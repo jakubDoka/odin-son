@@ -1,7 +1,18 @@
 package main
 
 import zydis "./zydis"
+import "backend"
 import "core:fmt"
+import "core:io"
+import "core:log"
+import "core:odin/ast"
+import "core:odin/parser"
+import "core:strconv"
+import "core:strings"
+import "core:testing"
+import "meta"
+import "vendored/gam/util/arna"
+import "vendored/gam/util/hot"
 
 // A small hardcoded blob of x86-64 machine code to disassemble.
 //
@@ -82,4 +93,121 @@ main :: proc() {
 
 		offset += length
 	}
+}
+
+fmts: map[typeid]fmt.User_Formatter
+
+@(test)
+build_simplest_function :: proc(t: ^testing.T) {
+	context.allocator = context.temp_allocator
+	fmt.set_user_formatters(&fmts)
+
+	fmt.register_user_formatter(
+		backend.Reg_Mask,
+		proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
+			value := value.(backend.Reg_Mask)
+			io.write_rune(fi.writer, backend.reg_kind_char(value.kind))
+			for m in 0 ..< value.bit_length / backend.MASK_SIZE {
+				fmt.wprintf(fi.writer, "%08x", value.masks[m])
+			}
+			return true
+		},
+	)
+
+	context.assertion_failure_proc = hot.init_trace()
+
+	source :: `
+		package main
+
+		main :: proc() -> int {
+			return 69
+		}
+	`
+
+	p := parser.Parser{}
+	f := ast.File {
+		src      = source,
+		fullpath = "test",
+	}
+	ok := parser.parse_file(&p, &f); assert(ok)
+
+	main: ^ast.Proc_Lit
+	for decl in f.decls {
+		sdecl := decl.derived_stmt.(^ast.Value_Decl) or_continue
+		if meta.src_of(f, sdecl.names[0]) == "main" {
+			main = sdecl.values[0].derived.(^ast.Proc_Lit)
+		}
+	}
+
+	assert(main != nil)
+
+	slots: [4096 * 4]u8
+
+	graph: Ctx
+	graph.node_spec = &backend.SPECS[.X64]
+	graph.mem = arna.init_from_buffer(slots[:])
+	graph.mem.pos += backend.PRECISION
+
+	start := backend.graph_add_start(&graph)
+	assert(start == backend.NODE_START)
+	entry := backend.graph_add_entry(&graph, start)
+	assert(entry == backend.NODE_ENTRY)
+
+	graph.cfg = entry
+
+	emit_nodes(&graph, main.body)
+
+	schedule: backend.Graph_Schedule
+	backend.graph_schedule(&graph, &schedule)
+
+	reg_slots: [4096]u8
+
+	ra: backend.Regalloc
+	ra.spec = &backend.SPECS[.X64]
+	ra.alloc = arna.init_from_buffer(reg_slots[:])
+
+	regs := backend.regalloc(&ra, &graph, &schedule)
+
+	sb: strings.Builder
+	append(&sb.buf, "\n")
+	backend.graph_display(&sb, &graph, &schedule, regs)
+
+	log.info(string(sb.buf[:]))
+
+}
+
+Ctx :: struct {
+	using graph: backend.Graph,
+	cfg:         backend.Node_ID,
+}
+
+emit_nodes :: proc(ctx: ^Ctx, node: ^ast.Node) -> backend.Node_ID {
+	#partial switch d in node.derived {
+	case ^ast.Block_Stmt:
+		for stmt in d.stmts {
+			emit_nodes(ctx, stmt)
+		}
+	case ^ast.Return_Stmt:
+		values := make([]backend.Node_ID, 1 + len(d.results))
+		values[0] = ctx.cfg
+		for r, i in d.results {
+			values[1 + i] = emit_nodes(ctx, r)
+		}
+		ctx.cfg = 0
+
+		ctx.end = backend.graph_add_return(ctx, values)
+	case ^ast.Basic_Lit:
+		#partial switch d.tok.kind {
+		case .Integer:
+			value, ok := strconv.parse_i64(d.tok.text)
+			assert(ok)
+			return backend.graph_add_cint(ctx, .I64, value)
+		case:
+			fmt.panicf("TODO: %#v", node.derived)
+		}
+	case:
+		fmt.panicf("TODO: %#v", node.derived)
+	}
+
+	return 0
 }

@@ -1,6 +1,14 @@
 package backend
 // NOTE: this file is generated: odin run meta
 
+graph_node_hash :: proc{graph_node_hash_node, graph_node_hash_node_id}
+graph_node_hash_node_id :: #force_inline proc(graph: ^Graph, id: Node_ID) -> (hash: u32) {
+	return graph_node_hash_node(graph, graph_get(graph, id))
+}
+graph_extra_dwords :: proc{graph_extra_dwords_node, graph_extra_dwords_node_id}
+graph_extra_dwords_node_id :: #force_inline proc(graph: ^Graph, id: Node_ID) -> []u32 {
+	return graph_extra_dwords_node(graph, graph_get(graph, id))
+}
 graph_idom :: proc{graph_idom_node, graph_idom_node_id}
 graph_idom_node_id :: #force_inline proc(graph: ^Graph, id: Node_ID) -> Node_ID {
 	return graph_idom_node(graph, graph_get(graph, id))
@@ -50,4 +58,8 @@ graph_has_flag_node_id :: #force_inline proc(
 	flag: Class_Flag,
 ) -> bool {
 	return graph_has_flag_node(graph, graph_get(graph, id), flag)
+}
+graph_idepth :: proc{graph_idepth_node, graph_idepth_node_id}
+graph_idepth_node_id :: #force_inline proc(graph: ^Graph, id: Node_ID) -> u32 {
+	return graph_idepth_node(graph, graph_get(graph, id))
 }

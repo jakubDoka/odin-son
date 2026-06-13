@@ -13,7 +13,7 @@ GEN_SPEC :: #config(GEN_SPEC, false)
 COMMAND :: "odin run backend -define:GEN_SPEC=true"
 
 @(rodata)
-IDEAL_CLASSES := [I_Node_Type]Class_Spec {
+IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 	.Start = {id = Cfg_Extra, default_type = .Void},
 	.Entry = {
 		id = Cfg_Extra,
@@ -21,21 +21,22 @@ IDEAL_CLASSES := [I_Node_Type]Class_Spec {
 		flags = {.Is_Basic_Block_Start},
 		default_type = .Void,
 	},
-	.CInt = {id = CInt, extra_args = {"value"}, no_ctrl = true},
+	.CInt = {
+		id = CInt,
+		extra_args = {"value"},
+		no_ctrl = true,
+		flags = {.Interned},
+	},
+	.Add ..= .Mul = {id = No_Extra, args = {"lhs", "rhs"}, no_ctrl = true},
+	.Split = {id = No_Extra, args = {"dest"}, no_ctrl = true},
 	.Return = {id = Cfg_Extra, varargs = true, default_type = .Void},
 }
 
 @(rodata)
-IDEAL_REG_CLASSES := [I_Node_Type]Reg_Class_Spec{}
+IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec{}
 
 Inherit_Table_Elem :: u8
 Mask_Intern_Key :: u8
-
-Codegen_Spec :: struct {
-	name:                 Node_Spec_Name,
-	classes:              []Class_Array,
-	datatype_to_reg_kind: [Node_Datatype]Reg_Kind,
-}
 
 Class_Array :: struct {
 	enm:  typeid,
@@ -63,7 +64,26 @@ when (#load("node_specs.odin", string) or_else "") == "" {
 	@(rodata)
 	SPECS := [Node_Spec_Name]Node_Spec{}
 
+	Ideal_Node_Type :: enum u16 {
+		Start,
+		Entry,
+		CInt,
+		Add,
+		Mul,
+		Split,
+		Return,
+	}
+
+	X64_Node_Type :: enum u16 {}
+
 	inherit_idx_of :: proc($T: typeid) -> u8 {return 0}
+
+	graph_add_split :: proc(
+		graph: ^Graph,
+		name: string,
+		dt: Node_Datatype,
+		src: Node_ID,
+	) -> Node_ID {return 0}
 
 	when !GEN_SPEC {
 		#panic("Missing generated files, run `" + COMMAND + "`")
@@ -80,6 +100,12 @@ generate_specs :: proc() {
 	_ = SPECS
 
 	context.allocator = context.temp_allocator
+
+	Codegen_Spec :: struct {
+		name:                 Node_Spec_Name,
+		classes:              []Class_Array,
+		datatype_to_reg_kind: [Node_Datatype]Reg_Kind,
+	}
 
 	ts :: proc(arr: ^[$E]typeid, regalloc: ^[E]Reg_Class_Spec) -> Class_Array {
 		return {
@@ -108,6 +134,7 @@ generate_specs :: proc() {
 	os.write_string(file, "package backend\n")
 	os.write_string(file, "// NOTE: this file is generated: " + COMMAND)
 	os.write_string(file, "\n\n")
+	os.write_string(file, "when !GEN_SPEC {\n")
 
 	global_inheritable: map[typeid]int
 	inherits: map[typeid]Inherit_Table_Elem
@@ -158,9 +185,11 @@ generate_specs :: proc() {
 						full_mask := make([]int, reg_mask_lengths[kind])
 						copy(full_mask, mask)
 
-						interned_reg_masks[mask_key(full_mask)] = len(
-							interned_reg_masks,
-						)
+						if mask_key(full_mask) not_in interned_reg_masks {
+							interned_reg_masks[mask_key(full_mask)] = len(
+								interned_reg_masks,
+							)
+						}
 					}
 				}
 			}
@@ -191,7 +220,7 @@ generate_specs :: proc() {
 			fmt.fprintf(file, "\t\t\traw_data(%T{{", masks)
 			for mask, i in masks {
 				if i != 0 do os.write_string(file, ", ")
-				fmt.fprintf(file, "0x%x", mask)
+				fmt.fprintf(file, "0x%x", uint(mask))
 			}
 			os.write_string(file, "}),\n")
 		}
@@ -200,10 +229,12 @@ generate_specs :: proc() {
 		os.write_string(file, "\t\treg_masks = {\n")
 		for classes in spec.classes {
 			for class, i in classes.regs {
-				final := make(
-					[][Reg_Kind]Mask_Intern_Key,
-					len(class.reg_masks),
-				)
+				mx := 0
+				for masks in class.reg_masks {
+					mx = max(mx, len(masks))
+				}
+
+				final := make([][Reg_Kind]Mask_Intern_Key, mx)
 
 				for masks, kind in class.reg_masks {
 					for mask, i in masks {
@@ -240,12 +271,14 @@ generate_specs :: proc() {
 		os.write_string(file, "\t\t},\n")
 
 		if reg_mask_lengths != {} {
+			prefix := strings.to_snake_case(
+				reflect.enum_name_from_value(spec.name) or_else panic(""),
+			)
+			fmt.fprintf(file, "\t\treg_mask_of = %v_reg_mask_of,\n", prefix)
 			fmt.fprintf(
 				file,
-				"\t\treg_mask_of = %v_reg_mask_of,\n",
-				strings.to_snake_case(
-					reflect.enum_name_from_value(spec.name) or_else panic(""),
-				),
+				"\t\temit_function = %v_emit_function,\n",
+				prefix,
 			)
 		}
 
@@ -314,8 +347,8 @@ generate_specs :: proc() {
 			for class, i in classes.ids {
 				fmt.fprintf(
 					file,
-					"\t\t\ttransmute(Class_Flags)u8(%v), // %v\n",
-					transmute(u8)class.flags,
+					"\t\t\t%w, // %v\n",
+					class.flags,
 					reflect.enum_field_names(classes.enm)[i],
 				)
 			}
@@ -362,6 +395,15 @@ generate_specs :: proc() {
 	seen: map[Seen_Key]struct{}
 
 	for spec in specs {
+		prefix := reflect.enum_name_from_value(spec.name) or_else panic("")
+		fmt.fprintfln(file, "%v_Node_Type :: enum u16 {{\n", prefix)
+		for classes in spec.classes {
+			for field in reflect.enum_fields_zipped(classes.enm) {
+				fmt.fprintfln(file, "%v,", field.name)
+			}
+		}
+		os.write_string(file, "}\n")
+
 		for classes in spec.classes {
 			for class, i in classes.ids {
 				if _, seen := seen[{classes.enm, i}]; seen do continue
@@ -386,7 +428,7 @@ generate_specs :: proc() {
 				name := reflect.enum_field_names(classes.enm)[i]
 				fmt.fprintf(
 					file,
-					"graph_add_%v :: #force_inline proc(graph: ^Graph",
+					"graph_add_%v :: #force_inline proc(graph: ^Graph, name: string",
 					strings.to_camel_case(name),
 				)
 
@@ -409,23 +451,26 @@ generate_specs :: proc() {
 
 				os.write_string(file, ") -> (id: Node_ID) {\n")
 
+				os.write_string(file, "\tpush_node_name(graph, name)\n")
+
 				if len(class.extra_args) != 0 {
-					os.write_string(file, "\tdefer {\n")
 					fmt.fprintf(
 						file,
-						"\t\textra := graph_get_extra(graph, id, %v)\n",
+						"\textra := (^%v)(graph_get_next_extra_slot(graph," +
+						" u16(Ideal_Node_Type.%v)))\n",
 						class.id,
+						name,
 					)
 					for earg in class.extra_args {
 						field := reflect.struct_field_by_name(class.id, earg)
-						fmt.fprintf(file, "\t\textra.%v = %v\n", earg, earg)
+						fmt.fprintf(file, "\textra.%v = %v\n", earg, earg)
 					}
-					os.write_string(file, "\t}\n")
 				}
 
 				fmt.fprintf(
 					file,
-					"\treturn graph_add_raw(graph," + " u16(I_Node_Type.%v), ",
+					"\treturn graph_add_raw(graph," +
+					" u16(Ideal_Node_Type.%v), ",
 					name,
 				)
 
@@ -480,5 +525,5 @@ generate_specs :: proc() {
 	)
 	os.write_string(file, "}\n")
 
-	os.write_string(file, "\n")
+	os.write_string(file, "}\n")
 }

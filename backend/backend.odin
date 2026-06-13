@@ -3,15 +3,28 @@ package backend
 import "../vendored/gam/util/arna"
 import "base:runtime"
 import "core:fmt"
+import "core:hash"
 import "core:mem"
 import "core:reflect"
+import "core:simd"
+import "core:slice"
 import "core:strings"
 import "core:terminal/ansi"
 
+when NODE_NAMES {
+	PREFIX_SIZE :: size_of(string)
+} else {
+	PREFIX_SIZE :: 0
+}
+
 PRECISION :: size_of(u32)
-NODE_START :: Node_ID(4) / 4
-NODE_ENTRY :: Node_ID(4 + size_of(Node) + size_of(Cfg_Extra)) / 4
-REGLOGS :: #config(REGLOGS, false)
+NODE_START :: Node_ID(4 + PREFIX_SIZE) / 4
+NODE_ENTRY ::
+	Node_ID(
+		4 + PREFIX_SIZE + size_of(Node) + size_of(Cfg_Extra) + PREFIX_SIZE,
+	) /
+	4
+NODE_NAMES :: #config(NODE_NAMES, ODIN_DEBUG)
 
 Node_Spec_Name :: enum {
 	Ideal,
@@ -25,6 +38,7 @@ Node_Spec :: struct {
 	node_extra_types:  []typeid,
 	node_kind_name:    []string,
 	using regalloc:    Regalloc_Spec,
+	using codegen:     Codegen_Spec,
 }
 
 Class_Flags :: bit_set[Class_Flag;u8]
@@ -32,11 +46,12 @@ Class_Flags :: bit_set[Class_Flag;u8]
 Class_Flag :: enum {
 	Is_Basic_Block_Start,
 	Pinnable,
+	Interned,
 }
 
 Cfg_Extra :: struct {
 	using _: struct #raw_union {
-		idom:   u32,
+		idepth: u32,
 		bb_idx: u32,
 	},
 }
@@ -45,12 +60,7 @@ CInt :: struct #align (4) {
 	value: i64,
 }
 
-I_Node_Type :: enum u16 {
-	Start,
-	Entry,
-	CInt,
-	Return,
-}
+No_Extra :: struct {}
 
 Node_Datatype :: enum u8 {
 	Void,
@@ -69,7 +79,7 @@ Node_Output :: bit_field u32 {
 
 Node :: struct {
 	using _:             struct #raw_union {
-		itype: I_Node_Type,
+		itype: Ideal_Node_Type,
 		xtype: X64_Node_Type,
 		rtype: u16,
 	},
@@ -89,11 +99,178 @@ Node :: struct {
 
 #assert(size_of(Node) == 24)
 
+Node_Intern_Entry :: struct {
+	hash: u8,
+	id:   Node_ID,
+}
+
 Graph :: struct {
 	using node_spec: ^Node_Spec,
+	interner:        #soa[]Node_Intern_Entry,
+	interner_len:    int,
 	mem:             arna.Allocator,
 	gvn:             u32,
 	end:             Node_ID,
+	dont_intern:     bool,
+}
+
+Intern_Vec :: #simd[16]u8
+
+graph_interner_find :: proc(graph: ^Graph, id: Node_ID) -> (int, u8, bool) {
+	assert(mem.is_aligned(graph.interner.hash, align_of(Intern_Vec)))
+
+	needle := u8(graph_node_hash(graph, id))
+
+	for mask, i in mem.slice_data_cast(
+		[]Intern_Vec,
+		graph.interner.hash[:len(graph.interner)],
+	) {
+		mask := simd.lanes_eq(mask, Intern_Vec(needle))
+		bits := transmute(u16)simd.extract_lsbs(mask)
+		for bits != 0 {
+			idx :=
+				i * size_of(Intern_Vec) + int(simd.count_trailing_zeros(bits))
+			bits &= bits - 1
+
+			if graph_node_eq(graph, graph.interner.id[idx], id) {
+				return idx, needle, true
+			}
+		}
+	}
+
+	return -1, needle, false
+}
+
+graph_intern :: proc(graph: ^Graph, id: Node_ID) -> Node_ID {
+	if .Interned not_in graph.node_flags[graph_get(graph, id).itype] ||
+	   graph.dont_intern {
+		return id
+	}
+
+	idx, hash, _ := graph_interner_find(graph, id)
+	if idx >= 0 do return graph.interner.id[idx]
+
+	if len(graph.interner) == graph.interner_len {
+		new_cap := len(graph.interner) * 2 + size_of(Intern_Vec)
+		hashes := arna.alloc(&graph.mem, uint(new_cap), align_of(Intern_Vec))
+		nodes := arna.smake(&graph.mem, []Node_ID, new_cap)
+
+		mem.copy_non_overlapping(
+			raw_data(hashes),
+			graph.interner.hash,
+			graph.interner_len,
+		)
+		mem.copy_non_overlapping(
+			raw_data(nodes),
+			graph.interner.id,
+			graph.interner_len,
+		)
+
+		graph.interner.hash = raw_data(hashes)
+		graph.interner.id = raw_data(nodes)
+		raw_soa_footer_slice(&graph.interner).len = new_cap
+	}
+
+	graph.interner[graph.interner_len] = {
+		hash = hash,
+		id   = id,
+	}
+	graph.interner_len += 1
+
+	return id
+}
+
+graph_unintern :: proc(graph: ^Graph, id: Node_ID) {
+	if .Interned in graph.node_flags[graph_get(graph, id).itype] &&
+	   !graph.dont_intern {
+		idx, _, _ := graph_interner_find(graph, id)
+		if idx < 0 do return
+		graph.interner_len -= 1
+		graph.interner[idx] = graph.interner[graph.interner_len]
+		graph.interner[graph.interner_len] = {}
+	}
+}
+
+graph_node_eq :: proc(graph: ^Graph, a, b: Node_ID) -> bool {
+	if a == b do return true
+
+	an, bn := graph_get(graph, a), graph_get(graph, b)
+	if an.rtype != bn.rtype do return false
+	if an.dt != bn.dt do return false
+
+	if !slice.equal(graph_inputs(graph, an), graph_inputs(graph, bn)) {
+		return false
+	}
+
+	ad := graph_extra_dwords(graph, an)
+	bd := graph_extra_dwords(graph, bn)
+	if !slice.equal(ad, bd) do return false
+
+	return true
+}
+
+graph_set_input :: proc(
+	graph: ^Graph,
+	id: Node_ID,
+	#any_int idx: int,
+	value: Node_ID,
+) -> Node_ID {
+	node := graph_get(graph, id)
+
+	value_node := graph_get(graph, value)
+	value_outputs := graph_outputs(graph, value_node)
+	inputs := graph_inputs(graph, node)
+	assert(inputs[idx] != 0)
+
+	current_value := graph_get(graph, inputs[idx])
+	current_value_outputs := graph_outputs(graph, current_value)
+	out_idx, _ := slice.linear_search(
+		current_value_outputs,
+		Node_Output{id = id, idx = u8(idx)},
+	)
+	current_value_outputs[out_idx] =
+		current_value_outputs[len(current_value_outputs) - 1]
+	current_value.output_count -= 1
+
+	graph_add_output(graph, value, id, idx)
+
+	graph_unintern(graph, id)
+	inputs[idx] = value
+	return graph_intern(graph, id)
+}
+
+@(tag = "node_proc")
+graph_node_hash_node :: proc(graph: ^Graph, node: ^Node) -> (hash: u32) {
+	type := u32(node.rtype)
+	dt := u32(node.dt)
+	extra_dwords := graph_extra_dwords(graph, node)
+	inputs := graph_inputs(graph, node)
+
+	hash += type + dt
+	for n in extra_dwords do hash += n
+	for n in inputs do hash += u32(n)
+
+	hash_u32 :: proc(x: u32) -> u32 {
+		h := x
+
+		h ~= h >> 16
+		h *= 0x85eb_ca6b
+		h ~= h >> 13
+		h *= 0xc2b2_ae35
+		h ~= h >> 16
+
+		return h
+	}
+
+	hash = hash_u32(hash)
+
+	return
+}
+
+@(tag = "node_proc")
+graph_extra_dwords_node :: proc(graph: ^Graph, node: ^Node) -> []u32 {
+	extra := graph_extra(graph, node)
+	return mem.slice_data_cast([]u32, reflect.as_bytes(extra))
 }
 
 graph_get :: #force_inline proc(graph: ^Graph, id: Node_ID) -> ^Node {
@@ -129,6 +306,20 @@ graph_outputs_node :: #force_inline proc(
 	return ([^]Node_Output)(graph.mem.ptr)[node.outputs:][:node.output_count]
 }
 
+graph_get_next_extra_slot :: proc(graph: ^Graph, type: u16) -> [^]u32 {
+	size := size_of(Node) + int(graph.node_extra_sizes[type]) * PRECISION
+	slot := arna.alloc(&graph.mem, uint(size), PRECISION)
+	graph.mem.pos -= uint(len(slot))
+
+	return auto_cast raw_data(slot)[size_of(Node):]
+}
+
+@(disabled = !NODE_NAMES)
+push_node_name :: proc(graph: ^Graph, name: string) {
+	slot := arna.alloc(&graph.mem, size_of(string), 4)
+	copy(slot, reflect.as_bytes(name))
+}
+
 graph_add_raw :: proc(
 	graph: ^Graph,
 	type: u16,
@@ -158,6 +349,12 @@ graph_add_raw :: proc(
 		PRECISION,
 	)
 	copy(mem.slice_data_cast([]Node_ID, new_inputs), inputs)
+
+	inode := graph_intern(graph, id)
+	if inode != id {
+		graph.mem.pos = uint(id) * PRECISION
+		return inode
+	}
 
 	for inp, i in inputs {
 		graph_add_output(graph, inp, id, i)
@@ -199,7 +396,7 @@ graph_is_block_start_node :: proc(graph: ^Graph, node: ^Node) -> bool {
 	return node.itype == .Entry
 }
 
-graph_get_extra :: proc {
+graph_extra :: proc {
 	graph_get_any_extra_node,
 	graph_get_any_extra_node_id,
 	graph_get_static_extra_node,
@@ -273,9 +470,9 @@ graph_display :: proc(
 graph_display_node :: proc(sb: ^strings.Builder, graph: ^Graph, id: Node_ID) {
 	node := graph_get(graph, id)
 
-	extra := graph_get_extra(graph, node)
+	extra := graph_extra(graph, node)
 
-	graph_display_node_gvn(sb, node.gvn)
+	graph_display_node_gvn(sb, graph, id)
 	fmt.sbprintf(sb, " := %v(", graph.node_kind_name[node.rtype])
 
 	written_one: bool
@@ -285,13 +482,13 @@ graph_display_node :: proc(sb: ^strings.Builder, graph: ^Graph, id: Node_ID) {
 		inode := graph_get(graph, inp)
 		if written_one do fmt.sbprintf(sb, ", ")
 		written_one = true
-		graph_display_node_gvn(sb, inode.gvn)
+		graph_display_node_gvn(sb, graph, inp)
 	}
 	append(&sb.buf, ") [")
 	for out, i in graph_outputs(graph, node) {
 		onode := graph_get(graph, out.id)
 		if i != 0 do append(&sb.buf, ", ")
-		graph_display_node_gvn(sb, onode.gvn)
+		graph_display_node_gvn(sb, graph, out.id)
 		fmt.sbprintf(sb, ":%v", out.idx)
 	}
 	append(&sb.buf, "]")
@@ -322,7 +519,13 @@ graph_display_extra :: proc(
 	fmt.sbprint(sb, extra)
 }
 
-graph_display_node_gvn :: proc(sb: ^strings.Builder, gvn: u32) {
+graph_display_node_gvn :: proc(
+	sb: ^strings.Builder,
+	graph: ^Graph,
+	id: Node_ID,
+) {
+	gvn := graph_get(graph, id).gvn
+
 	if .Terminal_Color in context.logger.options {
 		colors := [?]string {
 			ansi.FG_BRIGHT_RED,
@@ -345,7 +548,15 @@ graph_display_node_gvn :: proc(sb: ^strings.Builder, gvn: u32) {
 		append(&sb.buf, ansi.SGR)
 	}
 
-	fmt.sbprintf(sb, "#%v", gvn)
+	name := ""
+	when NODE_NAMES {
+		copy(
+			reflect.as_bytes(name),
+			graph.mem.ptr[int(id) * PRECISION - PREFIX_SIZE:][:PREFIX_SIZE],
+		)
+	}
+
+	fmt.sbprintf(sb, "#%v%v", name, gvn)
 
 	if .Terminal_Color in context.logger.options {
 		append(&sb.buf, ansi.CSI + ansi.RESET + ansi.SGR)

@@ -8,7 +8,10 @@ import "core:container/queue"
 import "core:fmt"
 import "core:log"
 import "core:mem"
+import "core:sort"
 import "core:strings"
+
+REGLOGS :: #config(REGLOGS, false)
 
 Reg_Kind :: enum u16 {
 	General,
@@ -149,10 +152,10 @@ reg_mask_of :: proc(
 		id := masks[idx][reg_kind]
 		if id != 0 {
 			mask := reg_mask_empty(re, reg_kind)
-			mem.copy(
+			mem.copy_non_overlapping(
 				mask.masks,
 				re.interned_reg_masks[id],
-				int(re.class_lengths[reg_kind]),
+				int(re.class_lengths[reg_kind]) * size_of(int),
 			)
 			return mask
 		}
@@ -174,18 +177,43 @@ regalloc :: proc(
 	panic("Ralloc took too many rounds")
 }
 
+Lrg_Meta :: bit_field u32 {
+	index:           u32  | 22,
+	failed_to_color: bool | 1,
+	failed:          bool | 1,
+	self_conflict:   bool | 1,
+	rank:            u8   | 7,
+}
+
+Lrg :: struct {
+	node:    Node_ID,
+	using _: Lrg_Meta,
+	mask:    Reg_Mask,
+	parent:  ^Lrg,
+	// TODO: this should go into meta instead of the index
+	reg:     i16,
+}
+
 regalloc_round :: proc(
 	ra: ^Regalloc,
 	graph: ^Graph,
 	sched: ^Graph_Schedule,
 ) -> (
 	res: []Reg,
-	ok: bool,
+	ok: bool = true,
 ) {
 	arna.scrath(ra)
 
+	graph.dont_intern = true
+	defer graph.dont_intern = false
+
+	Instr_Placement :: struct {
+		block: u32,
+	}
+
 	max_lrg_count := 0
 	block_base := int(graph.gvn) - len(sched.bbs)
+	instr_placement := arna.smake(ra, []Instr_Placement, block_base)
 	rev_gvn := block_base
 
 	rev_gvn -= 1
@@ -202,32 +230,17 @@ regalloc_round :: proc(
 				rev_gvn -= 1
 				instr_node.gvn = u32(rev_gvn)
 			}
+			instr_placement[instr_node.gvn] = {
+				block = u32(i),
+			}
 		}
 	}
-
-	instr_gvn_base: u32 = 0
-	max_lrg_count -= int(instr_gvn_base)
 
 	Stage :: enum int {
 		None,
 		Build_Lrgs,
 		Build_Ifg,
 		Color,
-	}
-
-	Lrg_Meta :: bit_field u32 {
-		index:  u32  | 24,
-		failed: bool | 1,
-		rank:   u8   | 7,
-	}
-
-	Lrg :: struct {
-		node:    Node_ID,
-		using _: Lrg_Meta,
-		mask:    Reg_Mask,
-		parent:  ^Lrg,
-		// TODO: this should go into meta instead of the index
-		reg:     i16,
 	}
 
 	failed_stage: Stage
@@ -259,16 +272,14 @@ regalloc_round :: proc(
 				for o in instr_outputs {
 					out_node := graph_get(graph, o.id)
 					if u8(ra.inplace_slot_idxs[out_node.rtype]) == o.idx {
-						lrg = unify(
-							lrg,
-							lrg_table[out_node.gvn - instr_gvn_base],
-						)
+						lrg = unify(lrg, lrg_table[out_node.gvn])
 					}
 				}
 
 				mask := reg_mask_of(graph, ra, instr, 0)
 				if lrg == nil {
 					lrg = &lrgs[used_lrgs]
+					lrg.node = instr
 					lrg.index = used_lrgs
 					lrg.mask = mask
 					lrg.reg = -1
@@ -288,7 +299,7 @@ regalloc_round :: proc(
 					intersect(lrg, mask)
 				}
 
-				lrg_table[instr_node.gvn - instr_gvn_base] = lrg
+				lrg_table[instr_node.gvn] = lrg
 			}
 
 		}
@@ -299,7 +310,7 @@ regalloc_round :: proc(
 		l = find(l)
 	}
 
-	log_lrgs(graph, sched, lrg_table, instr_gvn_base)
+	log_lrgs(graph, sched, lrg_table)
 
 	arena := arna.allocator(ra)
 
@@ -312,6 +323,13 @@ regalloc_round :: proc(
 	// TODO: round these up to teh mask size, that should allow us to optimize the set bit collection
 	interference := bit_arr.init(used_lrgs * used_lrgs, arena)
 	blocks := arna.smake(ra, []Block, len(sched.bbs))
+
+	Self_Conflict :: struct {
+		lrg:  ^Lrg,
+		node: Node_ID,
+	}
+
+	self_conflicts := make([dynamic]Self_Conflict, arena)
 
 	worklist: queue.Queue(u32)
 	queue.init(&worklist, len(sched.bbs), arena)
@@ -335,10 +353,10 @@ regalloc_round :: proc(
 			input_start := ra.first_input_idxs[instr_node.rtype]
 
 			if instr_node.dt != .Void {
-				lrg := lrg_table[instr_node.gvn - instr_gvn_base]
-				_, v := delete_key(&current_liveouts, lrg)
-				if v != instr {
-					panic("TODO: self conflict")
+				lrg := lrg_table[instr_node.gvn]
+				k, v := delete_key(&current_liveouts, lrg)
+				if k != lrg || v != instr {
+					add_conflict(&self_conflicts, lrg, v, instr)
 				}
 
 				for l in current_liveouts {
@@ -347,7 +365,7 @@ regalloc_round :: proc(
 					pair := []^Lrg{lrg, l}
 
 					for i in 0 ..< 2 {
-						l, r := pair[i], pair[i - 1]
+						l, r := pair[i], pair[1 - i]
 
 						// TODO: this could be a single operation
 						if reg_mask_pop_count(l.mask) == 1 {
@@ -366,7 +384,7 @@ regalloc_round :: proc(
 
 						bit_arr.set(
 							interference,
-							l.index * used_lrgs + r.index,
+							r.index * used_lrgs + l.index,
 						)
 					}
 				}
@@ -374,13 +392,25 @@ regalloc_round :: proc(
 
 			for inp in instr_inputs[input_start:] {
 				inp_node := graph_get(graph, inp)
-				lrg := lrg_table[inp_node.gvn - instr_gvn_base]
-				current_liveouts[lrg] = inp
+				lrg := lrg_table[inp_node.gvn]
+				_, slot, just_inserted, _ := map_entry(&current_liveouts, lrg)
+				if !just_inserted && slot^ != inp {
+					add_conflict(&self_conflicts, lrg, inp, slot^)
+				}
+				slot^ = inp
 			}
 		}
 	}
 
-	log_lrgs(graph, sched, lrg_table, instr_gvn_base)
+	log_lrgs(graph, sched, lrg_table)
+
+	used_lrgs_check := used_lrgs
+
+	if len(self_conflicts) != 0 {
+		used_lrgs = 0
+		interference.bit_length = 0
+		ok = false
+	}
 
 	ifg := arna.smake(ra, [][]^Lrg, used_lrgs)
 	slices := arna.smake(ra, []^Lrg, bit_arr.pop_count(interference))
@@ -396,26 +426,48 @@ regalloc_round :: proc(
 			base := cursor * int(used_lrgs)
 			end := base + int(used_lrgs)
 
-			if edge > end {
+			if edge >= end {
 				ifg[cursor] = slices[slice_base:slice_cursor]
 				slice_base = slice_cursor
 				cursor += 1
 				continue
 			}
 
-			slices[slice_cursor] = &lrgs[edge]
+			slices[slice_cursor] = &lrgs[edge - base]
 			slice_cursor += 1
 			break
 		}
 	}
 
-	if REGLOGS {
-		log.info(ifg)
+	if len(ifg) != 0 {
+		ifg[cursor] = slices[slice_base:slice_cursor]
 	}
 
-	res = make([]Reg, used_lrgs)
-	for n, i in ifg {
-		lrg := lrgs[i]
+	when REGLOGS && false {
+		sb: strings.Builder
+		append(&sb.buf, "\n")
+		for n, i in ifg {
+			fmt.sbprintln(&sb, lrgs[i], n)
+		}
+		log.info(string(sb.buf[:]))
+	}
+
+	color_order := arna.smake(ra, []bit_field u64 {
+			idx:      u32 | 32,
+			priority: u32 | 32,
+		}, len(ifg))
+	for &s, i in color_order {
+		s = {
+			idx      = u32(i),
+			priority = 10000 - color_priority(graph, &lrgs[i], ifg[i]),
+		}
+	}
+
+	sort.quick_sort(color_order)
+
+	for co in color_order {
+		n := ifg[co.idx]
+		lrg := &lrgs[co.idx]
 		for inter in n {
 			if inter.reg == -1 do continue
 			reg_mask_set(lrg.mask, inter.reg, false)
@@ -423,18 +475,166 @@ regalloc_round :: proc(
 
 		first_set, ok := reg_mask_first_set(lrg.mask)
 		if !ok {
-			panic("TODO")
+			lrg.failed = true
+			lrg.failed_to_color = true
+			continue
 		}
 
+		assert(first_set != -1)
+
 		lrg.reg = i16(first_set)
+	}
+
+	res = make([]Reg, max_lrg_count)
+
+	for lrg, i in lrg_table {
 		res[i] = {
 			kind  = lrg.mask.kind,
 			index = u16(lrg.reg),
 		}
 	}
 
-	ok = true
+	prev_gvn := graph.gvn
+
+	for lrg in lrgs[:used_lrgs_check] {
+		fnode := graph_get(graph, lrg.node)
+		fouts := graph_outputs(graph, fnode)
+		if lrg.failed_to_color {
+			if fnode.itype != .Split {
+				panic("TODO")
+			}
+
+			ok = false
+
+			for out in fouts {
+				split := split_before(
+					graph,
+					sched,
+					instr_placement,
+					out.id,
+					out.idx,
+				)
+				graph_set_input(graph, out.id, out.idx, split)
+			}
+		}
+	}
+
+	for sc in self_conflicts {
+		lrg := sc.lrg
+		id := sc.node
+
+		node := graph_get(graph, id)
+		inputs := graph_inputs(graph, node)
+		outputs := graph_outputs(graph, node)
+		outputs = arna.clone(ra, outputs)
+		first_input := ra.first_input_idxs[node.rtype]
+		inplace_slot := ra.inplace_slot_idxs[node.rtype]
+
+		// NOTE: we could be using the same value multiple times, so since we
+		// are at it, lets reuse the immediate split
+		last_split: Node_ID
+
+		for inp, i in inputs {
+			inp_node := graph_get(graph, inp)
+			if inp_node.dt == .Void do continue
+			if inp_node.gvn >= prev_gvn {
+				last_split = inp
+				continue
+			}
+
+			inp_lrg := lrg_table[inp_node.gvn]
+			if inp_lrg == lrg &&
+			   (inp_node.itype != .Split || inp_node.output_count > 1) {
+				split: Node_ID
+				if last_split != 0 &&
+				   graph_inputs(graph, last_split)[0] == inp {
+					split = last_split
+				} else {
+					split = split_before(graph, sched, instr_placement, id, i)
+				}
+
+				last_split = split
+
+				graph_set_input(graph, id, i, split)
+			}
+		}
+
+		last_split = 0
+		last_split_out: Node_ID
+		for out, i in outputs {
+			out_node := graph_get(graph, out.id)
+			out_node_in_place_slot := ra.inplace_slot_idxs[out_node.rtype]
+			if out_node.dt == .Void do continue
+			if out_node.gvn >= prev_gvn do continue
+
+			out_lrg := lrg_table[out_node.gvn]
+			if out.idx == u8(out_node_in_place_slot) {
+				split: Node_ID
+				if last_split != 0 && last_split_out == out.id {
+					split = last_split
+				} else {
+					split = split_before(
+						graph,
+						sched,
+						instr_placement,
+						out.id,
+						out.idx,
+					)
+				}
+
+				last_split_out = out.id
+				last_split = split
+
+				graph_set_input(graph, out.id, out.idx, split)
+			}
+		}
+	}
+
 	return
+
+	split_before :: proc(
+		graph: ^Graph,
+		sched: ^Graph_Schedule,
+		instr_placement: []Instr_Placement,
+		id: Node_ID,
+		#any_int idx: int,
+	) -> Node_ID {
+		node := graph_get(graph, id)
+		node_inputs := graph_inputs(graph, node)
+		inp := node_inputs[idx]
+		inp_node := graph_get(graph, inp)
+
+		placement_block := &sched.bbs[instr_placement[node.gvn].block]
+		placement_idx, _ := arna.simd_search(placement_block.instrs[:], id)
+
+		split := graph_add_split(graph, "sc-in", inp_node.dt, inp)
+		inject_at(&placement_block.instrs, placement_idx, split)
+		return split
+	}
+
+	color_priority :: proc(graph: ^Graph, lrg: ^Lrg, adj: []^Lrg) -> u32 {
+		if reg_mask_pop_count(lrg.mask) > len(adj) {
+			return 0
+		}
+
+		if graph_get(graph, lrg.node).itype == .Split {
+			return 10
+		}
+
+		return 100
+	}
+
+	add_conflict :: proc(
+		self_conflicts: ^[dynamic]Self_Conflict,
+		lrg: ^Lrg,
+		a, b: Node_ID,
+	) {
+		if !lrg.self_conflict {
+			lrg.self_conflict = true
+			append(self_conflicts, Self_Conflict{lrg, a})
+			append(self_conflicts, Self_Conflict{lrg, b})
+		}
+	}
 
 	unify :: proc(a, b: ^Lrg) -> ^Lrg {
 		a, b := a, b
@@ -482,7 +682,6 @@ regalloc_round :: proc(
 		graph: ^Graph,
 		sched: ^Graph_Schedule,
 		lrg_table: []^Lrg,
-		instr_gvn_base: u32,
 	) {
 		sb: strings.Builder
 		append(&sb.buf, "\n")
@@ -492,8 +691,8 @@ regalloc_round :: proc(
 			for instr in bb.instrs {
 				instr_node := graph_get(graph, instr)
 				if instr_node.dt != .Void {
-					lrg := lrg_table[instr_node.gvn - instr_gvn_base]
-					fmt.sbprintf(&sb, "%v", lrg.mask)
+					lrg := lrg_table[instr_node.gvn]
+					fmt.sbprintf(&sb, "%v:%2i", lrg.mask, lrg.index)
 				}
 				graph_display_node(&sb, graph, instr)
 				append(&sb.buf, "\n")

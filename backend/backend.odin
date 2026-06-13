@@ -108,7 +108,7 @@ Graph :: struct {
 	using node_spec: ^Node_Spec,
 	interner:        #soa[]Node_Intern_Entry,
 	interner_len:    int,
-	mem:             arna.Allocator,
+	mem:             ^arna.Allocator,
 	gvn:             u32,
 	end:             Node_ID,
 	dont_intern:     bool,
@@ -152,8 +152,8 @@ graph_intern :: proc(graph: ^Graph, id: Node_ID) -> Node_ID {
 
 	if len(graph.interner) == graph.interner_len {
 		new_cap := len(graph.interner) * 2 + size_of(Intern_Vec)
-		hashes := arna.alloc(&graph.mem, uint(new_cap), align_of(Intern_Vec))
-		nodes := arna.smake(&graph.mem, []Node_ID, new_cap)
+		hashes := arna.alloc(graph.mem, uint(new_cap), align_of(Intern_Vec))
+		nodes := arna.smake(graph.mem, []Node_ID, new_cap)
 
 		mem.copy_non_overlapping(
 			raw_data(hashes),
@@ -308,7 +308,7 @@ graph_outputs_node :: #force_inline proc(
 
 graph_get_next_extra_slot :: proc(graph: ^Graph, type: u16) -> [^]u32 {
 	size := size_of(Node) + int(graph.node_extra_sizes[type]) * PRECISION
-	slot := arna.alloc(&graph.mem, uint(size), PRECISION)
+	slot := arna.alloc(graph.mem, uint(size), PRECISION)
 	graph.mem.pos -= uint(len(slot))
 
 	return auto_cast raw_data(slot)[size_of(Node):]
@@ -316,8 +316,16 @@ graph_get_next_extra_slot :: proc(graph: ^Graph, type: u16) -> [^]u32 {
 
 @(disabled = !NODE_NAMES)
 push_node_name :: proc(graph: ^Graph, name: string) {
-	slot := arna.alloc(&graph.mem, size_of(string), 4)
+	slot := arna.alloc(graph.mem, size_of(string), 4)
 	copy(slot, reflect.as_bytes(name))
+}
+
+@(disabled = !NODE_NAMES)
+graph_set_name :: proc(graph: ^Graph, node: Node_ID, name: string) {
+	copy(
+		graph.mem.ptr[int(node) * PRECISION - PREFIX_SIZE:][:PREFIX_SIZE],
+		reflect.as_bytes(name),
+	)
 }
 
 graph_add_raw :: proc(
@@ -331,7 +339,7 @@ graph_add_raw :: proc(
 	id = Node_ID(graph.mem.pos / PRECISION)
 
 	size := size_of(Node) + int(graph.node_extra_sizes[type]) * PRECISION
-	slot := arna.alloc(&graph.mem, uint(size), PRECISION)
+	slot := arna.alloc(graph.mem, uint(size), PRECISION)
 
 	node := (^Node)(raw_data(slot))
 	node^ = {
@@ -344,7 +352,7 @@ graph_add_raw :: proc(
 	}
 
 	new_inputs := arna.alloc(
-		&graph.mem,
+		graph.mem,
 		uint(len(inputs) * PRECISION),
 		PRECISION,
 	)
@@ -375,7 +383,7 @@ graph_add_output_node :: proc(
 	if node.output_cap == node.output_count {
 		base := u32(graph.mem.pos / PRECISION)
 		new_cap := node.output_cap * 2 + 2
-		slot := arna.alloc(&graph.mem, uint(new_cap * PRECISION), PRECISION)
+		slot := arna.alloc(graph.mem, uint(new_cap * PRECISION), PRECISION)
 		copy(
 			mem.slice_data_cast([]Node_Output, slot),
 			graph_outputs(graph, node),
@@ -556,7 +564,7 @@ graph_display_node_gvn :: proc(
 		)
 	}
 
-	fmt.sbprintf(sb, "#%v%v", name, gvn)
+	fmt.sbprintf(sb, "#%v%v", gvn, name)
 
 	if .Terminal_Color in context.logger.options {
 		append(&sb.buf, ansi.CSI + ansi.RESET + ansi.SGR)

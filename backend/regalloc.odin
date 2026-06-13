@@ -134,7 +134,7 @@ Regalloc_Spec :: struct {
 
 Regalloc :: struct {
 	using spec:  ^Regalloc_Spec,
-	using alloc: arna.Allocator,
+	using alloc: ^arna.Allocator,
 }
 
 MASK_SIZE :: size_of(int) * 8
@@ -394,7 +394,7 @@ regalloc_round :: proc(
 				inp_node := graph_get(graph, inp)
 				lrg := lrg_table[inp_node.gvn]
 				_, slot, just_inserted, _ := map_entry(&current_liveouts, lrg)
-				if !just_inserted && slot^ != inp {
+				if !just_inserted {
 					add_conflict(&self_conflicts, lrg, inp, slot^)
 				}
 				slot^ = inp
@@ -421,6 +421,8 @@ regalloc_round :: proc(
 	iter := bit_arr.iter(interference)
 	for edge in bit_arr.iter_next(&iter) {
 		assert(edge != cursor)
+
+		assert(ok)
 
 		for {
 			base := cursor * int(used_lrgs)
@@ -497,15 +499,35 @@ regalloc_round :: proc(
 	prev_gvn := graph.gvn
 
 	for lrg in lrgs[:used_lrgs_check] {
-		fnode := graph_get(graph, lrg.node)
+		id := lrg.node
+		fnode := graph_get(graph, id)
 		fouts := graph_outputs(graph, fnode)
-		if lrg.failed_to_color {
+		if lrg.failed {
+			if fnode.itype == .Split && fnode.output_count == 1 {
+				id = fouts[0].id
+				fnode = graph_get(graph, id)
+				fouts = graph_outputs(graph, fnode)
+			}
+
 			if fnode.itype != .Split {
-				panic("TODO")
+				split := graph_add_split(graph, "sdef", fnode.dt, id)
+
+				placement_block := &sched.bbs[instr_placement[fnode.gvn].block]
+				placement_idx, _ := arna.simd_search(
+					placement_block.instrs[:],
+					id,
+				)
+
+				inject_at(&placement_block.instrs, placement_idx + 1, split)
+
+				id = split
+				fnode = graph_get(graph, id)
+				fouts = graph_outputs(graph, fnode)
 			}
 
 			ok = false
 
+			fouts = arna.clone(ra, fouts)
 			for out in fouts {
 				split := split_before(
 					graph,
@@ -629,7 +651,7 @@ regalloc_round :: proc(
 		lrg: ^Lrg,
 		a, b: Node_ID,
 	) {
-		if !lrg.self_conflict {
+		if a != b {
 			lrg.self_conflict = true
 			append(self_conflicts, Self_Conflict{lrg, a})
 			append(self_conflicts, Self_Conflict{lrg, b})

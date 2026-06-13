@@ -158,7 +158,7 @@ run_test :: proc(t: ^testing.T, source: string) {
 		reserved = 4096 * 16,
 	}
 	regalloc_mem := arna.Allocator {
-		reserved = 4096 * 16,
+		reserved = 4096 * 64,
 	}
 	scratch_mem := arna.Allocator {
 		reserved = 4096 * 16,
@@ -172,8 +172,9 @@ run_test :: proc(t: ^testing.T, source: string) {
 
 	graph: Ctx
 	graph.node_spec = spec
-	graph.mem = graph_mem
+	graph.mem = &graph_mem
 	graph.mem.pos += backend.PRECISION
+	graph.file = &f
 
 	current_graph = &graph
 
@@ -184,14 +185,14 @@ run_test :: proc(t: ^testing.T, source: string) {
 
 	graph.cfg = entry
 
-	emit_nodes(&graph, main.body)
+	emit_nodes(&graph, {}, main.body)
 
 	schedule: backend.Graph_Schedule
 	backend.graph_schedule(&graph, &schedule)
 
 	ra: backend.Regalloc
 	ra.spec = spec
-	ra.alloc = regalloc_mem
+	ra.alloc = &regalloc_mem
 
 	regs := backend.regalloc(&ra, &graph, &schedule)
 
@@ -220,19 +221,32 @@ run_test :: proc(t: ^testing.T, source: string) {
 	testing.expect_value(t, ptr(), expected_return)
 }
 
+Variable :: struct {
+	name:  string,
+	value: backend.Node_ID,
+}
+
 Ctx :: struct {
 	using graph: backend.Graph,
 	cfg:         backend.Node_ID,
+	scope:       [dynamic]Variable,
+	file:        ^ast.File,
 }
 
-emit_nodes :: proc(ctx: ^Ctx, node: ^ast.Node) -> backend.Node_ID {
+Propagation :: struct {}
+
+emit_nodes :: proc(
+	ctx: ^Ctx,
+	prop: Propagation,
+	node: ^ast.Node,
+) -> backend.Node_ID {
 	#partial switch d in node.derived {
 	case ^ast.Block_Stmt:
 		for stmt in d.stmts {
-			emit_nodes(ctx, stmt)
+			emit_nodes(ctx, {}, stmt)
 		}
 	case ^ast.Binary_Expr:
-		lhs, rhs := emit_nodes(ctx, d.left), emit_nodes(ctx, d.right)
+		lhs, rhs := emit_nodes(ctx, {}, d.left), emit_nodes(ctx, {}, d.right)
 		#partial switch d.op.kind {
 		case .Add:
 			return backend.graph_add_add(ctx, "add", .I64, lhs, rhs)
@@ -245,7 +259,7 @@ emit_nodes :: proc(ctx: ^Ctx, node: ^ast.Node) -> backend.Node_ID {
 		values := make([]backend.Node_ID, 1 + len(d.results))
 		values[0] = ctx.cfg
 		for r, i in d.results {
-			values[1 + i] = emit_nodes(ctx, r)
+			values[1 + i] = emit_nodes(ctx, {}, r)
 		}
 		ctx.cfg = 0
 
@@ -259,8 +273,27 @@ emit_nodes :: proc(ctx: ^Ctx, node: ^ast.Node) -> backend.Node_ID {
 		case:
 			fmt.panicf("TODO: %#v", node.derived)
 		}
+	case ^ast.Value_Decl:
+		assert(len(d.names) == len(d.values))
+		for i in 0 ..< len(d.names) {
+			name := meta.src_of(ctx.file^, d.names[i])
+			value := emit_nodes(ctx, {}, d.values[i])
+
+			backend.graph_set_name(ctx, value, name)
+			append(&ctx.scope, Variable{name, value})
+		}
+	case ^ast.Ident:
+		name := meta.src_of(ctx.file^, node)
+
+		for var in ctx.scope {
+			if var.name == name {
+				return var.value
+			}
+		}
+
+		panic("TODO: undefined variable")
 	case ^ast.Paren_Expr:
-		return emit_nodes(ctx, d.expr)
+		return emit_nodes(ctx, prop, d.expr)
 	case:
 		fmt.panicf("TODO: %#v", node.derived)
 	}

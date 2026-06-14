@@ -58,8 +58,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{}, // Start
 			{Class_Flag.Is_Basic_Block_Start}, // Entry
 			{Class_Flag.Interned}, // CInt
-			{}, // Add
-			{}, // Mul
+			{Class_Flag.Comutes}, // Add
+			{Class_Flag.Comutes}, // Mul
 			{}, // Split
 			{}, // Return
 		},
@@ -141,8 +141,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{}, // Start
 			{Class_Flag.Is_Basic_Block_Start}, // Entry
 			{Class_Flag.Interned}, // CInt
-			{}, // Add
-			{}, // Mul
+			{Class_Flag.Comutes}, // Add
+			{Class_Flag.Comutes}, // Mul
 			{}, // Split
 			{}, // Return
 		},
@@ -227,9 +227,9 @@ Return,
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	when false {}
+	else when T == No_Extra {return 2}
 	else when T == CInt {return 1}
 	else when T == Cfg_Extra {return 0}
-	else when T == No_Extra {return 2}
 	else {#panic(`the passed type is not subclass of anything`)}
 }
 }

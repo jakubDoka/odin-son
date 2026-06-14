@@ -3,11 +3,13 @@ package main
 import zydis "./zydis"
 import "backend"
 import "core:fmt"
+import "core:hash"
 import "core:io"
 import "core:log"
 import "core:mem/virtual"
 import "core:odin/ast"
 import "core:odin/parser"
+import "core:reflect"
 import "core:strconv"
 import "core:strings"
 import "core:sync"
@@ -49,8 +51,34 @@ disasm :: proc(sb: ^strings.Builder, instructions: []u8) {
 			fmt.sbprint(sb, "   ")
 		}
 
-		mnemonic := zydis.MnemonicGetString(instr.info.mnemonic)
-		fmt.sbprintfln(sb, "%s", cstring(&instr.text[0]))
+		text := string(cstring(&instr.text[0]))
+
+		for field, i in reflect.enum_fields_zipped(backend.X64_Reg)[:16] {
+			name := strings.to_lower(field.name)
+			highlight: strings.Builder
+
+			backend.ansi_start(&highlight, i)
+			append(&highlight.buf, name)
+			backend.ansi_end(&highlight)
+
+			text, _ = strings.replace_all(text, name, string(highlight.buf[:]))
+		}
+
+		for i in 0 ..< 100 {
+			off := i * 8
+
+			name := fmt.tprintf("0x%02x]", off)
+
+			highlight: strings.Builder
+
+			backend.ansi_start(&highlight, i)
+			append(&highlight.buf, name)
+			backend.ansi_end(&highlight)
+
+			text, _ = strings.replace_all(text, name, string(highlight.buf[:]))
+		}
+
+		fmt.sbprintfln(sb, "%s", text)
 
 		offset += length
 	}

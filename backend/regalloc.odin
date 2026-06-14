@@ -169,9 +169,12 @@ regalloc :: proc(
 	graph: ^Graph,
 	sched: ^Graph_Schedule,
 ) -> []Reg {
-	for _ in 0 ..< 7 {
+	for i in 0 ..< 7 {
 		res, ok := regalloc_round(ra, graph, sched)
-		if ok do return res
+		if ok {
+			if REGLOGS do log.info("regalloc rounds:", i)
+			return res
+		}
 	}
 
 	panic("Ralloc took too many rounds")
@@ -211,9 +214,22 @@ regalloc_round :: proc(
 		block: u32,
 	}
 
+	Ctx :: struct {
+		graph:           ^Graph,
+		ra:              ^Regalloc,
+		sched:           ^Graph_Schedule,
+		instr_placement: []Instr_Placement,
+		lrg_table:       []^Lrg,
+	}
+
+	ctx: Ctx
+	ctx.ra = ra
+	ctx.graph = graph
+	ctx.sched = sched
+
 	max_lrg_count := 0
 	block_base := int(graph.gvn) - len(sched.bbs)
-	instr_placement := arna.smake(ra, []Instr_Placement, block_base)
+	ctx.instr_placement = arna.smake(ra, []Instr_Placement, block_base)
 	rev_gvn := block_base
 
 	rev_gvn -= 1
@@ -230,7 +246,7 @@ regalloc_round :: proc(
 				rev_gvn -= 1
 				instr_node.gvn = u32(rev_gvn)
 			}
-			instr_placement[instr_node.gvn] = {
+			ctx.instr_placement[instr_node.gvn] = {
 				block = u32(i),
 			}
 		}
@@ -248,7 +264,7 @@ regalloc_round :: proc(
 	lrgs := arna.smake(ra, []Lrg, max_lrg_count)
 	used_lrgs: u32
 
-	lrg_table := arna.smake(ra, []^Lrg, max_lrg_count)
+	ctx.lrg_table = arna.smake(ra, []^Lrg, max_lrg_count)
 
 	for bb, i in sched.bbs {
 		for instr in bb.instrs {
@@ -261,18 +277,35 @@ regalloc_round :: proc(
 			if instr_node.dt != .Void {
 				lrg: ^Lrg
 
+				if .Comutes in graph.node_flags[instr_node.rtype] {
+					if graph_get(graph, instr_inputs[0]).output_count > 1 &&
+					   graph_get(graph, instr_inputs[1]).output_count == 1 {
+						graph_outputs(graph, instr_inputs[1])[0].idx = 0
+
+						for &out in graph_outputs(graph, instr_inputs[0]) {
+							if out.id == instr && out.idx == 0 {
+								out.idx = 1
+								break
+							}
+						}
+
+						instr_inputs[0], instr_inputs[1] =
+							instr_inputs[1], instr_inputs[0]
+					}
+				}
+
 				if inplace_slot >= 0 {
 					inplace_node := graph_get(
 						graph,
 						instr_inputs[inplace_slot],
 					)
-					lrg = lrg_table[inplace_node.gvn]
+					lrg = ctx.lrg_table[inplace_node.gvn]
 				}
 
 				for o in instr_outputs {
 					out_node := graph_get(graph, o.id)
 					if u8(ra.inplace_slot_idxs[out_node.rtype]) == o.idx {
-						lrg = unify(lrg, lrg_table[out_node.gvn])
+						lrg = unify(lrg, ctx.lrg_table[out_node.gvn])
 					}
 				}
 
@@ -299,18 +332,18 @@ regalloc_round :: proc(
 					intersect(lrg, mask)
 				}
 
-				lrg_table[instr_node.gvn] = lrg
+				ctx.lrg_table[instr_node.gvn] = lrg
 			}
 
 		}
 	}
 
-	for &l in lrg_table {
+	for &l in ctx.lrg_table {
 		assert(!l.failed)
 		l = find(l)
 	}
 
-	log_lrgs(graph, sched, lrg_table)
+	//log_lrgs(graph, sched, lrg_table)
 
 	arena := arna.allocator(ra)
 
@@ -353,9 +386,9 @@ regalloc_round :: proc(
 			input_start := ra.first_input_idxs[instr_node.rtype]
 
 			if instr_node.dt != .Void {
-				lrg := lrg_table[instr_node.gvn]
+				lrg := ctx.lrg_table[instr_node.gvn]
 				k, v := delete_key(&current_liveouts, lrg)
-				if k != lrg || v != instr {
+				if k == lrg && v != instr {
 					add_conflict(&self_conflicts, lrg, v, instr)
 				}
 
@@ -392,7 +425,7 @@ regalloc_round :: proc(
 
 			for inp in instr_inputs[input_start:] {
 				inp_node := graph_get(graph, inp)
-				lrg := lrg_table[inp_node.gvn]
+				lrg := ctx.lrg_table[inp_node.gvn]
 				_, slot, just_inserted, _ := map_entry(&current_liveouts, lrg)
 				if !just_inserted {
 					add_conflict(&self_conflicts, lrg, inp, slot^)
@@ -402,7 +435,7 @@ regalloc_round :: proc(
 		}
 	}
 
-	log_lrgs(graph, sched, lrg_table)
+	//log_lrgs(graph, sched, lrg_table)
 
 	used_lrgs_check := used_lrgs
 
@@ -461,7 +494,7 @@ regalloc_round :: proc(
 	for &s, i in color_order {
 		s = {
 			idx      = u32(i),
-			priority = 10000 - color_priority(graph, &lrgs[i], ifg[i]),
+			priority = 10000 - color_priority(ctx, &lrgs[i], ifg[i]),
 		}
 	}
 
@@ -487,9 +520,11 @@ regalloc_round :: proc(
 		lrg.reg = i16(first_set)
 	}
 
+	log_lrgs(ctx, ifg)
+
 	res = make([]Reg, max_lrg_count)
 
-	for lrg, i in lrg_table {
+	for lrg, i in ctx.lrg_table {
 		res[i] = {
 			kind  = lrg.mask.kind,
 			index = u16(lrg.reg),
@@ -498,21 +533,19 @@ regalloc_round :: proc(
 
 	prev_gvn := graph.gvn
 
-	for lrg in lrgs[:used_lrgs_check] {
+	for &lrg in lrgs[:used_lrgs_check] {
 		id := lrg.node
-		fnode := graph_get(graph, id)
-		fouts := graph_outputs(graph, fnode)
 		if lrg.failed {
-			if fnode.itype == .Split && fnode.output_count == 1 {
-				id = fouts[0].id
-				fnode = graph_get(graph, id)
-				fouts = graph_outputs(graph, fnode)
-			}
+			id = forward_lrg(graph, &lrg, ctx.lrg_table)
+
+			fnode := graph_get(graph, id)
+			fouts := graph_outputs(graph, fnode)
+			fouts = arna.clone(ra, fouts)
 
 			if fnode.itype != .Split {
 				split := graph_add_split(graph, "sdef", fnode.dt, id)
 
-				placement_block := &sched.bbs[instr_placement[fnode.gvn].block]
+				placement_block := &sched.bbs[ctx.instr_placement[fnode.gvn].block]
 				placement_idx, _ := arna.simd_search(
 					placement_block.instrs[:],
 					id,
@@ -522,20 +555,25 @@ regalloc_round :: proc(
 
 				id = split
 				fnode = graph_get(graph, id)
-				fouts = graph_outputs(graph, fnode)
 			}
 
 			ok = false
 
-			fouts = arna.clone(ra, fouts)
 			for out in fouts {
-				split := split_before(
-					graph,
-					sched,
-					instr_placement,
-					out.id,
-					out.idx,
-				)
+				out_node := graph_get(graph, out.id)
+
+				split := id
+				if out_node.itype != .Split {
+					assert(out_node.gvn < prev_gvn)
+					split = split_before(
+						ctx,
+						out.id,
+						out.idx,
+						"suse",
+						redirect = id,
+					)
+				}
+
 				graph_set_input(graph, out.id, out.idx, split)
 			}
 		}
@@ -557,6 +595,10 @@ regalloc_round :: proc(
 		last_split: Node_ID
 
 		for inp, i in inputs {
+			if i != int(inplace_slot) {
+				continue
+			}
+
 			inp_node := graph_get(graph, inp)
 			if inp_node.dt == .Void do continue
 			if inp_node.gvn >= prev_gvn {
@@ -564,7 +606,7 @@ regalloc_round :: proc(
 				continue
 			}
 
-			inp_lrg := lrg_table[inp_node.gvn]
+			inp_lrg := ctx.lrg_table[inp_node.gvn]
 			if inp_lrg == lrg &&
 			   (inp_node.itype != .Split || inp_node.output_count > 1) {
 				split: Node_ID
@@ -572,7 +614,7 @@ regalloc_round :: proc(
 				   graph_inputs(graph, last_split)[0] == inp {
 					split = last_split
 				} else {
-					split = split_before(graph, sched, instr_placement, id, i)
+					split = split_before(ctx, id, i, "sc-in")
 				}
 
 				last_split = split
@@ -589,19 +631,13 @@ regalloc_round :: proc(
 			if out_node.dt == .Void do continue
 			if out_node.gvn >= prev_gvn do continue
 
-			out_lrg := lrg_table[out_node.gvn]
+			out_lrg := ctx.lrg_table[out_node.gvn]
 			if out.idx == u8(out_node_in_place_slot) {
 				split: Node_ID
 				if last_split != 0 && last_split_out == out.id {
 					split = last_split
 				} else {
-					split = split_before(
-						graph,
-						sched,
-						instr_placement,
-						out.id,
-						out.idx,
-					)
+					split = split_before(ctx, out.id, out.idx, "sc-out")
 				}
 
 				last_split_out = out.id
@@ -615,31 +651,80 @@ regalloc_round :: proc(
 	return
 
 	split_before :: proc(
-		graph: ^Graph,
-		sched: ^Graph_Schedule,
-		instr_placement: []Instr_Placement,
+		ctx: Ctx,
 		id: Node_ID,
 		#any_int idx: int,
+		name: string,
+		redirect: Node_ID = 0,
 	) -> Node_ID {
+		graph := ctx.graph
+		sched := ctx.sched
+		lrg_table := ctx.lrg_table
+		instr_placement := ctx.instr_placement
+
 		node := graph_get(graph, id)
 		node_inputs := graph_inputs(graph, node)
-		inp := node_inputs[idx]
+		inp := redirect if redirect != 0 else node_inputs[idx]
 		inp_node := graph_get(graph, inp)
 
 		placement_block := &sched.bbs[instr_placement[node.gvn].block]
 		placement_idx, _ := arna.simd_search(placement_block.instrs[:], id)
 
-		split := graph_add_split(graph, "sc-in", inp_node.dt, inp)
+		split := graph_add_split(graph, name, inp_node.dt, inp)
 		inject_at(&placement_block.instrs, placement_idx, split)
 		return split
 	}
 
-	color_priority :: proc(graph: ^Graph, lrg: ^Lrg, adj: []^Lrg) -> u32 {
+	forward_lrg :: proc(
+		graph: ^Graph,
+		lrg: ^Lrg,
+		lrg_table: []^Lrg,
+	) -> Node_ID {
+		id := lrg.node
+		fnode := graph_get(graph, id)
+		fouts := graph_outputs(graph, fnode)
+
+		if fnode.itype == .Split && fnode.output_count == 1 {
+			sid := fouts[0].id
+			snode := graph_get(graph, sid)
+			if int(snode.gvn) >= len(lrg_table) do return id
+			if lrg_table[snode.gvn] != lrg do return id
+			id = sid
+		}
+
+		return id
+	}
+
+	color_priority :: proc(ctx: Ctx, lrg: ^Lrg, adj: []^Lrg) -> (vl: u32) {
+		graph := ctx.graph
+		lrg_table := ctx.lrg_table
+		instr_placement := ctx.instr_placement
+
 		if reg_mask_pop_count(lrg.mask) > len(adj) {
 			return 0
 		}
 
-		if graph_get(graph, lrg.node).itype == .Split {
+		id := forward_lrg(graph, lrg, lrg_table)
+		fnode := graph_get(graph, id)
+		fouts := graph_outputs(graph, fnode)
+
+		inputs := graph_inputs(graph, fnode)
+
+		if fnode.output_count == 1 {
+			onode := graph_get(graph, fouts[0].id)
+
+			if instr_placement[onode.gvn].block ==
+			   instr_placement[fnode.gvn].block {
+				return 1000 - (onode.gvn - fnode.gvn) * 100
+			}
+		}
+
+		if fnode.itype == .Split {
+			if graph_get(graph, inputs[0]).itype == .Split {
+				if fnode.output_count == 1 {
+					return 30
+				}
+			}
 			return 10
 		}
 
@@ -651,6 +736,9 @@ regalloc_round :: proc(
 		lrg: ^Lrg,
 		a, b: Node_ID,
 	) {
+		assert(a != 0)
+		assert(b != 0)
+
 		if a != b {
 			lrg.self_conflict = true
 			append(self_conflicts, Self_Conflict{lrg, a})
@@ -700,11 +788,12 @@ regalloc_round :: proc(
 	}
 
 	@(disabled = !REGLOGS)
-	log_lrgs :: proc(
-		graph: ^Graph,
-		sched: ^Graph_Schedule,
-		lrg_table: []^Lrg,
-	) {
+	log_lrgs :: proc(ctx: Ctx, adj: [][]^Lrg = {}) {
+		graph := ctx.graph
+		sched := ctx.sched
+		lrg_table := ctx.lrg_table
+		instr_placement := ctx.instr_placement
+
 		sb: strings.Builder
 		append(&sb.buf, "\n")
 		for bb in sched.bbs {
@@ -714,7 +803,13 @@ regalloc_round :: proc(
 				instr_node := graph_get(graph, instr)
 				if instr_node.dt != .Void {
 					lrg := lrg_table[instr_node.gvn]
-					fmt.sbprintf(&sb, "%v:%2i", lrg.mask, lrg.index)
+					fmt.sbprintf(&sb, "%v:%3i", lrg.mask, lrg.index)
+					if len(adj) != 0 {
+						priority := color_priority(ctx, lrg, adj[lrg.index])
+						fmt.sbprintf(&sb, " %04i ", priority)
+					}
+				} else {
+					fmt.sbprint(&sb, "                           ")
 				}
 				graph_display_node(&sb, graph, instr)
 				append(&sb.buf, "\n")

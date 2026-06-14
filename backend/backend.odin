@@ -47,6 +47,7 @@ Class_Flag :: enum {
 	Is_Basic_Block_Start,
 	Pinnable,
 	Interned,
+	Comutes,
 }
 
 Cfg_Extra :: struct {
@@ -527,13 +528,7 @@ graph_display_extra :: proc(
 	fmt.sbprint(sb, extra)
 }
 
-graph_display_node_gvn :: proc(
-	sb: ^strings.Builder,
-	graph: ^Graph,
-	id: Node_ID,
-) {
-	gvn := graph_get(graph, id).gvn
-
+ansi_start :: proc(sb: ^strings.Builder, #any_int gvn: int) {
 	if .Terminal_Color in context.logger.options {
 		colors := [?]string {
 			ansi.FG_BRIGHT_RED,
@@ -555,6 +550,22 @@ graph_display_node_gvn :: proc(
 		append(&sb.buf, colors[gvn % len(colors)])
 		append(&sb.buf, ansi.SGR)
 	}
+}
+
+ansi_end :: proc(sb: ^strings.Builder) {
+	if .Terminal_Color in context.logger.options {
+		append(&sb.buf, ansi.CSI + ansi.RESET + ansi.SGR)
+	}
+}
+
+graph_display_node_gvn :: proc(
+	sb: ^strings.Builder,
+	graph: ^Graph,
+	id: Node_ID,
+) {
+	gvn := graph_get(graph, id).gvn
+
+	ansi_start(sb, gvn)
 
 	name := ""
 	when NODE_NAMES {
@@ -566,7 +577,5 @@ graph_display_node_gvn :: proc(
 
 	fmt.sbprintf(sb, "#%v%v", gvn, name)
 
-	if .Terminal_Color in context.logger.options {
-		append(&sb.buf, ansi.CSI + ansi.RESET + ansi.SGR)
-	}
+	ansi_end(sb)
 }

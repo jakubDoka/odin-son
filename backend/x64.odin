@@ -1,6 +1,7 @@
 package backend
 
 import "../vendored/gam/util/arna"
+import "../vendored/gam/util/bit_arr"
 import "base:intrinsics"
 import "core:fmt"
 
@@ -9,8 +10,10 @@ NOOP_REX :: 0b0100_0000
 @(rodata)
 X64_CLASSES := [X64_Node_Type]Class_Spec{}
 
-GPA_MASK :: []int{0xFFFF & ~int(1 << X64_Reg.Rsi)}
-GPA_SPILL_MASK :: []int{~int(1 << X64_Reg.Rsi)}
+GPA_MASK :: []int{0xFFFF & ~int(1 << X64_Reg.Rsp)}
+GPA_SPILL_MASK :: []int{~int(1 << X64_Reg.Rsp)}
+RIP :: X64_Reg.Rbp
+NO_INDEX :: X64_Reg.Rsp
 
 @(rodata)
 X64_IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec {
@@ -78,10 +81,10 @@ X64_Reg :: enum u16 {
 	Rbx,
 	Rcx,
 	Rdx,
+	Rsp,
+	Rbp,
 	Rsi,
 	Rdi,
-	Rbp,
-	Rsp,
 	R8,
 	R9,
 	R10,
@@ -133,12 +136,63 @@ x64_reg_mask_of :: proc(
 }
 
 when !GEN_SPEC {
-	x64_emit_function :: proc(ctx: Codegen_Emit_Ctx) -> Codegen_Output {
-		start := ctx.code.pos
+	x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
+		start := ectx.code.pos
+
+		Ctx :: struct {
+			using inner:     Codegen_Emit_Ctx,
+			spill_slot_base: [Reg_Kind]int,
+		}
+
+		ctx: Ctx
+		ctx.inner = ectx
+
+		reg_kind_of :: proc(
+			ctx: Codegen_Emit_Ctx,
+			id: Node_ID,
+		) -> (
+			X64_Reg,
+			Reg_Kind,
+		) {
+			node := graph_get(ctx, id)
+			return X64_Reg(ctx.allocs[node.gvn].index),
+				ctx.allocs[node.gvn].kind
+		}
 
 		reg_of :: proc(ctx: Codegen_Emit_Ctx, id: Node_ID) -> X64_Reg {
 			node := graph_get(ctx, id)
 			return X64_Reg(ctx.allocs[node.gvn].index)
+		}
+
+		spill_slot_count: [Reg_Kind]int
+
+		slot: [2]int
+		used := bit_arr.init_from_masks(slot[:])
+
+		for reg in ctx.allocs {
+			spill_slot_count[reg.kind] = max(
+				spill_slot_count[reg.kind],
+				int(reg.index) - 16 + 1,
+			)
+			bit_arr.set(used, int(reg.index))
+		}
+
+		total_spill_size := 0
+		for size, kind in spill_slot_count {
+			ctx.spill_slot_base[kind] = total_spill_size
+			total_spill_size += size
+		}
+
+		stack_size := total_spill_size * 8
+
+		for reg in ([]X64_Reg{.Rbx, .Rbp, .R12, .R13, .R14, .R15}) {
+			if bit_arr.contains(used, int(reg)) {
+				emit_single_op(ctx.code, 0x50, reg)
+			}
+		}
+
+		if stack_size != 0 {
+			emit_imm_op(ctx.code, 0x81, 0b101, .Rsp, stack_size)
 		}
 
 		assert(len(ctx.bbs) == 1)
@@ -160,16 +214,66 @@ when !GEN_SPEC {
 				case .Mul:
 					dst := reg_of(ctx, inputs[0])
 					rhs := reg_of(ctx, inputs[1])
-					rx := rex(dst, dst, .Rax, true)
+					rx := rex(dst, rhs, .Rax, true)
 					emit(ctx.code, {rx, 0x0f, 0xaf, mod_rm(.Direct, dst, rhs)})
 				case .Split:
-					dst := reg_of(ctx, instr)
-					src := reg_of(ctx, inputs[0])
+					dst, dkind := reg_kind_of(ctx, instr)
+					src, skind := reg_kind_of(ctx, inputs[0])
+					assert(dkind == skind)
 					if dst == src do break
-					assert(int(dst) < 16)
-					assert(int(src) < 16)
-					emit_reg_op(ctx.code, 0x89, src, dst)
+					if int(dst) >= 16 {
+						dst_offset :=
+							ctx.spill_slot_base[dkind] + 8 * (int(dst) - 16)
+
+						assert(int(src) < 16)
+
+						emit(ctx.code, {rex(src, .Rsp, .Rax, true), 0x89})
+						emit_indirect_addr(
+							ctx.code,
+							src,
+							.Rsp,
+							NO_INDEX,
+							1,
+							dst_offset,
+						)
+					} else if int(src) >= 16 {
+						src_offset :=
+							ctx.spill_slot_base[dkind] + 8 * (int(src) - 16)
+						assert(int(dst) < 16)
+
+						emit(ctx.code, {rex(dst, .Rsp, .Rax, true), 0x8b})
+						emit_indirect_addr(
+							ctx.code,
+							dst,
+							.Rsp,
+							NO_INDEX,
+							1,
+							src_offset,
+						)
+					} else {
+						assert(int(dst) < 16)
+						assert(int(src) < 16)
+
+						emit_reg_op(ctx.code, 0x89, src, dst)
+					}
 				case .Return:
+					if stack_size != 0 {
+						emit_imm_op(ctx.code, 0x81, 0b101, .Rsp, -stack_size)
+					}
+
+					#reverse for reg in ([]X64_Reg {
+							.Rbx,
+							.Rbp,
+							.R12,
+							.R13,
+							.R14,
+							.R15,
+						}) {
+						if bit_arr.contains(used, int(reg)) {
+							emit_single_op(ctx.code, 0x58, reg)
+						}
+					}
+
 					emit(ctx.code, {0xc3})
 				}
 			}
@@ -180,7 +284,10 @@ when !GEN_SPEC {
 }
 
 emit_single_op :: proc(code: ^arna.Allocator, op_base: u8, dst: X64_Reg) {
-	emit(code, {rex(.Rax, dst, .Rax, true), op_base + u8(reg_idx(dst))})
+	emit(
+		code,
+		{rex(.Rax, dst, .Rax, true), op_base + u8(reg_idx(dst) & 0b111)},
+	)
 }
 
 //pub fn emitRegOp(self: *X86_64Gen, op: u8, dst: Reg, src: Reg) void {
@@ -195,4 +302,86 @@ emit_reg_op :: proc(
 	src: X64_Reg,
 ) {
 	emit(code, {rex(dst, src, .Rax, true), op, mod_rm(.Direct, dst, src)})
+}
+
+// pub fn fromDis(dis: i64) Mod {
+//     return switch (dis) {
+//         0 => .indirect,
+//         std.math.minInt(i8)...-1, 1...std.math.maxInt(i8) => .indirect_disp8,
+//         else => .indirect_disp32,
+//     };
+// }
+
+mod_from_dis :: proc(dis: i64) -> Mod {
+	switch dis {
+	case 0:
+		return .Indirect
+	case -128 ..< 127:
+		return .Indirect_Disp8
+	case:
+		return .Indirect_Disp32
+	}
+}
+
+emit_indirect_addr :: proc(
+	code: ^arna.Allocator,
+	reg: X64_Reg,
+	base: X64_Reg,
+	index: X64_Reg,
+	scale: u64,
+	#any_int dis: i64,
+	is_reloc: bool = false,
+) {
+	mod := mod_from_dis(dis)
+
+	assert(mod != .Direct)
+
+	ill_base := base == .Rsp || base == .R12
+
+	if mod == .Indirect && !is_reloc && (base == RIP || base == .R13) {
+		mod = .Indirect_Disp8
+	}
+
+	if index != NO_INDEX || ill_base || scale != 1 {
+		emit(code, {mod_rm(mod, reg, .Rsp), sib(base, index, scale)})
+	} else {
+		emit(code, {mod_rm(mod, reg, base)})
+	}
+
+	switch mod {
+	case .Indirect:
+	case .Indirect_Disp8:
+		emit(code, {u8(dis)})
+	case .Indirect_Disp32:
+		emit_anys(code, u32(dis))
+	case .Direct:
+		fallthrough
+	case:
+		panic("unreachable")
+	}
+}
+
+emit_imm_op :: proc(
+	code: ^arna.Allocator,
+	op: u8,
+	mod: u8,
+	dst: X64_Reg,
+	#any_int imm: i64,
+) {
+	is_small_imm := imm >= -128 && imm <= 127
+
+	emit(
+		code,
+		{
+			rex(dst, .Rax, .Rax, true),
+			op + 2 * u8(is_small_imm),
+			mod_rm(.Direct, X64_Reg(mod), dst),
+		},
+	)
+
+	if is_small_imm {
+		emit(code, {u8(imm)})
+	} else {
+		emit_anys(code, u32(imm))
+	}
 }

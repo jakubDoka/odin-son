@@ -27,7 +27,7 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 		no_ctrl = true,
 		flags = {.Interned},
 	},
-	.Add ..= .Mul = {id = No_Extra, args = {"lhs", "rhs"}, no_ctrl = true},
+	.Add ..= .Mul = {id = No_Extra, args = {"lhs", "rhs"}, no_ctrl = true, flags = {.Comutes}},
 	.Split = {id = No_Extra, args = {"dest"}, no_ctrl = true},
 	.Return = {id = Cfg_Extra, varargs = true, default_type = .Void},
 }

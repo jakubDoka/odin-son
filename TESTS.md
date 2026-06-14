@@ -84,7 +84,7 @@ main :: proc() -> int {
 ```odin
 package main
 
-return_value :: 0
+return_value :: 45701539774315
 opt_level :: "none"
 
 package main

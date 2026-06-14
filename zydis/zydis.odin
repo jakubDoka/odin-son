@@ -241,7 +241,6 @@ PrefixType :: enum i32 {
 	MANDATORY,
 }
 
-Mnemonic :: distinct i32
 Register :: distinct i32
 ISASet :: distinct i32
 ISAExt :: distinct i32

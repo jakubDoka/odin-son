@@ -153,7 +153,7 @@ main :: proc() {
 					"@(test) %v :: proc(t: ^testing.T) {{",
 					rall_name,
 				)
-				fmt.fprintfln(file, "run_test(t, `%v`)", code)
+				fmt.fprintfln(file, "run_test(t, `%v`, `%v`)", rall_name, code)
 				fmt.fprintfln(file, "}}")
 			}
 		}

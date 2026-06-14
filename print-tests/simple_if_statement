@@ -1,0 +1,20 @@
+   48 51                               push rcx
+   48 b8 00 00 00 00 00 00 00 00       mov rax, 0x00
+   48 3b c0                            cmp rax, rax
+   48 0f 94 c0                         setz al
+   48 0f b6 c0                         movzx rax, al
+   48 b9 64 00 00 00 00 00 00 00       mov rcx, 0x64
+   48 ba 02 00 00 00 00 00 00 00       mov rdx, 0x02
+   48 85 c0                            test rax, rax
+   0f 84 05 00 00 00                   jz :0
+
+   e9 08 00 00 00                      jmp :1
+
+00:48 89 d0                            mov rax, rdx
+   e9 08 00 00 00                      jmp :2
+
+01:48 89 c8                            mov rax, rcx
+   e9 00 00 00 00                      jmp :2
+
+02:48 59                               pop rcx
+   c3                                  ret

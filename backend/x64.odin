@@ -4,11 +4,9 @@ import "../vendored/gam/util/arna"
 import "../vendored/gam/util/bit_arr"
 import "base:intrinsics"
 import "core:fmt"
+import "core:reflect"
 
 NOOP_REX :: 0b0100_0000
-
-@(rodata)
-X64_CLASSES := [X64_Node_Type]Class_Spec{}
 
 GPA_MASK :: []int{0xFFFF & ~int(1 << X64_Reg.Rsp)}
 GPA_SPILL_MASK :: []int{~int(1 << X64_Reg.Rsp)}
@@ -20,10 +18,23 @@ X64_IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec {
 	.Start = {},
 	.Entry = {},
 	.CInt = {reg_masks = #partial{.General = {GPA_MASK}}},
-	.Add ..= .Mul = {reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}}, inplace_slot_idx = 0},
+	.Add ..= .Eq = {reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}}, inplace_slot_idx = 0},
 	.Split = {
 		reg_masks = #partial{.General = {GPA_SPILL_MASK, GPA_SPILL_MASK}},
 	},
+	.Phi = {
+		reg_masks = #partial{
+			.General = {GPA_SPILL_MASK, GPA_SPILL_MASK, GPA_SPILL_MASK},
+		},
+	},
+	.If = {
+		reg_masks = #partial{.General = {{}, GPA_MASK}},
+		input_start_idx = 1,
+	},
+	.Then = {},
+	.Else = {},
+	.Jump = {input_start_idx = 1},
+	.Region = {},
 	.Return = {input_start_idx = 1},
 }
 
@@ -45,6 +56,10 @@ mod_rm :: proc(mod: Mod, reg: X64_Reg, r_m: X64_Reg) -> u8 {
 	}
 
 	return u8(Mod_Rm{mod = mod, reg = reg, r_m = r_m})
+}
+
+mod_sm :: #force_inline proc(mod: Mod, #any_int sub: int, r_m: X64_Reg) -> u8 {
+	return mod_rm(mod, X64_Reg(sub), r_m)
 }
 
 sib :: proc(base: X64_Reg, index: X64_Reg, #any_int scale: int) -> u8 {
@@ -131,7 +146,7 @@ x64_reg_mask_of :: proc(
 		assert(idx != 0)
 		return reg_mask_single(re, {kind = .General, index = u16(X64_Reg.Rax)})
 	case:
-		fmt.panicf("TODO: %v")
+		fmt.panicf("TODO: %v %v", node.itype, idx)
 	}
 }
 
@@ -174,7 +189,7 @@ when !GEN_SPEC {
 				spill_slot_count[reg.kind],
 				int(reg.index) - 16 + 1,
 			)
-			bit_arr.set(used, int(reg.index))
+			bit_arr.set_unbounded(used, int(reg.index))
 		}
 
 		total_spill_size := 0
@@ -195,30 +210,84 @@ when !GEN_SPEC {
 			emit_imm_op(ctx.code, 0x81, 0b101, .Rsp, stack_size)
 		}
 
-		assert(len(ctx.bbs) == 1)
-		for bb in ctx.bbs {
+		Local_Reloc :: struct {
+			dest:   u32,
+			offset: u32,
+			off:    u32,
+		}
+
+		local_relocs := make([dynamic]Local_Reloc, 0, len(ctx.bbs))
+		block_base := ctx.gvn - u32(len(ctx.bbs))
+
+		for &bb, i in ctx.bbs {
+			bb.offset = u32(ctx.code.pos)
 			for instr in bb.instrs {
-				node := graph_get(ctx, instr)
-				inputs := graph_inputs(ctx, node)
+				node := graph_expand(ctx, instr)
 				switch node.xtype {
-				case .Start, .Entry:
+				case .Start, .Entry, .Then, .Else, .Region:
 					panic("Not reachable form here")
+				case .If:
+					cond := reg_of(ctx, node.inps[1])
+					rx := rex(cond, cond, .Rax, true)
+					emit(ctx.code, {rx, 0x85, mod_rm(.Direct, cond, cond)})
+
+					assert(len(node.outs) == 2)
+					append(
+						&local_relocs,
+						Local_Reloc {
+							dest = graph_get(ctx, node.outs[1].id).gvn -
+							block_base,
+							offset = u32(ctx.code.pos),
+							off = 2,
+						},
+					)
+
+					emit(ctx.code, {0x0f, 0x84, 0, 0, 0, 0})
+
+					fallthrough
+				case .Jump:
+					append(
+						&local_relocs,
+						Local_Reloc {
+							dest = graph_get(ctx, node.outs[0].id).gvn -
+							block_base,
+							offset = u32(ctx.code.pos),
+							off = 1,
+						},
+					)
+
+					emit(ctx.code, {0xE9, 0, 0, 0, 0})
+				case .Phi:
 				case .CInt:
 					emit_single_op(ctx.code, 0xb8, reg_of(ctx, instr))
 					emit_anys(ctx.code, graph_extra(ctx, node, CInt).value)
 				case .Add:
-					dst := reg_of(ctx, inputs[0])
-					rhs := reg_of(ctx, inputs[1])
+					dst := reg_of(ctx, node.inps[0])
+					rhs := reg_of(ctx, node.inps[1])
 					rx := rex(rhs, dst, .Rax, true)
 					emit(ctx.code, {rx, 0x01, mod_rm(.Direct, rhs, dst)})
 				case .Mul:
-					dst := reg_of(ctx, inputs[0])
-					rhs := reg_of(ctx, inputs[1])
+					dst := reg_of(ctx, node.inps[0])
+					rhs := reg_of(ctx, node.inps[1])
 					rx := rex(dst, rhs, .Rax, true)
 					emit(ctx.code, {rx, 0x0f, 0xaf, mod_rm(.Direct, dst, rhs)})
+				case .Eq:
+					lhs := reg_of(ctx, node.inps[0])
+					rhs := reg_of(ctx, node.inps[1])
+					rx := rex(lhs, rhs, .Rax, true)
+					emit(ctx.code, {rx, 0x3b, mod_rm(.Direct, lhs, rhs)})
+
+					rx = rex(.Rax, lhs, .Rax, true)
+					emit(
+						ctx.code,
+						{rx, 0x0F, 0x94, mod_sm(.Direct, 0b000, lhs)},
+					)
+
+					rx = rex(lhs, lhs, .Rax, true)
+					emit(ctx.code, {rx, 0x0F, 0xB6, mod_rm(.Direct, lhs, lhs)})
 				case .Split:
 					dst, dkind := reg_kind_of(ctx, instr)
-					src, skind := reg_kind_of(ctx, inputs[0])
+					src, skind := reg_kind_of(ctx, node.inps[0])
 					assert(dkind == skind)
 					if dst == src do break
 					if int(dst) >= 16 {
@@ -277,6 +346,18 @@ when !GEN_SPEC {
 					emit(ctx.code, {0xc3})
 				}
 			}
+		}
+
+		for reloc in local_relocs {
+			size: u32 = 4
+
+			dst_offset := ctx.bbs[reloc.dest].offset
+			jump := dst_offset - reloc.offset - size - reloc.off
+
+			copy(
+				ctx.code.ptr[reloc.offset + reloc.off:][:size],
+				reflect.as_bytes(jump),
+			)
 		}
 
 		return {code = ctx.code.ptr[start:ctx.code.pos]}

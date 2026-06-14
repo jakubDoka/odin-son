@@ -1,12 +1,14 @@
 package backend
 
 import "../vendored/gam/util/bit_arr"
+import "core:fmt"
 import "core:slice"
 
 Graph_Basic_Block :: struct {
 	head:   Node_ID,
 	tail:   Node_ID,
 	instrs: [dynamic]Node_ID,
+	offset: u32,
 }
 
 Graph_Schedule :: struct {
@@ -14,22 +16,56 @@ Graph_Schedule :: struct {
 }
 
 @(tag = "node_proc")
+graph_idom_node :: proc(graph: ^Graph, node: ^Node) -> Node_ID {
+	inps := graph_inps(graph, node)
+
+	#partial switch node.itype {
+	case .Start:
+		return 0
+	case .Entry, .Return, .If, .Else, .Then, .Jump:
+		return inps[0]
+	case .Region:
+		assert(len(inps) == 2)
+		a, b := inps[0], inps[1]
+		for a != b {
+			adepth, bdepth := graph_idepth(graph, a), graph_idepth(graph, a)
+			if adepth <= bdepth do a = graph_idom(graph, a)
+			if bdepth <= adepth do b = graph_idom(graph, b)
+		}
+		return a
+	case:
+		fmt.panicf("TODO: %v", node.itype)
+	}
+}
+
+@(tag = "node_proc")
 graph_idepth_node :: proc(graph: ^Graph, node: ^Node) -> u32 {
 	extra := graph_extra(graph, node, Cfg_Extra)
-	inputs := graph_inputs(graph, node)
+	inps := graph_inps(graph, node)
 
-	if extra.idepth != 0 || node.itype == .Start {
+	if extra.idepth != 0 {
 		return extra.idepth
 	}
 
-	extra.idepth = graph_idepth(graph, inputs[0]) + 1
+	#partial switch node.itype {
+	case .Start:
+	case .Entry, .Return, .If, .Else, .Then, .Jump:
+		extra.idepth = 1 + graph_idepth(graph, inps[0])
+	case .Region:
+		assert(len(inps) == 2)
+		extra.idepth =
+			1 + max(graph_idepth(graph, inps[0]), graph_idepth(graph, inps[1]))
+	case:
+		fmt.panicf("TODO: %v", node.itype)
+	}
+
 	return extra.idepth
 }
 
 graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 	bbs: [dynamic]Graph_Basic_Block
 	cfg_rpos: [dynamic]Node_ID
-	visited := bit_arr.init(graph.gvn)
+	visited := bit_arr.init(graph.gvn * 2)
 
 	// TODO: add loop tree building
 
@@ -41,16 +77,23 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 		cfg_rpos: ^[dynamic]Node_ID,
 		visited: bit_arr.Bit_Set,
 	) {
-		node := graph_get(graph, root)
+		node := graph_expand(graph, root)
 
 		if bit_arr.contains(visited, node.gvn) {
 			return
 		}
 		bit_arr.set(visited, node.gvn)
 
-		for o in graph_outputs(graph, node) {
+		for o in node.outs {
+			onode := graph_get(graph, o.id)
 			if graph_extra(graph, o.id, Cfg_Extra) != nil {
-				cfg_reverse_postorder(graph, o.id, cfg_rpos, visited)
+				if onode.itype == .Region && node.itype != .Jump {
+					jmp := graph_add_jump(graph, "jump", root)
+					graph_set_input(graph, o.id, o.idx, jmp)
+					cfg_reverse_postorder(graph, jmp, cfg_rpos, visited)
+				} else {
+					cfg_reverse_postorder(graph, o.id, cfg_rpos, visited)
+				}
 			}
 		}
 
@@ -71,36 +114,38 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 	ctx.nodes = make([]Node_ID, graph.gvn)
 
 	for id in cfg_rpos {
-		ctrl := graph_get(graph, id)
-		ctx.early_schedules[ctrl.gvn] = graph_idom(graph, ctrl)
+		ctrl := graph_expand(graph, id)
+		ctx.early_schedules[ctrl.gvn] = id
 
-		for i in graph_inputs(graph, id) {
+		for i in ctrl.inps {
 			if graph_extra(graph, i, Cfg_Extra) != nil do continue
 
 			sched_early(ctx, i)
+		}
 
-			sched_early :: proc(ctx: Ctx, root: Node_ID) {
-				graph := ctx.graph
-				node := graph_get(graph, root)
+		sched_early :: proc(ctx: Ctx, root: Node_ID) {
+			graph := ctx.graph
+			node := graph_expand(graph, root)
 
-				if ctx.early_schedules[node.gvn] != 0 do return
-
-				sched := NODE_ENTRY
-
-				for inp in graph_inputs(graph, node) {
-					sched_early(ctx, inp)
-
-					inp_node := graph_get(graph, inp)
-
-					if graph_idepth(graph, ctx.early_schedules[inp_node.gvn]) >
-					   graph_idepth(graph, sched) {
-						sched = inp
-					}
-				}
-
-				ctx.early_schedules[node.gvn] = sched
-				ctx.nodes[node.gvn] = root
+			if ctx.early_schedules[node.gvn] != 0 {
+				return
 			}
+
+			sched := NODE_ENTRY
+
+			for inp in node.inps {
+				sched_early(ctx, inp)
+
+				inp_node := graph_get(graph, inp)
+
+				if graph_idepth(graph, ctx.early_schedules[inp_node.gvn]) >
+				   graph_idepth(graph, sched) {
+					sched = ctx.early_schedules[inp_node.gvn]
+				}
+			}
+
+			ctx.early_schedules[node.gvn] = sched
+			ctx.nodes[node.gvn] = root
 		}
 	}
 

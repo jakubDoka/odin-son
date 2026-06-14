@@ -195,6 +195,7 @@ Lrg :: struct {
 	parent:  ^Lrg,
 	// TODO: this should go into meta instead of the index
 	reg:     i16,
+	area:    u32,
 }
 
 regalloc_round :: proc(
@@ -220,6 +221,7 @@ regalloc_round :: proc(
 		sched:           ^Graph_Schedule,
 		instr_placement: []Instr_Placement,
 		lrg_table:       []^Lrg,
+		self_conflicts:  [dynamic]Self_Conflict,
 	}
 
 	ctx: Ctx
@@ -268,44 +270,45 @@ regalloc_round :: proc(
 
 	for bb, i in sched.bbs {
 		for instr in bb.instrs {
-			instr_node := graph_get(graph, instr)
-			instr_inputs := graph_inputs(graph, instr_node)
-			instr_outputs := graph_outputs(graph, instr_node)
-			first_input := ra.first_input_idxs[instr_node.rtype]
-			inplace_slot := ra.inplace_slot_idxs[instr_node.rtype]
+			inode := graph_expand(graph, instr)
 
-			if instr_node.dt != .Void {
+			if inode.dt != .Void {
 				lrg: ^Lrg
 
-				if .Comutes in graph.node_flags[instr_node.rtype] {
-					if graph_get(graph, instr_inputs[0]).output_count > 1 &&
-					   graph_get(graph, instr_inputs[1]).output_count == 1 {
-						graph_outputs(graph, instr_inputs[1])[0].idx = 0
+				if .Comutes in graph.node_flags[inode.rtype] {
+					if graph_get(graph, inode.inps[0]).output_count > 1 &&
+					   graph_get(graph, inode.inps[1]).output_count == 1 {
+						graph_outs(graph, inode.inps[1])[0].idx = 0
 
-						for &out in graph_outputs(graph, instr_inputs[0]) {
+						for &out in graph_outs(graph, inode.inps[0]) {
 							if out.id == instr && out.idx == 0 {
 								out.idx = 1
 								break
 							}
 						}
 
-						instr_inputs[0], instr_inputs[1] =
-							instr_inputs[1], instr_inputs[0]
+						inode.inps[0], inode.inps[1] =
+							inode.inps[1], inode.inps[0]
 					}
 				}
 
-				if inplace_slot >= 0 {
+				if inode.inplace_slot >= 0 {
 					inplace_node := graph_get(
 						graph,
-						instr_inputs[inplace_slot],
+						inode.inps[inode.inplace_slot],
 					)
 					lrg = ctx.lrg_table[inplace_node.gvn]
+				} else if inode.itype == .Phi {
+					for inp in inode.inps[1:] {
+						inp_node := graph_get(graph, inp)
+						lrg = unify(lrg, ctx.lrg_table[inp_node.gvn])
+					}
 				}
 
-				for o in instr_outputs {
-					out_node := graph_get(graph, o.id)
-					if u8(ra.inplace_slot_idxs[out_node.rtype]) == o.idx {
-						lrg = unify(lrg, ctx.lrg_table[out_node.gvn])
+				for o in inode.outs {
+					onode := graph_expand(graph, o.id)
+					if onode.inplace_slot == o.idx {
+						lrg = unify(lrg, ctx.lrg_table[onode.gvn])
 					}
 				}
 
@@ -321,10 +324,10 @@ regalloc_round :: proc(
 					intersect(lrg, mask)
 				}
 
-				for o in instr_outputs {
-					out_node := graph_get(graph, o.id)
-					if o.idx < ra.first_input_idxs[out_node.rtype] ||
-					   u16(o.idx) >= out_node.ordered_input_count {
+				for o in inode.outs {
+					onode := graph_expand(graph, o.id)
+					if int(o.idx) < onode.data_start ||
+					   u16(o.idx) >= onode.ordered_input_count {
 						continue
 					}
 
@@ -332,7 +335,7 @@ regalloc_round :: proc(
 					intersect(lrg, mask)
 				}
 
-				ctx.lrg_table[instr_node.gvn] = lrg
+				ctx.lrg_table[inode.gvn] = lrg
 			}
 
 		}
@@ -362,7 +365,7 @@ regalloc_round :: proc(
 		node: Node_ID,
 	}
 
-	self_conflicts := make([dynamic]Self_Conflict, arena)
+	ctx.self_conflicts = make([dynamic]Self_Conflict, arena)
 
 	worklist: queue.Queue(u32)
 	queue.init(&worklist, len(sched.bbs), arena)
@@ -372,24 +375,25 @@ regalloc_round :: proc(
 	}
 
 	current_liveouts: Liveouts
-	for b in queue.pop_back_safe(&worklist) {
+	for b in queue.pop_front_safe(&worklist) {
+
 		bb := sched.bbs[b]
 		lbb := blocks[b]
 		bb_head := graph_get(graph, bb.head)
 
 		clear(&current_liveouts)
-		for k, v in lbb.liveouts do current_liveouts[k] = v
+		for k, v in lbb.liveouts {
+			current_liveouts[k] = v
+		}
 
 		#reverse for instr in bb.instrs {
-			instr_node := graph_get(graph, instr)
-			instr_inputs := graph_inputs(graph, instr_node)
-			input_start := ra.first_input_idxs[instr_node.rtype]
+			inode := graph_expand(graph, instr)
 
-			if instr_node.dt != .Void {
-				lrg := ctx.lrg_table[instr_node.gvn]
+			if inode.dt != .Void {
+				lrg := ctx.lrg_table[inode.gvn]
 				k, v := delete_key(&current_liveouts, lrg)
 				if k == lrg && v != instr {
-					add_conflict(&self_conflicts, lrg, v, instr)
+					add_conflict(&ctx, lrg, v, instr)
 				}
 
 				for l in current_liveouts {
@@ -423,15 +427,53 @@ regalloc_round :: proc(
 				}
 			}
 
-			for inp in instr_inputs[input_start:] {
-				inp_node := graph_get(graph, inp)
-				lrg := ctx.lrg_table[inp_node.gvn]
-				_, slot, just_inserted, _ := map_entry(&current_liveouts, lrg)
-				if !just_inserted {
-					add_conflict(&self_conflicts, lrg, inp, slot^)
+			if inode.itype != .Phi {
+				for inp in inode.inps[inode.data_start:] {
+					inp_node := graph_get(graph, inp)
+					lrg := ctx.lrg_table[inp_node.gvn]
+					add_liveout(&ctx, &current_liveouts, lrg, inp)
 				}
-				slot^ = inp
 			}
+		}
+
+		head := graph_expand(graph, bb.head)
+		for pred, i in head.inps {
+			if pred == NODE_START do break
+
+			pred_block := graph_get(graph, graph_idom(graph, pred))
+			assert(.Is_Basic_Block_Start in graph.node_flags[pred_block.rtype])
+
+			pred_bb_idx := int(pred_block.gvn) - block_base
+			assert(pred_bb_idx >= 0)
+
+			pred_liveouts := &blocks[pred_bb_idx].liveouts
+
+			for lrg, n in current_liveouts {
+				add_liveout(&ctx, pred_liveouts, lrg, n)
+			}
+
+			for out in head.outs {
+				onode := graph_expand(graph, out.id)
+				if onode.itype == .Phi {
+					lrg := ctx.lrg_table[onode.gvn]
+					n := onode.inps[1 + i]
+
+					add_liveout(&ctx, pred_liveouts, lrg, n)
+				}
+			}
+		}
+
+		add_liveout :: proc(
+			ctx: ^Ctx,
+			louts: ^Liveouts,
+			lrg: ^Lrg,
+			n: Node_ID,
+		) {
+			_, slot, just_inserted, _ := map_entry(louts, lrg)
+			if !just_inserted {
+				add_conflict(ctx, lrg, n, slot^)
+			}
+			slot^ = n
 		}
 	}
 
@@ -439,7 +481,7 @@ regalloc_round :: proc(
 
 	used_lrgs_check := used_lrgs
 
-	if len(self_conflicts) != 0 {
+	if len(ctx.self_conflicts) != 0 {
 		used_lrgs = 0
 		interference.bit_length = 0
 		ok = false
@@ -533,88 +575,120 @@ regalloc_round :: proc(
 
 	prev_gvn := graph.gvn
 
+	get_lrg :: proc(ctx: Ctx, node: Node_ID) -> ^Lrg {
+		node := graph_get(ctx.graph, node)
+		if int(node.gvn) >= len(ctx.lrg_table) do return nil
+		return ctx.lrg_table[node.gvn]
+	}
+
 	for &lrg in lrgs[:used_lrgs_check] {
 		id := lrg.node
 		if lrg.failed {
-			id = forward_lrg(graph, &lrg, ctx.lrg_table)
-
-			fnode := graph_get(graph, id)
-			fouts := graph_outputs(graph, fnode)
-			fouts = arna.clone(ra, fouts)
-
-			if fnode.itype != .Split {
-				split := graph_add_split(graph, "sdef", fnode.dt, id)
-
-				placement_block := &sched.bbs[ctx.instr_placement[fnode.gvn].block]
-				placement_idx, _ := arna.simd_search(
-					placement_block.instrs[:],
-					id,
-				)
-
-				inject_at(&placement_block.instrs, placement_idx + 1, split)
-
-				id = split
-				fnode = graph_get(graph, id)
+			ok = false
+			members := make([dynamic]Node_ID, arena)
+			append(&members, id)
+			for i := 0; i < len(members); i += 1 {
+				member := members[i]
+				for out in graph_outs(graph, member) {
+					if get_lrg(ctx, out.id) == &lrg {
+						append(&members, out.id)
+					}
+				}
 			}
 
-			ok = false
-
-			for out in fouts {
-				out_node := graph_get(graph, out.id)
-
-				split := id
-				if out_node.itype != .Split {
-					assert(out_node.gvn < prev_gvn)
-					split = split_before(
-						ctx,
-						out.id,
-						out.idx,
-						"suse",
-						redirect = id,
-					)
+			for m in members {
+				is_internal := true
+				for out in graph_outs(graph, m) {
+					if get_lrg(ctx, out.id) == &lrg do continue
+					if graph_get(graph, out.id).itype == .Split {
+						continue
+					}
+					is_internal = false
 				}
 
-				graph_set_input(graph, out.id, out.idx, split)
+				if is_internal do continue
+
+				id = m
+				fnode := graph_get(graph, m)
+
+				if fnode.itype != .Split {
+					split := graph_add_split(graph, "sdef", fnode.dt, m)
+
+					placement_block := get_node_block(ctx, id)
+					placement_idx, _ := arna.simd_search(
+						placement_block.instrs[:],
+						id,
+					)
+
+					inject_at(
+						&placement_block.instrs,
+						placement_idx + 1,
+						split,
+					)
+
+					id = split
+					fnode = graph_get(graph, id)
+				}
+
+				for out in arna.clone(ra, graph_outs(graph, m)) {
+					olrg := get_lrg(ctx, out.id)
+					if olrg == &lrg || olrg == nil do continue
+
+					out_node := graph_get(graph, out.id)
+
+					split := id
+					if out_node.itype != .Split {
+						assert(out_node.gvn < prev_gvn)
+						split = split_before(
+							ctx,
+							out.id,
+							out.idx,
+							"suse",
+							redirect = id,
+						)
+					}
+
+					graph_set_input(graph, out.id, out.idx, split)
+				}
 			}
 		}
 	}
 
-	for sc in self_conflicts {
+	for sc in ctx.self_conflicts {
 		lrg := sc.lrg
 		id := sc.node
 
-		node := graph_get(graph, id)
-		inputs := graph_inputs(graph, node)
-		outputs := graph_outputs(graph, node)
-		outputs = arna.clone(ra, outputs)
-		first_input := ra.first_input_idxs[node.rtype]
-		inplace_slot := ra.inplace_slot_idxs[node.rtype]
+		node := graph_expand(graph, id)
+		node.outs = arna.clone(ra, node.outs)
 
 		// NOTE: we could be using the same value multiple times, so since we
 		// are at it, lets reuse the immediate split
 		last_split: Node_ID
 
-		for inp, i in inputs {
-			if i != int(inplace_slot) {
+		for inp, i in node.inps {
+			if i != int(node.inplace_slot) {
 				continue
 			}
 
-			inp_node := graph_get(graph, inp)
-			if inp_node.dt == .Void do continue
-			if inp_node.gvn >= prev_gvn {
+			inode := graph_get(graph, inp)
+			if inode.dt == .Void do continue
+			if inode.gvn >= prev_gvn {
 				last_split = inp
 				continue
 			}
 
-			inp_lrg := ctx.lrg_table[inp_node.gvn]
+			inp_lrg := ctx.lrg_table[inode.gvn]
 			if inp_lrg == lrg &&
-			   (inp_node.itype != .Split || inp_node.output_count > 1) {
+			   ((inode.itype != .Split &&
+						   (ctx.instr_placement[inode.gvn] !=
+									   ctx.instr_placement[node.gvn] ||
+								   inode.gvn != node.gvn - 1)) ||
+					   inode.output_count > 1) {
 				split: Node_ID
-				if last_split != 0 &&
-				   graph_inputs(graph, last_split)[0] == inp {
+				if last_split != 0 && graph_inps(graph, last_split)[0] == inp {
 					split = last_split
 				} else {
-					split = split_before(ctx, id, i, "sc-in")
+					split = split_before(ctx, id, i, "sci")
 				}
 
 				last_split = split
@@ -625,19 +699,18 @@ regalloc_round :: proc(
 
 		last_split = 0
 		last_split_out: Node_ID
-		for out, i in outputs {
-			out_node := graph_get(graph, out.id)
-			out_node_in_place_slot := ra.inplace_slot_idxs[out_node.rtype]
-			if out_node.dt == .Void do continue
-			if out_node.gvn >= prev_gvn do continue
+		for out, i in node.outs {
+			onode := graph_expand(graph, out.id)
+			if onode.dt == .Void do continue
+			if onode.gvn >= prev_gvn do continue
 
-			out_lrg := ctx.lrg_table[out_node.gvn]
-			if out.idx == u8(out_node_in_place_slot) {
+			out_lrg := ctx.lrg_table[onode.gvn]
+			if out.idx == onode.inplace_slot || onode.itype == .Phi {
 				split: Node_ID
 				if last_split != 0 && last_split_out == out.id {
 					split = last_split
 				} else {
-					split = split_before(ctx, out.id, out.idx, "sc-out")
+					split = split_before(ctx, out.id, out.idx, "sco")
 				}
 
 				last_split_out = out.id
@@ -657,22 +730,32 @@ regalloc_round :: proc(
 		name: string,
 		redirect: Node_ID = 0,
 	) -> Node_ID {
-		graph := ctx.graph
-		sched := ctx.sched
-		lrg_table := ctx.lrg_table
-		instr_placement := ctx.instr_placement
+		node := graph_expand(ctx.graph, id)
+		inp := redirect if redirect != 0 else node.inps[idx]
+		inp_node := graph_get(ctx.graph, inp)
 
-		node := graph_get(graph, id)
-		node_inputs := graph_inputs(graph, node)
-		inp := redirect if redirect != 0 else node_inputs[idx]
-		inp_node := graph_get(graph, inp)
+		placement_block: ^Graph_Basic_Block
+		placement_idx: int
+		if node.itype == .Phi {
+			last := graph_inps(ctx.graph, node.inps[0])[idx - 1]
+			placement_block = get_node_block(ctx, last)
+			placement_idx = len(placement_block.instrs) - 1
+		} else {
+			placement_block = get_node_block(ctx, id)
+			placement_idx, _ = arna.simd_search(placement_block.instrs[:], id)
+		}
 
-		placement_block := &sched.bbs[instr_placement[node.gvn].block]
-		placement_idx, _ := arna.simd_search(placement_block.instrs[:], id)
-
-		split := graph_add_split(graph, name, inp_node.dt, inp)
+		split := graph_add_split(ctx.graph, name, inp_node.dt, inp)
 		inject_at(&placement_block.instrs, placement_idx, split)
 		return split
+	}
+
+	get_node_block :: #force_inline proc(
+		ctx: Ctx,
+		node: Node_ID,
+	) -> ^Graph_Basic_Block {
+		node := graph_get(ctx.graph, node)
+		return &ctx.sched.bbs[ctx.instr_placement[node.gvn].block]
 	}
 
 	forward_lrg :: proc(
@@ -682,7 +765,7 @@ regalloc_round :: proc(
 	) -> Node_ID {
 		id := lrg.node
 		fnode := graph_get(graph, id)
-		fouts := graph_outputs(graph, fnode)
+		fouts := graph_outs(graph, fnode)
 
 		if fnode.itype == .Split && fnode.output_count == 1 {
 			sid := fouts[0].id
@@ -705,22 +788,38 @@ regalloc_round :: proc(
 		}
 
 		id := forward_lrg(graph, lrg, lrg_table)
-		fnode := graph_get(graph, id)
-		fouts := graph_outputs(graph, fnode)
 
-		inputs := graph_inputs(graph, fnode)
+		members := make([dynamic]Node_ID, arna.allocator(ctx.ra))
+		append(&members, id)
+		for i := 0; i < len(members); i += 1 {
+			member := members[i]
+			for out in graph_outs(graph, member) {
+				if int(graph_get(graph, out.id).gvn) >= len(ctx.lrg_table) do continue
+				if ctx.lrg_table[graph_get(graph, out.id).gvn] == lrg {
+					append(&members, out.id)
+				}
+			}
+		}
+
+		fnode := graph_expand(graph, id)
 
 		if fnode.output_count == 1 {
-			onode := graph_get(graph, fouts[0].id)
+			onode := graph_get(graph, fnode.outs[0].id)
+			if int(onode.gvn) < len(ctx.lrg_table) {
 
-			if instr_placement[onode.gvn].block ==
-			   instr_placement[fnode.gvn].block {
-				return 1000 - (onode.gvn - fnode.gvn) * 100
+				if instr_placement[onode.gvn].block ==
+					   instr_placement[fnode.gvn].block &&
+				   ctx.lrg_table[onode.gvn] != ctx.lrg_table[fnode.gvn] {
+					assert(onode.gvn > fnode.gvn)
+					return u32(
+						max(1000 - int((onode.gvn - fnode.gvn) * 100), 0),
+					)
+				}
 			}
 		}
 
 		if fnode.itype == .Split {
-			if graph_get(graph, inputs[0]).itype == .Split {
+			if graph_get(graph, fnode.inps[0]).itype == .Split {
 				if fnode.output_count == 1 {
 					return 30
 				}
@@ -728,21 +827,17 @@ regalloc_round :: proc(
 			return 10
 		}
 
-		return 100
+		return 100 + (u32(len(members)) - 1) * 100
 	}
 
-	add_conflict :: proc(
-		self_conflicts: ^[dynamic]Self_Conflict,
-		lrg: ^Lrg,
-		a, b: Node_ID,
-	) {
+	add_conflict :: proc(ctx: ^Ctx, lrg: ^Lrg, a, b: Node_ID) {
 		assert(a != 0)
 		assert(b != 0)
 
 		if a != b {
 			lrg.self_conflict = true
-			append(self_conflicts, Self_Conflict{lrg, a})
-			append(self_conflicts, Self_Conflict{lrg, b})
+			append(&ctx.self_conflicts, Self_Conflict{lrg, a})
+			append(&ctx.self_conflicts, Self_Conflict{lrg, b})
 		}
 	}
 
@@ -750,6 +845,7 @@ regalloc_round :: proc(
 		a, b := a, b
 		if a == nil do return b
 		if b == nil do return a
+		if a == b do return a
 
 		a, b = find(a), find(b)
 
@@ -781,6 +877,7 @@ regalloc_round :: proc(
 
 		cursor := l
 		for cursor.parent != nil {
+			assert(cursor.parent.rank > cursor.rank)
 			cursor, cursor.parent = cursor.parent, cursor.parent.parent
 		}
 
@@ -803,7 +900,10 @@ regalloc_round :: proc(
 				instr_node := graph_get(graph, instr)
 				if instr_node.dt != .Void {
 					lrg := lrg_table[instr_node.gvn]
-					fmt.sbprintf(&sb, "%v:%3i", lrg.mask, lrg.index)
+					fmt.sbprintf(&sb, "%v:", lrg.mask)
+					ansi_start(&sb, lrg.index)
+					fmt.sbprintf(&sb, "%3i", lrg.index)
+					ansi_end(&sb)
 					if len(adj) != 0 {
 						priority := color_priority(ctx, lrg, adj[lrg.index])
 						fmt.sbprintf(&sb, " %04i ", priority)

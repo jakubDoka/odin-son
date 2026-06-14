@@ -27,13 +27,36 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 		no_ctrl = true,
 		flags = {.Interned},
 	},
-	.Add ..= .Mul = {id = No_Extra, args = {"lhs", "rhs"}, no_ctrl = true, flags = {.Comutes}},
+	.Add ..= .Eq = {id = No_Extra, args = {"lhs", "rhs"}, no_ctrl = true, flags = {.Comutes}},
 	.Split = {id = No_Extra, args = {"dest"}, no_ctrl = true},
-	.Return = {id = Cfg_Extra, varargs = true, default_type = .Void},
+	.Phi = {id = No_Extra, args = {"reg", "lhs", "rhs"}, no_ctrl = true},
+	.If = {id = Cfg_Extra, args = {"ctrl", "cond"}, default_type = .Void},
+	.Then ..= .Else = {id = Cfg_Extra, args = {"cfg"}, default_type = .Void, flags = {.Is_Basic_Block_Start}},
+	.Jump = {
+		id = Cfg_Extra,
+		args = {"ctrl"},
+		default_type = .Void,
+		no_ctrl = true,
+	},
+	.Region = {
+		id = Region,
+		args = {"rcfg", "lcfg"},
+		default_type = .Void,
+		flags = {.Is_Basic_Block_Start},
+	},
+	.Return = {
+		id = Cfg_Extra,
+		varargs = true,
+		default_type = .Void,
+		flags = {.Immortal},
+	},
 }
 
 @(rodata)
 IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec{}
+
+@(rodata)
+BUILDER_REG_CLASSES := [Builder_Node_Type]Reg_Class_Spec{}
 
 Inherit_Table_Elem :: u8
 Mask_Intern_Key :: u8
@@ -60,21 +83,46 @@ Reg_Class_Spec :: struct {
 	reg_masks:        [Reg_Kind][][]int,
 }
 
+Ideal_Node_Type :: enum u16 {
+	Start,
+	Entry,
+	CInt,
+	Add,
+	Mul,
+	Eq,
+	Split,
+	Phi,
+	If,
+	Then,
+	Else,
+	Jump,
+	Region,
+	Return,
+}
+
 when (#load("node_specs.odin", string) or_else "") == "" {
 	@(rodata)
 	SPECS := [Node_Spec_Name]Node_Spec{}
 
-	Ideal_Node_Type :: enum u16 {
-		Start,
-		Entry,
-		CInt,
-		Add,
-		Mul,
-		Split,
-		Return,
+	Builder_Node_Type :: enum u16 {
+		Scope,
 	}
 
 	X64_Node_Type :: enum u16 {}
+
+	@(rodata)
+	BUILDER_CLASSES := [Builder_Node_Type]Class_Spec {
+		.Scope = {
+			id = Scope,
+			args = {"cfg"},
+			default_type = .Void,
+			no_ctrl = true,
+			flags = {.Immortal},
+		},
+	}
+
+	@(rodata)
+	X64_CLASSES := [X64_Node_Type]Class_Spec{}
 
 	inherit_idx_of :: proc($T: typeid) -> u8 {return 0}
 
@@ -85,9 +133,36 @@ when (#load("node_specs.odin", string) or_else "") == "" {
 		src: Node_ID,
 	) -> Node_ID {return 0}
 
+	graph_add_region :: proc(
+		graph: ^Graph,
+		name: string,
+		lctrl: Node_ID,
+		rctrl: Node_ID,
+	) -> Node_ID {return 0}
+
+	graph_add_phi :: proc(
+		graph: ^Graph,
+		name: string,
+		dt: Node_Datatype,
+		region: Node_ID,
+		lhs: Node_ID,
+		rhs: Node_ID,
+	) -> Node_ID {return 0}
+
+	graph_add_jump :: proc(
+		graph: ^Graph,
+		name: string,
+		ctrl: Node_ID,
+	) -> Node_ID {return 0}
+
 	when !GEN_SPEC {
 		#panic("Missing generated files, run `" + COMMAND + "`")
 	}
+} else {
+	@(rodata)
+	BUILDER_CLASSES := [Builder_Node_Type]Class_Spec{}
+	@(rodata)
+	X64_CLASSES := [X64_Node_Type]Class_Spec{}
 }
 
 when GEN_SPEC {
@@ -116,7 +191,13 @@ generate_specs :: proc() {
 	}
 
 	specs := [?]Codegen_Spec {
-		{name = .Ideal, classes = {ts(&IDEAL_CLASSES, &IDEAL_REG_CLASSES)}},
+		{
+			name = .Builder,
+			classes = {
+				ts(&IDEAL_CLASSES, &IDEAL_REG_CLASSES),
+				ts(&BUILDER_CLASSES, &BUILDER_REG_CLASSES),
+			},
+		},
 		{
 			name = .X64,
 			classes = {
@@ -457,8 +538,9 @@ generate_specs :: proc() {
 					fmt.fprintf(
 						file,
 						"\textra := (^%v)(graph_get_next_extra_slot(graph," +
-						" u16(Ideal_Node_Type.%v)))\n",
+						" u16(%v.%v)))\n",
 						class.id,
+						classes.enm,
 						name,
 					)
 					for earg in class.extra_args {
@@ -469,8 +551,8 @@ generate_specs :: proc() {
 
 				fmt.fprintf(
 					file,
-					"\treturn graph_add_raw(graph," +
-					" u16(Ideal_Node_Type.%v), ",
+					"\treturn graph_add_raw(graph," + " u16(%v.%v), ",
+					classes.enm,
 					name,
 				)
 

@@ -211,7 +211,7 @@ main :: proc() -> int {
 run_test(t, `if_statement_with_register_pressure`, `
 package main
 
-return_value :: 100
+return_value :: 5484395
 opt_level :: "none"
 
 main :: proc() -> int {

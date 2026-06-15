@@ -755,6 +755,13 @@ ansi_start :: proc(sb: ^strings.Builder, #any_int gvn: int) {
 			{fg = ansi.FG_BRIGHT_MAGENTA},
 			{fg = ansi.FG_BRIGHT_CYAN},
 			{fg = ansi.FG_BRIGHT_WHITE},
+			{fg = ansi.FG_RED},
+			{fg = ansi.FG_GREEN},
+			{fg = ansi.FG_YELLOW},
+			{fg = ansi.FG_BLUE},
+			{fg = ansi.FG_MAGENTA},
+			{fg = ansi.FG_CYAN},
+			{fg = ansi.FG_WHITE},
 			{fg = ansi.FG_BLACK, bg = ansi.BG_WHITE},
 			{fg = ansi.FG_BLACK, bg = ansi.BG_WHITE},
 			{fg = ansi.FG_BLACK, bg = ansi.BG_RED},
@@ -765,13 +772,6 @@ ansi_start :: proc(sb: ^strings.Builder, #any_int gvn: int) {
 			{fg = ansi.FG_BLACK, bg = ansi.BG_MAGENTA},
 			{fg = ansi.FG_BLACK, bg = ansi.BG_CYAN},
 			{fg = ansi.FG_BLACK, bg = ansi.BG_WHITE},
-			{fg = ansi.FG_RED},
-			{fg = ansi.FG_GREEN},
-			{fg = ansi.FG_YELLOW},
-			{fg = ansi.FG_BLUE},
-			{fg = ansi.FG_MAGENTA},
-			{fg = ansi.FG_CYAN},
-			{fg = ansi.FG_WHITE},
 		}
 
 		pick := colors[gvn % len(colors)]

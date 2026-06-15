@@ -212,7 +212,7 @@ main :: proc() -> int {
 ```odin
 package main
 
-return_value :: 100
+return_value :: 5484395
 opt_level :: "none"
 
 main :: proc() -> int {

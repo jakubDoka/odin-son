@@ -189,13 +189,14 @@ Lrg_Meta :: bit_field u32 {
 }
 
 Lrg :: struct {
-	node:    Node_ID,
-	using _: Lrg_Meta,
-	mask:    Reg_Mask,
-	parent:  ^Lrg,
+	node:             Node_ID,
+	using _:          Lrg_Meta,
+	mask:             Reg_Mask,
+	parent:           ^Lrg,
 	// TODO: this should go into meta instead of the index
-	reg:     i16,
-	area:    u32,
+	reg:              i16,
+	longest_use_area: u32,
+	longest_def:      Node_ID,
 }
 
 regalloc_round :: proc(
@@ -351,7 +352,13 @@ regalloc_round :: proc(
 
 	arena := arna.allocator(ra)
 
-	Liveouts :: map[^Lrg]Node_ID
+	Liveout :: struct {
+		node:     Node_ID,
+		area:     u32,
+		last_pos: u32,
+	}
+
+	Liveouts :: map[^Lrg]Liveout
 
 	Block :: struct {
 		liveouts: Liveouts,
@@ -374,6 +381,14 @@ regalloc_round :: proc(
 		queue.push_front(&worklist, u32(i))
 	}
 
+	// TODO: used only once for now, dont forget to inline
+	add_area :: proc(lrg: ^Lrg, out: Liveout) {
+		if out.area > lrg.longest_use_area {
+			lrg.longest_use_area = out.area
+			lrg.longest_def = out.node
+		}
+	}
+
 	current_liveouts: Liveouts
 	for b in queue.pop_front_safe(&worklist) {
 
@@ -386,14 +401,17 @@ regalloc_round :: proc(
 			current_liveouts[k] = v
 		}
 
-		#reverse for instr in bb.instrs {
+		#reverse for instr, i in bb.instrs {
 			inode := graph_expand(graph, instr)
 
 			if inode.dt != .Void {
 				lrg := ctx.lrg_table[inode.gvn]
 				k, v := delete_key(&current_liveouts, lrg)
-				if k == lrg && v != instr {
-					add_conflict(&ctx, lrg, v, instr)
+				if k == lrg {
+					if add_conflict(&ctx, lrg, v.node, instr) {
+						v.area += v.last_pos - u32(i)
+						add_area(lrg, v)
+					}
 				}
 
 				for l in current_liveouts {
@@ -431,7 +449,12 @@ regalloc_round :: proc(
 				for inp in inode.inps[inode.data_start:] {
 					inp_node := graph_get(graph, inp)
 					lrg := ctx.lrg_table[inp_node.gvn]
-					add_liveout(&ctx, &current_liveouts, lrg, inp)
+					add_liveout(
+						&ctx,
+						&current_liveouts,
+						lrg,
+						{node = inp, last_pos = u32(i)},
+					)
 				}
 			}
 		}
@@ -446,9 +469,13 @@ regalloc_round :: proc(
 			pred_bb_idx := int(pred_block.gvn) - block_base
 			assert(pred_bb_idx >= 0)
 
+			pred_bb := sched.bbs[pred_bb_idx]
 			pred_liveouts := &blocks[pred_bb_idx].liveouts
 
 			for lrg, n in current_liveouts {
+				n := n
+				n.area += n.last_pos
+				n.last_pos = u32(len(pred_bb.instrs))
 				add_liveout(&ctx, pred_liveouts, lrg, n)
 			}
 
@@ -458,7 +485,12 @@ regalloc_round :: proc(
 					lrg := ctx.lrg_table[onode.gvn]
 					n := onode.inps[1 + i]
 
-					add_liveout(&ctx, pred_liveouts, lrg, n)
+					add_liveout(
+						&ctx,
+						pred_liveouts,
+						lrg,
+						{node = n, last_pos = u32(len(pred_bb.instrs))},
+					)
 				}
 			}
 		}
@@ -564,9 +596,17 @@ regalloc_round :: proc(
 
 	prev_gvn := graph.gvn
 
+	has_failed: bool
+
+	failed := make([dynamic]^Lrg, arena)
+
 	for &lrg in lrgs[:used_lrgs_check] {
+
 		id := lrg.node
+
 		if lrg.failed {
+			append(&failed, &lrg)
+			has_failed |= lrg.failed_to_color
 			ok = false
 			members := make([dynamic]Node_ID, arena)
 			append(&members, id)
@@ -633,6 +673,59 @@ regalloc_round :: proc(
 
 					graph_set_input(graph, out.id, out.idx, split)
 				}
+			}
+		}
+	}
+
+	if has_failed {
+		order := arna.smake(ra, []bit_field u64 {
+				id:            u32 | 32,
+				biggest_split: u32 | 32,
+			}, used_lrgs_check)
+		for &o, i in order {
+			o = {
+				id            = u32(i),
+				biggest_split = 100000 - lrgs[i].longest_use_area,
+			}
+		}
+
+		sort.quick_sort(order)
+
+		for ord in order[:min(16, len(order))] {
+			lrg := lrgs[ord.id]
+			id := lrg.longest_def
+
+			fnode := graph_expand(graph, id)
+
+			split: if lrg.longest_def != 0 && lrg.longest_use_area > 1 {
+
+				fnode.outs = arna.clone(ra, fnode.outs)
+
+				split := graph_add_split(graph, "cdef", fnode.dt, id)
+
+				placement_block := get_node_block(ctx, id)
+				placement_idx, _ := arna.simd_search(
+					placement_block.instrs[:],
+					id,
+				)
+
+				inject_at(&placement_block.instrs, placement_idx + 1, split)
+
+				for o in fnode.outs {
+					onode := graph_get(graph, o.id)
+					split := split
+					if onode.itype != .Split {
+						split = split_before(
+							ctx,
+							o.id,
+							o.idx,
+							"cuse",
+							redirect = split,
+						)
+					}
+					graph_set_input(graph, o.id, o.idx, split)
+				}
+
 			}
 		}
 	}
@@ -706,11 +799,13 @@ regalloc_round :: proc(
 
 	return
 
-	add_liveout :: proc(ctx: ^Ctx, louts: ^Liveouts, lrg: ^Lrg, n: Node_ID) {
+	add_liveout :: proc(ctx: ^Ctx, louts: ^Liveouts, lrg: ^Lrg, n: Liveout) {
+		n := n
 		_, slot, just_inserted, _ := map_entry(louts, lrg)
 		if !just_inserted {
-			add_conflict(ctx, lrg, n, slot^)
+			add_conflict(ctx, lrg, n.node, slot^.node)
 		}
+		n.area = max(n.area, slot.area)
 		slot^ = n
 	}
 
@@ -786,16 +881,22 @@ regalloc_round :: proc(
 
 		id := forward_lrg(graph, lrg, lrg_table)
 
+		has_non_split := false
 		members := make([dynamic]Node_ID, arna.allocator(ctx.ra))
 		append(&members, id)
 		for i := 0; i < len(members); i += 1 {
 			member := members[i]
 			for out in graph_outs(graph, member) {
-				if int(graph_get(graph, out.id).gvn) >= len(ctx.lrg_table) do continue
-				if ctx.lrg_table[graph_get(graph, out.id).gvn] == lrg {
+				onode := graph_get(graph, out.id)
+				has_non_split |= onode.itype != .Split
+				if get_lrg(ctx, out.id) == lrg {
 					append(&members, out.id)
 				}
 			}
+		}
+
+		if !has_non_split {
+			return 0
 		}
 
 		fnode := graph_expand(graph, id)
@@ -827,7 +928,7 @@ regalloc_round :: proc(
 		return 100 + (u32(len(members)) - 1) * 100
 	}
 
-	add_conflict :: proc(ctx: ^Ctx, lrg: ^Lrg, a, b: Node_ID) {
+	add_conflict :: proc(ctx: ^Ctx, lrg: ^Lrg, a, b: Node_ID) -> bool {
 		assert(a != 0)
 		assert(b != 0)
 
@@ -836,6 +937,8 @@ regalloc_round :: proc(
 			append(&ctx.self_conflicts, Self_Conflict{lrg, a})
 			append(&ctx.self_conflicts, Self_Conflict{lrg, b})
 		}
+
+		return a == b
 	}
 
 	unify :: proc(a, b: ^Lrg) -> ^Lrg {

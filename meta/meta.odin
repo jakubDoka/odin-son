@@ -24,7 +24,7 @@ main :: proc() {
 		os.write_string(file, "// NOTE: this file is generated: " + COMMAND)
 		os.write_string(file, "\n\n")
 
-		file_paths := []string{"./backend/backend.odin", "./backend/gcm.odin"}
+		file_paths := []string{"./backend/graph.odin", "./backend/gcm.odin"}
 		for file_path in file_paths {
 			data, err := os.read_entire_file(file_path, context.allocator)
 			fmt.assertf(err == nil, "%v", err)

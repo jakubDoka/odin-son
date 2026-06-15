@@ -25,8 +25,8 @@ reg_kind_char :: proc(kind: Reg_Kind) -> rune {
 }
 
 Reg :: bit_field u16 {
-	kind:  Reg_Kind | 4,
 	index: u16      | 12,
+	kind:  Reg_Kind | 4,
 }
 
 Reg_Mask :: struct {
@@ -222,6 +222,7 @@ regalloc_round :: proc(
 		instr_placement: []Instr_Placement,
 		lrg_table:       []^Lrg,
 		self_conflicts:  [dynamic]Self_Conflict,
+		adj:             [][]^Lrg,
 	}
 
 	ctx: Ctx
@@ -356,7 +357,6 @@ regalloc_round :: proc(
 		liveouts: Liveouts,
 	}
 
-	// TODO: round these up to teh mask size, that should allow us to optimize the set bit collection
 	interference := bit_arr.init(used_lrgs * used_lrgs, arena)
 	blocks := arna.smake(ra, []Block, len(sched.bbs))
 
@@ -463,18 +463,6 @@ regalloc_round :: proc(
 			}
 		}
 
-		add_liveout :: proc(
-			ctx: ^Ctx,
-			louts: ^Liveouts,
-			lrg: ^Lrg,
-			n: Node_ID,
-		) {
-			_, slot, just_inserted, _ := map_entry(louts, lrg)
-			if !just_inserted {
-				add_conflict(ctx, lrg, n, slot^)
-			}
-			slot^ = n
-		}
 	}
 
 	//log_lrgs(graph, sched, lrg_table)
@@ -488,6 +476,7 @@ regalloc_round :: proc(
 	}
 
 	ifg := arna.smake(ra, [][]^Lrg, used_lrgs)
+	ctx.adj = ifg
 	slices := arna.smake(ra, []^Lrg, bit_arr.pop_count(interference))
 	cursor := 0
 	slice_base := 0
@@ -562,7 +551,7 @@ regalloc_round :: proc(
 		lrg.reg = i16(first_set)
 	}
 
-	log_lrgs(ctx, ifg)
+	log_lrgs(&ctx)
 
 	res = make([]Reg, max_lrg_count)
 
@@ -574,12 +563,6 @@ regalloc_round :: proc(
 	}
 
 	prev_gvn := graph.gvn
-
-	get_lrg :: proc(ctx: Ctx, node: Node_ID) -> ^Lrg {
-		node := graph_get(ctx.graph, node)
-		if int(node.gvn) >= len(ctx.lrg_table) do return nil
-		return ctx.lrg_table[node.gvn]
-	}
 
 	for &lrg in lrgs[:used_lrgs_check] {
 		id := lrg.node
@@ -722,6 +705,20 @@ regalloc_round :: proc(
 	}
 
 	return
+
+	add_liveout :: proc(ctx: ^Ctx, louts: ^Liveouts, lrg: ^Lrg, n: Node_ID) {
+		_, slot, just_inserted, _ := map_entry(louts, lrg)
+		if !just_inserted {
+			add_conflict(ctx, lrg, n, slot^)
+		}
+		slot^ = n
+	}
+
+	get_lrg :: proc(ctx: Ctx, node: Node_ID) -> ^Lrg {
+		node := graph_get(ctx.graph, node)
+		if int(node.gvn) >= len(ctx.lrg_table) do return nil
+		return ctx.lrg_table[node.gvn]
+	}
 
 	split_before :: proc(
 		ctx: Ctx,
@@ -885,36 +882,41 @@ regalloc_round :: proc(
 	}
 
 	@(disabled = !REGLOGS)
-	log_lrgs :: proc(ctx: Ctx, adj: [][]^Lrg = {}) {
+	log_lrgs :: proc(ctx: ^Ctx) {
+
 		graph := ctx.graph
 		sched := ctx.sched
 		lrg_table := ctx.lrg_table
 		instr_placement := ctx.instr_placement
 
 		sb: strings.Builder
-		append(&sb.buf, "\n")
-		for bb in sched.bbs {
-			graph_display_node(&sb, graph, bb.head)
-			append(&sb.buf, "\n")
-			for instr in bb.instrs {
-				instr_node := graph_get(graph, instr)
-				if instr_node.dt != .Void {
-					lrg := lrg_table[instr_node.gvn]
-					fmt.sbprintf(&sb, "%v:", lrg.mask)
-					ansi_start(&sb, lrg.index)
-					fmt.sbprintf(&sb, "%3i", lrg.index)
-					ansi_end(&sb)
-					if len(adj) != 0 {
-						priority := color_priority(ctx, lrg, adj[lrg.index])
-						fmt.sbprintf(&sb, " %04i ", priority)
-					}
+
+		context.user_ptr = ctx
+		graph_display(&sb, ctx.graph, ctx.sched, prefix = prefix)
+
+		prefix :: proc(
+			sb: ^strings.Builder,
+			instr: ^Node,
+			bb: Graph_Basic_Block,
+		) {
+			ctx := (^Ctx)(context.user_ptr)
+			if instr.dt != .Void {
+				lrg := ctx.lrg_table[instr.gvn]
+				fmt.sbprintf(sb, "%v:", lrg.mask)
+				ansi_start(sb, lrg.index)
+				fmt.sbprintf(sb, "%3i", lrg.index)
+				ansi_end(sb)
+				if len(ctx.adj) != 0 {
+					priority := color_priority(ctx^, lrg, ctx.adj[lrg.index])
+					fmt.sbprintf(sb, " %04i ", priority)
 				} else {
-					fmt.sbprint(&sb, "                           ")
+					fmt.sbprint(sb, "      ")
 				}
-				graph_display_node(&sb, graph, instr)
-				append(&sb.buf, "\n")
+			} else {
+				fmt.sbprint(sb, "                           ")
 			}
 		}
+
 		log.info(string(sb.buf[:]))
 	}
 }

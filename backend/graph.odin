@@ -288,6 +288,7 @@ graph_merge_scopes :: proc(
 		graph_set_input(graph, lctrl, i, phi)
 	}
 
+	graph_set_input(graph, lctrl, 0, region)
 	graph_delete(graph, rnode)
 
 	return lctrl
@@ -605,19 +606,25 @@ graph_display :: proc(
 	sb: ^strings.Builder,
 	graph: ^Graph,
 	ctx: ^Graph_Schedule = nil,
+	prefix: proc(_: ^strings.Builder, _: ^Node, _: Graph_Basic_Block) = nil,
 	regs: []Reg = {},
 ) {
 	if ctx != nil {
 		for bb in ctx.bbs {
 			graph_display_node(sb, graph, bb.head)
+
 			append(&sb.buf, " {\n")
 
 			for instr in bb.instrs {
+				inode := graph_get(graph, instr)
+				if inode.itype == .Phi {
+					continue
+				}
+
 				append(&sb.buf, "  ")
-				instr_node := graph_get(graph, instr)
 				if len(regs) != 0 {
-					if instr_node.dt != .Void {
-						reg := regs[instr_node.gvn]
+					if inode.dt != .Void {
+						reg := regs[inode.gvn]
 						fmt.sbprintf(
 							sb,
 							"%v%03i",
@@ -627,37 +634,80 @@ graph_display :: proc(
 					} else {
 						append(&sb.buf, "    ")
 					}
+				} else if prefix != nil {
+					prefix(sb, inode, bb)
 				}
 				graph_display_node(sb, graph, instr)
 				append(&sb.buf, "\n")
 			}
 
-			append(&sb.buf, "}")
+			append(&sb.buf, "}\n")
 		}
 	}
 }
 
 graph_display_node :: proc(sb: ^strings.Builder, graph: ^Graph, id: Node_ID) {
-	node := graph_get(graph, id)
+	node := graph_expand(graph, id)
 
 	extra := graph_extra(graph, node)
 
 	graph_display_node_gvn(sb, graph, id)
-	fmt.sbprintf(sb, " := %v(", graph.node_kind_name[node.rtype])
+	fmt.sbprintf(sb, ":%v(", graph.node_kind_name[node.rtype])
 
 	written_one: bool
 	graph_display_extra(sb, extra, "", &written_one)
 
-	for inp, i in graph_inps(graph, node) {
+	for inp, i in node.inps {
 		inode := graph_get(graph, inp)
 		if written_one do fmt.sbprintf(sb, ", ")
 		written_one = true
 		graph_display_node_gvn(sb, graph, inp)
 	}
-	append(&sb.buf, ") [")
-	for out, i in graph_outs(graph, node) {
+
+	if node.itype == .Jump {
+		reg := node.outs[0]
+		rnode := graph_expand(graph, reg.id)
+		for out in rnode.outs {
+			onode := graph_expand(graph, out.id)
+			if onode.itype == .Phi {
+				if written_one do fmt.sbprintf(sb, ", ")
+				written_one = true
+				graph_display_node_gvn(sb, graph, onode.inps[1 + reg.idx])
+			}
+		}
+	}
+
+	for out in node.outs {
 		onode := graph_get(graph, out.id)
-		if i != 0 do append(&sb.buf, ", ")
+		if onode.itype == .Phi {
+			if written_one do fmt.sbprintf(sb, ", ")
+			written_one = true
+			graph_display_node_gvn(sb, graph, out.id)
+		}
+	}
+
+	append(&sb.buf, ") [")
+	written_one = false
+	for out, i in node.outs {
+		onode := graph_expand(graph, out.id)
+		if onode.itype == .Phi {
+			if out.idx != 0 {
+				reg := onode.inps[0]
+				rnode := graph_expand(graph, reg)
+				idx := 0
+				for ro in rnode.outs {
+					if ro.id == out.id do break
+					idx += int(graph_get(graph, ro.id).itype == .Phi)
+				}
+				if written_one do fmt.sbprintf(sb, ", ")
+				written_one = true
+				graph_display_node_gvn(sb, graph, rnode.inps[out.idx - 1])
+				fmt.sbprintf(sb, ":%v", 1 + idx)
+			}
+			continue
+		}
+		if written_one do fmt.sbprintf(sb, ", ")
+		written_one = true
 		graph_display_node_gvn(sb, graph, out.id)
 		fmt.sbprintf(sb, ":%v", out.idx)
 	}
@@ -691,25 +741,52 @@ graph_display_extra :: proc(
 
 ansi_start :: proc(sb: ^strings.Builder, #any_int gvn: int) {
 	if .Terminal_Color in context.logger.options {
-		colors := [?]string {
-			ansi.FG_BRIGHT_RED,
-			ansi.FG_BRIGHT_GREEN,
-			ansi.FG_BRIGHT_YELLOW,
-			ansi.FG_BRIGHT_BLUE,
-			ansi.FG_BRIGHT_MAGENTA,
-			ansi.FG_BRIGHT_CYAN,
-			ansi.FG_BRIGHT_WHITE,
-			ansi.FG_RED,
-			ansi.FG_GREEN,
-			ansi.FG_YELLOW,
-			ansi.FG_BLUE,
-			ansi.FG_MAGENTA,
-			ansi.FG_CYAN,
-			ansi.FG_WHITE,
+		Combo :: struct {
+			fg: string,
+			bg: string,
 		}
-		append(&sb.buf, ansi.CSI)
-		append(&sb.buf, colors[gvn % len(colors)])
-		append(&sb.buf, ansi.SGR)
+
+		colors := [?]Combo {
+			{fg = ansi.FG_BRIGHT_BLACK},
+			{fg = ansi.FG_BRIGHT_RED},
+			{fg = ansi.FG_BRIGHT_GREEN},
+			{fg = ansi.FG_BRIGHT_YELLOW},
+			{fg = ansi.FG_BRIGHT_BLUE},
+			{fg = ansi.FG_BRIGHT_MAGENTA},
+			{fg = ansi.FG_BRIGHT_CYAN},
+			{fg = ansi.FG_BRIGHT_WHITE},
+			{fg = ansi.FG_BLACK, bg = ansi.BG_WHITE},
+			{fg = ansi.FG_BLACK, bg = ansi.BG_WHITE},
+			{fg = ansi.FG_BLACK, bg = ansi.BG_RED},
+			{fg = ansi.FG_BLACK, bg = ansi.BG_GREEN},
+			{fg = ansi.FG_BLACK, bg = ansi.BG_YELLOW},
+			{fg = ansi.FG_WHITE, bg = ansi.BG_BLUE},
+			{fg = ansi.FG_WHITE, bg = ansi.BG_BRIGHT_BLACK},
+			{fg = ansi.FG_BLACK, bg = ansi.BG_MAGENTA},
+			{fg = ansi.FG_BLACK, bg = ansi.BG_CYAN},
+			{fg = ansi.FG_BLACK, bg = ansi.BG_WHITE},
+			{fg = ansi.FG_RED},
+			{fg = ansi.FG_GREEN},
+			{fg = ansi.FG_YELLOW},
+			{fg = ansi.FG_BLUE},
+			{fg = ansi.FG_MAGENTA},
+			{fg = ansi.FG_CYAN},
+			{fg = ansi.FG_WHITE},
+		}
+
+		pick := colors[gvn % len(colors)]
+
+		if pick.fg != "" {
+			append(&sb.buf, ansi.CSI)
+			append(&sb.buf, pick.fg)
+			append(&sb.buf, ansi.SGR)
+		}
+
+		if pick.bg != "" {
+			append(&sb.buf, ansi.CSI)
+			append(&sb.buf, pick.bg)
+			append(&sb.buf, ansi.SGR)
+		}
 	}
 }
 

@@ -9,7 +9,6 @@ import "core:mem/virtual"
 import "core:odin/ast"
 import "core:odin/parser"
 import "core:os"
-import "core:reflect"
 import "core:strconv"
 import "core:strings"
 import "core:sync"
@@ -208,8 +207,28 @@ disasm :: proc(sb: ^strings.Builder, instructions: []u8) {
 highlight_disasm :: proc(disasm: string) -> string {
 	text := disasm
 
-	for field, i in reflect.enum_fields_zipped(backend.X64_Reg)[:16] {
-		name := strings.to_lower(field.name)
+	gp_register_names := []string {
+		"rax",
+		"rbx",
+		"rcx",
+		"rdx",
+		"rsi",
+		"rdi",
+		"rbp",
+		"rsp",
+		"r8",
+		"r9",
+		"r10",
+		"r11",
+		"r12",
+		"r13",
+		"r14",
+		"r15",
+		"rip",
+		"rflags",
+	}
+
+	for name, i in gp_register_names {
 		highlight: strings.Builder
 
 		backend.ansi_start(&highlight, i)
@@ -380,7 +399,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string) {
 	sb: strings.Builder
 	if backend.REGLOGS {
 		append(&sb.buf, "\n")
-		backend.graph_display(&sb, &graph, &schedule, regs)
+		backend.graph_display(&sb, &graph, &schedule, regs = regs)
 		log.info(string(sb.buf[:]))
 	}
 

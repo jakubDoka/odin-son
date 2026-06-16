@@ -299,7 +299,7 @@ main :: proc() -> int {
 ```
 
 #### nested loops
-```!odin
+```odin
 package main
 
 main :: proc() -> int {

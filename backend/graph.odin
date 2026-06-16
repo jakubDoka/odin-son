@@ -277,7 +277,8 @@ graph_get_scope_value :: proc(
 	if vnode.btype == .Scope {
 		pval := val
 		val = graph_get_scope_value(graph, val, idx)
-		if graph_get(graph, val).itype != .Lazy_Phi {
+		cvnode := graph_expand(graph, val)
+		if cvnode.itype != .Lazy_Phi || vnode.inps[0] != cvnode.inps[0] {
 			val = graph_add_lazyPhi(
 				graph,
 				"lphi",
@@ -385,9 +386,10 @@ graph_clone :: proc(graph: ^Graph, id: Node_ID) -> Node_ID {
 	idx := graph_get_next_extra_slot(graph, node.rtype)
 	extra := graph_extra_dwords(graph, node)
 	copy(idx[:len(extra)], extra)
+	push_node_name(graph, graph_get_node_name(graph, id))
 	new := graph_add_raw(graph, node.rtype, node.dt, node.inps)
 	graph_get(graph, new).ordered_input_count = node.ordered_input_count
-	//graph.dont_intern = false
+	graph.dont_intern = false
 	return new
 }
 
@@ -714,9 +716,9 @@ graph_display :: proc(
 
 		for instr in bb.instrs {
 			inode := graph_get(graph, instr)
-			if inode.itype == .Phi {
-				continue
-			}
+			//if inode.itype == .Phi {
+			//	continue
+			//}
 
 			append(&sb.buf, "  ")
 			if len(regs) != 0 {
@@ -894,24 +896,26 @@ ansi_end :: proc(sb: ^strings.Builder) {
 	}
 }
 
-graph_display_node_gvn :: proc(
-	sb: ^strings.Builder,
-	graph: ^Graph,
-	id: Node_ID,
-) {
-	gvn := graph_get(graph, id).gvn
-
-	ansi_start(sb, gvn)
-
-	name := ""
+graph_get_node_name :: proc(graph: ^Graph, id: Node_ID) -> (name: string) {
 	when NODE_NAMES {
 		copy(
 			reflect.as_bytes(name),
 			graph.mem.ptr[int(id) * PRECISION - PREFIX_SIZE:][:PREFIX_SIZE],
 		)
 	}
+	return
+}
 
-	fmt.sbprintf(sb, "#%v%v", gvn, name)
+graph_display_node_gvn :: proc(
+	sb: ^strings.Builder,
+	graph: ^Graph,
+	id: Node_ID,
+) {
+	n := graph_get(graph, id)
+
+	ansi_start(sb, n.gvn)
+
+	fmt.sbprintf(sb, "#%v%v", n.gvn, graph_get_node_name(graph, id))
 
 	ansi_end(sb)
 }

@@ -125,6 +125,10 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 			if graph_extra(graph, out.id, Cfg_Extra) != nil do continue
 			ctx.nodes[onode.gvn] = out.id
 		}
+	}
+
+	for id in cfg_rpos {
+		ctrl := graph_expand(graph, id)
 
 		for out in ctrl.outs {
 			onode := graph_expand(graph, out.id)
@@ -192,8 +196,20 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 
 	for &bb in bbs {
 		if bb.tail == 0 do continue
+		schedule_block(graph, &bb)
 		append(&bb.instrs, bb.tail)
 	}
 
 	gs.bbs = bbs[:]
+
+	schedule_block :: proc(graph: ^Graph, bb: ^Graph_Basic_Block) {
+		phi_count := 0
+		for instr, i in bb.instrs {
+			if graph_get(graph, instr).itype == .Phi {
+				ordered_remove(&bb.instrs, i)
+				inject_at(&bb.instrs, phi_count, instr)
+				phi_count += 1
+			}
+		}
+	}
 }

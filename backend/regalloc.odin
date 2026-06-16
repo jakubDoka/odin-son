@@ -240,6 +240,8 @@ regalloc_round :: proc(
 	rev_gvn -= 1
 	graph_get(graph, NODE_START).gvn = u32(rev_gvn)
 
+	log_lrgs(&ctx)
+
 	for bb, i in sched.bbs {
 		graph_get(graph, bb.head).gvn = u32(block_base + i)
 		for instr in bb.instrs {
@@ -256,8 +258,6 @@ regalloc_round :: proc(
 			}
 		}
 	}
-
-	log_lrgs(&ctx)
 
 	Stage :: enum int {
 		None,
@@ -484,12 +484,14 @@ regalloc_round :: proc(
 			pred_bb := sched.bbs[pred_bb_idx]
 			pred_liveouts := &blocks[pred_bb_idx].liveouts
 
+			changed := false
+
 			for lrg, n in current_liveouts {
 				lrg := &lrgs[lrg]
 				n := n
 				n.area += n.last_pos
 				n.last_pos = u32(len(pred_bb.instrs))
-				add_liveout(&ctx, pred_liveouts, lrg, n)
+				changed |= add_liveout(&ctx, pred_liveouts, lrg, n)
 			}
 
 			for out in head.outs {
@@ -498,13 +500,17 @@ regalloc_round :: proc(
 					lrg := ctx.lrg_table[onode.gvn]
 					n := onode.inps[1 + i]
 
-					add_liveout(
+					changed |= add_liveout(
 						&ctx,
 						pred_liveouts,
 						lrg,
 						{node = n, last_pos = u32(len(pred_bb.instrs))},
 					)
 				}
+			}
+
+			if changed {
+				queue.push_back(&worklist, u32(pred_bb_idx))
 			}
 		}
 
@@ -812,7 +818,14 @@ regalloc_round :: proc(
 
 	return
 
-	add_liveout :: proc(ctx: ^Ctx, louts: ^Liveouts, lrg: ^Lrg, n: Liveout) {
+	add_liveout :: proc(
+		ctx: ^Ctx,
+		louts: ^Liveouts,
+		lrg: ^Lrg,
+		n: Liveout,
+	) -> (
+		chanded: bool,
+	) {
 		n := n
 		assert(n.node != 0)
 
@@ -820,8 +833,11 @@ regalloc_round :: proc(
 		if ok {
 			add_conflict(ctx, lrg, n.node, v.node)
 		}
+		chanded = v.node != n.node
 		n.area = max(n.area, v.area)
 		louts[lrg.index] = n
+
+		return
 
 		// TODO: there is most likey a bug in the builting hash map
 		// implementation, once it gets fixed, we will use this again

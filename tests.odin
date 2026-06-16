@@ -569,3 +569,47 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) nested_loops :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc() -> int {
+	x := 3
+	sum := 0
+	i := 0
+	for {
+		if i == x do break
+		j := 0
+		for {
+			if j == x do break
+			sum += i * j
+			j += 1
+		}
+		i += 1
+	}
+
+	return sum
+}
+
+run_test(t, `nested_loops`, `
+package main
+
+main :: proc() -> int {
+	x := 3
+	sum := 0
+	i := 0
+	for {
+		if i == x do break
+		j := 0
+		for {
+			if j == x do break
+			sum += i * j
+			j += 1
+		}
+		i += 1
+	}
+
+	return sum
+}
+`, main_())
+}

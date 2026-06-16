@@ -409,9 +409,11 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 	clear(&sb.buf)
 	disasm(&sb, output.code)
 
-	if err == .Not_Exist || #config(ACCEPT, false) {
+	if #config(ACCEPT, false) {
 		err := os.write_entire_file(diff_path, sb.buf[:])
 		assert(err == nil)
+	} else if err == .Not_Exist {
+		log.error("\n", highlight_disasm(string(sb.buf[:])), sep = "")
 	} else {
 		assert(err == nil)
 		new, old := string(sb.buf[:]), string(file)

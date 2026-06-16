@@ -2,6 +2,7 @@ package backend
 
 import "../vendored/gam/util/bit_arr"
 import "core:fmt"
+import "core:log"
 import "core:slice"
 
 Graph_Basic_Block :: struct {
@@ -22,7 +23,7 @@ graph_idom_node :: proc(graph: ^Graph, node: ^Node) -> Node_ID {
 	#partial switch node.itype {
 	case .Start:
 		return 0
-	case .Entry, .Return, .If, .Else, .Then, .Jump:
+	case .Entry, .Return, .If, .Else, .Then, .Jump, .Loop:
 		return inps[0]
 	case .Region:
 		assert(len(inps) == 2)
@@ -49,7 +50,7 @@ graph_idepth_node :: proc(graph: ^Graph, node: ^Node) -> u32 {
 
 	#partial switch node.itype {
 	case .Start:
-	case .Entry, .Return, .If, .Else, .Then, .Jump:
+	case .Entry, .Return, .If, .Else, .Then, .Jump, .Loop:
 		extra.idepth = 1 + graph_idepth(graph, inps[0])
 	case .Region:
 		assert(len(inps) == 2)
@@ -87,7 +88,8 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 		for o in node.outs {
 			onode := graph_get(graph, o.id)
 			if graph_extra(graph, o.id, Cfg_Extra) != nil {
-				if onode.itype == .Region && node.itype != .Jump {
+				if (onode.itype == .Region || onode.itype == .Loop) &&
+				   node.itype != .Jump {
 					jmp := graph_add_jump(graph, "jump", root)
 					graph_set_input(graph, o.id, o.idx, jmp)
 					cfg_reverse_postorder(graph, jmp, cfg_rpos, visited)
@@ -116,6 +118,21 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 	for id in cfg_rpos {
 		ctrl := graph_expand(graph, id)
 		ctx.early_schedules[ctrl.gvn] = id
+
+		for out in ctrl.outs {
+			onode := graph_expand(graph, out.id)
+			ctx.early_schedules[onode.gvn] = id
+			if graph_extra(graph, out.id, Cfg_Extra) != nil do continue
+			ctx.nodes[onode.gvn] = out.id
+		}
+
+		for out in ctrl.outs {
+			onode := graph_expand(graph, out.id)
+			for i in onode.inps {
+				if graph_extra(graph, i, Cfg_Extra) != nil do continue
+				sched_early(ctx, i)
+			}
+		}
 
 		for i in ctrl.inps {
 			if graph_extra(graph, i, Cfg_Extra) != nil do continue
@@ -156,7 +173,14 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 			extra.bb_idx = u32(bb_idx)
 			bb_idx += 1
 
-			append(&bbs, Graph_Basic_Block{head = id, tail = cfg_rpos[i + 1]})
+			tail: Node_ID
+			if i + 1 < len(cfg_rpos) &&
+			   !graph_has_flag(graph, cfg_rpos[i + 1], .Is_Basic_Block_Start) {
+				tail = cfg_rpos[i + 1]
+			} else {
+				log.error("oob gcm schedule")
+			}
+			append(&bbs, Graph_Basic_Block{head = id, tail = tail})
 		}
 	}
 
@@ -167,6 +191,7 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 	}
 
 	for &bb in bbs {
+		if bb.tail == 0 do continue
 		append(&bb.instrs, bb.tail)
 	}
 

@@ -44,12 +44,16 @@ graph_add_input_node_id :: #force_inline proc(
 ) -> int {
 	return graph_add_input_node(graph, graph_get(graph, id), inp, is_scope)
 }
+graph_add_extra_input :: proc{graph_add_extra_input_node, graph_add_extra_input_node_id}
+graph_add_extra_input_node_id :: #force_inline proc(graph: ^Graph, id: Node_ID, inp: Node_ID) {
+	graph_add_extra_input_node(graph, graph_get(graph, id), inp)
+}
 graph_add_output :: proc{graph_add_output_node, graph_add_output_node_id}
 graph_add_output_node_id :: #force_inline proc(
 	graph: ^Graph,
 	id: Node_ID,
 	out: Node_ID,
-	i: int,
+	#any_int i: int,
 ) {
 	graph_add_output_node(graph, graph_get(graph, id), out, i)
 }

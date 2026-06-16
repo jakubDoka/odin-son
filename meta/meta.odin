@@ -153,7 +153,19 @@ main :: proc() {
 					"@(test) %v :: proc(t: ^testing.T) {{",
 					rall_name,
 				)
-				fmt.fprintfln(file, "run_test(t, `%v`, `%v`)", rall_name, code)
+				inlined, _ := strings.replace_all(code, "package main", "")
+				inlined, _ = strings.replace_all(
+					inlined,
+					"main ::",
+					"main_ ::",
+				)
+				fmt.fprintfln(file, "%v", inlined)
+				fmt.fprintfln(
+					file,
+					"run_test(t, `%v`, `%v`, main_())",
+					rall_name,
+					code,
+				)
 				fmt.fprintfln(file, "}}")
 			}
 		}

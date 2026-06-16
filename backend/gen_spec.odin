@@ -27,11 +27,35 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 		no_ctrl = true,
 		flags = {.Interned},
 	},
-	.Add ..= .Eq = {id = No_Extra, args = {"lhs", "rhs"}, no_ctrl = true, flags = {.Comutes}},
+	.Add = {
+		id = No_Extra,
+		args = {"lhs", "rhs"},
+		no_ctrl = true,
+		flags = {.Comutes},
+	},
+	.Sub = {id = No_Extra, args = {"lhs", "rhs"}, no_ctrl = true},
+	.Mul = {
+		id = No_Extra,
+		args = {"lhs", "rhs"},
+		no_ctrl = true,
+		flags = {.Comutes},
+	},
+	.Eq = {
+		id = No_Extra,
+		args = {"lhs", "rhs"},
+		no_ctrl = true,
+		flags = {.Comutes},
+	},
 	.Split = {id = No_Extra, args = {"dest"}, no_ctrl = true},
 	.Phi = {id = No_Extra, args = {"reg", "lhs", "rhs"}, no_ctrl = true},
+	.Lazy_Phi = {
+		id = No_Extra,
+		args = {"reg", "lhs"},
+		no_ctrl = true,
+		extra_capacity = 1,
+	},
 	.If = {id = Cfg_Extra, args = {"ctrl", "cond"}, default_type = .Void},
-	.Then ..= .Else = {id = Cfg_Extra, args = {"cfg"}, default_type = .Void, flags = {.Is_Basic_Block_Start}},
+	.Then ..= .Else = {id = Cfg_Extra, args = {"ctrl"}, default_type = .Void, flags = {.Is_Basic_Block_Start}},
 	.Jump = {
 		id = Cfg_Extra,
 		args = {"ctrl"},
@@ -43,6 +67,13 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 		args = {"rcfg", "lcfg"},
 		default_type = .Void,
 		flags = {.Is_Basic_Block_Start},
+	},
+	.Loop = {
+		id = Cfg_Extra,
+		args = {"ctrl"},
+		default_type = .Void,
+		flags = {.Is_Basic_Block_Start},
+		extra_capacity = 1,
 	},
 	.Return = {
 		id = Cfg_Extra,
@@ -68,13 +99,14 @@ Class_Array :: struct {
 }
 
 Class_Spec :: struct {
-	id:           typeid,
-	args:         []string,
-	extra_args:   []string,
-	varargs:      bool,
-	default_type: Maybe(Node_Datatype),
-	flags:        Class_Flags,
-	no_ctrl:      bool,
+	id:             typeid,
+	args:           []string,
+	extra_args:     []string,
+	varargs:        bool,
+	default_type:   Maybe(Node_Datatype),
+	flags:          Class_Flags,
+	no_ctrl:        bool,
+	extra_capacity: int,
 }
 
 Reg_Class_Spec :: struct {
@@ -88,15 +120,18 @@ Ideal_Node_Type :: enum u16 {
 	Entry,
 	CInt,
 	Add,
+	Sub,
 	Mul,
 	Eq,
 	Split,
+	Lazy_Phi,
 	Phi,
 	If,
 	Then,
 	Else,
 	Jump,
 	Region,
+	Loop,
 	Return,
 }
 
@@ -117,7 +152,6 @@ when (#load("node_specs.odin", string) or_else "") == "" {
 			args = {"cfg"},
 			default_type = .Void,
 			no_ctrl = true,
-			flags = {.Immortal},
 		},
 	}
 
@@ -153,6 +187,14 @@ when (#load("node_specs.odin", string) or_else "") == "" {
 		graph: ^Graph,
 		name: string,
 		ctrl: Node_ID,
+	) -> Node_ID {return 0}
+
+	graph_add_lazyPhi :: proc(
+		graph: ^Graph,
+		name: string,
+		dt: Node_Datatype,
+		region: Node_ID,
+		lhs: Node_ID,
 	) -> Node_ID {return 0}
 
 	when !GEN_SPEC {
@@ -583,6 +625,14 @@ generate_specs :: proc() {
 					os.write_string(file, ", {0}")
 				} else {
 					os.write_string(file, ", {}")
+				}
+
+				if class.extra_capacity != 0 {
+					fmt.fprintf(
+						file,
+						", extra_capacity = %v",
+						class.extra_capacity,
+					)
 				}
 
 				os.write_string(file, ")\n")

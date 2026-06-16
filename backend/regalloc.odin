@@ -7,6 +7,7 @@ import "base:runtime"
 import "core:container/queue"
 import "core:fmt"
 import "core:log"
+import "core:math/rand"
 import "core:mem"
 import "core:sort"
 import "core:strings"
@@ -256,6 +257,8 @@ regalloc_round :: proc(
 		}
 	}
 
+	log_lrgs(&ctx)
+
 	Stage :: enum int {
 		None,
 		Build_Lrgs,
@@ -333,6 +336,10 @@ regalloc_round :: proc(
 						continue
 					}
 
+					if onode.itype == .Phi {
+						lrg = unify(lrg, ctx.lrg_table[onode.gvn])
+					}
+
 					mask := reg_mask_of(graph, ra, o.id, o.idx)
 					intersect(lrg, mask)
 				}
@@ -351,6 +358,9 @@ regalloc_round :: proc(
 	//log_lrgs(graph, sched, lrg_table)
 
 	arena := arna.allocator(ra)
+	drg_state: rand.PCG_Random_State
+	context.random_generator = rand.pcg_random_generator(&drg_state)
+	runtime.random_generator_reset_u64(context.random_generator, 0)
 
 	Liveout :: struct {
 		node:     Node_ID,
@@ -358,7 +368,7 @@ regalloc_round :: proc(
 		last_pos: u32,
 	}
 
-	Liveouts :: map[^Lrg]Liveout
+	Liveouts :: map[u32]Liveout
 
 	Block :: struct {
 		liveouts: Liveouts,
@@ -391,13 +401,13 @@ regalloc_round :: proc(
 
 	current_liveouts: Liveouts
 	for b in queue.pop_front_safe(&worklist) {
-
 		bb := sched.bbs[b]
-		lbb := blocks[b]
+		lbb := &blocks[b]
 		bb_head := graph_get(graph, bb.head)
 
 		clear(&current_liveouts)
 		for k, v in lbb.liveouts {
+			assert(v.node != 0)
 			current_liveouts[k] = v
 		}
 
@@ -406,8 +416,8 @@ regalloc_round :: proc(
 
 			if inode.dt != .Void {
 				lrg := ctx.lrg_table[inode.gvn]
-				k, v := delete_key(&current_liveouts, lrg)
-				if k == lrg {
+				_, v := delete_key(&current_liveouts, lrg.index)
+				if v.node != 0 {
 					if add_conflict(&ctx, lrg, v.node, instr) {
 						v.area += v.last_pos - u32(i)
 						add_area(lrg, v)
@@ -415,6 +425,7 @@ regalloc_round :: proc(
 				}
 
 				for l in current_liveouts {
+					l := &lrgs[l]
 					if !reg_mask_intersects(l.mask, lrg.mask) do continue
 
 					pair := []^Lrg{lrg, l}
@@ -449,6 +460,7 @@ regalloc_round :: proc(
 				for inp in inode.inps[inode.data_start:] {
 					inp_node := graph_get(graph, inp)
 					lrg := ctx.lrg_table[inp_node.gvn]
+
 					add_liveout(
 						&ctx,
 						&current_liveouts,
@@ -473,6 +485,7 @@ regalloc_round :: proc(
 			pred_liveouts := &blocks[pred_bb_idx].liveouts
 
 			for lrg, n in current_liveouts {
+				lrg := &lrgs[lrg]
 				n := n
 				n.area += n.last_pos
 				n.last_pos = u32(len(pred_bb.instrs))
@@ -596,7 +609,7 @@ regalloc_round :: proc(
 
 	prev_gvn := graph.gvn
 
-	has_failed: bool
+	color_fails: int
 
 	failed := make([dynamic]^Lrg, arena)
 
@@ -606,7 +619,7 @@ regalloc_round :: proc(
 
 		if lrg.failed {
 			append(&failed, &lrg)
-			has_failed |= lrg.failed_to_color
+			color_fails += int(lrg.failed_to_color)
 			ok = false
 			members := make([dynamic]Node_ID, arena)
 			append(&members, id)
@@ -677,7 +690,7 @@ regalloc_round :: proc(
 		}
 	}
 
-	if has_failed {
+	if color_fails > 0 {
 		order := arna.smake(ra, []bit_field u64 {
 				id:            u32 | 32,
 				biggest_split: u32 | 32,
@@ -801,12 +814,26 @@ regalloc_round :: proc(
 
 	add_liveout :: proc(ctx: ^Ctx, louts: ^Liveouts, lrg: ^Lrg, n: Liveout) {
 		n := n
-		_, slot, just_inserted, _ := map_entry(louts, lrg)
-		if !just_inserted {
-			add_conflict(ctx, lrg, n.node, slot^.node)
+		assert(n.node != 0)
+
+		v, ok := louts[lrg.index]
+		if ok {
+			add_conflict(ctx, lrg, n.node, v.node)
 		}
-		n.area = max(n.area, slot.area)
-		slot^ = n
+		n.area = max(n.area, v.area)
+		louts[lrg.index] = n
+
+		// TODO: there is most likey a bug in the builting hash map
+		// implementation, once it gets fixed, we will use this again
+
+		//k, slot, just_inserted, err := map_entry(louts, lrg)
+		//assert(k^ == lrg)
+		//assert(err == nil)
+		//if !just_inserted {
+		//	add_conflict(ctx, lrg, n.node, slot^.node)
+		//}
+		//n.area = max(n.area, slot.area)
+		//slot^ = n
 	}
 
 	get_lrg :: proc(ctx: Ctx, node: Node_ID) -> ^Lrg {
@@ -948,6 +975,7 @@ regalloc_round :: proc(
 		if a == b do return a
 
 		a, b = find(a), find(b)
+		if a == b do return a
 
 		if a.rank < b.rank {
 			a, b = b, a
@@ -960,6 +988,8 @@ regalloc_round :: proc(
 		if a.rank == b.rank {
 			a.rank += 1
 		}
+
+		assert(find(a) != nil) // just assert find works
 
 		return a
 	}
@@ -1003,6 +1033,7 @@ regalloc_round :: proc(
 			bb: Graph_Basic_Block,
 		) {
 			ctx := (^Ctx)(context.user_ptr)
+			if len(ctx.lrg_table) == 0 do return
 			if instr.dt != .Void {
 				lrg := ctx.lrg_table[instr.gvn]
 				fmt.sbprintf(sb, "%v:", lrg.mask)

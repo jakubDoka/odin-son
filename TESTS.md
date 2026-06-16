@@ -8,7 +8,7 @@ like, making an example is too much for me.
 ```odin
 package main
 
-return_value :: 69
+opt_level :: "none"
 
 main :: proc() -> int {
 	return 69
@@ -19,7 +19,6 @@ main :: proc() -> int {
 ```odin
 package main
 
-return_value :: 7
 opt_level :: "none"
 
 main :: proc() -> int {
@@ -31,7 +30,6 @@ main :: proc() -> int {
 ```odin
 package main
 
-return_value :: 6
 opt_level :: "none"
 
 main :: proc() -> int {
@@ -43,7 +41,6 @@ main :: proc() -> int {
 ```odin
 package main
 
-return_value :: 18
 opt_level :: "none"
 
 main :: proc() -> int {
@@ -55,7 +52,6 @@ main :: proc() -> int {
 ```odin
 package main
 
-return_value :: 32
 opt_level :: "none"
 
 main :: proc() -> int {
@@ -70,7 +66,6 @@ main :: proc() -> int {
 ```odin
 package main
 
-return_value :: 42
 opt_level :: "none"
 
 main :: proc() -> int {
@@ -84,7 +79,6 @@ main :: proc() -> int {
 ```odin
 package main
 
-return_value :: 45701539774315
 opt_level :: "none"
 
 main :: proc() -> int {
@@ -138,7 +132,6 @@ main :: proc() -> int {
 ```odin
 package main
 
-return_value :: 52074
 opt_level :: "none"
 
 main :: proc() -> int {
@@ -194,7 +187,6 @@ main :: proc() -> int {
 ```odin
 package main
 
-return_value :: 100
 opt_level :: "none"
 
 main :: proc() -> int {
@@ -212,7 +204,6 @@ main :: proc() -> int {
 ```odin
 package main
 
-return_value :: 5484395
 opt_level :: "none"
 
 main :: proc() -> int {
@@ -284,5 +275,48 @@ main :: proc() -> int {
 		d0+d1+d2+d3+
 		e0+e1+e2+e3+
 		f0+f1+f2+f3
+}
+```
+
+#### loops
+```odin
+package main
+
+main :: proc() -> int {
+	n := 10
+	a := 0
+	b := 1
+	for {
+		c := a + b
+		a = b
+		b = c
+		if n == 0 do break
+		n -= 1
+	}
+
+	return a
+}
+```
+
+#### nested loops
+```!odin
+package main
+
+main :: proc() -> int {
+	x := 3
+	sum := 0
+	i := 0
+	for {
+		if i == x do break
+		j := 0
+		for {
+			if j == x do break
+			sum += i * j
+			j += 1
+		}
+		i += 1
+	}
+
+	return sum
 }
 ```

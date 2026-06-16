@@ -62,7 +62,9 @@ Region :: struct {
 	using base: Cfg_Extra,
 }
 
-Scope :: struct {}
+Scope :: struct #align (4) {
+	done: bool,
+}
 
 CInt :: struct #align (4) {
 	value: i64,
@@ -114,13 +116,15 @@ Node_Intern_Entry :: struct {
 }
 
 Graph :: struct {
-	using node_spec: ^Node_Spec,
-	interner:        #soa[]Node_Intern_Entry,
-	interner_len:    int,
-	mem:             ^arna.Allocator,
-	gvn:             u32,
-	end:             Node_ID,
-	dont_intern:     bool,
+	using node_spec:        ^Node_Spec,
+	interner:               #soa[]Node_Intern_Entry,
+	interner_len:           int,
+	mem:                    ^arna.Allocator,
+	gvn:                    u32,
+	end:                    Node_ID,
+	dont_intern:            bool,
+	// TODO: somehow comment this out on release, idk how
+	is_in_transition_state: bool,
 }
 
 Intern_Vec :: #simd[16]u8
@@ -151,6 +155,8 @@ graph_interner_find :: proc(graph: ^Graph, id: Node_ID) -> (int, u8, bool) {
 }
 
 graph_intern :: proc(graph: ^Graph, id: Node_ID) -> Node_ID {
+	assert(!graph.is_in_transition_state)
+
 	if .Interned not_in graph.node_flags[graph_get(graph, id).itype] ||
 	   graph.dont_intern {
 		return id
@@ -190,6 +196,8 @@ graph_intern :: proc(graph: ^Graph, id: Node_ID) -> Node_ID {
 }
 
 graph_unintern :: proc(graph: ^Graph, id: Node_ID) {
+	assert(!graph.is_in_transition_state)
+
 	if .Interned in graph.node_flags[graph_get(graph, id).itype] &&
 	   !graph.dont_intern {
 		idx, _, _ := graph_interner_find(graph, id)
@@ -197,6 +205,44 @@ graph_unintern :: proc(graph: ^Graph, id: Node_ID) {
 		graph.interner_len -= 1
 		graph.interner[idx] = graph.interner[graph.interner_len]
 		graph.interner[graph.interner_len] = {}
+	}
+}
+
+graph_subsume :: proc(graph: ^Graph, with: Node_ID, target: Node_ID) {
+	// TODO: explain this to AI and try to make it find bugs here
+
+	wnode := graph_expand(graph, with)
+	tnode := graph_expand(graph, target)
+
+	graph_ensure_available_output_cap(graph, wnode, tnode.output_count)
+
+	wnode.output_count += tnode.output_count
+	tnode.output_count = 0
+
+	wnode = graph_expand(graph, with)
+	copy(wnode.outs[len(wnode.outs) - len(tnode.outs):], tnode.outs)
+
+	for out in tnode.outs {
+		graph_unintern(graph, out.id)
+		graph_inps(graph, out.id)[out.idx] = with
+	}
+	graph_delete(graph, tnode)
+
+	wnode = graph_expand(graph, with)
+
+	keep := 0
+	for out in tnode.outs {
+		for oout in wnode.outs {
+			if out == oout {
+				tnode.outs[keep] = out
+				keep += 1
+			}
+		}
+	}
+	tnode.outs = tnode.outs[:keep]
+
+	for out in tnode.outs {
+		graph_intern(graph, out.id)
 	}
 }
 
@@ -225,7 +271,26 @@ graph_get_scope_value :: proc(
 ) -> Node_ID {
 	scope_node := graph_get(graph, scope)
 	assert(scope_node.btype == .Scope)
-	return graph_inps(graph, scope_node)[idx]
+
+	val := graph_inps(graph, scope_node)[idx]
+	vnode := graph_expand(graph, val)
+	if vnode.btype == .Scope {
+		pval := val
+		val = graph_get_scope_value(graph, val, idx)
+		if graph_get(graph, val).itype != .Lazy_Phi {
+			val = graph_add_lazyPhi(
+				graph,
+				"lphi",
+				graph_get(graph, val).dt,
+				vnode.inps[0],
+				val,
+			)
+			graph_set_input(graph, pval, idx, val)
+		}
+		graph_set_input(graph, scope, idx, val)
+	}
+
+	return val
 }
 
 graph_push_scope_value :: proc(
@@ -251,8 +316,9 @@ graph_truncate_scope :: proc(
 	assert(snode.btype == .Scope)
 	assert(to_len <= int(snode.ordered_input_count))
 
-	for inp, i in snode.inps[to_len:snode.ordered_input_count] {
+	for &inp, i in snode.inps[to_len:snode.ordered_input_count] {
 		graph_remove_output(graph, inp, {idx = to_len + i, id = scope})
+		inp = 0
 	}
 
 	snode.ordered_input_count = u16(to_len)
@@ -321,6 +387,7 @@ graph_clone :: proc(graph: ^Graph, id: Node_ID) -> Node_ID {
 	copy(idx[:len(extra)], extra)
 	new := graph_add_raw(graph, node.rtype, node.dt, node.inps)
 	graph_get(graph, new).ordered_input_count = node.ordered_input_count
+	//graph.dont_intern = false
 	return new
 }
 
@@ -331,7 +398,7 @@ graph_remove_output_node :: proc(
 	out: Node_Output,
 ) {
 	outs := graph_outs(graph, node)
-	out_idx, _ := slice.linear_search(outs, out)
+	out_idx := slice.linear_search(outs, out) or_else panic("")
 	outs[out_idx] = outs[len(outs) - 1]
 	node.output_count -= 1
 	graph_delete(graph, node, indirect = true)
@@ -365,7 +432,7 @@ graph_node_hash_node :: proc(graph: ^Graph, node: ^Node) -> (hash: u32) {
 	return
 }
 
-graph_id :: proc(graph: ^Graph, node: ^Node) -> Node_ID {
+graph_id :: #force_inline proc(graph: ^Graph, node: ^Node) -> Node_ID {
 	return Node_ID((uintptr(node) - uintptr(graph.mem.ptr)) / PRECISION)
 }
 
@@ -380,6 +447,7 @@ graph_delete_node :: proc(graph: ^Graph, node: ^Node, indirect := false) {
 		graph_remove_output(graph, inp, {idx = i, id = id})
 	}
 
+	graph_unintern(graph, graph_id(graph, node))
 	node^ = {}
 }
 
@@ -461,6 +529,7 @@ graph_add_raw :: proc(
 	type: u16,
 	dt: Node_Datatype,
 	inps: []Node_ID,
+	extra_capacity: int = 0,
 ) -> (
 	id: Node_ID,
 ) {
@@ -479,7 +548,12 @@ graph_add_raw :: proc(
 		input_count         = u16(len(inps)),
 	}
 
-	new_inps := arna.alloc(graph.mem, uint(len(inps) * PRECISION), PRECISION)
+	new_inps := arna.alloc(
+		graph.mem,
+		uint(int(len(inps) + extra_capacity) * PRECISION),
+		PRECISION,
+		zeroed = ODIN_DEBUG,
+	)
 	copy(mem.slice_data_cast([]Node_ID, new_inps), inps)
 
 	inode := graph_intern(graph, id)
@@ -539,20 +613,36 @@ graph_add_input_node :: proc(
 }
 
 @(tag = "node_proc")
-graph_add_output_node :: proc(
+graph_add_extra_input_node :: proc(graph: ^Graph, node: ^Node, inp: Node_ID) {
+	node.input_count += 1
+	node.ordered_input_count += 1
+	graph_inps(graph, node)[node.input_count - 1] = inp
+	graph_add_output(graph, inp, graph_id(graph, node), node.input_count - 1)
+}
+
+graph_ensure_available_output_cap :: proc(
 	graph: ^Graph,
 	node: ^Node,
-	out: Node_ID,
-	i: int,
+	available: u16,
 ) {
-	if node.output_cap == node.output_count {
+	if node.output_cap - node.output_count < available {
 		base := u32(graph.mem.pos / PRECISION)
-		new_cap := node.output_cap * 2 + 2
+		new_cap := max(node.output_cap * 2 + 2, node.output_cap + available)
 		slot := arna.alloc(graph.mem, uint(new_cap * PRECISION), PRECISION)
 		copy(mem.slice_data_cast([]Node_Output, slot), graph_outs(graph, node))
 		node.output_cap = new_cap
 		node.output_idx = base
 	}
+}
+
+@(tag = "node_proc")
+graph_add_output_node :: proc(
+	graph: ^Graph,
+	node: ^Node,
+	out: Node_ID,
+	#any_int i: int,
+) {
+	graph_ensure_available_output_cap(graph, node, 1)
 
 	node.output_count += 1
 	assert(i < 256)
@@ -609,40 +699,46 @@ graph_display :: proc(
 	prefix: proc(_: ^strings.Builder, _: ^Node, _: Graph_Basic_Block) = nil,
 	regs: []Reg = {},
 ) {
-	if ctx != nil {
-		for bb in ctx.bbs {
-			graph_display_node(sb, graph, bb.head)
+	ctx := ctx
+	our_ctx: Graph_Schedule
 
-			append(&sb.buf, " {\n")
+	if ctx == nil {
+		graph_schedule(graph, &our_ctx)
+		ctx = &our_ctx
+	}
 
-			for instr in bb.instrs {
-				inode := graph_get(graph, instr)
-				if inode.itype == .Phi {
-					continue
-				}
+	for bb in ctx.bbs {
+		graph_display_node(sb, graph, bb.head)
 
-				append(&sb.buf, "  ")
-				if len(regs) != 0 {
-					if inode.dt != .Void {
-						reg := regs[inode.gvn]
-						fmt.sbprintf(
-							sb,
-							"%v%03i",
-							reg_kind_char(reg.kind),
-							reg.index,
-						)
-					} else {
-						append(&sb.buf, "    ")
-					}
-				} else if prefix != nil {
-					prefix(sb, inode, bb)
-				}
-				graph_display_node(sb, graph, instr)
-				append(&sb.buf, "\n")
+		append(&sb.buf, " {\n")
+
+		for instr in bb.instrs {
+			inode := graph_get(graph, instr)
+			if inode.itype == .Phi {
+				continue
 			}
 
-			append(&sb.buf, "}\n")
+			append(&sb.buf, "  ")
+			if len(regs) != 0 {
+				if inode.dt != .Void {
+					reg := regs[inode.gvn]
+					fmt.sbprintf(
+						sb,
+						"%v%03i",
+						reg_kind_char(reg.kind),
+						reg.index,
+					)
+				} else {
+					append(&sb.buf, "    ")
+				}
+			} else if prefix != nil {
+				prefix(sb, inode, bb)
+			}
+			graph_display_node(sb, graph, instr)
+			append(&sb.buf, "\n")
 		}
+
+		append(&sb.buf, "}\n")
 	}
 }
 
@@ -677,12 +773,14 @@ graph_display_node :: proc(sb: ^strings.Builder, graph: ^Graph, id: Node_ID) {
 		}
 	}
 
-	for out in node.outs {
-		onode := graph_get(graph, out.id)
-		if onode.itype == .Phi {
-			if written_one do fmt.sbprintf(sb, ", ")
-			written_one = true
-			graph_display_node_gvn(sb, graph, out.id)
+	if node.itype == .Region || node.itype == .Loop {
+		for out in node.outs {
+			onode := graph_get(graph, out.id)
+			if onode.itype == .Phi {
+				if written_one do fmt.sbprintf(sb, ", ")
+				written_one = true
+				graph_display_node_gvn(sb, graph, out.id)
+			}
 		}
 	}
 

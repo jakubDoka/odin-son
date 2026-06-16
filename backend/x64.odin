@@ -41,6 +41,7 @@ X64_IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec {
 	.Split = {
 		reg_masks = #partial{.General = {GPA_SPILL_MASK, GPA_SPILL_MASK}},
 	},
+	.Lazy_Phi = {},
 	.Phi = {
 		reg_masks = #partial{
 			.General = {GPA_SPILL_MASK, GPA_SPILL_MASK, GPA_SPILL_MASK},
@@ -52,8 +53,9 @@ X64_IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec {
 	},
 	.Then = {},
 	.Else = {},
-	.Jump = {input_start_idx = 1},
 	.Region = {},
+	.Loop = {},
+	.Jump = {input_start_idx = 1},
 	.Return = {input_start_idx = 1},
 }
 
@@ -135,7 +137,7 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 	for &bb, i in ctx.bbs {
 		bb.offset = u32(ctx.code.pos)
 		for instr in bb.instrs {
-			x64_emit_instr(&ctx, instr)
+			x64_emit_instr(&ctx, instr, 0)
 		}
 	}
 
@@ -155,11 +157,11 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 }
 
 @(disabled = GEN_SPEC)
-x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID) {
+x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 	block_base := ctx.gvn - u32(len(ctx.bbs))
 	node := graph_expand(ctx, instr)
 	switch node.xtype {
-	case .Start, .Entry, .Then, .Else, .Region:
+	case .Start, .Entry, .Then, .Else, .Region, .Loop, .Lazy_Phi:
 		panic("Not reachable form here")
 	case .If:
 		cond := reg_of(ctx, node.inps[1])
@@ -199,6 +201,11 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID) {
 		rhs := reg_of(ctx, node.inps[1])
 		rx := rex(rhs, dst, RAX, true)
 		emit(ctx.code, {rx, 0x01, mod_rm(.Direct, rhs, dst)})
+	case .Sub:
+		dst := reg_of(ctx, node.inps[0])
+		rhs := reg_of(ctx, node.inps[1])
+		rx := rex(rhs, dst, RAX, true)
+		emit(ctx.code, {rx, 0x29, mod_rm(.Direct, rhs, dst)})
 	case .Mul:
 		dst := reg_of(ctx, node.inps[0])
 		rhs := reg_of(ctx, node.inps[1])

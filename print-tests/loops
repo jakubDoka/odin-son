@@ -1,0 +1,28 @@
+   48 51                               push rcx
+   48 55                               push rbp
+   48 b9 0a 00 00 00 00 00 00 00       mov rcx, 0x0A
+   48 ba 00 00 00 00 00 00 00 00       mov rdx, 0x00
+   48 b8 01 00 00 00 00 00 00 00       mov rax, 0x01
+   48 bb 00 00 00 00 00 00 00 00       mov rbx, 0x00
+   48 bd 01 00 00 00 00 00 00 00       mov rbp, 0x01
+   48 89 d6                            mov rsi, rdx
+   e9 00 00 00 00                      jmp :0
+
+00:48 89 f2                            mov rdx, rsi
+   48 01 c2                            add rdx, rax
+   48 3b d9                            cmp rbx, rcx
+   48 0f 94 c3                         setz bl
+   48 0f b6 db                         movzx rbx, bl
+   48 29 e9                            sub rcx, rbp
+   48 85 db                            test rbx, rbx
+   0f 84 05 00 00 00                   jz :1
+
+   e9 0b 00 00 00                      jmp :2
+
+01:48 89 c6                            mov rsi, rax
+   48 89 d0                            mov rax, rdx
+   e9 d3 ff ff ff                      jmp :0
+
+02:48 5d                               pop rbp
+   48 59                               pop rcx
+   c3                                  ret

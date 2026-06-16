@@ -278,7 +278,7 @@ graph_get_scope_value :: proc(
 		pval := val
 		val = graph_get_scope_value(graph, val, idx)
 		cvnode := graph_expand(graph, val)
-		if cvnode.itype != .Lazy_Phi || vnode.inps[0] != cvnode.inps[0] {
+		if cvnode.btype != .Lazy_Phi || vnode.inps[0] != cvnode.inps[0] {
 			val = graph_add_lazyPhi(
 				graph,
 				"lphi",
@@ -330,6 +330,9 @@ graph_merge_scopes :: proc(
 	lctrl: Node_ID,
 	rctrl: Node_ID,
 ) -> Node_ID {
+	if lctrl == 0 do return rctrl
+	if rctrl == 0 do return lctrl
+
 	lnode := graph_expand(graph, lctrl)
 	assert(lnode.btype == .Scope)
 	rnode := graph_expand(graph, rctrl)

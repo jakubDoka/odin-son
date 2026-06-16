@@ -17,8 +17,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{}, // Sub
 			{}, // Mul
 			{}, // Eq
+			{}, // Ne
 			{}, // Split
-			{}, // Lazy_Phi
 			{}, // Phi
 			{}, // If
 			{}, // Then
@@ -28,6 +28,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{}, // Loop
 			{}, // Return
 			{}, // Scope
+			{}, // Lazy_Phi
 		},
 		inplace_slot_idxs = {
 			-1, //Start
@@ -37,8 +38,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			-1, //Sub
 			-1, //Mul
 			-1, //Eq
+			-1, //Ne
 			-1, //Split
-			-1, //Lazy_Phi
 			-1, //Phi
 			-1, //If
 			-1, //Then
@@ -48,6 +49,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			-1, //Loop
 			-1, //Return
 			-1, //Scope
+			-1, //Lazy_Phi
 		},
 		first_input_idxs = {
 			0, //Start
@@ -57,8 +59,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, //Sub
 			0, //Mul
 			0, //Eq
+			0, //Ne
 			0, //Split
-			0, //Lazy_Phi
 			0, //Phi
 			0, //If
 			0, //Then
@@ -68,6 +70,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, //Loop
 			0, //Return
 			0, //Scope
+			0, //Lazy_Phi
 		},
 		inheritance_table = {
 			0b1, // Start
@@ -77,8 +80,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0b100, // Sub
 			0b100, // Mul
 			0b100, // Eq
+			0b100, // Ne
 			0b100, // Split
-			0b100, // Lazy_Phi
 			0b100, // Phi
 			0b1, // If
 			0b1, // Then
@@ -88,6 +91,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0b1, // Loop
 			0b1, // Return
 			0b10000, // Scope
+			0b100, // Lazy_Phi
 		},
 		node_extra_sizes = {
 			1, // Start -> Cfg_Extra
@@ -97,8 +101,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, // Sub -> No_Extra
 			0, // Mul -> No_Extra
 			0, // Eq -> No_Extra
+			0, // Ne -> No_Extra
 			0, // Split -> No_Extra
-			0, // Lazy_Phi -> No_Extra
 			0, // Phi -> No_Extra
 			1, // If -> Cfg_Extra
 			1, // Then -> Cfg_Extra
@@ -108,6 +112,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			1, // Loop -> Cfg_Extra
 			1, // Return -> Cfg_Extra
 			1, // Scope -> Scope
+			0, // Lazy_Phi -> No_Extra
 		},
 		node_flags = {
 			{}, // Start
@@ -117,8 +122,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{}, // Sub
 			{Class_Flag.Comutes}, // Mul
 			{Class_Flag.Comutes}, // Eq
+			{Class_Flag.Comutes}, // Ne
 			{}, // Split
-			{}, // Lazy_Phi
 			{}, // Phi
 			{}, // If
 			{Class_Flag.Is_Basic_Block_Start}, // Then
@@ -128,6 +133,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{Class_Flag.Is_Basic_Block_Start}, // Loop
 			{Class_Flag.Immortal}, // Return
 			{}, // Scope
+			{}, // Lazy_Phi
 		},
 		node_extra_types = {
 			Cfg_Extra,
@@ -148,6 +154,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			Cfg_Extra,
 			Cfg_Extra,
 			Scope,
+			No_Extra,
 		},
 		node_kind_name = {
 			`Start`,
@@ -157,8 +164,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			`Sub`,
 			`Mul`,
 			`Eq`,
+			`Ne`,
 			`Split`,
-			`Lazy_Phi`,
 			`Phi`,
 			`If`,
 			`Then`,
@@ -168,6 +175,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			`Loop`,
 			`Return`,
 			`Scope`,
+			`Lazy_Phi`,
 		},
 	},
 	.X64 = {
@@ -187,8 +195,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{{.General = 1}, {.General = 1}, {.General = 1}}, // Sub
 			{{.General = 1}, {.General = 1}, {.General = 1}}, // Mul
 			{{.General = 1}, {.General = 1}, {.General = 1}}, // Eq
+			{{.General = 1}, {.General = 1}, {.General = 1}}, // Ne
 			{{.General = 2}, {.General = 2}}, // Split
-			{}, // Lazy_Phi
 			{{.General = 2}, {.General = 2}, {.General = 2}}, // Phi
 			{{.General = 3}, {.General = 1}}, // If
 			{}, // Then
@@ -206,8 +214,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, //Sub
 			0, //Mul
 			0, //Eq
+			0, //Ne
 			-1, //Split
-			-1, //Lazy_Phi
 			-1, //Phi
 			-1, //If
 			-1, //Then
@@ -227,8 +235,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, //Sub
 			0, //Mul
 			0, //Eq
+			0, //Ne
 			0, //Split
-			0, //Lazy_Phi
 			0, //Phi
 			1, //If
 			0, //Then
@@ -246,8 +254,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0b100, // Sub
 			0b100, // Mul
 			0b100, // Eq
+			0b100, // Ne
 			0b100, // Split
-			0b100, // Lazy_Phi
 			0b100, // Phi
 			0b1, // If
 			0b1, // Then
@@ -265,8 +273,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, // Sub -> No_Extra
 			0, // Mul -> No_Extra
 			0, // Eq -> No_Extra
+			0, // Ne -> No_Extra
 			0, // Split -> No_Extra
-			0, // Lazy_Phi -> No_Extra
 			0, // Phi -> No_Extra
 			1, // If -> Cfg_Extra
 			1, // Then -> Cfg_Extra
@@ -284,8 +292,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{}, // Sub
 			{Class_Flag.Comutes}, // Mul
 			{Class_Flag.Comutes}, // Eq
+			{Class_Flag.Comutes}, // Ne
 			{}, // Split
-			{}, // Lazy_Phi
 			{}, // Phi
 			{}, // If
 			{Class_Flag.Is_Basic_Block_Start}, // Then
@@ -322,8 +330,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			`Sub`,
 			`Mul`,
 			`Eq`,
+			`Ne`,
 			`Split`,
-			`Lazy_Phi`,
 			`Phi`,
 			`If`,
 			`Then`,
@@ -345,8 +353,8 @@ Add,
 Sub,
 Mul,
 Eq,
+Ne,
 Split,
-Lazy_Phi,
 Phi,
 If,
 Then,
@@ -356,6 +364,7 @@ Region,
 Loop,
 Return,
 Scope,
+Lazy_Phi,
 }
 #assert(size_of(Cfg_Extra) % 4 == 0)
 graph_add_start :: #force_inline proc(graph: ^Graph, name: string) -> (id: Node_ID) {
@@ -395,14 +404,14 @@ graph_add_eq :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatyp
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Eq), dt, {lhs, rhs})
 }
 #assert(size_of(No_Extra) % 4 == 0)
+graph_add_ne :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype, lhs: Node_ID, rhs: Node_ID) -> (id: Node_ID) {
+	push_node_name(graph, name)
+	return graph_add_raw(graph, u16(Ideal_Node_Type.Ne), dt, {lhs, rhs})
+}
+#assert(size_of(No_Extra) % 4 == 0)
 graph_add_split :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype, dest: Node_ID) -> (id: Node_ID) {
 	push_node_name(graph, name)
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Split), dt, {dest})
-}
-#assert(size_of(No_Extra) % 4 == 0)
-graph_add_lazyPhi :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype, reg: Node_ID, lhs: Node_ID) -> (id: Node_ID) {
-	push_node_name(graph, name)
-	return graph_add_raw(graph, u16(Ideal_Node_Type.Lazy_Phi), dt, {reg, lhs}, extra_capacity = 1)
 }
 #assert(size_of(No_Extra) % 4 == 0)
 graph_add_phi :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype, reg: Node_ID, lhs: Node_ID, rhs: Node_ID) -> (id: Node_ID) {
@@ -449,6 +458,11 @@ graph_add_scope :: #force_inline proc(graph: ^Graph, name: string, cfg: Node_ID)
 	push_node_name(graph, name)
 	return graph_add_raw(graph, u16(Builder_Node_Type.Scope), .Void, {cfg})
 }
+#assert(size_of(No_Extra) % 4 == 0)
+graph_add_lazyPhi :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype, reg: Node_ID, lhs: Node_ID) -> (id: Node_ID) {
+	push_node_name(graph, name)
+	return graph_add_raw(graph, u16(Builder_Node_Type.Lazy_Phi), dt, {reg, lhs}, extra_capacity = 1)
+}
 X64_Node_Type :: enum u16 {
 
 Start,
@@ -458,8 +472,8 @@ Add,
 Sub,
 Mul,
 Eq,
+Ne,
 Split,
-Lazy_Phi,
 Phi,
 If,
 Then,

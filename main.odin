@@ -537,6 +537,8 @@ emit_nodes :: proc(
 			return backend.graph_add_mul(ctx, "mul", .I64, lhs, rhs)
 		case .Cmp_Eq:
 			return backend.graph_add_eq(ctx, "eq", .I64, lhs, rhs)
+		case .Not_Eq:
+			return backend.graph_add_ne(ctx, "ne", .I64, lhs, rhs)
 		case:
 			fmt.panicf("TODO: %#v", node.derived)
 		}
@@ -603,17 +605,11 @@ emit_nodes :: proc(
 		emit_nodes(ctx, {}, d.else_stmt)
 		else_scope = ctx.node_scope
 
-		if then_scope == 0 {
-			ctx.node_scope = else_scope
-		} else {
-			assert(else_scope != 0)
-			assert(then_scope != 0)
-			ctx.node_scope = backend.graph_merge_scopes(
-				ctx,
-				then_scope,
-				else_scope,
-			)
-		}
+		ctx.node_scope = backend.graph_merge_scopes(
+			ctx,
+			then_scope,
+			else_scope,
+		)
 	case ^ast.For_Stmt:
 		assert(d.label == nil)
 		assert(d.init == nil)
@@ -637,26 +633,39 @@ emit_nodes :: proc(
 
 		emit_nodes(ctx, {}, d.body)
 
-		backedge := backend.graph_expand(ctx, ctx.node_scope)
+		ctx.node_scope = backend.graph_merge_scopes(
+			ctx,
+			ctx.node_scope,
+			loop_state.scopes[.Continue],
+		)
+
 		init := backend.graph_expand(ctx, loop_state.scope)
-		assert(init.ordered_input_count == backedge.ordered_input_count)
-		for i in 1 ..< init.ordered_input_count {
-			init := init.inps[i]
-			inode := backend.graph_expand(ctx, init)
-			bnode := backend.graph_get(ctx, backedge.inps[i])
-			if inode.itype == .Lazy_Phi {
-				if bnode.btype == .Scope || inode.node == bnode {
-					backend.graph_subsume(ctx, inode.inps[1], init)
-				} else {
-					backend.graph_add_extra_input(ctx, inode, backedge.inps[i])
-					inode.itype = .Phi
-					backend.graph_intern(ctx, init)
+		backedge := ctx.node_scope
+		if backedge != 0 {
+			backedge := backend.graph_expand(ctx, ctx.node_scope)
+			assert(init.ordered_input_count == backedge.ordered_input_count)
+			for i in 1 ..< init.ordered_input_count {
+				init := init.inps[i]
+				inode := backend.graph_expand(ctx, init)
+				bnode := backend.graph_get(ctx, backedge.inps[i])
+				if inode.itype == .Lazy_Phi {
+					if bnode.btype == .Scope || inode.node == bnode {
+						backend.graph_subsume(ctx, inode.inps[1], init)
+					} else {
+						backend.graph_add_extra_input(
+							ctx,
+							inode,
+							backedge.inps[i],
+						)
+						inode.itype = .Phi
+						backend.graph_intern(ctx, init)
+					}
 				}
 			}
-		}
 
-		assert(backend.graph_get(ctx, init.inps[0]).itype == .Loop)
-		backend.graph_add_extra_input(ctx, init.inps[0], backedge.inps[0])
+			assert(backend.graph_get(ctx, init.inps[0]).itype == .Loop)
+			backend.graph_add_extra_input(ctx, init.inps[0], backedge.inps[0])
+		}
 
 		ctx.node_scope = loop_state.scopes[.Break]
 
@@ -669,22 +678,34 @@ emit_nodes :: proc(
 		}
 
 		backend.graph_remove_output(ctx, loop_state.scope, {id = 0, idx = 0})
-		backend.graph_delete(ctx, backedge)
+		if backedge != 0 {
+			backend.graph_delete(ctx, backedge)
+		} else {
+			backend.graph_subsume(ctx, backend.graph_inps(ctx, loop)[0], loop)
+		}
 		ctx.loop = ctx.loop.parent
 	case ^ast.Branch_Stmt:
 		assert(d.label == nil)
+		backend.graph_truncate_scope(
+			ctx,
+			ctx.node_scope,
+			backend.graph_get(ctx, ctx.loop.scope).ordered_input_count,
+		)
+		variant := Loop_Control(-1)
 		#partial switch d.tok.kind {
 		case .Break:
-			backend.graph_truncate_scope(
-				ctx,
-				ctx.node_scope,
-				backend.graph_get(ctx, ctx.loop.scope).ordered_input_count,
-			)
-			ctx.loop.scopes[.Break] = ctx.node_scope
-			ctx.node_scope = 0
+			variant = .Break
+		case .Continue:
+			variant = .Continue
 		case:
 			fmt.panicf("TODO: %#v", node.derived)
 		}
+		ctx.loop.scopes[variant] = backend.graph_merge_scopes(
+			ctx,
+			ctx.node_scope,
+			ctx.loop.scopes[variant],
+		)
+		ctx.node_scope = 0
 	case:
 		fmt.panicf("TODO: %#v", node.derived)
 	}

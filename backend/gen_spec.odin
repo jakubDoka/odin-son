@@ -46,14 +46,14 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 		no_ctrl = true,
 		flags = {.Comutes},
 	},
+	.Ne = {
+		id = No_Extra,
+		args = {"lhs", "rhs"},
+		no_ctrl = true,
+		flags = {.Comutes},
+	},
 	.Split = {id = No_Extra, args = {"dest"}, no_ctrl = true},
 	.Phi = {id = No_Extra, args = {"reg", "lhs", "rhs"}, no_ctrl = true},
-	.Lazy_Phi = {
-		id = No_Extra,
-		args = {"reg", "lhs"},
-		no_ctrl = true,
-		extra_capacity = 1,
-	},
 	.If = {id = Cfg_Extra, args = {"ctrl", "cond"}, default_type = .Void},
 	.Then ..= .Else = {id = Cfg_Extra, args = {"ctrl"}, default_type = .Void, flags = {.Is_Basic_Block_Start}},
 	.Jump = {
@@ -123,8 +123,8 @@ Ideal_Node_Type :: enum u16 {
 	Sub,
 	Mul,
 	Eq,
+	Ne,
 	Split,
-	Lazy_Phi,
 	Phi,
 	If,
 	Then,
@@ -141,6 +141,7 @@ when (#load("node_specs.odin", string) or_else "") == "" {
 
 	Builder_Node_Type :: enum u16 {
 		Scope,
+		Lazy_Phi,
 	}
 
 	X64_Node_Type :: enum u16 {}
@@ -152,6 +153,12 @@ when (#load("node_specs.odin", string) or_else "") == "" {
 			args = {"cfg"},
 			default_type = .Void,
 			no_ctrl = true,
+		},
+		.Lazy_Phi = {
+			id = No_Extra,
+			args = {"reg", "lhs"},
+			no_ctrl = true,
+			extra_capacity = 1,
 		},
 	}
 

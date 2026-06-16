@@ -37,11 +37,29 @@ X64_IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec {
 	.Start = {},
 	.Entry = {},
 	.CInt = {reg_masks = #partial{.General = {GPA_MASK}}},
-	.Add ..= .Eq = {reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}}, inplace_slot_idx = 0},
+	.Add = {
+		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
+		inplace_slot_idx = 0,
+	},
+	.Sub = {
+		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
+		inplace_slot_idx = 0,
+	},
+	.Mul = {
+		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
+		inplace_slot_idx = 0,
+	},
+	.Eq = {
+		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
+		inplace_slot_idx = 0,
+	},
+	.Ne = {
+		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
+		inplace_slot_idx = 0,
+	},
 	.Split = {
 		reg_masks = #partial{.General = {GPA_SPILL_MASK, GPA_SPILL_MASK}},
 	},
-	.Lazy_Phi = {},
 	.Phi = {
 		reg_masks = #partial{
 			.General = {GPA_SPILL_MASK, GPA_SPILL_MASK, GPA_SPILL_MASK},
@@ -161,7 +179,7 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 	block_base := ctx.gvn - u32(len(ctx.bbs))
 	node := graph_expand(ctx, instr)
 	switch node.xtype {
-	case .Start, .Entry, .Then, .Else, .Region, .Loop, .Lazy_Phi:
+	case .Start, .Entry, .Then, .Else, .Region, .Loop:
 		panic("Not reachable form here")
 	case .If:
 		cond := reg_of(ctx, node.inps[1])
@@ -219,6 +237,17 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 
 		rx = rex(RAX, lhs, RAX, true)
 		emit(ctx.code, {rx, 0x0F, 0x94, mod_sm(.Direct, 0b000, lhs)})
+
+		rx = rex(lhs, lhs, RAX, true)
+		emit(ctx.code, {rx, 0x0F, 0xB6, mod_rm(.Direct, lhs, lhs)})
+	case .Ne:
+		lhs := reg_of(ctx, node.inps[0])
+		rhs := reg_of(ctx, node.inps[1])
+		rx := rex(lhs, rhs, RAX, true)
+		emit(ctx.code, {rx, 0x3b, mod_rm(.Direct, lhs, rhs)})
+
+		rx = rex(RAX, lhs, RAX, true)
+		emit(ctx.code, {rx, 0x0F, 0x95, mod_sm(.Direct, 0b000, lhs)})
 
 		rx = rex(lhs, lhs, RAX, true)
 		emit(ctx.code, {rx, 0x0F, 0xB6, mod_rm(.Direct, lhs, lhs)})

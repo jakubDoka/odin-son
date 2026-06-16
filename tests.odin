@@ -613,3 +613,123 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) loop_edge_cases :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc() -> int {
+	for {
+		break
+	}
+
+	r := 0
+
+	i := 0
+	for {
+		i += 1
+		if i == 2 {
+			break
+		}
+		if i == 1 {
+			continue
+		}
+		i += 1
+		r = 1
+	}
+
+	if r != 0 do return r
+
+	i = 0
+	for {
+		i += 1
+		if i == 3 {
+			break
+		}
+		if i == 2 {
+			continue
+		}
+		if i == 1 {
+			continue
+		}
+		i += 1
+		r = 2
+	}
+
+	if r != 0 do return r
+
+	i = 0
+	for {
+		i += 1
+		if i == 3 {
+			break
+		}
+		i += 1
+		if i == 4 {
+			r = 3
+			break
+		}
+	}
+
+	return r
+}
+
+run_test(t, `loop_edge_cases`, `
+package main
+
+main :: proc() -> int {
+	for {
+		break
+	}
+
+	r := 0
+
+	i := 0
+	for {
+		i += 1
+		if i == 2 {
+			break
+		}
+		if i == 1 {
+			continue
+		}
+		i += 1
+		r = 1
+	}
+
+	if r != 0 do return r
+
+	i = 0
+	for {
+		i += 1
+		if i == 3 {
+			break
+		}
+		if i == 2 {
+			continue
+		}
+		if i == 1 {
+			continue
+		}
+		i += 1
+		r = 2
+	}
+
+	if r != 0 do return r
+
+	i = 0
+	for {
+		i += 1
+		if i == 3 {
+			break
+		}
+		i += 1
+		if i == 4 {
+			r = 3
+			break
+		}
+	}
+
+	return r
+}
+`, main_())
+}

@@ -1,47 +1,45 @@
-   48 51                               push rcx
-   48 55                               push rbp
-   48 b9 03 00 00 00 00 00 00 00       mov rcx, 0x03
-   48 ba 00 00 00 00 00 00 00 00       mov rdx, 0x00
-   48 bb 01 00 00 00 00 00 00 00       mov rbx, 0x01
-   49 89 d1                            mov r9, rdx
-   48 89 d0                            mov rax, rdx
-   e9 00 00 00 00                      jmp :0
+     push rcx
+     push rbp
+     mov rcx, 0x00
+     mov rdi, rcx
+     mov rax, rcx
+     jmp :0
 
-00:4c 89 cd                            mov rbp, r9
-   48 3b e9                            cmp rbp, rcx
-   48 0f 94 c5                         setz bpl
-   48 0f b6 ed                         movzx rbp, bpl
-   4c 89 ce                            mov rsi, r9
-   48 01 de                            add rsi, rbx
-   48 85 ed                            test rbp, rbp
-   0f 84 05 00 00 00                   jz :1
+000: mov rdx, 0x03
+     mov rbx, rdi
+     cmp rbx, rdx
+     setz bl
+     movzx rbx, bl
+     test rbx, rbx
+     jz :1
+     jmp :2
 
-   e9 47 00 00 00                      jmp :2
+001: mov rbp, rcx
+     mov rsi, rax
+     jmp :3
 
-01:48 89 d7                            mov rdi, rdx
-   49 89 c0                            mov r8, rax
-   e9 00 00 00 00                      jmp :3
+003: mov rax, rbp
+     cmp rax, rdx
+     setz al
+     movzx rax, al
+     mov rbx, 0x01
+     test rax, rax
+     jz :4
+     jmp :5
 
-03:48 89 f8                            mov rax, rdi
-   48 3b c1                            cmp rax, rcx
-   48 0f 94 c0                         setz al
-   48 0f b6 c0                         movzx rax, al
-   4c 89 cd                            mov rbp, r9
-   48 0f af ef                         imul rbp, rdi
-   4c 01 c5                            add rbp, r8
-   48 01 df                            add rdi, rbx
-   48 85 c0                            test rax, rax
-   0f 84 05 00 00 00                   jz :4
+004: mov rax, rdi
+     imul rax, rbp
+     add rax, rsi
+     add rbp, rbx
+     mov rsi, rax
+     jmp :3
 
-   e9 08 00 00 00                      jmp :5
+005: mov rdx, rdi
+     add rdx, rbx
+     mov rax, rsi
+     mov rdi, rdx
+     jmp :0
 
-04:49 89 e8                            mov r8, rbp
-   e9 cf ff ff ff                      jmp :3
-
-05:4c 89 c0                            mov rax, r8
-   49 89 f1                            mov r9, rsi
-   e9 97 ff ff ff                      jmp :0
-
-02:48 5d                               pop rbp
-   48 59                               pop rcx
-   c3                                  ret
+002: pop rbp
+     pop rcx
+     ret

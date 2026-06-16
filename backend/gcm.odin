@@ -1,19 +1,42 @@
 package backend
 
 import "../vendored/gam/util/bit_arr"
+import "core:container/queue"
 import "core:fmt"
 import "core:log"
 import "core:slice"
+import "core:sync"
+import "core:sys/info"
 
 Graph_Basic_Block :: struct {
-	head:   Node_ID,
-	tail:   Node_ID,
-	instrs: [dynamic]Node_ID,
-	offset: u32,
+	head:      Node_ID,
+	tail:      Node_ID,
+	instrs:    [dynamic]Node_ID,
+	offset:    u32,
+	loop_tree: ^Loop_Tree,
 }
 
 Graph_Schedule :: struct {
 	bbs: []Graph_Basic_Block,
+}
+
+Loop_Tree :: struct {
+	parent: ^Loop_Tree,
+	depth:  u32,
+	finite: bool,
+}
+
+graph_lca :: proc(graph: ^Graph, a, b: Node_ID) -> Node_ID {
+	if a == 0 do return b
+	if b == 0 do return a
+
+	a, b := a, b
+	for a != b {
+		adepth, bdepth := graph_idepth(graph, a), graph_idepth(graph, b)
+		if adepth >= bdepth do a = graph_idom(graph, a)
+		if bdepth >= adepth do b = graph_idom(graph, b)
+	}
+	return a
 }
 
 @(tag = "node_proc")
@@ -27,13 +50,7 @@ graph_idom_node :: proc(graph: ^Graph, node: ^Node) -> Node_ID {
 		return inps[0]
 	case .Region:
 		assert(len(inps) == 2)
-		a, b := inps[0], inps[1]
-		for a != b {
-			adepth, bdepth := graph_idepth(graph, a), graph_idepth(graph, a)
-			if adepth <= bdepth do a = graph_idom(graph, a)
-			if bdepth <= adepth do b = graph_idom(graph, b)
-		}
-		return a
+		return graph_lca(graph, inps[0], inps[1])
 	case:
 		fmt.panicf("TODO: %v", node.itype)
 	}
@@ -63,7 +80,97 @@ graph_idepth_node :: proc(graph: ^Graph, node: ^Node) -> u32 {
 	return extra.idepth
 }
 
+mut: sync.Mutex
+node_count: int
+iter_count: int
+
 graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
+	Loop_Ctx :: struct {
+		using graph: ^Graph,
+		loop_trees:  []^Loop_Tree,
+	}
+
+	lctx: Loop_Ctx
+	lctx.graph = graph
+	lctx.loop_trees = make([]^Loop_Tree, graph.gvn)
+
+	root := new(Loop_Tree)
+	root.finite = true
+
+	assert(graph_get(graph, NODE_ENTRY).gvn == 1)
+	lctx.loop_trees[graph_get(graph, graph.end).gvn] = root
+
+	build_loop_tree(&lctx, NODE_ENTRY, root)
+
+	tree_depth :: proc(tree: ^Loop_Tree) -> u32 {
+		if tree.parent == nil do return 0
+		if tree.depth == 0 {
+			tree.depth = 1 + tree_depth(tree.parent)
+		}
+		return tree.depth
+	}
+
+	build_loop_tree :: proc(
+		ctx: ^Loop_Ctx,
+		root: Node_ID,
+		tree: ^Loop_Tree,
+	) -> ^Loop_Tree {
+		tree := tree
+		node := graph_expand(ctx, root)
+
+		otree := ctx.loop_trees[node.gvn]
+		if otree != nil {
+			return otree
+		}
+
+		prev_tree := tree
+
+		if node.itype == .Loop {
+			tree = new(Loop_Tree)
+			tree.depth = 10000
+			ctx.loop_trees[node.gvn] = tree
+		}
+
+		deepest: ^Loop_Tree
+		for o in node.outs {
+			if !is_cfg(ctx, o.id) do continue
+			other := build_loop_tree(ctx, o.id, tree)
+			deepest = select(deepest, other, true)
+			if other != tree {
+				tree.parent = select(tree.parent, other, true)
+				tree.finite = true
+			}
+		}
+
+		if node.itype == .Loop {
+			tree.depth = 0
+			if tree.parent == nil {
+				tree.parent = prev_tree
+			}
+			deepest = tree.parent
+		} else {
+			ctx.loop_trees[node.gvn] = deepest
+		}
+
+		return deepest
+
+		select :: proc(
+			a: ^Loop_Tree,
+			b: ^Loop_Tree,
+			deepest: bool,
+		) -> ^Loop_Tree {
+			if a == nil do return b
+			if b == nil do return a
+			if deepest {
+				if a.depth < b.depth do return b
+				return a
+			} else {
+				if a.depth < b.depth do return a
+				return b
+			}
+		}
+	}
+
 	bbs: [dynamic]Graph_Basic_Block
 	cfg_rpos: [dynamic]Node_ID
 	visited := bit_arr.init(graph.gvn * 2)
@@ -107,13 +214,19 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 	Ctx :: struct {
 		graph:           ^Graph,
 		early_schedules: []Node_ID,
+		late_schedules:  []Node_ID,
 		nodes:           []Node_ID,
 	}
 
 	ctx: Ctx
 	ctx.graph = graph
 	ctx.early_schedules = make([]Node_ID, graph.gvn)
+	ctx.late_schedules = make([]Node_ID, graph.gvn)
 	ctx.nodes = make([]Node_ID, graph.gvn)
+
+	is_cfg :: proc(graph: ^Graph, id: Node_ID) -> bool {
+		return graph_extra(graph, id, Cfg_Extra) != nil
+	}
 
 	for id in cfg_rpos {
 		ctrl := graph_expand(graph, id)
@@ -122,7 +235,7 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 		for out in ctrl.outs {
 			onode := graph_expand(graph, out.id)
 			ctx.early_schedules[onode.gvn] = id
-			if graph_extra(graph, out.id, Cfg_Extra) != nil do continue
+			if is_cfg(graph, out.id) do continue
 			ctx.nodes[onode.gvn] = out.id
 		}
 	}
@@ -133,13 +246,13 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 		for out in ctrl.outs {
 			onode := graph_expand(graph, out.id)
 			for i in onode.inps {
-				if graph_extra(graph, i, Cfg_Extra) != nil do continue
+				if is_cfg(graph, i) do continue
 				sched_early(ctx, i)
 			}
 		}
 
 		for i in ctrl.inps {
-			if graph_extra(graph, i, Cfg_Extra) != nil do continue
+			if is_cfg(graph, i) do continue
 
 			sched_early(ctx, i)
 		}
@@ -170,11 +283,94 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 		}
 	}
 
+	in_worklist := bit_arr.init(graph.gvn)
+	worklist: queue.Queue(Node_ID)
+	queue.init(&worklist, int(graph.gvn))
+	queue.push_front(&worklist, graph.end)
+	bit_arr.set(in_worklist, graph_get(graph, graph.end).gvn)
+
+	rounds := 0
+
+	for n in queue.pop_front_safe(&worklist) {
+		rounds += 1
+
+		node := graph_expand(graph, n)
+		bit_arr.set(in_worklist, node.gvn, false)
+
+		assert(ctx.late_schedules[node.gvn] == 0)
+
+		ready := true
+		if graph_has_flag(graph, n, .Is_Basic_Block_Start) {
+			ctx.late_schedules[node.gvn] = n
+		} else if 0 < len(node.inps) && is_cfg(graph, node.inps[0]) {
+			ctx.late_schedules[node.gvn] = node.inps[0]
+		} else {
+			for out in node.outs {
+				onode := graph_expand(graph, out.id)
+				if ctx.late_schedules[onode.gvn] == 0 {
+					if bit_arr.set(in_worklist, onode.gvn) {
+						queue.push_back(&worklist, out.id)
+					}
+					ready = false
+				}
+			}
+		}
+
+		if !ready do continue
+
+		lca := ctx.late_schedules[node.gvn]
+		if lca == 0 {
+			for out in node.outs {
+				onode := graph_expand(graph, out.id)
+				olca := ctx.late_schedules[onode.gvn]
+
+				assert(is_cfg(graph, olca))
+
+				if onode.itype == .Phi {
+					jmp := graph_inps(graph, olca)[out.idx - 1]
+					olca = graph_inps(graph, jmp)[0]
+				}
+				lca = graph_lca(graph, lca, olca)
+			}
+
+			if !graph_has_flag(graph, lca, .Is_Basic_Block_Start) {
+				lca = graph_idom(graph, lca)
+			}
+			ctx.late_schedules[node.gvn] = lca
+		}
+
+		if node.itype != .Entry {
+			for inp in node.inps {
+				inode := graph_expand(graph, inp)
+				if ctx.late_schedules[inode.gvn] == 0 {
+					if bit_arr.set(in_worklist, inode.gvn) {
+						queue.push_back(&worklist, inp)
+					}
+				}
+			}
+		}
+	}
+
+	if false {
+		{sync.guard(&mut)
+			node_count += int(graph.gvn)
+			iter_count += rounds
+
+			log.info(f32(node_count) / f32(iter_count))
+		}
+
+		log.info(graph.gvn, rounds, f32(graph.gvn) / f32(rounds))
+	}
+
 	bb_idx := 0
 	for id, i in cfg_rpos {
 		if graph_has_flag(graph, id, .Is_Basic_Block_Start) {
 			extra := graph_extra(graph, id, Cfg_Extra)
 			extra.bb_idx = u32(bb_idx)
+			loop_tree := lctx.loop_trees[graph_get(graph, id).gvn]
+			tree_depth(loop_tree)
+
+			assert(loop_tree != nil)
 			bb_idx += 1
 
 			tail: Node_ID
@@ -184,13 +380,20 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 			} else {
 				log.error("oob gcm schedule")
 			}
-			append(&bbs, Graph_Basic_Block{head = id, tail = tail})
+			append(
+				&bbs,
+				Graph_Basic_Block {
+					head = id,
+					tail = tail,
+					loop_tree = loop_tree,
+				},
+			)
 		}
 	}
 
 	for node, i in ctx.nodes {
 		if node == 0 do continue
-		bb := graph_extra(graph, ctx.early_schedules[i], Cfg_Extra).bb_idx
+		bb := graph_extra(graph, ctx.late_schedules[i], Cfg_Extra).bb_idx
 		append(&bbs[bb].instrs, node)
 	}
 

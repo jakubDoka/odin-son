@@ -282,6 +282,8 @@ main :: proc() -> int {
 ```odin
 package main
 
+opt_level :: "none"
+
 main :: proc() -> int {
 	n := 10
 	a := 0
@@ -302,6 +304,8 @@ main :: proc() -> int {
 ```odin
 package main
 
+opt_level :: "none"
+
 main :: proc() -> int {
 	x := 3
 	sum := 0
@@ -321,9 +325,42 @@ main :: proc() -> int {
 }
 ```
 
+#### consecutive loops
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	i := 0
+
+	if false {
+		i = 0
+		for {
+			i += 1
+			if i == 1 {
+				break
+			}
+		}
+	}
+
+	i = 0
+	for {
+		i += 1
+		if i == 3 {
+			break
+		}
+	}
+
+	return 0
+}
+```
+
 #### loop edge cases
 ```odin
 package main
+
+opt_level :: "none"
 
 main :: proc() -> int {
 	for {
@@ -345,39 +382,58 @@ main :: proc() -> int {
 		r = 1
 	}
 
-	if r != 0 do return r
-
-	i = 0
-	for {
-		i += 1
-		if i == 3 {
-			break
+	if r == 0 {
+		i = 0
+		for {
+			i += 1
+			if i == 3 {
+				break
+			}
+			if i == 2 {
+				continue
+			}
+			if i == 1 {
+				continue
+			}
+			i += 1
+			r = 2
 		}
-		if i == 2 {
-			continue
-		}
-		if i == 1 {
-			continue
-		}
-		i += 1
-		r = 2
 	}
 
-	if r != 0 do return r
-
-	i = 0
-	for {
-		i += 1
-		if i == 3 {
-			break
-		}
-		i += 1
-		if i == 4 {
-			r = 3
-			break
+	if r != 0 {
+		i = 0
+		for {
+			i += 1
+			if i == 3 {
+				r = 1
+				break
+			}
+			i += 1
+			if i == 4 {
+				r = 3
+				break
+			}
 		}
 	}
 
 	return r
+}
+```
+
+#### infinite loops
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	if false {
+		i := 0
+		for {
+			i += 1
+		}
+	}
+
+	return 0
 }
 ```

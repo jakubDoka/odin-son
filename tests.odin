@@ -535,6 +535,8 @@ main :: proc() -> int {
 
 
 
+opt_level :: "none"
+
 main_ :: proc() -> int {
 	n := 10
 	a := 0
@@ -552,6 +554,8 @@ main_ :: proc() -> int {
 
 run_test(t, `loops`, `
 package main
+
+opt_level :: "none"
 
 main :: proc() -> int {
 	n := 10
@@ -572,6 +576,8 @@ main :: proc() -> int {
 @(test) nested_loops :: proc(t: ^testing.T) {
 
 
+
+opt_level :: "none"
 
 main_ :: proc() -> int {
 	x := 3
@@ -594,6 +600,8 @@ main_ :: proc() -> int {
 run_test(t, `nested_loops`, `
 package main
 
+opt_level :: "none"
+
 main :: proc() -> int {
 	x := 3
 	sum := 0
@@ -613,9 +621,71 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) consecutive_loops :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	i := 0
+
+	if false {
+		i = 0
+		for {
+			i += 1
+			if i == 1 {
+				break
+			}
+		}
+	}
+
+	i = 0
+	for {
+		i += 1
+		if i == 3 {
+			break
+		}
+	}
+
+	return 0
+}
+
+run_test(t, `consecutive_loops`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	i := 0
+
+	if false {
+		i = 0
+		for {
+			i += 1
+			if i == 1 {
+				break
+			}
+		}
+	}
+
+	i = 0
+	for {
+		i += 1
+		if i == 3 {
+			break
+		}
+	}
+
+	return 0
+}
+`, main_())
+}
 @(test) loop_edge_cases :: proc(t: ^testing.T) {
 
 
+
+opt_level :: "none"
 
 main_ :: proc() -> int {
 	for {
@@ -637,36 +707,37 @@ main_ :: proc() -> int {
 		r = 1
 	}
 
-	if r != 0 do return r
-
-	i = 0
-	for {
-		i += 1
-		if i == 3 {
-			break
+	if r == 0 {
+		i = 0
+		for {
+			i += 1
+			if i == 3 {
+				break
+			}
+			if i == 2 {
+				continue
+			}
+			if i == 1 {
+				continue
+			}
+			i += 1
+			r = 2
 		}
-		if i == 2 {
-			continue
-		}
-		if i == 1 {
-			continue
-		}
-		i += 1
-		r = 2
 	}
 
-	if r != 0 do return r
-
-	i = 0
-	for {
-		i += 1
-		if i == 3 {
-			break
-		}
-		i += 1
-		if i == 4 {
-			r = 3
-			break
+	if r != 0 {
+		i = 0
+		for {
+			i += 1
+			if i == 3 {
+				r = 1
+				break
+			}
+			i += 1
+			if i == 4 {
+				r = 3
+				break
+			}
 		}
 	}
 
@@ -675,6 +746,8 @@ main_ :: proc() -> int {
 
 run_test(t, `loop_edge_cases`, `
 package main
+
+opt_level :: "none"
 
 main :: proc() -> int {
 	for {
@@ -696,40 +769,75 @@ main :: proc() -> int {
 		r = 1
 	}
 
-	if r != 0 do return r
-
-	i = 0
-	for {
-		i += 1
-		if i == 3 {
-			break
+	if r == 0 {
+		i = 0
+		for {
+			i += 1
+			if i == 3 {
+				break
+			}
+			if i == 2 {
+				continue
+			}
+			if i == 1 {
+				continue
+			}
+			i += 1
+			r = 2
 		}
-		if i == 2 {
-			continue
-		}
-		if i == 1 {
-			continue
-		}
-		i += 1
-		r = 2
 	}
 
-	if r != 0 do return r
-
-	i = 0
-	for {
-		i += 1
-		if i == 3 {
-			break
-		}
-		i += 1
-		if i == 4 {
-			r = 3
-			break
+	if r != 0 {
+		i = 0
+		for {
+			i += 1
+			if i == 3 {
+				r = 1
+				break
+			}
+			i += 1
+			if i == 4 {
+				r = 3
+				break
+			}
 		}
 	}
 
 	return r
+}
+`, main_())
+}
+@(test) infinite_loops :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	if false {
+		i := 0
+		for {
+			i += 1
+		}
+	}
+
+	return 0
+}
+
+run_test(t, `infinite_loops`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	if false {
+		i := 0
+		for {
+			i += 1
+		}
+	}
+
+	return 0
 }
 `, main_())
 }

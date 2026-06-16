@@ -313,6 +313,7 @@ graph_truncate_scope :: proc(
 	#any_int to_len: int,
 ) {
 	if scope == 0 do return
+
 	snode := graph_expand(graph, scope)
 	assert(snode.btype == .Scope)
 	assert(to_len <= int(snode.ordered_input_count))
@@ -603,12 +604,11 @@ graph_add_input_node :: proc(
 			graph.mem,
 			uint(new_cap * PRECISION),
 			PRECISION,
-			zeroed = !is_scope,
+			zeroed = true,
 		)
 		copy(mem.slice_data_cast([]Node_ID, slot), graph_inps(graph, node))
 		node.input_count = new_cap
 		node.input_idx = base
-
 	}
 
 	graph_inps(graph, node)[free_idx] = inp
@@ -713,15 +713,17 @@ graph_display :: proc(
 	}
 
 	for bb in ctx.bbs {
+		fmt.sbprintf(sb, "%02i %p", bb.loop_tree.depth, bb.loop_tree)
+
 		graph_display_node(sb, graph, bb.head)
 
 		append(&sb.buf, " {\n")
 
 		for instr in bb.instrs {
 			inode := graph_get(graph, instr)
-			//if inode.itype == .Phi {
-			//	continue
-			//}
+			if inode.itype == .Phi {
+				continue
+			}
 
 			append(&sb.buf, "  ")
 			if len(regs) != 0 {
@@ -865,7 +867,6 @@ ansi_start :: proc(sb: ^strings.Builder, #any_int gvn: int) {
 			{fg = ansi.FG_MAGENTA},
 			{fg = ansi.FG_CYAN},
 			{fg = ansi.FG_WHITE},
-			{fg = ansi.FG_BLACK, bg = ansi.BG_WHITE},
 			{fg = ansi.FG_BLACK, bg = ansi.BG_WHITE},
 			{fg = ansi.FG_BLACK, bg = ansi.BG_RED},
 			{fg = ansi.FG_BLACK, bg = ansi.BG_GREEN},

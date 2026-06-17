@@ -6,11 +6,10 @@
      push r15
      sub rsp, 0xD8
      mov rcx, 0x00
-     mov r11, 0x01
-     add r11, rcx
-     mov rax, 0x02
-     add rax, rcx
-     mov r13, rax
+     mov rbp, 0x01
+     add rbp, rcx
+     mov rsi, 0x02
+     add rsi, rcx
      mov rax, 0x03
      add rax, rcx
      mov r14, rax
@@ -29,102 +28,91 @@
      mov rax, 0x08
      add rax, rcx
      mov [rsp+0x18], rax
-     mov rax, 0x09
-     add rax, rcx
-     mov [rsp+0x20], rax
-     mov rax, 0x0A
-     add rax, rcx
-     mov [rsp+0x28], rax
-     mov rax, 0x0B
-     add rax, rcx
-     mov [rsp+0x30], rax
-     mov rax, 0x0C
-     add rax, rcx
-     mov [rsp+0x38], rax
+     mov rdi, 0x09
+     add rdi, rcx
+     mov r8, 0x0A
+     add r8, rcx
+     mov r9, 0x0B
+     add r9, rcx
+     mov r10, 0x0C
+     add r10, rcx
      mov rax, 0x0D
      add rax, rcx
-     mov [rsp+0x40], rax
+     mov [rsp+0x20], rax
      mov rax, 0x0E
      add rax, rcx
-     mov [rsp+0x48], rax
+     mov [rsp+0x28], rax
      mov rax, 0x0F
      add rax, rcx
-     mov [rsp+0x50], rax
+     mov [rsp+0x30], rax
      mov rax, 0x10
      add rax, rcx
+     mov [rsp+0x38], rax
+     mov rdx, rbp
+     imul rdx, rdi
+     mov rax, [rsp+0x38]
+     add rdx, rax
+     mov [rsp+0x40], rdx
+     mov rdx, rsi
+     imul rdx, r8
+     mov rax, [rsp+0x30]
+     add rdx, rax
+     mov rax, rdx
+     mov [rsp+0x48], rax
+     mov rdx, r14
+     imul rdx, r9
+     mov rax, [rsp+0x28]
+     add rdx, rax
+     mov rax, rdx
+     mov [rsp+0x50], rax
+     mov rdx, r15
+     imul rdx, r10
+     mov rax, [rsp+0x20]
+     add rdx, rax
+     mov rax, rdx
      mov [rsp+0x58], rax
-     mov rdx, r11
+     mov rdx, [rsp]
      mov rax, [rsp+0x20]
      imul rdx, rax
-     mov rax, [rsp+0x58]
-     add rdx, rax
-     mov [rsp+0x60], rdx
-     mov rdx, r13
+     add rdx, r10
+     mov rax, rdx
+     mov [rsp+0x60], rax
+     mov rdx, [rsp+0x08]
      mov rax, [rsp+0x28]
      imul rdx, rax
-     mov rax, [rsp+0x50]
-     add rdx, rax
-     mov [rsp+0x68], rdx
-     mov rdx, r14
+     add rdx, r9
+     mov rax, rdx
+     mov [rsp+0x68], rax
+     mov rdx, [rsp+0x10]
      mov rax, [rsp+0x30]
      imul rdx, rax
-     mov rax, [rsp+0x48]
-     add rdx, rax
+     add rdx, r8
      mov rax, rdx
      mov [rsp+0x70], rax
-     mov rdx, r15
+     mov rdx, [rsp+0x18]
      mov rax, [rsp+0x38]
      imul rdx, rax
-     mov rax, [rsp+0x40]
-     add rdx, rax
+     add rdx, rdi
      mov rax, rdx
      mov [rsp+0x78], rax
-     mov rdx, [rsp]
-     mov rax, [rsp+0x40]
-     imul rdx, rax
-     mov rax, [rsp+0x38]
+     mov rdx, [rsp+0x40]
+     mov rax, [rsp+0x60]
      add rdx, rax
      mov [rsp+0x80], rdx
-     mov rdx, [rsp+0x08]
-     mov rax, [rsp+0x48]
-     imul rdx, rax
-     mov rax, [rsp+0x30]
+     mov rdx, [rsp+0x48]
+     mov rax, [rsp+0x68]
      add rdx, rax
-     mov rax, rdx
-     mov [rsp+0x88], rax
-     mov rdx, [rsp+0x10]
-     mov rax, [rsp+0x50]
-     imul rdx, rax
-     mov rax, [rsp+0x28]
+     mov [rsp+0x88], rdx
+     mov rdx, [rsp+0x50]
+     mov rax, [rsp+0x70]
      add rdx, rax
      mov rax, rdx
      mov [rsp+0x90], rax
-     mov rdx, [rsp+0x18]
-     mov rax, [rsp+0x58]
-     imul rdx, rax
-     mov rax, [rsp+0x20]
+     mov rdx, [rsp+0x58]
+     mov rax, [rsp+0x78]
      add rdx, rax
      mov rax, rdx
      mov [rsp+0x98], rax
-     mov rdx, [rsp+0x60]
-     mov rax, [rsp+0x80]
-     add rdx, rax
-     mov rax, rdx
-     mov [rsp+0xA0], rax
-     mov rdx, [rsp+0x68]
-     mov rax, [rsp+0x88]
-     add rdx, rax
-     mov [rsp+0xA8], rdx
-     mov rdx, [rsp+0x70]
-     mov rax, [rsp+0x90]
-     add rdx, rax
-     mov rax, rdx
-     mov [rsp+0xB0], rax
-     mov rdx, [rsp+0x78]
-     mov rax, [rsp+0x98]
-     add rdx, rax
-     mov rax, rdx
-     mov [rsp+0xB8], rax
      cmp rcx, rcx
      setz cl
      movzx rcx, cl
@@ -132,103 +120,106 @@
      jz :0
      jmp :1
 
-000: mov rsi, [rsp+0xB8]
-     mov rbp, [rsp+0xB0]
-     mov rbx, [rsp+0xA8]
-     mov rdx, [rsp+0xA0]
+000: mov rax, [rsp+0x90]
+     mov rdx, [rsp+0x88]
+     mov rcx, [rsp+0x80]
+     mov rbx, [rsp+0x98]
      jmp :2
 
-001: mov rdx, [rsp+0xA0]
-     imul rdx, r11
-     mov rax, [rsp+0x58]
-     add rdx, rax
-     mov rbx, [rsp+0xA8]
-     mov rax, r13
-     imul rbx, rax
-     mov rax, [rsp+0x50]
-     add rbx, rax
-     mov rbp, [rsp+0xB0]
-     mov rax, r14
-     imul rbp, rax
-     mov rax, [rsp+0x48]
-     add rbp, rax
-     mov rsi, [rsp+0xB8]
-     mov rax, r15
-     imul rsi, rax
-     mov rax, [rsp+0x40]
-     add rsi, rax
-     jmp :2
-
-002: mov rax, rdx
-     imul rax, rbx
-     mov rcx, rax
-     mov rax, [rsp+0x60]
+001: mov rcx, [rsp+0x80]
+     imul rcx, rbp
+     mov rax, [rsp+0x38]
      add rcx, rax
-     mov rax, [rsp+0x68]
+     mov rdx, [rsp+0x88]
+     imul rdx, rsi
+     mov rax, [rsp+0x30]
+     add rdx, rax
+     mov rbx, [rsp+0x90]
+     mov rax, r14
+     imul rbx, rax
+     mov rax, [rsp+0x28]
+     add rbx, rax
+     mov r11, [rsp+0x98]
+     mov rax, r15
+     imul r11, rax
+     mov rax, [rsp+0x20]
+     add r11, rax
+     mov rax, rbx
+     mov rbx, r11
+     jmp :2
+
+002: mov [rsp+0xA0], rcx
+     mov [rsp+0xA8], rdx
+     mov [rsp+0xB0], rax
+     mov [rsp+0xB8], rbx
+     mov rcx, [rsp+0xA0]
+     mov rax, [rsp+0xA8]
+     imul rcx, rax
+     mov rax, [rsp+0x40]
+     add rcx, rax
+     mov rax, [rsp+0x48]
      add rcx, rax
      mov [rsp+0xC0], rcx
-     mov rax, rbp
-     imul rax, rsi
-     mov rcx, rax
-     mov rax, [rsp+0x70]
+     mov rcx, [rsp+0xB0]
+     mov rax, [rsp+0xB8]
+     imul rcx, rax
+     mov rax, [rsp+0x50]
      add rcx, rax
-     mov rax, [rsp+0x78]
+     mov rax, [rsp+0x58]
      add rcx, rax
      mov [rsp+0xC8], rcx
-     mov rdi, rdx
-     imul rdi, rbp
-     mov rax, [rsp+0x80]
-     add rdi, rax
-     mov rax, [rsp+0x88]
-     add rdi, rax
-     mov r8, rbx
-     imul r8, rsi
-     mov rax, [rsp+0x90]
-     add r8, rax
-     mov rax, [rsp+0x98]
-     add r8, rax
-     mov rax, r11
-     cmp rax, r11
+     mov rdx, [rsp+0xA0]
+     mov rax, [rsp+0xB0]
+     imul rdx, rax
+     mov rax, [rsp+0x60]
+     add rdx, rax
+     mov rax, [rsp+0x68]
+     add rdx, rax
+     mov rbx, [rsp+0xA8]
+     mov rax, [rsp+0xB8]
+     imul rbx, rax
+     mov rax, [rsp+0x70]
+     add rbx, rax
+     mov rax, [rsp+0x78]
+     add rbx, rax
+     mov rax, rbp
+     cmp rax, rbp
      setz al
      movzx rax, al
      test rax, rax
      jz :3
      jmp :4
 
-003: mov r10, r8
-     mov rax, rdi
-     mov r9, [rsp+0xC8]
+003: mov rax, rdx
      mov rcx, [rsp+0xC0]
+     mov r12, rbx
+     mov r11, [rsp+0xC8]
      jmp :5
 
 004: mov rcx, [rsp+0xC0]
      mov rax, [rsp]
      imul rcx, rax
-     mov rax, [rsp+0x38]
-     add rcx, rax
-     mov r9, [rsp+0xC8]
+     add rcx, r10
+     mov r11, [rsp+0xC8]
      mov rax, [rsp+0x08]
-     imul r9, rax
-     mov rax, [rsp+0x30]
-     add r9, rax
-     mov r12, rdi
+     imul r11, rax
+     add r11, r9
+     mov r12, rdx
      mov rax, [rsp+0x10]
      imul r12, rax
-     mov rax, [rsp+0x28]
-     add r12, rax
-     mov r10, r8
+     add r12, r8
+     mov r13, rbx
      mov rax, [rsp+0x18]
-     imul r10, rax
-     mov rax, [rsp+0x20]
-     add r10, rax
+     imul r13, rax
+     add r13, rdi
      mov rax, r12
+     mov r12, r13
      jmp :5
 
-005: mov r12, rcx
+005: mov r13, rcx
      mov [rsp+0xD0], rax
-     mov rax, r11
-     mov rcx, r13
-     add rax, rcx
+     mov rax, rbp
+     add rax, rsi
      mov rcx, r14
      add rax, rcx
      mov rcx, r15
@@ -241,6 +232,10 @@
      add rax, rcx
      mov rcx, [rsp+0x18]
      add rax, rcx
+     add rax, rdi
+     add rax, r8
+     add rax, r9
+     add rax, r10
      mov rcx, [rsp+0x20]
      add rax, rcx
      mov rcx, [rsp+0x28]
@@ -249,15 +244,15 @@
      add rax, rcx
      mov rcx, [rsp+0x38]
      add rax, rcx
-     mov rcx, [rsp+0x40]
-     add rax, rcx
-     mov rcx, [rsp+0x48]
-     add rax, rcx
-     mov rcx, [rsp+0x50]
-     add rax, rcx
-     mov rcx, [rsp+0x58]
-     add rax, rcx
      mov rcx, rax
+     mov rax, [rsp+0x40]
+     add rcx, rax
+     mov rax, [rsp+0x48]
+     add rcx, rax
+     mov rax, [rsp+0x50]
+     add rcx, rax
+     mov rax, [rsp+0x58]
+     add rcx, rax
      mov rax, [rsp+0x60]
      add rcx, rax
      mov rax, [rsp+0x68]
@@ -274,31 +269,29 @@
      add rcx, rax
      mov rax, [rsp+0x98]
      add rcx, rax
-     mov rax, [rsp+0xA0]
-     add rcx, rax
-     mov rax, [rsp+0xA8]
-     add rcx, rax
-     mov rax, [rsp+0xB0]
-     add rcx, rax
-     mov rax, [rsp+0xB8]
-     add rcx, rax
      mov rax, rcx
-     add rax, rdx
-     add rax, rbx
-     add rax, rbp
-     add rax, rsi
+     mov rcx, [rsp+0xA0]
+     add rax, rcx
+     mov rcx, [rsp+0xA8]
+     add rax, rcx
+     mov rcx, [rsp+0xB0]
+     add rax, rcx
+     mov rcx, [rsp+0xB8]
+     add rax, rcx
      mov rcx, [rsp+0xC0]
      add rax, rcx
      mov rcx, [rsp+0xC8]
      add rax, rcx
-     add rax, rdi
-     add rax, r8
-     mov rcx, r12
+     add rax, rdx
+     add rax, rbx
+     mov rcx, r13
      add rax, rcx
-     add rax, r9
+     mov rcx, r11
+     add rax, rcx
      mov rcx, [rsp+0xD0]
      add rax, rcx
-     add rax, r10
+     mov rcx, r12
+     add rax, rcx
      sub rsp, 0xFFFFFFFFFFFFFF28
      pop r15
      pop r14

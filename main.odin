@@ -434,20 +434,26 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 	clear(&sb.buf)
 	disasm(&sb, output.code)
 
+	DO_DIFFING :: #config(DIFF, true)
+
 	if #config(ACCEPT, false) {
 		err := os.write_entire_file(diff_path, sb.buf[:])
 		assert(err == nil)
 	} else if err == .Not_Exist {
-		log.error("\n", highlight_disasm(string(sb.buf[:])), sep = "")
+		if DO_DIFFING {
+			log.error("\n", highlight_disasm(string(sb.buf[:])), sep = "")
+		}
 	} else {
-		assert(err == nil)
-		new, old := string(sb.buf[:]), string(file)
-		if new != old {
-			new, old = highlight_disasm(new), highlight_disasm(old)
-			clear(&sb.buf)
-			append(&sb.buf, "\n")
-			print_diff(&sb, old, new)
-			log.error(string(sb.buf[:]))
+		if DO_DIFFING {
+			assert(err == nil)
+			new, old := string(sb.buf[:]), string(file)
+			if new != old {
+				new, old = highlight_disasm(new), highlight_disasm(old)
+				clear(&sb.buf)
+				append(&sb.buf, "\n")
+				print_diff(&sb, old, new)
+				log.error(string(sb.buf[:]))
+			}
 		}
 	}
 
@@ -502,6 +508,7 @@ emit_nodes :: proc(
 			backend.graph_get(ctx, ctx.node_scope).ordered_input_count
 		for stmt in d.stmts {
 			emit_nodes(ctx, {}, stmt)
+			if ctx.node_scope == 0 do break
 		}
 		resize(&ctx.scope, prev_scope_len)
 		backend.graph_truncate_scope(ctx, ctx.node_scope, prev_scope_len)

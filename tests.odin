@@ -991,3 +991,131 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) loop_unreachable_tail_after_labelled_break_crash :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	sum := 0
+	for {
+		if sum == 2 do break
+		sum += 1
+	}
+	return sum
+}
+
+run_test(t, `loop_unreachable_tail_after_labelled_break_crash`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	sum := 0
+	for {
+		if sum == 2 do break
+		sum += 1
+	}
+	return sum
+}
+`, main_())
+}
+@(test) loop_sibling_continue_outer_regalloc_blowup :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	sum := 0
+	i := 0
+	A: for {
+		i += 1
+		if i == 8 do break
+		j := 0
+		for {
+			j += 1
+			if j == 5 do break
+			if j == 2 do continue A
+			sum += 1
+		}
+		k := 0
+		for {
+			k += 1
+			if k == 5 do break
+			if k == 3 do continue A
+			sum += 2
+		}
+		sum += 100
+	}
+	return sum
+}
+
+run_test(t, `loop_sibling_continue_outer_regalloc_blowup`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	sum := 0
+	i := 0
+	A: for {
+		i += 1
+		if i == 8 do break
+		j := 0
+		for {
+			j += 1
+			if j == 5 do break
+			if j == 2 do continue A
+			sum += 1
+		}
+		k := 0
+		for {
+			k += 1
+			if k == 5 do break
+			if k == 3 do continue A
+			sum += 2
+		}
+		sum += 100
+	}
+	return sum
+}
+`, main_())
+}
+@(test) foobar :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+      sum := 0; i := 0
+      A: for {
+              i += 1
+              if i == 2 do break
+	      // infinite inner; tail below is unreachable
+              if i == 3 { for { sum += 1 } }
+              sum += 10
+      }
+      return sum
+}
+
+run_test(t, `foobar`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+      sum := 0; i := 0
+      A: for {
+              i += 1
+              if i == 2 do break
+	      // infinite inner; tail below is unreachable
+              if i == 3 { for { sum += 1 } }
+              sum += 10
+      }
+      return sum
+}
+`, main_())
+}

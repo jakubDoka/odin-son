@@ -514,3 +514,70 @@ main :: proc() -> int {
 	return sum
 }
 ```
+
+#### loop unreachable tail after labelled break crash
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	sum := 0
+	for {
+		if sum == 2 do break
+		sum += 1
+	}
+	return sum
+}
+```
+
+#### loop sibling continue outer regalloc blowup
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	sum := 0
+	i := 0
+	A: for {
+		i += 1
+		if i == 8 do break
+		j := 0
+		for {
+			j += 1
+			if j == 5 do break
+			if j == 2 do continue A
+			sum += 1
+		}
+		k := 0
+		for {
+			k += 1
+			if k == 5 do break
+			if k == 3 do continue A
+			sum += 2
+		}
+		sum += 100
+	}
+	return sum
+}
+```
+
+#### foobar
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+      sum := 0; i := 0
+      A: for {
+              i += 1
+              if i == 2 do break
+	      // infinite inner; tail below is unreachable
+              if i == 3 { for { sum += 1 } }
+              sum += 10
+      }
+      return sum
+}
+```

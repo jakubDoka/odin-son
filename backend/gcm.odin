@@ -5,6 +5,7 @@ import "core:container/queue"
 import "core:fmt"
 import "core:log"
 import "core:slice"
+import "core:strings"
 import "core:sync"
 import "core:sys/info"
 
@@ -366,7 +367,7 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 	for id, i in cfg_rpos {
 		if graph_has_flag(graph, id, .Is_Basic_Block_Start) {
 			extra := graph_extra(graph, id, Cfg_Extra)
-			extra.bb_idx = u32(bb_idx)
+			ctx.late_schedules[graph_get(graph, id).gvn] = Node_ID(bb_idx)
 			loop_tree := lctx.loop_trees[graph_get(graph, id).gvn]
 			tree_depth(loop_tree)
 
@@ -393,7 +394,7 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 
 	for node, i in ctx.nodes {
 		if node == 0 do continue
-		bb := graph_extra(graph, ctx.late_schedules[i], Cfg_Extra).bb_idx
+		bb := ctx.late_schedules[graph_get(graph, ctx.late_schedules[i]).gvn]
 		append(&bbs[bb].instrs, node)
 	}
 
@@ -405,6 +406,8 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 
 	gs.bbs = bbs[:]
 
+	verify_integrity(graph, gs)
+
 	schedule_block :: proc(graph: ^Graph, bb: ^Graph_Basic_Block) {
 		phi_count := 0
 		for instr, i in bb.instrs {
@@ -412,6 +415,49 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 				ordered_remove(&bb.instrs, i)
 				inject_at(&bb.instrs, phi_count, instr)
 				phi_count += 1
+			}
+		}
+	}
+
+	@(disabled = ODIN_DISABLE_ASSERT)
+	verify_integrity :: proc(graph: ^Graph, sched: ^Graph_Schedule) {
+		schedules := make([]Node_ID, graph.gvn)
+
+		for bb in sched.bbs {
+			for instr, i in bb.instrs {
+				inode := graph_expand(graph, instr)
+
+				if inode.itype != .Phi {
+					for oinstr in bb.instrs[i + 1:] {
+						onode := graph_expand(graph, oinstr)
+						assert(!slice.contains(inode.inps, oinstr))
+					}
+				}
+
+				schedules[inode.gvn] = bb.head
+			}
+		}
+
+		for bb, idx in sched.bbs {
+			for instr, i in bb.instrs {
+				inode := graph_expand(graph, instr)
+
+				for inp, i in inode.inps {
+					innode := graph_expand(graph, inp)
+					if is_cfg(graph, inp) do continue
+
+					insched := schedules[innode.gvn]
+
+					latest := schedules[inode.gvn]
+					if inode.itype == .Phi {
+						jmp := graph_inps(graph, inode.inps[0])[i - 1]
+						latest = graph_inps(graph, jmp)[0]
+					}
+
+					for insched != latest {
+						latest = graph_idom(graph, latest)
+					}
+				}
 			}
 		}
 	}

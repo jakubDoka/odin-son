@@ -54,7 +54,6 @@ Class_Flag :: enum {
 Cfg_Extra :: struct {
 	using _: struct #raw_union {
 		idepth: u32,
-		bb_idx: u32,
 	},
 }
 

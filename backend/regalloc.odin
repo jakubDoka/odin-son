@@ -383,6 +383,8 @@ regalloc_round :: proc(
 		node: Node_ID,
 	}
 
+	// TODO: optimize this, we need to deduplicate these because the IFG round
+	// are repushing same stuff
 	ctx.self_conflicts = make([dynamic]Self_Conflict, arena)
 
 	worklist: queue.Queue(u32)
@@ -762,7 +764,7 @@ regalloc_round :: proc(
 		last_split: Node_ID
 
 		for inp, i in node.inps {
-			if i != int(node.inplace_slot) {
+			if i != int(node.inplace_slot) && node.itype != .Phi {
 				continue
 			}
 
@@ -781,7 +783,9 @@ regalloc_round :: proc(
 								   inode.gvn != node.gvn - 1)) ||
 					   inode.output_count > 1) {
 				split: Node_ID
-				if last_split != 0 && graph_inps(graph, last_split)[0] == inp {
+				if last_split != 0 &&
+				   graph_inps(graph, last_split)[0] == inp &&
+				   node.itype != .Phi {
 					split = last_split
 				} else {
 					split = split_before(ctx, id, i, "sci")

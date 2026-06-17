@@ -1,0 +1,55 @@
+     push rcx
+     push rbp
+     mov rcx, 0x00
+     mov rbx, rcx
+     mov rax, rcx
+     jmp :0
+
+000: mov rdx, 0x01
+     add rbx, rdx
+     mov rbp, 0x05
+     mov rsi, rbx
+     cmp rsi, rbp
+     setz sil
+     movzx rsi, sil
+     test rsi, rsi
+     jz :1
+     jmp :2
+
+001: mov rsi, rcx
+     add rsi, rdx
+     cmp rsi, rbp
+     setz sil
+     movzx rsi, sil
+     test rsi, rsi
+     jz :3
+     jmp :4
+
+003: mov rsi, rcx
+     mov rbp, rax
+     jmp :5
+
+005: mov rax, rsi
+     add rax, rdx
+     add rbp, rdx
+     mov rsi, 0x02
+     cmp rsi, rax
+     setz sil
+     movzx rsi, sil
+     test rsi, rsi
+     jz :6
+     jmp :7
+
+006: mov rsi, rax
+     jmp :5
+
+007: mov rax, rbp
+     jmp :8
+
+004: jmp :8
+
+008: jmp :0
+
+002: pop rbp
+     pop rcx
+     ret

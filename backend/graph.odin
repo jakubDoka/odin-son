@@ -4,11 +4,11 @@ import "../vendored/gam/util/arna"
 import "base:runtime"
 import "core:fmt"
 import "core:hash"
+import "core:io"
 import "core:mem"
 import "core:reflect"
 import "core:simd"
 import "core:slice"
-import "core:strings"
 import "core:terminal/ansi"
 
 when NODE_NAMES {
@@ -116,23 +116,23 @@ Node_Intern_Entry :: struct {
 }
 
 Graph :: struct {
-	using node_spec:        ^Node_Spec,
-	interner:               #soa[]Node_Intern_Entry,
-	interner_len:           int,
-	mem:                    ^arna.Allocator,
-	gvn:                    u32,
-	end:                    Node_ID,
-	dont_intern:            bool,
-	// TODO: somehow comment this out on release, idk how
-	is_in_transition_state: bool,
+	using node_spec: ^Node_Spec,
+	interner:        #soa[]Node_Intern_Entry,
+	interner_len:    int,
+	mem:             ^arna.Allocator,
+	gvn:             u32,
+	end:             Node_ID,
+	dont_intern:     bool,
 }
 
 Intern_Vec :: #simd[16]u8
 
 graph_interner_find :: proc(graph: ^Graph, id: Node_ID) -> (int, u8, bool) {
 	assert(mem.is_aligned(graph.interner.hash, align_of(Intern_Vec)))
+	assert(id != 0)
 
 	needle := u8(graph_node_hash(graph, id))
+	needle += u8(needle == 0)
 
 	for mask, i in mem.slice_data_cast(
 		[]Intern_Vec,
@@ -155,10 +155,7 @@ graph_interner_find :: proc(graph: ^Graph, id: Node_ID) -> (int, u8, bool) {
 }
 
 graph_intern :: proc(graph: ^Graph, id: Node_ID) -> Node_ID {
-	assert(!graph.is_in_transition_state)
-
-	if .Interned not_in graph.node_flags[graph_get(graph, id).itype] ||
-	   graph.dont_intern {
+	if !graph_has_flag(graph, id, .Interned) || graph.dont_intern {
 		return id
 	}
 
@@ -167,7 +164,12 @@ graph_intern :: proc(graph: ^Graph, id: Node_ID) -> Node_ID {
 
 	if len(graph.interner) == graph.interner_len {
 		new_cap := len(graph.interner) * 2 + size_of(Intern_Vec)
-		hashes := arna.alloc(graph.mem, uint(new_cap), align_of(Intern_Vec))
+		hashes := arna.alloc(
+			graph.mem,
+			uint(new_cap),
+			align_of(Intern_Vec),
+			zeroed = true,
+		)
 		nodes := arna.smake(graph.mem, []Node_ID, new_cap)
 
 		mem.copy_non_overlapping(
@@ -178,11 +180,12 @@ graph_intern :: proc(graph: ^Graph, id: Node_ID) -> Node_ID {
 		mem.copy_non_overlapping(
 			raw_data(nodes),
 			graph.interner.id,
-			graph.interner_len,
+			graph.interner_len * size_of(Node_ID),
 		)
 
 		graph.interner.hash = raw_data(hashes)
 		graph.interner.id = raw_data(nodes)
+
 		raw_soa_footer_slice(&graph.interner).len = new_cap
 	}
 
@@ -196,15 +199,17 @@ graph_intern :: proc(graph: ^Graph, id: Node_ID) -> Node_ID {
 }
 
 graph_unintern :: proc(graph: ^Graph, id: Node_ID) {
-	assert(!graph.is_in_transition_state)
-
-	if .Interned in graph.node_flags[graph_get(graph, id).itype] &&
-	   !graph.dont_intern {
+	if graph_has_flag(graph, id, .Interned) && !graph.dont_intern {
 		idx, _, _ := graph_interner_find(graph, id)
 		if idx < 0 do return
+
 		graph.interner_len -= 1
 		graph.interner[idx] = graph.interner[graph.interner_len]
-		graph.interner[graph.interner_len] = {}
+
+		// NOTE: there is probably a bug in the odin compiler that requires us
+		// to not set the value with a leteral
+		tmp: Node_Intern_Entry
+		graph.interner[graph.interner_len] = tmp
 	}
 }
 
@@ -269,16 +274,18 @@ graph_get_scope_value :: proc(
 	scope: Node_ID,
 	#any_int idx: int,
 ) -> Node_ID {
-	scope_node := graph_get(graph, scope)
-	assert(scope_node.btype == .Scope)
+	snode := graph_get(graph, scope)
+	assert(snode.btype == .Scope)
 
-	val := graph_inps(graph, scope_node)[idx]
+	val := graph_inps(graph, snode)[idx]
 	vnode := graph_expand(graph, val)
-	if vnode.btype == .Scope {
+	loop_scope := graph_extra(graph, vnode, Scope)
+	if loop_scope != nil {
 		pval := val
 		val = graph_get_scope_value(graph, val, idx)
 		cvnode := graph_expand(graph, val)
-		if cvnode.btype != .Lazy_Phi || vnode.inps[0] != cvnode.inps[0] {
+		if (cvnode.btype != .Lazy_Phi || vnode.inps[0] != cvnode.inps[0]) &&
+		   !loop_scope.done {
 			assert(graph_get(graph, vnode.inps[0]).itype == .Loop)
 			val = graph_add_lazyPhi(
 				graph,
@@ -447,7 +454,7 @@ graph_id :: #force_inline proc(graph: ^Graph, node: ^Node) -> Node_ID {
 graph_delete_node :: proc(graph: ^Graph, node: ^Node, indirect := false) {
 	id := graph_id(graph, node)
 	if node.output_count != 0 do return
-	if .Immortal in graph.node_flags[node.rtype] && indirect do return
+	if graph_has_flag(graph, node, .Immortal) && indirect do return
 
 	for inp, i in graph_inps(graph, node) {
 		if inp == 0 do continue
@@ -699,10 +706,10 @@ graph_has_flag_node :: #force_inline proc(
 }
 
 graph_display :: proc(
-	sb: ^strings.Builder,
+	w: io.Writer,
 	graph: ^Graph,
 	ctx: ^Graph_Schedule = nil,
-	prefix: proc(_: ^strings.Builder, _: ^Node, _: Graph_Basic_Block) = nil,
+	prefix: proc(_: io.Writer, _: ^Node, _: Graph_Basic_Block) = nil,
 	regs: []Reg = {},
 ) {
 	ctx := ctx
@@ -723,17 +730,17 @@ graph_display :: proc(
 			seen_loop_trees[bb.loop_tree.parent] = len(seen_loop_trees)
 		}
 
-		fmt.sbprintf(
-			sb,
+		fmt.wprintf(
+			w,
 			"%02i:%02i:%02i ",
 			bb.loop_tree.depth,
 			seen_loop_trees[bb.loop_tree],
 			seen_loop_trees[bb.loop_tree.parent],
 		)
 
-		graph_display_node(sb, graph, bb.head)
+		graph_display_node(w, graph, bb.head)
 
-		append(&sb.buf, " {\n")
+		fmt.wprint(w, " {\n")
 
 		for instr in bb.instrs {
 			inode := graph_get(graph, instr)
@@ -741,46 +748,45 @@ graph_display :: proc(
 				continue
 			}
 
-			append(&sb.buf, "  ")
+			fmt.wprint(w, "  ")
 			if len(regs) != 0 {
 				if inode.dt != .Void {
 					reg := regs[inode.gvn]
-					fmt.sbprintf(
-						sb,
+					fmt.wprintf(
+						w,
 						"%v%03i",
 						reg_kind_char(reg.kind),
 						reg.index,
 					)
 				} else {
-					append(&sb.buf, "    ")
+					fmt.wprint(w, "    ")
 				}
 			} else if prefix != nil {
-				prefix(sb, inode, bb)
+				prefix(w, inode, bb)
 			}
-			graph_display_node(sb, graph, instr)
-			append(&sb.buf, "\n")
+			graph_display_node(w, graph, instr)
+			fmt.wprint(w, "\n")
 		}
 
-		append(&sb.buf, "}\n")
+		fmt.wprint(w, "}\n")
 	}
 }
 
-graph_display_node :: proc(sb: ^strings.Builder, graph: ^Graph, id: Node_ID) {
+graph_display_node :: proc(w: io.Writer, graph: ^Graph, id: Node_ID) {
 	node := graph_expand(graph, id)
 
 	extra := graph_extra(graph, node)
 
-	graph_display_node_gvn(sb, graph, id)
-	fmt.sbprintf(sb, ":%v(", graph.node_kind_name[node.rtype])
+	graph_display_node_gvn(w, graph, id)
+	fmt.wprintf(w, ":%v(", graph.node_kind_name[node.rtype])
 
 	written_one: bool
-	graph_display_extra(sb, extra, "", &written_one)
+	graph_display_extra(w, extra, "", &written_one)
 
 	for inp, i in node.inps {
-		inode := graph_get(graph, inp)
-		if written_one do fmt.sbprintf(sb, ", ")
+		if written_one do fmt.wprintf(w, ", ")
 		written_one = true
-		graph_display_node_gvn(sb, graph, inp)
+		graph_display_node_gvn(w, graph, inp)
 	}
 
 	if node.itype == .Jump {
@@ -789,9 +795,9 @@ graph_display_node :: proc(sb: ^strings.Builder, graph: ^Graph, id: Node_ID) {
 		for out in rnode.outs {
 			onode := graph_expand(graph, out.id)
 			if onode.itype == .Phi {
-				if written_one do fmt.sbprintf(sb, ", ")
+				if written_one do fmt.wprintf(w, ", ")
 				written_one = true
-				graph_display_node_gvn(sb, graph, onode.inps[1 + reg.idx])
+				graph_display_node_gvn(w, graph, onode.inps[1 + reg.idx])
 			}
 		}
 	}
@@ -800,43 +806,45 @@ graph_display_node :: proc(sb: ^strings.Builder, graph: ^Graph, id: Node_ID) {
 		for out in node.outs {
 			onode := graph_get(graph, out.id)
 			if onode.itype == .Phi {
-				if written_one do fmt.sbprintf(sb, ", ")
+				if written_one do fmt.wprintf(w, ", ")
 				written_one = true
-				graph_display_node_gvn(sb, graph, out.id)
+				graph_display_node_gvn(w, graph, out.id)
 			}
 		}
 	}
 
-	append(&sb.buf, ") [")
+	fmt.wprint(w, ") [")
 	written_one = false
 	for out, i in node.outs {
-		onode := graph_expand(graph, out.id)
-		if onode.itype == .Phi {
-			if out.idx != 0 {
-				reg := onode.inps[0]
-				rnode := graph_expand(graph, reg)
-				idx := 0
-				for ro in rnode.outs {
-					if ro.id == out.id do break
-					idx += int(graph_get(graph, ro.id).itype == .Phi)
+		if out.id != 0 {
+			onode := graph_expand(graph, out.id)
+			if onode.itype == .Phi {
+				if out.idx != 0 {
+					reg := onode.inps[0]
+					rnode := graph_expand(graph, reg)
+					idx := 0
+					for ro in rnode.outs {
+						if ro.id == out.id do break
+						idx += int(graph_get(graph, ro.id).itype == .Phi)
+					}
+					if written_one do fmt.wprintf(w, ", ")
+					written_one = true
+					graph_display_node_gvn(w, graph, rnode.inps[out.idx - 1])
+					fmt.wprintf(w, ":%v", 1 + idx)
 				}
-				if written_one do fmt.sbprintf(sb, ", ")
-				written_one = true
-				graph_display_node_gvn(sb, graph, rnode.inps[out.idx - 1])
-				fmt.sbprintf(sb, ":%v", 1 + idx)
+				continue
 			}
-			continue
 		}
-		if written_one do fmt.sbprintf(sb, ", ")
+		if written_one do fmt.wprintf(w, ", ")
 		written_one = true
-		graph_display_node_gvn(sb, graph, out.id)
-		fmt.sbprintf(sb, ":%v", out.idx)
+		graph_display_node_gvn(w, graph, out.id)
+		fmt.wprintf(w, ":%v", out.idx)
 	}
-	append(&sb.buf, "]")
+	fmt.wprint(w, "]")
 }
 
 graph_display_extra :: proc(
-	sb: ^strings.Builder,
+	w: io.Writer,
 	extra: any,
 	name: string,
 	written_one: ^bool,
@@ -846,21 +854,21 @@ graph_display_extra :: proc(
 	case runtime.Type_Info_Struct:
 		for field in reflect.struct_fields_zipped(extra.id) {
 			extra := reflect.struct_field_value(extra, field)
-			graph_display_extra(sb, extra, field.name, written_one)
+			graph_display_extra(w, extra, field.name, written_one)
 			if .raw_union in info.flags do break
 		}
 		return
 	}
 
-	if written_one^ do append(&sb.buf, ", ")
+	if written_one^ do fmt.wprint(w, ", ")
 	written_one^ = true
 	if name != "" {
-		fmt.sbprintf(sb, "%v: ", name)
+		fmt.wprintf(w, "%v: ", name)
 	}
-	fmt.sbprint(sb, extra)
+	fmt.wprint(w, extra)
 }
 
-ansi_start :: proc(sb: ^strings.Builder, #any_int gvn: int) {
+ansi_start :: proc(w: io.Writer, #any_int gvn: int) {
 	if .Terminal_Color in context.logger.options {
 		Combo :: struct {
 			fg: string,
@@ -897,22 +905,18 @@ ansi_start :: proc(sb: ^strings.Builder, #any_int gvn: int) {
 		pick := colors[gvn % len(colors)]
 
 		if pick.fg != "" {
-			append(&sb.buf, ansi.CSI)
-			append(&sb.buf, pick.fg)
-			append(&sb.buf, ansi.SGR)
+			fmt.wprintf(w, ansi.CSI + "%v" + ansi.SGR, pick.fg)
 		}
 
 		if pick.bg != "" {
-			append(&sb.buf, ansi.CSI)
-			append(&sb.buf, pick.bg)
-			append(&sb.buf, ansi.SGR)
+			fmt.wprintf(w, ansi.CSI + "%v" + ansi.SGR, pick.bg)
 		}
 	}
 }
 
-ansi_end :: proc(sb: ^strings.Builder) {
+ansi_end :: proc(w: io.Writer) {
 	if .Terminal_Color in context.logger.options {
-		append(&sb.buf, ansi.CSI + ansi.RESET + ansi.SGR)
+		fmt.wprint(w, ansi.CSI + ansi.RESET + ansi.SGR)
 	}
 }
 
@@ -926,16 +930,16 @@ graph_get_node_name :: proc(graph: ^Graph, id: Node_ID) -> (name: string) {
 	return
 }
 
-graph_display_node_gvn :: proc(
-	sb: ^strings.Builder,
-	graph: ^Graph,
-	id: Node_ID,
-) {
+graph_display_node_gvn :: proc(w: io.Writer, graph: ^Graph, id: Node_ID) {
+	if id == 0 {
+		fmt.wprint(w, "nl")
+		return
+	}
 	n := graph_get(graph, id)
 
-	ansi_start(sb, n.gvn)
+	ansi_start(w, n.gvn)
 
-	fmt.sbprintf(sb, "#%v%v", n.gvn, graph_get_node_name(graph, id))
+	fmt.wprintf(w, "#%v%v", n.gvn, graph_get_node_name(graph, id))
 
-	ansi_end(sb)
+	ansi_end(w)
 }

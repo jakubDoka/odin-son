@@ -54,18 +54,30 @@
      jmp :12
 
 012: add rbp, rcx
-     mov rdx, rbp
-     cmp rdx, rbx
+     mov rdx, 0x02
+     cmp rdx, rbp
      setz dl
      movzx rdx, dl
      test rdx, rdx
      jz :13
      jmp :14
 
-013: jmp :12
+013: mov rdx, rbp
+     cmp rdx, rbx
+     setz dl
+     movzx rdx, dl
+     test rdx, rdx
+     jz :15
+     jmp :16
 
-014: jmp :6
+015: jmp :12
 
-008: pop rbp
+016: jmp :6
+
+014: jmp :17
+
+008: jmp :17
+
+017: pop rbp
      pop rcx
      ret

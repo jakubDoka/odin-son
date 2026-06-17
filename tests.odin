@@ -879,3 +879,115 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) inner_loop_only_breaks_outer :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	sum := 0
+	i := 0
+	outer: for {
+		i += 1
+		if i == 4 do break
+		j := 0
+		for {
+			j += 1
+			if j == 4 do break
+			if j == 2 {
+				k := 0
+				for {
+					k += 1
+					sum += 1
+					if k == 5 do break outer
+				}
+			}
+		}
+	}
+	return sum
+}
+
+run_test(t, `inner_loop_only_breaks_outer`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	sum := 0
+	i := 0
+	outer: for {
+		i += 1
+		if i == 4 do break
+		j := 0
+		for {
+			j += 1
+			if j == 4 do break
+			if j == 2 {
+				k := 0
+				for {
+					k += 1
+					sum += 1
+					if k == 5 do break outer
+				}
+			}
+		}
+	}
+	return sum
+}
+`, main_())
+}
+@(test) inner_loop_continues_outer :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	sum := 0
+	i := 0
+	outer: for {
+		i += 1
+		if i == 5 do break
+		j := 0
+		for {
+			j += 1
+			if j == 5 do break
+			k := 0
+			for {
+				k += 1
+				sum += 1
+				if k == 2 do continue outer
+			}
+		}
+	}
+	return sum
+}
+
+run_test(t, `inner_loop_continues_outer`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	sum := 0
+	i := 0
+	outer: for {
+		i += 1
+		if i == 5 do break
+		j := 0
+		for {
+			j += 1
+			if j == 5 do break
+			k := 0
+			for {
+				k += 1
+				sum += 1
+				if k == 2 do continue outer
+			}
+		}
+	}
+	return sum
+}
+`, main_())
+}

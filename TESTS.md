@@ -456,3 +456,61 @@ main :: proc() -> int {
 	return 0
 }
 ```
+
+#### inner loop only breaks outer
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	sum := 0
+	i := 0
+	outer: for {
+		i += 1
+		if i == 4 do break
+		j := 0
+		for {
+			j += 1
+			if j == 4 do break
+			if j == 2 {
+				k := 0
+				for {
+					k += 1
+					sum += 1
+					if k == 5 do break outer
+				}
+			}
+		}
+	}
+	return sum
+}
+```
+
+#### inner loop continues outer
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	sum := 0
+	i := 0
+	outer: for {
+		i += 1
+		if i == 5 do break
+		j := 0
+		for {
+			j += 1
+			if j == 5 do break
+			k := 0
+			for {
+				k += 1
+				sum += 1
+				if k == 2 do continue outer
+			}
+		}
+	}
+	return sum
+}
+```

@@ -6,6 +6,7 @@ import "base:intrinsics"
 import "base:runtime"
 import "core:container/queue"
 import "core:fmt"
+import "core:io"
 import "core:log"
 import "core:math/rand"
 import "core:mem"
@@ -280,7 +281,7 @@ regalloc_round :: proc(
 			if inode.dt != .Void {
 				lrg: ^Lrg
 
-				if .Comutes in graph.node_flags[inode.rtype] {
+				if graph_has_flag(graph, inode, .Comutes) {
 					if graph_get(graph, inode.inps[0]).output_count > 1 &&
 					   graph_get(graph, inode.inps[1]).output_count == 1 {
 						graph_outs(graph, inode.inps[1])[0].idx = 0
@@ -476,7 +477,7 @@ regalloc_round :: proc(
 			if pred == NODE_START do break
 
 			pred_block := graph_get(graph, graph_idom(graph, pred))
-			assert(.Is_Basic_Block_Start in graph.node_flags[pred_block.rtype])
+			assert(graph_has_flag(graph, pred_block, .Is_Basic_Block_Start))
 
 			pred_bb_idx := int(pred_block.gvn) - block_base
 			assert(pred_bb_idx >= 0)
@@ -1041,29 +1042,30 @@ regalloc_round :: proc(
 		sb: strings.Builder
 
 		context.user_ptr = ctx
-		graph_display(&sb, ctx.graph, ctx.sched, prefix = prefix)
+		graph_display(
+			strings.to_writer(&sb),
+			ctx.graph,
+			ctx.sched,
+			prefix = prefix,
+		)
 
-		prefix :: proc(
-			sb: ^strings.Builder,
-			instr: ^Node,
-			bb: Graph_Basic_Block,
-		) {
+		prefix :: proc(w: io.Writer, instr: ^Node, bb: Graph_Basic_Block) {
 			ctx := (^Ctx)(context.user_ptr)
 			if len(ctx.lrg_table) == 0 do return
 			if instr.dt != .Void {
 				lrg := ctx.lrg_table[instr.gvn]
-				fmt.sbprintf(sb, "%v:", lrg.mask)
-				ansi_start(sb, lrg.index)
-				fmt.sbprintf(sb, "%3i", lrg.index)
-				ansi_end(sb)
+				fmt.wprintf(w, "%v:", lrg.mask)
+				ansi_start(w, lrg.index)
+				fmt.wprintf(w, "%3i", lrg.index)
+				ansi_end(w)
 				if len(ctx.adj) != 0 {
 					priority := color_priority(ctx^, lrg, ctx.adj[lrg.index])
-					fmt.sbprintf(sb, " %04i ", priority)
+					fmt.wprintf(w, " %04i ", priority)
 				} else {
-					fmt.sbprint(sb, "      ")
+					fmt.wprint(w, "      ")
 				}
 			} else {
-				fmt.sbprint(sb, "                           ")
+				fmt.wprint(w, "                           ")
 			}
 		}
 

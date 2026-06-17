@@ -234,9 +234,9 @@ highlight_disasm :: proc(disasm: string) -> string {
 	for name, i in gp_register_names {
 		highlight: strings.Builder
 
-		backend.ansi_start(&highlight, i)
+		backend.ansi_start(strings.to_writer(&highlight), i)
 		append(&highlight.buf, name)
-		backend.ansi_end(&highlight)
+		backend.ansi_end(strings.to_writer(&highlight))
 
 		text, _ = strings.replace_all(text, name, string(highlight.buf[:]))
 	}
@@ -248,9 +248,9 @@ highlight_disasm :: proc(disasm: string) -> string {
 
 		highlight: strings.Builder
 
-		backend.ansi_start(&highlight, i)
+		backend.ansi_start(strings.to_writer(&highlight), i)
 		append(&highlight.buf, name)
-		backend.ansi_end(&highlight)
+		backend.ansi_end(strings.to_writer(&highlight))
 
 		text, _ = strings.replace_all(text, name, string(highlight.buf[:]))
 	}
@@ -303,13 +303,21 @@ init_custom_fmt :: proc() {
 		backend.Node_ID,
 		proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
 			value := value.(backend.Node_ID)
-			sb: strings.Builder
 			if value != 0 {
-				backend.graph_display_node_gvn(&sb, current_graph, value)
+				backend.graph_display_node_gvn(fi.writer, current_graph, value)
 			} else {
-				append(&sb.buf, "nl")
+				fmt.wprint(fi.writer, "nl")
 			}
-			io.write(fi.writer, sb.buf[:])
+			return true
+		},
+	)
+
+	fmt.register_user_formatter(
+		backend.Node,
+		proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
+			value := &value.(backend.Node)
+			id := backend.graph_id(current_graph, value)
+			backend.graph_display_node(fi.writer, current_graph, id)
 			return true
 		},
 	)
@@ -403,7 +411,12 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 	sb: strings.Builder
 	if backend.REGLOGS {
 		append(&sb.buf, "\n")
-		backend.graph_display(&sb, &graph, &schedule, regs = regs)
+		backend.graph_display(
+			strings.to_writer(&sb),
+			&graph,
+			&schedule,
+			regs = regs,
+		)
 		log.info(string(sb.buf[:]))
 	}
 
@@ -703,7 +716,9 @@ emit_nodes :: proc(
 			}
 		}
 
+		backend.graph_extra(ctx, loop_state.scope, backend.Scope).done = true
 		backend.graph_remove_output(ctx, loop_state.scope, {id = 0, idx = 0})
+
 		if backedge != 0 {
 			backend.graph_delete(ctx, backedge)
 		} else {

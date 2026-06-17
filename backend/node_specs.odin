@@ -118,13 +118,13 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{}, // Start
 			{Class_Flag.Is_Basic_Block_Start}, // Entry
 			{Class_Flag.Interned}, // CInt
-			{Class_Flag.Comutes}, // Add
+			{Class_Flag.Interned, Class_Flag.Comutes}, // Add
 			{}, // Sub
-			{Class_Flag.Comutes}, // Mul
-			{Class_Flag.Comutes}, // Eq
-			{Class_Flag.Comutes}, // Ne
+			{Class_Flag.Interned, Class_Flag.Comutes}, // Mul
+			{Class_Flag.Interned, Class_Flag.Comutes}, // Eq
+			{Class_Flag.Interned, Class_Flag.Comutes}, // Ne
 			{}, // Split
-			{}, // Phi
+			{Class_Flag.Interned}, // Phi
 			{}, // If
 			{Class_Flag.Is_Basic_Block_Start}, // Then
 			{Class_Flag.Is_Basic_Block_Start}, // Else
@@ -288,13 +288,13 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{}, // Start
 			{Class_Flag.Is_Basic_Block_Start}, // Entry
 			{Class_Flag.Interned}, // CInt
-			{Class_Flag.Comutes}, // Add
+			{Class_Flag.Interned, Class_Flag.Comutes}, // Add
 			{}, // Sub
-			{Class_Flag.Comutes}, // Mul
-			{Class_Flag.Comutes}, // Eq
-			{Class_Flag.Comutes}, // Ne
+			{Class_Flag.Interned, Class_Flag.Comutes}, // Mul
+			{Class_Flag.Interned, Class_Flag.Comutes}, // Eq
+			{Class_Flag.Interned, Class_Flag.Comutes}, // Ne
 			{}, // Split
-			{}, // Phi
+			{Class_Flag.Interned}, // Phi
 			{}, // If
 			{Class_Flag.Is_Basic_Block_Start}, // Then
 			{Class_Flag.Is_Basic_Block_Start}, // Else

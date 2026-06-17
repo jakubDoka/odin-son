@@ -173,5 +173,6 @@ main :: proc() {
 }
 
 src_of :: proc(f: ast.File, node: ^ast.Node) -> string {
+	if node == nil do return ""
 	return f.src[node.pos.offset:node.end.offset]
 }

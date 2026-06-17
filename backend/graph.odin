@@ -279,6 +279,7 @@ graph_get_scope_value :: proc(
 		val = graph_get_scope_value(graph, val, idx)
 		cvnode := graph_expand(graph, val)
 		if cvnode.btype != .Lazy_Phi || vnode.inps[0] != cvnode.inps[0] {
+			assert(graph_get(graph, vnode.inps[0]).itype == .Loop)
 			val = graph_add_lazyPhi(
 				graph,
 				"lphi",
@@ -712,8 +713,23 @@ graph_display :: proc(
 		ctx = &our_ctx
 	}
 
+	seen_loop_trees: map[^Loop_Tree]int
+
 	for bb in ctx.bbs {
-		fmt.sbprintf(sb, "%02i %p", bb.loop_tree.depth, bb.loop_tree)
+		if bb.loop_tree not_in seen_loop_trees {
+			seen_loop_trees[bb.loop_tree] = len(seen_loop_trees)
+		}
+		if bb.loop_tree.parent not_in seen_loop_trees {
+			seen_loop_trees[bb.loop_tree.parent] = len(seen_loop_trees)
+		}
+
+		fmt.sbprintf(
+			sb,
+			"%02i:%02i:%02i ",
+			bb.loop_tree.depth,
+			seen_loop_trees[bb.loop_tree],
+			seen_loop_trees[bb.loop_tree.parent],
+		)
 
 		graph_display_node(sb, graph, bb.head)
 

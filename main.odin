@@ -465,6 +465,7 @@ Loop_Control :: enum int {
 
 Loop_State :: struct {
 	parent: ^Loop_State,
+	label:  string,
 	scope:  backend.Node_ID,
 	scopes: [Loop_Control]backend.Node_ID,
 }
@@ -628,7 +629,6 @@ emit_nodes :: proc(
 			else_scope,
 		)
 	case ^ast.For_Stmt:
-		assert(d.label == nil)
 		assert(d.init == nil)
 		assert(d.cond == nil)
 		assert(d.post == nil)
@@ -637,6 +637,7 @@ emit_nodes :: proc(
 		backend.graph_set_input(ctx, ctx.node_scope, 0, loop)
 
 		loop_state: Loop_State
+		loop_state.label = meta.src_of(ctx.file^, d.label)
 		loop_state.parent = ctx.loop
 		loop_state.scope = backend.graph_clone(ctx, ctx.node_scope)
 		ctx.loop = &loop_state
@@ -706,16 +707,33 @@ emit_nodes :: proc(
 		if backedge != 0 {
 			backend.graph_delete(ctx, backedge)
 		} else {
+			for out in backend.graph_outs(ctx, loop) {
+				onode := backend.graph_expand(ctx, out.id)
+				if onode.btype == .Lazy_Phi {
+					backend.graph_subsume(ctx, onode.inps[1], out.id)
+				}
+			}
+
 			backend.graph_subsume(ctx, backend.graph_inps(ctx, loop)[0], loop)
 		}
 
 		ctx.loop = ctx.loop.parent
 	case ^ast.Branch_Stmt:
-		assert(d.label == nil)
+		label := meta.src_of(ctx.file^, d.label)
+
+		loop := ctx.loop
+		for ; loop != nil; loop = loop.parent {
+			if loop.label == label || label == "" {
+				break
+			}
+		}
+
+		assert(loop != nil)
+
 		backend.graph_truncate_scope(
 			ctx,
 			ctx.node_scope,
-			backend.graph_get(ctx, ctx.loop.scope).ordered_input_count,
+			backend.graph_get(ctx, loop.scope).ordered_input_count,
 		)
 		variant := Loop_Control(-1)
 		#partial switch d.tok.kind {
@@ -726,10 +744,10 @@ emit_nodes :: proc(
 		case:
 			fmt.panicf("TODO: %#v", node.derived)
 		}
-		ctx.loop.scopes[variant] = backend.graph_merge_scopes(
+		loop.scopes[variant] = backend.graph_merge_scopes(
 			ctx,
 			ctx.node_scope,
-			ctx.loop.scopes[variant],
+			loop.scopes[variant],
 		)
 		ctx.node_scope = 0
 	case:

@@ -127,7 +127,7 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 
 		if node.itype == .Loop {
 			tree = new(Loop_Tree)
-			tree.depth = 10000
+			tree.depth = 1 + prev_tree.depth
 			ctx.loop_trees[node.gvn] = tree
 		}
 

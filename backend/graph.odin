@@ -132,6 +132,28 @@ Graph :: struct {
 
 Intern_Vec :: #simd[16]u8
 
+graph_merge_returns :: proc(graph: ^Graph, ctrl: Node_ID, rets: []Node_ID) {
+	if graph.end == 0 {
+		graph.end = graph_add_return(graph, "ret", rets)
+		return
+	}
+
+	end := graph_expand(graph, graph.end)
+
+	reg := graph_add_region(graph, "rreg", ctrl, end.inps[0])
+	graph_set_input(graph, graph.end, 0, reg)
+
+	for i in 1 ..< len(end.inps) {
+		rhs := end.inps[i]
+		ty := graph_get(graph, rhs).dt
+		lhs :=
+			i - 1 < len(rets) ? rets[i - 1] : graph_add_poison(graph, "rpsn")
+		if rhs == lhs do continue
+		phi := graph_add_phi(graph, "rphi", ty, reg, lhs, rhs)
+		graph_set_input(graph, graph.end, i, phi)
+	}
+}
+
 graph_interner_find :: proc(graph: ^Graph, id: Node_ID) -> (int, u8, bool) {
 	assert(mem.is_aligned(graph.interner.hash, align_of(Intern_Vec)))
 	assert(id != 0)
@@ -385,6 +407,8 @@ graph_set_input :: proc(
 	value: Node_ID,
 ) -> Node_ID {
 	node := graph_expand(graph, id)
+
+	if node.inps[idx] == value do return id
 
 	assert(node.inps[idx] != 0)
 

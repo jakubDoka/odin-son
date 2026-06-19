@@ -582,6 +582,25 @@ main :: proc() -> int {
 }
 ```
 
+#### infinite loop with control flow
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	if false {
+		i := 0
+		for {
+			if false {
+				i -= 1
+			}
+		}
+	}
+	return 0
+}
+```
+
 #### functions
 ```odin
 package main

@@ -21,6 +21,12 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 		flags = {.Is_Basic_Block_Start},
 		default_type = .Void,
 	},
+	.Poison = {
+		id = No_Extra,
+		default_type = .Void,
+		flags = {.Interned},
+		no_ctrl = true,
+	},
 	// TODO: maybe its better to introduce a flag: Schedule_Early
 	.Arg = {id = Tup, args = {"entry"}, no_ctrl = true, extra_args = {"idx"}},
 	.CInt = {
@@ -99,6 +105,7 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 		flags = {.Is_Basic_Block_Start},
 		extra_capacity = 1,
 	},
+	.Always = {id = Cfg, args = {"ctrl"}, default_type = .Void},
 	.Call = {
 		id = Call,
 		varargs = true,
@@ -161,6 +168,7 @@ Reg_Class_Spec :: struct {
 Ideal_Node_Type :: enum u16 {
 	Start,
 	Entry,
+	Poison,
 	Arg,
 	CInt,
 	Add,
@@ -177,6 +185,7 @@ Ideal_Node_Type :: enum u16 {
 	Jump,
 	Region,
 	Loop,
+	Always,
 	Call,
 	Call_End,
 	Ret,
@@ -251,6 +260,32 @@ when (#load("node_specs.odin", string) or_else "") == "" {
 		region: Node_ID,
 		lhs: Node_ID,
 	) -> Node_ID {return 0}
+
+	graph_add_return :: proc(
+		graph: ^Graph,
+		name: string,
+		inputs: []Node_ID,
+	) -> Node_ID {return 0}
+
+	graph_add_always :: proc(
+		graph: ^Graph,
+		name: string,
+		ctrl: Node_ID,
+	) -> Node_ID {return 0}
+
+	graph_add_then :: proc(
+		graph: ^Graph,
+		name: string,
+		ctrl: Node_ID,
+	) -> Node_ID {return 0}
+
+	graph_add_else :: proc(
+		graph: ^Graph,
+		name: string,
+		ctrl: Node_ID,
+	) -> Node_ID {return 0}
+
+	graph_add_poison :: proc(graph: ^Graph, name: string) -> Node_ID {return 0}
 
 	when !GEN_SPEC {
 		#panic("Missing generated files, run `" + COMMAND + "`")

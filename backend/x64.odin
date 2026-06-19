@@ -42,6 +42,17 @@ R14 :: Reg(14)
 R15 :: Reg(15)
 RIP :: RBP
 
+//* Large parameters (> 16 bytes) will be implicitly passed by pointer
+//* Multiple return values are handled as the following
+//  * If all of the return value can be passed in a register if they were
+//  treated as a struct, they will
+//  * If they cannot, then the values are treated separately with everything
+//  but the last value being passed by pointer after the input parameters
+//    * The end value is then treated as the "normal" return value according to
+//    the calling conventioN
+// * The `context` pointer is then the last parameter to the procedure
+// arguments
+
 CALLE_SAVED := []Reg{RBX, RBP, R12, R13, R14, R15}
 CALLER_SAVED :: []Reg{RAX, RCX, RDX, RSI, RDI, R8, R9, R10, R11}
 ARGS := []Reg{RDI, RSI, RDX, RCX, R8, R9}
@@ -50,6 +61,7 @@ ARGS := []Reg{RDI, RSI, RDX, RCX, R8, R9}
 X64_IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec {
 	.Start = {},
 	.Entry = {},
+	.Poison = {},
 	.Arg = {input_start_idx = 1},
 	.CInt = {reg_masks = #partial{.General = {GPA_MASK}}},
 	.Add = {
@@ -96,6 +108,7 @@ X64_IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec {
 	.Else = {},
 	.Region = {},
 	.Loop = {},
+	.Always = {input_start_idx = 1},
 	.Call = {
 		input_start_idx = 1,
 		clobbers = #partial{.General = CALL_CLOBBERS},
@@ -240,6 +253,8 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		emit(ctx.code, {0x0f, 0x84, 0, 0, 0, 0})
 
 		fallthrough
+	case .Always:
+		fallthrough
 	case .Jump:
 		append(
 			&ctx.local_relocs,
@@ -260,9 +275,7 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 			size   = .r4,
 			id     = call.cid,
 		}
-	case .Arg:
-	case .Phi:
-	case .Ret:
+	case .Poison, .Arg, .Phi, .Ret:
 	case .CInt:
 		emit_single_op(ctx.code, 0xb8, reg_of(ctx, instr))
 		emit_anys(ctx.code, graph_extra(ctx, node, CInt).value)

@@ -1119,6 +1119,42 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) infinite_loop_with_control_flow :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	if false {
+		i := 0
+		for {
+			if false {
+				i -= 1
+			}
+		}
+	}
+	return 0
+}
+
+run_test(t, `infinite_loop_with_control_flow`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	if false {
+		i := 0
+		for {
+			if false {
+				i -= 1
+			}
+		}
+	}
+	return 0
+}
+`, main_())
+}
 @(test) functions :: proc(t: ^testing.T) {
 
 

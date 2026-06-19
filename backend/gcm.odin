@@ -23,7 +23,6 @@ Graph_Schedule :: struct {
 Loop_Tree :: struct {
 	parent: ^Loop_Tree,
 	depth:  u32,
-	finite: bool,
 }
 
 graph_lca :: proc(graph: ^Graph, a, b: Node_ID) -> Node_ID {
@@ -46,7 +45,16 @@ graph_idom_node :: proc(graph: ^Graph, node: ^Node) -> Node_ID {
 	#partial switch node.itype {
 	case .Start:
 		return 0
-	case .Entry, .Return, .If, .Else, .Then, .Jump, .Loop, .Call, .Call_End:
+	case .Entry,
+	     .Return,
+	     .If,
+	     .Else,
+	     .Then,
+	     .Jump,
+	     .Loop,
+	     .Call,
+	     .Call_End,
+	     .Always:
 		return inps[0]
 	case .Region:
 		assert(len(inps) == 2)
@@ -88,18 +96,18 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 	Loop_Ctx :: struct {
 		using graph: ^Graph,
 		loop_trees:  []^Loop_Tree,
+		root:        ^Loop_Tree,
 	}
 
 	lctx: Loop_Ctx
 	lctx.graph = graph
-	lctx.loop_trees = make([]^Loop_Tree, graph.gvn)
+	lctx.loop_trees = make([]^Loop_Tree, graph.gvn * 2)
 
-	root := new(Loop_Tree)
-	root.finite = true
+	lctx.root = new(Loop_Tree)
 
 	if graph.end != 0 {
-		lctx.loop_trees[graph_get(graph, graph.end).gvn] = root
-		build_loop_tree(&lctx, NODE_ENTRY, root)
+		lctx.loop_trees[graph_get(graph, graph.end).gvn] = lctx.root
+		build_loop_tree(&lctx, NODE_ENTRY, lctx.root)
 	}
 
 	tree_depth :: proc(tree: ^Loop_Tree) -> u32 {
@@ -132,6 +140,7 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 			ctx.loop_trees[node.gvn] = tree
 		}
 
+		infinite := true
 		deepest: ^Loop_Tree
 		for o in node.outs {
 			if !is_cfg(ctx, o.id) do continue
@@ -139,7 +148,7 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 			deepest = select(deepest, other, true)
 			if other != tree {
 				tree.parent = select(tree.parent, other, true)
-				tree.finite = true
+				infinite = false
 			}
 		}
 
@@ -149,6 +158,17 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 				tree.parent = prev_tree
 			}
 			deepest = tree.parent
+
+			if infinite {
+				always := graph_add_always(ctx, "alw", node.inps[1])
+				then := graph_add_then(ctx, "athn", always)
+				ctx.loop_trees[graph_get(ctx, then).gvn] = tree
+				graph_set_input(ctx, root, 1, then)
+
+				else_ := graph_add_else(ctx, "aels", always)
+				ctx.loop_trees[graph_get(ctx, else_).gvn] = ctx.root
+				graph_merge_returns(ctx, else_, {})
+			}
 		} else {
 			ctx.loop_trees[node.gvn] = deepest
 		}
@@ -440,6 +460,7 @@ verify_schedule_integrity :: proc(graph: ^Graph, sched: ^Graph_Schedule) {
 				}
 			}
 
+			fmt.assertf(schedules[inode.gvn] == 0, "%v", inode.node)
 			schedules[inode.gvn] = bb.head
 		}
 	}

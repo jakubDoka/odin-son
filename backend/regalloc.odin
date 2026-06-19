@@ -314,8 +314,7 @@ regalloc_round :: proc(
 					lrg = ctx.lrg_table[inplace_node.gvn]
 				} else if inode.itype == .Phi {
 					for inp in inode.inps[1:] {
-						inp_node := graph_get(graph, inp)
-						lrg = unify(lrg, ctx.lrg_table[inp_node.gvn])
+						lrg = unify(lrg, get_lrg(ctx, inp))
 					}
 				}
 
@@ -795,15 +794,7 @@ regalloc_round :: proc(
 
 				fnode.outs = arna.clone(ra, fnode.outs)
 
-				split := graph_add_split(graph, "cdef", fnode.dt, id)
-
-				placement_block := get_node_block(ctx, id)
-				placement_idx, _ := arna.simd_search(
-					placement_block.instrs[:],
-					id,
-				)
-
-				inject_at(&placement_block.instrs, placement_idx + 1, split)
+				split := split_after(ctx, "cdef", id)
 
 				for o in fnode.outs {
 					onode := graph_get(graph, o.id)
@@ -895,6 +886,9 @@ regalloc_round :: proc(
 		}
 	}
 
+	ctx.lrg_table = {}
+	log_lrgs(&ctx)
+
 	verify_schedule_integrity(ctx.graph, ctx.sched)
 
 	return
@@ -984,6 +978,8 @@ regalloc_round :: proc(
 		node := graph_expand(ctx.graph, id)
 		inp := redirect if redirect != 0 else node.inps[idx]
 		inp_node := graph_get(ctx.graph, inp)
+
+		if inp_node.dt == .Void do return inp
 
 		placement_block: ^Graph_Basic_Block
 		placement_idx: int

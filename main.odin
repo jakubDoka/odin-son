@@ -603,10 +603,9 @@ Loop_Control :: enum int {
 }
 
 Loop_State :: struct {
-	parent: ^Loop_State,
-	label:  string,
-	scope:  backend.Node_ID,
-	scopes: [Loop_Control]backend.Node_ID,
+	parent:       ^Loop_State,
+	label:        string,
+	using bstate: backend.Loop_State,
 }
 
 Propagation :: struct {}
@@ -708,7 +707,7 @@ emit_nodes :: proc(
 			values[1 + i] = emit_nodes(ctx, {}, r)
 		}
 		values[0] = ctx_ctrl(ctx)
-		ctx.end = backend.graph_add_return(ctx, "ret", values)
+		backend.graph_merge_returns(ctx, values)
 		backend.graph_delete(ctx, ctx.node_scope)
 		ctx.node_scope = 0
 	case ^ast.Basic_Lit:
@@ -780,98 +779,18 @@ emit_nodes :: proc(
 		assert(d.cond == nil)
 		assert(d.post == nil)
 
-		loop := backend.graph_add_loop(ctx, "loop", ctx_ctrl(ctx))
-		backend.graph_set_input(ctx, ctx.node_scope, 0, loop)
-
 		loop_state: Loop_State
 		loop_state.label = meta.src_of(ctx.file^, d.label)
 		loop_state.parent = ctx.loop
-		loop_state.scope = backend.graph_clone(ctx, ctx.node_scope)
 		ctx.loop = &loop_state
 
-		backend.graph_add_output(ctx, loop_state.scope, 0, 0)
-
-		scope := backend.graph_get(ctx, ctx.node_scope)
-		for i in 1 ..< scope.ordered_input_count {
-			backend.graph_set_input(ctx, ctx.node_scope, i, loop_state.scope)
-		}
-
+		backend.graph_start_loop(ctx, ctx.node_scope, &loop_state)
 		emit_nodes(ctx, {}, d.body)
-
-		ctx.node_scope = backend.graph_merge_scopes(
+		ctx.node_scope = backend.graph_end_loop(
 			ctx,
 			ctx.node_scope,
-			loop_state.scopes[.Continue],
+			&loop_state,
 		)
-
-		init := backend.graph_expand(ctx, loop_state.scope)
-		bscope := ctx.node_scope
-		if bscope != 0 {
-			backedge := backend.graph_expand(ctx, ctx.node_scope)
-			assert(init.ordered_input_count == backedge.ordered_input_count)
-			for i in 1 ..< init.ordered_input_count {
-				init := init.inps[i]
-				inode := backend.graph_expand(ctx, init)
-				bnode := backend.graph_expand(ctx, backedge.inps[i])
-				if inode.btype == .Lazy_Phi {
-					for {
-						scp := backend.graph_extra(ctx, bnode, backend.Scope)
-						if scp == nil || !scp.done || bnode.inps[0] == loop {
-							break
-						}
-						bnode = backend.graph_expand(ctx, bnode.inps[i])
-					}
-
-					if bnode.btype == .Scope || inode.node == bnode.node {
-						backend.graph_subsume(ctx, inode.inps[1], init)
-					} else {
-						backend.graph_add_extra_input(
-							ctx,
-							inode,
-							backend.graph_id(ctx, bnode),
-						)
-						inode.itype = .Phi
-						backend.graph_intern(ctx, init)
-					}
-				}
-			}
-
-			assert(backend.graph_get(ctx, init.inps[0]).itype == .Loop)
-			backend.graph_add_extra_input(ctx, init.inps[0], backedge.inps[0])
-		}
-
-		ctx.node_scope = loop_state.scopes[.Break]
-
-		if ctx.node_scope != 0 {
-			exit := backend.graph_expand(ctx, ctx.node_scope)
-			for i in 1 ..< exit.ordered_input_count {
-				enode := backend.graph_get(ctx, exit.inps[i])
-				if enode.btype == .Scope {
-					backend.graph_set_input(
-						ctx,
-						ctx.node_scope,
-						i,
-						init.inps[i],
-					)
-				}
-			}
-		}
-
-		backend.graph_extra(ctx, loop_state.scope, backend.Scope).done = true
-		backend.graph_remove_output(ctx, loop_state.scope, {id = 0, idx = 0})
-
-		if bscope != 0 {
-			backend.graph_delete(ctx, bscope)
-		} else {
-			for out in backend.graph_outs(ctx, loop) {
-				onode := backend.graph_expand(ctx, out.id)
-				if onode.btype == .Lazy_Phi {
-					backend.graph_subsume(ctx, onode.inps[1], out.id)
-				}
-			}
-
-			backend.graph_subsume(ctx, backend.graph_inps(ctx, loop)[0], loop)
-		}
 
 		ctx.loop = ctx.loop.parent
 	case ^ast.Call_Expr:
@@ -911,15 +830,9 @@ emit_nodes :: proc(
 				break
 			}
 		}
-
 		assert(loop != nil)
 
-		backend.graph_truncate_scope(
-			ctx,
-			ctx.node_scope,
-			backend.graph_get(ctx, loop.scope).ordered_input_count,
-		)
-		variant := Loop_Control(-1)
+		variant := backend.Loop_Control(-1)
 		#partial switch d.tok.kind {
 		case .Break:
 			variant = .Break
@@ -928,11 +841,8 @@ emit_nodes :: proc(
 		case:
 			fmt.panicf("TODO: %#v", node.derived)
 		}
-		loop.scopes[variant] = backend.graph_merge_scopes(
-			ctx,
-			ctx.node_scope,
-			loop.scopes[variant],
-		)
+
+		backend.graph_loop_control(variant, ctx, ctx.node_scope, loop)
 		ctx.node_scope = 0
 	case:
 		fmt.panicf("TODO: %#v", node.derived)

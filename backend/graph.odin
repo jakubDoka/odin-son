@@ -132,26 +132,130 @@ Graph :: struct {
 
 Intern_Vec :: #simd[16]u8
 
-graph_merge_returns :: proc(
+Loop_Control :: enum int {
+	Break,
+	Continue,
+}
+
+Loop_State :: struct {
+	scope:  Node_ID,
+	scopes: [Loop_Control]Node_ID,
+}
+
+graph_start_loop :: proc(graph: ^Graph, scope: Node_ID, state: ^Loop_State) {
+	snode := graph_expand(graph, scope)
+	loop := graph_add_loop(graph, "loop", snode.inps[0])
+	graph_set_input(graph, scope, 0, loop)
+	state.scope = graph_clone(graph, scope)
+
+	graph_add_output(graph, state.scope, 0, 0)
+
+	snode = graph_expand(graph, scope)
+	for i in 1 ..< snode.ordered_input_count {
+		graph_set_input(graph, scope, i, state.scope)
+	}
+}
+
+graph_end_loop :: proc(
 	graph: ^Graph,
-	ctrl: Node_ID,
-	rets: []Node_ID,
-) -> Node_ID {
+	in_node_scope: Node_ID,
+	state: ^Loop_State,
+) -> (
+	node_scope: Node_ID,
+) {
+	node_scope = in_node_scope
+	node_scope = graph_merge_scopes(graph, node_scope, state.scopes[.Continue])
+
+	init := graph_expand(graph, state.scope)
+	loop := init.inps[0]
+	assert(graph_get(graph, loop).itype == .Loop)
+
+	bscope := node_scope
+	if bscope != 0 {
+		backedge := graph_expand(graph, node_scope)
+		assert(init.ordered_input_count == backedge.ordered_input_count)
+		for i in 1 ..< init.ordered_input_count {
+			init := init.inps[i]
+			inode := graph_expand(graph, init)
+			bnode := graph_expand(graph, backedge.inps[i])
+			if inode.btype != .Lazy_Phi do continue
+
+			for {
+				scp := graph_extra(graph, bnode, Scope)
+				if scp == nil || !scp.done || bnode.inps[0] == loop do break
+				bnode = graph_expand(graph, bnode.inps[i])
+			}
+
+			if bnode.btype == .Scope || inode.node == bnode.node {
+				graph_subsume(graph, inode.inps[1], init)
+			} else {
+				graph_add_extra_input(graph, inode, graph_id(graph, bnode))
+				inode.itype = .Phi
+				graph_intern(graph, init)
+			}
+		}
+
+		assert(graph_get(graph, init.inps[0]).itype == .Loop)
+		graph_add_extra_input(graph, init.inps[0], backedge.inps[0])
+	}
+
+	node_scope = state.scopes[.Break]
+
+	if node_scope != 0 {
+		exit := graph_expand(graph, node_scope)
+		for i in 1 ..< exit.ordered_input_count {
+			enode := graph_get(graph, exit.inps[i])
+			if enode.btype == .Scope {
+				graph_set_input(graph, node_scope, i, init.inps[i])
+			}
+		}
+	}
+
+	graph_extra(graph, state.scope, Scope).done = true
+	graph_remove_output(graph, state.scope, {id = 0, idx = 0})
+
+	if bscope != 0 {
+		graph_delete(graph, bscope)
+	} else {
+		for out in graph_outs(graph, loop) {
+			onode := graph_expand(graph, out.id)
+			if onode.btype == .Lazy_Phi {
+				graph_subsume(graph, onode.inps[1], out.id)
+			}
+		}
+
+		graph_subsume(graph, graph_inps(graph, loop)[0], loop)
+	}
+
+	return
+}
+
+graph_loop_control :: proc(
+	variant: Loop_Control,
+	ctx: ^Graph,
+	scope: Node_ID,
+	loop: ^Loop_State,
+) {
+	base_size := graph_get(ctx, loop.scope).ordered_input_count
+	graph_truncate_scope(ctx, scope, base_size)
+	loop.scopes[variant] = graph_merge_scopes(ctx, scope, loop.scopes[variant])
+}
+
+graph_merge_returns :: proc(graph: ^Graph, args: []Node_ID) -> Node_ID {
 	if graph.end == 0 {
-		graph.end = graph_add_return(graph, "ret", rets)
+		graph.end = graph_add_return(graph, "ret", args)
 		return graph.end
 	}
 
 	end := graph_expand(graph, graph.end)
 
-	reg := graph_add_region(graph, "rreg", ctrl, end.inps[0])
+	reg := graph_add_region(graph, "rreg", args[0], end.inps[0])
 	graph_set_input(graph, graph.end, 0, reg)
 
 	for i in 1 ..< len(end.inps) {
 		rhs := end.inps[i]
 		ty := graph_get(graph, rhs).dt
-		lhs :=
-			i - 1 < len(rets) ? rets[i - 1] : graph_add_poison(graph, "rpsn")
+		lhs := i < len(args) ? args[i] : graph_add_poison(graph, "rpsn")
 		if rhs == lhs do continue
 		phi := graph_add_phi(graph, "rphi", ty, reg, lhs, rhs)
 		graph_set_input(graph, graph.end, i, phi)
@@ -188,7 +292,6 @@ graph_interner_find :: proc(graph: ^Graph, id: Node_ID) -> (int, u8, bool) {
 }
 
 graph_intern :: proc(graph: ^Graph, id: Node_ID) -> Node_ID {
-
 	if !graph_has_flag(graph, id, .Interned) || graph.dont_intern {
 		return id
 	}

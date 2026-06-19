@@ -176,7 +176,7 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 
 				else_ := graph_add_else(ctx, "aels", always)
 				ctx.loop_trees[graph_get(ctx, else_).gvn] = ctx.root
-				reg := graph_merge_returns(ctx, else_, {})
+				reg := graph_merge_returns(ctx, {else_})
 				ctx.loop_trees[graph_get(ctx, reg).gvn] = ctx.root
 			}
 		} else {

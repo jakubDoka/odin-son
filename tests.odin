@@ -1421,3 +1421,45 @@ c :: proc(v: int) -> int {
 }
 `, main_())
 }
+@(test) pointers :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+
+main_ :: proc() -> int {
+	vl := 0
+	ptr := &vl
+
+	set(ptr)
+
+	return vl
+}
+
+set :: proc(ptr: ^int) -> int {
+	ptr^ = 1
+	return ptr^
+}
+
+run_test(t, `pointers`, `
+package main
+
+opt_level :: "none"
+
+
+main :: proc() -> int {
+	vl := 0
+	ptr := &vl
+
+	set(ptr)
+
+	return vl
+}
+
+set :: proc(ptr: ^int) -> int {
+	ptr^ = 1
+	return ptr^
+}
+`, main_())
+}

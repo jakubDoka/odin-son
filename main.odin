@@ -2,6 +2,7 @@ package main
 
 import zydis "./zydis"
 import "backend"
+import "base:runtime"
 import "core:fmt"
 import "core:io"
 import "core:log"
@@ -396,17 +397,8 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 						if len(param.names) == 1 {
 							name = meta.src_of(f, param.names[0])
 						}
-						#partial switch d in param.type.derived {
-						case ^ast.Ident:
-							switch d.name {
-							case "int":
-								tys[i] = {name, .Int}
-							case:
-								fmt.panicf("TODO: %#v", param.type.derived)
-							}
-						case:
-							fmt.panicf("TODO: %#v", param.type.derived)
-						}
+
+						tys[i] = {name, emit_type(&ctx, param.type)}
 					}
 				}
 
@@ -455,30 +447,53 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 	)
 
 	for &prc, i in ctx.procs {
-
 		ctx.graph = {}
 		ctx.node_spec = &backend.SPECS[.Builder]
 		ctx.mem = &graph_mem
 		ctx.mem.pos = backend.PRECISION
 		ctx.file = &f
 
-		current_graph = &ctx
+		{
+			clear(&ctx.scope)
 
-		start := backend.graph_add_start(&ctx, "start")
-		assert(start == backend.NODE_START)
-		entry := backend.graph_add_entry(&ctx, "entry", start)
-		assert(entry == backend.NODE_ENTRY)
+			for par, i in prc.params {
+				append(&ctx.scope, Variable{par.name, 0, par.type, nil, {}})
+			}
 
-		ctx.node_scope = backend.graph_add_scope(&ctx, "scope", entry)
-
-		for par, i in prc.params {
-			assert(par.type == .Int)
-			value := backend.graph_add_arg(&ctx, "arg", .I64, entry, u32(i))
-			idx := backend.graph_push_scope_value(&ctx, ctx.node_scope, value)
-			append(&ctx.scope, Variable{par.name, idx})
+			typecheck(&ctx, {}, prc.ast.body)
 		}
 
-		emit_nodes(&ctx, {}, prc.ast.body)
+		current_graph = &ctx
+
+		{
+			clear(&ctx.scope)
+
+			start := backend.graph_add_start(&ctx, "start")
+			assert(start == backend.NODE_START)
+			entry := backend.graph_add_entry(&ctx, "entry", start)
+			assert(entry == backend.NODE_ENTRY)
+
+			ctx.node_scope = backend.graph_add_scope(&ctx, "scope", entry)
+
+			for par, i in prc.params {
+				assert(par.type == .Int)
+				value := backend.graph_add_arg(
+					&ctx,
+					"arg",
+					.I64,
+					entry,
+					u32(i),
+				)
+				idx := backend.graph_push_scope_value(
+					&ctx,
+					ctx.node_scope,
+					value,
+				)
+				append(&ctx.scope, Variable{par.name, idx, par.type, nil, {}})
+			}
+
+			emit_nodes(&ctx, {}, prc.ast.body)
+		}
 
 		spec := &backend.SPECS[.X64]
 		ctx.node_spec = spec
@@ -566,8 +581,80 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 	testing.expect_value(t, ptr(), exit_code)
 }
 
-Type :: enum u32 {
+Lit :: union {
+	Proc_ID,
+}
+
+Proc_ID :: distinct int
+
+Type :: enum uintptr {
+	Void,
 	Int,
+}
+
+Type_Kind :: enum uintptr {
+	Builtin,
+	Pointer,
+	Lit,
+}
+
+Raw_Type :: bit_field uintptr {
+	data: uintptr   | 48,
+	tag:  Type_Kind | 16,
+}
+
+Pointer :: distinct ^Type
+Builtin :: distinct Type
+
+Type_Data :: union #no_nil {
+	Builtin,
+	Pointer,
+	^Lit,
+}
+
+Raw_Type_Data :: struct {
+	data: uintptr,
+	tag:  Type_Kind,
+}
+
+pack_type :: proc(typ: Type_Data) -> Type {
+	raw := transmute(Raw_Type_Data)typ
+	return Type(Raw_Type{tag = raw.tag, data = raw.data})
+}
+
+unpack_type :: proc(typ: Type) -> Type_Data {
+	raw := Raw_Type(typ)
+	return transmute(Type_Data)Raw_Type_Data{data = raw.data, tag = raw.tag}
+}
+
+intern_pointer :: proc(ctx: ^Ctx, ty: Type) -> Type {
+	existing := ctx.pointers[ty] or_else Pointer(new_clone(ty))
+	ctx.pointers[ty] = existing
+	return pack_type(existing)
+}
+
+intern_lit :: proc(ctx: ^Ctx, lit: Lit) -> ^Lit {
+	existing := ctx.lits[lit] or_else new_clone(lit)
+	ctx.lits[lit] = existing
+	return existing
+}
+
+emit_type :: proc(ctx: ^Ctx, expr: ^ast.Expr) -> Type {
+	if expr == nil do return .Void
+
+	#partial switch d in expr.derived {
+	case ^ast.Ident:
+		switch d.name {
+		case "int":
+			return .Int
+		case:
+			fmt.panicf("TODO: %#v", expr.derived)
+		}
+	case ^ast.Pointer_Type:
+		return intern_pointer(ctx, emit_type(ctx, d.elem))
+	case:
+		fmt.panicf("TODO: %#v", expr.derived)
+	}
 }
 
 Proc :: struct {
@@ -584,17 +671,23 @@ Param :: struct {
 }
 
 Variable :: struct {
-	name: string,
-	idx:  int,
+	name:  string,
+	idx:   int,
+	type:  Type,
+	ident: ^ast.Expr,
+	flags: Var_Flags,
 }
 
 Ctx :: struct {
 	using graph: backend.Graph,
 	procs:       [dynamic]Proc,
 	scope:       [dynamic]Variable,
+	pointers:    map[Type]Pointer,
+	lits:        map[Lit]^Lit,
 	node_scope:  backend.Node_ID,
 	loop:        ^Loop_State,
 	file:        ^ast.File,
+	prc:         Proc_ID,
 }
 
 Loop_Control :: enum int {
@@ -609,9 +702,153 @@ Loop_State :: struct {
 }
 
 Propagation :: struct {}
+Ty_Propagation :: struct {
+	inferred_ty: Type,
+	referencing: bool,
+}
+
+Var_Flag :: enum uintptr {
+	Referenced,
+}
+
+Var_Flags :: bit_set[Var_Flag;uintptr]
 
 ctx_ctrl :: proc(ctx: ^Ctx) -> backend.Node_ID {
 	return backend.graph_inps(ctx, ctx.node_scope)[0]
+}
+
+get_node_type :: proc(node: ^ast.Node) -> Type {
+	return Type(raw_data(node.end.file))
+}
+
+get_node_vflags :: proc(node: ^ast.Node) -> Var_Flags {
+	_ = node.derived.(^ast.Ident)
+	return transmute(Var_Flags)raw_data(node.end.file)
+}
+
+set_node_data :: proc(node: ^ast.Node, value: $T) {
+	raw := (^runtime.Raw_Slice)(&node.end.file)
+	raw.data = transmute(rawptr)value
+	raw.len = 0
+}
+
+typecheck :: proc(
+	ctx: ^Ctx,
+	prop: Ty_Propagation,
+	node: ^ast.Node,
+) -> (
+	ty: Type,
+) {
+	defer {
+		set_node_data(node, ty)
+	}
+
+	if node == nil do return .Void
+
+	#partial switch d in node.derived {
+	case ^ast.Block_Stmt:
+		prev_scope_len := len(ctx.scope)
+		for stmt in d.stmts {
+			typecheck(ctx, {}, stmt)
+		}
+		for var in ctx.scope[prev_scope_len:] {
+			set_node_data(var.ident, var.flags)
+		}
+		resize(&ctx.scope, prev_scope_len)
+		return .Void
+	case ^ast.Value_Decl:
+		assert(len(d.names) == len(d.values))
+
+		inferred_ty := emit_type(ctx, d.type)
+
+		for i in 0 ..< len(d.names) {
+			name := meta.src_of(ctx.file^, d.names[i])
+			value_ty := typecheck(
+				ctx,
+				{inferred_ty = inferred_ty},
+				d.values[i],
+			)
+			if inferred_ty != .Void {
+				assert(value_ty == inferred_ty)
+			}
+			set_node_data(d.names[i], Var_Flags{})
+			append(&ctx.scope, Variable{name, 0, value_ty, d.names[i], {}})
+		}
+		return .Void
+	case ^ast.Basic_Lit:
+		assert(prop.inferred_ty == .Void || prop.inferred_ty == .Int)
+		return .Int
+	case ^ast.Unary_Expr:
+		#partial switch d.op.kind {
+		case .And:
+			inferred_ty := Type.Void
+			if ptr, ok := unpack_type(prop.inferred_ty).(Pointer); ok {
+				inferred_ty = ptr^
+			}
+
+			inner_ty := typecheck(
+				ctx,
+				{inferred_ty = inferred_ty, referencing = true},
+				d.expr,
+			)
+			if inferred_ty != .Void {
+				assert(inferred_ty == inner_ty)
+			}
+			return intern_pointer(ctx, inner_ty)
+		case:
+			fmt.panicf("TODO: %#v", node.derived)
+		}
+	case ^ast.Expr_Stmt:
+		return typecheck(ctx, {}, d.expr)
+	case ^ast.Ident:
+		name := d.name
+		#reverse for &var in ctx.scope {
+			if var.name == name {
+				if prop.referencing {
+					var.flags |= {.Referenced}
+				}
+				return var.type
+			}
+		}
+
+		for p, i in ctx.procs {
+			if p.name == name {
+				return pack_type(intern_lit(ctx, Proc_ID(i)))
+			}
+		}
+
+		fmt.panicf("variable not declared: %v", name)
+	case ^ast.Call_Expr:
+		callee := typecheck(ctx, {}, d.expr)
+
+		#partial switch v in unpack_type(callee) {
+		case ^Lit:
+			prc_id := v.(Proc_ID)
+			prc := &ctx.procs[prc_id]
+
+			assert(len(prc.params) == len(d.args))
+
+			for param, i in prc.params {
+				ty := typecheck(ctx, {inferred_ty = param.type}, d.args[i])
+				assert(ty == param.type)
+			}
+
+			assert(len(prc.rets) == 1)
+
+			return prc.rets[0].type
+		case:
+			fmt.panicf("TODO: %v %v", v, d)
+		}
+	case ^ast.Return_Stmt:
+		prc := &ctx.procs[ctx.prc]
+		assert(len(d.results) == len(prc.rets))
+		for i in 0 ..< len(d.results) {
+			typecheck(ctx, {inferred_ty = prc.rets[i].type}, d.results[i])
+		}
+		return .Void
+	case:
+		fmt.panicf("TODO: %#v", node.derived)
+	}
 }
 
 emit_nodes :: proc(
@@ -620,6 +857,8 @@ emit_nodes :: proc(
 	node: ^ast.Node,
 ) -> backend.Node_ID {
 	if node == nil do return 0
+
+	ty := get_node_type(node)
 
 	#partial switch d in node.derived {
 	case ^ast.Block_Stmt:
@@ -701,6 +940,8 @@ emit_nodes :: proc(
 		case:
 			fmt.panicf("TODO: %#v", node.derived)
 		}
+	case ^ast.Unary_Expr:
+		panic("TODO")
 	case ^ast.Return_Stmt:
 		values := make([]backend.Node_ID, 1 + len(d.results))
 		for r, i in d.results {
@@ -723,11 +964,15 @@ emit_nodes :: proc(
 		assert(len(d.names) == len(d.values))
 		for i in 0 ..< len(d.names) {
 			name := meta.src_of(ctx.file^, d.names[i])
+			ty := get_node_type(d.values[i])
 			value := emit_nodes(ctx, {}, d.values[i])
+			flags := get_node_vflags(d.names[i])
+
+			assert(.Referenced not_in flags)
 
 			backend.graph_set_name(ctx, value, name)
 			idx := backend.graph_push_scope_value(ctx, ctx.node_scope, value)
-			append(&ctx.scope, Variable{name, idx})
+			append(&ctx.scope, Variable{name, idx, ty, d.names[i], flags})
 		}
 	case ^ast.Ident:
 		name := d.name

@@ -737,3 +737,24 @@ c :: proc(v: int) -> int {
 	return v * 3
 }
 ```
+
+#### pointers
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	vl := 0
+	ptr := &vl
+
+	set(ptr)
+
+	return vl
+}
+
+set :: proc(ptr: ^int) -> int {
+	ptr^ = 1
+	return ptr^
+}
+```

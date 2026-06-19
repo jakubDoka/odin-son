@@ -563,7 +563,7 @@ main :: proc() -> int {
 }
 ```
 
-#### foobar
+#### nested infinite loop
 ```odin
 package main
 
@@ -579,5 +579,26 @@ main :: proc() -> int {
               sum += 10
       }
       return sum
+}
+```
+
+#### functions
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	return fib(10)
+}
+
+fib :: proc(x: int) -> int {
+	x := x
+	if x <= 2 {
+		x = 1
+	} else {
+		x = fib(x - 1) + fib(x - 2)
+	}
+	return x
 }
 ```

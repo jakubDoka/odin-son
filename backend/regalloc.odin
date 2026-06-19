@@ -10,6 +10,7 @@ import "core:io"
 import "core:log"
 import "core:math/rand"
 import "core:mem"
+import "core:slice"
 import "core:sort"
 import "core:strings"
 
@@ -124,6 +125,7 @@ Regalloc_Spec :: struct {
 	datatype_to_reg_kind: [Node_Datatype]Reg_Kind,
 	inplace_slot_idxs:    []i8,
 	first_input_idxs:     []u8,
+	clobbers:             [][Reg_Kind]int,
 	interned_reg_masks:   [][^]int,
 	reg_masks:            [][][Reg_Kind]Mask_Intern_Key,
 	reg_mask_of:          proc(
@@ -153,6 +155,16 @@ reg_mask_of :: proc(
 	if idx < len(masks) {
 		id := masks[idx][reg_kind]
 		if id != 0 {
+			if idx != 0 {
+				return {
+					re.interned_reg_masks[id],
+					{
+						kind = reg_kind,
+						bit_length = int(re.class_lengths[reg_kind]) *
+						MASK_SIZE,
+					},
+				}
+			}
 			mask := reg_mask_empty(re, reg_kind)
 			mem.copy_non_overlapping(
 				mask.masks,
@@ -183,11 +195,15 @@ regalloc :: proc(
 }
 
 Lrg_Meta :: bit_field u32 {
-	index:           u32  | 22,
+	index: u32 | 24,
+	rank:  u8  | 8,
+}
+
+Lrg_Fails :: bit_field u8 {
+	killed:          bool | 1,
 	failed_to_color: bool | 1,
-	failed:          bool | 1,
+	reg_conflict:    bool | 1,
 	self_conflict:   bool | 1,
-	rank:            u8   | 7,
 }
 
 Lrg :: struct {
@@ -196,6 +212,7 @@ Lrg :: struct {
 	mask:             Reg_Mask,
 	parent:           ^Lrg,
 	// TODO: this should go into meta instead of the index
+	using fails:      Lrg_Fails,
 	reg:              i16,
 	longest_use_area: u32,
 	longest_def:      Node_ID,
@@ -259,15 +276,6 @@ regalloc_round :: proc(
 			}
 		}
 	}
-
-	Stage :: enum int {
-		None,
-		Build_Lrgs,
-		Build_Ifg,
-		Color,
-	}
-
-	failed_stage: Stage
 
 	lrgs := arna.smake(ra, []Lrg, max_lrg_count)
 	used_lrgs: u32
@@ -347,12 +355,12 @@ regalloc_round :: proc(
 
 				ctx.lrg_table[inode.gvn] = lrg
 			}
-
 		}
 	}
 
+	failed_any := false
 	for &l in ctx.lrg_table {
-		assert(!l.failed)
+		failed_any |= l.fails != {}
 		l = find(l)
 	}
 
@@ -390,8 +398,10 @@ regalloc_round :: proc(
 	worklist: queue.Queue(u32)
 	queue.init(&worklist, len(sched.bbs), arena)
 
-	for _, i in sched.bbs {
-		queue.push_front(&worklist, u32(i))
+	if !failed_any {
+		for _, i in sched.bbs {
+			queue.push_front(&worklist, u32(i))
+		}
 	}
 
 	// TODO: used only once for now, dont forget to inline
@@ -444,10 +454,11 @@ regalloc_round :: proc(
 								false,
 							)
 
+							// TODO: one of them will fail, and its pretty
+							// arbitrary maby its worth selecting here based on
+							// a longer liverange
 							if reg_mask_is_empty(r.mask) {
-								r.failed = true
-								failed_stage = .Build_Ifg
-								panic("TODO: ifg failure")
+								r.killed = true
 							}
 						}
 
@@ -455,6 +466,18 @@ regalloc_round :: proc(
 							interference,
 							r.index * used_lrgs + l.index,
 						)
+					}
+				}
+			}
+
+			if ra.clobbers[inode.rtype] != {} {
+				for l in current_liveouts {
+					l := &lrgs[l]
+					assert(l.mask.bit_length != 0)
+					prev := l.mask.masks[0]
+					l.mask.masks[0] &= ~ra.clobbers[inode.rtype][l.mask.kind]
+					if reg_mask_is_empty(l.mask) {
+						l.killed = true
 					}
 				}
 			}
@@ -516,14 +539,16 @@ regalloc_round :: proc(
 				queue.push_back(&worklist, u32(pred_bb_idx))
 			}
 		}
-
 	}
 
 	//log_lrgs(graph, sched, lrg_table)
 
 	used_lrgs_check := used_lrgs
+	for lrg in lrgs {
+		failed_any |= lrg.fails != {}
+	}
 
-	if len(ctx.self_conflicts) != 0 {
+	if len(ctx.self_conflicts) != 0 || failed_any {
 		used_lrgs = 0
 		interference.bit_length = 0
 		ok = false
@@ -585,6 +610,8 @@ regalloc_round :: proc(
 
 	sort.quick_sort(color_order)
 
+	if failed_any do color_order = {}
+
 	for co in color_order {
 		n := ifg[co.idx]
 		lrg := &lrgs[co.idx]
@@ -595,7 +622,6 @@ regalloc_round :: proc(
 
 		first_set, ok := reg_mask_first_set(lrg.mask)
 		if !ok {
-			lrg.failed = true
 			lrg.failed_to_color = true
 			continue
 		}
@@ -620,26 +646,36 @@ regalloc_round :: proc(
 
 	color_fails: int
 
-	failed := make([dynamic]^Lrg, arena)
-
 	for &lrg in lrgs[:used_lrgs_check] {
-
 		id := lrg.node
 
-		if lrg.failed {
-			append(&failed, &lrg)
-			color_fails += int(lrg.failed_to_color)
-			ok = false
-			members := make([dynamic]Node_ID, arena)
-			append(&members, id)
-			for i := 0; i < len(members); i += 1 {
-				member := members[i]
-				for out in graph_outs(graph, member) {
-					if get_lrg(ctx, out.id) == &lrg {
-						append(&members, out.id)
-					}
+		if lrg.fails == {} {
+			assert(!reg_mask_is_empty(lrg.mask))
+			continue
+		}
+
+		ok = false
+
+		members := make([dynamic]Node_ID, arena)
+		append(&members, id)
+		for i := 0; i < len(members); i += 1 {
+			member := members[i]
+			for out in graph_outs(graph, member) {
+				if get_lrg(ctx, out.id) == &lrg &&
+				   !slice.contains(members[:], out.id) {
+					append(&members, out.id)
 				}
 			}
+			for inp in graph_inps(graph, member) {
+				if get_lrg(ctx, inp) == &lrg &&
+				   !slice.contains(members[:], inp) {
+					append(&members, inp)
+				}
+			}
+		}
+
+		if lrg.failed_to_color {
+			color_fails += int(lrg.failed_to_color)
 
 			for m in members {
 				is_internal := true
@@ -657,21 +693,7 @@ regalloc_round :: proc(
 				fnode := graph_get(graph, m)
 
 				if fnode.itype != .Split {
-					split := graph_add_split(graph, "sdef", fnode.dt, m)
-
-					placement_block := get_node_block(ctx, id)
-					placement_idx, _ := arna.simd_search(
-						placement_block.instrs[:],
-						id,
-					)
-
-					inject_at(
-						&placement_block.instrs,
-						placement_idx + 1,
-						split,
-					)
-
-					id = split
+					id = split_after(ctx, "sdef", m)
 					fnode = graph_get(graph, id)
 				}
 
@@ -696,6 +718,51 @@ regalloc_round :: proc(
 					graph_set_input(graph, out.id, out.idx, split)
 				}
 			}
+
+			continue
+		}
+
+		if lrg.killed {
+			for m in members {
+				mnode := graph_expand(graph, m)
+				mblock := get_node_block(ctx, m)
+				redirect := m
+				for out in arna.clone(ra, mnode.outs) {
+					onode := graph_expand(graph, out.id)
+					oblock := get_node_block(ctx, out.id)
+					if onode.itype == .Phi {
+						last :=
+							graph_inps(ctx.graph, onode.inps[0])[out.idx - 1]
+						oblock = get_node_block(ctx, last)
+					}
+
+					// TODO: we request reg masks needlessly since we never
+					// modify them, maybe if it shows up, adda readonly flag to
+					// the reg_mask_of
+
+					if oblock != mblock {
+						if redirect == m {
+							redirect = split_after(ctx, "kla", m)
+						}
+					}
+
+					split := redirect
+					if onode.itype != .Split {
+						split = split_before(
+							ctx,
+							out.id,
+							out.idx,
+							"klb",
+							redirect,
+						)
+					}
+					graph_set_input(graph, out.id, out.idx, split)
+				}
+			}
+		}
+
+		if lrg.reg_conflict {
+			log.info("reg conflict:", id)
 		}
 	}
 
@@ -807,7 +874,9 @@ regalloc_round :: proc(
 			out_lrg := ctx.lrg_table[onode.gvn]
 			if out.idx == onode.inplace_slot || onode.itype == .Phi {
 				split: Node_ID
-				if last_split != 0 && last_split_out == out.id {
+				if last_split != 0 &&
+				   last_split_out == out.id &&
+				   onode.itype != .Phi {
 					split = last_split
 				} else {
 					split = split_before(ctx, out.id, out.idx, "sco")
@@ -820,6 +889,8 @@ regalloc_round :: proc(
 			}
 		}
 	}
+
+	verify_schedule_integrity(ctx.graph, ctx.sched)
 
 	return
 
@@ -861,6 +932,19 @@ regalloc_round :: proc(
 		node := graph_get(ctx.graph, node)
 		if int(node.gvn) >= len(ctx.lrg_table) do return nil
 		return ctx.lrg_table[node.gvn]
+	}
+
+	split_after :: proc(ctx: Ctx, name: string, use: Node_ID) -> Node_ID {
+		graph := ctx.graph
+		fnode := graph_get(graph, use)
+		split := graph_add_split(graph, name, fnode.dt, use)
+
+		placement_block := get_node_block(ctx, use)
+		placement_idx, _ := arna.simd_search(placement_block.instrs[:], use)
+
+		inject_at(&placement_block.instrs, placement_idx + 1, split)
+
+		return split
 	}
 
 	split_before :: proc(
@@ -1018,7 +1102,7 @@ regalloc_round :: proc(
 	intersect :: proc(l: ^Lrg, mask: Reg_Mask) {
 		reg_mask_intersection(l.mask, mask)
 		if reg_mask_is_empty(l.mask) {
-			l.failed = true
+			l.reg_conflict = true
 		}
 	}
 

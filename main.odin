@@ -9,6 +9,7 @@ import "core:mem/virtual"
 import "core:odin/ast"
 import "core:odin/parser"
 import "core:os"
+import "core:reflect"
 import "core:strconv"
 import "core:strings"
 import "core:sync"
@@ -114,7 +115,7 @@ print_diff :: proc(out: ^strings.Builder, a, b: string) {
 	}
 }
 
-disasm :: proc(sb: ^strings.Builder, instructions: []u8) {
+disasm :: proc(sb: ^strings.Builder, ctx: Ctx) {
 	runtime_address: zydis.U64 = 0x0040_0000
 
 	jumps: map[int]int
@@ -123,88 +124,99 @@ disasm :: proc(sb: ^strings.Builder, instructions: []u8) {
 		return mne == .JZ || mne == .JMP
 	}
 
-	offset: int
-	for offset < len(instructions) {
-		instr: zydis.DisassembledInstruction
-		status := zydis.DisassembleIntel(
-			.LONG_64,
-			runtime_address + zydis.U64(offset),
-			&instructions[offset],
-			zydis.USize(uint(len(instructions)) - uint(offset)),
-			&instr,
-		)
-		if !zydis.SUCCESS(status) {
-			break
-		}
+	for prc in ctx.procs {
+		fmt.sbprintfln(sb, "%v:", prc.name)
 
-		length := int(instr.info.length)
+		instructions := prc.out.code
 
-		if is_jump(instr.info.mnemonic) {
-			offset := offset + length + int(instr.operands[0].imm.value.s)
-			if offset not_in jumps {
-				jumps[offset] = len(jumps)
+		offset: int
+		for offset < len(instructions) {
+			instr: zydis.DisassembledInstruction
+			status := zydis.DisassembleIntel(
+				.LONG_64,
+				runtime_address + zydis.U64(offset),
+				&instructions[offset],
+				zydis.USize(uint(len(instructions)) - uint(offset)),
+				&instr,
+			)
+			if !zydis.SUCCESS(status) {
+				break
+			}
+
+			length := int(instr.info.length)
+
+			if is_jump(instr.info.mnemonic) {
+				offset := offset + length + int(instr.operands[0].imm.value.s)
+				if offset not_in jumps {
+					jumps[offset] = len(jumps)
+				}
+			}
+
+			offset += length
+
+			if length == 0 {
+				break
 			}
 		}
 
-		offset += length
-
-		if length == 0 {
-			break
-		}
-	}
-
-	offset = 0
-	for offset < len(instructions) {
-		instr: zydis.DisassembledInstruction
-		status := zydis.DisassembleIntel(
-			.LONG_64,
-			runtime_address + zydis.U64(offset),
-			&instructions[offset],
-			zydis.USize(uint(len(instructions)) - uint(offset)),
-			&instr,
-		)
-		if !zydis.SUCCESS(status) {
-			fmt.sbprintfln(
-				sb,
-				"0x%08x  <decode failed: %#x>",
+		offset = 0
+		for offset < len(instructions) {
+			instr: zydis.DisassembledInstruction
+			status := zydis.DisassembleIntel(
+				.LONG_64,
 				runtime_address + zydis.U64(offset),
-				status,
+				&instructions[offset],
+				zydis.USize(uint(len(instructions)) - uint(offset)),
+				&instr,
 			)
-			break
+			if !zydis.SUCCESS(status) {
+				fmt.sbprintfln(
+					sb,
+					"0x%08x  <decode failed: %#x>",
+					runtime_address + zydis.U64(offset),
+					status,
+				)
+				break
+			}
+
+			if off, ok := jumps[offset]; ok {
+				fmt.sbprintf(sb, "%03i: ", off)
+			} else if len(jumps) != 0 {
+				fmt.sbprint(sb, "     ")
+			}
+
+			length := int(instr.info.length)
+
+			text := string(cstring(&instr.text[0]))
+			if is_jump(instr.info.mnemonic) {
+				offset := offset + length + int(instr.operands[0].imm.value.s)
+				text = fmt.tprintf(
+					"%v :%v",
+					zydis.MnemonicGetString(instr.info.mnemonic),
+					jumps[offset],
+				)
+			} else if instr.info.mnemonic == .CALL {
+				for reloc in prc.out.relocs {
+					if int(reloc.offset) == offset + length {
+						text = fmt.tprintf(
+							"%v :%v",
+							zydis.MnemonicGetString(instr.info.mnemonic),
+							ctx.procs[reloc.id].name,
+						)
+					}
+				}
+			}
+
+			fmt.sbprintfln(sb, "%s", text)
+
+			if instr.info.mnemonic == .JMP {
+				append(&sb.buf, "\n")
+			}
+
+			offset += length
 		}
-
-		if off, ok := jumps[offset]; ok {
-			fmt.sbprintf(sb, "%03i: ", off)
-		} else if len(jumps) != 0 {
-			fmt.sbprint(sb, "     ")
-		}
-
-		length := int(instr.info.length)
-		//for b in instructions[offset:offset + length] {
-		//	fmt.sbprintf(sb, "%02x ", b)
-		//}
-		//for _ in length ..< 12 {
-		//	fmt.sbprint(sb, "   ")
-		//}
-
-		text := string(cstring(&instr.text[0]))
-		if is_jump(instr.info.mnemonic) {
-			offset := offset + length + int(instr.operands[0].imm.value.s)
-			text = fmt.tprintf(
-				"%v :%v",
-				zydis.MnemonicGetString(instr.info.mnemonic),
-				jumps[offset],
-			)
-		}
-
-		fmt.sbprintfln(sb, "%s", text)
-
-		if instr.info.mnemonic == .JMP {
-			append(&sb.buf, "\n")
-		}
-
-		offset += length
 	}
+
 }
 
 highlight_disasm :: proc(disasm: string) -> string {
@@ -321,6 +333,15 @@ init_custom_fmt :: proc() {
 			return true
 		},
 	)
+
+	fmt.register_user_formatter(
+		backend.Graph,
+		proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
+			value := &value.(backend.Graph)
+			backend.graph_display(fi.writer, value)
+			return true
+		},
+	)
 }
 
 once: sync.Once
@@ -352,16 +373,55 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 	}
 	ok := parser.parse_file(&p, &f); assert(ok)
 
-	main: ^ast.Proc_Lit
+	ctx: Ctx
+
 	for decl in f.decls {
 		if sdecl, ok := decl.derived_stmt.(^ast.Value_Decl); ok {
-			if meta.src_of(f, sdecl.names[0]) == "main" {
-				main = sdecl.values[0].derived.(^ast.Proc_Lit)
+			if prc, ok := sdecl.values[0].derived.(^ast.Proc_Lit); ok {
+				plist := prc.type.params.list
+				rlist := prc.type.results.list
+
+				params := make([]Param, len(plist))
+				rets := make([]Param, len(rlist))
+
+				lists := [][]^ast.Field{plist, rlist}
+				tys := [][]Param{params, rets}
+
+				for list, j in lists {
+					tys := tys[j]
+
+					for param, i in list {
+						assert(len(param.names) <= 1)
+						name := ""
+						if len(param.names) == 1 {
+							name = meta.src_of(f, param.names[0])
+						}
+						#partial switch d in param.type.derived {
+						case ^ast.Ident:
+							switch d.name {
+							case "int":
+								tys[i] = {name, .Int}
+							case:
+								fmt.panicf("TODO: %#v", param.type.derived)
+							}
+						case:
+							fmt.panicf("TODO: %#v", param.type.derived)
+						}
+					}
+				}
+
+				append(
+					&ctx.procs,
+					Proc {
+						name = meta.src_of(f, sdecl.names[0]),
+						ast = prc,
+						params = params,
+						rets = rets,
+					},
+				)
 			}
 		}
 	}
-
-	assert(main != nil)
 
 	graph_mem := arna.Allocator {
 		reserved = 4096 * 16,
@@ -375,93 +435,152 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 	code_mem := arna.Allocator {
 		reserved = 4096 * 16,
 	}
-
-	_ = arna.bulk_init(&graph_mem, &regalloc_mem, &scratch_mem, &code_mem)
-	defer arna.bulk_destroy(&graph_mem, &regalloc_mem, &scratch_mem, &code_mem)
-
-	graph: Ctx
-	graph.node_spec = &backend.SPECS[.Builder]
-	graph.mem = &graph_mem
-	graph.mem.pos += backend.PRECISION
-	graph.file = &f
-
-	current_graph = &graph
-
-	start := backend.graph_add_start(&graph, "start")
-	assert(start == backend.NODE_START)
-	entry := backend.graph_add_entry(&graph, "entry", start)
-	assert(entry == backend.NODE_ENTRY)
-
-	graph.node_scope = backend.graph_add_scope(&graph, "scope", entry)
-
-	emit_nodes(&graph, {}, main.body)
-
-	spec := &backend.SPECS[.X64]
-	graph.node_spec = spec
-
-	schedule: backend.Graph_Schedule
-	backend.graph_schedule(&graph, &schedule)
-
-	ra: backend.Regalloc
-	ra.spec = spec
-	ra.alloc = &regalloc_mem
-
-	regs := backend.regalloc(&ra, &graph, &schedule)
-
-	sb: strings.Builder
-	if backend.REGLOGS {
-		append(&sb.buf, "\n")
-		backend.graph_display(
-			strings.to_writer(&sb),
-			&graph,
-			&schedule,
-			regs = regs,
-		)
-		log.info(string(sb.buf[:]))
+	reloc_mem := arna.Allocator {
+		reserved = 4096 * 16,
 	}
 
-	ctx := backend.Codegen_Emit_Ctx {
-		graph = &graph,
-		schedule = &schedule,
-		buf = {scratch = &scratch_mem, code = &code_mem},
-		allocs = regs,
+	_ = arna.bulk_init(
+		&graph_mem,
+		&regalloc_mem,
+		&scratch_mem,
+		&code_mem,
+		&reloc_mem,
+	)
+	defer arna.bulk_destroy(
+		&graph_mem,
+		&regalloc_mem,
+		&scratch_mem,
+		&code_mem,
+		&reloc_mem,
+	)
+
+	for &prc, i in ctx.procs {
+
+		ctx.graph = {}
+		ctx.node_spec = &backend.SPECS[.Builder]
+		ctx.mem = &graph_mem
+		ctx.mem.pos = backend.PRECISION
+		ctx.file = &f
+
+		current_graph = &ctx
+
+		start := backend.graph_add_start(&ctx, "start")
+		assert(start == backend.NODE_START)
+		entry := backend.graph_add_entry(&ctx, "entry", start)
+		assert(entry == backend.NODE_ENTRY)
+
+		ctx.node_scope = backend.graph_add_scope(&ctx, "scope", entry)
+
+		for par, i in prc.params {
+			assert(par.type == .Int)
+			value := backend.graph_add_arg(&ctx, "arg", .I64, entry, u32(i))
+			idx := backend.graph_push_scope_value(&ctx, ctx.node_scope, value)
+			append(&ctx.scope, Variable{par.name, idx})
+		}
+
+		emit_nodes(&ctx, {}, prc.ast.body)
+
+		spec := &backend.SPECS[.X64]
+		ctx.node_spec = spec
+
+		schedule: backend.Graph_Schedule
+		backend.graph_schedule(&ctx, &schedule)
+
+		ra: backend.Regalloc
+		ra.spec = spec
+		ra.alloc = &regalloc_mem
+
+		regs := backend.regalloc(&ra, &ctx, &schedule)
+
+		if backend.REGLOGS {
+			sb: strings.Builder
+			append(&sb.buf, "\n")
+			backend.graph_display(
+				strings.to_writer(&sb),
+				&ctx,
+				&schedule,
+				regs = regs,
+			)
+			log.info(string(sb.buf[:]))
+		}
+
+		ctx := backend.Codegen_Emit_Ctx {
+			graph = &ctx,
+			schedule = &schedule,
+			buf = {
+				scratch = &scratch_mem,
+				code = &code_mem,
+				relocs = &reloc_mem,
+			},
+			allocs = regs,
+		}
+		prc.out = spec.emit_function(ctx)
+
 	}
-	output := spec.emit_function(ctx)
+
+	for p in ctx.procs {
+		for rel in p.out.relocs {
+			target := &ctx.procs[rel.id]
+			target_off := uintptr(raw_data(target.out.code))
+			source := uintptr(raw_data(p.out.code)) + uintptr(rel.offset)
+			jump := u32(target_off - source)
+			assert(rel.size == .r4)
+			slot := p.out.code[rel.offset - 4:][:4]
+			copy(slot, reflect.as_bytes(jump))
+		}
+	}
+
+	dsb: strings.Builder
+	disasm(&dsb, ctx)
 
 	diff_path, _ := os.join_path({TEST_OUT_DIR, name}, context.allocator)
 	file, err := os.read_entire_file(diff_path, context.allocator)
 
-	clear(&sb.buf)
-	disasm(&sb, output.code)
-
 	DO_DIFFING :: #config(DIFF, true)
 
 	if #config(ACCEPT, false) {
-		err := os.write_entire_file(diff_path, sb.buf[:])
+		err := os.write_entire_file(diff_path, dsb.buf[:])
 		assert(err == nil)
 	} else if err == .Not_Exist {
 		if DO_DIFFING {
-			log.error("\n", highlight_disasm(string(sb.buf[:])), sep = "")
+			log.error("\n", highlight_disasm(string(dsb.buf[:])), sep = "")
 		}
 	} else {
 		if DO_DIFFING {
 			assert(err == nil)
-			new, old := string(sb.buf[:]), string(file)
+			new, old := string(dsb.buf[:]), string(file)
 			if new != old {
 				new, old = highlight_disasm(new), highlight_disasm(old)
-				clear(&sb.buf)
-				append(&sb.buf, "\n")
-				print_diff(&sb, old, new)
-				log.error(string(sb.buf[:]))
+				clear(&dsb.buf)
+				append(&dsb.buf, "\n")
+				print_diff(&dsb, old, new)
+				log.error(string(dsb.buf[:]))
 			}
 		}
 	}
 
-	oka := virtual.protect(raw_data(output.code), 4096, {.Read, .Execute})
+	oka := virtual.protect(code_mem.ptr, code_mem.commited, {.Read, .Execute})
 	assert(oka)
 
-	ptr := transmute(proc() -> int)(raw_data(output.code))
-	//testing.expect_value(t, ptr(), exit_code)
+	ptr := transmute(proc() -> int)(code_mem.ptr)
+	testing.expect_value(t, ptr(), exit_code)
+}
+
+Type :: enum u32 {
+	Int,
+}
+
+Proc :: struct {
+	name:   string,
+	params: []Param,
+	rets:   []Param,
+	ast:    ^ast.Proc_Lit,
+	out:    backend.Codegen_Output,
+}
+
+Param :: struct {
+	name: string,
+	type: Type,
 }
 
 Variable :: struct {
@@ -471,6 +590,7 @@ Variable :: struct {
 
 Ctx :: struct {
 	using graph: backend.Graph,
+	procs:       [dynamic]Proc,
 	scope:       [dynamic]Variable,
 	node_scope:  backend.Node_ID,
 	loop:        ^Loop_State,
@@ -566,21 +686,25 @@ emit_nodes :: proc(
 		#partial switch d.op.kind {
 		case .Add:
 			return backend.graph_add_add(ctx, "add", .I64, lhs, rhs)
+		case .Sub:
+			return backend.graph_add_sub(ctx, "sub", .I64, lhs, rhs)
 		case .Mul:
 			return backend.graph_add_mul(ctx, "mul", .I64, lhs, rhs)
 		case .Cmp_Eq:
 			return backend.graph_add_eq(ctx, "eq", .I64, lhs, rhs)
 		case .Not_Eq:
 			return backend.graph_add_ne(ctx, "ne", .I64, lhs, rhs)
+		case .Lt_Eq:
+			return backend.graph_add_le(ctx, "le", .I64, lhs, rhs)
 		case:
 			fmt.panicf("TODO: %#v", node.derived)
 		}
 	case ^ast.Return_Stmt:
 		values := make([]backend.Node_ID, 1 + len(d.results))
-		values[0] = ctx_ctrl(ctx)
 		for r, i in d.results {
 			values[1 + i] = emit_nodes(ctx, {}, r)
 		}
+		values[0] = ctx_ctrl(ctx)
 		ctx.end = backend.graph_add_return(ctx, "ret", values)
 		backend.graph_delete(ctx, ctx.node_scope)
 		ctx.node_scope = 0
@@ -678,23 +802,30 @@ emit_nodes :: proc(
 		)
 
 		init := backend.graph_expand(ctx, loop_state.scope)
-		backedge := ctx.node_scope
-		if backedge != 0 {
-
+		bscope := ctx.node_scope
+		if bscope != 0 {
 			backedge := backend.graph_expand(ctx, ctx.node_scope)
 			assert(init.ordered_input_count == backedge.ordered_input_count)
 			for i in 1 ..< init.ordered_input_count {
 				init := init.inps[i]
 				inode := backend.graph_expand(ctx, init)
-				bnode := backend.graph_get(ctx, backedge.inps[i])
+				bnode := backend.graph_expand(ctx, backedge.inps[i])
 				if inode.btype == .Lazy_Phi {
-					if bnode.btype == .Scope || inode.node == bnode {
+					for {
+						scp := backend.graph_extra(ctx, bnode, backend.Scope)
+						if scp == nil || !scp.done || bnode.inps[0] == loop {
+							break
+						}
+						bnode = backend.graph_expand(ctx, bnode.inps[i])
+					}
+
+					if bnode.btype == .Scope || inode.node == bnode.node {
 						backend.graph_subsume(ctx, inode.inps[1], init)
 					} else {
 						backend.graph_add_extra_input(
 							ctx,
 							inode,
-							backedge.inps[i],
+							backend.graph_id(ctx, bnode),
 						)
 						inode.itype = .Phi
 						backend.graph_intern(ctx, init)
@@ -726,8 +857,8 @@ emit_nodes :: proc(
 		backend.graph_extra(ctx, loop_state.scope, backend.Scope).done = true
 		backend.graph_remove_output(ctx, loop_state.scope, {id = 0, idx = 0})
 
-		if backedge != 0 {
-			backend.graph_delete(ctx, backedge)
+		if bscope != 0 {
+			backend.graph_delete(ctx, bscope)
 		} else {
 			for out in backend.graph_outs(ctx, loop) {
 				onode := backend.graph_expand(ctx, out.id)
@@ -740,6 +871,34 @@ emit_nodes :: proc(
 		}
 
 		ctx.loop = ctx.loop.parent
+	case ^ast.Call_Expr:
+		args := make([]backend.Node_ID, 1 + len(d.args))
+
+		name := meta.src_of(ctx.file^, d.expr)
+
+		prc: ^Proc
+		idx: u32
+		for &p, i in ctx.procs {
+			if p.name == name {
+				prc = &p
+				idx = u32(i)
+			}
+		}
+		assert(prc != nil)
+
+		for arg, i in d.args {
+			args[1 + i] = emit_nodes(ctx, {}, arg)
+		}
+		args[0] = ctx_ctrl(ctx)
+
+		call := backend.graph_add_call(ctx, "call", args, idx)
+		call_end := backend.graph_add_callEnd(ctx, "calle", call)
+
+		backend.graph_set_input(ctx, ctx.node_scope, 0, call_end)
+
+		assert(len(prc.rets) == 1)
+
+		return backend.graph_add_ret(ctx, "ret", .I64, call_end, 0)
 	case ^ast.Branch_Stmt:
 		label := meta.src_of(ctx.file^, d.label)
 

@@ -16,11 +16,30 @@ Codegen_Emit_Ctx :: struct {
 
 Codegen_Emit_Buf :: struct {
 	code:    ^arna.Allocator,
+	relocs:  ^arna.Allocator,
 	scratch: ^arna.Allocator,
 }
 
 Codegen_Output :: struct {
-	code: []u8,
+	relocs: []Reloc,
+	code:   []u8,
+}
+
+Reloc_Kind :: enum u32 {
+	Func,
+}
+
+Reloc_Size :: enum u32 {
+	r4,
+}
+
+Reloc :: struct {
+	offset:  u32,
+	using _: bit_field u32 {
+		kind: Reloc_Kind | 2,
+		size: Reloc_Size | 2,
+		id:   u32        | 28,
+	},
 }
 
 emit :: #force_no_inline proc(buf: ^arna.Allocator, bytes: []u8) {
@@ -34,4 +53,8 @@ emit_anys :: #force_no_inline proc(buf: ^arna.Allocator, values: ..any) {
 		bytes := arna.smake(buf, []u8, len(b))
 		copy(bytes, b)
 	}
+}
+
+add_reloc :: #force_no_inline proc(buf: ^arna.Allocator) -> ^Reloc {
+	return (^Reloc)(raw_data(arna.alloc(buf, size_of(Reloc), align_of(Reloc))))
 }

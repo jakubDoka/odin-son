@@ -4,6 +4,7 @@ import "../vendored/gam/util/arna"
 import "../vendored/gam/util/bit_arr"
 import "base:intrinsics"
 import "core:fmt"
+import "core:mem"
 import "core:reflect"
 
 NOOP_REX :: 0b0100_0000
@@ -11,6 +12,17 @@ NOOP_REX :: 0b0100_0000
 GPA_MASK :: []int{0xFFFF & ~int(1 << uint(RSP))}
 GPA_SPILL_MASK :: []int{~int(1 << uint(RSP))}
 NO_INDEX :: RSP
+GPA_RET_MASK :: []int{1 << uint(RAX)}
+CALL_CLOBBERS ::
+	1 << uint(CALLER_SAVED[0]) |
+	1 << uint(CALLER_SAVED[1]) |
+	1 << uint(CALLER_SAVED[2]) |
+	1 << uint(CALLER_SAVED[3]) |
+	1 << uint(CALLER_SAVED[4]) |
+	1 << uint(CALLER_SAVED[5]) |
+	1 << uint(CALLER_SAVED[6]) |
+	1 << uint(CALLER_SAVED[7]) |
+	1 << uint(CALLER_SAVED[8])
 
 RAX :: Reg(0)
 RBX :: Reg(1)
@@ -31,11 +43,14 @@ R15 :: Reg(15)
 RIP :: RBP
 
 CALLE_SAVED := []Reg{RBX, RBP, R12, R13, R14, R15}
+CALLER_SAVED :: []Reg{RAX, RCX, RDX, RSI, RDI, R8, R9, R10, R11}
+ARGS := []Reg{RDI, RSI, RDX, RCX, R8, R9}
 
 @(rodata)
 X64_IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec {
 	.Start = {},
 	.Entry = {},
+	.Arg = {input_start_idx = 1},
 	.CInt = {reg_masks = #partial{.General = {GPA_MASK}}},
 	.Add = {
 		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
@@ -57,6 +72,10 @@ X64_IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec {
 		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
 		inplace_slot_idx = 0,
 	},
+	.Le = {
+		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
+		inplace_slot_idx = 0,
+	},
 	.Split = {
 		reg_masks = #partial{.General = {GPA_SPILL_MASK, GPA_SPILL_MASK}},
 	},
@@ -69,12 +88,24 @@ X64_IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec {
 		reg_masks = #partial{.General = {{}, GPA_MASK}},
 		input_start_idx = 1,
 	},
+	.Ret = {
+		reg_masks = #partial{.General = {GPA_RET_MASK}},
+		input_start_idx = 1,
+	},
 	.Then = {},
 	.Else = {},
 	.Region = {},
 	.Loop = {},
+	.Call = {
+		input_start_idx = 1,
+		clobbers = #partial{.General = CALL_CLOBBERS},
+	},
+	.Call_End = {},
 	.Jump = {input_start_idx = 1},
-	.Return = {input_start_idx = 1},
+	.Return = {
+		reg_masks = #partial{.General = {{}, GPA_RET_MASK}},
+		input_start_idx = 1,
+	},
 }
 
 @(rodata)
@@ -82,7 +113,7 @@ X64_REG_CLASSES := [X64_Node_Type]Reg_Class_Spec{}
 
 x64_reg_mask_of :: proc(
 	graph: ^Graph,
-	re: ^Regalloc,
+	ra: ^Regalloc,
 	id: Node_ID,
 	idx: int,
 ) -> Reg_Mask {
@@ -91,9 +122,11 @@ x64_reg_mask_of :: proc(
 	ALL_GENERAL :: 0xffff & ~int(1 << uint(RSP))
 
 	#partial switch node.itype {
-	case .Return:
-		assert(idx != 0)
-		return reg_mask_single(re, {kind = .General, index = u16(RAX)})
+	case .Arg:
+		arg := graph_extra(graph, node, Tup)
+		return reg_mask_single(ra, ARGS[arg.idx])
+	case .Call:
+		return reg_mask_single(ra, ARGS[idx - 1])
 	case:
 		fmt.panicf("TODO: %v %v", node.itype, idx)
 	}
@@ -105,6 +138,7 @@ Ctx :: struct {
 	local_relocs:    [dynamic]Local_Reloc,
 	stack_size:      int,
 	used:            bit_arr.Bit_Set,
+	code_start:      uint,
 }
 
 Local_Reloc :: struct {
@@ -114,9 +148,10 @@ Local_Reloc :: struct {
 }
 
 x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
-	start := ectx.code.pos
+	reloc_start := ectx.relocs.pos
 
 	ctx: Ctx
+	ctx.code_start = ectx.code.pos
 	ctx.inner = ectx
 
 	spill_slot_count: [Reg_Kind]int
@@ -171,7 +206,13 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 		)
 	}
 
-	return {code = ctx.code.ptr[start:ctx.code.pos]}
+	return {
+		code = ctx.code.ptr[ctx.code_start:ctx.code.pos],
+		relocs = mem.slice_data_cast(
+			[]Reloc,
+			ctx.relocs.ptr[reloc_start:ctx.relocs.pos],
+		),
+	}
 }
 
 @(disabled = GEN_SPEC)
@@ -179,7 +220,7 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 	block_base := ctx.gvn - u32(len(ctx.bbs))
 	node := graph_expand(ctx, instr)
 	switch node.xtype {
-	case .Start, .Entry, .Then, .Else, .Region, .Loop:
+	case .Start, .Entry, .Then, .Else, .Region, .Loop, .Call_End:
 		panic("Not reachable form here")
 	case .If:
 		cond := reg_of(ctx, node.inps[1])
@@ -209,8 +250,19 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 			},
 		)
 
-		emit(ctx.code, {0xE9, 0, 0, 0, 0})
+		emit(ctx.code, {0xe9, 0, 0, 0, 0})
+	case .Call:
+		call := graph_extra(ctx, node, Call)
+		emit(ctx.code, {0xe8, 0, 0, 0, 0})
+		add_reloc(ctx.relocs)^ = {
+			offset = u32(ctx.code.pos - ctx.code_start),
+			kind   = .Func,
+			size   = .r4,
+			id     = call.cid,
+		}
+	case .Arg:
 	case .Phi:
+	case .Ret:
 	case .CInt:
 		emit_single_op(ctx.code, 0xb8, reg_of(ctx, instr))
 		emit_anys(ctx.code, graph_extra(ctx, node, CInt).value)
@@ -248,6 +300,17 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 
 		rx = rex(RAX, lhs, RAX, true)
 		emit(ctx.code, {rx, 0x0F, 0x95, mod_sm(.Direct, 0b000, lhs)})
+
+		rx = rex(lhs, lhs, RAX, true)
+		emit(ctx.code, {rx, 0x0F, 0xB6, mod_rm(.Direct, lhs, lhs)})
+	case .Le:
+		lhs := reg_of(ctx, node.inps[0])
+		rhs := reg_of(ctx, node.inps[1])
+		rx := rex(lhs, rhs, RAX, true)
+		emit(ctx.code, {rx, 0x3b, mod_rm(.Direct, lhs, rhs)})
+
+		rx = rex(RAX, lhs, RAX, true)
+		emit(ctx.code, {rx, 0x0F, 0x96, mod_sm(.Direct, 0b000, lhs)})
 
 		rx = rex(lhs, lhs, RAX, true)
 		emit(ctx.code, {rx, 0x0F, 0xB6, mod_rm(.Direct, lhs, lhs)})

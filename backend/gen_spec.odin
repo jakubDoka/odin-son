@@ -14,13 +14,15 @@ COMMAND :: "odin run backend -define:GEN_SPEC=true"
 
 @(rodata)
 IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
-	.Start = {id = Cfg_Extra, default_type = .Void},
+	.Start = {id = Cfg, default_type = .Void},
 	.Entry = {
-		id = Cfg_Extra,
+		id = Cfg,
 		args = {"start"},
 		flags = {.Is_Basic_Block_Start},
 		default_type = .Void,
 	},
+	// TODO: maybe its better to introduce a flag: Schedule_Early
+	.Arg = {id = Tup, args = {"entry"}, no_ctrl = true, extra_args = {"idx"}},
 	.CInt = {
 		id = CInt,
 		extra_args = {"value"},
@@ -33,7 +35,12 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 		no_ctrl = true,
 		flags = {.Comutes, .Interned},
 	},
-	.Sub = {id = No_Extra, args = {"lhs", "rhs"}, no_ctrl = true},
+	.Sub = {
+		id = No_Extra,
+		args = {"lhs", "rhs"},
+		flags = {.Interned},
+		no_ctrl = true,
+	},
 	.Mul = {
 		id = No_Extra,
 		args = {"lhs", "rhs"},
@@ -52,6 +59,12 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 		no_ctrl = true,
 		flags = {.Comutes, .Interned},
 	},
+	.Le = {
+		id = No_Extra,
+		args = {"lhs", "rhs"},
+		no_ctrl = true,
+		flags = {.Interned},
+	},
 	.Split = {id = No_Extra, args = {"dest"}, no_ctrl = true},
 	.Phi = {
 		id = No_Extra,
@@ -59,20 +72,20 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 		no_ctrl = true,
 		flags = {.Interned},
 	},
-	.If = {id = Cfg_Extra, args = {"ctrl", "cond"}, default_type = .Void},
+	.If = {id = Cfg, args = {"ctrl", "cond"}, default_type = .Void},
 	.Then = {
-		id = Cfg_Extra,
+		id = Cfg,
 		args = {"ctrl"},
 		default_type = .Void,
 		flags = {.Is_Basic_Block_Start},
 	},
 	.Else = {
-		id = Cfg_Extra,
+		id = Cfg,
 		args = {"ctrl"},
 		default_type = .Void,
 		flags = {.Is_Basic_Block_Start},
 	},
-	.Jump = {id = Cfg_Extra, args = {"ctrl"}, default_type = .Void},
+	.Jump = {id = Cfg, args = {"ctrl"}, default_type = .Void},
 	.Region = {
 		id = Region,
 		args = {"rcfg", "lcfg"},
@@ -80,14 +93,32 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 		flags = {.Is_Basic_Block_Start},
 	},
 	.Loop = {
-		id = Cfg_Extra,
+		id = Cfg,
 		args = {"ctrl"},
 		default_type = .Void,
 		flags = {.Is_Basic_Block_Start},
 		extra_capacity = 1,
 	},
+	.Call = {
+		id = Call,
+		varargs = true,
+		default_type = .Void,
+		extra_args = {"cid"},
+	},
+	.Call_End = {
+		id = Cfg,
+		args = {"call"},
+		flags = {.Is_Basic_Block_Start},
+		default_type = .Void,
+	},
+	.Ret = {
+		id = Tup,
+		args = {"call_end"},
+		no_ctrl = true,
+		extra_args = {"idx"},
+	},
 	.Return = {
-		id = Cfg_Extra,
+		id = Cfg,
 		varargs = true,
 		default_type = .Void,
 		flags = {.Immortal},
@@ -123,18 +154,21 @@ Class_Spec :: struct {
 Reg_Class_Spec :: struct {
 	inplace_slot_idx: Maybe(int),
 	input_start_idx:  int,
+	clobbers:         [Reg_Kind]int,
 	reg_masks:        [Reg_Kind][][]int,
 }
 
 Ideal_Node_Type :: enum u16 {
 	Start,
 	Entry,
+	Arg,
 	CInt,
 	Add,
 	Sub,
 	Mul,
 	Eq,
 	Ne,
+	Le,
 	Split,
 	Phi,
 	If,
@@ -143,6 +177,9 @@ Ideal_Node_Type :: enum u16 {
 	Jump,
 	Region,
 	Loop,
+	Call,
+	Call_End,
+	Ret,
 	Return,
 }
 
@@ -351,6 +388,19 @@ generate_specs :: proc() {
 			spec.datatype_to_reg_kind,
 		)
 
+		os.write_string(file, "\t\tclobbers = {\n")
+		for classes in spec.classes {
+			for class, i in classes.regs {
+				fmt.fprintfln(
+					file,
+					"\t\t\t%w, // %v",
+					class.clobbers,
+					reflect.enum_field_names(classes.enm)[i],
+				)
+			}
+		}
+		os.write_string(file, "\t\t},\n")
+
 		interned_reg_masks_arr := make([][]int, len(interned_reg_masks))
 		for mask, idx in interned_reg_masks {
 			interned_reg_masks_arr[idx] = key_mask(mask)
@@ -558,7 +608,7 @@ generate_specs :: proc() {
 				)
 
 				no_ctrl := class.no_ctrl
-				auto_no_ctrl_classes := [?]typeid{Cfg_Extra}
+				auto_no_ctrl_classes := [?]typeid{Cfg}
 				for cc in auto_no_ctrl_classes {
 					no_ctrl |=
 						inherits[class.id] &

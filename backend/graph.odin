@@ -20,10 +20,7 @@ when NODE_NAMES {
 PRECISION :: size_of(u32)
 NODE_START :: Node_ID(4 + PREFIX_SIZE) / 4
 NODE_ENTRY ::
-	Node_ID(
-		4 + PREFIX_SIZE + size_of(Node) + size_of(Cfg_Extra) + PREFIX_SIZE,
-	) /
-	4
+	Node_ID(4 + PREFIX_SIZE + size_of(Node) + size_of(Cfg) + PREFIX_SIZE) / 4
 NODE_NAMES :: #config(NODE_NAMES, ODIN_DEBUG)
 
 Node_Spec_Name :: enum {
@@ -51,14 +48,14 @@ Class_Flag :: enum {
 	Immortal,
 }
 
-Cfg_Extra :: struct {
+Cfg :: struct {
 	using _: struct #raw_union {
 		idepth: u32,
 	},
 }
 
 Region :: struct {
-	using base: Cfg_Extra,
+	using base: Cfg,
 }
 
 Scope :: struct #align (4) {
@@ -67,6 +64,15 @@ Scope :: struct #align (4) {
 
 CInt :: struct #align (4) {
 	value: i64,
+}
+
+Call :: struct {
+	using base: Cfg,
+	cid:        u32,
+}
+
+Tup :: struct {
+	idx: u32,
 }
 
 No_Extra :: struct {}
@@ -681,7 +687,12 @@ graph_get_static_extra_node :: #force_inline proc(
 	node: ^Node,
 	$T: typeid,
 ) -> ^T {
-	assert(int(node.rtype) < len(graph.inheritance_table))
+	fmt.assertf(
+		int(node.rtype) < len(graph.inheritance_table),
+		"node: %v %v",
+		graph_id(graph, node),
+		graph_outs(graph, node),
+	)
 	if graph.inheritance_table[node.rtype] & (1 << inherit_idx_of(T)) ==
 	   0 {return nil}
 	return (^T)(&node.extra)
@@ -722,20 +733,22 @@ graph_display :: proc(
 	seen_loop_trees: map[^Loop_Tree]int
 
 	for bb in ctx.bbs {
-		if bb.loop_tree not_in seen_loop_trees {
-			seen_loop_trees[bb.loop_tree] = len(seen_loop_trees)
-		}
-		if bb.loop_tree.parent not_in seen_loop_trees {
-			seen_loop_trees[bb.loop_tree.parent] = len(seen_loop_trees)
-		}
+		if bb.loop_tree != nil {
+			if bb.loop_tree not_in seen_loop_trees {
+				seen_loop_trees[bb.loop_tree] = len(seen_loop_trees)
+			}
+			if bb.loop_tree.parent not_in seen_loop_trees {
+				seen_loop_trees[bb.loop_tree.parent] = len(seen_loop_trees)
+			}
 
-		fmt.wprintf(
-			w,
-			"%02i:%02i:%02i ",
-			bb.loop_tree.depth,
-			seen_loop_trees[bb.loop_tree],
-			seen_loop_trees[bb.loop_tree.parent],
-		)
+			fmt.wprintf(
+				w,
+				"%02i:%02i:%02i ",
+				bb.loop_tree.depth,
+				seen_loop_trees[bb.loop_tree],
+				seen_loop_trees[bb.loop_tree.parent],
+			)
+		}
 
 		graph_display_node(w, graph, bb.head)
 

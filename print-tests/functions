@@ -1,0 +1,40 @@
+main:
+mov rdi, 0x0A
+call :fib
+ret
+fib:
+     push rcx
+     push rbp
+     push r12
+     mov rbp, rdi
+     mov rcx, 0x02
+     mov rax, rbp
+     cmp rax, rcx
+     setbe al
+     movzx rax, al
+     mov rdx, 0x01
+     test rax, rax
+     jz :0
+     jmp :1
+
+000: mov rax, rbp
+     sub rax, rdx
+     mov rdi, rax
+     call :fib
+     mov r12, rax
+     mov rax, rbp
+     sub rax, rcx
+     mov rdi, rax
+     call :fib
+     mov rcx, r12
+     add rcx, rax
+     mov rax, rcx
+     jmp :2
+
+001: mov rax, rdx
+     jmp :2
+
+002: pop r12
+     pop rbp
+     pop rcx
+     ret

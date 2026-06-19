@@ -1083,7 +1083,7 @@ main :: proc() -> int {
 }
 `, main_())
 }
-@(test) foobar :: proc(t: ^testing.T) {
+@(test) nested_infinite_loop :: proc(t: ^testing.T) {
 
 
 
@@ -1101,7 +1101,7 @@ main_ :: proc() -> int {
       return sum
 }
 
-run_test(t, `foobar`, `
+run_test(t, `nested_infinite_loop`, `
 package main
 
 opt_level :: "none"
@@ -1116,6 +1116,46 @@ main :: proc() -> int {
               sum += 10
       }
       return sum
+}
+`, main_())
+}
+@(test) functions :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	return fib(10)
+}
+
+fib :: proc(x: int) -> int {
+	x := x
+	if x <= 2 {
+		x = 1
+	} else {
+		x = fib(x - 1) + fib(x - 2)
+	}
+	return x
+}
+
+run_test(t, `functions`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	return fib(10)
+}
+
+fib :: proc(x: int) -> int {
+	x := x
+	if x <= 2 {
+		x = 1
+	} else {
+		x = fib(x - 1) + fib(x - 2)
+	}
+	return x
 }
 `, main_())
 }

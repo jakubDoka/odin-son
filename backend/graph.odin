@@ -132,10 +132,14 @@ Graph :: struct {
 
 Intern_Vec :: #simd[16]u8
 
-graph_merge_returns :: proc(graph: ^Graph, ctrl: Node_ID, rets: []Node_ID) {
+graph_merge_returns :: proc(
+	graph: ^Graph,
+	ctrl: Node_ID,
+	rets: []Node_ID,
+) -> Node_ID {
 	if graph.end == 0 {
 		graph.end = graph_add_return(graph, "ret", rets)
-		return
+		return graph.end
 	}
 
 	end := graph_expand(graph, graph.end)
@@ -152,6 +156,8 @@ graph_merge_returns :: proc(graph: ^Graph, ctrl: Node_ID, rets: []Node_ID) {
 		phi := graph_add_phi(graph, "rphi", ty, reg, lhs, rhs)
 		graph_set_input(graph, graph.end, i, phi)
 	}
+
+	return reg
 }
 
 graph_interner_find :: proc(graph: ^Graph, id: Node_ID) -> (int, u8, bool) {
@@ -182,12 +188,16 @@ graph_interner_find :: proc(graph: ^Graph, id: Node_ID) -> (int, u8, bool) {
 }
 
 graph_intern :: proc(graph: ^Graph, id: Node_ID) -> Node_ID {
+
 	if !graph_has_flag(graph, id, .Interned) || graph.dont_intern {
 		return id
 	}
 
 	idx, hash, _ := graph_interner_find(graph, id)
-	if idx >= 0 do return graph.interner.id[idx]
+	if idx >= 0 {
+		//assert(len(graph_outs(graph, id)) == 0)
+		return graph.interner.id[idx]
+	}
 
 	if len(graph.interner) == graph.interner_len {
 		new_cap := len(graph.interner) * 2 + size_of(Intern_Vec)

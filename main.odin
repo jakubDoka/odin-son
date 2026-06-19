@@ -181,7 +181,7 @@ disasm :: proc(sb: ^strings.Builder, ctx: Ctx) {
 
 			if off, ok := jumps[offset]; ok {
 				fmt.sbprintf(sb, "%03i: ", off)
-			} else if len(jumps) != 0 {
+			} else {
 				fmt.sbprint(sb, "     ")
 			}
 

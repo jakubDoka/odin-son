@@ -711,3 +711,29 @@ c :: proc(v: int) -> int {
 	return v * 3
 }
 ```
+
+#### multiple returns
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	return a(1, 2)
+}
+
+a :: proc(u: int, v: int) -> int {
+	if u == 0 do return 0
+	if v == 2 do return v * 6
+	if u == 1 do return b(u) + c(v * 2)
+	return b(u) + c(v)
+}
+
+b :: proc(u: int) -> int {
+	return u * 2
+}
+
+c :: proc(v: int) -> int {
+	return v * 3
+}
+```

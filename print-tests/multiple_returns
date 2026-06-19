@@ -1,0 +1,82 @@
+main:
+     mov rdi, 0x01
+     mov rsi, 0x02
+     call :a
+     ret
+a:
+     push rcx
+     push rbp
+     push r12
+     mov rbp, rsi
+     mov rax, 0x00
+     mov rcx, rax
+     mov rdx, rdi
+     cmp rdx, rax
+     setz dl
+     movzx rdx, dl
+     test rdx, rdx
+     jz :0
+     jmp :1
+
+000: mov rcx, 0x02
+     mov rax, rbp
+     cmp rax, rcx
+     setz al
+     movzx rax, al
+     test rax, rax
+     jz :2
+     jmp :3
+
+002: mov rax, 0x01
+     cmp rax, rdi
+     setz al
+     movzx rax, al
+     test rax, rax
+     jz :4
+     jmp :5
+
+004: call :b
+     mov rcx, rax
+     mov rdi, rbp
+     call :c
+     add rcx, rax
+     mov rax, rcx
+     jmp :6
+
+005: call :b
+     mov r12, rax
+     mov rax, rbp
+     imul rax, rcx
+     mov rdi, rax
+     call :c
+     mov rcx, r12
+     add rcx, rax
+     mov rax, rcx
+     jmp :7
+
+003: mov rax, 0x06
+     mov rcx, rbp
+     imul rax, rcx
+     jmp :8
+
+001: mov rax, rcx
+     jmp :8
+
+008: jmp :7
+
+007: jmp :6
+
+006: pop r12
+     pop rbp
+     pop rcx
+     ret
+b:
+     mov rax, 0x02
+     imul rdi, rax
+     mov rax, rdi
+     ret
+c:
+     mov rax, 0x03
+     imul rdi, rax
+     mov rax, rdi
+     ret

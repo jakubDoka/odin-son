@@ -253,6 +253,19 @@ when (#load("node_specs.odin", string) or_else "") == "" {
 		ctrl: Node_ID,
 	) -> Node_ID {return 0}
 
+	graph_add_loop :: proc(
+		graph: ^Graph,
+		name: string,
+		ctrl: Node_ID,
+	) -> Node_ID {return 0}
+
+	graph_add_if :: proc(
+		graph: ^Graph,
+		name: string,
+		ctrl: Node_ID,
+		cond: Node_ID,
+	) -> Node_ID {return 0}
+
 	graph_add_lazyPhi :: proc(
 		graph: ^Graph,
 		name: string,

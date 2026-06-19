@@ -132,6 +132,42 @@ Graph :: struct {
 
 Intern_Vec :: #simd[16]u8
 
+If_State :: struct {
+	if_:     Node_ID,
+	using _: struct #raw_union {
+		else_scope: Node_ID,
+		then_scope: Node_ID,
+	},
+}
+
+graph_start_if :: proc(
+	graph: ^Graph,
+	scope: Node_ID,
+	state: ^If_State,
+	cond: Node_ID,
+) {
+	snode := graph_expand(graph, scope)
+	state.if_ = graph_add_if(graph, "if", snode.inps[0], cond)
+	state.else_scope = graph_clone(graph, scope)
+
+	then := graph_add_then(graph, "then", state.if_)
+	graph_set_input(graph, scope, 0, then)
+}
+
+graph_start_else :: proc(
+	graph: ^Graph,
+	then_scope: ^Node_ID,
+	state: ^If_State,
+) {
+	else_ := graph_add_else(graph, "else", state.if_)
+	graph_set_input(graph, state.else_scope, 0, else_)
+	then_scope^, state.then_scope = state.else_scope, then_scope^
+}
+
+graph_end_else :: proc(graph: ^Graph, else_scope: ^Node_ID, state: ^If_State) {
+	else_scope^ = graph_merge_scopes(graph, state.then_scope, else_scope^)
+}
+
 Loop_Control :: enum int {
 	Break,
 	Continue,
@@ -158,21 +194,22 @@ graph_start_loop :: proc(graph: ^Graph, scope: Node_ID, state: ^Loop_State) {
 
 graph_end_loop :: proc(
 	graph: ^Graph,
-	in_node_scope: Node_ID,
+	node_scope: ^Node_ID,
 	state: ^Loop_State,
-) -> (
-	node_scope: Node_ID,
 ) {
-	node_scope = in_node_scope
-	node_scope = graph_merge_scopes(graph, node_scope, state.scopes[.Continue])
+	node_scope^ = graph_merge_scopes(
+		graph,
+		node_scope^,
+		state.scopes[.Continue],
+	)
 
 	init := graph_expand(graph, state.scope)
 	loop := init.inps[0]
 	assert(graph_get(graph, loop).itype == .Loop)
 
-	bscope := node_scope
+	bscope := node_scope^
 	if bscope != 0 {
-		backedge := graph_expand(graph, node_scope)
+		backedge := graph_expand(graph, bscope)
 		assert(init.ordered_input_count == backedge.ordered_input_count)
 		for i in 1 ..< init.ordered_input_count {
 			init := init.inps[i]
@@ -199,14 +236,14 @@ graph_end_loop :: proc(
 		graph_add_extra_input(graph, init.inps[0], backedge.inps[0])
 	}
 
-	node_scope = state.scopes[.Break]
+	node_scope^ = state.scopes[.Break]
 
-	if node_scope != 0 {
-		exit := graph_expand(graph, node_scope)
+	if node_scope^ != 0 {
+		exit := graph_expand(graph, node_scope^)
 		for i in 1 ..< exit.ordered_input_count {
 			enode := graph_get(graph, exit.inps[i])
 			if enode.btype == .Scope {
-				graph_set_input(graph, node_scope, i, init.inps[i])
+				graph_set_input(graph, node_scope^, i, init.inps[i])
 			}
 		}
 	}

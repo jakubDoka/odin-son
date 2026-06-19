@@ -754,26 +754,13 @@ emit_nodes :: proc(
 		return emit_nodes(ctx, prop, d.expr)
 	case ^ast.If_Stmt:
 		cond := emit_nodes(ctx, {}, d.cond)
-		if_id := backend.graph_add_if(ctx, "if", ctx_ctrl(ctx), cond)
 
-		else_scope := backend.graph_clone(ctx, ctx.node_scope)
-
-		then := backend.graph_add_then(ctx, "then", if_id)
-		backend.graph_set_input(ctx, ctx.node_scope, 0, then)
+		if_state: backend.If_State
+		backend.graph_start_if(ctx, ctx.node_scope, &if_state, cond)
 		emit_nodes(ctx, {}, d.body)
-		then_scope := ctx.node_scope
-
-		else_ := backend.graph_add_else(ctx, "else", if_id)
-		ctx.node_scope = else_scope
-		backend.graph_set_input(ctx, ctx.node_scope, 0, else_)
+		backend.graph_start_else(ctx, &ctx.node_scope, &if_state)
 		emit_nodes(ctx, {}, d.else_stmt)
-		else_scope = ctx.node_scope
-
-		ctx.node_scope = backend.graph_merge_scopes(
-			ctx,
-			then_scope,
-			else_scope,
-		)
+		backend.graph_end_else(ctx, &ctx.node_scope, &if_state)
 	case ^ast.For_Stmt:
 		assert(d.init == nil)
 		assert(d.cond == nil)
@@ -786,11 +773,7 @@ emit_nodes :: proc(
 
 		backend.graph_start_loop(ctx, ctx.node_scope, &loop_state)
 		emit_nodes(ctx, {}, d.body)
-		ctx.node_scope = backend.graph_end_loop(
-			ctx,
-			ctx.node_scope,
-			&loop_state,
-		)
+		backend.graph_end_loop(ctx, &ctx.node_scope, &loop_state)
 
 		ctx.loop = ctx.loop.parent
 	case ^ast.Call_Expr:

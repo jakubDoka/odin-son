@@ -654,25 +654,9 @@ regalloc_round :: proc(
 			continue
 		}
 
-		ok = false
+		members := collect_lrg_members(ctx, &lrg)
 
-		members := make([dynamic]Node_ID, arena)
-		append(&members, id)
-		for i := 0; i < len(members); i += 1 {
-			member := members[i]
-			for out in graph_outs(graph, member) {
-				if get_lrg(ctx, out.id) == &lrg &&
-				   !slice.contains(members[:], out.id) {
-					append(&members, out.id)
-				}
-			}
-			for inp in graph_inps(graph, member) {
-				if get_lrg(ctx, inp) == &lrg &&
-				   !slice.contains(members[:], inp) {
-					append(&members, inp)
-				}
-			}
-		}
+		ok = false
 
 		if lrg.failed_to_color {
 			color_fails += int(lrg.failed_to_color)
@@ -759,10 +743,31 @@ regalloc_round :: proc(
 					graph_set_input(graph, out.id, out.idx, split)
 				}
 			}
+
+			continue
 		}
 
 		if lrg.reg_conflict {
-			log.info("reg conflict:", id)
+			for m in members {
+				for out in graph_outs(graph, m) {
+					onode := graph_expand(graph, out.id)
+					if get_lrg(ctx, out.id) == &lrg do continue
+					mask := reg_mask_of(
+						graph,
+						ra,
+						out.id,
+						out.idx + 1 - onode.data_start,
+					)
+					// TODO: this is not sufficient but for now it works, later
+					// we should instead idscover disjoint masks and split them
+					if reg_mask_pop_count(mask) == 1 {
+						split := split_before(ctx, out.id, out.idx, "rco")
+						graph_set_input(graph, out.id, out.idx, split)
+					}
+				}
+			}
+
+			continue
 		}
 	}
 
@@ -894,6 +899,28 @@ regalloc_round :: proc(
 
 	return
 
+	collect_lrg_members :: proc(ctx: Ctx, lrg: ^Lrg) -> []Node_ID {
+		graph := ctx.graph
+		members := make([dynamic]Node_ID, arna.allocator(ctx.ra))
+		append(&members, lrg.node)
+		for i := 0; i < len(members); i += 1 {
+			member := members[i]
+			for out in graph_outs(graph, member) {
+				if get_lrg(ctx, out.id) == lrg &&
+				   !slice.contains(members[:], out.id) {
+					append(&members, out.id)
+				}
+			}
+			for inp in graph_inps(graph, member) {
+				if get_lrg(ctx, inp) == lrg &&
+				   !slice.contains(members[:], inp) {
+					append(&members, inp)
+				}
+			}
+		}
+		return members[:]
+	}
+
 	add_liveout :: proc(
 		ctx: ^Ctx,
 		louts: ^Liveouts,
@@ -1013,20 +1040,14 @@ regalloc_round :: proc(
 
 		id := forward_lrg(graph, lrg, lrg_table)
 
+		members := collect_lrg_members(ctx, lrg)
+
 		has_non_split := false
-		members := make([dynamic]Node_ID, arna.allocator(ctx.ra))
-		append(&members, id)
-		for i := 0; i < len(members); i += 1 {
-			member := members[i]
-			for out in graph_outs(graph, member) {
-				onode := graph_get(graph, out.id)
-				has_non_split |= onode.itype != .Split
-				if get_lrg(ctx, out.id) == lrg {
-					append(&members, out.id)
-				}
+		for m in members {
+			for o in graph_outs(graph, m) {
+				has_non_split |= graph_get(graph, o.id).itype != .Split
 			}
 		}
-
 		if !has_non_split {
 			return 0
 		}

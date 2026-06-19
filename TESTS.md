@@ -602,3 +602,93 @@ fib :: proc(x: int) -> int {
 	return x
 }
 ```
+
+#### regalloc pressure across calls
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	x := 0
+
+	a0  := x + 1
+	a1  := x + 2
+	a2  := x + 3
+	a3  := x + 4
+	a4  := x + 5
+	a5  := x + 6
+	a6  := x + 7
+	a7  := x + 8
+	a8  := x + 9
+	a9  := x + 10
+	a10 := x + 11
+	a11 := x + 12
+	a12 := x + 13
+	a13 := x + 14
+	a14 := x + 15
+	a15 := x + 16
+
+	call(a15)
+
+	b0 := a0  * a15 + a1
+	b1 := a1  * a14 + a2
+	b2 := a2  * a13 + a3
+	b3 := a3  * a12 + a4
+	b4 := a4  * a11 + a5
+	b5 := a5  * a10 + a6
+	b6 := a6  * a9  + a7
+	b7 := a7  * a8  + a0
+
+	call(b7)
+
+	c0 := b0 * b4 + b1
+	c1 := b1 * b5 + b2
+	c2 := b2 * b6 + b3
+	c3 := b3 * b7 + b0
+
+	call(c3)
+
+	d0 := c0 * c2 + c1
+	d1 := c1 * c3 + c2
+
+	call(d1)
+
+	e0 := d0 * d1 + c3
+
+	call(e0)
+
+	return e0 +
+		a0 + a1 + a2 + a3 +
+		a4 + a5 + a6 + a7 +
+		a8 + a9 + a10 + a11 +
+		a12 + a13 + a14 + a15
+}
+
+call :: proc(vl: int) -> int {
+	return vl
+}
+```
+
+#### some nested fuction calls
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	return a(1, 2)
+}
+
+a :: proc(u: int, v: int) -> int {
+	return b(u) + c(v)
+}
+
+b :: proc(u: int) -> int {
+	return u * 2
+}
+
+c :: proc(v: int) -> int {
+	return v * 3
+}
+```

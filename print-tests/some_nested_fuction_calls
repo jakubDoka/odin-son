@@ -1,0 +1,29 @@
+main:
+mov rdi, 0x01
+mov rsi, 0x02
+call :a
+ret
+a:
+push rcx
+push rbp
+mov rcx, rsi
+call :b
+mov rbp, rax
+mov rdi, rcx
+call :c
+mov rcx, rbp
+add rcx, rax
+mov rax, rcx
+pop rbp
+pop rcx
+ret
+b:
+mov rax, 0x02
+imul rdi, rax
+mov rax, rdi
+ret
+c:
+mov rax, 0x03
+imul rdi, rax
+mov rax, rdi
+ret

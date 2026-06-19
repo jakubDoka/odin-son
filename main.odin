@@ -632,6 +632,9 @@ emit_nodes :: proc(
 		}
 		resize(&ctx.scope, prev_scope_len)
 		backend.graph_truncate_scope(ctx, ctx.node_scope, prev_scope_len)
+	case ^ast.Expr_Stmt:
+		node := emit_nodes(ctx, {}, d.expr)
+		backend.graph_delete(ctx, node)
 	case ^ast.Assign_Stmt:
 		assert(len(d.lhs) == len(d.rhs))
 		for i in 0 ..< len(d.lhs) {
@@ -898,7 +901,7 @@ emit_nodes :: proc(
 
 		assert(len(prc.rets) == 1)
 
-		return backend.graph_add_ret(ctx, "ret", .I64, call_end, 0)
+		return backend.graph_add_ret(ctx, "cret", .I64, call_end, 0)
 	case ^ast.Branch_Stmt:
 		label := meta.src_of(ctx.file^, d.label)
 

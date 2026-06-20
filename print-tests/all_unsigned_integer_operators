@@ -5,7 +5,7 @@ main:
      mov rbp, rax
      mov rbx, 0x06
      mov rax, 0x00
-     mov rsi, rax
+     mov r8, rax
      mov rax, rbp
      xor rdx, rdx
      div rbx
@@ -17,20 +17,19 @@ main:
      jz :0
      jmp :1
 
-000: mov rax, rsi
+000: mov rdi, r8
      jmp :2
 
-001: mov rax, 0x01
-     mov rdx, rsi
-     add rax, rdx
+001: mov rdi, 0x01
+     mov rax, r8
+     add rdi, rax
      jmp :2
 
-002: mov rdi, rax
-     mov rax, rbp
+002: mov rax, rbp
      xor rdx, rdx
      div rbx
      mov rax, 0x02
-     mov r8, rax
+     mov rsi, rax
      cmp rdx, rax
      setz dl
      movzx rdx, dl
@@ -38,20 +37,17 @@ main:
      jz :3
      jmp :4
 
-003: mov rax, rdi
+003: jmp :5
+
+004: mov rax, rsi
+     add rdi, rax
      jmp :5
 
-004: mov rax, rdi
-     mov rdx, r8
-     add rax, rdx
-     jmp :5
-
-005: mov rdi, rax
+005: mov r9, rdi
      mov rax, 0x07
-     mov rdx, rsi
-     sub rdx, rax
-     mov rsi, rdx
-     mov rax, rsi
+     sub r8, rax
+     mov rdi, r8
+     mov rax, rdi
      xor rdx, rdx
      div rbx
      mov rdx, rbp
@@ -62,16 +58,16 @@ main:
      jz :6
      jmp :7
 
-006: mov rax, rdi
-     jmp :8
+006: jmp :8
 
 007: mov rax, 0x04
-     mov rdx, rdi
-     add rax, rdx
+     mov rdx, r9
+     mov r9, rax
+     add r9, rdx
      jmp :8
 
-008: mov rdi, rax
-     mov rax, rsi
+008: mov r8, r9
+     mov rax, rdi
      xor rdx, rdx
      div rbx
      cmp rdx, rcx
@@ -81,119 +77,122 @@ main:
      jz :9
      jmp :10
 
-009: mov rax, rdi
-     jmp :11
+009: jmp :11
 
 010: mov rax, 0x08
-     mov rcx, rdi
-     add rax, rcx
+     mov rcx, r8
+     mov r8, rax
+     add r8, rcx
      jmp :11
 
 011: mov rcx, 0x3C
-     mov rdx, rsi
+     mov rdx, rdi
      shr rdx, cl
-     mov rcx, 0x0F
-     cmp rdx, rcx
+     mov rax, 0x0F
+     cmp rdx, rax
      setz dl
      movzx rdx, dl
-     mov rcx, rdx
-     test rcx, rcx
+     test rdx, rdx
      jz :12
      jmp :13
 
 012: jmp :14
 
-013: mov rcx, 0x10
-     add rcx, rax
-     mov rax, rcx
+013: mov rax, 0x10
+     mov rcx, r8
+     mov r8, rax
+     add r8, rcx
      jmp :14
 
 014: mov rdx, rbp
-     mov rcx, r8
+     mov rcx, rsi
      shr rdx, cl
-     mov rcx, 0x05
-     cmp rdx, rcx
+     mov rax, 0x05
+     cmp rdx, rax
      setz dl
      movzx rdx, dl
-     mov rcx, rdx
-     test rcx, rcx
+     test rdx, rdx
      jz :15
      jmp :16
 
 015: jmp :17
 
-016: mov rcx, 0x20
-     add rcx, rax
-     mov rax, rcx
+016: mov rax, 0x20
+     add rax, r8
+     mov r8, rax
      jmp :17
 
-017: mov rcx, rsi
-     cmp rcx, rbx
-     setnbe cl
-     movzx rcx, cl
-     test rcx, rcx
+017: mov rdx, r8
+     mov rax, rdi
+     cmp rax, rbx
+     setnbe al
+     movzx rax, al
+     test rax, rax
      jz :18
      jmp :19
 
 018: jmp :20
 
-019: mov rcx, 0x40
-     add rcx, rax
-     mov rax, rcx
+019: mov rax, 0x40
+     mov rcx, rdx
+     mov rdx, rax
+     add rdx, rcx
      jmp :20
 
-020: mov rcx, rbp
-     mov rdx, rsi
-     cmp rdx, rcx
-     setnb dl
-     movzx rdx, dl
-     mov rcx, rdx
+020: mov rax, rbp
+     mov rcx, rdi
+     cmp rcx, rax
+     setnb cl
+     movzx rcx, cl
      test rcx, rcx
      jz :21
      jmp :22
 
 021: jmp :23
 
-022: mov rcx, 0x80
-     add rcx, rax
-     mov rax, rcx
+022: mov rax, 0x80
+     mov rcx, rdx
+     mov rdx, rax
+     add rdx, rcx
      jmp :23
 
-023: mov rcx, rsi
-     mov rdx, rbx
-     cmp rdx, rcx
-     setb dl
-     movzx rdx, dl
-     test rdx, rdx
+023: mov rax, rdi
+     mov rcx, rbx
+     cmp rcx, rax
+     setb cl
+     movzx rcx, cl
+     test rcx, rcx
      jz :24
      jmp :25
 
 024: jmp :26
 
-025: mov rcx, 0x100
-     add rcx, rax
-     mov rax, rcx
+025: mov rax, 0x100
+     mov rcx, rdx
+     mov rdx, rax
+     add rdx, rcx
      jmp :26
 
-026: mov rcx, rsi
-     mov rdx, rbx
-     cmp rdx, rcx
-     setbe dl
-     movzx rdx, dl
-     test rdx, rdx
+026: mov rax, rdi
+     mov rcx, rbx
+     cmp rcx, rax
+     setbe cl
+     movzx rcx, cl
+     test rcx, rcx
      jz :27
      jmp :28
 
 027: jmp :29
 
-028: mov rcx, 0x200
-     add rcx, rax
-     mov rax, rcx
+028: mov rax, 0x200
+     mov rcx, rdx
+     mov rdx, rax
+     add rdx, rcx
      jmp :29
 
 029: mov rcx, rbp
-     mov rdx, rsi
-     cmp rcx, rdx
+     mov rax, rdi
+     cmp rcx, rax
      setb cl
      movzx rcx, cl
      test rcx, rcx
@@ -202,11 +201,13 @@ main:
 
 030: jmp :32
 
-031: mov rcx, 0x400
-     add rcx, rax
-     mov rax, rcx
+031: mov rax, 0x400
+     mov rcx, rdx
+     mov rdx, rax
+     add rdx, rcx
      jmp :32
 
-032: pop rbp
+032: mov rax, rdx
+     pop rbp
      pop rbx
      ret

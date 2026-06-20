@@ -7,15 +7,14 @@ a:
      push rbx
      push rbp
      push r12
-     mov rax, rsi
-     mov rbp, rax
+     mov rbp, rsi
      mov rax, 0x00
-     mov rcx, rax
-     mov rdx, rdi
-     cmp rdx, rax
-     setz dl
-     movzx rdx, dl
-     test rdx, rdx
+     mov rdx, rax
+     mov rcx, rdi
+     cmp rcx, rax
+     setz cl
+     movzx rcx, cl
+     test rcx, rcx
      jz :0
      jmp :1
 
@@ -37,12 +36,10 @@ a:
      jmp :5
 
 004: call :b
-     mov rbx, rax
+     mov r12, rax
      mov rdi, rbp
      call :c
-     mov rcx, rbx
-     add rcx, rax
-     mov rax, rcx
+     add r12, rax
      jmp :6
 
 005: call :b
@@ -51,24 +48,23 @@ a:
      imul rax, rbx
      mov rdi, rax
      call :c
-     mov rcx, r12
-     add rcx, rax
-     mov rax, rcx
+     add r12, rax
      jmp :7
 
-003: mov rax, 0x06
-     mov rcx, rbp
-     imul rax, rcx
+003: mov rdx, 0x06
+     mov rax, rbp
+     imul rdx, rax
      jmp :8
 
-001: mov rax, rcx
-     jmp :8
+001: jmp :8
 
-008: jmp :7
+008: mov r12, rdx
+     jmp :7
 
 007: jmp :6
 
-006: pop r12
+006: mov rax, r12
+     pop r12
      pop rbp
      pop rbx
      ret

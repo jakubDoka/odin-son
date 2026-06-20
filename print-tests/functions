@@ -3,27 +3,27 @@ main:
      call :fib
      ret
 fib:
-     push rcx
+     push rbx
      push rbp
      push r12
      mov rbp, rdi
-     mov rcx, 0x02
+     mov rbx, 0x02
      mov rax, rbp
-     cmp rax, rcx
-     setbe al
+     cmp rax, rbx
+     setle al
      movzx rax, al
-     mov rdx, 0x01
+     mov rcx, 0x01
      test rax, rax
      jz :0
      jmp :1
 
 000: mov rax, rbp
-     sub rax, rdx
+     sub rax, rcx
      mov rdi, rax
      call :fib
      mov r12, rax
      mov rax, rbp
-     sub rax, rcx
+     sub rax, rbx
      mov rdi, rax
      call :fib
      mov rcx, r12
@@ -31,10 +31,10 @@ fib:
      mov rax, rcx
      jmp :2
 
-001: mov rax, rdx
+001: mov rax, rcx
      jmp :2
 
 002: pop r12
      pop rbp
-     pop rcx
+     pop rbx
      ret

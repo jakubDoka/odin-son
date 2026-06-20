@@ -4,7 +4,7 @@ main:
      call :a
      ret
 a:
-     push rcx
+     push rbx
      push rbp
      push r12
      mov rbp, rsi
@@ -18,9 +18,9 @@ a:
      jz :0
      jmp :1
 
-000: mov rcx, 0x02
+000: mov rbx, 0x02
      mov rax, rbp
-     cmp rax, rcx
+     cmp rax, rbx
      setz al
      movzx rax, al
      test rax, rax
@@ -36,9 +36,10 @@ a:
      jmp :5
 
 004: call :b
-     mov rcx, rax
+     mov rbx, rax
      mov rdi, rbp
      call :c
+     mov rcx, rbx
      add rcx, rax
      mov rax, rcx
      jmp :6
@@ -46,7 +47,7 @@ a:
 005: call :b
      mov r12, rax
      mov rax, rbp
-     imul rax, rcx
+     imul rax, rbx
      mov rdi, rax
      call :c
      mov rcx, r12
@@ -68,7 +69,7 @@ a:
 
 006: pop r12
      pop rbp
-     pop rcx
+     pop rbx
      ret
 b:
      mov rax, 0x02

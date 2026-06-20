@@ -1,5 +1,5 @@
 main:
-     push rcx
+     push rbx
      push rbp
      push r12
      push r13
@@ -31,38 +31,39 @@ main:
      imul rax, rcx
      mov rcx, r15
      add rax, rcx
-     mov rcx, rax
-     mov rdi, rcx
+     mov rbx, rax
+     mov rdi, rbx
      call :call
      mov rax, 0x02
-     mov rdx, r13
-     add rax, rdx
+     mov rcx, r13
+     add rax, rcx
      mov [rsp+0x10], rax
      mov rax, 0x04
-     mov rdx, r13
-     add rax, rdx
+     mov rcx, r13
+     add rax, rcx
      mov [rsp+0x18], rax
      mov rax, 0x05
-     mov rdx, r13
-     add rax, rdx
+     mov rcx, r13
+     add rax, rcx
      mov [rsp+0x20], rax
      mov rax, 0x0D
-     mov rdx, r13
-     add rax, rdx
+     mov rcx, r13
+     add rax, rcx
      mov [rsp+0x28], rax
      mov rax, r14
-     mov rdx, r15
-     imul rdx, rax
+     mov rcx, r15
+     imul rcx, rax
      mov rax, [rsp+0x10]
-     add rdx, rax
-     mov [rsp+0x30], rdx
+     add rcx, rax
+     mov [rsp+0x30], rcx
      mov rax, [rsp+0x18]
-     mov rdx, [rsp+0x28]
-     imul rax, rdx
-     mov rdx, [rsp+0x20]
-     add rax, rdx
-     mov rdx, rax
-     mov [rsp+0x38], rdx
+     mov rcx, [rsp+0x28]
+     imul rax, rcx
+     mov rcx, [rsp+0x20]
+     add rax, rcx
+     mov rcx, rax
+     mov [rsp+0x38], rcx
+     mov rcx, rbx
      imul rax, rcx
      mov rcx, [rsp+0x30]
      add rax, rcx
@@ -142,32 +143,32 @@ main:
      mov rax, r13
      add rcx, rax
      mov r13, rcx
-     mov rcx, [rsp+0x20]
+     mov rbx, [rsp+0x20]
      mov rax, r13
-     imul rcx, rax
+     imul rbx, rax
      mov rax, [rsp+0x50]
-     add rcx, rax
+     add rbx, rax
      mov rax, [rsp+0x30]
-     imul rcx, rax
-     add rcx, r12
-     imul rcx, rbp
+     imul rbx, rax
+     add rbx, r12
+     imul rbx, rbp
      mov rax, [rsp+0x80]
-     add rcx, rax
+     add rbx, rax
      mov rax, [rsp+0x38]
-     imul rcx, rax
+     imul rbx, rax
      mov rax, [rsp+0x40]
-     add rcx, rax
-     mov rdi, rcx
+     add rbx, rax
+     mov rdi, rbx
      call :call
-     mov rdx, r15
-     add rdx, rcx
+     mov rcx, r15
+     add rcx, rbx
      mov rax, [rsp+0x10]
-     add rdx, rax
+     add rcx, rax
      mov rax, [rsp+0x48]
-     add rdx, rax
+     add rcx, rax
      mov rax, [rsp+0x18]
-     add rdx, rax
-     mov rax, rdx
+     add rcx, rax
+     mov rax, rcx
      mov rcx, [rsp+0x20]
      add rax, rcx
      mov rcx, [rsp+0x50]
@@ -198,7 +199,7 @@ main:
      pop r13
      pop r12
      pop rbp
-     pop rcx
+     pop rbx
      ret
 call:
      mov rax, rdi

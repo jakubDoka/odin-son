@@ -43,6 +43,78 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) all_integer_operators :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	a := 20
+	b := 6
+	n := 0 - 7
+
+	r := 0
+
+	r += a / b
+	r += a % b
+	r += n / b
+	r += n % b
+	r += a & b
+	r += a | b
+	r += a ~ b
+	r += a &~ b
+	r += a << 2
+	r += a >> 2
+	r += n >> 2
+
+	if a > b do r += 1
+	if b < a do r += 2
+	if a >= b do r += 4
+	if a <= b do r += 8
+	if a == a do r += 16
+	if a != b do r += 32
+	if n < b do r += 64
+
+	return r
+}
+
+run_test(t, `all_integer_operators`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	a := 20
+	b := 6
+	n := 0 - 7
+
+	r := 0
+
+	r += a / b
+	r += a % b
+	r += n / b
+	r += n % b
+	r += a & b
+	r += a | b
+	r += a ~ b
+	r += a &~ b
+	r += a << 2
+	r += a >> 2
+	r += n >> 2
+
+	if a > b do r += 1
+	if b < a do r += 2
+	if a >= b do r += 4
+	if a <= b do r += 8
+	if a == a do r += 16
+	if a != b do r += 32
+	if n < b do r += 64
+
+	return r
+}
+`, main_())
+}
 @(test) simple_2_adress_self_conflict :: proc(t: ^testing.T) {
 
 
@@ -1427,7 +1499,6 @@ c :: proc(v: int) -> int {
 
 opt_level :: "none"
 
-
 main_ :: proc() -> int {
 	vl := 0
 	ptr := &vl
@@ -1446,7 +1517,6 @@ run_test(t, `pointers`, `
 package main
 
 opt_level :: "none"
-
 
 main :: proc() -> int {
 	vl := 0

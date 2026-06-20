@@ -14,6 +14,18 @@ GPA_MASK :: []int{0xFFFF & ~int(1 << uint(RSP))}
 GPA_SPILL_MASK :: []int{~int(1 << uint(RSP))}
 NO_INDEX :: RSP
 GPA_RET_MASK :: []int{1 << uint(RAX)}
+// dividend / quotient live in RAX, remainder / sign-extension in RDX, so the
+// divisor must avoid both (and RSP)
+GPA_DIV_MASK :: []int {
+	0xFFFF &
+	~int(1 << uint(RSP)) &
+	~int(1 << uint(RAX)) &
+	~int(1 << uint(RDX)),
+}
+RAX_MASK :: []int{1 << uint(RAX)}
+RDX_MASK :: []int{1 << uint(RDX)}
+// variable shift counts must be in CL
+RCX_MASK :: []int{1 << uint(RCX)}
 CALL_CLOBBERS ::
 	1 << uint(CALLER_SAVED[0]) |
 	1 << uint(CALLER_SAVED[1]) |
@@ -26,9 +38,9 @@ CALL_CLOBBERS ::
 	1 << uint(CALLER_SAVED[8])
 
 RAX :: Reg(0)
-RBX :: Reg(1)
-RCX :: Reg(2)
-RDX :: Reg(3)
+RCX :: Reg(1)
+RDX :: Reg(2)
+RBX :: Reg(3)
 RSP :: Reg(4)
 RBP :: Reg(5)
 RSI :: Reg(6)
@@ -88,6 +100,54 @@ X64_IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec {
 	.Le = {
 		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
 		inplace_slot_idx = 0,
+	},
+	.Lt = {
+		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
+		inplace_slot_idx = 0,
+	},
+	.Gt = {
+		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
+		inplace_slot_idx = 0,
+	},
+	.Ge = {
+		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
+		inplace_slot_idx = 0,
+	},
+	.And = {
+		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
+		inplace_slot_idx = 0,
+	},
+	.Or = {
+		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
+		inplace_slot_idx = 0,
+	},
+	.Xor = {
+		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
+		inplace_slot_idx = 0,
+	},
+	// a &~ b is emitted as `not rhs; and rhs, lhs`, so the destination shares
+	// the rhs slot (index 1) which we are free to clobber
+	.And_Not = {
+		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
+		inplace_slot_idx = 1,
+	},
+	.Shl = {
+		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, RCX_MASK}},
+		inplace_slot_idx = 0,
+	},
+	.Shr = {
+		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, RCX_MASK}},
+		inplace_slot_idx = 0,
+	},
+	// idiv divides RDX:RAX by the divisor; quotient -> RAX, remainder -> RDX
+	.Div = {
+		reg_masks = #partial{.General = {RAX_MASK, RAX_MASK, GPA_DIV_MASK}},
+		inplace_slot_idx = 0,
+		clobbers = #partial{.General = 1 << uint(RDX)},
+	},
+	.Rem = {
+		reg_masks = #partial{.General = {RDX_MASK, RAX_MASK, GPA_DIV_MASK}},
+		clobbers = #partial{.General = 1 << uint(RAX)},
 	},
 	.Split = {
 		reg_masks = #partial{.General = {GPA_SPILL_MASK, GPA_SPILL_MASK}},
@@ -390,10 +450,98 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		emit(ctx.code, {rx, 0x3b, mod_rm(.Direct, lhs, rhs)})
 
 		rx = rex(RAX, lhs, RAX, true)
-		emit(ctx.code, {rx, 0x0F, 0x96, mod_sm(.Direct, 0b000, lhs)})
+		emit(ctx.code, {rx, 0x0F, 0x9e, mod_sm(.Direct, 0b000, lhs)})
 
 		rx = rex(lhs, lhs, RAX, true)
 		emit(ctx.code, {rx, 0x0F, 0xB6, mod_rm(.Direct, lhs, lhs)})
+	case .Lt:
+		lhs := reg_of(ctx, node.inps[0])
+		rhs := reg_of(ctx, node.inps[1])
+		rx := rex(lhs, rhs, RAX, true)
+		emit(ctx.code, {rx, 0x3b, mod_rm(.Direct, lhs, rhs)})
+
+		rx = rex(RAX, lhs, RAX, true)
+		emit(ctx.code, {rx, 0x0F, 0x9C, mod_sm(.Direct, 0b000, lhs)})
+
+		rx = rex(lhs, lhs, RAX, true)
+		emit(ctx.code, {rx, 0x0F, 0xB6, mod_rm(.Direct, lhs, lhs)})
+	case .Gt:
+		lhs := reg_of(ctx, node.inps[0])
+		rhs := reg_of(ctx, node.inps[1])
+		rx := rex(lhs, rhs, RAX, true)
+		emit(ctx.code, {rx, 0x3b, mod_rm(.Direct, lhs, rhs)})
+
+		rx = rex(RAX, lhs, RAX, true)
+		emit(ctx.code, {rx, 0x0F, 0x9F, mod_sm(.Direct, 0b000, lhs)})
+
+		rx = rex(lhs, lhs, RAX, true)
+		emit(ctx.code, {rx, 0x0F, 0xB6, mod_rm(.Direct, lhs, lhs)})
+	case .Ge:
+		lhs := reg_of(ctx, node.inps[0])
+		rhs := reg_of(ctx, node.inps[1])
+		rx := rex(lhs, rhs, RAX, true)
+		emit(ctx.code, {rx, 0x3b, mod_rm(.Direct, lhs, rhs)})
+
+		rx = rex(RAX, lhs, RAX, true)
+		emit(ctx.code, {rx, 0x0F, 0x9D, mod_sm(.Direct, 0b000, lhs)})
+
+		rx = rex(lhs, lhs, RAX, true)
+		emit(ctx.code, {rx, 0x0F, 0xB6, mod_rm(.Direct, lhs, lhs)})
+	case .And:
+		dst := reg_of(ctx, node.inps[0])
+		rhs := reg_of(ctx, node.inps[1])
+		rx := rex(rhs, dst, RAX, true)
+		emit(ctx.code, {rx, 0x21, mod_rm(.Direct, rhs, dst)})
+	case .Or:
+		dst := reg_of(ctx, node.inps[0])
+		rhs := reg_of(ctx, node.inps[1])
+		rx := rex(rhs, dst, RAX, true)
+		emit(ctx.code, {rx, 0x09, mod_rm(.Direct, rhs, dst)})
+	case .Xor:
+		dst := reg_of(ctx, node.inps[0])
+		rhs := reg_of(ctx, node.inps[1])
+		rx := rex(rhs, dst, RAX, true)
+		emit(ctx.code, {rx, 0x31, mod_rm(.Direct, rhs, dst)})
+	case .And_Not:
+		// dst aliases the rhs slot; compute `dst = ~rhs & lhs`
+		dst := reg_of(ctx, node.inps[1])
+		lhs := reg_of(ctx, node.inps[0])
+		emit(
+			ctx.code,
+			{rex(RAX, dst, RAX, true), 0xf7, mod_sm(.Direct, 0b010, dst)},
+		)
+		emit(
+			ctx.code,
+			{rex(lhs, dst, RAX, true), 0x21, mod_rm(.Direct, lhs, dst)},
+		)
+	case .Shl:
+		dst := reg_of(ctx, node.inps[0])
+		emit(
+			ctx.code,
+			{rex(RAX, dst, RAX, true), 0xd3, mod_sm(.Direct, 0b100, dst)},
+		)
+	case .Shr:
+		dst := reg_of(ctx, node.inps[0])
+		emit(
+			ctx.code,
+			{rex(RAX, dst, RAX, true), 0xd3, mod_sm(.Direct, 0b111, dst)},
+		)
+	case .Div:
+		rhs := reg_of(ctx, node.inps[1])
+		// cqo: sign-extend RAX into RDX
+		emit(ctx.code, {rex(RAX, RAX, RAX, true), 0x99})
+		// idiv rhs
+		emit(
+			ctx.code,
+			{rex(RAX, rhs, RAX, true), 0xf7, mod_sm(.Direct, 0b111, rhs)},
+		)
+	case .Rem:
+		rhs := reg_of(ctx, node.inps[1])
+		emit(ctx.code, {rex(RAX, RAX, RAX, true), 0x99})
+		emit(
+			ctx.code,
+			{rex(RAX, rhs, RAX, true), 0xf7, mod_sm(.Direct, 0b111, rhs)},
+		)
 	case .Split:
 		dst := reg_of(ctx, instr)
 		src := reg_of(ctx, node.inps[0])

@@ -975,6 +975,44 @@ tok_to_binop :: proc(
 		kind, name = .Ne, "ne"
 	case .Lt_Eq:
 		kind, name = .Le, "le"
+	case .Lt:
+		kind, name = .Lt, "lt"
+	case .Gt:
+		kind, name = .Gt, "gt"
+	case .Gt_Eq:
+		kind, name = .Ge, "ge"
+	case .Quo:
+		kind, name = .Div, "div"
+	case .Quo_Eq:
+		kind, name = .Div, "dive"
+	case .Mod:
+		kind, name = .Rem, "rem"
+	case .Mod_Eq:
+		kind, name = .Rem, "reme"
+	case .And:
+		kind, name = .And, "and"
+	case .And_Eq:
+		kind, name = .And, "ande"
+	case .Or:
+		kind, name = .Or, "or"
+	case .Or_Eq:
+		kind, name = .Or, "ore"
+	case .Xor:
+		kind, name = .Xor, "xor"
+	case .Xor_Eq:
+		kind, name = .Xor, "xore"
+	case .And_Not:
+		kind, name = .And_Not, "andn"
+	case .And_Not_Eq:
+		kind, name = .And_Not, "andne"
+	case .Shl:
+		kind, name = .Shl, "shl"
+	case .Shl_Eq:
+		kind, name = .Shl, "shle"
+	case .Shr:
+		kind, name = .Shr, "shr"
+	case .Shr_Eq:
+		kind, name = .Shr, "shre"
 	case:
 		fmt.panicf("TODO: %#v", node.derived)
 	}

@@ -18,6 +18,17 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{.General = 0}, // Eq
 			{.General = 0}, // Ne
 			{.General = 0}, // Le
+			{.General = 0}, // Lt
+			{.General = 0}, // Gt
+			{.General = 0}, // Ge
+			{.General = 0}, // Div
+			{.General = 0}, // Rem
+			{.General = 0}, // And
+			{.General = 0}, // Or
+			{.General = 0}, // Xor
+			{.General = 0}, // And_Not
+			{.General = 0}, // Shl
+			{.General = 0}, // Shr
 			{.General = 0}, // Split
 			{.General = 0}, // Phi
 			{.General = 0}, // Mem
@@ -54,6 +65,17 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{}, // Eq
 			{}, // Ne
 			{}, // Le
+			{}, // Lt
+			{}, // Gt
+			{}, // Ge
+			{}, // Div
+			{}, // Rem
+			{}, // And
+			{}, // Or
+			{}, // Xor
+			{}, // And_Not
+			{}, // Shl
+			{}, // Shr
 			{}, // Split
 			{}, // Phi
 			{}, // Mem
@@ -87,6 +109,17 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			-1, //Eq
 			-1, //Ne
 			-1, //Le
+			-1, //Lt
+			-1, //Gt
+			-1, //Ge
+			-1, //Div
+			-1, //Rem
+			-1, //And
+			-1, //Or
+			-1, //Xor
+			-1, //And_Not
+			-1, //Shl
+			-1, //Shr
 			-1, //Split
 			-1, //Phi
 			-1, //Mem
@@ -120,6 +153,17 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, //Eq
 			0, //Ne
 			0, //Le
+			0, //Lt
+			0, //Gt
+			0, //Ge
+			0, //Div
+			0, //Rem
+			0, //And
+			0, //Or
+			0, //Xor
+			0, //And_Not
+			0, //Shl
+			0, //Shr
 			0, //Split
 			0, //Phi
 			0, //Mem
@@ -153,6 +197,17 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0b10, // Eq
 			0b10, // Ne
 			0b10, // Le
+			0b10, // Lt
+			0b10, // Gt
+			0b10, // Ge
+			0b10, // Div
+			0b10, // Rem
+			0b10, // And
+			0b10, // Or
+			0b10, // Xor
+			0b10, // And_Not
+			0b10, // Shl
+			0b10, // Shr
 			0b10, // Split
 			0b10, // Phi
 			0b10, // Mem
@@ -186,6 +241,17 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, // Eq -> No_Extra
 			0, // Ne -> No_Extra
 			0, // Le -> No_Extra
+			0, // Lt -> No_Extra
+			0, // Gt -> No_Extra
+			0, // Ge -> No_Extra
+			0, // Div -> No_Extra
+			0, // Rem -> No_Extra
+			0, // And -> No_Extra
+			0, // Or -> No_Extra
+			0, // Xor -> No_Extra
+			0, // And_Not -> No_Extra
+			0, // Shl -> No_Extra
+			0, // Shr -> No_Extra
 			0, // Split -> No_Extra
 			0, // Phi -> No_Extra
 			0, // Mem -> No_Extra
@@ -219,6 +285,17 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{Class_Flag.Interned, Class_Flag.Comutes}, // Eq
 			{Class_Flag.Interned, Class_Flag.Comutes}, // Ne
 			{Class_Flag.Interned}, // Le
+			{Class_Flag.Interned}, // Lt
+			{Class_Flag.Interned}, // Gt
+			{Class_Flag.Interned}, // Ge
+			{Class_Flag.Interned}, // Div
+			{Class_Flag.Interned}, // Rem
+			{Class_Flag.Interned, Class_Flag.Comutes}, // And
+			{Class_Flag.Interned, Class_Flag.Comutes}, // Or
+			{Class_Flag.Interned, Class_Flag.Comutes}, // Xor
+			{Class_Flag.Interned}, // And_Not
+			{Class_Flag.Interned}, // Shl
+			{Class_Flag.Interned}, // Shr
 			{}, // Split
 			{Class_Flag.Interned}, // Phi
 			{}, // Mem
@@ -246,6 +323,17 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			No_Extra,
 			Tup,
 			CInt,
+			No_Extra,
+			No_Extra,
+			No_Extra,
+			No_Extra,
+			No_Extra,
+			No_Extra,
+			No_Extra,
+			No_Extra,
+			No_Extra,
+			No_Extra,
+			No_Extra,
 			No_Extra,
 			No_Extra,
 			No_Extra,
@@ -285,6 +373,17 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			`Eq`,
 			`Ne`,
 			`Le`,
+			`Lt`,
+			`Gt`,
+			`Ge`,
+			`Div`,
+			`Rem`,
+			`And`,
+			`Or`,
+			`Xor`,
+			`And_Not`,
+			`Shl`,
+			`Shr`,
 			`Split`,
 			`Phi`,
 			`Mem`,
@@ -322,6 +421,17 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{.General = 0}, // Eq
 			{.General = 0}, // Ne
 			{.General = 0}, // Le
+			{.General = 0}, // Lt
+			{.General = 0}, // Gt
+			{.General = 0}, // Ge
+			{.General = 4}, // Div
+			{.General = 1}, // Rem
+			{.General = 0}, // And
+			{.General = 0}, // Or
+			{.General = 0}, // Xor
+			{.General = 0}, // And_Not
+			{.General = 0}, // Shl
+			{.General = 0}, // Shr
 			{.General = 0}, // Split
 			{.General = 0}, // Phi
 			{.General = 0}, // Mem
@@ -336,7 +446,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{.General = 0}, // Region
 			{.General = 0}, // Loop
 			{.General = 0}, // Always
-			{.General = 4045}, // Call
+			{.General = 4039}, // Call
 			{.General = 0}, // Call_End
 			{.General = 0}, // Ret
 			{.General = 0}, // Return
@@ -344,9 +454,12 @@ SPECS := [Node_Spec_Name]Node_Spec{
 		interned_reg_masks = {
 			raw_data([]int{}),
 			raw_data([]int{0xffef}),
+			raw_data([]int{0x1}),
+			raw_data([]int{0xffea}),
+			raw_data([]int{0x4}),
+			raw_data([]int{0x2}),
 			raw_data([]int{0xffffffffffffffef}),
 			raw_data([]int{0x0}),
-			raw_data([]int{0x1}),
 		},
 		reg_masks = {
 			{}, // Start
@@ -360,14 +473,25 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{{.General = 1}, {.General = 1}, {.General = 1}}, // Eq
 			{{.General = 1}, {.General = 1}, {.General = 1}}, // Ne
 			{{.General = 1}, {.General = 1}, {.General = 1}}, // Le
-			{{.General = 2}, {.General = 2}}, // Split
-			{{.General = 2}, {.General = 2}, {.General = 2}}, // Phi
+			{{.General = 1}, {.General = 1}, {.General = 1}}, // Lt
+			{{.General = 1}, {.General = 1}, {.General = 1}}, // Gt
+			{{.General = 1}, {.General = 1}, {.General = 1}}, // Ge
+			{{.General = 2}, {.General = 2}, {.General = 3}}, // Div
+			{{.General = 4}, {.General = 2}, {.General = 3}}, // Rem
+			{{.General = 1}, {.General = 1}, {.General = 1}}, // And
+			{{.General = 1}, {.General = 1}, {.General = 1}}, // Or
+			{{.General = 1}, {.General = 1}, {.General = 1}}, // Xor
+			{{.General = 1}, {.General = 1}, {.General = 1}}, // And_Not
+			{{.General = 1}, {.General = 1}, {.General = 5}}, // Shl
+			{{.General = 1}, {.General = 1}, {.General = 5}}, // Shr
+			{{.General = 6}, {.General = 6}}, // Split
+			{{.General = 6}, {.General = 6}, {.General = 6}}, // Phi
 			{}, // Mem
 			{}, // Local
 			{{.General = 1}}, // Local_Addr
-			{{.General = 3}, {.General = 1}, {.General = 1}}, // Store
+			{{.General = 7}, {.General = 1}, {.General = 1}}, // Store
 			{{.General = 1}, {.General = 1}}, // Load
-			{{.General = 3}, {.General = 1}}, // If
+			{{.General = 7}, {.General = 1}}, // If
 			{}, // Then
 			{}, // Else
 			{}, // Jump
@@ -376,8 +500,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{}, // Always
 			{}, // Call
 			{}, // Call_End
-			{{.General = 4}}, // Ret
-			{{.General = 3}, {.General = 4}}, // Return
+			{{.General = 2}}, // Ret
+			{{.General = 7}, {.General = 2}}, // Return
 		},
 		inplace_slot_idxs = {
 			-1, //Start
@@ -391,6 +515,17 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, //Eq
 			0, //Ne
 			0, //Le
+			0, //Lt
+			0, //Gt
+			0, //Ge
+			0, //Div
+			-1, //Rem
+			0, //And
+			0, //Or
+			0, //Xor
+			1, //And_Not
+			0, //Shl
+			0, //Shr
 			-1, //Split
 			-1, //Phi
 			-1, //Mem
@@ -424,6 +559,17 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, //Eq
 			0, //Ne
 			0, //Le
+			0, //Lt
+			0, //Gt
+			0, //Ge
+			0, //Div
+			0, //Rem
+			0, //And
+			0, //Or
+			0, //Xor
+			0, //And_Not
+			0, //Shl
+			0, //Shr
 			0, //Split
 			1, //Phi
 			1, //Mem
@@ -455,6 +601,17 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0b10, // Eq
 			0b10, // Ne
 			0b10, // Le
+			0b10, // Lt
+			0b10, // Gt
+			0b10, // Ge
+			0b10, // Div
+			0b10, // Rem
+			0b10, // And
+			0b10, // Or
+			0b10, // Xor
+			0b10, // And_Not
+			0b10, // Shl
+			0b10, // Shr
 			0b10, // Split
 			0b10, // Phi
 			0b10, // Mem
@@ -486,6 +643,17 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, // Eq -> No_Extra
 			0, // Ne -> No_Extra
 			0, // Le -> No_Extra
+			0, // Lt -> No_Extra
+			0, // Gt -> No_Extra
+			0, // Ge -> No_Extra
+			0, // Div -> No_Extra
+			0, // Rem -> No_Extra
+			0, // And -> No_Extra
+			0, // Or -> No_Extra
+			0, // Xor -> No_Extra
+			0, // And_Not -> No_Extra
+			0, // Shl -> No_Extra
+			0, // Shr -> No_Extra
 			0, // Split -> No_Extra
 			0, // Phi -> No_Extra
 			0, // Mem -> No_Extra
@@ -517,6 +685,17 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{Class_Flag.Interned, Class_Flag.Comutes}, // Eq
 			{Class_Flag.Interned, Class_Flag.Comutes}, // Ne
 			{Class_Flag.Interned}, // Le
+			{Class_Flag.Interned}, // Lt
+			{Class_Flag.Interned}, // Gt
+			{Class_Flag.Interned}, // Ge
+			{Class_Flag.Interned}, // Div
+			{Class_Flag.Interned}, // Rem
+			{Class_Flag.Interned, Class_Flag.Comutes}, // And
+			{Class_Flag.Interned, Class_Flag.Comutes}, // Or
+			{Class_Flag.Interned, Class_Flag.Comutes}, // Xor
+			{Class_Flag.Interned}, // And_Not
+			{Class_Flag.Interned}, // Shl
+			{Class_Flag.Interned}, // Shr
 			{}, // Split
 			{Class_Flag.Interned}, // Phi
 			{}, // Mem
@@ -542,6 +721,17 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			No_Extra,
 			Tup,
 			CInt,
+			No_Extra,
+			No_Extra,
+			No_Extra,
+			No_Extra,
+			No_Extra,
+			No_Extra,
+			No_Extra,
+			No_Extra,
+			No_Extra,
+			No_Extra,
+			No_Extra,
 			No_Extra,
 			No_Extra,
 			No_Extra,
@@ -579,6 +769,17 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			`Eq`,
 			`Ne`,
 			`Le`,
+			`Lt`,
+			`Gt`,
+			`Ge`,
+			`Div`,
+			`Rem`,
+			`And`,
+			`Or`,
+			`Xor`,
+			`And_Not`,
+			`Shl`,
+			`Shr`,
 			`Split`,
 			`Phi`,
 			`Mem`,
@@ -605,9 +806,20 @@ Bin_Op :: enum u16 {
 	Add = u16(Ideal_Node_Type.Add),
 	Mul = u16(Ideal_Node_Type.Mul),
 	Sub = u16(Ideal_Node_Type.Sub),
+	Ge = u16(Ideal_Node_Type.Ge),
+	Gt = u16(Ideal_Node_Type.Gt),
+	Rem = u16(Ideal_Node_Type.Rem),
+	Div = u16(Ideal_Node_Type.Div),
 	Ne = u16(Ideal_Node_Type.Ne),
 	Eq = u16(Ideal_Node_Type.Eq),
+	Lt = u16(Ideal_Node_Type.Lt),
 	Le = u16(Ideal_Node_Type.Le),
+	Shr = u16(Ideal_Node_Type.Shr),
+	Shl = u16(Ideal_Node_Type.Shl),
+	Or = u16(Ideal_Node_Type.Or),
+	And = u16(Ideal_Node_Type.And),
+	And_Not = u16(Ideal_Node_Type.And_Not),
+	Xor = u16(Ideal_Node_Type.Xor),
 }
 Builder_Node_Type :: enum u16 {
 	Start,
@@ -621,6 +833,17 @@ Builder_Node_Type :: enum u16 {
 	Eq,
 	Ne,
 	Le,
+	Lt,
+	Gt,
+	Ge,
+	Div,
+	Rem,
+	And,
+	Or,
+	Xor,
+	And_Not,
+	Shl,
+	Shr,
 	Split,
 	Phi,
 	Mem,
@@ -676,6 +899,17 @@ graph_add_bin_op :: #force_inline proc(graph: ^Graph, name: string, type: Bin_Op
 	push_node_name(graph, name)
 	return graph_add_raw(graph, u16(type), dt, {lhs, rhs})
 }
+#assert(size_of(No_Extra) % 4 == 0)
+#assert(size_of(No_Extra) % 4 == 0)
+#assert(size_of(No_Extra) % 4 == 0)
+#assert(size_of(No_Extra) % 4 == 0)
+#assert(size_of(No_Extra) % 4 == 0)
+#assert(size_of(No_Extra) % 4 == 0)
+#assert(size_of(No_Extra) % 4 == 0)
+#assert(size_of(No_Extra) % 4 == 0)
+#assert(size_of(No_Extra) % 4 == 0)
+#assert(size_of(No_Extra) % 4 == 0)
+#assert(size_of(No_Extra) % 4 == 0)
 #assert(size_of(No_Extra) % 4 == 0)
 #assert(size_of(No_Extra) % 4 == 0)
 #assert(size_of(No_Extra) % 4 == 0)
@@ -797,6 +1031,17 @@ X64_Node_Type :: enum u16 {
 	Eq,
 	Ne,
 	Le,
+	Lt,
+	Gt,
+	Ge,
+	Div,
+	Rem,
+	And,
+	Or,
+	Xor,
+	And_Not,
+	Shl,
+	Shr,
 	Split,
 	Phi,
 	Mem,

@@ -21,35 +21,19 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 		flags = {.Is_Basic_Block_Start},
 		default_type = .Void,
 	},
-	.Poison = {id = No_Extra, default_type = .Void, flags = {.Interned}},
+	.Poison = {default_type = .Void, flags = {.Interned}},
 	// TODO: maybe its better to introduce a flag: Schedule_Early
 	.Arg = {id = Tup, args = {"entry"}, extra_args = {"idx"}},
 	.CInt = {id = CInt, extra_args = {"value"}, flags = {.Interned}},
-	.Add = {
-		id = No_Extra,
-		args = {"lhs", "rhs"},
-		flags = {.Comutes, .Interned},
-	},
-	.Sub = {id = No_Extra, args = {"lhs", "rhs"}, flags = {.Interned}},
-	.Mul = {
-		id = No_Extra,
-		args = {"lhs", "rhs"},
-		flags = {.Comutes, .Interned},
-	},
-	.Eq = {
-		id = No_Extra,
-		args = {"lhs", "rhs"},
-		flags = {.Comutes, .Interned},
-	},
-	.Ne = {
-		id = No_Extra,
-		args = {"lhs", "rhs"},
-		flags = {.Comutes, .Interned},
-	},
-	.Le = {id = No_Extra, args = {"lhs", "rhs"}, flags = {.Interned}},
-	.Mem = {id = No_Extra, args = {"ctrl"}, default_type = .Void},
+	.Add = {args = {"lhs", "rhs"}, flags = {.Comutes, .Interned}},
+	.Sub = {args = {"lhs", "rhs"}, flags = {.Interned}},
+	.Mul = {args = {"lhs", "rhs"}, flags = {.Comutes, .Interned}},
+	.Eq = {args = {"lhs", "rhs"}, flags = {.Comutes, .Interned}},
+	.Ne = {args = {"lhs", "rhs"}, flags = {.Comutes, .Interned}},
+	.Le = {args = {"lhs", "rhs"}, flags = {.Interned}},
+	.Mem = {args = {"ctrl"}, default_type = .Void},
 	.Local = {id = Local, args = {"mem"}, default_type = .Void},
-	.Local_Addr = {id = No_Extra, args = {"local"}, default_type = .I64},
+	.Local_Addr = {args = {"local"}, default_type = .I64},
 	.Load = {id = Mem_Op, args = {"ctrl", "mem", "addr"}, flags = {.Interned}},
 	.Store = {
 		id = Mem_Op,
@@ -57,8 +41,8 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 		default_type = .Void,
 		flags = {.Interned},
 	},
-	.Split = {id = No_Extra, args = {"dest"}},
-	.Phi = {id = No_Extra, args = {"reg", "lhs", "rhs"}, flags = {.Interned}},
+	.Split = {args = {"dest"}},
+	.Phi = {args = {"reg", "lhs", "rhs"}, flags = {.Interned}},
 	.If = {id = Cfg, args = {"ctrl", "cond"}, default_type = .Void},
 	.Then = {
 		id = Cfg,
@@ -154,7 +138,7 @@ when (#load("node_specs.odin", string) or_else "") == "" {
 	@(rodata)
 	BUILDER_CLASSES := [Builder_Node_Type]Class_Spec {
 		.Scope = {id = Scope, args = {"cfg"}, default_type = .Void},
-		.Lazy_Phi = {id = No_Extra, args = {"reg", "lhs"}, extra_capacity = 1},
+		.Lazy_Phi = {args = {"reg", "lhs"}, extra_capacity = 1},
 	}
 
 	@(rodata)
@@ -265,10 +249,13 @@ generate_specs :: proc() {
 		datatype_to_reg_kind: [Node_Datatype]Reg_Kind,
 	}
 
-	ts :: proc(arr: ^[$E]typeid, regalloc: ^[E]Reg_Class_Spec) -> Class_Array {
+	ts :: proc(
+		arr: ^[$E]Class_Spec,
+		regalloc: ^[E]Reg_Class_Spec,
+	) -> Class_Array {
 		return {
 			E,
-			slice.enumerated_array(arr),
+			slice.clone(slice.enumerated_array(arr)),
 			slice.enumerated_array(regalloc),
 		}
 	}
@@ -289,6 +276,14 @@ generate_specs :: proc() {
 			},
 			datatype_to_reg_kind = {.Void = .General, .I8 ..= .I64 = .General},
 		},
+	}
+
+	for spec in specs {
+		for classes in spec.classes {
+			for &class, i in classes.ids {
+				if class.id == nil do class.id = No_Extra
+			}
+		}
 	}
 
 	file, err := os.open("backend/node_specs.odin", {.Create, .Trunc, .Write})

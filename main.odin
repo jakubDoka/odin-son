@@ -963,68 +963,63 @@ tok_to_binop :: proc(
 	kind: backend.Bin_Op,
 	name: string,
 ) {
-	unsigned := ty == .Uint
-	#partial switch tok {
-	case .Add:
-		kind, name = .Add, "add"
-	case .Add_Eq:
-		kind, name = .Add, "adde"
-	case .Sub:
-		kind, name = .Sub, "sub"
-	case .Sub_Eq:
-		kind, name = .Sub, "sube"
-	case .Mul:
-		kind, name = .Mul, "mul"
-	case .Mul_Eq:
-		kind, name = .Mul, "mule"
-	case .Cmp_Eq:
-		kind, name = .Eq, "eq"
-	case .Not_Eq:
-		kind, name = .Ne, "ne"
-	case .Lt_Eq:
-		kind, name = unsigned ? .U_Le : .Le, unsigned ? "leu" : "le"
-	case .Lt:
-		kind, name = unsigned ? .U_Lt : .Lt, unsigned ? "ltu" : "lt"
-	case .Gt:
-		kind, name = unsigned ? .U_Gt : .Gt, unsigned ? "gtu" : "gt"
-	case .Gt_Eq:
-		kind, name = unsigned ? .U_Ge : .Ge, unsigned ? "geu" : "ge"
-	case .Quo:
-		kind, name = unsigned ? .U_Div : .Div, unsigned ? "divu" : "div"
-	case .Quo_Eq:
-		kind, name = unsigned ? .U_Div : .Div, unsigned ? "diveu" : "dive"
-	case .Mod:
-		kind, name = unsigned ? .U_Rem : .Rem, unsigned ? "remu" : "rem"
-	case .Mod_Eq:
-		kind, name = unsigned ? .U_Rem : .Rem, unsigned ? "remeu" : "reme"
-	case .And:
-		kind, name = .And, "and"
-	case .And_Eq:
-		kind, name = .And, "ande"
-	case .Or:
-		kind, name = .Or, "or"
-	case .Or_Eq:
-		kind, name = .Or, "ore"
-	case .Xor:
-		kind, name = .Xor, "xor"
-	case .Xor_Eq:
-		kind, name = .Xor, "xore"
-	case .And_Not:
-		kind, name = .And_Not, "andn"
-	case .And_Not_Eq:
-		kind, name = .And_Not, "andne"
-	case .Shl:
-		kind, name = .Shl, "shl"
-	case .Shl_Eq:
-		kind, name = .Shl, "shle"
-	case .Shr:
-		kind, name = unsigned ? .U_Shr : .Shr, unsigned ? "shru" : "shr"
-	case .Shr_Eq:
-		kind, name = unsigned ? .U_Shr : .Shr, unsigned ? "shreu" : "shre"
-	case:
-		fmt.panicf("TODO: %v", tok)
+	Op_Info :: struct {
+		kind: backend.Bin_Op,
+		name: string,
 	}
-	return
+
+	@(static)
+	@(rodata)
+	SIGNED_TABLE := #partial [tokenizer.Token_Kind]Op_Info {
+		.Add        = {.Add, "add"},
+		.Add_Eq     = {.Add, "adde"},
+		.Sub        = {.Sub, "sub"},
+		.Sub_Eq     = {.Sub, "sube"},
+		.Mul        = {.Mul, "mul"},
+		.Mul_Eq     = {.Mul, "mule"},
+		.Cmp_Eq     = {.Eq, "eq"},
+		.Not_Eq     = {.Ne, "ne"},
+		.Lt         = {.Lt, "lt"},
+		.Lt_Eq      = {.Le, "le"},
+		.Gt         = {.Gt, "gt"},
+		.Gt_Eq      = {.Ge, "ge"},
+		.Quo        = {.Div, "div"},
+		.Quo_Eq     = {.Div, "dive"},
+		.Mod        = {.Rem, "rem"},
+		.Mod_Eq     = {.Rem, "reme"},
+		.And        = {.And, "and"},
+		.And_Eq     = {.And, "ande"},
+		.Or         = {.Or, "or"},
+		.Or_Eq      = {.Or, "ore"},
+		.Xor        = {.Xor, "xor"},
+		.Xor_Eq     = {.Xor, "xore"},
+		.And_Not    = {.And_Not, "andn"},
+		.And_Not_Eq = {.And_Not, "andne"},
+		.Shl        = {.Shl, "shl"},
+		.Shl_Eq     = {.Shl, "shle"},
+		.Shr        = {.Shr, "shr"},
+		.Shr_Eq     = {.Shr, "shre"},
+	}
+
+	@(static)
+	@(rodata)
+	UNSIGNED_TABLE := #partial [tokenizer.Token_Kind]Op_Info {
+		.Lt     = {.U_Lt, "ltu"},
+		.Lt_Eq  = {.U_Le, "leu"},
+		.Gt     = {.U_Gt, "gtu"},
+		.Gt_Eq  = {.U_Ge, "geu"},
+		.Quo    = {.U_Div, "divu"},
+		.Quo_Eq = {.U_Div, "diveu"},
+		.Mod    = {.U_Rem, "remu"},
+		.Mod_Eq = {.U_Rem, "remeu"},
+		.Shr    = {.U_Shr, "shru"},
+		.Shr_Eq = {.U_Shr, "shreu"},
+	}
+
+	info := SIGNED_TABLE[tok]
+	uinfo := UNSIGNED_TABLE[tok]
+	if ty == .Uint && uinfo.kind != {} do info = uinfo
+	return info.kind, info.name
 }
 
 Sym :: union #no_nil {
@@ -1094,10 +1089,7 @@ emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 			switch sym in sym {
 			case int:
 				if d.op.kind != .Eq {
-					op, name := tok_to_binop(
-						get_node_type(rhs),
-						d.op.kind,
-					)
+					op, name := tok_to_binop(get_node_type(rhs), d.op.kind)
 					value = auto_cast backend.graph_add_bin_op(
 						ctx,
 						name,

@@ -14,8 +14,6 @@ GPA_MASK :: []int{0xFFFF & ~int(1 << uint(RSP))}
 GPA_SPILL_MASK :: []int{~int(1 << uint(RSP))}
 NO_INDEX :: RSP
 GPA_RET_MASK :: []int{1 << uint(RAX)}
-// dividend / quotient live in RAX, remainder / sign-extension in RDX, so the
-// divisor must avoid both (and RSP)
 GPA_DIV_MASK :: []int {
 	0xFFFF &
 	~int(1 << uint(RSP)) &
@@ -70,6 +68,32 @@ CALLE_SAVED := []Reg{RBX, RBP, R12, R13, R14, R15}
 CALLER_SAVED :: []Reg{RAX, RCX, RDX, RSI, RDI, R8, R9, R10, R11}
 ARGS := []Reg{RDI, RSI, RDX, RCX, R8, R9}
 
+SIMPLE_BINOP_SPEC :: Reg_Class_Spec {
+	reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
+	inplace_slot_idx = 0,
+}
+
+SIMPLE_SHIFT_SPEC :: Reg_Class_Spec {
+	reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, RCX_MASK}},
+	inplace_slot_idx = 0,
+}
+
+DIV_SPEC :: Reg_Class_Spec {
+	reg_masks = #partial{.General = {RAX_MASK, RAX_MASK, GPA_DIV_MASK}},
+	inplace_slot_idx = 0,
+	clobbers = #partial{.General = 1 << uint(RDX)},
+}
+
+REM_SPEC :: Reg_Class_Spec {
+	reg_masks = #partial{.General = {RDX_MASK, RAX_MASK, GPA_DIV_MASK}},
+	clobbers = #partial{.General = 1 << uint(RAX)},
+}
+
+Instr_Info :: struct {
+	opcode: u8,
+	ext:    u8,
+}
+
 @(rodata)
 X64_IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec {
 	.Start = {},
@@ -77,108 +101,37 @@ X64_IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec {
 	.Poison = {},
 	.Arg = {input_start_idx = 1},
 	.CInt = {reg_masks = #partial{.General = {GPA_MASK}}},
-	.Add = {
-		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
-		inplace_slot_idx = 0,
-	},
-	.Sub = {
-		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
-		inplace_slot_idx = 0,
-	},
-	.Mul = {
-		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
-		inplace_slot_idx = 0,
-	},
-	.Eq = {
-		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
-		inplace_slot_idx = 0,
-	},
-	.Ne = {
-		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
-		inplace_slot_idx = 0,
-	},
-	.Le = {
-		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
-		inplace_slot_idx = 0,
-	},
-	.Lt = {
-		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
-		inplace_slot_idx = 0,
-	},
-	.Gt = {
-		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
-		inplace_slot_idx = 0,
-	},
-	.Ge = {
-		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
-		inplace_slot_idx = 0,
-	},
-	.And = {
-		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
-		inplace_slot_idx = 0,
-	},
-	.Or = {
-		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
-		inplace_slot_idx = 0,
-	},
-	.Xor = {
-		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
-		inplace_slot_idx = 0,
-	},
+	.Add = SIMPLE_BINOP_SPEC,
+	.Sub = SIMPLE_BINOP_SPEC,
+	.Mul = SIMPLE_BINOP_SPEC,
+	.Eq = SIMPLE_BINOP_SPEC,
+	.Ne = SIMPLE_BINOP_SPEC,
+	.Le = SIMPLE_BINOP_SPEC,
+	.Lt = SIMPLE_BINOP_SPEC,
+	.Gt = SIMPLE_BINOP_SPEC,
+	.Ge = SIMPLE_BINOP_SPEC,
+	.And = SIMPLE_BINOP_SPEC,
+	.Or = SIMPLE_BINOP_SPEC,
+	.Xor = SIMPLE_BINOP_SPEC,
 	// a &~ b is emitted as `not rhs; and rhs, lhs`, so the destination shares
 	// the rhs slot (index 1) which we are free to clobber
 	.And_Not = {
 		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
 		inplace_slot_idx = 1,
 	},
-	.Shl = {
-		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, RCX_MASK}},
-		inplace_slot_idx = 0,
-	},
-	.Shr = {
-		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, RCX_MASK}},
-		inplace_slot_idx = 0,
-	},
+	.Shl = SIMPLE_SHIFT_SPEC,
+	.Shr = SIMPLE_SHIFT_SPEC,
 	// idiv divides RDX:RAX by the divisor; quotient -> RAX, remainder -> RDX
-	.Div = {
-		reg_masks = #partial{.General = {RAX_MASK, RAX_MASK, GPA_DIV_MASK}},
-		inplace_slot_idx = 0,
-		clobbers = #partial{.General = 1 << uint(RDX)},
-	},
-	.Rem = {
-		reg_masks = #partial{.General = {RDX_MASK, RAX_MASK, GPA_DIV_MASK}},
-		clobbers = #partial{.General = 1 << uint(RAX)},
-	},
-	.U_Lt = {
-		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
-		inplace_slot_idx = 0,
-	},
-	.U_Gt = {
-		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
-		inplace_slot_idx = 0,
-	},
-	.U_Le = {
-		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
-		inplace_slot_idx = 0,
-	},
-	.U_Ge = {
-		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
-		inplace_slot_idx = 0,
-	},
-	.U_Shr = {
-		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, RCX_MASK}},
-		inplace_slot_idx = 0,
-	},
+	.Div = DIV_SPEC,
+	.Rem = REM_SPEC,
+	.U_Lt = SIMPLE_BINOP_SPEC,
+	.U_Gt = SIMPLE_BINOP_SPEC,
+	.U_Le = SIMPLE_BINOP_SPEC,
+	.U_Ge = SIMPLE_BINOP_SPEC,
+	.U_Shr = SIMPLE_SHIFT_SPEC,
 	// idiv divides RDX:RAX by the divisor; quotient -> RAX, remainder -> RDX
-	.U_Div = {
-		reg_masks = #partial{.General = {RAX_MASK, RAX_MASK, GPA_DIV_MASK}},
-		inplace_slot_idx = 0,
-		clobbers = #partial{.General = 1 << uint(RDX)},
-	},
-	.U_Rem = {
-		reg_masks = #partial{.General = {RDX_MASK, RAX_MASK, GPA_DIV_MASK}},
-		clobbers = #partial{.General = 1 << uint(RAX)},
-	},
+	.U_Div = DIV_SPEC,
+	.U_Rem = REM_SPEC,
 	.Split = {
 		reg_masks = #partial{.General = {GPA_SPILL_MASK, GPA_SPILL_MASK}},
 	},
@@ -373,6 +326,35 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 
 @(disabled = GEN_SPEC)
 x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
+
+	@(static)
+	@(rodata)
+	OPCODE_TABLE := #partial [X64_Node_Type]Instr_Info {
+		.Add     = {0x01, 0},
+		.Sub     = {0x29, 0},
+		.And     = {0x21, 0},
+		.Or      = {0x09, 0},
+		.Xor     = {0x31, 0},
+		.Eq      = {0x94, 0},
+		.Ne      = {0x95, 0},
+		.Lt      = {0x9C, 0},
+		.Le      = {0x9E, 0},
+		.Gt      = {0x9F, 0},
+		.Ge      = {0x9D, 0},
+		.U_Lt    = {0x92, 0},
+		.U_Le    = {0x96, 0},
+		.U_Gt    = {0x97, 0},
+		.U_Ge    = {0x93, 0},
+		.Shl     = {0xD3, 0b100},
+		.U_Shr   = {0xD3, 0b101},
+		.Shr     = {0xD3, 0b111},
+		.And_Not = {0xF7, 0b010},
+		.U_Div   = {0xF7, 0b110},
+		.U_Rem   = {0xF7, 0b110},
+		.Div     = {0xF7, 0b111},
+		.Rem     = {0xF7, 0b111},
+	}
+
 	block_base := ctx.gvn - u32(len(ctx.bbs))
 	node := graph_expand(ctx, instr)
 	switch node.xtype {
@@ -436,208 +418,53 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 	case .CInt:
 		emit_single_op(ctx.code, 0xb8, reg_of(ctx, instr))
 		emit_anys(ctx.code, graph_extra(ctx, node, CInt).value)
-	case .Add:
+	case .Add, .Sub, .And, .Or, .Xor:
 		dst := reg_of(ctx, node.inps[0])
 		rhs := reg_of(ctx, node.inps[1])
 		rx := rex(rhs, dst, RAX, true)
-		emit(ctx.code, {rx, 0x01, mod_rm(.Direct, rhs, dst)})
-	case .Sub:
-		dst := reg_of(ctx, node.inps[0])
-		rhs := reg_of(ctx, node.inps[1])
-		rx := rex(rhs, dst, RAX, true)
-		emit(ctx.code, {rx, 0x29, mod_rm(.Direct, rhs, dst)})
+		op := OPCODE_TABLE[node.xtype].opcode
+		emit(ctx.code, {rx, op, mod_rm(.Direct, rhs, dst)})
 	case .Mul:
 		dst := reg_of(ctx, node.inps[0])
 		rhs := reg_of(ctx, node.inps[1])
 		rx := rex(dst, rhs, RAX, true)
 		emit(ctx.code, {rx, 0x0f, 0xaf, mod_rm(.Direct, dst, rhs)})
-	case .Eq:
+	case .Eq, .Ne, .Lt, .Gt, .Ge, .Le, .U_Lt, .U_Gt, .U_Ge, .U_Le:
 		lhs := reg_of(ctx, node.inps[0])
 		rhs := reg_of(ctx, node.inps[1])
 		rx := rex(lhs, rhs, RAX, true)
 		emit(ctx.code, {rx, 0x3b, mod_rm(.Direct, lhs, rhs)})
 
 		rx = rex(RAX, lhs, RAX, true)
-		emit(ctx.code, {rx, 0x0F, 0x94, mod_sm(.Direct, 0b000, lhs)})
+		op := OPCODE_TABLE[node.xtype].opcode
+		emit(ctx.code, {rx, 0x0F, op, mod_sm(.Direct, 0b000, lhs)})
 
 		rx = rex(lhs, lhs, RAX, true)
 		emit(ctx.code, {rx, 0x0F, 0xB6, mod_rm(.Direct, lhs, lhs)})
-	case .Ne:
-		lhs := reg_of(ctx, node.inps[0])
-		rhs := reg_of(ctx, node.inps[1])
-		rx := rex(lhs, rhs, RAX, true)
-		emit(ctx.code, {rx, 0x3b, mod_rm(.Direct, lhs, rhs)})
-
-		rx = rex(RAX, lhs, RAX, true)
-		emit(ctx.code, {rx, 0x0F, 0x95, mod_sm(.Direct, 0b000, lhs)})
-
-		rx = rex(lhs, lhs, RAX, true)
-		emit(ctx.code, {rx, 0x0F, 0xB6, mod_rm(.Direct, lhs, lhs)})
-	case .Le:
-		lhs := reg_of(ctx, node.inps[0])
-		rhs := reg_of(ctx, node.inps[1])
-		rx := rex(lhs, rhs, RAX, true)
-		emit(ctx.code, {rx, 0x3b, mod_rm(.Direct, lhs, rhs)})
-
-		rx = rex(RAX, lhs, RAX, true)
-		emit(ctx.code, {rx, 0x0F, 0x9e, mod_sm(.Direct, 0b000, lhs)})
-
-		rx = rex(lhs, lhs, RAX, true)
-		emit(ctx.code, {rx, 0x0F, 0xB6, mod_rm(.Direct, lhs, lhs)})
-	case .Lt:
-		lhs := reg_of(ctx, node.inps[0])
-		rhs := reg_of(ctx, node.inps[1])
-		rx := rex(lhs, rhs, RAX, true)
-		emit(ctx.code, {rx, 0x3b, mod_rm(.Direct, lhs, rhs)})
-
-		rx = rex(RAX, lhs, RAX, true)
-		emit(ctx.code, {rx, 0x0F, 0x9C, mod_sm(.Direct, 0b000, lhs)})
-
-		rx = rex(lhs, lhs, RAX, true)
-		emit(ctx.code, {rx, 0x0F, 0xB6, mod_rm(.Direct, lhs, lhs)})
-	case .Gt:
-		lhs := reg_of(ctx, node.inps[0])
-		rhs := reg_of(ctx, node.inps[1])
-		rx := rex(lhs, rhs, RAX, true)
-		emit(ctx.code, {rx, 0x3b, mod_rm(.Direct, lhs, rhs)})
-
-		rx = rex(RAX, lhs, RAX, true)
-		emit(ctx.code, {rx, 0x0F, 0x9F, mod_sm(.Direct, 0b000, lhs)})
-
-		rx = rex(lhs, lhs, RAX, true)
-		emit(ctx.code, {rx, 0x0F, 0xB6, mod_rm(.Direct, lhs, lhs)})
-	case .Ge:
-		lhs := reg_of(ctx, node.inps[0])
-		rhs := reg_of(ctx, node.inps[1])
-		rx := rex(lhs, rhs, RAX, true)
-		emit(ctx.code, {rx, 0x3b, mod_rm(.Direct, lhs, rhs)})
-
-		rx = rex(RAX, lhs, RAX, true)
-		emit(ctx.code, {rx, 0x0F, 0x9D, mod_sm(.Direct, 0b000, lhs)})
-
-		rx = rex(lhs, lhs, RAX, true)
-		emit(ctx.code, {rx, 0x0F, 0xB6, mod_rm(.Direct, lhs, lhs)})
-	case .And:
-		dst := reg_of(ctx, node.inps[0])
-		rhs := reg_of(ctx, node.inps[1])
-		rx := rex(rhs, dst, RAX, true)
-		emit(ctx.code, {rx, 0x21, mod_rm(.Direct, rhs, dst)})
-	case .Or:
-		dst := reg_of(ctx, node.inps[0])
-		rhs := reg_of(ctx, node.inps[1])
-		rx := rex(rhs, dst, RAX, true)
-		emit(ctx.code, {rx, 0x09, mod_rm(.Direct, rhs, dst)})
-	case .Xor:
-		dst := reg_of(ctx, node.inps[0])
-		rhs := reg_of(ctx, node.inps[1])
-		rx := rex(rhs, dst, RAX, true)
-		emit(ctx.code, {rx, 0x31, mod_rm(.Direct, rhs, dst)})
 	case .And_Not:
 		// dst aliases the rhs slot; compute `dst = ~rhs & lhs`
 		dst := reg_of(ctx, node.inps[1])
 		lhs := reg_of(ctx, node.inps[0])
-		emit(
-			ctx.code,
-			{rex(RAX, dst, RAX, true), 0xf7, mod_sm(.Direct, 0b010, dst)},
-		)
-		emit(
-			ctx.code,
-			{rex(lhs, dst, RAX, true), 0x21, mod_rm(.Direct, lhs, dst)},
-		)
-	case .Shl:
+		rx := rex(RAX, dst, RAX, true)
+		emit(ctx.code, {rx, 0xf7, mod_sm(.Direct, 0b010, dst)})
+		rx = rex(lhs, dst, RAX, true)
+		emit(ctx.code, {rx, 0x21, mod_rm(.Direct, lhs, dst)})
+	case .Shl, .Shr, .U_Shr:
 		dst := reg_of(ctx, node.inps[0])
-		emit(
-			ctx.code,
-			{rex(RAX, dst, RAX, true), 0xd3, mod_sm(.Direct, 0b100, dst)},
-		)
-	case .Shr:
-		dst := reg_of(ctx, node.inps[0])
-		emit(
-			ctx.code,
-			{rex(RAX, dst, RAX, true), 0xd3, mod_sm(.Direct, 0b111, dst)},
-		)
-	case .Div:
-		rhs := reg_of(ctx, node.inps[1])
-		// cqo: sign-extend RAX into RDX
-		emit(ctx.code, {rex(RAX, RAX, RAX, true), 0x99})
-		// idiv rhs
-		emit(
-			ctx.code,
-			{rex(RAX, rhs, RAX, true), 0xf7, mod_sm(.Direct, 0b111, rhs)},
-		)
-	case .Rem:
+		rx := rex(RAX, dst, RAX, true)
+		op := OPCODE_TABLE[node.xtype].ext
+		emit(ctx.code, {rx, 0xd3, mod_sm(.Direct, op, dst)})
+	case .Div, .Rem:
 		rhs := reg_of(ctx, node.inps[1])
 		emit(ctx.code, {rex(RAX, RAX, RAX, true), 0x99})
-		emit(
-			ctx.code,
-			{rex(RAX, rhs, RAX, true), 0xf7, mod_sm(.Direct, 0b111, rhs)},
-		)
-	case .U_Lt:
-		lhs := reg_of(ctx, node.inps[0])
+		rx := rex(RAX, rhs, RAX, true)
+		emit(ctx.code, {rx, 0xf7, mod_sm(.Direct, 0b111, rhs)})
+	case .U_Div, .U_Rem:
 		rhs := reg_of(ctx, node.inps[1])
-		rx := rex(lhs, rhs, RAX, true)
-		emit(ctx.code, {rx, 0x3b, mod_rm(.Direct, lhs, rhs)})
-
-		rx = rex(RAX, lhs, RAX, true)
-		emit(ctx.code, {rx, 0x0F, 0x92, mod_sm(.Direct, 0b000, lhs)})
-
-		rx = rex(lhs, lhs, RAX, true)
-		emit(ctx.code, {rx, 0x0F, 0xB6, mod_rm(.Direct, lhs, lhs)})
-	case .U_Gt:
-		lhs := reg_of(ctx, node.inps[0])
-		rhs := reg_of(ctx, node.inps[1])
-		rx := rex(lhs, rhs, RAX, true)
-		emit(ctx.code, {rx, 0x3b, mod_rm(.Direct, lhs, rhs)})
-
-		rx = rex(RAX, lhs, RAX, true)
-		emit(ctx.code, {rx, 0x0F, 0x97, mod_sm(.Direct, 0b000, lhs)})
-
-		rx = rex(lhs, lhs, RAX, true)
-		emit(ctx.code, {rx, 0x0F, 0xB6, mod_rm(.Direct, lhs, lhs)})
-	case .U_Le:
-		lhs := reg_of(ctx, node.inps[0])
-		rhs := reg_of(ctx, node.inps[1])
-		rx := rex(lhs, rhs, RAX, true)
-		emit(ctx.code, {rx, 0x3b, mod_rm(.Direct, lhs, rhs)})
-
-		rx = rex(RAX, lhs, RAX, true)
-		emit(ctx.code, {rx, 0x0F, 0x96, mod_sm(.Direct, 0b000, lhs)})
-
-		rx = rex(lhs, lhs, RAX, true)
-		emit(ctx.code, {rx, 0x0F, 0xB6, mod_rm(.Direct, lhs, lhs)})
-	case .U_Ge:
-		lhs := reg_of(ctx, node.inps[0])
-		rhs := reg_of(ctx, node.inps[1])
-		rx := rex(lhs, rhs, RAX, true)
-		emit(ctx.code, {rx, 0x3b, mod_rm(.Direct, lhs, rhs)})
-
-		rx = rex(RAX, lhs, RAX, true)
-		emit(ctx.code, {rx, 0x0F, 0x93, mod_sm(.Direct, 0b000, lhs)})
-
-		rx = rex(lhs, lhs, RAX, true)
-		emit(ctx.code, {rx, 0x0F, 0xB6, mod_rm(.Direct, lhs, lhs)})
-	case .U_Shr:
-		dst := reg_of(ctx, node.inps[0])
-		emit(
-			ctx.code,
-			{rex(RAX, dst, RAX, true), 0xd3, mod_sm(.Direct, 0b101, dst)},
-		)
-	case .U_Div:
-		rhs := reg_of(ctx, node.inps[1])
-		// xor edx, edx: zero-extend (unsigned dividend has no sign bits)
-		emit(ctx.code, {rex(RDX, RDX, RAX, true), 0x31, mod_rm(.Direct, RDX, RDX)})
-		// div rhs
-		emit(
-			ctx.code,
-			{rex(RAX, rhs, RAX, true), 0xf7, mod_sm(.Direct, 0b110, rhs)},
-		)
-	case .U_Rem:
-		rhs := reg_of(ctx, node.inps[1])
-		emit(ctx.code, {rex(RDX, RDX, RAX, true), 0x31, mod_rm(.Direct, RDX, RDX)})
-		emit(
-			ctx.code,
-			{rex(RAX, rhs, RAX, true), 0xf7, mod_sm(.Direct, 0b110, rhs)},
-		)
+		rx := rex(RDX, RDX, RAX, true)
+		emit(ctx.code, {rx, 0x31, mod_rm(.Direct, RDX, RDX)})
+		rx = rex(RAX, rhs, RAX, true)
+		emit(ctx.code, {rx, 0xf7, mod_sm(.Direct, 0b110, rhs)})
 	case .Split:
 		dst := reg_of(ctx, instr)
 		src := reg_of(ctx, node.inps[0])
@@ -700,12 +527,6 @@ mod_from_dis :: proc(dis: i64) -> Mod {
 		return .Indirect_Disp32
 	}
 }
-
-///pub fn emitStackLea(self: *X86_64Gen, dst: Reg, dis: i32) void {
-///    self.emitRex(dst, .rax, .rax, 8);
-///    self.emitByte(0x8d);
-///    self.emitIndirectAddr(dst, .rsp, .no_index, 1, dis);
-///}
 
 emit_stack_lea :: proc(code: ^arna.Allocator, dst: Reg, #any_int dis: i64) {
 	emit(code, {rex(dst, RAX, RAX, true), 0x8d})

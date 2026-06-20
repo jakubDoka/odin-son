@@ -12,6 +12,12 @@ GEN_SPEC :: #config(GEN_SPEC, false)
 
 COMMAND :: "odin run backend -define:GEN_SPEC=true"
 
+SIMPLE_BINOP_CLASS :: Class_Spec {
+	args  = {"lhs", "rhs"},
+	group = "Bin_Op",
+	flags = {.Comutes, .Interned},
+}
+
 @(rodata)
 IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 	.Start = {id = Cfg, default_type = .Void},
@@ -25,48 +31,20 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 	// TODO: maybe its better to introduce a flag: Schedule_Early
 	.Arg = {id = Tup, args = {"entry"}, extra_args = {"idx"}},
 	.CInt = {id = CInt, extra_args = {"value"}, flags = {.Interned}},
-	.Add = {
-		args = {"lhs", "rhs"},
-		group = "Bin_Op",
-		flags = {.Comutes, .Interned},
-	},
+	.Add = SIMPLE_BINOP_CLASS,
 	.Sub = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
-	.Mul = {
-		args = {"lhs", "rhs"},
-		group = "Bin_Op",
-		flags = {.Comutes, .Interned},
-	},
-	.Eq = {
-		args = {"lhs", "rhs"},
-		group = "Bin_Op",
-		flags = {.Comutes, .Interned},
-	},
-	.Ne = {
-		args = {"lhs", "rhs"},
-		group = "Bin_Op",
-		flags = {.Comutes, .Interned},
-	},
+	.Mul = SIMPLE_BINOP_CLASS,
+	.Eq = SIMPLE_BINOP_CLASS,
+	.Ne = SIMPLE_BINOP_CLASS,
 	.Le = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
 	.Lt = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
 	.Gt = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
 	.Ge = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
 	.Div = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
 	.Rem = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
-	.And = {
-		args = {"lhs", "rhs"},
-		group = "Bin_Op",
-		flags = {.Comutes, .Interned},
-	},
-	.Or = {
-		args = {"lhs", "rhs"},
-		group = "Bin_Op",
-		flags = {.Comutes, .Interned},
-	},
-	.Xor = {
-		args = {"lhs", "rhs"},
-		group = "Bin_Op",
-		flags = {.Comutes, .Interned},
-	},
+	.And = SIMPLE_BINOP_CLASS,
+	.Or = SIMPLE_BINOP_CLASS,
+	.Xor = SIMPLE_BINOP_CLASS,
 	.And_Not = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
 	.Shl = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
 	.Shr = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},

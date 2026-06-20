@@ -115,6 +115,64 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) all_unsigned_integer_operators :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	a: uint = 20
+	b: uint = 6
+	n: uint = 0
+	n -= 7 // huge unsigned value (2^64 - 7)
+
+	r := 0
+
+	if a / b == 3 do r += 1
+	if a % b == 2 do r += 2
+	if n / b > a do r += 4
+	if n % b == 3 do r += 8
+	if n >> 60 == 15 do r += 16
+	if a >> 2 == 5 do r += 32
+	if n > b do r += 64
+	if n >= a do r += 128
+	if b < n do r += 256
+	if b <= n do r += 512
+	if a < n do r += 1024
+
+	return r
+}
+
+run_test(t, `all_unsigned_integer_operators`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	a: uint = 20
+	b: uint = 6
+	n: uint = 0
+	n -= 7 // huge unsigned value (2^64 - 7)
+
+	r := 0
+
+	if a / b == 3 do r += 1
+	if a % b == 2 do r += 2
+	if n / b > a do r += 4
+	if n % b == 3 do r += 8
+	if n >> 60 == 15 do r += 16
+	if a >> 2 == 5 do r += 32
+	if n > b do r += 64
+	if n >= a do r += 128
+	if b < n do r += 256
+	if b <= n do r += 512
+	if a < n do r += 1024
+
+	return r
+}
+`, main_())
+}
 @(test) simple_2_adress_self_conflict :: proc(t: ^testing.T) {
 
 

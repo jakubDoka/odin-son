@@ -29,6 +29,13 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{.General = 0}, // And_Not
 			{.General = 0}, // Shl
 			{.General = 0}, // Shr
+			{.General = 0}, // U_Lt
+			{.General = 0}, // U_Gt
+			{.General = 0}, // U_Le
+			{.General = 0}, // U_Ge
+			{.General = 0}, // U_Div
+			{.General = 0}, // U_Rem
+			{.General = 0}, // U_Shr
 			{.General = 0}, // Split
 			{.General = 0}, // Phi
 			{.General = 0}, // Mem
@@ -76,6 +83,13 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{}, // And_Not
 			{}, // Shl
 			{}, // Shr
+			{}, // U_Lt
+			{}, // U_Gt
+			{}, // U_Le
+			{}, // U_Ge
+			{}, // U_Div
+			{}, // U_Rem
+			{}, // U_Shr
 			{}, // Split
 			{}, // Phi
 			{}, // Mem
@@ -120,6 +134,13 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			-1, //And_Not
 			-1, //Shl
 			-1, //Shr
+			-1, //U_Lt
+			-1, //U_Gt
+			-1, //U_Le
+			-1, //U_Ge
+			-1, //U_Div
+			-1, //U_Rem
+			-1, //U_Shr
 			-1, //Split
 			-1, //Phi
 			-1, //Mem
@@ -164,6 +185,13 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, //And_Not
 			0, //Shl
 			0, //Shr
+			0, //U_Lt
+			0, //U_Gt
+			0, //U_Le
+			0, //U_Ge
+			0, //U_Div
+			0, //U_Rem
+			0, //U_Shr
 			0, //Split
 			0, //Phi
 			0, //Mem
@@ -208,6 +236,13 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0b10, // And_Not
 			0b10, // Shl
 			0b10, // Shr
+			0b10, // U_Lt
+			0b10, // U_Gt
+			0b10, // U_Le
+			0b10, // U_Ge
+			0b10, // U_Div
+			0b10, // U_Rem
+			0b10, // U_Shr
 			0b10, // Split
 			0b10, // Phi
 			0b10, // Mem
@@ -252,6 +287,13 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, // And_Not -> No_Extra
 			0, // Shl -> No_Extra
 			0, // Shr -> No_Extra
+			0, // U_Lt -> No_Extra
+			0, // U_Gt -> No_Extra
+			0, // U_Le -> No_Extra
+			0, // U_Ge -> No_Extra
+			0, // U_Div -> No_Extra
+			0, // U_Rem -> No_Extra
+			0, // U_Shr -> No_Extra
 			0, // Split -> No_Extra
 			0, // Phi -> No_Extra
 			0, // Mem -> No_Extra
@@ -296,6 +338,13 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{Class_Flag.Interned}, // And_Not
 			{Class_Flag.Interned}, // Shl
 			{Class_Flag.Interned}, // Shr
+			{Class_Flag.Interned}, // U_Lt
+			{Class_Flag.Interned}, // U_Gt
+			{Class_Flag.Interned}, // U_Le
+			{Class_Flag.Interned}, // U_Ge
+			{Class_Flag.Interned}, // U_Div
+			{Class_Flag.Interned}, // U_Rem
+			{Class_Flag.Interned}, // U_Shr
 			{}, // Split
 			{Class_Flag.Interned}, // Phi
 			{}, // Mem
@@ -323,6 +372,13 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			No_Extra,
 			Tup,
 			CInt,
+			No_Extra,
+			No_Extra,
+			No_Extra,
+			No_Extra,
+			No_Extra,
+			No_Extra,
+			No_Extra,
 			No_Extra,
 			No_Extra,
 			No_Extra,
@@ -384,6 +440,13 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			`And_Not`,
 			`Shl`,
 			`Shr`,
+			`U_Lt`,
+			`U_Gt`,
+			`U_Le`,
+			`U_Ge`,
+			`U_Div`,
+			`U_Rem`,
+			`U_Shr`,
 			`Split`,
 			`Phi`,
 			`Mem`,
@@ -432,6 +495,13 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{.General = 0}, // And_Not
 			{.General = 0}, // Shl
 			{.General = 0}, // Shr
+			{.General = 0}, // U_Lt
+			{.General = 0}, // U_Gt
+			{.General = 0}, // U_Le
+			{.General = 0}, // U_Ge
+			{.General = 4}, // U_Div
+			{.General = 1}, // U_Rem
+			{.General = 0}, // U_Shr
 			{.General = 0}, // Split
 			{.General = 0}, // Phi
 			{.General = 0}, // Mem
@@ -484,6 +554,13 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{{.General = 1}, {.General = 1}, {.General = 1}}, // And_Not
 			{{.General = 1}, {.General = 1}, {.General = 5}}, // Shl
 			{{.General = 1}, {.General = 1}, {.General = 5}}, // Shr
+			{{.General = 1}, {.General = 1}, {.General = 1}}, // U_Lt
+			{{.General = 1}, {.General = 1}, {.General = 1}}, // U_Gt
+			{{.General = 1}, {.General = 1}, {.General = 1}}, // U_Le
+			{{.General = 1}, {.General = 1}, {.General = 1}}, // U_Ge
+			{{.General = 2}, {.General = 2}, {.General = 3}}, // U_Div
+			{{.General = 4}, {.General = 2}, {.General = 3}}, // U_Rem
+			{{.General = 1}, {.General = 1}, {.General = 5}}, // U_Shr
 			{{.General = 6}, {.General = 6}}, // Split
 			{{.General = 6}, {.General = 6}, {.General = 6}}, // Phi
 			{}, // Mem
@@ -526,6 +603,13 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			1, //And_Not
 			0, //Shl
 			0, //Shr
+			0, //U_Lt
+			0, //U_Gt
+			0, //U_Le
+			0, //U_Ge
+			0, //U_Div
+			-1, //U_Rem
+			0, //U_Shr
 			-1, //Split
 			-1, //Phi
 			-1, //Mem
@@ -570,6 +654,13 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, //And_Not
 			0, //Shl
 			0, //Shr
+			0, //U_Lt
+			0, //U_Gt
+			0, //U_Le
+			0, //U_Ge
+			0, //U_Div
+			0, //U_Rem
+			0, //U_Shr
 			0, //Split
 			1, //Phi
 			1, //Mem
@@ -612,6 +703,13 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0b10, // And_Not
 			0b10, // Shl
 			0b10, // Shr
+			0b10, // U_Lt
+			0b10, // U_Gt
+			0b10, // U_Le
+			0b10, // U_Ge
+			0b10, // U_Div
+			0b10, // U_Rem
+			0b10, // U_Shr
 			0b10, // Split
 			0b10, // Phi
 			0b10, // Mem
@@ -654,6 +752,13 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, // And_Not -> No_Extra
 			0, // Shl -> No_Extra
 			0, // Shr -> No_Extra
+			0, // U_Lt -> No_Extra
+			0, // U_Gt -> No_Extra
+			0, // U_Le -> No_Extra
+			0, // U_Ge -> No_Extra
+			0, // U_Div -> No_Extra
+			0, // U_Rem -> No_Extra
+			0, // U_Shr -> No_Extra
 			0, // Split -> No_Extra
 			0, // Phi -> No_Extra
 			0, // Mem -> No_Extra
@@ -696,6 +801,13 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{Class_Flag.Interned}, // And_Not
 			{Class_Flag.Interned}, // Shl
 			{Class_Flag.Interned}, // Shr
+			{Class_Flag.Interned}, // U_Lt
+			{Class_Flag.Interned}, // U_Gt
+			{Class_Flag.Interned}, // U_Le
+			{Class_Flag.Interned}, // U_Ge
+			{Class_Flag.Interned}, // U_Div
+			{Class_Flag.Interned}, // U_Rem
+			{Class_Flag.Interned}, // U_Shr
 			{}, // Split
 			{Class_Flag.Interned}, // Phi
 			{}, // Mem
@@ -721,6 +833,13 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			No_Extra,
 			Tup,
 			CInt,
+			No_Extra,
+			No_Extra,
+			No_Extra,
+			No_Extra,
+			No_Extra,
+			No_Extra,
+			No_Extra,
 			No_Extra,
 			No_Extra,
 			No_Extra,
@@ -780,6 +899,13 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			`And_Not`,
 			`Shl`,
 			`Shr`,
+			`U_Lt`,
+			`U_Gt`,
+			`U_Le`,
+			`U_Ge`,
+			`U_Div`,
+			`U_Rem`,
+			`U_Shr`,
 			`Split`,
 			`Phi`,
 			`Mem`,
@@ -816,10 +942,17 @@ Bin_Op :: enum u16 {
 	Le = u16(Ideal_Node_Type.Le),
 	Shr = u16(Ideal_Node_Type.Shr),
 	Shl = u16(Ideal_Node_Type.Shl),
+	U_Gt = u16(Ideal_Node_Type.U_Gt),
+	U_Lt = u16(Ideal_Node_Type.U_Lt),
 	Or = u16(Ideal_Node_Type.Or),
 	And = u16(Ideal_Node_Type.And),
 	And_Not = u16(Ideal_Node_Type.And_Not),
 	Xor = u16(Ideal_Node_Type.Xor),
+	U_Shr = u16(Ideal_Node_Type.U_Shr),
+	U_Ge = u16(Ideal_Node_Type.U_Ge),
+	U_Le = u16(Ideal_Node_Type.U_Le),
+	U_Rem = u16(Ideal_Node_Type.U_Rem),
+	U_Div = u16(Ideal_Node_Type.U_Div),
 }
 Builder_Node_Type :: enum u16 {
 	Start,
@@ -844,6 +977,13 @@ Builder_Node_Type :: enum u16 {
 	And_Not,
 	Shl,
 	Shr,
+	U_Lt,
+	U_Gt,
+	U_Le,
+	U_Ge,
+	U_Div,
+	U_Rem,
+	U_Shr,
 	Split,
 	Phi,
 	Mem,
@@ -899,6 +1039,13 @@ graph_add_bin_op :: #force_inline proc(graph: ^Graph, name: string, type: Bin_Op
 	push_node_name(graph, name)
 	return graph_add_raw(graph, u16(type), dt, {lhs, rhs})
 }
+#assert(size_of(No_Extra) % 4 == 0)
+#assert(size_of(No_Extra) % 4 == 0)
+#assert(size_of(No_Extra) % 4 == 0)
+#assert(size_of(No_Extra) % 4 == 0)
+#assert(size_of(No_Extra) % 4 == 0)
+#assert(size_of(No_Extra) % 4 == 0)
+#assert(size_of(No_Extra) % 4 == 0)
 #assert(size_of(No_Extra) % 4 == 0)
 #assert(size_of(No_Extra) % 4 == 0)
 #assert(size_of(No_Extra) % 4 == 0)
@@ -1042,6 +1189,13 @@ X64_Node_Type :: enum u16 {
 	And_Not,
 	Shl,
 	Shr,
+	U_Lt,
+	U_Gt,
+	U_Le,
+	U_Ge,
+	U_Div,
+	U_Rem,
+	U_Shr,
 	Split,
 	Phi,
 	Mem,

@@ -1,4 +1,4 @@
-### add missing integer ops
+### add missing integer ops (DONE)
 
 The current code has all the parts designed to add more integer ops into it.
 The extension should be simple enough but ist tedious to add them all. Your
@@ -20,3 +20,13 @@ right now we only care about the `int` variant of the instructions.
 
 If you are uncertain about something, please ask questions. Otherwise just
 execute the steps.
+
+### add missing unsigned integer ops
+
+The datatype of a node does not express signedness, to fix this we should add a
+`U_x` variants of ops that differ when unsigned. Otherwise the steps are the same.
+
+Note that you need to modify the `tok_to_binop` to account for the type of the
+operations. Also make sure to add a new test for unsigned ops. The current ops
+test is fine, but we need a complementary test that verifyes the signed
+integers are handled correctly.

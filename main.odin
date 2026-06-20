@@ -597,6 +597,7 @@ Proc_ID :: distinct int
 Type :: enum uintptr {
 	Void,
 	Int,
+	Uint,
 }
 
 Type_Kind :: enum uintptr {
@@ -654,6 +655,8 @@ emit_type :: proc(ctx: ^Ctx, expr: ^ast.Expr) -> Type {
 		switch d.name {
 		case "int":
 			return .Int
+		case "uint":
+			return .Uint
 		case:
 			fmt.panicf("TODO: %#v", expr.derived)
 		}
@@ -797,8 +800,12 @@ typecheck :: proc(
 			)
 		}
 	case ^ast.Basic_Lit:
-		assert(prop.inferred_ty == .Void || prop.inferred_ty == .Int)
-		return .Int
+		assert(
+			prop.inferred_ty == .Void ||
+			prop.inferred_ty == .Int ||
+			prop.inferred_ty == .Uint,
+		)
+		return prop.inferred_ty == .Uint ? .Uint : .Int
 	case ^ast.Binary_Expr:
 		lhs_ty := typecheck(ctx, prop, d.left)
 		rhs_ty := typecheck(ctx, {inferred_ty = lhs_ty}, d.right)
@@ -836,7 +843,7 @@ typecheck :: proc(
 		return typecheck(ctx, {}, d.expr)
 	case ^ast.If_Stmt:
 		cond_ty := typecheck(ctx, {}, d.cond)
-		assert(cond_ty == .Int)
+		assert(cond_ty == .Int || cond_ty == .Uint)
 		typecheck(ctx, {}, d.body)
 		typecheck(ctx, {}, d.else_stmt)
 		return {}
@@ -930,7 +937,7 @@ to_rvalue :: proc {
 
 to_rvalue_ty :: proc(ctx: ^Ctx, value: Value, ty: Type) -> backend.Node_ID {
 	if !value.is_lvalue do return value.id
-	assert(ty == .Int || is_of(ty, Pointer))
+	assert(ty == .Int || ty == .Uint || is_of(ty, Pointer))
 	return backend.graph_add_load(
 		ctx,
 		"ltr",
@@ -950,12 +957,13 @@ to_rvalue_expr :: proc(
 }
 
 tok_to_binop :: proc(
-	node: ^ast.Node,
+	ty: Type,
 	tok: tokenizer.Token_Kind,
 ) -> (
 	kind: backend.Bin_Op,
 	name: string,
 ) {
+	unsigned := ty == .Uint
 	#partial switch tok {
 	case .Add:
 		kind, name = .Add, "add"
@@ -974,21 +982,21 @@ tok_to_binop :: proc(
 	case .Not_Eq:
 		kind, name = .Ne, "ne"
 	case .Lt_Eq:
-		kind, name = .Le, "le"
+		kind, name = unsigned ? .U_Le : .Le, unsigned ? "leu" : "le"
 	case .Lt:
-		kind, name = .Lt, "lt"
+		kind, name = unsigned ? .U_Lt : .Lt, unsigned ? "ltu" : "lt"
 	case .Gt:
-		kind, name = .Gt, "gt"
+		kind, name = unsigned ? .U_Gt : .Gt, unsigned ? "gtu" : "gt"
 	case .Gt_Eq:
-		kind, name = .Ge, "ge"
+		kind, name = unsigned ? .U_Ge : .Ge, unsigned ? "geu" : "ge"
 	case .Quo:
-		kind, name = .Div, "div"
+		kind, name = unsigned ? .U_Div : .Div, unsigned ? "divu" : "div"
 	case .Quo_Eq:
-		kind, name = .Div, "dive"
+		kind, name = unsigned ? .U_Div : .Div, unsigned ? "diveu" : "dive"
 	case .Mod:
-		kind, name = .Rem, "rem"
+		kind, name = unsigned ? .U_Rem : .Rem, unsigned ? "remu" : "rem"
 	case .Mod_Eq:
-		kind, name = .Rem, "reme"
+		kind, name = unsigned ? .U_Rem : .Rem, unsigned ? "remeu" : "reme"
 	case .And:
 		kind, name = .And, "and"
 	case .And_Eq:
@@ -1010,11 +1018,11 @@ tok_to_binop :: proc(
 	case .Shl_Eq:
 		kind, name = .Shl, "shle"
 	case .Shr:
-		kind, name = .Shr, "shr"
+		kind, name = unsigned ? .U_Shr : .Shr, unsigned ? "shru" : "shr"
 	case .Shr_Eq:
-		kind, name = .Shr, "shre"
+		kind, name = unsigned ? .U_Shr : .Shr, unsigned ? "shreu" : "shre"
 	case:
-		fmt.panicf("TODO: %#v", node.derived)
+		fmt.panicf("TODO: %v", tok)
 	}
 	return
 }
@@ -1086,7 +1094,10 @@ emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 			switch sym in sym {
 			case int:
 				if d.op.kind != .Eq {
-					op, name := tok_to_binop(node, d.op.kind)
+					op, name := tok_to_binop(
+						get_node_type(rhs),
+						d.op.kind,
+					)
 					value = auto_cast backend.graph_add_bin_op(
 						ctx,
 						name,
@@ -1125,7 +1136,7 @@ emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 	case ^ast.Binary_Expr:
 		lhsv, rhsv := emit_nodes(ctx, {}, d.left), emit_nodes(ctx, {}, d.right)
 		lhs, rhs := to_rvalue(ctx, lhsv, d.left), to_rvalue(ctx, rhsv, d.right)
-		kind, name := tok_to_binop(node, d.op.kind)
+		kind, name := tok_to_binop(get_node_type(d.left), d.op.kind)
 		nd := backend.graph_add_bin_op(ctx, name, kind, .I64, lhs, rhs)
 		return auto_cast nd
 	case ^ast.Unary_Expr:

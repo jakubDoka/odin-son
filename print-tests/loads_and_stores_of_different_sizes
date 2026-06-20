@@ -1,0 +1,76 @@
+main:
+     sub rsp, 0x20
+     mov rax, 0x00
+     lea rcx, [rsp]
+     mov [rcx], al
+     mov rax, 0x01
+     mov [rcx], al
+     movzx ecx, byte ptr [rcx]
+     cmp rcx, rax
+     setnz cl
+     movzx rcx, cl
+     mov rax, 0x01
+     test rcx, rcx
+     jz :0
+     jmp :1
+
+000: mov rcx, 0x00
+     lea rdx, [rsp+0x08]
+     mov [rdx], cx
+     mov rcx, 0x01
+     mov [rdx], cx
+     movzx edx, word ptr [rdx]
+     cmp rdx, rcx
+     setnz dl
+     movzx rdx, dl
+     test rdx, rdx
+     jz :2
+     jmp :3
+
+002: mov rcx, 0x00
+     lea rdx, [rsp+0x10]
+     mov [rdx], ecx
+     mov rcx, 0x01
+     mov [rdx], ecx
+     mov edx, [rdx]
+     cmp rdx, rcx
+     setnz dl
+     movzx rdx, dl
+     test rdx, rdx
+     jz :4
+     jmp :5
+
+004: mov rcx, 0x00
+     lea rdx, [rsp+0x18]
+     mov [rdx], rcx
+     mov [rdx], rax
+     mov rdx, [rdx]
+     cmp rdx, rax
+     setnz dl
+     movzx rdx, dl
+     test rdx, rdx
+     jz :6
+     jmp :7
+
+006: mov rax, rcx
+     jmp :8
+
+007: mov rax, 0x04
+     jmp :9
+
+005: mov rax, 0x03
+     jmp :10
+
+003: mov rax, 0x02
+     jmp :11
+
+001: jmp :11
+
+011: jmp :10
+
+010: jmp :9
+
+009: jmp :8
+
+008: sub rsp, 0xFFFFFFFFFFFFFFE0
+     ret

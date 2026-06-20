@@ -483,11 +483,10 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 			)
 
 			for par, i in prc.params {
-				assert(par.type == .Int || is_of(par.type, Pointer))
 				value := backend.graph_add_arg(
 					&ctx,
 					"arg",
-					.I64,
+					type_to_dt(par.type),
 					entry,
 					u32(i),
 				)
@@ -596,8 +595,78 @@ Proc_ID :: distinct int
 
 Type :: enum uintptr {
 	Void,
+	Bool,
 	Int,
+	I64,
+	I32,
+	I16,
+	I8,
 	Uint,
+	U64,
+	U32,
+	U16,
+	U8,
+}
+
+@(rodata)
+TYPE_NAMES := [Type]string {
+	.Void = "void",
+	.Bool = "bool",
+	.Int  = "int",
+	.I64  = "i64",
+	.I32  = "i32",
+	.I16  = "i16",
+	.I8   = "i8",
+	.Uint = "uint",
+	.U64  = "u64",
+	.U32  = "u32",
+	.U16  = "u16",
+	.U8   = "u8",
+}
+
+type_to_dt :: proc(ty: Type) -> backend.Node_Datatype {
+	@(static)
+	@(rodata)
+	TYPE_TO_DT := [Type]backend.Node_Datatype {
+		.Void = .Void,
+		.Bool = .I8,
+		.Int  = .I64,
+		.I64  = .I64,
+		.I32  = .I32,
+		.I16  = .I16,
+		.I8   = .I8,
+		.Uint = .I64,
+		.U64  = .I64,
+		.U32  = .I32,
+		.U16  = .I16,
+		.U8   = .I8,
+	}
+
+	switch t in unpack_type(ty) {
+	case Builtin:
+		return TYPE_TO_DT[ty]
+	case Pointer:
+		return .I64
+	case ^Lit:
+		panic("we should not be type type")
+	case:
+		panic("wuwut")
+	}
+}
+
+UNSIGNED_TYPES :: bit_set[Type]{.Uint, .U64, .U32, .U16, .U8, .Bool}
+INTEGER_TYPES :: bit_set[Type] {
+	.Uint,
+	.Int,
+	.I64,
+	.I32,
+	.I16,
+	.I8,
+	.Uint,
+	.U64,
+	.U32,
+	.U16,
+	.U8,
 }
 
 Type_Kind :: enum uintptr {
@@ -652,14 +721,11 @@ emit_type :: proc(ctx: ^Ctx, expr: ^ast.Expr) -> Type {
 
 	#partial switch d in expr.derived {
 	case ^ast.Ident:
-		switch d.name {
-		case "int":
-			return .Int
-		case "uint":
-			return .Uint
-		case:
-			fmt.panicf("TODO: %#v", expr.derived)
+		for name, kind in TYPE_NAMES {
+			if name == d.name do return kind
 		}
+
+		fmt.panicf("TODO: %#v", expr.derived)
 	case ^ast.Pointer_Type:
 		return intern_pointer(ctx, emit_type(ctx, d.elem))
 	case:
@@ -668,11 +734,15 @@ emit_type :: proc(ctx: ^Ctx, expr: ^ast.Expr) -> Type {
 }
 
 Proc :: struct {
-	name:   string,
+	name:      string,
+	using sig: Signature,
+	ast:       ^ast.Proc_Lit,
+	out:       backend.Codegen_Output,
+}
+
+Signature :: struct {
 	params: []Param,
 	rets:   []Param,
-	ast:    ^ast.Proc_Lit,
-	out:    backend.Codegen_Output,
 }
 
 Param :: struct {
@@ -800,16 +870,19 @@ typecheck :: proc(
 			)
 		}
 	case ^ast.Basic_Lit:
-		assert(
-			prop.inferred_ty == .Void ||
-			prop.inferred_ty == .Int ||
-			prop.inferred_ty == .Uint,
-		)
-		return prop.inferred_ty == .Uint ? .Uint : .Int
+		assert(d.tok.kind == .Integer)
+		assert(prop.inferred_ty == .Void || prop.inferred_ty in INTEGER_TYPES)
+
+		return prop.inferred_ty != .Void ? prop.inferred_ty : .Int
 	case ^ast.Binary_Expr:
 		lhs_ty := typecheck(ctx, prop, d.left)
 		rhs_ty := typecheck(ctx, {inferred_ty = lhs_ty}, d.right)
 		assert(lhs_ty == rhs_ty)
+
+		if .B_Comparison_Begin < d.op.kind && d.op.kind < .B_Comparison_End {
+			return .Bool
+		}
+
 		return lhs_ty
 	case ^ast.Unary_Expr:
 		#partial switch d.op.kind {
@@ -843,7 +916,7 @@ typecheck :: proc(
 		return typecheck(ctx, {}, d.expr)
 	case ^ast.If_Stmt:
 		cond_ty := typecheck(ctx, {}, d.cond)
-		assert(cond_ty == .Int || cond_ty == .Uint)
+		assert(cond_ty == .Bool)
 		typecheck(ctx, {}, d.body)
 		typecheck(ctx, {}, d.else_stmt)
 		return {}
@@ -853,7 +926,6 @@ typecheck :: proc(
 		assert(d.post == nil)
 
 		typecheck(ctx, {}, d.body)
-
 	case ^ast.Branch_Stmt:
 		return {}
 	case ^ast.Paren_Expr:
@@ -875,32 +947,32 @@ typecheck :: proc(
 			}
 		}
 
-		if name == "false" {
-			return .Int
+		if name == "false" || name == "true" {
+			return .Bool
 		}
 
 		fmt.panicf("variable not declared: %v", name)
 	case ^ast.Call_Expr:
 		callee := typecheck(ctx, {}, d.expr)
 
+		sig: Signature
 		#partial switch v in unpack_type(callee) {
 		case ^Lit:
 			prc_id := v.(Proc_ID)
 			prc := &ctx.procs[prc_id]
-
-			assert(len(prc.params) == len(d.args))
-
-			for param, i in prc.params {
-				ty := typecheck(ctx, {inferred_ty = param.type}, d.args[i])
-				assert(ty == param.type)
-			}
-
-			assert(len(prc.rets) == 1)
-
-			return prc.rets[0].type
+			sig = prc.sig
 		case:
 			fmt.panicf("TODO: %v %v", v, d)
 		}
+
+		assert(len(sig.params) == len(d.args))
+		for param, i in sig.params {
+			ty := typecheck(ctx, {inferred_ty = param.type}, d.args[i])
+			assert(ty == param.type)
+		}
+
+		assert(len(sig.rets) == 1)
+		return sig.rets[0].type
 	case ^ast.Return_Stmt:
 		prc := &ctx.procs[ctx.prc]
 		assert(len(d.results) == len(prc.rets))
@@ -937,11 +1009,10 @@ to_rvalue :: proc {
 
 to_rvalue_ty :: proc(ctx: ^Ctx, value: Value, ty: Type) -> backend.Node_ID {
 	if !value.is_lvalue do return value.id
-	assert(ty == .Int || ty == .Uint || is_of(ty, Pointer))
 	return backend.graph_add_load(
 		ctx,
 		"ltr",
-		.I64,
+		type_to_dt(ty),
 		ctx_ctrl(ctx),
 		ctx_mem(ctx),
 		value.id,
@@ -1018,7 +1089,7 @@ tok_to_binop :: proc(
 
 	info := SIGNED_TABLE[tok]
 	uinfo := UNSIGNED_TABLE[tok]
-	if ty == .Uint && uinfo.kind != {} do info = uinfo
+	if ty in UNSIGNED_TYPES && uinfo.kind != {} do info = uinfo
 	return info.kind, info.name
 }
 
@@ -1042,9 +1113,9 @@ ctx_lookup_lvalue :: proc(ctx: ^Ctx, expr: ^ast.Node) -> Sym {
 
 		switch id.name {
 		case "false":
-			return Value(backend.graph_add_c_int(ctx, "false", .I64, 0))
+			return Value(backend.graph_add_c_int(ctx, "false", .I8, 0))
 		case "true":
-			return Value(backend.graph_add_c_int(ctx, "true", .I64, 1))
+			return Value(backend.graph_add_c_int(ctx, "true", .I8, 1))
 		}
 
 		fmt.panicf("TODO: undefined variable: %v %#v", id.name, expr)
@@ -1057,6 +1128,7 @@ emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 	if node == nil do return {}
 
 	ty := get_node_type(node)
+	dt := type_to_dt(ty)
 
 	#partial switch d in node.derived {
 	case ^ast.Block_Stmt:
@@ -1094,7 +1166,7 @@ emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 						ctx,
 						name,
 						op,
-						.I64,
+						type_to_dt(get_node_type(lhs)),
 						backend.graph_get_scope_value(
 							ctx,
 							ctx.node_scope,
@@ -1129,7 +1201,7 @@ emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 		lhsv, rhsv := emit_nodes(ctx, {}, d.left), emit_nodes(ctx, {}, d.right)
 		lhs, rhs := to_rvalue(ctx, lhsv, d.left), to_rvalue(ctx, rhsv, d.right)
 		kind, name := tok_to_binop(get_node_type(d.left), d.op.kind)
-		nd := backend.graph_add_bin_op(ctx, name, kind, .I64, lhs, rhs)
+		nd := backend.graph_add_bin_op(ctx, name, kind, dt, lhs, rhs)
 		return auto_cast nd
 	case ^ast.Unary_Expr:
 		node := emit_nodes(ctx, {}, d.expr)
@@ -1153,7 +1225,7 @@ emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 		case .Integer:
 			value, ok := strconv.parse_i64(d.tok.text)
 			assert(ok)
-			return auto_cast backend.graph_add_c_int(ctx, "cnst", .I64, value)
+			return auto_cast backend.graph_add_c_int(ctx, "cnst", dt, value)
 		case:
 			fmt.panicf("TODO: %#v", node.derived)
 		}
@@ -1172,6 +1244,7 @@ emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 			// TODO: extract common stuff
 			if .Referenced in flags {
 				alloca := backend.graph_add_local(ctx, name, ctx.root_mem)
+				backend.graph_extra(ctx, alloca, backend.Local).size = 8
 				ptr := backend.graph_add_local_addr(ctx, name, alloca)
 				backend.graph_add_output(ctx, ptr, 0, 0)
 				ctx_set_mem(
@@ -1251,8 +1324,8 @@ emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 		ctx_set_mem(ctx, backend.graph_add_mem(ctx, "cmem", call_end))
 
 		assert(len(prc.rets) == 1)
-
-		return auto_cast backend.graph_add_ret(ctx, "cret", .I64, call_end, 0)
+		dt := type_to_dt(prc.rets[0].type)
+		return auto_cast backend.graph_add_ret(ctx, "cret", dt, call_end, 0)
 	case ^ast.Branch_Stmt:
 		label := meta.src_of(ctx.file^, d.label)
 

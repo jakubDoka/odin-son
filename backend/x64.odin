@@ -353,6 +353,8 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		.U_Rem   = {0xF7, 0b110},
 		.Div     = {0xF7, 0b111},
 		.Rem     = {0xF7, 0b111},
+		.Load    = {0x8b, 0},
+		.Store   = {0x89, 0},
 	}
 
 	block_base := ctx.gvn - u32(len(ctx.bbs))
@@ -363,14 +365,40 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		offset := graph_extra(ctx, node.inps[0], Local).offset
 		emit_stack_lea(ctx.code, reg_of(ctx, instr), offset)
 	case .Store:
+		dt := graph_get(ctx, node.inps[3]).dt
 		bse := reg_of(ctx, node.inps[2])
 		val := reg_of(ctx, node.inps[3])
-		emit(ctx.code, {rex(val, bse, NO_INDEX, true), 0x89})
+
+		rx := rex(val, bse, NO_INDEX, DT_SIZE[dt] == 8)
+		op := OPCODE_TABLE[node.xtype].opcode
+		switch dt {
+		case .Void:
+		case .I8:
+			emit(ctx.code, {rx, 0x88})
+		case .I16:
+			emit(ctx.code, {0x66, rx, 0x89})
+		case .I32, .I64:
+			emit(ctx.code, {rx, 0x89})
+		}
+
 		emit_indirect_addr(ctx.code, val, bse, NO_INDEX, 1, 0)
 	case .Load:
+		dt := node.dt
 		bse := reg_of(ctx, node.inps[2])
 		val := reg_of(ctx, instr)
-		emit(ctx.code, {rex(val, bse, NO_INDEX, true), 0x8b})
+
+		rx := rex(val, bse, NO_INDEX, DT_SIZE[dt] == 8)
+		op := OPCODE_TABLE[node.xtype].opcode
+		switch dt {
+		case .Void:
+		case .I8:
+			emit(ctx.code, {rx, 0x0f, 0xb6})
+		case .I16:
+			emit(ctx.code, {rx, 0x0f, 0xb7})
+		case .I32, .I64:
+			emit(ctx.code, {rx, 0x8b})
+		}
+
 		emit_indirect_addr(ctx.code, val, bse, NO_INDEX, 1, 0)
 	case .Start, .Entry, .Then, .Else, .Region, .Loop, .Call_End:
 		panic("Not reachable form here")

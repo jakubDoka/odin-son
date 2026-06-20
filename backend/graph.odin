@@ -144,6 +144,14 @@ Node_Datatype :: enum u8 {
 	I64,
 }
 
+DT_SIZE := [Node_Datatype]int {
+	.Void = 0,
+	.I8   = 1,
+	.I16  = 2,
+	.I32  = 4,
+	.I64  = 8,
+}
+
 Node_ID :: distinct u32
 
 Node_Output :: bit_field u32 {
@@ -1023,6 +1031,9 @@ graph_display_node :: proc(w: io.Writer, graph: ^Graph, id: Node_ID) {
 	extra := graph_extra(graph, node)
 
 	graph_display_node_gvn(w, graph, id)
+	if node.dt != .Void {
+		fmt.wprintf(w, ":%v", node.dt)
+	}
 	fmt.wprintf(w, ":%v(", graph.node_kind_name[node.rtype])
 
 	written_one: bool

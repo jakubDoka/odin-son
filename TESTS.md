@@ -859,3 +859,70 @@ set :: proc(ptr: ^int) -> int {
 	return ptr^
 }
 ```
+
+#### loads and stores of different sizes
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	{
+		vl: u8 = 0 
+		ptr := &vl
+		ptr^ = 1
+		if ptr^ != 1 do return 1
+	}
+
+	{
+		vl: u16 = 0
+		ptr := &vl
+		ptr^ = 1
+		if ptr^ != 1 do return 2
+	}
+
+	{
+		vl: u32 = 0
+		ptr := &vl
+		ptr^ = 1
+		if ptr^ != 1 do return 3
+	}
+
+	{
+		vl: u64 = 0
+		ptr := &vl
+		ptr^ = 1
+		if ptr^ != 1 do return 4
+	}
+
+	{
+		vl: i8 = 0 
+		ptr := &vl
+		ptr^ = 0 - 1
+		if ptr^ != 0 - 1 do return 5
+	}
+
+	{
+		vl: i16 = 0
+		ptr := &vl
+		ptr^ = 0 - 1
+		if ptr^ != 0 - 1 do return 6
+	}
+
+	{
+		vl: i32 = 0
+		ptr := &vl
+		ptr^ = 0 - 1
+		if ptr^ != 0 - 1 do return 7
+	}
+
+	{
+		vl: i64 = 0
+		ptr := &vl
+		ptr^ = 0 - 1
+		if ptr^ != 0 - 1 do return 8
+	}
+
+	return 0
+}
+```

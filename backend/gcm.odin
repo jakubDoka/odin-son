@@ -6,7 +6,6 @@ import "core:fmt"
 import "core:log"
 import "core:slice"
 import "core:sync"
-import "core:sys/info"
 
 Graph_Basic_Block :: struct {
 	head:      Node_ID,
@@ -411,7 +410,6 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 	bb_idx := 0
 	for id, i in cfg_rpos {
 		if graph_has_flag(graph, id, .Is_Basic_Block_Start) {
-			extra := graph_extra(graph, id, Cfg)
 			ctx.late_schedules[graph_get(graph, id).gvn] = Node_ID(bb_idx)
 			loop_tree := lctx.loop_trees[graph_get(graph, id).gvn]
 
@@ -483,7 +481,6 @@ verify_schedule_integrity :: proc(graph: ^Graph, sched: ^Graph_Schedule) {
 
 			if inode.itype != .Phi {
 				for oinstr in bb.instrs[i + 1:] {
-					onode := graph_expand(graph, oinstr)
 					assert(!slice.contains(inode.inps, oinstr))
 				}
 			}
@@ -493,8 +490,8 @@ verify_schedule_integrity :: proc(graph: ^Graph, sched: ^Graph_Schedule) {
 		}
 	}
 
-	for bb, idx in sched.bbs {
-		for instr, i in bb.instrs {
+	for bb in sched.bbs {
+		for instr in bb.instrs {
 			inode := graph_expand(graph, instr)
 
 			for inp, i in inode.inps {

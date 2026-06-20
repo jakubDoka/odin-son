@@ -290,17 +290,19 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 
 	for reg in CALLE_SAVED {
 		if bit_arr.contains(ctx.used, int(reg)) {
+			// push $reg
 			emit_single_op(ctx.code, 0x50, reg)
 		}
 	}
 
 	if ctx.stack_size != 0 {
+		// sub rsp, $ctx.stack_size
 		emit_imm_op(ctx.code, 0x81, 0b101, RSP, ctx.stack_size)
 	}
 
 	ctx.local_relocs = make([dynamic]Local_Reloc, 0, len(ctx.bbs))
 
-	for &bb, i in ctx.bbs {
+	for &bb in ctx.bbs {
 		bb.offset = u32(ctx.code.pos)
 		for instr in bb.instrs {
 			x64_emit_instr(&ctx, instr, 0)
@@ -366,6 +368,7 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 	switch node.xtype {
 	case .Local:
 	case .Local_Addr:
+		// lea [rsp + $offset]
 		offset := graph_extra(ctx, node.inps[0], Local).offset
 		emit_stack_lea(ctx.code, reg_of(ctx, instr), offset)
 	case .Store:
@@ -374,14 +377,16 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		val := reg_of(ctx, node.inps[3])
 
 		rx := rex(val, bse, NO_INDEX, DT_SIZE[dt] == 8)
-		op := OPCODE_TABLE[node.xtype].opcode
 		switch dt {
 		case .Void:
 		case .I8:
+			// mov [$bse], $val
 			emit(ctx.code, {rx, 0x88})
 		case .I16:
+			// mov [$bse], $val
 			emit(ctx.code, {0x66, rx, 0x89})
 		case .I32, .I64:
+			// mov [$bse], $val
 			emit(ctx.code, {rx, 0x89})
 		}
 
@@ -392,14 +397,16 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		val := reg_of(ctx, instr)
 
 		rx := rex(val, bse, NO_INDEX, DT_SIZE[dt] == 8)
-		op := OPCODE_TABLE[node.xtype].opcode
 		switch dt {
 		case .Void:
 		case .I8:
+			// movzx $val, [$bse]
 			emit(ctx.code, {rx, 0x0f, 0xb6})
 		case .I16:
+			// movzx $val, [$bse]
 			emit(ctx.code, {rx, 0x0f, 0xb7})
 		case .I32, .I64:
+			// mov $val, [$bse]
 			emit(ctx.code, {rx, 0x8b})
 		}
 
@@ -409,17 +416,20 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		bse := reg_of(ctx, node.inps[2])
 		val := reg_of(ctx, instr)
 
-		// always sign extend into the full 64 bit register
 		rx := rex(val, bse, NO_INDEX, true)
 		switch dt {
 		case .Void:
 		case .I8:
+			// movsx $val, [$bse]
 			emit(ctx.code, {rx, 0x0f, 0xbe})
 		case .I16:
+			// movsx $val, [$bse]
 			emit(ctx.code, {rx, 0x0f, 0xbf})
 		case .I32:
+			// movsxd $val, [$bse]
 			emit(ctx.code, {rx, 0x63})
 		case .I64:
+			// mov $val, [$bse]
 			emit(ctx.code, {rx, 0x8b})
 		}
 
@@ -427,11 +437,13 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 	case .Start, .Entry, .Then, .Else, .Region, .Loop, .Call_End:
 		panic("Not reachable form here")
 	case .If:
+		// test $cond, $cond
 		cond := reg_of(ctx, node.inps[1])
 		rx := rex(cond, cond, RAX, true)
 		emit(ctx.code, {rx, 0x85, mod_rm(.Direct, cond, cond)})
 
 		assert(len(node.outs) == 2)
+		// jz
 		append(
 			&ctx.local_relocs,
 			Local_Reloc {
@@ -447,6 +459,7 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 	case .Always:
 		fallthrough
 	case .Jump:
+		// jmp
 		append(
 			&ctx.local_relocs,
 			Local_Reloc {
@@ -459,6 +472,7 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		emit(ctx.code, {0xe9, 0, 0, 0, 0})
 	case .Call:
 		call := graph_extra(ctx, node, Call)
+		// call $call.cid
 		emit(ctx.code, {0xe8, 0, 0, 0, 0})
 		add_reloc(ctx.relocs)^ = {
 			offset = u32(ctx.code.pos - ctx.code_start),
@@ -468,53 +482,65 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		}
 	case .Poison, .Arg, .Phi, .Ret, .Mem:
 	case .CInt:
+		// mov
 		emit_single_op(ctx.code, 0xb8, reg_of(ctx, instr))
 		emit_anys(ctx.code, graph_extra(ctx, node, CInt).value)
 	case .Add, .Sub, .And, .Or, .Xor:
+		// add/sub/and/or/xor $dst, $rhs
 		dst := reg_of(ctx, node.inps[0])
 		rhs := reg_of(ctx, node.inps[1])
 		rx := rex(rhs, dst, RAX, true)
 		op := OPCODE_TABLE[node.xtype].opcode
 		emit(ctx.code, {rx, op, mod_rm(.Direct, rhs, dst)})
 	case .Mul:
+		// imul $dst, $rhs
 		dst := reg_of(ctx, node.inps[0])
 		rhs := reg_of(ctx, node.inps[1])
 		rx := rex(dst, rhs, RAX, true)
 		emit(ctx.code, {rx, 0x0f, 0xaf, mod_rm(.Direct, dst, rhs)})
 	case .Eq, .Ne, .Lt, .Gt, .Ge, .Le, .U_Lt, .U_Gt, .U_Ge, .U_Le:
+		// cmp $lhs, $rhs
 		lhs := reg_of(ctx, node.inps[0])
 		rhs := reg_of(ctx, node.inps[1])
 		rx := rex(lhs, rhs, RAX, true)
 		emit(ctx.code, {rx, 0x3b, mod_rm(.Direct, lhs, rhs)})
 
+		// setcc $lhs
 		rx = rex(RAX, lhs, RAX, true)
 		op := OPCODE_TABLE[node.xtype].opcode
 		emit(ctx.code, {rx, 0x0F, op, mod_sm(.Direct, 0b000, lhs)})
 
+		// movzx $lhs, $lhs
 		rx = rex(lhs, lhs, RAX, true)
 		emit(ctx.code, {rx, 0x0F, 0xB6, mod_rm(.Direct, lhs, lhs)})
 	case .And_Not:
-		// dst aliases the rhs slot; compute `dst = ~rhs & lhs`
 		dst := reg_of(ctx, node.inps[1])
 		lhs := reg_of(ctx, node.inps[0])
+		// not $dst
 		rx := rex(RAX, dst, RAX, true)
 		emit(ctx.code, {rx, 0xf7, mod_sm(.Direct, 0b010, dst)})
+		// and $dst, $lhs
 		rx = rex(lhs, dst, RAX, true)
 		emit(ctx.code, {rx, 0x21, mod_rm(.Direct, lhs, dst)})
 	case .Shl, .Shr, .U_Shr:
+		// shl/shr $dst, cl
 		dst := reg_of(ctx, node.inps[0])
 		rx := rex(RAX, dst, RAX, true)
 		op := OPCODE_TABLE[node.xtype].ext
 		emit(ctx.code, {rx, 0xd3, mod_sm(.Direct, op, dst)})
 	case .Div, .Rem:
 		rhs := reg_of(ctx, node.inps[1])
+		// cqo
 		emit(ctx.code, {rex(RAX, RAX, RAX, true), 0x99})
+		// idiv $rhs
 		rx := rex(RAX, rhs, RAX, true)
 		emit(ctx.code, {rx, 0xf7, mod_sm(.Direct, 0b111, rhs)})
 	case .U_Div, .U_Rem:
 		rhs := reg_of(ctx, node.inps[1])
+		// xor rdx, rdx
 		rx := rex(RDX, RDX, RAX, true)
 		emit(ctx.code, {rx, 0x31, mod_rm(.Direct, RDX, RDX)})
+		// div $rhs
 		rx = rex(RAX, rhs, RAX, true)
 		emit(ctx.code, {rx, 0xf7, mod_sm(.Direct, 0b110, rhs)})
 	case .Split:
@@ -523,6 +549,7 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		assert(dst.kind == src.kind)
 		if dst == src do break
 		if int(dst) >= 16 {
+			// mov [rsp + $dst_offset], $src
 			dst_offset := ctx.spill_slot_base[dst.kind] + 8 * (int(dst) - 16)
 
 			assert(int(src) < 16)
@@ -530,6 +557,7 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 			emit(ctx.code, {rex(src, RSP, RAX, true), 0x89})
 			emit_indirect_addr(ctx.code, src, RSP, NO_INDEX, 1, dst_offset)
 		} else if int(src) >= 16 {
+			// mov $dst, [rsp + $src_offset]
 			src_offset := ctx.spill_slot_base[dst.kind] + 8 * (int(src) - 16)
 			assert(int(dst) < 16)
 
@@ -539,19 +567,23 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 			assert(int(dst) < 16)
 			assert(int(src) < 16)
 
+			// mov $dst, $src
 			emit_reg_op(ctx.code, 0x89, src, dst)
 		}
 	case .Return:
 		if ctx.stack_size != 0 {
+			// sub rsp, -$ctx.stack_size
 			emit_imm_op(ctx.code, 0x81, 0b101, RSP, -ctx.stack_size)
 		}
 
 		#reverse for reg in CALLE_SAVED {
 			if bit_arr.contains(ctx.used, int(reg)) {
+				// pop $reg
 				emit_single_op(ctx.code, 0x58, reg)
 			}
 		}
 
+		// ret
 		emit(ctx.code, {0xc3})
 	}
 }

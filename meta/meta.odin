@@ -26,8 +26,8 @@ main :: proc() {
 
 		file_paths := []string{"./backend/graph.odin", "./backend/gcm.odin"}
 		for file_path in file_paths {
-			data, err := os.read_entire_file(file_path, context.allocator)
-			fmt.assertf(err == nil, "%v", err)
+			data, derr := os.read_entire_file(file_path, context.allocator)
+			fmt.assertf(derr == nil, "%v", derr)
 			p := parser.Parser{}
 			f := ast.File {
 				src      = string(data),
@@ -115,8 +115,8 @@ main :: proc() {
 
 		file_paths := []string{"TESTS.md"}
 		for file_path in file_paths {
-			data, err := os.read_entire_file(file_path, context.allocator)
-			fmt.assertf(err == nil, "%v", err)
+			data, derr := os.read_entire_file(file_path, context.allocator)
+			fmt.assertf(derr == nil, "%v", derr)
 
 			src := string(data)
 

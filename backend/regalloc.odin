@@ -3,7 +3,6 @@ package backend
 import "../vendored/gam/util/arna"
 import "../vendored/gam/util/bit_arr"
 import "base:intrinsics"
-import "base:runtime"
 import "core:container/queue"
 import "core:fmt"
 import "core:io"
@@ -37,19 +36,6 @@ Reg_Mask :: struct {
 		kind:       Reg_Kind | 4,
 		bit_length: int      | 60,
 	},
-}
-
-reg_mask_simple :: proc(
-	ra: ^Regalloc,
-	kind: Reg_Kind,
-	first_mask: int,
-) -> (
-	rm: Reg_Mask,
-) {
-	rm = reg_mask_empty(ra, kind)
-	assert(rm.bit_length >= MASK_SIZE)
-	rm.masks[0] = first_mask
-	return
 }
 
 reg_mask_single :: proc(ra: ^Regalloc, reg: Reg) -> (rm: Reg_Mask) {
@@ -297,7 +283,7 @@ regalloc_round :: proc(
 
 	ctx.lrg_table = arna.smake(ra, []^Lrg, max_lrg_count)
 
-	for bb, i in sched.bbs {
+	for bb in sched.bbs {
 		for instr in bb.instrs {
 			inode := graph_expand(graph, instr)
 
@@ -363,13 +349,13 @@ regalloc_round :: proc(
 						lrg = unify(lrg, ctx.lrg_table[onode.gvn])
 					}
 
-					mask := reg_mask_of(
+					umask := reg_mask_of(
 						graph,
 						ra,
 						o.id,
 						o.idx + 1 - onode.data_start,
 					)
-					intersect(lrg, mask)
+					intersect(lrg, umask)
 				}
 
 				ctx.lrg_table[inode.gvn] = lrg
@@ -439,7 +425,6 @@ regalloc_round :: proc(
 
 		bb := sched.bbs[b]
 		lbb := &blocks[b]
-		bb_head := graph_get(graph, bb.head)
 
 		clear(&current_liveouts)
 		for k, v in lbb.liveouts {
@@ -466,28 +451,28 @@ regalloc_round :: proc(
 
 					pair := []^Lrg{lrg, l}
 
-					for i in 0 ..< 2 {
-						l, r := pair[i], pair[1 - i]
+					for j in 0 ..< 2 {
+						ll, rl := pair[j], pair[1 - j]
 
 						// TODO: this could be a single operation
-						if reg_mask_pop_count(l.mask) == 1 {
+						if reg_mask_pop_count(ll.mask) == 1 {
 							reg_mask_set(
-								r.mask,
-								reg_mask_first_set(l.mask) or_else panic(""),
+								rl.mask,
+								reg_mask_first_set(ll.mask) or_else panic(""),
 								false,
 							)
 
 							// TODO: one of them will fail, and its pretty
 							// arbitrary maby its worth selecting here based on
 							// a longer liverange
-							if reg_mask_is_empty(r.mask) {
-								r.killed = true
+							if reg_mask_is_empty(rl.mask) {
+								rl.killed = true
 							}
 						}
 
 						bit_arr.set(
 							interference,
-							r.index * used_lrgs + l.index,
+							rl.index * used_lrgs + ll.index,
 						)
 					}
 				}
@@ -497,7 +482,6 @@ regalloc_round :: proc(
 				for l in current_liveouts {
 					l := &lrgs[l]
 					assert(l.mask.bit_length != 0)
-					prev := l.mask.masks[0]
 					l.mask.masks[0] &= ~ra.clobbers[inode.rtype][l.mask.kind]
 					if reg_mask_is_empty(l.mask) {
 						l.killed = true
@@ -627,8 +611,6 @@ regalloc_round :: proc(
 			inode := graph_expand(graph, instr)
 			if inode.itype != .Split do continue
 
-			input := graph_expand(graph, inode.inps[0])
-
 			ilrg := find(get_lrg(ctx, instr))
 			inlrg := find(get_lrg(ctx, inode.inps[0]))
 
@@ -695,18 +677,18 @@ regalloc_round :: proc(
 			priority: u32 | 32,
 		}, len(ifg))
 
-	i := 0
+	alive_lrgs := 0
 	for &lrg in lrgs[:used_lrgs] {
 		if !ok do break
 		if lrg.parent != nil do continue
-		color_order[i] = {
+		color_order[alive_lrgs] = {
 			idx      = u32(lrg.index),
 			priority = 10000 - color_priority(ctx, &lrg, ifg[lrg.index]),
 		}
-		i += 1
+		alive_lrgs += 1
 	}
 
-	color_order = color_order[:i]
+	color_order = color_order[:alive_lrgs]
 
 	sort.quick_sort(color_order)
 
@@ -720,8 +702,8 @@ regalloc_round :: proc(
 			reg_mask_set(lrg.mask, inter.reg, false)
 		}
 
-		first_set, ok := reg_mask_first_set(lrg.mask)
-		if !ok {
+		first_set, fok := reg_mask_first_set(lrg.mask)
+		if !fok {
 			lrg.failed_to_color = true
 			continue
 		}
@@ -853,18 +835,8 @@ regalloc_round :: proc(
 		if lrg.reg_conflict {
 
 			for m in members {
-				dmask := reg_mask_of(graph, ra, m, 0, readonly = true)
 				split := m
 				for out in graph_outs(graph, m) {
-					onode := graph_expand(graph, out.id)
-
-					omask := reg_mask_of(
-						graph,
-						ra,
-						out.id,
-						out.idx + 1 - onode.data_start,
-					)
-
 					if split == m {
 						split = split_after(ctx, "rcd", m)
 					}
@@ -969,12 +941,11 @@ regalloc_round :: proc(
 
 		last_split = 0
 		last_split_out: Node_ID
-		for out, i in node.outs {
+		for out in node.outs {
 			onode := graph_expand(graph, out.id)
 			if onode.dt == .Void do continue
 			if onode.gvn >= prev_gvn do continue
 
-			out_lrg := ctx.lrg_table[onode.gvn]
 			if out.idx == onode.inplace_slot || onode.itype == .Phi {
 				split: Node_ID
 				if last_split != 0 &&
@@ -1247,12 +1218,6 @@ regalloc_round :: proc(
 
 	@(disabled = !REGLOGS)
 	log_lrgs :: proc(ctx: ^Ctx) {
-
-		graph := ctx.graph
-		sched := ctx.sched
-		lrg_table := ctx.lrg_table
-		instr_placement := ctx.instr_placement
-
 		sb: strings.Builder
 
 		append(&sb.buf, "\n")

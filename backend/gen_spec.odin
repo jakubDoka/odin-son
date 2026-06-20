@@ -1,6 +1,5 @@
 package backend
 
-import "base:runtime"
 import "core:fmt"
 import "core:mem"
 import "core:os"
@@ -59,7 +58,11 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 	.Local = {id = Local, args = {"mem"}, default_type = .Void},
 	.Local_Addr = {args = {"local"}, default_type = .I64},
 	.Load = {id = Mem_Op, args = {"ctrl", "mem", "addr"}, flags = {.Interned}},
-	.Load_S = {id = Mem_Op, args = {"ctrl", "mem", "addr"}, flags = {.Interned}},
+	.Load_S = {
+		id = Mem_Op,
+		args = {"ctrl", "mem", "addr"},
+		flags = {.Interned},
+	},
 	.Store = {
 		id = Mem_Op,
 		args = {"ctrl", "mem", "addr", "value"},
@@ -280,7 +283,7 @@ generate_specs :: proc() {
 
 	for spec in specs {
 		for classes in spec.classes {
-			for &class, i in classes.ids {
+			for &class in classes.ids {
 				if class.id == nil do class.id = No_Extra
 			}
 		}
@@ -342,7 +345,7 @@ generate_specs :: proc() {
 				}
 			}
 
-			for rclass, i in classes.regs {
+			for rclass in classes.regs {
 				for masks, kind in rclass.reg_masks {
 					for mask in masks {
 						reg_mask_lengths[kind] = max(
@@ -355,7 +358,7 @@ generate_specs :: proc() {
 		}
 
 		for classes in spec.classes {
-			for rclass, i in classes.regs {
+			for rclass in classes.regs {
 				for masks, kind in rclass.reg_masks {
 					for mask in masks {
 						full_mask := make([]int, reg_mask_lengths[kind])
@@ -426,11 +429,11 @@ generate_specs :: proc() {
 				final := make([][Reg_Kind]Mask_Intern_Key, mx)
 
 				for masks, kind in class.reg_masks {
-					for mask, i in masks {
+					for mask, j in masks {
 						full_mask := make([]int, reg_mask_lengths[kind])
 						copy(full_mask, mask)
 
-						final[i][kind] = Mask_Intern_Key(
+						final[j][kind] = Mask_Intern_Key(
 							interned_reg_masks[mask_key(full_mask)] or_else -1,
 						)
 					}
@@ -546,7 +549,7 @@ generate_specs :: proc() {
 
 		os.write_string(file, "\t\tnode_extra_types = {\n")
 		for classes in spec.classes {
-			for class, i in classes.ids {
+			for class in classes.ids {
 				fmt.fprintf(file, "\t\t\t%v,\n", class.id)
 			}
 		}
@@ -554,7 +557,7 @@ generate_specs :: proc() {
 
 		os.write_string(file, "\t\tnode_kind_name = {\n")
 		for classes in spec.classes {
-			for class, i in classes.ids {
+			for _, i in classes.ids {
 				fmt.fprintf(
 					file,
 					"\t\t\t`%v`,\n",
@@ -623,7 +626,7 @@ generate_specs :: proc() {
 
 				name := reflect.enum_field_names(classes.enm)[i]
 
-				k, v := delete_key(&groups, class.group)
+				k, _ := delete_key(&groups, class.group)
 				if k != class.group do continue
 
 				fname := name
@@ -670,7 +673,6 @@ generate_specs :: proc() {
 						name,
 					)
 					for earg in class.extra_args {
-						field := reflect.struct_field_by_name(class.id, earg)
 						fmt.fprintf(file, "\textra.%v = %v\n", earg, earg)
 					}
 				}
@@ -700,7 +702,7 @@ generate_specs :: proc() {
 
 					written_one: bool
 
-					for arg, i in class.args {
+					for arg in class.args {
 						if written_one do os.write_string(file, ", ")
 						written_one = true
 						fmt.fprintf(file, "%v", arg)

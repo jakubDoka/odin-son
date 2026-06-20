@@ -3,7 +3,6 @@ package backend
 import "../vendored/gam/util/arna"
 import "base:runtime"
 import "core:fmt"
-import "core:hash"
 import "core:io"
 import "core:mem"
 import "core:reflect"
@@ -382,8 +381,8 @@ graph_interner_find :: proc(graph: ^Graph, id: Node_ID) -> (int, u8, bool) {
 		[]Intern_Vec,
 		graph.interner.hash[:len(graph.interner)],
 	) {
-		mask := simd.lanes_eq(mask, Intern_Vec(needle))
-		bits := transmute(u16)simd.extract_lsbs(mask)
+		eqs := simd.lanes_eq(mask, Intern_Vec(needle))
+		bits := transmute(u16)simd.extract_lsbs(eqs)
 		for bits != 0 {
 			idx :=
 				i * size_of(Intern_Vec) + int(simd.count_trailing_zeros(bits))
@@ -914,10 +913,6 @@ graph_add_output_node :: proc(
 	}
 }
 
-graph_is_block_start_node :: proc(graph: ^Graph, node: ^Node) -> bool {
-	return node.itype == .Entry
-}
-
 graph_extra :: proc {
 	graph_get_any_extra_node,
 	graph_get_any_extra_node_id,
@@ -1042,7 +1037,7 @@ graph_display_node :: proc(w: io.Writer, graph: ^Graph, id: Node_ID) {
 	written_one: bool
 	graph_display_extra(w, extra, "", &written_one)
 
-	for inp, i in node.inps {
+	for inp in node.inps {
 		if written_one do fmt.wprintf(w, ", ")
 		written_one = true
 		graph_display_node_gvn(w, graph, inp)
@@ -1074,7 +1069,7 @@ graph_display_node :: proc(w: io.Writer, graph: ^Graph, id: Node_ID) {
 
 	fmt.wprint(w, ") [")
 	written_one = false
-	for out, i in node.outs {
+	for out in node.outs {
 		if out.id != 0 {
 			onode := graph_expand(graph, out.id)
 			if onode.itype == .Phi {
@@ -1112,8 +1107,8 @@ graph_display_extra :: proc(
 		type_info_of(reflect.typeid_base(extra.id)).variant {
 	case runtime.Type_Info_Struct:
 		for field in reflect.struct_fields_zipped(extra.id) {
-			extra := reflect.struct_field_value(extra, field)
-			graph_display_extra(w, extra, field.name, written_one)
+			extra_field := reflect.struct_field_value(extra, field)
+			graph_display_extra(w, extra_field, field.name, written_one)
 			if .raw_union in info.flags do break
 		}
 		return

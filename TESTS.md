@@ -926,3 +926,25 @@ main :: proc() -> int {
 	return 0
 }
 ```
+
+#### structs
+```odin
+package main
+
+opt_level :: "none"
+
+Stru :: struct {
+	a: int,
+	b: StruB,
+}
+
+StruB :: struct {
+	c: int,
+	d: int,
+}
+
+main :: proc() -> int {
+	st := Stru{b = {2, 3}}
+	return st.a + st.b.c + st.b.d
+}
+```

@@ -15,7 +15,6 @@ import "core:reflect"
 import "core:strconv"
 import "core:strings"
 import "core:sync"
-import "core:sys/info"
 import "core:testing"
 import "meta"
 import "vendored/gam/util/arna"
@@ -148,9 +147,9 @@ disasm :: proc(sb: ^strings.Builder, ctx: Ctx) {
 			length := int(instr.info.length)
 
 			if is_jump(instr.info.mnemonic) {
-				offset := offset + length + int(instr.operands[0].imm.value.s)
-				if offset not_in jumps {
-					jumps[offset] = len(jumps)
+				off := offset + length + int(instr.operands[0].imm.value.s)
+				if off not_in jumps {
+					jumps[off] = len(jumps)
 				}
 			}
 
@@ -191,11 +190,11 @@ disasm :: proc(sb: ^strings.Builder, ctx: Ctx) {
 
 			text := string(cstring(&instr.text[0]))
 			if is_jump(instr.info.mnemonic) {
-				offset := offset + length + int(instr.operands[0].imm.value.s)
+				off := offset + length + int(instr.operands[0].imm.value.s)
 				text = fmt.tprintf(
 					"%v :%v",
 					zydis.MnemonicGetString(instr.info.mnemonic),
-					jumps[offset],
+					jumps[off],
 				)
 			} else if instr.info.mnemonic == .CALL {
 				for reloc in prc.out.relocs {
@@ -381,8 +380,8 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 	ctx: Ctx
 
 	for decl in f.decls {
-		if sdecl, ok := decl.derived_stmt.(^ast.Value_Decl); ok {
-			if prc, ok := sdecl.values[0].derived.(^ast.Proc_Lit); ok {
+		if sdecl, sok := decl.derived_stmt.(^ast.Value_Decl); sok {
+			if prc, pok := sdecl.values[0].derived.(^ast.Proc_Lit); pok {
 				plist := prc.type.params.list
 				rlist := prc.type.results.list
 
@@ -397,12 +396,12 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 
 					for param, i in list {
 						assert(len(param.names) <= 1)
-						name := ""
+						pname := ""
 						if len(param.names) == 1 {
-							name = meta.src_of(f, param.names[0])
+							pname = meta.src_of(f, param.names[0])
 						}
 
-						tys[i] = {name, emit_type(&ctx, param.type)}
+						tys[i] = {pname, emit_type(&ctx, param.type)}
 					}
 				}
 
@@ -450,7 +449,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		&reloc_mem,
 	)
 
-	for &prc, i in ctx.procs {
+	for &prc in ctx.procs {
 		ctx.graph = {}
 		ctx.node_spec = &backend.SPECS[.Builder]
 		ctx.mem = &graph_mem
@@ -460,7 +459,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		{
 			clear(&ctx.scope)
 
-			for par, i in prc.params {
+			for par in prc.params {
 				append(&ctx.scope, Variable{name = par.name, type = par.type})
 			}
 
@@ -563,8 +562,8 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 	DO_DIFFING :: #config(DIFF, true)
 
 	if #config(ACCEPT, false) {
-		err := os.write_entire_file(diff_path, dsb.buf[:])
-		assert(err == nil)
+		werr := os.write_entire_file(diff_path, dsb.buf[:])
+		assert(werr == nil)
 	} else if err == .Not_Exist {
 		if DO_DIFFING {
 			log.error("\n", highlight_disasm(string(dsb.buf[:])), sep = "")
@@ -902,7 +901,7 @@ typecheck :: proc(
 			inferred_ty = intern_pointer(ctx, prop.inferred_ty)
 		}
 
-		ty := typecheck(ctx, {inferred_ty = inferred_ty}, d.expr)
+		ty = typecheck(ctx, {inferred_ty = inferred_ty}, d.expr)
 		return unpack_type(ty).(Pointer)^
 	case ^ast.Expr_Stmt:
 		return typecheck(ctx, {}, d.expr)
@@ -959,8 +958,8 @@ typecheck :: proc(
 
 		assert(len(sig.params) == len(d.args))
 		for param, i in sig.params {
-			ty := typecheck(ctx, {inferred_ty = param.type}, d.args[i])
-			assert(ty == param.type)
+			pty := typecheck(ctx, {inferred_ty = param.type}, d.args[i])
+			assert(pty == param.type)
 		}
 
 		assert(len(sig.rets) == 1)
@@ -1167,9 +1166,9 @@ emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 			lhs := d.lhs[i]
 			rhs := d.rhs[i]
 			sym := ctx_lookup_lvalue(ctx, lhs)
-			value := emit_nodes(ctx, {}, rhs)
 			switch sym in sym {
 			case int:
+				value := emit_nodes(ctx, {}, rhs)
 				if d.op.kind != .Eq {
 					op, name := tok_to_binop(get_node_type(rhs), d.op.kind)
 					value = auto_cast backend.graph_add_bin_op(
@@ -1243,7 +1242,7 @@ emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 		assert(len(d.names) == len(d.values))
 		for i in 0 ..< len(d.names) {
 			name := meta.src_of(ctx.file^, d.names[i])
-			ty := get_node_type(d.values[i])
+			vty := get_node_type(d.values[i])
 			value := to_rvalue(
 				ctx,
 				emit_nodes(ctx, {}, d.values[i]),
@@ -1268,7 +1267,7 @@ emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 						value,
 					),
 				)
-				append(&ctx.scope, Variable{name, ptr, ty, d.names[i], flags})
+				append(&ctx.scope, Variable{name, ptr, vty, d.names[i], flags})
 			} else {
 				backend.graph_set_name(ctx, value, name)
 				idx := backend.graph_push_scope_value(
@@ -1276,7 +1275,7 @@ emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 					ctx.node_scope,
 					value,
 				)
-				append(&ctx.scope, Variable{name, idx, ty, d.names[i], flags})
+				append(&ctx.scope, Variable{name, idx, vty, d.names[i], flags})
 			}
 		}
 	case ^ast.Ident:
@@ -1334,7 +1333,7 @@ emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 		ctx_set_mem(ctx, backend.graph_add_mem(ctx, "cmem", call_end))
 
 		assert(len(prc.rets) == 1)
-		dt := type_to_dt(prc.rets[0].type)
+		dt = type_to_dt(prc.rets[0].type)
 		return auto_cast backend.graph_add_ret(ctx, "cret", dt, call_end, 0)
 	case ^ast.Branch_Stmt:
 		label := meta.src_of(ctx.file^, d.label)

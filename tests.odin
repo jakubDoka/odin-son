@@ -1789,3 +1789,45 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) structs :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Stru :: struct {
+	a: int,
+	b: StruB,
+}
+
+StruB :: struct {
+	c: int,
+	d: int,
+}
+
+main_ :: proc() -> int {
+	st := Stru{b = {2, 3}}
+	return st.a + st.b.c + st.b.d
+}
+
+run_test(t, `structs`, `
+package main
+
+opt_level :: "none"
+
+Stru :: struct {
+	a: int,
+	b: StruB,
+}
+
+StruB :: struct {
+	c: int,
+	d: int,
+}
+
+main :: proc() -> int {
+	st := Stru{b = {2, 3}}
+	return st.a + st.b.c + st.b.d
+}
+`, main_())
+}

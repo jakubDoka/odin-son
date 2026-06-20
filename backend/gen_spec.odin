@@ -21,94 +21,44 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 		flags = {.Is_Basic_Block_Start},
 		default_type = .Void,
 	},
-	.Poison = {
-		id = No_Extra,
-		default_type = .Void,
-		flags = {.Interned},
-		no_ctrl = true,
-	},
+	.Poison = {id = No_Extra, default_type = .Void, flags = {.Interned}},
 	// TODO: maybe its better to introduce a flag: Schedule_Early
-	.Arg = {id = Tup, args = {"entry"}, no_ctrl = true, extra_args = {"idx"}},
-	.CInt = {
-		id = CInt,
-		extra_args = {"value"},
-		no_ctrl = true,
-		flags = {.Interned},
-	},
+	.Arg = {id = Tup, args = {"entry"}, extra_args = {"idx"}},
+	.CInt = {id = CInt, extra_args = {"value"}, flags = {.Interned}},
 	.Add = {
 		id = No_Extra,
 		args = {"lhs", "rhs"},
-		no_ctrl = true,
 		flags = {.Comutes, .Interned},
 	},
-	.Sub = {
-		id = No_Extra,
-		args = {"lhs", "rhs"},
-		flags = {.Interned},
-		no_ctrl = true,
-	},
+	.Sub = {id = No_Extra, args = {"lhs", "rhs"}, flags = {.Interned}},
 	.Mul = {
 		id = No_Extra,
 		args = {"lhs", "rhs"},
-		no_ctrl = true,
 		flags = {.Comutes, .Interned},
 	},
 	.Eq = {
 		id = No_Extra,
 		args = {"lhs", "rhs"},
-		no_ctrl = true,
 		flags = {.Comutes, .Interned},
 	},
 	.Ne = {
 		id = No_Extra,
 		args = {"lhs", "rhs"},
-		no_ctrl = true,
 		flags = {.Comutes, .Interned},
 	},
-	.Le = {
-		id = No_Extra,
-		args = {"lhs", "rhs"},
-		no_ctrl = true,
-		flags = {.Interned},
-	},
-	.Mem = {
-		id = No_Extra,
-		args = {"ctrl"},
-		default_type = .Void,
-		no_ctrl = true,
-	},
-	.Local = {
-		id = Local,
-		args = {"mem"},
-		default_type = .Void,
-		no_ctrl = true,
-	},
-	.Local_Addr = {
-		id = No_Extra,
-		args = {"local"},
-		default_type = .I64,
-		no_ctrl = true,
-	},
-	.Load = {
-		id = Mem_Op,
-		args = {"ctrl", "mem", "addr"},
-		no_ctrl = true,
-		flags = {.Interned},
-	},
+	.Le = {id = No_Extra, args = {"lhs", "rhs"}, flags = {.Interned}},
+	.Mem = {id = No_Extra, args = {"ctrl"}, default_type = .Void},
+	.Local = {id = Local, args = {"mem"}, default_type = .Void},
+	.Local_Addr = {id = No_Extra, args = {"local"}, default_type = .I64},
+	.Load = {id = Mem_Op, args = {"ctrl", "mem", "addr"}, flags = {.Interned}},
 	.Store = {
 		id = Mem_Op,
 		args = {"ctrl", "mem", "addr", "value"},
-		no_ctrl = true,
 		default_type = .Void,
 		flags = {.Interned},
 	},
-	.Split = {id = No_Extra, args = {"dest"}, no_ctrl = true},
-	.Phi = {
-		id = No_Extra,
-		args = {"reg", "lhs", "rhs"},
-		no_ctrl = true,
-		flags = {.Interned},
-	},
+	.Split = {id = No_Extra, args = {"dest"}},
+	.Phi = {id = No_Extra, args = {"reg", "lhs", "rhs"}, flags = {.Interned}},
 	.If = {id = Cfg, args = {"ctrl", "cond"}, default_type = .Void},
 	.Then = {
 		id = Cfg,
@@ -149,12 +99,7 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 		flags = {.Is_Basic_Block_Start},
 		default_type = .Void,
 	},
-	.Ret = {
-		id = Tup,
-		args = {"call_end"},
-		no_ctrl = true,
-		extra_args = {"idx"},
-	},
+	.Ret = {id = Tup, args = {"call_end"}, extra_args = {"idx"}},
 	.Return = {
 		id = Cfg,
 		varargs = true,
@@ -185,7 +130,6 @@ Class_Spec :: struct {
 	varargs:        bool,
 	default_type:   Maybe(Node_Datatype),
 	flags:          Class_Flags,
-	no_ctrl:        bool,
 	extra_capacity: int,
 }
 
@@ -209,18 +153,8 @@ when (#load("node_specs.odin", string) or_else "") == "" {
 
 	@(rodata)
 	BUILDER_CLASSES := [Builder_Node_Type]Class_Spec {
-		.Scope = {
-			id = Scope,
-			args = {"cfg"},
-			default_type = .Void,
-			no_ctrl = true,
-		},
-		.Lazy_Phi = {
-			id = No_Extra,
-			args = {"reg", "lhs"},
-			no_ctrl = true,
-			extra_capacity = 1,
-		},
+		.Scope = {id = Scope, args = {"cfg"}, default_type = .Void},
+		.Lazy_Phi = {id = No_Extra, args = {"reg", "lhs"}, extra_capacity = 1},
 	}
 
 	@(rodata)
@@ -659,15 +593,6 @@ generate_specs :: proc() {
 					PRECISION,
 				)
 
-				no_ctrl := class.no_ctrl
-				auto_no_ctrl_classes := [?]typeid{Cfg}
-				for cc in auto_no_ctrl_classes {
-					no_ctrl |=
-						inherits[class.id] &
-							(1 << uint(global_inheritable[cc])) !=
-						0
-				}
-
 				name := reflect.enum_field_names(classes.enm)[i]
 				fmt.fprintf(
 					file,
@@ -728,10 +653,6 @@ generate_specs :: proc() {
 					os.write_string(file, ", {")
 
 					written_one: bool
-					if !no_ctrl {
-						os.write_string(file, "0")
-						written_one = true
-					}
 
 					for arg, i in class.args {
 						if written_one do os.write_string(file, ", ")
@@ -741,8 +662,6 @@ generate_specs :: proc() {
 					os.write_string(file, "}")
 				} else if class.varargs {
 					os.write_string(file, ", inputs")
-				} else if !no_ctrl {
-					os.write_string(file, ", {0}")
 				} else {
 					os.write_string(file, ", {}")
 				}

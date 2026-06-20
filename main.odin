@@ -300,6 +300,9 @@ init_custom_fmt :: proc() {
 			if value.reg != -1 {
 				fmt.wprintf(fi.writer, "%03i", value.reg)
 			}
+			backend.ansi_start(fi.writer, value.index)
+			fmt.wprintf(fi.writer, "%3i", value.index)
+			backend.ansi_end(fi.writer)
 			return true
 		},
 	)

@@ -93,6 +93,19 @@ reg_mask_pop_count :: proc(rm: Reg_Mask) -> (count: int) {
 	return
 }
 
+reg_mask_intersection_pop_count :: proc(
+	a: Reg_Mask,
+	b: Reg_Mask,
+) -> (
+	count: int,
+) {
+	assert(a.bit_length == b.bit_length)
+	for i in 0 ..< a.bit_length / MASK_SIZE {
+		count += intrinsics.count_ones(a.masks[i] & b.masks[i])
+	}
+	return
+}
+
 reg_mask_intersects :: proc(a, b: Reg_Mask) -> bool {
 	if a.kind != b.kind do return false
 	assert(a.bit_length == b.bit_length)
@@ -603,25 +616,133 @@ regalloc_round :: proc(
 		ifg[cursor] = slices[slice_base:slice_cursor]
 	}
 
-	when REGLOGS && false {
-		sb: strings.Builder
-		append(&sb.buf, "\n")
-		for n, i in ifg {
-			fmt.sbprintln(&sb, lrgs[i], n)
+	log_lrgs(&ctx)
+
+	coalesced := false
+	for &bb in sched.bbs {
+		if !ok do break
+
+		i := 0
+
+		#reverse for instr, i in bb.instrs {
+			inode := graph_expand(graph, instr)
+			if inode.itype != .Split do continue
+
+			input := graph_expand(graph, inode.inps[0])
+
+			ilrg := find(get_lrg(ctx, instr))
+			inlrg := find(get_lrg(ctx, inode.inps[0]))
+
+			if ilrg == inlrg do continue
+
+			iadj, inadj := ifg[ilrg.index], ifg[inlrg.index]
+
+			collision := false
+			common_count := 0
+			for a in iadj {
+				assert(a != ilrg)
+				collision |= a == inlrg
+				for b in inadj {
+					assert(b != inlrg)
+					collision |= b == ilrg
+					common_count += int(a == b)
+				}
+			}
+			if collision do continue
+			total := len(iadj) + len(inadj) - common_count
+
+			leeway := reg_mask_intersection_pop_count(ilrg.mask, inlrg.mask)
+
+			if total >= leeway do continue
+
+			coalesced = true
+
+			buf := arna.smake(ra, []^Lrg, total)
+			cursor := 0
+			// TODO: we can copy the bigger one tho
+			for side in ([][]^Lrg{iadj, inadj}) {
+				append: for l in side {
+					for e in buf[:cursor] {
+						if e == l do continue append
+					}
+					buf[cursor] = l
+					cursor += 1
+				}
+			}
+
+			assert(cursor == total)
+
+			winner := unify(ilrg, inlrg)
+			assert(winner.fails == {})
+
+			to_patch := winner == ilrg ? inadj : iadj
+			other := winner == ilrg ? inlrg : ilrg
+			for adj in to_patch {
+				assert(adj.parent == nil)
+				oadj := ifg[adj.index]
+				idx, _ := slice.linear_search(oadj, other)
+
+				for a, i in ifg[adj.index] {
+					assert(a.parent == nil || a == other)
+					for b in ifg[adj.index][i + 1:] {
+						assert(a != b)
+					}
+				}
+				if slice.contains(oadj, winner) {
+					oadj[idx] = oadj[len(oadj) - 1]
+					ifg[adj.index] = oadj[:len(oadj) - 1]
+				} else {
+					oadj[idx] = winner
+				}
+				for a, i in ifg[adj.index] {
+					assert(a.parent == nil)
+					for b in ifg[adj.index][i + 1:] {
+						assert(a != b)
+					}
+				}
+			}
+
+			winner.node = inlrg.node
+			ifg[winner.index] = buf
+
+			ordered_remove(&bb.instrs, i)
+			graph_subsume(graph, inode.inps[0], instr)
+
+			for row, j in ifg {
+				if lrgs[j].parent != nil do continue
+				for a, i in row {
+					assert(a.parent == nil && a != other)
+					for b in row[i + 1:] {
+						assert(a != b)
+					}
+				}
+			}
 		}
-		log.info(string(sb.buf[:]))
+	}
+
+	if coalesced {
+		for &l in ctx.lrg_table {
+			l = find(l)
+		}
 	}
 
 	color_order := arna.smake(ra, []bit_field u64 {
 			idx:      u32 | 32,
 			priority: u32 | 32,
 		}, len(ifg))
-	for &s, i in color_order {
-		s = {
-			idx      = u32(i),
-			priority = 10000 - color_priority(ctx, &lrgs[i], ifg[i]),
+
+	i := 0
+	for &lrg in lrgs[:used_lrgs] {
+		if !ok do break
+		if lrg.parent != nil do continue
+		color_order[i] = {
+			idx      = u32(lrg.index),
+			priority = 10000 - color_priority(ctx, &lrg, ifg[lrg.index]),
 		}
+		i += 1
 	}
+
+	color_order = color_order[:i]
 
 	sort.quick_sort(color_order)
 
@@ -1149,7 +1270,9 @@ regalloc_round :: proc(
 		cursor := l
 		for cursor.parent != nil {
 			assert(cursor.parent.rank > cursor.rank)
-			cursor, cursor.parent = cursor.parent, cursor.parent.parent
+			root := cursor.parent.parent
+			if root == nil do root = cursor.parent
+			cursor, cursor.parent = cursor.parent, root
 		}
 
 		return cursor

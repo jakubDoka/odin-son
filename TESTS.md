@@ -93,6 +93,40 @@ main :: proc() -> int {
 }
 ```
 
+#### all signed integer operators
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	a := 20
+	b := 0 - 6
+	c := 0 - 7
+
+	r := 0
+
+	// signed division/remainder
+	r += a / b      // -3
+	r += a % b      // 2
+	r += c / b      // 1
+	r += c % b      // -1
+
+	// arithmetic right shift
+	r += c >> 1     // -4
+	r += b >> 1     // -3
+
+	// signed comparisons
+	if b < a  do r += 1
+	if c < b  do r += 2
+	if a > b  do r += 4
+	if b <= c do r += 8
+	if a >= b do r += 16
+
+	return r
+}
+```
+
 #### simple 2 adress self conflict
 ```odin
 package main

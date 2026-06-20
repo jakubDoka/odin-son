@@ -147,6 +147,7 @@ reg_mask_of :: proc(
 	re: ^Regalloc,
 	id: Node_ID,
 	#any_int idx: int,
+	readonly := false,
 ) -> Reg_Mask {
 	node := graph_get(graph, id)
 	masks := re.reg_masks[node.rtype]
@@ -154,7 +155,7 @@ reg_mask_of :: proc(
 	if idx < len(masks) {
 		id := masks[idx][reg_kind]
 		if id != 0 {
-			if idx != 0 {
+			if idx != 0 || readonly {
 				return {
 					re.interned_reg_masks[id],
 					{
@@ -762,22 +763,25 @@ regalloc_round :: proc(
 		}
 
 		if lrg.reg_conflict {
+
 			for m in members {
+				dmask := reg_mask_of(graph, ra, m, 0, readonly = true)
+				split := m
 				for out in graph_outs(graph, m) {
 					onode := graph_expand(graph, out.id)
-					if get_lrg(ctx, out.id) == &lrg do continue
-					mask := reg_mask_of(
+
+					omask := reg_mask_of(
 						graph,
 						ra,
 						out.id,
 						out.idx + 1 - onode.data_start,
 					)
-					// TODO: this is not sufficient but for now it works, later
-					// we should instead idscover disjoint masks and split them
-					if reg_mask_pop_count(mask) == 1 {
-						split := split_before(ctx, out.id, out.idx, "rco")
-						graph_set_input(graph, out.id, out.idx, split)
+
+					if split == m {
+						split = split_after(ctx, "rcd", m)
 					}
+
+					graph_set_input(graph, out.id, out.idx, split)
 				}
 			}
 

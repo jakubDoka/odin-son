@@ -21,7 +21,7 @@ right now we only care about the `int` variant of the instructions.
 If you are uncertain about something, please ask questions. Otherwise just
 execute the steps.
 
-### add missing unsigned integer ops
+### add missing unsigned integer ops (DONE)
 
 The datatype of a node does not express signedness, to fix this we should add a
 `U_x` variants of ops that differ when unsigned. Otherwise the steps are the same.

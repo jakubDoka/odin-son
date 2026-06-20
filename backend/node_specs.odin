@@ -601,39 +601,46 @@ SPECS := [Node_Spec_Name]Node_Spec{
 	},
 }
 
+Bin_Op :: enum u16 {
+	Add = u16(Ideal_Node_Type.Add),
+	Mul = u16(Ideal_Node_Type.Mul),
+	Sub = u16(Ideal_Node_Type.Sub),
+	Ne = u16(Ideal_Node_Type.Ne),
+	Eq = u16(Ideal_Node_Type.Eq),
+	Le = u16(Ideal_Node_Type.Le),
+}
 Builder_Node_Type :: enum u16 {
-
-Start,
-Entry,
-Poison,
-Arg,
-CInt,
-Add,
-Sub,
-Mul,
-Eq,
-Ne,
-Le,
-Split,
-Phi,
-Mem,
-Local,
-Local_Addr,
-Store,
-Load,
-If,
-Then,
-Else,
-Jump,
-Region,
-Loop,
-Always,
-Call,
-Call_End,
-Ret,
-Return,
-Scope,
-Lazy_Phi,
+	Start,
+	Entry,
+	Poison,
+	Arg,
+	CInt,
+	Add,
+	Sub,
+	Mul,
+	Eq,
+	Ne,
+	Le,
+	Split,
+	Phi,
+	Mem,
+	Local,
+	Local_Addr,
+	Store,
+	Load,
+	If,
+	Then,
+	Else,
+	Jump,
+	Region,
+	Loop,
+	Always,
+	Call,
+	Call_End,
+	Ret,
+	Return,
+	Scope,
+	Lazy_Phi,
 }
 #assert(size_of(Cfg) % 4 == 0)
 graph_add_start :: #force_inline proc(graph: ^Graph, name: string) -> (id: Node_ID) {
@@ -658,42 +665,22 @@ graph_add_arg :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Dataty
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Arg), dt, {entry})
 }
 #assert(size_of(CInt) % 4 == 0)
-graph_add_cint :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype, value: i64) -> (id: Node_ID) {
+graph_add_c_int :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype, value: i64) -> (id: Node_ID) {
 	push_node_name(graph, name)
 	extra := (^CInt)(graph_get_next_extra_slot(graph, u16(Ideal_Node_Type.CInt)))
 	extra.value = value
 	return graph_add_raw(graph, u16(Ideal_Node_Type.CInt), dt, {})
 }
 #assert(size_of(No_Extra) % 4 == 0)
-graph_add_add :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype, lhs: Node_ID, rhs: Node_ID) -> (id: Node_ID) {
+graph_add_bin_op :: #force_inline proc(graph: ^Graph, name: string, type: Bin_Op, dt: Node_Datatype, lhs: Node_ID, rhs: Node_ID) -> (id: Node_ID) {
 	push_node_name(graph, name)
-	return graph_add_raw(graph, u16(Ideal_Node_Type.Add), dt, {lhs, rhs})
+	return graph_add_raw(graph, u16(type), dt, {lhs, rhs})
 }
 #assert(size_of(No_Extra) % 4 == 0)
-graph_add_sub :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype, lhs: Node_ID, rhs: Node_ID) -> (id: Node_ID) {
-	push_node_name(graph, name)
-	return graph_add_raw(graph, u16(Ideal_Node_Type.Sub), dt, {lhs, rhs})
-}
 #assert(size_of(No_Extra) % 4 == 0)
-graph_add_mul :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype, lhs: Node_ID, rhs: Node_ID) -> (id: Node_ID) {
-	push_node_name(graph, name)
-	return graph_add_raw(graph, u16(Ideal_Node_Type.Mul), dt, {lhs, rhs})
-}
 #assert(size_of(No_Extra) % 4 == 0)
-graph_add_eq :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype, lhs: Node_ID, rhs: Node_ID) -> (id: Node_ID) {
-	push_node_name(graph, name)
-	return graph_add_raw(graph, u16(Ideal_Node_Type.Eq), dt, {lhs, rhs})
-}
 #assert(size_of(No_Extra) % 4 == 0)
-graph_add_ne :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype, lhs: Node_ID, rhs: Node_ID) -> (id: Node_ID) {
-	push_node_name(graph, name)
-	return graph_add_raw(graph, u16(Ideal_Node_Type.Ne), dt, {lhs, rhs})
-}
 #assert(size_of(No_Extra) % 4 == 0)
-graph_add_le :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype, lhs: Node_ID, rhs: Node_ID) -> (id: Node_ID) {
-	push_node_name(graph, name)
-	return graph_add_raw(graph, u16(Ideal_Node_Type.Le), dt, {lhs, rhs})
-}
 #assert(size_of(No_Extra) % 4 == 0)
 graph_add_split :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype, dest: Node_ID) -> (id: Node_ID) {
 	push_node_name(graph, name)
@@ -715,7 +702,7 @@ graph_add_local :: #force_inline proc(graph: ^Graph, name: string, mem: Node_ID)
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Local), .Void, {mem})
 }
 #assert(size_of(No_Extra) % 4 == 0)
-graph_add_localAddr :: #force_inline proc(graph: ^Graph, name: string, local: Node_ID) -> (id: Node_ID) {
+graph_add_local_addr :: #force_inline proc(graph: ^Graph, name: string, local: Node_ID) -> (id: Node_ID) {
 	push_node_name(graph, name)
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Local_Addr), .I64, {local})
 }
@@ -772,7 +759,7 @@ graph_add_call :: #force_inline proc(graph: ^Graph, name: string, inputs: []Node
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Call), .Void, inputs)
 }
 #assert(size_of(Cfg) % 4 == 0)
-graph_add_callEnd :: #force_inline proc(graph: ^Graph, name: string, call: Node_ID) -> (id: Node_ID) {
+graph_add_call_end :: #force_inline proc(graph: ^Graph, name: string, call: Node_ID) -> (id: Node_ID) {
 	push_node_name(graph, name)
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Call_End), .Void, {call})
 }
@@ -794,41 +781,40 @@ graph_add_scope :: #force_inline proc(graph: ^Graph, name: string, cfg: Node_ID)
 	return graph_add_raw(graph, u16(Builder_Node_Type.Scope), .Void, {cfg})
 }
 #assert(size_of(No_Extra) % 4 == 0)
-graph_add_lazyPhi :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype, reg: Node_ID, lhs: Node_ID) -> (id: Node_ID) {
+graph_add_lazy_phi :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype, reg: Node_ID, lhs: Node_ID) -> (id: Node_ID) {
 	push_node_name(graph, name)
 	return graph_add_raw(graph, u16(Builder_Node_Type.Lazy_Phi), dt, {reg, lhs}, extra_capacity = 1)
 }
 X64_Node_Type :: enum u16 {
-
-Start,
-Entry,
-Poison,
-Arg,
-CInt,
-Add,
-Sub,
-Mul,
-Eq,
-Ne,
-Le,
-Split,
-Phi,
-Mem,
-Local,
-Local_Addr,
-Store,
-Load,
-If,
-Then,
-Else,
-Jump,
-Region,
-Loop,
-Always,
-Call,
-Call_End,
-Ret,
-Return,
+	Start,
+	Entry,
+	Poison,
+	Arg,
+	CInt,
+	Add,
+	Sub,
+	Mul,
+	Eq,
+	Ne,
+	Le,
+	Split,
+	Phi,
+	Mem,
+	Local,
+	Local_Addr,
+	Store,
+	Load,
+	If,
+	Then,
+	Else,
+	Jump,
+	Region,
+	Loop,
+	Always,
+	Call,
+	Call_End,
+	Ret,
+	Return,
 }
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {

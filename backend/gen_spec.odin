@@ -25,12 +25,28 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 	// TODO: maybe its better to introduce a flag: Schedule_Early
 	.Arg = {id = Tup, args = {"entry"}, extra_args = {"idx"}},
 	.CInt = {id = CInt, extra_args = {"value"}, flags = {.Interned}},
-	.Add = {args = {"lhs", "rhs"}, flags = {.Comutes, .Interned}},
-	.Sub = {args = {"lhs", "rhs"}, flags = {.Interned}},
-	.Mul = {args = {"lhs", "rhs"}, flags = {.Comutes, .Interned}},
-	.Eq = {args = {"lhs", "rhs"}, flags = {.Comutes, .Interned}},
-	.Ne = {args = {"lhs", "rhs"}, flags = {.Comutes, .Interned}},
-	.Le = {args = {"lhs", "rhs"}, flags = {.Interned}},
+	.Add = {
+		args = {"lhs", "rhs"},
+		group = "Bin_Op",
+		flags = {.Comutes, .Interned},
+	},
+	.Sub = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
+	.Mul = {
+		args = {"lhs", "rhs"},
+		group = "Bin_Op",
+		flags = {.Comutes, .Interned},
+	},
+	.Eq = {
+		args = {"lhs", "rhs"},
+		group = "Bin_Op",
+		flags = {.Comutes, .Interned},
+	},
+	.Ne = {
+		args = {"lhs", "rhs"},
+		group = "Bin_Op",
+		flags = {.Comutes, .Interned},
+	},
+	.Le = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
 	.Mem = {args = {"ctrl"}, default_type = .Void},
 	.Local = {id = Local, args = {"mem"}, default_type = .Void},
 	.Local_Addr = {args = {"local"}, default_type = .I64},
@@ -111,6 +127,7 @@ Class_Spec :: struct {
 	id:             typeid,
 	args:           []string,
 	extra_args:     []string,
+	group:          string,
 	varargs:        bool,
 	default_type:   Maybe(Node_Datatype),
 	flags:          Class_Flags,
@@ -153,13 +170,6 @@ when (#load("node_specs.odin", string) or_else "") == "" {
 		src: Node_ID,
 	) -> Node_ID {return 0}
 
-	graph_add_region :: proc(
-		graph: ^Graph,
-		name: string,
-		lctrl: Node_ID,
-		rctrl: Node_ID,
-	) -> Node_ID {return 0}
-
 	graph_add_phi :: proc(
 		graph: ^Graph,
 		name: string,
@@ -169,26 +179,7 @@ when (#load("node_specs.odin", string) or_else "") == "" {
 		rhs: Node_ID,
 	) -> Node_ID {return 0}
 
-	graph_add_jump :: proc(
-		graph: ^Graph,
-		name: string,
-		ctrl: Node_ID,
-	) -> Node_ID {return 0}
-
-	graph_add_loop :: proc(
-		graph: ^Graph,
-		name: string,
-		ctrl: Node_ID,
-	) -> Node_ID {return 0}
-
-	graph_add_if :: proc(
-		graph: ^Graph,
-		name: string,
-		ctrl: Node_ID,
-		cond: Node_ID,
-	) -> Node_ID {return 0}
-
-	graph_add_lazyPhi :: proc(
+	graph_add_lazy_phi :: proc(
 		graph: ^Graph,
 		name: string,
 		dt: Node_Datatype,
@@ -202,23 +193,23 @@ when (#load("node_specs.odin", string) or_else "") == "" {
 		inputs: []Node_ID,
 	) -> Node_ID {return 0}
 
-	graph_add_always :: proc(
+	graph_add_region :: proc(
 		graph: ^Graph,
 		name: string,
-		ctrl: Node_ID,
+		lctrl: Node_ID,
+		rctrl: Node_ID,
 	) -> Node_ID {return 0}
+	graph_add_if :: graph_add_region
 
-	graph_add_then :: proc(
+	graph_add_jump :: proc(
 		graph: ^Graph,
 		name: string,
 		ctrl: Node_ID,
 	) -> Node_ID {return 0}
-
-	graph_add_else :: proc(
-		graph: ^Graph,
-		name: string,
-		ctrl: Node_ID,
-	) -> Node_ID {return 0}
+	graph_add_loop :: graph_add_jump
+	graph_add_always :: graph_add_jump
+	graph_add_then :: graph_add_jump
+	graph_add_else :: graph_add_jump
 
 	graph_add_poison :: proc(graph: ^Graph, name: string) -> Node_ID {return 0}
 
@@ -295,11 +286,22 @@ generate_specs :: proc() {
 	os.write_string(file, "\n\n")
 	os.write_string(file, "when !GEN_SPEC {\n")
 
+	Group_Member :: struct {
+		class_group: int,
+		class:       int,
+	}
+
+	Group :: struct {
+		spec:    ^Codegen_Spec,
+		members: map[Group_Member]struct{},
+	}
+
 	global_inheritable: map[typeid]int
 	inherits: map[typeid]Inherit_Table_Elem
+	groups: map[string]Group
 
 	os.write_string(file, "SPECS := [Node_Spec_Name]Node_Spec{\n")
-	for spec in specs {
+	for &spec in specs {
 		fmt.fprintf(file, "\t.%v = {{\n", spec.name)
 
 		reg_mask_lengths: [Reg_Kind]int
@@ -317,11 +319,17 @@ generate_specs :: proc() {
 			return mem.slice_data_cast([]int, transmute([]u8)masks)
 		}
 
-		for classes in spec.classes {
+		for classes, j in spec.classes {
 			for class, i in classes.ids {
 				if class.id not_in inheritable {
 					assert(len(inheritable) < size_of(Inherit_Table_Elem) * 8)
 					inheritable[class.id] = len(inheritable)
+				}
+				if class.group != "" {
+					g := groups[class.group]
+					g.spec = &spec
+					g.members[Group_Member{j, i}] = {}
+					groups[class.group] = g
 				}
 			}
 
@@ -566,12 +574,28 @@ generate_specs :: proc() {
 
 	seen: map[Seen_Key]struct{}
 
+	for name, group in groups {
+		fmt.fprintfln(file, "%v :: enum u16 {{", name)
+		for member in group.members {
+			classes := group.spec.classes[member.class_group]
+			class := reflect.enum_fields_zipped(classes.enm)[member.class]
+			fmt.fprintfln(
+				file,
+				"\t%v = u16(%v.%v),",
+				class.name,
+				classes.enm,
+				class.name,
+			)
+		}
+		os.write_string(file, "}\n")
+	}
+
 	for spec in specs {
 		prefix := reflect.enum_name_from_value(spec.name) or_else panic("")
-		fmt.fprintfln(file, "%v_Node_Type :: enum u16 {{\n", prefix)
+		fmt.fprintfln(file, "%v_Node_Type :: enum u16 {{", prefix)
 		for classes in spec.classes {
 			for field in reflect.enum_fields_zipped(classes.enm) {
-				fmt.fprintfln(file, "%v,", field.name)
+				fmt.fprintfln(file, "\t%v,", field.name)
 			}
 		}
 		os.write_string(file, "}\n")
@@ -589,11 +613,22 @@ generate_specs :: proc() {
 				)
 
 				name := reflect.enum_field_names(classes.enm)[i]
+
+				k, v := delete_key(&groups, class.group)
+				if k != class.group do continue
+
+				fname := name
+				if k != "" do fname = k
+
 				fmt.fprintf(
 					file,
 					"graph_add_%v :: #force_inline proc(graph: ^Graph, name: string",
-					strings.to_camel_case(name),
+					strings.to_snake_case(fname),
 				)
+
+				if k != "" {
+					fmt.fprintf(file, ", type: %v", k)
+				}
 
 				if class.default_type == nil {
 					os.write_string(file, ", dt: Node_Datatype")
@@ -631,12 +666,19 @@ generate_specs :: proc() {
 					}
 				}
 
-				fmt.fprintf(
-					file,
-					"\treturn graph_add_raw(graph," + " u16(%v.%v), ",
-					classes.enm,
-					name,
-				)
+				if k == "" {
+					fmt.fprintf(
+						file,
+						"\treturn graph_add_raw(graph, u16(%v.%v), ",
+						classes.enm,
+						name,
+					)
+				} else {
+					os.write_string(
+						file,
+						"\treturn graph_add_raw(graph, u16(type), ",
+					)
+				}
 
 				if ty, ok := class.default_type.?; ok {
 					fmt.fprintf(file, ".%s", ty)

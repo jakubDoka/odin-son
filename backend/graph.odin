@@ -505,7 +505,7 @@ graph_get_scope_value :: proc(
 		if (cvnode.btype != .Lazy_Phi || vnode.inps[0] != cvnode.inps[0]) &&
 		   !loop_scope.done {
 			assert(graph_get(graph, vnode.inps[0]).itype == .Loop)
-			val = graph_add_lazyPhi(
+			val = graph_add_lazy_phi(
 				graph,
 				"lphi",
 				graph_get(graph, val).dt,

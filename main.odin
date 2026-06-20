@@ -9,6 +9,7 @@ import "core:log"
 import "core:mem/virtual"
 import "core:odin/ast"
 import "core:odin/parser"
+import "core:odin/tokenizer"
 import "core:os"
 import "core:reflect"
 import "core:strconv"
@@ -948,6 +949,69 @@ to_rvalue_expr :: proc(
 	return to_rvalue(ctx, value, get_node_type(node))
 }
 
+tok_to_binop :: proc(
+	node: ^ast.Node,
+	tok: tokenizer.Token_Kind,
+) -> (
+	kind: backend.Bin_Op,
+	name: string,
+) {
+	#partial switch tok {
+	case .Add:
+		kind, name = .Add, "add"
+	case .Add_Eq:
+		kind, name = .Add, "adde"
+	case .Sub:
+		kind, name = .Sub, "sub"
+	case .Sub_Eq:
+		kind, name = .Sub, "sube"
+	case .Mul:
+		kind, name = .Mul, "mul"
+	case .Mul_Eq:
+		kind, name = .Mul, "mule"
+	case .Cmp_Eq:
+		kind, name = .Eq, "eq"
+	case .Not_Eq:
+		kind, name = .Ne, "ne"
+	case .Lt_Eq:
+		kind, name = .Le, "le"
+	case:
+		fmt.panicf("TODO: %#v", node.derived)
+	}
+	return
+}
+
+Sym :: union #no_nil {
+	Value,
+	int,
+}
+
+ctx_lookup_lvalue :: proc(ctx: ^Ctx, expr: ^ast.Node) -> Sym {
+	if id, ok := expr.derived.(^ast.Ident); ok {
+		#reverse for var in ctx.scope {
+			if var.name == id.name {
+				switch idx in var.idx {
+				case int:
+					return idx
+				case backend.Node_ID:
+					return Value{id = idx, is_lvalue = true}
+				}
+			}
+		}
+
+		switch id.name {
+		case "false":
+			return Value(backend.graph_add_c_int(ctx, "false", .I64, 0))
+		case "true":
+			return Value(backend.graph_add_c_int(ctx, "true", .I64, 1))
+		}
+
+		fmt.panicf("TODO: undefined variable: %v %#v", id.name, expr)
+	} else {
+		return emit_nodes(ctx, {}, expr)
+	}
+}
+
 emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 	if node == nil do return {}
 
@@ -979,56 +1043,31 @@ emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 		for i in 0 ..< len(d.lhs) {
 			lhs := d.lhs[i]
 			rhs := d.rhs[i]
-			if id, ok := lhs.derived.(^ast.Ident); ok {
-				value := emit_nodes(ctx, {}, rhs)
-				for var in ctx.scope {
-					if var.name == id.name {
-						switch idx in var.idx {
-						case int:
-							#partial switch d.op.kind {
-							case .Eq:
-							case .Add_Eq:
-								value = auto_cast backend.graph_add_add(
-									ctx,
-									"adde",
-									.I64,
-									backend.graph_get_scope_value(
-										ctx,
-										ctx.node_scope,
-										idx,
-									),
-									to_rvalue(ctx, value, ty),
-								)
-							case .Sub_Eq:
-								value = auto_cast backend.graph_add_sub(
-									ctx,
-									"sube",
-									.I64,
-									backend.graph_get_scope_value(
-										ctx,
-										ctx.node_scope,
-										idx,
-									),
-									to_rvalue(ctx, value, ty),
-								)
-							case:
-								fmt.panicf("TODO: %#v", node.derived)
-							}
-
-							backend.graph_set_input(
-								ctx,
-								ctx.node_scope,
-								idx,
-								value.id,
-							)
-						case backend.Node_ID:
-							fmt.panicf("TODO: stack variable assignemnt")
-						}
-						return {}
-					}
+			sym := ctx_lookup_lvalue(ctx, lhs)
+			value := emit_nodes(ctx, {}, rhs)
+			switch sym in sym {
+			case int:
+				if d.op.kind != .Eq {
+					op, name := tok_to_binop(node, d.op.kind)
+					value = auto_cast backend.graph_add_bin_op(
+						ctx,
+						name,
+						op,
+						.I64,
+						backend.graph_get_scope_value(
+							ctx,
+							ctx.node_scope,
+							sym,
+						),
+						to_rvalue(ctx, value, ty),
+					)
+				} else {
+					assert(!value.is_lvalue)
 				}
-				fmt.panicf("TODO: variable not found: %v", lhs)
-			} else {
+
+				backend.graph_set_input(ctx, ctx.node_scope, sym, value.id)
+			case Value:
+				assert(d.op.kind == .Eq)
 				dest := emit_nodes(ctx, {}, lhs)
 				assert(dest.is_lvalue)
 				value := emit_nodes(ctx, {}, rhs)
@@ -1048,22 +1087,9 @@ emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 	case ^ast.Binary_Expr:
 		lhsv, rhsv := emit_nodes(ctx, {}, d.left), emit_nodes(ctx, {}, d.right)
 		lhs, rhs := to_rvalue(ctx, lhsv, d.left), to_rvalue(ctx, rhsv, d.right)
-		#partial switch d.op.kind {
-		case .Add:
-			return auto_cast backend.graph_add_add(ctx, "add", .I64, lhs, rhs)
-		case .Sub:
-			return auto_cast backend.graph_add_sub(ctx, "sub", .I64, lhs, rhs)
-		case .Mul:
-			return auto_cast backend.graph_add_mul(ctx, "mul", .I64, lhs, rhs)
-		case .Cmp_Eq:
-			return auto_cast backend.graph_add_eq(ctx, "eq", .I64, lhs, rhs)
-		case .Not_Eq:
-			return auto_cast backend.graph_add_ne(ctx, "ne", .I64, lhs, rhs)
-		case .Lt_Eq:
-			return auto_cast backend.graph_add_le(ctx, "le", .I64, lhs, rhs)
-		case:
-			fmt.panicf("TODO: %#v", node.derived)
-		}
+		kind, name := tok_to_binop(node, d.op.kind)
+		nd := backend.graph_add_bin_op(ctx, name, kind, .I64, lhs, rhs)
+		return auto_cast nd
 	case ^ast.Unary_Expr:
 		node := emit_nodes(ctx, {}, d.expr)
 		assert(node.is_lvalue)
@@ -1086,7 +1112,7 @@ emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 		case .Integer:
 			value, ok := strconv.parse_i64(d.tok.text)
 			assert(ok)
-			return auto_cast backend.graph_add_cint(ctx, "cnst", .I64, value)
+			return auto_cast backend.graph_add_c_int(ctx, "cnst", .I64, value)
 		case:
 			fmt.panicf("TODO: %#v", node.derived)
 		}
@@ -1105,7 +1131,7 @@ emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 			// TODO: extract common stuff
 			if .Referenced in flags {
 				alloca := backend.graph_add_local(ctx, name, ctx.root_mem)
-				ptr := backend.graph_add_localAddr(ctx, name, alloca)
+				ptr := backend.graph_add_local_addr(ctx, name, alloca)
 				backend.graph_add_output(ctx, ptr, 0, 0)
 				ctx_set_mem(
 					ctx,
@@ -1130,32 +1156,15 @@ emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 			}
 		}
 	case ^ast.Ident:
-		name := d.name
-
-		for var in ctx.scope {
-			if var.name == name {
-				switch idx in var.idx {
-				case int:
-					val := backend.graph_get_scope_value(
-						ctx,
-						ctx.node_scope,
-						idx,
-					)
-					assert(backend.graph_get(ctx, val).btype != .Scope)
-					return auto_cast val
-				case backend.Node_ID:
-					return {id = idx, is_lvalue = true}
-				}
-
-			}
+		sym := ctx_lookup_lvalue(ctx, d)
+		switch sym in sym {
+		case int:
+			val := backend.graph_get_scope_value(ctx, ctx.node_scope, sym)
+			assert(backend.graph_get(ctx, val).btype != .Scope)
+			return Value(val)
+		case Value:
+			return sym
 		}
-
-		switch name {
-		case "false":
-			return auto_cast backend.graph_add_cint(ctx, "false", .I64, 0)
-		}
-
-		fmt.panicf("TODO: undefined variable: %v %#v", name, d)
 	case ^ast.Paren_Expr:
 		return emit_nodes(ctx, prop, d.expr)
 	case ^ast.If_Stmt:
@@ -1185,17 +1194,8 @@ emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 	case ^ast.Call_Expr:
 		args := make([]backend.Node_ID, 2 + len(d.args))
 
-		name := meta.src_of(ctx.file^, d.expr)
-
-		prc: ^Proc
-		idx: u32
-		for &p, i in ctx.procs {
-			if p.name == name {
-				prc = &p
-				idx = u32(i)
-			}
-		}
-		assert(prc != nil)
+		idx := u32(unpack_type(get_node_type(d.expr)).(^Lit).(Proc_ID))
+		prc := &ctx.procs[idx]
 
 		for arg, i in d.args {
 			args[2 + i] = to_rvalue(ctx, emit_nodes(ctx, {}, arg), arg)
@@ -1204,7 +1204,7 @@ emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 		args[1] = ctx_mem(ctx)
 
 		call := backend.graph_add_call(ctx, "call", args, idx)
-		call_end := backend.graph_add_callEnd(ctx, "calle", call)
+		call_end := backend.graph_add_call_end(ctx, "calle", call)
 
 		backend.graph_set_input(ctx, ctx.node_scope, 0, call_end)
 		ctx_set_mem(ctx, backend.graph_add_mem(ctx, "cmem", call_end))

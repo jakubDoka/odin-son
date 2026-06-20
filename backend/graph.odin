@@ -75,6 +75,9 @@ Ideal_Node_Type :: enum u16 {
 	Local_Addr,
 	Store,
 	Load,
+	// like Load, but sign extends the loaded value into the full register
+	// since we always do arithmetic in the biggest register size
+	Load_S,
 	If,
 	Then,
 	Else,

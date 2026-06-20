@@ -43,6 +43,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{.General = 0}, // Local_Addr
 			{.General = 0}, // Store
 			{.General = 0}, // Load
+			{.General = 0}, // Load_S
 			{.General = 0}, // If
 			{.General = 0}, // Then
 			{.General = 0}, // Else
@@ -97,6 +98,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{}, // Local_Addr
 			{}, // Store
 			{}, // Load
+			{}, // Load_S
 			{}, // If
 			{}, // Then
 			{}, // Else
@@ -148,6 +150,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			-1, //Local_Addr
 			-1, //Store
 			-1, //Load
+			-1, //Load_S
 			-1, //If
 			-1, //Then
 			-1, //Else
@@ -199,6 +202,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, //Local_Addr
 			0, //Store
 			0, //Load
+			0, //Load_S
 			0, //If
 			0, //Then
 			0, //Else
@@ -250,6 +254,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0b10, // Local_Addr
 			0b100000, // Store
 			0b100000, // Load
+			0b100000, // Load_S
 			0b1, // If
 			0b1, // Then
 			0b1, // Else
@@ -301,6 +306,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, // Local_Addr -> No_Extra
 			0, // Store -> Mem_Op
 			0, // Load -> Mem_Op
+			0, // Load_S -> Mem_Op
 			1, // If -> Cfg
 			1, // Then -> Cfg
 			1, // Else -> Cfg
@@ -352,6 +358,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{}, // Local_Addr
 			{Class_Flag.Interned}, // Store
 			{Class_Flag.Interned}, // Load
+			{Class_Flag.Interned}, // Load_S
 			{}, // If
 			{Class_Flag.Is_Basic_Block_Start}, // Then
 			{Class_Flag.Is_Basic_Block_Start}, // Else
@@ -401,6 +408,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			No_Extra,
 			Local,
 			No_Extra,
+			Mem_Op,
 			Mem_Op,
 			Mem_Op,
 			Cfg,
@@ -454,6 +462,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			`Local_Addr`,
 			`Store`,
 			`Load`,
+			`Load_S`,
 			`If`,
 			`Then`,
 			`Else`,
@@ -509,6 +518,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{.General = 0}, // Local_Addr
 			{.General = 0}, // Store
 			{.General = 0}, // Load
+			{.General = 0}, // Load_S
 			{.General = 0}, // If
 			{.General = 0}, // Then
 			{.General = 0}, // Else
@@ -568,6 +578,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{{.General = 1}}, // Local_Addr
 			{{.General = 7}, {.General = 1}, {.General = 1}}, // Store
 			{{.General = 1}, {.General = 1}}, // Load
+			{{.General = 1}, {.General = 1}}, // Load_S
 			{{.General = 7}, {.General = 1}}, // If
 			{}, // Then
 			{}, // Else
@@ -617,6 +628,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			-1, //Local_Addr
 			-1, //Store
 			-1, //Load
+			-1, //Load_S
 			-1, //If
 			-1, //Then
 			-1, //Else
@@ -668,6 +680,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			1, //Local_Addr
 			2, //Store
 			2, //Load
+			2, //Load_S
 			1, //If
 			0, //Then
 			0, //Else
@@ -717,6 +730,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0b10, // Local_Addr
 			0b100000, // Store
 			0b100000, // Load
+			0b100000, // Load_S
 			0b1, // If
 			0b1, // Then
 			0b1, // Else
@@ -766,6 +780,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, // Local_Addr -> No_Extra
 			0, // Store -> Mem_Op
 			0, // Load -> Mem_Op
+			0, // Load_S -> Mem_Op
 			1, // If -> Cfg
 			1, // Then -> Cfg
 			1, // Else -> Cfg
@@ -815,6 +830,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{}, // Local_Addr
 			{Class_Flag.Interned}, // Store
 			{Class_Flag.Interned}, // Load
+			{Class_Flag.Interned}, // Load_S
 			{}, // If
 			{Class_Flag.Is_Basic_Block_Start}, // Then
 			{Class_Flag.Is_Basic_Block_Start}, // Else
@@ -862,6 +878,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			No_Extra,
 			Local,
 			No_Extra,
+			Mem_Op,
 			Mem_Op,
 			Mem_Op,
 			Cfg,
@@ -913,6 +930,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			`Local_Addr`,
 			`Store`,
 			`Load`,
+			`Load_S`,
 			`If`,
 			`Then`,
 			`Else`,
@@ -991,6 +1009,7 @@ Builder_Node_Type :: enum u16 {
 	Local_Addr,
 	Store,
 	Load,
+	Load_S,
 	If,
 	Then,
 	Else,
@@ -1096,6 +1115,11 @@ graph_add_store :: #force_inline proc(graph: ^Graph, name: string, ctrl: Node_ID
 graph_add_load :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype, ctrl: Node_ID, mem: Node_ID, addr: Node_ID) -> (id: Node_ID) {
 	push_node_name(graph, name)
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Load), dt, {ctrl, mem, addr})
+}
+#assert(size_of(Mem_Op) % 4 == 0)
+graph_add_load_s :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype, ctrl: Node_ID, mem: Node_ID, addr: Node_ID) -> (id: Node_ID) {
+	push_node_name(graph, name)
+	return graph_add_raw(graph, u16(Ideal_Node_Type.Load_S), dt, {ctrl, mem, addr})
 }
 #assert(size_of(Cfg) % 4 == 0)
 graph_add_if :: #force_inline proc(graph: ^Graph, name: string, ctrl: Node_ID, cond: Node_ID) -> (id: Node_ID) {
@@ -1203,6 +1227,7 @@ X64_Node_Type :: enum u16 {
 	Local_Addr,
 	Store,
 	Load,
+	Load_S,
 	If,
 	Then,
 	Else,

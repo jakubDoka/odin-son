@@ -151,6 +151,10 @@ X64_IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec {
 		input_start_idx = 2,
 		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK}},
 	},
+	.Load_S = {
+		input_start_idx = 2,
+		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK}},
+	},
 	.Store = {
 		input_start_idx = 2,
 		reg_masks = #partial{.General = {{}, GPA_MASK, GPA_MASK}},
@@ -396,6 +400,26 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		case .I16:
 			emit(ctx.code, {rx, 0x0f, 0xb7})
 		case .I32, .I64:
+			emit(ctx.code, {rx, 0x8b})
+		}
+
+		emit_indirect_addr(ctx.code, val, bse, NO_INDEX, 1, 0)
+	case .Load_S:
+		dt := node.dt
+		bse := reg_of(ctx, node.inps[2])
+		val := reg_of(ctx, instr)
+
+		// always sign extend into the full 64 bit register
+		rx := rex(val, bse, NO_INDEX, true)
+		switch dt {
+		case .Void:
+		case .I8:
+			emit(ctx.code, {rx, 0x0f, 0xbe})
+		case .I16:
+			emit(ctx.code, {rx, 0x0f, 0xbf})
+		case .I32:
+			emit(ctx.code, {rx, 0x63})
+		case .I64:
 			emit(ctx.code, {rx, 0x8b})
 		}
 

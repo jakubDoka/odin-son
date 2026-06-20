@@ -59,6 +59,7 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 	.Local = {id = Local, args = {"mem"}, default_type = .Void},
 	.Local_Addr = {args = {"local"}, default_type = .I64},
 	.Load = {id = Mem_Op, args = {"ctrl", "mem", "addr"}, flags = {.Interned}},
+	.Load_S = {id = Mem_Op, args = {"ctrl", "mem", "addr"}, flags = {.Interned}},
 	.Store = {
 		id = Mem_Op,
 		args = {"ctrl", "mem", "addr", "value"},

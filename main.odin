@@ -655,19 +655,8 @@ type_to_dt :: proc(ty: Type) -> backend.Node_Datatype {
 }
 
 UNSIGNED_TYPES :: bit_set[Type]{.Uint, .U64, .U32, .U16, .U8, .Bool}
-INTEGER_TYPES :: bit_set[Type] {
-	.Uint,
-	.Int,
-	.I64,
-	.I32,
-	.I16,
-	.I8,
-	.Uint,
-	.U64,
-	.U32,
-	.U16,
-	.U8,
-}
+SIGNED_TYPES :: bit_set[Type]{.Int, .I64, .I32, .I16, .I8}
+INTEGER_TYPES :: UNSIGNED_TYPES | SIGNED_TYPES
 
 Type_Kind :: enum uintptr {
 	Builtin,
@@ -1009,14 +998,32 @@ to_rvalue :: proc {
 
 to_rvalue_ty :: proc(ctx: ^Ctx, value: Value, ty: Type) -> backend.Node_ID {
 	if !value.is_lvalue do return value.id
+	dt := type_to_dt(ty)
+	// signed sub-word values must be sign extended on load since we always
+	// do arithmetic in the biggest register size
+	if is_signed_subword(ty) {
+		return backend.graph_add_load_s(
+			ctx,
+			"ltr",
+			dt,
+			ctx_ctrl(ctx),
+			ctx_mem(ctx),
+			value.id,
+		)
+	}
 	return backend.graph_add_load(
 		ctx,
 		"ltr",
-		type_to_dt(ty),
+		dt,
 		ctx_ctrl(ctx),
 		ctx_mem(ctx),
 		value.id,
 	)
+}
+
+is_signed_subword :: proc(ty: Type) -> bool {
+	bt := unpack_type(ty).(Builtin) or_return
+	return Type(bt) in SIGNED_TYPES && backend.DT_SIZE[type_to_dt(ty)] < 8
 }
 
 to_rvalue_expr :: proc(

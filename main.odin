@@ -457,7 +457,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 			clear(&ctx.scope)
 
 			for par, i in prc.params {
-				append(&ctx.scope, Variable{par.name, 0, par.type, nil, {}})
+				append(&ctx.scope, Variable{name = par.name, type = par.type})
 			}
 
 			typecheck(&ctx, {}, prc.ast.body)
@@ -472,11 +472,17 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 			assert(start == backend.NODE_START)
 			entry := backend.graph_add_entry(&ctx, "entry", start)
 			assert(entry == backend.NODE_ENTRY)
+			ctx.root_mem = backend.graph_add_mem(&ctx, "emem", entry)
 
 			ctx.node_scope = backend.graph_add_scope(&ctx, "scope", entry)
+			ctx.mem_slot = backend.graph_push_scope_value(
+				&ctx,
+				ctx.node_scope,
+				ctx.root_mem,
+			)
 
 			for par, i in prc.params {
-				assert(par.type == .Int)
+				assert(par.type == .Int || is_of(par.type, Pointer))
 				value := backend.graph_add_arg(
 					&ctx,
 					"arg",
@@ -672,7 +678,10 @@ Param :: struct {
 
 Variable :: struct {
 	name:  string,
-	idx:   int,
+	idx:   union #no_nil {
+		int,
+		backend.Node_ID,
+	},
 	type:  Type,
 	ident: ^ast.Expr,
 	flags: Var_Flags,
@@ -685,6 +694,8 @@ Ctx :: struct {
 	pointers:    map[Type]Pointer,
 	lits:        map[Lit]^Lit,
 	node_scope:  backend.Node_ID,
+	root_mem:    backend.Node_ID,
+	mem_slot:    int,
 	loop:        ^Loop_State,
 	file:        ^ast.File,
 	prc:         Proc_ID,
@@ -717,6 +728,14 @@ ctx_ctrl :: proc(ctx: ^Ctx) -> backend.Node_ID {
 	return backend.graph_inps(ctx, ctx.node_scope)[0]
 }
 
+ctx_mem :: proc(ctx: ^Ctx) -> backend.Node_ID {
+	return backend.graph_get_scope_value(ctx, ctx.node_scope, ctx.mem_slot)
+}
+
+ctx_set_mem :: proc(ctx: ^Ctx, mem: backend.Node_ID) {
+	backend.graph_set_input(ctx, ctx.node_scope, ctx.mem_slot, mem)
+}
+
 get_node_type :: proc(node: ^ast.Node) -> Type {
 	return Type(raw_data(node.end.file))
 }
@@ -739,11 +758,11 @@ typecheck :: proc(
 ) -> (
 	ty: Type,
 ) {
+	if node == nil do return .Void
+
 	defer {
 		set_node_data(node, ty)
 	}
-
-	if node == nil do return .Void
 
 	#partial switch d in node.derived {
 	case ^ast.Block_Stmt:
@@ -755,7 +774,6 @@ typecheck :: proc(
 			set_node_data(var.ident, var.flags)
 		}
 		resize(&ctx.scope, prev_scope_len)
-		return .Void
 	case ^ast.Value_Decl:
 		assert(len(d.names) == len(d.values))
 
@@ -772,12 +790,19 @@ typecheck :: proc(
 				assert(value_ty == inferred_ty)
 			}
 			set_node_data(d.names[i], Var_Flags{})
-			append(&ctx.scope, Variable{name, 0, value_ty, d.names[i], {}})
+			append(
+				&ctx.scope,
+				Variable{name = name, type = value_ty, ident = d.names[i]},
+			)
 		}
-		return .Void
 	case ^ast.Basic_Lit:
 		assert(prop.inferred_ty == .Void || prop.inferred_ty == .Int)
 		return .Int
+	case ^ast.Binary_Expr:
+		lhs_ty := typecheck(ctx, prop, d.left)
+		rhs_ty := typecheck(ctx, {inferred_ty = lhs_ty}, d.right)
+		assert(lhs_ty == rhs_ty)
+		return lhs_ty
 	case ^ast.Unary_Expr:
 		#partial switch d.op.kind {
 		case .And:
@@ -798,8 +823,33 @@ typecheck :: proc(
 		case:
 			fmt.panicf("TODO: %#v", node.derived)
 		}
+	case ^ast.Deref_Expr:
+		inferred_ty := Type.Void
+		if prop.inferred_ty != .Void {
+			inferred_ty = intern_pointer(ctx, prop.inferred_ty)
+		}
+
+		ty := typecheck(ctx, {inferred_ty = inferred_ty}, d.expr)
+		return unpack_type(ty).(Pointer)^
 	case ^ast.Expr_Stmt:
 		return typecheck(ctx, {}, d.expr)
+	case ^ast.If_Stmt:
+		cond_ty := typecheck(ctx, {}, d.cond)
+		assert(cond_ty == .Int)
+		typecheck(ctx, {}, d.body)
+		typecheck(ctx, {}, d.else_stmt)
+		return {}
+	case ^ast.For_Stmt:
+		assert(d.init == nil)
+		assert(d.cond == nil)
+		assert(d.post == nil)
+
+		typecheck(ctx, {}, d.body)
+
+	case ^ast.Branch_Stmt:
+		return {}
+	case ^ast.Paren_Expr:
+		return typecheck(ctx, prop, d.expr)
 	case ^ast.Ident:
 		name := d.name
 		#reverse for &var in ctx.scope {
@@ -815,6 +865,10 @@ typecheck :: proc(
 			if p.name == name {
 				return pack_type(intern_lit(ctx, Proc_ID(i)))
 			}
+		}
+
+		if name == "false" {
+			return .Int
 		}
 
 		fmt.panicf("variable not declared: %v", name)
@@ -845,109 +899,185 @@ typecheck :: proc(
 		for i in 0 ..< len(d.results) {
 			typecheck(ctx, {inferred_ty = prc.rets[i].type}, d.results[i])
 		}
-		return .Void
+	case ^ast.Assign_Stmt:
+		assert(len(d.lhs) == len(d.rhs))
+		for i in 0 ..< len(d.lhs) {
+			lhs_ty := typecheck(ctx, {}, d.lhs[i])
+			typecheck(ctx, {inferred_ty = lhs_ty}, d.rhs[i])
+		}
 	case:
 		fmt.panicf("TODO: %#v", node.derived)
 	}
+
+	return .Void
 }
 
-emit_nodes :: proc(
+Value :: bit_field u32 {
+	id:        backend.Node_ID | 31,
+	is_lvalue: bool            | 1,
+}
+
+is_of :: proc(vl: Type, $K: typeid) -> bool {
+	_, ok := unpack_type(vl).(K)
+	return ok
+}
+
+to_rvalue :: proc {
+	to_rvalue_ty,
+	to_rvalue_expr,
+}
+
+to_rvalue_ty :: proc(ctx: ^Ctx, value: Value, ty: Type) -> backend.Node_ID {
+	if !value.is_lvalue do return value.id
+	assert(ty == .Int || is_of(ty, Pointer))
+	return backend.graph_add_load(
+		ctx,
+		"ltr",
+		.I64,
+		ctx_ctrl(ctx),
+		ctx_mem(ctx),
+		value.id,
+	)
+}
+
+to_rvalue_expr :: proc(
 	ctx: ^Ctx,
-	prop: Propagation,
+	value: Value,
 	node: ^ast.Node,
 ) -> backend.Node_ID {
-	if node == nil do return 0
+	return to_rvalue(ctx, value, get_node_type(node))
+}
+
+emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
+	if node == nil do return {}
 
 	ty := get_node_type(node)
 
 	#partial switch d in node.derived {
 	case ^ast.Block_Stmt:
+		prev_local_scope_len := len(ctx.scope)
 		prev_scope_len :=
 			backend.graph_get(ctx, ctx.node_scope).ordered_input_count
 		for stmt in d.stmts {
 			emit_nodes(ctx, {}, stmt)
 			if ctx.node_scope == 0 do break
 		}
-		resize(&ctx.scope, prev_scope_len)
+		for v in ctx.scope[prev_local_scope_len:] {
+			switch n in v.idx {
+			case backend.Node_ID:
+				backend.graph_remove_output(ctx, n, {})
+			case int:
+			}
+		}
+		resize(&ctx.scope, prev_local_scope_len)
 		backend.graph_truncate_scope(ctx, ctx.node_scope, prev_scope_len)
 	case ^ast.Expr_Stmt:
 		node := emit_nodes(ctx, {}, d.expr)
-		backend.graph_delete(ctx, node)
+		backend.graph_delete(ctx, node.id)
 	case ^ast.Assign_Stmt:
 		assert(len(d.lhs) == len(d.rhs))
 		for i in 0 ..< len(d.lhs) {
 			lhs := d.lhs[i]
 			rhs := d.rhs[i]
-			name := meta.src_of(ctx.file^, lhs)
-			value := emit_nodes(ctx, {}, rhs)
-			for var in ctx.scope {
-				if var.name == name {
-					#partial switch d.op.kind {
-					case .Eq:
-					case .Add_Eq:
-						value = backend.graph_add_add(
-							ctx,
-							"adde",
-							.I64,
-							backend.graph_get_scope_value(
-								ctx,
-								ctx.node_scope,
-								var.idx,
-							),
-							value,
-						)
-					case .Sub_Eq:
-						value = backend.graph_add_sub(
-							ctx,
-							"sube",
-							.I64,
-							backend.graph_get_scope_value(
-								ctx,
-								ctx.node_scope,
-								var.idx,
-							),
-							value,
-						)
-					case:
-						fmt.panicf("TODO: %#v", node.derived)
-					}
+			if id, ok := lhs.derived.(^ast.Ident); ok {
+				value := emit_nodes(ctx, {}, rhs)
+				for var in ctx.scope {
+					if var.name == id.name {
+						switch idx in var.idx {
+						case int:
+							#partial switch d.op.kind {
+							case .Eq:
+							case .Add_Eq:
+								value = auto_cast backend.graph_add_add(
+									ctx,
+									"adde",
+									.I64,
+									backend.graph_get_scope_value(
+										ctx,
+										ctx.node_scope,
+										idx,
+									),
+									to_rvalue(ctx, value, ty),
+								)
+							case .Sub_Eq:
+								value = auto_cast backend.graph_add_sub(
+									ctx,
+									"sube",
+									.I64,
+									backend.graph_get_scope_value(
+										ctx,
+										ctx.node_scope,
+										idx,
+									),
+									to_rvalue(ctx, value, ty),
+								)
+							case:
+								fmt.panicf("TODO: %#v", node.derived)
+							}
 
-					backend.graph_set_input(
-						ctx,
-						ctx.node_scope,
-						var.idx,
-						value,
-					)
+							backend.graph_set_input(
+								ctx,
+								ctx.node_scope,
+								idx,
+								value.id,
+							)
+						case backend.Node_ID:
+							fmt.panicf("TODO: stack variable assignemnt")
+						}
+						return {}
+					}
 				}
+				fmt.panicf("TODO: variable not found: %v", lhs)
+			} else {
+				dest := emit_nodes(ctx, {}, lhs)
+				assert(dest.is_lvalue)
+				value := emit_nodes(ctx, {}, rhs)
+				ctx_set_mem(
+					ctx,
+					backend.graph_add_store(
+						ctx,
+						"asss",
+						ctx_ctrl(ctx),
+						ctx_mem(ctx),
+						dest.id,
+						to_rvalue(ctx, value, ty),
+					),
+				)
 			}
 		}
-		return 0
 	case ^ast.Binary_Expr:
-		lhs, rhs := emit_nodes(ctx, {}, d.left), emit_nodes(ctx, {}, d.right)
+		lhsv, rhsv := emit_nodes(ctx, {}, d.left), emit_nodes(ctx, {}, d.right)
+		lhs, rhs := to_rvalue(ctx, lhsv, d.left), to_rvalue(ctx, rhsv, d.right)
 		#partial switch d.op.kind {
 		case .Add:
-			return backend.graph_add_add(ctx, "add", .I64, lhs, rhs)
+			return auto_cast backend.graph_add_add(ctx, "add", .I64, lhs, rhs)
 		case .Sub:
-			return backend.graph_add_sub(ctx, "sub", .I64, lhs, rhs)
+			return auto_cast backend.graph_add_sub(ctx, "sub", .I64, lhs, rhs)
 		case .Mul:
-			return backend.graph_add_mul(ctx, "mul", .I64, lhs, rhs)
+			return auto_cast backend.graph_add_mul(ctx, "mul", .I64, lhs, rhs)
 		case .Cmp_Eq:
-			return backend.graph_add_eq(ctx, "eq", .I64, lhs, rhs)
+			return auto_cast backend.graph_add_eq(ctx, "eq", .I64, lhs, rhs)
 		case .Not_Eq:
-			return backend.graph_add_ne(ctx, "ne", .I64, lhs, rhs)
+			return auto_cast backend.graph_add_ne(ctx, "ne", .I64, lhs, rhs)
 		case .Lt_Eq:
-			return backend.graph_add_le(ctx, "le", .I64, lhs, rhs)
+			return auto_cast backend.graph_add_le(ctx, "le", .I64, lhs, rhs)
 		case:
 			fmt.panicf("TODO: %#v", node.derived)
 		}
 	case ^ast.Unary_Expr:
-		panic("TODO")
+		node := emit_nodes(ctx, {}, d.expr)
+		assert(node.is_lvalue)
+		return auto_cast node.id
+	case ^ast.Deref_Expr:
+		node := to_rvalue(ctx, emit_nodes(ctx, {}, d.expr), d.expr)
+		return {id = node, is_lvalue = true}
 	case ^ast.Return_Stmt:
-		values := make([]backend.Node_ID, 1 + len(d.results))
+		values := make([]backend.Node_ID, 2 + len(d.results))
 		for r, i in d.results {
-			values[1 + i] = emit_nodes(ctx, {}, r)
+			values[2 + i] = to_rvalue(ctx, emit_nodes(ctx, {}, r), r)
 		}
 		values[0] = ctx_ctrl(ctx)
+		values[1] = ctx_mem(ctx)
 		backend.graph_merge_returns(ctx, values)
 		backend.graph_delete(ctx, ctx.node_scope)
 		ctx.node_scope = 0
@@ -956,7 +1086,7 @@ emit_nodes :: proc(
 		case .Integer:
 			value, ok := strconv.parse_i64(d.tok.text)
 			assert(ok)
-			return backend.graph_add_cint(ctx, "cnst", .I64, value)
+			return auto_cast backend.graph_add_cint(ctx, "cnst", .I64, value)
 		case:
 			fmt.panicf("TODO: %#v", node.derived)
 		}
@@ -965,40 +1095,71 @@ emit_nodes :: proc(
 		for i in 0 ..< len(d.names) {
 			name := meta.src_of(ctx.file^, d.names[i])
 			ty := get_node_type(d.values[i])
-			value := emit_nodes(ctx, {}, d.values[i])
+			value := to_rvalue(
+				ctx,
+				emit_nodes(ctx, {}, d.values[i]),
+				d.values[i],
+			)
 			flags := get_node_vflags(d.names[i])
 
-			assert(.Referenced not_in flags)
-
-			backend.graph_set_name(ctx, value, name)
-			idx := backend.graph_push_scope_value(ctx, ctx.node_scope, value)
-			append(&ctx.scope, Variable{name, idx, ty, d.names[i], flags})
+			// TODO: extract common stuff
+			if .Referenced in flags {
+				alloca := backend.graph_add_local(ctx, name, ctx.root_mem)
+				ptr := backend.graph_add_localAddr(ctx, name, alloca)
+				backend.graph_add_output(ctx, ptr, 0, 0)
+				ctx_set_mem(
+					ctx,
+					backend.graph_add_store(
+						ctx,
+						"init",
+						ctx_ctrl(ctx),
+						ctx_mem(ctx),
+						ptr,
+						value,
+					),
+				)
+				append(&ctx.scope, Variable{name, ptr, ty, d.names[i], flags})
+			} else {
+				backend.graph_set_name(ctx, value, name)
+				idx := backend.graph_push_scope_value(
+					ctx,
+					ctx.node_scope,
+					value,
+				)
+				append(&ctx.scope, Variable{name, idx, ty, d.names[i], flags})
+			}
 		}
 	case ^ast.Ident:
 		name := d.name
 
 		for var in ctx.scope {
 			if var.name == name {
-				val := backend.graph_get_scope_value(
-					ctx,
-					ctx.node_scope,
-					var.idx,
-				)
-				assert(backend.graph_get(ctx, val).btype != .Scope)
-				return val
+				switch idx in var.idx {
+				case int:
+					val := backend.graph_get_scope_value(
+						ctx,
+						ctx.node_scope,
+						idx,
+					)
+					assert(backend.graph_get(ctx, val).btype != .Scope)
+					return auto_cast val
+				case backend.Node_ID:
+					return {id = idx, is_lvalue = true}
+				}
+
 			}
 		}
 
 		switch name {
 		case "false":
-			return backend.graph_add_cint(ctx, "false", .I64, 0)
+			return auto_cast backend.graph_add_cint(ctx, "false", .I64, 0)
 		}
 
 		fmt.panicf("TODO: undefined variable: %v %#v", name, d)
 	case ^ast.Paren_Expr:
 		return emit_nodes(ctx, prop, d.expr)
 	case ^ast.If_Stmt:
-		cond := emit_nodes(ctx, {}, d.cond)
+		cond := to_rvalue(ctx, emit_nodes(ctx, {}, d.cond), d.cond)
 
 		if_state: backend.If_State
 		backend.graph_start_if(ctx, ctx.node_scope, &if_state, cond)
@@ -1022,7 +1183,7 @@ emit_nodes :: proc(
 
 		ctx.loop = ctx.loop.parent
 	case ^ast.Call_Expr:
-		args := make([]backend.Node_ID, 1 + len(d.args))
+		args := make([]backend.Node_ID, 2 + len(d.args))
 
 		name := meta.src_of(ctx.file^, d.expr)
 
@@ -1037,18 +1198,20 @@ emit_nodes :: proc(
 		assert(prc != nil)
 
 		for arg, i in d.args {
-			args[1 + i] = emit_nodes(ctx, {}, arg)
+			args[2 + i] = to_rvalue(ctx, emit_nodes(ctx, {}, arg), arg)
 		}
 		args[0] = ctx_ctrl(ctx)
+		args[1] = ctx_mem(ctx)
 
 		call := backend.graph_add_call(ctx, "call", args, idx)
 		call_end := backend.graph_add_callEnd(ctx, "calle", call)
 
 		backend.graph_set_input(ctx, ctx.node_scope, 0, call_end)
+		ctx_set_mem(ctx, backend.graph_add_mem(ctx, "cmem", call_end))
 
 		assert(len(prc.rets) == 1)
 
-		return backend.graph_add_ret(ctx, "cret", .I64, call_end, 0)
+		return auto_cast backend.graph_add_ret(ctx, "cret", .I64, call_end, 0)
 	case ^ast.Branch_Stmt:
 		label := meta.src_of(ctx.file^, d.label)
 
@@ -1076,5 +1239,5 @@ emit_nodes :: proc(
 		fmt.panicf("TODO: %#v", node.derived)
 	}
 
-	return 0
+	return {}
 }

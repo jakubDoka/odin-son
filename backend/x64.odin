@@ -6,6 +6,7 @@ import "base:intrinsics"
 import "core:fmt"
 import "core:mem"
 import "core:reflect"
+import "core:sort"
 
 NOOP_REX :: 0b0100_0000
 
@@ -92,9 +93,24 @@ X64_IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec {
 		reg_masks = #partial{.General = {GPA_SPILL_MASK, GPA_SPILL_MASK}},
 	},
 	.Phi = {
+		input_start_idx = 1,
 		reg_masks = #partial{
 			.General = {GPA_SPILL_MASK, GPA_SPILL_MASK, GPA_SPILL_MASK},
 		},
+	},
+	.Mem = {input_start_idx = 1},
+	.Local = {input_start_idx = 1},
+	.Local_Addr = {
+		input_start_idx = 1,
+		reg_masks = #partial{.General = {GPA_MASK}},
+	},
+	.Load = {
+		input_start_idx = 2,
+		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK}},
+	},
+	.Store = {
+		input_start_idx = 2,
+		reg_masks = #partial{.General = {{}, GPA_MASK, GPA_MASK}},
 	},
 	.If = {
 		reg_masks = #partial{.General = {{}, GPA_MASK}},
@@ -110,14 +126,14 @@ X64_IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec {
 	.Loop = {},
 	.Always = {input_start_idx = 1},
 	.Call = {
-		input_start_idx = 1,
+		input_start_idx = 2,
 		clobbers = #partial{.General = CALL_CLOBBERS},
 	},
 	.Call_End = {},
 	.Jump = {input_start_idx = 1},
 	.Return = {
 		reg_masks = #partial{.General = {{}, GPA_RET_MASK}},
-		input_start_idx = 1,
+		input_start_idx = 2,
 	},
 }
 
@@ -131,8 +147,6 @@ x64_reg_mask_of :: proc(
 	idx: int,
 ) -> Reg_Mask {
 	node := graph_get(graph, id)
-
-	ALL_GENERAL :: 0xffff & ~int(1 << uint(RSP))
 
 	#partial switch node.itype {
 	case .Arg:
@@ -188,6 +202,45 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 
 	ctx.stack_size = total_spill_size * 8
 
+	emem: Node_ID
+	for eout in graph_outs(ctx.graph, ectx.schedule.bbs[0].head) {
+		enode := graph_expand(ctx.graph, eout.id)
+		if enode.itype == .Mem {
+			emem = eout.id
+			break
+		}
+	}
+
+	if emem != 0 {
+		Local_Slot :: bit_field u64 {
+			node:     Node_ID | 32,
+			priority: u32     | 32,
+		}
+		locals: [dynamic]Local_Slot
+
+		for mout in graph_outs(ctx.graph, emem) {
+			mnode := graph_expand(ctx.graph, mout.id)
+			if mnode.itype == .Local {
+				extra := graph_extra(ctx.graph, mnode, Local)
+				append(
+					&locals,
+					Local_Slot {
+						node = mout.id,
+						priority = intrinsics.count_trailing_zeros(extra.size),
+					},
+				)
+			}
+		}
+
+		sort.quick_sort(locals[:])
+
+		for loc in locals {
+			extra := graph_extra(ctx.graph, loc.node, Local)
+			ctx.stack_size += int(extra.size)
+			extra.offset = u32(ctx.stack_size) - extra.size
+		}
+	}
+
 	for reg in CALLE_SAVED {
 		if bit_arr.contains(ctx.used, int(reg)) {
 			emit_single_op(ctx.code, 0x50, reg)
@@ -233,6 +286,20 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 	block_base := ctx.gvn - u32(len(ctx.bbs))
 	node := graph_expand(ctx, instr)
 	switch node.xtype {
+	case .Local:
+	case .Local_Addr:
+		offset := graph_extra(ctx, node.inps[0], Local).offset
+		emit_stack_lea(ctx.code, reg_of(ctx, instr), offset)
+	case .Store:
+		bse := reg_of(ctx, node.inps[2])
+		val := reg_of(ctx, node.inps[3])
+		emit(ctx.code, {rex(val, bse, NO_INDEX, true), 0x89})
+		emit_indirect_addr(ctx.code, val, bse, NO_INDEX, 1, 0)
+	case .Load:
+		bse := reg_of(ctx, node.inps[2])
+		val := reg_of(ctx, instr)
+		emit(ctx.code, {rex(val, bse, NO_INDEX, true), 0x8b})
+		emit_indirect_addr(ctx.code, val, bse, NO_INDEX, 1, 0)
 	case .Start, .Entry, .Then, .Else, .Region, .Loop, .Call_End:
 		panic("Not reachable form here")
 	case .If:
@@ -275,7 +342,7 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 			size   = .r4,
 			id     = call.cid,
 		}
-	case .Poison, .Arg, .Phi, .Ret:
+	case .Poison, .Arg, .Phi, .Ret, .Mem:
 	case .CInt:
 		emit_single_op(ctx.code, 0xb8, reg_of(ctx, instr))
 		emit_anys(ctx.code, graph_extra(ctx, node, CInt).value)
@@ -388,6 +455,17 @@ mod_from_dis :: proc(dis: i64) -> Mod {
 	case:
 		return .Indirect_Disp32
 	}
+}
+
+///pub fn emitStackLea(self: *X86_64Gen, dst: Reg, dis: i32) void {
+///    self.emitRex(dst, .rax, .rax, 8);
+///    self.emitByte(0x8d);
+///    self.emitIndirectAddr(dst, .rsp, .no_index, 1, dis);
+///}
+
+emit_stack_lea :: proc(code: ^arna.Allocator, dst: Reg, #any_int dis: i64) {
+	emit(code, {rex(dst, RAX, RAX, true), 0x8d})
+	emit_indirect_addr(code, dst, RSP, NO_INDEX, 1, dis)
 }
 
 emit_indirect_addr :: proc(

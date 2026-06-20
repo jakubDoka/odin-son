@@ -20,6 +20,11 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{.General = 0}, // Le
 			{.General = 0}, // Split
 			{.General = 0}, // Phi
+			{.General = 0}, // Mem
+			{.General = 0}, // Local
+			{.General = 0}, // Local_Addr
+			{.General = 0}, // Store
+			{.General = 0}, // Load
 			{.General = 0}, // If
 			{.General = 0}, // Then
 			{.General = 0}, // Else
@@ -51,6 +56,11 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{}, // Le
 			{}, // Split
 			{}, // Phi
+			{}, // Mem
+			{}, // Local
+			{}, // Local_Addr
+			{}, // Store
+			{}, // Load
 			{}, // If
 			{}, // Then
 			{}, // Else
@@ -79,6 +89,11 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			-1, //Le
 			-1, //Split
 			-1, //Phi
+			-1, //Mem
+			-1, //Local
+			-1, //Local_Addr
+			-1, //Store
+			-1, //Load
 			-1, //If
 			-1, //Then
 			-1, //Else
@@ -107,6 +122,11 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, //Le
 			0, //Split
 			0, //Phi
+			0, //Mem
+			0, //Local
+			0, //Local_Addr
+			0, //Store
+			0, //Load
 			0, //If
 			0, //Then
 			0, //Else
@@ -135,18 +155,23 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0b10, // Le
 			0b10, // Split
 			0b10, // Phi
+			0b10, // Mem
+			0b10000, // Local
+			0b10, // Local_Addr
+			0b100000, // Store
+			0b100000, // Load
 			0b1, // If
 			0b1, // Then
 			0b1, // Else
 			0b1, // Jump
-			0b10001, // Region
+			0b1000001, // Region
 			0b1, // Loop
 			0b1, // Always
-			0b100001, // Call
+			0b10000001, // Call
 			0b1, // Call_End
 			0b100, // Ret
 			0b1, // Return
-			0b1000000, // Scope
+			0b100000000, // Scope
 			0b10, // Lazy_Phi
 		},
 		node_extra_sizes = {
@@ -163,6 +188,11 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, // Le -> No_Extra
 			0, // Split -> No_Extra
 			0, // Phi -> No_Extra
+			0, // Mem -> No_Extra
+			1, // Local -> Local
+			0, // Local_Addr -> No_Extra
+			0, // Store -> Mem_Op
+			0, // Load -> Mem_Op
 			1, // If -> Cfg
 			1, // Then -> Cfg
 			1, // Else -> Cfg
@@ -191,6 +221,11 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{Class_Flag.Interned}, // Le
 			{}, // Split
 			{Class_Flag.Interned}, // Phi
+			{}, // Mem
+			{}, // Local
+			{}, // Local_Addr
+			{Class_Flag.Interned}, // Store
+			{Class_Flag.Interned}, // Load
 			{}, // If
 			{Class_Flag.Is_Basic_Block_Start}, // Then
 			{Class_Flag.Is_Basic_Block_Start}, // Else
@@ -219,6 +254,11 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			No_Extra,
 			No_Extra,
 			No_Extra,
+			No_Extra,
+			Local,
+			No_Extra,
+			Mem_Op,
+			Mem_Op,
 			Cfg,
 			Cfg,
 			Cfg,
@@ -247,6 +287,11 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			`Le`,
 			`Split`,
 			`Phi`,
+			`Mem`,
+			`Local`,
+			`Local_Addr`,
+			`Store`,
+			`Load`,
 			`If`,
 			`Then`,
 			`Else`,
@@ -279,6 +324,11 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{.General = 0}, // Le
 			{.General = 0}, // Split
 			{.General = 0}, // Phi
+			{.General = 0}, // Mem
+			{.General = 0}, // Local
+			{.General = 0}, // Local_Addr
+			{.General = 0}, // Store
+			{.General = 0}, // Load
 			{.General = 0}, // If
 			{.General = 0}, // Then
 			{.General = 0}, // Else
@@ -312,6 +362,11 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{{.General = 1}, {.General = 1}, {.General = 1}}, // Le
 			{{.General = 2}, {.General = 2}}, // Split
 			{{.General = 2}, {.General = 2}, {.General = 2}}, // Phi
+			{}, // Mem
+			{}, // Local
+			{{.General = 1}}, // Local_Addr
+			{{.General = 3}, {.General = 1}, {.General = 1}}, // Store
+			{{.General = 1}, {.General = 1}}, // Load
 			{{.General = 3}, {.General = 1}}, // If
 			{}, // Then
 			{}, // Else
@@ -338,6 +393,11 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, //Le
 			-1, //Split
 			-1, //Phi
+			-1, //Mem
+			-1, //Local
+			-1, //Local_Addr
+			-1, //Store
+			-1, //Load
 			-1, //If
 			-1, //Then
 			-1, //Else
@@ -365,7 +425,12 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, //Ne
 			0, //Le
 			0, //Split
-			0, //Phi
+			1, //Phi
+			1, //Mem
+			1, //Local
+			1, //Local_Addr
+			2, //Store
+			2, //Load
 			1, //If
 			0, //Then
 			0, //Else
@@ -373,10 +438,10 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, //Region
 			0, //Loop
 			1, //Always
-			1, //Call
+			2, //Call
 			0, //Call_End
 			1, //Ret
-			1, //Return
+			2, //Return
 		},
 		inheritance_table = {
 			0b1, // Start
@@ -392,14 +457,19 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0b10, // Le
 			0b10, // Split
 			0b10, // Phi
+			0b10, // Mem
+			0b10000, // Local
+			0b10, // Local_Addr
+			0b100000, // Store
+			0b100000, // Load
 			0b1, // If
 			0b1, // Then
 			0b1, // Else
 			0b1, // Jump
-			0b10001, // Region
+			0b1000001, // Region
 			0b1, // Loop
 			0b1, // Always
-			0b100001, // Call
+			0b10000001, // Call
 			0b1, // Call_End
 			0b100, // Ret
 			0b1, // Return
@@ -418,6 +488,11 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, // Le -> No_Extra
 			0, // Split -> No_Extra
 			0, // Phi -> No_Extra
+			0, // Mem -> No_Extra
+			1, // Local -> Local
+			0, // Local_Addr -> No_Extra
+			0, // Store -> Mem_Op
+			0, // Load -> Mem_Op
 			1, // If -> Cfg
 			1, // Then -> Cfg
 			1, // Else -> Cfg
@@ -444,6 +519,11 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{Class_Flag.Interned}, // Le
 			{}, // Split
 			{Class_Flag.Interned}, // Phi
+			{}, // Mem
+			{}, // Local
+			{}, // Local_Addr
+			{Class_Flag.Interned}, // Store
+			{Class_Flag.Interned}, // Load
 			{}, // If
 			{Class_Flag.Is_Basic_Block_Start}, // Then
 			{Class_Flag.Is_Basic_Block_Start}, // Else
@@ -470,6 +550,11 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			No_Extra,
 			No_Extra,
 			No_Extra,
+			No_Extra,
+			Local,
+			No_Extra,
+			Mem_Op,
+			Mem_Op,
 			Cfg,
 			Cfg,
 			Cfg,
@@ -496,6 +581,11 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			`Le`,
 			`Split`,
 			`Phi`,
+			`Mem`,
+			`Local`,
+			`Local_Addr`,
+			`Store`,
+			`Load`,
 			`If`,
 			`Then`,
 			`Else`,
@@ -526,6 +616,11 @@ Ne,
 Le,
 Split,
 Phi,
+Mem,
+Local,
+Local_Addr,
+Store,
+Load,
 If,
 Then,
 Else,
@@ -608,6 +703,31 @@ graph_add_split :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Data
 graph_add_phi :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype, reg: Node_ID, lhs: Node_ID, rhs: Node_ID) -> (id: Node_ID) {
 	push_node_name(graph, name)
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Phi), dt, {reg, lhs, rhs})
+}
+#assert(size_of(No_Extra) % 4 == 0)
+graph_add_mem :: #force_inline proc(graph: ^Graph, name: string, ctrl: Node_ID) -> (id: Node_ID) {
+	push_node_name(graph, name)
+	return graph_add_raw(graph, u16(Ideal_Node_Type.Mem), .Void, {ctrl})
+}
+#assert(size_of(Local) % 4 == 0)
+graph_add_local :: #force_inline proc(graph: ^Graph, name: string, mem: Node_ID) -> (id: Node_ID) {
+	push_node_name(graph, name)
+	return graph_add_raw(graph, u16(Ideal_Node_Type.Local), .Void, {mem})
+}
+#assert(size_of(No_Extra) % 4 == 0)
+graph_add_localAddr :: #force_inline proc(graph: ^Graph, name: string, local: Node_ID) -> (id: Node_ID) {
+	push_node_name(graph, name)
+	return graph_add_raw(graph, u16(Ideal_Node_Type.Local_Addr), .I64, {local})
+}
+#assert(size_of(Mem_Op) % 4 == 0)
+graph_add_store :: #force_inline proc(graph: ^Graph, name: string, ctrl: Node_ID, mem: Node_ID, addr: Node_ID, value: Node_ID) -> (id: Node_ID) {
+	push_node_name(graph, name)
+	return graph_add_raw(graph, u16(Ideal_Node_Type.Store), .Void, {ctrl, mem, addr, value})
+}
+#assert(size_of(Mem_Op) % 4 == 0)
+graph_add_load :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype, ctrl: Node_ID, mem: Node_ID, addr: Node_ID) -> (id: Node_ID) {
+	push_node_name(graph, name)
+	return graph_add_raw(graph, u16(Ideal_Node_Type.Load), dt, {ctrl, mem, addr})
 }
 #assert(size_of(Cfg) % 4 == 0)
 graph_add_if :: #force_inline proc(graph: ^Graph, name: string, ctrl: Node_ID, cond: Node_ID) -> (id: Node_ID) {
@@ -693,6 +813,11 @@ Ne,
 Le,
 Split,
 Phi,
+Mem,
+Local,
+Local_Addr,
+Store,
+Load,
 If,
 Then,
 Else,
@@ -710,11 +835,13 @@ inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	when false {}
 	else when T == CInt {return 3}
 	else when T == Tup {return 2}
-	else when T == Region {return 4}
-	else when T == Scope {return 6}
+	else when T == Local {return 4}
+	else when T == Region {return 6}
 	else when T == No_Extra {return 1}
-	else when T == Call {return 5}
+	else when T == Call {return 7}
+	else when T == Scope {return 8}
 	else when T == Cfg {return 0}
+	else when T == Mem_Op {return 5}
 	else {#panic(`the passed type is not subclass of anything`)}
 }
 }

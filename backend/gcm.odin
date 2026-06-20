@@ -26,6 +26,32 @@ Loop_Tree :: struct {
 	infinite: bool,
 }
 
+Redundancy_Counter :: struct {
+	mut:   sync.Mutex,
+	min:   int,
+	total: int,
+}
+
+redundancy_add :: proc(
+	counter: ^Redundancy_Counter,
+	#any_int min: int,
+	#any_int total: int,
+) {
+	sync.guard(&counter.mut)
+	counter.min += min
+	counter.total += total
+}
+
+redundancy_log :: proc(counter: ^Redundancy_Counter, loc := #caller_location) {
+	sync.guard(&counter.mut)
+	log.info(
+		counter.min,
+		counter.total,
+		f32(counter.min) / f32(counter.total),
+		location = loc,
+	)
+}
+
 graph_lca :: proc(graph: ^Graph, a, b: Node_ID) -> Node_ID {
 	if a == 0 do return b
 	if b == 0 do return a
@@ -98,9 +124,7 @@ graph_idepth_node :: proc(graph: ^Graph, node: ^Node) -> u32 {
 	return extra.idepth
 }
 
-mut: sync.Mutex
-node_count: int
-iter_count: int
+gvn_redc: Redundancy_Counter
 
 graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 	Loop_Ctx :: struct {
@@ -380,14 +404,8 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 	}
 
 	if false {
-		{sync.guard(&mut)
-			node_count += int(graph.gvn)
-			iter_count += rounds
-
-			log.info(f32(node_count) / f32(iter_count))
-		}
-
-		log.info(graph.gvn, rounds, f32(graph.gvn) / f32(rounds))
+		redundancy_add(&gvn_redc, graph.gvn, rounds)
+		redundancy_log(&gvn_redc)
 	}
 
 	bb_idx := 0

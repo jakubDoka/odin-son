@@ -30,12 +30,44 @@ Node_Spec_Name :: enum {
 
 Node_Spec :: struct {
 	node_extra_sizes:  []u8,
-	inheritance_table: []u8,
+	inheritance_table: []Inherit_Table_Elem,
 	node_flags:        []Class_Flags,
 	node_extra_types:  []typeid,
 	node_kind_name:    []string,
 	using regalloc:    Regalloc_Spec,
 	using codegen:     Codegen_Spec,
+}
+
+Ideal_Node_Type :: enum u16 {
+	Start,
+	Entry,
+	Poison,
+	Arg,
+	CInt,
+	Add,
+	Sub,
+	Mul,
+	Eq,
+	Ne,
+	Le,
+	Split,
+	Phi,
+	Mem,
+	Local,
+	Local_Addr,
+	Store,
+	Load,
+	If,
+	Then,
+	Else,
+	Jump,
+	Region,
+	Loop,
+	Always,
+	Call,
+	Call_End,
+	Ret,
+	Return,
 }
 
 Class_Flags :: bit_set[Class_Flag;u8]
@@ -74,6 +106,15 @@ Call :: struct {
 Tup :: struct {
 	idx: u32,
 }
+
+Local :: struct {
+	using _: struct #raw_union {
+		size:   u32,
+		offset: u32,
+	},
+}
+
+Mem_Op :: struct {}
 
 No_Extra :: struct {}
 
@@ -1069,14 +1110,12 @@ ansi_start :: proc(w: io.Writer, #any_int gvn: int) {
 			{fg = ansi.FG_BRIGHT_BLUE},
 			{fg = ansi.FG_BRIGHT_MAGENTA},
 			{fg = ansi.FG_BRIGHT_CYAN},
-			{fg = ansi.FG_BRIGHT_WHITE},
 			{fg = ansi.FG_RED},
 			{fg = ansi.FG_GREEN},
 			{fg = ansi.FG_YELLOW},
 			{fg = ansi.FG_BLUE},
 			{fg = ansi.FG_MAGENTA},
 			{fg = ansi.FG_CYAN},
-			{fg = ansi.FG_WHITE},
 			{fg = ansi.FG_BLACK, bg = ansi.BG_WHITE},
 			{fg = ansi.FG_BLACK, bg = ansi.BG_RED},
 			{fg = ansi.FG_BLACK, bg = ansi.BG_GREEN},

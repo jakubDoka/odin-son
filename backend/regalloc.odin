@@ -8,7 +8,6 @@ import "core:container/queue"
 import "core:fmt"
 import "core:io"
 import "core:log"
-import "core:math/rand"
 import "core:mem"
 import "core:slice"
 import "core:sort"
@@ -218,6 +217,8 @@ Lrg :: struct {
 	longest_def:      Node_ID,
 }
 
+ifg_redc: Redundancy_Counter
+
 regalloc_round :: proc(
 	ra: ^Regalloc,
 	graph: ^Graph,
@@ -348,7 +349,12 @@ regalloc_round :: proc(
 						lrg = unify(lrg, ctx.lrg_table[onode.gvn])
 					}
 
-					mask := reg_mask_of(graph, ra, o.id, o.idx)
+					mask := reg_mask_of(
+						graph,
+						ra,
+						o.id,
+						o.idx + 1 - onode.data_start,
+					)
 					intersect(lrg, mask)
 				}
 
@@ -366,9 +372,6 @@ regalloc_round :: proc(
 	//log_lrgs(graph, sched, lrg_table)
 
 	arena := arna.allocator(ra)
-	drg_state: rand.PCG_Random_State
-	context.random_generator = rand.pcg_random_generator(&drg_state)
-	runtime.random_generator_reset_u64(context.random_generator, 0)
 
 	Liveout :: struct {
 		node:     Node_ID,
@@ -396,8 +399,10 @@ regalloc_round :: proc(
 
 	worklist: queue.Queue(u32)
 	queue.init(&worklist, len(sched.bbs), arena)
+	in_queue := bit_arr.init(len(sched.bbs))
 
 	if !failed_any {
+		bit_arr.set_all(in_queue)
 		for _, i in sched.bbs {
 			queue.push_front(&worklist, u32(i))
 		}
@@ -411,8 +416,13 @@ regalloc_round :: proc(
 		}
 	}
 
+	rounds: int
+
 	current_liveouts: Liveouts
 	for b in queue.pop_front_safe(&worklist) {
+		bit_arr.set(in_queue, b, value = false)
+		rounds += 1
+
 		bb := sched.bbs[b]
 		lbb := &blocks[b]
 		bb_head := graph_get(graph, bb.head)
@@ -521,7 +531,7 @@ regalloc_round :: proc(
 
 			for out in head.outs {
 				onode := graph_expand(graph, out.id)
-				if onode.itype == .Phi {
+				if onode.itype == .Phi && onode.dt != .Void {
 					lrg := ctx.lrg_table[onode.gvn]
 					n := onode.inps[1 + i]
 
@@ -534,10 +544,15 @@ regalloc_round :: proc(
 				}
 			}
 
-			if changed {
+			if changed && bit_arr.set(in_queue, pred_bb_idx, value = true) {
 				queue.push_back(&worklist, u32(pred_bb_idx))
 			}
 		}
+	}
+
+	if false {
+		redundancy_add(&ifg_redc, len(sched.bbs), rounds)
+		redundancy_log(&ifg_redc)
 	}
 
 	//log_lrgs(graph, sched, lrg_table)
@@ -1145,6 +1160,8 @@ regalloc_round :: proc(
 		instr_placement := ctx.instr_placement
 
 		sb: strings.Builder
+
+		append(&sb.buf, "\n")
 
 		context.user_ptr = ctx
 		graph_display(

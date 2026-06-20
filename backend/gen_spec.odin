@@ -71,6 +71,37 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 		no_ctrl = true,
 		flags = {.Interned},
 	},
+	.Mem = {
+		id = No_Extra,
+		args = {"ctrl"},
+		default_type = .Void,
+		no_ctrl = true,
+	},
+	.Local = {
+		id = Local,
+		args = {"mem"},
+		default_type = .Void,
+		no_ctrl = true,
+	},
+	.Local_Addr = {
+		id = No_Extra,
+		args = {"local"},
+		default_type = .I64,
+		no_ctrl = true,
+	},
+	.Load = {
+		id = Mem_Op,
+		args = {"ctrl", "mem", "addr"},
+		no_ctrl = true,
+		flags = {.Interned},
+	},
+	.Store = {
+		id = Mem_Op,
+		args = {"ctrl", "mem", "addr", "value"},
+		no_ctrl = true,
+		default_type = .Void,
+		flags = {.Interned},
+	},
 	.Split = {id = No_Extra, args = {"dest"}, no_ctrl = true},
 	.Phi = {
 		id = No_Extra,
@@ -138,7 +169,7 @@ IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec{}
 @(rodata)
 BUILDER_REG_CLASSES := [Builder_Node_Type]Reg_Class_Spec{}
 
-Inherit_Table_Elem :: u8
+Inherit_Table_Elem :: u16
 Mask_Intern_Key :: u8
 
 Class_Array :: struct {
@@ -163,36 +194,6 @@ Reg_Class_Spec :: struct {
 	input_start_idx:  int,
 	clobbers:         [Reg_Kind]int,
 	reg_masks:        [Reg_Kind][][]int,
-}
-
-Ideal_Node_Type :: enum u16 {
-	Start,
-	Entry,
-	Poison,
-	Arg,
-	CInt,
-	Add,
-	Sub,
-	Mul,
-	Eq,
-	Ne,
-	Le,
-	Split,
-	Phi,
-	Local,
-	Store,
-	Load,
-	If,
-	Then,
-	Else,
-	Jump,
-	Region,
-	Loop,
-	Always,
-	Call,
-	Call_End,
-	Ret,
-	Return,
 }
 
 when (#load("node_specs.odin", string) or_else "") == "" {
@@ -390,7 +391,7 @@ generate_specs :: proc() {
 		for classes in spec.classes {
 			for class, i in classes.ids {
 				if class.id not_in inheritable {
-					assert(len(inheritable) < 8)
+					assert(len(inheritable) < size_of(Inherit_Table_Elem) * 8)
 					inheritable[class.id] = len(inheritable)
 				}
 			}

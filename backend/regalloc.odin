@@ -619,10 +619,9 @@ regalloc_round :: proc(
 	log_lrgs(&ctx)
 
 	coalesced := false
+	// TODO: add priority to at least the blocks by loop depth
 	for &bb in sched.bbs {
 		if !ok do break
-
-		i := 0
 
 		#reverse for instr, i in bb.instrs {
 			inode := graph_expand(graph, instr)
@@ -638,18 +637,16 @@ regalloc_round :: proc(
 			iadj, inadj := ifg[ilrg.index], ifg[inlrg.index]
 
 			collision := false
-			common_count := 0
-			for a in iadj {
-				assert(a != ilrg)
+			to_move := 0
+			for &a in iadj {
 				collision |= a == inlrg
-				for b in inadj {
-					assert(b != inlrg)
-					collision |= b == ilrg
-					common_count += int(a == b)
+				if !slice.contains(inadj, a) {
+					a, iadj[to_move] = iadj[to_move], a
+					to_move += 1
 				}
 			}
 			if collision do continue
-			total := len(iadj) + len(inadj) - common_count
+			total := to_move + len(inadj)
 
 			leeway := reg_mask_intersection_pop_count(ilrg.mask, inlrg.mask)
 
@@ -658,19 +655,8 @@ regalloc_round :: proc(
 			coalesced = true
 
 			buf := arna.smake(ra, []^Lrg, total)
-			cursor := 0
-			// TODO: we can copy the bigger one tho
-			for side in ([][]^Lrg{iadj, inadj}) {
-				append: for l in side {
-					for e in buf[:cursor] {
-						if e == l do continue append
-					}
-					buf[cursor] = l
-					cursor += 1
-				}
-			}
-
-			assert(cursor == total)
+			copy(buf, iadj[:to_move])
+			copy(buf[to_move:], inadj)
 
 			winner := unify(ilrg, inlrg)
 			assert(winner.fails == {})
@@ -682,23 +668,11 @@ regalloc_round :: proc(
 				oadj := ifg[adj.index]
 				idx, _ := slice.linear_search(oadj, other)
 
-				for a, i in ifg[adj.index] {
-					assert(a.parent == nil || a == other)
-					for b in ifg[adj.index][i + 1:] {
-						assert(a != b)
-					}
-				}
 				if slice.contains(oadj, winner) {
 					oadj[idx] = oadj[len(oadj) - 1]
 					ifg[adj.index] = oadj[:len(oadj) - 1]
 				} else {
 					oadj[idx] = winner
-				}
-				for a, i in ifg[adj.index] {
-					assert(a.parent == nil)
-					for b in ifg[adj.index][i + 1:] {
-						assert(a != b)
-					}
 				}
 			}
 
@@ -707,16 +681,6 @@ regalloc_round :: proc(
 
 			ordered_remove(&bb.instrs, i)
 			graph_subsume(graph, inode.inps[0], instr)
-
-			for row, j in ifg {
-				if lrgs[j].parent != nil do continue
-				for a, i in row {
-					assert(a.parent == nil && a != other)
-					for b in row[i + 1:] {
-						assert(a != b)
-					}
-				}
-			}
 		}
 	}
 
@@ -781,6 +745,9 @@ regalloc_round :: proc(
 	prev_gvn := graph.gvn
 
 	color_fails: int
+
+	// TODO: this should be improved but for now the coalescing kind of fixes
+	// things
 
 	for &lrg in lrgs[:used_lrgs_check] {
 		id := lrg.node

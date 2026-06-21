@@ -2,7 +2,6 @@ package backend
 
 import "../vendored/gam/util/arna"
 import "../vendored/gam/util/bit_arr"
-import "../vendored/gam/util/hot"
 import "base:intrinsics"
 import "core:container/queue"
 import "core:fmt"

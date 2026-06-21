@@ -553,6 +553,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{.General = 0}, // Return
 			{.General = 0}, // X64_Add
 			{.General = 0}, // X64_Sub
+			{.General = 0}, // X64_Load
+			{.General = 0}, // X64_Store
 		},
 		interned_reg_masks = {
 			raw_data([]int{}),
@@ -619,6 +621,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{{.General = 7}, {.General = 2}}, // Return
 			{{.General = 1}, {.General = 1}}, // X64_Add
 			{{.General = 1}, {.General = 1}}, // X64_Sub
+			{{.General = 1}, {.General = 1}}, // X64_Load
+			{{.General = 7}, {.General = 1}, {.General = 1}}, // X64_Store
 		},
 		inplace_slot_idxs = {
 			-1, //Start
@@ -673,6 +677,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			-1, //Return
 			0, //X64_Add
 			0, //X64_Sub
+			-1, //X64_Load
+			-1, //X64_Store
 		},
 		reg_mask_of = x64_reg_mask_of,
 		emit_function = x64_emit_function,
@@ -730,6 +736,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			2, //Return
 			0, //X64_Add
 			0, //X64_Sub
+			2, //X64_Load
+			2, //X64_Store
 		},
 		inheritance_table = {
 			0b1, // Start
@@ -784,6 +792,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0b1, // Return
 			0b100000000, // X64_Add
 			0b100000000, // X64_Sub
+			0b100000000, // X64_Load
+			0b100000000, // X64_Store
 		},
 		node_extra_sizes = {
 			1, // Start -> Cfg
@@ -838,6 +848,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			1, // Return -> Cfg
 			4, // X64_Add -> X64_Mem_Op
 			4, // X64_Sub -> X64_Mem_Op
+			4, // X64_Load -> X64_Mem_Op
+			4, // X64_Store -> X64_Mem_Op
 		},
 		node_flags = {
 			{}, // Start
@@ -892,6 +904,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{Class_Flag.Immortal}, // Return
 			{Class_Flag.Load}, // X64_Add
 			{Class_Flag.Load}, // X64_Sub
+			{Class_Flag.Load}, // X64_Load
+			{Class_Flag.Store}, // X64_Store
 		},
 		node_extra_types = {
 			Cfg,
@@ -944,6 +958,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			Cfg,
 			Tup,
 			Cfg,
+			X64_Mem_Op,
+			X64_Mem_Op,
 			X64_Mem_Op,
 			X64_Mem_Op,
 		},
@@ -1000,6 +1016,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			`Return`,
 			`X64_Add`,
 			`X64_Sub`,
+			`X64_Load`,
+			`X64_Store`,
 		},
 	},
 }
@@ -1326,18 +1344,32 @@ X64_Node_Type :: enum u16 {
 	Return,
 	X64_Add,
 	X64_Sub,
+	X64_Load,
+	X64_Store,
 }
 #assert(size_of(X64_Mem_Op) % 4 == 0)
-graph_add_x64_add :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype, lhs: Node_ID, rhs: Node_ID) -> (id: Node_ID) {
+graph_add_x64_add :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype) -> (id: Node_ID) {
 	push_node_name(graph, name)
 	(^X64_Mem_Op)(graph_get_next_extra_slot(graph, u16(X64_Node_Type.X64_Add)))^ = {}
-	return graph_add_raw(graph, u16(X64_Node_Type.X64_Add), dt, {lhs, rhs})
+	return graph_add_raw(graph, u16(X64_Node_Type.X64_Add), dt, {})
 }
 #assert(size_of(X64_Mem_Op) % 4 == 0)
-graph_add_x64_sub :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype, lhs: Node_ID, rhs: Node_ID) -> (id: Node_ID) {
+graph_add_x64_sub :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype) -> (id: Node_ID) {
 	push_node_name(graph, name)
 	(^X64_Mem_Op)(graph_get_next_extra_slot(graph, u16(X64_Node_Type.X64_Sub)))^ = {}
-	return graph_add_raw(graph, u16(X64_Node_Type.X64_Sub), dt, {lhs, rhs})
+	return graph_add_raw(graph, u16(X64_Node_Type.X64_Sub), dt, {})
+}
+#assert(size_of(X64_Mem_Op) % 4 == 0)
+graph_add_x64_load :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype) -> (id: Node_ID) {
+	push_node_name(graph, name)
+	(^X64_Mem_Op)(graph_get_next_extra_slot(graph, u16(X64_Node_Type.X64_Load)))^ = {}
+	return graph_add_raw(graph, u16(X64_Node_Type.X64_Load), dt, {})
+}
+#assert(size_of(X64_Mem_Op) % 4 == 0)
+graph_add_x64_store :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype) -> (id: Node_ID) {
+	push_node_name(graph, name)
+	(^X64_Mem_Op)(graph_get_next_extra_slot(graph, u16(X64_Node_Type.X64_Store)))^ = {}
+	return graph_add_raw(graph, u16(X64_Node_Type.X64_Store), dt, {})
 }
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {

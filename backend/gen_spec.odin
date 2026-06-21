@@ -187,6 +187,8 @@ when (#load("node_specs.odin", string) or_else "") == "" {
 	X64_Node_Type :: enum u16 {
 		X64_Add,
 		X64_Sub,
+		X64_Load,
+		X64_Store,
 	}
 
 	@(rodata)
@@ -197,8 +199,10 @@ when (#load("node_specs.odin", string) or_else "") == "" {
 
 	@(rodata)
 	X64_CLASSES := [X64_Node_Type]Class_Spec {
-		.X64_Add = {id = X64_Mem_Op, args = {"lhs", "rhs"}, flags = {.Load}},
-		.X64_Sub = {id = X64_Mem_Op, args = {"lhs", "rhs"}, flags = {.Load}},
+		.X64_Add = {id = X64_Mem_Op, flags = {.Load}},
+		.X64_Sub = {id = X64_Mem_Op, flags = {.Load}},
+		.X64_Load = {id = X64_Mem_Op, flags = {.Load}},
+		.X64_Store = {id = X64_Mem_Op, flags = {.Store}},
 	}
 
 	inherit_idx_of :: proc($T: typeid) -> u8 {return 0}

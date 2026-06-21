@@ -207,11 +207,19 @@ X64_REG_CLASSES := #partial [X64_Node_Type]Reg_Class_Spec {
 		inplace_slot_idx = 0,
 		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK}},
 	},
+	.X64_Load = {
+		input_start_idx = 2,
+		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK}},
+	},
+	.X64_Store = {
+		input_start_idx = 2,
+		reg_masks = #partial{.General = {{}, GPA_MASK, GPA_MASK}},
+	},
 }
 
 X64_Mem_Op :: struct {
 	imm:    i32,
-	dis:    u32,
+	dis:    i32,
 	scale:  u32,
 	signed: bool,
 }
@@ -232,21 +240,61 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 		}
 	}
 
+	base: Node_ID
+	displacement: i32
+	if 2 < len(node.inps) {
+		cbase := graph_expand(ctx, node.inps[2])
+		if cbase.xtype == .X64_Add {
+			base = cbase.inps[0]
+			displacement = graph_extra(ctx, node.inps[2], X64_Mem_Op).imm
+		}
+	}
+
 	#partial switch node.itype {
 	case .Add, .Sub:
 		if lhs_const_in_i32_range {
-			push_node_name(ctx, graph_get_node_name(ctx, id))
-			node := graph_add_raw(
+			return make_node(
 				ctx,
+				id,
 				u16(node.itype) + OP_OFFSET,
-				node.dt,
-				{node.inps[0]},
+				node.inps[:1],
+				{imm = i32(lhs_const.value)},
 			)
-			extra := graph_extra(ctx, node, X64_Mem_Op)
-			extra^ = {}
-			extra.imm = i32(lhs_const.value)
-			return node
 		}
+	case .Load, .Load_S:
+		if base != 0 {
+			return make_node(
+				ctx,
+				id,
+				u16(X64_Node_Type.X64_Load),
+				{node.inps[0], node.inps[1], base},
+				{dis = displacement, signed = node.itype == .Load_S},
+			)
+		}
+	case .Store:
+		if base != 0 {
+			return make_node(
+				ctx,
+				id,
+				u16(X64_Node_Type.X64_Store),
+				{node.inps[0], node.inps[1], base, node.inps[3]},
+				{dis = displacement},
+			)
+		}
+	}
+
+	make_node :: proc(
+		graph: ^Graph,
+		from: Node_ID,
+		type: u16,
+		inps: []Node_ID,
+		extra: X64_Mem_Op,
+	) -> Node_ID {
+		push_node_name(graph, graph_get_node_name(graph, from))
+		fnode := graph_get(graph, from)
+		node := graph_add_raw(graph, type, fnode.dt, inps)
+		graph_extra(graph, node, X64_Mem_Op)^ = extra
+		return node
 	}
 
 	return 0
@@ -267,7 +315,7 @@ x64_reg_mask_of :: proc(
 	case .Call:
 		return reg_mask_single(ra, ARGS[idx - 1])
 	case:
-		fmt.panicf("TODO: %v %v", node.itype, idx)
+		fmt.panicf("TODO: %v %v", node.xtype, idx)
 	}
 }
 
@@ -431,16 +479,23 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 
 	block_base := ctx.gvn - u32(len(ctx.bbs))
 	node := graph_expand(ctx, instr)
+	mem_op_placeholder: X64_Mem_Op
+	mem_op := graph_extra(ctx, node, X64_Mem_Op)
+	if mem_op == nil {
+		mem_op = &mem_op_placeholder
+	}
+
 	switch node.xtype {
 	case .Local:
 	case .Local_Addr:
 		// lea [rsp + $offset]
 		offset := graph_extra(ctx, node.inps[0], Local).offset
 		emit_stack_lea(ctx.code, reg_of(ctx, instr), offset)
-	case .Store:
+	case .Store, .X64_Store:
 		dt := graph_get(ctx, node.inps[3]).dt
 		bse := reg_of(ctx, node.inps[2])
 		val := reg_of(ctx, node.inps[3])
+		dis := mem_op.dis
 
 		rx := rex(val, bse, NO_INDEX, DT_SIZE[dt] == 8)
 		switch dt {
@@ -456,50 +511,47 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 			emit(ctx.code, {rx, 0x89})
 		}
 
-		emit_indirect_addr(ctx.code, val, bse, NO_INDEX, 1, 0)
-	case .Load:
+		emit_indirect_addr(ctx.code, val, bse, NO_INDEX, 1, dis)
+	case .Load, .X64_Load, .Load_S:
 		dt := node.dt
 		bse := reg_of(ctx, node.inps[2])
 		val := reg_of(ctx, instr)
+		dis := mem_op.dis
+		signed := mem_op.signed || node.itype == .Load_S
 
-		rx := rex(val, bse, NO_INDEX, DT_SIZE[dt] == 8)
-		switch dt {
-		case .Void:
-		case .I8:
-			// movzx $val, [$bse]
-			emit(ctx.code, {rx, 0x0f, 0xb6})
-		case .I16:
-			// movzx $val, [$bse]
-			emit(ctx.code, {rx, 0x0f, 0xb7})
-		case .I32, .I64:
-			// mov $val, [$bse]
-			emit(ctx.code, {rx, 0x8b})
+		rx := rex(val, bse, NO_INDEX, DT_SIZE[dt] == 8 || signed)
+		if signed {
+			switch dt {
+			case .Void:
+			case .I8:
+				// movsx $val, [$bse]
+				emit(ctx.code, {rx, 0x0f, 0xbe})
+			case .I16:
+				// movsx $val, [$bse]
+				emit(ctx.code, {rx, 0x0f, 0xbf})
+			case .I32:
+				// movsxd $val, [$bse]
+				emit(ctx.code, {rx, 0x63})
+			case .I64:
+				// mov $val, [$bse]
+				emit(ctx.code, {rx, 0x8b})
+			}
+		} else {
+			switch dt {
+			case .Void:
+			case .I8:
+				// movzx $val, [$bse]
+				emit(ctx.code, {rx, 0x0f, 0xb6})
+			case .I16:
+				// movzx $val, [$bse]
+				emit(ctx.code, {rx, 0x0f, 0xb7})
+			case .I32, .I64:
+				// mov $val, [$bse]
+				emit(ctx.code, {rx, 0x8b})
+			}
 		}
 
-		emit_indirect_addr(ctx.code, val, bse, NO_INDEX, 1, 0)
-	case .Load_S:
-		dt := node.dt
-		bse := reg_of(ctx, node.inps[2])
-		val := reg_of(ctx, instr)
-
-		rx := rex(val, bse, NO_INDEX, true)
-		switch dt {
-		case .Void:
-		case .I8:
-			// movsx $val, [$bse]
-			emit(ctx.code, {rx, 0x0f, 0xbe})
-		case .I16:
-			// movsx $val, [$bse]
-			emit(ctx.code, {rx, 0x0f, 0xbf})
-		case .I32:
-			// movsxd $val, [$bse]
-			emit(ctx.code, {rx, 0x63})
-		case .I64:
-			// mov $val, [$bse]
-			emit(ctx.code, {rx, 0x8b})
-		}
-
-		emit_indirect_addr(ctx.code, val, bse, NO_INDEX, 1, 0)
+		emit_indirect_addr(ctx.code, val, bse, NO_INDEX, 1, dis)
 	case .Start, .Entry, .Then, .Else, .Region, .Loop, .Call_End:
 		fmt.panicf("Not reachable form here %v", node.node)
 	case .If:
@@ -584,8 +636,7 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 	case .X64_Add, .X64_Sub:
 		op := OPCODE_TABLE[node.xtype]
 		dst := reg_of(ctx, node.inps[0])
-		extra := graph_extra(ctx, node, X64_Mem_Op)
-		imm := i32(extra.imm)
+		imm := mem_op.imm
 
 		rx := rex(RAX, dst, RAX, true)
 		emit(ctx.code, {rx, op.opcode, mod_sm(.Direct, op.ext, dst)})

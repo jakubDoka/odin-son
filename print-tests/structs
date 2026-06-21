@@ -45,29 +45,19 @@ main:
 =========== OPT LEVEL: Full ===========
 main:
      push rbx
-     push rbp
-     push r12
      sub rsp, 0x30
      lea rdi, [rsp]
      mov rsi, 0x00
      mov rdx, 0x18
      call :$set
      mov rax, 0x02
-     lea rbx, [rsp]
-     add rbx, 0x08
      mov rcx, 0x03
-     mov rdx, rbx
+     lea rdx, [rsp]
      add rdx, 0x08
-     add rbx, 0x00
-     mov [rbx], rax
+     mov [rdx], rax
+     mov [rdx+0x08], rcx
      lea rbx, [rsp+0x18]
-     add rbx, 0x00
-     lea rbp, [rsp+0x18]
-     add rbp, 0x08
-     mov r12, rbp
-     add r12, 0x00
-     add rbp, 0x08
-     mov [rdx], rcx
+     add rbx, 0x08
      mov rsi, 0x00
      mov rdx, 0x18
      lea rdi, [rsp+0x18]
@@ -76,15 +66,13 @@ main:
      mov rdx, 0x18
      lea rdi, [rsp+0x18]
      call :$copy
-     mov rcx, [r12]
-     mov rax, rbp
-     mov rdx, [rax]
      mov rax, rbx
+     mov rcx, [rax]
+     mov rdx, [rbx+0x08]
+     lea rax, [rsp+0x18]
      mov rax, [rax]
      add rax, rcx
      add rax, rdx
      sub rsp, 0xFFFFFFFFFFFFFFD0
-     pop r12
-     pop rbp
      pop rbx
      ret

@@ -2,148 +2,14 @@
 main:
      push rbx
      push rbp
-     mov rdi, 0x00
-     mov rbp, rdi
-     mov rbx, rdi
-     jmp :0
-
-000: mov rax, 0x01
-     add rbp, rax
-     mov rcx, 0x02
-     mov rdx, rbp
-     cmp rdx, rcx
-     setz dl
-     movzx rdx, dl
-     test rdx, rdx
-     jz :1
-     jmp :2
-
-001: mov rcx, rbp
-     cmp rcx, rax
-     setz cl
-     movzx rcx, cl
-     test rcx, rcx
-     jz :3
-     jmp :4
-
-003: add rbp, rax
-     mov rbx, rax
-     jmp :5
-
-004: jmp :5
-
-005: jmp :0
-
-002: mov rdx, rbx
-     cmp rdx, rdi
-     setz dl
-     movzx rdx, dl
-     mov rbp, 0x03
-     test rdx, rdx
-     jz :6
-     jmp :7
-
-006: jmp :8
-
-007: mov rsi, rdi
-     jmp :9
-
-009: add rsi, rax
-     mov rdx, rsi
-     cmp rdx, rbp
-     setz dl
-     movzx rdx, dl
-     test rdx, rdx
-     jz :10
-     jmp :11
-
-010: mov rdx, rsi
-     cmp rdx, rcx
-     setz dl
-     movzx rdx, dl
-     test rdx, rdx
-     jz :12
-     jmp :13
-
-012: mov rdx, rsi
-     cmp rdx, rax
-     setz dl
-     movzx rdx, dl
-     test rdx, rdx
-     jz :14
-     jmp :15
-
-014: add rsi, rax
-     mov rbx, rcx
-     jmp :16
-
-015: jmp :17
-
-013: jmp :17
-
-017: jmp :16
-
-016: jmp :9
-
-011: jmp :8
-
-008: mov rcx, rbx
-     cmp rcx, rdi
-     setnz cl
-     movzx rcx, cl
-     test rcx, rcx
-     jz :18
-     jmp :19
-
-018: mov rax, rbx
-     jmp :20
-
-019: jmp :21
-
-021: add rdi, rax
-     mov rcx, rdi
-     cmp rcx, rbp
-     setz cl
-     movzx rcx, cl
-     test rcx, rcx
-     jz :22
-     jmp :23
-
-022: mov rcx, rdi
-     add rcx, rax
-     mov rdx, 0x04
-     cmp rdx, rcx
-     setz dl
-     movzx rdx, dl
-     test rdx, rdx
-     jz :24
-     jmp :25
-
-024: mov rdi, rcx
-     jmp :21
-
-025: mov rax, rbp
-     jmp :26
-
-023: jmp :26
-
-026: jmp :20
-
-020: pop rbp
-     pop rbx
-     ret
-=========== OPT LEVEL: Full ===========
-main:
-     push rbx
-     push rbp
      mov rcx, 0x00
-     mov rsi, rcx
-     mov rbp, rcx
+     mov rsi, 0x00
+     mov rbp, 0x00
      jmp :0
 
 000: mov rax, 0x01
+     add rsi, rax
      mov rdx, 0x02
-     add rsi, 0x01
      mov rbx, rsi
      cmp rbx, rdx
      setz bl
@@ -160,8 +26,8 @@ main:
      jz :3
      jmp :4
 
-003: add rsi, 0x01
-     mov rbp, rax
+003: add rsi, rax
+     mov rbp, 0x01
      jmp :5
 
 004: jmp :5
@@ -179,10 +45,10 @@ main:
 
 006: jmp :8
 
-007: mov rdi, rcx
+007: mov rdi, 0x00
      jmp :9
 
-009: add rdi, 0x01
+009: add rdi, rax
      mov rbx, rdi
      cmp rbx, rsi
      setz bl
@@ -207,8 +73,8 @@ main:
      jz :14
      jmp :15
 
-014: add rdi, 0x01
-     mov rbp, rdx
+014: add rdi, rax
+     mov rbp, 0x02
      jmp :16
 
 015: jmp :17
@@ -232,10 +98,10 @@ main:
 018: mov rax, rbp
      jmp :20
 
-019: mov rdx, rcx
+019: mov rdx, 0x00
      jmp :21
 
-021: add rdx, 0x01
+021: add rdx, rax
      mov rcx, rdx
      cmp rcx, rsi
      setz cl
@@ -244,8 +110,8 @@ main:
      jz :22
      jmp :23
 
-022: mov rcx, 0x04
-     add rdx, 0x01
+022: add rdx, rax
+     mov rcx, 0x04
      cmp rcx, rdx
      setz cl
      movzx rcx, cl
@@ -255,10 +121,145 @@ main:
 
 024: jmp :21
 
-025: mov rax, rsi
+025: mov rax, 0x03
      jmp :26
 
-023: jmp :26
+023: mov rax, 0x01
+     jmp :26
+
+026: jmp :20
+
+020: pop rbp
+     pop rbx
+     ret
+=========== OPT LEVEL: Full ===========
+main:
+     push rbx
+     push rbp
+     mov rax, 0x00
+     mov rsi, 0x00
+     mov rbp, 0x00
+     jmp :0
+
+000: mov rcx, 0x01
+     mov rdx, 0x02
+     add rsi, 0x01
+     mov rbx, rsi
+     cmp rbx, rdx
+     setz bl
+     movzx rbx, bl
+     test rbx, rbx
+     jz :1
+     jmp :2
+
+001: mov rdx, rsi
+     cmp rdx, rcx
+     setz dl
+     movzx rdx, dl
+     test rdx, rdx
+     jz :3
+     jmp :4
+
+003: add rsi, 0x01
+     mov rbp, 0x01
+     jmp :5
+
+004: jmp :5
+
+005: jmp :0
+
+002: mov rbx, rbp
+     cmp rbx, rax
+     setz bl
+     movzx rbx, bl
+     mov rsi, 0x03
+     test rbx, rbx
+     jz :6
+     jmp :7
+
+006: jmp :8
+
+007: mov rdi, 0x00
+     jmp :9
+
+009: add rdi, 0x01
+     mov rbx, rdi
+     cmp rbx, rsi
+     setz bl
+     movzx rbx, bl
+     test rbx, rbx
+     jz :10
+     jmp :11
+
+010: mov rbx, rdi
+     cmp rbx, rdx
+     setz bl
+     movzx rbx, bl
+     test rbx, rbx
+     jz :12
+     jmp :13
+
+012: mov rbx, rdi
+     cmp rbx, rcx
+     setz bl
+     movzx rbx, bl
+     test rbx, rbx
+     jz :14
+     jmp :15
+
+014: add rdi, 0x01
+     mov rbp, 0x02
+     jmp :16
+
+015: jmp :17
+
+013: jmp :17
+
+017: jmp :16
+
+016: jmp :9
+
+011: jmp :8
+
+008: mov rcx, rbp
+     cmp rcx, rax
+     setnz cl
+     movzx rcx, cl
+     test rcx, rcx
+     jz :18
+     jmp :19
+
+018: mov rax, rbp
+     jmp :20
+
+019: mov rcx, 0x00
+     jmp :21
+
+021: add rcx, 0x01
+     mov rax, rcx
+     cmp rax, rsi
+     setz al
+     movzx rax, al
+     test rax, rax
+     jz :22
+     jmp :23
+
+022: mov rax, 0x04
+     add rcx, 0x01
+     cmp rax, rcx
+     setz al
+     movzx rax, al
+     test rax, rax
+     jz :24
+     jmp :25
+
+024: jmp :21
+
+025: mov rax, 0x03
+     jmp :26
+
+023: mov rax, 0x01
+     jmp :26
 
 026: jmp :20
 

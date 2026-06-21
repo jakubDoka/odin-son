@@ -3,13 +3,12 @@ main:
      push rbx
      push rbp
      mov rbp, 0x00
-     mov rsi, rbp
      jmp :0
 
 000: mov rax, 0x01
-     add rsi, rax
+     add rbp, rax
      mov rcx, 0x04
-     mov rdx, rsi
+     mov rdx, rbp
      cmp rdx, rcx
      setz dl
      movzx rdx, dl
@@ -17,7 +16,7 @@ main:
      jz :1
      jmp :2
 
-001: mov rbx, rbp
+001: mov rbx, 0x00
      jmp :3
 
 003: add rbx, rax
@@ -39,13 +38,14 @@ main:
 
 006: jmp :3
 
-007: mov rdx, rbp
+007: mov rbx, 0x00
+     mov rdx, 0x00
      jmp :8
 
-008: add rbp, rax
-     add rdx, rax
+008: add rdx, rax
+     add rbx, rax
      mov rcx, 0x05
-     cmp rcx, rbp
+     cmp rcx, rdx
      setz cl
      movzx rcx, cl
      test rcx, rcx
@@ -54,12 +54,12 @@ main:
 
 009: jmp :8
 
-010: mov rax, rdx
+010: mov rax, rbx
      jmp :11
 
 005: jmp :0
 
-002: mov rax, rbp
+002: mov rax, 0x00
      jmp :11
 
 011: pop rbp
@@ -68,14 +68,12 @@ main:
 =========== OPT LEVEL: Full ===========
 main:
      push rbx
-     push rbp
      mov rbx, 0x00
-     mov rbp, rbx
      jmp :0
 
 000: mov rax, 0x04
-     add rbp, 0x01
-     mov rcx, rbp
+     add rbx, 0x01
+     mov rcx, rbx
      cmp rcx, rax
      setz cl
      movzx rcx, cl
@@ -83,7 +81,7 @@ main:
      jz :1
      jmp :2
 
-001: mov rdx, rbx
+001: mov rdx, 0x00
      jmp :3
 
 003: add rdx, 0x01
@@ -105,13 +103,14 @@ main:
 
 006: jmp :3
 
-007: mov rcx, rbx
+007: mov rdx, 0x00
+     mov rcx, 0x00
      jmp :8
 
 008: mov rax, 0x05
-     add rbx, 0x01
      add rcx, 0x01
-     cmp rax, rbx
+     add rdx, 0x01
+     cmp rax, rcx
      setz al
      movzx rax, al
      test rax, rax
@@ -120,14 +119,13 @@ main:
 
 009: jmp :8
 
-010: mov rax, rcx
+010: mov rax, rdx
      jmp :11
 
 005: jmp :0
 
-002: mov rax, rbx
+002: mov rax, 0x00
      jmp :11
 
-011: pop rbp
-     pop rbx
+011: pop rbx
      ret

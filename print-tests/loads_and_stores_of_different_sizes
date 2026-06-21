@@ -93,7 +93,7 @@ main:
 
 012: lea rax, [rsp+0x16]
      mov [rax], r8
-     mov rcx, r8
+     mov rcx, 0x00
      sub rcx, rbp
      mov [rax], rcx
      mov rax, [rax]
@@ -104,7 +104,7 @@ main:
      jz :14
      jmp :15
 
-014: mov rax, r8
+014: mov rax, 0x00
      jmp :16
 
 015: mov rax, 0x08
@@ -128,7 +128,7 @@ main:
 003: mov rax, 0x02
      jmp :23
 
-001: mov rax, rbp
+001: mov rax, 0x01
      jmp :23
 
 023: jmp :22
@@ -163,7 +163,7 @@ main:
      cmp rcx, rdx
      setnz cl
      movzx rcx, cl
-     mov rbp, 0x01
+     mov rbx, 0x01
      test rcx, rcx
      jz :0
      jmp :1
@@ -171,57 +171,57 @@ main:
 000: lea rdx, [rsp+0x02]
      mov rcx, 0x00
      mov [rdx], cx
-     mov rbx, 0x01
-     mov [rdx], bx
+     mov rbp, 0x01
+     mov [rdx], bp
      movzx edx, word ptr [rdx]
-     cmp rdx, rbx
+     cmp rdx, rbp
      setnz dl
      movzx rdx, dl
      test rdx, rdx
      jz :2
      jmp :3
 
-002: lea rbx, [rsp+0x06]
+002: lea rbp, [rsp+0x06]
      mov rdx, 0x00
-     mov [rbx], edx
+     mov [rbp], edx
      mov rsi, 0x01
-     mov [rbx], esi
-     mov ebx, [rbx]
-     cmp rbx, rsi
-     setnz bl
-     movzx rbx, bl
-     test rbx, rbx
-     jz :4
-     jmp :5
-
-004: lea rsi, [rsp+0x0E]
-     mov rbx, 0x00
-     mov [rsi], rbx
-     mov [rsi], rbp
-     mov rsi, [rsi]
-     cmp rsi, rbp
-     setnz sil
-     movzx rsi, sil
-     test rsi, rsi
-     jz :6
-     jmp :7
-
-006: lea rbp, [rsp+0x01]
-     mov [rbp], al
-     mov rax, 0xFFFFFFFFFFFFFFFF
-     mov [rbp], rax
-     movsx rbp, byte ptr [rbp]
-     cmp rbp, rax
+     mov [rbp], esi
+     mov ebp, [rbp]
+     cmp rbp, rsi
      setnz bpl
      movzx rbp, bpl
      test rbp, rbp
+     jz :4
+     jmp :5
+
+004: lea rbp, [rsp+0x0E]
+     mov rsi, 0x00
+     mov [rbp], rsi
+     mov [rbp], rbx
+     mov rbp, [rbp]
+     cmp rbp, rbx
+     setnz bpl
+     movzx rbp, bpl
+     test rbp, rbp
+     jz :6
+     jmp :7
+
+006: lea rbx, [rsp+0x01]
+     mov [rbx], al
+     mov rax, 0xFFFFFFFFFFFFFFFF
+     mov [rbx], rax
+     movsx rbx, byte ptr [rbx]
+     cmp rbx, rax
+     setnz bl
+     movzx rbx, bl
+     test rbx, rbx
      jz :8
      jmp :9
 
-008: lea rbp, [rsp+0x04]
-     mov [rbp], cx
-     mov [rbp], rax
-     movsx rcx, word ptr [rbp]
+008: lea rbx, [rsp+0x04]
+     mov [rbx], cx
+     mov [rbx], rax
+     movsx rcx, word ptr [rbx]
      cmp rcx, rax
      setnz cl
      movzx rcx, cl
@@ -241,7 +241,7 @@ main:
      jmp :13
 
 012: lea rcx, [rsp+0x16]
-     mov [rcx], rbx
+     mov [rcx], rsi
      mov [rcx], rax
      mov rcx, [rcx]
      cmp rcx, rax
@@ -251,7 +251,7 @@ main:
      jz :14
      jmp :15
 
-014: mov rax, rbx
+014: mov rax, 0x00
      jmp :16
 
 015: mov rax, 0x08
@@ -275,7 +275,7 @@ main:
 003: mov rax, 0x02
      jmp :23
 
-001: mov rax, rbp
+001: mov rax, 0x01
      jmp :23
 
 023: jmp :22

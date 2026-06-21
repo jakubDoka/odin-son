@@ -2,42 +2,41 @@
 main:
      push rbx
      push rbp
-     mov rcx, 0x00
-     mov rdi, rcx
-     mov rax, rcx
+     mov rsi, 0x00
+     mov rax, 0x00
      jmp :0
 
-000: mov rdx, 0x03
-     mov rbx, rdi
-     cmp rbx, rdx
-     setz bl
-     movzx rbx, bl
-     test rbx, rbx
+000: mov rcx, 0x03
+     mov rdx, rsi
+     cmp rdx, rcx
+     setz dl
+     movzx rdx, dl
+     test rdx, rdx
      jz :1
      jmp :2
 
-001: mov rbp, rcx
-     mov rsi, rax
+001: mov rbx, 0x00
+     mov rbp, rax
      jmp :3
 
-003: mov rax, rbp
-     cmp rax, rdx
+003: mov rax, rbx
+     cmp rax, rcx
      setz al
      movzx rax, al
-     mov rbx, 0x01
+     mov rdx, 0x01
      test rax, rax
      jz :4
      jmp :5
 
-004: mov rax, rdi
-     imul rax, rbp
-     add rax, rsi
-     add rbp, rbx
-     mov rsi, rax
+004: mov rax, rsi
+     imul rax, rbx
+     add rax, rbp
+     add rbx, rdx
+     mov rbp, rax
      jmp :3
 
-005: add rdi, rbx
-     mov rax, rsi
+005: add rsi, rdx
+     mov rax, rbp
      jmp :0
 
 002: pop rbp
@@ -47,41 +46,40 @@ main:
 main:
      push rbx
      push rbp
-     mov rcx, 0x00
-     mov rsi, rcx
-     mov rax, rcx
+     mov rbp, 0x00
+     mov rax, 0x00
      jmp :0
 
-000: mov rdx, 0x03
-     mov rbx, rsi
-     cmp rbx, rdx
-     setz bl
-     movzx rbx, bl
-     test rbx, rbx
+000: mov rcx, 0x03
+     mov rdx, rbp
+     cmp rdx, rcx
+     setz dl
+     movzx rdx, dl
+     test rdx, rdx
      jz :1
      jmp :2
 
-001: mov rbx, rcx
-     mov rbp, rax
+001: mov rdx, 0x00
+     mov rbx, rax
      jmp :3
 
-003: mov rax, rbx
-     cmp rax, rdx
+003: mov rax, rdx
+     cmp rax, rcx
      setz al
      movzx rax, al
      test rax, rax
      jz :4
      jmp :5
 
-004: mov rax, rsi
-     imul rax, rbx
-     add rax, rbp
-     add rbx, 0x01
-     mov rbp, rax
+004: mov rax, rbp
+     imul rax, rdx
+     add rax, rbx
+     add rdx, 0x01
+     mov rbx, rax
      jmp :3
 
-005: add rsi, 0x01
-     mov rax, rbp
+005: add rbp, 0x01
+     mov rax, rbx
      jmp :0
 
 002: pop rbp

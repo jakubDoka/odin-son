@@ -171,6 +171,7 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 		if node.itype == .Loop {
 			tree = new(Loop_Tree)
 			tree.depth = 1 + prev_tree.depth
+			tree.infinite = true
 			ctx.loop_trees[node.gvn] = tree
 		}
 
@@ -391,6 +392,17 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 			ctx.late_schedules[node.gvn] = lca
 		}
 
+		if node.itype == .Loop {
+			for out in node.outs {
+				onode := graph_expand(graph, out.id)
+				if ctx.late_schedules[onode.gvn] == 0 {
+					if bit_arr.set(in_worklist, onode.gvn) {
+						queue.push_back(&worklist, out.id)
+					}
+				}
+			}
+		}
+
 		if node.itype != .Entry {
 			for inp in node.inps {
 				inode := graph_expand(graph, inp)
@@ -468,6 +480,27 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 				inject_at(&bb.instrs, phi_count, instr)
 				phi_count += 1
 			}
+		}
+
+		// TODO: this is extremely stupid but works, fix later
+		changed := true
+		for _ in 0 ..< 1000 {
+			changed = false
+
+			for &instr, i in bb.instrs {
+				inode := graph_expand(graph, instr)
+
+				if inode.itype != .Phi {
+					for &oinstr in bb.instrs[i + 1:] {
+						if slice.contains(inode.inps, oinstr) {
+							instr, oinstr = oinstr, instr
+							changed = true
+						}
+					}
+				}
+			}
+
+			if !changed do break
 		}
 	}
 }

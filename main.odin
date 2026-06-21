@@ -13,7 +13,6 @@ import "core:odin/parser"
 import "core:odin/tokenizer"
 import "core:os"
 import "core:reflect"
-import "core:slice"
 import "core:strconv"
 import "core:strings"
 import "core:sync"
@@ -511,13 +510,13 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 				ctx.root_mem,
 			)
 
-			for par, i in prc.params {
+			for par, j in prc.params {
 				value := backend.graph_add_arg(
 					&ctx,
 					"arg",
 					type_to_dt(par.type),
 					entry,
-					u32(i),
+					u32(j),
 				)
 				idx := backend.graph_push_scope_value(
 					&ctx,
@@ -539,6 +538,10 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 
 			spec := &backend.SPECS[.X64]
 			ctx.node_spec = spec
+
+			if level == .Full {
+				backend.graph_iter_peeps(&ctx)
+			}
 
 			schedule: backend.Graph_Schedule
 			backend.graph_schedule(&ctx, &schedule)

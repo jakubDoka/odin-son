@@ -614,6 +614,9 @@ regalloc_round :: proc(
 			ilrg := find(get_lrg(ctx, instr))
 			inlrg := find(get_lrg(ctx, inode.inps[0]))
 
+			assert(graph_get(graph, inlrg.longest_def).dt != .Void)
+			assert(graph_get(graph, ilrg.longest_def).dt != .Void)
+
 			if ilrg == inlrg do continue
 
 			iadj, inadj := ifg[ilrg.index], ifg[inlrg.index]
@@ -659,6 +662,8 @@ regalloc_round :: proc(
 			}
 
 			winner.node = inlrg.node
+			winner.longest_use_area = inlrg.longest_use_area
+			winner.longest_def = inlrg.longest_def
 			ifg[winner.index] = buf
 
 			ordered_remove(&bb.instrs, i)
@@ -871,16 +876,21 @@ regalloc_round :: proc(
 	}
 
 	if color_fails > 0 {
+		cursor := 0
 		order := arna.smake(ra, []bit_field u64 {
 				id:            u32 | 32,
 				biggest_split: u32 | 32,
 			}, used_lrgs_check)
-		for &o, i in order {
-			o = {
-				id            = u32(i),
-				biggest_split = 100000 - lrgs[i].longest_use_area,
+
+		for lrg in lrgs[:used_lrgs_check] {
+			if lrg.parent != nil do continue
+			order[cursor] = {
+				id            = u32(lrg.index),
+				biggest_split = 100000 - lrg.longest_use_area,
 			}
+			cursor += 1
 		}
+		order = order[:cursor]
 
 		sort.quick_sort(order)
 
@@ -1048,9 +1058,14 @@ regalloc_round :: proc(
 		//slot^ = n
 	}
 
-	get_lrg :: proc(ctx: Ctx, node: Node_ID) -> ^Lrg {
+	get_lrg :: proc(ctx: Ctx, node: Node_ID, logg := false) -> ^Lrg {
 		node := graph_get(ctx.graph, node)
-		if int(node.gvn) >= len(ctx.lrg_table) do return nil
+		if int(node.gvn) >= len(ctx.lrg_table) {
+			if logg {
+				log.error("lrg table out of bounds")
+			}
+			return nil
+		}
 		return ctx.lrg_table[node.gvn]
 	}
 
@@ -1209,8 +1224,6 @@ regalloc_round :: proc(
 		if a.rank == b.rank {
 			a.rank += 1
 		}
-
-		assert(find(a) != nil) // just assert find works
 
 		return a
 	}

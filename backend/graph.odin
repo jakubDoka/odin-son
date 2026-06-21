@@ -1,6 +1,7 @@
 package backend
 
 import "../vendored/gam/util/arna"
+import "base:intrinsics"
 import "base:runtime"
 import "core:container/queue"
 import "core:fmt"
@@ -102,16 +103,18 @@ Class_Flag :: enum {
 	Interned,
 	Comutes,
 	Immortal,
+	Store,
+	Load,
 }
 
 Cfg :: struct {
-	using _: struct #raw_union {
+	using props: struct #raw_union {
 		idepth: u32,
 	},
 }
 
 Region :: struct {
-	using base: Cfg,
+	using _: Cfg,
 }
 
 Scope :: struct #align (4) {
@@ -123,8 +126,8 @@ CInt :: struct #align (4) {
 }
 
 Call :: struct {
-	using base: Cfg,
-	cid:        u32,
+	using _: Cfg,
+	cid:     u32,
 }
 
 Tup :: struct {
@@ -132,7 +135,7 @@ Tup :: struct {
 }
 
 Local :: struct {
-	using _: struct #raw_union {
+	using props: struct #raw_union {
 		size:   u32,
 		offset: u32,
 	},
@@ -297,7 +300,6 @@ graph_iter_peeps :: proc(graph: ^Graph) {
 		}
 
 		for out in node.outs {
-			onode := graph_expand(graph, out.id)
 			worklist_add(graph, &worklist, out.id)
 		}
 
@@ -645,15 +647,12 @@ graph_unintern :: proc(graph: ^Graph, id: Node_ID, precomputed_hash: u8 = 0) {
 }
 
 graph_subsume :: proc(graph: ^Graph, with: Node_ID, target: Node_ID) {
-	// TODO: explain this to AI and try to make it find bugs here
-
 	wnode := graph_expand(graph, with)
 	tnode := graph_expand(graph, target)
 
-	// 0.0010629252 37632
-	// 0.0013431833 29780
+	assert(with != target)
 
-	try_recycle: {
+	try_recycle: if false {
 		wtotal_size :=
 			size_of(Node) +
 			uint(graph.node_extra_sizes[wnode.rtype]) * PRECISION +
@@ -676,6 +675,7 @@ graph_subsume :: proc(graph: ^Graph, with: Node_ID, target: Node_ID) {
 
 		for inp, i in tnode.inps {
 			if inp == 0 do continue
+			assert(inp != with)
 			graph_remove_output(graph, inp, {idx = i, id = target})
 		}
 
@@ -708,6 +708,7 @@ graph_subsume :: proc(graph: ^Graph, with: Node_ID, target: Node_ID) {
 	tnode.output_count = 0
 
 	wnode = graph_expand(graph, with)
+
 	copy(wnode.outs[len(wnode.outs) - len(tnode.outs):], tnode.outs)
 
 	for out in tnode.outs {
@@ -732,6 +733,7 @@ graph_subsume :: proc(graph: ^Graph, with: Node_ID, target: Node_ID) {
 	for out in tnode.outs {
 		graph_intern(graph, out.id)
 	}
+
 }
 
 graph_node_eq :: proc(graph: ^Graph, a, b: Node_ID) -> bool {
@@ -1238,7 +1240,7 @@ graph_display :: proc(
 			)
 		}
 
-		graph_display_node(w, graph, bb.head)
+		graph_display_node(w, graph, bb.head, scheduled = true)
 
 		fmt.wprint(w, " {\n")
 
@@ -1264,7 +1266,7 @@ graph_display :: proc(
 			} else if prefix != nil {
 				prefix(w, inode, bb)
 			}
-			graph_display_node(w, graph, instr)
+			graph_display_node(w, graph, instr, scheduled = true)
 			fmt.wprint(w, "\n")
 		}
 
@@ -1272,7 +1274,12 @@ graph_display :: proc(
 	}
 }
 
-graph_display_node :: proc(w: io.Writer, graph: ^Graph, id: Node_ID) {
+graph_display_node :: proc(
+	w: io.Writer,
+	graph: ^Graph,
+	id: Node_ID,
+	scheduled := false,
+) {
 	node := graph_expand(graph, id)
 
 	extra := graph_extra(graph, node)
@@ -1286,13 +1293,19 @@ graph_display_node :: proc(w: io.Writer, graph: ^Graph, id: Node_ID) {
 	written_one: bool
 	graph_display_extra(w, extra, "", &written_one)
 
-	for inp in node.inps {
-		if written_one do fmt.wprintf(w, ", ")
+	for inp, i in node.inps {
+		if written_one {
+			if i == int(node.ordered_input_count) {
+				fmt.wprintf(w, "; ")
+			} else {
+				fmt.wprintf(w, ", ")
+			}
+		}
 		written_one = true
 		graph_display_node_gvn(w, graph, inp)
 	}
 
-	if node.itype == .Jump {
+	if node.itype == .Jump && scheduled {
 		reg := node.outs[0]
 		rnode := graph_expand(graph, reg.id)
 		for out in rnode.outs {
@@ -1305,7 +1318,7 @@ graph_display_node :: proc(w: io.Writer, graph: ^Graph, id: Node_ID) {
 		}
 	}
 
-	if node.itype == .Region || node.itype == .Loop {
+	if (node.itype == .Region || node.itype == .Loop) && scheduled {
 		for out in node.outs {
 			onode := graph_get(graph, out.id)
 			if onode.itype == .Phi {
@@ -1321,7 +1334,7 @@ graph_display_node :: proc(w: io.Writer, graph: ^Graph, id: Node_ID) {
 	for out in node.outs {
 		if out.id != 0 {
 			onode := graph_expand(graph, out.id)
-			if onode.itype == .Phi {
+			if onode.itype == .Phi && scheduled {
 				if out.idx != 0 {
 					reg := onode.inps[0]
 					rnode := graph_expand(graph, reg)

@@ -369,11 +369,11 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{}, // Mem
 			{}, // Local
 			{}, // Local_Addr
-			{}, // Copy
-			{}, // Set
-			{}, // Store
-			{Class_Flag.Interned}, // Load
-			{Class_Flag.Interned}, // Load_S
+			{Class_Flag.Store}, // Copy
+			{Class_Flag.Store}, // Set
+			{Class_Flag.Store}, // Store
+			{Class_Flag.Interned, Class_Flag.Load}, // Load
+			{Class_Flag.Interned, Class_Flag.Load}, // Load_S
 			{}, // If
 			{Class_Flag.Is_Basic_Block_Start}, // Then
 			{Class_Flag.Is_Basic_Block_Start}, // Else
@@ -551,6 +551,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{.General = 0}, // Call_End
 			{.General = 0}, // Ret
 			{.General = 0}, // Return
+			{.General = 0}, // X64_Add
+			{.General = 0}, // X64_Sub
 		},
 		interned_reg_masks = {
 			raw_data([]int{}),
@@ -615,6 +617,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{}, // Call_End
 			{{.General = 2}}, // Ret
 			{{.General = 7}, {.General = 2}}, // Return
+			{{.General = 1}, {.General = 1}}, // X64_Add
+			{{.General = 1}, {.General = 1}}, // X64_Sub
 		},
 		inplace_slot_idxs = {
 			-1, //Start
@@ -667,6 +671,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			-1, //Call_End
 			-1, //Ret
 			-1, //Return
+			0, //X64_Add
+			0, //X64_Sub
 		},
 		reg_mask_of = x64_reg_mask_of,
 		emit_function = x64_emit_function,
@@ -722,6 +728,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, //Call_End
 			1, //Ret
 			2, //Return
+			0, //X64_Add
+			0, //X64_Sub
 		},
 		inheritance_table = {
 			0b1, // Start
@@ -774,6 +782,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0b1, // Call_End
 			0b100, // Ret
 			0b1, // Return
+			0b100000000, // X64_Add
+			0b100000000, // X64_Sub
 		},
 		node_extra_sizes = {
 			1, // Start -> Cfg
@@ -826,6 +836,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			1, // Call_End -> Cfg
 			1, // Ret -> Tup
 			1, // Return -> Cfg
+			4, // X64_Add -> X64_Mem_Op
+			4, // X64_Sub -> X64_Mem_Op
 		},
 		node_flags = {
 			{}, // Start
@@ -862,11 +874,11 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{}, // Mem
 			{}, // Local
 			{}, // Local_Addr
-			{}, // Copy
-			{}, // Set
-			{}, // Store
-			{Class_Flag.Interned}, // Load
-			{Class_Flag.Interned}, // Load_S
+			{Class_Flag.Store}, // Copy
+			{Class_Flag.Store}, // Set
+			{Class_Flag.Store}, // Store
+			{Class_Flag.Interned, Class_Flag.Load}, // Load
+			{Class_Flag.Interned, Class_Flag.Load}, // Load_S
 			{}, // If
 			{Class_Flag.Is_Basic_Block_Start}, // Then
 			{Class_Flag.Is_Basic_Block_Start}, // Else
@@ -878,6 +890,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{Class_Flag.Is_Basic_Block_Start}, // Call_End
 			{}, // Ret
 			{Class_Flag.Immortal}, // Return
+			{Class_Flag.Load}, // X64_Add
+			{Class_Flag.Load}, // X64_Sub
 		},
 		node_extra_types = {
 			Cfg,
@@ -930,6 +944,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			Cfg,
 			Tup,
 			Cfg,
+			X64_Mem_Op,
+			X64_Mem_Op,
 		},
 		node_kind_name = {
 			`Start`,
@@ -982,6 +998,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			`Call_End`,
 			`Ret`,
 			`Return`,
+			`X64_Add`,
+			`X64_Sub`,
 		},
 	},
 }
@@ -1306,6 +1324,20 @@ X64_Node_Type :: enum u16 {
 	Call_End,
 	Ret,
 	Return,
+	X64_Add,
+	X64_Sub,
+}
+#assert(size_of(X64_Mem_Op) % 4 == 0)
+graph_add_x64_add :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype, lhs: Node_ID, rhs: Node_ID) -> (id: Node_ID) {
+	push_node_name(graph, name)
+	(^X64_Mem_Op)(graph_get_next_extra_slot(graph, u16(X64_Node_Type.X64_Add)))^ = {}
+	return graph_add_raw(graph, u16(X64_Node_Type.X64_Add), dt, {lhs, rhs})
+}
+#assert(size_of(X64_Mem_Op) % 4 == 0)
+graph_add_x64_sub :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype, lhs: Node_ID, rhs: Node_ID) -> (id: Node_ID) {
+	push_node_name(graph, name)
+	(^X64_Mem_Op)(graph_get_next_extra_slot(graph, u16(X64_Node_Type.X64_Sub)))^ = {}
+	return graph_add_raw(graph, u16(X64_Node_Type.X64_Sub), dt, {lhs, rhs})
 }
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
@@ -1313,6 +1345,7 @@ inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	else when T == CInt {return 3}
 	else when T == Tup {return 2}
 	else when T == Local {return 4}
+	else when T == X64_Mem_Op {return 8}
 	else when T == Region {return 6}
 	else when T == No_Extra {return 1}
 	else when T == Call {return 7}

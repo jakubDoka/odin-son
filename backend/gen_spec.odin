@@ -57,26 +57,33 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 	.Mem = {args = {"ctrl"}, default_type = .Void},
 	.Local = {id = Local, args = {"mem"}, default_type = .Void},
 	.Local_Addr = {args = {"local"}, default_type = .I64},
-	.Load = {id = Mem_Op, args = {"ctrl", "mem", "addr"}, flags = {.Interned}},
+	.Load = {
+		id = Mem_Op,
+		args = {"ctrl", "mem", "addr"},
+		flags = {.Interned, .Load},
+	},
 	.Load_S = {
 		id = Mem_Op,
 		args = {"ctrl", "mem", "addr"},
-		flags = {.Interned},
+		flags = {.Interned, .Load},
 	},
 	.Store = {
 		id = Mem_Op,
 		args = {"ctrl", "mem", "addr", "value"},
 		default_type = .Void,
+		flags = {.Store},
 	},
 	.Copy = {
 		id = Mem_Op,
 		args = {"ctrl", "mem", "dst", "src", "size"},
 		default_type = .Void,
+		flags = {.Store},
 	},
 	.Set = {
 		id = Mem_Op,
 		args = {"ctrl", "mem", "dst", "value", "size"},
 		default_type = .Void,
+		flags = {.Store},
 	},
 	.Split = {args = {"dest"}},
 	.Phi = {args = {"reg", "lhs", "rhs"}, flags = {.Interned}},
@@ -173,7 +180,10 @@ when (#load("node_specs.odin", string) or_else "") == "" {
 		Lazy_Phi,
 	}
 
-	X64_Node_Type :: enum u16 {}
+	X64_Node_Type :: enum u16 {
+		X64_Add,
+		X64_Sub,
+	}
 
 	@(rodata)
 	BUILDER_CLASSES := [Builder_Node_Type]Class_Spec {
@@ -182,7 +192,10 @@ when (#load("node_specs.odin", string) or_else "") == "" {
 	}
 
 	@(rodata)
-	X64_CLASSES := [X64_Node_Type]Class_Spec{}
+	X64_CLASSES := [X64_Node_Type]Class_Spec {
+		.X64_Add = {id = X64_Mem_Op, args = {"lhs", "rhs"}, flags = {.Load}},
+		.X64_Sub = {id = X64_Mem_Op, args = {"lhs", "rhs"}, flags = {.Load}},
+	}
 
 	inherit_idx_of :: proc($T: typeid) -> u8 {return 0}
 
@@ -348,10 +361,26 @@ generate_specs :: proc() {
 
 		for classes, j in spec.classes {
 			for class, i in classes.ids {
-				if class.id not_in inheritable {
-					assert(len(inheritable) < size_of(Inherit_Table_Elem) * 8)
-					inheritable[class.id] = len(inheritable)
+				collect_inheritable(class.id, &inheritable)
+
+				collect_inheritable :: proc(
+					id: typeid,
+					inheritable: ^map[typeid]int,
+				) {
+					if id not_in inheritable {
+						assert(
+							len(inheritable) < size_of(Inherit_Table_Elem) * 8,
+						)
+						inheritable[id] = len(inheritable)
+					}
+
+					field := reflect.struct_field_by_name(id, "_")
+					if field.is_using {
+						assert(field.offset == 0)
+						collect_inheritable(field.type.id, inheritable)
+					}
 				}
+
 				if class.group != "" {
 					g := groups[class.group]
 					g.spec = &spec
@@ -515,7 +544,7 @@ generate_specs :: proc() {
 					idx := inheritable[t]
 					slot^ |= 1 << uint(idx)
 
-					field := reflect.struct_field_by_name(t, "base")
+					field := reflect.struct_field_by_name(t, "_")
 					if field.is_using {
 						assert(field.offset == 0)
 						mark_inherits(slot, field.type.id, inheritable)

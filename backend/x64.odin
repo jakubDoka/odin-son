@@ -4,7 +4,6 @@ import "../vendored/gam/util/arna"
 import "../vendored/gam/util/bit_arr"
 import "base:intrinsics"
 import "core:fmt"
-import "core:log"
 import "core:mem"
 import "core:reflect"
 import "core:sort"
@@ -199,9 +198,54 @@ X64_IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec {
 }
 
 @(rodata)
-X64_REG_CLASSES := [X64_Node_Type]Reg_Class_Spec{}
+X64_REG_CLASSES := #partial [X64_Node_Type]Reg_Class_Spec {
+	.X64_Add = {
+		inplace_slot_idx = 0,
+		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK}},
+	},
+	.X64_Sub = {
+		inplace_slot_idx = 0,
+		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK}},
+	},
+}
+
+X64_Mem_Op :: struct {
+	imm:    i32,
+	dis:    u32,
+	scale:  u32,
+	signed: bool,
+}
 
 x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
+	id := graph_id(ctx, node)
+
+	lhs_const: ^CInt
+	lhs_const_in_i32_range: bool
+	if 1 < len(node.inps) {
+		lhs_const = graph_extra(ctx, node.inps[1], CInt)
+		if lhs_const != nil {
+			clamped := i64(i32(lhs_const.value))
+			lhs_const_in_i32_range = clamped == lhs_const.value
+		}
+	}
+
+	#partial switch node.itype {
+	case .Add:
+		if lhs_const_in_i32_range {
+			push_node_name(ctx, graph_get_node_name(ctx, id))
+			node := graph_add_raw(
+				ctx,
+				u16(X64_Node_Type.X64_Add),
+				node.dt,
+				{node.inps[0]},
+			)
+			extra := graph_extra(ctx, node, X64_Mem_Op)
+			extra^ = {}
+			extra.imm = i32(lhs_const.value)
+			return node
+		}
+	}
+
 	return 0
 }
 
@@ -378,6 +422,8 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		.Rem     = {0xF7, 0b111},
 		.Load    = {0x8b, 0},
 		.Store   = {0x89, 0},
+		.X64_Add = {0x81, 0b000},
+		.X64_Sub = {0x81, 0b101},
 	}
 
 	block_base := ctx.gvn - u32(len(ctx.bbs))
@@ -532,6 +578,15 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		// mov
 		emit_single_op(ctx.code, 0xb8, reg_of(ctx, instr))
 		emit_anys(ctx.code, graph_extra(ctx, node, CInt).value)
+	case .X64_Add, .X64_Sub:
+		op := OPCODE_TABLE[node.xtype]
+		dst := reg_of(ctx, node.inps[0])
+		extra := graph_extra(ctx, node, X64_Mem_Op)
+		imm := i32(extra.imm)
+
+		rx := rex(RAX, dst, RAX, true)
+		emit(ctx.code, {rx, op.opcode, mod_sm(.Direct, op.ext, dst)})
+		emit_anys(ctx.code, imm)
 	case .Add, .Sub, .And, .Or, .Xor:
 		// add/sub/and/or/xor $dst, $rhs
 		dst := reg_of(ctx, node.inps[0])

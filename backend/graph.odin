@@ -5,6 +5,7 @@ import "base:runtime"
 import "core:container/queue"
 import "core:fmt"
 import "core:io"
+import "core:log"
 import "core:mem"
 import "core:reflect"
 import "core:simd"
@@ -652,7 +653,7 @@ graph_subsume :: proc(graph: ^Graph, with: Node_ID, target: Node_ID) {
 	// 0.0010629252 37632
 	// 0.0013431833 29780
 
-	try_recycle: if false {
+	try_recycle: {
 		wtotal_size :=
 			size_of(Node) +
 			uint(graph.node_extra_sizes[wnode.rtype]) * PRECISION +
@@ -879,10 +880,10 @@ graph_set_input :: proc(
 graph_clone :: proc(graph: ^Graph, id: Node_ID) -> Node_ID {
 	node := graph_expand(graph, id)
 	graph.dont_intern = true
+	push_node_name(graph, graph_get_node_name(graph, id))
 	idx := graph_get_next_extra_slot(graph, node.rtype)
 	extra := graph_extra_dwords(graph, node)
 	copy(idx[:len(extra)], extra)
-	push_node_name(graph, graph_get_node_name(graph, id))
 	new := graph_add_raw(graph, node.rtype, node.dt, node.inps)
 	graph_get(graph, new).ordered_input_count = node.ordered_input_count
 	graph.dont_intern = false
@@ -1015,7 +1016,7 @@ graph_get_next_extra_slot :: proc(graph: ^Graph, type: u16) -> [^]u32 {
 	slot := arna.alloc(graph.mem, uint(size), PRECISION)
 	graph.mem.pos -= uint(len(slot))
 
-	return auto_cast raw_data(slot)[size_of(Node):]
+	return ([^]u32)(raw_data(slot)[size_of(Node):])
 }
 
 @(disabled = !NODE_NAMES)

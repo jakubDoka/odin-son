@@ -13,6 +13,7 @@ import "core:odin/parser"
 import "core:odin/tokenizer"
 import "core:os"
 import "core:reflect"
+import "core:slice"
 import "core:strconv"
 import "core:strings"
 import "core:sync"
@@ -470,71 +471,69 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 
 	levels := [Opt_Level]struct{}{}
 
+	for &prc in ctx.procs {
+		clear(&ctx.scope)
+
+		for par in prc.params {
+			append(&ctx.scope, Variable{name = par.name, type = par.type})
+		}
+
+		typecheck(&ctx, {}, prc.ast.body)
+	}
+
+	dsb: strings.Builder
 	for _, level in levels {
-		for &prc in ctx.procs {
+		fmt.sbprintfln(&dsb, "=========== OPT LEVEL: %v ===========", level)
+		code_mem.pos = 0
+		reloc_mem.pos = 0
+
+		for &prc, i in ctx.procs {
+			ctx.prc = auto_cast i
 			ctx.graph = {}
 			ctx.node_spec = &backend.SPECS[.Builder]
 			ctx.mem = &graph_mem
 			ctx.mem.pos = backend.PRECISION
 
-			{
-				clear(&ctx.scope)
-
-				for par in prc.params {
-					append(
-						&ctx.scope,
-						Variable{name = par.name, type = par.type},
-					)
-				}
-
-				typecheck(&ctx, {}, prc.ast.body)
-			}
-
 			current_graph = &ctx
 
-			{
-				clear(&ctx.scope)
+			clear(&ctx.scope)
 
-				start := backend.graph_add_start(&ctx, "start")
-				assert(start == backend.NODE_START)
-				entry := backend.graph_add_entry(&ctx, "entry", start)
-				assert(entry == backend.NODE_ENTRY)
-				ctx.root_mem = backend.graph_add_mem(&ctx, "emem", entry)
+			start := backend.graph_add_start(&ctx, "start")
+			assert(start == backend.NODE_START)
+			entry := backend.graph_add_entry(&ctx, "entry", start)
+			assert(entry == backend.NODE_ENTRY)
+			ctx.root_mem = backend.graph_add_mem(&ctx, "emem", entry)
 
-				ctx.node_scope = backend.graph_add_scope(&ctx, "scope", entry)
-				ctx.mem_slot = backend.graph_push_scope_value(
+			ctx.node_scope = backend.graph_add_scope(&ctx, "scope", entry)
+			ctx.mem_slot = backend.graph_push_scope_value(
+				&ctx,
+				ctx.node_scope,
+				ctx.root_mem,
+			)
+
+			for par, i in prc.params {
+				value := backend.graph_add_arg(
+					&ctx,
+					"arg",
+					type_to_dt(par.type),
+					entry,
+					u32(i),
+				)
+				idx := backend.graph_push_scope_value(
 					&ctx,
 					ctx.node_scope,
-					ctx.root_mem,
+					value,
 				)
-
-				for par, i in prc.params {
-					value := backend.graph_add_arg(
-						&ctx,
-						"arg",
-						type_to_dt(par.type),
-						entry,
-						u32(i),
-					)
-					idx := backend.graph_push_scope_value(
-						&ctx,
-						ctx.node_scope,
-						value,
-					)
-					append(
-						&ctx.scope,
-						Variable{par.name, idx, par.type, nil, {}},
-					)
-				}
-
-				emit_nodes(&ctx, {}, prc.ast.body)
-
-				if level == .Full {
-					backend.graph_iter_peeps(&ctx)
-				}
-
-				//backend.redundancy_add(&waste_redc, 1, ctx.waste)
+				append(&ctx.scope, Variable{par.name, idx, par.type, nil, {}})
 			}
+
+			emit_nodes(&ctx, {}, prc.ast.body)
+
+			if level == .Full {
+				backend.graph_iter_peeps(&ctx)
+			}
+
+			//backend.redundancy_add(&waste_redc, 1, ctx.waste)
 
 			//backend.redundancy_log(&waste_redc)
 
@@ -608,34 +607,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 			}
 		}
 
-		dsb: strings.Builder
 		disasm(&dsb, ctx)
-
-		diff_path, _ := os.join_path({TEST_OUT_DIR, name}, context.allocator)
-		file, err := os.read_entire_file(diff_path, context.allocator)
-
-		DO_DIFFING :: #config(DIFF, true)
-
-		if #config(ACCEPT, false) {
-			werr := os.write_entire_file(diff_path, dsb.buf[:])
-			assert(werr == nil)
-		} else if err == .Not_Exist {
-			if DO_DIFFING {
-				log.error("\n", highlight_disasm(string(dsb.buf[:])), sep = "")
-			}
-		} else {
-			if DO_DIFFING {
-				assert(err == nil)
-				new, old := string(dsb.buf[:]), string(file)
-				if new != old {
-					new, old = highlight_disasm(new), highlight_disasm(old)
-					clear(&dsb.buf)
-					append(&dsb.buf, "\n")
-					print_diff(&dsb, old, new)
-					log.error(string(dsb.buf[:]))
-				}
-			}
-		}
 
 		oka := virtual.protect(
 			code_mem.ptr,
@@ -647,7 +619,34 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		ptr := transmute(proc() -> int)(code_mem.ptr)
 		testing.expect_value(t, ptr(), exit_code)
 
-		break
+		oka = virtual.protect(code_mem.ptr, code_mem.commited, {.Read, .Write})
+		assert(oka)
+	}
+
+	diff_path, _ := os.join_path({TEST_OUT_DIR, name}, context.allocator)
+	file, err := os.read_entire_file(diff_path, context.allocator)
+
+	DO_DIFFING :: #config(DIFF, true)
+
+	if #config(ACCEPT, false) {
+		werr := os.write_entire_file(diff_path, dsb.buf[:])
+		assert(werr == nil)
+	} else if err == .Not_Exist {
+		if DO_DIFFING {
+			log.error("\n", highlight_disasm(string(dsb.buf[:])), sep = "")
+		}
+	} else {
+		if DO_DIFFING {
+			assert(err == nil)
+			new, old := string(dsb.buf[:]), string(file)
+			if new != old {
+				new, old = highlight_disasm(new), highlight_disasm(old)
+				clear(&dsb.buf)
+				append(&dsb.buf, "\n")
+				print_diff(&dsb, old, new)
+				log.error(string(dsb.buf[:]))
+			}
+		}
 	}
 }
 

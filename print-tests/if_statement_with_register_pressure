@@ -1,3 +1,4 @@
+=========== OPT LEVEL: None ===========
 main:
      push rbx
      push rbp
@@ -299,6 +300,141 @@ main:
      mov rcx, r11
      add rax, rcx
      sub rsp, 0xFFFFFFFFFFFFFF28
+     pop r15
+     pop r14
+     pop r13
+     pop r12
+     pop rbp
+     pop rbx
+     ret
+=========== OPT LEVEL: Full ===========
+main:
+     push rbx
+     push rbp
+     push r12
+     push r13
+     push r14
+     push r15
+     sub rsp, 0x10
+     mov rax, 0x01
+     mov rcx, rax
+     test rcx, rcx
+     jz :0
+     jmp :1
+
+000: mov rbp, 0x66
+     mov rbx, 0x82
+     mov rdx, 0xA2
+     mov rcx, 0xC6
+     jmp :2
+
+001: mov rbp, 0x76
+     mov rbx, 0x113
+     mov rdx, 0x1F4
+     mov rcx, 0x325
+     jmp :2
+
+002: mov rsi, rbx
+     mov rdi, rdx
+     mov r8, rcx
+     mov rcx, 0x19
+     mov rdx, 0x23
+     mov rbx, 0x2F
+     mov r9, 0x3D
+     mov r10, 0x4D
+     mov r11, 0x5F
+     mov r12, 0x73
+     mov r13, 0x89
+     mov r14, rbp
+     mov r15, rsi
+     imul r14, r15
+     add r14, rcx
+     add r14, rdx
+     mov rcx, rdi
+     mov rdx, r8
+     imul rcx, rdx
+     add rcx, rbx
+     add rcx, r9
+     mov r9, rcx
+     mov rcx, rbp
+     mov rdx, rdi
+     imul rcx, rdx
+     mov rdx, r10
+     add rcx, rdx
+     mov rdx, r11
+     add rcx, rdx
+     mov r10, rcx
+     mov rcx, rsi
+     mov rdx, r8
+     imul rcx, rdx
+     mov rdx, r12
+     add rcx, rdx
+     mov rdx, r13
+     add rcx, rdx
+     mov r11, rcx
+     test rax, rax
+     jz :3
+     jmp :4
+
+003: mov rdx, r14
+     mov r12, r10
+     mov rbx, r11
+     mov rcx, r9
+     jmp :5
+
+004: mov rax, 0x05
+     mov r12, 0x06
+     mov r13, 0x07
+     mov rcx, 0x08
+     mov r15, rcx
+     mov rcx, 0x09
+     mov [rsp], rcx
+     mov rcx, 0x0A
+     mov [rsp+0x08], rcx
+     mov rbx, 0x0B
+     mov rcx, 0x0C
+     mov rdx, rax
+     mov rax, r14
+     imul rdx, rax
+     add rdx, rcx
+     mov rcx, r12
+     mov rax, r9
+     imul rcx, rax
+     add rcx, rbx
+     mov rax, r13
+     mov rbx, r10
+     imul rax, rbx
+     mov rbx, [rsp+0x08]
+     add rax, rbx
+     mov rbx, r15
+     mov r12, r11
+     imul rbx, r12
+     mov r12, [rsp]
+     add rbx, r12
+     mov r12, rax
+     jmp :5
+
+005: mov rax, 0x528
+     add rax, rbp
+     mov rbp, rsi
+     add rax, rbp
+     mov rbp, rdi
+     add rax, rbp
+     mov rbp, r8
+     add rax, rbp
+     mov rbp, r14
+     add rax, rbp
+     mov rbp, r9
+     add rax, rbp
+     mov rbp, r10
+     add rax, rbp
+     mov rbp, r11
+     add rax, rbp
+     add rax, rdx
+     add rax, rcx
+     add rax, r12
+     add rax, rbx
+     sub rsp, 0xFFFFFFFFFFFFFFF0
      pop r15
      pop r14
      pop r13

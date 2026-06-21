@@ -1069,11 +1069,13 @@ Builder_Node_Type :: enum u16 {
 #assert(size_of(Cfg) % 4 == 0)
 graph_add_start :: #force_inline proc(graph: ^Graph, name: string) -> (id: Node_ID) {
 	push_node_name(graph, name)
+	(^Cfg)(graph_get_next_extra_slot(graph, u16(Ideal_Node_Type.Start)))^ = {}
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Start), .Void, {})
 }
 #assert(size_of(Cfg) % 4 == 0)
 graph_add_entry :: #force_inline proc(graph: ^Graph, name: string, start: Node_ID) -> (id: Node_ID) {
 	push_node_name(graph, name)
+	(^Cfg)(graph_get_next_extra_slot(graph, u16(Ideal_Node_Type.Entry)))^ = {}
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Entry), .Void, {start})
 }
 #assert(size_of(No_Extra) % 4 == 0)
@@ -1141,6 +1143,7 @@ graph_add_mem :: #force_inline proc(graph: ^Graph, name: string, ctrl: Node_ID) 
 #assert(size_of(Local) % 4 == 0)
 graph_add_local :: #force_inline proc(graph: ^Graph, name: string, mem: Node_ID) -> (id: Node_ID) {
 	push_node_name(graph, name)
+	(^Local)(graph_get_next_extra_slot(graph, u16(Ideal_Node_Type.Local)))^ = {}
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Local), .Void, {mem})
 }
 #assert(size_of(No_Extra) % 4 == 0)
@@ -1176,36 +1179,43 @@ graph_add_load_s :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Dat
 #assert(size_of(Cfg) % 4 == 0)
 graph_add_if :: #force_inline proc(graph: ^Graph, name: string, ctrl: Node_ID, cond: Node_ID) -> (id: Node_ID) {
 	push_node_name(graph, name)
+	(^Cfg)(graph_get_next_extra_slot(graph, u16(Ideal_Node_Type.If)))^ = {}
 	return graph_add_raw(graph, u16(Ideal_Node_Type.If), .Void, {ctrl, cond})
 }
 #assert(size_of(Cfg) % 4 == 0)
 graph_add_then :: #force_inline proc(graph: ^Graph, name: string, ctrl: Node_ID) -> (id: Node_ID) {
 	push_node_name(graph, name)
+	(^Cfg)(graph_get_next_extra_slot(graph, u16(Ideal_Node_Type.Then)))^ = {}
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Then), .Void, {ctrl})
 }
 #assert(size_of(Cfg) % 4 == 0)
 graph_add_else :: #force_inline proc(graph: ^Graph, name: string, ctrl: Node_ID) -> (id: Node_ID) {
 	push_node_name(graph, name)
+	(^Cfg)(graph_get_next_extra_slot(graph, u16(Ideal_Node_Type.Else)))^ = {}
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Else), .Void, {ctrl})
 }
 #assert(size_of(Cfg) % 4 == 0)
 graph_add_jump :: #force_inline proc(graph: ^Graph, name: string, ctrl: Node_ID) -> (id: Node_ID) {
 	push_node_name(graph, name)
+	(^Cfg)(graph_get_next_extra_slot(graph, u16(Ideal_Node_Type.Jump)))^ = {}
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Jump), .Void, {ctrl})
 }
 #assert(size_of(Region) % 4 == 0)
 graph_add_region :: #force_inline proc(graph: ^Graph, name: string, rcfg: Node_ID, lcfg: Node_ID) -> (id: Node_ID) {
 	push_node_name(graph, name)
+	(^Region)(graph_get_next_extra_slot(graph, u16(Ideal_Node_Type.Region)))^ = {}
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Region), .Void, {rcfg, lcfg})
 }
 #assert(size_of(Cfg) % 4 == 0)
 graph_add_loop :: #force_inline proc(graph: ^Graph, name: string, ctrl: Node_ID) -> (id: Node_ID) {
 	push_node_name(graph, name)
+	(^Cfg)(graph_get_next_extra_slot(graph, u16(Ideal_Node_Type.Loop)))^ = {}
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Loop), .Void, {ctrl}, extra_capacity = 1)
 }
 #assert(size_of(Cfg) % 4 == 0)
 graph_add_always :: #force_inline proc(graph: ^Graph, name: string, ctrl: Node_ID) -> (id: Node_ID) {
 	push_node_name(graph, name)
+	(^Cfg)(graph_get_next_extra_slot(graph, u16(Ideal_Node_Type.Always)))^ = {}
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Always), .Void, {ctrl})
 }
 #assert(size_of(Call) % 4 == 0)
@@ -1218,6 +1228,7 @@ graph_add_call :: #force_inline proc(graph: ^Graph, name: string, inputs: []Node
 #assert(size_of(Cfg) % 4 == 0)
 graph_add_call_end :: #force_inline proc(graph: ^Graph, name: string, call: Node_ID) -> (id: Node_ID) {
 	push_node_name(graph, name)
+	(^Cfg)(graph_get_next_extra_slot(graph, u16(Ideal_Node_Type.Call_End)))^ = {}
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Call_End), .Void, {call})
 }
 #assert(size_of(Tup) % 4 == 0)
@@ -1230,11 +1241,13 @@ graph_add_ret :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Dataty
 #assert(size_of(Cfg) % 4 == 0)
 graph_add_return :: #force_inline proc(graph: ^Graph, name: string, inputs: []Node_ID) -> (id: Node_ID) {
 	push_node_name(graph, name)
+	(^Cfg)(graph_get_next_extra_slot(graph, u16(Ideal_Node_Type.Return)))^ = {}
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Return), .Void, inputs)
 }
 #assert(size_of(Scope) % 4 == 0)
 graph_add_scope :: #force_inline proc(graph: ^Graph, name: string, cfg: Node_ID) -> (id: Node_ID) {
 	push_node_name(graph, name)
+	(^Scope)(graph_get_next_extra_slot(graph, u16(Builder_Node_Type.Scope)))^ = {}
 	return graph_add_raw(graph, u16(Builder_Node_Type.Scope), .Void, {cfg})
 }
 #assert(size_of(No_Extra) % 4 == 0)

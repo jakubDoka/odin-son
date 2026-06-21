@@ -1,3 +1,4 @@
+=========== OPT LEVEL: None ===========
 main:
      push rbx
      push rbp
@@ -104,6 +105,153 @@ main:
      jmp :15
 
 014: mov rax, r8
+     jmp :16
+
+015: mov rax, 0x08
+     jmp :17
+
+013: mov rax, 0x07
+     jmp :18
+
+011: mov rax, 0x06
+     jmp :19
+
+009: mov rax, 0x05
+     jmp :20
+
+007: mov rax, 0x04
+     jmp :21
+
+005: mov rax, 0x03
+     jmp :22
+
+003: mov rax, 0x02
+     jmp :23
+
+001: mov rax, rbp
+     jmp :23
+
+023: jmp :22
+
+022: jmp :21
+
+021: jmp :20
+
+020: jmp :19
+
+019: jmp :18
+
+018: jmp :17
+
+017: jmp :16
+
+016: sub rsp, 0xFFFFFFFFFFFFFFE2
+     pop rbp
+     pop rbx
+     ret
+=========== OPT LEVEL: Full ===========
+main:
+     push rbx
+     push rbp
+     sub rsp, 0x1E
+     lea rcx, [rsp]
+     mov rax, 0x00
+     mov [rcx], al
+     mov rdx, 0x01
+     mov [rcx], dl
+     movzx ecx, byte ptr [rcx]
+     cmp rcx, rdx
+     setnz cl
+     movzx rcx, cl
+     mov rbp, 0x01
+     test rcx, rcx
+     jz :0
+     jmp :1
+
+000: lea rdx, [rsp+0x02]
+     mov rcx, 0x00
+     mov [rdx], cx
+     mov rbx, 0x01
+     mov [rdx], bx
+     movzx edx, word ptr [rdx]
+     cmp rdx, rbx
+     setnz dl
+     movzx rdx, dl
+     test rdx, rdx
+     jz :2
+     jmp :3
+
+002: lea rbx, [rsp+0x06]
+     mov rdx, 0x00
+     mov [rbx], edx
+     mov rsi, 0x01
+     mov [rbx], esi
+     mov ebx, [rbx]
+     cmp rbx, rsi
+     setnz bl
+     movzx rbx, bl
+     test rbx, rbx
+     jz :4
+     jmp :5
+
+004: lea rsi, [rsp+0x0E]
+     mov rbx, 0x00
+     mov [rsi], rbx
+     mov [rsi], rbp
+     mov rsi, [rsi]
+     cmp rsi, rbp
+     setnz sil
+     movzx rsi, sil
+     test rsi, rsi
+     jz :6
+     jmp :7
+
+006: lea rbp, [rsp+0x01]
+     mov [rbp], al
+     mov rax, 0xFFFFFFFFFFFFFFFF
+     mov [rbp], rax
+     movsx rbp, byte ptr [rbp]
+     cmp rbp, rax
+     setnz bpl
+     movzx rbp, bpl
+     test rbp, rbp
+     jz :8
+     jmp :9
+
+008: lea rbp, [rsp+0x04]
+     mov [rbp], cx
+     mov [rbp], rax
+     movsx rcx, word ptr [rbp]
+     cmp rcx, rax
+     setnz cl
+     movzx rcx, cl
+     test rcx, rcx
+     jz :10
+     jmp :11
+
+010: lea rcx, [rsp+0x0A]
+     mov [rcx], edx
+     mov [rcx], rax
+     movsxd rcx, dword ptr [rcx]
+     cmp rcx, rax
+     setnz cl
+     movzx rcx, cl
+     test rcx, rcx
+     jz :12
+     jmp :13
+
+012: lea rcx, [rsp+0x16]
+     mov [rcx], rbx
+     mov [rcx], rax
+     mov rcx, [rcx]
+     cmp rcx, rax
+     setnz cl
+     movzx rcx, cl
+     test rcx, rcx
+     jz :14
+     jmp :15
+
+014: mov rax, rbx
      jmp :16
 
 015: mov rax, 0x08

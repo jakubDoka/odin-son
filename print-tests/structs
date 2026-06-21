@@ -63,48 +63,58 @@ main:
      push r13
      push r14
      push r15
-     sub rsp, 0x30
-     lea rax, [rsp]
-     mov r12, rax
-     mov r13, 0x00
-     mov r14, 0x18
-     mov rdi, r12
-     mov rsi, r13
-     mov rdx, r14
+     sub rsp, 0x38
+     lea rax, [rsp+0x08]
+     mov [rsp], rax
+     mov rax, 0x00
+     mov r15, rax
+     mov rax, 0x18
+     mov rbx, rax
+     mov rax, [rsp]
+     mov rcx, r15
+     mov rdx, rbx
+     mov rdi, rax
+     mov rsi, rcx
      call :$set
-     mov rbx, 0x08
-     mov rdx, r12
-     add rdx, rbx
-     mov rbp, 0x00
-     mov rax, rdx
-     add rax, rbp
-     mov rcx, 0x02
-     mov [rax], rcx
-     add rdx, rbx
-     mov rax, 0x03
-     mov [rdx], rax
-     lea r15, [rsp+0x18]
-     mov rsi, r13
-     mov rdx, r14
-     mov rdi, r15
-     call :$set
-     mov rsi, r12
-     mov rdx, r14
-     mov rdi, r15
-     call :$copy
-     mov rax, r15
-     add rax, rbp
-     mov rdx, r15
-     add rdx, rbx
+     mov rsi, 0x02
+     mov rcx, [rsp]
+     add rcx, 0x08
+     mov rdx, 0x03
+     mov rax, rcx
+     add rax, 0x08
+     lea rbp, [rsp+0x20]
+     add rcx, 0x00
+     mov [rcx], rsi
+     mov rcx, rbp
+     add rcx, 0x00
+     mov r12, rcx
+     mov rsi, rbp
+     add rsi, 0x08
+     mov rcx, rsi
+     add rcx, 0x00
+     mov r13, rcx
+     add rsi, 0x08
+     mov r14, rsi
      mov rcx, rdx
-     add rcx, rbp
+     mov [rax], rcx
+     mov rax, rbx
+     mov rdi, rbp
+     mov rsi, r15
+     mov rdx, rax
+     call :$set
+     mov rdx, rbx
+     mov rdi, rbp
+     mov rsi, [rsp]
+     call :$copy
+     mov rax, r13
+     mov rcx, [rax]
+     mov rax, r14
+     mov rdx, [rax]
+     mov rax, r12
      mov rax, [rax]
-     mov rcx, [rcx]
      add rax, rcx
-     add rdx, rbx
-     mov rcx, [rdx]
-     add rax, rcx
-     sub rsp, 0xFFFFFFFFFFFFFFD0
+     add rax, rdx
+     sub rsp, 0xFFFFFFFFFFFFFFC8
      pop r15
      pop r14
      pop r13

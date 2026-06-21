@@ -920,7 +920,6 @@ regalloc_round :: proc(
 					}
 					graph_set_input(graph, o.id, o.idx, split)
 				}
-
 			}
 		}
 	}

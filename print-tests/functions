@@ -46,35 +46,31 @@ main:
 fib:
      push rbx
      push rbp
-     push r12
-     mov rbp, rdi
-     mov rbx, 0x02
-     mov rcx, rbp
-     cmp rcx, rbx
+     mov rbx, rdi
+     mov rax, 0x02
+     mov rcx, rbx
+     cmp rcx, rax
      setle cl
      movzx rcx, cl
-     mov rax, 0x01
      test rcx, rcx
      jz :0
      jmp :1
 
-000: mov rcx, rbp
-     sub rcx, rax
-     mov rdi, rcx
-     call :fib
-     mov r12, rax
-     mov rax, rbp
-     sub rax, rbx
+000: mov rax, rbx
+     sub rax, 0x01
      mov rdi, rax
      call :fib
-     add r12, rax
+     mov rbp, rax
+     sub rbx, 0x02
+     mov rdi, rbx
+     call :fib
+     add rbp, rax
      jmp :2
 
-001: mov r12, rax
+001: mov rbp, 0x01
      jmp :2
 
-002: mov rax, r12
-     pop r12
+002: mov rax, rbp
      pop rbp
      pop rbx
      ret

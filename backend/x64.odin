@@ -217,6 +217,8 @@ X64_Mem_Op :: struct {
 }
 
 x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
+	OP_OFFSET :: u16(X64_Node_Type.X64_Add - X64_Node_Type.Add)
+
 	id := graph_id(ctx, node)
 
 	lhs_const: ^CInt
@@ -230,12 +232,12 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 	}
 
 	#partial switch node.itype {
-	case .Add:
+	case .Add, .Sub:
 		if lhs_const_in_i32_range {
 			push_node_name(ctx, graph_get_node_name(ctx, id))
 			node := graph_add_raw(
 				ctx,
-				u16(X64_Node_Type.X64_Add),
+				u16(node.itype) + OP_OFFSET,
 				node.dt,
 				{node.inps[0]},
 			)

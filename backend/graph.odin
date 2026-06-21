@@ -2,6 +2,7 @@ package backend
 
 import "../vendored/gam/util/arna"
 import "base:runtime"
+import "core:container/queue"
 import "core:fmt"
 import "core:io"
 import "core:mem"
@@ -173,7 +174,9 @@ Node :: struct {
 	using _:             bit_field u8 {
 		dt: Node_Datatype | 8,
 	},
-	user_idx:            u8,
+	using _:             bit_field u8 {
+		in_worklist: bool | 1,
+	},
 	gvn:                 u32,
 	input_idx:           u32,
 	ordered_input_count: u16,
@@ -198,7 +201,13 @@ Graph :: struct {
 	mem:             ^arna.Allocator,
 	gvn:             u32,
 	end:             Node_ID,
+	waste:           int,
 	dont_intern:     bool,
+}
+
+Peep_Ctx :: struct {
+	using graph: ^Graph,
+	worklist:    ^queue.Queue(Node_ID),
 }
 
 Intern_Vec :: #simd[16]u8
@@ -247,6 +256,168 @@ Loop_Control :: enum int {
 Loop_State :: struct {
 	scope:  Node_ID,
 	scopes: [Loop_Control]Node_ID,
+}
+
+worklist_add :: proc(
+	graph: ^Graph,
+	worklist: ^queue.Queue(Node_ID),
+	id: Node_ID,
+) {
+	if id == 0 do return
+	node := graph_expand(graph, id)
+	if node.in_worklist do return
+	node.in_worklist = true
+	queue.push_back(worklist, id)
+}
+
+worklist_next :: proc(
+	graph: ^Graph,
+	worklist: ^queue.Queue(Node_ID),
+) -> (
+	n: Node_ID,
+	ok: bool,
+) {
+	id := queue.pop_front_safe(worklist) or_return
+	graph_expand(graph, id).in_worklist = false
+	return id, true
+}
+
+graph_iter_peeps :: proc(graph: ^Graph) {
+	worklist: queue.Queue(Node_ID)
+	queue.init(&worklist, int(graph.gvn))
+	worklist_add(graph, &worklist, NODE_START)
+
+	i := 0
+	for i < queue.len(worklist) {
+		node := graph_expand(graph, worklist.data[i])
+		for inp in node.inps {
+			if inp == 0 do continue
+			worklist_add(graph, &worklist, inp)
+		}
+
+		for out in node.outs {
+			onode := graph_expand(graph, out.id)
+			worklist_add(graph, &worklist, out.id)
+		}
+
+		i += 1
+	}
+
+	for n in worklist_next(graph, &worklist) {
+		node := graph_expand(graph, n)
+
+		prev_hash := graph_node_hash(graph, n)
+		node.in_worklist = true
+		new_node := graph.peep({graph, &worklist}, node)
+		node.in_worklist = false
+		if new_node == 0 do continue
+
+		for out in node.outs {
+			worklist_add(graph, &worklist, out.id)
+		}
+
+		assert_eq_hash := true
+
+		if new_node == n {
+			graph_unintern(graph, n, prev_hash)
+			new_node = graph_intern(graph, n)
+			if new_node == n do continue
+			assert_eq_hash = false
+		}
+
+		for inp in node.inps {
+			worklist_add(graph, &worklist, inp)
+		}
+
+		if assert_eq_hash {
+			assert(graph_node_hash(graph, node) == prev_hash)
+		}
+
+		graph_subsume(graph, new_node, n)
+	}
+}
+
+when !GEN_SPEC {
+	fold_bin_op :: proc(
+		lhs: i64,
+		op: Ideal_Node_Type,
+		rhs: i64,
+	) -> (
+		value: i64,
+	) {
+		switch Bin_Op(op) {
+		case .Add:
+			value = lhs + rhs
+		case .Sub:
+			value = lhs - rhs
+		case .Mul:
+			value = lhs * rhs
+		case .Div:
+			value = lhs / rhs
+		case .Rem:
+			value = lhs % rhs
+		case .And:
+			value = lhs & rhs
+		case .Or:
+			value = lhs | rhs
+		case .Xor:
+			value = lhs ~ rhs
+		case .And_Not:
+			value = lhs & ~rhs
+		case .Shl:
+			value = lhs << u64(rhs)
+		case .Shr:
+			value = lhs >> u64(rhs)
+		case .Eq:
+			value = i64(lhs == rhs)
+		case .Ne:
+			value = i64(lhs != rhs)
+		case .Le:
+			value = i64(lhs <= rhs)
+		case .Lt:
+			value = i64(lhs < rhs)
+		case .Gt:
+			value = i64(lhs > rhs)
+		case .Ge:
+			value = i64(lhs >= rhs)
+		case .U_Lt:
+			value = i64(u64(lhs) < u64(rhs))
+		case .U_Gt:
+			value = i64(u64(lhs) > u64(rhs))
+		case .U_Le:
+			value = i64(u64(lhs) <= u64(rhs))
+		case .U_Ge:
+			value = i64(u64(lhs) >= u64(rhs))
+		case .U_Div:
+			value = i64(u64(lhs) / u64(rhs))
+		case .U_Rem:
+			value = i64(u64(lhs) % u64(rhs))
+		case .U_Shr:
+			value = i64(u64(lhs) >> u64(rhs))
+		case:
+			panic("wuwut")
+		}
+		return
+	}
+
+	builder_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
+		#partial switch node.itype {
+		case .Add ..= .U_Shr:
+			lhs := graph_expand(ctx.graph, node.inps[0])
+			rhs := graph_expand(ctx.graph, node.inps[1])
+
+			if lhs.itype == .CInt && rhs.itype == .CInt {
+				lhs := graph_extra(ctx.graph, lhs, CInt).value
+				rhs := graph_extra(ctx.graph, rhs, CInt).value
+
+				value := fold_bin_op(lhs, node.itype, rhs)
+
+				return graph_add_c_int(ctx.graph, "fld", .I64, value)
+			}
+		}
+
+		return 0
+	}
 }
 
 graph_start_loop :: proc(graph: ^Graph, scope: Node_ID, state: ^Loop_State) {
@@ -372,12 +543,23 @@ graph_merge_returns :: proc(graph: ^Graph, args: []Node_ID) -> Node_ID {
 	return reg
 }
 
-graph_interner_find :: proc(graph: ^Graph, id: Node_ID) -> (int, u8, bool) {
+graph_interner_find :: proc(
+	graph: ^Graph,
+	id: Node_ID,
+	precomputed_hash: u8,
+) -> (
+	int,
+	u8,
+	bool,
+) {
 	assert(mem.is_aligned(graph.interner.hash, align_of(Intern_Vec)))
 	assert(id != 0)
 
-	needle := u8(graph_node_hash(graph, id))
-	needle += u8(needle == 0)
+	needle := precomputed_hash
+	if needle == 0 {
+		needle = graph_node_hash(graph, id)
+	}
+	assert(needle != 0)
 
 	for mask, i in mem.slice_data_cast(
 		[]Intern_Vec,
@@ -404,7 +586,7 @@ graph_intern :: proc(graph: ^Graph, id: Node_ID) -> Node_ID {
 		return id
 	}
 
-	idx, hash, _ := graph_interner_find(graph, id)
+	idx, hash, _ := graph_interner_find(graph, id, 0)
 	if idx >= 0 {
 		//assert(len(graph_outs(graph, id)) == 0)
 		return graph.interner.id[idx]
@@ -446,9 +628,9 @@ graph_intern :: proc(graph: ^Graph, id: Node_ID) -> Node_ID {
 	return id
 }
 
-graph_unintern :: proc(graph: ^Graph, id: Node_ID) {
+graph_unintern :: proc(graph: ^Graph, id: Node_ID, precomputed_hash: u8 = 0) {
 	if graph_has_flag(graph, id, .Interned) && !graph.dont_intern {
-		idx, _, _ := graph_interner_find(graph, id)
+		idx, _, _ := graph_interner_find(graph, id, precomputed_hash)
 		if idx < 0 do return
 
 		graph.interner_len -= 1
@@ -466,6 +648,58 @@ graph_subsume :: proc(graph: ^Graph, with: Node_ID, target: Node_ID) {
 
 	wnode := graph_expand(graph, with)
 	tnode := graph_expand(graph, target)
+
+	// 0.0010629252 37632
+	// 0.0013431833 29780
+
+	try_recycle: if false {
+		wtotal_size :=
+			size_of(Node) +
+			uint(graph.node_extra_sizes[wnode.rtype]) * PRECISION +
+			uint(wnode.input_count * size_of(Node_ID))
+
+		if int(graph.mem.pos - wtotal_size) / PRECISION != int(with) {
+			break try_recycle
+		}
+
+		assert(wnode.gvn == graph.gvn - 1)
+		assert(wnode.output_cap == 0)
+		assert(wnode.input_count == wnode.ordered_input_count)
+
+		ttotal_size :=
+			size_of(Node) +
+			uint(graph.node_extra_sizes[tnode.rtype]) * PRECISION +
+			size_of(Node_ID) * uint(tnode.ordered_input_count)
+
+		if wtotal_size > ttotal_size do break try_recycle
+
+		for inp, i in tnode.inps {
+			if inp == 0 do continue
+			graph_remove_output(graph, inp, {idx = i, id = target})
+		}
+
+		graph_unintern(graph, with)
+		graph_unintern(graph, target)
+
+		graph.waste += int(ttotal_size - wtotal_size)
+
+		wnode.gvn = tnode.gvn
+		wnode.output_count = tnode.output_count
+		wnode.output_cap = tnode.output_cap
+		wnode.output_idx = tnode.output_idx
+
+		nnode_slice := ([^]u8)(wnode.node)[-PREFIX_SIZE:][:wtotal_size +
+		PREFIX_SIZE]
+		node_slice := ([^]u8)(tnode.node)[-PREFIX_SIZE:][:ttotal_size +
+		PREFIX_SIZE]
+		copy(node_slice, nnode_slice)
+		graph.mem.pos = uint(with) * PRECISION
+		graph.gvn -= 1
+
+		graph_intern(graph, target)
+
+		return
+	}
 
 	graph_ensure_available_output_cap(graph, wnode, tnode.output_count)
 
@@ -669,7 +903,11 @@ graph_remove_output_node :: proc(
 }
 
 @(tag = "node_proc")
-graph_node_hash_node :: proc(graph: ^Graph, node: ^Node) -> (hash: u32) {
+graph_node_hash_node :: proc(graph: ^Graph, node: ^Node) -> u8 {
+	if !graph_has_flag(graph, node, .Interned) do return 0
+
+	hash: u32
+
 	type := u32(node.rtype)
 	dt := u32(node.dt)
 	extra_dwords := graph_extra_dwords(graph, node)
@@ -693,7 +931,9 @@ graph_node_hash_node :: proc(graph: ^Graph, node: ^Node) -> (hash: u32) {
 
 	hash = hash_u32(hash)
 
-	return
+	res := u8(hash)
+	res += u8(res == 0)
+	return res
 }
 
 graph_id :: #force_inline proc(graph: ^Graph, node: ^Node) -> Node_ID {
@@ -712,6 +952,10 @@ graph_delete_node :: proc(graph: ^Graph, node: ^Node, indirect := false) {
 	}
 
 	graph_unintern(graph, graph_id(graph, node))
+	graph.waste += int(node.input_count * size_of(Node_ID))
+	graph.waste += int(node.output_count * size_of(Node_Output))
+	graph.waste += size_of(Node)
+	graph.waste += int(graph.node_extra_sizes[node.rtype] * PRECISION)
 	node^ = {}
 }
 
@@ -856,6 +1100,7 @@ graph_add_input_node :: proc(
 			free_idx = int(node.input_count)
 		}
 
+		graph.waste += int(node.input_count * size_of(Node_ID))
 		base := u32(graph.mem.pos / PRECISION)
 		new_cap := node.input_count * 2 + 2
 		slot := arna.alloc(
@@ -889,6 +1134,7 @@ graph_ensure_available_output_cap :: proc(
 	available: u16,
 ) {
 	if node.output_cap - node.output_count < available {
+		graph.waste += int(node.output_cap * size_of(Node_ID))
 		base := u32(graph.mem.pos / PRECISION)
 		new_cap := max(node.output_cap * 2 + 2, node.output_cap + available)
 		slot := arna.alloc(graph.mem, uint(new_cap * PRECISION), PRECISION)

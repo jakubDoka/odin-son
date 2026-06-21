@@ -5,6 +5,7 @@ import "core:reflect"
 
 Codegen_Spec :: struct {
 	emit_function: proc(_: Codegen_Emit_Ctx) -> Codegen_Output,
+	peep:          Peep_Fn,
 }
 
 Codegen_Emit_Ctx :: struct {

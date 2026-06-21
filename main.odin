@@ -360,6 +360,7 @@ init_custom_fmt :: proc() {
 	)
 }
 
+waste_redc: backend.Redundancy_Counter
 once: sync.Once
 
 run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
@@ -462,160 +463,192 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		&reloc_mem,
 	)
 
-	for &prc in ctx.procs {
-		ctx.graph = {}
-		ctx.node_spec = &backend.SPECS[.Builder]
-		ctx.mem = &graph_mem
-		ctx.mem.pos = backend.PRECISION
+	Opt_Level :: enum int {
+		None,
+		Full,
+	}
 
-		{
-			clear(&ctx.scope)
+	levels := [Opt_Level]struct{}{}
 
-			for par in prc.params {
-				append(&ctx.scope, Variable{name = par.name, type = par.type})
+	for _, level in levels {
+		for &prc in ctx.procs {
+			ctx.graph = {}
+			ctx.node_spec = &backend.SPECS[.Builder]
+			ctx.mem = &graph_mem
+			ctx.mem.pos = backend.PRECISION
+
+			{
+				clear(&ctx.scope)
+
+				for par in prc.params {
+					append(
+						&ctx.scope,
+						Variable{name = par.name, type = par.type},
+					)
+				}
+
+				typecheck(&ctx, {}, prc.ast.body)
 			}
 
-			typecheck(&ctx, {}, prc.ast.body)
-		}
+			current_graph = &ctx
 
-		current_graph = &ctx
+			{
+				clear(&ctx.scope)
 
-		{
-			clear(&ctx.scope)
+				start := backend.graph_add_start(&ctx, "start")
+				assert(start == backend.NODE_START)
+				entry := backend.graph_add_entry(&ctx, "entry", start)
+				assert(entry == backend.NODE_ENTRY)
+				ctx.root_mem = backend.graph_add_mem(&ctx, "emem", entry)
 
-			start := backend.graph_add_start(&ctx, "start")
-			assert(start == backend.NODE_START)
-			entry := backend.graph_add_entry(&ctx, "entry", start)
-			assert(entry == backend.NODE_ENTRY)
-			ctx.root_mem = backend.graph_add_mem(&ctx, "emem", entry)
-
-			ctx.node_scope = backend.graph_add_scope(&ctx, "scope", entry)
-			ctx.mem_slot = backend.graph_push_scope_value(
-				&ctx,
-				ctx.node_scope,
-				ctx.root_mem,
-			)
-
-			for par, i in prc.params {
-				value := backend.graph_add_arg(
-					&ctx,
-					"arg",
-					type_to_dt(par.type),
-					entry,
-					u32(i),
-				)
-				idx := backend.graph_push_scope_value(
+				ctx.node_scope = backend.graph_add_scope(&ctx, "scope", entry)
+				ctx.mem_slot = backend.graph_push_scope_value(
 					&ctx,
 					ctx.node_scope,
-					value,
+					ctx.root_mem,
 				)
-				append(&ctx.scope, Variable{par.name, idx, par.type, nil, {}})
+
+				for par, i in prc.params {
+					value := backend.graph_add_arg(
+						&ctx,
+						"arg",
+						type_to_dt(par.type),
+						entry,
+						u32(i),
+					)
+					idx := backend.graph_push_scope_value(
+						&ctx,
+						ctx.node_scope,
+						value,
+					)
+					append(
+						&ctx.scope,
+						Variable{par.name, idx, par.type, nil, {}},
+					)
+				}
+
+				emit_nodes(&ctx, {}, prc.ast.body)
+
+				if level == .Full {
+					backend.graph_iter_peeps(&ctx)
+				}
+
+				//backend.redundancy_add(&waste_redc, 1, ctx.waste)
 			}
 
-			emit_nodes(&ctx, {}, prc.ast.body)
-		}
+			//backend.redundancy_log(&waste_redc)
 
-		spec := &backend.SPECS[.X64]
-		ctx.node_spec = spec
+			spec := &backend.SPECS[.X64]
+			ctx.node_spec = spec
 
-		schedule: backend.Graph_Schedule
-		backend.graph_schedule(&ctx, &schedule)
+			schedule: backend.Graph_Schedule
+			backend.graph_schedule(&ctx, &schedule)
 
-		ra: backend.Regalloc
-		ra.spec = spec
-		ra.alloc = &regalloc_mem
+			ra: backend.Regalloc
+			ra.spec = spec
+			ra.alloc = &regalloc_mem
 
-		regs := backend.regalloc(&ra, &ctx, &schedule)
+			regs := backend.regalloc(&ra, &ctx, &schedule)
 
-		if backend.REGLOGS {
-			sb: strings.Builder
-			append(&sb.buf, "\n")
-			backend.graph_display(
-				strings.to_writer(&sb),
-				&ctx,
-				&schedule,
-				regs = regs,
-			)
-			log.info(string(sb.buf[:]))
-		}
-
-		ctx := backend.Codegen_Emit_Ctx {
-			graph = &ctx,
-			schedule = &schedule,
-			buf = {
-				scratch = &scratch_mem,
-				code = &code_mem,
-				relocs = &reloc_mem,
-			},
-			allocs = regs,
-			lib_calls = {
-				copy = {id = 0, absolute = true},
-				set = {id = 1, absolute = true},
-			},
-		}
-		prc.out = spec.emit_function(ctx)
-
-	}
-
-	lib_call_offsets: [2]uintptr
-
-	lib_call_offsets[0] = auto_cast backend.emit_aligned(&code_mem, mem.copy)
-	lib_call_offsets[1] = auto_cast backend.emit_aligned(&code_mem, mem.set)
-
-	log.info("code size: %v", lib_call_offsets)
-
-	for p in ctx.procs {
-		for rel in p.out.relocs {
-			target_off: uintptr
-			switch rel.kind {
-			case .Text:
-				target := &ctx.procs[rel.id]
-				target_off = uintptr(raw_data(target.out.code))
-			case .Data:
-				target_off = lib_call_offsets[rel.id]
+			if backend.REGLOGS {
+				sb: strings.Builder
+				append(&sb.buf, "\n")
+				backend.graph_display(
+					strings.to_writer(&sb),
+					&ctx,
+					&schedule,
+					regs = regs,
+				)
+				log.info(string(sb.buf[:]))
 			}
-			source := uintptr(raw_data(p.out.code)) + uintptr(rel.offset)
-			jump := u32(target_off - source)
-			assert(rel.size == .r4)
-			slot := p.out.code[rel.offset - 4:][:4]
-			copy(slot, reflect.as_bytes(jump))
+
+			ctx := backend.Codegen_Emit_Ctx {
+				graph = &ctx,
+				schedule = &schedule,
+				buf = {
+					scratch = &scratch_mem,
+					code = &code_mem,
+					relocs = &reloc_mem,
+				},
+				allocs = regs,
+				lib_calls = {
+					copy = {id = 0, absolute = true},
+					set = {id = 1, absolute = true},
+				},
+			}
+			prc.out = spec.emit_function(ctx)
 		}
-	}
 
-	dsb: strings.Builder
-	disasm(&dsb, ctx)
+		lib_call_offsets: [2]uintptr
 
-	diff_path, _ := os.join_path({TEST_OUT_DIR, name}, context.allocator)
-	file, err := os.read_entire_file(diff_path, context.allocator)
+		lib_call_offsets[0] = auto_cast backend.emit_aligned(
+			&code_mem,
+			mem.copy,
+		)
+		lib_call_offsets[1] = auto_cast backend.emit_aligned(
+			&code_mem,
+			mem.set,
+		)
 
-	DO_DIFFING :: #config(DIFF, true)
-
-	if #config(ACCEPT, false) {
-		werr := os.write_entire_file(diff_path, dsb.buf[:])
-		assert(werr == nil)
-	} else if err == .Not_Exist {
-		if DO_DIFFING {
-			log.error("\n", highlight_disasm(string(dsb.buf[:])), sep = "")
-		}
-	} else {
-		if DO_DIFFING {
-			assert(err == nil)
-			new, old := string(dsb.buf[:]), string(file)
-			if new != old {
-				new, old = highlight_disasm(new), highlight_disasm(old)
-				clear(&dsb.buf)
-				append(&dsb.buf, "\n")
-				print_diff(&dsb, old, new)
-				log.error(string(dsb.buf[:]))
+		for p in ctx.procs {
+			for rel in p.out.relocs {
+				target_off: uintptr
+				switch rel.kind {
+				case .Text:
+					target := &ctx.procs[rel.id]
+					target_off = uintptr(raw_data(target.out.code))
+				case .Data:
+					target_off = lib_call_offsets[rel.id]
+				}
+				source := uintptr(raw_data(p.out.code)) + uintptr(rel.offset)
+				jump := u32(target_off - source)
+				assert(rel.size == .r4)
+				slot := p.out.code[rel.offset - 4:][:4]
+				copy(slot, reflect.as_bytes(jump))
 			}
 		}
+
+		dsb: strings.Builder
+		disasm(&dsb, ctx)
+
+		diff_path, _ := os.join_path({TEST_OUT_DIR, name}, context.allocator)
+		file, err := os.read_entire_file(diff_path, context.allocator)
+
+		DO_DIFFING :: #config(DIFF, true)
+
+		if #config(ACCEPT, false) {
+			werr := os.write_entire_file(diff_path, dsb.buf[:])
+			assert(werr == nil)
+		} else if err == .Not_Exist {
+			if DO_DIFFING {
+				log.error("\n", highlight_disasm(string(dsb.buf[:])), sep = "")
+			}
+		} else {
+			if DO_DIFFING {
+				assert(err == nil)
+				new, old := string(dsb.buf[:]), string(file)
+				if new != old {
+					new, old = highlight_disasm(new), highlight_disasm(old)
+					clear(&dsb.buf)
+					append(&dsb.buf, "\n")
+					print_diff(&dsb, old, new)
+					log.error(string(dsb.buf[:]))
+				}
+			}
+		}
+
+		oka := virtual.protect(
+			code_mem.ptr,
+			code_mem.commited,
+			{.Read, .Execute},
+		)
+		assert(oka)
+
+		ptr := transmute(proc() -> int)(code_mem.ptr)
+		testing.expect_value(t, ptr(), exit_code)
+
+		break
 	}
-
-	oka := virtual.protect(code_mem.ptr, code_mem.commited, {.Read, .Execute})
-	assert(oka)
-
-	ptr := transmute(proc() -> int)(code_mem.ptr)
-	testing.expect_value(t, ptr(), exit_code)
 }
 
 Lit :: union {
@@ -1351,7 +1384,7 @@ store_value_ty :: proc(
 	if ptr == value.id && value.is_lvalue do return
 
 	if type_to_dt(ty) == .Void {
-		assert(value.is_lvalue)
+		fmt.assertf(value.is_lvalue, "%v %v", value, ty)
 		ctx_set_mem(
 			ctx,
 			backend.graph_add_copy(
@@ -1490,7 +1523,7 @@ emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 				dest := emit_nodes(ctx, {}, lhs)
 				assert(dest.is_lvalue)
 				value := emit_nodes(ctx, {dest = dest.id}, rhs)
-				store_value(ctx, "asss", dest.id, value, ty)
+				store_value(ctx, "asss", dest.id, value, lhs)
 			}
 		}
 	case ^ast.Binary_Expr:
@@ -1533,7 +1566,12 @@ emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 			flags := get_node_vflags(d.names[i])
 
 			if .Referenced in flags || type_to_dt(vty) == .Void {
-				ptr := alloca(ctx, name, vty)
+				ptr := alloca(
+					ctx,
+					name,
+					vty,
+					zeroed = type_to_dt(vty) == .Void,
+				)
 				backend.graph_add_output(ctx, ptr, 0, 0)
 
 				value := emit_nodes(ctx, {dest = ptr}, d.values[i])

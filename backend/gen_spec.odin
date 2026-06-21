@@ -144,6 +144,8 @@ Class_Array :: struct {
 	regs: []Reg_Class_Spec,
 }
 
+Peep_Fn :: proc(_: Peep_Ctx, _: Expanded_Node) -> Node_ID
+
 Class_Spec :: struct {
 	id:             typeid,
 	args:           []string,
@@ -323,6 +325,10 @@ generate_specs :: proc() {
 
 	os.write_string(file, "SPECS := [Node_Spec_Name]Node_Spec{\n")
 	for &spec in specs {
+		prefix := strings.to_snake_case(
+			reflect.enum_name_from_value(spec.name) or_else panic(""),
+		)
+
 		fmt.fprintf(file, "\t.%v = {{\n", spec.name)
 
 		reg_mask_lengths: [Reg_Kind]int
@@ -472,9 +478,6 @@ generate_specs :: proc() {
 		os.write_string(file, "\t\t},\n")
 
 		if reg_mask_lengths != {} {
-			prefix := strings.to_snake_case(
-				reflect.enum_name_from_value(spec.name) or_else panic(""),
-			)
 			fmt.fprintf(file, "\t\treg_mask_of = %v_reg_mask_of,\n", prefix)
 			fmt.fprintf(
 				file,
@@ -482,6 +485,7 @@ generate_specs :: proc() {
 				prefix,
 			)
 		}
+		fmt.fprintf(file, "\t\tpeep = %v_peep,\n", prefix)
 
 		os.write_string(file, "\t\tfirst_input_idxs = {\n")
 		for classes in spec.classes {

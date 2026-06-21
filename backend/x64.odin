@@ -201,6 +201,10 @@ X64_IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec {
 @(rodata)
 X64_REG_CLASSES := [X64_Node_Type]Reg_Class_Spec{}
 
+x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
+	return 0
+}
+
 x64_reg_mask_of :: proc(
 	graph: ^Graph,
 	ra: ^Regalloc,
@@ -513,7 +517,6 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 				size   = .r4,
 				id     = lib_call.id,
 			}
-			log.info("lib_call: %v", lib_call.id)
 		} else {
 			// call $lib_call.id
 			emit(ctx.code, {0xe8, 0, 0, 0, 0})

@@ -171,6 +171,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			-1, //Scope
 			-1, //Lazy_Phi
 		},
+		peep = builder_peep,
 		first_input_idxs = {
 			0, //Start
 			0, //Entry
@@ -669,6 +670,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 		},
 		reg_mask_of = x64_reg_mask_of,
 		emit_function = x64_emit_function,
+		peep = x64_peep,
 		first_input_idxs = {
 			0, //Start
 			0, //Entry

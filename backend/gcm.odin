@@ -5,6 +5,7 @@ import "core:container/queue"
 import "core:fmt"
 import "core:log"
 import "core:slice"
+import "core:strings"
 import "core:sync"
 
 Graph_Basic_Block :: struct {
@@ -474,6 +475,13 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 @(disabled = ODIN_DISABLE_ASSERT)
 verify_schedule_integrity :: proc(graph: ^Graph, sched: ^Graph_Schedule) {
 	schedules := make([]Node_ID, graph.gvn)
+
+	if false {
+		sb: strings.Builder
+		append(&sb.buf, "\n")
+		graph_display(strings.to_writer(&sb), graph, sched)
+		log.info(string(sb.buf[:]))
+	}
 
 	for bb in sched.bbs {
 		for instr, i in bb.instrs {

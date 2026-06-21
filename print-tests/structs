@@ -1,0 +1,56 @@
+main:
+     push rbx
+     push rbp
+     push r12
+     push r13
+     push r14
+     push r15
+     sub rsp, 0x30
+     lea rax, [rsp]
+     mov r12, rax
+     mov r13, 0x00
+     mov r14, 0x18
+     mov rdi, r12
+     mov rsi, r13
+     mov rdx, r14
+     call :$set
+     mov rbx, 0x08
+     mov rdx, r12
+     add rdx, rbx
+     mov rbp, 0x00
+     mov rax, rdx
+     add rax, rbp
+     mov rcx, 0x02
+     mov [rax], rcx
+     add rdx, rbx
+     mov rax, 0x03
+     mov [rdx], rax
+     lea r15, [rsp+0x18]
+     mov rsi, r13
+     mov rdx, r14
+     mov rdi, r15
+     call :$set
+     mov rsi, r12
+     mov rdx, r14
+     mov rdi, r15
+     call :$copy
+     mov rax, r15
+     add rax, rbp
+     mov rdx, r15
+     add rdx, rbx
+     mov rcx, rdx
+     add rcx, rbp
+     mov rax, [rax]
+     mov rcx, [rcx]
+     add rax, rcx
+     add rdx, rbx
+     mov rcx, [rdx]
+     add rax, rcx
+     sub rsp, 0xFFFFFFFFFFFFFFD0
+     pop r15
+     pop r14
+     pop r13
+     pop r12
+     pop rbp
+     pop rbx
+     ret

@@ -2,6 +2,7 @@ package backend
 
 import "../vendored/gam/util/arna"
 import "../vendored/gam/util/bit_arr"
+import "../vendored/gam/util/hot"
 import "base:intrinsics"
 import "core:container/queue"
 import "core:fmt"
@@ -943,7 +944,9 @@ regalloc_round :: proc(
 			inode := graph_get(graph, inp)
 			if inode.dt == .Void do continue
 			if inode.gvn >= prev_gvn {
-				last_split = inp
+				if graph_get(graph, inp).itype == .Split {
+					last_split = inp
+				}
 				continue
 			}
 
@@ -963,7 +966,9 @@ regalloc_round :: proc(
 					split = split_before(ctx, id, i, "sci")
 				}
 
-				last_split = split
+				if graph_get(graph, split).itype == .Split {
+					last_split = split
+				}
 
 				graph_set_input(graph, id, i, split)
 			}
@@ -971,7 +976,7 @@ regalloc_round :: proc(
 
 		last_split = 0
 		last_split_out: Node_ID
-		for out in node.outs {
+		for out in arna.clone(ra, node.outs) {
 			onode := graph_expand(graph, out.id)
 			if onode.dt == .Void do continue
 			if onode.gvn >= prev_gvn do continue
@@ -986,8 +991,10 @@ regalloc_round :: proc(
 					split = split_before(ctx, out.id, out.idx, "sco")
 				}
 
-				last_split_out = out.id
-				last_split = split
+				if graph_get(graph, split).itype == .Split {
+					last_split_out = out.id
+					last_split = split
+				}
 
 				graph_set_input(graph, out.id, out.idx, split)
 			}
@@ -1071,12 +1078,16 @@ regalloc_round :: proc(
 	split_after :: proc(ctx: Ctx, name: string, use: Node_ID) -> Node_ID {
 		graph := ctx.graph
 		fnode := graph_get(graph, use)
+
+		if graph_has_flag(graph, fnode, .Clonable) {
+			return use
+		}
+
 		split := graph_add_split(graph, name, fnode.dt, use)
 
-		placement_block := get_node_block(ctx, use)
-		placement_idx, _ := arna.simd_search(placement_block.instrs[:], use)
+		block, idx := get_node_block_and_idx(ctx, use)
 
-		inject_at(&placement_block.instrs, placement_idx + 1, split)
+		inject_at(&block.instrs, idx + 1, split)
 
 		return split
 	}
@@ -1094,19 +1105,37 @@ regalloc_round :: proc(
 
 		if inp_node.dt == .Void do return inp
 
-		placement_block: ^Graph_Basic_Block
-		placement_idx: int
-		if node.itype == .Phi {
-			last := graph_inps(ctx.graph, node.inps[0])[idx - 1]
-			placement_block = get_node_block(ctx, last)
-			placement_idx = len(placement_block.instrs) - 1
+		split: Node_ID
+		if graph_has_flag(ctx.graph, inp_node, .Clonable) {
+			if int(inp_node.gvn) > len(ctx.instr_placement) {
+				// NOTE: means we already split this to the largest extent
+				return inp
+			}
+			if inp_node.output_count == 1 {
+				block, idx := get_node_block_and_idx(ctx, inp)
+				ordered_remove(&block.instrs, idx)
+
+				inp_node.gvn = ctx.graph.gvn
+				ctx.graph.gvn += 1
+				split = inp
+			} else {
+				split = graph_clone(ctx.graph, inp)
+			}
 		} else {
-			placement_block = get_node_block(ctx, id)
-			placement_idx, _ = arna.simd_search(placement_block.instrs[:], id)
+			split = graph_add_split(ctx.graph, name, inp_node.dt, inp)
 		}
 
-		split := graph_add_split(ctx.graph, name, inp_node.dt, inp)
-		inject_at(&placement_block.instrs, placement_idx, split)
+		block: ^Graph_Basic_Block
+		bidx: int
+		if node.itype == .Phi {
+			last := graph_inps(ctx.graph, node.inps[0])[idx - 1]
+			block = get_node_block(ctx, last)
+			bidx = len(block.instrs) - 1
+		} else {
+			block, bidx = get_node_block_and_idx(ctx, id)
+		}
+
+		inject_at(&block.instrs, bidx, split)
 		return split
 	}
 
@@ -1115,7 +1144,20 @@ regalloc_round :: proc(
 		node: Node_ID,
 	) -> ^Graph_Basic_Block {
 		node := graph_get(ctx.graph, node)
+		assert(int(node.gvn) < len(ctx.instr_placement))
 		return &ctx.sched.bbs[ctx.instr_placement[node.gvn].block]
+	}
+
+	get_node_block_and_idx :: proc(
+		ctx: Ctx,
+		id: Node_ID,
+	) -> (
+		block: ^Graph_Basic_Block,
+		idx: int,
+	) {
+		block = get_node_block(ctx, id)
+		idx = arna.simd_search(block.instrs[:], id) or_else panic("")
+		return
 	}
 
 	forward_lrg :: proc(

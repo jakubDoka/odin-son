@@ -217,7 +217,8 @@ X64_Mem_Op :: struct {
 }
 
 x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
-	OP_OFFSET :: u16(X64_Node_Type.X64_Add - X64_Node_Type.Add)
+	OP_OFFSET :: transmute(u16)(i16(X64_Node_Type.X64_Add) -
+		i16(Ideal_Node_Type.Add))
 
 	id := graph_id(ctx, node)
 
@@ -500,7 +501,7 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 
 		emit_indirect_addr(ctx.code, val, bse, NO_INDEX, 1, 0)
 	case .Start, .Entry, .Then, .Else, .Region, .Loop, .Call_End:
-		panic("Not reachable form here")
+		fmt.panicf("Not reachable form here %v", node.node)
 	case .If:
 		// test $cond, $cond
 		cond := reg_of(ctx, node.inps[1])

@@ -339,7 +339,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{Class_Flag.Is_Basic_Block_Start}, // Entry
 			{Class_Flag.Interned}, // Poison
 			{}, // Arg
-			{Class_Flag.Interned}, // CInt
+			{Class_Flag.Interned, Class_Flag.Clonable}, // CInt
 			{Class_Flag.Interned, Class_Flag.Comutes}, // Add
 			{Class_Flag.Interned}, // Sub
 			{Class_Flag.Interned, Class_Flag.Comutes}, // Mul
@@ -368,7 +368,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{Class_Flag.Interned}, // Phi
 			{}, // Mem
 			{}, // Local
-			{}, // Local_Addr
+			{Class_Flag.Clonable}, // Local_Addr
 			{Class_Flag.Store}, // Copy
 			{Class_Flag.Store}, // Set
 			{Class_Flag.Store}, // Store
@@ -844,7 +844,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{Class_Flag.Is_Basic_Block_Start}, // Entry
 			{Class_Flag.Interned}, // Poison
 			{}, // Arg
-			{Class_Flag.Interned}, // CInt
+			{Class_Flag.Interned, Class_Flag.Clonable}, // CInt
 			{Class_Flag.Interned, Class_Flag.Comutes}, // Add
 			{Class_Flag.Interned}, // Sub
 			{Class_Flag.Interned, Class_Flag.Comutes}, // Mul
@@ -873,7 +873,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{Class_Flag.Interned}, // Phi
 			{}, // Mem
 			{}, // Local
-			{}, // Local_Addr
+			{Class_Flag.Clonable}, // Local_Addr
 			{Class_Flag.Store}, // Copy
 			{Class_Flag.Store}, // Set
 			{Class_Flag.Store}, // Store

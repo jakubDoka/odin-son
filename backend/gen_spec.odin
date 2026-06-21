@@ -29,7 +29,11 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 	.Poison = {default_type = .Void, flags = {.Interned}},
 	// TODO: maybe its better to introduce a flag: Schedule_Early
 	.Arg = {id = Tup, args = {"entry"}, extra_args = {"idx"}},
-	.CInt = {id = CInt, extra_args = {"value"}, flags = {.Interned}},
+	.CInt = {
+		id = CInt,
+		extra_args = {"value"},
+		flags = {.Interned, .Clonable},
+	},
 	.Add = SIMPLE_BINOP_CLASS,
 	.Sub = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
 	.Mul = SIMPLE_BINOP_CLASS,
@@ -56,7 +60,7 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 	.U_Shr = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
 	.Mem = {args = {"ctrl"}, default_type = .Void},
 	.Local = {id = Local, args = {"mem"}, default_type = .Void},
-	.Local_Addr = {args = {"local"}, default_type = .I64},
+	.Local_Addr = {args = {"local"}, default_type = .I64, flags = {.Clonable}},
 	.Load = {
 		id = Mem_Op,
 		args = {"ctrl", "mem", "addr"},

@@ -1,12 +1,10 @@
 package backend
 
 import "../vendored/gam/util/arna"
-import "base:intrinsics"
 import "base:runtime"
 import "core:container/queue"
 import "core:fmt"
 import "core:io"
-import "core:log"
 import "core:mem"
 import "core:reflect"
 import "core:simd"
@@ -99,12 +97,12 @@ Class_Flags :: bit_set[Class_Flag;u8]
 
 Class_Flag :: enum {
 	Is_Basic_Block_Start,
-	Pinnable,
 	Interned,
 	Comutes,
 	Immortal,
 	Store,
 	Load,
+	Clonable,
 }
 
 Cfg :: struct {
@@ -652,7 +650,7 @@ graph_subsume :: proc(graph: ^Graph, with: Node_ID, target: Node_ID) {
 
 	assert(with != target)
 
-	try_recycle: if false {
+	try_recycle: {
 		wtotal_size :=
 			size_of(Node) +
 			uint(graph.node_extra_sizes[wnode.rtype]) * PRECISION +

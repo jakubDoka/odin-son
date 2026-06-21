@@ -11,7 +11,18 @@ Codegen_Emit_Ctx :: struct {
 	using graph:    ^Graph,
 	using schedule: ^Graph_Schedule,
 	using buf:      Codegen_Emit_Buf,
+	lib_calls:      Lib_Calls,
 	allocs:         []Reg,
+}
+
+Lib_Calls :: struct {
+	copy: Lib_Call,
+	set:  Lib_Call,
+}
+
+Lib_Call :: bit_field u32 {
+	id:       u32  | 31,
+	absolute: bool | 1,
 }
 
 Codegen_Emit_Buf :: struct {
@@ -26,7 +37,8 @@ Codegen_Output :: struct {
 }
 
 Reloc_Kind :: enum u32 {
-	Func,
+	Text,
+	Data,
 }
 
 Reloc_Size :: enum u32 {
@@ -53,6 +65,12 @@ emit_anys :: #force_no_inline proc(buf: ^arna.Allocator, values: ..any) {
 		bytes := arna.smake(buf, []u8, len(b))
 		copy(bytes, b)
 	}
+}
+
+emit_aligned :: #force_no_inline proc(buf: ^arna.Allocator, vl: $T) -> ^T {
+	slot := arna.alloc(buf, size_of(T), align_of(T))
+	(^T)(raw_data(slot))^ = vl
+	return (^T)(raw_data(slot))
 }
 
 add_reloc :: #force_no_inline proc(buf: ^arna.Allocator) -> ^Reloc {

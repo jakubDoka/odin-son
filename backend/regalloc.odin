@@ -833,12 +833,33 @@ regalloc_round :: proc(
 		}
 
 		if lrg.reg_conflict {
-
 			for m in members {
 				split := m
+
+				calls := bit_set[Ideal_Node_Type]{.Call, .Set, .Copy}
+
+				has_call_use := false
+				for out in graph_outs(graph, m) {
+					if graph_get(graph, out.id).itype in calls {
+						has_call_use = true
+						break
+					}
+				}
+
 				for out in graph_outs(graph, m) {
 					if split == m {
 						split = split_after(ctx, "rcd", m)
+					}
+
+					split := split
+					if has_call_use {
+						split = split_before(
+							ctx,
+							out.id,
+							out.idx,
+							"rcu",
+							redirect = split,
+						)
 					}
 
 					graph_set_input(graph, out.id, out.idx, split)

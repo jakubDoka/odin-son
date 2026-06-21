@@ -72,6 +72,8 @@ Ideal_Node_Type :: enum u16 {
 	Mem,
 	Local,
 	Local_Addr,
+	Copy,
+	Set,
 	Store,
 	Load,
 	// like Load, but sign extends the loaded value into the full register

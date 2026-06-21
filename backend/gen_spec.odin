@@ -67,7 +67,16 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 		id = Mem_Op,
 		args = {"ctrl", "mem", "addr", "value"},
 		default_type = .Void,
-		flags = {.Interned},
+	},
+	.Copy = {
+		id = Mem_Op,
+		args = {"ctrl", "mem", "dst", "src", "size"},
+		default_type = .Void,
+	},
+	.Set = {
+		id = Mem_Op,
+		args = {"ctrl", "mem", "dst", "value", "size"},
+		default_type = .Void,
 	},
 	.Split = {args = {"dest"}},
 	.Phi = {args = {"reg", "lhs", "rhs"}, flags = {.Interned}},

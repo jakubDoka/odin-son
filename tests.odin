@@ -1807,7 +1807,8 @@ StruB :: struct {
 
 main_ :: proc() -> int {
 	st := Stru{b = {2, 3}}
-	return st.a + st.b.c + st.b.d
+	stcpy := st
+	return stcpy.a + stcpy.b.c + stcpy.b.d
 }
 
 run_test(t, `structs`, `
@@ -1827,7 +1828,8 @@ StruB :: struct {
 
 main :: proc() -> int {
 	st := Stru{b = {2, 3}}
-	return st.a + st.b.c + st.b.d
+	stcpy := st
+	return stcpy.a + stcpy.b.c + stcpy.b.d
 }
 `, main_())
 }

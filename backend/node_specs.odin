@@ -41,6 +41,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{.General = 0}, // Mem
 			{.General = 0}, // Local
 			{.General = 0}, // Local_Addr
+			{.General = 0}, // Copy
+			{.General = 0}, // Set
 			{.General = 0}, // Store
 			{.General = 0}, // Load
 			{.General = 0}, // Load_S
@@ -96,6 +98,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{}, // Mem
 			{}, // Local
 			{}, // Local_Addr
+			{}, // Copy
+			{}, // Set
 			{}, // Store
 			{}, // Load
 			{}, // Load_S
@@ -148,6 +152,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			-1, //Mem
 			-1, //Local
 			-1, //Local_Addr
+			-1, //Copy
+			-1, //Set
 			-1, //Store
 			-1, //Load
 			-1, //Load_S
@@ -200,6 +206,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, //Mem
 			0, //Local
 			0, //Local_Addr
+			0, //Copy
+			0, //Set
 			0, //Store
 			0, //Load
 			0, //Load_S
@@ -252,6 +260,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0b10, // Mem
 			0b10000, // Local
 			0b10, // Local_Addr
+			0b100000, // Copy
+			0b100000, // Set
 			0b100000, // Store
 			0b100000, // Load
 			0b100000, // Load_S
@@ -304,6 +314,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, // Mem -> No_Extra
 			1, // Local -> Local
 			0, // Local_Addr -> No_Extra
+			0, // Copy -> Mem_Op
+			0, // Set -> Mem_Op
 			0, // Store -> Mem_Op
 			0, // Load -> Mem_Op
 			0, // Load_S -> Mem_Op
@@ -356,7 +368,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{}, // Mem
 			{}, // Local
 			{}, // Local_Addr
-			{Class_Flag.Interned}, // Store
+			{}, // Copy
+			{}, // Set
+			{}, // Store
 			{Class_Flag.Interned}, // Load
 			{Class_Flag.Interned}, // Load_S
 			{}, // If
@@ -411,6 +425,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			Mem_Op,
 			Mem_Op,
 			Mem_Op,
+			Mem_Op,
+			Mem_Op,
 			Cfg,
 			Cfg,
 			Cfg,
@@ -460,6 +476,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			`Mem`,
 			`Local`,
 			`Local_Addr`,
+			`Copy`,
+			`Set`,
 			`Store`,
 			`Load`,
 			`Load_S`,
@@ -516,6 +534,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{.General = 0}, // Mem
 			{.General = 0}, // Local
 			{.General = 0}, // Local_Addr
+			{.General = 4039}, // Copy
+			{.General = 4039}, // Set
 			{.General = 0}, // Store
 			{.General = 0}, // Load
 			{.General = 0}, // Load_S
@@ -540,6 +560,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			raw_data([]int{0x2}),
 			raw_data([]int{0xffffffffffffffef}),
 			raw_data([]int{0x0}),
+			raw_data([]int{0x80}),
+			raw_data([]int{0x40}),
 		},
 		reg_masks = {
 			{}, // Start
@@ -576,6 +598,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{}, // Mem
 			{}, // Local
 			{{.General = 1}}, // Local_Addr
+			{{.General = 7}, {.General = 8}, {.General = 9}, {.General = 4}}, // Copy
+			{{.General = 7}, {.General = 8}, {.General = 9}, {.General = 4}}, // Set
 			{{.General = 7}, {.General = 1}, {.General = 1}}, // Store
 			{{.General = 1}, {.General = 1}}, // Load
 			{{.General = 1}, {.General = 1}}, // Load_S
@@ -626,6 +650,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			-1, //Mem
 			-1, //Local
 			-1, //Local_Addr
+			-1, //Copy
+			-1, //Set
 			-1, //Store
 			-1, //Load
 			-1, //Load_S
@@ -678,6 +704,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			1, //Mem
 			1, //Local
 			1, //Local_Addr
+			2, //Copy
+			2, //Set
 			2, //Store
 			2, //Load
 			2, //Load_S
@@ -728,6 +756,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0b10, // Mem
 			0b10000, // Local
 			0b10, // Local_Addr
+			0b100000, // Copy
+			0b100000, // Set
 			0b100000, // Store
 			0b100000, // Load
 			0b100000, // Load_S
@@ -778,6 +808,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, // Mem -> No_Extra
 			1, // Local -> Local
 			0, // Local_Addr -> No_Extra
+			0, // Copy -> Mem_Op
+			0, // Set -> Mem_Op
 			0, // Store -> Mem_Op
 			0, // Load -> Mem_Op
 			0, // Load_S -> Mem_Op
@@ -828,7 +860,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{}, // Mem
 			{}, // Local
 			{}, // Local_Addr
-			{Class_Flag.Interned}, // Store
+			{}, // Copy
+			{}, // Set
+			{}, // Store
 			{Class_Flag.Interned}, // Load
 			{Class_Flag.Interned}, // Load_S
 			{}, // If
@@ -881,6 +915,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			Mem_Op,
 			Mem_Op,
 			Mem_Op,
+			Mem_Op,
+			Mem_Op,
 			Cfg,
 			Cfg,
 			Cfg,
@@ -928,6 +964,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			`Mem`,
 			`Local`,
 			`Local_Addr`,
+			`Copy`,
+			`Set`,
 			`Store`,
 			`Load`,
 			`Load_S`,
@@ -1007,6 +1045,8 @@ Builder_Node_Type :: enum u16 {
 	Mem,
 	Local,
 	Local_Addr,
+	Copy,
+	Set,
 	Store,
 	Load,
 	Load_S,
@@ -1105,6 +1145,16 @@ graph_add_local :: #force_inline proc(graph: ^Graph, name: string, mem: Node_ID)
 graph_add_local_addr :: #force_inline proc(graph: ^Graph, name: string, local: Node_ID) -> (id: Node_ID) {
 	push_node_name(graph, name)
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Local_Addr), .I64, {local})
+}
+#assert(size_of(Mem_Op) % 4 == 0)
+graph_add_copy :: #force_inline proc(graph: ^Graph, name: string, ctrl: Node_ID, mem: Node_ID, dst: Node_ID, src: Node_ID, size: Node_ID) -> (id: Node_ID) {
+	push_node_name(graph, name)
+	return graph_add_raw(graph, u16(Ideal_Node_Type.Copy), .Void, {ctrl, mem, dst, src, size})
+}
+#assert(size_of(Mem_Op) % 4 == 0)
+graph_add_set :: #force_inline proc(graph: ^Graph, name: string, ctrl: Node_ID, mem: Node_ID, dst: Node_ID, value: Node_ID, size: Node_ID) -> (id: Node_ID) {
+	push_node_name(graph, name)
+	return graph_add_raw(graph, u16(Ideal_Node_Type.Set), .Void, {ctrl, mem, dst, value, size})
 }
 #assert(size_of(Mem_Op) % 4 == 0)
 graph_add_store :: #force_inline proc(graph: ^Graph, name: string, ctrl: Node_ID, mem: Node_ID, addr: Node_ID, value: Node_ID) -> (id: Node_ID) {
@@ -1225,6 +1275,8 @@ X64_Node_Type :: enum u16 {
 	Mem,
 	Local,
 	Local_Addr,
+	Copy,
+	Set,
 	Store,
 	Load,
 	Load_S,

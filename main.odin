@@ -6,6 +6,7 @@ import "base:runtime"
 import "core:fmt"
 import "core:io"
 import "core:log"
+import "core:mem"
 import "core:mem/virtual"
 import "core:odin/ast"
 import "core:odin/parser"
@@ -199,11 +200,22 @@ disasm :: proc(sb: ^strings.Builder, ctx: Ctx) {
 			} else if instr.info.mnemonic == .CALL {
 				for reloc in prc.out.relocs {
 					if int(reloc.offset) == offset + length {
-						text = fmt.tprintf(
-							"%v :%v",
-							zydis.MnemonicGetString(instr.info.mnemonic),
-							ctx.procs[reloc.id].name,
-						)
+						switch reloc.kind {
+						case .Text:
+							text = fmt.tprintf(
+								"%v :%v",
+								zydis.MnemonicGetString(instr.info.mnemonic),
+								ctx.procs[reloc.id].name,
+							)
+						case .Data:
+							names := [2]string{"copy", "set"}
+
+							text = fmt.tprintf(
+								"%v :$%v",
+								zydis.MnemonicGetString(instr.info.mnemonic),
+								names[reloc.id],
+							)
+						}
 					}
 				}
 			}
@@ -378,6 +390,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 	ok := parser.parse_file(&p, &f); assert(ok)
 
 	ctx: Ctx
+	ctx.file = &f
 
 	for decl in f.decls {
 		if sdecl, sok := decl.derived_stmt.(^ast.Value_Decl); sok {
@@ -454,7 +467,6 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		ctx.node_spec = &backend.SPECS[.Builder]
 		ctx.mem = &graph_mem
 		ctx.mem.pos = backend.PRECISION
-		ctx.file = &f
 
 		{
 			clear(&ctx.scope)
@@ -536,15 +548,32 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 				relocs = &reloc_mem,
 			},
 			allocs = regs,
+			lib_calls = {
+				copy = {id = 0, absolute = true},
+				set = {id = 1, absolute = true},
+			},
 		}
 		prc.out = spec.emit_function(ctx)
 
 	}
 
+	lib_call_offsets: [2]uintptr
+
+	lib_call_offsets[0] = auto_cast backend.emit_aligned(&code_mem, mem.copy)
+	lib_call_offsets[1] = auto_cast backend.emit_aligned(&code_mem, mem.set)
+
+	log.info("code size: %v", lib_call_offsets)
+
 	for p in ctx.procs {
 		for rel in p.out.relocs {
-			target := &ctx.procs[rel.id]
-			target_off := uintptr(raw_data(target.out.code))
+			target_off: uintptr
+			switch rel.kind {
+			case .Text:
+				target := &ctx.procs[rel.id]
+				target_off = uintptr(raw_data(target.out.code))
+			case .Data:
+				target_off = lib_call_offsets[rel.id]
+			}
 			source := uintptr(raw_data(p.out.code)) + uintptr(rel.offset)
 			jump := u32(target_off - source)
 			assert(rel.size == .r4)
@@ -611,6 +640,52 @@ Type :: enum uintptr {
 }
 
 @(rodata)
+TYPE_SIZES := [Type]int {
+	.Void = 0,
+	.Bool = 1,
+	.Int  = 8,
+	.I64  = 8,
+	.I32  = 4,
+	.I16  = 2,
+	.I8   = 1,
+	.Uint = 8,
+	.U64  = 8,
+	.U32  = 4,
+	.U16  = 2,
+	.U8   = 1,
+}
+
+type_align :: proc(ty: Type) -> int {
+	switch t in unpack_type(ty) {
+	case Builtin:
+		return TYPE_SIZES[ty]
+	case Pointer:
+		return 8
+	case ^Struct:
+		return t.align
+	case ^Lit:
+		panic("we should not be type type")
+	case:
+		panic("wuwut")
+	}
+}
+
+type_size :: proc(ty: Type) -> int {
+	switch t in unpack_type(ty) {
+	case Builtin:
+		return TYPE_SIZES[ty]
+	case Pointer:
+		return 8
+	case ^Struct:
+		return t.size
+	case ^Lit:
+		panic("we should not be type type")
+	case:
+		panic("wuwut")
+	}
+}
+
+@(rodata)
 TYPE_NAMES := [Type]string {
 	.Void = "void",
 	.Bool = "bool",
@@ -649,8 +724,8 @@ type_to_dt :: proc(ty: Type) -> backend.Node_Datatype {
 		return TYPE_TO_DT[ty]
 	case Pointer:
 		return .I64
-	case ^Lit:
-		panic("we should not be type type")
+	case ^Lit, ^Struct:
+		return .Void
 	case:
 		panic("wuwut")
 	}
@@ -663,6 +738,7 @@ INTEGER_TYPES :: UNSIGNED_TYPES | SIGNED_TYPES
 Type_Kind :: enum uintptr {
 	Builtin,
 	Pointer,
+	Struct,
 	Lit,
 }
 
@@ -677,6 +753,7 @@ Builtin :: distinct Type
 Type_Data :: union #no_nil {
 	Builtin,
 	Pointer,
+	^Struct,
 	^Lit,
 }
 
@@ -712,6 +789,42 @@ emit_type :: proc(ctx: ^Ctx, expr: ^ast.Expr) -> Type {
 
 	#partial switch d in expr.derived {
 	case ^ast.Ident:
+		for decl in ctx.file.decls {
+			sdecl := decl.derived_stmt.(^ast.Value_Decl) or_continue
+			if meta.src_of(ctx.file^, sdecl.names[0]) != d.name do continue
+
+			#partial switch d in sdecl.values[0].derived {
+			case ^ast.Struct_Type:
+				key := Struct_Key{ctx.file_id, u32(decl.pos.offset)}
+				structa, ok := ctx.structs[key]
+				if ok do return pack_type(structa)
+
+				structa = new(Struct)
+				ctx.structs[key] = structa
+
+				structa.fields = make([]Struct_Field, len(d.fields.list))
+				for &field, i in structa.fields {
+					ast_field := d.fields.list[i]
+					assert(len(ast_field.names) == 1)
+					field.name = ast_field.names[0].derived.(^ast.Ident).name
+					field.ty = emit_type(ctx, ast_field.type)
+					field.offset = mem.align_forward_int(
+						structa.size,
+						type_align(field.ty),
+					)
+					structa.size = field.offset + type_size(field.ty)
+					structa.align = max(structa.align, type_align(field.ty))
+				}
+				structa.size = mem.align_forward_int(
+					structa.size,
+					structa.align,
+				)
+				return pack_type(structa)
+			case:
+				fmt.panicf("TODO: %#v", d)
+			}
+		}
+
 		for name, kind in TYPE_NAMES {
 			if name == d.name do return kind
 		}
@@ -757,13 +870,34 @@ Ctx :: struct {
 	procs:       [dynamic]Proc,
 	scope:       [dynamic]Variable,
 	pointers:    map[Type]Pointer,
+	structs:     map[Struct_Key]^Struct,
 	lits:        map[Lit]^Lit,
 	node_scope:  backend.Node_ID,
 	root_mem:    backend.Node_ID,
 	mem_slot:    int,
 	loop:        ^Loop_State,
 	file:        ^ast.File,
+	file_id:     File_ID,
 	prc:         Proc_ID,
+}
+
+File_ID :: distinct u32
+
+Struct_Key :: struct {
+	file:   File_ID,
+	offset: u32,
+}
+
+Struct :: struct {
+	fields: []Struct_Field,
+	size:   int,
+	align:  int,
+}
+
+Struct_Field :: struct {
+	name:   string,
+	ty:     Type,
+	offset: int,
 }
 
 Loop_Control :: enum int {
@@ -777,7 +911,10 @@ Loop_State :: struct {
 	using bstate: backend.Loop_State,
 }
 
-Propagation :: struct {}
+Propagation :: struct {
+	dest: backend.Node_ID,
+}
+
 Ty_Propagation :: struct {
 	inferred_ty: Type,
 	referencing: bool,
@@ -802,12 +939,16 @@ ctx_set_mem :: proc(ctx: ^Ctx, mem: backend.Node_ID) {
 }
 
 get_node_type :: proc(node: ^ast.Node) -> Type {
-	return Type(raw_data(node.end.file))
+	return get_node_data(node, Type)
 }
 
 get_node_vflags :: proc(node: ^ast.Node) -> Var_Flags {
 	_ = node.derived.(^ast.Ident)
-	return transmute(Var_Flags)raw_data(node.end.file)
+	return get_node_data(node, Var_Flags)
+}
+
+get_node_data :: proc(node: ^ast.Node, $T: typeid) -> T {
+	return transmute(T)raw_data(node.end.file)
 }
 
 set_node_data :: proc(node: ^ast.Node, value: $T) {
@@ -865,6 +1006,57 @@ typecheck :: proc(
 		assert(prop.inferred_ty == .Void || prop.inferred_ty in INTEGER_TYPES)
 
 		return prop.inferred_ty != .Void ? prop.inferred_ty : .Int
+	case ^ast.Comp_Lit:
+		inferred_ty := emit_type(ctx, d.type)
+		if inferred_ty == .Void do inferred_ty = prop.inferred_ty
+
+		#partial switch t in unpack_type(inferred_ty) {
+		case ^Struct:
+			for elem, i in d.elems {
+				#partial switch e in elem.derived {
+				case ^ast.Field_Value:
+					name := meta.src_of(ctx.file^, e.field)
+					for &field in t.fields {
+						if field.name == name {
+							set_node_data(e.field, field.offset)
+							fty := typecheck(
+								ctx,
+								{inferred_ty = field.ty},
+								e.value,
+							)
+							assert(fty == field.ty)
+						}
+					}
+				case:
+					field := t.fields[i]
+					fty := typecheck(ctx, {inferred_ty = field.ty}, elem)
+					assert(fty == field.ty)
+				}
+			}
+
+			return inferred_ty
+		case:
+			fmt.panicf("TODO: %#v", d)
+		}
+	case ^ast.Selector_Expr:
+		base := typecheck(ctx, {}, d.expr)
+
+		#partial switch f in d.field.derived {
+		case ^ast.Ident:
+			#partial switch t in unpack_type(base) {
+			case ^Struct:
+				for &field in t.fields {
+					if field.name == f.name {
+						set_node_data(d.field, field.offset)
+						return field.ty
+					}
+				}
+			case:
+				fmt.panicf("TODO: %#v", t)
+			}
+		case:
+			fmt.panicf("TODO: %#v", d.field.derived)
+		}
 	case ^ast.Binary_Expr:
 		lhs_ty := typecheck(ctx, prop, d.left)
 		rhs_ty := typecheck(ctx, {inferred_ty = lhs_ty}, d.right)
@@ -993,14 +1185,10 @@ is_of :: proc(vl: Type, $K: typeid) -> bool {
 	return ok
 }
 
-to_rvalue :: proc {
-	to_rvalue_ty,
-	to_rvalue_expr,
-}
-
 to_rvalue_ty :: proc(ctx: ^Ctx, value: Value, ty: Type) -> backend.Node_ID {
 	if !value.is_lvalue do return value.id
 	dt := type_to_dt(ty)
+	assert(dt != .Void)
 	// signed sub-word values must be sign extended on load since we always
 	// do arithmetic in the biggest register size
 	if is_signed_subword(ty) {
@@ -1023,9 +1211,9 @@ to_rvalue_ty :: proc(ctx: ^Ctx, value: Value, ty: Type) -> backend.Node_ID {
 	)
 }
 
-is_signed_subword :: proc(ty: Type) -> bool {
-	bt := unpack_type(ty).(Builtin) or_return
-	return Type(bt) in SIGNED_TYPES && backend.DT_SIZE[type_to_dt(ty)] < 8
+to_rvalue :: proc {
+	to_rvalue_ty,
+	to_rvalue_expr,
 }
 
 to_rvalue_expr :: proc(
@@ -1034,6 +1222,11 @@ to_rvalue_expr :: proc(
 	node: ^ast.Node,
 ) -> backend.Node_ID {
 	return to_rvalue(ctx, value, get_node_type(node))
+}
+
+is_signed_subword :: proc(ty: Type) -> bool {
+	bt := unpack_type(ty).(Builtin) or_return
+	return Type(bt) in SIGNED_TYPES && backend.DT_SIZE[type_to_dt(ty)] < 8
 }
 
 tok_to_binop :: proc(
@@ -1133,6 +1326,110 @@ ctx_lookup_lvalue :: proc(ctx: ^Ctx, expr: ^ast.Node) -> Sym {
 	}
 }
 
+store_value :: proc {
+	store_value_ty,
+	store_value_expr,
+}
+
+store_value_expr :: proc(
+	ctx: ^Ctx,
+	name: string,
+	ptr: backend.Node_ID,
+	value: Value,
+	node: ^ast.Node,
+) {
+	store_value(ctx, name, ptr, value, get_node_type(node))
+}
+
+store_value_ty :: proc(
+	ctx: ^Ctx,
+	name: string,
+	ptr: backend.Node_ID,
+	value: Value,
+	ty: Type,
+) {
+	if ptr == value.id && value.is_lvalue do return
+
+	if type_to_dt(ty) == .Void {
+		assert(value.is_lvalue)
+		ctx_set_mem(
+			ctx,
+			backend.graph_add_copy(
+				ctx,
+				name,
+				ctx_ctrl(ctx),
+				ctx_mem(ctx),
+				ptr,
+				value.id,
+				backend.graph_add_c_int(
+					ctx,
+					"msize",
+					.I32,
+					i64(type_size(ty)),
+				),
+			),
+		)
+	} else {
+		ctx_set_mem(
+			ctx,
+			backend.graph_add_store(
+				ctx,
+				name,
+				ctx_ctrl(ctx),
+				ctx_mem(ctx),
+				ptr,
+				to_rvalue(ctx, value, ty),
+			),
+		)
+	}
+}
+
+alloca :: proc(
+	ctx: ^Ctx,
+	name: string,
+	ty: Type,
+	zeroed := true,
+) -> backend.Node_ID {
+	alloca := backend.graph_add_local(ctx, name, ctx.root_mem)
+	size := u32(type_size(ty))
+	backend.graph_extra(ctx, alloca, backend.Local).size = size
+	ptr := backend.graph_add_local_addr(ctx, name, alloca)
+
+	if zeroed {
+		zero := backend.graph_add_c_int(ctx, "zero", .I8, 0)
+		size := backend.graph_add_c_int(ctx, "size", .I32, i64(type_size(ty)))
+		ctx_set_mem(
+			ctx,
+			backend.graph_add_set(
+				ctx,
+				"zinit",
+				ctx_ctrl(ctx),
+				ctx_mem(ctx),
+				ptr,
+				zero,
+				size,
+			),
+		)
+	}
+
+	return ptr
+}
+
+field_offset :: proc(
+	ctx: ^Ctx,
+	base: backend.Node_ID,
+	offset: int,
+) -> backend.Node_ID {
+	return backend.graph_add_bin_op(
+		ctx,
+		"fld",
+		.Add,
+		.I64,
+		base,
+		backend.graph_add_c_int(ctx, "foff", .I32, i64(offset)),
+	)
+}
+
 emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 	if node == nil do return {}
 
@@ -1192,18 +1489,8 @@ emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 				assert(d.op.kind == .Eq)
 				dest := emit_nodes(ctx, {}, lhs)
 				assert(dest.is_lvalue)
-				value := emit_nodes(ctx, {}, rhs)
-				ctx_set_mem(
-					ctx,
-					backend.graph_add_store(
-						ctx,
-						"asss",
-						ctx_ctrl(ctx),
-						ctx_mem(ctx),
-						dest.id,
-						to_rvalue(ctx, value, ty),
-					),
-				)
+				value := emit_nodes(ctx, {dest = dest.id}, rhs)
+				store_value(ctx, "asss", dest.id, value, ty)
 			}
 		}
 	case ^ast.Binary_Expr:
@@ -1243,32 +1530,22 @@ emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 		for i in 0 ..< len(d.names) {
 			name := meta.src_of(ctx.file^, d.names[i])
 			vty := get_node_type(d.values[i])
-			value := to_rvalue(
-				ctx,
-				emit_nodes(ctx, {}, d.values[i]),
-				d.values[i],
-			)
 			flags := get_node_vflags(d.names[i])
 
-			// TODO: extract common stuff
-			if .Referenced in flags {
-				alloca := backend.graph_add_local(ctx, name, ctx.root_mem)
-				backend.graph_extra(ctx, alloca, backend.Local).size = 8
-				ptr := backend.graph_add_local_addr(ctx, name, alloca)
+			if .Referenced in flags || type_to_dt(vty) == .Void {
+				ptr := alloca(ctx, name, vty)
 				backend.graph_add_output(ctx, ptr, 0, 0)
-				ctx_set_mem(
-					ctx,
-					backend.graph_add_store(
-						ctx,
-						"init",
-						ctx_ctrl(ctx),
-						ctx_mem(ctx),
-						ptr,
-						value,
-					),
-				)
+
+				value := emit_nodes(ctx, {dest = ptr}, d.values[i])
+				store_value(ctx, "init", ptr, value, vty)
+
 				append(&ctx.scope, Variable{name, ptr, vty, d.names[i], flags})
 			} else {
+				value := to_rvalue(
+					ctx,
+					emit_nodes(ctx, {}, d.values[i]),
+					d.values[i],
+				)
 				backend.graph_set_name(ctx, value, name)
 				idx := backend.graph_push_scope_value(
 					ctx,
@@ -1277,6 +1554,48 @@ emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 				)
 				append(&ctx.scope, Variable{name, idx, vty, d.names[i], flags})
 			}
+		}
+	case ^ast.Comp_Lit:
+		dest := prop.dest != 0 ? prop.dest : alloca(ctx, "comp", ty)
+
+		#partial switch t in unpack_type(ty) {
+		case ^Struct:
+			for elem, i in d.elems {
+				offset: int
+				ast_value: ^ast.Node
+				#partial switch e in elem.derived {
+				case ^ast.Field_Value:
+					offset = get_node_data(e.field, int)
+					ast_value = e.value
+				case:
+					offset = t.fields[i].offset
+					ast_value = elem
+				}
+
+				field_ptr := field_offset(ctx, dest, offset)
+				value := emit_nodes(ctx, {dest = field_ptr}, ast_value)
+				store_value(ctx, "finit", field_ptr, value, ast_value)
+			}
+
+			return {id = dest, is_lvalue = true}
+		case:
+			fmt.panicf("TODO: %#v", d)
+		}
+	case ^ast.Selector_Expr:
+		base := emit_nodes(ctx, {}, d.expr)
+		#partial switch f in d.field.derived {
+		case ^ast.Ident:
+			#partial switch t in unpack_type(get_node_type(d.expr)) {
+			case ^Struct:
+				assert(base.is_lvalue)
+				offset := get_node_data(d.field, int)
+				field_ptr := field_offset(ctx, base.id, offset)
+				return {id = field_ptr, is_lvalue = true}
+			case:
+				fmt.panicf("TODO: %#v", t)
+			}
+		case:
+			fmt.panicf("TODO: %#v", d.field.derived)
 		}
 	case ^ast.Ident:
 		sym := ctx_lookup_lvalue(ctx, d)

@@ -4,6 +4,7 @@ import "../vendored/gam/util/arna"
 import "../vendored/gam/util/bit_arr"
 import "base:intrinsics"
 import "core:fmt"
+import "core:log"
 import "core:mem"
 import "core:reflect"
 import "core:sort"
@@ -21,7 +22,10 @@ GPA_DIV_MASK :: []int {
 	~int(1 << uint(RDX)),
 }
 RAX_MASK :: []int{1 << uint(RAX)}
+RDI_MASK :: []int{1 << uint(RDI)}
+RSI_MASK :: []int{1 << uint(RSI)}
 RDX_MASK :: []int{1 << uint(RDX)}
+
 // variable shift counts must be in CL
 RCX_MASK :: []int{1 << uint(RCX)}
 CALL_CLOBBERS ::
@@ -174,6 +178,16 @@ X64_IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec {
 	.Always = {input_start_idx = 1},
 	.Call = {
 		input_start_idx = 2,
+		clobbers = #partial{.General = CALL_CLOBBERS},
+	},
+	.Copy = {
+		input_start_idx = 2,
+		reg_masks = #partial{.General = {{}, RDI_MASK, RSI_MASK, RDX_MASK}},
+		clobbers = #partial{.General = CALL_CLOBBERS},
+	},
+	.Set = {
+		input_start_idx = 2,
+		reg_masks = #partial{.General = {{}, RDI_MASK, RSI_MASK, RDX_MASK}},
 		clobbers = #partial{.General = CALL_CLOBBERS},
 	},
 	.Call_End = {},
@@ -332,7 +346,6 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 
 @(disabled = GEN_SPEC)
 x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
-
 	@(static)
 	@(rodata)
 	OPCODE_TABLE := #partial [X64_Node_Type]Instr_Info {
@@ -476,9 +489,40 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		emit(ctx.code, {0xe8, 0, 0, 0, 0})
 		add_reloc(ctx.relocs)^ = {
 			offset = u32(ctx.code.pos - ctx.code_start),
-			kind   = .Func,
+			kind   = .Text,
 			size   = .r4,
 			id     = call.cid,
+		}
+	case .Copy, .Set:
+		lib_call: Lib_Call
+		#partial switch node.itype {
+		case .Copy:
+			lib_call = ctx.lib_calls.copy
+		case .Set:
+			lib_call = ctx.lib_calls.set
+		case:
+			panic("wuwut")
+		}
+
+		if lib_call.absolute {
+			// call [rip + $lib_call.id]
+			emit(ctx.code, {0xFF, mod_sm(.Indirect, 0b010, RIP), 0, 0, 0, 0})
+			add_reloc(ctx.relocs)^ = {
+				offset = u32(ctx.code.pos - ctx.code_start),
+				kind   = .Data,
+				size   = .r4,
+				id     = lib_call.id,
+			}
+			log.info("lib_call: %v", lib_call.id)
+		} else {
+			// call $lib_call.id
+			emit(ctx.code, {0xe8, 0, 0, 0, 0})
+			add_reloc(ctx.relocs)^ = {
+				offset = u32(ctx.code.pos - ctx.code_start),
+				kind   = .Text,
+				size   = .r4,
+				id     = lib_call.id,
+			}
 		}
 	case .Poison, .Arg, .Phi, .Ret, .Mem:
 	case .CInt:

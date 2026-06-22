@@ -243,12 +243,23 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 
 	base: Node_ID
 	displacement: i32
+	stack_base: bool
 	if 2 < len(node.inps) {
-		cbase := graph_expand(ctx, node.inps[2])
-		if cbase.xtype == .X64_Add {
-			base = cbase.inps[0]
+		fbase := node.inps[2]
+
+		fnode := graph_expand(ctx, fbase)
+		if fnode.xtype == .X64_Add {
+			fbase = fnode.inps[0]
 			displacement = graph_extra(ctx, node.inps[2], X64_Mem_Op).imm
 		}
+
+		fnode = graph_expand(ctx, fbase)
+		if fnode.itype == .Local_Addr {
+			base = fnode.inps[0]
+			stack_base = true
+		}
+
+		if fbase == node.inps[2] do base = 0
 	}
 
 	#partial switch node.itype {
@@ -270,6 +281,7 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 				u16(X64_Node_Type.X64_Load),
 				{node.inps[0], node.inps[1], base},
 				{dis = displacement, signed = node.itype == .Load_S},
+				additional_data_offset = u8(stack_base),
 			)
 		}
 	case .Store:
@@ -280,6 +292,7 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 				u16(X64_Node_Type.X64_Store),
 				{node.inps[0], node.inps[1], base, node.inps[3]},
 				{dis = displacement},
+				additional_data_offset = u8(stack_base),
 			)
 		}
 	}
@@ -290,11 +303,13 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 		type: u16,
 		inps: []Node_ID,
 		extra: X64_Mem_Op,
+		additional_data_offset: u8 = 0,
 	) -> Node_ID {
 		push_node_name(graph, graph_get_node_name(graph, from))
 		fnode := graph_get(graph, from)
 		node := graph_add_raw(graph, type, fnode.dt, inps)
 		graph_extra(graph, node, X64_Mem_Op)^ = extra
+		graph_get(graph, node).additional_data_start = additional_data_offset
 		return node
 	}
 
@@ -494,7 +509,7 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		emit_stack_lea(ctx.code, reg_of(ctx, instr), offset)
 	case .Store, .X64_Store:
 		dt := graph_get(ctx, node.inps[3]).dt
-		bse := reg_of(ctx, node.inps[2])
+		bse, sdis := reg_and_disp_of(ctx, node.inps[2])
 		val := reg_of(ctx, node.inps[3])
 		dis := mem_op.dis
 
@@ -512,10 +527,10 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 			emit(ctx.code, {rx, 0x89})
 		}
 
-		emit_indirect_addr(ctx.code, val, bse, NO_INDEX, 1, dis)
+		emit_indirect_addr(ctx.code, val, bse, NO_INDEX, 1, dis + sdis)
 	case .Load, .X64_Load, .Load_S:
 		dt := node.dt
-		bse := reg_of(ctx, node.inps[2])
+		bse, sdis := reg_and_disp_of(ctx, node.inps[2])
 		val := reg_of(ctx, instr)
 		dis := mem_op.dis
 		signed := mem_op.signed || node.itype == .Load_S
@@ -552,7 +567,7 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 			}
 		}
 
-		emit_indirect_addr(ctx.code, val, bse, NO_INDEX, 1, dis)
+		emit_indirect_addr(ctx.code, val, bse, NO_INDEX, 1, dis + sdis)
 	case .Start, .Entry, .Then, .Else, .Region, .Loop, .Call_End:
 		fmt.panicf("Not reachable form here %v", node.node)
 	case .If:
@@ -748,6 +763,12 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 reg_of :: proc(ctx: Codegen_Emit_Ctx, id: Node_ID) -> Reg {
 	node := graph_get(ctx, id)
 	return ctx.allocs[node.gvn]
+}
+
+reg_and_disp_of :: proc(ctx: Codegen_Emit_Ctx, id: Node_ID) -> (Reg, i32) {
+	node := graph_get(ctx, id)
+	if node.itype == .Local do return RSP, i32(graph_extra(ctx, node, Local).offset)
+	return ctx.allocs[node.gvn], 0
 }
 
 emit_single_op :: proc(code: ^arna.Allocator, op_base: u8, dst: Reg) {

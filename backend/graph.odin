@@ -5,6 +5,7 @@ import "base:runtime"
 import "core:container/queue"
 import "core:fmt"
 import "core:io"
+import "core:log"
 import "core:mem"
 import "core:reflect"
 import "core:simd"
@@ -267,7 +268,16 @@ worklist_add :: proc(
 ) {
 	if id == 0 do return
 	node := graph_expand(graph, id)
-	if node.in_worklist do return
+	if node.in_worklist {
+		if false {
+			for elem in worklist.data {
+				if elem == id do return
+			}
+			fmt.panicf("wuta: %v", node.node)
+		} else {
+			return
+		}
+	}
 	node.in_worklist = true
 	queue.push_back(worklist, id)
 }
@@ -289,20 +299,7 @@ graph_iter_peeps :: proc(graph: ^Graph) {
 	queue.init(&worklist, int(graph.gvn))
 	worklist_add(graph, &worklist, NODE_START)
 
-	i := 0
-	for i < queue.len(worklist) {
-		node := graph_expand(graph, worklist.data[i])
-		for inp in node.inps {
-			if inp == 0 do continue
-			worklist_add(graph, &worklist, inp)
-		}
-
-		for out in node.outs {
-			worklist_add(graph, &worklist, out.id)
-		}
-
-		i += 1
-	}
+	collect_nodes(graph, &worklist)
 
 	for n in worklist_next(graph, &worklist) {
 		node := graph_expand(graph, n)
@@ -336,17 +333,39 @@ graph_iter_peeps :: proc(graph: ^Graph) {
 
 		graph_subsume(graph, new_node, n)
 	}
+
+	if ODIN_DEBUG {
+		collect_nodes(graph, &worklist)
+
+		for n in worklist_next(graph, &worklist) {
+			node := graph_expand(graph, n)
+			new_node := graph.peep({graph, &worklist}, node)
+			assert(new_node == 0)
+		}
+	}
+
+	collect_nodes :: proc(graph: ^Graph, worklist: ^queue.Queue(Node_ID)) {
+		i := 0
+		for i < queue.len(worklist^) {
+			node := graph_expand(graph, worklist.data[i])
+
+			for inp in node.inps {
+				if inp == 0 do continue
+				worklist_add(graph, worklist, inp)
+			}
+
+			for out in node.outs {
+				worklist_add(graph, worklist, out.id)
+			}
+
+			i += 1
+		}
+	}
 }
 
 when !GEN_SPEC {
-	fold_bin_op :: proc(
-		lhs: i64,
-		op: Ideal_Node_Type,
-		rhs: i64,
-	) -> (
-		value: i64,
-	) {
-		switch Bin_Op(op) {
+	fold_bin_op :: proc(lhs: i64, op: Bin_Op, rhs: i64) -> (value: i64) {
+		switch op {
 		case .Add:
 			value = lhs + rhs
 		case .Sub:
@@ -364,7 +383,7 @@ when !GEN_SPEC {
 		case .Xor:
 			value = lhs ~ rhs
 		case .And_Not:
-			value = lhs & ~rhs
+			value = lhs &~ rhs
 		case .Shl:
 			value = lhs << u64(rhs)
 		case .Shr:
@@ -407,13 +426,77 @@ when !GEN_SPEC {
 			lhs := graph_expand(ctx.graph, node.inps[0])
 			rhs := graph_expand(ctx.graph, node.inps[1])
 
-			if lhs.itype == .CInt && rhs.itype == .CInt {
-				lhs := graph_extra(ctx.graph, lhs, CInt).value
-				rhs := graph_extra(ctx.graph, rhs, CInt).value
+			clhs := graph_extra(ctx.graph, lhs, CInt)
+			crhs := graph_extra(ctx.graph, rhs, CInt)
+			op := Bin_Op(node.itype)
 
-				value := fold_bin_op(lhs, node.itype, rhs)
-
+			if clhs != nil && crhs != nil {
+				value := fold_bin_op(clhs.value, op, crhs.value)
 				return graph_add_c_int(ctx.graph, "fld", .I64, value)
+			}
+
+			if crhs != nil {
+				ZERO_IS_NEUTRAL := bit_set[Bin_Op] {
+					.Add,
+					.Sub,
+					.Or,
+					.Shr,
+					.U_Shr,
+					.Shl,
+					.Xor,
+					.And_Not,
+				}
+				if op in ZERO_IS_NEUTRAL && crhs.value == 0 {
+					return node.inps[0]
+				}
+
+				ONE_IS_NEUTRAL := bit_set[Bin_Op]{.Mul, .Div}
+				if op in ONE_IS_NEUTRAL && crhs.value == 1 {
+					return node.inps[0]
+				}
+			}
+
+			if lhs.node == rhs.node {
+				SYMETRI_IS_ZERO := bit_set[Bin_Op] {
+					.Sub,
+					.Xor,
+					.And_Not,
+					.Ne,
+					.Lt,
+					.Gt,
+					.U_Lt,
+					.U_Gt,
+				}
+				if op in SYMETRI_IS_ZERO {
+					return graph_add_c_int(ctx.graph, "sim0", .I64, 0)
+				}
+
+				SYMETRI_IS_ONE := bit_set[Bin_Op]{.Eq, .Le, .Ge, .U_Le, .U_Ge}
+				if op in SYMETRI_IS_ONE {
+					return graph_add_c_int(ctx.graph, "sim1", .I64, 1)
+				}
+			}
+
+			ASOCIATIVE := bit_set[Bin_Op]{.Add, .Mul, .And, .Or, .Xor, .And}
+
+			if Bin_Op(lhs.itype) == op && op in ASOCIATIVE && crhs != nil {
+				clhs_lhs := graph_extra(ctx, lhs.inps[0], CInt)
+				clhs_rhs := graph_extra(ctx, lhs.inps[1], CInt)
+				if clhs_rhs != nil && clhs_lhs == nil {
+					return graph_add_bin_op(
+						ctx.graph,
+						"rsoc",
+						op,
+						node.dt,
+						lhs.inps[0],
+						graph_add_c_int(
+							ctx.graph,
+							"rfld",
+							node.dt,
+							fold_bin_op(clhs_rhs.value, op, crhs.value),
+						),
+					)
+				}
 			}
 		}
 
@@ -650,7 +733,7 @@ graph_subsume :: proc(graph: ^Graph, with: Node_ID, target: Node_ID) {
 
 	assert(with != target)
 
-	try_recycle: {
+	try_recycle: if 0 == 0 {
 		wtotal_size :=
 			size_of(Node) +
 			uint(graph.node_extra_sizes[wnode.rtype]) * PRECISION +
@@ -663,6 +746,11 @@ graph_subsume :: proc(graph: ^Graph, with: Node_ID, target: Node_ID) {
 		assert(wnode.gvn == graph.gvn - 1)
 		assert(wnode.output_cap == 0)
 		assert(wnode.input_count == wnode.ordered_input_count)
+		assert(
+			wnode.input_idx ==
+			(u32(graph.mem.pos) - u32(wnode.input_count) * size_of(Node_ID)) /
+				PRECISION,
+		)
 
 		ttotal_size :=
 			size_of(Node) +
@@ -670,6 +758,11 @@ graph_subsume :: proc(graph: ^Graph, with: Node_ID, target: Node_ID) {
 			size_of(Node_ID) * uint(tnode.ordered_input_count)
 
 		if wtotal_size > ttotal_size do break try_recycle
+
+		for inp, i in wnode.inps {
+			graph_remove_output(graph, inp, {idx = i, id = with})
+			graph_add_output(graph, inp, target, i)
+		}
 
 		for inp, i in tnode.inps {
 			if inp == 0 do continue
@@ -683,6 +776,7 @@ graph_subsume :: proc(graph: ^Graph, with: Node_ID, target: Node_ID) {
 		graph.waste += int(ttotal_size - wtotal_size)
 
 		wnode.gvn = tnode.gvn
+		wnode.input_idx -= u32(with - target)
 		wnode.output_count = tnode.output_count
 		wnode.output_cap = tnode.output_cap
 		wnode.output_idx = tnode.output_idx
@@ -692,7 +786,7 @@ graph_subsume :: proc(graph: ^Graph, with: Node_ID, target: Node_ID) {
 		node_slice := ([^]u8)(tnode.node)[-PREFIX_SIZE:][:ttotal_size +
 		PREFIX_SIZE]
 		copy(node_slice, nnode_slice)
-		graph.mem.pos = uint(with) * PRECISION
+		graph.mem.pos = uint(with) * PRECISION - PREFIX_SIZE
 		graph.gvn -= 1
 
 		graph_intern(graph, target)

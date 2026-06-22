@@ -1455,14 +1455,8 @@ field_offset :: proc(
 	base: backend.Node_ID,
 	offset: int,
 ) -> backend.Node_ID {
-	return backend.graph_add_bin_op(
-		ctx,
-		"fld",
-		.Add,
-		.I64,
-		base,
-		backend.graph_add_c_int(ctx, "foff", .I32, i64(offset)),
-	)
+	off := backend.graph_add_c_int(ctx, "foff", .I64, i64(offset))
+	return backend.graph_add_bin_op(ctx, "fld", .Add, .I64, base, off)
 }
 
 emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {

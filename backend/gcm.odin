@@ -534,6 +534,10 @@ verify_schedule_integrity :: proc(graph: ^Graph, sched: ^Graph_Schedule) {
 	for bb in sched.bbs {
 		for instr in bb.instrs {
 			inode := graph_expand(graph, instr)
+			assert(
+				len(inode.outs) != 0 ||
+				graph_has_flag(graph, instr, .Immortal),
+			)
 
 			for inp, i in inode.inps {
 				innode := graph_expand(graph, inp)

@@ -165,52 +165,26 @@ main:
 =========== OPT LEVEL: Full ===========
 main:
      push rbx
-     push rbp
      sub rsp, 0x50
      lea rdi, [rsp]
      mov rsi, 0x00
      mov rdx, 0x28
      call :$set
-     mov rax, 0x0A
-     lea rcx, [rsp]
-     mov [rcx], eax
-     mov rax, 0x14
-     mov rcx, 0xFFFFFFFFFFFFFFE2
-     mov rdx, 0xFFFFFFFFFFFFFFD8
-     mov rbx, 0x01
-     mov rbp, 0x02
-     mov rsi, 0xFFFFFFFFFFFFFFFD
-     mov rdi, 0xFFFFFFFFFFFFFFFC
-     mov [rsp+0x08], rax
-     mov [rsp+0x10], rcx
-     mov [rsp+0x18], rdx
-     mov [rsp+0x20], bl
-     mov [rsp+0x22], bp
-     mov [rsp+0x24], rsi
-     mov [rsp+0x26], rdi
-     lea rax, [rsp]
-     mov eax, [rax]
-     add rax, 0x01
-     lea rcx, [rsp]
-     mov [rcx], eax
-     mov rax, [rsp+0x08]
-     add rax, 0x02
-     mov [rsp+0x08], rax
-     movsxd rax, dword ptr [rsp+0x10]
-     sub rax, 0x03
-     mov [rsp+0x10], eax
-     mov rax, [rsp+0x18]
-     sub rax, 0x04
-     mov [rsp+0x18], rax
-     movzx eax, byte ptr [rsp+0x20]
-     add rax, 0x05
-     mov [rsp+0x20], al
-     movzx eax, word ptr [rsp+0x22]
-     add rax, 0x06
-     mov [rsp+0x22], ax
-     movsx rax, byte ptr [rsp+0x24]
-     sub rax, 0x07
-     mov [rsp+0x24], al
+     mov dword ptr [rsp], 0x0A
+     mov qword ptr [rsp+0x08], 0x14
+     mov qword ptr [rsp+0x10], 0xFFFFFFFFFFFFFFE2
+     mov qword ptr [rsp+0x18], 0xFFFFFFFFFFFFFFD8
+     mov byte ptr [rsp+0x20], 0x01
+     mov word ptr [rsp+0x22], 0x02
+     mov qword ptr [rsp+0x24], 0xFFFFFFFFFFFFFFFD
+     mov qword ptr [rsp+0x26], 0xFFFFFFFFFFFFFFFC
+     add qword ptr [rsp], 0x01
+     add qword ptr [rsp+0x08], 0x02
+     sub qword ptr [rsp+0x10], 0x03
+     sub qword ptr [rsp+0x18], 0x04
+     add qword ptr [rsp+0x20], 0x05
+     add qword ptr [rsp+0x22], 0x06
+     sub qword ptr [rsp+0x24], 0x07
      movsx rax, word ptr [rsp+0x26]
      sub rax, 0x08
      mov [rsp+0x26], ax
@@ -222,23 +196,21 @@ main:
      mov rdx, 0x28
      lea rdi, [rsp+0x28]
      call :$copy
-     movzx ecx, byte ptr [rsp+0x48]
-     movzx edx, word ptr [rsp+0x4A]
-     movsxd rbx, dword ptr [rsp+0x38]
-     movsx rbp, byte ptr [rsp+0x4C]
-     mov rsi, [rsp+0x30]
-     movsx rdi, word ptr [rsp+0x4E]
-     mov r8, [rsp+0x40]
-     lea rax, [rsp+0x28]
-     mov eax, [rax]
-     add rax, rsi
-     add rax, rbx
-     add rax, r8
+     mov rcx, [rsp+0x30]
+     mov eax, [rsp+0x28]
      add rax, rcx
+     movsxd rcx, dword ptr [rsp+0x38]
+     add rax, rcx
+     movzx ecx, byte ptr [rsp+0x48]
+     mov rdx, [rsp+0x40]
+     movzx ebx, word ptr [rsp+0x4A]
      add rax, rdx
-     add rax, rbp
-     add rax, rdi
+     add rax, rcx
+     movsx rcx, word ptr [rsp+0x4E]
+     add rax, rbx
+     movsx rdx, byte ptr [rsp+0x4C]
+     add rax, rdx
+     add rax, rcx
      sub rsp, 0xFFFFFFFFFFFFFFB0
-     pop rbp
      pop rbx
      ret

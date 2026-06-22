@@ -1833,3 +1833,125 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) structs_with_differnt_datatypes :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Inner :: struct {
+	u8v:  u8,
+	u16v: u16,
+	i8v:  i8,
+	i16v: i16,
+}
+
+Outer :: struct {
+	u32v: u32,
+	u64v: u64,
+	i32v: i32,
+	i64v: i64,
+	inner: Inner,
+}
+
+main_ :: proc() -> int {
+	st := Outer{
+		u32v  = 10,
+		u64v  = 20,
+		i32v  = 0 - 30,
+		i64v  = 0 - 40,
+		inner = {
+			1,
+			2,
+			0 - 3,
+			0 - 4,
+		},
+	}
+
+	ptr := &st
+
+	ptr.u32v = ptr.u32v + 1
+	ptr.u64v = ptr.u64v + 2
+	ptr.i32v = ptr.i32v - 3
+	ptr.i64v = ptr.i64v - 4
+
+	ptr.inner.u8v  = ptr.inner.u8v + 5
+	ptr.inner.u16v = ptr.inner.u16v + 6
+	ptr.inner.i8v  = ptr.inner.i8v - 7
+	ptr.inner.i16v = ptr.inner.i16v - 8
+
+	stcpy := st
+
+	return int(
+		u64(stcpy.u32v) +
+		u64(stcpy.u64v) +
+		u64(stcpy.i32v) +
+		u64(stcpy.i64v) +
+		u64(stcpy.inner.u8v) +
+		u64(stcpy.inner.u16v) +
+		u64(stcpy.inner.i8v) +
+		u64(stcpy.inner.i16v),
+	)
+}
+
+run_test(t, `structs_with_differnt_datatypes`, `
+package main
+
+opt_level :: "none"
+
+Inner :: struct {
+	u8v:  u8,
+	u16v: u16,
+	i8v:  i8,
+	i16v: i16,
+}
+
+Outer :: struct {
+	u32v: u32,
+	u64v: u64,
+	i32v: i32,
+	i64v: i64,
+	inner: Inner,
+}
+
+main :: proc() -> int {
+	st := Outer{
+		u32v  = 10,
+		u64v  = 20,
+		i32v  = 0 - 30,
+		i64v  = 0 - 40,
+		inner = {
+			1,
+			2,
+			0 - 3,
+			0 - 4,
+		},
+	}
+
+	ptr := &st
+
+	ptr.u32v = ptr.u32v + 1
+	ptr.u64v = ptr.u64v + 2
+	ptr.i32v = ptr.i32v - 3
+	ptr.i64v = ptr.i64v - 4
+
+	ptr.inner.u8v  = ptr.inner.u8v + 5
+	ptr.inner.u16v = ptr.inner.u16v + 6
+	ptr.inner.i8v  = ptr.inner.i8v - 7
+	ptr.inner.i16v = ptr.inner.i16v - 8
+
+	stcpy := st
+
+	return int(
+		u64(stcpy.u32v) +
+		u64(stcpy.u64v) +
+		u64(stcpy.i32v) +
+		u64(stcpy.i64v) +
+		u64(stcpy.inner.u8v) +
+		u64(stcpy.inner.u16v) +
+		u64(stcpy.inner.i8v) +
+		u64(stcpy.inner.i16v),
+	)
+}
+`, main_())
+}

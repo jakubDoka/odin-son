@@ -5,7 +5,6 @@ import "base:runtime"
 import "core:container/queue"
 import "core:fmt"
 import "core:io"
-import "core:log"
 import "core:mem"
 import "core:reflect"
 import "core:simd"
@@ -178,7 +177,8 @@ Node :: struct {
 		dt: Node_Datatype | 8,
 	},
 	using _:             bit_field u8 {
-		in_worklist: bool | 1,
+		in_worklist:           bool | 1,
+		additional_data_start: u8   | 2,
 	},
 	gvn:                 u32,
 	input_idx:           u32,
@@ -421,6 +421,8 @@ when !GEN_SPEC {
 	}
 
 	builder_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
+		id := graph_id(ctx, node)
+
 		#partial switch node.itype {
 		case .Add ..= .U_Shr:
 			lhs := graph_expand(ctx.graph, node.inps[0])
@@ -497,6 +499,34 @@ when !GEN_SPEC {
 						),
 					)
 				}
+			}
+
+			COMUTATIVE :: bit_set[Bin_Op] {
+				.Add,
+				.Mul,
+				.Ge,
+				.Gt,
+				.Ne,
+				.Eq,
+				.Or,
+				.And,
+				.Xor,
+			}
+
+			@(static, rodata)
+			COMUTE_PRIORITY_TABLE := #partial [Ideal_Node_Type]u8 {
+				.CInt = 1,
+			}
+
+			if op in COMUTATIVE &&
+			   COMUTE_PRIORITY_TABLE[lhs.itype] >
+				   COMUTE_PRIORITY_TABLE[rhs.itype] {
+				for inp, i in node.inps {
+					graph_add_output(ctx, inp, id, 1 - i)
+					graph_remove_output(ctx, inp, {idx = i, id = id})
+				}
+				node.inps[0], node.inps[1] = node.inps[1], node.inps[0]
+				return id
 			}
 		}
 
@@ -1082,7 +1112,7 @@ graph_expand :: #force_no_inline proc(
 		node,
 		graph_inps(graph, node),
 		graph_outs(graph, node),
-		int(graph.first_input_idxs[node.rtype]),
+		int(graph.first_input_idxs[node.rtype] + node.additional_data_start),
 		int(graph.inplace_slot_idxs[node.rtype]),
 	}
 }

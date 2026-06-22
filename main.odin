@@ -819,7 +819,7 @@ intern_lit :: proc(ctx: ^Ctx, lit: Lit) -> ^Lit {
 	return existing
 }
 
-emit_type :: proc(ctx: ^Ctx, expr: ^ast.Expr) -> Type {
+emit_type :: proc(ctx: ^Ctx, expr: ^ast.Node) -> Type {
 	if expr == nil do return .Void
 
 	#partial switch d in expr.derived {
@@ -1078,6 +1078,8 @@ typecheck :: proc(
 
 		#partial switch f in d.field.derived {
 		case ^ast.Ident:
+			if p, ok := unpack_type(base).(Pointer); ok do base = p^
+
 			#partial switch t in unpack_type(base) {
 			case ^Struct:
 				for &field in t.fields {
@@ -1169,7 +1171,7 @@ typecheck :: proc(
 			return .Bool
 		}
 
-		fmt.panicf("variable not declared: %v", name)
+		return emit_type(ctx, node)
 	case ^ast.Call_Expr:
 		callee := typecheck(ctx, {}, d.expr)
 
@@ -1179,8 +1181,13 @@ typecheck :: proc(
 			prc_id := v.(Proc_ID)
 			prc := &ctx.procs[prc_id]
 			sig = prc.sig
+		case Builtin:
+			assert(v != .Void)
+			assert(len(d.args) == 1)
+			typecheck(ctx, {}, d.args[0])
+			return callee
 		case:
-			fmt.panicf("TODO: %v %v", v, d)
+			fmt.panicf("TODO: %v %#v", v, d)
 		}
 
 		assert(len(sig.params) == len(d.args))
@@ -1617,9 +1624,15 @@ emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 		}
 	case ^ast.Selector_Expr:
 		base := emit_nodes(ctx, {}, d.expr)
+		base_ty := unpack_type(get_node_type(d.expr))
 		#partial switch f in d.field.derived {
 		case ^ast.Ident:
-			#partial switch t in unpack_type(get_node_type(d.expr)) {
+			if pty, ok := base_ty.(Pointer); ok {
+				base_ty = unpack_type(pty^)
+				base.is_lvalue = true
+			}
+
+			#partial switch t in base_ty {
 			case ^Struct:
 				assert(base.is_lvalue)
 				offset := get_node_data(d.field, int)
@@ -1670,7 +1683,20 @@ emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 	case ^ast.Call_Expr:
 		args := make([]backend.Node_ID, 2 + len(d.args))
 
-		idx := u32(unpack_type(get_node_type(d.expr)).(^Lit).(Proc_ID))
+		base_ty := get_node_type(d.expr)
+
+		idx: u32
+		#partial switch t in unpack_type(base_ty) {
+		case ^Lit:
+			idx = u32(t.(Proc_ID))
+		case Builtin:
+			dest_dt := type_to_dt(base_ty)
+			arg := to_rvalue(ctx, emit_nodes(ctx, {}, d.args[0]), d.args[0])
+			return auto_cast arg
+		case:
+			fmt.panicf("TODO: %v %v", t, node)
+		}
+
 		prc := &ctx.procs[idx]
 
 		for arg, i in d.args {

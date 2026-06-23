@@ -1011,3 +1011,21 @@ main :: proc() -> int {
 	)
 }
 ```
+
+#### structs trigger displacement bug
+```odin
+package main
+
+opt_level :: "none"
+
+Stru :: struct {
+	a: int,
+	b: int,
+}
+
+main :: proc() -> int {
+	stru := Stru{1, 2}
+	stru.a = stru.b + 1
+	return stru.a + stru.b
+}
+```

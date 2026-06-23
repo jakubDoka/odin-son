@@ -1955,3 +1955,37 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) structs_trigger_displacement_bug :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Stru :: struct {
+	a: int,
+	b: int,
+}
+
+main_ :: proc() -> int {
+	stru := Stru{1, 2}
+	stru.a = stru.b + 1
+	return stru.a + stru.b
+}
+
+run_test(t, `structs_trigger_displacement_bug`, `
+package main
+
+opt_level :: "none"
+
+Stru :: struct {
+	a: int,
+	b: int,
+}
+
+main :: proc() -> int {
+	stru := Stru{1, 2}
+	stru.a = stru.b + 1
+	return stru.a + stru.b
+}
+`, main_())
+}

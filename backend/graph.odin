@@ -5,6 +5,7 @@ import "base:runtime"
 import "core:container/queue"
 import "core:fmt"
 import "core:io"
+import "core:log"
 import "core:mem"
 import "core:reflect"
 import "core:simd"
@@ -211,6 +212,17 @@ Graph :: struct {
 Peep_Ctx :: struct {
 	using graph: ^Graph,
 	worklist:    ^queue.Queue(Node_ID),
+	triggers:    ^[dynamic][dynamic; 4]Node_ID,
+}
+
+peep_ctx_add_trigger :: proc(ctx: Peep_Ctx, from: Node_ID, to: Node_ID) {
+	gvn := graph_get(ctx, from).gvn
+	if len(ctx.triggers) <= int(gvn) {
+		resize(ctx.triggers, gvn + 1)
+	}
+	if !slice.contains(ctx.triggers[gvn][:], to) {
+		append(&ctx.triggers[gvn], to)
+	}
 }
 
 Intern_Vec :: #simd[16]u8
@@ -297,7 +309,8 @@ worklist_next :: proc(
 graph_iter_peeps :: proc(graph: ^Graph) {
 	worklist: queue.Queue(Node_ID)
 	queue.init(&worklist, int(graph.gvn))
-	worklist_add(graph, &worklist, NODE_START)
+
+	triggers: [dynamic][dynamic; 4]Node_ID
 
 	collect_nodes(graph, &worklist)
 
@@ -306,7 +319,7 @@ graph_iter_peeps :: proc(graph: ^Graph) {
 
 		prev_hash := graph_node_hash(graph, n)
 		node.in_worklist = true
-		new_node := graph.peep({graph, &worklist}, node)
+		new_node := graph.peep({graph, &worklist, &triggers}, node)
 		node.in_worklist = false
 		if new_node == 0 do continue
 
@@ -315,6 +328,13 @@ graph_iter_peeps :: proc(graph: ^Graph) {
 		}
 
 		assert_eq_hash := true
+
+		if int(node.gvn) < len(triggers) {
+			for trig in triggers[node.gvn] {
+				worklist_add(graph, &worklist, trig)
+			}
+			triggers[node.gvn] = {}
+		}
 
 		if new_node == n {
 			graph_unintern(graph, n, prev_hash)
@@ -339,13 +359,14 @@ graph_iter_peeps :: proc(graph: ^Graph) {
 
 		for n in worklist_next(graph, &worklist) {
 			node := graph_expand(graph, n)
-			new_node := graph.peep({graph, &worklist}, node)
+			new_node := graph.peep({graph, &worklist, &triggers}, node)
 			assert(new_node == 0)
 		}
 	}
 
 	collect_nodes :: proc(graph: ^Graph, worklist: ^queue.Queue(Node_ID)) {
 		i := 0
+		worklist_add(graph, worklist, NODE_START)
 		for i < queue.len(worklist^) {
 			node := graph_expand(graph, worklist.data[i])
 

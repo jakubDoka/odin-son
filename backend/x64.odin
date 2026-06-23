@@ -285,6 +285,8 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 
 	#partial switch node.xtype {
 	case .X64_Store, .X64_Load:
+		changed := false
+
 		mem_op := graph_extra(ctx, node, X64_Mem_Op)
 
 		if val_const != nil {
@@ -293,10 +295,12 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 			node.input_count -= 1
 			mem_op.imm = i32(val_const.value)
 			node.inps = node.inps[:len(node.inps)]
+			changed = true
 		}
 
 		mem_op.dis += displacement
 
+		changed |= node.inps[2] != base
 		graph_set_input(ctx, id, 2, base)
 
 		node.additional_data_start = max(
@@ -310,9 +314,11 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 			if (val.xtype == .X64_Add || val.xtype == .X64_Sub) &&
 			   len(val.inps) == 1 {
 				lhs := graph_expand(ctx, val.inps[0])
+				lhs_mem := graph_extra(ctx, val.inps[0], X64_Mem_Op)
 				if lhs.xtype == .X64_Load &&
 				   lhs.inps[1] == node.inps[1] &&
-				   lhs.inps[2] == node.inps[2] {
+				   lhs.inps[2] == node.inps[2] &&
+				   lhs_mem.dis == mem_op.dis {
 					node.xtype = val.xtype
 
 					graph_remove_output(ctx, node.inps[3], {idx = 3, id = id})
@@ -322,10 +328,14 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 					mem_op.mem_mode = .Dest
 					node.inps = node.inps[:len(node.inps)]
 					node.additional_data_start += 2
+					changed = true
+				} else {
+					peep_ctx_add_trigger(ctx, val.inps[0], id)
 				}
 			}
 		}
 
+		if changed do return id
 		return 0
 	}
 

@@ -1013,9 +1013,8 @@ graph_set_input :: proc(
 
 	assert(node.inps[idx] != 0)
 
-	graph_remove_output(graph, node.inps[idx], {idx = idx, id = id})
-
 	graph_add_output(graph, value, id, idx)
+	graph_remove_output(graph, node.inps[idx], {idx = idx, id = id})
 
 	graph_unintern(graph, id)
 	node.inps[idx] = value

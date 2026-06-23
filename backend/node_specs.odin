@@ -619,8 +619,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{}, // Call_End
 			{{.General = 2}}, // Ret
 			{{.General = 7}, {.General = 2}}, // Return
-			{{.General = 1}, {.General = 1}}, // X64_Add
-			{{.General = 1}, {.General = 1}}, // X64_Sub
+			{{.General = 1}, {.General = 1}, {.General = 1}}, // X64_Add
+			{{.General = 1}, {.General = 1}, {.General = 1}}, // X64_Sub
 			{{.General = 1}, {.General = 1}}, // X64_Load
 			{{.General = 7}, {.General = 1}, {.General = 1}}, // X64_Store
 		},

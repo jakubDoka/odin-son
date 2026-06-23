@@ -30,3 +30,7 @@ Note that you need to modify the `tok_to_binop` to account for the type of the
 operations. Also make sure to add a new test for unsigned ops. The current ops
 test is fine, but we need a complementary test that verifyes the signed
 integers are handled correctly.
+
+### add X64 versions of .And, .Or, .Xor
+
+Thus far we have the X64_Add and X64_Sub, the pattern is established and now its just a boilerplate to add the remining nodes, so do that.

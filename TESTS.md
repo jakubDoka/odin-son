@@ -860,6 +860,51 @@ set :: proc(ptr: ^int) -> int {
 }
 ```
 
+#### pointers dynamic add opt
+```odin
+package main
+
+opt_level :: "none"
+
+Vls :: struct {
+	a: int,
+	b: i32,
+	c: i16,
+	d: i8,
+}
+
+main :: proc() -> int {
+	vls := Vls{}
+
+	add(&vls.a, 1)
+	add_32(&vls.b, 1)
+	add_16(&vls.c, 1)
+	add_8(&vls.d, 1)
+
+	return vls.a + int(vls.b) + int(vls.c) + int(vls.d)
+}
+
+add :: proc(ptr: ^int, v: int) -> int {
+	ptr^ = ptr^ + v
+	return ptr^
+}
+
+add_32 :: proc(ptr: ^i32, v: i32) -> i32 {
+	ptr^ = ptr^ + v
+	return ptr^
+}
+
+add_16 :: proc(ptr: ^i16, v: i16) -> i16 {
+	ptr^ = ptr^ + v
+	return ptr^
+}
+
+add_8 :: proc(ptr: ^i8, v: i8) -> i8 {
+	ptr^ = ptr^ + v
+	return ptr^
+}
+```
+
 #### loads and stores of different sizes
 ```odin
 package main

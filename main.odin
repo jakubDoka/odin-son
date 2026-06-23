@@ -620,6 +620,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		assert(oka)
 
 		ptr := transmute(proc() -> int)(code_mem.ptr)
+		//log.error()
 		testing.expect_value(t, ptr(), exit_code)
 
 		oka = virtual.protect(code_mem.ptr, code_mem.commited, {.Read, .Write})

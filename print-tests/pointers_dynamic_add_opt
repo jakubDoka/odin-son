@@ -1,0 +1,132 @@
+=========== OPT LEVEL: None ===========
+main:
+     push rbx
+     push rbp
+     push r12
+     push r13
+     sub rsp, 0x10
+     mov rsi, 0x00
+     mov rdx, 0x10
+     lea rdi, [rsp]
+     call :$set
+     lea rax, [rsp]
+     mov rcx, 0x00
+     add rcx, rax
+     mov rbx, rcx
+     mov rsi, 0x01
+     mov rdi, rcx
+     call :add
+     lea rax, [rsp]
+     mov rcx, 0x08
+     add rcx, rax
+     mov rbp, rcx
+     mov rsi, 0x01
+     mov rdi, rcx
+     call :add_32
+     lea rax, [rsp]
+     mov rcx, 0x0C
+     add rcx, rax
+     mov r12, rcx
+     mov rsi, 0x01
+     mov rdi, rcx
+     call :add_16
+     lea rax, [rsp]
+     mov rcx, 0x0E
+     add rcx, rax
+     mov r13, rcx
+     mov rsi, 0x01
+     mov rdi, rcx
+     call :add_8
+     mov rax, rbp
+     movsxd rcx, dword ptr [rax]
+     mov rax, rbx
+     mov rax, [rax]
+     add rax, rcx
+     mov rcx, r12
+     movsx rcx, word ptr [rcx]
+     add rax, rcx
+     mov rcx, r13
+     movsx rcx, byte ptr [rcx]
+     add rax, rcx
+     sub rsp, 0xFFFFFFFFFFFFFFF0
+     pop r13
+     pop r12
+     pop rbp
+     pop rbx
+     ret
+add:
+     mov rax, [rdi]
+     add rax, rsi
+     mov [rdi], rax
+     mov rax, [rdi]
+     ret
+add_32:
+     movsxd rax, dword ptr [rdi]
+     add rax, rsi
+     mov [rdi], eax
+     movsxd rax, dword ptr [rdi]
+     ret
+add_16:
+     movsx rax, word ptr [rdi]
+     add rax, rsi
+     mov [rdi], ax
+     movsx rax, word ptr [rdi]
+     ret
+add_8:
+     movsx rax, byte ptr [rdi]
+     add rax, rsi
+     mov [rdi], al
+     movsx rax, byte ptr [rdi]
+     ret
+=========== OPT LEVEL: Full ===========
+main:
+     push rbx
+     sub rsp, 0x10
+     mov rsi, 0x00
+     mov rdx, 0x10
+     lea rdi, [rsp]
+     call :$set
+     mov rsi, 0x01
+     lea rdi, [rsp]
+     call :add
+     mov rsi, 0x01
+     lea rax, [rsp]
+     add rax, 0x08
+     mov rdi, rax
+     call :add_32
+     mov rsi, 0x01
+     lea rax, [rsp]
+     add rax, 0x0C
+     mov rdi, rax
+     call :add_16
+     mov rsi, 0x01
+     lea rax, [rsp]
+     add rax, 0x0E
+     mov rdi, rax
+     call :add_8
+     movsxd rcx, dword ptr [rsp+0x08]
+     movsx rdx, word ptr [rsp+0x0C]
+     movsx rbx, byte ptr [rsp+0x0E]
+     mov rax, [rsp]
+     add rax, rcx
+     add rax, rdx
+     add rax, rbx
+     sub rsp, 0xFFFFFFFFFFFFFFF0
+     pop rbx
+     ret
+add:
+     add [rdi], rsi
+     mov rax, [rdi]
+     ret
+add_32:
+     add [rdi], esi
+     movsxd rax, dword ptr [rdi]
+     ret
+add_16:
+     add [rdi], si
+     movsx rax, word ptr [rdi]
+     ret
+add_8:
+     add [rdi], sil
+     movsx rax, byte ptr [rdi]
+     ret

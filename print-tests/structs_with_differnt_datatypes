@@ -179,14 +179,14 @@ main:
      mov word ptr [rsp+0x22], 0x02
      mov qword ptr [rsp+0x24], 0xFFFFFFFFFFFFFFFD
      mov qword ptr [rsp+0x26], 0xFFFFFFFFFFFFFFFC
-     add qword ptr [rsp], 0x01
+     add dword ptr [rsp], 0x01
      add qword ptr [rsp+0x08], 0x02
-     sub qword ptr [rsp+0x10], 0x03
+     sub dword ptr [rsp+0x10], 0x03
      sub qword ptr [rsp+0x18], 0x04
-     add qword ptr [rsp+0x20], 0x05
-     add qword ptr [rsp+0x22], 0x06
-     sub qword ptr [rsp+0x24], 0x07
-     sub qword ptr [rsp+0x26], 0x08
+     add byte ptr [rsp+0x20], 0x05
+     add word ptr [rsp+0x22], 0x06
+     sub byte ptr [rsp+0x24], 0x07
+     sub word ptr [rsp+0x26], 0x08
      mov rsi, 0x00
      mov rdx, 0x28
      lea rdi, [rsp+0x28]
@@ -195,21 +195,21 @@ main:
      mov rdx, 0x28
      lea rdi, [rsp+0x28]
      call :$copy
-     mov rcx, [rsp+0x40]
-     mov rdx, [rsp+0x30]
+     movsx rcx, word ptr [rsp+0x4E]
+     movsx rdx, byte ptr [rsp+0x4C]
+     movzx ebx, word ptr [rsp+0x4A]
+     movzx ebp, byte ptr [rsp+0x48]
+     mov rsi, [rsp+0x40]
+     movsxd rdi, dword ptr [rsp+0x38]
+     mov r8, [rsp+0x30]
      mov eax, [rsp+0x28]
-     add rax, rdx
-     movsxd rdx, dword ptr [rsp+0x38]
-     add rax, rdx
-     add rax, rcx
-     movzx ecx, byte ptr [rsp+0x48]
-     movsx rdx, word ptr [rsp+0x4E]
-     movsx rbx, byte ptr [rsp+0x4C]
-     movzx ebp, word ptr [rsp+0x4A]
-     add rax, rcx
+     add rax, r8
+     add rax, rdi
+     add rax, rsi
      add rax, rbp
      add rax, rbx
      add rax, rdx
+     add rax, rcx
      sub rsp, 0xFFFFFFFFFFFFFFB0
      pop rbp
      pop rbx

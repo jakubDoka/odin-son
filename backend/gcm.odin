@@ -502,6 +502,17 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 
 			if !changed do break
 		}
+
+		#reverse for instr, i in bb.instrs {
+			inode := graph_expand(graph, instr)
+			for inp in inode.inps {
+				innode := graph_expand(graph, inp)
+				if innode.output_count == 1 && innode.itype != .Phi {
+					pos := slice.linear_search(bb.instrs[:i], inp) or_continue
+					slice.rotate_left(bb.instrs[pos:i], 1)
+				}
+			}
+		}
 	}
 }
 

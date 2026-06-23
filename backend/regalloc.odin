@@ -1004,8 +1004,83 @@ regalloc_round :: proc(
 	log_lrgs(&ctx)
 
 	verify_schedule_integrity(ctx.graph, ctx.sched)
+	if ok do verify_alloc_integrity(ctx, res)
 
 	return
+
+	verify_alloc_integrity :: proc(ctx: Ctx, res: []Reg) {
+		for &bb in ctx.sched.bbs {
+			for instr, i in bb.instrs {
+				inode := graph_expand(ctx.graph, instr)
+				if inode.dt == .Void && inode.itype == .Phi do continue
+				for inp, idx in inode.inps[inode.data_start:] {
+
+					block := &bb
+					i := i
+					if inode.itype == .Phi {
+						last := graph_inps(ctx.graph, inode.inps[0])[idx]
+						block = get_node_block(ctx, last)
+						assert(block != &bb)
+						i = len(block.instrs)
+					}
+
+					seen := bit_arr.init(ctx.graph.gvn)
+
+					nd := graph_get(ctx.graph, inp)
+					if nd.itype == .Poison do continue
+
+					fmt.assertf(nd.dt != .Void, "%v", nd)
+
+					check_blocks(ctx, res, inp, block.head, i, seen)
+				}
+			}
+		}
+
+		check_blocks :: proc(
+			ctx: Ctx,
+			res: []Reg,
+			inp: Node_ID,
+			cb: Node_ID,
+			sindex: int,
+			seen: bit_arr.Bit_Set,
+		) {
+			cbnode := graph_expand(ctx.graph, cb)
+			if !bit_arr.set(seen, cbnode.gvn) {
+				return
+			}
+
+			bb: ^Graph_Basic_Block
+			for &b in ctx.sched.bbs {
+				if b.head == cb {
+					bb = &b
+				}
+			}
+			inpnode := graph_expand(ctx.graph, inp)
+			block, idx := get_node_block_and_idx(ctx, inp)
+			if block != bb do idx = -1
+			for j in idx + 1 ..< sindex {
+				clobber := graph_expand(ctx.graph, bb.instrs[j])
+				if clobber.dt == .Void do continue
+				fmt.assertf(
+					res[inpnode.gvn] != res[clobber.gvn],
+					"%v %v",
+					inpnode.node,
+					clobber.node,
+				)
+			}
+
+			if block == bb {
+				return
+			}
+
+			for inp in cbnode.inps {
+				if is_cfg(ctx.graph, inp) {
+					b := get_node_block(ctx, inp)
+					check_blocks(ctx, res, inp, b.head, len(b.instrs), seen)
+				}
+			}
+		}
+	}
 
 	collect_lrg_members :: proc(ctx: Ctx, lrg: ^Lrg) -> []Node_ID {
 		graph := ctx.graph

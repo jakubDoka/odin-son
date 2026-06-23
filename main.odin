@@ -101,18 +101,27 @@ print_diff :: proc(out: ^strings.Builder, a, b: string) {
 		   j < len(lines_b) &&
 		   lines_a[i] == lcs[k] &&
 		   lines_b[j] == lcs[k] {
-			fmt.sbprintf(out, " %s\n", lines_a[i])
+			fmt.sbprintfln(out, " %s", lines_a[i])
 			i += 1
 			j += 1
 			k += 1
 		} else if j < len(lines_b) && (k >= len(lcs) || lines_b[j] != lcs[k]) {
-			fmt.sbprintf(out, "\x1b[32m+%s\x1b[0m\n", lines_b[j])
+			if .Terminal_Color in context.logger.options {
+				fmt.sbprintfln(out, "\x1b[32m+%s\x1b[0m", lines_b[j])
+			} else {
+				fmt.sbprintfln(out, "+%s", lines_b[j])
+			}
 			j += 1
 		} else if i < len(lines_a) && (k >= len(lcs) || lines_a[i] != lcs[k]) {
-			fmt.sbprintf(out, "\x1b[31m-%s\x1b[0m\n", lines_a[i])
+			if .Terminal_Color in context.logger.options {
+				fmt.sbprintfln(out, "\x1b[31m-%s\x1b[0m", lines_a[i])
+			} else {
+				fmt.sbprintfln(out, "-%s", lines_b[j])
+			}
 			i += 1
 		} else {
-			panic("unreachable")
+			break
+			//fmt.panicf("unreachable %#v", lcs)
 		}
 	}
 }
@@ -482,6 +491,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 
 	dsb: strings.Builder
 	for _, level in levels {
+		if level == .Full do break
 		fmt.sbprintfln(&dsb, "=========== OPT LEVEL: %v ===========", level)
 		code_mem.pos = 0
 		reloc_mem.pos = 0
@@ -644,7 +654,8 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 			assert(err == nil)
 			new, old := string(dsb.buf[:]), string(file)
 			if new != old {
-				new, old = highlight_disasm(new), highlight_disasm(old)
+				new, old =
+					highlight_disasm(strings.clone(new)), highlight_disasm(old)
 				clear(&dsb.buf)
 				append(&dsb.buf, "\n")
 				print_diff(&dsb, old, new)

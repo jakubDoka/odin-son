@@ -338,8 +338,9 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 				.Xor,
 			}
 
-			if (val.xtype in X64_TRIGGER_OPS && len(val.inps) == 1) ||
-			   val.itype in IDEAL_TRIGGER_OPS {
+			if ((val.xtype in X64_TRIGGER_OPS && len(val.inps) == 1) ||
+				   val.itype in IDEAL_TRIGGER_OPS) &&
+			   len(val.outs) == 1 {
 
 				lhs := graph_expand(ctx, val.inps[0])
 				lhs_mem := graph_extra(ctx, val.inps[0], X64_Mem_Op)

@@ -129,119 +129,90 @@ main:
      push rbx
      push rbp
      mov rax, 0x00
-     mov rdi, 0x00
      mov rsi, 0x00
+     mov rbp, 0x00
      jmp :0
 
-000: mov rdx, 0x01
-     mov rbx, 0x02
-     mov rcx, rdi
-     add rcx, 0x01
-     cmp rcx, rbx
-     setz bpl
-     movzx rbp, bpl
-     test rbp, rbp
-     jz :1
+000: mov rcx, 0x01
+     mov rdx, 0x02
+     mov rbx, rsi
+     add rbx, 0x01
+     cmp rbx, rdx
+     jnz :1
      jmp :2
 
-001: cmp rcx, rdx
-     setz dl
-     movzx rdx, dl
-     test rdx, rdx
-     jz :3
+001: cmp rbx, rcx
+     jnz :3
      jmp :4
 
-003: add rdi, 0x02
-     mov rsi, 0x01
+003: add rsi, 0x02
+     mov rbp, 0x01
      jmp :5
 
-004: mov rdi, rcx
+004: mov rsi, rbx
      jmp :5
 
 005: jmp :0
 
-002: cmp rsi, rax
-     setz bpl
-     movzx rbp, bpl
-     mov rcx, 0x03
-     test rbp, rbp
-     jz :6
+002: cmp rbp, rax
+     mov rbx, 0x03
+     jnz :6
      jmp :7
 
 006: jmp :8
 
 007: mov rdi, 0x00
-     mov r8, rsi
      jmp :9
 
-009: mov rbp, rdi
-     add rbp, 0x01
-     cmp rbp, rcx
-     setz sil
-     movzx rsi, sil
-     test rsi, rsi
-     jz :10
+009: mov rsi, rdi
+     add rsi, 0x01
+     cmp rsi, rbx
+     jnz :10
      jmp :11
 
-010: cmp rbp, rbx
-     setz sil
-     movzx rsi, sil
-     test rsi, rsi
-     jz :12
+010: cmp rsi, rdx
+     jnz :12
      jmp :13
 
-012: cmp rbp, rdx
-     setz sil
-     movzx rsi, sil
-     test rsi, rsi
-     jz :14
+012: cmp rsi, rcx
+     jnz :14
      jmp :15
 
 014: add rdi, 0x02
-     mov r8, 0x02
+     mov rbp, 0x02
      jmp :16
 
 015: jmp :17
 
 013: jmp :17
 
-017: mov rdi, rbp
+017: mov rdi, rsi
      jmp :16
 
 016: jmp :9
 
-011: mov rsi, r8
-     jmp :8
+011: jmp :8
 
-008: cmp rsi, rax
-     setnz al
-     movzx rax, al
-     test rax, rax
+008: cmp rbp, rax
      jz :18
      jmp :19
 
-018: mov rax, rsi
+018: mov rax, rbp
      jmp :20
 
-019: mov rdx, 0x00
+019: mov rcx, 0x00
      jmp :21
 
-021: mov rax, rdx
+021: mov rax, rcx
      add rax, 0x01
-     cmp rax, rcx
-     setz al
-     movzx rax, al
-     test rax, rax
-     jz :22
+     cmp rax, rbx
+     jnz :22
      jmp :23
 
-022: add rdx, 0x02
+022: add rcx, 0x02
      mov rax, 0x04
-     cmp rax, rdx
-     setz al
-     movzx rax, al
-     test rax, rax
-     jz :24
+     cmp rcx, rax
+     jnz :24
      jmp :25
 
 024: jmp :21

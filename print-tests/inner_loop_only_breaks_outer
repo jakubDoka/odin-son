@@ -72,10 +72,7 @@ main:
 000: mov rax, 0x04
      add rbx, 0x01
      cmp rbx, rax
-     setz cl
-     movzx rcx, cl
-     test rcx, rcx
-     jz :1
+     jnz :1
      jmp :2
 
 001: mov rdx, 0x00
@@ -83,18 +80,12 @@ main:
 
 003: add rdx, 0x01
      cmp rdx, rax
-     setz cl
-     movzx rcx, cl
-     test rcx, rcx
-     jz :4
+     jnz :4
      jmp :5
 
 004: mov rcx, 0x02
-     cmp rcx, rdx
-     setz cl
-     movzx rcx, cl
-     test rcx, rcx
-     jz :6
+     cmp rdx, rcx
+     jnz :6
      jmp :7
 
 006: jmp :3
@@ -106,11 +97,8 @@ main:
 008: add rcx, 0x01
      add rdx, 0x01
      mov rax, 0x05
-     cmp rax, rcx
-     setz al
-     movzx rax, al
-     test rax, rax
-     jz :9
+     cmp rcx, rax
+     jnz :9
      jmp :10
 
 009: jmp :8

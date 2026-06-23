@@ -301,45 +301,27 @@ opaques:
      ret
 test_signed:
      cmp rdi, rsi
-     setz al
-     movzx rax, al
-     test rax, rax
-     jz :0
+     jnz :0
      jmp :1
 
 000: cmp rdi, rsi
-     setnz al
-     movzx rax, al
-     test rax, rax
      jz :2
      jmp :3
 
 002: cmp rdi, rsi
-     setl al
-     movzx rax, al
-     test rax, rax
-     jz :4
+     jnl :4
      jmp :5
 
 004: cmp rdi, rsi
-     setnl al
-     movzx rax, al
-     test rax, rax
-     jz :6
+     jnle :6
      jmp :7
 
 006: cmp rdi, rsi
-     setnle al
-     movzx rax, al
-     test rax, rax
-     jz :8
+     jle :8
      jmp :9
 
 008: cmp rdi, rsi
-     setle al
-     movzx rax, al
-     test rax, rax
-     jz :10
+     jnle :10
      jmp :11
 
 010: mov rax, 0x00
@@ -376,45 +358,27 @@ test_signed:
 012: ret
 test_unsigned:
      cmp rdi, rsi
-     setz al
-     movzx rax, al
-     test rax, rax
-     jz :0
+     jnz :0
      jmp :1
 
 000: cmp rdi, rsi
-     setnz al
-     movzx rax, al
-     test rax, rax
      jz :2
      jmp :3
 
 002: cmp rdi, rsi
-     setb al
-     movzx rax, al
-     test rax, rax
-     jz :4
+     jnb :4
      jmp :5
 
 004: cmp rdi, rsi
-     setnb al
-     movzx rax, al
-     test rax, rax
-     jz :6
+     jb :6
      jmp :7
 
 006: cmp rdi, rsi
-     setnbe al
-     movzx rax, al
-     test rax, rax
-     jz :8
+     jbe :8
      jmp :9
 
 008: cmp rdi, rsi
-     setbe al
-     movzx rax, al
-     test rax, rax
-     jz :10
+     jnbe :10
      jmp :11
 
 010: mov rax, 0x00
@@ -457,66 +421,48 @@ test_mixed_patterns:
      call :opaques
      mov rbx, rax
      add rbp, 0x01
-000: mov rdi, rbp
-     call :opaques
+     mov rdi, rbp
+002: call :opaques
      mov rcx, rbx
      cmp rcx, rax
-     setl cl
-     movzx rcx, cl
-     test rcx, rcx
-002: jz :18
+     jnl :18
      jmp :19
 
 018: jmp :20
 
 019: mov rcx, rbx
      cmp rcx, rax
-     setle cl
-     movzx rcx, cl
-     test rcx, rcx
-     jz :21
+     jnle :21
      jmp :22
 
-021: jmp :23
+021: jmp :11
 
 022: mov rcx, rbx
      cmp rcx, rax
-     setnz cl
-     movzx rcx, cl
-     test rcx, rcx
-     jz :24
-     jmp :25
+     jz :23
+     jmp :24
 
-024: jmp :23
+023: jmp :11
 
-023: jmp :20
+011: jmp :20
 
 020: mov rcx, rbx
      cmp rcx, rax
-     setnle cl
-     movzx rcx, cl
-     test rcx, rcx
-     jz :11
+     jle :25
      jmp :26
 
-011: jmp :27
+025: jmp :27
 
 026: mov rcx, rbx
-     cmp rcx, rax
-     setnl cl
-009: movzx rcx, cl
-     test rcx, rcx
-     jz :28
+007: cmp rcx, rax
+     jnle :28
      jmp :29
 
 028: jmp :30
 
 029: mov rcx, rbx
      cmp rcx, rax
-     setz al
-     movzx rax, al
-     test rax, rax
-     jz :31
+     jnz :31
      jmp :32
 
 031: jmp :30
@@ -529,7 +475,7 @@ test_mixed_patterns:
 032: mov rax, 0xC8
      jmp :34
 
-025: mov rax, 0x64
+024: mov rax, 0x64
      jmp :34
 
 034: jmp :33
@@ -549,7 +495,7 @@ main:
      call :test_signed
      mov rbx, rax
      mov rdi, 0x14
-002: mov rsi, 0x14
+018: mov rsi, 0x14
      call :test_signed
      mov rbp, rax
      mov rsi, 0x0A
@@ -559,34 +505,34 @@ main:
      mov rdi, 0x0A
      mov rsi, 0x14
      call :test_unsigned
-     mov r13, rax
+025: mov r13, rax
      mov rdi, 0x14
      mov rsi, 0x14
-     call :test_unsigned
+005: call :test_unsigned
      mov r14, rax
      mov rsi, 0x0A
      mov rdi, 0x1E
      call :test_unsigned
      mov r15, rax
-009: mov rdi, 0x2A
-     call :test_mixed_patterns
-007: mov rdx, rbx
-028: mov rcx, rbp
+     mov rdi, 0x2A
+032: call :test_mixed_patterns
+     mov rdx, rbx
+     mov rcx, rbp
      add rdx, rcx
-     mov rcx, r12
+014: mov rcx, r12
      add rdx, rcx
-005: mov rcx, r13
+     mov rcx, r13
      add rdx, rcx
      mov rcx, r14
      add rdx, rcx
      mov rcx, r15
-003: add rdx, rcx
+033: add rdx, rcx
      add rdx, rax
-031: mov rax, rdx
+     mov rax, rdx
      pop r15
-030: pop r14
+     pop r14
      pop r13
-001: pop r12
+     pop r12
      pop rbp
      pop rbx
      ret

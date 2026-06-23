@@ -400,7 +400,7 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 	}
 
 	#partial switch node.itype {
-	case .Add, .Sub, .And, .Or, .Xor:
+	case .Add ..= .Xor:
 		op := u16(node.itype) + OP_OFFSET
 
 		// TODO: we can do this one once things are scheduled
@@ -425,6 +425,17 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 				{imm = i32(rhs_conts.value)},
 			)
 		}
+	case .Eq ..= .U_Ge:
+		if node.dt != .Void &&
+		   len(node.outs) == 1 &&
+		   graph_get(ctx, node.outs[0].id).itype == .If {
+			node.dt = .Void
+			return id
+		}
+	case .If:
+		node.additional_data_start = u8(
+			graph_get(ctx, node.inps[1]).dt == .Void,
+		)
 	case .Load, .Load_S:
 		return make_node(
 			ctx,
@@ -620,6 +631,7 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 
 @(disabled = GEN_SPEC)
 x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
+
 	@(static)
 	@(rodata)
 	OPCODE_TABLE := #partial [X64_Node_Type]Instr_Info {
@@ -673,6 +685,36 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		.X64_And = {0x21, 0b100},
 		.X64_Or  = {0x09, 0b001},
 		.X64_Xor = {0x31, 0b110},
+	}
+
+	@(static)
+	@(rodata)
+	JCC_TABLE := #partial [X64_Node_Type]u8 {
+		.Eq   = 0x84, // JE / JZ
+		.Ne   = 0x85, // JNE / JNZ
+		.Lt   = 0x8C, // JL
+		.Le   = 0x8E, // JLE
+		.Gt   = 0x8F, // JG
+		.Ge   = 0x8D, // JGE
+		.U_Lt = 0x82, // JB / JNAE
+		.U_Le = 0x86, // JBE / JNA
+		.U_Gt = 0x87, // JA
+		.U_Ge = 0x83, // JAE / JNB
+	}
+
+	@(static)
+	@(rodata)
+	CMP_OP_REVERSE := #partial [X64_Node_Type]X64_Node_Type {
+		.Eq   = .Ne,
+		.Ne   = .Eq,
+		.Lt   = .Ge,
+		.Le   = .Gt,
+		.Gt   = .Le,
+		.Ge   = .Gt,
+		.U_Lt = .U_Ge,
+		.U_Le = .U_Gt,
+		.U_Gt = .U_Le,
+		.U_Ge = .U_Lt,
 	}
 
 	block_base := ctx.gvn - u32(len(ctx.bbs))
@@ -754,10 +796,13 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 	case .Start, .Entry, .Then, .Else, .Region, .Loop, .Call_End:
 		fmt.panicf("Not reachable form here %v", node.node)
 	case .If:
-		// test $cond, $cond
-		cond := reg_of(ctx, node.inps[1])
-		rx := rex(cond, cond, RAX, true)
-		emit(ctx.code, {rx, 0x85, mod_rm(.Direct, cond, cond)})
+		cnode := graph_expand(ctx, node.inps[1])
+		if cnode.dt != .Void {
+			// test $cond, $cond
+			cond := reg_of(ctx, node.inps[1])
+			rx := rex(cond, cond, RAX, true)
+			emit(ctx.code, {rx, 0x85, mod_rm(.Direct, cond, cond)})
+		}
 
 		assert(len(node.outs) == 2)
 		// jz
@@ -770,7 +815,11 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 			},
 		)
 
-		emit(ctx.code, {0x0f, 0x84, 0, 0, 0, 0})
+		opcode: u8 = 0x84
+		if cnode.dt == .Void {
+			opcode = JCC_TABLE[CMP_OP_REVERSE[cnode.xtype]]
+		}
+		emit(ctx.code, {0x0f, opcode, 0, 0, 0, 0})
 
 		fallthrough
 	case .Always:
@@ -881,20 +930,23 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		emit(ctx.code, {rx, 0x0f, 0xaf, mod_rm(.Direct, dst, rhs)})
 	case .Eq, .Ne, .Lt, .Gt, .Ge, .Le, .U_Lt, .U_Gt, .U_Ge, .U_Le:
 		// cmp $lhs, $rhs
-		dst := reg_of(ctx, instr)
 		lhs := reg_of(ctx, node.inps[0])
 		rhs := reg_of(ctx, node.inps[1])
 		rx := rex(lhs, rhs, RAX, true)
 		emit(ctx.code, {rx, 0x3b, mod_rm(.Direct, lhs, rhs)})
 
-		// setcc $lhs
-		rx = rex(RAX, dst, RAX, true)
-		op := OPCODE_TABLE[node.xtype].opcode
-		emit(ctx.code, {rx, 0x0F, op, mod_sm(.Direct, 0b000, dst)})
+		if node.dt != .Void {
+			dst := reg_of(ctx, instr)
 
-		// movzx $lhs, $lhs
-		rx = rex(dst, dst, RAX, true)
-		emit(ctx.code, {rx, 0x0F, 0xB6, mod_rm(.Direct, dst, dst)})
+			// setcc $lhs
+			rx = rex(RAX, dst, RAX, true)
+			op := OPCODE_TABLE[node.xtype].opcode
+			emit(ctx.code, {rx, 0x0F, op, mod_sm(.Direct, 0b000, dst)})
+
+			// movzx $lhs, $lhs
+			rx = rex(dst, dst, RAX, true)
+			emit(ctx.code, {rx, 0x0F, 0xB6, mod_rm(.Direct, dst, dst)})
+		}
 	case .And_Not:
 		dst := reg_of(ctx, node.inps[1])
 		lhs := reg_of(ctx, node.inps[0])

@@ -132,7 +132,19 @@ disasm :: proc(sb: ^strings.Builder, ctx: Ctx) {
 	jumps: map[int]int
 
 	is_jump :: proc(mne: zydis.Mnemonic) -> bool {
-		return mne == .JZ || mne == .JMP
+		return(
+			mne == .JZ ||
+			mne == .JNZ ||
+			mne == .JL ||
+			mne == .JLE ||
+			mne == .JB ||
+			mne == .JBE ||
+			mne == .JNB ||
+			mne == .JMP ||
+			mne == .JNLE ||
+			mne == .JNL ||
+			mne == .JNBE \
+		)
 	}
 
 	for prc in ctx.procs {

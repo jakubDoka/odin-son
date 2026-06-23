@@ -203,6 +203,7 @@ Lrg_Fails :: bit_field u8 {
 	failed_to_color: bool | 1,
 	reg_conflict:    bool | 1,
 	self_conflict:   bool | 1,
+	pushed_out:      bool | 1,
 }
 
 Lrg :: struct {
@@ -798,6 +799,7 @@ regalloc_round :: proc(
 
 		if lrg.killed {
 			for m in members {
+
 				mnode := graph_expand(graph, m)
 				mblock := get_node_block(ctx, m)
 				redirect := m
@@ -814,10 +816,8 @@ regalloc_round :: proc(
 					// modify them, maybe if it shows up, adda readonly flag to
 					// the reg_mask_of
 
-					if oblock != mblock {
-						if redirect == m {
-							redirect = split_after(ctx, "kla", m)
-						}
+					if redirect == m {
+						redirect = split_after(ctx, "kla", m)
 					}
 
 					split := redirect

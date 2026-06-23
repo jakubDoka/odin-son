@@ -139,7 +139,7 @@ main :: proc() -> int {
 	r += a | 3 
 	r += a ~ 6 
 
-	return r // 33
+	return r
 }
 
 opaqe :: proc(i: int) -> int {

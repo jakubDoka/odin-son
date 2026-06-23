@@ -491,7 +491,6 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 
 	dsb: strings.Builder
 	for _, level in levels {
-		if level == .Full do break
 		fmt.sbprintfln(&dsb, "=========== OPT LEVEL: %v ===========", level)
 		code_mem.pos = 0
 		reloc_mem.pos = 0
@@ -630,8 +629,11 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		assert(oka)
 
 		ptr := transmute(proc() -> int)(code_mem.ptr)
-		//log.error()
-		testing.expect_value(t, ptr(), exit_code)
+		vl := ptr()
+		if vl != exit_code {
+			log.error(level)
+			testing.expect_value(t, vl, exit_code)
+		}
 
 		oka = virtual.protect(code_mem.ptr, code_mem.commited, {.Read, .Write})
 		assert(oka)

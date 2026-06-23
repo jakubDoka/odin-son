@@ -3,10 +3,10 @@ main:
      push rbx
      push rbp
      mov rbx, 0x06
+     mov rcx, 0x03
      mov rax, 0x14
      xor rdx, rdx
      div rbx
-     mov rcx, 0x03
      cmp rax, rcx
      setz al
      movzx rax, al
@@ -46,11 +46,12 @@ main:
      mov rax, rsi
      xor rdx, rdx
      div rbx
-     mov rdx, 0x14
-     cmp rax, rdx
-     setnbe al
-     movzx rax, al
-     test rax, rax
+     mov rdx, rax
+     mov rax, 0x14
+     cmp rdx, rax
+     setnbe dl
+     movzx rdx, dl
+     test rdx, rdx
      jz :6
      jmp :7
 

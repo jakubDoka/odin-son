@@ -6,124 +6,116 @@ main:
      push r13
      push r14
      push r15
-     sub rsp, 0x50
+     sub rsp, 0x48
      mov rcx, 0x00
      mov rax, 0x01
      add rax, rcx
-     mov rsi, rax
+     mov rdi, rax
      mov rax, 0x02
      add rax, rcx
-     mov rdi, rax
+     mov r8, rax
      mov rax, 0x03
      add rax, rcx
-     mov r8, rax
+     mov r9, rax
      mov rax, 0x04
      add rax, rcx
-     mov r9, rax
+     mov r10, rax
      mov rax, 0x05
      add rax, rcx
-     mov r10, rax
+     mov r11, rax
      mov rax, 0x06
      add rax, rcx
-     mov r11, rax
+     mov r12, rax
      mov rax, 0x07
      add rax, rcx
-     mov r12, rax
+     mov r13, rax
      mov rax, 0x08
      add rax, rcx
-     mov r13, rax
+     mov r14, rax
      mov rax, 0x09
      add rax, rcx
-     mov r14, rax
+     mov r15, rax
      mov rax, 0x0A
      add rax, rcx
-     mov r15, rax
+     mov [rsp], rax
      mov rax, 0x0B
      add rax, rcx
-     mov [rsp], rax
+     mov [rsp+0x08], rax
      mov rax, 0x0C
      add rax, rcx
-     mov [rsp+0x08], rax
+     mov [rsp+0x10], rax
      mov rax, 0x0D
      add rax, rcx
-     mov [rsp+0x10], rax
+     mov [rsp+0x18], rax
      mov rax, 0x0E
      add rax, rcx
-     mov [rsp+0x18], rax
+     mov [rsp+0x20], rax
      mov rax, 0x0F
      add rax, rcx
-     mov [rsp+0x20], rax
+     mov [rsp+0x28], rax
      mov rax, 0x10
      add rax, rcx
-     mov [rsp+0x28], rax
-     mov rcx, rsi
-     mov rax, [rsp+0x28]
-     imul rcx, rax
-     mov rax, rdi
-     add rcx, rax
-     mov [rsp+0x30], rcx
+     mov [rsp+0x30], rax
      mov rcx, rdi
-     mov rax, [rsp+0x20]
+     mov rax, [rsp+0x30]
      imul rcx, rax
      mov rax, r8
      add rcx, rax
      mov [rsp+0x38], rcx
-     mov rcx, r8
-     mov rax, [rsp+0x18]
-     imul rcx, rax
+     mov rbp, r8
+     mov rax, [rsp+0x28]
+     imul rbp, rax
      mov rax, r9
-     add rcx, rax
-     mov [rsp+0x40], rcx
-     mov rcx, r9
-     mov rax, [rsp+0x10]
-     imul rcx, rax
+     add rbp, rax
+     mov rbx, r9
+     mov rax, [rsp+0x20]
+     imul rbx, rax
      mov rax, r10
-     add rcx, rax
-     mov [rsp+0x48], rcx
-     mov rax, r10
-     mov rcx, [rsp+0x08]
-     imul rax, rcx
-     mov rcx, r11
-     add rax, rcx
-     mov rdx, r11
-     mov rcx, [rsp]
-     imul rdx, rcx
+     add rbx, rax
+     mov rsi, r10
+     mov rax, [rsp+0x18]
+     imul rsi, rax
+     mov rax, r11
+     add rsi, rax
      mov rcx, r12
-     add rdx, rcx
-     mov rbx, r12
-     mov rcx, r15
-     imul rbx, rcx
-     mov rcx, r13
-     add rbx, rcx
-     mov rbp, r13
-     mov rcx, r14
-     imul rbp, rcx
-     mov rcx, rsi
-     add rbp, rcx
-     mov rcx, [rsp+0x30]
+     mov rax, [rsp+0x08]
+     imul rcx, rax
+     mov rax, r13
+     add rcx, rax
+     imul rcx, rbp
+     add rcx, rbx
+     mov [rsp+0x40], rcx
+     mov rdx, r13
+     mov rax, [rsp]
+     imul rdx, rax
+     mov rax, r14
+     add rdx, rax
+     imul rdx, rbx
+     add rdx, rsi
+     mov rbx, r14
+     mov rax, r15
+     imul rbx, rax
+     mov rax, rdi
+     add rbx, rax
+     imul rbx, rsi
+     mov rax, [rsp+0x38]
+     add rbx, rax
+     mov rax, r11
+     mov rcx, [rsp+0x10]
      imul rax, rcx
-     mov rcx, [rsp+0x38]
+     mov rcx, r12
      add rax, rcx
      mov rcx, [rsp+0x38]
-     imul rdx, rcx
-     mov rcx, [rsp+0x40]
-     add rdx, rcx
-     mov rcx, [rsp+0x40]
-     imul rbx, rcx
-     mov rcx, [rsp+0x48]
-     add rbx, rcx
-     mov rcx, [rsp+0x48]
-     imul rbp, rcx
-     mov rcx, [rsp+0x30]
-     add rbp, rcx
-     imul rax, rbx
-     add rax, rdx
-     imul rdx, rbp
-     add rdx, rbx
-     imul rax, rdx
+     imul rax, rcx
      add rax, rbp
-     mov rcx, rsi
+     imul rax, rdx
+     mov rcx, [rsp+0x40]
      add rax, rcx
+     mov rcx, [rsp+0x40]
+     imul rcx, rbx
+     add rcx, rdx
+     imul rax, rcx
+     add rax, rbx
      mov rcx, rdi
      add rax, rcx
      mov rcx, r8
@@ -154,7 +146,9 @@ main:
      add rax, rcx
      mov rcx, [rsp+0x28]
      add rax, rcx
-     sub rsp, 0xFFFFFFFFFFFFFFB0
+     mov rcx, [rsp+0x30]
+     add rax, rcx
+     sub rsp, 0xFFFFFFFFFFFFFFB8
      pop r15
      pop r14
      pop r13

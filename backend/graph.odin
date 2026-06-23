@@ -5,7 +5,6 @@ import "base:runtime"
 import "core:container/queue"
 import "core:fmt"
 import "core:io"
-import "core:log"
 import "core:mem"
 import "core:reflect"
 import "core:simd"
@@ -47,6 +46,9 @@ Ideal_Node_Type :: enum u16 {
 	CInt,
 	Add,
 	Sub,
+	And,
+	Or,
+	Xor,
 	Mul,
 	Eq,
 	Ne,
@@ -56,9 +58,6 @@ Ideal_Node_Type :: enum u16 {
 	Ge,
 	Div,
 	Rem,
-	And,
-	Or,
-	Xor,
 	And_Not,
 	Shl,
 	Shr,

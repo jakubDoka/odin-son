@@ -106,17 +106,14 @@ main :: proc() -> int {
 
 	r := 0
 
-	// signed division/remainder
-	r += a / b      // -3
-	r += a % b      // 2
-	r += c / b      // 1
-	r += c % b      // -1
+	r += a / b
+	r += a % b
+	r += c / b
+	r += c % b
 
-	// arithmetic right shift
-	r += c >> 1     // -4
-	r += b >> 1     // -3
+	r += c >> 1
+	r += b >> 1
 
-	// signed comparisons
 	if b < a  do r += 1
 	if c < b  do r += 2
 	if a > b  do r += 4
@@ -124,6 +121,60 @@ main :: proc() -> int {
 	if a >= b do r += 16
 
 	return r
+}
+```
+
+#### bitwise ops with constants
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	a := opaqe(12)
+
+	r := opaqe(0)
+
+	r += a & 10
+	r += a | 3 
+	r += a ~ 6 
+
+	return r // 33
+}
+
+opaqe :: proc(i: int) -> int {
+	return i
+}
+```
+
+#### bitwise ops through pointers
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	a := 12
+	ptr := &a
+	ptr^ = ptr^ & 10
+
+	b := 10
+	c := 6
+
+	or_into(&b, 5)
+	xor_into(&c, 3)
+
+	return a + b + c
+}
+
+or_into :: proc(ptr: ^int, v: int) -> int {
+	ptr^ = ptr^ | v
+	return ptr^
+}
+
+xor_into :: proc(ptr: ^int, v: int) -> int {
+	ptr^ = ptr^ ~ v
+	return ptr^
 }
 ```
 

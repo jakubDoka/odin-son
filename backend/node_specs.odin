@@ -14,6 +14,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{.General = 0}, // CInt
 			{.General = 0}, // Add
 			{.General = 0}, // Sub
+			{.General = 0}, // And
+			{.General = 0}, // Or
+			{.General = 0}, // Xor
 			{.General = 0}, // Mul
 			{.General = 0}, // Eq
 			{.General = 0}, // Ne
@@ -23,9 +26,6 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{.General = 0}, // Ge
 			{.General = 0}, // Div
 			{.General = 0}, // Rem
-			{.General = 0}, // And
-			{.General = 0}, // Or
-			{.General = 0}, // Xor
 			{.General = 0}, // And_Not
 			{.General = 0}, // Shl
 			{.General = 0}, // Shr
@@ -71,6 +71,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{}, // CInt
 			{}, // Add
 			{}, // Sub
+			{}, // And
+			{}, // Or
+			{}, // Xor
 			{}, // Mul
 			{}, // Eq
 			{}, // Ne
@@ -80,9 +83,6 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{}, // Ge
 			{}, // Div
 			{}, // Rem
-			{}, // And
-			{}, // Or
-			{}, // Xor
 			{}, // And_Not
 			{}, // Shl
 			{}, // Shr
@@ -125,6 +125,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			-1, //CInt
 			-1, //Add
 			-1, //Sub
+			-1, //And
+			-1, //Or
+			-1, //Xor
 			-1, //Mul
 			-1, //Eq
 			-1, //Ne
@@ -134,9 +137,6 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			-1, //Ge
 			-1, //Div
 			-1, //Rem
-			-1, //And
-			-1, //Or
-			-1, //Xor
 			-1, //And_Not
 			-1, //Shl
 			-1, //Shr
@@ -180,6 +180,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, //CInt
 			0, //Add
 			0, //Sub
+			0, //And
+			0, //Or
+			0, //Xor
 			0, //Mul
 			0, //Eq
 			0, //Ne
@@ -189,9 +192,6 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, //Ge
 			0, //Div
 			0, //Rem
-			0, //And
-			0, //Or
-			0, //Xor
 			0, //And_Not
 			0, //Shl
 			0, //Shr
@@ -234,6 +234,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0b1000, // CInt
 			0b10, // Add
 			0b10, // Sub
+			0b10, // And
+			0b10, // Or
+			0b10, // Xor
 			0b10, // Mul
 			0b10, // Eq
 			0b10, // Ne
@@ -243,9 +246,6 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0b10, // Ge
 			0b10, // Div
 			0b10, // Rem
-			0b10, // And
-			0b10, // Or
-			0b10, // Xor
 			0b10, // And_Not
 			0b10, // Shl
 			0b10, // Shr
@@ -288,6 +288,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			2, // CInt -> CInt
 			0, // Add -> No_Extra
 			0, // Sub -> No_Extra
+			0, // And -> No_Extra
+			0, // Or -> No_Extra
+			0, // Xor -> No_Extra
 			0, // Mul -> No_Extra
 			0, // Eq -> No_Extra
 			0, // Ne -> No_Extra
@@ -297,9 +300,6 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, // Ge -> No_Extra
 			0, // Div -> No_Extra
 			0, // Rem -> No_Extra
-			0, // And -> No_Extra
-			0, // Or -> No_Extra
-			0, // Xor -> No_Extra
 			0, // And_Not -> No_Extra
 			0, // Shl -> No_Extra
 			0, // Shr -> No_Extra
@@ -342,6 +342,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{Class_Flag.Interned, Class_Flag.Clonable}, // CInt
 			{Class_Flag.Interned, Class_Flag.Comutes}, // Add
 			{Class_Flag.Interned}, // Sub
+			{Class_Flag.Interned, Class_Flag.Comutes}, // And
+			{Class_Flag.Interned, Class_Flag.Comutes}, // Or
+			{Class_Flag.Interned, Class_Flag.Comutes}, // Xor
 			{Class_Flag.Interned, Class_Flag.Comutes}, // Mul
 			{Class_Flag.Interned, Class_Flag.Comutes}, // Eq
 			{Class_Flag.Interned, Class_Flag.Comutes}, // Ne
@@ -351,9 +354,6 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{Class_Flag.Interned}, // Ge
 			{Class_Flag.Interned}, // Div
 			{Class_Flag.Interned}, // Rem
-			{Class_Flag.Interned, Class_Flag.Comutes}, // And
-			{Class_Flag.Interned, Class_Flag.Comutes}, // Or
-			{Class_Flag.Interned, Class_Flag.Comutes}, // Xor
 			{Class_Flag.Interned}, // And_Not
 			{Class_Flag.Interned}, // Shl
 			{Class_Flag.Interned}, // Shr
@@ -450,6 +450,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			`CInt`,
 			`Add`,
 			`Sub`,
+			`And`,
+			`Or`,
+			`Xor`,
 			`Mul`,
 			`Eq`,
 			`Ne`,
@@ -459,9 +462,6 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			`Ge`,
 			`Div`,
 			`Rem`,
-			`And`,
-			`Or`,
-			`Xor`,
 			`And_Not`,
 			`Shl`,
 			`Shr`,
@@ -508,6 +508,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{.General = 0}, // CInt
 			{.General = 0}, // Add
 			{.General = 0}, // Sub
+			{.General = 0}, // And
+			{.General = 0}, // Or
+			{.General = 0}, // Xor
 			{.General = 0}, // Mul
 			{.General = 0}, // Eq
 			{.General = 0}, // Ne
@@ -517,9 +520,6 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{.General = 0}, // Ge
 			{.General = 4}, // Div
 			{.General = 1}, // Rem
-			{.General = 0}, // And
-			{.General = 0}, // Or
-			{.General = 0}, // Xor
 			{.General = 0}, // And_Not
 			{.General = 0}, // Shl
 			{.General = 0}, // Shr
@@ -553,6 +553,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{.General = 0}, // Return
 			{.General = 0}, // X64_Add
 			{.General = 0}, // X64_Sub
+			{.General = 0}, // X64_And
+			{.General = 0}, // X64_Or
+			{.General = 0}, // X64_Xor
 			{.General = 0}, // X64_Load
 			{.General = 0}, // X64_Store
 		},
@@ -576,6 +579,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{{.General = 1}}, // CInt
 			{{.General = 1}, {.General = 1}, {.General = 1}}, // Add
 			{{.General = 1}, {.General = 1}, {.General = 1}}, // Sub
+			{{.General = 1}, {.General = 1}, {.General = 1}}, // And
+			{{.General = 1}, {.General = 1}, {.General = 1}}, // Or
+			{{.General = 1}, {.General = 1}, {.General = 1}}, // Xor
 			{{.General = 1}, {.General = 1}, {.General = 1}}, // Mul
 			{{.General = 1}, {.General = 1}, {.General = 1}}, // Eq
 			{{.General = 1}, {.General = 1}, {.General = 1}}, // Ne
@@ -585,9 +591,6 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{{.General = 1}, {.General = 1}, {.General = 1}}, // Ge
 			{{.General = 2}, {.General = 2}, {.General = 3}}, // Div
 			{{.General = 4}, {.General = 2}, {.General = 3}}, // Rem
-			{{.General = 1}, {.General = 1}, {.General = 1}}, // And
-			{{.General = 1}, {.General = 1}, {.General = 1}}, // Or
-			{{.General = 1}, {.General = 1}, {.General = 1}}, // Xor
 			{{.General = 1}, {.General = 1}, {.General = 1}}, // And_Not
 			{{.General = 1}, {.General = 1}, {.General = 5}}, // Shl
 			{{.General = 1}, {.General = 1}, {.General = 5}}, // Shr
@@ -621,6 +624,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{{.General = 7}, {.General = 2}}, // Return
 			{{.General = 1}, {.General = 1}, {.General = 1}}, // X64_Add
 			{{.General = 1}, {.General = 1}, {.General = 1}}, // X64_Sub
+			{{.General = 1}, {.General = 1}, {.General = 1}}, // X64_And
+			{{.General = 1}, {.General = 1}, {.General = 1}}, // X64_Or
+			{{.General = 1}, {.General = 1}, {.General = 1}}, // X64_Xor
 			{{.General = 1}, {.General = 1}}, // X64_Load
 			{{.General = 7}, {.General = 1}, {.General = 1}}, // X64_Store
 		},
@@ -632,6 +638,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			-1, //CInt
 			0, //Add
 			0, //Sub
+			0, //And
+			0, //Or
+			0, //Xor
 			0, //Mul
 			0, //Eq
 			0, //Ne
@@ -641,9 +650,6 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, //Ge
 			0, //Div
 			-1, //Rem
-			0, //And
-			0, //Or
-			0, //Xor
 			1, //And_Not
 			0, //Shl
 			0, //Shr
@@ -677,6 +683,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			-1, //Return
 			0, //X64_Add
 			0, //X64_Sub
+			0, //X64_And
+			0, //X64_Or
+			0, //X64_Xor
 			-1, //X64_Load
 			-1, //X64_Store
 		},
@@ -691,6 +700,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, //CInt
 			0, //Add
 			0, //Sub
+			0, //And
+			0, //Or
+			0, //Xor
 			0, //Mul
 			0, //Eq
 			0, //Ne
@@ -700,9 +712,6 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, //Ge
 			0, //Div
 			0, //Rem
-			0, //And
-			0, //Or
-			0, //Xor
 			0, //And_Not
 			0, //Shl
 			0, //Shr
@@ -736,6 +745,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			2, //Return
 			0, //X64_Add
 			0, //X64_Sub
+			0, //X64_And
+			0, //X64_Or
+			0, //X64_Xor
 			2, //X64_Load
 			2, //X64_Store
 		},
@@ -747,6 +759,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0b1000, // CInt
 			0b10, // Add
 			0b10, // Sub
+			0b10, // And
+			0b10, // Or
+			0b10, // Xor
 			0b10, // Mul
 			0b10, // Eq
 			0b10, // Ne
@@ -756,9 +771,6 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0b10, // Ge
 			0b10, // Div
 			0b10, // Rem
-			0b10, // And
-			0b10, // Or
-			0b10, // Xor
 			0b10, // And_Not
 			0b10, // Shl
 			0b10, // Shr
@@ -792,6 +804,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0b1, // Return
 			0b100000000, // X64_Add
 			0b100000000, // X64_Sub
+			0b100000000, // X64_And
+			0b100000000, // X64_Or
+			0b100000000, // X64_Xor
 			0b100000000, // X64_Load
 			0b100000000, // X64_Store
 		},
@@ -803,6 +818,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			2, // CInt -> CInt
 			0, // Add -> No_Extra
 			0, // Sub -> No_Extra
+			0, // And -> No_Extra
+			0, // Or -> No_Extra
+			0, // Xor -> No_Extra
 			0, // Mul -> No_Extra
 			0, // Eq -> No_Extra
 			0, // Ne -> No_Extra
@@ -812,9 +830,6 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, // Ge -> No_Extra
 			0, // Div -> No_Extra
 			0, // Rem -> No_Extra
-			0, // And -> No_Extra
-			0, // Or -> No_Extra
-			0, // Xor -> No_Extra
 			0, // And_Not -> No_Extra
 			0, // Shl -> No_Extra
 			0, // Shr -> No_Extra
@@ -848,6 +863,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			1, // Return -> Cfg
 			4, // X64_Add -> X64_Mem_Op
 			4, // X64_Sub -> X64_Mem_Op
+			4, // X64_And -> X64_Mem_Op
+			4, // X64_Or -> X64_Mem_Op
+			4, // X64_Xor -> X64_Mem_Op
 			4, // X64_Load -> X64_Mem_Op
 			4, // X64_Store -> X64_Mem_Op
 		},
@@ -859,6 +877,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{Class_Flag.Interned, Class_Flag.Clonable}, // CInt
 			{Class_Flag.Interned, Class_Flag.Comutes}, // Add
 			{Class_Flag.Interned}, // Sub
+			{Class_Flag.Interned, Class_Flag.Comutes}, // And
+			{Class_Flag.Interned, Class_Flag.Comutes}, // Or
+			{Class_Flag.Interned, Class_Flag.Comutes}, // Xor
 			{Class_Flag.Interned, Class_Flag.Comutes}, // Mul
 			{Class_Flag.Interned, Class_Flag.Comutes}, // Eq
 			{Class_Flag.Interned, Class_Flag.Comutes}, // Ne
@@ -868,9 +889,6 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{Class_Flag.Interned}, // Ge
 			{Class_Flag.Interned}, // Div
 			{Class_Flag.Interned}, // Rem
-			{Class_Flag.Interned, Class_Flag.Comutes}, // And
-			{Class_Flag.Interned, Class_Flag.Comutes}, // Or
-			{Class_Flag.Interned, Class_Flag.Comutes}, // Xor
 			{Class_Flag.Interned}, // And_Not
 			{Class_Flag.Interned}, // Shl
 			{Class_Flag.Interned}, // Shr
@@ -904,6 +922,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{Class_Flag.Immortal}, // Return
 			{Class_Flag.Load}, // X64_Add
 			{Class_Flag.Load}, // X64_Sub
+			{Class_Flag.Load}, // X64_And
+			{Class_Flag.Load}, // X64_Or
+			{Class_Flag.Load}, // X64_Xor
 			{Class_Flag.Load}, // X64_Load
 			{Class_Flag.Store}, // X64_Store
 		},
@@ -962,6 +983,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			X64_Mem_Op,
 			X64_Mem_Op,
 			X64_Mem_Op,
+			X64_Mem_Op,
+			X64_Mem_Op,
+			X64_Mem_Op,
 		},
 		node_kind_name = {
 			`Start`,
@@ -971,6 +995,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			`CInt`,
 			`Add`,
 			`Sub`,
+			`And`,
+			`Or`,
+			`Xor`,
 			`Mul`,
 			`Eq`,
 			`Ne`,
@@ -980,9 +1007,6 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			`Ge`,
 			`Div`,
 			`Rem`,
-			`And`,
-			`Or`,
-			`Xor`,
 			`And_Not`,
 			`Shl`,
 			`Shr`,
@@ -1016,6 +1040,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			`Return`,
 			`X64_Add`,
 			`X64_Sub`,
+			`X64_And`,
+			`X64_Or`,
+			`X64_Xor`,
 			`X64_Load`,
 			`X64_Store`,
 		},
@@ -1024,24 +1051,24 @@ SPECS := [Node_Spec_Name]Node_Spec{
 
 Bin_Op :: enum u16 {
 	Add = u16(Ideal_Node_Type.Add),
-	Mul = u16(Ideal_Node_Type.Mul),
+	And = u16(Ideal_Node_Type.And),
 	Sub = u16(Ideal_Node_Type.Sub),
-	Ge = u16(Ideal_Node_Type.Ge),
-	Gt = u16(Ideal_Node_Type.Gt),
-	Rem = u16(Ideal_Node_Type.Rem),
-	Div = u16(Ideal_Node_Type.Div),
-	Ne = u16(Ideal_Node_Type.Ne),
-	Eq = u16(Ideal_Node_Type.Eq),
-	Lt = u16(Ideal_Node_Type.Lt),
 	Le = u16(Ideal_Node_Type.Le),
+	Ne = u16(Ideal_Node_Type.Ne),
+	Gt = u16(Ideal_Node_Type.Gt),
+	Lt = u16(Ideal_Node_Type.Lt),
+	Xor = u16(Ideal_Node_Type.Xor),
+	Or = u16(Ideal_Node_Type.Or),
+	Eq = u16(Ideal_Node_Type.Eq),
+	Mul = u16(Ideal_Node_Type.Mul),
 	Shr = u16(Ideal_Node_Type.Shr),
 	Shl = u16(Ideal_Node_Type.Shl),
 	U_Gt = u16(Ideal_Node_Type.U_Gt),
 	U_Lt = u16(Ideal_Node_Type.U_Lt),
-	Or = u16(Ideal_Node_Type.Or),
-	And = u16(Ideal_Node_Type.And),
+	Div = u16(Ideal_Node_Type.Div),
+	Ge = u16(Ideal_Node_Type.Ge),
 	And_Not = u16(Ideal_Node_Type.And_Not),
-	Xor = u16(Ideal_Node_Type.Xor),
+	Rem = u16(Ideal_Node_Type.Rem),
 	U_Shr = u16(Ideal_Node_Type.U_Shr),
 	U_Ge = u16(Ideal_Node_Type.U_Ge),
 	U_Le = u16(Ideal_Node_Type.U_Le),
@@ -1056,6 +1083,9 @@ Builder_Node_Type :: enum u16 {
 	CInt,
 	Add,
 	Sub,
+	And,
+	Or,
+	Xor,
 	Mul,
 	Eq,
 	Ne,
@@ -1065,9 +1095,6 @@ Builder_Node_Type :: enum u16 {
 	Ge,
 	Div,
 	Rem,
-	And,
-	Or,
-	Xor,
 	And_Not,
 	Shl,
 	Shr,
@@ -1299,6 +1326,9 @@ X64_Node_Type :: enum u16 {
 	CInt,
 	Add,
 	Sub,
+	And,
+	Or,
+	Xor,
 	Mul,
 	Eq,
 	Ne,
@@ -1308,9 +1338,6 @@ X64_Node_Type :: enum u16 {
 	Ge,
 	Div,
 	Rem,
-	And,
-	Or,
-	Xor,
 	And_Not,
 	Shl,
 	Shr,
@@ -1344,6 +1371,9 @@ X64_Node_Type :: enum u16 {
 	Return,
 	X64_Add,
 	X64_Sub,
+	X64_And,
+	X64_Or,
+	X64_Xor,
 	X64_Load,
 	X64_Store,
 }
@@ -1358,6 +1388,24 @@ graph_add_x64_sub :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Da
 	push_node_name(graph, name)
 	(^X64_Mem_Op)(graph_get_next_extra_slot(graph, u16(X64_Node_Type.X64_Sub)))^ = {}
 	return graph_add_raw(graph, u16(X64_Node_Type.X64_Sub), dt, {})
+}
+#assert(size_of(X64_Mem_Op) % 4 == 0)
+graph_add_x64_and :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype) -> (id: Node_ID) {
+	push_node_name(graph, name)
+	(^X64_Mem_Op)(graph_get_next_extra_slot(graph, u16(X64_Node_Type.X64_And)))^ = {}
+	return graph_add_raw(graph, u16(X64_Node_Type.X64_And), dt, {})
+}
+#assert(size_of(X64_Mem_Op) % 4 == 0)
+graph_add_x64_or :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype) -> (id: Node_ID) {
+	push_node_name(graph, name)
+	(^X64_Mem_Op)(graph_get_next_extra_slot(graph, u16(X64_Node_Type.X64_Or)))^ = {}
+	return graph_add_raw(graph, u16(X64_Node_Type.X64_Or), dt, {})
+}
+#assert(size_of(X64_Mem_Op) % 4 == 0)
+graph_add_x64_xor :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype) -> (id: Node_ID) {
+	push_node_name(graph, name)
+	(^X64_Mem_Op)(graph_get_next_extra_slot(graph, u16(X64_Node_Type.X64_Xor)))^ = {}
+	return graph_add_raw(graph, u16(X64_Node_Type.X64_Xor), dt, {})
 }
 #assert(size_of(X64_Mem_Op) % 4 == 0)
 graph_add_x64_load :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype) -> (id: Node_ID) {

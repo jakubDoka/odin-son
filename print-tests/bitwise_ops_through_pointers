@@ -1,0 +1,72 @@
+=========== OPT LEVEL: None ===========
+main:
+     push rbx
+     sub rsp, 0x18
+     lea rbx, [rsp]
+     mov rax, 0x0C
+     mov [rbx], rax
+     mov rax, 0x0A
+     mov rcx, [rbx]
+     and rcx, rax
+     mov [rbx], rcx
+     lea rcx, [rsp+0x08]
+     mov [rcx], rax
+     mov rax, 0x06
+     lea rcx, [rsp+0x10]
+     mov [rcx], rax
+     mov rsi, 0x05
+     lea rdi, [rsp+0x08]
+     call :or_into
+     mov rsi, 0x03
+     lea rdi, [rsp+0x10]
+     call :xor_into
+     mov rax, [rbx]
+     lea rcx, [rsp+0x08]
+     mov rcx, [rcx]
+     add rax, rcx
+     lea rcx, [rsp+0x10]
+     mov rcx, [rcx]
+     add rax, rcx
+     sub rsp, 0xFFFFFFFFFFFFFFE8
+     pop rbx
+     ret
+or_into:
+     mov rax, [rdi]
+     or rax, rsi
+     mov [rdi], rax
+     mov rax, [rdi]
+     ret
+xor_into:
+     mov rax, [rdi]
+     xor rax, rsi
+     mov [rdi], rax
+     mov rax, [rdi]
+     ret
+=========== OPT LEVEL: Full ===========
+main:
+     sub rsp, 0x18
+     lea rdi, [rsp+0x08]
+     mov rsi, 0x05
+     mov qword ptr [rsp], 0x0C
+     and qword ptr [rsp], 0x0A
+     mov qword ptr [rsp+0x08], 0x0A
+     mov qword ptr [rsp+0x10], 0x06
+     call :or_into
+     lea rdi, [rsp+0x10]
+     mov rsi, 0x03
+     call :xor_into
+     mov rax, [rsp]
+     mov rcx, [rsp+0x10]
+     mov rdx, [rsp+0x08]
+     add rax, rdx
+     add rax, rcx
+     sub rsp, 0xFFFFFFFFFFFFFFE8
+     ret
+or_into:
+     or [rdi], rsi
+     mov rax, [rdi]
+     ret
+xor_into:
+     xor [rdi], rsi
+     mov rax, [rdi]
+     ret

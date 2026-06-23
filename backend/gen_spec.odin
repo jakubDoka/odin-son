@@ -187,6 +187,9 @@ when (#load("node_specs.odin", string) or_else "") == "" {
 	X64_Node_Type :: enum u16 {
 		X64_Add,
 		X64_Sub,
+		X64_And,
+		X64_Or,
+		X64_Xor,
 		X64_Load,
 		X64_Store,
 	}
@@ -201,6 +204,9 @@ when (#load("node_specs.odin", string) or_else "") == "" {
 	X64_CLASSES := [X64_Node_Type]Class_Spec {
 		.X64_Add = {id = X64_Mem_Op, flags = {.Load}},
 		.X64_Sub = {id = X64_Mem_Op, flags = {.Load}},
+		.X64_And = {id = X64_Mem_Op, flags = {.Load}},
+		.X64_Or = {id = X64_Mem_Op, flags = {.Load}},
+		.X64_Xor = {id = X64_Mem_Op, flags = {.Load}},
 		.X64_Load = {id = X64_Mem_Op, flags = {.Load}},
 		.X64_Store = {id = X64_Mem_Op, flags = {.Store}},
 	}

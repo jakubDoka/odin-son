@@ -4,7 +4,6 @@ import "../vendored/gam/util/arna"
 import "../vendored/gam/util/bit_arr"
 import "base:intrinsics"
 import "core:fmt"
-import "core:log"
 import "core:mem"
 import "core:reflect"
 import "core:sort"
@@ -208,6 +207,18 @@ X64_REG_CLASSES := #partial [X64_Node_Type]Reg_Class_Spec {
 		inplace_slot_idx = 0,
 		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
 	},
+	.X64_And = {
+		inplace_slot_idx = 0,
+		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
+	},
+	.X64_Or = {
+		inplace_slot_idx = 0,
+		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
+	},
+	.X64_Xor = {
+		inplace_slot_idx = 0,
+		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
+	},
 	.X64_Load = {
 		input_start_idx = 2,
 		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK}},
@@ -312,8 +323,20 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 			val := graph_expand(ctx, node.inps[3])
 			val_mem := graph_extra(ctx, val, X64_Mem_Op)
 
-			X64_TRIGGER_OPS :: bit_set[X64_Node_Type]{.X64_Add, .X64_Sub}
-			IDEAL_TRIGGER_OPS :: bit_set[Ideal_Node_Type]{.Add, .Sub}
+			X64_TRIGGER_OPS :: bit_set[X64_Node_Type] {
+				.X64_Add,
+				.X64_Sub,
+				.X64_And,
+				.X64_Or,
+				.X64_Xor,
+			}
+			IDEAL_TRIGGER_OPS :: bit_set[Ideal_Node_Type] {
+				.Add,
+				.Sub,
+				.And,
+				.Or,
+				.Xor,
+			}
 
 			if (val.xtype in X64_TRIGGER_OPS && len(val.inps) == 1) ||
 			   val.itype in IDEAL_TRIGGER_OPS {
@@ -355,7 +378,7 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 	}
 
 	#partial switch node.itype {
-	case .Add, .Sub:
+	case .Add, .Sub, .And, .Or, .Xor:
 		op := u16(node.itype) + OP_OFFSET
 
 		// TODO: we can do this one once things are scheduled
@@ -605,6 +628,9 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		.Store   = {0x89, 0},
 		.X64_Add = {0x81, 0b000},
 		.X64_Sub = {0x81, 0b101},
+		.X64_And = {0x81, 0b100},
+		.X64_Or  = {0x81, 0b001},
+		.X64_Xor = {0x81, 0b110},
 	}
 
 	@(static)
@@ -612,6 +638,9 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 	DEST_MODE_OPCODE_CONST_TABLE := #partial [X64_Node_Type]Instr_Info {
 		.X64_Add = {0x81, 0b000},
 		.X64_Sub = {0x81, 0b101},
+		.X64_And = {0x81, 0b100},
+		.X64_Or  = {0x81, 0b001},
+		.X64_Xor = {0x81, 0b110},
 	}
 
 	@(static)
@@ -619,6 +648,9 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 	DEST_MODE_OPCODE_TABLE := #partial [X64_Node_Type]Instr_Info {
 		.X64_Add = {0x01, 0b000},
 		.X64_Sub = {0x29, 0b101},
+		.X64_And = {0x21, 0b100},
+		.X64_Or  = {0x09, 0b001},
+		.X64_Xor = {0x31, 0b110},
 	}
 
 	block_base := ctx.gvn - u32(len(ctx.bbs))
@@ -776,7 +808,7 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		// mov
 		emit_single_op(ctx.code, 0xb8, reg_of(ctx, instr))
 		emit_anys(ctx.code, graph_extra(ctx, node, CInt).value)
-	case .X64_Add, .X64_Sub:
+	case .X64_Add, .X64_Sub, .X64_And, .X64_Or, .X64_Xor:
 		imm := mem_op.imm
 
 		switch mem_op.mem_mode {

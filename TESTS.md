@@ -178,6 +178,60 @@ xor_into :: proc(ptr: ^int, v: int) -> int {
 }
 ```
 
+#### bitwise ops sized through pointers
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	// const fused into a sized store, exercising the operand size branch:
+	//   and byte  ptr [...], imm   (8 bit)
+	//   or  word  ptr [...], imm   (16 bit)
+	//   xor dword ptr [...], imm   (32 bit)
+	a8: i8 = 12
+	a16: i16 = 12
+	a32: i32 = 13
+
+	pa8 := &a8
+	pa16 := &a16
+	pa32 := &a32
+
+	pa8^ = pa8^ & 10
+	pa16^ = pa16^ | 3
+	pa32^ = pa32^ ~ 6
+
+	// reg fused into a sized store, exercising the operand size branch:
+	//   or  byte  ptr [...], reg   (8 bit)
+	//   xor word  ptr [...], reg   (16 bit)
+	//   and dword ptr [...], reg   (32 bit)
+	b8: i8 = 10
+	b16: i16 = 15
+	b32: i32 = 11
+
+	or8(&b8, 5)
+	xor16(&b16, 6)
+	and32(&b32, 6)
+
+	return int(a8) + int(a16) + int(a32) + int(b8) + int(b16) + int(b32)
+}
+
+or8 :: proc(ptr: ^i8, v: i8) -> i8 {
+	ptr^ = ptr^ | v
+	return ptr^
+}
+
+xor16 :: proc(ptr: ^i16, v: i16) -> i16 {
+	ptr^ = ptr^ ~ v
+	return ptr^
+}
+
+and32 :: proc(ptr: ^i32, v: i32) -> i32 {
+	ptr^ = ptr^ & v
+	return ptr^
+}
+```
+
 #### simple 2 adress self conflict
 ```odin
 package main

@@ -1,18 +1,46 @@
 =========== OPT LEVEL: None ===========
 main:
-     mov rcx, 0x0C
-     mov rax, 0x00
-     mov rdx, 0x0A
-     and rdx, rcx
-     add rax, rdx
-     mov rdx, 0x03
-     or rdx, rcx
-     add rax, rdx
-     mov rdx, 0x06
-     xor rdx, rcx
-     add rax, rdx
+     push rbx
+     mov rdi, 0x0C
+     call :opaqe
+     mov rbx, rax
+     mov rdi, 0x00
+     call :opaqe
+     mov rcx, 0x0A
+     mov rdx, rbx
+     and rcx, rdx
+     add rax, rcx
+     mov rcx, 0x03
+     mov rdx, rbx
+     or rcx, rdx
+     add rax, rcx
+     mov rcx, 0x06
+     mov rdx, rbx
+     xor rcx, rdx
+     add rax, rcx
+     pop rbx
+     ret
+opaqe:
+     mov rax, rdi
      ret
 =========== OPT LEVEL: Full ===========
 main:
-     mov rax, 0x21
+     push rbx
+     mov rdi, 0x0C
+     call :opaqe
+     mov rbx, rax
+     mov rdi, 0x00
+     call :opaqe
+     mov rcx, rbx
+     and rcx, 0x0A
+     mov rdx, rbx
+     or rdx, 0x03
+     add rax, rcx
+     xor rbx, 0x06
+     add rax, rdx
+     add rax, rbx
+     pop rbx
+     ret
+opaqe:
+     mov rax, rdi
      ret

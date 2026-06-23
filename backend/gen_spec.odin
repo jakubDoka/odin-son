@@ -182,6 +182,7 @@ when (#load("node_specs.odin", string) or_else "") == "" {
 	Builder_Node_Type :: enum u16 {
 		Scope,
 		Lazy_Phi,
+		Dead,
 	}
 
 	X64_Node_Type :: enum u16 {
@@ -198,6 +199,7 @@ when (#load("node_specs.odin", string) or_else "") == "" {
 	BUILDER_CLASSES := [Builder_Node_Type]Class_Spec {
 		.Scope = {id = Scope, args = {"cfg"}, default_type = .Void},
 		.Lazy_Phi = {args = {"reg", "lhs"}, extra_capacity = 1},
+		.Dead = {default_type = .Void},
 	}
 
 	@(rodata)

@@ -473,9 +473,11 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 	}
 
 	schedule_block :: proc(graph: ^Graph, bb: ^Graph_Basic_Block) {
+		PUSHED_UP :: bit_set[Ideal_Node_Type]{.Phi, .Ret, .Arg}
+
 		phi_count := 0
 		for instr, i in bb.instrs {
-			if graph_get(graph, instr).itype == .Phi {
+			if graph_get(graph, instr).itype in PUSHED_UP {
 				ordered_remove(&bb.instrs, i)
 				inject_at(&bb.instrs, phi_count, instr)
 				phi_count += 1
@@ -507,10 +509,7 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 			inode := graph_expand(graph, instr)
 			#reverse for inp in inode.inps {
 				innode := graph_expand(graph, inp)
-				if innode.output_count == 1 &&
-				   innode.itype != .Phi &&
-				   innode.itype != .Ret &&
-				   innode.itype != .Arg {
+				if innode.output_count == 1 && innode.itype not_in PUSHED_UP {
 					pos := slice.linear_search(bb.instrs[:i], inp) or_continue
 					slice.rotate_left(bb.instrs[pos:i], 1)
 					break

@@ -59,6 +59,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{.General = 0}, // Return
 			{.General = 0}, // Scope
 			{.General = 0}, // Lazy_Phi
+			{.General = 0}, // Dead
 		},
 		interned_reg_masks = {
 			raw_data([]int{}),
@@ -116,6 +117,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{}, // Return
 			{}, // Scope
 			{}, // Lazy_Phi
+			{}, // Dead
 		},
 		inplace_slot_idxs = {
 			-1, //Start
@@ -170,6 +172,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			-1, //Return
 			-1, //Scope
 			-1, //Lazy_Phi
+			-1, //Dead
 		},
 		peep = builder_peep,
 		first_input_idxs = {
@@ -225,6 +228,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, //Return
 			0, //Scope
 			0, //Lazy_Phi
+			0, //Dead
 		},
 		inheritance_table = {
 			0b1, // Start
@@ -279,6 +283,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0b1, // Return
 			0b100000000, // Scope
 			0b10, // Lazy_Phi
+			0b10, // Dead
 		},
 		node_extra_sizes = {
 			1, // Start -> Cfg
@@ -333,6 +338,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			1, // Return -> Cfg
 			1, // Scope -> Scope
 			0, // Lazy_Phi -> No_Extra
+			0, // Dead -> No_Extra
 		},
 		node_flags = {
 			{}, // Start
@@ -387,6 +393,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{Class_Flag.Immortal}, // Return
 			{}, // Scope
 			{}, // Lazy_Phi
+			{}, // Dead
 		},
 		node_extra_types = {
 			Cfg,
@@ -440,6 +447,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			Tup,
 			Cfg,
 			Scope,
+			No_Extra,
 			No_Extra,
 		},
 		node_kind_name = {
@@ -495,6 +503,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			`Return`,
 			`Scope`,
 			`Lazy_Phi`,
+			`Dead`,
 		},
 	},
 	.X64 = {
@@ -1128,6 +1137,7 @@ Builder_Node_Type :: enum u16 {
 	Return,
 	Scope,
 	Lazy_Phi,
+	Dead,
 }
 #assert(size_of(Cfg) % 4 == 0)
 graph_add_start :: #force_inline proc(graph: ^Graph, name: string) -> (id: Node_ID) {
@@ -1317,6 +1327,11 @@ graph_add_scope :: #force_inline proc(graph: ^Graph, name: string, cfg: Node_ID)
 graph_add_lazy_phi :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype, reg: Node_ID, lhs: Node_ID) -> (id: Node_ID) {
 	push_node_name(graph, name)
 	return graph_add_raw(graph, u16(Builder_Node_Type.Lazy_Phi), dt, {reg, lhs}, extra_capacity = 1)
+}
+#assert(size_of(No_Extra) % 4 == 0)
+graph_add_dead :: #force_inline proc(graph: ^Graph, name: string) -> (id: Node_ID) {
+	push_node_name(graph, name)
+	return graph_add_raw(graph, u16(Builder_Node_Type.Dead), .Void, {})
 }
 X64_Node_Type :: enum u16 {
 	Start,

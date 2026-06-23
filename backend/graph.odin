@@ -5,6 +5,7 @@ import "base:runtime"
 import "core:container/queue"
 import "core:fmt"
 import "core:io"
+import "core:log"
 import "core:mem"
 import "core:reflect"
 import "core:simd"
@@ -441,9 +442,81 @@ when !GEN_SPEC {
 	}
 
 	builder_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
+		node := node
 		id := graph_id(ctx, node)
 
+		DEAD_EXCEPTIONS := bit_set[Ideal_Node_Type]{.Region, .Start}
+
+		if is_cfg(ctx, id) && node.itype not_in DEAD_EXCEPTIONS {
+			idom := graph_expand(ctx, node.inps[0])
+			if idom.btype == .Dead {
+				return node.inps[0]
+			}
+		}
+
+		ordered_remove :: proc(ctx: Peep_Ctx, node: ^Expanded_Node, i: int) {
+			par := graph_id(ctx, node)
+			for inp, j in node.inps[i + 1:] {
+				graph_add_output(ctx, inp, par, j + i)
+				graph_remove_output(ctx, inp, {idx = j + i + 1, id = par})
+			}
+			inp := node.inps[i]
+			slice.rotate_left(node.inps[i:], 1)
+			node.inps = node.inps[:len(node.inps) - 1]
+			node.input_count -= 1
+			node.ordered_input_count -= 1
+			graph_remove_output(ctx, inp, {idx = i, id = par})
+		}
+
 		#partial switch node.itype {
+		case .Region:
+			any_dead: Node_ID
+			#reverse for inp, i in node.inps {
+				inode := graph_expand(ctx, inp)
+				if inode.btype == .Dead {
+					ordered_remove(ctx, &node, i)
+					any_dead = inp
+
+					for out in node.outs {
+						onode := graph_expand(ctx, out.id)
+						if onode.itype == .Phi && len(onode.inps) > 2 {
+							ordered_remove(ctx, &onode, i + 1)
+						}
+					}
+				}
+			}
+
+			if len(node.inps) == 0 {
+				assert(any_dead != 0)
+				return any_dead
+			}
+
+			if len(node.inps) == 1 {
+				return node.inps[0]
+			}
+
+			return 0
+		case .Phi:
+			if len(node.inps) == 2 {
+				return node.inps[1]
+			}
+
+			if graph_get(ctx, node.inps[0]).btype == .Dead &&
+			   2 < len(node.inps) {
+				ordered_remove(ctx, &node, 2)
+			}
+		case .Then, .Else:
+			if_ := graph_expand(ctx, node.inps[0])
+			cond_const := graph_extra(ctx, if_.inps[1], CInt)
+			if cond_const != nil {
+				if (cond_const.value == 0) ~ (node.itype == .Else) {
+					return graph_add_dead(ctx, "dead")
+				} else {
+					return if_.inps[0]
+				}
+			} else {
+				peep_ctx_add_trigger(ctx, if_.inps[1], id)
+			}
 		case .Add ..= .U_Shr:
 			lhs := graph_expand(ctx.graph, node.inps[0])
 			rhs := graph_expand(ctx.graph, node.inps[1])

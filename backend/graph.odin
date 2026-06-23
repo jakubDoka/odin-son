@@ -50,24 +50,24 @@ Ideal_Node_Type :: enum u16 {
 	And,
 	Or,
 	Xor,
-	Mul,
 	Eq,
 	Ne,
 	Le,
 	Lt,
 	Gt,
 	Ge,
-	Div,
-	Rem,
-	And_Not,
-	Shl,
-	Shr,
 	U_Lt,
 	U_Gt,
 	U_Le,
 	U_Ge,
+	Mul,
+	Div,
 	U_Div,
+	Rem,
 	U_Rem,
+	And_Not,
+	Shl,
+	Shr,
 	U_Shr,
 	Split,
 	Phi,
@@ -318,9 +318,7 @@ graph_iter_peeps :: proc(graph: ^Graph) {
 		node := graph_expand(graph, n)
 
 		prev_hash := graph_node_hash(graph, n)
-		node.in_worklist = true
 		new_node := graph.peep({graph, &worklist, &triggers}, node)
-		node.in_worklist = false
 		if new_node == 0 do continue
 
 		for out in node.outs {
@@ -360,7 +358,16 @@ graph_iter_peeps :: proc(graph: ^Graph) {
 		for n in worklist_next(graph, &worklist) {
 			node := graph_expand(graph, n)
 			new_node := graph.peep({graph, &worklist, &triggers}, node)
-			assert(new_node == 0)
+			if new_node != 0 {
+				log.info(graph)
+
+				fmt.assertf(
+					new_node == 0,
+					"\nnew: %v\nold: %v",
+					graph_get(graph, new_node),
+					node.node,
+				)
+			}
 		}
 	}
 
@@ -619,6 +626,7 @@ when !GEN_SPEC {
 					graph_remove_output(ctx, inp, {idx = i, id = id})
 				}
 				node.inps[0], node.inps[1] = node.inps[1], node.inps[0]
+				worklist_add(ctx, ctx.worklist, id)
 				return id
 			}
 		}

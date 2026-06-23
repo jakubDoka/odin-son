@@ -248,7 +248,7 @@ main_ :: proc() -> int {
 	r += a | 3 
 	r += a ~ 6 
 
-	return r // 33
+	return r
 }
 
 opaqe :: proc(i: int) -> int {
@@ -269,7 +269,7 @@ main :: proc() -> int {
 	r += a | 3 
 	r += a ~ 6 
 
-	return r // 33
+	return r
 }
 
 opaqe :: proc(i: int) -> int {
@@ -928,6 +928,156 @@ main :: proc() -> int {
 		d0+d1+d2+d3+
 		e0+e1+e2+e3+
 		f0+f1+f2+f3
+}
+`, main_())
+}
+@(test) if_statement_peepholes :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+opaques :: proc(x: int) -> int {
+	return x
+}
+
+test_signed :: proc(a: int, b: int) -> int {
+	if a == b do return 1
+	if a != b do return 2
+
+	if a < b do return 3
+	if a >= b do return 4
+
+	if a > b do return 5
+	if a <= b do return 6
+
+	return 0
+}
+
+test_unsigned :: proc(a: uint, b: uint) -> uint {
+	if a == b do return 10
+	if a != b do return 20
+
+	if a < b do return 30
+	if a >= b do return 40
+
+	if a > b do return 50
+	if a <= b do return 60
+
+	return 0
+}
+
+test_mixed_patterns :: proc(x: int) -> int {
+	a := opaques(x)
+	b := opaques(x + 1)
+
+	if a < b {
+		if a <= b {
+			if a != b {
+				return 100
+			}
+		}
+	}
+
+	if a > b {
+		if a >= b {
+			if a == b {
+				return 200
+			}
+		}
+	}
+
+	return 0
+}
+
+main_ :: proc() -> int {
+	r := 0
+
+	r += test_signed(10, 20)
+	r += test_signed(20, 20)
+	r += test_signed(30, 10)
+
+	r += int(test_unsigned(10, 20))
+	r += int(test_unsigned(20, 20))
+	r += int(test_unsigned(30, 10))
+
+	r += test_mixed_patterns(42)
+
+	return r
+}
+
+run_test(t, `if_statement_peepholes`, `
+package main
+
+opt_level :: "none"
+
+opaques :: proc(x: int) -> int {
+	return x
+}
+
+test_signed :: proc(a: int, b: int) -> int {
+	if a == b do return 1
+	if a != b do return 2
+
+	if a < b do return 3
+	if a >= b do return 4
+
+	if a > b do return 5
+	if a <= b do return 6
+
+	return 0
+}
+
+test_unsigned :: proc(a: uint, b: uint) -> uint {
+	if a == b do return 10
+	if a != b do return 20
+
+	if a < b do return 30
+	if a >= b do return 40
+
+	if a > b do return 50
+	if a <= b do return 60
+
+	return 0
+}
+
+test_mixed_patterns :: proc(x: int) -> int {
+	a := opaques(x)
+	b := opaques(x + 1)
+
+	if a < b {
+		if a <= b {
+			if a != b {
+				return 100
+			}
+		}
+	}
+
+	if a > b {
+		if a >= b {
+			if a == b {
+				return 200
+			}
+		}
+	}
+
+	return 0
+}
+
+main :: proc() -> int {
+	r := 0
+
+	r += test_signed(10, 20)
+	r += test_signed(20, 20)
+	r += test_signed(30, 10)
+
+	r += int(test_unsigned(10, 20))
+	r += int(test_unsigned(20, 20))
+	r += int(test_unsigned(30, 10))
+
+	r += test_mixed_patterns(42)
+
+	return r
 }
 `, main_())
 }

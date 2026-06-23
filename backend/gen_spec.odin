@@ -175,7 +175,9 @@ Reg_Class_Spec :: struct {
 	reg_masks:        [Reg_Kind][][]int,
 }
 
-when (#load("node_specs.odin", string) or_else "") == "" {
+SPEC_NOT_PRESENT :: (#load("node_specs.odin", string) or_else "") == ""
+
+when SPEC_NOT_PRESENT {
 	@(rodata)
 	SPECS := [Node_Spec_Name]Node_Spec{}
 
@@ -185,32 +187,11 @@ when (#load("node_specs.odin", string) or_else "") == "" {
 		Dead,
 	}
 
-	X64_Node_Type :: enum u16 {
-		X64_Add,
-		X64_Sub,
-		X64_And,
-		X64_Or,
-		X64_Xor,
-		X64_Load,
-		X64_Store,
-	}
-
 	@(rodata)
 	BUILDER_CLASSES := [Builder_Node_Type]Class_Spec {
 		.Scope = {id = Scope, args = {"cfg"}, default_type = .Void},
 		.Lazy_Phi = {args = {"reg", "lhs"}, extra_capacity = 1},
 		.Dead = {default_type = .Void},
-	}
-
-	@(rodata)
-	X64_CLASSES := [X64_Node_Type]Class_Spec {
-		.X64_Add = {id = X64_Mem_Op, flags = {.Load}},
-		.X64_Sub = {id = X64_Mem_Op, flags = {.Load}},
-		.X64_And = {id = X64_Mem_Op, flags = {.Load}},
-		.X64_Or = {id = X64_Mem_Op, flags = {.Load}},
-		.X64_Xor = {id = X64_Mem_Op, flags = {.Load}},
-		.X64_Load = {id = X64_Mem_Op, flags = {.Load}},
-		.X64_Store = {id = X64_Mem_Op, flags = {.Store}},
 	}
 
 	inherit_idx_of :: proc($T: typeid) -> u8 {return 0}

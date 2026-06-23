@@ -2,69 +2,66 @@
 main:
      push rbx
      push rbp
-     mov rdi, 0x00
+     mov rcx, 0x00
      mov rax, 0x00
      jmp :0
 
-000: mov rcx, 0x01
-     add rdi, rcx
-     mov rdx, 0x08
-     cmp rdx, rdi
-     setz dl
-     movzx rdx, dl
-     test rdx, rdx
+000: mov rdx, 0x01
+     add rcx, rdx
+     mov rbx, 0x08
+     cmp rbx, rcx
+     setz bl
+     movzx rbx, bl
+     test rbx, rbx
      jz :1
      jmp :2
 
-001: mov rsi, rax
-     mov rbp, 0x00
+001: mov rdi, rax
+     mov rsi, 0x00
      jmp :3
 
-003: add rbp, rcx
+003: add rsi, rdx
      mov rax, 0x05
-     mov rdx, rbp
-     cmp rdx, rax
-     setz dl
-     movzx rdx, dl
-     mov rbx, 0x02
-     test rdx, rdx
+     cmp rsi, rax
+     setz bl
+     movzx rbx, bl
+     mov rbp, 0x02
+     test rbx, rbx
      jz :4
      jmp :5
 
-004: mov rax, rbp
-     cmp rax, rbx
+004: cmp rsi, rbp
      setz al
      movzx rax, al
      test rax, rax
      jz :6
      jmp :7
 
-006: add rsi, rcx
+006: add rdi, rdx
      jmp :3
 
 007: jmp :8
 
-005: mov rbp, 0x00
+005: mov rsi, 0x00
      jmp :9
 
-009: add rbp, rcx
-     mov rdx, rbp
-     cmp rdx, rax
-     setz dl
-     movzx rdx, dl
-     test rdx, rdx
+009: add rsi, rdx
+     cmp rsi, rax
+     setz bl
+     movzx rbx, bl
+     test rbx, rbx
      jz :10
      jmp :11
 
-010: mov rdx, 0x03
-     cmp rdx, rbp
-     setz dl
-     movzx rdx, dl
-     test rdx, rdx
+010: mov rbx, 0x03
+     cmp rbx, rsi
+     setz bl
+     movzx rbx, bl
+     test rbx, rbx
      jz :12
      jmp :13
 
-012: add rsi, rbx
+012: add rdi, rbp
      jmp :9
 
 013: jmp :8
@@ -72,11 +69,11 @@ main:
 008: jmp :14
 
 011: mov rax, 0x64
-     add rax, rsi
-     mov rsi, rax
+     add rax, rdi
+     mov rdi, rax
      jmp :14
 
-014: mov rax, rsi
+014: mov rax, rdi
      jmp :0
 
 002: pop rbp
@@ -105,8 +102,7 @@ main:
 
 003: mov rax, 0x05
      add rdx, 0x01
-     mov rcx, rdx
-     cmp rcx, rax
+     cmp rdx, rax
      setz cl
      movzx rcx, cl
      test rcx, rcx
@@ -130,8 +126,7 @@ main:
      jmp :9
 
 009: add rdx, 0x01
-     mov rcx, rdx
-     cmp rcx, rax
+     cmp rdx, rax
      setz cl
      movzx rcx, cl
      test rcx, rcx

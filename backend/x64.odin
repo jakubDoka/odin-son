@@ -76,6 +76,10 @@ SIMPLE_BINOP_SPEC :: Reg_Class_Spec {
 	inplace_slot_idx = 0,
 }
 
+SIMPLE_CMP_SPEC :: Reg_Class_Spec {
+	reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
+}
+
 SIMPLE_SHIFT_SPEC :: Reg_Class_Spec {
 	reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, RCX_MASK}},
 	inplace_slot_idx = 0,
@@ -104,35 +108,18 @@ X64_IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec {
 	.Poison = {},
 	.Arg = {input_start_idx = 1},
 	.CInt = {reg_masks = #partial{.General = {GPA_MASK}}},
-	.Add = SIMPLE_BINOP_SPEC,
-	.Sub = SIMPLE_BINOP_SPEC,
-	.Mul = SIMPLE_BINOP_SPEC,
-	.Eq = SIMPLE_BINOP_SPEC,
-	.Ne = SIMPLE_BINOP_SPEC,
-	.Le = SIMPLE_BINOP_SPEC,
-	.Lt = SIMPLE_BINOP_SPEC,
-	.Gt = SIMPLE_BINOP_SPEC,
-	.Ge = SIMPLE_BINOP_SPEC,
-	.And = SIMPLE_BINOP_SPEC,
-	.Or = SIMPLE_BINOP_SPEC,
-	.Xor = SIMPLE_BINOP_SPEC,
-	// a &~ b is emitted as `not rhs; and rhs, lhs`, so the destination shares
-	// the rhs slot (index 1) which we are free to clobber
+	.Add ..= .Xor = SIMPLE_BINOP_SPEC,
+	.Eq ..= .U_Ge = SIMPLE_CMP_SPEC,
 	.And_Not = {
 		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
 		inplace_slot_idx = 1,
 	},
 	.Shl = SIMPLE_SHIFT_SPEC,
 	.Shr = SIMPLE_SHIFT_SPEC,
-	// idiv divides RDX:RAX by the divisor; quotient -> RAX, remainder -> RDX
+	.Mul = SIMPLE_BINOP_SPEC,
 	.Div = DIV_SPEC,
 	.Rem = REM_SPEC,
-	.U_Lt = SIMPLE_BINOP_SPEC,
-	.U_Gt = SIMPLE_BINOP_SPEC,
-	.U_Le = SIMPLE_BINOP_SPEC,
-	.U_Ge = SIMPLE_BINOP_SPEC,
 	.U_Shr = SIMPLE_SHIFT_SPEC,
-	// idiv divides RDX:RAX by the divisor; quotient -> RAX, remainder -> RDX
 	.U_Div = DIV_SPEC,
 	.U_Rem = REM_SPEC,
 	.Split = {
@@ -197,28 +184,19 @@ X64_IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec {
 	},
 }
 
+X64_SIMPE_OP :: Reg_Class_Spec {
+	inplace_slot_idx = 0,
+	reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
+}
+
+X64_SIMPE_CMP_OP :: Reg_Class_Spec {
+	reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
+}
+
 @(rodata)
 X64_REG_CLASSES := #partial [X64_Node_Type]Reg_Class_Spec {
-	.X64_Add = {
-		inplace_slot_idx = 0,
-		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
-	},
-	.X64_Sub = {
-		inplace_slot_idx = 0,
-		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
-	},
-	.X64_And = {
-		inplace_slot_idx = 0,
-		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
-	},
-	.X64_Or = {
-		inplace_slot_idx = 0,
-		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
-	},
-	.X64_Xor = {
-		inplace_slot_idx = 0,
-		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
-	},
+	.X64_Add ..= .X64_Xor = X64_SIMPE_OP,
+	.X64_Eq ..= .X64_U_Ge = X64_SIMPE_CMP_OP,
 	.X64_Load = {
 		input_start_idx = 2,
 		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK}},
@@ -227,6 +205,49 @@ X64_REG_CLASSES := #partial [X64_Node_Type]Reg_Class_Spec {
 		input_start_idx = 2,
 		reg_masks = #partial{.General = {{}, GPA_MASK, GPA_MASK}},
 	},
+}
+
+when SPEC_NOT_PRESENT {
+	X64_Node_Type :: enum u16 {
+		X64_Add,
+		X64_Sub,
+		X64_And,
+		X64_Or,
+		X64_Xor,
+		X64_Eq,
+		X64_Ne,
+		X64_Le,
+		X64_Lt,
+		X64_Gt,
+		X64_Ge,
+		X64_U_Lt,
+		X64_U_Gt,
+		X64_U_Le,
+		X64_U_Ge,
+		X64_Load,
+		X64_Store,
+	}
+
+	@(rodata)
+	X64_CLASSES := [X64_Node_Type]Class_Spec {
+		.X64_Add = {id = X64_Mem_Op, flags = {.Load}},
+		.X64_Sub = {id = X64_Mem_Op, flags = {.Load}},
+		.X64_And = {id = X64_Mem_Op, flags = {.Load}},
+		.X64_Or = {id = X64_Mem_Op, flags = {.Load}},
+		.X64_Xor = {id = X64_Mem_Op, flags = {.Load}},
+		.X64_Eq = {id = X64_Mem_Op, flags = {.Load}},
+		.X64_Ne = {id = X64_Mem_Op, flags = {.Load}},
+		.X64_Le = {id = X64_Mem_Op, flags = {.Load}},
+		.X64_Lt = {id = X64_Mem_Op, flags = {.Load}},
+		.X64_Gt = {id = X64_Mem_Op, flags = {.Load}},
+		.X64_Ge = {id = X64_Mem_Op, flags = {.Load}},
+		.X64_U_Lt = {id = X64_Mem_Op, flags = {.Load}},
+		.X64_U_Gt = {id = X64_Mem_Op, flags = {.Load}},
+		.X64_U_Le = {id = X64_Mem_Op, flags = {.Load}},
+		.X64_U_Ge = {id = X64_Mem_Op, flags = {.Load}},
+		.X64_Load = {id = X64_Mem_Op, flags = {.Load}},
+		.X64_Store = {id = X64_Mem_Op, flags = {.Store}},
+	}
 }
 
 Mem_Mode :: enum u8 {
@@ -662,7 +683,9 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		mem_op = &mem_op_placeholder
 	}
 
-	switch node.xtype {
+	#partial switch node.xtype {
+	case:
+		panic("")
 	case .Local:
 	case .Local_Addr:
 		// lea [rsp + $offset]
@@ -858,19 +881,20 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		emit(ctx.code, {rx, 0x0f, 0xaf, mod_rm(.Direct, dst, rhs)})
 	case .Eq, .Ne, .Lt, .Gt, .Ge, .Le, .U_Lt, .U_Gt, .U_Ge, .U_Le:
 		// cmp $lhs, $rhs
+		dst := reg_of(ctx, instr)
 		lhs := reg_of(ctx, node.inps[0])
 		rhs := reg_of(ctx, node.inps[1])
 		rx := rex(lhs, rhs, RAX, true)
 		emit(ctx.code, {rx, 0x3b, mod_rm(.Direct, lhs, rhs)})
 
 		// setcc $lhs
-		rx = rex(RAX, lhs, RAX, true)
+		rx = rex(RAX, dst, RAX, true)
 		op := OPCODE_TABLE[node.xtype].opcode
-		emit(ctx.code, {rx, 0x0F, op, mod_sm(.Direct, 0b000, lhs)})
+		emit(ctx.code, {rx, 0x0F, op, mod_sm(.Direct, 0b000, dst)})
 
 		// movzx $lhs, $lhs
-		rx = rex(lhs, lhs, RAX, true)
-		emit(ctx.code, {rx, 0x0F, 0xB6, mod_rm(.Direct, lhs, lhs)})
+		rx = rex(dst, dst, RAX, true)
+		emit(ctx.code, {rx, 0x0F, 0xB6, mod_rm(.Direct, dst, dst)})
 	case .And_Not:
 		dst := reg_of(ctx, node.inps[1])
 		lhs := reg_of(ctx, node.inps[0])

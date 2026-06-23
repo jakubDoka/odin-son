@@ -628,7 +628,14 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		)
 		assert(oka)
 
-		ptr := transmute(proc() -> int)(code_mem.ptr)
+		main: ^Proc
+		for &p in ctx.procs {
+			if p.name == "main" {
+				main = &p
+			}
+		}
+
+		ptr := transmute(proc() -> int)(raw_data(main.out.code))
 		vl := ptr()
 		if vl != exit_code {
 			log.error(level)

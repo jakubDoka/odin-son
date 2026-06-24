@@ -92,6 +92,8 @@ Ideal_Node_Type :: enum u16 {
 	Call_End,
 	Ret,
 	Return,
+	Neg,
+	Not,
 }
 
 Class_Flags :: bit_set[Class_Flag;u8]

@@ -49,6 +49,8 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 	.Or = SIMPLE_BINOP_CLASS,
 	.Xor = SIMPLE_BINOP_CLASS,
 	.And_Not = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
+	.Neg = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
+	.Not = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
 	.Shl = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
 	.Shr = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
 	.U_Lt = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},

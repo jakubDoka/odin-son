@@ -1159,6 +1159,12 @@ typecheck :: proc(
 				assert(inferred_ty == inner_ty)
 			}
 			return intern_pointer(ctx, inner_ty)
+		case .Not:
+			inner_ty := typecheck(ctx, {}, d.expr)
+			assert(inner_ty == .Bool)
+			return .Bool
+		case .Sub, .Xor:
+			return typecheck(ctx, prop, d.expr)
 		case:
 			fmt.panicf("TODO: %#v", node.derived)
 		}
@@ -1574,9 +1580,60 @@ emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 		nd := backend.graph_add_bin_op(ctx, name, kind, dt, lhs, rhs)
 		return auto_cast nd
 	case ^ast.Unary_Expr:
-		node := emit_nodes(ctx, {}, d.expr)
-		assert(node.is_lvalue)
-		return auto_cast node.id
+		#partial switch d.op.kind {
+		case .And:
+			node := emit_nodes(ctx, {}, d.expr)
+			assert(node.is_lvalue)
+			return auto_cast node.id
+		case .Not:
+			// !x  ->  x == 0
+			operand := to_rvalue(ctx, emit_nodes(ctx, {}, d.expr), d.expr)
+			zero := backend.graph_add_c_int(ctx, "zero", dt, 0)
+			return(
+				auto_cast backend.graph_add_bin_op(
+					ctx,
+					"lnot",
+					.Eq,
+					dt,
+					operand,
+					zero,
+				) \
+			)
+		case .Sub, .Xor:
+			oty := get_node_type(d.expr)
+			operand := to_rvalue(ctx, emit_nodes(ctx, {}, d.expr), d.expr)
+
+			op: backend.Un_Op = d.op.kind == .Sub ? .Neg : .Not
+			name := d.op.kind == .Sub ? "neg" : "not"
+			// the dt matches the result type so a following store is sized
+			// correctly; the neg/not itself always runs on the full register
+			res := backend.graph_add_un_op(ctx, name, op, dt, operand)
+
+			// neg/not on the full register leaves garbage in the high bits for
+			// unsigned sub-word operands (the load only zero-extended the live
+			// bits), so mask the result back into range
+			if oty in UNSIGNED_TYPES && backend.DT_SIZE[type_to_dt(oty)] < 8 {
+				bits := uint(backend.DT_SIZE[type_to_dt(oty)] * 8)
+				mask := backend.graph_add_c_int(
+					ctx,
+					"umask",
+					dt,
+					i64((u64(1) << bits) - 1),
+				)
+				res = backend.graph_add_bin_op(
+					ctx,
+					"utrunc",
+					.And,
+					dt,
+					res,
+					mask,
+				)
+			}
+
+			return auto_cast res
+		case:
+			fmt.panicf("TODO: %#v", node.derived)
+		}
 	case ^ast.Deref_Expr:
 		node := to_rvalue(ctx, emit_nodes(ctx, {}, d.expr), d.expr)
 		return {id = node, is_lvalue = true}

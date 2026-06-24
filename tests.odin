@@ -344,10 +344,6 @@ xor_into :: proc(ptr: ^int, v: int) -> int {
 opt_level :: "none"
 
 main_ :: proc() -> int {
-	// const fused into a sized store, exercising the operand size branch:
-	//   and byte  ptr [...], imm   (8 bit)
-	//   or  word  ptr [...], imm   (16 bit)
-	//   xor dword ptr [...], imm   (32 bit)
 	a8: i8 = 12
 	a16: i16 = 12
 	a32: i32 = 13
@@ -360,10 +356,6 @@ main_ :: proc() -> int {
 	pa16^ = pa16^ | 3
 	pa32^ = pa32^ ~ 6
 
-	// reg fused into a sized store, exercising the operand size branch:
-	//   or  byte  ptr [...], reg   (8 bit)
-	//   xor word  ptr [...], reg   (16 bit)
-	//   and dword ptr [...], reg   (32 bit)
 	b8: i8 = 10
 	b16: i16 = 15
 	b32: i32 = 11
@@ -396,10 +388,6 @@ package main
 opt_level :: "none"
 
 main :: proc() -> int {
-	// const fused into a sized store, exercising the operand size branch:
-	//   and byte  ptr [...], imm   (8 bit)
-	//   or  word  ptr [...], imm   (16 bit)
-	//   xor dword ptr [...], imm   (32 bit)
 	a8: i8 = 12
 	a16: i16 = 12
 	a32: i32 = 13
@@ -412,10 +400,6 @@ main :: proc() -> int {
 	pa16^ = pa16^ | 3
 	pa32^ = pa32^ ~ 6
 
-	// reg fused into a sized store, exercising the operand size branch:
-	//   or  byte  ptr [...], reg   (8 bit)
-	//   xor word  ptr [...], reg   (16 bit)
-	//   and dword ptr [...], reg   (32 bit)
 	b8: i8 = 10
 	b16: i16 = 15
 	b32: i32 = 11
@@ -1504,7 +1488,8 @@ test_not_reg :: proc(x: bool) -> bool {
 }
 
 test_not_i8 :: proc(x: ^bool) -> bool {
-	return !x^
+	x^ = !x^
+	return x^
 }
 
 test_bitnot_reg :: proc(x: int) -> int {
@@ -1512,35 +1497,43 @@ test_bitnot_reg :: proc(x: int) -> int {
 }
 
 test_bitnot_i8 :: proc(x: ^i8) -> int {
-	return int(~x^)
+	x^ = ~x^
+	return int(x^)
 }
 
 test_bitnot_u8 :: proc(x: ^u8) -> int {
-	return int(~x^)
+	x^ = ~x^
+	return int(x^)
 }
 
 test_bitnot_i16 :: proc(x: ^i16) -> int {
-	return int(~x^)
+	x^ = ~x^
+	return int(x^)
 }
 
 test_bitnot_u16 :: proc(x: ^u16) -> int {
-	return int(~x^)
+	x^ = ~x^
+	return int(x^)
 }
 
 test_bitnot_i32 :: proc(x: ^i32) -> int {
-	return int(~x^)
+	x^ = ~x^
+	return int(x^)
 }
 
 test_bitnot_u32 :: proc(x: ^u32) -> int {
-	return int(~x^)
+	x^ = ~x^
+	return int(x^)
 }
 
 test_bitnot_i64 :: proc(x: ^i64) -> int {
-	return int(~x^)
+	x^ = ~x^
+	return int(x^)
 }
 
 test_bitnot_u64 :: proc(x: ^u64) -> int {
-	return int(~x^)
+	x^ = ~x^
+	return int(x^)
 }
 
 test_neg_reg :: proc(x: int) -> int {
@@ -1548,35 +1541,43 @@ test_neg_reg :: proc(x: int) -> int {
 }
 
 test_neg_i8 :: proc(x: ^i8) -> int {
-	return int(-x^)
+	x^ = -x^
+	return int(x^)
 }
 
 test_neg_u8 :: proc(x: ^u8) -> int {
-	return int(-x^)
+	x^ = -x^
+	return int(x^)
 }
 
 test_neg_i16 :: proc(x: ^i16) -> int {
-	return int(-x^)
+	x^ = -x^
+	return int(x^)
 }
 
 test_neg_u16 :: proc(x: ^u16) -> int {
-	return int(-x^)
+	x^ = -x^
+	return int(x^)
 }
 
 test_neg_i32 :: proc(x: ^i32) -> int {
-	return int(-x^)
+	x^ = -x^
+	return int(x^)
 }
 
 test_neg_u32 :: proc(x: ^u32) -> int {
-	return int(-x^)
+	x^ = -x^
+	return int(x^)
 }
 
 test_neg_i64 :: proc(x: ^i64) -> int {
-	return int(-x^)
+	x^ = -x^
+	return int(x^)
 }
 
 test_neg_u64 :: proc(x: ^u64) -> int {
-	return int(-x^)
+	x^ = -x^
+	return int(x^)
 }
 
 main_ :: proc() -> int {
@@ -1630,7 +1631,8 @@ test_not_reg :: proc(x: bool) -> bool {
 }
 
 test_not_i8 :: proc(x: ^bool) -> bool {
-	return !x^
+	x^ = !x^
+	return x^
 }
 
 test_bitnot_reg :: proc(x: int) -> int {
@@ -1638,35 +1640,43 @@ test_bitnot_reg :: proc(x: int) -> int {
 }
 
 test_bitnot_i8 :: proc(x: ^i8) -> int {
-	return int(~x^)
+	x^ = ~x^
+	return int(x^)
 }
 
 test_bitnot_u8 :: proc(x: ^u8) -> int {
-	return int(~x^)
+	x^ = ~x^
+	return int(x^)
 }
 
 test_bitnot_i16 :: proc(x: ^i16) -> int {
-	return int(~x^)
+	x^ = ~x^
+	return int(x^)
 }
 
 test_bitnot_u16 :: proc(x: ^u16) -> int {
-	return int(~x^)
+	x^ = ~x^
+	return int(x^)
 }
 
 test_bitnot_i32 :: proc(x: ^i32) -> int {
-	return int(~x^)
+	x^ = ~x^
+	return int(x^)
 }
 
 test_bitnot_u32 :: proc(x: ^u32) -> int {
-	return int(~x^)
+	x^ = ~x^
+	return int(x^)
 }
 
 test_bitnot_i64 :: proc(x: ^i64) -> int {
-	return int(~x^)
+	x^ = ~x^
+	return int(x^)
 }
 
 test_bitnot_u64 :: proc(x: ^u64) -> int {
-	return int(~x^)
+	x^ = ~x^
+	return int(x^)
 }
 
 test_neg_reg :: proc(x: int) -> int {
@@ -1674,35 +1684,43 @@ test_neg_reg :: proc(x: int) -> int {
 }
 
 test_neg_i8 :: proc(x: ^i8) -> int {
-	return int(-x^)
+	x^ = -x^
+	return int(x^)
 }
 
 test_neg_u8 :: proc(x: ^u8) -> int {
-	return int(-x^)
+	x^ = -x^
+	return int(x^)
 }
 
 test_neg_i16 :: proc(x: ^i16) -> int {
-	return int(-x^)
+	x^ = -x^
+	return int(x^)
 }
 
 test_neg_u16 :: proc(x: ^u16) -> int {
-	return int(-x^)
+	x^ = -x^
+	return int(x^)
 }
 
 test_neg_i32 :: proc(x: ^i32) -> int {
-	return int(-x^)
+	x^ = -x^
+	return int(x^)
 }
 
 test_neg_u32 :: proc(x: ^u32) -> int {
-	return int(-x^)
+	x^ = -x^
+	return int(x^)
 }
 
 test_neg_i64 :: proc(x: ^i64) -> int {
-	return int(-x^)
+	x^ = -x^
+	return int(x^)
 }
 
 test_neg_u64 :: proc(x: ^u64) -> int {
-	return int(-x^)
+	x^ = -x^
+	return int(x^)
 }
 
 main :: proc() -> int {

@@ -4,7 +4,6 @@ import "../vendored/gam/util/arna"
 import "../vendored/gam/util/bit_arr"
 import "base:intrinsics"
 import "core:fmt"
-import "core:log"
 import "core:mem"
 import "core:reflect"
 import "core:sort"
@@ -86,6 +85,11 @@ SIMPLE_SHIFT_SPEC :: Reg_Class_Spec {
 	inplace_slot_idx = 0,
 }
 
+SIMPLE_UNOP_SPEC :: Reg_Class_Spec {
+	reg_masks = #partial{.General = {GPA_MASK, GPA_MASK}},
+	inplace_slot_idx = 0,
+}
+
 DIV_SPEC :: Reg_Class_Spec {
 	reg_masks = #partial{.General = {RAX_MASK, RAX_MASK, GPA_DIV_MASK}},
 	inplace_slot_idx = 0,
@@ -115,6 +119,8 @@ X64_IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec {
 		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
 		inplace_slot_idx = 1,
 	},
+	.Neg = SIMPLE_UNOP_SPEC,
+	.Not = SIMPLE_UNOP_SPEC,
 	.Shl ..= .U_Shr = SIMPLE_SHIFT_SPEC,
 	.Mul = SIMPLE_BINOP_SPEC,
 	.Div = DIV_SPEC,
@@ -197,6 +203,7 @@ X64_REG_CLASSES := #partial [X64_Node_Type]Reg_Class_Spec {
 	.X64_Add ..= .X64_Xor = X64_SIMPE_OP,
 	.X64_Eq ..= .X64_U_Ge = X64_SIMPE_CMP_OP,
 	.X64_Shl ..= .X64_U_Shr = SIMPLE_SHIFT_SPEC,
+	.X64_Neg ..= .X64_Not = SIMPLE_UNOP_SPEC,
 	.X64_Load = {
 		input_start_idx = 2,
 		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK}},
@@ -229,6 +236,8 @@ when SPEC_NOT_PRESENT {
 		X64_U_Shr,
 		X64_Load,
 		X64_Store,
+		X64_Neg,
+		X64_Not,
 	}
 
 	X64_SIMPLE_BIN_OP_SPEC :: Class_Spec {
@@ -241,10 +250,16 @@ when SPEC_NOT_PRESENT {
 		flags = {.Load},
 	}
 
+	X64_SIMPLE_UN_OP_SPEC :: Class_Spec {
+		id    = X64_Mem_Op,
+		flags = {.Load},
+	}
+
 	@(rodata)
 	X64_CLASSES := [X64_Node_Type]Class_Spec {
 		.X64_Add ..= .X64_U_Ge = X64_SIMPLE_BIN_OP_SPEC,
 		.X64_Shl ..= .X64_U_Shr = X64_SIMPLE_SHIFT_OP_SPEC,
+		.X64_Neg ..= .X64_Not = X64_SIMPLE_UN_OP_SPEC,
 		.X64_Load = {id = X64_Mem_Op, flags = {.Load}},
 		.X64_Store = {id = X64_Mem_Op, flags = {.Store}},
 	}
@@ -267,8 +282,11 @@ X64_Mem_Op :: struct {
 
 x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 	node := node
-	OP_OFFSET :: transmute(u16)(i16(X64_Node_Type.X64_Add) -
+	BIN_OP_OFFSET :: transmute(u16)(i16(X64_Node_Type.X64_Add) -
 		i16(Ideal_Node_Type.Add))
+
+	UN_OP_OFFSET :: transmute(u16)(i16(X64_Node_Type.X64_Neg) -
+		i16(Ideal_Node_Type.Neg))
 
 	id := graph_id(ctx, node)
 
@@ -363,7 +381,11 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 				.Shl,
 				.Shr,
 				.U_Shr,
+				.Not,
+				.Neg,
 			}
+
+			IDEAL_TRIGGER_UN_OPS :: bit_set[Ideal_Node_Type]{.Not, .Neg}
 
 			if ((val.xtype in X64_TRIGGER_OPS && len(val.inps) == 1) ||
 				   val.itype in IDEAL_TRIGGER_OPS) &&
@@ -386,9 +408,19 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 						node.ordered_input_count -= 1
 						node.input_count -= 1
 						mem_op.imm = val_mem.imm
-						node.inps = node.inps[:len(node.inps)]
+						node.inps = node.inps[:len(node.inps) - 1]
+					} else if val.itype in IDEAL_TRIGGER_UN_OPS {
+						node.rtype += UN_OP_OFFSET
+						graph_remove_output(
+							ctx,
+							node.inps[3],
+							{idx = 3, id = id},
+						)
+						node.ordered_input_count -= 1
+						node.input_count -= 1
+						node.inps = node.inps[:len(node.inps) - 1]
 					} else {
-						node.rtype += OP_OFFSET
+						node.rtype += BIN_OP_OFFSET
 						graph_set_input(ctx, id, 3, val.inps[1])
 					}
 
@@ -407,7 +439,7 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 
 	#partial switch node.itype {
 	case .Add ..= .Xor, .Eq ..= .U_Ge, .Shl ..= .U_Shr:
-		op := u16(node.itype) + OP_OFFSET
+		op := u16(node.itype) + BIN_OP_OFFSET
 
 		// TODO: we can do this one once things are scheduled
 		if false && rhs_load != nil {
@@ -661,6 +693,16 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		.U_Le      = {0x96, 0},
 		.U_Gt      = {0x97, 0},
 		.U_Ge      = {0x93, 0},
+		.X64_Eq    = {0x94, 0},
+		.X64_Ne    = {0x95, 0},
+		.X64_Lt    = {0x9C, 0},
+		.X64_Le    = {0x9E, 0},
+		.X64_Gt    = {0x9F, 0},
+		.X64_Ge    = {0x9D, 0},
+		.X64_U_Lt  = {0x92, 0},
+		.X64_U_Le  = {0x96, 0},
+		.X64_U_Gt  = {0x97, 0},
+		.X64_U_Ge  = {0x93, 0},
 		.Shl       = {0xD3, 0b100},
 		.U_Shr     = {0xD3, 0b101},
 		.Shr       = {0xD3, 0b111},
@@ -679,6 +721,8 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		.X64_Shl   = {0xC1, 0b100},
 		.X64_Shr   = {0xC1, 0b111},
 		.X64_U_Shr = {0xC1, 0b101},
+		.Neg       = {0xf7, 0b011},
+		.Not       = {0xf7, 0b010},
 	}
 
 	@(static)
@@ -705,6 +749,8 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		.X64_Shl   = {0xD3, 0b100},
 		.X64_Shr   = {0xD3, 0b111},
 		.X64_U_Shr = {0xD3, 0b101},
+		.X64_Neg   = {0xf7, 0b011},
+		.X64_Not   = {0xf7, 0b010},
 	}
 
 	@(static)
@@ -1006,6 +1052,22 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		rx := rex(RAX, dst, RAX, true)
 		op := OPCODE_TABLE[node.xtype].ext
 		emit(ctx.code, {rx, 0xd3, mod_sm(.Direct, op, dst)})
+	case .X64_Neg ..= .X64_Not:
+		assert(mem_op.mem_mode == .Dest)
+		dis := mem_op.dis
+		dst, sdis := reg_and_disp_of(ctx, node.inps[2])
+
+		op := DEST_MODE_OPCODE_TABLE[node.xtype]
+
+		rx := rex(RAX, dst, NO_INDEX, DT_SIZE[mem_op.dt] == 8)
+		emit_sized_opcode(ctx.code, mem_op.dt, rx, op.opcode)
+		emit_indirect_addr(ctx.code, Reg(op.ext), dst, NO_INDEX, 1, dis + sdis)
+	case .Neg ..= .Not:
+		// neg/not $dst
+		dst := reg_of(ctx, node.inps[0])
+		op := OPCODE_TABLE[node.xtype]
+		rx := rex(RAX, dst, RAX, true)
+		emit(ctx.code, {rx, op.opcode, mod_sm(.Direct, op.ext, dst)})
 	case .Mul:
 		// imul $dst, $rhs
 		dst := reg_of(ctx, node.inps[0])

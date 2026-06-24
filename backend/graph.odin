@@ -390,6 +390,16 @@ graph_iter_peeps :: proc(graph: ^Graph) {
 }
 
 when !GEN_SPEC {
+	fold_un_op :: proc(op: Un_Op, oper: i64) -> (value: i64) {
+		switch op {
+		case .Not:
+			value = ~oper
+		case .Neg:
+			value = -oper
+		}
+		return
+	}
+
 	fold_bin_op :: proc(lhs: i64, op: Bin_Op, rhs: i64) -> (value: i64) {
 		switch op {
 		case .Add:
@@ -521,6 +531,15 @@ when !GEN_SPEC {
 				}
 			} else {
 				peep_ctx_add_trigger(ctx, if_.inps[1], id)
+			}
+		case .Neg ..= .Not:
+			op := Un_Op(node.itype)
+			oper := graph_expand(ctx.graph, node.inps[0])
+			coper := graph_extra(ctx.graph, oper, CInt)
+
+			if coper != nil {
+				value := fold_un_op(op, coper.value)
+				return graph_add_c_int(ctx.graph, "fld", .I64, value)
 			}
 		case .Add ..= .And_Not:
 			lhs := graph_expand(ctx.graph, node.inps[0])

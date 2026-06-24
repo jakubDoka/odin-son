@@ -768,6 +768,134 @@ main :: proc() -> int {
 }
 ```
 
+#### unary ops
+```odin
+package main
+
+opt_level :: "none"
+
+test_not_reg :: proc(x: bool) -> bool {
+	return !x
+}
+
+test_not_i8 :: proc(x: ^bool) -> bool {
+	return !x^
+}
+
+test_bitnot_reg :: proc(x: int) -> int {
+	return ~x
+}
+
+test_bitnot_i8 :: proc(x: ^i8) -> int {
+	return int(~x^)
+}
+
+test_bitnot_u8 :: proc(x: ^u8) -> int {
+	return int(~x^)
+}
+
+test_bitnot_i16 :: proc(x: ^i16) -> int {
+	return int(~x^)
+}
+
+test_bitnot_u16 :: proc(x: ^u16) -> int {
+	return int(~x^)
+}
+
+test_bitnot_i32 :: proc(x: ^i32) -> int {
+	return int(~x^)
+}
+
+test_bitnot_u32 :: proc(x: ^u32) -> int {
+	return int(~x^)
+}
+
+test_bitnot_i64 :: proc(x: ^i64) -> int {
+	return int(~x^)
+}
+
+test_bitnot_u64 :: proc(x: ^u64) -> int {
+	return int(~x^)
+}
+
+test_neg_reg :: proc(x: int) -> int {
+	return -x
+}
+
+test_neg_i8 :: proc(x: ^i8) -> int {
+	return int(-x^)
+}
+
+test_neg_u8 :: proc(x: ^u8) -> int {
+	return int(-x^)
+}
+
+test_neg_i16 :: proc(x: ^i16) -> int {
+	return int(-x^)
+}
+
+test_neg_u16 :: proc(x: ^u16) -> int {
+	return int(-x^)
+}
+
+test_neg_i32 :: proc(x: ^i32) -> int {
+	return int(-x^)
+}
+
+test_neg_u32 :: proc(x: ^u32) -> int {
+	return int(-x^)
+}
+
+test_neg_i64 :: proc(x: ^i64) -> int {
+	return int(-x^)
+}
+
+test_neg_u64 :: proc(x: ^u64) -> int {
+	return int(-x^)
+}
+
+main :: proc() -> int {
+	a8: i8 = -5
+	b8: u8 = 200
+
+	a16: i16 = -1000
+	b16: u16 = 40000
+
+	a32: i32 = -100000
+	b32: u32 = 100000
+
+	a64: i64 = -100000000
+	b64: u64 = 100000000
+
+	r := 0
+
+	r += int(test_not_reg(false))
+	r += int(test_not_reg(true))
+
+	r += test_bitnot_reg(123)
+	r += test_bitnot_i8(&a8)
+	r += test_bitnot_u8(&b8)
+	r += test_bitnot_i16(&a16)
+	r += test_bitnot_u16(&b16)
+	r += test_bitnot_i32(&a32)
+	r += test_bitnot_u32(&b32)
+	r += test_bitnot_i64(&a64)
+	r += test_bitnot_u64(&b64)
+
+	r += test_neg_reg(7)
+	r += test_neg_i8(&a8)
+	r += test_neg_u8(&b8)
+	r += test_neg_i16(&a16)
+	r += test_neg_u16(&b16)
+	r += test_neg_i32(&a32)
+	r += test_neg_u32(&b32)
+	r += test_neg_i64(&a64)
+	r += test_neg_u64(&b64)
+
+	return r
+}
+```
+
 #### loops
 ```odin
 package main

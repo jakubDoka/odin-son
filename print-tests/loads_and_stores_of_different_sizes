@@ -155,64 +155,59 @@ main:
 =========== OPT LEVEL: Full ===========
 main:
      sub rsp, 0x1E
-     mov rax, 0x01
      mov byte ptr [rsp], 0x00
      mov byte ptr [rsp], 0x01
-     movzx ecx, byte ptr [rsp]
-     mov rdx, 0x01
-     cmp rcx, rdx
+     movzx eax, byte ptr [rsp]
+     cmp rax, 0x01
      jz :0
      jmp :1
 
 000: mov word ptr [rsp+0x02], 0x00
      mov word ptr [rsp+0x02], 0x01
-     movzx ecx, word ptr [rsp+0x02]
-     mov rdx, 0x01
-     cmp rcx, rdx
+     movzx eax, word ptr [rsp+0x02]
+     cmp rax, 0x01
      jz :2
      jmp :3
 
 002: mov dword ptr [rsp+0x06], 0x00
      mov dword ptr [rsp+0x06], 0x01
-     mov ecx, [rsp+0x06]
-     mov rdx, 0x01
-     cmp rcx, rdx
+     mov eax, [rsp+0x06]
+     cmp rax, 0x01
      jz :4
      jmp :5
 
 004: mov qword ptr [rsp+0x0E], 0x00
      mov qword ptr [rsp+0x0E], 0x01
-     mov rcx, [rsp+0x0E]
-     cmp rcx, rax
+     mov rax, [rsp+0x0E]
+     cmp rax, 0x01
      jz :6
      jmp :7
 
-006: mov rax, 0xFFFFFFFFFFFFFFFF
-     mov byte ptr [rsp+0x01], 0x00
+006: mov byte ptr [rsp+0x01], 0x00
      mov qword ptr [rsp+0x01], 0xFFFFFFFFFFFFFFFF
-     movsx rcx, byte ptr [rsp+0x01]
-     cmp rcx, rax
+     movsx rax, byte ptr [rsp+0x01]
+     cmp rax, 0xFFFFFFFFFFFFFFFF
      jz :8
      jmp :9
 
 008: mov word ptr [rsp+0x04], 0x00
      mov qword ptr [rsp+0x04], 0xFFFFFFFFFFFFFFFF
-     movsx rcx, word ptr [rsp+0x04]
-     cmp rcx, rax
+     movsx rax, word ptr [rsp+0x04]
+     cmp rax, 0xFFFFFFFFFFFFFFFF
      jz :10
      jmp :11
 
 010: mov dword ptr [rsp+0x0A], 0x00
      mov qword ptr [rsp+0x0A], 0xFFFFFFFFFFFFFFFF
-     movsxd rcx, dword ptr [rsp+0x0A]
-     cmp rcx, rax
+     movsxd rax, dword ptr [rsp+0x0A]
+     cmp rax, 0xFFFFFFFFFFFFFFFF
      jz :12
      jmp :13
 
 012: mov qword ptr [rsp+0x16], 0x00
      mov qword ptr [rsp+0x16], 0xFFFFFFFFFFFFFFFF
-     mov rcx, [rsp+0x16]
-     cmp rcx, rax
+     mov rax, [rsp+0x16]
+     cmp rax, 0xFFFFFFFFFFFFFFFF
      jz :14
      jmp :15
 
@@ -240,7 +235,8 @@ main:
 003: mov rax, 0x02
      jmp :23
 
-001: jmp :23
+001: mov rax, 0x01
+     jmp :23
 
 023: jmp :22
 

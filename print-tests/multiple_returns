@@ -87,55 +87,48 @@ main:
 a:
      push rbx
      push rbp
-     push r12
-     mov rbp, rsi
-     mov rax, 0x00
-     cmp rdi, rax
+     mov rbx, rsi
+     cmp rdi, 0x00
      jnz :0
      jmp :1
 
-000: mov rbx, 0x02
-     mov rax, rbp
-     cmp rax, rbx
+000: mov rax, rbx
+     cmp rax, 0x02
      jnz :2
      jmp :3
 
-002: mov rax, 0x01
-     cmp rdi, rax
+002: cmp rdi, 0x01
      jnz :4
      jmp :5
 
 004: call :b
-     mov rbx, rax
-     mov rdi, rbp
+     mov rbp, rax
+     mov rdi, rbx
      call :c
-     add rbx, rax
+     add rbp, rax
      jmp :6
 
 005: call :b
-     mov r12, rax
-     mov rax, rbp
-     imul rax, rbx
-     mov rdi, rax
+     mov rbp, rax
+     mov rdi, 0x02
+     imul rdi, rbx
      call :c
-     add r12, rax
+     add rbp, rax
      jmp :7
 
-003: mov rax, rbp
-     mov r12, 0x06
-     imul r12, rax
+003: mov rax, rbx
+     mov rbp, 0x06
+     imul rbp, rax
      jmp :8
 
-001: mov r12, 0x00
+001: mov rbp, 0x00
      jmp :8
 
 008: jmp :7
 
-007: mov rbx, r12
-     jmp :6
+007: jmp :6
 
-006: mov rax, rbx
-     pop r12
+006: mov rax, rbp
      pop rbp
      pop rbx
      ret

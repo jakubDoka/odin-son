@@ -1081,6 +1081,418 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) different_shift_peeps :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+test_imm_shifts :: proc(a: int) -> int {
+	return a << 3 + a >> 3 + int(u64(a) >> 5)
+}
+
+test_imm_inplace_shifts :: proc(a: ^int, b: ^uint) -> int {
+	a^ = a^ << 2
+	a^ = a^ >> 5
+	b^ = b^ >> 4
+	return a^ + int(b^)
+}
+
+test_inplace_shifts :: proc(a: ^int, b: ^uint, v: uint) -> int {
+	a^ = a^ << v
+	a^ = a^ >> v
+	b^ = b^ >> v
+	return a^ + int(b^)
+}
+
+main_ :: proc() -> int {
+	a: int = 0 - 5
+	b: uint = 20
+
+	return test_imm_shifts(0 - 1) +
+		test_imm_inplace_shifts(&a, &b) +
+		test_inplace_shifts(&a, &b, 4)
+}
+
+run_test(t, `different_shift_peeps`, `
+package main
+
+opt_level :: "none"
+
+test_imm_shifts :: proc(a: int) -> int {
+	return a << 3 + a >> 3 + int(u64(a) >> 5)
+}
+
+test_imm_inplace_shifts :: proc(a: ^int, b: ^uint) -> int {
+	a^ = a^ << 2
+	a^ = a^ >> 5
+	b^ = b^ >> 4
+	return a^ + int(b^)
+}
+
+test_inplace_shifts :: proc(a: ^int, b: ^uint, v: uint) -> int {
+	a^ = a^ << v
+	a^ = a^ >> v
+	b^ = b^ >> v
+	return a^ + int(b^)
+}
+
+main :: proc() -> int {
+	a: int = 0 - 5
+	b: uint = 20
+
+	return test_imm_shifts(0 - 1) +
+		test_imm_inplace_shifts(&a, &b) +
+		test_inplace_shifts(&a, &b, 4)
+}
+`, main_())
+}
+@(test) exhaustive_mem_shift_peeps :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+test_mem_shifts_i8_u8 :: proc(
+	si8: ^i8,
+	su8: ^u8,
+	v: uint,
+) -> int {
+	r := 0
+
+	si8^ = si8^ << v
+	si8^ = si8^ >> v
+	r += int(si8^)
+
+	su8^ = su8^ >> v
+	su8^ = su8^ << v
+	r += int(su8^)
+
+	return r
+}
+
+test_mem_shifts_i16_u16 :: proc(
+	si16: ^i16,
+	su16: ^u16,
+	v: uint,
+) -> int {
+	r := 0
+
+	si16^ = si16^ << v
+	si16^ = si16^ >> v
+	r += int(si16^)
+
+	su16^ = su16^ >> v
+	su16^ = su16^ << v
+	r += int(su16^)
+
+	return r
+}
+
+test_mem_shifts_i32_u32 :: proc(
+	si32: ^i32,
+	su32: ^u32,
+	v: uint,
+) -> int {
+	r := 0
+
+	si32^ = si32^ << v
+	si32^ = si32^ >> v
+	r += int(si32^)
+
+	su32^ = su32^ >> v
+	su32^ = su32^ << v
+	r += int(su32^)
+
+	return r
+}
+
+test_mem_shifts_i64_u64 :: proc(
+	si64: ^i64,
+	su64: ^u64,
+	v: uint,
+) -> int {
+	r := 0
+
+	si64^ = si64^ << v
+	si64^ = si64^ >> v
+	r += int(si64^)
+
+	su64^ = su64^ >> v
+	su64^ = su64^ << v
+	r += int(su64^)
+
+	return r
+}
+
+test_mem_imm_shifts_i8_u8 :: proc(
+	si8: ^i8,
+	su8: ^u8,
+) -> int {
+	r := 0
+
+	si8^ = si8^ << 3
+	si8^ = si8^ >> 3
+	r += int(si8^)
+
+	su8^ = su8^ >> 2
+	su8^ = su8^ << 2
+	r += int(su8^)
+
+	return r
+}
+
+test_mem_imm_shifts_i16_u16 :: proc(
+	si16: ^i16,
+	su16: ^u16,
+) -> int {
+	r := 0
+
+	si16^ = si16^ << 4
+	si16^ = si16^ >> 4
+	r += int(si16^)
+
+	su16^ = su16^ >> 5
+	su16^ = su16^ << 5
+	r += int(su16^)
+
+	return r
+}
+
+test_mem_imm_shifts_i32_u32 :: proc(
+	si32: ^i32,
+	su32: ^u32,
+) -> int {
+	r := 0
+
+	si32^ = si32^ << 6
+	si32^ = si32^ >> 6
+	r += int(si32^)
+
+	su32^ = su32^ >> 7
+	su32^ = su32^ << 7
+	r += int(su32^)
+
+	return r
+}
+
+test_mem_imm_shifts_i64_u64 :: proc(
+	si64: ^i64,
+	su64: ^u64,
+) -> int {
+	r := 0
+
+	si64^ = si64^ << 8
+	si64^ = si64^ >> 8
+	r += int(si64^)
+
+	su64^ = su64^ >> 9
+	su64^ = su64^ << 9
+	r += int(su64^)
+
+	return r
+}
+
+main_ :: proc() -> int {
+	si8: i8 = 0-33
+	su8: u8 = 201
+
+	si16: i16 = 0-1234
+	su16: u16 = 54321
+
+	si32: i32 = 0-123456
+	su32: u32 = 123456
+
+	si64: i64 = 0-123456789
+	su64: u64 = 123456789
+
+	v := uint(3)
+
+	return (
+		test_mem_shifts_i8_u8(&si8, &su8, v) +
+		test_mem_shifts_i16_u16(&si16, &su16, v) +
+		test_mem_shifts_i32_u32(&si32, &su32, v) +
+		test_mem_shifts_i64_u64(&si64, &su64, v) +
+		test_mem_imm_shifts_i8_u8(&si8, &su8) +
+		test_mem_imm_shifts_i16_u16(&si16, &su16) +
+		test_mem_imm_shifts_i32_u32(&si32, &su32) +
+		test_mem_imm_shifts_i64_u64(&si64, &su64) \
+	)
+}
+
+run_test(t, `exhaustive_mem_shift_peeps`, `
+package main
+
+opt_level :: "none"
+
+test_mem_shifts_i8_u8 :: proc(
+	si8: ^i8,
+	su8: ^u8,
+	v: uint,
+) -> int {
+	r := 0
+
+	si8^ = si8^ << v
+	si8^ = si8^ >> v
+	r += int(si8^)
+
+	su8^ = su8^ >> v
+	su8^ = su8^ << v
+	r += int(su8^)
+
+	return r
+}
+
+test_mem_shifts_i16_u16 :: proc(
+	si16: ^i16,
+	su16: ^u16,
+	v: uint,
+) -> int {
+	r := 0
+
+	si16^ = si16^ << v
+	si16^ = si16^ >> v
+	r += int(si16^)
+
+	su16^ = su16^ >> v
+	su16^ = su16^ << v
+	r += int(su16^)
+
+	return r
+}
+
+test_mem_shifts_i32_u32 :: proc(
+	si32: ^i32,
+	su32: ^u32,
+	v: uint,
+) -> int {
+	r := 0
+
+	si32^ = si32^ << v
+	si32^ = si32^ >> v
+	r += int(si32^)
+
+	su32^ = su32^ >> v
+	su32^ = su32^ << v
+	r += int(su32^)
+
+	return r
+}
+
+test_mem_shifts_i64_u64 :: proc(
+	si64: ^i64,
+	su64: ^u64,
+	v: uint,
+) -> int {
+	r := 0
+
+	si64^ = si64^ << v
+	si64^ = si64^ >> v
+	r += int(si64^)
+
+	su64^ = su64^ >> v
+	su64^ = su64^ << v
+	r += int(su64^)
+
+	return r
+}
+
+test_mem_imm_shifts_i8_u8 :: proc(
+	si8: ^i8,
+	su8: ^u8,
+) -> int {
+	r := 0
+
+	si8^ = si8^ << 3
+	si8^ = si8^ >> 3
+	r += int(si8^)
+
+	su8^ = su8^ >> 2
+	su8^ = su8^ << 2
+	r += int(su8^)
+
+	return r
+}
+
+test_mem_imm_shifts_i16_u16 :: proc(
+	si16: ^i16,
+	su16: ^u16,
+) -> int {
+	r := 0
+
+	si16^ = si16^ << 4
+	si16^ = si16^ >> 4
+	r += int(si16^)
+
+	su16^ = su16^ >> 5
+	su16^ = su16^ << 5
+	r += int(su16^)
+
+	return r
+}
+
+test_mem_imm_shifts_i32_u32 :: proc(
+	si32: ^i32,
+	su32: ^u32,
+) -> int {
+	r := 0
+
+	si32^ = si32^ << 6
+	si32^ = si32^ >> 6
+	r += int(si32^)
+
+	su32^ = su32^ >> 7
+	su32^ = su32^ << 7
+	r += int(su32^)
+
+	return r
+}
+
+test_mem_imm_shifts_i64_u64 :: proc(
+	si64: ^i64,
+	su64: ^u64,
+) -> int {
+	r := 0
+
+	si64^ = si64^ << 8
+	si64^ = si64^ >> 8
+	r += int(si64^)
+
+	su64^ = su64^ >> 9
+	su64^ = su64^ << 9
+	r += int(su64^)
+
+	return r
+}
+
+main :: proc() -> int {
+	si8: i8 = 0-33
+	su8: u8 = 201
+
+	si16: i16 = 0-1234
+	su16: u16 = 54321
+
+	si32: i32 = 0-123456
+	su32: u32 = 123456
+
+	si64: i64 = 0-123456789
+	su64: u64 = 123456789
+
+	v := uint(3)
+
+	return (
+		test_mem_shifts_i8_u8(&si8, &su8, v) +
+		test_mem_shifts_i16_u16(&si16, &su16, v) +
+		test_mem_shifts_i32_u32(&si32, &su32, v) +
+		test_mem_shifts_i64_u64(&si64, &su64, v) +
+		test_mem_imm_shifts_i8_u8(&si8, &su8) +
+		test_mem_imm_shifts_i16_u16(&si16, &su16) +
+		test_mem_imm_shifts_i32_u32(&si32, &su32) +
+		test_mem_imm_shifts_i64_u64(&si64, &su64) \
+	)
+}
+`, main_())
+}
 @(test) loops :: proc(t: ^testing.T) {
 
 

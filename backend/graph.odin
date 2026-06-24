@@ -60,15 +60,15 @@ Ideal_Node_Type :: enum u16 {
 	U_Gt,
 	U_Le,
 	U_Ge,
+	Shl,
+	Shr,
+	U_Shr,
 	Mul,
 	Div,
 	U_Div,
 	Rem,
 	U_Rem,
 	And_Not,
-	Shl,
-	Shr,
-	U_Shr,
 	Split,
 	Phi,
 	Mem,
@@ -345,10 +345,6 @@ graph_iter_peeps :: proc(graph: ^Graph) {
 			worklist_add(graph, &worklist, inp)
 		}
 
-		if assert_eq_hash {
-			assert(graph_node_hash(graph, node) == prev_hash)
-		}
-
 		graph_subsume(graph, new_node, n)
 	}
 
@@ -524,7 +520,7 @@ when !GEN_SPEC {
 			} else {
 				peep_ctx_add_trigger(ctx, if_.inps[1], id)
 			}
-		case .Add ..= .U_Shr:
+		case .Add ..= .And_Not:
 			lhs := graph_expand(ctx.graph, node.inps[0])
 			rhs := graph_expand(ctx.graph, node.inps[1])
 

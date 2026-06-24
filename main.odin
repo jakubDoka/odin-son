@@ -648,6 +648,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		}
 
 		ptr := transmute(proc() -> int)(raw_data(main.out.code))
+		//log.error()
 		vl := ptr()
 		if vl != exit_code {
 			log.error(level)
@@ -1129,8 +1130,12 @@ typecheck :: proc(
 		}
 	case ^ast.Binary_Expr:
 		lhs_ty := typecheck(ctx, prop, d.left)
-		rhs_ty := typecheck(ctx, {inferred_ty = lhs_ty}, d.right)
-		assert(lhs_ty == rhs_ty)
+		inferred_ty := lhs_ty
+		if d.op.kind == .Shl || d.op.kind == .Shr {
+			inferred_ty = .Uint
+		}
+		rhs_ty := typecheck(ctx, {inferred_ty = inferred_ty}, d.right)
+		assert(inferred_ty == rhs_ty)
 
 		if .B_Comparison_Begin < d.op.kind && d.op.kind < .B_Comparison_End {
 			return .Bool

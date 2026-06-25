@@ -1,6 +1,7 @@
 package backend
 
 import "../vendored/gam/util/arna"
+import "base:intrinsics"
 import "base:runtime"
 import "core:container/queue"
 import "core:fmt"
@@ -321,6 +322,14 @@ worklist_next :: proc(
 	return id, true
 }
 
+graph_pin :: proc(graph: ^Graph, id: Node_ID) {
+	graph_add_output(graph, id, 0, 0)
+}
+
+graph_unpin :: proc(graph: ^Graph, id: Node_ID, no_delete := false) {
+	graph_remove_output(graph, id, {}, no_delete)
+}
+
 graph_peep :: proc(graph: ^Graph, id: Node_ID) -> Node_ID {
 	if .Local_Peeps not_in graph.opt_flags do return id
 
@@ -337,9 +346,9 @@ graph_peep :: proc(graph: ^Graph, id: Node_ID) -> Node_ID {
 		if res == id do return id
 	}
 
-	graph_add_output(graph, res, 0, 0)
+	graph_pin(graph, res)
 	graph_delete(graph, node)
-	graph_remove_output(graph, res, {}, no_delete = true)
+	graph_unpin(graph, res, no_delete = true)
 
 	return res
 }
@@ -689,9 +698,15 @@ when !GEN_SPEC {
 				.CInt = 1,
 			}
 
-			if op in COMUTATIVE &&
-			   COMUTE_PRIORITY_TABLE[lhs.itype] >
-				   COMUTE_PRIORITY_TABLE[rhs.itype] {
+			lhs_priority, rhs_priority: u8
+			if int(lhs.itype) < len(COMUTE_PRIORITY_TABLE) {
+				lhs_priority = COMUTE_PRIORITY_TABLE[lhs.itype]
+			}
+			if int(rhs.itype) < len(COMUTE_PRIORITY_TABLE) {
+				rhs_priority = COMUTE_PRIORITY_TABLE[rhs.itype]
+			}
+
+			if op in COMUTATIVE && lhs_priority > rhs_priority {
 				for inp, i in node.inps {
 					graph_add_output(ctx, inp, id, 1 - i)
 					graph_remove_output(ctx, inp, {idx = i, id = id})

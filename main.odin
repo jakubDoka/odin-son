@@ -1573,10 +1573,14 @@ emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 			}
 		}
 	case ^ast.Binary_Expr:
-		lhsv, rhsv := emit_nodes(ctx, {}, d.left), emit_nodes(ctx, {}, d.right)
+		lhsv := emit_nodes(ctx, {}, d.left)
+		backend.graph_pin(ctx, lhsv.id)
+		rhsv := emit_nodes(ctx, {}, d.right)
 		lhs, rhs := to_rvalue(ctx, lhsv, d.left), to_rvalue(ctx, rhsv, d.right)
 		kind, name := tok_to_binop(get_node_type(d.left), d.op.kind)
 		nd := backend.graph_add_bin_op(ctx, name, kind, dt, lhs, rhs)
+		backend.graph_unpin(ctx, lhsv.id)
+		nd = backend.graph_peep(ctx, nd)
 		return auto_cast nd
 	case ^ast.Unary_Expr:
 		#partial switch d.op.kind {

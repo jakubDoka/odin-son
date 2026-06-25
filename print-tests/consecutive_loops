@@ -1,4 +1,4 @@
-=========== OPT LEVEL: None ===========
+=========== OPT LEVEL: none ===========
 main:
      push rbx
      push rbp
@@ -81,7 +81,90 @@ main:
 017: pop rbp
      pop rbx
      ret
-=========== OPT LEVEL: Full ===========
+=========== OPT LEVEL: mininal ===========
+main:
+     push rbx
+     push rbp
+     mov rax, 0x00
+     mov rcx, 0x00
+     mov rdx, 0x01
+     test rcx, rcx
+     jz :0
+     jmp :1
+
+000: jmp :2
+
+001: mov rbx, 0x00
+     jmp :3
+
+003: add rbx, rdx
+     cmp rbx, rdx
+     setz cl
+     movzx rcx, cl
+     test rcx, rcx
+     jz :4
+     jmp :5
+
+004: jmp :3
+
+005: jmp :2
+
+002: mov rsi, 0x00
+     jmp :6
+
+006: add rsi, rdx
+     mov rcx, 0x03
+     cmp rsi, rcx
+     setz bl
+     movzx rbx, bl
+     test rbx, rbx
+     jz :7
+     jmp :8
+
+007: mov rbp, 0x00
+     jmp :9
+
+009: add rbp, rdx
+     cmp rbp, rcx
+     setz bl
+     movzx rbx, bl
+     test rbx, rbx
+     jz :10
+     jmp :11
+
+010: jmp :9
+
+011: mov rbp, 0x00
+     jmp :12
+
+012: add rbp, rdx
+     mov rbx, 0x02
+     cmp rbx, rbp
+     setz bl
+     movzx rbx, bl
+     test rbx, rbx
+     jz :13
+     jmp :14
+
+013: cmp rbp, rcx
+     setz bl
+     movzx rbx, bl
+     test rbx, rbx
+     jz :15
+     jmp :16
+
+015: jmp :12
+
+016: jmp :6
+
+014: jmp :17
+
+008: jmp :17
+
+017: pop rbp
+     pop rbx
+     ret
+=========== OPT LEVEL: all ===========
 main:
      mov rax, 0x00
      mov rdx, 0x00

@@ -1,4 +1,4 @@
-=========== OPT LEVEL: None ===========
+=========== OPT LEVEL: none ===========
 main:
      sub rsp, 0x08
      mov rax, 0x00
@@ -15,7 +15,24 @@ set:
      mov [rdi], rax
      mov rax, [rdi]
      ret
-=========== OPT LEVEL: Full ===========
+=========== OPT LEVEL: mininal ===========
+main:
+     sub rsp, 0x08
+     mov rax, 0x00
+     lea rcx, [rsp]
+     mov [rcx], rax
+     lea rdi, [rsp]
+     call :set
+     lea rax, [rsp]
+     mov rax, [rax]
+     sub rsp, 0xFFFFFFFFFFFFFFF8
+     ret
+set:
+     mov rax, 0x01
+     mov [rdi], rax
+     mov rax, [rdi]
+     ret
+=========== OPT LEVEL: all ===========
 main:
      sub rsp, 0x08
      lea rdi, [rsp]

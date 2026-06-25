@@ -59,6 +59,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{.General = 0}, // Return
 			{.General = 0}, // Neg
 			{.General = 0}, // Not
+			{.General = 0}, // Sext
+			{.General = 0}, // Uext
+			{.General = 0}, // Cast
 			{.General = 0}, // Scope
 			{.General = 0}, // Lazy_Phi
 			{.General = 0}, // Dead
@@ -119,6 +122,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{}, // Return
 			{}, // Neg
 			{}, // Not
+			{}, // Sext
+			{}, // Uext
+			{}, // Cast
 			{}, // Scope
 			{}, // Lazy_Phi
 			{}, // Dead
@@ -176,6 +182,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			-1, //Return
 			-1, //Neg
 			-1, //Not
+			-1, //Sext
+			-1, //Uext
+			-1, //Cast
 			-1, //Scope
 			-1, //Lazy_Phi
 			-1, //Dead
@@ -234,6 +243,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, //Return
 			0, //Neg
 			0, //Not
+			0, //Sext
+			0, //Uext
+			0, //Cast
 			0, //Scope
 			0, //Lazy_Phi
 			0, //Dead
@@ -291,6 +303,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0b1, // Return
 			0b10, // Neg
 			0b10, // Not
+			0b10, // Sext
+			0b10, // Uext
+			0b10, // Cast
 			0b100000000, // Scope
 			0b10, // Lazy_Phi
 			0b10, // Dead
@@ -348,6 +363,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			1, // Return -> Cfg
 			0, // Neg -> No_Extra
 			0, // Not -> No_Extra
+			0, // Sext -> No_Extra
+			0, // Uext -> No_Extra
+			0, // Cast -> No_Extra
 			1, // Scope -> Scope
 			0, // Lazy_Phi -> No_Extra
 			0, // Dead -> No_Extra
@@ -405,6 +423,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{Class_Flag.Immortal}, // Return
 			{Class_Flag.Interned}, // Neg
 			{Class_Flag.Interned}, // Not
+			{Class_Flag.Interned}, // Sext
+			{Class_Flag.Interned}, // Uext
+			{Class_Flag.Interned}, // Cast
 			{}, // Scope
 			{}, // Lazy_Phi
 			{}, // Dead
@@ -460,6 +481,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			Cfg,
 			Tup,
 			Cfg,
+			No_Extra,
+			No_Extra,
+			No_Extra,
 			No_Extra,
 			No_Extra,
 			Scope,
@@ -519,6 +543,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			`Return`,
 			`Neg`,
 			`Not`,
+			`Sext`,
+			`Uext`,
+			`Cast`,
 			`Scope`,
 			`Lazy_Phi`,
 			`Dead`,
@@ -580,6 +607,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{.General = 0}, // Return
 			{.General = 0}, // Neg
 			{.General = 0}, // Not
+			{.General = 0}, // Sext
+			{.General = 0}, // Uext
+			{.General = 0}, // Cast
 			{.General = 0}, // X64_Add
 			{.General = 0}, // X64_Sub
 			{.General = 0}, // X64_And
@@ -668,6 +698,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{{.General = 7}, {.General = 3}}, // Return
 			{{.General = 1}, {.General = 1}}, // Neg
 			{{.General = 1}, {.General = 1}}, // Not
+			{{.General = 1}, {.General = 1}}, // Sext
+			{{.General = 1}, {.General = 1}}, // Uext
+			{{.General = 1}, {.General = 1}}, // Cast
 			{{.General = 1}, {.General = 1}, {.General = 1}}, // X64_Add
 			{{.General = 1}, {.General = 1}, {.General = 1}}, // X64_Sub
 			{{.General = 1}, {.General = 1}, {.General = 1}}, // X64_And
@@ -744,6 +777,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			-1, //Return
 			0, //Neg
 			0, //Not
+			-1, //Sext
+			-1, //Uext
+			0, //Cast
 			0, //X64_Add
 			0, //X64_Sub
 			0, //X64_And
@@ -823,6 +859,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			2, //Return
 			0, //Neg
 			0, //Not
+			0, //Sext
+			0, //Uext
+			0, //Cast
 			0, //X64_Add
 			0, //X64_Sub
 			0, //X64_And
@@ -899,6 +938,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0b1, // Return
 			0b10, // Neg
 			0b10, // Not
+			0b10, // Sext
+			0b10, // Uext
+			0b10, // Cast
 			0b100000000, // X64_Add
 			0b100000000, // X64_Sub
 			0b100000000, // X64_And
@@ -975,6 +1017,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			1, // Return -> Cfg
 			0, // Neg -> No_Extra
 			0, // Not -> No_Extra
+			0, // Sext -> No_Extra
+			0, // Uext -> No_Extra
+			0, // Cast -> No_Extra
 			4, // X64_Add -> X64_Mem_Op
 			4, // X64_Sub -> X64_Mem_Op
 			4, // X64_And -> X64_Mem_Op
@@ -1051,6 +1096,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{Class_Flag.Immortal}, // Return
 			{Class_Flag.Interned}, // Neg
 			{Class_Flag.Interned}, // Not
+			{Class_Flag.Interned}, // Sext
+			{Class_Flag.Interned}, // Uext
+			{Class_Flag.Interned}, // Cast
 			{Class_Flag.Load}, // X64_Add
 			{Class_Flag.Load}, // X64_Sub
 			{Class_Flag.Load}, // X64_And
@@ -1125,6 +1173,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			Cfg,
 			Tup,
 			Cfg,
+			No_Extra,
+			No_Extra,
+			No_Extra,
 			No_Extra,
 			No_Extra,
 			X64_Mem_Op,
@@ -1203,6 +1254,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			`Return`,
 			`Neg`,
 			`Not`,
+			`Sext`,
+			`Uext`,
+			`Cast`,
 			`X64_Add`,
 			`X64_Sub`,
 			`X64_And`,
@@ -1230,6 +1284,9 @@ SPECS := [Node_Spec_Name]Node_Spec{
 }
 
 Un_Op :: enum u16 {
+	Uext = u16(Ideal_Node_Type.Uext),
+	Sext = u16(Ideal_Node_Type.Sext),
+	Cast = u16(Ideal_Node_Type.Cast),
 	Not = u16(Ideal_Node_Type.Not),
 	Neg = u16(Ideal_Node_Type.Neg),
 }
@@ -1312,6 +1369,9 @@ Builder_Node_Type :: enum u16 {
 	Return,
 	Neg,
 	Not,
+	Sext,
+	Uext,
+	Cast,
 	Scope,
 	Lazy_Phi,
 	Dead,
@@ -1500,6 +1560,9 @@ graph_add_un_op :: #force_inline proc(graph: ^Graph, name: string, type: Un_Op, 
 	return graph_add_raw(graph, u16(type), dt, {oprnd})
 }
 #assert(size_of(No_Extra) % 4 == 0)
+#assert(size_of(No_Extra) % 4 == 0)
+#assert(size_of(No_Extra) % 4 == 0)
+#assert(size_of(No_Extra) % 4 == 0)
 #assert(size_of(Scope) % 4 == 0)
 graph_add_scope :: #force_inline proc(graph: ^Graph, name: string, cfg: Node_ID) -> (id: Node_ID) {
 	push_node_name(graph, name)
@@ -1569,6 +1632,9 @@ X64_Node_Type :: enum u16 {
 	Return,
 	Neg,
 	Not,
+	Sext,
+	Uext,
+	Cast,
 	X64_Add,
 	X64_Sub,
 	X64_And,

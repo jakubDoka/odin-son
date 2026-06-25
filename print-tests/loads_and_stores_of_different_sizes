@@ -1,4 +1,4 @@
-=========== OPT LEVEL: None ===========
+=========== OPT LEVEL: none ===========
 main:
      push rbx
      push rbp
@@ -152,7 +152,161 @@ main:
      pop rbp
      pop rbx
      ret
-=========== OPT LEVEL: Full ===========
+=========== OPT LEVEL: mininal ===========
+main:
+     push rbx
+     push rbp
+     sub rsp, 0x1E
+     lea rdx, [rsp]
+     mov rax, 0x00
+     mov rcx, 0x01
+     mov [rdx], al
+     mov [rdx], cl
+     movzx edx, byte ptr [rdx]
+     cmp rdx, rcx
+     setnz bl
+     movzx rbx, bl
+     mov rdx, 0x01
+     test rbx, rbx
+     jz :0
+     jmp :1
+
+000: lea rsi, [rsp+0x02]
+     mov rbx, 0x00
+     mov rbp, 0x01
+     mov [rsi], bx
+     mov [rsi], bp
+     movzx esi, word ptr [rsi]
+     cmp rsi, rbp
+     setnz sil
+     movzx rsi, sil
+     test rsi, rsi
+     jz :2
+     jmp :3
+
+002: lea r8, [rsp+0x06]
+     mov rsi, 0x00
+     mov rdi, 0x01
+     mov [r8], esi
+     mov [r8], edi
+     mov r8d, [r8]
+     cmp r8, rdi
+     setnz r8b
+     movzx r8, r8b
+     test r8, r8
+     jz :4
+     jmp :5
+
+004: lea r9, [rsp+0x0E]
+     mov r8, 0x00
+     mov [r9], r8
+     mov [r9], rdx
+     mov r9, [r9]
+     cmp r9, rdx
+     setnz r9b
+     movzx r9, r9b
+     test r9, r9
+     jz :6
+     jmp :7
+
+006: lea r9, [rsp+0x01]
+     mov r10, 0x00
+     sub r10, rcx
+     mov [r9], al
+     mov [r9], r10b
+     movsx rax, byte ptr [r9]
+     cmp rax, r10
+     setnz al
+     movzx rax, al
+     test rax, rax
+     jz :8
+     jmp :9
+
+008: lea rax, [rsp+0x04]
+     mov rcx, 0x00
+     sub rcx, rbp
+     mov [rax], bx
+     mov [rax], cx
+     movsx rax, word ptr [rax]
+     cmp rax, rcx
+     setnz al
+     movzx rax, al
+     test rax, rax
+     jz :10
+     jmp :11
+
+010: lea rax, [rsp+0x0A]
+     mov rcx, 0x00
+     sub rcx, rdi
+     mov [rax], esi
+     mov [rax], ecx
+     movsxd rax, dword ptr [rax]
+     cmp rax, rcx
+     setnz al
+     movzx rax, al
+     test rax, rax
+     jz :12
+     jmp :13
+
+012: lea rax, [rsp+0x16]
+     mov rcx, 0x00
+     sub rcx, rdx
+     mov [rax], r8
+     mov [rax], rcx
+     mov rax, [rax]
+     cmp rax, rcx
+     setnz al
+     movzx rax, al
+     test rax, rax
+     jz :14
+     jmp :15
+
+014: mov rax, 0x00
+     jmp :16
+
+015: mov rax, 0x08
+     jmp :17
+
+013: mov rax, 0x07
+     jmp :18
+
+011: mov rax, 0x06
+     jmp :19
+
+009: mov rax, 0x05
+     jmp :20
+
+007: mov rax, 0x04
+     jmp :21
+
+005: mov rax, 0x03
+     jmp :22
+
+003: mov rax, 0x02
+     jmp :23
+
+001: mov rax, 0x01
+     jmp :23
+
+023: jmp :22
+
+022: jmp :21
+
+021: jmp :20
+
+020: jmp :19
+
+019: jmp :18
+
+018: jmp :17
+
+017: jmp :16
+
+016: sub rsp, 0xFFFFFFFFFFFFFFE2
+     pop rbp
+     pop rbx
+     ret
+=========== OPT LEVEL: all ===========
 main:
      sub rsp, 0x1E
      mov byte ptr [rsp], 0x00

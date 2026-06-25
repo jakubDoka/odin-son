@@ -1,4 +1,4 @@
-=========== OPT LEVEL: None ===========
+=========== OPT LEVEL: none ===========
 main:
      push rbx
      mov rdi, 0x0C
@@ -23,7 +23,32 @@ main:
 opaqe:
      mov rax, rdi
      ret
-=========== OPT LEVEL: Full ===========
+=========== OPT LEVEL: mininal ===========
+main:
+     push rbx
+     mov rdi, 0x0C
+     call :opaqe
+     mov rbx, rax
+     mov rdi, 0x00
+     call :opaqe
+     mov rcx, 0x0A
+     mov rdx, rbx
+     and rcx, rdx
+     add rax, rcx
+     mov rcx, 0x03
+     mov rdx, rbx
+     or rcx, rdx
+     add rax, rcx
+     mov rcx, 0x06
+     mov rdx, rbx
+     xor rcx, rdx
+     add rax, rcx
+     pop rbx
+     ret
+opaqe:
+     mov rax, rdi
+     ret
+=========== OPT LEVEL: all ===========
 main:
      push rbx
      mov rdi, 0x0C

@@ -1,4 +1,4 @@
-=========== OPT LEVEL: None ===========
+=========== OPT LEVEL: none ===========
 main:
      push rbx
      push rbp
@@ -43,18 +43,24 @@ main:
      lea rdi, [rsp+0x0A]
      call :and32
      movsx rax, byte ptr [rbx]
+     movsx rax, al
      movsx rcx, word ptr [rbp]
+     movsx rcx, cx
      add rax, rcx
      movsxd rcx, dword ptr [r12]
+     movsxd rcx, ecx
      add rax, rcx
      lea rcx, [rsp+0x01]
      movsx rcx, byte ptr [rcx]
+     movsx rcx, cl
      add rax, rcx
      lea rcx, [rsp+0x04]
      movsx rcx, word ptr [rcx]
+     movsx rcx, cx
      add rax, rcx
      lea rcx, [rsp+0x0A]
      movsxd rcx, dword ptr [rcx]
+     movsxd rcx, ecx
      add rax, rcx
      sub rsp, 0xFFFFFFFFFFFFFFF2
      pop r12
@@ -79,7 +85,94 @@ and32:
      mov [rdi], eax
      movsxd rax, dword ptr [rdi]
      ret
-=========== OPT LEVEL: Full ===========
+=========== OPT LEVEL: mininal ===========
+main:
+     push rbx
+     push rbp
+     push r12
+     sub rsp, 0x0E
+     lea rbx, [rsp]
+     mov rax, 0x0C
+     mov [rbx], al
+     lea rbp, [rsp+0x02]
+     mov rax, 0x0C
+     mov [rbp], ax
+     lea r12, [rsp+0x06]
+     mov rax, 0x0D
+     mov [r12], eax
+     mov rax, 0x0A
+     movsx rcx, byte ptr [rbx]
+     and rcx, rax
+     mov [rbx], cl
+     movsx rcx, word ptr [rbp]
+     mov rdx, 0x03
+     or rcx, rdx
+     mov [rbp], cx
+     movsxd rcx, dword ptr [r12]
+     mov rdx, 0x06
+     xor rcx, rdx
+     mov [r12], ecx
+     lea rcx, [rsp+0x01]
+     mov [rcx], al
+     mov rax, 0x0F
+     lea rcx, [rsp+0x04]
+     mov [rcx], ax
+     mov rax, 0x0B
+     lea rcx, [rsp+0x0A]
+     mov [rcx], eax
+     mov rsi, 0x05
+     lea rdi, [rsp+0x01]
+     call :or8
+     mov rsi, 0x06
+     lea rdi, [rsp+0x04]
+     call :xor16
+     mov rsi, 0x06
+     lea rdi, [rsp+0x0A]
+     call :and32
+     movsx rax, byte ptr [rbx]
+     movsx rax, al
+     movsx rcx, word ptr [rbp]
+     movsx rcx, cx
+     add rax, rcx
+     movsxd rcx, dword ptr [r12]
+     movsxd rcx, ecx
+     add rax, rcx
+     lea rcx, [rsp+0x01]
+     movsx rcx, byte ptr [rcx]
+     movsx rcx, cl
+     add rax, rcx
+     lea rcx, [rsp+0x04]
+     movsx rcx, word ptr [rcx]
+     movsx rcx, cx
+     add rax, rcx
+     lea rcx, [rsp+0x0A]
+     movsxd rcx, dword ptr [rcx]
+     movsxd rcx, ecx
+     add rax, rcx
+     sub rsp, 0xFFFFFFFFFFFFFFF2
+     pop r12
+     pop rbp
+     pop rbx
+     ret
+or8:
+     movsx rax, byte ptr [rdi]
+     or rax, rsi
+     mov [rdi], al
+     movsx rax, byte ptr [rdi]
+     ret
+xor16:
+     movsx rax, word ptr [rdi]
+     xor rax, rsi
+     mov [rdi], ax
+     movsx rax, word ptr [rdi]
+     ret
+and32:
+     movsxd rax, dword ptr [rdi]
+     and rax, rsi
+     mov [rdi], eax
+     movsxd rax, dword ptr [rdi]
+     ret
+=========== OPT LEVEL: all ===========
 main:
      sub rsp, 0x0E
      lea rdi, [rsp+0x01]

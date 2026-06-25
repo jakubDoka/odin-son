@@ -1,4 +1,4 @@
-=========== OPT LEVEL: None ===========
+=========== OPT LEVEL: none ===========
 opaques:
      mov rax, rdi
      ret
@@ -273,29 +273,332 @@ main:
      mov r15, rax
 009: mov rdi, 0x2A
      call :test_mixed_patterns
-007: mov rdx, rax
+007: mov rcx, rax
      mov rax, 0x00
-     mov rcx, rbx
+     mov rdx, rbx
+     add rax, rdx
+     mov rdx, rbp
+     add rax, rdx
+     mov rdx, r12
+     add rax, rdx
+     mov rdx, r13
+     mov rdx, rdx
+     add rax, rdx
+     mov rdx, r14
+     mov rdx, rdx
+     add rax, rdx
+028: mov rdx, r15
+     mov rdx, rdx
+     add rax, rdx
      add rax, rcx
-     mov rcx, rbp
-     add rax, rcx
-     mov rcx, r12
-     add rax, rcx
-     mov rcx, r13
-     add rax, rcx
-     mov rcx, r14
-     add rax, rcx
-     mov rcx, r15
-     add rax, rcx
-028: add rax, rdx
      pop r15
      pop r14
-     pop r13
+016: pop r13
      pop r12
-017: pop rbp
+     pop rbp
      pop rbx
-033: ret
-=========== OPT LEVEL: Full ===========
+     ret
+=========== OPT LEVEL: mininal ===========
+opaques:
+     mov rax, rdi
+     ret
+test_signed:
+     cmp rdi, rsi
+     setz al
+     movzx rax, al
+     test rax, rax
+     jz :0
+     jmp :1
+
+000: cmp rdi, rsi
+     setnz al
+     movzx rax, al
+     test rax, rax
+     jz :2
+     jmp :3
+
+002: cmp rdi, rsi
+     setl al
+     movzx rax, al
+     test rax, rax
+     jz :4
+     jmp :5
+
+004: cmp rdi, rsi
+     setnl al
+     movzx rax, al
+     test rax, rax
+     jz :6
+     jmp :7
+
+006: cmp rdi, rsi
+     setnle al
+     movzx rax, al
+     test rax, rax
+     jz :8
+     jmp :9
+
+008: cmp rdi, rsi
+     setle al
+     movzx rax, al
+     test rax, rax
+     jz :10
+     jmp :11
+
+010: mov rax, 0x00
+     jmp :12
+
+011: mov rax, 0x06
+     jmp :13
+
+009: mov rax, 0x05
+     jmp :14
+
+007: mov rax, 0x04
+     jmp :15
+
+005: mov rax, 0x03
+     jmp :16
+
+003: mov rax, 0x02
+     jmp :17
+
+001: mov rax, 0x01
+     jmp :17
+
+017: jmp :16
+
+016: jmp :15
+
+015: jmp :14
+
+014: jmp :13
+
+013: jmp :12
+
+012: ret
+test_unsigned:
+     cmp rdi, rsi
+     setz al
+     movzx rax, al
+     test rax, rax
+     jz :0
+     jmp :1
+
+000: cmp rdi, rsi
+     setnz al
+     movzx rax, al
+     test rax, rax
+     jz :2
+     jmp :3
+
+002: cmp rdi, rsi
+     setb al
+     movzx rax, al
+     test rax, rax
+     jz :4
+     jmp :5
+
+004: cmp rdi, rsi
+     setnb al
+     movzx rax, al
+     test rax, rax
+     jz :6
+     jmp :7
+
+006: cmp rdi, rsi
+     setnbe al
+     movzx rax, al
+     test rax, rax
+     jz :8
+     jmp :9
+
+008: cmp rdi, rsi
+     setbe al
+     movzx rax, al
+     test rax, rax
+     jz :10
+     jmp :11
+
+010: mov rax, 0x00
+     jmp :12
+
+011: mov rax, 0x3C
+     jmp :13
+
+009: mov rax, 0x32
+     jmp :14
+
+007: mov rax, 0x28
+     jmp :15
+
+005: mov rax, 0x1E
+     jmp :16
+
+003: mov rax, 0x14
+     jmp :17
+
+001: mov rax, 0x0A
+     jmp :17
+
+017: jmp :16
+
+016: jmp :15
+
+015: jmp :14
+
+014: jmp :13
+
+013: jmp :12
+
+012: ret
+test_mixed_patterns:
+     push rbx
+     push rbp
+     mov rbp, rdi
+     mov rdi, rbp
+     call :opaques
+     mov rbx, rax
+     mov rdi, 0x01
+     add rdi, rbp
+     call :opaques
+     mov rcx, rbx
+     cmp rcx, rax
+     setl cl
+     movzx rcx, cl
+002: test rcx, rcx
+     jz :18
+     jmp :19
+
+018: jmp :20
+
+019: mov rcx, rbx
+     cmp rcx, rax
+004: setle cl
+     movzx rcx, cl
+     test rcx, rcx
+     jz :21
+     jmp :22
+
+021: jmp :23
+
+022: mov rcx, rbx
+     cmp rcx, rax
+     setnz cl
+     movzx rcx, cl
+     test rcx, rcx
+     jz :24
+008: jmp :25
+
+024: jmp :23
+
+023: jmp :20
+
+020: mov rcx, rbx
+     cmp rcx, rax
+     setnle cl
+010: movzx rcx, cl
+     test rcx, rcx
+     jz :26
+     jmp :27
+
+026: jmp :28
+
+027: mov rcx, rbx
+     cmp rcx, rax
+     setnl cl
+     movzx rcx, cl
+     test rcx, rcx
+     jz :29
+     jmp :30
+
+029: jmp :31
+
+030: mov rcx, rbx
+     cmp rcx, rax
+     setz al
+     movzx rax, al
+     test rax, rax
+     jz :32
+     jmp :33
+
+032: jmp :31
+
+031: jmp :28
+
+028: mov rax, 0x00
+     jmp :34
+
+033: mov rax, 0xC8
+     jmp :35
+
+025: mov rax, 0x64
+     jmp :35
+
+035: jmp :34
+
+034: pop rbp
+     pop rbx
+     ret
+main:
+     push rbx
+     push rbp
+     push r12
+     push r13
+     push r14
+     push r15
+     mov rdi, 0x0A
+     mov rsi, 0x14
+     call :test_signed
+     mov rbx, rax
+     mov rdi, 0x14
+002: mov rsi, 0x14
+     call :test_signed
+     mov rbp, rax
+     mov rsi, 0x0A
+     mov rdi, 0x1E
+     call :test_signed
+     mov r12, rax
+     mov rdi, 0x0A
+     mov rsi, 0x14
+     call :test_unsigned
+     mov r13, rax
+     mov rdi, 0x14
+     mov rsi, 0x14
+     call :test_unsigned
+     mov r14, rax
+     mov rsi, 0x0A
+     mov rdi, 0x1E
+     call :test_unsigned
+     mov r15, rax
+009: mov rdi, 0x2A
+     call :test_mixed_patterns
+007: mov rcx, rax
+     mov rax, 0x00
+     mov rdx, rbx
+     add rax, rdx
+     mov rdx, rbp
+     add rax, rdx
+     mov rdx, r12
+     add rax, rdx
+     mov rdx, r13
+     mov rdx, rdx
+     add rax, rdx
+     mov rdx, r14
+     mov rdx, rdx
+     add rax, rdx
+028: mov rdx, r15
+     mov rdx, rdx
+     add rax, rdx
+     add rax, rcx
+     pop r15
+     pop r14
+016: pop r13
+     pop r12
+     pop rbp
+     pop rbx
+     ret
+=========== OPT LEVEL: all ===========
 opaques:
      mov rax, rdi
      ret

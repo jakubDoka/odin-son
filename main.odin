@@ -484,12 +484,14 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		&reloc_mem,
 	)
 
-	Opt_Level :: enum int {
-		None,
-		Full,
+	levels := []struct {
+		name:  string,
+		flags: backend.Graph_Opt_Flags,
+	} {
+		{"none", {}},
+		{"mininal", {.Local_Peeps}},
+		{"all", {.Iter_Peeps, .Local_Peeps}},
 	}
-
-	levels := [Opt_Level]struct{}{}
 
 	for &prc in ctx.procs {
 		clear(&ctx.scope)
@@ -502,8 +504,12 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 	}
 
 	dsb: strings.Builder
-	for _, level in levels {
-		fmt.sbprintfln(&dsb, "=========== OPT LEVEL: %v ===========", level)
+	for level in levels {
+		fmt.sbprintfln(
+			&dsb,
+			"=========== OPT LEVEL: %v ===========",
+			level.name,
+		)
 		code_mem.pos = 0
 		reloc_mem.pos = 0
 
@@ -513,6 +519,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 			ctx.node_spec = &backend.SPECS[.Builder]
 			ctx.mem = &graph_mem
 			ctx.mem.pos = backend.PRECISION
+			ctx.opt_flags = level.flags
 
 			current_graph = &ctx
 
@@ -549,20 +556,12 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 
 			emit_nodes(&ctx, {}, prc.ast.body)
 
-			if level == .Full {
-				backend.graph_iter_peeps(&ctx)
-			}
-
-			//backend.redundancy_add(&waste_redc, 1, ctx.waste)
-
-			//backend.redundancy_log(&waste_redc)
+			backend.graph_iter_peeps(&ctx)
 
 			spec := &backend.SPECS[.X64]
 			ctx.node_spec = spec
 
-			if level == .Full {
-				backend.graph_iter_peeps(&ctx)
-			}
+			backend.graph_iter_peeps(&ctx)
 
 			schedule: backend.Graph_Schedule
 			backend.graph_schedule(&ctx, &schedule)
@@ -1586,7 +1585,6 @@ emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 			assert(node.is_lvalue)
 			return auto_cast node.id
 		case .Not:
-			// !x  ->  x == 0
 			operand := to_rvalue(ctx, emit_nodes(ctx, {}, d.expr), d.expr)
 			zero := backend.graph_add_c_int(ctx, "zero", dt, 0)
 			return(
@@ -1605,30 +1603,7 @@ emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 
 			op: backend.Un_Op = d.op.kind == .Sub ? .Neg : .Not
 			name := d.op.kind == .Sub ? "neg" : "not"
-			// the dt matches the result type so a following store is sized
-			// correctly; the neg/not itself always runs on the full register
 			res := backend.graph_add_un_op(ctx, name, op, dt, operand)
-
-			// neg/not on the full register leaves garbage in the high bits for
-			// unsigned sub-word operands (the load only zero-extended the live
-			// bits), so mask the result back into range
-			if oty in UNSIGNED_TYPES && backend.DT_SIZE[type_to_dt(oty)] < 8 {
-				bits := uint(backend.DT_SIZE[type_to_dt(oty)] * 8)
-				mask := backend.graph_add_c_int(
-					ctx,
-					"umask",
-					dt,
-					i64((u64(1) << bits) - 1),
-				)
-				res = backend.graph_add_bin_op(
-					ctx,
-					"utrunc",
-					.And,
-					dt,
-					res,
-					mask,
-				)
-			}
 
 			return auto_cast res
 		case:
@@ -1732,6 +1707,7 @@ emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 				assert(base.is_lvalue)
 				offset := get_node_data(d.field, int)
 				field_ptr := field_offset(ctx, base.id, offset)
+				field_ptr = backend.graph_peep(ctx, field_ptr)
 				return {id = field_ptr, is_lvalue = true}
 			case:
 				fmt.panicf("TODO: %#v", t)
@@ -1787,7 +1763,24 @@ emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 		case Builtin:
 			dest_dt := type_to_dt(base_ty)
 			arg := to_rvalue(ctx, emit_nodes(ctx, {}, d.args[0]), d.args[0])
-			return auto_cast arg
+
+			op: backend.Un_Op = .Uext
+			if get_node_type(d.args[0]) in SIGNED_TYPES {
+				op = .Sext
+			}
+			if type_size(get_node_type(d.args[0])) > type_size(base_ty) {
+				op = .Cast
+			}
+
+			return(
+				auto_cast backend.graph_add_un_op(
+					ctx,
+					"iext",
+					op,
+					dest_dt,
+					arg,
+				) \
+			)
 		case:
 			fmt.panicf("TODO: %v %v", t, node)
 		}

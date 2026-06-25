@@ -1,4 +1,4 @@
-=========== OPT LEVEL: None ===========
+=========== OPT LEVEL: none ===========
 main:
      push rbx
      push rbp
@@ -123,47 +123,232 @@ main:
      mov rcx, 0x00
      add rax, rcx
      mov eax, [rax]
+     mov eax, eax
      lea rcx, [rsp+0x28]
      mov rdx, 0x08
      add rcx, rdx
      mov rcx, [rcx]
+     mov rcx, rcx
      add rax, rcx
      lea rcx, [rsp+0x28]
      mov rdx, 0x10
      add rcx, rdx
      movsxd rcx, dword ptr [rcx]
+     movsxd rcx, ecx
      add rax, rcx
      lea rcx, [rsp+0x28]
      add rcx, rbx
      mov rcx, [rcx]
+     mov rcx, rcx
      add rax, rcx
-     lea rbx, [rsp+0x28]
-     add rbx, rbp
-     mov rcx, rbx
-     mov rdx, 0x00
+     lea rcx, [rsp+0x28]
+     add rcx, rbp
+     mov rdx, rcx
+     mov rbx, 0x00
+     add rdx, rbx
+     movzx edx, byte ptr [rdx]
+     movzx edx, dl
+     add rax, rdx
+     mov rdx, rcx
+     add rdx, r12
+     movzx edx, word ptr [rdx]
+     movzx edx, dx
+     add rax, rdx
+     mov rdx, rcx
+     mov rbx, 0x04
+     add rdx, rbx
+     movsx rdx, byte ptr [rdx]
+     movsx rdx, dl
+     add rax, rdx
+     mov rdx, 0x06
      add rcx, rdx
-     movzx ecx, byte ptr [rcx]
+     movsx rcx, word ptr [rcx]
+     movsx rcx, cx
      add rax, rcx
-     mov rcx, rbx
-     add rcx, r12
-     movzx ecx, word ptr [rcx]
-     add rax, rcx
-     mov rcx, rbx
-     mov rdx, 0x04
-     add rcx, rdx
-     movsx rcx, byte ptr [rcx]
-     add rax, rcx
-     mov rcx, 0x06
-     add rbx, rcx
-     movsx rcx, word ptr [rbx]
-     add rax, rcx
+     mov rax, rax
      sub rsp, 0xFFFFFFFFFFFFFFB0
      pop r13
      pop r12
      pop rbp
      pop rbx
      ret
-=========== OPT LEVEL: Full ===========
+=========== OPT LEVEL: mininal ===========
+main:
+     push rbx
+     push rbp
+     push r12
+     push r13
+     push r14
+     sub rsp, 0x50
+     mov rdx, 0x28
+     lea rdi, [rsp]
+     mov rsi, 0x00
+     call :$set
+     lea rax, [rsp]
+     mov rcx, 0x00
+     add rax, rcx
+     mov r8, rax
+     mov rax, 0x0A
+     mov rcx, r8
+     mov [rcx], eax
+     lea rax, [rsp]
+     mov rcx, 0x08
+     add rax, rcx
+     mov r9, rax
+     mov rax, 0x14
+     mov rcx, r9
+     mov [rcx], rax
+     lea rax, [rsp]
+     mov rcx, 0x10
+     add rax, rcx
+     mov r10, rax
+     mov rax, 0x1E
+     mov rcx, 0x00
+     sub rcx, rax
+     mov rax, r10
+     mov [rax], ecx
+     mov rbx, 0x18
+     lea rax, [rsp]
+     add rax, rbx
+     mov r11, rax
+     mov rax, 0x28
+     mov rcx, 0x00
+     sub rcx, rax
+     mov rax, r11
+     mov [rax], rcx
+     mov rbp, 0x20
+     lea rax, [rsp]
+     add rax, rbp
+     mov rdx, rax
+     mov rax, rdx
+     mov rcx, 0x00
+     add rax, rcx
+     mov rsi, rax
+     mov rax, 0x01
+     mov [rsi], al
+     mov rax, 0x02
+     mov rcx, rdx
+     add rcx, rax
+     mov rdi, rcx
+     mov rcx, 0x02
+     mov [rdi], cx
+     mov rcx, 0x04
+     mov r12, rdx
+     add r12, rcx
+     mov r13, 0x03
+     mov r14, 0x00
+     sub r14, r13
+     mov r13, r12
+     mov [r13], r14b
+     mov r13, 0x06
+     add r13, rdx
+     mov rdx, r13
+     mov r13, 0x00
+     mov r14, 0x04
+     sub r13, r14
+     mov r14, rdx
+     mov [r14], r13w
+     mov r13, r8
+     mov r13d, [r13]
+     mov r14, 0x01
+     add r13, r14
+     mov [r8], r13d
+     mov r8, r9
+     mov r8, [r8]
+     add r8, rax
+     mov rax, r9
+     mov [rax], r8
+     mov rax, r10
+     movsxd rax, dword ptr [rax]
+     mov r8, 0x03
+     sub rax, r8
+     mov r8, r10
+     mov [r8], eax
+     mov rax, r11
+     mov rax, [rax]
+     sub rax, rcx
+     mov rcx, r11
+     mov [rcx], rax
+     movzx eax, byte ptr [rsi]
+     mov rcx, 0x05
+     add rax, rcx
+     mov [rsi], al
+     movzx eax, word ptr [rdi]
+     mov rcx, 0x06
+     add rax, rcx
+     mov [rdi], ax
+     mov rax, r12
+     movsx rax, byte ptr [rax]
+     mov rcx, 0x07
+     sub rax, rcx
+     mov rcx, r12
+     mov [rcx], al
+     mov rax, rdx
+     movsx rcx, word ptr [rax]
+     mov rax, 0x08
+     sub rcx, rax
+     mov rax, rdx
+     mov [rax], cx
+     mov rdx, 0x28
+     lea rdi, [rsp+0x28]
+     mov rsi, 0x00
+     call :$set
+     mov rdx, 0x28
+     lea rdi, [rsp+0x28]
+     lea rsi, [rsp]
+     call :$copy
+     lea rax, [rsp+0x28]
+     mov eax, [rax]
+     mov eax, eax
+     lea rcx, [rsp+0x28]
+     mov rdx, 0x08
+     add rcx, rdx
+     mov rcx, [rcx]
+     mov rcx, rcx
+     add rax, rcx
+     lea rcx, [rsp+0x28]
+     mov rdx, 0x10
+     add rcx, rdx
+     movsxd rcx, dword ptr [rcx]
+     movsxd rcx, ecx
+     add rax, rcx
+     lea rcx, [rsp+0x28]
+     add rcx, rbx
+     mov rcx, [rcx]
+     mov rcx, rcx
+     add rax, rcx
+     lea rcx, [rsp+0x28]
+     add rcx, rbp
+     movzx ecx, byte ptr [rcx]
+     movzx ecx, cl
+     add rax, rcx
+     mov rcx, 0x22
+     lea rdx, [rsp+0x28]
+     add rcx, rdx
+     movzx ecx, word ptr [rcx]
+     movzx ecx, cx
+     add rax, rcx
+     mov rcx, 0x24
+     lea rdx, [rsp+0x28]
+     add rcx, rdx
+     movsx rcx, byte ptr [rcx]
+     movsx rcx, cl
+     add rax, rcx
+     mov rcx, 0x26
+     lea rdx, [rsp+0x28]
+     add rcx, rdx
+     movsx rcx, word ptr [rcx]
+     movsx rcx, cx
+     add rax, rcx
+     mov rax, rax
+     sub rsp, 0xFFFFFFFFFFFFFFB0
+     pop r14
+     pop r13
+     pop r12
+     pop rbp
+     pop rbx
+     ret
+=========== OPT LEVEL: all ===========
 main:
      sub rsp, 0x50
      lea rdi, [rsp]

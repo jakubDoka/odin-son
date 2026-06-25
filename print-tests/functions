@@ -1,4 +1,4 @@
-=========== OPT LEVEL: None ===========
+=========== OPT LEVEL: none ===========
 main:
      mov rdi, 0x0A
      call :fib
@@ -38,7 +38,47 @@ fib:
      pop rbp
      pop rbx
      ret
-=========== OPT LEVEL: Full ===========
+=========== OPT LEVEL: mininal ===========
+main:
+     mov rdi, 0x0A
+     call :fib
+     ret
+fib:
+     push rbx
+     push rbp
+     push r12
+     mov rbp, rdi
+     mov rbx, 0x02
+     mov rax, rbp
+     cmp rax, rbx
+     setle al
+     movzx rax, al
+     test rax, rax
+     jz :0
+     jmp :1
+
+000: mov rcx, rbp
+     mov rax, 0x01
+     sub rcx, rax
+     mov rdi, rcx
+     call :fib
+     mov r12, rax
+     mov rax, rbp
+     sub rax, rbx
+     mov rdi, rax
+     call :fib
+     add r12, rax
+     jmp :2
+
+001: mov r12, 0x01
+     jmp :2
+
+002: mov rax, r12
+     pop r12
+     pop rbp
+     pop rbx
+     ret
+=========== OPT LEVEL: all ===========
 main:
      mov rdi, 0x0A
      call :fib

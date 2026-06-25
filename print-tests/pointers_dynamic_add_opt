@@ -1,4 +1,4 @@
-=========== OPT LEVEL: None ===========
+=========== OPT LEVEL: none ===========
 main:
      push rbx
      push rbp
@@ -41,12 +41,15 @@ main:
      mov rax, [rax]
      mov rcx, rbp
      movsxd rcx, dword ptr [rcx]
+     movsxd rcx, ecx
      add rax, rcx
      mov rcx, r12
      movsx rcx, word ptr [rcx]
+     movsx rcx, cx
      add rax, rcx
      mov rcx, r13
      movsx rcx, byte ptr [rcx]
+     movsx rcx, cl
      add rax, rcx
      sub rsp, 0xFFFFFFFFFFFFFFF0
      pop r13
@@ -78,7 +81,84 @@ add_8:
      mov [rdi], al
      movsx rax, byte ptr [rdi]
      ret
-=========== OPT LEVEL: Full ===========
+=========== OPT LEVEL: mininal ===========
+main:
+     push rbx
+     push rbp
+     push r12
+     sub rsp, 0x10
+     mov rsi, 0x00
+     mov rdx, 0x10
+     lea rdi, [rsp]
+     call :$set
+     mov rsi, 0x01
+     lea rdi, [rsp]
+     call :add
+     lea rax, [rsp]
+     mov rcx, 0x08
+     add rcx, rax
+     mov rbx, rcx
+     mov rsi, 0x01
+     mov rdi, rbx
+     call :add_32
+     lea rax, [rsp]
+     mov rcx, 0x0C
+     add rcx, rax
+     mov rbp, rcx
+     mov rsi, 0x01
+     mov rdi, rbp
+     call :add_16
+     lea rax, [rsp]
+     mov rcx, 0x0E
+     add rcx, rax
+     mov r12, rcx
+     mov rsi, 0x01
+     mov rdi, r12
+     call :add_8
+     lea rax, [rsp]
+     mov rax, [rax]
+     mov rcx, rbx
+     movsxd rcx, dword ptr [rcx]
+     movsxd rcx, ecx
+     add rax, rcx
+     mov rcx, rbp
+     movsx rcx, word ptr [rcx]
+     movsx rcx, cx
+     add rax, rcx
+     mov rcx, r12
+     movsx rcx, byte ptr [rcx]
+     movsx rcx, cl
+     add rax, rcx
+     sub rsp, 0xFFFFFFFFFFFFFFF0
+     pop r12
+     pop rbp
+     pop rbx
+     ret
+add:
+     mov rax, [rdi]
+     add rax, rsi
+     mov [rdi], rax
+     mov rax, [rdi]
+     ret
+add_32:
+     movsxd rax, dword ptr [rdi]
+     add rax, rsi
+     mov [rdi], eax
+     movsxd rax, dword ptr [rdi]
+     ret
+add_16:
+     movsx rax, word ptr [rdi]
+     add rax, rsi
+     mov [rdi], ax
+     movsx rax, word ptr [rdi]
+     ret
+add_8:
+     movsx rax, byte ptr [rdi]
+     add rax, rsi
+     mov [rdi], al
+     movsx rax, byte ptr [rdi]
+     ret
+=========== OPT LEVEL: all ===========
 main:
      sub rsp, 0x10
      mov rsi, 0x00

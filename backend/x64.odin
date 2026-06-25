@@ -90,6 +90,10 @@ SIMPLE_UNOP_SPEC :: Reg_Class_Spec {
 	inplace_slot_idx = 0,
 }
 
+RELAXED_UNOP_SPEC :: Reg_Class_Spec {
+	reg_masks = #partial{.General = {GPA_MASK, GPA_MASK}},
+}
+
 DIV_SPEC :: Reg_Class_Spec {
 	reg_masks = #partial{.General = {RAX_MASK, RAX_MASK, GPA_DIV_MASK}},
 	inplace_slot_idx = 0,
@@ -121,6 +125,9 @@ X64_IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec {
 	},
 	.Neg = SIMPLE_UNOP_SPEC,
 	.Not = SIMPLE_UNOP_SPEC,
+	.Cast = SIMPLE_UNOP_SPEC,
+	.Sext = RELAXED_UNOP_SPEC,
+	.Uext = RELAXED_UNOP_SPEC,
 	.Shl ..= .U_Shr = SIMPLE_SHIFT_SPEC,
 	.Mul = SIMPLE_BINOP_SPEC,
 	.Div = DIV_SPEC,
@@ -867,6 +874,50 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		}
 
 		emit_indirect_addr(ctx.code, val, bse, NO_INDEX, 1, dis + sdis)
+	case .Sext:
+		dt := graph_get(ctx, node.inps[0]).dt
+		dst := reg_of(ctx, instr)
+		src := reg_of(ctx, node.inps[0])
+
+		rx := rex(dst, src, RAX, true)
+		switch dt {
+		case .Void:
+		case .I8:
+			// movsx r64, r/m8
+			emit(ctx.code, {rx, 0x0f, 0xbe})
+
+		case .I16:
+			// movsx r64, r/m16
+			emit(ctx.code, {rx, 0x0f, 0xbf})
+
+		case .I32:
+			// movsxd r64, r/m32
+			emit(ctx.code, {rx, 0x63})
+		case .I64:
+			// mov r64, r/m64
+			emit(ctx.code, {rx, 0x8b})
+		}
+		emit(ctx.code, {mod_rm(.Direct, dst, src)})
+	case .Uext:
+		dt := graph_get(ctx, node.inps[0]).dt
+		dst := reg_of(ctx, instr)
+		src := reg_of(ctx, node.inps[0])
+
+		rx := rex(dst, src, RAX, DT_SIZE[dt] == 8)
+		switch dt {
+		case .Void:
+		case .I8:
+			// movzx $val, [$bse]
+			emit(ctx.code, {rx, 0x0f, 0xb6})
+		case .I16:
+			// movzx $val, [$bse]
+			emit(ctx.code, {rx, 0x0f, 0xb7})
+		case .I32, .I64:
+			// mov $val, [$bse]
+			emit(ctx.code, {rx, 0x8b})
+		}
+		emit(ctx.code, {mod_rm(.Direct, dst, src)})
+	case .Cast:
 	case .Start, .Entry, .Then, .Else, .Region, .Loop, .Call_End:
 		fmt.panicf("Not reachable form here %v", node.node)
 	case .If:

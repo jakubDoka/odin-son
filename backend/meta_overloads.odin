@@ -6,8 +6,9 @@ graph_remove_output_node_id :: #force_inline proc(
 	graph: ^Graph,
 	id: Node_ID,
 	out: Node_Output,
+	no_delete := false,
 ) {
-	graph_remove_output_node(graph, graph_get(graph, id), out)
+	graph_remove_output_node(graph, graph_get(graph, id), out, no_delete)
 }
 graph_node_hash :: proc{graph_node_hash_node, graph_node_hash_node_id}
 graph_node_hash_node_id :: #force_inline proc(graph: ^Graph, id: Node_ID) -> u8 {

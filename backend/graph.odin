@@ -78,8 +78,6 @@ Ideal_Node_Type :: enum u16 {
 	Set,
 	Store,
 	Load,
-	// like Load, but sign extends the loaded value into the full register
-	// since we always do arithmetic in the biggest register size
 	Load_S,
 	If,
 	Then,
@@ -94,6 +92,9 @@ Ideal_Node_Type :: enum u16 {
 	Return,
 	Neg,
 	Not,
+	Sext,
+	Uext,
+	Cast,
 }
 
 Class_Flags :: bit_set[Class_Flag;u8]
@@ -209,6 +210,14 @@ Graph :: struct {
 	end:             Node_ID,
 	waste:           int,
 	dont_intern:     bool,
+	opt_flags:       Graph_Opt_Flags,
+}
+
+Graph_Opt_Flags :: bit_set[Graph_Opt_Flag]
+
+Graph_Opt_Flag :: enum int {
+	Iter_Peeps,
+	Local_Peeps,
 }
 
 Peep_Ctx :: struct {
@@ -218,6 +227,8 @@ Peep_Ctx :: struct {
 }
 
 peep_ctx_add_trigger :: proc(ctx: Peep_Ctx, from: Node_ID, to: Node_ID) {
+	if ctx.triggers == nil do return
+
 	gvn := graph_get(ctx, from).gvn
 	if len(ctx.triggers) <= int(gvn) {
 		resize(ctx.triggers, gvn + 1)
@@ -281,6 +292,8 @@ worklist_add :: proc(
 	id: Node_ID,
 ) {
 	if id == 0 do return
+	if worklist == nil do return
+
 	node := graph_expand(graph, id)
 	if node.in_worklist {
 		if false {
@@ -308,7 +321,32 @@ worklist_next :: proc(
 	return id, true
 }
 
+graph_peep :: proc(graph: ^Graph, id: Node_ID) -> Node_ID {
+	if .Local_Peeps not_in graph.opt_flags do return id
+
+	node := graph_expand(graph, id)
+	if len(node.outs) > 0 do return id
+
+	prev_hash := graph_node_hash(graph, node)
+	res := graph.peep({graph, nil, nil}, node)
+	if res == 0 do res = id
+
+	if res == id {
+		graph_unintern(graph, id, prev_hash)
+		res = graph_intern(graph, id)
+		if res == id do return id
+	}
+
+	graph_add_output(graph, res, 0, 0)
+	graph_delete(graph, node)
+	graph_remove_output(graph, res, {}, no_delete = true)
+
+	return res
+}
+
 graph_iter_peeps :: proc(graph: ^Graph) {
+	if .Iter_Peeps not_in graph.opt_flags do return
+
 	worklist: queue.Queue(Node_ID)
 	queue.init(&worklist, int(graph.gvn))
 
@@ -319,15 +357,13 @@ graph_iter_peeps :: proc(graph: ^Graph) {
 	for n in worklist_next(graph, &worklist) {
 		node := graph_expand(graph, n)
 
-		prev_hash := graph_node_hash(graph, n)
+		prev_hash := graph_node_hash(graph, node)
 		new_node := graph.peep({graph, &worklist, &triggers}, node)
 		if new_node == 0 do continue
 
 		for out in node.outs {
 			worklist_add(graph, &worklist, out.id)
 		}
-
-		assert_eq_hash := true
 
 		if int(node.gvn) < len(triggers) {
 			for trig in triggers[node.gvn] {
@@ -340,7 +376,6 @@ graph_iter_peeps :: proc(graph: ^Graph) {
 			graph_unintern(graph, n, prev_hash)
 			new_node = graph_intern(graph, n)
 			if new_node == n do continue
-			assert_eq_hash = false
 		}
 
 		for inp in node.inps {
@@ -390,12 +425,31 @@ graph_iter_peeps :: proc(graph: ^Graph) {
 }
 
 when !GEN_SPEC {
-	fold_un_op :: proc(op: Un_Op, oper: i64) -> (value: i64) {
+	fold_un_op :: proc(
+		op: Un_Op,
+		oper: i64,
+		src_ty: Node_Datatype,
+	) -> (
+		value: i64,
+	) {
+		bit_size := uint(DT_SIZE[src_ty] * 8)
+		mask: i64 = -1 << bit_size
+
 		switch op {
 		case .Not:
 			value = ~oper
 		case .Neg:
 			value = -oper
+		case .Uext:
+			value = oper &~ mask
+		case .Sext:
+			if value & 1 << (bit_size - 1) == 0 {
+				value = oper &~ mask
+			} else {
+				value = oper | mask
+			}
+		case .Cast:
+			value = oper
 		}
 		return
 	}
@@ -538,7 +592,7 @@ when !GEN_SPEC {
 			coper := graph_extra(ctx.graph, oper, CInt)
 
 			if coper != nil {
-				value := fold_un_op(op, coper.value)
+				value := fold_un_op(op, coper.value, oper.dt)
 				return graph_add_c_int(ctx.graph, "fld", .I64, value)
 			}
 		case .Add ..= .And_Not:
@@ -645,6 +699,21 @@ when !GEN_SPEC {
 				node.inps[0], node.inps[1] = node.inps[1], node.inps[0]
 				worklist_add(ctx, ctx.worklist, id)
 				return id
+			}
+
+		case .Sext, .Uext:
+			oper := graph_expand(ctx, node.inps[0])
+			if oper.itype == .Load_S || oper.itype == .Load {
+				return node.inps[0]
+			}
+
+			if DT_SIZE[oper.dt] >= DT_SIZE[node.dt] {
+				return node.inps[0]
+			}
+		case .Cast:
+			oper := graph_expand(ctx, node.inps[0])
+			if oper.dt == node.dt {
+				return node.inps[0]
 			}
 		}
 
@@ -875,6 +944,14 @@ graph_unintern :: proc(graph: ^Graph, id: Node_ID, precomputed_hash: u8 = 0) {
 	}
 }
 
+node_approx_size :: proc(graph: ^Graph, node: ^Node) -> uint {
+	return(
+		size_of(Node) +
+		uint(graph.node_extra_sizes[node.rtype]) * PRECISION +
+		uint(node.input_count * size_of(Node_ID)) \
+	)
+}
+
 graph_subsume :: proc(graph: ^Graph, with: Node_ID, target: Node_ID) {
 	wnode := graph_expand(graph, with)
 	tnode := graph_expand(graph, target)
@@ -882,10 +959,7 @@ graph_subsume :: proc(graph: ^Graph, with: Node_ID, target: Node_ID) {
 	assert(with != target)
 
 	try_recycle: if 0 == 0 {
-		wtotal_size :=
-			size_of(Node) +
-			uint(graph.node_extra_sizes[wnode.rtype]) * PRECISION +
-			uint(wnode.input_count * size_of(Node_ID))
+		wtotal_size := node_approx_size(graph, wnode)
 
 		if int(graph.mem.pos - wtotal_size) / PRECISION != int(with) {
 			break try_recycle
@@ -900,10 +974,7 @@ graph_subsume :: proc(graph: ^Graph, with: Node_ID, target: Node_ID) {
 				PRECISION,
 		)
 
-		ttotal_size :=
-			size_of(Node) +
-			uint(graph.node_extra_sizes[tnode.rtype]) * PRECISION +
-			size_of(Node_ID) * uint(tnode.ordered_input_count)
+		ttotal_size := node_approx_size(graph, tnode)
 
 		if wtotal_size > ttotal_size do break try_recycle
 
@@ -1136,12 +1207,15 @@ graph_remove_output_node :: proc(
 	graph: ^Graph,
 	node: ^Node,
 	out: Node_Output,
+	no_delete := false,
 ) {
 	outs := graph_outs(graph, node)
 	out_idx := slice.linear_search(outs, out) or_else panic("")
 	outs[out_idx] = outs[len(outs) - 1]
 	node.output_count -= 1
-	graph_delete(graph, node, indirect = true)
+	if !no_delete {
+		graph_delete(graph, node, indirect = true)
+	}
 }
 
 @(tag = "node_proc")
@@ -1194,10 +1268,19 @@ graph_delete_node :: proc(graph: ^Graph, node: ^Node, indirect := false) {
 	}
 
 	graph_unintern(graph, graph_id(graph, node))
-	graph.waste += int(node.input_count * size_of(Node_ID))
-	graph.waste += int(node.output_count * size_of(Node_Output))
-	graph.waste += size_of(Node)
-	graph.waste += int(graph.node_extra_sizes[node.rtype] * PRECISION)
+
+	size := node_approx_size(graph, node)
+
+	if int(graph.mem.pos - size) / PRECISION != int(id) {
+		graph.waste += int(node.input_count * size_of(Node_ID))
+		graph.waste += int(node.output_count * size_of(Node_Output))
+		graph.waste += size_of(Node)
+		graph.waste += int(graph.node_extra_sizes[node.rtype] * PRECISION)
+	} else {
+		graph.mem.pos = uint(id) * PRECISION - PREFIX_SIZE
+		graph.gvn -= 1
+	}
+
 	node^ = {}
 }
 

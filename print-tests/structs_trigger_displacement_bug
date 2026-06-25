@@ -1,4 +1,4 @@
-=========== OPT LEVEL: None ===========
+=========== OPT LEVEL: none ===========
 main:
      push rbx
      push rbp
@@ -27,7 +27,36 @@ main:
      pop rbp
      pop rbx
      ret
-=========== OPT LEVEL: Full ===========
+=========== OPT LEVEL: mininal ===========
+main:
+     push rbx
+     push rbp
+     sub rsp, 0x10
+     mov rsi, 0x00
+     mov rbx, 0x00
+     lea rax, [rsp]
+     add rbx, rax
+     mov rbp, 0x01
+     mov rdx, 0x10
+     lea rdi, [rsp]
+     call :$set
+     mov [rbx], rbp
+     mov rcx, 0x08
+     lea rax, [rsp]
+     add rcx, rax
+     mov rax, 0x02
+     mov [rcx], rax
+     mov rax, [rcx]
+     add rax, rbp
+     mov [rbx], rax
+     mov rax, [rbx]
+     mov rcx, [rcx]
+     add rax, rcx
+     sub rsp, 0xFFFFFFFFFFFFFFF0
+     pop rbp
+     pop rbx
+     ret
+=========== OPT LEVEL: all ===========
 main:
      sub rsp, 0x10
      lea rdi, [rsp]

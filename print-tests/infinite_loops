@@ -1,4 +1,4 @@
-=========== OPT LEVEL: None ===========
+=========== OPT LEVEL: none ===========
 main:
      mov rcx, 0x00
      test rcx, rcx
@@ -20,7 +20,29 @@ main:
      add rdx, rcx
      jmp :3
 
-=========== OPT LEVEL: Full ===========
+=========== OPT LEVEL: mininal ===========
+main:
+     mov rcx, 0x00
+     test rcx, rcx
+     jz :0
+     jmp :1
+
+000: mov rax, 0x00
+     jmp :2
+
+001: mov rdx, 0x00
+     jmp :3
+
+003: jmp :4
+
+     jmp :2
+
+002: ret
+004: mov rcx, 0x01
+     add rdx, rcx
+     jmp :3
+
+=========== OPT LEVEL: all ===========
 main:
      mov rax, 0x00
      ret

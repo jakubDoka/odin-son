@@ -823,6 +823,10 @@ test_neg_reg :: proc(x: int) -> int {
 	return -x
 }
 
+test_bitnot_reg_u8 :: proc(x: u8) -> int {
+	return int(~x)
+}
+
 test_neg_i8 :: proc(x: ^i8) -> int {
 	x^ = -x^
 	return int(x^)
@@ -882,6 +886,7 @@ main :: proc() -> int {
 	r += int(test_not_reg(true))
 
 	r += test_bitnot_reg(123)
+	r += test_bitnot_reg_u8(123)
 	r += test_bitnot_i8(&a8)
 	r += test_bitnot_u8(&b8)
 	r += test_bitnot_i16(&a16)
@@ -904,6 +909,19 @@ main :: proc() -> int {
 	return r
 }
 ```
+
+#### extend reduce integer chain
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	vl: i16 = -1000
+	return int(u8(vl))
+}
+```
+
 
 #### loops
 ```odin

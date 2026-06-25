@@ -1,4 +1,4 @@
-=========== OPT LEVEL: None ===========
+=========== OPT LEVEL: none ===========
 main:
      push rbx
      push rbp
@@ -63,7 +63,72 @@ main:
 011: pop rbp
      pop rbx
      ret
-=========== OPT LEVEL: Full ===========
+=========== OPT LEVEL: mininal ===========
+main:
+     push rbx
+     push rbp
+     mov rbp, 0x00
+     jmp :0
+
+000: mov rax, 0x01
+     add rbp, rax
+     mov rcx, 0x04
+     cmp rbp, rcx
+     setz dl
+     movzx rdx, dl
+     test rdx, rdx
+     jz :1
+     jmp :2
+
+001: mov rbx, 0x00
+     jmp :3
+
+003: add rbx, rax
+     cmp rbx, rcx
+     setz dl
+     movzx rdx, dl
+     test rdx, rdx
+     jz :4
+     jmp :5
+
+004: mov rdx, 0x02
+     cmp rdx, rbx
+     setz dl
+     movzx rdx, dl
+     test rdx, rdx
+     jz :6
+     jmp :7
+
+006: jmp :3
+
+007: mov rbx, 0x00
+     mov rdx, 0x00
+     jmp :8
+
+008: add rdx, rax
+     add rbx, rax
+     mov rcx, 0x05
+     cmp rcx, rdx
+     setz cl
+     movzx rcx, cl
+     test rcx, rcx
+     jz :9
+     jmp :10
+
+009: jmp :8
+
+010: mov rax, rbx
+     jmp :11
+
+005: jmp :0
+
+002: mov rax, 0x00
+     jmp :11
+
+011: pop rbp
+     pop rbx
+     ret
+=========== OPT LEVEL: all ===========
 main:
      mov rcx, 0x00
      jmp :0

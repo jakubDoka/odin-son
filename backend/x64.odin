@@ -607,6 +607,8 @@ Local_Reloc :: struct {
 }
 
 x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
+	context.allocator, _ = arna.scrath()
+
 	reloc_start := ectx.relocs.pos
 
 	ctx: Ctx

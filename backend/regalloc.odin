@@ -3,6 +3,7 @@ package backend
 import "../vendored/gam/util/arna"
 import "../vendored/gam/util/bit_arr"
 import "base:intrinsics"
+import "base:runtime"
 import "core:container/queue"
 import "core:fmt"
 import "core:io"
@@ -55,7 +56,7 @@ reg_mask_set :: proc(rm: Reg_Mask, #any_int index: int, value := true) {
 
 reg_mask_empty :: proc(ra: ^Regalloc, kind: Reg_Kind) -> Reg_Mask {
 	return {
-		masks = raw_data(arna.smake(ra, []int, ra.class_lengths[kind])),
+		masks = raw_data(make([]int, ra.class_lengths[kind])),
 		bit_length = int(ra.class_lengths[kind]) * MASK_SIZE,
 		kind = kind,
 	}
@@ -135,8 +136,7 @@ Regalloc_Spec :: struct {
 }
 
 Regalloc :: struct {
-	using spec:  ^Regalloc_Spec,
-	using alloc: ^arna.Allocator,
+	using spec: ^Regalloc_Spec,
 }
 
 MASK_SIZE :: size_of(int) * 8
@@ -181,9 +181,10 @@ regalloc :: proc(
 	ra: ^Regalloc,
 	graph: ^Graph,
 	sched: ^Graph_Schedule,
+	scratch: runtime.Allocator,
 ) -> []Reg {
 	for i in 0 ..< 7 {
-		res, ok := regalloc_round(ra, graph, sched)
+		res, ok := regalloc_round(ra, graph, sched, scratch)
 		if ok {
 			if REGLOGS do log.info("regalloc rounds:", i)
 			return res
@@ -224,11 +225,12 @@ regalloc_round :: proc(
 	ra: ^Regalloc,
 	graph: ^Graph,
 	sched: ^Graph_Schedule,
+	scratch: runtime.Allocator,
 ) -> (
 	res: []Reg,
 	ok: bool = true,
 ) {
-	arna.scrath(ra)
+	context.allocator, _ = arna.scrath(scratch)
 
 	graph.dont_intern = true
 	defer graph.dont_intern = false
@@ -254,7 +256,7 @@ regalloc_round :: proc(
 
 	max_lrg_count := 0
 	block_base := int(graph.gvn) - len(sched.bbs)
-	ctx.instr_placement = arna.smake(ra, []Instr_Placement, block_base)
+	ctx.instr_placement = make([]Instr_Placement, block_base)
 	rev_gvn := block_base
 
 	rev_gvn -= 1
@@ -279,10 +281,10 @@ regalloc_round :: proc(
 		}
 	}
 
-	lrgs := arna.smake(ra, []Lrg, max_lrg_count)
+	lrgs := make([]Lrg, max_lrg_count)
 	used_lrgs: u32
 
-	ctx.lrg_table = arna.smake(ra, []^Lrg, max_lrg_count)
+	ctx.lrg_table = make([]^Lrg, max_lrg_count)
 
 	for bb in sched.bbs {
 		for instr in bb.instrs {
@@ -376,8 +378,6 @@ regalloc_round :: proc(
 
 	//log_lrgs(graph, sched, lrg_table)
 
-	arena := arna.allocator(ra)
-
 	Liveout :: struct {
 		node:     Node_ID,
 		area:     u32,
@@ -390,8 +390,8 @@ regalloc_round :: proc(
 		liveouts: Liveouts,
 	}
 
-	interference := bit_arr.init(used_lrgs * used_lrgs, arena)
-	blocks := arna.smake(ra, []Block, len(sched.bbs))
+	interference := bit_arr.init(used_lrgs * used_lrgs)
+	blocks := make([]Block, len(sched.bbs))
 
 	Self_Conflict :: struct {
 		lrg:  ^Lrg,
@@ -400,10 +400,10 @@ regalloc_round :: proc(
 
 	// TODO: optimize this, we need to deduplicate these because the IFG round
 	// are repushing same stuff
-	ctx.self_conflicts = make([dynamic]Self_Conflict, arena)
+	ctx.self_conflicts = make([dynamic]Self_Conflict)
 
 	worklist: queue.Queue(u32)
-	queue.init(&worklist, len(sched.bbs), arena)
+	queue.init(&worklist, len(sched.bbs))
 	in_queue := bit_arr.init(len(sched.bbs))
 
 	if !failed_any {
@@ -571,9 +571,9 @@ regalloc_round :: proc(
 		ok = false
 	}
 
-	ifg := arna.smake(ra, [][]^Lrg, used_lrgs)
+	ifg := make([][]^Lrg, used_lrgs)
 	ctx.adj = ifg
-	slices := arna.smake(ra, []^Lrg, bit_arr.pop_count(interference))
+	slices := make([]^Lrg, bit_arr.pop_count(interference))
 	cursor := 0
 	slice_base := 0
 	slice_cursor := 0
@@ -644,7 +644,7 @@ regalloc_round :: proc(
 
 			coalesced = true
 
-			buf := arna.smake(ra, []^Lrg, total)
+			buf := make([]^Lrg, total)
 			copy(buf, iadj[:to_move])
 			copy(buf[to_move:], inadj)
 
@@ -682,7 +682,7 @@ regalloc_round :: proc(
 		}
 	}
 
-	color_order := arna.smake(ra, []bit_field u64 {
+	color_order := make([]bit_field u64 {
 			idx:      u32 | 32,
 			priority: u32 | 32,
 		}, len(ifg))
@@ -776,7 +776,7 @@ regalloc_round :: proc(
 					fnode = graph_get(graph, id)
 				}
 
-				for out in arna.clone(ra, graph_outs(graph, m)) {
+				for out in slice.clone(graph_outs(graph, m)) {
 					olrg := get_lrg(ctx, out.id)
 					if olrg == &lrg || olrg == nil do continue
 
@@ -807,7 +807,7 @@ regalloc_round :: proc(
 				mnode := graph_expand(graph, m)
 				mblock := get_node_block(ctx, m)
 				redirect := m
-				for out in arna.clone(ra, mnode.outs) {
+				for out in slice.clone(mnode.outs) {
 					onode := graph_expand(graph, out.id)
 					oblock := get_node_block(ctx, out.id)
 					if onode.itype == .Phi {
@@ -881,7 +881,7 @@ regalloc_round :: proc(
 
 	if color_fails > 0 {
 		cursor := 0
-		order := arna.smake(ra, []bit_field u64 {
+		order := make([]bit_field u64 {
 				id:            u32 | 32,
 				biggest_split: u32 | 32,
 			}, used_lrgs_check)
@@ -906,7 +906,7 @@ regalloc_round :: proc(
 
 			split: if lrg.longest_def != 0 && lrg.longest_use_area > 1 {
 
-				fnode.outs = arna.clone(ra, fnode.outs)
+				fnode.outs = slice.clone(fnode.outs)
 
 				split := split_after(ctx, "cdef", id)
 
@@ -933,7 +933,7 @@ regalloc_round :: proc(
 		id := sc.node
 
 		node := graph_expand(graph, id)
-		node.outs = arna.clone(ra, node.outs)
+		node.outs = slice.clone(node.outs)
 
 		// NOTE: we could be using the same value multiple times, so since we
 		// are at it, lets reuse the immediate split
@@ -979,7 +979,7 @@ regalloc_round :: proc(
 
 		last_split = 0
 		last_split_out: Node_ID
-		for out in arna.clone(ra, node.outs) {
+		for out in slice.clone(node.outs) {
 			onode := graph_expand(graph, out.id)
 			if onode.dt == .Void do continue
 			if onode.gvn >= prev_gvn do continue
@@ -1012,7 +1012,9 @@ regalloc_round :: proc(
 
 	return
 
+	@(disabled = ODIN_DISABLE_ASSERT)
 	verify_alloc_integrity :: proc(ctx: Ctx, res: []Reg) {
+		seen := bit_arr.init(ctx.graph.gvn)
 		for &bb in ctx.sched.bbs {
 			for instr, i in bb.instrs {
 				inode := graph_expand(ctx.graph, instr)
@@ -1028,7 +1030,7 @@ regalloc_round :: proc(
 						i = len(block.instrs)
 					}
 
-					seen := bit_arr.init(ctx.graph.gvn)
+					bit_arr.set_all(seen, value = false)
 
 					nd := graph_get(ctx.graph, inp)
 					if nd.itype == .Poison do continue
@@ -1088,7 +1090,7 @@ regalloc_round :: proc(
 
 	collect_lrg_members :: proc(ctx: Ctx, lrg: ^Lrg) -> []Node_ID {
 		graph := ctx.graph
-		members := make([dynamic]Node_ID, arna.allocator(ctx.ra))
+		members := make([dynamic]Node_ID)
 		append(&members, lrg.node)
 		for i := 0; i < len(members); i += 1 {
 			member := members[i]

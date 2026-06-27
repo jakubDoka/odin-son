@@ -1,6 +1,8 @@
 package backend
 
+import "../vendored/gam/util/arna"
 import "../vendored/gam/util/bit_arr"
+import "base:runtime"
 import "core:container/queue"
 import "core:fmt"
 import "core:log"
@@ -126,7 +128,13 @@ graph_idepth_node :: proc(graph: ^Graph, node: ^Node) -> u32 {
 
 gvn_redc: Redundancy_Counter
 
-graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
+graph_schedule :: proc(
+	graph: ^Graph,
+	gs: ^Graph_Schedule,
+	scratch: runtime.Allocator,
+) {
+	context.allocator, _ = arna.scrath(scratch)
+
 	Loop_Ctx :: struct {
 		using graph: ^Graph,
 		loop_trees:  []^Loop_Tree,
@@ -137,11 +145,11 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 	lctx.graph = graph
 	lctx.loop_trees = make([]^Loop_Tree, graph.gvn * 2)
 
-	lctx.root = new(Loop_Tree)
+	lctx.root = new(Loop_Tree, scratch)
 
 	if graph.end != 0 {
 		lctx.loop_trees[graph_get(graph, graph.end).gvn] = lctx.root
-		build_loop_tree(&lctx, NODE_ENTRY, lctx.root)
+		build_loop_tree(&lctx, NODE_ENTRY, lctx.root, scratch)
 	}
 
 	tree_depth :: proc(tree: ^Loop_Tree) -> u32 {
@@ -157,6 +165,7 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 		ctx: ^Loop_Ctx,
 		root: Node_ID,
 		tree: ^Loop_Tree,
+		scratch: runtime.Allocator,
 	) -> ^Loop_Tree {
 		tree := tree
 		node := graph_expand(ctx, root)
@@ -169,7 +178,7 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 		prev_tree := tree
 
 		if node.itype == .Loop {
-			tree = new(Loop_Tree)
+			tree = new(Loop_Tree, scratch)
 			tree.depth = 1 + prev_tree.depth
 			tree.infinite = true
 			ctx.loop_trees[node.gvn] = tree
@@ -178,7 +187,7 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 		deepest: ^Loop_Tree
 		for o in node.outs {
 			if !is_cfg(ctx, o.id) do continue
-			other := build_loop_tree(ctx, o.id, tree)
+			other := build_loop_tree(ctx, o.id, tree, scratch)
 			deepest = select(deepest, other, true)
 			if other != tree {
 				tree.parent = select(tree.parent, other, true)
@@ -228,6 +237,7 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 	}
 
 	bbs: [dynamic]Graph_Basic_Block
+	bbs.allocator = scratch
 	cfg_rpos: [dynamic]Node_ID
 	visited := bit_arr.init(graph.gvn * 2)
 
@@ -455,6 +465,7 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 					head = id,
 					tail = tail,
 					loop_tree = loop_tree,
+					instrs = make([dynamic]Node_ID, scratch),
 				},
 			)
 		}
@@ -531,13 +542,6 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 @(disabled = ODIN_DISABLE_ASSERT)
 verify_schedule_integrity :: proc(graph: ^Graph, sched: ^Graph_Schedule) {
 	schedules := make([]Node_ID, graph.gvn)
-
-	if false {
-		sb: strings.Builder
-		append(&sb.buf, "\n")
-		graph_display(strings.to_writer(&sb), graph, sched)
-		log.info(string(sb.buf[:]))
-	}
 
 	for bb in sched.bbs {
 		for instr, i in bb.instrs {

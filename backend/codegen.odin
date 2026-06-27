@@ -35,9 +35,8 @@ Lib_Call :: bit_field u32 {
 }
 
 Codegen_Emit_Buf :: struct {
-	code:    ^arna.Allocator,
-	relocs:  ^arna.Allocator,
-	scratch: ^arna.Allocator,
+	code:   ^arna.Allocator,
+	relocs: ^arna.Allocator,
 }
 
 Codegen_Output :: struct {
@@ -64,14 +63,14 @@ Reloc :: struct {
 }
 
 emit :: #force_no_inline proc(buf: ^arna.Allocator, bytes: []u8) {
-	b := arna.smake(buf, []u8, len(bytes))
+	b := arna.smake(buf, []u8, len(bytes), zeroed = false)
 	copy(b, bytes)
 }
 
 emit_anys :: #force_no_inline proc(buf: ^arna.Allocator, values: ..any) {
 	for value in values {
 		b := reflect.as_bytes(value)
-		bytes := arna.smake(buf, []u8, len(b))
+		bytes := arna.smake(buf, []u8, len(b), zeroed = false)
 		copy(bytes, b)
 	}
 }

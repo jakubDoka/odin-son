@@ -394,6 +394,8 @@ graph_schedule_peeps :: proc(graph: ^Graph, schedule: ^Graph_Schedule) {
 graph_iter_peeps :: proc(graph: ^Graph) {
 	if .Iter_Peeps not_in graph.opt_flags do return
 
+	context.allocator, _ = arna.scrath()
+
 	worklist: queue.Queue(Node_ID)
 	queue.init(&worklist, int(graph.gvn))
 
@@ -1937,11 +1939,13 @@ graph_display :: proc(
 	prefix: proc(_: io.Writer, _: ^Node, _: Graph_Basic_Block) = nil,
 	regs: []Reg = {},
 ) {
+	context.allocator, _ = arna.scrath()
+
 	ctx := ctx
 	our_ctx: Graph_Schedule
 
 	if ctx == nil {
-		graph_schedule(graph, &our_ctx)
+		graph_schedule(graph, &our_ctx, context.allocator)
 		ctx = &our_ctx
 	}
 

@@ -310,6 +310,8 @@ fmts: map[typeid]fmt.User_Formatter
 current_graph: ^backend.Graph
 
 init_custom_fmt :: proc() {
+	context.allocator = context.temp_allocator
+
 	fmt.set_user_formatters(&fmts)
 
 	fmt.register_user_formatter(
@@ -387,11 +389,53 @@ once: sync.Once
 run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 	context.logger.options &= ~{.Time, .Date, .Level, .Procedure}
 	context.assertion_failure_proc = hot.init_trace()
-	context.allocator = context.temp_allocator
+
+	arna.scratch[0].reserved = 1024 * 128
+	arna.scratch[1].reserved = 1024 * 128
+	graph_mem := arna.Allocator {
+		reserved = 4096 * 16,
+	}
+	regalloc_mem := arna.Allocator {
+		reserved = 4096 * 64,
+	}
+	scratch_mem := arna.Allocator {
+		reserved = 4096 * 16,
+	}
+	code_mem := arna.Allocator {
+		reserved = 4096 * 16,
+	}
+	reloc_mem := arna.Allocator {
+		reserved = 4096 * 16,
+	}
+	type_mem := arna.Allocator {
+		reserved = 4096 * 16,
+	}
+
+	_ = arna.bulk_init(
+		&arna.scratch[0],
+		&arna.scratch[1],
+		&graph_mem,
+		&regalloc_mem,
+		&scratch_mem,
+		&code_mem,
+		&reloc_mem,
+		&type_mem,
+	)
+	defer arna.bulk_destroy(
+		&arna.scratch[0],
+		&arna.scratch[1],
+		&graph_mem,
+		&regalloc_mem,
+		&scratch_mem,
+		&code_mem,
+		&reloc_mem,
+		&type_mem,
+	)
 
 	sync.once_do(
 		&once,
 		proc() {
+			context.allocator = context.temp_allocator
 			// NOTE: this is intensly stupid, but we have to do this or there
 			// will be dataraces
 			p := parser.Parser{}
@@ -410,10 +454,17 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		src      = source,
 		fullpath = "test",
 	}
-	ok := parser.parse_file(&p, &f); assert(ok)
+	{context.allocator = context.temp_allocator
+		ok := parser.parse_file(&p, &f); assert(ok)
+	}
 
 	ctx: Ctx
 	ctx.file = &f
+	ctx.type_allocator = arna.allocator(&type_mem)
+	ctx.procs.allocator = ctx.type_allocator
+	ctx.pointers.allocator = ctx.type_allocator
+	ctx.structs.allocator = ctx.type_allocator
+	ctx.lits.allocator = ctx.type_allocator
 
 	for decl in f.decls {
 		if sdecl, sok := decl.derived_stmt.(^ast.Value_Decl); sok {
@@ -421,8 +472,8 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 				plist := prc.type.params.list
 				rlist := prc.type.results.list
 
-				params := make([]Param, len(plist))
-				rets := make([]Param, len(rlist))
+				params := make([]Param, len(plist), context.temp_allocator)
+				rets := make([]Param, len(rlist), context.temp_allocator)
 
 				lists := [][]^ast.Field{plist, rlist}
 				tys := [][]Param{params, rets}
@@ -454,37 +505,6 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		}
 	}
 
-	graph_mem := arna.Allocator {
-		reserved = 4096 * 16,
-	}
-	regalloc_mem := arna.Allocator {
-		reserved = 4096 * 64,
-	}
-	scratch_mem := arna.Allocator {
-		reserved = 4096 * 16,
-	}
-	code_mem := arna.Allocator {
-		reserved = 4096 * 16,
-	}
-	reloc_mem := arna.Allocator {
-		reserved = 4096 * 16,
-	}
-
-	_ = arna.bulk_init(
-		&graph_mem,
-		&regalloc_mem,
-		&scratch_mem,
-		&code_mem,
-		&reloc_mem,
-	)
-	defer arna.bulk_destroy(
-		&graph_mem,
-		&regalloc_mem,
-		&scratch_mem,
-		&code_mem,
-		&reloc_mem,
-	)
-
 	levels := []struct {
 		name:  string,
 		flags: backend.Graph_Opt_Flags,
@@ -495,7 +515,8 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 	}
 
 	for &prc in ctx.procs {
-		clear(&ctx.scope)
+		scratch_mem.pos = 0
+		ctx.scope = make([dynamic]Variable, arna.allocator(&scratch_mem))
 
 		for par in prc.params {
 			append(&ctx.scope, Variable{name = par.name, type = par.type})
@@ -505,6 +526,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 	}
 
 	dsb: strings.Builder
+	dsb.buf.allocator = context.temp_allocator
 	for level in levels {
 		fmt.sbprintfln(
 			&dsb,
@@ -564,16 +586,26 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 
 			backend.graph_iter_peeps(&ctx)
 
+			scratch_mem.pos = 0
+
 			schedule: backend.Graph_Schedule
-			backend.graph_schedule(&ctx, &schedule)
+			backend.graph_schedule(
+				&ctx,
+				&schedule,
+				arna.allocator(&scratch_mem),
+			)
 
 			backend.graph_schedule_peeps(&ctx, &schedule)
 
 			ra: backend.Regalloc
 			ra.spec = spec
-			ra.alloc = &regalloc_mem
 
-			regs := backend.regalloc(&ra, &ctx, &schedule)
+			regs := backend.regalloc(
+				&ra,
+				&ctx,
+				&schedule,
+				arna.allocator(&scratch_mem),
+			)
 
 			if backend.REGLOGS {
 				sb: strings.Builder
@@ -590,11 +622,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 			ctx := backend.Codegen_Emit_Ctx {
 				graph = &ctx,
 				schedule = &schedule,
-				buf = {
-					scratch = &scratch_mem,
-					code = &code_mem,
-					relocs = &reloc_mem,
-				},
+				buf = {code = &code_mem, relocs = &reloc_mem},
 				allocs = regs,
 				lib_calls = {
 					copy = {id = 0, absolute = true},
@@ -633,7 +661,8 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 			}
 		}
 
-		disasm(&dsb, ctx)
+		{context.allocator = context.temp_allocator
+			disasm(&dsb, ctx)}
 
 		oka := virtual.protect(
 			code_mem.ptr,
@@ -661,6 +690,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		assert(oka)
 	}
 
+	context.allocator = context.temp_allocator
 	diff_path, _ := os.join_path({TEST_OUT_DIR, name}, context.allocator)
 	file, err := os.read_entire_file(diff_path, context.allocator)
 
@@ -844,13 +874,14 @@ unpack_type :: proc(typ: Type) -> Type_Data {
 }
 
 intern_pointer :: proc(ctx: ^Ctx, ty: Type) -> Type {
-	existing := ctx.pointers[ty] or_else Pointer(new_clone(ty))
+	existing :=
+		ctx.pointers[ty] or_else Pointer(new_clone(ty, ctx.type_allocator))
 	ctx.pointers[ty] = existing
 	return pack_type(existing)
 }
 
 intern_lit :: proc(ctx: ^Ctx, lit: Lit) -> ^Lit {
-	existing := ctx.lits[lit] or_else new_clone(lit)
+	existing := ctx.lits[lit] or_else new_clone(lit, ctx.type_allocator)
 	ctx.lits[lit] = existing
 	return existing
 }
@@ -870,10 +901,14 @@ emit_type :: proc(ctx: ^Ctx, expr: ^ast.Node) -> Type {
 				structa, ok := ctx.structs[key]
 				if ok do return pack_type(structa)
 
-				structa = new(Struct)
+				structa = new(Struct, ctx.type_allocator)
 				ctx.structs[key] = structa
 
-				structa.fields = make([]Struct_Field, len(d.fields.list))
+				structa.fields = make(
+					[]Struct_Field,
+					len(d.fields.list),
+					ctx.type_allocator,
+				)
 				for &field, i in structa.fields {
 					ast_field := d.fields.list[i]
 					assert(len(ast_field.names) == 1)
@@ -937,19 +972,20 @@ Variable :: struct {
 }
 
 Ctx :: struct {
-	using graph: backend.Graph,
-	procs:       [dynamic]Proc,
-	scope:       [dynamic]Variable,
-	pointers:    map[Type]Pointer,
-	structs:     map[Struct_Key]^Struct,
-	lits:        map[Lit]^Lit,
-	node_scope:  backend.Node_ID,
-	root_mem:    backend.Node_ID,
-	mem_slot:    int,
-	loop:        ^Loop_State,
-	file:        ^ast.File,
-	file_id:     File_ID,
-	prc:         Proc_ID,
+	using graph:    backend.Graph,
+	type_allocator: runtime.Allocator,
+	procs:          [dynamic]Proc,
+	scope:          [dynamic]Variable,
+	pointers:       map[Type]Pointer,
+	structs:        map[Struct_Key]^Struct,
+	lits:           map[Lit]^Lit,
+	node_scope:     backend.Node_ID,
+	root_mem:       backend.Node_ID,
+	mem_slot:       int,
+	loop:           ^Loop_State,
+	file:           ^ast.File,
+	file_id:        File_ID,
+	prc:            Proc_ID,
 }
 
 File_ID :: distinct u32
@@ -1525,6 +1561,8 @@ emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 		return vl.id, vl.is_lvalue
 	}
 
+	tmp, _ := arna.scrath(context.temp_allocator)
+
 	#partial switch d in node.derived {
 	case ^ast.Block_Stmt:
 		prev_local_scope_len := len(ctx.scope)
@@ -1614,7 +1652,7 @@ emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 		res = to_rvalue(ctx, emit_nodes(ctx, {}, d.expr), d.expr)
 		lvalue = true
 	case ^ast.Return_Stmt:
-		values := make([]backend.Node_ID, 2 + len(d.results))
+		values := make([]backend.Node_ID, 2 + len(d.results), tmp)
 		for r, i in d.results {
 			values[2 + i] = to_rvalue(ctx, emit_nodes(ctx, {}, r), r)
 		}
@@ -1750,7 +1788,7 @@ emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 
 		ctx.loop = ctx.loop.parent
 	case ^ast.Call_Expr:
-		args := make([]backend.Node_ID, 2 + len(d.args))
+		args := make([]backend.Node_ID, 2 + len(d.args), tmp)
 
 		base_ty := get_node_type(d.expr)
 

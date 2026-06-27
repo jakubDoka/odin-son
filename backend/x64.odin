@@ -248,18 +248,15 @@ when SPEC_NOT_PRESENT {
 	}
 
 	X64_SIMPLE_BIN_OP_SPEC :: Class_Spec {
-		id    = X64_Mem_Op,
-		flags = {.Load},
+		id = X64_Mem_Op,
 	}
 
 	X64_SIMPLE_SHIFT_OP_SPEC :: Class_Spec {
-		id    = X64_Mem_Op,
-		flags = {.Load},
+		id = X64_Mem_Op,
 	}
 
 	X64_SIMPLE_UN_OP_SPEC :: Class_Spec {
-		id    = X64_Mem_Op,
-		flags = {.Load},
+		id = X64_Mem_Op,
 	}
 
 	@(rodata)
@@ -267,7 +264,7 @@ when SPEC_NOT_PRESENT {
 		.X64_Add ..= .X64_U_Ge = X64_SIMPLE_BIN_OP_SPEC,
 		.X64_Shl ..= .X64_U_Shr = X64_SIMPLE_SHIFT_OP_SPEC,
 		.X64_Neg ..= .X64_Not = X64_SIMPLE_UN_OP_SPEC,
-		.X64_Load = {id = X64_Mem_Op, flags = {.Load}},
+		.X64_Load = {id = X64_Mem_Op},
 		.X64_Store = {id = X64_Mem_Op, flags = {.Store}},
 	}
 }
@@ -287,13 +284,14 @@ X64_Mem_Op :: struct {
 	dt:       Node_Datatype,
 }
 
+BIN_OP_OFFSET :: transmute(u16)(i16(X64_Node_Type.X64_Add) -
+	i16(Ideal_Node_Type.Add))
+
+UN_OP_OFFSET :: transmute(u16)(i16(X64_Node_Type.X64_Neg) -
+	i16(Ideal_Node_Type.Neg))
+
 x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 	node := node
-	BIN_OP_OFFSET :: transmute(u16)(i16(X64_Node_Type.X64_Add) -
-		i16(Ideal_Node_Type.Add))
-
-	UN_OP_OFFSET :: transmute(u16)(i16(X64_Node_Type.X64_Neg) -
-		i16(Ideal_Node_Type.Neg))
 
 	id := graph_id(ctx, node)
 
@@ -432,6 +430,7 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 					}
 
 					mem_op.mem_mode = .Dest
+					node.in_place_slot_offset = -1
 					node.additional_data_start += 2
 					changed = true
 				} else {
@@ -452,7 +451,7 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 		if false && rhs_load != nil {
 			load := graph_expand(ctx, node.inps[1])
 
-			return make_node(
+			return x64_make_node(
 				ctx,
 				id,
 				op,
@@ -472,7 +471,7 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 		}
 
 		if rhs_conts != nil {
-			return make_node(
+			return x64_make_node(
 				ctx,
 				id,
 				op,
@@ -487,7 +486,7 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 			graph_get(ctx, node.inps[1]).dt == .Void,
 		)
 	case .Load, .Load_S:
-		return make_node(
+		return x64_make_node(
 			ctx,
 			id,
 			u16(X64_Node_Type.X64_Load),
@@ -503,7 +502,7 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 			inps = inps[:len(inps) - 1]
 		}
 
-		return make_node(
+		return x64_make_node(
 			ctx,
 			id,
 			u16(X64_Node_Type.X64_Store),
@@ -517,20 +516,57 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 		)
 	}
 
-	make_node :: proc(
-		graph: ^Graph,
-		from: Node_ID,
-		type: u16,
-		inps: []Node_ID,
-		extra: X64_Mem_Op,
-		additional_data_offset: u8 = 0,
-	) -> Node_ID {
-		push_node_name(graph, graph_get_node_name(graph, from))
-		fnode := graph_get(graph, from)
-		node := graph_add_raw(graph, type, fnode.dt, inps)
-		graph_extra(graph, node, X64_Mem_Op)^ = extra
-		graph_get(graph, node).additional_data_start = additional_data_offset
-		return node
+	return 0
+}
+
+x64_make_node :: proc(
+	graph: ^Graph,
+	from: Node_ID,
+	type: u16,
+	inps: []Node_ID,
+	extra: X64_Mem_Op,
+	additional_data_offset: u8 = 0,
+	in_place_slot_offset: i8 = 0,
+) -> Node_ID {
+	push_node_name(graph, graph_get_node_name(graph, from))
+	fnode := graph_get(graph, from)
+	node := graph_add_raw(graph, type, fnode.dt, inps)
+	graph_extra(graph, node, X64_Mem_Op)^ = extra
+	graph_get(graph, node).additional_data_start = additional_data_offset
+	graph_get(graph, node).in_place_slot_offset = in_place_slot_offset
+	return node
+}
+
+x64_post_schedule_peep :: proc(
+	ctx: PS_Peep_Ctx,
+	node: Expanded_Node,
+) -> Node_ID {
+	id := graph_id(ctx, node)
+	#partial match: switch node.itype {
+	case .Add ..= .Xor, .Eq ..= .U_Ge:
+		op := node.rtype + BIN_OP_OFFSET
+		rhs := graph_expand(ctx, node.inps[1])
+		if rhs.xtype == .X64_Load && len(rhs.outs) == 1 && rhs.dt == node.dt {
+			mem_op := graph_extra(ctx, rhs, X64_Mem_Op)
+			#reverse for pred in ctx.preds {
+				if pred == node.inps[1] do break
+				pnode := graph_expand(ctx, pred)
+				if pnode.is_store || graph_has_flag(ctx, pnode, .Store) {
+					break match
+				}
+			}
+			mem_op.mem_mode = .Src
+
+			return x64_make_node(
+				ctx,
+				id,
+				op,
+				{rhs.inps[0], rhs.inps[1], rhs.inps[2], node.inps[0]},
+				mem_op^,
+				additional_data_offset = u8(rhs.data_start),
+				in_place_slot_offset = 1 - i8(rhs.data_start == 3),
+			)
+		}
 	}
 
 	return 0
@@ -800,6 +836,16 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		.X64_U_Ge = .U_Lt,
 	}
 
+	@(static)
+	@(rodata)
+	SRC_MODE_OPCODE_TABLE := #partial [X64_Node_Type]Instr_Info {
+		.X64_Add = {0x03, 0},
+		.X64_Sub = {0x2B, 0},
+		.X64_And = {0x23, 0},
+		.X64_Or  = {0x0B, 0},
+		.X64_Xor = {0x33, 0},
+	}
+
 	block_base := ctx.gvn - u32(len(ctx.bbs))
 	node := graph_expand(ctx, instr)
 	mem_op_placeholder: X64_Mem_Op
@@ -1053,7 +1099,17 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 				}
 			}
 		case .Src:
-			panic("")
+			dst := reg_of(ctx, node.inps[3])
+
+			bse, sdis := reg_and_disp_of(ctx, node.inps[2])
+			dis := mem_op.dis
+
+			op := SRC_MODE_OPCODE_TABLE[node.xtype]
+
+			// add/sub/and/or/xor $dst, [$bse + $sdis + $dis]
+			rx := rex(dst, bse, NO_INDEX, DT_SIZE[node.dt] == 8)
+			emit_sized_opcode(ctx.code, node.dt, rx, op.opcode)
+			emit_indirect_addr(ctx.code, dst, bse, NO_INDEX, 1, dis + sdis)
 		}
 	case .Add ..= .Xor:
 		// add/sub/and/or/xor $dst, $rhs

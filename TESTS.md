@@ -1618,3 +1618,51 @@ main :: proc() -> int {
 	return stru.a + stru.b
 }
 ```
+
+#### frontend peepholes on function args
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	return funnel(2, 2 + 2, 2 + 2 + 2)
+}
+
+funnel :: proc(a: int, b: int, c: int) -> int {
+	return a + b + c
+}
+```
+
+#### stress testing structs
+```odin
+package main
+
+opt_level :: "none"
+
+Stru :: struct {
+	a: int,
+	b: int,
+	c: C,
+}
+
+C :: struct {
+	a: int,
+	b: int,
+	c: D,
+}
+
+D :: struct {
+	a: int,
+	b: int,
+}
+
+main :: proc() -> int {
+	vl := Stru{c = {c = {0, 0}}}
+	vl.a = 3
+	vl.b = 2
+	vl.c = {1, 1, {vl.c.a + vl.c.b, 8}}
+	vl.c.c = {vl.a, vl.b}
+	return vl.a + vl.b + vl.c.a + vl.c.b + vl.c.c.a + vl.c.c.b
+}
+```

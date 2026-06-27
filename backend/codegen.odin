@@ -4,8 +4,16 @@ import "../vendored/gam/util/arna"
 import "core:reflect"
 
 Codegen_Spec :: struct {
-	emit_function: proc(_: Codegen_Emit_Ctx) -> Codegen_Output,
-	peep:          Peep_Fn,
+	emit_function:      proc(_: Codegen_Emit_Ctx) -> Codegen_Output,
+	peep:               Peep_Fn,
+	post_schedule_peep: PS_Peep_Fn,
+}
+
+PS_Peep_Fn :: proc(_: PS_Peep_Ctx, node: Expanded_Node) -> Node_ID
+
+PS_Peep_Ctx :: struct {
+	using graph: ^Graph,
+	preds:       []Node_ID,
 }
 
 Codegen_Emit_Ctx :: struct {

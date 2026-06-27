@@ -190,6 +190,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			-1, //Dead
 		},
 		peep = builder_peep,
+		post_schedule_peep = builder_post_schedule_peep,
 		first_input_idxs = {
 			0, //Start
 			0, //Entry
@@ -408,8 +409,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{Class_Flag.Store}, // Copy
 			{Class_Flag.Store}, // Set
 			{Class_Flag.Store}, // Store
-			{Class_Flag.Interned, Class_Flag.Load}, // Load
-			{Class_Flag.Interned, Class_Flag.Load}, // Load_S
+			{Class_Flag.Interned}, // Load
+			{Class_Flag.Interned}, // Load_S
 			{}, // If
 			{Class_Flag.Is_Basic_Block_Start}, // Then
 			{Class_Flag.Is_Basic_Block_Start}, // Else
@@ -806,6 +807,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 		reg_mask_of = x64_reg_mask_of,
 		emit_function = x64_emit_function,
 		peep = x64_peep,
+		post_schedule_peep = x64_post_schedule_peep,
 		first_input_idxs = {
 			0, //Start
 			0, //Entry
@@ -1081,8 +1083,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{Class_Flag.Store}, // Copy
 			{Class_Flag.Store}, // Set
 			{Class_Flag.Store}, // Store
-			{Class_Flag.Interned, Class_Flag.Load}, // Load
-			{Class_Flag.Interned, Class_Flag.Load}, // Load_S
+			{Class_Flag.Interned}, // Load
+			{Class_Flag.Interned}, // Load_S
 			{}, // If
 			{Class_Flag.Is_Basic_Block_Start}, // Then
 			{Class_Flag.Is_Basic_Block_Start}, // Else
@@ -1099,28 +1101,28 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{Class_Flag.Interned}, // Sext
 			{Class_Flag.Interned}, // Uext
 			{Class_Flag.Interned}, // Cast
-			{Class_Flag.Load}, // X64_Add
-			{Class_Flag.Load}, // X64_Sub
-			{Class_Flag.Load}, // X64_And
-			{Class_Flag.Load}, // X64_Or
-			{Class_Flag.Load}, // X64_Xor
-			{Class_Flag.Load}, // X64_Eq
-			{Class_Flag.Load}, // X64_Ne
-			{Class_Flag.Load}, // X64_Le
-			{Class_Flag.Load}, // X64_Lt
-			{Class_Flag.Load}, // X64_Gt
-			{Class_Flag.Load}, // X64_Ge
-			{Class_Flag.Load}, // X64_U_Lt
-			{Class_Flag.Load}, // X64_U_Gt
-			{Class_Flag.Load}, // X64_U_Le
-			{Class_Flag.Load}, // X64_U_Ge
-			{Class_Flag.Load}, // X64_Shl
-			{Class_Flag.Load}, // X64_Shr
-			{Class_Flag.Load}, // X64_U_Shr
-			{Class_Flag.Load}, // X64_Load
+			{}, // X64_Add
+			{}, // X64_Sub
+			{}, // X64_And
+			{}, // X64_Or
+			{}, // X64_Xor
+			{}, // X64_Eq
+			{}, // X64_Ne
+			{}, // X64_Le
+			{}, // X64_Lt
+			{}, // X64_Gt
+			{}, // X64_Ge
+			{}, // X64_U_Lt
+			{}, // X64_U_Gt
+			{}, // X64_U_Le
+			{}, // X64_U_Ge
+			{}, // X64_Shl
+			{}, // X64_Shr
+			{}, // X64_U_Shr
+			{}, // X64_Load
 			{Class_Flag.Store}, // X64_Store
-			{Class_Flag.Load}, // X64_Neg
-			{Class_Flag.Load}, // X64_Not
+			{}, // X64_Neg
+			{}, // X64_Not
 		},
 		node_extra_types = {
 			Cfg,

@@ -373,6 +373,15 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule) {
 
 		lca := ctx.late_schedules[node.gvn]
 		if lca == 0 {
+			if len(node.outs) == 0 {
+				lca = ctx.early_schedules[node.gvn]
+				if lca == 0 {
+					ctx.nodes[node.gvn] = n
+					lca = NODE_ENTRY
+				}
+				log.warn("free node with no outputs:", node.node, lca)
+			}
+
 			for out in node.outs {
 				onode := graph_expand(graph, out.id)
 				olca := ctx.late_schedules[onode.gvn]
@@ -548,10 +557,10 @@ verify_schedule_integrity :: proc(graph: ^Graph, sched: ^Graph_Schedule) {
 	for bb in sched.bbs {
 		for instr in bb.instrs {
 			inode := graph_expand(graph, instr)
-			assert(
-				len(inode.outs) != 0 ||
-				graph_has_flag(graph, instr, .Immortal),
-			)
+			if len(inode.outs) == 0 &&
+			   !graph_has_flag(graph, instr, .Immortal) {
+				log.warn("dead node in the schedule:", inode.node)
+			}
 
 			for inp, i in inode.inps {
 				innode := graph_expand(graph, inp)

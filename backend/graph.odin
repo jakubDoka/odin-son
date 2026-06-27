@@ -11,6 +11,7 @@ import "core:mem"
 import "core:reflect"
 import "core:simd"
 import "core:slice"
+import "core:sort"
 import "core:terminal/ansi"
 
 when NODE_NAMES {
@@ -39,6 +40,8 @@ Node_Spec :: struct {
 	using regalloc:    Regalloc_Spec,
 	using codegen:     Codegen_Spec,
 }
+
+DEAD_NODE_KIND :: ~u16(0)
 
 Ideal_Node_Type :: enum u16 {
 	Start,
@@ -106,7 +109,6 @@ Class_Flag :: enum {
 	Comutes,
 	Immortal,
 	Store,
-	Load,
 	Clonable,
 }
 
@@ -183,6 +185,8 @@ Node :: struct {
 	},
 	using _:             bit_field u8 {
 		in_worklist:           bool | 1,
+		is_store:              bool | 1,
+		in_place_slot_offset:  i8   | 2,
 		additional_data_start: u8   | 2,
 	},
 	gvn:                 u32,
@@ -217,6 +221,7 @@ Graph :: struct {
 Graph_Opt_Flags :: bit_set[Graph_Opt_Flag]
 
 Graph_Opt_Flag :: enum int {
+	Schedule_Peeps,
 	Iter_Peeps,
 	Local_Peeps,
 }
@@ -227,15 +232,19 @@ Peep_Ctx :: struct {
 	triggers:    ^[dynamic][dynamic; 4]Node_ID,
 }
 
-peep_ctx_add_trigger :: proc(ctx: Peep_Ctx, from: Node_ID, to: Node_ID) {
+peep_ctx_graph_is_complete :: proc(ctx: Peep_Ctx) -> bool {
+	return ctx.worklist != nil
+}
+
+peep_ctx_add_trigger :: proc(ctx: Peep_Ctx, triggerer: Node_ID, tar: Node_ID) {
 	if ctx.triggers == nil do return
 
-	gvn := graph_get(ctx, from).gvn
+	gvn := graph_get(ctx, triggerer).gvn
 	if len(ctx.triggers) <= int(gvn) {
 		resize(ctx.triggers, gvn + 1)
 	}
-	if !slice.contains(ctx.triggers[gvn][:], to) {
-		append(&ctx.triggers[gvn], to)
+	if !slice.contains(ctx.triggers[gvn][:], tar) {
+		append(&ctx.triggers[gvn], tar)
 	}
 }
 
@@ -317,9 +326,13 @@ worklist_next :: proc(
 	n: Node_ID,
 	ok: bool,
 ) {
-	id := queue.pop_front_safe(worklist) or_return
-	graph_expand(graph, id).in_worklist = false
-	return id, true
+	for {
+		id := queue.pop_front_safe(worklist) or_return
+		nd := graph_get(graph, id)
+		if nd.rtype == DEAD_NODE_KIND do continue
+		nd.in_worklist = false
+		return id, true
+	}
 }
 
 graph_pin :: proc(graph: ^Graph, id: Node_ID) {
@@ -332,13 +345,14 @@ graph_unpin :: proc(graph: ^Graph, id: Node_ID, no_delete := false) {
 
 graph_peep :: proc(graph: ^Graph, id: Node_ID) -> Node_ID {
 	if .Local_Peeps not_in graph.opt_flags do return id
+	if id == 0 do return id
 
 	node := graph_expand(graph, id)
 	if len(node.outs) > 0 do return id
 
 	prev_hash := graph_node_hash(graph, node)
 	res := graph.peep({graph, nil, nil}, node)
-	if res == 0 do res = id
+	if res == 0 do return id
 
 	if res == id {
 		graph_unintern(graph, id, prev_hash)
@@ -351,6 +365,30 @@ graph_peep :: proc(graph: ^Graph, id: Node_ID) -> Node_ID {
 	graph_unpin(graph, res, no_delete = true)
 
 	return res
+}
+
+graph_schedule_peeps :: proc(graph: ^Graph, schedule: ^Graph_Schedule) {
+	if .Schedule_Peeps not_in graph.opt_flags do return
+
+	for &bb in schedule.bbs {
+		for &instr, i in bb.instrs[:len(bb.instrs) - 1] {
+			node := graph_expand(graph, instr)
+			new_node := graph.post_schedule_peep({graph, bb.instrs[:i]}, node)
+			if new_node == 0 do continue
+			if new_node == instr do continue
+			graph_subsume(graph, new_node, instr)
+			instr = new_node
+		}
+
+		keep := 0
+		for instr in bb.instrs {
+			if graph_get(graph, instr).rtype != DEAD_NODE_KIND {
+				bb.instrs[keep] = instr
+				keep += 1
+			}
+		}
+		resize(&bb.instrs, keep)
+	}
 }
 
 graph_iter_peeps :: proc(graph: ^Graph) {
@@ -387,11 +425,13 @@ graph_iter_peeps :: proc(graph: ^Graph) {
 			if new_node == n do continue
 		}
 
+		node = graph_expand(graph, n)
+
 		for inp in node.inps {
 			worklist_add(graph, &worklist, inp)
 		}
 
-		graph_subsume(graph, new_node, n)
+		graph_subsume(graph, new_node, n, &worklist)
 	}
 
 	if ODIN_DEBUG {
@@ -415,6 +455,7 @@ graph_iter_peeps :: proc(graph: ^Graph) {
 
 	collect_nodes :: proc(graph: ^Graph, worklist: ^queue.Queue(Node_ID)) {
 		i := 0
+		worklist.offset = 0
 		worklist_add(graph, worklist, NODE_START)
 		for i < queue.len(worklist^) {
 			node := graph_expand(graph, worklist.data[i])
@@ -522,6 +563,7 @@ when !GEN_SPEC {
 	builder_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 		node := node
 		id := graph_id(ctx, node)
+		is_complete := peep_ctx_graph_is_complete(ctx)
 
 		DEAD_EXCEPTIONS := bit_set[Ideal_Node_Type]{.Region, .Start}
 
@@ -546,7 +588,7 @@ when !GEN_SPEC {
 			graph_remove_output(ctx, inp, {idx = i, id = par})
 		}
 
-		#partial switch node.itype {
+		#partial match: switch node.itype {
 		case .Region:
 			any_dead: Node_ID
 			#reverse for inp, i in node.inps {
@@ -664,8 +706,8 @@ when !GEN_SPEC {
 			if Bin_Op(lhs.itype) == op && op in ASOCIATIVE && crhs != nil {
 				clhs_lhs := graph_extra(ctx, lhs.inps[0], CInt)
 				clhs_rhs := graph_extra(ctx, lhs.inps[1], CInt)
-				if clhs_rhs != nil && clhs_lhs == nil {
-					return graph_add_bin_op(
+				for clhs_rhs != nil && clhs_lhs == nil {
+					res := graph_add_bin_op(
 						ctx.graph,
 						"rsoc",
 						op,
@@ -678,6 +720,12 @@ when !GEN_SPEC {
 							fold_bin_op(clhs_rhs.value, op, crhs.value),
 						),
 					)
+					worklist_add(ctx, ctx.worklist, res)
+					return res
+				}
+
+				if clhs_rhs == nil && clhs_lhs == nil {
+					peep_ctx_add_trigger(ctx, lhs.inps[1], id)
 				}
 			}
 
@@ -715,7 +763,6 @@ when !GEN_SPEC {
 				worklist_add(ctx, ctx.worklist, id)
 				return id
 			}
-
 		case .Sext, .Uext:
 			oper := graph_expand(ctx, node.inps[0])
 			if oper.itype == .Load_S || oper.itype == .Load {
@@ -730,9 +777,322 @@ when !GEN_SPEC {
 			if oper.dt == node.dt {
 				return node.inps[0]
 			}
+		case .Set:
+			if !is_complete do break
+
+			ctrl := node.inps[0]
+			mem := node.inps[1]
+			dst := graph_expand(ctx, node.inps[2])
+			val := graph_expand(ctx, node.inps[3])
+			val_const := graph_extra(ctx, val, CInt)
+			sze := graph_expand(ctx, node.inps[4])
+			sze_const := graph_extra(ctx, sze, CInt)
+
+			if dst.itype != .Local_Addr do break
+			if sze_const == nil do break
+
+			if len(node.outs) == 1 {
+				out := graph_expand(ctx, node.outs[0].id)
+				if out.itype == .Copy &&
+				   out.inps[0] == ctrl &&
+				   out.inps[2] == node.inps[2] &&
+				   out.inps[4] == node.inps[4] {
+					return mem
+				}
+			}
+
+			if val_const == nil do break
+			if val_const.value != 0 do break
+
+			dst_slot := graph_expand(ctx, dst.inps[0])
+
+			Slot :: bit_field int {
+				size:   int | 8,
+				state:  enum uint {
+					Uninit,
+					Needs_Init,
+					Inited,
+				}    | 2,
+				offset: int | 54,
+			}
+
+			Slots :: [dynamic; 8]Slot
+
+			slots: Slots
+			dst_size := int(graph_extra(ctx, dst_slot, Local).size)
+
+			Member :: struct {
+				id:       Node_ID,
+				slot_idx: int,
+			}
+
+			members: [dynamic; 16]Member
+
+			iter: Offset_Iter
+			iter.curr = node.inps[2]
+			scan: for out in offset_iter_next(ctx, &iter) {
+				onode := graph_expand(ctx, out.id)
+
+				size: int
+				#partial switch onode.itype {
+				case .Load:
+					size = DT_SIZE[onode.dt]
+				case .Store:
+					if out.idx != 2 {
+						continue
+					}
+					size = DT_SIZE[graph_get(ctx, onode.inps[2]).dt]
+				case .Copy, .Set:
+					if out.idx != 2 {
+						continue
+					}
+
+					copy_size := graph_extra(ctx, onode.inps[4], CInt)
+					if copy_size == nil {
+						continue
+					}
+
+					size = int(copy_size.value)
+					continue // TODO: worth a try
+				case:
+					continue
+				}
+
+				end := iter.offset + size
+
+				for &slot, i in slots {
+					send := slot.offset + slot.size
+					if end <= slot.offset || send <= iter.offset {
+						continue
+					}
+
+					if slot.offset != iter.offset || slot.size != size {
+						continue scan
+					}
+
+					if onode.itype != .Load {
+						append(&members, Member{out.id, i})
+					}
+					continue scan
+				}
+
+				if onode.itype != .Load {
+					append(&members, Member{out.id, len(slots)})
+				}
+				append(&slots, Slot{offset = iter.offset, size = size})
+			}
+
+			cursor := id
+			traverse: for {
+				cnode := graph_expand(ctx, cursor)
+				prev_len := len(slots)
+
+				cursor = 0
+				cur_slot: ^Slot
+
+				for out in cnode.outs {
+					onode := graph_expand(ctx, out.id)
+
+					slot: ^Slot
+					for memb in members {
+						if memb.id == out.id {
+							slot = &slots[memb.slot_idx]
+						}
+					}
+
+					if slot == nil {
+						if onode.itype == .Load {
+							base, off := base_and_offset(ctx, onode.inps[2])
+							if base == node.inps[2] {
+								for &slt in slots {
+									if slt.offset == off {
+										slot = &slt
+										break
+									}
+								}
+							}
+						}
+					}
+
+					if slot == nil {
+						break traverse
+					}
+
+					#partial switch onode.itype {
+					case .Store:
+						// give up on branches and backtrack
+						if cursor != 0 {
+							break traverse
+						}
+						cur_slot = slot
+						cursor = out.id
+					case .Load:
+						if slot.state == .Uninit {
+							slot.state = .Needs_Init
+						}
+					case:
+						panic("")
+					}
+				}
+
+				if cursor == 0 do break
+				if cur_slot.state == .Uninit {
+					cur_slot.state = .Inited
+				}
+			}
+
+			sort.quick_sort(slots[:])
+
+			align_of :: proc(offset: int) -> int {
+				if offset == 0 do return MAX_STORE_UNIT
+				return 1 << uint(intrinsics.count_trailing_zeros(offset))
+			}
+
+			MAX_STORE_UNIT :: 8
+
+			align := min(align_of(dst_size), MAX_STORE_UNIT)
+			assert(align != 0)
+
+			offset := dst_size
+			prev_len := len(slots)
+			for i in 0 ..= prev_len {
+				slot := i == prev_len ? Slot{} : slots[prev_len - i - 1]
+
+				assert(offset >= slot.offset)
+				rev_offset := slot.offset + slot.size
+				inserts := 0
+				for rev_offset < offset {
+					fill := Slot {
+						size = offset - rev_offset,
+					}
+					current_align := min(align, align_of(rev_offset))
+					assert(current_align != 0)
+					fill.size = min(current_align, fill.size)
+					assert(fill.size != 0)
+					fill.offset = rev_offset
+					rev_offset += fill.size
+					if !inject_at(&slots, prev_len - i + inserts, fill) do break match
+					inserts += 1
+				}
+				offset = slot.offset
+			}
+
+			keep := 0
+			for slot in slots {
+				if slot.state != .Inited {
+					slots[keep] = slot
+					keep += 1
+				}
+			}
+			resize(&slots, keep)
+
+			if len(slots) >= 5 do break match
+
+			mem_thread := mem
+			for slot in slots {
+				idx := intrinsics.count_trailing_zeros(slot.size)
+				table := [4]Node_Datatype{.I8, .I16, .I32, .I64}
+				dt := table[idx]
+				vl := graph_add_c_int(ctx, "zrsp", dt, 0)
+				off := graph_add_c_int(ctx, "zroffv", .I64, i64(slot.offset))
+				dst := graph_add_bin_op(
+					ctx,
+					"zroff",
+					.Add,
+					.I64,
+					node.inps[2],
+					off,
+				)
+				worklist_add(ctx, ctx.worklist, dst)
+				mem_thread = graph_add_store(
+					ctx,
+					"zrst",
+					ctrl,
+					mem_thread,
+					dst,
+					vl,
+				)
+				worklist_add(ctx, ctx.worklist, mem_thread)
+			}
+
+			return mem_thread
 		}
 
 		return 0
+	}
+
+	builder_post_schedule_peep :: proc(
+		ctx: PS_Peep_Ctx,
+		node: Expanded_Node,
+	) -> Node_ID {
+		return 0
+	}
+}
+
+base_and_offset :: proc(
+	graph: ^Graph,
+	node: Node_ID,
+) -> (
+	base: Node_ID,
+	off: int,
+) {
+	base = node
+	for {
+		bnode := graph_expand(graph, base)
+		if bnode.itype != .Add do return
+		lhs_const := graph_extra(graph, bnode.inps[1], CInt)
+		if lhs_const == nil do return
+		base = bnode.inps[0]
+		off += int(lhs_const.value)
+	}
+}
+
+Offset_Iter :: struct {
+	curr:    Node_ID,
+	offset:  int,
+	out_idx: int,
+}
+
+offset_iter_next :: proc(
+	ctx: Peep_Ctx,
+	iter: ^Offset_Iter,
+) -> (
+	Node_Output,
+	bool,
+) {
+	for {
+		curr := graph_expand(ctx, iter.curr)
+		if iter.out_idx == len(curr.outs) {
+			if curr.itype == .Add {
+				parent := graph_expand(ctx, curr.inps[0])
+				off := graph_extra(ctx, curr.inps[1], CInt)
+				iter.offset -= int(off.value)
+				iter.out_idx =
+					slice.linear_search(
+						parent.outs,
+						Node_Output{id = iter.curr, idx = 0},
+					) or_else panic("")
+				iter.out_idx += 1
+				iter.curr = curr.inps[0]
+				continue
+			} else {
+				return {}, false
+			}
+		}
+
+		next := curr.outs[iter.out_idx]
+		next_node := graph_expand(ctx, next.id)
+		recurse: if next_node.itype == .Add {
+			off := graph_extra(ctx, next_node.inps[1], CInt)
+			if off == nil do break recurse
+			iter.offset += int(off.value)
+			iter.curr = next.id
+			iter.out_idx = 0
+			continue
+		}
+
+		iter.out_idx += 1
+		return next, true
 	}
 }
 
@@ -967,13 +1327,26 @@ node_approx_size :: proc(graph: ^Graph, node: ^Node) -> uint {
 	)
 }
 
-graph_subsume :: proc(graph: ^Graph, with: Node_ID, target: Node_ID) {
+graph_subsume :: proc(
+	graph: ^Graph,
+	with: Node_ID,
+	target: Node_ID,
+	worklist: ^queue.Queue(Node_ID) = nil,
+) {
 	wnode := graph_expand(graph, with)
 	tnode := graph_expand(graph, target)
 
 	assert(with != target)
 
 	try_recycle: if 0 == 0 {
+		if wnode.in_worklist {
+			last := queue.pop_back(worklist)
+			queue.push_back(worklist, last)
+			if last != with {
+				break try_recycle
+			}
+		}
+
 		wtotal_size := node_approx_size(graph, wnode)
 
 		if int(graph.mem.pos - wtotal_size) / PRECISION != int(with) {
@@ -993,6 +1366,10 @@ graph_subsume :: proc(graph: ^Graph, with: Node_ID, target: Node_ID) {
 
 		if wtotal_size > ttotal_size do break try_recycle
 
+		if wnode.in_worklist {
+			queue.pop_back(worklist)
+		}
+
 		for inp, i in wnode.inps {
 			graph_remove_output(graph, inp, {idx = i, id = with})
 			graph_add_output(graph, inp, target, i)
@@ -1010,6 +1387,7 @@ graph_subsume :: proc(graph: ^Graph, with: Node_ID, target: Node_ID) {
 		graph.waste += int(ttotal_size - wtotal_size)
 
 		wnode.gvn = tnode.gvn
+		wnode.in_worklist = tnode.in_worklist
 		wnode.input_idx -= u32(with - target)
 		wnode.output_count = tnode.output_count
 		wnode.output_cap = tnode.output_cap
@@ -1296,7 +1674,9 @@ graph_delete_node :: proc(graph: ^Graph, node: ^Node, indirect := false) {
 		graph.gvn -= 1
 	}
 
-	node^ = {}
+	node^ = {
+		rtype = DEAD_NODE_KIND,
+	}
 }
 
 @(tag = "node_proc")
@@ -1323,12 +1703,18 @@ graph_expand :: #force_no_inline proc(
 	id: Node_ID,
 ) -> Expanded_Node {
 	node := graph_get(graph, id)
+	assert(node.rtype != DEAD_NODE_KIND)
+	in_place := graph.inplace_slot_idxs[node.rtype]
+	if in_place >= 0 {
+		in_place += i8(node.additional_data_start)
+	}
+	in_place += node.in_place_slot_offset
 	return {
 		node,
 		graph_inps(graph, node),
 		graph_outs(graph, node),
 		int(graph.first_input_idxs[node.rtype] + node.additional_data_start),
-		int(graph.inplace_slot_idxs[node.rtype]),
+		int(in_place),
 	}
 }
 
@@ -1366,6 +1752,7 @@ push_node_name :: proc(graph: ^Graph, name: string) {
 
 @(disabled = !NODE_NAMES)
 graph_set_name :: proc(graph: ^Graph, node: Node_ID, name: string) {
+	assert(node != 0)
 	copy(
 		graph.mem.ptr[int(node) * PRECISION - PREFIX_SIZE:][:PREFIX_SIZE],
 		reflect.as_bytes(name),
@@ -1491,6 +1878,7 @@ graph_add_output_node :: proc(
 	out: Node_ID,
 	#any_int i: int,
 ) {
+	assert(node.rtype != DEAD_NODE_KIND)
 	graph_ensure_available_output_cap(graph, node, 1)
 
 	node.output_count += 1

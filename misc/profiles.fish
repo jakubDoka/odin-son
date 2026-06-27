@@ -7,5 +7,6 @@ alias gen-meta 'odin run meta'
 
 set acc '-define:ACCEPT=true'
 set rlg '-define:REGLOGS=true'
-
+set dff '-define:DIFF=false'
+ 
 alias run-test 'odin test . -keep-executable -debug -define:ODIN_TEST_FANCY=false'

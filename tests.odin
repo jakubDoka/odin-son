@@ -3147,3 +3147,95 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) frontend_peepholes_on_function_args :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	return funnel(2, 2 + 2, 2 + 2 + 2)
+}
+
+funnel :: proc(a: int, b: int, c: int) -> int {
+	return a + b + c
+}
+
+run_test(t, `frontend_peepholes_on_function_args`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	return funnel(2, 2 + 2, 2 + 2 + 2)
+}
+
+funnel :: proc(a: int, b: int, c: int) -> int {
+	return a + b + c
+}
+`, main_())
+}
+@(test) stress_testing_structs :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Stru :: struct {
+	a: int,
+	b: int,
+	c: C,
+}
+
+C :: struct {
+	a: int,
+	b: int,
+	c: D,
+}
+
+D :: struct {
+	a: int,
+	b: int,
+}
+
+main_ :: proc() -> int {
+	vl := Stru{c = {c = {0, 0}}}
+	vl.a = 3
+	vl.b = 2
+	vl.c = {1, 1, {vl.c.a + vl.c.b, 8}}
+	vl.c.c = {vl.a, vl.b}
+	return vl.a + vl.b + vl.c.a + vl.c.b + vl.c.c.a + vl.c.c.b
+}
+
+run_test(t, `stress_testing_structs`, `
+package main
+
+opt_level :: "none"
+
+Stru :: struct {
+	a: int,
+	b: int,
+	c: C,
+}
+
+C :: struct {
+	a: int,
+	b: int,
+	c: D,
+}
+
+D :: struct {
+	a: int,
+	b: int,
+}
+
+main :: proc() -> int {
+	vl := Stru{c = {c = {0, 0}}}
+	vl.a = 3
+	vl.b = 2
+	vl.c = {1, 1, {vl.c.a + vl.c.b, 8}}
+	vl.c.c = {vl.a, vl.b}
+	return vl.a + vl.b + vl.c.a + vl.c.b + vl.c.c.a + vl.c.c.b
+}
+`, main_())
+}

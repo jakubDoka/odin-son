@@ -313,6 +313,10 @@ regalloc_round :: proc(
 						graph,
 						inode.inps[inode.inplace_slot],
 					)
+					if int(inplace_node.gvn) > len(ctx.lrg_table) {
+						log.info(graph)
+						log.info(inode.node, inode.inplace_slot)
+					}
 					lrg = ctx.lrg_table[inplace_node.gvn]
 				} else if inode.itype == .Phi {
 					for inp in inode.inps[1:] {

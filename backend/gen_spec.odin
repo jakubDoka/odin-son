@@ -66,15 +66,11 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 	.Mem = {args = {"ctrl"}, default_type = .Void},
 	.Local = {id = Local, args = {"mem"}, default_type = .Void},
 	.Local_Addr = {args = {"local"}, default_type = .I64, flags = {.Clonable}},
-	.Load = {
-		id = Mem_Op,
-		args = {"ctrl", "mem", "addr"},
-		flags = {.Interned, .Load},
-	},
+	.Load = {id = Mem_Op, args = {"ctrl", "mem", "addr"}, flags = {.Interned}},
 	.Load_S = {
 		id = Mem_Op,
 		args = {"ctrl", "mem", "addr"},
-		flags = {.Interned, .Load},
+		flags = {.Interned},
 	},
 	.Store = {
 		id = Mem_Op,
@@ -517,6 +513,11 @@ generate_specs :: proc() {
 			)
 		}
 		fmt.fprintf(file, "\t\tpeep = %v_peep,\n", prefix)
+		fmt.fprintf(
+			file,
+			"\t\tpost_schedule_peep = %v_post_schedule_peep,\n",
+			prefix,
+		)
 
 		os.write_string(file, "\t\tfirst_input_idxs = {\n")
 		for classes in spec.classes {

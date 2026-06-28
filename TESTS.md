@@ -1666,3 +1666,29 @@ main :: proc() -> int {
 	return vl.a + vl.b + vl.c.a + vl.c.b + vl.c.c.a + vl.c.c.b
 }
 ```
+
+#### pass stack in calls
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	return load_of_args(1, 2, 3, 4, 5, 6, 7, 8, 9)
+}
+
+load_of_args :: proc(
+	a: int,
+	b: int,
+	c: int,
+ 	d: int,
+ 	e: int,
+ 	f: int,
+ 	g: int,
+ 	h: int,
+ 	i: int,
+) -> int {
+	return a + b + c + d + e + f + g + h + i
+}
+```
+

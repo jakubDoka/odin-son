@@ -495,7 +495,7 @@ regalloc_round :: proc(
 			}
 
 			if inode.itype != .Phi {
-				for inp in inode.inps[inode.data_start:] {
+				for inp in inode.inps[inode.data_start:inode.ordered_input_count] {
 					inp_node := graph_get(graph, inp)
 					lrg := ctx.lrg_table[inp_node.gvn]
 
@@ -861,7 +861,7 @@ regalloc_round :: proc(
 					}
 
 					split := split
-					if has_call_use {
+					if has_call_use || split == m {
 						split = split_before(
 							ctx,
 							out.id,
@@ -1019,7 +1019,7 @@ regalloc_round :: proc(
 			for instr, i in bb.instrs {
 				inode := graph_expand(ctx.graph, instr)
 				if inode.dt == .Void && inode.itype == .Phi do continue
-				for inp, idx in inode.inps[inode.data_start:] {
+				for inp, idx in inode.inps[inode.data_start:inode.ordered_input_count] {
 
 					block := &bb
 					i := i
@@ -1159,7 +1159,12 @@ regalloc_round :: proc(
 		graph := ctx.graph
 		fnode := graph_get(graph, use)
 
-		if graph_has_flag(graph, fnode, .Clonable) {
+		if graph_has_flag(graph, fnode, .Clonable) ||
+		   ((reg_mask_first_set(
+							   reg_mask_of(ctx.graph, ctx.ra, use, 0),
+						   ) or_else 0) >=
+					   GPA_REG_COUNT &&
+				   len(graph_outs(ctx.graph, use)) == 1) {
 			return use
 		}
 

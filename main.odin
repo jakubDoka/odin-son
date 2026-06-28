@@ -24,7 +24,8 @@ import "vendored/gam/util/hot"
 TEST_OUT_DIR :: "print-tests"
 
 split_lines :: proc(input: string) -> []string {
-	lines := make([dynamic]string)
+
+	lines: [dynamic]string
 
 	start := 0
 	for i in 0 ..< len(input) {
@@ -126,7 +127,7 @@ print_diff :: proc(out: ^strings.Builder, a, b: string) {
 	}
 }
 
-disasm :: proc(sb: ^strings.Builder, ctx: Ctx) {
+disasm :: proc(sb: ^strings.Builder, ctx: Gen_Ctx) {
 	runtime_address: zydis.U64 = 0x0040_0000
 
 	jumps: map[int]int
@@ -254,7 +255,8 @@ disasm :: proc(sb: ^strings.Builder, ctx: Ctx) {
 }
 
 highlight_disasm :: proc(disasm: string) -> string {
-	text := disasm
+	text: strings.Builder
+	append(&text.buf, disasm)
 
 	gp_register_names := []string {
 		"rax",
@@ -277,14 +279,15 @@ highlight_disasm :: proc(disasm: string) -> string {
 		"rflags",
 	}
 
+	highlight: strings.Builder
 	for name, i in gp_register_names {
-		highlight: strings.Builder
+		clear(&highlight.buf)
 
 		backend.ansi_start(strings.to_writer(&highlight), i)
 		append(&highlight.buf, name)
 		backend.ansi_end(strings.to_writer(&highlight))
 
-		text, _ = strings.replace_all(text, name, string(highlight.buf[:]))
+		strings.builder_replace_all(&text, name, string(highlight.buf[:]))
 	}
 
 	for i in 0 ..< 100 {
@@ -298,10 +301,10 @@ highlight_disasm :: proc(disasm: string) -> string {
 		append(&highlight.buf, name)
 		backend.ansi_end(strings.to_writer(&highlight))
 
-		text, _ = strings.replace_all(text, name, string(highlight.buf[:]))
+		strings.builder_replace_all(&text, name, string(highlight.buf[:]))
 	}
 
-	return text
+	return string(text.buf[:])
 }
 
 fmts_once: sync.Once
@@ -449,6 +452,8 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 
 	sync.once_do(&fmts_once, init_custom_fmt)
 
+	global_ctx: Global_Ctx
+
 	p := parser.Parser{}
 	f := ast.File {
 		src      = source,
@@ -458,13 +463,16 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		ok := parser.parse_file(&p, &f); assert(ok)
 	}
 
-	ctx: Ctx
+	types: Types
+	types.allocator = arna.allocator(&type_mem)
+	types.procs.allocator = types.allocator
+	types.pointers.allocator = types.allocator
+	types.structs.allocator = types.allocator
+	types.lits.allocator = types.allocator
+
+	ctx: Gen_Ctx
 	ctx.file = &f
-	ctx.type_allocator = arna.allocator(&type_mem)
-	ctx.procs.allocator = ctx.type_allocator
-	ctx.pointers.allocator = ctx.type_allocator
-	ctx.structs.allocator = ctx.type_allocator
-	ctx.lits.allocator = ctx.type_allocator
+	ctx.types = &types
 
 	for decl in f.decls {
 		if sdecl, sok := decl.derived_stmt.(^ast.Value_Decl); sok {
@@ -873,20 +881,20 @@ unpack_type :: proc(typ: Type) -> Type_Data {
 	return transmute(Type_Data)Raw_Type_Data{data = raw.data, tag = raw.tag}
 }
 
-intern_pointer :: proc(ctx: ^Ctx, ty: Type) -> Type {
+intern_pointer :: proc(ctx: ^Gen_Ctx, ty: Type) -> Type {
 	existing :=
-		ctx.pointers[ty] or_else Pointer(new_clone(ty, ctx.type_allocator))
+		ctx.pointers[ty] or_else Pointer(new_clone(ty, ctx.types.allocator))
 	ctx.pointers[ty] = existing
 	return pack_type(existing)
 }
 
-intern_lit :: proc(ctx: ^Ctx, lit: Lit) -> ^Lit {
-	existing := ctx.lits[lit] or_else new_clone(lit, ctx.type_allocator)
+intern_lit :: proc(ctx: ^Gen_Ctx, lit: Lit) -> ^Lit {
+	existing := ctx.lits[lit] or_else new_clone(lit, ctx.types.allocator)
 	ctx.lits[lit] = existing
 	return existing
 }
 
-emit_type :: proc(ctx: ^Ctx, expr: ^ast.Node) -> Type {
+emit_type :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Type {
 	if expr == nil do return .Void
 
 	#partial switch d in expr.derived {
@@ -901,13 +909,13 @@ emit_type :: proc(ctx: ^Ctx, expr: ^ast.Node) -> Type {
 				structa, ok := ctx.structs[key]
 				if ok do return pack_type(structa)
 
-				structa = new(Struct, ctx.type_allocator)
+				structa = new(Struct, ctx.types.allocator)
 				ctx.structs[key] = structa
 
 				structa.fields = make(
 					[]Struct_Field,
 					len(d.fields.list),
-					ctx.type_allocator,
+					ctx.types.allocator,
 				)
 				for &field, i in structa.fields {
 					ast_field := d.fields.list[i]
@@ -971,21 +979,34 @@ Variable :: struct {
 	flags: Var_Flags,
 }
 
-Ctx :: struct {
-	using graph:    backend.Graph,
-	type_allocator: runtime.Allocator,
-	procs:          [dynamic]Proc,
-	scope:          [dynamic]Variable,
-	pointers:       map[Type]Pointer,
-	structs:        map[Struct_Key]^Struct,
-	lits:           map[Lit]^Lit,
-	node_scope:     backend.Node_ID,
-	root_mem:       backend.Node_ID,
-	mem_slot:       int,
-	loop:           ^Loop_State,
-	file:           ^ast.File,
-	file_id:        File_ID,
-	prc:            Proc_ID,
+Module :: struct {
+	files: []ast.File,
+}
+
+Global_Ctx :: struct {
+	modules: []Module,
+}
+
+Types :: struct {
+	allocator: runtime.Allocator,
+	procs:     [dynamic]Proc,
+	scope:     [dynamic]Variable,
+	pointers:  map[Type]Pointer,
+	structs:   map[Struct_Key]^Struct,
+	lits:      map[Lit]^Lit,
+}
+
+Gen_Ctx :: struct {
+	using global: ^Global_Ctx,
+	using types:  ^Types,
+	using graph:  backend.Graph,
+	node_scope:   backend.Node_ID,
+	root_mem:     backend.Node_ID,
+	mem_slot:     int,
+	loop:         ^Loop_State,
+	file:         ^ast.File,
+	file_id:      File_ID,
+	prc:          Proc_ID,
 }
 
 File_ID :: distinct u32
@@ -1033,15 +1054,15 @@ Var_Flag :: enum uintptr {
 
 Var_Flags :: bit_set[Var_Flag;uintptr]
 
-ctx_ctrl :: proc(ctx: ^Ctx) -> backend.Node_ID {
+ctx_ctrl :: proc(ctx: ^Gen_Ctx) -> backend.Node_ID {
 	return backend.graph_inps(ctx, ctx.node_scope)[0]
 }
 
-ctx_mem :: proc(ctx: ^Ctx) -> backend.Node_ID {
+ctx_mem :: proc(ctx: ^Gen_Ctx) -> backend.Node_ID {
 	return backend.graph_get_scope_value(ctx, ctx.node_scope, ctx.mem_slot)
 }
 
-ctx_set_mem :: proc(ctx: ^Ctx, mem: backend.Node_ID) {
+ctx_set_mem :: proc(ctx: ^Gen_Ctx, mem: backend.Node_ID) {
 	backend.graph_set_input(ctx, ctx.node_scope, ctx.mem_slot, mem)
 }
 
@@ -1065,7 +1086,7 @@ set_node_data :: proc(node: ^ast.Node, value: $T) {
 }
 
 typecheck :: proc(
-	ctx: ^Ctx,
+	ctx: ^Gen_Ctx,
 	prop: Ty_Propagation,
 	node: ^ast.Node,
 ) -> (
@@ -1309,7 +1330,11 @@ is_of :: proc(vl: Type, $K: typeid) -> bool {
 	return ok
 }
 
-to_rvalue_ty :: proc(ctx: ^Ctx, value: Value, ty: Type) -> backend.Node_ID {
+to_rvalue_ty :: proc(
+	ctx: ^Gen_Ctx,
+	value: Value,
+	ty: Type,
+) -> backend.Node_ID {
 	if !value.is_lvalue do return value.id
 	dt := type_to_dt(ty)
 	assert(dt != .Void)
@@ -1341,7 +1366,7 @@ to_rvalue :: proc {
 }
 
 to_rvalue_expr :: proc(
-	ctx: ^Ctx,
+	ctx: ^Gen_Ctx,
 	value: Value,
 	node: ^ast.Node,
 ) -> backend.Node_ID {
@@ -1424,7 +1449,7 @@ Sym :: union #no_nil {
 	int,
 }
 
-ctx_lookup_lvalue :: proc(ctx: ^Ctx, expr: ^ast.Node) -> Sym {
+ctx_lookup_lvalue :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Sym {
 	if id, ok := expr.derived.(^ast.Ident); ok {
 		#reverse for var in ctx.scope {
 			if var.name == id.name {
@@ -1456,7 +1481,7 @@ store_value :: proc {
 }
 
 store_value_expr :: proc(
-	ctx: ^Ctx,
+	ctx: ^Gen_Ctx,
 	name: string,
 	ptr: backend.Node_ID,
 	value: Value,
@@ -1466,7 +1491,7 @@ store_value_expr :: proc(
 }
 
 store_value_ty :: proc(
-	ctx: ^Ctx,
+	ctx: ^Gen_Ctx,
 	name: string,
 	ptr: backend.Node_ID,
 	value: Value,
@@ -1509,7 +1534,7 @@ store_value_ty :: proc(
 }
 
 alloca :: proc(
-	ctx: ^Ctx,
+	ctx: ^Gen_Ctx,
 	name: string,
 	ty: Type,
 	zeroed := true,
@@ -1540,7 +1565,7 @@ alloca :: proc(
 }
 
 field_offset :: proc(
-	ctx: ^Ctx,
+	ctx: ^Gen_Ctx,
 	base: backend.Node_ID,
 	offset: int,
 ) -> backend.Node_ID {
@@ -1548,7 +1573,11 @@ field_offset :: proc(
 	return backend.graph_add_bin_op(ctx, "fld", .Add, .I64, base, off)
 }
 
-emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
+emit_nodes :: proc(
+	ctx: ^Gen_Ctx,
+	prop: Propagation,
+	node: ^ast.Node,
+) -> Value {
 	if node == nil do return {}
 
 	ty := get_node_type(node)
@@ -1788,7 +1817,9 @@ emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 
 		ctx.loop = ctx.loop.parent
 	case ^ast.Call_Expr:
-		args := make([]backend.Node_ID, 2 + len(d.args), tmp)
+		CALL_PREFIX :: 2
+
+		args := make([]backend.Node_ID, CALL_PREFIX + len(d.args), tmp)
 
 		base_ty := get_node_type(d.expr)
 
@@ -1799,14 +1830,36 @@ emit_nodes :: proc(ctx: ^Ctx, prop: Propagation, node: ^ast.Node) -> Value {
 			prc := &ctx.procs[idx]
 
 			for arg, i in d.args {
-				args[2 + i] = to_rvalue(ctx, emit_nodes(ctx, {}, arg), arg)
-				backend.graph_pin(ctx, args[2 + i])
+				args[CALL_PREFIX + i] = to_rvalue(
+					ctx,
+					emit_nodes(ctx, {}, arg),
+					arg,
+				)
+				if i >= len(backend.ARGS) {
+					ty := get_node_type(arg)
+					slot := alloca(ctx, "aspl", ty, false)
+					store_value(
+						ctx,
+						"ast",
+						slot,
+						Value(args[CALL_PREFIX + i]),
+						ty,
+					)
+					local := backend.graph_inps(ctx, slot)[0]
+					args[CALL_PREFIX + i] = local
+				}
+				backend.graph_pin(ctx, args[CALL_PREFIX + i])
 			}
 			args[0] = ctx_ctrl(ctx)
 			args[1] = ctx_mem(ctx)
 
 			call := backend.graph_add_call(ctx, "call", args, idx)
-			for arg in args[2:] {
+			cnode := backend.graph_get(ctx, call)
+			cnode.ordered_input_count = min(
+				cnode.ordered_input_count,
+				u16(len(backend.ARGS)) + CALL_PREFIX,
+			)
+			for arg in args[CALL_PREFIX:] {
 				backend.graph_unpin(ctx, arg)
 			}
 			call_end := backend.graph_add_call_end(ctx, "calle", call)

@@ -56,6 +56,8 @@ R14 :: Reg(14)
 R15 :: Reg(15)
 RIP :: RBP
 
+GPA_REG_COUNT :: 16
+
 //* Large parameters (> 16 bytes) will be implicitly passed by pointer
 //* Multiple return values are handled as the following
 //  * If all of the return value can be passed in a register if they were
@@ -582,22 +584,43 @@ x64_reg_mask_of :: proc(
 
 	#partial switch node.itype {
 	case .Arg:
-		arg := graph_extra(graph, node, Tup)
-		return reg_mask_single(ra, ARGS[arg.idx])
+		arg_ext := graph_extra(graph, node, Tup)
+		if int(arg_ext.idx) < len(ARGS) {
+			return reg_mask_single(ra, ARGS[arg_ext.idx])
+		} else {
+			return reg_mask_single(
+				ra,
+				{
+					kind = .General,
+					index = GPA_REG_COUNT + u16(arg_ext.idx) - u16(len(ARGS)),
+				},
+			)
+		}
 	case .Call:
-		return reg_mask_single(ra, ARGS[idx - 1])
+		if idx - 1 < len(ARGS) {
+			return reg_mask_single(ra, ARGS[idx - 1])
+		} else {
+			mask := reg_mask_empty(ra, ra.datatype_to_reg_kind[node.dt])
+			mem.copy_non_overlapping(
+				mask.masks,
+				raw_data(GPA_SPILL_MASK),
+				len(GPA_SPILL_MASK) * size_of(int),
+			)
+			return mask
+		}
 	case:
 		fmt.panicf("TODO: %v %v", node.xtype, idx)
 	}
 }
 
 Ctx :: struct {
-	using inner:     Codegen_Emit_Ctx,
-	spill_slot_base: [Reg_Kind]int,
-	local_relocs:    [dynamic]Local_Reloc,
-	stack_size:      int,
-	used:            bit_arr.Bit_Set,
-	code_start:      uint,
+	using inner:        Codegen_Emit_Ctx,
+	spill_slot_base:    [Reg_Kind]i32,
+	local_relocs:       [dynamic]Local_Reloc,
+	stack_size:         int,
+	used:               bit_arr.Bit_Set,
+	code_start:         uint,
+	stack_param_offset: [Reg_Kind][dynamic]i32,
 }
 
 Local_Reloc :: struct {
@@ -620,6 +643,22 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 	slot: [2]int
 	ctx.used = bit_arr.init_from_masks(slot[:])
 
+	for bb in ctx.schedule.bbs {
+		bnode := graph_expand(ctx, bb.head)
+		if bnode.itype != .Call_End do continue
+		cnode := graph_expand(ctx, bnode.inps[0])
+		call_stack_size: u32
+		for inp in cnode.inps {
+			inode := graph_expand(ctx, inp)
+			if inode.itype != .Local do continue
+			inode.done = true
+			iext := graph_extra(ctx, inode, Local)
+			call_stack_size += iext.size
+			iext.offset = call_stack_size - iext.size
+		}
+		ctx.stack_size = max(ctx.stack_size, int(call_stack_size))
+	}
+
 	for reg in ctx.allocs {
 		spill_slot_count[reg.kind] = max(
 			spill_slot_count[reg.kind],
@@ -628,16 +667,13 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 		bit_arr.set_unbounded(ctx.used, int(reg.index))
 	}
 
-	total_spill_size := 0
 	for size, kind in spill_slot_count {
-		ctx.spill_slot_base[kind] = total_spill_size
-		total_spill_size += size
+		ctx.spill_slot_base[kind] = i32(ctx.stack_size)
+		ctx.stack_size += size * 8
 	}
 
-	ctx.stack_size = total_spill_size * 8
-
 	emem: Node_ID
-	for eout in graph_outs(ctx.graph, ectx.schedule.bbs[0].head) {
+	for eout in graph_outs(ctx.graph, NODE_ENTRY) {
 		enode := graph_expand(ctx.graph, eout.id)
 		if enode.itype == .Mem {
 			emem = eout.id
@@ -654,7 +690,7 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 
 		for mout in graph_outs(ctx.graph, emem) {
 			mnode := graph_expand(ctx.graph, mout.id)
-			if mnode.itype == .Local {
+			if mnode.itype == .Local && !mnode.done {
 				extra := graph_extra(ctx.graph, mnode, Local)
 				append(
 					&locals,
@@ -675,11 +711,37 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 		}
 	}
 
+	pushed := 0
 	for reg in CALLE_SAVED {
 		if bit_arr.contains(ctx.used, int(reg)) {
 			// push $reg
 			emit_single_op(ctx.code, 0x50, reg)
+			pushed += 8
 		}
+	}
+
+	Arg_Slot :: bit_field u64 {
+		id:  Node_ID | 32,
+		idx: u32     | 32,
+	}
+	args: [dynamic]Arg_Slot
+	for eout in graph_outs(ctx, NODE_ENTRY) {
+		enode := graph_expand(ctx, eout.id)
+		if enode.itype != .Arg do continue
+		earg := graph_extra(ctx, eout.id, Tup)
+		if int(earg.idx) < len(ARGS) do continue
+		append(&args, Arg_Slot{id = eout.id, idx = earg.idx})
+	}
+
+	sort.quick_sort(args[:])
+
+	param_offset := ctx.stack_size + pushed + 8
+	#reverse for arg in args {
+		enode := graph_expand(ctx, arg.id)
+		kind := ctx.datatype_to_reg_kind[enode.dt]
+		param_offset -= DT_SIZE[enode.dt]
+		ctx.stack_size -= DT_SIZE[enode.dt]
+		append(&ctx.stack_param_offset[kind], i32(param_offset))
 	}
 
 	if ctx.stack_size != 0 {
@@ -1205,15 +1267,14 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		if dst == src do break
 		if int(dst) >= 16 {
 			// mov [rsp + $dst_offset], $src
-			dst_offset := ctx.spill_slot_base[dst.kind] + 8 * (int(dst) - 16)
-
+			dst_offset := spill_slot_offset(ctx, dst)
 			assert(int(src) < 16)
 
 			emit(ctx.code, {rex(src, RSP, RAX, true), 0x89})
 			emit_indirect_addr(ctx.code, src, RSP, NO_INDEX, 1, dst_offset)
 		} else if int(src) >= 16 {
 			// mov $dst, [rsp + $src_offset]
-			src_offset := ctx.spill_slot_base[dst.kind] + 8 * (int(src) - 16)
+			src_offset := spill_slot_offset(ctx, src)
 			assert(int(dst) < 16)
 
 			emit(ctx.code, {rex(dst, RSP, RAX, true), 0x8b})
@@ -1224,6 +1285,21 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 
 			// mov $dst, $src
 			emit_reg_op(ctx.code, 0x89, src, dst)
+		}
+
+		spill_slot_offset :: proc(ctx: ^Ctx, reg: Reg) -> i32 {
+			assert(reg.kind == .General)
+			param_count := len(ctx.stack_param_offset[reg.kind])
+			if int(reg.index - GPA_REG_COUNT) < param_count {
+				return(
+					i32(ctx.stack_size) +
+					ctx.stack_param_offset[reg.kind][reg.index - GPA_REG_COUNT] \
+				)
+			}
+			return(
+				ctx.spill_slot_base[reg.kind] +
+				(i32(reg.index) - i32(param_count) - GPA_REG_COUNT) * 8 \
+			)
 		}
 	case .Return:
 		if ctx.stack_size != 0 {

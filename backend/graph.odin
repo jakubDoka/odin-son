@@ -186,6 +186,7 @@ Node :: struct {
 	using _:             bit_field u8 {
 		in_worklist:           bool | 1,
 		is_store:              bool | 1,
+		done:                  bool | 1,
 		in_place_slot_offset:  i8   | 2,
 		additional_data_start: u8   | 2,
 	},
@@ -881,7 +882,14 @@ when !GEN_SPEC {
 				if onode.itype != .Load {
 					append(&members, Member{out.id, len(slots)})
 				}
-				append(&slots, Slot{offset = iter.offset, size = size})
+
+				slot := Slot {
+					offset = iter.offset,
+					size   = size,
+				}
+				if append(&slots, slot) == 0 {
+					break match
+				}
 			}
 
 			cursor := id

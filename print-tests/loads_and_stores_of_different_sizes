@@ -148,7 +148,7 @@ main:
 
 017: jmp :16
 
-016: sub rsp, 0xFFFFFFFFFFFFFFE2
+016: add rsp, 0x1E
      pop rbp
      pop rbx
      ret
@@ -209,12 +209,12 @@ main:
      jz :6
      jmp :7
 
-006: lea rsi, [rsp+0x01]
-     mov rcx, 0xFFFFFFFFFFFFFFFF
-     mov [rsi], al
-     mov [rsi], rcx
-     movsx rax, byte ptr [rsi]
-     cmp rax, rcx
+006: lea rcx, [rsp+0x01]
+     mov rsi, 0xFFFFFFFFFFFFFFFF
+     mov [rcx], al
+     mov [rcx], sil
+     movsx rax, byte ptr [rcx]
+     cmp rax, rsi
      setnz al
      movzx rax, al
      test rax, rax
@@ -222,8 +222,9 @@ main:
      jmp :9
 
 008: lea rax, [rsp+0x04]
+     mov rcx, 0xFFFFFFFFFFFFFFFF
      mov [rax], dx
-     mov [rax], rcx
+     mov [rax], cx
      movsx rax, word ptr [rax]
      cmp rax, rcx
      setnz al
@@ -233,8 +234,9 @@ main:
      jmp :11
 
 010: lea rax, [rsp+0x0A]
+     mov rcx, 0xFFFFFFFFFFFFFFFF
      mov [rax], ebx
-     mov [rax], rcx
+     mov [rax], ecx
      movsxd rax, dword ptr [rax]
      cmp rax, rcx
      setnz al
@@ -244,6 +246,7 @@ main:
      jmp :13
 
 012: lea rax, [rsp+0x16]
+     mov rcx, 0xFFFFFFFFFFFFFFFF
      mov [rax], rbp
      mov [rax], rcx
      mov rax, [rax]
@@ -295,7 +298,7 @@ main:
 
 017: jmp :16
 
-016: sub rsp, 0xFFFFFFFFFFFFFFE2
+016: add rsp, 0x1E
      pop rbp
      pop rbx
      ret
@@ -331,21 +334,21 @@ main:
      jmp :7
 
 006: mov byte ptr [rsp+0x01], 0x00
-     mov qword ptr [rsp+0x01], 0xFFFFFFFFFFFFFFFF
+     mov byte ptr [rsp+0x01], 0xFF
      movsx rax, byte ptr [rsp+0x01]
      cmp rax, 0xFFFFFFFFFFFFFFFF
      jz :8
      jmp :9
 
 008: mov word ptr [rsp+0x04], 0x00
-     mov qword ptr [rsp+0x04], 0xFFFFFFFFFFFFFFFF
+     mov word ptr [rsp+0x04], 0xFFFF
      movsx rax, word ptr [rsp+0x04]
      cmp rax, 0xFFFFFFFFFFFFFFFF
      jz :10
      jmp :11
 
 010: mov dword ptr [rsp+0x0A], 0x00
-     mov qword ptr [rsp+0x0A], 0xFFFFFFFFFFFFFFFF
+     mov dword ptr [rsp+0x0A], 0xFFFFFFFF
      movsxd rax, dword ptr [rsp+0x0A]
      cmp rax, 0xFFFFFFFFFFFFFFFF
      jz :12
@@ -399,5 +402,5 @@ main:
 
 017: jmp :16
 
-016: sub rsp, 0xFFFFFFFFFFFFFFE2
+016: add rsp, 0x1E
      ret

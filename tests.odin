@@ -3245,45 +3245,165 @@ main :: proc() -> int {
 
 opt_level :: "none"
 
+Stru :: struct {
+	a: int,
+	b: int,
+}
+
+Stru2 :: struct {
+	a: int,
+	b: int,
+	c: int,
+}
+
+Stru3 :: struct {
+	a: u8,
+	b: u8,
+	c: u8,
+	d: u8,
+	e: u8,
+	f: u8,
+	g: u8,
+}
+
+Stru4 :: struct {
+	a: Stru3,
+	b: Stru3,
+	c: u8,
+}
+
 main_ :: proc() -> int {
-	return load_of_args(1, 2, 3, 4, 5, 6, 7, 8, 9)
+	vl := 0
+	vl += fortran({16, 20}, {30, 46, 50})
+	vl += load_of_args(1, 2, 3, 4, 5, 6, 7, 8, 9)
+	vl += brahma(1, 2, 3, 4, 5, {6, 7})
+	vl += int(compose({{1, 2, 3, 4, 5, 6, 7},
+		{8, 9, 10, 11, 12, 13, 14}, 15}))
+	vl += return_stru(1, 2).a
+	vl += int(return_stru3().f)
+	return vl
+}
+
+compose :: proc(a: Stru4) -> u8 {
+	return kentus(a.a) + kentus(a.b) + a.c
+}
+
+kentus :: proc(a: Stru3) -> u8 {
+	return a.a + a.b + a.c + a.d + a.e + a.f + a.g
+}
+
+fortran :: proc(a: Stru, b: Stru2) -> int {
+	return a.a + a.b + b.a + b.b + b.c
+}
+
+brahma :: proc(a: int, b: int, c: int, d: int, e: int, f: Stru) -> int {
+	return a + b + c + d + e + f.a + f.b
 }
 
 load_of_args :: proc(
 	a: int,
 	b: int,
 	c: int,
- 	d: int,
- 	e: int,
- 	f: int,
- 	g: int,
- 	h: int,
- 	i: int,
+	d: int,
+	e: int,
+	f: int,
+	g: int,
+	h: int,
+	i: int,
 ) -> int {
 	return a + b + c + d + e + f + g + h + i
 }
+
+return_stru :: proc(a: int, b: int) -> Stru {
+	return {a, b}
+}
+
+return_stru3 :: proc() -> Stru3 {
+	return {1, 2, 3, 4, 5, 6, 7}
+}
+
 
 run_test(t, `pass_stack_in_calls`, `
 package main
 
 opt_level :: "none"
 
+Stru :: struct {
+	a: int,
+	b: int,
+}
+
+Stru2 :: struct {
+	a: int,
+	b: int,
+	c: int,
+}
+
+Stru3 :: struct {
+	a: u8,
+	b: u8,
+	c: u8,
+	d: u8,
+	e: u8,
+	f: u8,
+	g: u8,
+}
+
+Stru4 :: struct {
+	a: Stru3,
+	b: Stru3,
+	c: u8,
+}
+
 main :: proc() -> int {
-	return load_of_args(1, 2, 3, 4, 5, 6, 7, 8, 9)
+	vl := 0
+	vl += fortran({16, 20}, {30, 46, 50})
+	vl += load_of_args(1, 2, 3, 4, 5, 6, 7, 8, 9)
+	vl += brahma(1, 2, 3, 4, 5, {6, 7})
+	vl += int(compose({{1, 2, 3, 4, 5, 6, 7},
+		{8, 9, 10, 11, 12, 13, 14}, 15}))
+	vl += return_stru(1, 2).a
+	vl += int(return_stru3().f)
+	return vl
+}
+
+compose :: proc(a: Stru4) -> u8 {
+	return kentus(a.a) + kentus(a.b) + a.c
+}
+
+kentus :: proc(a: Stru3) -> u8 {
+	return a.a + a.b + a.c + a.d + a.e + a.f + a.g
+}
+
+fortran :: proc(a: Stru, b: Stru2) -> int {
+	return a.a + a.b + b.a + b.b + b.c
+}
+
+brahma :: proc(a: int, b: int, c: int, d: int, e: int, f: Stru) -> int {
+	return a + b + c + d + e + f.a + f.b
 }
 
 load_of_args :: proc(
 	a: int,
 	b: int,
 	c: int,
- 	d: int,
- 	e: int,
- 	f: int,
- 	g: int,
- 	h: int,
- 	i: int,
+	d: int,
+	e: int,
+	f: int,
+	g: int,
+	h: int,
+	i: int,
 ) -> int {
 	return a + b + c + d + e + f + g + h + i
 }
+
+return_stru :: proc(a: int, b: int) -> Stru {
+	return {a, b}
+}
+
+return_stru3 :: proc() -> Stru3 {
+	return {1, 2, 3, 4, 5, 6, 7}
+}
+
 `, main_())
 }

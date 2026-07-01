@@ -166,7 +166,7 @@ main:
      movsx rcx, cx
      add rax, rcx
      mov rax, rax
-     sub rsp, 0xFFFFFFFFFFFFFFB0
+     add rsp, 0x50
      pop r13
      pop r12
      pop rbp
@@ -202,7 +202,7 @@ main:
      mov r9, rax
      mov rax, 0xFFFFFFFFFFFFFFE2
      mov rcx, r9
-     mov [rcx], rax
+     mov [rcx], eax
      lea rax, [rsp]
      mov rcx, 0x18
      add rax, rcx
@@ -232,11 +232,11 @@ main:
      add rax, rdx
      mov rsi, rax
      mov rax, 0xFFFFFFFFFFFFFFFD
-     mov [rsi], rax
+     mov [rsi], al
      mov rax, 0x06
      add rax, rbx
      mov rbx, 0xFFFFFFFFFFFFFFFC
-     mov [rax], rbx
+     mov [rax], bx
      mov rbx, rdi
      mov ebx, [rbx]
      mov r12, 0x01
@@ -323,7 +323,7 @@ main:
      add rcx, rdx
      movsx rcx, word ptr [rcx]
      add rax, rcx
-     sub rsp, 0xFFFFFFFFFFFFFFB0
+     add rsp, 0x50
      pop r12
      pop rbp
      pop rbx
@@ -333,14 +333,17 @@ main:
      sub rsp, 0x50
      lea rsi, [rsp]
      lea rdi, [rsp+0x28]
+     mov dword ptr [rsp+0x04], 0x00
+     mov dword ptr [rsp+0x14], 0x00
+     mov byte ptr [rsp+0x21], 0x00
      mov dword ptr [rsp], 0x0A
      mov qword ptr [rsp+0x08], 0x14
-     mov qword ptr [rsp+0x10], 0xFFFFFFFFFFFFFFE2
+     mov dword ptr [rsp+0x10], 0xFFFFFFE2
      mov qword ptr [rsp+0x18], 0xFFFFFFFFFFFFFFD8
      mov byte ptr [rsp+0x20], 0x01
      mov word ptr [rsp+0x22], 0x02
-     mov qword ptr [rsp+0x24], 0xFFFFFFFFFFFFFFFD
-     mov qword ptr [rsp+0x26], 0xFFFFFFFFFFFFFFFC
+     mov byte ptr [rsp+0x24], 0xFD
+     mov word ptr [rsp+0x26], 0xFFFC
      add dword ptr [rsp], 0x01
      add qword ptr [rsp+0x08], 0x02
      sub dword ptr [rsp+0x10], 0x03
@@ -364,5 +367,5 @@ main:
      add rax, rcx
      movsx rcx, word ptr [rsp+0x4E]
      add rax, rcx
-     sub rsp, 0xFFFFFFFFFFFFFFB0
+     add rsp, 0x50
      ret

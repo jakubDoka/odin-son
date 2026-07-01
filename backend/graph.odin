@@ -380,7 +380,9 @@ graph_schedule_peeps :: proc(graph: ^Graph, schedule: ^Graph_Schedule) {
 			graph_subsume(graph, new_node, instr)
 			instr = new_node
 		}
+	}
 
+	for &bb in schedule.bbs {
 		keep := 0
 		for instr in bb.instrs {
 			if graph_get(graph, instr).rtype != DEAD_NODE_KIND {
@@ -647,7 +649,7 @@ when !GEN_SPEC {
 
 			if coper != nil {
 				value := fold_un_op(op, coper.value, oper.dt)
-				return graph_add_c_int(ctx.graph, "fld", .I64, value)
+				return graph_add_c_int(ctx.graph, "fld", node.dt, value)
 			}
 		case .Add ..= .And_Not:
 			lhs := graph_expand(ctx.graph, node.inps[0])
@@ -659,7 +661,7 @@ when !GEN_SPEC {
 
 			if clhs != nil && crhs != nil {
 				value := fold_bin_op(clhs.value, op, crhs.value)
-				return graph_add_c_int(ctx.graph, "fld", .I64, value)
+				return graph_add_c_int(ctx.graph, "fld", lhs.dt, value)
 			}
 
 			if crhs != nil {
@@ -844,7 +846,7 @@ when !GEN_SPEC {
 					if out.idx != 2 {
 						continue
 					}
-					size = DT_SIZE[graph_get(ctx, onode.inps[2]).dt]
+					size = DT_SIZE[graph_get(ctx, onode.inps[3]).dt]
 				case .Copy, .Set:
 					if out.idx != 2 {
 						continue
@@ -862,6 +864,12 @@ when !GEN_SPEC {
 				}
 
 				end := iter.offset + size
+
+				if end > dst_size {
+					log.error(ctx.graph)
+					log.error(onode.node, iter.offset, size, dst_size)
+					break match
+				}
 
 				for &slot, i in slots {
 					send := slot.offset + slot.size
@@ -968,7 +976,7 @@ when !GEN_SPEC {
 			for i in 0 ..= prev_len {
 				slot := i == prev_len ? Slot{} : slots[prev_len - i - 1]
 
-				assert(offset >= slot.offset)
+				fmt.assertf(offset >= slot.offset, "%v, %v", offset, slot)
 				rev_offset := slot.offset + slot.size
 				inserts := 0
 				for rev_offset < offset {
@@ -2017,6 +2025,7 @@ graph_display_node :: proc(
 	id: Node_ID,
 	scheduled := false,
 ) {
+	log.info(id)
 	node := graph_expand(graph, id)
 
 	extra := graph_extra(graph, node)

@@ -13,6 +13,7 @@ import "core:odin/parser"
 import "core:odin/tokenizer"
 import "core:os"
 import "core:reflect"
+import "core:slice"
 import "core:strconv"
 import "core:strings"
 import "core:sync"
@@ -24,7 +25,6 @@ import "vendored/gam/util/hot"
 TEST_OUT_DIR :: "print-tests"
 
 split_lines :: proc(input: string) -> []string {
-
 	lines: [dynamic]string
 
 	start := 0
@@ -522,7 +522,8 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		{"all", {.Iter_Peeps, .Local_Peeps, .Schedule_Peeps}},
 	}
 
-	for &prc in ctx.procs {
+	for &prc, i in ctx.procs {
+		ctx.prc = auto_cast i
 		scratch_mem.pos = 0
 		ctx.scope = make([dynamic]Variable, arna.allocator(&scratch_mem))
 
@@ -569,20 +570,91 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 				ctx.root_mem,
 			)
 
-			for par, j in prc.params {
-				value := backend.graph_add_arg(
-					&ctx,
-					"arg",
-					type_to_dt(par.type),
-					entry,
-					u32(j),
-				)
-				idx := backend.graph_push_scope_value(
-					&ctx,
-					ctx.node_scope,
-					value,
-				)
-				append(&ctx.scope, Variable{par.name, idx, par.type, nil, {}})
+			gpa_fuel := 6
+			i := 0
+			for par in prc.params {
+				dt := type_to_dt(par.type)
+
+				if dt == .Void {
+					value: backend.Node_ID
+					size := type_size(par.type)
+					switch size {
+					case 0:
+						continue
+					case 1 ..= 16:
+						if gpa_fuel < 2 {
+							value = alloca(
+								&ctx,
+								"sparg",
+								par.type,
+								zeroed = false,
+								is_arg = true,
+							)
+							break
+						}
+
+						slot := alloca(&ctx, "sarg", par.type)
+
+						value = backend.graph_add_arg(
+							&ctx,
+							"arg",
+							.I64,
+							entry,
+							u32(i),
+						)
+						emit_arbitrary_store(&ctx, slot, value, size)
+
+						if size > 8 {
+							i += 1
+							second := backend.graph_add_arg(
+								&ctx,
+								"af",
+								.I64,
+								entry,
+								u32(i),
+							)
+							emit_arbitrary_store(&ctx, slot, second, size, 8)
+						}
+
+						value = slot
+					case 17 ..= int(~uint(0) >> 1):
+						value = backend.graph_add_arg(
+							&ctx,
+							"arg",
+							.I64,
+							entry,
+							u32(i),
+						)
+					case:
+						fmt.panicf("unsupported type: %v", par.type)
+					}
+
+					append(
+						&ctx.scope,
+						Variable{par.name, value, par.type, nil, {}},
+					)
+					i += 1
+					gpa_fuel -= 1
+				} else {
+					value := backend.graph_add_arg(
+						&ctx,
+						"arg",
+						dt,
+						entry,
+						u32(i),
+					)
+					idx := backend.graph_push_scope_value(
+						&ctx,
+						ctx.node_scope,
+						value,
+					)
+					append(
+						&ctx.scope,
+						Variable{par.name, idx, par.type, nil, {}},
+					)
+					i += 1
+					gpa_fuel -= 1
+				}
 			}
 
 			emit_nodes(&ctx, {}, prc.ast.body)
@@ -687,7 +759,6 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		}
 
 		ptr := transmute(proc() -> int)(raw_data(main.out.code))
-		//log.error()
 		vl := ptr()
 		if vl != exit_code {
 			log.error(level)
@@ -1164,7 +1235,7 @@ typecheck :: proc(
 
 			return inferred_ty
 		case:
-			fmt.panicf("TODO: %#v", d)
+			fmt.panicf("TODO: %v %#v", unpack_type(inferred_ty), d)
 		}
 	case ^ast.Selector_Expr:
 		base := typecheck(ctx, {}, d.expr)
@@ -1343,7 +1414,7 @@ to_rvalue_ty :: proc(
 	if is_signed_subword(ty) {
 		return backend.graph_add_load_s(
 			ctx,
-			"ltr",
+			"sltr",
 			dt,
 			ctx_ctrl(ctx),
 			ctx_mem(ctx),
@@ -1352,7 +1423,7 @@ to_rvalue_ty :: proc(
 	}
 	return backend.graph_add_load(
 		ctx,
-		"ltr",
+		"ultr",
 		dt,
 		ctx_ctrl(ctx),
 		ctx_mem(ctx),
@@ -1538,9 +1609,12 @@ alloca :: proc(
 	name: string,
 	ty: Type,
 	zeroed := true,
+	is_arg := false,
+	align_size_to := 1,
 ) -> backend.Node_ID {
-	alloca := backend.graph_add_local(ctx, name, ctx.root_mem)
-	size := u32(type_size(ty))
+	root := is_arg ? backend.NODE_ENTRY : ctx.root_mem
+	alloca := backend.graph_add_local(ctx, name, root)
+	size := u32(mem.align_forward_int(type_size(ty), align_size_to))
 	backend.graph_extra(ctx, alloca, backend.Local).size = size
 	ptr := backend.graph_add_local_addr(ctx, name, alloca)
 
@@ -1634,7 +1708,7 @@ emit_nodes :: proc(
 							ctx.node_scope,
 							sym,
 						),
-						to_rvalue(ctx, value, ty),
+						to_rvalue(ctx, value, get_node_type(rhs)),
 					)
 				} else {
 					assert(!value.is_lvalue)
@@ -1681,13 +1755,35 @@ emit_nodes :: proc(
 		res = to_rvalue(ctx, emit_nodes(ctx, {}, d.expr), d.expr)
 		lvalue = true
 	case ^ast.Return_Stmt:
-		values := make([]backend.Node_ID, 2 + len(d.results), tmp)
-		for r, i in d.results {
-			values[2 + i] = to_rvalue(ctx, emit_nodes(ctx, {}, r), r)
+		values := make([]backend.Node_ID, 2 + len(d.results) * 2, tmp)
+		assert(len(d.results) == 1)
+		i := 2
+		for r in d.results {
+			ty := get_node_type(r)
+			dt = type_to_dt(ty)
+			vl := emit_nodes(ctx, {}, r)
+
+			if dt == .Void {
+				assert(vl.is_lvalue)
+				size := type_size(ty)
+				switch size {
+				case 1 ..= 16:
+					values[i] = emit_arbitrary_load(ctx, vl.id, size)
+					i += 1
+
+					if size > 8 {
+						values[i] = emit_arbitrary_load(ctx, vl.id, size, 8)
+						i += 1
+					}
+				}
+			} else {
+				values[i] = to_rvalue(ctx, vl, r)
+				i += 1
+			}
 		}
 		values[0] = ctx_ctrl(ctx)
 		values[1] = ctx_mem(ctx)
-		backend.graph_merge_returns(ctx, values)
+		backend.graph_merge_returns(ctx, values[:i])
 		backend.graph_delete(ctx, ctx.node_scope)
 		ctx.node_scope = 0
 	case ^ast.Basic_Lit:
@@ -1819,7 +1915,7 @@ emit_nodes :: proc(
 	case ^ast.Call_Expr:
 		CALL_PREFIX :: 2
 
-		args := make([]backend.Node_ID, CALL_PREFIX + len(d.args), tmp)
+		args := make([]backend.Node_ID, CALL_PREFIX + len(d.args) * 2, tmp)
 
 		base_ty := get_node_type(d.expr)
 
@@ -1829,37 +1925,95 @@ emit_nodes :: proc(
 
 			prc := &ctx.procs[idx]
 
-			for arg, i in d.args {
-				args[CALL_PREFIX + i] = to_rvalue(
-					ctx,
-					emit_nodes(ctx, {}, arg),
-					arg,
-				)
-				if i >= len(backend.ARGS) {
-					ty := get_node_type(arg)
-					slot := alloca(ctx, "aspl", ty, false)
-					store_value(
-						ctx,
-						"ast",
-						slot,
-						Value(args[CALL_PREFIX + i]),
-						ty,
-					)
-					local := backend.graph_inps(ctx, slot)[0]
-					args[CALL_PREFIX + i] = local
+			gpa_fuel := 6
+			i := CALL_PREFIX
+			ri := len(args)
+			for arg in d.args {
+				ty := get_node_type(arg)
+				vl := emit_nodes(ctx, {}, arg)
+
+				is_stack := false
+				if type_to_dt(ty) == .Void {
+					assert(vl.is_lvalue)
+
+					size := type_size(ty)
+					switch size {
+					case 0:
+						continue
+					case 1 ..= 8:
+						args[i] = emit_arbitrary_load(ctx, vl.id, size)
+						backend.graph_pin(ctx, args[i])
+						i += 1
+						continue
+					case 9 ..= 16:
+						if gpa_fuel < 2 {
+							slot := alloca(ctx, "sarg", ty, is_arg = true)
+							store_value(ctx, "ast", slot, vl, ty)
+							local := backend.graph_inps(ctx, slot)[0]
+							ri -= 1
+							args[ri] = local
+							backend.graph_pin(ctx, local)
+							continue
+						}
+
+						args[i] = backend.graph_add_load(
+							ctx,
+							"afld",
+							.I64,
+							ctx_ctrl(ctx),
+							ctx_mem(ctx),
+							vl.id,
+						)
+						backend.graph_pin(ctx, args[i])
+						i += 1
+
+						args[i] = emit_arbitrary_load(ctx, vl.id, size, 8)
+						backend.graph_pin(ctx, args[i])
+						i += 1
+						continue
+					case 17 ..= int(~uint(0) >> 1):
+						is_stack = true
+					case:
+						fmt.panicf("unsupported type: %v", ty)
+					}
 				}
-				backend.graph_pin(ctx, args[CALL_PREFIX + i])
+
+				if is_stack {
+					args[i] = vl.id
+				} else {
+					args[i] = to_rvalue(ctx, vl, ty)
+				}
+				gpa_fuel -= 1
+				if gpa_fuel < 0 {
+					ty := get_node_type(arg)
+					slot := alloca(
+						ctx,
+						"aspl",
+						ty,
+						zeroed = false,
+						is_arg = true,
+					)
+					store_value(ctx, "ast", slot, Value(args[i]), ty)
+					local := backend.graph_inps(ctx, slot)[0]
+					ri -= 1
+					args[ri] = local
+					backend.graph_pin(ctx, args[ri])
+				} else {
+					backend.graph_pin(ctx, args[i])
+					i += 1
+				}
 			}
 			args[0] = ctx_ctrl(ctx)
 			args[1] = ctx_mem(ctx)
 
-			call := backend.graph_add_call(ctx, "call", args, idx)
+			slice.reverse(args[ri:])
+			copy(args[i:], args[ri:])
+			ln := i + len(args) - ri
+
+			call := backend.graph_add_call(ctx, "call", args[:ln], idx)
 			cnode := backend.graph_get(ctx, call)
-			cnode.ordered_input_count = min(
-				cnode.ordered_input_count,
-				u16(len(backend.ARGS)) + CALL_PREFIX,
-			)
-			for arg in args[CALL_PREFIX:] {
+			cnode.ordered_input_count = u16(i)
+			for arg in args[CALL_PREFIX:ln] {
 				backend.graph_unpin(ctx, arg)
 			}
 			call_end := backend.graph_add_call_end(ctx, "calle", call)
@@ -1868,8 +2022,36 @@ emit_nodes :: proc(
 			ctx_set_mem(ctx, backend.graph_add_mem(ctx, "cmem", call_end))
 
 			assert(len(prc.rets) == 1)
-			dt = type_to_dt(prc.rets[0].type)
-			res = backend.graph_add_ret(ctx, "cret", dt, call_end, 0)
+			ty := prc.rets[0].type
+			dt = type_to_dt(ty)
+
+			if dt == .Void {
+				size := type_size(ty)
+				switch size {
+				case 1 ..= 16:
+					dest := prop.dest
+					if dest == 0 do dest = alloca(ctx, "sret", ty)
+
+					vl := backend.graph_add_ret(ctx, "cret", .I64, call_end, 0)
+					emit_arbitrary_store(ctx, dest, vl, size)
+
+					if size > 8 {
+						svl := backend.graph_add_ret(
+							ctx,
+							"cret",
+							.I64,
+							call_end,
+							1,
+						)
+						emit_arbitrary_store(ctx, dest, svl, size, 8)
+					}
+
+					res = dest
+					lvalue = true
+				}
+			} else {
+				res = backend.graph_add_ret(ctx, "cret", dt, call_end, 0)
+			}
 		case Builtin:
 			dest_dt := type_to_dt(base_ty)
 			arg := to_rvalue(ctx, emit_nodes(ctx, {}, d.args[0]), d.args[0])
@@ -1916,4 +2098,134 @@ emit_nodes :: proc(
 	res = backend.graph_peep(ctx, res)
 
 	return {id = res, is_lvalue = lvalue}
+}
+
+emit_arbitrary_store :: proc(
+	ctx: ^Gen_Ctx,
+	addr: backend.Node_ID,
+	value: backend.Node_ID,
+	size: int,
+	extra_offset := 0,
+) {
+	store_unit := backend.Node_Datatype.I64
+	size := min(size - extra_offset, 8)
+	offset: int
+
+	for offset < size {
+		for backend.DT_SIZE[store_unit] + offset > size {
+			store_unit = backend.Node_Datatype(u8(store_unit) - 1)
+			assert(store_unit != .Void)
+		}
+
+		value := backend.graph_add_un_op(
+			ctx,
+			"rvl",
+			.Cast,
+			store_unit,
+			backend.graph_add_bin_op(
+				ctx,
+				"stsh",
+				.U_Shr,
+				.I64,
+				value,
+				backend.graph_add_c_int(ctx, "stshoff", .I64, i64(offset * 8)),
+			),
+		)
+
+		ctx_set_mem(
+			ctx,
+			backend.graph_add_store(
+				ctx,
+				"asld",
+				ctx_ctrl(ctx),
+				ctx_mem(ctx),
+				backend.graph_add_bin_op(
+					ctx,
+					"asstof",
+					.Add,
+					.I64,
+					addr,
+					backend.graph_add_c_int(
+						ctx,
+						"asstofc",
+						.I64,
+						i64(offset + extra_offset),
+					),
+				),
+				value,
+			),
+		)
+
+		offset += backend.DT_SIZE[store_unit]
+	}
+}
+
+emit_arbitrary_load :: proc(
+	ctx: ^Gen_Ctx,
+	addr: backend.Node_ID,
+	size: int,
+	extra_offset := 0,
+) -> backend.Node_ID {
+	load_unit := backend.Node_Datatype.I64
+	size := min(size - extra_offset, 8)
+	offset: int
+	value: backend.Node_ID
+
+	for offset < size {
+		for backend.DT_SIZE[load_unit] + offset > size {
+			load_unit = backend.Node_Datatype(u8(load_unit) - 1)
+			assert(load_unit != .Void)
+		}
+
+		load := backend.graph_add_load(
+			ctx,
+			"asld",
+			load_unit,
+			ctx_ctrl(ctx),
+			ctx_mem(ctx),
+			backend.graph_add_bin_op(
+				ctx,
+				"asldof",
+				.Add,
+				.I64,
+				addr,
+				backend.graph_add_c_int(
+					ctx,
+					"asldofc",
+					.I64,
+					i64(offset + extra_offset),
+				),
+			),
+		)
+
+		if value == 0 {
+			value = load
+			assert(offset == 0)
+		} else {
+			value = backend.graph_add_bin_op(
+				ctx,
+				"aor",
+				.Or,
+				.I64,
+				value,
+				backend.graph_add_bin_op(
+					ctx,
+					"ash",
+					.Shl,
+					.I64,
+					load,
+					backend.graph_add_c_int(
+						ctx,
+						"ssham",
+						.I64,
+						i64(offset * 8),
+					),
+				),
+			)
+		}
+
+		offset += backend.DT_SIZE[load_unit]
+	}
+
+	return value
 }

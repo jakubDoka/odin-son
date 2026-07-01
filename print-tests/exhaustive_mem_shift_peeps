@@ -190,70 +190,70 @@ main:
      mov rax, 0x00
      mov rcx, 0x21
      sub rax, rcx
-     lea rcx, [rsp+0x08]
+     lea rcx, [rsp]
      mov [rcx], al
      mov rax, 0xC9
-     lea rcx, [rsp+0x09]
+     lea rcx, [rsp+0x01]
      mov [rcx], al
      mov rax, 0x00
      mov rcx, 0x4D2
      sub rax, rcx
-     lea rcx, [rsp+0x0A]
+     lea rcx, [rsp+0x02]
      mov [rcx], ax
      mov rax, 0xD431
-     lea rcx, [rsp+0x0C]
+     lea rcx, [rsp+0x04]
      mov [rcx], ax
      mov rax, 0x1E240
      mov rcx, 0x00
      sub rcx, rax
-     lea rdx, [rsp+0x0E]
+     lea rdx, [rsp+0x06]
      mov [rdx], ecx
-     lea rcx, [rsp+0x12]
+     lea rcx, [rsp+0x0A]
      mov [rcx], eax
      mov rax, 0x75BCD15
      mov rcx, 0x00
      sub rcx, rax
-     lea rdx, [rsp+0x16]
+     lea rdx, [rsp+0x0E]
      mov [rdx], rcx
-     lea rcx, [rsp+0x1E]
+     lea rcx, [rsp+0x16]
      mov [rcx], rax
      mov rax, 0x03
      mov rax, rax
      mov rbx, rax
-     lea rdi, [rsp+0x08]
-     lea rsi, [rsp+0x09]
+     lea rdi, [rsp]
+     lea rsi, [rsp+0x01]
      mov rdx, rbx
      call :test_mem_shifts_i8_u8
      mov rbp, rax
-     lea rdi, [rsp+0x0A]
-     lea rsi, [rsp+0x0C]
+     lea rdi, [rsp+0x02]
+     lea rsi, [rsp+0x04]
      mov rdx, rbx
      call :test_mem_shifts_i16_u16
      mov r12, rax
-     lea rdi, [rsp+0x0E]
-     lea rsi, [rsp+0x12]
+     lea rdi, [rsp+0x06]
+     lea rsi, [rsp+0x0A]
      mov rdx, rbx
      call :test_mem_shifts_i32_u32
      mov r13, rax
-     lea rdi, [rsp+0x16]
-     lea rsi, [rsp+0x1E]
+     lea rdi, [rsp+0x0E]
+     lea rsi, [rsp+0x16]
      mov rdx, rbx
      call :test_mem_shifts_i64_u64
      mov rbx, rax
-     lea rdi, [rsp+0x08]
-     lea rsi, [rsp+0x09]
+     lea rdi, [rsp]
+     lea rsi, [rsp+0x01]
      call :test_mem_imm_shifts_i8_u8
      mov r14, rax
-     lea rdi, [rsp+0x0A]
-     lea rsi, [rsp+0x0C]
+     lea rdi, [rsp+0x02]
+     lea rsi, [rsp+0x04]
      call :test_mem_imm_shifts_i16_u16
      mov r15, rax
-     lea rdi, [rsp+0x0E]
-     lea rsi, [rsp+0x12]
+     lea rdi, [rsp+0x06]
+     lea rsi, [rsp+0x0A]
      call :test_mem_imm_shifts_i32_u32
-     mov [rsp], rax
-     lea rdi, [rsp+0x16]
-     lea rsi, [rsp+0x1E]
+     mov [rsp+0x1E], rax
+     lea rdi, [rsp+0x0E]
+     lea rsi, [rsp+0x16]
      call :test_mem_imm_shifts_i64_u64
      mov rdx, rbp
      mov rcx, r12
@@ -266,11 +266,11 @@ main:
      add rdx, rcx
      mov rcx, r15
      add rdx, rcx
-     mov rcx, [rsp]
+     mov rcx, [rsp+0x1E]
      add rdx, rcx
      add rdx, rax
      mov rax, rdx
-     sub rsp, 0xFFFFFFFFFFFFFFDA
+     add rsp, 0x26
      pop r15
      pop r14
      pop r13
@@ -452,63 +452,63 @@ main:
      push r15
      sub rsp, 0x26
      mov rax, 0xFFFFFFFFFFFFFFDF
-     lea rcx, [rsp+0x08]
-     mov [rcx], rax
+     lea rcx, [rsp]
+     mov [rcx], al
      mov rax, 0xC9
-     lea rcx, [rsp+0x09]
+     lea rcx, [rsp+0x01]
      mov [rcx], al
      mov rax, 0xFFFFFFFFFFFFFB2E
-     lea rcx, [rsp+0x0A]
-     mov [rcx], rax
+     lea rcx, [rsp+0x02]
+     mov [rcx], ax
      mov rax, 0xD431
-     lea rcx, [rsp+0x0C]
+     lea rcx, [rsp+0x04]
      mov [rcx], ax
      mov rax, 0xFFFFFFFFFFFE1DC0
-     lea rcx, [rsp+0x0E]
-     mov [rcx], rax
+     lea rcx, [rsp+0x06]
+     mov [rcx], eax
      mov rax, 0x1E240
-     lea rcx, [rsp+0x12]
+     lea rcx, [rsp+0x0A]
      mov [rcx], eax
      mov rax, 0xFFFFFFFFF8A432EB
-     lea rcx, [rsp+0x16]
+     lea rcx, [rsp+0x0E]
      mov [rcx], rax
      mov rax, 0x75BCD15
-     lea rcx, [rsp+0x1E]
+     lea rcx, [rsp+0x16]
      mov [rcx], rax
-     lea rdi, [rsp+0x08]
-     lea rsi, [rsp+0x09]
+     lea rdi, [rsp]
+     lea rsi, [rsp+0x01]
      mov rdx, 0x03
      call :test_mem_shifts_i8_u8
      mov rbx, rax
-     lea rdi, [rsp+0x0A]
-     lea rsi, [rsp+0x0C]
+     lea rdi, [rsp+0x02]
+     lea rsi, [rsp+0x04]
      mov rdx, 0x03
      call :test_mem_shifts_i16_u16
      mov rbp, rax
-     lea rdi, [rsp+0x0E]
-     lea rsi, [rsp+0x12]
+     lea rdi, [rsp+0x06]
+     lea rsi, [rsp+0x0A]
      mov rdx, 0x03
      call :test_mem_shifts_i32_u32
      mov r12, rax
-     lea rdi, [rsp+0x16]
-     lea rsi, [rsp+0x1E]
+     lea rdi, [rsp+0x0E]
+     lea rsi, [rsp+0x16]
      mov rdx, 0x03
      call :test_mem_shifts_i64_u64
      mov r13, rax
-     lea rdi, [rsp+0x08]
-     lea rsi, [rsp+0x09]
+     lea rdi, [rsp]
+     lea rsi, [rsp+0x01]
      call :test_mem_imm_shifts_i8_u8
      mov r14, rax
-     lea rdi, [rsp+0x0A]
-     lea rsi, [rsp+0x0C]
+     lea rdi, [rsp+0x02]
+     lea rsi, [rsp+0x04]
      call :test_mem_imm_shifts_i16_u16
      mov r15, rax
-     lea rdi, [rsp+0x0E]
-     lea rsi, [rsp+0x12]
+     lea rdi, [rsp+0x06]
+     lea rsi, [rsp+0x0A]
      call :test_mem_imm_shifts_i32_u32
-     mov [rsp], rax
-     lea rdi, [rsp+0x16]
-     lea rsi, [rsp+0x1E]
+     mov [rsp+0x1E], rax
+     lea rdi, [rsp+0x0E]
+     lea rsi, [rsp+0x16]
      call :test_mem_imm_shifts_i64_u64
      mov rdx, rbx
      mov rcx, rbp
@@ -521,11 +521,11 @@ main:
      add rdx, rcx
      mov rcx, r15
      add rdx, rcx
-     mov rcx, [rsp]
+     mov rcx, [rsp+0x1E]
      add rdx, rcx
      add rdx, rax
      mov rax, rdx
-     sub rsp, 0xFFFFFFFFFFFFFFDA
+     add rsp, 0x26
      pop r15
      pop r14
      pop r13
@@ -616,48 +616,48 @@ main:
      push r14
      push r15
      sub rsp, 0x26
-     mov qword ptr [rsp+0x08], 0xFFFFFFFFFFFFFFDF
-     mov byte ptr [rsp+0x09], 0xC9
-     mov qword ptr [rsp+0x0A], 0xFFFFFFFFFFFFFB2E
-     mov word ptr [rsp+0x0C], 0xD431
-     mov qword ptr [rsp+0x0E], 0xFFFFFFFFFFFE1DC0
-     mov dword ptr [rsp+0x12], 0x1E240
-     mov qword ptr [rsp+0x16], 0xFFFFFFFFF8A432EB
-     mov qword ptr [rsp+0x1E], 0x75BCD15
-     lea rdi, [rsp+0x08]
-     lea rsi, [rsp+0x09]
+     mov byte ptr [rsp], 0xDF
+     mov byte ptr [rsp+0x01], 0xC9
+     mov word ptr [rsp+0x02], 0xFB2E
+     mov word ptr [rsp+0x04], 0xD431
+     mov dword ptr [rsp+0x06], 0xFFFE1DC0
+     mov dword ptr [rsp+0x0A], 0x1E240
+     mov qword ptr [rsp+0x0E], 0xFFFFFFFFF8A432EB
+     mov qword ptr [rsp+0x16], 0x75BCD15
+     lea rdi, [rsp]
+     lea rsi, [rsp+0x01]
      mov rdx, 0x03
      call :test_mem_shifts_i8_u8
      mov rbx, rax
      mov rdx, 0x03
-     lea rdi, [rsp+0x0A]
-     lea rsi, [rsp+0x0C]
+     lea rdi, [rsp+0x02]
+     lea rsi, [rsp+0x04]
      call :test_mem_shifts_i16_u16
      mov rbp, rax
      mov rdx, 0x03
-     lea rdi, [rsp+0x0E]
-     lea rsi, [rsp+0x12]
+     lea rdi, [rsp+0x06]
+     lea rsi, [rsp+0x0A]
      call :test_mem_shifts_i32_u32
      mov r12, rax
      mov rdx, 0x03
-     lea rdi, [rsp+0x16]
-     lea rsi, [rsp+0x1E]
+     lea rdi, [rsp+0x0E]
+     lea rsi, [rsp+0x16]
      call :test_mem_shifts_i64_u64
      mov r13, rax
-     lea rdi, [rsp+0x08]
-     lea rsi, [rsp+0x09]
+     lea rdi, [rsp]
+     lea rsi, [rsp+0x01]
      call :test_mem_imm_shifts_i8_u8
      mov r14, rax
-     lea rdi, [rsp+0x0A]
-     lea rsi, [rsp+0x0C]
+     lea rdi, [rsp+0x02]
+     lea rsi, [rsp+0x04]
      call :test_mem_imm_shifts_i16_u16
      mov r15, rax
-     lea rdi, [rsp+0x0E]
-     lea rsi, [rsp+0x12]
+     lea rdi, [rsp+0x06]
+     lea rsi, [rsp+0x0A]
      call :test_mem_imm_shifts_i32_u32
-     mov [rsp], rax
-     lea rdi, [rsp+0x16]
-     lea rsi, [rsp+0x1E]
+     mov [rsp+0x1E], rax
+     lea rdi, [rsp+0x0E]
+     lea rsi, [rsp+0x16]
      call :test_mem_imm_shifts_i64_u64
      mov rdx, rbx
      mov rcx, rbp
@@ -670,11 +670,11 @@ main:
      add rdx, rcx
      mov rcx, r15
      add rdx, rcx
-     mov rcx, [rsp]
+     mov rcx, [rsp+0x1E]
      add rdx, rcx
      add rdx, rax
      mov rax, rdx
-     sub rsp, 0xFFFFFFFFFFFFFFDA
+     add rsp, 0x26
      pop r15
      pop r14
      pop r13

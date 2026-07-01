@@ -1160,11 +1160,10 @@ regalloc_round :: proc(
 		fnode := graph_get(graph, use)
 
 		if graph_has_flag(graph, fnode, .Clonable) ||
-		   ((reg_mask_first_set(
-							   reg_mask_of(ctx.graph, ctx.ra, use, 0),
-						   ) or_else 0) >=
-					   GPA_REG_COUNT &&
-				   len(graph_outs(ctx.graph, use)) == 1) {
+		   (reg_mask_first_set(
+					   reg_mask_of(ctx.graph, ctx.ra, use, 0),
+				   ) or_else 0) >=
+			   GPA_REG_COUNT {
 			return use
 		}
 

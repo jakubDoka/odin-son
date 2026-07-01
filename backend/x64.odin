@@ -14,6 +14,7 @@ GPA_MASK :: []int{0xFFFF & ~int(1 << uint(RSP))}
 GPA_SPILL_MASK :: []int{~int(1 << uint(RSP))}
 NO_INDEX :: RSP
 GPA_RET_MASK :: []int{1 << uint(RAX)}
+GPA_RET_MASK_SEC :: []int{1 << uint(RDX)}
 GPA_DIV_MASK :: []int {
 	0xFFFF &
 	~int(1 << uint(RSP)) &
@@ -72,6 +73,7 @@ GPA_REG_COUNT :: 16
 CALLE_SAVED := []Reg{RBX, RBP, R12, R13, R14, R15}
 CALLER_SAVED :: []Reg{RAX, RCX, RDX, RSI, RDI, R8, R9, R10, R11}
 ARGS := []Reg{RDI, RSI, RDX, RCX, R8, R9}
+RETS := []Reg{RAX, RDX}
 
 SIMPLE_BINOP_SPEC :: Reg_Class_Spec {
 	reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
@@ -193,7 +195,7 @@ X64_IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec {
 	.Call_End = {},
 	.Jump = {input_start_idx = 1},
 	.Return = {
-		reg_masks = #partial{.General = {{}, GPA_RET_MASK}},
+		reg_masks = #partial{.General = {{}, GPA_RET_MASK, GPA_RET_MASK_SEC}},
 		input_start_idx = 2,
 	},
 }
@@ -638,8 +640,6 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 	ctx.code_start = ectx.code.pos
 	ctx.inner = ectx
 
-	spill_slot_count: [Reg_Kind]int
-
 	slot: [2]int
 	ctx.used = bit_arr.init_from_masks(slot[:])
 
@@ -651,25 +651,11 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 		for inp in cnode.inps {
 			inode := graph_expand(ctx, inp)
 			if inode.itype != .Local do continue
-			inode.done = true
 			iext := graph_extra(ctx, inode, Local)
 			call_stack_size += iext.size
 			iext.offset = call_stack_size - iext.size
 		}
 		ctx.stack_size = max(ctx.stack_size, int(call_stack_size))
-	}
-
-	for reg in ctx.allocs {
-		spill_slot_count[reg.kind] = max(
-			spill_slot_count[reg.kind],
-			int(reg.index) - 16 + 1,
-		)
-		bit_arr.set_unbounded(ctx.used, int(reg.index))
-	}
-
-	for size, kind in spill_slot_count {
-		ctx.spill_slot_base[kind] = i32(ctx.stack_size)
-		ctx.stack_size += size * 8
 	}
 
 	emem: Node_ID
@@ -690,7 +676,7 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 
 		for mout in graph_outs(ctx.graph, emem) {
 			mnode := graph_expand(ctx.graph, mout.id)
-			if mnode.itype == .Local && !mnode.done {
+			if mnode.itype == .Local {
 				extra := graph_extra(ctx.graph, mnode, Local)
 				append(
 					&locals,
@@ -711,6 +697,37 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 		}
 	}
 
+	// NOTE: the Arg and Local never get promoted to a different node so we can
+	// just order them by the node id, the allocation order matters tho so
+	// document that somewhere
+	args: [dynamic]Node_ID
+	find_args: for eout in graph_outs(ctx, NODE_ENTRY) {
+		enode := graph_expand(ctx, eout.id)
+		if enode.itype != .Arg && enode.itype != .Local do continue
+
+		if enode.itype == .Local {
+			for lout in enode.outs {
+				lonode := graph_expand(ctx, lout.id)
+				if lonode.itype == .Call {
+					continue find_args
+				}
+			}
+		}
+
+		append(&args, eout.id)
+	}
+
+	sort.quick_sort(args[:])
+
+	spill_slot_count: [Reg_Kind]int
+	for reg in ctx.allocs {
+		spill_slot_count[reg.kind] = max(
+			spill_slot_count[reg.kind],
+			int(reg.index) - 16 + 1,
+		)
+		bit_arr.set_unbounded(ctx.used, int(reg.index))
+	}
+
 	pushed := 0
 	for reg in CALLE_SAVED {
 		if bit_arr.contains(ctx.used, int(reg)) {
@@ -720,28 +737,41 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 		}
 	}
 
-	Arg_Slot :: bit_field u64 {
-		id:  Node_ID | 32,
-		idx: u32     | 32,
-	}
-	args: [dynamic]Arg_Slot
-	for eout in graph_outs(ctx, NODE_ENTRY) {
-		enode := graph_expand(ctx, eout.id)
-		if enode.itype != .Arg do continue
-		earg := graph_extra(ctx, eout.id, Tup)
-		if int(earg.idx) < len(ARGS) do continue
-		append(&args, Arg_Slot{id = eout.id, idx = earg.idx})
+	for size, kind in spill_slot_count {
+		ctx.spill_slot_base[kind] = i32(ctx.stack_size)
+		ctx.stack_size += size * 8
 	}
 
-	sort.quick_sort(args[:])
-
-	param_offset := ctx.stack_size + pushed + 8
+	param_offset := pushed + 8
+	gpa_fuel := len(ARGS)
 	#reverse for arg in args {
-		enode := graph_expand(ctx, arg.id)
-		kind := ctx.datatype_to_reg_kind[enode.dt]
-		param_offset -= DT_SIZE[enode.dt]
-		ctx.stack_size -= DT_SIZE[enode.dt]
-		append(&ctx.stack_param_offset[kind], i32(param_offset))
+		enode := graph_expand(ctx, arg)
+
+		gpa_fuel -= int(enode.itype == .Arg)
+		if enode.itype == .Arg && gpa_fuel < 0 {
+			kind := ctx.datatype_to_reg_kind[enode.dt]
+			ctx.stack_size -= 8
+			append(&ctx.stack_param_offset[kind], i32(param_offset))
+			param_offset += 8
+		}
+
+		if enode.itype == .Local {
+			extra := graph_extra(ctx.graph, enode, Local)
+			extra.offset = u32(param_offset)
+			param_offset += int(extra.size)
+		}
+	}
+
+	for arg in args {
+		enode := graph_expand(ctx, arg)
+		if enode.itype == .Local {
+			extra := graph_extra(ctx.graph, enode, Local)
+			extra.offset += u32(ctx.stack_size)
+		}
+	}
+
+	for &group in ctx.stack_param_offset {
+		for &off in group do off += i32(ctx.stack_size)
 	}
 
 	if ctx.stack_size != 0 {
@@ -1292,7 +1322,6 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 			param_count := len(ctx.stack_param_offset[reg.kind])
 			if int(reg.index - GPA_REG_COUNT) < param_count {
 				return(
-					i32(ctx.stack_size) +
 					ctx.stack_param_offset[reg.kind][reg.index - GPA_REG_COUNT] \
 				)
 			}
@@ -1304,7 +1333,7 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 	case .Return:
 		if ctx.stack_size != 0 {
 			// sub rsp, -$ctx.stack_size
-			emit_imm_op(ctx.code, 0x81, 0b101, RSP, -ctx.stack_size)
+			emit_imm_op(ctx.code, 0x81, 0b000, RSP, ctx.stack_size)
 		}
 
 		#reverse for reg in CALLE_SAVED {

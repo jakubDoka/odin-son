@@ -1,47 +1,39 @@
 =========== OPT LEVEL: none ===========
 main:
      sub rsp, 0x08
-     mov rax, 0x00
-     lea rcx, [rsp]
-     mov [rcx], rax
-     lea rdi, [rsp]
-     call :set
-     lea rax, [rsp]
-     mov rax, [rax]
-     add rsp, 0x08
-     ret
-set:
-     mov rax, 0x01
-     mov [rdi], rax
-     mov rax, [rdi]
-     ret
-=========== OPT LEVEL: mininal ===========
-main:
-     sub rsp, 0x08
-     mov rax, 0x00
-     lea rcx, [rsp]
-     mov [rcx], rax
-     lea rdi, [rsp]
-     call :set
-     lea rax, [rsp]
-     mov rax, [rax]
-     add rsp, 0x08
-     ret
-set:
-     mov rax, 0x01
-     mov [rdi], rax
-     mov rax, [rdi]
-     ret
-=========== OPT LEVEL: all ===========
-main:
-     sub rsp, 0x08
-     lea rdi, [rsp]
      mov qword ptr [rsp], 0x00
+     lea rdi, [rsp]
      call :set
      mov rax, [rsp]
      add rsp, 0x08
      ret
 set:
-     mov rax, 0x01
      mov qword ptr [rdi], 0x01
+     mov rax, [rdi]
+     ret
+=========== OPT LEVEL: mininal ===========
+main:
+     sub rsp, 0x08
+     mov qword ptr [rsp], 0x00
+     lea rdi, [rsp]
+     call :set
+     mov rax, [rsp]
+     add rsp, 0x08
+     ret
+set:
+     mov qword ptr [rdi], 0x01
+     mov rax, [rdi]
+     ret
+=========== OPT LEVEL: all ===========
+main:
+     sub rsp, 0x08
+     mov qword ptr [rsp], 0x00
+     lea rdi, [rsp]
+     call :set
+     mov rax, [rsp]
+     add rsp, 0x08
+     ret
+set:
+     mov qword ptr [rdi], 0x01
+     mov rax, 0x01
      ret

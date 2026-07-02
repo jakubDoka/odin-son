@@ -1,0 +1,113 @@
+=========== OPT LEVEL: none ===========
+main:
+     sub rsp, 0x10
+     mov rsi, 0x00
+     mov rdx, 0x10
+     lea rdi, [rsp]
+     call :$set
+     mov qword ptr [rsp], 0x01
+     mov qword ptr [rsp+0x08], 0x02
+     mov rdi, [rsp]
+     mov rsi, [rsp+0x08]
+     call :mutate
+     lea rax, [rsp]
+     add rax, 0x00
+     mov rax, [rax]
+     lea rcx, [rsp]
+     add rcx, 0x08
+     mov rcx, [rcx]
+     add rax, rcx
+     add rsp, 0x10
+     ret
+mutate:
+     sub rsp, 0x20
+     shr rdi, 0x00
+     mov [rsp], rdi
+     shr rsi, 0x00
+     mov [rsp+0x08], rsi
+     mov rsi, 0x00
+     lea rdi, [rsp+0x10]
+     mov rdx, 0x10
+     call :$set
+     lea rsi, [rsp]
+     lea rdi, [rsp+0x10]
+     mov rdx, 0x10
+     call :$copy
+     mov qword ptr [rsp+0x10], 0x64
+     mov qword ptr [rsp+0x18], 0xC8
+     mov rax, [rsp+0x10]
+     mov rcx, [rsp+0x18]
+     add rax, rcx
+     add rsp, 0x20
+     ret
+=========== OPT LEVEL: mininal ===========
+main:
+     sub rsp, 0x10
+     mov rsi, 0x00
+     mov rdx, 0x10
+     lea rdi, [rsp]
+     call :$set
+     mov qword ptr [rsp], 0x01
+     mov qword ptr [rsp+0x08], 0x02
+     mov rdi, [rsp]
+     mov rsi, [rsp+0x08]
+     call :mutate
+     lea rax, [rsp]
+     add rax, 0x00
+     mov rax, [rax]
+     lea rcx, [rsp]
+     add rcx, 0x08
+     mov rcx, [rcx]
+     add rax, rcx
+     add rsp, 0x10
+     ret
+mutate:
+     sub rsp, 0x20
+     shr rdi, 0x00
+     mov [rsp], rdi
+     shr rsi, 0x00
+     mov [rsp+0x08], rsi
+     mov rsi, 0x00
+     lea rdi, [rsp+0x10]
+     mov rdx, 0x10
+     call :$set
+     lea rsi, [rsp]
+     lea rdi, [rsp+0x10]
+     mov rdx, 0x10
+     call :$copy
+     mov qword ptr [rsp+0x10], 0x64
+     mov qword ptr [rsp+0x18], 0xC8
+     mov rax, [rsp+0x10]
+     mov rcx, [rsp+0x18]
+     add rax, rcx
+     add rsp, 0x20
+     ret
+=========== OPT LEVEL: all ===========
+main:
+     sub rsp, 0x10
+     mov rdi, 0x01
+     mov qword ptr [rsp], 0x01
+     mov qword ptr [rsp+0x08], 0x02
+     mov rsi, 0x02
+     call :mutate
+     mov rax, [rsp]
+     lea rcx, [rsp]
+     add rcx, 0x08
+     add rax, [rcx]
+     add rsp, 0x10
+     ret
+mutate:
+     sub rsp, 0x20
+     mov rax, rdi
+     mov rcx, rsi
+     lea rsi, [rsp]
+     lea rdi, [rsp+0x10]
+     mov [rsp], rax
+     mov [rsp+0x08], rcx
+     mov rdx, 0x10
+     call :$copy
+     mov qword ptr [rsp+0x10], 0x64
+     mov qword ptr [rsp+0x18], 0xC8
+     mov rax, 0x12C
+     add rsp, 0x20
+     ret

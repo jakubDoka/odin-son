@@ -1,67 +1,43 @@
 =========== OPT LEVEL: none ===========
 main:
-     push rbx
-     push rbp
      sub rsp, 0x10
-     mov rsi, 0x00
-     mov rbx, 0x00
-     lea rax, [rsp]
-     add rbx, rax
-     mov rbp, 0x01
-     mov rdx, 0x10
      lea rdi, [rsp]
+     mov rsi, 0x00
+     mov rdx, 0x10
      call :$set
-     mov [rbx], rbp
-     mov rcx, 0x08
-     lea rax, [rsp]
-     add rcx, rax
-     mov rax, 0x02
-     mov [rcx], rax
-     mov rax, [rcx]
-     add rax, rbp
-     mov [rbx], rax
-     mov rax, [rbx]
-     mov rcx, [rcx]
+     mov qword ptr [rsp], 0x01
+     mov qword ptr [rsp+0x08], 0x02
+     mov rax, [rsp+0x08]
+     add rax, 0x01
+     mov [rsp], rax
+     mov rax, [rsp]
+     mov rcx, [rsp+0x08]
      add rax, rcx
      add rsp, 0x10
-     pop rbp
-     pop rbx
      ret
 =========== OPT LEVEL: mininal ===========
 main:
-     push rbx
-     push rbp
      sub rsp, 0x10
-     mov rsi, 0x00
-     mov rbx, 0x00
-     lea rax, [rsp]
-     add rbx, rax
-     mov rbp, 0x01
-     mov rdx, 0x10
      lea rdi, [rsp]
+     mov rsi, 0x00
+     mov rdx, 0x10
      call :$set
-     mov [rbx], rbp
-     mov rcx, 0x08
-     lea rax, [rsp]
-     add rcx, rax
-     mov rax, 0x02
-     mov [rcx], rax
-     mov rax, [rcx]
-     add rax, rbp
-     mov [rbx], rax
-     mov rax, [rbx]
-     mov rcx, [rcx]
+     mov qword ptr [rsp], 0x01
+     mov qword ptr [rsp+0x08], 0x02
+     mov rax, [rsp+0x08]
+     add rax, 0x01
+     mov [rsp], rax
+     mov rax, [rsp]
+     mov rcx, [rsp+0x08]
      add rax, rcx
      add rsp, 0x10
-     pop rbp
-     pop rbx
      ret
 =========== OPT LEVEL: all ===========
 main:
      sub rsp, 0x10
-     mov rax, 0x05
      mov qword ptr [rsp], 0x01
      mov qword ptr [rsp+0x08], 0x02
      mov qword ptr [rsp], 0x03
+     mov rax, 0x05
      add rsp, 0x10
      ret

@@ -1,109 +1,67 @@
 =========== OPT LEVEL: none ===========
 main:
-     push rbx
-     push rbp
      sub rsp, 0x1E
-     lea rdx, [rsp]
-     mov rax, 0x00
-     mov rcx, 0x01
-     mov [rdx], al
-     mov [rdx], cl
-     movzx edx, byte ptr [rdx]
-     cmp dl, cl
-     setnz bl
-     movzx rbx, bl
-     mov rdx, 0x01
-     test rbx, rbx
+     mov byte ptr [rsp], 0x00
+     mov byte ptr [rsp], 0x01
+     movzx eax, byte ptr [rsp]
+     cmp al, 0x01
      jz :0
      jmp :1
 
-000: lea rsi, [rsp+0x02]
-     mov rbx, 0x00
-     mov rbp, 0x01
-     mov [rsi], bx
-     mov [rsi], bp
-     movzx esi, word ptr [rsi]
-     cmp si, bp
-     setnz sil
-     movzx rsi, sil
-     test rsi, rsi
+000: mov word ptr [rsp+0x02], 0x00
+     mov word ptr [rsp+0x02], 0x01
+     movzx eax, word ptr [rsp+0x02]
+     cmp ax, 0x01
      jz :2
      jmp :3
 
-002: lea r8, [rsp+0x06]
-     mov rsi, 0x00
-     mov rdi, 0x01
-     mov [r8], esi
-     mov [r8], edi
-     mov r8d, [r8]
-     cmp r8d, edi
-     setnz r8b
-     movzx r8, r8b
-     test r8, r8
+002: mov dword ptr [rsp+0x06], 0x00
+     mov dword ptr [rsp+0x06], 0x01
+     mov eax, [rsp+0x06]
+     cmp eax, 0x01
      jz :4
      jmp :5
 
-004: lea r9, [rsp+0x0E]
-     mov r8, 0x00
-     mov [r9], r8
-     mov [r9], rdx
-     mov r9, [r9]
-     cmp r9, rdx
-     setnz r9b
-     movzx r9, r9b
-     test r9, r9
+004: mov qword ptr [rsp+0x0E], 0x00
+     mov qword ptr [rsp+0x0E], 0x01
+     mov rax, [rsp+0x0E]
+     cmp rax, 0x01
      jz :6
      jmp :7
 
-006: lea r9, [rsp+0x01]
-     mov r10, 0x00
-     sub r10b, cl
-     mov [r9], al
-     mov [r9], r10b
-     movsx rax, byte ptr [r9]
-     cmp al, r10b
-     setnz al
-     movzx rax, al
-     test rax, rax
+006: mov rax, 0x00
+     sub rax, 0x01
+     mov byte ptr [rsp+0x01], 0x00
+     mov [rsp+0x01], al
+     movsx rcx, byte ptr [rsp+0x01]
+     cmp cl, al
      jz :8
      jmp :9
 
-008: lea rax, [rsp+0x04]
-     mov rcx, 0x00
-     sub cx, bp
-     mov [rax], bx
-     mov [rax], cx
-     movsx rax, word ptr [rax]
-     cmp ax, cx
-     setnz al
-     movzx rax, al
-     test rax, rax
+008: mov rax, 0x00
+     sub rax, 0x01
+     mov word ptr [rsp+0x04], 0x00
+     mov [rsp+0x04], ax
+     movsx rcx, word ptr [rsp+0x04]
+     cmp cx, ax
      jz :10
      jmp :11
 
-010: lea rax, [rsp+0x0A]
-     mov rcx, 0x00
-     sub ecx, edi
-     mov [rax], esi
-     mov [rax], ecx
-     movsxd rax, dword ptr [rax]
-     cmp eax, ecx
-     setnz al
-     movzx rax, al
-     test rax, rax
+010: mov rax, 0x00
+     sub rax, 0x01
+     mov dword ptr [rsp+0x0A], 0x00
+     mov [rsp+0x0A], eax
+     movsxd rcx, dword ptr [rsp+0x0A]
+     cmp ecx, eax
      jz :12
      jmp :13
 
-012: lea rax, [rsp+0x16]
-     mov rcx, 0x00
-     sub rcx, rdx
-     mov [rax], r8
-     mov [rax], rcx
-     mov rax, [rax]
-     cmp rax, rcx
-     setnz al
-     movzx rax, al
-     test rax, rax
+012: mov rax, 0x00
+     sub rax, 0x01
+     mov qword ptr [rsp+0x16], 0x00
+     mov [rsp+0x16], rax
+     mov rcx, [rsp+0x16]
+     cmp rcx, rax
      jz :14
      jmp :15
 
@@ -149,111 +107,63 @@ main:
 017: jmp :16
 
 016: add rsp, 0x1E
-     pop rbp
-     pop rbx
      ret
 =========== OPT LEVEL: mininal ===========
 main:
-     push rbx
-     push rbp
      sub rsp, 0x1E
-     lea rcx, [rsp]
-     mov rax, 0x00
-     mov rdx, 0x01
-     mov [rcx], al
-     mov [rcx], dl
-     movzx ecx, byte ptr [rcx]
-     cmp cl, dl
-     setnz dl
-     movzx rdx, dl
-     mov rcx, 0x01
-     test rdx, rdx
+     mov byte ptr [rsp], 0x00
+     mov byte ptr [rsp], 0x01
+     movzx eax, byte ptr [rsp]
+     cmp al, 0x01
      jz :0
      jmp :1
 
-000: lea rbx, [rsp+0x02]
-     mov rdx, 0x00
-     mov rbp, 0x01
-     mov [rbx], dx
-     mov [rbx], bp
-     movzx ebx, word ptr [rbx]
-     cmp bx, bp
-     setnz bl
-     movzx rbx, bl
-     test rbx, rbx
+000: mov word ptr [rsp+0x02], 0x00
+     mov word ptr [rsp+0x02], 0x01
+     movzx eax, word ptr [rsp+0x02]
+     cmp ax, 0x01
      jz :2
      jmp :3
 
-002: lea rbp, [rsp+0x06]
-     mov rbx, 0x00
-     mov rsi, 0x01
-     mov [rbp], ebx
-     mov [rbp], esi
-     mov ebp, [rbp]
-     cmp ebp, esi
-     setnz bpl
-     movzx rbp, bpl
-     test rbp, rbp
+002: mov dword ptr [rsp+0x06], 0x00
+     mov dword ptr [rsp+0x06], 0x01
+     mov eax, [rsp+0x06]
+     cmp eax, 0x01
      jz :4
      jmp :5
 
-004: lea rsi, [rsp+0x0E]
-     mov rbp, 0x00
-     mov [rsi], rbp
-     mov [rsi], rcx
-     mov rsi, [rsi]
-     cmp rsi, rcx
-     setnz cl
-     movzx rcx, cl
-     test rcx, rcx
+004: mov qword ptr [rsp+0x0E], 0x00
+     mov qword ptr [rsp+0x0E], 0x01
+     mov rax, [rsp+0x0E]
+     cmp rax, 0x01
      jz :6
      jmp :7
 
-006: lea rcx, [rsp+0x01]
-     mov rsi, 0xFFFFFFFFFFFFFFFF
-     mov [rcx], al
-     mov [rcx], sil
-     movsx rax, byte ptr [rcx]
-     cmp al, sil
-     setnz al
-     movzx rax, al
-     test rax, rax
+006: mov byte ptr [rsp+0x01], 0x00
+     mov byte ptr [rsp+0x01], 0xFF
+     movsx rax, byte ptr [rsp+0x01]
+     cmp al, 0xFF
      jz :8
      jmp :9
 
-008: lea rax, [rsp+0x04]
-     mov rcx, 0xFFFFFFFFFFFFFFFF
-     mov [rax], dx
-     mov [rax], cx
-     movsx rax, word ptr [rax]
-     cmp ax, cx
-     setnz al
-     movzx rax, al
-     test rax, rax
+008: mov word ptr [rsp+0x04], 0x00
+     mov word ptr [rsp+0x04], 0xFFFF
+     movsx rax, word ptr [rsp+0x04]
+     cmp ax, 0xFFFF
      jz :10
      jmp :11
 
-010: lea rax, [rsp+0x0A]
-     mov rcx, 0xFFFFFFFFFFFFFFFF
-     mov [rax], ebx
-     mov [rax], ecx
-     movsxd rax, dword ptr [rax]
-     cmp eax, ecx
-     setnz al
-     movzx rax, al
-     test rax, rax
+010: mov dword ptr [rsp+0x0A], 0x00
+     mov dword ptr [rsp+0x0A], 0xFFFFFFFF
+     movsxd rax, dword ptr [rsp+0x0A]
+     cmp eax, 0xFFFFFFFF
      jz :12
      jmp :13
 
-012: lea rax, [rsp+0x16]
-     mov rcx, 0xFFFFFFFFFFFFFFFF
-     mov [rax], rbp
-     mov [rax], rcx
-     mov rax, [rax]
-     cmp rax, rcx
-     setnz al
-     movzx rax, al
-     test rax, rax
+012: mov qword ptr [rsp+0x16], 0x00
+     mov qword ptr [rsp+0x16], 0xFFFFFFFFFFFFFFFF
+     mov rax, [rsp+0x16]
+     cmp rax, 0xFFFFFFFFFFFFFFFF
      jz :14
      jmp :15
 
@@ -299,13 +209,10 @@ main:
 017: jmp :16
 
 016: add rsp, 0x1E
-     pop rbp
-     pop rbx
      ret
 =========== OPT LEVEL: all ===========
 main:
      sub rsp, 0x1E
-     mov rax, 0x00
      mov byte ptr [rsp], 0x00
      mov byte ptr [rsp], 0x01
      mov word ptr [rsp+0x02], 0x00
@@ -322,5 +229,6 @@ main:
      mov dword ptr [rsp+0x0A], 0xFFFFFFFF
      mov qword ptr [rsp+0x16], 0x00
      mov qword ptr [rsp+0x16], 0xFFFFFFFFFFFFFFFF
+     mov rax, 0x00
      add rsp, 0x1E
      ret

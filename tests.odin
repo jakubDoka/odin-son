@@ -159,7 +159,7 @@ main_ :: proc() -> int {
 	{
 		a: i8 = 20
 		b: i8 = 6
-		n: i8 = 7
+		n: i8 = 0 - 7
 
 		r += int(a / b)
 		r += int(a % b)
@@ -185,7 +185,7 @@ main_ :: proc() -> int {
 	{
 		a: i16 = 20
 		b: i16 = 6
-		n: i16 = 7
+		n: i16 = 0 - 7
 
 		r += int(a / b)
 		r += int(a % b)
@@ -211,7 +211,7 @@ main_ :: proc() -> int {
 	{
 		a: i32 = 20
 		b: i32 = 6
-		n: i32 = 7
+		n: i32 = 0 - 7
 
 		r += int(a / b)
 		r += int(a % b)
@@ -352,7 +352,7 @@ main :: proc() -> int {
 	{
 		a: i8 = 20
 		b: i8 = 6
-		n: i8 = 7
+		n: i8 = 0 - 7
 
 		r += int(a / b)
 		r += int(a % b)
@@ -378,7 +378,7 @@ main :: proc() -> int {
 	{
 		a: i16 = 20
 		b: i16 = 6
-		n: i16 = 7
+		n: i16 = 0 - 7
 
 		r += int(a / b)
 		r += int(a % b)
@@ -404,7 +404,7 @@ main :: proc() -> int {
 	{
 		a: i32 = 20
 		b: i32 = 6
-		n: i32 = 7
+		n: i32 = 0 - 7
 
 		r += int(a / b)
 		r += int(a % b)
@@ -3728,6 +3728,658 @@ return_stru3 :: proc() -> Stru3 {
 
 return_stru4 :: proc() -> Stru4 {
 	return {return_stru3(), return_stru3(), 70}
+}
+`, main_())
+}
+@(test) struct_passed_by_value_is_copied :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Stru :: struct {
+	a: int,
+	b: int,
+}
+
+main_ :: proc() -> int {
+	s := Stru{1, 2}
+	mutate(s)
+	return s.a + s.b
+}
+
+mutate :: proc(s: Stru) -> int {
+	s := s
+	s.a = 100
+	s.b = 200
+	return s.a + s.b
+}
+
+run_test(t, `struct_passed_by_value_is_copied`, `
+package main
+
+opt_level :: "none"
+
+Stru :: struct {
+	a: int,
+	b: int,
+}
+
+main :: proc() -> int {
+	s := Stru{1, 2}
+	mutate(s)
+	return s.a + s.b
+}
+
+mutate :: proc(s: Stru) -> int {
+	s := s
+	s.a = 100
+	s.b = 200
+	return s.a + s.b
+}
+`, main_())
+}
+@(test) nested_struct_passed_by_value :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Inner :: struct {
+	x: int,
+	y: int,
+}
+
+Outer :: struct {
+	a: Inner,
+	b: int,
+}
+
+main_ :: proc() -> int {
+	o := Outer{Inner{1, 2}, 3}
+	return sum(o)
+}
+
+sum :: proc(o: Outer) -> int {
+	return o.a.x + o.a.y + o.b
+}
+
+run_test(t, `nested_struct_passed_by_value`, `
+package main
+
+opt_level :: "none"
+
+Inner :: struct {
+	x: int,
+	y: int,
+}
+
+Outer :: struct {
+	a: Inner,
+	b: int,
+}
+
+main :: proc() -> int {
+	o := Outer{Inner{1, 2}, 3}
+	return sum(o)
+}
+
+sum :: proc(o: Outer) -> int {
+	return o.a.x + o.a.y + o.b
+}
+`, main_())
+}
+@(test) bool_values_stored_and_negated :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	a := 5
+	b := 10
+	x := a < b
+	y := a == b
+	r := 0
+	if x do r += 1
+	if !y do r += 2
+	z := !x
+	if z do r += 4
+	return r
+}
+
+run_test(t, `bool_values_stored_and_negated`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	a := 5
+	b := 10
+	x := a < b
+	y := a == b
+	r := 0
+	if x do r += 1
+	if !y do r += 2
+	z := !x
+	if z do r += 4
+	return r
+}
+`, main_())
+}
+@(test) comparison_result_as_integer :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	a := 5
+	b := 10
+	x := int(a < b)
+	y := int(a > b)
+	return x * 100 + y
+}
+
+run_test(t, `comparison_result_as_integer`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	a := 5
+	b := 10
+	x := int(a < b)
+	y := int(a > b)
+	return x * 100 + y
+}
+`, main_())
+}
+@(test) nested_pointer_double_deref :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	a := 42
+	p := &a
+	pp := &p
+	pp^^ = 100
+	return a
+}
+
+run_test(t, `nested_pointer_double_deref`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	a := 42
+	p := &a
+	pp := &p
+	pp^^ = 100
+	return a
+}
+`, main_())
+}
+@(test) integer_multiplication_truncation :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	a: i32 = 100000
+	b: i32 = 100000
+	c := a * b
+
+	x: u32 = 100000
+	y: u32 = 100000
+	z := x * y
+
+	return int(c) + int(z)
+}
+
+run_test(t, `integer_multiplication_truncation`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	a: i32 = 100000
+	b: i32 = 100000
+	c := a * b
+
+	x: u32 = 100000
+	y: u32 = 100000
+	z := x * y
+
+	return int(c) + int(z)
+}
+`, main_())
+}
+@(test) subword_register_multiply :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	a := opaque(0 - 5)
+	b: i16 = i16(a)
+	c := b * 3
+
+	d: i32 = i32(a)
+	e := d * 3
+
+	return int(c) + int(e)
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+run_test(t, `subword_register_multiply`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	a := opaque(0 - 5)
+	b: i16 = i16(a)
+	c := b * 3
+
+	d: i32 = i32(a)
+	e := d * 3
+
+	return int(c) + int(e)
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+`, main_())
+}
+@(test) subword_signed_division :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	a := opaque(0 - 100)
+	b: i8 = i8(a)
+	c := b / 3
+	return int(c)
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+run_test(t, `subword_signed_division`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	a := opaque(0 - 100)
+	b: i8 = i8(a)
+	c := b / 3
+	return int(c)
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+`, main_())
+}
+@(test) compound_divide_and_modulo_assign :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	a := 100
+	a /= 7
+	a %= 4
+
+	b: uint = 100
+	b /= 7
+	b %= 4
+
+	return a + int(b)
+}
+
+run_test(t, `compound_divide_and_modulo_assign`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	a := 100
+	a /= 7
+	a %= 4
+
+	b: uint = 100
+	b /= 7
+	b %= 4
+
+	return a + int(b)
+}
+`, main_())
+}
+@(test) compound_and_not_assign :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	a := 15
+	a &~= 6
+	a |= 1
+	a ~= 2
+	a &= 254
+	return a
+}
+
+run_test(t, `compound_and_not_assign`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	a := 15
+	a &~= 6
+	a |= 1
+	a ~= 2
+	a &= 254
+	return a
+}
+`, main_())
+}
+@(test) unsigned_negation_wraps :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	a := opaque(1)
+	b: u16 = u16(a)
+	c := -b
+	return int(c)
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+run_test(t, `unsigned_negation_wraps`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	a := opaque(1)
+	b: u16 = u16(a)
+	c := -b
+	return int(c)
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+`, main_())
+}
+@(test) unsigned_cast_wraps_to_max :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	a: i32 = 0 - 1
+	return int(u32(a))
+}
+
+run_test(t, `unsigned_cast_wraps_to_max`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	a: i32 = 0 - 1
+	return int(u32(a))
+}
+`, main_())
+}
+@(test) subword_return_values :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	return int(get8()) + int(get16())
+}
+
+get8 :: proc() -> i8 {
+	return 0 - 10
+}
+
+get16 :: proc() -> i16 {
+	return 0 - 1000
+}
+
+run_test(t, `subword_return_values`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	return int(get8()) + int(get16())
+}
+
+get8 :: proc() -> i8 {
+	return 0 - 10
+}
+
+get16 :: proc() -> i16 {
+	return 0 - 1000
+}
+`, main_())
+}
+@(test) signed_subword_division_widening_bug :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	a: i32 = 0 - 100
+	b: i32 = 7
+	r := 0
+	r += int(a / b)
+	r += int(a % b)
+
+	c: i16 = 0 - 100
+	d: i16 = 7
+	r += int(c / d)
+	r += int(c % d)
+
+	return r
+}
+
+run_test(t, `signed_subword_division_widening_bug`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	a: i32 = 0 - 100
+	b: i32 = 7
+	r := 0
+	r += int(a / b)
+	r += int(a % b)
+
+	c: i16 = 0 - 100
+	d: i16 = 7
+	r += int(c / d)
+	r += int(c % d)
+
+	return r
+}
+`, main_())
+}
+@(test) signed_widening_cast_bug :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	x: i16 = 0 - 1000
+	y: i8 = 0 - 50
+	return int(x) + int(y)
+}
+
+run_test(t, `signed_widening_cast_bug`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	x: i16 = 0 - 1000
+	y: i8 = 0 - 50
+	return int(x) + int(y)
+}
+`, main_())
+}
+@(test) signed_cast_through_truncation_bug :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	b: u8 = 200
+	c: u64 = 0
+	c -= 1
+	return int(i8(b)) + int(i32(c))
+}
+
+run_test(t, `signed_cast_through_truncation_bug`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	b: u8 = 200
+	c: u64 = 0
+	c -= 1
+	return int(i8(b)) + int(i32(c))
+}
+`, main_())
+}
+@(test) signed_subword_multiply_widening_bug :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Stru :: struct {
+	b: i16,
+}
+
+main_ :: proc() -> int {
+	s := Stru{0 - 1000}
+	return int(s.b * 2)
+}
+
+run_test(t, `signed_subword_multiply_widening_bug`, `
+package main
+
+opt_level :: "none"
+
+Stru :: struct {
+	b: i16,
+}
+
+main :: proc() -> int {
+	s := Stru{0 - 1000}
+	return int(s.b * 2)
+}
+`, main_())
+}
+@(test) parallel_assignment_swap_bug :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	a := 3
+	b := 7
+	a, b = b, a
+	return a * 10 + b
+}
+
+run_test(t, `parallel_assignment_swap_bug`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	a := 3
+	b := 7
+	a, b = b, a
+	return a * 10 + b
+}
+`, main_())
+}
+@(test) eight_bit_register_multiply_crash :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	a: i8 = 0 - 5
+	b := a * 2
+
+	c := opaque(20)
+	d: u8 = u8(c)
+	e := d * 3
+
+	return int(b) + int(e)
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+run_test(t, `eight_bit_register_multiply_crash`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	a: i8 = 0 - 5
+	b := a * 2
+
+	c := opaque(20)
+	d: u8 = u8(c)
+	e := d * 3
+
+	return int(b) + int(e)
+}
+
+opaque :: proc(x: int) -> int {
+	return x
 }
 `, main_())
 }

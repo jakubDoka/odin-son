@@ -1,0 +1,45 @@
+=========== OPT LEVEL: none ===========
+main:
+     mov rdi, 0x14
+     call :opaque
+     mov rdx, rax
+     mov rcx, 0x00
+     sub rcx, 0x05
+     mov rax, 0x02
+     imul cl
+     movsx rcx, al
+     mov rax, 0x03
+     imul dl
+     movzx eax, al
+     add rcx, rax
+     mov rax, rcx
+     ret
+opaque:
+     mov rax, rdi
+     ret
+=========== OPT LEVEL: mininal ===========
+main:
+     mov rdi, 0x14
+     call :opaque
+     mov rcx, rax
+     mov rax, 0x03
+     imul cl
+     movzx eax, al
+     add rax, 0xFFFFFFFFFFFFFFF6
+     ret
+opaque:
+     mov rax, rdi
+     ret
+=========== OPT LEVEL: all ===========
+main:
+     mov rdi, 0x14
+     call :opaque
+     mov rcx, rax
+     mov rax, 0x03
+     imul cl
+     movzx eax, al
+     add rax, 0xFFFFFFFFFFFFFFF6
+     ret
+opaque:
+     mov rax, rdi
+     ret

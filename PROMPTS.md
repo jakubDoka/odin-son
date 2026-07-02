@@ -41,3 +41,14 @@ The tests that we have right now dont really cover all of the configurations of
 these ops. This includes `op [addr], $imm`, `op [addr], reg`, `op reg, $imm`,
 the ops with store then firther branch on the operand size. Please add tests
 and verify they emit these instructions.
+
+### add more tests to expose bugs in backend
+
+NOTE: Read AGENTS.md
+
+Right now there is a wider range of things that we already support and I am not
+confident they are tested properly. Try to add more tests to cover gaps in the
+current tests and, better yet, try to find tests that expose bugs. If the test
+is breaking in the frontend because something is not implemented yet, don't
+include that test. But otherwise if frontend crashes on unexpected assert/ioob
+etcetera.

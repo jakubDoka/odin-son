@@ -1,0 +1,57 @@
+=========== OPT LEVEL: none ===========
+main:
+     sub rsp, 0x18
+     mov rsi, 0x00
+     mov rdx, 0x18
+     lea rdi, [rsp]
+     call :$set
+     mov qword ptr [rsp], 0x01
+     mov qword ptr [rsp+0x08], 0x02
+     mov qword ptr [rsp+0x10], 0x03
+     lea rdi, [rsp]
+     call :sum
+     add rsp, 0x18
+     ret
+sum:
+     mov rax, [rdi]
+     mov rcx, [rdi+0x08]
+     add rax, rcx
+     mov rcx, [rdi+0x10]
+     add rax, rcx
+     ret
+=========== OPT LEVEL: mininal ===========
+main:
+     sub rsp, 0x18
+     mov rsi, 0x00
+     mov rdx, 0x18
+     lea rdi, [rsp]
+     call :$set
+     mov qword ptr [rsp], 0x01
+     mov qword ptr [rsp+0x08], 0x02
+     mov qword ptr [rsp+0x10], 0x03
+     lea rdi, [rsp]
+     call :sum
+     add rsp, 0x18
+     ret
+sum:
+     mov rax, [rdi]
+     mov rcx, [rdi+0x08]
+     add rax, rcx
+     mov rcx, [rdi+0x10]
+     add rax, rcx
+     ret
+=========== OPT LEVEL: all ===========
+main:
+     sub rsp, 0x18
+     mov qword ptr [rsp], 0x01
+     mov qword ptr [rsp+0x08], 0x02
+     mov qword ptr [rsp+0x10], 0x03
+     lea rdi, [rsp]
+     call :sum
+     add rsp, 0x18
+     ret
+sum:
+     mov rax, [rdi]
+     add rax, [rdi+0x08]
+     add rax, [rdi+0x10]
+     ret

@@ -1,0 +1,37 @@
+=========== OPT LEVEL: none ===========
+main:
+     sub rsp, 0x02
+     lea rdi, [rsp]
+     mov rsi, 0x00
+     mov rdx, 0x02
+     call :$set
+     mov rax, 0x00
+     sub rax, 0x3E8
+     mov [rsp], ax
+     movsx rax, word ptr [rsp]
+     mov rcx, 0x02
+     imul ax, cx
+     movsx rax, ax
+     add rsp, 0x02
+     ret
+=========== OPT LEVEL: mininal ===========
+main:
+     sub rsp, 0x02
+     lea rdi, [rsp]
+     mov rsi, 0x00
+     mov rdx, 0x02
+     call :$set
+     mov word ptr [rsp], 0xFC18
+     movsx rax, word ptr [rsp]
+     mov rcx, 0x02
+     imul ax, cx
+     movsx rax, ax
+     add rsp, 0x02
+     ret
+=========== OPT LEVEL: all ===========
+main:
+     sub rsp, 0x02
+     mov word ptr [rsp], 0xFC18
+     mov rax, 0xFFFFFFFFFFFFF830
+     add rsp, 0x02
+     ret

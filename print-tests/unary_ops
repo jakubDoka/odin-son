@@ -1,14 +1,12 @@
 =========== OPT LEVEL: none ===========
 test_not_reg:
-     mov rax, 0x00
-     cmp dil, al
+     cmp dil, 0x00
      setz al
      movzx rax, al
      ret
 test_not_i8:
      movzx eax, byte ptr [rdi]
-     mov rcx, 0x00
-     cmp al, cl
+     cmp al, 0x00
      setz al
      movzx rax, al
      mov [rdi], al
@@ -19,58 +17,42 @@ test_bitnot_reg:
      not rax
      ret
 test_bitnot_i8:
-     movsx rax, byte ptr [rdi]
-     not al
-     mov [rdi], al
+     not [rdi]
      movsx rax, byte ptr [rdi]
      movsx rax, al
      ret
 test_bitnot_u8:
-     movzx eax, byte ptr [rdi]
-     not al
-     mov [rdi], al
+     not [rdi]
      movzx eax, byte ptr [rdi]
      movzx eax, al
      ret
 test_bitnot_i16:
-     movsx rax, word ptr [rdi]
-     not ax
-     mov [rdi], ax
+     not [rdi]
      movsx rax, word ptr [rdi]
      movsx rax, ax
      ret
 test_bitnot_u16:
-     movzx eax, word ptr [rdi]
-     not ax
-     mov [rdi], ax
+     not [rdi]
      movzx eax, word ptr [rdi]
      movzx eax, ax
      ret
 test_bitnot_i32:
-     movsxd rax, dword ptr [rdi]
-     not eax
-     mov [rdi], eax
+     not [rdi]
      movsxd rax, dword ptr [rdi]
      movsxd rax, eax
      ret
 test_bitnot_u32:
-     mov eax, [rdi]
-     not eax
-     mov [rdi], eax
+     not [rdi]
      mov eax, [rdi]
      mov eax, eax
      ret
 test_bitnot_i64:
-     mov rax, [rdi]
-     not rax
-     mov [rdi], rax
+     not [rdi]
      mov rax, [rdi]
      mov rax, rax
      ret
 test_bitnot_u64:
-     mov rax, [rdi]
-     not rax
-     mov [rdi], rax
+     not [rdi]
      mov rax, [rdi]
      mov rax, rax
      ret
@@ -83,58 +65,42 @@ test_bitnot_reg_u8:
      movzx eax, dil
      ret
 test_neg_i8:
-     movsx rax, byte ptr [rdi]
-     neg al
-     mov [rdi], al
+     neg [rdi]
      movsx rax, byte ptr [rdi]
      movsx rax, al
      ret
 test_neg_u8:
-     movzx eax, byte ptr [rdi]
-     neg al
-     mov [rdi], al
+     neg [rdi]
      movzx eax, byte ptr [rdi]
      movzx eax, al
      ret
 test_neg_i16:
-     movsx rax, word ptr [rdi]
-     neg ax
-     mov [rdi], ax
+     neg [rdi]
      movsx rax, word ptr [rdi]
      movsx rax, ax
      ret
 test_neg_u16:
-     movzx eax, word ptr [rdi]
-     neg ax
-     mov [rdi], ax
+     neg [rdi]
      movzx eax, word ptr [rdi]
      movzx eax, ax
      ret
 test_neg_i32:
-     movsxd rax, dword ptr [rdi]
-     neg eax
-     mov [rdi], eax
+     neg [rdi]
      movsxd rax, dword ptr [rdi]
      movsxd rax, eax
      ret
 test_neg_u32:
-     mov eax, [rdi]
-     neg eax
-     mov [rdi], eax
+     neg [rdi]
      mov eax, [rdi]
      mov eax, eax
      ret
 test_neg_i64:
-     mov rax, [rdi]
-     neg rax
-     mov [rdi], rax
+     neg [rdi]
      mov rax, [rdi]
      mov rax, rax
      ret
 test_neg_u64:
-     mov rax, [rdi]
-     neg rax
-     mov [rdi], rax
+     neg [rdi]
      mov rax, [rdi]
      mov rax, rax
      ret
@@ -148,32 +114,20 @@ main:
      sub rsp, 0x8E
      mov rax, 0x05
      neg al
-     lea rcx, [rsp]
-     mov [rcx], al
-     mov rax, 0xC8
-     lea rcx, [rsp+0x01]
-     mov [rcx], al
+     mov [rsp], al
+     mov byte ptr [rsp+0x01], 0xC8
      mov rax, 0x3E8
      neg ax
-     lea rcx, [rsp+0x02]
-     mov [rcx], ax
-     mov rax, 0x9C40
-     lea rcx, [rsp+0x04]
-     mov [rcx], ax
+     mov [rsp+0x02], ax
+     mov word ptr [rsp+0x04], 0x9C40
      mov rax, 0x186A0
-     mov rcx, 0x186A0
-     neg ecx
-     lea rdx, [rsp+0x06]
-     mov [rdx], ecx
-     lea rcx, [rsp+0x0A]
-     mov [rcx], eax
+     neg eax
+     mov [rsp+0x06], eax
+     mov dword ptr [rsp+0x0A], 0x186A0
      mov rax, 0x5F5E100
-     mov rcx, 0x5F5E100
-     neg rcx
-     lea rdx, [rsp+0x0E]
-     mov [rdx], rcx
-     lea rcx, [rsp+0x16]
-     mov [rcx], rax
+     neg rax
+     mov [rsp+0x0E], rax
+     mov qword ptr [rsp+0x16], 0x5F5E100
      mov rdi, 0x00
      call :test_not_reg
      mov rbx, rax
@@ -292,15 +246,13 @@ main:
      ret
 =========== OPT LEVEL: mininal ===========
 test_not_reg:
-     mov rax, 0x00
-     cmp dil, al
+     cmp dil, 0x00
      setz al
      movzx rax, al
      ret
 test_not_i8:
      movzx eax, byte ptr [rdi]
-     mov rcx, 0x00
-     cmp al, cl
+     cmp al, 0x00
      setz al
      movzx rax, al
      mov [rdi], al
@@ -311,57 +263,41 @@ test_bitnot_reg:
      not rax
      ret
 test_bitnot_i8:
-     movsx rax, byte ptr [rdi]
-     not al
-     mov [rdi], al
+     not [rdi]
      movsx rax, byte ptr [rdi]
      movsx rax, al
      ret
 test_bitnot_u8:
-     movzx eax, byte ptr [rdi]
-     not al
-     mov [rdi], al
+     not [rdi]
      movzx eax, byte ptr [rdi]
      movzx eax, al
      ret
 test_bitnot_i16:
-     movsx rax, word ptr [rdi]
-     not ax
-     mov [rdi], ax
+     not [rdi]
      movsx rax, word ptr [rdi]
      movsx rax, ax
      ret
 test_bitnot_u16:
-     movzx eax, word ptr [rdi]
-     not ax
-     mov [rdi], ax
+     not [rdi]
      movzx eax, word ptr [rdi]
      movzx eax, ax
      ret
 test_bitnot_i32:
-     movsxd rax, dword ptr [rdi]
-     not eax
-     mov [rdi], eax
+     not [rdi]
      movsxd rax, dword ptr [rdi]
      movsxd rax, eax
      ret
 test_bitnot_u32:
-     mov eax, [rdi]
-     not eax
-     mov [rdi], eax
+     not [rdi]
      mov eax, [rdi]
      mov eax, eax
      ret
 test_bitnot_i64:
-     mov rax, [rdi]
-     not rax
-     mov [rdi], rax
+     not [rdi]
      mov rax, [rdi]
      ret
 test_bitnot_u64:
-     mov rax, [rdi]
-     not rax
-     mov [rdi], rax
+     not [rdi]
      mov rax, [rdi]
      ret
 test_neg_reg:
@@ -373,57 +309,41 @@ test_bitnot_reg_u8:
      movzx eax, dil
      ret
 test_neg_i8:
-     movsx rax, byte ptr [rdi]
-     neg al
-     mov [rdi], al
+     neg [rdi]
      movsx rax, byte ptr [rdi]
      movsx rax, al
      ret
 test_neg_u8:
-     movzx eax, byte ptr [rdi]
-     neg al
-     mov [rdi], al
+     neg [rdi]
      movzx eax, byte ptr [rdi]
      movzx eax, al
      ret
 test_neg_i16:
-     movsx rax, word ptr [rdi]
-     neg ax
-     mov [rdi], ax
+     neg [rdi]
      movsx rax, word ptr [rdi]
      movsx rax, ax
      ret
 test_neg_u16:
-     movzx eax, word ptr [rdi]
-     neg ax
-     mov [rdi], ax
+     neg [rdi]
      movzx eax, word ptr [rdi]
      movzx eax, ax
      ret
 test_neg_i32:
-     movsxd rax, dword ptr [rdi]
-     neg eax
-     mov [rdi], eax
+     neg [rdi]
      movsxd rax, dword ptr [rdi]
      movsxd rax, eax
      ret
 test_neg_u32:
-     mov eax, [rdi]
-     neg eax
-     mov [rdi], eax
+     neg [rdi]
      mov eax, [rdi]
      mov eax, eax
      ret
 test_neg_i64:
-     mov rax, [rdi]
-     neg rax
-     mov [rdi], rax
+     neg [rdi]
      mov rax, [rdi]
      ret
 test_neg_u64:
-     mov rax, [rdi]
-     neg rax
-     mov [rdi], rax
+     neg [rdi]
      mov rax, [rdi]
      ret
 main:
@@ -434,30 +354,14 @@ main:
      push r14
      push r15
      sub rsp, 0x8E
-     mov rax, 0xFFFFFFFFFFFFFFFB
-     lea rcx, [rsp]
-     mov [rcx], al
-     mov rax, 0xC8
-     lea rcx, [rsp+0x01]
-     mov [rcx], al
-     mov rax, 0xFFFFFFFFFFFFFC18
-     lea rcx, [rsp+0x02]
-     mov [rcx], ax
-     mov rax, 0x9C40
-     lea rcx, [rsp+0x04]
-     mov [rcx], ax
-     mov rax, 0xFFFFFFFFFFFE7960
-     lea rcx, [rsp+0x06]
-     mov [rcx], eax
-     mov rax, 0x186A0
-     lea rcx, [rsp+0x0A]
-     mov [rcx], eax
-     mov rax, 0xFFFFFFFFFA0A1F00
-     lea rcx, [rsp+0x0E]
-     mov [rcx], rax
-     mov rax, 0x5F5E100
-     lea rcx, [rsp+0x16]
-     mov [rcx], rax
+     mov byte ptr [rsp], 0xFB
+     mov byte ptr [rsp+0x01], 0xC8
+     mov word ptr [rsp+0x02], 0xFC18
+     mov word ptr [rsp+0x04], 0x9C40
+     mov dword ptr [rsp+0x06], 0xFFFE7960
+     mov dword ptr [rsp+0x0A], 0x186A0
+     mov qword ptr [rsp+0x0E], 0xFFFFFFFFFA0A1F00
+     mov qword ptr [rsp+0x16], 0x5F5E100
      mov rdi, 0x00
      call :test_not_reg
      mov rbx, rax
@@ -592,40 +496,40 @@ test_bitnot_reg:
      not rax
      ret
 test_bitnot_i8:
-     movsx rcx, byte ptr [rdi]
-     not cl
-     movsx rax, cl
-     mov [rdi], cl
+     movsx rax, byte ptr [rdi]
+     not al
+     mov [rdi], al
+     movsx rax, al
      ret
 test_bitnot_u8:
-     movzx ecx, byte ptr [rdi]
-     not cl
-     movzx eax, cl
-     mov [rdi], cl
+     movzx eax, byte ptr [rdi]
+     not al
+     mov [rdi], al
+     movzx eax, al
      ret
 test_bitnot_i16:
-     movsx rcx, word ptr [rdi]
-     not cx
-     movsx rax, cx
-     mov [rdi], cx
+     movsx rax, word ptr [rdi]
+     not ax
+     mov [rdi], ax
+     movsx rax, ax
      ret
 test_bitnot_u16:
-     movzx ecx, word ptr [rdi]
-     not cx
-     movzx eax, cx
-     mov [rdi], cx
+     movzx eax, word ptr [rdi]
+     not ax
+     mov [rdi], ax
+     movzx eax, ax
      ret
 test_bitnot_i32:
-     movsxd rcx, dword ptr [rdi]
-     not ecx
-     movsxd rax, ecx
-     mov [rdi], ecx
+     movsxd rax, dword ptr [rdi]
+     not eax
+     mov [rdi], eax
+     movsxd rax, eax
      ret
 test_bitnot_u32:
-     mov ecx, [rdi]
-     not ecx
-     mov eax, ecx
-     mov [rdi], ecx
+     mov eax, [rdi]
+     not eax
+     mov [rdi], eax
+     mov eax, eax
      ret
 test_bitnot_i64:
      mov rax, [rdi]
@@ -646,40 +550,40 @@ test_bitnot_reg_u8:
      movzx eax, dil
      ret
 test_neg_i8:
-     movsx rcx, byte ptr [rdi]
-     neg cl
-     movsx rax, cl
-     mov [rdi], cl
+     movsx rax, byte ptr [rdi]
+     neg al
+     mov [rdi], al
+     movsx rax, al
      ret
 test_neg_u8:
-     movzx ecx, byte ptr [rdi]
-     neg cl
-     movzx eax, cl
-     mov [rdi], cl
+     movzx eax, byte ptr [rdi]
+     neg al
+     mov [rdi], al
+     movzx eax, al
      ret
 test_neg_i16:
-     movsx rcx, word ptr [rdi]
-     neg cx
-     movsx rax, cx
-     mov [rdi], cx
+     movsx rax, word ptr [rdi]
+     neg ax
+     mov [rdi], ax
+     movsx rax, ax
      ret
 test_neg_u16:
-     movzx ecx, word ptr [rdi]
-     neg cx
-     movzx eax, cx
-     mov [rdi], cx
+     movzx eax, word ptr [rdi]
+     neg ax
+     mov [rdi], ax
+     movzx eax, ax
      ret
 test_neg_i32:
-     movsxd rcx, dword ptr [rdi]
-     neg ecx
-     movsxd rax, ecx
-     mov [rdi], ecx
+     movsxd rax, dword ptr [rdi]
+     neg eax
+     mov [rdi], eax
+     movsxd rax, eax
      ret
 test_neg_u32:
-     mov ecx, [rdi]
-     neg ecx
-     mov eax, ecx
-     mov [rdi], ecx
+     mov eax, [rdi]
+     neg eax
+     mov [rdi], eax
+     mov eax, eax
      ret
 test_neg_i64:
      mov rax, [rdi]
@@ -699,7 +603,6 @@ main:
      push r14
      push r15
      sub rsp, 0x8E
-     mov rdi, 0x00
      mov byte ptr [rsp], 0xFB
      mov byte ptr [rsp+0x01], 0xC8
      mov word ptr [rsp+0x02], 0xFC18
@@ -708,6 +611,7 @@ main:
      mov dword ptr [rsp+0x0A], 0x186A0
      mov qword ptr [rsp+0x0E], 0xFFFFFFFFFA0A1F00
      mov qword ptr [rsp+0x16], 0x5F5E100
+     mov rdi, 0x00
      call :test_not_reg
      mov rbx, rax
      mov rdi, 0x01

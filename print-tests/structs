@@ -1,23 +1,12 @@
 =========== OPT LEVEL: none ===========
 main:
-     push rbx
-     push rbp
      sub rsp, 0x30
      lea rdi, [rsp]
      mov rsi, 0x00
      mov rdx, 0x18
      call :$set
-     mov rbx, 0x08
-     lea rdx, [rsp]
-     add rdx, rbx
-     mov rbp, 0x00
-     mov rax, rdx
-     add rax, rbp
-     mov rcx, 0x02
-     mov [rax], rcx
-     add rdx, rbx
-     mov rax, 0x03
-     mov [rdx], rax
+     mov qword ptr [rsp+0x08], 0x02
+     mov qword ptr [rsp+0x10], 0x03
      mov rsi, 0x00
      mov rdx, 0x18
      lea rdi, [rsp+0x18]
@@ -26,40 +15,22 @@ main:
      mov rdx, 0x18
      lea rdi, [rsp+0x18]
      call :$copy
-     lea rdx, [rsp+0x18]
-     add rdx, rbx
-     lea rax, [rsp+0x18]
-     add rax, rbp
-     mov rax, [rax]
-     mov rcx, rdx
-     add rcx, rbp
-     mov rcx, [rcx]
+     mov rax, [rsp+0x18]
+     mov rcx, [rsp+0x20]
      add rax, rcx
-     add rdx, rbx
-     mov rcx, [rdx]
+     mov rcx, [rsp+0x28]
      add rax, rcx
      add rsp, 0x30
-     pop rbp
-     pop rbx
      ret
 =========== OPT LEVEL: mininal ===========
 main:
-     push rbx
      sub rsp, 0x30
      lea rdi, [rsp]
      mov rsi, 0x00
      mov rdx, 0x18
      call :$set
-     mov rbx, 0x08
-     lea rdx, [rsp]
-     add rdx, rbx
-     mov rax, 0x00
-     add rax, rdx
-     mov rcx, 0x02
-     mov [rax], rcx
-     add rdx, rbx
-     mov rax, 0x03
-     mov [rdx], rax
+     mov qword ptr [rsp+0x08], 0x02
+     mov qword ptr [rsp+0x10], 0x03
      mov rsi, 0x00
      mov rdx, 0x18
      lea rdi, [rsp+0x18]
@@ -68,19 +39,12 @@ main:
      mov rdx, 0x18
      lea rdi, [rsp+0x18]
      call :$copy
-     lea rax, [rsp+0x18]
-     mov rax, [rax]
-     lea rcx, [rsp+0x18]
-     add rcx, rbx
-     mov rcx, [rcx]
+     mov rax, [rsp+0x18]
+     mov rcx, [rsp+0x20]
      add rax, rcx
-     mov rcx, 0x10
-     lea rdx, [rsp+0x18]
-     add rcx, rdx
-     mov rcx, [rcx]
+     mov rcx, [rsp+0x28]
      add rax, rcx
      add rsp, 0x30
-     pop rbx
      ret
 =========== OPT LEVEL: all ===========
 main:

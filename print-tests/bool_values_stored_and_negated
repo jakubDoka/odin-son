@@ -1,0 +1,78 @@
+=========== OPT LEVEL: none ===========
+main:
+     mov rcx, 0x05
+     mov rax, 0x00
+     cmp rcx, 0x0A
+     setl dl
+     movzx rdx, dl
+     test rdx, rdx
+     jz :0
+     jmp :1
+
+000: jmp :2
+
+001: add rax, 0x01
+     jmp :2
+
+002: cmp rcx, 0x0A
+     setz cl
+     movzx rcx, cl
+     cmp cl, 0x00
+     jnz :3
+     jmp :4
+
+003: jmp :5
+
+004: add rax, 0x02
+     jmp :5
+
+005: cmp dl, 0x00
+     jnz :6
+     jmp :7
+
+006: jmp :8
+
+007: add rax, 0x04
+     jmp :8
+
+008: ret
+=========== OPT LEVEL: mininal ===========
+main:
+     mov rax, 0x01
+     mov rcx, 0x00
+     test rax, rax
+     jz :0
+     jmp :1
+
+000: mov rdx, 0x00
+     jmp :2
+
+001: mov rdx, 0x00
+     add rdx, 0x01
+     jmp :2
+
+002: test rax, rax
+     jz :3
+     jmp :4
+
+003: jmp :5
+
+004: add rdx, 0x02
+     jmp :5
+
+005: test rcx, rcx
+     jz :6
+     jmp :7
+
+006: mov rax, rdx
+     jmp :8
+
+007: mov rax, rdx
+     add rax, 0x04
+     jmp :8
+
+008: ret
+=========== OPT LEVEL: all ===========
+main:
+     mov rax, 0x03
+     ret

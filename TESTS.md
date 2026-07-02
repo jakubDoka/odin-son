@@ -142,7 +142,7 @@ main :: proc() -> int {
 	{
 		a: i8 = 20
 		b: i8 = 6
-		n: i8 = 7
+		n: i8 = 0 - 7
 
 		r += int(a / b)
 		r += int(a % b)
@@ -168,7 +168,7 @@ main :: proc() -> int {
 	{
 		a: i16 = 20
 		b: i16 = 6
-		n: i16 = 7
+		n: i16 = 0 - 7
 
 		r += int(a / b)
 		r += int(a % b)
@@ -194,7 +194,7 @@ main :: proc() -> int {
 	{
 		a: i32 = 20
 		b: i32 = 6
-		n: i32 = 7
+		n: i32 = 0 - 7
 
 		r += int(a / b)
 		r += int(a % b)
@@ -1914,3 +1914,348 @@ return_stru4 :: proc() -> Stru4 {
 }
 ```
 
+
+#### struct passed by value is copied
+```odin
+package main
+
+opt_level :: "none"
+
+Stru :: struct {
+	a: int,
+	b: int,
+}
+
+main :: proc() -> int {
+	s := Stru{1, 2}
+	mutate(s)
+	return s.a + s.b
+}
+
+mutate :: proc(s: Stru) -> int {
+	s := s
+	s.a = 100
+	s.b = 200
+	return s.a + s.b
+}
+```
+
+#### nested struct passed by value
+```odin
+package main
+
+opt_level :: "none"
+
+Inner :: struct {
+	x: int,
+	y: int,
+}
+
+Outer :: struct {
+	a: Inner,
+	b: int,
+}
+
+main :: proc() -> int {
+	o := Outer{Inner{1, 2}, 3}
+	return sum(o)
+}
+
+sum :: proc(o: Outer) -> int {
+	return o.a.x + o.a.y + o.b
+}
+```
+
+#### bool values stored and negated
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	a := 5
+	b := 10
+	x := a < b
+	y := a == b
+	r := 0
+	if x do r += 1
+	if !y do r += 2
+	z := !x
+	if z do r += 4
+	return r
+}
+```
+
+#### comparison result as integer
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	a := 5
+	b := 10
+	x := int(a < b)
+	y := int(a > b)
+	return x * 100 + y
+}
+```
+
+#### nested pointer double deref
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	a := 42
+	p := &a
+	pp := &p
+	pp^^ = 100
+	return a
+}
+```
+
+#### integer multiplication truncation
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	a: i32 = 100000
+	b: i32 = 100000
+	c := a * b
+
+	x: u32 = 100000
+	y: u32 = 100000
+	z := x * y
+
+	return int(c) + int(z)
+}
+```
+
+#### subword register multiply
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	a := opaque(0 - 5)
+	b: i16 = i16(a)
+	c := b * 3
+
+	d: i32 = i32(a)
+	e := d * 3
+
+	return int(c) + int(e)
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+```
+
+#### subword signed division
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	a := opaque(0 - 100)
+	b: i8 = i8(a)
+	c := b / 3
+	return int(c)
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+```
+
+#### compound divide and modulo assign
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	a := 100
+	a /= 7
+	a %= 4
+
+	b: uint = 100
+	b /= 7
+	b %= 4
+
+	return a + int(b)
+}
+```
+
+#### compound and not assign
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	a := 15
+	a &~= 6
+	a |= 1
+	a ~= 2
+	a &= 254
+	return a
+}
+```
+
+#### unsigned negation wraps
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	a := opaque(1)
+	b: u16 = u16(a)
+	c := -b
+	return int(c)
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+```
+
+#### unsigned cast wraps to max
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	a: i32 = 0 - 1
+	return int(u32(a))
+}
+```
+
+#### subword return values
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	return int(get8()) + int(get16())
+}
+
+get8 :: proc() -> i8 {
+	return 0 - 10
+}
+
+get16 :: proc() -> i16 {
+	return 0 - 1000
+}
+```
+
+#### signed subword division widening bug
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	a: i32 = 0 - 100
+	b: i32 = 7
+	r := 0
+	r += int(a / b)
+	r += int(a % b)
+
+	c: i16 = 0 - 100
+	d: i16 = 7
+	r += int(c / d)
+	r += int(c % d)
+
+	return r
+}
+```
+
+#### signed widening cast bug
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	x: i16 = 0 - 1000
+	y: i8 = 0 - 50
+	return int(x) + int(y)
+}
+```
+
+#### signed cast through truncation bug
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	b: u8 = 200
+	c: u64 = 0
+	c -= 1
+	return int(i8(b)) + int(i32(c))
+}
+```
+
+#### signed subword multiply widening bug
+```odin
+package main
+
+opt_level :: "none"
+
+Stru :: struct {
+	b: i16,
+}
+
+main :: proc() -> int {
+	s := Stru{0 - 1000}
+	return int(s.b * 2)
+}
+```
+
+#### parallel assignment swap bug
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	a := 3
+	b := 7
+	a, b = b, a
+	return a * 10 + b
+}
+```
+
+#### eight bit register multiply crash
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	a: i8 = 0 - 5
+	b := a * 2
+
+	c := opaque(20)
+	d: u8 = u8(c)
+	e := d * 3
+
+	return int(b) + int(e)
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+```

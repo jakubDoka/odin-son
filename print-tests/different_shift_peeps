@@ -1,34 +1,21 @@
 =========== OPT LEVEL: none ===========
 test_imm_shifts:
-     push rbx
      mov rax, rdi
-     mov rcx, 0x03
-     mov rbx, rax
-     shl rbx, cl
      mov rdx, rax
-     sar rdx, cl
-     add rbx, rdx
+     shl rdx, 0x03
+     mov rcx, rax
+     sar rcx, 0x03
+     add rdx, rcx
      mov rax, rax
-     mov rcx, 0x05
-     shr rax, cl
+     shr rax, 0x05
      mov rax, rax
-     add rbx, rax
-     mov rax, rbx
-     pop rbx
+     add rdx, rax
+     mov rax, rdx
      ret
 test_imm_inplace_shifts:
-     mov rax, [rdi]
-     mov rcx, 0x02
-     shl rax, cl
-     mov [rdi], rax
-     mov rax, [rdi]
-     mov rcx, 0x05
-     sar rax, cl
-     mov [rdi], rax
-     mov rax, [rsi]
-     mov rcx, 0x04
-     shr rax, cl
-     mov [rsi], rax
+     shl qword ptr [rdi], 0x02
+     sar qword ptr [rdi], 0x05
+     shr qword ptr [rsi], 0x04
      mov rax, [rdi]
      mov rcx, [rsi]
      mov rcx, rcx
@@ -36,15 +23,9 @@ test_imm_inplace_shifts:
      ret
 test_inplace_shifts:
      mov rcx, rdx
-     mov rax, [rdi]
-     shl rax, cl
-     mov [rdi], rax
-     mov rax, [rdi]
-     sar rax, cl
-     mov [rdi], rax
-     mov rax, [rsi]
-     shr rax, cl
-     mov [rsi], rax
+     shl qword ptr [rdi], cl
+     sar qword ptr [rdi], cl
+     shr qword ptr [rsi], cl
      mov rax, [rdi]
      mov rcx, [rsi]
      mov rcx, rcx
@@ -54,17 +35,12 @@ main:
      push rbx
      push rbp
      sub rsp, 0x10
-     mov rax, 0x05
-     mov rcx, 0x00
-     sub rcx, rax
-     lea rax, [rsp]
-     mov [rax], rcx
-     mov rax, 0x14
-     lea rcx, [rsp+0x08]
-     mov [rcx], rax
-     mov rax, 0x01
+     mov rax, 0x00
+     sub rax, 0x05
+     mov [rsp], rax
+     mov qword ptr [rsp+0x08], 0x14
      mov rdi, 0x00
-     sub rdi, rax
+     sub rdi, 0x01
      call :test_imm_shifts
      mov rbp, rax
      lea rdi, [rsp]
@@ -84,48 +60,29 @@ main:
      ret
 =========== OPT LEVEL: mininal ===========
 test_imm_shifts:
-     push rbx
-     mov rbx, rdi
-     mov rcx, 0x03
-     mov rdx, rbx
-     shl rdx, cl
-     mov rax, rbx
-     sar rax, cl
-     add rdx, rax
-     mov rcx, 0x05
-     shr rbx, cl
-     add rdx, rbx
+     mov rdx, rdi
+     mov rcx, rdx
+     shl rcx, 0x03
      mov rax, rdx
-     pop rbx
+     sar rax, 0x03
+     add rcx, rax
+     shr rdx, 0x05
+     add rcx, rdx
+     mov rax, rcx
      ret
 test_imm_inplace_shifts:
-     mov rax, [rdi]
-     mov rcx, 0x02
-     shl rax, cl
-     mov [rdi], rax
-     mov rax, [rdi]
-     mov rcx, 0x05
-     sar rax, cl
-     mov [rdi], rax
-     mov rax, [rsi]
-     mov rcx, 0x04
-     shr rax, cl
-     mov [rsi], rax
+     shl qword ptr [rdi], 0x02
+     sar qword ptr [rdi], 0x05
+     shr qword ptr [rsi], 0x04
      mov rax, [rdi]
      mov rcx, [rsi]
      add rax, rcx
      ret
 test_inplace_shifts:
      mov rcx, rdx
-     mov rax, [rdi]
-     shl rax, cl
-     mov [rdi], rax
-     mov rax, [rdi]
-     sar rax, cl
-     mov [rdi], rax
-     mov rax, [rsi]
-     shr rax, cl
-     mov [rsi], rax
+     shl qword ptr [rdi], cl
+     sar qword ptr [rdi], cl
+     shr qword ptr [rsi], cl
      mov rax, [rdi]
      mov rcx, [rsi]
      add rax, rcx
@@ -134,12 +91,8 @@ main:
      push rbx
      push rbp
      sub rsp, 0x10
-     mov rax, 0xFFFFFFFFFFFFFFFB
-     lea rcx, [rsp]
-     mov [rcx], rax
-     mov rax, 0x14
-     lea rcx, [rsp+0x08]
-     mov [rcx], rax
+     mov qword ptr [rsp], 0xFFFFFFFFFFFFFFFB
+     mov qword ptr [rsp+0x08], 0x14
      mov rdi, 0xFFFFFFFFFFFFFFFF
      call :test_imm_shifts
      mov rbp, rax
@@ -199,9 +152,9 @@ main:
      push rbx
      push rbp
      sub rsp, 0x10
-     mov rdi, 0xFFFFFFFFFFFFFFFF
      mov qword ptr [rsp], 0xFFFFFFFFFFFFFFFB
      mov qword ptr [rsp+0x08], 0x14
+     mov rdi, 0xFFFFFFFFFFFFFFFF
      call :test_imm_shifts
      mov rbp, rax
      lea rdi, [rsp]

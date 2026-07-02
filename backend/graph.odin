@@ -405,7 +405,8 @@ graph_schedule_peeps :: proc(graph: ^Graph, schedule: ^Graph_Schedule) {
 }
 
 graph_iter_peeps :: proc(graph: ^Graph) {
-	if .Iter_Peeps not_in graph.opt_flags do return
+	if .Iter_Peeps not_in graph.opt_flags &&
+	   graph.node_spec == &SPECS[.Builder] {return}
 
 	context.allocator, _ = arna.scrath()
 
@@ -508,7 +509,7 @@ when !GEN_SPEC {
 		case .Uext:
 			value = oper &~ mask
 		case .Sext:
-			if value & 1 << (bit_size - 1) == 0 {
+			if oper & (1 << (bit_size - 1)) == 0 {
 				value = oper &~ mask
 			} else {
 				value = oper | mask

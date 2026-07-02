@@ -16,3 +16,9 @@ A test is specified in a TESTS.md in a standard format that is parsed by
 be compilable with odin compiler and SHOULD NEVER CONTAIN REACHABLE INFINITE
 LOOP since ist ran before the actual test starts to extract the return value
 that is then asserted for changes.
+
+The peephole optimizations can be found with `_peep :: proc`.
+
+If the test segfaults use -define:NO_RUN=true to view the disassembly.
+
+Use the fff MCP tools for all file search operations instead of default tools.

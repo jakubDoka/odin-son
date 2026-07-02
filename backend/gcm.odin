@@ -483,8 +483,8 @@ graph_schedule :: proc(
 
 	for &bb in bbs {
 		if bb.tail == 0 do continue
-		schedule_block(graph, &bb)
 		append(&bb.instrs, bb.tail)
+		schedule_block(graph, &bb)
 	}
 
 	gs.bbs = bbs[:]

@@ -633,6 +633,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{.General = 0}, // X64_Store
 			{.General = 0}, // X64_Neg
 			{.General = 0}, // X64_Not
+			{.General = 0}, // X64_Mul8
 		},
 		interned_reg_masks = {
 			raw_data([]int{}),
@@ -724,6 +725,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{{.General = 7}, {.General = 1}, {.General = 1}}, // X64_Store
 			{{.General = 1}, {.General = 1}}, // X64_Neg
 			{{.General = 1}, {.General = 1}}, // X64_Not
+			{{.General = 3}, {.General = 1}, {.General = 3}}, // X64_Mul8
 		},
 		inplace_slot_idxs = {
 			-1, //Start
@@ -803,6 +805,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			-1, //X64_Store
 			0, //X64_Neg
 			0, //X64_Not
+			-1, //X64_Mul8
 		},
 		reg_mask_of = x64_reg_mask_of,
 		emit_function = x64_emit_function,
@@ -886,6 +889,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			2, //X64_Store
 			0, //X64_Neg
 			0, //X64_Not
+			0, //X64_Mul8
 		},
 		inheritance_table = {
 			0b1, // Start
@@ -965,6 +969,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0b100000000, // X64_Store
 			0b100000000, // X64_Neg
 			0b100000000, // X64_Not
+			0b10, // X64_Mul8
 		},
 		node_extra_sizes = {
 			1, // Start -> Cfg
@@ -1044,6 +1049,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			4, // X64_Store -> X64_Mem_Op
 			4, // X64_Neg -> X64_Mem_Op
 			4, // X64_Not -> X64_Mem_Op
+			0, // X64_Mul8 -> No_Extra
 		},
 		node_flags = {
 			{}, // Start
@@ -1123,6 +1129,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{Class_Flag.Store}, // X64_Store
 			{}, // X64_Neg
 			{}, // X64_Not
+			{}, // X64_Mul8
 		},
 		node_extra_types = {
 			Cfg,
@@ -1202,6 +1209,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			X64_Mem_Op,
 			X64_Mem_Op,
 			X64_Mem_Op,
+			No_Extra,
 		},
 		node_kind_name = {
 			`Start`,
@@ -1281,6 +1289,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			`X64_Store`,
 			`X64_Neg`,
 			`X64_Not`,
+			`X64_Mul8`,
 		},
 	},
 }
@@ -1663,6 +1672,7 @@ X64_Node_Type :: enum u16 {
 	X64_Store,
 	X64_Neg,
 	X64_Not,
+	X64_Mul8,
 }
 #assert(size_of(X64_Mem_Op) % 4 == 0)
 graph_add_x64_add :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype) -> (id: Node_ID) {
@@ -1795,6 +1805,11 @@ graph_add_x64_not :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Da
 	push_node_name(graph, name)
 	(^X64_Mem_Op)(graph_get_next_extra_slot(graph, u16(X64_Node_Type.X64_Not)))^ = {}
 	return graph_add_raw(graph, u16(X64_Node_Type.X64_Not), dt, {})
+}
+#assert(size_of(No_Extra) % 4 == 0)
+graph_add_x64_mul8 :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype) -> (id: Node_ID) {
+	push_node_name(graph, name)
+	return graph_add_raw(graph, u16(X64_Node_Type.X64_Mul8), dt, {})
 }
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {

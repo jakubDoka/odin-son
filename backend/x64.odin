@@ -223,6 +223,9 @@ X64_REG_CLASSES := #partial [X64_Node_Type]Reg_Class_Spec {
 		input_start_idx = 2,
 		reg_masks = #partial{.General = {{}, GPA_MASK, GPA_MASK}},
 	},
+	.X64_Mul8 = {
+		reg_masks = #partial{.General = {RAX_MASK, GPA_MASK, RAX_MASK}},
+	},
 }
 
 when SPEC_NOT_PRESENT {
@@ -249,6 +252,7 @@ when SPEC_NOT_PRESENT {
 		X64_Store,
 		X64_Neg,
 		X64_Not,
+		X64_Mul8,
 	}
 
 	X64_SIMPLE_BIN_OP_SPEC :: Class_Spec {
@@ -270,6 +274,7 @@ when SPEC_NOT_PRESENT {
 		.X64_Neg ..= .X64_Not = X64_SIMPLE_UN_OP_SPEC,
 		.X64_Load = {id = X64_Mem_Op},
 		.X64_Store = {id = X64_Mem_Op, flags = {.Store}},
+		.X64_Mul8 = {},
 	}
 }
 
@@ -328,14 +333,12 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 	displacement: i32
 	stack_base: bool
 	if 2 < len(node.inps) {
-		base = node.inps[2]
-		bnode := graph_expand(ctx, base)
-		if bnode.xtype == .X64_Add {
-			base = bnode.inps[0]
-			displacement = graph_extra(ctx, node.inps[2], X64_Mem_Op).imm
+		nbase, ndisplacement := base_and_offset(ctx, node.inps[2])
+		if int(i32(ndisplacement)) == ndisplacement {
+			base, displacement = nbase, i32(ndisplacement)
 		}
 
-		bnode = graph_expand(ctx, base)
+		bnode := graph_expand(ctx, nbase)
 		if bnode.itype == .Local_Addr {
 			base = bnode.inps[0]
 			stack_base = true
@@ -485,6 +488,11 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 		}
 
 		if chanded do return id
+	case .Mul:
+		if node.dt == .I8 {
+			node.xtype = .X64_Mul8
+			return id
+		}
 	case .If:
 		node.additional_data_start = u8(
 			graph_get(ctx, node.inps[1]).dt == .Void,
@@ -913,7 +921,7 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		.Lt       = .Ge,
 		.Le       = .Gt,
 		.Gt       = .Le,
-		.Ge       = .Gt,
+		.Ge       = .Lt,
 		.U_Lt     = .U_Ge,
 		.U_Le     = .U_Gt,
 		.U_Gt     = .U_Le,
@@ -923,7 +931,7 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		.X64_Lt   = .Ge,
 		.X64_Le   = .Gt,
 		.X64_Gt   = .Le,
-		.X64_Ge   = .Gt,
+		.X64_Ge   = .Lt,
 		.X64_U_Lt = .U_Ge,
 		.X64_U_Le = .U_Gt,
 		.X64_U_Gt = .U_Le,
@@ -1080,6 +1088,7 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 
 		opcode: u8 = 0x84
 		if cnode.dt == .Void {
+			// TODO: untangle this
 			opcode = JCC_TABLE[CMP_OP_REVERSE[cnode.xtype]]
 		}
 		emit(ctx.code, {0x0f, opcode, 0, 0, 0, 0})
@@ -1282,6 +1291,10 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		rx := rex(dst, rhs, RAX, DT_SIZE[node.dt] == 8)
 		emit_extended_sized_opcode(ctx.code, node.dt, rx, 0xaf)
 		emit(ctx.code, {mod_rm(.Direct, dst, rhs)})
+	case .X64_Mul8:
+		// imul $op
+		dst := reg_of(ctx, node.inps[0])
+		emit(ctx.code, {0xf6, mod_sm(.Direct, 0b101, dst)})
 	case .Div, .Rem:
 		rhs := reg_of(ctx, node.inps[1])
 		// cqo
@@ -1310,22 +1323,29 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 	case .Split:
 		dst := reg_of(ctx, instr)
 		src := reg_of(ctx, node.inps[0])
+		dst_off := spill_slot_offset(ctx, dst)
+		src_off := spill_slot_offset(ctx, src)
 		assert(dst.kind == src.kind)
 		if dst == src do break
-		if int(dst) >= 16 {
+		if int(dst) >= 16 && int(src) >= 16 {
+			// push [rsp + $src_offset]
+			emit(ctx.code, {0xff})
+			emit_indirect_addr(ctx.code, Reg(0b110), RSP, NO_INDEX, 1, src_off)
+			// pop [rsp + $dst_off]
+			emit(ctx.code, {0x8F})
+			emit_indirect_addr(ctx.code, Reg(0b000), RSP, NO_INDEX, 1, dst_off)
+		} else if int(dst) >= 16 {
 			// mov [rsp + $dst_offset], $src
-			dst_offset := spill_slot_offset(ctx, dst)
-			assert(int(src) < 16)
+			fmt.assertf(int(src) < 16, "%v", node.node)
 
 			emit(ctx.code, {rex(src, RSP, RAX, true), 0x89})
-			emit_indirect_addr(ctx.code, src, RSP, NO_INDEX, 1, dst_offset)
+			emit_indirect_addr(ctx.code, src, RSP, NO_INDEX, 1, dst_off)
 		} else if int(src) >= 16 {
 			// mov $dst, [rsp + $src_offset]
-			src_offset := spill_slot_offset(ctx, src)
 			assert(int(dst) < 16)
 
 			emit(ctx.code, {rex(dst, RSP, RAX, true), 0x8b})
-			emit_indirect_addr(ctx.code, dst, RSP, NO_INDEX, 1, src_offset)
+			emit_indirect_addr(ctx.code, dst, RSP, NO_INDEX, 1, src_off)
 		} else {
 			assert(int(dst) < 16)
 			assert(int(src) < 16)
@@ -1335,6 +1355,8 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		}
 
 		spill_slot_offset :: proc(ctx: ^Ctx, reg: Reg) -> i32 {
+			if reg.index < GPA_REG_COUNT do return 0
+
 			assert(reg.kind == .General)
 			param_count := len(ctx.stack_param_offset[reg.kind])
 			if int(reg.index - GPA_REG_COUNT) < param_count {

@@ -614,7 +614,7 @@ regalloc_round :: proc(
 			ilrg := find(get_lrg(ctx, instr))
 			inlrg := find(get_lrg(ctx, inode.inps[0]))
 
-			assert(graph_get(graph, inlrg.longest_def).dt != .Void)
+			interest := inode.gvn == 110
 
 			assert(graph_get(graph, inlrg.longest_def).dt != .Void)
 			assert(graph_get(graph, ilrg.longest_def).dt != .Void)
@@ -632,12 +632,21 @@ regalloc_round :: proc(
 					to_move += 1
 				}
 			}
-			if collision do continue
+			if collision {
+				continue
+			}
 			total := to_move + len(inadj)
 
 			leeway := reg_mask_intersection_pop_count(ilrg.mask, inlrg.mask)
 
-			if total >= leeway do continue
+			if total >= leeway &&
+			   (leeway == 0 ||
+					   max(len(inadj), len(iadj)) != total ||
+					   graph_get(graph, inode.inps[0]).itype != .Split ||
+					   i == 0 ||
+					   bb.instrs[i - 1] != inode.inps[0]) {
+				continue
+			}
 
 			coalesced = true
 
@@ -646,7 +655,7 @@ regalloc_round :: proc(
 			copy(buf[to_move:], inadj)
 
 			winner := unify(ilrg, inlrg)
-			assert(winner.fails == {})
+			fmt.assertf(winner.fails == {}, "%v", winner.fails)
 
 			to_patch := winner == ilrg ? inadj : iadj
 			other := winner == ilrg ? inlrg : ilrg
@@ -758,7 +767,10 @@ regalloc_round :: proc(
 				for out in graph_outs(graph, m) {
 					if get_lrg(ctx, out.id) == &lrg do continue
 					if graph_get(graph, out.id).itype == .Split {
-						continue
+						block, placement := get_node_block_and_idx(ctx, m)
+						if block.instrs[placement + 1] == out.id {
+							continue
+						}
 					}
 					is_internal = false
 				}

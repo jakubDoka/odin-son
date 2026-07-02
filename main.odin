@@ -759,11 +759,14 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		}
 
 		ptr := transmute(proc() -> int)(raw_data(main.out.code))
-		//log.error()
-		vl := ptr()
-		if vl != exit_code {
-			log.error(level)
-			testing.expect_value(t, vl, exit_code)
+		if #config(NO_RUN, false) {
+			log.error("running compiled code disabled")
+		} else {
+			vl := ptr()
+			if vl != exit_code {
+				log.error(level)
+				testing.expect_value(t, vl, exit_code)
+			}
 		}
 
 		oka = virtual.protect(code_mem.ptr, code_mem.commited, {.Read, .Write})
@@ -1137,13 +1140,23 @@ emit_nodes :: proc(
 		backend.graph_delete(ctx, node.id)
 	case ^ast.Assign_Stmt:
 		assert(len(d.lhs) == len(d.rhs))
+		Value_Slot :: struct {
+			idx: int,
+			vl:  backend.Node_ID,
+		}
+		values := make([dynamic]Value_Slot, 0, len(d.lhs), tmp)
+
 		for i in 0 ..< len(d.lhs) {
 			lhs := d.lhs[i]
 			rhs := d.rhs[i]
 			sym := ctx_lookup_lvalue(ctx, lhs)
 			switch sym in sym {
 			case int:
-				value := emit_nodes(ctx, {}, rhs)
+				value := to_rvalue(
+					ctx,
+					emit_nodes(ctx, {}, rhs),
+					get_node_type(rhs),
+				)
 				if d.op.kind != .Eq {
 					op, name := tok_to_binop(get_node_type(rhs), d.op.kind)
 					value = auto_cast backend.graph_add_bin_op(
@@ -1156,13 +1169,13 @@ emit_nodes :: proc(
 							ctx.node_scope,
 							sym,
 						),
-						to_rvalue(ctx, value, get_node_type(rhs)),
+						value,
 					)
-				} else {
-					assert(!value.is_lvalue)
 				}
 
-				backend.graph_set_input(ctx, ctx.node_scope, sym, value.id)
+				backend.graph_pin(ctx, value)
+
+				append(&values, Value_Slot{sym, value})
 			case Value:
 				assert(d.op.kind == .Eq)
 				dest := emit_nodes(ctx, {}, lhs)
@@ -1170,6 +1183,11 @@ emit_nodes :: proc(
 				value := emit_nodes(ctx, {dest = dest.id}, rhs)
 				store_value(ctx, "asss", dest.id, value, lhs)
 			}
+		}
+
+		for s in values {
+			backend.graph_set_input(ctx, ctx.node_scope, s.idx, s.vl)
+			backend.graph_unpin(ctx, s.vl)
 		}
 	case ^ast.Binary_Expr:
 		lhsv := emit_nodes(ctx, {}, d.left)

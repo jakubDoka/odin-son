@@ -272,7 +272,7 @@ when SPEC_NOT_PRESENT {
 		.X64_Add ..= .X64_U_Ge = X64_SIMPLE_BIN_OP_SPEC,
 		.X64_Shl ..= .X64_U_Shr = X64_SIMPLE_SHIFT_OP_SPEC,
 		.X64_Neg ..= .X64_Not = X64_SIMPLE_UN_OP_SPEC,
-		.X64_Load = {id = X64_Mem_Op},
+		.X64_Load = {id = X64_Mem_Op, flags = {.Load}},
 		.X64_Store = {id = X64_Mem_Op, flags = {.Store}},
 		.X64_Mul8 = {},
 	}
@@ -384,6 +384,7 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 				.X64_Shr,
 				.X64_U_Shr,
 			}
+
 			IDEAL_TRIGGER_OPS :: bit_set[Ideal_Node_Type] {
 				.Add,
 				.Sub,
@@ -542,11 +543,16 @@ x64_make_node :: proc(
 ) -> Node_ID {
 	push_node_name(graph, graph_get_node_name(graph, from))
 	fnode := graph_get(graph, from)
-	node := graph_add_raw(graph, type, fnode.dt, inps)
+	id := graph_add_raw(graph, type, fnode.dt, inps)
+	node := graph_get(graph, id)
+	// NOTE: afaik this is sufficient since we don't insert load ops before
+	// scheduling
+	node.is_store = fnode.is_store
+	node.is_load = fnode.is_load
+	node.additional_data_start = additional_data_offset
+	node.in_place_slot_offset = in_place_slot_offset
 	graph_extra(graph, node, X64_Mem_Op)^ = extra
-	graph_get(graph, node).additional_data_start = additional_data_offset
-	graph_get(graph, node).in_place_slot_offset = in_place_slot_offset
-	return node
+	return id
 }
 
 x64_post_schedule_peep :: proc(
@@ -1297,8 +1303,23 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		emit(ctx.code, {0xf6, mod_sm(.Direct, 0b101, dst)})
 	case .Div, .Rem:
 		rhs := reg_of(ctx, node.inps[1])
-		// cqo
-		emit(ctx.code, {rex(RAX, RAX, RAX, true), 0x99})
+		switch node.dt {
+		case .Void:
+			panic("")
+		case .I8:
+			// cbw
+			emit(ctx.code, {0x66, 0x98})
+		case .I16:
+			// cwd
+			emit(ctx.code, {0x66, 0x99})
+		case .I32:
+			// cdq
+			emit(ctx.code, {0x99})
+		case .I64:
+			// cqo
+			emit(ctx.code, {0x48, 0x99})
+		}
+
 		// idiv $rhs
 		rx := rex(RAX, rhs, RAX, DT_SIZE[node.dt] == 8)
 		emit_sized_opcode(ctx.code, node.dt, rx, 0xf7)
@@ -1309,11 +1330,16 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		}
 	case .U_Div, .U_Rem:
 		rhs := reg_of(ctx, node.inps[1])
-		// xor rdx, rdx
-		rx := rex(RDX, RDX, RAX, true)
-		emit(ctx.code, {rx, 0x31, mod_rm(.Direct, RDX, RDX)})
+		if node.dt != .I8 {
+			// xor rdx, rdx
+			rx := rex(RDX, RDX, RAX, true)
+			emit(ctx.code, {rx, 0x31, mod_rm(.Direct, RDX, RDX)})
+		} else {
+			// movzx ax, al
+			emit(ctx.code, {0x0F, 0xB6, 0xC0})
+		}
 		// div $rhs
-		rx = rex(RAX, rhs, RAX, DT_SIZE[node.dt] == 8)
+		rx := rex(RAX, rhs, RAX, DT_SIZE[node.dt] == 8)
 		emit_sized_opcode(ctx.code, node.dt, rx, 0xf7)
 		emit(ctx.code, {mod_sm(.Direct, 0b110, rhs)})
 		if node.itype == .U_Rem && node.dt == .I8 {

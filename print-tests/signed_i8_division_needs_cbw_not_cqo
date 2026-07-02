@@ -1,36 +1,53 @@
 =========== OPT LEVEL: none ===========
 main:
-     mov rdi, 0x00
-     sub rdi, 0x64
+     push rbx
+     mov rdi, 0xC8
      call :opaque
-     mov rcx, 0x03
+     mov rbx, rax
+     mov rdi, 0x03
+     call :opaque
+     mov rcx, rax
+     mov rax, rbx
      cbw
      idiv cl
      movsx rax, al
+     pop rbx
      ret
 opaque:
      mov rax, rdi
      ret
 =========== OPT LEVEL: mininal ===========
 main:
-     mov rdi, 0xFFFFFFFFFFFFFF9C
+     push rbx
+     mov rdi, 0xC8
      call :opaque
-     mov rcx, 0x03
+     mov rbx, rax
+     mov rdi, 0x03
+     call :opaque
+     mov rcx, rax
+     mov rax, rbx
      cbw
      idiv cl
      movsx rax, al
+     pop rbx
      ret
 opaque:
      mov rax, rdi
      ret
 =========== OPT LEVEL: all ===========
 main:
-     mov rdi, 0xFFFFFFFFFFFFFF9C
+     push rbx
+     mov rdi, 0xC8
      call :opaque
-     mov rcx, 0x03
+     mov rbx, rax
+     mov rdi, 0x03
+     call :opaque
+     mov rcx, rax
+     mov rax, rbx
      cbw
      idiv cl
      movsx rax, al
+     pop rbx
      ret
 opaque:
      mov rax, rdi

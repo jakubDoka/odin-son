@@ -124,23 +124,23 @@ main:
 
 020: mov rdi, 0x06
      mov rax, 0x14
-     xor rdx, rdx
+     movzx eax, al
      div dil
      movzx eax, al
      add rcx, rax
      mov rax, 0x14
-     xor rdx, rdx
+     movzx eax, al
      div dil
      movsx edx, ah
      movzx eax, dl
      add rcx, rax
      mov rax, 0x07
-     xor rdx, rdx
+     movzx eax, al
      div dil
      movzx eax, al
      add rcx, rax
      mov rax, 0x07
-     xor rdx, rdx
+     movzx eax, al
      div dil
      movsx edx, ah
      movzx eax, dl
@@ -586,14 +586,14 @@ main:
      jmp :83
 
 083: mov rax, 0x14
-     cqo
+     cbw
      idiv dil
      movsx rcx, al
      mov rax, [rsp+0x60]
      add rax, rcx
      mov [rsp+0x60], rax
      mov rax, 0x14
-     cqo
+     cbw
      idiv dil
      movzx edx, ah
      movsx rcx, dl
@@ -604,14 +604,14 @@ main:
      sub rax, 0x07
      mov [rsp+0x68], rax
      mov rax, [rsp+0x68]
-     cqo
+     cbw
      idiv dil
      movsx rcx, al
      mov rax, [rsp+0x60]
      add rax, rcx
      mov [rsp+0x60], rax
      mov rax, [rsp+0x68]
-     cqo
+     cbw
      idiv dil
      movzx edx, ah
      movsx rcx, dl
@@ -734,14 +734,14 @@ main:
      jmp :104
 
 104: mov rax, 0x14
-     cqo
+     cwd
      idiv r10w
      movsx rcx, ax
      mov rax, rbx
      add rax, rcx
      mov rbx, rax
      mov rax, 0x14
-     cqo
+     cwd
      idiv r10w
      movsx rcx, dx
      mov rax, rbx
@@ -751,14 +751,14 @@ main:
      sub rax, 0x07
      mov rdi, rax
      mov rax, rdi
-     cqo
+     cwd
      idiv r10w
      movsx rcx, ax
      mov rax, rbx
      add rax, rcx
      mov rbx, rax
      mov rax, rdi
-     cqo
+     cwd
      idiv r10w
      movsx rcx, dx
      mov rax, rbx
@@ -863,12 +863,12 @@ main:
      jmp :125
 
 125: mov rax, 0x14
-     cqo
+     cdq
      idiv r13d
      movsxd rax, eax
      add rcx, rax
      mov rax, 0x14
-     cqo
+     cdq
      idiv r13d
      movsxd rax, edx
      add rcx, rax
@@ -876,12 +876,12 @@ main:
      sub rax, 0x07
      mov rbx, rax
      mov rax, rbx
-     cqo
+     cdq
      idiv r13d
      movsxd rax, eax
      add rcx, rax
      mov rax, rbx
-     cqo
+     cdq
      idiv r13d
      movsxd rax, edx
      add rcx, rax

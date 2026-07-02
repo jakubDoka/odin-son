@@ -2259,3 +2259,136 @@ opaque :: proc(x: int) -> int {
 	return x
 }
 ```
+
+#### signed i8 division needs cbw not cqo
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	a := opaque(200)
+	b: i8 = i8(a)
+	d := opaque(3)
+	e: i8 = i8(d)
+	c := b / e
+	return int(c)
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+```
+
+#### signed i32 division needs cdq not cqo
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	x := i32(opaque(10))
+	y := i32(opaque(30))
+	b := x - y
+	c := i32(opaque(3))
+	d := b / c
+	return int(d)
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+```
+
+#### comparison ge gt not commutative
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	x := opaque(3)
+	return int(5 >= x)
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+```
+
+#### load must not sink past aliasing store
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	a := opaque(10)
+	p := opaque_ptr(&a)
+	x := p^
+	a = 99
+	if opaque(1) == 1 {
+		return x
+	}
+	return 0
+}
+
+opaque_ptr :: proc(p: ^int) -> ^int {
+	return p
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+```
+
+#### narrowing cast leaves dirty upper bits
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	a := opaque(511)
+	b: u8 = u8(a)
+	c := b / 2
+	return int(c)
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+```
+
+#### two register struct arg fuel accounting
+```odin
+package main
+
+opt_level :: "none"
+
+Vec :: struct {
+	x: int,
+	y: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+consume :: proc(s: Vec, a: int, b: int, c: int, d: int, e: int, f: int) -> int {
+	return s.x + s.y + a + b + c + d + e + f
+}
+
+main :: proc() -> int {
+	v := Vec{opaque(10), opaque(20)}
+	return consume(
+		v,
+		opaque(1),
+		opaque(2),
+		opaque(3),
+		opaque(4),
+		opaque(5),
+		opaque(6),
+	)
+}
+```

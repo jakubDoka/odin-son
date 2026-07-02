@@ -4383,3 +4383,257 @@ opaque :: proc(x: int) -> int {
 }
 `, main_())
 }
+@(test) signed_i8_division_needs_cbw_not_cqo :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	a := opaque(200)
+	b: i8 = i8(a)
+	d := opaque(3)
+	e: i8 = i8(d)
+	c := b / e
+	return int(c)
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+run_test(t, `signed_i8_division_needs_cbw_not_cqo`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	a := opaque(200)
+	b: i8 = i8(a)
+	d := opaque(3)
+	e: i8 = i8(d)
+	c := b / e
+	return int(c)
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+`, main_())
+}
+@(test) signed_i32_division_needs_cdq_not_cqo :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	x := i32(opaque(10))
+	y := i32(opaque(30))
+	b := x - y
+	c := i32(opaque(3))
+	d := b / c
+	return int(d)
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+run_test(t, `signed_i32_division_needs_cdq_not_cqo`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	x := i32(opaque(10))
+	y := i32(opaque(30))
+	b := x - y
+	c := i32(opaque(3))
+	d := b / c
+	return int(d)
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+`, main_())
+}
+@(test) comparison_ge_gt_not_commutative :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	x := opaque(3)
+	return int(5 >= x)
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+run_test(t, `comparison_ge_gt_not_commutative`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	x := opaque(3)
+	return int(5 >= x)
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+`, main_())
+}
+@(test) load_must_not_sink_past_aliasing_store :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	a := opaque(10)
+	p := opaque_ptr(&a)
+	x := p^
+	a = 99
+	if opaque(1) == 1 {
+		return x
+	}
+	return 0
+}
+
+opaque_ptr :: proc(p: ^int) -> ^int {
+	return p
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+run_test(t, `load_must_not_sink_past_aliasing_store`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	a := opaque(10)
+	p := opaque_ptr(&a)
+	x := p^
+	a = 99
+	if opaque(1) == 1 {
+		return x
+	}
+	return 0
+}
+
+opaque_ptr :: proc(p: ^int) -> ^int {
+	return p
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+`, main_())
+}
+@(test) narrowing_cast_leaves_dirty_upper_bits :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	a := opaque(511)
+	b: u8 = u8(a)
+	c := b / 2
+	return int(c)
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+run_test(t, `narrowing_cast_leaves_dirty_upper_bits`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	a := opaque(511)
+	b: u8 = u8(a)
+	c := b / 2
+	return int(c)
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+`, main_())
+}
+@(test) two_register_struct_arg_fuel_accounting :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Vec :: struct {
+	x: int,
+	y: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+consume :: proc(s: Vec, a: int, b: int, c: int, d: int, e: int, f: int) -> int {
+	return s.x + s.y + a + b + c + d + e + f
+}
+
+main_ :: proc() -> int {
+	v := Vec{opaque(10), opaque(20)}
+	return consume(
+		v,
+		opaque(1),
+		opaque(2),
+		opaque(3),
+		opaque(4),
+		opaque(5),
+		opaque(6),
+	)
+}
+
+run_test(t, `two_register_struct_arg_fuel_accounting`, `
+package main
+
+opt_level :: "none"
+
+Vec :: struct {
+	x: int,
+	y: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+consume :: proc(s: Vec, a: int, b: int, c: int, d: int, e: int, f: int) -> int {
+	return s.x + s.y + a + b + c + d + e + f
+}
+
+main :: proc() -> int {
+	v := Vec{opaque(10), opaque(20)}
+	return consume(
+		v,
+		opaque(1),
+		opaque(2),
+		opaque(3),
+		opaque(4),
+		opaque(5),
+		opaque(6),
+	)
+}
+`, main_())
+}

@@ -110,6 +110,7 @@ Class_Flag :: enum {
 	Comutes,
 	Immortal,
 	Store,
+	Load,
 	Clonable,
 }
 
@@ -194,6 +195,7 @@ Node :: struct {
 			dt:                    Node_Datatype | 4,
 			in_worklist:           bool          | 1,
 			is_store:              bool          | 1,
+			is_load:               bool          | 1,
 			in_place_slot_offset:  i8            | 2,
 			additional_data_start: u8            | 2,
 			mem_alignment_pow:     u32           | 3,
@@ -751,16 +753,34 @@ when !GEN_SPEC {
 				}
 			}
 
-			COMUTATIVE :: bit_set[Bin_Op] {
+			COMUTATIVE_OR_SWAPPABLE :: bit_set[Bin_Op] {
 				.Add,
 				.Mul,
-				.Ge,
-				.Gt,
 				.Ne,
 				.Eq,
 				.Or,
 				.And,
 				.Xor,
+				.Ge,
+				.Lt,
+				.Gt,
+				.Le,
+				.U_Ge,
+				.U_Lt,
+				.U_Gt,
+				.U_Le,
+			}
+
+			@(static, rodata)
+			SWAPPABLE := #partial [Bin_Op]Bin_Op {
+				.Ge   = .Lt,
+				.Lt   = .Ge,
+				.Gt   = .Le,
+				.Le   = .Gt,
+				.U_Ge = .U_Lt,
+				.U_Lt = .U_Ge,
+				.U_Gt = .U_Le,
+				.U_Le = .U_Gt,
 			}
 
 			@(static, rodata)
@@ -776,7 +796,11 @@ when !GEN_SPEC {
 				rhs_priority = COMUTE_PRIORITY_TABLE[rhs.itype]
 			}
 
-			if op in COMUTATIVE && lhs_priority > rhs_priority {
+			if op in COMUTATIVE_OR_SWAPPABLE && lhs_priority > rhs_priority {
+				if SWAPPABLE[op] != {} {
+					node.rtype = u16(SWAPPABLE[op])
+				}
+
 				for inp, i in node.inps {
 					graph_add_output(ctx, inp, id, 1 - i)
 					graph_remove_output(ctx, inp, {idx = i, id = id})
@@ -1716,6 +1740,7 @@ graph_set_input :: proc(
 ) -> Node_ID {
 	node := graph_expand(graph, id)
 
+	assert(idx < len(node.inps))
 	if node.inps[idx] == value do return id
 
 	assert(node.inps[idx] != 0)
@@ -1923,6 +1948,8 @@ graph_add_raw :: proc(
 		rtype               = type,
 		dt                  = dt,
 		gvn                 = graph.gvn,
+		is_store            = .Store in graph.node_flags[type],
+		is_load             = .Load in graph.node_flags[type],
 		input_idx           = u32(graph.mem.pos / PRECISION),
 		ordered_input_count = u16(len(inps)),
 		input_count         = u16(len(inps)),
@@ -1959,8 +1986,6 @@ graph_add_input_node :: proc(
 	inp: Node_ID,
 	is_scope := false,
 ) -> int {
-	assert(is_scope, "TODO")
-
 	free_idx := int(node.ordered_input_count)
 	grow: if node.ordered_input_count == node.input_count || !is_scope {
 		if !is_scope {

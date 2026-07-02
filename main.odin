@@ -582,7 +582,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 					case 0:
 						continue
 					case 1 ..= 16:
-						if gpa_fuel < 2 {
+						if gpa_fuel < 2 && size > 8 {
 							value = alloca(
 								&ctx,
 								"sparg",
@@ -606,6 +606,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 
 						if size > 8 {
 							i += 1
+							gpa_fuel -= 1
 							second := backend.graph_add_arg(
 								&ctx,
 								"af",
@@ -1410,6 +1411,7 @@ emit_nodes :: proc(
 						args[i] = emit_arbitrary_load(ctx, vl.id, size)
 						backend.graph_pin(ctx, args[i])
 						i += 1
+						gpa_fuel -= 1
 						continue
 					case 9 ..= 16:
 						if gpa_fuel < 2 {
@@ -1436,6 +1438,7 @@ emit_nodes :: proc(
 						args[i] = emit_arbitrary_load(ctx, vl.id, size, 8)
 						backend.graph_pin(ctx, args[i])
 						i += 1
+						gpa_fuel -= 2
 						continue
 					case 17 ..= int(~uint(0) >> 1):
 						is_stack = true

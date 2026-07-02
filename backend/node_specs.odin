@@ -403,14 +403,14 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{Class_Flag.Interned}, // And_Not
 			{}, // Split
 			{Class_Flag.Interned}, // Phi
-			{}, // Mem
+			{Class_Flag.Store}, // Mem
 			{}, // Local
 			{Class_Flag.Clonable}, // Local_Addr
 			{Class_Flag.Store}, // Copy
 			{Class_Flag.Store}, // Set
 			{Class_Flag.Store}, // Store
-			{Class_Flag.Interned}, // Load
-			{Class_Flag.Interned}, // Load_S
+			{Class_Flag.Interned, Class_Flag.Load}, // Load
+			{Class_Flag.Interned, Class_Flag.Load}, // Load_S
 			{}, // If
 			{Class_Flag.Is_Basic_Block_Start}, // Then
 			{Class_Flag.Is_Basic_Block_Start}, // Else
@@ -1083,14 +1083,14 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{Class_Flag.Interned}, // And_Not
 			{}, // Split
 			{Class_Flag.Interned}, // Phi
-			{}, // Mem
+			{Class_Flag.Store}, // Mem
 			{}, // Local
 			{Class_Flag.Clonable}, // Local_Addr
 			{Class_Flag.Store}, // Copy
 			{Class_Flag.Store}, // Set
 			{Class_Flag.Store}, // Store
-			{Class_Flag.Interned}, // Load
-			{Class_Flag.Interned}, // Load_S
+			{Class_Flag.Interned, Class_Flag.Load}, // Load
+			{Class_Flag.Interned, Class_Flag.Load}, // Load_S
 			{}, // If
 			{Class_Flag.Is_Basic_Block_Start}, // Then
 			{Class_Flag.Is_Basic_Block_Start}, // Else
@@ -1125,7 +1125,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{}, // X64_Shl
 			{}, // X64_Shr
 			{}, // X64_U_Shr
-			{}, // X64_Load
+			{Class_Flag.Load}, // X64_Load
 			{Class_Flag.Store}, // X64_Store
 			{}, // X64_Neg
 			{}, // X64_Not

@@ -1,0 +1,96 @@
+=========== OPT LEVEL: none ===========
+main:
+     push rbx
+     sub rsp, 0x08
+     mov rdi, 0x0A
+     call :opaque
+     mov [rsp], rax
+     lea rdi, [rsp]
+     call :opaque_ptr
+     mov rbx, [rax]
+     mov qword ptr [rsp], 0x63
+     mov rdi, 0x01
+     call :opaque
+     cmp rax, 0x01
+     jnz :0
+     jmp :1
+
+000: mov rbx, 0x00
+     jmp :2
+
+001: jmp :2
+
+002: mov rax, rbx
+     add rsp, 0x08
+     pop rbx
+     ret
+opaque_ptr:
+     mov rax, rdi
+     ret
+opaque:
+     mov rax, rdi
+     ret
+=========== OPT LEVEL: mininal ===========
+main:
+     push rbx
+     sub rsp, 0x08
+     mov rdi, 0x0A
+     call :opaque
+     mov [rsp], rax
+     lea rdi, [rsp]
+     call :opaque_ptr
+     mov rbx, [rax]
+     mov qword ptr [rsp], 0x63
+     mov rdi, 0x01
+     call :opaque
+     cmp rax, 0x01
+     jnz :0
+     jmp :1
+
+000: mov rbx, 0x00
+     jmp :2
+
+001: jmp :2
+
+002: mov rax, rbx
+     add rsp, 0x08
+     pop rbx
+     ret
+opaque_ptr:
+     mov rax, rdi
+     ret
+opaque:
+     mov rax, rdi
+     ret
+=========== OPT LEVEL: all ===========
+main:
+     push rbx
+     sub rsp, 0x08
+     mov rdi, 0x0A
+     call :opaque
+     mov [rsp], rax
+     lea rdi, [rsp]
+     call :opaque_ptr
+     mov rbx, [rax]
+     mov qword ptr [rsp], 0x63
+     mov rdi, 0x01
+     call :opaque
+     cmp rax, 0x01
+     jnz :0
+     jmp :1
+
+000: mov rbx, 0x00
+     jmp :2
+
+001: jmp :2
+
+002: mov rax, rbx
+     add rsp, 0x08
+     pop rbx
+     ret
+opaque_ptr:
+     mov rax, rdi
+     ret
+opaque:
+     mov rax, rdi
+     ret

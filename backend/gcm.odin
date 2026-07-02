@@ -6,6 +6,7 @@ import "base:runtime"
 import "core:container/queue"
 import "core:fmt"
 import "core:log"
+import "core:os"
 import "core:slice"
 import "core:sync"
 
@@ -281,6 +282,7 @@ graph_schedule :: proc(
 		early_schedules: []Node_ID,
 		late_schedules:  []Node_ID,
 		nodes:           []Node_ID,
+		antideps:        [][dynamic]Node_ID,
 	}
 
 	ctx: Ctx
@@ -288,6 +290,7 @@ graph_schedule :: proc(
 	ctx.early_schedules = make([]Node_ID, graph.gvn)
 	ctx.late_schedules = make([]Node_ID, graph.gvn)
 	ctx.nodes = make([]Node_ID, graph.gvn)
+	ctx.antideps = make([][dynamic]Node_ID, graph.gvn)
 
 	for id in cfg_rpos {
 		ctrl := graph_expand(graph, id)
@@ -362,6 +365,19 @@ graph_schedule :: proc(
 		assert(ctx.late_schedules[node.gvn] == 0)
 
 		ready := true
+
+		if node.is_load {
+			snode := graph_expand(graph, node.inps[1])
+			for out in snode.outs {
+				onode := graph_expand(graph, out.id)
+				if ctx.late_schedules[onode.gvn] == 0 && !onode.is_load {
+					ready = false
+				}
+			}
+		}
+
+		if !ready do continue
+
 		if graph_has_flag(graph, n, .Is_Basic_Block_Start) {
 			ctx.late_schedules[node.gvn] = n
 		} else if 0 < len(node.inps) && is_cfg(graph, node.inps[0]) {
@@ -369,7 +385,8 @@ graph_schedule :: proc(
 		} else {
 			for out in node.outs {
 				onode := graph_expand(graph, out.id)
-				if ctx.late_schedules[onode.gvn] == 0 {
+				if ctx.late_schedules[onode.gvn] == 0 &&
+				   (!onode.is_load || !node.is_store) {
 					if bit_arr.set(in_worklist, onode.gvn) {
 						queue.push_back(&worklist, out.id)
 					}
@@ -393,9 +410,10 @@ graph_schedule :: proc(
 
 			for out in node.outs {
 				onode := graph_expand(graph, out.id)
+				if onode.is_load && node.is_store do continue
 				olca := ctx.late_schedules[onode.gvn]
 
-				assert(is_cfg(graph, olca))
+				fmt.assertf(is_cfg(graph, olca), "%v", onode.node)
 
 				if onode.itype == .Phi {
 					jmp := graph_inps(graph, olca)[out.idx - 1]
@@ -410,6 +428,29 @@ graph_schedule :: proc(
 			}
 
 			ctx.late_schedules[node.gvn] = lca
+
+		}
+
+		lca = add_antydeps(ctx, node, lca)
+
+		add_antydeps :: proc(
+			ctx: Ctx,
+			node: Expanded_Node,
+			lca: Node_ID,
+		) -> Node_ID {
+			id := graph_id(ctx.graph, node)
+			lca := lca
+			if !node.is_load do return lca
+
+			mnode := graph_expand(ctx.graph, node.inps[1])
+			for out in mnode.outs {
+				onode := graph_expand(ctx.graph, out.id)
+				if onode.is_store && ctx.late_schedules[onode.gvn] == lca {
+					append(&ctx.antideps[onode.gvn], id)
+				}
+			}
+
+			return lca
 		}
 
 		if node.itype == .Loop {
@@ -429,6 +470,17 @@ graph_schedule :: proc(
 				if ctx.late_schedules[inode.gvn] == 0 {
 					if bit_arr.set(in_worklist, inode.gvn) {
 						queue.push_back(&worklist, inp)
+					}
+				}
+			}
+		}
+
+		if node.is_store {
+			for out in node.outs {
+				onode := graph_expand(graph, out.id)
+				if ctx.late_schedules[onode.gvn] == 0 && onode.is_load {
+					if bit_arr.set(in_worklist, onode.gvn) {
+						queue.push_back(&worklist, out.id)
 					}
 				}
 			}
@@ -477,6 +529,10 @@ graph_schedule :: proc(
 		late := ctx.late_schedules[i]
 		early := ctx.early_schedules[i]
 		sched := graph.end == 0 ? early : late
+		if sched == 0 {
+			log.error(graph_get(graph, node))
+			continue
+		}
 		bb := ctx.late_schedules[graph_get(graph, sched).gvn]
 		append(&bbs[bb].instrs, node)
 	}
@@ -484,7 +540,7 @@ graph_schedule :: proc(
 	for &bb in bbs {
 		if bb.tail == 0 do continue
 		append(&bb.instrs, bb.tail)
-		schedule_block(graph, &bb)
+		schedule_block(ctx, &bb)
 	}
 
 	gs.bbs = bbs[:]
@@ -493,8 +549,12 @@ graph_schedule :: proc(
 		verify_schedule_integrity(graph, gs)
 	}
 
-	schedule_block :: proc(graph: ^Graph, bb: ^Graph_Basic_Block) {
+	//graph_display(os.to_writer(os.stderr), graph, gs)
+
+	schedule_block :: proc(ctx: Ctx, bb: ^Graph_Basic_Block) {
 		PUSHED_UP :: bit_set[Ideal_Node_Type]{.Phi, .Ret, .Arg}
+
+		graph := ctx.graph
 
 		phi_count := 0
 		for instr, i in bb.instrs {
@@ -515,7 +575,8 @@ graph_schedule :: proc(
 
 				if inode.itype != .Phi {
 					for &oinstr in bb.instrs[i + 1:] {
-						if slice.contains(inode.inps, oinstr) {
+						if slice.contains(inode.inps, oinstr) ||
+						   slice.contains(ctx.antideps[inode.gvn][:], oinstr) {
 							instr, oinstr = oinstr, instr
 							changed = true
 						}

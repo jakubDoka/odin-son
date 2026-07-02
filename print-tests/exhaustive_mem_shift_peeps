@@ -3,19 +3,19 @@ test_mem_shifts_i8_u8:
      mov rcx, rdx
      mov rax, 0x00
      movsx rdx, byte ptr [rdi]
-     shl rdx, cl
+     shl dl, cl
      mov [rdi], dl
      movsx rdx, byte ptr [rdi]
-     sar rdx, cl
+     sar dl, cl
      mov [rdi], dl
      movsx rdx, byte ptr [rdi]
      movsx rdx, dl
      add rax, rdx
      movzx edx, byte ptr [rsi]
-     shr rdx, cl
+     shr dl, cl
      mov [rsi], dl
      movzx edx, byte ptr [rsi]
-     shl rdx, cl
+     shl dl, cl
      mov [rsi], dl
      movzx ecx, byte ptr [rsi]
      movzx ecx, cl
@@ -25,19 +25,19 @@ test_mem_shifts_i16_u16:
      mov rcx, rdx
      mov rax, 0x00
      movsx rdx, word ptr [rdi]
-     shl rdx, cl
+     shl dx, cl
      mov [rdi], dx
      movsx rdx, word ptr [rdi]
-     sar rdx, cl
+     sar dx, cl
      mov [rdi], dx
      movsx rdx, word ptr [rdi]
      movsx rdx, dx
      add rax, rdx
      movzx edx, word ptr [rsi]
-     shr rdx, cl
+     shr dx, cl
      mov [rsi], dx
      movzx edx, word ptr [rsi]
-     shl rdx, cl
+     shl dx, cl
      mov [rsi], dx
      movzx ecx, word ptr [rsi]
      movzx ecx, cx
@@ -47,19 +47,19 @@ test_mem_shifts_i32_u32:
      mov rcx, rdx
      mov rax, 0x00
      movsxd rdx, dword ptr [rdi]
-     shl rdx, cl
+     shl edx, cl
      mov [rdi], edx
      movsxd rdx, dword ptr [rdi]
-     sar rdx, cl
+     sar edx, cl
      mov [rdi], edx
      movsxd rdx, dword ptr [rdi]
      movsxd rdx, edx
      add rax, rdx
      mov edx, [rsi]
-     shr rdx, cl
+     shr edx, cl
      mov [rsi], edx
      mov edx, [rsi]
-     shl rdx, cl
+     shl edx, cl
      mov [rsi], edx
      mov ecx, [rsi]
      mov ecx, ecx
@@ -91,20 +91,20 @@ test_mem_imm_shifts_i8_u8:
      mov rax, 0x00
      mov rcx, 0x03
      movsx rdx, byte ptr [rdi]
-     shl rdx, cl
+     shl dl, cl
      mov [rdi], dl
      movsx rdx, byte ptr [rdi]
-     sar rdx, cl
+     sar dl, cl
      mov [rdi], dl
      movsx rcx, byte ptr [rdi]
      movsx rcx, cl
      add rax, rcx
      mov rcx, 0x02
      movzx edx, byte ptr [rsi]
-     shr rdx, cl
+     shr dl, cl
      mov [rsi], dl
      movzx edx, byte ptr [rsi]
-     shl rdx, cl
+     shl dl, cl
      mov [rsi], dl
      movzx ecx, byte ptr [rsi]
      movzx ecx, cl
@@ -114,20 +114,20 @@ test_mem_imm_shifts_i16_u16:
      mov rax, 0x00
      mov rcx, 0x04
      movsx rdx, word ptr [rdi]
-     shl rdx, cl
+     shl dx, cl
      mov [rdi], dx
      movsx rdx, word ptr [rdi]
-     sar rdx, cl
+     sar dx, cl
      mov [rdi], dx
      movsx rcx, word ptr [rdi]
      movsx rcx, cx
      add rax, rcx
      mov rcx, 0x05
      movzx edx, word ptr [rsi]
-     shr rdx, cl
+     shr dx, cl
      mov [rsi], dx
      movzx edx, word ptr [rsi]
-     shl rdx, cl
+     shl dx, cl
      mov [rsi], dx
      movzx ecx, word ptr [rsi]
      movzx ecx, cx
@@ -137,20 +137,20 @@ test_mem_imm_shifts_i32_u32:
      mov rax, 0x00
      mov rcx, 0x06
      movsxd rdx, dword ptr [rdi]
-     shl rdx, cl
+     shl edx, cl
      mov [rdi], edx
      movsxd rdx, dword ptr [rdi]
-     sar rdx, cl
+     sar edx, cl
      mov [rdi], edx
      movsxd rcx, dword ptr [rdi]
      movsxd rcx, ecx
      add rax, rcx
      mov rcx, 0x07
      mov edx, [rsi]
-     shr rdx, cl
+     shr edx, cl
      mov [rsi], edx
      mov edx, [rsi]
-     shl rdx, cl
+     shl edx, cl
      mov [rsi], edx
      mov ecx, [rsi]
      mov ecx, ecx
@@ -189,7 +189,7 @@ main:
      sub rsp, 0x26
      mov rax, 0x00
      mov rcx, 0x21
-     sub rax, rcx
+     sub al, cl
      lea rcx, [rsp]
      mov [rcx], al
      mov rax, 0xC9
@@ -197,7 +197,7 @@ main:
      mov [rcx], al
      mov rax, 0x00
      mov rcx, 0x4D2
-     sub rax, rcx
+     sub ax, cx
      lea rcx, [rsp+0x02]
      mov [rcx], ax
      mov rax, 0xD431
@@ -205,7 +205,7 @@ main:
      mov [rcx], ax
      mov rax, 0x1E240
      mov rcx, 0x00
-     sub rcx, rax
+     sub ecx, eax
      lea rdx, [rsp+0x06]
      mov [rdx], ecx
      lea rcx, [rsp+0x0A]
@@ -283,60 +283,66 @@ test_mem_shifts_i8_u8:
      mov rcx, rdx
      mov rax, 0x00
      movsx rdx, byte ptr [rdi]
-     shl rdx, cl
+     shl dl, cl
      mov [rdi], dl
      movsx rdx, byte ptr [rdi]
-     sar rdx, cl
+     sar dl, cl
      mov [rdi], dl
      movsx rdx, byte ptr [rdi]
+     movsx rdx, dl
      add rax, rdx
      movzx edx, byte ptr [rsi]
-     shr rdx, cl
+     shr dl, cl
      mov [rsi], dl
      movzx edx, byte ptr [rsi]
-     shl rdx, cl
+     shl dl, cl
      mov [rsi], dl
      movzx ecx, byte ptr [rsi]
+     movzx ecx, cl
      add rax, rcx
      ret
 test_mem_shifts_i16_u16:
      mov rcx, rdx
      mov rax, 0x00
      movsx rdx, word ptr [rdi]
-     shl rdx, cl
+     shl dx, cl
      mov [rdi], dx
      movsx rdx, word ptr [rdi]
-     sar rdx, cl
+     sar dx, cl
      mov [rdi], dx
      movsx rdx, word ptr [rdi]
+     movsx rdx, dx
      add rax, rdx
      movzx edx, word ptr [rsi]
-     shr rdx, cl
+     shr dx, cl
      mov [rsi], dx
      movzx edx, word ptr [rsi]
-     shl rdx, cl
+     shl dx, cl
      mov [rsi], dx
      movzx ecx, word ptr [rsi]
+     movzx ecx, cx
      add rax, rcx
      ret
 test_mem_shifts_i32_u32:
      mov rcx, rdx
      mov rax, 0x00
      movsxd rdx, dword ptr [rdi]
-     shl rdx, cl
+     shl edx, cl
      mov [rdi], edx
      movsxd rdx, dword ptr [rdi]
-     sar rdx, cl
+     sar edx, cl
      mov [rdi], edx
      movsxd rdx, dword ptr [rdi]
+     movsxd rdx, edx
      add rax, rdx
      mov edx, [rsi]
-     shr rdx, cl
+     shr edx, cl
      mov [rsi], edx
      mov edx, [rsi]
-     shl rdx, cl
+     shl edx, cl
      mov [rsi], edx
      mov ecx, [rsi]
+     mov ecx, ecx
      add rax, rcx
      ret
 test_mem_shifts_i64_u64:
@@ -363,63 +369,69 @@ test_mem_imm_shifts_i8_u8:
      mov rax, 0x00
      mov rcx, 0x03
      movsx rdx, byte ptr [rdi]
-     shl rdx, cl
+     shl dl, cl
      mov [rdi], dl
      movsx rdx, byte ptr [rdi]
-     sar rdx, cl
+     sar dl, cl
      mov [rdi], dl
      movsx rcx, byte ptr [rdi]
+     movsx rcx, cl
      add rax, rcx
      mov rcx, 0x02
      movzx edx, byte ptr [rsi]
-     shr rdx, cl
+     shr dl, cl
      mov [rsi], dl
      movzx edx, byte ptr [rsi]
-     shl rdx, cl
+     shl dl, cl
      mov [rsi], dl
      movzx ecx, byte ptr [rsi]
+     movzx ecx, cl
      add rax, rcx
      ret
 test_mem_imm_shifts_i16_u16:
      mov rax, 0x00
      mov rcx, 0x04
      movsx rdx, word ptr [rdi]
-     shl rdx, cl
+     shl dx, cl
      mov [rdi], dx
      movsx rdx, word ptr [rdi]
-     sar rdx, cl
+     sar dx, cl
      mov [rdi], dx
      movsx rcx, word ptr [rdi]
+     movsx rcx, cx
      add rax, rcx
      mov rcx, 0x05
      movzx edx, word ptr [rsi]
-     shr rdx, cl
+     shr dx, cl
      mov [rsi], dx
      movzx edx, word ptr [rsi]
-     shl rdx, cl
+     shl dx, cl
      mov [rsi], dx
      movzx ecx, word ptr [rsi]
+     movzx ecx, cx
      add rax, rcx
      ret
 test_mem_imm_shifts_i32_u32:
      mov rax, 0x00
      mov rcx, 0x06
      movsxd rdx, dword ptr [rdi]
-     shl rdx, cl
+     shl edx, cl
      mov [rdi], edx
      movsxd rdx, dword ptr [rdi]
-     sar rdx, cl
+     sar edx, cl
      mov [rdi], edx
      movsxd rcx, dword ptr [rdi]
+     movsxd rcx, ecx
      add rax, rcx
      mov rcx, 0x07
      mov edx, [rsi]
-     shr rdx, cl
+     shr edx, cl
      mov [rsi], edx
      mov edx, [rsi]
-     shl rdx, cl
+     shl edx, cl
      mov [rsi], edx
      mov ecx, [rsi]
+     mov ecx, ecx
      add rax, rcx
      ret
 test_mem_imm_shifts_i64_u64:
@@ -535,78 +547,150 @@ main:
      ret
 =========== OPT LEVEL: all ===========
 test_mem_shifts_i8_u8:
+     push rbx
      mov rcx, rdx
-     shl byte ptr [rdi], cl
-     sar byte ptr [rdi], cl
      movsx rax, byte ptr [rdi]
-     shr byte ptr [rsi], cl
-     shl byte ptr [rsi], cl
-     movzx ecx, byte ptr [rsi]
+     shl al, cl
+     mov rdx, rax
+     sar dl, cl
+     mov [rdi], al
+     mov [rdi], dl
+     movzx ebx, byte ptr [rsi]
+     shr bl, cl
+     movsx rax, dl
+     mov rdx, rbx
+     shl dl, cl
+     mov [rsi], bl
+     mov [rsi], dl
+     movzx ecx, dl
      add rax, rcx
+     pop rbx
      ret
 test_mem_shifts_i16_u16:
+     push rbx
      mov rcx, rdx
-     shl word ptr [rdi], cl
-     sar word ptr [rdi], cl
      movsx rax, word ptr [rdi]
-     shr word ptr [rsi], cl
-     shl word ptr [rsi], cl
-     movzx ecx, word ptr [rsi]
+     shl ax, cl
+     mov rdx, rax
+     sar dx, cl
+     mov [rdi], ax
+     mov [rdi], dx
+     movzx ebx, word ptr [rsi]
+     shr bx, cl
+     movsx rax, dx
+     mov rdx, rbx
+     shl dx, cl
+     mov [rsi], bx
+     mov [rsi], dx
+     movzx ecx, dx
      add rax, rcx
+     pop rbx
      ret
 test_mem_shifts_i32_u32:
+     push rbx
      mov rcx, rdx
-     shl dword ptr [rdi], cl
-     sar dword ptr [rdi], cl
      movsxd rax, dword ptr [rdi]
-     shr dword ptr [rsi], cl
-     shl dword ptr [rsi], cl
-     mov ecx, [rsi]
+     shl eax, cl
+     mov rdx, rax
+     sar edx, cl
+     mov [rdi], eax
+     mov [rdi], edx
+     mov ebx, [rsi]
+     shr ebx, cl
+     movsxd rax, edx
+     mov rdx, rbx
+     shl edx, cl
+     mov [rsi], ebx
+     mov [rsi], edx
+     mov ecx, edx
      add rax, rcx
+     pop rbx
      ret
 test_mem_shifts_i64_u64:
+     push rbx
      mov rcx, rdx
-     shl qword ptr [rdi], cl
-     sar qword ptr [rdi], cl
      mov rax, [rdi]
-     shr qword ptr [rsi], cl
-     shl qword ptr [rsi], cl
-     add rax, [rsi]
+     shl rax, cl
+     mov rdx, rax
+     sar rdx, cl
+     mov [rdi], rax
+     mov [rdi], rdx
+     mov rax, [rsi]
+     shr rax, cl
+     mov rbx, rax
+     shl rbx, cl
+     mov [rsi], rax
+     mov [rsi], rbx
+     mov rax, rdx
+     add rax, rbx
+     pop rbx
      ret
 test_mem_imm_shifts_i8_u8:
-     shl byte ptr [rdi], 0x03
-     sar byte ptr [rdi], 0x03
      movsx rax, byte ptr [rdi]
-     shr byte ptr [rsi], 0x02
-     shl byte ptr [rsi], 0x02
-     movzx ecx, byte ptr [rsi]
+     shl rax, 0x03
+     mov rcx, rax
+     sar rcx, 0x03
+     mov [rdi], al
+     mov [rdi], cl
+     movzx eax, byte ptr [rsi]
+     shr rax, 0x02
+     mov rdx, rax
+     shl rdx, 0x02
+     mov [rsi], al
+     mov [rsi], dl
+     movsx rax, cl
+     movzx ecx, dl
      add rax, rcx
      ret
 test_mem_imm_shifts_i16_u16:
-     shl word ptr [rdi], 0x04
-     sar word ptr [rdi], 0x04
      movsx rax, word ptr [rdi]
-     shr word ptr [rsi], 0x05
-     shl word ptr [rsi], 0x05
-     movzx ecx, word ptr [rsi]
+     shl rax, 0x04
+     mov rcx, rax
+     sar rcx, 0x04
+     mov [rdi], ax
+     mov [rdi], cx
+     movzx eax, word ptr [rsi]
+     shr rax, 0x05
+     mov rdx, rax
+     shl rdx, 0x05
+     mov [rsi], ax
+     mov [rsi], dx
+     movsx rax, cx
+     movzx ecx, dx
      add rax, rcx
      ret
 test_mem_imm_shifts_i32_u32:
-     shl dword ptr [rdi], 0x06
-     sar dword ptr [rdi], 0x06
      movsxd rax, dword ptr [rdi]
-     shr dword ptr [rsi], 0x07
-     shl dword ptr [rsi], 0x07
-     mov ecx, [rsi]
+     shl rax, 0x06
+     mov rcx, rax
+     sar rcx, 0x06
+     mov [rdi], eax
+     mov [rdi], ecx
+     mov eax, [rsi]
+     shr rax, 0x07
+     mov rdx, rax
+     shl rdx, 0x07
+     mov [rsi], eax
+     mov [rsi], edx
+     movsxd rax, ecx
+     mov ecx, edx
      add rax, rcx
      ret
 test_mem_imm_shifts_i64_u64:
-     shl qword ptr [rdi], 0x08
-     sar qword ptr [rdi], 0x08
      mov rax, [rdi]
-     shr qword ptr [rsi], 0x09
-     shl qword ptr [rsi], 0x09
-     add rax, [rsi]
+     shl rax, 0x08
+     mov rcx, rax
+     sar rcx, 0x08
+     mov [rdi], rax
+     mov [rdi], rcx
+     mov rax, [rsi]
+     shr rax, 0x09
+     mov rdx, rax
+     shl rdx, 0x09
+     mov [rsi], rax
+     mov [rsi], rdx
+     mov rax, rcx
+     add rax, rdx
      ret
 main:
      push rbx

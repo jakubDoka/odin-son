@@ -1025,11 +1025,9 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		case .I8:
 			// movsx r64, r/m8
 			emit(ctx.code, {rx, 0x0f, 0xbe})
-
 		case .I16:
 			// movsx r64, r/m16
 			emit(ctx.code, {rx, 0x0f, 0xbf})
-
 		case .I32:
 			// movsxd r64, r/m32
 			emit(ctx.code, {rx, 0x63})
@@ -1209,21 +1207,25 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		// add/sub/and/or/xor $dst, $rhs
 		dst := reg_of(ctx, node.inps[0])
 		rhs := reg_of(ctx, node.inps[1])
-		rx := rex(rhs, dst, RAX, true)
+		rx := rex(rhs, dst, RAX, DT_SIZE[node.dt] == 8)
 		op := OPCODE_TABLE[node.xtype].opcode
-		emit(ctx.code, {rx, op, mod_rm(.Direct, rhs, dst)})
+		emit_sized_opcode(ctx.code, node.dt, rx, op)
+		emit(ctx.code, {mod_rm(.Direct, rhs, dst)})
 	case .Eq ..= .U_Ge, .X64_Eq ..= .X64_U_Ge:
 		lhs := reg_of(ctx, node.inps[0])
+		op_dt := graph_get(ctx, node.inps[0]).dt
 		if 1 < len(node.inps) {
 			// cmp $lhs, $rhs
 			rhs := reg_of(ctx, node.inps[1])
-			rx := rex(lhs, rhs, RAX, true)
-			emit(ctx.code, {rx, 0x3b, mod_rm(.Direct, lhs, rhs)})
+			rx := rex(lhs, rhs, RAX, DT_SIZE[op_dt] == 8)
+			emit_sized_opcode(ctx.code, op_dt, rx, 0x3b)
+			emit(ctx.code, {mod_rm(.Direct, lhs, rhs)})
 		} else {
 			// cmp $lhs, $imm
-			rx := rex(RAX, lhs, RAX, true)
-			emit(ctx.code, {rx, 0x81, mod_sm(.Direct, 0b111, lhs)})
-			emit_anys(ctx.code, mem_op.imm)
+			rx := rex(RAX, lhs, RAX, DT_SIZE[op_dt] == 8)
+			emit_sized_opcode(ctx.code, op_dt, rx, 0x81)
+			emit(ctx.code, {mod_sm(.Direct, 0b111, lhs)})
+			emit_imm_for_dt(ctx.code, op_dt, mem_op.imm)
 		}
 
 		if node.dt != .Void {
@@ -1242,17 +1244,20 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		dst := reg_of(ctx, node.inps[1])
 		lhs := reg_of(ctx, node.inps[0])
 		// not $dst
-		rx := rex(RAX, dst, RAX, true)
-		emit(ctx.code, {rx, 0xf7, mod_sm(.Direct, 0b010, dst)})
+		rx := rex(RAX, dst, RAX, DT_SIZE[node.dt] == 8)
+		emit_sized_opcode(ctx.code, node.dt, rx, 0xf7)
+		emit(ctx.code, {mod_sm(.Direct, 0b010, dst)})
 		// and $dst, $lhs
-		rx = rex(lhs, dst, RAX, true)
-		emit(ctx.code, {rx, 0x21, mod_rm(.Direct, lhs, dst)})
+		rx = rex(lhs, dst, RAX, DT_SIZE[node.dt] == 8)
+		emit_sized_opcode(ctx.code, node.dt, rx, 0x21)
+		emit(ctx.code, {mod_rm(.Direct, lhs, dst)})
 	case .Shl ..= .U_Shr:
 		// shl/shr $dst, cl
 		dst := reg_of(ctx, node.inps[0])
-		rx := rex(RAX, dst, RAX, true)
+		rx := rex(RAX, dst, RAX, DT_SIZE[node.dt] == 8)
 		op := OPCODE_TABLE[node.xtype].ext
-		emit(ctx.code, {rx, 0xd3, mod_sm(.Direct, op, dst)})
+		emit_sized_opcode(ctx.code, node.dt, rx, 0xd3)
+		emit(ctx.code, {mod_sm(.Direct, op, dst)})
 	case .X64_Neg ..= .X64_Not:
 		assert(mem_op.mem_mode == .Dest)
 		dis := mem_op.dis
@@ -1267,29 +1272,41 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		// neg/not $dst
 		dst := reg_of(ctx, node.inps[0])
 		op := OPCODE_TABLE[node.xtype]
-		rx := rex(RAX, dst, RAX, true)
-		emit(ctx.code, {rx, op.opcode, mod_sm(.Direct, op.ext, dst)})
+		rx := rex(RAX, dst, RAX, DT_SIZE[node.dt] == 8)
+		emit_sized_opcode(ctx.code, node.dt, rx, op.opcode)
+		emit(ctx.code, {mod_sm(.Direct, op.ext, dst)})
 	case .Mul:
 		// imul $dst, $rhs
 		dst := reg_of(ctx, node.inps[0])
 		rhs := reg_of(ctx, node.inps[1])
-		rx := rex(dst, rhs, RAX, true)
-		emit(ctx.code, {rx, 0x0f, 0xaf, mod_rm(.Direct, dst, rhs)})
+		rx := rex(dst, rhs, RAX, DT_SIZE[node.dt] == 8)
+		emit_extended_sized_opcode(ctx.code, node.dt, rx, 0xaf)
+		emit(ctx.code, {mod_rm(.Direct, dst, rhs)})
 	case .Div, .Rem:
 		rhs := reg_of(ctx, node.inps[1])
 		// cqo
 		emit(ctx.code, {rex(RAX, RAX, RAX, true), 0x99})
 		// idiv $rhs
-		rx := rex(RAX, rhs, RAX, true)
-		emit(ctx.code, {rx, 0xf7, mod_sm(.Direct, 0b111, rhs)})
+		rx := rex(RAX, rhs, RAX, DT_SIZE[node.dt] == 8)
+		emit_sized_opcode(ctx.code, node.dt, rx, 0xf7)
+		emit(ctx.code, {mod_sm(.Direct, 0b111, rhs)})
+		if node.itype == .Rem && node.dt == .I8 {
+			// movzx edx, ah
+			emit(ctx.code, {0x0F, 0xB6, 0xD4})
+		}
 	case .U_Div, .U_Rem:
 		rhs := reg_of(ctx, node.inps[1])
 		// xor rdx, rdx
 		rx := rex(RDX, RDX, RAX, true)
 		emit(ctx.code, {rx, 0x31, mod_rm(.Direct, RDX, RDX)})
 		// div $rhs
-		rx = rex(RAX, rhs, RAX, true)
-		emit(ctx.code, {rx, 0xf7, mod_sm(.Direct, 0b110, rhs)})
+		rx = rex(RAX, rhs, RAX, DT_SIZE[node.dt] == 8)
+		emit_sized_opcode(ctx.code, node.dt, rx, 0xf7)
+		emit(ctx.code, {mod_sm(.Direct, 0b110, rhs)})
+		if node.itype == .U_Rem && node.dt == .I8 {
+			// movsx edx, ah
+			emit(ctx.code, {0x0F, 0xBE, 0xD4})
+		}
 	case .Split:
 		dst := reg_of(ctx, instr)
 		src := reg_of(ctx, node.inps[0])
@@ -1510,6 +1527,24 @@ emit_imm_for_dt :: proc(code: ^arna.Allocator, dt: Node_Datatype, imm: i32) {
 	}
 }
 
+emit_extended_sized_opcode :: proc(
+	code: ^arna.Allocator,
+	dt: Node_Datatype,
+	rx: u8,
+	op: u8,
+) {
+	switch dt {
+	case .Void:
+		panic("")
+	case .I8:
+		emit(code, {rx, 0x0f, op - 1})
+	case .I16:
+		emit(code, {0x66, rx, 0x0f, op})
+	case .I32, .I64:
+		emit(code, {rx, 0x0f, op})
+	}
+}
+
 emit_sized_opcode :: proc(
 	code: ^arna.Allocator,
 	dt: Node_Datatype,
@@ -1520,13 +1555,10 @@ emit_sized_opcode :: proc(
 	case .Void:
 		panic("")
 	case .I8:
-		// mov [$bse], $val
 		emit(code, {rx, op - 1})
 	case .I16:
-		// mov [$bse], $val
 		emit(code, {0x66, rx, op})
 	case .I32, .I64:
-		// mov [$bse], $val
 		emit(code, {rx, op})
 	}
 }

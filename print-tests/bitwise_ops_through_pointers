@@ -92,7 +92,7 @@ main:
      lea rdi, [rsp+0x08]
      mov rsi, 0x05
      mov qword ptr [rsp], 0x0C
-     and qword ptr [rsp], 0x0A
+     mov qword ptr [rsp], 0x08
      mov qword ptr [rsp+0x08], 0x0A
      mov qword ptr [rsp+0x10], 0x06
      call :or_into
@@ -105,10 +105,12 @@ main:
      add rsp, 0x18
      ret
 or_into:
-     or [rdi], rsi
      mov rax, [rdi]
+     or rax, rsi
+     mov [rdi], rax
      ret
 xor_into:
-     xor [rdi], rsi
      mov rax, [rdi]
+     xor rax, rsi
+     mov [rdi], rax
      ret

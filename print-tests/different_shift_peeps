@@ -171,19 +171,29 @@ test_imm_shifts:
      mov rax, rcx
      ret
 test_imm_inplace_shifts:
-     shl qword ptr [rdi], 0x02
-     sar qword ptr [rdi], 0x05
-     shr qword ptr [rsi], 0x04
      mov rax, [rdi]
-     add rax, [rsi]
+     shl rax, 0x02
+     mov [rdi], rax
+     sar rax, 0x05
+     mov [rdi], rax
+     mov rcx, [rsi]
+     shr rcx, 0x04
+     mov [rsi], rcx
+     mov rax, [rdi]
+     add rax, rcx
      ret
 test_inplace_shifts:
      mov rcx, rdx
-     shl qword ptr [rdi], cl
-     sar qword ptr [rdi], cl
-     shr qword ptr [rsi], cl
      mov rax, [rdi]
-     add rax, [rsi]
+     shl rax, cl
+     mov [rdi], rax
+     sar rax, cl
+     mov [rdi], rax
+     mov rdx, [rsi]
+     shr rdx, cl
+     mov [rsi], rdx
+     mov rax, [rdi]
+     add rax, rdx
      ret
 main:
      push rbx

@@ -50,31 +50,189 @@ main :: proc() -> int {
 opt_level :: "none"
 
 main_ :: proc() -> int {
-	a := 20
-	b := 6
-	n := 0 - 7
 
 	r := 0
+	{
+		a := 20
+		b := 6
+		n := 0 - 7
 
-	r += a / b
-	r += a % b
-	r += n / b
-	r += n % b
-	r += a & b
-	r += a | b
-	r += a ~ b
-	r += a &~ b
-	r += a << 2
-	r += a >> 2
-	r += n >> 2
+		r += a / b
+		r += a % b
+		r += n / b
+		r += n % b
+		r += a & b
+		r += a | b
+		r += a ~ b
+		r += a &~ b
+		r += a << 2
+		r += a >> 2
+		r += n >> 2
 
-	if a > b do r += 1
-	if b < a do r += 2
-	if a >= b do r += 4
-	if a <= b do r += 8
-	if a == a do r += 16
-	if a != b do r += 32
-	if n < b do r += 64
+		if a > b do r += 1
+		if b < a do r += 2
+		if a >= b do r += 4
+		if a <= b do r += 8
+		if a == a do r += 16
+		if a != b do r += 32
+		if n < b do r += 64
+	}
+
+	{
+		a: u8 = 20
+		b: u8 = 6
+		n: u8 = 7
+
+		r += int(a / b)
+		r += int(a % b)
+		r += int(n / b)
+		r += int(n % b)
+		r += int(a & b)
+		r += int(a | b)
+		r += int(a ~ b)
+		r += int(a &~ b)
+		r += int(a << 2)
+		r += int(a >> 2)
+		r += int(n >> 2)
+
+		if a > b do r += 1
+		if b < a do r += 2
+		if a >= b do r += 4
+		if a <= b do r += 8
+		if a == a do r += 16
+		if a != b do r += 32
+		if n < b do r += 64
+	}
+
+	{
+		a: u16 = 20
+		b: u16 = 6
+		n: u16 = 7
+
+		r += int(a / b)
+		r += int(a % b)
+		r += int(n / b)
+		r += int(n % b)
+		r += int(a & b)
+		r += int(a | b)
+		r += int(a ~ b)
+		r += int(a &~ b)
+		r += int(a << 2)
+		r += int(a >> 2)
+		r += int(n >> 2)
+
+		if a > b do r += 1
+		if b < a do r += 2
+		if a >= b do r += 4
+		if a <= b do r += 8
+		if a == a do r += 16
+		if a != b do r += 32
+		if n < b do r += 64
+	}
+
+	{
+		a: u32 = 20
+		b: u32 = 6
+		n: u32 = 7
+
+		r += int(a / b)
+		r += int(a % b)
+		r += int(n / b)
+		r += int(n % b)
+		r += int(a & b)
+		r += int(a | b)
+		r += int(a ~ b)
+		r += int(a &~ b)
+		r += int(a << 2)
+		r += int(a >> 2)
+		r += int(n >> 2)
+
+		if a > b do r += 1
+		if b < a do r += 2
+		if a >= b do r += 4
+		if a <= b do r += 8
+		if a == a do r += 16
+		if a != b do r += 32
+		if n < b do r += 64
+	}
+
+	{
+		a: i8 = 20
+		b: i8 = 6
+		n: i8 = 7
+
+		r += int(a / b)
+		r += int(a % b)
+		r += int(n / b)
+		r += int(n % b)
+		r += int(a & b)
+		r += int(a | b)
+		r += int(a ~ b)
+		r += int(a &~ b)
+		r += int(a << 2)
+		r += int(a >> 2)
+		r += int(n >> 2)
+
+		if a > b do r += 1
+		if b < a do r += 2
+		if a >= b do r += 4
+		if a <= b do r += 8
+		if a == a do r += 16
+		if a != b do r += 32
+		if n < b do r += 64
+	}
+
+	{
+		a: i16 = 20
+		b: i16 = 6
+		n: i16 = 7
+
+		r += int(a / b)
+		r += int(a % b)
+		r += int(n / b)
+		r += int(n % b)
+		r += int(a & b)
+		r += int(a | b)
+		r += int(a ~ b)
+		r += int(a &~ b)
+		r += int(a << 2)
+		r += int(a >> 2)
+		r += int(n >> 2)
+
+		if a > b do r += 1
+		if b < a do r += 2
+		if a >= b do r += 4
+		if a <= b do r += 8
+		if a == a do r += 16
+		if a != b do r += 32
+		if n < b do r += 64
+	}
+
+	{
+		a: i32 = 20
+		b: i32 = 6
+		n: i32 = 7
+
+		r += int(a / b)
+		r += int(a % b)
+		r += int(n / b)
+		r += int(n % b)
+		r += int(a & b)
+		r += int(a | b)
+		r += int(a ~ b)
+		r += int(a &~ b)
+		r += int(a << 2)
+		r += int(a >> 2)
+		r += int(n >> 2)
+
+		if a > b do r += 1
+		if b < a do r += 2
+		if a >= b do r += 4
+		if a <= b do r += 8
+		if a == a do r += 16
+		if a != b do r += 32
+		if n < b do r += 64
+	}
 
 	return r
 }
@@ -85,31 +243,189 @@ package main
 opt_level :: "none"
 
 main :: proc() -> int {
-	a := 20
-	b := 6
-	n := 0 - 7
 
 	r := 0
+	{
+		a := 20
+		b := 6
+		n := 0 - 7
 
-	r += a / b
-	r += a % b
-	r += n / b
-	r += n % b
-	r += a & b
-	r += a | b
-	r += a ~ b
-	r += a &~ b
-	r += a << 2
-	r += a >> 2
-	r += n >> 2
+		r += a / b
+		r += a % b
+		r += n / b
+		r += n % b
+		r += a & b
+		r += a | b
+		r += a ~ b
+		r += a &~ b
+		r += a << 2
+		r += a >> 2
+		r += n >> 2
 
-	if a > b do r += 1
-	if b < a do r += 2
-	if a >= b do r += 4
-	if a <= b do r += 8
-	if a == a do r += 16
-	if a != b do r += 32
-	if n < b do r += 64
+		if a > b do r += 1
+		if b < a do r += 2
+		if a >= b do r += 4
+		if a <= b do r += 8
+		if a == a do r += 16
+		if a != b do r += 32
+		if n < b do r += 64
+	}
+
+	{
+		a: u8 = 20
+		b: u8 = 6
+		n: u8 = 7
+
+		r += int(a / b)
+		r += int(a % b)
+		r += int(n / b)
+		r += int(n % b)
+		r += int(a & b)
+		r += int(a | b)
+		r += int(a ~ b)
+		r += int(a &~ b)
+		r += int(a << 2)
+		r += int(a >> 2)
+		r += int(n >> 2)
+
+		if a > b do r += 1
+		if b < a do r += 2
+		if a >= b do r += 4
+		if a <= b do r += 8
+		if a == a do r += 16
+		if a != b do r += 32
+		if n < b do r += 64
+	}
+
+	{
+		a: u16 = 20
+		b: u16 = 6
+		n: u16 = 7
+
+		r += int(a / b)
+		r += int(a % b)
+		r += int(n / b)
+		r += int(n % b)
+		r += int(a & b)
+		r += int(a | b)
+		r += int(a ~ b)
+		r += int(a &~ b)
+		r += int(a << 2)
+		r += int(a >> 2)
+		r += int(n >> 2)
+
+		if a > b do r += 1
+		if b < a do r += 2
+		if a >= b do r += 4
+		if a <= b do r += 8
+		if a == a do r += 16
+		if a != b do r += 32
+		if n < b do r += 64
+	}
+
+	{
+		a: u32 = 20
+		b: u32 = 6
+		n: u32 = 7
+
+		r += int(a / b)
+		r += int(a % b)
+		r += int(n / b)
+		r += int(n % b)
+		r += int(a & b)
+		r += int(a | b)
+		r += int(a ~ b)
+		r += int(a &~ b)
+		r += int(a << 2)
+		r += int(a >> 2)
+		r += int(n >> 2)
+
+		if a > b do r += 1
+		if b < a do r += 2
+		if a >= b do r += 4
+		if a <= b do r += 8
+		if a == a do r += 16
+		if a != b do r += 32
+		if n < b do r += 64
+	}
+
+	{
+		a: i8 = 20
+		b: i8 = 6
+		n: i8 = 7
+
+		r += int(a / b)
+		r += int(a % b)
+		r += int(n / b)
+		r += int(n % b)
+		r += int(a & b)
+		r += int(a | b)
+		r += int(a ~ b)
+		r += int(a &~ b)
+		r += int(a << 2)
+		r += int(a >> 2)
+		r += int(n >> 2)
+
+		if a > b do r += 1
+		if b < a do r += 2
+		if a >= b do r += 4
+		if a <= b do r += 8
+		if a == a do r += 16
+		if a != b do r += 32
+		if n < b do r += 64
+	}
+
+	{
+		a: i16 = 20
+		b: i16 = 6
+		n: i16 = 7
+
+		r += int(a / b)
+		r += int(a % b)
+		r += int(n / b)
+		r += int(n % b)
+		r += int(a & b)
+		r += int(a | b)
+		r += int(a ~ b)
+		r += int(a &~ b)
+		r += int(a << 2)
+		r += int(a >> 2)
+		r += int(n >> 2)
+
+		if a > b do r += 1
+		if b < a do r += 2
+		if a >= b do r += 4
+		if a <= b do r += 8
+		if a == a do r += 16
+		if a != b do r += 32
+		if n < b do r += 64
+	}
+
+	{
+		a: i32 = 20
+		b: i32 = 6
+		n: i32 = 7
+
+		r += int(a / b)
+		r += int(a % b)
+		r += int(n / b)
+		r += int(n % b)
+		r += int(a & b)
+		r += int(a | b)
+		r += int(a ~ b)
+		r += int(a &~ b)
+		r += int(a << 2)
+		r += int(a >> 2)
+		r += int(n >> 2)
+
+		if a > b do r += 1
+		if b < a do r += 2
+		if a >= b do r += 4
+		if a <= b do r += 8
+		if a == a do r += 16
+		if a != b do r += 32
+		if n < b do r += 64
+	}
 
 	return r
 }
@@ -3281,6 +3597,7 @@ main_ :: proc() -> int {
 		{8, 9, 10, 11, 12, 13, 14}, 15}))
 	vl += return_stru(1, 2).a
 	vl += int(return_stru3().f)
+	vl += int(return_stru3().c)
 	return vl
 }
 
@@ -3322,6 +3639,9 @@ return_stru3 :: proc() -> Stru3 {
 	return {1, 2, 3, 4, 5, 6, 7}
 }
 
+return_stru4 :: proc() -> Stru4 {
+	return {return_stru3(), return_stru3(), 70}
+}
 
 run_test(t, `pass_stack_in_calls`, `
 package main
@@ -3364,6 +3684,7 @@ main :: proc() -> int {
 		{8, 9, 10, 11, 12, 13, 14}, 15}))
 	vl += return_stru(1, 2).a
 	vl += int(return_stru3().f)
+	vl += int(return_stru3().c)
 	return vl
 }
 
@@ -3405,5 +3726,8 @@ return_stru3 :: proc() -> Stru3 {
 	return {1, 2, 3, 4, 5, 6, 7}
 }
 
+return_stru4 :: proc() -> Stru4 {
+	return {return_stru3(), return_stru3(), 70}
+}
 `, main_())
 }

@@ -29,7 +29,7 @@ main:
      mov rdi, rax
      mov rax, 0x1E
      mov rcx, 0x00
-     sub rcx, rax
+     sub ecx, eax
      mov rax, rdi
      mov [rax], ecx
      mov rbx, 0x18
@@ -60,20 +60,20 @@ main:
      add r10, r11
      mov r11, 0x03
      mov r13, 0x00
-     sub r13, r11
+     sub r13b, r11b
      mov r11, r10
      mov [r11], r13b
      mov r11, 0x06
      add r9, r11
      mov r11, 0x00
      mov r13, 0x04
-     sub r11, r13
+     sub r11w, r13w
      mov r13, r9
      mov [r13], r11w
      mov r11, rdx
      mov r11d, [r11]
      mov r13, 0x01
-     add r11, r13
+     add r11d, r13d
      mov [rdx], r11d
      mov rdx, rsi
      mov rdx, [rdx]
@@ -82,7 +82,7 @@ main:
      mov rdx, rdi
      movsxd rdx, dword ptr [rdx]
      mov rsi, 0x03
-     sub rdx, rsi
+     sub edx, esi
      mov rsi, rdi
      mov [rsi], edx
      mov rdx, r8
@@ -93,22 +93,22 @@ main:
      mov [rsi], rdx
      movzx edx, byte ptr [rax]
      mov rsi, 0x05
-     add rdx, rsi
+     add dl, sil
      mov [rax], dl
      movzx eax, word ptr [rcx]
      mov rdx, 0x06
-     add rax, rdx
+     add ax, dx
      mov [rcx], ax
      mov rax, r10
      movsx rax, byte ptr [rax]
      mov rcx, 0x07
-     sub rax, rcx
+     sub al, cl
      mov rcx, r10
      mov [rcx], al
      mov rax, r9
      movsx rcx, word ptr [rax]
      mov rax, 0x08
-     sub rcx, rax
+     sub cx, ax
      mov rax, r9
      mov [rax], cx
      mov rdx, 0x28
@@ -240,7 +240,7 @@ main:
      mov rbx, rdi
      mov ebx, [rbx]
      mov r12, 0x01
-     add rbx, r12
+     add ebx, r12d
      mov [rdi], ebx
      mov rbx, r8
      mov rbx, [rbx]
@@ -250,7 +250,7 @@ main:
      mov rcx, r9
      movsxd rcx, dword ptr [rcx]
      mov rbx, 0x03
-     sub rcx, rbx
+     sub ecx, ebx
      mov rbx, r9
      mov [rbx], ecx
      mov rcx, r10
@@ -261,21 +261,21 @@ main:
      mov rcx, r11
      movzx ecx, byte ptr [rcx]
      mov rdx, 0x05
-     add rcx, rdx
+     add cl, dl
      mov rdx, r11
      mov [rdx], cl
      movzx ecx, word ptr [rbp]
      mov rdx, 0x06
-     add rcx, rdx
+     add cx, dx
      mov [rbp], cx
      mov rcx, rsi
      movsx rcx, byte ptr [rcx]
      mov rdx, 0x07
-     sub rcx, rdx
+     sub cl, dl
      mov [rsi], cl
      movsx rdx, word ptr [rax]
      mov rcx, 0x08
-     sub rdx, rcx
+     sub dx, cx
      mov [rax], dx
      mov rdx, 0x28
      lea rdi, [rsp+0x28]
@@ -286,7 +286,8 @@ main:
      lea rsi, [rsp]
      call :$copy
      lea rax, [rsp+0x28]
-     mov edx, [rax]
+     mov eax, [rax]
+     mov edx, eax
      lea rax, [rsp+0x28]
      mov rcx, 0x08
      add rax, rcx
@@ -296,6 +297,7 @@ main:
      mov rcx, 0x10
      add rax, rcx
      movsxd rax, dword ptr [rax]
+     movsxd rax, eax
      add rdx, rax
      lea rax, [rsp+0x28]
      mov rcx, 0x18
@@ -305,23 +307,27 @@ main:
      lea rax, [rsp+0x28]
      mov rcx, 0x20
      add rax, rcx
-     movzx ecx, byte ptr [rax]
+     movzx eax, byte ptr [rax]
+     movzx ecx, al
      mov rax, rdx
      add rax, rcx
      mov rcx, 0x22
      lea rdx, [rsp+0x28]
      add rcx, rdx
      movzx ecx, word ptr [rcx]
+     movzx ecx, cx
      add rax, rcx
      mov rcx, 0x24
      lea rdx, [rsp+0x28]
      add rcx, rdx
      movsx rcx, byte ptr [rcx]
+     movsx rcx, cl
      add rax, rcx
      mov rcx, 0x26
      lea rdx, [rsp+0x28]
      add rcx, rdx
      movsx rcx, word ptr [rcx]
+     movsx rcx, cx
      add rax, rcx
      add rsp, 0x50
      pop r12
@@ -344,28 +350,34 @@ main:
      mov word ptr [rsp+0x22], 0x02
      mov byte ptr [rsp+0x24], 0xFD
      mov word ptr [rsp+0x26], 0xFFFC
-     add dword ptr [rsp], 0x01
-     add qword ptr [rsp+0x08], 0x02
-     sub dword ptr [rsp+0x10], 0x03
-     sub qword ptr [rsp+0x18], 0x04
-     add byte ptr [rsp+0x20], 0x05
-     add word ptr [rsp+0x22], 0x06
-     sub byte ptr [rsp+0x24], 0x07
-     sub word ptr [rsp+0x26], 0x08
+     mov dword ptr [rsp], 0x0B
+     mov qword ptr [rsp+0x08], 0x16
+     mov dword ptr [rsp+0x10], 0xFFFFFFDF
+     mov qword ptr [rsp+0x18], 0xFFFFFFFFFFFFFFD4
+     mov byte ptr [rsp+0x20], 0x06
+     mov word ptr [rsp+0x22], 0x08
+     mov byte ptr [rsp+0x24], 0xF6
+     mov word ptr [rsp+0x26], 0xFFF4
      mov rdx, 0x28
      call :$copy
      mov eax, [rsp+0x28]
+     mov eax, eax
      add rax, [rsp+0x30]
      movsxd rcx, dword ptr [rsp+0x38]
+     movsxd rcx, ecx
      add rax, rcx
      add rax, [rsp+0x40]
      movzx ecx, byte ptr [rsp+0x48]
+     movzx ecx, cl
      add rax, rcx
      movzx ecx, word ptr [rsp+0x4A]
+     movzx ecx, cx
      add rax, rcx
      movsx rcx, byte ptr [rsp+0x4C]
+     movsx rcx, cl
      add rax, rcx
      movsx rcx, word ptr [rsp+0x4E]
+     movsx rcx, cx
      add rax, rcx
      add rsp, 0x50
      ret

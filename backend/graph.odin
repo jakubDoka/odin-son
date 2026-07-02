@@ -7,6 +7,7 @@ import "core:container/queue"
 import "core:fmt"
 import "core:io"
 import "core:log"
+import "core:math"
 import "core:mem"
 import "core:reflect"
 import "core:simd"
@@ -166,6 +167,14 @@ DT_SIZE := [Node_Datatype]int {
 	.I64  = 8,
 }
 
+int_for_size :: proc(size: int) -> Node_Datatype {
+	assert(math.is_power_of_two(size))
+	assert(size <= 8)
+	return Node_Datatype(
+		u8(Node_Datatype.I8) + u8(intrinsics.count_trailing_zeros(size)),
+	)
+}
+
 Node_ID :: distinct u32
 
 Node_Output :: bit_field u32 {
@@ -174,21 +183,21 @@ Node_Output :: bit_field u32 {
 }
 
 Node :: struct {
-	using _:             struct #raw_union {
-		itype: Ideal_Node_Type,
-		btype: Builder_Node_Type,
-		xtype: X64_Node_Type,
-		rtype: u16,
-	},
-	using _:             bit_field u8 {
-		dt: Node_Datatype | 8,
-	},
-	using _:             bit_field u8 {
-		in_worklist:           bool | 1,
-		is_store:              bool | 1,
-		done:                  bool | 1,
-		in_place_slot_offset:  i8   | 2,
-		additional_data_start: u8   | 2,
+	using spec:          struct #align (4) {
+		using _: struct #raw_union {
+			itype: Ideal_Node_Type,
+			btype: Builder_Node_Type,
+			xtype: X64_Node_Type,
+			rtype: u16,
+		},
+		using _: bit_field u16 {
+			dt:                    Node_Datatype | 4,
+			in_worklist:           bool          | 1,
+			is_store:              bool          | 1,
+			in_place_slot_offset:  i8            | 2,
+			additional_data_start: u8            | 2,
+			mem_alignment_pow:     u32           | 3,
+		},
 	},
 	gvn:                 u32,
 	input_idx:           u32,
@@ -238,6 +247,7 @@ peep_ctx_graph_is_complete :: proc(ctx: Peep_Ctx) -> bool {
 }
 
 peep_ctx_add_trigger :: proc(ctx: Peep_Ctx, triggerer: Node_ID, tar: Node_ID) {
+	if triggerer == 0 do return
 	if ctx.triggers == nil do return
 
 	gvn := graph_get(ctx, triggerer).gvn
@@ -595,12 +605,10 @@ when !GEN_SPEC {
 
 		#partial match: switch node.itype {
 		case .Region:
-			any_dead: Node_ID
 			#reverse for inp, i in node.inps {
 				inode := graph_expand(ctx, inp)
 				if inode.btype == .Dead {
 					ordered_remove(ctx, &node, i)
-					any_dead = inp
 
 					for out in node.outs {
 						onode := graph_expand(ctx, out.id)
@@ -608,12 +616,11 @@ when !GEN_SPEC {
 							ordered_remove(ctx, &onode, i + 1)
 						}
 					}
-				}
-			}
 
-			if len(node.inps) == 0 {
-				assert(any_dead != 0)
-				return any_dead
+					if node.input_count == 1 {
+						break
+					}
+				}
 			}
 
 			if len(node.inps) == 1 {
@@ -642,7 +649,7 @@ when !GEN_SPEC {
 			} else {
 				peep_ctx_add_trigger(ctx, if_.inps[1], id)
 			}
-		case .Neg ..= .Not:
+		case .Neg ..= .Cast:
 			op := Un_Op(node.itype)
 			oper := graph_expand(ctx.graph, node.inps[0])
 			coper := graph_extra(ctx.graph, oper, CInt)
@@ -650,6 +657,15 @@ when !GEN_SPEC {
 			if coper != nil {
 				value := fold_un_op(op, coper.value, oper.dt)
 				return graph_add_c_int(ctx.graph, "fld", node.dt, value)
+			}
+
+			if (op == .Sext || op == .Uext) &&
+			   DT_SIZE[oper.dt] >= DT_SIZE[node.dt] {
+				return node.inps[0]
+			}
+
+			if op == .Cast && oper.dt == node.dt {
+				return node.inps[0]
 			}
 		case .Add ..= .And_Not:
 			lhs := graph_expand(ctx.graph, node.inps[0])
@@ -768,19 +784,117 @@ when !GEN_SPEC {
 				worklist_add(ctx, ctx.worklist, id)
 				return id
 			}
-		case .Sext, .Uext:
-			oper := graph_expand(ctx, node.inps[0])
-			if oper.itype == .Load_S || oper.itype == .Load {
-				return node.inps[0]
-			}
+		case .Load, .Load_S:
+			florward_loads: {
+				fuel := 4
 
-			if DT_SIZE[oper.dt] >= DT_SIZE[node.dt] {
-				return node.inps[0]
+				cursor := node.inps[1]
+				for {
+					cnode := graph_expand(ctx, cursor)
+					if cnode.itype != .Store do break
+					if cnode.inps[0] != node.inps[0] do break
+					if !is_noalias(
+						ctx,
+						cnode.inps[2],
+						node.inps[2],
+						node.dt,
+						graph_get(ctx, cnode.inps[3]).dt,
+					) {
+						break
+					}
+					cursor = cnode.inps[1]
+				}
+
+				fnode := graph_expand(ctx, cursor)
+				if fnode.itype == .Store &&
+				   fnode.inps[0] == node.inps[0] &&
+				   fnode.inps[2] == node.inps[2] &&
+				   graph_get(ctx, fnode.inps[3]).dt == node.dt {
+
+					return fnode.inps[3]
+				} else {
+					peep_ctx_add_trigger(ctx, cursor, id)
+					if fnode.itype == .Store {
+						peep_ctx_add_trigger(ctx, fnode.inps[2], id)
+					}
+				}
+
+				is_noalias :: proc(
+					graph: ^Graph,
+					a, b: Node_ID,
+					ad, bd: Node_Datatype,
+				) -> bool {
+					abase, aoffset := base_and_offset(graph, a)
+					bbase, boffset := base_and_offset(graph, b)
+
+					anode := graph_get(graph, abase)
+					bnode := graph_get(graph, bbase)
+
+					if anode == bnode {
+						aend, bend :=
+							aoffset + DT_SIZE[ad], boffset + DT_SIZE[bd]
+						return aoffset >= bend || boffset >= aend
+					}
+
+					return false
+				}
 			}
-		case .Cast:
-			oper := graph_expand(ctx, node.inps[0])
-			if oper.dt == node.dt {
-				return node.inps[0]
+		case .Store:
+			coalesce_stores: {
+				SIZE_LIMIT :: 8
+				fuel := SIZE_LIMIT
+				imm: i64
+				size: int
+				common_ctrl := node.inps[0]
+				common_base, prev_offset := base_and_offset(ctx, node.inps[2])
+				prev_offset += DT_SIZE[graph_get(ctx, node.inps[3]).dt]
+				cursor := id
+				last_valid: Node_ID
+				last_valid_imm: i64
+				last_valid_size: int
+				for fuel > 0 {
+					cnode := graph_expand(ctx, cursor)
+					if cnode.itype != .Store do break
+					if size != 0 && len(cnode.outs) != 1 do break
+					if cnode.inps[0] != common_ctrl do break
+					val := graph_get(ctx, cnode.inps[3])
+					val_const := graph_extra(ctx, val, CInt)
+					if val_const == nil do break
+					base, offset := base_and_offset(ctx, cnode.inps[2])
+					if base != common_base do break
+					if prev_offset - offset != DT_SIZE[val.dt] do break
+					if size + DT_SIZE[val.dt] > SIZE_LIMIT do break
+
+					size += DT_SIZE[val.dt]
+					imm <<= uint(DT_SIZE[val.dt] * 8)
+					imm |= val_const.value
+
+					prev_offset = offset
+					if math.is_power_of_two(size) {
+						last_valid = cursor
+						last_valid_imm = imm
+						last_valid_size = size
+					}
+					cursor = cnode.inps[1]
+					fuel -= 1
+				}
+
+				if last_valid != id && last_valid != 0 {
+					final := graph_expand(ctx, last_valid)
+					return graph_add_store(
+						ctx,
+						"cost",
+						final.inps[0],
+						final.inps[1],
+						final.inps[2],
+						graph_add_c_int(
+							ctx,
+							"cocnst",
+							int_for_size(last_valid_size),
+							last_valid_imm,
+						),
+					)
+				}
 			}
 		case .Set:
 			if !is_complete do break
@@ -835,6 +949,7 @@ when !GEN_SPEC {
 
 			iter: Offset_Iter
 			iter.curr = node.inps[2]
+			corrupt := false
 			scan: for out in offset_iter_next(ctx, &iter) {
 				onode := graph_expand(ctx, out.id)
 
@@ -871,35 +986,42 @@ when !GEN_SPEC {
 					break match
 				}
 
-				for &slot, i in slots {
+				#reverse for &slot, i in slots {
 					send := slot.offset + slot.size
 					if end <= slot.offset || send <= iter.offset {
 						continue
 					}
 
 					if slot.offset != iter.offset || slot.size != size {
-						continue scan
+						corrupt = true
 					}
 
 					if onode.itype != .Load {
-						append(&members, Member{out.id, i})
+						corrupt |= append(&members, Member{out.id, i}) == 0
 					}
 					continue scan
 				}
 
 				if onode.itype != .Load {
-					append(&members, Member{out.id, len(slots)})
+					corrupt |=
+						append(&members, Member{out.id, len(slots)}) == 0
 				}
 
 				slot := Slot {
 					offset = iter.offset,
 					size   = size,
 				}
-				if append(&slots, slot) == 0 {
-					break match
-				}
+				corrupt |= append(&slots, slot) == 0
 			}
 
+			if corrupt {
+				for m in members {
+					peep_ctx_add_trigger(ctx, m.id, id)
+				}
+				break match
+			}
+
+			blocker: Node_ID
 			cursor := id
 			traverse: for {
 				cnode := graph_expand(ctx, cursor)
@@ -933,6 +1055,7 @@ when !GEN_SPEC {
 					}
 
 					if slot == nil {
+						blocker = out.id
 						break traverse
 					}
 
@@ -989,7 +1112,9 @@ when !GEN_SPEC {
 					assert(fill.size != 0)
 					fill.offset = rev_offset
 					rev_offset += fill.size
-					if !inject_at(&slots, prev_len - i + inserts, fill) do break match
+					if !inject_at(&slots, prev_len - i + inserts, fill) {
+						break match
+					}
 					inserts += 1
 				}
 				offset = slot.offset
@@ -1004,7 +1129,10 @@ when !GEN_SPEC {
 			}
 			resize(&slots, keep)
 
-			if len(slots) >= 5 do break match
+			if len(slots) >= 5 {
+				peep_ctx_add_trigger(ctx, blocker, id)
+				break match
+			}
 
 			mem_thread := mem
 			for slot in slots {
@@ -1462,8 +1590,7 @@ graph_node_eq :: proc(graph: ^Graph, a, b: Node_ID) -> bool {
 	if a == b do return true
 
 	an, bn := graph_get(graph, a), graph_get(graph, b)
-	if an.rtype != bn.rtype do return false
-	if an.dt != bn.dt do return false
+	if an.spec != bn.spec do return false
 
 	if !slice.equal(graph_inps(graph, an), graph_inps(graph, bn)) {
 		return false
@@ -1635,12 +1762,11 @@ graph_node_hash_node :: proc(graph: ^Graph, node: ^Node) -> u8 {
 
 	hash: u32
 
-	type := u32(node.rtype)
-	dt := u32(node.dt)
+	spec := transmute(u32)(node.spec)
 	extra_dwords := graph_extra_dwords(graph, node)
 	inps := graph_inps(graph, node)
 
-	hash += type + dt
+	hash += spec
 	for n in extra_dwords do hash += n
 	for n in inps do hash += u32(n)
 
@@ -2025,7 +2151,6 @@ graph_display_node :: proc(
 	id: Node_ID,
 	scheduled := false,
 ) {
-	log.info(id)
 	node := graph_expand(graph, id)
 
 	extra := graph_extra(graph, node)
@@ -2037,6 +2162,11 @@ graph_display_node :: proc(
 	fmt.wprintf(w, ":%v(", graph.node_kind_name[node.rtype])
 
 	written_one: bool
+	if node.mem_alignment_pow != 0 {
+		written_one = true
+		fmt.wprintf(w, "align: %v", 1 << node.mem_alignment_pow)
+	}
+
 	graph_display_extra(w, extra, "", &written_one)
 
 	for inp, i in node.inps {

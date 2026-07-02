@@ -406,7 +406,9 @@ graph_schedule :: proc(
 
 			if !graph_has_flag(graph, lca, .Is_Basic_Block_Start) {
 				lca = graph_idom(graph, lca)
+				assert(lca != 0)
 			}
+
 			ctx.late_schedules[node.gvn] = lca
 		}
 

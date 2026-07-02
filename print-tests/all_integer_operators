@@ -2,6 +2,11 @@
 main:
      push rbx
      push rbp
+     push r12
+     push r13
+     push r14
+     push r15
+     sub rsp, 0x50
      mov rbx, 0x06
      mov rax, 0x07
      mov rcx, 0x00
@@ -40,14 +45,16 @@ main:
      not rcx
      and rcx, rax
      add rdx, rcx
-     mov rcx, 0x02
      mov rax, 0x14
+     mov rcx, 0x02
      shl rax, cl
      add rdx, rax
      mov rax, 0x14
+     mov rcx, 0x02
      sar rax, cl
      add rdx, rax
      mov rax, rbp
+     mov rcx, 0x02
      sar rax, cl
      add rdx, rax
      mov rax, 0x14
@@ -61,11 +68,11 @@ main:
 000: jmp :2
 
 001: mov rax, 0x01
-     add rax, rdx
-     mov rdx, rax
+     add rdx, rax
      jmp :2
 
-002: mov rax, 0x14
+002: mov rcx, rdx
+     mov rax, 0x14
      cmp rbx, rax
      setl al
      movzx rax, al
@@ -75,7 +82,8 @@ main:
 
 003: jmp :5
 
-004: add rdx, rcx
+004: mov rax, 0x02
+     add rcx, rax
      jmp :5
 
 005: mov rax, 0x14
@@ -88,9 +96,8 @@ main:
 
 006: jmp :8
 
-007: mov rax, rdx
-     mov rdx, 0x04
-     add rdx, rax
+007: mov rax, 0x04
+     add rcx, rax
      jmp :8
 
 008: mov rax, 0x14
@@ -103,12 +110,12 @@ main:
 
 009: jmp :11
 
-010: mov rax, rdx
-     mov rdx, 0x08
-     add rdx, rax
+010: mov rax, 0x08
+     add rcx, rax
      jmp :11
 
-011: mov rax, 0x14
+011: mov rdx, rcx
+     mov rax, 0x14
      mov rcx, 0x14
      cmp rcx, rax
      setz al
@@ -119,8 +126,7 @@ main:
 
 012: jmp :14
 
-013: mov rax, rdx
-     mov rdx, 0x10
+013: mov rax, 0x10
      add rdx, rax
      jmp :14
 
@@ -134,8 +140,7 @@ main:
 
 015: jmp :17
 
-016: mov rax, rdx
-     mov rdx, 0x20
+016: mov rax, 0x20
      add rdx, rax
      jmp :17
 
@@ -149,12 +154,1127 @@ main:
 
 018: jmp :20
 
-019: mov rax, rdx
-     mov rdx, 0x40
+019: mov rax, 0x40
      add rdx, rax
      jmp :20
 
-020: mov rax, rdx
+020: mov rbx, rdx
+     mov rax, 0x14
+     mov rcx, 0x06
+     xor rdx, rdx
+     div cl
+     movzx eax, al
+     add rbx, rax
+     mov rax, 0x14
+     mov rcx, 0x06
+     xor rdx, rdx
+     div cl
+     movsx edx, ah
+     movzx eax, dl
+     add rbx, rax
+     mov rax, 0x07
+     mov rcx, 0x06
+     xor rdx, rdx
+     div cl
+     movzx eax, al
+     add rbx, rax
+     mov rax, 0x07
+     mov rcx, 0x06
+     xor rdx, rdx
+     div cl
+     movsx edx, ah
+     movzx eax, dl
+     add rbx, rax
+     mov rax, 0x14
+     mov rcx, 0x06
+     and al, cl
+     mov r8, rax
+     mov rax, r8
+     movzx eax, al
+     add rbx, rax
+     mov rdx, rbx
+     mov rcx, 0x14
+     mov rax, 0x06
+     or cl, al
+     mov r9, rcx
+     mov rax, r9
+     movzx eax, al
+     add rdx, rax
+     mov rcx, 0x14
+     mov rax, 0x06
+     xor cl, al
+     mov r10, rcx
+     mov rax, r10
+     movzx eax, al
+     add rdx, rax
+     mov rax, 0x14
+     mov rcx, 0x06
+     not cl
+     and cl, al
+     mov r11, rcx
+     mov rax, r11
+     movzx eax, al
+     add rdx, rax
+     mov rax, 0x14
+     mov rcx, 0x02
+     shl al, cl
+     mov r12, rax
+     mov rax, r12
+     movzx eax, al
+     add rdx, rax
+     mov rax, 0x14
+     mov rcx, 0x02
+     shr al, cl
+     movzx eax, al
+     add rdx, rax
+     mov rax, 0x07
+     mov rcx, 0x02
+     shr al, cl
+     movzx eax, al
+     add rdx, rax
+     mov rbx, rdx
+     mov rax, 0x14
+     mov rcx, 0x06
+     cmp al, cl
+     setnbe al
+     movzx rax, al
+     test rax, rax
+     jz :21
+     jmp :22
+
+021: jmp :23
+
+022: mov rax, rbx
+     mov rcx, 0x01
+     add rax, rcx
+     mov rbx, rax
+     jmp :23
+
+023: mov rax, 0x14
+     mov rcx, 0x06
+     cmp cl, al
+     setb al
+     movzx rax, al
+     test rax, rax
+     jz :24
+     jmp :25
+
+024: jmp :26
+
+025: mov rax, rbx
+     mov rcx, 0x02
+     add rax, rcx
+     mov rbx, rax
+     jmp :26
+
+026: mov rax, 0x14
+     mov rcx, 0x06
+     cmp al, cl
+     setnb al
+     movzx rax, al
+     test rax, rax
+     jz :27
+     jmp :28
+
+027: jmp :29
+
+028: mov rax, rbx
+     mov rcx, 0x04
+     add rax, rcx
+     mov rbx, rax
+     jmp :29
+
+029: mov rax, 0x14
+     mov rcx, 0x06
+     cmp al, cl
+     setbe al
+     movzx rax, al
+     test rax, rax
+     jz :30
+     jmp :31
+
+030: jmp :32
+
+031: mov rax, rbx
+     mov rcx, 0x08
+     add rax, rcx
+     mov rbx, rax
+     jmp :32
+
+032: mov rax, 0x14
+     mov rcx, 0x14
+     cmp cl, al
+     setz al
+     movzx rax, al
+     mov r13, rax
+     mov rax, r13
+     test rax, rax
+     jz :33
+     jmp :34
+
+033: jmp :35
+
+034: mov rax, rbx
+     mov rcx, 0x10
+     add rax, rcx
+     mov rbx, rax
+     jmp :35
+
+035: mov rax, 0x14
+     mov rcx, 0x06
+     cmp al, cl
+     setnz al
+     movzx rax, al
+     mov r14, rax
+     mov rax, r14
+     test rax, rax
+     jz :36
+     jmp :37
+
+036: jmp :38
+
+037: mov rax, rbx
+     mov rcx, 0x20
+     add rax, rcx
+     mov rbx, rax
+     jmp :38
+
+038: mov rax, 0x07
+     mov rcx, 0x06
+     cmp al, cl
+     setb al
+     movzx rax, al
+     test rax, rax
+     jz :39
+     jmp :40
+
+039: jmp :41
+
+040: mov rax, rbx
+     mov rcx, 0x40
+     add rax, rcx
+     mov rbx, rax
+     jmp :41
+
+041: mov rax, 0x14
+     mov rcx, 0x06
+     xor rdx, rdx
+     div cx
+     movzx eax, ax
+     mov rcx, rbx
+     add rcx, rax
+     mov rax, 0x14
+     mov rbx, 0x06
+     xor rdx, rdx
+     div bx
+     movzx eax, dx
+     add rcx, rax
+     mov rax, 0x07
+     mov rbx, 0x06
+     xor rdx, rdx
+     div bx
+     movzx eax, ax
+     add rcx, rax
+     mov rax, 0x07
+     mov rbx, 0x06
+     xor rdx, rdx
+     div bx
+     movzx eax, dx
+     add rcx, rax
+     mov rax, 0x14
+     mov rdx, 0x06
+     and ax, dx
+     mov r15, rax
+     mov rax, r15
+     movzx eax, ax
+     mov rdx, rcx
+     add rdx, rax
+     mov rax, 0x14
+     mov rcx, 0x06
+     or ax, cx
+     mov [rsp], rax
+     mov rax, [rsp]
+     movzx eax, ax
+     add rdx, rax
+     mov rax, rdx
+     mov rcx, 0x14
+     mov rdx, 0x06
+     xor cx, dx
+     mov [rsp+0x08], rcx
+     mov rcx, [rsp+0x08]
+     movzx ecx, cx
+     mov rdx, rax
+     add rdx, rcx
+     mov rax, 0x14
+     mov rbx, 0x06
+     not bx
+     and bx, ax
+     movzx eax, bx
+     add rdx, rax
+     mov rax, rdx
+     mov rdx, 0x14
+     mov rcx, 0x02
+     shl dx, cl
+     mov [rsp+0x10], rdx
+     mov rcx, [rsp+0x10]
+     movzx ecx, cx
+     add rax, rcx
+     mov rdx, rax
+     mov rax, 0x14
+     mov rcx, 0x02
+     shr ax, cl
+     movzx eax, ax
+     mov rcx, rdx
+     add rcx, rax
+     mov rdx, rcx
+     mov rax, 0x07
+     mov rcx, 0x02
+     shr ax, cl
+     movzx eax, ax
+     mov rcx, rdx
+     add rcx, rax
+     mov rbp, rcx
+     mov rax, 0x14
+     mov rcx, 0x06
+     cmp ax, cx
+     setnbe al
+     movzx rax, al
+     test rax, rax
+     jz :42
+     jmp :43
+
+042: jmp :44
+
+043: mov rax, rbp
+     mov rcx, 0x01
+     add rax, rcx
+     mov rbp, rax
+     jmp :44
+
+044: mov rax, 0x14
+     mov rcx, 0x06
+     cmp cx, ax
+     setb al
+     movzx rax, al
+     test rax, rax
+     jz :45
+     jmp :46
+
+045: jmp :47
+
+046: mov rax, rbp
+     mov rcx, 0x02
+     add rax, rcx
+     mov rbp, rax
+     jmp :47
+
+047: mov rax, 0x14
+     mov rcx, 0x06
+     cmp ax, cx
+     setnb al
+     movzx rax, al
+     test rax, rax
+     jz :48
+     jmp :49
+
+048: jmp :50
+
+049: mov rax, rbp
+     mov rcx, 0x04
+     add rax, rcx
+     mov rbp, rax
+     jmp :50
+
+050: mov rax, 0x14
+     mov rcx, 0x06
+     cmp ax, cx
+     setbe al
+     movzx rax, al
+     test rax, rax
+     jz :51
+     jmp :52
+
+051: jmp :53
+
+052: mov rax, rbp
+     mov rcx, 0x08
+     add rax, rcx
+     mov rbp, rax
+     jmp :53
+
+053: mov rax, 0x14
+     mov rcx, 0x14
+     cmp cx, ax
+     setz al
+     movzx rax, al
+     mov [rsp+0x18], rax
+     mov rax, [rsp+0x18]
+     test rax, rax
+     jz :54
+     jmp :55
+
+054: jmp :56
+
+055: mov rax, rbp
+     mov rcx, 0x10
+     add rax, rcx
+     mov rbp, rax
+     jmp :56
+
+056: mov rcx, 0x14
+     mov rax, 0x06
+     cmp cx, ax
+     setnz al
+     movzx rax, al
+     mov [rsp+0x20], rax
+     mov rax, [rsp+0x20]
+     test rax, rax
+     jz :57
+     jmp :58
+
+057: jmp :59
+
+058: mov rax, rbp
+     mov rcx, 0x20
+     add rax, rcx
+     mov rbp, rax
+     jmp :59
+
+059: mov rcx, 0x07
+     mov rax, 0x06
+     cmp cx, ax
+     setb al
+     movzx rax, al
+     test rax, rax
+     jz :60
+     jmp :61
+
+060: jmp :62
+
+061: mov rax, rbp
+     mov rcx, 0x40
+     add rax, rcx
+     mov rbp, rax
+     jmp :62
+
+062: mov rax, 0x14
+     mov rcx, 0x06
+     xor rdx, rdx
+     div ecx
+     mov ecx, eax
+     mov rax, rbp
+     add rax, rcx
+     mov rbp, rax
+     mov rax, 0x14
+     mov rcx, 0x06
+     xor rdx, rdx
+     div ecx
+     mov ecx, edx
+     mov rax, rbp
+     add rax, rcx
+     mov rbp, rax
+     mov rax, 0x07
+     mov rcx, 0x06
+     xor rdx, rdx
+     div ecx
+     mov ecx, eax
+     mov rax, rbp
+     add rax, rcx
+     mov rbp, rax
+     mov rax, 0x07
+     mov rcx, 0x06
+     xor rdx, rdx
+     div ecx
+     mov ecx, edx
+     mov rax, rbp
+     add rax, rcx
+     mov rdx, rax
+     mov rcx, 0x14
+     mov rax, 0x06
+     and ecx, eax
+     mov [rsp+0x28], rcx
+     mov rax, [rsp+0x28]
+     mov ecx, eax
+     mov rax, rdx
+     add rax, rcx
+     mov rdx, rax
+     mov rcx, 0x14
+     mov rax, 0x06
+     or ecx, eax
+     mov [rsp+0x30], rcx
+     mov rax, [rsp+0x30]
+     mov ecx, eax
+     mov rax, rdx
+     add rax, rcx
+     mov rdx, rax
+     mov rcx, 0x14
+     mov rax, 0x06
+     xor ecx, eax
+     mov [rsp+0x38], rcx
+     mov rax, [rsp+0x38]
+     mov ecx, eax
+     mov rax, rdx
+     add rax, rcx
+     mov rdx, rax
+     mov rax, 0x14
+     mov rbp, 0x06
+     not ebp
+     and ebp, eax
+     mov ecx, ebp
+     mov rax, rdx
+     add rax, rcx
+     mov rdx, rax
+     mov rax, 0x14
+     mov rcx, 0x02
+     shl eax, cl
+     mov [rsp+0x40], rax
+     mov rax, [rsp+0x40]
+     mov ecx, eax
+     mov rax, rdx
+     add rax, rcx
+     mov rdx, rax
+     mov rax, 0x14
+     mov rcx, 0x02
+     shr eax, cl
+     mov ecx, eax
+     mov rax, rdx
+     add rax, rcx
+     mov rdx, rax
+     mov rax, 0x07
+     mov rcx, 0x02
+     shr eax, cl
+     mov ecx, eax
+     mov rax, rdx
+     add rax, rcx
+     mov [rsp+0x48], rax
+     mov rcx, 0x14
+     mov rax, 0x06
+     cmp ecx, eax
+     setnbe al
+     movzx rax, al
+     test rax, rax
+     jz :63
+     jmp :64
+
+063: jmp :65
+
+064: mov rax, [rsp+0x48]
+     mov rcx, 0x01
+     add rax, rcx
+     mov [rsp+0x48], rax
+     jmp :65
+
+065: mov rcx, 0x14
+     mov rax, 0x06
+     cmp eax, ecx
+     setb al
+     movzx rax, al
+     test rax, rax
+     jz :66
+     jmp :67
+
+066: jmp :68
+
+067: mov rax, [rsp+0x48]
+     mov rcx, 0x02
+     add rax, rcx
+     mov [rsp+0x48], rax
+     jmp :68
+
+068: mov rcx, 0x14
+     mov rax, 0x06
+     cmp ecx, eax
+     setnb al
+     movzx rax, al
+     test rax, rax
+     jz :69
+     jmp :70
+
+069: jmp :71
+
+070: mov rax, [rsp+0x48]
+     mov rcx, 0x04
+     add rax, rcx
+     mov [rsp+0x48], rax
+     jmp :71
+
+071: mov rcx, 0x14
+     mov rax, 0x06
+     cmp ecx, eax
+     setbe al
+     movzx rax, al
+     test rax, rax
+     jz :72
+     jmp :73
+
+072: jmp :74
+
+073: mov rax, [rsp+0x48]
+     mov rcx, 0x08
+     add rax, rcx
+     mov [rsp+0x48], rax
+     jmp :74
+
+074: mov rcx, 0x14
+     mov rax, 0x14
+     cmp eax, ecx
+     setz sil
+     movzx rsi, sil
+     test rsi, rsi
+     jz :75
+     jmp :76
+
+075: jmp :77
+
+076: mov rax, [rsp+0x48]
+     mov rcx, 0x10
+     add rax, rcx
+     mov [rsp+0x48], rax
+     jmp :77
+
+077: mov rcx, 0x14
+     mov rax, 0x06
+     cmp ecx, eax
+     setnz dil
+     movzx rdi, dil
+     test rdi, rdi
+     jz :78
+     jmp :79
+
+078: jmp :80
+
+079: mov rax, [rsp+0x48]
+     mov rcx, 0x20
+     add rax, rcx
+     mov [rsp+0x48], rax
+     jmp :80
+
+080: mov rcx, 0x07
+     mov rax, 0x06
+     cmp ecx, eax
+     setb al
+     movzx rax, al
+     test rax, rax
+     jz :81
+     jmp :82
+
+081: jmp :83
+
+082: mov rax, [rsp+0x48]
+     mov rcx, 0x40
+     add rax, rcx
+     mov [rsp+0x48], rax
+     jmp :83
+
+083: mov rax, 0x14
+     mov rcx, 0x06
+     cqo
+     idiv cl
+     movsx rcx, al
+     mov rax, [rsp+0x48]
+     add rax, rcx
+     mov [rsp+0x48], rax
+     mov rax, 0x14
+     mov rcx, 0x06
+     cqo
+     idiv cl
+     movzx edx, ah
+     movsx rcx, dl
+     mov rax, [rsp+0x48]
+     add rax, rcx
+     mov [rsp+0x48], rax
+     mov rax, 0x07
+     mov rcx, 0x06
+     cqo
+     idiv cl
+     movsx rcx, al
+     mov rax, [rsp+0x48]
+     add rax, rcx
+     mov [rsp+0x48], rax
+     mov rax, 0x07
+     mov rcx, 0x06
+     cqo
+     idiv cl
+     movzx edx, ah
+     movsx rcx, dl
+     mov rax, [rsp+0x48]
+     add rax, rcx
+     mov rdx, rax
+     mov rax, r8
+     movsx rcx, al
+     mov rax, rdx
+     add rax, rcx
+     mov rdx, rax
+     mov rax, r9
+     movsx rcx, al
+     mov rax, rdx
+     add rax, rcx
+     mov rdx, rax
+     mov rax, r10
+     movsx rcx, al
+     mov rax, rdx
+     add rax, rcx
+     mov rdx, rax
+     mov rax, r11
+     movsx rcx, al
+     mov rax, rdx
+     add rax, rcx
+     mov rdx, rax
+     mov rax, r12
+     movsx rcx, al
+     mov rax, rdx
+     add rax, rcx
+     mov rdx, rax
+     mov rax, 0x14
+     mov rcx, 0x02
+     sar al, cl
+     movsx rcx, al
+     mov rax, rdx
+     add rax, rcx
+     mov rdx, rax
+     mov rax, 0x07
+     mov rcx, 0x02
+     sar al, cl
+     movsx rcx, al
+     mov rax, rdx
+     add rax, rcx
+     mov r8, rax
+     mov rcx, 0x14
+     mov rax, 0x06
+     cmp cl, al
+     setnle al
+     movzx rax, al
+     test rax, rax
+     jz :84
+     jmp :85
+
+084: jmp :86
+
+085: mov rax, r8
+     mov rcx, 0x01
+     add rax, rcx
+     mov r8, rax
+     jmp :86
+
+086: mov rcx, 0x14
+     mov rax, 0x06
+     cmp al, cl
+     setl al
+     movzx rax, al
+     test rax, rax
+     jz :87
+     jmp :88
+
+087: jmp :89
+
+088: mov rax, r8
+     mov rcx, 0x02
+     add rax, rcx
+     mov r8, rax
+     jmp :89
+
+089: mov rcx, 0x14
+     mov rax, 0x06
+     cmp cl, al
+     setnl al
+     movzx rax, al
+     test rax, rax
+     jz :90
+     jmp :91
+
+090: jmp :92
+
+091: mov rax, r8
+     mov rcx, 0x04
+     add rax, rcx
+     mov r8, rax
+     jmp :92
+
+092: mov rcx, 0x14
+     mov rax, 0x06
+     cmp cl, al
+     setle al
+     movzx rax, al
+     test rax, rax
+     jz :93
+     jmp :94
+
+093: jmp :95
+
+094: mov rax, r8
+     mov rcx, 0x08
+     add rax, rcx
+     mov r8, rax
+     jmp :95
+
+095: mov rax, r13
+     test rax, rax
+     jz :96
+     jmp :97
+
+096: jmp :98
+
+097: mov rax, r8
+     mov rcx, 0x10
+     add rax, rcx
+     mov r8, rax
+     jmp :98
+
+098: mov rax, r14
+     test rax, rax
+     jz :99
+     jmp :100
+
+099: jmp :101
+
+100: mov rax, r8
+     mov rcx, 0x20
+     add rax, rcx
+     mov r8, rax
+     jmp :101
+
+101: mov rcx, 0x07
+     mov rax, 0x06
+     cmp cl, al
+     setl al
+     movzx rax, al
+     test rax, rax
+     jz :102
+     jmp :103
+
+102: jmp :104
+
+103: mov rax, r8
+     mov rcx, 0x40
+     add rax, rcx
+     mov r8, rax
+     jmp :104
+
+104: mov rax, 0x14
+     mov rcx, 0x06
+     cqo
+     idiv cx
+     movsx rcx, ax
+     mov rax, r8
+     add rax, rcx
+     mov r8, rax
+     mov rax, 0x14
+     mov rcx, 0x06
+     cqo
+     idiv cx
+     movsx rcx, dx
+     mov rax, r8
+     add rax, rcx
+     mov r8, rax
+     mov rax, 0x07
+     mov rcx, 0x06
+     cqo
+     idiv cx
+     movsx rcx, ax
+     mov rax, r8
+     add rax, rcx
+     mov r8, rax
+     mov rax, 0x07
+     mov rcx, 0x06
+     cqo
+     idiv cx
+     movsx rcx, dx
+     mov rax, r8
+     add rax, rcx
+     mov rcx, rax
+     mov rax, r15
+     movsx rax, ax
+     add rcx, rax
+     mov rax, rcx
+     mov rcx, [rsp]
+     movsx rcx, cx
+     add rax, rcx
+     mov rcx, rax
+     mov rax, [rsp+0x08]
+     movsx rax, ax
+     add rcx, rax
+     movsx rax, bx
+     add rcx, rax
+     mov rax, [rsp+0x10]
+     movsx rax, ax
+     mov rdx, rcx
+     add rdx, rax
+     mov rax, 0x14
+     mov rcx, 0x02
+     sar ax, cl
+     movsx rax, ax
+     add rdx, rax
+     mov rax, 0x07
+     mov rcx, 0x02
+     sar ax, cl
+     movsx rax, ax
+     mov rcx, rdx
+     add rcx, rax
+     mov rbx, rcx
+     mov rax, 0x14
+     mov rcx, 0x06
+     cmp ax, cx
+     setnle al
+     movzx rax, al
+     test rax, rax
+     jz :105
+     jmp :106
+
+105: jmp :107
+
+106: mov rax, rbx
+     mov rcx, 0x01
+     add rax, rcx
+     mov rbx, rax
+     jmp :107
+
+107: mov rax, 0x14
+     mov rcx, 0x06
+     cmp cx, ax
+     setl al
+     movzx rax, al
+     test rax, rax
+     jz :108
+     jmp :109
+
+108: jmp :110
+
+109: mov rax, rbx
+     mov rcx, 0x02
+     add rax, rcx
+     mov rbx, rax
+     jmp :110
+
+110: mov rax, 0x14
+     mov rcx, 0x06
+     cmp ax, cx
+     setnl al
+     movzx rax, al
+     test rax, rax
+     jz :111
+     jmp :112
+
+111: jmp :113
+
+112: mov rax, rbx
+     mov rcx, 0x04
+     add rax, rcx
+     mov rbx, rax
+     jmp :113
+
+113: mov rax, 0x14
+     mov rcx, 0x06
+     cmp ax, cx
+     setle al
+     movzx rax, al
+     test rax, rax
+     jz :114
+     jmp :115
+
+114: jmp :116
+
+115: mov rax, rbx
+     mov rcx, 0x08
+     add rax, rcx
+     mov rbx, rax
+     jmp :116
+
+116: mov rax, [rsp+0x18]
+     test rax, rax
+     jz :117
+     jmp :118
+
+117: jmp :119
+
+118: mov rax, rbx
+     mov rcx, 0x10
+     add rax, rcx
+     mov rbx, rax
+     jmp :119
+
+119: mov rax, [rsp+0x20]
+     test rax, rax
+     jz :120
+     jmp :121
+
+120: jmp :122
+
+121: mov rax, rbx
+     mov rcx, 0x20
+     add rax, rcx
+     mov rbx, rax
+     jmp :122
+
+122: mov rax, 0x07
+     mov rcx, 0x06
+     cmp ax, cx
+     setl al
+     movzx rax, al
+     test rax, rax
+     jz :123
+     jmp :124
+
+123: jmp :125
+
+124: mov rax, rbx
+     mov rcx, 0x40
+     add rax, rcx
+     mov rbx, rax
+     jmp :125
+
+125: mov rax, 0x14
+     mov rcx, 0x06
+     cqo
+     idiv ecx
+     movsxd rax, eax
+     mov rcx, rbx
+     add rcx, rax
+     mov rax, 0x14
+     mov rbx, 0x06
+     cqo
+     idiv ebx
+     movsxd rax, edx
+     mov rbx, rcx
+     add rbx, rax
+     mov rax, 0x07
+     mov rcx, 0x06
+     cqo
+     idiv ecx
+     movsxd rax, eax
+     add rbx, rax
+     mov rax, 0x07
+     mov rcx, 0x06
+     cqo
+     idiv ecx
+     movsxd rax, edx
+     add rbx, rax
+     mov rax, [rsp+0x28]
+     movsxd rax, eax
+     mov rcx, rbx
+     add rcx, rax
+     mov rax, [rsp+0x30]
+     movsxd rax, eax
+     add rcx, rax
+     mov rax, [rsp+0x38]
+     movsxd rax, eax
+     add rcx, rax
+     movsxd rax, ebp
+     add rcx, rax
+     mov rax, [rsp+0x40]
+     movsxd rax, eax
+     mov rdx, rcx
+     add rdx, rax
+     mov rax, 0x14
+     mov rcx, 0x02
+     sar eax, cl
+     movsxd rax, eax
+     add rdx, rax
+     mov rax, 0x07
+     mov rcx, 0x02
+     sar eax, cl
+     movsxd rax, eax
+     add rdx, rax
+     mov rax, 0x14
+     mov rcx, 0x06
+     cmp eax, ecx
+     setnle al
+     movzx rax, al
+     test rax, rax
+     jz :126
+     jmp :127
+
+126: jmp :128
+
+127: mov rax, 0x01
+     add rdx, rax
+     jmp :128
+
+128: mov rax, 0x14
+     mov rcx, 0x06
+     cmp ecx, eax
+     setl al
+     movzx rax, al
+     test rax, rax
+     jz :129
+     jmp :130
+
+129: jmp :131
+
+130: mov rax, 0x02
+     add rdx, rax
+     jmp :131
+
+131: mov rax, 0x14
+     mov rcx, 0x06
+     cmp eax, ecx
+     setnl al
+     movzx rax, al
+     test rax, rax
+     jz :132
+     jmp :133
+
+132: jmp :134
+
+133: mov rax, 0x04
+     add rdx, rax
+     jmp :134
+
+134: mov rax, 0x14
+     mov rcx, 0x06
+     cmp eax, ecx
+     setle al
+     movzx rax, al
+     test rax, rax
+     jz :135
+     jmp :136
+
+135: jmp :137
+
+136: mov rax, 0x08
+     add rdx, rax
+     jmp :137
+
+137: test rsi, rsi
+     jz :138
+     jmp :139
+
+138: jmp :140
+
+139: mov rax, 0x10
+     add rdx, rax
+     jmp :140
+
+140: test rdi, rdi
+     jz :141
+     jmp :142
+
+141: jmp :143
+
+142: mov rax, 0x20
+     add rdx, rax
+     jmp :143
+
+143: mov rax, 0x07
+     mov rcx, 0x06
+     cmp eax, ecx
+     setl al
+     movzx rax, al
+     test rax, rax
+     jz :144
+     jmp :145
+
+144: jmp :146
+
+145: mov rax, 0x40
+     add rdx, rax
+     jmp :146
+
+146: mov rax, rdx
+     add rsp, 0x50
+     pop r15
+     pop r14
+     pop r13
+     pop r12
      pop rbp
      pop rbx
      ret
@@ -163,101 +1283,747 @@ main:
      push rbx
      push rbp
      mov rax, 0x00
-     mov rcx, 0x02
-     mov rdx, 0xFFFFFFFFFFFFFFFF
-     mov rbx, 0x04
-     mov rsi, 0x03
-     add rsi, rax
-     add rsi, rcx
-     add rsi, rdx
-     add rsi, rdx
-     add rsi, rbx
-     mov rdx, 0x16
-     add rsi, rdx
-     mov rdx, 0x10
-     mov rbp, 0x12
-     add rsi, rbp
-     add rsi, rdx
-     mov rbp, 0x50
-     add rsi, rbp
-     mov rbp, 0x05
-     add rsi, rbp
-     mov rbp, 0xFFFFFFFFFFFFFFFE
-     add rsi, rbp
-     mov rbp, 0x01
-     test rbp, rbp
+     mov rcx, 0xFFFFFFFFFFFFFFFF
+     mov rbx, 0x00
+     mov rdx, 0x03
+     add rbx, rdx
+     mov rdx, 0x02
+     add rbx, rdx
+     add rbx, rcx
+     add rbx, rcx
+     mov rcx, 0x04
+     add rbx, rcx
+     mov rcx, 0x16
+     add rbx, rcx
+     mov rcx, 0x12
+     add rbx, rcx
+     mov rcx, 0x10
+     add rbx, rcx
+     mov rcx, 0x50
+     add rbx, rcx
+     mov rcx, 0x05
+     add rbx, rcx
+     mov rcx, 0xFFFFFFFFFFFFFFFE
+     add rbx, rcx
+     mov rcx, 0x01
+     test rcx, rcx
      jz :0
      jmp :1
 
-000: jmp :2
-
-001: add rsi, rbp
+000: mov rcx, rbx
      jmp :2
 
-002: test rbp, rbp
+001: mov rcx, 0x01
+     add rcx, rbx
+     jmp :2
+
+002: mov rdx, 0x01
+     test rdx, rdx
      jz :3
      jmp :4
 
-003: jmp :5
-
-004: add rsi, rcx
+003: mov rdx, rcx
      jmp :5
 
-005: test rbp, rbp
+004: mov rdx, 0x02
+     add rdx, rcx
+     jmp :5
+
+005: mov rcx, 0x01
+     test rcx, rcx
      jz :6
      jmp :7
 
 006: jmp :8
 
-007: add rsi, rbx
+007: mov rcx, 0x04
+     add rcx, rdx
+     mov rdx, rcx
      jmp :8
 
 008: test rax, rax
      jz :9
      jmp :10
 
-009: mov rcx, rsi
+009: jmp :11
+
+010: mov rax, 0x08
+     add rdx, rax
      jmp :11
 
-010: mov rcx, 0x08
-     add rcx, rsi
-     jmp :11
-
-011: test rbp, rbp
+011: mov rax, 0x01
+     test rax, rax
      jz :12
      jmp :13
 
 012: jmp :14
 
-013: add rcx, rdx
+013: mov rax, 0x10
+     add rax, rdx
+     mov rdx, rax
      jmp :14
 
-014: test rbp, rbp
+014: mov rax, 0x01
+     test rax, rax
      jz :15
      jmp :16
 
 015: jmp :17
 
 016: mov rax, 0x20
-     add rax, rcx
-     mov rcx, rax
+     add rax, rdx
+     mov rdx, rax
      jmp :17
 
-017: test rbp, rbp
+017: mov rax, 0x01
+     test rax, rax
      jz :18
      jmp :19
 
-018: mov rax, rcx
+018: mov rax, rdx
      jmp :20
 
 019: mov rax, 0x40
-     add rax, rcx
+     add rax, rdx
      jmp :20
 
-020: pop rbp
+020: mov rcx, 0x03
+     add rax, rcx
+     mov rcx, 0x02
+     add rax, rcx
+     mov rcx, 0x01
+     add rax, rcx
+     mov rcx, 0x01
+     add rax, rcx
+     mov rcx, 0x04
+     add rax, rcx
+     mov rcx, 0x16
+     add rax, rcx
+     mov rcx, 0x12
+     add rax, rcx
+     mov rcx, 0x10
+     add rax, rcx
+     mov rcx, 0x50
+     add rax, rcx
+     mov rcx, 0x05
+     add rax, rcx
+     mov rcx, 0x01
+     add rax, rcx
+     mov rcx, 0x01
+     test rcx, rcx
+     jz :21
+     jmp :22
+
+021: mov rcx, rax
+     jmp :23
+
+022: mov rcx, 0x01
+     add rcx, rax
+     jmp :23
+
+023: mov rax, 0x01
+     test rax, rax
+     jz :24
+     jmp :25
+
+024: jmp :26
+
+025: mov rax, 0x02
+     add rax, rcx
+     mov rcx, rax
+     jmp :26
+
+026: mov rax, 0x01
+     test rax, rax
+     jz :27
+     jmp :28
+
+027: jmp :29
+
+028: mov rax, 0x04
+     add rax, rcx
+     mov rcx, rax
+     jmp :29
+
+029: mov rax, 0x00
+     test rax, rax
+     jz :30
+     jmp :31
+
+030: jmp :32
+
+031: mov rax, 0x08
+     add rax, rcx
+     mov rcx, rax
+     jmp :32
+
+032: mov rax, 0x01
+     test rax, rax
+     jz :33
+     jmp :34
+
+033: jmp :35
+
+034: mov rax, 0x10
+     add rax, rcx
+     mov rcx, rax
+     jmp :35
+
+035: mov rax, 0x01
+     test rax, rax
+     jz :36
+     jmp :37
+
+036: jmp :38
+
+037: mov rax, 0x20
+     add rax, rcx
+     mov rcx, rax
+     jmp :38
+
+038: mov rax, 0x00
+     test rax, rax
+     jz :39
+     jmp :40
+
+039: mov rax, rcx
+     jmp :41
+
+040: mov rax, 0x40
+     add rax, rcx
+     jmp :41
+
+041: mov rcx, 0x03
+     add rax, rcx
+     mov rcx, 0x02
+     add rax, rcx
+     mov rcx, 0x01
+     add rax, rcx
+     mov rcx, 0x01
+     add rax, rcx
+     mov rcx, 0x04
+     add rax, rcx
+     mov rcx, 0x16
+     add rax, rcx
+     mov rcx, 0x12
+     add rax, rcx
+     mov rcx, 0x10
+     add rax, rcx
+     mov rcx, 0x50
+     add rax, rcx
+     mov rcx, 0x05
+     add rax, rcx
+     mov rcx, 0x01
+     add rax, rcx
+     mov rcx, 0x01
+     test rcx, rcx
+     jz :42
+     jmp :43
+
+042: mov rcx, rax
+     jmp :44
+
+043: mov rcx, 0x01
+     add rcx, rax
+     jmp :44
+
+044: mov rax, 0x01
+     test rax, rax
+     jz :45
+     jmp :46
+
+045: jmp :47
+
+046: mov rax, 0x02
+     add rax, rcx
+     mov rcx, rax
+     jmp :47
+
+047: mov rax, 0x01
+     test rax, rax
+     jz :48
+     jmp :49
+
+048: jmp :50
+
+049: mov rax, 0x04
+     add rax, rcx
+     mov rcx, rax
+     jmp :50
+
+050: mov rax, 0x00
+     test rax, rax
+     jz :51
+     jmp :52
+
+051: jmp :53
+
+052: mov rdx, 0x08
+     add rdx, rcx
+     mov rcx, rdx
+     jmp :53
+
+053: mov rdx, 0x01
+     test rdx, rdx
+     jz :54
+     jmp :55
+
+054: jmp :56
+
+055: mov rdx, 0x10
+     add rdx, rcx
+     mov rcx, rdx
+     jmp :56
+
+056: mov rdx, 0x01
+     test rdx, rdx
+     jz :57
+     jmp :58
+
+057: jmp :59
+
+058: mov rdx, 0x20
+     add rdx, rcx
+     mov rcx, rdx
+     jmp :59
+
+059: test rax, rax
+     jz :60
+     jmp :61
+
+060: mov rdx, rcx
+     jmp :62
+
+061: mov rdx, 0x40
+     add rdx, rcx
+     jmp :62
+
+062: mov rcx, 0x03
+     add rdx, rcx
+     mov rcx, 0x02
+     add rdx, rcx
+     mov rcx, 0x01
+     add rdx, rcx
+     mov rcx, 0x01
+     add rdx, rcx
+     mov rcx, 0x04
+     add rdx, rcx
+     mov rcx, 0x16
+     add rdx, rcx
+     mov rcx, 0x12
+     add rdx, rcx
+     mov rcx, 0x10
+     add rdx, rcx
+     mov rcx, 0x50
+     add rdx, rcx
+     mov rcx, 0x05
+     add rdx, rcx
+     mov rcx, 0x01
+     add rdx, rcx
+     mov rcx, 0x01
+     test rcx, rcx
+     jz :63
+     jmp :64
+
+063: jmp :65
+
+064: mov rcx, 0x01
+     add rcx, rdx
+     mov rdx, rcx
+     jmp :65
+
+065: mov rcx, 0x01
+     test rcx, rcx
+     jz :66
+     jmp :67
+
+066: jmp :68
+
+067: mov rcx, 0x02
+     add rcx, rdx
+     mov rdx, rcx
+     jmp :68
+
+068: mov rcx, 0x01
+     test rcx, rcx
+     jz :69
+     jmp :70
+
+069: jmp :71
+
+070: mov rcx, 0x04
+     add rcx, rdx
+     mov rdx, rcx
+     jmp :71
+
+071: mov rcx, 0x00
+     test rcx, rcx
+     jz :72
+     jmp :73
+
+072: jmp :74
+
+073: mov rbx, 0x08
+     add rbx, rdx
+     mov rdx, rbx
+     jmp :74
+
+074: mov rbx, 0x01
+     test rbx, rbx
+     jz :75
+     jmp :76
+
+075: jmp :77
+
+076: mov rbx, 0x10
+     add rbx, rdx
+     mov rdx, rbx
+     jmp :77
+
+077: mov rbx, 0x01
+     test rbx, rbx
+     jz :78
+     jmp :79
+
+078: mov rbx, rdx
+     jmp :80
+
+079: mov rbx, 0x20
+     add rbx, rdx
+     jmp :80
+
+080: test rcx, rcx
+     jz :81
+     jmp :82
+
+081: mov rdx, rbx
+     jmp :83
+
+082: mov rdx, 0x40
+     add rdx, rbx
+     jmp :83
+
+083: mov rbx, 0x03
+     add rdx, rbx
+     mov rbx, 0x02
+     add rdx, rbx
+     mov rbx, 0x01
+     add rdx, rbx
+     mov rbx, 0x01
+     add rdx, rbx
+     mov rbx, 0x04
+     add rdx, rbx
+     mov rbx, 0x16
+     add rdx, rbx
+     mov rbx, 0x12
+     add rdx, rbx
+     mov rbx, 0x10
+     add rdx, rbx
+     mov rbx, 0x50
+     add rdx, rbx
+     mov rbx, 0x05
+     add rdx, rbx
+     mov rbx, 0x01
+     mov rbp, rdx
+     add rbp, rbx
+     mov rdx, 0x01
+     test rdx, rdx
+     jz :84
+     jmp :85
+
+084: jmp :86
+
+085: mov rdx, 0x01
+     add rdx, rbp
+     mov rbp, rdx
+     jmp :86
+
+086: mov rdx, 0x01
+     test rdx, rdx
+     jz :87
+     jmp :88
+
+087: jmp :89
+
+088: mov rdx, 0x02
+     add rdx, rbp
+     mov rbp, rdx
+     jmp :89
+
+089: mov rdx, 0x01
+     test rdx, rdx
+     jz :90
+     jmp :91
+
+090: jmp :92
+
+091: mov rdx, 0x04
+     add rdx, rbp
+     mov rbp, rdx
+     jmp :92
+
+092: mov rdx, 0x00
+     test rdx, rdx
+     jz :93
+     jmp :94
+
+093: jmp :95
+
+094: mov rdx, 0x08
+     add rdx, rbp
+     mov rbp, rdx
+     jmp :95
+
+095: mov rdx, 0x01
+     test rdx, rdx
+     jz :96
+     jmp :97
+
+096: mov rbx, rbp
+     jmp :98
+
+097: mov rbx, 0x10
+     add rbx, rbp
+     jmp :98
+
+098: mov rdx, 0x01
+     test rdx, rdx
+     jz :99
+     jmp :100
+
+099: jmp :101
+
+100: mov rdx, 0x20
+     add rdx, rbx
+     mov rbx, rdx
+     jmp :101
+
+101: mov rdx, 0x00
+     test rdx, rdx
+     jz :102
+     jmp :103
+
+102: mov rdx, rbx
+     jmp :104
+
+103: mov rdx, 0x40
+     add rdx, rbx
+     jmp :104
+
+104: mov rbx, 0x03
+     add rdx, rbx
+     mov rbx, 0x02
+     add rdx, rbx
+     mov rbx, 0x01
+     add rdx, rbx
+     mov rbx, 0x01
+     add rdx, rbx
+     mov rbx, 0x04
+     add rdx, rbx
+     mov rbx, 0x16
+     add rdx, rbx
+     mov rbx, 0x12
+     add rdx, rbx
+     mov rbx, 0x10
+     add rdx, rbx
+     mov rbx, 0x50
+     add rdx, rbx
+     mov rbx, 0x05
+     add rdx, rbx
+     mov rbx, 0x01
+     mov rbp, rdx
+     add rbp, rbx
+     mov rdx, 0x01
+     test rdx, rdx
+     jz :105
+     jmp :106
+
+105: jmp :107
+
+106: mov rdx, 0x01
+     add rdx, rbp
+     mov rbp, rdx
+     jmp :107
+
+107: mov rdx, 0x01
+     test rdx, rdx
+     jz :108
+     jmp :109
+
+108: jmp :110
+
+109: mov rdx, 0x02
+     add rdx, rbp
+     mov rbp, rdx
+     jmp :110
+
+110: mov rdx, 0x01
+     test rdx, rdx
+     jz :111
+     jmp :112
+
+111: jmp :113
+
+112: mov rdx, 0x04
+     add rdx, rbp
+     mov rbp, rdx
+     jmp :113
+
+113: test rax, rax
+     jz :114
+     jmp :115
+
+114: jmp :116
+
+115: mov rdx, 0x08
+     add rdx, rbp
+     mov rbp, rdx
+     jmp :116
+
+116: mov rdx, 0x01
+     test rdx, rdx
+     jz :117
+     jmp :118
+
+117: jmp :119
+
+118: mov rdx, 0x10
+     add rdx, rbp
+     mov rbp, rdx
+     jmp :119
+
+119: mov rdx, 0x01
+     test rdx, rdx
+     jz :120
+     jmp :121
+
+120: mov rdx, rbp
+     jmp :122
+
+121: mov rdx, 0x20
+     add rdx, rbp
+     jmp :122
+
+122: test rax, rax
+     jz :123
+     jmp :124
+
+123: mov rax, rdx
+     jmp :125
+
+124: mov rax, 0x40
+     add rax, rdx
+     jmp :125
+
+125: mov rdx, 0x03
+     add rax, rdx
+     mov rdx, 0x02
+     add rax, rdx
+     mov rdx, 0x01
+     add rax, rdx
+     mov rdx, 0x01
+     add rax, rdx
+     mov rdx, 0x04
+     add rax, rdx
+     mov rdx, 0x16
+     add rax, rdx
+     mov rdx, 0x12
+     add rax, rdx
+     mov rdx, 0x10
+     add rax, rdx
+     mov rdx, 0x50
+     add rax, rdx
+     mov rdx, 0x05
+     add rax, rdx
+     mov rdx, 0x01
+     mov rbx, rax
+     add rbx, rdx
+     mov rax, 0x01
+     test rax, rax
+     jz :126
+     jmp :127
+
+126: jmp :128
+
+127: mov rax, 0x01
+     add rax, rbx
+     mov rbx, rax
+     jmp :128
+
+128: mov rax, 0x01
+     test rax, rax
+     jz :129
+     jmp :130
+
+129: jmp :131
+
+130: mov rax, 0x02
+     add rax, rbx
+     mov rbx, rax
+     jmp :131
+
+131: mov rax, 0x01
+     test rax, rax
+     jz :132
+     jmp :133
+
+132: jmp :134
+
+133: mov rax, 0x04
+     add rax, rbx
+     mov rbx, rax
+     jmp :134
+
+134: test rcx, rcx
+     jz :135
+     jmp :136
+
+135: jmp :137
+
+136: mov rax, 0x08
+     add rax, rbx
+     mov rbx, rax
+     jmp :137
+
+137: mov rax, 0x01
+     test rax, rax
+     jz :138
+     jmp :139
+
+138: jmp :140
+
+139: mov rax, 0x10
+     add rax, rbx
+     mov rbx, rax
+     jmp :140
+
+140: mov rax, 0x01
+     test rax, rax
+     jz :141
+     jmp :142
+
+141: mov rdx, rbx
+     jmp :143
+
+142: mov rdx, 0x20
+     add rdx, rbx
+     jmp :143
+
+143: test rcx, rcx
+     jz :144
+     jmp :145
+
+144: mov rax, rdx
+     jmp :146
+
+145: mov rax, 0x40
+     add rax, rdx
+     jmp :146
+
+146: pop rbp
      pop rbx
      ret
 =========== OPT LEVEL: all ===========
 main:
-     mov rax, 0x109
+     mov rax, 0x5E9
      ret

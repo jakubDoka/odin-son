@@ -33,10 +33,8 @@ Reg :: bit_field u16 {
 
 Reg_Mask :: struct {
 	masks:      [^]int,
-	using meta: bit_field int {
-		kind:       Reg_Kind | 4,
-		bit_length: int      | 60,
-	},
+	kind:       Reg_Kind,
+	bit_length: u32,
 }
 
 reg_mask_single :: proc(ra: ^Regalloc, reg: Reg) -> (rm: Reg_Mask) {
@@ -45,7 +43,7 @@ reg_mask_single :: proc(ra: ^Regalloc, reg: Reg) -> (rm: Reg_Mask) {
 	return
 }
 
-reg_mask_set :: proc(rm: Reg_Mask, #any_int index: int, value := true) {
+reg_mask_set :: proc(rm: Reg_Mask, #any_int index: u32, value := true) {
 	assert(index < rm.bit_length)
 	if value {
 		rm.masks[index / MASK_SIZE] |= 1 << uint(index % MASK_SIZE)
@@ -57,7 +55,7 @@ reg_mask_set :: proc(rm: Reg_Mask, #any_int index: int, value := true) {
 reg_mask_empty :: proc(ra: ^Regalloc, kind: Reg_Kind) -> Reg_Mask {
 	return {
 		masks = raw_data(make([]int, ra.class_lengths[kind])),
-		bit_length = int(ra.class_lengths[kind]) * MASK_SIZE,
+		bit_length = u32(ra.class_lengths[kind]) * MASK_SIZE,
 		kind = kind,
 	}
 }
@@ -65,7 +63,7 @@ reg_mask_empty :: proc(ra: ^Regalloc, kind: Reg_Kind) -> Reg_Mask {
 reg_mask_first_set :: proc(rm: Reg_Mask) -> (int, bool) {
 	for i in 0 ..< rm.bit_length / MASK_SIZE {
 		if rm.masks[i] != 0 {
-			return i * MASK_SIZE +
+			return int(i) * MASK_SIZE +
 				intrinsics.count_trailing_zeros(rm.masks[i]),
 				true
 		}
@@ -156,12 +154,9 @@ reg_mask_of :: proc(
 		if id != 0 {
 			if idx != 0 || readonly {
 				return {
-					re.interned_reg_masks[id],
-					{
-						kind = reg_kind,
-						bit_length = int(re.class_lengths[reg_kind]) *
-						MASK_SIZE,
-					},
+					masks = re.interned_reg_masks[id],
+					kind = reg_kind,
+					bit_length = u32(re.class_lengths[reg_kind]) * MASK_SIZE,
 				}
 			}
 			mask := reg_mask_empty(re, reg_kind)
@@ -620,6 +615,8 @@ regalloc_round :: proc(
 			inlrg := find(get_lrg(ctx, inode.inps[0]))
 
 			assert(graph_get(graph, inlrg.longest_def).dt != .Void)
+
+			assert(graph_get(graph, inlrg.longest_def).dt != .Void)
 			assert(graph_get(graph, ilrg.longest_def).dt != .Void)
 
 			if ilrg == inlrg do continue
@@ -771,6 +768,8 @@ regalloc_round :: proc(
 				id = m
 				fnode := graph_get(graph, m)
 
+				assert(fnode.output_count > 0)
+
 				if fnode.itype != .Split {
 					id = split_after(ctx, "sdef", m)
 					fnode = graph_get(graph, id)
@@ -795,6 +794,12 @@ regalloc_round :: proc(
 					}
 
 					graph_set_input(graph, out.id, out.idx, split)
+				}
+
+				if fnode.output_count == 0 {
+					block, idx := get_node_block_and_idx(ctx, m)
+					ordered_remove(&block.instrs, idx + 1)
+					graph_delete(ctx.graph, fnode)
 				}
 			}
 
@@ -1161,7 +1166,7 @@ regalloc_round :: proc(
 
 		if graph_has_flag(graph, fnode, .Clonable) ||
 		   (reg_mask_first_set(
-					   reg_mask_of(ctx.graph, ctx.ra, use, 0),
+					   reg_mask_of(ctx.graph, ctx.ra, use, 0, readonly = true),
 				   ) or_else 0) >=
 			   GPA_REG_COUNT {
 			return use

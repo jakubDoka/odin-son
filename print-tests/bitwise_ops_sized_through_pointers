@@ -15,15 +15,15 @@ main:
      mov [r12], eax
      mov rax, 0x0A
      movsx rcx, byte ptr [rbx]
-     and rcx, rax
+     and cl, al
      mov [rbx], cl
      movsx rcx, word ptr [rbp]
      mov rdx, 0x03
-     or rcx, rdx
+     or cx, dx
      mov [rbp], cx
      movsxd rcx, dword ptr [r12]
      mov rdx, 0x06
-     xor rcx, rdx
+     xor ecx, edx
      mov [r12], ecx
      lea rcx, [rsp+0x01]
      mov [rcx], al
@@ -69,19 +69,19 @@ main:
      ret
 or8:
      movsx rax, byte ptr [rdi]
-     or rax, rsi
+     or al, sil
      mov [rdi], al
      movsx rax, byte ptr [rdi]
      ret
 xor16:
      movsx rax, word ptr [rdi]
-     xor rax, rsi
+     xor ax, si
      mov [rdi], ax
      movsx rax, word ptr [rdi]
      ret
 and32:
      movsxd rax, dword ptr [rdi]
-     and rax, rsi
+     and eax, esi
      mov [rdi], eax
      movsxd rax, dword ptr [rdi]
      ret
@@ -102,15 +102,15 @@ main:
      mov [r12], eax
      mov rax, 0x0A
      movsx rcx, byte ptr [rbx]
-     and rcx, rax
+     and cl, al
      mov [rbx], cl
      movsx rcx, word ptr [rbp]
      mov rdx, 0x03
-     or rcx, rdx
+     or cx, dx
      mov [rbp], cx
      movsxd rcx, dword ptr [r12]
      mov rdx, 0x06
-     xor rcx, rdx
+     xor ecx, edx
      mov [r12], ecx
      lea rcx, [rsp+0x01]
      mov [rcx], al
@@ -130,18 +130,24 @@ main:
      lea rdi, [rsp+0x0A]
      call :and32
      movsx rax, byte ptr [rbx]
+     movsx rax, al
      movsx rcx, word ptr [rbp]
+     movsx rcx, cx
      add rax, rcx
      movsxd rcx, dword ptr [r12]
+     movsxd rcx, ecx
      add rax, rcx
      lea rcx, [rsp+0x01]
      movsx rcx, byte ptr [rcx]
+     movsx rcx, cl
      add rax, rcx
      lea rcx, [rsp+0x04]
      movsx rcx, word ptr [rcx]
+     movsx rcx, cx
      add rax, rcx
      lea rcx, [rsp+0x0A]
      movsxd rcx, dword ptr [rcx]
+     movsxd rcx, ecx
      add rax, rcx
      add rsp, 0x0E
      pop r12
@@ -150,19 +156,19 @@ main:
      ret
 or8:
      movsx rax, byte ptr [rdi]
-     or rax, rsi
+     or al, sil
      mov [rdi], al
      movsx rax, byte ptr [rdi]
      ret
 xor16:
      movsx rax, word ptr [rdi]
-     xor rax, rsi
+     xor ax, si
      mov [rdi], ax
      movsx rax, word ptr [rdi]
      ret
 and32:
      movsxd rax, dword ptr [rdi]
-     and rax, rsi
+     and eax, esi
      mov [rdi], eax
      movsxd rax, dword ptr [rdi]
      ret
@@ -188,27 +194,36 @@ main:
      lea rdi, [rsp+0x0A]
      call :and32
      movsx rax, byte ptr [rsp]
+     movsx rax, al
      movsx rcx, word ptr [rsp+0x02]
+     movsx rcx, cx
      add rax, rcx
      movsxd rcx, dword ptr [rsp+0x06]
+     movsxd rcx, ecx
      add rax, rcx
      movsx rcx, byte ptr [rsp+0x01]
+     movsx rcx, cl
      add rax, rcx
      movsx rcx, word ptr [rsp+0x04]
+     movsx rcx, cx
      add rax, rcx
      movsxd rcx, dword ptr [rsp+0x0A]
+     movsxd rcx, ecx
      add rax, rcx
      add rsp, 0x0E
      ret
 or8:
-     or [rdi], sil
      movsx rax, byte ptr [rdi]
+     or al, sil
+     mov [rdi], al
      ret
 xor16:
-     xor [rdi], si
      movsx rax, word ptr [rdi]
+     xor ax, si
+     mov [rdi], ax
      ret
 and32:
-     and [rdi], esi
      movsxd rax, dword ptr [rdi]
+     and eax, esi
+     mov [rdi], eax
      ret

@@ -711,15 +711,16 @@ generate_specs :: proc() {
 				if len(class.extra_args) != 0 {
 					fmt.fprintf(
 						file,
-						"\textra := (^%v)(graph_get_next_extra_slot(graph," +
-						" u16(%v.%v)))\n",
+						"\t(^%v)(graph_get_next_extra_slot(graph," +
+						" u16(%v.%v)))^ = {{\n",
 						class.id,
 						classes.enm,
 						name,
 					)
 					for earg in class.extra_args {
-						fmt.fprintf(file, "\textra.%v = %v\n", earg, earg)
+						fmt.fprintf(file, "\t\t%v = %v\n", earg, earg)
 					}
+					os.write_string(file, "\t}\n")
 				} else if reflect.size_of_typeid(class.id) > 0 {
 					fmt.fprintf(
 						file,

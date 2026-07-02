@@ -1398,15 +1398,17 @@ graph_add_poison :: #force_inline proc(graph: ^Graph, name: string) -> (id: Node
 #assert(size_of(Tup) % 4 == 0)
 graph_add_arg :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype, entry: Node_ID, idx: u32) -> (id: Node_ID) {
 	push_node_name(graph, name)
-	extra := (^Tup)(graph_get_next_extra_slot(graph, u16(Ideal_Node_Type.Arg)))
-	extra.idx = idx
+	(^Tup)(graph_get_next_extra_slot(graph, u16(Ideal_Node_Type.Arg)))^ = {
+		idx = idx
+	}
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Arg), dt, {entry})
 }
 #assert(size_of(CInt) % 4 == 0)
 graph_add_c_int :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype, value: i64) -> (id: Node_ID) {
 	push_node_name(graph, name)
-	extra := (^CInt)(graph_get_next_extra_slot(graph, u16(Ideal_Node_Type.CInt)))
-	extra.value = value
+	(^CInt)(graph_get_next_extra_slot(graph, u16(Ideal_Node_Type.CInt)))^ = {
+		value = value
+	}
 	return graph_add_raw(graph, u16(Ideal_Node_Type.CInt), dt, {})
 }
 #assert(size_of(No_Extra) % 4 == 0)
@@ -1533,8 +1535,9 @@ graph_add_always :: #force_inline proc(graph: ^Graph, name: string, ctrl: Node_I
 #assert(size_of(Call) % 4 == 0)
 graph_add_call :: #force_inline proc(graph: ^Graph, name: string, inputs: []Node_ID, cid: u32) -> (id: Node_ID) {
 	push_node_name(graph, name)
-	extra := (^Call)(graph_get_next_extra_slot(graph, u16(Ideal_Node_Type.Call)))
-	extra.cid = cid
+	(^Call)(graph_get_next_extra_slot(graph, u16(Ideal_Node_Type.Call)))^ = {
+		cid = cid
+	}
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Call), .Void, inputs)
 }
 #assert(size_of(Cfg) % 4 == 0)
@@ -1546,8 +1549,9 @@ graph_add_call_end :: #force_inline proc(graph: ^Graph, name: string, call: Node
 #assert(size_of(Tup) % 4 == 0)
 graph_add_ret :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype, call_end: Node_ID, idx: u32) -> (id: Node_ID) {
 	push_node_name(graph, name)
-	extra := (^Tup)(graph_get_next_extra_slot(graph, u16(Ideal_Node_Type.Ret)))
-	extra.idx = idx
+	(^Tup)(graph_get_next_extra_slot(graph, u16(Ideal_Node_Type.Ret)))^ = {
+		idx = idx
+	}
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Ret), dt, {call_end})
 }
 #assert(size_of(Cfg) % 4 == 0)

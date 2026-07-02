@@ -6,45 +6,45 @@ main:
      push r13
      push r14
      push r15
-     sub rsp, 0x7E
-     lea rdi, [rsp+0x46]
+     sub rsp, 0x85
+     lea rdi, [rsp+0x4D]
      mov rsi, 0x00
      mov rdx, 0x10
      call :$set
      mov rbx, 0x10
      mov rax, 0x00
-     lea rcx, [rsp+0x46]
+     lea rcx, [rsp+0x4D]
      add rcx, rax
      mov [rcx], rbx
      mov rbp, 0x08
-     lea rdx, [rsp+0x46]
+     lea rdx, [rsp+0x4D]
      add rdx, rbp
      mov rax, 0x14
      mov rcx, rdx
      mov [rcx], rax
-     lea rax, [rsp+0x46]
+     lea rax, [rsp+0x4D]
      mov rax, [rax]
      mov r12, rax
      mov rax, [rdx]
      mov r13, rax
      mov rdx, 0x18
-     lea rdi, [rsp+0x2E]
+     lea rdi, [rsp+0x35]
      mov rsi, 0x00
      call :$set
-     lea rcx, [rsp+0x2E]
+     lea rcx, [rsp+0x35]
      mov rax, 0x00
      add rcx, rax
      mov rax, 0x1E
      mov [rcx], rax
-     lea rax, [rsp+0x2E]
+     lea rax, [rsp+0x35]
      add rax, rbp
      mov rcx, 0x2E
      mov [rax], rcx
-     lea rax, [rsp+0x2E]
+     lea rax, [rsp+0x35]
      add rax, rbx
      mov rcx, 0x32
      mov [rax], rcx
-     lea rdx, [rsp+0x2E]
+     lea rdx, [rsp+0x35]
      mov rdi, r12
      mov rsi, r13
      call :fortran
@@ -65,23 +65,23 @@ main:
      mov r9, 0x06
      call :load_of_args
      mov r13, rax
-     lea rdi, [rsp+0x56]
+     lea rdi, [rsp+0x5D]
      mov rsi, 0x00
      mov rdx, 0x10
      call :$set
-     lea rcx, [rsp+0x56]
+     lea rcx, [rsp+0x5D]
      mov rax, 0x00
      add rcx, rax
      mov rax, 0x06
      mov [rcx], rax
-     lea rax, [rsp+0x56]
+     lea rax, [rsp+0x5D]
      add rax, rbp
      mov [rax], rbx
      mov rsi, 0x00
      mov rdx, 0x10
      lea rdi, [rsp]
      call :$set
-     lea rsi, [rsp+0x56]
+     lea rsi, [rsp+0x5D]
      mov rdx, 0x10
      lea rdi, [rsp]
      call :$copy
@@ -200,44 +200,32 @@ main:
      mov rsi, 0x02
      call :return_stru
      mov rbx, rax
-     mov [rsp+0x76], rax
+     mov [rsp+0x7D], rax
      mov rsi, 0x00
      mov rdx, 0x10
-     lea rdi, [rsp+0x66]
+     lea rdi, [rsp+0x6D]
      call :$set
      mov rax, 0x00
-     lea rdx, [rsp+0x66]
+     lea rdx, [rsp+0x6D]
      add rdx, rax
      mov rcx, 0x00
      mov rax, rbx
      shr rax, cl
      mov rcx, rdx
      mov [rcx], rax
-     lea rbx, [rsp+0x66]
+     lea rbx, [rsp+0x6D]
      add rbx, rbp
      mov rcx, 0x00
-     mov rax, [rsp+0x76]
+     mov rax, [rsp+0x7D]
      shr rax, cl
      mov [rbx], rax
      mov rax, rdx
      mov rbx, [rax]
      call :return_stru3
      mov rbp, rax
-     mov rax, 0x00
-     mov rcx, r12
-     add rcx, rax
-     mov rax, r13
-     add rcx, rax
-     mov rax, r14
-     add rcx, rax
-     mov rax, r15
-     movzx eax, al
-     add rcx, rax
-     add rcx, rbx
-     mov rbx, rcx
-     mov rdx, 0x07
      mov rsi, 0x00
      lea rdi, [rsp+0x27]
+     mov rdx, 0x07
      call :$set
      mov rax, 0x00
      lea rdx, [rsp+0x27]
@@ -263,12 +251,57 @@ main:
      mov rax, 0x05
      lea rcx, [rsp+0x27]
      add rcx, rax
+     movzx ebp, byte ptr [rcx]
+     call :return_stru3
+     mov [rsp+0x7D], rax
+     mov rax, 0x00
+     mov rcx, r12
+     add rcx, rax
+     mov rax, r13
+     add rcx, rax
+     mov rax, r14
+     add rcx, rax
+     mov rax, r15
+     movzx eax, al
+     add rcx, rax
+     add rcx, rbx
+     movzx eax, bpl
+     add rcx, rax
+     mov rbx, rcx
+     mov rsi, 0x00
+     mov rdx, 0x07
+     lea rdi, [rsp+0x2E]
+     call :$set
+     mov rax, 0x00
+     lea rdx, [rsp+0x2E]
+     add rdx, rax
+     mov rcx, 0x00
+     mov rax, [rsp+0x7D]
+     shr rax, cl
+     mov [rdx], eax
+     mov rax, 0x04
+     lea rdx, [rsp+0x2E]
+     add rdx, rax
+     mov rcx, 0x20
+     mov rax, [rsp+0x7D]
+     shr rax, cl
+     mov [rdx], ax
+     mov rax, 0x06
+     lea rdx, [rsp+0x2E]
+     add rdx, rax
+     mov rcx, 0x30
+     mov rax, [rsp+0x7D]
+     shr rax, cl
+     mov [rdx], al
+     mov rax, 0x02
+     lea rcx, [rsp+0x2E]
+     add rcx, rax
      movzx eax, byte ptr [rcx]
      movzx eax, al
      mov rcx, rbx
      add rcx, rax
      mov rax, rcx
-     add rsp, 0x7E
+     add rsp, 0x85
      pop r15
      pop r14
      pop r13
@@ -281,86 +314,77 @@ compose:
      push rbp
      push r12
      push r13
+     push r14
      sub rsp, 0x0F
-     mov rbx, rdi
-     mov rbp, rsi
-     mov rsi, 0x00
-     mov rdx, 0x0F
-     lea rdi, [rsp]
-     call :$set
+     lea rbp, [rsp]
+     mov rcx, 0x00
      lea rax, [rsp]
-     mov rcx, 0x00
      add rax, rcx
-     mov rdx, rbx
      mov rcx, 0x00
-     shr rdx, cl
-     mov rcx, rax
-     mov [rcx], rdx
+     shr rdi, cl
+     mov [rax], rdi
      mov rdx, 0x08
-     lea rcx, [rsp]
-     add rdx, rcx
-     mov rbx, rbp
+     add rdx, rbp
      mov rcx, 0x00
+     mov rbx, rsi
      shr rbx, cl
      mov [rdx], ebx
      mov rdx, 0x0C
-     lea rcx, [rsp]
-     add rdx, rcx
-     mov rbx, rbp
+     add rdx, rbp
      mov rcx, 0x20
+     mov rbx, rsi
      shr rbx, cl
      mov [rdx], bx
      mov rbx, 0x0E
-     lea rcx, [rsp]
-     add rbx, rcx
-     mov rdx, rbp
+     add rbx, rbp
      mov rcx, 0x30
+     mov rdx, rsi
      shr rdx, cl
      mov [rbx], dl
-     mov rdx, rax
      mov rcx, 0x00
+     mov rdx, rax
      add rdx, rcx
      mov edi, [rdx]
-     mov rbp, 0x04
+     mov r12, 0x04
      mov rcx, rax
-     add rcx, rbp
+     add rcx, r12
      movzx edx, word ptr [rcx]
      mov rcx, 0x20
      shl rdx, cl
      or rdi, rdx
-     mov r12, 0x06
-     add rax, r12
+     mov r13, 0x06
+     add rax, r13
      movzx eax, byte ptr [rax]
      mov rcx, 0x30
      shl rax, cl
      or rdi, rax
      call :kentus
-     mov r13, rax
+     mov r14, rax
      mov rdx, 0x07
-     lea rax, [rsp]
-     add rdx, rax
+     add rdx, rbp
      mov rax, 0x00
      mov rcx, rdx
      add rcx, rax
      mov edi, [rcx]
      mov rax, rdx
-     add rax, rbp
+     add rax, r12
      movzx eax, word ptr [rax]
      mov rcx, 0x20
      shl rax, cl
      or rdi, rax
-     add rdx, r12
+     add rdx, r13
      movzx eax, byte ptr [rdx]
      mov rcx, 0x30
      shl rax, cl
      or rdi, rax
      call :kentus
-     mov rcx, r13
-     add rcx, rax
+     mov rcx, r14
+     add cl, al
      movzx eax, byte ptr [rbx]
-     add rcx, rax
+     add cl, al
      mov rax, rcx
      add rsp, 0x0F
+     pop r14
      pop r13
      pop r12
      pop rbp
@@ -370,56 +394,46 @@ kentus:
      push rbx
      push rbp
      sub rsp, 0x07
-     mov rbp, rdi
-     mov rsi, 0x00
-     mov rdx, 0x07
-     lea rdi, [rsp]
-     call :$set
+     lea rbp, [rsp]
      mov rcx, 0x00
      lea rax, [rsp]
      add rax, rcx
-     mov rdx, rbp
+     mov rdx, rdi
      shr rdx, cl
-     mov rcx, rax
-     mov [rcx], edx
+     mov [rax], edx
      mov rdx, 0x04
-     lea rcx, [rsp]
-     add rdx, rcx
+     add rdx, rbp
      mov rcx, 0x20
-     mov rbx, rbp
+     mov rbx, rdi
      shr rbx, cl
      mov [rdx], bx
      mov rbx, 0x06
-     lea rcx, [rsp]
-     add rbx, rcx
+     add rbx, rbp
      mov rcx, 0x30
-     shr rbp, cl
-     mov [rbx], bpl
+     mov rsi, rdi
+     shr rsi, cl
+     mov [rbx], sil
      movzx eax, byte ptr [rax]
      mov rcx, 0x01
-     lea rbp, [rsp]
      add rcx, rbp
      movzx ecx, byte ptr [rcx]
-     add rax, rcx
+     add al, cl
      mov rcx, 0x02
-     lea rbp, [rsp]
      add rcx, rbp
      movzx ecx, byte ptr [rcx]
-     add rax, rcx
+     add al, cl
      mov rcx, 0x03
-     lea rbp, [rsp]
      add rcx, rbp
      movzx ecx, byte ptr [rcx]
-     add rax, rcx
+     add al, cl
      movzx ecx, byte ptr [rdx]
-     add rax, rcx
+     add al, cl
      mov rcx, 0x05
-     lea rdx, [rsp]
-     add rcx, rdx
+     add rcx, rbp
      movzx ecx, byte ptr [rcx]
-     add rax, rcx
+     add al, cl
      movzx ecx, byte ptr [rbx]
-     add rax, rcx
+     add al, cl
      add rsp, 0x07
      pop rbp
      pop rbx
@@ -427,46 +441,33 @@ kentus:
 fortran:
      push rbx
      push rbp
-     push r12
      sub rsp, 0x10
-     mov rbx, rdi
-     mov rbp, rsi
-     mov r12, rdx
-     mov rsi, 0x00
-     mov rdx, 0x10
-     lea rdi, [rsp]
-     call :$set
      mov rcx, 0x00
      lea rax, [rsp]
      add rax, rcx
-     mov rdx, rbx
-     shr rdx, cl
-     mov rbx, rax
-     mov [rbx], rdx
-     mov rdx, 0x08
-     lea rbx, [rsp]
-     add rbx, rdx
-     shr rbp, cl
-     mov rsi, rbx
-     mov [rsi], rbp
+     shr rdi, cl
+     mov [rax], rdi
+     mov rbx, 0x08
+     lea rbp, [rsp]
+     add rbp, rbx
+     shr rsi, cl
+     mov [rbp], rsi
      mov rax, [rax]
-     mov rbx, [rbx]
-     add rax, rbx
-     mov rbx, r12
-     add rbx, rcx
-     mov rcx, [rbx]
+     mov rbp, [rbp]
+     add rax, rbp
+     mov rbp, rdx
+     add rbp, rcx
+     mov rcx, [rbp]
      add rax, rcx
-     mov rcx, r12
-     add rcx, rdx
+     mov rcx, rdx
+     add rcx, rbx
      mov rcx, [rcx]
      add rax, rcx
      mov rcx, 0x10
-     mov rdx, r12
      add rcx, rdx
      mov rcx, [rcx]
      add rax, rcx
      add rsp, 0x10
-     pop r12
      pop rbp
      pop rbx
      ret
@@ -586,6 +587,88 @@ return_stru3:
      add rsp, 0x07
      pop rbx
      ret
+return_stru4:
+     push rbx
+     push rbp
+     push r12
+     sub rsp, 0x0F
+     mov rsi, 0x00
+     mov rdx, 0x0F
+     lea rdi, [rsp]
+     call :$set
+     call :return_stru3
+     lea rcx, [rsp]
+     mov rdx, 0x00
+     add rcx, rdx
+     mov r12, rcx
+     mov rbx, r12
+     mov rcx, 0x00
+     add rbx, rcx
+     mov rcx, 0x00
+     mov rdx, rax
+     shr rdx, cl
+     mov [rbx], edx
+     mov rbx, 0x04
+     mov rbp, r12
+     add rbp, rbx
+     mov rcx, 0x20
+     mov rdx, rax
+     shr rdx, cl
+     mov [rbp], dx
+     mov rbp, 0x06
+     mov rdx, r12
+     add rdx, rbp
+     mov rcx, 0x30
+     shr rax, cl
+     mov [rdx], al
+     call :return_stru3
+     mov rdx, 0x07
+     lea rcx, [rsp]
+     add rdx, rcx
+     mov rcx, 0x00
+     mov rsi, rdx
+     add rsi, rcx
+     mov rcx, 0x00
+     mov rdi, rax
+     shr rdi, cl
+     mov [rsi], edi
+     mov rsi, rdx
+     add rsi, rbx
+     mov rcx, 0x20
+     mov rbx, rax
+     shr rbx, cl
+     mov [rsi], bx
+     add rdx, rbp
+     mov rcx, 0x30
+     shr rax, cl
+     mov [rdx], al
+     mov rbx, 0x0E
+     lea rax, [rsp]
+     add rbx, rax
+     mov rax, 0x46
+     mov [rbx], al
+     mov rax, r12
+     mov rax, [rax]
+     mov rcx, 0x08
+     lea rdx, [rsp]
+     add rcx, rdx
+     mov edx, [rcx]
+     mov rcx, 0x0C
+     lea rbp, [rsp]
+     add rcx, rbp
+     movzx ebp, word ptr [rcx]
+     mov rcx, 0x20
+     shl rbp, cl
+     or rdx, rbp
+     movzx ebx, byte ptr [rbx]
+     mov rcx, 0x30
+     shl rbx, cl
+     or rdx, rbx
+     add rsp, 0x0F
+     pop r12
+     pop rbp
+     pop rbx
+     ret
 =========== OPT LEVEL: mininal ===========
 main:
      push rbx
@@ -594,50 +677,50 @@ main:
      push r13
      push r14
      push r15
-     sub rsp, 0x7E
-     lea rdi, [rsp+0x46]
+     sub rsp, 0x85
+     lea rdi, [rsp+0x4D]
      mov rsi, 0x00
      mov rdx, 0x10
      call :$set
      mov rbx, 0x10
      mov rax, 0x00
-     lea rcx, [rsp+0x46]
+     lea rcx, [rsp+0x4D]
      add rcx, rax
      mov [rcx], rbx
      mov rbp, 0x08
-     lea rdx, [rsp+0x46]
+     lea rdx, [rsp+0x4D]
      add rdx, rbp
      mov rax, 0x14
      mov rcx, rdx
      mov [rcx], rax
-     lea rax, [rsp+0x46]
+     lea rax, [rsp+0x4D]
      mov rax, [rax]
      mov r12, rax
      mov rax, [rdx]
      mov r13, rax
      mov rdx, 0x18
-     lea rdi, [rsp+0x2E]
+     lea rdi, [rsp+0x35]
      mov rsi, 0x00
      call :$set
-     lea rcx, [rsp+0x2E]
+     lea rcx, [rsp+0x35]
      mov rax, 0x00
      add rcx, rax
      mov rax, 0x1E
      mov [rcx], rax
-     lea rax, [rsp+0x2E]
+     lea rax, [rsp+0x35]
      add rax, rbp
      mov rcx, 0x2E
      mov [rax], rcx
-     lea rax, [rsp+0x2E]
+     lea rax, [rsp+0x35]
      add rax, rbx
      mov rcx, 0x32
      mov [rax], rcx
-     mov rbx, 0x07
-     lea rdx, [rsp+0x2E]
+     lea rdx, [rsp+0x35]
      mov rdi, r12
      mov rsi, r13
      call :fortran
      mov r12, rax
+     mov rbx, 0x07
      lea rax, [rsp]
      mov [rax], rbx
      lea rax, [rsp+0x08]
@@ -653,23 +736,23 @@ main:
      mov r9, 0x06
      call :load_of_args
      mov r13, rax
-     lea rdi, [rsp+0x56]
+     lea rdi, [rsp+0x5D]
      mov rsi, 0x00
      mov rdx, 0x10
      call :$set
-     lea rcx, [rsp+0x56]
+     lea rcx, [rsp+0x5D]
      mov rax, 0x00
      add rcx, rax
      mov rax, 0x06
      mov [rcx], rax
-     lea rax, [rsp+0x56]
+     lea rax, [rsp+0x5D]
      add rax, rbp
      mov [rax], rbx
      mov rsi, 0x00
      mov rdx, 0x10
      lea rdi, [rsp]
      call :$set
-     lea rsi, [rsp+0x56]
+     lea rsi, [rsp+0x5D]
      mov rdx, 0x10
      lea rdi, [rsp]
      call :$copy
@@ -788,44 +871,32 @@ main:
      mov rsi, 0x02
      call :return_stru
      mov rbx, rax
-     mov [rsp+0x76], rax
+     mov [rsp+0x7D], rax
      mov rsi, 0x00
      mov rdx, 0x10
-     lea rdi, [rsp+0x66]
+     lea rdi, [rsp+0x6D]
      call :$set
      mov rax, 0x00
-     lea rdx, [rsp+0x66]
+     lea rdx, [rsp+0x6D]
      add rdx, rax
      mov rcx, 0x00
      mov rax, rbx
      shr rax, cl
      mov rcx, rdx
      mov [rcx], rax
-     lea rbx, [rsp+0x66]
+     lea rbx, [rsp+0x6D]
      add rbx, rbp
      mov rcx, 0x00
-     mov rax, [rsp+0x76]
+     mov rax, [rsp+0x7D]
      shr rax, cl
      mov [rbx], rax
      mov rax, rdx
      mov rbx, [rax]
      call :return_stru3
      mov rbp, rax
-     mov rax, 0x00
-     mov rcx, r12
-     add rcx, rax
-     mov rax, r13
-     add rcx, rax
-     mov rax, r14
-     add rcx, rax
-     mov rax, r15
-     movzx eax, al
-     add rcx, rax
-     add rcx, rbx
-     mov rbx, rcx
-     mov rdx, 0x07
      mov rsi, 0x00
      lea rdi, [rsp+0x27]
+     mov rdx, 0x07
      call :$set
      mov rax, 0x00
      lea rdx, [rsp+0x27]
@@ -851,11 +922,57 @@ main:
      mov rax, 0x05
      lea rcx, [rsp+0x27]
      add rcx, rax
+     movzx ebp, byte ptr [rcx]
+     call :return_stru3
+     mov [rsp+0x7D], rax
+     mov rax, 0x00
+     mov rcx, r12
+     add rcx, rax
+     mov rax, r13
+     add rcx, rax
+     mov rax, r14
+     add rcx, rax
+     mov rax, r15
+     movzx eax, al
+     add rcx, rax
+     add rcx, rbx
+     movzx eax, bpl
+     add rcx, rax
+     mov rbx, rcx
+     mov rsi, 0x00
+     mov rdx, 0x07
+     lea rdi, [rsp+0x2E]
+     call :$set
+     mov rax, 0x00
+     lea rdx, [rsp+0x2E]
+     add rdx, rax
+     mov rcx, 0x00
+     mov rax, [rsp+0x7D]
+     shr rax, cl
+     mov [rdx], eax
+     mov rax, 0x04
+     lea rdx, [rsp+0x2E]
+     add rdx, rax
+     mov rcx, 0x20
+     mov rax, [rsp+0x7D]
+     shr rax, cl
+     mov [rdx], ax
+     mov rax, 0x06
+     lea rdx, [rsp+0x2E]
+     add rdx, rax
+     mov rcx, 0x30
+     mov rax, [rsp+0x7D]
+     shr rax, cl
+     mov [rdx], al
+     mov rax, 0x02
+     lea rcx, [rsp+0x2E]
+     add rcx, rax
      movzx eax, byte ptr [rcx]
+     movzx eax, al
      mov rcx, rbx
      add rcx, rax
      mov rax, rcx
-     add rsp, 0x7E
+     add rsp, 0x85
      pop r15
      pop r14
      pop r13
@@ -868,86 +985,77 @@ compose:
      push rbp
      push r12
      push r13
+     push r14
      sub rsp, 0x0F
-     mov rbx, rdi
-     mov rbp, rsi
-     mov rsi, 0x00
-     mov rdx, 0x0F
-     lea rdi, [rsp]
-     call :$set
+     lea rbp, [rsp]
+     mov rcx, 0x00
      lea rax, [rsp]
-     mov rcx, 0x00
      add rax, rcx
-     mov rdx, rbx
      mov rcx, 0x00
-     shr rdx, cl
-     mov rcx, rax
-     mov [rcx], rdx
+     shr rdi, cl
+     mov [rax], rdi
      mov rdx, 0x08
-     lea rcx, [rsp]
-     add rdx, rcx
-     mov rbx, rbp
+     add rdx, rbp
      mov rcx, 0x00
+     mov rbx, rsi
      shr rbx, cl
      mov [rdx], ebx
      mov rdx, 0x0C
-     lea rcx, [rsp]
-     add rdx, rcx
-     mov rbx, rbp
+     add rdx, rbp
      mov rcx, 0x20
+     mov rbx, rsi
      shr rbx, cl
      mov [rdx], bx
      mov rbx, 0x0E
-     lea rcx, [rsp]
-     add rbx, rcx
-     mov rdx, rbp
+     add rbx, rbp
      mov rcx, 0x30
+     mov rdx, rsi
      shr rdx, cl
      mov [rbx], dl
-     mov rdx, rax
      mov rcx, 0x00
+     mov rdx, rax
      add rdx, rcx
      mov edi, [rdx]
-     mov rbp, 0x04
+     mov r12, 0x04
      mov rcx, rax
-     add rcx, rbp
+     add rcx, r12
      movzx edx, word ptr [rcx]
      mov rcx, 0x20
      shl rdx, cl
      or rdi, rdx
-     mov r12, 0x06
-     add rax, r12
+     mov r13, 0x06
+     add rax, r13
      movzx eax, byte ptr [rax]
      mov rcx, 0x30
      shl rax, cl
      or rdi, rax
      call :kentus
-     mov r13, rax
+     mov r14, rax
      mov rdx, 0x07
-     lea rax, [rsp]
-     add rdx, rax
+     add rdx, rbp
      mov rax, 0x00
      mov rcx, rdx
      add rcx, rax
      mov edi, [rcx]
      mov rax, rdx
-     add rax, rbp
+     add rax, r12
      movzx eax, word ptr [rax]
      mov rcx, 0x20
      shl rax, cl
      or rdi, rax
-     add rdx, r12
+     add rdx, r13
      movzx eax, byte ptr [rdx]
      mov rcx, 0x30
      shl rax, cl
      or rdi, rax
      call :kentus
-     mov rcx, r13
-     add rcx, rax
+     mov rcx, r14
+     add cl, al
      movzx eax, byte ptr [rbx]
-     add rcx, rax
+     add cl, al
      mov rax, rcx
      add rsp, 0x0F
+     pop r14
      pop r13
      pop r12
      pop rbp
@@ -957,56 +1065,46 @@ kentus:
      push rbx
      push rbp
      sub rsp, 0x07
-     mov rbp, rdi
-     mov rsi, 0x00
-     mov rdx, 0x07
-     lea rdi, [rsp]
-     call :$set
+     lea rbp, [rsp]
      mov rcx, 0x00
      lea rax, [rsp]
      add rax, rcx
-     mov rdx, rbp
+     mov rdx, rdi
      shr rdx, cl
-     mov rcx, rax
-     mov [rcx], edx
+     mov [rax], edx
      mov rdx, 0x04
-     lea rcx, [rsp]
-     add rdx, rcx
+     add rdx, rbp
      mov rcx, 0x20
-     mov rbx, rbp
+     mov rbx, rdi
      shr rbx, cl
      mov [rdx], bx
      mov rbx, 0x06
-     lea rcx, [rsp]
-     add rbx, rcx
+     add rbx, rbp
      mov rcx, 0x30
-     shr rbp, cl
-     mov [rbx], bpl
+     mov rsi, rdi
+     shr rsi, cl
+     mov [rbx], sil
      movzx eax, byte ptr [rax]
      mov rcx, 0x01
-     lea rbp, [rsp]
      add rcx, rbp
      movzx ecx, byte ptr [rcx]
-     add rax, rcx
+     add al, cl
      mov rcx, 0x02
-     lea rbp, [rsp]
      add rcx, rbp
      movzx ecx, byte ptr [rcx]
-     add rax, rcx
+     add al, cl
      mov rcx, 0x03
-     lea rbp, [rsp]
      add rcx, rbp
      movzx ecx, byte ptr [rcx]
-     add rax, rcx
+     add al, cl
      movzx ecx, byte ptr [rdx]
-     add rax, rcx
+     add al, cl
      mov rcx, 0x05
-     lea rdx, [rsp]
-     add rcx, rdx
+     add rcx, rbp
      movzx ecx, byte ptr [rcx]
-     add rax, rcx
+     add al, cl
      movzx ecx, byte ptr [rbx]
-     add rax, rcx
+     add al, cl
      add rsp, 0x07
      pop rbp
      pop rbx
@@ -1014,46 +1112,31 @@ kentus:
 fortran:
      push rbx
      push rbp
-     push r12
      sub rsp, 0x10
-     mov rbx, rdi
-     mov rbp, rsi
-     mov r12, rdx
-     mov rsi, 0x00
-     mov rdx, 0x10
-     lea rdi, [rsp]
-     call :$set
      mov rcx, 0x00
      lea rax, [rsp]
      add rax, rcx
-     mov rdx, rbx
-     shr rdx, cl
-     mov rbx, rax
-     mov [rbx], rdx
-     mov rdx, 0x08
-     lea rbx, [rsp]
-     add rbx, rdx
-     shr rbp, cl
-     mov rcx, rbx
-     mov [rcx], rbp
+     shr rdi, cl
+     mov [rax], rdi
+     mov rbx, 0x08
+     lea rbp, [rsp]
+     add rbp, rbx
+     shr rsi, cl
+     mov [rbp], rsi
      mov rax, [rax]
-     mov rcx, rbx
-     mov rcx, [rcx]
+     mov rcx, [rbp]
      add rax, rcx
-     mov rcx, r12
-     mov rcx, [rcx]
+     mov rcx, [rdx]
      add rax, rcx
-     mov rcx, r12
-     add rcx, rdx
+     mov rcx, rdx
+     add rcx, rbx
      mov rcx, [rcx]
      add rax, rcx
      mov rcx, 0x10
-     mov rdx, r12
      add rcx, rdx
      mov rcx, [rcx]
      add rax, rcx
      add rsp, 0x10
-     pop r12
      pop rbp
      pop rbx
      ret
@@ -1171,23 +1254,107 @@ return_stru3:
      add rsp, 0x07
      pop rbx
      ret
+return_stru4:
+     push rbx
+     push rbp
+     push r12
+     sub rsp, 0x0F
+     mov rsi, 0x00
+     mov rdx, 0x0F
+     lea rdi, [rsp]
+     call :$set
+     call :return_stru3
+     lea rcx, [rsp]
+     mov rdx, 0x00
+     add rcx, rdx
+     mov r12, rcx
+     mov rbx, r12
+     mov rcx, 0x00
+     add rbx, rcx
+     mov rcx, 0x00
+     mov rdx, rax
+     shr rdx, cl
+     mov [rbx], edx
+     mov rbx, 0x04
+     mov rbp, r12
+     add rbp, rbx
+     mov rcx, 0x20
+     mov rdx, rax
+     shr rdx, cl
+     mov [rbp], dx
+     mov rbp, 0x06
+     mov rdx, r12
+     add rdx, rbp
+     mov rcx, 0x30
+     shr rax, cl
+     mov [rdx], al
+     call :return_stru3
+     mov rdx, 0x07
+     lea rcx, [rsp]
+     add rdx, rcx
+     mov rcx, 0x00
+     mov rsi, rdx
+     add rsi, rcx
+     mov rcx, 0x00
+     mov rdi, rax
+     shr rdi, cl
+     mov [rsi], edi
+     mov rsi, rdx
+     add rsi, rbx
+     mov rcx, 0x20
+     mov rbx, rax
+     shr rbx, cl
+     mov [rsi], bx
+     add rdx, rbp
+     mov rcx, 0x30
+     shr rax, cl
+     mov [rdx], al
+     mov rbx, 0x0E
+     lea rax, [rsp]
+     add rbx, rax
+     mov rax, 0x46
+     mov [rbx], al
+     mov rax, r12
+     mov rax, [rax]
+     mov rcx, 0x08
+     lea rdx, [rsp]
+     add rcx, rdx
+     mov edx, [rcx]
+     mov rcx, 0x0C
+     lea rbp, [rsp]
+     add rcx, rbp
+     movzx ebp, word ptr [rcx]
+     mov rcx, 0x20
+     shl rbp, cl
+     or rdx, rbp
+     movzx ebx, byte ptr [rbx]
+     mov rcx, 0x30
+     shl rbx, cl
+     or rdx, rbx
+     add rsp, 0x0F
+     pop r12
+     pop rbp
+     pop rbx
+     ret
 =========== OPT LEVEL: all ===========
 main:
      push rbx
      push rbp
      push r12
      push r13
-     sub rsp, 0x76
-     lea rdx, [rsp+0x2E]
-     mov qword ptr [rsp+0x46], 0x10
-     mov qword ptr [rsp+0x4E], 0x14
-     mov rdi, [rsp+0x46]
-     mov rsi, [rsp+0x4E]
-     mov qword ptr [rsp+0x2E], 0x1E
-     mov qword ptr [rsp+0x36], 0x2E
-     mov qword ptr [rsp+0x3E], 0x32
+     push r14
+     push r15
+     sub rsp, 0x85
+     mov rdi, 0x10
+     mov rsi, 0x14
+     lea rdx, [rsp+0x35]
+     mov qword ptr [rsp+0x4D], 0x10
+     mov qword ptr [rsp+0x55], 0x14
+     mov qword ptr [rsp+0x35], 0x1E
+     mov qword ptr [rsp+0x3D], 0x2E
+     mov qword ptr [rsp+0x45], 0x32
      call :fortran
-     mov rbx, rax
+     mov rbp, rax
      mov r9, 0x06
      mov qword ptr [rsp], 0x07
      mov qword ptr [rsp+0x08], 0x08
@@ -1198,11 +1365,11 @@ main:
      mov rcx, 0x04
      mov r8, 0x05
      call :load_of_args
-     mov rbp, rax
-     lea rsi, [rsp+0x56]
+     mov r12, rax
+     lea rsi, [rsp+0x5D]
      lea rdi, [rsp]
-     mov qword ptr [rsp+0x56], 0x06
-     mov qword ptr [rsp+0x5E], 0x07
+     mov qword ptr [rsp+0x5D], 0x06
+     mov qword ptr [rsp+0x65], 0x07
      mov rdx, 0x10
      call :$copy
      mov rdi, 0x01
@@ -1211,63 +1378,75 @@ main:
      mov rcx, 0x04
      mov r8, 0x05
      call :brahma
-     mov r12, rax
-     mov rsi, 0x00
-     lea rdi, [rsp+0x18]
-     mov rdx, 0x0F
-     call :$set
-     mov byte ptr [rsp+0x18], 0x01
-     mov byte ptr [rsp+0x19], 0x02
-     mov byte ptr [rsp+0x1A], 0x03
-     mov byte ptr [rsp+0x1B], 0x04
-     mov byte ptr [rsp+0x1C], 0x05
-     mov byte ptr [rsp+0x1D], 0x06
-     mov byte ptr [rsp+0x1E], 0x07
-     mov byte ptr [rsp+0x1F], 0x08
-     mov byte ptr [rsp+0x20], 0x09
-     mov byte ptr [rsp+0x21], 0x0A
-     mov byte ptr [rsp+0x22], 0x0B
-     mov byte ptr [rsp+0x23], 0x0C
-     mov byte ptr [rsp+0x24], 0x0D
-     mov byte ptr [rsp+0x25], 0x0E
+     mov r13, rax
+     mov rdi, 0x807060504030201
+     mov [rsp+0x18], rdi
+     mov dword ptr [rsp+0x20], 0xC0B0A09
+     mov word ptr [rsp+0x24], 0xE0D
      mov byte ptr [rsp+0x26], 0x0F
-     mov rdi, [rsp+0x18]
-     mov esi, [rsp+0x20]
-     movzx eax, word ptr [rsp+0x24]
-     shl rax, 0x20
-     or rsi, rax
-     movzx eax, byte ptr [rsp+0x26]
-     shl rax, 0x30
+     movzx esi, word ptr [rsp+0x24]
+     shl rsi, 0x20
+     mov rax, 0xF00000C0B0A09
      or rsi, rax
      call :compose
-     mov r13, rax
+     mov r14, rax
      mov rdi, 0x01
      mov rsi, 0x02
      call :return_stru
-     mov rcx, rax
-     mov [rsp+0x66], rcx
-     mov [rsp+0x6E], rax
+     mov r15, rax
+     mov rcx, r15
+     mov [rsp+0x6D], rcx
+     mov [rsp+0x75], rax
      call :return_stru3
-     mov rdx, rbx
-     mov rcx, rbp
-     add rdx, rcx
-     mov rcx, r12
-     add rdx, rcx
-     mov rcx, r13
-     movzx ecx, cl
-     add rdx, rcx
-     add rdx, [rsp+0x66]
-     mov rcx, rax
-     mov [rsp+0x27], ecx
-     mov rcx, rax
-     shr rcx, 0x20
-     mov [rsp+0x2B], cx
+     mov rbx, rax
+     lea rdi, [rsp+0x27]
+     mov rsi, 0x00
+     mov rdx, 0x07
+     call :$set
+     mov rax, rbx
+     mov [rsp+0x27], eax
+     mov rax, rbx
+     shr rax, 0x20
+     mov [rsp+0x2B], ax
+     mov rax, rbx
      shr rax, 0x30
      mov [rsp+0x2D], al
-     movzx eax, byte ptr [rsp+0x2C]
-     add rdx, rax
-     mov rax, rdx
-     add rsp, 0x76
+     movzx ebx, byte ptr [rsp+0x2C]
+     call :return_stru3
+     mov [rsp+0x7D], rax
+     mov rcx, rbp
+     mov rax, r12
+     add rcx, rax
+     mov rax, r13
+     add rcx, rax
+     mov rax, r14
+     movzx eax, al
+     add rcx, rax
+     mov rax, r15
+     add rcx, rax
+     movzx eax, bl
+     add rcx, rax
+     mov rbx, rcx
+     lea rdi, [rsp+0x2E]
+     mov rsi, 0x00
+     mov rdx, 0x07
+     call :$set
+     mov rax, [rsp+0x7D]
+     mov [rsp+0x2E], eax
+     mov rax, [rsp+0x7D]
+     shr rax, 0x20
+     mov [rsp+0x32], ax
+     mov rax, [rsp+0x7D]
+     shr rax, 0x30
+     mov [rsp+0x34], al
+     movzx eax, byte ptr [rsp+0x30]
+     movzx eax, al
+     mov rcx, rbx
+     add rcx, rax
+     mov rax, rcx
+     add rsp, 0x85
+     pop r15
+     pop r14
      pop r13
      pop r12
      pop rbp
@@ -1302,7 +1481,7 @@ compose:
      shl rax, 0x30
      or rdi, rax
      call :kentus
-     add rbx, rax
+     add bl, al
      mov rax, rbx
      add al, [rsp+0x0E]
      add rsp, 0x0F
@@ -1310,32 +1489,34 @@ compose:
      ret
 kentus:
      sub rsp, 0x07
+     mov rcx, rdi
+     shr rcx, 0x30
      mov rax, rdi
      mov [rsp], eax
      mov rax, rdi
      shr rax, 0x20
      mov [rsp+0x04], ax
-     mov rax, rdi
-     shr rax, 0x30
-     mov [rsp+0x06], al
+     mov [rsp+0x06], cl
      movzx eax, byte ptr [rsp]
      add al, [rsp+0x01]
      add al, [rsp+0x02]
      add al, [rsp+0x03]
      add al, [rsp+0x04]
      add al, [rsp+0x05]
-     add al, [rsp+0x06]
+     add al, cl
      add rsp, 0x07
      ret
 fortran:
      sub rsp, 0x10
-     mov [rsp], rdi
+     mov rax, rdi
+     mov rcx, rax
+     add rcx, rsi
+     mov [rsp], rax
      mov [rsp+0x08], rsi
-     mov rax, [rsp]
-     add rax, [rsp+0x08]
-     add rax, [rdx]
-     add rax, [rdx+0x08]
-     add rax, [rdx+0x10]
+     add rcx, [rdx]
+     add rcx, [rdx+0x08]
+     add rcx, [rdx+0x10]
+     mov rax, rcx
      add rsp, 0x10
      ret
 brahma:
@@ -1366,27 +1547,49 @@ load_of_args:
      ret
 return_stru:
      sub rsp, 0x10
-     mov [rsp], rdi
-     mov [rsp+0x08], rsi
-     mov rdx, [rsp+0x08]
-     mov rax, [rsp]
+     mov rax, rdi
+     mov rdx, rsi
+     mov [rsp], rax
+     mov [rsp+0x08], rdx
      add rsp, 0x10
      ret
 return_stru3:
      sub rsp, 0x07
-     mov byte ptr [rsp], 0x01
-     mov byte ptr [rsp+0x01], 0x02
-     mov byte ptr [rsp+0x02], 0x03
-     mov byte ptr [rsp+0x03], 0x04
-     mov byte ptr [rsp+0x04], 0x05
-     mov byte ptr [rsp+0x05], 0x06
+     mov rax, 0x7060504030201
+     mov dword ptr [rsp], 0x4030201
+     mov word ptr [rsp+0x04], 0x605
      mov byte ptr [rsp+0x06], 0x07
-     mov eax, [rsp]
-     movzx ecx, word ptr [rsp+0x04]
-     shl rcx, 0x20
-     or rax, rcx
-     movzx ecx, byte ptr [rsp+0x06]
-     shl rcx, 0x30
-     or rax, rcx
      add rsp, 0x07
+     ret
+return_stru4:
+     sub rsp, 0x0F
+     lea rdi, [rsp]
+     mov rsi, 0x00
+     mov rdx, 0x0F
+     call :$set
+     call :return_stru3
+     mov rcx, rax
+     mov [rsp], ecx
+     mov rcx, rax
+     shr rcx, 0x20
+     mov [rsp+0x04], cx
+     shr rax, 0x30
+     mov [rsp+0x06], al
+     call :return_stru3
+     mov rcx, rax
+     mov [rsp+0x07], ecx
+     mov rcx, rax
+     shr rcx, 0x20
+     mov [rsp+0x0B], cx
+     shr rax, 0x30
+     mov [rsp+0x0D], al
+     mov byte ptr [rsp+0x0E], 0x46
+     mov edx, [rsp+0x08]
+     movzx eax, word ptr [rsp+0x0C]
+     shl rax, 0x20
+     or rdx, rax
+     mov rax, 0x46000000000000
+     or rdx, rax
+     mov rax, [rsp]
+     add rsp, 0x0F
      ret

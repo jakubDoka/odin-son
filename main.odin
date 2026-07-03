@@ -1071,12 +1071,10 @@ alloca :: proc(
 	ty: Type,
 	zeroed := true,
 	is_arg := false,
-	align_size_to := 1,
 ) -> backend.Node_ID {
 	root := is_arg ? backend.NODE_ENTRY : ctx.root_mem
 	alloca := backend.graph_add_local(ctx, name, root)
-	size := u32(mem.align_forward_int(type_size(ty), align_size_to))
-	backend.graph_extra(ctx, alloca, backend.Local).size = size
+	backend.graph_extra(ctx, alloca, backend.Local).size = i32(type_size(ty))
 	ptr := backend.graph_add_local_addr(ctx, name, alloca)
 
 	if zeroed {

@@ -6,7 +6,6 @@ main:
      push r13
      push r14
      push r15
-     sub rsp, 0x78
      mov rcx, 0x06
      mov rax, 0x14
      cqo
@@ -147,32 +146,32 @@ main:
      add rcx, rax
      mov rax, 0x14
      and rax, 0x06
-     mov [rsp], rax
+     mov [rsp-0x78], rax
      mov rax, 0x14
      or rax, 0x06
-     mov [rsp+0x08], rax
+     mov [rsp-0x70], rax
      mov rax, 0x14
      xor rax, 0x06
-     mov [rsp+0x10], rax
+     mov [rsp-0x68], rax
      mov rax, 0x14
      mov rsi, 0x06
      not sil
      and sil, al
-     mov rax, [rsp]
+     mov rax, [rsp-0x78]
      movzx eax, al
      add rcx, rax
      mov rax, 0x14
      shl rax, 0x02
-     mov [rsp+0x18], rax
-     mov rax, [rsp+0x08]
+     mov [rsp-0x60], rax
+     mov rax, [rsp-0x70]
      movzx eax, al
      add rcx, rax
-     mov rax, [rsp+0x10]
+     mov rax, [rsp-0x68]
      movzx eax, al
      add rcx, rax
      movzx eax, sil
      add rcx, rax
-     mov rax, [rsp+0x18]
+     mov rax, [rsp-0x60]
      movzx eax, al
      add rcx, rax
      mov rax, 0x14
@@ -281,37 +280,37 @@ main:
      add rcx, rax
      mov rax, 0x14
      and rax, 0x06
-     mov [rsp+0x20], rax
+     mov [rsp-0x58], rax
      mov rax, 0x14
      or rax, 0x06
-     mov [rsp+0x28], rax
+     mov [rsp-0x50], rax
      mov rax, 0x14
      xor rax, 0x06
-     mov [rsp+0x30], rax
+     mov [rsp-0x48], rax
      mov rax, 0x14
      mov rdi, 0x06
      not di
      and di, ax
-     mov rax, [rsp+0x20]
+     mov rax, [rsp-0x58]
      movzx eax, ax
      add rcx, rax
      mov rdx, rcx
      mov rax, 0x14
      shl rax, 0x02
-     mov [rsp+0x38], rax
-     mov rax, [rsp+0x28]
+     mov [rsp-0x40], rax
+     mov rax, [rsp-0x50]
      movzx ecx, ax
      mov rax, rdx
      add rax, rcx
      mov rdx, rax
-     mov rax, [rsp+0x30]
+     mov rax, [rsp-0x48]
      movzx ecx, ax
      mov rax, rdx
      add rax, rcx
      movzx ecx, di
      add rax, rcx
      mov rdx, rax
-     mov rax, [rsp+0x38]
+     mov rax, [rsp-0x40]
      movzx ecx, ax
      mov rax, rdx
      add rax, rcx
@@ -448,38 +447,38 @@ main:
      mov rdx, rax
      mov rax, 0x14
      and rax, 0x06
-     mov [rsp+0x40], rax
+     mov [rsp-0x38], rax
      mov rax, 0x14
      or rax, 0x06
-     mov [rsp+0x48], rax
+     mov [rsp-0x30], rax
      mov rax, 0x14
      xor rax, 0x06
-     mov [rsp+0x50], rax
+     mov [rsp-0x28], rax
      mov rax, 0x14
      mov r8, 0x06
      not r8d
      and r8d, eax
-     mov rax, [rsp+0x40]
+     mov rax, [rsp-0x38]
      mov ecx, eax
      mov rax, rdx
      add rax, rcx
      mov rdx, rax
      mov rax, 0x14
      shl rax, 0x02
-     mov [rsp+0x58], rax
-     mov rax, [rsp+0x48]
+     mov [rsp-0x20], rax
+     mov rax, [rsp-0x30]
      mov ecx, eax
      mov rax, rdx
      add rax, rcx
      mov rdx, rax
-     mov rax, [rsp+0x50]
+     mov rax, [rsp-0x28]
      mov ecx, eax
      mov rax, rdx
      add rax, rcx
      mov ecx, r8d
      add rax, rcx
      mov rdx, rax
-     mov rax, [rsp+0x58]
+     mov rax, [rsp-0x20]
      mov ecx, eax
      mov rax, rdx
      add rax, rcx
@@ -495,7 +494,7 @@ main:
      mov ecx, eax
      mov rax, rdx
      add rax, rcx
-     mov [rsp+0x60], rax
+     mov [rsp-0x18], rax
      mov rax, 0x14
      cmp eax, 0x06
      jbe :63
@@ -503,9 +502,9 @@ main:
 
 063: jmp :65
 
-064: mov rax, [rsp+0x60]
+064: mov rax, [rsp-0x18]
      add rax, 0x01
-     mov [rsp+0x60], rax
+     mov [rsp-0x18], rax
      jmp :65
 
 065: cmp r13d, 0x14
@@ -514,9 +513,9 @@ main:
 
 066: jmp :68
 
-067: mov rax, [rsp+0x60]
+067: mov rax, [rsp-0x18]
      add rax, 0x02
-     mov [rsp+0x60], rax
+     mov [rsp-0x18], rax
      jmp :68
 
 068: mov rax, 0x14
@@ -526,9 +525,9 @@ main:
 
 069: jmp :71
 
-070: mov rax, [rsp+0x60]
+070: mov rax, [rsp-0x18]
      add rax, 0x04
-     mov [rsp+0x60], rax
+     mov [rsp-0x18], rax
      jmp :71
 
 071: mov rax, 0x14
@@ -538,9 +537,9 @@ main:
 
 072: jmp :74
 
-073: mov rax, [rsp+0x60]
+073: mov rax, [rsp-0x18]
      add rax, 0x08
-     mov [rsp+0x60], rax
+     mov [rsp-0x18], rax
      jmp :74
 
 074: mov rax, 0x14
@@ -553,9 +552,9 @@ main:
 
 075: jmp :77
 
-076: mov rax, [rsp+0x60]
+076: mov rax, [rsp-0x18]
      add rax, 0x10
-     mov [rsp+0x60], rax
+     mov [rsp-0x18], rax
      jmp :77
 
 077: mov rax, 0x14
@@ -568,9 +567,9 @@ main:
 
 078: jmp :80
 
-079: mov rax, [rsp+0x60]
+079: mov rax, [rsp-0x18]
      add rax, 0x20
-     mov [rsp+0x60], rax
+     mov [rsp-0x18], rax
      jmp :80
 
 080: mov rax, 0x07
@@ -580,62 +579,62 @@ main:
 
 081: jmp :83
 
-082: mov rax, [rsp+0x60]
+082: mov rax, [rsp-0x18]
      add rax, 0x40
-     mov [rsp+0x60], rax
+     mov [rsp-0x18], rax
      jmp :83
 
 083: mov rax, 0x14
      cbw
      idiv r9b
      movsx rcx, al
-     mov rax, [rsp+0x60]
+     mov rax, [rsp-0x18]
      add rax, rcx
-     mov [rsp+0x60], rax
+     mov [rsp-0x18], rax
      mov rax, 0x14
      cbw
      idiv r9b
      movzx edx, ah
      movsx rcx, dl
-     mov rax, [rsp+0x60]
+     mov rax, [rsp-0x18]
      add rax, rcx
-     mov [rsp+0x60], rax
+     mov [rsp-0x18], rax
      mov rax, 0x00
      sub rax, 0x07
-     mov [rsp+0x68], rax
-     mov rax, [rsp+0x68]
+     mov [rsp-0x10], rax
+     mov rax, [rsp-0x10]
      cbw
      idiv r9b
      movsx rcx, al
-     mov rax, [rsp+0x60]
+     mov rax, [rsp-0x18]
      add rax, rcx
-     mov [rsp+0x60], rax
-     mov rax, [rsp+0x68]
+     mov [rsp-0x18], rax
+     mov rax, [rsp-0x10]
      cbw
      idiv r9b
      movzx edx, ah
      movsx rcx, dl
-     mov rax, [rsp+0x60]
+     mov rax, [rsp-0x18]
      add rax, rcx
      mov rdx, rax
-     mov rax, [rsp]
+     mov rax, [rsp-0x78]
      movsx rcx, al
      mov rax, rdx
      add rax, rcx
      mov rdx, rax
-     mov rax, [rsp+0x08]
+     mov rax, [rsp-0x70]
      movsx rcx, al
      mov rax, rdx
      add rax, rcx
      mov rdx, rax
-     mov rax, [rsp+0x10]
+     mov rax, [rsp-0x68]
      movsx rcx, al
      mov rax, rdx
      add rax, rcx
      movsx rcx, sil
      add rax, rcx
      mov rdx, rax
-     mov rax, [rsp+0x18]
+     mov rax, [rsp-0x60]
      movsx rcx, al
      mov rax, rdx
      add rax, rcx
@@ -646,7 +645,7 @@ main:
      mov rax, rdx
      add rax, rcx
      mov rdx, rax
-     mov rax, [rsp+0x68]
+     mov rax, [rsp-0x10]
      sar rax, 0x02
      movsx rcx, al
      mov rax, rdx
@@ -721,7 +720,7 @@ main:
      mov rsi, rax
      jmp :101
 
-101: mov rax, [rsp+0x68]
+101: mov rax, [rsp-0x10]
      cmp al, 0x06
      jnl :102
      jmp :103
@@ -764,17 +763,17 @@ main:
      mov rax, rsi
      add rax, rcx
      mov rdx, rax
-     mov rax, [rsp+0x20]
+     mov rax, [rsp-0x58]
      movsx rcx, ax
      mov rax, rdx
      add rax, rcx
      mov rdx, rax
-     mov rax, [rsp+0x28]
+     mov rax, [rsp-0x50]
      movsx rcx, ax
      mov rax, rdx
      add rax, rcx
      mov rdx, rax
-     mov rax, [rsp+0x30]
+     mov rax, [rsp-0x48]
      movsx rcx, ax
      mov rax, rdx
      add rax, rcx
@@ -782,7 +781,7 @@ main:
      movsx rax, di
      add rcx, rax
      mov rax, rcx
-     mov rcx, [rsp+0x38]
+     mov rcx, [rsp-0x40]
      movsx rcx, cx
      add rax, rcx
      mov rcx, 0x14
@@ -885,18 +884,18 @@ main:
      idiv r13d
      movsxd rax, edx
      add rcx, rax
-     mov rax, [rsp+0x40]
+     mov rax, [rsp-0x38]
      movsxd rax, eax
      add rcx, rax
-     mov rax, [rsp+0x48]
+     mov rax, [rsp-0x30]
      movsxd rax, eax
      add rcx, rax
-     mov rax, [rsp+0x50]
+     mov rax, [rsp-0x28]
      movsxd rax, eax
      add rcx, rax
      movsxd rax, r8d
      add rcx, rax
-     mov rax, [rsp+0x58]
+     mov rax, [rsp-0x20]
      movsxd rax, eax
      add rcx, rax
      mov rax, 0x14
@@ -975,7 +974,6 @@ main:
      jmp :146
 
 146: mov rax, rcx
-     add rsp, 0x78
      pop r15
      pop r14
      pop r13

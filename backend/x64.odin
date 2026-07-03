@@ -802,7 +802,7 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 
 	used_red_zone: i32
 	if !has_call {
-		used_red_zone = max(ctx.red_zone_size, ctx.stack_size)
+		used_red_zone = min(ctx.red_zone_size, ctx.stack_size)
 	}
 
 	ctx.stack_size -= used_red_zone

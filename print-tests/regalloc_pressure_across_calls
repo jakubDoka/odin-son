@@ -6,7 +6,7 @@ main:
      push r13
      push r14
      push r15
-     sub rsp, 0x80
+     sub rsp, 0x88
      mov rax, 0x00
      add rax, 0x10
      mov rbx, rax
@@ -176,7 +176,7 @@ main:
      add rax, rcx
      mov rcx, rbx
      add rax, rcx
-     add rsp, 0x80
+     add rsp, 0x88
      pop r15
      pop r14
      pop r13
@@ -189,6 +189,7 @@ call:
      ret
 =========== OPT LEVEL: mininal ===========
 main:
+     sub rsp, 0x08
      mov rdi, 0x10
      call :call
      mov rdi, 0x49
@@ -200,12 +201,14 @@ main:
      mov rdi, 0x2990B80B3EE3
      call :call
      mov rax, 0x2990B80B3F6B
+     add rsp, 0x08
      ret
 call:
      mov rax, rdi
      ret
 =========== OPT LEVEL: all ===========
 main:
+     sub rsp, 0x08
      mov rdi, 0x10
      call :call
      mov rdi, 0x49
@@ -217,6 +220,7 @@ main:
      mov rdi, 0x2990B80B3EE3
      call :call
      mov rax, 0x2990B80B3F6B
+     add rsp, 0x08
      ret
 call:
      mov rax, rdi

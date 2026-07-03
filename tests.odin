@@ -4637,3 +4637,89 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) eliminate_phi_with_direct_cycle :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	i := 0
+	b := 0
+	j := 0
+	for {
+		i += b
+		j += 1
+		if j == 3 do break
+	}
+
+	return 0
+}
+
+run_test(t, `eliminate_phi_with_direct_cycle`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	i := 0
+	b := 0
+	j := 0
+	for {
+		i += b
+		j += 1
+		if j == 3 do break
+	}
+
+	return 0
+}
+`, main_())
+}
+@(test) proper_stack_alignemnt :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Stru :: struct {
+	a: u8,
+}
+
+main_ :: proc() -> int {
+	a: Stru = {}
+	b: Stru = {}
+
+	copy(&a, &b)
+
+	return 0
+}
+
+copy :: proc(a: ^Stru, b: ^Stru) -> int {
+	a^ = b^
+	return 0
+}
+
+run_test(t, `proper_stack_alignemnt`, `
+package main
+
+opt_level :: "none"
+
+Stru :: struct {
+	a: u8,
+}
+
+main :: proc() -> int {
+	a: Stru = {}
+	b: Stru = {}
+
+	copy(&a, &b)
+
+	return 0
+}
+
+copy :: proc(a: ^Stru, b: ^Stru) -> int {
+	a^ = b^
+	return 0
+}
+`, main_())
+}

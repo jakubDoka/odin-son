@@ -657,8 +657,16 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 	slot: [2]int
 	ctx.used = bit_arr.init_from_masks(slot[:])
 
+	has_call := false
 	for bb in ctx.schedule.bbs {
 		bnode := graph_expand(ctx, bb.head)
+
+		CALLS :: bit_set[X64_Node_Type]{.Copy, .Set, .Call}
+
+		for ins in bb.instrs {
+			has_call |= graph_get(ctx, ins).xtype in CALLS
+		}
+
 		if bnode.itype != .Call_End do continue
 		cnode := graph_expand(ctx, bnode.inps[0])
 		call_stack_size: u32
@@ -774,6 +782,12 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 			extra.offset = u32(param_offset)
 			param_offset += int(extra.size)
 		}
+	}
+
+	if has_call || ctx.stack_size != 0 {
+		to_align := pushed + 8 + ctx.stack_size
+		padding := mem.align_forward_int(to_align, 16) - to_align
+		ctx.stack_size += padding
 	}
 
 	for arg in args {

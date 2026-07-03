@@ -1,5 +1,6 @@
 =========== OPT LEVEL: none ===========
 main:
+     sub rsp, 0x08
      mov rdi, 0x00
      sub rdi, 0x64
      call :opaque
@@ -7,30 +8,35 @@ main:
      cbw
      idiv cl
      movsx rax, al
+     add rsp, 0x08
      ret
 opaque:
      mov rax, rdi
      ret
 =========== OPT LEVEL: mininal ===========
 main:
+     sub rsp, 0x08
      mov rdi, 0xFFFFFFFFFFFFFF9C
      call :opaque
      mov rcx, 0x03
      cbw
      idiv cl
      movsx rax, al
+     add rsp, 0x08
      ret
 opaque:
      mov rax, rdi
      ret
 =========== OPT LEVEL: all ===========
 main:
+     sub rsp, 0x08
      mov rdi, 0xFFFFFFFFFFFFFF9C
      call :opaque
      mov rcx, 0x03
      cbw
      idiv cl
      movsx rax, al
+     add rsp, 0x08
      ret
 opaque:
      mov rax, rdi

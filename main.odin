@@ -2,6 +2,7 @@ package main
 
 import zydis "./zydis"
 import "backend"
+import "base:intrinsics"
 import "base:runtime"
 import "core:fmt"
 import "core:io"
@@ -715,10 +716,13 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 
 		lib_call_offsets: [2]uintptr
 
-		lib_call_offsets[0] = auto_cast backend.emit_aligned(
-			&code_mem,
-			mem.copy,
-		)
+		_copy :: proc "contextless" (dst, src: rawptr, len: int) -> rawptr {
+			vl: #simd[16]u8
+			_ = intrinsics.volatile_load(&vl)
+			return mem.copy(dst, src, len)
+		}
+
+		lib_call_offsets[0] = auto_cast backend.emit_aligned(&code_mem, _copy)
 		lib_call_offsets[1] = auto_cast backend.emit_aligned(
 			&code_mem,
 			mem.set,

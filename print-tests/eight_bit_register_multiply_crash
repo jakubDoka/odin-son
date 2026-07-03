@@ -1,5 +1,6 @@
 =========== OPT LEVEL: none ===========
 main:
+     sub rsp, 0x08
      mov rdi, 0x14
      call :opaque
      mov rdx, rax
@@ -13,12 +14,14 @@ main:
      movzx eax, al
      add rcx, rax
      mov rax, rcx
+     add rsp, 0x08
      ret
 opaque:
      mov rax, rdi
      ret
 =========== OPT LEVEL: mininal ===========
 main:
+     sub rsp, 0x08
      mov rdi, 0x14
      call :opaque
      mov rcx, rax
@@ -26,12 +29,14 @@ main:
      imul cl
      movzx eax, al
      add rax, 0xFFFFFFFFFFFFFFF6
+     add rsp, 0x08
      ret
 opaque:
      mov rax, rdi
      ret
 =========== OPT LEVEL: all ===========
 main:
+     sub rsp, 0x08
      mov rdi, 0x14
      call :opaque
      mov rcx, rax
@@ -39,6 +44,7 @@ main:
      imul cl
      movzx eax, al
      add rax, 0xFFFFFFFFFFFFFFF6
+     add rsp, 0x08
      ret
 opaque:
      mov rax, rdi

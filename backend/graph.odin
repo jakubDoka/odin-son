@@ -726,13 +726,19 @@ when !GEN_SPEC {
 
 			return 0
 		case .Phi:
+			if graph_get(ctx, node.inps[0]).btype == .Dead &&
+			   2 < len(node.inps) {
+				ordered_remove(ctx, &node, 2)
+
+				if node.rtype == DEAD_NODE_KIND do break match
+			}
+
 			if len(node.inps) == 2 {
 				return node.inps[1]
 			}
 
-			if graph_get(ctx, node.inps[0]).btype == .Dead &&
-			   2 < len(node.inps) {
-				ordered_remove(ctx, &node, 2)
+			if node.inps[2] == id {
+				return node.inps[1]
 			}
 		case .Then, .Else:
 			if_ := graph_expand(ctx, node.inps[0])

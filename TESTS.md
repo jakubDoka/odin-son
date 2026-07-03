@@ -2392,3 +2392,48 @@ main :: proc() -> int {
 	)
 }
 ```
+
+#### eliminate phi with direct cycle
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	i := 0
+	b := 0
+	j := 0
+	for {
+		i += b
+		j += 1
+		if j == 3 do break
+	}
+
+	return 0
+}
+```
+
+#### proper stack alignemnt
+```odin
+package main
+
+opt_level :: "none"
+
+Stru :: struct {
+	a: u8,
+}
+
+main :: proc() -> int {
+	a: Stru = {}
+	b: Stru = {}
+
+	copy(&a, &b)
+
+	return 0
+}
+
+copy :: proc(a: ^Stru, b: ^Stru) -> int {
+	a^ = b^
+	return 0
+}
+```

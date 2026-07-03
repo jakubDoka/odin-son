@@ -125,6 +125,7 @@ Regalloc_Spec :: struct {
 	clobbers:             [][Reg_Kind]int,
 	interned_reg_masks:   [][^]int,
 	reg_masks:            [][][Reg_Kind]Mask_Intern_Key,
+	reg_bias:             int,
 	reg_mask_of:          proc(
 		_: ^Graph,
 		_: ^Regalloc,
@@ -716,6 +717,10 @@ regalloc_round :: proc(
 		for inter in n {
 			if inter.reg == -1 do continue
 			reg_mask_set(lrg.mask, inter.reg, false)
+		}
+
+		if lrg.mask.masks[0] & ctx.graph.reg_bias != 0 {
+			lrg.mask.masks[0] &= ctx.graph.reg_bias
 		}
 
 		first_set, fok := reg_mask_first_set(lrg.mask)

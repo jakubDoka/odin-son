@@ -1,54 +1,52 @@
 =========== OPT LEVEL: none ===========
 main:
-     push rbx
-     push rbp
      mov rax, 0x00
      sub rax, 0x06
      mov rcx, rax
      mov rax, 0x14
      cqo
      idiv rcx
-     mov rbp, rax
+     mov rdi, rax
      mov rax, 0x00
-     add rbp, rax
+     add rdi, rax
      mov rax, 0x00
      sub rax, 0x07
-     mov rbx, rax
+     mov rsi, rax
      mov rax, 0x14
      cqo
      idiv rcx
-     add rbp, rdx
-     mov rax, rbx
+     add rdi, rdx
+     mov rax, rsi
      cqo
      idiv rcx
-     add rbp, rax
-     mov rax, rbx
+     add rdi, rax
+     mov rax, rsi
      cqo
      idiv rcx
-     add rbp, rdx
-     mov rax, rbx
+     add rdi, rdx
+     mov rax, rsi
      sar rax, 0x01
-     add rbp, rax
+     add rdi, rax
      mov rax, rcx
      sar rax, 0x01
-     add rbp, rax
+     add rdi, rax
      cmp rcx, 0x14
      jnl :0
      jmp :1
 
 000: jmp :2
 
-001: add rbp, 0x01
+001: add rdi, 0x01
      jmp :2
 
-002: mov rax, rbx
+002: mov rax, rsi
      cmp rax, rcx
      jnl :3
      jmp :4
 
 003: jmp :5
 
-004: add rbp, 0x02
+004: add rdi, 0x02
      jmp :5
 
 005: mov rax, 0x14
@@ -58,19 +56,19 @@ main:
 
 006: jmp :8
 
-007: add rbp, 0x04
+007: add rdi, 0x04
      jmp :8
 
-008: cmp rcx, rbx
+008: cmp rcx, rsi
      jnle :9
      jmp :10
 
 009: jmp :11
 
-010: add rbp, 0x08
+010: add rdi, 0x08
      jmp :11
 
-011: mov rdx, rbp
+011: mov rdx, rdi
      mov rax, 0x14
      cmp rax, rcx
      jl :12
@@ -82,8 +80,6 @@ main:
      jmp :14
 
 014: mov rax, rdx
-     pop rbp
-     pop rbx
      ret
 =========== OPT LEVEL: mininal ===========
 main:

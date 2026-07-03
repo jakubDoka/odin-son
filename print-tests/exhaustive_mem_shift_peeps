@@ -373,7 +373,6 @@ main:
      ret
 =========== OPT LEVEL: all ===========
 test_mem_shifts_i8_u8:
-     push rbx
      mov rcx, rdx
      movsx rax, byte ptr [rdi]
      shl al, cl
@@ -381,19 +380,17 @@ test_mem_shifts_i8_u8:
      sar dl, cl
      mov [rdi], al
      mov [rdi], dl
-     movzx ebx, byte ptr [rsi]
-     shr bl, cl
+     movzx edi, byte ptr [rsi]
+     shr dil, cl
      movsx rax, dl
-     mov rdx, rbx
+     mov rdx, rdi
      shl dl, cl
-     mov [rsi], bl
+     mov [rsi], dil
      mov [rsi], dl
      movzx ecx, dl
      add rax, rcx
-     pop rbx
      ret
 test_mem_shifts_i16_u16:
-     push rbx
      mov rcx, rdx
      movsx rax, word ptr [rdi]
      shl ax, cl
@@ -401,19 +398,17 @@ test_mem_shifts_i16_u16:
      sar dx, cl
      mov [rdi], ax
      mov [rdi], dx
-     movzx ebx, word ptr [rsi]
-     shr bx, cl
+     movzx edi, word ptr [rsi]
+     shr di, cl
      movsx rax, dx
-     mov rdx, rbx
+     mov rdx, rdi
      shl dx, cl
-     mov [rsi], bx
+     mov [rsi], di
      mov [rsi], dx
      movzx ecx, dx
      add rax, rcx
-     pop rbx
      ret
 test_mem_shifts_i32_u32:
-     push rbx
      mov rcx, rdx
      movsxd rax, dword ptr [rdi]
      shl eax, cl
@@ -421,19 +416,17 @@ test_mem_shifts_i32_u32:
      sar edx, cl
      mov [rdi], eax
      mov [rdi], edx
-     mov ebx, [rsi]
-     shr ebx, cl
+     mov edi, [rsi]
+     shr edi, cl
      movsxd rax, edx
-     mov rdx, rbx
+     mov rdx, rdi
      shl edx, cl
-     mov [rsi], ebx
+     mov [rsi], edi
      mov [rsi], edx
      mov ecx, edx
      add rax, rcx
-     pop rbx
      ret
 test_mem_shifts_i64_u64:
-     push rbx
      mov rcx, rdx
      mov rax, [rdi]
      shl rax, cl
@@ -443,13 +436,12 @@ test_mem_shifts_i64_u64:
      mov [rdi], rdx
      mov rax, [rsi]
      shr rax, cl
-     mov rbx, rax
-     shl rbx, cl
+     mov rdi, rax
+     shl rdi, cl
      mov [rsi], rax
-     mov [rsi], rbx
+     mov [rsi], rdi
      mov rax, rdx
-     add rax, rbx
-     pop rbx
+     add rax, rdi
      ret
 test_mem_imm_shifts_i8_u8:
      movsx rax, byte ptr [rdi]

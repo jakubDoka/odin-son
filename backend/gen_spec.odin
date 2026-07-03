@@ -276,6 +276,7 @@ generate_specs :: proc() {
 		name:                 Node_Spec_Name,
 		classes:              []Class_Array,
 		datatype_to_reg_kind: [Node_Datatype]Reg_Kind,
+		reg_bias:             int,
 	}
 
 	ts :: proc(
@@ -299,6 +300,7 @@ generate_specs :: proc() {
 		},
 		{
 			name = .X64,
+			reg_bias = X64_REG_BIAS,
 			classes = {
 				ts(&IDEAL_CLASSES, &X64_IDEAL_REG_CLASSES),
 				ts(&X64_CLASSES, &X64_REG_CLASSES),
@@ -434,6 +436,7 @@ generate_specs :: proc() {
 			"\t\tdatatype_to_reg_kind = %w,\n",
 			spec.datatype_to_reg_kind,
 		)
+		fmt.fprintf(file, "\t\treg_bias = %v,\n", spec.reg_bias)
 
 		os.write_string(file, "\t\tclobbers = {\n")
 		for classes in spec.classes {

@@ -3,6 +3,10 @@ package backend
 import "../vendored/gam/util/arna"
 import "core:reflect"
 
+Abi :: struct {
+	red_zone_size: i32,
+}
+
 Codegen_Spec :: struct {
 	emit_function:      proc(_: Codegen_Emit_Ctx) -> Codegen_Output,
 	peep:               Peep_Fn,
@@ -19,6 +23,7 @@ PS_Peep_Ctx :: struct {
 Codegen_Emit_Ctx :: struct {
 	using graph:    ^Graph,
 	using schedule: ^Graph_Schedule,
+	using abi:      ^Abi,
 	using buf:      Codegen_Emit_Buf,
 	lib_calls:      Lib_Calls,
 	allocs:         []Reg,

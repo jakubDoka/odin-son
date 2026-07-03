@@ -21,7 +21,7 @@ when NODE_NAMES {
 	PREFIX_SIZE :: 0
 }
 
-DEAD_LOCAL :: ~u32(0)
+DEAD_LOCAL: i32 : -1
 PRECISION :: size_of(u32)
 NODE_START :: Node_ID(4 + PREFIX_SIZE) / 4
 NODE_ENTRY ::
@@ -144,8 +144,8 @@ Tup :: struct {
 
 Local :: struct {
 	using props: struct #raw_union {
-		size:   u32,
-		offset: u32,
+		size:   i32,
+		offset: i32,
 	},
 }
 

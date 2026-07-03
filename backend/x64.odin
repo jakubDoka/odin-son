@@ -39,6 +39,8 @@ CALL_CLOBBERS ::
 	1 << uint(CALLER_SAVED[7]) |
 	1 << uint(CALLER_SAVED[8])
 
+X64_REG_BIAS :: CALL_CLOBBERS
+
 RAX :: Reg(0)
 RCX :: Reg(1)
 RDX :: Reg(2)
@@ -633,7 +635,7 @@ Ctx :: struct {
 	using inner:        Codegen_Emit_Ctx,
 	spill_slot_base:    [Reg_Kind]i32,
 	local_relocs:       [dynamic]Local_Reloc,
-	stack_size:         int,
+	stack_size:         i32,
 	used:               bit_arr.Bit_Set,
 	code_start:         uint,
 	stack_param_offset: [Reg_Kind][dynamic]i32,
@@ -661,7 +663,12 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 	for bb in ctx.schedule.bbs {
 		bnode := graph_expand(ctx, bb.head)
 
-		CALLS :: bit_set[X64_Node_Type]{.Copy, .Set, .Call}
+		CALLS ::
+			bit_set[X64_Node_Type] {
+				.Copy,
+				.Set,
+				.Call,
+			} when !GEN_SPEC else bit_set[X64_Node_Type]{}
 
 		for ins in bb.instrs {
 			has_call |= graph_get(ctx, ins).xtype in CALLS
@@ -669,7 +676,7 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 
 		if bnode.itype != .Call_End do continue
 		cnode := graph_expand(ctx, bnode.inps[0])
-		call_stack_size: u32
+		call_stack_size: i32
 		for inp in cnode.inps {
 			inode := graph_expand(ctx, inp)
 			if inode.itype != .Local do continue
@@ -677,7 +684,7 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 			call_stack_size += iext.size
 			iext.offset = call_stack_size - iext.size
 		}
-		ctx.stack_size = max(ctx.stack_size, int(call_stack_size))
+		ctx.stack_size = max(ctx.stack_size, call_stack_size)
 	}
 
 	emem: Node_ID
@@ -689,34 +696,37 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 		}
 	}
 
+	mem_outs: []Node_Output
 	if emem != 0 {
-		Local_Slot :: bit_field u64 {
-			node:     Node_ID | 32,
-			priority: u32     | 32,
-		}
-		locals: [dynamic]Local_Slot
+		mem_outs = graph_outs(ctx.graph, emem)
+	}
 
-		for mout in graph_outs(ctx.graph, emem) {
-			mnode := graph_expand(ctx.graph, mout.id)
-			if mnode.itype == .Local {
-				extra := graph_extra(ctx.graph, mnode, Local)
-				append(
-					&locals,
-					Local_Slot {
-						node = mout.id,
-						priority = intrinsics.count_trailing_zeros(extra.size),
-					},
-				)
-			}
-		}
+	Local_Slot :: bit_field u64 {
+		node:     Node_ID | 32,
+		priority: i32     | 32,
+	}
+	locals: [dynamic]Local_Slot
 
-		sort.quick_sort(locals[:])
-
-		for loc in locals {
-			extra := graph_extra(ctx.graph, loc.node, Local)
-			ctx.stack_size += int(extra.size)
-			extra.offset = u32(ctx.stack_size) - extra.size
+	for mout in mem_outs {
+		mnode := graph_expand(ctx.graph, mout.id)
+		if mnode.itype == .Local {
+			extra := graph_extra(ctx.graph, mnode, Local)
+			append(
+				&locals,
+				Local_Slot {
+					node = mout.id,
+					priority = intrinsics.count_trailing_zeros(extra.size),
+				},
+			)
 		}
+	}
+
+	sort.quick_sort(locals[:])
+
+	for loc in locals {
+		extra := graph_extra(ctx.graph, loc.node, Local)
+		ctx.stack_size += extra.size
+		extra.offset = ctx.stack_size - extra.size
 	}
 
 	// NOTE: the Arg and Local never get promoted to a different node so we can
@@ -741,16 +751,16 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 
 	sort.quick_sort(args[:])
 
-	spill_slot_count: [Reg_Kind]int
+	spill_slot_count: [Reg_Kind]i32
 	for reg in ctx.allocs {
 		spill_slot_count[reg.kind] = max(
 			spill_slot_count[reg.kind],
-			int(reg.index) - 16 + 1,
+			i32(reg.index) - 16 + 1,
 		)
 		bit_arr.set_unbounded(ctx.used, int(reg.index))
 	}
 
-	pushed := 0
+	pushed: i32
 	for reg in CALLE_SAVED {
 		if bit_arr.contains(ctx.used, int(reg)) {
 			// push $reg
@@ -779,22 +789,39 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 
 		if enode.itype == .Local {
 			extra := graph_extra(ctx.graph, enode, Local)
-			extra.offset = u32(param_offset)
-			param_offset += int(extra.size)
+			extra.offset = param_offset
+			param_offset += extra.size
 		}
 	}
 
 	if has_call || ctx.stack_size != 0 {
 		to_align := pushed + 8 + ctx.stack_size
-		padding := mem.align_forward_int(to_align, 16) - to_align
+		padding := i32(mem.align_forward_int(int(to_align), 16)) - to_align
 		ctx.stack_size += padding
+	}
+
+	used_red_zone: i32
+	if !has_call {
+		used_red_zone = max(ctx.red_zone_size, ctx.stack_size)
+	}
+
+	ctx.stack_size -= used_red_zone
+
+	for mout in mem_outs {
+		local := graph_extra(ctx, mout.id, Local)
+		if local == nil do continue
+		local.offset -= used_red_zone
+	}
+
+	for &slot in ctx.spill_slot_base {
+		slot -= used_red_zone
 	}
 
 	for arg in args {
 		enode := graph_expand(ctx, arg)
 		if enode.itype == .Local {
 			extra := graph_extra(ctx.graph, enode, Local)
-			extra.offset += u32(ctx.stack_size)
+			extra.offset += ctx.stack_size
 		}
 	}
 

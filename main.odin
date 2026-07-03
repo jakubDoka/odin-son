@@ -701,9 +701,14 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 				log.info(string(sb.buf[:]))
 			}
 
+			abi := backend.Abi {
+				red_zone_size = 128,
+			}
+
 			ctx := backend.Codegen_Emit_Ctx {
 				graph = &ctx,
 				schedule = &schedule,
+				abi = &abi,
 				buf = {code = &code_mem, relocs = &reloc_mem},
 				allocs = regs,
 				lib_calls = {

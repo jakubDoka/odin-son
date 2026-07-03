@@ -6,6 +6,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 	.Builder = {
 		class_lengths = {.General = 0},
 		datatype_to_reg_kind = {.Void = Reg_Kind.General, .I8 = Reg_Kind.General, .I16 = Reg_Kind.General, .I32 = Reg_Kind.General, .I64 = Reg_Kind.General},
+		reg_bias = 0,
 		clobbers = {
 			{.General = 0}, // Start
 			{.General = 0}, // Entry
@@ -555,6 +556,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 	.X64 = {
 		class_lengths = {.General = 1},
 		datatype_to_reg_kind = {.Void = Reg_Kind.General, .I8 = Reg_Kind.General, .I16 = Reg_Kind.General, .I32 = Reg_Kind.General, .I64 = Reg_Kind.General},
+		reg_bias = 4039,
 		clobbers = {
 			{.General = 0}, // Start
 			{.General = 0}, // Entry

@@ -3,15 +3,14 @@ opaque:
      mov rax, rdi
      ret
 consume:
-     push rbx
-     sub rsp, 0x10
+     sub rsp, 0x18
      shr rdi, 0x00
      mov [rsp], rdi
      shr rsi, 0x00
      mov [rsp+0x08], rsi
      mov rax, [rsp]
-     mov rbx, [rsp+0x08]
-     add rax, rbx
+     mov rsi, [rsp+0x08]
+     add rax, rsi
      add rax, rdx
      add rax, rcx
      add rax, r8
@@ -20,8 +19,7 @@ consume:
      add rax, rcx
      mov rcx, [rsp+0x28]
      add rax, rcx
-     add rsp, 0x10
-     pop rbx
+     add rsp, 0x18
      ret
 main:
      push rbx
@@ -83,15 +81,14 @@ opaque:
      mov rax, rdi
      ret
 consume:
-     push rbx
-     sub rsp, 0x10
+     sub rsp, 0x18
      shr rdi, 0x00
      mov [rsp], rdi
      shr rsi, 0x00
      mov [rsp+0x08], rsi
      mov rax, [rsp]
-     mov rbx, [rsp+0x08]
-     add rax, rbx
+     mov rsi, [rsp+0x08]
+     add rax, rsi
      add rax, rdx
      add rax, rcx
      add rax, r8
@@ -100,8 +97,7 @@ consume:
      add rax, rcx
      mov rcx, [rsp+0x28]
      add rax, rcx
-     add rsp, 0x10
-     pop rbx
+     add rsp, 0x18
      ret
 main:
      push rbx
@@ -163,19 +159,16 @@ opaque:
      mov rax, rdi
      ret
 consume:
-     push rbx
-     mov rbx, rdi
-     add rbx, rsi
-     add rbx, rdx
-     add rbx, rcx
-     add rbx, r8
-     add rbx, r9
+     add rdi, rsi
+     add rdi, rdx
+     add rdi, rcx
+     add rdi, r8
+     add rdi, r9
+     mov rax, [rsp+0x08]
+     add rdi, rax
      mov rax, [rsp+0x10]
-     add rbx, rax
-     mov rax, [rsp+0x18]
-     add rbx, rax
-     mov rax, rbx
-     pop rbx
+     add rdi, rax
+     mov rax, rdi
      ret
 main:
      push rbx

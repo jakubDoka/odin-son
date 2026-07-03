@@ -6,7 +6,6 @@ import "base:runtime"
 import "core:container/queue"
 import "core:fmt"
 import "core:log"
-import "core:os"
 import "core:slice"
 import "core:sync"
 
@@ -346,21 +345,18 @@ graph_schedule :: proc(
 		}
 	}
 
-	in_worklist := bit_arr.init(graph.gvn)
 	worklist: queue.Queue(Node_ID)
 	queue.init(&worklist, int(graph.gvn))
 	if graph.end != 0 {
-		queue.push_front(&worklist, graph.end)
-		bit_arr.set(in_worklist, graph_get(graph, graph.end).gvn)
+		worklist_add(graph, &worklist, graph.end)
 	}
 
 	rounds := 0
 
-	for n in queue.pop_front_safe(&worklist) {
+	for n in worklist_next(graph, &worklist) {
 		rounds += 1
 
 		node := graph_expand(graph, n)
-		bit_arr.set(in_worklist, node.gvn, false)
 
 		assert(ctx.late_schedules[node.gvn] == 0)
 
@@ -387,9 +383,7 @@ graph_schedule :: proc(
 				onode := graph_expand(graph, out.id)
 				if ctx.late_schedules[onode.gvn] == 0 &&
 				   (!onode.is_load || !node.is_store) {
-					if bit_arr.set(in_worklist, onode.gvn) {
-						queue.push_back(&worklist, out.id)
-					}
+					worklist_add(graph, &worklist, out.id)
 					ready = false
 				}
 			}
@@ -457,9 +451,7 @@ graph_schedule :: proc(
 			for out in node.outs {
 				onode := graph_expand(graph, out.id)
 				if ctx.late_schedules[onode.gvn] == 0 {
-					if bit_arr.set(in_worklist, onode.gvn) {
-						queue.push_back(&worklist, out.id)
-					}
+					worklist_add(graph, &worklist, out.id)
 				}
 			}
 		}
@@ -468,9 +460,7 @@ graph_schedule :: proc(
 			for inp in node.inps {
 				inode := graph_expand(graph, inp)
 				if ctx.late_schedules[inode.gvn] == 0 {
-					if bit_arr.set(in_worklist, inode.gvn) {
-						queue.push_back(&worklist, inp)
-					}
+					worklist_add(graph, &worklist, inp)
 				}
 			}
 		}
@@ -479,9 +469,7 @@ graph_schedule :: proc(
 			for out in node.outs {
 				onode := graph_expand(graph, out.id)
 				if ctx.late_schedules[onode.gvn] == 0 && onode.is_load {
-					if bit_arr.set(in_worklist, onode.gvn) {
-						queue.push_back(&worklist, out.id)
-					}
+					worklist_add(graph, &worklist, out.id)
 				}
 			}
 		}

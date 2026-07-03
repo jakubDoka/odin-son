@@ -469,6 +469,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 	types.procs.allocator = types.allocator
 	types.pointers.allocator = types.allocator
 	types.structs.allocator = types.allocator
+	types.arrays.allocator = types.allocator
 	types.lits.allocator = types.allocator
 
 	ctx: Gen_Ctx
@@ -1326,6 +1327,14 @@ emit_nodes :: proc(
 				store_value(ctx, "finit", field_ptr, value, ast_value)
 			}
 			res, lvalue = dest, true
+		case ^Array:
+			stride := array_elem_stride(t.elem)
+			for elem, i in d.elems {
+				elem_ptr := field_offset(ctx, dest, i * stride)
+				value := emit_nodes(ctx, {dest = elem_ptr}, elem)
+				store_value(ctx, "ainit", elem_ptr, value, t.elem)
+			}
+			res, lvalue = dest, true
 		case:
 			fmt.panicf("TODO: %#v", d)
 		}
@@ -1351,6 +1360,22 @@ emit_nodes :: proc(
 		case:
 			fmt.panicf("TODO: %#v", d.field.derived)
 		}
+	case ^ast.Index_Expr:
+		base := emit_nodes(ctx, {}, d.expr)
+		assert(base.is_lvalue)
+		idx := to_rvalue(ctx, emit_nodes(ctx, {}, d.index), d.index)
+
+		stride := array_elem_stride(ty)
+		off := backend.graph_add_bin_op(
+			ctx,
+			"idxm",
+			.Mul,
+			.I64,
+			idx,
+			backend.graph_add_c_int(ctx, "idxs", .I64, i64(stride)),
+		)
+		res = backend.graph_add_bin_op(ctx, "idx", .Add, .I64, base.id, off)
+		lvalue = true
 	case ^ast.Ident:
 		sym := ctx_lookup_lvalue(ctx, d)
 		switch sym in sym {
@@ -1387,6 +1412,12 @@ emit_nodes :: proc(
 
 		ctx.loop = ctx.loop.parent
 	case ^ast.Call_Expr:
+		if id, ok := d.expr.derived.(^ast.Ident); ok && id.name == "len" {
+			arr := unpack_type(get_node_type(d.args[0])).(^Array)
+			res = backend.graph_add_c_int(ctx, "len", dt, i64(arr.len))
+			break
+		}
+
 		CALL_PREFIX :: 2
 
 		args := make([]backend.Node_ID, CALL_PREFIX + len(d.args) * 2, tmp)

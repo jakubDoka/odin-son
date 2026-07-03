@@ -1,0 +1,128 @@
+=========== OPT LEVEL: none ===========
+main:
+     sub rsp, 0x28
+     mov rsi, 0x00
+     mov rdx, 0x20
+     lea rdi, [rsp]
+     call :$set
+     mov rdx, 0x00
+     jmp :0
+
+000: mov rcx, 0x01
+     cmp rdx, 0x20
+     jl :1
+     jmp :2
+
+001: mov rax, rdx
+     imul rax, rcx
+     lea rcx, [rsp]
+     add rax, rcx
+     mov rcx, rdx
+     mov [rax], cl
+     add rdx, 0x01
+     jmp :0
+
+002: mov rdi, 0x00
+     mov rax, 0x00
+     jmp :3
+
+003: cmp rdi, 0x20
+     jl :4
+     jmp :5
+
+004: mov rdx, rdi
+     imul rdx, rcx
+     lea rsi, [rsp]
+     add rdx, rsi
+     movzx edx, byte ptr [rdx]
+     movzx edx, dl
+     add rdx, rax
+     add rdi, 0x01
+     mov rax, rdx
+     jmp :3
+
+005: add rsp, 0x28
+     ret
+=========== OPT LEVEL: mininal ===========
+main:
+     sub rsp, 0x28
+     mov rsi, 0x00
+     mov rdx, 0x20
+     lea rdi, [rsp]
+     call :$set
+     mov rdx, 0x00
+     jmp :0
+
+000: mov rcx, 0x01
+     cmp rdx, 0x20
+     jl :1
+     jmp :2
+
+001: mov rax, rdx
+     imul rax, rcx
+     lea rcx, [rsp]
+     add rax, rcx
+     mov rcx, rdx
+     mov [rax], cl
+     add rdx, 0x01
+     jmp :0
+
+002: mov rdi, 0x00
+     mov rax, 0x00
+     jmp :3
+
+003: cmp rdi, 0x20
+     jl :4
+     jmp :5
+
+004: mov rdx, rdi
+     imul rdx, rcx
+     lea rsi, [rsp]
+     add rdx, rsi
+     movzx edx, byte ptr [rdx]
+     movzx edx, dl
+     add rdx, rax
+     add rdi, 0x01
+     mov rax, rdx
+     jmp :3
+
+005: add rsp, 0x28
+     ret
+=========== OPT LEVEL: all ===========
+main:
+     mov qword ptr [rsp-0x28], 0x00
+     mov qword ptr [rsp-0x20], 0x00
+     mov qword ptr [rsp-0x18], 0x00
+     mov qword ptr [rsp-0x10], 0x00
+     mov rdx, 0x00
+     jmp :0
+
+000: cmp rdx, 0x20
+     jl :1
+     jmp :2
+
+001: lea rax, [rsp-0x28]
+     add rax, rdx
+     mov rcx, rdx
+     mov [rax], cl
+     add rdx, 0x01
+     jmp :0
+
+002: mov rdx, 0x00
+     mov rax, 0x00
+     jmp :3
+
+003: cmp rdx, 0x20
+     jl :4
+     jmp :5
+
+004: lea rcx, [rsp-0x28]
+     add rcx, rdx
+     movzx ecx, byte ptr [rcx]
+     movzx ecx, cl
+     add rcx, rax
+     add rdx, 0x01
+     mov rax, rcx
+     jmp :3
+
+005: ret

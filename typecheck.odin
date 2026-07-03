@@ -6,6 +6,7 @@ import "core:fmt"
 import "core:mem"
 import "core:odin/ast"
 import "core:odin/tokenizer"
+import "core:strconv"
 import "meta"
 
 Lit :: union {
@@ -53,11 +54,17 @@ type_align :: proc(ty: Type) -> int {
 		return 8
 	case ^Struct:
 		return t.align
+	case ^Array:
+		return type_align(t.elem)
 	case ^Lit:
 		panic("we should not be type type")
 	case:
 		panic("wuwut")
 	}
+}
+
+array_elem_stride :: proc(elem: Type) -> int {
+	return mem.align_forward_int(type_size(elem), type_align(elem))
 }
 
 type_size :: proc(ty: Type) -> int {
@@ -68,6 +75,8 @@ type_size :: proc(ty: Type) -> int {
 		return 8
 	case ^Struct:
 		return t.size
+	case ^Array:
+		return array_elem_stride(t.elem) * t.len
 	case ^Lit:
 		panic("we should not be type type")
 	case:
@@ -114,7 +123,7 @@ type_to_dt :: proc(ty: Type) -> backend.Node_Datatype {
 		return TYPE_TO_DT[ty]
 	case Pointer:
 		return .I64
-	case ^Lit, ^Struct:
+	case ^Lit, ^Struct, ^Array:
 		return .Void
 	case:
 		panic("wuwut")
@@ -129,6 +138,7 @@ Type_Kind :: enum uintptr {
 	Builtin,
 	Pointer,
 	Struct,
+	Array,
 	Lit,
 }
 
@@ -144,6 +154,7 @@ Type_Data :: union #no_nil {
 	Builtin,
 	Pointer,
 	^Struct,
+	^Array,
 	^Lit,
 }
 
@@ -166,6 +177,18 @@ intern_pointer :: proc(ctx: ^Gen_Ctx, ty: Type) -> Type {
 	existing :=
 		ctx.pointers[ty] or_else Pointer(new_clone(ty, ctx.types.allocator))
 	ctx.pointers[ty] = existing
+	return pack_type(existing)
+}
+
+intern_array :: proc(ctx: ^Gen_Ctx, elem: Type, length: int) -> Type {
+	key := Array_Key{elem, length}
+	existing, ok := ctx.arrays[key]
+	if !ok {
+		existing = new(Array, ctx.types.allocator)
+		existing.elem = elem
+		existing.len = length
+		ctx.arrays[key] = existing
+	}
 	return pack_type(existing)
 }
 
@@ -227,6 +250,13 @@ emit_type :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Type {
 		fmt.panicf("TODO: %#v", expr.derived)
 	case ^ast.Pointer_Type:
 		return intern_pointer(ctx, emit_type(ctx, d.elem))
+	case ^ast.Array_Type:
+		elem := emit_type(ctx, d.elem)
+		len_lit := d.len.derived.(^ast.Basic_Lit)
+		assert(len_lit.tok.kind == .Integer)
+		length, ok := strconv.parse_int(len_lit.tok.text)
+		assert(ok)
+		return intern_array(ctx, elem, length)
 	case:
 		fmt.panicf("TODO: %#v", expr.derived)
 	}
@@ -274,7 +304,18 @@ Types :: struct {
 	scope:     [dynamic]Variable,
 	pointers:  map[Type]Pointer,
 	structs:   map[Struct_Key]^Struct,
+	arrays:    map[Array_Key]^Array,
 	lits:      map[Lit]^Lit,
+}
+
+Array_Key :: struct {
+	elem: Type,
+	len:  int,
+}
+
+Array :: struct {
+	elem: Type,
+	len:  int,
 }
 
 File_ID :: distinct u32
@@ -374,8 +415,23 @@ typecheck :: proc(
 			}
 
 			return inferred_ty
+		case ^Array:
+			for elem in d.elems {
+				ety := typecheck(ctx, {inferred_ty = t.elem}, elem)
+				assert(ety == t.elem)
+			}
+			return inferred_ty
 		case:
 			fmt.panicf("TODO: %v %#v", unpack_type(inferred_ty), d)
+		}
+	case ^ast.Index_Expr:
+		base := typecheck(ctx, {}, d.expr)
+		typecheck(ctx, {inferred_ty = .Int}, d.index)
+		#partial switch t in unpack_type(base) {
+		case ^Array:
+			return t.elem
+		case:
+			fmt.panicf("TODO: %#v", t)
 		}
 	case ^ast.Selector_Expr:
 		base := typecheck(ctx, {}, d.expr)
@@ -487,6 +543,13 @@ typecheck :: proc(
 
 		return emit_type(ctx, node)
 	case ^ast.Call_Expr:
+		if id, ok := d.expr.derived.(^ast.Ident); ok && id.name == "len" {
+			assert(len(d.args) == 1)
+			arg_ty := typecheck(ctx, {}, d.args[0])
+			_ = unpack_type(arg_ty).(^Array)
+			return .Int
+		}
+
 		callee := typecheck(ctx, {}, d.expr)
 
 		sig: Signature

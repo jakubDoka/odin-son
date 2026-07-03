@@ -44,8 +44,6 @@ and verify they emit these instructions.
 
 ### add more tests to expose bugs in backend (DONE)
 
-NOTE: Read AGENTS.md
-
 Right now there is a wider range of things that we already support and I am not
 confident they are tested properly. Try to add more tests to cover gaps in the
 current tests and, better yet, try to find tests that expose bugs. If the test
@@ -53,9 +51,7 @@ is breaking in the frontend because something is not implemented yet, don't
 include that test. But otherwise if frontend crashes on unexpected assert/ioob
 etcetera.
 
-### rewiew the codebase and look for bugs, then write tests that reproduce them
-
-NOTE: Read AGENTS.md
+### rewiew the codebase and look for bugs, then write tests that reproduce them (DONE)
 
 You should spinn up agents that will search for bugs by randomly reviewing
 code, each agent should upon finding a bug, make a test that reproduces it,
@@ -64,3 +60,14 @@ verification, once bug is verified, agent should stop and give you the test,
 you will then clean up the test name and add it to the test list. If an agent
 generates invalid odin code, it should immediately remove it as it can block
 others.
+
+### Implement arrays in the frontend code
+
+NOTE: Read AGENTS.md
+
+The frontend, as of right now is only handling structs, ints, and basic pointer
+types. I have added a example that should force implementing at lease a part to
+the frontend implementation for the array handling. Make sure the test passes
+(#### basic arrays). You should follow the patterns already established by the
+existing code. I dont thing there are any backend changes required, if so, stop
+and let me know.

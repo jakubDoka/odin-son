@@ -41,9 +41,9 @@ graph_add_input_node_id :: #force_inline proc(
 	graph: ^Graph,
 	id: Node_ID,
 	inp: Node_ID,
-	is_scope := false,
+	max_growth: u16 = 1024,
 ) -> int {
-	return graph_add_input_node(graph, graph_get(graph, id), inp, is_scope)
+	return graph_add_input_node(graph, graph_get(graph, id), inp, max_growth)
 }
 graph_add_extra_input :: proc{graph_add_extra_input_node, graph_add_extra_input_node_id}
 graph_add_extra_input_node_id :: #force_inline proc(graph: ^Graph, id: Node_ID, inp: Node_ID) {

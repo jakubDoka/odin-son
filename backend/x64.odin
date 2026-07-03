@@ -4,6 +4,7 @@ import "../vendored/gam/util/arna"
 import "../vendored/gam/util/bit_arr"
 import "base:intrinsics"
 import "core:fmt"
+import "core:math"
 import "core:mem"
 import "core:reflect"
 import "core:sort"
@@ -219,14 +220,17 @@ X64_REG_CLASSES := #partial [X64_Node_Type]Reg_Class_Spec {
 	.X64_Neg ..= .X64_Not = SIMPLE_UNOP_SPEC,
 	.X64_Load = {
 		input_start_idx = 2,
-		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK}},
+		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
 	},
 	.X64_Store = {
 		input_start_idx = 2,
-		reg_masks = #partial{.General = {{}, GPA_MASK, GPA_MASK}},
+		reg_masks = #partial{.General = {{}, GPA_MASK, GPA_MASK, GPA_MASK}},
 	},
 	.X64_Mul8 = {
 		reg_masks = #partial{.General = {RAX_MASK, GPA_MASK, RAX_MASK}},
+	},
+	.X64_Lea = {
+		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
 	},
 	.X64_Mul = X64_SIMPE_CMP_OP,
 }
@@ -252,6 +256,7 @@ when SPEC_NOT_PRESENT {
 		X64_Shr,
 		X64_U_Shr,
 		X64_Mul,
+		X64_Lea,
 		X64_Load,
 		X64_Store,
 		X64_Neg,
@@ -277,6 +282,7 @@ when SPEC_NOT_PRESENT {
 		.X64_Shl ..= .X64_U_Shr = X64_SIMPLE_SHIFT_OP_SPEC,
 		.X64_Neg ..= .X64_Not = X64_SIMPLE_UN_OP_SPEC,
 		.X64_Mul = X64_SIMPLE_BIN_OP_SPEC,
+		.X64_Lea = {id = X64_Mem_Op},
 		.X64_Load = {id = X64_Mem_Op, flags = {.Load}},
 		.X64_Store = {id = X64_Mem_Op, flags = {.Store}},
 		.X64_Mul8 = {},
@@ -292,7 +298,7 @@ Mem_Mode :: enum u8 {
 X64_Mem_Op :: struct {
 	imm:      i32,
 	dis:      i32,
-	scale:    u32,
+	scale:    i32,
 	signed:   bool,
 	mem_mode: Mem_Mode,
 	dt:       Node_Datatype,
@@ -334,7 +340,8 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 		}
 	}
 
-	base: Node_ID
+	base, index: Node_ID
+	scale: i32
 	displacement: i32
 	stack_base: bool
 	if 2 < len(node.inps) {
@@ -344,19 +351,162 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 		}
 
 		bnode := graph_expand(ctx, nbase)
+		if bnode.xtype == .X64_Lea {
+			mem_op := graph_extra(ctx, bnode, X64_Mem_Op)
+			scale = mem_op.scale
+			overflowed: bool
+			displacement, overflowed = intrinsics.overflow_add(
+				displacement,
+				mem_op.dis,
+			)
+			assert(!overflowed)
+
+			index = bnode.inps[1]
+			base = bnode.inps[0]
+			nbase = base
+		}
+
+		bnode = graph_expand(ctx, nbase)
 		if bnode.itype == .Local_Addr {
 			base = bnode.inps[0]
 			stack_base = true
+		} else {
+			stack_base = bnode.itype == .Local
 		}
 	}
 
-	#partial switch node.xtype {
+	#partial switch node.itype {
+	case .Add ..= .Xor, .Eq ..= .U_Ge, .Shl ..= .U_Shr, .Mul:
+		op := u16(node.itype) + BIN_OP_OFFSET
+
+		if node.dt == .I8 && node.itype == .Mul {
+			node.xtype = .X64_Mul8
+			return id
+		}
+
+		// TODO: we can do this one once things are scheduled
+		if false && rhs_load != nil {
+			load := graph_expand(ctx, node.inps[1])
+
+			return x64_make_node(
+				ctx,
+				id,
+				op,
+				{load.inps[0], load.inps[1], node.inps[0], load.inps[2]},
+				{},
+			)
+		}
+
+		chanded := false
+		if .Eq <= node.itype && node.itype <= .U_Ge {
+			if node.dt != .Void &&
+			   len(node.outs) == 1 &&
+			   graph_get(ctx, node.outs[0].id).itype == .If {
+				node.dt = .Void
+				chanded = true
+			}
+		}
+
+		if rhs_conts != nil {
+			return x64_make_node(
+				ctx,
+				id,
+				op,
+				node.inps[:1],
+				{imm = i32(rhs_conts.value)},
+			)
+		}
+
+		if chanded do return id
+
+		indexify: if node.itype == .Add {
+			rhs := graph_expand(ctx, node.inps[1])
+			if rhs.xtype != .X64_Mul do break indexify
+
+			stride_const := graph_extra(ctx, rhs, X64_Mem_Op).imm
+			if stride_const > 8 || !math.is_power_of_two(int(stride_const)) {
+				break indexify
+			}
+
+			scale := stride_const
+			index := rhs.inps[0]
+
+			base, offset := base_and_offset(ctx, node.inps[0])
+			if int(i32(offset)) == offset {
+				displacement = i32(offset)
+			}
+
+			bnode := graph_expand(ctx, base)
+			if bnode.itype == .Local_Addr {
+				base = bnode.inps[0]
+				stack_base = true
+			}
+
+			return x64_make_node(
+				ctx,
+				id,
+				u16(X64_Node_Type.X64_Lea),
+				{base, index},
+				{scale = scale, dis = displacement},
+				additional_data_offset = u8(stack_base),
+			)
+		}
+	case .If:
+		node.additional_data_start = u8(
+			graph_get(ctx, node.inps[1]).dt == .Void,
+		)
+	case .Load, .Load_S:
+		assert(index == 0)
+		return x64_make_node(
+			ctx,
+			id,
+			u16(X64_Node_Type.X64_Load),
+			{node.inps[0], node.inps[1], base},
+			{dis = displacement, signed = node.itype == .Load_S},
+			additional_data_offset = u8(stack_base),
+		)
+	case .Store:
+		assert(index == 0)
+		immediate: i32
+		inps := []Node_ID{node.inps[0], node.inps[1], base, node.inps[3]}
+		if val_const != nil {
+			immediate = i32(val_const.value)
+			inps = inps[:len(inps) - 1]
+		}
+
+		return x64_make_node(
+			ctx,
+			id,
+			u16(X64_Node_Type.X64_Store),
+			inps,
+			{
+				dis = displacement,
+				imm = immediate,
+				dt = graph_get(ctx, node.inps[3]).dt,
+			},
+			additional_data_offset = u8(stack_base),
+		)
+	}
+	#partial matchx: switch node.xtype {
 	case .X64_Store, .X64_Load:
 		changed := false
 
 		mem_op := graph_extra(ctx, node, X64_Mem_Op)
 
+		if scale != 0 && mem_op.scale != 0 {
+			break matchx
+		}
+
+		if scale != 0 {
+			assert(index != 0)
+			idx := graph_add_input(ctx, node, index, max_growth = 1)
+			graph_add_output(ctx, index, id, idx)
+			mem_op.scale = scale
+			changed = true
+		}
+
 		if val_const != nil {
+			assert(scale == 0)
 			graph_remove_output(ctx, node.inps[3], {idx = 3, id = id})
 			node.ordered_input_count -= 1
 			node.input_count -= 1
@@ -456,84 +606,6 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 		return 0
 	}
 
-	#partial switch node.itype {
-	case .Add ..= .Xor, .Eq ..= .U_Ge, .Shl ..= .U_Shr, .Mul:
-		op := u16(node.itype) + BIN_OP_OFFSET
-
-		if node.dt == .I8 && node.itype == .Mul {
-			node.xtype = .X64_Mul8
-			return id
-		}
-
-		// TODO: we can do this one once things are scheduled
-		if false && rhs_load != nil {
-			load := graph_expand(ctx, node.inps[1])
-
-			return x64_make_node(
-				ctx,
-				id,
-				op,
-				{load.inps[0], load.inps[1], node.inps[0], load.inps[2]},
-				{},
-			)
-		}
-
-		chanded := false
-		if .Eq <= node.itype && node.itype <= .U_Ge {
-			if node.dt != .Void &&
-			   len(node.outs) == 1 &&
-			   graph_get(ctx, node.outs[0].id).itype == .If {
-				node.dt = .Void
-				chanded = true
-			}
-		}
-
-		if rhs_conts != nil {
-			return x64_make_node(
-				ctx,
-				id,
-				op,
-				node.inps[:1],
-				{imm = i32(rhs_conts.value)},
-			)
-		}
-
-		if chanded do return id
-	case .If:
-		node.additional_data_start = u8(
-			graph_get(ctx, node.inps[1]).dt == .Void,
-		)
-	case .Load, .Load_S:
-		return x64_make_node(
-			ctx,
-			id,
-			u16(X64_Node_Type.X64_Load),
-			{node.inps[0], node.inps[1], base},
-			{dis = displacement, signed = node.itype == .Load_S},
-			additional_data_offset = u8(stack_base),
-		)
-	case .Store:
-		immediate: i32
-		inps := []Node_ID{node.inps[0], node.inps[1], base, node.inps[3]}
-		if val_const != nil {
-			immediate = i32(val_const.value)
-			inps = inps[:len(inps) - 1]
-		}
-
-		return x64_make_node(
-			ctx,
-			id,
-			u16(X64_Node_Type.X64_Store),
-			inps,
-			{
-				dis = displacement,
-				imm = immediate,
-				dt = graph_get(ctx, node.inps[3]).dt,
-			},
-			additional_data_offset = u8(stack_base),
-		)
-	}
-
 	return 0
 }
 
@@ -575,11 +647,16 @@ x64_post_schedule_peep :: proc(
 			mem_op.mem_mode = .Src
 			mem_op.dt = rhs.dt
 
+			slots: [5]Node_ID
+			copy(slots[:], rhs.inps)
+			slots[4] = slots[3]
+			slots[3] = node.inps[0]
+
 			return x64_make_node(
 				ctx,
 				id,
 				op,
-				{rhs.inps[0], rhs.inps[1], rhs.inps[2], node.inps[0]},
+				slots[:len(slots) - int(slots[4] == 0)],
 				mem_op^,
 				additional_data_offset = u8(rhs.data_start),
 				in_place_slot_offset = 1 - i8(rhs.data_start == 3),
@@ -602,7 +679,7 @@ x64_post_schedule_peep :: proc(
 				ctx,
 				id,
 				node.rtype,
-				{lhs.inps[0], lhs.inps[1], lhs.inps[2]},
+				lhs.inps,
 				om_mem_op^,
 				additional_data_offset = u8(lhs.data_start),
 				in_place_slot_offset = 0,
@@ -1021,30 +1098,44 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		mem_op = &mem_op_placeholder
 	}
 
+	scl := mem_op.scale
+	idx := NO_INDEX
+	if scl != 0 do idx = reg_of(ctx, node.inps[len(node.inps) - 1])
+	imm_boundary := int(scl != 0)
+
 	switch node.xtype {
 	case .Local:
 	case .Local_Addr:
-		// lea [rsp + $offset]
+		dst := reg_of(ctx, instr)
+		// lea $dst, [rsp + $offset]
 		offset := graph_extra(ctx, node.inps[0], Local).offset
-		emit_stack_lea(ctx.code, reg_of(ctx, instr), offset)
+		emit_stack_lea(ctx.code, dst, offset)
+	case .X64_Lea:
+		dst := reg_of(ctx, instr)
+		bse, sdis := reg_and_disp_of(ctx, node.inps[0])
+		dis := mem_op.dis
+
+		// lea $dst, [$bse + $idx * $scl + $sdis + $dis]
+		rx := rex(dst, bse, idx, true)
+		emit(ctx.code, {rx, 0x8D})
+		emit_indirect_addr(ctx.code, dst, bse, idx, scl, sdis + dis)
 	case .Store, .X64_Store:
 		bse, sdis := reg_and_disp_of(ctx, node.inps[2])
 		dis := mem_op.dis
 		dt := mem_op.dt
 
-		if 3 < len(node.inps) {
+		if 3 + imm_boundary < len(node.inps) {
 			dt := graph_get(ctx, node.inps[3]).dt
 			val := reg_of(ctx, node.inps[3])
 
-			rx := rex(val, bse, NO_INDEX, DT_SIZE[dt] == 8)
+			rx := rex(val, bse, idx, DT_SIZE[dt] == 8)
 			emit_sized_opcode(ctx.code, dt, rx, 0x89)
-			emit_indirect_addr(ctx.code, val, bse, NO_INDEX, 1, dis + sdis)
+			emit_indirect_addr(ctx.code, val, bse, idx, scl, dis + sdis)
 		} else {
 			imm := mem_op.imm
-
-			rx := rex(RAX, bse, NO_INDEX, DT_SIZE[dt] == 8)
+			rx := rex(RAX, bse, idx, DT_SIZE[dt] == 8)
 			emit_sized_opcode(ctx.code, dt, rx, 0xC7)
-			emit_indirect_addr(ctx.code, RAX, bse, NO_INDEX, 1, dis + sdis)
+			emit_indirect_addr(ctx.code, RAX, bse, idx, scl, dis + sdis)
 			emit_imm_for_dt(ctx.code, dt, imm)
 		}
 	case .Load, .X64_Load, .Load_S:
@@ -1054,7 +1145,7 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		dis := mem_op.dis
 		signed := mem_op.signed || node.itype == .Load_S
 
-		rx := rex(val, bse, NO_INDEX, DT_SIZE[dt] == 8 || signed)
+		rx := rex(val, bse, idx, DT_SIZE[dt] == 8 || signed)
 		if signed {
 			switch dt {
 			case .Void:
@@ -1086,7 +1177,7 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 			}
 		}
 
-		emit_indirect_addr(ctx.code, val, bse, NO_INDEX, 1, dis + sdis)
+		emit_indirect_addr(ctx.code, val, bse, idx, scl, dis + sdis)
 	case .Sext:
 		dt := graph_get(ctx, node.inps[0]).dt
 		dst := reg_of(ctx, instr)
@@ -1240,6 +1331,7 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 				emit_anys(ctx.code, imm)
 			}
 		case .Dest:
+			assert(scl == 0)
 			dst, sdis := reg_and_disp_of(ctx, node.inps[2])
 			dis := mem_op.dis
 
@@ -1273,9 +1365,9 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 			op := SRC_MODE_OPCODE_TABLE[node.xtype]
 
 			// add/sub/and/or/xor $dst, [$bse + $sdis + $dis]
-			rx := rex(dst, bse, NO_INDEX, DT_SIZE[node.dt] == 8)
+			rx := rex(dst, bse, idx, DT_SIZE[node.dt] == 8)
 			emit_sized_opcode(ctx.code, node.dt, rx, op.opcode)
-			emit_indirect_addr(ctx.code, dst, bse, NO_INDEX, 1, dis + sdis)
+			emit_indirect_addr(ctx.code, dst, bse, idx, scl, dis + sdis)
 		}
 	case .Add ..= .Xor:
 		// add/sub/and/or/xor $dst, $rhs
@@ -1286,6 +1378,7 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		emit_sized_opcode(ctx.code, node.dt, rx, op)
 		emit(ctx.code, {mod_rm(.Direct, rhs, dst)})
 	case .Eq ..= .U_Ge, .X64_Eq ..= .X64_U_Ge:
+		assert(scl == 0)
 		switch mem_op.mem_mode {
 		case .Dest:
 			bse, sdis := reg_and_disp_of(ctx, node.inps[2])
@@ -1363,6 +1456,7 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		emit_sized_opcode(ctx.code, node.dt, rx, 0xd3)
 		emit(ctx.code, {mod_sm(.Direct, op, dst)})
 	case .X64_Neg ..= .X64_Not:
+		assert(scl == 0)
 		assert(mem_op.mem_mode == .Dest)
 		dis := mem_op.dis
 		dst, sdis := reg_and_disp_of(ctx, node.inps[2])
@@ -1554,10 +1648,12 @@ emit_indirect_addr :: proc(
 	reg: Reg,
 	base: Reg,
 	index: Reg,
-	scale: u64,
+	#any_int scale: u64,
 	#any_int dis: i64,
 	is_reloc: bool = false,
 ) {
+	scale := max(scale, 1)
+
 	mod := mod_from_dis(dis)
 
 	assert(mod != .Direct)

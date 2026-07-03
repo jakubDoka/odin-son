@@ -1784,7 +1784,7 @@ graph_push_scope_value :: proc(
 	scope_node := graph_get(graph, scope)
 	assert(scope_node.btype == .Scope)
 
-	idx := graph_add_input(graph, scope_node, value, is_scope = true)
+	idx := graph_add_input(graph, scope_node, value)
 	graph_add_output(graph, value, scope, idx)
 	return idx
 }
@@ -2099,22 +2099,14 @@ graph_add_input_node :: proc(
 	graph: ^Graph,
 	node: ^Node,
 	inp: Node_ID,
-	is_scope := false,
+	max_growth: u16 = 1024,
 ) -> int {
 	free_idx := int(node.ordered_input_count)
-	grow: if node.ordered_input_count == node.input_count || !is_scope {
-		if !is_scope {
-			free_idx, _ = slice.linear_search_reverse(
-				graph_inps(graph, node),
-				0,
-			)
-			if free_idx >= 0 do break grow
-			free_idx = int(node.input_count)
-		}
-
+	grow: if node.ordered_input_count == node.input_count {
 		graph.waste += int(node.input_count * size_of(Node_ID))
 		base := u32(graph.mem.pos / PRECISION)
-		new_cap := node.input_count * 2 + 2
+		max_growth := node.input_count + max_growth
+		new_cap := min(node.input_count * 2 + 2, max_growth)
 		slot := arna.alloc(
 			graph.mem,
 			uint(new_cap * PRECISION),
@@ -2127,7 +2119,7 @@ graph_add_input_node :: proc(
 	}
 
 	graph_inps(graph, node)[free_idx] = inp
-	node.ordered_input_count += u16(is_scope)
+	node.ordered_input_count += 1
 
 	return free_idx
 }

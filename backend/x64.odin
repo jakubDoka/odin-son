@@ -385,19 +385,6 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 			return id
 		}
 
-		// TODO: we can do this one once things are scheduled
-		if false && rhs_load != nil {
-			load := graph_expand(ctx, node.inps[1])
-
-			return x64_make_node(
-				ctx,
-				id,
-				op,
-				{load.inps[0], load.inps[1], node.inps[0], load.inps[2]},
-				{},
-			)
-		}
-
 		chanded := false
 		if .Eq <= node.itype && node.itype <= .U_Ge {
 			if node.dt != .Void &&
@@ -457,7 +444,6 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 			graph_get(ctx, node.inps[1]).dt == .Void,
 		)
 	case .Load, .Load_S:
-		// [ctrl, mem, base, index?] - index is a trailing input when scaled
 		load_inps := [4]Node_ID{node.inps[0], node.inps[1], base, index}
 		return x64_make_node(
 			ctx,
@@ -473,8 +459,6 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 		)
 	case .Store:
 		immediate: i32
-		// [ctrl, mem, base, value, index?] - the index is always the last
-		// input, so a folded-away value slot is filled with the index
 		inps := [5]Node_ID {
 			node.inps[0],
 			node.inps[1],
@@ -536,20 +520,7 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 			node.inps[3], node.inps[4] = node.inps[4], node.inps[3]
 		}
 
-		if val_const != nil {
-			val_idx := 3 + int(mem_op.scale != 0)
-			if mem_op.scale != 0 do swap_out_imm(ctx, node)
-			graph_remove_output(
-				ctx,
-				node.inps[val_idx],
-				{idx = val_idx, id = id},
-			)
-			node.ordered_input_count -= 1
-			node.input_count -= 1
-			mem_op.imm = i32(val_const.value)
-			node = graph_expand(ctx, id)
-			changed = true
-		}
+		assert(val_const == nil)
 
 		mem_op.dis += displacement
 
@@ -1024,8 +995,7 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 @(disabled = GEN_SPEC)
 x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 
-	@(static)
-	@(rodata)
+	@(static, rodata)
 	OPCODE_TABLE := #partial [X64_Node_Type]Instr_Info {
 		.Add       = {0x01, 0},
 		.Sub       = {0x29, 0},
@@ -1074,8 +1044,7 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		.Not       = {0xf7, 0b010},
 	}
 
-	@(static)
-	@(rodata)
+	@(static, rodata)
 	DEST_MODE_OPCODE_TABLE := #partial [X64_Node_Type]Instr_Info {
 		.X64_Add   = {0x01, 0b000},
 		.X64_Sub   = {0x29, 0b101},
@@ -1089,8 +1058,7 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		.X64_Not   = {0xf7, 0b010},
 	}
 
-	@(static)
-	@(rodata)
+	@(static, rodata)
 	JCC_TABLE := #partial [X64_Node_Type]u8 {
 		.Eq   = 0x84, // JE / JZ
 		.Ne   = 0x85, // JNE / JNZ
@@ -1104,8 +1072,7 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		.U_Ge = 0x83, // JAE / JNB
 	}
 
-	@(static)
-	@(rodata)
+	@(static, rodata)
 	CMP_OP_REVERSE := #partial [X64_Node_Type]X64_Node_Type {
 		.Eq       = .Ne,
 		.Ne       = .Eq,
@@ -1129,8 +1096,7 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		.X64_U_Ge = .U_Lt,
 	}
 
-	@(static)
-	@(rodata)
+	@(static, rodata)
 	SRC_MODE_OPCODE_TABLE := #partial [X64_Node_Type]Instr_Info {
 		.X64_Add = {0x03, 0},
 		.X64_Sub = {0x2B, 0},
@@ -1156,9 +1122,10 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 	case .Local:
 	case .Local_Addr:
 		dst := reg_of(ctx, instr)
+		dis := graph_extra(ctx, node.inps[0], Local).offset
 		// lea $dst, [rsp + $offset]
-		offset := graph_extra(ctx, node.inps[0], Local).offset
-		emit_stack_lea(ctx.code, dst, offset)
+		emit(ctx.code, {rex(dst, RAX, RAX, true), 0x8d})
+		emit_indirect_addr(ctx.code, dst, RSP, NO_INDEX, 1, dis)
 	case .X64_Lea:
 		dst := reg_of(ctx, instr)
 		bse, sdis := reg_and_disp_of(ctx, node.inps[0])
@@ -1611,7 +1578,8 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 			assert(int(src) < 16)
 
 			// mov $dst, $src
-			emit_reg_op(ctx.code, 0x89, src, dst)
+			rx := rex(src, dst, RAX, true)
+			emit(ctx.code, {rx, 0x89, mod_rm(.Direct, src, dst)})
 		}
 
 		spill_slot_offset :: proc(ctx: ^Ctx, reg: Reg) -> i32 {
@@ -1663,10 +1631,6 @@ emit_single_op :: proc(code: ^arna.Allocator, op_base: u8, dst: Reg) {
 	emit(code, {rex(RAX, dst, RAX, true), op_base + u8(dst.index & 0b111)})
 }
 
-emit_reg_op :: proc(code: ^arna.Allocator, op: u8, dst: Reg, src: Reg) {
-	emit(code, {rex(dst, src, RAX, true), op, mod_rm(.Direct, dst, src)})
-}
-
 mod_from_dis :: proc(dis: i64) -> Mod {
 	switch dis {
 	case 0:
@@ -1676,11 +1640,6 @@ mod_from_dis :: proc(dis: i64) -> Mod {
 	case:
 		return .Indirect_Disp32
 	}
-}
-
-emit_stack_lea :: proc(code: ^arna.Allocator, dst: Reg, #any_int dis: i64) {
-	emit(code, {rex(dst, RAX, RAX, true), 0x8d})
-	emit_indirect_addr(code, dst, RSP, NO_INDEX, 1, dis)
 }
 
 emit_indirect_addr :: proc(
@@ -1732,14 +1691,8 @@ emit_imm_op :: proc(
 ) {
 	is_small_imm := imm >= -128 && imm <= 127
 
-	emit(
-		code,
-		{
-			rex(dst, RAX, RAX, true),
-			op + 2 * u8(is_small_imm),
-			mod_rm(.Direct, Reg(mod), dst),
-		},
-	)
+	rx := rex(dst, RAX, RAX, true)
+	emit(code, {rx, op + 2 * u8(is_small_imm), mod_rm(.Direct, Reg(mod), dst)})
 
 	if is_small_imm {
 		emit(code, {u8(imm)})

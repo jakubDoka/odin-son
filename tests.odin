@@ -4830,6 +4830,21 @@ main_ :: proc() -> int {
 	}
 
 	sarr := [4]int{16, 25, 31, 64}
+
+	i = 0
+	for {
+		if i >= len(sarr) do break
+		sarr[i] += i
+		i += 1
+	}
+
+	i = 0
+	for {
+		if i >= len(sarr) do break
+		sarr[i] += 1
+		i += 1
+	}
+
 	i = 0
 	for {
 		if i >= len(sarr) do break
@@ -4864,6 +4879,21 @@ main :: proc() -> int {
 	}
 
 	sarr := [4]int{16, 25, 31, 64}
+
+	i = 0
+	for {
+		if i >= len(sarr) do break
+		sarr[i] += i
+		i += 1
+	}
+
+	i = 0
+	for {
+		if i >= len(sarr) do break
+		sarr[i] += 1
+		i += 1
+	}
+
 	i = 0
 	for {
 		if i >= len(sarr) do break

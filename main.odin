@@ -1030,7 +1030,9 @@ store_value_ty :: proc(
 	value: Value,
 	ty: Type,
 ) {
-	if ptr == value.id && value.is_lvalue do return
+	if ptr == value.id && value.is_lvalue {
+		return
+	}
 
 	if type_to_dt(ty) == .Void {
 		fmt.assertf(value.is_lvalue, "%v %v", value, ty)
@@ -1186,11 +1188,29 @@ emit_nodes :: proc(
 
 				append(&values, Value_Slot{sym, value})
 			case Value:
-				assert(d.op.kind == .Eq)
-				dest := emit_nodes(ctx, {}, lhs)
-				assert(dest.is_lvalue)
-				value := emit_nodes(ctx, {dest = dest.id}, rhs)
-				store_value(ctx, "asss", dest.id, value, lhs)
+				assert(sym.is_lvalue)
+				if d.op.kind == .Eq {
+					value := emit_nodes(ctx, {dest = sym.id}, rhs)
+					store_value(ctx, "asss", sym.id, value, lhs)
+				} else {
+					op, name := tok_to_binop(get_node_type(rhs), d.op.kind)
+					vl := to_rvalue(ctx, sym, rhs)
+					backend.graph_pin(ctx, vl)
+					value := backend.graph_add_bin_op(
+						ctx,
+						name,
+						op,
+						type_to_dt(get_node_type(lhs)),
+						vl,
+						to_rvalue(
+							ctx,
+							emit_nodes(ctx, {}, rhs),
+							get_node_type(rhs),
+						),
+					)
+					backend.graph_unpin(ctx, vl)
+					store_value(ctx, "asss", sym.id, Value(value), lhs)
+				}
 			}
 		}
 

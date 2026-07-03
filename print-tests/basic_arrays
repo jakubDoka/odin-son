@@ -41,21 +41,43 @@ main:
      mov qword ptr [rsp+0x28], 0x19
      mov qword ptr [rsp+0x30], 0x1F
      mov qword ptr [rsp+0x38], 0x40
-     mov rdx, 0x00
-     mov rax, rbx
+     mov rax, 0x00
      jmp :6
 
-006: cmp rdx, 0x04
+006: cmp rax, 0x04
      jl :7
      jmp :8
 
-007: mov rcx, [rsp+rdx*8+0x20]
+007: add [rsp+rax*8+0x20], rax
+     add rax, 0x01
+     jmp :6
+
+008: mov rax, 0x00
+     jmp :9
+
+009: cmp rax, 0x04
+     jl :10
+     jmp :11
+
+010: add qword ptr [rsp+rax*8+0x20], 0x01
+     add rax, 0x01
+     jmp :9
+
+011: mov rdx, 0x00
+     mov rax, rbx
+     jmp :12
+
+012: cmp rdx, 0x04
+     jl :13
+     jmp :14
+
+013: mov rcx, [rsp+rdx*8+0x20]
      add rcx, rax
      add rdx, 0x01
      mov rax, rcx
-     jmp :6
+     jmp :12
 
-008: add rsp, 0x40
+014: add rsp, 0x40
      pop rbx
      ret
 =========== OPT LEVEL: mininal ===========
@@ -101,21 +123,43 @@ main:
      mov qword ptr [rsp+0x28], 0x19
      mov qword ptr [rsp+0x30], 0x1F
      mov qword ptr [rsp+0x38], 0x40
-     mov rdx, 0x00
-     mov rax, rbx
+     mov rax, 0x00
      jmp :6
 
-006: cmp rdx, 0x04
+006: cmp rax, 0x04
      jl :7
      jmp :8
 
-007: mov rcx, [rsp+rdx*8+0x20]
+007: add [rsp+rax*8+0x20], rax
+     add rax, 0x01
+     jmp :6
+
+008: mov rax, 0x00
+     jmp :9
+
+009: cmp rax, 0x04
+     jl :10
+     jmp :11
+
+010: add qword ptr [rsp+rax*8+0x20], 0x01
+     add rax, 0x01
+     jmp :9
+
+011: mov rdx, 0x00
+     mov rax, rbx
+     jmp :12
+
+012: cmp rdx, 0x04
+     jl :13
+     jmp :14
+
+013: mov rcx, [rsp+rdx*8+0x20]
      add rcx, rax
      add rdx, 0x01
      mov rax, rcx
-     jmp :6
+     jmp :12
 
-008: add rsp, 0x40
+014: add rsp, 0x40
      pop rbx
      ret
 =========== OPT LEVEL: all ===========
@@ -159,16 +203,38 @@ main:
      mov qword ptr [rsp-0x20], 0x19
      mov qword ptr [rsp-0x18], 0x1F
      mov qword ptr [rsp-0x10], 0x40
-     mov rdx, 0x00
-     mov rax, rcx
+     mov rax, 0x00
      jmp :6
 
-006: cmp rdx, 0x04
+006: cmp rax, 0x04
      jl :7
      jmp :8
 
-007: add rax, [rsp+rdx*8-0x28]
-     add rdx, 0x01
+007: add [rsp+rax*8-0x28], rax
+     add rax, 0x01
      jmp :6
 
-008: ret
+008: mov rax, 0x00
+     jmp :9
+
+009: cmp rax, 0x04
+     jl :10
+     jmp :11
+
+010: add qword ptr [rsp+rax*8-0x28], 0x01
+     add rax, 0x01
+     jmp :9
+
+011: mov rdx, 0x00
+     mov rax, rcx
+     jmp :12
+
+012: cmp rdx, 0x04
+     jl :13
+     jmp :14
+
+013: add rax, [rsp+rdx*8-0x28]
+     add rdx, 0x01
+     jmp :12
+
+014: ret

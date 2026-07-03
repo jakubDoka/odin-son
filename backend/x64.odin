@@ -4,9 +4,11 @@ import "../vendored/gam/util/arna"
 import "../vendored/gam/util/bit_arr"
 import "base:intrinsics"
 import "core:fmt"
+import "core:log"
 import "core:math"
 import "core:mem"
 import "core:reflect"
+import "core:slice"
 import "core:sort"
 
 NOOP_REX :: 0b0100_0000
@@ -474,7 +476,7 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 			inps = inps[:len(inps) - 1]
 		}
 
-		return x64_make_node(
+		res := x64_make_node(
 			ctx,
 			id,
 			u16(X64_Node_Type.X64_Store),
@@ -486,6 +488,8 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 			},
 			additional_data_offset = u8(stack_base),
 		)
+		worklist_add(ctx, ctx.worklist, res)
+		return res
 	}
 	#partial matchx: switch node.xtype {
 	case .X64_Store, .X64_Load:
@@ -502,6 +506,7 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 			idx := graph_add_input(ctx, node, index, max_growth = 1)
 			graph_add_output(ctx, index, id, idx)
 			mem_op.scale = scale
+			node = graph_expand(ctx, id)
 			changed = true
 		}
 
@@ -525,7 +530,8 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 			u8(stack_base),
 		)
 
-		if node.xtype == .X64_Store && 3 < len(node.inps) {
+		if node.xtype == .X64_Store &&
+		   3 + int(mem_op.scale != 0) < len(node.inps) {
 			val := graph_expand(ctx, node.inps[3])
 			val_mem := graph_extra(ctx, val, X64_Mem_Op)
 
@@ -555,39 +561,56 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 
 			IDEAL_TRIGGER_UN_OPS :: bit_set[Ideal_Node_Type]{.Not, .Neg}
 
-			if ((val.xtype in X64_TRIGGER_OPS && len(val.inps) == 1) ||
-				   val.itype in IDEAL_TRIGGER_OPS) &&
-			   len(val.outs) == 1 {
+			is_interesting :=
+				((val.xtype in X64_TRIGGER_OPS && len(val.inps) == 1) ||
+					val.itype in IDEAL_TRIGGER_OPS)
 
+			if is_interesting && len(val.outs) == 1 {
 				lhs := graph_expand(ctx, val.inps[0])
-				lhs_mem := graph_extra(ctx, val.inps[0], X64_Mem_Op)
-				if lhs.xtype == .X64_Load &&
+				lhs_mem := graph_extra(ctx, lhs, X64_Mem_Op)
+				dest_op: if lhs.xtype == .X64_Load &&
 				   lhs.inps[1] == node.inps[1] &&
 				   lhs.inps[2] == node.inps[2] &&
+				   lhs_mem.scale == mem_op.scale &&
 				   lhs_mem.dis == mem_op.dis {
+
+					needs_removal :=
+						val.xtype in X64_TRIGGER_OPS ||
+						val.itype in IDEAL_TRIGGER_UN_OPS
+
+					rm_idx := 3 + int(lhs_mem.scale != 0)
+					if lhs_mem.scale != 0 && needs_removal {
+						outs := graph_outs(ctx, node.inps[rm_idx])
+						idx :=
+							slice.linear_search(
+								outs,
+								Node_Output{idx = rm_idx, id = id},
+							) or_else panic("")
+						outs[idx].idx = 3
+
+						node.inps[3], node.inps[4] = node.inps[4], node.inps[3]
+					}
+
 					node.xtype = val.xtype
 
-					if val.xtype in X64_TRIGGER_OPS {
-						graph_remove_output(
-							ctx,
-							node.inps[3],
-							{idx = 3, id = id},
-						)
-						node.ordered_input_count -= 1
-						node.input_count -= 1
-						mem_op.imm = val_mem.imm
-						node.inps = node.inps[:len(node.inps) - 1]
-					} else if val.itype in IDEAL_TRIGGER_UN_OPS {
+					if val.itype in IDEAL_TRIGGER_UN_OPS {
+						assert(node.rtype < len(IDEAL_CLASSES))
 						node.rtype += UN_OP_OFFSET
+					} else if val.xtype in X64_TRIGGER_OPS {
+						mem_op.imm = val_mem.imm
+					}
+
+					if needs_removal {
 						graph_remove_output(
 							ctx,
-							node.inps[3],
+							node.inps[rm_idx],
 							{idx = 3, id = id},
 						)
 						node.ordered_input_count -= 1
 						node.input_count -= 1
 						node.inps = node.inps[:len(node.inps) - 1]
 					} else {
+						assert(node.rtype < len(IDEAL_CLASSES))
 						node.rtype += BIN_OP_OFFSET
 						graph_set_input(ctx, id, 3, val.inps[1])
 					}
@@ -598,6 +621,9 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 					changed = true
 				} else {
 					peep_ctx_add_trigger(ctx, val.inps[0], id)
+					if lhs.xtype == .X64_Load {
+						peep_ctx_add_trigger(ctx, lhs.inps[2], id)
+					}
 				}
 			}
 		}
@@ -1331,13 +1357,12 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 				emit_anys(ctx.code, imm)
 			}
 		case .Dest:
-			assert(scl == 0)
 			dst, sdis := reg_and_disp_of(ctx, node.inps[2])
 			dis := mem_op.dis
 
 			op := OPCODE_TABLE[node.xtype]
 			src := Reg(op.ext)
-			if 3 < len(node.inps) {
+			if 3 + imm_boundary < len(node.inps) {
 				op = DEST_MODE_OPCODE_TABLE[node.xtype]
 				if !is_shift {
 					src = reg_of(ctx, node.inps[3])
@@ -1347,9 +1372,9 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 			// add/sub/and/or/xor [$dst + $sdis + $dis], $src/$imm
 			rx := rex(src, dst, NO_INDEX, DT_SIZE[mem_op.dt] == 8)
 			emit_sized_opcode(ctx.code, mem_op.dt, rx, op.opcode)
-			emit_indirect_addr(ctx.code, src, dst, NO_INDEX, 1, dis + sdis)
+			emit_indirect_addr(ctx.code, src, dst, idx, scl, dis + sdis)
 
-			if 3 >= len(node.inps) {
+			if 3 + imm_boundary >= len(node.inps) {
 				if is_shift {
 					emit(ctx.code, {u8(imm)})
 				} else {

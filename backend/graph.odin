@@ -1,6 +1,7 @@
 package backend
 
 import "../vendored/gam/util/arna"
+import "../vendored/gam/util/hot"
 import "base:intrinsics"
 import "base:runtime"
 import "core:container/queue"
@@ -465,7 +466,7 @@ graph_iter_peeps :: proc(graph: ^Graph) {
 			)
 			new_node := graph.peep({graph, &worklist, &triggers}, node)
 			if new_node != 0 {
-				log.info(graph)
+				//log.info(graph)
 
 				fmt.assertf(
 					new_node == 0,
@@ -1958,6 +1959,8 @@ graph_delete_node :: proc(graph: ^Graph, node: ^Node, indirect := false) {
 		graph.mem.pos = uint(id) * PRECISION - PREFIX_SIZE
 		graph.gvn -= 1
 	}
+
+	node.rtype = DEAD_NODE_KIND
 
 	node^ = {
 		rtype = DEAD_NODE_KIND,

@@ -4723,3 +4723,85 @@ copy :: proc(a: ^Stru, b: ^Stru) -> int {
 }
 `, main_())
 }
+@(test) trigger_comparison_with_load :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	v := 1
+	c := -1
+	return cmps(-1, &v) + cmps(1, &v) +
+		cmps(-1, &c) + cmps(1, &c) +
+		imm_cmps(&v) + imm_cmps(&v) +
+		imm_cmps(&c) + imm_cmps(&c)
+}
+
+imm_cmps :: proc(b: ^int) -> int {
+	r := 0
+
+	if 0 == b^ do r += 1
+	if 0 != b^ do r += 2
+	if 0 >= b^ do r += 4
+	if 0 <= b^ do r += 8
+	if 0 > b^ do r += 16
+	if 0 < b^ do r += 32
+
+	return r
+}
+
+cmps :: proc(a: int, b: ^int) -> int {
+	r := 0
+
+	if a == b^ do r += 1
+	if a != b^ do r += 2
+	if a >= b^ do r += 4
+	if a <= b^ do r += 8
+	if a > b^ do r += 16
+	if a < b^ do r += 32
+
+	return r
+}
+
+run_test(t, `trigger_comparison_with_load`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	v := 1
+	c := -1
+	return cmps(-1, &v) + cmps(1, &v) +
+		cmps(-1, &c) + cmps(1, &c) +
+		imm_cmps(&v) + imm_cmps(&v) +
+		imm_cmps(&c) + imm_cmps(&c)
+}
+
+imm_cmps :: proc(b: ^int) -> int {
+	r := 0
+
+	if 0 == b^ do r += 1
+	if 0 != b^ do r += 2
+	if 0 >= b^ do r += 4
+	if 0 <= b^ do r += 8
+	if 0 > b^ do r += 16
+	if 0 < b^ do r += 32
+
+	return r
+}
+
+cmps :: proc(a: int, b: ^int) -> int {
+	r := 0
+
+	if a == b^ do r += 1
+	if a != b^ do r += 2
+	if a >= b^ do r += 4
+	if a <= b^ do r += 8
+	if a > b^ do r += 16
+	if a < b^ do r += 32
+
+	return r
+}
+`, main_())
+}

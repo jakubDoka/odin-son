@@ -1,0 +1,556 @@
+=========== OPT LEVEL: none ===========
+main:
+     push rbx
+     push rbp
+     push r12
+     push r13
+     push r14
+     push r15
+     sub rsp, 0x18
+     mov rbx, 0x01
+     neg rbx
+     mov qword ptr [rsp], 0x01
+     mov rax, rbx
+     mov [rsp+0x08], rax
+     lea rsi, [rsp]
+     mov rdi, rbx
+     call :cmps
+     mov rbp, rax
+     lea rsi, [rsp]
+     mov rdi, 0x01
+     call :cmps
+     mov r12, rax
+     lea rsi, [rsp+0x08]
+     mov rdi, rbx
+     call :cmps
+     mov rbx, rax
+     lea rsi, [rsp+0x08]
+     mov rdi, 0x01
+     call :cmps
+     mov r13, rax
+     lea rdi, [rsp]
+     call :imm_cmps
+     mov r14, rax
+     lea rdi, [rsp]
+     call :imm_cmps
+     mov r15, rax
+     lea rdi, [rsp+0x08]
+     call :imm_cmps
+     mov [rsp+0x10], rax
+     lea rdi, [rsp+0x08]
+     call :imm_cmps
+     mov rdx, rbp
+     mov rcx, r12
+     add rdx, rcx
+     mov rcx, rbx
+     add rdx, rcx
+     mov rcx, r13
+     add rdx, rcx
+     mov rcx, r14
+     add rdx, rcx
+     mov rcx, r15
+     add rdx, rcx
+     mov rcx, [rsp+0x10]
+     add rdx, rcx
+     add rdx, rax
+     mov rax, rdx
+     add rsp, 0x18
+     pop r15
+     pop r14
+     pop r13
+     pop r12
+     pop rbp
+     pop rbx
+     ret
+imm_cmps:
+     mov rax, 0x00
+     mov rcx, [rdi]
+     cmp rax, rcx
+     jnz :0
+     jmp :1
+
+000: mov rdx, 0x00
+     jmp :2
+
+001: mov rdx, 0x00
+     add rdx, 0x01
+     jmp :2
+
+002: mov rcx, [rdi]
+     cmp rax, rcx
+     jz :3
+     jmp :4
+
+003: jmp :5
+
+004: add rdx, 0x02
+     jmp :5
+
+005: mov rcx, [rdi]
+     cmp rax, rcx
+     jl :6
+     jmp :7
+
+006: jmp :8
+
+007: add rdx, 0x04
+     jmp :8
+
+008: mov rcx, [rdi]
+     cmp rax, rcx
+     jnle :9
+     jmp :10
+
+009: jmp :11
+
+010: add rdx, 0x08
+     jmp :11
+
+011: mov rcx, [rdi]
+     cmp rax, rcx
+     jle :12
+     jmp :13
+
+012: jmp :14
+
+013: add rdx, 0x10
+     jmp :14
+
+014: mov rcx, [rdi]
+     cmp rax, rcx
+     jnl :15
+     jmp :16
+
+015: mov rax, rdx
+     jmp :17
+
+016: mov rax, rdx
+     add rax, 0x20
+     jmp :17
+
+017: ret
+cmps:
+     mov rax, 0x00
+     mov rcx, [rsi]
+     cmp rdi, rcx
+     jnz :0
+     jmp :18
+
+000: jmp :19
+
+018: add rax, 0x01
+     jmp :19
+
+019: mov rcx, [rsi]
+     cmp rdi, rcx
+     jz :20
+     jmp :21
+
+020: jmp :22
+
+021: add rax, 0x02
+     jmp :22
+
+022: mov rcx, [rsi]
+003: cmp rdi, rcx
+     jl :23
+     jmp :24
+
+023: jmp :25
+
+024: add rax, 0x04
+     jmp :25
+
+025: mov rcx, [rsi]
+006: cmp rdi, rcx
+     jnle :26
+     jmp :27
+
+026: jmp :28
+
+027: add rax, 0x08
+     jmp :28
+
+028: mov rcx, [rsi]
+009: cmp rdi, rcx
+     jle :29
+     jmp :30
+
+029: jmp :31
+
+030: add rax, 0x10
+     jmp :31
+
+031: mov rcx, [rsi]
+012: cmp rdi, rcx
+     jnl :32
+     jmp :33
+
+032: jmp :34
+
+033: add rax, 0x20
+     jmp :34
+
+034: ret
+=========== OPT LEVEL: mininal ===========
+main:
+     push rbx
+     push rbp
+     push r12
+     push r13
+     push r14
+     push r15
+     sub rsp, 0x18
+     mov qword ptr [rsp], 0x01
+     mov qword ptr [rsp+0x08], 0xFFFFFFFFFFFFFFFF
+     lea rsi, [rsp]
+     mov rdi, 0xFFFFFFFFFFFFFFFF
+     call :cmps
+     mov rbx, rax
+     lea rsi, [rsp]
+     mov rdi, 0x01
+     call :cmps
+     mov rbp, rax
+     lea rsi, [rsp+0x08]
+     mov rdi, 0xFFFFFFFFFFFFFFFF
+     call :cmps
+     mov r12, rax
+     lea rsi, [rsp+0x08]
+     mov rdi, 0x01
+     call :cmps
+     mov r13, rax
+     lea rdi, [rsp]
+     call :imm_cmps
+     mov r14, rax
+     lea rdi, [rsp]
+     call :imm_cmps
+     mov r15, rax
+     lea rdi, [rsp+0x08]
+     call :imm_cmps
+     mov [rsp+0x10], rax
+     lea rdi, [rsp+0x08]
+     call :imm_cmps
+     mov rdx, rbx
+     mov rcx, rbp
+     add rdx, rcx
+     mov rcx, r12
+     add rdx, rcx
+     mov rcx, r13
+     add rdx, rcx
+     mov rcx, r14
+     add rdx, rcx
+     mov rcx, r15
+     add rdx, rcx
+     mov rcx, [rsp+0x10]
+     add rdx, rcx
+     add rdx, rax
+     mov rax, rdx
+     add rsp, 0x18
+     pop r15
+     pop r14
+     pop r13
+     pop r12
+     pop rbp
+     pop rbx
+     ret
+imm_cmps:
+     mov rax, 0x00
+     mov rcx, [rdi]
+     cmp rcx, 0x00
+     jnz :0
+     jmp :1
+
+000: jmp :2
+
+001: add rax, 0x01
+     jmp :2
+
+002: mov rcx, [rdi]
+     cmp rcx, 0x00
+     jz :3
+     jmp :4
+
+003: jmp :5
+
+004: add rax, 0x02
+     jmp :5
+
+005: mov rcx, [rdi]
+     cmp rcx, 0x00
+     jnl :6
+     jmp :7
+
+006: jmp :8
+
+007: add rax, 0x04
+     jmp :8
+
+008: mov rcx, [rdi]
+     cmp rcx, 0x00
+     jle :9
+     jmp :10
+
+009: jmp :11
+
+010: add rax, 0x08
+     jmp :11
+
+011: mov rcx, [rdi]
+     cmp rcx, 0x00
+     jnle :12
+     jmp :13
+
+012: jmp :14
+
+013: add rax, 0x10
+     jmp :14
+
+014: mov rcx, [rdi]
+     cmp rcx, 0x00
+     jl :15
+     jmp :16
+
+015: jmp :17
+
+016: add rax, 0x20
+     jmp :17
+
+017: ret
+cmps:
+     mov rax, 0x00
+     mov rcx, [rsi]
+     cmp rdi, rcx
+     jnz :18
+     jmp :19
+
+018: jmp :20
+
+019: add rax, 0x01
+     jmp :20
+
+020: mov rcx, [rsi]
+     cmp rdi, rcx
+     jz :21
+     jmp :22
+
+021: jmp :23
+
+022: add rax, 0x02
+     jmp :23
+
+023: mov rcx, [rsi]
+     cmp rdi, rcx
+     jl :24
+     jmp :25
+
+024: jmp :7
+
+025: add rax, 0x04
+006: jmp :7
+
+007: mov rcx, [rsi]
+     cmp rdi, rcx
+     jnle :26
+008: jmp :27
+
+026: jmp :28
+
+027: add rax, 0x08
+     jmp :28
+
+028: mov rcx, [rsi]
+     cmp rdi, rcx
+     jle :29
+     jmp :30
+
+029: jmp :31
+
+030: add rax, 0x10
+     jmp :31
+
+031: mov rcx, [rsi]
+012: cmp rdi, rcx
+     jnl :32
+     jmp :33
+
+032: jmp :34
+
+033: add rax, 0x20
+     jmp :34
+
+034: ret
+=========== OPT LEVEL: all ===========
+main:
+     push rbx
+     push rbp
+     push r12
+     push r13
+     push r14
+     push r15
+     sub rsp, 0x18
+     mov qword ptr [rsp], 0x01
+     mov qword ptr [rsp+0x08], 0xFFFFFFFFFFFFFFFF
+     lea rsi, [rsp]
+     mov rdi, 0xFFFFFFFFFFFFFFFF
+     call :cmps
+     mov rbx, rax
+     lea rsi, [rsp]
+     mov rdi, 0x01
+     call :cmps
+     mov rbp, rax
+     lea rsi, [rsp+0x08]
+     mov rdi, 0xFFFFFFFFFFFFFFFF
+     call :cmps
+     mov r12, rax
+     lea rsi, [rsp+0x08]
+     mov rdi, 0x01
+     call :cmps
+     mov r13, rax
+     lea rdi, [rsp]
+     call :imm_cmps
+     mov r14, rax
+     lea rdi, [rsp]
+     call :imm_cmps
+     mov r15, rax
+     lea rdi, [rsp+0x08]
+     call :imm_cmps
+     mov [rsp+0x10], rax
+     lea rdi, [rsp+0x08]
+     call :imm_cmps
+     mov rdx, rbx
+     mov rcx, rbp
+     add rdx, rcx
+     mov rcx, r12
+     add rdx, rcx
+     mov rcx, r13
+     add rdx, rcx
+     mov rcx, r14
+     add rdx, rcx
+     mov rcx, r15
+     add rdx, rcx
+     mov rcx, [rsp+0x10]
+     add rdx, rcx
+     add rdx, rax
+     mov rax, rdx
+     add rsp, 0x18
+     pop r15
+     pop r14
+     pop r13
+     pop r12
+     pop rbp
+     pop rbx
+     ret
+imm_cmps:
+     cmp qword ptr [rdi], 0x00
+     jnz :0
+     jmp :1
+
+000: mov rax, 0x00
+     jmp :2
+
+001: mov rax, 0x01
+     jmp :2
+
+002: cmp qword ptr [rdi], 0x00
+     jz :3
+     jmp :4
+
+003: jmp :5
+
+004: add rax, 0x02
+     jmp :5
+
+005: cmp qword ptr [rdi], 0x00
+     jnl :6
+     jmp :7
+
+006: jmp :8
+
+007: add rax, 0x04
+     jmp :8
+
+008: cmp qword ptr [rdi], 0x00
+     jle :9
+     jmp :10
+
+009: jmp :11
+
+010: add rax, 0x08
+     jmp :11
+
+011: cmp qword ptr [rdi], 0x00
+     jnle :12
+     jmp :13
+
+012: jmp :14
+
+013: add rax, 0x10
+     jmp :14
+
+014: cmp qword ptr [rdi], 0x00
+     jl :15
+     jmp :16
+
+015: jmp :17
+
+016: add rax, 0x20
+     jmp :17
+
+017: ret
+cmps:
+     cmp rdi, [rsi]
+     jnz :18
+     jmp :19
+
+018: mov rax, 0x00
+     jmp :20
+
+019: mov rax, 0x01
+     jmp :20
+
+020: cmp rdi, [rsi]
+     jz :21
+     jmp :22
+
+021: jmp :23
+
+022: add rax, 0x02
+     jmp :23
+
+023: cmp rdi, [rsi]
+     jl :24
+     jmp :25
+
+024: jmp :7
+
+025: add rax, 0x04
+006: jmp :7
+
+007: cmp rdi, [rsi]
+     jnle :26
+     jmp :27
+
+026: jmp :28
+
+027: add rax, 0x08
+     jmp :28
+
+028: cmp rdi, [rsi]
+     jle :29
+     jmp :30
+
+029: jmp :31
+
+030: add rax, 0x10
+     jmp :31
+
+031: cmp rdi, [rsi]
+012: jnl :32
+     jmp :33
+
+032: jmp :34
+
+033: add rax, 0x20
+     jmp :34
+
+034: ret

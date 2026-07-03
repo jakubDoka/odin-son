@@ -2530,3 +2530,66 @@ main :: proc() -> int {
 	return sum
 }
 ```
+
+#### scaled index sib operations
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	arr := [8]int{3, 14, 25, 8, 40, 17, 55, 2}
+
+	// comparison against a scaled-index load: cmp [base + idx*8], imm
+	cnt := 0
+	i := 0
+	for {
+		if i >= len(arr) do break
+		if arr[i] > 20 do cnt += 1
+		i += 1
+	}
+
+	// negate in place: neg [base + idx*8]
+	i = 0
+	for {
+		if i >= len(arr) do break
+		arr[i] = -arr[i]
+		i += 1
+	}
+
+	// bitwise not in place: not [base + idx*8]
+	i = 0
+	for {
+		if i >= len(arr) do break
+		arr[i] = ~arr[i]
+		i += 1
+	}
+
+	// compound add in place: add [base + idx*8], imm
+	i = 0
+	for {
+		if i >= len(arr) do break
+		arr[i] += 7
+		i += 1
+	}
+
+	// store a constant through a scaled index: mov [base + idx*8], imm
+	i = 0
+	for {
+		if i >= len(arr) do break
+		if i & 1 == 0 do arr[i] = 100
+		i += 1
+	}
+
+	// reduce with a scaled-index load: mov reg, [base + idx*8]
+	sum := 0
+	i = 0
+	for {
+		if i >= len(arr) do break
+		sum += arr[i]
+		i += 1
+	}
+
+	return sum + cnt
+}
+```

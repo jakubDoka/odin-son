@@ -61,9 +61,7 @@ you will then clean up the test name and add it to the test list. If an agent
 generates invalid odin code, it should immediately remove it as it can block
 others.
 
-### Implement arrays in the frontend code
-
-NOTE: Read AGENTS.md
+### Implement arrays in the frontend code (DONE)
 
 The frontend, as of right now is only handling structs, ints, and basic pointer
 types. I have added a example that should force implementing at lease a part to
@@ -71,3 +69,22 @@ the frontend implementation for the array handling. Make sure the test passes
 (#### basic arrays). You should follow the patterns already established by the
 existing code. I dont thing there are any backend changes required, if so, stop
 and let me know.
+
+### Implemment missing peephole discovery related to index/scale params
+
+NOTE: Read AGENTS.md
+
+The was just extended with better sib byte utilizations, but not all codepahts
+are implemented yet. I added asserts in places that if reached will signal
+unhandled index/scale code. All of the important code is located in the
+`backend/x64`.
+
+1. Spinn up the agent that will find all the important places that will need
+   modifications.
+2. Spinn up an agent that will, given the interesting areas, generate tests
+   that will reach these asserts (bigger tests are preferrable that cover
+   multiple asserts).
+3. Fix the asserts and make sure the emitted code is correct.
+
+This will not require running agents in parallel, Its just to save context for
+implementing the actual thing.

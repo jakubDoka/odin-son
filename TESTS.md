@@ -2504,6 +2504,14 @@ main :: proc() -> int {
 		i += 1
 	}
 
+	sarr := [4]int{16, 25, 31, 64}
+	i = 0
+	for {
+		if i >= len(sarr) do break
+		sum += sarr[i]
+		i += 1
+	}
+
 	return sum
 }
 ```

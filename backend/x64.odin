@@ -228,6 +228,7 @@ X64_REG_CLASSES := #partial [X64_Node_Type]Reg_Class_Spec {
 	.X64_Mul8 = {
 		reg_masks = #partial{.General = {RAX_MASK, GPA_MASK, RAX_MASK}},
 	},
+	.X64_Mul = X64_SIMPE_CMP_OP,
 }
 
 when SPEC_NOT_PRESENT {
@@ -250,6 +251,7 @@ when SPEC_NOT_PRESENT {
 		X64_Shl,
 		X64_Shr,
 		X64_U_Shr,
+		X64_Mul,
 		X64_Load,
 		X64_Store,
 		X64_Neg,
@@ -274,6 +276,7 @@ when SPEC_NOT_PRESENT {
 		.X64_Add ..= .X64_U_Ge = X64_SIMPLE_BIN_OP_SPEC,
 		.X64_Shl ..= .X64_U_Shr = X64_SIMPLE_SHIFT_OP_SPEC,
 		.X64_Neg ..= .X64_Not = X64_SIMPLE_UN_OP_SPEC,
+		.X64_Mul = X64_SIMPLE_BIN_OP_SPEC,
 		.X64_Load = {id = X64_Mem_Op, flags = {.Load}},
 		.X64_Store = {id = X64_Mem_Op, flags = {.Store}},
 		.X64_Mul8 = {},
@@ -454,8 +457,13 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 	}
 
 	#partial switch node.itype {
-	case .Add ..= .Xor, .Eq ..= .U_Ge, .Shl ..= .U_Shr:
+	case .Add ..= .Xor, .Eq ..= .U_Ge, .Shl ..= .U_Shr, .Mul:
 		op := u16(node.itype) + BIN_OP_OFFSET
+
+		if node.dt == .I8 && node.itype == .Mul {
+			node.xtype = .X64_Mul8
+			return id
+		}
 
 		// TODO: we can do this one once things are scheduled
 		if false && rhs_load != nil {
@@ -491,11 +499,6 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 		}
 
 		if chanded do return id
-	case .Mul:
-		if node.dt == .I8 {
-			node.xtype = .X64_Mul8
-			return id
-		}
 	case .If:
 		node.additional_data_start = u8(
 			graph_get(ctx, node.inps[1]).dt == .Void,
@@ -1377,12 +1380,23 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 		emit_sized_opcode(ctx.code, node.dt, rx, op.opcode)
 		emit(ctx.code, {mod_sm(.Direct, op.ext, dst)})
 	case .Mul:
-		// imul $dst, $rhs
 		dst := reg_of(ctx, node.inps[0])
 		rhs := reg_of(ctx, node.inps[1])
+
+		// imul $dst, $rhs
 		rx := rex(dst, rhs, RAX, DT_SIZE[node.dt] == 8)
 		emit_extended_sized_opcode(ctx.code, node.dt, rx, 0xaf)
 		emit(ctx.code, {mod_rm(.Direct, dst, rhs)})
+	case .X64_Mul:
+		dst := reg_of(ctx, instr)
+		lhs := reg_of(ctx, node.inps[0])
+		imm := mem_op.imm
+
+		// imul $dst, $lhs, $imm
+		rx := rex(dst, lhs, RAX, DT_SIZE[node.dt] == 8)
+		emit_sized_opcode(ctx.code, node.dt, rx, 0x69)
+		emit(ctx.code, {mod_rm(.Direct, dst, lhs)})
+		emit_imm_for_dt(ctx.code, node.dt, imm)
 	case .X64_Mul8:
 		// imul $op
 		dst := reg_of(ctx, node.inps[0])

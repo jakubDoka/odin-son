@@ -1,99 +1,11 @@
 =========== OPT LEVEL: none ===========
 main:
-     sub rsp, 0x28
+     push rbx
+     sub rsp, 0x40
+     lea rdi, [rsp]
      mov rsi, 0x00
      mov rdx, 0x20
-     lea rdi, [rsp]
      call :$set
-     mov rdx, 0x00
-     jmp :0
-
-000: mov rcx, 0x01
-     cmp rdx, 0x20
-     jl :1
-     jmp :2
-
-001: mov rax, rdx
-     imul rax, rcx
-     lea rcx, [rsp]
-     add rax, rcx
-     mov rcx, rdx
-     mov [rax], cl
-     add rdx, 0x01
-     jmp :0
-
-002: mov rdi, 0x00
-     mov rax, 0x00
-     jmp :3
-
-003: cmp rdi, 0x20
-     jl :4
-     jmp :5
-
-004: mov rdx, rdi
-     imul rdx, rcx
-     lea rsi, [rsp]
-     add rdx, rsi
-     movzx edx, byte ptr [rdx]
-     movzx edx, dl
-     add rdx, rax
-     add rdi, 0x01
-     mov rax, rdx
-     jmp :3
-
-005: add rsp, 0x28
-     ret
-=========== OPT LEVEL: mininal ===========
-main:
-     sub rsp, 0x28
-     mov rsi, 0x00
-     mov rdx, 0x20
-     lea rdi, [rsp]
-     call :$set
-     mov rdx, 0x00
-     jmp :0
-
-000: mov rcx, 0x01
-     cmp rdx, 0x20
-     jl :1
-     jmp :2
-
-001: mov rax, rdx
-     imul rax, rcx
-     lea rcx, [rsp]
-     add rax, rcx
-     mov rcx, rdx
-     mov [rax], cl
-     add rdx, 0x01
-     jmp :0
-
-002: mov rdi, 0x00
-     mov rax, 0x00
-     jmp :3
-
-003: cmp rdi, 0x20
-     jl :4
-     jmp :5
-
-004: mov rdx, rdi
-     imul rdx, rcx
-     lea rsi, [rsp]
-     add rdx, rsi
-     movzx edx, byte ptr [rdx]
-     movzx edx, dl
-     add rdx, rax
-     add rdi, 0x01
-     mov rax, rdx
-     jmp :3
-
-005: add rsp, 0x28
-     ret
-=========== OPT LEVEL: all ===========
-main:
-     mov qword ptr [rsp-0x28], 0x00
-     mov qword ptr [rsp-0x20], 0x00
-     mov qword ptr [rsp-0x18], 0x00
-     mov qword ptr [rsp-0x10], 0x00
      mov rdx, 0x00
      jmp :0
 
@@ -101,28 +13,185 @@ main:
      jl :1
      jmp :2
 
-001: lea rax, [rsp-0x28]
-     add rax, rdx
+001: imul rax, rdx, 0x01
+     lea rcx, [rsp]
+     add rax, rcx
      mov rcx, rdx
-     mov [rax], cl
-     add rdx, 0x01
+     add rcx, 0x01
+     mov [rax], dl
+     mov rdx, rcx
      jmp :0
 
-002: mov rdx, 0x00
-     mov rax, 0x00
+002: mov rbx, 0x00
+     mov rdx, 0x00
      jmp :3
 
 003: cmp rdx, 0x20
      jl :4
      jmp :5
 
-004: lea rcx, [rsp-0x28]
-     add rcx, rdx
-     movzx ecx, byte ptr [rcx]
-     movzx ecx, cl
-     add rcx, rax
+004: imul rax, rdx, 0x01
+     lea rcx, [rsp]
+     add rax, rcx
+     movzx eax, byte ptr [rax]
+     movzx eax, al
+     add rax, rbx
      add rdx, 0x01
-     mov rax, rcx
+     mov rbx, rax
      jmp :3
 
-005: ret
+005: mov rsi, 0x00
+     mov rdx, 0x20
+     lea rdi, [rsp+0x20]
+     call :$set
+     mov qword ptr [rsp+0x20], 0x10
+     mov qword ptr [rsp+0x28], 0x19
+     mov qword ptr [rsp+0x30], 0x1F
+     mov qword ptr [rsp+0x38], 0x40
+     mov rsi, 0x00
+     mov rax, rbx
+     jmp :6
+
+006: cmp rsi, 0x04
+     jl :7
+     jmp :8
+
+007: imul rcx, rsi, 0x08
+     lea rdx, [rsp+0x20]
+     add rcx, rdx
+     mov rcx, [rcx]
+     add rcx, rax
+     add rsi, 0x01
+     mov rax, rcx
+     jmp :6
+
+008: add rsp, 0x40
+     pop rbx
+     ret
+=========== OPT LEVEL: mininal ===========
+main:
+     push rbx
+     sub rsp, 0x40
+     lea rdi, [rsp]
+     mov rsi, 0x00
+     mov rdx, 0x20
+     call :$set
+     mov rdx, 0x00
+     jmp :0
+
+000: cmp rdx, 0x20
+     jl :1
+     jmp :2
+
+001: imul rax, rdx, 0x01
+     lea rcx, [rsp]
+     add rax, rcx
+     mov rcx, rdx
+     add rcx, 0x01
+     mov [rax], dl
+     mov rdx, rcx
+     jmp :0
+
+002: mov rbx, 0x00
+     mov rdx, 0x00
+     jmp :3
+
+003: cmp rdx, 0x20
+     jl :4
+     jmp :5
+
+004: imul rax, rdx, 0x01
+     lea rcx, [rsp]
+     add rax, rcx
+     movzx eax, byte ptr [rax]
+     movzx eax, al
+     add rax, rbx
+     add rdx, 0x01
+     mov rbx, rax
+     jmp :3
+
+005: mov rsi, 0x00
+     mov rdx, 0x20
+     lea rdi, [rsp+0x20]
+     call :$set
+     mov qword ptr [rsp+0x20], 0x10
+     mov qword ptr [rsp+0x28], 0x19
+     mov qword ptr [rsp+0x30], 0x1F
+     mov qword ptr [rsp+0x38], 0x40
+     mov rsi, 0x00
+     mov rax, rbx
+     jmp :6
+
+006: cmp rsi, 0x04
+     jl :7
+     jmp :8
+
+007: imul rcx, rsi, 0x08
+     lea rdx, [rsp+0x20]
+     add rcx, rdx
+     mov rcx, [rcx]
+     add rcx, rax
+     add rsi, 0x01
+     mov rax, rcx
+     jmp :6
+
+008: add rsp, 0x40
+     pop rbx
+     ret
+=========== OPT LEVEL: all ===========
+main:
+     mov qword ptr [rsp-0x48], 0x00
+     mov qword ptr [rsp-0x40], 0x00
+     mov qword ptr [rsp-0x38], 0x00
+     mov qword ptr [rsp-0x30], 0x00
+     mov rdx, 0x00
+     jmp :0
+
+000: cmp rdx, 0x20
+     jl :1
+     jmp :2
+
+001: lea rax, [rsp-0x48]
+     add rax, rdx
+     mov rcx, rdx
+     mov [rax], cl
+     add rdx, 0x01
+     jmp :0
+
+002: mov rcx, 0x00
+     mov rdx, 0x00
+     jmp :3
+
+003: cmp rdx, 0x20
+     jl :4
+     jmp :5
+
+004: lea rax, [rsp-0x48]
+     add rax, rdx
+     movzx eax, byte ptr [rax]
+     movzx eax, al
+     add rax, rcx
+     add rdx, 0x01
+     mov rcx, rax
+     jmp :3
+
+005: mov qword ptr [rsp-0x28], 0x10
+     mov qword ptr [rsp-0x20], 0x19
+     mov qword ptr [rsp-0x18], 0x1F
+     mov qword ptr [rsp-0x10], 0x40
+     mov rsi, 0x00
+     mov rax, rcx
+     jmp :6
+
+006: cmp rsi, 0x04
+     jl :7
+     jmp :8
+
+007: lea rcx, [rsp-0x28]
+     imul rdx, rsi, 0x08
+     add rcx, rdx
+     add rax, [rcx]
+     add rsi, 0x01
+     jmp :6
+
+008: ret

@@ -119,9 +119,7 @@ main:
      ret
 =========== OPT LEVEL: all ===========
 main:
-     sub rsp, 0x50
-     lea rsi, [rsp]
-     lea rdi, [rsp+0x28]
+     sub rsp, 0x28
      mov dword ptr [rsp+0x04], 0x00
      mov dword ptr [rsp+0x14], 0x00
      mov byte ptr [rsp+0x21], 0x00
@@ -141,26 +139,23 @@ main:
      mov word ptr [rsp+0x22], 0x08
      mov byte ptr [rsp+0x24], 0xF6
      mov word ptr [rsp+0x26], 0xFFF4
-     mov rdx, 0x28
-     call :$copy
-     mov eax, [rsp+0x28]
-     mov eax, eax
-     add rax, [rsp+0x30]
-     movsxd rcx, dword ptr [rsp+0x38]
+     mov rax, [rsp+0x08]
+     add rax, 0x0B
+     movsxd rcx, dword ptr [rsp+0x10]
      movsxd rcx, ecx
      add rax, rcx
-     add rax, [rsp+0x40]
-     movzx ecx, byte ptr [rsp+0x48]
+     add rax, [rsp+0x18]
+     movzx ecx, byte ptr [rsp+0x20]
      movzx ecx, cl
      add rax, rcx
-     movzx ecx, word ptr [rsp+0x4A]
+     movzx ecx, word ptr [rsp+0x22]
      movzx ecx, cx
      add rax, rcx
-     movsx rcx, byte ptr [rsp+0x4C]
+     movsx rcx, byte ptr [rsp+0x24]
      movsx rcx, cl
      add rax, rcx
-     movsx rcx, word ptr [rsp+0x4E]
+     movsx rcx, word ptr [rsp+0x26]
      movsx rcx, cx
      add rax, rcx
-     add rsp, 0x50
+     add rsp, 0x28
      ret

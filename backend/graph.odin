@@ -625,31 +625,81 @@ when !GEN_SPEC {
 
 		#partial match: switch node.itype {
 		case .Local_Addr:
+			if !is_complete do break match
+
 			slot := graph_expand(ctx, node.inps[0])
 			root := graph_expand(ctx, slot.inps[0])
-			if root.itype != .Mem do break match
+			mark_dead: {
+				if root.itype != .Mem do break mark_dead
 
-			slot_local := graph_extra(ctx, slot, Local)
-			if slot_local.size == DEAD_LOCAL do break match
+				slot_local := graph_extra(ctx, slot, Local)
+				if slot_local.size == DEAD_LOCAL do break match
 
-			iter: Offset_Iter
-			iter.curr = id
-			for user in offset_iter_next(ctx, &iter) {
-				unode := graph_expand(ctx, user.id)
-				if unode.itype in STORES && user.idx == 2 {
-					continue
+				iter: Offset_Iter
+				iter.curr = id
+				for user in offset_iter_next(ctx, &iter) {
+					unode := graph_expand(ctx, user.id)
+					if unode.itype in STORES && user.idx == 2 {
+						continue
+					}
+
+					peep_ctx_add_trigger(ctx, user.id, id)
+					break mark_dead
 				}
 
-				peep_ctx_add_trigger(ctx, user.id, id)
+				slot_local.size = DEAD_LOCAL
+
+				iter = {}
+				iter.curr = id
+				for user in offset_iter_next(ctx, &iter) {
+					worklist_add(ctx, ctx.worklist, user.id)
+				}
+
 				break match
 			}
 
-			slot_local.size = DEAD_LOCAL
+			forward: {
+				if root.itype != .Mem do break forward
 
-			iter = {}
-			iter.curr = id
-			for user in offset_iter_next(ctx, &iter) {
-				worklist_add(ctx, ctx.worklist, user.id)
+				forward_candidate: Node_ID
+				op_count := 0
+
+				iter: Offset_Iter
+				iter.curr = id
+				for user in offset_iter_next(ctx, &iter) {
+					unode := graph_expand(ctx, user.id)
+					op_count += 1
+					if unode.itype in STORES && user.idx == 2 {
+						continue
+					}
+
+					if unode.itype == .Copy &&
+					   user.idx == 3 &&
+					   forward_candidate == 0 {
+						forward_candidate = user.id
+						continue
+					}
+
+					peep_ctx_add_trigger(ctx, user.id, id)
+					break forward
+				}
+
+				assert(forward_candidate != 0)
+
+				fnode := graph_expand(ctx, forward_candidate)
+
+				cursor := fnode.inps[1]
+				op_count -= 1
+				for op_count > 0 {
+					cnode := graph_expand(ctx, cursor)
+					if cnode.itype not_in STORES do break forward
+					base, _ := base_and_offset(ctx, cnode.inps[2])
+					if base != id do break forward
+					cursor = cnode.inps[1]
+					op_count -= 1
+				}
+
+				return fnode.inps[2]
 			}
 		case .Region:
 			#reverse for inp, i in node.inps {
@@ -1232,6 +1282,10 @@ when !GEN_SPEC {
 			}
 
 			return mem_thread
+		case .Copy:
+			if node.inps[2] == node.inps[3] {
+				return node.inps[1]
+			}
 		}
 
 		return 0

@@ -41,12 +41,8 @@ main:
      mov rsi, 0x00
      mov rdx, 0x10
      call :$set
-     lea rax, [rsp+0x5D]
-     add rax, 0x00
-     mov qword ptr [rax], 0x06
-     lea rax, [rsp+0x5D]
-     add rax, 0x08
-     mov qword ptr [rax], 0x07
+     mov qword ptr [rsp+0x5D], 0x06
+     mov qword ptr [rsp+0x65], 0x07
      mov rsi, 0x00
      mov rdx, 0x10
      lea rdi, [rsp]
@@ -62,124 +58,66 @@ main:
      mov r8, 0x05
      call :brahma
      mov r14, rax
-     lea rax, [rsp+0x18]
-     add rax, 0x00
-     mov rbx, rax
-     lea rax, [rsp+0x18]
-     add rax, 0x0E
-     mov rbp, rax
-     lea rax, [rsp+0x18]
-     add rax, 0x07
-     mov r15, rax
+     lea rdi, [rsp+0x18]
      mov rdx, 0x0F
      mov rsi, 0x00
-     lea rdi, [rsp+0x18]
      call :$set
-     mov rax, rbx
-     mov byte ptr [rax], 0x01
-     mov rax, rbx
-     add rax, 0x01
-     mov byte ptr [rax], 0x02
-     mov rax, rbx
-     add rax, 0x02
-     mov byte ptr [rax], 0x03
-     mov rax, rbx
-     add rax, 0x03
-     mov byte ptr [rax], 0x04
-     mov rax, rbx
-     add rax, 0x04
-     mov byte ptr [rax], 0x05
-     mov rax, rbx
-     add rax, 0x05
-     mov byte ptr [rax], 0x06
-     mov rax, rbx
-     add rax, 0x06
-     mov byte ptr [rax], 0x07
-     mov rax, r15
-     add rax, 0x00
-     mov byte ptr [rax], 0x08
-     mov rax, r15
-     add rax, 0x01
-     mov byte ptr [rax], 0x09
-     mov rax, r15
-     add rax, 0x02
-     mov byte ptr [rax], 0x0A
-     mov rax, r15
-     add rax, 0x03
-     mov byte ptr [rax], 0x0B
-     mov rax, r15
-     add rax, 0x04
-     mov byte ptr [rax], 0x0C
-     mov rax, r15
-     add rax, 0x05
-     mov byte ptr [rax], 0x0D
-     mov rax, r15
-     add rax, 0x06
-     mov byte ptr [rax], 0x0E
-     mov rax, rbp
-     mov byte ptr [rax], 0x0F
-     mov rax, [rsp+0x18]
-     lea rcx, [rsp+0x18]
-     add rcx, 0x08
-     mov esi, [rcx]
-     lea rcx, [rsp+0x18]
-     add rcx, 0x0C
-     movzx ecx, word ptr [rcx]
-     shl rcx, 0x20
-     or rsi, rcx
-     mov rcx, rbp
-     movzx ecx, byte ptr [rcx]
-     shl rcx, 0x30
-     or rsi, rcx
-     mov rdi, rax
+     mov byte ptr [rsp+0x18], 0x01
+     mov byte ptr [rsp+0x19], 0x02
+     mov byte ptr [rsp+0x1A], 0x03
+     mov byte ptr [rsp+0x1B], 0x04
+     mov byte ptr [rsp+0x1C], 0x05
+     mov byte ptr [rsp+0x1D], 0x06
+     mov byte ptr [rsp+0x1E], 0x07
+     mov byte ptr [rsp+0x1F], 0x08
+     mov byte ptr [rsp+0x20], 0x09
+     mov byte ptr [rsp+0x21], 0x0A
+     mov byte ptr [rsp+0x22], 0x0B
+     mov byte ptr [rsp+0x23], 0x0C
+     mov byte ptr [rsp+0x24], 0x0D
+     mov byte ptr [rsp+0x25], 0x0E
+     mov byte ptr [rsp+0x26], 0x0F
+     mov rdi, [rsp+0x18]
+     mov esi, [rsp+0x20]
+     movzx eax, word ptr [rsp+0x24]
+     shl rax, 0x20
+     or rsi, rax
+     movzx eax, byte ptr [rsp+0x26]
+     shl rax, 0x30
+     or rsi, rax
      call :compose
      mov r15, rax
      mov rdi, 0x01
      mov rsi, 0x02
      call :return_stru
-     mov rbx, rax
      mov rbp, rax
+     mov rbx, rax
+     lea rdi, [rsp+0x6D]
      mov rsi, 0x00
      mov rdx, 0x10
-     lea rdi, [rsp+0x6D]
      call :$set
-     lea rax, [rsp+0x6D]
-     add rax, 0x00
-     lea rcx, [rsp+0x6D]
-     add rcx, 0x08
-     mov rdx, rbx
-     shr rdx, 0x00
-     mov rbx, rax
-     mov [rbx], rdx
-     mov rdx, rbp
-     shr rdx, 0x00
-     mov [rcx], rdx
-     mov rbx, [rax]
+     shr rbp, 0x00
+     mov [rsp+0x6D], rbp
+     mov rax, rbx
+     shr rax, 0x00
+     mov [rsp+0x75], rax
+     mov rbx, [rsp+0x6D]
      call :return_stru3
      mov rbp, rax
-     mov rsi, 0x00
      lea rdi, [rsp+0x27]
+     mov rsi, 0x00
      mov rdx, 0x07
      call :$set
-     lea rax, [rsp+0x27]
-     add rax, 0x00
-     lea rcx, [rsp+0x27]
-     add rcx, 0x04
-     lea rdx, [rsp+0x27]
-     add rdx, 0x06
-     mov rsi, rbp
-     shr rsi, 0x00
-     mov [rax], esi
+     mov rax, rbp
+     shr rax, 0x00
+     mov [rsp+0x27], eax
      mov rax, rbp
      shr rax, 0x20
-     mov [rcx], ax
+     mov [rsp+0x2B], ax
      mov rax, rbp
      shr rax, 0x30
-     mov rcx, rdx
-     mov [rcx], al
-     lea rax, [rsp+0x27]
-     add rax, 0x05
-     movzx ebp, byte ptr [rax]
+     mov [rsp+0x2D], al
+     movzx ebp, byte ptr [rsp+0x2C]
      call :return_stru3
      mov [rsp+0x7D], rax
      mov rax, r12
@@ -196,28 +134,20 @@ main:
      movzx eax, bpl
      add rcx, rax
      mov rbx, rcx
+     lea rdi, [rsp+0x2E]
      mov rsi, 0x00
      mov rdx, 0x07
-     lea rdi, [rsp+0x2E]
      call :$set
-     lea rdx, [rsp+0x2E]
-     add rdx, 0x00
-     lea rax, [rsp+0x2E]
-     add rax, 0x06
-     mov rcx, [rsp+0x7D]
-     shr rcx, 0x00
-     mov [rdx], ecx
-     lea rdx, [rsp+0x2E]
-     add rdx, 0x04
-     mov rcx, [rsp+0x7D]
-     shr rcx, 0x20
-     mov [rdx], cx
-     mov rcx, [rsp+0x7D]
-     shr rcx, 0x30
-     mov [rax], cl
-     lea rax, [rsp+0x2E]
-     add rax, 0x02
-     movzx eax, byte ptr [rax]
+     mov rax, [rsp+0x7D]
+     shr rax, 0x00
+     mov [rsp+0x2E], eax
+     mov rax, [rsp+0x7D]
+     shr rax, 0x20
+     mov [rsp+0x32], ax
+     mov rax, [rsp+0x7D]
+     shr rax, 0x30
+     mov [rsp+0x34], al
+     movzx eax, byte ptr [rsp+0x30]
      movzx eax, al
      mov rcx, rbx
      add rcx, rax
@@ -262,9 +192,7 @@ compose:
      or rdi, rax
      call :kentus
      add bl, al
-     lea rax, [rsp]
-     add rax, 0x0E
-     movzx eax, byte ptr [rax]
+     movzx eax, byte ptr [rsp+0x0E]
      add bl, al
      mov rax, rbx
      add rsp, 0x0F
@@ -385,12 +313,10 @@ return_stru3:
      add rsp, 0x07
      ret
 return_stru4:
-     push rbx
-     push rbp
      sub rsp, 0x0F
+     lea rdi, [rsp]
      mov rsi, 0x00
      mov rdx, 0x0F
-     lea rdi, [rsp]
      call :$set
      call :return_stru3
      mov rcx, rax
@@ -402,42 +328,24 @@ return_stru4:
      shr rax, 0x30
      mov [rsp+0x06], al
      call :return_stru3
-     lea rbx, [rsp]
-     add rbx, 0x07
-     lea rcx, [rsp]
-     add rcx, 0x0E
-     mov rbp, rbx
-     add rbp, 0x04
-     mov rsi, rbx
-     add rsi, 0x06
-     add rbx, 0x00
-     mov rdx, rax
-     shr rdx, 0x00
-     mov [rbx], edx
-     mov rdx, rax
-     shr rdx, 0x20
-     mov [rbp], dx
+     mov rcx, rax
+     shr rcx, 0x00
+     mov [rsp+0x07], ecx
+     mov rcx, rax
+     shr rcx, 0x20
+     mov [rsp+0x0B], cx
      shr rax, 0x30
-     mov [rsi], al
-     mov rax, rcx
-     mov byte ptr [rax], 0x46
-     lea rax, [rsp]
-     add rax, 0x08
-     mov edx, [rax]
-     lea rax, [rsp]
-     add rax, 0x0C
-     movzx eax, word ptr [rax]
+     mov [rsp+0x0D], al
+     mov byte ptr [rsp+0x0E], 0x46
+     mov edx, [rsp+0x08]
+     movzx eax, word ptr [rsp+0x0C]
      shl rax, 0x20
      or rdx, rax
-     lea rax, [rsp]
-     add rax, 0x00
-     mov rax, [rax]
-     movzx ecx, byte ptr [rcx]
+     mov rax, [rsp]
+     movzx ecx, byte ptr [rsp+0x0E]
      shl rcx, 0x30
      or rdx, rcx
      add rsp, 0x0F
-     pop rbp
-     pop rbx
      ret
 =========== OPT LEVEL: mininal ===========
 main:
@@ -482,12 +390,8 @@ main:
      mov rsi, 0x00
      mov rdx, 0x10
      call :$set
-     lea rax, [rsp+0x5D]
-     add rax, 0x00
-     mov qword ptr [rax], 0x06
-     lea rax, [rsp+0x5D]
-     add rax, 0x08
-     mov qword ptr [rax], 0x07
+     mov qword ptr [rsp+0x5D], 0x06
+     mov qword ptr [rsp+0x65], 0x07
      mov rsi, 0x00
      mov rdx, 0x10
      lea rdi, [rsp]
@@ -503,124 +407,66 @@ main:
      mov r8, 0x05
      call :brahma
      mov r14, rax
-     lea rax, [rsp+0x18]
-     add rax, 0x00
-     mov rbx, rax
-     lea rax, [rsp+0x18]
-     add rax, 0x0E
-     mov rbp, rax
-     lea rax, [rsp+0x18]
-     add rax, 0x07
-     mov r15, rax
+     lea rdi, [rsp+0x18]
      mov rdx, 0x0F
      mov rsi, 0x00
-     lea rdi, [rsp+0x18]
      call :$set
-     mov rax, rbx
-     mov byte ptr [rax], 0x01
-     mov rax, rbx
-     add rax, 0x01
-     mov byte ptr [rax], 0x02
-     mov rax, rbx
-     add rax, 0x02
-     mov byte ptr [rax], 0x03
-     mov rax, rbx
-     add rax, 0x03
-     mov byte ptr [rax], 0x04
-     mov rax, rbx
-     add rax, 0x04
-     mov byte ptr [rax], 0x05
-     mov rax, rbx
-     add rax, 0x05
-     mov byte ptr [rax], 0x06
-     mov rax, rbx
-     add rax, 0x06
-     mov byte ptr [rax], 0x07
-     mov rax, r15
-     add rax, 0x00
-     mov byte ptr [rax], 0x08
-     mov rax, r15
-     add rax, 0x01
-     mov byte ptr [rax], 0x09
-     mov rax, r15
-     add rax, 0x02
-     mov byte ptr [rax], 0x0A
-     mov rax, r15
-     add rax, 0x03
-     mov byte ptr [rax], 0x0B
-     mov rax, r15
-     add rax, 0x04
-     mov byte ptr [rax], 0x0C
-     mov rax, r15
-     add rax, 0x05
-     mov byte ptr [rax], 0x0D
-     mov rax, r15
-     add rax, 0x06
-     mov byte ptr [rax], 0x0E
-     mov rax, rbp
-     mov byte ptr [rax], 0x0F
-     mov rax, [rsp+0x18]
-     lea rcx, [rsp+0x18]
-     add rcx, 0x08
-     mov esi, [rcx]
-     lea rcx, [rsp+0x18]
-     add rcx, 0x0C
-     movzx ecx, word ptr [rcx]
-     shl rcx, 0x20
-     or rsi, rcx
-     mov rcx, rbp
-     movzx ecx, byte ptr [rcx]
-     shl rcx, 0x30
-     or rsi, rcx
-     mov rdi, rax
+     mov byte ptr [rsp+0x18], 0x01
+     mov byte ptr [rsp+0x19], 0x02
+     mov byte ptr [rsp+0x1A], 0x03
+     mov byte ptr [rsp+0x1B], 0x04
+     mov byte ptr [rsp+0x1C], 0x05
+     mov byte ptr [rsp+0x1D], 0x06
+     mov byte ptr [rsp+0x1E], 0x07
+     mov byte ptr [rsp+0x1F], 0x08
+     mov byte ptr [rsp+0x20], 0x09
+     mov byte ptr [rsp+0x21], 0x0A
+     mov byte ptr [rsp+0x22], 0x0B
+     mov byte ptr [rsp+0x23], 0x0C
+     mov byte ptr [rsp+0x24], 0x0D
+     mov byte ptr [rsp+0x25], 0x0E
+     mov byte ptr [rsp+0x26], 0x0F
+     mov rdi, [rsp+0x18]
+     mov esi, [rsp+0x20]
+     movzx eax, word ptr [rsp+0x24]
+     shl rax, 0x20
+     or rsi, rax
+     movzx eax, byte ptr [rsp+0x26]
+     shl rax, 0x30
+     or rsi, rax
      call :compose
      mov r15, rax
      mov rdi, 0x01
      mov rsi, 0x02
      call :return_stru
-     mov rbx, rax
      mov rbp, rax
+     mov rbx, rax
+     lea rdi, [rsp+0x6D]
      mov rsi, 0x00
      mov rdx, 0x10
-     lea rdi, [rsp+0x6D]
      call :$set
-     lea rax, [rsp+0x6D]
-     add rax, 0x00
-     lea rcx, [rsp+0x6D]
-     add rcx, 0x08
-     mov rdx, rbx
-     shr rdx, 0x00
-     mov rbx, rax
-     mov [rbx], rdx
-     mov rdx, rbp
-     shr rdx, 0x00
-     mov [rcx], rdx
-     mov rbx, [rax]
+     shr rbp, 0x00
+     mov [rsp+0x6D], rbp
+     mov rax, rbx
+     shr rax, 0x00
+     mov [rsp+0x75], rax
+     mov rbx, [rsp+0x6D]
      call :return_stru3
      mov rbp, rax
-     mov rsi, 0x00
      lea rdi, [rsp+0x27]
+     mov rsi, 0x00
      mov rdx, 0x07
      call :$set
-     lea rax, [rsp+0x27]
-     add rax, 0x00
-     lea rcx, [rsp+0x27]
-     add rcx, 0x04
-     lea rdx, [rsp+0x27]
-     add rdx, 0x06
-     mov rsi, rbp
-     shr rsi, 0x00
-     mov [rax], esi
+     mov rax, rbp
+     shr rax, 0x00
+     mov [rsp+0x27], eax
      mov rax, rbp
      shr rax, 0x20
-     mov [rcx], ax
+     mov [rsp+0x2B], ax
      mov rax, rbp
      shr rax, 0x30
-     mov rcx, rdx
-     mov [rcx], al
-     lea rax, [rsp+0x27]
-     add rax, 0x05
-     movzx ebp, byte ptr [rax]
+     mov [rsp+0x2D], al
+     movzx ebp, byte ptr [rsp+0x2C]
      call :return_stru3
      mov [rsp+0x7D], rax
      mov rax, r12
@@ -637,28 +483,20 @@ main:
      movzx eax, bpl
      add rcx, rax
      mov rbx, rcx
+     lea rdi, [rsp+0x2E]
      mov rsi, 0x00
      mov rdx, 0x07
-     lea rdi, [rsp+0x2E]
      call :$set
-     lea rdx, [rsp+0x2E]
-     add rdx, 0x00
-     lea rax, [rsp+0x2E]
-     add rax, 0x06
-     mov rcx, [rsp+0x7D]
-     shr rcx, 0x00
-     mov [rdx], ecx
-     lea rdx, [rsp+0x2E]
-     add rdx, 0x04
-     mov rcx, [rsp+0x7D]
-     shr rcx, 0x20
-     mov [rdx], cx
-     mov rcx, [rsp+0x7D]
-     shr rcx, 0x30
-     mov [rax], cl
-     lea rax, [rsp+0x2E]
-     add rax, 0x02
-     movzx eax, byte ptr [rax]
+     mov rax, [rsp+0x7D]
+     shr rax, 0x00
+     mov [rsp+0x2E], eax
+     mov rax, [rsp+0x7D]
+     shr rax, 0x20
+     mov [rsp+0x32], ax
+     mov rax, [rsp+0x7D]
+     shr rax, 0x30
+     mov [rsp+0x34], al
+     movzx eax, byte ptr [rsp+0x30]
      movzx eax, al
      mov rcx, rbx
      add rcx, rax
@@ -703,9 +541,7 @@ compose:
      or rdi, rax
      call :kentus
      add bl, al
-     lea rax, [rsp]
-     add rax, 0x0E
-     movzx eax, byte ptr [rax]
+     movzx eax, byte ptr [rsp+0x0E]
      add bl, al
      mov rax, rbx
      add rsp, 0x0F
@@ -826,12 +662,10 @@ return_stru3:
      add rsp, 0x07
      ret
 return_stru4:
-     push rbx
-     push rbp
      sub rsp, 0x0F
+     lea rdi, [rsp]
      mov rsi, 0x00
      mov rdx, 0x0F
-     lea rdi, [rsp]
      call :$set
      call :return_stru3
      mov rcx, rax
@@ -843,42 +677,24 @@ return_stru4:
      shr rax, 0x30
      mov [rsp+0x06], al
      call :return_stru3
-     lea rbx, [rsp]
-     add rbx, 0x07
-     lea rcx, [rsp]
-     add rcx, 0x0E
-     mov rbp, rbx
-     add rbp, 0x04
-     mov rsi, rbx
-     add rsi, 0x06
-     add rbx, 0x00
-     mov rdx, rax
-     shr rdx, 0x00
-     mov [rbx], edx
-     mov rdx, rax
-     shr rdx, 0x20
-     mov [rbp], dx
+     mov rcx, rax
+     shr rcx, 0x00
+     mov [rsp+0x07], ecx
+     mov rcx, rax
+     shr rcx, 0x20
+     mov [rsp+0x0B], cx
      shr rax, 0x30
-     mov [rsi], al
-     mov rax, rcx
-     mov byte ptr [rax], 0x46
-     lea rax, [rsp]
-     add rax, 0x08
-     mov edx, [rax]
-     lea rax, [rsp]
-     add rax, 0x0C
-     movzx eax, word ptr [rax]
+     mov [rsp+0x0D], al
+     mov byte ptr [rsp+0x0E], 0x46
+     mov edx, [rsp+0x08]
+     movzx eax, word ptr [rsp+0x0C]
      shl rax, 0x20
      or rdx, rax
-     lea rax, [rsp]
-     add rax, 0x00
-     mov rax, [rax]
-     movzx ecx, byte ptr [rcx]
+     mov rax, [rsp]
+     movzx ecx, byte ptr [rsp+0x0E]
      shl rcx, 0x30
      or rdx, rcx
      add rsp, 0x0F
-     pop rbp
-     pop rbx
      ret
 =========== OPT LEVEL: all ===========
 main:
@@ -888,11 +704,9 @@ main:
      push r13
      push r14
      push r15
-     sub rsp, 0x85
+     sub rsp, 0x65
      mov rdi, 0x10
      mov rsi, 0x14
-     mov qword ptr [rsp+0x4D], 0x10
-     mov qword ptr [rsp+0x55], 0x14
      mov qword ptr [rsp+0x35], 0x1E
      mov qword ptr [rsp+0x3D], 0x2E
      mov qword ptr [rsp+0x45], 0x32
@@ -910,12 +724,10 @@ main:
      mov r8, 0x05
      call :load_of_args
      mov r12, rax
-     lea rsi, [rsp+0x5D]
+     lea rsi, [rsp+0x4D]
      lea rdi, [rsp]
-     mov qword ptr [rsp+0x5D], 0x06
-     lea rax, [rsp+0x5D]
-     add rax, 0x08
-     mov qword ptr [rax], 0x07
+     mov qword ptr [rsp+0x4D], 0x06
+     mov qword ptr [rsp+0x55], 0x07
      mov rdx, 0x10
      call :$copy
      mov rdi, 0x01
@@ -927,18 +739,10 @@ main:
      mov r13, rax
      mov rdi, 0x807060504030201
      mov [rsp+0x18], rdi
-     lea rax, [rsp+0x18]
-     add rax, 0x08
-     mov dword ptr [rax], 0xC0B0A09
-     lea rax, [rsp+0x18]
-     add rax, 0x0C
-     mov word ptr [rax], 0xE0D
-     lea rax, [rsp+0x18]
-     add rax, 0x0E
-     mov byte ptr [rax], 0x0F
-     lea rax, [rsp+0x18]
-     add rax, 0x0C
-     movzx esi, word ptr [rax]
+     mov dword ptr [rsp+0x20], 0xC0B0A09
+     mov word ptr [rsp+0x24], 0xE0D
+     mov byte ptr [rsp+0x26], 0x0F
+     movzx esi, word ptr [rsp+0x24]
      shl rsi, 0x20
      mov rax, 0xF00000C0B0A09
      or rsi, rax
@@ -948,34 +752,23 @@ main:
      mov rsi, 0x02
      call :return_stru
      mov r15, rax
-     mov rcx, r15
-     mov [rsp+0x6D], rcx
-     lea rcx, [rsp+0x6D]
-     add rcx, 0x08
-     mov [rcx], rax
      call :return_stru3
      mov rbx, rax
-     mov rsi, 0x00
      lea rdi, [rsp+0x27]
+     mov rsi, 0x00
      mov rdx, 0x07
      call :$set
      mov rax, rbx
      mov [rsp+0x27], eax
-     lea rdx, [rsp+0x27]
-     add rdx, 0x04
-     lea rax, [rsp+0x27]
-     add rax, 0x06
-     mov rcx, rbx
-     shr rcx, 0x20
-     mov [rdx], cx
-     mov rcx, rbx
-     shr rcx, 0x30
-     mov [rax], cl
-     lea rax, [rsp+0x27]
-     add rax, 0x05
-     movzx ebx, byte ptr [rax]
+     mov rax, rbx
+     shr rax, 0x20
+     mov [rsp+0x2B], ax
+     mov rax, rbx
+     shr rax, 0x30
+     mov [rsp+0x2D], al
+     movzx ebx, byte ptr [rsp+0x2C]
      call :return_stru3
-     mov [rsp+0x7D], rax
+     mov [rsp+0x5D], rax
      mov rcx, rbp
      mov rax, r12
      add rcx, rax
@@ -989,30 +782,24 @@ main:
      movzx eax, bl
      add rcx, rax
      mov rbx, rcx
+     lea rdi, [rsp+0x2E]
      mov rsi, 0x00
      mov rdx, 0x07
-     lea rdi, [rsp+0x2E]
      call :$set
-     lea rcx, [rsp+0x2E]
-     add rcx, 0x04
-     mov rax, [rsp+0x7D]
+     mov rax, [rsp+0x5D]
      mov [rsp+0x2E], eax
-     lea rdx, [rsp+0x2E]
-     add rdx, 0x06
-     mov rax, [rsp+0x7D]
+     mov rax, [rsp+0x5D]
      shr rax, 0x20
-     mov [rcx], ax
-     mov rax, [rsp+0x7D]
+     mov [rsp+0x32], ax
+     mov rax, [rsp+0x5D]
      shr rax, 0x30
-     mov [rdx], al
-     lea rax, [rsp+0x2E]
-     add rax, 0x02
-     movzx eax, byte ptr [rax]
+     mov [rsp+0x34], al
+     movzx eax, byte ptr [rsp+0x30]
      movzx eax, al
      mov rcx, rbx
      add rcx, rax
      mov rax, rcx
-     add rsp, 0x85
+     add rsp, 0x65
      pop r15
      pop r14
      pop r13
@@ -1050,10 +837,8 @@ compose:
      or rdi, rax
      call :kentus
      add bl, al
-     lea rax, [rsp]
-     add rax, 0x0E
-     add bl, [rax]
      mov rax, rbx
+     add al, [rsp+0x0E]
      add rsp, 0x0F
      pop rbx
      ret
@@ -1077,17 +862,11 @@ kentus:
      add rsp, 0x07
      ret
 fortran:
-     sub rsp, 0x10
      mov rax, rdi
-     mov rcx, rax
-     add rcx, rsi
-     mov [rsp], rax
-     mov [rsp+0x08], rsi
-     add rcx, [rdx]
-     add rcx, [rdx+0x08]
-     add rcx, [rdx+0x10]
-     mov rax, rcx
-     add rsp, 0x10
+     add rax, rsi
+     add rax, [rdx]
+     add rax, [rdx+0x08]
+     add rax, [rdx+0x10]
      ret
 brahma:
      mov rax, rdi
@@ -1116,28 +895,17 @@ load_of_args:
      pop rbx
      ret
 return_stru:
-     sub rsp, 0x10
      mov rax, rdi
      mov rdx, rsi
-     mov [rsp], rax
-     mov [rsp+0x08], rdx
-     add rsp, 0x10
      ret
 return_stru3:
-     sub rsp, 0x07
-     mov dword ptr [rsp], 0x4030201
-     mov word ptr [rsp+0x04], 0x605
-     mov byte ptr [rsp+0x06], 0x07
      mov rax, 0x7060504030201
-     add rsp, 0x07
      ret
 return_stru4:
-     push rbx
-     push rbp
      sub rsp, 0x0F
+     lea rdi, [rsp]
      mov rsi, 0x00
      mov rdx, 0x0F
-     lea rdi, [rsp]
      call :$set
      call :return_stru3
      mov rcx, rax
@@ -1148,34 +916,20 @@ return_stru4:
      shr rax, 0x30
      mov [rsp+0x06], al
      call :return_stru3
-     lea rbp, [rsp]
-     add rbp, 0x0D
-     lea rdx, [rsp]
-     add rdx, 0x07
-     lea rbx, [rsp]
-     add rbx, 0x0B
      mov rcx, rax
-     mov [rdx], ecx
+     mov [rsp+0x07], ecx
      mov rcx, rax
      shr rcx, 0x20
-     mov [rbx], cx
+     mov [rsp+0x0B], cx
      shr rax, 0x30
-     mov [rbp], al
-     lea rax, [rsp]
-     add rax, 0x0E
-     mov byte ptr [rax], 0x46
-     lea rax, [rsp]
-     add rax, 0x08
-     mov edx, [rax]
-     lea rax, [rsp]
-     add rax, 0x0C
-     movzx eax, word ptr [rax]
+     mov [rsp+0x0D], al
+     mov byte ptr [rsp+0x0E], 0x46
+     mov edx, [rsp+0x08]
+     movzx eax, word ptr [rsp+0x0C]
      shl rax, 0x20
      or rdx, rax
      mov rax, [rsp]
      mov rcx, 0x46000000000000
      or rdx, rcx
      add rsp, 0x0F
-     pop rbp
-     pop rbx
      ret

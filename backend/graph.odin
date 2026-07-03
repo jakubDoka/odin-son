@@ -21,6 +21,7 @@ when NODE_NAMES {
 	PREFIX_SIZE :: 0
 }
 
+DEAD_LOCAL :: ~u32(0)
 PRECISION :: size_of(u32)
 NODE_START :: Node_ID(4 + PREFIX_SIZE) / 4
 NODE_ENTRY ::
@@ -317,13 +318,14 @@ worklist_add :: proc(
 	if id == 0 do return
 	if worklist == nil do return
 
-	node := graph_expand(graph, id)
+	node := graph_get(graph, id)
+	if node.rtype == DEAD_NODE_KIND do return
 	if node.in_worklist {
 		if false {
 			for elem in worklist.data {
 				if elem == id do return
 			}
-			fmt.panicf("wuta: %v", node.node)
+			fmt.panicf("wuta: %v", node)
 		} else {
 			return
 		}
@@ -457,6 +459,10 @@ graph_iter_peeps :: proc(graph: ^Graph) {
 
 		for n in worklist_next(graph, &worklist) {
 			node := graph_expand(graph, n)
+			assert(
+				node.itype != .Local ||
+				graph_extra(graph, node, Local).size != DEAD_LOCAL,
+			)
 			new_node := graph.peep({graph, &worklist, &triggers}, node)
 			if new_node != 0 {
 				log.info(graph)
@@ -606,7 +612,45 @@ when !GEN_SPEC {
 			graph_remove_output(ctx, inp, {idx = i, id = par})
 		}
 
+		STORES := bit_set[Ideal_Node_Type]{.Store, .Set, .Copy}
+
+		emilinate_dead_local: if node.itype in STORES {
+			base, _ := base_and_offset(ctx, node.inps[2])
+			bnode := graph_expand(ctx, base)
+			if bnode.itype != .Local_Addr do break emilinate_dead_local
+			if graph_extra(ctx, bnode.inps[0], Local).size == DEAD_LOCAL {
+				return node.inps[1]
+			}
+		}
+
 		#partial match: switch node.itype {
+		case .Local_Addr:
+			slot := graph_expand(ctx, node.inps[0])
+			root := graph_expand(ctx, slot.inps[0])
+			if root.itype != .Mem do break match
+
+			slot_local := graph_extra(ctx, slot, Local)
+			if slot_local.size == DEAD_LOCAL do break match
+
+			iter: Offset_Iter
+			iter.curr = id
+			for user in offset_iter_next(ctx, &iter) {
+				unode := graph_expand(ctx, user.id)
+				if unode.itype in STORES && user.idx == 2 {
+					continue
+				}
+
+				peep_ctx_add_trigger(ctx, user.id, id)
+				break match
+			}
+
+			slot_local.size = DEAD_LOCAL
+
+			iter = {}
+			iter.curr = id
+			for user in offset_iter_next(ctx, &iter) {
+				worklist_add(ctx, ctx.worklist, user.id)
+			}
 		case .Region:
 			#reverse for inp, i in node.inps {
 				inode := graph_expand(ctx, inp)
@@ -921,6 +965,7 @@ when !GEN_SPEC {
 					)
 				}
 			}
+
 		case .Set:
 			if !is_complete do break
 
@@ -1210,11 +1255,21 @@ base_and_offset :: proc(
 	base = node
 	for {
 		bnode := graph_expand(graph, base)
-		if bnode.itype != .Add do return
-		lhs_const := graph_extra(graph, bnode.inps[1], CInt)
-		if lhs_const == nil do return
-		base = bnode.inps[0]
-		off += int(lhs_const.value)
+		if bnode.itype == .Add {
+			lhs_const := graph_extra(graph, bnode.inps[1], CInt)
+			if lhs_const == nil do return
+			base = bnode.inps[0]
+			off += int(lhs_const.value)
+			continue
+		}
+
+		if bnode.xtype == .X64_Add {
+			base = bnode.inps[0]
+			off += int(graph_extra(graph, bnode, X64_Mem_Op).imm)
+			continue
+		}
+
+		return
 	}
 }
 

@@ -321,10 +321,10 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 
 	id := graph_id(ctx, node)
 
-	rhs_conts: ^CInt
+	rhs_const: ^CInt
 	val_const: ^CInt
 
-	slots := [2]^^CInt{&rhs_conts, &val_const}
+	slots := [2]^^CInt{&rhs_const, &val_const}
 	idxs := [2]int{1, 3}
 
 	for idx, i in idxs {
@@ -335,14 +335,6 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 				clamped := i64(i32(slot^.value))
 				if clamped != slot^.value do slot^ = nil
 			}
-		}
-	}
-
-	rhs_load: ^X64_Mem_Op
-	if 1 < len(node.inps) {
-		rhs := graph_expand(ctx, node.inps[1])
-		if rhs.xtype == .X64_Load {
-			rhs_load = graph_extra(ctx, rhs, X64_Mem_Op)
 		}
 	}
 
@@ -404,13 +396,13 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 			}
 		}
 
-		if rhs_conts != nil {
+		if rhs_const != nil {
 			return x64_make_node(
 				ctx,
 				id,
 				op,
 				node.inps[:1],
-				{imm = i32(rhs_conts.value)},
+				{imm = i32(rhs_const.value)},
 			)
 		}
 
@@ -418,15 +410,25 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 
 		indexify: if node.itype == .Add {
 			rhs := graph_expand(ctx, node.inps[1])
-			if rhs.xtype != .X64_Mul do break indexify
 
-			stride_const := graph_extra(ctx, rhs, X64_Mem_Op).imm
-			if stride_const > 8 || !math.is_power_of_two(int(stride_const)) {
-				break indexify
+			scale: i32 = 1
+			index := node.inps[1]
+
+			if rhs.xtype == .X64_Mul {
+				scale = graph_extra(ctx, rhs, X64_Mem_Op).imm
+				index = rhs.inps[0]
+			} else if rhs.itype == .Mul {
+				rhs_const := graph_extra(ctx, rhs.inps[1], CInt)
+				if rhs_const != nil &&
+				   i64(i32(rhs_const.value)) == rhs_const.value {
+					scale = i32(rhs_const.value)
+					index = rhs.inps[0]
+				}
 			}
 
-			scale := stride_const
-			index := rhs.inps[0]
+			if scale > 8 || !math.is_power_of_two(int(scale)) {
+				break indexify
+			}
 
 			if graph_get(ctx, index).itype == .CInt do break indexify
 
@@ -439,6 +441,10 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 			if bnode.itype == .Local_Addr {
 				base = bnode.inps[0]
 				stack_base = true
+			}
+
+			if scale == 1 && !stack_base && offset == 0 {
+				break indexify
 			}
 
 			return x64_make_node(
@@ -503,11 +509,11 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 		return res
 	}
 
+	mem_op := graph_extra(ctx, node, X64_Mem_Op)
+
 	#partial matchx: switch node.xtype {
 	case .X64_Store, .X64_Load:
 		changed := false
-
-		mem_op := graph_extra(ctx, node, X64_Mem_Op)
 
 		if scale != 0 && mem_op.scale != 0 {
 			break matchx

@@ -288,16 +288,14 @@ main:
      mov qword ptr [rsp+0x50], 0x00
      mov qword ptr [rsp+0x58], 0x00
      mov qword ptr [rsp+0x60], 0x00
-     mov rdx, 0x00
-002: cmp rdx, 0x20
+     mov rcx, 0x00
+002: cmp rcx, 0x20
      jl :0
      jmp :1
 
-000: lea rax, [rsp+0x48]
-     add rax, rdx
-     mov rcx, rdx
-     mov [rax], cl
-     add rdx, 0x01
+000: mov rax, rcx
+     mov [rsp+rcx*1+0x48], al
+     add rcx, 0x01
      jmp :2
 
 001: mov rcx, 0x00
@@ -306,9 +304,7 @@ main:
      jl :3
      jmp :4
 
-003: lea rax, [rsp+0x48]
-     add rax, rdx
-     movzx eax, byte ptr [rax]
+003: movzx eax, byte ptr [rsp+rdx*1+0x48]
      movzx eax, al
      add rdx, 0x01
      add rax, rcx

@@ -1191,21 +1191,21 @@ index_offset :: proc(
 	index: backend.Node_ID,
 	stride: int,
 ) -> backend.Node_ID {
-	return backend.graph_add_bin_op(
-		ctx,
-		"snd",
-		.Add,
-		.I64,
-		base,
-		backend.graph_add_bin_op(
+	if stride == 0 do return base
+
+	index := index
+	if stride > 1 {
+		index = backend.graph_add_bin_op(
 			ctx,
 			"snoff",
 			.Mul,
 			.I64,
 			index,
 			backend.graph_add_c_int(ctx, "sst", .I64, i64(stride)),
-		),
-	)
+		)
+	}
+
+	return backend.graph_add_bin_op(ctx, "snd", .Add, .I64, base, index)
 }
 
 emit_nodes :: proc(
@@ -1557,25 +1557,24 @@ emit_nodes :: proc(
 			fmt.panicf("TODO: slice result %#v", t)
 		}
 
-		// source element-0 pointer and source length
-		data0: backend.Node_ID
+		base_ptr: backend.Node_ID
 		src_len: backend.Node_ID
 		#partial switch t in unpack_type(get_node_type(d.expr)) {
 		case ^Array:
-			data0 = base.id
+			base_ptr = base.id
 			src_len = backend.graph_add_c_int(ctx, "alen", .I64, i64(t.len))
 		case Builtin:
 			assert(t == .String)
-			data0 = field_load(ctx, "sdata", .I64, base.id)
+			base_ptr = field_load(ctx, "sdata", .I64, base.id)
 			src_len = field_load(ctx, "slen", .I64, base.id, 8)
 		case ^Slice:
-			data0 = field_load(ctx, "sdata", .I64, base.id)
+			base_ptr = field_load(ctx, "sdata", .I64, base.id)
 			src_len = field_load(ctx, "slen", .I64, base.id, 8)
 		case:
 			fmt.panicf("TODO: slice of %#v", t)
 		}
 
-		backend.graph_pin(ctx, data0)
+		backend.graph_pin(ctx, base_ptr)
 		backend.graph_pin(ctx, src_len)
 
 		low: backend.Node_ID = backend.graph_add_c_int(ctx, "slo", .I64, 0)
@@ -1590,13 +1589,13 @@ emit_nodes :: proc(
 		}
 		backend.graph_pin(ctx, high)
 
-		new_data := index_offset(ctx, data0, low, stride)
+		new_data := index_offset(ctx, base_ptr, low, stride)
 		field_store(ctx, "sptr", dest, 0, new_data)
 
 		new_len := backend.graph_add_bin_op(ctx, "snl", .Sub, .I64, high, low)
 		field_store(ctx, "sptr", dest, 8, new_len)
 
-		backend.graph_unpin(ctx, data0)
+		backend.graph_unpin(ctx, base_ptr)
 		backend.graph_unpin(ctx, src_len)
 		backend.graph_unpin(ctx, low)
 		backend.graph_unpin(ctx, high)

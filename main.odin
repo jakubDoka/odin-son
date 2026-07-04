@@ -1185,6 +1185,29 @@ field_load :: proc(
 	)
 }
 
+index_offset :: proc(
+	ctx: ^Gen_Ctx,
+	base: backend.Node_ID,
+	index: backend.Node_ID,
+	stride: int,
+) -> backend.Node_ID {
+	return backend.graph_add_bin_op(
+		ctx,
+		"snd",
+		.Add,
+		.I64,
+		base,
+		backend.graph_add_bin_op(
+			ctx,
+			"snoff",
+			.Mul,
+			.I64,
+			index,
+			backend.graph_add_c_int(ctx, "sst", .I64, i64(stride)),
+		),
+	)
+}
+
 emit_nodes :: proc(
 	ctx: ^Gen_Ctx,
 	prop: Propagation,
@@ -1515,15 +1538,7 @@ emit_nodes :: proc(
 		idx := to_rvalue(ctx, emit_nodes(ctx, {}, d.index), d.index)
 
 		stride := array_elem_stride(ty)
-		off := backend.graph_add_bin_op(
-			ctx,
-			"idxm",
-			.Mul,
-			.I64,
-			idx,
-			backend.graph_add_c_int(ctx, "idxs", .I64, i64(stride)),
-		)
-		res = backend.graph_add_bin_op(ctx, "idx", .Add, .I64, base_ptr, off)
+		res = index_offset(ctx, base_ptr, idx, stride)
 		lvalue = true
 	case ^ast.Slice_Expr:
 		dest := prop.dest != 0 ? prop.dest : alloca(ctx, "slice", ty)
@@ -1575,21 +1590,7 @@ emit_nodes :: proc(
 		}
 		backend.graph_pin(ctx, high)
 
-		new_data := backend.graph_add_bin_op(
-			ctx,
-			"snd",
-			.Add,
-			.I64,
-			data0,
-			backend.graph_add_bin_op(
-				ctx,
-				"snoff",
-				.Mul,
-				.I64,
-				low,
-				backend.graph_add_c_int(ctx, "sst", .I64, i64(stride)),
-			),
-		)
+		new_data := index_offset(ctx, data0, low, stride)
 		field_store(ctx, "sptr", dest, 0, new_data)
 
 		new_len := backend.graph_add_bin_op(ctx, "snl", .Sub, .I64, high, low)

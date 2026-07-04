@@ -377,6 +377,18 @@ graph_schedule :: proc(
 		if graph_has_flag(graph, n, .Is_Basic_Block_Start) {
 			ctx.late_schedules[node.gvn] = n
 		} else if 0 < len(node.inps) && is_cfg(graph, node.inps[0]) {
+			if node.is_store {
+				for out in node.outs {
+					onode := graph_expand(graph, out.id)
+					if ctx.late_schedules[onode.gvn] == 0 && !onode.is_load {
+						worklist_add(graph, &worklist, out.id)
+						ready = false
+					}
+				}
+			}
+
+			if !ready do continue
+
 			ctx.late_schedules[node.gvn] = node.inps[0]
 		} else {
 			for out in node.outs {
@@ -613,7 +625,7 @@ verify_schedule_integrity :: proc(graph: ^Graph, sched: ^Graph_Schedule) {
 			inode := graph_expand(graph, instr)
 			if len(inode.outs) == 0 &&
 			   !graph_has_flag(graph, instr, .Immortal) {
-				log.warn("dead node in the schedule:", inode.node)
+				log.error("dead node in the schedule:", inode.node)
 			}
 
 			for inp, i in inode.inps {

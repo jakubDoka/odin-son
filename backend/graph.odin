@@ -1,7 +1,6 @@
 package backend
 
 import "../vendored/gam/util/arna"
-import "../vendored/gam/util/hot"
 import "base:intrinsics"
 import "base:runtime"
 import "core:container/queue"

@@ -70,9 +70,7 @@ the frontend implementation for the array handling. Make sure the test passes
 existing code. I dont thing there are any backend changes required, if so, stop
 and let me know.
 
-### Implemment missing peephole discovery related to index/scale params
-
-NOTE: Read AGENTS.md
+### Implemment missing peephole discovery related to index/scale params (DONE)
 
 The was just extended with better sib byte utilizations, but not all codepahts
 are implemented yet. I added asserts in places that if reached will signal
@@ -88,3 +86,12 @@ unhandled index/scale code. All of the important code is located in the
 
 This will not require running agents in parallel, Its just to save context for
 implementing the actual thing.
+
+### Implement slices in the frontend code
+
+NOTE: Read AGENTS.md
+
+We recently implemented array types, lets proceed with implementing slices.
+There is a test to exscercise them (#### basic slices). The `backend` package
+should remain unchanged. Follow the patterns already established, only
+`main.odin` and `typecheck.odin` should require modifications.

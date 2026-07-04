@@ -2628,3 +2628,58 @@ main :: proc() -> int {
 	return sum + cnt
 }
 ```
+
+#### basic slices
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	arr := [8]int{3, 14, 25, 8, 40, 17, 55, 2}
+
+	slc: []int = arr[:]
+	sum := 0
+	i := 0
+	for {
+		if i >= len(slc) do break
+		sum += slc[i]
+		i += 1
+	}
+
+	slc = slc[1:]
+	i = 0
+	for {
+		if i >= len(slc) do break
+		sum += slc[i]
+		i += 1
+	}
+
+	slc = slc[:5]
+	i = 0
+	for {
+		if i >= len(slc) do break
+		sum += slc[i]
+		i += 1
+	}
+
+	slc = slc[1:3]
+	i = 0
+	for {
+		if i >= len(slc) do break
+		sum += slc[i]
+		i += 1
+	}
+
+	arra := [4]int{0, 1, 2, 3}
+	slc = arra[4 - 4:]
+	i = 0
+	for {
+		if i >= len(slc) do break
+		sum += slc[i]
+		i += 1
+	}
+
+	return sum
+}
+```

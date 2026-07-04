@@ -56,6 +56,8 @@ type_align :: proc(ty: Type) -> int {
 		return t.align
 	case ^Array:
 		return type_align(t.elem)
+	case ^Slice:
+		return 8
 	case ^Lit:
 		panic("we should not be type type")
 	case:
@@ -77,6 +79,8 @@ type_size :: proc(ty: Type) -> int {
 		return t.size
 	case ^Array:
 		return array_elem_stride(t.elem) * t.len
+	case ^Slice:
+		return 16
 	case ^Lit:
 		panic("we should not be type type")
 	case:
@@ -123,7 +127,7 @@ type_to_dt :: proc(ty: Type) -> backend.Node_Datatype {
 		return TYPE_TO_DT[ty]
 	case Pointer:
 		return .I64
-	case ^Lit, ^Struct, ^Array:
+	case ^Lit, ^Struct, ^Array, ^Slice:
 		return .Void
 	case:
 		panic("wuwut")
@@ -139,6 +143,7 @@ Type_Kind :: enum uintptr {
 	Pointer,
 	Struct,
 	Array,
+	Slice,
 	Lit,
 }
 
@@ -155,6 +160,7 @@ Type_Data :: union #no_nil {
 	Pointer,
 	^Struct,
 	^Array,
+	^Slice,
 	^Lit,
 }
 
@@ -188,6 +194,16 @@ intern_array :: proc(ctx: ^Gen_Ctx, elem: Type, length: int) -> Type {
 		existing.elem = elem
 		existing.len = length
 		ctx.arrays[key] = existing
+	}
+	return pack_type(existing)
+}
+
+intern_slice :: proc(ctx: ^Gen_Ctx, elem: Type) -> Type {
+	existing, ok := ctx.slices[elem]
+	if !ok {
+		existing = new(Slice, ctx.types.allocator)
+		existing.elem = elem
+		ctx.slices[elem] = existing
 	}
 	return pack_type(existing)
 }
@@ -252,6 +268,9 @@ emit_type :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Type {
 		return intern_pointer(ctx, emit_type(ctx, d.elem))
 	case ^ast.Array_Type:
 		elem := emit_type(ctx, d.elem)
+		if d.len == nil {
+			return intern_slice(ctx, elem)
+		}
 		len_lit := d.len.derived.(^ast.Basic_Lit)
 		assert(len_lit.tok.kind == .Integer)
 		length, ok := strconv.parse_int(len_lit.tok.text)
@@ -305,6 +324,7 @@ Types :: struct {
 	pointers:  map[Type]Pointer,
 	structs:   map[Struct_Key]^Struct,
 	arrays:    map[Array_Key]^Array,
+	slices:    map[Type]^Slice,
 	lits:      map[Lit]^Lit,
 }
 
@@ -316,6 +336,10 @@ Array_Key :: struct {
 Array :: struct {
 	elem: Type,
 	len:  int,
+}
+
+Slice :: struct {
+	elem: Type,
 }
 
 File_ID :: distinct u32
@@ -430,6 +454,20 @@ typecheck :: proc(
 		#partial switch t in unpack_type(base) {
 		case ^Array:
 			return t.elem
+		case ^Slice:
+			return t.elem
+		case:
+			fmt.panicf("TODO: %#v", t)
+		}
+	case ^ast.Slice_Expr:
+		base := typecheck(ctx, {}, d.expr)
+		typecheck(ctx, {inferred_ty = .Int}, d.low)
+		typecheck(ctx, {inferred_ty = .Int}, d.high)
+		#partial switch t in unpack_type(base) {
+		case ^Array:
+			return intern_slice(ctx, t.elem)
+		case ^Slice:
+			return base
 		case:
 			fmt.panicf("TODO: %#v", t)
 		}
@@ -546,7 +584,11 @@ typecheck :: proc(
 		if id, ok := d.expr.derived.(^ast.Ident); ok && id.name == "len" {
 			assert(len(d.args) == 1)
 			arg_ty := typecheck(ctx, {}, d.args[0])
-			_ = unpack_type(arg_ty).(^Array)
+			#partial switch t in unpack_type(arg_ty) {
+			case ^Array, ^Slice:
+			case:
+				fmt.panicf("TODO: len of %#v", t)
+			}
 			return .Int
 		}
 

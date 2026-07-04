@@ -187,7 +187,7 @@ Node_Output :: bit_field u32 {
 }
 
 Node :: struct {
-	using spec:          struct #align (4) {
+	using spec:   struct #align (4) {
 		using _: struct #raw_union {
 			itype: Ideal_Node_Type,
 			btype: Builder_Node_Type,
@@ -204,14 +204,14 @@ Node :: struct {
 			mem_alignment_pow:     u32           | 3,
 		},
 	},
-	gvn:                 u32,
-	input_idx:           u32,
-	ordered_input_count: u16,
-	input_count:         u16,
-	output_idx:          u32,
-	output_count:        u16,
-	output_cap:          u16,
-	extra:               [0]u32,
+	gvn:          u32,
+	input_idx:    u32,
+	input_count:  u16,
+	input_cap:    u16,
+	output_idx:   u32,
+	output_count: u16,
+	output_cap:   u16,
+	extra:        [0]u32,
 }
 
 #assert(size_of(Node) == 24)
@@ -640,7 +640,6 @@ when !GEN_SPEC {
 			slice.rotate_left(node.inps[i:], 1)
 			node.inps = node.inps[:len(node.inps) - 1]
 			node.input_count -= 1
-			node.ordered_input_count -= 1
 			graph_remove_output(ctx, inp, {idx = i, id = par})
 		}
 
@@ -1422,7 +1421,7 @@ graph_start_loop :: proc(graph: ^Graph, scope: Node_ID, state: ^Loop_State) {
 	graph_add_output(graph, state.scope, 0, 0)
 
 	snode = graph_expand(graph, scope)
-	for i in 1 ..< snode.ordered_input_count {
+	for i in 1 ..< snode.input_count {
 		graph_set_input(graph, scope, i, state.scope)
 	}
 }
@@ -1445,8 +1444,8 @@ graph_end_loop :: proc(
 	bscope := node_scope^
 	if bscope != 0 {
 		backedge := graph_expand(graph, bscope)
-		assert(init.ordered_input_count == backedge.ordered_input_count)
-		for i in 1 ..< init.ordered_input_count {
+		assert(init.input_count == backedge.input_count)
+		for i in 1 ..< init.input_count {
 			init := init.inps[i]
 			inode := graph_expand(graph, init)
 			bnode := graph_expand(graph, backedge.inps[i])
@@ -1475,7 +1474,7 @@ graph_end_loop :: proc(
 
 	if node_scope^ != 0 {
 		exit := graph_expand(graph, node_scope^)
-		for i in 1 ..< exit.ordered_input_count {
+		for i in 1 ..< exit.input_count {
 			enode := graph_get(graph, exit.inps[i])
 			if enode.btype == .Scope {
 				graph_set_input(graph, node_scope^, i, init.inps[i])
@@ -1508,7 +1507,7 @@ graph_loop_control :: proc(
 	scope: Node_ID,
 	loop: ^Loop_State,
 ) {
-	base_size := graph_get(ctx, loop.scope).ordered_input_count
+	base_size := graph_get(ctx, loop.scope).input_count
 	graph_truncate_scope(ctx, scope, base_size)
 	loop.scopes[variant] = graph_merge_scopes(ctx, scope, loop.scopes[variant])
 }
@@ -1640,7 +1639,7 @@ node_approx_size :: proc(graph: ^Graph, node: ^Node) -> uint {
 	return(
 		size_of(Node) +
 		uint(graph.node_extra_sizes[node.rtype]) * PRECISION +
-		uint(node.input_count * size_of(Node_ID)) \
+		uint(node.input_cap * size_of(Node_ID)) \
 	)
 }
 
@@ -1672,10 +1671,10 @@ graph_subsume :: proc(
 
 		assert(wnode.gvn == graph.gvn - 1)
 		assert(wnode.output_cap == 0)
-		assert(wnode.input_count == wnode.ordered_input_count)
+		assert(wnode.input_cap == wnode.input_count)
 		assert(
 			wnode.input_idx ==
-			(u32(graph.mem.pos) - u32(wnode.input_count) * size_of(Node_ID)) /
+			(u32(graph.mem.pos) - u32(wnode.input_cap) * size_of(Node_ID)) /
 				PRECISION,
 		)
 
@@ -1829,14 +1828,14 @@ graph_truncate_scope :: proc(
 
 	snode := graph_expand(graph, scope)
 	assert(snode.btype == .Scope)
-	assert(to_len <= int(snode.ordered_input_count))
+	assert(to_len <= int(snode.input_count))
 
-	for &inp, i in snode.inps[to_len:snode.ordered_input_count] {
+	for &inp, i in snode.inps[to_len:snode.input_count] {
 		graph_remove_output(graph, inp, {idx = to_len + i, id = scope})
 		inp = 0
 	}
 
-	snode.ordered_input_count = u16(to_len)
+	snode.input_count = u16(to_len)
 }
 
 graph_merge_scopes :: proc(
@@ -1852,11 +1851,11 @@ graph_merge_scopes :: proc(
 	rnode := graph_expand(graph, rctrl)
 	assert(rnode.btype == .Scope)
 
-	assert(lnode.ordered_input_count == rnode.ordered_input_count)
+	assert(lnode.input_count == rnode.input_count)
 
 	region := graph_add_region(graph, "reg", lnode.inps[0], rnode.inps[0])
 
-	for i in 1 ..< lnode.ordered_input_count {
+	for i in 1 ..< lnode.input_count {
 		if lnode.inps[i] == rnode.inps[i] do continue
 		lvalue := graph_get_scope_value(graph, lctrl, i)
 		rvalue := graph_get_scope_value(graph, rctrl, i)
@@ -1901,13 +1900,14 @@ graph_set_input :: proc(
 
 graph_clone :: proc(graph: ^Graph, id: Node_ID) -> Node_ID {
 	node := graph_expand(graph, id)
+	assert(node.itype != .Call)
 	graph.dont_intern = true
 	push_node_name(graph, graph_get_node_name(graph, id))
 	idx := graph_get_next_extra_slot(graph, node.rtype)
 	extra := graph_extra_dwords(graph, node)
 	copy(idx[:len(extra)], extra)
 	new := graph_add_raw(graph, node.rtype, node.dt, node.inps)
-	graph_get(graph, new).ordered_input_count = node.ordered_input_count
+	graph_get(graph, new).input_count = node.input_count
 	graph.dont_intern = false
 	return new
 }
@@ -1991,7 +1991,7 @@ graph_delete_node :: proc(graph: ^Graph, node: ^Node, indirect := false) {
 	size := node_approx_size(graph, node)
 
 	if int(graph.mem.pos - size) / PRECISION != int(id) {
-		graph.waste += int(node.input_count * size_of(Node_ID))
+		graph.waste += int(node.input_cap * size_of(Node_ID))
 		graph.waste += int(node.output_count * size_of(Node_Output))
 		graph.waste += size_of(Node)
 		graph.waste += int(graph.node_extra_sizes[node.rtype] * PRECISION)
@@ -2103,14 +2103,14 @@ graph_add_raw :: proc(
 
 	node := (^Node)(raw_data(slot))
 	node^ = {
-		rtype               = type,
-		dt                  = dt,
-		gvn                 = graph.gvn,
-		is_store            = .Store in graph.node_flags[type],
-		is_load             = .Load in graph.node_flags[type],
-		input_idx           = u32(graph.mem.pos / PRECISION),
-		ordered_input_count = u16(len(inps)),
-		input_count         = u16(len(inps)),
+		rtype       = type,
+		dt          = dt,
+		gvn         = graph.gvn,
+		is_store    = .Store in graph.node_flags[type],
+		is_load     = .Load in graph.node_flags[type],
+		input_idx   = u32(graph.mem.pos / PRECISION),
+		input_count = u16(len(inps)),
+		input_cap   = u16(len(inps)),
 	}
 
 	new_inps := arna.alloc(
@@ -2144,12 +2144,12 @@ graph_add_input_node :: proc(
 	inp: Node_ID,
 	max_growth: u16 = 1024,
 ) -> int {
-	free_idx := int(node.ordered_input_count)
-	grow: if node.ordered_input_count == node.input_count {
-		graph.waste += int(node.input_count * size_of(Node_ID))
+	free_idx := int(node.input_count)
+	grow: if node.input_count == node.input_cap {
+		graph.waste += int(node.input_cap * size_of(Node_ID))
 		base := u32(graph.mem.pos / PRECISION)
-		max_growth := node.input_count + max_growth
-		new_cap := min(node.input_count * 2 + 2, max_growth)
+		max_growth := node.input_cap + max_growth
+		new_cap := min(node.input_cap * 2 + 2, max_growth)
 		slot := arna.alloc(
 			graph.mem,
 			uint(new_cap * PRECISION),
@@ -2157,22 +2157,23 @@ graph_add_input_node :: proc(
 			zeroed = true,
 		)
 		copy(mem.slice_data_cast([]Node_ID, slot), graph_inps(graph, node))
-		node.input_count = new_cap
+		node.input_cap = new_cap
 		node.input_idx = base
 	}
 
-	graph_inps(graph, node)[free_idx] = inp
-	node.ordered_input_count += 1
+	raw_data(graph_inps(graph, node))[free_idx] = inp
+	node.input_count += 1
 
 	return free_idx
 }
 
 @(tag = "node_proc")
 graph_add_extra_input_node :: proc(graph: ^Graph, node: ^Node, inp: Node_ID) {
+	// TODO: remove this
+	node.input_cap += 1
 	node.input_count += 1
-	node.ordered_input_count += 1
-	graph_inps(graph, node)[node.input_count - 1] = inp
-	graph_add_output(graph, inp, graph_id(graph, node), node.input_count - 1)
+	graph_inps(graph, node)[node.input_cap - 1] = inp
+	graph_add_output(graph, inp, graph_id(graph, node), node.input_cap - 1)
 }
 
 graph_ensure_available_output_cap :: proc(
@@ -2347,7 +2348,7 @@ graph_display_node :: proc(
 
 	for inp, i in node.inps {
 		if written_one {
-			if i == int(node.ordered_input_count) {
+			if i == int(node.input_count) {
 				fmt.wprintf(w, "; ")
 			} else {
 				fmt.wprintf(w, ", ")

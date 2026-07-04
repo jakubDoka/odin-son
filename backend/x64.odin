@@ -622,7 +622,6 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 							node.inps[rm_idx],
 							{idx = 3, id = id},
 						)
-						node.ordered_input_count -= 1
 						node.input_count -= 1
 						node.inps = node.inps[:len(node.inps) - 1]
 					} else {
@@ -826,7 +825,7 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 		if bnode.itype != .Call_End do continue
 		cnode := graph_expand(ctx, bnode.inps[0])
 		call_stack_size: i32
-		for inp in cnode.inps {
+		for inp in raw_data(cnode.inps)[cnode.input_count:cnode.input_cap] {
 			inode := graph_expand(ctx, inp)
 			if inode.itype != .Local do continue
 			iext := graph_extra(ctx, inode, Local)

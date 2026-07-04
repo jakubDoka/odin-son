@@ -1230,8 +1230,7 @@ emit_nodes :: proc(
 	#partial switch d in node.derived {
 	case ^ast.Block_Stmt:
 		prev_local_scope_len := len(ctx.scope)
-		prev_scope_len :=
-			backend.graph_get(ctx, ctx.node_scope).ordered_input_count
+		prev_scope_len := backend.graph_get(ctx, ctx.node_scope).input_count
 		for stmt in d.stmts {
 			emit_nodes(ctx, {}, stmt)
 			if ctx.node_scope == 0 do break
@@ -1755,7 +1754,7 @@ emit_nodes :: proc(
 
 			call := backend.graph_add_call(ctx, "call", args[:ln], idx)
 			cnode := backend.graph_get(ctx, call)
-			cnode.ordered_input_count = u16(i)
+			cnode.input_count = u16(i)
 			for arg in args[CALL_PREFIX:ln] {
 				backend.graph_unpin(ctx, arg)
 			}

@@ -574,6 +574,9 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 				   lhs.inps[1] == node.inps[1] &&
 				   lhs.inps[2] == node.inps[2] &&
 				   lhs_mem.scale == mem_op.scale &&
+				   (lhs_mem.scale == 0 ||
+						   lhs.inps[len(lhs.inps) - 1] ==
+							   node.inps[len(node.inps) - 1]) &&
 				   lhs_mem.dis == mem_op.dis {
 
 					needs_removal :=

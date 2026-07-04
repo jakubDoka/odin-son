@@ -4845,6 +4845,15 @@ main_ :: proc() -> int {
 		i += 1
 	}
 
+	j := 1
+	i = 0
+	for {
+		if j >= len(sarr) do break
+		sarr[i] = sarr[j] + 1
+		i += 1
+		j += 1
+	}
+
 	i = 0
 	for {
 		if i >= len(sarr) do break
@@ -4892,6 +4901,15 @@ main :: proc() -> int {
 		if i >= len(sarr) do break
 		sarr[i] += 1
 		i += 1
+	}
+
+	j := 1
+	i = 0
+	for {
+		if j >= len(sarr) do break
+		sarr[i] = sarr[j] + 1
+		i += 1
+		j += 1
 	}
 
 	i = 0

@@ -66,108 +66,84 @@ imm_cmps:
      mov rax, 0x00
      mov rcx, [rdi]
      cmp rax, rcx
-     jnz :0
+     jz :0
+     mov rdx, 0x00
      jmp :1
 
 000: mov rdx, 0x00
-     jmp :2
-
-001: mov rdx, 0x00
      add rdx, 0x01
-002: mov rcx, [rdi]
+001: mov rcx, [rdi]
      cmp rax, rcx
-     jz :3
-     jmp :4
+     jnz :2
+     jmp :3
 
-003: jmp :5
+002: add rdx, 0x02
+003: mov rcx, [rdi]
+     cmp rax, rcx
+     jnl :4
+     jmp :5
 
-004: add rdx, 0x02
+004: add rdx, 0x04
 005: mov rcx, [rdi]
      cmp rax, rcx
-     jl :6
+     jle :6
      jmp :7
 
-006: jmp :8
-
-007: add rdx, 0x04
-008: mov rcx, [rdi]
+006: add rdx, 0x08
+007: mov rcx, [rdi]
      cmp rax, rcx
-     jnle :9
-     jmp :10
+     jnle :8
+     jmp :9
 
-009: jmp :11
-
-010: add rdx, 0x08
-011: mov rcx, [rdi]
+008: add rdx, 0x10
+009: mov rcx, [rdi]
      cmp rax, rcx
-     jle :12
-     jmp :13
+     jl :10
+     mov rax, rdx
+     jmp :11
 
-012: jmp :14
-
-013: add rdx, 0x10
-014: mov rcx, [rdi]
-     cmp rax, rcx
-     jnl :15
-     jmp :16
-
-015: mov rax, rdx
-     jmp :17
-
-016: mov rax, rdx
+010: mov rax, rdx
      add rax, 0x20
-017: ret
+011: ret
 cmps:
      mov rax, 0x00
      mov rcx, [rsi]
      cmp rdi, rcx
-     jnz :0
-     jmp :18
+     jz :12
+     jmp :13
 
-000: jmp :19
+012: add rax, 0x01
+013: mov rcx, [rsi]
+000: cmp rdi, rcx
+     jnz :14
+     jmp :15
 
-018: add rax, 0x01
+014: add rax, 0x02
+015: mov rcx, [rsi]
+     cmp rdi, rcx
+     jnl :16
+     jmp :17
+
+016: add rax, 0x04
+017: mov rcx, [rsi]
+     cmp rdi, rcx
+     jle :18
+     jmp :19
+
+018: add rax, 0x08
 019: mov rcx, [rsi]
-001: cmp rdi, rcx
-     jz :20
+     cmp rdi, rcx
+     jnle :20
      jmp :21
 
-020: jmp :22
-
-021: add rax, 0x02
-022: mov rcx, [rsi]
+020: add rax, 0x10
+021: mov rcx, [rsi]
      cmp rdi, rcx
-     jl :23
-     jmp :24
+     jl :22
+     jmp :23
 
-023: jmp :25
-
-024: add rax, 0x04
-025: mov rcx, [rsi]
-     cmp rdi, rcx
-     jnle :26
-     jmp :27
-
-026: jmp :28
-
-027: add rax, 0x08
-028: mov rcx, [rsi]
-     cmp rdi, rcx
-     jle :29
-     jmp :30
-
-029: jmp :31
-
-030: add rax, 0x10
-031: mov rcx, [rsi]
-     cmp rdi, rcx
-     jnl :32
-     jmp :33
-
-032: jmp :34
-
-033: add rax, 0x20
-034: ret
+022: add rax, 0x20
+023: ret
 =========== OPT LEVEL: mininal ===========
 main:
      push rbx
@@ -233,104 +209,80 @@ imm_cmps:
      mov rax, 0x00
      mov rcx, [rdi]
      cmp rcx, 0x00
-     jnz :0
+     jz :0
      jmp :1
 
-000: jmp :2
-
-001: add rax, 0x01
-002: mov rcx, [rdi]
+000: add rax, 0x01
+001: mov rcx, [rdi]
      cmp rcx, 0x00
-     jz :3
-     jmp :4
+     jnz :2
+     jmp :3
 
-003: jmp :5
+002: add rax, 0x02
+003: mov rcx, [rdi]
+     cmp rcx, 0x00
+     jl :4
+     jmp :5
 
-004: add rax, 0x02
+004: add rax, 0x04
 005: mov rcx, [rdi]
      cmp rcx, 0x00
-     jnl :6
+     jnle :6
      jmp :7
 
-006: jmp :8
-
-007: add rax, 0x04
-008: mov rcx, [rdi]
+006: add rax, 0x08
+007: mov rcx, [rdi]
      cmp rcx, 0x00
-     jle :9
-     jmp :10
+     jle :8
+     jmp :9
 
-009: jmp :11
-
-010: add rax, 0x08
-011: mov rcx, [rdi]
+008: add rax, 0x10
+009: mov rcx, [rdi]
      cmp rcx, 0x00
-     jnle :12
-     jmp :13
+     jnl :10
+     jmp :11
 
-012: jmp :14
-
-013: add rax, 0x10
-014: mov rcx, [rdi]
-     cmp rcx, 0x00
-     jl :15
-     jmp :16
-
-015: jmp :17
-
-016: add rax, 0x20
-017: ret
+010: add rax, 0x20
+011: ret
 cmps:
      mov rax, 0x00
      mov rcx, [rsi]
      cmp rdi, rcx
-     jnz :18
-     jmp :19
+     jz :12
+     jmp :13
 
-018: jmp :20
-
-019: add rax, 0x01
-020: mov rcx, [rsi]
+012: add rax, 0x01
+013: mov rcx, [rsi]
      cmp rdi, rcx
-     jz :21
-     jmp :22
+     jnz :14
+     jmp :15
 
-021: jmp :23
-
-022: add rax, 0x02
-023: mov rcx, [rsi]
+014: add rax, 0x02
+015: mov rcx, [rsi]
      cmp rdi, rcx
-     jl :24
-     jmp :25
+     jnl :16
+     jmp :17
 
-024: jmp :6
-
-025: add rax, 0x04
-006: mov rcx, [rsi]
+016: add rax, 0x04
+017: mov rcx, [rsi]
      cmp rdi, rcx
-     jnle :26
-008: jmp :27
+     jle :18
+005: jmp :19
 
-026: jmp :28
-
-027: add rax, 0x08
-028: mov rcx, [rsi]
+018: add rax, 0x08
+019: mov rcx, [rsi]
      cmp rdi, rcx
-     jle :29
-     jmp :30
+     jnle :20
+     jmp :21
 
-029: jmp :31
-
-030: add rax, 0x10
-031: mov rcx, [rsi]
+020: add rax, 0x10
+021: mov rcx, [rsi]
      cmp rdi, rcx
-     jnl :32
-     jmp :33
+     jl :22
+     jmp :23
 
-032: jmp :34
-
-033: add rax, 0x20
-034: ret
+022: add rax, 0x20
+023: ret
 =========== OPT LEVEL: all ===========
 main:
      push rbx
@@ -394,91 +346,67 @@ main:
      ret
 imm_cmps:
      cmp qword ptr [rdi], 0x00
-     jnz :0
+     jz :0
+     mov rax, 0x00
      jmp :1
 
-000: mov rax, 0x00
-     jmp :2
+000: mov rax, 0x01
+001: cmp qword ptr [rdi], 0x00
+     jnz :2
+     jmp :3
 
-001: mov rax, 0x01
-002: cmp qword ptr [rdi], 0x00
-     jz :3
-     jmp :4
+002: add rax, 0x02
+003: cmp qword ptr [rdi], 0x00
+     jl :4
+     jmp :5
 
-003: jmp :5
-
-004: add rax, 0x02
+004: add rax, 0x04
 005: cmp qword ptr [rdi], 0x00
-     jnl :6
+     jnle :6
      jmp :7
 
-006: jmp :8
+006: add rax, 0x08
+007: cmp qword ptr [rdi], 0x00
+     jle :8
+     jmp :9
 
-007: add rax, 0x04
-008: cmp qword ptr [rdi], 0x00
-     jle :9
-     jmp :10
+008: add rax, 0x10
+009: cmp qword ptr [rdi], 0x00
+     jnl :10
+     jmp :11
 
-009: jmp :11
-
-010: add rax, 0x08
-011: cmp qword ptr [rdi], 0x00
-     jnle :12
-     jmp :13
-
-012: jmp :14
-
-013: add rax, 0x10
-014: cmp qword ptr [rdi], 0x00
-     jl :15
-     jmp :16
-
-015: jmp :17
-
-016: add rax, 0x20
-017: ret
+010: add rax, 0x20
+011: ret
 cmps:
      cmp rdi, [rsi]
-     jnz :18
+     jz :12
+     mov rax, 0x00
+     jmp :13
+
+012: mov rax, 0x01
+013: cmp rdi, [rsi]
+     jnz :14
+     jmp :15
+
+014: add rax, 0x02
+015: cmp rdi, [rsi]
+     jnl :16
+     jmp :17
+
+016: add rax, 0x04
+017: cmp rdi, [rsi]
+     jle :18
      jmp :19
 
-018: mov rax, 0x00
-     jmp :20
+018: add rax, 0x08
+019: cmp rdi, [rsi]
+     jnle :20
+006: jmp :21
 
-019: mov rax, 0x01
-020: cmp rdi, [rsi]
-     jz :21
-     jmp :22
+020: add rax, 0x10
+021: cmp rdi, [rsi]
+     jl :22
+     jmp :23
 
-021: jmp :23
-
-022: add rax, 0x02
-023: cmp rdi, [rsi]
-     jl :24
-     jmp :25
-
-024: jmp :6
-
-025: add rax, 0x04
-006: cmp rdi, [rsi]
-     jnle :26
-     jmp :27
-
-026: jmp :28
-
-027: add rax, 0x08
-028: cmp rdi, [rsi]
-     jle :29
-010: jmp :30
-
-029: jmp :31
-
-030: add rax, 0x10
-031: cmp rdi, [rsi]
-     jnl :32
-     jmp :33
-
-032: jmp :34
-
-033: add rax, 0x20
-034: ret
+022: add rax, 0x20
+023: ret

@@ -31,45 +31,35 @@ main:
      sar rax, 0x01
      add rdi, rax
      cmp rcx, 0x14
-     jnl :0
+     jl :0
      jmp :1
 
-000: jmp :2
-
-001: add rdi, 0x01
-002: mov rax, rsi
+000: add rdi, 0x01
+001: mov rax, rsi
      cmp rax, rcx
-     jnl :3
-     jmp :4
+     jl :2
+     jmp :3
 
-003: jmp :5
-
-004: add rdi, 0x02
-005: mov rax, 0x14
+002: add rdi, 0x02
+003: mov rax, 0x14
      cmp rax, rcx
+     jnle :4
+     jmp :5
+
+004: add rdi, 0x04
+005: cmp rcx, rsi
      jle :6
      jmp :7
 
-006: jmp :8
-
-007: add rdi, 0x04
-008: cmp rcx, rsi
-     jnle :9
-     jmp :10
-
-009: jmp :11
-
-010: add rdi, 0x08
-011: mov rdx, rdi
+006: add rdi, 0x08
+007: mov rdx, rdi
      mov rax, 0x14
      cmp rax, rcx
-     jl :12
-     jmp :13
+     jnl :8
+     jmp :9
 
-012: jmp :14
-
-013: add rdx, 0x10
-014: mov rax, rdx
+008: add rdx, 0x10
+009: mov rax, rdx
      ret
 =========== OPT LEVEL: mininal ===========
 main:
@@ -83,43 +73,33 @@ main:
      add rdx, 0xFFFFFFFFFFFFFFFC
      add rdx, 0xFFFFFFFFFFFFFFFD
      test rcx, rcx
-     jz :0
+     jnz :0
      jmp :1
 
-000: jmp :2
+000: add rdx, 0x01
+001: test rcx, rcx
+     jnz :2
+     jmp :3
 
-001: add rdx, 0x01
-002: test rcx, rcx
-     jz :3
-     jmp :4
+002: add rdx, 0x02
+003: test rcx, rcx
+     jnz :4
+     jmp :5
 
-003: jmp :5
-
-004: add rdx, 0x02
-005: test rcx, rcx
-     jz :6
+004: add rdx, 0x04
+005: test rax, rax
+     jnz :6
+     mov rax, rdx
      jmp :7
 
-006: jmp :8
-
-007: add rdx, 0x04
-008: test rax, rax
-     jz :9
-     jmp :10
-
-009: mov rax, rdx
-     jmp :11
-
-010: mov rax, rdx
+006: mov rax, rdx
      add rax, 0x08
-011: test rcx, rcx
-     jz :12
-     jmp :13
+007: test rcx, rcx
+     jnz :8
+     jmp :9
 
-012: jmp :14
-
-013: add rax, 0x10
-014: ret
+008: add rax, 0x10
+009: ret
 =========== OPT LEVEL: all ===========
 main:
      mov rax, 0x0F

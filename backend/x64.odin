@@ -1286,21 +1286,27 @@ x64_emit_instr :: proc(
 		}
 
 		assert(len(node.outs) == 2)
-		// jz
 		append(
 			&ctx.local_relocs,
 			Local_Reloc {
-				dest = graph_get(ctx, node.outs[1].id).gvn - block_base,
+				dest = graph_get(ctx, node.outs[int(is_consecutive)].id).gvn -
+				block_base,
 				offset = u32(ctx.code.pos) + 2,
 			},
 		)
 
-		opcode: u8 = 0x84
+		op: X64_Node_Type = is_consecutive ? .Eq : .Ne
 		if cnode.dt == .Void {
-			// TODO: untangle this
-			opcode = JCC_TABLE[CMP_OP_REVERSE[cnode.xtype]]
+			// we do this anyway to normalize
+			op = CMP_OP_REVERSE[cnode.xtype]
+			if !is_consecutive {
+				op = CMP_OP_REVERSE[op]
+			}
 		}
-		emit(ctx.code, {0x0f, opcode, 0, 0, 0, 0})
+
+		emit(ctx.code, {0x0f, JCC_TABLE[op], 0, 0, 0, 0})
+
+		if !is_consecutive do break
 
 		fallthrough
 	case .Always:

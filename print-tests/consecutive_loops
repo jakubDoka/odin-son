@@ -3,130 +3,98 @@ main:
      mov rax, 0x00
      mov rcx, 0x00
      test rcx, rcx
-     jz :0
+     jnz :0
      jmp :1
 
-000: jmp :2
-
-001: mov rcx, 0x00
-004: add rcx, 0x01
+000: mov rcx, 0x00
+002: add rcx, 0x01
      cmp rcx, 0x01
-     jnz :3
+     jz :1
      jmp :2
 
-003: jmp :4
-
-002: mov rdx, 0x00
-015: add rdx, 0x01
+001: mov rdx, 0x00
+009: add rdx, 0x01
      cmp rdx, 0x03
-     jnz :5
-     jmp :6
-
-005: mov rcx, 0x00
-009: add rcx, 0x01
+     jz :3
+     mov rcx, 0x00
+005: add rcx, 0x01
      cmp rcx, 0x03
-     jnz :7
+     jz :4
+     jmp :5
+
+004: mov rcx, 0x00
+008: add rcx, 0x01
+     cmp rcx, 0x02
+     jz :6
+     cmp rcx, 0x03
+     jz :7
      jmp :8
 
 007: jmp :9
 
-008: mov rcx, 0x00
-014: add rcx, 0x01
-     cmp rcx, 0x02
-     jnz :10
-     jmp :11
+006: jmp :3
 
-010: cmp rcx, 0x03
-     jnz :12
-     jmp :13
-
-012: jmp :14
-
-013: jmp :15
-
-011: jmp :6
-
-006: ret
+003: ret
 =========== OPT LEVEL: mininal ===========
 main:
      mov rax, 0x00
      mov rcx, 0x00
      test rcx, rcx
-     jz :0
-     jmp :1
-
-000: jmp :2
-
-001: mov rcx, 0x00
-004: add rcx, 0x01
-     cmp rcx, 0x01
-     jnz :3
-     jmp :2
-
-003: jmp :4
-
-002: mov rdx, 0x00
-015: add rdx, 0x01
-     cmp rdx, 0x03
-     jnz :5
-     jmp :6
-
-005: mov rcx, 0x00
-009: add rcx, 0x01
-     cmp rcx, 0x03
-     jnz :7
-     jmp :8
-
-007: jmp :9
-
-008: mov rcx, 0x00
-014: add rcx, 0x01
-     cmp rcx, 0x02
-     jnz :10
-     jmp :11
-
-010: cmp rcx, 0x03
-     jnz :12
-     jmp :13
-
-012: jmp :14
-
-013: jmp :15
-
-011: jmp :6
-
-006: ret
-=========== OPT LEVEL: all ===========
-main:
-     mov rax, 0x00
-     mov rdx, 0x00
-010: add rdx, 0x01
-     cmp rdx, 0x03
      jnz :0
      jmp :1
 
 000: mov rcx, 0x00
-004: add rcx, 0x01
+002: add rcx, 0x01
+     cmp rcx, 0x01
+     jz :1
+     jmp :2
+
+001: mov rdx, 0x00
+009: add rdx, 0x01
+     cmp rdx, 0x03
+     jz :3
+     mov rcx, 0x00
+005: add rcx, 0x01
      cmp rcx, 0x03
-     jnz :2
-     jmp :3
+     jz :4
+     jmp :5
 
-002: jmp :4
-
-003: mov rcx, 0x00
-009: add rcx, 0x01
+004: mov rcx, 0x00
+008: add rcx, 0x01
      cmp rcx, 0x02
-     jnz :5
-     jmp :6
-
-005: cmp rcx, 0x03
-     jnz :7
+     jz :6
+     cmp rcx, 0x03
+     jz :7
      jmp :8
 
 007: jmp :9
 
-008: jmp :10
+006: jmp :3
 
-006: jmp :1
+003: ret
+=========== OPT LEVEL: all ===========
+main:
+     mov rax, 0x00
+     mov rdx, 0x00
+006: add rdx, 0x01
+     cmp rdx, 0x03
+     jz :0
+     mov rcx, 0x00
+002: add rcx, 0x01
+     cmp rcx, 0x03
+     jz :1
+     jmp :2
 
-001: ret
+001: mov rcx, 0x00
+005: add rcx, 0x01
+     cmp rcx, 0x02
+     jz :3
+     cmp rcx, 0x03
+     jz :4
+     jmp :5
+
+004: jmp :6
+
+003: jmp :0
+
+000: ret

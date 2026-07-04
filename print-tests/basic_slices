@@ -33,19 +33,17 @@ main:
      mov [rsp+0x08], rbp
      mov rdx, 0x00
      mov rcx, 0x00
-002: mov rax, [rsp+0x08]
+001: mov rax, [rsp+0x08]
      cmp rdx, rax
-     jl :0
-     jmp :1
-
-000: mov rax, [rsp]
+     jnl :0
+     mov rax, [rsp]
      mov rax, [rax+rdx*8]
      add rax, rcx
      add rdx, 0x01
      mov rcx, rax
-     jmp :2
+     jmp :1
 
-001: mov rax, 0x01
+000: mov rax, 0x01
      imul rax, rax, 0x08
      mov rdx, [rsp+0x08]
      add [rsp], rax
@@ -53,54 +51,48 @@ main:
      mov [rsp+0x08], rdx
      mov rsi, 0x00
      mov rdx, rcx
+003: mov rcx, [rsp+0x08]
+     cmp rsi, rcx
+     jnl :2
+     mov rcx, [rsp]
+     mov rcx, [rcx+rsi*8]
+     add rcx, rdx
+     add rsi, 0x01
+     mov rdx, rcx
+     jmp :3
+
+002: add [rsp], rbx
+     mov rcx, 0x05
+     sub rcx, 0x00
+     mov [rsp+0x08], rcx
+     mov rsi, 0x00
 005: mov rcx, [rsp+0x08]
      cmp rsi, rcx
-     jl :3
-     jmp :4
-
-003: mov rcx, [rsp]
+     jnl :4
+     mov rcx, [rsp]
      mov rcx, [rcx+rsi*8]
      add rcx, rdx
      add rsi, 0x01
      mov rdx, rcx
      jmp :5
 
-004: add [rsp], rbx
-     mov rcx, 0x05
-     sub rcx, 0x00
-     mov [rsp+0x08], rcx
-     mov rsi, 0x00
-008: mov rcx, [rsp+0x08]
-     cmp rsi, rcx
-     jl :6
-     jmp :7
-
-006: mov rcx, [rsp]
-     mov rcx, [rcx+rsi*8]
-     add rcx, rdx
-     add rsi, 0x01
-     mov rdx, rcx
-     jmp :8
-
-007: add [rsp], rax
+004: add [rsp], rax
      mov rax, 0x03
      sub rax, 0x01
      mov [rsp+0x08], rax
      mov rcx, 0x00
      mov rbx, rdx
-011: mov rax, [rsp+0x08]
+007: mov rax, [rsp+0x08]
      cmp rcx, rax
-     jl :9
-     jmp :10
-
-009: mov rax, [rsp]
+     jnl :6
+     mov rax, [rsp]
      mov rax, [rax+rcx*8]
      add rax, rbx
      add rcx, 0x01
      mov rbx, rax
-     jmp :11
+     jmp :7
 
-010: lea rdi, [rsp+0x30]
+006: lea rdi, [rsp+0x30]
      mov r13, 0x04
      sub r13, 0x04
      mov rdx, 0x20
@@ -116,19 +108,17 @@ main:
      sub rax, r13
      mov [rsp+0x08], rax
      mov rcx, 0x00
-014: mov rax, [rsp+0x08]
+009: mov rax, [rsp+0x08]
      cmp rcx, rax
-     jl :12
-     jmp :13
-
-012: mov rax, [rsp]
+     jnl :8
+     mov rax, [rsp]
      mov rax, [rax+rcx*8]
      add rax, rbx
      add rcx, 0x01
      mov rbx, rax
-     jmp :14
+     jmp :9
 
-013: lea rdi, [rsp+0x10]
+008: lea rdi, [rsp+0x10]
      mov rsi, 0x00
      mov rdx, 0x10
      call :$set
@@ -139,20 +129,18 @@ main:
      mov rsi, [rsp+0x18]
      call :quick_sort
      mov rdx, 0x00
-017: cmp rdx, 0x08
-     jl :15
-     jmp :16
-
-015: mov rax, [rsp+rdx*8+0x50]
+011: cmp rdx, 0x08
+     jnl :10
+     mov rax, [rsp+rdx*8+0x50]
      mov rcx, rdx
      shl rax, cl
      add rax, rbx
      neg [rsp+rdx*8+0x50]
      add rdx, 0x01
      mov rbx, rax
-     jmp :17
+     jmp :11
 
-016: lea rdi, [rsp+0x20]
+010: lea rdi, [rsp+0x20]
      mov rsi, 0x00
      mov rdx, 0x10
      call :$set
@@ -164,20 +152,18 @@ main:
      call :bubble_sort
      mov rsi, 0x00
      mov rax, rbx
-020: cmp rsi, 0x08
-     jl :18
-     jmp :19
-
-018: neg [rsp+rsi*8+0x50]
+013: cmp rsi, 0x08
+     jnl :12
+     neg [rsp+rsi*8+0x50]
      mov rdx, [rsp+rsi*8+0x50]
      mov rcx, rsi
      shl rdx, cl
      add rdx, rax
      add rsi, 0x01
      mov rax, rdx
-     jmp :20
+     jmp :13
 
-019: add rsp, 0x98
+012: add rsp, 0x98
      pop r13
      pop r12
      pop rbp
@@ -191,63 +177,53 @@ bubble_sort:
      mov rcx, [rsp-0x10]
      sub rcx, 0x01
      mov r11, rcx
-035: mov rcx, 0x01
+024: mov rcx, 0x01
      neg rcx
      mov r9, rcx
      mov r10, 0x00
      mov r8, rcx
-029: cmp r10, r11
-     jl :21
-     jmp :22
-
-021: mov rdx, r10
+019: cmp r10, r11
+     jnl :14
+     mov rdx, r10
      add rdx, 0x01
      mov rsi, [rsp-0x18]
      mov rdi, [rsi+r10*8]
      mov rsi, [rsi+rdx*8]
      cmp rdi, rsi
-     jle :23
-     jmp :24
+     jnle :15
+     jmp :16
 
-023: jmp :25
-
-024: mov rsi, [rsp-0x18]
+015: mov rsi, [rsp-0x18]
      mov rdi, [rsi+r10*8]
      mov r8, [rsi+rdx*8]
      mov [rsi+rdx*8], rdi
      mov rsi, [rsp-0x18]
      mov [rsi+r10*8], r8
      cmp r9, rcx
-     jnz :26
-     jmp :27
+     jz :17
+     jmp :18
 
-026: jmp :28
+017: mov r9, r10
+018: mov r8, r10
+016: mov r10, rdx
+     jmp :19
 
-027: mov r9, r10
-028: mov r8, r10
-025: mov r10, rdx
-     jmp :29
-
-022: cmp r8, rcx
-     jnz :30
-     jmp :31
-
-030: sub r9, 0x01
+014: cmp r8, rcx
+     jz :20
+     sub r9, 0x01
      cmp r9, 0x00
-     jnl :32
-     jmp :33
+     jl :21
+     jmp :21
 
-032: jmp :33
+021: jmp :22
 
-033: jmp :2
+     jmp :23
 
-     jmp :34
+022: mov r11, r8
+     jmp :24
 
-002: mov r11, r8
-     jmp :35
-
-031: mov rax, 0x00
-034: ret
+020: mov rax, 0x00
+023: ret
 quick_sort:
      push rbx
      push rbp
@@ -262,17 +238,15 @@ quick_sort:
      mov rdx, 0x10
      call :$set
      lea rsi, [rsp]
-029: lea rdi, [rsp+0x10]
+019: lea rdi, [rsp+0x10]
      mov rdx, 0x10
      call :$copy
      mov rax, [rsp+0x18]
      mov rbp, rax
      mov rax, rbp
      cmp rax, 0x02
-     jnl :36
-     jmp :37
-
-036: mov rcx, [rsp+0x10]
+     jl :25
+     mov rcx, [rsp+0x10]
      mov rsi, 0x02
      mov rax, rbp
      cqo
@@ -281,38 +255,32 @@ quick_sort:
      mov rdi, rbp
      sub rdi, 0x01
      mov rcx, 0x00
-040: mov r12, rcx
+016: mov r12, rcx
      mov rcx, r12
      add rcx, 0x01
      mov rdx, [rsp+0x10]
-022: mov rsi, r12
+     mov rsi, r12
      mov rdx, [rdx+rsi*8]
      cmp rdx, rax
-     jl :38
-     jmp :39
+     jnl :26
+     jmp :16
 
-038: jmp :40
-
-039: mov rdx, rdi
-     mov rsi, rdx
+026: mov rdx, rdi
+021: mov rsi, rdx
      sub rsi, 0x01
-032: mov rdi, [rsp+0x10]
-033: mov r8, rdx
-     mov rdi, [rdi+r8*8]
+022: mov rdi, [rsp+0x10]
+     mov r8, rdx
+020: mov rdi, [rdi+r8*8]
      cmp rax, rdi
-002: jl :41
-     jmp :0
+     jnl :27
+     mov rdi, rsi
+     jmp :26
 
-041: mov rdi, rsi
-     jmp :39
-
-000: mov rdi, r12
+027: mov rdi, r12
      mov r8, rdx
      cmp rdi, r8
-     jl :42
-     jmp :43
-
-042: mov rdi, [rsp+0x10]
+     jnl :28
+     mov rdi, [rsp+0x10]
      mov r8, r12
      mov r8, [rdi+r8*8]
      mov r9, rdx
@@ -321,14 +289,14 @@ quick_sort:
      mov rdx, [rsp+0x10]
      mov rdi, r12
      mov [rdx+rdi*8], r9
-     jmp :44
+     jmp :29
 
-     jmp :45
+     jmp :30
 
-044: mov rdi, rsi
-     jmp :40
+029: mov rdi, rsi
+     jmp :16
 
-043: lea rdi, [rsp+0x20]
+028: lea rdi, [rsp+0x20]
      mov rsi, 0x00
      mov rdx, 0x10
      call :$set
@@ -349,7 +317,7 @@ quick_sort:
      call :$set
      mov rax, [rsp+0x10]
      mov rcx, r12
-007: lea rax, [rax+rcx*8]
+     lea rax, [rax+rcx*8]
      mov [rsp+0x30], rax
      mov rax, r12
      mov rcx, rbp
@@ -358,10 +326,10 @@ quick_sort:
      mov rdi, [rsp+0x30]
      mov rsi, [rsp+0x38]
      call :quick_sort
-     jmp :37
+     jmp :25
 
-037: mov rbx, 0x00
-045: mov rax, rbx
+025: mov rbx, 0x00
+030: mov rax, rbx
      add rsp, 0x40
      pop r12
      pop rbp
@@ -402,19 +370,17 @@ main:
      mov [rsp+0x08], rbp
      mov rax, 0x00
      mov rdx, 0x00
-002: mov rcx, [rsp+0x08]
+001: mov rcx, [rsp+0x08]
      cmp rax, rcx
-     jl :0
-     jmp :1
-
-000: mov rcx, [rsp]
+     jnl :0
+     mov rcx, [rsp]
      mov rcx, [rcx+rax*8]
      add rcx, rdx
      add rax, 0x01
      mov rdx, rcx
-     jmp :2
+     jmp :1
 
-001: mov rax, 0x01
+000: mov rax, 0x01
      imul rax, rax, 0x08
      mov rcx, [rsp+0x08]
      add [rsp], rax
@@ -422,54 +388,48 @@ main:
      mov [rsp+0x08], rcx
      mov rcx, 0x00
      mov rsi, rdx
+003: mov rdx, [rsp+0x08]
+     cmp rcx, rdx
+     jnl :2
+     mov rdx, [rsp]
+     mov rdx, [rdx+rcx*8]
+     add rdx, rsi
+     add rcx, 0x01
+     mov rsi, rdx
+     jmp :3
+
+002: add [rsp], r12
+     mov rcx, 0x05
+     sub rcx, 0x00
+     mov [rsp+0x08], rcx
+     mov rcx, 0x00
 005: mov rdx, [rsp+0x08]
      cmp rcx, rdx
-     jl :3
-     jmp :4
-
-003: mov rdx, [rsp]
+     jnl :4
+     mov rdx, [rsp]
      mov rdx, [rdx+rcx*8]
      add rdx, rsi
      add rcx, 0x01
      mov rsi, rdx
      jmp :5
 
-004: add [rsp], r12
-     mov rcx, 0x05
-     sub rcx, 0x00
-     mov [rsp+0x08], rcx
-     mov rcx, 0x00
-008: mov rdx, [rsp+0x08]
-     cmp rcx, rdx
-     jl :6
-     jmp :7
-
-006: mov rdx, [rsp]
-     mov rdx, [rdx+rcx*8]
-     add rdx, rsi
-     add rcx, 0x01
-     mov rsi, rdx
-     jmp :8
-
-007: add [rsp], rax
+004: add [rsp], rax
      mov rax, 0x03
      sub rax, 0x01
      mov [rsp+0x08], rax
      mov rax, 0x00
      mov rbx, rsi
-011: mov rcx, [rsp+0x08]
+007: mov rcx, [rsp+0x08]
      cmp rax, rcx
-     jl :9
-     jmp :10
-
-009: mov rcx, [rsp]
+     jnl :6
+     mov rcx, [rsp]
      mov rcx, [rcx+rax*8]
      add rcx, rbx
      add rax, 0x01
      mov rbx, rcx
-     jmp :11
+     jmp :7
 
-010: mov rdx, 0x20
+006: mov rdx, 0x20
      mov rsi, 0x00
      lea rdi, [rsp+0x30]
      call :$set
@@ -484,19 +444,17 @@ main:
      sub rax, 0x00
      mov [rsp+0x08], rax
      mov rax, 0x00
-014: mov rcx, [rsp+0x08]
+009: mov rcx, [rsp+0x08]
      cmp rax, rcx
-     jl :12
-     jmp :13
-
-012: mov rcx, [rsp]
+     jnl :8
+     mov rcx, [rsp]
      mov rcx, [rcx+rax*8]
      add rcx, rbx
      add rax, 0x01
      mov rbx, rcx
-     jmp :14
+     jmp :9
 
-013: lea rdi, [rsp+0x10]
+008: lea rdi, [rsp+0x10]
      mov rsi, 0x00
      mov rdx, 0x10
      call :$set
@@ -507,19 +465,17 @@ main:
      mov rsi, [rsp+0x18]
      call :quick_sort
      mov rcx, 0x00
-017: cmp rcx, 0x08
-     jl :15
-     jmp :16
-
-015: mov rax, [rsp+rcx*8+0x50]
+011: cmp rcx, 0x08
+     jnl :10
+     mov rax, [rsp+rcx*8+0x50]
      shl rax, cl
      add rax, rbx
      neg [rsp+rcx*8+0x50]
      add rcx, 0x01
      mov rbx, rax
-     jmp :17
+     jmp :11
 
-016: lea rdi, [rsp+0x20]
+010: lea rdi, [rsp+0x20]
      mov rsi, 0x00
      mov rdx, 0x10
      call :$set
@@ -531,19 +487,17 @@ main:
      call :bubble_sort
      mov rcx, 0x00
      mov rax, rbx
-020: cmp rcx, 0x08
-     jl :18
-     jmp :19
-
-018: neg [rsp+rcx*8+0x50]
+013: cmp rcx, 0x08
+     jnl :12
+     neg [rsp+rcx*8+0x50]
      mov rdx, [rsp+rcx*8+0x50]
      shl rdx, cl
      add rdx, rax
      add rcx, 0x01
      mov rax, rdx
-     jmp :20
+     jmp :13
 
-019: add rsp, 0x98
+012: add rsp, 0x98
      pop r13
      pop r12
      pop rbp
@@ -556,61 +510,51 @@ bubble_sort:
      mov [rsp-0x10], rsi
      sub rsi, 0x01
      mov r10, rsi
-036: mov r8, 0xFFFFFFFFFFFFFFFF
+024: mov r8, 0xFFFFFFFFFFFFFFFF
      mov r9, 0x00
      mov rdi, 0xFFFFFFFFFFFFFFFF
-029: cmp r9, r10
-     jl :21
-     jmp :22
-
-021: mov rcx, r9
+019: cmp r9, r10
+     jnl :14
+     mov rcx, r9
      add rcx, 0x01
      mov rdx, [rsp-0x18]
      mov rsi, [rdx+r9*8]
      mov rdx, [rdx+rcx*8]
      cmp rsi, rdx
-     jle :23
-     jmp :24
+     jnle :15
+     jmp :16
 
-023: jmp :25
-
-024: mov rdx, [rsp-0x18]
+015: mov rdx, [rsp-0x18]
      mov rsi, [rdx+r9*8]
      mov rdi, [rdx+rcx*8]
      mov [rdx+rcx*8], rsi
      mov rdx, [rsp-0x18]
      mov [rdx+r9*8], rdi
      cmp r8, 0xFFFFFFFFFFFFFFFF
-     jnz :26
-     jmp :27
+     jz :17
+     jmp :18
 
-026: jmp :28
+017: mov r8, r9
+018: mov rdi, r9
+016: mov r9, rcx
+     jmp :19
 
-027: mov r8, r9
-028: mov rdi, r9
-025: mov r9, rcx
-     jmp :29
-
-022: cmp rdi, 0xFFFFFFFFFFFFFFFF
-     jnz :30
-     jmp :31
-
-030: sub r8, 0x01
+014: cmp rdi, 0xFFFFFFFFFFFFFFFF
+     jz :20
+     sub r8, 0x01
      cmp r8, 0x00
-     jnl :32
-     jmp :33
+     jl :21
+     jmp :21
 
-032: jmp :33
+021: jmp :22
 
-033: jmp :34
+     jmp :23
 
-     jmp :35
+022: mov r10, rdi
+     jmp :24
 
-034: mov r10, rdi
-     jmp :36
-
-031: mov rax, 0x00
-035: ret
+020: mov rax, 0x00
+023: ret
 quick_sort:
      push rbx
      push rbp
@@ -624,7 +568,7 @@ quick_sort:
      mov rsi, 0x00
      mov rdx, 0x10
      call :$set
-029: lea rsi, [rsp]
+019: lea rsi, [rsp]
      lea rdi, [rsp+0x10]
      mov rdx, 0x10
      call :$copy
@@ -632,10 +576,8 @@ quick_sort:
      mov rbp, rax
      mov rax, rbp
      cmp rax, 0x02
-     jnl :37
-     jmp :38
-
-037: mov rcx, [rsp+0x10]
+     jl :25
+     mov rcx, [rsp+0x10]
      mov rsi, 0x02
      mov rax, rbp
      cqo
@@ -644,38 +586,32 @@ quick_sort:
      mov rdi, rbp
      sub rdi, 0x01
      mov rcx, 0x00
-041: mov r12, rcx
+016: mov r12, rcx
      mov rcx, r12
      add rcx, 0x01
      mov rdx, [rsp+0x10]
-022: mov rsi, r12
+     mov rsi, r12
      mov rdx, [rdx+rsi*8]
      cmp rdx, rax
-     jl :39
-     jmp :40
+     jnl :26
+     jmp :16
 
-039: jmp :41
-
-040: mov rdx, rdi
+026: mov rdx, rdi
      mov rsi, rdx
      sub rsi, 0x01
      mov rdi, [rsp+0x10]
      mov r8, rdx
      mov rdi, [rdi+r8*8]
-     cmp rax, rdi
-002: jl :42
-     jmp :0
+020: cmp rax, rdi
+     jnl :27
+     mov rdi, rsi
+     jmp :26
 
-042: mov rdi, rsi
-     jmp :40
-
-000: mov rdi, r12
-035: mov r8, rdx
+027: mov rdi, r12
+     mov r8, rdx
      cmp rdi, r8
-     jl :43
-     jmp :44
-
-043: mov rdi, [rsp+0x10]
+     jnl :28
+     mov rdi, [rsp+0x10]
      mov r8, r12
      mov r8, [rdi+r8*8]
      mov r9, rdx
@@ -684,14 +620,14 @@ quick_sort:
      mov rdx, [rsp+0x10]
      mov rdi, r12
      mov [rdx+rdi*8], r9
-     jmp :45
+     jmp :29
 
-     jmp :46
+     jmp :30
 
-045: mov rdi, rsi
-     jmp :41
+029: mov rdi, rsi
+     jmp :16
 
-044: lea rdi, [rsp+0x20]
+028: lea rdi, [rsp+0x20]
      mov rsi, 0x00
      mov rdx, 0x10
      call :$set
@@ -712,7 +648,7 @@ quick_sort:
      call :$set
      mov rax, [rsp+0x10]
      mov rcx, r12
-007: lea rax, [rax+rcx*8]
+     lea rax, [rax+rcx*8]
      mov [rsp+0x30], rax
      mov rax, r12
      mov rcx, rbp
@@ -721,10 +657,10 @@ quick_sort:
      mov rdi, [rsp+0x30]
      mov rsi, [rsp+0x38]
      call :quick_sort
-     jmp :38
+     jmp :25
 
-038: mov rbx, 0x00
-046: mov rax, rbx
+025: mov rbx, 0x00
+030: mov rax, rbx
      add rsp, 0x40
      pop r12
      pop rbp
@@ -747,55 +683,47 @@ main:
      mov qword ptr [rsp+0x08], 0x08
      mov rax, 0x00
      mov rbx, 0x00
-002: cmp rax, [rsp+0x08]
-     jl :0
-     jmp :1
-
-000: mov rcx, [rsp]
+001: cmp rax, [rsp+0x08]
+     jnl :0
+     mov rcx, [rsp]
      add rbx, [rcx+rax*8]
      add rax, 0x01
-     jmp :2
+     jmp :1
 
-001: mov rax, [rsp+0x08]
+000: mov rax, [rsp+0x08]
      add qword ptr [rsp], 0x08
      sub rax, 0x01
      mov [rsp+0x08], rax
      mov rax, 0x00
-005: cmp rax, [rsp+0x08]
-     jl :3
-     jmp :4
+003: cmp rax, [rsp+0x08]
+     jnl :2
+     mov rcx, [rsp]
+     add rbx, [rcx+rax*8]
+     add rax, 0x01
+     jmp :3
 
-003: mov rcx, [rsp]
+002: mov rax, [rsp]
+     mov [rsp], rax
+     mov qword ptr [rsp+0x08], 0x05
+     mov rax, 0x00
+005: cmp rax, [rsp+0x08]
+     jnl :4
+     mov rcx, [rsp]
      add rbx, [rcx+rax*8]
      add rax, 0x01
      jmp :5
 
-004: mov rax, [rsp]
-     mov [rsp], rax
-     mov qword ptr [rsp+0x08], 0x05
-     mov rax, 0x00
-008: cmp rax, [rsp+0x08]
-     jl :6
-     jmp :7
-
-006: mov rcx, [rsp]
-     add rbx, [rcx+rax*8]
-     add rax, 0x01
-     jmp :8
-
-007: add qword ptr [rsp], 0x08
+004: add qword ptr [rsp], 0x08
      mov qword ptr [rsp+0x08], 0x02
      mov rax, 0x00
-011: cmp rax, [rsp+0x08]
-     jl :9
-     jmp :10
-
-009: mov rcx, [rsp]
+007: cmp rax, [rsp+0x08]
+     jnl :6
+     mov rcx, [rsp]
      add rbx, [rcx+rax*8]
      add rax, 0x01
-     jmp :11
+     jmp :7
 
-010: mov qword ptr [rsp+0x10], 0x00
+006: mov qword ptr [rsp+0x10], 0x00
      mov qword ptr [rsp+0x18], 0x01
      mov qword ptr [rsp+0x20], 0x02
      mov qword ptr [rsp+0x28], 0x03
@@ -803,41 +731,35 @@ main:
      mov [rsp], rax
      mov qword ptr [rsp+0x08], 0x04
      mov rax, 0x00
-014: cmp rax, [rsp+0x08]
-     jl :12
-     jmp :13
-
-012: mov rcx, [rsp]
+009: cmp rax, [rsp+0x08]
+     jnl :8
+     mov rcx, [rsp]
      add rbx, [rcx+rax*8]
      add rax, 0x01
-     jmp :14
+     jmp :9
 
-013: lea rdi, [rsp+0x30]
+008: lea rdi, [rsp+0x30]
      mov rsi, 0x08
      call :quick_sort
      mov rcx, 0x00
-017: cmp rcx, 0x08
-     jl :15
-     jmp :16
-
-015: mov rax, [rsp+rcx*8+0x30]
+011: cmp rcx, 0x08
+     jnl :10
+     mov rax, [rsp+rcx*8+0x30]
      shl rax, cl
      neg [rsp+rcx*8+0x30]
      add rcx, 0x01
      add rax, rbx
      mov rbx, rax
-     jmp :17
+     jmp :11
 
-016: lea rdi, [rsp+0x30]
+010: lea rdi, [rsp+0x30]
      mov rsi, 0x08
      call :bubble_sort
      mov rcx, 0x00
      mov rax, rbx
-020: cmp rcx, 0x08
-     jl :18
-     jmp :19
-
-018: mov rdx, [rsp+rcx*8+0x30]
+013: cmp rcx, 0x08
+     jnl :12
+     mov rdx, [rsp+rcx*8+0x30]
      neg rdx
      mov rsi, rdx
      shl rsi, cl
@@ -845,9 +767,9 @@ main:
      add rcx, 0x01
      add rsi, rax
      mov rax, rsi
-     jmp :20
+     jmp :13
 
-019: add rsp, 0x70
+012: add rsp, 0x70
      pop rbx
      ret
 bubble_sort:
@@ -855,60 +777,50 @@ bubble_sort:
      mov [rsp-0x10], rsi
      sub rsi, 0x01
      mov r10, rsi
-035: mov r8, 0xFFFFFFFFFFFFFFFF
+024: mov r8, 0xFFFFFFFFFFFFFFFF
      mov r9, 0x00
      mov rdi, 0xFFFFFFFFFFFFFFFF
-028: cmp r9, r10
-     jl :21
-     jmp :22
-
-021: mov rcx, r9
+019: cmp r9, r10
+     jnl :14
+     mov rcx, r9
      add rcx, 0x01
      mov rdx, [rsp-0x18]
      mov rsi, [rdx+r9*8]
      cmp rsi, [rdx+rcx*8]
-     jle :23
-     jmp :24
+     jnle :15
+     jmp :16
 
-023: jmp :25
-
-024: mov rdx, [rsp-0x18]
+015: mov rdx, [rsp-0x18]
      mov rsi, [rdx+r9*8]
      mov rdi, [rdx+rcx*8]
-002: mov [rdx+rcx*8], rsi
+     mov [rdx+rcx*8], rsi
      mov rdx, [rsp-0x18]
      mov [rdx+r9*8], rdi
      cmp r8, 0xFFFFFFFFFFFFFFFF
-     jnz :26
-     jmp :1
+     jz :17
+     jmp :18
 
-026: jmp :27
+017: mov r8, r9
+018: mov rdi, r9
+016: mov r9, rcx
+     jmp :19
 
-001: mov r8, r9
-027: mov rdi, r9
-025: mov r9, rcx
-     jmp :28
-
-022: cmp rdi, 0xFFFFFFFFFFFFFFFF
-     jnz :29
-     jmp :30
-
-029: sub r8, 0x01
+014: cmp rdi, 0xFFFFFFFFFFFFFFFF
+     jz :20
+     sub r8, 0x01
      cmp r8, 0x00
-     jnl :31
-     jmp :32
+     jl :21
+     jmp :21
 
-031: jmp :32
+021: jmp :22
 
-032: jmp :33
+     jmp :23
 
-     jmp :34
+022: mov r10, rdi
+     jmp :24
 
-033: mov r10, rdi
-     jmp :35
-
-030: mov rax, 0x00
-034: ret
+020: mov rax, 0x00
+023: ret
 quick_sort:
      push rbx
      push rbp
@@ -919,11 +831,9 @@ quick_sort:
      mov rbx, rax
      mov rax, rbx
      cmp rax, 0x02
-     jnl :36
-     jmp :37
-
-036: mov rsi, [rsp]
-028: mov rdi, 0x02
+     jl :25
+     mov rsi, [rsp]
+     mov rdi, 0x02
      mov rax, rbx
      cqo
      idiv rdi
@@ -932,63 +842,57 @@ quick_sort:
      sub rdx, 0x01
      mov r8, rdx
      mov rdx, 0x00
-040: mov rbp, rdx
-023: mov rdx, rbp
+027: mov rbp, rdx
+015: mov rdx, rbp
      add rdx, 0x01
      mov rsi, [rsp]
      mov rdi, rbp
      mov rsi, [rsi+rdi*8]
      cmp rsi, rax
-     jl :38
-     jmp :39
+     jnl :26
+     jmp :27
 
-038: jmp :40
-
-039: mov rsi, r8
+026: mov rsi, r8
      mov rdi, rsi
      sub rdi, 0x01
      mov r8, rdi
      mov rdi, [rsp]
-025: cmp rax, [rdi+rsi*8]
-     jl :41
-     jmp :42
+     cmp rax, [rdi+rsi*8]
+     jnl :28
+     jmp :26
 
-041: jmp :39
-
-042: mov rdi, rbp
+028: mov rdi, rbp
      cmp rdi, rsi
-029: jl :43
-     jmp :44
-
-043: mov rdi, [rsp]
+     jnl :29
+     mov rdi, [rsp]
      mov r9, rbp
-     mov r9, [rdi+r9*8]
+003: mov r9, [rdi+r9*8]
      mov r10, [rdi+rsi*8]
      mov [rdi+rsi*8], r9
-032: mov rsi, [rsp]
+     mov rsi, [rsp]
      mov rdi, rbp
      mov [rsi+rdi*8], r10
-     jmp :45
+     jmp :30
 
-     jmp :46
+     jmp :31
 
-045: jmp :40
+030: jmp :27
 
-044: mov rdi, [rsp]
+029: mov rdi, [rsp]
      mov rsi, rbp
      call :quick_sort
      mov rax, [rsp]
      mov rcx, rbp
      lea rdi, [rax+rcx*8]
      mov rax, rbp
-006: mov rcx, rbx
+     mov rcx, rbx
      sub rcx, rax
      mov rsi, rcx
      call :quick_sort
-     jmp :37
+     jmp :25
 
-037: mov rcx, 0x00
-046: mov rax, rcx
+025: mov rcx, 0x00
+031: mov rax, rcx
      add rsp, 0x18
      pop rbp
      pop rbx

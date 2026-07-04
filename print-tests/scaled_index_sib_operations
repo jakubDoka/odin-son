@@ -15,81 +15,65 @@ main:
      mov qword ptr [rsp+0x38], 0x02
      mov rcx, 0x00
      mov rdx, 0x00
-005: cmp rdx, 0x08
-     jl :0
-     jmp :1
-
-000: mov rax, [rsp+rdx*8]
+003: cmp rdx, 0x08
+     jnl :0
+     mov rax, [rsp+rdx*8]
      cmp rax, 0x14
-     jle :2
+     jnle :1
+     mov rax, rcx
+     jmp :2
+
+001: mov rax, rcx
+     add rax, 0x01
+002: add rdx, 0x01
+     mov rcx, rax
      jmp :3
 
-002: mov rax, rcx
-     jmp :4
-
-003: mov rax, rcx
+000: mov rax, 0x00
+005: cmp rax, 0x08
+     jnl :4
+     neg [rsp+rax*8]
      add rax, 0x01
-004: add rdx, 0x01
-     mov rcx, rax
      jmp :5
 
-001: mov rax, 0x00
-008: cmp rax, 0x08
-     jl :6
+004: mov rax, 0x00
+007: cmp rax, 0x08
+     jnl :6
+     not [rsp+rax*8]
+     add rax, 0x01
      jmp :7
 
-006: neg [rsp+rax*8]
+006: mov rax, 0x00
+009: cmp rax, 0x08
+     jnl :8
+     add qword ptr [rsp+rax*8], 0x07
      add rax, 0x01
-     jmp :8
+     jmp :9
 
-007: mov rax, 0x00
-011: cmp rax, 0x08
-     jl :9
-     jmp :10
-
-009: not [rsp+rax*8]
-     add rax, 0x01
-     jmp :11
-
-010: mov rax, 0x00
-014: cmp rax, 0x08
-     jl :12
-     jmp :13
-
-012: add qword ptr [rsp+rax*8], 0x07
-     add rax, 0x01
-     jmp :14
-
-013: mov rdx, 0x00
-020: cmp rdx, 0x08
-     jl :15
-     jmp :16
-
-015: mov rax, rdx
+008: mov rdx, 0x00
+013: cmp rdx, 0x08
+     jnl :10
+     mov rax, rdx
      and rax, 0x01
      cmp rax, 0x00
-     jnz :17
-     jmp :18
+     jz :11
+     jmp :12
 
-017: jmp :19
+011: mov qword ptr [rsp+rdx*8], 0x64
+012: add rdx, 0x01
+     jmp :13
 
-018: mov qword ptr [rsp+rdx*8], 0x64
-019: add rdx, 0x01
-     jmp :20
-
-016: mov rdx, 0x00
+010: mov rdx, 0x00
      mov rsi, 0x00
-023: cmp rsi, 0x08
-     jl :21
-     jmp :22
-
-021: mov rax, [rsp+rsi*8]
+015: cmp rsi, 0x08
+     jnl :14
+     mov rax, [rsp+rsi*8]
      add rax, rdx
      add rsi, 0x01
      mov rdx, rax
-     jmp :23
+     jmp :15
 
-022: mov rax, rdx
+014: mov rax, rdx
      add rax, rcx
      add rsp, 0x48
      ret
@@ -110,81 +94,65 @@ main:
      mov qword ptr [rsp+0x38], 0x02
      mov rcx, 0x00
      mov rdx, 0x00
-005: cmp rdx, 0x08
-     jl :0
-     jmp :1
-
-000: mov rax, [rsp+rdx*8]
+003: cmp rdx, 0x08
+     jnl :0
+     mov rax, [rsp+rdx*8]
      cmp rax, 0x14
-     jle :2
+     jnle :1
+     mov rax, rcx
+     jmp :2
+
+001: mov rax, rcx
+     add rax, 0x01
+002: add rdx, 0x01
+     mov rcx, rax
      jmp :3
 
-002: mov rax, rcx
-     jmp :4
-
-003: mov rax, rcx
+000: mov rax, 0x00
+005: cmp rax, 0x08
+     jnl :4
+     neg [rsp+rax*8]
      add rax, 0x01
-004: add rdx, 0x01
-     mov rcx, rax
      jmp :5
 
-001: mov rax, 0x00
-008: cmp rax, 0x08
-     jl :6
+004: mov rax, 0x00
+007: cmp rax, 0x08
+     jnl :6
+     not [rsp+rax*8]
+     add rax, 0x01
      jmp :7
 
-006: neg [rsp+rax*8]
+006: mov rax, 0x00
+009: cmp rax, 0x08
+     jnl :8
+     add qword ptr [rsp+rax*8], 0x07
      add rax, 0x01
-     jmp :8
+     jmp :9
 
-007: mov rax, 0x00
-011: cmp rax, 0x08
-     jl :9
-     jmp :10
-
-009: not [rsp+rax*8]
-     add rax, 0x01
-     jmp :11
-
-010: mov rax, 0x00
-014: cmp rax, 0x08
-     jl :12
-     jmp :13
-
-012: add qword ptr [rsp+rax*8], 0x07
-     add rax, 0x01
-     jmp :14
-
-013: mov rdx, 0x00
-020: cmp rdx, 0x08
-     jl :15
-     jmp :16
-
-015: mov rax, rdx
+008: mov rdx, 0x00
+013: cmp rdx, 0x08
+     jnl :10
+     mov rax, rdx
      and rax, 0x01
      cmp rax, 0x00
-     jnz :17
-     jmp :18
+     jz :11
+     jmp :12
 
-017: jmp :19
+011: mov qword ptr [rsp+rdx*8], 0x64
+012: add rdx, 0x01
+     jmp :13
 
-018: mov qword ptr [rsp+rdx*8], 0x64
-019: add rdx, 0x01
-     jmp :20
-
-016: mov rdx, 0x00
+010: mov rdx, 0x00
      mov rsi, 0x00
-023: cmp rsi, 0x08
-     jl :21
-     jmp :22
-
-021: mov rax, [rsp+rsi*8]
+015: cmp rsi, 0x08
+     jnl :14
+     mov rax, [rsp+rsi*8]
      add rax, rdx
      add rsi, 0x01
      mov rdx, rax
-     jmp :23
+     jmp :15
 
-022: mov rax, rdx
+014: mov rax, rdx
      add rax, rcx
      add rsp, 0x48
      ret
@@ -200,76 +168,60 @@ main:
      mov qword ptr [rsp-0x10], 0x02
      mov rcx, 0x00
      mov rdx, 0x00
-005: cmp rdx, 0x08
-     jl :0
-     jmp :1
+003: cmp rdx, 0x08
+     jnl :0
+     cmp qword ptr [rsp+rdx*8-0x48], 0x14
+     jnle :1
+     mov rax, rcx
+     jmp :2
 
-000: cmp qword ptr [rsp+rdx*8-0x48], 0x14
-     jle :2
+001: mov rax, rcx
+     add rax, 0x01
+002: add rdx, 0x01
+     mov rcx, rax
      jmp :3
 
-002: mov rax, rcx
-     jmp :4
-
-003: mov rax, rcx
+000: mov rax, 0x00
+005: cmp rax, 0x08
+     jnl :4
+     neg [rsp+rax*8-0x48]
      add rax, 0x01
-004: add rdx, 0x01
-     mov rcx, rax
      jmp :5
 
-001: mov rax, 0x00
-008: cmp rax, 0x08
-     jl :6
+004: mov rax, 0x00
+007: cmp rax, 0x08
+     jnl :6
+     not [rsp+rax*8-0x48]
+     add rax, 0x01
      jmp :7
 
-006: neg [rsp+rax*8-0x48]
+006: mov rax, 0x00
+009: cmp rax, 0x08
+     jnl :8
+     add qword ptr [rsp+rax*8-0x48], 0x07
      add rax, 0x01
-     jmp :8
+     jmp :9
 
-007: mov rax, 0x00
-011: cmp rax, 0x08
-     jl :9
-     jmp :10
-
-009: not [rsp+rax*8-0x48]
-     add rax, 0x01
-     jmp :11
-
-010: mov rax, 0x00
-014: cmp rax, 0x08
-     jl :12
-     jmp :13
-
-012: add qword ptr [rsp+rax*8-0x48], 0x07
-     add rax, 0x01
-     jmp :14
-
-013: mov rdx, 0x00
-020: cmp rdx, 0x08
-     jl :15
-     jmp :16
-
-015: mov rax, rdx
+008: mov rdx, 0x00
+013: cmp rdx, 0x08
+     jnl :10
+     mov rax, rdx
      and rax, 0x01
      cmp rax, 0x00
-     jnz :17
-     jmp :18
+     jz :11
+     jmp :12
 
-017: jmp :19
+011: mov qword ptr [rsp+rdx*8-0x48], 0x64
+012: add rdx, 0x01
+     jmp :13
 
-018: mov qword ptr [rsp+rdx*8-0x48], 0x64
-019: add rdx, 0x01
-     jmp :20
-
-016: mov rax, 0x00
+010: mov rax, 0x00
      mov rdx, 0x00
-023: cmp rdx, 0x08
-     jl :21
-     jmp :22
-
-021: add rax, [rsp+rdx*8-0x48]
+015: cmp rdx, 0x08
+     jnl :14
+     add rax, [rsp+rdx*8-0x48]
      add rdx, 0x01
-     jmp :23
+     jmp :15
 
-022: add rax, rcx
+014: add rax, rcx
      ret

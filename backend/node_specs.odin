@@ -712,20 +712,20 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{{.General = 1}, {.General = 1}, {.General = 1}, {.General = 1}}, // X64_And
 			{{.General = 1}, {.General = 1}, {.General = 1}, {.General = 1}}, // X64_Or
 			{{.General = 1}, {.General = 1}, {.General = 1}, {.General = 1}}, // X64_Xor
-			{{.General = 1}, {.General = 1}, {.General = 1}}, // X64_Eq
-			{{.General = 1}, {.General = 1}, {.General = 1}}, // X64_Ne
-			{{.General = 1}, {.General = 1}, {.General = 1}}, // X64_Le
-			{{.General = 1}, {.General = 1}, {.General = 1}}, // X64_Lt
-			{{.General = 1}, {.General = 1}, {.General = 1}}, // X64_Gt
-			{{.General = 1}, {.General = 1}, {.General = 1}}, // X64_Ge
-			{{.General = 1}, {.General = 1}, {.General = 1}}, // X64_U_Lt
-			{{.General = 1}, {.General = 1}, {.General = 1}}, // X64_U_Gt
-			{{.General = 1}, {.General = 1}, {.General = 1}}, // X64_U_Le
-			{{.General = 1}, {.General = 1}, {.General = 1}}, // X64_U_Ge
+			{{.General = 1}, {.General = 1}, {.General = 1}, {.General = 1}}, // X64_Eq
+			{{.General = 1}, {.General = 1}, {.General = 1}, {.General = 1}}, // X64_Ne
+			{{.General = 1}, {.General = 1}, {.General = 1}, {.General = 1}}, // X64_Le
+			{{.General = 1}, {.General = 1}, {.General = 1}, {.General = 1}}, // X64_Lt
+			{{.General = 1}, {.General = 1}, {.General = 1}, {.General = 1}}, // X64_Gt
+			{{.General = 1}, {.General = 1}, {.General = 1}, {.General = 1}}, // X64_Ge
+			{{.General = 1}, {.General = 1}, {.General = 1}, {.General = 1}}, // X64_U_Lt
+			{{.General = 1}, {.General = 1}, {.General = 1}, {.General = 1}}, // X64_U_Gt
+			{{.General = 1}, {.General = 1}, {.General = 1}, {.General = 1}}, // X64_U_Le
+			{{.General = 1}, {.General = 1}, {.General = 1}, {.General = 1}}, // X64_U_Ge
 			{{.General = 1}, {.General = 1}, {.General = 2}}, // X64_Shl
 			{{.General = 1}, {.General = 1}, {.General = 2}}, // X64_Shr
 			{{.General = 1}, {.General = 1}, {.General = 2}}, // X64_U_Shr
-			{{.General = 1}, {.General = 1}, {.General = 1}}, // X64_Mul
+			{{.General = 1}, {.General = 1}, {.General = 1}, {.General = 1}}, // X64_Mul
 			{{.General = 1}, {.General = 1}, {.General = 1}}, // X64_Lea
 			{{.General = 1}, {.General = 1}, {.General = 1}}, // X64_Load
 			{{.General = 7}, {.General = 1}, {.General = 1}, {.General = 1}}, // X64_Store

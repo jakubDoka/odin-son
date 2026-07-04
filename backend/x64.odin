@@ -210,7 +210,7 @@ X64_SIMPE_OP :: Reg_Class_Spec {
 }
 
 X64_SIMPE_CMP_OP :: Reg_Class_Spec {
-	reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
+	reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK, GPA_MASK}},
 }
 
 @(rodata)
@@ -487,9 +487,11 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 			},
 			additional_data_offset = u8(stack_base),
 		)
+
 		worklist_add(ctx, ctx.worklist, res)
 		return res
 	}
+
 	#partial matchx: switch node.xtype {
 	case .X64_Store, .X64_Load:
 		changed := false

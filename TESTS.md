@@ -2680,6 +2680,47 @@ main :: proc() -> int {
 		i += 1
 	}
 
+	quick_sort(arr[:])
+
+	i = 0
+	for {
+		if i >= len(arr) do break
+		sum += arr[i] << uint(i)
+		i += 1
+	}
+
 	return sum
+}
+
+quick_sort :: proc(array: []int) -> int {
+	a := array
+	n := len(a)
+	if n < 2 {
+		return 0
+	}
+
+	p := a[n / 2]
+	i, j := 0, n - 1
+
+	loop: for {
+		for {if a[i] >= p do break; i += 1}
+		for {if p >= a[j] do break; j -= 1}
+
+		if i >= j {
+			break loop
+		}
+		
+		tmp := a[j]
+		a[j] = a[i]
+		a[i] = tmp
+
+		i += 1
+		j -= 1
+	}
+
+	quick_sort(a[0:i])
+	quick_sort(a[i:n])
+
+	return 0
 }
 ```

@@ -282,6 +282,7 @@ graph_schedule :: proc(
 		late_schedules:  []Node_ID,
 		nodes:           []Node_ID,
 		antideps:        [][dynamic]Node_ID,
+		extra_outputs:   []u16,
 	}
 
 	ctx: Ctx
@@ -290,6 +291,7 @@ graph_schedule :: proc(
 	ctx.late_schedules = make([]Node_ID, graph.gvn)
 	ctx.nodes = make([]Node_ID, graph.gvn)
 	ctx.antideps = make([][dynamic]Node_ID, graph.gvn)
+	ctx.extra_outputs = make([]u16, graph.gvn)
 
 	for id in cfg_rpos {
 		ctrl := graph_expand(graph, id)
@@ -377,18 +379,6 @@ graph_schedule :: proc(
 		if graph_has_flag(graph, n, .Is_Basic_Block_Start) {
 			ctx.late_schedules[node.gvn] = n
 		} else if 0 < len(node.inps) && is_cfg(graph, node.inps[0]) {
-			if node.is_store {
-				for out in node.outs {
-					onode := graph_expand(graph, out.id)
-					if ctx.late_schedules[onode.gvn] == 0 && !onode.is_load {
-						worklist_add(graph, &worklist, out.id)
-						ready = false
-					}
-				}
-			}
-
-			if !ready do continue
-
 			ctx.late_schedules[node.gvn] = node.inps[0]
 		} else {
 			for out in node.outs {
@@ -453,6 +443,7 @@ graph_schedule :: proc(
 				onode := graph_expand(ctx.graph, out.id)
 				if onode.is_store && ctx.late_schedules[onode.gvn] == lca {
 					append(&ctx.antideps[onode.gvn], id)
+					ctx.extra_outputs[node.gvn] += 1
 				}
 			}
 
@@ -482,6 +473,15 @@ graph_schedule :: proc(
 				onode := graph_expand(graph, out.id)
 				if ctx.late_schedules[onode.gvn] == 0 && onode.is_load {
 					worklist_add(graph, &worklist, out.id)
+				}
+			}
+
+			if 1 < len(node.inps) {
+				for out in graph_outs(graph, node.inps[1]) {
+					onode := graph_expand(graph, out.id)
+					if ctx.late_schedules[onode.gvn] == 0 && onode.is_load {
+						worklist_add(graph, &worklist, out.id)
+					}
 				}
 			}
 		}
@@ -546,7 +546,7 @@ graph_schedule :: proc(
 	gs.bbs = bbs[:]
 
 	if graph.end != 0 {
-		verify_schedule_integrity(graph, gs)
+		verify_schedule_integrity(graph, gs, ctx.antideps)
 	}
 
 	//graph_display(os.to_writer(os.stderr), graph, gs)
@@ -573,7 +573,7 @@ graph_schedule :: proc(
 			for &instr, i in bb.instrs {
 				inode := graph_expand(graph, instr)
 
-				if inode.itype != .Phi {
+				if inode.itype not_in PUSHED_UP {
 					for &oinstr in bb.instrs[i + 1:] {
 						if slice.contains(inode.inps, oinstr) ||
 						   slice.contains(ctx.antideps[inode.gvn][:], oinstr) {
@@ -591,18 +591,24 @@ graph_schedule :: proc(
 			inode := graph_expand(graph, instr)
 			#reverse for inp in inode.inps {
 				innode := graph_expand(graph, inp)
-				if innode.output_count == 1 && innode.itype not_in PUSHED_UP {
+				if innode.output_count + ctx.extra_outputs[innode.gvn] == 1 &&
+				   innode.itype not_in PUSHED_UP {
 					pos := slice.linear_search(bb.instrs[:i], inp) or_continue
 					slice.rotate_left(bb.instrs[pos:i], 1)
 					break
 				}
 			}
 		}
+
 	}
 }
 
 @(disabled = ODIN_DISABLE_ASSERT)
-verify_schedule_integrity :: proc(graph: ^Graph, sched: ^Graph_Schedule) {
+verify_schedule_integrity :: proc(
+	graph: ^Graph,
+	sched: ^Graph_Schedule,
+	antys: [][dynamic]Node_ID = {},
+) {
 	schedules := make([]Node_ID, graph.gvn)
 
 	for bb in sched.bbs {
@@ -612,6 +618,9 @@ verify_schedule_integrity :: proc(graph: ^Graph, sched: ^Graph_Schedule) {
 			if inode.itype != .Phi {
 				for oinstr in bb.instrs[i + 1:] {
 					assert(!slice.contains(inode.inps, oinstr))
+					if len(antys) != 0 {
+						assert(!slice.contains(antys[inode.gvn][:], oinstr))
+					}
 				}
 			}
 

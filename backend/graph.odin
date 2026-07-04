@@ -967,26 +967,6 @@ when !GEN_SPEC {
 						peep_ctx_add_trigger(ctx, fnode.inps[2], id)
 					}
 				}
-
-				is_noalias :: proc(
-					graph: ^Graph,
-					a, b: Node_ID,
-					ad, bd: Node_Datatype,
-				) -> bool {
-					abase, aoffset := base_and_offset(graph, a)
-					bbase, boffset := base_and_offset(graph, b)
-
-					anode := graph_get(graph, abase)
-					bnode := graph_get(graph, bbase)
-
-					if anode == bnode {
-						aend, bend :=
-							aoffset + DT_SIZE[ad], boffset + DT_SIZE[bd]
-						return aoffset >= bend || boffset >= aend
-					}
-
-					return false
-				}
 			}
 		case .Store:
 			coalesce_stores: {
@@ -1328,6 +1308,25 @@ when !GEN_SPEC {
 	) -> Node_ID {
 		return 0
 	}
+}
+
+is_noalias :: proc(
+	graph: ^Graph,
+	a, b: Node_ID,
+	ad, bd: Node_Datatype,
+) -> bool {
+	abase, aoffset := base_and_offset(graph, a)
+	bbase, boffset := base_and_offset(graph, b)
+
+	anode := graph_get(graph, abase)
+	bnode := graph_get(graph, bbase)
+
+	if anode == bnode {
+		aend, bend := aoffset + DT_SIZE[ad], boffset + DT_SIZE[bd]
+		return aoffset >= bend || boffset >= aend
+	}
+
+	return false
 }
 
 base_and_offset :: proc(
@@ -2412,12 +2411,14 @@ graph_display_extra :: proc(
 		return
 	}
 
-	if written_one^ do fmt.wprint(w, ", ")
-	written_one^ = true
-	if name != "" {
-		fmt.wprintf(w, "%v: ", name)
+	if !mem.check_zero(reflect.as_bytes(extra)) {
+		if written_one^ do fmt.wprint(w, ", ")
+		written_one^ = true
+		if name != "" {
+			fmt.wprintf(w, "%v: ", name)
+		}
+		fmt.wprint(w, extra)
 	}
-	fmt.wprint(w, extra)
 }
 
 ansi_start :: proc(w: io.Writer, #any_int gvn: int) {

@@ -180,7 +180,7 @@ regalloc :: proc(
 	scratch: runtime.Allocator,
 ) -> []Reg {
 	for i in 0 ..< 7 {
-		res, ok := regalloc_round(ra, graph, sched, scratch)
+		res, ok := regalloc_round(ra, graph, sched, scratch, i)
 		if ok {
 			if REGLOGS do log.info("regalloc rounds:", i)
 			return res
@@ -222,10 +222,12 @@ regalloc_round :: proc(
 	graph: ^Graph,
 	sched: ^Graph_Schedule,
 	scratch: runtime.Allocator,
+	i: int,
 ) -> (
 	res: []Reg,
 	ok: bool = true,
 ) {
+
 	context.allocator, _ = arna.scrath(scratch)
 
 	graph.dont_intern = true
@@ -258,7 +260,7 @@ regalloc_round :: proc(
 	rev_gvn -= 1
 	graph_get(graph, NODE_START).gvn = u32(rev_gvn)
 
-	log_lrgs(&ctx)
+	if i == 0 do log_lrgs(&ctx)
 
 	for bb, i in sched.bbs {
 		graph_get(graph, bb.head).gvn = u32(block_base + i)
@@ -601,7 +603,7 @@ regalloc_round :: proc(
 		ifg[cursor] = slices[slice_base:slice_cursor]
 	}
 
-	log_lrgs(&ctx)
+	//log_lrgs(&ctx)
 
 	coalesced := false
 	// TODO: add priority to at least the blocks by loop depth
@@ -734,7 +736,7 @@ regalloc_round :: proc(
 		lrg.reg = i16(first_set)
 	}
 
-	log_lrgs(&ctx)
+	//log_lrgs(&ctx)
 
 	res = make([]Reg, max_lrg_count)
 
@@ -1027,7 +1029,7 @@ regalloc_round :: proc(
 	}
 
 	ctx.lrg_table = {}
-	log_lrgs(&ctx)
+	//log_lrgs(&ctx)
 
 	verify_schedule_integrity(ctx.graph, ctx.sched)
 	if ok do verify_alloc_integrity(ctx, res)

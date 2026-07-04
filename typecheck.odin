@@ -28,22 +28,24 @@ Type :: enum uintptr {
 	U32,
 	U16,
 	U8,
+	String,
 }
 
 @(rodata)
 TYPE_SIZES := [Type]int {
-	.Void = 0,
-	.Bool = 1,
-	.Int  = 8,
-	.I64  = 8,
-	.I32  = 4,
-	.I16  = 2,
-	.I8   = 1,
-	.Uint = 8,
-	.U64  = 8,
-	.U32  = 4,
-	.U16  = 2,
-	.U8   = 1,
+	.Void   = 0,
+	.Bool   = 1,
+	.Int    = 8,
+	.I64    = 8,
+	.I32    = 4,
+	.I16    = 2,
+	.I8     = 1,
+	.Uint   = 8,
+	.U64    = 8,
+	.U32    = 4,
+	.U16    = 2,
+	.U8     = 1,
+	.String = 16,
 }
 
 type_align :: proc(ty: Type) -> int {
@@ -90,36 +92,38 @@ type_size :: proc(ty: Type) -> int {
 
 @(rodata)
 TYPE_NAMES := [Type]string {
-	.Void = "void",
-	.Bool = "bool",
-	.Int  = "int",
-	.I64  = "i64",
-	.I32  = "i32",
-	.I16  = "i16",
-	.I8   = "i8",
-	.Uint = "uint",
-	.U64  = "u64",
-	.U32  = "u32",
-	.U16  = "u16",
-	.U8   = "u8",
+	.Void   = "void",
+	.Bool   = "bool",
+	.Int    = "int",
+	.I64    = "i64",
+	.I32    = "i32",
+	.I16    = "i16",
+	.I8     = "i8",
+	.Uint   = "uint",
+	.U64    = "u64",
+	.U32    = "u32",
+	.U16    = "u16",
+	.U8     = "u8",
+	.String = "string",
 }
 
 type_to_dt :: proc(ty: Type) -> backend.Node_Datatype {
 	@(static)
 	@(rodata)
 	TYPE_TO_DT := [Type]backend.Node_Datatype {
-		.Void = .Void,
-		.Bool = .I8,
-		.Int  = .I64,
-		.I64  = .I64,
-		.I32  = .I32,
-		.I16  = .I16,
-		.I8   = .I8,
-		.Uint = .I64,
-		.U64  = .I64,
-		.U32  = .I32,
-		.U16  = .I16,
-		.U8   = .I8,
+		.Void   = .Void,
+		.Bool   = .I8,
+		.Int    = .I64,
+		.I64    = .I64,
+		.I32    = .I32,
+		.I16    = .I16,
+		.I8     = .I8,
+		.Uint   = .I64,
+		.U64    = .I64,
+		.U32    = .I32,
+		.U16    = .I16,
+		.U8     = .I8,
+		.String = .Void,
 	}
 
 	switch t in unpack_type(ty) {
@@ -406,10 +410,17 @@ typecheck :: proc(
 			)
 		}
 	case ^ast.Basic_Lit:
-		assert(d.tok.kind == .Integer)
-		assert(prop.inferred_ty == .Void || prop.inferred_ty in INTEGER_TYPES)
-
-		return prop.inferred_ty != .Void ? prop.inferred_ty : .Int
+		#partial switch d.tok.kind {
+		case .Integer:
+			assert(
+				prop.inferred_ty == .Void || prop.inferred_ty in INTEGER_TYPES,
+			)
+			return prop.inferred_ty != .Void ? prop.inferred_ty : .Int
+		case .String:
+			return .String
+		case:
+			fmt.panicf("TODO: missing literal typecheck %v", d)
+		}
 	case ^ast.Comp_Lit:
 		inferred_ty := emit_type(ctx, d.type)
 		if inferred_ty == .Void do inferred_ty = prop.inferred_ty
@@ -456,6 +467,9 @@ typecheck :: proc(
 			return t.elem
 		case ^Slice:
 			return t.elem
+		case Builtin:
+			assert(t == .String)
+			return .U8
 		case:
 			fmt.panicf("TODO: %#v", t)
 		}

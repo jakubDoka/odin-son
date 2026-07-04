@@ -42,6 +42,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{.General = 0}, // Mem
 			{.General = 0}, // Local
 			{.General = 0}, // Local_Addr
+			{.General = 0}, // Global
+			{.General = 0}, // Global_Addr
 			{.General = 0}, // Copy
 			{.General = 0}, // Set
 			{.General = 0}, // Store
@@ -105,6 +107,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{}, // Mem
 			{}, // Local
 			{}, // Local_Addr
+			{}, // Global
+			{}, // Global_Addr
 			{}, // Copy
 			{}, // Set
 			{}, // Store
@@ -165,6 +169,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			-1, //Mem
 			-1, //Local
 			-1, //Local_Addr
+			-1, //Global
+			-1, //Global_Addr
 			-1, //Copy
 			-1, //Set
 			-1, //Store
@@ -227,6 +233,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, //Mem
 			0, //Local
 			0, //Local_Addr
+			0, //Global
+			0, //Global_Addr
 			0, //Copy
 			0, //Set
 			0, //Store
@@ -287,6 +295,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0b10, // Mem
 			0b10000, // Local
 			0b10, // Local_Addr
+			0b100, // Global
+			0b10, // Global_Addr
 			0b100000, // Copy
 			0b100000, // Set
 			0b100000, // Store
@@ -347,6 +357,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, // Mem -> No_Extra
 			1, // Local -> Local
 			0, // Local_Addr -> No_Extra
+			1, // Global -> Tup
+			0, // Global_Addr -> No_Extra
 			0, // Copy -> Mem_Op
 			0, // Set -> Mem_Op
 			0, // Store -> Mem_Op
@@ -407,6 +419,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{Class_Flag.Store}, // Mem
 			{}, // Local
 			{Class_Flag.Clonable}, // Local_Addr
+			{}, // Global
+			{Class_Flag.Interned, Class_Flag.Clonable}, // Global_Addr
 			{Class_Flag.Store}, // Copy
 			{Class_Flag.Store}, // Set
 			{Class_Flag.Store}, // Store
@@ -466,6 +480,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			No_Extra,
 			No_Extra,
 			Local,
+			No_Extra,
+			Tup,
 			No_Extra,
 			Mem_Op,
 			Mem_Op,
@@ -527,6 +543,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			`Mem`,
 			`Local`,
 			`Local_Addr`,
+			`Global`,
+			`Global_Addr`,
 			`Copy`,
 			`Set`,
 			`Store`,
@@ -592,6 +610,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{.General = 0}, // Mem
 			{.General = 0}, // Local
 			{.General = 0}, // Local_Addr
+			{.General = 0}, // Global
+			{.General = 0}, // Global_Addr
 			{.General = 4039}, // Copy
 			{.General = 4039}, // Set
 			{.General = 0}, // Store
@@ -686,6 +706,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{}, // Mem
 			{}, // Local
 			{{.General = 1}}, // Local_Addr
+			{}, // Global
+			{{.General = 1}}, // Global_Addr
 			{{.General = 7}, {.General = 8}, {.General = 9}, {.General = 5}}, // Copy
 			{{.General = 7}, {.General = 8}, {.General = 9}, {.General = 5}}, // Set
 			{{.General = 7}, {.General = 1}, {.General = 1}}, // Store
@@ -768,6 +790,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			-1, //Mem
 			-1, //Local
 			-1, //Local_Addr
+			-1, //Global
+			-1, //Global_Addr
 			-1, //Copy
 			-1, //Set
 			-1, //Store
@@ -854,6 +878,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			1, //Mem
 			1, //Local
 			1, //Local_Addr
+			1, //Global
+			1, //Global_Addr
 			2, //Copy
 			2, //Set
 			2, //Store
@@ -936,6 +962,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0b10, // Mem
 			0b10000, // Local
 			0b10, // Local_Addr
+			0b100, // Global
+			0b10, // Global_Addr
 			0b100000, // Copy
 			0b100000, // Set
 			0b100000, // Store
@@ -1018,6 +1046,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, // Mem -> No_Extra
 			1, // Local -> Local
 			0, // Local_Addr -> No_Extra
+			1, // Global -> Tup
+			0, // Global_Addr -> No_Extra
 			0, // Copy -> Mem_Op
 			0, // Set -> Mem_Op
 			0, // Store -> Mem_Op
@@ -1100,6 +1130,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{Class_Flag.Store}, // Mem
 			{}, // Local
 			{Class_Flag.Clonable}, // Local_Addr
+			{}, // Global
+			{Class_Flag.Interned, Class_Flag.Clonable}, // Global_Addr
 			{Class_Flag.Store}, // Copy
 			{Class_Flag.Store}, // Set
 			{Class_Flag.Store}, // Store
@@ -1181,6 +1213,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			No_Extra,
 			No_Extra,
 			Local,
+			No_Extra,
+			Tup,
 			No_Extra,
 			Mem_Op,
 			Mem_Op,
@@ -1264,6 +1298,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			`Mem`,
 			`Local`,
 			`Local_Addr`,
+			`Global`,
+			`Global_Addr`,
 			`Copy`,
 			`Set`,
 			`Store`,
@@ -1315,11 +1351,11 @@ SPECS := [Node_Spec_Name]Node_Spec{
 }
 
 Un_Op :: enum u16 {
+	Not = u16(Ideal_Node_Type.Not),
+	Neg = u16(Ideal_Node_Type.Neg),
 	Uext = u16(Ideal_Node_Type.Uext),
 	Sext = u16(Ideal_Node_Type.Sext),
 	Cast = u16(Ideal_Node_Type.Cast),
-	Not = u16(Ideal_Node_Type.Not),
-	Neg = u16(Ideal_Node_Type.Neg),
 }
 Bin_Op :: enum u16 {
 	Add = u16(Ideal_Node_Type.Add),
@@ -1382,6 +1418,8 @@ Builder_Node_Type :: enum u16 {
 	Mem,
 	Local,
 	Local_Addr,
+	Global,
+	Global_Addr,
 	Copy,
 	Set,
 	Store,
@@ -1493,6 +1531,17 @@ graph_add_local :: #force_inline proc(graph: ^Graph, name: string, mem: Node_ID)
 graph_add_local_addr :: #force_inline proc(graph: ^Graph, name: string, local: Node_ID) -> (id: Node_ID) {
 	push_node_name(graph, name)
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Local_Addr), .I64, {local})
+}
+#assert(size_of(Tup) % 4 == 0)
+graph_add_global :: #force_inline proc(graph: ^Graph, name: string) -> (id: Node_ID) {
+	push_node_name(graph, name)
+	(^Tup)(graph_get_next_extra_slot(graph, u16(Ideal_Node_Type.Global)))^ = {}
+	return graph_add_raw(graph, u16(Ideal_Node_Type.Global), .Void, {})
+}
+#assert(size_of(No_Extra) % 4 == 0)
+graph_add_global_addr :: #force_inline proc(graph: ^Graph, name: string, global: Node_ID) -> (id: Node_ID) {
+	push_node_name(graph, name)
+	return graph_add_raw(graph, u16(Ideal_Node_Type.Global_Addr), .I64, {global})
 }
 #assert(size_of(Mem_Op) % 4 == 0)
 graph_add_copy :: #force_inline proc(graph: ^Graph, name: string, ctrl: Node_ID, mem: Node_ID, dst: Node_ID, src: Node_ID, size: Node_ID) -> (id: Node_ID) {
@@ -1649,6 +1698,8 @@ X64_Node_Type :: enum u16 {
 	Mem,
 	Local,
 	Local_Addr,
+	Global,
+	Global_Addr,
 	Copy,
 	Set,
 	Store,

@@ -58,6 +58,10 @@ Reloc_Size :: enum u32 {
 	r4,
 }
 
+RELOC_SIZE := [Reloc_Size]u32 {
+	.r4 = 4,
+}
+
 Reloc :: struct {
 	offset:  u32,
 	using _: bit_field u32 {
@@ -65,6 +69,10 @@ Reloc :: struct {
 		size: Reloc_Size | 2,
 		id:   u32        | 28,
 	},
+}
+
+Reloc_Slot :: struct #raw_union #align (1) {
+	addend_4: u32,
 }
 
 emit :: #force_no_inline proc(buf: ^arna.Allocator, bytes: []u8) {

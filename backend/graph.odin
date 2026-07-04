@@ -80,6 +80,8 @@ Ideal_Node_Type :: enum u16 {
 	Mem,
 	Local,
 	Local_Addr,
+	Global,
+	Global_Addr,
 	Copy,
 	Set,
 	Store,

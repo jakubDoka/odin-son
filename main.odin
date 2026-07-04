@@ -13,7 +13,6 @@ import "core:odin/ast"
 import "core:odin/parser"
 import "core:odin/tokenizer"
 import "core:os"
-import "core:reflect"
 import "core:slice"
 import "core:strconv"
 import "core:strings"
@@ -745,11 +744,18 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 				case .Data:
 					target_off = lib_call_offsets[rel.id]
 				}
+
 				source := uintptr(raw_data(p.out.code)) + uintptr(rel.offset)
 				jump := u32(target_off - source)
-				assert(rel.size == .r4)
-				slot := p.out.code[rel.offset - 4:][:4]
-				copy(slot, reflect.as_bytes(jump))
+
+				size := backend.RELOC_SIZE[rel.size]
+				slot := (^backend.Reloc_Slot)(
+					raw_data(p.out.code[rel.offset - size:][:size]),
+				)
+				switch rel.size {
+				case .r4:
+					slot.addend_4 += jump
+				}
 			}
 		}
 
@@ -1289,6 +1295,11 @@ emit_nodes :: proc(
 			value, ok := strconv.parse_i64(d.tok.text)
 			assert(ok)
 			res = backend.graph_add_c_int(ctx, "cnst", dt, value)
+		case .String:
+			slot := prop.dest
+			if slot == 0 do alloca(ctx, "str", .String, zeroed = false)
+
+			fmt.panicf("TODO: initialize the string")
 		case:
 			fmt.panicf("TODO: %#v", node.derived)
 		}

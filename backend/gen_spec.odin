@@ -66,6 +66,12 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 	.Mem = {args = {"ctrl"}, default_type = .Void, flags = {.Store}},
 	.Local = {id = Local, args = {"mem"}, default_type = .Void},
 	.Local_Addr = {args = {"local"}, default_type = .I64, flags = {.Clonable}},
+	.Global = {id = Tup, default_type = .Void},
+	.Global_Addr = {
+		args = {"global"},
+		default_type = .I64,
+		flags = {.Clonable, .Interned},
+	},
 	.Load = {
 		id = Mem_Op,
 		args = {"ctrl", "mem", "addr"},

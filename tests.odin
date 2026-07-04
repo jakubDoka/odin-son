@@ -4984,7 +4984,6 @@ opt_level :: "none"
 main_ :: proc() -> int {
 	arr := [8]int{3, 14, 25, 8, 40, 17, 55, 2}
 
-	// comparison against a scaled-index load: cmp [base + idx*8], imm
 	cnt := 0
 	i := 0
 	for {
@@ -4993,7 +4992,6 @@ main_ :: proc() -> int {
 		i += 1
 	}
 
-	// negate in place: neg [base + idx*8]
 	i = 0
 	for {
 		if i >= len(arr) do break
@@ -5001,7 +4999,6 @@ main_ :: proc() -> int {
 		i += 1
 	}
 
-	// bitwise not in place: not [base + idx*8]
 	i = 0
 	for {
 		if i >= len(arr) do break
@@ -5009,7 +5006,6 @@ main_ :: proc() -> int {
 		i += 1
 	}
 
-	// compound add in place: add [base + idx*8], imm
 	i = 0
 	for {
 		if i >= len(arr) do break
@@ -5017,7 +5013,6 @@ main_ :: proc() -> int {
 		i += 1
 	}
 
-	// store a constant through a scaled index: mov [base + idx*8], imm
 	i = 0
 	for {
 		if i >= len(arr) do break
@@ -5025,7 +5020,6 @@ main_ :: proc() -> int {
 		i += 1
 	}
 
-	// reduce with a scaled-index load: mov reg, [base + idx*8]
 	sum := 0
 	i = 0
 	for {
@@ -5045,7 +5039,6 @@ opt_level :: "none"
 main :: proc() -> int {
 	arr := [8]int{3, 14, 25, 8, 40, 17, 55, 2}
 
-	// comparison against a scaled-index load: cmp [base + idx*8], imm
 	cnt := 0
 	i := 0
 	for {
@@ -5054,7 +5047,6 @@ main :: proc() -> int {
 		i += 1
 	}
 
-	// negate in place: neg [base + idx*8]
 	i = 0
 	for {
 		if i >= len(arr) do break
@@ -5062,7 +5054,6 @@ main :: proc() -> int {
 		i += 1
 	}
 
-	// bitwise not in place: not [base + idx*8]
 	i = 0
 	for {
 		if i >= len(arr) do break
@@ -5070,7 +5061,6 @@ main :: proc() -> int {
 		i += 1
 	}
 
-	// compound add in place: add [base + idx*8], imm
 	i = 0
 	for {
 		if i >= len(arr) do break
@@ -5078,7 +5068,6 @@ main :: proc() -> int {
 		i += 1
 	}
 
-	// store a constant through a scaled index: mov [base + idx*8], imm
 	i = 0
 	for {
 		if i >= len(arr) do break
@@ -5086,7 +5075,6 @@ main :: proc() -> int {
 		i += 1
 	}
 
-	// reduce with a scaled-index load: mov reg, [base + idx*8]
 	sum := 0
 	i = 0
 	for {
@@ -5380,6 +5368,28 @@ quick_sort :: proc(array: []int) -> int {
 	quick_sort(a[i:n])
 
 	return 0
+}
+`, main_())
+}
+@(test) basic_strings :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	vl := "Edward"
+	return int(vl[0])
+}
+
+run_test(t, `basic_strings`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	vl := "Edward"
+	return int(vl[0])
 }
 `, main_())
 }

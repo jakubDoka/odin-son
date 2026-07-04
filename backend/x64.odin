@@ -157,6 +157,11 @@ X64_IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec {
 		input_start_idx = 1,
 		reg_masks = #partial{.General = {GPA_MASK}},
 	},
+	.Global = {input_start_idx = 1},
+	.Global_Addr = {
+		input_start_idx = 1,
+		reg_masks = #partial{.General = {GPA_MASK}},
+	},
 	.Load = {
 		input_start_idx = 2,
 		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK}},
@@ -777,7 +782,6 @@ Ctx :: struct {
 Local_Reloc :: struct {
 	dest:   u32,
 	offset: u32,
-	off:    u32,
 }
 
 x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
@@ -986,12 +990,9 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 		size: u32 = 4
 
 		dst_offset := ctx.bbs[reloc.dest].offset
-		jump := dst_offset - reloc.offset - size - reloc.off
+		jump := dst_offset - reloc.offset - size
 
-		copy(
-			ctx.code.ptr[reloc.offset + reloc.off:][:size],
-			reflect.as_bytes(jump),
-		)
+		copy(ctx.code.ptr[reloc.offset:][:size], reflect.as_bytes(jump))
 	}
 
 	return {
@@ -1134,24 +1135,25 @@ x64_emit_instr :: proc(
 	imm_boundary := int(scl != 0)
 
 	switch node.xtype {
+	case .Global:
 	case .Local:
-	case .Local_Addr:
+	case .Local_Addr, .Global_Addr:
 		dst := reg_of(ctx, instr)
-		dis := graph_extra(ctx, node.inps[0], Local).offset
-		// lea $dst, [rsp + $offset]
+		addr, dis, id := reg_and_disp_of(ctx, node.inps[0])
+		// lea $dst, [rsp/rip + $offset]
 		emit(ctx.code, {rex(dst, RAX, RAX, true), 0x8d})
-		emit_indirect_addr(ctx.code, dst, RSP, NO_INDEX, 1, dis)
+		emit_indirect_addr(ctx, dst, RSP, NO_INDEX, 1, dis, id)
 	case .X64_Lea:
 		dst := reg_of(ctx, instr)
-		bse, sdis := reg_and_disp_of(ctx, node.inps[0])
+		bse, sdis, id := reg_and_disp_of(ctx, node.inps[0])
 		dis := mem_op.dis
 
 		// lea $dst, [$bse + $idx * $scl + $sdis + $dis]
 		rx := rex(dst, bse, idx, true)
 		emit(ctx.code, {rx, 0x8D})
-		emit_indirect_addr(ctx.code, dst, bse, idx, scl, sdis + dis)
+		emit_indirect_addr(ctx, dst, bse, idx, scl, sdis + dis, id)
 	case .Store, .X64_Store:
-		bse, sdis := reg_and_disp_of(ctx, node.inps[2])
+		bse, sdis, id := reg_and_disp_of(ctx, node.inps[2])
 		dis := mem_op.dis
 		dt := mem_op.dt
 
@@ -1161,17 +1163,17 @@ x64_emit_instr :: proc(
 
 			rx := rex(val, bse, idx, DT_SIZE[dt] == 8)
 			emit_sized_opcode(ctx.code, dt, rx, 0x89)
-			emit_indirect_addr(ctx.code, val, bse, idx, scl, dis + sdis)
+			emit_indirect_addr(ctx, val, bse, idx, scl, dis + sdis, id)
 		} else {
 			imm := mem_op.imm
 			rx := rex(RAX, bse, idx, DT_SIZE[dt] == 8)
 			emit_sized_opcode(ctx.code, dt, rx, 0xC7)
-			emit_indirect_addr(ctx.code, RAX, bse, idx, scl, dis + sdis)
+			emit_indirect_addr(ctx, RAX, bse, idx, scl, dis + sdis, id)
 			emit_imm_for_dt(ctx.code, dt, imm)
 		}
 	case .Load, .X64_Load, .Load_S:
 		dt := node.dt
-		bse, sdis := reg_and_disp_of(ctx, node.inps[2])
+		bse, sdis, id := reg_and_disp_of(ctx, node.inps[2])
 		val := reg_of(ctx, instr)
 		dis := mem_op.dis
 		signed := mem_op.signed || node.itype == .Load_S
@@ -1208,7 +1210,7 @@ x64_emit_instr :: proc(
 			}
 		}
 
-		emit_indirect_addr(ctx.code, val, bse, idx, scl, dis + sdis)
+		emit_indirect_addr(ctx, val, bse, idx, scl, dis + sdis, id)
 	case .Sext:
 		dt := graph_get(ctx, node.inps[0]).dt
 		dst := reg_of(ctx, instr)
@@ -1268,8 +1270,7 @@ x64_emit_instr :: proc(
 			&ctx.local_relocs,
 			Local_Reloc {
 				dest = graph_get(ctx, node.outs[1].id).gvn - block_base,
-				offset = u32(ctx.code.pos),
-				off = 2,
+				offset = u32(ctx.code.pos) + 2,
 			},
 		)
 
@@ -1291,8 +1292,7 @@ x64_emit_instr :: proc(
 			&ctx.local_relocs,
 			Local_Reloc {
 				dest = graph_get(ctx, node.outs[0].id).gvn - block_base,
-				offset = u32(ctx.code.pos),
-				off = 1,
+				offset = u32(ctx.code.pos) + 1,
 			},
 		)
 
@@ -1364,7 +1364,7 @@ x64_emit_instr :: proc(
 				emit_anys(ctx.code, imm)
 			}
 		case .Dest:
-			dst, sdis := reg_and_disp_of(ctx, node.inps[2])
+			dst, sdis, id := reg_and_disp_of(ctx, node.inps[2])
 			dis := mem_op.dis
 
 			op := OPCODE_TABLE[node.xtype]
@@ -1379,7 +1379,7 @@ x64_emit_instr :: proc(
 			// add/sub/and/or/xor [$dst + $idx * $scl + $sdis + $dis], $src/$imm
 			rx := rex(src, dst, idx, DT_SIZE[mem_op.dt] == 8)
 			emit_sized_opcode(ctx.code, mem_op.dt, rx, op.opcode)
-			emit_indirect_addr(ctx.code, src, dst, idx, scl, dis + sdis)
+			emit_indirect_addr(ctx, src, dst, idx, scl, dis + sdis, id)
 
 			if 3 + imm_boundary >= len(node.inps) {
 				if is_shift {
@@ -1391,7 +1391,7 @@ x64_emit_instr :: proc(
 		case .Src:
 			dst := reg_of(ctx, node.inps[3])
 
-			bse, sdis := reg_and_disp_of(ctx, node.inps[2])
+			bse, sdis, id := reg_and_disp_of(ctx, node.inps[2])
 			dis := mem_op.dis
 
 			op := SRC_MODE_OPCODE_TABLE[node.xtype]
@@ -1399,7 +1399,7 @@ x64_emit_instr :: proc(
 			// add/sub/and/or/xor $dst, [$bse + $sdis + $dis]
 			rx := rex(dst, bse, idx, DT_SIZE[node.dt] == 8)
 			emit_sized_opcode(ctx.code, node.dt, rx, op.opcode)
-			emit_indirect_addr(ctx.code, dst, bse, idx, scl, dis + sdis)
+			emit_indirect_addr(ctx, dst, bse, idx, scl, dis + sdis, id)
 		}
 	case .Add ..= .Xor:
 		// add/sub/and/or/xor $dst, $rhs
@@ -1412,25 +1412,25 @@ x64_emit_instr :: proc(
 	case .Eq ..= .U_Ge, .X64_Eq ..= .X64_U_Ge:
 		switch mem_op.mem_mode {
 		case .Dest:
-			bse, sdis := reg_and_disp_of(ctx, node.inps[2])
+			bse, sdis, id := reg_and_disp_of(ctx, node.inps[2])
 			dis := mem_op.dis
 			op_dt := mem_op.dt
 
 			// cmp [$bse + $idx * $scl + $sdis + $dis], $imm
 			rx := rex(RAX, bse, idx, DT_SIZE[op_dt] == 8)
 			emit_sized_opcode(ctx.code, op_dt, rx, 0x81)
-			emit_indirect_addr(ctx.code, Reg(0b111), bse, idx, scl, dis + sdis)
+			emit_indirect_addr(ctx, 0b111, bse, idx, scl, dis + sdis, id)
 			emit_imm_for_dt(ctx.code, op_dt, mem_op.imm)
 		case .Src:
 			lhs := reg_of(ctx, node.inps[3])
 
-			bse, sdis := reg_and_disp_of(ctx, node.inps[2])
+			bse, sdis, id := reg_and_disp_of(ctx, node.inps[2])
 			dis := mem_op.dis
 
 			// cmp $dst, [$bse + $idx * $scl + $sdis + $dis]
 			rx := rex(lhs, bse, idx, DT_SIZE[mem_op.dt] == 8)
 			emit_sized_opcode(ctx.code, mem_op.dt, rx, 0x3b)
-			emit_indirect_addr(ctx.code, lhs, bse, idx, scl, dis + sdis)
+			emit_indirect_addr(ctx, lhs, bse, idx, scl, dis + sdis, id)
 		case .None:
 			lhs := reg_of(ctx, node.inps[0])
 			op_dt := graph_get(ctx, node.inps[0]).dt
@@ -1482,14 +1482,14 @@ x64_emit_instr :: proc(
 	case .X64_Neg ..= .X64_Not:
 		assert(mem_op.mem_mode == .Dest)
 		dis := mem_op.dis
-		dst, sdis := reg_and_disp_of(ctx, node.inps[2])
+		dst, sdis, id := reg_and_disp_of(ctx, node.inps[2])
 
 		op := DEST_MODE_OPCODE_TABLE[node.xtype]
 
 		// neg/not [$dst + $idx * $scl + $sdis + $dis]
 		rx := rex(RAX, dst, idx, DT_SIZE[mem_op.dt] == 8)
 		emit_sized_opcode(ctx.code, mem_op.dt, rx, op.opcode)
-		emit_indirect_addr(ctx.code, Reg(op.ext), dst, idx, scl, dis + sdis)
+		emit_indirect_addr(ctx, op.ext, dst, idx, scl, dis + sdis, id)
 	case .Neg ..= .Not:
 		// neg/not $dst
 		dst := reg_of(ctx, node.inps[0])
@@ -1574,29 +1574,29 @@ x64_emit_instr :: proc(
 		if int(dst) >= 16 && int(src) >= 16 {
 			// push [rsp + $src_offset]
 			emit(ctx.code, {0xff})
-			emit_indirect_addr(ctx.code, Reg(0b110), RSP, NO_INDEX, 1, src_off)
+			spill_indirect_addr(ctx, Reg(0b110), src_off)
 			// pop [rsp + $dst_off]
 			emit(ctx.code, {0x8F})
-			emit_indirect_addr(ctx.code, Reg(0b000), RSP, NO_INDEX, 1, dst_off)
+			spill_indirect_addr(ctx, Reg(0b000), dst_off)
 		} else if int(dst) >= 16 {
 			// mov [rsp + $dst_offset], $src
 			fmt.assertf(int(src) < 16, "%v", node.node)
 
 			emit(ctx.code, {rex(src, RSP, RAX, true), 0x89})
-			emit_indirect_addr(ctx.code, src, RSP, NO_INDEX, 1, dst_off)
+			spill_indirect_addr(ctx, src, dst_off)
 		} else if int(src) >= 16 {
 			// mov $dst, [rsp + $src_offset]
-			assert(int(dst) < 16)
 
 			emit(ctx.code, {rex(dst, RSP, RAX, true), 0x8b})
-			emit_indirect_addr(ctx.code, dst, RSP, NO_INDEX, 1, src_off)
+			spill_indirect_addr(ctx, dst, src_off)
 		} else {
-			assert(int(dst) < 16)
-			assert(int(src) < 16)
-
 			// mov $dst, $src
 			rx := rex(src, dst, RAX, true)
 			emit(ctx.code, {rx, 0x89, mod_rm(.Direct, src, dst)})
+		}
+
+		spill_indirect_addr :: proc(ctx: ^Ctx, reg: Reg, off: i32) {
+			emit_indirect_addr(ctx, reg, RSP, NO_INDEX, 1, off, 0)
 		}
 
 		spill_slot_offset :: proc(ctx: ^Ctx, reg: Reg) -> i32 {
@@ -1638,10 +1638,22 @@ reg_of :: proc(ctx: Codegen_Emit_Ctx, id: Node_ID) -> Reg {
 	return ctx.allocs[node.gvn]
 }
 
-reg_and_disp_of :: proc(ctx: Codegen_Emit_Ctx, id: Node_ID) -> (Reg, i32) {
+reg_and_disp_of :: proc(
+	ctx: Codegen_Emit_Ctx,
+	id: Node_ID,
+) -> (
+	Reg,
+	i32,
+	u32,
+) {
 	node := graph_get(ctx, id)
-	if node.itype == .Local do return RSP, i32(graph_extra(ctx, node, Local).offset)
-	return ctx.allocs[node.gvn], 0
+	if node.itype == .Global {
+		return RIP, 0, graph_extra(ctx, node, Tup).idx
+	}
+	if node.itype == .Local {
+		return RSP, i32(graph_extra(ctx, node, Local).offset), 0
+	}
+	return ctx.allocs[node.gvn], 0, 0
 }
 
 emit_single_op :: proc(code: ^arna.Allocator, op_base: u8, dst: Reg) {
@@ -1659,14 +1671,31 @@ mod_from_dis :: proc(dis: i64) -> Mod {
 	}
 }
 
-emit_indirect_addr :: proc(
-	code: ^arna.Allocator,
+emit_indirect_addr :: proc {
+	emit_indirect_addr_reg,
+	emit_indirect_addr_op,
+}
+
+emit_indirect_addr_op :: #force_inline proc(
+	ctx: ^Ctx,
+	op: u8,
+	base: Reg,
+	index: Reg,
+	#any_int scale: u64,
+	#any_int dis: i64,
+	reloc: u32,
+) {
+	emit_indirect_addr(ctx, Reg(op), base, index, scale, dis, reloc)
+}
+
+emit_indirect_addr_reg :: proc(
+	ctx: ^Ctx,
 	reg: Reg,
 	base: Reg,
 	index: Reg,
 	#any_int scale: u64,
 	#any_int dis: i64,
-	is_reloc: bool = false,
+	reloc: u32,
 ) {
 	scale := max(scale, 1)
 
@@ -1676,26 +1705,35 @@ emit_indirect_addr :: proc(
 
 	ill_base := base == RSP || base == R12
 
-	if mod == .Indirect && !is_reloc && (base == RIP || base == R13) {
+	if mod == .Indirect && reloc != 0 && (base == RIP || base == R13) {
 		mod = .Indirect_Disp8
 	}
 
 	if index != NO_INDEX || ill_base || scale != 1 {
-		emit(code, {mod_rm(mod, reg, RSP), sib(base, index, scale)})
+		emit(ctx.code, {mod_rm(mod, reg, RSP), sib(base, index, scale)})
 	} else {
-		emit(code, {mod_rm(mod, reg, base)})
+		emit(ctx.code, {mod_rm(mod, reg, base)})
 	}
 
 	switch mod {
 	case .Indirect:
 	case .Indirect_Disp8:
-		emit(code, {u8(dis)})
+		emit(ctx.code, {u8(dis)})
 	case .Indirect_Disp32:
-		emit_anys(code, u32(dis))
+		emit_anys(ctx.code, u32(dis))
 	case .Direct:
 		fallthrough
 	case:
 		panic("unreachable")
+	}
+
+	if reloc != 0 {
+		add_reloc(ctx.relocs)^ = {
+			offset = u32(ctx.code.pos - ctx.code_start),
+			kind   = .Text,
+			size   = .r4,
+			id     = reloc,
+		}
 	}
 }
 

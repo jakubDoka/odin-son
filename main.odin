@@ -1191,6 +1191,7 @@ emit_nodes :: proc(
 			case Value:
 				assert(sym.is_lvalue)
 				if d.op.kind == .Eq {
+					assert(len(d.lhs) == 1)
 					value := emit_nodes(ctx, {dest = sym.id}, rhs)
 					store_value(ctx, "asss", sym.id, value, lhs)
 				} else {

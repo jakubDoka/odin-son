@@ -31,33 +31,21 @@ test_signed:
      jmp :12
 
 011: mov rax, 0x06
-     jmp :13
+     jmp :12
 
 009: mov rax, 0x05
-     jmp :14
+     jmp :12
 
 007: mov rax, 0x04
-     jmp :15
+     jmp :12
 
 005: mov rax, 0x03
-     jmp :16
+     jmp :12
 
 003: mov rax, 0x02
-     jmp :17
+     jmp :12
 
 001: mov rax, 0x01
-     jmp :17
-
-017: jmp :16
-
-016: jmp :15
-
-015: jmp :14
-
-014: jmp :13
-
-013: jmp :12
-
 012: ret
 test_unsigned:
      cmp rdi, rsi
@@ -88,33 +76,21 @@ test_unsigned:
      jmp :12
 
 011: mov rax, 0x3C
-     jmp :13
+     jmp :12
 
 009: mov rax, 0x32
-     jmp :14
+     jmp :12
 
 007: mov rax, 0x28
-     jmp :15
+     jmp :12
 
 005: mov rax, 0x1E
-     jmp :16
+     jmp :12
 
 003: mov rax, 0x14
-     jmp :17
+     jmp :12
 
 001: mov rax, 0x0A
-     jmp :17
-
-017: jmp :16
-
-016: jmp :15
-
-015: jmp :14
-
-014: jmp :13
-
-013: jmp :12
-
 012: ret
 test_mixed_patterns:
      push rbx
@@ -129,62 +105,50 @@ test_mixed_patterns:
      call :opaques
      mov rcx, rbx
      cmp rcx, rax
-     jnl :18
-     jmp :19
+     jnl :13
+     jmp :14
 
-018: jmp :20
+013: jmp :15
 
-019: mov rcx, rbx
+014: mov rcx, rbx
      cmp rcx, rax
-     jnle :21
-     jmp :22
+     jnle :16
+     jmp :17
 
-021: jmp :23
+016: jmp :15
 
-022: mov rcx, rbx
+017: mov rcx, rbx
 010: cmp rcx, rax
-     jz :24
-     jmp :13
+     jz :15
+     jmp :18
 
-024: jmp :23
+015: mov rcx, rbx
+     cmp rcx, rax
+     jle :19
+     jmp :20
 
-023: jmp :20
+019: jmp :3
 
 020: mov rcx, rbx
      cmp rcx, rax
-009: jle :25
-     jmp :26
+     jl :21
+     jmp :22
 
-025: jmp :27
+021: jmp :3
 
-026: mov rcx, rbx
+022: mov rcx, rbx
      cmp rcx, rax
-     jl :28
-     jmp :29
+     jnz :3
+     jmp :1
 
-028: jmp :1
+003: mov rax, 0x00
+     jmp :23
 
-029: mov rcx, rbx
-     cmp rcx, rax
-     jnz :30
-     jmp :16
+001: mov rax, 0xC8
+012: jmp :23
 
-030: jmp :1
-
-001: jmp :27
-
-027: mov rax, 0x00
-017: jmp :31
-
-016: mov rax, 0xC8
-014: jmp :32
-
-013: mov rax, 0x64
-     jmp :32
-
-032: jmp :31
-
-031: add rsp, 0x08
+018: mov rax, 0x64
+023: add rsp, 0x08
      pop rbp
      pop rbx
      ret
@@ -201,7 +165,7 @@ main:
      call :test_signed
      mov rbx, rax
      mov rsi, 0x14
-018: mov rdi, 0x14
+013: mov rdi, 0x14
      call :test_signed
      mov rbp, rax
      mov rsi, 0x0A
@@ -210,8 +174,8 @@ main:
      mov r12, rax
      mov rdi, 0x0A
      mov rsi, 0x14
-     call :test_unsigned
-025: mov r13, rax
+020: call :test_unsigned
+     mov r13, rax
      mov rsi, 0x14
      mov rdi, 0x14
      call :test_unsigned
@@ -220,15 +184,15 @@ main:
      mov rdi, 0x1E
      call :test_unsigned
      mov r15, rax
-     mov rdi, 0x2A
-016: call :test_mixed_patterns
-015: mov rcx, rax
+012: mov rdi, 0x2A
+     call :test_mixed_patterns
+023: mov rcx, rax
      mov rax, 0x00
      mov rdx, rbx
      add rax, rdx
      mov rdx, rbp
      add rax, rdx
-032: mov rdx, r12
+     mov rdx, r12
      add rax, rdx
      mov rdx, r13
      mov rdx, rdx
@@ -281,33 +245,21 @@ test_signed:
      jmp :12
 
 011: mov rax, 0x06
-     jmp :13
+     jmp :12
 
 009: mov rax, 0x05
-     jmp :14
+     jmp :12
 
 007: mov rax, 0x04
-     jmp :15
+     jmp :12
 
 005: mov rax, 0x03
-     jmp :16
+     jmp :12
 
 003: mov rax, 0x02
-     jmp :17
+     jmp :12
 
 001: mov rax, 0x01
-     jmp :17
-
-017: jmp :16
-
-016: jmp :15
-
-015: jmp :14
-
-014: jmp :13
-
-013: jmp :12
-
 012: ret
 test_unsigned:
      cmp rdi, rsi
@@ -338,33 +290,21 @@ test_unsigned:
      jmp :12
 
 011: mov rax, 0x3C
-     jmp :13
+     jmp :12
 
 009: mov rax, 0x32
-     jmp :14
+     jmp :12
 
 007: mov rax, 0x28
-     jmp :15
+     jmp :12
 
 005: mov rax, 0x1E
-     jmp :16
+     jmp :12
 
 003: mov rax, 0x14
-     jmp :17
+     jmp :12
 
 001: mov rax, 0x0A
-     jmp :17
-
-017: jmp :16
-
-016: jmp :15
-
-015: jmp :14
-
-014: jmp :13
-
-013: jmp :12
-
 012: ret
 test_mixed_patterns:
      push rbx
@@ -379,62 +319,50 @@ test_mixed_patterns:
      call :opaques
      mov rcx, rbx
      cmp rcx, rax
-     jnl :18
-     jmp :19
+     jnl :13
+     jmp :14
 
-018: jmp :20
+013: jmp :15
 
-019: mov rcx, rbx
+014: mov rcx, rbx
      cmp rcx, rax
-     jnle :21
-     jmp :22
+     jnle :16
+     jmp :17
 
-021: jmp :23
+016: jmp :15
 
-022: mov rcx, rbx
+017: mov rcx, rbx
 010: cmp rcx, rax
-     jz :24
-     jmp :13
+     jz :15
+     jmp :18
 
-024: jmp :23
+015: mov rcx, rbx
+     cmp rcx, rax
+     jle :19
+     jmp :20
 
-023: jmp :20
+019: jmp :3
 
 020: mov rcx, rbx
      cmp rcx, rax
-009: jle :25
-     jmp :26
+     jl :21
+     jmp :22
 
-025: jmp :27
+021: jmp :3
 
-026: mov rcx, rbx
+022: mov rcx, rbx
      cmp rcx, rax
-     jl :28
-     jmp :29
+     jnz :3
+     jmp :1
 
-028: jmp :1
+003: mov rax, 0x00
+     jmp :23
 
-029: mov rcx, rbx
-     cmp rcx, rax
-     jnz :30
-     jmp :16
+001: mov rax, 0xC8
+012: jmp :23
 
-030: jmp :1
-
-001: jmp :27
-
-027: mov rax, 0x00
-017: jmp :31
-
-016: mov rax, 0xC8
-014: jmp :32
-
-013: mov rax, 0x64
-     jmp :32
-
-032: jmp :31
-
-031: add rsp, 0x08
+018: mov rax, 0x64
+023: add rsp, 0x08
      pop rbp
      pop rbx
      ret
@@ -451,7 +379,7 @@ main:
      call :test_signed
      mov rbx, rax
      mov rsi, 0x14
-018: mov rdi, 0x14
+013: mov rdi, 0x14
      call :test_signed
      mov rbp, rax
      mov rsi, 0x0A
@@ -460,8 +388,8 @@ main:
      mov r12, rax
      mov rdi, 0x0A
      mov rsi, 0x14
-     call :test_unsigned
-025: mov r13, rax
+020: call :test_unsigned
+     mov r13, rax
      mov rsi, 0x14
      mov rdi, 0x14
      call :test_unsigned
@@ -470,15 +398,15 @@ main:
      mov rdi, 0x1E
      call :test_unsigned
      mov r15, rax
-     mov rdi, 0x2A
-016: call :test_mixed_patterns
-015: mov rdx, rax
+012: mov rdi, 0x2A
+     call :test_mixed_patterns
+023: mov rdx, rax
      mov rax, 0x00
      mov rcx, rbx
      add rax, rcx
      mov rcx, rbp
      add rax, rcx
-032: mov rcx, r12
+     mov rcx, r12
      add rax, rcx
      mov rcx, r13
      add rax, rcx
@@ -528,33 +456,21 @@ test_signed:
      jmp :12
 
 011: mov rax, 0x06
-     jmp :13
+     jmp :12
 
 009: mov rax, 0x05
-     jmp :14
+     jmp :12
 
 007: mov rax, 0x04
-     jmp :15
+     jmp :12
 
 005: mov rax, 0x03
-     jmp :16
+     jmp :12
 
 003: mov rax, 0x02
-     jmp :17
+     jmp :12
 
 001: mov rax, 0x01
-     jmp :17
-
-017: jmp :16
-
-016: jmp :15
-
-015: jmp :14
-
-014: jmp :13
-
-013: jmp :12
-
 012: ret
 test_unsigned:
      cmp rdi, rsi
@@ -585,33 +501,21 @@ test_unsigned:
      jmp :12
 
 011: mov rax, 0x3C
-     jmp :13
+     jmp :12
 
 009: mov rax, 0x32
-     jmp :14
+     jmp :12
 
 007: mov rax, 0x28
-     jmp :15
+     jmp :12
 
 005: mov rax, 0x1E
-     jmp :16
+     jmp :12
 
 003: mov rax, 0x14
-     jmp :17
+     jmp :12
 
 001: mov rax, 0x0A
-     jmp :17
-
-017: jmp :16
-
-016: jmp :15
-
-015: jmp :14
-
-014: jmp :13
-
-013: jmp :12
-
 012: ret
 test_mixed_patterns:
      push rbx
@@ -626,62 +530,50 @@ test_mixed_patterns:
      call :opaques
      mov rcx, rbx
      cmp rcx, rax
-     jnl :18
-     jmp :19
+     jnl :13
+     jmp :14
 
-018: jmp :20
+013: jmp :15
 
-019: mov rcx, rbx
+014: mov rcx, rbx
      cmp rcx, rax
-     jnle :21
-     jmp :22
+     jnle :16
+     jmp :17
 
-021: jmp :23
+016: jmp :15
 
-022: mov rcx, rbx
+017: mov rcx, rbx
 010: cmp rcx, rax
-     jz :24
-     jmp :13
+     jz :15
+     jmp :18
 
-024: jmp :23
+015: mov rcx, rbx
+     cmp rcx, rax
+     jle :19
+     jmp :20
 
-023: jmp :20
+019: jmp :3
 
 020: mov rcx, rbx
      cmp rcx, rax
-009: jle :25
-     jmp :26
+     jl :21
+     jmp :22
 
-025: jmp :27
+021: jmp :3
 
-026: mov rcx, rbx
+022: mov rcx, rbx
      cmp rcx, rax
-     jl :28
-     jmp :29
+     jnz :3
+     jmp :1
 
-028: jmp :1
+003: mov rax, 0x00
+     jmp :23
 
-029: mov rcx, rbx
-     cmp rcx, rax
-     jnz :30
-     jmp :16
+001: mov rax, 0xC8
+012: jmp :23
 
-030: jmp :1
-
-001: jmp :27
-
-027: mov rax, 0x00
-017: jmp :31
-
-016: mov rax, 0xC8
-014: jmp :32
-
-013: mov rax, 0x64
-     jmp :32
-
-032: jmp :31
-
-031: add rsp, 0x08
+018: mov rax, 0x64
+023: add rsp, 0x08
      pop rbp
      pop rbx
      ret
@@ -698,7 +590,7 @@ main:
      call :test_signed
      mov rbx, rax
      mov rsi, 0x14
-018: mov rdi, 0x14
+013: mov rdi, 0x14
      call :test_signed
      mov rbp, rax
      mov rsi, 0x0A
@@ -707,8 +599,8 @@ main:
      mov r12, rax
      mov rdi, 0x0A
      mov rsi, 0x14
-     call :test_unsigned
-025: mov r13, rax
+020: call :test_unsigned
+     mov r13, rax
      mov rsi, 0x14
      mov rdi, 0x14
      call :test_unsigned
@@ -717,19 +609,19 @@ main:
      mov rdi, 0x1E
      call :test_unsigned
      mov r15, rax
-     mov rdi, 0x2A
-016: call :test_mixed_patterns
-015: mov rdx, rbx
+012: mov rdi, 0x2A
+     call :test_mixed_patterns
+023: mov rdx, rbx
      mov rcx, rbp
      add rdx, rcx
      mov rcx, r12
      add rdx, rcx
-012: mov rcx, r13
+     mov rcx, r13
      add rdx, rcx
      mov rcx, r14
      add rdx, rcx
      mov rcx, r15
-031: add rdx, rcx
+     add rdx, rcx
      add rdx, rax
      mov rax, rdx
      add rsp, 0x08

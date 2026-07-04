@@ -969,10 +969,16 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 
 	ctx.local_relocs = make([dynamic]Local_Reloc, 0, len(ctx.bbs))
 
-	for &bb in ctx.bbs {
+	for &bb, i in ctx.bbs {
 		bb.offset = u32(ctx.code.pos)
+
+		last := graph_expand(ctx, bb.instrs[len(bb.instrs) - 1])
+		is_consecutive :=
+			i + 1 < len(ctx.bbs) &&
+			0 < len(last.outs) &&
+			ctx.bbs[i + 1].head == last.outs[0].id
 		for instr in bb.instrs {
-			x64_emit_instr(&ctx, instr, 0)
+			x64_emit_instr(&ctx, instr, is_consecutive, 0)
 		}
 	}
 
@@ -998,8 +1004,12 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 }
 
 @(disabled = GEN_SPEC)
-x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
-
+x64_emit_instr :: proc(
+	ctx: ^Ctx,
+	instr: Node_ID,
+	is_consecutive: bool,
+	_: $T,
+) {
 	@(static, rodata)
 	OPCODE_TABLE := #partial [X64_Node_Type]Instr_Info {
 		.Add       = {0x01, 0},
@@ -1274,6 +1284,8 @@ x64_emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, _: $T) {
 	case .Always:
 		fallthrough
 	case .Jump:
+		if is_consecutive do break
+
 		// jmp
 		append(
 			&ctx.local_relocs,

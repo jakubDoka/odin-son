@@ -5156,10 +5156,57 @@ main_ :: proc() -> int {
 	for {
 		if i >= len(arr) do break
 		sum += arr[i] << uint(i)
+		arr[i] = -arr[i]
+		i += 1
+	}
+
+	bubble_sort(arr[:])
+
+	i = 0
+	for {
+		if i >= len(arr) do break
+		arr[i] = -arr[i]
+		sum += arr[i] << uint(i)
 		i += 1
 	}
 
 	return sum
+}
+
+
+bubble_sort :: proc(array: []int) -> int {
+	count := len(array)
+
+	init_j, last_j := 0, count - 1
+
+	for {
+		init_swap, prev_swap := -1, -1
+
+		j := init_j
+		for {
+			if j >= last_j do break
+
+			if array[j] > array[j + 1] {
+				tmp := array[j + 1]
+				array[j + 1] = array[j]
+				array[j] = tmp
+				prev_swap = j
+				if init_swap == -1 {
+					init_swap = j
+				}
+			}
+
+			j += 1
+		}
+
+		if prev_swap == -1 {
+			return 0
+		}
+
+		init_j = init_swap - 1
+		if init_j < 0 do init_j = 0
+		last_j = prev_swap
+	}
 }
 
 quick_sort :: proc(array: []int) -> int {
@@ -5183,6 +5230,7 @@ quick_sort :: proc(array: []int) -> int {
 		tmp := a[j]
 		a[j] = a[i]
 		a[i] = tmp
+
 		i += 1
 		j -= 1
 	}
@@ -5249,10 +5297,57 @@ main :: proc() -> int {
 	for {
 		if i >= len(arr) do break
 		sum += arr[i] << uint(i)
+		arr[i] = -arr[i]
+		i += 1
+	}
+
+	bubble_sort(arr[:])
+
+	i = 0
+	for {
+		if i >= len(arr) do break
+		arr[i] = -arr[i]
+		sum += arr[i] << uint(i)
 		i += 1
 	}
 
 	return sum
+}
+
+
+bubble_sort :: proc(array: []int) -> int {
+	count := len(array)
+
+	init_j, last_j := 0, count - 1
+
+	for {
+		init_swap, prev_swap := -1, -1
+
+		j := init_j
+		for {
+			if j >= last_j do break
+
+			if array[j] > array[j + 1] {
+				tmp := array[j + 1]
+				array[j + 1] = array[j]
+				array[j] = tmp
+				prev_swap = j
+				if init_swap == -1 {
+					init_swap = j
+				}
+			}
+
+			j += 1
+		}
+
+		if prev_swap == -1 {
+			return 0
+		}
+
+		init_j = init_swap - 1
+		if init_j < 0 do init_j = 0
+		last_j = prev_swap
+	}
 }
 
 quick_sort :: proc(array: []int) -> int {
@@ -5276,6 +5371,7 @@ quick_sort :: proc(array: []int) -> int {
 		tmp := a[j]
 		a[j] = a[i]
 		a[i] = tmp
+
 		i += 1
 		j -= 1
 	}

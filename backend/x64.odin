@@ -206,7 +206,7 @@ X64_IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec {
 
 X64_SIMPE_OP :: Reg_Class_Spec {
 	inplace_slot_idx = 0,
-	reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
+	reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK, GPA_MASK}},
 }
 
 X64_SIMPE_CMP_OP :: Reg_Class_Spec {

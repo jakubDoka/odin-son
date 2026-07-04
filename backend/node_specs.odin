@@ -707,11 +707,11 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{{.General = 1}, {.General = 1}}, // Sext
 			{{.General = 1}, {.General = 1}}, // Uext
 			{{.General = 1}, {.General = 1}}, // Cast
-			{{.General = 1}, {.General = 1}, {.General = 1}}, // X64_Add
-			{{.General = 1}, {.General = 1}, {.General = 1}}, // X64_Sub
-			{{.General = 1}, {.General = 1}, {.General = 1}}, // X64_And
-			{{.General = 1}, {.General = 1}, {.General = 1}}, // X64_Or
-			{{.General = 1}, {.General = 1}, {.General = 1}}, // X64_Xor
+			{{.General = 1}, {.General = 1}, {.General = 1}, {.General = 1}}, // X64_Add
+			{{.General = 1}, {.General = 1}, {.General = 1}, {.General = 1}}, // X64_Sub
+			{{.General = 1}, {.General = 1}, {.General = 1}, {.General = 1}}, // X64_And
+			{{.General = 1}, {.General = 1}, {.General = 1}, {.General = 1}}, // X64_Or
+			{{.General = 1}, {.General = 1}, {.General = 1}, {.General = 1}}, // X64_Xor
 			{{.General = 1}, {.General = 1}, {.General = 1}}, // X64_Eq
 			{{.General = 1}, {.General = 1}, {.General = 1}}, // X64_Ne
 			{{.General = 1}, {.General = 1}, {.General = 1}}, // X64_Le

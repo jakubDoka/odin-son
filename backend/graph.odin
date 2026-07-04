@@ -407,6 +407,30 @@ graph_schedule_peeps :: proc(graph: ^Graph, schedule: ^Graph_Schedule) {
 		}
 		resize(&bb.instrs, keep)
 	}
+
+	for &bb in schedule.bbs {
+		phi_shift: #reverse for instr, i in bb.instrs {
+			inode := graph_expand(graph, instr)
+			if inode.output_count == 1 &&
+			   graph_get(graph, inode.outs[0].id).itype == .Phi &&
+			   graph_get(graph, inode.outs[0].id).dt != .Void &&
+			   (0 == len(inode.inps) ||
+					   (graph_get(graph, inode.inps[0]).itype == .Phi &&
+							   inode.inps[0] == inode.outs[0].id &&
+							   graph_get(graph, inode.inps[0]).output_count >
+								   1)) {
+
+				for inp in inode.inps[min(1, len(inode.inps)):] {
+					if graph_get(graph, inp).itype == .Phi {
+						continue phi_shift
+					}
+				}
+
+				slice.rotate_left(bb.instrs[i:len(bb.instrs) - 1], 1)
+			}
+		}
+	}
+
 }
 
 graph_iter_peeps :: proc(graph: ^Graph) {
@@ -1239,9 +1263,10 @@ when !GEN_SPEC {
 					assert(fill.size != 0)
 					fill.offset = rev_offset
 					rev_offset += fill.size
-					if !inject_at(&slots, prev_len - i + inserts, fill) {
+					if prev_len - i + inserts >= cap(slots) {
 						break match
 					}
+					inject_at(&slots, prev_len - i + inserts, fill)
 					inserts += 1
 				}
 				offset = slot.offset

@@ -2536,6 +2536,32 @@ main :: proc() -> int {
 		i += 1
 	}
 
+	d: [3][3]int = {}
+
+	i = 0
+	for {
+		if i >= len(d) do break
+		j = 0
+		for {
+			if j >= len(d) do break
+			d[i][j] = i * j
+			j += 1
+		}
+		i += 1
+	}
+
+	i = 0
+	for {
+		if i >= len(d) do break
+		j = 0
+		for {
+			if j >= len(d) do break
+			sum += d[i][j]
+			j += 1
+		}
+		i += 1
+	}
+
 	return sum
 }
 ```

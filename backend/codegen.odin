@@ -52,6 +52,7 @@ Codegen_Output :: struct {
 Reloc_Kind :: enum u32 {
 	Text,
 	Data,
+	Global,
 }
 
 Reloc_Size :: enum u32 {

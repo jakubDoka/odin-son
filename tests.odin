@@ -5379,7 +5379,8 @@ opt_level :: "none"
 
 main_ :: proc() -> int {
 	vl := "Edward"
-	return int(vl[0])
+	return int(vl[0]) + int(vl[1:][0]) +
+	int(vl[:1][0]) + int(vl[2:4][1])
 }
 
 run_test(t, `basic_strings`, `
@@ -5389,7 +5390,72 @@ opt_level :: "none"
 
 main :: proc() -> int {
 	vl := "Edward"
-	return int(vl[0])
+	return int(vl[0]) + int(vl[1:][0]) +
+	int(vl[:1][0]) + int(vl[2:4][1])
+}
+`, main_())
+}
+@(test) mutable_global :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	@(static) g := 5
+	g += 10
+	return g
+}
+
+run_test(t, `mutable_global`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	@(static) g := 5
+	g += 10
+	return g
+}
+`, main_())
+}
+@(test) global_peepholes :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	@(static) acc := 40
+	@(static) cnt := 0
+	@(static) flag := 0
+
+	if acc == 40 do cnt += 1
+	acc = -acc
+	acc = ~acc
+	acc += 3
+	flag = 9
+
+	return acc + cnt + flag
+}
+
+run_test(t, `global_peepholes`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	@(static) acc := 40
+	@(static) cnt := 0
+	@(static) flag := 0
+
+	if acc == 40 do cnt += 1
+	acc = -acc
+	acc = ~acc
+	acc += 3
+	flag = 9
+
+	return acc + cnt + flag
 }
 `, main_())
 }

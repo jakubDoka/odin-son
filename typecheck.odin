@@ -330,6 +330,12 @@ Types :: struct {
 	arrays:    map[Array_Key]^Array,
 	slices:    map[Type]^Slice,
 	lits:      map[Lit]^Lit,
+	globals:   [dynamic]Global_Data,
+}
+
+Global_Data :: struct {
+	bytes: []u8,
+	align: int,
 }
 
 Array_Key :: struct {
@@ -482,6 +488,9 @@ typecheck :: proc(
 			return intern_slice(ctx, t.elem)
 		case ^Slice:
 			return base
+		case Builtin:
+			assert(t == .String)
+			return .String
 		case:
 			fmt.panicf("TODO: %#v", t)
 		}

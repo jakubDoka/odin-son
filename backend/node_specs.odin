@@ -878,7 +878,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			1, //Mem
 			1, //Local
 			1, //Local_Addr
-			1, //Global
+			0, //Global
 			1, //Global_Addr
 			2, //Copy
 			2, //Set

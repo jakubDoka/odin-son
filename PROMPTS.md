@@ -87,11 +87,54 @@ unhandled index/scale code. All of the important code is located in the
 This will not require running agents in parallel, Its just to save context for
 implementing the actual thing.
 
-### Implement slices in the frontend code
-
-NOTE: Read AGENTS.md
+### Implement slices in the frontend code (DONE)
 
 We recently implemented array types, lets proceed with implementing slices.
 There is a test to exscercise them (#### basic slices). The `backend` package
 should remain unchanged. Follow the patterns already established, only
 `main.odin` and `typecheck.odin` should require modifications.
+
+### Finish the implementation of globals
+
+NOTE: Read AGENTS.md
+
+Spinn up an agent for each part
+
+#### Part 1
+
+I have added (in the last commit) some setup for global variables. I want this
+to be tested with strings (#### basic strings). You should implement the
+frontend to pass the test.
+
+You likely don't need to change the backend unless something fundamental is
+missing or there is a bug. Otherwise just finish implementing the frontend
+part. Note that global variable management is not in place and the compiled
+code needs to be marked for execution so you probably should copy the globals
+into the code arena aligned to the next page boundary. And do relocations from
+there.
+
+The backend emits relocations that you should juts use, good to note that the
+global id is arbitrary and it would be good if its a index into linear table
+but that is a frontend concern.
+
+
+#### Part 2
+
+Now that we have strings and globals, add a test that will use mutable globals,
+use `@(static)` so that this works in the test suite. THIS DOES NOT INCLUDE
+`::` constants, these have completely different semantics.
+
+Also write a test that will excercise the future global variable peepholes.
+This is almost the same as specializing on stack allocations. I already added
+facilities to emit this.
+
+#### Part 3
+
+Implement the global variables in the frontend until the test passes. THIS DOES
+NOT INCLUDE nested globals.
+
+#### Part 4
+
+Implement the appropriate peepholes for the x64 backend, the whole point is to
+use the RIP directly in the CISC instructions, same way we do for
+`.Local_Addr`.

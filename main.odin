@@ -237,6 +237,7 @@ disasm :: proc(sb: ^strings.Builder, ctx: Gen_Ctx) {
 								zydis.MnemonicGetString(instr.info.mnemonic),
 								names[reloc.id],
 							)
+						case .Global:
 						}
 					}
 				}
@@ -471,6 +472,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 	types.arrays.allocator = types.allocator
 	types.slices.allocator = types.allocator
 	types.lits.allocator = types.allocator
+	types.globals.allocator = types.allocator
 
 	ctx: Gen_Ctx
 	ctx.file = &f
@@ -546,6 +548,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		)
 		code_mem.pos = 0
 		reloc_mem.pos = 0
+		clear(&ctx.globals)
 
 		for &prc, i in ctx.procs {
 			ctx.prc = auto_cast i
@@ -734,6 +737,21 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 			mem.set,
 		)
 
+		arna.alloc(&code_mem, 0, 4096)
+		code_until := code_mem.pos
+
+		global_addrs := make(
+			[]uintptr,
+			len(ctx.globals),
+			context.temp_allocator,
+		)
+		for glob, i in ctx.globals {
+			align := uint(max(glob.align, 1))
+			slot := arna.alloc(&code_mem, len(glob.bytes), align)
+			copy(slot, glob.bytes)
+			global_addrs[i] = uintptr(raw_data(slot))
+		}
+
 		for p in ctx.procs {
 			for rel in p.out.relocs {
 				target_off: uintptr
@@ -743,6 +761,8 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 					target_off = uintptr(raw_data(target.out.code))
 				case .Data:
 					target_off = lib_call_offsets[rel.id]
+				case .Global:
+					target_off = global_addrs[rel.id]
 				}
 
 				source := uintptr(raw_data(p.out.code)) + uintptr(rel.offset)
@@ -762,11 +782,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		{context.allocator = context.temp_allocator
 			disasm(&dsb, ctx)}
 
-		oka := virtual.protect(
-			code_mem.ptr,
-			code_mem.commited,
-			{.Read, .Execute},
-		)
+		oka := virtual.protect(code_mem.ptr, code_until, {.Read, .Execute})
 		assert(oka)
 
 		main: ^Proc
@@ -787,7 +803,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 			}
 		}
 
-		oka = virtual.protect(code_mem.ptr, code_mem.commited, {.Read, .Write})
+		oka = virtual.protect(code_mem.ptr, code_until, {.Read, .Write})
 		assert(oka)
 	}
 
@@ -890,14 +906,7 @@ to_rvalue_ty :: proc(
 			value.id,
 		)
 	}
-	return backend.graph_add_load(
-		ctx,
-		"ultr",
-		dt,
-		ctx_ctrl(ctx),
-		ctx_mem(ctx),
-		value.id,
-	)
+	return field_load(ctx, "ultr", dt, value.id)
 }
 
 to_rvalue :: proc {
@@ -1061,17 +1070,7 @@ store_value_ty :: proc(
 			),
 		)
 	} else {
-		ctx_set_mem(
-			ctx,
-			backend.graph_add_store(
-				ctx,
-				name,
-				ctx_ctrl(ctx),
-				ctx_mem(ctx),
-				ptr,
-				to_rvalue(ctx, value, ty),
-			),
-		)
+		field_store(ctx, name, ptr, 0, to_rvalue(ctx, value, ty))
 	}
 }
 
@@ -1107,13 +1106,83 @@ alloca :: proc(
 	return ptr
 }
 
+is_static :: proc(d: ^ast.Value_Decl) -> bool {
+	for attr in d.attributes {
+		for elem in attr.elems {
+			if id, ok := elem.derived.(^ast.Ident); ok {
+				if id.name == "static" do return true
+			}
+		}
+	}
+	return false
+}
+
+const_eval_int :: proc(node: ^ast.Expr) -> (value: i64, ok: bool) {
+	#partial switch d in node.derived {
+	case ^ast.Basic_Lit:
+		if d.tok.kind != .Integer do return 0, false
+		return strconv.parse_i64(d.tok.text)
+	case ^ast.Unary_Expr:
+		if d.op.text != "-" do return 0, false
+		inner := const_eval_int(d.expr) or_return
+		return -inner, true
+	case ^ast.Paren_Expr:
+		return const_eval_int(d.expr)
+	}
+	return 0, false
+}
+
+add_global :: proc(ctx: ^Gen_Ctx, bytes: []u8, align: int) -> u32 {
+	idx := u32(len(ctx.globals))
+	append(&ctx.globals, Global_Data{bytes = bytes, align = align})
+	return idx
+}
+
 field_offset :: proc(
 	ctx: ^Gen_Ctx,
 	base: backend.Node_ID,
 	offset: int,
 ) -> backend.Node_ID {
+	if offset == 0 do return base
 	off := backend.graph_add_c_int(ctx, "foff", .I64, i64(offset))
 	return backend.graph_add_bin_op(ctx, "fld", .Add, .I64, base, off)
+}
+
+field_store :: proc(
+	ctx: ^Gen_Ctx,
+	name: string,
+	base: backend.Node_ID,
+	offset: int,
+	value: backend.Node_ID,
+) {
+	ctx_set_mem(
+		ctx,
+		backend.graph_add_store(
+			ctx,
+			name,
+			ctx_ctrl(ctx),
+			ctx_mem(ctx),
+			field_offset(ctx, base, offset),
+			value,
+		),
+	)
+}
+
+field_load :: proc(
+	ctx: ^Gen_Ctx,
+	name: string,
+	dt: backend.Node_Datatype,
+	base: backend.Node_ID,
+	offset: int = 0,
+) -> backend.Node_ID {
+	return backend.graph_add_load(
+		ctx,
+		name,
+		dt,
+		ctx_ctrl(ctx),
+		ctx_mem(ctx),
+		field_offset(ctx, base, offset),
+	)
 }
 
 emit_nodes :: proc(
@@ -1296,10 +1365,25 @@ emit_nodes :: proc(
 			assert(ok)
 			res = backend.graph_add_c_int(ctx, "cnst", dt, value)
 		case .String:
-			slot := prop.dest
-			if slot == 0 do alloca(ctx, "str", .String, zeroed = false)
+			str, _, ok := strconv.unquote_string(
+				d.tok.text,
+				context.temp_allocator,
+			)
+			assert(ok)
 
-			fmt.panicf("TODO: initialize the string")
+			idx := add_global(ctx, transmute([]u8)str, 1)
+			g := backend.graph_add_global(ctx, "str")
+			backend.graph_extra(ctx, g, backend.Tup).idx = idx
+			addr := backend.graph_add_global_addr(ctx, "str", g)
+
+			slot := prop.dest
+			if slot == 0 do slot = alloca(ctx, "str", .String, zeroed = false)
+
+			field_store(ctx, "sptrst", slot, 0, addr)
+			len := backend.graph_add_c_int(ctx, "slenc", .I64, i64(len(str)))
+			field_store(ctx, "slenst", slot, 8, len)
+
+			res, lvalue = slot, true
 		case:
 			fmt.panicf("TODO: %#v", node.derived)
 		}
@@ -1310,7 +1394,31 @@ emit_nodes :: proc(
 			vty := get_node_type(d.values[i])
 			flags := get_node_vflags(d.names[i])
 
-			if .Referenced in flags || type_to_dt(vty) == .Void {
+			if is_static(d) {
+				if type_to_dt(vty) == .Void {
+					fmt.panicf("TODO: aggregate static initializer: %v", name)
+				}
+				value, cok := const_eval_int(d.values[i])
+				if !cok {
+					fmt.panicf(
+						"TODO: non-constant static initializer: %v",
+						name,
+					)
+				}
+
+				size := type_size(vty)
+				bytes := make([]u8, size, ctx.globals.allocator)
+				val_bytes := transmute([8]u8)value
+				copy(bytes, val_bytes[:size])
+
+				idx := add_global(ctx, bytes, type_align(vty))
+				g := backend.graph_add_global(ctx, name)
+				backend.graph_extra(ctx, g, backend.Tup).idx = idx
+				ptr := backend.graph_add_global_addr(ctx, name, g)
+				backend.graph_pin(ctx, ptr)
+
+				append(&ctx.scope, Variable{name, ptr, vty, d.names[i], flags})
+			} else if .Referenced in flags || type_to_dt(vty) == .Void {
 				ptr := alloca(
 					ctx,
 					name,
@@ -1398,15 +1506,10 @@ emit_nodes :: proc(
 		assert(base.is_lvalue)
 
 		base_ptr := base.id
-		if _, ok := unpack_type(get_node_type(d.expr)).(^Slice); ok {
-			base_ptr = backend.graph_add_load(
-				ctx,
-				"sdata",
-				.I64,
-				ctx_ctrl(ctx),
-				ctx_mem(ctx),
-				base.id,
-			)
+		base_is_ptr := false
+		if is_of(get_node_type(d.expr), ^Slice) ||
+		   get_node_type(d.expr) == .String {
+			base_ptr = field_load(ctx, "sdata", .I64, base.id)
 		}
 
 		idx := to_rvalue(ctx, emit_nodes(ctx, {}, d.index), d.index)
@@ -1428,8 +1531,16 @@ emit_nodes :: proc(
 		base := emit_nodes(ctx, {}, d.expr)
 		assert(base.is_lvalue)
 
-		elem_ty := unpack_type(ty).(^Slice).elem
-		stride := array_elem_stride(elem_ty)
+		stride: int
+		#partial switch t in unpack_type(ty) {
+		case ^Slice:
+			stride = array_elem_stride(t.elem)
+		case Builtin:
+			assert(t == .String)
+			stride = 1
+		case:
+			fmt.panicf("TODO: slice result %#v", t)
+		}
 
 		// source element-0 pointer and source length
 		data0: backend.Node_ID
@@ -1438,23 +1549,13 @@ emit_nodes :: proc(
 		case ^Array:
 			data0 = base.id
 			src_len = backend.graph_add_c_int(ctx, "alen", .I64, i64(t.len))
+		case Builtin:
+			assert(t == .String)
+			data0 = field_load(ctx, "sdata", .I64, base.id)
+			src_len = field_load(ctx, "slen", .I64, base.id, 8)
 		case ^Slice:
-			data0 = backend.graph_add_load(
-				ctx,
-				"sdata",
-				.I64,
-				ctx_ctrl(ctx),
-				ctx_mem(ctx),
-				base.id,
-			)
-			src_len = backend.graph_add_load(
-				ctx,
-				"slen",
-				.I64,
-				ctx_ctrl(ctx),
-				ctx_mem(ctx),
-				field_offset(ctx, base.id, 8),
-			)
+			data0 = field_load(ctx, "sdata", .I64, base.id)
+			src_len = field_load(ctx, "slen", .I64, base.id, 8)
 		case:
 			fmt.panicf("TODO: slice of %#v", t)
 		}
@@ -1489,30 +1590,10 @@ emit_nodes :: proc(
 				backend.graph_add_c_int(ctx, "sst", .I64, i64(stride)),
 			),
 		)
-		ctx_set_mem(
-			ctx,
-			backend.graph_add_store(
-				ctx,
-				"sptr",
-				ctx_ctrl(ctx),
-				ctx_mem(ctx),
-				dest,
-				new_data,
-			),
-		)
+		field_store(ctx, "sptr", dest, 0, new_data)
 
 		new_len := backend.graph_add_bin_op(ctx, "snl", .Sub, .I64, high, low)
-		ctx_set_mem(
-			ctx,
-			backend.graph_add_store(
-				ctx,
-				"slln",
-				ctx_ctrl(ctx),
-				ctx_mem(ctx),
-				field_offset(ctx, dest, 8),
-				new_len,
-			),
-		)
+		field_store(ctx, "sptr", dest, 8, new_len)
 
 		backend.graph_unpin(ctx, data0)
 		backend.graph_unpin(ctx, src_len)
@@ -1563,14 +1644,7 @@ emit_nodes :: proc(
 			case ^Slice:
 				slc := emit_nodes(ctx, {}, d.args[0])
 				assert(slc.is_lvalue)
-				res = backend.graph_add_load(
-					ctx,
-					"slen",
-					dt,
-					ctx_ctrl(ctx),
-					ctx_mem(ctx),
-					field_offset(ctx, slc.id, 8),
-				)
+				res = field_load(ctx, "slen", dt, slc.id, 8)
 			case:
 				fmt.panicf("TODO: len of %#v", t)
 			}
@@ -1621,14 +1695,7 @@ emit_nodes :: proc(
 							continue
 						}
 
-						args[i] = backend.graph_add_load(
-							ctx,
-							"afld",
-							.I64,
-							ctx_ctrl(ctx),
-							ctx_mem(ctx),
-							vl.id,
-						)
+						args[i] = field_load(ctx, "afld", .I64, vl.id)
 						backend.graph_pin(ctx, args[i])
 						i += 1
 
@@ -1798,29 +1865,7 @@ emit_arbitrary_store :: proc(
 			),
 		)
 
-		ctx_set_mem(
-			ctx,
-			backend.graph_add_store(
-				ctx,
-				"asld",
-				ctx_ctrl(ctx),
-				ctx_mem(ctx),
-				backend.graph_add_bin_op(
-					ctx,
-					"asstof",
-					.Add,
-					.I64,
-					addr,
-					backend.graph_add_c_int(
-						ctx,
-						"asstofc",
-						.I64,
-						i64(offset + extra_offset),
-					),
-				),
-				value,
-			),
-		)
+		field_store(ctx, "asld", addr, offset + extra_offset, value)
 
 		offset += backend.DT_SIZE[store_unit]
 	}
@@ -1843,26 +1888,7 @@ emit_arbitrary_load :: proc(
 			assert(load_unit != .Void)
 		}
 
-		load := backend.graph_add_load(
-			ctx,
-			"asld",
-			load_unit,
-			ctx_ctrl(ctx),
-			ctx_mem(ctx),
-			backend.graph_add_bin_op(
-				ctx,
-				"asldof",
-				.Add,
-				.I64,
-				addr,
-				backend.graph_add_c_int(
-					ctx,
-					"asldofc",
-					.I64,
-					i64(offset + extra_offset),
-				),
-			),
-		)
+		load := field_load(ctx, "asld", load_unit, addr, offset + extra_offset)
 
 		if value == 0 {
 			value = load

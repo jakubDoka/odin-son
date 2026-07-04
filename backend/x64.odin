@@ -157,7 +157,7 @@ X64_IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec {
 		input_start_idx = 1,
 		reg_masks = #partial{.General = {GPA_MASK}},
 	},
-	.Global = {input_start_idx = 1},
+	.Global = {input_start_idx = 0},
 	.Global_Addr = {
 		input_start_idx = 1,
 		reg_masks = #partial{.General = {GPA_MASK}},
@@ -376,8 +376,12 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 		if bnode.itype == .Local_Addr {
 			base = bnode.inps[0]
 			stack_base = true
+		} else if bnode.itype == .Global_Addr && index == 0 {
+			base = bnode.inps[0]
+			stack_base = true
 		} else {
-			stack_base = bnode.itype == .Local
+			stack_base =
+				bnode.itype == .Local || (bnode.itype == .Global && index == 0)
 		}
 	}
 
@@ -423,6 +427,8 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 
 			scale := stride_const
 			index := rhs.inps[0]
+
+			if graph_get(ctx, index).itype == .CInt do break indexify
 
 			base, offset := base_and_offset(ctx, node.inps[0])
 			if int(i32(offset)) == offset {
@@ -1142,7 +1148,7 @@ x64_emit_instr :: proc(
 		addr, dis, id := reg_and_disp_of(ctx, node.inps[0])
 		// lea $dst, [rsp/rip + $offset]
 		emit(ctx.code, {rex(dst, RAX, RAX, true), 0x8d})
-		emit_indirect_addr(ctx, dst, RSP, NO_INDEX, 1, dis, id)
+		emit_indirect_addr(ctx, dst, addr, NO_INDEX, 1, dis, id)
 	case .X64_Lea:
 		dst := reg_of(ctx, instr)
 		bse, sdis, id := reg_and_disp_of(ctx, node.inps[0])
@@ -1168,7 +1174,16 @@ x64_emit_instr :: proc(
 			imm := mem_op.imm
 			rx := rex(RAX, bse, idx, DT_SIZE[dt] == 8)
 			emit_sized_opcode(ctx.code, dt, rx, 0xC7)
-			emit_indirect_addr(ctx, RAX, bse, idx, scl, dis + sdis, id)
+			emit_indirect_addr(
+				ctx,
+				RAX,
+				bse,
+				idx,
+				scl,
+				dis + sdis,
+				id,
+				DT_SIZE[dt],
+			)
 			emit_imm_for_dt(ctx.code, dt, imm)
 		}
 	case .Load, .X64_Load, .Load_S:
@@ -1376,10 +1391,15 @@ x64_emit_instr :: proc(
 				}
 			}
 
+			tb: int = 0
+			if 3 + imm_boundary >= len(node.inps) {
+				tb = is_shift ? 1 : DT_SIZE[mem_op.dt]
+			}
+
 			// add/sub/and/or/xor [$dst + $idx * $scl + $sdis + $dis], $src/$imm
 			rx := rex(src, dst, idx, DT_SIZE[mem_op.dt] == 8)
 			emit_sized_opcode(ctx.code, mem_op.dt, rx, op.opcode)
-			emit_indirect_addr(ctx, src, dst, idx, scl, dis + sdis, id)
+			emit_indirect_addr(ctx, src, dst, idx, scl, dis + sdis, id, tb)
 
 			if 3 + imm_boundary >= len(node.inps) {
 				if is_shift {
@@ -1419,7 +1439,8 @@ x64_emit_instr :: proc(
 			// cmp [$bse + $idx * $scl + $sdis + $dis], $imm
 			rx := rex(RAX, bse, idx, DT_SIZE[op_dt] == 8)
 			emit_sized_opcode(ctx.code, op_dt, rx, 0x81)
-			emit_indirect_addr(ctx, 0b111, bse, idx, scl, dis + sdis, id)
+			tb := DT_SIZE[op_dt]
+			emit_indirect_addr(ctx, 0b111, bse, idx, scl, dis + sdis, id, tb)
 			emit_imm_for_dt(ctx.code, op_dt, mem_op.imm)
 		case .Src:
 			lhs := reg_of(ctx, node.inps[3])
@@ -1648,7 +1669,9 @@ reg_and_disp_of :: proc(
 ) {
 	node := graph_get(ctx, id)
 	if node.itype == .Global {
-		return RIP, 0, graph_extra(ctx, node, Tup).idx
+		// bias by one so that global 0 is distinguishable from the "no
+		// relocation" sentinel used by emit_indirect_addr
+		return RIP, 0, graph_extra(ctx, node, Tup).idx + 1
 	}
 	if node.itype == .Local {
 		return RSP, i32(graph_extra(ctx, node, Local).offset), 0
@@ -1684,8 +1707,9 @@ emit_indirect_addr_op :: #force_inline proc(
 	#any_int scale: u64,
 	#any_int dis: i64,
 	reloc: u32,
+	#any_int tb: i64 = 0,
 ) {
-	emit_indirect_addr(ctx, Reg(op), base, index, scale, dis, reloc)
+	emit_indirect_addr(ctx, Reg(op), base, index, scale, dis, reloc, tb)
 }
 
 emit_indirect_addr_reg :: proc(
@@ -1696,8 +1720,10 @@ emit_indirect_addr_reg :: proc(
 	#any_int scale: u64,
 	#any_int dis: i64,
 	reloc: u32,
+	#any_int trailing_imm: i64 = 0,
 ) {
 	scale := max(scale, 1)
+	trailing_imm := min(trailing_imm, 4)
 
 	mod := mod_from_dis(dis)
 
@@ -1705,7 +1731,11 @@ emit_indirect_addr_reg :: proc(
 
 	ill_base := base == RSP || base == R12
 
-	if mod == .Indirect && reloc != 0 && (base == RIP || base == R13) {
+	rip_relative := reloc != 0
+	if rip_relative {
+		assert(base == RIP)
+		mod = .Indirect
+	} else if mod == .Indirect && base == R13 {
 		mod = .Indirect_Disp8
 	}
 
@@ -1717,6 +1747,7 @@ emit_indirect_addr_reg :: proc(
 
 	switch mod {
 	case .Indirect:
+		if rip_relative do emit_anys(ctx.code, u32(dis - trailing_imm))
 	case .Indirect_Disp8:
 		emit(ctx.code, {u8(dis)})
 	case .Indirect_Disp32:
@@ -1730,9 +1761,9 @@ emit_indirect_addr_reg :: proc(
 	if reloc != 0 {
 		add_reloc(ctx.relocs)^ = {
 			offset = u32(ctx.code.pos - ctx.code_start),
-			kind   = .Text,
+			kind   = .Global,
 			size   = .r4,
-			id     = reloc,
+			id     = reloc - 1,
 		}
 	}
 }

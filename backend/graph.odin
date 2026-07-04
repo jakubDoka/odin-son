@@ -223,6 +223,8 @@ Node_Intern_Entry :: struct {
 
 Graph :: struct {
 	using node_spec: ^Node_Spec,
+	worklist:        ^queue.Queue(Node_ID),
+	triggers:        ^[dynamic][dynamic; 4]Node_ID,
 	interner:        #soa[]Node_Intern_Entry,
 	interner_len:    int,
 	mem:             ^arna.Allocator,
@@ -243,8 +245,6 @@ Graph_Opt_Flag :: enum int {
 
 Peep_Ctx :: struct {
 	using graph: ^Graph,
-	worklist:    ^queue.Queue(Node_ID),
-	triggers:    ^[dynamic][dynamic; 4]Node_ID,
 }
 
 peep_ctx_graph_is_complete :: proc(ctx: Peep_Ctx) -> bool {
@@ -368,7 +368,7 @@ graph_peep :: proc(graph: ^Graph, id: Node_ID) -> Node_ID {
 	if len(node.outs) > 0 do return id
 
 	prev_hash := graph_node_hash(graph, node)
-	res := graph.peep({graph, nil, nil}, node)
+	res := graph.peep({graph}, node)
 	if res == 0 do return id
 
 	if res == id {
@@ -445,13 +445,16 @@ graph_iter_peeps :: proc(graph: ^Graph) {
 
 	triggers: [dynamic][dynamic; 4]Node_ID
 
+	graph.worklist = &worklist
+	graph.triggers = &triggers
+
 	collect_nodes(graph, &worklist)
 
 	for n in worklist_next(graph, &worklist) {
 		node := graph_expand(graph, n)
 
 		prev_hash := graph_node_hash(graph, node)
-		new_node := graph.peep({graph, &worklist, &triggers}, node)
+		new_node := graph.peep({graph}, node)
 		if new_node == 0 do continue
 
 		for out in node.outs {
@@ -489,7 +492,7 @@ graph_iter_peeps :: proc(graph: ^Graph) {
 				node.itype != .Local ||
 				graph_extra(graph, node, Local).size != DEAD_LOCAL,
 			)
-			new_node := graph.peep({graph, &worklist, &triggers}, node)
+			new_node := graph.peep({graph}, node)
 			if new_node != 0 {
 				//log.info(graph)
 
@@ -502,6 +505,9 @@ graph_iter_peeps :: proc(graph: ^Graph) {
 			}
 		}
 	}
+
+	graph.worklist = nil
+	graph.triggers = nil
 
 	collect_nodes :: proc(graph: ^Graph, worklist: ^queue.Queue(Node_ID)) {
 		i := 0
@@ -937,8 +943,6 @@ when !GEN_SPEC {
 			}
 		case .Load, .Load_S:
 			florward_loads: {
-				fuel := 4
-
 				cursor := node.inps[1]
 				for {
 					cnode := graph_expand(ctx, cursor)
@@ -1008,6 +1012,7 @@ when !GEN_SPEC {
 					}
 					cursor = cnode.inps[1]
 					fuel -= 1
+
 				}
 
 				if last_valid != id && last_valid != 0 {
@@ -1966,8 +1971,18 @@ graph_delete_node :: proc(graph: ^Graph, node: ^Node, indirect := false) {
 	if node.output_count != 0 do return
 	if graph_has_flag(graph, node, .Immortal) && indirect do return
 
+	if graph.triggers != nil && int(node.gvn) < len(graph.triggers) {
+		for trig in graph.triggers[node.gvn] {
+			worklist_add(graph, graph.worklist, trig)
+		}
+		graph.triggers[node.gvn] = {}
+	}
+
 	for inp, i in graph_inps(graph, node) {
 		if inp == 0 do continue
+		if graph.worklist != nil && len(graph_outs(graph, inp)) > 1 {
+			worklist_add(graph, graph.worklist, inp)
+		}
 		graph_remove_output(graph, inp, {idx = i, id = id})
 	}
 

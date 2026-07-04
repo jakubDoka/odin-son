@@ -1,0 +1,62 @@
+=========== OPT LEVEL: none ===========
+main:
+     mov rax, [0x0000000000401000]
+     cmp rax, 0x28
+     jnz :0
+     jmp :1
+
+000: jmp :2
+
+001: add qword ptr [0x0000000000401008], 0x01
+002: neg [0x0000000000401000]
+     not [0x0000000000401000]
+     add qword ptr [0x0000000000401000], 0x03
+     mov qword ptr [0x0000000000401010], 0x09
+     mov rax, [0x0000000000401000]
+     mov rcx, [0x0000000000401008]
+     add rax, rcx
+     mov rcx, [0x0000000000401010]
+     add rax, rcx
+     ret
+=========== OPT LEVEL: mininal ===========
+main:
+     mov rax, [0x0000000000401000]
+     cmp rax, 0x28
+     jnz :0
+     jmp :1
+
+000: jmp :2
+
+001: add qword ptr [0x0000000000401008], 0x01
+002: neg [0x0000000000401000]
+     not [0x0000000000401000]
+     add qword ptr [0x0000000000401000], 0x03
+     mov qword ptr [0x0000000000401010], 0x09
+     mov rax, [0x0000000000401000]
+     mov rcx, [0x0000000000401008]
+     add rax, rcx
+     mov rcx, [0x0000000000401010]
+     add rax, rcx
+     ret
+=========== OPT LEVEL: all ===========
+main:
+     cmp qword ptr [0x0000000000401000], 0x28
+     jnz :0
+     jmp :1
+
+000: jmp :2
+
+001: add qword ptr [0x0000000000401008], 0x01
+002: mov rax, [0x0000000000401000]
+     neg rax
+     mov rcx, rax
+     not rcx
+     mov [0x0000000000401000], rax
+     mov [0x0000000000401000], rcx
+     add rcx, 0x03
+     mov [0x0000000000401000], rcx
+     mov qword ptr [0x0000000000401010], 0x09
+     mov rax, [0x0000000000401000]
+     add rax, [0x0000000000401008]
+     add rax, 0x09
+     ret

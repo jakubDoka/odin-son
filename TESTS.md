@@ -2774,6 +2774,41 @@ opt_level :: "none"
 
 main :: proc() -> int {
 	vl := "Edward"
-	return int(vl[0])
+	return int(vl[0]) + int(vl[1:][0]) +
+	int(vl[:1][0]) + int(vl[2:4][1])
+}
+```
+
+#### mutable global
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	@(static) g := 5
+	g += 10
+	return g
+}
+```
+
+#### global peepholes
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	@(static) acc := 40
+	@(static) cnt := 0
+	@(static) flag := 0
+
+	if acc == 40 do cnt += 1
+	acc = -acc
+	acc = ~acc
+	acc += 3
+	flag = 9
+
+	return acc + cnt + flag
 }
 ```

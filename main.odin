@@ -1387,6 +1387,11 @@ emit_nodes :: proc(
 			value, ok := strconv.parse_i64(d.tok.text)
 			assert(ok)
 			res = backend.graph_add_c_int(ctx, "cnst", dt, value)
+		case .Rune:
+			inner := d.tok.text[1:len(d.tok.text) - 1]
+			r, _, _, ok := strconv.unquote_char(inner, '\'')
+			assert(ok)
+			res = backend.graph_add_c_int(ctx, "cnst", dt, i64(r))
 		case .String:
 			str, _, ok := strconv.unquote_string(
 				d.tok.text,
@@ -1642,6 +1647,11 @@ emit_nodes :: proc(
 			case ^Array:
 				res = backend.graph_add_c_int(ctx, "len", dt, i64(t.len))
 			case ^Slice:
+				slc := emit_nodes(ctx, {}, d.args[0])
+				assert(slc.is_lvalue)
+				res = field_load(ctx, "slen", dt, slc.id, 8)
+			case Builtin:
+				assert(t == .String)
 				slc := emit_nodes(ctx, {}, d.args[0])
 				assert(slc.is_lvalue)
 				res = field_load(ctx, "slen", dt, slc.id, 8)

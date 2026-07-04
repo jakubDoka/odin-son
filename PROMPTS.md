@@ -94,9 +94,7 @@ There is a test to exscercise them (#### basic slices). The `backend` package
 should remain unchanged. Follow the patterns already established, only
 `main.odin` and `typecheck.odin` should require modifications.
 
-### Finish the implementation of globals
-
-NOTE: Read AGENTS.md
+### Finish the implementation of globals (DONE)
 
 Spinn up an agent for each part
 
@@ -138,3 +136,13 @@ NOT INCLUDE nested globals.
 Implement the appropriate peepholes for the x64 backend, the whole point is to
 use the RIP directly in the CISC instructions, same way we do for
 `.Local_Addr`.
+
+### Make more complicated tests
+
+NOTE: Read AGENTS.md
+
+The tests we have are great and all but we need more complicated ones. Could
+you please write a JSON validator, make sure it works in odin as expected.
+(Make a test in the `main.odin`). If you need some simple frontend features
+like character literals, implement them. Then proceed with porting the code to
+be a valid test case. If you find bugs in the compiler fix them.

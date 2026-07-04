@@ -2812,3 +2812,213 @@ main :: proc() -> int {
 	return acc + cnt + flag
 }
 ```
+
+#### json validator
+```odin
+package main
+
+opt_level :: "none"
+
+Parser :: struct {
+	data: string,
+	pos:  int,
+}
+
+peek :: proc(p: ^Parser) -> u8 {
+	if p.pos >= len(p.data) do return 0
+	return p.data[p.pos]
+}
+
+advance :: proc(p: ^Parser) -> u8 {
+	c := peek(p)
+	p.pos += 1
+	return c
+}
+
+is_digit :: proc(c: u8) -> bool {
+	if (c >= '0') & (c <= '9') do return true
+	return false
+}
+
+is_hex :: proc(c: u8) -> bool {
+	if (c >= '0') & (c <= '9') do return true
+	if (c >= 'a') & (c <= 'f') do return true
+	if (c >= 'A') & (c <= 'F') do return true
+	return false
+}
+
+skip_ws :: proc(p: ^Parser) -> bool {
+	for {
+		c := peek(p)
+		if (c == ' ') | (c == '\t') | (c == '\n') | (c == '\r') {
+			p.pos += 1
+		} else {
+			break
+		}
+	}
+	return true
+}
+
+parse_lit :: proc(p: ^Parser, lit: string) -> bool {
+	i := 0
+	for {
+		if i >= len(lit) do break
+		if peek(p) != lit[i] do return false
+		p.pos += 1
+		i += 1
+	}
+	return true
+}
+
+parse_string :: proc(p: ^Parser) -> bool {
+	if advance(p) != '"' do return false
+	for {
+		c := advance(p)
+		if c == '"' do return true
+		if c == 0 do return false
+		if c == '\\' {
+			e := advance(p)
+			if e == '"' do continue
+			if e == '\\' do continue
+			if e == '/' do continue
+			if e == 'b' do continue
+			if e == 'f' do continue
+			if e == 'n' do continue
+			if e == 'r' do continue
+			if e == 't' do continue
+			if e == 'u' {
+				j := 0
+				for {
+					if j >= 4 do break
+					if !is_hex(advance(p)) do return false
+					j += 1
+				}
+				continue
+			}
+			return false
+		}
+		if c < 0x20 do return false
+	}
+}
+
+parse_number :: proc(p: ^Parser) -> bool {
+	if peek(p) == '-' do p.pos += 1
+	c := peek(p)
+	if c == '0' {
+		p.pos += 1
+	} else if (c >= '1') & (c <= '9') {
+		p.pos += 1
+		for {
+			if !is_digit(peek(p)) do break
+			p.pos += 1
+		}
+	} else {
+		return false
+	}
+	if peek(p) == '.' {
+		p.pos += 1
+		if !is_digit(peek(p)) do return false
+		for {
+			if !is_digit(peek(p)) do break
+			p.pos += 1
+		}
+	}
+	c = peek(p)
+	if (c == 'e') | (c == 'E') {
+		p.pos += 1
+		c = peek(p)
+		if (c == '+') | (c == '-') do p.pos += 1
+		if !is_digit(peek(p)) do return false
+		for {
+			if !is_digit(peek(p)) do break
+			p.pos += 1
+		}
+	}
+	return true
+}
+
+parse_array :: proc(p: ^Parser) -> bool {
+	if advance(p) != '[' do return false
+	skip_ws(p)
+	if peek(p) == ']' {
+		p.pos += 1
+		return true
+	}
+	for {
+		if !parse_value(p) do return false
+		skip_ws(p)
+		c := advance(p)
+		if c == ']' do return true
+		if c != ',' do return false
+	}
+}
+
+parse_object :: proc(p: ^Parser) -> bool {
+	if advance(p) != '{' do return false
+	skip_ws(p)
+	if peek(p) == '}' {
+		p.pos += 1
+		return true
+	}
+	for {
+		skip_ws(p)
+		if peek(p) != '"' do return false
+		if !parse_string(p) do return false
+		skip_ws(p)
+		if advance(p) != ':' do return false
+		if !parse_value(p) do return false
+		skip_ws(p)
+		c := advance(p)
+		if c == '}' do return true
+		if c != ',' do return false
+	}
+}
+
+parse_value :: proc(p: ^Parser) -> bool {
+	skip_ws(p)
+	c := peek(p)
+	if c == '{' do return parse_object(p)
+	if c == '[' do return parse_array(p)
+	if c == '"' do return parse_string(p)
+	if c == 't' do return parse_lit(p, "true")
+	if c == 'f' do return parse_lit(p, "false")
+	if c == 'n' do return parse_lit(p, "null")
+	if (c == '-') | is_digit(c) do return parse_number(p)
+	return false
+}
+
+validate :: proc(input: string) -> bool {
+	p := Parser{data = input, pos = 0}
+	skip_ws(&p)
+	if !parse_value(&p) do return false
+	skip_ws(&p)
+	if p.pos != len(p.data) do return false
+	return true
+}
+
+main :: proc() -> int {
+	score := 0
+
+	if validate("true") do score += 1
+	if validate("false") do score += 2
+	if validate("null") do score += 4
+	if validate("123") do score += 8
+	if validate("-0.5e10") do score += 16
+	if validate("\"hello\"") do score += 32
+	if validate("[1, 2, 3]") do score += 64
+	if validate("{\"a\": 1, \"b\": [true, null]}") do score += 128
+	if validate("  {  }  ") do score += 256
+	if validate("[]") do score += 512
+
+	if !validate("") do score += 1024
+	if !validate("{") do score += 2048
+	if !validate("[1,]") do score += 4096
+	if !validate("truex") do score += 8192
+	if !validate("01") do score += 16384
+	if !validate("\"un\\x\"") do score += 32768
+	if !validate("{\"a\" 1}") do score += 65536
+	if !validate("nul") do score += 131072
+
+	return score
+}
+```

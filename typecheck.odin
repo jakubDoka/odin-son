@@ -417,7 +417,7 @@ typecheck :: proc(
 		}
 	case ^ast.Basic_Lit:
 		#partial switch d.tok.kind {
-		case .Integer:
+		case .Integer, .Rune:
 			assert(
 				prop.inferred_ty == .Void || prop.inferred_ty in INTEGER_TYPES,
 			)
@@ -609,6 +609,8 @@ typecheck :: proc(
 			arg_ty := typecheck(ctx, {}, d.args[0])
 			#partial switch t in unpack_type(arg_ty) {
 			case ^Array, ^Slice:
+			case Builtin:
+				assert(t == .String)
 			case:
 				fmt.panicf("TODO: len of %#v", t)
 			}

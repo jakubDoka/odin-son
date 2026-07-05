@@ -94,41 +94,41 @@ opaque:
      ret
 main:
      sub rsp, 0x28
-     mov qword ptr [rsp], 0x00
      mov qword ptr [rsp+0x08], 0x00
      mov qword ptr [rsp+0x10], 0x00
      mov qword ptr [rsp+0x18], 0x00
-     mov rdi, 0x00
-     call :opaque
-     mov [rsp], rax
+     mov qword ptr [rsp], 0x00
      mov rdi, 0x00
      call :opaque
      mov [rsp+0x08], rax
-     mov rdi, 0x01
+     mov rdi, 0x00
      call :opaque
      mov [rsp+0x10], rax
-     mov rdi, 0x02
+     mov rdi, 0x01
      call :opaque
      mov [rsp+0x18], rax
+     mov rdi, 0x02
+     call :opaque
+     mov [rsp], rax
      mov rdx, 0x00
 003: mov rax, rdx
      cmp rax, 0x0A
      jnl :0
-     mov rax, [rsp]
-     add rax, [rsp+0x10]
-     mov [rsp], rax
-     mov rcx, [rsp+0x18]
-     add [rsp+0x08], rcx
+     mov rax, [rsp+0x08]
+     add rax, [rsp+0x18]
+     mov [rsp+0x08], rax
+     mov rcx, [rsp]
+     add [rsp+0x10], rcx
      cmp rax, 0x05
      jnle :1
      jmp :2
 
-001: add qword ptr [rsp+0x10], 0x01
+001: add qword ptr [rsp+0x18], 0x01
 002: add rdx, 0x01
      jmp :3
 
-000: mov rax, [rsp]
+000: mov rax, [rsp+0x08]
      imul rax, rax, 0x3E8
-     add rax, [rsp+0x08]
+     add rax, [rsp+0x10]
      add rsp, 0x28
      ret

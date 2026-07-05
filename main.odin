@@ -524,7 +524,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 	} {
 		{"none", {}},
 		{"mininal", {.Local_Peeps}},
-		{"all", {.Iter_Peeps, .Local_Peeps, .Schedule_Peeps}},
+		{"all", {.Iter_Peeps, .Local_Peeps, .Schedule_Peeps, .MemOpt}},
 	}
 
 	for &prc, i in ctx.procs {
@@ -666,6 +666,8 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 
 			emit_nodes(&ctx, {}, prc.ast.body)
 
+			backend.graph_iter_peeps(&ctx)
+			backend.memopt(&ctx)
 			backend.graph_iter_peeps(&ctx)
 
 			spec := &backend.SPECS[.X64]

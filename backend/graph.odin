@@ -238,6 +238,7 @@ Graph_Opt_Flag :: enum int {
 	Schedule_Peeps,
 	Iter_Peeps,
 	Local_Peeps,
+	MemOpt,
 }
 
 Peep_Ctx :: struct {
@@ -429,6 +430,22 @@ graph_schedule_peeps :: proc(graph: ^Graph, schedule: ^Graph_Schedule) {
 		}
 	}
 
+}
+
+find_entry_node :: proc(
+	graph: ^Graph,
+	kind: Ideal_Node_Type,
+) -> (
+	Node_ID,
+	bool,
+) {
+	for eout in graph_outs(graph, NODE_ENTRY) {
+		enode := graph_expand(graph, eout.id)
+		if enode.itype == kind {
+			return eout.id, true
+		}
+	}
+	return 0, false
 }
 
 graph_iter_peeps :: proc(graph: ^Graph) {
@@ -623,7 +640,7 @@ Offset_Iter :: struct {
 }
 
 offset_iter_next :: proc(
-	ctx: Peep_Ctx,
+	ctx: ^Graph,
 	iter: ^Offset_Iter,
 ) -> (
 	Node_Output,

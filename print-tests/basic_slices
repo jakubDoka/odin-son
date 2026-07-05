@@ -775,8 +775,7 @@ main:
      pop rbx
      ret
 bubble_sort:
-     mov [rsp-0x18], rdi
-     mov [rsp-0x10], rsi
+     mov [rsp-0x08], rdi
      sub rsi, 0x01
      mov r10, rsi
 010: mov r8, 0xFFFFFFFFFFFFFFFF
@@ -786,17 +785,17 @@ bubble_sort:
      jnl :0
      mov rcx, r9
      add rcx, 0x01
-     mov rdx, [rsp-0x18]
+     mov rdx, [rsp-0x08]
      mov rsi, [rdx+r9*8]
      cmp rsi, [rdx+rcx*8]
      jnle :1
      jmp :2
 
-001: mov rdx, [rsp-0x18]
+001: mov rdx, [rsp-0x08]
      mov rsi, [rdx+r9*8]
      mov rdi, [rdx+rcx*8]
      mov [rdx+rcx*8], rsi
-     mov rdx, [rsp-0x18]
+     mov rdx, [rsp-0x08]
      mov [rdx+r9*8], rdi
      cmp r8, 0xFFFFFFFFFFFFFFFF
      jz :3
@@ -826,11 +825,9 @@ bubble_sort:
 quick_sort:
      push rbx
      push rbp
-     sub rsp, 0x18
+     sub rsp, 0x08
+     mov rbx, rsi
      mov [rsp], rdi
-     mov [rsp+0x08], rsi
-     mov rax, [rsp+0x08]
-     mov rbx, rax
      mov rax, rbx
      cmp rax, 0x02
      jl :0
@@ -894,7 +891,7 @@ quick_sort:
 
 000: mov rcx, 0x00
 005: mov rax, rcx
-     add rsp, 0x18
+     add rsp, 0x08
      pop rbp
      pop rbx
      ret

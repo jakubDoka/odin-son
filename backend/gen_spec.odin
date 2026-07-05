@@ -118,7 +118,7 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 	.Jump = {id = Cfg, args = {"ctrl"}, default_type = .Void},
 	.Region = {
 		id = Region,
-		args = {"rcfg", "lcfg"},
+		varargs = true,
 		default_type = .Void,
 		flags = {.Is_Basic_Block_Start},
 	},
@@ -240,10 +240,14 @@ when SPEC_NOT_PRESENT {
 	graph_add_region :: proc(
 		graph: ^Graph,
 		name: string,
-		lctrl: Node_ID,
-		rctrl: Node_ID,
+		ctrls: []Node_ID,
 	) -> Node_ID {return 0}
-	graph_add_if :: graph_add_region
+	graph_add_if :: proc(
+		graph: ^Graph,
+		name: string,
+		ctrl: Node_ID,
+		cond: Node_ID,
+	) -> Node_ID {return 0}
 
 	graph_add_jump :: proc(
 		graph: ^Graph,

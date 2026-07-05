@@ -85,8 +85,11 @@ graph_idom_node :: proc(graph: ^Graph, node: ^Node) -> Node_ID {
 	     .Always:
 		return inps[0]
 	case .Region:
-		assert(len(inps) == 2)
-		return graph_lca(graph, inps[0], inps[1])
+		lca: Node_ID
+		for inp in inps {
+			lca = graph_lca(graph, lca, inp)
+		}
+		return lca
 	case:
 		fmt.panicf("TODO: %v", node.itype)
 	}
@@ -115,9 +118,11 @@ graph_idepth_node :: proc(graph: ^Graph, node: ^Node) -> u32 {
 	     .Always:
 		extra.idepth = 1 + graph_idepth(graph, inps[0])
 	case .Region:
-		assert(len(inps) == 2)
-		extra.idepth =
-			1 + max(graph_idepth(graph, inps[0]), graph_idepth(graph, inps[1]))
+		mx: u32
+		for inp in inps {
+			mx = max(mx, graph_idepth(graph, inp))
+		}
+		extra.idepth = 1 + mx
 	case:
 		fmt.panicf("TODO: %v", node.itype)
 	}
@@ -147,8 +152,17 @@ graph_schedule :: proc(
 	lctx.root = new(Loop_Tree, scratch)
 
 	if graph.end != 0 {
-		lctx.loop_trees[graph_get(graph, graph.end).gvn] = lctx.root
+		end := graph_expand(graph, graph.end)
+		lctx.loop_trees[end.gvn] = lctx.root
 		build_loop_tree(&lctx, NODE_ENTRY, lctx.root, scratch)
+
+		#reverse for inp, i in end.inps {
+			inode := graph_expand(graph, inp)
+			idx := int(inode.itype == .Phi)
+			if len(inode.inps) == 1 + idx {
+				graph_set_input(graph, graph.end, i, inode.inps[idx])
+			}
+		}
 	}
 
 	tree_depth :: proc(tree: ^Loop_Tree) -> u32 {
@@ -424,7 +438,6 @@ graph_schedule :: proc(
 			}
 
 			ctx.late_schedules[node.gvn] = lca
-
 		}
 
 		lca = add_antydeps(ctx, node, lca)

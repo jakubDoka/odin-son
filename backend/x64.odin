@@ -148,7 +148,13 @@ X64_IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec {
 	.Phi = {
 		input_start_idx = 1,
 		reg_masks = #partial{
-			.General = {GPA_SPILL_MASK, GPA_SPILL_MASK, GPA_SPILL_MASK},
+			.General = {
+				GPA_SPILL_MASK,
+				GPA_SPILL_MASK,
+				GPA_SPILL_MASK,
+				GPA_SPILL_MASK,
+				GPA_SPILL_MASK,
+			},
 		},
 	},
 	.Mem = {input_start_idx = 1},
@@ -775,6 +781,15 @@ x64_reg_mask_of :: proc(
 			)
 			return mask
 		}
+	case .Phi:
+		assert(idx > 0)
+		mask := reg_mask_empty(ra, ra.datatype_to_reg_kind[node.dt])
+		mem.copy_non_overlapping(
+			mask.masks,
+			raw_data(GPA_SPILL_MASK),
+			len(GPA_SPILL_MASK) * size_of(int),
+		)
+		return mask
 	case:
 		fmt.panicf("TODO: %v %v", node.xtype, idx)
 	}

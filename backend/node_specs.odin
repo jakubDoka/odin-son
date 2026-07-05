@@ -1593,10 +1593,10 @@ graph_add_jump :: #force_inline proc(graph: ^Graph, name: string, ctrl: Node_ID)
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Jump), .Void, {ctrl})
 }
 #assert(size_of(Region) % 4 == 0)
-graph_add_region :: #force_inline proc(graph: ^Graph, name: string, rcfg: Node_ID, lcfg: Node_ID) -> (id: Node_ID) {
+graph_add_region :: #force_inline proc(graph: ^Graph, name: string, inputs: []Node_ID) -> (id: Node_ID) {
 	push_node_name(graph, name)
 	(^Region)(graph_get_next_extra_slot(graph, u16(Ideal_Node_Type.Region)))^ = {}
-	return graph_add_raw(graph, u16(Ideal_Node_Type.Region), .Void, {rcfg, lcfg})
+	return graph_add_raw(graph, u16(Ideal_Node_Type.Region), .Void, inputs)
 }
 #assert(size_of(Cfg) % 4 == 0)
 graph_add_loop :: #force_inline proc(graph: ^Graph, name: string, ctrl: Node_ID) -> (id: Node_ID) {

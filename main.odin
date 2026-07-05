@@ -149,6 +149,7 @@ disasm :: proc(sb: ^strings.Builder, ctx: Gen_Ctx) {
 	}
 
 	for prc in ctx.procs {
+		clear(&jumps)
 		fmt.sbprintfln(sb, "%v:", prc.name)
 
 		instructions := prc.out.code

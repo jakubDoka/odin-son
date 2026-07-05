@@ -751,7 +751,12 @@ when !GEN_SPEC {
 				}
 			}
 
-			if len(node.inps) == 1 {
+			elim: if len(node.inps) == 1 {
+				for out in node.outs {
+					if graph_get(ctx, out.id).itype == .Return {
+						break elim
+					}
+				}
 				return node.inps[0]
 			}
 
@@ -764,11 +769,16 @@ when !GEN_SPEC {
 				if node.rtype == DEAD_NODE_KIND do break match
 			}
 
-			if len(node.inps) == 2 {
+			elimn: if len(node.inps) == 2 {
+				for out in graph_outs(ctx, node.inps[0]) {
+					if graph_get(ctx, out.id).itype == .Return {
+						break elimn
+					}
+				}
 				return node.inps[1]
 			}
 
-			if node.inps[2] == id {
+			if 2 < len(node.inps) && node.inps[2] == id {
 				return node.inps[1]
 			}
 		case .Then, .Else:
@@ -1514,25 +1524,31 @@ graph_loop_control :: proc(
 
 graph_merge_returns :: proc(graph: ^Graph, args: []Node_ID) -> Node_ID {
 	if graph.end == 0 {
+		args[0] = graph_add_region(graph, "rret", {args[0]})
+		for &a in args[1:] {
+			push_node_name(graph, "rphi")
+			a = graph_add_raw(
+				graph,
+				u16(Ideal_Node_Type.Phi),
+				graph_get(graph, a).dt,
+				{args[0], a},
+			)
+		}
+
 		graph.end = graph_add_return(graph, "ret", args)
-		return graph.end
+	} else {
+		end := graph_expand(graph, graph.end)
+		idx := graph_add_input(graph, end.inps[0], args[0])
+		graph_add_output(graph, args[0], end.inps[0], idx)
+
+		for i in 1 ..< len(end.inps) {
+			new := i < len(args) ? args[i] : graph_add_poison(graph, "rpsn")
+			idx = graph_add_input(graph, end.inps[i], new)
+			graph_add_output(graph, new, end.inps[i], idx)
+		}
 	}
 
-	end := graph_expand(graph, graph.end)
-
-	reg := graph_add_region(graph, "rreg", args[0], end.inps[0])
-	graph_set_input(graph, graph.end, 0, reg)
-
-	for i in 1 ..< len(end.inps) {
-		rhs := end.inps[i]
-		ty := graph_get(graph, rhs).dt
-		lhs := i < len(args) ? args[i] : graph_add_poison(graph, "rpsn")
-		if rhs == lhs do continue
-		phi := graph_add_phi(graph, "rphi", ty, reg, lhs, rhs)
-		graph_set_input(graph, graph.end, i, phi)
-	}
-
-	return reg
+	return graph.end
 }
 
 graph_interner_find :: proc(
@@ -1853,7 +1869,7 @@ graph_merge_scopes :: proc(
 
 	assert(lnode.input_count == rnode.input_count)
 
-	region := graph_add_region(graph, "reg", lnode.inps[0], rnode.inps[0])
+	region := graph_add_region(graph, "reg", {lnode.inps[0], rnode.inps[0]})
 
 	for i in 1 ..< lnode.input_count {
 		if lnode.inps[i] == rnode.inps[i] do continue

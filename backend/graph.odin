@@ -1131,14 +1131,14 @@ when !GEN_SPEC {
 
 			dst_slot := graph_expand(ctx, dst.inps[0])
 
-			Slot :: bit_field int {
+			Slot :: bit_field u64 {
 				size:   int | 8,
 				state:  enum uint {
 					Uninit,
 					Needs_Init,
 					Inited,
 				}    | 2,
-				offset: int | 54,
+				offset: int | 32,
 			}
 
 			Slots :: [dynamic; 8]Slot

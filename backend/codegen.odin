@@ -7,6 +7,21 @@ Abi :: struct {
 	red_zone_size: i32,
 }
 
+Call_Conv :: struct {
+	callee_saved: [Reg_Kind][]Reg,
+	caller_saved: [Reg_Kind][]Reg,
+	args:         [Reg_Kind][]Reg,
+	rets:         [Reg_Kind][]Reg,
+}
+
+init_call_clobbers :: proc(cc: ^Call_Conv, clobbers: ^[Reg_Kind]int) {
+	for &slot, kind in clobbers {
+		for reg in cc.caller_saved[kind] {
+			slot |= 1 << reg.index
+		}
+	}
+}
+
 Codegen_Spec :: struct {
 	emit_function:      proc(_: Codegen_Emit_Ctx) -> Codegen_Output,
 	peep:               Peep_Fn,

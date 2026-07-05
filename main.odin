@@ -686,6 +686,8 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 
 			ra: backend.Regalloc
 			ra.spec = spec
+			ra.cc = &backend.X64_SYSTEMV_CC
+			backend.init_call_clobbers(ra.cc, &ra.call_clobbers)
 
 			regs := backend.regalloc(
 				&ra,

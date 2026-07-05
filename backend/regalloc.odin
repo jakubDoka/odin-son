@@ -135,7 +135,9 @@ Regalloc_Spec :: struct {
 }
 
 Regalloc :: struct {
-	using spec: ^Regalloc_Spec,
+	using spec:    ^Regalloc_Spec,
+	using cc:      ^Call_Conv,
+	call_clobbers: [Reg_Kind]int,
 }
 
 MASK_SIZE :: size_of(int) * 8

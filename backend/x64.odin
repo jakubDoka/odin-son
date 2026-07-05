@@ -79,6 +79,16 @@ CALLER_SAVED :: []Reg{RAX, RCX, RDX, RSI, RDI, R8, R9, R10, R11}
 ARGS := []Reg{RDI, RSI, RDX, RCX, R8, R9}
 RETS := []Reg{RAX, RDX}
 
+@(rodata)
+X64_SYSTEMV_CC := Call_Conv {
+	callee_saved = #partial{.General = {RBX, RBP, R12, R13, R14, R15}},
+	caller_saved = #partial{
+		.General = {RAX, RCX, RDX, RSI, RDI, R8, R9, R10, R11},
+	},
+	args = #partial{.General = {RDI, RSI, RDX, RCX, R8, R9}},
+	rets = #partial{.General = {RAX, RDX}},
+}
+
 SIMPLE_BINOP_SPEC :: Reg_Class_Spec {
 	reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
 	inplace_slot_idx = 0,

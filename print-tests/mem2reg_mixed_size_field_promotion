@@ -1,0 +1,117 @@
+=========== OPT LEVEL: none ===========
+opaque:
+     mov rax, rdi
+     ret
+main:
+     sub rsp, 0x18
+     lea rdi, [rsp]
+     mov rsi, 0x00
+     mov rdx, 0x10
+     call :$set
+     mov rdi, 0x64
+     call :opaque
+     mov [rsp], al
+     mov rdi, 0x12C
+     call :opaque
+     mov [rsp+0x02], ax
+     mov rdi, 0x11170
+     call :opaque
+     mov [rsp+0x04], eax
+     mov rdi, 0x1F4
+     call :opaque
+     mov rax, rax
+     mov [rsp+0x08], rax
+     add byte ptr [rsp], 0x01
+     add word ptr [rsp+0x02], 0x02
+     add dword ptr [rsp+0x04], 0x03
+     add qword ptr [rsp+0x08], 0x04
+     movzx eax, byte ptr [rsp]
+     movzx eax, al
+     movzx ecx, word ptr [rsp+0x02]
+     movzx ecx, cx
+     add rax, rcx
+     mov ecx, [rsp+0x04]
+     mov ecx, ecx
+     add rax, rcx
+     mov rcx, [rsp+0x08]
+     mov rcx, rcx
+     add rax, rcx
+     mov rax, rax
+     add rsp, 0x18
+     ret
+=========== OPT LEVEL: mininal ===========
+opaque:
+     mov rax, rdi
+     ret
+main:
+     sub rsp, 0x18
+     lea rdi, [rsp]
+     mov rsi, 0x00
+     mov rdx, 0x10
+     call :$set
+     mov rdi, 0x64
+     call :opaque
+     mov [rsp], al
+     mov rdi, 0x12C
+     call :opaque
+     mov [rsp+0x02], ax
+     mov rdi, 0x11170
+     call :opaque
+     mov [rsp+0x04], eax
+     mov rdi, 0x1F4
+     call :opaque
+     mov [rsp+0x08], rax
+     add byte ptr [rsp], 0x01
+     add word ptr [rsp+0x02], 0x02
+     add dword ptr [rsp+0x04], 0x03
+     add qword ptr [rsp+0x08], 0x04
+     movzx eax, byte ptr [rsp]
+     movzx eax, al
+     movzx ecx, word ptr [rsp+0x02]
+     movzx ecx, cx
+     add rax, rcx
+     mov ecx, [rsp+0x04]
+     mov ecx, ecx
+     add rax, rcx
+     mov rcx, [rsp+0x08]
+     add rax, rcx
+     add rsp, 0x18
+     ret
+=========== OPT LEVEL: all ===========
+opaque:
+     mov rax, rdi
+     ret
+main:
+     sub rsp, 0x18
+     mov qword ptr [rsp], 0x00
+     mov qword ptr [rsp+0x08], 0x00
+     mov rdi, 0x64
+     call :opaque
+     mov [rsp], al
+     mov rdi, 0x12C
+     call :opaque
+     mov [rsp+0x02], ax
+     mov rdi, 0x11170
+     call :opaque
+     mov [rsp+0x04], eax
+     mov rdi, 0x1F4
+     call :opaque
+     mov [rsp+0x08], rax
+     movzx eax, byte ptr [rsp]
+     add rax, 0x01
+     mov [rsp], al
+     add word ptr [rsp+0x02], 0x02
+     add dword ptr [rsp+0x04], 0x03
+     mov rcx, [rsp+0x08]
+     add rcx, 0x04
+     mov [rsp+0x08], rcx
+     movzx eax, al
+     movzx edx, word ptr [rsp+0x02]
+     movzx edx, dx
+     add rax, rdx
+     mov edx, [rsp+0x04]
+     mov edx, edx
+     add rax, rdx
+     add rax, rcx
+     add rsp, 0x18
+     ret

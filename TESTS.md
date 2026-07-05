@@ -3022,3 +3022,348 @@ main :: proc() -> int {
 	return score
 }
 ```
+
+#### mem2reg local struct scalar promotion
+```odin
+package main
+
+opt_level :: "none"
+
+Vec3 :: struct {
+	x: int,
+	y: int,
+	z: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main :: proc() -> int {
+	s := Vec3{opaque(10), opaque(20), opaque(30)}
+	s.x = s.x + s.y
+	s.z = s.z + s.x
+	return s.x + s.y + s.z
+}
+```
+
+#### mem2reg struct field conditional phi
+```odin
+package main
+
+opt_level :: "none"
+
+Vec2 :: struct {
+	x: int,
+	y: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main :: proc() -> int {
+	s := Vec2{opaque(5), opaque(7)}
+	if opaque(1) > 0 {
+		s.x = s.x + 100
+	} else {
+		s.x = s.x - 100
+	}
+	return s.x + s.y
+}
+```
+
+#### mem2reg struct accumulator in loop
+```odin
+package main
+
+opt_level :: "none"
+
+Vec2 :: struct {
+	x: int,
+	y: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main :: proc() -> int {
+	acc := Vec2{0, 0}
+	i := 0
+	n := opaque(5)
+	for {
+		if i >= n do break
+		acc.x = acc.x + i
+		acc.y = acc.y + 1
+		i += 1
+	}
+	return acc.x * 100 + acc.y
+}
+```
+
+#### mem2reg nested struct promotion
+```odin
+package main
+
+opt_level :: "none"
+
+Inner :: struct {
+	x: int,
+	y: int,
+}
+
+Outer :: struct {
+	p: Inner,
+	q: Inner,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main :: proc() -> int {
+	o := Outer{Inner{opaque(1), opaque(2)}, Inner{opaque(3), opaque(4)}}
+	o.p.x = o.q.y
+	o.q.x = o.p.y
+	return o.p.x * 1000 + o.p.y * 100 + o.q.x * 10 + o.q.y
+}
+```
+
+#### mem2reg struct copy promotion
+```odin
+package main
+
+opt_level :: "none"
+
+Vec2 :: struct {
+	x: int,
+	y: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main :: proc() -> int {
+	s := Vec2{opaque(3), opaque(4)}
+	t := s
+	t.x = t.x + 1
+	t.y = t.y + 1
+	return s.x * 1000 + s.y * 100 + t.x * 10 + t.y
+}
+```
+
+#### mem2reg multiple structs register pressure
+```odin
+package main
+
+opt_level :: "none"
+
+Vec2 :: struct {
+	x: int,
+	y: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main :: proc() -> int {
+	a := Vec2{opaque(1), opaque(2)}
+	b := Vec2{opaque(3), opaque(4)}
+	c := Vec2{opaque(5), opaque(6)}
+	d := Vec2{opaque(7), opaque(8)}
+	a.x = a.x + b.x + c.x + d.x
+	b.y = b.y + c.y + d.y + a.y
+	return a.x * 100 + b.y + c.x + d.y
+}
+```
+
+#### mem2reg partially initialized struct
+```odin
+package main
+
+opt_level :: "none"
+
+Vec3 :: struct {
+	x: int,
+	y: int,
+	z: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main :: proc() -> int {
+	s := Vec3{}
+	s.y = opaque(42)
+	return s.x + s.y + s.z
+}
+```
+
+#### mem2reg struct returned then mutated
+```odin
+package main
+
+opt_level :: "none"
+
+Vec2 :: struct {
+	x: int,
+	y: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+mk :: proc(a: int, b: int) -> Vec2 {
+	return {a, b}
+}
+
+main :: proc() -> int {
+	s := mk(opaque(6), opaque(9))
+	s.x = s.x + s.y
+	return s.x * 100 + s.y
+}
+```
+
+#### mem2reg mixed size field promotion
+```odin
+package main
+
+opt_level :: "none"
+
+Mixed :: struct {
+	a: u8,
+	b: u16,
+	c: u32,
+	d: i64,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main :: proc() -> int {
+	m := Mixed {
+		u8(opaque(100)),
+		u16(opaque(300)),
+		u32(opaque(70000)),
+		i64(opaque(500)),
+	}
+	m.a = m.a + 1
+	m.b = m.b + 2
+	m.c = m.c + 3
+	m.d = m.d + 4
+	return int(u64(m.a) + u64(m.b) + u64(m.c) + u64(m.d))
+}
+```
+
+#### mem2reg struct feeds another struct
+```odin
+package main
+
+opt_level :: "none"
+
+Vec3 :: struct {
+	x: int,
+	y: int,
+	z: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main :: proc() -> int {
+	s := Vec3{opaque(2), opaque(3), opaque(4)}
+	t := Vec3{s.x + s.y, s.y + s.z, s.z + s.x}
+	s.x = t.x + t.z
+	return s.x * 100 + t.y * 10 + t.x
+}
+```
+
+#### mem2reg struct field swap
+```odin
+package main
+
+opt_level :: "none"
+
+Vec2 :: struct {
+	x: int,
+	y: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main :: proc() -> int {
+	s := Vec2{opaque(3), opaque(8)}
+	s.x, s.y = s.y, s.x
+	return s.x * 100 + s.y
+}
+```
+
+#### mem2reg local pointer to struct non escaping
+```odin
+package main
+
+opt_level :: "none"
+
+Vec3 :: struct {
+	x: int,
+	y: int,
+	z: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main :: proc() -> int {
+	s := Vec3{opaque(1), opaque(2), opaque(3)}
+	ptr := &s
+	ptr.x = ptr.x + ptr.y
+	ptr.z = ptr.z + ptr.x
+	return s.x + s.y + s.z
+}
+```
+
+#### mem2reg nested struct loop with conditional
+```odin
+package main
+
+opt_level :: "none"
+
+Vec2 :: struct {
+	x: int,
+	y: int,
+}
+
+Particle :: struct {
+	pos: Vec2,
+	vel: Vec2,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main :: proc() -> int {
+	p := Particle{Vec2{opaque(0), opaque(0)}, Vec2{opaque(1), opaque(2)}}
+	i := 0
+	for {
+		if i >= 10 do break
+		p.pos.x = p.pos.x + p.vel.x
+		p.pos.y = p.pos.y + p.vel.y
+		if p.pos.x > 5 {
+			p.vel.x = p.vel.x + 1
+		}
+		i += 1
+	}
+	return p.pos.x * 1000 + p.pos.y
+}
+```

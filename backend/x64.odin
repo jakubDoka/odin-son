@@ -178,10 +178,7 @@ X64_IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec {
 		reg_masks = #partial{.General = {{}, GPA_MASK}},
 		input_start_idx = 1,
 	},
-	.Ret = {
-		reg_masks = #partial{.General = {GPA_RET_MASK}},
-		input_start_idx = 1,
-	},
+	.Ret = {input_start_idx = 1},
 	.Then = {},
 	.Else = {},
 	.Region = {},
@@ -728,6 +725,7 @@ x64_post_schedule_peep :: proc(
 	has_no_clobbers :: proc(ctx: PS_Peep_Ctx, inp: Node_ID) -> bool {
 		#reverse for pred in ctx.preds {
 			if pred == inp do return true
+			if graph_get(ctx, pred).rtype == DEAD_NODE_KIND do continue
 			pnode := graph_expand(ctx, pred)
 			if pnode.is_store do break
 		}
@@ -764,6 +762,9 @@ x64_reg_mask_of :: proc(
 		}
 	case .Call:
 		return reg_mask_single(ra, args[idx - 1])
+	case .Ret:
+		ret_ext := graph_extra(graph, node, Tup)
+		return reg_mask_single(ra, ra.rets[.General][ret_ext.idx])
 	case .Phi:
 		assert(idx > 0)
 

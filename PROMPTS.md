@@ -137,12 +137,22 @@ Implement the appropriate peepholes for the x64 backend, the whole point is to
 use the RIP directly in the CISC instructions, same way we do for
 `.Local_Addr`.
 
-### Make more complicated tests
-
-NOTE: Read AGENTS.md
+### Make more complicated tests (DONE)
 
 The tests we have are great and all but we need more complicated ones. Could
 you please write a JSON validator, make sure it works in odin as expected.
 (Make a test in the `main.odin`). If you need some simple frontend features
 like character literals, implement them. Then proceed with porting the code to
 be a valid test case. If you find bugs in the compiler fix them.
+
+### Prepare for memopt pass
+
+NOTE: Read AGENTS.md
+
+The point of the mem opt pass is to split locals into scalar parts and then do
+a renaming into registers. Before we do that tho, I need a good set of tests
+that will offer many opportunities to optimize that can not be optimized yet.
+Create the tests based on whta is already supported in other tests, but use
+structs since these are put on stack by the frontend. I will write the mem2reg
+pass, just focus on adding good tests, if you encounter any bugs in the
+process, fix them.

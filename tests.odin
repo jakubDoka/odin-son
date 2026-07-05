@@ -5877,3 +5877,667 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) mem2reg_local_struct_scalar_promotion :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Vec3 :: struct {
+	x: int,
+	y: int,
+	z: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main_ :: proc() -> int {
+	s := Vec3{opaque(10), opaque(20), opaque(30)}
+	s.x = s.x + s.y
+	s.z = s.z + s.x
+	return s.x + s.y + s.z
+}
+
+run_test(t, `mem2reg_local_struct_scalar_promotion`, `
+package main
+
+opt_level :: "none"
+
+Vec3 :: struct {
+	x: int,
+	y: int,
+	z: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main :: proc() -> int {
+	s := Vec3{opaque(10), opaque(20), opaque(30)}
+	s.x = s.x + s.y
+	s.z = s.z + s.x
+	return s.x + s.y + s.z
+}
+`, main_())
+}
+@(test) mem2reg_struct_field_conditional_phi :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Vec2 :: struct {
+	x: int,
+	y: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main_ :: proc() -> int {
+	s := Vec2{opaque(5), opaque(7)}
+	if opaque(1) > 0 {
+		s.x = s.x + 100
+	} else {
+		s.x = s.x - 100
+	}
+	return s.x + s.y
+}
+
+run_test(t, `mem2reg_struct_field_conditional_phi`, `
+package main
+
+opt_level :: "none"
+
+Vec2 :: struct {
+	x: int,
+	y: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main :: proc() -> int {
+	s := Vec2{opaque(5), opaque(7)}
+	if opaque(1) > 0 {
+		s.x = s.x + 100
+	} else {
+		s.x = s.x - 100
+	}
+	return s.x + s.y
+}
+`, main_())
+}
+@(test) mem2reg_struct_accumulator_in_loop :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Vec2 :: struct {
+	x: int,
+	y: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main_ :: proc() -> int {
+	acc := Vec2{0, 0}
+	i := 0
+	n := opaque(5)
+	for {
+		if i >= n do break
+		acc.x = acc.x + i
+		acc.y = acc.y + 1
+		i += 1
+	}
+	return acc.x * 100 + acc.y
+}
+
+run_test(t, `mem2reg_struct_accumulator_in_loop`, `
+package main
+
+opt_level :: "none"
+
+Vec2 :: struct {
+	x: int,
+	y: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main :: proc() -> int {
+	acc := Vec2{0, 0}
+	i := 0
+	n := opaque(5)
+	for {
+		if i >= n do break
+		acc.x = acc.x + i
+		acc.y = acc.y + 1
+		i += 1
+	}
+	return acc.x * 100 + acc.y
+}
+`, main_())
+}
+@(test) mem2reg_nested_struct_promotion :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Inner :: struct {
+	x: int,
+	y: int,
+}
+
+Outer :: struct {
+	p: Inner,
+	q: Inner,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main_ :: proc() -> int {
+	o := Outer{Inner{opaque(1), opaque(2)}, Inner{opaque(3), opaque(4)}}
+	o.p.x = o.q.y
+	o.q.x = o.p.y
+	return o.p.x * 1000 + o.p.y * 100 + o.q.x * 10 + o.q.y
+}
+
+run_test(t, `mem2reg_nested_struct_promotion`, `
+package main
+
+opt_level :: "none"
+
+Inner :: struct {
+	x: int,
+	y: int,
+}
+
+Outer :: struct {
+	p: Inner,
+	q: Inner,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main :: proc() -> int {
+	o := Outer{Inner{opaque(1), opaque(2)}, Inner{opaque(3), opaque(4)}}
+	o.p.x = o.q.y
+	o.q.x = o.p.y
+	return o.p.x * 1000 + o.p.y * 100 + o.q.x * 10 + o.q.y
+}
+`, main_())
+}
+@(test) mem2reg_struct_copy_promotion :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Vec2 :: struct {
+	x: int,
+	y: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main_ :: proc() -> int {
+	s := Vec2{opaque(3), opaque(4)}
+	t := s
+	t.x = t.x + 1
+	t.y = t.y + 1
+	return s.x * 1000 + s.y * 100 + t.x * 10 + t.y
+}
+
+run_test(t, `mem2reg_struct_copy_promotion`, `
+package main
+
+opt_level :: "none"
+
+Vec2 :: struct {
+	x: int,
+	y: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main :: proc() -> int {
+	s := Vec2{opaque(3), opaque(4)}
+	t := s
+	t.x = t.x + 1
+	t.y = t.y + 1
+	return s.x * 1000 + s.y * 100 + t.x * 10 + t.y
+}
+`, main_())
+}
+@(test) mem2reg_multiple_structs_register_pressure :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Vec2 :: struct {
+	x: int,
+	y: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main_ :: proc() -> int {
+	a := Vec2{opaque(1), opaque(2)}
+	b := Vec2{opaque(3), opaque(4)}
+	c := Vec2{opaque(5), opaque(6)}
+	d := Vec2{opaque(7), opaque(8)}
+	a.x = a.x + b.x + c.x + d.x
+	b.y = b.y + c.y + d.y + a.y
+	return a.x * 100 + b.y + c.x + d.y
+}
+
+run_test(t, `mem2reg_multiple_structs_register_pressure`, `
+package main
+
+opt_level :: "none"
+
+Vec2 :: struct {
+	x: int,
+	y: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main :: proc() -> int {
+	a := Vec2{opaque(1), opaque(2)}
+	b := Vec2{opaque(3), opaque(4)}
+	c := Vec2{opaque(5), opaque(6)}
+	d := Vec2{opaque(7), opaque(8)}
+	a.x = a.x + b.x + c.x + d.x
+	b.y = b.y + c.y + d.y + a.y
+	return a.x * 100 + b.y + c.x + d.y
+}
+`, main_())
+}
+@(test) mem2reg_partially_initialized_struct :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Vec3 :: struct {
+	x: int,
+	y: int,
+	z: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main_ :: proc() -> int {
+	s := Vec3{}
+	s.y = opaque(42)
+	return s.x + s.y + s.z
+}
+
+run_test(t, `mem2reg_partially_initialized_struct`, `
+package main
+
+opt_level :: "none"
+
+Vec3 :: struct {
+	x: int,
+	y: int,
+	z: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main :: proc() -> int {
+	s := Vec3{}
+	s.y = opaque(42)
+	return s.x + s.y + s.z
+}
+`, main_())
+}
+@(test) mem2reg_struct_returned_then_mutated :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Vec2 :: struct {
+	x: int,
+	y: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+mk :: proc(a: int, b: int) -> Vec2 {
+	return {a, b}
+}
+
+main_ :: proc() -> int {
+	s := mk(opaque(6), opaque(9))
+	s.x = s.x + s.y
+	return s.x * 100 + s.y
+}
+
+run_test(t, `mem2reg_struct_returned_then_mutated`, `
+package main
+
+opt_level :: "none"
+
+Vec2 :: struct {
+	x: int,
+	y: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+mk :: proc(a: int, b: int) -> Vec2 {
+	return {a, b}
+}
+
+main :: proc() -> int {
+	s := mk(opaque(6), opaque(9))
+	s.x = s.x + s.y
+	return s.x * 100 + s.y
+}
+`, main_())
+}
+@(test) mem2reg_mixed_size_field_promotion :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Mixed :: struct {
+	a: u8,
+	b: u16,
+	c: u32,
+	d: i64,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main_ :: proc() -> int {
+	m := Mixed {
+		u8(opaque(100)),
+		u16(opaque(300)),
+		u32(opaque(70000)),
+		i64(opaque(500)),
+	}
+	m.a = m.a + 1
+	m.b = m.b + 2
+	m.c = m.c + 3
+	m.d = m.d + 4
+	return int(u64(m.a) + u64(m.b) + u64(m.c) + u64(m.d))
+}
+
+run_test(t, `mem2reg_mixed_size_field_promotion`, `
+package main
+
+opt_level :: "none"
+
+Mixed :: struct {
+	a: u8,
+	b: u16,
+	c: u32,
+	d: i64,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main :: proc() -> int {
+	m := Mixed {
+		u8(opaque(100)),
+		u16(opaque(300)),
+		u32(opaque(70000)),
+		i64(opaque(500)),
+	}
+	m.a = m.a + 1
+	m.b = m.b + 2
+	m.c = m.c + 3
+	m.d = m.d + 4
+	return int(u64(m.a) + u64(m.b) + u64(m.c) + u64(m.d))
+}
+`, main_())
+}
+@(test) mem2reg_struct_feeds_another_struct :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Vec3 :: struct {
+	x: int,
+	y: int,
+	z: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main_ :: proc() -> int {
+	s := Vec3{opaque(2), opaque(3), opaque(4)}
+	t := Vec3{s.x + s.y, s.y + s.z, s.z + s.x}
+	s.x = t.x + t.z
+	return s.x * 100 + t.y * 10 + t.x
+}
+
+run_test(t, `mem2reg_struct_feeds_another_struct`, `
+package main
+
+opt_level :: "none"
+
+Vec3 :: struct {
+	x: int,
+	y: int,
+	z: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main :: proc() -> int {
+	s := Vec3{opaque(2), opaque(3), opaque(4)}
+	t := Vec3{s.x + s.y, s.y + s.z, s.z + s.x}
+	s.x = t.x + t.z
+	return s.x * 100 + t.y * 10 + t.x
+}
+`, main_())
+}
+@(test) mem2reg_struct_field_swap :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Vec2 :: struct {
+	x: int,
+	y: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main_ :: proc() -> int {
+	s := Vec2{opaque(3), opaque(8)}
+	s.x, s.y = s.y, s.x
+	return s.x * 100 + s.y
+}
+
+run_test(t, `mem2reg_struct_field_swap`, `
+package main
+
+opt_level :: "none"
+
+Vec2 :: struct {
+	x: int,
+	y: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main :: proc() -> int {
+	s := Vec2{opaque(3), opaque(8)}
+	s.x, s.y = s.y, s.x
+	return s.x * 100 + s.y
+}
+`, main_())
+}
+@(test) mem2reg_local_pointer_to_struct_non_escaping :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Vec3 :: struct {
+	x: int,
+	y: int,
+	z: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main_ :: proc() -> int {
+	s := Vec3{opaque(1), opaque(2), opaque(3)}
+	ptr := &s
+	ptr.x = ptr.x + ptr.y
+	ptr.z = ptr.z + ptr.x
+	return s.x + s.y + s.z
+}
+
+run_test(t, `mem2reg_local_pointer_to_struct_non_escaping`, `
+package main
+
+opt_level :: "none"
+
+Vec3 :: struct {
+	x: int,
+	y: int,
+	z: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main :: proc() -> int {
+	s := Vec3{opaque(1), opaque(2), opaque(3)}
+	ptr := &s
+	ptr.x = ptr.x + ptr.y
+	ptr.z = ptr.z + ptr.x
+	return s.x + s.y + s.z
+}
+`, main_())
+}
+@(test) mem2reg_nested_struct_loop_with_conditional :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Vec2 :: struct {
+	x: int,
+	y: int,
+}
+
+Particle :: struct {
+	pos: Vec2,
+	vel: Vec2,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main_ :: proc() -> int {
+	p := Particle{Vec2{opaque(0), opaque(0)}, Vec2{opaque(1), opaque(2)}}
+	i := 0
+	for {
+		if i >= 10 do break
+		p.pos.x = p.pos.x + p.vel.x
+		p.pos.y = p.pos.y + p.vel.y
+		if p.pos.x > 5 {
+			p.vel.x = p.vel.x + 1
+		}
+		i += 1
+	}
+	return p.pos.x * 1000 + p.pos.y
+}
+
+run_test(t, `mem2reg_nested_struct_loop_with_conditional`, `
+package main
+
+opt_level :: "none"
+
+Vec2 :: struct {
+	x: int,
+	y: int,
+}
+
+Particle :: struct {
+	pos: Vec2,
+	vel: Vec2,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main :: proc() -> int {
+	p := Particle{Vec2{opaque(0), opaque(0)}, Vec2{opaque(1), opaque(2)}}
+	i := 0
+	for {
+		if i >= 10 do break
+		p.pos.x = p.pos.x + p.vel.x
+		p.pos.y = p.pos.y + p.vel.y
+		if p.pos.x > 5 {
+			p.vel.x = p.vel.x + 1
+		}
+		i += 1
+	}
+	return p.pos.x * 1000 + p.pos.y
+}
+`, main_())
+}

@@ -720,7 +720,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{}, // Always
 			{}, // Call
 			{}, // Call_End
-			{{.General = 3}}, // Ret
+			{}, // Ret
 			{{.General = 7}, {.General = 3}, {.General = 5}}, // Return
 			{{.General = 1}, {.General = 1}}, // Neg
 			{{.General = 1}, {.General = 1}}, // Not

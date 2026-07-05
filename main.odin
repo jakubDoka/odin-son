@@ -1254,6 +1254,12 @@ emit_nodes :: proc(
 			vl:  backend.Node_ID,
 		}
 		values := make([dynamic]Value_Slot, 0, len(d.lhs), tmp)
+		Mem_Store :: struct {
+			ptr: backend.Node_ID,
+			vl:  backend.Node_ID,
+			lhs: ^ast.Node,
+		}
+		mem_stores := make([dynamic]Mem_Store, 0, len(d.lhs), tmp)
 
 		for i in 0 ..< len(d.lhs) {
 			lhs := d.lhs[i]
@@ -1288,9 +1294,18 @@ emit_nodes :: proc(
 			case Value:
 				assert(sym.is_lvalue)
 				if d.op.kind == .Eq {
-					assert(len(d.lhs) == 1)
-					value := emit_nodes(ctx, {dest = sym.id}, rhs)
-					store_value(ctx, "asss", sym.id, value, lhs)
+					if len(d.lhs) == 1 {
+						value := emit_nodes(ctx, {dest = sym.id}, rhs)
+						store_value(ctx, "asss", sym.id, value, lhs)
+					} else {
+						value := to_rvalue(
+							ctx,
+							emit_nodes(ctx, {}, rhs),
+							get_node_type(rhs),
+						)
+						backend.graph_pin(ctx, value)
+						append(&mem_stores, Mem_Store{sym.id, value, lhs})
+					}
 				} else {
 					op, name := tok_to_binop(get_node_type(rhs), d.op.kind)
 					vl := to_rvalue(ctx, sym, rhs)
@@ -1315,6 +1330,11 @@ emit_nodes :: proc(
 
 		for s in values {
 			backend.graph_set_input(ctx, ctx.node_scope, s.idx, s.vl)
+			backend.graph_unpin(ctx, s.vl)
+		}
+
+		for s in mem_stores {
+			store_value(ctx, "asss", s.ptr, Value(s.vl), s.lhs)
 			backend.graph_unpin(ctx, s.vl)
 		}
 	case ^ast.Binary_Expr:

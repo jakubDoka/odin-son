@@ -1,0 +1,110 @@
+=========== OPT LEVEL: none ===========
+opaque:
+     mov rax, rdi
+     ret
+main:
+     sub rsp, 0x28
+     lea rdi, [rsp]
+     mov rsi, 0x00
+     mov rdx, 0x10
+     call :$set
+     mov rdi, 0x03
+     call :opaque
+     mov [rsp], rax
+     mov rdi, 0x04
+     call :opaque
+     mov [rsp+0x08], rax
+     mov rsi, 0x00
+     mov rdx, 0x10
+     lea rdi, [rsp+0x10]
+     call :$set
+     lea rsi, [rsp]
+     mov rdx, 0x10
+     lea rdi, [rsp+0x10]
+     call :$copy
+     add qword ptr [rsp+0x10], 0x01
+     add qword ptr [rsp+0x18], 0x01
+     mov rax, [rsp]
+     imul rax, rax, 0x3E8
+     mov rcx, [rsp+0x08]
+     imul rcx, rcx, 0x64
+     add rax, rcx
+     mov rcx, [rsp+0x10]
+     imul rcx, rcx, 0x0A
+     add rax, rcx
+     mov rcx, [rsp+0x18]
+     add rax, rcx
+     add rsp, 0x28
+     ret
+=========== OPT LEVEL: mininal ===========
+opaque:
+     mov rax, rdi
+     ret
+main:
+     sub rsp, 0x28
+     lea rdi, [rsp]
+     mov rsi, 0x00
+     mov rdx, 0x10
+     call :$set
+     mov rdi, 0x03
+     call :opaque
+     mov [rsp], rax
+     mov rdi, 0x04
+     call :opaque
+     mov [rsp+0x08], rax
+     mov rsi, 0x00
+     mov rdx, 0x10
+     lea rdi, [rsp+0x10]
+     call :$set
+     lea rsi, [rsp]
+     mov rdx, 0x10
+     lea rdi, [rsp+0x10]
+     call :$copy
+     add qword ptr [rsp+0x10], 0x01
+     add qword ptr [rsp+0x18], 0x01
+     mov rax, [rsp]
+     imul rax, rax, 0x3E8
+     mov rcx, [rsp+0x08]
+     imul rcx, rcx, 0x64
+     add rax, rcx
+     mov rcx, [rsp+0x10]
+     imul rcx, rcx, 0x0A
+     add rax, rcx
+     mov rcx, [rsp+0x18]
+     add rax, rcx
+     add rsp, 0x28
+     ret
+=========== OPT LEVEL: all ===========
+opaque:
+     mov rax, rdi
+     ret
+main:
+     sub rsp, 0x28
+     mov qword ptr [rsp], 0x00
+     mov qword ptr [rsp+0x08], 0x00
+     mov rdi, 0x03
+     call :opaque
+     mov [rsp], rax
+     mov rdi, 0x04
+     call :opaque
+     lea rsi, [rsp]
+     lea rdi, [rsp+0x10]
+     mov [rsp+0x08], rax
+     mov rdx, 0x10
+     call :$copy
+     mov rcx, [rsp+0x10]
+     add rcx, 0x01
+     mov [rsp+0x10], rcx
+     mov rdx, [rsp+0x18]
+     add rdx, 0x01
+     mov [rsp+0x18], rdx
+     mov rax, [rsp]
+     imul rax, rax, 0x3E8
+     mov rsi, [rsp+0x08]
+     imul rsi, rsi, 0x64
+     add rax, rsi
+     imul rcx, rcx, 0x0A
+     add rax, rcx
+     add rax, rdx
+     add rsp, 0x28
+     ret

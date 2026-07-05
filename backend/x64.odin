@@ -1000,9 +1000,7 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 
 	ctx.local_relocs = make([dynamic]Local_Reloc, 0, len(ctx.bbs))
 
-	enable_jump_threading :: true
-
-	prev_is_consecutive := false
+	prev_is_if := false
 	for &bb, i in ctx.bbs {
 		bb.offset = u32(ctx.code.pos)
 
@@ -1012,7 +1010,7 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 			0 < len(last.outs) &&
 			ctx.bbs[i + 1].head == last.outs[0].id
 
-		if len(bb.instrs) == 1 && last.itype == .Jump && !prev_is_consecutive {
+		if len(bb.instrs) == 1 && last.itype == .Jump && !prev_is_if {
 			continue
 		}
 
@@ -1020,14 +1018,14 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 			x64_emit_instr(&ctx, instr, is_consecutive, 0)
 		}
 
-		prev_is_consecutive = last.itype == .If
+		prev_is_if = last.itype == .If
 	}
 
 	block_base := ctx.gvn - u32(len(ctx.bbs))
 	for &reloc in ctx.local_relocs {
 		size: u32 = 4
 
-		for enable_jump_threading {
+		for {
 			bb := &ctx.bbs[reloc.dest]
 
 			if len(bb.instrs) > 1 do break

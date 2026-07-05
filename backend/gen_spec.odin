@@ -514,7 +514,7 @@ generate_specs :: proc() {
 				fmt.fprintf(
 					file,
 					"\t\t\t%v, //%v\n",
-					class.inplace_slot_idx.? or_else -1,
+					class.inplace_slot_idx.? or_else -16,
 					reflect.enum_field_names(classes.enm)[i],
 				)
 			}

@@ -1906,7 +1906,7 @@ graph_truncate_scope :: proc(
 	assert(snode.btype == .Scope)
 	assert(to_len <= int(snode.input_count))
 
-	for &inp, i in snode.inps[to_len:snode.input_count] {
+	for &inp, i in snode.inps[to_len:] {
 		graph_remove_output(graph, inp, {idx = to_len + i, id = scope})
 		inp = 0
 	}
@@ -2109,9 +2109,7 @@ graph_expand :: #force_no_inline proc(
 	node := graph_get(graph, id)
 	assert(node.rtype != DEAD_NODE_KIND)
 	in_place := graph.inplace_slot_idxs[node.rtype]
-	if in_place >= 0 {
-		in_place += i8(node.additional_data_start)
-	}
+	in_place += i8(node.additional_data_start)
 	in_place += node.in_place_slot_offset
 	return {
 		node,

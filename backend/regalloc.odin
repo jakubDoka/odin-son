@@ -493,7 +493,7 @@ regalloc_round :: proc(
 			}
 
 			if inode.itype != .Phi {
-				for inp in inode.inps[inode.data_start:inode.input_count] {
+				for inp in inode.inps[inode.data_start:] {
 					inp_node := graph_get(graph, inp)
 					lrg := ctx.lrg_table[inp_node.gvn]
 
@@ -1057,7 +1057,7 @@ regalloc_round :: proc(
 			for instr, i in bb.instrs {
 				inode := graph_expand(ctx.graph, instr)
 				if inode.dt == .Void && inode.itype == .Phi do continue
-				for inp, idx in inode.inps[inode.data_start:inode.input_count] {
+				for inp, idx in inode.inps[inode.data_start:] {
 
 					block := &bb
 					i := i

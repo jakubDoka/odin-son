@@ -135,66 +135,66 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{}, // Dead
 		},
 		inplace_slot_idxs = {
-			-1, //Start
-			-1, //Entry
-			-1, //Poison
-			-1, //Arg
-			-1, //CInt
-			-1, //Add
-			-1, //Sub
-			-1, //And
-			-1, //Or
-			-1, //Xor
-			-1, //Eq
-			-1, //Ne
-			-1, //Le
-			-1, //Lt
-			-1, //Gt
-			-1, //Ge
-			-1, //U_Lt
-			-1, //U_Gt
-			-1, //U_Le
-			-1, //U_Ge
-			-1, //Shl
-			-1, //Shr
-			-1, //U_Shr
-			-1, //Mul
-			-1, //Div
-			-1, //U_Div
-			-1, //Rem
-			-1, //U_Rem
-			-1, //And_Not
-			-1, //Split
-			-1, //Phi
-			-1, //Mem
-			-1, //Local
-			-1, //Local_Addr
-			-1, //Global
-			-1, //Global_Addr
-			-1, //Copy
-			-1, //Set
-			-1, //Store
-			-1, //Load
-			-1, //Load_S
-			-1, //If
-			-1, //Then
-			-1, //Else
-			-1, //Jump
-			-1, //Region
-			-1, //Loop
-			-1, //Always
-			-1, //Call
-			-1, //Call_End
-			-1, //Ret
-			-1, //Return
-			-1, //Neg
-			-1, //Not
-			-1, //Sext
-			-1, //Uext
-			-1, //Cast
-			-1, //Scope
-			-1, //Lazy_Phi
-			-1, //Dead
+			-16, //Start
+			-16, //Entry
+			-16, //Poison
+			-16, //Arg
+			-16, //CInt
+			-16, //Add
+			-16, //Sub
+			-16, //And
+			-16, //Or
+			-16, //Xor
+			-16, //Eq
+			-16, //Ne
+			-16, //Le
+			-16, //Lt
+			-16, //Gt
+			-16, //Ge
+			-16, //U_Lt
+			-16, //U_Gt
+			-16, //U_Le
+			-16, //U_Ge
+			-16, //Shl
+			-16, //Shr
+			-16, //U_Shr
+			-16, //Mul
+			-16, //Div
+			-16, //U_Div
+			-16, //Rem
+			-16, //U_Rem
+			-16, //And_Not
+			-16, //Split
+			-16, //Phi
+			-16, //Mem
+			-16, //Local
+			-16, //Local_Addr
+			-16, //Global
+			-16, //Global_Addr
+			-16, //Copy
+			-16, //Set
+			-16, //Store
+			-16, //Load
+			-16, //Load_S
+			-16, //If
+			-16, //Then
+			-16, //Else
+			-16, //Jump
+			-16, //Region
+			-16, //Loop
+			-16, //Always
+			-16, //Call
+			-16, //Call_End
+			-16, //Ret
+			-16, //Return
+			-16, //Neg
+			-16, //Not
+			-16, //Sext
+			-16, //Uext
+			-16, //Cast
+			-16, //Scope
+			-16, //Lazy_Phi
+			-16, //Dead
 		},
 		peep = builder_peep,
 		post_schedule_peep = builder_post_schedule_peep,
@@ -702,7 +702,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{{.General = 5}, {.General = 3}, {.General = 4}}, // U_Rem
 			{{.General = 1}, {.General = 1}, {.General = 1}}, // And_Not
 			{{.General = 6}, {.General = 6}}, // Split
-			{{.General = 6}, {.General = 6}, {.General = 6}}, // Phi
+			{{.General = 6}, {.General = 6}, {.General = 6}, {.General = 6}, {.General = 6}}, // Phi
 			{}, // Mem
 			{}, // Local
 			{{.General = 1}}, // Local_Addr
@@ -756,88 +756,88 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{{.General = 3}, {.General = 1}, {.General = 3}}, // X64_Mul8
 		},
 		inplace_slot_idxs = {
-			-1, //Start
-			-1, //Entry
-			-1, //Poison
-			-1, //Arg
-			-1, //CInt
+			-16, //Start
+			-16, //Entry
+			-16, //Poison
+			-16, //Arg
+			-16, //CInt
 			0, //Add
 			0, //Sub
 			0, //And
 			0, //Or
 			0, //Xor
-			-1, //Eq
-			-1, //Ne
-			-1, //Le
-			-1, //Lt
-			-1, //Gt
-			-1, //Ge
-			-1, //U_Lt
-			-1, //U_Gt
-			-1, //U_Le
-			-1, //U_Ge
+			-16, //Eq
+			-16, //Ne
+			-16, //Le
+			-16, //Lt
+			-16, //Gt
+			-16, //Ge
+			-16, //U_Lt
+			-16, //U_Gt
+			-16, //U_Le
+			-16, //U_Ge
 			0, //Shl
 			0, //Shr
 			0, //U_Shr
 			0, //Mul
 			0, //Div
 			0, //U_Div
-			-1, //Rem
-			-1, //U_Rem
+			-16, //Rem
+			-16, //U_Rem
 			1, //And_Not
-			-1, //Split
-			-1, //Phi
-			-1, //Mem
-			-1, //Local
-			-1, //Local_Addr
-			-1, //Global
-			-1, //Global_Addr
-			-1, //Copy
-			-1, //Set
-			-1, //Store
-			-1, //Load
-			-1, //Load_S
-			-1, //If
-			-1, //Then
-			-1, //Else
-			-1, //Jump
-			-1, //Region
-			-1, //Loop
-			-1, //Always
-			-1, //Call
-			-1, //Call_End
-			-1, //Ret
-			-1, //Return
+			-16, //Split
+			-16, //Phi
+			-16, //Mem
+			-16, //Local
+			-16, //Local_Addr
+			-16, //Global
+			-16, //Global_Addr
+			-16, //Copy
+			-16, //Set
+			-16, //Store
+			-16, //Load
+			-16, //Load_S
+			-16, //If
+			-16, //Then
+			-16, //Else
+			-16, //Jump
+			-16, //Region
+			-16, //Loop
+			-16, //Always
+			-16, //Call
+			-16, //Call_End
+			-16, //Ret
+			-16, //Return
 			0, //Neg
 			0, //Not
-			-1, //Sext
-			-1, //Uext
+			-16, //Sext
+			-16, //Uext
 			0, //Cast
 			0, //X64_Add
 			0, //X64_Sub
 			0, //X64_And
 			0, //X64_Or
 			0, //X64_Xor
-			-1, //X64_Eq
-			-1, //X64_Ne
-			-1, //X64_Le
-			-1, //X64_Lt
-			-1, //X64_Gt
-			-1, //X64_Ge
-			-1, //X64_U_Lt
-			-1, //X64_U_Gt
-			-1, //X64_U_Le
-			-1, //X64_U_Ge
+			-16, //X64_Eq
+			-16, //X64_Ne
+			-16, //X64_Le
+			-16, //X64_Lt
+			-16, //X64_Gt
+			-16, //X64_Ge
+			-16, //X64_U_Lt
+			-16, //X64_U_Gt
+			-16, //X64_U_Le
+			-16, //X64_U_Ge
 			0, //X64_Shl
 			0, //X64_Shr
 			0, //X64_U_Shr
-			-1, //X64_Mul
-			-1, //X64_Lea
-			-1, //X64_Load
-			-1, //X64_Store
+			-16, //X64_Mul
+			-16, //X64_Lea
+			-16, //X64_Load
+			-16, //X64_Store
 			0, //X64_Neg
 			0, //X64_Not
-			-1, //X64_Mul8
+			-16, //X64_Mul8
 		},
 		reg_mask_of = x64_reg_mask_of,
 		emit_function = x64_emit_function,

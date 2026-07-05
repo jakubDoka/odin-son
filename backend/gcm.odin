@@ -324,7 +324,7 @@ graph_schedule :: proc(
 
 		for out in ctrl.outs {
 			onode := graph_expand(graph, out.id)
-			for i in onode.inps[:onode.input_count] {
+			for i in onode.inps {
 				if is_cfg(graph, i) do continue
 				sched_early(ctx, i)
 			}

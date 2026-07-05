@@ -522,30 +522,30 @@ parse_value:
      pop rbx
      ret
 validate:
-     sub rsp, 0x38
+     sub rsp, 0x28
      shr rdi, 0x00
-     mov [rsp], rdi
+     mov [rsp+0x18], rdi
      shr rsi, 0x00
-     mov [rsp+0x08], rsi
-     mov rdx, 0x20
+     mov [rsp+0x20], rsi
+     mov rdx, 0x18
      mov rsi, 0x00
-     lea rdi, [rsp+0x10]
+     lea rdi, [rsp]
      call :$set
      mov rdx, 0x10
-     lea rsi, [rsp]
-     lea rdi, [rsp+0x10]
+     lea rsi, [rsp+0x18]
+     lea rdi, [rsp]
      call :$copy
-     mov qword ptr [rsp+0x20], 0x00
-     lea rdi, [rsp+0x10]
+     mov qword ptr [rsp+0x10], 0x00
+     lea rdi, [rsp]
      call :skip_ws
-     lea rdi, [rsp+0x10]
+     lea rdi, [rsp]
      call :parse_value
      cmp al, 0x00
      jz :0
-     lea rdi, [rsp+0x10]
+     lea rdi, [rsp]
      call :skip_ws
-     mov rax, [rsp+0x20]
-     mov rcx, [rsp+0x18]
+     mov rax, [rsp+0x10]
+     mov rcx, [rsp+0x08]
      cmp rax, rcx
      jnz :1
      mov rax, 0x01
@@ -555,12 +555,12 @@ validate:
      jmp :2
 
 000: mov rax, 0x00
-002: add rsp, 0x38
+002: add rsp, 0x28
      ret
 main:
      push rbx
      sub rsp, 0x120
-     lea rax, [0x00000000004006BD]
+     lea rax, [0x00000000004006C0]
      mov [rsp], rax
      mov qword ptr [rsp+0x08], 0x04
      mov rdi, [rsp]
@@ -573,7 +573,7 @@ main:
 
 000: mov rbx, 0x00
      add rbx, 0x01
-001: lea rax, [0x00000000004006C1]
+001: lea rax, [0x00000000004006C4]
      mov [rsp+0x10], rax
      mov qword ptr [rsp+0x18], 0x05
      mov rdi, [rsp+0x10]
@@ -584,7 +584,7 @@ main:
      jmp :3
 
 002: add rbx, 0x02
-003: lea rax, [0x00000000004006C6]
+003: lea rax, [0x00000000004006C9]
      mov [rsp+0x20], rax
      mov qword ptr [rsp+0x28], 0x04
      mov rdi, [rsp+0x20]
@@ -595,7 +595,7 @@ main:
      jmp :5
 
 004: add rbx, 0x04
-005: lea rax, [0x00000000004006CA]
+005: lea rax, [0x00000000004006CD]
      mov [rsp+0x30], rax
      mov qword ptr [rsp+0x38], 0x03
      mov rdi, [rsp+0x30]
@@ -606,7 +606,7 @@ main:
      jmp :7
 
 006: add rbx, 0x08
-007: lea rax, [0x00000000004006CD]
+007: lea rax, [0x00000000004006D0]
      mov [rsp+0x40], rax
      mov qword ptr [rsp+0x48], 0x07
      mov rdi, [rsp+0x40]
@@ -617,7 +617,7 @@ main:
      jmp :9
 
 008: add rbx, 0x10
-009: lea rax, [0x00000000004006D4]
+009: lea rax, [0x00000000004006D7]
      mov [rsp+0x50], rax
      mov qword ptr [rsp+0x58], 0x07
      mov rdi, [rsp+0x50]
@@ -628,7 +628,7 @@ main:
      jmp :11
 
 010: add rbx, 0x20
-011: lea rax, [0x00000000004006DB]
+011: lea rax, [0x00000000004006DE]
      mov [rsp+0x60], rax
      mov qword ptr [rsp+0x68], 0x09
      mov rdi, [rsp+0x60]
@@ -639,7 +639,7 @@ main:
      jmp :13
 
 012: add rbx, 0x40
-013: lea rax, [0x00000000004006E4]
+013: lea rax, [0x00000000004006E7]
      mov [rsp+0x70], rax
      mov qword ptr [rsp+0x78], 0x1B
      mov rdi, [rsp+0x70]
@@ -650,7 +650,7 @@ main:
      jmp :15
 
 014: add rbx, 0x80
-015: lea rax, [0x00000000004006FF]
+015: lea rax, [0x0000000000400702]
      mov [rsp+0x80], rax
      mov qword ptr [rsp+0x88], 0x08
      mov rdi, [rsp+0x80]
@@ -661,7 +661,7 @@ main:
      jmp :17
 
 016: add rbx, 0x100
-017: lea rax, [0x0000000000400707]
+017: lea rax, [0x000000000040070A]
      mov [rsp+0x90], rax
      mov qword ptr [rsp+0x98], 0x02
      mov rdi, [rsp+0x90]
@@ -672,7 +672,7 @@ main:
      jmp :19
 
 018: add rbx, 0x200
-019: lea rax, [0x0000000000400709]
+019: lea rax, [0x000000000040070C]
      mov [rsp+0xA0], rax
      mov qword ptr [rsp+0xA8], 0x00
      mov rdi, [rsp+0xA0]
@@ -683,7 +683,7 @@ main:
      jmp :21
 
 020: add rbx, 0x400
-021: lea rax, [0x0000000000400709]
+021: lea rax, [0x000000000040070C]
      mov [rsp+0xB0], rax
      mov qword ptr [rsp+0xB8], 0x01
      mov rdi, [rsp+0xB0]
@@ -694,7 +694,7 @@ main:
      jmp :23
 
 022: add rbx, 0x800
-023: lea rax, [0x000000000040070A]
+023: lea rax, [0x000000000040070D]
      mov [rsp+0xC0], rax
      mov qword ptr [rsp+0xC8], 0x04
      mov rdi, [rsp+0xC0]
@@ -705,7 +705,7 @@ main:
      jmp :25
 
 024: add rbx, 0x1000
-025: lea rax, [0x000000000040070E]
+025: lea rax, [0x0000000000400711]
      mov [rsp+0xD0], rax
      mov qword ptr [rsp+0xD8], 0x05
      mov rdi, [rsp+0xD0]
@@ -716,7 +716,7 @@ main:
      jmp :27
 
 026: add rbx, 0x2000
-027: lea rax, [0x0000000000400713]
+027: lea rax, [0x0000000000400716]
      mov [rsp+0xE0], rax
      mov qword ptr [rsp+0xE8], 0x02
      mov rdi, [rsp+0xE0]
@@ -727,7 +727,7 @@ main:
      jmp :29
 
 028: add rbx, 0x4000
-029: lea rax, [0x0000000000400715]
+029: lea rax, [0x0000000000400718]
      mov [rsp+0xF0], rax
      mov qword ptr [rsp+0xF8], 0x06
      mov rdi, [rsp+0xF0]
@@ -738,7 +738,7 @@ main:
      jmp :31
 
 030: add rbx, 0x8000
-031: lea rax, [0x000000000040071B]
+031: lea rax, [0x000000000040071E]
      mov [rsp+0x100], rax
      mov qword ptr [rsp+0x108], 0x07
      mov rdi, [rsp+0x100]
@@ -749,7 +749,7 @@ main:
      jmp :33
 
 032: add rbx, 0x10000
-033: lea rax, [0x0000000000400722]
+033: lea rax, [0x0000000000400725]
      mov [rsp+0x110], rax
      mov qword ptr [rsp+0x118], 0x03
      mov rdi, [rsp+0x110]
@@ -1288,30 +1288,30 @@ parse_value:
      pop rbx
      ret
 validate:
-     sub rsp, 0x38
+     sub rsp, 0x28
      shr rdi, 0x00
-     mov [rsp], rdi
+     mov [rsp+0x18], rdi
      shr rsi, 0x00
-     mov [rsp+0x08], rsi
-     mov rdx, 0x20
+     mov [rsp+0x20], rsi
+     mov rdx, 0x18
      mov rsi, 0x00
-     lea rdi, [rsp+0x10]
+     lea rdi, [rsp]
      call :$set
      mov rdx, 0x10
-     lea rsi, [rsp]
-     lea rdi, [rsp+0x10]
+     lea rsi, [rsp+0x18]
+     lea rdi, [rsp]
      call :$copy
-     mov qword ptr [rsp+0x20], 0x00
-     lea rdi, [rsp+0x10]
+     mov qword ptr [rsp+0x10], 0x00
+     lea rdi, [rsp]
      call :skip_ws
-     lea rdi, [rsp+0x10]
+     lea rdi, [rsp]
      call :parse_value
      cmp al, 0x00
      jz :0
-     lea rdi, [rsp+0x10]
+     lea rdi, [rsp]
      call :skip_ws
-     mov rax, [rsp+0x20]
-     mov rcx, [rsp+0x18]
+     mov rax, [rsp+0x10]
+     mov rcx, [rsp+0x08]
      cmp rax, rcx
      jnz :1
      mov rax, 0x01
@@ -1321,12 +1321,12 @@ validate:
      jmp :2
 
 000: mov rax, 0x00
-002: add rsp, 0x38
+002: add rsp, 0x28
      ret
 main:
      push rbx
      sub rsp, 0x120
-     lea rax, [0x00000000004006BD]
+     lea rax, [0x00000000004006C0]
      mov [rsp], rax
      mov qword ptr [rsp+0x08], 0x04
      mov rdi, [rsp]
@@ -1339,7 +1339,7 @@ main:
 
 000: mov rbx, 0x00
      add rbx, 0x01
-001: lea rax, [0x00000000004006C1]
+001: lea rax, [0x00000000004006C4]
      mov [rsp+0x10], rax
      mov qword ptr [rsp+0x18], 0x05
      mov rdi, [rsp+0x10]
@@ -1350,7 +1350,7 @@ main:
      jmp :3
 
 002: add rbx, 0x02
-003: lea rax, [0x00000000004006C6]
+003: lea rax, [0x00000000004006C9]
      mov [rsp+0x20], rax
      mov qword ptr [rsp+0x28], 0x04
      mov rdi, [rsp+0x20]
@@ -1361,7 +1361,7 @@ main:
      jmp :5
 
 004: add rbx, 0x04
-005: lea rax, [0x00000000004006CA]
+005: lea rax, [0x00000000004006CD]
      mov [rsp+0x30], rax
      mov qword ptr [rsp+0x38], 0x03
      mov rdi, [rsp+0x30]
@@ -1372,7 +1372,7 @@ main:
      jmp :7
 
 006: add rbx, 0x08
-007: lea rax, [0x00000000004006CD]
+007: lea rax, [0x00000000004006D0]
      mov [rsp+0x40], rax
      mov qword ptr [rsp+0x48], 0x07
      mov rdi, [rsp+0x40]
@@ -1383,7 +1383,7 @@ main:
      jmp :9
 
 008: add rbx, 0x10
-009: lea rax, [0x00000000004006D4]
+009: lea rax, [0x00000000004006D7]
      mov [rsp+0x50], rax
      mov qword ptr [rsp+0x58], 0x07
      mov rdi, [rsp+0x50]
@@ -1394,7 +1394,7 @@ main:
      jmp :11
 
 010: add rbx, 0x20
-011: lea rax, [0x00000000004006DB]
+011: lea rax, [0x00000000004006DE]
      mov [rsp+0x60], rax
      mov qword ptr [rsp+0x68], 0x09
      mov rdi, [rsp+0x60]
@@ -1405,7 +1405,7 @@ main:
      jmp :13
 
 012: add rbx, 0x40
-013: lea rax, [0x00000000004006E4]
+013: lea rax, [0x00000000004006E7]
      mov [rsp+0x70], rax
      mov qword ptr [rsp+0x78], 0x1B
      mov rdi, [rsp+0x70]
@@ -1416,7 +1416,7 @@ main:
      jmp :15
 
 014: add rbx, 0x80
-015: lea rax, [0x00000000004006FF]
+015: lea rax, [0x0000000000400702]
      mov [rsp+0x80], rax
      mov qword ptr [rsp+0x88], 0x08
      mov rdi, [rsp+0x80]
@@ -1427,7 +1427,7 @@ main:
      jmp :17
 
 016: add rbx, 0x100
-017: lea rax, [0x0000000000400707]
+017: lea rax, [0x000000000040070A]
      mov [rsp+0x90], rax
      mov qword ptr [rsp+0x98], 0x02
      mov rdi, [rsp+0x90]
@@ -1438,7 +1438,7 @@ main:
      jmp :19
 
 018: add rbx, 0x200
-019: lea rax, [0x0000000000400709]
+019: lea rax, [0x000000000040070C]
      mov [rsp+0xA0], rax
      mov qword ptr [rsp+0xA8], 0x00
      mov rdi, [rsp+0xA0]
@@ -1449,7 +1449,7 @@ main:
      jmp :21
 
 020: add rbx, 0x400
-021: lea rax, [0x0000000000400709]
+021: lea rax, [0x000000000040070C]
      mov [rsp+0xB0], rax
      mov qword ptr [rsp+0xB8], 0x01
      mov rdi, [rsp+0xB0]
@@ -1460,7 +1460,7 @@ main:
      jmp :23
 
 022: add rbx, 0x800
-023: lea rax, [0x000000000040070A]
+023: lea rax, [0x000000000040070D]
      mov [rsp+0xC0], rax
      mov qword ptr [rsp+0xC8], 0x04
      mov rdi, [rsp+0xC0]
@@ -1471,7 +1471,7 @@ main:
      jmp :25
 
 024: add rbx, 0x1000
-025: lea rax, [0x000000000040070E]
+025: lea rax, [0x0000000000400711]
      mov [rsp+0xD0], rax
      mov qword ptr [rsp+0xD8], 0x05
      mov rdi, [rsp+0xD0]
@@ -1482,7 +1482,7 @@ main:
      jmp :27
 
 026: add rbx, 0x2000
-027: lea rax, [0x0000000000400713]
+027: lea rax, [0x0000000000400716]
      mov [rsp+0xE0], rax
      mov qword ptr [rsp+0xE8], 0x02
      mov rdi, [rsp+0xE0]
@@ -1493,7 +1493,7 @@ main:
      jmp :29
 
 028: add rbx, 0x4000
-029: lea rax, [0x0000000000400715]
+029: lea rax, [0x0000000000400718]
      mov [rsp+0xF0], rax
      mov qword ptr [rsp+0xF8], 0x06
      mov rdi, [rsp+0xF0]
@@ -1504,7 +1504,7 @@ main:
      jmp :31
 
 030: add rbx, 0x8000
-031: lea rax, [0x000000000040071B]
+031: lea rax, [0x000000000040071E]
      mov [rsp+0x100], rax
      mov qword ptr [rsp+0x108], 0x07
      mov rdi, [rsp+0x100]
@@ -1515,7 +1515,7 @@ main:
      jmp :33
 
 032: add rbx, 0x10000
-033: lea rax, [0x0000000000400722]
+033: lea rax, [0x0000000000400725]
      mov [rsp+0x110], rax
      mov qword ptr [rsp+0x118], 0x03
      mov rdi, [rsp+0x110]
@@ -2038,29 +2038,20 @@ parse_value:
      pop rbx
      ret
 validate:
-     sub rsp, 0x38
-     mov rax, rsi
-     lea rsi, [rsp]
+     sub rsp, 0x18
      mov [rsp], rdi
-     mov [rsp+0x08], rax
+     mov [rsp+0x08], rsi
      mov qword ptr [rsp+0x10], 0x00
-     mov qword ptr [rsp+0x18], 0x00
-     mov qword ptr [rsp+0x20], 0x00
-     mov qword ptr [rsp+0x28], 0x00
-     mov rdx, 0x10
-     lea rdi, [rsp+0x10]
-     call :$copy
-     mov qword ptr [rsp+0x20], 0x00
-     lea rdi, [rsp+0x10]
+     lea rdi, [rsp]
      call :skip_ws
-     lea rdi, [rsp+0x10]
+     lea rdi, [rsp]
      call :parse_value
      cmp al, 0x00
      jz :0
-     lea rdi, [rsp+0x10]
+     lea rdi, [rsp]
      call :skip_ws
-     mov rax, [rsp+0x20]
-     cmp rax, [rsp+0x18]
+     mov rax, [rsp+0x10]
+     cmp rax, [rsp+0x08]
      jnz :1
      mov rax, 0x01
      jmp :2
@@ -2069,11 +2060,11 @@ validate:
      jmp :2
 
 000: mov rax, 0x00
-002: add rsp, 0x38
+002: add rsp, 0x18
      ret
 main:
      push rbx
-     lea rdi, [0x0000000000400707]
+     lea rdi, [0x000000000040074A]
      mov rsi, 0x04
      call :validate
      test rax, rax
@@ -2082,7 +2073,7 @@ main:
      jmp :1
 
 000: mov rbx, 0x01
-001: lea rdi, [0x000000000040070B]
+001: lea rdi, [0x000000000040074E]
      mov rsi, 0x05
      call :validate
      test rax, rax
@@ -2090,7 +2081,7 @@ main:
      jmp :3
 
 002: add rbx, 0x02
-003: lea rdi, [0x0000000000400710]
+003: lea rdi, [0x0000000000400753]
      mov rsi, 0x04
      call :validate
      test rax, rax
@@ -2098,7 +2089,7 @@ main:
      jmp :5
 
 004: add rbx, 0x04
-005: lea rdi, [0x0000000000400714]
+005: lea rdi, [0x0000000000400757]
      mov rsi, 0x03
      call :validate
      test rax, rax
@@ -2106,7 +2097,7 @@ main:
      jmp :7
 
 006: add rbx, 0x08
-007: lea rdi, [0x0000000000400717]
+007: lea rdi, [0x000000000040075A]
      mov rsi, 0x07
      call :validate
      test rax, rax
@@ -2114,7 +2105,7 @@ main:
      jmp :9
 
 008: add rbx, 0x10
-009: lea rdi, [0x000000000040071E]
+009: lea rdi, [0x0000000000400761]
      mov rsi, 0x07
      call :validate
      test rax, rax
@@ -2122,7 +2113,7 @@ main:
      jmp :11
 
 010: add rbx, 0x20
-011: lea rdi, [0x0000000000400725]
+011: lea rdi, [0x0000000000400768]
      mov rsi, 0x09
      call :validate
      test rax, rax
@@ -2130,7 +2121,7 @@ main:
      jmp :13
 
 012: add rbx, 0x40
-013: lea rdi, [0x000000000040072E]
+013: lea rdi, [0x0000000000400771]
      mov rsi, 0x1B
      call :validate
      test rax, rax
@@ -2138,7 +2129,7 @@ main:
      jmp :15
 
 014: add rbx, 0x80
-015: lea rdi, [0x0000000000400749]
+015: lea rdi, [0x000000000040078C]
      mov rsi, 0x08
      call :validate
      test rax, rax
@@ -2146,7 +2137,7 @@ main:
      jmp :17
 
 016: add rbx, 0x100
-017: lea rdi, [0x0000000000400751]
+017: lea rdi, [0x0000000000400794]
      mov rsi, 0x02
      call :validate
      test rax, rax
@@ -2154,7 +2145,7 @@ main:
      jmp :19
 
 018: add rbx, 0x200
-019: lea rdi, [0x0000000000400753]
+019: lea rdi, [0x0000000000400796]
      mov rsi, 0x00
      call :validate
      cmp al, 0x00
@@ -2162,7 +2153,7 @@ main:
      jmp :21
 
 020: add rbx, 0x400
-021: lea rdi, [0x0000000000400753]
+021: lea rdi, [0x0000000000400796]
      mov rsi, 0x01
      call :validate
      cmp al, 0x00
@@ -2170,7 +2161,7 @@ main:
      jmp :23
 
 022: add rbx, 0x800
-023: lea rdi, [0x0000000000400754]
+023: lea rdi, [0x0000000000400797]
      mov rsi, 0x04
      call :validate
      cmp al, 0x00
@@ -2178,7 +2169,7 @@ main:
      jmp :25
 
 024: add rbx, 0x1000
-025: lea rdi, [0x0000000000400758]
+025: lea rdi, [0x000000000040079B]
      mov rsi, 0x05
      call :validate
      cmp al, 0x00
@@ -2186,7 +2177,7 @@ main:
      jmp :27
 
 026: add rbx, 0x2000
-027: lea rdi, [0x000000000040075D]
+027: lea rdi, [0x00000000004007A0]
      mov rsi, 0x02
      call :validate
      cmp al, 0x00
@@ -2194,7 +2185,7 @@ main:
      jmp :29
 
 028: add rbx, 0x4000
-029: lea rdi, [0x000000000040075F]
+029: lea rdi, [0x00000000004007A2]
      mov rsi, 0x06
      call :validate
      cmp al, 0x00
@@ -2202,7 +2193,7 @@ main:
      jmp :31
 
 030: add rbx, 0x8000
-031: lea rdi, [0x0000000000400765]
+031: lea rdi, [0x00000000004007A8]
      mov rsi, 0x07
      call :validate
      cmp al, 0x00
@@ -2210,7 +2201,7 @@ main:
      jmp :33
 
 032: add rbx, 0x10000
-033: lea rdi, [0x000000000040076C]
+033: lea rdi, [0x00000000004007AF]
      mov rsi, 0x03
      call :validate
      cmp al, 0x00

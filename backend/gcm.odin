@@ -391,8 +391,10 @@ graph_schedule :: proc(
 		if !ready do continue
 
 		if graph_has_flag(graph, n, .Is_Basic_Block_Start) {
+			assert(n != NODE_START)
 			ctx.late_schedules[node.gvn] = n
 		} else if 0 < len(node.inps) && is_cfg(graph, node.inps[0]) {
+			fmt.assertf(node.inps[0] != NODE_START, "%v", node.node)
 			ctx.late_schedules[node.gvn] = node.inps[0]
 		} else {
 			for out in node.outs {
@@ -437,6 +439,7 @@ graph_schedule :: proc(
 				assert(lca != 0)
 			}
 
+			assert(lca != NODE_START)
 			ctx.late_schedules[node.gvn] = lca
 		}
 

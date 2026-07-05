@@ -51,6 +51,7 @@ TYPE_SIZES := [Type]int {
 type_align :: proc(ty: Type) -> int {
 	switch t in unpack_type(ty) {
 	case Builtin:
+		if ty == .String do return 8
 		return TYPE_SIZES[ty]
 	case Pointer:
 		return 8

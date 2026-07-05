@@ -794,9 +794,9 @@ when !GEN_SPEC {
 						continue
 					}
 
-					for inp in inode.inps[1:] {
-						idx := graph_add_input(ctx, node, inp)
-						graph_add_output(ctx, inp, id, idx)
+					for iinp in inode.inps[1:] {
+						idx := graph_add_input(ctx, node, iinp)
+						graph_add_output(ctx, iinp, id, idx)
 					}
 
 					for out in node.outs {
@@ -806,9 +806,9 @@ when !GEN_SPEC {
 						to_merge := graph_expand(ctx, onode.inps[1 + i])
 						assert(to_merge.itype == .Phi)
 
-						for inp in to_merge.inps[2:] {
-							idx := graph_add_input(ctx, onode, inp)
-							graph_add_output(ctx, inp, out.id, idx)
+						for iinp in to_merge.inps[2:] {
+							idx := graph_add_input(ctx, onode, iinp)
+							graph_add_output(ctx, iinp, out.id, idx)
 						}
 
 						graph_set_input(ctx, out.id, 1 + i, to_merge.inps[1])
@@ -1231,7 +1231,6 @@ when !GEN_SPEC {
 			cursor := id
 			traverse: for {
 				cnode := graph_expand(ctx, cursor)
-				prev_len := len(slots)
 
 				cursor = 0
 				cur_slot: ^Slot
@@ -2212,18 +2211,12 @@ graph_add_raw :: proc(
 }
 
 @(tag = "node_proc")
-graph_add_input_node :: proc(
-	graph: ^Graph,
-	node: ^Node,
-	inp: Node_ID,
-	max_growth: u16 = 1024,
-) -> int {
+graph_add_input_node :: proc(graph: ^Graph, node: ^Node, inp: Node_ID) -> int {
 	free_idx := int(node.input_count)
 	grow: if node.input_count == node.input_cap {
 		graph.waste += int(node.input_cap * size_of(Node_ID))
 		base := u32(graph.mem.pos / PRECISION)
-		max_growth := node.input_cap + max_growth
-		new_cap := min(node.input_cap * 2 + 2, max_growth)
+		new_cap := node.input_cap * 2 + 2
 		slot := arna.alloc(
 			graph.mem,
 			uint(new_cap * PRECISION),

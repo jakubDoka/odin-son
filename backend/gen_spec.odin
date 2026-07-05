@@ -177,6 +177,7 @@ Class_Spec :: struct {
 	default_type:   Maybe(Node_Datatype),
 	flags:          Class_Flags,
 	extra_capacity: int,
+	no_ctor:        bool,
 }
 
 Reg_Class_Spec :: struct {
@@ -685,6 +686,8 @@ generate_specs :: proc() {
 					class.id,
 					PRECISION,
 				)
+
+				if class.no_ctor do continue
 
 				name := reflect.enum_field_names(classes.enm)[i]
 

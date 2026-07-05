@@ -4,7 +4,6 @@ import "../vendored/gam/util/arna"
 import "../vendored/gam/util/bit_arr"
 import "base:intrinsics"
 import "core:fmt"
-import "core:log"
 import "core:math"
 import "core:mem"
 import "core:reflect"
@@ -278,15 +277,18 @@ when SPEC_NOT_PRESENT {
 	}
 
 	X64_SIMPLE_BIN_OP_SPEC :: Class_Spec {
-		id = X64_Mem_Op,
+		id      = X64_Mem_Op,
+		no_ctor = true,
 	}
 
 	X64_SIMPLE_SHIFT_OP_SPEC :: Class_Spec {
-		id = X64_Mem_Op,
+		id      = X64_Mem_Op,
+		no_ctor = true,
 	}
 
 	X64_SIMPLE_UN_OP_SPEC :: Class_Spec {
-		id = X64_Mem_Op,
+		id      = X64_Mem_Op,
+		no_ctor = true,
 	}
 
 	@(rodata)
@@ -295,10 +297,10 @@ when SPEC_NOT_PRESENT {
 		.X64_Shl ..= .X64_U_Shr = X64_SIMPLE_SHIFT_OP_SPEC,
 		.X64_Neg ..= .X64_Not = X64_SIMPLE_UN_OP_SPEC,
 		.X64_Mul = X64_SIMPLE_BIN_OP_SPEC,
-		.X64_Lea = {id = X64_Mem_Op},
-		.X64_Load = {id = X64_Mem_Op, flags = {.Load}},
-		.X64_Store = {id = X64_Mem_Op, flags = {.Store}},
-		.X64_Mul8 = {},
+		.X64_Lea = {id = X64_Mem_Op, no_ctor = true},
+		.X64_Load = {id = X64_Mem_Op, flags = {.Load}, no_ctor = true},
+		.X64_Store = {id = X64_Mem_Op, flags = {.Store}, no_ctor = true},
+		.X64_Mul8 = {no_ctor = true},
 	}
 }
 
@@ -418,39 +420,39 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 		indexify: if node.itype == .Add {
 			rhs := graph_expand(ctx, node.inps[1])
 
-			scale: i32 = 1
-			index := node.inps[1]
+			ascale: i32 = 1
+			aindex := node.inps[1]
 
 			if rhs.xtype == .X64_Mul {
-				scale = graph_extra(ctx, rhs, X64_Mem_Op).imm
-				index = rhs.inps[0]
+				ascale = graph_extra(ctx, rhs, X64_Mem_Op).imm
+				aindex = rhs.inps[0]
 			} else if rhs.itype == .Mul {
-				rhs_const := graph_extra(ctx, rhs.inps[1], CInt)
-				if rhs_const != nil &&
-				   i64(i32(rhs_const.value)) == rhs_const.value {
-					scale = i32(rhs_const.value)
-					index = rhs.inps[0]
+				arhs_const := graph_extra(ctx, rhs.inps[1], CInt)
+				if arhs_const != nil &&
+				   i64(i32(arhs_const.value)) == arhs_const.value {
+					ascale = i32(arhs_const.value)
+					aindex = rhs.inps[0]
 				}
 			}
 
-			if scale > 8 || !math.is_power_of_two(int(scale)) {
+			if ascale > 8 || !math.is_power_of_two(int(ascale)) {
 				break indexify
 			}
 
-			if graph_get(ctx, index).itype == .CInt do break indexify
+			if graph_get(ctx, aindex).itype == .CInt do break indexify
 
-			base, offset := base_and_offset(ctx, node.inps[0])
+			abase, offset := base_and_offset(ctx, node.inps[0])
 			if int(i32(offset)) == offset {
 				displacement = i32(offset)
 			}
 
-			bnode := graph_expand(ctx, base)
+			bnode := graph_expand(ctx, abase)
 			if bnode.itype == .Local_Addr {
-				base = bnode.inps[0]
+				abase = bnode.inps[0]
 				stack_base = true
 			}
 
-			if scale == 1 && !stack_base && offset == 0 {
+			if ascale == 1 && !stack_base && offset == 0 {
 				break indexify
 			}
 
@@ -458,8 +460,8 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 				ctx,
 				id,
 				u16(X64_Node_Type.X64_Lea),
-				{base, index},
-				{scale = scale, dis = displacement},
+				{abase, aindex},
+				{scale = ascale, dis = displacement},
 				additional_data_offset = u8(stack_base),
 			)
 		}
@@ -527,7 +529,7 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 		}
 
 		if scale != 0 {
-			idx := graph_add_input(ctx, node, index, max_growth = 1)
+			idx := graph_add_input(ctx, node, index)
 			graph_add_output(ctx, index, id, idx)
 			mem_op.scale = scale
 			node = graph_expand(ctx, id)
@@ -1204,11 +1206,11 @@ x64_emit_instr :: proc(
 		dt := mem_op.dt
 
 		if 3 + imm_boundary < len(node.inps) {
-			dt := graph_get(ctx, node.inps[3]).dt
+			vdt := graph_get(ctx, node.inps[3]).dt
 			val := reg_of(ctx, node.inps[3])
 
-			rx := rex(val, bse, idx, DT_SIZE[dt] == 8)
-			emit_sized_opcode(ctx.code, dt, rx, 0x89)
+			rx := rex(val, bse, idx, DT_SIZE[vdt] == 8)
+			emit_sized_opcode(ctx.code, vdt, rx, 0x89)
 			emit_indirect_addr(ctx, val, bse, idx, scl, dis + sdis, id)
 		} else {
 			imm := mem_op.imm
@@ -1767,8 +1769,8 @@ emit_indirect_addr_reg :: proc(
 	reloc: u32,
 	#any_int trailing_imm: i64 = 0,
 ) {
-	scale := max(scale, 1)
-	trailing_imm := min(trailing_imm, 4)
+	scl := max(scale, 1)
+	timm := min(trailing_imm, 4)
 
 	mod := mod_from_dis(dis)
 
@@ -1784,15 +1786,15 @@ emit_indirect_addr_reg :: proc(
 		mod = .Indirect_Disp8
 	}
 
-	if index != NO_INDEX || ill_base || scale != 1 {
-		emit(ctx.code, {mod_rm(mod, reg, RSP), sib(base, index, scale)})
+	if index != NO_INDEX || ill_base || scl != 1 {
+		emit(ctx.code, {mod_rm(mod, reg, RSP), sib(base, index, scl)})
 	} else {
 		emit(ctx.code, {mod_rm(mod, reg, base)})
 	}
 
 	switch mod {
 	case .Indirect:
-		if rip_relative do emit_anys(ctx.code, u32(dis - trailing_imm))
+		if rip_relative do emit_anys(ctx.code, u32(dis - timm))
 	case .Indirect_Disp8:
 		emit(ctx.code, {u8(dis)})
 	case .Indirect_Disp32:

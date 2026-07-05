@@ -1748,154 +1748,30 @@ X64_Node_Type :: enum u16 {
 	X64_Mul8,
 }
 #assert(size_of(X64_Mem_Op) % 4 == 0)
-graph_add_x64_add :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype) -> (id: Node_ID) {
-	push_node_name(graph, name)
-	(^X64_Mem_Op)(graph_get_next_extra_slot(graph, u16(X64_Node_Type.X64_Add)))^ = {}
-	return graph_add_raw(graph, u16(X64_Node_Type.X64_Add), dt, {})
-}
 #assert(size_of(X64_Mem_Op) % 4 == 0)
-graph_add_x64_sub :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype) -> (id: Node_ID) {
-	push_node_name(graph, name)
-	(^X64_Mem_Op)(graph_get_next_extra_slot(graph, u16(X64_Node_Type.X64_Sub)))^ = {}
-	return graph_add_raw(graph, u16(X64_Node_Type.X64_Sub), dt, {})
-}
 #assert(size_of(X64_Mem_Op) % 4 == 0)
-graph_add_x64_and :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype) -> (id: Node_ID) {
-	push_node_name(graph, name)
-	(^X64_Mem_Op)(graph_get_next_extra_slot(graph, u16(X64_Node_Type.X64_And)))^ = {}
-	return graph_add_raw(graph, u16(X64_Node_Type.X64_And), dt, {})
-}
 #assert(size_of(X64_Mem_Op) % 4 == 0)
-graph_add_x64_or :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype) -> (id: Node_ID) {
-	push_node_name(graph, name)
-	(^X64_Mem_Op)(graph_get_next_extra_slot(graph, u16(X64_Node_Type.X64_Or)))^ = {}
-	return graph_add_raw(graph, u16(X64_Node_Type.X64_Or), dt, {})
-}
 #assert(size_of(X64_Mem_Op) % 4 == 0)
-graph_add_x64_xor :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype) -> (id: Node_ID) {
-	push_node_name(graph, name)
-	(^X64_Mem_Op)(graph_get_next_extra_slot(graph, u16(X64_Node_Type.X64_Xor)))^ = {}
-	return graph_add_raw(graph, u16(X64_Node_Type.X64_Xor), dt, {})
-}
 #assert(size_of(X64_Mem_Op) % 4 == 0)
-graph_add_x64_eq :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype) -> (id: Node_ID) {
-	push_node_name(graph, name)
-	(^X64_Mem_Op)(graph_get_next_extra_slot(graph, u16(X64_Node_Type.X64_Eq)))^ = {}
-	return graph_add_raw(graph, u16(X64_Node_Type.X64_Eq), dt, {})
-}
 #assert(size_of(X64_Mem_Op) % 4 == 0)
-graph_add_x64_ne :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype) -> (id: Node_ID) {
-	push_node_name(graph, name)
-	(^X64_Mem_Op)(graph_get_next_extra_slot(graph, u16(X64_Node_Type.X64_Ne)))^ = {}
-	return graph_add_raw(graph, u16(X64_Node_Type.X64_Ne), dt, {})
-}
 #assert(size_of(X64_Mem_Op) % 4 == 0)
-graph_add_x64_le :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype) -> (id: Node_ID) {
-	push_node_name(graph, name)
-	(^X64_Mem_Op)(graph_get_next_extra_slot(graph, u16(X64_Node_Type.X64_Le)))^ = {}
-	return graph_add_raw(graph, u16(X64_Node_Type.X64_Le), dt, {})
-}
 #assert(size_of(X64_Mem_Op) % 4 == 0)
-graph_add_x64_lt :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype) -> (id: Node_ID) {
-	push_node_name(graph, name)
-	(^X64_Mem_Op)(graph_get_next_extra_slot(graph, u16(X64_Node_Type.X64_Lt)))^ = {}
-	return graph_add_raw(graph, u16(X64_Node_Type.X64_Lt), dt, {})
-}
 #assert(size_of(X64_Mem_Op) % 4 == 0)
-graph_add_x64_gt :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype) -> (id: Node_ID) {
-	push_node_name(graph, name)
-	(^X64_Mem_Op)(graph_get_next_extra_slot(graph, u16(X64_Node_Type.X64_Gt)))^ = {}
-	return graph_add_raw(graph, u16(X64_Node_Type.X64_Gt), dt, {})
-}
 #assert(size_of(X64_Mem_Op) % 4 == 0)
-graph_add_x64_ge :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype) -> (id: Node_ID) {
-	push_node_name(graph, name)
-	(^X64_Mem_Op)(graph_get_next_extra_slot(graph, u16(X64_Node_Type.X64_Ge)))^ = {}
-	return graph_add_raw(graph, u16(X64_Node_Type.X64_Ge), dt, {})
-}
 #assert(size_of(X64_Mem_Op) % 4 == 0)
-graph_add_x64_u_lt :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype) -> (id: Node_ID) {
-	push_node_name(graph, name)
-	(^X64_Mem_Op)(graph_get_next_extra_slot(graph, u16(X64_Node_Type.X64_U_Lt)))^ = {}
-	return graph_add_raw(graph, u16(X64_Node_Type.X64_U_Lt), dt, {})
-}
 #assert(size_of(X64_Mem_Op) % 4 == 0)
-graph_add_x64_u_gt :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype) -> (id: Node_ID) {
-	push_node_name(graph, name)
-	(^X64_Mem_Op)(graph_get_next_extra_slot(graph, u16(X64_Node_Type.X64_U_Gt)))^ = {}
-	return graph_add_raw(graph, u16(X64_Node_Type.X64_U_Gt), dt, {})
-}
 #assert(size_of(X64_Mem_Op) % 4 == 0)
-graph_add_x64_u_le :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype) -> (id: Node_ID) {
-	push_node_name(graph, name)
-	(^X64_Mem_Op)(graph_get_next_extra_slot(graph, u16(X64_Node_Type.X64_U_Le)))^ = {}
-	return graph_add_raw(graph, u16(X64_Node_Type.X64_U_Le), dt, {})
-}
 #assert(size_of(X64_Mem_Op) % 4 == 0)
-graph_add_x64_u_ge :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype) -> (id: Node_ID) {
-	push_node_name(graph, name)
-	(^X64_Mem_Op)(graph_get_next_extra_slot(graph, u16(X64_Node_Type.X64_U_Ge)))^ = {}
-	return graph_add_raw(graph, u16(X64_Node_Type.X64_U_Ge), dt, {})
-}
 #assert(size_of(X64_Mem_Op) % 4 == 0)
-graph_add_x64_shl :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype) -> (id: Node_ID) {
-	push_node_name(graph, name)
-	(^X64_Mem_Op)(graph_get_next_extra_slot(graph, u16(X64_Node_Type.X64_Shl)))^ = {}
-	return graph_add_raw(graph, u16(X64_Node_Type.X64_Shl), dt, {})
-}
 #assert(size_of(X64_Mem_Op) % 4 == 0)
-graph_add_x64_shr :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype) -> (id: Node_ID) {
-	push_node_name(graph, name)
-	(^X64_Mem_Op)(graph_get_next_extra_slot(graph, u16(X64_Node_Type.X64_Shr)))^ = {}
-	return graph_add_raw(graph, u16(X64_Node_Type.X64_Shr), dt, {})
-}
 #assert(size_of(X64_Mem_Op) % 4 == 0)
-graph_add_x64_u_shr :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype) -> (id: Node_ID) {
-	push_node_name(graph, name)
-	(^X64_Mem_Op)(graph_get_next_extra_slot(graph, u16(X64_Node_Type.X64_U_Shr)))^ = {}
-	return graph_add_raw(graph, u16(X64_Node_Type.X64_U_Shr), dt, {})
-}
 #assert(size_of(X64_Mem_Op) % 4 == 0)
-graph_add_x64_mul :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype) -> (id: Node_ID) {
-	push_node_name(graph, name)
-	(^X64_Mem_Op)(graph_get_next_extra_slot(graph, u16(X64_Node_Type.X64_Mul)))^ = {}
-	return graph_add_raw(graph, u16(X64_Node_Type.X64_Mul), dt, {})
-}
 #assert(size_of(X64_Mem_Op) % 4 == 0)
-graph_add_x64_lea :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype) -> (id: Node_ID) {
-	push_node_name(graph, name)
-	(^X64_Mem_Op)(graph_get_next_extra_slot(graph, u16(X64_Node_Type.X64_Lea)))^ = {}
-	return graph_add_raw(graph, u16(X64_Node_Type.X64_Lea), dt, {})
-}
 #assert(size_of(X64_Mem_Op) % 4 == 0)
-graph_add_x64_load :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype) -> (id: Node_ID) {
-	push_node_name(graph, name)
-	(^X64_Mem_Op)(graph_get_next_extra_slot(graph, u16(X64_Node_Type.X64_Load)))^ = {}
-	return graph_add_raw(graph, u16(X64_Node_Type.X64_Load), dt, {})
-}
 #assert(size_of(X64_Mem_Op) % 4 == 0)
-graph_add_x64_store :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype) -> (id: Node_ID) {
-	push_node_name(graph, name)
-	(^X64_Mem_Op)(graph_get_next_extra_slot(graph, u16(X64_Node_Type.X64_Store)))^ = {}
-	return graph_add_raw(graph, u16(X64_Node_Type.X64_Store), dt, {})
-}
 #assert(size_of(X64_Mem_Op) % 4 == 0)
-graph_add_x64_neg :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype) -> (id: Node_ID) {
-	push_node_name(graph, name)
-	(^X64_Mem_Op)(graph_get_next_extra_slot(graph, u16(X64_Node_Type.X64_Neg)))^ = {}
-	return graph_add_raw(graph, u16(X64_Node_Type.X64_Neg), dt, {})
-}
 #assert(size_of(X64_Mem_Op) % 4 == 0)
-graph_add_x64_not :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype) -> (id: Node_ID) {
-	push_node_name(graph, name)
-	(^X64_Mem_Op)(graph_get_next_extra_slot(graph, u16(X64_Node_Type.X64_Not)))^ = {}
-	return graph_add_raw(graph, u16(X64_Node_Type.X64_Not), dt, {})
-}
 #assert(size_of(No_Extra) % 4 == 0)
-graph_add_x64_mul8 :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype) -> (id: Node_ID) {
-	push_node_name(graph, name)
-	return graph_add_raw(graph, u16(X64_Node_Type.X64_Mul8), dt, {})
-}
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	when false {}

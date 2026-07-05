@@ -262,8 +262,8 @@ regalloc_round :: proc(
 
 	//	if i == 0 do log_lrgs(&ctx)
 
-	for bb, i in sched.bbs {
-		graph_get(graph, bb.head).gvn = u32(block_base + i)
+	for bb, j in sched.bbs {
+		graph_get(graph, bb.head).gvn = u32(block_base + j)
 		for instr in bb.instrs {
 			instr_node := graph_get(graph, instr)
 			if instr_node.dt != .Void {
@@ -274,7 +274,7 @@ regalloc_round :: proc(
 				instr_node.gvn = u32(rev_gvn)
 			}
 			ctx.instr_placement[instr_node.gvn] = {
-				block = u32(i),
+				block = u32(j),
 			}
 		}
 	}
@@ -406,8 +406,8 @@ regalloc_round :: proc(
 
 	if !failed_any {
 		bit_arr.set_all(in_queue)
-		for _, i in sched.bbs {
-			queue.push_front(&worklist, u32(i))
+		for _, j in sched.bbs {
+			queue.push_front(&worklist, u32(j))
 		}
 	}
 
@@ -435,7 +435,7 @@ regalloc_round :: proc(
 			current_liveouts[k] = v
 		}
 
-		#reverse for instr, i in bb.instrs {
+		#reverse for instr, j in bb.instrs {
 			inode := graph_expand(graph, instr)
 
 			if inode.dt != .Void {
@@ -443,7 +443,7 @@ regalloc_round :: proc(
 				_, v := delete_key(&current_liveouts, lrg.index)
 				if v.node != 0 {
 					if add_conflict(&ctx, lrg, v.node, instr) {
-						v.area += v.last_pos - u32(i)
+						v.area += v.last_pos - u32(j)
 						add_area(lrg, v)
 					}
 				}
@@ -454,8 +454,8 @@ regalloc_round :: proc(
 
 					pair := []^Lrg{lrg, l}
 
-					for j in 0 ..< 2 {
-						ll, rl := pair[j], pair[1 - j]
+					for k in 0 ..< 2 {
+						ll, rl := pair[k], pair[1 - k]
 
 						// TODO: this could be a single operation
 						if reg_mask_pop_count(ll.mask) == 1 {
@@ -501,14 +501,14 @@ regalloc_round :: proc(
 						&ctx,
 						&current_liveouts,
 						lrg,
-						{node = inp, last_pos = u32(i)},
+						{node = inp, last_pos = u32(j)},
 					)
 				}
 			}
 		}
 
 		head := graph_expand(graph, bb.head)
-		for pred, i in head.inps {
+		for pred, j in head.inps {
 			if pred == NODE_START do break
 
 			pred_block := graph_get(graph, graph_idom(graph, pred))
@@ -534,7 +534,7 @@ regalloc_round :: proc(
 				onode := graph_expand(graph, out.id)
 				if onode.itype == .Phi && onode.dt != .Void {
 					lrg := ctx.lrg_table[onode.gvn]
-					n := onode.inps[1 + i]
+					n := onode.inps[1 + j]
 
 					changed |= add_liveout(
 						&ctx,
@@ -610,14 +610,12 @@ regalloc_round :: proc(
 	for &bb in sched.bbs {
 		if !ok do break
 
-		#reverse for instr, i in bb.instrs {
+		#reverse for instr, j in bb.instrs {
 			inode := graph_expand(graph, instr)
 			if inode.itype != .Split do continue
 
 			ilrg := find(get_lrg(ctx, instr))
 			inlrg := find(get_lrg(ctx, inode.inps[0]))
-
-			interest := inode.gvn == 110
 
 			assert(graph_get(graph, inlrg.longest_def).dt != .Void)
 			assert(graph_get(graph, ilrg.longest_def).dt != .Void)
@@ -646,8 +644,8 @@ regalloc_round :: proc(
 			   (leeway == 0 ||
 					   max(len(inadj), len(iadj)) != total ||
 					   graph_get(graph, inode.inps[0]).itype != .Split ||
-					   i == 0 ||
-					   bb.instrs[i - 1] != inode.inps[0]) {
+					   j == 0 ||
+					   bb.instrs[j - 1] != inode.inps[0]) {
 				continue
 			}
 
@@ -680,7 +678,7 @@ regalloc_round :: proc(
 			winner.longest_def = inlrg.longest_def
 			ifg[winner.index] = buf
 
-			ordered_remove(&bb.instrs, i)
+			ordered_remove(&bb.instrs, j)
 			graph_subsume(graph, inode.inps[0], instr)
 		}
 	}
@@ -740,8 +738,8 @@ regalloc_round :: proc(
 
 	res = make([]Reg, max_lrg_count)
 
-	for lrg, i in ctx.lrg_table {
-		res[i] = {
+	for lrg, j in ctx.lrg_table {
+		res[j] = {
 			kind  = lrg.mask.kind,
 			index = u16(lrg.reg),
 		}
@@ -829,7 +827,6 @@ regalloc_round :: proc(
 			for m in members {
 
 				mnode := graph_expand(graph, m)
-				mblock := get_node_block(ctx, m)
 				redirect := m
 				for out in slice.clone(mnode.outs) {
 					onode := graph_expand(graph, out.id)
@@ -904,7 +901,7 @@ regalloc_round :: proc(
 	}
 
 	if color_fails > 0 {
-		cursor := 0
+		ocursor := 0
 		order := make([]bit_field u64 {
 				id:            u32 | 32,
 				biggest_split: u32 | 32,
@@ -912,13 +909,13 @@ regalloc_round :: proc(
 
 		for lrg in lrgs[:used_lrgs_check] {
 			if lrg.parent != nil do continue
-			order[cursor] = {
+			order[ocursor] = {
 				id            = u32(lrg.index),
 				biggest_split = 100000 - lrg.longest_use_area,
 			}
-			cursor += 1
+			ocursor += 1
 		}
-		order = order[:cursor]
+		order = order[:ocursor]
 
 		sort.quick_sort(order)
 
@@ -963,8 +960,8 @@ regalloc_round :: proc(
 		// are at it, lets reuse the immediate split
 		last_split: Node_ID
 
-		for inp, i in node.inps {
-			if i != int(node.inplace_slot) && node.itype != .Phi {
+		for inp, j in node.inps {
+			if j != int(node.inplace_slot) && node.itype != .Phi {
 				continue
 			}
 
@@ -990,14 +987,14 @@ regalloc_round :: proc(
 				   node.itype != .Phi {
 					split = last_split
 				} else {
-					split = split_before(ctx, id, i, "sci")
+					split = split_before(ctx, id, j, "sci")
 				}
 
 				if graph_get(graph, split).itype == .Split {
 					last_split = split
 				}
 
-				graph_set_input(graph, id, i, split)
+				graph_set_input(graph, id, j, split)
 			}
 		}
 
@@ -1117,10 +1114,10 @@ regalloc_round :: proc(
 				return
 			}
 
-			for inp in cbnode.inps {
-				if is_cfg(ctx.graph, inp) {
-					b := get_node_block(ctx, inp)
-					check_blocks(ctx, res, inp, b.head, len(b.instrs), seen)
+			for cbinp in cbnode.inps {
+				if is_cfg(ctx.graph, cbinp) {
+					b := get_node_block(ctx, cbinp)
+					check_blocks(ctx, res, cbinp, b.head, len(b.instrs), seen)
 				}
 			}
 		}
@@ -1234,8 +1231,8 @@ regalloc_round :: proc(
 				return inp
 			}
 			if inp_node.output_count == 1 {
-				block, idx := get_node_block_and_idx(ctx, inp)
-				ordered_remove(&block.instrs, idx)
+				block, bidx := get_node_block_and_idx(ctx, inp)
+				ordered_remove(&block.instrs, bidx)
 
 				inp_node.gvn = ctx.graph.gvn
 				ctx.graph.gvn += 1

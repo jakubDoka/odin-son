@@ -30,18 +30,6 @@ RDX_MASK :: []int{1 << uint(RDX)}
 
 // variable shift counts must be in CL
 RCX_MASK :: []int{1 << uint(RCX)}
-CALL_CLOBBERS ::
-	1 << uint(CALLER_SAVED[0]) |
-	1 << uint(CALLER_SAVED[1]) |
-	1 << uint(CALLER_SAVED[2]) |
-	1 << uint(CALLER_SAVED[3]) |
-	1 << uint(CALLER_SAVED[4]) |
-	1 << uint(CALLER_SAVED[5]) |
-	1 << uint(CALLER_SAVED[6]) |
-	1 << uint(CALLER_SAVED[7]) |
-	1 << uint(CALLER_SAVED[8])
-
-X64_REG_BIAS :: CALL_CLOBBERS
 
 RAX :: Reg(0)
 RCX :: Reg(1)
@@ -74,19 +62,15 @@ GPA_REG_COUNT :: 16
 // * The `context` pointer is then the last parameter to the procedure
 // arguments
 
-CALLE_SAVED := []Reg{RBX, RBP, R12, R13, R14, R15}
-CALLER_SAVED :: []Reg{RAX, RCX, RDX, RSI, RDI, R8, R9, R10, R11}
-ARGS := []Reg{RDI, RSI, RDX, RCX, R8, R9}
-RETS := []Reg{RAX, RDX}
-
 @(rodata)
-X64_SYSTEMV_CC := Call_Conv {
+X64_ODIN_CC := Call_Conv {
 	callee_saved = #partial{.General = {RBX, RBP, R12, R13, R14, R15}},
 	caller_saved = #partial{
 		.General = {RAX, RCX, RDX, RSI, RDI, R8, R9, R10, R11},
 	},
 	args = #partial{.General = {RDI, RSI, RDX, RCX, R8, R9}},
 	rets = #partial{.General = {RAX, RDX}},
+	red_zone_size = 128,
 }
 
 SIMPLE_BINOP_SPEC :: Reg_Class_Spec {
@@ -203,19 +187,14 @@ X64_IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec {
 	.Region = {},
 	.Loop = {},
 	.Always = {input_start_idx = 1},
-	.Call = {
-		input_start_idx = 2,
-		clobbers = #partial{.General = CALL_CLOBBERS},
-	},
+	.Call = {input_start_idx = 2},
 	.Copy = {
 		input_start_idx = 2,
 		reg_masks = #partial{.General = {{}, RDI_MASK, RSI_MASK, RDX_MASK}},
-		clobbers = #partial{.General = CALL_CLOBBERS},
 	},
 	.Set = {
 		input_start_idx = 2,
 		reg_masks = #partial{.General = {{}, RDI_MASK, RSI_MASK, RDX_MASK}},
-		clobbers = #partial{.General = CALL_CLOBBERS},
 	},
 	.Call_End = {},
 	.Jump = {input_start_idx = 1},
@@ -768,41 +747,32 @@ x64_reg_mask_of :: proc(
 ) -> Reg_Mask {
 	node := graph_get(graph, id)
 
+	args := ra.args[.General]
+
 	#partial switch node.itype {
 	case .Arg:
 		arg_ext := graph_extra(graph, node, Tup)
-		if int(arg_ext.idx) < len(ARGS) {
-			return reg_mask_single(ra, ARGS[arg_ext.idx])
+		if int(arg_ext.idx) < len(args) {
+			return reg_mask_single(ra, args[arg_ext.idx])
 		} else {
 			return reg_mask_single(
 				ra,
 				{
 					kind = .General,
-					index = GPA_REG_COUNT + u16(arg_ext.idx) - u16(len(ARGS)),
+					index = GPA_REG_COUNT + u16(arg_ext.idx) - u16(len(args)),
 				},
 			)
 		}
 	case .Call:
-		if idx - 1 < len(ARGS) {
-			return reg_mask_single(ra, ARGS[idx - 1])
-		} else {
-			mask := reg_mask_empty(ra, ra.datatype_to_reg_kind[node.dt])
-			mem.copy_non_overlapping(
-				mask.masks,
-				raw_data(GPA_SPILL_MASK),
-				len(GPA_SPILL_MASK) * size_of(int),
-			)
-			return mask
-		}
+		return reg_mask_single(ra, args[idx - 1])
 	case .Phi:
 		assert(idx > 0)
-		mask := reg_mask_empty(ra, ra.datatype_to_reg_kind[node.dt])
-		mem.copy_non_overlapping(
-			mask.masks,
-			raw_data(GPA_SPILL_MASK),
-			len(GPA_SPILL_MASK) * size_of(int),
-		)
-		return mask
+
+		return {
+			masks = raw_data(GPA_SPILL_MASK),
+			kind = ra.datatype_to_reg_kind[node.dt],
+			bit_length = u32(len(GPA_SPILL_MASK)) * MASK_SIZE,
+		}
 	case:
 		fmt.panicf("TODO: %v %v", node.xtype, idx)
 	}
@@ -839,15 +809,8 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 	for bb in ctx.schedule.bbs {
 		bnode := graph_expand(ctx, bb.head)
 
-		CALLS ::
-			bit_set[X64_Node_Type] {
-				.Copy,
-				.Set,
-				.Call,
-			} when !GEN_SPEC else bit_set[X64_Node_Type]{}
-
 		for ins in bb.instrs {
-			has_call |= graph_get(ctx, ins).xtype in CALLS
+			has_call |= graph_has_flag(ctx, ins, .Call)
 		}
 
 		if bnode.itype != .Call_End do continue
@@ -937,7 +900,7 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 	}
 
 	pushed: i32
-	for reg in CALLE_SAVED {
+	for reg in ctx.callee_saved[.General] {
 		if bit_arr.contains(ctx.used, int(reg)) {
 			// push $reg
 			emit_single_op(ctx.code, 0x50, reg)
@@ -951,7 +914,7 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 	}
 
 	param_offset := pushed + 8
-	gpa_fuel := len(ARGS)
+	gpa_fuel := len(ctx.args[.General])
 	#reverse for arg in args {
 		enode := graph_expand(ctx, arg)
 
@@ -1698,7 +1661,7 @@ x64_emit_instr :: proc(
 			emit_imm_op(ctx.code, 0x81, 0b000, RSP, ctx.stack_size)
 		}
 
-		#reverse for reg in CALLE_SAVED {
+		#reverse for reg in ctx.callee_saved[.General] {
 			if bit_arr.contains(ctx.used, int(reg)) {
 				// pop $reg
 				emit_single_op(ctx.code, 0x58, reg)

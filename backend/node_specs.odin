@@ -6,7 +6,6 @@ SPECS := [Node_Spec_Name]Node_Spec{
 	.Builder = {
 		class_lengths = {.General = 0},
 		datatype_to_reg_kind = {.Void = Reg_Kind.General, .I8 = Reg_Kind.General, .I16 = Reg_Kind.General, .I32 = Reg_Kind.General, .I64 = Reg_Kind.General},
-		reg_bias = 0,
 		clobbers = {
 			{.General = 0}, // Start
 			{.General = 0}, // Entry
@@ -421,8 +420,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{Class_Flag.Clonable}, // Local_Addr
 			{}, // Global
 			{Class_Flag.Interned, Class_Flag.Clonable}, // Global_Addr
-			{Class_Flag.Store}, // Copy
-			{Class_Flag.Store}, // Set
+			{Class_Flag.Store, Class_Flag.Call}, // Copy
+			{Class_Flag.Store, Class_Flag.Call}, // Set
 			{Class_Flag.Store}, // Store
 			{Class_Flag.Interned, Class_Flag.Load}, // Load
 			{Class_Flag.Interned, Class_Flag.Load}, // Load_S
@@ -433,7 +432,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{Class_Flag.Is_Basic_Block_Start}, // Region
 			{Class_Flag.Is_Basic_Block_Start}, // Loop
 			{}, // Always
-			{}, // Call
+			{Class_Flag.Call}, // Call
 			{Class_Flag.Is_Basic_Block_Start}, // Call_End
 			{}, // Ret
 			{Class_Flag.Immortal}, // Return
@@ -574,7 +573,6 @@ SPECS := [Node_Spec_Name]Node_Spec{
 	.X64 = {
 		class_lengths = {.General = 1},
 		datatype_to_reg_kind = {.Void = Reg_Kind.General, .I8 = Reg_Kind.General, .I16 = Reg_Kind.General, .I32 = Reg_Kind.General, .I64 = Reg_Kind.General},
-		reg_bias = 4039,
 		clobbers = {
 			{.General = 0}, // Start
 			{.General = 0}, // Entry
@@ -612,8 +610,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{.General = 0}, // Local_Addr
 			{.General = 0}, // Global
 			{.General = 0}, // Global_Addr
-			{.General = 4039}, // Copy
-			{.General = 4039}, // Set
+			{.General = 0}, // Copy
+			{.General = 0}, // Set
 			{.General = 0}, // Store
 			{.General = 0}, // Load
 			{.General = 0}, // Load_S
@@ -624,7 +622,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{.General = 0}, // Region
 			{.General = 0}, // Loop
 			{.General = 0}, // Always
-			{.General = 4039}, // Call
+			{.General = 0}, // Call
 			{.General = 0}, // Call_End
 			{.General = 0}, // Ret
 			{.General = 0}, // Return
@@ -1132,8 +1130,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{Class_Flag.Clonable}, // Local_Addr
 			{}, // Global
 			{Class_Flag.Interned, Class_Flag.Clonable}, // Global_Addr
-			{Class_Flag.Store}, // Copy
-			{Class_Flag.Store}, // Set
+			{Class_Flag.Store, Class_Flag.Call}, // Copy
+			{Class_Flag.Store, Class_Flag.Call}, // Set
 			{Class_Flag.Store}, // Store
 			{Class_Flag.Interned, Class_Flag.Load}, // Load
 			{Class_Flag.Interned, Class_Flag.Load}, // Load_S
@@ -1144,7 +1142,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{Class_Flag.Is_Basic_Block_Start}, // Region
 			{Class_Flag.Is_Basic_Block_Start}, // Loop
 			{}, // Always
-			{}, // Call
+			{Class_Flag.Call}, // Call
 			{Class_Flag.Is_Basic_Block_Start}, // Call_End
 			{}, // Ret
 			{Class_Flag.Immortal}, // Return

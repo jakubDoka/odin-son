@@ -86,13 +86,13 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 		id = Mem_Op,
 		args = {"ctrl", "mem", "dst", "src", "size"},
 		default_type = .Void,
-		flags = {.Store},
+		flags = {.Store, .Call},
 	},
 	.Set = {
 		id = Mem_Op,
 		args = {"ctrl", "mem", "dst", "value", "size"},
 		default_type = .Void,
-		flags = {.Store},
+		flags = {.Store, .Call},
 	},
 	.Split = {args = {"dest"}},
 	.Phi = {args = {"reg", "lhs", "rhs"}, flags = {.Interned}},
@@ -129,6 +129,7 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 		varargs = true,
 		default_type = .Void,
 		extra_args = {"cid"},
+		flags = {.Call},
 	},
 	.Call_End = {
 		id = Cfg,

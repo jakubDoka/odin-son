@@ -125,7 +125,6 @@ Regalloc_Spec :: struct {
 	clobbers:             [][Reg_Kind]int,
 	interned_reg_masks:   [][^]int,
 	reg_masks:            [][][Reg_Kind]Mask_Intern_Key,
-	reg_bias:             int,
 	reg_mask_of:          proc(
 		_: ^Graph,
 		_: ^Regalloc,
@@ -483,11 +482,16 @@ regalloc_round :: proc(
 				}
 			}
 
-			if ra.clobbers[inode.rtype] != {} {
+			clobbers := ra.clobbers[inode.rtype]
+			if graph_has_flag(graph, inode, .Call) {
+				clobbers = ra.call_clobbers
+			}
+
+			if clobbers != {} {
 				for l in current_liveouts {
 					l := &lrgs[l]
 					assert(l.mask.bit_length != 0)
-					l.mask.masks[0] &= ~ra.clobbers[inode.rtype][l.mask.kind]
+					l.mask.masks[0] &= ~clobbers[l.mask.kind]
 					if reg_mask_is_empty(l.mask) {
 						l.killed = true
 					}
@@ -721,8 +725,8 @@ regalloc_round :: proc(
 			reg_mask_set(lrg.mask, inter.reg, false)
 		}
 
-		if lrg.mask.masks[0] & ctx.graph.reg_bias != 0 {
-			lrg.mask.masks[0] &= ctx.graph.reg_bias
+		if lrg.mask.masks[0] & ctx.ra.call_clobbers[lrg.mask.kind] != 0 {
+			lrg.mask.masks[0] &= ctx.ra.call_clobbers[lrg.mask.kind]
 		}
 
 		first_set, fok := reg_mask_first_set(lrg.mask)

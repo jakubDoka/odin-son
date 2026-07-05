@@ -3,15 +3,12 @@ package backend
 import "../vendored/gam/util/arna"
 import "core:reflect"
 
-Abi :: struct {
-	red_zone_size: i32,
-}
-
 Call_Conv :: struct {
-	callee_saved: [Reg_Kind][]Reg,
-	caller_saved: [Reg_Kind][]Reg,
-	args:         [Reg_Kind][]Reg,
-	rets:         [Reg_Kind][]Reg,
+	callee_saved:  [Reg_Kind][]Reg,
+	caller_saved:  [Reg_Kind][]Reg,
+	args:          [Reg_Kind][]Reg,
+	rets:          [Reg_Kind][]Reg,
+	red_zone_size: i32,
 }
 
 init_call_clobbers :: proc(cc: ^Call_Conv, clobbers: ^[Reg_Kind]int) {
@@ -38,7 +35,7 @@ PS_Peep_Ctx :: struct {
 Codegen_Emit_Ctx :: struct {
 	using graph:    ^Graph,
 	using schedule: ^Graph_Schedule,
-	using abi:      ^Abi,
+	using abi:      ^Call_Conv,
 	using buf:      Codegen_Emit_Buf,
 	lib_calls:      Lib_Calls,
 	allocs:         []Reg,

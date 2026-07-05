@@ -115,6 +115,7 @@ Class_Flag :: enum {
 	Store,
 	Load,
 	Clonable,
+	Call,
 }
 
 Cfg :: struct {

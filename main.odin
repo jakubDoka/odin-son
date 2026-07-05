@@ -686,7 +686,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 
 			ra: backend.Regalloc
 			ra.spec = spec
-			ra.cc = &backend.X64_SYSTEMV_CC
+			ra.cc = &backend.X64_ODIN_CC
 			backend.init_call_clobbers(ra.cc, &ra.call_clobbers)
 
 			regs := backend.regalloc(
@@ -709,14 +709,10 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 				log.info(string(sb.buf[:]))
 			}
 
-			abi := backend.Abi {
-				red_zone_size = 128,
-			}
-
 			ctx := backend.Codegen_Emit_Ctx {
 				graph = &ctx,
 				schedule = &schedule,
-				abi = &abi,
+				abi = ra.cc,
 				buf = {code = &code_mem, relocs = &reloc_mem},
 				allocs = regs,
 				lib_calls = {

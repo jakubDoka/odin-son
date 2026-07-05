@@ -260,7 +260,7 @@ regalloc_round :: proc(
 	rev_gvn -= 1
 	graph_get(graph, NODE_START).gvn = u32(rev_gvn)
 
-	if i == 0 do log_lrgs(&ctx)
+	//	if i == 0 do log_lrgs(&ctx)
 
 	for bb, i in sched.bbs {
 		graph_get(graph, bb.head).gvn = u32(block_base + i)
@@ -1033,6 +1033,20 @@ regalloc_round :: proc(
 
 	verify_schedule_integrity(ctx.graph, ctx.sched)
 	if ok do verify_alloc_integrity(ctx, res)
+	if ok {
+		for &bb in sched.bbs {
+			keep := 0
+			for instr in bb.instrs {
+				inode := graph_expand(graph, instr)
+				if inode.itype != .Split ||
+				   res[inode.gvn] != res[graph_get(graph, inode.inps[0]).gvn] {
+					bb.instrs[keep] = instr
+					keep += 1
+				}
+			}
+			resize(&bb.instrs, keep)
+		}
+	}
 
 	return
 

@@ -508,11 +508,12 @@ graph_schedule :: proc(
 	bb_idx := 0
 	for id, i in cfg_rpos {
 		if graph_has_flag(graph, id, .Is_Basic_Block_Start) {
-			ctx.late_schedules[graph_get(graph, id).gvn] = Node_ID(bb_idx)
-			loop_tree := lctx.loop_trees[graph_get(graph, id).gvn]
+			block := graph_get(graph, id)
+			ctx.late_schedules[block.gvn] = Node_ID(bb_idx)
+			loop_tree := lctx.loop_trees[block.gvn]
 
 			if graph.end != 0 {
-				assert(loop_tree != nil)
+				fmt.assertf(loop_tree != nil, "%v", block)
 				tree_depth(loop_tree)
 			}
 

@@ -4,6 +4,7 @@ import "../vendored/gam/util/arna"
 import "../vendored/gam/util/bit_arr"
 import "base:intrinsics"
 import "core:fmt"
+import "core:log"
 import "core:math"
 import "core:mem"
 import "core:reflect"
@@ -999,6 +1000,9 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 
 	ctx.local_relocs = make([dynamic]Local_Reloc, 0, len(ctx.bbs))
 
+	enable_jump_threading :: true
+
+	prev_is_consecutive := false
 	for &bb, i in ctx.bbs {
 		bb.offset = u32(ctx.code.pos)
 
@@ -1007,13 +1011,31 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 			i + 1 < len(ctx.bbs) &&
 			0 < len(last.outs) &&
 			ctx.bbs[i + 1].head == last.outs[0].id
+
+		if len(bb.instrs) == 1 && last.itype == .Jump && !prev_is_consecutive {
+			continue
+		}
+
 		for instr in bb.instrs {
 			x64_emit_instr(&ctx, instr, is_consecutive, 0)
 		}
+
+		prev_is_consecutive = last.itype == .If
 	}
 
-	for reloc in ctx.local_relocs {
+	block_base := ctx.gvn - u32(len(ctx.bbs))
+	for &reloc in ctx.local_relocs {
 		size: u32 = 4
+
+		for enable_jump_threading {
+			bb := &ctx.bbs[reloc.dest]
+
+			if len(bb.instrs) > 1 do break
+			jmp := graph_expand(ctx, bb.instrs[0])
+			if jmp.itype != .Jump do break
+
+			reloc.dest = graph_get(ctx, jmp.outs[0].id).gvn - block_base
+		}
 
 		dst_offset := ctx.bbs[reloc.dest].offset
 		jump := dst_offset - reloc.offset - size
@@ -1617,7 +1639,6 @@ x64_emit_instr :: proc(
 		dst_off := spill_slot_offset(ctx, dst)
 		src_off := spill_slot_offset(ctx, src)
 		assert(dst.kind == src.kind)
-		if dst == src do break
 		if int(dst) >= 16 && int(src) >= 16 {
 			// push [rsp + $src_offset]
 			emit(ctx.code, {0xff})

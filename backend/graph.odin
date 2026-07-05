@@ -735,19 +735,18 @@ when !GEN_SPEC {
 		case .Region:
 			#reverse for inp, i in node.inps {
 				inode := graph_expand(ctx, inp)
-				if inode.btype == .Dead {
-					ordered_remove(ctx, &node, i)
+				if inode.btype != .Dead do continue
+				ordered_remove(ctx, &node, i)
 
-					for out in node.outs {
-						onode := graph_expand(ctx, out.id)
-						if onode.itype == .Phi && len(onode.inps) > 2 {
-							ordered_remove(ctx, &onode, i + 1)
-						}
+				for out in node.outs {
+					onode := graph_expand(ctx, out.id)
+					if onode.itype == .Phi && len(onode.inps) > 2 {
+						ordered_remove(ctx, &onode, i + 1)
 					}
+				}
 
-					if node.input_count == 1 {
-						break
-					}
+				if node.input_count == 1 {
+					break
 				}
 			}
 
@@ -758,6 +757,67 @@ when !GEN_SPEC {
 					}
 				}
 				return node.inps[0]
+			}
+
+			phi_count := 0
+			for out in node.outs {
+				onode := graph_expand(ctx, out.id)
+				phi_count += int(onode.itype == .Phi)
+			}
+
+			changed := true
+
+			for changed {
+				changed = false
+
+				node = graph_expand(ctx, id)
+
+				merge: #reverse for inp, i in node.inps {
+					inode := graph_expand(ctx, inp)
+					if inode.itype != .Region do continue
+
+					not_covered_count := phi_count
+					for out in inode.outs {
+						onode := graph_expand(ctx, out.id)
+						if onode.itype == .Region do continue
+
+						if onode.itype != .Phi do continue merge
+						if len(onode.outs) != 1 do continue merge
+						if graph_inps(ctx, onode.outs[0].id)[0] != id {
+							continue merge
+						}
+
+						not_covered_count -= 1
+					}
+
+					if not_covered_count != 0 {
+						continue
+					}
+
+					for inp in inode.inps[1:] {
+						idx := graph_add_input(ctx, node, inp)
+						graph_add_output(ctx, inp, id, idx)
+					}
+
+					for out in node.outs {
+						onode := graph_expand(ctx, out.id)
+						if onode.itype != .Phi do continue
+
+						to_merge := graph_expand(ctx, onode.inps[1 + i])
+						assert(to_merge.itype == .Phi)
+
+						for inp in to_merge.inps[2:] {
+							idx := graph_add_input(ctx, onode, inp)
+							graph_add_output(ctx, inp, out.id, idx)
+						}
+
+						graph_set_input(ctx, out.id, 1 + i, to_merge.inps[1])
+					}
+
+					graph_set_input(ctx, id, i, inode.inps[0])
+
+					changed = true
+				}
 			}
 
 			return 0

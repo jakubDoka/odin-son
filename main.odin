@@ -696,6 +696,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 
 			if backend.REGLOGS {
 				sb: strings.Builder
+				append(&sb.buf, prc.name)
 				append(&sb.buf, "\n")
 				backend.graph_display(
 					strings.to_writer(&sb),

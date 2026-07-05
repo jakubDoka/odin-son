@@ -518,8 +518,7 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 		}
 
 		if scale != 0 {
-			idx := graph_add_input(ctx, node, index)
-			graph_add_output(ctx, index, id, idx)
+			graph_connect(ctx, id, index)
 			mem_op.scale = scale
 			node = graph_expand(ctx, id)
 			changed = true

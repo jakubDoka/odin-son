@@ -147,53 +147,62 @@ opaque:
      mov rax, rdi
      ret
 main:
-     sub rsp, 0x48
-     mov qword ptr [rsp+0x08], 0x00
-     mov qword ptr [rsp], 0x00
+     push rbx
+     push rbp
+     push r12
+     push r13
+     push r14
+     push r15
+     sub rsp, 0x08
      mov rdi, 0x01
      call :opaque
-     mov [rsp+0x08], rax
+     mov rbx, rax
      mov rdi, 0x02
      call :opaque
-     mov [rsp], rax
-     mov qword ptr [rsp+0x18], 0x00
-     mov qword ptr [rsp+0x10], 0x00
+     mov rbp, rax
      mov rdi, 0x03
      call :opaque
-     mov [rsp+0x18], rax
+     mov r12, rax
      mov rdi, 0x04
      call :opaque
-     mov [rsp+0x10], rax
-     mov qword ptr [rsp+0x28], 0x00
-     mov qword ptr [rsp+0x20], 0x00
+     mov r13, rax
      mov rdi, 0x05
      call :opaque
-     mov [rsp+0x28], rax
+     mov r14, rax
      mov rdi, 0x06
      call :opaque
-     mov [rsp+0x20], rax
-     mov qword ptr [rsp+0x38], 0x00
-     mov qword ptr [rsp+0x30], 0x00
+     mov r15, rax
      mov rdi, 0x07
      call :opaque
-     mov [rsp+0x38], rax
+     mov [rsp], rax
      mov rdi, 0x08
      call :opaque
-     mov [rsp+0x30], rax
-     mov rax, [rsp+0x08]
-     add rax, [rsp+0x18]
-     add rax, [rsp+0x28]
-     add rax, [rsp+0x38]
-     mov [rsp+0x08], rax
-     mov rcx, [rsp+0x10]
-     add rcx, [rsp+0x20]
-     add rcx, [rsp+0x30]
-     add rcx, [rsp]
-     mov [rsp+0x10], rcx
-     mov rax, [rsp+0x08]
-     imul rax, rax, 0x64
-     add rax, rcx
-     add rax, [rsp+0x28]
-     add rax, [rsp+0x30]
-     add rsp, 0x48
+     mov rdx, rbx
+     mov rcx, r12
+     add rdx, rcx
+     mov rcx, r14
+     add rdx, rcx
+     mov rcx, [rsp]
+     add rdx, rcx
+     imul rcx, rdx, 0x64
+     mov rsi, r13
+     mov rdx, r15
+     add rsi, rdx
+     mov rdx, rax
+     add rsi, rdx
+     mov rdx, rbp
+     add rsi, rdx
+     mov rdx, rcx
+     add rdx, rsi
+     mov rcx, r14
+     add rdx, rcx
+     add rdx, rax
+     mov rax, rdx
+     add rsp, 0x08
+     pop r15
+     pop r14
+     pop r13
+     pop r12
+     pop rbp
+     pop rbx
      ret

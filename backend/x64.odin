@@ -826,7 +826,7 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 		ctx.stack_size = max(ctx.stack_size, call_stack_size)
 	}
 
-	emem, _ := find_entry_node(ctx.graph, .Mem)
+	emem, _ := find_node(ctx.graph, .Mem)
 	mem_outs: []Node_Output
 	if emem != 0 {
 		mem_outs = graph_outs(ctx.graph, emem)

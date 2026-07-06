@@ -547,7 +547,7 @@ graph_schedule :: proc(
 		early := ctx.early_schedules[i]
 		sched := graph.end == 0 ? early : late
 		if sched == 0 {
-			log.error(graph_get(graph, node))
+			log.error("not scheduled:", graph_get(graph, node))
 			continue
 		}
 		bb := ctx.late_schedules[graph_get(graph, sched).gvn]

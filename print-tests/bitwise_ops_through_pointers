@@ -57,19 +57,17 @@ xor_into:
 =========== OPT LEVEL: all ===========
 main:
      sub rsp, 0x18
-     lea rdi, [rsp+0x08]
-     mov qword ptr [rsp], 0x0C
-     mov qword ptr [rsp], 0x08
-     mov qword ptr [rsp+0x08], 0x0A
-     mov qword ptr [rsp+0x10], 0x06
+     lea rdi, [rsp]
+     mov qword ptr [rsp], 0x0A
+     mov qword ptr [rsp+0x08], 0x06
      mov rsi, 0x05
      call :or_into
-     lea rdi, [rsp+0x10]
+     lea rdi, [rsp+0x08]
      mov rsi, 0x03
      call :xor_into
      mov rax, [rsp]
-     add rax, [rsp+0x08]
-     add rax, [rsp+0x10]
+     mov rcx, [rsp+0x08]
+     lea rax, [rax+rcx*1+0x08]
      add rsp, 0x18
      ret
 or_into:

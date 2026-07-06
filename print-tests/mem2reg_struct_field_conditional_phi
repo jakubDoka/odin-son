@@ -61,24 +61,26 @@ opaque:
      mov rax, rdi
      ret
 main:
-     sub rsp, 0x18
-     mov qword ptr [rsp+0x08], 0x00
-     mov qword ptr [rsp], 0x00
+     push rbx
+     push rbp
+     sub rsp, 0x08
      mov rdi, 0x05
      call :opaque
-     mov [rsp+0x08], rax
+     mov rbx, rax
      mov rdi, 0x07
      call :opaque
-     mov [rsp], rax
+     mov rbp, rax
      mov rdi, 0x01
      call :opaque
      cmp rax, 0x00
      jnle :0
-     sub qword ptr [rsp+0x08], 0x64
+     sub rbx, 0x64
      jmp :1
 
-000: add qword ptr [rsp+0x08], 0x64
-001: mov rax, [rsp+0x08]
-     add rax, [rsp]
-     add rsp, 0x18
+000: add rbx, 0x64
+001: add rbx, rbp
+     mov rax, rbx
+     add rsp, 0x08
+     pop rbp
+     pop rbx
      ret

@@ -79,13 +79,12 @@ opaque:
      mov rax, rdi
      ret
 main:
-     sub rsp, 0x08
-     mov qword ptr [rsp], 0x00
+     push rbx
      mov rdi, 0x01
      call :opaque
      mov rdi, 0x02
      call :opaque
-     mov [rsp], rax
+     mov rbx, rax
      mov rdi, 0x03
      call :opaque
      mov rdi, 0x04
@@ -93,12 +92,11 @@ main:
      mov rdx, rax
      mov rax, rdx
      imul rax, rax, 0x3E8
-     mov rcx, [rsp]
+     mov rcx, rbx
      imul rcx, rcx, 0x64
      add rax, rcx
-     mov rcx, [rsp]
-     imul rcx, rcx, 0x0A
+     imul rcx, rbx, 0x0A
      add rax, rcx
      add rax, rdx
-     add rsp, 0x08
+     pop rbx
      ret

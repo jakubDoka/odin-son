@@ -143,8 +143,9 @@ Tup :: struct {
 
 Local :: struct {
 	using props: struct #raw_union {
-		size:   i32,
-		offset: i32,
+		size:       i32,
+		offset:     i32,
+		rename_idx: i32,
 	},
 }
 
@@ -229,6 +230,7 @@ Graph :: struct {
 	end:             Node_ID,
 	waste:           int,
 	dont_intern:     bool,
+	dont_delete:     bool,
 	opt_flags:       Graph_Opt_Flags,
 }
 
@@ -432,14 +434,15 @@ graph_schedule_peeps :: proc(graph: ^Graph, schedule: ^Graph_Schedule) {
 
 }
 
-find_entry_node :: proc(
+find_node :: proc(
 	graph: ^Graph,
 	kind: Ideal_Node_Type,
+	on: Node_ID = NODE_ENTRY,
 ) -> (
 	Node_ID,
 	bool,
 ) {
-	for eout in graph_outs(graph, NODE_ENTRY) {
+	for eout in graph_outs(graph, on) {
 		enode := graph_expand(graph, eout.id)
 		if enode.itype == kind {
 			return eout.id, true
@@ -469,7 +472,8 @@ graph_iter_peeps :: proc(graph: ^Graph) {
 
 		prev_hash := graph_node_hash(graph, node)
 		new_node := graph.peep({graph}, node)
-		if new_node == 0 do continue
+		if node.rtype == DEAD_NODE_KIND do continue
+		if new_node == 0 && node.output_count != 0 do continue
 
 		for out in node.outs {
 			worklist_add(graph, &worklist, out.id)
@@ -494,9 +498,11 @@ graph_iter_peeps :: proc(graph: ^Graph) {
 			worklist_add(graph, &worklist, inp)
 		}
 
-		matched := node.gvn == 8
-
-		graph_subsume(graph, new_node, n, &worklist)
+		if new_node != 0 {
+			graph_subsume(graph, new_node, n, &worklist)
+		} else {
+			graph_delete(graph, n, indirect = true)
+		}
 	}
 
 	if ODIN_DEBUG {
@@ -525,24 +531,25 @@ graph_iter_peeps :: proc(graph: ^Graph) {
 	graph.worklist = nil
 	graph.triggers = nil
 
-	collect_nodes :: proc(graph: ^Graph, worklist: ^queue.Queue(Node_ID)) {
-		i := 0
-		worklist.offset = 0
-		worklist_add(graph, worklist, NODE_START)
-		for i < queue.len(worklist^) {
-			node := graph_expand(graph, worklist.data[i])
+}
 
-			for inp in node.inps {
-				if inp == 0 do continue
-				worklist_add(graph, worklist, inp)
-			}
+collect_nodes :: proc(graph: ^Graph, worklist: ^queue.Queue(Node_ID)) {
+	i := 0
+	worklist.offset = 0
+	worklist_add(graph, worklist, NODE_START)
+	for i < queue.len(worklist^) {
+		node := graph_expand(graph, worklist.data[i])
 
-			for out in node.outs {
-				worklist_add(graph, worklist, out.id)
-			}
-
-			i += 1
+		for inp in node.inps {
+			if inp == 0 do continue
+			worklist_add(graph, worklist, inp)
 		}
+
+		for out in node.outs {
+			worklist_add(graph, worklist, out.id)
+		}
+
+		i += 1
 	}
 }
 
@@ -922,6 +929,7 @@ graph_subsume :: proc(
 	with: Node_ID,
 	target: Node_ID,
 	worklist: ^queue.Queue(Node_ID) = nil,
+	dont_delete: bool = false,
 ) {
 	assert(with != NODE_START)
 	assert(target != NODE_ENTRY)
@@ -946,9 +954,10 @@ graph_subsume :: proc(
 			break try_recycle
 		}
 
+		if wnode.input_cap != wnode.input_count do break try_recycle
+
 		assert(wnode.gvn == graph.gvn - 1)
 		assert(wnode.output_cap == 0)
-		assert(wnode.input_cap == wnode.input_count)
 		assert(
 			wnode.input_idx ==
 			(u32(graph.mem.pos) - u32(wnode.input_cap) * size_of(Node_ID)) /
@@ -1009,16 +1018,20 @@ graph_subsume :: proc(
 	copy(wnode.outs[len(wnode.outs) - len(tnode.outs):], tnode.outs)
 
 	for out in tnode.outs {
+		if out == {} do continue
 		graph_unintern(graph, out.id)
 		graph_inps(graph, out.id)[out.idx] = with
 	}
-	graph_delete(graph, tnode)
+
+	if !dont_delete do graph_delete(graph, tnode)
 
 	wnode = graph_expand(graph, with)
 
 	keep := 0
 	for out in tnode.outs {
+		if out == {} do continue
 		for oout in wnode.outs {
+			if oout == {} do continue
 			if out == oout {
 				tnode.outs[keep] = out
 				keep += 1
@@ -1030,7 +1043,6 @@ graph_subsume :: proc(
 	for out in tnode.outs {
 		graph_intern(graph, out.id)
 	}
-
 }
 
 graph_node_eq :: proc(graph: ^Graph, a, b: Node_ID) -> bool {
@@ -1196,7 +1208,7 @@ graph_remove_output_node :: proc(
 	no_delete := false,
 ) {
 	outs := graph_outs(graph, node)
-	out_idx := slice.linear_search(outs, out) or_else panic("")
+	out_idx := slice.linear_search(outs, out) or_else fmt.panicf("%v", node)
 	outs[out_idx] = outs[len(outs) - 1]
 	node.output_count -= 1
 	if !no_delete {
@@ -1246,6 +1258,7 @@ graph_delete_node :: proc(graph: ^Graph, node: ^Node, indirect := false) {
 	id := graph_id(graph, node)
 	if node.output_count != 0 do return
 	if graph_has_flag(graph, node, .Immortal) && indirect do return
+	if graph.dont_delete do return
 
 	if graph.triggers != nil && int(node.gvn) < len(graph.triggers) {
 		for trig in graph.triggers[node.gvn] {

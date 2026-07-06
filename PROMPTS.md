@@ -145,9 +145,7 @@ you please write a JSON validator, make sure it works in odin as expected.
 like character literals, implement them. Then proceed with porting the code to
 be a valid test case. If you find bugs in the compiler fix them.
 
-### Prepare for memopt pass
-
-NOTE: Read AGENTS.md
+### Prepare for memopt pass (DONE)
 
 The point of the mem opt pass is to split locals into scalar parts and then do
 a renaming into registers. Before we do that tho, I need a good set of tests
@@ -156,3 +154,16 @@ Create the tests based on whta is already supported in other tests, but use
 structs since these are put on stack by the frontend. I will write the mem2reg
 pass, just focus on adding good tests, if you encounter any bugs in the
 process, fix them.
+
+### Find bugs in the memopt pass (DONE)
+
+NOTE: read AGENST.md
+
+The current tests for memopts are good, but I am not very confident about the
+implementation. There appear to be some edgecases I had to deal with and I feel
+like I did not structure the code correctly. Could you please review
+`backend/mem2reg.odin` and look for bugs? Try to create tests that reporduce
+them. For each bug you are suspecting, spawn an agent to make thetest for it.
+Once you thing you can't find anymore. Once that is done, spawn an agent to fix
+the bugs, only one agent though because multiple would stop over each other.
+

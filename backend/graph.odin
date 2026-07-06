@@ -231,6 +231,7 @@ Graph :: struct {
 	waste:           int,
 	dont_intern:     bool,
 	dont_delete:     bool,
+	peeped:          bool,
 	opt_flags:       Graph_Opt_Flags,
 }
 
@@ -451,9 +452,13 @@ find_node :: proc(
 	return 0, false
 }
 
-graph_iter_peeps :: proc(graph: ^Graph) {
-	if .Iter_Peeps not_in graph.opt_flags &&
-	   graph.node_spec == &SPECS[.Builder] {return}
+graph_iter_peeps :: proc(graph: ^Graph) -> (optimized: bool) {
+	is_builder := graph.node_spec == &SPECS[.Builder]
+
+	if graph.peeped && is_builder do return
+	graph.peeped = true
+
+	if .Iter_Peeps not_in graph.opt_flags && is_builder do return
 
 	context.allocator, _ = arna.scrath()
 
@@ -474,6 +479,8 @@ graph_iter_peeps :: proc(graph: ^Graph) {
 		new_node := graph.peep({graph}, node)
 		if node.rtype == DEAD_NODE_KIND do continue
 		if new_node == 0 && node.output_count != 0 do continue
+
+		optimized = true
 
 		for out in node.outs {
 			worklist_add(graph, &worklist, out.id)
@@ -531,6 +538,7 @@ graph_iter_peeps :: proc(graph: ^Graph) {
 	graph.worklist = nil
 	graph.triggers = nil
 
+	return
 }
 
 collect_nodes :: proc(graph: ^Graph, worklist: ^queue.Queue(Node_ID)) {
@@ -939,7 +947,7 @@ graph_subsume :: proc(
 
 	assert(with != target)
 
-	try_recycle: if 0 == 0 {
+	try_recycle: if 0 == 0 && !graph.dont_delete {
 		if wnode.in_worklist {
 			last := queue.pop_back(worklist)
 			queue.push_back(worklist, last)

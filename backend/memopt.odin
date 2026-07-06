@@ -6,10 +6,11 @@ import "core:fmt"
 import "core:mem"
 import "core:slice"
 
-memopt :: proc(graph: ^Graph) -> (ok: bool) {
+memopt :: proc(graph: ^Graph) -> (optimized: bool) {
 	assert(graph.node_spec == &SPECS[.Builder])
 
 	if .MemOpt not_in graph.opt_flags do return
+	defer graph.peeped &= !optimized
 
 	context.allocator, _ = arna.scrath()
 
@@ -221,14 +222,16 @@ memopt :: proc(graph: ^Graph) -> (ok: bool) {
 
 			cnode = graph_expand(ctx, pcursor)
 
+			original_scope := ctx.scope
+
 			for cout, i in outs {
 				last := i == len(outs) - 1
 
-				prev_scope := ctx.scope
 				if last {
 					cursor = cout.id
+					ctx.scope = original_scope
 				} else {
-					ctx.scope = slice.clone(ctx.scope)
+					ctx.scope = slice.clone(original_scope)
 				}
 
 				conode := graph_expand(ctx, cout.id)
@@ -252,9 +255,7 @@ memopt :: proc(graph: ^Graph) -> (ok: bool) {
 
 						join := &ctx.joins[id]
 
-						nv: []Value_Entry
-						if !last do nv = ctx.scope
-						join.entries[cout.idx - 1], ctx.scope = ctx.scope, nv
+						join.entries[cout.idx - 1] = ctx.scope
 
 						join.filled += 1
 						if join.filled < len(join.entries) {
@@ -301,7 +302,6 @@ memopt :: proc(graph: ^Graph) -> (ok: bool) {
 								)
 							}
 
-							tmp: Value_Entry
 							next_scope[i] = res
 						}
 						ctx.scope = next_scope
@@ -374,8 +374,6 @@ memopt :: proc(graph: ^Graph) -> (ok: bool) {
 				case .Store, .Call, .Set, .Copy, .Return:
 					if !last {
 						walk_thread(ctx, cout.id)
-						assert(raw_data(ctx.scope) != raw_data(prev_scope))
-						ctx.scope = prev_scope
 					}
 				case:
 					fmt.panicf("%v", conode.node)

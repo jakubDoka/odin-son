@@ -17,6 +17,9 @@ be compilable with odin compiler and SHOULD NEVER CONTAIN REACHABLE INFINITE
 LOOP since ist ran before the actual test starts to extract the return value
 that is then asserted for changes.
 
+When running tests, NEVER wait for more the 5 seconds, tests usually compile in
+1s and run in matter of miliseconds.
+
 The peephole optimizations can be found with `_peep :: proc`.
 
 If the test segfaults use -define:NO_RUN=true to view the disassembly.

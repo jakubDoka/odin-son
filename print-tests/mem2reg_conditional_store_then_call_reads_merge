@@ -1,0 +1,100 @@
+=========== OPT LEVEL: none ===========
+opaque:
+     mov rax, rdi
+     ret
+main:
+     sub rsp, 0x18
+     lea rdi, [rsp]
+     mov rsi, 0x00
+     mov rdx, 0x10
+     call :$set
+     mov rdi, 0x03
+     call :opaque
+     mov [rsp], rax
+     mov rdi, 0x04
+     call :opaque
+     mov [rsp+0x08], rax
+     mov rdi, 0x01
+     call :opaque
+     cmp rax, 0x01
+     jz :0
+     jmp :1
+
+000: mov rdi, 0x0A
+     call :opaque
+     mov [rsp], rax
+001: mov rdi, [rsp]
+     call :opaque
+     mov rdx, rax
+     mov rax, [rsp]
+     mov rcx, [rsp+0x08]
+     add rax, rcx
+     add rax, rdx
+     add rsp, 0x18
+     ret
+=========== OPT LEVEL: mininal ===========
+opaque:
+     mov rax, rdi
+     ret
+main:
+     sub rsp, 0x18
+     lea rdi, [rsp]
+     mov rsi, 0x00
+     mov rdx, 0x10
+     call :$set
+     mov rdi, 0x03
+     call :opaque
+     mov [rsp], rax
+     mov rdi, 0x04
+     call :opaque
+     mov [rsp+0x08], rax
+     mov rdi, 0x01
+     call :opaque
+     cmp rax, 0x01
+     jz :0
+     jmp :1
+
+000: mov rdi, 0x0A
+     call :opaque
+     mov [rsp], rax
+001: mov rdi, [rsp]
+     call :opaque
+     mov rdx, rax
+     mov rax, [rsp]
+     mov rcx, [rsp+0x08]
+     add rax, rcx
+     add rax, rdx
+     add rsp, 0x18
+     ret
+=========== OPT LEVEL: all ===========
+opaque:
+     mov rax, rdi
+     ret
+main:
+     push rbx
+     push rbp
+     sub rsp, 0x08
+     mov rdi, 0x03
+     call :opaque
+     mov rbx, rax
+     mov rdi, 0x04
+     call :opaque
+     mov rbp, rax
+     mov rdi, 0x01
+     call :opaque
+     cmp rax, 0x01
+     jz :0
+     jmp :1
+
+000: mov rdi, 0x0A
+     call :opaque
+     mov rbx, rax
+001: mov rdi, rbx
+     call :opaque
+     add rbp, rbx
+     add rbp, rax
+     mov rax, rbp
+     add rsp, 0x08
+     pop rbp
+     pop rbx
+     ret

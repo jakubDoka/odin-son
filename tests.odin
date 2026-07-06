@@ -6541,3 +6541,257 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) mem2reg_conditional_store_no_else :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Vec2 :: struct {
+	x: int,
+	y: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main_ :: proc() -> int {
+	s := Vec2{opaque(3), opaque(5)}
+	if opaque(1) > 0 {
+	} else {
+		s.x = 100
+	}
+	return s.x
+}
+
+run_test(t, `mem2reg_conditional_store_no_else`, `
+package main
+
+opt_level :: "none"
+
+Vec2 :: struct {
+	x: int,
+	y: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main :: proc() -> int {
+	s := Vec2{opaque(3), opaque(5)}
+	if opaque(1) > 0 {
+	} else {
+		s.x = 100
+	}
+	return s.x
+}
+`, main_())
+}
+@(test) mem2reg_conditional_store_empty_then_reads_both :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Vec2 :: struct {
+	x: int,
+	y: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main_ :: proc() -> int {
+	s := Vec2{opaque(5), opaque(7)}
+	if opaque(1) > 0 {
+	} else {
+		s.x = opaque(10)
+	}
+	return s.x * 100 + s.y
+}
+
+run_test(t, `mem2reg_conditional_store_empty_then_reads_both`, `
+package main
+
+opt_level :: "none"
+
+Vec2 :: struct {
+	x: int,
+	y: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main :: proc() -> int {
+	s := Vec2{opaque(5), opaque(7)}
+	if opaque(1) > 0 {
+	} else {
+		s.x = opaque(10)
+	}
+	return s.x * 100 + s.y
+}
+`, main_())
+}
+@(test) mem2reg_conditional_store_cross_field_after_merge :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Vec2 :: struct {
+	x: int,
+	y: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main_ :: proc() -> int {
+	s := Vec2{opaque(3), opaque(4)}
+	if opaque(1) == 1 {
+		s.x = opaque(10)
+	}
+	s.y = s.x + s.y
+	return s.x + s.y
+}
+
+run_test(t, `mem2reg_conditional_store_cross_field_after_merge`, `
+package main
+
+opt_level :: "none"
+
+Vec2 :: struct {
+	x: int,
+	y: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main :: proc() -> int {
+	s := Vec2{opaque(3), opaque(4)}
+	if opaque(1) == 1 {
+		s.x = opaque(10)
+	}
+	s.y = s.x + s.y
+	return s.x + s.y
+}
+`, main_())
+}
+@(test) mem2reg_conditional_store_then_call_reads_merge :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Vec2 :: struct {
+	x: int,
+	y: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main_ :: proc() -> int {
+	s := Vec2{opaque(3), opaque(4)}
+	if opaque(1) == 1 {
+		s.x = opaque(10)
+	}
+	a := opaque(s.x)
+	return s.x + s.y + a
+}
+
+run_test(t, `mem2reg_conditional_store_then_call_reads_merge`, `
+package main
+
+opt_level :: "none"
+
+Vec2 :: struct {
+	x: int,
+	y: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main :: proc() -> int {
+	s := Vec2{opaque(3), opaque(4)}
+	if opaque(1) == 1 {
+		s.x = opaque(10)
+	}
+	a := opaque(s.x)
+	return s.x + s.y + a
+}
+`, main_())
+}
+@(test) mem2reg_loop_continue_carries_field :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+S :: struct {
+	a: int,
+	b: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main_ :: proc() -> int {
+	s := S{opaque(1), opaque(0)}
+	i := 0
+	n := opaque(9)
+	for {
+		if i >= n do break
+		i += 1
+		s.a = s.a + 1
+		if s.a % 2 == 0 {
+			continue
+		}
+		s.b = s.b + s.a
+	}
+	return s.a * 100 + s.b
+}
+
+run_test(t, `mem2reg_loop_continue_carries_field`, `
+package main
+
+opt_level :: "none"
+
+S :: struct {
+	a: int,
+	b: int,
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main :: proc() -> int {
+	s := S{opaque(1), opaque(0)}
+	i := 0
+	n := opaque(9)
+	for {
+		if i >= n do break
+		i += 1
+		s.a = s.a + 1
+		if s.a % 2 == 0 {
+			continue
+		}
+		s.b = s.b + s.a
+	}
+	return s.a * 100 + s.b
+}
+`, main_())
+}

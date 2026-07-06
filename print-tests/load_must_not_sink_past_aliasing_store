@@ -54,6 +54,34 @@ opaque_ptr:
 opaque:
      mov rax, rdi
      ret
+=========== OPT LEVEL: moderate ===========
+main:
+     push rbx
+     sub rsp, 0x10
+     mov rdi, 0x0A
+     call :opaque
+     mov [rsp], rax
+     lea rdi, [rsp]
+     call :opaque_ptr
+     mov rbx, [rax]
+     mov qword ptr [rsp], 0x63
+     mov rdi, 0x01
+     call :opaque
+     cmp rax, 0x01
+     jz :0
+     mov rbx, 0x00
+     jmp :0
+
+000: mov rax, rbx
+     add rsp, 0x10
+     pop rbx
+     ret
+opaque_ptr:
+     mov rax, rdi
+     ret
+opaque:
+     mov rax, rdi
+     ret
 =========== OPT LEVEL: all ===========
 main:
      push rbx

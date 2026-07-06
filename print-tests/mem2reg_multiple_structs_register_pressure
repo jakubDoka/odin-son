@@ -142,6 +142,61 @@ main:
      add rax, rcx
      add rsp, 0x48
      ret
+=========== OPT LEVEL: moderate ===========
+opaque:
+     mov rax, rdi
+     ret
+main:
+     sub rsp, 0x48
+     mov qword ptr [rsp], 0x00
+     mov qword ptr [rsp+0x08], 0x00
+     mov rdi, 0x01
+     call :opaque
+     mov [rsp], rax
+     mov rdi, 0x02
+     call :opaque
+     mov [rsp+0x08], rax
+     mov qword ptr [rsp+0x10], 0x00
+     mov qword ptr [rsp+0x18], 0x00
+     mov rdi, 0x03
+     call :opaque
+     mov [rsp+0x10], rax
+     mov rdi, 0x04
+     call :opaque
+     mov [rsp+0x18], rax
+     mov qword ptr [rsp+0x20], 0x00
+     mov qword ptr [rsp+0x28], 0x00
+     mov rdi, 0x05
+     call :opaque
+     mov [rsp+0x20], rax
+     mov rdi, 0x06
+     call :opaque
+     mov [rsp+0x28], rax
+     mov qword ptr [rsp+0x30], 0x00
+     mov qword ptr [rsp+0x38], 0x00
+     mov rdi, 0x07
+     call :opaque
+     mov [rsp+0x30], rax
+     mov rdi, 0x08
+     call :opaque
+     mov [rsp+0x38], rax
+     mov rax, [rsp]
+     add rax, [rsp+0x10]
+     add rax, [rsp+0x20]
+     add rax, [rsp+0x30]
+     mov [rsp], rax
+     mov rcx, [rsp+0x18]
+     add rcx, [rsp+0x28]
+     add rcx, [rsp+0x38]
+     add rcx, [rsp+0x08]
+     mov [rsp+0x18], rcx
+     mov rax, [rsp]
+     imul rax, rax, 0x64
+     add rax, rcx
+     add rax, [rsp+0x20]
+     add rax, [rsp+0x38]
+     add rsp, 0x48
+     ret
 =========== OPT LEVEL: all ===========
 opaque:
      mov rax, rdi

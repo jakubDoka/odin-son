@@ -34,6 +34,24 @@ main:
 opaque:
      mov rax, rdi
      ret
+=========== OPT LEVEL: moderate ===========
+main:
+     push rbx
+     mov rdi, 0xC8
+     call :opaque
+     mov rbx, rax
+     mov rdi, 0x03
+     call :opaque
+     mov rcx, rax
+     mov rax, rbx
+     cbw
+     idiv cl
+     movsx rax, al
+     pop rbx
+     ret
+opaque:
+     mov rax, rdi
+     ret
 =========== OPT LEVEL: all ===========
 main:
      push rbx

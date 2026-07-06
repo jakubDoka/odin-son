@@ -524,6 +524,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 	} {
 		{"none", {}},
 		{"mininal", {.Local_Peeps}},
+		{"moderate", {.Iter_Peeps, .Local_Peeps, .Schedule_Peeps}},
 		{"all", {.Iter_Peeps, .Local_Peeps, .Schedule_Peeps, .MemOpt}},
 	}
 

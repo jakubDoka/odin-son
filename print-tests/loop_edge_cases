@@ -100,6 +100,63 @@ main:
 
 009: mov rax, 0x01
 008: ret
+=========== OPT LEVEL: moderate ===========
+main:
+     mov rdx, 0x00
+     mov rcx, 0x00
+003: mov rax, rdx
+     add rax, 0x01
+     cmp rax, 0x02
+     jz :0
+     cmp rax, 0x01
+     jz :1
+     add rdx, 0x02
+     mov rcx, 0x01
+     jmp :2
+
+001: mov rdx, rax
+002: jmp :3
+
+000: cmp rcx, 0x00
+     jz :4
+     jmp :5
+
+004: mov rdx, 0x00
+008: mov rax, rdx
+     add rax, 0x01
+     cmp rax, 0x03
+     jz :5
+     cmp rax, 0x02
+     jz :6
+     cmp rax, 0x01
+     jz :6
+     add rdx, 0x02
+     mov rcx, 0x02
+     jmp :7
+
+006: mov rdx, rax
+007: jmp :8
+
+005: cmp rcx, 0x00
+     jnz :9
+     mov rax, rcx
+     jmp :10
+
+009: mov rcx, 0x00
+013: mov rax, rcx
+     add rax, 0x01
+     cmp rax, 0x03
+     jz :11
+     add rcx, 0x02
+     cmp rcx, 0x04
+     jz :12
+     jmp :13
+
+012: mov rax, 0x03
+     jmp :10
+
+011: mov rax, 0x01
+010: ret
 =========== OPT LEVEL: all ===========
 main:
      mov rdx, 0x00

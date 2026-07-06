@@ -36,6 +36,24 @@ get8:
 get16:
      mov rax, 0xFFFFFFFFFFFFFC18
      ret
+=========== OPT LEVEL: moderate ===========
+main:
+     push rbx
+     call :get8
+     mov rbx, rax
+     call :get16
+     mov rcx, rax
+     movsx rax, bl
+     movsx rcx, cx
+     add rax, rcx
+     pop rbx
+     ret
+get8:
+     mov rax, 0xFFFFFFFFFFFFFFF6
+     ret
+get16:
+     mov rax, 0xFFFFFFFFFFFFFC18
+     ret
 =========== OPT LEVEL: all ===========
 main:
      push rbx

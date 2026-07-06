@@ -34,6 +34,21 @@ main:
 opaque:
      mov rax, rdi
      ret
+=========== OPT LEVEL: moderate ===========
+main:
+     sub rsp, 0x08
+     mov rdi, 0x14
+     call :opaque
+     mov rcx, rax
+     mov rax, 0x03
+     imul cl
+     movzx eax, al
+     add rax, 0xFFFFFFFFFFFFFFF6
+     add rsp, 0x08
+     ret
+opaque:
+     mov rax, rdi
+     ret
 =========== OPT LEVEL: all ===========
 main:
      sub rsp, 0x08

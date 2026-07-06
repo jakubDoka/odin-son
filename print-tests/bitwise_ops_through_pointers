@@ -54,6 +54,34 @@ xor_into:
      xor [rdi], rsi
      mov rax, [rdi]
      ret
+=========== OPT LEVEL: moderate ===========
+main:
+     sub rsp, 0x18
+     lea rdi, [rsp+0x08]
+     mov qword ptr [rsp], 0x0C
+     mov qword ptr [rsp], 0x08
+     mov qword ptr [rsp+0x08], 0x0A
+     mov qword ptr [rsp+0x10], 0x06
+     mov rsi, 0x05
+     call :or_into
+     lea rdi, [rsp+0x10]
+     mov rsi, 0x03
+     call :xor_into
+     mov rax, [rsp]
+     add rax, [rsp+0x08]
+     add rax, [rsp+0x10]
+     add rsp, 0x18
+     ret
+or_into:
+     mov rax, [rdi]
+     or rax, rsi
+     mov [rdi], rax
+     ret
+xor_into:
+     mov rax, [rdi]
+     xor rax, rsi
+     mov [rdi], rax
+     ret
 =========== OPT LEVEL: all ===========
 main:
      sub rsp, 0x18

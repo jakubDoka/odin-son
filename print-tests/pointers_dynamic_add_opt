@@ -104,6 +104,61 @@ add_8:
      add [rdi], sil
      movsx rax, byte ptr [rdi]
      ret
+=========== OPT LEVEL: moderate ===========
+main:
+     sub rsp, 0x18
+     mov qword ptr [rsp], 0x00
+     mov qword ptr [rsp+0x08], 0x00
+     mov rsi, 0x01
+     lea rdi, [rsp]
+     call :add
+     lea rax, [rsp]
+     add rax, 0x08
+     mov rsi, 0x01
+     mov rdi, rax
+     call :add_32
+     lea rax, [rsp]
+     add rax, 0x0C
+     mov rsi, 0x01
+     mov rdi, rax
+     call :add_16
+     lea rax, [rsp]
+     add rax, 0x0E
+     mov rsi, 0x01
+     mov rdi, rax
+     call :add_8
+     mov rax, [rsp]
+     movsxd rcx, dword ptr [rsp+0x08]
+     movsxd rcx, ecx
+     add rax, rcx
+     movsx rcx, word ptr [rsp+0x0C]
+     movsx rcx, cx
+     add rax, rcx
+     movsx rcx, byte ptr [rsp+0x0E]
+     movsx rcx, cl
+     add rax, rcx
+     add rsp, 0x18
+     ret
+add:
+     mov rax, [rdi]
+     add rax, rsi
+     mov [rdi], rax
+     ret
+add_32:
+     movsxd rax, dword ptr [rdi]
+     add eax, esi
+     mov [rdi], eax
+     ret
+add_16:
+     movsx rax, word ptr [rdi]
+     add ax, si
+     mov [rdi], ax
+     ret
+add_8:
+     movsx rax, byte ptr [rdi]
+     add al, sil
+     mov [rdi], al
+     ret
 =========== OPT LEVEL: all ===========
 main:
      sub rsp, 0x18

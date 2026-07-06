@@ -74,6 +74,21 @@ mutate:
      add rax, rcx
      add rsp, 0x28
      ret
+=========== OPT LEVEL: moderate ===========
+main:
+     sub rsp, 0x18
+     mov rdi, 0x01
+     mov qword ptr [rsp], 0x01
+     mov qword ptr [rsp+0x08], 0x02
+     mov rsi, 0x02
+     call :mutate
+     mov rax, [rsp]
+     add rax, [rsp+0x08]
+     add rsp, 0x18
+     ret
+mutate:
+     mov rax, 0x12C
+     ret
 =========== OPT LEVEL: all ===========
 main:
      sub rsp, 0x08

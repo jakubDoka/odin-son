@@ -102,6 +102,61 @@ and32:
      and [rdi], esi
      movsxd rax, dword ptr [rdi]
      ret
+=========== OPT LEVEL: moderate ===========
+main:
+     sub rsp, 0x18
+     lea rdi, [rsp+0x01]
+     mov byte ptr [rsp], 0x0C
+     mov word ptr [rsp+0x02], 0x0C
+     mov dword ptr [rsp+0x06], 0x0D
+     and byte ptr [rsp], 0x0A
+     or word ptr [rsp+0x02], 0x03
+     xor dword ptr [rsp+0x06], 0x06
+     mov byte ptr [rsp+0x01], 0x0A
+     mov word ptr [rsp+0x04], 0x0F
+     mov dword ptr [rsp+0x0A], 0x0B
+     mov rsi, 0x05
+     call :or8
+     lea rdi, [rsp+0x04]
+     mov rsi, 0x06
+     call :xor16
+     lea rdi, [rsp+0x0A]
+     mov rsi, 0x06
+     call :and32
+     movsx rax, byte ptr [rsp]
+     movsx rax, al
+     movsx rcx, word ptr [rsp+0x02]
+     movsx rcx, cx
+     add rax, rcx
+     movsxd rcx, dword ptr [rsp+0x06]
+     movsxd rcx, ecx
+     add rax, rcx
+     movsx rcx, byte ptr [rsp+0x01]
+     movsx rcx, cl
+     add rax, rcx
+     movsx rcx, word ptr [rsp+0x04]
+     movsx rcx, cx
+     add rax, rcx
+     movsxd rcx, dword ptr [rsp+0x0A]
+     movsxd rcx, ecx
+     add rax, rcx
+     add rsp, 0x18
+     ret
+or8:
+     movsx rax, byte ptr [rdi]
+     or al, sil
+     mov [rdi], al
+     ret
+xor16:
+     movsx rax, word ptr [rdi]
+     xor ax, si
+     mov [rdi], ax
+     ret
+and32:
+     movsxd rax, dword ptr [rdi]
+     and eax, esi
+     mov [rdi], eax
+     ret
 =========== OPT LEVEL: all ===========
 main:
      sub rsp, 0x08

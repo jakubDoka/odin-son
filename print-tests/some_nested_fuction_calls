@@ -56,6 +56,35 @@ b:
 c:
      imul rax, rdi, 0x03
      ret
+=========== OPT LEVEL: moderate ===========
+main:
+     sub rsp, 0x08
+     mov rdi, 0x01
+     mov rsi, 0x02
+     call :a
+     add rsp, 0x08
+     ret
+a:
+     push rbx
+     push rbp
+     sub rsp, 0x08
+     mov rbx, rsi
+     call :b
+     mov rbp, rax
+     mov rdi, rbx
+     call :c
+     add rbp, rax
+     mov rax, rbp
+     add rsp, 0x08
+     pop rbp
+     pop rbx
+     ret
+b:
+     imul rax, rdi, 0x02
+     ret
+c:
+     imul rax, rdi, 0x03
+     ret
 =========== OPT LEVEL: all ===========
 main:
      sub rsp, 0x08

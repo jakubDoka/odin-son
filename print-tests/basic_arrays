@@ -240,6 +240,116 @@ main:
 016: add rsp, 0x90
      pop rbx
      ret
+=========== OPT LEVEL: moderate ===========
+main:
+     push rbx
+     sub rsp, 0x90
+     mov qword ptr [rsp+0x48], 0x00
+     mov qword ptr [rsp+0x50], 0x00
+     mov qword ptr [rsp+0x58], 0x00
+     mov qword ptr [rsp+0x60], 0x00
+     mov rcx, 0x00
+001: cmp rcx, 0x20
+     jnl :0
+     mov rax, rcx
+     mov [rsp+rcx*1+0x48], al
+     add rcx, 0x01
+     jmp :1
+
+000: mov rcx, 0x00
+     mov rdx, 0x00
+003: cmp rdx, 0x20
+     jnl :2
+     movzx eax, byte ptr [rsp+rdx*1+0x48]
+     movzx eax, al
+     add rdx, 0x01
+     add rax, rcx
+     mov rcx, rax
+     jmp :3
+
+002: mov qword ptr [rsp+0x68], 0x10
+     mov qword ptr [rsp+0x70], 0x19
+     mov qword ptr [rsp+0x78], 0x1F
+     mov qword ptr [rsp+0x80], 0x40
+     mov rax, 0x00
+005: cmp rax, 0x04
+     jnl :4
+     add [rsp+rax*8+0x68], rax
+     add rax, 0x01
+     jmp :5
+
+004: mov rax, 0x00
+007: cmp rax, 0x04
+     jnl :6
+     add qword ptr [rsp+rax*8+0x68], 0x01
+     add rax, 0x01
+     jmp :7
+
+006: mov rax, 0x01
+     mov rsi, 0x00
+009: cmp rax, 0x04
+     jnl :8
+     mov rdx, [rsp+rax*8+0x68]
+     add rdx, 0x01
+     mov [rsp+rsi*8+0x68], rdx
+     add rax, 0x01
+     add rsi, 0x01
+     jmp :9
+
+008: mov rdx, 0x00
+     mov rbx, rcx
+011: cmp rdx, 0x04
+     jnl :10
+     mov rax, rbx
+     add rax, [rsp+rdx*8+0x68]
+     add rdx, 0x01
+     mov rbx, rax
+     jmp :11
+
+010: mov rsi, 0x00
+     mov rdx, 0x48
+     lea rdi, [rsp]
+     call :$set
+     mov rsi, 0x00
+015: cmp rsi, 0x03
+     jnl :12
+     mov rdx, 0x00
+014: cmp rdx, 0x03
+     jnl :13
+     imul rax, rsi, 0x18
+     lea rcx, [rsp]
+     add rax, rcx
+     mov rcx, rsi
+     imul rcx, rdx
+     mov [rax+rdx*8], rcx
+     add rdx, 0x01
+     jmp :14
+
+013: add rsi, 0x01
+     jmp :15
+
+012: mov rdi, 0x00
+     mov rax, rbx
+019: cmp rdi, 0x03
+     jnl :16
+     mov rdx, 0x00
+     mov rsi, rax
+018: cmp rdx, 0x03
+     jnl :17
+     imul rax, rdi, 0x18
+     lea rcx, [rsp]
+     add rax, rcx
+     add rsi, [rax+rdx*8]
+     add rdx, 0x01
+     jmp :18
+
+017: add rdi, 0x01
+     mov rax, rsi
+     jmp :19
+
+016: add rsp, 0x90
+     pop rbx
+     ret
 =========== OPT LEVEL: all ===========
 main:
      push rbx

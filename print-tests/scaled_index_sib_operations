@@ -156,6 +156,75 @@ main:
      add rax, rcx
      add rsp, 0x48
      ret
+=========== OPT LEVEL: moderate ===========
+main:
+     mov qword ptr [rsp-0x48], 0x03
+     mov qword ptr [rsp-0x40], 0x0E
+     mov qword ptr [rsp-0x38], 0x19
+     mov qword ptr [rsp-0x30], 0x08
+     mov qword ptr [rsp-0x28], 0x28
+     mov qword ptr [rsp-0x20], 0x11
+     mov qword ptr [rsp-0x18], 0x37
+     mov qword ptr [rsp-0x10], 0x02
+     mov rcx, 0x00
+     mov rdx, 0x00
+003: cmp rdx, 0x08
+     jnl :0
+     cmp qword ptr [rsp+rdx*8-0x48], 0x14
+     jnle :1
+     mov rax, rcx
+     jmp :2
+
+001: mov rax, rcx
+     add rax, 0x01
+002: add rdx, 0x01
+     mov rcx, rax
+     jmp :3
+
+000: mov rax, 0x00
+005: cmp rax, 0x08
+     jnl :4
+     neg [rsp+rax*8-0x48]
+     add rax, 0x01
+     jmp :5
+
+004: mov rax, 0x00
+007: cmp rax, 0x08
+     jnl :6
+     not [rsp+rax*8-0x48]
+     add rax, 0x01
+     jmp :7
+
+006: mov rax, 0x00
+009: cmp rax, 0x08
+     jnl :8
+     add qword ptr [rsp+rax*8-0x48], 0x07
+     add rax, 0x01
+     jmp :9
+
+008: mov rdx, 0x00
+013: cmp rdx, 0x08
+     jnl :10
+     mov rax, rdx
+     and rax, 0x01
+     cmp rax, 0x00
+     jz :11
+     jmp :12
+
+011: mov qword ptr [rsp+rdx*8-0x48], 0x64
+012: add rdx, 0x01
+     jmp :13
+
+010: mov rax, 0x00
+     mov rdx, 0x00
+015: cmp rdx, 0x08
+     jnl :14
+     add rax, [rsp+rdx*8-0x48]
+     add rdx, 0x01
+     jmp :15
+
+014: add rax, rcx
+     ret
 =========== OPT LEVEL: all ===========
 main:
      mov qword ptr [rsp-0x48], 0x03

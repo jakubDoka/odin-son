@@ -283,6 +283,133 @@ cmps:
 
 010: add rax, 0x20
 011: ret
+=========== OPT LEVEL: moderate ===========
+main:
+     push rbx
+     push rbp
+     push r12
+     push r13
+     push r14
+     push r15
+     sub rsp, 0x18
+     mov qword ptr [rsp], 0x01
+     mov qword ptr [rsp+0x08], 0xFFFFFFFFFFFFFFFF
+     lea rsi, [rsp]
+     mov rdi, 0xFFFFFFFFFFFFFFFF
+     call :cmps
+     mov rbx, rax
+     lea rsi, [rsp]
+     mov rdi, 0x01
+     call :cmps
+     mov rbp, rax
+     lea rsi, [rsp+0x08]
+     mov rdi, 0xFFFFFFFFFFFFFFFF
+     call :cmps
+     mov r12, rax
+     lea rsi, [rsp+0x08]
+     mov rdi, 0x01
+     call :cmps
+     mov r13, rax
+     lea rdi, [rsp]
+     call :imm_cmps
+     mov r14, rax
+     lea rdi, [rsp]
+     call :imm_cmps
+     mov r15, rax
+     lea rdi, [rsp+0x08]
+     call :imm_cmps
+     mov [rsp+0x10], rax
+     lea rdi, [rsp+0x08]
+     call :imm_cmps
+     mov rdx, rbx
+     mov rcx, rbp
+     add rdx, rcx
+     mov rcx, r12
+     add rdx, rcx
+     mov rcx, r13
+     add rdx, rcx
+     mov rcx, r14
+     add rdx, rcx
+     mov rcx, r15
+     add rdx, rcx
+     mov rcx, [rsp+0x10]
+     add rdx, rcx
+     add rdx, rax
+     mov rax, rdx
+     add rsp, 0x18
+     pop r15
+     pop r14
+     pop r13
+     pop r12
+     pop rbp
+     pop rbx
+     ret
+imm_cmps:
+     cmp qword ptr [rdi], 0x00
+     jz :0
+     mov rax, 0x00
+     jmp :1
+
+000: mov rax, 0x01
+001: cmp qword ptr [rdi], 0x00
+     jnz :2
+     jmp :3
+
+002: add rax, 0x02
+003: cmp qword ptr [rdi], 0x00
+     jl :4
+     jmp :5
+
+004: add rax, 0x04
+005: cmp qword ptr [rdi], 0x00
+     jnle :6
+     jmp :7
+
+006: add rax, 0x08
+007: cmp qword ptr [rdi], 0x00
+     jle :8
+     jmp :9
+
+008: add rax, 0x10
+009: cmp qword ptr [rdi], 0x00
+     jnl :10
+     jmp :11
+
+010: add rax, 0x20
+011: ret
+cmps:
+     cmp rdi, [rsi]
+     jz :0
+     mov rax, 0x00
+     jmp :1
+
+000: mov rax, 0x01
+001: cmp rdi, [rsi]
+     jnz :2
+     jmp :3
+
+002: add rax, 0x02
+003: cmp rdi, [rsi]
+     jnl :4
+     jmp :5
+
+004: add rax, 0x04
+005: cmp rdi, [rsi]
+     jle :6
+     jmp :7
+
+006: add rax, 0x08
+007: cmp rdi, [rsi]
+     jnle :8
+     jmp :9
+
+008: add rax, 0x10
+009: cmp rdi, [rsi]
+     jl :10
+     jmp :11
+
+010: add rax, 0x20
+011: ret
 =========== OPT LEVEL: all ===========
 main:
      push rbx

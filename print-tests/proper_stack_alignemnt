@@ -46,6 +46,24 @@ copy:
      mov rax, 0x00
      add rsp, 0x08
      ret
+=========== OPT LEVEL: moderate ===========
+main:
+     sub rsp, 0x08
+     lea rdi, [rsp]
+     mov byte ptr [rsp], 0x00
+     mov byte ptr [rsp+0x01], 0x00
+     lea rsi, [rsp+0x01]
+     call :copy
+     mov rax, 0x00
+     add rsp, 0x08
+     ret
+copy:
+     sub rsp, 0x08
+     mov rdx, 0x01
+     call :$copy
+     mov rax, 0x00
+     add rsp, 0x08
+     ret
 =========== OPT LEVEL: all ===========
 main:
      sub rsp, 0x08

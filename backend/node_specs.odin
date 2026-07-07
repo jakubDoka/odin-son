@@ -296,19 +296,19 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0b10, // Local_Addr
 			0b100, // Global
 			0b10, // Global_Addr
-			0b100000, // Copy
-			0b100000, // Set
-			0b100000, // Store
-			0b100000, // Load
-			0b100000, // Load_S
+			0b10, // Copy
+			0b10, // Set
+			0b10, // Store
+			0b10, // Load
+			0b10, // Load_S
 			0b1, // If
 			0b1, // Then
 			0b1, // Else
 			0b1, // Jump
-			0b1000001, // Region
+			0b1, // Region
 			0b1, // Loop
 			0b1, // Always
-			0b10000001, // Call
+			0b100001, // Call
 			0b1, // Call_End
 			0b100, // Ret
 			0b1, // Return
@@ -317,7 +317,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0b10, // Sext
 			0b10, // Uext
 			0b10, // Cast
-			0b100000000, // Scope
+			0b1000000, // Scope
 			0b10, // Lazy_Phi
 			0b10, // Dead
 		},
@@ -358,16 +358,16 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, // Local_Addr -> No_Extra
 			1, // Global -> Tup
 			0, // Global_Addr -> No_Extra
-			0, // Copy -> Mem_Op
-			0, // Set -> Mem_Op
-			0, // Store -> Mem_Op
-			0, // Load -> Mem_Op
-			0, // Load_S -> Mem_Op
+			0, // Copy -> No_Extra
+			0, // Set -> No_Extra
+			0, // Store -> No_Extra
+			0, // Load -> No_Extra
+			0, // Load_S -> No_Extra
 			1, // If -> Cfg
 			1, // Then -> Cfg
 			1, // Else -> Cfg
 			1, // Jump -> Cfg
-			1, // Region -> Region
+			1, // Region -> Cfg
 			1, // Loop -> Cfg
 			1, // Always -> Cfg
 			2, // Call -> Call
@@ -482,16 +482,16 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			No_Extra,
 			Tup,
 			No_Extra,
-			Mem_Op,
-			Mem_Op,
-			Mem_Op,
-			Mem_Op,
-			Mem_Op,
+			No_Extra,
+			No_Extra,
+			No_Extra,
+			No_Extra,
+			No_Extra,
 			Cfg,
 			Cfg,
 			Cfg,
 			Cfg,
-			Region,
+			Cfg,
 			Cfg,
 			Cfg,
 			Call,
@@ -962,19 +962,19 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0b10, // Local_Addr
 			0b100, // Global
 			0b10, // Global_Addr
-			0b100000, // Copy
-			0b100000, // Set
-			0b100000, // Store
-			0b100000, // Load
-			0b100000, // Load_S
+			0b10, // Copy
+			0b10, // Set
+			0b10, // Store
+			0b10, // Load
+			0b10, // Load_S
 			0b1, // If
 			0b1, // Then
 			0b1, // Else
 			0b1, // Jump
-			0b1000001, // Region
+			0b1, // Region
 			0b1, // Loop
 			0b1, // Always
-			0b10000001, // Call
+			0b100001, // Call
 			0b1, // Call_End
 			0b100, // Ret
 			0b1, // Return
@@ -983,30 +983,30 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0b10, // Sext
 			0b10, // Uext
 			0b10, // Cast
-			0b100000000, // X64_Add
-			0b100000000, // X64_Sub
-			0b100000000, // X64_And
-			0b100000000, // X64_Or
-			0b100000000, // X64_Xor
-			0b100000000, // X64_Eq
-			0b100000000, // X64_Ne
-			0b100000000, // X64_Le
-			0b100000000, // X64_Lt
-			0b100000000, // X64_Gt
-			0b100000000, // X64_Ge
-			0b100000000, // X64_U_Lt
-			0b100000000, // X64_U_Gt
-			0b100000000, // X64_U_Le
-			0b100000000, // X64_U_Ge
-			0b100000000, // X64_Shl
-			0b100000000, // X64_Shr
-			0b100000000, // X64_U_Shr
-			0b100000000, // X64_Mul
-			0b100000000, // X64_Lea
-			0b100000000, // X64_Load
-			0b100000000, // X64_Store
-			0b100000000, // X64_Neg
-			0b100000000, // X64_Not
+			0b1000000, // X64_Add
+			0b1000000, // X64_Sub
+			0b1000000, // X64_And
+			0b1000000, // X64_Or
+			0b1000000, // X64_Xor
+			0b1000000, // X64_Eq
+			0b1000000, // X64_Ne
+			0b1000000, // X64_Le
+			0b1000000, // X64_Lt
+			0b1000000, // X64_Gt
+			0b1000000, // X64_Ge
+			0b1000000, // X64_U_Lt
+			0b1000000, // X64_U_Gt
+			0b1000000, // X64_U_Le
+			0b1000000, // X64_U_Ge
+			0b1000000, // X64_Shl
+			0b1000000, // X64_Shr
+			0b1000000, // X64_U_Shr
+			0b1000000, // X64_Mul
+			0b1000000, // X64_Lea
+			0b1000000, // X64_Load
+			0b1000000, // X64_Store
+			0b1000000, // X64_Neg
+			0b1000000, // X64_Not
 			0b10, // X64_Mul8
 		},
 		node_extra_sizes = {
@@ -1046,16 +1046,16 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, // Local_Addr -> No_Extra
 			1, // Global -> Tup
 			0, // Global_Addr -> No_Extra
-			0, // Copy -> Mem_Op
-			0, // Set -> Mem_Op
-			0, // Store -> Mem_Op
-			0, // Load -> Mem_Op
-			0, // Load_S -> Mem_Op
+			0, // Copy -> No_Extra
+			0, // Set -> No_Extra
+			0, // Store -> No_Extra
+			0, // Load -> No_Extra
+			0, // Load_S -> No_Extra
 			1, // If -> Cfg
 			1, // Then -> Cfg
 			1, // Else -> Cfg
 			1, // Jump -> Cfg
-			1, // Region -> Region
+			1, // Region -> Cfg
 			1, // Loop -> Cfg
 			1, // Always -> Cfg
 			2, // Call -> Call
@@ -1067,30 +1067,30 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, // Sext -> No_Extra
 			0, // Uext -> No_Extra
 			0, // Cast -> No_Extra
-			4, // X64_Add -> X64_Mem_Op
-			4, // X64_Sub -> X64_Mem_Op
-			4, // X64_And -> X64_Mem_Op
-			4, // X64_Or -> X64_Mem_Op
-			4, // X64_Xor -> X64_Mem_Op
-			4, // X64_Eq -> X64_Mem_Op
-			4, // X64_Ne -> X64_Mem_Op
-			4, // X64_Le -> X64_Mem_Op
-			4, // X64_Lt -> X64_Mem_Op
-			4, // X64_Gt -> X64_Mem_Op
-			4, // X64_Ge -> X64_Mem_Op
-			4, // X64_U_Lt -> X64_Mem_Op
-			4, // X64_U_Gt -> X64_Mem_Op
-			4, // X64_U_Le -> X64_Mem_Op
-			4, // X64_U_Ge -> X64_Mem_Op
-			4, // X64_Shl -> X64_Mem_Op
-			4, // X64_Shr -> X64_Mem_Op
-			4, // X64_U_Shr -> X64_Mem_Op
-			4, // X64_Mul -> X64_Mem_Op
-			4, // X64_Lea -> X64_Mem_Op
-			4, // X64_Load -> X64_Mem_Op
-			4, // X64_Store -> X64_Mem_Op
-			4, // X64_Neg -> X64_Mem_Op
-			4, // X64_Not -> X64_Mem_Op
+			3, // X64_Add -> X64_Mem_Op
+			3, // X64_Sub -> X64_Mem_Op
+			3, // X64_And -> X64_Mem_Op
+			3, // X64_Or -> X64_Mem_Op
+			3, // X64_Xor -> X64_Mem_Op
+			3, // X64_Eq -> X64_Mem_Op
+			3, // X64_Ne -> X64_Mem_Op
+			3, // X64_Le -> X64_Mem_Op
+			3, // X64_Lt -> X64_Mem_Op
+			3, // X64_Gt -> X64_Mem_Op
+			3, // X64_Ge -> X64_Mem_Op
+			3, // X64_U_Lt -> X64_Mem_Op
+			3, // X64_U_Gt -> X64_Mem_Op
+			3, // X64_U_Le -> X64_Mem_Op
+			3, // X64_U_Ge -> X64_Mem_Op
+			3, // X64_Shl -> X64_Mem_Op
+			3, // X64_Shr -> X64_Mem_Op
+			3, // X64_U_Shr -> X64_Mem_Op
+			3, // X64_Mul -> X64_Mem_Op
+			3, // X64_Lea -> X64_Mem_Op
+			3, // X64_Load -> X64_Mem_Op
+			3, // X64_Store -> X64_Mem_Op
+			3, // X64_Neg -> X64_Mem_Op
+			3, // X64_Not -> X64_Mem_Op
 			0, // X64_Mul8 -> No_Extra
 		},
 		node_flags = {
@@ -1214,16 +1214,16 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			No_Extra,
 			Tup,
 			No_Extra,
-			Mem_Op,
-			Mem_Op,
-			Mem_Op,
-			Mem_Op,
-			Mem_Op,
+			No_Extra,
+			No_Extra,
+			No_Extra,
+			No_Extra,
+			No_Extra,
 			Cfg,
 			Cfg,
 			Cfg,
 			Cfg,
-			Region,
+			Cfg,
 			Cfg,
 			Cfg,
 			Call,
@@ -1541,27 +1541,27 @@ graph_add_global_addr :: #force_inline proc(graph: ^Graph, name: string, global:
 	push_node_name(graph, name)
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Global_Addr), .I64, {global})
 }
-#assert(size_of(Mem_Op) % 4 == 0)
+#assert(size_of(No_Extra) % 4 == 0)
 graph_add_copy :: #force_inline proc(graph: ^Graph, name: string, ctrl: Node_ID, mem: Node_ID, dst: Node_ID, src: Node_ID, size: Node_ID) -> (id: Node_ID) {
 	push_node_name(graph, name)
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Copy), .Void, {ctrl, mem, dst, src, size})
 }
-#assert(size_of(Mem_Op) % 4 == 0)
+#assert(size_of(No_Extra) % 4 == 0)
 graph_add_set :: #force_inline proc(graph: ^Graph, name: string, ctrl: Node_ID, mem: Node_ID, dst: Node_ID, value: Node_ID, size: Node_ID) -> (id: Node_ID) {
 	push_node_name(graph, name)
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Set), .Void, {ctrl, mem, dst, value, size})
 }
-#assert(size_of(Mem_Op) % 4 == 0)
+#assert(size_of(No_Extra) % 4 == 0)
 graph_add_store :: #force_inline proc(graph: ^Graph, name: string, ctrl: Node_ID, mem: Node_ID, addr: Node_ID, value: Node_ID) -> (id: Node_ID) {
 	push_node_name(graph, name)
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Store), .Void, {ctrl, mem, addr, value})
 }
-#assert(size_of(Mem_Op) % 4 == 0)
+#assert(size_of(No_Extra) % 4 == 0)
 graph_add_load :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype, ctrl: Node_ID, mem: Node_ID, addr: Node_ID) -> (id: Node_ID) {
 	push_node_name(graph, name)
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Load), dt, {ctrl, mem, addr})
 }
-#assert(size_of(Mem_Op) % 4 == 0)
+#assert(size_of(No_Extra) % 4 == 0)
 graph_add_load_s :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype, ctrl: Node_ID, mem: Node_ID, addr: Node_ID) -> (id: Node_ID) {
 	push_node_name(graph, name)
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Load_S), dt, {ctrl, mem, addr})
@@ -1590,10 +1590,10 @@ graph_add_jump :: #force_inline proc(graph: ^Graph, name: string, ctrl: Node_ID)
 	(^Cfg)(graph_get_next_extra_slot(graph, u16(Ideal_Node_Type.Jump)))^ = {}
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Jump), .Void, {ctrl})
 }
-#assert(size_of(Region) % 4 == 0)
+#assert(size_of(Cfg) % 4 == 0)
 graph_add_region :: #force_inline proc(graph: ^Graph, name: string, inputs: []Node_ID) -> (id: Node_ID) {
 	push_node_name(graph, name)
-	(^Region)(graph_get_next_extra_slot(graph, u16(Ideal_Node_Type.Region)))^ = {}
+	(^Cfg)(graph_get_next_extra_slot(graph, u16(Ideal_Node_Type.Region)))^ = {}
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Region), .Void, inputs)
 }
 #assert(size_of(Cfg) % 4 == 0)
@@ -1774,15 +1774,13 @@ X64_Node_Type :: enum u16 {
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	when false {}
 	else when T == CInt {return 3}
-	else when T == Tup {return 2}
 	else when T == Local {return 4}
-	else when T == X64_Mem_Op {return 8}
-	else when T == Region {return 6}
+	else when T == Tup {return 2}
+	else when T == X64_Mem_Op {return 6}
+	else when T == Scope {return 6}
 	else when T == No_Extra {return 1}
-	else when T == Call {return 7}
-	else when T == Scope {return 8}
+	else when T == Call {return 5}
 	else when T == Cfg {return 0}
-	else when T == Mem_Op {return 5}
 	else {#panic(`the passed type is not subclass of anything`)}
 }
 }

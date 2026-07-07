@@ -24,6 +24,35 @@ NODE_ENTRY ::
 	Node_ID(4 + PREFIX_SIZE + size_of(Node) + size_of(Cfg) + PREFIX_SIZE) / 4
 NODE_NAMES :: #config(NODE_NAMES, ODIN_DEBUG)
 
+Stats :: struct {
+	efficiency: [Efficiency_Stat_Kind]Efficiency_Stat,
+}
+
+Efficiency_Stat_Kind :: enum int {
+	graph_waste,
+	late_schedule_rounds,
+	ifg_rounds,
+	peephole_rounds,
+	recycles,
+}
+
+Efficiency_Stat :: struct {
+	total: int,
+	ideal: int,
+}
+
+add_efficiency_stat :: proc(
+	stats: ^Stats,
+	kind: Efficiency_Stat_Kind,
+	#any_int total: int,
+	#any_int ideal: int,
+) {
+	if stats == nil do return
+
+	stats.efficiency[kind].total += total
+	stats.efficiency[kind].ideal += ideal
+}
+
 Node_Spec_Name :: enum {
 	Builder,
 	X64,
@@ -120,10 +149,6 @@ Cfg :: struct {
 	},
 }
 
-Region :: struct {
-	using _: Cfg,
-}
-
 Scope :: struct #align (4) {
 	done: bool,
 }
@@ -148,8 +173,6 @@ Local :: struct {
 		rename_idx: i32,
 	},
 }
-
-Mem_Op :: struct {}
 
 No_Extra :: struct {}
 
@@ -221,6 +244,7 @@ Node_Intern_Entry :: struct {
 
 Graph :: struct {
 	using node_spec: ^Node_Spec,
+	using stats:     ^Stats,
 	worklist:        ^queue.Queue(Node_ID),
 	triggers:        ^[dynamic][dynamic; 4]Node_ID,
 	interner:        #soa[]Node_Intern_Entry,
@@ -433,6 +457,12 @@ graph_schedule_peeps :: proc(graph: ^Graph, schedule: ^Graph_Schedule) {
 		}
 	}
 
+	add_efficiency_stat(
+		graph,
+		.graph_waste,
+		graph.mem.pos,
+		int(graph.mem.pos) - graph.waste,
+	)
 }
 
 find_node :: proc(
@@ -472,7 +502,10 @@ graph_iter_peeps :: proc(graph: ^Graph) -> (optimized: bool) {
 
 	collect_nodes(graph, &worklist)
 
+	rounds := 0
 	for n in worklist_next(graph, &worklist) {
+		rounds += 1
+
 		node := graph_expand(graph, n)
 
 		prev_hash := graph_node_hash(graph, node)
@@ -512,11 +545,19 @@ graph_iter_peeps :: proc(graph: ^Graph) -> (optimized: bool) {
 		}
 	}
 
+	add_efficiency_stat(graph, .peephole_rounds, rounds, graph.gvn)
+
 	if ODIN_DEBUG {
 		collect_nodes(graph, &worklist)
 
 		for n in worklist_next(graph, &worklist) {
 			node := graph_expand(graph, n)
+			for out in node.outs {
+				onode := graph_get(graph, out.id)
+				if onode.itype != .Call {
+					assert(out.idx < int(onode.input_count))
+				}
+			}
 			assert(
 				node.itype != .Local ||
 				graph_extra(graph, node, Local).size != DEAD_LOCAL,
@@ -1013,8 +1054,11 @@ graph_subsume :: proc(
 
 		graph_intern(graph, target)
 
+		add_efficiency_stat(graph, .recycles, 1, 1)
 		return
 	}
+
+	add_efficiency_stat(graph, .recycles, 1, 0)
 
 	graph_ensure_available_output_cap(graph, wnode, tnode.output_count)
 

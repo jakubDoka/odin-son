@@ -395,7 +395,7 @@ memopt :: proc(graph: ^Graph) -> (optimized: bool) {
 						   vnode.inps[0] != loop.loop_node) &&
 					   !loop.done {
 						assert(
-							vnode.btype != .Phi ||
+							vnode.itype != .Phi ||
 							vnode.inps[0] != loop.loop_node,
 						)
 						val = graph_add_lazy_phi(

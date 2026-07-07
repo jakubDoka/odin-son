@@ -299,7 +299,7 @@ Mem_Mode :: enum u8 {
 X64_Mem_Op :: struct {
 	imm:      i32,
 	dis:      i32,
-	scale:    i32,
+	scale:    u8,
 	signed:   bool,
 	mem_mode: Mem_Mode,
 	dt:       Node_Datatype,
@@ -346,7 +346,7 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 		bnode := graph_expand(ctx, nbase)
 		if bnode.xtype == .X64_Lea {
 			mem_op := graph_extra(ctx, bnode, X64_Mem_Op)
-			scale = mem_op.scale
+			scale = i32(mem_op.scale)
 			overflowed: bool
 			displacement, overflowed = intrinsics.overflow_add(
 				displacement,
@@ -447,7 +447,7 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 				id,
 				u16(X64_Node_Type.X64_Lea),
 				{abase, aindex},
-				{scale = ascale, dis = displacement},
+				{scale = u8(ascale), dis = displacement},
 				additional_data_offset = u8(stack_base),
 			)
 		}
@@ -464,7 +464,7 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 			load_inps[:3 + int(scale != 0)],
 			{
 				dis = displacement,
-				scale = scale,
+				scale = u8(scale),
 				signed = node.itype == .Load_S,
 			},
 			additional_data_offset = u8(stack_base),
@@ -494,7 +494,7 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 			{
 				dis = displacement,
 				imm = immediate,
-				scale = scale,
+				scale = u8(scale),
 				dt = graph_get(ctx, node.inps[3]).dt,
 			},
 			additional_data_offset = u8(stack_base),
@@ -516,7 +516,7 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 
 		if scale != 0 {
 			graph_connect(ctx, id, index)
-			mem_op.scale = scale
+			mem_op.scale = u8(scale)
 			node = graph_expand(ctx, id)
 			changed = true
 		}

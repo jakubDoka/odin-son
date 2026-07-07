@@ -66,30 +66,19 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 		default_type = .I64,
 		flags = {.Clonable, .Interned},
 	},
-	.Load = {
-		id = Mem_Op,
-		args = {"ctrl", "mem", "addr"},
-		flags = {.Interned, .Load},
-	},
-	.Load_S = {
-		id = Mem_Op,
-		args = {"ctrl", "mem", "addr"},
-		flags = {.Interned, .Load},
-	},
+	.Load = {args = {"ctrl", "mem", "addr"}, flags = {.Interned, .Load}},
+	.Load_S = {args = {"ctrl", "mem", "addr"}, flags = {.Interned, .Load}},
 	.Store = {
-		id = Mem_Op,
 		args = {"ctrl", "mem", "addr", "value"},
 		default_type = .Void,
 		flags = {.Store},
 	},
 	.Copy = {
-		id = Mem_Op,
 		args = {"ctrl", "mem", "dst", "src", "size"},
 		default_type = .Void,
 		flags = {.Store, .Call},
 	},
 	.Set = {
-		id = Mem_Op,
 		args = {"ctrl", "mem", "dst", "value", "size"},
 		default_type = .Void,
 		flags = {.Store, .Call},
@@ -111,7 +100,7 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 	},
 	.Jump = {id = Cfg, args = {"ctrl"}, default_type = .Void},
 	.Region = {
-		id = Region,
+		id = Cfg,
 		varargs = true,
 		default_type = .Void,
 		flags = {.Is_Basic_Block_Start},
@@ -254,6 +243,8 @@ when SPEC_NOT_PRESENT {
 	graph_add_always :: graph_add_jump
 	graph_add_then :: graph_add_jump
 	graph_add_else :: graph_add_jump
+	graph_add_local :: graph_add_jump
+	graph_add_local_addr :: graph_add_jump
 
 	graph_add_poison :: proc(graph: ^Graph, name: string) -> Node_ID {return 0}
 

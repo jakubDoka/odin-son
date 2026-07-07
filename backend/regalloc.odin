@@ -216,8 +216,6 @@ Lrg :: struct {
 	longest_def:      Node_ID,
 }
 
-ifg_redc: Redundancy_Counter
-
 regalloc_round :: proc(
 	ra: ^Regalloc,
 	graph: ^Graph,
@@ -557,10 +555,7 @@ regalloc_round :: proc(
 		}
 	}
 
-	if false {
-		redundancy_add(&ifg_redc, len(sched.bbs), rounds)
-		redundancy_log(&ifg_redc)
-	}
+	add_efficiency_stat(graph, .ifg_rounds, rounds, len(sched.bbs))
 
 	//log_lrgs(graph, sched, lrg_table)
 

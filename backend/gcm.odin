@@ -7,7 +7,6 @@ import "core:container/queue"
 import "core:fmt"
 import "core:log"
 import "core:slice"
-import "core:sync"
 
 Graph_Basic_Block :: struct {
 	head:      Node_ID,
@@ -25,32 +24,6 @@ Loop_Tree :: struct {
 	parent:   ^Loop_Tree,
 	depth:    u32,
 	infinite: bool,
-}
-
-Redundancy_Counter :: struct {
-	mut:   sync.Mutex,
-	min:   int,
-	total: int,
-}
-
-redundancy_add :: proc(
-	counter: ^Redundancy_Counter,
-	#any_int min: int,
-	#any_int total: int,
-) {
-	sync.guard(&counter.mut)
-	counter.min += min
-	counter.total += total
-}
-
-redundancy_log :: proc(counter: ^Redundancy_Counter, loc := #caller_location) {
-	sync.guard(&counter.mut)
-	log.info(
-		counter.min,
-		counter.total,
-		f32(counter.min) / f32(counter.total),
-		location = loc,
-	)
 }
 
 graph_lca :: proc(graph: ^Graph, a, b: Node_ID) -> Node_ID {
@@ -129,8 +102,6 @@ graph_idepth_node :: proc(graph: ^Graph, node: ^Node) -> u32 {
 
 	return extra.idepth
 }
-
-gvn_redc: Redundancy_Counter
 
 graph_schedule :: proc(
 	graph: ^Graph,
@@ -273,7 +244,7 @@ graph_schedule :: proc(
 
 		for o in node.outs {
 			onode := graph_get(graph, o.id)
-			if graph_extra(graph, o.id, Cfg) != nil {
+			if is_cfg(graph, o.id) {
 				if (onode.itype == .Region || onode.itype == .Loop) &&
 				   node.itype != .Jump {
 					jmp := graph_add_jump(graph, "jump", root)
@@ -503,10 +474,7 @@ graph_schedule :: proc(
 		}
 	}
 
-	if false {
-		redundancy_add(&gvn_redc, graph.gvn, rounds)
-		redundancy_log(&gvn_redc)
-	}
+	add_efficiency_stat(graph, .late_schedule_rounds, rounds, graph.gvn)
 
 	bb_idx := 0
 	for id, i in cfg_rpos {

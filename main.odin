@@ -13,6 +13,7 @@ import "core:odin/ast"
 import "core:odin/parser"
 import "core:odin/tokenizer"
 import "core:os"
+import "core:reflect"
 import "core:slice"
 import "core:strconv"
 import "core:strings"
@@ -388,7 +389,6 @@ init_custom_fmt :: proc() {
 	)
 }
 
-waste_redc: backend.Redundancy_Counter
 once: sync.Once
 
 run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
@@ -540,6 +540,8 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		typecheck(&ctx, {}, prc.ast.body)
 	}
 
+	stats: backend.Stats
+
 	dsb: strings.Builder
 	dsb.buf.allocator = context.temp_allocator
 	for level in levels {
@@ -559,6 +561,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 			ctx.mem = &graph_mem
 			ctx.mem.pos = backend.PRECISION
 			ctx.opt_flags = level.flags
+			ctx.stats = &stats
 
 			current_graph = &ctx
 
@@ -808,6 +811,24 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 
 		oka = virtual.protect(code_mem.ptr, code_until, {.Read, .Write})
 		assert(oka)
+	}
+
+	@(static) log_lock: sync.Mutex
+
+	if false {sync.guard(&log_lock)
+		log.info(name)
+		for eff, kind in stats.efficiency {
+			name :=
+				reflect.enum_field_names(backend.Efficiency_Stat_Kind)[kind]
+			log.infof(
+				"  %s %s % -8d % -8d % -8f",
+				name,
+				strings.repeat(" ", 20 - len(name), context.temp_allocator),
+				eff.total,
+				eff.ideal,
+				f64(eff.total) / f64(eff.ideal),
+			)
+		}
 	}
 
 	context.allocator = context.temp_allocator

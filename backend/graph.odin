@@ -5,6 +5,7 @@ import "base:intrinsics"
 import "base:runtime"
 import "core:container/queue"
 import "core:fmt"
+import "core:log"
 import "core:math"
 import "core:mem"
 import "core:reflect"
@@ -19,9 +20,6 @@ when NODE_NAMES {
 
 DEAD_LOCAL: i32 : -1
 PRECISION :: size_of(u32)
-NODE_START :: Node_ID(4 + PREFIX_SIZE) / 4
-NODE_ENTRY ::
-	Node_ID(4 + PREFIX_SIZE + size_of(Node) + size_of(Cfg) + PREFIX_SIZE) / 4
 NODE_NAMES :: #config(NODE_NAMES, ODIN_DEBUG)
 
 Stats :: struct {
@@ -33,7 +31,6 @@ Efficiency_Stat_Kind :: enum int {
 	late_schedule_rounds,
 	ifg_rounds,
 	peephole_rounds,
-	recycles,
 }
 
 Efficiency_Stat :: struct {
@@ -251,6 +248,8 @@ Graph :: struct {
 	interner_len:    int,
 	mem:             ^arna.Allocator,
 	gvn:             u32,
+	start:           Node_ID,
+	entry:           Node_ID,
 	end:             Node_ID,
 	waste:           int,
 	dont_intern:     bool,
@@ -468,18 +467,118 @@ graph_schedule_peeps :: proc(graph: ^Graph, schedule: ^Graph_Schedule) {
 find_node :: proc(
 	graph: ^Graph,
 	kind: Ideal_Node_Type,
-	on: Node_ID = NODE_ENTRY,
+	on: Node_ID = 0,
 ) -> (
 	Node_ID,
 	bool,
 ) {
-	for eout in graph_outs(graph, on) {
+	for eout in graph_outs(graph, on if on != 0 else graph.entry) {
 		enode := graph_expand(graph, eout.id)
 		if enode.itype == kind {
 			return eout.id, true
 		}
 	}
 	return 0, false
+}
+
+graph_poll_gc :: proc(graph: ^Graph) {
+	//if graph.waste < int(graph.mem.pos / 2) do return
+
+	context.allocator, _ = arna.scrath()
+
+	worklist: queue.Queue(Node_ID)
+	queue.init(&worklist, int(graph.gvn * 3 / 5 + 20))
+
+	collect_nodes(graph, &worklist)
+
+	prev_mem := graph.mem^
+	prev := graph^
+	prev.mem = &prev_mem
+
+	graph.mem.ptr = graph.mem.ptr[graph.mem.pos:]
+	graph.mem.pos = PRECISION
+	graph.gvn = 0
+
+	KEEP_CAPACITY :: bit_set[Ideal_Node_Type]{.Call}
+
+	interned_count := 0
+
+	for &n in worklist.data[:worklist.len] {
+		node := graph_expand(&prev, n)
+
+		interned_count += int(graph_has_flag(&prev, node, .Interned))
+		if node.itype not_in KEEP_CAPACITY {
+			node.input_cap = node.input_count
+		}
+		node.output_cap = node.output_count
+
+		size :=
+			size_of(Node) + int(graph.node_extra_sizes[node.rtype]) * PRECISION
+		push_node_name(graph, graph_get_node_name(&prev, n))
+		slot := arna.alloc(graph.mem, uint(size), PRECISION)
+
+		mem.copy_non_overlapping(raw_data(slot), node.node, len(slot))
+
+		new_node := (^Node)(raw_data(slot))
+		new_node.gvn = graph.gvn
+		graph.gvn += 1
+
+		new_node.input_idx = u32(graph.mem.pos / PRECISION)
+		_ = arna.clone(graph.mem, raw_data(node.inps)[:node.input_cap])
+
+		new_node.output_idx = u32(graph.mem.pos / PRECISION)
+		_ = arna.clone(graph.mem, node.outs)
+
+		n = graph_id(graph, new_node)
+	}
+
+	graph.interner = graph.interner[:0]
+	graph.interner_len = 0
+	graph_interner_grow(
+		graph,
+		mem.align_forward_int(interned_count, align_of(Intern_Vec)),
+	)
+
+	for n in worklist.data[:worklist.len] {
+		node := graph_expand(graph, n)
+		node.in_worklist = false
+
+		for &inp in raw_data(node.inps)[:node.input_cap] {
+			if inp == 0 do continue
+			inp = project(&prev, worklist, inp)
+		}
+
+		for &out in node.outs {
+			out.id = project(&prev, worklist, out.id)
+		}
+
+		if graph_has_flag(graph, node, .Interned) {
+			hash := graph_node_hash(graph, node)
+			graph.interner[graph.interner_len] = {hash, n}
+			graph.interner_len += 1
+		}
+	}
+
+	assert(graph.interner_len == interned_count)
+
+	graph.start = project(&prev, worklist, graph.start)
+	graph.entry = project(&prev, worklist, graph.entry)
+	graph.end = project(&prev, worklist, graph.end)
+
+	project :: proc(
+		prev: ^Graph,
+		wl: queue.Queue(Node_ID),
+		node: Node_ID,
+	) -> Node_ID {
+		return wl.data[:wl.len][graph_get(prev, node).gvn]
+	}
+
+	mem.copy(prev.mem.ptr, graph.mem.ptr, int(graph.mem.pos))
+	graph.interner.hash = graph.interner.hash[-int(prev.mem.pos):]
+	graph.interner.id = graph.interner.id[-int(prev.mem.pos) /
+	size_of(Node_ID):]
+	graph.mem.ptr = prev.mem.ptr
+	graph.waste = 0
 }
 
 graph_iter_peeps :: proc(graph: ^Graph) -> (optimized: bool) {
@@ -585,9 +684,10 @@ graph_iter_peeps :: proc(graph: ^Graph) -> (optimized: bool) {
 collect_nodes :: proc(graph: ^Graph, worklist: ^queue.Queue(Node_ID)) {
 	i := 0
 	worklist.offset = 0
-	worklist_add(graph, worklist, NODE_START)
-	for i < queue.len(worklist^) {
+	worklist_add(graph, worklist, graph.start)
+	for i < int(worklist.len) {
 		node := graph_expand(graph, worklist.data[i])
+		node.gvn = u32(i)
 
 		for inp in node.inps {
 			if inp == 0 do continue
@@ -600,6 +700,9 @@ collect_nodes :: proc(graph: ^Graph, worklist: ^queue.Queue(Node_ID)) {
 
 		i += 1
 	}
+	graph.gvn = u32(worklist.len)
+
+	return
 }
 
 is_noalias :: proc {
@@ -840,7 +943,7 @@ graph_loop_control :: proc(
 
 graph_merge_returns :: proc(graph: ^Graph, args: []Node_ID) -> Node_ID {
 	if graph.end == 0 {
-		args[0] = graph_add_region(graph, "rret", {args[0]})
+		args[0] = graph_add_region(graph, "rret", {args[0], graph.start})
 		for &a in args[1:] {
 			push_node_name(graph, "rphi")
 			a = graph_add_raw(
@@ -854,12 +957,26 @@ graph_merge_returns :: proc(graph: ^Graph, args: []Node_ID) -> Node_ID {
 		graph.end = graph_add_return(graph, "ret", args)
 	} else {
 		end := graph_expand(graph, graph.end)
+
+		reg := graph_expand(graph, end.inps[0])
+
+		prev_cached := reg.inps[len(reg.inps) - 1]
+		reg.input_count -= 1
+		graph_remove_output(
+			graph,
+			prev_cached,
+			{idx = len(reg.inps) - 1, id = end.inps[0]},
+			no_delete = true,
+		)
+
 		graph_connect(graph, end.inps[0], args[0])
 
 		for i in 1 ..< len(end.inps) {
 			new := i < len(args) ? args[i] : graph_add_poison(graph, "rpsn")
 			graph_connect(graph, end.inps[i], new)
 		}
+
+		graph_connect(graph, end.inps[0], prev_cached)
 	}
 
 	return graph.end
@@ -910,35 +1027,12 @@ graph_intern :: proc(graph: ^Graph, id: Node_ID) -> Node_ID {
 
 	idx, hash, _ := graph_interner_find(graph, id, 0)
 	if idx >= 0 {
-		//assert(len(graph_outs(graph, id)) == 0)
 		return graph.interner.id[idx]
 	}
 
 	if len(graph.interner) == graph.interner_len {
 		new_cap := len(graph.interner) * 2 + size_of(Intern_Vec)
-		hashes := arna.alloc(
-			graph.mem,
-			uint(new_cap),
-			align_of(Intern_Vec),
-			zeroed = true,
-		)
-		nodes := arna.smake(graph.mem, []Node_ID, new_cap)
-
-		mem.copy_non_overlapping(
-			raw_data(hashes),
-			graph.interner.hash,
-			graph.interner_len,
-		)
-		mem.copy_non_overlapping(
-			raw_data(nodes),
-			graph.interner.id,
-			graph.interner_len * size_of(Node_ID),
-		)
-
-		graph.interner.hash = raw_data(hashes)
-		graph.interner.id = raw_data(nodes)
-
-		raw_soa_footer_slice(&graph.interner).len = new_cap
+		graph_interner_grow(graph, new_cap)
 	}
 
 	graph.interner[graph.interner_len] = {
@@ -948,6 +1042,34 @@ graph_intern :: proc(graph: ^Graph, id: Node_ID) -> Node_ID {
 	graph.interner_len += 1
 
 	return id
+}
+
+graph_interner_grow :: proc(graph: ^Graph, new_cap: int) {
+	assert(mem.is_aligned(rawptr(uintptr(new_cap)), align_of(Intern_Vec)))
+
+	hashes := arna.alloc(
+		graph.mem,
+		uint(new_cap),
+		align_of(Intern_Vec),
+		zeroed = true,
+	)
+	nodes := arna.smake(graph.mem, []Node_ID, new_cap)
+
+	mem.copy_non_overlapping(
+		raw_data(hashes),
+		graph.interner.hash,
+		graph.interner_len,
+	)
+	mem.copy_non_overlapping(
+		raw_data(nodes),
+		graph.interner.id,
+		graph.interner_len * size_of(Node_ID),
+	)
+
+	graph.interner.hash = raw_data(hashes)
+	graph.interner.id = raw_data(nodes)
+
+	raw_soa_footer_slice(&graph.interner).len = new_cap
 }
 
 graph_unintern :: proc(graph: ^Graph, id: Node_ID, precomputed_hash: u8 = 0) {
@@ -980,85 +1102,13 @@ graph_subsume :: proc(
 	worklist: ^queue.Queue(Node_ID) = nil,
 	dont_delete: bool = false,
 ) {
-	assert(with != NODE_START)
-	assert(target != NODE_ENTRY)
+	assert(with != graph.start)
+	assert(target != graph.entry)
 
 	wnode := graph_expand(graph, with)
 	tnode := graph_expand(graph, target)
 
 	assert(with != target)
-
-	try_recycle: if 0 == 0 && !graph.dont_delete {
-		if wnode.in_worklist {
-			last := queue.pop_back(worklist)
-			queue.push_back(worklist, last)
-			if last != with {
-				break try_recycle
-			}
-		}
-
-		wtotal_size := node_approx_size(graph, wnode)
-
-		if int(graph.mem.pos - wtotal_size) / PRECISION != int(with) {
-			break try_recycle
-		}
-
-		if wnode.input_cap != wnode.input_count do break try_recycle
-
-		assert(wnode.gvn == graph.gvn - 1)
-		assert(wnode.output_cap == 0)
-		assert(
-			wnode.input_idx ==
-			(u32(graph.mem.pos) - u32(wnode.input_cap) * size_of(Node_ID)) /
-				PRECISION,
-		)
-
-		ttotal_size := node_approx_size(graph, tnode)
-
-		if wtotal_size > ttotal_size do break try_recycle
-
-		if wnode.in_worklist {
-			queue.pop_back(worklist)
-		}
-
-		for inp, i in wnode.inps {
-			graph_remove_output(graph, inp, {idx = i, id = with})
-			graph_add_output(graph, inp, target, i)
-		}
-
-		for inp, i in tnode.inps {
-			if inp == 0 do continue
-			assert(inp != with)
-			graph_remove_output(graph, inp, {idx = i, id = target})
-		}
-
-		graph_unintern(graph, with)
-		graph_unintern(graph, target)
-
-		graph.waste += int(ttotal_size - wtotal_size)
-
-		wnode.gvn = tnode.gvn
-		wnode.in_worklist = tnode.in_worklist
-		wnode.input_idx -= u32(with - target)
-		wnode.output_count = tnode.output_count
-		wnode.output_cap = tnode.output_cap
-		wnode.output_idx = tnode.output_idx
-
-		nnode_slice := ([^]u8)(wnode.node)[-PREFIX_SIZE:][:wtotal_size +
-		PREFIX_SIZE]
-		node_slice := ([^]u8)(tnode.node)[-PREFIX_SIZE:][:ttotal_size +
-		PREFIX_SIZE]
-		copy(node_slice, nnode_slice)
-		graph.mem.pos = uint(with) * PRECISION - PREFIX_SIZE
-		graph.gvn -= 1
-
-		graph_intern(graph, target)
-
-		add_efficiency_stat(graph, .recycles, 1, 1)
-		return
-	}
-
-	add_efficiency_stat(graph, .recycles, 1, 0)
 
 	graph_ensure_available_output_cap(graph, wnode, tnode.output_count)
 
@@ -1191,7 +1241,11 @@ graph_merge_scopes :: proc(
 
 	assert(lnode.input_count == rnode.input_count)
 
-	region := graph_add_region(graph, "reg", {lnode.inps[0], rnode.inps[0]})
+	region := graph_add_region(
+		graph,
+		"reg",
+		{lnode.inps[0], rnode.inps[0], graph.start},
+	)
 
 	for i in 1 ..< lnode.input_count {
 		if lnode.inps[i] == rnode.inps[i] do continue
@@ -1221,8 +1275,6 @@ graph_set_input :: proc(
 	#any_int idx: int,
 	value: Node_ID,
 ) -> Node_ID {
-	assert(value != NODE_START)
-
 	node := graph_expand(graph, id)
 
 	assert(idx < len(node.inps))
@@ -1331,17 +1383,10 @@ graph_delete_node :: proc(graph: ^Graph, node: ^Node, indirect := false) {
 
 	size := node_approx_size(graph, node)
 
-	if int(graph.mem.pos - size) / PRECISION != int(id) {
-		graph.waste += int(node.input_cap * size_of(Node_ID))
-		graph.waste += int(node.output_count * size_of(Node_Output))
-		graph.waste += size_of(Node)
-		graph.waste += int(graph.node_extra_sizes[node.rtype] * PRECISION)
-	} else {
-		graph.mem.pos = uint(id) * PRECISION - PREFIX_SIZE
-		graph.gvn -= 1
-	}
-
-	node.rtype = DEAD_NODE_KIND
+	graph.waste += int(node.input_cap * size_of(Node_ID))
+	graph.waste += int(node.output_count * size_of(Node_Output))
+	graph.waste += size_of(Node)
+	graph.waste += int(graph.node_extra_sizes[node.rtype] * PRECISION)
 
 	node^ = {
 		rtype = DEAD_NODE_KIND,
@@ -1468,7 +1513,6 @@ graph_add_raw :: proc(
 
 	for inp, i in inps {
 		if inp == 0 do continue
-		assert(inp != NODE_START || id == NODE_ENTRY)
 		graph_add_output(graph, inp, id, i)
 	}
 

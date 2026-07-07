@@ -58,10 +58,20 @@ graph_idom_node :: proc(graph: ^Graph, node: ^Node) -> Node_ID {
 	     .Always:
 		return inps[0]
 	case .Region:
+		cached := inps[len(inps) - 1]
+		if cached != 0 && graph_get(graph, cached).itype == .If {
+			return cached
+		}
+
 		lca: Node_ID
-		for inp in inps {
+		for inp in inps[:len(inps) - 1] {
 			lca = graph_lca(graph, lca, inp)
 		}
+
+		graph_set_input(graph, graph_id(graph, node), len(inps) - 1, lca)
+
+		assert(lca != graph.start && lca != 0)
+
 		return lca
 	case:
 		fmt.panicf("TODO: %v", node.itype)
@@ -125,15 +135,18 @@ graph_schedule :: proc(
 	if graph.end != 0 {
 		end := graph_expand(graph, graph.end)
 		lctx.loop_trees[end.gvn] = lctx.root
-		build_loop_tree(&lctx, NODE_ENTRY, lctx.root, scratch)
+		build_loop_tree(&lctx, graph.entry, lctx.root, scratch)
 
+		remove_count := 0
 		#reverse for inp, i in end.inps {
 			inode := graph_expand(graph, inp)
 			idx := int(inode.itype == .Phi)
-			if len(inode.inps) == 1 + idx {
+			if len(inode.inps) == 2 {
 				graph_set_input(graph, graph.end, i, inode.inps[idx])
+				remove_count += 1
 			}
 		}
+		assert(remove_count == 0 || remove_count == len(end.inps))
 	}
 
 	tree_depth :: proc(tree: ^Loop_Tree) -> u32 {
@@ -227,7 +240,7 @@ graph_schedule :: proc(
 
 	// TODO: add loop tree building
 
-	cfg_reverse_postorder(graph, NODE_START, &cfg_rpos, visited)
+	cfg_reverse_postorder(graph, graph.start, &cfg_rpos, visited)
 
 	cfg_reverse_postorder :: proc(
 		graph: ^Graph,
@@ -246,7 +259,8 @@ graph_schedule :: proc(
 			onode := graph_get(graph, o.id)
 			if is_cfg(graph, o.id) {
 				if (onode.itype == .Region || onode.itype == .Loop) &&
-				   node.itype != .Jump {
+				   node.itype != .Jump &&
+				   root != graph.start {
 					jmp := graph_add_jump(graph, "jump", root)
 					graph_set_input(graph, o.id, o.idx, jmp)
 					cfg_reverse_postorder(graph, jmp, cfg_rpos, visited)
@@ -314,7 +328,7 @@ graph_schedule :: proc(
 				return
 			}
 
-			sched := NODE_ENTRY
+			sched := graph.entry
 
 			for inp in node.inps {
 				sched_early(ctx, inp)
@@ -362,10 +376,10 @@ graph_schedule :: proc(
 		if !ready do continue
 
 		if graph_has_flag(graph, n, .Is_Basic_Block_Start) {
-			assert(n != NODE_START)
+			assert(n != graph.start)
 			ctx.late_schedules[node.gvn] = n
 		} else if 0 < len(node.inps) && is_cfg(graph, node.inps[0]) {
-			fmt.assertf(node.inps[0] != NODE_START, "%v", node.node)
+			fmt.assertf(node.inps[0] != graph.start, "%v", node.node)
 			ctx.late_schedules[node.gvn] = node.inps[0]
 		} else {
 			for out in node.outs {
@@ -386,7 +400,7 @@ graph_schedule :: proc(
 				lca = ctx.early_schedules[node.gvn]
 				if lca == 0 {
 					ctx.nodes[node.gvn] = n
-					lca = NODE_ENTRY
+					lca = graph.entry
 				}
 				log.warn("free node with no outputs:", node.node, lca)
 			}
@@ -400,6 +414,13 @@ graph_schedule :: proc(
 
 				if onode.itype == .Phi {
 					jmp := graph_inps(graph, olca)[out.idx - 1]
+					fmt.assertf(
+						jmp != graph.start,
+						"%v %v %v",
+						onode,
+						node,
+						graph_get(graph, olca),
+					)
 					olca = graph_inps(graph, jmp)[0]
 				}
 				lca = graph_lca(graph, lca, olca)
@@ -410,7 +431,7 @@ graph_schedule :: proc(
 				assert(lca != 0)
 			}
 
-			assert(lca != NODE_START)
+			assert(lca != graph.start)
 			ctx.late_schedules[node.gvn] = lca
 		}
 

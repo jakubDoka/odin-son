@@ -380,6 +380,16 @@ init_custom_fmt :: proc() {
 	)
 
 	fmt.register_user_formatter(
+		backend.Expanded_Node,
+		proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
+			value := &value.(backend.Expanded_Node)
+			id := backend.graph_id(current_graph, value)
+			backend.graph_display_node(fi.writer, current_graph, id)
+			return true
+		},
+	)
+
+	fmt.register_user_formatter(
 		backend.Graph,
 		proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
 			value := &value.(backend.Graph)
@@ -567,13 +577,11 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 
 			clear(&ctx.scope)
 
-			start := backend.graph_add_start(&ctx, "start")
-			assert(start == backend.NODE_START)
-			entry := backend.graph_add_entry(&ctx, "entry", start)
-			assert(entry == backend.NODE_ENTRY)
-			ctx.root_mem = backend.graph_add_mem(&ctx, "emem", entry)
+			ctx.start = backend.graph_add_start(&ctx, "start")
+			ctx.entry = backend.graph_add_entry(&ctx, "entry", ctx.start)
+			ctx.root_mem = backend.graph_add_mem(&ctx, "emem", ctx.entry)
 
-			ctx.node_scope = backend.graph_add_scope(&ctx, "scope", entry)
+			ctx.node_scope = backend.graph_add_scope(&ctx, "scope", ctx.entry)
 			ctx.mem_slot = backend.graph_push_scope_value(
 				&ctx,
 				ctx.node_scope,
@@ -609,7 +617,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 							&ctx,
 							"arg",
 							.I64,
-							entry,
+							ctx.entry,
 							u32(i),
 						)
 						emit_arbitrary_store(&ctx, slot, value, size)
@@ -621,7 +629,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 								&ctx,
 								"af",
 								.I64,
-								entry,
+								ctx.entry,
 								u32(i),
 							)
 							emit_arbitrary_store(&ctx, slot, second, size, 8)
@@ -633,7 +641,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 							&ctx,
 							"arg",
 							.I64,
-							entry,
+							ctx.entry,
 							u32(i),
 						)
 					case:
@@ -651,7 +659,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 						&ctx,
 						"arg",
 						dt,
-						entry,
+						ctx.entry,
 						u32(i),
 					)
 					idx := backend.graph_push_scope_value(
@@ -679,6 +687,8 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 
 			backend.graph_iter_peeps(&ctx)
 
+			backend.graph_poll_gc(&ctx)
+
 			scratch_mem.pos = 0
 
 			schedule: backend.Graph_Schedule
@@ -701,19 +711,6 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 				&schedule,
 				arna.allocator(&scratch_mem),
 			)
-
-			if backend.REGLOGS {
-				sb: strings.Builder
-				append(&sb.buf, prc.name)
-				append(&sb.buf, "\n")
-				backend.graph_display(
-					strings.to_writer(&sb),
-					&ctx,
-					&schedule,
-					regs = regs,
-				)
-				log.info(string(sb.buf[:]))
-			}
 
 			ctx := backend.Codegen_Emit_Ctx {
 				graph = &ctx,
@@ -1105,7 +1102,7 @@ alloca :: proc(
 	zeroed := true,
 	is_arg := false,
 ) -> backend.Node_ID {
-	root := is_arg ? backend.NODE_ENTRY : ctx.root_mem
+	root := is_arg ? ctx.entry : ctx.root_mem
 	alloca := backend.graph_add_local(ctx, name, root)
 	backend.graph_extra(ctx, alloca, backend.Local).size = i32(type_size(ty))
 	ptr := backend.graph_add_local_addr(ctx, name, alloca)

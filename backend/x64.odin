@@ -864,7 +864,7 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 	// just order them by the node id, the allocation order matters tho so
 	// document that somewhere
 	args: [dynamic]Node_ID
-	find_args: for eout in graph_outs(ctx, NODE_ENTRY) {
+	find_args: for eout in graph_outs(ctx, ctx.entry) {
 		enode := graph_expand(ctx, eout.id)
 		if enode.itype != .Arg && enode.itype != .Local do continue
 
@@ -1286,7 +1286,6 @@ x64_emit_instr :: proc(
 			emit(ctx.code, {rx, 0x85, mod_rm(.Direct, cond, cond)})
 		}
 
-		assert(len(node.outs) == 2)
 		append(
 			&ctx.local_relocs,
 			Local_Reloc {

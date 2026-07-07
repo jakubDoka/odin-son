@@ -232,7 +232,7 @@ when !GEN_SPEC {
 				}
 			}
 
-			elim: if len(node.inps) == 1 {
+			elim: if len(node.inps) == 2 {
 				for out in node.outs {
 					if graph_get(ctx, out.id).itype == .Return {
 						break elim
@@ -254,7 +254,7 @@ when !GEN_SPEC {
 
 				node = graph_expand(ctx, id)
 
-				merge: #reverse for inp, i in node.inps {
+				merge: #reverse for inp, i in slice.clone(node.inps) {
 					inode := graph_expand(ctx, inp)
 					if inode.itype != .Region do continue
 
@@ -276,7 +276,16 @@ when !GEN_SPEC {
 						continue
 					}
 
-					for iinp in inode.inps[1:] {
+					prev_cached := node.inps[len(node.inps) - 1]
+					node.input_count -= 1
+					graph_remove_output(
+						ctx,
+						prev_cached,
+						{idx = len(node.inps) - 1, id = id},
+						no_delete = true,
+					)
+
+					for iinp in inode.inps[1:len(inode.inps) - 1] {
 						graph_connect(ctx, id, iinp)
 					}
 
@@ -294,8 +303,10 @@ when !GEN_SPEC {
 						graph_set_input(ctx, out.id, 1 + i, to_merge.inps[1])
 					}
 
+					graph_connect(ctx, id, prev_cached)
 					graph_set_input(ctx, id, i, inode.inps[0])
 
+					node = graph_expand(ctx, id)
 					changed = true
 				}
 			}

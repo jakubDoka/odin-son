@@ -257,7 +257,7 @@ regalloc_round :: proc(
 	rev_gvn := block_base
 
 	rev_gvn -= 1
-	graph_get(graph, NODE_START).gvn = u32(rev_gvn)
+	graph_get(graph, graph.start).gvn = u32(rev_gvn)
 
 	//	if i == 0 do log_lrgs(&ctx)
 
@@ -512,8 +512,8 @@ regalloc_round :: proc(
 		}
 
 		head := graph_expand(graph, bb.head)
-		for pred, j in head.inps {
-			if pred == NODE_START do break
+		for pred, j in head.inps[:len(head.inps) - int(head.itype == .Region)] {
+			if pred == graph.start do break
 
 			pred_block := graph_get(graph, graph_idom(graph, pred))
 			assert(graph_has_flag(graph, pred_block, .Is_Basic_Block_Start))

@@ -157,8 +157,6 @@ process, fix them.
 
 ### Find bugs in the memopt pass (DONE)
 
-NOTE: read AGENST.md
-
 The current tests for memopts are good, but I am not very confident about the
 implementation. There appear to be some edgecases I had to deal with and I feel
 like I did not structure the code correctly. Could you please review
@@ -167,3 +165,19 @@ them. For each bug you are suspecting, spawn an agent to make thetest for it.
 Once you thing you can't find anymore. Once that is done, spawn an agent to fix
 the bugs, only one agent though because multiple would stop over each other.
 
+### Implementing more complicated tests
+
+NOTE: read AGENST.md
+
+Could you spawn an agent that implements a zero initialized statics of any
+type? Don't waste your context just pass this to him.
+
+After the agent is done, read the TESTS.md and add a test that implements a
+custom allocator based on free lists that can accept a buffer and allocate
+bytes based on a size and alighment returning slice of bytes, it should also
+try to coalesce free slots. Then make a few allocations. Write to them, read
+from them, free some, read write and so on, just to test it works. While you
+are implementing this, also spawn an agent whenever you need some feature on
+the frontend that is not implemented yet, same way as described above. You
+should first develop the allocator in a separate module and then port it to a
+test once it works.

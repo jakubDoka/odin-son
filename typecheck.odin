@@ -331,11 +331,10 @@ ret_abi :: proc(rets: []Param) -> (rabi: Ret_ABI) {
 	return
 }
 
-ret_is_by_pointer :: proc(abi: Ret_ABI, rets: []Param, idx: int) -> bool {
-	return idx < len(rets) - 1 || abi.srets_start < len(abi.extras)
+ret_is_by_pointer :: proc(abi: Ret_ABI, idx: int) -> bool {
+	return idx < len(abi.extras) || abi.srets_start < len(abi.extras)
 }
 
-// If `node` is a call to a user procedure, returns its signature.
 call_sig :: proc(ctx: ^Gen_Ctx, node: ^ast.Node) -> (Signature, bool) {
 	call, cok := node.derived.(^ast.Call_Expr)
 	if !cok do return {}, false
@@ -349,12 +348,14 @@ call_sig :: proc(ctx: ^Gen_Ctx, node: ^ast.Node) -> (Signature, bool) {
 	return ctx.procs[pid].sig, true
 }
 
+Varuable_Idx :: union #no_nil {
+	int,
+	backend.Node_ID,
+}
+
 Variable :: struct {
 	name:  string,
-	idx:   union #no_nil {
-		int,
-		backend.Node_ID,
-	},
+	idx:   Varuable_Idx,
 	type:  Type,
 	ident: ^ast.Expr,
 	flags: Var_Flags,
@@ -442,20 +443,17 @@ typecheck :: proc(
 		}
 		resize(&ctx.scope, prev_scope_len)
 	case ^ast.Value_Decl:
-		// multi-value declaration: `a, b := multi_ret_call()`
 		if len(d.values) == 1 && len(d.names) > 1 {
 			typecheck(ctx, {}, d.values[0])
 			sig, ok := call_sig(ctx, d.values[0])
 			assert(ok)
 			assert(len(sig.rets) == len(d.names))
-			abi := ret_abi(sig.rets)
+			rabi := ret_abi(sig.rets)
 
 			for i in 0 ..< len(d.names) {
 				name := meta.src_of(ctx.file^, d.names[i])
 				flags: Var_Flags
-				// by-pointer returns must be backed by memory so the callee can
-				// write them, not held in ssa registers
-				if ret_is_by_pointer(abi, sig.rets, i) {
+				if ret_is_by_pointer(rabi, i) {
 					flags |= {.Referenced}
 				}
 				set_node_data(d.names[i], flags)
@@ -711,7 +709,6 @@ typecheck :: proc(
 			fmt.panicf("TODO: %v %#v", v, d)
 		}
 
-		// spread: `consume(produce())` passes a multi-value call as the args
 		if len(d.args) == 1 && len(d.args) != len(sig.params) {
 			typecheck(ctx, {}, d.args[0])
 			inner_sig, ok := call_sig(ctx, d.args[0])
@@ -729,7 +726,6 @@ typecheck :: proc(
 		}
 
 		if len(sig.rets) == 1 do return sig.rets[0].type
-		// void, or a multi-value result resolved by the enclosing decl/assign
 		return .Void
 	case ^ast.Return_Stmt:
 		prc := &ctx.procs[ctx.prc]
@@ -738,7 +734,6 @@ typecheck :: proc(
 			typecheck(ctx, {inferred_ty = prc.rets[i].type}, d.results[i])
 		}
 	case ^ast.Assign_Stmt:
-		// multi-value assignment: `a, b = multi_ret_call()`
 		if len(d.rhs) == 1 && len(d.lhs) > 1 {
 			typecheck(ctx, {}, d.rhs[0])
 			sig, ok := call_sig(ctx, d.rhs[0])

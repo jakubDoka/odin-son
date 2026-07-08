@@ -3765,3 +3765,246 @@ main :: proc() -> int {
 }
 ```
 
+#### multi return two scalars destructured
+```odin
+package main
+
+opt_level :: "none"
+
+divmod :: proc(a: int, b: int) -> (int, int) {
+	return a / b, a % b
+}
+
+main :: proc() -> int {
+	q, r := divmod(47, 5)
+	return q * 100 + r
+}
+```
+
+#### multi return two scalars into existing vars
+```odin
+package main
+
+opt_level :: "none"
+
+swap2 :: proc(a: int, b: int) -> (int, int) {
+	return b, a
+}
+
+main :: proc() -> int {
+	x := 3
+	y := 7
+	x, y = swap2(x, y)
+	return x * 100 + y
+}
+```
+
+#### multi return four i32 fit in registers
+```odin
+package main
+
+opt_level :: "none"
+
+four32 :: proc(base: i32) -> (i32, i32, i32, i32) {
+	return base + 1, base + 2, base + 3, base + 4
+}
+
+main :: proc() -> int {
+	a, b, c, d := four32(10)
+	return int(a) * 1000 + int(b) * 100 + int(c) * 10 + int(d)
+}
+```
+
+#### multi return three ints overflow registers
+```odin
+package main
+
+opt_level :: "none"
+
+three :: proc(a: int, b: int, c: int) -> (int, int, int) {
+	return a + b, b + c, a + c
+}
+
+main :: proc() -> int {
+	x, y, z := three(1, 2, 3)
+	return x * 100 + y * 10 + z
+}
+```
+
+#### multi return four ints overflow registers
+```odin
+package main
+
+opt_level :: "none"
+
+four :: proc(a: int) -> (int, int, int, int) {
+	return a, a * 2, a * 3, a * 4
+}
+
+main :: proc() -> int {
+	p, q, r, s := four(5)
+	return p + q + r + s
+}
+```
+
+#### multi return last value large struct
+```odin
+package main
+
+opt_level :: "none"
+
+Big :: struct {
+	a: int,
+	b: int,
+	c: int,
+	d: int,
+}
+
+split :: proc(seed: int) -> (int, int, Big) {
+	return seed + 1, seed + 2, Big{seed + 3, seed + 4, seed + 5, seed + 6}
+}
+
+main :: proc() -> int {
+	first, second, big := split(10)
+	return first * 1000 + second * 100 + big.a + big.b + big.c + big.d
+}
+```
+
+#### multi return scalar and small struct
+```odin
+package main
+
+opt_level :: "none"
+
+Pair :: struct {
+	x: i32,
+	y: i32,
+}
+
+mix :: proc(n: int) -> (int, Pair) {
+	return n * 2, Pair{i32(n), i32(n + 1)}
+}
+
+main :: proc() -> int {
+	scalar, pair := mix(7)
+	return scalar * 100 + int(pair.x) * 10 + int(pair.y)
+}
+```
+
+#### multi return ignore some values
+```odin
+package main
+
+opt_level :: "none"
+
+stats :: proc(a: int, b: int, c: int) -> (int, int, int) {
+	return a + b + c, a * b * c, a - b - c
+}
+
+main :: proc() -> int {
+	sum, _, _ := stats(2, 3, 4)
+	_, prod, _ := stats(2, 3, 4)
+	return sum * 100 + prod
+}
+```
+
+#### multi return feeds directly into call
+```odin
+package main
+
+opt_level :: "none"
+
+produce :: proc(seed: int) -> (int, int, int) {
+	return seed, seed + 1, seed + 2
+}
+
+consume :: proc(a: int, b: int, c: int) -> int {
+	return a * 100 + b * 10 + c
+}
+
+main :: proc() -> int {
+	return consume(produce(4))
+}
+```
+
+#### multi return with input params
+```odin
+package main
+
+opt_level :: "none"
+
+with_args :: proc(a: int, b: int, c: int, d: int) -> (int, int, int) {
+	return a + b, c + d, a + d
+}
+
+main :: proc() -> int {
+	x, y, z := with_args(1, 2, 3, 4)
+	return x * 100 + y * 10 + z
+}
+```
+
+#### multi return two small structs
+```odin
+package main
+
+opt_level :: "none"
+
+Small :: struct {
+	a: i32,
+	b: i32,
+}
+
+two_small :: proc(n: i32) -> (Small, Small) {
+	return Small{n, n + 1}, Small{n + 2, n + 3}
+}
+
+main :: proc() -> int {
+	p, q := two_small(10)
+	return int(p.a) * 1000 + int(p.b) * 100 + int(q.a) * 10 + int(q.b)
+}
+```
+
+#### multi return used in expression
+```odin
+package main
+
+opt_level :: "none"
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+minmax :: proc(a: int, b: int) -> (int, int) {
+	if a < b do return a, b
+	return b, a
+}
+
+main :: proc() -> int {
+	lo, hi := minmax(opaque(9), opaque(4))
+	span := (hi - lo) * 2 + lo
+	return span
+}
+```
+
+#### multi return mixed sizes with large tail
+```odin
+package main
+
+opt_level :: "none"
+
+Big :: struct {
+	a: int,
+	b: int,
+	c: int,
+}
+
+many :: proc(base: int, extra: int) -> (int, i32, Big) {
+	return base + extra, i32(base), Big{base, base + 1, extra}
+}
+
+main :: proc() -> int {
+	first, second, big := many(5, 100)
+	return first + int(second) * 10 + big.a + big.b + big.c
+}
+```
+

@@ -20,6 +20,10 @@ that is then asserted for changes.
 When running tests, NEVER wait for more the 5 seconds, tests usually compile in
 1s and run in matter of miliseconds.
 
+When instructed to spawn an agent to do something early, dont waste context
+analising the task, just pass down the instructions and let the agent figure it
+out.
+
 The peephole optimizations can be found with `_peep :: proc`.
 
 If the test segfaults use -define:NO_RUN=true to view the disassembly.

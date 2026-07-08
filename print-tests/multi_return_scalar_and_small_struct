@@ -1,0 +1,146 @@
+=========== OPT LEVEL: none ===========
+mix:
+     push rbx
+     sub rsp, 0x10
+     mov rbx, rdi
+     mov rax, rbx
+     imul rax, rax, 0x02
+     mov [rsi], rax
+     lea rdi, [rsp]
+     mov rsi, 0x00
+     mov rdx, 0x08
+     call :$set
+     mov rax, rbx
+     mov [rsp], eax
+     add rbx, 0x01
+     mov [rsp+0x04], ebx
+     mov rax, [rsp]
+     add rsp, 0x10
+     pop rbx
+     ret
+main:
+     push rbx
+     sub rsp, 0x10
+     mov rdi, 0x07
+     lea rsi, [rsp]
+     call :mix
+     mov rbx, rax
+     mov rsi, 0x00
+     lea rdi, [rsp+0x08]
+     mov rdx, 0x08
+     call :$set
+     shr rbx, 0x00
+     mov [rsp+0x08], rbx
+     mov rax, [rsp]
+     imul rax, rax, 0x64
+     movsxd rcx, dword ptr [rsp+0x08]
+     movsxd rcx, ecx
+     imul rcx, rcx, 0x0A
+     add rax, rcx
+     movsxd rcx, dword ptr [rsp+0x0C]
+     movsxd rcx, ecx
+     add rax, rcx
+     add rsp, 0x10
+     pop rbx
+     ret
+=========== OPT LEVEL: mininal ===========
+mix:
+     push rbx
+     sub rsp, 0x10
+     mov rbx, rdi
+     mov rax, rbx
+     imul rax, rax, 0x02
+     mov [rsi], rax
+     lea rdi, [rsp]
+     mov rsi, 0x00
+     mov rdx, 0x08
+     call :$set
+     mov rax, rbx
+     mov [rsp], eax
+     add rbx, 0x01
+     mov [rsp+0x04], ebx
+     mov rax, [rsp]
+     add rsp, 0x10
+     pop rbx
+     ret
+main:
+     push rbx
+     sub rsp, 0x10
+     mov rdi, 0x07
+     lea rsi, [rsp]
+     call :mix
+     mov rbx, rax
+     mov rsi, 0x00
+     lea rdi, [rsp+0x08]
+     mov rdx, 0x08
+     call :$set
+     shr rbx, 0x00
+     mov [rsp+0x08], rbx
+     mov rax, [rsp]
+     imul rax, rax, 0x64
+     movsxd rcx, dword ptr [rsp+0x08]
+     movsxd rcx, ecx
+     imul rcx, rcx, 0x0A
+     add rax, rcx
+     movsxd rcx, dword ptr [rsp+0x0C]
+     movsxd rcx, ecx
+     add rax, rcx
+     add rsp, 0x10
+     pop rbx
+     ret
+=========== OPT LEVEL: moderate ===========
+mix:
+     imul rax, rdi, 0x02
+     mov [rsi], rax
+     mov rax, rdi
+     mov [rsp-0x08], eax
+     mov rax, rdi
+     add rax, 0x01
+     mov [rsp-0x04], eax
+     mov rax, [rsp-0x08]
+     ret
+main:
+     sub rsp, 0x18
+     mov rdi, 0x07
+     lea rsi, [rsp]
+     call :mix
+     mov [rsp+0x08], rax
+     mov rax, [rsp]
+     imul rax, rax, 0x64
+     movsxd rcx, dword ptr [rsp+0x08]
+     movsxd rcx, ecx
+     imul rcx, rcx, 0x0A
+     add rax, rcx
+     movsxd rcx, dword ptr [rsp+0x0C]
+     movsxd rcx, ecx
+     add rax, rcx
+     add rsp, 0x18
+     ret
+=========== OPT LEVEL: all ===========
+mix:
+     imul rax, rdi, 0x02
+     mov [rsi], rax
+     mov rax, rdi
+     mov [rsp-0x08], eax
+     mov rax, rdi
+     add rax, 0x01
+     mov [rsp-0x04], eax
+     mov rax, [rsp-0x08]
+     ret
+main:
+     sub rsp, 0x18
+     mov rdi, 0x07
+     lea rsi, [rsp]
+     call :mix
+     mov [rsp+0x08], rax
+     mov rax, [rsp]
+     imul rax, rax, 0x64
+     movsxd rcx, dword ptr [rsp+0x08]
+     movsxd rcx, ecx
+     imul rcx, rcx, 0x0A
+     add rax, rcx
+     movsxd rcx, dword ptr [rsp+0x0C]
+     movsxd rcx, ecx
+     add rax, rcx
+     add rsp, 0x18
+     ret

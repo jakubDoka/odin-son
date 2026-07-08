@@ -1,0 +1,140 @@
+=========== OPT LEVEL: none ===========
+opaque:
+     mov rax, rdi
+     ret
+minmax:
+     mov rcx, rdi
+     mov rax, rsi
+     cmp rcx, rax
+     jl :0
+     mov [rdx], rax
+     jmp :1
+
+000: mov [rdx], rcx
+     mov rcx, rax
+001: mov rax, rcx
+     ret
+main:
+     push rbx
+     sub rsp, 0x10
+     mov rdi, 0x09
+     call :opaque
+     mov rbx, rax
+     mov rdi, 0x04
+     call :opaque
+     lea rdx, [rsp]
+     mov rdi, rbx
+     mov rsi, rax
+     call :minmax
+     mov rcx, [rsp]
+     sub rax, rcx
+     imul rax, rax, 0x02
+     add rax, rcx
+     add rsp, 0x10
+     pop rbx
+     ret
+=========== OPT LEVEL: mininal ===========
+opaque:
+     mov rax, rdi
+     ret
+minmax:
+     mov rcx, rdi
+     mov rax, rsi
+     cmp rcx, rax
+     jl :0
+     mov [rdx], rax
+     jmp :1
+
+000: mov [rdx], rcx
+     mov rcx, rax
+001: mov rax, rcx
+     ret
+main:
+     push rbx
+     sub rsp, 0x10
+     mov rdi, 0x09
+     call :opaque
+     mov rbx, rax
+     mov rdi, 0x04
+     call :opaque
+     lea rdx, [rsp]
+     mov rdi, rbx
+     mov rsi, rax
+     call :minmax
+     mov rcx, [rsp]
+     sub rax, rcx
+     imul rax, rax, 0x02
+     add rax, rcx
+     add rsp, 0x10
+     pop rbx
+     ret
+=========== OPT LEVEL: moderate ===========
+opaque:
+     mov rax, rdi
+     ret
+minmax:
+     mov rcx, rdi
+     mov rax, rsi
+     cmp rcx, rax
+     jl :0
+     mov [rdx], rax
+     jmp :1
+
+000: mov [rdx], rcx
+     mov rcx, rax
+001: mov rax, rcx
+     ret
+main:
+     push rbx
+     sub rsp, 0x10
+     mov rdi, 0x09
+     call :opaque
+     mov rbx, rax
+     mov rdi, 0x04
+     call :opaque
+     lea rdx, [rsp]
+     mov rdi, rbx
+     mov rsi, rax
+     call :minmax
+     mov rcx, [rsp]
+     sub rax, rcx
+     imul rax, rax, 0x02
+     add rax, rcx
+     add rsp, 0x10
+     pop rbx
+     ret
+=========== OPT LEVEL: all ===========
+opaque:
+     mov rax, rdi
+     ret
+minmax:
+     mov rcx, rdi
+     mov rax, rsi
+     cmp rcx, rax
+     jl :0
+     mov [rdx], rax
+     jmp :1
+
+000: mov [rdx], rcx
+     mov rcx, rax
+001: mov rax, rcx
+     ret
+main:
+     push rbx
+     sub rsp, 0x10
+     mov rdi, 0x09
+     call :opaque
+     mov rbx, rax
+     mov rdi, 0x04
+     call :opaque
+     lea rdx, [rsp]
+     mov rdi, rbx
+     mov rsi, rax
+     call :minmax
+     mov rcx, [rsp]
+     sub rax, rcx
+     imul rax, rax, 0x02
+     add rax, rcx
+     add rsp, 0x10
+     pop rbx
+     ret

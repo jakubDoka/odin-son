@@ -591,8 +591,27 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 				ctx.root_mem,
 			)
 
+			rabi := ret_abi(prc.rets[:])
+			ctx.ret_ptrs = nil
+			ctx.sret_ptr = 0
+
 			gpa_fuel := 6
 			i := 0
+
+			// a large last return value is passed by pointer as the first arg
+			if rabi.sret {
+				ctx.sret_ptr = backend.graph_add_arg(
+					&ctx,
+					"sret",
+					.I64,
+					ctx.entry,
+					u32(i),
+				)
+				backend.graph_pin(&ctx, ctx.sret_ptr)
+				i += 1
+				gpa_fuel -= 1
+			}
+
 			for par in prc.params {
 				dt := type_to_dt(par.type)
 
@@ -679,7 +698,39 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 				}
 			}
 
+			// for a Split return, every value but the last is passed back by a
+			// pointer appended after the input parameters
+			if rabi.kind == .Split {
+				ptr_count := len(prc.rets) - 1
+				ctx.ret_ptrs = make(
+					[]backend.Node_ID,
+					ptr_count,
+					context.temp_allocator,
+				)
+				for j in 0 ..< ptr_count {
+					ctx.ret_ptrs[j] = backend.graph_add_arg(
+						&ctx,
+						"retp",
+						.I64,
+						ctx.entry,
+						u32(i),
+					)
+					backend.graph_pin(&ctx, ctx.ret_ptrs[j])
+					i += 1
+					gpa_fuel -= 1
+				}
+			}
+
 			emit_nodes(&ctx, {}, prc.ast.body)
+
+			// release the pins that kept the return pointers alive during the
+			// body (they are now referenced by the stores in the returns)
+			if ctx.sret_ptr != 0 {
+				backend.graph_unpin(&ctx, ctx.sret_ptr)
+			}
+			for p in ctx.ret_ptrs {
+				backend.graph_unpin(&ctx, p)
+			}
 
 			if ctx.node_scope != 0 {
 				assert(len(prc.rets) == 0)
@@ -879,6 +930,11 @@ Gen_Ctx :: struct {
 	file:         ^ast.File,
 	file_id:      File_ID,
 	prc:          Proc_ID,
+	// for a Split return: pointers (passed as extra args) into which the
+	// non-last return values are stored, and, when the last value is large,
+	// the sret pointer it is stored into.
+	ret_ptrs:     []backend.Node_ID,
+	sret_ptr:     backend.Node_ID,
 }
 
 Loop_Control :: enum int {
@@ -1138,6 +1194,18 @@ alloca :: proc(
 	return ptr
 }
 
+// like alloca but for an untyped blob of a given size (e.g. to pack multiple
+// return values as a struct)
+alloca_bytes :: proc(
+	ctx: ^Gen_Ctx,
+	name: string,
+	size: int,
+) -> backend.Node_ID {
+	alloca := backend.graph_add_local(ctx, name, ctx.root_mem)
+	backend.graph_extra(ctx, alloca, backend.Local).size = i32(size)
+	return backend.graph_add_local_addr(ctx, name, alloca)
+}
+
 is_static :: proc(d: ^ast.Value_Decl) -> bool {
 	for attr in d.attributes {
 		for elem in attr.elems {
@@ -1282,6 +1350,52 @@ emit_nodes :: proc(
 			backend.graph_delete(ctx, node.id)
 		}
 	case ^ast.Assign_Stmt:
+		// multi-value assignment: `a, b = multi_ret_call()`
+		if len(d.rhs) == 1 && len(d.lhs) > 1 {
+			assert(d.op.kind == .Eq)
+			prc, ok := call_proc_of(ctx, d.rhs[0])
+			assert(ok)
+			assert(len(prc.rets) == len(d.lhs))
+			abi := ret_abi(prc.rets[:])
+
+			syms := make([]Sym, len(d.lhs), tmp)
+			out_slots := make([]backend.Node_ID, len(d.lhs), tmp)
+			for lhs, i in d.lhs {
+				if id, iok := lhs.derived.(^ast.Ident); iok && id.name == "_" {
+					continue
+				}
+				syms[i] = ctx_lookup_lvalue(ctx, lhs)
+				// a by-pointer return can be written straight into a memory lhs
+				if v, vok := syms[i].(Value);
+				   vok && ret_is_by_pointer(abi, prc.rets[:], i) {
+					out_slots[i] = v.id
+				}
+			}
+
+			results := emit_call(
+				ctx,
+				d.rhs[0].derived.(^ast.Call_Expr),
+				prc,
+				out_slots,
+			)
+
+			for r, i in results {
+				if id, iok := d.lhs[i].derived.(^ast.Ident);
+				   iok && id.name == "_" {
+					continue
+				}
+				vty := prc.rets[i].type
+				switch sym in syms[i] {
+				case int:
+					rv := to_rvalue_ty(ctx, r, vty)
+					backend.graph_set_input(ctx, ctx.node_scope, sym, rv)
+				case Value:
+					store_value(ctx, "masss", sym.id, r, vty)
+				}
+			}
+			break
+		}
+
 		assert(len(d.lhs) == len(d.rhs))
 		Value_Slot :: struct {
 			idx: int,
@@ -1403,32 +1517,58 @@ emit_nodes :: proc(
 		res = to_rvalue(ctx, emit_nodes(ctx, {}, d.expr), d.expr)
 		lvalue = true
 	case ^ast.Return_Stmt:
-		values := make([]backend.Node_ID, 2 + len(d.results) * 2, tmp)
-		assert(len(d.results) <= 1)
-		i := 2
-		for r in d.results {
-			ty := get_node_type(r)
-			dt = type_to_dt(ty)
-			vl := emit_nodes(ctx, {}, r)
+		rets := ctx.procs[ctx.prc].rets
+		rabi := ret_abi(rets)
 
-			if dt == .Void {
+		// ctrl, mem, and up to two register return values
+		values := make([]backend.Node_ID, 4, tmp)
+		i := 2
+
+		emit_reg_ret :: proc(
+			ctx: ^Gen_Ctx,
+			values: []backend.Node_ID,
+			i: ^int,
+			r: ^ast.Node,
+		) {
+			ty := get_node_type(r)
+			vl := emit_nodes(ctx, {}, r)
+			if type_to_dt(ty) == .Void {
 				assert(vl.is_lvalue)
 				size := type_size(ty)
-				switch size {
-				case 1 ..= 16:
-					values[i] = emit_arbitrary_load(ctx, vl.id, size)
-					i += 1
-
-					if size > 8 {
-						values[i] = emit_arbitrary_load(ctx, vl.id, size, 8)
-						i += 1
-					}
+				values[i^] = emit_arbitrary_load(ctx, vl.id, size)
+				i^ += 1
+				if size > 8 {
+					values[i^] = emit_arbitrary_load(ctx, vl.id, size, 8)
+					i^ += 1
 				}
 			} else {
-				values[i] = to_rvalue(ctx, vl, r)
-				i += 1
+				values[i^] = to_rvalue(ctx, vl, r)
+				i^ += 1
 			}
 		}
+
+		switch rabi.kind {
+		case .None:
+		case .Register:
+			emit_reg_ret(ctx, values, &i, d.results[0])
+		case .Split:
+			last := len(d.results) - 1
+			// every value but the last is stored through its pointer arg
+			for j in 0 ..< last {
+				r := d.results[j]
+				vl := emit_nodes(ctx, {dest = ctx.ret_ptrs[j]}, r)
+				store_value(ctx, "rpst", ctx.ret_ptrs[j], vl, get_node_type(r))
+			}
+			lr := d.results[last]
+			if rabi.sret {
+				// large last value is stored through the sret pointer
+				vl := emit_nodes(ctx, {dest = ctx.sret_ptr}, lr)
+				store_value(ctx, "srst", ctx.sret_ptr, vl, get_node_type(lr))
+			} else {
+				emit_reg_ret(ctx, values, &i, lr)
+			}
+		}
+
 		values[0] = ctx_ctrl(ctx)
 		values[1] = ctx_mem(ctx)
 		backend.graph_merge_returns(ctx, values[:i])
@@ -1469,6 +1609,50 @@ emit_nodes :: proc(
 			fmt.panicf("TODO: %#v", node.derived)
 		}
 	case ^ast.Value_Decl:
+		// multi-value declaration: `a, b := multi_ret_call()`
+		if len(d.values) == 1 && len(d.names) > 1 {
+			prc, ok := call_proc_of(ctx, d.values[0])
+			assert(ok)
+			assert(len(prc.rets) == len(d.names))
+
+			results := emit_call(
+				ctx,
+				d.values[0].derived.(^ast.Call_Expr),
+				prc,
+				nil,
+			)
+
+			for r, i in results {
+				name := meta.src_of(ctx.file^, d.names[i])
+				if name == "_" do continue
+				flags := get_node_vflags(d.names[i])
+				vty := prc.rets[i].type
+
+				if r.is_lvalue {
+					// value lives in memory (a return slot or a slice of the
+					// packed-register blob)
+					backend.graph_pin(ctx, r.id)
+					append(
+						&ctx.scope,
+						Variable{name, r.id, vty, d.names[i], flags},
+					)
+				} else {
+					// scalar register return: keep it as an ssa value
+					backend.graph_set_name(ctx, r.id, name)
+					idx := backend.graph_push_scope_value(
+						ctx,
+						ctx.node_scope,
+						r.id,
+					)
+					append(
+						&ctx.scope,
+						Variable{name, idx, vty, d.names[i], flags},
+					)
+				}
+			}
+			break
+		}
+
 		assert(len(d.names) == len(d.values))
 		for i in 0 ..< len(d.names) {
 			name := meta.src_of(ctx.file^, d.names[i])
@@ -1713,10 +1897,6 @@ emit_nodes :: proc(
 			break
 		}
 
-		CALL_PREFIX :: 2
-
-		args := make([]backend.Node_ID, CALL_PREFIX + len(d.args) * 2, tmp)
-
 		base_ty := get_node_type(d.expr)
 
 		#partial switch t in unpack_type(base_ty) {
@@ -1725,128 +1905,14 @@ emit_nodes :: proc(
 
 			prc := &ctx.procs[idx]
 
-			gpa_fuel := 6
-			i := CALL_PREFIX
-			ri := len(args)
-			for arg in d.args {
-				ty := get_node_type(arg)
-				vl := emit_nodes(ctx, {}, arg)
-
-				is_stack := false
-				if type_to_dt(ty) == .Void {
-					assert(vl.is_lvalue)
-
-					size := type_size(ty)
-					switch size {
-					case 0:
-						continue
-					case 1 ..= 8:
-						args[i] = emit_arbitrary_load(ctx, vl.id, size)
-						backend.graph_pin(ctx, args[i])
-						i += 1
-						gpa_fuel -= 1
-						continue
-					case 9 ..= 16:
-						if gpa_fuel < 2 {
-							slot := alloca(ctx, "sarg", ty, is_arg = true)
-							store_value(ctx, "ast", slot, vl, ty)
-							local := backend.graph_inps(ctx, slot)[0]
-							ri -= 1
-							args[ri] = local
-							backend.graph_pin(ctx, local)
-							continue
-						}
-
-						args[i] = field_load(ctx, "afld", .I64, vl.id)
-						backend.graph_pin(ctx, args[i])
-						i += 1
-
-						args[i] = emit_arbitrary_load(ctx, vl.id, size, 8)
-						backend.graph_pin(ctx, args[i])
-						i += 1
-						gpa_fuel -= 2
-						continue
-					case 17 ..= int(~uint(0) >> 1):
-						is_stack = true
-					case:
-						fmt.panicf("unsupported type: %v", ty)
-					}
-				}
-
-				if is_stack {
-					args[i] = vl.id
-				} else {
-					args[i] = to_rvalue(ctx, vl, ty)
-				}
-				gpa_fuel -= 1
-				if gpa_fuel < 0 {
-					ty := get_node_type(arg)
-					slot := alloca(
-						ctx,
-						"aspl",
-						ty,
-						zeroed = false,
-						is_arg = true,
-					)
-					store_value(ctx, "ast", slot, Value(args[i]), ty)
-					local := backend.graph_inps(ctx, slot)[0]
-					ri -= 1
-					args[ri] = local
-					backend.graph_pin(ctx, args[ri])
-				} else {
-					backend.graph_pin(ctx, args[i])
-					i += 1
-				}
-			}
-			args[0] = ctx_ctrl(ctx)
-			args[1] = ctx_mem(ctx)
-
-			slice.reverse(args[ri:])
-			copy(args[i:], args[ri:])
-			ln := i + len(args) - ri
-
-			call := backend.graph_add_call(ctx, "call", args[:ln], idx)
-			cnode := backend.graph_get(ctx, call)
-			cnode.input_count = u16(i)
-			for arg in args[CALL_PREFIX:ln] {
-				backend.graph_unpin(ctx, arg)
-			}
-			call_end := backend.graph_add_call_end(ctx, "calle", call)
-
-			backend.graph_set_input(ctx, ctx.node_scope, 0, call_end)
-			ctx_set_mem(ctx, backend.graph_add_mem(ctx, "cmem", call_end))
-
-			if len(prc.rets) == 0 do break
-			assert(len(prc.rets) == 1)
-			ty := prc.rets[0].type
-			dt = type_to_dt(ty)
-
-			if dt == .Void {
-				size := type_size(ty)
-				switch size {
-				case 1 ..= 16:
-					dest := prop.dest
-					if dest == 0 do dest = alloca(ctx, "sret", ty)
-
-					vl := backend.graph_add_ret(ctx, "cret", .I64, call_end, 0)
-					emit_arbitrary_store(ctx, dest, vl, size)
-
-					if size > 8 {
-						svl := backend.graph_add_ret(
-							ctx,
-							"cret",
-							.I64,
-							call_end,
-							1,
-						)
-						emit_arbitrary_store(ctx, dest, svl, size, 8)
-					}
-
-					res = dest
-					lvalue = true
-				}
-			} else {
-				res = backend.graph_add_ret(ctx, "cret", dt, call_end, 0)
+			// a multi-value call is only reached directly here when its result
+			// is spread into another call (e.g. `consume(produce())`); a
+			// multi-value assignment/declaration is pre-resolved by those
+			// handlers via emit_call.
+			results := emit_call(ctx, d, prc, nil, prop.dest)
+			if len(results) > 0 {
+				last := results[len(results) - 1]
+				res, lvalue = last.id, last.is_lvalue
 			}
 		case Builtin:
 			dest_dt := type_to_dt(base_ty)
@@ -1894,6 +1960,279 @@ emit_nodes :: proc(
 	res = backend.graph_peep(ctx, res)
 
 	return {id = res, is_lvalue = lvalue}
+}
+
+CALL_PREFIX :: 2
+
+// Lowers a single call argument (already emitted as `vl` with type `ty`) into
+// the `args` array, following the x64 calling convention. `i` tracks the next
+// register argument slot; `ri` the next stack argument slot (filled from the
+// end and reversed later); `gpa_fuel` the number of remaining GP registers.
+lower_call_arg :: proc(
+	ctx: ^Gen_Ctx,
+	args: []backend.Node_ID,
+	i: ^int,
+	ri: ^int,
+	gpa_fuel: ^int,
+	ty: Type,
+	vl: Value,
+) {
+	is_stack := false
+	if type_to_dt(ty) == .Void {
+		assert(vl.is_lvalue)
+
+		size := type_size(ty)
+		switch size {
+		case 0:
+			return
+		case 1 ..= 8:
+			args[i^] = emit_arbitrary_load(ctx, vl.id, size)
+			backend.graph_pin(ctx, args[i^])
+			i^ += 1
+			gpa_fuel^ -= 1
+			return
+		case 9 ..= 16:
+			if gpa_fuel^ < 2 {
+				slot := alloca(ctx, "sarg", ty, is_arg = true)
+				store_value(ctx, "ast", slot, vl, ty)
+				local := backend.graph_inps(ctx, slot)[0]
+				ri^ -= 1
+				args[ri^] = local
+				backend.graph_pin(ctx, local)
+				return
+			}
+
+			args[i^] = field_load(ctx, "afld", .I64, vl.id)
+			backend.graph_pin(ctx, args[i^])
+			i^ += 1
+
+			args[i^] = emit_arbitrary_load(ctx, vl.id, size, 8)
+			backend.graph_pin(ctx, args[i^])
+			i^ += 1
+			gpa_fuel^ -= 2
+			return
+		case 17 ..= int(~uint(0) >> 1):
+			is_stack = true
+		case:
+			fmt.panicf("unsupported type: %v", ty)
+		}
+	}
+
+	if is_stack {
+		args[i^] = vl.id
+	} else {
+		args[i^] = to_rvalue(ctx, vl, ty)
+	}
+	gpa_fuel^ -= 1
+	if gpa_fuel^ < 0 {
+		slot := alloca(ctx, "aspl", ty, zeroed = false, is_arg = true)
+		store_value(ctx, "ast", slot, Value(args[i^]), ty)
+		local := backend.graph_inps(ctx, slot)[0]
+		ri^ -= 1
+		args[ri^] = local
+		backend.graph_pin(ctx, args[ri^])
+	} else {
+		backend.graph_pin(ctx, args[i^])
+		i^ += 1
+	}
+}
+
+// If `node` is a call to a user procedure, returns it.
+call_proc_of :: proc(ctx: ^Gen_Ctx, node: ^ast.Node) -> (^Proc, bool) {
+	call, cok := node.derived.(^ast.Call_Expr)
+	if !cok do return nil, false
+	lit, lok := unpack_type(get_node_type(call.expr)).(^Lit)
+	if !lok do return nil, false
+	pid, pok := lit.(Proc_ID)
+	if !pok do return nil, false
+	return &ctx.procs[u32(pid)], true
+}
+
+// Emits a call to procedure `prc`. `out_slots` (when non-nil, one entry per
+// return value) gives a memory slot the caller wants each return written into;
+// entries may be 0 to request a temporary. Returns a Value per return value.
+// `prop_dest` is the destination for a single aggregate return value.
+emit_call :: proc(
+	ctx: ^Gen_Ctx,
+	d: ^ast.Call_Expr,
+	prc: ^Proc,
+	out_slots: []backend.Node_ID,
+	prop_dest: backend.Node_ID = 0,
+) -> []Value {
+	tmp, _ := arna.scrath(context.temp_allocator)
+
+	idx := u32(ctx.prc)
+	for &p, i in ctx.procs {
+		if &p == prc {
+			idx = u32(i)
+			break
+		}
+	}
+
+	rets := prc.rets
+	abi := ret_abi(rets)
+	ptr_ty := intern_pointer(ctx, .I64)
+
+	// resolve a memory slot for every value passed back by pointer
+	slots := make([]backend.Node_ID, len(rets), tmp)
+	for j in 0 ..< len(rets) {
+		if out_slots != nil && out_slots[j] != 0 {
+			slots[j] = out_slots[j]
+		}
+		if ret_is_by_pointer(abi, rets, j) && slots[j] == 0 {
+			slots[j] = alloca(ctx, "rtmp", rets[j].type, zeroed = false)
+		}
+		if slots[j] != 0 do backend.graph_pin(ctx, slots[j])
+	}
+
+	// spread: `consume(produce())` passes a multi-value call's results as args
+	spread_prc: ^Proc
+	if len(d.args) == 1 && len(d.args) != len(prc.params) {
+		spread_prc, _ = call_proc_of(ctx, d.args[0])
+		assert(spread_prc != nil)
+	}
+
+	arg_count := spread_prc != nil ? len(spread_prc.rets) : len(d.args)
+	args := make(
+		[]backend.Node_ID,
+		CALL_PREFIX + (arg_count + len(rets) + 1) * 2,
+		tmp,
+	)
+
+	gpa_fuel := 6
+	i := CALL_PREFIX
+	ri := len(args)
+
+	// a large last return is passed by pointer as the very first argument
+	if abi.sret {
+		lower_call_arg(
+			ctx,
+			args,
+			&i,
+			&ri,
+			&gpa_fuel,
+			ptr_ty,
+			Value(slots[len(rets) - 1]),
+		)
+	}
+
+	// the normal input arguments
+	if spread_prc != nil {
+		results := emit_call(
+			ctx,
+			d.args[0].derived.(^ast.Call_Expr),
+			spread_prc,
+			nil,
+		)
+		for r, j in results {
+			lower_call_arg(
+				ctx,
+				args,
+				&i,
+				&ri,
+				&gpa_fuel,
+				spread_prc.rets[j].type,
+				r,
+			)
+		}
+	} else {
+		for arg in d.args {
+			ty := get_node_type(arg)
+			vl := emit_nodes(ctx, {}, arg)
+			lower_call_arg(ctx, args, &i, &ri, &gpa_fuel, ty, vl)
+		}
+	}
+
+	// remaining (non-last) return values are passed by pointer after the args
+	if abi.kind == .Split {
+		for j in 0 ..< len(rets) - 1 {
+			lower_call_arg(
+				ctx,
+				args,
+				&i,
+				&ri,
+				&gpa_fuel,
+				ptr_ty,
+				Value(slots[j]),
+			)
+		}
+	}
+
+	args[0] = ctx_ctrl(ctx)
+	args[1] = ctx_mem(ctx)
+
+	slice.reverse(args[ri:])
+	copy(args[i:], args[ri:])
+	ln := i + len(args) - ri
+
+	call := backend.graph_add_call(ctx, "call", args[:ln], idx)
+	cnode := backend.graph_get(ctx, call)
+	cnode.input_count = u16(i)
+	for arg in args[CALL_PREFIX:ln] {
+		backend.graph_unpin(ctx, arg)
+	}
+	call_end := backend.graph_add_call_end(ctx, "calle", call)
+
+	backend.graph_set_input(ctx, ctx.node_scope, 0, call_end)
+	ctx_set_mem(ctx, backend.graph_add_mem(ctx, "cmem", call_end))
+
+	for s in slots {
+		if s != 0 do backend.graph_unpin(ctx, s)
+	}
+
+	if abi.kind == .None do return nil
+
+	results := make([]Value, len(rets), tmp)
+
+	read_reg_ret :: proc(
+		ctx: ^Gen_Ctx,
+		call_end: backend.Node_ID,
+		ty: Type,
+		dest: backend.Node_ID,
+	) -> Value {
+		if type_to_dt(ty) == .Void {
+			size := type_size(ty)
+			d := dest != 0 ? dest : alloca(ctx, "sret", ty)
+			vl := backend.graph_add_ret(ctx, "cret", .I64, call_end, 0)
+			emit_arbitrary_store(ctx, d, vl, size)
+			if size > 8 {
+				svl := backend.graph_add_ret(ctx, "cret", .I64, call_end, 1)
+				emit_arbitrary_store(ctx, d, svl, size, 8)
+			}
+			return {id = d, is_lvalue = true}
+		}
+		vl := backend.graph_add_ret(ctx, "cret", type_to_dt(ty), call_end, 0)
+		return {id = vl, is_lvalue = false}
+	}
+
+	switch abi.kind {
+	case .None:
+	case .Register:
+		results[0] = read_reg_ret(ctx, call_end, rets[0].type, prop_dest)
+	case .Split:
+		for j in 0 ..< len(rets) - 1 {
+			results[j] = {
+				id        = slots[j],
+				is_lvalue = true,
+			}
+		}
+		last := len(rets) - 1
+		if abi.sret {
+			results[last] = {
+				id        = slots[last],
+				is_lvalue = true,
+			}
+		} else {
+			results[last] = read_reg_ret(
+				ctx,
+				call_end,
+				rets[last].type,
+				out_slots != nil ? out_slots[last] : prop_dest,
+			)
+		}
+	}
+
+	return results
 }
 
 emit_arbitrary_store :: proc(

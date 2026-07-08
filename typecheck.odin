@@ -314,6 +314,74 @@ Param :: struct {
 	type: Type,
 }
 
+// How the return values of a procedure are passed back to the caller.
+Ret_Kind :: enum {
+	None, // no return values
+	Register, // all values, treated as a struct, fit in <= 16 bytes (RAX/RDX)
+	Split, // values passed separately: all but the last by pointer, last normal
+}
+
+Ret_ABI :: struct {
+	kind: Ret_Kind,
+	sret: bool, // Split: the last return is > 16 bytes and is passed via arg0
+}
+
+// offset of the `idx`-th return value when the returns are laid out as a struct
+ret_offset_of :: proc(rets: []Param, idx: int) -> int {
+	off := 0
+	for i in 0 ..< idx {
+		off = mem.align_forward_int(off, type_align(rets[i].type))
+		off += type_size(rets[i].type)
+	}
+	return mem.align_forward_int(off, type_align(rets[idx].type))
+}
+
+// total size of the return values laid out as a struct
+ret_combined_size :: proc(rets: []Param) -> int {
+	off := 0
+	align := 1
+	for r in rets {
+		a := type_align(r.type)
+		off = mem.align_forward_int(off, a)
+		off += type_size(r.type)
+		align = max(align, a)
+	}
+	return mem.align_forward_int(off, align)
+}
+
+ret_abi :: proc(rets: []Param) -> Ret_ABI {
+	if len(rets) == 0 do return {kind = .None}
+	size := ret_combined_size(rets)
+	if len(rets) == 1 {
+		if size <= 16 {
+			return {kind = .Register}
+		}
+	}
+	last := rets[len(rets) - 1]
+	return {kind = .Split, sret = type_size(last.type) > 16}
+}
+
+// is the `idx`-th return value passed back to the caller by pointer?
+ret_is_by_pointer :: proc(abi: Ret_ABI, rets: []Param, idx: int) -> bool {
+	if abi.kind != .Split do return false
+	if idx < len(rets) - 1 do return true
+	return abi.sret
+}
+
+// If `node` is a call to a user procedure, returns its signature.
+call_sig :: proc(ctx: ^Gen_Ctx, node: ^ast.Node) -> (Signature, bool) {
+	call, cok := node.derived.(^ast.Call_Expr)
+	if !cok do return {}, false
+	if id, iok := call.expr.derived.(^ast.Ident); iok && id.name == "len" {
+		return {}, false
+	}
+	lit, lok := unpack_type(typecheck(ctx, {}, call.expr)).(^Lit)
+	if !lok do return {}, false
+	pid, pok := lit.(Proc_ID)
+	if !pok do return {}, false
+	return ctx.procs[pid].sig, true
+}
+
 Variable :: struct {
 	name:  string,
 	idx:   union #no_nil {
@@ -407,6 +475,36 @@ typecheck :: proc(
 		}
 		resize(&ctx.scope, prev_scope_len)
 	case ^ast.Value_Decl:
+		// multi-value declaration: `a, b := multi_ret_call()`
+		if len(d.values) == 1 && len(d.names) > 1 {
+			typecheck(ctx, {}, d.values[0])
+			sig, ok := call_sig(ctx, d.values[0])
+			assert(ok)
+			assert(len(sig.rets) == len(d.names))
+			abi := ret_abi(sig.rets)
+
+			for i in 0 ..< len(d.names) {
+				name := meta.src_of(ctx.file^, d.names[i])
+				flags: Var_Flags
+				// by-pointer returns must be backed by memory so the callee can
+				// write them, not held in ssa registers
+				if ret_is_by_pointer(abi, sig.rets, i) {
+					flags |= {.Referenced}
+				}
+				set_node_data(d.names[i], flags)
+				append(
+					&ctx.scope,
+					Variable {
+						name = name,
+						type = sig.rets[i].type,
+						ident = d.names[i],
+						flags = flags,
+					},
+				)
+			}
+			return .Void
+		}
+
 		assert(len(d.names) == len(d.values))
 
 		inferred_ty := emit_type(ctx, d.type)
@@ -646,15 +744,26 @@ typecheck :: proc(
 			fmt.panicf("TODO: %v %#v", v, d)
 		}
 
-		assert(len(sig.params) == len(d.args))
-		for param, i in sig.params {
-			pty := typecheck(ctx, {inferred_ty = param.type}, d.args[i])
-			assert(pty == param.type)
+		// spread: `consume(produce())` passes a multi-value call as the args
+		if len(d.args) == 1 && len(d.args) != len(sig.params) {
+			typecheck(ctx, {}, d.args[0])
+			inner_sig, ok := call_sig(ctx, d.args[0])
+			assert(ok)
+			assert(len(inner_sig.rets) == len(sig.params))
+			for param, i in sig.params {
+				assert(param.type == inner_sig.rets[i].type)
+			}
+		} else {
+			assert(len(sig.params) == len(d.args))
+			for param, i in sig.params {
+				pty := typecheck(ctx, {inferred_ty = param.type}, d.args[i])
+				assert(pty == param.type)
+			}
 		}
 
-		if len(sig.rets) == 0 do return .Void
-		assert(len(sig.rets) == 1)
-		return sig.rets[0].type
+		if len(sig.rets) == 1 do return sig.rets[0].type
+		// void, or a multi-value result resolved by the enclosing decl/assign
+		return .Void
 	case ^ast.Return_Stmt:
 		prc := &ctx.procs[ctx.prc]
 		assert(len(d.results) == len(prc.rets))
@@ -662,6 +771,19 @@ typecheck :: proc(
 			typecheck(ctx, {inferred_ty = prc.rets[i].type}, d.results[i])
 		}
 	case ^ast.Assign_Stmt:
+		// multi-value assignment: `a, b = multi_ret_call()`
+		if len(d.rhs) == 1 && len(d.lhs) > 1 {
+			typecheck(ctx, {}, d.rhs[0])
+			sig, ok := call_sig(ctx, d.rhs[0])
+			assert(ok)
+			assert(len(sig.rets) == len(d.lhs))
+			for i in 0 ..< len(d.lhs) {
+				lhs_ty := typecheck(ctx, {}, d.lhs[i])
+				assert(lhs_ty == sig.rets[i].type)
+			}
+			return .Void
+		}
+
 		assert(len(d.lhs) == len(d.rhs))
 		for i in 0 ..< len(d.lhs) {
 			lhs_ty := typecheck(ctx, {}, d.lhs[i])

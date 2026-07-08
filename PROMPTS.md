@@ -167,8 +167,6 @@ the bugs, only one agent though because multiple would stop over each other.
 
 ### Implementing more complicated tests (DONE)
 
-NOTE: read AGENST.md
-
 Could you spawn an agent that implements a zero initialized statics of any
 type? Don't waste your context just pass this to him.
 
@@ -182,3 +180,45 @@ the frontend that is not implemented yet, same way as described above. You
 should first develop the allocator in a separate module and then port it to a
 test once it works. If you find any bugs in the backend, let an agent fix it.
 Once the test is implemented and it passes, stop.
+
+### Implement missing call configurations
+
+NOTE: read AGENST.md
+
+The current frontend is imssing implementation for multi value returns. We are implementing the odin cc that has following rules:
+
+```odin
+//* Large parameters (> 16 bytes) will be implicitly passed by pointer
+//* Multiple return values are handled as the following
+//  * If all of the return value can be passed in a register if they were
+//  treated as a struct, they will
+//  * If they cannot, then the values are treated separately with everything
+//  but the last value being passed by pointer after the input parameters
+//    * The end value is then treated as the "normal" return value according to
+//    the calling conventioN
+// * The `context` pointer is then the last parameter to the procedure
+// arguments
+```
+
+We dont support the multiple values yet and also dont support the last value
+beinge returned by stack. Note that the last value, if passed as stack, will be
+stored int the first argument (rdi) but other returns are stored into pointers
+appednded at the end. Do not worry about the context parameter yet, this is out
+of the scope right now.
+
+First spawn an agent to make tests that exersize the multiple return value
+scenareos.
+
+The implementation it self will require patternmatching on the call when
+assigning and declaring multiple values to preeptively resolve the unbalanced
+dest and src count.
+
+This also means the typecheck should mark scalar values that are returned by
+pointer from the function as Referenced so that we don't store them as ssa
+values.
+
+Test must pass, if you find bugs in the backend while implementing this, fix
+them with an agent and then continue implementing. Dont stop until the new
+tests pass.
+
+Alos not that return values will affect the argument, keep that in mind.

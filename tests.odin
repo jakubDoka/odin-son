@@ -7321,3 +7321,463 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) multi_return_two_scalars_destructured :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+divmod :: proc(a: int, b: int) -> (int, int) {
+	return a / b, a % b
+}
+
+main_ :: proc() -> int {
+	q, r := divmod(47, 5)
+	return q * 100 + r
+}
+
+run_test(t, `multi_return_two_scalars_destructured`, `
+package main
+
+opt_level :: "none"
+
+divmod :: proc(a: int, b: int) -> (int, int) {
+	return a / b, a % b
+}
+
+main :: proc() -> int {
+	q, r := divmod(47, 5)
+	return q * 100 + r
+}
+`, main_())
+}
+@(test) multi_return_two_scalars_into_existing_vars :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+swap2 :: proc(a: int, b: int) -> (int, int) {
+	return b, a
+}
+
+main_ :: proc() -> int {
+	x := 3
+	y := 7
+	x, y = swap2(x, y)
+	return x * 100 + y
+}
+
+run_test(t, `multi_return_two_scalars_into_existing_vars`, `
+package main
+
+opt_level :: "none"
+
+swap2 :: proc(a: int, b: int) -> (int, int) {
+	return b, a
+}
+
+main :: proc() -> int {
+	x := 3
+	y := 7
+	x, y = swap2(x, y)
+	return x * 100 + y
+}
+`, main_())
+}
+@(test) multi_return_four_i32_fit_in_registers :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+four32 :: proc(base: i32) -> (i32, i32, i32, i32) {
+	return base + 1, base + 2, base + 3, base + 4
+}
+
+main_ :: proc() -> int {
+	a, b, c, d := four32(10)
+	return int(a) * 1000 + int(b) * 100 + int(c) * 10 + int(d)
+}
+
+run_test(t, `multi_return_four_i32_fit_in_registers`, `
+package main
+
+opt_level :: "none"
+
+four32 :: proc(base: i32) -> (i32, i32, i32, i32) {
+	return base + 1, base + 2, base + 3, base + 4
+}
+
+main :: proc() -> int {
+	a, b, c, d := four32(10)
+	return int(a) * 1000 + int(b) * 100 + int(c) * 10 + int(d)
+}
+`, main_())
+}
+@(test) multi_return_three_ints_overflow_registers :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+three :: proc(a: int, b: int, c: int) -> (int, int, int) {
+	return a + b, b + c, a + c
+}
+
+main_ :: proc() -> int {
+	x, y, z := three(1, 2, 3)
+	return x * 100 + y * 10 + z
+}
+
+run_test(t, `multi_return_three_ints_overflow_registers`, `
+package main
+
+opt_level :: "none"
+
+three :: proc(a: int, b: int, c: int) -> (int, int, int) {
+	return a + b, b + c, a + c
+}
+
+main :: proc() -> int {
+	x, y, z := three(1, 2, 3)
+	return x * 100 + y * 10 + z
+}
+`, main_())
+}
+@(test) multi_return_four_ints_overflow_registers :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+four :: proc(a: int) -> (int, int, int, int) {
+	return a, a * 2, a * 3, a * 4
+}
+
+main_ :: proc() -> int {
+	p, q, r, s := four(5)
+	return p + q + r + s
+}
+
+run_test(t, `multi_return_four_ints_overflow_registers`, `
+package main
+
+opt_level :: "none"
+
+four :: proc(a: int) -> (int, int, int, int) {
+	return a, a * 2, a * 3, a * 4
+}
+
+main :: proc() -> int {
+	p, q, r, s := four(5)
+	return p + q + r + s
+}
+`, main_())
+}
+@(test) multi_return_last_value_large_struct :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Big :: struct {
+	a: int,
+	b: int,
+	c: int,
+	d: int,
+}
+
+split :: proc(seed: int) -> (int, int, Big) {
+	return seed + 1, seed + 2, Big{seed + 3, seed + 4, seed + 5, seed + 6}
+}
+
+main_ :: proc() -> int {
+	first, second, big := split(10)
+	return first * 1000 + second * 100 + big.a + big.b + big.c + big.d
+}
+
+run_test(t, `multi_return_last_value_large_struct`, `
+package main
+
+opt_level :: "none"
+
+Big :: struct {
+	a: int,
+	b: int,
+	c: int,
+	d: int,
+}
+
+split :: proc(seed: int) -> (int, int, Big) {
+	return seed + 1, seed + 2, Big{seed + 3, seed + 4, seed + 5, seed + 6}
+}
+
+main :: proc() -> int {
+	first, second, big := split(10)
+	return first * 1000 + second * 100 + big.a + big.b + big.c + big.d
+}
+`, main_())
+}
+@(test) multi_return_scalar_and_small_struct :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Pair :: struct {
+	x: i32,
+	y: i32,
+}
+
+mix :: proc(n: int) -> (int, Pair) {
+	return n * 2, Pair{i32(n), i32(n + 1)}
+}
+
+main_ :: proc() -> int {
+	scalar, pair := mix(7)
+	return scalar * 100 + int(pair.x) * 10 + int(pair.y)
+}
+
+run_test(t, `multi_return_scalar_and_small_struct`, `
+package main
+
+opt_level :: "none"
+
+Pair :: struct {
+	x: i32,
+	y: i32,
+}
+
+mix :: proc(n: int) -> (int, Pair) {
+	return n * 2, Pair{i32(n), i32(n + 1)}
+}
+
+main :: proc() -> int {
+	scalar, pair := mix(7)
+	return scalar * 100 + int(pair.x) * 10 + int(pair.y)
+}
+`, main_())
+}
+@(test) multi_return_ignore_some_values :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+stats :: proc(a: int, b: int, c: int) -> (int, int, int) {
+	return a + b + c, a * b * c, a - b - c
+}
+
+main_ :: proc() -> int {
+	sum, _, _ := stats(2, 3, 4)
+	_, prod, _ := stats(2, 3, 4)
+	return sum * 100 + prod
+}
+
+run_test(t, `multi_return_ignore_some_values`, `
+package main
+
+opt_level :: "none"
+
+stats :: proc(a: int, b: int, c: int) -> (int, int, int) {
+	return a + b + c, a * b * c, a - b - c
+}
+
+main :: proc() -> int {
+	sum, _, _ := stats(2, 3, 4)
+	_, prod, _ := stats(2, 3, 4)
+	return sum * 100 + prod
+}
+`, main_())
+}
+@(test) multi_return_feeds_directly_into_call :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+produce :: proc(seed: int) -> (int, int, int) {
+	return seed, seed + 1, seed + 2
+}
+
+consume :: proc(a: int, b: int, c: int) -> int {
+	return a * 100 + b * 10 + c
+}
+
+main_ :: proc() -> int {
+	return consume(produce(4))
+}
+
+run_test(t, `multi_return_feeds_directly_into_call`, `
+package main
+
+opt_level :: "none"
+
+produce :: proc(seed: int) -> (int, int, int) {
+	return seed, seed + 1, seed + 2
+}
+
+consume :: proc(a: int, b: int, c: int) -> int {
+	return a * 100 + b * 10 + c
+}
+
+main :: proc() -> int {
+	return consume(produce(4))
+}
+`, main_())
+}
+@(test) multi_return_with_input_params :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+with_args :: proc(a: int, b: int, c: int, d: int) -> (int, int, int) {
+	return a + b, c + d, a + d
+}
+
+main_ :: proc() -> int {
+	x, y, z := with_args(1, 2, 3, 4)
+	return x * 100 + y * 10 + z
+}
+
+run_test(t, `multi_return_with_input_params`, `
+package main
+
+opt_level :: "none"
+
+with_args :: proc(a: int, b: int, c: int, d: int) -> (int, int, int) {
+	return a + b, c + d, a + d
+}
+
+main :: proc() -> int {
+	x, y, z := with_args(1, 2, 3, 4)
+	return x * 100 + y * 10 + z
+}
+`, main_())
+}
+@(test) multi_return_two_small_structs :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Small :: struct {
+	a: i32,
+	b: i32,
+}
+
+two_small :: proc(n: i32) -> (Small, Small) {
+	return Small{n, n + 1}, Small{n + 2, n + 3}
+}
+
+main_ :: proc() -> int {
+	p, q := two_small(10)
+	return int(p.a) * 1000 + int(p.b) * 100 + int(q.a) * 10 + int(q.b)
+}
+
+run_test(t, `multi_return_two_small_structs`, `
+package main
+
+opt_level :: "none"
+
+Small :: struct {
+	a: i32,
+	b: i32,
+}
+
+two_small :: proc(n: i32) -> (Small, Small) {
+	return Small{n, n + 1}, Small{n + 2, n + 3}
+}
+
+main :: proc() -> int {
+	p, q := two_small(10)
+	return int(p.a) * 1000 + int(p.b) * 100 + int(q.a) * 10 + int(q.b)
+}
+`, main_())
+}
+@(test) multi_return_used_in_expression :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+minmax :: proc(a: int, b: int) -> (int, int) {
+	if a < b do return a, b
+	return b, a
+}
+
+main_ :: proc() -> int {
+	lo, hi := minmax(opaque(9), opaque(4))
+	span := (hi - lo) * 2 + lo
+	return span
+}
+
+run_test(t, `multi_return_used_in_expression`, `
+package main
+
+opt_level :: "none"
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+minmax :: proc(a: int, b: int) -> (int, int) {
+	if a < b do return a, b
+	return b, a
+}
+
+main :: proc() -> int {
+	lo, hi := minmax(opaque(9), opaque(4))
+	span := (hi - lo) * 2 + lo
+	return span
+}
+`, main_())
+}
+@(test) multi_return_mixed_sizes_with_large_tail :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Big :: struct {
+	a: int,
+	b: int,
+	c: int,
+}
+
+many :: proc(base: int, extra: int) -> (int, i32, Big) {
+	return base + extra, i32(base), Big{base, base + 1, extra}
+}
+
+main_ :: proc() -> int {
+	first, second, big := many(5, 100)
+	return first + int(second) * 10 + big.a + big.b + big.c
+}
+
+run_test(t, `multi_return_mixed_sizes_with_large_tail`, `
+package main
+
+opt_level :: "none"
+
+Big :: struct {
+	a: int,
+	b: int,
+	c: int,
+}
+
+many :: proc(base: int, extra: int) -> (int, i32, Big) {
+	return base + extra, i32(base), Big{base, base + 1, extra}
+}
+
+main :: proc() -> int {
+	first, second, big := many(5, 100)
+	return first + int(second) * 10 + big.a + big.b + big.c
+}
+`, main_())
+}

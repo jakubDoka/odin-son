@@ -485,6 +485,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 	types.globals.allocator = types.allocator
 
 	ctx: Gen_Ctx
+	ctx.cc = &backend.X64_ODIN_CC
 	ctx.file = &f
 	ctx.types = &types
 
@@ -594,7 +595,6 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 			ctx.ret_ptrs = nil
 
 			sm: Abi_Sm
-			sm.gpa_fuel = 6
 			i := 0
 			gpa_fuel := 6
 
@@ -877,7 +877,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 }
 
 Abi_Sm :: struct {
-	gpa_fuel: int,
+	used_gpas: int,
 }
 
 Abi_Param :: struct {
@@ -902,17 +902,17 @@ abi_sm_add :: proc(
 	forced_stack := par.dt == .Void
 
 	par.scalar = !forced_stack
-	par.spilled = sm.gpa_fuel <= 0
+	par.spilled = sm.used_gpas >= len(ctx.cc.args[.General])
 	switch par.size {
 	case 0:
 		return {}, false
 	case 1 ..= 8:
 		par.copied = forced_stack
-		sm.gpa_fuel -= 1
+		sm.used_gpas += 1
 	case 9 ..= 16:
-		par.spilled = sm.gpa_fuel <= 1
+		par.spilled = sm.used_gpas + 1 >= len(ctx.cc.args[.General])
 		par.copied = !par.spilled
-		if !par.spilled do sm.gpa_fuel -= 2
+		if !par.spilled do sm.used_gpas += 2
 	case 17 ..= int(~uint(0) >> 1):
 		par.by_ptr = true
 		par.scalar = true
@@ -928,6 +928,7 @@ Gen_Ctx :: struct {
 	using global: ^Global_Ctx,
 	using types:  ^Types,
 	using graph:  backend.Graph,
+	cc:           ^backend.Call_Conv,
 	node_scope:   backend.Node_ID,
 	root_mem:     backend.Node_ID,
 	mem_slot:     int,
@@ -1985,10 +1986,8 @@ emit_call :: proc(
 	)
 
 	lctx: Lower_Ctx
-	lctx.gpa_fuel = 6
 	lctx.i = CALL_PREFIX
 	lctx.ri = len(args)
-	lctx.sm.gpa_fuel = 6
 
 	for j in rabi.srets_start ..< len(rabi.extras) {
 		lower_call_arg(ctx, args, &lctx, ptr_ty, Value(slots[j]))
@@ -2052,40 +2051,36 @@ emit_call :: proc(
 
 	for j in 0 ..< len(rabi.reg_rets) {
 		res_idx := len(rabi.extras) + j
-		results[res_idx] = read_reg_ret(
-			ctx,
-			call_end,
-			rets[res_idx].type,
-			out_slots != nil ? out_slots[res_idx] : prop_dest,
-		)
+
+		ty := rets[res_idx].type
+		dest := out_slots != nil ? out_slots[res_idx] : prop_dest
+		dt := type_to_dt(ty)
+
+		if dt == .Void {
+			size := type_size(ty)
+			d := dest != 0 ? dest : alloca(ctx, "sret", ty, zeroed = false)
+
+			for i in 0 ..< (size + 7) / 8 {
+				rid := u32(i)
+				vl := backend.graph_add_ret(ctx, "cret", .I64, call_end, rid)
+				emit_arbitrary_store(ctx, d, vl, size, i * 8)
+			}
+
+			results[res_idx] = {
+				id        = d,
+				is_lvalue = true,
+			}
+		} else {
+			vl := backend.graph_add_ret(ctx, "cret", dt, call_end, 0)
+			results[res_idx] = Value(vl)
+		}
 	}
 
 	return results
 
 	Lower_Ctx :: struct {
-		i, ri, gpa_fuel: int,
-		sm:              Abi_Sm,
-	}
-
-	read_reg_ret :: proc(
-		ctx: ^Gen_Ctx,
-		call_end: backend.Node_ID,
-		ty: Type,
-		dest: backend.Node_ID,
-	) -> Value {
-		if type_to_dt(ty) == .Void {
-			size := type_size(ty)
-			d := dest != 0 ? dest : alloca(ctx, "sret", ty, zeroed = false)
-			vl := backend.graph_add_ret(ctx, "cret", .I64, call_end, 0)
-			emit_arbitrary_store(ctx, d, vl, size)
-			if size > 8 {
-				svl := backend.graph_add_ret(ctx, "cret", .I64, call_end, 1)
-				emit_arbitrary_store(ctx, d, svl, size, 8)
-			}
-			return {id = d, is_lvalue = true}
-		}
-		vl := backend.graph_add_ret(ctx, "cret", type_to_dt(ty), call_end, 0)
-		return {id = vl, is_lvalue = false}
+		i, ri: int,
+		sm:    Abi_Sm,
 	}
 
 	lower_call_arg :: proc(

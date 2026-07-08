@@ -314,58 +314,25 @@ Param :: struct {
 	type: Type,
 }
 
-// How the return values of a procedure are passed back to the caller.
-Ret_Kind :: enum {
-	None, // no return values
-	Register, // all values, treated as a struct, fit in <= 16 bytes (RAX/RDX)
-	Split, // values passed separately: all but the last by pointer, last normal
-}
-
 Ret_ABI :: struct {
-	kind: Ret_Kind,
-	sret: bool, // Split: the last return is > 16 bytes and is passed via arg0
+	extras:      []Param,
+	srets_start: int,
+	reg_rets:    []Param,
 }
 
-// offset of the `idx`-th return value when the returns are laid out as a struct
-ret_offset_of :: proc(rets: []Param, idx: int) -> int {
-	off := 0
-	for i in 0 ..< idx {
-		off = mem.align_forward_int(off, type_align(rets[i].type))
-		off += type_size(rets[i].type)
-	}
-	return mem.align_forward_int(off, type_align(rets[idx].type))
-}
-
-// total size of the return values laid out as a struct
-ret_combined_size :: proc(rets: []Param) -> int {
-	off := 0
-	align := 1
-	for r in rets {
-		a := type_align(r.type)
-		off = mem.align_forward_int(off, a)
-		off += type_size(r.type)
-		align = max(align, a)
-	}
-	return mem.align_forward_int(off, align)
-}
-
-ret_abi :: proc(rets: []Param) -> Ret_ABI {
-	if len(rets) == 0 do return {kind = .None}
-	size := ret_combined_size(rets)
-	if len(rets) == 1 {
-		if size <= 16 {
-			return {kind = .Register}
-		}
-	}
+ret_abi :: proc(rets: []Param) -> (rabi: Ret_ABI) {
+	if len(rets) == 0 do return
 	last := rets[len(rets) - 1]
-	return {kind = .Split, sret = type_size(last.type) > 16}
+	is_sret := int(type_size(last.type) > 16)
+	rabi.extras = rets[:len(rets) - 1 + is_sret]
+	rabi.srets_start = len(rabi.extras) - is_sret
+	rabi.reg_rets = rets[len(rabi.extras):]
+
+	return
 }
 
-// is the `idx`-th return value passed back to the caller by pointer?
 ret_is_by_pointer :: proc(abi: Ret_ABI, rets: []Param, idx: int) -> bool {
-	if abi.kind != .Split do return false
-	if idx < len(rets) - 1 do return true
-	return abi.sret
+	return idx < len(rets) - 1 || abi.srets_start < len(abi.extras)
 }
 
 // If `node` is a call to a user procedure, returns its signature.

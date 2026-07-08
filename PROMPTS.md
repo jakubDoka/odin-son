@@ -181,9 +181,7 @@ should first develop the allocator in a separate module and then port it to a
 test once it works. If you find any bugs in the backend, let an agent fix it.
 Once the test is implemented and it passes, stop.
 
-### Implement missing call configurations
-
-NOTE: read AGENST.md
+### Implement missing call configurations (DONE)
 
 The current frontend is imssing implementation for multi value returns. We are implementing the odin cc that has following rules:
 
@@ -222,3 +220,47 @@ them with an agent and then continue implementing. Dont stop until the new
 tests pass.
 
 Alos not that return values will affect the argument, keep that in mind.
+
+### Implement the cli for the jit compiler to compile multifile programs
+
+NOTE: read AGENST.md
+
+As of right now we can only test the single file tests. This is gread but I
+need to be able to write more complex programs. I have tidied up the main
+package so its prepared for the compiler cli implementation.
+
+There are few things missing:
+1. Module loader that can take a file and loads all of the reachable files into
+   a array of files and on top of it an array of modules that subslice the file
+   array. This is to allow later to refer to a file by an index but we don't
+   need it immediately.
+2. Once we have all of the files loaded, lets make a pass of typechecking on
+   them. This will require modifying how we search for global declarations and
+   also create a need for module values (not a runtime value but a compile time
+   value, same way functions work).
+3. Once we typechecked, we can start emiting code. This should be simple, just
+   populate the emit params on all of the procs.
+4. Emit a valid ELF file that can be compiled with `zig cc`. Separete the elf
+   emission to a file as it can get involved. Emit elf relocations, we
+   have a setup for `.rel` right now because compiler will write the addend
+   into the relocation slot.
+
+Before you implement anything, first create a project in a
+`test-programs/module-imports` and add a simple code in there that will test
+the path resolution and module symbol search so that we have something to test
+against wile implementing the compiler cli. Also include global variables so
+that the elf emission covers that.
+
+Also make a bash script in misc that will loop trough all files in
+`test-programs`, compile them with odin and with our compiler, run them and
+compare exit codes and stdout/err and log a summary of that.
+
+Use that bach script for testing while implementing the compiler.
+
+Note that its better to avoid implementint new features into the frontend. The
+scope of this is limmited to importing code and you should not worry about
+importing package collections right now. The frontend as fo right now is pretty
+limmited so it would not be usefull anyway.
+
+If you have any questions, please ask them, otherwise start implementing.
+

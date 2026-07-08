@@ -8,6 +8,7 @@ import "core:odin/ast"
 import "core:odin/tokenizer"
 import "core:strconv"
 import "meta"
+import "vendored/gam/util/arna"
 
 Lit :: union {
 	Proc_ID,
@@ -370,6 +371,8 @@ Global_Ctx :: struct {
 }
 
 Types :: struct {
+	tstats:    backend.Stats,
+	mems:      Mems,
 	allocator: runtime.Allocator,
 	procs:     [dynamic]Proc,
 	scope:     [dynamic]Variable,
@@ -379,6 +382,41 @@ Types :: struct {
 	slices:    map[Type]^Slice,
 	lits:      map[Lit]^Lit,
 	globals:   [dynamic]Global_Data,
+}
+
+types_init :: proc(types: ^Types) {
+	_ = arna.bulk_init(
+		&arna.scratch[0],
+		&arna.scratch[1],
+		&types.mems.graph,
+		&types.mems.regalloc,
+		&types.mems.scratch,
+		&types.mems.code,
+		&types.mems.reloc,
+		&types.mems.type,
+	)
+
+	types.allocator = arna.allocator(&types.mems.type)
+	types.procs.allocator = types.allocator
+	types.pointers.allocator = types.allocator
+	types.structs.allocator = types.allocator
+	types.arrays.allocator = types.allocator
+	types.slices.allocator = types.allocator
+	types.lits.allocator = types.allocator
+	types.globals.allocator = types.allocator
+}
+
+types_deinit :: proc(types: ^Types) {
+	arna.bulk_destroy(
+		&arna.scratch[0],
+		&arna.scratch[1],
+		&types.mems.graph,
+		&types.mems.regalloc,
+		&types.mems.scratch,
+		&types.mems.code,
+		&types.mems.reloc,
+		&types.mems.type,
+	)
 }
 
 Global_Data :: struct {
@@ -786,4 +824,60 @@ set_node_data :: proc(node: ^ast.Node, value: $T) {
 is_of :: proc(vl: Type, $K: typeid) -> bool {
 	_, ok := unpack_type(vl).(K)
 	return ok
+}
+
+typecheck_file :: proc(ctx: ^Gen_Ctx, f: ast.File) {
+	for decl in f.decls {
+		if sdecl, sok := decl.derived_stmt.(^ast.Value_Decl); sok {
+			if prc, pok := sdecl.values[0].derived.(^ast.Proc_Lit); pok {
+				plist := prc.type.params.list
+				rlist: []^ast.Field
+				if prc.type.results != nil {
+					rlist = prc.type.results.list
+				}
+
+				params := make([]Param, len(plist), context.temp_allocator)
+				rets := make([]Param, len(rlist), context.temp_allocator)
+
+				lists := [][]^ast.Field{plist, rlist}
+				tys := [][]Param{params, rets}
+
+				for list, j in lists {
+					tys := tys[j]
+
+					for param, i in list {
+						assert(len(param.names) <= 1)
+						pname := ""
+						if len(param.names) == 1 {
+							pname = meta.src_of(f, param.names[0])
+						}
+
+						tys[i] = {pname, emit_type(ctx, param.type)}
+					}
+				}
+
+				append(
+					&ctx.procs,
+					Proc {
+						name = meta.src_of(f, sdecl.names[0]),
+						ast = prc,
+						params = params,
+						rets = rets,
+					},
+				)
+			}
+		}
+	}
+
+	for &prc, i in ctx.procs {
+		ctx.prc = auto_cast i
+		ctx.mems.scratch.pos = 0
+		ctx.scope = make([dynamic]Variable, arna.allocator(&ctx.mems.scratch))
+
+		for par in prc.params {
+			append(&ctx.scope, Variable{name = par.name, type = par.type})
+		}
+
+		typecheck(ctx, {}, prc.ast.body)
+	}
 }

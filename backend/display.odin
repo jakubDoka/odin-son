@@ -8,6 +8,101 @@ import "core:mem"
 import "core:reflect"
 import "core:terminal/ansi"
 
+@(thread_local)
+current_graph: ^Graph
+
+init_custom_fmt :: proc() {
+	Scratch :: struct #align (4096) {
+		buf: [4096]u8,
+	}
+
+	@(static) fmts: map[typeid]fmt.User_Formatter
+	@(static) scratch: Scratch
+
+	arnar := arna.init_from_buffer(scratch.buf[:])
+	context.allocator = arna.allocator(&arnar)
+
+	fmt.set_user_formatters(&fmts)
+
+	fmt.register_user_formatter(
+		Reg_Mask,
+		proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
+			value := value.(Reg_Mask)
+			io.write_rune(fi.writer, reg_kind_char(value.kind))
+			for m in 0 ..< value.bit_length / MASK_SIZE {
+				fmt.wprintf(fi.writer, "%016x", uint(value.masks[m]))
+			}
+			return true
+		},
+	)
+
+	fmt.register_user_formatter(
+		Lrg,
+		proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
+			value := value.(Lrg)
+			fmt.wprintf(fi.writer, "%v%v", value.mask, value.node)
+			if value.reg != -1 {
+				fmt.wprintf(fi.writer, "%03i", value.reg)
+			}
+			ansi_start(fi.writer, value.index)
+			fmt.wprintf(fi.writer, "%3i", value.index)
+			ansi_end(fi.writer)
+			return true
+		},
+	)
+
+	fmt.register_user_formatter(
+		Node_Output,
+		proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
+			value := value.(Node_Output)
+			fmt.wprintf(fi.writer, "%v:%v", value.id, value.idx)
+			return true
+		},
+	)
+
+	fmt.register_user_formatter(
+		Node_ID,
+		proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
+			value := value.(Node_ID)
+			if value != 0 {
+				graph_display_node_gvn(fi.writer, current_graph, value)
+			} else {
+				fmt.wprint(fi.writer, "nl")
+			}
+			return true
+		},
+	)
+
+	fmt.register_user_formatter(
+		Node,
+		proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
+			value := &value.(Node)
+			id := graph_id(current_graph, value)
+			graph_display_node(fi.writer, current_graph, id)
+			return true
+		},
+	)
+
+	fmt.register_user_formatter(
+		Expanded_Node,
+		proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
+			value := &value.(Expanded_Node)
+			id := graph_id(current_graph, value)
+			graph_display_node(fi.writer, current_graph, id)
+			return true
+		},
+	)
+
+	fmt.register_user_formatter(
+		Graph,
+		proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
+			value := &value.(Graph)
+			graph_display(fi.writer, value)
+			return true
+		},
+	)
+}
+
 graph_display :: proc(
 	w: io.Writer,
 	graph: ^Graph,

@@ -3499,3 +3499,269 @@ main :: proc() -> int {
 	return s.a * 100 + s.b
 }
 ```
+
+#### zero initialized static aggregate
+```odin
+package main
+
+opt_level :: "none"
+
+Counters :: struct {
+	hits:   int,
+	misses: int,
+}
+
+main :: proc() -> int {
+	@(static) buf := [16]u8{}
+	@(static) c := Counters{}
+	@(static) scale := 3
+
+	i := 0
+	for {
+		if i >= 16 do break
+		buf[i] = u8(i)
+		i += 1
+	}
+
+	sum := 0
+	j := 0
+	for {
+		if j >= 16 do break
+		sum += int(buf[j])
+		j += 1
+	}
+
+	c.hits = 7
+	c.misses = 2
+
+	return sum * scale + c.hits - c.misses
+}
+```
+
+#### free list allocator
+```odin
+package main
+
+opt_level :: "none"
+
+MAX_BLOCKS :: 64
+
+Block :: struct {
+	offset: int,
+	size:   int,
+	free:   bool,
+}
+
+Allocator :: struct {
+	buf:    []u8,
+	blocks: [MAX_BLOCKS]Block,
+	count:  int,
+}
+
+alloc_init :: proc(a: ^Allocator, buf: []u8) {
+	a.buf = buf
+	a.count = 1
+	a.blocks[0] = Block{offset = 0, size = len(buf), free = true}
+}
+
+align_up :: proc(x: int, align: int) -> int {
+	return (x + align - 1) &~ (align - 1)
+}
+
+alloc_off :: proc(a: ^Allocator, size: int, align: int) -> int {
+	if size <= 0 do return -1
+
+	i := 0
+	for {
+		if i >= a.count do break
+		b := a.blocks[i]
+		if b.free {
+			aligned := align_up(b.offset, align)
+			pad := aligned - b.offset
+			total := pad + size
+			if b.size >= total {
+				rem := b.size - total
+
+				parts := [3]Block{}
+				n := 0
+				if pad > 0 {
+					parts[n] = Block{offset = b.offset, size = pad, free = true}
+					n += 1
+				}
+				parts[n] = Block{offset = aligned, size = size, free = false}
+				n += 1
+				if rem > 0 {
+					parts[n] = Block {
+						offset = aligned + size,
+						size   = rem,
+						free   = true,
+					}
+					n += 1
+				}
+
+				splice(a, i, n, parts)
+				return aligned
+			}
+		}
+		i += 1
+	}
+
+	return -1
+}
+
+splice :: proc(a: ^Allocator, idx: int, n: int, parts: [3]Block) {
+	added := n - 1
+	if added > 0 {
+		j := a.count - 1
+		for {
+			if j <= idx do break
+			a.blocks[j + added] = a.blocks[j]
+			j -= 1
+		}
+	}
+	k := 0
+	for {
+		if k >= n do break
+		a.blocks[idx + k] = parts[k]
+		k += 1
+	}
+	a.count += added
+}
+
+alloc_free :: proc(a: ^Allocator, offset: int) -> bool {
+	i := 0
+	for {
+		if i >= a.count do break
+		if (a.blocks[i].offset == offset) & (!a.blocks[i].free) {
+			a.blocks[i].free = true
+			coalesce(a)
+			return true
+		}
+		i += 1
+	}
+	return false
+}
+
+coalesce :: proc(a: ^Allocator) {
+	if a.count == 0 do return
+	w := 0
+	r := 1
+	for {
+		if r >= a.count do break
+		if a.blocks[w].free & a.blocks[r].free {
+			a.blocks[w].size += a.blocks[r].size
+		} else {
+			w += 1
+			a.blocks[w] = a.blocks[r]
+		}
+		r += 1
+	}
+	a.count = w + 1
+}
+
+write_pattern :: proc(s: []u8, seed: u8) {
+	i := 0
+	for {
+		if i >= len(s) do break
+		s[i] = u8(int(seed) + i)
+		i += 1
+	}
+}
+
+check_pattern :: proc(s: []u8, seed: u8) -> bool {
+	i := 0
+	for {
+		if i >= len(s) do break
+		if s[i] != u8(int(seed) + i) do return false
+		i += 1
+	}
+	return true
+}
+
+free_block_count :: proc(a: ^Allocator) -> int {
+	c := 0
+	i := 0
+	for {
+		if i >= a.count do break
+		if a.blocks[i].free do c += 1
+		i += 1
+	}
+	return c
+}
+
+test_coalesce :: proc(buf: []u8) -> bool {
+	a: Allocator = {}
+	alloc_init(&a, buf)
+
+	x := alloc_off(&a, 100, 1)
+	y := alloc_off(&a, 100, 1)
+	z := alloc_off(&a, 100, 1)
+	if (x != 0) | (y != 100) | (z != 200) do return false
+
+	alloc_free(&a, x)
+	alloc_free(&a, z)
+	if free_block_count(&a) != 2 do return false
+
+	alloc_free(&a, y)
+	if free_block_count(&a) != 1 do return false
+
+	whole := alloc_off(&a, len(buf), 1)
+	return whole == 0
+}
+
+main :: proc() -> int {
+	@(static) backing := [1024]u8{}
+	@(static) coalesce_buf := [512]u8{}
+
+	a: Allocator = {}
+	alloc_init(&a, backing[:])
+
+	score := 0
+
+	o1 := alloc_off(&a, 100, 8)
+	o2 := alloc_off(&a, 40, 16)
+	o3 := alloc_off(&a, 7, 1)
+	o4 := alloc_off(&a, 200, 32)
+
+	if o1 >= 0 do score += 1
+	if o2 >= 0 do score += 2
+	if o3 >= 0 do score += 4
+	if o4 >= 0 do score += 8
+
+	if o2 & 15 == 0 do score += 16
+	if o4 & 31 == 0 do score += 32
+
+	s1 := backing[o1:o1 + 100]
+	s2 := backing[o2:o2 + 40]
+	s3 := backing[o3:o3 + 7]
+	s4 := backing[o4:o4 + 200]
+
+	write_pattern(s1, 1)
+	write_pattern(s2, 50)
+	write_pattern(s3, 100)
+	write_pattern(s4, 7)
+
+	if check_pattern(s1, 1) do score += 64
+	if check_pattern(s2, 50) do score += 128
+	if check_pattern(s3, 100) do score += 256
+	if check_pattern(s4, 7) do score += 512
+
+	alloc_free(&a, o2)
+	alloc_free(&a, o3)
+
+	if test_coalesce(coalesce_buf[:]) do score += 1024
+
+	o5 := alloc_off(&a, 45, 8)
+	if o5 >= 0 do score += 2048
+	s5 := backing[o5:o5 + 45]
+	write_pattern(s5, 200)
+	if check_pattern(s5, 200) do score += 4096
+
+	if check_pattern(s1, 1) do score += 8192
+
+	if alloc_off(&a, 100000, 8) < 0 do score += 16384
+
+	return score
+}
+```
+

@@ -382,6 +382,7 @@ graph_schedule :: proc(
 			fmt.assertf(node.inps[0] != graph.start, "%v", node.node)
 			ctx.late_schedules[node.gvn] = node.inps[0]
 		} else {
+			assert(!node.is_store)
 			for out in node.outs {
 				onode := graph_expand(graph, out.id)
 				if ctx.late_schedules[onode.gvn] == 0 &&
@@ -476,7 +477,7 @@ graph_schedule :: proc(
 			}
 		}
 
-		if node.is_store {
+		if node.is_store || (node.itype == .Phi && node.dt == .Void) {
 			for out in node.outs {
 				onode := graph_expand(graph, out.id)
 				if ctx.late_schedules[onode.gvn] == 0 && onode.is_load {
@@ -484,7 +485,17 @@ graph_schedule :: proc(
 				}
 			}
 
-			if 1 < len(node.inps) {
+			if node.itype == .Phi {
+				for inp in node.inps[1:] {
+					for out in graph_outs(graph, inp) {
+						onode := graph_expand(graph, out.id)
+						if ctx.late_schedules[onode.gvn] == 0 &&
+						   onode.is_load {
+							worklist_add(graph, &worklist, out.id)
+						}
+					}
+				}
+			} else if 1 < len(node.inps) {
 				for out in graph_outs(graph, node.inps[1]) {
 					onode := graph_expand(graph, out.id)
 					if ctx.late_schedules[onode.gvn] == 0 && onode.is_load {

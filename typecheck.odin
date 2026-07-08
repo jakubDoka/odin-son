@@ -276,7 +276,18 @@ emit_type :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Type {
 		if d.len == nil {
 			return intern_slice(ctx, elem)
 		}
-		len_lit := d.len.derived.(^ast.Basic_Lit)
+		len_node := d.len
+		if len_ident, is_ident := len_node.derived.(^ast.Ident); is_ident {
+			for decl in ctx.file.decls {
+				sdecl := decl.derived_stmt.(^ast.Value_Decl) or_continue
+				if meta.src_of(ctx.file^, sdecl.names[0]) != len_ident.name {
+					continue
+				}
+				len_node = sdecl.values[0]
+				break
+			}
+		}
+		len_lit := len_node.derived.(^ast.Basic_Lit)
 		assert(len_lit.tok.kind == .Integer)
 		length, ok := strconv.parse_int(len_lit.tok.text)
 		assert(ok)
@@ -641,6 +652,7 @@ typecheck :: proc(
 			assert(pty == param.type)
 		}
 
+		if len(sig.rets) == 0 do return .Void
 		assert(len(sig.rets) == 1)
 		return sig.rets[0].type
 	case ^ast.Return_Stmt:

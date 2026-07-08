@@ -1746,7 +1746,7 @@ emit_indirect_addr_reg :: proc(
 	if rip_relative {
 		assert(base == RIP)
 		mod = .Indirect
-	} else if mod == .Indirect && base == R13 {
+	} else if mod == .Indirect && (base == R13 || base == RBP) {
 		mod = .Indirect_Disp8
 	}
 

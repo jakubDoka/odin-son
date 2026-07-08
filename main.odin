@@ -493,7 +493,10 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		if sdecl, sok := decl.derived_stmt.(^ast.Value_Decl); sok {
 			if prc, pok := sdecl.values[0].derived.(^ast.Proc_Lit); pok {
 				plist := prc.type.params.list
-				rlist := prc.type.results.list
+				rlist: []^ast.Field
+				if prc.type.results != nil {
+					rlist = prc.type.results.list
+				}
 
 				params := make([]Param, len(plist), context.temp_allocator)
 				rets := make([]Param, len(rlist), context.temp_allocator)
@@ -677,6 +680,14 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 			}
 
 			emit_nodes(&ctx, {}, prc.ast.body)
+
+			if ctx.node_scope != 0 {
+				assert(len(prc.rets) == 0)
+				values := [2]backend.Node_ID{ctx_ctrl(&ctx), ctx_mem(&ctx)}
+				backend.graph_merge_returns(&ctx, values[:])
+				backend.graph_delete(&ctx, ctx.node_scope)
+				ctx.node_scope = 0
+			}
 
 			backend.graph_iter_peeps(&ctx)
 			backend.memopt(&ctx)
@@ -1267,7 +1278,9 @@ emit_nodes :: proc(
 		backend.graph_truncate_scope(ctx, ctx.node_scope, prev_scope_len)
 	case ^ast.Expr_Stmt:
 		node := emit_nodes(ctx, {}, d.expr)
-		backend.graph_delete(ctx, node.id)
+		if node.id != 0 {
+			backend.graph_delete(ctx, node.id)
+		}
 	case ^ast.Assign_Stmt:
 		assert(len(d.lhs) == len(d.rhs))
 		Value_Slot :: struct {
@@ -1391,7 +1404,7 @@ emit_nodes :: proc(
 		lvalue = true
 	case ^ast.Return_Stmt:
 		values := make([]backend.Node_ID, 2 + len(d.results) * 2, tmp)
-		assert(len(d.results) == 1)
+		assert(len(d.results) <= 1)
 		i := 2
 		for r in d.results {
 			ty := get_node_type(r)
@@ -1463,21 +1476,20 @@ emit_nodes :: proc(
 			flags := get_node_vflags(d.names[i])
 
 			if is_static(d) {
-				if type_to_dt(vty) == .Void {
-					fmt.panicf("TODO: aggregate static initializer: %v", name)
-				}
-				value, cok := const_eval_int(d.values[i])
-				if !cok {
-					fmt.panicf(
-						"TODO: non-constant static initializer: %v",
-						name,
-					)
-				}
-
 				size := type_size(vty)
 				bytes := make([]u8, size, ctx.globals.allocator)
-				val_bytes := transmute([8]u8)value
-				copy(bytes, val_bytes[:size])
+
+				if type_to_dt(vty) != .Void {
+					value, cok := const_eval_int(d.values[i])
+					if !cok {
+						fmt.panicf(
+							"TODO: non-constant static initializer: %v",
+							name,
+						)
+					}
+					val_bytes := transmute([8]u8)value
+					copy(bytes, val_bytes[:size])
+				}
 
 				idx := add_global(ctx, bytes, type_align(vty))
 				g := backend.graph_add_global(ctx, name)
@@ -1804,6 +1816,7 @@ emit_nodes :: proc(
 			backend.graph_set_input(ctx, ctx.node_scope, 0, call_end)
 			ctx_set_mem(ctx, backend.graph_add_mem(ctx, "cmem", call_end))
 
+			if len(prc.rets) == 0 do break
 			assert(len(prc.rets) == 1)
 			ty := prc.rets[0].type
 			dt = type_to_dt(ty)

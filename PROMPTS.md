@@ -165,7 +165,7 @@ them. For each bug you are suspecting, spawn an agent to make thetest for it.
 Once you thing you can't find anymore. Once that is done, spawn an agent to fix
 the bugs, only one agent though because multiple would stop over each other.
 
-### Implementing more complicated tests
+### Implementing more complicated tests (DONE)
 
 NOTE: read AGENST.md
 
@@ -180,4 +180,5 @@ from them, free some, read write and so on, just to test it works. While you
 are implementing this, also spawn an agent whenever you need some feature on
 the frontend that is not implemented yet, same way as described above. You
 should first develop the allocator in a separate module and then port it to a
-test once it works.
+test once it works. If you find any bugs in the backend, let an agent fix it.
+Once the test is implemented and it passes, stop.

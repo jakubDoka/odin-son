@@ -1,0 +1,134 @@
+=========== OPT LEVEL: none ===========
+main:
+     mov rdx, 0x00
+001: cmp rdx, 0x10
+     jnl :0
+     lea rax, [0x0000000000401000]
+     add rax, rdx
+     mov rcx, rdx
+     add rcx, 0x01
+     mov [rax], dl
+     mov rdx, rcx
+     jmp :1
+
+000: mov rcx, 0x00
+     mov rdx, 0x00
+003: cmp rcx, 0x10
+     jnl :2
+     lea rax, [0x0000000000401000]
+     add rax, rcx
+     movzx eax, byte ptr [rax]
+     movzx eax, al
+     add rax, rdx
+     add rcx, 0x01
+     mov rdx, rax
+     jmp :3
+
+002: mov qword ptr [0x0000000000401010], 0x07
+     mov qword ptr [0x0000000000401018], 0x02
+     mov rax, [0x0000000000401020]
+     imul rax, rdx
+     mov rcx, [0x0000000000401010]
+     add rax, rcx
+     mov rcx, [0x0000000000401018]
+     sub rax, rcx
+     ret
+=========== OPT LEVEL: mininal ===========
+main:
+     mov rdx, 0x00
+001: cmp rdx, 0x10
+     jnl :0
+     lea rax, [0x0000000000401000]
+     add rax, rdx
+     mov rcx, rdx
+     add rcx, 0x01
+     mov [rax], dl
+     mov rdx, rcx
+     jmp :1
+
+000: mov rcx, 0x00
+     mov rdx, 0x00
+003: cmp rcx, 0x10
+     jnl :2
+     lea rax, [0x0000000000401000]
+     add rax, rcx
+     movzx eax, byte ptr [rax]
+     movzx eax, al
+     add rax, rdx
+     add rcx, 0x01
+     mov rdx, rax
+     jmp :3
+
+002: mov qword ptr [0x0000000000401010], 0x07
+     mov qword ptr [0x0000000000401018], 0x02
+     mov rax, [0x0000000000401020]
+     imul rax, rdx
+     mov rcx, [0x0000000000401010]
+     add rax, rcx
+     mov rcx, [0x0000000000401018]
+     sub rax, rcx
+     ret
+=========== OPT LEVEL: moderate ===========
+main:
+     mov rdx, 0x00
+001: cmp rdx, 0x10
+     jnl :0
+     lea rax, [0x0000000000401000]
+     add rax, rdx
+     mov rcx, rdx
+     mov [rax], cl
+     add rdx, 0x01
+     jmp :1
+
+000: mov rcx, 0x00
+     mov rdx, 0x00
+003: cmp rdx, 0x10
+     jnl :2
+     lea rax, [0x0000000000401000]
+     add rax, rdx
+     movzx eax, byte ptr [rax]
+     movzx eax, al
+     add rdx, 0x01
+     add rax, rcx
+     mov rcx, rax
+     jmp :3
+
+002: mov qword ptr [0x0000000000401010], 0x07
+     mov qword ptr [0x0000000000401018], 0x02
+     mov rax, [0x0000000000401020]
+     imul rax, rcx
+     add rax, 0x07
+     sub rax, 0x02
+     ret
+=========== OPT LEVEL: all ===========
+main:
+     mov rdx, 0x00
+001: cmp rdx, 0x10
+     jnl :0
+     lea rax, [0x0000000000401000]
+     add rax, rdx
+     mov rcx, rdx
+     mov [rax], cl
+     add rdx, 0x01
+     jmp :1
+
+000: mov rcx, 0x00
+     mov rdx, 0x00
+003: cmp rdx, 0x10
+     jnl :2
+     lea rax, [0x0000000000401000]
+     add rax, rdx
+     movzx eax, byte ptr [rax]
+     movzx eax, al
+     add rdx, 0x01
+     add rax, rcx
+     mov rcx, rax
+     jmp :3
+
+002: mov qword ptr [0x0000000000401010], 0x07
+     mov qword ptr [0x0000000000401018], 0x02
+     mov rax, [0x0000000000401020]
+     imul rax, rcx
+     add rax, 0x07
+     sub rax, 0x02
+     ret

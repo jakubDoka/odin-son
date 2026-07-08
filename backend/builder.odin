@@ -623,7 +623,7 @@ when !GEN_SPEC {
 			dst_slot := graph_expand(ctx, dst.inps[0])
 
 			Slot :: bit_field u64 {
-				size:   int | 8,
+				size:   int | 30,
 				state:  enum uint {
 					Uninit,
 					Needs_Init,
@@ -802,14 +802,14 @@ when !GEN_SPEC {
 				rev_offset := slot.offset + slot.size
 				inserts := 0
 				for rev_offset < offset {
-					fill := Slot {
-						size = offset - rev_offset,
-					}
+					gap := offset - rev_offset
 					current_align := min(align, align_of(rev_offset))
 					assert(current_align != 0)
-					fill.size = min(current_align, fill.size)
+					fill := Slot {
+						size   = min(current_align, gap),
+						offset = rev_offset,
+					}
 					assert(fill.size != 0)
-					fill.offset = rev_offset
 					rev_offset += fill.size
 					if len(slots) >= cap(slots) {
 						break match

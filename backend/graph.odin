@@ -376,10 +376,12 @@ worklist_next :: proc(
 }
 
 graph_pin :: proc(graph: ^Graph, id: Node_ID) {
+	if id == 0 do return
 	graph_add_output(graph, id, 0, 0)
 }
 
 graph_unpin :: proc(graph: ^Graph, id: Node_ID, no_delete := false) {
+	if id == 0 do return
 	graph_remove_output(graph, id, {}, no_delete)
 }
 

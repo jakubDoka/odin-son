@@ -3,6 +3,7 @@ package main
 import "backend"
 import "base:runtime"
 import "core:fmt"
+import "core:log"
 import "core:mem"
 import "core:odin/ast"
 import "core:odin/tokenizer"
@@ -1055,7 +1056,12 @@ emit_nodes :: proc(
 		}
 	case ^ast.Index_Expr:
 		base := emit_nodes(ctx, {}, d.expr)
-		assert(base.is_lvalue)
+
+		if is_of(get_node_type(d.expr), Multi_Pointer) {
+			base = Value(to_rvalue(ctx, base, d.expr))
+		} else {
+			assert(base.is_lvalue)
+		}
 
 		base_ptr := base.id
 		base_is_ptr := false
@@ -1070,10 +1076,7 @@ emit_nodes :: proc(
 		res = index_offset(ctx, base_ptr, idx, stride)
 		lvalue = true
 	case ^ast.Slice_Expr:
-		dest := prop.dest != 0 ? prop.dest : alloca(ctx, "slice", ty)
-
 		base := emit_nodes(ctx, {}, d.expr)
-		assert(base.is_lvalue)
 
 		stride: int
 		#partial switch t in unpack_type(ty) {
@@ -1089,16 +1092,33 @@ emit_nodes :: proc(
 		base_ptr: backend.Node_ID
 		src_len: backend.Node_ID
 		#partial switch t in unpack_type(get_node_type(d.expr)) {
+		case Pointer:
+			#partial switch nt in unpack_type(t^) {
+			case ^Array:
+				base_ptr = to_rvalue(ctx, base, d.expr)
+				src_len = backend.graph_add_c_int(
+					ctx,
+					"alen",
+					.I64,
+					i64(nt.len),
+				)
+			case:
+				fmt.panicf("TODO: index ptr to type of %#v", t)
+			}
 		case ^Array:
 			base_ptr = base.id
 			src_len = backend.graph_add_c_int(ctx, "alen", .I64, i64(t.len))
 		case Builtin:
 			assert(t == .String)
+			assert(base.is_lvalue)
 			base_ptr = field_load(ctx, "sdata", .I64, base.id)
 			src_len = field_load(ctx, "slen", .I64, base.id, 8)
 		case ^Slice:
+			assert(base.is_lvalue)
 			base_ptr = field_load(ctx, "sdata", .I64, base.id)
 			src_len = field_load(ctx, "slen", .I64, base.id, 8)
+		case Multi_Pointer:
+			base_ptr = to_rvalue(ctx, base, d.expr)
 		case:
 			fmt.panicf("TODO: slice of %#v", t)
 		}
@@ -1119,17 +1139,28 @@ emit_nodes :: proc(
 		backend.graph_pin(ctx, high)
 
 		new_data := index_offset(ctx, base_ptr, low, stride)
-		field_store(ctx, "sptr", dest, 0, new_data)
 
-		new_len := backend.graph_add_bin_op(ctx, "snl", .Sub, .I64, high, low)
-		field_store(ctx, "sptr", dest, 8, new_len)
+		dest := new_data
+		if high != 0 {
+			dest = prop.dest != 0 ? prop.dest : alloca(ctx, "slice", ty)
+			field_store(ctx, "sptr", dest, 0, new_data)
+			new_len := backend.graph_add_bin_op(
+				ctx,
+				"snl",
+				.Sub,
+				.I64,
+				high,
+				low,
+			)
+			field_store(ctx, "sptr", dest, 8, new_len)
+		}
 
 		backend.graph_unpin(ctx, base_ptr)
 		backend.graph_unpin(ctx, src_len)
 		backend.graph_unpin(ctx, low)
 		backend.graph_unpin(ctx, high)
 
-		res, lvalue = dest, true
+		res, lvalue = dest, high != 0
 	case ^ast.Ident:
 		sym := ctx_lookup_lvalue(ctx, d)
 		switch sym in sym {
@@ -1200,8 +1231,16 @@ emit_nodes :: proc(
 				slc := emit_nodes(ctx, {}, d.args[0])
 				assert(slc.is_lvalue)
 				res = field_load(ctx, "slen", dt, slc.id, 0)
+			case Pointer:
+				#partial switch nt in unpack_type(t^) {
+				case ^Array:
+					slc := emit_nodes(ctx, {}, d.args[0])
+					res = to_rvalue(ctx, slc, d.args[0])
+				case:
+					fmt.panicf("TODO: index ptr to type of %#v", t)
+				}
 			case:
-				fmt.panicf("TODO: len of %#v", t)
+				fmt.panicf("TODO: raw_data of %#v", t)
 			}
 			break
 		}

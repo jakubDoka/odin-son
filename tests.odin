@@ -7781,3 +7781,31 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) multi_pointers :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	arr: [4]int = {1, 2, 3, 4}
+	ptr := raw_data(&arr)
+	slc := ptr[:2]
+	ptr = raw_data(slc)
+	return ptr[0] + ptr[1]
+}
+
+run_test(t, `multi_pointers`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	arr: [4]int = {1, 2, 3, 4}
+	ptr := raw_data(&arr)
+	slc := ptr[:2]
+	ptr = raw_data(slc)
+	return ptr[0] + ptr[1]
+}
+`, main_())
+}

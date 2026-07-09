@@ -4008,3 +4008,17 @@ main :: proc() -> int {
 }
 ```
 
+#### multi pointers
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	arr: [4]int = {1, 2, 3, 4}
+	ptr := raw_data(&arr)
+	slc := ptr[:2]
+	ptr = raw_data(slc)
+	return ptr[0] + ptr[1]
+}
+```

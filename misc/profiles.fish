@@ -10,3 +10,11 @@ set rlg '-define:REGLOGS=true'
 set dff '-define:DIFF=false'
  
 alias run-test 'odin test . -keep-executable -debug -define:ODIN_TEST_FANCY=false'
+
+function run-test-program
+	odin build . -debug $argv[2..]
+	set ODIN_ROOT $HOME/odin/
+	./jit test-programs/$argv[1]/
+	zig cc a.o
+	./a.out
+end

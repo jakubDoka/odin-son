@@ -1,0 +1,89 @@
+=========== OPT LEVEL: none ===========
+main:
+     push rbx
+     sub rsp, 0x30
+     mov rax, 0x00
+     imul rbx, rax, 0x08
+     mov rdx, 0x20
+     mov rsi, 0x00
+     lea rdi, [rsp+0x10]
+     call :$set
+     mov qword ptr [rsp+0x10], 0x01
+     mov qword ptr [rsp+0x18], 0x02
+     mov qword ptr [rsp+0x20], 0x03
+     mov qword ptr [rsp+0x28], 0x04
+     mov rdx, 0x10
+     mov rsi, 0x00
+     lea rdi, [rsp]
+     call :$set
+     lea rax, [rsp+0x10]
+     add rax, rbx
+     mov [rsp], rax
+     mov rax, 0x02
+     sub rax, 0x00
+     mov [rsp+0x08], rax
+     mov rcx, [rsp]
+     mov rax, rcx
+     add rax, rbx
+     mov rax, [rax]
+     mov rdx, 0x01
+     imul rdx, rdx, 0x08
+     add rdx, rcx
+     mov rcx, [rdx]
+     add rax, rcx
+     add rsp, 0x30
+     pop rbx
+     ret
+=========== OPT LEVEL: mininal ===========
+main:
+     push rbx
+     push rbp
+     sub rsp, 0x38
+     mov rax, 0x00
+     imul rbx, rax, 0x08
+     lea rax, [rsp+0x10]
+     add rax, rbx
+     mov rbp, rax
+     mov rdx, 0x20
+     mov rsi, 0x00
+     lea rdi, [rsp+0x10]
+     call :$set
+     mov qword ptr [rsp+0x10], 0x01
+     mov qword ptr [rsp+0x18], 0x02
+     mov qword ptr [rsp+0x20], 0x03
+     mov qword ptr [rsp+0x28], 0x04
+     mov rdx, 0x10
+     mov rsi, 0x00
+     lea rdi, [rsp]
+     call :$set
+     mov rax, rbp
+     mov [rsp], rax
+     mov rax, 0x02
+     sub rax, 0x00
+     mov [rsp+0x08], rax
+     mov rax, rbp
+     add rax, rbx
+     mov rax, [rax]
+     mov rcx, 0x01
+     imul rcx, rcx, 0x08
+     mov rdx, rbp
+     add rcx, rdx
+     mov rcx, [rcx]
+     add rax, rcx
+     add rsp, 0x38
+     pop rbp
+     pop rbx
+     ret
+=========== OPT LEVEL: moderate ===========
+main:
+     mov qword ptr [rsp-0x28], 0x01
+     mov qword ptr [rsp-0x20], 0x02
+     mov qword ptr [rsp-0x18], 0x03
+     mov qword ptr [rsp-0x10], 0x04
+     mov rax, [rsp-0x20]
+     add rax, 0x01
+     ret
+=========== OPT LEVEL: all ===========
+main:
+     mov rax, 0x03
+     ret

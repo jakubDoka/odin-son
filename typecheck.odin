@@ -59,7 +59,7 @@ type_align :: proc(ty: Type) -> int {
 	case Builtin:
 		if ty == .String do return 8
 		return TYPE_SIZES[ty]
-	case Pointer:
+	case Pointer, Multi_Pointer:
 		return 8
 	case ^Struct:
 		return t.align
@@ -82,7 +82,7 @@ type_size :: proc(ty: Type) -> int {
 	switch t in unpack_type(ty) {
 	case Builtin:
 		return TYPE_SIZES[ty]
-	case Pointer:
+	case Pointer, Multi_Pointer:
 		return 8
 	case ^Struct:
 		return t.size
@@ -139,7 +139,7 @@ type_to_dt :: proc(ty: Type) -> backend.Node_Datatype {
 	case Builtin:
 		assert(int(ty) < len(TYPE_TO_DT))
 		return TYPE_TO_DT[ty]
-	case Pointer:
+	case Pointer, Multi_Pointer:
 		return .I64
 	case ^Lit, ^Struct, ^Array, ^Slice:
 		return .Void
@@ -166,12 +166,14 @@ Raw_Type :: bit_field uintptr {
 	tag:  Type_Kind | 16,
 }
 
+Multi_Pointer :: distinct ^Type
 Pointer :: distinct ^Type
 Builtin :: distinct Type
 
 Type_Data :: union #no_nil {
 	Builtin,
 	Pointer,
+	Multi_Pointer,
 	^Struct,
 	^Array,
 	^Slice,
@@ -191,6 +193,15 @@ pack_type :: proc(typ: Type_Data) -> Type {
 unpack_type :: proc(typ: Type) -> Type_Data {
 	raw := Raw_Type(typ)
 	return transmute(Type_Data)Raw_Type_Data{data = raw.data, tag = raw.tag}
+}
+
+intern_multi_pointer :: proc(ctx: ^Gen_Ctx, ty: Type) -> Type {
+	existing :=
+		ctx.multi_pointers[ty] or_else Multi_Pointer(
+			new_clone(ty, ctx.types.allocator),
+		)
+	ctx.multi_pointers[ty] = existing
+	return pack_type(existing)
 }
 
 intern_pointer :: proc(ctx: ^Gen_Ctx, ty: Type) -> Type {
@@ -228,8 +239,6 @@ intern_lit :: proc(ctx: ^Gen_Ctx, lit: Lit) -> ^Lit {
 	return existing
 }
 
-// find_module_decl searches every file of `mod` for a top level value
-// declaration named `name`.
 find_module_decl :: proc(
 	ctx: ^Gen_Ctx,
 	mod: Module_ID,
@@ -440,17 +449,18 @@ Global_Ctx :: struct {
 }
 
 Types :: struct {
-	tstats:    backend.Stats,
-	mems:      Mems,
-	allocator: runtime.Allocator,
-	procs:     [dynamic]Proc,
-	scope:     [dynamic]Variable,
-	pointers:  map[Type]Pointer,
-	structs:   map[Struct_Key]^Struct,
-	arrays:    map[Array_Key]^Array,
-	slices:    map[Type]^Slice,
-	lits:      map[Lit]^Lit,
-	globals:   [dynamic]Global_Data,
+	tstats:         backend.Stats,
+	mems:           Mems,
+	allocator:      runtime.Allocator,
+	procs:          [dynamic]Proc,
+	scope:          [dynamic]Variable,
+	pointers:       map[Type]Pointer,
+	multi_pointers: map[Type]Multi_Pointer,
+	structs:        map[Struct_Key]^Struct,
+	arrays:         map[Array_Key]^Array,
+	slices:         map[Type]^Slice,
+	lits:           map[Lit]^Lit,
+	globals:        [dynamic]Global_Data,
 }
 
 types_init :: proc(types: ^Types) {
@@ -468,6 +478,7 @@ types_init :: proc(types: ^Types) {
 	types.allocator = arna.allocator(&types.mems.type)
 	types.procs.allocator = types.allocator
 	types.pointers.allocator = types.allocator
+	types.multi_pointers.allocator = types.allocator
 	types.structs.allocator = types.allocator
 	types.arrays.allocator = types.allocator
 	types.slices.allocator = types.allocator
@@ -658,6 +669,15 @@ typecheck :: proc(
 		case Builtin:
 			assert(t == .String)
 			return .U8
+		case Pointer:
+			#partial switch nt in unpack_type(t^) {
+			case ^Array:
+				return intern_multi_pointer(ctx, nt.elem)
+			case:
+				fmt.panicf("TODO: index ptr to type of %#v", t)
+			}
+		case Multi_Pointer:
+			return t^
 		case:
 			fmt.panicf("TODO: %#v", t)
 		}
@@ -673,6 +693,16 @@ typecheck :: proc(
 		case Builtin:
 			assert(t == .String)
 			return .String
+		case Pointer:
+			#partial switch nt in unpack_type(t^) {
+			case ^Array:
+				return intern_multi_pointer(ctx, nt.elem)
+			case:
+				fmt.panicf("TODO: slice ptr to type of %#v", t)
+			}
+		case Multi_Pointer:
+			if d.high == nil do return base
+			return intern_slice(ctx, t^)
 		case:
 			fmt.panicf("TODO: %#v", t)
 		}
@@ -830,14 +860,21 @@ typecheck :: proc(
 			assert(len(d.args) == 1)
 			arg_ty := typecheck(ctx, {}, d.args[0])
 			#partial switch t in unpack_type(arg_ty) {
-			case ^Array:
 			case ^Slice:
+				return intern_multi_pointer(ctx, t.elem)
 			case Builtin:
 				assert(t == .String)
+				return intern_multi_pointer(ctx, .U8)
+			case Pointer:
+				#partial switch nt in unpack_type(t^) {
+				case ^Array:
+					return intern_multi_pointer(ctx, nt.elem)
+				case:
+					fmt.panicf("TODO: raw_data of of %#v", t)
+				}
 			case:
-				fmt.panicf("TODO: len of %#v", t)
+				fmt.panicf("TODO: raw_data of of %#v", t)
 			}
-			return .Int
 		}
 
 		callee := typecheck(ctx, {}, d.expr)

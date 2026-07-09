@@ -221,7 +221,7 @@ tests pass.
 
 Alos not that return values will affect the argument, keep that in mind.
 
-### Implement the cli for the jit compiler to compile multifile programs
+### Implement the cli for the jit compiler to compile multifile programs (DONE)
 
 NOTE: read AGENST.md
 
@@ -265,3 +265,11 @@ limmited so it would not be usefull anyway.
 If you have any questions, please ask them quickly, otherwise start
 implementing.
 
+### Implement functions for formatting integers and printing them
+
+Extend the `test-programs/module-imports` with a module that does basic integer
+formatting and parsing. Also make functions for printing thems, you can only
+use the linux syscalls tho because thats the only external code that you can
+call. Compiler does not implement many features of odin, you can take a look
+into TESTS.md to see whats suported. The parsing/fmt should support different
+integer bases.

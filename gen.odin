@@ -86,6 +86,7 @@ Gen_Ctx :: struct {
 	loop:              ^Loop_State,
 	file:              ^ast.File,
 	file_id:           File_ID,
+	module:            Module_ID,
 	prc:               Proc_ID,
 	ret_ptrs:          []backend.Node_ID,
 }
@@ -449,6 +450,9 @@ index_offset :: proc(
 
 emit_proc :: proc(ctx: ^Gen_Ctx, prc: ^Proc, i: int, level: Opt_Level) {
 	ctx.prc = auto_cast i
+	ctx.module = prc.module
+	ctx.file = prc.file
+	ctx.file_id = prc.file_id
 	ctx.graph = {}
 	ctx.node_spec = &backend.SPECS[.Builder]
 	ctx.mem = &ctx.mems.graph
@@ -554,7 +558,7 @@ emit_proc :: proc(ctx: ^Gen_Ctx, prc: ^Proc, i: int, level: Opt_Level) {
 		i += 1
 	}
 
-	emit_nodes(ctx, {}, prc.ast.body)
+	emit_nodes(ctx, {}, prc.lit.body)
 
 	for ptr in ctx.ret_ptrs {
 		backend.graph_unpin(ctx, ptr)
@@ -589,7 +593,6 @@ emit_proc :: proc(ctx: ^Gen_Ctx, prc: ^Proc, i: int, level: Opt_Level) {
 	ra: backend.Regalloc
 	ra.spec = spec
 	ra.cc = &backend.X64_ODIN_CC
-	backend.init_call_clobbers(ra.cc, &ra.call_clobbers)
 
 	regs := backend.regalloc(
 		&ra,
@@ -631,7 +634,7 @@ emit_nodes :: proc(
 
 	tmp, _ := arna.scrath(context.temp_allocator)
 
-	#partial switch d in node.derived {
+	#partial match: switch d in node.derived {
 	case ^ast.Block_Stmt:
 		prev_local_scope_len := len(ctx.scope)
 		prev_scope_len := backend.graph_get(ctx, ctx.node_scope).input_count
@@ -1182,18 +1185,77 @@ emit_nodes :: proc(
 			break
 		}
 
+		if id, ok := d.expr.derived.(^ast.Ident); ok && id.name == "raw_data" {
+			#partial switch t in unpack_type(get_node_type(d.args[0])) {
+			case ^Array:
+				slc := emit_nodes(ctx, {}, d.args[0])
+				assert(slc.is_lvalue)
+				res = slc.id
+			case ^Slice:
+				slc := emit_nodes(ctx, {}, d.args[0])
+				assert(slc.is_lvalue)
+				res = field_load(ctx, "slen", dt, slc.id, 0)
+			case Builtin:
+				assert(t == .String)
+				slc := emit_nodes(ctx, {}, d.args[0])
+				assert(slc.is_lvalue)
+				res = field_load(ctx, "slen", dt, slc.id, 0)
+			case:
+				fmt.panicf("TODO: len of %#v", t)
+			}
+			break
+		}
+
 		base_ty := get_node_type(d.expr)
 
 		#partial switch t in unpack_type(base_ty) {
 		case ^Lit:
-			idx := u32(t.(Proc_ID))
+			switch l in t^ {
+			case Proc_ID:
+				prc := &ctx.procs[l]
 
-			prc := &ctx.procs[idx]
+				results := emit_call(ctx, d, prc, nil, prop.dest)
+				if len(results) > 0 {
+					last := results[len(results) - 1]
+					res, lvalue = last.id, last.is_lvalue
+				}
+			case Intrinsic:
+				switch l {
+				case .syscall:
+					args := make(
+						[]backend.Node_ID,
+						CALL_PREFIX + len(d.args),
+						tmp,
+					)
+					for arg, i in d.args {
+						vl := emit_nodes(ctx, {}, arg)
+						args[CALL_PREFIX + i] = to_rvalue(ctx, vl, arg)
+						backend.graph_pin(ctx, args[CALL_PREFIX + i])
+					}
 
-			results := emit_call(ctx, d, prc, nil, prop.dest)
-			if len(results) > 0 {
-				last := results[len(results) - 1]
-				res, lvalue = last.id, last.is_lvalue
+					args[0] = ctx_ctrl(ctx)
+					args[1] = ctx_mem(ctx)
+
+					call := backend.graph_add_call(ctx, "call", args, ~u32(0))
+					backend.graph_extra(ctx, call, backend.Call).ccid = 1
+					cnode := backend.graph_get(ctx, call)
+					for arg in args[CALL_PREFIX:] {
+						backend.graph_unpin(ctx, arg)
+					}
+					call_end := backend.graph_add_call_end(ctx, "calle", call)
+
+					backend.graph_set_input(ctx, ctx.node_scope, 0, call_end)
+					ctx_set_mem(
+						ctx,
+						backend.graph_add_mem(ctx, "cmem", call_end),
+					)
+
+					res = backend.graph_add_ret(ctx, "cret", .I64, call_end, 0)
+
+					break match
+				}
+			case Module_ID:
+				panic("calling a module?")
 			}
 		case Builtin:
 			dest_dt := type_to_dt(base_ty)

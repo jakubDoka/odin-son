@@ -17,6 +17,7 @@ generate_specs :: proc() {
 		name:                 Node_Spec_Name,
 		classes:              []Class_Array,
 		datatype_to_reg_kind: [Node_Datatype]Reg_Kind,
+		cc_table:             []Call_Conv,
 	}
 
 	ts :: proc(
@@ -45,6 +46,7 @@ generate_specs :: proc() {
 				ts(&X64_CLASSES, &X64_REG_CLASSES),
 			},
 			datatype_to_reg_kind = #partial{.I8 ..= .I64 = .General},
+			cc_table = {X64_ODIN_CC, X64_LINUX_SYSCALL_CC},
 		},
 	}
 
@@ -168,6 +170,26 @@ generate_specs :: proc() {
 			"too many classes to inherit for this table elem %v",
 			len(inheritable),
 		)
+
+		os.write_string(file, "\t\tcc_table = {\n")
+		for c in spec.cc_table {
+			fmt.fprintf(file, "\t\t\t%s,\n", c.name)
+		}
+		os.write_string(file, "\t\t},\n")
+
+		os.write_string(file, "\t\tcall_clobbers = {\n")
+		for cc in spec.cc_table {
+			clobbers: [Reg_Kind]int
+
+			for &slot, kind in clobbers {
+				for reg in cc.caller_saved[kind] {
+					slot |= 1 << reg.index
+				}
+			}
+
+			fmt.fprintf(file, "\t\t\t%w,\n", clobbers)
+		}
+		os.write_string(file, "\t\t},\n")
 
 		fmt.fprintf(file, "\t\tclass_lengths = %w,\n", reg_mask_lengths)
 		fmt.fprintf(

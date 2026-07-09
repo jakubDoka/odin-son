@@ -5,7 +5,6 @@ import "base:intrinsics"
 import "base:runtime"
 import "core:container/queue"
 import "core:fmt"
-import "core:log"
 import "core:math"
 import "core:mem"
 import "core:reflect"
@@ -137,7 +136,6 @@ Class_Flag :: enum {
 	Store,
 	Load,
 	Clonable,
-	Call,
 }
 
 Cfg :: struct {
@@ -156,6 +154,7 @@ CInt :: struct #align (4) {
 
 Call :: struct {
 	using _: Cfg,
+	ccid:    u32,
 	cid:     u32,
 }
 

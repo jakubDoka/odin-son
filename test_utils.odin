@@ -67,12 +67,12 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 
 	ctx: Gen_Ctx
 	ctx.types = &types
+	ctx.global = &global_ctx
 	ctx.cc = &backend.X64_ODIN_CC
 	ctx.cc_dt_to_reg_kind = &backend.SPECS[.X64].datatype_to_reg_kind
-	ctx.file = &f
-	ctx.types = &types
 
-	typecheck_file(&ctx, f)
+	init_single_file_program(&ctx, &f)
+	typecheck_program(&ctx)
 
 	levels := []Opt_Level {
 		{"none", {}},

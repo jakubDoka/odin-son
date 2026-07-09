@@ -37,6 +37,8 @@ Reg_Mask :: struct {
 	bit_length: u32,
 }
 
+CALLS :: bit_set[Ideal_Node_Type]{.Call, .Set, .Copy}
+
 reg_mask_single :: proc(ra: ^Regalloc, reg: Reg) -> (rm: Reg_Mask) {
 	rm = reg_mask_empty(ra, reg.kind)
 	reg_mask_set(rm, reg.index)
@@ -125,6 +127,8 @@ Regalloc_Spec :: struct {
 	clobbers:             [][Reg_Kind]int,
 	interned_reg_masks:   [][^]int,
 	reg_masks:            [][][Reg_Kind]Mask_Intern_Key,
+	cc_table:             []Call_Conv,
+	call_clobbers:        [][Reg_Kind]int,
 	reg_mask_of:          proc(
 		_: ^Graph,
 		_: ^Regalloc,
@@ -134,9 +138,8 @@ Regalloc_Spec :: struct {
 }
 
 Regalloc :: struct {
-	using spec:    ^Regalloc_Spec,
-	using cc:      ^Call_Conv,
-	call_clobbers: [Reg_Kind]int,
+	using spec: ^Regalloc_Spec,
+	using cc:   ^Call_Conv,
 }
 
 MASK_SIZE :: size_of(int) * 8
@@ -481,8 +484,11 @@ regalloc_round :: proc(
 			}
 
 			clobbers := ra.clobbers[inode.rtype]
-			if graph_has_flag(graph, inode, .Call) {
-				clobbers = ra.call_clobbers
+			if inode.itype == .Call {
+				call := graph_extra(graph, inode, Call)
+				clobbers = ra.call_clobbers[call.ccid]
+			} else if inode.itype in CALLS {
+				clobbers = ra.call_clobbers[0]
 			}
 
 			if clobbers != {} {
@@ -720,8 +726,8 @@ regalloc_round :: proc(
 			reg_mask_set(lrg.mask, inter.reg, false)
 		}
 
-		if lrg.mask.masks[0] & ctx.ra.call_clobbers[lrg.mask.kind] != 0 {
-			lrg.mask.masks[0] &= ctx.ra.call_clobbers[lrg.mask.kind]
+		if lrg.mask.masks[0] & ctx.ra.call_clobbers[0][lrg.mask.kind] != 0 {
+			lrg.mask.masks[0] &= ctx.ra.call_clobbers[0][lrg.mask.kind]
 		}
 
 		first_set, fok := reg_mask_first_set(lrg.mask)
@@ -867,11 +873,9 @@ regalloc_round :: proc(
 			for m in members {
 				split := m
 
-				calls := bit_set[Ideal_Node_Type]{.Call, .Set, .Copy}
-
 				has_call_use := false
 				for out in graph_outs(graph, m) {
-					if graph_get(graph, out.id).itype in calls {
+					if graph_get(graph, out.id).itype in CALLS {
 						has_call_use = true
 						break
 					}

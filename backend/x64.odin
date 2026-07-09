@@ -64,6 +64,7 @@ GPA_REG_COUNT :: 16
 
 @(rodata)
 X64_ODIN_CC := Call_Conv {
+	name = "X64_ODIN_CC",
 	callee_saved = #partial{.General = {RBX, RBP, R12, R13, R14, R15}},
 	caller_saved = #partial{
 		.General = {RAX, RCX, RDX, RSI, RDI, R8, R9, R10, R11},
@@ -71,6 +72,18 @@ X64_ODIN_CC := Call_Conv {
 	args = #partial{.General = {RDI, RSI, RDX, RCX, R8, R9}},
 	rets = #partial{.General = {RAX, RDX}},
 	red_zone_size = 128,
+}
+
+@(rodata)
+X64_LINUX_SYSCALL_CC := Call_Conv {
+	name = "X64_LINUX_SYSCALL_CC",
+	callee_saved = #partial{
+		.General = {RBX, RDX, RDI, RSI, RBP, R8, R9, R10, R12, R13, R14, R15},
+	},
+	caller_saved = #partial{.General = {RAX, RCX, R11}},
+	args = #partial{.General = {RAX, RDI, RSI, RDX, R10, R8, R9}},
+	rets = #partial{.General = {RAX}},
+	is_syscall = true,
 }
 
 SIMPLE_BINOP_SPEC :: Reg_Class_Spec {
@@ -742,12 +755,11 @@ x64_reg_mask_of :: proc(
 	id: Node_ID,
 	idx: int,
 ) -> Reg_Mask {
-	node := graph_get(graph, id)
-
-	args := ra.args[.General]
+	node := graph_expand(graph, id)
 
 	#partial switch node.itype {
 	case .Arg:
+		args := ra.args[.General]
 		arg_ext := graph_extra(graph, node, Tup)
 		if int(arg_ext.idx) < len(args) {
 			return reg_mask_single(ra, args[arg_ext.idx])
@@ -761,10 +773,16 @@ x64_reg_mask_of :: proc(
 			)
 		}
 	case .Call:
+		call := graph_extra(graph, id, Call)
+		args := ra.cc_table[call.ccid].args[.General]
 		return reg_mask_single(ra, args[idx - 1])
 	case .Ret:
+		cend := graph_expand(graph, node.inps[0])
+
+		call := graph_extra(graph, cend.inps[0], Call)
 		ret_ext := graph_extra(graph, node, Tup)
-		return reg_mask_single(ra, ra.rets[.General][ret_ext.idx])
+		rets := ra.cc_table[call.ccid].rets[.General]
+		return reg_mask_single(ra, rets[ret_ext.idx])
 	case .Phi:
 		assert(idx > 0)
 
@@ -810,7 +828,7 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 		bnode := graph_expand(ctx, bb.head)
 
 		for ins in bb.instrs {
-			has_call |= graph_has_flag(ctx, ins, .Call)
+			has_call |= graph_get(ctx, ins).itype in CALLS
 		}
 
 		if bnode.itype != .Call_End do continue
@@ -1326,13 +1344,20 @@ x64_emit_instr :: proc(
 		emit(ctx.code, {0xe9, 0, 0, 0, 0})
 	case .Call:
 		call := graph_extra(ctx, node, Call)
-		// call $call.cid
-		emit(ctx.code, {0xe8, 0, 0, 0, 0})
-		add_reloc(ctx.relocs)^ = {
-			offset = u32(ctx.code.pos - ctx.code_start),
-			kind   = .Text,
-			size   = .r4,
-			id     = call.cid,
+
+		cc := ctx.graph.cc_table[call.ccid]
+		if cc.is_syscall {
+			// syscall
+			emit(ctx.code, {0x0F, 0x05})
+		} else {
+			// call $call.cid
+			emit(ctx.code, {0xe8, 0, 0, 0, 0})
+			add_reloc(ctx.relocs)^ = {
+				offset = u32(ctx.code.pos - ctx.code_start),
+				kind   = .Text,
+				size   = .r4,
+				id     = call.cid,
+			}
 		}
 	case .Copy, .Set:
 		lib_call: Lib_Call

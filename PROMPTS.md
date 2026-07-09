@@ -262,5 +262,6 @@ scope of this is limmited to importing code and you should not worry about
 importing package collections right now. The frontend as fo right now is pretty
 limmited so it would not be usefull anyway.
 
-If you have any questions, please ask them, otherwise start implementing.
+If you have any questions, please ask them quickly, otherwise start
+implementing.
 

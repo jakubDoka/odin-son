@@ -4,11 +4,13 @@ import "../vendored/gam/util/arna"
 import "core:reflect"
 
 Call_Conv :: struct {
+	name:          string,
 	callee_saved:  [Reg_Kind][]Reg,
 	caller_saved:  [Reg_Kind][]Reg,
 	args:          [Reg_Kind][]Reg,
 	rets:          [Reg_Kind][]Reg,
 	red_zone_size: i32,
+	is_syscall:    bool,
 }
 
 init_call_clobbers :: proc(cc: ^Call_Conv, clobbers: ^[Reg_Kind]int) {

@@ -76,12 +76,12 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 	.Copy = {
 		args = {"ctrl", "mem", "dst", "src", "size"},
 		default_type = .Void,
-		flags = {.Store, .Call},
+		flags = {.Store},
 	},
 	.Set = {
 		args = {"ctrl", "mem", "dst", "value", "size"},
 		default_type = .Void,
-		flags = {.Store, .Call},
+		flags = {.Store},
 	},
 	.Split = {args = {"dest"}},
 	.Phi = {args = {"reg", "lhs", "rhs"}, flags = {.Interned}},
@@ -118,7 +118,6 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 		varargs = true,
 		default_type = .Void,
 		extra_args = {"cid"},
-		flags = {.Call},
 	},
 	.Call_End = {
 		id = Cfg,

@@ -6,12 +6,15 @@ import "core:fmt"
 import "core:mem"
 import "core:odin/ast"
 import "core:odin/tokenizer"
+import "core:reflect"
 import "core:strconv"
 import "meta"
 import "vendored/gam/util/arna"
 
 Lit :: union {
 	Proc_ID,
+	Module_ID,
+	Intrinsic,
 }
 
 Proc_ID :: distinct int
@@ -29,24 +32,26 @@ Type :: enum uintptr {
 	U32,
 	U16,
 	U8,
+	Uintptr,
 	String,
 }
 
 @(rodata)
 TYPE_SIZES := [Type]int {
-	.Void   = 0,
-	.Bool   = 1,
-	.Int    = 8,
-	.I64    = 8,
-	.I32    = 4,
-	.I16    = 2,
-	.I8     = 1,
-	.Uint   = 8,
-	.U64    = 8,
-	.U32    = 4,
-	.U16    = 2,
-	.U8     = 1,
-	.String = 16,
+	.Void    = 0,
+	.Bool    = 1,
+	.Int     = 8,
+	.I64     = 8,
+	.I32     = 4,
+	.I16     = 2,
+	.I8      = 1,
+	.Uint    = 8,
+	.U64     = 8,
+	.U32     = 4,
+	.U16     = 2,
+	.U8      = 1,
+	.Uintptr = 8,
+	.String  = 16,
 }
 
 type_align :: proc(ty: Type) -> int {
@@ -94,42 +99,45 @@ type_size :: proc(ty: Type) -> int {
 
 @(rodata)
 TYPE_NAMES := [Type]string {
-	.Void   = "void",
-	.Bool   = "bool",
-	.Int    = "int",
-	.I64    = "i64",
-	.I32    = "i32",
-	.I16    = "i16",
-	.I8     = "i8",
-	.Uint   = "uint",
-	.U64    = "u64",
-	.U32    = "u32",
-	.U16    = "u16",
-	.U8     = "u8",
-	.String = "string",
+	.Void    = "void",
+	.Bool    = "bool",
+	.Int     = "int",
+	.I64     = "i64",
+	.I32     = "i32",
+	.I16     = "i16",
+	.I8      = "i8",
+	.Uint    = "uint",
+	.U64     = "u64",
+	.U32     = "u32",
+	.U16     = "u16",
+	.U8      = "u8",
+	.Uintptr = "uintptr",
+	.String  = "string",
 }
 
 type_to_dt :: proc(ty: Type) -> backend.Node_Datatype {
 	@(static)
 	@(rodata)
 	TYPE_TO_DT := [Type]backend.Node_Datatype {
-		.Void   = .Void,
-		.Bool   = .I8,
-		.Int    = .I64,
-		.I64    = .I64,
-		.I32    = .I32,
-		.I16    = .I16,
-		.I8     = .I8,
-		.Uint   = .I64,
-		.U64    = .I64,
-		.U32    = .I32,
-		.U16    = .I16,
-		.U8     = .I8,
-		.String = .Void,
+		.Void    = .Void,
+		.Bool    = .I8,
+		.Int     = .I64,
+		.I64     = .I64,
+		.I32     = .I32,
+		.I16     = .I16,
+		.I8      = .I8,
+		.Uint    = .I64,
+		.U64     = .I64,
+		.U32     = .I32,
+		.U16     = .I16,
+		.U8      = .I8,
+		.Uintptr = .I64,
+		.String  = .Void,
 	}
 
 	switch t in unpack_type(ty) {
 	case Builtin:
+		assert(int(ty) < len(TYPE_TO_DT))
 		return TYPE_TO_DT[ty]
 	case Pointer:
 		return .I64
@@ -140,7 +148,7 @@ type_to_dt :: proc(ty: Type) -> backend.Node_Datatype {
 	}
 }
 
-UNSIGNED_TYPES :: bit_set[Type]{.Uint, .U64, .U32, .U16, .U8, .Bool}
+UNSIGNED_TYPES :: bit_set[Type]{.Uint, .U64, .U32, .U16, .U8, .Bool, .Uintptr}
 SIGNED_TYPES :: bit_set[Type]{.Int, .I64, .I32, .I16, .I8}
 INTEGER_TYPES :: UNSIGNED_TYPES | SIGNED_TYPES
 
@@ -220,18 +228,59 @@ intern_lit :: proc(ctx: ^Gen_Ctx, lit: Lit) -> ^Lit {
 	return existing
 }
 
+// find_module_decl searches every file of `mod` for a top level value
+// declaration named `name`.
+find_module_decl :: proc(
+	ctx: ^Gen_Ctx,
+	mod: Module_ID,
+	name: string,
+) -> (
+	sdecl: ^ast.Value_Decl,
+	f: ^ast.File,
+	fid: File_ID,
+	ok: bool,
+) {
+	module := &ctx.modules[mod]
+	for i in 0 ..< module.file_count {
+		file := &ctx.files[module.file_start + i]
+		for decl in file.decls {
+			sd := decl.derived_stmt.(^ast.Value_Decl) or_continue
+			if len(sd.names) == 0 do continue
+			if meta.src_of(file^, sd.names[0]) == name {
+				return sd, file, File_ID(module.file_start + i), true
+			}
+		}
+	}
+	return
+}
+
+// find_module_proc returns the global Proc_ID of a procedure named `name`
+// defined directly in `mod`, if any.
+find_module_proc :: proc(
+	ctx: ^Gen_Ctx,
+	mod: Module_ID,
+	name: string,
+) -> (
+	Proc_ID,
+	bool,
+) {
+	m := ctx.modules[mod]
+	for i in m.proc_start ..< m.proc_start + m.proc_count {
+		if ctx.procs[i].name == name do return Proc_ID(i), true
+	}
+	return 0, false
+}
+
 emit_type :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Type {
 	if expr == nil do return .Void
 
 	#partial switch d in expr.derived {
 	case ^ast.Ident:
-		for decl in ctx.file.decls {
-			sdecl := decl.derived_stmt.(^ast.Value_Decl) or_continue
-			if meta.src_of(ctx.file^, sdecl.names[0]) != d.name do continue
-
+		if sdecl, dfile, dfid, ok := find_module_decl(ctx, ctx.module, d.name);
+		   ok {
 			#partial switch d in sdecl.values[0].derived {
 			case ^ast.Struct_Type:
-				key := Struct_Key{ctx.file_id, u32(decl.pos.offset)}
+				key := Struct_Key{dfid, u32(sdecl.pos.offset)}
 				structa, ok := ctx.structs[key]
 				if ok do return pack_type(structa)
 
@@ -279,13 +328,12 @@ emit_type :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Type {
 		}
 		len_node := d.len
 		if len_ident, is_ident := len_node.derived.(^ast.Ident); is_ident {
-			for decl in ctx.file.decls {
-				sdecl := decl.derived_stmt.(^ast.Value_Decl) or_continue
-				if meta.src_of(ctx.file^, sdecl.names[0]) != len_ident.name {
-					continue
-				}
+			if sdecl, _, _, ok := find_module_decl(
+				ctx,
+				ctx.module,
+				len_ident.name,
+			); ok {
 				len_node = sdecl.values[0]
-				break
 			}
 		}
 		len_lit := len_node.derived.(^ast.Basic_Lit)
@@ -301,7 +349,10 @@ emit_type :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Type {
 Proc :: struct {
 	name:      string,
 	using sig: Signature,
-	ast:       ^ast.Proc_Lit,
+	lit:       ^ast.Proc_Lit,
+	module:    Module_ID,
+	file:      ^ast.File,
+	file_id:   File_ID,
 	out:       backend.Codegen_Output,
 }
 
@@ -362,12 +413,30 @@ Variable :: struct {
 	flags: Var_Flags,
 }
 
+Module_ID :: distinct int
+
+Intrinsic :: enum int {
+	syscall,
+}
+
 Module :: struct {
-	files: []ast.File,
+	name:       string,
+	dir:        string,
+	file_start: int,
+	file_count: int,
+	// range into ctx.procs occupied by this module's procedures
+	proc_start: int,
+	proc_count: int,
+	// local import name -> module index
+	imports:    map[string]Module_ID,
 }
 
 Global_Ctx :: struct {
-	modules: []Module,
+	root:        string,
+	collections: map[string]string,
+	modules:     [dynamic]Module,
+	// every loaded file, indexable by File_ID
+	files:       [dynamic]ast.File,
 }
 
 Types :: struct {
@@ -612,6 +681,31 @@ typecheck :: proc(
 
 		#partial switch f in d.field.derived {
 		case ^ast.Ident:
+			if lit, ok := unpack_type(base).(^Lit); ok {
+				if mid, mok := lit.(Module_ID); mok {
+					if mid == MODULE_INTRINSICS {
+						return pack_type(
+							intern_lit(
+								ctx,
+								reflect.enum_from_name(
+									Intrinsic,
+									f.name,
+								) or_else panic(""),
+							),
+						)
+					}
+
+					pid, pok := find_module_proc(ctx, mid, f.name)
+					fmt.assertf(
+						pok,
+						"module %q has no symbol %q",
+						ctx.modules[mid].name,
+						f.name,
+					)
+					return pack_type(intern_lit(ctx, pid))
+				}
+			}
+
 			if p, ok := unpack_type(base).(Pointer); ok do base = p^
 
 			#partial switch t in unpack_type(base) {
@@ -705,10 +799,12 @@ typecheck :: proc(
 			}
 		}
 
-		for p, i in ctx.procs {
-			if p.name == name {
-				return pack_type(intern_lit(ctx, Proc_ID(i)))
-			}
+		if mid, ok := ctx.modules[ctx.module].imports[name]; ok {
+			return pack_type(intern_lit(ctx, Module_ID(mid)))
+		}
+
+		if pid, ok := find_module_proc(ctx, ctx.module, name); ok {
+			return pack_type(intern_lit(ctx, pid))
 		}
 
 		if name == "false" || name == "true" {
@@ -730,14 +826,49 @@ typecheck :: proc(
 			return .Int
 		}
 
+		if id, ok := d.expr.derived.(^ast.Ident); ok && id.name == "raw_data" {
+			assert(len(d.args) == 1)
+			arg_ty := typecheck(ctx, {}, d.args[0])
+			#partial switch t in unpack_type(arg_ty) {
+			case ^Array:
+			case ^Slice:
+			case Builtin:
+				assert(t == .String)
+			case:
+				fmt.panicf("TODO: len of %#v", t)
+			}
+			return .Int
+		}
+
 		callee := typecheck(ctx, {}, d.expr)
+
+		if callee == .Void {
+			for arg, i in d.args {
+				pty := typecheck(ctx, {inferred_ty = .Uintptr}, arg)
+				assert(pty == .Uintptr)
+			}
+			return .Uintptr
+		}
 
 		sig: Signature
 		#partial switch v in unpack_type(callee) {
 		case ^Lit:
-			prc_id := v.(Proc_ID)
-			prc := &ctx.procs[prc_id]
-			sig = prc.sig
+			switch l in v^ {
+			case Proc_ID:
+				prc := &ctx.procs[l]
+				sig = prc.sig
+			case Intrinsic:
+				switch l {
+				case .syscall:
+					for arg in d.args {
+						pty := typecheck(ctx, {inferred_ty = .Uintptr}, arg)
+						assert(pty == .Uintptr)
+					}
+					return .Uintptr
+				}
+			case Module_ID:
+				fmt.panicf("Cant call a module")
+			}
 		case Builtin:
 			assert(v != .Void)
 			assert(len(d.args) == 1)
@@ -826,51 +957,82 @@ is_of :: proc(vl: Type, $K: typeid) -> bool {
 	return ok
 }
 
-typecheck_file :: proc(ctx: ^Gen_Ctx, f: ast.File) {
-	for decl in f.decls {
-		if sdecl, sok := decl.derived_stmt.(^ast.Value_Decl); sok {
-			if prc, pok := sdecl.values[0].derived.(^ast.Proc_Lit); pok {
-				plist := prc.type.params.list
-				rlist: []^ast.Field
-				if prc.type.results != nil {
-					rlist = prc.type.results.list
-				}
+init_single_file_program :: proc(ctx: ^Gen_Ctx, f: ^ast.File) {
+	ctx.files.allocator = ctx.types.allocator
+	ctx.modules.allocator = ctx.types.allocator
+	if f.pkg_name == "" do f.pkg_name = "main"
+	append(&ctx.files, f^)
+	append(&ctx.modules, Module{name = f.pkg_name, file_count = 1})
+}
 
-				params := make([]Param, len(plist), context.temp_allocator)
-				rets := make([]Param, len(rlist), context.temp_allocator)
+register_module_procs :: proc(ctx: ^Gen_Ctx, mid: Module_ID) {
+	ctx.module = mid
+	mod := &ctx.modules[mid]
+	mod.proc_start = len(ctx.procs)
 
-				lists := [][]^ast.Field{plist, rlist}
-				tys := [][]Param{params, rets}
+	for i in 0 ..< mod.file_count {
+		ctx.file_id = File_ID(mod.file_start + i)
+		ctx.file = &ctx.files[ctx.file_id]
 
-				for list, j in lists {
-					tys := tys[j]
+		for decl in ctx.file.decls {
+			sdecl := decl.derived_stmt.(^ast.Value_Decl) or_continue
+			if len(sdecl.values) == 0 do continue
+			prc := sdecl.values[0].derived.(^ast.Proc_Lit) or_continue
 
-					for param, i in list {
-						assert(len(param.names) <= 1)
-						pname := ""
-						if len(param.names) == 1 {
-							pname = meta.src_of(f, param.names[0])
-						}
-
-						tys[i] = {pname, emit_type(ctx, param.type)}
-					}
-				}
-
-				append(
-					&ctx.procs,
-					Proc {
-						name = meta.src_of(f, sdecl.names[0]),
-						ast = prc,
-						params = params,
-						rets = rets,
-					},
-				)
+			plist := prc.type.params.list
+			rlist: []^ast.Field
+			if prc.type.results != nil {
+				rlist = prc.type.results.list
 			}
+
+			params := make([]Param, len(plist), ctx.types.allocator)
+			rets := make([]Param, len(rlist), ctx.types.allocator)
+
+			lists := [][]^ast.Field{plist, rlist}
+			tys := [][]Param{params, rets}
+
+			for list, j in lists {
+				tys := tys[j]
+
+				for param, i in list {
+					assert(len(param.names) <= 1)
+					pname := ""
+					if len(param.names) == 1 {
+						pname = meta.src_of(ctx.file^, param.names[0])
+					}
+
+					tys[i] = {pname, emit_type(ctx, param.type)}
+				}
+			}
+
+			append(
+				&ctx.procs,
+				Proc {
+					name = meta.src_of(ctx.file^, sdecl.names[0]),
+					lit = prc,
+					module = mid,
+					file = ctx.file,
+					file_id = ctx.file_id,
+					params = params,
+					rets = rets,
+				},
+			)
 		}
+	}
+
+	mod.proc_count = len(ctx.procs) - mod.proc_start
+}
+
+typecheck_program :: proc(ctx: ^Gen_Ctx) {
+	for mid in 0 ..< len(ctx.modules) {
+		register_module_procs(ctx, Module_ID(mid))
 	}
 
 	for &prc, i in ctx.procs {
 		ctx.prc = auto_cast i
+		ctx.module = prc.module
+		ctx.file = prc.file
+		ctx.file_id = prc.file_id
 		ctx.mems.scratch.pos = 0
 		ctx.scope = make([dynamic]Variable, arna.allocator(&ctx.mems.scratch))
 
@@ -878,6 +1040,6 @@ typecheck_file :: proc(ctx: ^Gen_Ctx, f: ast.File) {
 			append(&ctx.scope, Variable{name = par.name, type = par.type})
 		}
 
-		typecheck(ctx, {}, prc.ast.body)
+		typecheck(ctx, {}, prc.lit.body)
 	}
 }

@@ -4,6 +4,10 @@ package backend
 when !GEN_SPEC {
 SPECS := [Node_Spec_Name]Node_Spec{
 	.Builder = {
+		cc_table = {
+		},
+		call_clobbers = {
+		},
 		class_lengths = {.General = 0},
 		datatype_to_reg_kind = {.Void = Reg_Kind.General, .I8 = Reg_Kind.General, .I16 = Reg_Kind.General, .I32 = Reg_Kind.General, .I64 = Reg_Kind.General},
 		clobbers = {
@@ -370,7 +374,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			1, // Region -> Cfg
 			1, // Loop -> Cfg
 			1, // Always -> Cfg
-			2, // Call -> Call
+			3, // Call -> Call
 			1, // Call_End -> Cfg
 			1, // Ret -> Tup
 			1, // Return -> Cfg
@@ -420,8 +424,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{Class_Flag.Clonable}, // Local_Addr
 			{}, // Global
 			{Class_Flag.Interned, Class_Flag.Clonable}, // Global_Addr
-			{Class_Flag.Store, Class_Flag.Call}, // Copy
-			{Class_Flag.Store, Class_Flag.Call}, // Set
+			{Class_Flag.Store}, // Copy
+			{Class_Flag.Store}, // Set
 			{Class_Flag.Store}, // Store
 			{Class_Flag.Interned, Class_Flag.Load}, // Load
 			{Class_Flag.Interned, Class_Flag.Load}, // Load_S
@@ -432,7 +436,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{Class_Flag.Is_Basic_Block_Start}, // Region
 			{Class_Flag.Is_Basic_Block_Start}, // Loop
 			{}, // Always
-			{Class_Flag.Call}, // Call
+			{}, // Call
 			{Class_Flag.Is_Basic_Block_Start}, // Call_End
 			{}, // Ret
 			{Class_Flag.Immortal}, // Return
@@ -571,6 +575,14 @@ SPECS := [Node_Spec_Name]Node_Spec{
 		},
 	},
 	.X64 = {
+		cc_table = {
+			X64_ODIN_CC,
+			X64_LINUX_SYSCALL_CC,
+		},
+		call_clobbers = {
+			{.General = 4039},
+			{.General = 2051},
+		},
 		class_lengths = {.General = 1},
 		datatype_to_reg_kind = {.Void = Reg_Kind.General, .I8 = Reg_Kind.General, .I16 = Reg_Kind.General, .I32 = Reg_Kind.General, .I64 = Reg_Kind.General},
 		clobbers = {
@@ -1058,7 +1070,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			1, // Region -> Cfg
 			1, // Loop -> Cfg
 			1, // Always -> Cfg
-			2, // Call -> Call
+			3, // Call -> Call
 			1, // Call_End -> Cfg
 			1, // Ret -> Tup
 			1, // Return -> Cfg
@@ -1130,8 +1142,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{Class_Flag.Clonable}, // Local_Addr
 			{}, // Global
 			{Class_Flag.Interned, Class_Flag.Clonable}, // Global_Addr
-			{Class_Flag.Store, Class_Flag.Call}, // Copy
-			{Class_Flag.Store, Class_Flag.Call}, // Set
+			{Class_Flag.Store}, // Copy
+			{Class_Flag.Store}, // Set
 			{Class_Flag.Store}, // Store
 			{Class_Flag.Interned, Class_Flag.Load}, // Load
 			{Class_Flag.Interned, Class_Flag.Load}, // Load_S
@@ -1142,7 +1154,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{Class_Flag.Is_Basic_Block_Start}, // Region
 			{Class_Flag.Is_Basic_Block_Start}, // Loop
 			{}, // Always
-			{Class_Flag.Call}, // Call
+			{}, // Call
 			{Class_Flag.Is_Basic_Block_Start}, // Call_End
 			{}, // Ret
 			{Class_Flag.Immortal}, // Return

@@ -17,8 +17,15 @@ be compilable with odin compiler and SHOULD NEVER CONTAIN REACHABLE INFINITE
 LOOP since ist ran before the actual test starts to extract the return value
 that is then asserted for changes.
 
+Another category of tests we have are `test-programs`, that can be ran with
+`./misc/run-programs.sh`, the scripts asserts that exit codes and stdout/err
+are identical in programs compiled with each compiler.
+
 When running tests, NEVER wait for more the 5 seconds, tests usually compile in
 1s and run in matter of miliseconds.
+
+Whenever you see `#### Part n` you should spinn up an agent with that section
+as input.
 
 When instructed to spawn an agent to do something early, dont waste context
 analising the task, just pass down the instructions and let the agent figure it

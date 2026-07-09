@@ -7809,3 +7809,73 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) memopt_crash_on_indexing_digits :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+f :: proc(buf: []u8, value: u64, base: int) -> int {
+	digits := "0123456789abcdefghijklmnopqrstuvxyz"
+
+	b := u64(base)
+	tmp: [65]u8 = {}
+	v := value
+	n := 0
+	for {
+		if v == 0 do break
+		d := v % b
+		tmp[n] = digits[int(d)]
+		v /= b
+		n += 1
+	}
+	i := 0
+	for {
+		if i >= n do break
+		buf[i] = tmp[n - 1 - i]
+		i += 1
+	}
+	return n
+}
+
+main_ :: proc() -> int {
+	buf: [65]u8 = {}
+	n := f(buf[:], 255, 16)
+	return int(buf[0]) + int(buf[1]) + n  // 'f'+'f'+2 = 102+102+2=206
+}
+
+run_test(t, `memopt_crash_on_indexing_digits`, `
+package main
+
+opt_level :: "none"
+
+f :: proc(buf: []u8, value: u64, base: int) -> int {
+	digits := "0123456789abcdefghijklmnopqrstuvxyz"
+
+	b := u64(base)
+	tmp: [65]u8 = {}
+	v := value
+	n := 0
+	for {
+		if v == 0 do break
+		d := v % b
+		tmp[n] = digits[int(d)]
+		v /= b
+		n += 1
+	}
+	i := 0
+	for {
+		if i >= n do break
+		buf[i] = tmp[n - 1 - i]
+		i += 1
+	}
+	return n
+}
+
+main :: proc() -> int {
+	buf: [65]u8 = {}
+	n := f(buf[:], 255, 16)
+	return int(buf[0]) + int(buf[1]) + n  // 'f'+'f'+2 = 102+102+2=206
+}
+`, main_())
+}

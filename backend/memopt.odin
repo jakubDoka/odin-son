@@ -166,6 +166,7 @@ memopt :: proc(graph: ^Graph) -> (optimized: bool) {
 	ctx.dont_delete = false
 
 	for phi in ctx.deleted_lazy_phys {
+		if graph_get(graph, phi).rtype == DEAD_NODE_KIND do continue
 		graph_subsume(graph, graph_inps(graph, phi)[1], phi)
 	}
 

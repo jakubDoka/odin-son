@@ -1,6 +1,6 @@
 package main
 
-import "base:intrinsics"
+import "myfmt"
 import "mymath"
 
 // Exercises a compile time static global living in .data and a .Global
@@ -11,13 +11,57 @@ counter :: proc() -> int {
 	return c
 }
 
-main :: proc() -> int {
-	msg := `Hello, World!`
+// print_labeled prints "label = <value in base>\n" using the myfmt module.
+print_labeled :: proc(label: string, value: i64, base: int) {
+	myfmt.print(label)
+	myfmt.print(" = ")
+	myfmt.print_int(value, base)
+	myfmt.print("\n")
+}
 
-	intrinsics.syscall(1, 1, uintptr(raw_data(msg)), uintptr(len(msg)))
+main :: proc() -> int {
+	myfmt.print("Hello, World!\n")
 
 	x := mymath.square(7) // 49
 	y := counter() // 41
 	z := mymath.vec_sum(10) // 10 + 11 + 12 = 33
-	return x + y + z // 123
+
+	// Format the same value in several bases to show base support.
+	print_labeled("decimal", 12345, 10)
+	print_labeled("hex", 12345, 16)
+	print_labeled("octal", 12345, 8)
+	print_labeled("binary", 12345, 2)
+	print_labeled("negative", 0 - 255, 16)
+
+	// Unsigned formatting of a value that does not fit in i64.
+	myfmt.print("big = ")
+	myfmt.print_uint(18446744073709551615, 10) // max u64
+	myfmt.print("\n")
+
+	// Parse integers back from text in different bases and fold them into the
+	// return value so the round trip is actually checked.
+	check := 0
+
+	dec := myfmt.parse_int("-42", 10)
+	if dec.ok do check += int(dec.value) // -42
+
+	hexv := myfmt.parse_uint("ff", 16)
+	if hexv.ok do check += int(hexv.value) // 255
+
+	binv := myfmt.parse_uint("1010", 2)
+	if binv.ok do check += int(binv.value) // 10
+
+	octv := myfmt.parse_uint("777", 8)
+	if octv.ok do check += int(octv.value) // 511
+
+	// A malformed number reports failure and contributes nothing.
+	bad := myfmt.parse_int("nope", 10)
+	if !bad.ok do check += 1
+
+	myfmt.print("check = ")
+	myfmt.print_int(i64(check), 10)
+	myfmt.print("\n")
+
+	// x + y + z = 123, check = -42 + 255 + 10 + 511 + 1 = 735
+	return x + y + z + check // 858
 }

@@ -223,8 +223,6 @@ Alos not that return values will affect the argument, keep that in mind.
 
 ### Implement the cli for the jit compiler to compile multifile programs (DONE)
 
-NOTE: read AGENST.md
-
 As of right now we can only test the single file tests. This is gread but I
 need to be able to write more complex programs. I have tidied up the main
 package so its prepared for the compiler cli implementation.
@@ -265,7 +263,7 @@ limmited so it would not be usefull anyway.
 If you have any questions, please ask them quickly, otherwise start
 implementing.
 
-### Implement functions for formatting integers and printing them
+### Implement functions for formatting integers and printing them (DONE)
 
 Extend the `test-programs/module-imports` with a module that does basic integer
 formatting and parsing. Also make functions for printing thems, you can only
@@ -273,3 +271,20 @@ use the linux syscalls tho because thats the only external code that you can
 call. Compiler does not implement many features of odin, you can take a look
 into TESTS.md to see whats suported. The parsing/fmt should support different
 integer bases.
+
+### Implement globals, not only @(static)s
+
+NOTE: read AGENST.md
+
+#### Part 1
+
+As of right now we only support the @(static) annoteated global variables in
+local scopes. But since we now can compile standalone files, this should be
+testable. First extend the `test-programs/module-imports` with a global
+variable usage, for now just zeroed. Then implement it in the compiler.
+
+#### Part 2
+
+We are missing much needed `main::Type` custom formatter, as of right now the
+types when logged just give back a hex address. Implement this and also a test
+that checks that it works.

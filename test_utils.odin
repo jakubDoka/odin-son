@@ -20,6 +20,17 @@ import "vendored/gam/util/hot"
 
 TEST_OUT_DIR :: "print-tests"
 
+@(private)
+custom_fmt_once: sync.Once
+
+// Sets up all user formatters (backend + `main::Type`) exactly once.
+setup_custom_fmt :: proc() {
+	sync.once_do(&custom_fmt_once, proc() {
+		backend.init_custom_fmt()
+		init_type_fmt()
+	})
+}
+
 run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 	context.logger.options &= ~{.Time, .Date, .Level, .Procedure}
 	context.assertion_failure_proc = hot.init_trace()
@@ -51,8 +62,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		ok := parser.parse_file(&p, &f); assert(ok)
 	})
 
-	@(static) fmts_once: sync.Once
-	sync.once_do(&fmts_once, backend.init_custom_fmt)
+	setup_custom_fmt()
 
 	global_ctx: Global_Ctx
 

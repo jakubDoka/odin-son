@@ -3,6 +3,7 @@ package main
 import "backend"
 import "base:runtime"
 import "core:fmt"
+import "core:io"
 import "core:mem"
 import "core:odin/ast"
 import "core:odin/tokenizer"
@@ -185,6 +186,53 @@ Raw_Type_Data :: struct {
 	tag:  Type_Kind,
 }
 
+init_type_fmt :: proc() {
+	fmt.register_user_formatter(
+		Type,
+		proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
+			type_display(fi.writer, value.(Type))
+			return true
+		},
+	)
+
+	fmt.register_user_formatter(
+		Type_Data,
+		proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
+			type_display(fi.writer, pack_type(value.(Type_Data)))
+			return true
+		},
+	)
+}
+
+type_display :: proc(w: io.Writer, ty: Type) {
+	switch t in unpack_type(ty) {
+	case Builtin:
+		fmt.wprint(w, TYPE_NAMES[Type(t)])
+	case Pointer:
+		io.write_rune(w, '^')
+		type_display(w, (^Type)(t)^)
+	case Multi_Pointer:
+		fmt.wprint(w, "[^]")
+		type_display(w, (^Type)(t)^)
+	case ^Slice:
+		fmt.wprint(w, "[]")
+		type_display(w, t.elem)
+	case ^Array:
+		fmt.wprintf(w, "[%v]", t.len)
+		type_display(w, t.elem)
+	case ^Struct:
+		io.write_string(w, "struct {")
+		for field, i in t.fields {
+			if i != 0 do io.write_string(w, ", ")
+			fmt.wprintf(w, "%v: ", field.name)
+			type_display(w, field.ty)
+		}
+		io.write_rune(w, '}')
+	case ^Lit:
+		fmt.wprintf(w, "lit(%v)", t^)
+	}
+}
+
 pack_type :: proc(typ: Type_Data) -> Type {
 	raw := transmute(Raw_Type_Data)typ
 	return Type(Raw_Type{tag = raw.tag, data = raw.data})
@@ -280,6 +328,22 @@ find_module_proc :: proc(
 	return 0, false
 }
 
+// find_module_global returns the global variable named `name` defined directly
+// in `mod`, if any.
+find_module_global :: proc(
+	ctx: ^Gen_Ctx,
+	mod: Module_ID,
+	name: string,
+) -> (
+	^Global_Var,
+	bool,
+) {
+	for &g in ctx.global_vars {
+		if g.module == mod && g.name == name do return &g, true
+	}
+	return nil, false
+}
+
 emit_type :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Type {
 	if expr == nil do return .Void
 
@@ -368,6 +432,16 @@ Proc :: struct {
 Signature :: struct {
 	params: []Param,
 	rets:   []Param,
+}
+
+// A module level (global) mutable variable. The backing data lives in
+// ctx.globals; `idx` is assigned lazily at emit time (see emit_module_globals)
+// because ctx.globals is cleared between typechecking and codegen.
+Global_Var :: struct {
+	name:   string,
+	module: Module_ID,
+	type:   Type,
+	idx:    u32,
 }
 
 Param :: struct {
@@ -461,6 +535,7 @@ Types :: struct {
 	slices:         map[Type]^Slice,
 	lits:           map[Lit]^Lit,
 	globals:        [dynamic]Global_Data,
+	global_vars:    [dynamic]Global_Var,
 }
 
 types_init :: proc(types: ^Types) {
@@ -484,6 +559,7 @@ types_init :: proc(types: ^Types) {
 	types.slices.allocator = types.allocator
 	types.lits.allocator = types.allocator
 	types.globals.allocator = types.allocator
+	types.global_vars.allocator = types.allocator
 }
 
 types_deinit :: proc(types: ^Types) {
@@ -837,6 +913,10 @@ typecheck :: proc(
 			return pack_type(intern_lit(ctx, pid))
 		}
 
+		if g, ok := find_module_global(ctx, ctx.module, name); ok {
+			return g.type
+		}
+
 		if name == "false" || name == "true" {
 			return .Bool
 		}
@@ -1060,9 +1140,46 @@ register_module_procs :: proc(ctx: ^Gen_Ctx, mid: Module_ID) {
 	mod.proc_count = len(ctx.procs) - mod.proc_start
 }
 
+// register_module_globals records every module level mutable variable so that
+// identifiers can resolve to it. The backing data is allocated later, at emit
+// time, because ctx.globals is cleared between typechecking and codegen.
+register_module_globals :: proc(ctx: ^Gen_Ctx, mid: Module_ID) {
+	ctx.module = mid
+	mod := &ctx.modules[mid]
+
+	for i in 0 ..< mod.file_count {
+		ctx.file_id = File_ID(mod.file_start + i)
+		ctx.file = &ctx.files[ctx.file_id]
+
+		for decl in ctx.file.decls {
+			sdecl := decl.derived_stmt.(^ast.Value_Decl) or_continue
+			if !sdecl.is_mutable do continue
+
+			for name_node, j in sdecl.names {
+				name := meta.src_of(ctx.file^, name_node)
+				if name == "_" do continue
+
+				ty: Type
+				if sdecl.type != nil {
+					ty = emit_type(ctx, sdecl.type)
+				} else {
+					assert(len(sdecl.values) == len(sdecl.names))
+					ty = typecheck(ctx, {}, sdecl.values[j])
+				}
+
+				append(&ctx.global_vars, Global_Var{name, mid, ty, 0})
+			}
+		}
+	}
+}
+
 typecheck_program :: proc(ctx: ^Gen_Ctx) {
 	for mid in 0 ..< len(ctx.modules) {
 		register_module_procs(ctx, Module_ID(mid))
+	}
+
+	for mid in 0 ..< len(ctx.modules) {
+		register_module_globals(ctx, Module_ID(mid))
 	}
 
 	for &prc, i in ctx.procs {

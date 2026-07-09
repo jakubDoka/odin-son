@@ -3,7 +3,6 @@ package main
 import "backend"
 import "base:runtime"
 import "core:fmt"
-import "core:log"
 import "core:mem"
 import "core:odin/ast"
 import "core:odin/tokenizer"
@@ -259,6 +258,13 @@ ctx_lookup_lvalue :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Sym {
 			return Value(backend.graph_add_c_int(ctx, "true", .I8, 1))
 		}
 
+		if gv, ok := find_module_global(ctx, ctx.module, id.name); ok {
+			g := backend.graph_add_global(ctx, gv.name)
+			backend.graph_extra(ctx, g, backend.Tup).idx = gv.idx
+			ptr := backend.graph_add_global_addr(ctx, gv.name, g)
+			return Value{id = ptr, is_lvalue = true}
+		}
+
 		fmt.panicf("TODO: undefined variable: %v %#v", id.name, expr)
 	} else {
 		return emit_nodes(ctx, {}, expr)
@@ -371,6 +377,17 @@ const_eval_int :: proc(node: ^ast.Expr) -> (value: i64, ok: bool) {
 		return const_eval_int(d.expr)
 	}
 	return 0, false
+}
+
+// emit_module_globals allocates the (zero initialised) backing data for every
+// registered module level global variable and records its ctx.globals index.
+// It must run after ctx.globals is cleared and before any procedure is emitted.
+emit_module_globals :: proc(ctx: ^Gen_Ctx) {
+	for &gv in ctx.global_vars {
+		size := type_size(gv.type)
+		bytes := make([]u8, size, ctx.globals.allocator)
+		gv.idx = add_global(ctx, bytes, type_align(gv.type))
+	}
 }
 
 add_global :: proc(ctx: ^Gen_Ctx, bytes: []u8, align: int) -> u32 {

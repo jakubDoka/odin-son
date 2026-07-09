@@ -62,6 +62,7 @@ main :: proc() {
 	defer types_deinit(&types)
 
 	backend.init_custom_fmt()
+	init_type_fmt()
 
 	global_ctx: Global_Ctx
 	global_ctx.root = root
@@ -90,6 +91,7 @@ main :: proc() {
 	}
 
 	clear(&ctx.globals)
+	emit_module_globals(&ctx)
 	for &prc, i in ctx.procs {
 		emit_proc(&ctx, &prc, i, level)
 	}

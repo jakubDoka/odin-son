@@ -11,6 +11,15 @@ counter :: proc() -> int {
 	return c
 }
 
+// A module level (package scope) global variable, zero initialised. It lives in
+// .data just like a @(static) local but is visible across procedures, so both
+// loads and stores emit .Global relocations against the same symbol.
+global_accum: int
+
+bump_global :: proc(by: int) {
+	global_accum += by
+}
+
 // print_labeled prints "label = <value in base>\n" using the myfmt module.
 print_labeled :: proc(label: string, value: i64, base: int) {
 	myfmt.print(label)
@@ -62,6 +71,17 @@ main :: proc() -> int {
 	myfmt.print_int(i64(check), 10)
 	myfmt.print("\n")
 
-	// x + y + z = 123, check = -42 + 255 + 10 + 511 + 1 = 735
-	return x + y + z + check // 858
+	// Exercise the module level global: starts zeroed, then mutated across
+	// several calls that each read-modify-write the same .data symbol.
+	bump_global(100)
+	bump_global(23)
+	global_accum += 4
+
+	myfmt.print("global = ")
+	myfmt.print_int(i64(global_accum), 10) // 127
+	myfmt.print("\n")
+
+	// x + y + z = 123, check = -42 + 255 + 10 + 511 + 1 = 735,
+	// global_accum = 127
+	return x + y + z + check + global_accum // 985
 }

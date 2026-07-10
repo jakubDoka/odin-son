@@ -119,6 +119,11 @@ reg_mask_is_empty :: proc(mask: Reg_Mask) -> bool {
 	return true
 }
 
+reg_mask_contains :: proc(bset: Reg_Mask, #any_int index: u32) -> bool {
+	assert(index < bset.bit_length)
+	return bset.masks[index / MASK_SIZE] & (1 << uint(index % MASK_SIZE)) != 0
+}
+
 Regalloc_Spec :: struct {
 	class_lengths:        [Reg_Kind]u8,
 	datatype_to_reg_kind: [Node_Datatype]Reg_Kind,
@@ -688,6 +693,83 @@ regalloc_round :: proc(
 			ordered_remove(&bb.instrs, j)
 			graph_subsume(graph, inode.inps[0], instr)
 		}
+
+		if false {
+			#reverse for instr, j in bb.instrs[:len(bb.instrs) - 1] {
+				inode := graph_expand(graph, instr)
+				if inode.itype != .Split do continue
+				if inode.output_count != 1 do continue
+
+				inp := graph_get(graph, inode.inps[0])
+				if inp.itype == .Split do continue
+				if inp.itype == .Phi do continue
+
+				out := inode.outs[0]
+				if bb.instrs[j + 1] != out.id do continue
+				onode := graph_expand(graph, out.id)
+
+				ilrg := find(get_lrg(ctx, instr))
+				inlrg := find(get_lrg(ctx, inode.inps[0]))
+				olrg := find(get_lrg(ctx, out.id))
+
+				if ilrg == olrg do continue
+
+				iadj, inadj := ifg[ilrg.index], ifg[inlrg.index]
+
+				collision := false
+				to_move := 0
+				for &a in iadj {
+					collision |= a == inlrg
+					if !slice.contains(inadj, a) {
+						a, iadj[to_move] = iadj[to_move], a
+						to_move += 1
+					}
+				}
+				if collision {
+					continue
+				}
+				total := to_move + len(inadj)
+
+				leeway := reg_mask_intersection_pop_count(
+					ilrg.mask,
+					inlrg.mask,
+				)
+				if leeway == 0 do continue
+
+				coalesced = true
+
+				buf := make([]^Lrg, total)
+				copy(buf, iadj[:to_move])
+				copy(buf[to_move:], inadj)
+
+				winner := unify(ilrg, inlrg)
+				fmt.assertf(winner.fails == {}, "%v", winner.fails)
+
+				to_patch := winner == ilrg ? inadj : iadj
+				other := winner == ilrg ? inlrg : ilrg
+				for adj in to_patch {
+					assert(adj.parent == nil)
+					oadj := ifg[adj.index]
+					idx, _ := slice.linear_search(oadj, other)
+
+					if slice.contains(oadj, winner) {
+						oadj[idx] = oadj[len(oadj) - 1]
+						ifg[adj.index] = oadj[:len(oadj) - 1]
+					} else {
+						oadj[idx] = winner
+					}
+				}
+
+				winner.node = inlrg.node
+				winner.longest_use_area = inlrg.longest_use_area
+				winner.longest_def = inlrg.longest_def
+				ifg[winner.index] = buf
+
+				ordered_remove(&bb.instrs, j)
+				graph_subsume(graph, inode.inps[0], instr)
+			}
+		}
+
 	}
 
 	if coalesced {
@@ -1030,7 +1112,6 @@ regalloc_round :: proc(
 		}
 	}
 
-	ctx.lrg_table = {}
 	//log_lrgs(&ctx)
 
 	verify_schedule_integrity(ctx.graph, ctx.sched)
@@ -1038,13 +1119,38 @@ regalloc_round :: proc(
 	if ok {
 		for &bb in sched.bbs {
 			keep := 0
-			for instr in bb.instrs {
+			for instr, i in bb.instrs {
 				inode := graph_expand(graph, instr)
-				if inode.itype != .Split ||
-				   res[inode.gvn] != res[graph_get(graph, inode.inps[0]).gvn] {
-					bb.instrs[keep] = instr
-					keep += 1
+
+				if inode.itype == .Split {
+					inp := graph_get(graph, inode.inps[0])
+
+					if res[inode.gvn] == res[inp.gvn] {
+						continue
+					}
+
+					if i + 1 < len(bb.instrs) &&
+					   len(inode.outs) == 1 &&
+					   inode.outs[0].id == bb.instrs[i + 1] {
+						o := inode.outs[0]
+						onode := graph_expand(graph, o.id)
+						umask := reg_mask_of(
+							graph,
+							ra,
+							o.id,
+							o.idx + 1 - onode.data_start,
+						)
+
+						if reg_mask_contains(umask, res[inp.gvn].index) &&
+						   get_lrg(ctx, instr) != get_lrg(ctx, o.id) {
+							graph_subsume(graph, inode.inps[0], instr)
+							continue
+						}
+					}
 				}
+
+				bb.instrs[keep] = instr
+				keep += 1
 			}
 			resize(&bb.instrs, keep)
 		}
@@ -1401,6 +1507,7 @@ regalloc_round :: proc(
 	}
 
 	find :: proc(l: ^Lrg) -> ^Lrg {
+		if l == nil do return nil
 		if l.parent == nil do return l
 		if l.parent.parent == nil do return l.parent
 

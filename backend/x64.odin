@@ -1301,8 +1301,9 @@ x64_emit_instr :: proc(
 		if cnode.dt != .Void {
 			// test $cond, $cond
 			cond := reg_of(ctx, node.inps[1])
-			rx := rex(cond, cond, RAX, true)
-			emit(ctx.code, {rx, 0x85, mod_rm(.Direct, cond, cond)})
+			rx := rex(cond, cond, RAX, DT_SIZE[cnode.dt] == 8)
+			emit_sized_opcode(ctx.code, cnode.dt, rx, 0x85)
+			emit(ctx.code, {mod_rm(.Direct, cond, cond)})
 		}
 
 		append(

@@ -70,7 +70,7 @@ alloc_off:
      lea rdi, [rsp]
      call :$copy
      movzx eax, byte ptr [rsp+0x10]
-     test rax, rax
+     test al, al
      jnz :2
      jmp :3
 
@@ -249,7 +249,7 @@ alloc_free:
      setz r8b
      movzx r8, r8b
      and cl, r8b
-     test rcx, rcx
+     test cl, cl
      jnz :1
      add rax, 0x01
      jmp :2
@@ -286,7 +286,7 @@ coalesce:
      movzx edx, byte ptr [rcx+0x10]
      movzx edi, byte ptr [rsi+0x10]
      and dl, dil
-     test rdx, rdx
+     test dl, dl
      jnz :2
      imul rdi, rbp, 0x18
      add rdi, rax
@@ -362,7 +362,7 @@ free_block_count:
      imul rcx, rsi, 0x18
      add rdx, rcx
      movzx ecx, byte ptr [rdx+0x10]
-     test rcx, rcx
+     test cl, cl
      jnz :1
      jmp :2
 
@@ -414,7 +414,7 @@ test_coalesce:
      setnz cl
      movzx rcx, cl
      or al, cl
-     test rax, rax
+     test al, al
      jnz :0
      mov rsi, rbx
      lea rdi, [rsp]
@@ -604,7 +604,7 @@ main:
      mov rsi, [rsp+0x630]
      mov rdx, 0x01
      call :check_pattern
-     test rax, rax
+     test al, al
      jnz :12
      jmp :13
 
@@ -615,7 +615,7 @@ main:
      mov rsi, [rsp+0x640]
      mov rdx, 0x32
      call :check_pattern
-     test rax, rax
+     test al, al
      jnz :14
      jmp :15
 
@@ -626,7 +626,7 @@ main:
      mov rsi, [rsp+0x650]
      mov rdx, 0x64
      call :check_pattern
-     test rax, rax
+     test al, al
      jnz :16
      jmp :17
 
@@ -637,7 +637,7 @@ main:
      mov rsi, [rsp+0x660]
      mov rdx, 0x07
      call :check_pattern
-     test rax, rax
+     test al, al
      jnz :18
      jmp :19
 
@@ -663,7 +663,7 @@ main:
      mov rdi, [rsp+0x668]
      mov rsi, [rsp+0x670]
      call :test_coalesce
-     test rax, rax
+     test al, al
      jnz :20
      jmp :21
 
@@ -702,7 +702,7 @@ main:
      mov rsi, [rsp+0x680]
      mov rdx, 0xC8
      call :check_pattern
-     test rax, rax
+     test al, al
      jnz :24
      jmp :25
 
@@ -713,7 +713,7 @@ main:
      mov rsi, [rsp+0x630]
      mov rdx, 0x01
      call :check_pattern
-     test rax, rax
+     test al, al
      jnz :26
      jmp :27
 
@@ -809,7 +809,7 @@ alloc_off:
      lea rdi, [rsp]
      call :$copy
      movzx eax, byte ptr [rsp+0x10]
-     test rax, rax
+     test al, al
      jnz :2
      jmp :3
 
@@ -987,7 +987,7 @@ alloc_free:
      setz r8b
      movzx r8, r8b
      and cl, r8b
-     test rcx, rcx
+     test cl, cl
      jnz :1
      add rax, 0x01
      jmp :2
@@ -1024,7 +1024,7 @@ coalesce:
      movzx edx, byte ptr [rcx+0x10]
      movzx edi, byte ptr [rsi+0x10]
      and dl, dil
-     test rdx, rdx
+     test dl, dl
      jnz :2
      imul rdi, rbp, 0x18
      add rdi, rax
@@ -1100,7 +1100,7 @@ free_block_count:
      imul rcx, rsi, 0x18
      add rdx, rcx
      movzx ecx, byte ptr [rdx+0x10]
-     test rcx, rcx
+     test cl, cl
      jnz :1
      jmp :2
 
@@ -1149,7 +1149,7 @@ test_coalesce:
      setnz cl
      movzx rcx, cl
      or al, cl
-     test rax, rax
+     test al, al
      jnz :0
      mov rsi, rbx
      lea rdi, [rsp]
@@ -1339,7 +1339,7 @@ main:
      mov rsi, [rsp+0x630]
      mov rdx, 0x01
      call :check_pattern
-     test rax, rax
+     test al, al
      jnz :12
      jmp :13
 
@@ -1350,7 +1350,7 @@ main:
      mov rsi, [rsp+0x640]
      mov rdx, 0x32
      call :check_pattern
-     test rax, rax
+     test al, al
      jnz :14
      jmp :15
 
@@ -1361,7 +1361,7 @@ main:
      mov rsi, [rsp+0x650]
      mov rdx, 0x64
      call :check_pattern
-     test rax, rax
+     test al, al
      jnz :16
      jmp :17
 
@@ -1372,7 +1372,7 @@ main:
      mov rsi, [rsp+0x660]
      mov rdx, 0x07
      call :check_pattern
-     test rax, rax
+     test al, al
      jnz :18
      jmp :19
 
@@ -1398,7 +1398,7 @@ main:
      mov rdi, [rsp+0x668]
      mov rsi, [rsp+0x670]
      call :test_coalesce
-     test rax, rax
+     test al, al
      jnz :20
      jmp :21
 
@@ -1437,7 +1437,7 @@ main:
      mov rsi, [rsp+0x680]
      mov rdx, 0xC8
      call :check_pattern
-     test rax, rax
+     test al, al
      jnz :24
      jmp :25
 
@@ -1448,7 +1448,7 @@ main:
      mov rsi, [rsp+0x630]
      mov rdx, 0x01
      call :check_pattern
-     test rax, rax
+     test al, al
      jnz :26
      jmp :27
 
@@ -1530,7 +1530,7 @@ alloc_off:
      mov rsi, rcx
      call :$copy
      movzx eax, byte ptr [rsp+0x10]
-     test rax, rax
+     test al, al
      jnz :2
      jmp :3
 
@@ -1701,7 +1701,7 @@ alloc_free:
      setz r8b
      movzx r8, r8b
      and cl, r8b
-     test rcx, rcx
+     test cl, cl
      jnz :1
      add rax, 0x01
      jmp :2
@@ -1735,7 +1735,7 @@ coalesce:
      add rsi, rax
      movzx edx, byte ptr [rcx+0x10]
      and dl, [rsi+0x10]
-     test rdx, rdx
+     test dl, dl
      jnz :2
      imul rdi, rbp, 0x18
      add rdi, rax
@@ -1802,7 +1802,7 @@ free_block_count:
      imul rcx, rsi, 0x18
      add rdx, rcx
      movzx ecx, byte ptr [rdx+0x10]
-     test rcx, rcx
+     test cl, cl
      jnz :1
      jmp :2
 
@@ -1849,7 +1849,7 @@ test_coalesce:
      setnz cl
      movzx rcx, cl
      or al, cl
-     test rax, rax
+     test al, al
      jnz :0
      mov rsi, rbx
      lea rdi, [rsp]
@@ -2006,7 +2006,7 @@ main:
      mov rsi, [rsp+0x630]
      mov rdx, 0x01
      call :check_pattern
-     test rax, rax
+     test al, al
      jnz :12
      jmp :13
 
@@ -2017,7 +2017,7 @@ main:
      mov rsi, [rsp+0x640]
      mov rdx, 0x32
      call :check_pattern
-     test rax, rax
+     test al, al
      jnz :14
      jmp :15
 
@@ -2028,7 +2028,7 @@ main:
      mov rsi, [rsp+0x650]
      mov rdx, 0x64
      call :check_pattern
-     test rax, rax
+     test al, al
      jnz :16
      jmp :17
 
@@ -2039,7 +2039,7 @@ main:
      mov rsi, [rsp+0x660]
      mov rdx, 0x07
      call :check_pattern
-     test rax, rax
+     test al, al
      jnz :18
      jmp :19
 
@@ -2055,7 +2055,7 @@ main:
      lea rdi, [0x0000000000400CBF]
      mov rsi, 0x200
      call :test_coalesce
-     test rax, rax
+     test al, al
      jnz :20
      jmp :21
 
@@ -2088,7 +2088,7 @@ main:
      mov rsi, [rsp+0x620]
      mov rdx, 0xC8
      call :check_pattern
-     test rax, rax
+     test al, al
      jnz :24
      jmp :25
 
@@ -2099,7 +2099,7 @@ main:
      mov rsi, [rsp+0x630]
      mov rdx, 0x01
      call :check_pattern
-     test rax, rax
+     test al, al
      jnz :26
      jmp :27
 
@@ -2179,7 +2179,7 @@ alloc_off:
      mov rsi, rcx
      call :$copy
      movzx eax, byte ptr [rsp+0x10]
-     test rax, rax
+     test al, al
      jnz :2
      jmp :3
 
@@ -2350,7 +2350,7 @@ alloc_free:
      setz r8b
      movzx r8, r8b
      and cl, r8b
-     test rcx, rcx
+     test cl, cl
      jnz :1
      add rax, 0x01
      jmp :2
@@ -2384,7 +2384,7 @@ coalesce:
      add rsi, rax
      movzx edx, byte ptr [rcx+0x10]
      and dl, [rsi+0x10]
-     test rdx, rdx
+     test dl, dl
      jnz :2
      imul rdi, rbp, 0x18
      add rdi, rax
@@ -2447,7 +2447,7 @@ free_block_count:
      imul rcx, rsi, 0x18
      add rdx, rcx
      movzx ecx, byte ptr [rdx+0x10]
-     test rcx, rcx
+     test cl, cl
      jnz :1
      jmp :2
 
@@ -2495,7 +2495,7 @@ test_coalesce:
      setnz cl
      movzx rcx, cl
      or al, cl
-     test rax, rax
+     test al, al
      jnz :0
      mov rsi, rbx
      lea rdi, [rsp]
@@ -2656,7 +2656,7 @@ main:
      mov rsi, rbx
      mov rdx, 0x01
      call :check_pattern
-     test rax, rax
+     test al, al
      jnz :12
      jmp :13
 
@@ -2667,7 +2667,7 @@ main:
      mov rsi, [rsp+0x618]
      mov rdx, 0x32
      call :check_pattern
-     test rax, rax
+     test al, al
      jnz :14
      jmp :15
 
@@ -2678,7 +2678,7 @@ main:
      mov rsi, [rsp+0x628]
      mov rdx, 0x64
      call :check_pattern
-     test rax, rax
+     test al, al
      jnz :16
      jmp :17
 
@@ -2689,7 +2689,7 @@ main:
      mov rsi, rbp
      mov rdx, 0x07
      call :check_pattern
-     test rax, rax
+     test al, al
      jnz :18
      jmp :19
 
@@ -2705,7 +2705,7 @@ main:
      lea rdi, [0x0000000000400CF0]
      mov rsi, 0x200
      call :test_coalesce
-     test rax, rax
+     test al, al
      jnz :20
      jmp :21
 
@@ -2738,7 +2738,7 @@ main:
      mov rsi, r12
      mov rdx, 0xC8
      call :check_pattern
-     test rax, rax
+     test al, al
      jnz :24
      jmp :25
 
@@ -2749,7 +2749,7 @@ main:
      mov rsi, rbx
      mov rdx, 0x01
      call :check_pattern
-     test rax, rax
+     test al, al
      jnz :26
      jmp :27
 

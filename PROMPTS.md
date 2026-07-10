@@ -272,9 +272,7 @@ call. Compiler does not implement many features of odin, you can take a look
 into TESTS.md to see whats suported. The parsing/fmt should support different
 integer bases.
 
-### Implement globals, not only @(static)s
-
-NOTE: read AGENST.md
+### Implement globals, not only @(static)s (DONE)
 
 #### Part 1
 
@@ -288,3 +286,32 @@ variable usage, for now just zeroed. Then implement it in the compiler.
 We are missing much needed `main::Type` custom formatter, as of right now the
 types when logged just give back a hex address. Implement this and also a test
 that checks that it works.
+
+### Implement a lua lexer and parser
+
+NOTE: read AGENTS.md
+
+Make a `test-programs/lua` taht will have lexer/parser implementation for lua
+syntax. Note that you can import code from other tests.
+
+Make a list of lua test code hardcoded in strings that will be lexed and
+parsed. Then delcare all of the types and api functions from each component.
+This also includes an arena allocator (BUT DONT IMPLEMENT THE STANDARD ODIN
+INTERFACE), use linux syscalls to allocate pages for the arena. The arena
+should be growable, so account for that in the type definition.
+
+Once you have the api, implement the initial test routeen that will be called
+from main, and then start implementing the components (Arena, Lexer, Parser).
+Distribute this work to agents if nescessary.
+
+After thats done, spawn an agent to debug the code and make it work propery,
+using only the odin compiler.
+
+Once you are confident the parser works, (by pretty printing the AST). Start
+testing with the JIT. If you find bugs in the backend or frontend spawn an
+agent to fix it. Dont stop until the odin compiler and JIT are in observable
+parity.
+
+Once you are done, spawn an agent to analyze the objdump of the jitted binary
+to look for possible missed peephole optimization opportunities and list them
+in a POSSIBLE_PEEPHOLES showing example assembly and the ideal assembly.

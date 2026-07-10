@@ -47,16 +47,20 @@ main :: proc() {
 		os.exit(1)
 	}
 
-	arna.scratch[0].reserved = 1024 * 1024
-	arna.scratch[1].reserved = 1024 * 1024
+	// These reservations are virtual address space committed on demand (see
+	// vendored/gam/util/arna), so being generous is essentially free and lets
+	// the compiler handle larger multi-file packages (e.g. test-programs/lua)
+	// without exhausting an arena and returning nil from `new`.
+	arna.scratch[0].reserved = 64 * 1024 * 1024
+	arna.scratch[1].reserved = 64 * 1024 * 1024
 
 	types: Types
-	types.mems.graph.reserved = 4096 * 1024
-	types.mems.regalloc.reserved = 4096 * 512
-	types.mems.scratch.reserved = 4096 * 128
-	types.mems.code.reserved = 4096 * 256
-	types.mems.reloc.reserved = 4096 * 128
-	types.mems.type.reserved = 4096 * 256
+	types.mems.graph.reserved = 4096 * 16384
+	types.mems.regalloc.reserved = 4096 * 8192
+	types.mems.scratch.reserved = 4096 * 2048
+	types.mems.code.reserved = 4096 * 4096
+	types.mems.reloc.reserved = 4096 * 2048
+	types.mems.type.reserved = 4096 * 8192
 
 	types_init(&types)
 	defer types_deinit(&types)

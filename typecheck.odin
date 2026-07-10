@@ -383,7 +383,7 @@ emit_type :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Type {
 				)
 				return pack_type(structa)
 			case:
-				fmt.panicf("TODO: %#v", d)
+				return emit_type(ctx, sdecl.values[0])
 			}
 		}
 
@@ -392,6 +392,8 @@ emit_type :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Type {
 		}
 
 		fmt.panicf("TODO: %#v", expr.derived)
+	case ^ast.Multi_Pointer_Type:
+		return intern_multi_pointer(ctx, emit_type(ctx, d.elem))
 	case ^ast.Pointer_Type:
 		return intern_pointer(ctx, emit_type(ctx, d.elem))
 	case ^ast.Array_Type:
@@ -921,6 +923,19 @@ typecheck :: proc(
 			return .Bool
 		}
 
+		if name == "_" {
+			return .Void
+		}
+
+		if sdecl, _, _, ok := find_module_decl(ctx, ctx.module, name); ok {
+			if len(sdecl.values) == 1 {
+				if _, is_lit := sdecl.values[0].derived.(^ast.Basic_Lit);
+				   is_lit {
+					return typecheck(ctx, prop, sdecl.values[0])
+				}
+			}
+		}
+
 		return emit_type(ctx, node)
 	case ^ast.Call_Expr:
 		if id, ok := d.expr.derived.(^ast.Ident); ok && id.name == "len" {
@@ -990,6 +1005,10 @@ typecheck :: proc(
 			assert(v != .Void)
 			assert(len(d.args) == 1)
 			typecheck(ctx, {}, d.args[0])
+			return callee
+		case Multi_Pointer, Pointer:
+			assert(len(d.args) == 1)
+			typecheck(ctx, {inferred_ty = .Uintptr}, d.args[0])
 			return callee
 		case:
 			fmt.panicf("TODO: %v %#v", v, d)

@@ -238,6 +238,23 @@ Sym :: union #no_nil {
 	int,
 }
 
+module_const_lit :: proc(ctx: ^Gen_Ctx, id: ^ast.Ident) -> (^ast.Node, bool) {
+	#reverse for var in ctx.scope {
+		if var.name == id.name do return nil, false
+	}
+	if _, ok := find_module_global(ctx, ctx.module, id.name); ok {
+		return nil, false
+	}
+	if sdecl, _, _, ok := find_module_decl(ctx, ctx.module, id.name); ok {
+		if len(sdecl.values) == 1 {
+			if _, is_lit := sdecl.values[0].derived.(^ast.Basic_Lit); is_lit {
+				return sdecl.values[0], true
+			}
+		}
+	}
+	return nil, false
+}
+
 ctx_lookup_lvalue :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Sym {
 	if id, ok := expr.derived.(^ast.Ident); ok {
 		#reverse for var in ctx.scope {
@@ -735,6 +752,13 @@ emit_nodes :: proc(
 		for i in 0 ..< len(d.lhs) {
 			lhs := d.lhs[i]
 			rhs := d.rhs[i]
+			if id, iok := lhs.derived.(^ast.Ident); iok && id.name == "_" {
+				node := emit_nodes(ctx, {}, rhs)
+				if node.id != 0 {
+					backend.graph_delete(ctx, node.id)
+				}
+				continue
+			}
 			sym := ctx_lookup_lvalue(ctx, lhs)
 			switch sym in sym {
 			case int:
@@ -1179,6 +1203,11 @@ emit_nodes :: proc(
 
 		res, lvalue = dest, high != 0
 	case ^ast.Ident:
+		if lit, is_const := module_const_lit(ctx, d); is_const {
+			res, lvalue = unpack(emit_nodes(ctx, prop, lit))
+			break
+		}
+
 		sym := ctx_lookup_lvalue(ctx, d)
 		switch sym in sym {
 		case int:
@@ -1326,6 +1355,8 @@ emit_nodes :: proc(
 			}
 
 			res = backend.graph_add_un_op(ctx, "cst", op, dest_dt, arg)
+		case Multi_Pointer, Pointer:
+			res = to_rvalue(ctx, emit_nodes(ctx, {}, d.args[0]), d.args[0])
 		case:
 			fmt.panicf("TODO: %v %v", t, node)
 		}

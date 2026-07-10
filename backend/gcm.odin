@@ -477,7 +477,10 @@ graph_schedule :: proc(
 			}
 		}
 
-		if node.is_store || (node.itype == .Phi && node.dt == .Void) {
+		if node.is_store ||
+		   (node.itype == .Phi && node.dt == .Void) ||
+		   node.itype == .Call ||
+		   node.itype == .Return {
 			for out in node.outs {
 				onode := graph_expand(graph, out.id)
 				if ctx.late_schedules[onode.gvn] == 0 && onode.is_load {

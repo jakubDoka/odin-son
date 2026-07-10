@@ -385,6 +385,7 @@ when !GEN_SPEC {
 					.Shl,
 					.Xor,
 					.And_Not,
+					.Ne,
 				}
 				if op in ZERO_IS_NEUTRAL && crhs.value == 0 {
 					return node.inps[0]

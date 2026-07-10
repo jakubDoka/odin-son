@@ -652,6 +652,7 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 
 		if changed do return id
 		return 0
+	case .X64_Eq ..= .X64_U_Ge:
 	}
 
 	return 0

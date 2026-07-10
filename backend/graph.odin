@@ -590,6 +590,9 @@ graph_iter_peeps :: proc(graph: ^Graph) -> (optimized: bool) {
 
 	if .Iter_Peeps not_in graph.opt_flags && is_builder do return
 
+	graph.dont_intern = !is_builder
+	defer graph.dont_intern = false
+
 	context.allocator, _ = arna.scrath()
 
 	worklist: queue.Queue(Node_ID)

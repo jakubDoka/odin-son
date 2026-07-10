@@ -59,8 +59,9 @@ Codegen_Emit_Buf :: struct {
 }
 
 Codegen_Output :: struct {
-	relocs: []Reloc,
-	code:   []u8,
+	relocs:    []Reloc,
+	code:      []u8,
+	constants: []u8,
 }
 
 Reloc_Kind :: enum u32 {
@@ -85,6 +86,8 @@ Reloc :: struct {
 		id:   u32        | 28,
 	},
 }
+
+RELOC_BIG_CONSTANT_BASE :: (~u32(0) >> 4) - (1 << 22)
 
 Reloc_Slot :: struct #raw_union #align (1) {
 	addend_4: u32,

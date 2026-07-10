@@ -96,6 +96,16 @@ Ideal_Node_Type :: enum u16 {
 	Rem,
 	U_Rem,
 	And_Not,
+	F_Add,
+	F_Sub,
+	F_Mul,
+	F_Div,
+	F_Eq,
+	F_Ne,
+	F_Lt,
+	F_Le,
+	F_Gt,
+	F_Ge,
 	Split,
 	Phi,
 	Mem,
@@ -124,6 +134,10 @@ Ideal_Node_Type :: enum u16 {
 	Sext,
 	Uext,
 	Cast,
+	F_To_I,
+	F_From_I,
+	F_Ext,
+	F_Demote,
 }
 
 Class_Flags :: bit_set[Class_Flag;u8]
@@ -178,6 +192,8 @@ Node_Datatype :: enum u8 {
 	I16,
 	I32,
 	I64,
+	F32,
+	F64,
 }
 
 DT_SIZE := [Node_Datatype]int {
@@ -186,7 +202,11 @@ DT_SIZE := [Node_Datatype]int {
 	.I16  = 2,
 	.I32  = 4,
 	.I64  = 8,
+	.F32  = 4,
+	.F64  = 8,
 }
+
+FLOAT_DTS :: bit_set[Node_Datatype]{.F64, .F32}
 
 int_for_size :: proc(size: int) -> Node_Datatype {
 	assert(math.is_power_of_two(size))

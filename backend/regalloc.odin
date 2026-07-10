@@ -17,11 +17,13 @@ REGLOGS :: #config(REGLOGS, false)
 
 Reg_Kind :: enum u16 {
 	General,
+	Vector,
 }
 
 reg_kind_char :: proc(kind: Reg_Kind) -> rune {
 	table := [Reg_Kind]rune {
 		.General = 'g',
+		.Vector  = 'v',
 	}
 	return (table)[kind]
 }
@@ -156,9 +158,15 @@ reg_mask_of :: proc(
 	#any_int idx: int,
 	readonly := false,
 ) -> Reg_Mask {
-	node := graph_get(graph, id)
+	node := graph_expand(graph, id)
+
 	masks := re.reg_masks[node.rtype]
-	reg_kind := re.datatype_to_reg_kind[node.dt]
+	dt := node.dt
+	if idx != 0 {
+		inp := graph_get(graph, node.inps[idx - 1 + node.data_start])
+		dt = inp.dt
+	}
+	reg_kind := re.datatype_to_reg_kind[dt]
 	if idx < len(masks) {
 		id := masks[idx][reg_kind]
 		if id != 0 {

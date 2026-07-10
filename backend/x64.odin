@@ -28,8 +28,28 @@ RDI_MASK :: []int{1 << uint(RDI)}
 RSI_MASK :: []int{1 << uint(RSI)}
 RDX_MASK :: []int{1 << uint(RDX)}
 
-// variable shift counts must be in CL
 RCX_MASK :: []int{1 << uint(RCX)}
+
+VEC_BANK :: u16(Reg_Kind.Vector) << 12
+XMM0 :: Reg(VEC_BANK | 0)
+XMM1 :: Reg(VEC_BANK | 1)
+XMM2 :: Reg(VEC_BANK | 2)
+XMM3 :: Reg(VEC_BANK | 3)
+XMM4 :: Reg(VEC_BANK | 4)
+XMM5 :: Reg(VEC_BANK | 5)
+XMM6 :: Reg(VEC_BANK | 6)
+XMM7 :: Reg(VEC_BANK | 7)
+XMM8 :: Reg(VEC_BANK | 8)
+XMM9 :: Reg(VEC_BANK | 9)
+XMM10 :: Reg(VEC_BANK | 10)
+XMM11 :: Reg(VEC_BANK | 11)
+XMM12 :: Reg(VEC_BANK | 12)
+XMM13 :: Reg(VEC_BANK | 13)
+XMM14 :: Reg(VEC_BANK | 14)
+XMM15 :: Reg(VEC_BANK | 15)
+
+XMM_MASK :: []int{0xFFFF}
+XMM_SPILL_MASK :: []int{~int(0)}
 
 RAX :: Reg(0)
 RCX :: Reg(1)
@@ -68,9 +88,30 @@ X64_ODIN_CC := Call_Conv {
 	callee_saved = #partial{.General = {RBX, RBP, R12, R13, R14, R15}},
 	caller_saved = #partial{
 		.General = {RAX, RCX, RDX, RSI, RDI, R8, R9, R10, R11},
+		.Vector = {
+			XMM0,
+			XMM1,
+			XMM2,
+			XMM3,
+			XMM4,
+			XMM5,
+			XMM6,
+			XMM7,
+			XMM8,
+			XMM9,
+			XMM10,
+			XMM11,
+			XMM12,
+			XMM13,
+			XMM14,
+			XMM15,
+		},
 	},
-	args = #partial{.General = {RDI, RSI, RDX, RCX, R8, R9}},
-	rets = #partial{.General = {RAX, RDX}},
+	args = #partial{
+		.General = {RDI, RSI, RDX, RCX, R8, R9},
+		.Vector = {XMM0, XMM1, XMM2, XMM3, XMM4, XMM5, XMM6, XMM7},
+	},
+	rets = #partial{.General = {RAX, RDX}, .Vector = {XMM0, XMM1}},
 	red_zone_size = 128,
 }
 
@@ -115,6 +156,22 @@ DIV_SPEC :: Reg_Class_Spec {
 	clobbers = #partial{.General = 1 << uint(RDX)},
 }
 
+FLOAT_BINOP_SPEC :: Reg_Class_Spec {
+	reg_masks = #partial{.Vector = {XMM_MASK, XMM_MASK, XMM_MASK}},
+	inplace_slot_idx = 0,
+}
+
+FLOAT_CMP_SPEC :: Reg_Class_Spec {
+	reg_masks = #partial{
+		.Vector = {{}, XMM_MASK, XMM_MASK},
+		.General = {GPA_MASK},
+	},
+}
+
+FLOAT_CONV_SPEC :: Reg_Class_Spec {
+	reg_masks = #partial{.Vector = {XMM_MASK, XMM_MASK}},
+}
+
 REM_SPEC :: Reg_Class_Spec {
 	reg_masks = #partial{.General = {RDX_MASK, RAX_MASK, GPA_DIV_MASK}},
 	clobbers = #partial{.General = 1 << uint(RAX)},
@@ -131,7 +188,9 @@ X64_IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec {
 	.Entry = {},
 	.Poison = {},
 	.Arg = {input_start_idx = 1},
-	.CInt = {reg_masks = #partial{.General = {GPA_MASK}}},
+	.CInt = {
+		reg_masks = #partial{.General = {GPA_MASK}, .Vector = {XMM_MASK}},
+	},
 	.Add ..= .Xor = SIMPLE_BINOP_SPEC,
 	.Eq ..= .U_Ge = SIMPLE_CMP_SPEC,
 	.And_Not = {
@@ -149,8 +208,20 @@ X64_IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec {
 	.Rem = REM_SPEC,
 	.U_Div = DIV_SPEC,
 	.U_Rem = REM_SPEC,
+	.F_Add ..= .F_Div = FLOAT_BINOP_SPEC,
+	.F_Eq ..= .F_Ge = FLOAT_CMP_SPEC,
+	.F_Ext ..= .F_Demote = FLOAT_CONV_SPEC,
+	.F_From_I = {
+		reg_masks = #partial{.General = {{}, GPA_MASK}, .Vector = {XMM_MASK}},
+	},
+	.F_To_I = {
+		reg_masks = #partial{.General = {GPA_MASK}, .Vector = {{}, XMM_MASK}},
+	},
 	.Split = {
-		reg_masks = #partial{.General = {GPA_SPILL_MASK, GPA_SPILL_MASK}},
+		reg_masks = #partial{
+			.General = {GPA_SPILL_MASK, GPA_SPILL_MASK},
+			.Vector = {XMM_SPILL_MASK, XMM_SPILL_MASK},
+		},
 	},
 	.Phi = {
 		input_start_idx = 1,
@@ -161,6 +232,13 @@ X64_IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec {
 				GPA_SPILL_MASK,
 				GPA_SPILL_MASK,
 				GPA_SPILL_MASK,
+			},
+			.Vector = {
+				XMM_SPILL_MASK,
+				XMM_SPILL_MASK,
+				XMM_SPILL_MASK,
+				XMM_SPILL_MASK,
+				XMM_SPILL_MASK,
 			},
 		},
 	},
@@ -185,7 +263,10 @@ X64_IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec {
 	},
 	.Store = {
 		input_start_idx = 2,
-		reg_masks = #partial{.General = {{}, GPA_MASK, GPA_MASK}},
+		reg_masks = #partial{
+			.General = {{}, GPA_MASK, GPA_MASK},
+			.Vector = {{}, XMM_MASK, XMM_MASK},
+		},
 	},
 	.If = {
 		reg_masks = #partial{.General = {{}, GPA_MASK}},
@@ -231,11 +312,17 @@ X64_REG_CLASSES := #partial [X64_Node_Type]Reg_Class_Spec {
 	.X64_Neg ..= .X64_Not = SIMPLE_UNOP_SPEC,
 	.X64_Load = {
 		input_start_idx = 2,
-		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
+		reg_masks = #partial{
+			.General = {GPA_MASK, GPA_MASK, GPA_MASK},
+			.Vector = {XMM_MASK, XMM_MASK, XMM_MASK},
+		},
 	},
 	.X64_Store = {
 		input_start_idx = 2,
-		reg_masks = #partial{.General = {{}, GPA_MASK, GPA_MASK, GPA_MASK}},
+		reg_masks = #partial{
+			.General = {{}, GPA_MASK, GPA_MASK, GPA_MASK},
+			.Vector = {{}, XMM_MASK, XMM_MASK, XMM_MASK},
+		},
 	},
 	.X64_Mul8 = {
 		reg_masks = #partial{.General = {RAX_MASK, GPA_MASK, RAX_MASK}},
@@ -463,6 +550,13 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 				{scale = u8(ascale), dis = displacement},
 				additional_data_offset = u8(stack_base),
 			)
+		}
+	case .F_Eq ..= .F_Ge:
+		if node.dt != .Void &&
+		   len(node.outs) == 1 &&
+		   graph_get(ctx, node.outs[0].id).itype == .If {
+			node.dt = .Void
+			return id
 		}
 	case .If:
 		node.additional_data_start = u8(
@@ -750,6 +844,30 @@ x64_post_schedule_peep :: proc(
 	return 0
 }
 
+// whole-bank mask helpers for the mixed-bank float nodes. a fresh copy is
+// returned so the caller may mutate it (def masks get intersected in place).
+reg_bank_mask :: proc(ra: ^Regalloc, kind: Reg_Kind, src: []int) -> Reg_Mask {
+	mask := reg_mask_empty(ra, kind)
+	copy(mask.masks[:len(src)], src)
+	return mask
+}
+
+cc_reg_for_operand :: proc(
+	graph: ^Graph,
+	node: Expanded_Node,
+	banks: [Reg_Kind][]Reg,
+	pos: int,
+) -> Reg {
+	PREFIX :: 2
+	counts: [Reg_Kind]int
+	for i in PREFIX ..< pos {
+		rk := graph.datatype_to_reg_kind[graph_get(graph, node.inps[i]).dt]
+		counts[rk] += 1
+	}
+	rk := graph.datatype_to_reg_kind[graph_get(graph, node.inps[pos]).dt]
+	return banks[rk][counts[rk]]
+}
+
 x64_reg_mask_of :: proc(
 	graph: ^Graph,
 	ra: ^Regalloc,
@@ -758,9 +876,12 @@ x64_reg_mask_of :: proc(
 ) -> Reg_Mask {
 	node := graph_expand(graph, id)
 
+	pos := idx - 1 + node.data_start
+
 	#partial switch node.itype {
 	case .Arg:
-		args := ra.args[.General]
+		kind := ra.datatype_to_reg_kind[node.dt]
+		args := ra.args[kind]
 		arg_ext := graph_extra(graph, node, Tup)
 		if int(arg_ext.idx) < len(args) {
 			return reg_mask_single(ra, args[arg_ext.idx])
@@ -768,38 +889,49 @@ x64_reg_mask_of :: proc(
 			return reg_mask_single(
 				ra,
 				{
-					kind = .General,
+					kind = kind,
 					index = GPA_REG_COUNT + u16(arg_ext.idx) - u16(len(args)),
 				},
 			)
 		}
 	case .Call:
 		call := graph_extra(graph, id, Call)
-		args := ra.cc_table[call.ccid].args[.General]
-		return reg_mask_single(ra, args[idx - 1])
+		cc := ra.cc_table[call.ccid]
+		reg := cc_reg_for_operand(graph, node, cc.args, pos)
+		return reg_mask_single(ra, reg)
 	case .Ret:
 		cend := graph_expand(graph, node.inps[0])
-
 		call := graph_extra(graph, cend.inps[0], Call)
 		ret_ext := graph_extra(graph, node, Tup)
-		rets := ra.cc_table[call.ccid].rets[.General]
+		kind := ra.datatype_to_reg_kind[node.dt]
+		rets := ra.cc_table[call.ccid].rets[kind]
 		return reg_mask_single(ra, rets[ret_ext.idx])
+	case .Return:
+		assert(idx != 0)
+		reg := cc_reg_for_operand(graph, node, ra.rets, pos)
+		return reg_mask_single(ra, reg)
 	case .Phi:
-		assert(idx > 0)
-
-		return {
-			masks = raw_data(GPA_SPILL_MASK),
-			kind = ra.datatype_to_reg_kind[node.dt],
-			bit_length = u32(len(GPA_SPILL_MASK)) * MASK_SIZE,
-		}
-	case:
-		fmt.panicf("TODO: %v %v", node.xtype, idx)
+		// TODO: fix this to have a borrow
+		kind := ra.datatype_to_reg_kind[node.dt]
+		return reg_bank_mask(
+			ra,
+			kind,
+			kind == .Vector ? XMM_SPILL_MASK : GPA_SPILL_MASK,
+		)
 	}
+
+	fmt.panicf(
+		"TODO: %v %v %v",
+		node.xtype,
+		idx,
+		graph_get(graph, node.inps[pos]),
+	)
 }
 
 Ctx :: struct {
 	using inner:        Codegen_Emit_Ctx,
 	spill_slot_base:    [Reg_Kind]i32,
+	big_constants:      [dynamic]u8,
 	local_relocs:       [dynamic]Local_Reloc,
 	stack_size:         i32,
 	used:               bit_arr.Bit_Set,
@@ -810,6 +942,29 @@ Ctx :: struct {
 Local_Reloc :: struct {
 	dest:   u32,
 	offset: u32,
+}
+
+emit_big_constant :: proc(ctx: ^Ctx, const: any) -> (id: u32) {
+	align_up := mem.align_backward_int(
+		len(ctx.big_constants) + 2,
+		reflect.align_of_typeid(const.id),
+	)
+
+	for _ in len(ctx.big_constants) + 2 ..< align_up {
+		append(&ctx.big_constants, 0)
+	}
+
+	append(
+		&ctx.big_constants,
+		u8(reflect.size_of_typeid(const.id)),
+		u8(reflect.align_of_typeid(const.id)),
+	)
+
+	id = RELOC_BIG_CONSTANT_BASE + u32(len(ctx.big_constants))
+
+	append(&ctx.big_constants, ..reflect.as_bytes(const))
+
+	return
 }
 
 x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
@@ -1027,13 +1182,15 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 		copy(ctx.code.ptr[reloc.offset:][:size], reflect.as_bytes(jump))
 	}
 
-	return {
-		code = ctx.code.ptr[ctx.code_start:ctx.code.pos],
-		relocs = mem.slice_data_cast(
-			[]Reloc,
-			ctx.relocs.ptr[reloc_start:ctx.relocs.pos],
-		),
-	}
+	code := ctx.code.ptr[ctx.code_start:ctx.code.pos]
+	relocs := mem.slice_data_cast(
+		[]Reloc,
+		ctx.relocs.ptr[reloc_start:ctx.relocs.pos],
+	)
+	arna.alloc(ctx.code, 0, 8)
+	constants := arna.clone(ctx.code, ctx.big_constants[:])
+
+	return {code = code, relocs = relocs, constants = constants}
 }
 
 @(disabled = GEN_SPEC)
@@ -1043,6 +1200,7 @@ x64_emit_instr :: proc(
 	is_consecutive: bool,
 	_: $T,
 ) {
+
 	@(static, rodata)
 	OPCODE_TABLE := #partial [X64_Node_Type]Instr_Info {
 		.Add       = {0x01, 0},
@@ -1060,6 +1218,12 @@ x64_emit_instr :: proc(
 		.U_Le      = {0x96, 0},
 		.U_Gt      = {0x97, 0},
 		.U_Ge      = {0x93, 0},
+		.F_Eq      = {0x94, 0},
+		.F_Ne      = {0x95, 0},
+		.F_Gt      = {0x97, 0},
+		.F_Ge      = {0x93, 0},
+		.F_Lt      = {0x97, 0},
+		.F_Le      = {0x93, 0},
 		.X64_Eq    = {0x94, 0},
 		.X64_Ne    = {0x95, 0},
 		.X64_Lt    = {0x9C, 0},
@@ -1142,6 +1306,12 @@ x64_emit_instr :: proc(
 		.X64_U_Le = .U_Gt,
 		.X64_U_Gt = .U_Le,
 		.X64_U_Ge = .U_Lt,
+		.F_Eq     = .Ne,
+		.F_Ne     = .Eq,
+		.F_Lt     = .U_Le,
+		.F_Le     = .U_Lt,
+		.F_Gt     = .U_Le,
+		.F_Ge     = .U_Lt,
 	}
 
 	@(static, rodata)
@@ -1165,6 +1335,7 @@ x64_emit_instr :: proc(
 	idx := NO_INDEX
 	if scl != 0 do idx = reg_of(ctx, node.inps[len(node.inps) - 1])
 	imm_boundary := int(scl != 0)
+	pfx: u8 = node.dt == .F64 ? 0xF2 : 0xF3
 
 	switch node.xtype {
 	case .Global:
@@ -1193,6 +1364,15 @@ x64_emit_instr :: proc(
 			vdt := graph_get(ctx, node.inps[3]).dt
 			val := reg_of(ctx, node.inps[3])
 
+			if vdt in FLOAT_DTS {
+				// movss/movsd [$bse + ...], $val
+				pfx: u8 = vdt == .F64 ? 0xF2 : 0xF3
+				rx := rex(val, bse, idx, false)
+				emit(ctx.code, {pfx, rx, 0x0f, 0x11})
+				emit_indirect_addr(ctx, val, bse, idx, scl, dis + sdis, id)
+				break
+			}
+
 			rx := rex(val, bse, idx, DT_SIZE[vdt] == 8)
 			emit_sized_opcode(ctx.code, vdt, rx, 0x89)
 			emit_indirect_addr(ctx, val, bse, idx, scl, dis + sdis, id)
@@ -1219,9 +1399,17 @@ x64_emit_instr :: proc(
 		dis := mem_op.dis
 		signed := mem_op.signed || node.itype == .Load_S
 
+		if dt in FLOAT_DTS {
+			// movss/movsd $val, [$bse + ...]
+			rx := rex(val, bse, idx, false)
+			emit(ctx.code, {pfx, rx, 0x0f, 0x10})
+			emit_indirect_addr(ctx, val, bse, idx, scl, dis + sdis, id)
+			break
+		}
+
 		rx := rex(val, bse, idx, DT_SIZE[dt] == 8 || signed)
 		if signed {
-			switch dt {
+			#partial switch dt {
 			case .Void:
 			case .I8:
 				// movsx $val, [$bse]
@@ -1237,7 +1425,7 @@ x64_emit_instr :: proc(
 				emit(ctx.code, {rx, 0x8b})
 			}
 		} else {
-			switch dt {
+			#partial switch dt {
 			case .Void:
 			case .I8:
 				// movzx $val, [$bse]
@@ -1258,7 +1446,7 @@ x64_emit_instr :: proc(
 		src := reg_of(ctx, node.inps[0])
 
 		rx := rex(dst, src, RAX, true)
-		switch dt {
+		#partial switch dt {
 		case .Void:
 		case .I8:
 			// movsx r64, r/m8
@@ -1280,7 +1468,7 @@ x64_emit_instr :: proc(
 		src := reg_of(ctx, node.inps[0])
 
 		rx := rex(dst, src, RAX, DT_SIZE[dt] == 8)
-		switch dt {
+		#partial switch dt {
 		case .Void:
 		case .I8:
 			// movzx $val, [$bse]
@@ -1396,9 +1584,28 @@ x64_emit_instr :: proc(
 		dst := reg_of(ctx, instr)
 		imm := graph_extra(ctx, node, CInt).value
 
-		// mov $dst, $imm
-		emit_single_op(ctx.code, 0xb8, dst)
-		emit_anys(ctx.code, imm)
+		switch node.dt {
+		case .Void:
+			panic("")
+		case .I8 ..= .I64:
+			// mov $dst, $imm
+			emit_single_op(ctx.code, 0xb8, dst)
+			emit_anys(ctx.code, imm)
+		case .F32, .F64:
+			d_spill := dst.index >= GPA_REG_COUNT
+
+			id: u32
+			if node.dt == .F32 {
+				id = emit_big_constant(ctx, f32(transmute(f64)imm))
+			} else {
+				id = emit_big_constant(ctx, transmute(f64)imm)
+			}
+
+			// movss/movsd $dst, [rsp + $src_off]
+			emit(ctx.code, {pfx, rex(dst, RIP, RAX, false), 0x0f, 0x10})
+
+			emit_indirect_addr(ctx, dst, RIP, NO_INDEX, 1, 0, id + 1)
+		}
 	case .X64_Add ..= .X64_Xor, .X64_Shl ..= .X64_U_Shr:
 		imm := mem_op.imm
 
@@ -1579,9 +1786,76 @@ x64_emit_instr :: proc(
 		// imul $op
 		dst := reg_of(ctx, node.inps[0])
 		emit(ctx.code, {0xf6, mod_sm(.Direct, 0b101, dst)})
+	case .F_Add, .F_Sub, .F_Mul, .F_Div:
+		// dst == lhs (in place); op dst, rhs
+		dst := reg_of(ctx, node.inps[0])
+		rhs := reg_of(ctx, node.inps[1])
+
+		@(static, rodata)
+		FLOAT_OP := #partial [X64_Node_Type]u8 {
+			.F_Add = 0x58,
+			.F_Sub = 0x5C,
+			.F_Mul = 0x59,
+			.F_Div = 0x5E,
+		}
+
+		rx := rex(dst, rhs, RAX, false)
+		emit(
+			ctx.code,
+			{pfx, rx, 0x0f, FLOAT_OP[node.xtype], mod_rm(.Direct, dst, rhs)},
+		)
+	case .F_Eq ..= .F_Ge:
+		// ucomiss/ucomisd $lhs, $rhs
+		lhs := reg_of(ctx, node.inps[0])
+		rhs := reg_of(ctx, node.inps[1])
+		odt := graph_get(ctx, node.inps[0]).dt
+
+		a, b := lhs, rhs
+		setcc: u8 = OPCODE_TABLE[node.xtype].opcode
+		#partial switch node.xtype {
+		case .F_Lt, .F_Le:
+			a, b = rhs, lhs
+		}
+
+		// [66] 0F 2E /r  (ucomisd needs the 0x66 prefix, ucomiss none)
+		if odt == .F64 do emit(ctx.code, {0x66})
+		rx := rex(a, b, RAX, false)
+		emit(ctx.code, {rx, 0x0f, 0x2e, mod_rm(.Direct, a, b)})
+
+		if node.dt != .Void {
+			dst := reg_of(ctx, instr)
+			// setcc $dst
+			rxs := rex(RAX, dst, RAX, true)
+			emit(ctx.code, {rxs, 0x0F, setcc, mod_sm(.Direct, 0b000, dst)})
+			// movzx $dst, $dst
+			rxz := rex(dst, dst, RAX, true)
+			emit(ctx.code, {rxz, 0x0F, 0xB6, mod_rm(.Direct, dst, dst)})
+		}
+	case .F_From_I:
+		// cvtsi2ss/cvtsi2sd $dst(xmm), $src(gpr)
+		dst := reg_of(ctx, instr)
+		src := reg_of(ctx, node.inps[0])
+		sdt := graph_get(ctx, node.inps[0]).dt
+		rx := rex(dst, src, RAX, DT_SIZE[sdt] == 8)
+		emit(ctx.code, {pfx, rx, 0x0f, 0x2a, mod_rm(.Direct, dst, src)})
+	case .F_To_I:
+		// cvttss2si/cvttsd2si $dst(gpr), $src(xmm)
+		dst := reg_of(ctx, instr)
+		src := reg_of(ctx, node.inps[0])
+		sdt := graph_get(ctx, node.inps[0]).dt
+		pfx: u8 = sdt == .F64 ? 0xF2 : 0xF3
+		rx := rex(dst, src, RAX, DT_SIZE[node.dt] == 8)
+		emit(ctx.code, {pfx, rx, 0x0f, 0x2c, mod_rm(.Direct, dst, src)})
+	case .F_Ext, .F_Demote:
+		// cvtss2sd $dst, $src (f32 -> f64)
+		dst := reg_of(ctx, instr)
+		src := reg_of(ctx, node.inps[0])
+		rx := rex(dst, src, RAX, false)
+		pfx: u8 = node.dt == .F64 ? 0xF3 : 0xF2
+		emit(ctx.code, {pfx, rx, 0x0f, 0x5a, mod_rm(.Direct, dst, src)})
 	case .Div, .Rem:
 		rhs := reg_of(ctx, node.inps[1])
-		switch node.dt {
+		#partial switch node.dt {
 		case .Void:
 			panic("")
 		case .I8:
@@ -1630,6 +1904,46 @@ x64_emit_instr :: proc(
 		dst_off := spill_slot_offset(ctx, dst)
 		src_off := spill_slot_offset(ctx, src)
 		assert(dst.kind == src.kind)
+
+		if dst.kind == .Vector {
+			// movss/movsd based moves for xmm live ranges
+			pfx: u8 = node.dt == .F64 ? 0xF2 : 0xF3
+			d_spill := dst.index >= GPA_REG_COUNT
+			s_spill := src.index >= GPA_REG_COUNT
+			if d_spill && s_spill {
+				// pure memory-to-memory move: copy the 8-byte spill slot via
+				// the stack with push/pop, which never touches an xmm register.
+				// (slots are 8-byte sized, so this is correct for f32 too.)
+				// push [rsp + $src_off]
+				emit(ctx.code, {0xff})
+				spill_indirect_addr(ctx, Reg(0b110), src_off)
+				// pop [rsp + $dst_off]
+				emit(ctx.code, {0x8F})
+				spill_indirect_addr(ctx, Reg(0b000), dst_off)
+			} else if d_spill {
+				// movss/movsd [rsp + $dst_off], $src
+				emit(ctx.code, {pfx, rex(src, RSP, RAX, false), 0x0f, 0x11})
+				spill_indirect_addr(ctx, src, dst_off)
+			} else if s_spill {
+				// movss/movsd $dst, [rsp + $src_off]
+				emit(ctx.code, {pfx, rex(dst, RSP, RAX, false), 0x0f, 0x10})
+				spill_indirect_addr(ctx, dst, src_off)
+			} else {
+				// movss/movsd $dst, $src
+				emit(
+					ctx.code,
+					{
+						pfx,
+						rex(dst, src, RAX, false),
+						0x0f,
+						0x10,
+						mod_rm(.Direct, dst, src),
+					},
+				)
+			}
+			break
+		}
+
 		if int(dst) >= 16 && int(src) >= 16 {
 			// push [rsp + $src_offset]
 			emit(ctx.code, {0xff})
@@ -1661,7 +1975,6 @@ x64_emit_instr :: proc(
 		spill_slot_offset :: proc(ctx: ^Ctx, reg: Reg) -> i32 {
 			if reg.index < GPA_REG_COUNT do return 0
 
-			assert(reg.kind == .General)
 			param_count := len(ctx.stack_param_offset[reg.kind])
 			if int(reg.index - GPA_REG_COUNT) < param_count {
 				return(
@@ -1876,7 +2189,7 @@ rex :: proc(reg, ptr, idx: Reg, wide: bool) -> u8 {
 }
 
 emit_imm_for_dt :: proc(code: ^arna.Allocator, dt: Node_Datatype, imm: i32) {
-	switch dt {
+	#partial switch dt {
 	case .Void:
 		panic("")
 	case .I8:
@@ -1894,7 +2207,7 @@ emit_extended_sized_opcode :: proc(
 	rx: u8,
 	op: u8,
 ) {
-	switch dt {
+	#partial switch dt {
 	case .Void:
 		panic("")
 	case .I8:
@@ -1912,7 +2225,7 @@ emit_sized_opcode :: proc(
 	rx: u8,
 	op: u8,
 ) {
-	switch dt {
+	#partial switch dt {
 	case .Void:
 		panic("")
 	case .I8:

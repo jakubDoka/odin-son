@@ -287,9 +287,7 @@ We are missing much needed `main::Type` custom formatter, as of right now the
 types when logged just give back a hex address. Implement this and also a test
 that checks that it works.
 
-### Implement a lua lexer and parser
-
-NOTE: read AGENTS.md
+### Implement a lua lexer and parser (DONE)
 
 Make a `test-programs/lua` taht will have lexer/parser implementation for lua
 syntax. Note that you can import code from other tests.
@@ -315,3 +313,34 @@ parity.
 Once you are done, spawn an agent to analyze the objdump of the jitted binary
 to look for possible missed peephole optimization opportunities and list them
 in a POSSIBLE_PEEPHOLES showing example assembly and the ideal assembly.
+
+### Implement the floating point numbers
+
+NOTE: read AGENTS.md
+
+Right now the frontend and the backend only handle the integer ops. You should
+implement the floating point ops.
+
+#### Part 1
+
+Generate the tests that will test the floating point op as exhausively as
+integer ops. The point of the tests it to test spilling and peepholes so that
+the compiler emits all of the possible instructions.
+
+#### Part 2
+
+Add the appropriate nodes to the `Ideal_Node_Type`, the floating point ops
+should not share kinds with integer ops. Do a F_Op naming scheme here. Do not
+add isa specific instructions (X64_*) yet. Make sure to specify all properties
+of the new nodes and regenerate the spec. Also add the `.F32` and `.F64` to the
+`Node_Datatype`. These datatypes should map to new `.Vector` `Reg_Kind`. This
+will require filling in many things that require to cover specification for
+each Reg_Kind.
+
+Then proceed with implementing:
+1. x64 encodings for the new ops
+2. frontend support for floating point numbers
+
+#### Part 3 (depends on 1,2)
+
+The implementation is ready to be tests so fix bugs until tests pass.

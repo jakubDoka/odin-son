@@ -45,7 +45,10 @@ generate_specs :: proc() {
 				ts(&IDEAL_CLASSES, &X64_IDEAL_REG_CLASSES),
 				ts(&X64_CLASSES, &X64_REG_CLASSES),
 			},
-			datatype_to_reg_kind = #partial{.I8 ..= .I64 = .General},
+			datatype_to_reg_kind = #partial {
+				.I8 ..= .I64 = .General,
+				.F32 ..= .F64 = .Vector,
+			},
 			cc_table = {X64_ODIN_CC, X64_LINUX_SYSCALL_CC},
 		},
 	}

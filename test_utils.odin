@@ -149,7 +149,13 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 				case .Data:
 					target_off = lib_call_offsets[rel.id]
 				case .Global:
-					target_off = global_addrs[rel.id]
+					if rel.id >= backend.RELOC_BIG_CONSTANT_BASE {
+						target_off =
+							uintptr(rel.id - backend.RELOC_BIG_CONSTANT_BASE) +
+							uintptr(raw_data(p.out.constants))
+					} else {
+						target_off = global_addrs[rel.id]
+					}
 				}
 
 				source := uintptr(raw_data(p.out.code)) + uintptr(rel.offset)

@@ -1,0 +1,308 @@
+=========== OPT LEVEL: none ===========
+main:
+     push rbx
+     push rbp
+     sub rsp, 0x18
+     movsd xmm0, qword ptr [0x000000000040010A]
+     movsd xmm2, qword ptr [0x0000000000400114]
+     movsd xmm4, qword ptr [0x000000000040011E]
+     movsd xmm1, qword ptr [0x0000000000400128]
+     movsd [rsp], xmm1
+     movsd xmm1, qword ptr [0x0000000000400132]
+     movsd [rsp+0x08], xmm1
+     movsd xmm6, qword ptr [0x000000000040013C]
+     movsd xmm1, qword ptr [0x0000000000400146]
+     movsd xmm3, qword ptr [0x0000000000400150]
+     movsd xmm5, qword ptr [0x000000000040015A]
+     movsd xmm7, qword ptr [0x0000000000400164]
+     call :load_of_args
+     movsd [rsp+0x10], xmm0
+     mov rdi, 0x01
+     mov rsi, 0x03
+     mov rdx, 0x05
+     mov rcx, 0x07
+     mov r8, 0x09
+     movsd xmm0, qword ptr [0x000000000040016E]
+     movsd xmm1, qword ptr [0x0000000000400178]
+     movsd xmm2, qword ptr [0x0000000000400182]
+     movsd xmm3, qword ptr [0x000000000040018C]
+     movsd xmm4, qword ptr [0x0000000000400196]
+     call :mixed
+     movsd xmm1, qword ptr [0x00000000004001A0]
+     movsd xmm2, qword ptr [rsp+0x10]
+     addsd xmm1, xmm2
+     addsd xmm1, xmm0
+     cvttsd2si rax, xmm1
+     add rsp, 0x18
+     pop rbp
+     pop rbx
+     ret
+load_of_args:
+     push rbx
+     push rbp
+     addsd xmm0, xmm1
+     addsd xmm0, xmm2
+     addsd xmm0, xmm3
+     addsd xmm0, xmm4
+     addsd xmm0, xmm5
+     addsd xmm0, xmm6
+     addsd xmm0, xmm7
+     movsd xmm1, qword ptr [rsp+0x18]
+     addsd xmm0, xmm1
+     movsd xmm1, qword ptr [rsp+0x20]
+     addsd xmm0, xmm1
+     pop rbp
+     pop rbx
+     ret
+mixed:
+     push rbx
+     push rbp
+     movsd xmm5, xmm0
+     cvtsi2sd xmm0, rdi
+     addsd xmm0, xmm5
+     cvtsi2sd xmm5, rsi
+     addsd xmm0, xmm5
+     addsd xmm0, xmm1
+     cvtsi2sd xmm1, rdx
+     addsd xmm0, xmm1
+     addsd xmm0, xmm2
+     cvtsi2sd xmm1, rcx
+     addsd xmm0, xmm1
+     addsd xmm0, xmm3
+     cvtsi2sd xmm1, r8
+     addsd xmm0, xmm1
+     addsd xmm0, xmm4
+     pop rbp
+     pop rbx
+     ret
+=========== OPT LEVEL: mininal ===========
+main:
+     push rbx
+     push rbp
+     sub rsp, 0x18
+     movsd xmm0, qword ptr [0x000000000040010A]
+     movsd xmm2, qword ptr [0x0000000000400114]
+     movsd xmm4, qword ptr [0x000000000040011E]
+     movsd xmm1, qword ptr [0x0000000000400128]
+     movsd [rsp], xmm1
+     movsd xmm1, qword ptr [0x0000000000400132]
+     movsd [rsp+0x08], xmm1
+     movsd xmm6, qword ptr [0x000000000040013C]
+     movsd xmm1, qword ptr [0x0000000000400146]
+     movsd xmm3, qword ptr [0x0000000000400150]
+     movsd xmm5, qword ptr [0x000000000040015A]
+     movsd xmm7, qword ptr [0x0000000000400164]
+     call :load_of_args
+     movsd [rsp+0x10], xmm0
+     mov rdi, 0x01
+     mov rsi, 0x03
+     mov rdx, 0x05
+     mov rcx, 0x07
+     mov r8, 0x09
+     movsd xmm0, qword ptr [0x000000000040016E]
+     movsd xmm1, qword ptr [0x0000000000400178]
+     movsd xmm2, qword ptr [0x0000000000400182]
+     movsd xmm3, qword ptr [0x000000000040018C]
+     movsd xmm4, qword ptr [0x0000000000400196]
+     call :mixed
+     movsd xmm1, qword ptr [0x00000000004001A0]
+     movsd xmm2, qword ptr [rsp+0x10]
+     addsd xmm1, xmm2
+     addsd xmm1, xmm0
+     cvttsd2si rax, xmm1
+     add rsp, 0x18
+     pop rbp
+     pop rbx
+     ret
+load_of_args:
+     push rbx
+     push rbp
+     addsd xmm0, xmm1
+     addsd xmm0, xmm2
+     addsd xmm0, xmm3
+     addsd xmm0, xmm4
+     addsd xmm0, xmm5
+     addsd xmm0, xmm6
+     addsd xmm0, xmm7
+     movsd xmm1, qword ptr [rsp+0x18]
+     addsd xmm0, xmm1
+     movsd xmm1, qword ptr [rsp+0x20]
+     addsd xmm0, xmm1
+     pop rbp
+     pop rbx
+     ret
+mixed:
+     push rbx
+     push rbp
+     movsd xmm5, xmm0
+     cvtsi2sd xmm0, rdi
+     addsd xmm0, xmm5
+     cvtsi2sd xmm5, rsi
+     addsd xmm0, xmm5
+     addsd xmm0, xmm1
+     cvtsi2sd xmm1, rdx
+     addsd xmm0, xmm1
+     addsd xmm0, xmm2
+     cvtsi2sd xmm1, rcx
+     addsd xmm0, xmm1
+     addsd xmm0, xmm3
+     cvtsi2sd xmm1, r8
+     addsd xmm0, xmm1
+     addsd xmm0, xmm4
+     pop rbp
+     pop rbx
+     ret
+=========== OPT LEVEL: moderate ===========
+main:
+     push rbx
+     push rbp
+     sub rsp, 0x18
+     movsd xmm0, qword ptr [0x000000000040010A]
+     movsd xmm2, qword ptr [0x0000000000400114]
+     movsd xmm4, qword ptr [0x000000000040011E]
+     movsd xmm1, qword ptr [0x0000000000400128]
+     movsd [rsp], xmm1
+     movsd xmm1, qword ptr [0x0000000000400132]
+     movsd [rsp+0x08], xmm1
+     movsd xmm6, qword ptr [0x000000000040013C]
+     movsd xmm1, qword ptr [0x0000000000400146]
+     movsd xmm3, qword ptr [0x0000000000400150]
+     movsd xmm5, qword ptr [0x000000000040015A]
+     movsd xmm7, qword ptr [0x0000000000400164]
+     call :load_of_args
+     movsd [rsp+0x10], xmm0
+     mov rdi, 0x01
+     mov rsi, 0x03
+     mov rdx, 0x05
+     mov rcx, 0x07
+     mov r8, 0x09
+     movsd xmm0, qword ptr [0x000000000040016E]
+     movsd xmm1, qword ptr [0x0000000000400178]
+     movsd xmm2, qword ptr [0x0000000000400182]
+     movsd xmm3, qword ptr [0x000000000040018C]
+     movsd xmm4, qword ptr [0x0000000000400196]
+     call :mixed
+     movsd xmm1, qword ptr [0x00000000004001A0]
+     movsd xmm2, qword ptr [rsp+0x10]
+     addsd xmm1, xmm2
+     addsd xmm1, xmm0
+     cvttsd2si rax, xmm1
+     add rsp, 0x18
+     pop rbp
+     pop rbx
+     ret
+load_of_args:
+     push rbx
+     push rbp
+     addsd xmm0, xmm1
+     addsd xmm0, xmm2
+     addsd xmm0, xmm3
+     addsd xmm0, xmm4
+     addsd xmm0, xmm5
+     addsd xmm0, xmm6
+     addsd xmm0, xmm7
+     movsd xmm1, qword ptr [rsp+0x18]
+     addsd xmm0, xmm1
+     movsd xmm1, qword ptr [rsp+0x20]
+     addsd xmm0, xmm1
+     pop rbp
+     pop rbx
+     ret
+mixed:
+     push rbx
+     push rbp
+     movsd xmm5, xmm0
+     cvtsi2sd xmm0, rdi
+     addsd xmm0, xmm5
+     cvtsi2sd xmm5, rsi
+     addsd xmm0, xmm5
+     addsd xmm0, xmm1
+     cvtsi2sd xmm1, rdx
+     addsd xmm0, xmm1
+     addsd xmm0, xmm2
+     cvtsi2sd xmm1, rcx
+     addsd xmm0, xmm1
+     addsd xmm0, xmm3
+     cvtsi2sd xmm1, r8
+     addsd xmm0, xmm1
+     addsd xmm0, xmm4
+     pop rbp
+     pop rbx
+     ret
+=========== OPT LEVEL: all ===========
+main:
+     push rbx
+     push rbp
+     sub rsp, 0x18
+     movsd xmm0, qword ptr [0x000000000040010A]
+     movsd xmm2, qword ptr [0x0000000000400114]
+     movsd xmm4, qword ptr [0x000000000040011E]
+     movsd xmm1, qword ptr [0x0000000000400128]
+     movsd [rsp], xmm1
+     movsd xmm1, qword ptr [0x0000000000400132]
+     movsd [rsp+0x08], xmm1
+     movsd xmm6, qword ptr [0x000000000040013C]
+     movsd xmm1, qword ptr [0x0000000000400146]
+     movsd xmm3, qword ptr [0x0000000000400150]
+     movsd xmm5, qword ptr [0x000000000040015A]
+     movsd xmm7, qword ptr [0x0000000000400164]
+     call :load_of_args
+     movsd [rsp+0x10], xmm0
+     mov rdi, 0x01
+     mov rsi, 0x03
+     mov rdx, 0x05
+     mov rcx, 0x07
+     mov r8, 0x09
+     movsd xmm0, qword ptr [0x000000000040016E]
+     movsd xmm1, qword ptr [0x0000000000400178]
+     movsd xmm2, qword ptr [0x0000000000400182]
+     movsd xmm3, qword ptr [0x000000000040018C]
+     movsd xmm4, qword ptr [0x0000000000400196]
+     call :mixed
+     movsd xmm1, qword ptr [0x00000000004001A0]
+     movsd xmm2, qword ptr [rsp+0x10]
+     addsd xmm1, xmm2
+     addsd xmm1, xmm0
+     cvttsd2si rax, xmm1
+     add rsp, 0x18
+     pop rbp
+     pop rbx
+     ret
+load_of_args:
+     push rbx
+     push rbp
+     addsd xmm0, xmm1
+     addsd xmm0, xmm2
+     addsd xmm0, xmm3
+     addsd xmm0, xmm4
+     addsd xmm0, xmm5
+     addsd xmm0, xmm6
+     addsd xmm0, xmm7
+     movsd xmm1, qword ptr [rsp+0x18]
+     addsd xmm0, xmm1
+     movsd xmm1, qword ptr [rsp+0x20]
+     addsd xmm0, xmm1
+     pop rbp
+     pop rbx
+     ret
+mixed:
+     push rbx
+     push rbp
+     movsd xmm5, xmm0
+     cvtsi2sd xmm0, rdi
+     addsd xmm0, xmm5
+     cvtsi2sd xmm5, rsi
+     addsd xmm0, xmm5
+     addsd xmm0, xmm1
+     cvtsi2sd xmm1, rdx
+     addsd xmm0, xmm1
+     addsd xmm0, xmm2
+     cvtsi2sd xmm1, rcx
+     addsd xmm0, xmm1
+     addsd xmm0, xmm3
+     cvtsi2sd xmm1, r8
+     addsd xmm0, xmm1
+     addsd xmm0, xmm4
+     pop rbp
+     pop rbx
+     ret

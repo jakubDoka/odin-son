@@ -12,6 +12,7 @@ when !GEN_SPEC {
 	fold_un_op :: proc(
 		op: Un_Op,
 		oper: i64,
+		dst_ty: Node_Datatype,
 		src_ty: Node_Datatype,
 	) -> (
 		value: i64,
@@ -32,8 +33,12 @@ when !GEN_SPEC {
 			} else {
 				value = oper | mask
 			}
-		case .Cast:
+		case .Cast, .F_Ext, .F_Demote:
 			value = oper
+		case .F_From_I:
+			value = transmute(i64)(f64(oper))
+		case .F_To_I:
+			value = i64(transmute(f64)oper)
 		}
 		return
 	}
@@ -88,10 +93,31 @@ when !GEN_SPEC {
 			value = i64(u64(lhs) % u64(rhs))
 		case .U_Shr:
 			value = i64(u64(lhs) >> u64(rhs))
-		case:
-			panic("wuwut")
+		case .F_Ne:
+			value = i64(tf(lhs) != tf(rhs))
+		case .F_Eq:
+			value = i64(tf(lhs) == tf(rhs))
+		case .F_Le:
+			value = i64(tf(lhs) <= tf(rhs))
+		case .F_Lt:
+			value = i64(tf(lhs) < tf(rhs))
+		case .F_Gt:
+			value = i64(tf(lhs) > tf(rhs))
+		case .F_Ge:
+			value = i64(tf(lhs) >= tf(rhs))
+		case .F_Add:
+			value = ti(tf(lhs) + tf(rhs))
+		case .F_Sub:
+			value = ti(tf(lhs) - tf(rhs))
+		case .F_Mul:
+			value = ti(tf(lhs) * tf(rhs))
+		case .F_Div:
+			value = ti(tf(lhs) / tf(rhs))
 		}
 		return
+
+		tf :: proc(i: i64) -> f64 {return transmute(f64)i}
+		ti :: proc(i: f64) -> i64 {return transmute(i64)i}
 	}
 
 	builder_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
@@ -344,13 +370,13 @@ when !GEN_SPEC {
 			} else {
 				peep_ctx_add_trigger(ctx, if_.inps[1], id)
 			}
-		case .Neg ..= .Cast:
+		case .Neg ..= .F_Demote:
 			op := Un_Op(node.itype)
 			oper := graph_expand(ctx.graph, node.inps[0])
 			coper := graph_extra(ctx.graph, oper, CInt)
 
 			if coper != nil {
-				value := fold_un_op(op, coper.value, oper.dt)
+				value := fold_un_op(op, coper.value, node.dt, oper.dt)
 				return graph_add_c_int(ctx.graph, "fld", node.dt, value)
 			}
 
@@ -362,7 +388,7 @@ when !GEN_SPEC {
 			if op == .Cast && oper.dt == node.dt {
 				return node.inps[0]
 			}
-		case .Add ..= .And_Not:
+		case .Add ..= .F_Ge:
 			lhs := graph_expand(ctx.graph, node.inps[0])
 			rhs := graph_expand(ctx.graph, node.inps[1])
 
@@ -372,7 +398,7 @@ when !GEN_SPEC {
 
 			if clhs != nil && crhs != nil {
 				value := fold_bin_op(clhs.value, op, crhs.value)
-				return graph_add_c_int(ctx.graph, "fld", lhs.dt, value)
+				return graph_add_c_int(ctx.graph, "fld", node.dt, value)
 			}
 
 			if crhs != nil {

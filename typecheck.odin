@@ -35,6 +35,8 @@ Type :: enum uintptr {
 	U8,
 	Uintptr,
 	String,
+	F32,
+	F64,
 }
 
 @(rodata)
@@ -53,6 +55,8 @@ TYPE_SIZES := [Type]int {
 	.U8      = 1,
 	.Uintptr = 8,
 	.String  = 16,
+	.F32     = 4,
+	.F64     = 8,
 }
 
 type_align :: proc(ty: Type) -> int {
@@ -114,6 +118,8 @@ TYPE_NAMES := [Type]string {
 	.U8      = "u8",
 	.Uintptr = "uintptr",
 	.String  = "string",
+	.F32     = "f32",
+	.F64     = "f64",
 }
 
 type_to_dt :: proc(ty: Type) -> backend.Node_Datatype {
@@ -134,6 +140,8 @@ type_to_dt :: proc(ty: Type) -> backend.Node_Datatype {
 		.U8      = .I8,
 		.Uintptr = .I64,
 		.String  = .Void,
+		.F32     = .F32,
+		.F64     = .F64,
 	}
 
 	switch t in unpack_type(ty) {
@@ -152,6 +160,7 @@ type_to_dt :: proc(ty: Type) -> backend.Node_Datatype {
 UNSIGNED_TYPES :: bit_set[Type]{.Uint, .U64, .U32, .U16, .U8, .Bool, .Uintptr}
 SIGNED_TYPES :: bit_set[Type]{.Int, .I64, .I32, .I16, .I8}
 INTEGER_TYPES :: UNSIGNED_TYPES | SIGNED_TYPES
+FLOAT_TYPES :: bit_set[Type]{.F32, .F64}
 
 Type_Kind :: enum uintptr {
 	Builtin,
@@ -690,9 +699,16 @@ typecheck :: proc(
 		#partial switch d.tok.kind {
 		case .Integer, .Rune:
 			assert(
-				prop.inferred_ty == .Void || prop.inferred_ty in INTEGER_TYPES,
+				prop.inferred_ty == .Void ||
+				prop.inferred_ty in INTEGER_TYPES ||
+				prop.inferred_ty in FLOAT_TYPES,
 			)
 			return prop.inferred_ty != .Void ? prop.inferred_ty : .Int
+		case .Float:
+			assert(
+				prop.inferred_ty == .Void || prop.inferred_ty in FLOAT_TYPES,
+			)
+			return prop.inferred_ty != .Void ? prop.inferred_ty : .F64
 		case .String:
 			return .String
 		case:
@@ -831,6 +847,18 @@ typecheck :: proc(
 			fmt.panicf("TODO: %#v", d.field.derived)
 		}
 	case ^ast.Binary_Expr:
+		is_comparison :=
+			.B_Comparison_Begin < d.op.kind && d.op.kind < .B_Comparison_End
+
+		if is_num_lit(d.left) &&
+		   !is_num_lit(d.right) &&
+		   prop.inferred_ty == .Void {
+			rhs_ty := typecheck(ctx, {}, d.right)
+			lhs_ty := typecheck(ctx, {inferred_ty = rhs_ty}, d.left)
+			assert(lhs_ty == rhs_ty)
+			return is_comparison ? .Bool : rhs_ty
+		}
+
 		lhs_ty := typecheck(ctx, prop, d.left)
 		inferred_ty := lhs_ty
 		if d.op.kind == .Shl || d.op.kind == .Shr {
@@ -839,7 +867,7 @@ typecheck :: proc(
 		rhs_ty := typecheck(ctx, {inferred_ty = inferred_ty}, d.right)
 		assert(inferred_ty == rhs_ty)
 
-		if .B_Comparison_Begin < d.op.kind && d.op.kind < .B_Comparison_End {
+		if is_comparison {
 			return .Bool
 		}
 
@@ -1086,6 +1114,26 @@ set_node_data :: proc(node: ^ast.Node, value: $T) {
 	raw := (^runtime.Raw_Slice)(&node.end.file)
 	raw.data = transmute(rawptr)value
 	raw.len = 0
+}
+
+is_num_lit :: proc(node: ^ast.Node) -> bool {
+	n := node
+	for {
+		#partial switch d in n.derived {
+		case ^ast.Paren_Expr:
+			n = d.expr
+			continue
+		case ^ast.Unary_Expr:
+			if d.op.kind == .Sub || d.op.kind == .Add {
+				n = d.expr
+				continue
+			}
+			return false
+		case ^ast.Basic_Lit:
+			return d.tok.kind == .Integer || d.tok.kind == .Float
+		}
+		return false
+	}
 }
 
 is_of :: proc(vl: Type, $K: typeid) -> bool {

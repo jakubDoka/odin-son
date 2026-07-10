@@ -1,0 +1,92 @@
+=========== OPT LEVEL: none ===========
+main:
+     movss xmm0, dword ptr [0x00000000004000FA]
+     and al, 0xE8
+     movss [rsp-0x18], xmm0
+     movss xmm1, dword ptr [rsp-0x18]
+     ucomiss xmm1, xmm0
+     jnz :0
+     movsd xmm0, qword ptr [0x0000000000400100]
+     and al, 0xF0
+     movsd [rsp-0x10], xmm0
+     movsd xmm1, qword ptr [rsp-0x10]
+     ucomisd xmm1, xmm0
+     jnz :1
+     movss xmm0, dword ptr [0x000000000040010A]
+     movss xmm1, dword ptr [0x0000000000400110]
+     subss xmm0, xmm1
+     and al, 0xEC
+     movss [rsp-0x14], xmm0
+     movss xmm1, dword ptr [rsp-0x14]
+     ucomiss xmm1, xmm0
+     jnz :2
+     movsd xmm0, qword ptr [0x0000000000400116]
+     movsd xmm1, qword ptr [0x0000000000400120]
+     subsd xmm0, xmm1
+     and al, 0xF8
+     movsd [rsp-0x08], xmm0
+     movsd xmm1, qword ptr [rsp-0x08]
+     ucomisd xmm1, xmm0
+     jnz :3
+     mov rax, 0x00
+     jmp :4
+
+003: mov rax, 0x04
+     jmp :4
+
+002: mov rax, 0x03
+     jmp :4
+
+001: mov rax, 0x02
+     jmp :4
+
+000: mov rax, 0x01
+004: ret
+=========== OPT LEVEL: mininal ===========
+main:
+     movss xmm0, dword ptr [0x00000000004000E2]
+     and al, 0xE8
+     movss [rsp-0x18], xmm0
+     movss xmm1, dword ptr [rsp-0x18]
+     ucomiss xmm1, xmm0
+     jnz :0
+     movsd xmm0, qword ptr [0x00000000004000E8]
+     and al, 0xF0
+     movsd [rsp-0x10], xmm0
+     movsd xmm1, qword ptr [rsp-0x10]
+     ucomisd xmm1, xmm0
+     jnz :1
+     movss xmm0, dword ptr [0x00000000004000F2]
+     and al, 0xEC
+     movss [rsp-0x14], xmm0
+     movss xmm1, dword ptr [rsp-0x14]
+     ucomiss xmm1, xmm0
+     jnz :2
+     movsd xmm0, qword ptr [0x00000000004000F8]
+     and al, 0xF8
+     movsd [rsp-0x08], xmm0
+     movsd xmm1, qword ptr [rsp-0x08]
+     ucomisd xmm1, xmm0
+     jnz :3
+     mov rax, 0x00
+     jmp :4
+
+003: mov rax, 0x04
+     jmp :4
+
+002: mov rax, 0x03
+     jmp :4
+
+001: mov rax, 0x02
+     jmp :4
+
+000: mov rax, 0x01
+004: ret
+=========== OPT LEVEL: moderate ===========
+main:
+     mov rax, 0x00
+     ret
+=========== OPT LEVEL: all ===========
+main:
+     mov rax, 0x00
+     ret

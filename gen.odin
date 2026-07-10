@@ -227,10 +227,42 @@ tok_to_binop :: proc(
 		.Shr_Eq = {.U_Shr, "shreu"},
 	}
 
+	@(static)
+	@(rodata)
+	FLOAT_TABLE := #partial [tokenizer.Token_Kind]Op_Info {
+		.Add    = {.F_Add, "fadd"},
+		.Add_Eq = {.F_Add, "fadde"},
+		.Sub    = {.F_Sub, "fsub"},
+		.Sub_Eq = {.F_Sub, "fsube"},
+		.Mul    = {.F_Mul, "fmul"},
+		.Mul_Eq = {.F_Mul, "fmule"},
+		.Quo    = {.F_Div, "fdiv"},
+		.Quo_Eq = {.F_Div, "fdive"},
+		.Cmp_Eq = {.F_Eq, "feq"},
+		.Not_Eq = {.F_Ne, "fne"},
+		.Lt     = {.F_Lt, "flt"},
+		.Lt_Eq  = {.F_Le, "fle"},
+		.Gt     = {.F_Gt, "fgt"},
+		.Gt_Eq  = {.F_Ge, "fge"},
+	}
+
+	if ty in FLOAT_TYPES {
+		finfo := FLOAT_TABLE[tok]
+		return finfo.kind, finfo.name
+	}
+
 	info := SIGNED_TABLE[tok]
 	uinfo := UNSIGNED_TABLE[tok]
 	if ty in UNSIGNED_TYPES && uinfo.kind != {} do info = uinfo
 	return info.kind, info.name
+}
+
+emit_float_const :: proc(
+	ctx: ^Gen_Ctx,
+	dt: backend.Node_Datatype,
+	value: f64,
+) -> backend.Node_ID {
+	return backend.graph_add_c_int(ctx, "fbits", dt, transmute(i64)value)
 }
 
 Sym :: union #no_nil {
@@ -514,8 +546,9 @@ emit_proc :: proc(ctx: ^Gen_Ctx, prc: ^Proc, i: int, level: Opt_Level) {
 	ctx.ret_ptrs = nil
 
 	sm: Abi_Sm
-	i := 0
-	gpa_fuel := 6
+	// per-register-bank argument index; integer and sse arguments have
+	// independent counters (matches the caller side in x64_reg_mask_of)
+	arg_bank: [backend.Reg_Kind]u32
 
 	ctx.ret_ptrs = make(
 		[]backend.Node_ID,
@@ -529,12 +562,12 @@ emit_proc :: proc(ctx: ^Gen_Ctx, prc: ^Proc, i: int, level: Opt_Level) {
 			"sret",
 			.I64,
 			ctx.entry,
-			u32(i),
+			arg_bank[.General],
 		)
+		arg_bank[.General] += 1
 		backend.graph_pin(ctx, ctx.ret_ptrs[j])
 		apa := abi_sm_add(ctx, &sm, .I64) or_else panic("")
 		assert(!apa.spilled && !apa.by_ptr)
-		i += 1
 	}
 
 	for par in prc.params {
@@ -542,14 +575,15 @@ emit_proc :: proc(ctx: ^Gen_Ctx, prc: ^Proc, i: int, level: Opt_Level) {
 
 		value: backend.Node_ID
 		if apa.scalar {
+			bank := ctx.cc_dt_to_reg_kind[apa.dt]
 			value = backend.graph_add_arg(
 				ctx,
 				"arg",
 				apa.dt,
 				ctx.entry,
-				u32(i),
+				arg_bank[bank],
 			)
-			i += 1
+			arg_bank[bank] += 1
 		} else {
 			value = alloca(
 				ctx,
@@ -561,9 +595,15 @@ emit_proc :: proc(ctx: ^Gen_Ctx, prc: ^Proc, i: int, level: Opt_Level) {
 		}
 
 		for j in 0 ..< (apa.size + 7) / 8 {
-			vl := backend.graph_add_arg(ctx, "arg", .I64, ctx.entry, u32(i))
+			vl := backend.graph_add_arg(
+				ctx,
+				"arg",
+				.I64,
+				ctx.entry,
+				arg_bank[.General],
+			)
+			arg_bank[.General] += 1
 			emit_arbitrary_store(ctx, value, vl, apa.size, j * 8)
-			i += 1
 		}
 
 		value_idx: Varuable_Idx
@@ -586,11 +626,11 @@ emit_proc :: proc(ctx: ^Gen_Ctx, prc: ^Proc, i: int, level: Opt_Level) {
 			"retp",
 			.I64,
 			ctx.entry,
-			u32(i),
+			arg_bank[.General],
 		)
+		arg_bank[.General] += 1
 		backend.graph_pin(ctx, ctx.ret_ptrs[j])
 		_, _ = abi_sm_add(ctx, &sm, .I64)
-		i += 1
 	}
 
 	emit_nodes(ctx, {}, prc.lit.body)
@@ -854,6 +894,19 @@ emit_nodes :: proc(
 			oty := get_node_type(d.expr)
 			operand := to_rvalue(ctx, emit_nodes(ctx, {}, d.expr), d.expr)
 
+			if d.op.kind == .Sub && dt in backend.FLOAT_DTS {
+				zero := emit_float_const(ctx, dt, 0)
+				res = backend.graph_add_bin_op(
+					ctx,
+					"fneg",
+					.F_Sub,
+					dt,
+					zero,
+					operand,
+				)
+				break
+			}
+
 			op: backend.Un_Op = d.op.kind == .Sub ? .Neg : .Not
 			name := d.op.kind == .Sub ? "neg" : "not"
 			res = backend.graph_add_un_op(ctx, name, op, dt, operand)
@@ -913,7 +966,15 @@ emit_nodes :: proc(
 		case .Integer:
 			value, ok := strconv.parse_i64(d.tok.text)
 			assert(ok)
-			res = backend.graph_add_c_int(ctx, "cnst", dt, value)
+			if dt in backend.FLOAT_DTS {
+				res = emit_float_const(ctx, dt, f64(value))
+			} else {
+				res = backend.graph_add_c_int(ctx, "cnst", dt, value)
+			}
+		case .Float:
+			value, ok := strconv.parse_f64(d.tok.text)
+			assert(ok)
+			res = emit_float_const(ctx, dt, value)
 		case .Rune:
 			inner := d.tok.text[1:len(d.tok.text) - 1]
 			r, _, _, ok := strconv.unquote_char(inner, '\'')
@@ -1344,17 +1405,65 @@ emit_nodes :: proc(
 			}
 		case Builtin:
 			dest_dt := type_to_dt(base_ty)
+			src_ty := get_node_type(d.args[0])
+			src_dt := type_to_dt(src_ty)
 			arg := to_rvalue(ctx, emit_nodes(ctx, {}, d.args[0]), d.args[0])
 
-			op: backend.Un_Op = .Uext
-			if get_node_type(d.args[0]) in SIGNED_TYPES {
-				op = .Sext
-			}
-			if type_size(get_node_type(d.args[0])) > type_size(base_ty) {
-				op = .Cast
-			}
+			dst_float := dest_dt in backend.FLOAT_DTS
+			src_float := src_dt in backend.FLOAT_DTS
 
-			res = backend.graph_add_un_op(ctx, "cst", op, dest_dt, arg)
+			switch {
+			case dst_float && src_float:
+				if dest_dt == src_dt {
+					res = arg
+				} else if dest_dt == .F64 {
+					res = backend.graph_add_un_op(
+						ctx,
+						"fext",
+						.F_Ext,
+						dest_dt,
+						arg,
+					)
+				} else {
+					res = backend.graph_add_un_op(
+						ctx,
+						"fdem",
+						.F_Demote,
+						dest_dt,
+						arg,
+					)
+				}
+			case dst_float && !src_float:
+				wide := arg
+				if backend.DT_SIZE[src_dt] < 8 {
+					wop: backend.Un_Op = src_ty in SIGNED_TYPES ? .Sext : .Uext
+					wide = backend.graph_add_un_op(ctx, "iwd", wop, .I64, arg)
+				}
+				res = backend.graph_add_un_op(
+					ctx,
+					"i2f",
+					.F_From_I,
+					dest_dt,
+					wide,
+				)
+			case !dst_float && src_float:
+				res = backend.graph_add_un_op(
+					ctx,
+					"f2i",
+					.F_To_I,
+					dest_dt,
+					arg,
+				)
+			case:
+				op: backend.Un_Op = .Uext
+				if src_ty in SIGNED_TYPES {
+					op = .Sext
+				}
+				if type_size(src_ty) > type_size(base_ty) {
+					op = .Cast
+				}
+				res = backend.graph_add_un_op(ctx, "cst", op, dest_dt, arg)
+			}
 		case Multi_Pointer, Pointer:
 			res = to_rvalue(ctx, emit_nodes(ctx, {}, d.args[0]), d.args[0])
 		case:

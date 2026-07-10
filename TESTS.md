@@ -4058,3 +4058,834 @@ main :: proc() -> int {
 	return int(buf[0]) + int(buf[1]) + n  // 'f'+'f'+2 = 102+102+2=206
 }
 ```
+
+#### basic float arithmetic
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	return int(1.5 + 2.5 * 3.0)
+}
+```
+
+#### float force spill with simple addition
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	x: f64 = 1
+	return int(
+		((((x + x) + (x + x)) + ((x + x) + (x + x))) +
+		(((x + x) + (x + x)) + ((x + x) + (x + x)))) +
+		((((x + x) + (x + x)) + ((x + x) + (x + x))) +
+		(((x + x) + (x + x)) + ((x + x) + (x + x)))),
+	)
+}
+```
+
+#### all f32 operators
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	r: f32 = 0
+
+	a: f32 = 20
+	b: f32 = 6
+	n: f32 = 0 - 7
+
+	r += a + b
+	r += a - b
+	r += a * b
+	r += a / b
+	r += n / b
+	r += n * b
+	r += -a
+	r += -n
+
+	if a > b do r += 1
+	if b < a do r += 2
+	if a >= b do r += 4
+	if a <= b do r += 8
+	if a == a do r += 16
+	if a != b do r += 32
+	if n < b do r += 64
+	if n <= n do r += 128
+
+	return int(r)
+}
+```
+
+#### all f64 operators
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	r: f64 = 0
+
+	a: f64 = 20
+	b: f64 = 6
+	n: f64 = 0 - 7
+
+	r += a + b
+	r += a - b
+	r += a * b
+	r += a / b
+	r += n / b
+	r += n * b
+	r += -a
+	r += -n
+
+	if a > b do r += 1
+	if b < a do r += 2
+	if a >= b do r += 4
+	if a <= b do r += 8
+	if a == a do r += 16
+	if a != b do r += 32
+	if n < b do r += 64
+	if n <= n do r += 128
+
+	return int(r)
+}
+```
+
+#### float ops with constants
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	a := opaque(12)
+
+	r: f32 = 0
+
+	r += a * 2.0
+	r += a + 3.0
+	r += a - 1.5
+	r += a / 4.0
+
+	return int(r)
+}
+
+opaque :: proc(i: f32) -> f32 {
+	return i
+}
+```
+
+#### float ops through pointers
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	a: f32 = 12
+	pa := &a
+	pa^ = pa^ * 2.0
+
+	b: f64 = 10
+	c: f64 = 6
+
+	add_into(&b, 5.0)
+	mul_into(&c, 3.0)
+
+	return int(a + f32(b) + f32(c))
+}
+
+add_into :: proc(ptr: ^f64, v: f64) -> f64 {
+	ptr^ = ptr^ + v
+	return ptr^
+}
+
+mul_into :: proc(ptr: ^f64, v: f64) -> f64 {
+	ptr^ = ptr^ * v
+	return ptr^
+}
+```
+
+#### float ops sized through pointers
+```odin
+package main
+
+opt_level :: "none"
+
+add32 :: proc(ptr: ^f32, v: f32) -> f32 {
+	ptr^ = ptr^ + v
+	return ptr^
+}
+
+sub32 :: proc(ptr: ^f32, v: f32) -> f32 {
+	ptr^ = ptr^ - v
+	return ptr^
+}
+
+mul32 :: proc(ptr: ^f32, v: f32) -> f32 {
+	ptr^ = ptr^ * v
+	return ptr^
+}
+
+div32 :: proc(ptr: ^f32, v: f32) -> f32 {
+	ptr^ = ptr^ / v
+	return ptr^
+}
+
+add64 :: proc(ptr: ^f64, v: f64) -> f64 {
+	ptr^ = ptr^ + v
+	return ptr^
+}
+
+sub64 :: proc(ptr: ^f64, v: f64) -> f64 {
+	ptr^ = ptr^ - v
+	return ptr^
+}
+
+mul64 :: proc(ptr: ^f64, v: f64) -> f64 {
+	ptr^ = ptr^ * v
+	return ptr^
+}
+
+div64 :: proc(ptr: ^f64, v: f64) -> f64 {
+	ptr^ = ptr^ / v
+	return ptr^
+}
+
+main :: proc() -> int {
+	a: f32 = 8
+	add32(&a, 4)
+	sub32(&a, 2)
+	mul32(&a, 3)
+	div32(&a, 5)
+
+	b: f64 = 100
+	add64(&b, 20)
+	sub64(&b, 40)
+	mul64(&b, 2)
+	div64(&b, 4)
+
+	return int(a + f32(b))
+}
+```
+
+#### float unary neg
+```odin
+package main
+
+opt_level :: "none"
+
+neg32_reg :: proc(x: f32) -> f32 {
+	return -x
+}
+
+neg64_reg :: proc(x: f64) -> f64 {
+	return -x
+}
+
+neg32 :: proc(x: ^f32) -> f32 {
+	x^ = -x^
+	return x^
+}
+
+neg64 :: proc(x: ^f64) -> f64 {
+	x^ = -x^
+	return x^
+}
+
+main :: proc() -> int {
+	a: f32 = 5.5
+	b: f64 = 10.25
+
+	r: f64 = 0
+
+	r += f64(neg32_reg(7.5))
+	r += neg64_reg(3.25)
+	r += f64(neg32(&a))
+	r += neg64(&b)
+	r += f64(a)
+	r += b
+
+	return int(r)
+}
+```
+
+#### float comparison peepholes
+```odin
+package main
+
+opt_level :: "none"
+
+opaque32 :: proc(x: f32) -> f32 {
+	return x
+}
+
+test_f32 :: proc(a: f32, b: f32) -> int {
+	if a == b do return 1
+	if a != b do return 2
+
+	if a < b do return 3
+	if a >= b do return 4
+
+	if a > b do return 5
+	if a <= b do return 6
+
+	return 0
+}
+
+test_f64 :: proc(a: f64, b: f64) -> int {
+	if a == b do return 10
+	if a != b do return 20
+
+	if a < b do return 30
+	if a >= b do return 40
+
+	if a > b do return 50
+	if a <= b do return 60
+
+	return 0
+}
+
+test_mixed_patterns :: proc(x: f32) -> int {
+	a := opaque32(x)
+	b := opaque32(x + 1)
+
+	if a < b {
+		if a <= b {
+			if a != b {
+				return 100
+			}
+		}
+	}
+
+	if a > b {
+		if a >= b {
+			if a == b {
+				return 200
+			}
+		}
+	}
+
+	return 0
+}
+
+main :: proc() -> int {
+	r := 0
+
+	r += test_f32(10, 20)
+	r += test_f32(20, 20)
+	r += test_f32(30, 10)
+
+	r += test_f64(10, 20)
+	r += test_f64(20, 20)
+	r += test_f64(30, 10)
+
+	r += test_mixed_patterns(42)
+
+	return r
+}
+```
+
+#### float comparison with load
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	v: f32 = 1
+	c: f32 = 0 - 1
+	return cmps(0 - 1, &v) + cmps(1, &v) +
+		cmps(0 - 1, &c) + cmps(1, &c) +
+		imm_cmps(&v) + imm_cmps(&c)
+}
+
+imm_cmps :: proc(b: ^f32) -> int {
+	r := 0
+
+	if 0 == b^ do r += 1
+	if 0 != b^ do r += 2
+	if 0 >= b^ do r += 4
+	if 0 <= b^ do r += 8
+	if 0 > b^ do r += 16
+	if 0 < b^ do r += 32
+
+	return r
+}
+
+cmps :: proc(a: f32, b: ^f32) -> int {
+	r := 0
+
+	if a == b^ do r += 1
+	if a != b^ do r += 2
+	if a >= b^ do r += 4
+	if a <= b^ do r += 8
+	if a > b^ do r += 16
+	if a < b^ do r += 32
+
+	return r
+}
+```
+
+#### float conversions
+```odin
+package main
+
+opt_level :: "none"
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main :: proc() -> int {
+	r := 0
+
+	{
+		a: f32 = 3.5
+		b: f64 = f64(a)
+		c: f32 = f32(b + 2.5)
+		r += int(c)
+	}
+
+	{
+		i8v: i8 = i8(opaque(0 - 100))
+		i16v: i16 = i16(opaque(0 - 3000))
+		i32v: i32 = i32(opaque(0 - 70000))
+		i64v: i64 = i64(opaque(0 - 5000000))
+
+		r += int(f32(i8v))
+		r += int(f64(i8v))
+		r += int(f32(i16v))
+		r += int(f64(i16v))
+		r += int(f32(i32v))
+		r += int(f64(i32v))
+		r += int(f32(i64v))
+		r += int(f64(i64v))
+	}
+
+	{
+		u8v: u8 = u8(opaque(200))
+		u16v: u16 = u16(opaque(60000))
+		u32v: u32 = u32(opaque(4000000))
+		u64v: u64 = u64(opaque(7000000))
+
+		r += int(f32(u8v))
+		r += int(f64(u8v))
+		r += int(f32(u16v))
+		r += int(f64(u16v))
+		r += int(f32(u32v))
+		r += int(f64(u32v))
+		r += int(f32(u64v))
+		r += int(f64(u64v))
+	}
+
+	{
+		a: f32 = 7.9
+		b: f64 = 0 - 12.7
+		r += int(i32(a))
+		r += int(i64(a))
+		r += int(i32(b))
+		r += int(i64(b))
+	}
+
+	{
+		a: f64 = 250.6
+		b: f32 = 65000.0
+		r += int(u8(a))
+		r += int(u16(b))
+		r += int(u32(a))
+		r += int(u64(a))
+	}
+
+	return r
+}
+```
+
+#### float loads and stores of different sizes
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	{
+		vl: f32 = 0
+		ptr := &vl
+		ptr^ = 1.5
+		if ptr^ != 1.5 do return 1
+	}
+
+	{
+		vl: f64 = 0
+		ptr := &vl
+		ptr^ = 2.25
+		if ptr^ != 2.25 do return 2
+	}
+
+	{
+		vl: f32 = 0
+		ptr := &vl
+		ptr^ = 0 - 3.5
+		if ptr^ != 0 - 3.5 do return 3
+	}
+
+	{
+		vl: f64 = 0
+		ptr := &vl
+		ptr^ = 0 - 4.75
+		if ptr^ != 0 - 4.75 do return 4
+	}
+
+	return 0
+}
+```
+
+#### float variables that create register pressure
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	x: f64 = 0
+
+	a0  := x + 1
+	a1  := x + 2
+	a2  := x + 3
+	a3  := x + 4
+	a4  := x + 5
+	a5  := x + 6
+	a6  := x + 7
+	a7  := x + 8
+	a8  := x + 9
+	a9  := x + 10
+	a10 := x + 11
+	a11 := x + 12
+	a12 := x + 13
+	a13 := x + 14
+	a14 := x + 15
+	a15 := x + 16
+
+	b0 := (a0  + a15) * 0.5 + a1
+	b1 := (a1  + a14) * 0.5 + a2
+	b2 := (a2  + a13) * 0.5 + a3
+	b3 := (a3  + a12) * 0.5 + a4
+	b4 := (a4  + a11) * 0.5 + a5
+	b5 := (a5  + a10) * 0.5 + a6
+	b6 := (a6  + a9 ) * 0.5 + a7
+	b7 := (a7  + a8 ) * 0.5 + a0
+
+	c0 := (b0 + b4) * 0.5 + b1
+	c1 := (b1 + b5) * 0.5 + b2
+	c2 := (b2 + b6) * 0.5 + b3
+	c3 := (b3 + b7) * 0.5 + b0
+
+	d0 := (c0 + c2) * 0.5 + c1
+	d1 := (c1 + c3) * 0.5 + c2
+
+	e0 := (d0 + d1) * 0.5 + c3
+
+	return int(e0 +
+		a0 + a1 + a2 + a3 +
+		a4 + a5 + a6 + a7 +
+		a8 + a9 + a10 + a11 +
+		a12 + a13 + a14 + a15)
+}
+```
+
+#### float variables that create even more register pressure
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	x: f64 = 0
+	a0  := x + 1
+	a1  := x + 2
+	a2  := x + 3
+	a3  := x + 4
+	a4  := x + 5
+	a5  := x + 6
+	a6  := x + 7
+	a7  := x + 8
+	a8  := x + 9
+	a9  := x + 10
+	a10 := x + 11
+	a11 := x + 12
+	a12 := x + 13
+	a13 := x + 14
+	a14 := x + 15
+	a15 := x + 16
+	a16 := x + 17
+	a17 := x + 18
+	a18 := x + 19
+	a19 := x + 20
+
+	b0 := (a0 + a10 + a19) * 0.5
+	b1 := (a1 + a11 + a18) * 0.5
+	b2 := (a2 + a12 + a17) * 0.5
+	b3 := (a3 + a13 + a16) * 0.5
+	b4 := (a4 + a14 + a15) * 0.5
+	b5 := (a5 + a15 + a14) * 0.5
+	b6 := (a6 + a16 + a13) * 0.5
+	b7 := (a7 + a17 + a12) * 0.5
+	b8 := (a8 + a18 + a11) * 0.5
+	b9 := (a9 + a19 + a10) * 0.5
+
+	c0 := (b0 + b5 + a0 + a19) * 0.5
+	c1 := (b1 + b6 + a1 + a18) * 0.5
+	c2 := (b2 + b7 + a2 + a17) * 0.5
+	c3 := (b3 + b8 + a3 + a16) * 0.5
+	c4 := (b4 + b9 + a4 + a15) * 0.5
+
+	return int(
+		a0+a1+a2+a3+a4+a5+a6+a7+a8+a9+
+		a10+a11+a12+a13+a14+a15+a16+a17+a18+a19+
+		b0+b1+b2+b3+b4+b5+b6+b7+b8+b9+
+		c0+c1+c2+c3+c4\
+	)
+}
+```
+
+#### float if statement with register pressure
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	x: f64 = 0
+	a0  := x + 1
+	a1  := x + 2
+	a2  := x + 3
+	a3  := x + 4
+	a4  := x + 5
+	a5  := x + 6
+	a6  := x + 7
+	a7  := x + 8
+	a8  := x + 9
+	a9  := x + 10
+	a10 := x + 11
+	a11 := x + 12
+	a12 := x + 13
+	a13 := x + 14
+	a14 := x + 15
+	a15 := x + 16
+
+	b0 := (a0 + a8 ) * 0.5 + a15
+	b1 := (a1 + a9 ) * 0.5 + a14
+	b2 := (a2 + a10) * 0.5 + a13
+	b3 := (a3 + a11) * 0.5 + a12
+	b4 := (a4 + a12) * 0.5 + a11
+	b5 := (a5 + a13) * 0.5 + a10
+	b6 := (a6 + a14) * 0.5 + a9
+	b7 := (a7 + a15) * 0.5 + a8
+
+	c0 := b0 + b4
+	c1 := b1 + b5
+	c2 := b2 + b6
+	c3 := b3 + b7
+
+	d0 := c0
+	d1 := c1
+	d2 := c2
+	d3 := c3
+
+	if x == x {
+		d0 = (d0 + a0) * 0.5 + a15
+		d1 = (d1 + a1) * 0.5 + a14
+		d2 = (d2 + a2) * 0.5 + a13
+		d3 = (d3 + a3) * 0.5 + a12
+	}
+
+	e0 := (d0 + d1) * 0.5 + b0 + b1
+	e1 := (d2 + d3) * 0.5 + b2 + b3
+	e2 := (d0 + d2) * 0.5 + b4 + b5
+	e3 := (d1 + d3) * 0.5 + b6 + b7
+
+	f0 := e0
+	f1 := e1
+	f2 := e2
+	f3 := e3
+
+	if a0 == a0 {
+		f0 = (f0 + a4) * 0.5 + a11
+		f1 = (f1 + a5) * 0.5 + a10
+		f2 = (f2 + a6) * 0.5 + a9
+		f3 = (f3 + a7) * 0.5 + a8
+	}
+
+	return int(a0+a1+a2+a3+a4+a5+a6+a7+
+		a8+a9+a10+a11+a12+a13+a14+a15+
+		b0+b1+b2+b3+b4+b5+b6+b7+
+		c0+c1+c2+c3+
+		d0+d1+d2+d3+
+		e0+e1+e2+e3+
+		f0+f1+f2+f3)
+}
+```
+
+#### float regalloc pressure across calls
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	x: f64 = 0
+
+	a0  := x + 1
+	a1  := x + 2
+	a2  := x + 3
+	a3  := x + 4
+	a4  := x + 5
+	a5  := x + 6
+	a6  := x + 7
+	a7  := x + 8
+	a8  := x + 9
+	a9  := x + 10
+	a10 := x + 11
+	a11 := x + 12
+	a12 := x + 13
+	a13 := x + 14
+	a14 := x + 15
+	a15 := x + 16
+
+	call(a15)
+
+	b0 := (a0  + a15) * 0.5 + a1
+	b1 := (a1  + a14) * 0.5 + a2
+	b2 := (a2  + a13) * 0.5 + a3
+	b3 := (a3  + a12) * 0.5 + a4
+	b4 := (a4  + a11) * 0.5 + a5
+	b5 := (a5  + a10) * 0.5 + a6
+	b6 := (a6  + a9 ) * 0.5 + a7
+	b7 := (a7  + a8 ) * 0.5 + a0
+
+	call(b7)
+
+	c0 := (b0 + b4) * 0.5 + b1
+	c1 := (b1 + b5) * 0.5 + b2
+	c2 := (b2 + b6) * 0.5 + b3
+	c3 := (b3 + b7) * 0.5 + b0
+
+	call(c3)
+
+	d0 := (c0 + c2) * 0.5 + c1
+	d1 := (c1 + c3) * 0.5 + c2
+
+	call(d1)
+
+	e0 := (d0 + d1) * 0.5 + c3
+
+	call(e0)
+
+	return int(e0 +
+		a0 + a1 + a2 + a3 +
+		a4 + a5 + a6 + a7 +
+		a8 + a9 + a10 + a11 +
+		a12 + a13 + a14 + a15)
+}
+
+call :: proc(vl: f64) -> f64 {
+	return vl
+}
+```
+
+#### float args passed on stack
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	vl: f64 = 0
+	vl += load_of_args(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+	vl += mixed(1, 2.0, 3, 4.0, 5, 6.0, 7, 8.0, 9, 10.0)
+	return int(vl)
+}
+
+load_of_args :: proc(
+	a: f64,
+	b: f64,
+	c: f64,
+	d: f64,
+	e: f64,
+	f: f64,
+	g: f64,
+	h: f64,
+	i: f64,
+	j: f64,
+) -> f64 {
+	return a + b + c + d + e + f + g + h + i + j
+}
+
+mixed :: proc(
+	a: int,
+	b: f64,
+	c: int,
+	d: f64,
+	e: int,
+	f: f64,
+	g: int,
+	h: f64,
+	i: int,
+	j: f64,
+) -> f64 {
+	return f64(a) + b + f64(c) + d + f64(e) + f + f64(g) + h + f64(i) + j
+}
+```
+
+#### float subword conversions round trip
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	r := 0
+
+	{
+		a: f32 = 100.5
+		b := f64(a)
+		c := f32(b)
+		r += int(c)
+	}
+
+	{
+		a: f64 = 0 - 250.75
+		b := f32(a)
+		c := f64(b)
+		r += int(c)
+	}
+
+	{
+		i := opaque(0 - 42)
+		fa := f32(i)
+		fb := f64(i)
+		r += int(fa) + int(fb)
+	}
+
+	{
+		f: f64 = 123.9
+		r += int(i8(f))
+		r += int(i16(f))
+		r += int(i32(f))
+		r += int(i64(f))
+	}
+
+	return r
+}
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+```
+

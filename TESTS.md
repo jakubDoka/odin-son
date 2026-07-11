@@ -4889,6 +4889,12 @@ opaque :: proc(x: int) -> int {
 }
 ```
 
+#### float materialized compares
+```odin
+package main
+	
+```
+
 #### crash in gcm on two loops nested in a loop
 ```odin
 package main

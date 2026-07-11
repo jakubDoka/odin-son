@@ -356,9 +356,7 @@ If you find any bugs in the frontend or backend fix them, or there is a simple
 frontend feature you need, implement it. Don't stopu until the test program has
 identical ouput with odin and jit compiler.
 
-### Add floating point peepholes
-
-NOTE: read AGENTS.md
+### Add floating point peepholes (DONE)
 
 We should add floating point peepholes that are similar to what we do with
 integer ops. Do not add fma yet, just optimize the loads and stores into one
@@ -366,3 +364,8 @@ op. Also, the constants are stored in global memory and loaded with X64_CLoad,
 make sure this also gets inlined into opts during the post schedule peeps.
 
 Make sure all tests pass (run-test and ./misc/run-programs.sh), then stop.
+
+### Add tests to veryfi correct comparison spills
+
+NOTE: read AGENTS.md
+

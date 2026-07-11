@@ -928,7 +928,6 @@ x64_post_schedule_peep :: proc(
 				slots[:],
 				mem_op,
 				additional_data_offset = 1,
-				in_place_slot_offset = 0,
 			)
 		}
 	}
@@ -1383,6 +1382,12 @@ x64_emit_instr :: proc(
 		.X64_U_Le  = {0x96, 0},
 		.X64_U_Gt  = {0x97, 0},
 		.X64_U_Ge  = {0x93, 0},
+		.X64_F_Eq  = {0x94, 0},
+		.X64_F_Ne  = {0x95, 0},
+		.X64_F_Lt  = {0x92, 0},
+		.X64_F_Le  = {0x96, 0},
+		.X64_F_Gt  = {0x97, 0},
+		.X64_F_Ge  = {0x93, 0},
 		.Shl       = {0xD3, 0b100},
 		.U_Shr     = {0xD3, 0b101},
 		.Shr       = {0xD3, 0b111},
@@ -2000,7 +2005,7 @@ x64_emit_instr :: proc(
 			lhs := reg_of(ctx, node.inps[lhs_idx])
 			mem_idx := node.data_start == 1 ? 0 : 2
 			bse, sdis, id := reg_and_disp_of(ctx, node.inps[mem_idx])
-			odt := graph_get(ctx, node.inps[node.data_start]).dt
+			odt := graph_get(ctx, node.inps[lhs_idx]).dt
 			dis := mem_op.dis
 
 			// ucomiss/ucomisd $lhs, [$rhs + $idx * scl + $sdis + $dis]

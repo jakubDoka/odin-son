@@ -388,7 +388,7 @@ when !GEN_SPEC {
 			if op == .Cast && oper.dt == node.dt {
 				return node.inps[0]
 			}
-		case .Add ..= .F_Ge:
+		case .Add ..= .And_Not:
 			lhs := graph_expand(ctx.graph, node.inps[0])
 			rhs := graph_expand(ctx.graph, node.inps[1])
 

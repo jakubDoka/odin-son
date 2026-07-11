@@ -4,6 +4,7 @@ import "../vendored/gam/util/arna"
 import "../vendored/gam/util/bit_arr"
 import "base:intrinsics"
 import "core:fmt"
+import "core:log"
 import "core:math"
 import "core:mem"
 import "core:reflect"
@@ -304,6 +305,13 @@ X64_SIMPE_CMP_OP :: Reg_Class_Spec {
 	reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK, GPA_MASK}},
 }
 
+X64_SIMPE_FCMP_OP :: Reg_Class_Spec {
+	reg_masks = #partial{
+		.General = {GPA_MASK, GPA_MASK, GPA_MASK, GPA_MASK},
+		.Vector = {XMM_MASK, XMM_MASK, XMM_MASK, XMM_MASK},
+	},
+}
+
 // float op with a folded memory source operand. the shape mirrors the integer
 // src-mode ops: inputs are [ctrl, mem, base, value, index] with the base kept
 // out of register allocation when it is rsp/rip relative (via data_start). the
@@ -323,6 +331,7 @@ X64_REG_CLASSES := #partial [X64_Node_Type]Reg_Class_Spec {
 	.X64_Eq ..= .X64_U_Ge = X64_SIMPE_CMP_OP,
 	.X64_Shl ..= .X64_U_Shr = SIMPLE_SHIFT_SPEC,
 	.X64_Neg ..= .X64_Not = SIMPLE_UNOP_SPEC,
+	.X64_F_Eq ..= .X64_F_Ge = X64_SIMPE_FCMP_OP,
 	.X64_Load = {
 		input_start_idx = 2,
 		reg_masks = #partial{
@@ -349,6 +358,13 @@ X64_REG_CLASSES := #partial [X64_Node_Type]Reg_Class_Spec {
 	},
 	.X64_Mul = X64_SIMPE_CMP_OP,
 	.X64_F_Add ..= .X64_F_Div = X64_FLOAT_SRC_OP,
+	.X64_Fma_213 = {
+		reg_masks = #partial{
+			.General = {GPA_MASK, GPA_MASK, GPA_MASK, GPA_MASK},
+			.Vector = {XMM_MASK, XMM_MASK, XMM_MASK, XMM_MASK},
+		},
+		inplace_slot_idx = 0,
+	},
 }
 
 when SPEC_NOT_PRESENT {
@@ -368,6 +384,16 @@ when SPEC_NOT_PRESENT {
 		X64_U_Gt,
 		X64_U_Le,
 		X64_U_Ge,
+		X64_F_Add,
+		X64_F_Sub,
+		X64_F_Mul,
+		X64_F_Div,
+		X64_F_Eq,
+		X64_F_Ne,
+		X64_F_Le,
+		X64_F_Lt,
+		X64_F_Gt,
+		X64_F_Ge,
 		X64_Shl,
 		X64_Shr,
 		X64_U_Shr,
@@ -379,10 +405,6 @@ when SPEC_NOT_PRESENT {
 		X64_Neg,
 		X64_Not,
 		X64_Mul8,
-		X64_F_Add,
-		X64_F_Sub,
-		X64_F_Mul,
-		X64_F_Div,
 		X64_Fma_213,
 	}
 
@@ -406,6 +428,7 @@ when SPEC_NOT_PRESENT {
 		.X64_Add ..= .X64_U_Ge = X64_SIMPLE_BIN_OP_SPEC,
 		.X64_Shl ..= .X64_U_Shr = X64_SIMPLE_SHIFT_OP_SPEC,
 		.X64_Neg ..= .X64_Not = X64_SIMPLE_UN_OP_SPEC,
+		.X64_F_Eq ..= .X64_F_Ge = X64_SIMPLE_BIN_OP_SPEC,
 		.X64_Mul = X64_SIMPLE_BIN_OP_SPEC,
 		.X64_Lea = {id = X64_Mem_Op, no_ctor = true},
 		.X64_Load = {id = X64_Mem_Op, flags = {.Load}, no_ctor = true},
@@ -413,7 +436,7 @@ when SPEC_NOT_PRESENT {
 		.X64_Store = {id = X64_Mem_Op, flags = {.Store}, no_ctor = true},
 		.X64_Mul8 = {no_ctor = true},
 		.X64_F_Add ..= .X64_F_Div = {id = X64_Mem_Op, no_ctor = true},
-		.X64_Fma = {id = X64_Mem_Op, no_ctor = true},
+		.X64_Fma_213 = {id = X64_Mem_Op, no_ctor = true},
 	}
 }
 
@@ -536,6 +559,25 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 				u16(X64_Node_Type.X64_CLoad),
 				node.dt,
 				{global},
+			)
+		}
+	case .F_Add:
+		lhs := graph_expand(ctx, node.inps[0])
+		rhs := graph_expand(ctx, node.inps[1])
+
+		if rhs.itype == .F_Mul {
+			lhs, rhs = rhs, lhs
+		}
+
+		rhs_id := graph_id(ctx, rhs)
+
+		if lhs.itype == .F_Mul {
+			return x64_make_node(
+				ctx,
+				id,
+				u16(X64_Node_Type.X64_Fma_213),
+				{lhs.inps[0], lhs.inps[1], rhs_id},
+				{},
 			)
 		}
 	case .Add ..= .Xor, .Eq ..= .U_Ge, .Shl ..= .U_Shr, .Mul:
@@ -846,38 +888,14 @@ x64_post_schedule_peep :: proc(
 ) -> Node_ID {
 	id := graph_id(ctx, node)
 	#partial matchi: switch node.itype {
-	case .Add ..= .Xor, .Eq ..= .U_Ge:
+	case .Add ..= .Xor, .Eq ..= .U_Ge, .F_Add ..= .F_Div, .F_Eq ..= .F_Ge:
+		if node.itype == .F_Lt || node.itype == .F_Le do break
+
 		op := node.rtype + BIN_OP_OFFSET
 		rhs := graph_expand(ctx, node.inps[1])
 		if rhs.xtype == .X64_Load && len(rhs.outs) == 1 {
 			mem_op := graph_extra(ctx, rhs, X64_Mem_Op)
 			if !has_no_clobbers(ctx, node.inps[1]) do break matchi
-			mem_op.mem_mode = .Src
-			mem_op.dt = rhs.dt
-
-			slots: [5]Node_ID
-			copy(slots[:], rhs.inps)
-			slots[4] = slots[3]
-			slots[3] = node.inps[0]
-
-			return x64_make_node(
-				ctx,
-				id,
-				op,
-				slots[:len(slots) - int(slots[4] == 0)],
-				mem_op^,
-				additional_data_offset = u8(rhs.data_start),
-				in_place_slot_offset = 1 - i8(rhs.data_start == 3),
-			)
-		}
-	case .F_Add ..= .F_Div:
-		op := node.rtype + FLOAT_BIN_OP_OFFSET
-		rhs := graph_expand(ctx, node.inps[1])
-		if len(rhs.outs) != 1 do break matchi
-
-		if rhs.xtype == .X64_Load {
-			if !has_no_clobbers(ctx, node.inps[1]) do break matchi
-			mem_op := graph_extra(ctx, rhs, X64_Mem_Op)
 			mem_op.mem_mode = .Src
 			mem_op.dt = rhs.dt
 
@@ -934,6 +952,28 @@ x64_post_schedule_peep :: proc(
 				om_mem_op^,
 				additional_data_offset = u8(lhs.data_start),
 				in_place_slot_offset = 0,
+			)
+		}
+	case .X64_Fma_213:
+		mem_op := graph_extra(ctx, node, X64_Mem_Op)
+		rhs := graph_expand(ctx, node.inps[2])
+
+		if rhs.xtype == .X64_Load {
+			if !has_no_clobbers(ctx, node.inps[2]) do break matchx
+			panic("")
+		} else if rhs.xtype == .X64_CLoad {
+			mem_op.mem_mode = .Src
+			mem_op.dt = rhs.dt
+
+			slots := [?]Node_ID{rhs.inps[0], node.inps[0], node.inps[1]}
+
+			return x64_make_node(
+				ctx,
+				id,
+				node.rtype,
+				slots[:],
+				mem_op^,
+				additional_data_offset = 1,
 			)
 		}
 	}
@@ -1425,6 +1465,12 @@ x64_emit_instr :: proc(
 		.F_Le     = .U_Lt,
 		.F_Gt     = .U_Le,
 		.F_Ge     = .U_Lt,
+		.X64_F_Eq = .Ne,
+		.X64_F_Ne = .Eq,
+		.X64_F_Lt = .U_Le,
+		.X64_F_Le = .U_Lt,
+		.X64_F_Gt = .U_Le,
+		.X64_F_Ge = .U_Lt,
 	}
 
 	@(static, rodata)
@@ -1453,6 +1499,7 @@ x64_emit_instr :: proc(
 	if scl != 0 do idx = reg_of(ctx, node.inps[len(node.inps) - 1])
 	imm_boundary := int(scl != 0)
 	pfx: u8 = node.dt == .F64 ? 0xF2 : 0xF3
+	wide := node.dt == .F64
 
 	switch node.xtype {
 	case .Global:
@@ -1906,6 +1953,34 @@ x64_emit_instr :: proc(
 		rx := rex(dst, rhs, RAX, false)
 		op := OPCODE_TABLE[node.xtype].opcode
 		emit(ctx.code, {pfx, rx, 0x0f, op, mod_rm(.Direct, dst, rhs)})
+	case .X64_Fma_213:
+		switch mem_op.mem_mode {
+		case .None:
+			dst := reg_of(ctx, node.inps[0])
+			smul := reg_of(ctx, node.inps[1])
+			sadd := reg_of(ctx, node.inps[2])
+			emit(
+				ctx.code,
+				{
+					vex3(dst, sadd, idx, smul, wide, ._0F38, .P66, false),
+					0xa9,
+					mod_rm(.Direct, dst, sadd),
+				},
+			)
+		case .Src:
+			dst := reg_of(ctx, node.inps[1])
+			smul := reg_of(ctx, node.inps[2])
+			mem_idx := node.data_start == 1 ? 0 : 2
+			sadd, sdis, id := reg_and_disp_of(ctx, node.inps[mem_idx])
+			dis := mem_op.dis
+			emit(
+				ctx.code,
+				{vex3(dst, sadd, idx, smul, wide, ._0F38, .P66, false), 0xa9},
+			)
+			emit_indirect_addr(ctx, dst, sadd, idx, scl, sdis + dis, id)
+		case .Dest:
+			panic("")
+		}
 	case .X64_F_Add ..= .X64_F_Div:
 		// dst == value (in place); op dst, [$bse + $idx * $scl + $sdis + $dis].
 		dst := reg_of(ctx, node.inps[node.inplace_slot])
@@ -1916,22 +1991,40 @@ x64_emit_instr :: proc(
 		op := SRC_MODE_OPCODE_TABLE[node.xtype].opcode
 		emit(ctx.code, {pfx, rx, 0x0f, op})
 		emit_indirect_addr(ctx, dst, bse, idx, scl, dis + sdis, id)
-	case .F_Eq ..= .F_Ge:
-		// ucomiss/ucomisd $lhs, $rhs
-		lhs := reg_of(ctx, node.inps[0])
-		rhs := reg_of(ctx, node.inps[1])
-		odt := graph_get(ctx, node.inps[0]).dt
+	case .F_Eq ..= .F_Ge, .X64_F_Eq ..= .X64_F_Ge:
+		switch mem_op.mem_mode {
+		case .Dest:
+			panic("never")
+		case .Src:
+			lhs_idx := node.data_start == 1 ? 1 : 3
+			lhs := reg_of(ctx, node.inps[lhs_idx])
+			mem_idx := node.data_start == 1 ? 0 : 2
+			bse, sdis, id := reg_and_disp_of(ctx, node.inps[mem_idx])
+			odt := graph_get(ctx, node.inps[node.data_start]).dt
+			dis := mem_op.dis
 
-		a, b := lhs, rhs
-		#partial switch node.xtype {
-		case .F_Lt, .F_Le:
-			a, b = rhs, lhs
+			// ucomiss/ucomisd $lhs, [$rhs + $idx * scl + $sdis + $dis]
+			if odt == .F64 do emit(ctx.code, {0x66})
+			rx := rex(lhs, bse, RAX, false)
+			emit(ctx.code, {rx, 0x0f, 0x2e})
+			emit_indirect_addr(ctx, lhs, bse, idx, scl, dis + sdis, id)
+		case .None:
+			// ucomiss/ucomisd $lhs, $rhs
+			lhs := reg_of(ctx, node.inps[0])
+			rhs := reg_of(ctx, node.inps[1])
+			odt := graph_get(ctx, node.inps[0]).dt
+
+			a, b := lhs, rhs
+			#partial switch node.xtype {
+			case .F_Lt, .F_Le:
+				a, b = rhs, lhs
+			}
+
+			// [66] 0F 2E /r  (ucomisd needs the 0x66 prefix, ucomiss none)
+			if odt == .F64 do emit(ctx.code, {0x66})
+			rx := rex(a, b, RAX, false)
+			emit(ctx.code, {rx, 0x0f, 0x2e, mod_rm(.Direct, a, b)})
 		}
-
-		// [66] 0F 2E /r  (ucomisd needs the 0x66 prefix, ucomiss none)
-		if odt == .F64 do emit(ctx.code, {0x66})
-		rx := rex(a, b, RAX, false)
-		emit(ctx.code, {rx, 0x0f, 0x2e, mod_rm(.Direct, a, b)})
 
 		if node.dt != .Void {
 			setcc: u8 = OPCODE_TABLE[node.xtype].opcode
@@ -2340,7 +2433,7 @@ vex3 :: proc(
 
 	if wide do b2 |= 0b1000_0000
 
-	b2 |= u8(~vvvv.index) << 3
+	b2 |= (u8(~vvvv.index) & 0b1111) << 3
 
 	if l do b2 |= 0b0000_0100
 

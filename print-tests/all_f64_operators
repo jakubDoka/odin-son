@@ -1,74 +1,72 @@
 =========== OPT LEVEL: none ===========
 main:
-     movsd xmm0, qword ptr [0x0000000000400192]
-     movsd xmm1, qword ptr [0x000000000040019C]
-     movsd xmm2, qword ptr [0x00000000004001A6]
-     movsd xmm3, qword ptr [0x000000000040019C]
-     subsd xmm3, [0x00000000004001B0]
-     movsd xmm4, qword ptr [0x00000000004001A6]
-     addsd xmm4, xmm0
-     addsd xmm4, xmm1
-     movsd xmm1, qword ptr [0x00000000004001A6]
-     subsd xmm1, xmm0
-     addsd xmm4, xmm1
-     movsd xmm1, qword ptr [0x00000000004001A6]
-     mulsd xmm1, xmm0
-     addsd xmm4, xmm1
-     movsd xmm1, qword ptr [0x00000000004001A6]
-     divsd xmm1, xmm0
-     addsd xmm4, xmm1
-     movsd xmm1, xmm3
-     divsd xmm1, xmm0
-     addsd xmm4, xmm1
-     movsd xmm1, xmm3
-     mulsd xmm1, xmm0
-     addsd xmm4, xmm1
-     movsd xmm1, qword ptr [0x000000000040019C]
-     subsd xmm1, xmm2
-     addsd xmm4, xmm1
-     movsd xmm1, qword ptr [0x000000000040019C]
-     subsd xmm1, xmm3
-     addsd xmm4, xmm1
-     ucomisd xmm2, xmm0
+     movsd xmm0, qword ptr [0x00000000004001AA]
+     movsd xmm1, qword ptr [0x00000000004001B4]
+     movsd xmm2, qword ptr [0x00000000004001BE]
+     movsd xmm3, qword ptr [0x00000000004001BE]
+     subsd xmm3, [0x00000000004001C8]
+     movsd xmm4, qword ptr [0x00000000004001B4]
+     addsd xmm4, [0x00000000004001AA]
+     addsd xmm4, xmm2
+     movsd xmm2, qword ptr [0x00000000004001B4]
+     subsd xmm2, [0x00000000004001AA]
+     addsd xmm4, xmm2
+     movsd xmm5, qword ptr [0x00000000004001B4]
+     vfmadd213sd xmm5, xmm0, xmm4
+     movsd xmm2, qword ptr [0x00000000004001B4]
+     divsd xmm2, [0x00000000004001AA]
+     addsd xmm5, xmm2
+     movsd xmm2, xmm3
+     divsd xmm2, [0x00000000004001AA]
+     addsd xmm5, xmm2
+     movsd xmm4, xmm3
+     vfmadd213sd xmm4, xmm0, xmm5
+     movsd xmm2, qword ptr [0x00000000004001BE]
+     subsd xmm2, [0x00000000004001B4]
+     addsd xmm4, xmm2
+     movsd xmm2, qword ptr [0x00000000004001BE]
+     subsd xmm2, xmm3
+     addsd xmm4, xmm2
+     ucomisd xmm1, [0x00000000004001AA]
      jnbe :0
      jmp :1
 
-000: addsd xmm4, [0x00000000004001BA]
-001: ucomisd xmm2, xmm0
+000: addsd xmm4, [0x00000000004001D2]
+001: ucomisd xmm1, xmm0
      jnbe :2
      jmp :3
 
-002: addsd xmm4, [0x00000000004001C4]
-003: ucomisd xmm2, xmm0
+002: addsd xmm4, [0x00000000004001DC]
+003: ucomisd xmm1, [0x00000000004001AA]
      jnb :4
      jmp :5
 
-004: addsd xmm4, [0x00000000004001CE]
-005: ucomisd xmm0, xmm2
+004: addsd xmm4, [0x00000000004001E6]
+005: ucomisd xmm0, xmm1
      jnb :6
      jmp :7
 
-006: addsd xmm4, [0x00000000004001D8]
-007: ucomisd xmm2, xmm2
+006: addsd xmm4, [0x00000000004001F0]
+007: ucomisd xmm1, [0x00000000004001B4]
      jz :8
      jmp :9
 
-008: addsd xmm4, [0x00000000004001E2]
-009: ucomisd xmm2, xmm0
+008: addsd xmm4, [0x00000000004001FA]
+009: ucomisd xmm1, [0x00000000004001AA]
      jnz :10
      jmp :11
 
-010: addsd xmm4, [0x00000000004001EC]
+010: addsd xmm4, [0x0000000000400204]
 011: ucomisd xmm0, xmm3
      jnbe :12
      jmp :13
 
-012: addsd xmm4, [0x00000000004001F6]
+012: addsd xmm4, [0x000000000040020E]
 013: ucomisd xmm3, xmm3
      jnb :14
      jmp :15
 
-014: addsd xmm4, [0x0000000000400200]
+014: addsd xmm4, [0x0000000000400218]
 015: cvttsd2si rax, xmm4
      ret
 =========== OPT LEVEL: mininal ===========

@@ -45,7 +45,7 @@ generate_specs :: proc() {
 				ts(&IDEAL_CLASSES, &X64_IDEAL_REG_CLASSES),
 				ts(&X64_CLASSES, &X64_REG_CLASSES),
 			},
-			datatype_to_reg_kind = #partial {
+			datatype_to_reg_kind = #partial{
 				.I8 ..= .I64 = .General,
 				.F32 ..= .F64 = .Vector,
 			},
@@ -473,6 +473,7 @@ generate_specs :: proc() {
 
 				for earg in class.extra_args {
 					field := reflect.struct_field_by_name(class.id, earg)
+					if field.type == nil do field.type = type_info_of(u32)
 					fmt.fprintf(file, ", %v: %v", earg, field.type)
 				}
 

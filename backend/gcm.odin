@@ -371,7 +371,9 @@ graph_schedule :: proc(
 			snode := graph_expand(graph, node.inps[1])
 			for out in snode.outs {
 				onode := graph_expand(graph, out.id)
-				if ctx.late_schedules[onode.gvn] == 0 && !onode.is_load {
+				if ctx.late_schedules[onode.gvn] == 0 &&
+				   !onode.is_load &&
+				   onode.itype != .Local {
 					ready = false
 				}
 			}
@@ -548,6 +550,8 @@ graph_schedule :: proc(
 		}
 	}
 
+	has_unscheduled := false
+
 	for node, i in ctx.nodes {
 		if node == 0 do continue
 		late := ctx.late_schedules[i]
@@ -555,6 +559,7 @@ graph_schedule :: proc(
 		sched := graph.end == 0 ? early : late
 		if sched == 0 {
 			log.error("not scheduled:", graph_get(graph, node))
+			has_unscheduled = true
 			continue
 		}
 		bb := ctx.late_schedules[graph_get(graph, sched).gvn]
@@ -569,11 +574,13 @@ graph_schedule :: proc(
 
 	gs.bbs = bbs[:]
 
+	if has_unscheduled {
+		graph_display(os.to_writer(os.stderr), graph, gs)
+	}
+
 	if graph.end != 0 {
 		verify_schedule_integrity(graph, gs, ctx.antideps)
 	}
-
-	//graph_display(os.to_writer(os.stderr), graph, gs)
 
 	schedule_block :: proc(ctx: Ctx, bb: ^Graph_Basic_Block) {
 		PUSHED_UP :: bit_set[Ideal_Node_Type]{.Phi, .Ret, .Arg}
@@ -623,7 +630,6 @@ graph_schedule :: proc(
 				}
 			}
 		}
-
 	}
 }
 

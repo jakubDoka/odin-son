@@ -10,7 +10,7 @@ main:
      movss xmm1, dword ptr [0x00000000004000E0]
      subss xmm1, xmm0
      movss [rsp+0x08], xmm1
-     movss xmm0, dword ptr [0x00000000004000E6]
+     movss xmm0, dword ptr [0x00000000004000DA]
      movss [rsp], xmm0
      movss xmm0, dword ptr [rsp+0x08]
      movss [rsp+0x04], xmm0
@@ -18,7 +18,7 @@ main:
      lea rdi, [rsp]
      call :cmps
      mov rbx, rax
-     movss xmm0, dword ptr [0x00000000004000EC]
+     movss xmm0, dword ptr [0x00000000004000DA]
      lea rdi, [rsp]
      call :cmps
      mov rbp, rax
@@ -26,7 +26,7 @@ main:
      lea rdi, [rsp+0x04]
      call :cmps
      mov r12, rax
-     movss xmm0, dword ptr [0x00000000004000F2]
+     movss xmm0, dword ptr [0x00000000004000DA]
      lea rdi, [rsp+0x04]
      call :cmps
      mov r13, rax
@@ -50,8 +50,8 @@ main:
      pop rbx
      ret
 imm_cmps:
-     movss xmm0, dword ptr [0x00000000004000BC]
      mov rax, 0x00
+     movss xmm0, dword ptr [0x00000000004000BE]
      movss xmm1, dword ptr [rdi]
      ucomiss xmm0, xmm1
      jz :0
@@ -140,19 +140,19 @@ main:
      movss [rsp], xmm0
      movss xmm0, dword ptr [0x00000000004000C8]
      movss [rsp+0x04], xmm0
-     movss xmm0, dword ptr [0x00000000004000CE]
+     movss xmm0, dword ptr [0x00000000004000C8]
      lea rdi, [rsp]
      call :cmps
      mov rbx, rax
-     movss xmm0, dword ptr [0x00000000004000D4]
+     movss xmm0, dword ptr [0x00000000004000C2]
      lea rdi, [rsp]
      call :cmps
      mov rbp, rax
-     movss xmm0, dword ptr [0x00000000004000DA]
+     movss xmm0, dword ptr [0x00000000004000C8]
      lea rdi, [rsp+0x04]
      call :cmps
      mov r12, rax
-     movss xmm0, dword ptr [0x00000000004000E0]
+     movss xmm0, dword ptr [0x00000000004000C2]
      lea rdi, [rsp+0x04]
      call :cmps
      mov r13, rax
@@ -176,41 +176,41 @@ main:
      pop rbx
      ret
 imm_cmps:
-     movss xmm0, dword ptr [0x00000000004000BE]
      mov rax, 0x00
+     movss xmm0, dword ptr [0x00000000004000BE]
      movss xmm1, dword ptr [rdi]
-     ucomiss xmm0, xmm1
+     ucomiss xmm1, xmm0
      jz :0
      jmp :1
 
 000: add rax, 0x01
 001: movss xmm1, dword ptr [rdi]
-     ucomiss xmm0, xmm1
+     ucomiss xmm1, xmm0
      jnz :2
      jmp :3
 
 002: add rax, 0x02
 003: movss xmm1, dword ptr [rdi]
      ucomiss xmm0, xmm1
-     jnb :4
+     jnbe :4
      jmp :5
 
 004: add rax, 0x04
 005: movss xmm1, dword ptr [rdi]
      ucomiss xmm1, xmm0
-     jnb :6
+     jnbe :6
      jmp :7
 
 006: add rax, 0x08
 007: movss xmm1, dword ptr [rdi]
      ucomiss xmm0, xmm1
-     jnbe :8
+     jnb :8
      jmp :9
 
 008: add rax, 0x10
 009: movss xmm1, dword ptr [rdi]
      ucomiss xmm1, xmm0
-     jnbe :10
+     jnb :10
      jmp :11
 
 010: add rax, 0x20
@@ -266,19 +266,19 @@ main:
      movss [rsp], xmm0
      movss xmm0, dword ptr [0x00000000004000C8]
      movss [rsp+0x04], xmm0
-     movss xmm0, dword ptr [0x00000000004000CE]
+     movss xmm0, dword ptr [0x00000000004000C8]
      lea rdi, [rsp]
      call :cmps
      mov rbx, rax
-     movss xmm0, dword ptr [0x00000000004000D4]
+     movss xmm0, dword ptr [0x00000000004000C2]
      lea rdi, [rsp]
      call :cmps
      mov rbp, rax
-     movss xmm0, dword ptr [0x00000000004000DA]
+     movss xmm0, dword ptr [0x00000000004000C8]
      lea rdi, [rsp+0x04]
      call :cmps
      mov r12, rax
-     movss xmm0, dword ptr [0x00000000004000E0]
+     movss xmm0, dword ptr [0x00000000004000C2]
      lea rdi, [rsp+0x04]
      call :cmps
      mov r13, rax
@@ -304,39 +304,39 @@ main:
 imm_cmps:
      movss xmm0, dword ptr [0x00000000004000BE]
      movss xmm1, dword ptr [rdi]
-     ucomiss xmm0, xmm1
+     ucomiss xmm1, xmm0
      jz :0
      mov rax, 0x00
      jmp :1
 
 000: mov rax, 0x01
 001: movss xmm1, dword ptr [rdi]
-     ucomiss xmm0, xmm1
+     ucomiss xmm1, xmm0
      jnz :2
      jmp :3
 
 002: add rax, 0x02
 003: movss xmm1, dword ptr [rdi]
      ucomiss xmm0, xmm1
-     jnb :4
+     jnbe :4
      jmp :5
 
 004: add rax, 0x04
 005: movss xmm1, dword ptr [rdi]
      ucomiss xmm1, xmm0
-     jnb :6
+     jnbe :6
      jmp :7
 
 006: add rax, 0x08
 007: movss xmm1, dword ptr [rdi]
      ucomiss xmm0, xmm1
-     jnbe :8
+     jnb :8
      jmp :9
 
 008: add rax, 0x10
 009: movss xmm1, dword ptr [rdi]
      ucomiss xmm1, xmm0
-     jnbe :10
+     jnb :10
      jmp :11
 
 010: add rax, 0x20
@@ -392,19 +392,19 @@ main:
      movss [rsp], xmm0
      movss xmm0, dword ptr [0x00000000004000C8]
      movss [rsp+0x04], xmm0
-     movss xmm0, dword ptr [0x00000000004000CE]
+     movss xmm0, dword ptr [0x00000000004000C8]
      lea rdi, [rsp]
      call :cmps
      mov rbx, rax
-     movss xmm0, dword ptr [0x00000000004000D4]
+     movss xmm0, dword ptr [0x00000000004000C2]
      lea rdi, [rsp]
      call :cmps
      mov rbp, rax
-     movss xmm0, dword ptr [0x00000000004000DA]
+     movss xmm0, dword ptr [0x00000000004000C8]
      lea rdi, [rsp+0x04]
      call :cmps
      mov r12, rax
-     movss xmm0, dword ptr [0x00000000004000E0]
+     movss xmm0, dword ptr [0x00000000004000C2]
      lea rdi, [rsp+0x04]
      call :cmps
      mov r13, rax
@@ -430,39 +430,39 @@ main:
 imm_cmps:
      movss xmm0, dword ptr [0x00000000004000BE]
      movss xmm1, dword ptr [rdi]
-     ucomiss xmm0, xmm1
+     ucomiss xmm1, xmm0
      jz :0
      mov rax, 0x00
      jmp :1
 
 000: mov rax, 0x01
 001: movss xmm1, dword ptr [rdi]
-     ucomiss xmm0, xmm1
+     ucomiss xmm1, xmm0
      jnz :2
      jmp :3
 
 002: add rax, 0x02
 003: movss xmm1, dword ptr [rdi]
      ucomiss xmm0, xmm1
-     jnb :4
+     jnbe :4
      jmp :5
 
 004: add rax, 0x04
 005: movss xmm1, dword ptr [rdi]
      ucomiss xmm1, xmm0
-     jnb :6
+     jnbe :6
      jmp :7
 
 006: add rax, 0x08
 007: movss xmm1, dword ptr [rdi]
      ucomiss xmm0, xmm1
-     jnbe :8
+     jnb :8
      jmp :9
 
 008: add rax, 0x10
 009: movss xmm1, dword ptr [rdi]
      ucomiss xmm1, xmm0
-     jnbe :10
+     jnb :10
      jmp :11
 
 010: add rax, 0x20

@@ -277,6 +277,7 @@ when SPEC_NOT_PRESENT {
 	graph_add_local_addr :: graph_add_jump
 
 	graph_add_poison :: proc(graph: ^Graph, name: string) -> Node_ID {return 0}
+	graph_add_global :: graph_add_poison
 
 	when !GEN_SPEC {
 		#panic("Missing generated files, run `" + COMMAND + "`")

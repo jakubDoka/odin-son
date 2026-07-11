@@ -805,9 +805,14 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{.General = 0, .Vector = 0}, // X64_Lea
 			{.General = 0, .Vector = 0}, // X64_Load
 			{.General = 0, .Vector = 0}, // X64_Store
+			{.General = 0, .Vector = 0}, // X64_CLoad
 			{.General = 0, .Vector = 0}, // X64_Neg
 			{.General = 0, .Vector = 0}, // X64_Not
 			{.General = 0, .Vector = 0}, // X64_Mul8
+			{.General = 0, .Vector = 0}, // X64_F_Add
+			{.General = 0, .Vector = 0}, // X64_F_Sub
+			{.General = 0, .Vector = 0}, // X64_F_Mul
+			{.General = 0, .Vector = 0}, // X64_F_Div
 		},
 		interned_reg_masks = {
 			raw_data([]int{}),
@@ -917,9 +922,14 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{{.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}}, // X64_Lea
 			{{.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}}, // X64_Load
 			{{.General = 7, .Vector = 7}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}}, // X64_Store
+			{{.General = 1, .Vector = 2}}, // X64_CLoad
 			{{.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}}, // X64_Neg
 			{{.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}}, // X64_Not
 			{{.General = 4, .Vector = 0}, {.General = 1, .Vector = 0}, {.General = 4, .Vector = 0}}, // X64_Mul8
+			{{.General = 7, .Vector = 2}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 7}}, // X64_F_Add
+			{{.General = 7, .Vector = 2}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 7}}, // X64_F_Sub
+			{{.General = 7, .Vector = 2}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 7}}, // X64_F_Mul
+			{{.General = 7, .Vector = 2}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 7}}, // X64_F_Div
 		},
 		inplace_slot_idxs = {
 			-16, //Start
@@ -1015,9 +1025,14 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			-16, //X64_Lea
 			-16, //X64_Load
 			-16, //X64_Store
+			-16, //X64_CLoad
 			0, //X64_Neg
 			0, //X64_Not
 			-16, //X64_Mul8
+			0, //X64_F_Add
+			0, //X64_F_Sub
+			0, //X64_F_Mul
+			0, //X64_F_Div
 		},
 		reg_mask_of = x64_reg_mask_of,
 		emit_function = x64_emit_function,
@@ -1117,9 +1132,14 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, //X64_Lea
 			2, //X64_Load
 			2, //X64_Store
+			1, //X64_CLoad
 			0, //X64_Neg
 			0, //X64_Not
 			0, //X64_Mul8
+			0, //X64_F_Add
+			0, //X64_F_Sub
+			0, //X64_F_Mul
+			0, //X64_F_Div
 		},
 		inheritance_table = {
 			0b1, // Start
@@ -1215,9 +1235,14 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0b1000000, // X64_Lea
 			0b1000000, // X64_Load
 			0b1000000, // X64_Store
+			0b10, // X64_CLoad
 			0b1000000, // X64_Neg
 			0b1000000, // X64_Not
 			0b10, // X64_Mul8
+			0b1000000, // X64_F_Add
+			0b1000000, // X64_F_Sub
+			0b1000000, // X64_F_Mul
+			0b1000000, // X64_F_Div
 		},
 		node_extra_sizes = {
 			1, // Start -> Cfg
@@ -1313,9 +1338,14 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			3, // X64_Lea -> X64_Mem_Op
 			3, // X64_Load -> X64_Mem_Op
 			3, // X64_Store -> X64_Mem_Op
+			0, // X64_CLoad -> No_Extra
 			3, // X64_Neg -> X64_Mem_Op
 			3, // X64_Not -> X64_Mem_Op
 			0, // X64_Mul8 -> No_Extra
+			3, // X64_F_Add -> X64_Mem_Op
+			3, // X64_F_Sub -> X64_Mem_Op
+			3, // X64_F_Mul -> X64_Mem_Op
+			3, // X64_F_Div -> X64_Mem_Op
 		},
 		node_flags = {
 			{}, // Start
@@ -1411,9 +1441,14 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{}, // X64_Lea
 			{Class_Flag.Load}, // X64_Load
 			{Class_Flag.Store}, // X64_Store
+			{Class_Flag.Clonable}, // X64_CLoad
 			{}, // X64_Neg
 			{}, // X64_Not
 			{}, // X64_Mul8
+			{}, // X64_F_Add
+			{}, // X64_F_Sub
+			{}, // X64_F_Mul
+			{}, // X64_F_Div
 		},
 		node_extra_types = {
 			Cfg,
@@ -1509,9 +1544,14 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			X64_Mem_Op,
 			X64_Mem_Op,
 			X64_Mem_Op,
+			No_Extra,
 			X64_Mem_Op,
 			X64_Mem_Op,
 			No_Extra,
+			X64_Mem_Op,
+			X64_Mem_Op,
+			X64_Mem_Op,
+			X64_Mem_Op,
 		},
 		node_kind_name = {
 			`Start`,
@@ -1607,9 +1647,14 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			`X64_Lea`,
 			`X64_Load`,
 			`X64_Store`,
+			`X64_CLoad`,
 			`X64_Neg`,
 			`X64_Not`,
 			`X64_Mul8`,
+			`X64_F_Add`,
+			`X64_F_Sub`,
+			`X64_F_Mul`,
+			`X64_F_Div`,
 		},
 	},
 }
@@ -2063,9 +2108,14 @@ X64_Node_Type :: enum u16 {
 	X64_Lea,
 	X64_Load,
 	X64_Store,
+	X64_CLoad,
 	X64_Neg,
 	X64_Not,
 	X64_Mul8,
+	X64_F_Add,
+	X64_F_Sub,
+	X64_F_Mul,
+	X64_F_Div,
 }
 #assert(size_of(X64_Mem_Op) % 4 == 0)
 #assert(size_of(X64_Mem_Op) % 4 == 0)
@@ -2089,9 +2139,14 @@ X64_Node_Type :: enum u16 {
 #assert(size_of(X64_Mem_Op) % 4 == 0)
 #assert(size_of(X64_Mem_Op) % 4 == 0)
 #assert(size_of(X64_Mem_Op) % 4 == 0)
+#assert(size_of(No_Extra) % 4 == 0)
 #assert(size_of(X64_Mem_Op) % 4 == 0)
 #assert(size_of(X64_Mem_Op) % 4 == 0)
 #assert(size_of(No_Extra) % 4 == 0)
+#assert(size_of(X64_Mem_Op) % 4 == 0)
+#assert(size_of(X64_Mem_Op) % 4 == 0)
+#assert(size_of(X64_Mem_Op) % 4 == 0)
+#assert(size_of(X64_Mem_Op) % 4 == 0)
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	when false {}

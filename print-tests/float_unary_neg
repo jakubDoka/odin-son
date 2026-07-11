@@ -130,27 +130,25 @@ neg64_reg:
      subsd xmm0, xmm1
      ret
 neg32:
-     movss xmm1, dword ptr [rdi]
-     movss xmm0, dword ptr [0x0000000000400020]
-     subss xmm0, xmm1
+     movss xmm0, dword ptr [0x0000000000400018]
+     subss xmm0, [rdi]
      movss [rdi], xmm0
      ret
 neg64:
-     movsd xmm1, qword ptr [rdi]
      movsd xmm0, qword ptr [0x000000000040001C]
-     subsd xmm0, xmm1
+     subsd xmm0, [rdi]
      movsd [rdi], xmm0
      ret
 main:
      sub rsp, 0x28
-     movss xmm0, dword ptr [0x00000000004000D0]
+     movss xmm0, dword ptr [0x00000000004000C8]
      movss [rsp], xmm0
-     movsd xmm0, qword ptr [0x00000000004000D6]
+     movsd xmm0, qword ptr [0x00000000004000CE]
      movsd [rsp+0x04], xmm0
-     movss xmm0, dword ptr [0x00000000004000E0]
+     movss xmm0, dword ptr [0x00000000004000D8]
      call :neg32_reg
      movss [rsp+0x0C], xmm0
-     movsd xmm0, qword ptr [0x00000000004000E6]
+     movsd xmm0, qword ptr [0x00000000004000DE]
      call :neg64_reg
      movsd [rsp+0x14], xmm0
      lea rdi, [rsp]
@@ -158,10 +156,9 @@ main:
      movss [rsp+0x1C], xmm0
      lea rdi, [rsp+0x04]
      call :neg64
-     movsd xmm1, qword ptr [0x00000000004000F0]
-     movss xmm2, dword ptr [rsp+0x0C]
-     cvtss2sd xmm2, xmm2
-     addsd xmm1, xmm2
+     movss xmm1, dword ptr [rsp+0x0C]
+     cvtss2sd xmm1, xmm1
+     addsd xmm1, [0x00000000004000E8]
      movsd xmm2, qword ptr [rsp+0x14]
      addsd xmm1, xmm2
      movss xmm2, dword ptr [rsp+0x1C]
@@ -171,8 +168,7 @@ main:
      movss xmm0, dword ptr [rsp]
      cvtss2sd xmm0, xmm0
      addsd xmm1, xmm0
-     movsd xmm0, qword ptr [rsp+0x04]
-     addsd xmm1, xmm0
+     addsd xmm1, [rsp+0x04]
      cvttsd2si rax, xmm1
      add rsp, 0x28
      ret
@@ -188,27 +184,25 @@ neg64_reg:
      subsd xmm0, xmm1
      ret
 neg32:
-     movss xmm1, dword ptr [rdi]
-     movss xmm0, dword ptr [0x0000000000400020]
-     subss xmm0, xmm1
+     movss xmm0, dword ptr [0x0000000000400018]
+     subss xmm0, [rdi]
      movss [rdi], xmm0
      ret
 neg64:
-     movsd xmm1, qword ptr [rdi]
      movsd xmm0, qword ptr [0x000000000040001C]
-     subsd xmm0, xmm1
+     subsd xmm0, [rdi]
      movsd [rdi], xmm0
      ret
 main:
      sub rsp, 0x28
-     movss xmm0, dword ptr [0x00000000004000D0]
+     movss xmm0, dword ptr [0x00000000004000C8]
      movss [rsp], xmm0
-     movsd xmm0, qword ptr [0x00000000004000D6]
+     movsd xmm0, qword ptr [0x00000000004000CE]
      movsd [rsp+0x04], xmm0
-     movss xmm0, dword ptr [0x00000000004000E0]
+     movss xmm0, dword ptr [0x00000000004000D8]
      call :neg32_reg
      movss [rsp+0x0C], xmm0
-     movsd xmm0, qword ptr [0x00000000004000E6]
+     movsd xmm0, qword ptr [0x00000000004000DE]
      call :neg64_reg
      movsd [rsp+0x14], xmm0
      lea rdi, [rsp]
@@ -216,10 +210,9 @@ main:
      movss [rsp+0x1C], xmm0
      lea rdi, [rsp+0x04]
      call :neg64
-     movsd xmm1, qword ptr [0x00000000004000F0]
-     movss xmm2, dword ptr [rsp+0x0C]
-     cvtss2sd xmm2, xmm2
-     addsd xmm1, xmm2
+     movss xmm1, dword ptr [rsp+0x0C]
+     cvtss2sd xmm1, xmm1
+     addsd xmm1, [0x00000000004000E8]
      movsd xmm2, qword ptr [rsp+0x14]
      addsd xmm1, xmm2
      movss xmm2, dword ptr [rsp+0x1C]
@@ -229,8 +222,7 @@ main:
      movss xmm0, dword ptr [rsp]
      cvtss2sd xmm0, xmm0
      addsd xmm1, xmm0
-     movsd xmm0, qword ptr [rsp+0x04]
-     addsd xmm1, xmm0
+     addsd xmm1, [rsp+0x04]
      cvttsd2si rax, xmm1
      add rsp, 0x28
      ret

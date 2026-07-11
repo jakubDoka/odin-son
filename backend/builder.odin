@@ -475,8 +475,12 @@ when !GEN_SPEC {
 			COMUTATIVE_OR_SWAPPABLE :: bit_set[Bin_Op] {
 				.Add,
 				.Mul,
+				.F_Add,
+				.F_Mul,
 				.Ne,
+				.F_Ne,
 				.Eq,
+				.F_Eq,
 				.Or,
 				.And,
 				.Xor,
@@ -488,6 +492,10 @@ when !GEN_SPEC {
 				.U_Lt,
 				.U_Gt,
 				.U_Le,
+				.F_Ge,
+				.F_Lt,
+				.F_Gt,
+				.F_Le,
 			}
 
 			@(static, rodata)
@@ -500,6 +508,10 @@ when !GEN_SPEC {
 				.U_Lt = .U_Ge,
 				.U_Gt = .U_Le,
 				.U_Le = .U_Gt,
+				.F_Ge = .F_Lt,
+				.F_Lt = .F_Ge,
+				.F_Gt = .F_Le,
+				.F_Le = .F_Gt,
 			}
 
 			@(static, rodata)

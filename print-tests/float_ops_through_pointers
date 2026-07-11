@@ -3,11 +3,11 @@ main:
      sub rsp, 0x18
      movss xmm0, dword ptr [0x00000000004000AA]
      movss [rsp], xmm0
+     lea rdi, [rsp+0x04]
      movss xmm0, dword ptr [rsp]
      movss xmm1, dword ptr [0x00000000004000B0]
      mulss xmm0, xmm1
      movss [rsp], xmm0
-     lea rdi, [rsp+0x04]
      movsd xmm0, qword ptr [0x00000000004000B6]
      movsd [rsp+0x04], xmm0
      movsd xmm0, qword ptr [0x00000000004000C0]
@@ -44,11 +44,11 @@ main:
      sub rsp, 0x18
      movss xmm0, dword ptr [0x00000000004000AA]
      movss [rsp], xmm0
+     lea rdi, [rsp+0x04]
      movss xmm0, dword ptr [rsp]
      movss xmm1, dword ptr [0x00000000004000B0]
      mulss xmm0, xmm1
      movss [rsp], xmm0
-     lea rdi, [rsp+0x04]
      movsd xmm0, qword ptr [0x00000000004000B6]
      movsd [rsp+0x04], xmm0
      movsd xmm0, qword ptr [0x00000000004000C0]
@@ -122,20 +122,19 @@ mul_into:
 =========== OPT LEVEL: all ===========
 main:
      sub rsp, 0x18
-     movsd xmm0, qword ptr [0x0000000000400082]
-     movsd [rsp+0x08], xmm0
      lea rdi, [rsp+0x08]
-     movsd xmm0, qword ptr [0x000000000040008C]
+     movsd xmm0, qword ptr [0x000000000040007A]
+     movsd [rsp+0x08], xmm0
+     movsd xmm0, qword ptr [0x0000000000400084]
      movsd [rsp], xmm0
-     movsd xmm0, qword ptr [0x0000000000400096]
+     movsd xmm0, qword ptr [0x000000000040008E]
      call :add_into
      lea rdi, [rsp]
-     movsd xmm0, qword ptr [0x00000000004000A0]
+     movsd xmm0, qword ptr [0x0000000000400098]
      call :mul_into
-     movss xmm0, dword ptr [0x00000000004000AA]
-     movsd xmm1, qword ptr [rsp+0x08]
-     cvtsd2ss xmm1, xmm1
-     addss xmm0, xmm1
+     movsd xmm0, qword ptr [rsp+0x08]
+     cvtsd2ss xmm0, xmm0
+     addss xmm0, [0x00000000004000A2]
      movsd xmm1, qword ptr [rsp]
      cvtsd2ss xmm1, xmm1
      addss xmm0, xmm1

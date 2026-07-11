@@ -304,6 +304,19 @@ X64_SIMPE_CMP_OP :: Reg_Class_Spec {
 	reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK, GPA_MASK}},
 }
 
+// float op with a folded memory source operand. the shape mirrors the integer
+// src-mode ops: inputs are [ctrl, mem, base, value, index] with the base kept
+// out of register allocation when it is rsp/rip relative (via data_start). the
+// per-index masks carry both banks so the same table works whether the first
+// data input is the gpr base or the xmm value.
+X64_FLOAT_SRC_OP :: Reg_Class_Spec {
+	inplace_slot_idx = 0,
+	reg_masks = #partial{
+		.Vector = {XMM_MASK, XMM_MASK, XMM_MASK, {}},
+		.General = {{}, GPA_MASK, GPA_MASK, GPA_MASK},
+	},
+}
+
 @(rodata)
 X64_REG_CLASSES := #partial [X64_Node_Type]Reg_Class_Spec {
 	.X64_Add ..= .X64_Xor = X64_SIMPE_OP,
@@ -316,6 +329,10 @@ X64_REG_CLASSES := #partial [X64_Node_Type]Reg_Class_Spec {
 			.General = {GPA_MASK, GPA_MASK, GPA_MASK},
 			.Vector = {XMM_MASK, XMM_MASK, XMM_MASK},
 		},
+	},
+	.X64_CLoad = {
+		input_start_idx = 1,
+		reg_masks = #partial{.Vector = {XMM_MASK}, .General = {GPA_MASK}},
 	},
 	.X64_Store = {
 		input_start_idx = 2,
@@ -331,6 +348,7 @@ X64_REG_CLASSES := #partial [X64_Node_Type]Reg_Class_Spec {
 		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
 	},
 	.X64_Mul = X64_SIMPE_CMP_OP,
+	.X64_F_Add ..= .X64_F_Div = X64_FLOAT_SRC_OP,
 }
 
 when SPEC_NOT_PRESENT {
@@ -357,9 +375,14 @@ when SPEC_NOT_PRESENT {
 		X64_Lea,
 		X64_Load,
 		X64_Store,
+		X64_CLoad,
 		X64_Neg,
 		X64_Not,
 		X64_Mul8,
+		X64_F_Add,
+		X64_F_Sub,
+		X64_F_Mul,
+		X64_F_Div,
 	}
 
 	X64_SIMPLE_BIN_OP_SPEC :: Class_Spec {
@@ -385,8 +408,10 @@ when SPEC_NOT_PRESENT {
 		.X64_Mul = X64_SIMPLE_BIN_OP_SPEC,
 		.X64_Lea = {id = X64_Mem_Op, no_ctor = true},
 		.X64_Load = {id = X64_Mem_Op, flags = {.Load}, no_ctor = true},
+		.X64_CLoad = {flags = {.Clonable}, no_ctor = true},
 		.X64_Store = {id = X64_Mem_Op, flags = {.Store}, no_ctor = true},
 		.X64_Mul8 = {no_ctor = true},
+		.X64_F_Add ..= .X64_F_Div = {id = X64_Mem_Op, no_ctor = true},
 	}
 }
 
@@ -410,6 +435,9 @@ BIN_OP_OFFSET :: transmute(u16)(i16(X64_Node_Type.X64_Add) -
 
 UN_OP_OFFSET :: transmute(u16)(i16(X64_Node_Type.X64_Neg) -
 	i16(Ideal_Node_Type.Neg))
+
+FLOAT_BIN_OP_OFFSET :: transmute(u16)(i16(X64_Node_Type.X64_F_Add) -
+	i16(Ideal_Node_Type.F_Add))
 
 x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 	node := node
@@ -438,10 +466,6 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 	displacement: i32
 	stack_base: bool
 
-	// An already lowered store/load carries its index as a dedicated input, but
-	// the code below only rediscovers an index folded out of an X64_Lea. Without
-	// this the Global_Addr unwrap below would fire on re-peep and drop the base
-	// wrapper while the index input stays, corrupting the address.
 	has_own_index :=
 		(node.xtype == .X64_Store || node.xtype == .X64_Load) &&
 		graph_extra(ctx, node, X64_Mem_Op).scale != 0
@@ -482,6 +506,36 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 	}
 
 	#partial switch node.itype {
+	case .CInt:
+		cnst: ^CInt = graph_extra(ctx, node, CInt)
+		if node.dt in FLOAT_DTS {
+			mem := find_node(ctx, .Mem) or_else panic("")
+
+			global := graph_add_global(ctx, "iglb")
+			tup: ^Tup = graph_extra(ctx, global, Tup)
+			tup.is_inline = true
+			tup.align = DT_SIZE[node.dt]
+			tup.size = DT_SIZE[node.dt]
+
+			if node.dt == .F32 {
+				arna.clone(ctx.mem, reflect.as_bytes(f32(cnst.fvalue)))
+			} else {
+				assert(node.dt == .F64)
+				arna.clone(ctx.mem, reflect.as_bytes(cnst.fvalue))
+			}
+
+			graph_get(ctx, global).extra_dwords = u32(
+				DT_SIZE[node.dt] / PRECISION,
+			)
+
+			push_node_name(ctx, graph_get_node_name(ctx, id))
+			return graph_add_raw(
+				ctx,
+				u16(X64_Node_Type.X64_CLoad),
+				node.dt,
+				{global},
+			)
+		}
 	case .Add ..= .Xor, .Eq ..= .U_Ge, .Shl ..= .U_Shr, .Mul:
 		op := u16(node.itype) + BIN_OP_OFFSET
 
@@ -777,7 +831,7 @@ x64_make_node :: proc(
 	// NOTE: afaik this is sufficient since we don't insert load ops before
 	// scheduling
 	node.is_store = fnode.is_store
-	node.is_load = fnode.is_load
+	node.is_load = fnode.is_load || type == u16(X64_Node_Type.X64_Load)
 	node.additional_data_start = additional_data_offset
 	node.in_place_slot_offset = in_place_slot_offset
 	graph_extra(graph, node, X64_Mem_Op)^ = extra
@@ -812,6 +866,49 @@ x64_post_schedule_peep :: proc(
 				mem_op^,
 				additional_data_offset = u8(rhs.data_start),
 				in_place_slot_offset = 1 - i8(rhs.data_start == 3),
+			)
+		}
+	case .F_Add ..= .F_Div:
+		op := node.rtype + FLOAT_BIN_OP_OFFSET
+		rhs := graph_expand(ctx, node.inps[1])
+		if len(rhs.outs) != 1 do break matchi
+
+		if rhs.xtype == .X64_Load {
+			if !has_no_clobbers(ctx, node.inps[1]) do break matchi
+			mem_op := graph_extra(ctx, rhs, X64_Mem_Op)
+			mem_op.mem_mode = .Src
+			mem_op.dt = rhs.dt
+
+			slots: [5]Node_ID
+			copy(slots[:], rhs.inps)
+			slots[4] = slots[3]
+			slots[3] = node.inps[0]
+
+			return x64_make_node(
+				ctx,
+				id,
+				op,
+				slots[:len(slots) - int(slots[4] == 0)],
+				mem_op^,
+				additional_data_offset = u8(rhs.data_start),
+				in_place_slot_offset = 1 - i8(rhs.data_start == 3),
+			)
+		} else if rhs.xtype == .X64_CLoad {
+			mem_op := X64_Mem_Op {
+				mem_mode = .Src,
+				dt       = rhs.dt,
+			}
+
+			slots := [?]Node_ID{rhs.inps[0], node.inps[0]}
+
+			return x64_make_node(
+				ctx,
+				id,
+				op,
+				slots[:],
+				mem_op,
+				additional_data_offset = 1,
+				in_place_slot_offset = 0,
 			)
 		}
 	}
@@ -953,25 +1050,24 @@ Local_Reloc :: struct {
 	offset: u32,
 }
 
-emit_big_constant :: proc(ctx: ^Ctx, const: any) -> (id: u32) {
-	align_up := mem.align_backward_int(
-		len(ctx.big_constants) + 2,
-		reflect.align_of_typeid(const.id),
-	)
+emit_big_constant :: proc(
+	ctx: ^Ctx,
+	#any_int align: int,
+	bytes: []u8,
+) -> (
+	id: u32,
+) {
+	align_up := mem.align_backward_int(len(ctx.big_constants) + 2, align)
 
 	for _ in len(ctx.big_constants) + 2 ..< align_up {
 		append(&ctx.big_constants, 0)
 	}
 
-	append(
-		&ctx.big_constants,
-		u8(reflect.size_of_typeid(const.id)),
-		u8(reflect.align_of_typeid(const.id)),
-	)
+	append(&ctx.big_constants, u8(len(bytes)), u8(align))
 
 	id = RELOC_BIG_CONSTANT_BASE + u32(len(ctx.big_constants))
 
-	append(&ctx.big_constants, ..reflect.as_bytes(const))
+	append(&ctx.big_constants, ..bytes)
 
 	return
 }
@@ -1366,6 +1462,13 @@ x64_emit_instr :: proc(
 		rx := rex(dst, bse, idx, true)
 		emit(ctx.code, {rx, 0x8D})
 		emit_indirect_addr(ctx, dst, bse, idx, scl, sdis + dis, id)
+	case .X64_CLoad:
+		dst := reg_of(ctx, instr)
+		bse, sdis, id := reg_and_disp_of(ctx, node.inps[0])
+
+		// movss/movsd $dst, [rsp + $src_off]
+		emit(ctx.code, {pfx, rex(dst, bse, RAX, false), 0x0f, 0x10})
+		emit_indirect_addr(ctx, dst, bse, NO_INDEX, 1, 0, id)
 	case .Store, .X64_Store:
 		bse, sdis, id := reg_and_disp_of(ctx, node.inps[2])
 		dis := mem_op.dis
@@ -1604,18 +1707,6 @@ x64_emit_instr :: proc(
 			emit_anys(ctx.code, imm)
 		case .F32, .F64:
 			d_spill := dst.index >= GPA_REG_COUNT
-
-			id: u32
-			if node.dt == .F32 {
-				id = emit_big_constant(ctx, f32(transmute(f64)imm))
-			} else {
-				id = emit_big_constant(ctx, transmute(f64)imm)
-			}
-
-			// movss/movsd $dst, [rsp + $src_off]
-			emit(ctx.code, {pfx, rex(dst, RIP, RAX, false), 0x0f, 0x10})
-
-			emit_indirect_addr(ctx, dst, RIP, NO_INDEX, 1, 0, id + 1)
 		}
 	case .X64_Add ..= .X64_Xor, .X64_Shl ..= .X64_U_Shr:
 		imm := mem_op.imm
@@ -1815,6 +1906,23 @@ x64_emit_instr :: proc(
 			ctx.code,
 			{pfx, rx, 0x0f, FLOAT_OP[node.xtype], mod_rm(.Direct, dst, rhs)},
 		)
+	case .X64_F_Add ..= .X64_F_Div:
+		// dst == value (in place); op dst, [$bse + $idx * $scl + $sdis + $dis].
+		dst := reg_of(ctx, node.inps[node.inplace_slot])
+		bse, sdis, id := reg_and_disp_of(ctx, node.inps[node.inplace_slot - 1])
+		dis := mem_op.dis
+
+		@(static, rodata)
+		FLOAT_SRC_OP := #partial [X64_Node_Type]u8 {
+			.X64_F_Add = 0x58,
+			.X64_F_Sub = 0x5C,
+			.X64_F_Mul = 0x59,
+			.X64_F_Div = 0x5E,
+		}
+
+		rx := rex(dst, bse, idx, false)
+		emit(ctx.code, {pfx, rx, 0x0f, FLOAT_SRC_OP[node.xtype]})
+		emit_indirect_addr(ctx, dst, bse, idx, scl, dis + sdis, id)
 	case .F_Eq ..= .F_Ge:
 		// ucomiss/ucomisd $lhs, $rhs
 		lhs := reg_of(ctx, node.inps[0])
@@ -2021,19 +2129,22 @@ reg_of :: proc(ctx: Codegen_Emit_Ctx, id: Node_ID) -> Reg {
 	return ctx.allocs[node.gvn]
 }
 
-reg_and_disp_of :: proc(
-	ctx: Codegen_Emit_Ctx,
-	id: Node_ID,
-) -> (
-	Reg,
-	i32,
-	u32,
-) {
+reg_and_disp_of :: proc(ctx: ^Ctx, id: Node_ID) -> (Reg, i32, u32) {
 	node := graph_get(ctx, id)
 	if node.itype == .Global {
+		tup: ^Tup = graph_extra(ctx, node, Tup)
+
+		if tup.is_inline {
+			tup.idx = emit_big_constant(
+				ctx,
+				tup.align,
+				raw_data(&tup.end)[:tup.size],
+			)
+		}
+
 		// bias by one so that global 0 is distinguishable from the "no
 		// relocation" sentinel used by emit_indirect_addr
-		return RIP, 0, graph_extra(ctx, node, Tup).idx + 1
+		return RIP, 0, tup.idx + 1
 	}
 	if node.itype == .Local {
 		return RSP, i32(graph_extra(ctx, node, Local).offset), 0

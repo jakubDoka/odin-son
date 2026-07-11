@@ -343,9 +343,7 @@ Then proceed with implementing:
 
 The implementation is ready to be tests so fix bugs until tests pass.
 
-### Implement terminal rendered boids
-
-NOTE: read AGENTS.md
+### Implement terminal rendered boids (DONE)
 
 We now have floating point number support. Lets implement a simple boid
 simulation rendered into the terminal with ansi escape codes. By default the
@@ -357,3 +355,14 @@ put it into `test-programs/boids`.
 If you find any bugs in the frontend or backend fix them, or there is a simple
 frontend feature you need, implement it. Don't stopu until the test program has
 identical ouput with odin and jit compiler.
+
+### Add floating point peepholes
+
+NOTE: read AGENTS.md
+
+We should add floating point peepholes that are similar to what we do with
+integer ops. Do not add fma yet, just optimize the loads and stores into one
+op. Also, the constants are stored in global memory and loaded with X64_CLoad,
+make sure this also gets inlined into opts during the post schedule peeps.
+
+Make sure all tests pass (run-test and ./misc/run-programs.sh), then stop.

@@ -5,7 +5,6 @@ import "base:intrinsics"
 import "base:runtime"
 import "core:container/queue"
 import "core:fmt"
-import "core:log"
 import "core:math"
 import "core:mem"
 import "core:reflect"
@@ -163,8 +162,9 @@ Scope :: struct #align (4) {
 	done: bool,
 }
 
-CInt :: struct #align (4) {
-	value: i64,
+CInt :: struct #raw_union #align (4) {
+	value:  i64,
+	fvalue: f64,
 }
 
 Call :: struct {
@@ -174,7 +174,15 @@ Call :: struct {
 }
 
 Tup :: struct {
-	idx: u32,
+	using fields: struct #raw_union {
+		idx:     u32,
+		using _: bit_field u32 {
+			size:      int  | 16,
+			align:     int  | 15,
+			is_inline: bool | 1,
+		},
+	},
+	end:          [0]u8,
 }
 
 Local :: struct {
@@ -240,6 +248,7 @@ Node :: struct {
 			in_place_slot_offset:  i8            | 2,
 			additional_data_start: u8            | 2,
 			mem_alignment_pow:     u32           | 3,
+			extra_dwords:          u32           | 2,
 		},
 	},
 	gvn:          u32,
@@ -535,7 +544,9 @@ graph_poll_gc :: proc(graph: ^Graph) {
 		node.output_cap = node.output_count
 
 		size :=
-			size_of(Node) + int(graph.node_extra_sizes[node.rtype]) * PRECISION
+			size_of(Node) +
+			int(graph.node_extra_sizes[node.rtype]) * PRECISION +
+			int(node.extra_dwords) * PRECISION
 		push_node_name(graph, graph_get_node_name(&prev, n))
 		slot := arna.alloc(graph.mem, uint(size), PRECISION)
 

@@ -419,7 +419,7 @@ const_eval_int :: proc(node: ^ast.Expr) -> (value: i64, ok: bool) {
 	#partial switch d in node.derived {
 	case ^ast.Basic_Lit:
 		if d.tok.kind != .Integer do return 0, false
-		return strconv.parse_i64(d.tok.text)
+		return i64(strconv.parse_u64(d.tok.text) or_return), true
 	case ^ast.Unary_Expr:
 		if d.op.text != "-" do return 0, false
 		inner := const_eval_int(d.expr) or_return
@@ -977,12 +977,12 @@ emit_nodes :: proc(
 	case ^ast.Basic_Lit:
 		#partial switch d.tok.kind {
 		case .Integer:
-			value, ok := strconv.parse_i64(d.tok.text)
+			value, ok := strconv.parse_u64(d.tok.text)
 			assert(ok)
 			if dt in backend.FLOAT_DTS {
 				res = emit_float_const(ctx, dt, f64(value))
 			} else {
-				res = backend.graph_add_c_int(ctx, "cnst", dt, value)
+				res = backend.graph_add_c_int(ctx, "cnst", dt, i64(value))
 			}
 		case .Float:
 			value, ok := strconv.parse_f64(d.tok.text)

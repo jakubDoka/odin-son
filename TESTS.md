@@ -2641,61 +2641,58 @@ main :: proc() -> int {
 		i += 1
 	}
 
-	//if false {
+	slc = slc[1:]
+	i = 0
+	for {
+		if i >= len(slc) do break
+		sum += slc[i]
+		i += 1
+	}
 
-	//slc = slc[1:]
-	//i = 0
-	//for {
-	//	if i >= len(slc) do break
-	//	sum += slc[i]
-	//	i += 1
-	//}
+	slc = slc[:5]
+	i = 0
+	for {
+		if i >= len(slc) do break
+		sum += slc[i]
+		i += 1
+	}
 
-	//slc = slc[:5]
-	//i = 0
-	//for {
-	//	if i >= len(slc) do break
-	//	sum += slc[i]
-	//	i += 1
-	//}
+	slc = slc[1:3]
+	i = 0
+	for {
+		if i >= len(slc) do break
+		sum += slc[i]
+		i += 1
+	}
 
-	//slc = slc[1:3]
-	//i = 0
-	//for {
-	//	if i >= len(slc) do break
-	//	sum += slc[i]
-	//	i += 1
-	//}
+	arra := [4]int{0, 1, 2, 3}
+	slc = arra[4 - 4:]
+	i = 0
+	for {
+		if i >= len(slc) do break
+		sum += slc[i]
+		i += 1
+	}
 
-	//arra := [4]int{0, 1, 2, 3}
-	//slc = arra[4 - 4:]
-	//i = 0
-	//for {
-	//	if i >= len(slc) do break
-	//	sum += slc[i]
-	//	i += 1
-	//}
+	quick_sort(arr[:])
 
-	//quick_sort(arr[:])
+	i = 0
+	for {
+		if i >= len(arr) do break
+		sum += arr[i] << uint(i)
+		arr[i] = -arr[i]
+		i += 1
+	}
 
-	//i = 0
-	//for {
-	//	if i >= len(arr) do break
-	//	sum += arr[i] << uint(i)
-	//	arr[i] = -arr[i]
-	//	i += 1
-	//}
+	bubble_sort(arr[:])
 
-	//bubble_sort(arr[:])
-
-	//i = 0
-	//for {
-	//	if i >= len(arr) do break
-	//	arr[i] = -arr[i]
-	//	sum += arr[i] << uint(i)
-	//	i += 1
-	//}
-	//}
+	i = 0
+	for {
+		if i >= len(arr) do break
+		arr[i] = -arr[i]
+		sum += arr[i] << uint(i)
+		i += 1
+	}
 
 	return sum
 }
@@ -2736,37 +2733,37 @@ bubble_sort :: proc(array: []int) -> int {
 	}
 }
 
-//quick_sort :: proc(array: []int) -> int {
-//	a := array
-//	n := len(a)
-//	if n < 2 {
-//		return 0
-//	}
-//
-//	p := a[n / 2]
-//	i, j := 0, n - 1
-//
-//	loop: for {
-//		for {if a[i] >= p do break; i += 1}
-//		for {if p >= a[j] do break; j -= 1}
-//
-//		if i >= j {
-//			break loop
-//		}
-//		
-//		tmp := a[j]
-//		a[j] = a[i]
-//		a[i] = tmp
-//
-//		i += 1
-//		j -= 1
-//	}
-//
-//	quick_sort(a[0:i])
-//	quick_sort(a[i:n])
-//
-//	return 0
-//}
+quick_sort :: proc(array: []int) -> int {
+	a := array
+	n := len(a)
+	if n < 2 {
+		return 0
+	}
+
+	p := a[n / 2]
+	i, j := 0, n - 1
+
+	loop: for {
+		for {if a[i] >= p do break; i += 1}
+		for {if p >= a[j] do break; j -= 1}
+
+		if i >= j {
+			break loop
+		}
+		
+		tmp := a[j]
+		a[j] = a[i]
+		a[i] = tmp
+
+		i += 1
+		j -= 1
+	}
+
+	quick_sort(a[0:i])
+	quick_sort(a[i:n])
+
+	return 0
+}
 ```
 
 #### basic strings

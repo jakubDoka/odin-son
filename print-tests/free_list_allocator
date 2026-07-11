@@ -220,8 +220,7 @@ splice:
      add rbx, 0x01
      jmp :4
 
-003: mov rax, rbp
-     add [rax+0x610], r15
+003: add [rbp+0x610], r15
      add rsp, 0x08
      pop r15
      pop r14
@@ -958,8 +957,7 @@ splice:
      add rbx, 0x01
      jmp :4
 
-003: mov rax, rbp
-     add [rax+0x610], r15
+003: add [rbp+0x610], r15
      add rsp, 0x08
      pop r15
      pop r14
@@ -1518,8 +1516,7 @@ alloc_off:
      jle :0
      mov rax, 0x00
 005: mov r13, rax
-     mov rax, rbp
-     cmp r13, [rax+0x610]
+     cmp r13, [rbp+0x610]
      jnl :1
      mov rcx, rbp
      add rcx, 0x10
@@ -1674,8 +1671,7 @@ splice:
      add rbx, 0x01
      jmp :4
 
-003: mov rax, rbp
-     add [rax+0x610], r15
+003: add [rbp+0x610], r15
      add rsp, 0x08
      pop r15
      pop r14
@@ -1900,7 +1896,7 @@ main:
      lea rdi, [rsp]
      call :$set
      mov rdx, 0x400
-     lea rsi, [0x0000000000400890]
+     lea rsi, [0x0000000000400898]
      lea rdi, [rsp]
      call :alloc_init
      mov rsi, 0x64
@@ -1958,28 +1954,28 @@ main:
 
 010: add rdx, 0x20
 011: mov r13, rdx
-     lea rdx, [0x0000000000400890]
+     lea rdx, [0x0000000000400898]
      add rdx, rbx
      mov [rsp+0x628], rdx
      mov rdx, rbx
      add rdx, 0x64
      sub rdx, rbx
      mov [rsp+0x630], rdx
-     lea rdx, [0x0000000000400890]
+     lea rdx, [0x0000000000400898]
      add rdx, rbp
      mov [rsp+0x638], rdx
      mov rdx, rbp
      add rdx, 0x28
      sub rdx, rbp
      mov [rsp+0x640], rdx
-     lea rdx, [0x0000000000400890]
+     lea rdx, [0x0000000000400898]
      add rdx, r12
      mov [rsp+0x648], rdx
      mov rdx, r12
      add rdx, 0x07
      sub rdx, r12
      mov [rsp+0x650], rdx
-     lea rdx, [0x0000000000400890]
+     lea rdx, [0x0000000000400898]
      add rdx, rax
      mov [rsp+0x658], rdx
      mov rcx, rax
@@ -2052,7 +2048,7 @@ main:
      mov rsi, r12
      lea rdi, [rsp]
      call :alloc_free
-     lea rdi, [0x0000000000400C90]
+     lea rdi, [0x0000000000400C98]
      mov rsi, 0x200
      call :test_coalesce
      test al, al
@@ -2073,7 +2069,7 @@ main:
 022: mov rcx, r13
      add rcx, 0x800
      mov r13, rcx
-023: lea rcx, [0x0000000000400890]
+023: lea rcx, [0x0000000000400898]
      add rcx, rax
      mov rdx, rax
      add rdx, 0x2D
@@ -2167,8 +2163,7 @@ alloc_off:
      jle :0
      mov rax, 0x00
 005: mov r13, rax
-     mov rax, rbp
-     cmp r13, [rax+0x610]
+     cmp r13, [rbp+0x610]
      jnl :1
      mov rcx, rbp
      add rcx, 0x10
@@ -2323,8 +2318,7 @@ splice:
      add rbx, 0x01
      jmp :4
 
-003: mov rax, rbp
-     add [rax+0x610], r15
+003: add [rbp+0x610], r15
      add rsp, 0x08
      pop r15
      pop r14
@@ -2549,7 +2543,7 @@ main:
      lea rdi, [rsp]
      call :$set
      mov rdx, 0x400
-     lea rsi, [0x00000000004008C0]
+     lea rsi, [0x00000000004008C8]
      lea rdi, [rsp]
      call :alloc_init
      mov rsi, 0x64
@@ -2608,7 +2602,7 @@ main:
 
 010: add rcx, 0x20
 011: mov [rsp+0x638], rcx
-     lea rax, [0x00000000004008C0]
+     lea rax, [0x00000000004008C8]
      add rax, rbx
      mov r14, rax
      mov rax, rbx
@@ -2619,7 +2613,7 @@ main:
      mov rsi, rbx
      mov rdx, 0x01
      call :write_pattern
-     lea rax, [0x00000000004008C0]
+     lea rax, [0x00000000004008C8]
      add rax, r12
      mov r15, rax
      mov rax, r12
@@ -2630,7 +2624,7 @@ main:
      mov rsi, [rsp+0x618]
      mov rdx, 0x32
      call :write_pattern
-     lea rax, [0x00000000004008C0]
+     lea rax, [0x00000000004008C8]
      add rax, r13
      mov [rsp+0x620], rax
      mov rax, r13
@@ -2641,7 +2635,7 @@ main:
      mov rsi, [rsp+0x628]
      mov rdx, 0x64
      call :write_pattern
-     lea rax, [0x00000000004008C0]
+     lea rax, [0x00000000004008C8]
      add rax, rbp
      mov [rsp+0x630], rax
      mov rax, rbp
@@ -2702,7 +2696,7 @@ main:
      mov rsi, r13
      lea rdi, [rsp]
      call :alloc_free
-     lea rdi, [0x0000000000400CC0]
+     lea rdi, [0x0000000000400CC8]
      mov rsi, 0x200
      call :test_coalesce
      test al, al
@@ -2723,7 +2717,7 @@ main:
 022: mov rcx, [rsp+0x638]
      add rcx, 0x800
      mov [rsp+0x638], rcx
-023: lea rcx, [0x00000000004008C0]
+023: lea rcx, [0x00000000004008C8]
      add rcx, rax
      mov rbp, rcx
      mov rcx, rax

@@ -277,8 +277,7 @@ quick_sort:
      mov r8, rdx
      jmp :1
 
-003: mov rsi, r8
-     cmp r12, rsi
+003: cmp r12, r8
      jnl :4
      mov rsi, [rsp+0x10]
      mov rdi, [rsi+r12*8]
@@ -603,8 +602,7 @@ quick_sort:
      mov r8, rdx
      jmp :1
 
-003: mov rsi, r8
-     cmp r12, rsi
+003: cmp r12, r8
      jnl :4
      mov rsi, [rsp+0x10]
      mov rdi, [rsi+r12*8]
@@ -1034,8 +1032,7 @@ quick_sort:
 002: mov r12, rdx
      mov rdx, r12
      add rdx, 0x01
-     mov rsi, r12
-     mov rsi, [rbx+rsi*8]
+     mov rsi, [rbx+r12*8]
      cmp rsi, rax
      jnl :1
      jmp :2
@@ -1051,11 +1048,9 @@ quick_sort:
 003: cmp r12, rsi
      jnl :4
      mov rdi, [rbx+rsi*8]
-     mov r9, r12
-     mov r9, [rbx+r9*8]
+     mov r9, [rbx+r12*8]
      mov [rbx+rsi*8], r9
-     mov rsi, r12
-     mov [rbx+rsi*8], rdi
+     mov [rbx+r12*8], rdi
      jmp :2
 
      jmp :5
@@ -1063,8 +1058,7 @@ quick_sort:
 004: mov rsi, r12
      mov rdi, rbx
      call :quick_sort
-     mov rax, r12
-     lea rdi, [rbx+rax*8]
+     lea rdi, [rbx+r12*8]
      mov rax, r12
      mov rcx, rbp
      sub rcx, rax

@@ -1064,44 +1064,44 @@ regalloc_round :: proc(
 	verify_schedule_integrity(ctx.graph, ctx.sched)
 	if ok do verify_alloc_integrity(ctx, res)
 	if ok {
-		for _ in 0 ..< 10 {
-			for &bb in sched.bbs {
-				keep := 0
-				for instr, i in bb.instrs {
-					inode := graph_expand(graph, instr)
+		for &bb in sched.bbs {
+			// NOTE: do this in reverse or we miss oportunities with multiple
+			// moves going into an instruction
+			keep := len(bb.instrs) - 1
+			#reverse for instr, i in bb.instrs[:keep] {
+				inode := graph_expand(graph, instr)
 
-					if inode.itype == .Split {
-						inp := graph_get(graph, inode.inps[0])
+				if inode.itype == .Split {
+					inp := graph_get(graph, inode.inps[0])
 
-						if res[inode.gvn] == res[inp.gvn] {
-							continue
-						}
-
-						if i + 1 < len(bb.instrs) &&
-						   len(inode.outs) == 1 &&
-						   inode.outs[0].id == bb.instrs[i + 1] {
-							o := inode.outs[0]
-							onode := graph_expand(graph, o.id)
-							umask := reg_mask_of(
-								graph,
-								ra,
-								o.id,
-								o.idx + 1 - onode.data_start,
-							)
-
-							if reg_mask_contains(umask, res[inp.gvn].index) &&
-							   get_lrg(ctx, instr) != get_lrg(ctx, o.id) {
-								graph_subsume(graph, inode.inps[0], instr)
-								continue
-							}
-						}
+					if res[inode.gvn] == res[inp.gvn] {
+						continue
 					}
 
-					bb.instrs[keep] = instr
-					keep += 1
+					if i + 1 < len(bb.instrs) &&
+					   len(inode.outs) == 1 &&
+					   inode.outs[0].id == bb.instrs[keep] {
+						o := inode.outs[0]
+						onode := graph_expand(graph, o.id)
+						umask := reg_mask_of(
+							graph,
+							ra,
+							o.id,
+							o.idx + 1 - onode.data_start,
+						)
+
+						if reg_mask_contains(umask, res[inp.gvn].index) &&
+						   get_lrg(ctx, instr) != get_lrg(ctx, o.id) {
+							graph_subsume(graph, inode.inps[0], instr)
+							continue
+						}
+					}
 				}
-				resize(&bb.instrs, keep)
+				keep -= 1
+				bb.instrs[keep] = instr
 			}
+
+			remove_range(&bb.instrs, 0, keep)
 		}
 	}
 

@@ -87,8 +87,8 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 	levels := []Opt_Level {
 		{"none", {}},
 		{"mininal", {.Local_Peeps}},
-		{"moderate", {.Iter_Peeps, .Local_Peeps, .Schedule_Peeps}},
-		{"all", {.Iter_Peeps, .Local_Peeps, .Schedule_Peeps, .MemOpt}},
+		{"moderate", {.Iter_Peeps, .Local_Peeps}},
+		{"all", {.Iter_Peeps, .Local_Peeps, .MemOpt}},
 	}
 
 	dsb: strings.Builder

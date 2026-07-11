@@ -20,26 +20,25 @@ f:
      mov rsi, 0x00
      lea rdi, [rsp]
      call :$set
-     mov r9, 0x00
-001: mov rcx, r9
-     mov rsi, rbp
-     cmp rsi, 0x00
+     mov rax, 0x00
+001: mov rcx, rax
+     cmp rbp, 0x00
      jz :0
-     mov rdi, rbx
-     mov r8, [rsp+0x51]
-     mov r9, rcx
-     add r9, 0x01
-     mov rax, rsi
+     mov rsi, rbx
+     mov rdi, [rsp+0x51]
+     mov rax, rbp
      xor rdx, rdx
-     div rdi
-     mov rbp, rax
-     mov rax, rsi
-     xor rdx, rdx
-     div rdi
+     div rsi
      mov rax, rdx
-     add r8, rax
-     movzx eax, byte ptr [r8]
+     add rdi, rax
+     movzx eax, byte ptr [rdi]
      mov [rsp+rcx*1], al
+     mov rax, rbp
+     xor rdx, rdx
+     div rsi
+     mov rbp, rax
+     mov rax, rcx
+     add rax, 0x01
      jmp :1
 
 000: mov rdi, 0x00
@@ -112,26 +111,25 @@ f:
      mov rsi, 0x00
      lea rdi, [rsp]
      call :$set
-     mov rdx, 0x00
-001: mov rcx, rdx
-     mov rsi, rbp
-     cmp rsi, 0x00
+     mov rsi, 0x00
+001: mov rcx, rsi
+     cmp rbp, 0x00
      jz :0
+     mov rsi, [rsp+0x51]
      mov rdi, rbx
-     mov rax, rsi
+     mov rax, rbp
      xor rdx, rdx
      div rdi
-     mov rbp, rax
-     mov rdi, [rsp+0x51]
-     mov r8, rbx
-     mov rax, rsi
-     xor rdx, rdx
-     div r8
-     add rdi, rdx
-     movzx eax, byte ptr [rdi]
-     mov rdx, rcx
-     add rdx, 0x01
+     add rsi, rdx
+     movzx eax, byte ptr [rsi]
      mov [rsp+rcx*1], al
+     mov rsi, rcx
+     add rsi, 0x01
+     mov rcx, rbx
+     mov rax, rbp
+     xor rdx, rdx
+     div rcx
+     mov rbp, rax
      jmp :1
 
 000: mov rdi, 0x00

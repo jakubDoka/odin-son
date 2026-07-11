@@ -1,33 +1,29 @@
 =========== OPT LEVEL: none ===========
 main:
-     mov rax, 0x00
-     mov r8, 0x00
-005: cmp r8, 0x04
-     jnl :0
      mov rdi, 0x00
-     mov rdx, 0x00
-002: cmp rdx, 0x04
+     mov rax, 0x00
+005: cmp rdi, 0x04
+     jnl :0
+     mov rsi, 0x00
+     mov rcx, 0x00
+002: cmp rcx, 0x04
      jnl :1
-     mov rcx, rdx
+     add rsi, rcx
      add rcx, 0x01
-     add rdi, rdx
-     mov rdx, rcx
      jmp :2
 
-001: mov rdx, 0x00
-     mov rsi, 0x00
-004: cmp rsi, 0x04
+001: mov rcx, 0x00
+     mov rdx, 0x00
+004: cmp rdx, 0x04
      jnl :3
-     mov rcx, rsi
-     add rcx, 0x01
-     lea rdx, [rdx+rsi*2]
-     mov rsi, rcx
+     lea rcx, [rcx+rdx*2]
+     add rdx, 0x01
      jmp :4
 
-003: add r8, 0x01
-     add rdi, rdx
-     add rdi, rax
-     mov rax, rdi
+003: add rsi, rcx
+     add rsi, rax
+     add rdi, 0x01
+     mov rax, rsi
      jmp :5
 
 000: mov rcx, 0xFB
@@ -37,34 +33,30 @@ main:
      ret
 =========== OPT LEVEL: mininal ===========
 main:
-     mov rax, 0x00
-     mov r8, 0x00
-005: cmp r8, 0x04
-     jnl :0
      mov rdi, 0x00
-     mov rdx, 0x00
-002: cmp rdx, 0x04
+     mov rax, 0x00
+005: cmp rdi, 0x04
+     jnl :0
+     mov rsi, 0x00
+     mov rcx, 0x00
+002: cmp rcx, 0x04
      jnl :1
-     mov rcx, rdx
+     add rsi, rcx
      add rcx, 0x01
-     add rdi, rdx
-     mov rdx, rcx
      jmp :2
 
-001: mov rdx, 0x00
-     mov rsi, 0x00
-004: cmp rsi, 0x04
+001: mov rcx, 0x00
+     mov rdx, 0x00
+004: cmp rdx, 0x04
      jnl :3
-     mov rcx, rsi
-     add rcx, 0x01
-     lea rdx, [rdx+rsi*2]
-     mov rsi, rcx
+     lea rcx, [rcx+rdx*2]
+     add rdx, 0x01
      jmp :4
 
-003: add r8, 0x01
-     add rdi, rdx
-     add rdi, rax
-     mov rax, rdi
+003: add rsi, rcx
+     add rsi, rax
+     add rdi, 0x01
+     mov rax, rsi
      jmp :5
 
 000: mov rcx, 0xFB

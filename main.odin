@@ -91,7 +91,7 @@ main :: proc() {
 
 	level := Opt_Level {
 		name  = "all",
-		flags = {.Iter_Peeps, .Local_Peeps, .Schedule_Peeps, .MemOpt},
+		flags = {.Iter_Peeps, .Local_Peeps, .MemOpt},
 	}
 
 	clear(&ctx.globals)

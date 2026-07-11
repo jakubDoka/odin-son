@@ -383,6 +383,7 @@ when SPEC_NOT_PRESENT {
 		X64_F_Sub,
 		X64_F_Mul,
 		X64_F_Div,
+		X64_Fma_213,
 	}
 
 	X64_SIMPLE_BIN_OP_SPEC :: Class_Spec {
@@ -412,6 +413,7 @@ when SPEC_NOT_PRESENT {
 		.X64_Store = {id = X64_Mem_Op, flags = {.Store}, no_ctor = true},
 		.X64_Mul8 = {no_ctor = true},
 		.X64_F_Add ..= .X64_F_Div = {id = X64_Mem_Op, no_ctor = true},
+		.X64_Fma = {id = X64_Mem_Op, no_ctor = true},
 	}
 }
 
@@ -1361,6 +1363,10 @@ x64_emit_instr :: proc(
 		.X64_U_Shr = {0xC1, 0b101},
 		.Neg       = {0xf7, 0b011},
 		.Not       = {0xf7, 0b010},
+		.F_Add     = {0x58, 0},
+		.F_Sub     = {0x5C, 0},
+		.F_Mul     = {0x59, 0},
+		.F_Div     = {0x5E, 0},
 	}
 
 	@(static, rodata)
@@ -1423,11 +1429,15 @@ x64_emit_instr :: proc(
 
 	@(static, rodata)
 	SRC_MODE_OPCODE_TABLE := #partial [X64_Node_Type]Instr_Info {
-		.X64_Add = {0x03, 0},
-		.X64_Sub = {0x2B, 0},
-		.X64_And = {0x23, 0},
-		.X64_Or  = {0x0B, 0},
-		.X64_Xor = {0x33, 0},
+		.X64_Add   = {0x03, 0},
+		.X64_Sub   = {0x2B, 0},
+		.X64_And   = {0x23, 0},
+		.X64_Or    = {0x0B, 0},
+		.X64_Xor   = {0x33, 0},
+		.X64_F_Add = {0x58, 0},
+		.X64_F_Sub = {0x5C, 0},
+		.X64_F_Mul = {0x59, 0},
+		.X64_F_Div = {0x5E, 0},
 	}
 
 	block_base := ctx.gvn - u32(len(ctx.bbs))
@@ -1888,40 +1898,23 @@ x64_emit_instr :: proc(
 		// imul $op
 		dst := reg_of(ctx, node.inps[0])
 		emit(ctx.code, {0xf6, mod_sm(.Direct, 0b101, dst)})
-	case .F_Add, .F_Sub, .F_Mul, .F_Div:
+	case .F_Add ..= .F_Div:
 		// dst == lhs (in place); op dst, rhs
 		dst := reg_of(ctx, node.inps[0])
 		rhs := reg_of(ctx, node.inps[1])
 
-		@(static, rodata)
-		FLOAT_OP := #partial [X64_Node_Type]u8 {
-			.F_Add = 0x58,
-			.F_Sub = 0x5C,
-			.F_Mul = 0x59,
-			.F_Div = 0x5E,
-		}
-
 		rx := rex(dst, rhs, RAX, false)
-		emit(
-			ctx.code,
-			{pfx, rx, 0x0f, FLOAT_OP[node.xtype], mod_rm(.Direct, dst, rhs)},
-		)
+		op := OPCODE_TABLE[node.xtype].opcode
+		emit(ctx.code, {pfx, rx, 0x0f, op, mod_rm(.Direct, dst, rhs)})
 	case .X64_F_Add ..= .X64_F_Div:
 		// dst == value (in place); op dst, [$bse + $idx * $scl + $sdis + $dis].
 		dst := reg_of(ctx, node.inps[node.inplace_slot])
 		bse, sdis, id := reg_and_disp_of(ctx, node.inps[node.inplace_slot - 1])
 		dis := mem_op.dis
 
-		@(static, rodata)
-		FLOAT_SRC_OP := #partial [X64_Node_Type]u8 {
-			.X64_F_Add = 0x58,
-			.X64_F_Sub = 0x5C,
-			.X64_F_Mul = 0x59,
-			.X64_F_Div = 0x5E,
-		}
-
 		rx := rex(dst, bse, idx, false)
-		emit(ctx.code, {pfx, rx, 0x0f, FLOAT_SRC_OP[node.xtype]})
+		op := SRC_MODE_OPCODE_TABLE[node.xtype].opcode
+		emit(ctx.code, {pfx, rx, 0x0f, op})
 		emit_indirect_addr(ctx, dst, bse, idx, scl, dis + sdis, id)
 	case .F_Eq ..= .F_Ge:
 		// ucomiss/ucomisd $lhs, $rhs
@@ -1930,7 +1923,6 @@ x64_emit_instr :: proc(
 		odt := graph_get(ctx, node.inps[0]).dt
 
 		a, b := lhs, rhs
-		setcc: u8 = OPCODE_TABLE[node.xtype].opcode
 		#partial switch node.xtype {
 		case .F_Lt, .F_Le:
 			a, b = rhs, lhs
@@ -1942,6 +1934,8 @@ x64_emit_instr :: proc(
 		emit(ctx.code, {rx, 0x0f, 0x2e, mod_rm(.Direct, a, b)})
 
 		if node.dt != .Void {
+			setcc: u8 = OPCODE_TABLE[node.xtype].opcode
+
 			dst := reg_of(ctx, instr)
 			// setcc $dst
 			rxs := rex(RAX, dst, RAX, true)
@@ -2308,6 +2302,51 @@ rex :: proc(reg, ptr, idx: Reg, wide: bool) -> u8 {
 	if ptr.index >= 8 do res |= 0b0000_0001
 
 	return res
+}
+
+VEX3 :: struct {
+	b0, b1, b2: u8,
+}
+
+Vex_Map :: enum u8 {
+	_0F   = 1,
+	_0F38 = 2,
+	_0F3A = 3,
+}
+
+Vex_PP :: enum u8 {
+	None = 0,
+	P66  = 1,
+	F3   = 2,
+	F2   = 3,
+}
+
+vex3 :: proc(
+	reg, ptr, idx, vvvv: Reg,
+	wide: bool,
+	mapa: Vex_Map,
+	pp: Vex_PP,
+	l: bool,
+) -> (
+	b0: u8 = 0xC4,
+	b1: u8,
+	b2: u8,
+) {
+	if reg.index < 8 do b1 |= 0b1000_0000
+	if idx.index < 8 do b1 |= 0b0100_0000
+	if ptr.index < 8 do b1 |= 0b0010_0000
+
+	b1 |= u8(mapa) & 0b1_1111
+
+	if wide do b2 |= 0b1000_0000
+
+	b2 |= u8(~vvvv.index) << 3
+
+	if l do b2 |= 0b0000_0100
+
+	b2 |= u8(pp)
+
+	return 0xC4, b1, b2
 }
 
 emit_imm_for_dt :: proc(code: ^arna.Allocator, dt: Node_Datatype, imm: i32) {

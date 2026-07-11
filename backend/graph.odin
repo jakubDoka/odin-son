@@ -290,7 +290,6 @@ Graph :: struct {
 Graph_Opt_Flags :: bit_set[Graph_Opt_Flag]
 
 Graph_Opt_Flag :: enum int {
-	Schedule_Peeps,
 	Iter_Peeps,
 	Local_Peeps,
 	MemOpt,
@@ -440,8 +439,6 @@ graph_peep :: proc(graph: ^Graph, id: Node_ID) -> Node_ID {
 }
 
 graph_schedule_peeps :: proc(graph: ^Graph, schedule: ^Graph_Schedule) {
-	if .Schedule_Peeps not_in graph.opt_flags do return
-
 	for &bb in schedule.bbs {
 		for &instr, i in bb.instrs[:len(bb.instrs) - 1] {
 			node := graph_expand(graph, instr)

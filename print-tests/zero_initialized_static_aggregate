@@ -6,32 +6,29 @@ main:
      lea rax, [0x0000000000401000]
      add rax, rdx
      mov rcx, rdx
-     add rcx, 0x01
-     mov [rax], dl
-     mov rdx, rcx
+     mov [rax], cl
+     add rdx, 0x01
      jmp :1
 
 000: mov rcx, 0x00
      mov rdx, 0x00
-003: cmp rcx, 0x10
+003: cmp rdx, 0x10
      jnl :2
      lea rax, [0x0000000000401000]
-     add rax, rcx
+     add rax, rdx
      movzx eax, byte ptr [rax]
      movzx eax, al
-     add rax, rdx
-     add rcx, 0x01
-     mov rdx, rax
+     add rdx, 0x01
+     add rax, rcx
+     mov rcx, rax
      jmp :3
 
 002: mov qword ptr [0x0000000000401010], 0x07
      mov qword ptr [0x0000000000401018], 0x02
      mov rax, [0x0000000000401020]
-     imul rax, rdx
-     mov rcx, [0x0000000000401010]
-     add rax, rcx
-     mov rcx, [0x0000000000401018]
-     sub rax, rcx
+     imul rax, rcx
+     add rax, [0x0000000000401010]
+     sub rax, [0x0000000000401018]
      ret
 =========== OPT LEVEL: mininal ===========
 main:
@@ -41,32 +38,29 @@ main:
      lea rax, [0x0000000000401000]
      add rax, rdx
      mov rcx, rdx
-     add rcx, 0x01
-     mov [rax], dl
-     mov rdx, rcx
+     mov [rax], cl
+     add rdx, 0x01
      jmp :1
 
 000: mov rcx, 0x00
      mov rdx, 0x00
-003: cmp rcx, 0x10
+003: cmp rdx, 0x10
      jnl :2
      lea rax, [0x0000000000401000]
-     add rax, rcx
+     add rax, rdx
      movzx eax, byte ptr [rax]
      movzx eax, al
-     add rax, rdx
-     add rcx, 0x01
-     mov rdx, rax
+     add rdx, 0x01
+     add rax, rcx
+     mov rcx, rax
      jmp :3
 
 002: mov qword ptr [0x0000000000401010], 0x07
      mov qword ptr [0x0000000000401018], 0x02
      mov rax, [0x0000000000401020]
-     imul rax, rdx
-     mov rcx, [0x0000000000401010]
-     add rax, rcx
-     mov rcx, [0x0000000000401018]
-     sub rax, rcx
+     imul rax, rcx
+     add rax, [0x0000000000401010]
+     sub rax, [0x0000000000401018]
      ret
 =========== OPT LEVEL: moderate ===========
 main:

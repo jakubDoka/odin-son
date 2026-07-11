@@ -31,6 +31,9 @@ When instructed to spawn an agent to do something early, dont waste context
 analising the task, just pass down the instructions and let the agent figure it
 out.
 
+NEVER comment the code with what it does, only why we absolutely need it if its
+handling an edgecase that is unclear.
+
 The peephole optimizations can be found with `_peep :: proc`.
 
 If the test segfaults use -define:NO_RUN=true to view the disassembly.

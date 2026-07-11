@@ -6,6 +6,7 @@ import "base:runtime"
 import "core:container/queue"
 import "core:fmt"
 import "core:log"
+import "core:os"
 import "core:slice"
 
 Graph_Basic_Block :: struct {
@@ -146,7 +147,12 @@ graph_schedule :: proc(
 				remove_count += 1
 			}
 		}
-		assert(remove_count == 0 || remove_count == len(end.inps))
+		fmt.assertf(
+			remove_count == 0 || remove_count == len(end.inps),
+			"%v %v",
+			remove_count,
+			len(end.inps),
+		)
 	}
 
 	tree_depth :: proc(tree: ^Loop_Tree) -> u32 {
@@ -237,8 +243,6 @@ graph_schedule :: proc(
 	bbs.allocator = scratch
 	cfg_rpos: [dynamic]Node_ID
 	visited := bit_arr.init(graph.gvn * 2)
-
-	// TODO: add loop tree building
 
 	cfg_reverse_postorder(graph, graph.start, &cfg_rpos, visited)
 

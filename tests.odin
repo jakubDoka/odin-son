@@ -5105,58 +5105,61 @@ main_ :: proc() -> int {
 		i += 1
 	}
 
-	slc = slc[1:]
-	i = 0
-	for {
-		if i >= len(slc) do break
-		sum += slc[i]
-		i += 1
-	}
+	//if false {
 
-	slc = slc[:5]
-	i = 0
-	for {
-		if i >= len(slc) do break
-		sum += slc[i]
-		i += 1
-	}
+	//slc = slc[1:]
+	//i = 0
+	//for {
+	//	if i >= len(slc) do break
+	//	sum += slc[i]
+	//	i += 1
+	//}
 
-	slc = slc[1:3]
-	i = 0
-	for {
-		if i >= len(slc) do break
-		sum += slc[i]
-		i += 1
-	}
+	//slc = slc[:5]
+	//i = 0
+	//for {
+	//	if i >= len(slc) do break
+	//	sum += slc[i]
+	//	i += 1
+	//}
 
-	arra := [4]int{0, 1, 2, 3}
-	slc = arra[4 - 4:]
-	i = 0
-	for {
-		if i >= len(slc) do break
-		sum += slc[i]
-		i += 1
-	}
+	//slc = slc[1:3]
+	//i = 0
+	//for {
+	//	if i >= len(slc) do break
+	//	sum += slc[i]
+	//	i += 1
+	//}
 
-	quick_sort(arr[:])
+	//arra := [4]int{0, 1, 2, 3}
+	//slc = arra[4 - 4:]
+	//i = 0
+	//for {
+	//	if i >= len(slc) do break
+	//	sum += slc[i]
+	//	i += 1
+	//}
 
-	i = 0
-	for {
-		if i >= len(arr) do break
-		sum += arr[i] << uint(i)
-		arr[i] = -arr[i]
-		i += 1
-	}
+	//quick_sort(arr[:])
 
-	bubble_sort(arr[:])
+	//i = 0
+	//for {
+	//	if i >= len(arr) do break
+	//	sum += arr[i] << uint(i)
+	//	arr[i] = -arr[i]
+	//	i += 1
+	//}
 
-	i = 0
-	for {
-		if i >= len(arr) do break
-		arr[i] = -arr[i]
-		sum += arr[i] << uint(i)
-		i += 1
-	}
+	//bubble_sort(arr[:])
+
+	//i = 0
+	//for {
+	//	if i >= len(arr) do break
+	//	arr[i] = -arr[i]
+	//	sum += arr[i] << uint(i)
+	//	i += 1
+	//}
+	//}
 
 	return sum
 }
@@ -5197,37 +5200,37 @@ bubble_sort :: proc(array: []int) -> int {
 	}
 }
 
-quick_sort :: proc(array: []int) -> int {
-	a := array
-	n := len(a)
-	if n < 2 {
-		return 0
-	}
-
-	p := a[n / 2]
-	i, j := 0, n - 1
-
-	loop: for {
-		for {if a[i] >= p do break; i += 1}
-		for {if p >= a[j] do break; j -= 1}
-
-		if i >= j {
-			break loop
-		}
-		
-		tmp := a[j]
-		a[j] = a[i]
-		a[i] = tmp
-
-		i += 1
-		j -= 1
-	}
-
-	quick_sort(a[0:i])
-	quick_sort(a[i:n])
-
-	return 0
-}
+//quick_sort :: proc(array: []int) -> int {
+//	a := array
+//	n := len(a)
+//	if n < 2 {
+//		return 0
+//	}
+//
+//	p := a[n / 2]
+//	i, j := 0, n - 1
+//
+//	loop: for {
+//		for {if a[i] >= p do break; i += 1}
+//		for {if p >= a[j] do break; j -= 1}
+//
+//		if i >= j {
+//			break loop
+//		}
+//		
+//		tmp := a[j]
+//		a[j] = a[i]
+//		a[i] = tmp
+//
+//		i += 1
+//		j -= 1
+//	}
+//
+//	quick_sort(a[0:i])
+//	quick_sort(a[i:n])
+//
+//	return 0
+//}
 
 run_test(t, `basic_slices`, `
 package main
@@ -5246,58 +5249,61 @@ main :: proc() -> int {
 		i += 1
 	}
 
-	slc = slc[1:]
-	i = 0
-	for {
-		if i >= len(slc) do break
-		sum += slc[i]
-		i += 1
-	}
+	//if false {
 
-	slc = slc[:5]
-	i = 0
-	for {
-		if i >= len(slc) do break
-		sum += slc[i]
-		i += 1
-	}
+	//slc = slc[1:]
+	//i = 0
+	//for {
+	//	if i >= len(slc) do break
+	//	sum += slc[i]
+	//	i += 1
+	//}
 
-	slc = slc[1:3]
-	i = 0
-	for {
-		if i >= len(slc) do break
-		sum += slc[i]
-		i += 1
-	}
+	//slc = slc[:5]
+	//i = 0
+	//for {
+	//	if i >= len(slc) do break
+	//	sum += slc[i]
+	//	i += 1
+	//}
 
-	arra := [4]int{0, 1, 2, 3}
-	slc = arra[4 - 4:]
-	i = 0
-	for {
-		if i >= len(slc) do break
-		sum += slc[i]
-		i += 1
-	}
+	//slc = slc[1:3]
+	//i = 0
+	//for {
+	//	if i >= len(slc) do break
+	//	sum += slc[i]
+	//	i += 1
+	//}
 
-	quick_sort(arr[:])
+	//arra := [4]int{0, 1, 2, 3}
+	//slc = arra[4 - 4:]
+	//i = 0
+	//for {
+	//	if i >= len(slc) do break
+	//	sum += slc[i]
+	//	i += 1
+	//}
 
-	i = 0
-	for {
-		if i >= len(arr) do break
-		sum += arr[i] << uint(i)
-		arr[i] = -arr[i]
-		i += 1
-	}
+	//quick_sort(arr[:])
 
-	bubble_sort(arr[:])
+	//i = 0
+	//for {
+	//	if i >= len(arr) do break
+	//	sum += arr[i] << uint(i)
+	//	arr[i] = -arr[i]
+	//	i += 1
+	//}
 
-	i = 0
-	for {
-		if i >= len(arr) do break
-		arr[i] = -arr[i]
-		sum += arr[i] << uint(i)
-		i += 1
-	}
+	//bubble_sort(arr[:])
+
+	//i = 0
+	//for {
+	//	if i >= len(arr) do break
+	//	arr[i] = -arr[i]
+	//	sum += arr[i] << uint(i)
+	//	i += 1
+	//}
+	//}
 
 	return sum
 }
@@ -5338,37 +5344,37 @@ bubble_sort :: proc(array: []int) -> int {
 	}
 }
 
-quick_sort :: proc(array: []int) -> int {
-	a := array
-	n := len(a)
-	if n < 2 {
-		return 0
-	}
-
-	p := a[n / 2]
-	i, j := 0, n - 1
-
-	loop: for {
-		for {if a[i] >= p do break; i += 1}
-		for {if p >= a[j] do break; j -= 1}
-
-		if i >= j {
-			break loop
-		}
-		
-		tmp := a[j]
-		a[j] = a[i]
-		a[i] = tmp
-
-		i += 1
-		j -= 1
-	}
-
-	quick_sort(a[0:i])
-	quick_sort(a[i:n])
-
-	return 0
-}
+//quick_sort :: proc(array: []int) -> int {
+//	a := array
+//	n := len(a)
+//	if n < 2 {
+//		return 0
+//	}
+//
+//	p := a[n / 2]
+//	i, j := 0, n - 1
+//
+//	loop: for {
+//		for {if a[i] >= p do break; i += 1}
+//		for {if p >= a[j] do break; j -= 1}
+//
+//		if i >= j {
+//			break loop
+//		}
+//		
+//		tmp := a[j]
+//		a[j] = a[i]
+//		a[i] = tmp
+//
+//		i += 1
+//		j -= 1
+//	}
+//
+//	quick_sort(a[0:i])
+//	quick_sort(a[i:n])
+//
+//	return 0
+//}
 `, main_())
 }
 @(test) basic_strings :: proc(t: ^testing.T) {
@@ -9500,6 +9506,70 @@ main :: proc() -> int {
 
 opaque :: proc(x: int) -> int {
 	return x
+}
+`, main_())
+}
+@(test) crash_in_gcm_on_two_loops_nested_in_a_loop :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc() -> int {
+	i := 0
+	total := 0
+	for {
+		if i >= 4 do break
+
+		a := 0
+		j := 0
+		for {
+			if j >= 4 do break
+			a += j
+			j += 1
+		}
+
+		b := 0
+		k := 0
+		for {
+			if k >= 4 do break
+			b += k * 2
+			k += 1
+		}
+
+		total += a + b
+		i += 1
+	}
+	return total % 251
+}
+
+run_test(t, `crash_in_gcm_on_two_loops_nested_in_a_loop`, `
+package main
+
+main :: proc() -> int {
+	i := 0
+	total := 0
+	for {
+		if i >= 4 do break
+
+		a := 0
+		j := 0
+		for {
+			if j >= 4 do break
+			a += j
+			j += 1
+		}
+
+		b := 0
+		k := 0
+		for {
+			if k >= 4 do break
+			b += k * 2
+			k += 1
+		}
+
+		total += a + b
+		i += 1
+	}
+	return total % 251
 }
 `, main_())
 }

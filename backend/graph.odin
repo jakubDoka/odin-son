@@ -5,6 +5,7 @@ import "base:intrinsics"
 import "base:runtime"
 import "core:container/queue"
 import "core:fmt"
+import "core:log"
 import "core:math"
 import "core:mem"
 import "core:reflect"
@@ -902,7 +903,7 @@ graph_end_loop :: proc(
 			init := init.inps[i]
 			inode := graph_expand(graph, init)
 			bnode := graph_expand(graph, backedge.inps[i])
-			if inode.btype != .Lazy_Phi do continue
+			if inode.btype != .Lazy_Phi || inode.inps[0] != loop do continue
 
 			for {
 				scp := graph_extra(graph, bnode, Scope)
@@ -928,8 +929,8 @@ graph_end_loop :: proc(
 	if node_scope^ != 0 {
 		exit := graph_expand(graph, node_scope^)
 		for i in 1 ..< exit.input_count {
-			enode := graph_get(graph, exit.inps[i])
-			if enode.btype == .Scope {
+			enode := graph_expand(graph, exit.inps[i])
+			if enode.btype == .Scope && enode.inps[0] == loop {
 				graph_set_input(graph, node_scope^, i, init.inps[i])
 			}
 		}
@@ -1097,18 +1098,18 @@ graph_interner_grow :: proc(graph: ^Graph, new_cap: int) {
 }
 
 graph_unintern :: proc(graph: ^Graph, id: Node_ID, precomputed_hash: u8 = 0) {
-	if graph_has_flag(graph, id, .Interned) && !graph.dont_intern {
-		idx, _, _ := graph_interner_find(graph, id, precomputed_hash)
-		if idx < 0 do return
+	if !graph_has_flag(graph, id, .Interned) || graph.dont_intern do return
 
-		graph.interner_len -= 1
-		graph.interner[idx] = graph.interner[graph.interner_len]
+	idx, _, _ := graph_interner_find(graph, id, precomputed_hash)
+	if idx < 0 do return
 
-		// NOTE: there is probably a bug in the odin compiler that requires us
-		// to not set the value with a leteral
-		tmp: Node_Intern_Entry
-		graph.interner[graph.interner_len] = tmp
-	}
+	graph.interner_len -= 1
+	graph.interner[idx] = graph.interner[graph.interner_len]
+
+	// NOTE: there is probably a bug in the odin compiler that requires us
+	// to not set the value with a leteral
+	tmp: Node_Intern_Entry
+	graph.interner[graph.interner_len] = tmp
 }
 
 node_approx_size :: proc(graph: ^Graph, node: ^Node) -> uint {
@@ -1149,6 +1150,8 @@ graph_subsume :: proc(
 		graph_inps(graph, out.id)[out.idx] = with
 	}
 
+	graph_pin(graph, with)
+
 	if !dont_delete do graph_delete(graph, tnode)
 
 	wnode = graph_expand(graph, with)
@@ -1169,6 +1172,8 @@ graph_subsume :: proc(
 	for out in tnode.outs {
 		graph_intern(graph, out.id)
 	}
+
+	graph_unpin(graph, with)
 }
 
 graph_node_eq :: proc(graph: ^Graph, a, b: Node_ID) -> bool {
@@ -1299,6 +1304,7 @@ graph_set_input :: proc(
 	#any_int idx: int,
 	value: Node_ID,
 ) -> Node_ID {
+
 	node := graph_expand(graph, id)
 
 	assert(idx < len(node.inps))

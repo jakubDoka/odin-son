@@ -9,6 +9,7 @@ import "core:fmt"
 import "core:io"
 import "core:log"
 import "core:mem"
+import "core:os"
 import "core:slice"
 import "core:sort"
 import "core:strings"
@@ -629,6 +630,7 @@ regalloc_round :: proc(
 	// TODO: add priority to at least the blocks by loop depth
 	for &bb in sched.bbs {
 		if !ok do break
+		//if true do break
 
 		#reverse for instr, j in bb.instrs {
 			inode := graph_expand(graph, instr)
@@ -701,86 +703,24 @@ regalloc_round :: proc(
 			ordered_remove(&bb.instrs, j)
 			graph_subsume(graph, inode.inps[0], instr)
 		}
-
-		if false {
-			#reverse for instr, j in bb.instrs[:len(bb.instrs) - 1] {
-				inode := graph_expand(graph, instr)
-				if inode.itype != .Split do continue
-				if inode.output_count != 1 do continue
-
-				inp := graph_get(graph, inode.inps[0])
-				if inp.itype == .Split do continue
-				if inp.itype == .Phi do continue
-
-				out := inode.outs[0]
-				if bb.instrs[j + 1] != out.id do continue
-				onode := graph_expand(graph, out.id)
-
-				ilrg := find(get_lrg(ctx, instr))
-				inlrg := find(get_lrg(ctx, inode.inps[0]))
-				olrg := find(get_lrg(ctx, out.id))
-
-				if ilrg == olrg do continue
-
-				iadj, inadj := ifg[ilrg.index], ifg[inlrg.index]
-
-				collision := false
-				to_move := 0
-				for &a in iadj {
-					collision |= a == inlrg
-					if !slice.contains(inadj, a) {
-						a, iadj[to_move] = iadj[to_move], a
-						to_move += 1
-					}
-				}
-				if collision {
-					continue
-				}
-				total := to_move + len(inadj)
-
-				leeway := reg_mask_intersection_pop_count(
-					ilrg.mask,
-					inlrg.mask,
-				)
-				if leeway == 0 do continue
-
-				coalesced = true
-
-				buf := make([]^Lrg, total)
-				copy(buf, iadj[:to_move])
-				copy(buf[to_move:], inadj)
-
-				winner := unify(ilrg, inlrg)
-				fmt.assertf(winner.fails == {}, "%v", winner.fails)
-
-				to_patch := winner == ilrg ? inadj : iadj
-				other := winner == ilrg ? inlrg : ilrg
-				for adj in to_patch {
-					assert(adj.parent == nil)
-					oadj := ifg[adj.index]
-					idx, _ := slice.linear_search(oadj, other)
-
-					if slice.contains(oadj, winner) {
-						oadj[idx] = oadj[len(oadj) - 1]
-						ifg[adj.index] = oadj[:len(oadj) - 1]
-					} else {
-						oadj[idx] = winner
-					}
-				}
-
-				winner.node = inlrg.node
-				winner.longest_use_area = inlrg.longest_use_area
-				winner.longest_def = inlrg.longest_def
-				ifg[winner.index] = buf
-
-				ordered_remove(&bb.instrs, j)
-				graph_subsume(graph, inode.inps[0], instr)
-			}
-		}
-
 	}
 
 	if coalesced {
+		for adj, i in ifg {
+			if lrgs[i].parent != nil do continue
+
+			for a, i in adj {
+				for b, j in adj {
+					if i == j do continue
+					assert(a != b)
+				}
+			}
+
+			for a in adj {
+				assert(slice.contains(ifg[a.index], &lrgs[i]))
+			}
+		}
+
 		for &l in ctx.lrg_table {
 			l = find(l)
 		}
@@ -811,6 +751,7 @@ regalloc_round :: proc(
 	for co in color_order {
 		n := ifg[co.idx]
 		lrg := &lrgs[co.idx]
+		assert(lrg.parent == nil)
 		for inter in n {
 			if inter.reg == -1 do continue
 			reg_mask_set(lrg.mask, inter.reg, false)
@@ -845,9 +786,6 @@ regalloc_round :: proc(
 	prev_gvn := graph.gvn
 
 	color_fails: int
-
-	// TODO: this should be improved but for now the coalescing kind of fixes
-	// things
 
 	for &lrg in lrgs[:used_lrgs_check] {
 		id := lrg.node
@@ -1168,8 +1106,19 @@ regalloc_round :: proc(
 
 	@(disabled = ODIN_DISABLE_ASSERT)
 	verify_alloc_integrity :: proc(ctx: Ctx, res: []Reg) {
+
+		//graph_display(os.to_writer(os.stderr), ctx.graph, ctx.sched)
+
 		seen := bit_arr.init(ctx.graph.gvn)
 		for &bb in ctx.sched.bbs {
+			seen_phi := false
+			#reverse for instr in bb.instrs {
+				inode := graph_get(ctx.graph, instr)
+				is_phi_or_mem := inode.itype == .Phi || inode.itype == .Mem
+				fmt.assertf(!seen_phi || is_phi_or_mem, "%v", inode)
+				seen_phi |= inode.itype == .Phi
+			}
+
 			for instr, i in bb.instrs {
 				inode := graph_expand(ctx.graph, instr)
 				if inode.dt == .Void && inode.itype == .Phi do continue
@@ -1236,7 +1185,7 @@ regalloc_round :: proc(
 			for cbinp in cbnode.inps {
 				if is_cfg(ctx.graph, cbinp) {
 					b := get_node_block(ctx, cbinp)
-					check_blocks(ctx, res, cbinp, b.head, len(b.instrs), seen)
+					check_blocks(ctx, res, inp, b.head, len(b.instrs), seen)
 				}
 			}
 		}
@@ -1324,6 +1273,11 @@ regalloc_round :: proc(
 		split := graph_add_split(graph, name, fnode.dt, use)
 
 		block, idx := get_node_block_and_idx(ctx, use)
+		for {
+			nd := graph_get(ctx.graph, block.instrs[idx + 1])
+			if nd.itype != .Phi && nd.itype != .Mem do break
+			idx += 1
+		}
 
 		inject_at(&block.instrs, idx + 1, split)
 

@@ -196,7 +196,19 @@ graph_display_node :: proc(
 		fmt.wprintf(w, "align: %v", 1 << node.mem_alignment_pow)
 	}
 
-	graph_display_extra(w, extra, "", &written_one)
+	if vl, ok := extra.(CInt); ok {
+		if written_one {
+			fmt.wprintf(w, ", ")
+		}
+		if node.dt in FLOAT_DTS {
+			fmt.wprintf(w, "%v", transmute(f64)vl.value)
+		} else {
+			fmt.wprintf(w, "%v", vl.value)
+		}
+		written_one = true
+	} else {
+		graph_display_extra(w, extra, "", &written_one)
+	}
 
 	for inp, i in node.inps {
 		if written_one {

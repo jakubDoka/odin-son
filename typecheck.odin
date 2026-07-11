@@ -453,6 +453,7 @@ Global_Var :: struct {
 	module: Module_ID,
 	type:   Type,
 	idx:    u32,
+	init:   ^ast.Expr,
 }
 
 Param :: struct {
@@ -1234,7 +1235,10 @@ register_module_globals :: proc(ctx: ^Gen_Ctx, mid: Module_ID) {
 					ty = typecheck(ctx, {}, sdecl.values[j])
 				}
 
-				append(&ctx.global_vars, Global_Var{name, mid, ty, 0})
+				init: ^ast.Expr
+				if j < len(sdecl.values) do init = sdecl.values[j]
+
+				append(&ctx.global_vars, Global_Var{name, mid, ty, 0, init})
 			}
 		}
 	}

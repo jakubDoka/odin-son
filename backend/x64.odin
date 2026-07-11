@@ -437,6 +437,15 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 	scale: i32
 	displacement: i32
 	stack_base: bool
+
+	// An already lowered store/load carries its index as a dedicated input, but
+	// the code below only rediscovers an index folded out of an X64_Lea. Without
+	// this the Global_Addr unwrap below would fire on re-peep and drop the base
+	// wrapper while the index input stays, corrupting the address.
+	has_own_index :=
+		(node.xtype == .X64_Store || node.xtype == .X64_Load) &&
+		graph_extra(ctx, node, X64_Mem_Op).scale != 0
+
 	if 2 < len(node.inps) {
 		nbase, ndisplacement := base_and_offset(ctx, node.inps[2])
 		if int(i32(ndisplacement)) == ndisplacement {
@@ -463,7 +472,7 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 		if bnode.itype == .Local_Addr {
 			base = bnode.inps[0]
 			stack_base = true
-		} else if bnode.itype == .Global_Addr && index == 0 {
+		} else if bnode.itype == .Global_Addr && index == 0 && !has_own_index {
 			base = bnode.inps[0]
 			stack_base = true
 		} else {
@@ -1062,7 +1071,9 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 			spill_slot_count[reg.kind],
 			i32(reg.index) - 16 + 1,
 		)
-		bit_arr.set_unbounded(ctx.used, int(reg.index))
+		if reg.kind == .General {
+			bit_arr.set_unbounded(ctx.used, int(reg.index))
+		}
 	}
 
 	pushed: i32
@@ -1919,7 +1930,7 @@ x64_emit_instr :: proc(
 				spill_indirect_addr(ctx, Reg(0b110), src_off)
 				// pop [rsp + $dst_off]
 				emit(ctx.code, {0x8F})
-				spill_indirect_addr(ctx, Reg(0b000), dst_off)
+				spill_indirect_addr(ctx, Reg(0b000), dst_off - 8)
 			} else if d_spill {
 				// movss/movsd [rsp + $dst_off], $src
 				emit(ctx.code, {pfx, rex(src, RSP, RAX, false), 0x0f, 0x11})

@@ -504,6 +504,21 @@ highlight_disasm :: proc(disasm: string) -> string {
 		"r15",
 		"rip",
 		"rflags",
+		"xmm10",
+		"xmm12",
+		"xmm13",
+		"xmm14",
+		"xmm15",
+		"xmm0",
+		"xmm1",
+		"xmm2",
+		"xmm3",
+		"xmm4",
+		"xmm5",
+		"xmm6",
+		"xmm7",
+		"xmm8",
+		"xmm9",
 	}
 
 	highlight: strings.Builder
@@ -511,8 +526,11 @@ highlight_disasm :: proc(disasm: string) -> string {
 		clear(&highlight.buf)
 
 		backend.ansi_start(strings.to_writer(&highlight), i)
+		ln := len(highlight.buf)
 		append(&highlight.buf, name)
 		backend.ansi_end(strings.to_writer(&highlight))
+
+		inject_at(&highlight.buf, ln + 1, 0)
 
 		strings.builder_replace_all(&text, name, string(highlight.buf[:]))
 	}

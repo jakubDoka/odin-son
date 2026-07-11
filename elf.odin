@@ -1,5 +1,6 @@
 package main
 
+import "backend"
 import "core:mem"
 import "core:slice"
 
@@ -26,10 +27,16 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	text: [dynamic]u8
 	text.allocator = scratch
 	proc_off := make([]int, len(ctx.procs), scratch)
+	// Each procedure's constant pool (e.g. materialised float immediates) is
+	// laid out right after its code; big-constant relocs are resolved against it.
+	const_off := make([]int, len(ctx.procs), scratch)
 	for &prc, i in ctx.procs {
 		for len(text) % 16 != 0 do append(&text, 0)
 		proc_off[i] = len(text)
 		append(&text, ..prc.out.code)
+		for len(text) % 8 != 0 do append(&text, 0)
+		const_off[i] = len(text)
+		append(&text, ..prc.out.constants)
 	}
 
 	// --- .data : concatenate globals honouring their alignment ----------
@@ -141,6 +148,18 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	for &prc, i in ctx.procs {
 		for rel in prc.out.relocs {
 			slot := proc_off[i] + int(rel.offset) - 4
+
+			// Big-constant relocs point into this proc's own constant pool in
+			// .text, so resolve them in place (RIP relative) with no ELF entry.
+			if rel.kind == .Global && rel.id >= backend.RELOC_BIG_CONSTANT_BASE {
+				target := const_off[i] + int(rel.id - backend.RELOC_BIG_CONSTANT_BASE)
+				source := proc_off[i] + int(rel.offset)
+				cur := u32(0)
+				mem.copy(&cur, &text[slot], 4)
+				cur += u32(target - source)
+				mem.copy(&text[slot], &cur, 4)
+				continue
+			}
 
 			sym: u32
 			type: u32

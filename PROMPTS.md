@@ -314,9 +314,7 @@ Once you are done, spawn an agent to analyze the objdump of the jitted binary
 to look for possible missed peephole optimization opportunities and list them
 in a POSSIBLE_PEEPHOLES showing example assembly and the ideal assembly.
 
-### Implement the floating point numbers
-
-NOTE: read AGENTS.md
+### Implement the floating point numbers (DONE)
 
 Right now the frontend and the backend only handle the integer ops. You should
 implement the floating point ops.
@@ -344,3 +342,18 @@ Then proceed with implementing:
 #### Part 3 (depends on 1,2)
 
 The implementation is ready to be tests so fix bugs until tests pass.
+
+### Implement terminal rendered boids
+
+NOTE: read AGENTS.md
+
+We now have floating point number support. Lets implement a simple boid
+simulation rendered into the terminal with ansi escape codes. By default the
+symulation will run for 100 iterations without sleeping. But if terminal colors
+can be used, (detect it with a syscall), then use colors and sleep (with a
+syscall) in a loop indefinitely so I can visually verify it works. You should
+put it into `test-programs/boids`.
+
+If you find any bugs in the frontend or backend fix them, or there is a simple
+frontend feature you need, implement it. Don't stopu until the test program has
+identical ouput with odin and jit compiler.

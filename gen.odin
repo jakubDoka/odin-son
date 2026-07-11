@@ -3,9 +3,11 @@ package main
 import "backend"
 import "base:runtime"
 import "core:fmt"
+import "core:log"
 import "core:mem"
 import "core:odin/ast"
 import "core:odin/tokenizer"
+import "core:os"
 import "core:slice"
 import "core:strconv"
 import "meta"
@@ -428,13 +430,23 @@ const_eval_int :: proc(node: ^ast.Expr) -> (value: i64, ok: bool) {
 	return 0, false
 }
 
-// emit_module_globals allocates the (zero initialised) backing data for every
-// registered module level global variable and records its ctx.globals index.
-// It must run after ctx.globals is cleared and before any procedure is emitted.
 emit_module_globals :: proc(ctx: ^Gen_Ctx) {
 	for &gv in ctx.global_vars {
 		size := type_size(gv.type)
 		bytes := make([]u8, size, ctx.globals.allocator)
+
+		if gv.init != nil && type_to_dt(gv.type) != .Void {
+			value, cok := const_eval_int(gv.init)
+			if !cok {
+				fmt.panicf(
+					"TODO: non-constant global initializer: %v",
+					gv.name,
+				)
+			}
+			val_bytes := transmute([8]u8)value
+			copy(bytes, val_bytes[:size])
+		}
+
 		gv.idx = add_global(ctx, bytes, type_align(gv.type))
 	}
 }
@@ -649,6 +661,7 @@ emit_proc :: proc(ctx: ^Gen_Ctx, prc: ^Proc, i: int, level: Opt_Level) {
 
 	backend.graph_iter_peeps(ctx)
 	backend.memopt(ctx)
+
 	backend.graph_iter_peeps(ctx)
 
 	spec := &backend.SPECS[.X64]
@@ -1300,6 +1313,7 @@ emit_nodes :: proc(
 
 		backend.graph_start_loop(ctx, ctx.node_scope, &loop_state)
 		emit_nodes(ctx, {}, d.body)
+
 		backend.graph_end_loop(ctx, &ctx.node_scope, &loop_state)
 
 		ctx.loop = ctx.loop.parent

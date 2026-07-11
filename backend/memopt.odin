@@ -198,6 +198,7 @@ memopt :: proc(graph: ^Graph) -> (optimized: bool) {
 				id := get_edited_node_idx(ctx, cnode) or_break
 				slot := &ctx.scope[id]
 				slot^ = Value_Entry(cnode.inps[3])
+				assert(slot^ != {})
 			case .Call:
 				assert(len(cnode.outs) == 1)
 				cursor = cnode.outs[0].id
@@ -314,13 +315,14 @@ memopt :: proc(graph: ^Graph) -> (optimized: bool) {
 
 							loop_scope := slice.clone(ctx.scope)
 							scope := make([]Value_Entry, ctx.slot_count)
-							slice.fill(
-								scope,
-								Value_Entry {
-									node = Node_ID(id),
-									is_loop = true,
-								},
-							)
+							for &s, i in scope {
+								if loop_scope[i] != {} {
+									s = Value_Entry {
+										node    = Node_ID(id),
+										is_loop = true,
+									}
+								}
+							}
 
 							append(
 								&ctx.loops,
@@ -336,6 +338,7 @@ memopt :: proc(graph: ^Graph) -> (optimized: bool) {
 								init := loop.scope[i]
 								bnode := &backedge[i]
 								if init.is_loop do continue
+								if init.node == 0 do continue
 
 								inode := graph_expand(ctx, init.node)
 								if inode.btype != .Lazy_Phi do continue

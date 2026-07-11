@@ -369,3 +369,8 @@ Make sure all tests pass (run-test and ./misc/run-programs.sh), then stop.
 
 NOTE: read AGENTS.md
 
+We dont test the cases when the comparison ops are not optimized into direct
+cmp -> jmp. Make tests that tickle all of the comparison op x type and make
+sure they work and dont fold away. Use functions to obfuscake operands and
+results of the ops. If you find bugs fix them, until all tests pass and
+compiler emmited all possible comparison flag spills.

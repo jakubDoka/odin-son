@@ -1,0 +1,844 @@
+=========== OPT LEVEL: none ===========
+si:
+     mov rax, 0x00
+     cmp edi, 0x07
+     setz cl
+     movzx rcx, cl
+     movzx ecx, cl
+     add rax, rcx
+     cmp edi, 0x07
+     setnz cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*2]
+     cmp edi, 0x07
+     setl cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*4]
+     cmp edi, 0x07
+     setle cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*8]
+     cmp edi, 0x07
+     setnle cl
+     movzx rcx, cl
+     movzx ecx, cl
+     imul rcx, rcx, 0x10
+     add rax, rcx
+     cmp edi, 0x07
+     setnl cl
+     movzx rcx, cl
+     movzx ecx, cl
+     imul rcx, rcx, 0x20
+     add rax, rcx
+     ret
+sil:
+     mov rax, 0x00
+     cmp rdi, 0x07
+     setz cl
+     movzx rcx, cl
+     movzx ecx, cl
+     add rax, rcx
+     cmp rdi, 0x07
+     setnz cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*2]
+     cmp rdi, 0x07
+     setl cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*4]
+     cmp rdi, 0x07
+     setle cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*8]
+     cmp rdi, 0x07
+     setnle cl
+     movzx rcx, cl
+     movzx ecx, cl
+     imul rcx, rcx, 0x10
+     add rax, rcx
+     cmp rdi, 0x07
+     setnl cl
+     movzx rcx, cl
+     movzx ecx, cl
+     imul rcx, rcx, 0x20
+     add rax, rcx
+     ret
+ui:
+     mov rax, 0x00
+     cmp edi, 0x07
+     setz cl
+     movzx rcx, cl
+     movzx ecx, cl
+     add rax, rcx
+     cmp edi, 0x07
+     setnz cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*2]
+     cmp edi, 0x07
+     setb cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*4]
+     cmp edi, 0x07
+     setbe cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*8]
+     cmp edi, 0x07
+     setnbe cl
+     movzx rcx, cl
+     movzx ecx, cl
+     imul rcx, rcx, 0x10
+     add rax, rcx
+     cmp edi, 0x07
+     setnb cl
+     movzx rcx, cl
+     movzx ecx, cl
+     imul rcx, rcx, 0x20
+     add rax, rcx
+     ret
+uil:
+     mov rax, 0x00
+     cmp rdi, 0x07
+     setz cl
+     movzx rcx, cl
+     movzx ecx, cl
+     add rax, rcx
+     cmp rdi, 0x07
+     setnz cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*2]
+     cmp rdi, 0x07
+     setb cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*4]
+     cmp rdi, 0x07
+     setbe cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*8]
+     cmp rdi, 0x07
+     setnbe cl
+     movzx rcx, cl
+     movzx ecx, cl
+     imul rcx, rcx, 0x10
+     add rax, rcx
+     cmp rdi, 0x07
+     setnb cl
+     movzx rcx, cl
+     movzx ecx, cl
+     imul rcx, rcx, 0x20
+     add rax, rcx
+     ret
+main:
+     push rbx
+     push rbp
+     push r12
+     push r13
+     push r14
+     push r15
+     sub rsp, 0x28
+     mov rdi, 0x03
+     call :si
+     mov rbx, rax
+     mov rdi, 0x07
+     call :si
+     mov rbp, rax
+     mov rdi, 0x00
+     sub rdi, 0x03
+     call :si
+     mov r12, rax
+     mov rdi, 0x03
+     call :sil
+     mov r13, rax
+     mov rdi, 0x07
+     call :sil
+     mov r14, rax
+     mov rax, 0x00
+     sub rax, 0x03
+     mov rdi, rax
+     call :sil
+     mov r15, rax
+     mov rdi, 0x03
+     call :ui
+     mov [rsp], rax
+     mov rdi, 0x07
+     call :ui
+     mov [rsp+0x08], rax
+     mov rdi, 0xEE6B2800
+     call :ui
+     mov [rsp+0x10], rax
+     mov rdi, 0x03
+     call :uil
+     mov [rsp+0x18], rax
+     mov rdi, 0x07
+     call :uil
+     mov [rsp+0x20], rax
+     mov rdi, 0x8AC7230489E80000
+     call :uil
+     mov rdx, rbx
+     add rdx, rbp
+     add rdx, r12
+     mov rcx, 0x00
+     add rdx, rcx
+     mov rsi, r13
+     add rsi, r14
+     add rsi, r15
+     mov rcx, rdx
+     add rcx, rsi
+     mov rsi, [rsp]
+     mov rdx, [rsp+0x08]
+     add rsi, rdx
+     mov rdx, [rsp+0x10]
+     add rsi, rdx
+     mov rdx, rcx
+     add rdx, rsi
+     mov rsi, [rsp+0x18]
+     mov rcx, [rsp+0x20]
+     add rsi, rcx
+     add rsi, rax
+     add rdx, rsi
+     mov rax, rdx
+     add rsp, 0x28
+     pop r15
+     pop r14
+     pop r13
+     pop r12
+     pop rbp
+     pop rbx
+     ret
+=========== OPT LEVEL: mininal ===========
+si:
+     mov rax, 0x00
+     cmp edi, 0x07
+     setz cl
+     movzx rcx, cl
+     movzx ecx, cl
+     add rax, rcx
+     cmp edi, 0x07
+     setnz cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*2]
+     cmp edi, 0x07
+     setl cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*4]
+     cmp edi, 0x07
+     setle cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*8]
+     cmp edi, 0x07
+     setnle cl
+     movzx rcx, cl
+     movzx ecx, cl
+     imul rcx, rcx, 0x10
+     add rax, rcx
+     cmp edi, 0x07
+     setnl cl
+     movzx rcx, cl
+     movzx ecx, cl
+     imul rcx, rcx, 0x20
+     add rax, rcx
+     ret
+sil:
+     mov rax, 0x00
+     cmp rdi, 0x07
+     setz cl
+     movzx rcx, cl
+     movzx ecx, cl
+     add rax, rcx
+     cmp rdi, 0x07
+     setnz cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*2]
+     cmp rdi, 0x07
+     setl cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*4]
+     cmp rdi, 0x07
+     setle cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*8]
+     cmp rdi, 0x07
+     setnle cl
+     movzx rcx, cl
+     movzx ecx, cl
+     imul rcx, rcx, 0x10
+     add rax, rcx
+     cmp rdi, 0x07
+     setnl cl
+     movzx rcx, cl
+     movzx ecx, cl
+     imul rcx, rcx, 0x20
+     add rax, rcx
+     ret
+ui:
+     mov rax, 0x00
+     cmp edi, 0x07
+     setz cl
+     movzx rcx, cl
+     movzx ecx, cl
+     add rax, rcx
+     cmp edi, 0x07
+     setnz cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*2]
+     cmp edi, 0x07
+     setb cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*4]
+     cmp edi, 0x07
+     setbe cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*8]
+     cmp edi, 0x07
+     setnbe cl
+     movzx rcx, cl
+     movzx ecx, cl
+     imul rcx, rcx, 0x10
+     add rax, rcx
+     cmp edi, 0x07
+     setnb cl
+     movzx rcx, cl
+     movzx ecx, cl
+     imul rcx, rcx, 0x20
+     add rax, rcx
+     ret
+uil:
+     mov rax, 0x00
+     cmp rdi, 0x07
+     setz cl
+     movzx rcx, cl
+     movzx ecx, cl
+     add rax, rcx
+     cmp rdi, 0x07
+     setnz cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*2]
+     cmp rdi, 0x07
+     setb cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*4]
+     cmp rdi, 0x07
+     setbe cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*8]
+     cmp rdi, 0x07
+     setnbe cl
+     movzx rcx, cl
+     movzx ecx, cl
+     imul rcx, rcx, 0x10
+     add rax, rcx
+     cmp rdi, 0x07
+     setnb cl
+     movzx rcx, cl
+     movzx ecx, cl
+     imul rcx, rcx, 0x20
+     add rax, rcx
+     ret
+main:
+     push rbx
+     push rbp
+     push r12
+     push r13
+     push r14
+     push r15
+     sub rsp, 0x28
+     mov rdi, 0x03
+     call :si
+     mov rbx, rax
+     mov rdi, 0x07
+     call :si
+     mov rbp, rax
+     mov rdi, 0xFFFFFFFFFFFFFFFD
+     call :si
+     mov r12, rax
+     mov rdi, 0x03
+     call :sil
+     mov r13, rax
+     mov rdi, 0x07
+     call :sil
+     mov r14, rax
+     mov rdi, 0xFFFFFFFFFFFFFFFD
+     call :sil
+     mov r15, rax
+     mov rdi, 0x03
+     call :ui
+     mov [rsp], rax
+     mov rdi, 0x07
+     call :ui
+     mov [rsp+0x08], rax
+     mov rdi, 0xEE6B2800
+     call :ui
+     mov [rsp+0x10], rax
+     mov rdi, 0x03
+     call :uil
+     mov [rsp+0x18], rax
+     mov rdi, 0x07
+     call :uil
+     mov [rsp+0x20], rax
+     mov rdi, 0x8AC7230489E80000
+     call :uil
+     mov rdx, rbx
+     add rdx, rbp
+     add rdx, r12
+     mov rcx, 0x00
+     add rcx, rdx
+     mov rsi, r13
+     add rsi, r14
+     add rsi, r15
+     add rcx, rsi
+     mov rsi, [rsp]
+     mov rdx, [rsp+0x08]
+     add rsi, rdx
+     mov rdx, [rsp+0x10]
+     add rsi, rdx
+     mov rdi, rcx
+     add rdi, rsi
+     mov rdx, [rsp+0x18]
+     mov rcx, [rsp+0x20]
+     add rdx, rcx
+     add rdx, rax
+     add rdi, rdx
+     mov rax, rdi
+     add rsp, 0x28
+     pop r15
+     pop r14
+     pop r13
+     pop r12
+     pop rbp
+     pop rbx
+     ret
+=========== OPT LEVEL: moderate ===========
+si:
+     cmp edi, 0x07
+     setz al
+     movzx rax, al
+     movzx eax, al
+     cmp edi, 0x07
+     setnz cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*2]
+     cmp edi, 0x07
+     setl cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*4]
+     cmp edi, 0x07
+     setle cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*8]
+     cmp edi, 0x07
+     setnle cl
+     movzx rcx, cl
+     movzx ecx, cl
+     imul rcx, rcx, 0x10
+     add rax, rcx
+     cmp edi, 0x07
+     setnl cl
+     movzx rcx, cl
+     movzx ecx, cl
+     imul rcx, rcx, 0x20
+     add rax, rcx
+     ret
+sil:
+     cmp rdi, 0x07
+     setz al
+     movzx rax, al
+     movzx eax, al
+     cmp rdi, 0x07
+     setnz cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*2]
+     cmp rdi, 0x07
+     setl cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*4]
+     cmp rdi, 0x07
+     setle cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*8]
+     cmp rdi, 0x07
+     setnle cl
+     movzx rcx, cl
+     movzx ecx, cl
+     imul rcx, rcx, 0x10
+     add rax, rcx
+     cmp rdi, 0x07
+     setnl cl
+     movzx rcx, cl
+     movzx ecx, cl
+     imul rcx, rcx, 0x20
+     add rax, rcx
+     ret
+ui:
+     cmp edi, 0x07
+     setz al
+     movzx rax, al
+     movzx eax, al
+     cmp edi, 0x07
+     setnz cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*2]
+     cmp edi, 0x07
+     setb cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*4]
+     cmp edi, 0x07
+     setbe cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*8]
+     cmp edi, 0x07
+     setnbe cl
+     movzx rcx, cl
+     movzx ecx, cl
+     imul rcx, rcx, 0x10
+     add rax, rcx
+     cmp edi, 0x07
+     setnb cl
+     movzx rcx, cl
+     movzx ecx, cl
+     imul rcx, rcx, 0x20
+     add rax, rcx
+     ret
+uil:
+     cmp rdi, 0x07
+     setz al
+     movzx rax, al
+     movzx eax, al
+     cmp rdi, 0x07
+     setnz cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*2]
+     cmp rdi, 0x07
+     setb cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*4]
+     cmp rdi, 0x07
+     setbe cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*8]
+     cmp rdi, 0x07
+     setnbe cl
+     movzx rcx, cl
+     movzx ecx, cl
+     imul rcx, rcx, 0x10
+     add rax, rcx
+     cmp rdi, 0x07
+     setnb cl
+     movzx rcx, cl
+     movzx ecx, cl
+     imul rcx, rcx, 0x20
+     add rax, rcx
+     ret
+main:
+     push rbx
+     push rbp
+     push r12
+     push r13
+     push r14
+     push r15
+     sub rsp, 0x28
+     mov rdi, 0x03
+     call :si
+     mov rbx, rax
+     mov rdi, 0x07
+     call :si
+     mov rbp, rax
+     mov rdi, 0xFFFFFFFFFFFFFFFD
+     call :si
+     mov r12, rax
+     mov rdi, 0x03
+     call :sil
+     mov r13, rax
+     mov rdi, 0x07
+     call :sil
+     mov r14, rax
+     mov rdi, 0xFFFFFFFFFFFFFFFD
+     call :sil
+     mov r15, rax
+     mov rdi, 0x03
+     call :ui
+     mov [rsp], rax
+     mov rdi, 0x07
+     call :ui
+     mov [rsp+0x08], rax
+     mov rdi, 0xEE6B2800
+     call :ui
+     mov [rsp+0x10], rax
+     mov rdi, 0x03
+     call :uil
+     mov [rsp+0x18], rax
+     mov rdi, 0x07
+     call :uil
+     mov [rsp+0x20], rax
+     mov rdi, 0x8AC7230489E80000
+     call :uil
+     mov rcx, rbx
+     add rcx, rbp
+     mov rdx, rcx
+     add rdx, r12
+     mov rsi, r13
+     add rsi, r14
+     add rsi, r15
+     mov rcx, rdx
+     add rcx, rsi
+     mov rsi, [rsp]
+     mov rdx, [rsp+0x08]
+     add rsi, rdx
+     mov rdx, [rsp+0x10]
+     add rsi, rdx
+     mov rdx, rcx
+     add rdx, rsi
+     mov rsi, [rsp+0x18]
+     mov rcx, [rsp+0x20]
+     add rsi, rcx
+     add rsi, rax
+     add rdx, rsi
+     mov rax, rdx
+     add rsp, 0x28
+     pop r15
+     pop r14
+     pop r13
+     pop r12
+     pop rbp
+     pop rbx
+     ret
+=========== OPT LEVEL: all ===========
+si:
+     cmp edi, 0x07
+     setz al
+     movzx rax, al
+     movzx eax, al
+     cmp edi, 0x07
+     setnz cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*2]
+     cmp edi, 0x07
+     setl cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*4]
+     cmp edi, 0x07
+     setle cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*8]
+     cmp edi, 0x07
+     setnle cl
+     movzx rcx, cl
+     movzx ecx, cl
+     imul rcx, rcx, 0x10
+     add rax, rcx
+     cmp edi, 0x07
+     setnl cl
+     movzx rcx, cl
+     movzx ecx, cl
+     imul rcx, rcx, 0x20
+     add rax, rcx
+     ret
+sil:
+     cmp rdi, 0x07
+     setz al
+     movzx rax, al
+     movzx eax, al
+     cmp rdi, 0x07
+     setnz cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*2]
+     cmp rdi, 0x07
+     setl cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*4]
+     cmp rdi, 0x07
+     setle cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*8]
+     cmp rdi, 0x07
+     setnle cl
+     movzx rcx, cl
+     movzx ecx, cl
+     imul rcx, rcx, 0x10
+     add rax, rcx
+     cmp rdi, 0x07
+     setnl cl
+     movzx rcx, cl
+     movzx ecx, cl
+     imul rcx, rcx, 0x20
+     add rax, rcx
+     ret
+ui:
+     cmp edi, 0x07
+     setz al
+     movzx rax, al
+     movzx eax, al
+     cmp edi, 0x07
+     setnz cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*2]
+     cmp edi, 0x07
+     setb cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*4]
+     cmp edi, 0x07
+     setbe cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*8]
+     cmp edi, 0x07
+     setnbe cl
+     movzx rcx, cl
+     movzx ecx, cl
+     imul rcx, rcx, 0x10
+     add rax, rcx
+     cmp edi, 0x07
+     setnb cl
+     movzx rcx, cl
+     movzx ecx, cl
+     imul rcx, rcx, 0x20
+     add rax, rcx
+     ret
+uil:
+     cmp rdi, 0x07
+     setz al
+     movzx rax, al
+     movzx eax, al
+     cmp rdi, 0x07
+     setnz cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*2]
+     cmp rdi, 0x07
+     setb cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*4]
+     cmp rdi, 0x07
+     setbe cl
+     movzx rcx, cl
+     movzx ecx, cl
+     lea rax, [rax+rcx*8]
+     cmp rdi, 0x07
+     setnbe cl
+     movzx rcx, cl
+     movzx ecx, cl
+     imul rcx, rcx, 0x10
+     add rax, rcx
+     cmp rdi, 0x07
+     setnb cl
+     movzx rcx, cl
+     movzx ecx, cl
+     imul rcx, rcx, 0x20
+     add rax, rcx
+     ret
+main:
+     push rbx
+     push rbp
+     push r12
+     push r13
+     push r14
+     push r15
+     sub rsp, 0x28
+     mov rdi, 0x03
+     call :si
+     mov rbx, rax
+     mov rdi, 0x07
+     call :si
+     mov rbp, rax
+     mov rdi, 0xFFFFFFFFFFFFFFFD
+     call :si
+     mov r12, rax
+     mov rdi, 0x03
+     call :sil
+     mov r13, rax
+     mov rdi, 0x07
+     call :sil
+     mov r14, rax
+     mov rdi, 0xFFFFFFFFFFFFFFFD
+     call :sil
+     mov r15, rax
+     mov rdi, 0x03
+     call :ui
+     mov [rsp], rax
+     mov rdi, 0x07
+     call :ui
+     mov [rsp+0x08], rax
+     mov rdi, 0xEE6B2800
+     call :ui
+     mov [rsp+0x10], rax
+     mov rdi, 0x03
+     call :uil
+     mov [rsp+0x18], rax
+     mov rdi, 0x07
+     call :uil
+     mov [rsp+0x20], rax
+     mov rdi, 0x8AC7230489E80000
+     call :uil
+     mov rcx, rbx
+     add rcx, rbp
+     mov rdx, rcx
+     add rdx, r12
+     mov rsi, r13
+     add rsi, r14
+     add rsi, r15
+     mov rcx, rdx
+     add rcx, rsi
+     mov rsi, [rsp]
+     mov rdx, [rsp+0x08]
+     add rsi, rdx
+     mov rdx, [rsp+0x10]
+     add rsi, rdx
+     mov rdx, rcx
+     add rdx, rsi
+     mov rsi, [rsp+0x18]
+     mov rcx, [rsp+0x20]
+     add rsi, rcx
+     add rsi, rax
+     add rdx, rsi
+     mov rax, rdx
+     add rsp, 0x28
+     pop r15
+     pop r14
+     pop r13
+     pop r12
+     pop rbp
+     pop rbx
+     ret

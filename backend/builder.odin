@@ -592,6 +592,7 @@ when !GEN_SPEC {
 					if size != 0 && len(cnode.outs) != 1 do break
 					if cnode.inps[0] != common_ctrl do break
 					val := graph_get(ctx, cnode.inps[3])
+					if val.dt in FLOAT_DTS do break
 					val_const := graph_extra(ctx, val, CInt)
 					if val_const == nil do break
 					base, offset := base_and_offset(ctx, cnode.inps[2])
@@ -600,8 +601,10 @@ when !GEN_SPEC {
 					if size + DT_SIZE[val.dt] > SIZE_LIMIT do break
 
 					size += DT_SIZE[val.dt]
-					imm <<= uint(DT_SIZE[val.dt] * 8)
-					imm |= val_const.value
+					bits := uint(DT_SIZE[val.dt] * 8)
+					vmask: i64 = i64(~uint(0) >> (64 - bits))
+					imm <<= bits
+					imm |= val_const.value & vmask
 
 					prev_offset = offset
 					if math.is_power_of_two(size) {

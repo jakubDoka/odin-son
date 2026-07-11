@@ -4889,10 +4889,486 @@ opaque :: proc(x: int) -> int {
 }
 ```
 
+#### signed integer materialized compares
+```odin
+package main
+
+opt_level :: "none"
+
+s8 :: proc(a: i8, b: i8) -> int {
+	r := 0
+	r += int(a == b)
+	r += int(a != b) * 2
+	r += int(a < b) * 4
+	r += int(a <= b) * 8
+	r += int(a > b) * 16
+	r += int(a >= b) * 32
+	return r
+}
+
+s16 :: proc(a: i16, b: i16) -> int {
+	r := 0
+	r += int(a == b)
+	r += int(a != b) * 2
+	r += int(a < b) * 4
+	r += int(a <= b) * 8
+	r += int(a > b) * 16
+	r += int(a >= b) * 32
+	return r
+}
+
+s32 :: proc(a: i32, b: i32) -> int {
+	r := 0
+	r += int(a == b)
+	r += int(a != b) * 2
+	r += int(a < b) * 4
+	r += int(a <= b) * 8
+	r += int(a > b) * 16
+	r += int(a >= b) * 32
+	return r
+}
+
+s64 :: proc(a: i64, b: i64) -> int {
+	r := 0
+	r += int(a == b)
+	r += int(a != b) * 2
+	r += int(a < b) * 4
+	r += int(a <= b) * 8
+	r += int(a > b) * 16
+	r += int(a >= b) * 32
+	return r
+}
+
+sint :: proc(a: int, b: int) -> int {
+	r := 0
+	r += int(a == b)
+	r += int(a != b) * 2
+	r += int(a < b) * 4
+	r += int(a <= b) * 8
+	r += int(a > b) * 16
+	r += int(a >= b) * 32
+	return r
+}
+
+main :: proc() -> int {
+	r := 0
+
+	r += s8(0 - 1, 1) + s8(5, 5) + s8(7, 0 - 3)
+	r += s16(0 - 1, 1) + s16(5, 5) + s16(7, 0 - 3)
+	r += s32(0 - 1, 1) + s32(5, 5) + s32(7, 0 - 3)
+	r += s64(0 - 1, 1) + s64(5, 5) + s64(7, 0 - 3)
+	r += sint(0 - 1, 1) + sint(5, 5) + sint(7, 0 - 3)
+
+	return r
+}
+```
+
+#### unsigned integer materialized compares
+```odin
+package main
+
+opt_level :: "none"
+
+u8c :: proc(a: u8, b: u8) -> int {
+	r := 0
+	r += int(a == b)
+	r += int(a != b) * 2
+	r += int(a < b) * 4
+	r += int(a <= b) * 8
+	r += int(a > b) * 16
+	r += int(a >= b) * 32
+	return r
+}
+
+u16c :: proc(a: u16, b: u16) -> int {
+	r := 0
+	r += int(a == b)
+	r += int(a != b) * 2
+	r += int(a < b) * 4
+	r += int(a <= b) * 8
+	r += int(a > b) * 16
+	r += int(a >= b) * 32
+	return r
+}
+
+u32c :: proc(a: u32, b: u32) -> int {
+	r := 0
+	r += int(a == b)
+	r += int(a != b) * 2
+	r += int(a < b) * 4
+	r += int(a <= b) * 8
+	r += int(a > b) * 16
+	r += int(a >= b) * 32
+	return r
+}
+
+u64c :: proc(a: u64, b: u64) -> int {
+	r := 0
+	r += int(a == b)
+	r += int(a != b) * 2
+	r += int(a < b) * 4
+	r += int(a <= b) * 8
+	r += int(a > b) * 16
+	r += int(a >= b) * 32
+	return r
+}
+
+uintc :: proc(a: uint, b: uint) -> int {
+	r := 0
+	r += int(a == b)
+	r += int(a != b) * 2
+	r += int(a < b) * 4
+	r += int(a <= b) * 8
+	r += int(a > b) * 16
+	r += int(a >= b) * 32
+	return r
+}
+
+main :: proc() -> int {
+	r := 0
+
+	// high bit set operands so a signed comparison would give a different answer
+	r += u8c(200, 5) + u8c(100, 100) + u8c(5, 200)
+	r += u16c(50000, 5) + u16c(100, 100) + u16c(5, 50000)
+	r += u32c(4000000000, 5) + u32c(100, 100) + u32c(5, 4000000000)
+	r += u64c(10000000000000000000, 5) + u64c(100, 100) + u64c(5, 10000000000000000000)
+	r += uintc(10000000000000000000, 5) + uintc(100, 100) + uintc(5, 10000000000000000000)
+
+	return r
+}
+```
+
 #### float materialized compares
 ```odin
 package main
-	
+
+opt_level :: "none"
+
+f32c :: proc(a: f32, b: f32) -> int {
+	r := 0
+	r += int(a == b)
+	r += int(a != b) * 2
+	r += int(a < b) * 4
+	r += int(a <= b) * 8
+	r += int(a > b) * 16
+	r += int(a >= b) * 32
+	return r
+}
+
+f64c :: proc(a: f64, b: f64) -> int {
+	r := 0
+	r += int(a == b)
+	r += int(a != b) * 2
+	r += int(a < b) * 4
+	r += int(a <= b) * 8
+	r += int(a > b) * 16
+	r += int(a >= b) * 32
+	return r
+}
+
+main :: proc() -> int {
+	r := 0
+
+	r += f32c(1, 2) + f32c(2, 2) + f32c(3, 2)
+	r += f64c(1, 2) + f64c(2, 2) + f64c(3, 2)
+
+	return r
+}
+```
+
+#### integer materialized compares with immediate
+```odin
+package main
+
+opt_level :: "none"
+
+si :: proc(a: i32) -> int {
+	r := 0
+	r += int(a == 7)
+	r += int(a != 7) * 2
+	r += int(a < 7) * 4
+	r += int(a <= 7) * 8
+	r += int(a > 7) * 16
+	r += int(a >= 7) * 32
+	return r
+}
+
+sil :: proc(a: i64) -> int {
+	r := 0
+	r += int(a == 7)
+	r += int(a != 7) * 2
+	r += int(a < 7) * 4
+	r += int(a <= 7) * 8
+	r += int(a > 7) * 16
+	r += int(a >= 7) * 32
+	return r
+}
+
+ui :: proc(a: u32) -> int {
+	r := 0
+	r += int(a == 7)
+	r += int(a != 7) * 2
+	r += int(a < 7) * 4
+	r += int(a <= 7) * 8
+	r += int(a > 7) * 16
+	r += int(a >= 7) * 32
+	return r
+}
+
+uil :: proc(a: u64) -> int {
+	r := 0
+	r += int(a == 7)
+	r += int(a != 7) * 2
+	r += int(a < 7) * 4
+	r += int(a <= 7) * 8
+	r += int(a > 7) * 16
+	r += int(a >= 7) * 32
+	return r
+}
+
+main :: proc() -> int {
+	r := 0
+
+	r += si(3) + si(7) + si(0 - 3)
+	r += sil(3) + sil(7) + sil(0 - 3)
+	r += ui(3) + ui(7) + ui(4000000000)
+	r += uil(3) + uil(7) + uil(10000000000000000000)
+
+	return r
+}
+```
+
+#### integer materialized compares with load
+```odin
+package main
+
+opt_level :: "none"
+
+sld :: proc(a: i32, p: ^i32) -> int {
+	r := 0
+	r += int(a == p^)
+	r += int(a != p^) * 2
+	r += int(a < p^) * 4
+	r += int(a <= p^) * 8
+	r += int(a > p^) * 16
+	r += int(a >= p^) * 32
+	return r
+}
+
+uld :: proc(a: u32, p: ^u32) -> int {
+	r := 0
+	r += int(a == p^)
+	r += int(a != p^) * 2
+	r += int(a < p^) * 4
+	r += int(a <= p^) * 8
+	r += int(a > p^) * 16
+	r += int(a >= p^) * 32
+	return r
+}
+
+main :: proc() -> int {
+	r := 0
+
+	sv: i32 = 5
+	r += sld(3, &sv) + sld(5, &sv) + sld(9, &sv)
+
+	uv: u32 = 4000000000
+	r += uld(5, &uv) + uld(4000000000, &uv) + uld(4000000001, &uv)
+
+	return r
+}
+```
+
+#### float materialized compares with load
+```odin
+package main
+
+opt_level :: "none"
+
+fld32 :: proc(a: f32, p: ^f32) -> int {
+	r := 0
+	r += int(a == p^)
+	r += int(a != p^) * 2
+	r += int(a < p^) * 4
+	r += int(a <= p^) * 8
+	r += int(a > p^) * 16
+	r += int(a >= p^) * 32
+	return r
+}
+
+fld64 :: proc(a: f64, p: ^f64) -> int {
+	r := 0
+	r += int(a == p^)
+	r += int(a != p^) * 2
+	r += int(a < p^) * 4
+	r += int(a <= p^) * 8
+	r += int(a > p^) * 16
+	r += int(a >= p^) * 32
+	return r
+}
+
+main :: proc() -> int {
+	r := 0
+
+	v32: f32 = 2
+	r += fld32(1, &v32) + fld32(2, &v32) + fld32(3, &v32)
+
+	v64: f64 = 2
+	r += fld64(1, &v64) + fld64(2, &v64) + fld64(3, &v64)
+
+	return r
+}
+```
+
+#### integer materialized compares with folded load
+```odin
+package main
+
+opt_level :: "none"
+
+Si6 :: struct {
+	a: i32,
+	b: i32,
+	c: i32,
+	d: i32,
+	e: i32,
+	f: i32,
+}
+
+Ui6 :: struct {
+	a: u32,
+	b: u32,
+	c: u32,
+	d: u32,
+	e: u32,
+	f: u32,
+}
+
+// each field is a distinct single use load so it folds into the cmp's memory operand
+msrc :: proc(a: i32, p: ^Si6) -> int {
+	r := 0
+	r += int(a == p.a)
+	r += int(a != p.b) * 2
+	r += int(a < p.c) * 4
+	r += int(a <= p.d) * 8
+	r += int(a > p.e) * 16
+	r += int(a >= p.f) * 32
+	return r
+}
+
+usrc :: proc(a: u32, p: ^Ui6) -> int {
+	r := 0
+	r += int(a == p.a)
+	r += int(a != p.b) * 2
+	r += int(a < p.c) * 4
+	r += int(a <= p.d) * 8
+	r += int(a > p.e) * 16
+	r += int(a >= p.f) * 32
+	return r
+}
+
+mdst :: proc(p: ^Si6) -> int {
+	r := 0
+	r += int(p.a == 7)
+	r += int(p.b != 7) * 2
+	r += int(p.c < 7) * 4
+	r += int(p.d <= 7) * 8
+	r += int(p.e > 7) * 16
+	r += int(p.f >= 7) * 32
+	return r
+}
+
+udst :: proc(p: ^Ui6) -> int {
+	r := 0
+	r += int(p.a == 7)
+	r += int(p.b != 7) * 2
+	r += int(p.c < 7) * 4
+	r += int(p.d <= 7) * 8
+	r += int(p.e > 7) * 16
+	r += int(p.f >= 7) * 32
+	return r
+}
+
+main :: proc() -> int {
+	r := 0
+
+	si := Si6{0 - 5, 0 - 5, 0 - 5, 0 - 5, 0 - 5, 0 - 5}
+	r += msrc(0 - 9, &si) + msrc(0 - 5, &si) + msrc(3, &si)
+
+	ui := Ui6{4000000000, 4000000000, 4000000000, 4000000000, 4000000000, 4000000000}
+	r += usrc(5, &ui) + usrc(4000000000, &ui) + usrc(4000000001, &ui)
+
+	di := Si6{3, 3, 3, 3, 3, 3}
+	r += mdst(&di)
+	dj := Si6{9, 9, 9, 9, 9, 9}
+	r += mdst(&dj)
+
+	du := Ui6{3, 3, 3, 3, 3, 3}
+	r += udst(&du)
+	dv := Ui6{4000000000, 4000000000, 4000000000, 4000000000, 4000000000, 4000000000}
+	r += udst(&dv)
+
+	return r
+}
+```
+
+#### float materialized compares with folded load
+```odin
+package main
+
+opt_level :: "none"
+
+F32x6 :: struct {
+	a: f32,
+	b: f32,
+	c: f32,
+	d: f32,
+	e: f32,
+	f: f32,
+}
+
+F64x6 :: struct {
+	a: f64,
+	b: f64,
+	c: f64,
+	d: f64,
+	e: f64,
+	f: f64,
+}
+
+fsrc32 :: proc(a: f32, p: ^F32x6) -> int {
+	r := 0
+	r += int(a == p.a)
+	r += int(a != p.b) * 2
+	r += int(a < p.c) * 4
+	r += int(a <= p.d) * 8
+	r += int(a > p.e) * 16
+	r += int(a >= p.f) * 32
+	return r
+}
+
+fsrc64 :: proc(a: f64, p: ^F64x6) -> int {
+	r := 0
+	r += int(a == p.a)
+	r += int(a != p.b) * 2
+	r += int(a < p.c) * 4
+	r += int(a <= p.d) * 8
+	r += int(a > p.e) * 16
+	r += int(a >= p.f) * 32
+	return r
+}
+
+main :: proc() -> int {
+	r := 0
+
+	a32 := F32x6{2, 2, 2, 2, 2, 2}
+	r += fsrc32(1, &a32) + fsrc32(2, &a32) + fsrc32(3, &a32)
+
+	a64 := F64x6{2, 2, 2, 2, 2, 2}
+	r += fsrc64(1, &a64) + fsrc64(2, &a64) + fsrc64(3, &a64)
+
+	return r
+}
 ```
 
 #### crash in gcm on two loops nested in a loop

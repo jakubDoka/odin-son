@@ -138,12 +138,10 @@ x86_reg_class_classify :: proc(
 		case ^Enum:
 			classify(t.backing, slots, offset) or_return
 		case ^Union:
-			for i in 0 ..< (t.size + 7) / 8 {
-				slots[offset / 8 + i] = max(
-					slots[offset / 8 + i],
-					X86_Reg_Class.Integer,
-				)
+			for f in t.variants {
+				classify(f, slots, offset) or_return
 			}
+			classify(t.tag_ty, slots, t.tag_offset)
 		case ^Lit:
 			panic("should not happen")
 		}
@@ -558,8 +556,6 @@ store_value_ty :: proc(
 	}
 }
 
-// store_union writes `member_val` (of type member_ty) into the payload at
-// offset 0 of the union at `dest` and sets the tag to the variant index.
 store_union :: proc(
 	ctx: ^Gen_Ctx,
 	dest: backend.Node_ID,
@@ -916,32 +912,32 @@ emit_proc :: proc(
 	prc.out = spec.emit_function(emit_ctx^)
 }
 
-// emit_stmts emits a list of statements as a lexical scope, mirroring the
-// bookkeeping done for ^ast.Block_Stmt (used by switch case bodies). `bind`, if
-// set, is an extra lvalue variable introduced into the scope (the type-switch
-// capture); its backing pointer is pinned for the duration of the body.
+Scope_Base :: struct {
+	gen:  int,
+	node: u16,
+}
+
+ctx_scope_base :: proc(ctx: ^Gen_Ctx) -> Scope_Base {
+	return {len(ctx.scope), backend.graph_get(ctx, ctx.node_scope).input_count}
+}
+
 emit_stmts :: proc(
 	ctx: ^Gen_Ctx,
 	stmts: []^ast.Stmt,
-	bind: Maybe(Variable) = nil,
+	scope_base_override: Maybe(Scope_Base) = nil,
 ) {
-	prev_local := len(ctx.scope)
-	prev_scope := backend.graph_get(ctx, ctx.node_scope).input_count
-	if b, ok := bind.?; ok {
-		backend.graph_pin(ctx, b.idx.(backend.Node_ID))
-		append(&ctx.scope, b)
-	}
+	base := scope_base_override.? or_else ctx_scope_base(ctx)
 	for stmt in stmts {
 		emit_nodes(ctx, {}, stmt)
 		if ctx.node_scope == 0 do break
 	}
-	for v in ctx.scope[prev_local:] {
+	for v in ctx.scope[base.gen:] {
 		if n, ok := v.idx.(backend.Node_ID); ok {
 			backend.graph_unpin(ctx, n)
 		}
 	}
-	resize(&ctx.scope, prev_local)
-	backend.graph_truncate_scope(ctx, ctx.node_scope, prev_scope)
+	resize(&ctx.scope, base.gen)
+	backend.graph_truncate_scope(ctx, ctx.node_scope, base.node)
 }
 
 emit_nodes :: proc(
@@ -965,21 +961,7 @@ emit_nodes :: proc(
 
 	#partial match: switch d in node.derived {
 	case ^ast.Block_Stmt:
-		prev_local_scope_len := len(ctx.scope)
-		prev_scope_len := backend.graph_get(ctx, ctx.node_scope).input_count
-		for stmt in d.stmts {
-			emit_nodes(ctx, {}, stmt)
-			if ctx.node_scope == 0 do break
-		}
-		for v in ctx.scope[prev_local_scope_len:] {
-			switch n in v.idx {
-			case backend.Node_ID:
-				backend.graph_unpin(ctx, n)
-			case int:
-			}
-		}
-		resize(&ctx.scope, prev_local_scope_len)
-		backend.graph_truncate_scope(ctx, ctx.node_scope, prev_scope_len)
+		emit_stmts(ctx, d.stmts)
 	case ^ast.Expr_Stmt:
 		node := emit_nodes(ctx, {}, d.expr)
 		if node.id != 0 {
@@ -1600,7 +1582,8 @@ emit_nodes :: proc(
 		backend.graph_pin(ctx, condv)
 
 		body := d.body.derived.(^ast.Block_Stmt)
-		states := make([dynamic]backend.If_State, tmp)
+		sw: backend.Block_State
+		backend.graph_start_block(&sw)
 		default_clause: ^ast.Case_Clause
 		for clause_node in body.stmts {
 			clause := clause_node.derived.(^ast.Case_Clause)
@@ -1617,20 +1600,19 @@ emit_nodes :: proc(
 					cond == 0 ? eq : backend.graph_add_bin_op(ctx, "sor", .Or, .I8, cond, eq)
 			}
 
-			st: backend.If_State
-			backend.graph_start_if(ctx, ctx.node_scope, &st, cond)
+			arm: backend.If_State
+			backend.graph_start_if(ctx, ctx.node_scope, &arm, cond)
 			emit_stmts(ctx, clause.body)
-			backend.graph_start_else(ctx, &ctx.node_scope, &st)
-			append(&states, st)
+			backend.graph_break_block(ctx, &ctx.node_scope, &sw)
+			backend.graph_start_else(ctx, &ctx.node_scope, &arm)
+			backend.graph_end_else(ctx, &ctx.node_scope, &arm)
 		}
 
 		if default_clause != nil {
 			emit_stmts(ctx, default_clause.body)
 		}
 
-		#reverse for &st in states {
-			backend.graph_end_else(ctx, &ctx.node_scope, &st)
-		}
+		backend.graph_end_block(ctx, &ctx.node_scope, &sw)
 
 		backend.graph_unpin(ctx, condv)
 	case ^ast.Type_Switch_Stmt:
@@ -1648,7 +1630,8 @@ emit_nodes :: proc(
 		backend.graph_pin(ctx, tagv)
 
 		body := d.body.derived.(^ast.Block_Stmt)
-		states := make([dynamic]backend.If_State, tmp)
+		sw: backend.Block_State
+		backend.graph_start_block(&sw)
 		default_clause: ^ast.Case_Clause
 		for clause_node in body.stmts {
 			clause := clause_node.derived.(^ast.Case_Clause)
@@ -1662,21 +1645,27 @@ emit_nodes :: proc(
 			cval := backend.graph_add_c_int(ctx, "tsc", tag_dt, i64(idx + 1))
 			cond := backend.graph_add_bin_op(ctx, "tseq", .Eq, .I8, tagv, cval)
 
-			st: backend.If_State
-			backend.graph_start_if(ctx, ctx.node_scope, &st, cond)
-			emit_stmts(
-				ctx,
-				clause.body,
-				Variable{binding, ptr, case_ty, tag.lhs[0], {.Referenced}},
-			)
-			backend.graph_start_else(ctx, &ctx.node_scope, &st)
-			append(&states, st)
+			arm: backend.If_State
+			backend.graph_start_if(ctx, ctx.node_scope, &arm, cond)
+			{
+				base := ctx_scope_base(ctx)
+				backend.graph_pin(ctx, ptr)
+				append(
+					&ctx.scope,
+					Variable{binding, ptr, case_ty, tag.lhs[0], {.Referenced}},
+				)
+				emit_stmts(ctx, clause.body, base)
+				backend.graph_break_block(ctx, &ctx.node_scope, &sw)
+			}
+			backend.graph_start_else(ctx, &ctx.node_scope, &arm)
+			backend.graph_end_else(ctx, &ctx.node_scope, &arm)
 		}
 
 		if default_clause != nil {
-			emit_stmts(
-				ctx,
-				default_clause.body,
+			base := ctx_scope_base(ctx)
+			backend.graph_pin(ctx, ptr)
+			append(
+				&ctx.scope,
 				Variable {
 					binding,
 					ptr,
@@ -1685,11 +1674,10 @@ emit_nodes :: proc(
 					{.Referenced},
 				},
 			)
+			emit_stmts(ctx, default_clause.body, base)
 		}
 
-		#reverse for &st in states {
-			backend.graph_end_else(ctx, &ctx.node_scope, &st)
-		}
+		backend.graph_end_block(ctx, &ctx.node_scope, &sw)
 
 		backend.graph_unpin(ctx, tagv)
 		backend.graph_unpin(ctx, ptr)

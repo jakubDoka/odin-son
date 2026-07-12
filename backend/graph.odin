@@ -357,6 +357,28 @@ graph_end_else :: proc(graph: ^Graph, else_scope: ^Node_ID, state: ^If_State) {
 	else_scope^ = graph_merge_scopes(graph, state.then_scope, else_scope^)
 }
 
+Block_State :: struct {
+	end_scope: Node_ID,
+}
+
+graph_start_block :: proc(state: ^Block_State) {
+	state^ = {}
+}
+
+graph_break_block :: proc(
+	graph: ^Graph,
+	scope: ^Node_ID,
+	state: ^Block_State,
+) {
+	state.end_scope = graph_merge_scopes(graph, state.end_scope, scope^)
+	scope^ = 0
+}
+
+graph_end_block :: proc(graph: ^Graph, scope: ^Node_ID, state: ^Block_State) {
+	state.end_scope = graph_merge_scopes(graph, state.end_scope, scope^)
+	scope^ = state.end_scope
+}
+
 Loop_Control :: enum int {
 	Break,
 	Continue,

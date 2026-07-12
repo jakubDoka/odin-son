@@ -380,9 +380,7 @@ Add a raylib example program, implement boids. This program should be in
 to use the foreign blocks to bind to raylib manually, use system installed
 raylib when linking.
 
-### Add suport for enums and unions
-
-NOTE: read AGENTS.md
+### Add suport for enums and unions (DONE)
 
 Support enums and unions. This breaks down into multiple steps:
 1. Add tests to the `TESTS.md` that exercize the compiler with all the possible
@@ -390,3 +388,17 @@ Support enums and unions. This breaks down into multiple steps:
 2. Implement the frontend code to handle these.
 3. Make sure thests pass, if you find a bug, spawn an agent to fix it, then
    return to me.
+
+### Clean up the switch statement codegen
+
+NOTE: read AGENTS.md
+
+Currently a switch statement uses a stack of If States to get emitted. Add a
+new builder into the `backend/graph.odin` that gives you an ability to break
+out of it, which will accumulate the breaks into a region with phis, similar to
+what `Loop_State` does with the `break` control flow.
+
+Once that is done, refactor the switch codegen by using it instead of a if
+statement stack.
+
+Make usre all tests still pass.

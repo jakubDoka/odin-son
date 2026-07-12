@@ -8,6 +8,7 @@ import "core:mem"
 import "core:odin/ast"
 import "core:odin/tokenizer"
 import "core:reflect"
+import "core:slice"
 import "core:strconv"
 import "meta"
 import "vendored/gam/util/arna"
@@ -742,10 +743,7 @@ Union :: struct {
 }
 
 union_variant_index :: proc(u: ^Union, ty: Type) -> (int, bool) {
-	for v, i in u.variants {
-		if v == ty do return i, true
-	}
-	return 0, false
+	return slice.linear_search(u.variants, ty)
 }
 
 typecheck :: proc(

@@ -6,8 +6,8 @@ main:
      mov [rsp], rax
      shr rdx, 0x00
      mov [rsp+0x08], rdx
-     movss xmm0, dword ptr [rsp]
-     mov rdi, [rsp+0x08]
+     mov rdi, [rsp]
+     mov rsi, [rsp+0x08]
      call :fn
      add rsp, 0x18
      ret
@@ -24,9 +24,10 @@ ofn:
      add rsp, 0x18
      ret
 fn:
-     movss [rsp-0x18], xmm0
      shr rdi, 0x00
-     mov [rsp-0x10], rdi
+     mov [rsp-0x18], rdi
+     shr rsi, 0x00
+     mov [rsp-0x10], rsi
      movss xmm0, dword ptr [rsp-0x18]
      cvttss2si rax, xmm0
      add rax, [rsp-0x10]
@@ -39,8 +40,8 @@ main:
      mov [rsp], rax
      shr rdx, 0x00
      mov [rsp+0x08], rdx
-     movss xmm0, dword ptr [rsp]
-     mov rdi, [rsp+0x08]
+     mov rdi, [rsp]
+     mov rsi, [rsp+0x08]
      call :fn
      add rsp, 0x18
      ret
@@ -57,24 +58,23 @@ ofn:
      add rsp, 0x18
      ret
 fn:
-     movss [rsp-0x18], xmm0
      shr rdi, 0x00
-     mov [rsp-0x10], rdi
+     mov [rsp-0x18], rdi
+     shr rsi, 0x00
+     mov [rsp-0x10], rsi
      movss xmm0, dword ptr [rsp-0x18]
      cvttss2si rax, xmm0
      add rax, [rsp-0x10]
      ret
 =========== OPT LEVEL: moderate ===========
 main:
-     sub rsp, 0x18
+     sub rsp, 0x08
      call :ofn
      mov rcx, rdx
-     mov [rsp], rax
-     mov [rsp+0x08], rcx
-     movss xmm0, dword ptr [rsp]
-     mov rdi, rcx
+     mov rdi, rax
+     mov rsi, rcx
      call :fn
-     add rsp, 0x18
+     add rsp, 0x08
      ret
 ofn:
      mov dword ptr [rsp-0x14], 0x00
@@ -84,20 +84,21 @@ ofn:
      mov rdx, 0x01
      ret
 fn:
+     mov [rsp-0x18], rdi
+     mov [rsp-0x10], rsi
+     movss xmm0, dword ptr [rsp-0x18]
      cvttss2si rax, xmm0
-     add rax, rdi
+     add rax, rsi
      ret
 =========== OPT LEVEL: all ===========
 main:
-     sub rsp, 0x18
+     sub rsp, 0x08
      call :ofn
      mov rcx, rdx
-     mov [rsp], rax
-     mov [rsp+0x08], rcx
-     movss xmm0, dword ptr [rsp]
-     mov rdi, rcx
+     mov rdi, rax
+     mov rsi, rcx
      call :fn
-     add rsp, 0x18
+     add rsp, 0x08
      ret
 ofn:
      mov dword ptr [rsp-0x14], 0x00
@@ -107,6 +108,9 @@ ofn:
      mov rdx, 0x01
      ret
 fn:
+     mov [rsp-0x18], rdi
+     mov [rsp-0x10], rsi
+     movss xmm0, dword ptr [rsp-0x18]
      cvttss2si rax, xmm0
-     add rax, rdi
+     add rax, rsi
      ret

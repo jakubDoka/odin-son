@@ -116,8 +116,17 @@ x86_reg_class_classify :: proc(
 			slots[offset / 8] = .Integer
 			slots[offset / 8 + 1] = .Integer
 		case ^Struct:
-			for f in t.fields {
+			for f, i in t.fields {
 				classify(f.ty, slots, offset + f.offset) or_return
+
+				next_offset := t.size
+				if i + 1 < len(t.fields) {
+					next_offset = t.fields[i + 1].offset
+				}
+				field_end := f.offset + type_size(f.ty)
+				for i in field_end ..< next_offset {
+					classify(.I8, slots, offset + i)
+				}
 			}
 		case ^Array:
 			step := type_size(t.elem)

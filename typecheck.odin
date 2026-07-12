@@ -76,6 +76,10 @@ type_align :: proc(ty: Type) -> int {
 		return type_align(t.elem)
 	case ^Slice:
 		return 8
+	case ^Enum:
+		return type_align(t.backing)
+	case ^Union:
+		return t.align
 	case ^Lit:
 		panic("we should not be type type")
 	case:
@@ -99,6 +103,10 @@ type_size :: proc(ty: Type) -> int {
 		return array_elem_stride(t.elem) * t.len
 	case ^Slice:
 		return 16
+	case ^Enum:
+		return type_size(t.backing)
+	case ^Union:
+		return t.size
 	case ^Lit:
 		panic("we should not be type type")
 	case:
@@ -158,7 +166,9 @@ type_to_dt :: proc(ty: Type) -> backend.Node_Datatype {
 		return TYPE_TO_DT[ty]
 	case Pointer, Multi_Pointer:
 		return .I64
-	case ^Lit, ^Struct, ^Array, ^Slice:
+	case ^Enum:
+		return type_to_dt(t.backing)
+	case ^Lit, ^Struct, ^Array, ^Slice, ^Union:
 		return .Void
 	case:
 		panic("wuwut")
@@ -177,6 +187,8 @@ Type_Kind :: enum uintptr {
 	Array,
 	Slice,
 	Lit,
+	Enum,
+	Union,
 }
 
 Raw_Type :: bit_field uintptr {
@@ -196,6 +208,8 @@ Type_Data :: union #no_nil {
 	^Array,
 	^Slice,
 	^Lit,
+	^Enum,
+	^Union,
 }
 
 Raw_Type_Data :: struct {
@@ -243,6 +257,20 @@ type_display :: proc(w: io.Writer, ty: Type) {
 			if i != 0 do io.write_string(w, ", ")
 			fmt.wprintf(w, "%v: ", field.name)
 			type_display(w, field.ty)
+		}
+		io.write_rune(w, '}')
+	case ^Enum:
+		io.write_string(w, "enum {")
+		for v, i in t.variants {
+			if i != 0 do io.write_string(w, ", ")
+			fmt.wprintf(w, "%v = %v", v.name, v.value)
+		}
+		io.write_rune(w, '}')
+	case ^Union:
+		io.write_string(w, "union {")
+		for v, i in t.variants {
+			if i != 0 do io.write_string(w, ", ")
+			type_display(w, v)
 		}
 		io.write_rune(w, '}')
 	case ^Lit:
@@ -399,6 +427,62 @@ emit_type :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Type {
 					structa.align,
 				)
 				return pack_type(structa)
+			case ^ast.Enum_Type:
+				key := Struct_Key{dfid, u32(sdecl.pos.offset)}
+				if e, ok := ctx.enums[key]; ok do return pack_type(e)
+
+				e := new(Enum, ctx.types.allocator)
+				ctx.enums[key] = e
+				e.backing =
+					d.base_type != nil ? emit_type(ctx, d.base_type) : .Int
+				e.variants = make(
+					[]Enum_Variant,
+					len(d.fields),
+					ctx.types.allocator,
+				)
+				next := i64(0)
+				for f, i in d.fields {
+					vname: string
+					vval := next
+					#partial switch fd in f.derived {
+					case ^ast.Ident:
+						vname = fd.name
+					case ^ast.Field_Value:
+						vname = fd.field.derived.(^ast.Ident).name
+						cv, cok := const_eval_int(fd.value)
+						assert(cok)
+						vval = cv
+					case:
+						fmt.panicf("TODO: enum field %#v", f.derived)
+					}
+					e.variants[i] = {vname, vval}
+					next = vval + 1
+				}
+				return pack_type(e)
+			case ^ast.Union_Type:
+				key := Struct_Key{dfid, u32(sdecl.pos.offset)}
+				if u, ok := ctx.unions[key]; ok do return pack_type(u)
+
+				u := new(Union, ctx.types.allocator)
+				ctx.unions[key] = u
+				u.variants = make([]Type, len(d.variants), ctx.types.allocator)
+				max_size := 0
+				max_align := 1
+				for v, i in d.variants {
+					vt := emit_type(ctx, v)
+					u.variants[i] = vt
+					max_size = max(max_size, type_size(vt))
+					max_align = max(max_align, type_align(vt))
+				}
+				u.tag_ty = .I64
+				tag_size := type_size(u.tag_ty)
+				u.tag_offset = mem.align_forward_int(max_size, tag_size)
+				u.align = max(max_align, tag_size)
+				u.size = mem.align_forward_int(
+					u.tag_offset + tag_size,
+					u.align,
+				)
+				return pack_type(u)
 			case:
 				return emit_type(ctx, sdecl.values[0])
 			}
@@ -551,6 +635,8 @@ Types :: struct {
 	pointers:       map[Type]Pointer,
 	multi_pointers: map[Type]Multi_Pointer,
 	structs:        map[Struct_Key]^Struct,
+	enums:          map[Struct_Key]^Enum,
+	unions:         map[Struct_Key]^Union,
 	arrays:         map[Array_Key]^Array,
 	slices:         map[Type]^Slice,
 	lits:           map[Lit]^Lit,
@@ -575,6 +661,8 @@ types_init :: proc(types: ^Types) {
 	types.pointers.allocator = types.allocator
 	types.multi_pointers.allocator = types.allocator
 	types.structs.allocator = types.allocator
+	types.enums.allocator = types.allocator
+	types.unions.allocator = types.allocator
 	types.arrays.allocator = types.allocator
 	types.slices.allocator = types.allocator
 	types.lits.allocator = types.allocator
@@ -633,6 +721,33 @@ Struct_Field :: struct {
 	offset: int,
 }
 
+Enum :: struct {
+	backing:  Type,
+	variants: []Enum_Variant,
+}
+
+Enum_Variant :: struct {
+	name:  string,
+	value: i64,
+}
+
+// Union memory layout: the active variant's payload lives at offset 0, and the
+// tag (1-based variant index, 0 == nil) lives at `tag_offset`.
+Union :: struct {
+	variants:   []Type,
+	tag_ty:     Type,
+	tag_offset: int,
+	size:       int,
+	align:      int,
+}
+
+union_variant_index :: proc(u: ^Union, ty: Type) -> (int, bool) {
+	for v, i in u.variants {
+		if v == ty do return i, true
+	}
+	return 0, false
+}
+
 typecheck :: proc(
 	ctx: ^Gen_Ctx,
 	prop: Ty_Propagation,
@@ -684,12 +799,58 @@ typecheck :: proc(
 			return .Void
 		}
 
-		assert(len(d.names) == len(d.values))
-
 		inferred_ty := emit_type(ctx, d.type)
+
+		if len(d.values) == 0 {
+			assert(inferred_ty != .Void)
+			flags: Var_Flags
+			if type_to_dt(inferred_ty) == .Void do flags |= {.Referenced}
+			for i in 0 ..< len(d.names) {
+				name := meta.src_of(ctx.file^, d.names[i])
+				set_node_data(d.names[i], flags)
+				append(
+					&ctx.scope,
+					Variable {
+						name = name,
+						type = inferred_ty,
+						ident = d.names[i],
+						flags = flags,
+					},
+				)
+			}
+			return .Void
+		}
+
+		assert(len(d.names) == len(d.values))
 
 		for i in 0 ..< len(d.names) {
 			name := meta.src_of(ctx.file^, d.names[i])
+
+			if u, ok := unpack_type(inferred_ty).(^Union); ok {
+				value_ty := typecheck(ctx, {}, d.values[i])
+				if value_ty != inferred_ty {
+					_, found := union_variant_index(u, value_ty)
+					fmt.assertf(
+						found,
+						"%v is not a variant of %v",
+						value_ty,
+						inferred_ty,
+					)
+				}
+				flags := Var_Flags{.Referenced}
+				set_node_data(d.names[i], flags)
+				append(
+					&ctx.scope,
+					Variable {
+						name = name,
+						type = inferred_ty,
+						ident = d.names[i],
+						flags = flags,
+					},
+				)
+				continue
+			}
+
 			value_ty := typecheck(
 				ctx,
 				{inferred_ty = inferred_ty},
@@ -839,6 +1000,16 @@ typecheck :: proc(
 				}
 			}
 
+			if e, ok := unpack_type(base).(^Enum); ok {
+				for v in e.variants {
+					if v.name == f.name {
+						set_node_data(d.field, int(v.value))
+						return base
+					}
+				}
+				fmt.panicf("enum has no variant %q", f.name)
+			}
+
 			if p, ok := unpack_type(base).(Pointer); ok do base = p^
 
 			#partial switch t in unpack_type(base) {
@@ -855,9 +1026,38 @@ typecheck :: proc(
 		case:
 			fmt.panicf("TODO: %#v", d.field.derived)
 		}
+	case ^ast.Implicit_Selector_Expr:
+		e, ok := unpack_type(prop.inferred_ty).(^Enum)
+		fmt.assertf(
+			ok,
+			"implicit selector needs enum context: %v",
+			prop.inferred_ty,
+		)
+		for v in e.variants {
+			if v.name == d.field.name {
+				set_node_data(d.field, int(v.value))
+				return prop.inferred_ty
+			}
+		}
+		fmt.panicf("enum has no variant %q", d.field.name)
+	case ^ast.Type_Assertion:
+		base := typecheck(ctx, {}, d.expr)
+		u, ok := unpack_type(base).(^Union)
+		assert(ok)
+		target := emit_type(ctx, d.type)
+		_, found := union_variant_index(u, target)
+		fmt.assertf(found, "type %v is not a variant of %v", target, base)
+		return target
 	case ^ast.Binary_Expr:
 		is_comparison :=
 			.B_Comparison_Begin < d.op.kind && d.op.kind < .B_Comparison_End
+
+		if is_nil_lit(d.left) || is_nil_lit(d.right) {
+			operand := is_nil_lit(d.left) ? d.right : d.left
+			oty := typecheck(ctx, {}, operand)
+			assert(is_of(oty, ^Union))
+			return .Bool
+		}
 
 		if is_num_lit(d.left) &&
 		   !is_num_lit(d.right) &&
@@ -922,6 +1122,47 @@ typecheck :: proc(
 		assert(cond_ty == .Bool)
 		typecheck(ctx, {}, d.body)
 		typecheck(ctx, {}, d.else_stmt)
+		return {}
+	case ^ast.Switch_Stmt:
+		assert(d.init == nil)
+		cond_ty := typecheck(ctx, {}, d.cond)
+		body := d.body.derived.(^ast.Block_Stmt)
+		for clause_node in body.stmts {
+			clause := clause_node.derived.(^ast.Case_Clause)
+			for v in clause.list {
+				typecheck(ctx, {inferred_ty = cond_ty}, v)
+			}
+			prev := len(ctx.scope)
+			for stmt in clause.body do typecheck(ctx, {}, stmt)
+			resize(&ctx.scope, prev)
+		}
+		return {}
+	case ^ast.Type_Switch_Stmt:
+		tag := d.tag.derived.(^ast.Assign_Stmt)
+		binding := meta.src_of(ctx.file^, tag.lhs[0])
+		union_ty := typecheck(ctx, {}, tag.rhs[0])
+		assert(is_of(union_ty, ^Union))
+		body := d.body.derived.(^ast.Block_Stmt)
+		for clause_node in body.stmts {
+			clause := clause_node.derived.(^ast.Case_Clause)
+			bind_ty := union_ty
+			if len(clause.list) > 0 {
+				bind_ty = emit_type(ctx, clause.list[0])
+			}
+			prev := len(ctx.scope)
+			set_node_data(tag.lhs[0], Var_Flags{.Referenced})
+			append(
+				&ctx.scope,
+				Variable {
+					name = binding,
+					type = bind_ty,
+					ident = tag.lhs[0],
+					flags = {.Referenced},
+				},
+			)
+			for stmt in clause.body do typecheck(ctx, {}, stmt)
+			resize(&ctx.scope, prev)
+		}
 		return {}
 	case ^ast.For_Stmt:
 		assert(d.init == nil)
@@ -1083,6 +1324,19 @@ typecheck :: proc(
 		assert(len(d.lhs) == len(d.rhs))
 		for i in 0 ..< len(d.lhs) {
 			lhs_ty := typecheck(ctx, {}, d.lhs[i])
+			if u, ok := unpack_type(lhs_ty).(^Union); ok {
+				rhs_ty := typecheck(ctx, {}, d.rhs[i])
+				if rhs_ty != lhs_ty {
+					_, found := union_variant_index(u, rhs_ty)
+					fmt.assertf(
+						found,
+						"%v is not a variant of %v",
+						rhs_ty,
+						lhs_ty,
+					)
+				}
+				continue
+			}
 			typecheck(ctx, {inferred_ty = lhs_ty}, d.rhs[i])
 		}
 	case ^ast.Pointer_Type:
@@ -1137,6 +1391,13 @@ is_num_lit :: proc(node: ^ast.Node) -> bool {
 		}
 		return false
 	}
+}
+
+is_nil_lit :: proc(node: ^ast.Node) -> bool {
+	n := node
+	if p, ok := n.derived.(^ast.Paren_Expr); ok do n = p.expr
+	id, ok := n.derived.(^ast.Ident)
+	return ok && id.name == "nil"
 }
 
 is_of :: proc(vl: Type, $K: typeid) -> bool {

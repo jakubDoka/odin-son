@@ -1,0 +1,38 @@
+=========== OPT LEVEL: none ===========
+main:
+     mov rcx, 0x02
+     mov rax, 0x00
+     cmp rcx, 0x02
+     jz :0
+     jmp :1
+
+000: add rax, 0x01
+001: cmp rcx, 0x00
+     jnz :2
+     jmp :3
+
+002: add rax, 0x02
+003: ret
+=========== OPT LEVEL: mininal ===========
+main:
+     mov rcx, 0x01
+     mov rax, 0x00
+     test cl, cl
+     jnz :0
+     jmp :1
+
+000: add rax, 0x01
+001: test cl, cl
+     jnz :2
+     jmp :3
+
+002: add rax, 0x02
+003: ret
+=========== OPT LEVEL: moderate ===========
+main:
+     mov rax, 0x03
+     ret
+=========== OPT LEVEL: all ===========
+main:
+     mov rax, 0x03
+     ret

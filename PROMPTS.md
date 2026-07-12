@@ -373,11 +373,20 @@ sure they work and dont fold away. Use functions to obfuscake operands and
 results of the ops. If you find bugs fix them, until all tests pass and
 compiler emmited all possible comparison flag spills.
 
-### Add a raylib example program
-
-NOTE: read AGENTS.md
+### Add a raylib example program (DONE)
 
 Add a raylib example program, implement boids. This program should be in
 `./examples/` and should ahve a bash script to build+run it. The point here is
 to use the foreign blocks to bind to raylib manually, use system installed
 raylib when linking.
+
+### Add suport for enums and unions
+
+NOTE: read AGENTS.md
+
+Support enums and unions. This breaks down into multiple steps:
+1. Add tests to the `TESTS.md` that exercize the compiler with all the possible
+   usages of unions ane enums. Each test should only focus on one of these.
+2. Implement the frontend code to handle these.
+3. Make sure thests pass, if you find a bug, spawn an agent to fix it, then
+   return to me.

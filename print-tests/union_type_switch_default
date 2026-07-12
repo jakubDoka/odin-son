@@ -1,0 +1,42 @@
+=========== OPT LEVEL: none ===========
+main:
+     sub rsp, 0x18
+     mov rsi, 0x00
+     lea rdi, [rsp]
+     mov rdx, 0x10
+     call :$set
+     mov byte ptr [rsp], 0x01
+     mov qword ptr [rsp+0x08], 0x02
+     cmp qword ptr [rsp+0x08], 0x01
+     jz :0
+     mov rax, 0x02
+     jmp :1
+
+000: mov rax, 0x01
+001: add rsp, 0x18
+     ret
+=========== OPT LEVEL: mininal ===========
+main:
+     sub rsp, 0x18
+     mov rsi, 0x00
+     lea rdi, [rsp]
+     mov rdx, 0x10
+     call :$set
+     mov byte ptr [rsp], 0x01
+     mov qword ptr [rsp+0x08], 0x02
+     cmp qword ptr [rsp+0x08], 0x01
+     jz :0
+     mov rax, 0x02
+     jmp :1
+
+000: mov rax, 0x01
+001: add rsp, 0x18
+     ret
+=========== OPT LEVEL: moderate ===========
+main:
+     mov rax, 0x02
+     ret
+=========== OPT LEVEL: all ===========
+main:
+     mov rax, 0x02
+     ret

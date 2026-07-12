@@ -1,0 +1,62 @@
+=========== OPT LEVEL: none ===========
+main:
+     sub rsp, 0x18
+     mov rsi, 0x00
+     lea rdi, [rsp]
+     mov rdx, 0x10
+     call :$set
+     mov rax, 0x00
+     cmp qword ptr [rsp+0x08], 0x00
+     jz :0
+     jmp :1
+
+000: add rax, 0x01
+001: mov qword ptr [rsp], 0x05
+     mov qword ptr [rsp+0x08], 0x01
+     cmp qword ptr [rsp+0x08], 0x00
+     jnz :2
+     jmp :3
+
+002: add rax, 0x02
+003: add rsp, 0x18
+     ret
+=========== OPT LEVEL: mininal ===========
+main:
+     sub rsp, 0x18
+     mov rsi, 0x00
+     lea rdi, [rsp]
+     mov rdx, 0x10
+     call :$set
+     mov rax, 0x00
+     cmp qword ptr [rsp+0x08], 0x00
+     jz :0
+     jmp :1
+
+000: add rax, 0x01
+001: mov qword ptr [rsp], 0x05
+     mov qword ptr [rsp+0x08], 0x01
+     mov rcx, [rsp+0x08]
+     test rcx, rcx
+     jnz :2
+     jmp :3
+
+002: add rax, 0x02
+003: add rsp, 0x18
+     ret
+=========== OPT LEVEL: moderate ===========
+main:
+     mov qword ptr [rsp-0x10], 0x00
+     cmp qword ptr [rsp-0x10], 0x00
+     jz :0
+     mov rax, 0x00
+     jmp :1
+
+000: mov rax, 0x01
+001: mov qword ptr [rsp-0x18], 0x05
+     mov qword ptr [rsp-0x10], 0x01
+     add rax, 0x02
+     ret
+=========== OPT LEVEL: all ===========
+main:
+     mov rax, 0x03
+     ret

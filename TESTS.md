@@ -5444,3 +5444,291 @@ main :: proc() -> int {
 	return slt^
 }
 ```
+
+#### enum basic values
+```odin
+package main
+
+opt_level :: "none"
+
+Color :: enum {
+	Red,
+	Green,
+	Blue,
+}
+
+main :: proc() -> int {
+	c := Color.Green
+	return int(c)
+}
+```
+
+#### enum explicit values
+```odin
+package main
+
+opt_level :: "none"
+
+Code :: enum {
+	A = 3,
+	B,
+	C = 10,
+}
+
+main :: proc() -> int {
+	return int(Code.B) + int(Code.C)
+}
+```
+
+#### enum backing type
+```odin
+package main
+
+opt_level :: "none"
+
+Flag :: enum u8 {
+	X = 200,
+	Y,
+}
+
+main :: proc() -> int {
+	f := Flag.Y
+	return int(f)
+}
+```
+
+#### enum comparison
+```odin
+package main
+
+opt_level :: "none"
+
+Dir :: enum {
+	N,
+	E,
+	S,
+	W,
+}
+
+main :: proc() -> int {
+	d := Dir.S
+	r := 0
+	if d == Dir.S do r += 1
+	if d != Dir.N do r += 2
+	return r
+}
+```
+
+#### enum implicit selector
+```odin
+package main
+
+opt_level :: "none"
+
+State :: enum {
+	Off,
+	On,
+}
+
+main :: proc() -> int {
+	s: State = .On
+	if s == .On do return 5
+	return 0
+}
+```
+
+#### enum in struct
+```odin
+package main
+
+opt_level :: "none"
+
+Kind :: enum {
+	A,
+	B,
+}
+
+Box :: struct {
+	k: Kind,
+	n: int,
+}
+
+main :: proc() -> int {
+	b := Box{k = Kind.B, n = 7}
+	return int(b.k) + b.n
+}
+```
+
+#### enum value switch
+```odin
+package main
+
+opt_level :: "none"
+
+Op :: enum {
+	Add,
+	Sub,
+	Mul,
+}
+
+main :: proc() -> int {
+	o := Op.Mul
+	r := 0
+	switch o {
+	case .Add:
+		r = 1
+	case .Sub:
+		r = 2
+	case .Mul:
+		r = 3
+	}
+	return r
+}
+```
+
+#### enum as param
+```odin
+package main
+
+opt_level :: "none"
+
+Sign :: enum {
+	Pos,
+	Neg,
+}
+
+apply :: proc(s: Sign, x: int) -> int {
+	if s == .Neg do return 100 - x
+	return x
+}
+
+main :: proc() -> int {
+	return apply(.Neg, 9)
+}
+```
+
+#### union assert
+```odin
+package main
+
+opt_level :: "none"
+
+V :: union {
+	int,
+	f32,
+}
+
+main :: proc() -> int {
+	v: V = 42
+	return v.(int)
+}
+```
+
+#### union type switch
+```odin
+package main
+
+opt_level :: "none"
+
+V :: union {
+	int,
+	bool,
+}
+
+main :: proc() -> int {
+	v: V = 7
+	r := 0
+	switch x in v {
+	case int:
+		r = x
+	case bool:
+		if x do r = 100
+	}
+	return r
+}
+```
+
+#### union nil check
+```odin
+package main
+
+opt_level :: "none"
+
+V :: union {
+	int,
+}
+
+main :: proc() -> int {
+	v: V
+	r := 0
+	if v == nil do r += 1
+	v = 5
+	if v != nil do r += 2
+	return r
+}
+```
+
+#### union reassign variant
+```odin
+package main
+
+opt_level :: "none"
+
+V :: union {
+	int,
+	i32,
+}
+
+main :: proc() -> int {
+	v: V = int(3)
+	v = i32(9)
+	return int(v.(i32))
+}
+```
+
+#### union struct member
+```odin
+package main
+
+opt_level :: "none"
+
+P :: struct {
+	x: int,
+	y: int,
+}
+
+V :: union {
+	int,
+	P,
+}
+
+main :: proc() -> int {
+	v: V = P{x = 4, y = 5}
+	p := v.(P)
+	return p.x + p.y
+}
+```
+
+#### union type switch default
+```odin
+package main
+
+opt_level :: "none"
+
+V :: union {
+	int,
+	bool,
+}
+
+main :: proc() -> int {
+	v: V = true
+	r := 0
+	#partial switch x in v {
+	case int:
+		r = 1
+	case:
+		r = 2
+	}
+	return r
+}
+```

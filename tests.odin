@@ -10593,3 +10593,551 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) enum_basic_values :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Color :: enum {
+	Red,
+	Green,
+	Blue,
+}
+
+main_ :: proc() -> int {
+	c := Color.Green
+	return int(c)
+}
+
+run_test(t, `enum_basic_values`, `
+package main
+
+opt_level :: "none"
+
+Color :: enum {
+	Red,
+	Green,
+	Blue,
+}
+
+main :: proc() -> int {
+	c := Color.Green
+	return int(c)
+}
+`, main_())
+}
+@(test) enum_explicit_values :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Code :: enum {
+	A = 3,
+	B,
+	C = 10,
+}
+
+main_ :: proc() -> int {
+	return int(Code.B) + int(Code.C)
+}
+
+run_test(t, `enum_explicit_values`, `
+package main
+
+opt_level :: "none"
+
+Code :: enum {
+	A = 3,
+	B,
+	C = 10,
+}
+
+main :: proc() -> int {
+	return int(Code.B) + int(Code.C)
+}
+`, main_())
+}
+@(test) enum_backing_type :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Flag :: enum u8 {
+	X = 200,
+	Y,
+}
+
+main_ :: proc() -> int {
+	f := Flag.Y
+	return int(f)
+}
+
+run_test(t, `enum_backing_type`, `
+package main
+
+opt_level :: "none"
+
+Flag :: enum u8 {
+	X = 200,
+	Y,
+}
+
+main :: proc() -> int {
+	f := Flag.Y
+	return int(f)
+}
+`, main_())
+}
+@(test) enum_comparison :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Dir :: enum {
+	N,
+	E,
+	S,
+	W,
+}
+
+main_ :: proc() -> int {
+	d := Dir.S
+	r := 0
+	if d == Dir.S do r += 1
+	if d != Dir.N do r += 2
+	return r
+}
+
+run_test(t, `enum_comparison`, `
+package main
+
+opt_level :: "none"
+
+Dir :: enum {
+	N,
+	E,
+	S,
+	W,
+}
+
+main :: proc() -> int {
+	d := Dir.S
+	r := 0
+	if d == Dir.S do r += 1
+	if d != Dir.N do r += 2
+	return r
+}
+`, main_())
+}
+@(test) enum_implicit_selector :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+State :: enum {
+	Off,
+	On,
+}
+
+main_ :: proc() -> int {
+	s: State = .On
+	if s == .On do return 5
+	return 0
+}
+
+run_test(t, `enum_implicit_selector`, `
+package main
+
+opt_level :: "none"
+
+State :: enum {
+	Off,
+	On,
+}
+
+main :: proc() -> int {
+	s: State = .On
+	if s == .On do return 5
+	return 0
+}
+`, main_())
+}
+@(test) enum_in_struct :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Kind :: enum {
+	A,
+	B,
+}
+
+Box :: struct {
+	k: Kind,
+	n: int,
+}
+
+main_ :: proc() -> int {
+	b := Box{k = Kind.B, n = 7}
+	return int(b.k) + b.n
+}
+
+run_test(t, `enum_in_struct`, `
+package main
+
+opt_level :: "none"
+
+Kind :: enum {
+	A,
+	B,
+}
+
+Box :: struct {
+	k: Kind,
+	n: int,
+}
+
+main :: proc() -> int {
+	b := Box{k = Kind.B, n = 7}
+	return int(b.k) + b.n
+}
+`, main_())
+}
+@(test) enum_value_switch :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Op :: enum {
+	Add,
+	Sub,
+	Mul,
+}
+
+main_ :: proc() -> int {
+	o := Op.Mul
+	r := 0
+	switch o {
+	case .Add:
+		r = 1
+	case .Sub:
+		r = 2
+	case .Mul:
+		r = 3
+	}
+	return r
+}
+
+run_test(t, `enum_value_switch`, `
+package main
+
+opt_level :: "none"
+
+Op :: enum {
+	Add,
+	Sub,
+	Mul,
+}
+
+main :: proc() -> int {
+	o := Op.Mul
+	r := 0
+	switch o {
+	case .Add:
+		r = 1
+	case .Sub:
+		r = 2
+	case .Mul:
+		r = 3
+	}
+	return r
+}
+`, main_())
+}
+@(test) enum_as_param :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Sign :: enum {
+	Pos,
+	Neg,
+}
+
+apply :: proc(s: Sign, x: int) -> int {
+	if s == .Neg do return 100 - x
+	return x
+}
+
+main_ :: proc() -> int {
+	return apply(.Neg, 9)
+}
+
+run_test(t, `enum_as_param`, `
+package main
+
+opt_level :: "none"
+
+Sign :: enum {
+	Pos,
+	Neg,
+}
+
+apply :: proc(s: Sign, x: int) -> int {
+	if s == .Neg do return 100 - x
+	return x
+}
+
+main :: proc() -> int {
+	return apply(.Neg, 9)
+}
+`, main_())
+}
+@(test) union_assert :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+V :: union {
+	int,
+	f32,
+}
+
+main_ :: proc() -> int {
+	v: V = 42
+	return v.(int)
+}
+
+run_test(t, `union_assert`, `
+package main
+
+opt_level :: "none"
+
+V :: union {
+	int,
+	f32,
+}
+
+main :: proc() -> int {
+	v: V = 42
+	return v.(int)
+}
+`, main_())
+}
+@(test) union_type_switch :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+V :: union {
+	int,
+	bool,
+}
+
+main_ :: proc() -> int {
+	v: V = 7
+	r := 0
+	switch x in v {
+	case int:
+		r = x
+	case bool:
+		if x do r = 100
+	}
+	return r
+}
+
+run_test(t, `union_type_switch`, `
+package main
+
+opt_level :: "none"
+
+V :: union {
+	int,
+	bool,
+}
+
+main :: proc() -> int {
+	v: V = 7
+	r := 0
+	switch x in v {
+	case int:
+		r = x
+	case bool:
+		if x do r = 100
+	}
+	return r
+}
+`, main_())
+}
+@(test) union_nil_check :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+V :: union {
+	int,
+}
+
+main_ :: proc() -> int {
+	v: V
+	r := 0
+	if v == nil do r += 1
+	v = 5
+	if v != nil do r += 2
+	return r
+}
+
+run_test(t, `union_nil_check`, `
+package main
+
+opt_level :: "none"
+
+V :: union {
+	int,
+}
+
+main :: proc() -> int {
+	v: V
+	r := 0
+	if v == nil do r += 1
+	v = 5
+	if v != nil do r += 2
+	return r
+}
+`, main_())
+}
+@(test) union_reassign_variant :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+V :: union {
+	int,
+	i32,
+}
+
+main_ :: proc() -> int {
+	v: V = int(3)
+	v = i32(9)
+	return int(v.(i32))
+}
+
+run_test(t, `union_reassign_variant`, `
+package main
+
+opt_level :: "none"
+
+V :: union {
+	int,
+	i32,
+}
+
+main :: proc() -> int {
+	v: V = int(3)
+	v = i32(9)
+	return int(v.(i32))
+}
+`, main_())
+}
+@(test) union_struct_member :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+P :: struct {
+	x: int,
+	y: int,
+}
+
+V :: union {
+	int,
+	P,
+}
+
+main_ :: proc() -> int {
+	v: V = P{x = 4, y = 5}
+	p := v.(P)
+	return p.x + p.y
+}
+
+run_test(t, `union_struct_member`, `
+package main
+
+opt_level :: "none"
+
+P :: struct {
+	x: int,
+	y: int,
+}
+
+V :: union {
+	int,
+	P,
+}
+
+main :: proc() -> int {
+	v: V = P{x = 4, y = 5}
+	p := v.(P)
+	return p.x + p.y
+}
+`, main_())
+}
+@(test) union_type_switch_default :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+V :: union {
+	int,
+	bool,
+}
+
+main_ :: proc() -> int {
+	v: V = true
+	r := 0
+	#partial switch x in v {
+	case int:
+		r = 1
+	case:
+		r = 2
+	}
+	return r
+}
+
+run_test(t, `union_type_switch_default`, `
+package main
+
+opt_level :: "none"
+
+V :: union {
+	int,
+	bool,
+}
+
+main :: proc() -> int {
+	v: V = true
+	r := 0
+	#partial switch x in v {
+	case int:
+		r = 1
+	case:
+		r = 2
+	}
+	return r
+}
+`, main_())
+}

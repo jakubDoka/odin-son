@@ -119,6 +119,8 @@ x86_reg_class_classify :: proc(
 			for f, i in t.fields {
 				classify(f.ty, slots, offset + f.offset) or_return
 
+				// NOTE: better save then sorry, but we should optimize in the
+				// future
 				next_offset := t.size
 				if i + 1 < len(t.fields) {
 					next_offset = t.fields[i + 1].offset
@@ -132,6 +134,15 @@ x86_reg_class_classify :: proc(
 			step := type_size(t.elem)
 			for i in 0 ..< t.len {
 				classify(t.elem, slots, offset + i * step) or_return
+			}
+		case ^Enum:
+			classify(t.backing, slots, offset) or_return
+		case ^Union:
+			for i in 0 ..< (t.size + 7) / 8 {
+				slots[offset / 8 + i] = max(
+					slots[offset / 8 + i],
+					X86_Reg_Class.Integer,
+				)
 			}
 		case ^Lit:
 			panic("should not happen")
@@ -348,6 +359,9 @@ tok_to_binop :: proc(
 	kind: backend.Bin_Op,
 	name: string,
 ) {
+	ty := ty
+	if e, ok := unpack_type(ty).(^Enum); ok do ty = e.backing
+
 	Op_Info :: struct {
 		kind: backend.Bin_Op,
 		name: string,
@@ -542,6 +556,27 @@ store_value_ty :: proc(
 	} else {
 		field_store(ctx, name, ptr, 0, to_rvalue(ctx, value, ty))
 	}
+}
+
+// store_union writes `member_val` (of type member_ty) into the payload at
+// offset 0 of the union at `dest` and sets the tag to the variant index.
+store_union :: proc(
+	ctx: ^Gen_Ctx,
+	dest: backend.Node_ID,
+	member_val: Value,
+	u: ^Union,
+	member_ty: Type,
+) {
+	idx, ok := union_variant_index(u, member_ty)
+	assert(ok)
+	store_value(ctx, "unionv", dest, member_val, member_ty)
+	tag := backend.graph_add_c_int(
+		ctx,
+		"utag",
+		type_to_dt(u.tag_ty),
+		i64(idx + 1),
+	)
+	field_store(ctx, "utagst", dest, u.tag_offset, tag)
 }
 
 alloca :: proc(
@@ -881,6 +916,34 @@ emit_proc :: proc(
 	prc.out = spec.emit_function(emit_ctx^)
 }
 
+// emit_stmts emits a list of statements as a lexical scope, mirroring the
+// bookkeeping done for ^ast.Block_Stmt (used by switch case bodies). `bind`, if
+// set, is an extra lvalue variable introduced into the scope (the type-switch
+// capture); its backing pointer is pinned for the duration of the body.
+emit_stmts :: proc(
+	ctx: ^Gen_Ctx,
+	stmts: []^ast.Stmt,
+	bind: Maybe(Variable) = nil,
+) {
+	prev_local := len(ctx.scope)
+	prev_scope := backend.graph_get(ctx, ctx.node_scope).input_count
+	if b, ok := bind.?; ok {
+		backend.graph_pin(ctx, b.idx.(backend.Node_ID))
+		append(&ctx.scope, b)
+	}
+	for stmt in stmts {
+		emit_nodes(ctx, {}, stmt)
+		if ctx.node_scope == 0 do break
+	}
+	for v in ctx.scope[prev_local:] {
+		if n, ok := v.idx.(backend.Node_ID); ok {
+			backend.graph_unpin(ctx, n)
+		}
+	}
+	resize(&ctx.scope, prev_local)
+	backend.graph_truncate_scope(ctx, ctx.node_scope, prev_scope)
+}
+
 emit_nodes :: proc(
 	ctx: ^Gen_Ctx,
 	prop: Propagation,
@@ -1019,6 +1082,13 @@ emit_nodes :: proc(
 				append(&values, Value_Slot{sym, value})
 			case Value:
 				assert(sym.is_lvalue)
+				lhs_ty := get_node_type(lhs)
+				if u, uok := unpack_type(lhs_ty).(^Union);
+				   uok && d.op.kind == .Eq && get_node_type(rhs) != lhs_ty {
+					value := emit_nodes(ctx, {dest = sym.id}, rhs)
+					store_union(ctx, sym.id, value, u, get_node_type(rhs))
+					continue
+				}
 				if d.op.kind == .Eq {
 					if len(d.lhs) == 1 {
 						value := emit_nodes(ctx, {dest = sym.id}, rhs)
@@ -1064,6 +1134,19 @@ emit_nodes :: proc(
 			backend.graph_unpin(ctx, s.vl)
 		}
 	case ^ast.Binary_Expr:
+		if is_nil_lit(d.left) || is_nil_lit(d.right) {
+			union_expr := is_nil_lit(d.left) ? d.right : d.left
+			u := unpack_type(get_node_type(union_expr)).(^Union)
+			uv := emit_nodes(ctx, {}, union_expr)
+			assert(uv.is_lvalue)
+			tag_dt := type_to_dt(u.tag_ty)
+			tag := field_load(ctx, "ntag", tag_dt, uv.id, u.tag_offset)
+			zero := backend.graph_add_c_int(ctx, "nzero", tag_dt, 0)
+			op: backend.Bin_Op = d.op.kind == .Cmp_Eq ? .Eq : .Ne
+			res = backend.graph_add_bin_op(ctx, "ncmp", op, dt, tag, zero)
+			break
+		}
+
 		lhsv := emit_nodes(ctx, {}, d.left)
 		backend.graph_pin(ctx, lhsv.id)
 		rhsv := emit_nodes(ctx, {}, d.right)
@@ -1235,10 +1318,26 @@ emit_nodes :: proc(
 			break
 		}
 
+		if len(d.values) == 0 {
+			decl_ty := emit_type(ctx, d.type)
+			for i in 0 ..< len(d.names) {
+				name := meta.src_of(ctx.file^, d.names[i])
+				flags := get_node_vflags(d.names[i])
+				ptr := alloca(ctx, name, decl_ty, zeroed = true)
+				backend.graph_pin(ctx, ptr)
+				append(
+					&ctx.scope,
+					Variable{name, ptr, decl_ty, d.names[i], flags},
+				)
+			}
+			break
+		}
+
 		assert(len(d.names) == len(d.values))
 		for i in 0 ..< len(d.names) {
 			name := meta.src_of(ctx.file^, d.names[i])
-			vty := get_node_type(d.values[i])
+			decl_ty := emit_type(ctx, d.type)
+			vty := decl_ty != .Void ? decl_ty : get_node_type(d.values[i])
 			flags := get_node_vflags(d.names[i])
 
 			if is_static(d) {
@@ -1274,7 +1373,12 @@ emit_nodes :: proc(
 				backend.graph_pin(ctx, ptr)
 
 				value := emit_nodes(ctx, {dest = ptr}, d.values[i])
-				store_value(ctx, "init", ptr, value, vty)
+				if u, uok := unpack_type(vty).(^Union);
+				   uok && get_node_type(d.values[i]) != vty {
+					store_union(ctx, ptr, value, u, get_node_type(d.values[i]))
+				} else {
+					store_value(ctx, "init", ptr, value, vty)
+				}
 
 				append(&ctx.scope, Variable{name, ptr, vty, d.names[i], flags})
 			} else {
@@ -1326,6 +1430,11 @@ emit_nodes :: proc(
 			fmt.panicf("TODO: %#v", d)
 		}
 	case ^ast.Selector_Expr:
+		if is_of(get_node_type(d.expr), ^Enum) {
+			val := get_node_data(d.field, int)
+			res = backend.graph_add_c_int(ctx, "enumv", dt, i64(val))
+			break
+		}
 		base := emit_nodes(ctx, {}, d.expr)
 		base_ty := unpack_type(get_node_type(d.expr))
 		#partial switch f in d.field.derived {
@@ -1347,6 +1456,13 @@ emit_nodes :: proc(
 		case:
 			fmt.panicf("TODO: %#v", d.field.derived)
 		}
+	case ^ast.Implicit_Selector_Expr:
+		val := get_node_data(d.field, int)
+		res = backend.graph_add_c_int(ctx, "enumv", dt, i64(val))
+	case ^ast.Type_Assertion:
+		base := emit_nodes(ctx, {}, d.expr)
+		assert(base.is_lvalue)
+		res, lvalue = base.id, true
 	case ^ast.Index_Expr:
 		base := emit_nodes(ctx, {}, d.expr)
 
@@ -1479,6 +1595,104 @@ emit_nodes :: proc(
 		backend.graph_start_else(ctx, &ctx.node_scope, &if_state)
 		emit_nodes(ctx, {}, d.else_stmt)
 		backend.graph_end_else(ctx, &ctx.node_scope, &if_state)
+	case ^ast.Switch_Stmt:
+		condv := to_rvalue(ctx, emit_nodes(ctx, {}, d.cond), d.cond)
+		backend.graph_pin(ctx, condv)
+
+		body := d.body.derived.(^ast.Block_Stmt)
+		states := make([dynamic]backend.If_State, tmp)
+		default_clause: ^ast.Case_Clause
+		for clause_node in body.stmts {
+			clause := clause_node.derived.(^ast.Case_Clause)
+			if len(clause.list) == 0 {
+				default_clause = clause
+				continue
+			}
+
+			cond: backend.Node_ID
+			for v in clause.list {
+				cv := to_rvalue(ctx, emit_nodes(ctx, {}, v), v)
+				eq := backend.graph_add_bin_op(ctx, "seq", .Eq, .I8, condv, cv)
+				cond =
+					cond == 0 ? eq : backend.graph_add_bin_op(ctx, "sor", .Or, .I8, cond, eq)
+			}
+
+			st: backend.If_State
+			backend.graph_start_if(ctx, ctx.node_scope, &st, cond)
+			emit_stmts(ctx, clause.body)
+			backend.graph_start_else(ctx, &ctx.node_scope, &st)
+			append(&states, st)
+		}
+
+		if default_clause != nil {
+			emit_stmts(ctx, default_clause.body)
+		}
+
+		#reverse for &st in states {
+			backend.graph_end_else(ctx, &ctx.node_scope, &st)
+		}
+
+		backend.graph_unpin(ctx, condv)
+	case ^ast.Type_Switch_Stmt:
+		tag := d.tag.derived.(^ast.Assign_Stmt)
+		binding := meta.src_of(ctx.file^, tag.lhs[0])
+		u := unpack_type(get_node_type(tag.rhs[0])).(^Union)
+
+		uv := emit_nodes(ctx, {}, tag.rhs[0])
+		assert(uv.is_lvalue)
+		ptr := uv.id
+		backend.graph_pin(ctx, ptr)
+
+		tag_dt := type_to_dt(u.tag_ty)
+		tagv := field_load(ctx, "tstag", tag_dt, ptr, u.tag_offset)
+		backend.graph_pin(ctx, tagv)
+
+		body := d.body.derived.(^ast.Block_Stmt)
+		states := make([dynamic]backend.If_State, tmp)
+		default_clause: ^ast.Case_Clause
+		for clause_node in body.stmts {
+			clause := clause_node.derived.(^ast.Case_Clause)
+			if len(clause.list) == 0 {
+				default_clause = clause
+				continue
+			}
+
+			case_ty := emit_type(ctx, clause.list[0])
+			idx, _ := union_variant_index(u, case_ty)
+			cval := backend.graph_add_c_int(ctx, "tsc", tag_dt, i64(idx + 1))
+			cond := backend.graph_add_bin_op(ctx, "tseq", .Eq, .I8, tagv, cval)
+
+			st: backend.If_State
+			backend.graph_start_if(ctx, ctx.node_scope, &st, cond)
+			emit_stmts(
+				ctx,
+				clause.body,
+				Variable{binding, ptr, case_ty, tag.lhs[0], {.Referenced}},
+			)
+			backend.graph_start_else(ctx, &ctx.node_scope, &st)
+			append(&states, st)
+		}
+
+		if default_clause != nil {
+			emit_stmts(
+				ctx,
+				default_clause.body,
+				Variable {
+					binding,
+					ptr,
+					get_node_type(tag.rhs[0]),
+					tag.lhs[0],
+					{.Referenced},
+				},
+			)
+		}
+
+		#reverse for &st in states {
+			backend.graph_end_else(ctx, &ctx.node_scope, &st)
+		}
+
+		backend.graph_unpin(ctx, tagv)
+		backend.graph_unpin(ctx, ptr)
 	case ^ast.For_Stmt:
 		assert(d.init == nil)
 		assert(d.cond == nil)

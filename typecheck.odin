@@ -1208,9 +1208,6 @@ register_module_procs :: proc(ctx: ^Gen_Ctx, mid: Module_ID) {
 	mod.proc_count = len(ctx.procs) - mod.proc_start
 }
 
-// register_module_globals records every module level mutable variable so that
-// identifiers can resolve to it. The backing data is allocated later, at emit
-// time, because ctx.globals is cleared between typechecking and codegen.
 register_module_globals :: proc(ctx: ^Gen_Ctx, mid: Module_ID) {
 	ctx.module = mid
 	mod := &ctx.modules[mid]

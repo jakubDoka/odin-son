@@ -4,7 +4,6 @@ import "../vendored/gam/util/arna"
 import "../vendored/gam/util/bit_arr"
 import "base:intrinsics"
 import "core:fmt"
-import "core:log"
 import "core:math"
 import "core:mem"
 import "core:reflect"
@@ -84,8 +83,8 @@ GPA_REG_COUNT :: 16
 // arguments
 
 @(rodata)
-X64_ODIN_CC := Call_Conv {
-	name = "X64_ODIN_CC",
+X64_SYSTEMV_CC := Call_Conv {
+	name = "X64_SYSTEMV_CC",
 	callee_saved = #partial{.General = {RBX, RBP, R12, R13, R14, R15}},
 	caller_saved = #partial{
 		.General = {RAX, RCX, RDX, RSI, RDI, R8, R9, R10, R11},
@@ -143,7 +142,10 @@ SIMPLE_SHIFT_SPEC :: Reg_Class_Spec {
 }
 
 SIMPLE_UNOP_SPEC :: Reg_Class_Spec {
-	reg_masks = #partial{.General = {GPA_MASK, GPA_MASK}},
+	reg_masks = #partial{
+		.General = {GPA_MASK, GPA_MASK},
+		.Vector = {XMM_MASK, XMM_MASK},
+	},
 	inplace_slot_idx = 0,
 }
 
@@ -464,7 +466,7 @@ UN_OP_OFFSET :: transmute(u16)(i16(X64_Node_Type.X64_Neg) -
 FLOAT_BIN_OP_OFFSET :: transmute(u16)(i16(X64_Node_Type.X64_F_Add) -
 	i16(Ideal_Node_Type.F_Add))
 
-x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
+x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node, _: $T) -> Node_ID {
 	node := node
 
 	id := graph_id(ctx, node)
@@ -481,7 +483,8 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 			slot^ = graph_extra(ctx, node.inps[idx], CInt)
 			if slot^ != nil {
 				clamped := i64(i32(slot^.value))
-				if clamped != slot^.value do slot^ = nil
+				if clamped != slot^.value ||
+				   graph_get(ctx, node.inps[idx]).dt == .F64 {slot^ = nil}
 			}
 		}
 	}
@@ -530,7 +533,9 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 		}
 	}
 
-	#partial switch node.itype {
+	mem_op := graph_extra(ctx, node, X64_Mem_Op)
+
+	#partial matchx: switch node.xtype {
 	case .CInt:
 		cnst: ^CInt = graph_extra(ctx, node, CInt)
 		if node.dt in FLOAT_DTS {
@@ -716,11 +721,6 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 
 		worklist_add(ctx, ctx.worklist, res)
 		return res
-	}
-
-	mem_op := graph_extra(ctx, node, X64_Mem_Op)
-
-	#partial matchx: switch node.xtype {
 	case .X64_Store, .X64_Load:
 		changed := false
 
@@ -853,7 +853,6 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
 
 		if changed do return id
 		return 0
-	case .X64_Eq ..= .X64_U_Ge:
 	}
 
 	return 0
@@ -885,9 +884,10 @@ x64_make_node :: proc(
 x64_post_schedule_peep :: proc(
 	ctx: PS_Peep_Ctx,
 	node: Expanded_Node,
+	_: $T,
 ) -> Node_ID {
 	id := graph_id(ctx, node)
-	#partial matchi: switch node.itype {
+	#partial matchx: switch node.xtype {
 	case .Add ..= .Xor, .Eq ..= .U_Ge, .F_Add ..= .F_Div, .F_Eq ..= .F_Ge:
 		if node.itype == .F_Lt || node.itype == .F_Le do break
 
@@ -895,7 +895,7 @@ x64_post_schedule_peep :: proc(
 		rhs := graph_expand(ctx, node.inps[1])
 		if rhs.xtype == .X64_Load && len(rhs.outs) == 1 {
 			mem_op := graph_extra(ctx, rhs, X64_Mem_Op)
-			if !has_no_clobbers(ctx, node.inps[1]) do break matchi
+			if !has_no_clobbers(ctx, node.inps[1]) do break matchx
 			mem_op.mem_mode = .Src
 			mem_op.dt = rhs.dt
 
@@ -930,8 +930,6 @@ x64_post_schedule_peep :: proc(
 				additional_data_offset = 1,
 			)
 		}
-	}
-	#partial matchx: switch node.xtype {
 	case .X64_Eq ..= .X64_U_Ge:
 		mem_op := graph_extra(ctx, node, X64_Mem_Op)
 		if mem_op.mem_mode != .None do break matchx
@@ -1715,6 +1713,15 @@ x64_emit_instr :: proc(
 		if cc.is_syscall {
 			// syscall
 			emit(ctx.code, {0x0F, 0x05})
+		} else if call.imported && ctx.emit_got_imports {
+			// call [rip + $lib_call.id]
+			emit(ctx.code, {0xFF, mod_sm(.Indirect, 0b010, RIP), 0, 0, 0, 0})
+			add_reloc(ctx.relocs)^ = {
+				offset = u32(ctx.code.pos - ctx.code_start),
+				kind   = .Got,
+				size   = .r4,
+				id     = call.cid,
+			}
 		} else {
 			// call $call.cid
 			emit(ctx.code, {0xe8, 0, 0, 0, 0})
@@ -1741,7 +1748,7 @@ x64_emit_instr :: proc(
 			emit(ctx.code, {0xFF, mod_sm(.Indirect, 0b010, RIP), 0, 0, 0, 0})
 			add_reloc(ctx.relocs)^ = {
 				offset = u32(ctx.code.pos - ctx.code_start),
-				kind   = .Data,
+				kind   = .Got,
 				size   = .r4,
 				id     = lib_call.id,
 			}
@@ -2448,15 +2455,17 @@ vex3 :: proc(
 }
 
 emit_imm_for_dt :: proc(code: ^arna.Allocator, dt: Node_Datatype, imm: i32) {
-	#partial switch dt {
+	switch dt {
 	case .Void:
 		panic("")
 	case .I8:
 		emit_anys(code, i8(imm))
 	case .I16:
 		emit_anys(code, i16(imm))
-	case .I64, .I32:
+	case .I64, .I32, .F32:
 		emit_anys(code, imm)
+	case .F64:
+		panic("no")
 	}
 }
 
@@ -2466,7 +2475,7 @@ emit_extended_sized_opcode :: proc(
 	rx: u8,
 	op: u8,
 ) {
-	#partial switch dt {
+	switch dt {
 	case .Void:
 		panic("")
 	case .I8:
@@ -2475,6 +2484,8 @@ emit_extended_sized_opcode :: proc(
 		emit(code, {0x66, rx, 0x0f, op})
 	case .I32, .I64:
 		emit(code, {rx, 0x0f, op})
+	case .F32, .F64:
+		panic("no")
 	}
 }
 
@@ -2484,14 +2495,16 @@ emit_sized_opcode :: proc(
 	rx: u8,
 	op: u8,
 ) {
-	#partial switch dt {
+	switch dt {
 	case .Void:
 		panic("")
 	case .I8:
 		emit(code, {rx, op - 1})
 	case .I16:
 		emit(code, {0x66, rx, op})
-	case .I32, .I64:
+	case .I32, .I64, .F32:
 		emit(code, {rx, op})
+	case .F64:
+		panic("no")
 	}
 }

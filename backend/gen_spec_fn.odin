@@ -49,7 +49,7 @@ generate_specs :: proc() {
 				.I8 ..= .I64 = .General,
 				.F32 ..= .F64 = .Vector,
 			},
-			cc_table = {X64_ODIN_CC, X64_LINUX_SYSCALL_CC},
+			cc_table = {X64_SYSTEMV_CC, X64_LINUX_SYSCALL_CC},
 		},
 	}
 
@@ -282,10 +282,10 @@ generate_specs :: proc() {
 				prefix,
 			)
 		}
-		fmt.fprintf(file, "\t\tpeep = %v_peep,\n", prefix)
+		fmt.fprintf(file, "\t\tpeep = %v_peep_inst,\n", prefix)
 		fmt.fprintf(
 			file,
-			"\t\tpost_schedule_peep = %v_post_schedule_peep,\n",
+			"\t\tpost_schedule_peep = %v_post_schedule_peep_inst,\n",
 			prefix,
 		)
 
@@ -419,6 +419,7 @@ generate_specs :: proc() {
 
 	for spec in specs {
 		prefix := reflect.enum_name_from_value(spec.name) or_else panic("")
+		lprefix := strings.to_snake_case(prefix)
 		fmt.fprintfln(file, "%v_Node_Type :: enum u16 {{", prefix)
 		for classes in spec.classes {
 			for field in reflect.enum_fields_zipped(classes.enm) {
@@ -426,6 +427,23 @@ generate_specs :: proc() {
 			}
 		}
 		os.write_string(file, "}\n")
+
+		fmt.fprintfln(
+			file,
+			`
+		%v_peep_inst :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {{
+			return %v_peep(ctx, node, struct{{}}{{}})
+		}}
+		%v_post_schedule_peep_inst :: proc(
+			ctx: PS_Peep_Ctx, node: Expanded_Node) -> Node_ID {{
+			return %v_post_schedule_peep(ctx, node, struct{{}}{{}})
+		}}
+		`,
+			lprefix,
+			lprefix,
+			lprefix,
+			lprefix,
+		)
 
 		for classes in spec.classes {
 			for class, i in classes.ids {

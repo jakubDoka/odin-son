@@ -125,8 +125,11 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	lib_names := [2]string{"memcpy", "memset"}
 	for &prc in ctx.procs {
 		for rel in prc.out.relocs {
-			if rel.kind != .Data do continue
-			id := rel.id
+			is_libcall :=
+				LIBCALL_BASE <= rel.id &&
+				rel.id < backend.RELOC_BIG_CONSTANT_BASE
+			if !is_libcall do continue
+			id := rel.id - LIBCALL_BASE
 			if have_lib[id] do continue
 			have_lib[id] = true
 			append(
@@ -149,10 +152,18 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 		for rel in prc.out.relocs {
 			slot := proc_off[i] + int(rel.offset) - 4
 
+			is_libcall :=
+				LIBCALL_BASE <= rel.id &&
+				rel.id < backend.RELOC_BIG_CONSTANT_BASE
+
+			// TODO: this is horrible
 			// Big-constant relocs point into this proc's own constant pool in
 			// .text, so resolve them in place (RIP relative) with no ELF entry.
-			if rel.kind == .Global && rel.id >= backend.RELOC_BIG_CONSTANT_BASE {
-				target := const_off[i] + int(rel.id - backend.RELOC_BIG_CONSTANT_BASE)
+			if rel.kind == .Global &&
+			   rel.id >= backend.RELOC_BIG_CONSTANT_BASE {
+				target :=
+					const_off[i] +
+					int(rel.id - backend.RELOC_BIG_CONSTANT_BASE)
 				source := proc_off[i] + int(rel.offset)
 				cur := u32(0)
 				mem.copy(&cur, &text[slot], 4)
@@ -165,12 +176,16 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 			type: u32
 			switch rel.kind {
 			case .Text:
-				sym = proc_sym[rel.id]
+				if is_libcall {
+					sym = lib_sym[rel.id - LIBCALL_BASE]
+				} else {
+					sym = proc_sym[rel.id]
+				}
 				type = R_X86_64_PC32
 			case .Global:
 				sym = data_sym[rel.id]
 				type = R_X86_64_PC32
-			case .Data:
+			case .Got:
 				sym = lib_sym[rel.id]
 				type = R_X86_64_GOTPCREL
 			}

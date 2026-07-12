@@ -16,10 +16,6 @@ Opt_Level :: struct {
 	flags: backend.Graph_Opt_Flags,
 }
 
-Abi_Sm :: struct {
-	used_regs: [backend.Reg_Kind]int,
-}
-
 Abi_Param :: struct {
 	size:    int,
 	spilled: bool,
@@ -27,6 +23,165 @@ Abi_Param :: struct {
 	by_ptr:  bool,
 	scalar:  bool,
 	dt:      backend.Node_Datatype,
+}
+
+Abi_Param2 :: struct {
+	size:    int,
+	spilled: bool,
+	copied:  bool,
+	by_ptr:  bool,
+	scalar:  bool,
+	dt:      [dynamic; 2]backend.Node_Datatype,
+}
+
+Abi_Type :: enum int {
+	Odin,
+	C,
+}
+
+Abi_Sm :: struct {
+	type:      Abi_Type,
+	used_regs: [backend.Reg_Kind]int,
+}
+
+X86_Reg_Class :: enum u8 {
+	No_Class,
+	Sse_32,
+	Sse,
+	Sse_Up,
+	Integer,
+}
+
+x86_reg_class_classify :: proc(
+	ty: Type,
+) -> (
+	slots: [dynamic; 2]backend.Node_Datatype,
+	ok: bool,
+) {
+	MAX_SIZE :: 512 / 64
+	class_slots: [MAX_SIZE]X86_Reg_Class
+
+	size := type_size(ty)
+
+	if size > MAX_SIZE * 8 do return
+
+	classify(ty, class_slots[:]) or_return
+
+	relevant := class_slots[:(size + 7) / 8]
+
+	assert(!slice.contains(relevant, X86_Reg_Class.Sse_Up), "TODO")
+
+	if len(relevant) > 2 do return
+
+	@(static, rodata)
+	X86_REG_CLASS_TO_DT := #partial [X86_Reg_Class]backend.Node_Datatype {
+		.Integer = .I64,
+		.Sse_32  = .F32,
+		.Sse     = .F64,
+	}
+
+	for v in relevant {
+		dt := X86_REG_CLASS_TO_DT[v]
+		append(&slots, dt)
+	}
+
+	ok = true
+	return
+
+	classify :: proc(
+		ty: Type,
+		slots: []X86_Reg_Class,
+		offset: int = 0,
+	) -> bool {
+		mem.is_aligned(rawptr(uintptr(offset)), type_align(ty)) or_return
+
+		switch t in unpack_type(ty) {
+		case Builtin:
+			@(static, rodata)
+			TYPE_TO_REGLCASS := [Type]X86_Reg_Class {
+				.Void   = .No_Class,
+				.Bool ..= .Uintptr        = .Integer,
+				.String = .Integer,
+				.F32    = .Sse_32,
+				.F64    = .Sse,
+			}
+
+			if slots[offset / 8] == .Sse_32 do slots[offset / 8] = .Sse
+			slots[offset / 8] = max(slots[offset / 8], TYPE_TO_REGLCASS[ty])
+			if t == .String do slots[offset / 8 + 1] = .Integer
+		case Pointer, Multi_Pointer:
+			slots[offset / 8] = .Integer
+		case ^Slice:
+			slots[offset / 8] = .Integer
+			slots[offset / 8 + 1] = .Integer
+		case ^Struct:
+			for f in t.fields {
+				classify(f.ty, slots, offset + f.offset) or_return
+			}
+		case ^Array:
+			step := type_size(t.elem)
+			for i in 0 ..< t.len {
+				classify(t.elem, slots, offset + i * step) or_return
+			}
+		case ^Lit:
+			panic("should not happen")
+		}
+
+		return true
+	}
+}
+
+abi_sm_add2 :: proc(
+	ctx: ^Gen_Ctx,
+	sm: ^Abi_Sm,
+	ty: Type,
+) -> (
+	par: Abi_Param2,
+	ok: bool,
+) {
+	cata, oka := x86_reg_class_classify(ty)
+
+	par.dt = cata
+
+	par.size = type_size(ty)
+	forced_stack := type_to_dt(ty) == .Void
+	par.scalar = !forced_stack
+
+	if !oka {
+		switch sm.type {
+		case .Odin:
+			par.by_ptr = true
+			par.scalar = true
+			par.dt = {.I64}
+			par.size = 0
+		case .C:
+			par.spilled = true
+			par.size = 0
+		}
+		ok = true
+		return
+	}
+
+	for p in cata {
+		rk := ctx.cc_dt_to_reg_kind[p]
+		par.spilled |= sm.used_regs[rk] >= len(ctx.cc.args[rk])
+		sm.used_regs[rk] += 1
+	}
+
+	if par.spilled {
+		for p in cata {
+			rk := ctx.cc_dt_to_reg_kind[p]
+			sm.used_regs[rk] -= 1
+		}
+	}
+
+	par.copied |= len(par.dt) > 1 && !par.spilled
+	par.copied |= len(par.dt) == 1 && forced_stack
+
+	ok = len(par.dt) != 0
+	if !par.copied do par.size = 0
+	if par.scalar do par.dt = {type_to_dt(ty)}
+	return
 }
 
 abi_sm_add :: proc(
@@ -37,6 +192,8 @@ abi_sm_add :: proc(
 	par: Abi_Param,
 	ok: bool = true,
 ) {
+	cata, oka := x86_reg_class_classify(ty)
+
 	par.size = type_size(ty)
 	par.dt = type_to_dt(ty)
 	forced_stack := par.dt == .Void
@@ -47,15 +204,22 @@ abi_sm_add :: proc(
 	par.spilled = sm.used_regs[rk] >= len(ctx.cc.args[rk])
 	switch par.size {
 	case 0:
+		assert(len(cata) == 0)
 		return {}, false
 	case 1 ..= 8:
+		assert(len(cata) == 1)
+		assert(ctx.cc_dt_to_reg_kind[cata[0]] == rk)
 		par.copied = forced_stack
 		sm.used_regs[rk] += 1
 	case 9 ..= 16:
+		assert(len(cata) == 2)
+		assert(ctx.cc_dt_to_reg_kind[cata[0]] == rk)
+		assert(ctx.cc_dt_to_reg_kind[cata[1]] == rk)
 		par.spilled = sm.used_regs[rk] + 1 >= len(ctx.cc.args[rk])
 		par.copied = !par.spilled
 		if !par.spilled do sm.used_regs[rk] += 2
 	case 17 ..= int(~uint(0) >> 1):
+		assert(!oka)
 		par.by_ptr = true
 		par.scalar = true
 	}
@@ -525,7 +689,13 @@ index_offset :: proc(
 	return backend.graph_add_bin_op(ctx, "snd", .Add, .I64, base, index)
 }
 
-emit_proc :: proc(ctx: ^Gen_Ctx, prc: ^Proc, i: int, level: Opt_Level) {
+emit_proc :: proc(
+	ctx: ^Gen_Ctx,
+	prc: ^Proc,
+	i: int,
+	level: Opt_Level,
+	emit_ctx: ^backend.Codegen_Emit_Ctx,
+) {
 	ctx.prc = auto_cast i
 	ctx.module = prc.module
 	ctx.file = prc.file
@@ -556,9 +726,7 @@ emit_proc :: proc(ctx: ^Gen_Ctx, prc: ^Proc, i: int, level: Opt_Level) {
 	ctx.ret_ptrs = nil
 
 	sm: Abi_Sm
-	// per-register-bank argument index; integer and sse arguments have
-	// independent counters (matches the caller side in x64_reg_mask_of)
-	arg_bank: [backend.Reg_Kind]u32
+	arg_cnts: [backend.Reg_Kind]u32
 
 	ctx.ret_ptrs = make(
 		[]backend.Node_ID,
@@ -572,28 +740,29 @@ emit_proc :: proc(ctx: ^Gen_Ctx, prc: ^Proc, i: int, level: Opt_Level) {
 			"sret",
 			.I64,
 			ctx.entry,
-			arg_bank[.General],
+			arg_cnts[.General],
 		)
-		arg_bank[.General] += 1
+		arg_cnts[.General] += 1
 		backend.graph_pin(ctx, ctx.ret_ptrs[j])
-		apa := abi_sm_add(ctx, &sm, .I64) or_else panic("")
+		apa := abi_sm_add2(ctx, &sm, .I64) or_else panic("")
 		assert(!apa.spilled && !apa.by_ptr)
 	}
 
 	for par in prc.params {
-		apa := abi_sm_add(ctx, &sm, par.type) or_continue
+		apa := abi_sm_add2(ctx, &sm, par.type) or_continue
 
 		value: backend.Node_ID
 		if apa.scalar {
-			bank := ctx.cc_dt_to_reg_kind[apa.dt]
+			dt := apa.dt[0]
+			bank := ctx.cc_dt_to_reg_kind[dt]
 			value = backend.graph_add_arg(
 				ctx,
 				"arg",
-				apa.dt,
+				dt,
 				ctx.entry,
-				arg_bank[bank],
+				arg_cnts[bank],
 			)
-			arg_bank[bank] += 1
+			arg_cnts[bank] += 1
 		} else {
 			value = alloca(
 				ctx,
@@ -604,16 +773,17 @@ emit_proc :: proc(ctx: ^Gen_Ctx, prc: ^Proc, i: int, level: Opt_Level) {
 			)
 		}
 
-		for j in 0 ..< (apa.size + 7) / 8 {
+		for dt, j in apa.dt[:(apa.size + 7) / 8] {
+			bank := ctx.cc_dt_to_reg_kind[dt]
 			vl := backend.graph_add_arg(
 				ctx,
 				"arg",
-				.I64,
+				dt,
 				ctx.entry,
-				arg_bank[.General],
+				arg_cnts[bank],
 			)
-			arg_bank[.General] += 1
-			emit_arbitrary_store(ctx, value, vl, apa.size, j * 8)
+			arg_cnts[bank] += 1
+			emit_arbitrary_store(ctx, value, vl, apa.size, j * 8, dt)
 		}
 
 		value_idx: Varuable_Idx
@@ -636,11 +806,11 @@ emit_proc :: proc(ctx: ^Gen_Ctx, prc: ^Proc, i: int, level: Opt_Level) {
 			"retp",
 			.I64,
 			ctx.entry,
-			arg_bank[.General],
+			arg_cnts[.General],
 		)
-		arg_bank[.General] += 1
+		arg_cnts[.General] += 1
 		backend.graph_pin(ctx, ctx.ret_ptrs[j])
-		_, _ = abi_sm_add(ctx, &sm, .I64)
+		_ = abi_sm_add2(ctx, &sm, .I64) or_else panic("")
 	}
 
 	emit_nodes(ctx, {}, prc.lit.body)
@@ -678,7 +848,7 @@ emit_proc :: proc(ctx: ^Gen_Ctx, prc: ^Proc, i: int, level: Opt_Level) {
 
 	ra: backend.Regalloc
 	ra.spec = spec
-	ra.cc = &backend.X64_ODIN_CC
+	ra.cc = &backend.X64_SYSTEMV_CC
 
 	regs := backend.regalloc(
 		&ra,
@@ -687,18 +857,16 @@ emit_proc :: proc(ctx: ^Gen_Ctx, prc: ^Proc, i: int, level: Opt_Level) {
 		arna.allocator(&ctx.mems.scratch),
 	)
 
-	ctx := backend.Codegen_Emit_Ctx {
-		graph = ctx,
-		schedule = &schedule,
-		abi = ra.cc,
-		buf = {code = &ctx.mems.code, relocs = &ctx.mems.reloc},
-		allocs = regs,
-		lib_calls = {
-			copy = {id = 0, absolute = true},
-			set = {id = 1, absolute = true},
-		},
+	emit_ctx.graph = ctx
+	emit_ctx.schedule = &schedule
+	emit_ctx.abi = ra.cc
+	emit_ctx.buf = {
+		code   = &ctx.mems.code,
+		relocs = &ctx.mems.reloc,
 	}
-	prc.out = spec.emit_function(ctx)
+	emit_ctx.allocs = regs
+
+	prc.out = spec.emit_function(emit_ctx^)
 }
 
 emit_nodes :: proc(
@@ -1679,11 +1847,11 @@ emit_call :: proc(
 	) -> bool {
 		assert(vl.id != 0)
 
-		apa := abi_sm_add(ctx, &lctx.sm, ty) or_return
+		apa := abi_sm_add2(ctx, &lctx.sm, ty) or_return
 
-		for i in 0 ..< (apa.size + 7) / 8 {
+		for dt, i in apa.dt[:(apa.size + 7) / 8] {
 			assert(!apa.spilled)
-			args[lctx.i] = emit_arbitrary_load(ctx, vl.id, apa.size, i * 8)
+			args[lctx.i] = emit_arbitrary_load(ctx, vl.id, apa.size, i * 8, dt)
 			backend.graph_pin(ctx, args[lctx.i])
 			lctx.i += 1
 		}
@@ -1718,10 +1886,16 @@ emit_arbitrary_store :: proc(
 	value: backend.Node_ID,
 	size: int,
 	extra_offset := 0,
+	unit: backend.Node_Datatype = .I64,
 ) {
-	store_unit := backend.Node_Datatype.I64
-	size := min(size - extra_offset, 8)
+	store_unit := unit
+	size := min(size - extra_offset, backend.DT_SIZE[unit])
 	offset: int
+
+	if store_unit in backend.FLOAT_DTS {
+		field_store(ctx, "asst", addr, offset + extra_offset, value)
+		return
+	}
 
 	for offset < size {
 		for backend.DT_SIZE[store_unit] + offset > size {
@@ -1755,14 +1929,20 @@ emit_arbitrary_load :: proc(
 	addr: backend.Node_ID,
 	size: int,
 	extra_offset := 0,
+	unit: backend.Node_Datatype = .I64,
 ) -> backend.Node_ID {
-	load_unit := backend.Node_Datatype.I64
-	size := min(size - extra_offset, 8)
+	load_unit := unit
+	size := min(size - extra_offset, backend.DT_SIZE[unit])
 	offset: int
 	value: backend.Node_ID
 
+	if load_unit in backend.FLOAT_DTS {
+		return field_load(ctx, "asld", load_unit, addr, offset + extra_offset)
+	}
+
 	for offset < size {
 		for backend.DT_SIZE[load_unit] + offset > size {
+			assert(load_unit not_in backend.FLOAT_DTS)
 			load_unit = backend.Node_Datatype(u8(load_unit) - 1)
 			assert(load_unit != .Void)
 		}

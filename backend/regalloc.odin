@@ -33,6 +33,7 @@ Reg :: bit_field u16 {
 	kind:  Reg_Kind | 4,
 }
 
+// TODO: make this COW
 Reg_Mask :: struct {
 	masks:      [^]int,
 	kind:       Reg_Kind,

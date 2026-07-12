@@ -3555,6 +3555,52 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) mixed_2_register_op :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Stru :: struct {
+	v: f32,
+	b: int,
+}
+
+main_ :: proc() -> int {
+	return fn(ofn())
+}
+
+ofn :: proc() -> Stru {
+	return {0, 1}
+}
+
+fn :: proc(s: Stru) -> int {
+	return int(s.v) + s.b
+}
+
+run_test(t, `mixed_2_register_op`, `
+package main
+
+opt_level :: "none"
+
+Stru :: struct {
+	v: f32,
+	b: int,
+}
+
+main :: proc() -> int {
+	return fn(ofn())
+}
+
+ofn :: proc() -> Stru {
+	return {0, 1}
+}
+
+fn :: proc(s: Stru) -> int {
+	return int(s.v) + s.b
+}
+`, main_())
+}
 @(test) pass_stack_in_calls :: proc(t: ^testing.T) {
 
 

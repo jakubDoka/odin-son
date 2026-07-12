@@ -1825,6 +1825,30 @@ main :: proc() -> int {
 }
 ```
 
+#### mixed 2 register op
+```odin
+package main
+
+opt_level :: "none"
+
+Stru :: struct {
+	v: f32,
+	b: int,
+}
+
+main :: proc() -> int {
+	return fn(ofn())
+}
+
+ofn :: proc() -> Stru {
+	return {0, 1}
+}
+
+fn :: proc(s: Stru) -> int {
+	return int(s.v) + s.b
+}
+```
+
 #### pass stack in calls
 ```odin
 package main

@@ -241,8 +241,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			-16, //Lazy_Phi
 			-16, //Dead
 		},
-		peep = builder_peep,
-		post_schedule_peep = builder_post_schedule_peep,
+		peep = builder_peep_inst,
+		post_schedule_peep = builder_post_schedule_peep_inst,
 		first_input_idxs = {
 			0, //Start
 			0, //Entry
@@ -702,7 +702,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 	},
 	.X64 = {
 		cc_table = {
-			X64_ODIN_CC,
+			X64_SYSTEMV_CC,
 			X64_LINUX_SYSCALL_CC,
 		},
 		call_clobbers = {
@@ -898,11 +898,11 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{}, // Call_End
 			{}, // Ret
 			{{.General = 3, .Vector = 0}, {.General = 5, .Vector = 0}, {.General = 7, .Vector = 0}}, // Return
-			{{.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}}, // Neg
-			{{.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}}, // Not
+			{{.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}}, // Neg
+			{{.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}}, // Not
 			{{.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}}, // Sext
 			{{.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}}, // Uext
-			{{.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}}, // Cast
+			{{.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}}, // Cast
 			{{.General = 1, .Vector = 3}, {.General = 0, .Vector = 2}}, // F_To_I
 			{{.General = 3, .Vector = 2}, {.General = 1, .Vector = 0}}, // F_From_I
 			{{.General = 0, .Vector = 2}, {.General = 0, .Vector = 2}}, // F_Ext
@@ -940,8 +940,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{{.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}}, // X64_Load
 			{{.General = 3, .Vector = 3}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}}, // X64_Store
 			{{.General = 1, .Vector = 2}}, // X64_CLoad
-			{{.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}}, // X64_Neg
-			{{.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}}, // X64_Not
+			{{.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}}, // X64_Neg
+			{{.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}}, // X64_Not
 			{{.General = 5, .Vector = 0}, {.General = 1, .Vector = 0}, {.General = 5, .Vector = 0}}, // X64_Mul8
 			{{.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}}, // X64_Fma_213
 		},
@@ -1057,8 +1057,8 @@ SPECS := [Node_Spec_Name]Node_Spec{
 		},
 		reg_mask_of = x64_reg_mask_of,
 		emit_function = x64_emit_function,
-		peep = x64_peep,
-		post_schedule_peep = x64_post_schedule_peep,
+		peep = x64_peep_inst,
+		post_schedule_peep = x64_post_schedule_peep_inst,
 		first_input_idxs = {
 			0, //Start
 			0, //Entry
@@ -1845,6 +1845,15 @@ Builder_Node_Type :: enum u16 {
 	Lazy_Phi,
 	Dead,
 }
+
+		builder_peep_inst :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
+			return builder_peep(ctx, node, struct{}{})
+		}
+		builder_post_schedule_peep_inst :: proc(
+			ctx: PS_Peep_Ctx, node: Expanded_Node) -> Node_ID {
+			return builder_post_schedule_peep(ctx, node, struct{}{})
+		}
+		
 #assert(size_of(Cfg) % 4 == 0)
 graph_add_start :: #force_inline proc(graph: ^Graph, name: string) -> (id: Node_ID) {
 	push_node_name(graph, name)
@@ -2187,6 +2196,15 @@ X64_Node_Type :: enum u16 {
 	X64_Mul8,
 	X64_Fma_213,
 }
+
+		x64_peep_inst :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
+			return x64_peep(ctx, node, struct{}{})
+		}
+		x64_post_schedule_peep_inst :: proc(
+			ctx: PS_Peep_Ctx, node: Expanded_Node) -> Node_ID {
+			return x64_post_schedule_peep(ctx, node, struct{}{})
+		}
+		
 #assert(size_of(X64_Mem_Op) % 4 == 0)
 #assert(size_of(X64_Mem_Op) % 4 == 0)
 #assert(size_of(X64_Mem_Op) % 4 == 0)

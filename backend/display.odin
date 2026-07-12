@@ -182,7 +182,7 @@ graph_display_node :: proc(
 ) {
 	node := graph_expand(graph, id)
 
-	extra := graph_extra(graph, node)
+	extra := graph_extra_dyn(graph, node)
 
 	graph_display_node_gvn(w, graph, id)
 	if node.dt != .Void {

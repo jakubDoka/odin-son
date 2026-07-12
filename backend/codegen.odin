@@ -35,12 +35,13 @@ PS_Peep_Ctx :: struct {
 }
 
 Codegen_Emit_Ctx :: struct {
-	using graph:    ^Graph,
-	using schedule: ^Graph_Schedule,
-	using abi:      ^Call_Conv,
-	using buf:      Codegen_Emit_Buf,
-	lib_calls:      Lib_Calls,
-	allocs:         []Reg,
+	using graph:      ^Graph,
+	using schedule:   ^Graph_Schedule,
+	using abi:        ^Call_Conv,
+	using buf:        Codegen_Emit_Buf,
+	emit_got_imports: bool,
+	lib_calls:        Lib_Calls,
+	allocs:           []Reg,
 }
 
 Lib_Calls :: struct {
@@ -66,7 +67,7 @@ Codegen_Output :: struct {
 
 Reloc_Kind :: enum u32 {
 	Text,
-	Data,
+	Got,
 	Global,
 }
 

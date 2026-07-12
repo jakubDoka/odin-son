@@ -78,7 +78,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 	ctx: Gen_Ctx
 	ctx.types = &types
 	ctx.global = &global_ctx
-	ctx.cc = &backend.X64_ODIN_CC
+	ctx.cc = &backend.X64_SYSTEMV_CC
 	ctx.cc_dt_to_reg_kind = &backend.SPECS[.X64].datatype_to_reg_kind
 
 	init_single_file_program(&ctx, &f)
@@ -103,8 +103,16 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		types.mems.reloc.pos = 0
 		clear(&ctx.globals)
 
+		emit_ctx := backend.Codegen_Emit_Ctx {
+			lib_calls = {
+				copy = {id = 0, absolute = true},
+				set = {id = 1, absolute = true},
+			},
+			emit_got_imports = true,
+		}
+
 		for &prc, i in ctx.procs {
-			emit_proc(&ctx, &prc, i, level)
+			emit_proc(&ctx, &prc, i, level, &emit_ctx)
 		}
 
 		lib_call_offsets: [2]uintptr
@@ -146,7 +154,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 				case .Text:
 					target := &ctx.procs[rel.id]
 					target_off = uintptr(raw_data(target.out.code))
-				case .Data:
+				case .Got:
 					target_off = lib_call_offsets[rel.id]
 				case .Global:
 					if rel.id >= backend.RELOC_BIG_CONSTANT_BASE {
@@ -455,7 +463,7 @@ disasm :: proc(sb: ^strings.Builder, ctx: Gen_Ctx) {
 								zydis.MnemonicGetString(instr.info.mnemonic),
 								ctx.procs[reloc.id].name,
 							)
-						case .Data:
+						case .Got:
 							names := [2]string{"copy", "set"}
 
 							text = fmt.tprintf(

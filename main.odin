@@ -7,6 +7,10 @@ import "core:os"
 import "vendored/gam/util/arna"
 import "vendored/gam/util/hot"
 
+LIBCALL_BASE :: backend.RELOC_BIG_CONSTANT_BASE - 32
+MEMCPY_ID :: LIBCALL_BASE
+MEMSET_ID :: LIBCALL_BASE + 1
+
 main :: proc() {
 	context.assertion_failure_proc = hot.init_trace()
 	context.logger = log.create_console_logger()
@@ -83,7 +87,7 @@ main :: proc() {
 	ctx: Gen_Ctx
 	ctx.types = &types
 	ctx.global = &global_ctx
-	ctx.cc = &backend.X64_ODIN_CC
+	ctx.cc = &backend.X64_SYSTEMV_CC
 	ctx.cc_dt_to_reg_kind = &backend.SPECS[.X64].datatype_to_reg_kind
 
 	load_program(&ctx, input)
@@ -94,10 +98,14 @@ main :: proc() {
 		flags = {.Iter_Peeps, .Local_Peeps, .MemOpt},
 	}
 
+	emit_ctx := backend.Codegen_Emit_Ctx {
+		lib_calls = {copy = {id = MEMCPY_ID}, set = {id = MEMSET_ID}},
+	}
+
 	clear(&ctx.globals)
 	emit_module_globals(&ctx)
 	for &prc, i in ctx.procs {
-		emit_proc(&ctx, &prc, i, level)
+		emit_proc(&ctx, &prc, i, level, &emit_ctx)
 	}
 
 	elf := emit_elf(&ctx)

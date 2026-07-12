@@ -169,7 +169,10 @@ CInt :: struct #raw_union #align (4) {
 
 Call :: struct {
 	using _: Cfg,
-	ccid:    u32,
+	using _: bit_field u32 {
+		ccid:     u32  | 31,
+		imported: bool | 1,
+	},
 	cid:     u32,
 }
 
@@ -1433,8 +1436,10 @@ graph_delete_node :: proc(graph: ^Graph, node: ^Node, indirect := false) {
 
 @(tag = "node_proc")
 graph_extra_dwords_node :: proc(graph: ^Graph, node: ^Node) -> []u32 {
-	extra := graph_extra(graph, node)
-	return mem.slice_data_cast([]u32, reflect.as_bytes(extra))
+	return mem.slice_data_cast(
+		[]u32,
+		raw_data(&node.extra)[:graph.node_extra_sizes[node.rtype]],
+	)
 }
 
 graph_get :: #force_inline proc(graph: ^Graph, id: Node_ID) -> ^Node {
@@ -1624,10 +1629,13 @@ graph_add_output_node :: proc(
 }
 
 graph_extra :: proc {
-	graph_get_any_extra_node,
-	graph_get_any_extra_node_id,
 	graph_get_static_extra_node,
 	graph_get_static_extra_node_id,
+}
+
+graph_extra_dyn :: proc {
+	graph_get_any_extra_node,
+	graph_get_any_extra_node_id,
 }
 
 @(tag = "node_proc")

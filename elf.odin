@@ -75,6 +75,9 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 			main_index = i
 			continue // main is emitted as a global symbol below
 		}
+		// foreign procedures have no body; they become undefined global
+		// symbols the linker resolves against the linked libraries.
+		if prc.lit.body == nil do continue
 		append(
 			&locals,
 			Elf64_Sym {
@@ -118,6 +121,21 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 			},
 		)
 		proc_sym[main_index] = next_global
+		next_global += 1
+	}
+
+	// foreign procedures: undefined globals resolved at link time
+	for &prc, i in ctx.procs {
+		if prc.lit.body != nil do continue
+		append(
+			&globals,
+			Elf64_Sym {
+				st_name = strtab_add(&str, prc.name),
+				st_info = (STB_GLOBAL << 4) | STT_NOTYPE,
+				st_shndx = SHN_UNDEF,
+			},
+		)
+		proc_sym[i] = next_global
 		next_global += 1
 	}
 

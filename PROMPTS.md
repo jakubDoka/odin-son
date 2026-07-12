@@ -365,12 +365,19 @@ make sure this also gets inlined into opts during the post schedule peeps.
 
 Make sure all tests pass (run-test and ./misc/run-programs.sh), then stop.
 
-### Add tests to veryfi correct comparison spills
-
-NOTE: read AGENTS.md
+### Add tests to veryfi correct comparison spills (DONE)
 
 We dont test the cases when the comparison ops are not optimized into direct
 cmp -> jmp. Make tests that tickle all of the comparison op x type and make
 sure they work and dont fold away. Use functions to obfuscake operands and
 results of the ops. If you find bugs fix them, until all tests pass and
 compiler emmited all possible comparison flag spills.
+
+### Add a raylib example program
+
+NOTE: read AGENTS.md
+
+Add a raylib example program, implement boids. This program should be in
+`./examples/` and should ahve a bash script to build+run it. The point here is
+to use the foreign blocks to bind to raylib manually, use system installed
+raylib when linking.

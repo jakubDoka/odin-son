@@ -22,6 +22,7 @@ Proc_ID :: distinct int
 
 Type :: enum uintptr {
 	Void,
+	Typeid,
 	Bool,
 	Int,
 	I64,
@@ -34,6 +35,7 @@ Type :: enum uintptr {
 	U16,
 	U8,
 	Uintptr,
+	Rawptr,
 	String,
 	F32,
 	F64,
@@ -42,6 +44,7 @@ Type :: enum uintptr {
 @(rodata)
 TYPE_SIZES := [Type]int {
 	.Void    = 0,
+	.Typeid  = 8,
 	.Bool    = 1,
 	.Int     = 8,
 	.I64     = 8,
@@ -54,6 +57,7 @@ TYPE_SIZES := [Type]int {
 	.U16     = 2,
 	.U8      = 1,
 	.Uintptr = 8,
+	.Rawptr  = 8,
 	.String  = 16,
 	.F32     = 4,
 	.F64     = 8,
@@ -105,6 +109,7 @@ type_size :: proc(ty: Type) -> int {
 @(rodata)
 TYPE_NAMES := [Type]string {
 	.Void    = "void",
+	.Typeid  = "typeid",
 	.Bool    = "bool",
 	.Int     = "int",
 	.I64     = "i64",
@@ -117,6 +122,7 @@ TYPE_NAMES := [Type]string {
 	.U16     = "u16",
 	.U8      = "u8",
 	.Uintptr = "uintptr",
+	.Rawptr  = "rawptr",
 	.String  = "string",
 	.F32     = "f32",
 	.F64     = "f64",
@@ -127,6 +133,7 @@ type_to_dt :: proc(ty: Type) -> backend.Node_Datatype {
 	@(rodata)
 	TYPE_TO_DT := [Type]backend.Node_Datatype {
 		.Void    = .Void,
+		.Typeid  = .I64,
 		.Bool    = .I8,
 		.Int     = .I64,
 		.I64     = .I64,
@@ -139,6 +146,7 @@ type_to_dt :: proc(ty: Type) -> backend.Node_Datatype {
 		.U16     = .I16,
 		.U8      = .I8,
 		.Uintptr = .I64,
+		.Rawptr  = .I64,
 		.String  = .Void,
 		.F32     = .F32,
 		.F64     = .F64,
@@ -1003,14 +1011,6 @@ typecheck :: proc(
 
 		callee := typecheck(ctx, {}, d.expr)
 
-		if callee == .Void {
-			for arg, i in d.args {
-				pty := typecheck(ctx, {inferred_ty = .Uintptr}, arg)
-				assert(pty == .Uintptr)
-			}
-			return .Uintptr
-		}
-
 		sig: Signature
 		#partial switch v in unpack_type(callee) {
 		case ^Lit:
@@ -1085,6 +1085,8 @@ typecheck :: proc(
 			lhs_ty := typecheck(ctx, {}, d.lhs[i])
 			typecheck(ctx, {inferred_ty = lhs_ty}, d.rhs[i])
 		}
+	case ^ast.Pointer_Type:
+		return emit_type(ctx, node)
 	case:
 		fmt.panicf("TODO: %#v", node.derived)
 	}
@@ -1160,49 +1162,70 @@ register_module_procs :: proc(ctx: ^Gen_Ctx, mid: Module_ID) {
 		ctx.file = &ctx.files[ctx.file_id]
 
 		for decl in ctx.file.decls {
+			block := decl.derived_stmt.(^ast.Foreign_Block_Decl) or_continue
+			body := block.body.derived.(^ast.Block_Stmt) or_continue
+			for vl in body.stmts {
+				sdecl := vl.derived.(^ast.Value_Decl) or_continue
+				if len(sdecl.values) == 0 do continue
+				prc := sdecl.values[0].derived.(^ast.Proc_Lit) or_continue
+				assert(prc.body == nil)
+				typecheck_proc(ctx, mid, sdecl, prc)
+			}
+		}
+
+		for decl in ctx.file.decls {
 			sdecl := decl.derived_stmt.(^ast.Value_Decl) or_continue
 			if len(sdecl.values) == 0 do continue
 			prc := sdecl.values[0].derived.(^ast.Proc_Lit) or_continue
-
-			plist := prc.type.params.list
-			rlist: []^ast.Field
-			if prc.type.results != nil {
-				rlist = prc.type.results.list
-			}
-
-			params := make([]Param, len(plist), ctx.types.allocator)
-			rets := make([]Param, len(rlist), ctx.types.allocator)
-
-			lists := [][]^ast.Field{plist, rlist}
-			tys := [][]Param{params, rets}
-
-			for list, j in lists {
-				tys := tys[j]
-
-				for param, i in list {
-					assert(len(param.names) <= 1)
-					pname := ""
-					if len(param.names) == 1 {
-						pname = meta.src_of(ctx.file^, param.names[0])
-					}
-
-					tys[i] = {pname, emit_type(ctx, param.type)}
-				}
-			}
-
-			append(
-				&ctx.procs,
-				Proc {
-					name = meta.src_of(ctx.file^, sdecl.names[0]),
-					lit = prc,
-					module = mid,
-					file = ctx.file,
-					file_id = ctx.file_id,
-					params = params,
-					rets = rets,
-				},
-			)
+			typecheck_proc(ctx, mid, sdecl, prc)
 		}
+	}
+
+	typecheck_proc :: proc(
+		ctx: ^Gen_Ctx,
+		mid: Module_ID,
+		sdecl: ^ast.Value_Decl,
+		prc: ^ast.Proc_Lit,
+	) {
+
+		plist := prc.type.params.list
+		rlist: []^ast.Field
+		if prc.type.results != nil {
+			rlist = prc.type.results.list
+		}
+
+		params := make([]Param, len(plist), ctx.types.allocator)
+		rets := make([]Param, len(rlist), ctx.types.allocator)
+
+		lists := [][]^ast.Field{plist, rlist}
+		tys := [][]Param{params, rets}
+
+		for list, j in lists {
+			tys := tys[j]
+
+			for param, i in list {
+				assert(len(param.names) <= 1)
+				pname := ""
+				if len(param.names) == 1 {
+					pname = meta.src_of(ctx.file^, param.names[0])
+				}
+
+				tys[i] = {pname, emit_type(ctx, param.type)}
+			}
+		}
+
+		append(
+			&ctx.procs,
+			Proc {
+				name = meta.src_of(ctx.file^, sdecl.names[0]),
+				lit = prc,
+				module = mid,
+				file = ctx.file,
+				file_id = ctx.file_id,
+				params = params,
+				rets = rets,
+			},
+		)
 	}
 
 	mod.proc_count = len(ctx.procs) - mod.proc_start
@@ -1244,9 +1267,6 @@ register_module_globals :: proc(ctx: ^Gen_Ctx, mid: Module_ID) {
 typecheck_program :: proc(ctx: ^Gen_Ctx) {
 	for mid in 0 ..< len(ctx.modules) {
 		register_module_procs(ctx, Module_ID(mid))
-	}
-
-	for mid in 0 ..< len(ctx.modules) {
 		register_module_globals(ctx, Module_ID(mid))
 	}
 

@@ -100,7 +100,8 @@ x86_reg_class_classify :: proc(
 			@(static, rodata)
 			TYPE_TO_REGLCASS := [Type]X86_Reg_Class {
 				.Void   = .No_Class,
-				.Bool ..= .Uintptr        = .Integer,
+				.Typeid = .Integer,
+				.Bool ..= .Rawptr        = .Integer,
 				.String = .Integer,
 				.F32    = .Sse_32,
 				.F64    = .Sse,
@@ -696,6 +697,8 @@ emit_proc :: proc(
 	level: Opt_Level,
 	emit_ctx: ^backend.Codegen_Emit_Ctx,
 ) {
+	if prc.lit.body == nil do return
+
 	ctx.prc = auto_cast i
 	ctx.module = prc.module
 	ctx.file = prc.file
@@ -1702,6 +1705,7 @@ emit_call :: proc(
 ) -> []Value {
 	tmp, _ := arna.scrath(context.temp_allocator)
 
+	// TODO: we can cumpute this in N(1)
 	idx := u32(ctx.prc)
 	for &p, i in ctx.procs {
 		if &p == prc {
@@ -1743,6 +1747,7 @@ emit_call :: proc(
 	lctx: Lower_Ctx
 	lctx.i = CALL_PREFIX
 	lctx.ri = len(args)
+	if prc.lit.body == nil do lctx.sm.type = .C
 
 	for j in rabi.srets_start ..< len(rabi.extras) {
 		lower_call_arg(ctx, args, &lctx, ptr_ty, Value(slots[j]))
@@ -1785,6 +1790,7 @@ emit_call :: proc(
 	ln := lctx.i + len(args) - lctx.ri
 
 	call := backend.graph_add_call(ctx, "call", args[:ln], idx)
+	backend.graph_extra(ctx, call, backend.Call).imported = prc.lit.body == nil
 	cnode := backend.graph_get(ctx, call)
 	cnode.input_count = u16(lctx.i)
 	for arg in args[CALL_PREFIX:ln] {

@@ -10561,3 +10561,35 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) foreign_block :: proc(t: ^testing.T) {
+
+
+
+foreign {
+	malloc :: proc(size: int) -> rawptr ---
+	free :: proc(size: rawptr) ---
+}
+
+main_ :: proc() -> int {
+	slt := (^int)(malloc(8))
+	slt^ = 0
+	free(rawptr(slt))
+	return slt^
+}
+
+run_test(t, `foreign_block`, `
+package main
+
+foreign {
+	malloc :: proc(size: int) -> rawptr ---
+	free :: proc(size: rawptr) ---
+}
+
+main :: proc() -> int {
+	slt := (^int)(malloc(8))
+	slt^ = 0
+	free(rawptr(slt))
+	return slt^
+}
+`, main_())
+}

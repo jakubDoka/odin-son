@@ -5427,3 +5427,20 @@ main :: proc() -> int {
 	return total % 251
 }
 ```
+
+#### foreign block
+```odin
+package main
+
+foreign {
+	malloc :: proc(size: int) -> rawptr ---
+	free :: proc(size: rawptr) ---
+}
+
+main :: proc() -> int {
+	slt := (^int)(malloc(8))
+	slt^ = 0
+	free(rawptr(slt))
+	return slt^
+}
+```

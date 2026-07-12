@@ -4,10 +4,12 @@ import zydis "./zydis"
 import "backend"
 import "base:intrinsics"
 import "base:runtime"
+import "core:dynlib"
 import "core:fmt"
 import "core:log"
 import "core:mem"
 import "core:mem/virtual"
+import "core:odin"
 import "core:odin/ast"
 import "core:odin/parser"
 import "core:os"
@@ -91,6 +93,9 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		{"all", {.Iter_Peeps, .Local_Peeps, .MemOpt}},
 	}
 
+	lib, did_load := dynlib.load_library("")
+	assert(did_load, dynlib.last_error())
+
 	dsb: strings.Builder
 	dsb.buf.allocator = context.temp_allocator
 	for level in levels {
@@ -103,34 +108,42 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		types.mems.reloc.pos = 0
 		clear(&ctx.globals)
 
-		emit_ctx := backend.Codegen_Emit_Ctx {
-			lib_calls = {
-				copy = {id = 0, absolute = true},
-				set = {id = 1, absolute = true},
-			},
-			emit_got_imports = true,
-		}
-
-		for &prc, i in ctx.procs {
-			emit_proc(&ctx, &prc, i, level, &emit_ctx)
-		}
-
-		lib_call_offsets: [2]uintptr
-
 		_copy :: proc "contextless" (dst, src: rawptr, len: int) -> rawptr {
 			vl: #simd[16]u8
 			_ = intrinsics.volatile_load(&vl)
 			return mem.copy(dst, src, len)
 		}
 
-		lib_call_offsets[0] = auto_cast backend.emit_aligned(
-			&types.mems.code,
-			_copy,
+		imported_offsets: [dynamic]uintptr
+		imported_offsets.allocator = context.temp_allocator
+		for p in ctx.procs {
+			if p.lit.body == nil {
+				addr := dynlib.symbol_address(lib, p.name) or_else panic("")
+				slot := backend.emit_aligned(&types.mems.code, addr)
+				append(&imported_offsets, uintptr(slot))
+			}
+		}
+
+		emit_ctx := backend.Codegen_Emit_Ctx {
+			lib_calls = {
+				copy = {id = u32(len(imported_offsets)), absolute = true},
+				set = {id = u32(len(imported_offsets)) + 1, absolute = true},
+			},
+			emit_got_imports = true,
+		}
+
+		append(
+			&imported_offsets,
+			auto_cast backend.emit_aligned(&types.mems.code, _copy),
 		)
-		lib_call_offsets[1] = auto_cast backend.emit_aligned(
-			&types.mems.code,
-			mem.set,
+		append(
+			&imported_offsets,
+			auto_cast backend.emit_aligned(&types.mems.code, mem.set),
 		)
+
+		for &prc, i in ctx.procs {
+			emit_proc(&ctx, &prc, i, level, &emit_ctx)
+		}
 
 		arna.alloc(&types.mems.code, 0, 4096)
 		code_until := types.mems.code.pos
@@ -155,7 +168,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 					target := &ctx.procs[rel.id]
 					target_off = uintptr(raw_data(target.out.code))
 				case .Got:
-					target_off = lib_call_offsets[rel.id]
+					target_off = imported_offsets[rel.id]
 				case .Global:
 					if rel.id >= backend.RELOC_BIG_CONSTANT_BASE {
 						target_off =

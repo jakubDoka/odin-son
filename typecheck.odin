@@ -390,103 +390,39 @@ find_module_global :: proc(
 	return nil, false
 }
 
-emit_type :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Type {
+emit_type :: proc(
+	ctx: ^Gen_Ctx,
+	expr: ^ast.Node,
+	key: Maybe(Decl_Key) = nil,
+) -> (
+	ret: Type,
+) {
 	if expr == nil do return .Void
+
+	intern_decl :: proc(
+		mapa: ^map[Decl_Key]^$T,
+		key: Maybe(Decl_Key),
+		ret: ^Type,
+	) -> (
+		^T,
+		bool,
+	) {
+		if key, ok := key.?; ok {
+			record, ok := mapa[key]
+			ret^ = pack_type(record)
+			if ok do return nil, false
+		}
+		record := new(T, mapa.allocator)
+		if key, ok := key.?; ok do mapa[key] = record
+		return record, true
+	}
 
 	#partial switch d in expr.derived {
 	case ^ast.Ident:
 		if sdecl, dfile, dfid, ok := find_module_decl(ctx, ctx.module, d.name);
 		   ok {
-			#partial switch d in sdecl.values[0].derived {
-			case ^ast.Struct_Type:
-				key := Struct_Key{dfid, u32(sdecl.pos.offset)}
-				structa, ok := ctx.structs[key]
-				if ok do return pack_type(structa)
-
-				structa = new(Struct, ctx.types.allocator)
-				ctx.structs[key] = structa
-
-				structa.fields = make(
-					[]Struct_Field,
-					len(d.fields.list),
-					ctx.types.allocator,
-				)
-				for &field, i in structa.fields {
-					ast_field := d.fields.list[i]
-					assert(len(ast_field.names) == 1)
-					field.name = ast_field.names[0].derived.(^ast.Ident).name
-					field.ty = emit_type(ctx, ast_field.type)
-					field.offset = mem.align_forward_int(
-						structa.size,
-						type_align(field.ty),
-					)
-					structa.size = field.offset + type_size(field.ty)
-					structa.align = max(structa.align, type_align(field.ty))
-				}
-				structa.size = mem.align_forward_int(
-					structa.size,
-					structa.align,
-				)
-				return pack_type(structa)
-			case ^ast.Enum_Type:
-				key := Struct_Key{dfid, u32(sdecl.pos.offset)}
-				if e, ok := ctx.enums[key]; ok do return pack_type(e)
-
-				e := new(Enum, ctx.types.allocator)
-				ctx.enums[key] = e
-				e.backing =
-					d.base_type != nil ? emit_type(ctx, d.base_type) : .Int
-				e.variants = make(
-					[]Enum_Variant,
-					len(d.fields),
-					ctx.types.allocator,
-				)
-				next := i64(0)
-				for f, i in d.fields {
-					vname: string
-					vval := next
-					#partial switch fd in f.derived {
-					case ^ast.Ident:
-						vname = fd.name
-					case ^ast.Field_Value:
-						vname = fd.field.derived.(^ast.Ident).name
-						cv, cok := const_eval_int(fd.value)
-						assert(cok)
-						vval = cv
-					case:
-						fmt.panicf("TODO: enum field %#v", f.derived)
-					}
-					e.variants[i] = {vname, vval}
-					next = vval + 1
-				}
-				return pack_type(e)
-			case ^ast.Union_Type:
-				key := Struct_Key{dfid, u32(sdecl.pos.offset)}
-				if u, ok := ctx.unions[key]; ok do return pack_type(u)
-
-				u := new(Union, ctx.types.allocator)
-				ctx.unions[key] = u
-				u.variants = make([]Type, len(d.variants), ctx.types.allocator)
-				max_size := 0
-				max_align := 1
-				for v, i in d.variants {
-					vt := emit_type(ctx, v)
-					u.variants[i] = vt
-					max_size = max(max_size, type_size(vt))
-					max_align = max(max_align, type_align(vt))
-				}
-				u.tag_ty = .I64
-				tag_size := type_size(u.tag_ty)
-				u.tag_offset = mem.align_forward_int(max_size, tag_size)
-				u.align = max(max_align, tag_size)
-				u.size = mem.align_forward_int(
-					u.tag_offset + tag_size,
-					u.align,
-				)
-				return pack_type(u)
-			case:
-				return emit_type(ctx, sdecl.values[0])
-			}
+			key := Decl_Key{dfid, u32(sdecl.pos.offset)}
+			return emit_type(ctx, sdecl.values[0], key)
 		}
 
 		for name, kind in TYPE_NAMES {
@@ -494,6 +430,76 @@ emit_type :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Type {
 		}
 
 		fmt.panicf("TODO: %#v", expr.derived)
+	case ^ast.Struct_Type:
+		structa := intern_decl(&ctx.structs, key, &ret) or_break
+
+		structa.fields = make(
+			[]Struct_Field,
+			len(d.fields.list),
+			ctx.types.allocator,
+		)
+		for &field, i in structa.fields {
+			ast_field := d.fields.list[i]
+			assert(len(ast_field.names) == 1)
+			field.name = ast_field.names[0].derived.(^ast.Ident).name
+			field.ty = emit_type(ctx, ast_field.type)
+			field.offset = mem.align_forward_int(
+				structa.size,
+				type_align(field.ty),
+			)
+			structa.size = field.offset + type_size(field.ty)
+			structa.align = max(structa.align, type_align(field.ty))
+		}
+		structa.size = mem.align_forward_int(structa.size, structa.align)
+		return pack_type(structa)
+	case ^ast.Enum_Type:
+		e := intern_decl(&ctx.enums, key, &ret) or_break
+
+		e.backing = d.base_type != nil ? emit_type(ctx, d.base_type) : .Int
+		e.variants = make([]Enum_Variant, len(d.fields), ctx.types.allocator)
+		next := i64(0)
+		for f, i in d.fields {
+			vname: string
+			vval := next
+			#partial switch fd in f.derived {
+			case ^ast.Ident:
+				vname = fd.name
+			case ^ast.Field_Value:
+				vname = fd.field.derived.(^ast.Ident).name
+				cv, cok := const_eval_int(fd.value)
+				assert(cok)
+				vval = cv
+			case:
+				fmt.panicf("TODO: enum field %#v", f.derived)
+			}
+			e.variants[i] = {vname, vval}
+			next = vval + 1
+		}
+		return pack_type(e)
+	case ^ast.Union_Type:
+		u := intern_decl(&ctx.unions, key, &ret) or_break
+
+		Geneva :: struct($T: typeid) {
+			v: T,
+		}
+
+		v := Geneva(u8){}
+
+		u.variants = make([]Type, len(d.variants), ctx.types.allocator)
+		max_size := 0
+		max_align := 1
+		for v, i in d.variants {
+			vt := emit_type(ctx, v)
+			u.variants[i] = vt
+			max_size = max(max_size, type_size(vt))
+			max_align = max(max_align, type_align(vt))
+		}
+		u.tag_ty = .I64
+		tag_size := type_size(u.tag_ty)
+		u.tag_offset = mem.align_forward_int(max_size, tag_size)
+		u.align = max(max_align, tag_size)
+		u.size = mem.align_forward_int(u.tag_offset + tag_size, u.align)
+		return pack_type(u)
 	case ^ast.Multi_Pointer_Type:
 		return intern_multi_pointer(ctx, emit_type(ctx, d.elem))
 	case ^ast.Pointer_Type:
@@ -521,6 +527,8 @@ emit_type :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Type {
 	case:
 		fmt.panicf("TODO: %#v", expr.derived)
 	}
+
+	return
 }
 
 Proc :: struct {

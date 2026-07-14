@@ -389,9 +389,7 @@ Support enums and unions. This breaks down into multiple steps:
 3. Make sure thests pass, if you find a bug, spawn an agent to fix it, then
    return to me.
 
-### Clean up the switch statement codegen
-
-NOTE: read AGENTS.md
+### Clean up the switch statement codegen (DONE)
 
 Currently a switch statement uses a stack of If States to get emitted. Add a
 new builder into the `backend/graph.odin` that gives you an ability to break
@@ -402,3 +400,41 @@ Once that is done, refactor the switch codegen by using it instead of a if
 statement stack.
 
 Make usre all tests still pass.
+
+### Refactor the typechecking and gen to use the Check_Meta struct
+
+NOTE: read AGENTS.md
+
+See git diff for context.
+
+I want do decouple Lit from the Type, make them parallel to each other. I
+already changed the code a bit to guide you with the refactor. Check_Meta
+should hold a type and possibly a value of that type. .Eg:
+
+The lit type can have sentinel values, e.g. the type can be known but also can
+be a dynamic typeid. The function can be known or it can be a function pointer.
+
+The intended result should be that all of the uses of old ^Lit contraption is
+cleanued up for a better codegen code. (A flat switch on a type followed by a
+access to a raw union). Basically it should get rid of one level of indirection
+while also providing more information.
+
+I also changed how the packed type union works. Now it actually has all of the
+builtins as union variants, this should further flatten code. We do use some
+table here and there but it only makes the code less straight forward. So
+replace tables with extended switches on the unpacked type, unless we only use
+the table on the packed type and ignore other variants.
+
+The Builtin enum is now only usefull for hardcoded types.
+
+
+I also started the poly type (generics) implementation. Do not try to implement
+generics yet. Instead just add `fmt.panicf("POLY TODO: %v", <type>)` to the
+code, Of course if the Poly actually should not be reache just add a
+`panic("should not reach poly here")`.
+
+First fix all of the compilation errors. Then make sure all tests pass
+(including the test-programs).
+
+This change should not affect the resulting generated code (golden files should
+not change). This is purely a frontend change (package main).

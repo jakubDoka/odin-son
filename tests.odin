@@ -11141,3 +11141,37 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) generic_fuctions :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	return int(fib(i32(10))) + fib(10)
+}
+
+fib :: proc(x: $T) -> T {
+	if x <= 2 {
+		return 1
+	}
+	return fib(x - 1) + fib(x - 2)
+}
+
+run_test(t, `generic_fuctions`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	return int(fib(i32(10))) + fib(10)
+}
+
+fib :: proc(x: $T) -> T {
+	if x <= 2 {
+		return 1
+	}
+	return fib(x - 1) + fib(x - 2)
+}
+`, main_())
+}

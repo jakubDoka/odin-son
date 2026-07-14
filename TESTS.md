@@ -5732,3 +5732,21 @@ main :: proc() -> int {
 	return r
 }
 ```
+
+#### generic fuctions
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	return int(fib(i32(10))) + fib(10)
+}
+
+fib :: proc(x: $T) -> T {
+	if x <= 2 {
+		return 1
+	}
+	return fib(x - 1) + fib(x - 2)
+}
+```

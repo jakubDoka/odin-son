@@ -12,6 +12,7 @@
 
 set -u
 
+export ODIN_ROOT="$HOME/odin"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROGRAMS_DIR="$ROOT/test-programs"
 WORK="$(mktemp -d)"

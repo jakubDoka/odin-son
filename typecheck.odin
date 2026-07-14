@@ -13,17 +13,38 @@ import "core:strconv"
 import "meta"
 import "vendored/gam/util/arna"
 
-Lit :: union {
-	Proc_ID,
-	Module_ID,
-	Intrinsic,
+Lit :: struct #raw_union {
+	procid:    Proc_ID,
+	module:    Module_ID,
+	typeida:   Type,
+	intrinsic: Intrinsic,
+}
+
+// Constants that indicate the lit is not known
+PROC_FUNCTION_POINTER_SENTINEL :: Proc_ID(-1)
+// NOTE: Module is always known
+TYPE_UNKNOWN_SENTINEL :: Type(~uintptr(0))
+// NOTE: Intrinsic is always known
+// NOTE: Poly_Data is always known
+
+Poly_Data :: struct {
+	idx:            int,
+	specialization: Type,
+}
+
+Check_Meta :: struct {
+	type: Type,
+	lit:  Lit,
 }
 
 Proc_ID :: distinct int
 
 Type :: enum uintptr {
 	Void,
+	Poly,
 	Typeid,
+	Intrinsic,
+	Module,
 	Bool,
 	Int,
 	I64,
@@ -43,7 +64,7 @@ Type :: enum uintptr {
 }
 
 @(rodata)
-TYPE_SIZES := [Type]int {
+TYPE_SIZES := #partial [Type]int {
 	.Void    = 0,
 	.Typeid  = 8,
 	.Bool    = 1,
@@ -65,10 +86,7 @@ TYPE_SIZES := [Type]int {
 }
 
 type_align :: proc(ty: Type) -> int {
-	switch t in unpack_type(ty) {
-	case Builtin:
-		if ty == .String do return 8
-		return TYPE_SIZES[ty]
+	#partial switch t in unpack_type(ty) {
 	case Pointer, Multi_Pointer:
 		return 8
 	case ^Struct:
@@ -81,11 +99,13 @@ type_align :: proc(ty: Type) -> int {
 		return type_align(t.backing)
 	case ^Union:
 		return t.align
-	case ^Lit:
+	case ^Proc_Type:
 		panic("we should not be type type")
-	case:
-		panic("wuwut")
+	case ^Poly_Data:
+		fmt.panicf("POLY TODO: %v", ty)
 	}
+	if ty == .String do return 8
+	return TYPE_SIZES[ty]
 }
 
 array_elem_stride :: proc(elem: Type) -> int {
@@ -93,9 +113,7 @@ array_elem_stride :: proc(elem: Type) -> int {
 }
 
 type_size :: proc(ty: Type) -> int {
-	switch t in unpack_type(ty) {
-	case Builtin:
-		return TYPE_SIZES[ty]
+	#partial switch t in unpack_type(ty) {
 	case Pointer, Multi_Pointer:
 		return 8
 	case ^Struct:
@@ -108,15 +126,16 @@ type_size :: proc(ty: Type) -> int {
 		return type_size(t.backing)
 	case ^Union:
 		return t.size
-	case ^Lit:
+	case ^Proc_Type:
 		panic("we should not be type type")
-	case:
-		panic("wuwut")
+	case ^Poly_Data:
+		fmt.panicf("POLY TODO: %v", ty)
 	}
+	return TYPE_SIZES[ty]
 }
 
 @(rodata)
-TYPE_NAMES := [Type]string {
+TYPE_NAMES := #partial [Type]string {
 	.Void    = "void",
 	.Typeid  = "typeid",
 	.Bool    = "bool",
@@ -140,7 +159,7 @@ TYPE_NAMES := [Type]string {
 type_to_dt :: proc(ty: Type) -> backend.Node_Datatype {
 	@(static)
 	@(rodata)
-	TYPE_TO_DT := [Type]backend.Node_Datatype {
+	TYPE_TO_DT := #partial [Type]backend.Node_Datatype {
 		.Void    = .Void,
 		.Typeid  = .I64,
 		.Bool    = .I8,
@@ -161,19 +180,17 @@ type_to_dt :: proc(ty: Type) -> backend.Node_Datatype {
 		.F64     = .F64,
 	}
 
-	switch t in unpack_type(ty) {
-	case Builtin:
-		assert(int(ty) < len(TYPE_TO_DT))
-		return TYPE_TO_DT[ty]
+	#partial switch t in unpack_type(ty) {
 	case Pointer, Multi_Pointer:
 		return .I64
 	case ^Enum:
 		return type_to_dt(t.backing)
-	case ^Lit, ^Struct, ^Array, ^Slice, ^Union:
+	case ^Proc_Type, ^Struct, ^Array, ^Slice, ^Union:
 		return .Void
-	case:
-		panic("wuwut")
+	case ^Poly_Data:
+		fmt.panicf("POLY TODO: %v", ty)
 	}
+	return TYPE_TO_DT[ty]
 }
 
 UNSIGNED_TYPES :: bit_set[Type]{.Uint, .U64, .U32, .U16, .U8, .Bool, .Uintptr}
@@ -181,41 +198,71 @@ SIGNED_TYPES :: bit_set[Type]{.Int, .I64, .I32, .I16, .I8}
 INTEGER_TYPES :: UNSIGNED_TYPES | SIGNED_TYPES
 FLOAT_TYPES :: bit_set[Type]{.F32, .F64}
 
-Type_Kind :: enum uintptr {
-	Builtin,
-	Pointer,
-	Struct,
-	Array,
-	Slice,
-	Lit,
-	Enum,
-	Union,
-}
-
 Raw_Type :: bit_field uintptr {
-	data: uintptr   | 48,
-	tag:  Type_Kind | 16,
+	tag:  int     | 16,
+	data: uintptr | 48,
 }
 
 Multi_Pointer :: distinct ^Type
 Pointer :: distinct ^Type
 Builtin :: distinct Type
 
+Void_Type :: struct {}
+Typeid_Type :: struct {}
+Intrinsic_Type :: struct {}
+Module_Type :: struct {}
+Bool_Type :: struct {}
+Int_Type :: struct {}
+I64_Type :: struct {}
+I32_Type :: struct {}
+I16_Type :: struct {}
+I8_Type :: struct {}
+Uint_Type :: struct {}
+U64_Type :: struct {}
+U32_Type :: struct {}
+U16_Type :: struct {}
+U8_Type :: struct {}
+Uintptr_Type :: struct {}
+Rawptr_Type :: struct {}
+String_Type :: struct {}
+F32_Type :: struct {}
+F64_Type :: struct {}
+
 Type_Data :: union #no_nil {
-	Builtin,
+	Void_Type,
+	^Poly_Data,
+	Typeid_Type,
+	Intrinsic_Type,
+	Module_Type,
+	Bool_Type,
+	Int_Type,
+	I64_Type,
+	I32_Type,
+	I16_Type,
+	I8_Type,
+	Uint_Type,
+	U64_Type,
+	U32_Type,
+	U16_Type,
+	U8_Type,
+	Uintptr_Type,
+	Rawptr_Type,
+	String_Type,
+	F32_Type,
+	F64_Type,
 	Pointer,
 	Multi_Pointer,
+	^Proc_Type,
 	^Struct,
 	^Array,
 	^Slice,
-	^Lit,
 	^Enum,
 	^Union,
 }
 
 Raw_Type_Data :: struct {
 	data: uintptr,
-	tag:  Type_Kind,
+	tag:  int,
 }
 
 init_type_fmt :: proc() {
@@ -237,9 +284,7 @@ init_type_fmt :: proc() {
 }
 
 type_display :: proc(w: io.Writer, ty: Type) {
-	switch t in unpack_type(ty) {
-	case Builtin:
-		fmt.wprint(w, TYPE_NAMES[Type(t)])
+	#partial switch t in unpack_type(ty) {
 	case Pointer:
 		io.write_rune(w, '^')
 		type_display(w, (^Type)(t)^)
@@ -274,8 +319,25 @@ type_display :: proc(w: io.Writer, ty: Type) {
 			type_display(w, v)
 		}
 		io.write_rune(w, '}')
-	case ^Lit:
-		fmt.wprintf(w, "lit(%v)", t^)
+	case ^Proc_Type:
+		io.write_string(w, "proc(")
+		for a, i in t.args {
+			if i != 0 do io.write_string(w, ", ")
+			type_display(w, a)
+		}
+		io.write_rune(w, ')')
+
+		if len(t.rets) > 0 {
+			io.write_string(w, " -> ")
+			for a, i in t.rets {
+				if i != 0 do io.write_string(w, ", ")
+				type_display(w, a)
+			}
+		}
+	case ^Poly_Data:
+		fmt.wprintf(w, "$poly%v", t.idx)
+	case:
+		fmt.wprint(w, TYPE_NAMES[ty])
 	}
 }
 
@@ -286,7 +348,12 @@ pack_type :: proc(typ: Type_Data) -> Type {
 
 unpack_type :: proc(typ: Type) -> Type_Data {
 	raw := Raw_Type(typ)
-	return transmute(Type_Data)Raw_Type_Data{data = raw.data, tag = raw.tag}
+	return(
+		transmute(Type_Data)Raw_Type_Data {
+			data = raw.data,
+			tag = int(raw.tag),
+		} \
+	)
 }
 
 intern_multi_pointer :: proc(ctx: ^Gen_Ctx, ty: Type) -> Type {
@@ -306,7 +373,7 @@ intern_pointer :: proc(ctx: ^Gen_Ctx, ty: Type) -> Type {
 }
 
 intern_array :: proc(ctx: ^Gen_Ctx, elem: Type, length: int) -> Type {
-	key := Array_Key{elem, length}
+	key := Array{elem, length}
 	existing, ok := ctx.arrays[key]
 	if !ok {
 		existing = new(Array, ctx.types.allocator)
@@ -327,10 +394,53 @@ intern_slice :: proc(ctx: ^Gen_Ctx, elem: Type) -> Type {
 	return pack_type(existing)
 }
 
-intern_lit :: proc(ctx: ^Gen_Ctx, lit: Lit) -> ^Lit {
-	existing := ctx.lits[lit] or_else new_clone(lit, ctx.types.allocator)
-	ctx.lits[lit] = existing
-	return existing
+intern_poly :: proc(ctx: ^Gen_Ctx, poly: Poly_Data) -> Type {
+	existing := ctx.polys[poly] or_else new_clone(poly, ctx.types.allocator)
+	ctx.polys[poly] = existing
+	return pack_type(existing)
+}
+
+// proc_type_of returns the (function pointer) type of the procedure `pid`. The
+// specific procedure is not encoded in the type, it lives in the Check_Meta
+// lit alongside it.
+proc_type_of :: proc(ctx: ^Gen_Ctx, pid: Proc_ID) -> Type {
+	if existing, ok := ctx.proc_types[pid]; ok do return existing
+
+	prc := &ctx.procs[pid]
+	pt := new(Proc_Type, ctx.types.allocator)
+	pt.args = make([]Type, len(prc.params), ctx.types.allocator)
+	for p, i in prc.params do pt.args[i] = p.type
+	pt.rets = make([]Type, len(prc.rets), ctx.types.allocator)
+	for r, i in prc.rets do pt.rets[i] = r.type
+
+	ty := pack_type(pt)
+	ctx.proc_types[pid] = ty
+	return ty
+}
+
+tmeta :: proc(ctx: ^Gen_Ctx, ty: Type) -> ^Check_Meta {
+	return new_clone(Check_Meta{type = ty}, ctx.types.allocator)
+}
+
+proc_meta :: proc(ctx: ^Gen_Ctx, pid: Proc_ID) -> ^Check_Meta {
+	m := new(Check_Meta, ctx.types.allocator)
+	m.type = proc_type_of(ctx, pid)
+	m.lit.procid = pid
+	return m
+}
+
+module_meta :: proc(ctx: ^Gen_Ctx, mid: Module_ID) -> ^Check_Meta {
+	m := new(Check_Meta, ctx.types.allocator)
+	m.type = .Module
+	m.lit.module = mid
+	return m
+}
+
+intrinsic_meta :: proc(ctx: ^Gen_Ctx, intr: Intrinsic) -> ^Check_Meta {
+	m := new(Check_Meta, ctx.types.allocator)
+	m.type = .Intrinsic
+	m.lit.intrinsic = intr
+	return m
 }
 
 find_module_decl :: proc(
@@ -372,6 +482,16 @@ find_module_proc :: proc(
 		if ctx.procs[i].name == name do return Proc_ID(i), true
 	}
 	return 0, false
+}
+
+extract_polys :: proc(ctx: ^Gen_Ctx, slots: []Type, root: Type) -> bool {
+	#partial switch t in unpack_type(root) {
+	case ^Poly_Data:
+		slots[t.idx] = root
+		return true
+	}
+
+	return false
 }
 
 // find_module_global returns the global variable named `name` defined directly
@@ -524,6 +644,15 @@ emit_type :: proc(
 		length, ok := strconv.parse_int(len_lit.tok.text)
 		assert(ok)
 		return intern_array(ctx, elem, length)
+	case ^ast.Poly_Type:
+		ctx.poly_type_count += 1
+		return intern_poly(
+			ctx,
+			Poly_Data {
+				ctx.poly_type_count - 1,
+				emit_type(ctx, d.specialization),
+			},
+		)
 	case:
 		fmt.panicf("TODO: %#v", expr.derived)
 	}
@@ -589,11 +718,10 @@ call_sig :: proc(ctx: ^Gen_Ctx, node: ^ast.Node) -> (Signature, bool) {
 	if id, iok := call.expr.derived.(^ast.Ident); iok && id.name == "len" {
 		return {}, false
 	}
-	lit, lok := unpack_type(typecheck(ctx, {}, call.expr)).(^Lit)
-	if !lok do return {}, false
-	pid, pok := lit.(Proc_ID)
-	if !pok do return {}, false
-	return ctx.procs[pid].sig, true
+	m := typecheck(ctx, {}, call.expr)
+	if !is_of(m.type, ^Proc_Type) do return {}, false
+	if m.lit.procid == PROC_FUNCTION_POINTER_SENTINEL do return {}, false
+	return ctx.procs[m.lit.procid].sig, true
 }
 
 Varuable_Idx :: union #no_nil {
@@ -643,12 +771,13 @@ Types :: struct {
 	scope:          [dynamic]Variable,
 	pointers:       map[Type]Pointer,
 	multi_pointers: map[Type]Multi_Pointer,
-	structs:        map[Struct_Key]^Struct,
-	enums:          map[Struct_Key]^Enum,
-	unions:         map[Struct_Key]^Union,
-	arrays:         map[Array_Key]^Array,
+	structs:        map[Decl_Key]^Struct,
+	enums:          map[Decl_Key]^Enum,
+	unions:         map[Decl_Key]^Union,
+	arrays:         map[Array]^Array,
 	slices:         map[Type]^Slice,
-	lits:           map[Lit]^Lit,
+	polys:          map[Poly_Data]^Poly_Data,
+	proc_types:     map[Proc_ID]Type,
 	globals:        [dynamic]Global_Data,
 	global_vars:    [dynamic]Global_Var,
 }
@@ -674,7 +803,8 @@ types_init :: proc(types: ^Types) {
 	types.unions.allocator = types.allocator
 	types.arrays.allocator = types.allocator
 	types.slices.allocator = types.allocator
-	types.lits.allocator = types.allocator
+	types.polys.allocator = types.allocator
+	types.proc_types.allocator = types.allocator
 	types.globals.allocator = types.allocator
 	types.global_vars.allocator = types.allocator
 }
@@ -697,11 +827,6 @@ Global_Data :: struct {
 	align: int,
 }
 
-Array_Key :: struct {
-	elem: Type,
-	len:  int,
-}
-
 Array :: struct {
 	elem: Type,
 	len:  int,
@@ -713,7 +838,7 @@ Slice :: struct {
 
 File_ID :: distinct u32
 
-Struct_Key :: struct {
+Decl_Key :: struct {
 	file:   File_ID,
 	offset: u32,
 }
@@ -740,6 +865,11 @@ Enum_Variant :: struct {
 	value: i64,
 }
 
+Proc_Type :: struct {
+	args: []Type,
+	rets: []Type,
+}
+
 // Union memory layout: the active variant's payload lives at offset 0, and the
 // tag (1-based variant index, 0 == nil) lives at `tag_offset`.
 Union :: struct {
@@ -754,14 +884,19 @@ union_variant_index :: proc(u: ^Union, ty: Type) -> (int, bool) {
 	return slice.linear_search(u.variants, ty)
 }
 
+@(rodata)
+VOID := Check_Meta {
+	type = .Void,
+}
+
 typecheck :: proc(
 	ctx: ^Gen_Ctx,
 	prop: Ty_Propagation,
 	node: ^ast.Node,
 ) -> (
-	ty: Type,
+	ty: ^Check_Meta,
 ) {
-	if node == nil do return .Void
+	if node == nil do return &VOID
 
 	defer {
 		set_node_data(node, ty)
@@ -802,7 +937,7 @@ typecheck :: proc(
 					},
 				)
 			}
-			return .Void
+			return &VOID
 		}
 
 		inferred_ty := emit_type(ctx, d.type)
@@ -824,7 +959,7 @@ typecheck :: proc(
 					},
 				)
 			}
-			return .Void
+			return &VOID
 		}
 
 		assert(len(d.names) == len(d.values))
@@ -834,12 +969,12 @@ typecheck :: proc(
 
 			if u, ok := unpack_type(inferred_ty).(^Union); ok {
 				value_ty := typecheck(ctx, {}, d.values[i])
-				if value_ty != inferred_ty {
-					_, found := union_variant_index(u, value_ty)
+				if value_ty.type != inferred_ty {
+					_, found := union_variant_index(u, value_ty.type)
 					fmt.assertf(
 						found,
 						"%v is not a variant of %v",
-						value_ty,
+						value_ty.type,
 						inferred_ty,
 					)
 				}
@@ -863,12 +998,16 @@ typecheck :: proc(
 				d.values[i],
 			)
 			if inferred_ty != .Void {
-				assert(value_ty == inferred_ty)
+				assert(value_ty.type == inferred_ty)
 			}
 			set_node_data(d.names[i], Var_Flags{})
 			append(
 				&ctx.scope,
-				Variable{name = name, type = value_ty, ident = d.names[i]},
+				Variable {
+					name = name,
+					type = value_ty.type,
+					ident = d.names[i],
+				},
 			)
 		}
 	case ^ast.Basic_Lit:
@@ -879,14 +1018,20 @@ typecheck :: proc(
 				prop.inferred_ty in INTEGER_TYPES ||
 				prop.inferred_ty in FLOAT_TYPES,
 			)
-			return prop.inferred_ty != .Void ? prop.inferred_ty : .Int
+			return tmeta(
+				ctx,
+				prop.inferred_ty != .Void ? prop.inferred_ty : .Int,
+			)
 		case .Float:
 			assert(
 				prop.inferred_ty == .Void || prop.inferred_ty in FLOAT_TYPES,
 			)
-			return prop.inferred_ty != .Void ? prop.inferred_ty : .F64
+			return tmeta(
+				ctx,
+				prop.inferred_ty != .Void ? prop.inferred_ty : .F64,
+			)
 		case .String:
-			return .String
+			return tmeta(ctx, .String)
 		case:
 			fmt.panicf("TODO: missing literal typecheck %v", d)
 		}
@@ -908,46 +1053,45 @@ typecheck :: proc(
 								{inferred_ty = field.ty},
 								e.value,
 							)
-							assert(fty == field.ty)
+							assert(fty.type == field.ty)
 						}
 					}
 				case:
 					field := t.fields[i]
 					fty := typecheck(ctx, {inferred_ty = field.ty}, elem)
-					assert(fty == field.ty)
+					assert(fty.type == field.ty)
 				}
 			}
 
-			return inferred_ty
+			return tmeta(ctx, inferred_ty)
 		case ^Array:
 			for elem in d.elems {
 				ety := typecheck(ctx, {inferred_ty = t.elem}, elem)
-				assert(ety == t.elem)
+				assert(ety.type == t.elem)
 			}
-			return inferred_ty
+			return tmeta(ctx, inferred_ty)
 		case:
 			fmt.panicf("TODO: %v %#v", unpack_type(inferred_ty), d)
 		}
 	case ^ast.Index_Expr:
 		base := typecheck(ctx, {}, d.expr)
 		typecheck(ctx, {inferred_ty = .Int}, d.index)
-		#partial switch t in unpack_type(base) {
+		#partial switch t in unpack_type(base.type) {
 		case ^Array:
-			return t.elem
+			return tmeta(ctx, t.elem)
 		case ^Slice:
-			return t.elem
-		case Builtin:
-			assert(t == .String)
-			return .U8
+			return tmeta(ctx, t.elem)
+		case String_Type:
+			return tmeta(ctx, .U8)
 		case Pointer:
 			#partial switch nt in unpack_type(t^) {
 			case ^Array:
-				return intern_multi_pointer(ctx, nt.elem)
+				return tmeta(ctx, intern_multi_pointer(ctx, nt.elem))
 			case:
 				fmt.panicf("TODO: index ptr to type of %#v", t)
 			}
 		case Multi_Pointer:
-			return t^
+			return tmeta(ctx, t^)
 		case:
 			fmt.panicf("TODO: %#v", t)
 		}
@@ -955,24 +1099,23 @@ typecheck :: proc(
 		base := typecheck(ctx, {}, d.expr)
 		typecheck(ctx, {inferred_ty = .Int}, d.low)
 		typecheck(ctx, {inferred_ty = .Int}, d.high)
-		#partial switch t in unpack_type(base) {
+		#partial switch t in unpack_type(base.type) {
 		case ^Array:
-			return intern_slice(ctx, t.elem)
+			return tmeta(ctx, intern_slice(ctx, t.elem))
 		case ^Slice:
 			return base
-		case Builtin:
-			assert(t == .String)
-			return .String
+		case String_Type:
+			return tmeta(ctx, .String)
 		case Pointer:
 			#partial switch nt in unpack_type(t^) {
 			case ^Array:
-				return intern_multi_pointer(ctx, nt.elem)
+				return tmeta(ctx, intern_multi_pointer(ctx, nt.elem))
 			case:
 				fmt.panicf("TODO: slice ptr to type of %#v", t)
 			}
 		case Multi_Pointer:
 			if d.high == nil do return base
-			return intern_slice(ctx, t^)
+			return tmeta(ctx, intern_slice(ctx, t^))
 		case:
 			fmt.panicf("TODO: %#v", t)
 		}
@@ -981,32 +1124,29 @@ typecheck :: proc(
 
 		#partial switch f in d.field.derived {
 		case ^ast.Ident:
-			if lit, ok := unpack_type(base).(^Lit); ok {
-				if mid, mok := lit.(Module_ID); mok {
-					if mid == MODULE_INTRINSICS {
-						return pack_type(
-							intern_lit(
-								ctx,
-								reflect.enum_from_name(
-									Intrinsic,
-									f.name,
-								) or_else panic(""),
-							),
-						)
-					}
-
-					pid, pok := find_module_proc(ctx, mid, f.name)
-					fmt.assertf(
-						pok,
-						"module %q has no symbol %q",
-						ctx.modules[mid].name,
-						f.name,
+			if base.type == .Module {
+				mid := base.lit.module
+				if mid == MODULE_INTRINSICS {
+					return intrinsic_meta(
+						ctx,
+						reflect.enum_from_name(
+							Intrinsic,
+							f.name,
+						) or_else panic(""),
 					)
-					return pack_type(intern_lit(ctx, pid))
 				}
+
+				pid, pok := find_module_proc(ctx, mid, f.name)
+				fmt.assertf(
+					pok,
+					"module %q has no symbol %q",
+					ctx.modules[mid].name,
+					f.name,
+				)
+				return proc_meta(ctx, pid)
 			}
 
-			if e, ok := unpack_type(base).(^Enum); ok {
+			if e, ok := unpack_type(base.type).(^Enum); ok {
 				for v in e.variants {
 					if v.name == f.name {
 						set_node_data(d.field, int(v.value))
@@ -1016,14 +1156,15 @@ typecheck :: proc(
 				fmt.panicf("enum has no variant %q", f.name)
 			}
 
-			if p, ok := unpack_type(base).(Pointer); ok do base = p^
+			base_ty := base.type
+			if p, ok := unpack_type(base_ty).(Pointer); ok do base_ty = p^
 
-			#partial switch t in unpack_type(base) {
+			#partial switch t in unpack_type(base_ty) {
 			case ^Struct:
 				for &field in t.fields {
 					if field.name == f.name {
 						set_node_data(d.field, field.offset)
-						return field.ty
+						return tmeta(ctx, field.ty)
 					}
 				}
 			case:
@@ -1042,18 +1183,18 @@ typecheck :: proc(
 		for v in e.variants {
 			if v.name == d.field.name {
 				set_node_data(d.field, int(v.value))
-				return prop.inferred_ty
+				return tmeta(ctx, prop.inferred_ty)
 			}
 		}
 		fmt.panicf("enum has no variant %q", d.field.name)
 	case ^ast.Type_Assertion:
 		base := typecheck(ctx, {}, d.expr)
-		u, ok := unpack_type(base).(^Union)
+		u, ok := unpack_type(base.type).(^Union)
 		assert(ok)
 		target := emit_type(ctx, d.type)
 		_, found := union_variant_index(u, target)
-		fmt.assertf(found, "type %v is not a variant of %v", target, base)
-		return target
+		fmt.assertf(found, "type %v is not a variant of %v", target, base.type)
+		return tmeta(ctx, target)
 	case ^ast.Binary_Expr:
 		is_comparison :=
 			.B_Comparison_Begin < d.op.kind && d.op.kind < .B_Comparison_End
@@ -1061,29 +1202,29 @@ typecheck :: proc(
 		if is_nil_lit(d.left) || is_nil_lit(d.right) {
 			operand := is_nil_lit(d.left) ? d.right : d.left
 			oty := typecheck(ctx, {}, operand)
-			assert(is_of(oty, ^Union))
-			return .Bool
+			assert(is_of(oty.type, ^Union))
+			return tmeta(ctx, .Bool)
 		}
 
 		if is_num_lit(d.left) &&
 		   !is_num_lit(d.right) &&
 		   prop.inferred_ty == .Void {
 			rhs_ty := typecheck(ctx, {}, d.right)
-			lhs_ty := typecheck(ctx, {inferred_ty = rhs_ty}, d.left)
-			assert(lhs_ty == rhs_ty)
-			return is_comparison ? .Bool : rhs_ty
+			lhs_ty := typecheck(ctx, {inferred_ty = rhs_ty.type}, d.left)
+			assert(lhs_ty.type == rhs_ty.type)
+			return is_comparison ? tmeta(ctx, .Bool) : rhs_ty
 		}
 
 		lhs_ty := typecheck(ctx, prop, d.left)
-		inferred_ty := lhs_ty
+		inferred_ty := lhs_ty.type
 		if d.op.kind == .Shl || d.op.kind == .Shr {
 			inferred_ty = .Uint
 		}
 		rhs_ty := typecheck(ctx, {inferred_ty = inferred_ty}, d.right)
-		assert(inferred_ty == rhs_ty)
+		assert(inferred_ty == rhs_ty.type)
 
 		if is_comparison {
-			return .Bool
+			return tmeta(ctx, .Bool)
 		}
 
 		return lhs_ty
@@ -1101,13 +1242,13 @@ typecheck :: proc(
 				d.expr,
 			)
 			if inferred_ty != .Void {
-				assert(inferred_ty == inner_ty)
+				assert(inferred_ty == inner_ty.type)
 			}
-			return intern_pointer(ctx, inner_ty)
+			return tmeta(ctx, intern_pointer(ctx, inner_ty.type))
 		case .Not:
 			inner_ty := typecheck(ctx, {}, d.expr)
-			assert(inner_ty == .Bool)
-			return .Bool
+			assert(inner_ty.type == .Bool)
+			return tmeta(ctx, .Bool)
 		case .Sub, .Xor:
 			return typecheck(ctx, prop, d.expr)
 		case:
@@ -1119,16 +1260,16 @@ typecheck :: proc(
 			inferred_ty = intern_pointer(ctx, prop.inferred_ty)
 		}
 
-		ty = typecheck(ctx, {inferred_ty = inferred_ty}, d.expr)
-		return unpack_type(ty).(Pointer)^
+		inner := typecheck(ctx, {inferred_ty = inferred_ty}, d.expr)
+		return tmeta(ctx, unpack_type(inner.type).(Pointer)^)
 	case ^ast.Expr_Stmt:
 		return typecheck(ctx, {}, d.expr)
 	case ^ast.If_Stmt:
 		cond_ty := typecheck(ctx, {}, d.cond)
-		assert(cond_ty == .Bool)
+		assert(cond_ty.type == .Bool)
 		typecheck(ctx, {}, d.body)
 		typecheck(ctx, {}, d.else_stmt)
-		return {}
+		return &VOID
 	case ^ast.Switch_Stmt:
 		assert(d.init == nil)
 		cond_ty := typecheck(ctx, {}, d.cond)
@@ -1136,22 +1277,22 @@ typecheck :: proc(
 		for clause_node in body.stmts {
 			clause := clause_node.derived.(^ast.Case_Clause)
 			for v in clause.list {
-				typecheck(ctx, {inferred_ty = cond_ty}, v)
+				typecheck(ctx, {inferred_ty = cond_ty.type}, v)
 			}
 			prev := len(ctx.scope)
 			for stmt in clause.body do typecheck(ctx, {}, stmt)
 			resize(&ctx.scope, prev)
 		}
-		return {}
+		return &VOID
 	case ^ast.Type_Switch_Stmt:
 		tag := d.tag.derived.(^ast.Assign_Stmt)
 		binding := meta.src_of(ctx.file^, tag.lhs[0])
 		union_ty := typecheck(ctx, {}, tag.rhs[0])
-		assert(is_of(union_ty, ^Union))
+		assert(is_of(union_ty.type, ^Union))
 		body := d.body.derived.(^ast.Block_Stmt)
 		for clause_node in body.stmts {
 			clause := clause_node.derived.(^ast.Case_Clause)
-			bind_ty := union_ty
+			bind_ty := union_ty.type
 			if len(clause.list) > 0 {
 				bind_ty = emit_type(ctx, clause.list[0])
 			}
@@ -1169,7 +1310,7 @@ typecheck :: proc(
 			for stmt in clause.body do typecheck(ctx, {}, stmt)
 			resize(&ctx.scope, prev)
 		}
-		return {}
+		return &VOID
 	case ^ast.For_Stmt:
 		assert(d.init == nil)
 		assert(d.cond == nil)
@@ -1177,7 +1318,7 @@ typecheck :: proc(
 
 		typecheck(ctx, {}, d.body)
 	case ^ast.Branch_Stmt:
-		return {}
+		return &VOID
 	case ^ast.Paren_Expr:
 		return typecheck(ctx, prop, d.expr)
 	case ^ast.Ident:
@@ -1187,28 +1328,28 @@ typecheck :: proc(
 				if prop.referencing {
 					var.flags |= {.Referenced}
 				}
-				return var.type
+				return tmeta(ctx, var.type)
 			}
 		}
 
 		if mid, ok := ctx.modules[ctx.module].imports[name]; ok {
-			return pack_type(intern_lit(ctx, Module_ID(mid)))
+			return module_meta(ctx, Module_ID(mid))
 		}
 
 		if pid, ok := find_module_proc(ctx, ctx.module, name); ok {
-			return pack_type(intern_lit(ctx, pid))
+			return proc_meta(ctx, pid)
 		}
 
 		if g, ok := find_module_global(ctx, ctx.module, name); ok {
-			return g.type
+			return tmeta(ctx, g.type)
 		}
 
 		if name == "false" || name == "true" {
-			return .Bool
+			return tmeta(ctx, .Bool)
 		}
 
 		if name == "_" {
-			return .Void
+			return &VOID
 		}
 
 		if sdecl, _, _, ok := find_module_decl(ctx, ctx.module, name); ok {
@@ -1220,34 +1361,32 @@ typecheck :: proc(
 			}
 		}
 
-		return emit_type(ctx, node)
+		return tmeta(ctx, emit_type(ctx, node))
 	case ^ast.Call_Expr:
 		if id, ok := d.expr.derived.(^ast.Ident); ok && id.name == "len" {
 			assert(len(d.args) == 1)
 			arg_ty := typecheck(ctx, {}, d.args[0])
-			#partial switch t in unpack_type(arg_ty) {
+			#partial switch t in unpack_type(arg_ty.type) {
 			case ^Array, ^Slice:
-			case Builtin:
-				assert(t == .String)
+			case String_Type:
 			case:
 				fmt.panicf("TODO: len of %#v", t)
 			}
-			return .Int
+			return tmeta(ctx, .Int)
 		}
 
 		if id, ok := d.expr.derived.(^ast.Ident); ok && id.name == "raw_data" {
 			assert(len(d.args) == 1)
 			arg_ty := typecheck(ctx, {}, d.args[0])
-			#partial switch t in unpack_type(arg_ty) {
+			#partial switch t in unpack_type(arg_ty.type) {
 			case ^Slice:
-				return intern_multi_pointer(ctx, t.elem)
-			case Builtin:
-				assert(t == .String)
-				return intern_multi_pointer(ctx, .U8)
+				return tmeta(ctx, intern_multi_pointer(ctx, t.elem))
+			case String_Type:
+				return tmeta(ctx, intern_multi_pointer(ctx, .U8))
 			case Pointer:
 				#partial switch nt in unpack_type(t^) {
 				case ^Array:
-					return intern_multi_pointer(ctx, nt.elem)
+					return tmeta(ctx, intern_multi_pointer(ctx, nt.elem))
 				case:
 					fmt.panicf("TODO: raw_data of of %#v", t)
 				}
@@ -1259,35 +1398,29 @@ typecheck :: proc(
 		callee := typecheck(ctx, {}, d.expr)
 
 		sig: Signature
-		#partial switch v in unpack_type(callee) {
-		case ^Lit:
-			switch l in v^ {
-			case Proc_ID:
-				prc := &ctx.procs[l]
-				sig = prc.sig
-			case Intrinsic:
-				switch l {
-				case .syscall:
-					for arg in d.args {
-						pty := typecheck(ctx, {inferred_ty = .Uintptr}, arg)
-						assert(pty == .Uintptr)
-					}
-					return .Uintptr
+		#partial switch v in unpack_type(callee.type) {
+		case ^Proc_Type:
+			sig = ctx.procs[callee.lit.procid].sig
+		case Intrinsic_Type:
+			switch callee.lit.intrinsic {
+			case .syscall:
+				for arg in d.args {
+					pty := typecheck(ctx, {inferred_ty = .Uintptr}, arg)
+					assert(pty.type == .Uintptr)
 				}
-			case Module_ID:
-				fmt.panicf("Cant call a module")
+				return tmeta(ctx, .Uintptr)
 			}
-		case Builtin:
-			assert(v != .Void)
-			assert(len(d.args) == 1)
-			typecheck(ctx, {}, d.args[0])
-			return callee
+		case Module_Type:
+			fmt.panicf("Cant call a module")
 		case Multi_Pointer, Pointer:
 			assert(len(d.args) == 1)
 			typecheck(ctx, {inferred_ty = .Uintptr}, d.args[0])
 			return callee
 		case:
-			fmt.panicf("TODO: %v %#v", v, d)
+			assert(is_builtin(callee.type) && callee.type != .Void)
+			assert(len(d.args) == 1)
+			typecheck(ctx, {}, d.args[0])
+			return callee
 		}
 
 		if len(d.args) == 1 && len(d.args) != len(sig.params) {
@@ -1302,12 +1435,12 @@ typecheck :: proc(
 			assert(len(sig.params) == len(d.args))
 			for param, i in sig.params {
 				pty := typecheck(ctx, {inferred_ty = param.type}, d.args[i])
-				assert(pty == param.type)
+				assert(pty.type == param.type)
 			}
 		}
 
-		if len(sig.rets) == 1 do return sig.rets[0].type
-		return .Void
+		if len(sig.rets) == 1 do return tmeta(ctx, sig.rets[0].type)
+		return &VOID
 	case ^ast.Return_Stmt:
 		prc := &ctx.procs[ctx.prc]
 		assert(len(d.results) == len(prc.rets))
@@ -1322,36 +1455,36 @@ typecheck :: proc(
 			assert(len(sig.rets) == len(d.lhs))
 			for i in 0 ..< len(d.lhs) {
 				lhs_ty := typecheck(ctx, {}, d.lhs[i])
-				assert(lhs_ty == sig.rets[i].type)
+				assert(lhs_ty.type == sig.rets[i].type)
 			}
-			return .Void
+			return &VOID
 		}
 
 		assert(len(d.lhs) == len(d.rhs))
 		for i in 0 ..< len(d.lhs) {
 			lhs_ty := typecheck(ctx, {}, d.lhs[i])
-			if u, ok := unpack_type(lhs_ty).(^Union); ok {
+			if u, ok := unpack_type(lhs_ty.type).(^Union); ok {
 				rhs_ty := typecheck(ctx, {}, d.rhs[i])
-				if rhs_ty != lhs_ty {
-					_, found := union_variant_index(u, rhs_ty)
+				if rhs_ty.type != lhs_ty.type {
+					_, found := union_variant_index(u, rhs_ty.type)
 					fmt.assertf(
 						found,
 						"%v is not a variant of %v",
-						rhs_ty,
-						lhs_ty,
+						rhs_ty.type,
+						lhs_ty.type,
 					)
 				}
 				continue
 			}
-			typecheck(ctx, {inferred_ty = lhs_ty}, d.rhs[i])
+			typecheck(ctx, {inferred_ty = lhs_ty.type}, d.rhs[i])
 		}
 	case ^ast.Pointer_Type:
-		return emit_type(ctx, node)
+		return tmeta(ctx, emit_type(ctx, node))
 	case:
 		fmt.panicf("TODO: %#v", node.derived)
 	}
 
-	return .Void
+	return &VOID
 }
 
 Var_Flag :: enum uintptr {
@@ -1360,8 +1493,19 @@ Var_Flag :: enum uintptr {
 
 Var_Flags :: bit_set[Var_Flag;uintptr]
 
+get_node_meta :: proc(node: ^ast.Node) -> ^Check_Meta {
+	return get_node_data(node, ^Check_Meta)
+}
+
 get_node_type :: proc(node: ^ast.Node) -> Type {
-	return get_node_data(node, Type)
+	return get_node_meta(node).type
+}
+
+// is_builtin reports whether `ty` is one of the zero sized builtin types (the
+// low, data less variants of Type_Data), i.e. it is stored as the bare enum
+// value.
+is_builtin :: proc(ty: Type) -> bool {
+	return Raw_Type(ty).tag < len(reflect.enum_field_names(Type))
 }
 
 get_node_vflags :: proc(node: ^ast.Node) -> Var_Flags {
@@ -1519,7 +1663,7 @@ register_module_globals :: proc(ctx: ^Gen_Ctx, mid: Module_ID) {
 					ty = emit_type(ctx, sdecl.type)
 				} else {
 					assert(len(sdecl.values) == len(sdecl.names))
-					ty = typecheck(ctx, {}, sdecl.values[j])
+					ty = typecheck(ctx, {}, sdecl.values[j]).type
 				}
 
 				init: ^ast.Expr

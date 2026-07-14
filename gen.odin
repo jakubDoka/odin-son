@@ -95,26 +95,14 @@ x86_reg_class_classify :: proc(
 	) -> bool {
 		mem.is_aligned(rawptr(uintptr(offset)), type_align(ty)) or_return
 
-		switch t in unpack_type(ty) {
-		case Builtin:
-			@(static, rodata)
-			TYPE_TO_REGLCASS := [Type]X86_Reg_Class {
-				.Void   = .No_Class,
-				.Typeid = .Integer,
-				.Bool ..= .Rawptr        = .Integer,
-				.String = .Integer,
-				.F32    = .Sse_32,
-				.F64    = .Sse,
-			}
-
-			if slots[offset / 8] == .Sse_32 do slots[offset / 8] = .Sse
-			slots[offset / 8] = max(slots[offset / 8], TYPE_TO_REGLCASS[ty])
-			if t == .String do slots[offset / 8 + 1] = .Integer
+		#partial switch t in unpack_type(ty) {
 		case Pointer, Multi_Pointer:
 			slots[offset / 8] = .Integer
+			return true
 		case ^Slice:
 			slots[offset / 8] = .Integer
 			slots[offset / 8 + 1] = .Integer
+			return true
 		case ^Struct:
 			for f, i in t.fields {
 				classify(f.ty, slots, offset + f.offset) or_return
@@ -130,21 +118,41 @@ x86_reg_class_classify :: proc(
 					classify(.I8, slots, offset + i)
 				}
 			}
+			return true
 		case ^Array:
 			step := type_size(t.elem)
 			for i in 0 ..< t.len {
 				classify(t.elem, slots, offset + i * step) or_return
 			}
+			return true
 		case ^Enum:
 			classify(t.backing, slots, offset) or_return
+			return true
 		case ^Union:
 			for f in t.variants {
 				classify(f, slots, offset) or_return
 			}
 			classify(t.tag_ty, slots, t.tag_offset)
-		case ^Lit:
+			return true
+		case ^Proc_Type:
 			panic("should not happen")
+		case ^Poly_Data:
+			fmt.panicf("POLY TODO: %v", ty)
 		}
+
+		@(static, rodata)
+		TYPE_TO_REGLCASS := #partial [Type]X86_Reg_Class {
+			.Void   = .No_Class,
+			.Typeid = .Integer,
+			.Bool ..= .Rawptr        = .Integer,
+			.String = .Integer,
+			.F32    = .Sse_32,
+			.F64    = .Sse,
+		}
+
+		if slots[offset / 8] == .Sse_32 do slots[offset / 8] = .Sse
+		slots[offset / 8] = max(slots[offset / 8], TYPE_TO_REGLCASS[ty])
+		if ty == .String do slots[offset / 8 + 1] = .Integer
 
 		return true
 	}
@@ -272,6 +280,7 @@ Gen_Ctx :: struct {
 	module:            Module_ID,
 	prc:               Proc_ID,
 	ret_ptrs:          []backend.Node_ID,
+	poly_type_count:   int,
 }
 
 Loop_Control :: enum int {
@@ -346,8 +355,8 @@ to_rvalue_expr :: proc(
 }
 
 is_signed_subword :: proc(ty: Type) -> bool {
-	bt := unpack_type(ty).(Builtin) or_return
-	return Type(bt) in SIGNED_TYPES && backend.DT_SIZE[type_to_dt(ty)] < 8
+	if !is_builtin(ty) do return false
+	return ty in SIGNED_TYPES && backend.DT_SIZE[type_to_dt(ty)] < 8
 }
 
 tok_to_binop :: proc(
@@ -1473,8 +1482,7 @@ emit_nodes :: proc(
 		#partial switch t in unpack_type(ty) {
 		case ^Slice:
 			stride = array_elem_stride(t.elem)
-		case Builtin:
-			assert(t == .String)
+		case String_Type:
 			stride = 1
 		case:
 			fmt.panicf("TODO: slice result %#v", t)
@@ -1499,8 +1507,7 @@ emit_nodes :: proc(
 		case ^Array:
 			base_ptr = base.id
 			src_len = backend.graph_add_c_int(ctx, "alen", .I64, i64(t.len))
-		case Builtin:
-			assert(t == .String)
+		case String_Type:
 			assert(base.is_lvalue)
 			base_ptr = field_load(ctx, "sdata", .I64, base.id)
 			src_len = field_load(ctx, "slen", .I64, base.id, 8)
@@ -1706,11 +1713,17 @@ emit_nodes :: proc(
 				slc := emit_nodes(ctx, {}, d.args[0])
 				assert(slc.is_lvalue)
 				res = field_load(ctx, "slen", dt, slc.id, 8)
-			case Builtin:
-				assert(t == .String)
+			case String_Type:
 				slc := emit_nodes(ctx, {}, d.args[0])
 				assert(slc.is_lvalue)
 				res = field_load(ctx, "slen", dt, slc.id, 8)
+			case Pointer:
+				#partial switch nt in unpack_type(t^) {
+				case ^Array:
+					res = backend.graph_add_c_int(ctx, "len", dt, i64(nt.len))
+				case:
+					fmt.panicf("TODO: index ptr to type of %#v", t)
+				}
 			case:
 				fmt.panicf("TODO: len of %#v", t)
 			}
@@ -1727,8 +1740,7 @@ emit_nodes :: proc(
 				slc := emit_nodes(ctx, {}, d.args[0])
 				assert(slc.is_lvalue)
 				res = field_load(ctx, "slen", dt, slc.id, 0)
-			case Builtin:
-				assert(t == .String)
+			case String_Type:
 				slc := emit_nodes(ctx, {}, d.args[0])
 				assert(slc.is_lvalue)
 				res = field_load(ctx, "slen", dt, slc.id, 0)
@@ -1746,58 +1758,51 @@ emit_nodes :: proc(
 			break
 		}
 
-		base_ty := get_node_type(d.expr)
+		base_meta := get_node_meta(d.expr)
+		base_ty := base_meta.type
 
-		#partial switch t in unpack_type(base_ty) {
-		case ^Lit:
-			switch l in t^ {
-			case Proc_ID:
-				prc := &ctx.procs[l]
+		switch {
+		case is_of(base_ty, ^Proc_Type):
+			prc := &ctx.procs[base_meta.lit.procid]
 
-				results := emit_call(ctx, d, prc, nil, prop.dest)
-				if len(results) > 0 {
-					last := results[len(results) - 1]
-					res, lvalue = last.id, last.is_lvalue
-				}
-			case Intrinsic:
-				switch l {
-				case .syscall:
-					args := make(
-						[]backend.Node_ID,
-						CALL_PREFIX + len(d.args),
-						tmp,
-					)
-					for arg, i in d.args {
-						vl := emit_nodes(ctx, {}, arg)
-						args[CALL_PREFIX + i] = to_rvalue(ctx, vl, arg)
-						backend.graph_pin(ctx, args[CALL_PREFIX + i])
-					}
-
-					args[0] = ctx_ctrl(ctx)
-					args[1] = ctx_mem(ctx)
-
-					call := backend.graph_add_call(ctx, "call", args, ~u32(0))
-					backend.graph_extra(ctx, call, backend.Call).ccid = 1
-					cnode := backend.graph_get(ctx, call)
-					for arg in args[CALL_PREFIX:] {
-						backend.graph_unpin(ctx, arg)
-					}
-					call_end := backend.graph_add_call_end(ctx, "calle", call)
-
-					backend.graph_set_input(ctx, ctx.node_scope, 0, call_end)
-					ctx_set_mem(
-						ctx,
-						backend.graph_add_mem(ctx, "cmem", call_end),
-					)
-
-					res = backend.graph_add_ret(ctx, "cret", .I64, call_end, 0)
-
-					break match
-				}
-			case Module_ID:
-				panic("calling a module?")
+			results := emit_call(ctx, d, prc, nil, prop.dest)
+			if len(results) > 0 {
+				last := results[len(results) - 1]
+				res, lvalue = last.id, last.is_lvalue
 			}
-		case Builtin:
+		case base_ty == .Intrinsic:
+			switch base_meta.lit.intrinsic {
+			case .syscall:
+				args := make([]backend.Node_ID, CALL_PREFIX + len(d.args), tmp)
+				for arg, i in d.args {
+					vl := emit_nodes(ctx, {}, arg)
+					args[CALL_PREFIX + i] = to_rvalue(ctx, vl, arg)
+					backend.graph_pin(ctx, args[CALL_PREFIX + i])
+				}
+
+				args[0] = ctx_ctrl(ctx)
+				args[1] = ctx_mem(ctx)
+
+				call := backend.graph_add_call(ctx, "call", args, ~u32(0))
+				backend.graph_extra(ctx, call, backend.Call).ccid = 1
+				cnode := backend.graph_get(ctx, call)
+				for arg in args[CALL_PREFIX:] {
+					backend.graph_unpin(ctx, arg)
+				}
+				call_end := backend.graph_add_call_end(ctx, "calle", call)
+
+				backend.graph_set_input(ctx, ctx.node_scope, 0, call_end)
+				ctx_set_mem(ctx, backend.graph_add_mem(ctx, "cmem", call_end))
+
+				res = backend.graph_add_ret(ctx, "cret", .I64, call_end, 0)
+
+				break match
+			}
+		case base_ty == .Module:
+			panic("calling a module?")
+		case is_of(base_ty, Multi_Pointer), is_of(base_ty, Pointer):
+			res = to_rvalue(ctx, emit_nodes(ctx, {}, d.args[0]), d.args[0])
+		case is_builtin(base_ty):
 			dest_dt := type_to_dt(base_ty)
 			src_ty := get_node_type(d.args[0])
 			src_dt := type_to_dt(src_ty)
@@ -1858,10 +1863,8 @@ emit_nodes :: proc(
 				}
 				res = backend.graph_add_un_op(ctx, "cst", op, dest_dt, arg)
 			}
-		case Multi_Pointer, Pointer:
-			res = to_rvalue(ctx, emit_nodes(ctx, {}, d.args[0]), d.args[0])
 		case:
-			fmt.panicf("TODO: %v %v", t, node)
+			fmt.panicf("TODO: %v %v", base_ty, node)
 		}
 	case ^ast.Branch_Stmt:
 		label := meta.src_of(ctx.file^, d.label)
@@ -1900,11 +1903,10 @@ CALL_PREFIX :: 2
 call_proc_of :: proc(ctx: ^Gen_Ctx, node: ^ast.Node) -> (^Proc, bool) {
 	call, cok := node.derived.(^ast.Call_Expr)
 	if !cok do return nil, false
-	lit, lok := unpack_type(get_node_type(call.expr)).(^Lit)
-	if !lok do return nil, false
-	pid, pok := lit.(Proc_ID)
-	if !pok do return nil, false
-	return &ctx.procs[u32(pid)], true
+	m := get_node_meta(call.expr)
+	if !is_of(m.type, ^Proc_Type) do return nil, false
+	if m.lit.procid == PROC_FUNCTION_POINTER_SENTINEL do return nil, false
+	return &ctx.procs[u32(m.lit.procid)], true
 }
 
 emit_call :: proc(

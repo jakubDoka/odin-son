@@ -1978,9 +1978,9 @@ emit_call :: proc(
 	copy(args[lctx.i:], args[lctx.ri:])
 	ln := lctx.i + len(args) - lctx.ri
 
-	cid := u32(prc_id) - u32(prc_id == 0)
-	call := backend.graph_add_call(ctx, "call", args[:ln], cid)
+	call := backend.graph_add_call(ctx, "call", args[:ln], u32(prc_id))
 	backend.graph_extra(ctx, call, backend.Call).imported = imported
+	backend.graph_extra(ctx, call, backend.Call).indirect = prc_id == 0
 	cnode := backend.graph_get(ctx, call)
 	cnode.input_count = u16(lctx.i)
 	for arg in args[CALL_PREFIX:ln] {

@@ -1042,7 +1042,7 @@ x64_reg_mask_of :: proc(
 		}
 	case .Call:
 		call := graph_extra(graph, id, Call)
-		if call.cid == ~u32(0) && pos == len(node.inps) - 1 {
+		if call.indirect && pos == len(node.inps) - 1 {
 			return reg_bank_mask(ra, .General, GPA_MASK)
 		}
 		cc := ra.cc_table[call.ccid]
@@ -1723,7 +1723,7 @@ x64_emit_instr :: proc(
 		if cc.is_syscall {
 			// syscall
 			emit(ctx.code, {0x0F, 0x05})
-		} else if call.cid == ~u32(0) {
+		} else if call.indirect {
 			// call $ptr
 			ptr := reg_of(ctx, node.inps[len(node.inps) - 1])
 			emit(ctx.code, {0xFF, mod_sm(.Direct, 0b010, ptr)})

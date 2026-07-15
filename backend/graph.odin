@@ -171,8 +171,9 @@ CInt :: struct #raw_union #align (4) {
 Call :: struct {
 	using _: Cfg,
 	using _: bit_field u32 {
-		ccid:     u32  | 31,
+		ccid:     u32  | 30,
 		imported: bool | 1,
+		indirect: bool | 1,
 	},
 	cid:     u32,
 }

@@ -18,3 +18,10 @@ function run-test-program
 	zig cc a.o
 	./a.out
 end
+
+function dump-test-program
+	odin build . -debug $argv[2..]
+	set ODIN_ROOT $HOME/odin/
+	./jit test-programs/$argv[1]/
+	objdump -d --no-show-raw-insn "a.o" | perl -p -e 's/^\s+(\S+):\t//'
+end

@@ -105,6 +105,7 @@ main :: proc() {
 	clear(&ctx.globals)
 	emit_module_globals(&ctx)
 	for &prc, i in ctx.procs {
+		if len(prc.poly_names) != len(prc.poly_values) do continue
 		emit_proc(&ctx, &prc, i, level, &emit_ctx)
 	}
 

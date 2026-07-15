@@ -9,7 +9,6 @@ import "core:fmt"
 import "core:log"
 import "core:mem"
 import "core:mem/virtual"
-import "core:odin"
 import "core:odin/ast"
 import "core:odin/parser"
 import "core:os"
@@ -142,6 +141,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		)
 
 		for &prc, i in ctx.procs {
+			if len(prc.poly_names) != len(prc.poly_values) do continue
 			emit_proc(&ctx, &prc, i, level, &emit_ctx)
 		}
 

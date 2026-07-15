@@ -280,7 +280,12 @@ Gen_Ctx :: struct {
 	module:            Module_ID,
 	prc:               Proc_ID,
 	ret_ptrs:          []backend.Node_ID,
-	poly_type_count:   int,
+	poly_types:        #soa[dynamic]Poly_Entry,
+}
+
+Poly_Entry :: struct {
+	name: string,
+	meta: Check_Meta,
 }
 
 Loop_Control :: enum int {
@@ -800,8 +805,9 @@ emit_proc :: proc(
 		assert(!apa.spilled && !apa.by_ptr)
 	}
 
-	for par in prc.params {
-		apa := abi_sm_add2(ctx, &sm, par.type) or_continue
+	for par, i in prc.params {
+		name := prc.param_names[i]
+		apa := abi_sm_add2(ctx, &sm, par) or_continue
 
 		value: backend.Node_ID
 		if apa.scalar {
@@ -819,7 +825,7 @@ emit_proc :: proc(
 			value = alloca(
 				ctx,
 				"sarg",
-				par.type,
+				par,
 				zeroed = false,
 				is_arg = !apa.copied,
 			)
@@ -849,7 +855,7 @@ emit_proc :: proc(
 			value_idx = value
 		}
 
-		append(&ctx.scope, Variable{par.name, value_idx, par.type, nil, {}})
+		append(&ctx.scope, Variable{name, value_idx, par, nil, {}})
 	}
 
 	for j in 0 ..< rabi.srets_start {
@@ -1009,7 +1015,7 @@ emit_nodes :: proc(
 				   iok && id.name == "_" {
 					continue
 				}
-				vty := prc.rets[i].type
+				vty := prc.rets[i]
 				switch sym in syms[i] {
 				case int:
 					rv := to_rvalue_ty(ctx, r, vty)
@@ -1285,7 +1291,7 @@ emit_nodes :: proc(
 				name := meta.src_of(ctx.file^, d.names[i])
 				if name == "_" do continue
 				flags := get_node_vflags(d.names[i])
-				vty := prc.rets[i].type
+				vty := prc.rets[i]
 
 				if r.is_lvalue {
 					backend.graph_pin(ctx, r.id)
@@ -1705,7 +1711,9 @@ emit_nodes :: proc(
 
 		ctx.loop = ctx.loop.parent
 	case ^ast.Call_Expr:
-		if id, ok := d.expr.derived.(^ast.Ident); ok && id.name == "len" {
+		switch get_builtin_proc(d.expr) {
+		case .nil:
+		case .len:
 			#partial switch t in unpack_type(get_node_type(d.args[0])) {
 			case ^Array:
 				res = backend.graph_add_c_int(ctx, "len", dt, i64(t.len))
@@ -1727,10 +1735,8 @@ emit_nodes :: proc(
 			case:
 				fmt.panicf("TODO: len of %#v", t)
 			}
-			break
-		}
-
-		if id, ok := d.expr.derived.(^ast.Ident); ok && id.name == "raw_data" {
+			break match
+		case .raw_data:
 			#partial switch t in unpack_type(get_node_type(d.args[0])) {
 			case ^Array:
 				slc := emit_nodes(ctx, {}, d.args[0])
@@ -1755,7 +1761,7 @@ emit_nodes :: proc(
 			case:
 				fmt.panicf("TODO: raw_data of %#v", t)
 			}
-			break
+			break match
 		}
 
 		base_meta := get_node_meta(d.expr)
@@ -1939,7 +1945,7 @@ emit_call :: proc(
 			slots[j] = out_slots[j]
 		}
 		if ret_is_by_pointer(rabi, j) && slots[j] == 0 {
-			slots[j] = alloca(ctx, "rtmp", rets[j].type, zeroed = false)
+			slots[j] = alloca(ctx, "rtmp", rets[j], zeroed = false)
 		}
 		if slots[j] != 0 do backend.graph_pin(ctx, slots[j])
 	}
@@ -1974,7 +1980,7 @@ emit_call :: proc(
 			nil,
 		)
 		for r, j in results {
-			lower_call_arg(ctx, args, &lctx, spread_prc.rets[j].type, r)
+			lower_call_arg(ctx, args, &lctx, spread_prc.rets[j], r)
 		}
 	} else {
 		for arg in d.args {
@@ -2026,7 +2032,7 @@ emit_call :: proc(
 	for j in 0 ..< len(rabi.reg_rets) {
 		res_idx := len(rabi.extras) + j
 
-		ty := rets[res_idx].type
+		ty := rets[res_idx]
 		dest := out_slots != nil ? out_slots[res_idx] : prop_dest
 		dt := type_to_dt(ty)
 

@@ -20,13 +20,6 @@ Lit :: struct #raw_union {
 	intrinsic: Intrinsic,
 }
 
-// Constants that indicate the lit is not known
-PROC_FUNCTION_POINTER_SENTINEL :: Proc_ID(-1)
-// NOTE: Module is always known
-TYPE_UNKNOWN_SENTINEL :: Type(~uintptr(0))
-// NOTE: Intrinsic is always known
-// NOTE: Poly_Data is always known
-
 Poly_Data :: struct {
 	idx:            int,
 	specialization: Type,
@@ -405,7 +398,6 @@ intern_poly :: proc(ctx: ^Gen_Ctx, poly: Poly_Data) -> Type {
 
 tmeta :: proc(ctx: ^Gen_Ctx, ty: Type) -> ^Check_Meta {
 	lit: Lit
-	if is_of(ty, ^Proc_Type) do lit.procid = PROC_FUNCTION_POINTER_SENTINEL
 	return new_clone(Check_Meta{ty, lit}, ctx.types.allocator)
 }
 
@@ -1812,12 +1804,15 @@ register_module_globals :: proc(ctx: ^Gen_Ctx, mid: Module_ID) {
 }
 
 typecheck_program :: proc(ctx: ^Gen_Ctx) {
+	@(static) stt: ast.Proc_Lit
+	append(&ctx.procs, Proc{lit = &stt})
+
 	for mid in 0 ..< len(ctx.modules) {
 		register_module_procs(ctx, Module_ID(mid))
 		register_module_globals(ctx, Module_ID(mid))
 	}
 
-	for i := 0; i < len(ctx.procs); i += 1 {
+	for i := 1; i < len(ctx.procs); i += 1 {
 		prc := ctx.procs[i]
 		ctx.prc = auto_cast i
 		ctx.module = prc.module

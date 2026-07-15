@@ -80,7 +80,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 	ctx.types = &types
 	ctx.global = &global_ctx
 	ctx.cc = &backend.X64_SYSTEMV_CC
-	ctx.cc_dt_to_reg_kind = &backend.SPECS[.X64].datatype_to_reg_kind
+	ctx.target_spec = &backend.SPECS[.X64]
 
 	init_single_file_program(&ctx, &f)
 	typecheck_program(&ctx)
@@ -89,7 +89,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		{"none", {}},
 		{"mininal", {.Local_Peeps}},
 		{"moderate", {.Iter_Peeps, .Local_Peeps}},
-		{"all", {.Iter_Peeps, .Local_Peeps, .MemOpt}},
+		{"all", {.Iter_Peeps, .Local_Peeps, .Mem_Opt}},
 	}
 
 	lib, did_load := dynlib.load_library("")
@@ -115,7 +115,8 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 
 		imported_offsets: [dynamic]uintptr
 		imported_offsets.allocator = context.temp_allocator
-		for p in ctx.procs {
+		append(&imported_offsets, 0)
+		for p in ctx.procs[1:] {
 			if p.lit.body == nil {
 				addr := dynlib.symbol_address(lib, p.name) or_else panic("")
 				slot := backend.emit_aligned(&types.mems.code, addr)
@@ -130,7 +131,6 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 			},
 			emit_got_imports = true,
 		}
-
 		append(
 			&imported_offsets,
 			auto_cast backend.emit_aligned(&types.mems.code, _copy),
@@ -394,7 +394,7 @@ disasm :: proc(sb: ^strings.Builder, ctx: Gen_Ctx) {
 		)
 	}
 
-	for prc in ctx.procs {
+	for prc in ctx.procs[1:] {
 		clear(&jumps)
 		fmt.sbprintfln(sb, "%v:", prc.name)
 
@@ -478,11 +478,27 @@ disasm :: proc(sb: ^strings.Builder, ctx: Gen_Ctx) {
 							)
 						case .Got:
 							names := [2]string{"copy", "set"}
+							name: string
+
+							fuel := reloc.id
+							for p in ctx.procs[1:] {
+								if p.lit.body == nil {
+									fuel -= 1
+									if fuel == 0 {
+										name = p.name
+										break
+									}
+								}
+							}
+
+							if fuel > 0 {
+								name = names[fuel - 1]
+							}
 
 							text = fmt.tprintf(
 								"%v :$%v",
 								zydis.MnemonicGetString(instr.info.mnemonic),
-								names[reloc.id],
+								name,
 							)
 						case .Global:
 						}

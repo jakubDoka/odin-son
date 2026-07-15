@@ -296,7 +296,7 @@ Graph_Opt_Flags :: bit_set[Graph_Opt_Flag]
 Graph_Opt_Flag :: enum int {
 	Iter_Peeps,
 	Local_Peeps,
-	MemOpt,
+	Mem_Opt,
 }
 
 Peep_Ctx :: struct {

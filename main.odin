@@ -88,14 +88,14 @@ main :: proc() {
 	ctx.types = &types
 	ctx.global = &global_ctx
 	ctx.cc = &backend.X64_SYSTEMV_CC
-	ctx.cc_dt_to_reg_kind = &backend.SPECS[.X64].datatype_to_reg_kind
+	ctx.target_spec = &backend.SPECS[.X64]
 
 	load_program(&ctx, input)
 	typecheck_program(&ctx)
 
 	level := Opt_Level {
 		name  = "all",
-		flags = {.Iter_Peeps, .Local_Peeps, .MemOpt},
+		flags = {.Iter_Peeps, .Local_Peeps, .Mem_Opt},
 	}
 
 	emit_ctx := backend.Codegen_Emit_Ctx {

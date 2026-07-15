@@ -9,7 +9,7 @@ import "core:slice"
 memopt :: proc(graph: ^Graph) -> (optimized: bool) {
 	assert(graph.node_spec == &SPECS[.Builder])
 
-	if .MemOpt not_in graph.opt_flags do return
+	if .Mem_Opt not_in graph.opt_flags do return
 	defer graph.peeped &= !optimized
 
 	context.allocator, _ = arna.scrath()

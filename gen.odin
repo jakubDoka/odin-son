@@ -189,14 +189,14 @@ abi_sm_add2 :: proc(
 	}
 
 	for p in cata {
-		rk := ctx.cc_dt_to_reg_kind[p]
+		rk := ctx.target_spec.datatype_to_reg_kind[p]
 		par.spilled |= sm.used_regs[rk] >= len(ctx.cc.args[rk])
 		sm.used_regs[rk] += 1
 	}
 
 	if par.spilled {
 		for p in cata {
-			rk := ctx.cc_dt_to_reg_kind[p]
+			rk := ctx.target_spec.datatype_to_reg_kind[p]
 			sm.used_regs[rk] -= 1
 		}
 	}
@@ -210,51 +210,6 @@ abi_sm_add2 :: proc(
 	return
 }
 
-abi_sm_add :: proc(
-	ctx: ^Gen_Ctx,
-	sm: ^Abi_Sm,
-	ty: Type,
-) -> (
-	par: Abi_Param,
-	ok: bool = true,
-) {
-	cata, oka := x86_reg_class_classify(ty)
-
-	par.size = type_size(ty)
-	par.dt = type_to_dt(ty)
-	forced_stack := par.dt == .Void
-	if par.size > 16 do par.dt = .I64
-	rk := ctx.cc_dt_to_reg_kind[par.dt]
-
-	par.scalar = !forced_stack
-	par.spilled = sm.used_regs[rk] >= len(ctx.cc.args[rk])
-	switch par.size {
-	case 0:
-		assert(len(cata) == 0)
-		return {}, false
-	case 1 ..= 8:
-		assert(len(cata) == 1)
-		assert(ctx.cc_dt_to_reg_kind[cata[0]] == rk)
-		par.copied = forced_stack
-		sm.used_regs[rk] += 1
-	case 9 ..= 16:
-		assert(len(cata) == 2)
-		assert(ctx.cc_dt_to_reg_kind[cata[0]] == rk)
-		assert(ctx.cc_dt_to_reg_kind[cata[1]] == rk)
-		par.spilled = sm.used_regs[rk] + 1 >= len(ctx.cc.args[rk])
-		par.copied = !par.spilled
-		if !par.spilled do sm.used_regs[rk] += 2
-	case 17 ..= int(~uint(0) >> 1):
-		assert(!oka)
-		par.by_ptr = true
-		par.scalar = true
-	}
-
-	if !par.copied do par.size = 0
-
-	return
-}
-
 Mems :: struct {
 	graph:    arna.Allocator,
 	regalloc: arna.Allocator,
@@ -265,21 +220,21 @@ Mems :: struct {
 }
 
 Gen_Ctx :: struct {
-	using global:      ^Global_Ctx,
-	using types:       ^Types,
-	using graph:       backend.Graph,
-	cc:                ^backend.Call_Conv,
-	cc_dt_to_reg_kind: ^[backend.Node_Datatype]backend.Reg_Kind,
-	node_scope:        backend.Node_ID,
-	root_mem:          backend.Node_ID,
-	mem_slot:          int,
-	loop:              ^Loop_State,
-	file:              ^ast.File,
-	file_id:           File_ID,
-	module:            Module_ID,
-	prc:               Proc_ID,
-	ret_ptrs:          []backend.Node_ID,
-	poly_types:        #soa[dynamic]Poly_Entry,
+	using global: ^Global_Ctx,
+	using types:  ^Types,
+	using graph:  backend.Graph,
+	cc:           ^backend.Call_Conv,
+	target_spec:  ^backend.Node_Spec,
+	node_scope:   backend.Node_ID,
+	root_mem:     backend.Node_ID,
+	mem_slot:     int,
+	loop:         ^Loop_State,
+	file:         ^ast.File,
+	file_id:      File_ID,
+	module:       Module_ID,
+	prc:          Proc_ID,
+	ret_ptrs:     []backend.Node_ID,
+	poly_types:   #soa[dynamic]Poly_Entry,
 }
 
 Poly_Entry :: struct {
@@ -811,7 +766,7 @@ emit_proc :: proc(
 		value: backend.Node_ID
 		if apa.scalar {
 			dt := apa.dt[0]
-			bank := ctx.cc_dt_to_reg_kind[dt]
+			bank := ctx.target_spec.datatype_to_reg_kind[dt]
 			value = backend.graph_add_arg(
 				ctx,
 				"arg",
@@ -831,7 +786,7 @@ emit_proc :: proc(
 		}
 
 		for dt, j in apa.dt[:(apa.size + 7) / 8] {
-			bank := ctx.cc_dt_to_reg_kind[dt]
+			bank := ctx.target_spec.datatype_to_reg_kind[dt]
 			vl := backend.graph_add_arg(
 				ctx,
 				"arg",
@@ -1776,7 +1731,7 @@ emit_nodes :: proc(
 			prc := base_meta.lit.procid
 			fptr: backend.Node_ID
 			siga: ^Proc_Type
-			if base_meta.lit.procid == PROC_FUNCTION_POINTER_SENTINEL {
+			if base_meta.lit.procid == 0 {
 				fptr = to_rvalue(ctx, emit_nodes(ctx, {}, d.expr), d.expr)
 				siga = unpack_type(base_ty).(^Proc_Type)
 			}
@@ -1925,8 +1880,7 @@ call_proc_of :: proc(ctx: ^Gen_Ctx, node: ^ast.Node) -> (Proc_ID, bool) {
 	if !cok do return {}, false
 	m := get_node_meta(call.expr)
 	if !is_of(m.type, ^Proc_Type) do return {}, false
-	if m.lit.procid == PROC_FUNCTION_POINTER_SENTINEL do return {}, false
-	return m.lit.procid, true
+	return m.lit.procid, m.lit.procid != 0
 }
 
 emit_call :: proc(
@@ -1941,13 +1895,8 @@ emit_call :: proc(
 	context.allocator, _ = arna.scrath()
 	sig := sig
 
-	imported :=
-		prc_id != PROC_FUNCTION_POINTER_SENTINEL &&
-		ctx.procs[prc_id].lit.body == nil
-
-	if prc_id != PROC_FUNCTION_POINTER_SENTINEL {
-		sig = ctx.procs[prc_id].sig
-	}
+	imported := ctx.procs[prc_id].lit.body == nil
+	if prc_id != 0 do sig = ctx.procs[prc_id].sig
 
 	rets := sig.rets
 	rabi := ret_abi(rets)
@@ -1966,7 +1915,7 @@ emit_call :: proc(
 	}
 
 	arg_count := len(d.args)
-	spread_prc: Proc_ID = -1
+	spread_prc: Proc_ID
 	if len(d.args) == 1 && len(d.args) != len(sig.params) {
 		spread_prc = call_proc_of(ctx, d.args[0]) or_else panic("")
 		arg_count = len(ctx.procs[spread_prc].rets)
@@ -1988,7 +1937,7 @@ emit_call :: proc(
 		lower_call_arg(ctx, args, &lctx, .I64, Value(slots[j]))
 	}
 
-	if spread_prc != -1 {
+	if spread_prc != 0 {
 		results := emit_call(
 			ctx,
 			d.args[0].derived.(^ast.Call_Expr),
@@ -2029,7 +1978,8 @@ emit_call :: proc(
 	copy(args[lctx.i:], args[lctx.ri:])
 	ln := lctx.i + len(args) - lctx.ri
 
-	call := backend.graph_add_call(ctx, "call", args[:ln], u32(prc_id))
+	cid := u32(prc_id) - u32(prc_id == 0)
+	call := backend.graph_add_call(ctx, "call", args[:ln], cid)
 	backend.graph_extra(ctx, call, backend.Call).imported = imported
 	cnode := backend.graph_get(ctx, call)
 	cnode.input_count = u16(lctx.i)

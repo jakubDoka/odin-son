@@ -5440,8 +5440,9 @@ foreign {
 main :: proc() -> int {
 	slt := (^int)(malloc(8))
 	slt^ = 0
+	vl := slt^
 	free(rawptr(slt))
-	return slt^
+	return vl
 }
 ```
 

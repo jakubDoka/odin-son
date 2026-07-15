@@ -256,6 +256,7 @@ X64_IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec {
 		input_start_idx = 1,
 		reg_masks = #partial{.General = {GPA_MASK}},
 	},
+	.Proc_Addr = {reg_masks = #partial{.General = {GPA_MASK}}},
 	.Load = {
 		input_start_idx = 2,
 		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK}},
@@ -1041,6 +1042,9 @@ x64_reg_mask_of :: proc(
 		}
 	case .Call:
 		call := graph_extra(graph, id, Call)
+		if call.cid == ~u32(0) && pos == len(node.inps) - 1 {
+			return reg_bank_mask(ra, .General, GPA_MASK)
+		}
 		cc := ra.cc_table[call.ccid]
 		reg := cc_reg_for_operand(graph, node, cc.args, pos)
 		return reg_mask_single(ra, reg)
@@ -1511,8 +1515,14 @@ x64_emit_instr :: proc(
 		dst := reg_of(ctx, instr)
 		addr, dis, id := reg_and_disp_of(ctx, node.inps[0])
 		// lea $dst, [rsp/rip + $offset]
-		emit(ctx.code, {rex(dst, RAX, RAX, true), 0x8d})
+		emit(ctx.code, {rex(dst, addr, RAX, true), 0x8d})
 		emit_indirect_addr(ctx, dst, addr, NO_INDEX, 1, dis, id)
+	case .Proc_Addr:
+		id := graph_extra(ctx, instr, Tup).idx + 1
+		dst := reg_of(ctx, instr)
+		// lea $dst, [rip + $offset]
+		emit(ctx.code, {rex(dst, RIP, NO_INDEX, true), 0x8d})
+		emit_indirect_addr(ctx, dst, RIP, NO_INDEX, 1, 0, id, kind = .Text)
 	case .X64_Lea:
 		dst := reg_of(ctx, instr)
 		bse, sdis, id := reg_and_disp_of(ctx, node.inps[0])
@@ -1713,6 +1723,10 @@ x64_emit_instr :: proc(
 		if cc.is_syscall {
 			// syscall
 			emit(ctx.code, {0x0F, 0x05})
+		} else if call.cid == ~u32(0) {
+			// call $ptr
+			ptr := reg_of(ctx, node.inps[len(node.inps) - 1])
+			emit(ctx.code, {0xFF, mod_sm(.Direct, 0b010, ptr)})
 		} else if call.imported && ctx.emit_got_imports {
 			// call [rip + $lib_call.id]
 			emit(ctx.code, {0xFF, mod_sm(.Indirect, 0b010, RIP), 0, 0, 0, 0})
@@ -2293,6 +2307,7 @@ emit_indirect_addr_reg :: proc(
 	#any_int dis: i64,
 	reloc: u32,
 	#any_int trailing_imm: i64 = 0,
+	kind: Reloc_Kind = .Global,
 ) {
 	scl := max(scale, 1)
 	timm := min(trailing_imm, 4)
@@ -2333,7 +2348,7 @@ emit_indirect_addr_reg :: proc(
 	if reloc != 0 {
 		add_reloc(ctx.relocs)^ = {
 			offset = u32(ctx.code.pos - ctx.code_start),
-			kind   = .Global,
+			kind   = kind,
 			size   = .r4,
 			id     = reloc - 1,
 		}

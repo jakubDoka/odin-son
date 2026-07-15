@@ -11175,3 +11175,31 @@ fib :: proc(x: $T) -> T {
 }
 `, main_())
 }
+@(test) function_pointers :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	return d(proc() -> int {return 10})
+}
+
+d :: proc(f: proc() -> int) -> int {
+	return f()
+}
+
+run_test(t, `function_pointers`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	return d(proc() -> int {return 10})
+}
+
+d :: proc(f: proc() -> int) -> int {
+	return f()
+}
+`, main_())
+}

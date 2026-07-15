@@ -97,6 +97,11 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 		default_type = .I64,
 		flags = {.Clonable, .Interned},
 	},
+	.Proc_Addr = {
+		id = Tup,
+		default_type = .I64,
+		flags = {.Clonable, .Interned},
+	},
 	.Load = {args = {"ctrl", "mem", "addr"}, flags = {.Interned, .Load}},
 	.Load_S = {args = {"ctrl", "mem", "addr"}, flags = {.Interned, .Load}},
 	.Store = {

@@ -4,7 +4,6 @@ import "backend"
 import "base:runtime"
 import "core:fmt"
 import "core:io"
-import "core:log"
 import "core:mem"
 import "core:odin/ast"
 import "core:odin/tokenizer"
@@ -88,7 +87,7 @@ TYPE_SIZES := #partial [Type]int {
 
 type_align :: proc(ty: Type) -> int {
 	#partial switch t in unpack_type(ty) {
-	case Pointer, Multi_Pointer:
+	case ^Proc_Type, Pointer, Multi_Pointer:
 		return 8
 	case ^Struct:
 		return t.align
@@ -100,8 +99,6 @@ type_align :: proc(ty: Type) -> int {
 		return type_align(t.backing)
 	case ^Union:
 		return t.align
-	case ^Proc_Type:
-		panic("we should not be type type")
 	case ^Poly_Data:
 		fmt.panicf("POLY TODO: %v", ty)
 	}
@@ -115,7 +112,7 @@ array_elem_stride :: proc(elem: Type) -> int {
 
 type_size :: proc(ty: Type) -> int {
 	#partial switch t in unpack_type(ty) {
-	case Pointer, Multi_Pointer:
+	case ^Proc_Type, Pointer, Multi_Pointer:
 		return 8
 	case ^Struct:
 		return t.size
@@ -127,8 +124,6 @@ type_size :: proc(ty: Type) -> int {
 		return type_size(t.backing)
 	case ^Union:
 		return t.size
-	case ^Proc_Type:
-		panic("we should not be type type")
 	case ^Poly_Data:
 		fmt.panicf("POLY TODO: %v", ty)
 	}
@@ -182,11 +177,11 @@ type_to_dt :: proc(ty: Type) -> backend.Node_Datatype {
 	}
 
 	#partial switch t in unpack_type(ty) {
-	case Pointer, Multi_Pointer:
+	case ^Proc_Type, Pointer, Multi_Pointer:
 		return .I64
 	case ^Enum:
 		return type_to_dt(t.backing)
-	case ^Proc_Type, ^Struct, ^Array, ^Slice, ^Union:
+	case ^Struct, ^Array, ^Slice, ^Union:
 		return .Void
 	case ^Poly_Data:
 		fmt.panicf("POLY TODO: %v", ty)
@@ -409,7 +404,9 @@ intern_poly :: proc(ctx: ^Gen_Ctx, poly: Poly_Data) -> Type {
 }
 
 tmeta :: proc(ctx: ^Gen_Ctx, ty: Type) -> ^Check_Meta {
-	return new_clone(Check_Meta{type = ty}, ctx.types.allocator)
+	lit: Lit
+	if is_of(ty, ^Proc_Type) do lit.procid = PROC_FUNCTION_POINTER_SENTINEL
+	return new_clone(Check_Meta{ty, lit}, ctx.types.allocator)
 }
 
 proc_meta :: proc(ctx: ^Gen_Ctx, pid: Proc_ID) -> ^Check_Meta {
@@ -672,6 +669,9 @@ emit_type :: proc(
 			Poly_Entry{d.type.name, {.Typeid, {typeida = res}}},
 		)
 		return res
+	case ^ast.Proc_Type:
+		sig, _, _ := typecheck_sig(ctx, d)
+		return pack_type(sig)
 	case:
 		fmt.panicf("TODO: %#v", expr.derived)
 	}
@@ -833,6 +833,7 @@ types_init :: proc(types: ^Types) {
 
 	types.allocator = arna.allocator(&types.mems.type)
 	types.procs.allocator = types.allocator
+	types.proc_insts.allocator = types.allocator
 	types.pointers.allocator = types.allocator
 	types.multi_pointers.allocator = types.allocator
 	types.structs.allocator = types.allocator
@@ -1050,6 +1051,8 @@ typecheck :: proc(
 				},
 			)
 		}
+	case ^ast.Proc_Lit:
+		return proc_meta(ctx, typecheck_proc(ctx, ctx.module, "", d))
 	case ^ast.Basic_Lit:
 		#partial switch d.tok.kind {
 		case .Integer, .Rune:
@@ -1478,7 +1481,7 @@ typecheck :: proc(
 			}
 		} else {
 			assert(len(sig.params) == len(d.args))
-			if proc_id != 0 && len(ctx.procs[proc_id].poly_names) != 0 {
+			if proc_id > 0 && len(ctx.procs[proc_id].poly_names) != 0 {
 				prc := ctx.procs[proc_id]
 				assert(len(prc.poly_values) == 0)
 				polys := make([]Check_Meta, len(prc.poly_names))
@@ -1511,6 +1514,9 @@ typecheck :: proc(
 				existing, ok := ctx.proc_insts[key]
 				if !ok {
 					prc.sig = sig
+					{context.allocator = ctx.types.allocator
+						prc.lit = ast.clone(prc.lit).derived.(^ast.Proc_Lit)
+					}
 					prc.poly_values = slice.clone(polys, ctx.types.allocator)
 					existing = Proc_ID(len(ctx.types.procs))
 					append(&ctx.types.procs, prc)
@@ -1668,7 +1674,12 @@ register_module_procs :: proc(ctx: ^Gen_Ctx, mid: Module_ID) {
 				if len(sdecl.values) == 0 do continue
 				prc := sdecl.values[0].derived.(^ast.Proc_Lit) or_continue
 				assert(prc.body == nil)
-				typecheck_proc(ctx, mid, sdecl, prc)
+				typecheck_proc(
+					ctx,
+					mid,
+					meta.src_of(ctx.file^, sdecl.names[0]),
+					prc,
+				)
 			}
 		}
 
@@ -1676,76 +1687,95 @@ register_module_procs :: proc(ctx: ^Gen_Ctx, mid: Module_ID) {
 			sdecl := decl.derived_stmt.(^ast.Value_Decl) or_continue
 			if len(sdecl.values) == 0 do continue
 			prc := sdecl.values[0].derived.(^ast.Proc_Lit) or_continue
-			typecheck_proc(ctx, mid, sdecl, prc)
+			typecheck_proc(
+				ctx,
+				mid,
+				meta.src_of(ctx.file^, sdecl.names[0]),
+				prc,
+			)
 		}
-	}
-
-	typecheck_proc :: proc(
-		ctx: ^Gen_Ctx,
-		mid: Module_ID,
-		sdecl: ^ast.Value_Decl,
-		prc: ^ast.Proc_Lit,
-	) {
-
-		context.allocator, _ = arna.scrath()
-
-		plist := prc.type.params.list
-		rlist: []^ast.Field
-		if prc.type.results != nil {
-			rlist = prc.type.results.list
-		}
-
-		params := make([]Type, len(plist))
-		param_names := make([]string, len(plist), ctx.types.allocator)
-		rets := make([]Type, len(rlist))
-		ret_names := make([]string, len(rlist), ctx.types.allocator)
-
-		lists := [][]^ast.Field{plist, rlist}
-		tys := [][]Type{params, rets}
-		names := [][]string{param_names, ret_names}
-
-		clear(&ctx.poly_types)
-		for list, j in lists {
-			tys := tys[j]
-			names := names[j]
-
-			for param, i in list {
-				assert(len(param.names) <= 1)
-				pname := ""
-				if len(param.names) == 1 {
-					pname = meta.src_of(ctx.file^, param.names[0])
-				}
-
-				tys[i] = emit_type(ctx, param.type)
-				names[i] = pname
-			}
-		}
-
-		sig := Proc_Type {
-			params = intern_type_slice(ctx, params),
-			rets   = intern_type_slice(ctx, rets),
-		}
-
-		append(
-			&ctx.procs,
-			Proc {
-				name = meta.src_of(ctx.file^, sdecl.names[0]),
-				lit = prc,
-				module = mid,
-				poly_names = slice.clone(
-					ctx.poly_types.name[:len(ctx.poly_types)],
-					ctx.types.allocator,
-				),
-				file = ctx.file,
-				file_id = ctx.file_id,
-				sig = intern_proc_type(ctx, &sig),
-				param_names = param_names,
-				ret_names = ret_names,
-			},
-		)
 	}
 
 	mod.proc_count = len(ctx.procs) - mod.proc_start
+}
+
+typecheck_sig :: proc(
+	ctx: ^Gen_Ctx,
+	prc: ^ast.Proc_Type,
+) -> (
+	^Proc_Type,
+	[]string,
+	[]string,
+) {
+	plist := prc.params.list
+	rlist: []^ast.Field
+	if prc.results != nil {
+		rlist = prc.results.list
+	}
+
+	params := make([]Type, len(plist))
+	param_names := make([]string, len(plist), ctx.types.allocator)
+	rets := make([]Type, len(rlist))
+	ret_names := make([]string, len(rlist), ctx.types.allocator)
+
+	lists := [][]^ast.Field{plist, rlist}
+	tys := [][]Type{params, rets}
+	names := [][]string{param_names, ret_names}
+
+	clear(&ctx.poly_types)
+	for list, j in lists {
+		tys := tys[j]
+		names := names[j]
+
+		for param, i in list {
+			assert(len(param.names) <= 1)
+			pname := ""
+			if len(param.names) == 1 {
+				pname = meta.src_of(ctx.file^, param.names[0])
+			}
+
+			tys[i] = emit_type(ctx, param.type)
+			names[i] = pname
+		}
+	}
+
+	sig := Proc_Type {
+		params = intern_type_slice(ctx, params),
+		rets   = intern_type_slice(ctx, rets),
+	}
+
+	return intern_proc_type(ctx, &sig), param_names, ret_names
+}
+
+typecheck_proc :: proc(
+	ctx: ^Gen_Ctx,
+	mid: Module_ID,
+	name: string,
+	prc: ^ast.Proc_Lit,
+) -> Proc_ID {
+	context.allocator, _ = arna.scrath()
+
+	isig, param_names, ret_names := typecheck_sig(ctx, prc.type)
+
+	append(
+		&ctx.procs,
+		Proc {
+			name = name,
+			lit = prc,
+			module = mid,
+			poly_names = slice.clone(
+				ctx.poly_types.name[:len(ctx.poly_types)],
+				ctx.types.allocator,
+			),
+			file = ctx.file,
+			file_id = ctx.file_id,
+			sig = isig,
+			param_names = param_names,
+			ret_names = ret_names,
+		},
+	)
+
+	return Proc_ID(len(ctx.procs) - 1)
 }
 
 register_module_globals :: proc(ctx: ^Gen_Ctx, mid: Module_ID) {

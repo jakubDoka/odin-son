@@ -57,6 +57,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{.General = 0, .Vector = 0}, // Local_Addr
 			{.General = 0, .Vector = 0}, // Global
 			{.General = 0, .Vector = 0}, // Global_Addr
+			{.General = 0, .Vector = 0}, // Proc_Addr
 			{.General = 0, .Vector = 0}, // Copy
 			{.General = 0, .Vector = 0}, // Set
 			{.General = 0, .Vector = 0}, // Store
@@ -136,6 +137,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{}, // Local_Addr
 			{}, // Global
 			{}, // Global_Addr
+			{}, // Proc_Addr
 			{}, // Copy
 			{}, // Set
 			{}, // Store
@@ -212,6 +214,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			-16, //Local_Addr
 			-16, //Global
 			-16, //Global_Addr
+			-16, //Proc_Addr
 			-16, //Copy
 			-16, //Set
 			-16, //Store
@@ -290,6 +293,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, //Local_Addr
 			0, //Global
 			0, //Global_Addr
+			0, //Proc_Addr
 			0, //Copy
 			0, //Set
 			0, //Store
@@ -366,6 +370,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0b10, // Local_Addr
 			0b100, // Global
 			0b10, // Global_Addr
+			0b100, // Proc_Addr
 			0b10, // Copy
 			0b10, // Set
 			0b10, // Store
@@ -442,6 +447,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, // Local_Addr -> No_Extra
 			1, // Global -> Tup
 			0, // Global_Addr -> No_Extra
+			1, // Proc_Addr -> Tup
 			0, // Copy -> No_Extra
 			0, // Set -> No_Extra
 			0, // Store -> No_Extra
@@ -518,6 +524,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{Class_Flag.Clonable}, // Local_Addr
 			{}, // Global
 			{Class_Flag.Interned, Class_Flag.Clonable}, // Global_Addr
+			{Class_Flag.Interned, Class_Flag.Clonable}, // Proc_Addr
 			{Class_Flag.Store}, // Copy
 			{Class_Flag.Store}, // Set
 			{Class_Flag.Store}, // Store
@@ -594,6 +601,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			No_Extra,
 			Tup,
 			No_Extra,
+			Tup,
 			No_Extra,
 			No_Extra,
 			No_Extra,
@@ -670,6 +678,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			`Local_Addr`,
 			`Global`,
 			`Global_Addr`,
+			`Proc_Addr`,
 			`Copy`,
 			`Set`,
 			`Store`,
@@ -758,6 +767,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{.General = 0, .Vector = 0}, // Local_Addr
 			{.General = 0, .Vector = 0}, // Global
 			{.General = 0, .Vector = 0}, // Global_Addr
+			{.General = 0, .Vector = 0}, // Proc_Addr
 			{.General = 0, .Vector = 0}, // Copy
 			{.General = 0, .Vector = 0}, // Set
 			{.General = 0, .Vector = 0}, // Store
@@ -882,6 +892,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{{.General = 1, .Vector = 0}}, // Local_Addr
 			{}, // Global
 			{{.General = 1, .Vector = 0}}, // Global_Addr
+			{{.General = 1, .Vector = 0}}, // Proc_Addr
 			{{.General = 3, .Vector = 0}, {.General = 10, .Vector = 0}, {.General = 11, .Vector = 0}, {.General = 7, .Vector = 0}}, // Copy
 			{{.General = 3, .Vector = 0}, {.General = 10, .Vector = 0}, {.General = 11, .Vector = 0}, {.General = 7, .Vector = 0}}, // Set
 			{{.General = 3, .Vector = 3}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}}, // Store
@@ -992,6 +1003,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			-16, //Local_Addr
 			-16, //Global
 			-16, //Global_Addr
+			-16, //Proc_Addr
 			-16, //Copy
 			-16, //Set
 			-16, //Store
@@ -1106,6 +1118,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			1, //Local_Addr
 			0, //Global
 			1, //Global_Addr
+			0, //Proc_Addr
 			2, //Copy
 			2, //Set
 			2, //Store
@@ -1216,6 +1229,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0b10, // Local_Addr
 			0b100, // Global
 			0b10, // Global_Addr
+			0b100, // Proc_Addr
 			0b10, // Copy
 			0b10, // Set
 			0b10, // Store
@@ -1326,6 +1340,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, // Local_Addr -> No_Extra
 			1, // Global -> Tup
 			0, // Global_Addr -> No_Extra
+			1, // Proc_Addr -> Tup
 			0, // Copy -> No_Extra
 			0, // Set -> No_Extra
 			0, // Store -> No_Extra
@@ -1436,6 +1451,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{Class_Flag.Clonable}, // Local_Addr
 			{}, // Global
 			{Class_Flag.Interned, Class_Flag.Clonable}, // Global_Addr
+			{Class_Flag.Interned, Class_Flag.Clonable}, // Proc_Addr
 			{Class_Flag.Store}, // Copy
 			{Class_Flag.Store}, // Set
 			{Class_Flag.Store}, // Store
@@ -1546,6 +1562,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			No_Extra,
 			Tup,
 			No_Extra,
+			Tup,
 			No_Extra,
 			No_Extra,
 			No_Extra,
@@ -1656,6 +1673,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			`Local_Addr`,
 			`Global`,
 			`Global_Addr`,
+			`Proc_Addr`,
 			`Copy`,
 			`Set`,
 			`Store`,
@@ -1723,14 +1741,14 @@ SPECS := [Node_Spec_Name]Node_Spec{
 }
 
 Un_Op :: enum u16 {
-	F_Ext = u16(Ideal_Node_Type.F_Ext),
 	F_From_I = u16(Ideal_Node_Type.F_From_I),
-	F_Demote = u16(Ideal_Node_Type.F_Demote),
-	Uext = u16(Ideal_Node_Type.Uext),
-	Sext = u16(Ideal_Node_Type.Sext),
 	F_To_I = u16(Ideal_Node_Type.F_To_I),
-	Cast = u16(Ideal_Node_Type.Cast),
+	F_Demote = u16(Ideal_Node_Type.F_Demote),
+	F_Ext = u16(Ideal_Node_Type.F_Ext),
+	Sext = u16(Ideal_Node_Type.Sext),
 	Not = u16(Ideal_Node_Type.Not),
+	Cast = u16(Ideal_Node_Type.Cast),
+	Uext = u16(Ideal_Node_Type.Uext),
 	Neg = u16(Ideal_Node_Type.Neg),
 }
 Bin_Op :: enum u16 {
@@ -1816,6 +1834,7 @@ Builder_Node_Type :: enum u16 {
 	Local_Addr,
 	Global,
 	Global_Addr,
+	Proc_Addr,
 	Copy,
 	Set,
 	Store,
@@ -1961,6 +1980,12 @@ graph_add_global :: #force_inline proc(graph: ^Graph, name: string) -> (id: Node
 graph_add_global_addr :: #force_inline proc(graph: ^Graph, name: string, global: Node_ID) -> (id: Node_ID) {
 	push_node_name(graph, name)
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Global_Addr), .I64, {global})
+}
+#assert(size_of(Tup) % 4 == 0)
+graph_add_proc_addr :: #force_inline proc(graph: ^Graph, name: string) -> (id: Node_ID) {
+	push_node_name(graph, name)
+	(^Tup)(graph_get_next_extra_slot(graph, u16(Ideal_Node_Type.Proc_Addr)))^ = {}
+	return graph_add_raw(graph, u16(Ideal_Node_Type.Proc_Addr), .I64, {})
 }
 #assert(size_of(No_Extra) % 4 == 0)
 graph_add_copy :: #force_inline proc(graph: ^Graph, name: string, ctrl: Node_ID, mem: Node_ID, dst: Node_ID, src: Node_ID, size: Node_ID) -> (id: Node_ID) {
@@ -2133,6 +2158,7 @@ X64_Node_Type :: enum u16 {
 	Local_Addr,
 	Global,
 	Global_Addr,
+	Proc_Addr,
 	Copy,
 	Set,
 	Store,

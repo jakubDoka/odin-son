@@ -96,7 +96,8 @@ x86_reg_class_classify :: proc(
 		mem.is_aligned(rawptr(uintptr(offset)), type_align(ty)) or_return
 
 		#partial switch t in unpack_type(ty) {
-		case Pointer, Multi_Pointer:
+
+		case Pointer, ^Proc_Type, Multi_Pointer:
 			slots[offset / 8] = .Integer
 			return true
 		case ^Slice:
@@ -134,8 +135,6 @@ x86_reg_class_classify :: proc(
 			}
 			classify(t.tag_ty, slots, t.tag_offset)
 			return true
-		case ^Proc_Type:
-			panic("should not happen")
 		case ^Poly_Data:
 			fmt.panicf("POLY TODO: %v", ty)
 		}
@@ -985,7 +984,8 @@ emit_nodes :: proc(
 	case ^ast.Assign_Stmt:
 		if len(d.rhs) == 1 && len(d.lhs) > 1 {
 			assert(d.op.kind == .Eq)
-			prc, ok := call_proc_of(ctx, d.rhs[0])
+			prc_id, ok := call_proc_of(ctx, d.rhs[0])
+			prc := ctx.procs[prc_id]
 			assert(ok)
 			assert(len(prc.rets) == len(d.lhs))
 			rabi := ret_abi(prc.rets[:])
@@ -1006,7 +1006,9 @@ emit_nodes :: proc(
 			results := emit_call(
 				ctx,
 				d.rhs[0].derived.(^ast.Call_Expr),
-				prc,
+				nil,
+				prc_id,
+				0,
 				out_slots,
 			)
 
@@ -1276,14 +1278,16 @@ emit_nodes :: proc(
 		}
 	case ^ast.Value_Decl:
 		if len(d.values) == 1 && len(d.names) > 1 {
-			prc, ok := call_proc_of(ctx, d.values[0])
+			prc_id, ok := call_proc_of(ctx, d.values[0])
 			assert(ok)
-			assert(len(prc.rets) == len(d.names))
+			assert(len(ctx.procs[prc_id].rets) == len(d.names))
 
 			results := emit_call(
 				ctx,
 				d.values[0].derived.(^ast.Call_Expr),
-				prc,
+				nil,
+				prc_id,
+				0,
 				nil,
 			)
 
@@ -1291,7 +1295,7 @@ emit_nodes :: proc(
 				name := meta.src_of(ctx.file^, d.names[i])
 				if name == "_" do continue
 				flags := get_node_vflags(d.names[i])
-				vty := prc.rets[i]
+				vty := ctx.procs[prc_id].rets[i]
 
 				if r.is_lvalue {
 					backend.graph_pin(ctx, r.id)
@@ -1769,9 +1773,15 @@ emit_nodes :: proc(
 
 		switch {
 		case is_of(base_ty, ^Proc_Type):
-			prc := &ctx.procs[base_meta.lit.procid]
+			prc := base_meta.lit.procid
+			fptr: backend.Node_ID
+			siga: ^Proc_Type
+			if base_meta.lit.procid == PROC_FUNCTION_POINTER_SENTINEL {
+				fptr = to_rvalue(ctx, emit_nodes(ctx, {}, d.expr), d.expr)
+				siga = unpack_type(base_ty).(^Proc_Type)
+			}
 
-			results := emit_call(ctx, d, prc, nil, prop.dest)
+			results := emit_call(ctx, d, siga, prc, fptr, nil, prop.dest)
 			if len(results) > 0 {
 				last := results[len(results) - 1]
 				res, lvalue = last.id, last.is_lvalue
@@ -1895,6 +1905,10 @@ emit_nodes :: proc(
 
 		backend.graph_loop_control(variant, ctx, ctx.node_scope, loop)
 		ctx.node_scope = 0
+	case ^ast.Proc_Lit:
+		meta := get_node_meta(node)
+		res = backend.graph_add_proc_addr(ctx, "fptr")
+		backend.graph_extra(ctx, res, backend.Tup).idx = u32(meta.lit.procid)
 	case:
 		fmt.panicf("TODO: %#v", node.derived)
 	}
@@ -1906,40 +1920,41 @@ emit_nodes :: proc(
 
 CALL_PREFIX :: 2
 
-call_proc_of :: proc(ctx: ^Gen_Ctx, node: ^ast.Node) -> (^Proc, bool) {
+call_proc_of :: proc(ctx: ^Gen_Ctx, node: ^ast.Node) -> (Proc_ID, bool) {
 	call, cok := node.derived.(^ast.Call_Expr)
-	if !cok do return nil, false
+	if !cok do return {}, false
 	m := get_node_meta(call.expr)
-	if !is_of(m.type, ^Proc_Type) do return nil, false
-	if m.lit.procid == PROC_FUNCTION_POINTER_SENTINEL do return nil, false
-	return &ctx.procs[u32(m.lit.procid)], true
+	if !is_of(m.type, ^Proc_Type) do return {}, false
+	if m.lit.procid == PROC_FUNCTION_POINTER_SENTINEL do return {}, false
+	return m.lit.procid, true
 }
 
 emit_call :: proc(
 	ctx: ^Gen_Ctx,
 	d: ^ast.Call_Expr,
-	prc: ^Proc,
+	sig: ^Proc_Type,
+	prc_id: Proc_ID,
+	ptr: backend.Node_ID,
 	out_slots: []backend.Node_ID,
 	prop_dest: backend.Node_ID = 0,
 ) -> []Value {
-	tmp, _ := arna.scrath(context.temp_allocator)
+	context.allocator, _ = arna.scrath()
+	sig := sig
 
-	// TODO: we can cumpute this in N(1)
-	idx := u32(ctx.prc)
-	for &p, i in ctx.procs {
-		if &p == prc {
-			idx = u32(i)
-			break
-		}
+	imported :=
+		prc_id != PROC_FUNCTION_POINTER_SENTINEL &&
+		ctx.procs[prc_id].lit.body == nil
+
+	if prc_id != PROC_FUNCTION_POINTER_SENTINEL {
+		sig = ctx.procs[prc_id].sig
 	}
 
-	rets := prc.rets
+	rets := sig.rets
 	rabi := ret_abi(rets)
-	ptr_ty := intern_pointer(ctx, .I64)
 
-	results := make([]Value, len(rets), tmp)
+	results := make([]Value, len(rets), context.temp_allocator)
 
-	slots := make([]backend.Node_ID, len(rets), tmp)
+	slots := make([]backend.Node_ID, len(rets))
 	for j in 0 ..< len(rets) {
 		if out_slots != nil && out_slots[j] != 0 {
 			slots[j] = out_slots[j]
@@ -1950,37 +1965,40 @@ emit_call :: proc(
 		if slots[j] != 0 do backend.graph_pin(ctx, slots[j])
 	}
 
-	spread_prc: ^Proc
-	if len(d.args) == 1 && len(d.args) != len(prc.params) {
-		spread_prc, _ = call_proc_of(ctx, d.args[0])
-		assert(spread_prc != nil)
+	arg_count := len(d.args)
+	spread_prc: Proc_ID = -1
+	if len(d.args) == 1 && len(d.args) != len(sig.params) {
+		spread_prc = call_proc_of(ctx, d.args[0]) or_else panic("")
+		arg_count = len(ctx.procs[spread_prc].rets)
 	}
 
-	arg_count := spread_prc != nil ? len(spread_prc.rets) : len(d.args)
+	backend.graph_pin(ctx, ptr)
+
 	args := make(
 		[]backend.Node_ID,
-		CALL_PREFIX + (arg_count + len(rets) + 1) * 2,
-		tmp,
+		CALL_PREFIX + (arg_count + len(rets) + 1) * 2 + int(ptr != 0),
 	)
 
 	lctx: Lower_Ctx
 	lctx.i = CALL_PREFIX
 	lctx.ri = len(args)
-	if prc.lit.body == nil do lctx.sm.type = .C
+	if imported do lctx.sm.type = .C
 
 	for j in rabi.srets_start ..< len(rabi.extras) {
-		lower_call_arg(ctx, args, &lctx, ptr_ty, Value(slots[j]))
+		lower_call_arg(ctx, args, &lctx, .I64, Value(slots[j]))
 	}
 
-	if spread_prc != nil {
+	if spread_prc != -1 {
 		results := emit_call(
 			ctx,
 			d.args[0].derived.(^ast.Call_Expr),
+			nil,
 			spread_prc,
+			0,
 			nil,
 		)
 		for r, j in results {
-			lower_call_arg(ctx, args, &lctx, spread_prc.rets[j], r)
+			lower_call_arg(ctx, args, &lctx, ctx.procs[spread_prc].rets[j], r)
 		}
 	} else {
 		for arg in d.args {
@@ -1990,8 +2008,11 @@ emit_call :: proc(
 		}
 	}
 
+	if ptr != 0 do lower_call_arg(ctx, args, &lctx, .I64, Value(ptr))
+	backend.graph_unpin(ctx, ptr)
+
 	for j in 0 ..< rabi.srets_start {
-		lower_call_arg(ctx, args, &lctx, ptr_ty, Value(slots[j]))
+		lower_call_arg(ctx, args, &lctx, .I64, Value(slots[j]))
 	}
 
 	for j in 0 ..< len(rabi.extras) {
@@ -2008,8 +2029,8 @@ emit_call :: proc(
 	copy(args[lctx.i:], args[lctx.ri:])
 	ln := lctx.i + len(args) - lctx.ri
 
-	call := backend.graph_add_call(ctx, "call", args[:ln], idx)
-	backend.graph_extra(ctx, call, backend.Call).imported = prc.lit.body == nil
+	call := backend.graph_add_call(ctx, "call", args[:ln], u32(prc_id))
+	backend.graph_extra(ctx, call, backend.Call).imported = imported
 	cnode := backend.graph_get(ctx, call)
 	cnode.input_count = u16(lctx.i)
 	for arg in args[CALL_PREFIX:ln] {

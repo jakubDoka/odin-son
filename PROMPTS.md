@@ -401,9 +401,7 @@ statement stack.
 
 Make usre all tests still pass.
 
-### Refactor the typechecking and gen to use the Check_Meta struct
-
-NOTE: read AGENTS.md
+### Refactor the typechecking and gen to use the Check_Meta struct (DONE)
 
 See git diff for context.
 
@@ -438,3 +436,8 @@ First fix all of the compilation errors. Then make sure all tests pass
 
 This change should not affect the resulting generated code (golden files should
 not change). This is purely a frontend change (package main).
+
+### Implement odin language features so that we can 
+
+NOTE: read AGENTS.md
+

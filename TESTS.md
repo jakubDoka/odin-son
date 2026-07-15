@@ -5750,3 +5750,18 @@ fib :: proc(x: $T) -> T {
 	return fib(x - 1) + fib(x - 2)
 }
 ```
+
+#### function pointers
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	return d(proc() -> int {return 10})
+}
+
+d :: proc(f: proc() -> int) -> int {
+	return f()
+}
+```

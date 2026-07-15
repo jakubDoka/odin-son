@@ -113,6 +113,7 @@ Ideal_Node_Type :: enum u16 {
 	Local_Addr,
 	Global,
 	Global_Addr,
+	Proc_Addr,
 	Copy,
 	Set,
 	Store,

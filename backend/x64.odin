@@ -540,7 +540,7 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node, _: $T) -> Node_ID {
 	case .CInt:
 		cnst: ^CInt = graph_extra(ctx, node, CInt)
 		if node.dt in FLOAT_DTS {
-			mem := find_node(ctx, .Mem) or_else panic("")
+			mem := graph_find_node(ctx, .Mem) or_else panic("")
 
 			global := graph_add_global(ctx, "iglb")
 			tup: ^Tup = graph_extra(ctx, global, Tup)
@@ -1148,7 +1148,7 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 		ctx.stack_size = max(ctx.stack_size, call_stack_size)
 	}
 
-	emem, _ := find_node(ctx.graph, .Mem)
+	emem, _ := graph_find_node(ctx.graph, .Mem)
 	mem_outs: []Node_Output
 	if emem != 0 {
 		mem_outs = graph_outs(ctx.graph, emem)

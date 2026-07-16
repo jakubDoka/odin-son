@@ -14,7 +14,7 @@ memopt :: proc(graph: ^Graph) -> (optimized: bool) {
 
 	context.allocator, _ = arna.scrath()
 
-	emem := find_node(graph, .Mem) or_return
+	emem := graph_find_node(graph, .Mem) or_return
 
 	sroa: for mout in graph_outs(graph, emem) {
 		mnode := graph_expand(graph, mout.id)
@@ -202,7 +202,7 @@ memopt :: proc(graph: ^Graph) -> (optimized: bool) {
 			case .Call:
 				assert(len(cnode.outs) == 1)
 				cursor = cnode.outs[0].id
-				cursor = find_node(ctx, .Mem, cursor) or_else panic("")
+				cursor = graph_find_node(ctx, .Mem, cursor) or_else panic("")
 				continue
 			case .Mem, .Set, .Copy, .Phi, .Return:
 			case:

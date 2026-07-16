@@ -273,23 +273,39 @@ Node_Intern_Entry :: struct {
 	id:   Node_ID,
 }
 
+Interner :: struct {
+	hash_idx: uintptr,
+	node_idx: uintptr,
+	len:      int,
+	cap:      int,
+}
+
 Graph :: struct {
 	using node_spec: ^Node_Spec,
 	using stats:     ^Stats,
 	worklist:        ^queue.Queue(Node_ID),
 	triggers:        ^[dynamic][dynamic; 4]Node_ID,
-	interner:        #soa[]Node_Intern_Entry,
-	interner_len:    int,
 	mem:             ^arna.Allocator,
-	gvn:             u32,
-	start:           Node_ID,
-	entry:           Node_ID,
-	end:             Node_ID,
-	waste:           int,
+	using meta:      Graph_Meta,
 	dont_intern:     bool,
 	dont_delete:     bool,
 	peeped:          bool,
 	opt_flags:       Graph_Opt_Flags,
+}
+
+Graph_Meta :: struct {
+	interner: Interner,
+	weight:   int,
+	gvn:      u32,
+	start:    Node_ID,
+	entry:    Node_ID,
+	end:      Node_ID,
+	waste:    int,
+}
+
+Stencil :: struct {
+	mem:        []u8,
+	using meta: Graph_Meta,
 }
 
 Graph_Opt_Flags :: bit_set[Graph_Opt_Flag]
@@ -519,7 +535,7 @@ graph_schedule_peeps :: proc(graph: ^Graph, schedule: ^Graph_Schedule) {
 	)
 }
 
-find_node :: proc(
+graph_find_node :: proc(
 	graph: ^Graph,
 	kind: Ideal_Node_Type,
 	on: Node_ID = 0,
@@ -536,9 +552,245 @@ find_node :: proc(
 	return 0, false
 }
 
-graph_poll_gc :: proc(graph: ^Graph) {
-	//if graph.waste < int(graph.mem.pos / 2) do return
+graph_inline :: proc(graph: ^Graph, call: Node_ID, from: ^Graph) {
+	assert(graph.node_spec == &SPECS[.Builder])
 
+	context.allocator, _ = arna.scrath()
+
+	Ctx :: struct {
+		graph:      ^Graph,
+		from:       ^Graph,
+		projection: []Node_ID,
+	}
+
+	ctx: Ctx
+	ctx.graph = graph
+	ctx.from = from
+	ctx.projection = make([]Node_ID, from.gvn)
+
+	call := graph_expand(graph, call)
+
+	entry := graph_expand(from, ctx.from.entry)
+	mem_id := graph_find_node(from, .Mem) or_else panic("")
+	mem := graph_get(from, mem_id)
+	ctx.projection[entry.gvn] = call.inps[0]
+	ctx.projection[mem.gvn] = call.inps[1]
+
+	Arg_Entry :: bit_field u64 {
+		id:  Node_ID | 32,
+		gvn: u32     | 32,
+	}
+	starter: Node_ID
+	params: [dynamic]Arg_Entry
+	for o in entry.outs {
+		onode := graph_expand(from, o.id)
+		is_local_arg := onode.itype == .Local
+		if is_local_arg {
+			for lo in onode.outs {
+				if graph_get(from, lo.id).itype == .Call {
+					is_local_arg = false
+					break
+				}
+			}
+		}
+
+		if onode.itype == .Arg || is_local_arg {
+			append(&params, Arg_Entry{id = o.id, gvn = onode.gvn})
+		}
+
+		if is_cfg(from, o.id) {
+			assert(starter == 0)
+			starter = o.id
+		}
+	}
+
+	assert(len(params) == int(call.input_cap))
+	for i in 0 ..< len(params) {
+		param := params[i]
+		arg := raw_data(call.inps)[i]
+		ctx.projection[param.gvn] = arg
+	}
+
+	clone_along_cfg(&ctx, starter)
+
+	cend := graph_expand(graph, call.outs[0].id)
+	ret := graph_expand(from, from.end)
+
+	for o in cend.outs {
+		onode := graph_expand(ctx.graph, o.id)
+		if onode.itype == .Mem {
+			sub := graph_get(from, ret.inps[1])
+			graph_subsume(graph, ctx.projection[sub.gvn], o.id)
+		}
+		if onode.itype == .Ret {
+			RET_PREFIX :: 2
+			idx := graph_extra(graph, onode, Tup).idx
+			sub := graph_get(from, ret.inps[RET_PREFIX + idx])
+			graph_subsume(graph, ctx.projection[sub.gvn], o.id)
+		}
+	}
+
+	end_ctrl := graph_get(from, ret.inps[0])
+	graph_subsume(graph, ctx.projection[end_ctrl.gvn], call.outs[0].id)
+
+	clone_along_cfg :: proc(ctx: ^Ctx, root: Node_ID) {
+		node := graph_expand(ctx.from, root)
+		if ctx.projection[node.gvn] != 0 do return
+
+		if node.itype == .Region {
+			for i in node.inps {
+				inode := graph_expand(ctx.from, i)
+				if ctx.projection[node.gvn] == 0 {
+					return
+				}
+			}
+
+			for out in node.outs {
+				onode := graph_expand(ctx.from, out.id)
+				if onode.itype == .Phi {
+					for inp in onode.inps[1:] {
+						clone_node(ctx, inp)
+					}
+				}
+			}
+		}
+
+		if node.itype == .Loop {
+			for out in node.outs {
+				onode := graph_expand(ctx.from, out.id)
+				if onode.itype == .Phi {
+					clone_node(ctx, onode.inps[1])
+				}
+			}
+		}
+
+		clone_node(ctx, root)
+		nid := ctx.projection[node.gvn]
+
+		for out in node.outs {
+			if !is_cfg(ctx.from, out.id) do continue
+
+			onode := graph_expand(ctx.from, out.id)
+
+			if onode.itype == .Loop && out.idx == 1 {
+				proj := ctx.projection[onode.gvn]
+				graph_add_input(ctx.graph, proj, nid)
+
+				for lout in onode.outs {
+					lonode := graph_expand(ctx.graph, lout.id)
+					if lonode.btype == .Phi {
+						lproj := ctx.projection[lonode.gvn]
+						lpnode := graph_get(ctx.graph, lproj)
+						backedge := graph_get(ctx.from, lonode.inps[2])
+						bproj := ctx.projection[backedge.gvn]
+						lpnode.itype = .Phi
+						graph_add_input(ctx.graph, lproj, bproj)
+						id := graph_intern(ctx.graph, lout.id)
+						if id != lout.id {
+							graph_subsume(ctx.graph, id, lout.id)
+							ctx.projection[lonode.gvn] = id
+						}
+					}
+				}
+
+				continue
+			}
+
+			clone_along_cfg(ctx, out.id)
+		}
+	}
+
+	clone_node :: proc(ctx: ^Ctx, root: Node_ID) {
+		graph := ctx.graph
+
+		node := graph_expand(ctx.from, root)
+		if ctx.projection[node.gvn] != 0 do return
+
+		assert(!is_cfg(ctx.from, root))
+
+		input_cap := node.input_cap
+		rtype := node.rtype
+		if node.itype not_in KEEP_CAPACITY {
+			input_cap = node.input_count
+		}
+
+		if node.itype == .Loop {
+			input_cap = 1
+		}
+
+		if node.itype == .Phi &&
+		   graph_get(ctx.from, node.inps[0]).itype == .Loop {
+			rtype = u16(Builder_Node_Type.Lazy_Phi)
+			input_cap = 2
+		}
+
+		inps := make([]Node_ID, input_cap)
+		for inp, i in raw_data(node.inps)[:input_cap] {
+			clone_node(ctx, inp)
+			inps[i] = ctx.projection[graph_get(ctx.from, inp).gvn]
+		}
+
+		if node.itype == .Return do return
+
+		prev := graph.mem.pos
+
+		size :=
+			size_of(Node) +
+			int(graph.node_extra_sizes[node.rtype]) * PRECISION +
+			int(node.extra_dwords) * PRECISION
+		push_node_name(graph, graph_get_node_name(ctx.from, root))
+		slot := arna.alloc(graph.mem, uint(size), PRECISION)
+
+		mem.copy_non_overlapping(raw_data(slot), node.node, len(slot))
+
+		new_node := (^Node)(raw_data(slot))
+		new_node.gvn = graph.gvn
+		graph.gvn += 1
+
+		new_node.input_idx = u32(graph.mem.pos / PRECISION)
+		_ = arna.clone(graph.mem, raw_data(node.inps)[:node.input_cap])
+
+		new_node.output_idx = u32(graph.mem.pos / PRECISION)
+		_ = arna.alloc(graph.mem, uint(node.output_cap * PRECISION), PRECISION)
+		new_node.output_count = 0
+		new_node.output_cap = node.output_cap
+
+		id := graph_id(graph, new_node)
+		interned := graph_intern(graph, id)
+		if interned != id {
+			graph.mem.pos = prev
+			id = interned
+		}
+
+		ctx.projection[node.gvn] = id
+	}
+}
+
+KEEP_CAPACITY :: bit_set[Ideal_Node_Type]{.Call}
+
+graph_compute_weight :: proc(graph: ^Graph, all: []Node_ID) {
+	@(static, rodata)
+	WEIGHTS := #partial [Ideal_Node_Type]u8 {
+		.Loop = 5,
+		.Call = 10,
+		.Add ..= .And_Not      = 1,
+	}
+
+	graph.weight = 1
+
+	for n in all {
+		graph.weight += int(WEIGHTS[graph_get(graph, n).itype])
+	}
+}
+
+// mem is borrowed
+graph_stencil :: proc(graph: ^Graph) -> (s: Stencil) {
+	s.mem = graph.mem.ptr[:graph.mem.pos]
+	s.meta = graph.meta
+	return
+}
+
+graph_compact :: proc(graph: ^Graph) {
 	context.allocator, _ = arna.scrath()
 
 	worklist: queue.Queue(Node_ID)
@@ -553,8 +805,6 @@ graph_poll_gc :: proc(graph: ^Graph) {
 	graph.mem.ptr = graph.mem.ptr[graph.mem.pos:]
 	graph.mem.pos = PRECISION
 	graph.gvn = 0
-
-	KEEP_CAPACITY :: bit_set[Ideal_Node_Type]{.Call}
 
 	interned_count := 0
 
@@ -589,12 +839,14 @@ graph_poll_gc :: proc(graph: ^Graph) {
 		n = graph_id(graph, new_node)
 	}
 
-	graph.interner = graph.interner[:0]
-	graph.interner_len = 0
+	graph.interner.len = 0
+	graph.interner.cap = 0
 	graph_interner_grow(
 		graph,
 		mem.align_forward_int(interned_count, align_of(Intern_Vec)),
 	)
+
+	iview := graph_interner_zip(graph)
 
 	for n in worklist.data[:worklist.len] {
 		node := graph_expand(graph, n)
@@ -611,12 +863,12 @@ graph_poll_gc :: proc(graph: ^Graph) {
 
 		if graph_has_flag(graph, node, .Interned) {
 			hash := graph_node_hash(graph, node)
-			graph.interner[graph.interner_len] = {hash, n}
-			graph.interner_len += 1
+			iview[graph.interner.len] = {hash, n}
+			graph.interner.len += 1
 		}
 	}
 
-	assert(graph.interner_len == interned_count)
+	assert(graph.interner.len == interned_count)
 
 	graph.start = project(&prev, worklist, graph.start)
 	graph.entry = project(&prev, worklist, graph.entry)
@@ -631,9 +883,6 @@ graph_poll_gc :: proc(graph: ^Graph) {
 	}
 
 	mem.copy(prev.mem.ptr, graph.mem.ptr, int(graph.mem.pos))
-	graph.interner.hash = graph.interner.hash[-int(prev.mem.pos):]
-	graph.interner.id = graph.interner.id[-int(prev.mem.pos) /
-	size_of(Node_ID):]
 	graph.mem.ptr = prev.mem.ptr
 	graph.waste = 0
 }
@@ -951,7 +1200,8 @@ graph_end_loop :: proc(
 			} else {
 				graph_connect(graph, init, graph_id(graph, bnode))
 				inode.itype = .Phi
-				graph_intern(graph, init)
+				id := graph_intern(graph, init)
+				if id != init do graph_subsume(graph, id, init)
 			}
 		}
 
@@ -1042,6 +1292,13 @@ graph_merge_returns :: proc(graph: ^Graph, args: []Node_ID) -> Node_ID {
 	return graph.end
 }
 
+graph_interner_zip :: proc(graph: ^Graph) -> (r: #soa[]Node_Intern_Entry) {
+	r.hash = graph.mem.ptr[graph.interner.hash_idx * PRECISION:]
+	r.id = ([^]Node_ID)(graph.mem.ptr)[graph.interner.node_idx:]
+	runtime.raw_soa_footer(&r).len = graph.interner.cap
+	return
+}
+
 graph_interner_find :: proc(
 	graph: ^Graph,
 	id: Node_ID,
@@ -1051,7 +1308,8 @@ graph_interner_find :: proc(
 	u8,
 	bool,
 ) {
-	assert(mem.is_aligned(graph.interner.hash, align_of(Intern_Vec)))
+	iview := graph_interner_zip(graph)
+	assert(mem.is_aligned(iview.hash, align_of(Intern_Vec)))
 	assert(id != 0)
 
 	needle := precomputed_hash
@@ -1060,10 +1318,7 @@ graph_interner_find :: proc(
 	}
 	assert(needle != 0)
 
-	for mask, i in mem.slice_data_cast(
-		[]Intern_Vec,
-		graph.interner.hash[:len(graph.interner)],
-	) {
+	for mask, i in mem.slice_data_cast([]Intern_Vec, iview.hash[:len(iview)]) {
 		eqs := simd.lanes_eq(mask, Intern_Vec(needle))
 		bits := transmute(u16)simd.extract_lsbs(eqs)
 		for bits != 0 {
@@ -1071,7 +1326,7 @@ graph_interner_find :: proc(
 				i * size_of(Intern_Vec) + int(simd.count_trailing_zeros(bits))
 			bits &= bits - 1
 
-			if graph_node_eq(graph, graph.interner.id[idx], id) {
+			if graph_node_eq(graph, iview.id[idx], id) {
 				return idx, needle, true
 			}
 		}
@@ -1085,27 +1340,27 @@ graph_intern :: proc(graph: ^Graph, id: Node_ID) -> Node_ID {
 		return id
 	}
 
+	iview := graph_interner_zip(graph)
+
 	idx, hash, _ := graph_interner_find(graph, id, 0)
-	if idx >= 0 {
-		return graph.interner.id[idx]
-	}
+	if idx >= 0 do return iview.id[idx]
 
-	if len(graph.interner) == graph.interner_len {
-		new_cap := len(graph.interner) * 2 + size_of(Intern_Vec)
+	if len(iview) == graph.interner.len {
+		new_cap := len(iview) * 2 + size_of(Intern_Vec)
 		graph_interner_grow(graph, new_cap)
+		iview = graph_interner_zip(graph)
 	}
 
-	graph.interner[graph.interner_len] = {
-		hash = hash,
-		id   = id,
-	}
-	graph.interner_len += 1
+	iview[graph.interner.len] = {hash, id}
+	graph.interner.len += 1
 
 	return id
 }
 
 graph_interner_grow :: proc(graph: ^Graph, new_cap: int) {
 	assert(mem.is_aligned(rawptr(uintptr(new_cap)), align_of(Intern_Vec)))
+
+	iview := graph_interner_zip(graph)
 
 	hashes := arna.alloc(
 		graph.mem,
@@ -1115,21 +1370,18 @@ graph_interner_grow :: proc(graph: ^Graph, new_cap: int) {
 	)
 	nodes := arna.smake(graph.mem, []Node_ID, new_cap)
 
-	mem.copy_non_overlapping(
-		raw_data(hashes),
-		graph.interner.hash,
-		graph.interner_len,
-	)
+	mem.copy_non_overlapping(raw_data(hashes), iview.hash, len(iview))
 	mem.copy_non_overlapping(
 		raw_data(nodes),
-		graph.interner.id,
-		graph.interner_len * size_of(Node_ID),
+		iview.id,
+		len(iview) * size_of(Node_ID),
 	)
 
-	graph.interner.hash = raw_data(hashes)
-	graph.interner.id = raw_data(nodes)
-
-	raw_soa_footer_slice(&graph.interner).len = new_cap
+	graph.interner.hash_idx =
+		(uintptr(raw_data(hashes)) - uintptr(graph.mem.ptr)) / PRECISION
+	graph.interner.node_idx =
+		(uintptr(raw_data(nodes)) - uintptr(graph.mem.ptr)) / PRECISION
+	graph.interner.cap = new_cap
 }
 
 graph_unintern :: proc(graph: ^Graph, id: Node_ID, precomputed_hash: u8 = 0) {
@@ -1138,13 +1390,15 @@ graph_unintern :: proc(graph: ^Graph, id: Node_ID, precomputed_hash: u8 = 0) {
 	idx, _, _ := graph_interner_find(graph, id, precomputed_hash)
 	if idx < 0 do return
 
-	graph.interner_len -= 1
-	graph.interner[idx] = graph.interner[graph.interner_len]
+	iview := graph_interner_zip(graph)
+
+	graph.interner.len -= 1
+	iview[idx] = iview[graph.interner.len]
 
 	// NOTE: there is probably a bug in the odin compiler that requires us
 	// to not set the value with a leteral
 	tmp: Node_Intern_Entry
-	graph.interner[graph.interner_len] = tmp
+	iview[graph.interner.len] = tmp
 }
 
 node_approx_size :: proc(graph: ^Graph, node: ^Node) -> uint {

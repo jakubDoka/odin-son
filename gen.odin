@@ -849,7 +849,7 @@ emit_proc :: proc(
 
 	backend.graph_iter_peeps(ctx)
 
-	backend.graph_poll_gc(ctx)
+	backend.graph_compact(ctx)
 
 	ctx.mems.scratch.pos = 0
 

@@ -600,10 +600,10 @@ graph_sym_iter_next :: proc(
 	ok: bool,
 ) {
 	arr := graph_outs(graph, graph.sym)
-	if iter^ >= len(arr) do return
+	if iter^ <= 0 do return
+	iter^ -= 1
 	ok = true
 	elem := graph_get(graph, arr[iter^].id)
-	iter^ += 1
 	#partial switch elem.itype {
 	case .Call:
 		res.id = graph_extra(graph, elem, Call).cid
@@ -615,7 +615,21 @@ graph_sym_iter_next :: proc(
 	return
 }
 
-graph_inline :: proc(graph: ^Graph, call: Node_ID, from: ^Graph) {
+graph_inline :: proc {
+	graph_inline_graph,
+	graph_inline_stencil,
+}
+
+graph_inline_stencil :: proc(graph: ^Graph, call: Node_ID, from: Stencil) {
+	slot: arna.Allocator
+	fromg: Graph
+	fromg.node_spec = &SPECS[.Builder]
+	fromg.mem = &slot
+	graph_mount_stencil(&fromg, from)
+	graph_inline_graph(graph, call, &fromg)
+}
+
+graph_inline_graph :: proc(graph: ^Graph, call: Node_ID, from: ^Graph) {
 	assert(graph.node_spec == &SPECS[.Builder])
 
 	context.allocator, _ = arna.scrath()

@@ -729,12 +729,11 @@ inline_and_optimize :: proc(
 		graph.mem = &slot
 		backend.graph_mount_stencil(&graph, prc.stencil)
 
-		sym_count := backend.graph_sym_count(&graph)
-		sctx.caller_to_callee[i] = make([]u32, sym_count)
-
-		for j := 0; sr in backend.graph_sym_iter_next(&graph, &j) {
+		sc := backend.graph_sym_count(&graph)
+		sctx.caller_to_callee[i] = make([]u32, sc)
+		for j := sc; sr in backend.graph_sym_iter_next(&graph, &j) {
 			assert(sr.type == .Func)
-			sctx.caller_to_callee[i][j - 1] = sr.id
+			sctx.caller_to_callee[i][j] = sr.id
 		}
 	}
 
@@ -812,7 +811,6 @@ inline_and_optimize :: proc(
 			resize(&sctx.stack, stack_mark)
 			append(&sctx.sccs, scc)
 		}
-
 	}
 
 	for &scc, i in sctx.sccs {
@@ -875,45 +873,29 @@ inline_and_optimize :: proc(
 
 	inline_count := 0
 	for si in scc_order do for m in sctx.sccs[si].members {
-		prc := &ctx.procs[m]
-		if len(prc.stencil.mem) == 0 do continue
-		backend.graph_mount_stencil(ctx, prc.stencil)
+		caller := &ctx.procs[m]
+		if len(caller.stencil.mem) == 0 do continue
+		backend.graph_mount_stencil(ctx, caller.stencil)
 
-		wcata := weight_cata(ctx.weight)
+		caller_wct := weight_cata(ctx.weight)
 
-		// TODO: clean this up (iterate in reverse)
-		sym_count := backend.graph_sym_count(ctx)
-		refs := make([]backend.Sym_Ref, sym_count)
-
-		for j := 0; sr in backend.graph_sym_iter_next(ctx, &j) {
-			assert(sr.type == .Func)
-			refs[j - 1] = sr
-		}
-
-		for sim in refs {
+		sc := backend.graph_sym_count(ctx)
+		for j := sc; sim in backend.graph_sym_iter_next(ctx, &j) {
 			assert(sim.type == .Func)
-			oprc := &ctx.procs[sim.id]
-			if len(oprc.stencil.mem) == 0 do continue
+			callee := &ctx.procs[sim.id]
+			if len(callee.stencil.mem) == 0 do continue
+
+			callee_wct := weight_cata(callee.stencil.weight)
+			if !weight_cata_can_merge(caller_wct, callee_wct) do continue
+
+			backend.graph_inline(ctx, sim.node, callee.stencil)
+			inline_count += 1
 
 			slt := &sctx.callee_to_caller[sim.id]
 			slt^ = slt^[:len(slt^) - 1]
-
-			owcata := weight_cata(oprc.stencil.weight)
-
-			if !weight_cata_can_merge(wcata, owcata) do continue
-
-			slot: arna.Allocator
-			graph: backend.Graph
-			graph.node_spec = &backend.SPECS[.Builder]
-			graph.mem = &slot
-			backend.graph_mount_stencil(&graph, oprc.stencil)
-
-			backend.graph_inline(ctx, sim.node, &graph)
-			inline_count += 1
-
 			if len(slt) == 0 {
-				delete(oprc.stencil.mem, perm)
-				oprc.stencil = {}
+				delete(callee.stencil.mem, perm)
+				callee.stencil = {}
 			}
 		}
 
@@ -921,10 +903,10 @@ inline_and_optimize :: proc(
 		backend.memopt(ctx)
 		backend.graph_iter_peeps({graph = ctx})
 		backend.graph_compact(ctx)
-		delete(prc.stencil.mem, perm)
 
-		prc.stencil = backend.graph_stencil(ctx)
-		prc.stencil.mem = slice.clone(prc.stencil.mem, perm)
+		delete(caller.stencil.mem, perm)
+		caller.stencil = backend.graph_stencil(ctx)
+		caller.stencil.mem = slice.clone(caller.stencil.mem, perm)
 	}
 
 	for &prc, i in ctx.procs {

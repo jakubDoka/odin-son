@@ -53,6 +53,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{.General = 0, .Vector = 0}, // Split
 			{.General = 0, .Vector = 0}, // Phi
 			{.General = 0, .Vector = 0}, // Mem
+			{.General = 0, .Vector = 0}, // Sym
 			{.General = 0, .Vector = 0}, // Local
 			{.General = 0, .Vector = 0}, // Local_Addr
 			{.General = 0, .Vector = 0}, // Global
@@ -133,6 +134,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{}, // Split
 			{}, // Phi
 			{}, // Mem
+			{}, // Sym
 			{}, // Local
 			{}, // Local_Addr
 			{}, // Global
@@ -210,6 +212,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			-16, //Split
 			-16, //Phi
 			-16, //Mem
+			-16, //Sym
 			-16, //Local
 			-16, //Local_Addr
 			-16, //Global
@@ -289,6 +292,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, //Split
 			0, //Phi
 			0, //Mem
+			0, //Sym
 			0, //Local
 			0, //Local_Addr
 			0, //Global
@@ -366,6 +370,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0b10, // Split
 			0b10, // Phi
 			0b10, // Mem
+			0b10, // Sym
 			0b10000, // Local
 			0b10, // Local_Addr
 			0b100, // Global
@@ -443,6 +448,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, // Split -> No_Extra
 			0, // Phi -> No_Extra
 			0, // Mem -> No_Extra
+			0, // Sym -> No_Extra
 			1, // Local -> Local
 			0, // Local_Addr -> No_Extra
 			1, // Global -> Tup
@@ -520,6 +526,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{}, // Split
 			{Class_Flag.Interned}, // Phi
 			{Class_Flag.Store}, // Mem
+			{Class_Flag.Immortal}, // Sym
 			{}, // Local
 			{Class_Flag.Clonable}, // Local_Addr
 			{}, // Global
@@ -560,6 +567,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			No_Extra,
 			Tup,
 			CInt,
+			No_Extra,
 			No_Extra,
 			No_Extra,
 			No_Extra,
@@ -674,6 +682,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			`Split`,
 			`Phi`,
 			`Mem`,
+			`Sym`,
 			`Local`,
 			`Local_Addr`,
 			`Global`,
@@ -763,6 +772,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{.General = 0, .Vector = 0}, // Split
 			{.General = 0, .Vector = 0}, // Phi
 			{.General = 0, .Vector = 0}, // Mem
+			{.General = 0, .Vector = 0}, // Sym
 			{.General = 0, .Vector = 0}, // Local
 			{.General = 0, .Vector = 0}, // Local_Addr
 			{.General = 0, .Vector = 0}, // Global
@@ -888,6 +898,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{{.General = 8, .Vector = 9}, {.General = 8, .Vector = 9}}, // Split
 			{{.General = 8, .Vector = 9}, {.General = 8, .Vector = 9}, {.General = 8, .Vector = 9}, {.General = 8, .Vector = 9}, {.General = 8, .Vector = 9}}, // Phi
 			{}, // Mem
+			{}, // Sym
 			{}, // Local
 			{{.General = 1, .Vector = 0}}, // Local_Addr
 			{}, // Global
@@ -999,6 +1010,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			-16, //Split
 			-16, //Phi
 			-16, //Mem
+			-16, //Sym
 			-16, //Local
 			-16, //Local_Addr
 			-16, //Global
@@ -1114,6 +1126,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, //Split
 			1, //Phi
 			1, //Mem
+			1, //Sym
 			1, //Local
 			1, //Local_Addr
 			0, //Global
@@ -1131,7 +1144,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, //Region
 			0, //Loop
 			1, //Always
-			2, //Call
+			3, //Call
 			0, //Call_End
 			1, //Ret
 			2, //Return
@@ -1225,6 +1238,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0b10, // Split
 			0b10, // Phi
 			0b10, // Mem
+			0b10, // Sym
 			0b10000, // Local
 			0b10, // Local_Addr
 			0b100, // Global
@@ -1336,6 +1350,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			0, // Split -> No_Extra
 			0, // Phi -> No_Extra
 			0, // Mem -> No_Extra
+			0, // Sym -> No_Extra
 			1, // Local -> Local
 			0, // Local_Addr -> No_Extra
 			1, // Global -> Tup
@@ -1447,6 +1462,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{}, // Split
 			{Class_Flag.Interned}, // Phi
 			{Class_Flag.Store}, // Mem
+			{Class_Flag.Immortal}, // Sym
 			{}, // Local
 			{Class_Flag.Clonable}, // Local_Addr
 			{}, // Global
@@ -1521,6 +1537,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			No_Extra,
 			Tup,
 			CInt,
+			No_Extra,
 			No_Extra,
 			No_Extra,
 			No_Extra,
@@ -1669,6 +1686,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			`Split`,
 			`Phi`,
 			`Mem`,
+			`Sym`,
 			`Local`,
 			`Local_Addr`,
 			`Global`,
@@ -1741,15 +1759,15 @@ SPECS := [Node_Spec_Name]Node_Spec{
 }
 
 Un_Op :: enum u16 {
-	F_From_I = u16(Ideal_Node_Type.F_From_I),
 	F_To_I = u16(Ideal_Node_Type.F_To_I),
-	F_Demote = u16(Ideal_Node_Type.F_Demote),
-	F_Ext = u16(Ideal_Node_Type.F_Ext),
-	Sext = u16(Ideal_Node_Type.Sext),
-	Not = u16(Ideal_Node_Type.Not),
 	Cast = u16(Ideal_Node_Type.Cast),
-	Uext = u16(Ideal_Node_Type.Uext),
+	F_Ext = u16(Ideal_Node_Type.F_Ext),
+	F_From_I = u16(Ideal_Node_Type.F_From_I),
+	Not = u16(Ideal_Node_Type.Not),
 	Neg = u16(Ideal_Node_Type.Neg),
+	Uext = u16(Ideal_Node_Type.Uext),
+	Sext = u16(Ideal_Node_Type.Sext),
+	F_Demote = u16(Ideal_Node_Type.F_Demote),
 }
 Bin_Op :: enum u16 {
 	Add = u16(Ideal_Node_Type.Add),
@@ -1830,6 +1848,7 @@ Builder_Node_Type :: enum u16 {
 	Split,
 	Phi,
 	Mem,
+	Sym,
 	Local,
 	Local_Addr,
 	Global,
@@ -1958,6 +1977,11 @@ graph_add_phi :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Dataty
 graph_add_mem :: #force_inline proc(graph: ^Graph, name: string, ctrl: Node_ID) -> (id: Node_ID) {
 	push_node_name(graph, name)
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Mem), .Void, {ctrl})
+}
+#assert(size_of(No_Extra) % 4 == 0)
+graph_add_sym :: #force_inline proc(graph: ^Graph, name: string, entry: Node_ID) -> (id: Node_ID) {
+	push_node_name(graph, name)
+	return graph_add_raw(graph, u16(Ideal_Node_Type.Sym), .Void, {entry})
 }
 #assert(size_of(Local) % 4 == 0)
 graph_add_local :: #force_inline proc(graph: ^Graph, name: string, mem: Node_ID) -> (id: Node_ID) {
@@ -2154,6 +2178,7 @@ X64_Node_Type :: enum u16 {
 	Split,
 	Phi,
 	Mem,
+	Sym,
 	Local,
 	Local_Addr,
 	Global,

@@ -13,6 +13,7 @@ import "core:odin/ast"
 import "core:odin/parser"
 import "core:os"
 import "core:reflect"
+import "core:slice"
 import "core:strings"
 import "core:sync"
 import "core:testing"
@@ -90,6 +91,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		{"mininal", {.Local_Peeps}},
 		{"moderate", {.Iter_Peeps, .Local_Peeps}},
 		{"all", {.Iter_Peeps, .Local_Peeps, .Mem_Opt}},
+		{"aggresive", {.Iter_Peeps, .Local_Peeps, .Mem_Opt, .Inline}},
 	}
 
 	lib, did_load := dynlib.load_library("")
@@ -106,6 +108,8 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		types.mems.code.pos = 0
 		types.mems.reloc.pos = 0
 		clear(&ctx.globals)
+
+		for &prc in ctx.procs do prc.out = {}
 
 		_copy :: proc "contextless" (dst, src: rawptr, len: int) -> rawptr {
 			vl: #simd[16]u8
@@ -142,7 +146,243 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 
 		for &prc, i in ctx.procs {
 			if len(prc.poly_names) != len(prc.poly_values) do continue
-			emit_proc(&ctx, &prc, i, level, &emit_ctx)
+			emit_proc(&ctx, i, level, &emit_ctx)
+		}
+
+		defer for prc in ctx.procs do delete(prc.stencil.mem)
+
+		if .Inline in level.flags {
+			perm := context.allocator
+			context.allocator, _ = arna.scrath()
+
+			S_Ctx :: struct {
+				caller_to_callee: [][]u32,
+				callee_to_caller: [][]u32,
+				scc_asoc:         []SCC_Asoc,
+				sccs:             [dynamic]SCC,
+				stack:            [dynamic]u32,
+				index:            int,
+			}
+
+			scc_order: [dynamic]int
+
+			sctx: S_Ctx
+			sctx.caller_to_callee = make([][]u32, len(ctx.procs))
+
+			for prc, i in ctx.procs {
+				if len(prc.stencil.mem) == 0 do continue
+
+				slot: arna.Allocator
+				graph: backend.Graph
+				graph.node_spec = &backend.SPECS[.Builder]
+				graph.mem = &slot
+				backend.graph_mount_stencil(&graph, prc.stencil)
+
+				sym_count := backend.graph_sym_count(&graph)
+				sctx.caller_to_callee[i] = make([]u32, sym_count)
+
+				for j := 0; sr in backend.graph_sym_iter_next(&graph, &j) {
+					assert(sr.type == .Func)
+					sctx.caller_to_callee[i][j - 1] = sr.id
+				}
+			}
+
+			sctx.callee_to_caller = make([][]u32, len(ctx.procs))
+
+			for egs in sctx.caller_to_callee {
+				for e in egs {
+					slt := &sctx.callee_to_caller[e]
+					slt^ = raw_data(slt^)[:len(slt^) + 1]
+				}
+			}
+
+			for &egs in sctx.callee_to_caller {
+				egs = make([]u32, len(egs))
+				egs = egs[:0]
+			}
+
+			for egs, i in sctx.caller_to_callee {
+				for e in egs {
+					slt := &sctx.callee_to_caller[e]
+					slt^ = raw_data(slt^)[:len(slt^) + 1]
+					slt^[len(slt^) - 1] = u32(i)
+				}
+			}
+
+			SCC :: struct {
+				members: []u32,
+				rc:      int,
+			}
+
+			SCC_Asoc :: struct {
+				index, lowlink: int,
+				scc_id:         int,
+				on_stack:       bool,
+			}
+
+			sctx.scc_asoc = make([]SCC_Asoc, len(ctx.procs))
+
+			for &scc, i in sctx.scc_asoc {
+				if scc.index == 0 {
+					strong_connect(&sctx, u32(i))
+				}
+			}
+
+			strong_connect :: proc(sctx: ^S_Ctx, caller: u32) {
+				stack_mark := len(sctx.stack)
+				sctx.index += 1
+				sctx.scc_asoc[caller].index = sctx.index
+				sctx.scc_asoc[caller].lowlink = sctx.index
+				sctx.scc_asoc[caller].on_stack = true
+				append(&sctx.stack, caller)
+
+				for callee in sctx.caller_to_callee[caller] {
+					if sctx.scc_asoc[callee].index == 0 {
+						strong_connect(sctx, callee)
+						sctx.scc_asoc[caller].lowlink = min(
+							sctx.scc_asoc[caller].lowlink,
+							sctx.scc_asoc[callee].lowlink,
+						)
+					} else if sctx.scc_asoc[callee].on_stack {
+						sctx.scc_asoc[caller].lowlink = min(
+							sctx.scc_asoc[caller].lowlink,
+							sctx.scc_asoc[callee].index,
+						)
+					}
+				}
+
+				if sctx.scc_asoc[caller].index ==
+				   sctx.scc_asoc[caller].lowlink {
+					for n in sctx.stack[stack_mark:] {
+						sctx.scc_asoc[n].scc_id = len(sctx.sccs)
+						sctx.scc_asoc[n].on_stack = false
+					}
+					scc: SCC
+					scc.members = slice.clone(sctx.stack[stack_mark:])
+					resize(&sctx.stack, stack_mark)
+					append(&sctx.sccs, scc)
+				}
+
+			}
+
+			for &scc, i in sctx.sccs {
+				for m in scc.members {
+					for edg in sctx.callee_to_caller[m] {
+						id := sctx.scc_asoc[edg].scc_id
+						oscc := &sctx.sccs[id]
+						oscc.rc += int(id != i)
+					}
+				}
+			}
+
+			for scc, i in sctx.sccs {
+				if scc.rc == 0 {
+					append(&scc_order, i)
+				}
+			}
+
+			for i := 0; i < len(scc_order); i += 1 {
+				scc := &sctx.sccs[scc_order[i]]
+				assert(scc.rc == 0)
+
+				for m in scc.members {
+					for edg in sctx.callee_to_caller[m] {
+						id := sctx.scc_asoc[edg].scc_id
+						oscc := &sctx.sccs[id]
+						oscc.rc -= 1
+						if oscc.rc == 0 do append(&scc_order, id)
+					}
+				}
+			}
+
+			Weight_Category :: enum {
+				Light,
+				Light_Medium,
+				Medium,
+				Medium_Heavy,
+				Heavy,
+			}
+
+			weight_cata :: proc(weight: int) -> Weight_Category {
+				switch weight {
+				case 0 ..< 10:
+					return .Light
+				case 10 ..< 30:
+					return .Light_Medium
+				case 30 ..< 50:
+					return .Medium
+				case 50 ..< 100:
+					return .Medium_Heavy
+				case:
+					return .Heavy
+				}
+			}
+
+			weight_cata_can_merge :: proc(
+				caller, callee: Weight_Category,
+			) -> bool {
+				if caller < .Medium && callee > .Medium do return false
+				return(
+					callee < .Medium ||
+					(caller == callee && caller == .Medium) \
+				)
+			}
+
+			for si in scc_order do for m in sctx.sccs[si].members {
+				prc := &ctx.procs[m]
+				if len(prc.stencil.mem) == 0 do continue
+				backend.graph_mount_stencil(&ctx, prc.stencil)
+
+				wcata := weight_cata(ctx.weight)
+
+				// TODO: clean this up (iterate in reverse)
+				sym_count := backend.graph_sym_count(&ctx)
+				refs := make([]backend.Sym_Ref, sym_count)
+
+				for j := 0; sr in backend.graph_sym_iter_next(&ctx, &j) {
+					assert(sr.type == .Func)
+					refs[j - 1] = sr
+				}
+
+				for sim in refs {
+					assert(sim.type == .Func)
+					oprc := &ctx.procs[sim.id]
+					if len(oprc.stencil.mem) == 0 do continue
+
+					slt := &sctx.callee_to_caller[sim.id]
+					slt^ = slt^[:len(slt^) - 1]
+
+					owcata := weight_cata(oprc.stencil.weight)
+
+					if !weight_cata_can_merge(wcata, owcata) do continue
+
+					slot: arna.Allocator
+					graph: backend.Graph
+					graph.node_spec = &backend.SPECS[.Builder]
+					graph.mem = &slot
+					backend.graph_mount_stencil(&graph, oprc.stencil)
+
+					backend.graph_inline(&ctx, sim.node, &graph)
+
+					if len(slt) == 0 {
+						delete(oprc.stencil.mem, perm)
+						oprc.stencil = {}
+					}
+				}
+
+				backend.graph_iter_peeps({graph = &ctx})
+				backend.graph_compact(&ctx)
+				delete(prc.stencil.mem, perm)
+
+				prc.stencil = backend.graph_stencil(&ctx)
+				prc.stencil.mem = slice.clone(prc.stencil.mem, perm)
+			}
+
+			for &prc, i in ctx.procs {
+				if len(prc.stencil.mem) == 0 do continue
+				backend.graph_mount_stencil(&ctx, prc.stencil)
+				emit_proc_code(&ctx, &emit_ctx, &prc)
+			}
 		}
 
 		arna.alloc(&types.mems.code, 0, 4096)

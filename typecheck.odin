@@ -682,6 +682,7 @@ Proc :: struct {
 	module:      Module_ID,
 	file:        ^ast.File,
 	file_id:     File_ID,
+	stencil:     backend.Stencil,
 	out:         backend.Codegen_Output,
 }
 

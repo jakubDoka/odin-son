@@ -437,7 +437,10 @@ First fix all of the compilation errors. Then make sure all tests pass
 This change should not affect the resulting generated code (golden files should
 not change). This is purely a frontend change (package main).
 
-### Implement odin language features so that we can 
+### Fix bugs caused by the new inlining opts
 
 NOTE: read AGENTS.md
 
+There are broken tests caused by the inlining opt flag, could you please make
+the tests pass. Thanks. If you fix all of the simple tests try to fix the
+test-programs if they dont work as well.

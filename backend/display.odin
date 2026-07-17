@@ -357,7 +357,7 @@ graph_get_node_name :: proc(graph: ^Graph, id: Node_ID) -> (name: string) {
 	when NODE_NAMES {
 		copy(
 			reflect.as_bytes(name),
-			graph.mem.ptr[int(id) * PRECISION - PREFIX_SIZE:][:PREFIX_SIZE],
+			graph.mem.ptr[int(id) * PRECISION - TAG_SIZE:][:TAG_SIZE],
 		)
 	}
 	return

@@ -11,6 +11,8 @@ import "core:strconv"
 import "meta"
 import "vendored/gam/util/arna"
 
+CALL_PREFIX :: backend.CALL_PREFIX
+
 Opt_Level :: struct {
 	name:  string,
 	flags: backend.Graph_Opt_Flags,
@@ -226,7 +228,6 @@ Gen_Ctx :: struct {
 	cc:           ^backend.Call_Conv,
 	target_spec:  ^backend.Node_Spec,
 	node_scope:   backend.Node_ID,
-	root_mem:     backend.Node_ID,
 	mem_slot:     int,
 	loop:         ^Loop_State,
 	file:         ^ast.File,
@@ -700,11 +701,11 @@ index_offset :: proc(
 
 emit_proc :: proc(
 	ctx: ^Gen_Ctx,
-	prc: ^Proc,
 	i: int,
 	level: Opt_Level,
 	emit_ctx: ^backend.Codegen_Emit_Ctx,
 ) {
+	prc := &ctx.procs[i]
 	if prc.lit.body == nil do return
 
 	ctx.prc = auto_cast i
@@ -725,6 +726,7 @@ emit_proc :: proc(
 	ctx.start = backend.graph_add_start(ctx, "start")
 	ctx.entry = backend.graph_add_entry(ctx, "entry", ctx.start)
 	ctx.root_mem = backend.graph_add_mem(ctx, "emem", ctx.entry)
+	ctx.sym = backend.graph_add_sym(ctx, "sym", ctx.entry)
 
 	ctx.node_scope = backend.graph_add_scope(ctx, "scope", ctx.entry)
 	ctx.mem_slot = backend.graph_push_scope_value(
@@ -826,6 +828,7 @@ emit_proc :: proc(
 	}
 
 	emit_nodes(ctx, {}, prc.lit.body)
+	prc = &ctx.procs[i]
 
 	for ptr in ctx.ret_ptrs {
 		backend.graph_unpin(ctx, ptr)
@@ -839,15 +842,36 @@ emit_proc :: proc(
 		ctx.node_scope = 0
 	}
 
-	backend.graph_iter_peeps(ctx)
+	peep_ctx: backend.Peep_Ctx
+	peep_ctx.graph = ctx
+
+	backend.graph_iter_peeps(peep_ctx)
 	backend.memopt(ctx)
 
-	backend.graph_iter_peeps(ctx)
+	backend.graph_iter_peeps(peep_ctx)
 
+	if .Inline in level.flags {
+		backend.graph_compact(ctx)
+		prc.stencil = backend.graph_stencil(ctx)
+		prc.stencil.mem = slice.clone(prc.stencil.mem)
+		return
+	}
+
+	emit_proc_code(ctx, emit_ctx, prc)
+}
+
+emit_proc_code :: proc(
+	ctx: ^Gen_Ctx,
+	emit_ctx: ^backend.Codegen_Emit_Ctx,
+	prc: ^Proc,
+) {
 	spec := &backend.SPECS[.X64]
 	ctx.node_spec = spec
 
-	backend.graph_iter_peeps(ctx)
+	peep_ctx: backend.Peep_Ctx
+	peep_ctx.graph = ctx
+
+	backend.graph_iter_peeps(peep_ctx)
 
 	backend.graph_compact(ctx)
 
@@ -1753,6 +1777,7 @@ emit_nodes :: proc(
 
 				args[0] = ctx_ctrl(ctx)
 				args[1] = ctx_mem(ctx)
+				args[2] = ctx.start
 
 				call := backend.graph_add_call(ctx, "call", args, ~u32(0))
 				backend.graph_extra(ctx, call, backend.Call).ccid = 1
@@ -1873,8 +1898,6 @@ emit_nodes :: proc(
 	return {id = res, is_lvalue = lvalue}
 }
 
-CALL_PREFIX :: 2
-
 call_proc_of :: proc(ctx: ^Gen_Ctx, node: ^ast.Node) -> (Proc_ID, bool) {
 	call, cok := node.derived.(^ast.Call_Expr)
 	if !cok do return {}, false
@@ -1973,6 +1996,8 @@ emit_call :: proc(
 
 	args[0] = ctx_ctrl(ctx)
 	args[1] = ctx_mem(ctx)
+	args[2] = ctx.sym
+	if ptr != 0 do args[2] = ctx.start
 
 	slice.reverse(args[lctx.ri:])
 	copy(args[lctx.i:], args[lctx.ri:])

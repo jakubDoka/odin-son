@@ -4,6 +4,7 @@ import "../vendored/gam/util/arna"
 import "../vendored/gam/util/bit_arr"
 import "base:intrinsics"
 import "core:fmt"
+import "core:log"
 import "core:math"
 import "core:mem"
 import "core:reflect"
@@ -245,6 +246,7 @@ X64_IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec {
 			},
 		},
 	},
+	.Sym = {input_start_idx = 1},
 	.Mem = {input_start_idx = 1},
 	.Local = {input_start_idx = 1},
 	.Local_Addr = {
@@ -282,7 +284,7 @@ X64_IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec {
 	.Region = {},
 	.Loop = {},
 	.Always = {input_start_idx = 1},
-	.Call = {input_start_idx = 2},
+	.Call = {input_start_idx = CALL_PREFIX},
 	.Copy = {
 		input_start_idx = 2,
 		reg_masks = #partial{.General = {{}, RDI_MASK, RSI_MASK, RDX_MASK}},
@@ -651,7 +653,7 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node, _: $T) -> Node_ID {
 				stack_base = true
 			}
 
-			if ascale == 1 && !stack_base && offset == 0 {
+			if ascale == 1 && !stack_base && displacement == 0 {
 				break indexify
 			}
 
@@ -1004,9 +1006,8 @@ cc_reg_for_operand :: proc(
 	banks: [Reg_Kind][]Reg,
 	pos: int,
 ) -> Reg {
-	PREFIX :: 2
 	counts: [Reg_Kind]int
-	for i in PREFIX ..< pos {
+	for i in CALL_PREFIX ..< pos {
 		rk := graph.datatype_to_reg_kind[graph_get(graph, node.inps[i]).dt]
 		counts[rk] += 1
 	}
@@ -1776,7 +1777,7 @@ x64_emit_instr :: proc(
 				id     = lib_call.id,
 			}
 		}
-	case .Poison, .Arg, .Phi, .Ret, .Mem:
+	case .Poison, .Arg, .Phi, .Ret, .Mem, .Sym:
 	case .CInt:
 		dst := reg_of(ctx, instr)
 		imm := graph_extra(ctx, node, CInt).value
@@ -1803,11 +1804,12 @@ x64_emit_instr :: proc(
 
 			// add/sub/and/or/xor $dst, $imm
 			rx := rex(RAX, dst, RAX, true)
-			emit(ctx.code, {rx, op.opcode, mod_sm(.Direct, op.ext, dst)})
+			emit_sized_opcode(ctx.code, node.dt, rx, op.opcode)
+			emit(ctx.code, {mod_sm(.Direct, op.ext, dst)})
 			if is_shift {
 				emit(ctx.code, {u8(imm)})
 			} else {
-				emit_anys(ctx.code, imm)
+				emit_imm_for_dt(ctx.code, node.dt, imm)
 			}
 		case .Dest:
 			dst, sdis, id := reg_and_disp_of(ctx, node.inps[2])

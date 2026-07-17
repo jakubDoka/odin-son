@@ -4,11 +4,25 @@ import "base:intrinsics"
 import "base:runtime"
 import "core:container/queue"
 import "core:fmt"
+import "core:log"
 import "core:math"
 import "core:slice"
 import "core:sort"
 
 when !GEN_SPEC {
+	sext :: proc(oper: i64, ty: Node_Datatype) -> (value: i64) {
+		bit_size := uint(DT_SIZE[ty] * 8)
+		mask: i64 = -1 << bit_size
+
+		if oper & (1 << (bit_size - 1)) == 0 {
+			value = oper &~ mask
+		} else {
+			value = oper | mask
+		}
+
+		return
+	}
+
 	fold_un_op :: proc(
 		op: Un_Op,
 		oper: i64,
@@ -27,13 +41,11 @@ when !GEN_SPEC {
 			value = -oper
 		case .Uext:
 			value = oper &~ mask
+		case .Cast:
+			value = oper &~ (-1 << uint(DT_SIZE[dst_ty] * 8))
 		case .Sext:
-			if oper & (1 << (bit_size - 1)) == 0 {
-				value = oper &~ mask
-			} else {
-				value = oper | mask
-			}
-		case .Cast, .F_Ext, .F_Demote:
+			value = sext(oper, src_ty)
+		case .F_Ext, .F_Demote:
 			value = oper
 		case .F_From_I:
 			value = transmute(i64)(f64(oper))
@@ -43,7 +55,14 @@ when !GEN_SPEC {
 		return
 	}
 
-	fold_bin_op :: proc(lhs: i64, op: Bin_Op, rhs: i64) -> (value: i64) {
+	fold_bin_op :: proc(
+		lhs: i64,
+		op: Bin_Op,
+		rhs: i64,
+		ty: Node_Datatype,
+	) -> (
+		value: i64,
+	) {
 		switch op {
 		case .Add:
 			value = lhs + rhs
@@ -52,7 +71,7 @@ when !GEN_SPEC {
 		case .Mul:
 			value = lhs * rhs
 		case .Div:
-			value = lhs / rhs
+			value = sext(lhs, ty) / sext(rhs, ty)
 		case .Rem:
 			value = lhs % rhs
 		case .And:
@@ -64,7 +83,7 @@ when !GEN_SPEC {
 		case .And_Not:
 			value = lhs &~ rhs
 		case .Shl:
-			value = lhs << u64(rhs)
+			value = sext(lhs << u64(rhs), ty)
 		case .Shr:
 			value = lhs >> u64(rhs)
 		case .Eq:
@@ -254,7 +273,7 @@ builder_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node, _: $T) -> Node_ID {
 				}
 			}
 
-			if node.input_count == 1 {
+			if node.input_count == 2 {
 				break
 			}
 		}
@@ -397,7 +416,7 @@ builder_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node, _: $T) -> Node_ID {
 		op := Bin_Op(node.itype)
 
 		if clhs != nil && crhs != nil {
-			value := fold_bin_op(clhs.value, op, crhs.value)
+			value := fold_bin_op(clhs.value, op, crhs.value, node.dt)
 			return graph_add_c_int(ctx.graph, "fld", node.dt, value)
 		}
 
@@ -460,7 +479,7 @@ builder_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node, _: $T) -> Node_ID {
 						ctx.graph,
 						"rfld",
 						node.dt,
-						fold_bin_op(clhs_rhs.value, op, crhs.value),
+						fold_bin_op(clhs_rhs.value, op, crhs.value, node.dt),
 					),
 				)
 				worklist_add(ctx, ctx.worklist, res)
@@ -500,18 +519,18 @@ builder_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node, _: $T) -> Node_ID {
 
 		@(static, rodata)
 		SWAPPABLE := #partial [Bin_Op]Bin_Op {
-			.Ge   = .Lt,
-			.Lt   = .Ge,
-			.Gt   = .Le,
-			.Le   = .Gt,
-			.U_Ge = .U_Lt,
-			.U_Lt = .U_Ge,
-			.U_Gt = .U_Le,
-			.U_Le = .U_Gt,
-			.F_Ge = .F_Lt,
-			.F_Lt = .F_Ge,
-			.F_Gt = .F_Le,
-			.F_Le = .F_Gt,
+			.Ge   = .Le,
+			.Lt   = .Lt,
+			.Gt   = .Gt,
+			.Le   = .Ge,
+			.U_Ge = .U_Le,
+			.U_Lt = .U_Gt,
+			.U_Gt = .U_Lt,
+			.U_Le = .U_Ge,
+			.F_Ge = .F_Le,
+			.F_Lt = .F_Gt,
+			.F_Gt = .F_Lt,
+			.F_Le = .F_Ge,
 		}
 
 		@(static, rodata)

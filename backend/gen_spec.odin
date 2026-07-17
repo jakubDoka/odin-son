@@ -88,6 +88,7 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 	.U_Div = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
 	.U_Rem = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
 	.U_Shr = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
+	.Sym = {args = {"entry"}, default_type = .Void, flags = {.Immortal}},
 	.Mem = {args = {"ctrl"}, default_type = .Void, flags = {.Store}},
 	.Local = {id = Local, args = {"mem"}, default_type = .Void},
 	.Local_Addr = {args = {"local"}, default_type = .I64, flags = {.Clonable}},

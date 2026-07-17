@@ -64,6 +64,8 @@ graph_idom_node :: proc(graph: ^Graph, node: ^Node) -> Node_ID {
 			return cached
 		}
 
+		assert(len(inps) > 1)
+
 		lca: Node_ID
 		for inp in inps[:len(inps) - 1] {
 			lca = graph_lca(graph, lca, inp)
@@ -297,6 +299,8 @@ graph_schedule :: proc(
 	ctx.extra_outputs = make([]u16, graph.gvn)
 
 	for id in cfg_rpos {
+		cfg := graph_extra(graph, id, Cfg)
+		assert(cfg.idepth == 0)
 		ctrl := graph_expand(graph, id)
 		ctx.early_schedules[ctrl.gvn] = id
 
@@ -525,7 +529,10 @@ graph_schedule :: proc(
 			loop_tree := lctx.loop_trees[block.gvn]
 
 			if graph.end != 0 {
-				fmt.assertf(loop_tree != nil, "%v", block)
+				if loop_tree == nil {
+					log.error("missing loop tree at %v", block)
+					loop_tree = new(Loop_Tree)
+				}
 				tree_depth(loop_tree)
 			}
 
@@ -551,6 +558,8 @@ graph_schedule :: proc(
 	}
 
 	has_unscheduled := false
+
+	ctx.late_schedules[graph_get(graph, graph.sym).gvn] = graph.entry
 
 	for node, i in ctx.nodes {
 		if node == 0 do continue

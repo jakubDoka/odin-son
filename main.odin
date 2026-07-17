@@ -95,7 +95,7 @@ main :: proc() {
 
 	level := Opt_Level {
 		name  = "all",
-		flags = {.Iter_Peeps, .Local_Peeps, .Mem_Opt},
+		flags = {.Iter_Peeps, .Local_Peeps, .Mem_Opt, .Inline},
 	}
 
 	emit_ctx := backend.Codegen_Emit_Ctx {
@@ -108,6 +108,10 @@ main :: proc() {
 	for prc, i in ctx.procs {
 		if len(prc.poly_names) != len(prc.poly_values) do continue
 		emit_proc(&ctx, i, level, &emit_ctx)
+	}
+
+	if .Inline in level.flags {
+		inline_and_optimize(&ctx, &emit_ctx)
 	}
 
 	elf := emit_elf(&ctx)

@@ -329,3 +329,55 @@ main:
      add rax, rdx
      add rsp, 0x48
      ret
+=========== OPT LEVEL: aggresive ===========
+f:
+main:
+     sub rsp, 0x88
+     lea rdi, [rsp]
+     mov rdx, 0x41
+     mov rsi, 0x00
+     call :$set
+     lea rdi, [rsp+0x41]
+     mov rdx, 0x41
+     mov rsi, 0x00
+     call :$set
+     mov rdi, 0xFF
+     mov r8, 0x00
+001: cmp rdi, 0x00
+     jz :0
+     mov rcx, 0x10
+     lea rsi, [0x0000000000400FF0]
+     mov rax, rdi
+     xor rdx, rdx
+     div rcx
+     add rsi, rdx
+     movzx eax, byte ptr [rsi]
+     mov [rsp+r8*1+0x41], al
+     mov rax, rdi
+     xor rdx, rdx
+     div rcx
+     mov rdi, rax
+     mov rax, r8
+     add rax, 0x01
+     mov r8, rax
+     jmp :1
+
+000: mov rcx, 0x00
+003: cmp rcx, r8
+     jnl :2
+     mov rax, r8
+     sub rax, 0x01
+     sub rax, rcx
+     movzx eax, byte ptr [rsp+rax*1+0x41]
+     mov [rsp+rcx*1], al
+     add rcx, 0x01
+     jmp :3
+
+002: movzx eax, byte ptr [rsp]
+     movzx eax, al
+     movzx ecx, byte ptr [rsp+0x01]
+     movzx ecx, cl
+     add rax, rcx
+     add rax, r8
+     add rsp, 0x88
+     ret

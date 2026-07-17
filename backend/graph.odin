@@ -682,20 +682,39 @@ graph_inline :: proc(graph: ^Graph, call: Node_ID, from: ^Graph) {
 
 	sort.quick_sort(params[:])
 
-	//fmt.assertf(
-	//	len(params) == int(call.input_cap - CALL_PREFIX),
-	//	"%v %v",
-	//	len(params),
-	//	int(call.input_cap - CALL_PREFIX),
-	//)
+	gp_slots, fp_slots: [dynamic]int
+	for p in CALL_PREFIX ..< int(call.input_count) {
+		if graph_get(graph, raw_data(call.inps)[p]).dt in FLOAT_DTS {
+			append(&fp_slots, p)
+		} else {
+			append(&gp_slots, p)
+		}
+	}
+
+	extra_count := 0
 	for i in 0 ..< len(params) {
 		param := params[i]
-		arg := raw_data(call.inps)[CALL_PREFIX + i]
 		pnode := graph_expand(from, param.id)
+
+		call_idx: int
+		beyond := param.is_local_arg
+		if !beyond {
+			arg_idx := int(graph_extra(from, pnode, Tup).idx)
+			slots := pnode.dt in FLOAT_DTS ? fp_slots[:] : gp_slots[:]
+			if arg_idx < len(slots) {
+				call_idx = slots[arg_idx]
+			} else {
+				beyond = true
+			}
+		}
+		if beyond {
+			call_idx = int(call.input_count) + extra_count
+			extra_count += 1
+		}
+
+		arg := raw_data(call.inps)[call_idx]
 		node := graph_expand(graph, arg)
-		current_graph = ctx.from
-		current_graph = ctx.graph
-		if CALL_PREFIX + i >= int(call.input_count) {
+		if beyond {
 			assert(node.inps[0] == graph.entry)
 			graph_set_input(graph, arg, 0, graph.root_mem)
 			if pnode.itype != .Local {
@@ -712,6 +731,7 @@ graph_inline :: proc(graph: ^Graph, call: Node_ID, from: ^Graph) {
 		}
 		ctx.projection[param.gvn] = arg
 	}
+	assert(extra_count == int(call.input_cap - call.input_count))
 
 	clone_along_cfg(&ctx, starter)
 

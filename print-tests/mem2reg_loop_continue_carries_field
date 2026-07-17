@@ -165,3 +165,27 @@ main:
      pop rbp
      pop rbx
      ret
+=========== OPT LEVEL: aggresive ===========
+opaque:
+main:
+     mov rcx, 0x01
+     mov r8, 0x00
+     mov rdi, 0x00
+002: cmp r8, 0x09
+     jnl :0
+     add rcx, 0x01
+     mov rsi, 0x02
+     mov rax, rcx
+     cqo
+     idiv rsi
+     cmp rdx, 0x00
+     jz :1
+     add rdi, rcx
+     jmp :1
+
+001: add r8, 0x01
+     jmp :2
+
+000: imul rax, rcx, 0x64
+     add rax, rdi
+     ret

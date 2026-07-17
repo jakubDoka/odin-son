@@ -437,7 +437,7 @@ First fix all of the compilation errors. Then make sure all tests pass
 This change should not affect the resulting generated code (golden files should
 not change). This is purely a frontend change (package main).
 
-### Fix bugs caused by the new inlining opts
+### Fix bugs caused by the new inlining opts (DONE)
 
 NOTE: read AGENTS.md
 

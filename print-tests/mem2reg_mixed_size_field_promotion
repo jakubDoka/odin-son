@@ -97,7 +97,7 @@ main:
      call :opaque
      mov [rsp+0x08], rax
      movzx eax, byte ptr [rsp]
-     add rax, 0x01
+     add al, 0x01
      mov [rsp], al
      add word ptr [rsp+0x02], 0x02
      add dword ptr [rsp+0x04], 0x03
@@ -135,7 +135,7 @@ main:
      call :opaque
      mov [rsp+0x08], rax
      movzx eax, byte ptr [rsp]
-     add rax, 0x01
+     add al, 0x01
      mov [rsp], al
      add word ptr [rsp+0x02], 0x02
      add dword ptr [rsp+0x04], 0x03
@@ -151,4 +151,26 @@ main:
      add rax, rdx
      add rax, rcx
      add rsp, 0x18
+     ret
+=========== OPT LEVEL: aggresive ===========
+opaque:
+main:
+     mov qword ptr [rsp-0x18], 0x00
+     mov qword ptr [rsp-0x10], 0x00
+     mov byte ptr [rsp-0x18], 0x64
+     mov word ptr [rsp-0x16], 0x12C
+     mov dword ptr [rsp-0x14], 0x11170
+     mov qword ptr [rsp-0x10], 0x1F4
+     mov byte ptr [rsp-0x18], 0x65
+     add word ptr [rsp-0x16], 0x02
+     add dword ptr [rsp-0x14], 0x03
+     mov rcx, [rsp-0x10]
+     add rcx, 0x04
+     mov [rsp-0x10], rcx
+     movzx eax, word ptr [rsp-0x16]
+     movzx eax, ax
+     mov edx, [rsp-0x14]
+     mov edx, edx
+     lea rax, [rax+rdx*1+0x65]
+     add rax, rcx
      ret

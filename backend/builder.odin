@@ -520,8 +520,8 @@ builder_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node, _: $T) -> Node_ID {
 		@(static, rodata)
 		SWAPPABLE := #partial [Bin_Op]Bin_Op {
 			.Ge   = .Le,
-			.Lt   = .Lt,
-			.Gt   = .Gt,
+			.Lt   = .Gt,
+			.Gt   = .Lt,
 			.Le   = .Ge,
 			.U_Ge = .U_Le,
 			.U_Lt = .U_Gt,

@@ -128,3 +128,19 @@ main:
      add rax, rcx
      add rsp, 0x18
      ret
+=========== OPT LEVEL: aggresive ===========
+mix:
+main:
+     mov qword ptr [rsp-0x18], 0x0E
+     mov rax, 0x800000007
+     mov [rsp-0x10], rax
+     mov rax, [rsp-0x18]
+     imul rax, rax, 0x64
+     movsxd rcx, dword ptr [rsp-0x10]
+     movsxd rcx, ecx
+     imul rcx, rcx, 0x0A
+     add rax, rcx
+     movsxd rcx, dword ptr [rsp-0x0C]
+     movsxd rcx, ecx
+     add rax, rcx
+     ret

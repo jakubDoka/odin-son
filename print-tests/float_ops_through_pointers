@@ -151,3 +151,24 @@ mul_into:
      mulsd xmm0, xmm1
      movsd [rdi], xmm0
      ret
+=========== OPT LEVEL: aggresive ===========
+main:
+     movsd xmm0, qword ptr [0x000000000040007A]
+     movsd [rsp-0x10], xmm0
+     movsd xmm0, qword ptr [0x0000000000400084]
+     movsd [rsp-0x18], xmm0
+     movsd xmm0, qword ptr [rsp-0x10]
+     addsd xmm0, [0x000000000040008E]
+     movsd [rsp-0x10], xmm0
+     movsd xmm0, qword ptr [rsp-0x18]
+     mulsd xmm0, [0x0000000000400098]
+     movsd [rsp-0x18], xmm0
+     movsd xmm1, qword ptr [rsp-0x10]
+     cvtsd2ss xmm1, xmm1
+     addss xmm1, [0x00000000004000A2]
+     cvtsd2ss xmm0, xmm0
+     addss xmm1, xmm0
+     cvttss2si rax, xmm1
+     ret
+add_into:
+mul_into:

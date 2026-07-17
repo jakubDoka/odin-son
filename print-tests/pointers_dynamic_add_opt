@@ -214,3 +214,27 @@ add_8:
      add al, sil
      mov [rdi], al
      ret
+=========== OPT LEVEL: aggresive ===========
+main:
+     mov qword ptr [rsp-0x18], 0x00
+     mov qword ptr [rsp-0x10], 0x00
+     mov qword ptr [rsp-0x18], 0x01
+     movsxd rax, dword ptr [rsp-0x10]
+     add eax, 0x01
+     mov [rsp-0x10], eax
+     movsx rcx, word ptr [rsp-0x0C]
+     add cx, 0x01
+     mov [rsp-0x0C], cx
+     movsx rdx, byte ptr [rsp-0x0A]
+     add dl, 0x01
+     mov [rsp-0x0A], dl
+     movsxd rax, eax
+     movsx rcx, cx
+     lea rax, [rax+rcx*1+0x01]
+     movsx rcx, dl
+     add rax, rcx
+     ret
+add:
+add_32:
+add_16:
+add_8:

@@ -104,3 +104,16 @@ xor_into:
      xor rax, rsi
      mov [rdi], rax
      ret
+=========== OPT LEVEL: aggresive ===========
+main:
+     mov qword ptr [rsp-0x10], 0x0A
+     mov qword ptr [rsp-0x18], 0x06
+     or qword ptr [rsp-0x10], 0x05
+     mov rax, [rsp-0x18]
+     xor rax, 0x03
+     mov [rsp-0x18], rax
+     mov rcx, [rsp-0x10]
+     lea rax, [rcx+rax*1+0x08]
+     ret
+or_into:
+xor_into:

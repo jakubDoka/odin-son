@@ -1803,7 +1803,7 @@ x64_emit_instr :: proc(
 			dst := reg_of(ctx, node.inps[0])
 
 			// add/sub/and/or/xor $dst, $imm
-			rx := rex(RAX, dst, RAX, true)
+			rx := rex(RAX, dst, RAX, DT_SIZE[node.dt] == 8)
 			emit_sized_opcode(ctx.code, node.dt, rx, op.opcode)
 			emit(ctx.code, {mod_sm(.Direct, op.ext, dst)})
 			if is_shift {

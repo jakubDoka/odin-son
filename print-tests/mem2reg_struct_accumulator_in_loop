@@ -97,3 +97,19 @@ main:
      add rax, rdx
      add rsp, 0x08
      ret
+=========== OPT LEVEL: aggresive ===========
+opaque:
+main:
+     mov rax, 0x00
+     mov rcx, 0x00
+     mov rdx, 0x00
+001: cmp rdx, 0x05
+     jnl :0
+     add rax, rdx
+     add rdx, 0x01
+     add rcx, 0x01
+     jmp :1
+
+000: imul rax, rax, 0x64
+     add rax, rcx
+     ret

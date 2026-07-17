@@ -197,3 +197,24 @@ and32:
      and eax, esi
      mov [rdi], eax
      ret
+=========== OPT LEVEL: aggresive ===========
+main:
+     mov byte ptr [rsp-0x08], 0x0A
+     mov word ptr [rsp-0x07], 0x0F
+     mov dword ptr [rsp-0x05], 0x0B
+     or byte ptr [rsp-0x08], 0x05
+     xor word ptr [rsp-0x07], 0x06
+     movsxd rcx, dword ptr [rsp-0x05]
+     and ecx, 0x06
+     mov [rsp-0x05], ecx
+     movsx rax, byte ptr [rsp-0x08]
+     movsx rax, al
+     movsx rdx, word ptr [rsp-0x07]
+     movsx rdx, dx
+     lea rax, [rax+rdx*1+0x22]
+     movsxd rcx, ecx
+     add rax, rcx
+     ret
+or8:
+xor16:
+and32:

@@ -940,3 +940,133 @@ main:
      pop rbp
      pop rbx
      ret
+=========== OPT LEVEL: aggresive ===========
+test_not_reg:
+test_not_i8:
+     cmp byte ptr [rdi], 0x00
+     setz al
+     movzx rax, al
+     mov [rdi], al
+     ret
+test_bitnot_reg:
+test_bitnot_i8:
+test_bitnot_u8:
+test_bitnot_i16:
+test_bitnot_u16:
+test_bitnot_i32:
+test_bitnot_u32:
+test_bitnot_i64:
+test_bitnot_u64:
+test_neg_reg:
+test_bitnot_reg_u8:
+test_neg_i8:
+test_neg_u8:
+test_neg_i16:
+test_neg_u16:
+test_neg_i32:
+test_neg_u32:
+test_neg_i64:
+test_neg_u64:
+main:
+     push rbx
+     push rbp
+     push r12
+     push r13
+     push r14
+     push r15
+     mov byte ptr [rsp-0x38], 0xFB
+     mov byte ptr [rsp-0x37], 0xC8
+     mov word ptr [rsp-0x36], 0xFC18
+     mov word ptr [rsp-0x34], 0x9C40
+     mov dword ptr [rsp-0x32], 0xFFFE7960
+     mov dword ptr [rsp-0x2E], 0x186A0
+     mov qword ptr [rsp-0x2A], 0xFFFFFFFFFA0A1F00
+     mov qword ptr [rsp-0x22], 0x5F5E100
+     movsx rax, byte ptr [rsp-0x38]
+     not al
+     mov [rsp-0x38], al
+     movzx ecx, byte ptr [rsp-0x37]
+     not cl
+     mov [rsp-0x37], cl
+     movsx rdx, word ptr [rsp-0x36]
+     not dx
+     mov [rsp-0x36], dx
+     movzx esi, word ptr [rsp-0x34]
+     not si
+     mov [rsp-0x34], si
+     movsxd rdi, dword ptr [rsp-0x32]
+     not edi
+     mov [rsp-0x32], edi
+     mov r8d, [rsp-0x2E]
+     not r8d
+     mov [rsp-0x2E], r8d
+     mov r9, [rsp-0x2A]
+     not r9
+     mov [rsp-0x2A], r9
+     mov r10, [rsp-0x22]
+     not r10
+     mov [rsp-0x22], r10
+     movsx r11, byte ptr [rsp-0x38]
+     neg r11b
+     mov [rsp-0x38], r11b
+     movzx ebx, byte ptr [rsp-0x37]
+     neg bl
+     mov [rsp-0x37], bl
+     movsx rbp, word ptr [rsp-0x36]
+     neg bp
+     mov [rsp-0x36], bp
+     movzx r12d, word ptr [rsp-0x34]
+     neg r12w
+     mov [rsp-0x34], r12w
+     movsxd r13, dword ptr [rsp-0x32]
+     neg r13d
+     mov [rsp-0x32], r13d
+     mov r14d, [rsp-0x2E]
+     neg r14d
+     mov [rsp-0x2E], r14d
+     mov r15, [rsp-0x2A]
+     neg r15
+     mov [rsp-0x1A], r15
+     mov [rsp-0x2A], r15
+     mov r15, [rsp-0x22]
+     neg r15
+     mov [rsp-0x12], r15
+     mov [rsp-0x22], r15
+     movsx rax, al
+     movzx ecx, cl
+     lea rax, [rax+rcx*1+0x09]
+     movsx rcx, dx
+     add rax, rcx
+     movzx ecx, si
+     add rax, rcx
+     movsxd rcx, edi
+     add rax, rcx
+     mov ecx, r8d
+     add rax, rcx
+     add rax, r9
+     add rax, r10
+     mov rcx, rax
+     movsx rax, r11b
+     lea rcx, [rcx+rax*1-0x07]
+     movzx eax, bl
+     add rcx, rax
+     movsx rax, bp
+     add rcx, rax
+     movzx eax, r12w
+     add rcx, rax
+     movsxd rax, r13d
+     add rcx, rax
+     mov edx, r14d
+     mov rax, rcx
+     add rax, rdx
+     mov rcx, [rsp-0x1A]
+     add rax, rcx
+     mov rcx, [rsp-0x12]
+     add rax, rcx
+     pop r15
+     pop r14
+     pop r13
+     pop r12
+     pop rbp
+     pop rbx
+     ret

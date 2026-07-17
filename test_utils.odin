@@ -328,6 +328,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 				)
 			}
 
+			inline_count := 0
 			for si in scc_order do for m in sctx.sccs[si].members {
 				prc := &ctx.procs[m]
 				if len(prc.stencil.mem) == 0 do continue
@@ -363,6 +364,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 					backend.graph_mount_stencil(&graph, oprc.stencil)
 
 					backend.graph_inline(&ctx, sim.node, &graph)
+					inline_count += 1
 
 					if len(slt) == 0 {
 						delete(oprc.stencil.mem, perm)
@@ -377,6 +379,8 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 				prc.stencil = backend.graph_stencil(&ctx)
 				prc.stencil.mem = slice.clone(prc.stencil.mem, perm)
 			}
+
+			if inline_count == 0 do continue
 
 			for &prc, i in ctx.procs {
 				if len(prc.stencil.mem) == 0 do continue

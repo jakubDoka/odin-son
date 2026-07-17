@@ -137,25 +137,22 @@ main:
 
 012: add rsi, 0x40
 013: cmp r8, 0x14
-     setnb cl
-     movzx rcx, cl
-     test cl, cl
-     jnz :14
+     jnb :14
      jmp :15
 
 014: add rsi, 0x80
-015: cmp r8, 0x06
-     jnb :16
+015: test al, al
+     jnz :16
      jmp :17
 
 016: add rsi, 0x100
-017: test al, al
-     jnz :18
+017: cmp r8, 0x06
+     jnb :18
      jmp :19
 
 018: add rsi, 0x200
-019: test cl, cl
-     jnz :20
+019: cmp r8, 0x14
+     jnbe :20
      jmp :21
 
 020: add rsi, 0x400
@@ -169,3 +166,4 @@ main:
 main:
      mov rax, 0x7FF
      ret
+=========== OPT LEVEL: aggresive ===========

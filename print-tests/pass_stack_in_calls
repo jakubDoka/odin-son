@@ -1020,3 +1020,123 @@ return_stru4:
      or rdx, rcx
      add rsp, 0x18
      ret
+=========== OPT LEVEL: aggresive ===========
+main:
+     sub rsp, 0x28
+     mov dword ptr [rsp+0x07], 0x4030201
+     mov word ptr [rsp+0x0B], 0x605
+     mov byte ptr [rsp+0x0D], 0x07
+     mov rax, 0xF0E0D0C0B0A0908
+     mov [rsp+0x0E], rax
+     mov rdi, [rsp+0x07]
+     mov esi, [rsp+0x0F]
+     movzx eax, word ptr [rsp+0x13]
+     shl rax, 0x20
+     or rsi, rax
+     movzx eax, byte ptr [rsp+0x15]
+     shl rax, 0x30
+     or rsi, rax
+     call :compose
+     mov dword ptr [rsp], 0x4030201
+     mov word ptr [rsp+0x04], 0x605
+     mov byte ptr [rsp+0x06], 0x07
+     movzx ecx, byte ptr [rsp+0x05]
+     mov dword ptr [rsp+0x16], 0x4030201
+     mov word ptr [rsp+0x1A], 0x605
+     mov byte ptr [rsp+0x1C], 0x07
+     movzx eax, al
+     movzx ecx, cl
+     lea rax, [rax+rcx*1+0xEC]
+     movzx ecx, byte ptr [rsp+0x18]
+     movzx ecx, cl
+     add rax, rcx
+     add rsp, 0x28
+     ret
+compose:
+     push rbx
+     mov [rsp-0x20], rdi
+     mov rax, rsi
+     mov [rsp-0x18], eax
+     mov rax, rsi
+     shr rax, 0x20
+     mov [rsp-0x14], ax
+     mov rax, rsi
+     shr rax, 0x30
+     mov [rsp-0x12], al
+     mov edx, [rsp-0x20]
+     movzx eax, byte ptr [rsp-0x1A]
+     movzx ecx, word ptr [rsp-0x1C]
+     shl rcx, 0x20
+     or rdx, rcx
+     shl rax, 0x30
+     or rdx, rax
+     mov rcx, rdx
+     shr rcx, 0x30
+     mov rax, rdx
+     mov [rsp-0x11], eax
+     shr rdx, 0x20
+     mov [rsp-0x0D], dx
+     mov [rsp-0x0B], cl
+     movzx eax, word ptr [rsp-0x15]
+     mov ebx, [rsp-0x19]
+     movzx edx, byte ptr [rsp-0x13]
+     movzx esi, byte ptr [rsp-0x0E]
+     shl rax, 0x20
+     or rbx, rax
+     movzx edi, byte ptr [rsp-0x0D]
+     shl rdx, 0x30
+     or rbx, rdx
+     movzx edx, byte ptr [rsp-0x0C]
+     mov r8, rbx
+     shr r8, 0x30
+     movzx r9d, byte ptr [rsp-0x10]
+     movzx r10d, byte ptr [rsp-0x0F]
+     movzx eax, byte ptr [rsp-0x11]
+     mov r11, rbx
+     mov [rsp-0x0A], r11d
+     shr rbx, 0x20
+     mov [rsp-0x06], bx
+     mov [rsp-0x04], r8b
+     movzx r11d, byte ptr [rsp-0x0A]
+     add r11b, [rsp-0x09]
+     add r11b, [rsp-0x08]
+     add r11b, [rsp-0x07]
+     add r11b, [rsp-0x06]
+     add al, r9b
+     add al, r10b
+     add al, sil
+     add al, dil
+     add al, dl
+     add al, cl
+     add r11b, [rsp-0x05]
+     add r11b, r8b
+     add al, r11b
+     add al, [rsp-0x12]
+     pop rbx
+     ret
+kentus:
+fortran:
+brahma:
+load_of_args:
+return_stru:
+return_stru3:
+return_stru4:
+     sub rsp, 0x18
+     lea rdi, [rsp]
+     mov rsi, 0x00
+     mov rdx, 0x0F
+     call :$set
+     mov dword ptr [rsp], 0x4030201
+     mov word ptr [rsp+0x04], 0x605
+     mov rax, 0x706050403020107
+     mov [rsp+0x06], rax
+     mov byte ptr [rsp+0x0E], 0x46
+     mov rax, [rsp]
+     mov edx, [rsp+0x08]
+     movzx ecx, word ptr [rsp+0x0C]
+     shl rcx, 0x20
+     or rdx, rcx
+     mov rcx, 0x46000000000000
+     or rdx, rcx
+     add rsp, 0x18
+     ret

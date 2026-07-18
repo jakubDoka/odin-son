@@ -55,6 +55,23 @@ for dir in "$PROGRAMS_DIR"/*/; do
 
 	echo "=== $name ==="
 
+	# --- optional per-program generator --------------------------------
+	# A program may ship a `generate.sh` that produces committed-or-throwaway
+	# Odin sources before the build (e.g. the wasm program embeds compiled
+	# blobs). Run it once, up front, so the reference and JIT builds compile
+	# identical source. A failing generator fails the program.
+	gen="$dir/generate.sh"
+	if [[ -f "$gen" ]]; then
+		echo "  generating..."
+		if ! bash "$gen" >"$WORK/gen.log" 2>&1; then
+			echo "  generate FAILED"
+			cat "$WORK/gen.log" | sed 's/^/    /'
+			fail=$((fail + 1))
+			failed_names+=("$name (generate)")
+			continue
+		fi
+	fi
+
 	# --- reference build with odin -------------------------------------
 	odin_src="$WORK/$name-odin"
 	rm -rf "$odin_src"

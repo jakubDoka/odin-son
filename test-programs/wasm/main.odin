@@ -27,7 +27,11 @@ WASM_FACT :: "\x00\x61\x73\x6d\x01\x00\x00\x00\x01\x06\x01\x60\x01\x7e\x01\x7e\x
 // mem: memory + mutable global + active data segment + load/store/global ops.
 WASM_MEM :: "\x00\x61\x73\x6d\x01\x00\x00\x00\x01\x06\x01\x60\x01\x7f\x01\x7f\x03\x02\x01\x00\x05\x04\x01\x01\x01\x04\x06\x06\x01\x7f\x01\x41\x2a\x0b\x07\x0e\x02\x03\x6d\x65\x6d\x02\x00\x04\x6c\x6f\x61\x64\x00\x00\x0b\x08\x01\x00\x41\x00\x0b\x02\x48\x69\x0a\x10\x01\x0e\x00\x20\x00\x28\x02\x00\x23\x00\x6a\x24\x00\x23\x00\x0b"
 
-run_module :: proc(name: string, data: string) -> int {
+// run_module_impl decodes, dumps and executes one module. When `auto` is set the
+// generic all-exports driver is used (for the compiler-generated blobs whose
+// export names are not known ahead of time); otherwise the named driver picks
+// the fixed arguments for the hand-crafted add/fact/mem modules.
+run_module_impl :: proc(name: string, data: string, auto: bool) -> int {
 	print("=== ")
 	print(name)
 	print(" ===\n")
@@ -46,7 +50,12 @@ run_module :: proc(name: string, data: string) -> int {
 	dump_module(&a, &m, data)
 	print("\n")
 
-	racc := w_run(name, &a, &m, data)
+	racc: i64 = 0
+	if auto {
+		racc = w_run_auto(&a, &m, data)
+	} else {
+		racc = w_run(name, &a, &m, data)
+	}
 	print("\n")
 
 	acc := int(racc)
@@ -76,6 +85,16 @@ run_module :: proc(name: string, data: string) -> int {
 	return acc
 }
 
+run_module :: proc(name: string, data: string) -> int {
+	return run_module_impl(name, data, false)
+}
+
+// run_module_auto drives a compiler-generated blob through the generic
+// all-exports interpreter path. Used by the generated.odin runner.
+run_module_auto :: proc(name: string, data: string) -> int {
+	return run_module_impl(name, data, true)
+}
+
 main :: proc() -> int {
 	strides_init()
 
@@ -84,6 +103,10 @@ main :: proc() -> int {
 	acc += run_module("add", WASM_ADD)
 	acc += run_module("fact", WASM_FACT)
 	acc += run_module("mem", WASM_MEM)
+
+	// The remaining modules are Odin programs compiled to wasm by generate.sh and
+	// embedded into generated.odin; run_generated drives every export of each.
+	acc += run_generated()
 
 	print("checksum = ")
 	print_int(i64(acc))

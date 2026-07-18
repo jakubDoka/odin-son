@@ -443,7 +443,7 @@ There are broken tests caused by the inlining opt flag, could you please make
 the tests pass. Thanks. If you fix all of the simple tests try to fix the
 test-programs if they dont work as well.
 
-### Add wasm parser to the test-programs
+### Add wasm parser to the test-programs (DONE)
 
 I'd like to add a bigger program to the test-progam collection, try to
 implement it. Us an arena allocator for all allocations, the memory should be
@@ -456,7 +456,7 @@ the frontend. Spinn up an agent for this, don't waste your context on
 implementing missng language features. The dynamic array should take the arena
 explicitly for functions that allocate, we dont yet implement the context.
 
-### Clean up the test programs
+### Clean up the test programs (DONE)
 
 Right now there are test programs that work around past compiler bugs, could
 you please review them and remove the workarounds? Also one of the tests is
@@ -469,7 +469,17 @@ configurations of flags as the test_utils.odin does.
 
 For both of these tasks, spinn up a parallel agent.
 
-### Add a wasm interpreter to the wasm test-program
+### Add a wasm interpreter to the wasm test-program (DONE)
+
+### Add more test programs to the wasm example program
 
 NOTE: read AGENTS.md
 
+Can you please add more example wasm blobs that can be run by the interpreter?
+You can make a subdirectory that will contain the test programs (in the wasm
+test program directory) written in odin and write a script that compiles them
+and embeds the file into a separate file and generates a function that runs a
+test fn on all of them. This script is then callend from
+./misc/run-programs.sh, but make it generic, look for a script with a
+conventional name, run if exists. If you find bugs in the compiler, immediately
+fix them once you are confident you understand what is wrong.

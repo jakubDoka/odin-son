@@ -15,6 +15,15 @@ package main
 
 WASM_PAGE :: 65536
 
+// Per-call scratch limits. A function body may not exceed W_MAX_INSTRS decoded
+// instructions or W_MAX_LOCALS local slots (params + declared locals); both are
+// generous for the hand-crafted and compiler-generated modules exercised here.
+// A body past either limit traps deterministically rather than overrun a buffer
+// (which the reference build catches via bounds checks but the JIT build would
+// not, desyncing the parity comparison).
+W_MAX_INSTRS :: 1024
+W_MAX_LOCALS :: 256
+
 // --- operand stack ----------------------------------------------------------
 
 wstack: [512]i64
@@ -62,6 +71,13 @@ w_se32 :: proc(x: i64) -> i64 {
 		v = v - 0x100000000
 	}
 	return v
+}
+
+// w_u32 keeps the low 32 bits of `x` as an unsigned value (0 .. 2^32-1),
+// widened into a non-negative i64 so unsigned i32 compares/shifts reduce to
+// ordinary signed i64 arithmetic.
+w_u32 :: proc(x: i64) -> i64 {
+	return x & 0xffffffff
 }
 
 w_mem_read :: proc(a: ^Arena, addr: int, n: int) -> i64 {
@@ -147,10 +163,10 @@ w_find_func :: proc(a: ^Arena, m: ^Module, data: string, name: string) -> int {
 
 // w_init installs the module's globals, reserves and zeroes linear memory and
 // copies every active data segment into place. Called once per module.
-w_init :: proc(a: ^Arena, m: ^Module, data: string) {
-	wsp = 0
-	wtrap = 0
-
+// w_load_globals (re)installs each global's declared initial value. Split out of
+// w_init so the generic driver can reset mutable globals (e.g. the compiler's
+// linear-memory stack pointer) between independent invocations of a module.
+w_load_globals :: proc(a: ^Arena, m: ^Module) {
 	gi := 0
 	for {
 		if gi >= m.globals.len do break
@@ -159,6 +175,13 @@ w_init :: proc(a: ^Arena, m: ^Module, data: string) {
 		wglobals[gi] = g.init_val
 		gi += 1
 	}
+}
+
+w_init :: proc(a: ^Arena, m: ^Module, data: string) {
+	wsp = 0
+	wtrap = 0
+
+	w_load_globals(a, m)
 
 	wmem_off = 0
 	wmem_size = 0
@@ -236,7 +259,16 @@ w_exec :: proc(a: ^Arena, m: ^Module, func_index: int) {
 	c: Code = {}
 	array_get(a, &m.codes, defined, &c)
 
-	locals: [128]i64 = {}
+	if c.instr_count > W_MAX_INSTRS {
+		wtrap = 1
+		return
+	}
+	if ft.param_count + c.local_total > W_MAX_LOCALS {
+		wtrap = 1
+		return
+	}
+
+	locals: [W_MAX_LOCALS]i64 = {}
 	nparams := ft.param_count
 	pi := nparams - 1
 	for {
@@ -246,15 +278,15 @@ w_exec :: proc(a: ^Arena, m: ^Module, func_index: int) {
 	}
 
 	// Pair each block/loop/if with its matching else/end in one forward scan.
-	match_end: [256]int = {}
-	match_else: [256]int = {}
+	match_end: [W_MAX_INSTRS]int = {}
+	match_else: [W_MAX_INSTRS]int = {}
 	zi := 0
 	for {
 		if zi >= c.instr_count do break
 		match_else[zi] = -1
 		zi += 1
 	}
-	scan: [256]int = {}
+	scan: [W_MAX_INSTRS]int = {}
 	ssp := 0
 	si := 0
 	for {
@@ -446,26 +478,62 @@ w_simple :: proc(a: ^Arena, op: int, x: i64, y: i64) -> int {
 		return 1
 	}
 
-	if op == 0x28 { // i32.load
+	if op == 0x28 { 	// i32.load
 		addr := int(wpop()) + int(y)
 		wpush(w_se32(w_mem_read(a, addr, 4)))
 		return 1
 	}
-	if op == 0x29 { // i64.load
+	if op == 0x29 { 	// i64.load
 		addr := int(wpop()) + int(y)
 		wpush(w_mem_read(a, addr, 8))
 		return 1
 	}
-	if op == 0x36 { // i32.store
+	if op == 0x2c { 	// i32.load8_s
+		addr := int(wpop()) + int(y)
+		v := w_mem_read(a, addr, 1)
+		if v >= 0x80 do v = v - 0x100
+		wpush(v)
+		return 1
+	}
+	if op == 0x2d { 	// i32.load8_u
+		addr := int(wpop()) + int(y)
+		wpush(w_mem_read(a, addr, 1))
+		return 1
+	}
+	if op == 0x2e { 	// i32.load16_s
+		addr := int(wpop()) + int(y)
+		v := w_mem_read(a, addr, 2)
+		if v >= 0x8000 do v = v - 0x10000
+		wpush(v)
+		return 1
+	}
+	if op == 0x2f { 	// i32.load16_u
+		addr := int(wpop()) + int(y)
+		wpush(w_mem_read(a, addr, 2))
+		return 1
+	}
+	if op == 0x36 { 	// i32.store
 		v := wpop()
 		addr := int(wpop()) + int(y)
 		w_mem_write(a, addr, 4, v)
 		return 1
 	}
-	if op == 0x37 { // i64.store
+	if op == 0x37 { 	// i64.store
 		v := wpop()
 		addr := int(wpop()) + int(y)
 		w_mem_write(a, addr, 8, v)
+		return 1
+	}
+	if op == 0x3a { 	// i32.store8
+		v := wpop()
+		addr := int(wpop()) + int(y)
+		w_mem_write(a, addr, 1, v)
+		return 1
+	}
+	if op == 0x3b { 	// i32.store16
+		v := wpop()
+		addr := int(wpop()) + int(y)
+		w_mem_write(a, addr, 2, v)
 		return 1
 	}
 	if op == OP_MEMORY_SIZE {
@@ -562,6 +630,255 @@ w_simple :: proc(a: ^Arena, op: int, x: i64, y: i64) -> int {
 		return 1
 	}
 
+	// --- extra i32 comparisons (result is a 0/1 i32) -----------------------
+	if op == 0x47 { 	// i32.ne
+		b := w_se32(wpop())
+		av := w_se32(wpop())
+		r: i64 = 0
+		if av != b do r = 1
+		wpush(r)
+		return 1
+	}
+	if op == 0x49 { 	// i32.lt_u
+		b := w_u32(wpop())
+		av := w_u32(wpop())
+		r: i64 = 0
+		if av < b do r = 1
+		wpush(r)
+		return 1
+	}
+	if op == 0x4a { 	// i32.gt_s
+		b := w_se32(wpop())
+		av := w_se32(wpop())
+		r: i64 = 0
+		if av > b do r = 1
+		wpush(r)
+		return 1
+	}
+	if op == 0x4b { 	// i32.gt_u
+		b := w_u32(wpop())
+		av := w_u32(wpop())
+		r: i64 = 0
+		if av > b do r = 1
+		wpush(r)
+		return 1
+	}
+	if op == 0x4c { 	// i32.le_s
+		b := w_se32(wpop())
+		av := w_se32(wpop())
+		r: i64 = 0
+		if av <= b do r = 1
+		wpush(r)
+		return 1
+	}
+	if op == 0x4d { 	// i32.le_u
+		b := w_u32(wpop())
+		av := w_u32(wpop())
+		r: i64 = 0
+		if av <= b do r = 1
+		wpush(r)
+		return 1
+	}
+	if op == 0x4e { 	// i32.ge_s
+		b := w_se32(wpop())
+		av := w_se32(wpop())
+		r: i64 = 0
+		if av >= b do r = 1
+		wpush(r)
+		return 1
+	}
+	if op == 0x4f { 	// i32.ge_u
+		b := w_u32(wpop())
+		av := w_u32(wpop())
+		r: i64 = 0
+		if av >= b do r = 1
+		wpush(r)
+		return 1
+	}
+
+	// --- extra i64 comparisons (0x53 le_s is handled above) ----------------
+	if op == 0x51 { 	// i64.eq
+		b := wpop()
+		av := wpop()
+		r: i64 = 0
+		if av == b do r = 1
+		wpush(r)
+		return 1
+	}
+	if op == 0x52 { 	// i64.ne
+		b := wpop()
+		av := wpop()
+		r: i64 = 0
+		if av != b do r = 1
+		wpush(r)
+		return 1
+	}
+	if op == 0x55 { 	// i64.gt_s
+		b := wpop()
+		av := wpop()
+		r: i64 = 0
+		if av > b do r = 1
+		wpush(r)
+		return 1
+	}
+	if op == 0x59 { 	// i64.ge_s
+		b := wpop()
+		av := wpop()
+		r: i64 = 0
+		if av >= b do r = 1
+		wpush(r)
+		return 1
+	}
+
+	// --- i32 division / bitwise / shifts -----------------------------------
+	if op == 0x6d { 	// i32.div_s
+		b := w_se32(wpop())
+		av := w_se32(wpop())
+		if b == 0 {
+			wtrap = 1
+			return 1
+		}
+		wpush(w_se32(av / b))
+		return 1
+	}
+	if op == 0x6e { 	// i32.div_u
+		b := w_u32(wpop())
+		av := w_u32(wpop())
+		if b == 0 {
+			wtrap = 1
+			return 1
+		}
+		wpush(w_se32(av / b))
+		return 1
+	}
+	if op == 0x6f { 	// i32.rem_s
+		b := w_se32(wpop())
+		av := w_se32(wpop())
+		if b == 0 {
+			wtrap = 1
+			return 1
+		}
+		wpush(w_se32(av % b))
+		return 1
+	}
+	if op == 0x70 { 	// i32.rem_u
+		b := w_u32(wpop())
+		av := w_u32(wpop())
+		if b == 0 {
+			wtrap = 1
+			return 1
+		}
+		wpush(w_se32(av % b))
+		return 1
+	}
+	if op == 0x71 { 	// i32.and
+		b := wpop()
+		av := wpop()
+		wpush(w_se32(av & b))
+		return 1
+	}
+	if op == 0x72 { 	// i32.or
+		b := wpop()
+		av := wpop()
+		wpush(w_se32(av | b))
+		return 1
+	}
+	if op == 0x73 { 	// i32.xor
+		b := wpop()
+		av := wpop()
+		wpush(w_se32(av ~ b))
+		return 1
+	}
+	if op == 0x74 { 	// i32.shl
+		b := w_u32(wpop())
+		av := w_u32(wpop())
+		sh := uint(b & 31)
+		wpush(w_se32(i64(av << sh)))
+		return 1
+	}
+	if op == 0x75 { 	// i32.shr_s
+		b := w_u32(wpop())
+		av := w_se32(wpop())
+		sh := uint(b & 31)
+		wpush(w_se32(av >> sh))
+		return 1
+	}
+	if op == 0x76 { 	// i32.shr_u
+		b := w_u32(wpop())
+		av := w_u32(wpop())
+		sh := uint(b & 31)
+		wpush(w_se32(i64(av >> sh)))
+		return 1
+	}
+
+	// --- i64 division / bitwise / shifts -----------------------------------
+	if op == 0x7f { 	// i64.div_s
+		b := wpop()
+		av := wpop()
+		if b == 0 {
+			wtrap = 1
+			return 1
+		}
+		wpush(av / b)
+		return 1
+	}
+	if op == 0x81 { 	// i64.rem_s
+		b := wpop()
+		av := wpop()
+		if b == 0 {
+			wtrap = 1
+			return 1
+		}
+		wpush(av % b)
+		return 1
+	}
+	if op == 0x83 { 	// i64.and
+		b := wpop()
+		av := wpop()
+		wpush(av & b)
+		return 1
+	}
+	if op == 0x84 { 	// i64.or
+		b := wpop()
+		av := wpop()
+		wpush(av | b)
+		return 1
+	}
+	if op == 0x85 { 	// i64.xor
+		b := wpop()
+		av := wpop()
+		wpush(av ~ b)
+		return 1
+	}
+	if op == 0x86 { 	// i64.shl
+		b := wpop()
+		av := wpop()
+		sh := uint(b & 63)
+		wpush(av << sh)
+		return 1
+	}
+	if op == 0x87 { 	// i64.shr_s
+		b := wpop()
+		av := wpop()
+		sh := uint(b & 63)
+		wpush(av >> sh)
+		return 1
+	}
+
+	// --- width conversions -------------------------------------------------
+	if op == 0xa7 { 	// i32.wrap_i64
+		wpush(w_se32(wpop()))
+		return 1
+	}
+	if op == 0xac { 	// i64.extend_i32_s
+		wpush(w_se32(wpop()))
+		return 1
+	}
+	if op == 0xad { 	// i64.extend_i32_u
+		wpush(w_u32(wpop()))
+		return 1
+	}
+
 	return 0
 }
 
@@ -595,7 +912,14 @@ w_finish :: proc(a: ^Arena, m: ^Module, fidx: int) -> i64 {
 // words), spilling a0/a1/nargs to the stack; `nargs` then came back as 2 instead
 // of 1, so fact/load ran with a bogus extra argument. Keeping the hot driver at
 // six register words sidesteps it.
-w_invoke :: proc(a: ^Arena, m: ^Module, fidx: int, a0: i64, a1: i64, nargs: int) -> i64 {
+w_invoke :: proc(
+	a: ^Arena,
+	m: ^Module,
+	fidx: int,
+	a0: i64,
+	a1: i64,
+	nargs: int,
+) -> i64 {
 	if fidx < 0 {
 		print("<no export>\n")
 		return 0
@@ -626,6 +950,62 @@ w_run :: proc(name: string, a: ^Arena, m: ^Module, data: string) -> i64 {
 		acc += w_invoke(a, m, w_find_func(a, m, data, "load"), 1, 0, 1)
 		print("  load(1) = ")
 		acc += w_invoke(a, m, w_find_func(a, m, data, "load"), 1, 0, 1)
+	}
+	return acc
+}
+
+// w_param_count returns the declared parameter count of function `fidx`, or -1
+// when the index does not name a locally-defined function.
+w_param_count :: proc(a: ^Arena, m: ^Module, fidx: int) -> int {
+	defined := fidx - wifuncs
+	if defined < 0 do return -1
+	if defined >= m.funcs.len do return -1
+	type_index := 0
+	array_get(a, &m.funcs, defined, &type_index)
+	ft: FuncType = {}
+	array_get(a, &m.types, type_index, &ft)
+	return ft.param_count
+}
+
+// w_run_auto is the generic driver used for the compiler-generated blobs whose
+// exported names are not known ahead of time: it invokes every exported
+// function with a fixed, small, deterministic argument per parameter and folds
+// the results into the checksum. Mutable globals (the compiler's linear-memory
+// stack pointer) are reset before each call so one invocation cannot perturb the
+// next.
+w_run_auto :: proc(a: ^Arena, m: ^Module, data: string) -> i64 {
+	if !m.ok do return 0
+	print("run:\n")
+	w_init(a, m, data)
+	acc: i64 = 0
+	ei := 0
+	for {
+		if ei >= m.exports.len do break
+		e: Export = {}
+		array_get(a, &m.exports, ei, &e)
+		if e.kind == EXT_FUNC {
+			np := w_param_count(a, m, e.index)
+			if np >= 0 {
+				w_load_globals(a, m)
+				wsp = 0
+				wtrap = 0
+				print("  ")
+				print_name_bytes(data, e.nm_off, e.nm_len)
+				print("(")
+				j := 0
+				for {
+					if j >= np do break
+					if j > 0 do print(", ")
+					arg := i64(5 + j)
+					print_int(arg)
+					wpush(arg)
+					j += 1
+				}
+				print(") = ")
+				acc += w_finish(a, m, e.index)
+			}
+		}
+		ei += 1
 	}
 	return acc
 }

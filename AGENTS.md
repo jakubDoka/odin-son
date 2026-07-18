@@ -39,3 +39,8 @@ The peephole optimizations can be found with `_peep :: proc`.
 If the test segfaults use -define:NO_RUN=true to view the disassembly.
 
 Use the fff MCP tools for all file search operations instead of default tools.
+
+Is important that whenever you work around a compiler bug, denote it in the
+test code with a comment starting with `COMPILER BUG:`, you can then fff for
+this when they need to be fixed. Also place the code that broke in a comment so
+that the you can later uncomment it to test.

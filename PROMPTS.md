@@ -458,8 +458,6 @@ explicitly for functions that allocate, we dont yet implement the context.
 
 ### Clean up the test programs
 
-NOTE: read AGENTS.md
-
 Right now there are test programs that work around past compiler bugs, could
 you please review them and remove the workarounds? Also one of the tests is
 completely made just to reproduce a bug and its mostly copypasted from wasm
@@ -470,3 +468,8 @@ optimization flags. And extend the ./misc/run-programs to test same
 configurations of flags as the test_utils.odin does.
 
 For both of these tasks, spinn up a parallel agent.
+
+### Add a wasm interpreter to the wasm test-program
+
+NOTE: read AGENTS.md
+

@@ -373,8 +373,6 @@ peep_ctx_add_trigger :: proc(ctx: Peep_Ctx, triggerer: Node_ID, tar: Node_ID) {
 	}
 }
 
-Intern_Vec :: #simd[16]u8
-
 If_State :: struct {
 	if_:     Node_ID,
 	using _: struct #raw_union {
@@ -696,7 +694,8 @@ graph_inline_graph :: proc(graph: ^Graph, call: Node_ID, from: ^Graph) {
 
 	sort.quick_sort(params[:])
 
-	gp_slots, fp_slots: [dynamic]int
+	// TODO: we need to clean this up, its incredibly disgusting
+	gp_slots, fp_slots, local_slots: [dynamic]int
 	for p in CALL_PREFIX ..< int(call.input_count) {
 		if graph_get(graph, raw_data(call.inps)[p]).dt in FLOAT_DTS {
 			append(&fp_slots, p)
@@ -704,26 +703,38 @@ graph_inline_graph :: proc(graph: ^Graph, call: Node_ID, from: ^Graph) {
 			append(&gp_slots, p)
 		}
 	}
+	for p in int(call.input_count) ..< int(call.input_cap) {
+		append(&local_slots, p)
+	}
 
-	extra_count := 0
+	local_used := make([]bool, len(local_slots))
+	local_cursor := 0
+	next_local :: proc(local_used: []bool, cursor: ^int) -> int {
+		for local_used[cursor^] do cursor^ += 1
+		local_used[cursor^] = true
+		return cursor^
+	}
+
 	for i in 0 ..< len(params) {
 		param := params[i]
 		pnode := graph_expand(from, param.id)
 
 		call_idx: int
-		beyond := param.is_local_arg
-		if !beyond {
+		beyond: bool
+		if param.is_local_arg {
+			call_idx = local_slots[next_local(local_used, &local_cursor)]
+			beyond = true
+		} else {
 			arg_idx := int(graph_extra(from, pnode, Tup).idx)
 			slots := pnode.dt in FLOAT_DTS ? fp_slots[:] : gp_slots[:]
 			if arg_idx < len(slots) {
 				call_idx = slots[arg_idx]
 			} else {
+				rank := arg_idx - len(slots)
+				local_used[rank] = true
+				call_idx = local_slots[rank]
 				beyond = true
 			}
-		}
-		if beyond {
-			call_idx = int(call.input_count) + extra_count
-			extra_count += 1
 		}
 
 		arg := raw_data(call.inps)[call_idx]
@@ -745,7 +756,7 @@ graph_inline_graph :: proc(graph: ^Graph, call: Node_ID, from: ^Graph) {
 		}
 		ctx.projection[param.gvn] = arg
 	}
-	assert(extra_count == int(call.input_cap - call.input_count))
+	for used in local_used do assert(used)
 
 	clone_along_cfg(&ctx, starter)
 
@@ -1123,7 +1134,7 @@ graph_iter_peeps :: proc(ctx: Peep_Ctx) -> (optimized: bool) {
 
 	add_efficiency_stat(graph, .peephole_rounds, rounds, graph.gvn)
 
-	if ODIN_DEBUG {
+	if !ODIN_DISABLE_ASSERT {
 		collect_nodes(graph, &worklist)
 
 		for n in worklist_next(graph, &worklist) {
@@ -1467,11 +1478,56 @@ graph_merge_returns :: proc(graph: ^Graph, args: []Node_ID) -> Node_ID {
 	return graph.end
 }
 
-graph_interner_zip :: proc(graph: ^Graph) -> (r: #soa[]Node_Intern_Entry) {
+graph_interner_zip :: proc(graph: ^Graph) -> (r: #soa[]SS_Entry(Node_ID)) {
 	r.hash = graph.mem.ptr[graph.interner.hash_idx * PRECISION:]
 	r.id = ([^]Node_ID)(graph.mem.ptr)[graph.interner.node_idx:]
 	runtime.raw_soa_footer(&r).len = graph.interner.cap
 	return
+}
+
+Intern_Vec :: #simd[16]u8
+
+Simd_Iter :: struct {
+	haystack: []Intern_Vec,
+	i:        int,
+	mask:     u16,
+	needle:   u8,
+}
+
+simd_iter_from :: #force_no_inline proc(
+	haystack: []u8,
+	needle: u8,
+) -> Simd_Iter {
+	assert(mem.is_aligned(raw_data(haystack), align_of(Intern_Vec)))
+	assert(len(haystack) % size_of(Intern_Vec) == 0)
+	return Simd_Iter {
+		haystack = mem.slice_data_cast([]Intern_Vec, haystack),
+		needle = needle,
+	}
+}
+
+simd_iter_next :: proc(siter: ^Simd_Iter) -> (int, bool) {
+	for {
+		if siter.mask != 0 {
+			idx :=
+				(siter.i - 1) * size_of(Intern_Vec) +
+				int(simd.count_trailing_zeros(siter.mask))
+			siter.mask &= siter.mask - 1
+
+			return idx, true
+		}
+
+		if siter.i < len(siter.haystack) {
+			mask := simd.lanes_eq(
+				siter.haystack[siter.i],
+				Intern_Vec(siter.needle),
+			)
+			siter.mask = transmute(u16)simd.extract_lsbs(mask)
+			siter.i += 1
+		} else {
+			return -1, false
+		}
+	}
 }
 
 graph_interner_find :: proc(
@@ -1484,7 +1540,6 @@ graph_interner_find :: proc(
 	bool,
 ) {
 	iview := graph_interner_zip(graph)
-	assert(mem.is_aligned(iview.hash, align_of(Intern_Vec)))
 	assert(id != 0)
 
 	needle := precomputed_hash
@@ -1493,17 +1548,10 @@ graph_interner_find :: proc(
 	}
 	assert(needle != 0)
 
-	for mask, i in mem.slice_data_cast([]Intern_Vec, iview.hash[:len(iview)]) {
-		eqs := simd.lanes_eq(mask, Intern_Vec(needle))
-		bits := transmute(u16)simd.extract_lsbs(eqs)
-		for bits != 0 {
-			idx :=
-				i * size_of(Intern_Vec) + int(simd.count_trailing_zeros(bits))
-			bits &= bits - 1
-
-			if graph_node_eq(graph, iview.id[idx], id) {
-				return idx, needle, true
-			}
+	siter := simd_iter_from(iview.hash[:len(iview)], needle)
+	for idx in simd_iter_next(&siter) {
+		if graph_node_eq(graph, iview.id[idx], id) {
+			return idx, needle, true
 		}
 	}
 
@@ -1532,30 +1580,38 @@ graph_intern :: proc(graph: ^Graph, id: Node_ID) -> Node_ID {
 	return id
 }
 
-graph_interner_grow :: proc(graph: ^Graph, new_cap: int) {
+SS_Entry :: struct($V: typeid) {
+	hash: u8,
+	id:   V,
+}
+
+grow_search_space :: proc(
+	ss: ^#soa[]SS_Entry($V),
+	new_cap: int,
+	allocator := context.temp_allocator,
+) {
+	context.allocator = allocator
 	assert(mem.is_aligned(rawptr(uintptr(new_cap)), align_of(Intern_Vec)))
 
+	hashes, _ := mem.alloc_bytes(new_cap, align_of(Intern_Vec))
+	nodes, _ := mem.alloc_bytes(new_cap * size_of(V), align_of(V))
+
+	mem.copy_non_overlapping(raw_data(hashes), ss.hash, len(ss))
+	mem.copy_non_overlapping(raw_data(nodes), ss.id, len(ss) * size_of(V))
+
+	ss.hash = raw_data(hashes)
+	ss.id = ([^]V)(raw_data(nodes))
+	runtime.raw_soa_footer(ss).len = new_cap
+}
+
+graph_interner_grow :: proc(graph: ^Graph, new_cap: int) {
 	iview := graph_interner_zip(graph)
-
-	hashes := arna.alloc(
-		graph.mem,
-		uint(new_cap),
-		align_of(Intern_Vec),
-		zeroed = true,
-	)
-	nodes := arna.smake(graph.mem, []Node_ID, new_cap)
-
-	mem.copy_non_overlapping(raw_data(hashes), iview.hash, len(iview))
-	mem.copy_non_overlapping(
-		raw_data(nodes),
-		iview.id,
-		len(iview) * size_of(Node_ID),
-	)
+	grow_search_space(&iview, new_cap, arna.allocator(graph.mem))
 
 	graph.interner.hash_idx =
-		(uintptr(raw_data(hashes)) - uintptr(graph.mem.ptr)) / PRECISION
+		(uintptr(iview.hash) - uintptr(graph.mem.ptr)) / PRECISION
 	graph.interner.node_idx =
-		(uintptr(raw_data(nodes)) - uintptr(graph.mem.ptr)) / PRECISION
+		(uintptr(iview.id) - uintptr(graph.mem.ptr)) / PRECISION
 	graph.interner.cap = new_cap
 }
 
@@ -1572,7 +1628,7 @@ graph_unintern :: proc(graph: ^Graph, id: Node_ID, precomputed_hash: u8 = 0) {
 
 	// NOTE: there is probably a bug in the odin compiler that requires us
 	// to not set the value with a leteral
-	tmp: Node_Intern_Entry
+	tmp: SS_Entry(Node_ID)
 	iview[graph.interner.len] = tmp
 }
 
@@ -1843,7 +1899,7 @@ graph_node_hash_node :: proc(graph: ^Graph, node: ^Node) -> u8 {
 	hash = hash_u32(hash)
 
 	res := u8(hash)
-	res += u8(res == 0)
+	res = max(res, 1)
 	return res
 }
 
@@ -2002,7 +2058,6 @@ graph_add_raw :: proc(
 		graph.mem,
 		uint(int(len(inps) + extra_capacity) * PRECISION),
 		PRECISION,
-		zeroed = ODIN_DEBUG,
 	)
 	copy(mem.slice_data_cast([]Node_ID, new_inps), inps)
 

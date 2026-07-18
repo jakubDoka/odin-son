@@ -1,14 +1,16 @@
 package main
 
-// A WebAssembly (MVP) binary-format decoder exercised end to end. `main` feeds a
-// handful of hand-crafted, well-formed `.wasm` modules through the decoder,
-// dumps the resulting AST (types, functions, memory, globals, exports, data and
-// per-function code with a flat, immediate-carrying instruction listing) and
-// folds the section/instruction counts into a checksum returned as the exit
-// code, so both stdout and the exit value participate in the parity check.
+// A WebAssembly (MVP) binary-format decoder and interpreter exercised end to
+// end. `main` feeds a handful of hand-crafted, well-formed `.wasm` modules
+// through the decoder, dumps the resulting AST (types, functions, memory,
+// globals, exports, data and per-function code with a flat, immediate-carrying
+// instruction listing), then runs each module's exported functions through the
+// stack interpreter (see interp.odin) with fixed arguments. Both the printed
+// results and the numeric returns are folded into a checksum returned as the
+// exit code, so stdout and the exit value participate in the parity check.
 //
-// The AST is laid out for a future interpreter: signatures resolve by index,
-// code bodies are flat instruction streams, and everything lives in an arena
+// The AST is laid out for the interpreter: signatures resolve by index, code
+// bodies are flat instruction streams, and everything lives in an arena
 // referenced by integer offset. The whole program stays within the subset of
 // Odin the JIT frontend accepts (see sibling files and the lua test program).
 
@@ -44,7 +46,10 @@ run_module :: proc(name: string, data: string) -> int {
 	dump_module(&a, &m, data)
 	print("\n")
 
-	acc := 0
+	racc := w_run(name, &a, &m, data)
+	print("\n")
+
+	acc := int(racc)
 	acc += m.section_count * 3
 	acc += m.types.len * 5
 	acc += m.funcs.len * 7

@@ -259,7 +259,7 @@ regalloc_round :: proc(
 		sched:           ^Graph_Schedule,
 		instr_placement: []Instr_Placement,
 		lrg_table:       []^Lrg,
-		self_conflicts:  [dynamic]Self_Conflict,
+		self_conflicts:  map[Self_Conflict]struct{},
 		adj:             [][]^Lrg,
 	}
 
@@ -393,12 +393,89 @@ regalloc_round :: proc(
 	//log_lrgs(graph, sched, lrg_table)
 
 	Liveout :: struct {
+		lrg:      u32,
 		node:     Node_ID,
 		area:     u32,
 		last_pos: u32,
 	}
 
-	Liveouts :: map[u32]Liveout
+	Liveouts :: struct {
+		data: #soa[]SS_Entry(Liveout),
+		len:  int,
+	}
+
+	liveouts_clone_into :: proc(into: ^Liveouts, from: Liveouts) {
+		if len(into.data) < len(from.data) {
+			grow_search_space(&into.data, len(from.data))
+		}
+
+		mem.zero_slice(into.data.hash[from.len:max(into.len, from.len)])
+		into.len = from.len
+		mem.copy_non_overlapping(into.data.hash, from.data.hash, into.len)
+		mem.copy_non_overlapping(
+			into.data.id,
+			from.data.id,
+			into.len * size_of(Liveout),
+		)
+
+		for id in into.data[:into.len] {
+			assert(id.hash != 0)
+			assert(id.id.node != 0)
+		}
+	}
+
+	lrg_hash :: #force_inline proc(id: u32) -> u8 {
+		return max(u8(id), 1)
+	}
+
+	liveouts_find :: proc(l: ^Liveouts, lrg: u32) -> (int, bool) {
+		iter := simd_iter_from(l.data.hash[:len(l.data)], lrg_hash(lrg))
+		for idx in simd_iter_next(&iter) {
+			if l.data.id[idx].lrg == lrg do return idx, true
+		}
+		return -1, false
+	}
+
+	liveouts_delete :: proc(into: ^Liveouts, lrg: u32) -> (v: Liveout) {
+		idx, ok := liveouts_find(into, lrg)
+		if !ok do return
+
+		v = into.data.id[idx]
+		into.len -= 1
+		into.data[idx] = into.data[into.len]
+		e: SS_Entry(Liveout)
+		into.data[into.len] = e
+
+		for id in into.data[:into.len] {
+			assert(id.hash != 0)
+			assert(id.id.node != 0)
+		}
+
+		return
+	}
+
+	liveouts_slot :: proc(
+		into: ^Liveouts,
+		lrg: u32,
+	) -> (
+		v: ^Liveout,
+		new: bool,
+	) {
+		if idx, ok := liveouts_find(into, lrg); ok {
+			return &into.data.id[idx], true
+		}
+
+		if into.len == len(into.data) {
+			new_cap := len(into.data) + size_of(Intern_Vec)
+			grow_search_space(&into.data, new_cap)
+		}
+
+		into.data.hash[into.len] = lrg_hash(lrg)
+		v = &into.data.id[into.len]
+		into.len += 1
+
+		return
+	}
 
 	Block :: struct {
 		liveouts: Liveouts,
@@ -408,13 +485,9 @@ regalloc_round :: proc(
 	blocks := make([]Block, len(sched.bbs))
 
 	Self_Conflict :: struct {
-		lrg:  ^Lrg,
+		lrg:  u32,
 		node: Node_ID,
 	}
-
-	// TODO: optimize this, we need to deduplicate these because the IFG round
-	// are repushing same stuff
-	ctx.self_conflicts = make([dynamic]Self_Conflict)
 
 	worklist: queue.Queue(u32)
 	queue.init(&worklist, len(sched.bbs))
@@ -445,18 +518,14 @@ regalloc_round :: proc(
 		bb := sched.bbs[b]
 		lbb := &blocks[b]
 
-		clear(&current_liveouts)
-		for k, v in lbb.liveouts {
-			assert(v.node != 0)
-			current_liveouts[k] = v
-		}
+		liveouts_clone_into(&current_liveouts, lbb.liveouts)
 
 		#reverse for instr, j in bb.instrs {
 			inode := graph_expand(graph, instr)
 
 			if inode.dt != .Void {
 				lrg := ctx.lrg_table[inode.gvn]
-				_, v := delete_key(&current_liveouts, lrg.index)
+				v := liveouts_delete(&current_liveouts, lrg.index)
 				if v.node != 0 {
 					if add_conflict(&ctx, lrg, v.node, instr) {
 						v.area += v.last_pos - u32(j)
@@ -464,8 +533,8 @@ regalloc_round :: proc(
 					}
 				}
 
-				for l in current_liveouts {
-					l := &lrgs[l]
+				for l in current_liveouts.data.id[:current_liveouts.len] {
+					l := &lrgs[l.lrg]
 					if !reg_mask_intersects(l.mask, lrg.mask) do continue
 
 					pair := []^Lrg{lrg, l}
@@ -506,8 +575,8 @@ regalloc_round :: proc(
 			}
 
 			if clobbers != {} {
-				for l in current_liveouts {
-					l := &lrgs[l]
+				for l in current_liveouts.data.id[:current_liveouts.len] {
+					l := &lrgs[l.lrg]
 					assert(l.mask.bit_length != 0)
 					l.mask.masks[0] &= ~clobbers[l.mask.kind]
 					if reg_mask_is_empty(l.mask) {
@@ -546,9 +615,9 @@ regalloc_round :: proc(
 
 			changed := false
 
-			for lrg, n in current_liveouts {
-				lrg := &lrgs[lrg]
-				n := n
+			for vl in current_liveouts.data[:current_liveouts.len] {
+				lrg := &lrgs[vl.id.lrg]
+				n := vl.id
 				n.area += n.last_pos
 				n.last_pos = u32(len(pred_bb.instrs))
 				changed |= add_liveout(&ctx, pred_liveouts, lrg, n)
@@ -705,7 +774,7 @@ regalloc_round :: proc(
 	}
 
 	if coalesced {
-		when ODIN_DEBUG {
+		when !ODIN_DISABLE_ASSERT {
 			for adj, i in ifg {
 				if lrgs[i].parent != nil do continue
 
@@ -984,7 +1053,7 @@ regalloc_round :: proc(
 	}
 
 	for sc in ctx.self_conflicts {
-		lrg := sc.lrg
+		lrg := &lrgs[sc.lrg]
 		id := sc.node
 
 		node := graph_expand(graph, id)
@@ -1220,15 +1289,16 @@ regalloc_round :: proc(
 		chanded: bool,
 	) {
 		n := n
+		n.lrg = lrg.index
 		assert(n.node != 0)
 
-		v, ok := louts[lrg.index]
+		v, ok := liveouts_slot(louts, lrg.index)
 		if ok {
-			add_conflict(ctx, lrg, n.node, v.node)
+			if !add_conflict(ctx, lrg, n.node, v.node) do return
 		}
 		chanded = v.node != n.node
 		n.area = max(n.area, v.area)
-		louts[lrg.index] = n
+		v^ = n
 
 		return
 
@@ -1428,8 +1498,8 @@ regalloc_round :: proc(
 
 		if a != b {
 			lrg.self_conflict = true
-			append(&ctx.self_conflicts, Self_Conflict{lrg, a})
-			append(&ctx.self_conflicts, Self_Conflict{lrg, b})
+			ctx.self_conflicts[Self_Conflict{lrg.index, a}] = {}
+			ctx.self_conflicts[Self_Conflict{lrg.index, b}] = {}
 		}
 
 		return a == b

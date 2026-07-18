@@ -1230,16 +1230,21 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 	}
 
 	param_offset := pushed + 8
-	gpa_fuel := len(ctx.args[.General])
 	#reverse for arg in args {
 		enode := graph_expand(ctx, arg)
 
-		gpa_fuel -= int(enode.itype == .Arg)
-		if enode.itype == .Arg && gpa_fuel < 0 {
+		if enode.itype == .Arg {
 			kind := ctx.datatype_to_reg_kind[enode.dt]
-			ctx.stack_size -= 8
-			append(&ctx.stack_param_offset[kind], i32(param_offset))
-			param_offset += 8
+			arg_ext := graph_extra(ctx.graph, enode, Tup)
+			// An Arg lives on the caller's stack iff its index is beyond the
+			// registers of its bank. Classify by the actual index rather than a
+			// running count of *present* Args -- dead lower-indexed args get
+			// eliminated, so a count would misclassify the survivors.
+			if int(arg_ext.idx) >= len(ctx.args[kind]) {
+				ctx.stack_size -= 8
+				append(&ctx.stack_param_offset[kind], i32(param_offset))
+				param_offset += 8
+			}
 		}
 
 		if enode.itype == .Local {

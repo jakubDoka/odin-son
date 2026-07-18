@@ -7,9 +7,8 @@ main:
      push r14
      push r15
      sub rsp, 0x58
-     mov rax, 0x00
-     add rax, 0x05
-     mov r10, rax
+     mov r9, 0x00
+     add r9, 0x05
      mov rax, 0x00
      add rax, 0x06
      mov r11, rax
@@ -25,8 +24,8 @@ main:
      mov rax, 0x00
      add rax, 0x09
      mov r13, rax
-     mov r9, 0x00
-     add r9, 0x01
+     mov r10, 0x00
+     add r10, 0x01
      mov rax, 0x00
      add rax, 0x0F
      mov r14, rax
@@ -54,7 +53,7 @@ main:
      mov rax, 0x00
      add rax, 0x04
      mov [rsp-0x50], rax
-     mov rax, r10
+     mov rax, r9
      mov rcx, [rsp-0x60]
      imul rax, rcx
      mov rcx, [rsp-0x58]
@@ -74,7 +73,7 @@ main:
      imul rax, r12
      add rax, r13
      mov [rsp-0x30], rax
-     mov rax, r9
+     mov rax, r10
      imul rax, r13
      add rax, r12
      mov [rsp-0x28], rax
@@ -113,73 +112,74 @@ main:
      mov rax, 0x00
      cmp rax, 0x00
      jz :0
-     mov rdx, [rsp+0x10]
-     mov rsi, [rsp+0x08]
-     mov rdi, [rsp-0x08]
-     mov r8, [rsp-0x20]
+     mov rdx, [rsp+0x08]
+     mov rdi, [rsp-0x20]
+     mov rsi, [rsp-0x08]
+     mov r8, [rsp+0x10]
      jmp :1
 
 000: mov rax, [rsp-0x20]
-     imul rax, r9
-     mov r8, rax
-     add r8, r12
+     imul rax, r10
+     mov rdi, rax
+     add rdi, r12
      mov rax, [rsp-0x08]
      mov rcx, [rsp-0x80]
      imul rax, rcx
-     mov rdi, rax
-     add rdi, r14
+     mov rsi, rax
+     add rsi, r14
      mov rax, [rsp+0x08]
      mov rcx, [rsp-0x68]
      imul rax, rcx
-     mov rsi, rax
+     mov rdx, rax
      mov rax, [rsp-0x78]
-     add rsi, rax
+     add rdx, rax
      mov rax, [rsp+0x10]
      mov rcx, [rsp-0x50]
      imul rax, rcx
-     mov rcx, [rsp-0x60]
-     add rax, rcx
-     mov rdx, rax
-001: mov rax, r8
-     imul rax, rdi
+     mov rcx, rax
+     mov rax, [rsp-0x60]
+     add rcx, rax
+     mov r8, rcx
+001: mov rax, rdi
+     imul rax, rsi
      mov rcx, [rsp-0x28]
      add rax, rcx
      mov rcx, [rsp-0x10]
      add rax, rcx
      mov [rsp+0x18], rax
-     mov rax, r8
-     imul rax, rsi
+     mov rax, rdi
+     imul rax, rdx
      mov rcx, [rsp-0x48]
      add rax, rcx
      mov rcx, [rsp-0x40]
      add rax, rcx
      mov [rsp+0x20], rax
-     mov rax, rdi
-     imul rax, rdx
+     mov rax, rsi
+     imul rax, r8
      mov rcx, [rsp-0x38]
      add rax, rcx
      mov rcx, [rsp-0x30]
      add rax, rcx
      mov [rsp+0x28], rax
-     mov rax, rsi
-     imul rax, rdx
+     mov rax, rdx
+     imul rax, r8
      mov rcx, [rsp]
      add rax, rcx
      mov rcx, [rsp-0x18]
      add rax, rcx
      mov [rsp+0x30], rax
-     cmp r9, r9
+     cmp r10, r10
      jz :2
-     mov r9, [rsp+0x20]
-     mov rax, [rsp+0x28]
      push [rsp+0x30]
      pop [rsp+0x38]
+     mov r10, [rsp+0x20]
      push [rsp+0x18]
      pop [rsp+0x40]
+     mov rax, [rsp+0x28]
      jmp :3
 
 002: mov rax, [rsp+0x18]
-     imul rax, r10
+     imul rax, r9
      mov rcx, [rsp-0x58]
      add rax, rcx
      mov [rsp+0x40], rax
@@ -190,8 +190,8 @@ main:
      mov [rsp+0x38], rax
      mov rax, [rsp+0x20]
      imul rax, rbx
-     mov r9, rax
-     add r9, r15
+     mov r10, rax
+     add r10, r15
      mov rax, [rsp+0x28]
      imul rax, rbp
      mov rcx, rax
@@ -205,7 +205,7 @@ main:
      add rax, rcx
      mov rcx, [rsp-0x50]
      add rax, rcx
-     add rax, r10
+     add rax, r9
      add rax, r11
      add rax, rbx
      add rax, rbp
@@ -245,10 +245,10 @@ main:
      add rax, rcx
      mov rcx, [rsp+0x10]
      add rax, rcx
-     add rax, r8
      add rax, rdi
      add rax, rsi
      add rax, rdx
+     add rax, r8
      mov rcx, [rsp+0x18]
      add rax, rcx
      mov rcx, [rsp+0x30]
@@ -261,7 +261,7 @@ main:
      add rax, rcx
      mov rcx, [rsp+0x38]
      add rax, rcx
-     add rax, r9
+     add rax, r10
      mov rcx, [rsp+0x48]
      add rax, rcx
      add rsp, 0x58
@@ -281,14 +281,14 @@ main:
      test r11b, r11b
      jnz :0
      mov rcx, 0xC6
-     mov rdx, 0xA2
      mov rax, 0x66
+     mov rdx, 0xA2
      mov rsi, 0x82
      jmp :1
 
 000: mov rcx, 0x325
-     mov rdx, 0x1F4
      mov rax, 0x76
+     mov rdx, 0x1F4
      mov rsi, 0x113
 001: mov rdi, rax
      imul rdi, rsi
@@ -306,8 +306,8 @@ main:
      jnz :2
      mov r11, rdi
      mov rbp, r9
-     mov r12, r10
      mov rbx, r8
+     mov r12, r10
      jmp :3
 
 002: imul r11, rdi, 0x05

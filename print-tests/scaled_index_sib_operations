@@ -64,13 +64,14 @@ main:
 
 010: mov rax, 0x00
      mov rdx, 0x00
-015: cmp rdx, 0x08
+015: cmp rax, 0x08
      jnl :14
-     add rax, [rsp+rdx*8]
-     add rdx, 0x01
+     add rdx, [rsp+rax*8]
+     add rax, 0x01
      jmp :15
 
-014: add rax, rcx
+014: mov rax, rdx
+     add rax, rcx
      add rsp, 0x48
      ret
 =========== OPT LEVEL: mininal ===========
@@ -139,13 +140,14 @@ main:
 
 010: mov rax, 0x00
      mov rdx, 0x00
-015: cmp rdx, 0x08
+015: cmp rax, 0x08
      jnl :14
-     add rax, [rsp+rdx*8]
-     add rdx, 0x01
+     add rdx, [rsp+rax*8]
+     add rax, 0x01
      jmp :15
 
-014: add rax, rcx
+014: mov rax, rdx
+     add rax, rcx
      add rsp, 0x48
      ret
 =========== OPT LEVEL: moderate ===========
@@ -207,15 +209,16 @@ main:
 012: add rdx, 0x01
      jmp :13
 
-010: mov rax, 0x00
-     mov rdx, 0x00
-015: cmp rdx, 0x08
+010: mov rdx, 0x00
+     mov rax, 0x00
+015: cmp rax, 0x08
      jnl :14
-     add rax, [rsp+rdx*8-0x48]
-     add rdx, 0x01
+     add rdx, [rsp+rax*8-0x48]
+     add rax, 0x01
      jmp :15
 
-014: add rax, rcx
+014: mov rax, rdx
+     add rax, rcx
      ret
 =========== OPT LEVEL: all ===========
 main:
@@ -276,14 +279,15 @@ main:
 012: add rdx, 0x01
      jmp :13
 
-010: mov rax, 0x00
-     mov rdx, 0x00
-015: cmp rdx, 0x08
+010: mov rdx, 0x00
+     mov rax, 0x00
+015: cmp rax, 0x08
      jnl :14
-     add rax, [rsp+rdx*8-0x48]
-     add rdx, 0x01
+     add rdx, [rsp+rax*8-0x48]
+     add rax, 0x01
      jmp :15
 
-014: add rax, rcx
+014: mov rax, rdx
+     add rax, rcx
      ret
 =========== OPT LEVEL: aggresive ===========

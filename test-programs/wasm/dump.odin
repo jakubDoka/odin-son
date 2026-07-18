@@ -2,10 +2,6 @@ package main
 
 // Pretty printer for a decoded module. Output is plain and fully deterministic
 // so it can be diffed byte-for-byte between the reference compiler and the JIT.
-//
-// Each section is dumped by its own small procedure. This is deliberate: a
-// single monolithic dump procedure grows large enough to trip a JIT code
-// generation bug, whereas the small per-section helpers compile cleanly.
 
 print_name_bytes :: proc(data: string, off: int, length: int) {
 	i := 0
@@ -78,213 +74,6 @@ print_const_expr :: proc(op: int, val: i64) {
 	}
 }
 
-dump_types :: proc(a: ^Arena, m: ^Module) {
-	print("types ")
-	print_int(i64(m.types.len))
-	print("\n")
-	i := 0
-	for {
-		if i >= m.types.len do break
-		ft: FuncType = {}
-		array_get(a, &m.types, i, &ft)
-		print_indent(1)
-		print_int(i64(i))
-		print(": ")
-		print_functype(a, m, &ft)
-		print("\n")
-		i += 1
-	}
-}
-
-dump_imports :: proc(a: ^Arena, m: ^Module, data: string) {
-	if m.imports.len == 0 do return
-	print("imports ")
-	print_int(i64(m.imports.len))
-	print("\n")
-	i := 0
-	for {
-		if i >= m.imports.len do break
-		im: Import = {}
-		array_get(a, &m.imports, i, &im)
-		print_indent(1)
-		print("\"")
-		print_name_bytes(data, im.mod_off, im.mod_len)
-		print(".")
-		print_name_bytes(data, im.nm_off, im.nm_len)
-		print("\" ")
-		print(ext_kind_name(im.kind))
-		print(" ")
-		print_int(i64(im.index))
-		print("\n")
-		i += 1
-	}
-}
-
-dump_funcs :: proc(a: ^Arena, m: ^Module) {
-	print("funcs ")
-	print_int(i64(m.funcs.len))
-	print("\n")
-	i := 0
-	for {
-		if i >= m.funcs.len do break
-		ti: int = 0
-		array_get(a, &m.funcs, i, &ti)
-		print_indent(1)
-		print_int(i64(i))
-		print(": type ")
-		print_int(i64(ti))
-		print("\n")
-		i += 1
-	}
-}
-
-dump_memory :: proc(a: ^Arena, m: ^Module) {
-	if m.mems.len == 0 do return
-	print("memory ")
-	print_int(i64(m.mems.len))
-	print("\n")
-	i := 0
-	for {
-		if i >= m.mems.len do break
-		mem: Memory = {}
-		array_get(a, &m.mems, i, &mem)
-		print_indent(1)
-		print_int(i64(i))
-		print(": min ")
-		print_int(i64(mem.min))
-		if mem.has_max == 1 {
-			print(" max ")
-			print_int(i64(mem.max))
-		}
-		print("\n")
-		i += 1
-	}
-}
-
-dump_globals :: proc(a: ^Arena, m: ^Module) {
-	if m.globals.len == 0 do return
-	print("globals ")
-	print_int(i64(m.globals.len))
-	print("\n")
-	i := 0
-	for {
-		if i >= m.globals.len do break
-		g: Global = {}
-		array_get(a, &m.globals, i, &g)
-		print_indent(1)
-		print_int(i64(i))
-		print(": ")
-		if g.mutable == 1 {
-			print("mut ")
-		} else {
-			print("const ")
-		}
-		print(valtype_name(g.valtype))
-		print(" = ")
-		print_const_expr(g.init_op, g.init_val)
-		print("\n")
-		i += 1
-	}
-}
-
-dump_exports :: proc(a: ^Arena, m: ^Module, data: string) {
-	print("exports ")
-	print_int(i64(m.exports.len))
-	print("\n")
-	i := 0
-	for {
-		if i >= m.exports.len do break
-		e: Export = {}
-		array_get(a, &m.exports, i, &e)
-		print_indent(1)
-		print("\"")
-		print_name_bytes(data, e.nm_off, e.nm_len)
-		print("\" ")
-		print(ext_kind_name(e.kind))
-		print(" ")
-		print_int(i64(e.index))
-		print("\n")
-		i += 1
-	}
-}
-
-dump_data :: proc(a: ^Arena, m: ^Module) {
-	if m.datas.len == 0 do return
-	print("data ")
-	print_int(i64(m.datas.len))
-	print("\n")
-	i := 0
-	for {
-		if i >= m.datas.len do break
-		ds: Data = {}
-		array_get(a, &m.datas, i, &ds)
-		print_indent(1)
-		print_int(i64(i))
-		print(": mem ")
-		print_int(i64(ds.mem_index))
-		print(" offset ")
-		print_const_expr(ds.off_op, ds.off_val)
-		print(" bytes ")
-		print_int(i64(ds.bytes_len))
-		print("\n")
-		i += 1
-	}
-}
-
-dump_code_locals :: proc(a: ^Arena, m: ^Module, c: ^Code) {
-	li := 0
-	for {
-		if li >= c.local_count do break
-		loc: Local = {}
-		array_get(a, &m.locals, c.local_off + li, &loc)
-		print_indent(2)
-		print("local x")
-		print_int(i64(loc.count))
-		print(" ")
-		print(valtype_name(loc.valtype))
-		print("\n")
-		li += 1
-	}
-}
-
-dump_code_instrs :: proc(a: ^Arena, m: ^Module, c: ^Code) {
-	ii := 0
-	for {
-		if ii >= c.instr_count do break
-		ins: Instr = {}
-		array_get(a, &m.instrs, c.instr_off + ii, &ins)
-		print_indent(2)
-		print_int(i64(ii))
-		print(": ")
-		print_instr(&ins)
-		print("\n")
-		ii += 1
-	}
-}
-
-dump_code :: proc(a: ^Arena, m: ^Module) {
-	print("code ")
-	print_int(i64(m.codes.len))
-	print("\n")
-	i := 0
-	for {
-		if i >= m.codes.len do break
-		c: Code = {}
-		array_get(a, &m.codes, i, &c)
-		print_indent(1)
-		print("func ")
-		print_int(i64(i))
-		print(": locals ")
-		print_int(i64(c.local_total))
-		print(" body ")
-		print_int(i64(c.body_size))
-		print("\n")
-		dump_code_locals(a, m, &c)
-		dump_code_instrs(a, m, &c)
-		i += 1
-	}
-}
-
 dump_module :: proc(a: ^Arena, m: ^Module, data: string) {
 	if m.ok {
 		print("magic ok version ")
@@ -298,13 +87,148 @@ dump_module :: proc(a: ^Arena, m: ^Module, data: string) {
 	print_int(i64(m.section_count))
 	print("\n")
 
-	dump_types(a, m)
-	dump_imports(a, m, data)
-	dump_funcs(a, m)
-	dump_memory(a, m)
-	dump_globals(a, m)
-	dump_exports(a, m, data)
-	dump_data(a, m)
+	print("types ")
+	print_int(i64(m.types.len))
+	print("\n")
+	ti := 0
+	for {
+		if ti >= m.types.len do break
+		ft: FuncType = {}
+		array_get(a, &m.types, ti, &ft)
+		print_indent(1)
+		print_int(i64(ti))
+		print(": ")
+		print_functype(a, m, &ft)
+		print("\n")
+		ti += 1
+	}
+
+	if m.imports.len > 0 {
+		print("imports ")
+		print_int(i64(m.imports.len))
+		print("\n")
+		ii := 0
+		for {
+			if ii >= m.imports.len do break
+			im: Import = {}
+			array_get(a, &m.imports, ii, &im)
+			print_indent(1)
+			print("\"")
+			print_name_bytes(data, im.mod_off, im.mod_len)
+			print(".")
+			print_name_bytes(data, im.nm_off, im.nm_len)
+			print("\" ")
+			print(ext_kind_name(im.kind))
+			print(" ")
+			print_int(i64(im.index))
+			print("\n")
+			ii += 1
+		}
+	}
+
+	print("funcs ")
+	print_int(i64(m.funcs.len))
+	print("\n")
+	fi := 0
+	for {
+		if fi >= m.funcs.len do break
+		fti: int = 0
+		array_get(a, &m.funcs, fi, &fti)
+		print_indent(1)
+		print_int(i64(fi))
+		print(": type ")
+		print_int(i64(fti))
+		print("\n")
+		fi += 1
+	}
+
+	if m.mems.len > 0 {
+		print("memory ")
+		print_int(i64(m.mems.len))
+		print("\n")
+		mi := 0
+		for {
+			if mi >= m.mems.len do break
+			mem: Memory = {}
+			array_get(a, &m.mems, mi, &mem)
+			print_indent(1)
+			print_int(i64(mi))
+			print(": min ")
+			print_int(i64(mem.min))
+			if mem.has_max == 1 {
+				print(" max ")
+				print_int(i64(mem.max))
+			}
+			print("\n")
+			mi += 1
+		}
+	}
+
+	if m.globals.len > 0 {
+		print("globals ")
+		print_int(i64(m.globals.len))
+		print("\n")
+		gi := 0
+		for {
+			if gi >= m.globals.len do break
+			g: Global = {}
+			array_get(a, &m.globals, gi, &g)
+			print_indent(1)
+			print_int(i64(gi))
+			print(": ")
+			if g.mutable == 1 {
+				print("mut ")
+			} else {
+				print("const ")
+			}
+			print(valtype_name(g.valtype))
+			print(" = ")
+			print_const_expr(g.init_op, g.init_val)
+			print("\n")
+			gi += 1
+		}
+	}
+
+	print("exports ")
+	print_int(i64(m.exports.len))
+	print("\n")
+	ei := 0
+	for {
+		if ei >= m.exports.len do break
+		e: Export = {}
+		array_get(a, &m.exports, ei, &e)
+		print_indent(1)
+		print("\"")
+		print_name_bytes(data, e.nm_off, e.nm_len)
+		print("\" ")
+		print(ext_kind_name(e.kind))
+		print(" ")
+		print_int(i64(e.index))
+		print("\n")
+		ei += 1
+	}
+
+	if m.datas.len > 0 {
+		print("data ")
+		print_int(i64(m.datas.len))
+		print("\n")
+		di := 0
+		for {
+			if di >= m.datas.len do break
+			ds: Data = {}
+			array_get(a, &m.datas, di, &ds)
+			print_indent(1)
+			print_int(i64(di))
+			print(": mem ")
+			print_int(i64(ds.mem_index))
+			print(" offset ")
+			print_const_expr(ds.off_op, ds.off_val)
+			print(" bytes ")
+			print_int(i64(ds.bytes_len))
+			print("\n")
+			di += 1
+		}
+	}
 
 	if m.start_func >= 0 {
 		print("start func ")
@@ -312,7 +236,49 @@ dump_module :: proc(a: ^Arena, m: ^Module, data: string) {
 		print("\n")
 	}
 
-	dump_code(a, m)
+	print("code ")
+	print_int(i64(m.codes.len))
+	print("\n")
+	ci := 0
+	for {
+		if ci >= m.codes.len do break
+		c: Code = {}
+		array_get(a, &m.codes, ci, &c)
+		print_indent(1)
+		print("func ")
+		print_int(i64(ci))
+		print(": locals ")
+		print_int(i64(c.local_total))
+		print(" body ")
+		print_int(i64(c.body_size))
+		print("\n")
+		li := 0
+		for {
+			if li >= c.local_count do break
+			loc: Local = {}
+			array_get(a, &m.locals, c.local_off + li, &loc)
+			print_indent(2)
+			print("local x")
+			print_int(i64(loc.count))
+			print(" ")
+			print(valtype_name(loc.valtype))
+			print("\n")
+			li += 1
+		}
+		insi := 0
+		for {
+			if insi >= c.instr_count do break
+			ins: Instr = {}
+			array_get(a, &m.instrs, c.instr_off + insi, &ins)
+			print_indent(2)
+			print_int(i64(insi))
+			print(": ")
+			print_instr(&ins)
+			print("\n")
+			insi += 1
+		}
+		ci += 1
+	}
 
 	if m.ok {
 		print("status ok\n")

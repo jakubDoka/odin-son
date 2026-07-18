@@ -4,6 +4,7 @@ import "backend"
 import "core:fmt"
 import "core:log"
 import "core:os"
+import "core:strings"
 import "vendored/gam/util/arna"
 import "vendored/gam/util/hot"
 
@@ -18,25 +19,46 @@ main :: proc() {
 	input: string
 	output := "a.o"
 
+	levels := OPT_LEVELS
+	level := levels[len(levels) - 1]
+
 	root := os.get_env("ODIN_ROOT", context.temp_allocator)
 
 	args := os.args[1:]
 	i := 0
 	for i < len(args) {
 		arg := args[i]
-		switch arg {
-		case "-o":
+		switch {
+		case arg == "-o":
 			i += 1
 			if i >= len(args) {
 				fmt.eprintln("missing argument to -o")
 				os.exit(1)
 			}
 			output = args[i]
-		case:
-			if len(arg) > 0 && arg[0] == '-' {
-				fmt.eprintfln("unknown flag: %v", arg)
+		case strings.has_prefix(arg, "-O:"):
+			name := arg[len("-O:"):]
+			found := false
+			for lvl in levels {
+				if lvl.name == name {
+					level = lvl
+					found = true
+					break
+				}
+			}
+			if !found {
+				fmt.eprintfln("unknown optimization level: %v", name)
+				fmt.eprint("available levels:")
+				for lvl in levels {
+					fmt.eprintf(" %v", lvl.name)
+				}
+				fmt.eprintln()
 				os.exit(1)
 			}
+		case len(arg) > 0 && arg[0] == '-':
+			fmt.eprintfln("unknown flag: %v", arg)
+			os.exit(1)
+		case:
 			if input != "" {
 				fmt.eprintln("multiple input files are not supported")
 				os.exit(1)
@@ -47,7 +69,7 @@ main :: proc() {
 	}
 
 	if input == "" {
-		fmt.eprintln("usage: jit <entry.odin> [-o output.o]")
+		fmt.eprintln("usage: jit <entry.odin> [-o output.o] [-O:<level>]")
 		os.exit(1)
 	}
 
@@ -92,11 +114,6 @@ main :: proc() {
 
 	load_program(&ctx, input)
 	typecheck_program(&ctx)
-
-	level := Opt_Level {
-		name  = "all",
-		flags = {.Iter_Peeps, .Local_Peeps, .Inline, .Mem_Opt},
-	}
 
 	emit_ctx := backend.Codegen_Emit_Ctx {
 		lib_calls = {copy = {id = MEMCPY_ID}, set = {id = MEMSET_ID}},

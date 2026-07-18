@@ -46,34 +46,18 @@ array_reserve :: proc(a: ^Arena, arr: ^Array, need: int) {
 
 // array_push appends a copy of `v^` and returns its index. The element is taken
 // by pointer (passing a struct by value into a generic `$T` parameter is not
-// supported by the JIT frontend) and copied one byte at a time: a plain
-// `p^ = v^` struct assignment through a generic pointer is miscompiled by the
-// JIT backend once the program grows past a certain size, whereas the byte loop
-// (the same shape as arena_grow's copy) is reliable.
+// supported by the JIT frontend).
 array_push :: proc(a: ^Arena, arr: ^Array, v: ^$T) -> int {
 	array_reserve(a, arr, 1)
 	idx := arr.len
-	dst := Byte_Ptr(a.base + uintptr(arr.buf + idx * arr.stride))
-	src := Byte_Ptr(uintptr(v))
-	k := 0
-	for {
-		if k >= arr.stride do break
-		dst[k] = src[k]
-		k += 1
-	}
+	dst := (^T)(a.base + uintptr(arr.buf + idx * arr.stride))
+	dst^ = v^
 	arr.len += 1
 	return idx
 }
 
-// array_get copies element `i` into `out^` (byte-wise, for the same reason as
-// array_push).
+// array_get copies element `i` into `out^`.
 array_get :: proc(a: ^Arena, arr: ^Array, i: int, out: ^$T) {
-	src := Byte_Ptr(a.base + uintptr(arr.buf + i * arr.stride))
-	dst := Byte_Ptr(uintptr(out))
-	k := 0
-	for {
-		if k >= arr.stride do break
-		dst[k] = src[k]
-		k += 1
-	}
+	src := (^T)(a.base + uintptr(arr.buf + i * arr.stride))
+	out^ = src^
 }

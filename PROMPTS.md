@@ -445,8 +445,6 @@ test-programs if they dont work as well.
 
 ### Add wasm parser to the test-programs
 
-NOTE: read AGENTS.md
-
 I'd like to add a bigger program to the test-progam collection, try to
 implement it. Us an arena allocator for all allocations, the memory should be
 allocated by a mmpa syscall. We will later implement the interpreter but for
@@ -457,3 +455,18 @@ have that yet. We also don't yet have generics on structs, so implement them in
 the frontend. Spinn up an agent for this, don't waste your context on
 implementing missng language features. The dynamic array should take the arena
 explicitly for functions that allocate, we dont yet implement the context.
+
+### Clean up the test programs
+
+NOTE: read AGENTS.md
+
+Right now there are test programs that work around past compiler bugs, could
+you please review them and remove the workarounds? Also one of the tests is
+completely made just to reproduce a bug and its mostly copypasted from wasm
+test.
+
+Also, please make the compiler exe accept flags that enable different
+optimization flags. And extend the ./misc/run-programs to test same
+configurations of flags as the test_utils.odin does.
+
+For both of these tasks, spinn up a parallel agent.

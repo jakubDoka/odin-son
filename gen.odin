@@ -20,6 +20,14 @@ Opt_Level :: struct {
 	flags: backend.Graph_Opt_Flags,
 }
 
+OPT_LEVELS :: [?]Opt_Level {
+	{"none", {}},
+	{"mininal", {.Local_Peeps}},
+	{"moderate", {.Iter_Peeps, .Local_Peeps}},
+	{"all", {.Iter_Peeps, .Local_Peeps, .Mem_Opt}},
+	{"aggresive", {.Iter_Peeps, .Local_Peeps, .Mem_Opt, .Inline}},
+}
+
 Abi_Param :: struct {
 	size:    int,
 	spilled: bool,

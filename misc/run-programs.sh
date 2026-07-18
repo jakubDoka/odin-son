@@ -20,6 +20,11 @@ trap 'rm -rf "$WORK"' EXIT
 
 JIT="$ROOT/jit"
 
+# The optimization levels mirror OPT_LEVELS in gen.odin / the unit-test harness
+# in test_utils.odin. Each program is compiled once per level and every level is
+# compared against the same (jit-agnostic) reference Odin binary.
+LEVELS=(none mininal moderate all aggresive)
+
 # Build the compiler unless one was already provided.
 echo "building jit compiler..."
 (cd "$ROOT" && odin build . -out:jit -debug) || {
@@ -74,52 +79,54 @@ for dir in "$PROGRAMS_DIR"/*/; do
 	run_capture "$odin_bin" "$WORK/odin.out" "$WORK/odin.err"
 	odin_code=$REPLY_CODE
 
-	# --- our compiler --------------------------------------------------
-	jit_obj="$WORK/$name.o"
-	if ! "$JIT" "$entry" -o "$jit_obj" 2>"$WORK/jit-build.log"; then
-		echo "  jit compile FAILED"
-		cat "$WORK/jit-build.log" | sed 's/^/    /'
-		fail=$((fail + 1))
-		failed_names+=("$name (jit compile)")
-		continue
-	fi
+	# --- our compiler, once per optimization level ---------------------
+	for level in "${LEVELS[@]}"; do
+		jit_obj="$WORK/$name-$level.o"
+		if ! "$JIT" "$entry" -O:"$level" -o "$jit_obj" 2>"$WORK/jit-build.log"; then
+			echo "  [$level] jit compile FAILED"
+			cat "$WORK/jit-build.log" | sed 's/^/    /'
+			fail=$((fail + 1))
+			failed_names+=("$name/$level (jit compile)")
+			continue
+		fi
 
-	jit_bin="$WORK/$name-jit-bin"
-	if ! zig cc "$jit_obj" -o "$jit_bin" 2>"$WORK/jit-link.log"; then
-		echo "  zig cc link FAILED"
-		cat "$WORK/jit-link.log" | sed 's/^/    /'
-		fail=$((fail + 1))
-		failed_names+=("$name (link)")
-		continue
-	fi
+		jit_bin="$WORK/$name-$level-jit-bin"
+		if ! zig cc "$jit_obj" -o "$jit_bin" 2>"$WORK/jit-link.log"; then
+			echo "  [$level] zig cc link FAILED"
+			cat "$WORK/jit-link.log" | sed 's/^/    /'
+			fail=$((fail + 1))
+			failed_names+=("$name/$level (link)")
+			continue
+		fi
 
-	run_capture "$jit_bin" "$WORK/jit.out" "$WORK/jit.err"
-	jit_code=$REPLY_CODE
+		run_capture "$jit_bin" "$WORK/jit.out" "$WORK/jit.err"
+		jit_code=$REPLY_CODE
 
-	# --- compare -------------------------------------------------------
-	ok=1
-	if [[ "$odin_code" != "$jit_code" ]]; then
-		echo "  exit code mismatch: odin=$odin_code jit=$jit_code"
-		ok=0
-	fi
-	if ! diff -q "$WORK/odin.out" "$WORK/jit.out" >/dev/null; then
-		echo "  stdout mismatch:"
-		diff "$WORK/odin.out" "$WORK/jit.out" | sed 's/^/    /'
-		ok=0
-	fi
-	if ! diff -q "$WORK/odin.err" "$WORK/jit.err" >/dev/null; then
-		echo "  stderr mismatch:"
-		diff "$WORK/odin.err" "$WORK/jit.err" | sed 's/^/    /'
-		ok=0
-	fi
+		# --- compare -------------------------------------------------------
+		ok=1
+		if [[ "$odin_code" != "$jit_code" ]]; then
+			echo "  [$level] exit code mismatch: odin=$odin_code jit=$jit_code"
+			ok=0
+		fi
+		if ! diff -q "$WORK/odin.out" "$WORK/jit.out" >/dev/null; then
+			echo "  [$level] stdout mismatch:"
+			diff "$WORK/odin.out" "$WORK/jit.out" | sed 's/^/    /'
+			ok=0
+		fi
+		if ! diff -q "$WORK/odin.err" "$WORK/jit.err" >/dev/null; then
+			echo "  [$level] stderr mismatch:"
+			diff "$WORK/odin.err" "$WORK/jit.err" | sed 's/^/    /'
+			ok=0
+		fi
 
-	if [[ "$ok" == 1 ]]; then
-		echo "  OK (exit=$jit_code)"
-		pass=$((pass + 1))
-	else
-		fail=$((fail + 1))
-		failed_names+=("$name")
-	fi
+		if [[ "$ok" == 1 ]]; then
+			echo "  [$level] OK (exit=$jit_code)"
+			pass=$((pass + 1))
+		else
+			fail=$((fail + 1))
+			failed_names+=("$name/$level")
+		fi
+	done
 done
 
 echo

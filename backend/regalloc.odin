@@ -915,16 +915,13 @@ regalloc_round :: proc(
 						split = split_after(ctx, "rcd", m)
 					}
 
-					split := split
-					if has_call_use || split == m {
-						split = split_before(
-							ctx,
-							out.id,
-							out.idx,
-							"rcu",
-							redirect = split,
-						)
-					}
+					split := split_before(
+						ctx,
+						out.id,
+						out.idx,
+						"rcu",
+						redirect = split,
+					)
 
 					graph_set_input(graph, out.id, out.idx, split)
 				}
@@ -1059,14 +1056,12 @@ regalloc_round :: proc(
 		}
 	}
 
-	//log_lrgs(&ctx)
+	log_lrgs(&ctx)
 
 	verify_schedule_integrity(ctx.graph, ctx.sched)
 	if ok do verify_alloc_integrity(ctx, res)
 	if ok {
 		for &bb in sched.bbs {
-			// NOTE: do this in reverse or we miss oportunities with multiple
-			// moves going into an instruction
 			keep := len(bb.instrs) - 1
 			#reverse for instr, i in bb.instrs[:keep] {
 				inode := graph_expand(graph, instr)
@@ -1495,7 +1490,7 @@ regalloc_round :: proc(
 			strings.to_writer(&sb),
 			ctx.graph,
 			ctx.sched,
-			prefix = prefix,
+			//prefix = prefix,
 		)
 
 		prefix :: proc(w: io.Writer, instr: ^Node, bb: Graph_Basic_Block) {

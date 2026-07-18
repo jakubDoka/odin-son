@@ -470,7 +470,13 @@ extract_polys :: proc(
 	proot: Type,
 ) -> bool {
 	#partial switch t in unpack_type(proot) {
+	case Pointer:
+		cr := unpack_type(croot).(Pointer) or_return
+		return extract_polys(ctx, slots, cr^, t^)
 	case ^Poly_Data:
+		if slots[t.idx].lit.typeida != .Void {
+			return slots[t.idx].lit.typeida == croot
+		}
 		slots[t.idx] = {.Typeid, {typeida = croot}}
 		if t.specialization != .Void {
 			return extract_polys(ctx, slots, croot, t.specialization)
@@ -478,20 +484,32 @@ extract_polys :: proc(
 		return true
 	}
 
-	return false
+	return croot == proot
 }
 
 instantiate_polys :: proc(
 	ctx: ^Gen_Ctx,
 	slots: []Check_Meta,
 	root: Type,
-) -> Type {
+) -> (
+	t: Type,
+	ok: bool,
+) {
 	#partial switch t in unpack_type(root) {
+	case Pointer:
+		return intern_pointer(
+				ctx,
+				instantiate_polys(ctx, slots, t^) or_return,
+			),
+			true
 	case ^Poly_Data:
+		if slots[t.idx].type == .Void {
+			return {}, false
+		}
 		assert(slots[t.idx].type == .Typeid)
-		return slots[t.idx].lit.typeida
+		return slots[t.idx].lit.typeida, true
 	}
-	panic("TODO")
+	return root, true
 }
 
 // find_module_global returns the global variable named `name` defined directly
@@ -1260,7 +1278,12 @@ typecheck :: proc(
 			inferred_ty = .Uint
 		}
 		rhs_ty := typecheck(ctx, {inferred_ty = inferred_ty}, d.right)
-		assert(inferred_ty == rhs_ty.type)
+		fmt.assertf(
+			inferred_ty == rhs_ty.type,
+			"%v == %v",
+			inferred_ty,
+			rhs_ty.type,
+		)
 
 		if is_comparison {
 			return tmeta(ctx, .Bool)
@@ -1483,7 +1506,19 @@ typecheck :: proc(
 				rets := make([]Type, len(prc.rets))
 
 				for param, i in sig.params {
-					pty := typecheck(ctx, {}, d.args[i])
+					inferred_ty: Type
+					inferred_ty =
+						instantiate_polys(
+							ctx,
+							polys,
+							param,
+						) or_else inferred_ty
+
+					pty := typecheck(
+						ctx,
+						{inferred_ty = inferred_ty},
+						d.args[i],
+					)
 					ok := extract_polys(ctx, polys, pty.type, param)
 					assert(ok)
 					params[i] = pty.type
@@ -1494,7 +1529,8 @@ typecheck :: proc(
 				}
 
 				for ret, i in sig.rets {
-					rets[i] = instantiate_polys(ctx, polys, ret)
+					rets[i] =
+						instantiate_polys(ctx, polys, ret) or_else panic("")
 				}
 
 				params = intern_type_slice(ctx, params)

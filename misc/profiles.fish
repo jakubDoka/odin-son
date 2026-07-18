@@ -11,6 +11,11 @@ set dff '-define:DIFF=false'
  
 alias run-test 'odin test . -keep-executable -debug -define:ODIN_TEST_FANCY=false'
 
+alias measure 'rg --files --glob "!*.git/" --glob "!vendored" --glob \
+"!print-tests" --glob "!TESTS.md" --glob "!tests.odin" --glob "!zydis" --glob \
+"!backend/node_specs.odin" --glob "!test-programs" --glob "!examples" | xargs \
+wc -l | sort -n'
+
 function run-test-program
 	odin build . -debug $argv[2..]
 	export ODIN_ROOT=$HOME/odin/

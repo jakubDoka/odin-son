@@ -1,12 +1,12 @@
 =========== OPT LEVEL: none ===========
 test_imm_shifts:
-     mov rax, rdi
-     mov rdx, rax
+     mov rcx, rdi
+     mov rdx, rcx
      shl rdx, 0x03
-     mov rcx, rax
-     sar rcx, 0x03
-     add rdx, rcx
-     mov rax, rax
+     mov rax, rcx
+     sar rax, 0x03
+     add rdx, rax
+     mov rax, rcx
      shr rax, 0x05
      mov rax, rax
      add rdx, rax
@@ -22,9 +22,12 @@ test_imm_inplace_shifts:
      add rax, rcx
      ret
 test_inplace_shifts:
-     mov rcx, rdx
+     mov rax, rdx
+     mov rcx, rax
      shl qword ptr [rdi], cl
+     mov rcx, rax
      sar qword ptr [rdi], cl
+     mov rcx, rax
      shr qword ptr [rsi], cl
      mov rax, [rdi]
      mov rcx, [rsi]
@@ -60,15 +63,15 @@ main:
      ret
 =========== OPT LEVEL: mininal ===========
 test_imm_shifts:
-     mov rdx, rdi
-     mov rcx, rdx
-     shl rcx, 0x03
-     mov rax, rdx
-     sar rax, 0x03
-     add rcx, rax
-     shr rdx, 0x05
-     add rcx, rdx
+     mov rcx, rdi
+     mov rdx, rcx
+     shl rdx, 0x03
      mov rax, rcx
+     sar rax, 0x03
+     add rdx, rax
+     shr rcx, 0x05
+     add rdx, rcx
+     mov rax, rdx
      ret
 test_imm_inplace_shifts:
      shl qword ptr [rdi], 0x02
@@ -78,9 +81,12 @@ test_imm_inplace_shifts:
      add rax, [rsi]
      ret
 test_inplace_shifts:
-     mov rcx, rdx
+     mov rax, rdx
+     mov rcx, rax
      shl qword ptr [rdi], cl
+     mov rcx, rax
      sar qword ptr [rdi], cl
+     mov rcx, rax
      shr qword ptr [rsi], cl
      mov rax, [rdi]
      add rax, [rsi]
@@ -111,15 +117,15 @@ main:
      ret
 =========== OPT LEVEL: moderate ===========
 test_imm_shifts:
-     mov rdx, rdi
-     mov rcx, rdx
-     shl rcx, 0x03
-     mov rax, rdx
-     sar rax, 0x03
-     add rcx, rax
-     shr rdx, 0x05
-     add rcx, rdx
+     mov rcx, rdi
+     mov rdx, rcx
+     shl rdx, 0x03
      mov rax, rcx
+     sar rax, 0x03
+     add rdx, rax
+     shr rcx, 0x05
+     add rdx, rcx
+     mov rax, rdx
      ret
 test_imm_inplace_shifts:
      mov rax, [rdi]
@@ -134,13 +140,16 @@ test_imm_inplace_shifts:
      add rax, rcx
      ret
 test_inplace_shifts:
-     mov rcx, rdx
-     mov rax, [rdi]
-     shl rax, cl
-     mov [rdi], rax
-     sar rax, cl
-     mov [rdi], rax
+     mov rax, rdx
+     mov rdx, [rdi]
+     mov rcx, rax
+     shl rdx, cl
+     mov [rdi], rdx
+     mov rcx, rax
+     sar rdx, cl
+     mov [rdi], rdx
      mov rdx, [rsi]
+     mov rcx, rax
      shr rdx, cl
      mov [rsi], rdx
      mov rax, [rdi]
@@ -172,15 +181,15 @@ main:
      ret
 =========== OPT LEVEL: all ===========
 test_imm_shifts:
-     mov rdx, rdi
-     mov rcx, rdx
-     shl rcx, 0x03
-     mov rax, rdx
-     sar rax, 0x03
-     add rcx, rax
-     shr rdx, 0x05
-     add rcx, rdx
+     mov rcx, rdi
+     mov rdx, rcx
+     shl rdx, 0x03
      mov rax, rcx
+     sar rax, 0x03
+     add rdx, rax
+     shr rcx, 0x05
+     add rdx, rcx
+     mov rax, rdx
      ret
 test_imm_inplace_shifts:
      mov rax, [rdi]
@@ -195,13 +204,16 @@ test_imm_inplace_shifts:
      add rax, rcx
      ret
 test_inplace_shifts:
-     mov rcx, rdx
-     mov rax, [rdi]
-     shl rax, cl
-     mov [rdi], rax
-     sar rax, cl
-     mov [rdi], rax
+     mov rax, rdx
+     mov rdx, [rdi]
+     mov rcx, rax
+     shl rdx, cl
+     mov [rdi], rdx
+     mov rcx, rax
+     sar rdx, cl
+     mov [rdi], rdx
      mov rdx, [rsi]
+     mov rcx, rax
      shr rdx, cl
      mov [rsi], rdx
      mov rax, [rdi]

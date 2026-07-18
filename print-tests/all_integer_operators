@@ -1,4 +1,5 @@
 =========== OPT LEVEL: none ===========
+batch:
 main:
      push rbx
      push rbp
@@ -6,781 +7,65 @@ main:
      push r13
      push r14
      push r15
-     mov rcx, 0x06
-     mov rax, 0x00
-     sub rax, 0x07
-     mov rsi, rax
-     mov rax, 0x14
-     cqo
-     idiv rcx
-     mov rdi, rax
-     mov rax, 0x00
-     add rdi, rax
-     mov rax, 0x14
-     cqo
-     idiv rcx
-     add rdi, rdx
-     mov rax, rsi
-     cqo
-     idiv rcx
-     add rdi, rax
-     mov rax, rsi
-     cqo
-     idiv rcx
-     add rdi, rdx
-     mov rax, 0x14
-     and rax, 0x06
-     add rdi, rax
-     mov rax, 0x14
-     or rax, 0x06
-     add rdi, rax
-     mov rax, 0x14
-     xor rax, 0x06
-     add rdi, rax
-     mov rax, 0x14
-     mov rdx, 0x06
-     not rdx
-     and rdx, rax
-     add rdi, rdx
-     mov rax, 0x14
-     shl rax, 0x02
-     add rdi, rax
-     mov rax, 0x14
-     sar rax, 0x02
-     add rdi, rax
-     mov rax, rsi
-     sar rax, 0x02
-     add rdi, rax
-     mov rax, 0x14
-     cmp rax, 0x06
-     jnle :0
-     jmp :1
-
-000: add rdi, 0x01
-001: cmp rcx, 0x14
-     jl :2
-     jmp :3
-
-002: add rdi, 0x02
-003: mov rcx, rdi
-     mov rax, 0x14
-     cmp rax, 0x06
-     jnl :4
-     jmp :5
-
-004: add rcx, 0x04
-005: mov rax, 0x14
-     cmp rax, 0x06
-     jle :6
-     jmp :7
-
-006: add rcx, 0x08
-007: mov rax, 0x14
-     cmp rax, 0x14
-     jz :8
-     jmp :9
-
-008: add rcx, 0x10
-009: mov rax, 0x14
-     cmp rax, 0x06
-     jnz :10
-     jmp :11
-
-010: add rcx, 0x20
-011: cmp rsi, 0x06
-     jl :12
-     jmp :13
-
-012: add rcx, 0x40
-013: mov r9, 0x06
-     mov rax, 0x14
-     and al, 0x06
-     mov [rsp-0x78], rax
-     mov rax, 0x14
-     movzx eax, al
-     div r9b
-     movzx eax, al
-     add rcx, rax
-     mov rax, 0x14
-     movzx eax, al
-     div r9b
-     movsx edx, ah
-     movzx eax, dl
-     add rcx, rax
-     mov rax, 0x14
-     or al, 0x06
-     mov [rsp-0x70], rax
-     mov rax, 0x14
-     xor al, 0x06
-     mov [rsp-0x68], rax
-     mov rax, 0x14
+     sub rsp, 0x08
      mov rsi, 0x06
-     not sil
-     and sil, al
+     mov rdx, 0x07
+     neg rdx
+     mov rdi, 0x14
+     call :batch
+     mov rbx, rax
      mov rax, 0x14
-     shl al, 0x02
-     mov [rsp-0x60], rax
-     mov rax, 0x07
-     movzx eax, al
-     div r9b
-     movzx eax, al
-     add rcx, rax
-     mov rax, 0x07
-     movzx eax, al
-     div r9b
-     movsx edx, ah
-     movzx eax, dl
-     add rcx, rax
-     mov rax, [rsp-0x78]
-     movzx eax, al
-     add rcx, rax
-     mov rax, [rsp-0x70]
-     movzx eax, al
-     add rcx, rax
-     mov rax, [rsp-0x68]
-     movzx eax, al
-     add rcx, rax
-     movzx eax, sil
-     add rcx, rax
-     mov rax, [rsp-0x60]
-     movzx eax, al
-     add rcx, rax
+     mov rbp, rax
+     mov rdi, rbp
+     mov rsi, 0x06
+     mov rdx, 0x07
+     call :batch
+     mov r12, rax
      mov rax, 0x14
-     shr al, 0x02
-     movzx eax, al
-     add rcx, rax
-     mov rax, 0x07
-     shr al, 0x02
-     movzx eax, al
-     add rcx, rax
-     mov rax, 0x14
-     cmp al, 0x06
-     jnbe :14
-     jmp :15
-
-014: add rcx, 0x01
-015: cmp r9b, 0x14
-     jb :16
-     jmp :17
-
-016: add rcx, 0x02
-017: mov rax, 0x14
-     cmp al, 0x06
-     jnb :18
-     jmp :19
-
-018: add rcx, 0x04
-019: mov rax, 0x14
-     cmp al, 0x06
-     jbe :20
-     jmp :21
-
-020: add rcx, 0x08
-021: mov rax, 0x14
-     cmp al, 0x14
-     setz r10b
-     movzx r10, r10b
-     test r10b, r10b
-     jnz :22
-     jmp :23
-
-022: add rcx, 0x10
-023: mov rax, 0x14
-     cmp al, 0x06
-     setnz r11b
-     movzx r11, r11b
-     test r11b, r11b
-     jnz :24
-     jmp :25
-
-024: add rcx, 0x20
-025: mov rax, 0x07
-     cmp al, 0x06
-     jb :26
-     jmp :27
-
-026: add rcx, 0x40
-027: mov rbx, 0x06
-     mov rax, 0x14
-     and ax, 0x06
-     mov [rsp-0x58], rax
-     mov rax, 0x14
-     xor rdx, rdx
-     div bx
-     movzx eax, ax
-     add rcx, rax
-     mov rax, 0x14
-     xor rdx, rdx
-     div bx
-     movzx eax, dx
-     add rcx, rax
-     mov r8, rcx
-     mov rax, 0x14
-     or ax, 0x06
-     mov [rsp-0x50], rax
-     mov rax, 0x14
-     xor ax, 0x06
-     mov [rsp-0x48], rax
-     mov rax, 0x14
-     mov rdi, 0x06
-     not di
-     and di, ax
-     mov rax, 0x14
-     shl ax, 0x02
-     mov [rsp-0x40], rax
-     mov rax, 0x07
-     xor rdx, rdx
-     div bx
-     movzx ecx, ax
-     mov rax, r8
-     add rax, rcx
-     mov r8, rax
-     mov rax, 0x07
-     xor rdx, rdx
-     div bx
-     movzx ecx, dx
-     mov rax, r8
-     add rax, rcx
-     mov rdx, rax
-     mov rax, [rsp-0x58]
-     movzx ecx, ax
-     mov rax, rdx
-     add rax, rcx
-     mov rdx, rax
-     mov rax, [rsp-0x50]
-     movzx ecx, ax
-     mov rax, rdx
-     add rax, rcx
-     mov rdx, rax
-     mov rax, [rsp-0x48]
-     movzx ecx, ax
-     mov rax, rdx
-     add rax, rcx
-     movzx ecx, di
-     add rax, rcx
-     mov rdx, rax
-     mov rax, [rsp-0x40]
-     movzx ecx, ax
-     mov rax, rdx
-     add rax, rcx
-     mov rdx, rax
-     mov rax, 0x14
-     shr ax, 0x02
-     movzx ecx, ax
-     mov rax, rdx
-     add rax, rcx
-     mov rdx, rax
-     mov rax, 0x07
-     shr ax, 0x02
-     movzx ecx, ax
-     mov rax, rdx
-     add rax, rcx
-     mov r8, rax
-     mov rax, 0x14
-     cmp ax, 0x06
-     jnbe :28
-     jmp :29
-
-028: mov rax, r8
-     add rax, 0x01
-     mov r8, rax
-029: cmp bx, 0x14
-     jb :30
-     jmp :31
-
-030: mov rax, r8
-     add rax, 0x02
-     mov r8, rax
-031: mov rax, 0x14
-     cmp ax, 0x06
-     jnb :32
-     jmp :33
-
-032: mov rax, r8
-     add rax, 0x04
-     mov r8, rax
-033: mov rax, 0x14
-     cmp ax, 0x06
-     jbe :34
-     jmp :35
-
-034: mov rax, r8
-     add rax, 0x08
-     mov r8, rax
-035: mov rax, 0x14
-     cmp ax, 0x14
-     setz bpl
-     movzx rbp, bpl
-     test bpl, bpl
-     jnz :36
-     jmp :37
-
-036: mov rax, r8
-     add rax, 0x10
-     mov r8, rax
-037: mov rax, 0x14
-     cmp ax, 0x06
-     setnz r12b
-     movzx r12, r12b
-     test r12b, r12b
-     jnz :38
-     jmp :39
-
-038: mov rax, r8
-     add rax, 0x20
-     mov r8, rax
-039: mov rax, 0x07
-     cmp ax, 0x06
-     jb :40
-     jmp :41
-
-040: mov rax, r8
-     add rax, 0x40
-     mov r8, rax
-041: mov r13, 0x06
-     mov rax, 0x14
-     and eax, 0x06
-     mov [rsp-0x38], rax
-     mov rax, 0x14
-     xor rdx, rdx
-     div r13d
-     mov ecx, eax
-     mov rax, r8
-     add rax, rcx
-     mov r8, rax
-     mov rax, 0x14
-     xor rdx, rdx
-     div r13d
-     mov ecx, edx
-     mov rax, r8
-     add rax, rcx
+     mov r13, rax
+     mov rdi, r13
+     mov rsi, 0x06
+     mov rdx, 0x07
+     call :batch
      mov r14, rax
      mov rax, 0x14
-     or eax, 0x06
-     mov [rsp-0x30], rax
-     mov rax, 0x14
-     xor eax, 0x06
-     mov [rsp-0x28], rax
-     mov rax, 0x14
-     mov r8, 0x06
-     not r8d
-     and r8d, eax
-     mov rax, 0x14
-     shl eax, 0x02
-     mov [rsp-0x20], rax
+     mov r15, rax
+     mov rdi, r15
+     mov rsi, 0x06
+     mov rdx, 0x07
+     call :batch
+     mov [rsp], rax
      mov rax, 0x07
-     xor rdx, rdx
-     div r13d
-     mov ecx, eax
-     mov rax, r14
-     add rax, rcx
-     mov r14, rax
+     neg al
+     mov rdi, rbp
+     mov rsi, 0x06
+     mov rdx, rax
+     call :batch
+     mov rbp, rax
      mov rax, 0x07
-     xor rdx, rdx
-     div r13d
-     mov ecx, edx
-     mov rax, r14
-     add rax, rcx
+     neg ax
+     mov rdi, r13
+     mov rsi, 0x06
      mov rdx, rax
-     mov rax, [rsp-0x38]
-     mov ecx, eax
-     mov rax, rdx
-     add rax, rcx
-     mov rdx, rax
-     mov rax, [rsp-0x30]
-     mov ecx, eax
-     mov rax, rdx
-     add rax, rcx
-     mov rdx, rax
-     mov rax, [rsp-0x28]
-     mov ecx, eax
-     mov rax, rdx
-     add rax, rcx
-     mov ecx, r8d
-     add rax, rcx
-     mov rdx, rax
-     mov rax, [rsp-0x20]
-     mov ecx, eax
-     mov rax, rdx
-     add rax, rcx
-     mov rdx, rax
-     mov rax, 0x14
-     shr eax, 0x02
-     mov ecx, eax
-     mov rax, rdx
-     add rax, rcx
-     mov rdx, rax
+     call :batch
+     mov r13, rax
      mov rax, 0x07
-     shr eax, 0x02
-     mov ecx, eax
-     mov rax, rdx
-     add rax, rcx
-     mov [rsp-0x18], rax
-     mov rax, 0x14
-     cmp eax, 0x06
-     jnbe :42
-     jmp :43
-
-042: mov rax, [rsp-0x18]
-     add rax, 0x01
-     mov [rsp-0x18], rax
-043: cmp r13d, 0x14
-     jb :44
-     jmp :45
-
-044: mov rax, [rsp-0x18]
-     add rax, 0x02
-     mov [rsp-0x18], rax
-045: mov rax, 0x14
-     cmp eax, 0x06
-     jnb :46
-     jmp :47
-
-046: mov rax, [rsp-0x18]
-     add rax, 0x04
-     mov [rsp-0x18], rax
-047: mov rax, 0x14
-     cmp eax, 0x06
-     jbe :48
-     jmp :49
-
-048: mov rax, [rsp-0x18]
-     add rax, 0x08
-     mov [rsp-0x18], rax
-049: mov rax, 0x14
-     cmp eax, 0x14
-     setz r14b
-     movzx r14, r14b
-     test r14b, r14b
-     jnz :50
-     jmp :51
-
-050: mov rax, [rsp-0x18]
-     add rax, 0x10
-     mov [rsp-0x18], rax
-051: mov rax, 0x14
-     cmp eax, 0x06
-     setnz r15b
-     movzx r15, r15b
-     test r15b, r15b
-     jnz :52
-     jmp :53
-
-052: mov rax, [rsp-0x18]
-     add rax, 0x20
-     mov [rsp-0x18], rax
-053: mov rax, 0x07
-     cmp eax, 0x06
-     jb :54
-     jmp :55
-
-054: mov rax, [rsp-0x18]
-     add rax, 0x40
-     mov [rsp-0x18], rax
-055: mov rax, 0x00
-     sub al, 0x07
-     mov [rsp-0x10], rax
-     mov rax, 0x14
-     cbw
-     idiv r9b
-     movsx rcx, al
-     mov rax, [rsp-0x18]
-     add rax, rcx
-     mov [rsp-0x18], rax
-     mov rax, 0x14
-     cbw
-     idiv r9b
-     movzx edx, ah
-     movsx rcx, dl
-     mov rax, [rsp-0x18]
-     add rax, rcx
-     mov [rsp-0x18], rax
-     mov rax, [rsp-0x10]
-     cbw
-     idiv r9b
-     movsx rcx, al
-     mov rax, [rsp-0x18]
-     add rax, rcx
-     mov [rsp-0x18], rax
-     mov rax, [rsp-0x10]
-     cbw
-     idiv r9b
-     movzx edx, ah
-     movsx rcx, dl
-     mov rax, [rsp-0x18]
-     add rax, rcx
+     neg eax
+     mov rdi, r15
+     mov rsi, 0x06
      mov rdx, rax
-     mov rax, [rsp-0x78]
-     movsx rcx, al
-     mov rax, rdx
-     add rax, rcx
+     call :batch
      mov rdx, rax
-     mov rax, [rsp-0x70]
-     movsx rcx, al
-     mov rax, rdx
+     mov rax, 0x00
+     add rax, rbx
+     add rax, r12
+     add rax, r14
+     mov rcx, [rsp]
      add rax, rcx
-     mov rdx, rax
-     mov rax, [rsp-0x68]
-     movsx rcx, al
-     mov rax, rdx
-     add rax, rcx
-     movsx rcx, sil
-     add rax, rcx
-     mov rdx, rax
-     mov rax, [rsp-0x60]
-     movsx rcx, al
-     mov rax, rdx
-     add rax, rcx
-     mov rdx, rax
-     mov rax, 0x14
-     sar al, 0x02
-     movsx rcx, al
-     mov rax, rdx
-     add rax, rcx
-     mov rdx, rax
-     mov rax, [rsp-0x10]
-     sar al, 0x02
-     movsx rcx, al
-     mov rax, rdx
-     add rax, rcx
-     mov rsi, rax
-     mov rax, 0x14
-     cmp al, 0x06
-     jnle :56
-     jmp :57
-
-056: mov rax, rsi
-     add rax, 0x01
-     mov rsi, rax
-057: cmp r9b, 0x14
-     jl :58
-     jmp :59
-
-058: mov rax, rsi
-     add rax, 0x02
-     mov rsi, rax
-059: mov rax, 0x14
-     cmp al, 0x06
-     jnl :60
-     jmp :61
-
-060: mov rax, rsi
-     add rax, 0x04
-     mov rsi, rax
-061: mov rax, 0x14
-     cmp al, 0x06
-     jle :62
-     jmp :63
-
-062: mov rax, rsi
-     add rax, 0x08
-     mov rsi, rax
-063: test r10b, r10b
-     jnz :64
-     jmp :65
-
-064: mov rax, rsi
-     add rax, 0x10
-     mov rsi, rax
-065: test r11b, r11b
-     jnz :66
-     jmp :67
-
-066: mov rax, rsi
-     add rax, 0x20
-     mov rsi, rax
-067: mov rax, [rsp-0x10]
-     cmp al, 0x06
-     jl :68
-     jmp :69
-
-068: mov rax, rsi
-     add rax, 0x40
-     mov rsi, rax
-069: mov rax, 0x00
-     sub ax, 0x07
-     mov r9, rax
-     mov rax, 0x14
-     cwd
-     idiv bx
-     movsx rcx, ax
-     mov rax, rsi
-     add rax, rcx
-     mov rsi, rax
-     mov rax, 0x14
-     cwd
-     idiv bx
-     movsx rcx, dx
-     mov rax, rsi
-     add rax, rcx
-     mov rsi, rax
-     mov rax, r9
-     cwd
-     idiv bx
-     movsx rcx, ax
-     mov rax, rsi
-     add rax, rcx
-     mov rsi, rax
-     mov rax, r9
-     cwd
-     idiv bx
-     movsx rcx, dx
-     mov rax, rsi
-     add rax, rcx
-     mov rdx, rax
-     mov rax, [rsp-0x58]
-     movsx rcx, ax
-     mov rax, rdx
-     add rax, rcx
-     mov rdx, rax
-     mov rax, [rsp-0x50]
-     movsx rcx, ax
-     mov rax, rdx
-     add rax, rcx
-     mov rdx, rax
-     mov rax, [rsp-0x48]
-     movsx rcx, ax
-     mov rax, rdx
-     add rax, rcx
-     mov rcx, rax
-     movsx rax, di
-     add rcx, rax
-     mov rax, rcx
-     mov rcx, [rsp-0x40]
-     movsx rcx, cx
-     add rax, rcx
-     mov rcx, 0x14
-     sar cx, 0x02
-     movsx rcx, cx
-     add rax, rcx
-     mov rcx, r9
-     sar cx, 0x02
-     movsx rcx, cx
-     mov rdx, rax
-     add rdx, rcx
-     mov rax, 0x14
-     cmp ax, 0x06
-     jnle :70
-     jmp :71
-
-070: add rdx, 0x01
-071: cmp bx, 0x14
-     jl :72
-     jmp :73
-
-072: add rdx, 0x02
-073: mov rcx, rdx
-     mov rax, 0x14
-     cmp ax, 0x06
-     jnl :74
-     jmp :75
-
-074: add rcx, 0x04
-075: mov rax, 0x14
-     cmp ax, 0x06
-     jle :76
-     jmp :77
-
-076: add rcx, 0x08
-077: test bpl, bpl
-     jnz :78
-     jmp :79
-
-078: add rcx, 0x10
-079: test r12b, r12b
-     jnz :80
-     jmp :81
-
-080: add rcx, 0x20
-081: cmp r9w, 0x06
-     jl :82
-     jmp :83
-
-082: add rcx, 0x40
-083: mov rax, 0x00
-     sub eax, 0x07
-     mov rsi, rax
-     mov rax, 0x14
-     cdq
-     idiv r13d
-     movsxd rax, eax
-     add rcx, rax
-     mov rax, 0x14
-     cdq
-     idiv r13d
-     movsxd rax, edx
-     add rcx, rax
-     mov rax, rsi
-     cdq
-     idiv r13d
-     movsxd rax, eax
-     add rcx, rax
-     mov rax, rsi
-     cdq
-     idiv r13d
-     movsxd rax, edx
-     add rcx, rax
-     mov rax, [rsp-0x38]
-     movsxd rax, eax
-     add rcx, rax
-     mov rax, [rsp-0x30]
-     movsxd rax, eax
-     add rcx, rax
-     mov rax, [rsp-0x28]
-     movsxd rax, eax
-     add rcx, rax
-     movsxd rax, r8d
-     add rcx, rax
-     mov rax, [rsp-0x20]
-     movsxd rax, eax
-     add rcx, rax
-     mov rax, 0x14
-     sar eax, 0x02
-     movsxd rax, eax
-     add rcx, rax
-     mov rax, rsi
-     sar eax, 0x02
-     movsxd rax, eax
-     add rcx, rax
-     mov rax, 0x14
-     cmp eax, 0x06
-     jnle :84
-     jmp :85
-
-084: add rcx, 0x01
-085: cmp r13d, 0x14
-     jl :86
-     jmp :87
-
-086: add rcx, 0x02
-087: mov rax, 0x14
-     cmp eax, 0x06
-     jnl :88
-     jmp :89
-
-088: add rcx, 0x04
-089: mov rax, 0x14
-     cmp eax, 0x06
-     jle :90
-     jmp :91
-
-090: add rcx, 0x08
-091: test r14b, r14b
-     jnz :92
-     jmp :93
-
-092: add rcx, 0x10
-093: test r15b, r15b
-     jnz :94
-     jmp :95
-
-094: add rcx, 0x20
-095: cmp esi, 0x06
-     jl :96
-     jmp :97
-
-096: add rcx, 0x40
-097: mov rax, rcx
+     add rax, rbp
+     add rax, r13
+     add rax, rdx
+     add rsp, 0x08
      pop r15
      pop r14
      pop r13
@@ -788,340 +73,2808 @@ main:
      pop rbp
      pop rbx
      ret
-=========== OPT LEVEL: mininal ===========
-main:
-     mov rcx, 0x01
-     mov rax, 0x00
-     add rax, 0x03
-     add rax, 0x02
-     add rax, 0xFFFFFFFFFFFFFFFF
-     add rax, 0xFFFFFFFFFFFFFFFF
-     add rax, 0x04
-     add rax, 0x16
-     add rax, 0x12
-     add rax, 0x10
-     add rax, 0x50
-     add rax, 0x05
-     add rax, 0xFFFFFFFFFFFFFFFE
-     test cl, cl
-     jnz :0
+batch:
+     mov rcx, rdi
+     mov rdi, rdx
+     mov rax, rcx
+     imul rax, rsi
+     mov rax, rax
+     mov r8, 0x00
+     add r8, rax
+     mov rax, rcx
+     cqo
+     idiv rsi
+     mov rax, rax
+     add r8, rax
+     mov rax, rcx
+     cqo
+     idiv rsi
+     mov rax, rdx
+     add r8, rax
+     mov rax, rdi
+     cqo
+     idiv rsi
+     mov rax, rax
+     add r8, rax
+     mov rax, rdi
+     cqo
+     idiv rsi
+     mov rax, rdx
+     add r8, rax
+     mov rax, rcx
+     and rax, rsi
+     mov rax, rax
+     add r8, rax
+     mov rax, rcx
+     or rax, rsi
+     mov rax, rax
+     add r8, rax
+     mov rax, rcx
+     xor rax, rsi
+     mov rax, rax
+     add r8, rax
+     mov rax, rcx
+     mov rdx, rsi
+     not rdx
+     and rdx, rax
+     mov rax, rdx
+     add r8, rax
+     mov rax, rcx
+     shl rax, 0x02
+     mov rax, rax
+     add r8, rax
+     mov rax, rcx
+     sar rax, 0x02
+     mov rax, rax
+     add r8, rax
+     mov rax, rdi
+     sar rax, 0x02
+     mov rax, rax
+     add r8, rax
+     cmp rcx, rsi
+     jnle :0
      jmp :1
 
-000: add rax, 0x01
-001: test cl, cl
-     jnz :2
+000: add r8, 0x01
+001: mov rdx, r8
+     cmp rsi, rcx
+     jl :2
      jmp :3
 
-002: add rax, 0x02
-003: test cl, cl
-     jnz :4
+002: add rdx, 0x02
+003: cmp rcx, rsi
+     jnl :4
      jmp :5
 
-004: add rax, 0x04
-005: mov rdx, 0x00
-     test dl, dl
-     jnz :6
+004: add rdx, 0x04
+005: cmp rcx, rsi
+     jle :6
      jmp :7
 
-006: add rax, 0x08
-007: test cl, cl
-     jnz :8
+006: add rdx, 0x08
+007: cmp rcx, rcx
+     jz :8
      jmp :9
 
-008: add rax, 0x10
-009: test cl, cl
+008: add rdx, 0x10
+009: cmp rcx, rsi
      jnz :10
      jmp :11
 
-010: add rax, 0x20
-011: test cl, cl
-     jnz :12
+010: add rdx, 0x20
+011: cmp rdi, rsi
+     jl :12
      jmp :13
 
-012: add rax, 0x40
-013: add rax, 0x03
-     add rax, 0x02
-     add rax, 0x01
-     add rax, 0x01
-     add rax, 0x04
-     add rax, 0x16
-     add rax, 0x12
-     add rax, 0x10
-     add rax, 0x50
-     add rax, 0x05
-     add rax, 0x01
-     test cl, cl
-     jnz :14
-     jmp :15
+012: add rdx, 0x40
+013: mov rax, rdx
+     ret
+batch:
+     mov rcx, rdi
+     mov rdi, rdx
+     mov rdx, rcx
+     mov rax, rsi
+     imul dl
+     movzx eax, al
+     mov r8, 0x00
+     add r8, rax
+     mov rax, rcx
+     movzx eax, al
+     div sil
+     movzx eax, al
+     mov r9, r8
+     add r9, rax
+     mov rax, rcx
+     movzx eax, al
+     div sil
+     movsx edx, ah
+     movzx eax, dl
+     add r9, rax
+     mov r8, rsi
+     mov rax, rdi
+     movzx eax, al
+     div r8b
+     movzx eax, al
+     add r9, rax
+     mov r8, rsi
+     mov rax, rdi
+     movzx eax, al
+     div r8b
+     movsx edx, ah
+     movzx eax, dl
+     add r9, rax
+     mov rdx, rcx
+     and dl, sil
+     movzx eax, dl
+     mov r8, r9
+     add r8, rax
+     mov rdx, rcx
+     or dl, sil
+     movzx eax, dl
+     add r8, rax
+     mov rdx, rcx
+     xor dl, sil
+     movzx eax, dl
+     add r8, rax
+     mov rax, rcx
+     mov rdx, rsi
+     not dl
+     and dl, al
+     movzx eax, dl
+     add r8, rax
+     mov rax, rcx
+     shl al, 0x02
+     movzx eax, al
+     add r8, rax
+     mov rax, rcx
+     shr al, 0x02
+     movzx eax, al
+     add r8, rax
+     mov rax, rdi
+     shr al, 0x02
+     movzx eax, al
+     add r8, rax
+     cmp cl, sil
+     jnbe :0
+     jmp :1
 
-014: add rax, 0x01
-015: test cl, cl
-     jnz :16
-     jmp :17
+000: add r8, 0x01
+001: cmp sil, cl
+     jb :2
+     jmp :3
 
-016: add rax, 0x02
-017: test cl, cl
-     jnz :18
-     jmp :19
+002: add r8, 0x02
+003: cmp cl, sil
+     jnb :4
+     jmp :5
 
-018: add rax, 0x04
-019: test dl, dl
-     jnz :20
-     jmp :21
+004: add r8, 0x04
+005: cmp cl, sil
+     jbe :6
+     jmp :7
 
-020: add rax, 0x08
-021: test cl, cl
-     jnz :22
-     jmp :23
+006: add r8, 0x08
+007: cmp cl, cl
+     jz :8
+     jmp :9
 
-022: add rax, 0x10
-023: test cl, cl
-     jnz :24
-     jmp :25
+008: add r8, 0x10
+009: cmp cl, sil
+     jnz :10
+     jmp :11
 
-024: add rax, 0x20
-025: test dl, dl
-     jnz :26
-     jmp :27
+010: add r8, 0x20
+011: cmp dil, sil
+     jb :12
+     jmp :13
 
-026: add rax, 0x40
-027: add rax, 0x03
-     add rax, 0x02
-     add rax, 0x01
-     add rax, 0x01
-     add rax, 0x04
-     add rax, 0x16
-     add rax, 0x12
-     add rax, 0x10
-     add rax, 0x50
-     add rax, 0x05
-     add rax, 0x01
-     test cl, cl
-     jnz :28
-     jmp :29
+012: add r8, 0x40
+013: mov rax, r8
+     ret
+batch:
+     mov rcx, rdi
+     mov rdi, rdx
+     mov rax, rcx
+     imul ax, si
+     movzx eax, ax
+     mov r8, 0x00
+     add r8, rax
+     mov rax, rcx
+     xor rdx, rdx
+     div si
+     movzx eax, ax
+     add r8, rax
+     mov rax, rcx
+     xor rdx, rdx
+     div si
+     movzx eax, dx
+     add r8, rax
+     mov rax, rdi
+     xor rdx, rdx
+     div si
+     movzx eax, ax
+     add r8, rax
+     mov rax, rdi
+     xor rdx, rdx
+     div si
+     movzx eax, dx
+     add r8, rax
+     mov rax, rcx
+     and ax, si
+     movzx eax, ax
+     add r8, rax
+     mov rax, rcx
+     or ax, si
+     movzx eax, ax
+     add r8, rax
+     mov rax, rcx
+     xor ax, si
+     movzx eax, ax
+     add r8, rax
+     mov rax, rcx
+     mov rdx, rsi
+     not dx
+     and dx, ax
+     movzx eax, dx
+     add r8, rax
+     mov rax, rcx
+     shl ax, 0x02
+     movzx eax, ax
+     add r8, rax
+     mov rax, rcx
+     shr ax, 0x02
+     movzx eax, ax
+     add r8, rax
+     mov rax, rdi
+     shr ax, 0x02
+     movzx eax, ax
+     add r8, rax
+     cmp cx, si
+     jnbe :0
+     jmp :1
 
-028: add rax, 0x01
-029: test cl, cl
-     jnz :30
-     jmp :31
+000: add r8, 0x01
+001: mov rdx, r8
+     cmp si, cx
+     jb :2
+     jmp :3
 
-030: add rax, 0x02
-031: test cl, cl
-     jnz :32
-     jmp :33
+002: add rdx, 0x02
+003: cmp cx, si
+     jnb :4
+     jmp :5
 
-032: add rax, 0x04
-033: test dl, dl
-     jnz :34
-     jmp :35
+004: add rdx, 0x04
+005: cmp cx, si
+     jbe :6
+     jmp :7
 
-034: add rax, 0x08
-035: test cl, cl
-     jnz :36
-     jmp :37
+006: add rdx, 0x08
+007: cmp cx, cx
+     jz :8
+     jmp :9
 
-036: add rax, 0x10
-037: test cl, cl
-     jnz :38
-     jmp :39
+008: add rdx, 0x10
+009: cmp cx, si
+     jnz :10
+     jmp :11
 
-038: add rax, 0x20
-039: test dl, dl
-     jnz :40
-     jmp :41
+010: add rdx, 0x20
+011: cmp di, si
+     jb :12
+     jmp :13
 
-040: add rax, 0x40
-041: add rax, 0x03
-     add rax, 0x02
-     add rax, 0x01
-     add rax, 0x01
-     add rax, 0x04
-     add rax, 0x16
-     add rax, 0x12
-     add rax, 0x10
-     add rax, 0x50
-     add rax, 0x05
-     add rax, 0x01
-     test cl, cl
-     jnz :42
-     jmp :43
+012: add rdx, 0x40
+013: mov rax, rdx
+     ret
+batch:
+     mov rcx, rdi
+     mov rdi, rdx
+     mov rax, rcx
+     imul eax, esi
+     mov eax, eax
+     mov r8, 0x00
+     add r8, rax
+     mov rax, rcx
+     xor rdx, rdx
+     div esi
+     mov eax, eax
+     add r8, rax
+     mov rax, rcx
+     xor rdx, rdx
+     div esi
+     mov eax, edx
+     add r8, rax
+     mov rax, rdi
+     xor rdx, rdx
+     div esi
+     mov eax, eax
+     add r8, rax
+     mov rax, rdi
+     xor rdx, rdx
+     div esi
+     mov eax, edx
+     add r8, rax
+     mov rax, rcx
+     and eax, esi
+     mov eax, eax
+     add r8, rax
+     mov rax, rcx
+     or eax, esi
+     mov eax, eax
+     add r8, rax
+     mov rax, rcx
+     xor eax, esi
+     mov eax, eax
+     add r8, rax
+     mov rax, rcx
+     mov rdx, rsi
+     not edx
+     and edx, eax
+     mov eax, edx
+     add r8, rax
+     mov rax, rcx
+     shl eax, 0x02
+     mov eax, eax
+     add r8, rax
+     mov rax, rcx
+     shr eax, 0x02
+     mov eax, eax
+     add r8, rax
+     mov rax, rdi
+     shr eax, 0x02
+     mov eax, eax
+     add r8, rax
+     cmp ecx, esi
+     jnbe :0
+     jmp :1
 
-042: add rax, 0x01
-043: test cl, cl
-     jnz :44
-     jmp :45
+000: add r8, 0x01
+001: mov rdx, r8
+     cmp esi, ecx
+     jb :2
+     jmp :3
 
-044: add rax, 0x02
-045: test cl, cl
-     jnz :46
-     jmp :47
+002: add rdx, 0x02
+003: cmp ecx, esi
+     jnb :4
+     jmp :5
 
-046: add rax, 0x04
-047: test dl, dl
-     jnz :48
-     jmp :49
+004: add rdx, 0x04
+005: cmp ecx, esi
+     jbe :6
+     jmp :7
 
-048: add rax, 0x08
-049: test cl, cl
-     jnz :50
-     jmp :51
+006: add rdx, 0x08
+007: cmp ecx, ecx
+     jz :8
+     jmp :9
 
-050: add rax, 0x10
-051: test cl, cl
-     jnz :52
-     jmp :53
+008: add rdx, 0x10
+009: cmp ecx, esi
+     jnz :10
+     jmp :11
 
-052: add rax, 0x20
-053: test dl, dl
-     jnz :54
-     jmp :55
+010: add rdx, 0x20
+011: cmp edi, esi
+     jb :12
+     jmp :13
 
-054: add rax, 0x40
-055: add rax, 0x03
-     add rax, 0x02
-     add rax, 0xFFFFFFFFFFFFFFFF
-     add rax, 0xFFFFFFFFFFFFFFFF
-     add rax, 0x04
-     add rax, 0x16
-     add rax, 0x12
-     add rax, 0x10
-     add rax, 0x50
-     add rax, 0x05
-     add rax, 0xFFFFFFFFFFFFFFFE
-     test cl, cl
-     jnz :56
-     jmp :57
+012: add rdx, 0x40
+013: mov rax, rdx
+     ret
+batch:
+     mov rcx, rdi
+     mov rdi, rdx
+     mov rdx, rcx
+     mov rax, rsi
+     imul dl
+     movsx rax, al
+     mov r8, 0x00
+     add r8, rax
+     mov rax, rcx
+     cbw
+     idiv sil
+     movsx rax, al
+     mov r9, r8
+     add r9, rax
+     mov rax, rcx
+     cbw
+     idiv sil
+     movzx edx, ah
+     movsx rax, dl
+     add r9, rax
+     mov r8, rsi
+     mov rax, rdi
+     cbw
+     idiv r8b
+     movsx rax, al
+     add r9, rax
+     mov r8, rsi
+     mov rax, rdi
+     cbw
+     idiv r8b
+     movzx edx, ah
+     movsx rax, dl
+     add r9, rax
+     mov rdx, rcx
+     and dl, sil
+     movsx rax, dl
+     mov r8, r9
+     add r8, rax
+     mov rdx, rcx
+     or dl, sil
+     movsx rax, dl
+     add r8, rax
+     mov rdx, rcx
+     xor dl, sil
+     movsx rax, dl
+     add r8, rax
+     mov rax, rcx
+     mov rdx, rsi
+     not dl
+     and dl, al
+     movsx rax, dl
+     add r8, rax
+     mov rax, rcx
+     shl al, 0x02
+     movsx rax, al
+     add r8, rax
+     mov rax, rcx
+     sar al, 0x02
+     movsx rax, al
+     add r8, rax
+     mov rax, rdi
+     sar al, 0x02
+     movsx rax, al
+     add r8, rax
+     cmp cl, sil
+     jnle :0
+     jmp :1
 
-056: add rax, 0x01
-057: test cl, cl
-     jnz :58
-     jmp :59
+000: add r8, 0x01
+001: cmp sil, cl
+     jl :2
+     jmp :3
 
-058: add rax, 0x02
-059: test cl, cl
-     jnz :60
-     jmp :61
+002: add r8, 0x02
+003: cmp cl, sil
+     jnl :4
+     jmp :5
 
-060: add rax, 0x04
-061: test dl, dl
-     jnz :62
-     jmp :63
+004: add r8, 0x04
+005: cmp cl, sil
+     jle :6
+     jmp :7
 
-062: add rax, 0x08
-063: test cl, cl
-     jnz :64
-     jmp :65
+006: add r8, 0x08
+007: cmp cl, cl
+     jz :8
+     jmp :9
 
-064: add rax, 0x10
-065: test cl, cl
-     jnz :66
-     jmp :67
+008: add r8, 0x10
+009: cmp cl, sil
+     jnz :10
+     jmp :11
 
-066: add rax, 0x20
-067: test cl, cl
-     jnz :68
-     jmp :69
+010: add r8, 0x20
+011: cmp dil, sil
+     jl :12
+     jmp :13
 
-068: add rax, 0x40
-069: add rax, 0x03
-     add rax, 0x02
-     add rax, 0xFFFFFFFFFFFFFFFF
-     add rax, 0xFFFFFFFFFFFFFFFF
-     add rax, 0x04
-     add rax, 0x16
-     add rax, 0x12
-     add rax, 0x10
-     add rax, 0x50
-     add rax, 0x05
-     add rax, 0xFFFFFFFFFFFFFFFE
-     test cl, cl
-     jnz :70
-     jmp :71
+012: add r8, 0x40
+013: mov rax, r8
+     ret
+batch:
+     mov rcx, rdi
+     mov rdi, rdx
+     mov rax, rcx
+     imul ax, si
+     movsx rax, ax
+     mov r8, 0x00
+     add r8, rax
+     mov rax, rcx
+     cwd
+     idiv si
+     movsx rax, ax
+     add r8, rax
+     mov rax, rcx
+     cwd
+     idiv si
+     movsx rax, dx
+     add r8, rax
+     mov rax, rdi
+     cwd
+     idiv si
+     movsx rax, ax
+     add r8, rax
+     mov rax, rdi
+     cwd
+     idiv si
+     movsx rax, dx
+     add r8, rax
+     mov rax, rcx
+     and ax, si
+     movsx rax, ax
+     add r8, rax
+     mov rax, rcx
+     or ax, si
+     movsx rax, ax
+     add r8, rax
+     mov rax, rcx
+     xor ax, si
+     movsx rax, ax
+     add r8, rax
+     mov rax, rcx
+     mov rdx, rsi
+     not dx
+     and dx, ax
+     movsx rax, dx
+     add r8, rax
+     mov rax, rcx
+     shl ax, 0x02
+     movsx rax, ax
+     add r8, rax
+     mov rax, rcx
+     sar ax, 0x02
+     movsx rax, ax
+     add r8, rax
+     mov rax, rdi
+     sar ax, 0x02
+     movsx rax, ax
+     add r8, rax
+     cmp cx, si
+     jnle :0
+     jmp :1
 
-070: add rax, 0x01
-071: test cl, cl
-     jnz :72
-     jmp :73
+000: add r8, 0x01
+001: mov rdx, r8
+     cmp si, cx
+     jl :2
+     jmp :3
 
-072: add rax, 0x02
-073: test cl, cl
-     jnz :74
-     jmp :75
+002: add rdx, 0x02
+003: cmp cx, si
+     jnl :4
+     jmp :5
 
-074: add rax, 0x04
-075: test dl, dl
-     jnz :76
-     jmp :77
+004: add rdx, 0x04
+005: cmp cx, si
+     jle :6
+     jmp :7
 
-076: add rax, 0x08
-077: test cl, cl
-     jnz :78
-     jmp :79
+006: add rdx, 0x08
+007: cmp cx, cx
+     jz :8
+     jmp :9
 
-078: add rax, 0x10
-079: test cl, cl
-     jnz :80
-     jmp :81
+008: add rdx, 0x10
+009: cmp cx, si
+     jnz :10
+     jmp :11
 
-080: add rax, 0x20
-081: test cl, cl
-     jnz :82
-     jmp :83
+010: add rdx, 0x20
+011: cmp di, si
+     jl :12
+     jmp :13
 
-082: add rax, 0x40
-083: add rax, 0x03
-     add rax, 0x02
-     add rax, 0xFFFFFFFFFFFFFFFF
-     add rax, 0xFFFFFFFFFFFFFFFF
-     add rax, 0x04
-     add rax, 0x16
-     add rax, 0x12
-     add rax, 0x10
-     add rax, 0x50
-     add rax, 0x05
-     add rax, 0xFFFFFFFFFFFFFFFE
-     test cl, cl
-     jnz :84
-     jmp :85
+012: add rdx, 0x40
+013: mov rax, rdx
+     ret
+batch:
+     mov rcx, rdi
+     mov rdi, rdx
+     mov rax, rcx
+     imul eax, esi
+     movsxd rax, eax
+     mov r8, 0x00
+     add r8, rax
+     mov rax, rcx
+     cdq
+     idiv esi
+     movsxd rax, eax
+     add r8, rax
+     mov rax, rcx
+     cdq
+     idiv esi
+     movsxd rax, edx
+     add r8, rax
+     mov rax, rdi
+     cdq
+     idiv esi
+     movsxd rax, eax
+     add r8, rax
+     mov rax, rdi
+     cdq
+     idiv esi
+     movsxd rax, edx
+     add r8, rax
+     mov rax, rcx
+     and eax, esi
+     movsxd rax, eax
+     add r8, rax
+     mov rax, rcx
+     or eax, esi
+     movsxd rax, eax
+     add r8, rax
+     mov rax, rcx
+     xor eax, esi
+     movsxd rax, eax
+     add r8, rax
+     mov rax, rcx
+     mov rdx, rsi
+     not edx
+     and edx, eax
+     movsxd rax, edx
+     add r8, rax
+     mov rax, rcx
+     shl eax, 0x02
+     movsxd rax, eax
+     add r8, rax
+     mov rax, rcx
+     sar eax, 0x02
+     movsxd rax, eax
+     add r8, rax
+     mov rax, rdi
+     sar eax, 0x02
+     movsxd rax, eax
+     add r8, rax
+     cmp ecx, esi
+     jnle :0
+     jmp :1
 
-084: add rax, 0x01
-085: test cl, cl
-     jnz :86
-     jmp :87
+000: add r8, 0x01
+001: mov rdx, r8
+     cmp esi, ecx
+     jl :2
+     jmp :3
 
-086: add rax, 0x02
-087: test cl, cl
-     jnz :88
-     jmp :89
+002: add rdx, 0x02
+003: cmp ecx, esi
+     jnl :4
+     jmp :5
 
-088: add rax, 0x04
-089: test dl, dl
-     jnz :90
-     jmp :91
+004: add rdx, 0x04
+005: cmp ecx, esi
+     jle :6
+     jmp :7
 
-090: add rax, 0x08
-091: test cl, cl
-     jnz :92
-     jmp :93
+006: add rdx, 0x08
+007: cmp ecx, ecx
+     jz :8
+     jmp :9
 
-092: add rax, 0x10
-093: test cl, cl
-     jnz :94
-     jmp :95
+008: add rdx, 0x10
+009: cmp ecx, esi
+     jnz :10
+     jmp :11
 
-094: add rax, 0x20
-095: test cl, cl
-     jnz :96
-     jmp :97
+010: add rdx, 0x20
+011: cmp edi, esi
+     jl :12
+     jmp :13
 
-096: add rax, 0x40
-097: ret
-=========== OPT LEVEL: moderate ===========
+012: add rdx, 0x40
+013: mov rax, rdx
+     ret
+=========== OPT LEVEL: mininal ===========
+batch:
 main:
-     mov rax, 0x694
+     push rbx
+     push rbp
+     push r12
+     push r13
+     push r14
+     push r15
+     sub rsp, 0x08
+     mov rdi, 0x14
+     mov rsi, 0x06
+     mov rdx, 0xFFFFFFFFFFFFFFF9
+     call :batch
+     mov rbx, rax
+     mov rdx, 0x07
+     mov rdi, 0x14
+     mov rsi, 0x06
+     call :batch
+     mov rbp, rax
+     mov rdx, 0x07
+     mov rdi, 0x14
+     mov rsi, 0x06
+     call :batch
+     mov r12, rax
+     mov rdx, 0x07
+     mov rdi, 0x14
+     mov rsi, 0x06
+     call :batch
+     mov r13, rax
+     mov rdx, 0xFFFFFFFFFFFFFFF9
+     mov rdi, 0x14
+     mov rsi, 0x06
+     call :batch
+     mov r14, rax
+     mov rdx, 0xFFFFFFFFFFFFFFF9
+     mov rdi, 0x14
+     mov rsi, 0x06
+     call :batch
+     mov r15, rax
+     mov rdx, 0xFFFFFFFFFFFFFFF9
+     mov rdi, 0x14
+     mov rsi, 0x06
+     call :batch
+     mov rdx, rax
+     mov rax, 0x00
+     add rax, rbx
+     add rax, rbp
+     add rax, r12
+     add rax, r13
+     add rax, r14
+     add rax, r15
+     add rax, rdx
+     add rsp, 0x08
+     pop r15
+     pop r14
+     pop r13
+     pop r12
+     pop rbp
+     pop rbx
+     ret
+batch:
+     mov rcx, rdi
+     mov rdi, rdx
+     mov rax, rcx
+     imul rax, rsi
+     mov r8, 0x00
+     add r8, rax
+     mov rax, rcx
+     cqo
+     idiv rsi
+     add r8, rax
+     mov rax, rcx
+     cqo
+     idiv rsi
+     add r8, rdx
+     mov rax, rdi
+     cqo
+     idiv rsi
+     add r8, rax
+     mov rax, rdi
+     cqo
+     idiv rsi
+     add r8, rdx
+     mov rax, rcx
+     and rax, rsi
+     add r8, rax
+     mov rax, rcx
+     or rax, rsi
+     add r8, rax
+     mov rax, rcx
+     xor rax, rsi
+     add r8, rax
+     mov rax, rcx
+     mov rdx, rsi
+     not rdx
+     and rdx, rax
+     add r8, rdx
+     mov rax, rcx
+     shl rax, 0x02
+     add r8, rax
+     mov rax, rcx
+     sar rax, 0x02
+     add r8, rax
+     mov rax, rdi
+     sar rax, 0x02
+     add r8, rax
+     cmp rcx, rsi
+     jnle :0
+     jmp :1
+
+000: add r8, 0x01
+001: cmp rsi, rcx
+     jl :2
+     jmp :3
+
+002: add r8, 0x02
+003: mov rdx, r8
+     cmp rcx, rsi
+     jnl :4
+     jmp :5
+
+004: add rdx, 0x04
+005: cmp rcx, rsi
+     jle :6
+     jmp :7
+
+006: add rdx, 0x08
+007: mov rax, 0x01
+     test rax, rax
+     jnz :8
+     jmp :9
+
+008: add rdx, 0x10
+009: cmp rcx, rsi
+     jnz :10
+     jmp :11
+
+010: add rdx, 0x20
+011: cmp rdi, rsi
+     jl :12
+     jmp :13
+
+012: add rdx, 0x40
+013: mov rax, rdx
+     ret
+batch:
+     mov rcx, rdi
+     mov rdi, rdx
+     mov rdx, rcx
+     mov rax, rsi
+     imul dl
+     movzx eax, al
+     mov r8, 0x00
+     add r8, rax
+     mov rax, rcx
+     movzx eax, al
+     div sil
+     movzx eax, al
+     mov r9, r8
+     add r9, rax
+     mov rax, rcx
+     movzx eax, al
+     div sil
+     movsx edx, ah
+     movzx eax, dl
+     add r9, rax
+     mov r8, rsi
+     mov rax, rdi
+     movzx eax, al
+     div r8b
+     movzx eax, al
+     add r9, rax
+     mov r8, rsi
+     mov rax, rdi
+     movzx eax, al
+     div r8b
+     movsx edx, ah
+     movzx eax, dl
+     add r9, rax
+     mov rdx, rcx
+     and dl, sil
+     movzx eax, dl
+     mov r8, r9
+     add r8, rax
+     mov rdx, rcx
+     or dl, sil
+     movzx eax, dl
+     add r8, rax
+     mov rdx, rcx
+     xor dl, sil
+     movzx eax, dl
+     add r8, rax
+     mov rax, rcx
+     mov rdx, rsi
+     not dl
+     and dl, al
+     movzx eax, dl
+     add r8, rax
+     mov rax, rcx
+     shl al, 0x02
+     movzx eax, al
+     add r8, rax
+     mov rax, rcx
+     shr al, 0x02
+     movzx eax, al
+     add r8, rax
+     mov rax, rdi
+     shr al, 0x02
+     movzx eax, al
+     add r8, rax
+     cmp cl, sil
+     jnbe :0
+     jmp :1
+
+000: add r8, 0x01
+001: cmp sil, cl
+     jb :2
+     jmp :3
+
+002: add r8, 0x02
+003: cmp cl, sil
+     jnb :4
+     jmp :5
+
+004: add r8, 0x04
+005: cmp cl, sil
+     jbe :6
+     jmp :7
+
+006: add r8, 0x08
+007: mov rax, 0x01
+     test rax, rax
+     jnz :8
+     jmp :9
+
+008: add r8, 0x10
+009: cmp cl, sil
+     jnz :10
+     jmp :11
+
+010: add r8, 0x20
+011: cmp dil, sil
+     jb :12
+     jmp :13
+
+012: add r8, 0x40
+013: mov rax, r8
+     ret
+batch:
+     mov rcx, rdi
+     mov rdi, rdx
+     mov rax, rcx
+     imul ax, si
+     movzx eax, ax
+     mov r8, 0x00
+     add r8, rax
+     mov rax, rcx
+     xor rdx, rdx
+     div si
+     movzx eax, ax
+     add r8, rax
+     mov rax, rcx
+     xor rdx, rdx
+     div si
+     movzx eax, dx
+     add r8, rax
+     mov rax, rdi
+     xor rdx, rdx
+     div si
+     movzx eax, ax
+     add r8, rax
+     mov rax, rdi
+     xor rdx, rdx
+     div si
+     movzx eax, dx
+     add r8, rax
+     mov rax, rcx
+     and ax, si
+     movzx eax, ax
+     add r8, rax
+     mov rax, rcx
+     or ax, si
+     movzx eax, ax
+     add r8, rax
+     mov rax, rcx
+     xor ax, si
+     movzx eax, ax
+     add r8, rax
+     mov rax, rcx
+     mov rdx, rsi
+     not dx
+     and dx, ax
+     movzx eax, dx
+     add r8, rax
+     mov rax, rcx
+     shl ax, 0x02
+     movzx eax, ax
+     add r8, rax
+     mov rax, rcx
+     shr ax, 0x02
+     movzx eax, ax
+     add r8, rax
+     mov rax, rdi
+     shr ax, 0x02
+     movzx eax, ax
+     add r8, rax
+     cmp cx, si
+     jnbe :0
+     jmp :1
+
+000: add r8, 0x01
+001: mov rdx, r8
+     cmp si, cx
+     jb :2
+     jmp :3
+
+002: add rdx, 0x02
+003: cmp cx, si
+     jnb :4
+     jmp :5
+
+004: add rdx, 0x04
+005: cmp cx, si
+     jbe :6
+     jmp :7
+
+006: add rdx, 0x08
+007: mov rax, 0x01
+     test rax, rax
+     jnz :8
+     jmp :9
+
+008: add rdx, 0x10
+009: cmp cx, si
+     jnz :10
+     jmp :11
+
+010: add rdx, 0x20
+011: cmp di, si
+     jb :12
+     jmp :13
+
+012: add rdx, 0x40
+013: mov rax, rdx
+     ret
+batch:
+     mov rcx, rdi
+     mov rdi, rdx
+     mov rax, rcx
+     imul eax, esi
+     mov eax, eax
+     mov r8, 0x00
+     add r8, rax
+     mov rax, rcx
+     xor rdx, rdx
+     div esi
+     mov eax, eax
+     add r8, rax
+     mov rax, rcx
+     xor rdx, rdx
+     div esi
+     mov eax, edx
+     add r8, rax
+     mov rax, rdi
+     xor rdx, rdx
+     div esi
+     mov eax, eax
+     add r8, rax
+     mov rax, rdi
+     xor rdx, rdx
+     div esi
+     mov eax, edx
+     add r8, rax
+     mov rax, rcx
+     and eax, esi
+     mov eax, eax
+     add r8, rax
+     mov rax, rcx
+     or eax, esi
+     mov eax, eax
+     add r8, rax
+     mov rax, rcx
+     xor eax, esi
+     mov eax, eax
+     add r8, rax
+     mov rax, rcx
+     mov rdx, rsi
+     not edx
+     and edx, eax
+     mov eax, edx
+     add r8, rax
+     mov rax, rcx
+     shl eax, 0x02
+     mov eax, eax
+     add r8, rax
+     mov rax, rcx
+     shr eax, 0x02
+     mov eax, eax
+     add r8, rax
+     mov rax, rdi
+     shr eax, 0x02
+     mov eax, eax
+     add r8, rax
+     cmp ecx, esi
+     jnbe :0
+     jmp :1
+
+000: add r8, 0x01
+001: mov rdx, r8
+     cmp esi, ecx
+     jb :2
+     jmp :3
+
+002: add rdx, 0x02
+003: cmp ecx, esi
+     jnb :4
+     jmp :5
+
+004: add rdx, 0x04
+005: cmp ecx, esi
+     jbe :6
+     jmp :7
+
+006: add rdx, 0x08
+007: mov rax, 0x01
+     test rax, rax
+     jnz :8
+     jmp :9
+
+008: add rdx, 0x10
+009: cmp ecx, esi
+     jnz :10
+     jmp :11
+
+010: add rdx, 0x20
+011: cmp edi, esi
+     jb :12
+     jmp :13
+
+012: add rdx, 0x40
+013: mov rax, rdx
+     ret
+batch:
+     mov rcx, rdi
+     mov rdi, rdx
+     mov rdx, rcx
+     mov rax, rsi
+     imul dl
+     movsx rax, al
+     mov r8, 0x00
+     add r8, rax
+     mov rax, rcx
+     cbw
+     idiv sil
+     movsx rax, al
+     mov r9, r8
+     add r9, rax
+     mov rax, rcx
+     cbw
+     idiv sil
+     movzx edx, ah
+     movsx rax, dl
+     add r9, rax
+     mov r8, rsi
+     mov rax, rdi
+     cbw
+     idiv r8b
+     movsx rax, al
+     add r9, rax
+     mov r8, rsi
+     mov rax, rdi
+     cbw
+     idiv r8b
+     movzx edx, ah
+     movsx rax, dl
+     add r9, rax
+     mov rdx, rcx
+     and dl, sil
+     movsx rax, dl
+     mov r8, r9
+     add r8, rax
+     mov rdx, rcx
+     or dl, sil
+     movsx rax, dl
+     add r8, rax
+     mov rdx, rcx
+     xor dl, sil
+     movsx rax, dl
+     add r8, rax
+     mov rax, rcx
+     mov rdx, rsi
+     not dl
+     and dl, al
+     movsx rax, dl
+     add r8, rax
+     mov rax, rcx
+     shl al, 0x02
+     movsx rax, al
+     add r8, rax
+     mov rax, rcx
+     sar al, 0x02
+     movsx rax, al
+     add r8, rax
+     mov rax, rdi
+     sar al, 0x02
+     movsx rax, al
+     add r8, rax
+     cmp cl, sil
+     jnle :0
+     jmp :1
+
+000: add r8, 0x01
+001: cmp sil, cl
+     jl :2
+     jmp :3
+
+002: add r8, 0x02
+003: cmp cl, sil
+     jnl :4
+     jmp :5
+
+004: add r8, 0x04
+005: cmp cl, sil
+     jle :6
+     jmp :7
+
+006: add r8, 0x08
+007: mov rax, 0x01
+     test rax, rax
+     jnz :8
+     jmp :9
+
+008: add r8, 0x10
+009: cmp cl, sil
+     jnz :10
+     jmp :11
+
+010: add r8, 0x20
+011: cmp dil, sil
+     jl :12
+     jmp :13
+
+012: add r8, 0x40
+013: mov rax, r8
+     ret
+batch:
+     mov rcx, rdi
+     mov rdi, rdx
+     mov rax, rcx
+     imul ax, si
+     movsx rax, ax
+     mov r8, 0x00
+     add r8, rax
+     mov rax, rcx
+     cwd
+     idiv si
+     movsx rax, ax
+     add r8, rax
+     mov rax, rcx
+     cwd
+     idiv si
+     movsx rax, dx
+     add r8, rax
+     mov rax, rdi
+     cwd
+     idiv si
+     movsx rax, ax
+     add r8, rax
+     mov rax, rdi
+     cwd
+     idiv si
+     movsx rax, dx
+     add r8, rax
+     mov rax, rcx
+     and ax, si
+     movsx rax, ax
+     add r8, rax
+     mov rax, rcx
+     or ax, si
+     movsx rax, ax
+     add r8, rax
+     mov rax, rcx
+     xor ax, si
+     movsx rax, ax
+     add r8, rax
+     mov rax, rcx
+     mov rdx, rsi
+     not dx
+     and dx, ax
+     movsx rax, dx
+     add r8, rax
+     mov rax, rcx
+     shl ax, 0x02
+     movsx rax, ax
+     add r8, rax
+     mov rax, rcx
+     sar ax, 0x02
+     movsx rax, ax
+     add r8, rax
+     mov rax, rdi
+     sar ax, 0x02
+     movsx rax, ax
+     add r8, rax
+     cmp cx, si
+     jnle :0
+     jmp :1
+
+000: add r8, 0x01
+001: mov rdx, r8
+     cmp si, cx
+     jl :2
+     jmp :3
+
+002: add rdx, 0x02
+003: cmp cx, si
+     jnl :4
+     jmp :5
+
+004: add rdx, 0x04
+005: cmp cx, si
+     jle :6
+     jmp :7
+
+006: add rdx, 0x08
+007: mov rax, 0x01
+     test rax, rax
+     jnz :8
+     jmp :9
+
+008: add rdx, 0x10
+009: cmp cx, si
+     jnz :10
+     jmp :11
+
+010: add rdx, 0x20
+011: cmp di, si
+     jl :12
+     jmp :13
+
+012: add rdx, 0x40
+013: mov rax, rdx
+     ret
+batch:
+     mov rcx, rdi
+     mov rdi, rdx
+     mov rax, rcx
+     imul eax, esi
+     movsxd rax, eax
+     mov r8, 0x00
+     add r8, rax
+     mov rax, rcx
+     cdq
+     idiv esi
+     movsxd rax, eax
+     add r8, rax
+     mov rax, rcx
+     cdq
+     idiv esi
+     movsxd rax, edx
+     add r8, rax
+     mov rax, rdi
+     cdq
+     idiv esi
+     movsxd rax, eax
+     add r8, rax
+     mov rax, rdi
+     cdq
+     idiv esi
+     movsxd rax, edx
+     add r8, rax
+     mov rax, rcx
+     and eax, esi
+     movsxd rax, eax
+     add r8, rax
+     mov rax, rcx
+     or eax, esi
+     movsxd rax, eax
+     add r8, rax
+     mov rax, rcx
+     xor eax, esi
+     movsxd rax, eax
+     add r8, rax
+     mov rax, rcx
+     mov rdx, rsi
+     not edx
+     and edx, eax
+     movsxd rax, edx
+     add r8, rax
+     mov rax, rcx
+     shl eax, 0x02
+     movsxd rax, eax
+     add r8, rax
+     mov rax, rcx
+     sar eax, 0x02
+     movsxd rax, eax
+     add r8, rax
+     mov rax, rdi
+     sar eax, 0x02
+     movsxd rax, eax
+     add r8, rax
+     cmp ecx, esi
+     jnle :0
+     jmp :1
+
+000: add r8, 0x01
+001: mov rdx, r8
+     cmp esi, ecx
+     jl :2
+     jmp :3
+
+002: add rdx, 0x02
+003: cmp ecx, esi
+     jnl :4
+     jmp :5
+
+004: add rdx, 0x04
+005: cmp ecx, esi
+     jle :6
+     jmp :7
+
+006: add rdx, 0x08
+007: mov rax, 0x01
+     test rax, rax
+     jnz :8
+     jmp :9
+
+008: add rdx, 0x10
+009: cmp ecx, esi
+     jnz :10
+     jmp :11
+
+010: add rdx, 0x20
+011: cmp edi, esi
+     jl :12
+     jmp :13
+
+012: add rdx, 0x40
+013: mov rax, rdx
+     ret
+=========== OPT LEVEL: moderate ===========
+batch:
+main:
+     push rbx
+     push rbp
+     push r12
+     push r13
+     push r14
+     push r15
+     sub rsp, 0x08
+     mov rdi, 0x14
+     mov rsi, 0x06
+     mov rdx, 0xFFFFFFFFFFFFFFF9
+     call :batch
+     mov rbx, rax
+     mov rdx, 0x07
+     mov rdi, 0x14
+     mov rsi, 0x06
+     call :batch
+     mov rbp, rax
+     mov rdx, 0x07
+     mov rdi, 0x14
+     mov rsi, 0x06
+     call :batch
+     mov r12, rax
+     mov rdx, 0x07
+     mov rdi, 0x14
+     mov rsi, 0x06
+     call :batch
+     mov r13, rax
+     mov rdx, 0xFFFFFFFFFFFFFFF9
+     mov rdi, 0x14
+     mov rsi, 0x06
+     call :batch
+     mov r14, rax
+     mov rdx, 0xFFFFFFFFFFFFFFF9
+     mov rdi, 0x14
+     mov rsi, 0x06
+     call :batch
+     mov r15, rax
+     mov rdx, 0xFFFFFFFFFFFFFFF9
+     mov rdi, 0x14
+     mov rsi, 0x06
+     call :batch
+     mov rdx, rbx
+     add rdx, rbp
+     add rdx, r12
+     add rdx, r13
+     add rdx, r14
+     add rdx, r15
+     add rdx, rax
+     mov rax, rdx
+     add rsp, 0x08
+     pop r15
+     pop r14
+     pop r13
+     pop r12
+     pop rbp
+     pop rbx
+     ret
+batch:
+     mov rcx, rdi
+     mov rdi, rdx
+     mov r8, rcx
+     imul r8, rsi
+     mov rax, rcx
+     cqo
+     idiv rsi
+     add r8, rax
+     mov rax, rcx
+     cqo
+     idiv rsi
+     add r8, rdx
+     mov rax, rdi
+     cqo
+     idiv rsi
+     add r8, rax
+     mov rax, rdi
+     cqo
+     idiv rsi
+     add r8, rdx
+     mov rax, rcx
+     and rax, rsi
+     add r8, rax
+     mov rax, rcx
+     or rax, rsi
+     add r8, rax
+     mov rax, rcx
+     xor rax, rsi
+     add r8, rax
+     mov rax, rcx
+     mov rdx, rsi
+     not rdx
+     and rdx, rax
+     add r8, rdx
+     mov rax, rcx
+     shl rax, 0x02
+     add r8, rax
+     mov rax, rcx
+     sar rax, 0x02
+     add r8, rax
+     mov rax, rdi
+     sar rax, 0x02
+     add r8, rax
+     cmp rcx, rsi
+     jnle :0
+     jmp :1
+
+000: add r8, 0x01
+001: cmp rsi, rcx
+     jl :2
+     jmp :3
+
+002: add r8, 0x02
+003: mov rdx, r8
+     cmp rcx, rsi
+     jnl :4
+     jmp :5
+
+004: add rdx, 0x04
+005: cmp rcx, rsi
+     jle :6
+     jmp :7
+
+006: add rdx, 0x08
+007: cmp rcx, rsi
+     jnz :8
+     add rdx, 0x10
+     jmp :9
+
+008: add rdx, 0x30
+009: cmp rdi, rsi
+     jl :10
+     jmp :11
+
+010: add rdx, 0x40
+011: mov rax, rdx
+     ret
+batch:
+     mov rcx, rdi
+     mov rdi, rdx
+     mov rdx, rcx
+     mov rax, rsi
+     imul dl
+     movzx r8d, al
+     mov rax, rcx
+     movzx eax, al
+     div sil
+     movzx eax, al
+     mov r9, r8
+     add r9, rax
+     mov rax, rcx
+     movzx eax, al
+     div sil
+     movsx edx, ah
+     movzx eax, dl
+     add r9, rax
+     mov r8, rsi
+     mov rax, rdi
+     movzx eax, al
+     div r8b
+     movzx eax, al
+     add r9, rax
+     mov r8, rsi
+     mov rax, rdi
+     movzx eax, al
+     div r8b
+     movsx edx, ah
+     movzx eax, dl
+     add r9, rax
+     mov rdx, rcx
+     and dl, sil
+     movzx eax, dl
+     mov r8, r9
+     add r8, rax
+     mov rdx, rcx
+     or dl, sil
+     movzx eax, dl
+     add r8, rax
+     mov rdx, rcx
+     xor dl, sil
+     movzx eax, dl
+     add r8, rax
+     mov rax, rcx
+     mov rdx, rsi
+     not dl
+     and dl, al
+     movzx eax, dl
+     add r8, rax
+     mov rax, rcx
+     shl al, 0x02
+     movzx eax, al
+     add r8, rax
+     mov rax, rcx
+     shr al, 0x02
+     movzx eax, al
+     add r8, rax
+     mov rax, rdi
+     shr al, 0x02
+     movzx eax, al
+     add r8, rax
+     cmp cl, sil
+     jnbe :0
+     jmp :1
+
+000: add r8, 0x01
+001: cmp sil, cl
+     jb :2
+     jmp :3
+
+002: add r8, 0x02
+003: cmp cl, sil
+     jnb :4
+     jmp :5
+
+004: add r8, 0x04
+005: cmp cl, sil
+     jbe :6
+     jmp :7
+
+006: add r8, 0x08
+007: cmp cl, sil
+     jnz :8
+     add r8, 0x10
+     jmp :9
+
+008: add r8, 0x30
+009: cmp dil, sil
+     jb :10
+     jmp :11
+
+010: add r8, 0x40
+011: mov rax, r8
+     ret
+batch:
+     mov rcx, rdi
+     mov rdi, rdx
+     mov rax, rcx
+     imul ax, si
+     movzx r8d, ax
+     mov rax, rcx
+     xor rdx, rdx
+     div si
+     movzx eax, ax
+     add r8, rax
+     mov rax, rcx
+     xor rdx, rdx
+     div si
+     movzx eax, dx
+     add r8, rax
+     mov rax, rdi
+     xor rdx, rdx
+     div si
+     movzx eax, ax
+     add r8, rax
+     mov rax, rdi
+     xor rdx, rdx
+     div si
+     movzx eax, dx
+     add r8, rax
+     mov rax, rcx
+     and ax, si
+     movzx eax, ax
+     add r8, rax
+     mov rax, rcx
+     or ax, si
+     movzx eax, ax
+     add r8, rax
+     mov rax, rcx
+     xor ax, si
+     movzx eax, ax
+     add r8, rax
+     mov rax, rcx
+     mov rdx, rsi
+     not dx
+     and dx, ax
+     movzx eax, dx
+     add r8, rax
+     mov rax, rcx
+     shl ax, 0x02
+     movzx eax, ax
+     add r8, rax
+     mov rax, rcx
+     shr ax, 0x02
+     movzx eax, ax
+     add r8, rax
+     mov rax, rdi
+     shr ax, 0x02
+     movzx eax, ax
+     add r8, rax
+     cmp cx, si
+     jnbe :0
+     jmp :1
+
+000: add r8, 0x01
+001: mov rdx, r8
+     cmp si, cx
+     jb :2
+     jmp :3
+
+002: add rdx, 0x02
+003: cmp cx, si
+     jnb :4
+     jmp :5
+
+004: add rdx, 0x04
+005: cmp cx, si
+     jbe :6
+     jmp :7
+
+006: add rdx, 0x08
+007: cmp cx, si
+     jnz :8
+     add rdx, 0x10
+     jmp :9
+
+008: add rdx, 0x30
+009: cmp di, si
+     jb :10
+     jmp :11
+
+010: add rdx, 0x40
+011: mov rax, rdx
+     ret
+batch:
+     mov rcx, rdi
+     mov rdi, rdx
+     mov rax, rcx
+     imul eax, esi
+     mov r8d, eax
+     mov rax, rcx
+     xor rdx, rdx
+     div esi
+     mov eax, eax
+     add r8, rax
+     mov rax, rcx
+     xor rdx, rdx
+     div esi
+     mov eax, edx
+     add r8, rax
+     mov rax, rdi
+     xor rdx, rdx
+     div esi
+     mov eax, eax
+     add r8, rax
+     mov rax, rdi
+     xor rdx, rdx
+     div esi
+     mov eax, edx
+     add r8, rax
+     mov rax, rcx
+     and eax, esi
+     mov eax, eax
+     add r8, rax
+     mov rax, rcx
+     or eax, esi
+     mov eax, eax
+     add r8, rax
+     mov rax, rcx
+     xor eax, esi
+     mov eax, eax
+     add r8, rax
+     mov rax, rcx
+     mov rdx, rsi
+     not edx
+     and edx, eax
+     mov eax, edx
+     add r8, rax
+     mov rax, rcx
+     shl eax, 0x02
+     mov eax, eax
+     add r8, rax
+     mov rax, rcx
+     shr eax, 0x02
+     mov eax, eax
+     add r8, rax
+     mov rax, rdi
+     shr eax, 0x02
+     mov eax, eax
+     add r8, rax
+     cmp ecx, esi
+     jnbe :0
+     jmp :1
+
+000: add r8, 0x01
+001: mov rdx, r8
+     cmp esi, ecx
+     jb :2
+     jmp :3
+
+002: add rdx, 0x02
+003: cmp ecx, esi
+     jnb :4
+     jmp :5
+
+004: add rdx, 0x04
+005: cmp ecx, esi
+     jbe :6
+     jmp :7
+
+006: add rdx, 0x08
+007: cmp ecx, esi
+     jnz :8
+     add rdx, 0x10
+     jmp :9
+
+008: add rdx, 0x30
+009: cmp edi, esi
+     jb :10
+     jmp :11
+
+010: add rdx, 0x40
+011: mov rax, rdx
+     ret
+batch:
+     mov rcx, rdi
+     mov rdi, rdx
+     mov rdx, rcx
+     mov rax, rsi
+     imul dl
+     movsx r8, al
+     mov rax, rcx
+     cbw
+     idiv sil
+     movsx rax, al
+     mov r9, r8
+     add r9, rax
+     mov rax, rcx
+     cbw
+     idiv sil
+     movzx edx, ah
+     movsx rax, dl
+     add r9, rax
+     mov r8, rsi
+     mov rax, rdi
+     cbw
+     idiv r8b
+     movsx rax, al
+     add r9, rax
+     mov r8, rsi
+     mov rax, rdi
+     cbw
+     idiv r8b
+     movzx edx, ah
+     movsx rax, dl
+     add r9, rax
+     mov rdx, rcx
+     and dl, sil
+     movsx rax, dl
+     mov r8, r9
+     add r8, rax
+     mov rdx, rcx
+     or dl, sil
+     movsx rax, dl
+     add r8, rax
+     mov rdx, rcx
+     xor dl, sil
+     movsx rax, dl
+     add r8, rax
+     mov rax, rcx
+     mov rdx, rsi
+     not dl
+     and dl, al
+     movsx rax, dl
+     add r8, rax
+     mov rax, rcx
+     shl al, 0x02
+     movsx rax, al
+     add r8, rax
+     mov rax, rcx
+     sar al, 0x02
+     movsx rax, al
+     add r8, rax
+     mov rax, rdi
+     sar al, 0x02
+     movsx rax, al
+     add r8, rax
+     cmp cl, sil
+     jnle :0
+     jmp :1
+
+000: add r8, 0x01
+001: cmp sil, cl
+     jl :2
+     jmp :3
+
+002: add r8, 0x02
+003: cmp cl, sil
+     jnl :4
+     jmp :5
+
+004: add r8, 0x04
+005: cmp cl, sil
+     jle :6
+     jmp :7
+
+006: add r8, 0x08
+007: cmp cl, sil
+     jnz :8
+     add r8, 0x10
+     jmp :9
+
+008: add r8, 0x30
+009: cmp dil, sil
+     jl :10
+     jmp :11
+
+010: add r8, 0x40
+011: mov rax, r8
+     ret
+batch:
+     mov rcx, rdi
+     mov rdi, rdx
+     mov rax, rcx
+     imul ax, si
+     movsx r8, ax
+     mov rax, rcx
+     cwd
+     idiv si
+     movsx rax, ax
+     add r8, rax
+     mov rax, rcx
+     cwd
+     idiv si
+     movsx rax, dx
+     add r8, rax
+     mov rax, rdi
+     cwd
+     idiv si
+     movsx rax, ax
+     add r8, rax
+     mov rax, rdi
+     cwd
+     idiv si
+     movsx rax, dx
+     add r8, rax
+     mov rax, rcx
+     and ax, si
+     movsx rax, ax
+     add r8, rax
+     mov rax, rcx
+     or ax, si
+     movsx rax, ax
+     add r8, rax
+     mov rax, rcx
+     xor ax, si
+     movsx rax, ax
+     add r8, rax
+     mov rax, rcx
+     mov rdx, rsi
+     not dx
+     and dx, ax
+     movsx rax, dx
+     add r8, rax
+     mov rax, rcx
+     shl ax, 0x02
+     movsx rax, ax
+     add r8, rax
+     mov rax, rcx
+     sar ax, 0x02
+     movsx rax, ax
+     add r8, rax
+     mov rax, rdi
+     sar ax, 0x02
+     movsx rax, ax
+     add r8, rax
+     cmp cx, si
+     jnle :0
+     jmp :1
+
+000: add r8, 0x01
+001: mov rdx, r8
+     cmp si, cx
+     jl :2
+     jmp :3
+
+002: add rdx, 0x02
+003: cmp cx, si
+     jnl :4
+     jmp :5
+
+004: add rdx, 0x04
+005: cmp cx, si
+     jle :6
+     jmp :7
+
+006: add rdx, 0x08
+007: cmp cx, si
+     jnz :8
+     add rdx, 0x10
+     jmp :9
+
+008: add rdx, 0x30
+009: cmp di, si
+     jl :10
+     jmp :11
+
+010: add rdx, 0x40
+011: mov rax, rdx
+     ret
+batch:
+     mov rcx, rdi
+     mov rdi, rdx
+     mov rax, rcx
+     imul eax, esi
+     movsxd r8, eax
+     mov rax, rcx
+     cdq
+     idiv esi
+     movsxd rax, eax
+     add r8, rax
+     mov rax, rcx
+     cdq
+     idiv esi
+     movsxd rax, edx
+     add r8, rax
+     mov rax, rdi
+     cdq
+     idiv esi
+     movsxd rax, eax
+     add r8, rax
+     mov rax, rdi
+     cdq
+     idiv esi
+     movsxd rax, edx
+     add r8, rax
+     mov rax, rcx
+     and eax, esi
+     movsxd rax, eax
+     add r8, rax
+     mov rax, rcx
+     or eax, esi
+     movsxd rax, eax
+     add r8, rax
+     mov rax, rcx
+     xor eax, esi
+     movsxd rax, eax
+     add r8, rax
+     mov rax, rcx
+     mov rdx, rsi
+     not edx
+     and edx, eax
+     movsxd rax, edx
+     add r8, rax
+     mov rax, rcx
+     shl eax, 0x02
+     movsxd rax, eax
+     add r8, rax
+     mov rax, rcx
+     sar eax, 0x02
+     movsxd rax, eax
+     add r8, rax
+     mov rax, rdi
+     sar eax, 0x02
+     movsxd rax, eax
+     add r8, rax
+     cmp ecx, esi
+     jnle :0
+     jmp :1
+
+000: add r8, 0x01
+001: mov rdx, r8
+     cmp esi, ecx
+     jl :2
+     jmp :3
+
+002: add rdx, 0x02
+003: cmp ecx, esi
+     jnl :4
+     jmp :5
+
+004: add rdx, 0x04
+005: cmp ecx, esi
+     jle :6
+     jmp :7
+
+006: add rdx, 0x08
+007: cmp ecx, esi
+     jnz :8
+     add rdx, 0x10
+     jmp :9
+
+008: add rdx, 0x30
+009: cmp edi, esi
+     jl :10
+     jmp :11
+
+010: add rdx, 0x40
+011: mov rax, rdx
      ret
 =========== OPT LEVEL: all ===========
+batch:
 main:
-     mov rax, 0x694
+     push rbx
+     push rbp
+     push r12
+     push r13
+     push r14
+     push r15
+     sub rsp, 0x08
+     mov rdi, 0x14
+     mov rsi, 0x06
+     mov rdx, 0xFFFFFFFFFFFFFFF9
+     call :batch
+     mov rbx, rax
+     mov rdx, 0x07
+     mov rdi, 0x14
+     mov rsi, 0x06
+     call :batch
+     mov rbp, rax
+     mov rdx, 0x07
+     mov rdi, 0x14
+     mov rsi, 0x06
+     call :batch
+     mov r12, rax
+     mov rdx, 0x07
+     mov rdi, 0x14
+     mov rsi, 0x06
+     call :batch
+     mov r13, rax
+     mov rdx, 0xFFFFFFFFFFFFFFF9
+     mov rdi, 0x14
+     mov rsi, 0x06
+     call :batch
+     mov r14, rax
+     mov rdx, 0xFFFFFFFFFFFFFFF9
+     mov rdi, 0x14
+     mov rsi, 0x06
+     call :batch
+     mov r15, rax
+     mov rdx, 0xFFFFFFFFFFFFFFF9
+     mov rdi, 0x14
+     mov rsi, 0x06
+     call :batch
+     mov rdx, rbx
+     add rdx, rbp
+     add rdx, r12
+     add rdx, r13
+     add rdx, r14
+     add rdx, r15
+     add rdx, rax
+     mov rax, rdx
+     add rsp, 0x08
+     pop r15
+     pop r14
+     pop r13
+     pop r12
+     pop rbp
+     pop rbx
+     ret
+batch:
+     mov rcx, rdi
+     mov rdi, rdx
+     mov r8, rcx
+     imul r8, rsi
+     mov rax, rcx
+     cqo
+     idiv rsi
+     add r8, rax
+     mov rax, rcx
+     cqo
+     idiv rsi
+     add r8, rdx
+     mov rax, rdi
+     cqo
+     idiv rsi
+     add r8, rax
+     mov rax, rdi
+     cqo
+     idiv rsi
+     add r8, rdx
+     mov rax, rcx
+     and rax, rsi
+     add r8, rax
+     mov rax, rcx
+     or rax, rsi
+     add r8, rax
+     mov rax, rcx
+     xor rax, rsi
+     add r8, rax
+     mov rax, rcx
+     mov rdx, rsi
+     not rdx
+     and rdx, rax
+     add r8, rdx
+     mov rax, rcx
+     shl rax, 0x02
+     add r8, rax
+     mov rax, rcx
+     sar rax, 0x02
+     add r8, rax
+     mov rax, rdi
+     sar rax, 0x02
+     add r8, rax
+     cmp rcx, rsi
+     jnle :0
+     jmp :1
+
+000: add r8, 0x01
+001: cmp rsi, rcx
+     jl :2
+     jmp :3
+
+002: add r8, 0x02
+003: mov rdx, r8
+     cmp rcx, rsi
+     jnl :4
+     jmp :5
+
+004: add rdx, 0x04
+005: cmp rcx, rsi
+     jle :6
+     jmp :7
+
+006: add rdx, 0x08
+007: cmp rcx, rsi
+     jnz :8
+     add rdx, 0x10
+     jmp :9
+
+008: add rdx, 0x30
+009: cmp rdi, rsi
+     jl :10
+     jmp :11
+
+010: add rdx, 0x40
+011: mov rax, rdx
+     ret
+batch:
+     mov rcx, rdi
+     mov rdi, rdx
+     mov rdx, rcx
+     mov rax, rsi
+     imul dl
+     movzx r8d, al
+     mov rax, rcx
+     movzx eax, al
+     div sil
+     movzx eax, al
+     mov r9, r8
+     add r9, rax
+     mov rax, rcx
+     movzx eax, al
+     div sil
+     movsx edx, ah
+     movzx eax, dl
+     add r9, rax
+     mov r8, rsi
+     mov rax, rdi
+     movzx eax, al
+     div r8b
+     movzx eax, al
+     add r9, rax
+     mov r8, rsi
+     mov rax, rdi
+     movzx eax, al
+     div r8b
+     movsx edx, ah
+     movzx eax, dl
+     add r9, rax
+     mov rdx, rcx
+     and dl, sil
+     movzx eax, dl
+     mov r8, r9
+     add r8, rax
+     mov rdx, rcx
+     or dl, sil
+     movzx eax, dl
+     add r8, rax
+     mov rdx, rcx
+     xor dl, sil
+     movzx eax, dl
+     add r8, rax
+     mov rax, rcx
+     mov rdx, rsi
+     not dl
+     and dl, al
+     movzx eax, dl
+     add r8, rax
+     mov rax, rcx
+     shl al, 0x02
+     movzx eax, al
+     add r8, rax
+     mov rax, rcx
+     shr al, 0x02
+     movzx eax, al
+     add r8, rax
+     mov rax, rdi
+     shr al, 0x02
+     movzx eax, al
+     add r8, rax
+     cmp cl, sil
+     jnbe :0
+     jmp :1
+
+000: add r8, 0x01
+001: cmp sil, cl
+     jb :2
+     jmp :3
+
+002: add r8, 0x02
+003: cmp cl, sil
+     jnb :4
+     jmp :5
+
+004: add r8, 0x04
+005: cmp cl, sil
+     jbe :6
+     jmp :7
+
+006: add r8, 0x08
+007: cmp cl, sil
+     jnz :8
+     add r8, 0x10
+     jmp :9
+
+008: add r8, 0x30
+009: cmp dil, sil
+     jb :10
+     jmp :11
+
+010: add r8, 0x40
+011: mov rax, r8
+     ret
+batch:
+     mov rcx, rdi
+     mov rdi, rdx
+     mov rax, rcx
+     imul ax, si
+     movzx r8d, ax
+     mov rax, rcx
+     xor rdx, rdx
+     div si
+     movzx eax, ax
+     add r8, rax
+     mov rax, rcx
+     xor rdx, rdx
+     div si
+     movzx eax, dx
+     add r8, rax
+     mov rax, rdi
+     xor rdx, rdx
+     div si
+     movzx eax, ax
+     add r8, rax
+     mov rax, rdi
+     xor rdx, rdx
+     div si
+     movzx eax, dx
+     add r8, rax
+     mov rax, rcx
+     and ax, si
+     movzx eax, ax
+     add r8, rax
+     mov rax, rcx
+     or ax, si
+     movzx eax, ax
+     add r8, rax
+     mov rax, rcx
+     xor ax, si
+     movzx eax, ax
+     add r8, rax
+     mov rax, rcx
+     mov rdx, rsi
+     not dx
+     and dx, ax
+     movzx eax, dx
+     add r8, rax
+     mov rax, rcx
+     shl ax, 0x02
+     movzx eax, ax
+     add r8, rax
+     mov rax, rcx
+     shr ax, 0x02
+     movzx eax, ax
+     add r8, rax
+     mov rax, rdi
+     shr ax, 0x02
+     movzx eax, ax
+     add r8, rax
+     cmp cx, si
+     jnbe :0
+     jmp :1
+
+000: add r8, 0x01
+001: mov rdx, r8
+     cmp si, cx
+     jb :2
+     jmp :3
+
+002: add rdx, 0x02
+003: cmp cx, si
+     jnb :4
+     jmp :5
+
+004: add rdx, 0x04
+005: cmp cx, si
+     jbe :6
+     jmp :7
+
+006: add rdx, 0x08
+007: cmp cx, si
+     jnz :8
+     add rdx, 0x10
+     jmp :9
+
+008: add rdx, 0x30
+009: cmp di, si
+     jb :10
+     jmp :11
+
+010: add rdx, 0x40
+011: mov rax, rdx
+     ret
+batch:
+     mov rcx, rdi
+     mov rdi, rdx
+     mov rax, rcx
+     imul eax, esi
+     mov r8d, eax
+     mov rax, rcx
+     xor rdx, rdx
+     div esi
+     mov eax, eax
+     add r8, rax
+     mov rax, rcx
+     xor rdx, rdx
+     div esi
+     mov eax, edx
+     add r8, rax
+     mov rax, rdi
+     xor rdx, rdx
+     div esi
+     mov eax, eax
+     add r8, rax
+     mov rax, rdi
+     xor rdx, rdx
+     div esi
+     mov eax, edx
+     add r8, rax
+     mov rax, rcx
+     and eax, esi
+     mov eax, eax
+     add r8, rax
+     mov rax, rcx
+     or eax, esi
+     mov eax, eax
+     add r8, rax
+     mov rax, rcx
+     xor eax, esi
+     mov eax, eax
+     add r8, rax
+     mov rax, rcx
+     mov rdx, rsi
+     not edx
+     and edx, eax
+     mov eax, edx
+     add r8, rax
+     mov rax, rcx
+     shl eax, 0x02
+     mov eax, eax
+     add r8, rax
+     mov rax, rcx
+     shr eax, 0x02
+     mov eax, eax
+     add r8, rax
+     mov rax, rdi
+     shr eax, 0x02
+     mov eax, eax
+     add r8, rax
+     cmp ecx, esi
+     jnbe :0
+     jmp :1
+
+000: add r8, 0x01
+001: mov rdx, r8
+     cmp esi, ecx
+     jb :2
+     jmp :3
+
+002: add rdx, 0x02
+003: cmp ecx, esi
+     jnb :4
+     jmp :5
+
+004: add rdx, 0x04
+005: cmp ecx, esi
+     jbe :6
+     jmp :7
+
+006: add rdx, 0x08
+007: cmp ecx, esi
+     jnz :8
+     add rdx, 0x10
+     jmp :9
+
+008: add rdx, 0x30
+009: cmp edi, esi
+     jb :10
+     jmp :11
+
+010: add rdx, 0x40
+011: mov rax, rdx
+     ret
+batch:
+     mov rcx, rdi
+     mov rdi, rdx
+     mov rdx, rcx
+     mov rax, rsi
+     imul dl
+     movsx r8, al
+     mov rax, rcx
+     cbw
+     idiv sil
+     movsx rax, al
+     mov r9, r8
+     add r9, rax
+     mov rax, rcx
+     cbw
+     idiv sil
+     movzx edx, ah
+     movsx rax, dl
+     add r9, rax
+     mov r8, rsi
+     mov rax, rdi
+     cbw
+     idiv r8b
+     movsx rax, al
+     add r9, rax
+     mov r8, rsi
+     mov rax, rdi
+     cbw
+     idiv r8b
+     movzx edx, ah
+     movsx rax, dl
+     add r9, rax
+     mov rdx, rcx
+     and dl, sil
+     movsx rax, dl
+     mov r8, r9
+     add r8, rax
+     mov rdx, rcx
+     or dl, sil
+     movsx rax, dl
+     add r8, rax
+     mov rdx, rcx
+     xor dl, sil
+     movsx rax, dl
+     add r8, rax
+     mov rax, rcx
+     mov rdx, rsi
+     not dl
+     and dl, al
+     movsx rax, dl
+     add r8, rax
+     mov rax, rcx
+     shl al, 0x02
+     movsx rax, al
+     add r8, rax
+     mov rax, rcx
+     sar al, 0x02
+     movsx rax, al
+     add r8, rax
+     mov rax, rdi
+     sar al, 0x02
+     movsx rax, al
+     add r8, rax
+     cmp cl, sil
+     jnle :0
+     jmp :1
+
+000: add r8, 0x01
+001: cmp sil, cl
+     jl :2
+     jmp :3
+
+002: add r8, 0x02
+003: cmp cl, sil
+     jnl :4
+     jmp :5
+
+004: add r8, 0x04
+005: cmp cl, sil
+     jle :6
+     jmp :7
+
+006: add r8, 0x08
+007: cmp cl, sil
+     jnz :8
+     add r8, 0x10
+     jmp :9
+
+008: add r8, 0x30
+009: cmp dil, sil
+     jl :10
+     jmp :11
+
+010: add r8, 0x40
+011: mov rax, r8
+     ret
+batch:
+     mov rcx, rdi
+     mov rdi, rdx
+     mov rax, rcx
+     imul ax, si
+     movsx r8, ax
+     mov rax, rcx
+     cwd
+     idiv si
+     movsx rax, ax
+     add r8, rax
+     mov rax, rcx
+     cwd
+     idiv si
+     movsx rax, dx
+     add r8, rax
+     mov rax, rdi
+     cwd
+     idiv si
+     movsx rax, ax
+     add r8, rax
+     mov rax, rdi
+     cwd
+     idiv si
+     movsx rax, dx
+     add r8, rax
+     mov rax, rcx
+     and ax, si
+     movsx rax, ax
+     add r8, rax
+     mov rax, rcx
+     or ax, si
+     movsx rax, ax
+     add r8, rax
+     mov rax, rcx
+     xor ax, si
+     movsx rax, ax
+     add r8, rax
+     mov rax, rcx
+     mov rdx, rsi
+     not dx
+     and dx, ax
+     movsx rax, dx
+     add r8, rax
+     mov rax, rcx
+     shl ax, 0x02
+     movsx rax, ax
+     add r8, rax
+     mov rax, rcx
+     sar ax, 0x02
+     movsx rax, ax
+     add r8, rax
+     mov rax, rdi
+     sar ax, 0x02
+     movsx rax, ax
+     add r8, rax
+     cmp cx, si
+     jnle :0
+     jmp :1
+
+000: add r8, 0x01
+001: mov rdx, r8
+     cmp si, cx
+     jl :2
+     jmp :3
+
+002: add rdx, 0x02
+003: cmp cx, si
+     jnl :4
+     jmp :5
+
+004: add rdx, 0x04
+005: cmp cx, si
+     jle :6
+     jmp :7
+
+006: add rdx, 0x08
+007: cmp cx, si
+     jnz :8
+     add rdx, 0x10
+     jmp :9
+
+008: add rdx, 0x30
+009: cmp di, si
+     jl :10
+     jmp :11
+
+010: add rdx, 0x40
+011: mov rax, rdx
+     ret
+batch:
+     mov rcx, rdi
+     mov rdi, rdx
+     mov rax, rcx
+     imul eax, esi
+     movsxd r8, eax
+     mov rax, rcx
+     cdq
+     idiv esi
+     movsxd rax, eax
+     add r8, rax
+     mov rax, rcx
+     cdq
+     idiv esi
+     movsxd rax, edx
+     add r8, rax
+     mov rax, rdi
+     cdq
+     idiv esi
+     movsxd rax, eax
+     add r8, rax
+     mov rax, rdi
+     cdq
+     idiv esi
+     movsxd rax, edx
+     add r8, rax
+     mov rax, rcx
+     and eax, esi
+     movsxd rax, eax
+     add r8, rax
+     mov rax, rcx
+     or eax, esi
+     movsxd rax, eax
+     add r8, rax
+     mov rax, rcx
+     xor eax, esi
+     movsxd rax, eax
+     add r8, rax
+     mov rax, rcx
+     mov rdx, rsi
+     not edx
+     and edx, eax
+     movsxd rax, edx
+     add r8, rax
+     mov rax, rcx
+     shl eax, 0x02
+     movsxd rax, eax
+     add r8, rax
+     mov rax, rcx
+     sar eax, 0x02
+     movsxd rax, eax
+     add r8, rax
+     mov rax, rdi
+     sar eax, 0x02
+     movsxd rax, eax
+     add r8, rax
+     cmp ecx, esi
+     jnle :0
+     jmp :1
+
+000: add r8, 0x01
+001: mov rdx, r8
+     cmp esi, ecx
+     jl :2
+     jmp :3
+
+002: add rdx, 0x02
+003: cmp ecx, esi
+     jnl :4
+     jmp :5
+
+004: add rdx, 0x04
+005: cmp ecx, esi
+     jle :6
+     jmp :7
+
+006: add rdx, 0x08
+007: cmp ecx, esi
+     jnz :8
+     add rdx, 0x10
+     jmp :9
+
+008: add rdx, 0x30
+009: cmp edi, esi
+     jl :10
+     jmp :11
+
+010: add rdx, 0x40
+011: mov rax, rdx
      ret
 =========== OPT LEVEL: aggresive ===========

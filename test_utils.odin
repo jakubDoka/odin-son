@@ -46,7 +46,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 	types.mems.scratch.reserved = 4096 * 16
 	types.mems.code.reserved = 4096 * 16
 	types.mems.reloc.reserved = 4096 * 16
-	types.mems.type.reserved = 4096 * 16
+	types.mems.type.reserved = 4096 * 128
 
 	types_init(&types)
 	defer types_deinit(&types)

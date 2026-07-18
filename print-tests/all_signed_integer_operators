@@ -6,42 +6,49 @@ main:
      mov rax, 0x00
      sub rax, 0x07
      mov rsi, rax
+     mov rdi, rcx
      mov rax, 0x14
      cqo
-     idiv rcx
-     mov rdi, rax
+     idiv rdi
+     mov rdx, rax
      mov rax, 0x00
-     add rdi, rax
+     add rdx, rax
+     mov r8, rdx
+     mov rdi, rcx
      mov rax, 0x14
      cqo
-     idiv rcx
-     add rdi, rdx
+     idiv rdi
+     add r8, rdx
+     mov rdi, rcx
      mov rax, rsi
      cqo
-     idiv rcx
-     add rdi, rax
+     idiv rdi
+     add r8, rax
+     mov rdi, rcx
      mov rax, rsi
      cqo
-     idiv rcx
-     add rdi, rdx
+     idiv rdi
+     add r8, rdx
      mov rax, rsi
      sar rax, 0x01
-     add rdi, rax
+     add r8, rax
      mov rax, rcx
      sar rax, 0x01
-     add rdi, rax
+     add r8, rax
      cmp rcx, 0x14
      jl :0
      jmp :1
 
-000: add rdi, 0x01
-001: cmp rsi, rcx
+000: add r8, 0x01
+001: mov rdi, r8
+     cmp rsi, rcx
      jl :2
      jmp :3
 
 002: add rdi, 0x02
-003: mov rax, 0x14
-     cmp rax, rcx
+003: mov rax, rcx
+     mov rdx, 0x14
+     cmp rdx, rax
      jnle :4
      jmp :5
 
@@ -51,8 +58,9 @@ main:
      jmp :7
 
 006: add rdi, 0x08
-007: mov rax, 0x14
-     cmp rax, rcx
+007: mov rax, rcx
+     mov rcx, 0x14
+     cmp rcx, rax
      jnl :8
      jmp :9
 

@@ -32,190 +32,43 @@ package main
 
 opt_level :: "none"
 
+batch :: proc(a: $T, b: T, n: T) -> int {
+	r := 0
+
+	r += int(a * b)
+	r += int(a / b)
+	r += int(a % b)
+	r += int(n / b)
+	r += int(n % b)
+	r += int(a & b)
+	r += int(a | b)
+	r += int(a ~ b)
+	r += int(a &~ b)
+	r += int(a << 2)
+	r += int(a >> 2)
+	r += int(n >> 2)
+
+	if a > b do r += 1
+	if b < a do r += 2
+	if a >= b do r += 4
+	if a <= b do r += 8
+	if a == a do r += 16
+	if a != b do r += 32
+	if n < b do r += 64
+
+	return r
+}
+
 main :: proc() -> int {
 
 	r := 0
-	{
-		a := 20
-		b := 6
-		n := 0 - 7
-
-		r += a / b
-		r += a % b
-		r += n / b
-		r += n % b
-		r += a & b
-		r += a | b
-		r += a ~ b
-		r += a &~ b
-		r += a << 2
-		r += a >> 2
-		r += n >> 2
-
-		if a > b do r += 1
-		if b < a do r += 2
-		if a >= b do r += 4
-		if a <= b do r += 8
-		if a == a do r += 16
-		if a != b do r += 32
-		if n < b do r += 64
-	}
-
-	{
-		a: u8 = 20
-		b: u8 = 6
-		n: u8 = 7
-
-		r += int(a / b)
-		r += int(a % b)
-		r += int(n / b)
-		r += int(n % b)
-		r += int(a & b)
-		r += int(a | b)
-		r += int(a ~ b)
-		r += int(a &~ b)
-		r += int(a << 2)
-		r += int(a >> 2)
-		r += int(n >> 2)
-
-		if a > b do r += 1
-		if b < a do r += 2
-		if a >= b do r += 4
-		if a <= b do r += 8
-		if a == a do r += 16
-		if a != b do r += 32
-		if n < b do r += 64
-	}
-
-	{
-		a: u16 = 20
-		b: u16 = 6
-		n: u16 = 7
-
-		r += int(a / b)
-		r += int(a % b)
-		r += int(n / b)
-		r += int(n % b)
-		r += int(a & b)
-		r += int(a | b)
-		r += int(a ~ b)
-		r += int(a &~ b)
-		r += int(a << 2)
-		r += int(a >> 2)
-		r += int(n >> 2)
-
-		if a > b do r += 1
-		if b < a do r += 2
-		if a >= b do r += 4
-		if a <= b do r += 8
-		if a == a do r += 16
-		if a != b do r += 32
-		if n < b do r += 64
-	}
-
-	{
-		a: u32 = 20
-		b: u32 = 6
-		n: u32 = 7
-
-		r += int(a / b)
-		r += int(a % b)
-		r += int(n / b)
-		r += int(n % b)
-		r += int(a & b)
-		r += int(a | b)
-		r += int(a ~ b)
-		r += int(a &~ b)
-		r += int(a << 2)
-		r += int(a >> 2)
-		r += int(n >> 2)
-
-		if a > b do r += 1
-		if b < a do r += 2
-		if a >= b do r += 4
-		if a <= b do r += 8
-		if a == a do r += 16
-		if a != b do r += 32
-		if n < b do r += 64
-	}
-
-	{
-		a: i8 = 20
-		b: i8 = 6
-		n: i8 = 0 - 7
-
-		r += int(a / b)
-		r += int(a % b)
-		r += int(n / b)
-		r += int(n % b)
-		r += int(a & b)
-		r += int(a | b)
-		r += int(a ~ b)
-		r += int(a &~ b)
-		r += int(a << 2)
-		r += int(a >> 2)
-		r += int(n >> 2)
-
-		if a > b do r += 1
-		if b < a do r += 2
-		if a >= b do r += 4
-		if a <= b do r += 8
-		if a == a do r += 16
-		if a != b do r += 32
-		if n < b do r += 64
-	}
-
-	{
-		a: i16 = 20
-		b: i16 = 6
-		n: i16 = 0 - 7
-
-		r += int(a / b)
-		r += int(a % b)
-		r += int(n / b)
-		r += int(n % b)
-		r += int(a & b)
-		r += int(a | b)
-		r += int(a ~ b)
-		r += int(a &~ b)
-		r += int(a << 2)
-		r += int(a >> 2)
-		r += int(n >> 2)
-
-		if a > b do r += 1
-		if b < a do r += 2
-		if a >= b do r += 4
-		if a <= b do r += 8
-		if a == a do r += 16
-		if a != b do r += 32
-		if n < b do r += 64
-	}
-
-	{
-		a: i32 = 20
-		b: i32 = 6
-		n: i32 = 0 - 7
-
-		r += int(a / b)
-		r += int(a % b)
-		r += int(n / b)
-		r += int(n % b)
-		r += int(a & b)
-		r += int(a | b)
-		r += int(a ~ b)
-		r += int(a &~ b)
-		r += int(a << 2)
-		r += int(a >> 2)
-		r += int(n >> 2)
-
-		if a > b do r += 1
-		if b < a do r += 2
-		if a >= b do r += 4
-		if a <= b do r += 8
-		if a == a do r += 16
-		if a != b do r += 32
-		if n < b do r += 64
-	}
+	r += batch(20, 6, -7)
+	r += batch(u8(20), 6, 7)
+	r += batch(u16(20), 6, 7)
+	r += batch(u32(20), 6, 7)
+	r += batch(i8(20), 6, -7)
+	r += batch(i16(20), 6, -7)
+	r += batch(i32(20), 6, -7)
 
 	return r
 }
@@ -750,9 +603,9 @@ package main
 
 opt_level :: "none"
 
-test_mem_shifts_i8_u8 :: proc(
-	si8: ^i8,
-	su8: ^u8,
+test_mem_shifts :: proc(
+	si8: ^$A,
+	su8: ^$B,
 	v: uint,
 ) -> int {
 	r := 0
@@ -768,63 +621,9 @@ test_mem_shifts_i8_u8 :: proc(
 	return r
 }
 
-test_mem_shifts_i16_u16 :: proc(
-	si16: ^i16,
-	su16: ^u16,
-	v: uint,
-) -> int {
-	r := 0
-
-	si16^ = si16^ << v
-	si16^ = si16^ >> v
-	r += int(si16^)
-
-	su16^ = su16^ >> v
-	su16^ = su16^ << v
-	r += int(su16^)
-
-	return r
-}
-
-test_mem_shifts_i32_u32 :: proc(
-	si32: ^i32,
-	su32: ^u32,
-	v: uint,
-) -> int {
-	r := 0
-
-	si32^ = si32^ << v
-	si32^ = si32^ >> v
-	r += int(si32^)
-
-	su32^ = su32^ >> v
-	su32^ = su32^ << v
-	r += int(su32^)
-
-	return r
-}
-
-test_mem_shifts_i64_u64 :: proc(
-	si64: ^i64,
-	su64: ^u64,
-	v: uint,
-) -> int {
-	r := 0
-
-	si64^ = si64^ << v
-	si64^ = si64^ >> v
-	r += int(si64^)
-
-	su64^ = su64^ >> v
-	su64^ = su64^ << v
-	r += int(su64^)
-
-	return r
-}
-
-test_mem_imm_shifts_i8_u8 :: proc(
-	si8: ^i8,
-	su8: ^u8,
+test_mem_imm_shifts :: proc(
+	si8: ^$A,
+	su8: ^$B,
 ) -> int {
 	r := 0
 
@@ -835,57 +634,6 @@ test_mem_imm_shifts_i8_u8 :: proc(
 	su8^ = su8^ >> 2
 	su8^ = su8^ << 2
 	r += int(su8^)
-
-	return r
-}
-
-test_mem_imm_shifts_i16_u16 :: proc(
-	si16: ^i16,
-	su16: ^u16,
-) -> int {
-	r := 0
-
-	si16^ = si16^ << 4
-	si16^ = si16^ >> 4
-	r += int(si16^)
-
-	su16^ = su16^ >> 5
-	su16^ = su16^ << 5
-	r += int(su16^)
-
-	return r
-}
-
-test_mem_imm_shifts_i32_u32 :: proc(
-	si32: ^i32,
-	su32: ^u32,
-) -> int {
-	r := 0
-
-	si32^ = si32^ << 6
-	si32^ = si32^ >> 6
-	r += int(si32^)
-
-	su32^ = su32^ >> 7
-	su32^ = su32^ << 7
-	r += int(su32^)
-
-	return r
-}
-
-test_mem_imm_shifts_i64_u64 :: proc(
-	si64: ^i64,
-	su64: ^u64,
-) -> int {
-	r := 0
-
-	si64^ = si64^ << 8
-	si64^ = si64^ >> 8
-	r += int(si64^)
-
-	su64^ = su64^ >> 9
-	su64^ = su64^ << 9
-	r += int(su64^)
 
 	return r
 }
@@ -906,14 +654,14 @@ main :: proc() -> int {
 	v := uint(3)
 
 	return (
-		test_mem_shifts_i8_u8(&si8, &su8, v) +
-		test_mem_shifts_i16_u16(&si16, &su16, v) +
-		test_mem_shifts_i32_u32(&si32, &su32, v) +
-		test_mem_shifts_i64_u64(&si64, &su64, v) +
-		test_mem_imm_shifts_i8_u8(&si8, &su8) +
-		test_mem_imm_shifts_i16_u16(&si16, &su16) +
-		test_mem_imm_shifts_i32_u32(&si32, &su32) +
-		test_mem_imm_shifts_i64_u64(&si64, &su64) \
+		test_mem_shifts(&si8, &su8, v) +
+		test_mem_shifts(&si16, &su16, v) +
+		test_mem_shifts(&si32, &su32, v) +
+		test_mem_shifts(&si64, &su64, v) +
+		test_mem_imm_shifts(&si8, &su8) +
+		test_mem_imm_shifts(&si16, &su16) +
+		test_mem_imm_shifts(&si32, &su32) +
+		test_mem_imm_shifts(&si64, &su64) \
 	)
 }
 ```
@@ -937,42 +685,7 @@ test_bitnot_reg :: proc(x: int) -> int {
 	return ~x
 }
 
-test_bitnot_i8 :: proc(x: ^i8) -> int {
-	x^ = ~x^
-	return int(x^)
-}
-
-test_bitnot_u8 :: proc(x: ^u8) -> int {
-	x^ = ~x^
-	return int(x^)
-}
-
-test_bitnot_i16 :: proc(x: ^i16) -> int {
-	x^ = ~x^
-	return int(x^)
-}
-
-test_bitnot_u16 :: proc(x: ^u16) -> int {
-	x^ = ~x^
-	return int(x^)
-}
-
-test_bitnot_i32 :: proc(x: ^i32) -> int {
-	x^ = ~x^
-	return int(x^)
-}
-
-test_bitnot_u32 :: proc(x: ^u32) -> int {
-	x^ = ~x^
-	return int(x^)
-}
-
-test_bitnot_i64 :: proc(x: ^i64) -> int {
-	x^ = ~x^
-	return int(x^)
-}
-
-test_bitnot_u64 :: proc(x: ^u64) -> int {
+test_bitnot :: proc(x: ^$T) -> int {
 	x^ = ~x^
 	return int(x^)
 }
@@ -985,42 +698,7 @@ test_bitnot_reg_u8 :: proc(x: u8) -> int {
 	return int(~x)
 }
 
-test_neg_i8 :: proc(x: ^i8) -> int {
-	x^ = -x^
-	return int(x^)
-}
-
-test_neg_u8 :: proc(x: ^u8) -> int {
-	x^ = -x^
-	return int(x^)
-}
-
-test_neg_i16 :: proc(x: ^i16) -> int {
-	x^ = -x^
-	return int(x^)
-}
-
-test_neg_u16 :: proc(x: ^u16) -> int {
-	x^ = -x^
-	return int(x^)
-}
-
-test_neg_i32 :: proc(x: ^i32) -> int {
-	x^ = -x^
-	return int(x^)
-}
-
-test_neg_u32 :: proc(x: ^u32) -> int {
-	x^ = -x^
-	return int(x^)
-}
-
-test_neg_i64 :: proc(x: ^i64) -> int {
-	x^ = -x^
-	return int(x^)
-}
-
-test_neg_u64 :: proc(x: ^u64) -> int {
+test_neg :: proc(x: ^$T) -> int {
 	x^ = -x^
 	return int(x^)
 }
@@ -1045,24 +723,24 @@ main :: proc() -> int {
 
 	r += test_bitnot_reg(123)
 	r += test_bitnot_reg_u8(123)
-	r += test_bitnot_i8(&a8)
-	r += test_bitnot_u8(&b8)
-	r += test_bitnot_i16(&a16)
-	r += test_bitnot_u16(&b16)
-	r += test_bitnot_i32(&a32)
-	r += test_bitnot_u32(&b32)
-	r += test_bitnot_i64(&a64)
-	r += test_bitnot_u64(&b64)
+	r += test_bitnot(&a8)
+	r += test_bitnot(&b8)
+	r += test_bitnot(&a16)
+	r += test_bitnot(&b16)
+	r += test_bitnot(&a32)
+	r += test_bitnot(&b32)
+	r += test_bitnot(&a64)
+	r += test_bitnot(&b64)
 
 	r += test_neg_reg(7)
-	r += test_neg_i8(&a8)
-	r += test_neg_u8(&b8)
-	r += test_neg_i16(&a16)
-	r += test_neg_u16(&b16)
-	r += test_neg_i32(&a32)
-	r += test_neg_u32(&b32)
-	r += test_neg_i64(&a64)
-	r += test_neg_u64(&b64)
+	r += test_neg(&a8)
+	r += test_neg(&b8)
+	r += test_neg(&a16)
+	r += test_neg(&b16)
+	r += test_neg(&a32)
+	r += test_neg(&b32)
+	r += test_neg(&a64)
+	r += test_neg(&b64)
 
 	return r
 }
@@ -1579,29 +1257,14 @@ main :: proc() -> int {
 	vls := Vls{}
 
 	add(&vls.a, 1)
-	add_32(&vls.b, 1)
-	add_16(&vls.c, 1)
-	add_8(&vls.d, 1)
+	add(&vls.b, 1)
+	add(&vls.c, 1)
+	add(&vls.d, 1)
 
 	return vls.a + int(vls.b) + int(vls.c) + int(vls.d)
 }
 
-add :: proc(ptr: ^int, v: int) -> int {
-	ptr^ = ptr^ + v
-	return ptr^
-}
-
-add_32 :: proc(ptr: ^i32, v: i32) -> i32 {
-	ptr^ = ptr^ + v
-	return ptr^
-}
-
-add_16 :: proc(ptr: ^i16, v: i16) -> i16 {
-	ptr^ = ptr^ + v
-	return ptr^
-}
-
-add_8 :: proc(ptr: ^i8, v: i8) -> i8 {
+add :: proc(ptr: ^$T, v: T) -> T {
 	ptr^ = ptr^ + v
 	return ptr^
 }

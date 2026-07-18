@@ -249,124 +249,75 @@ fib int:
 =========== OPT LEVEL: aggresive ===========
 main:
      push rbx
-     mov rdi, 0x0A
+     push rbp
+     push r12
+     mov rdi, 0x09
      call :fib i32
-     mov rbx, rax
-     mov rdi, 0x0A
+     mov r12, rax
+     mov rdi, 0x08
+     call :fib i32
+     mov rbp, rax
+     mov rdi, 0x09
      call :fib int
-     mov rcx, rax
-     movsxd rax, ebx
-     add rax, rcx
+     mov rbx, rax
+     mov rdi, 0x08
+     call :fib int
+     add r12d, ebp
+     movsxd rdx, r12d
+     mov rcx, rbx
+     add rcx, rax
+     add rdx, rcx
+     mov rax, rdx
+     pop r12
+     pop rbp
      pop rbx
      ret
 fib:
 fib i32:
      push rbx
      push rbp
-     push r12
+     sub rsp, 0x08
      mov rbx, rdi
      cmp ebx, 0x02
      jle :0
      mov rax, rbx
      sub eax, 0x01
+     mov rdi, rax
+     call :fib i32
      mov rbp, rax
-     cmp ebp, 0x02
-     jle :1
-     mov rax, rbp
-     sub eax, 0x01
-     mov rdi, rax
+     sub ebx, 0x02
+     mov rdi, rbx
      call :fib i32
-     mov r12, rax
-     mov rax, rbp
-     sub eax, 0x02
-     mov rdi, rax
-     call :fib i32
-     add r12d, eax
-     jmp :2
+     add ebp, eax
+     jmp :1
 
-001: mov r12, 0x01
-002: mov rbp, r12
-     mov rax, rbx
-     sub eax, 0x02
-     mov rbx, rax
-     cmp ebx, 0x02
-     jle :3
-     mov rax, rbx
-     sub eax, 0x01
-     mov rdi, rax
-     call :fib i32
-     mov r12, rax
-     mov rax, rbx
-     sub eax, 0x02
-     mov rdi, rax
-     call :fib i32
-     add r12d, eax
-     jmp :4
-
-003: mov r12, 0x01
-004: mov rax, r12
-     mov rcx, rbp
-     add ecx, eax
-     jmp :5
-
-000: mov rcx, 0x01
-005: mov rax, rcx
-     pop r12
+000: mov rbp, 0x01
+001: mov rax, rbp
+     add rsp, 0x08
      pop rbp
      pop rbx
      ret
 fib int:
      push rbx
      push rbp
-     push r12
+     sub rsp, 0x08
      mov rbx, rdi
      cmp rbx, 0x02
      jle :0
      mov rax, rbx
      sub rax, 0x01
+     mov rdi, rax
+     call :fib int
      mov rbp, rax
-     cmp rbp, 0x02
-     jle :1
-     mov rax, rbp
-     sub rax, 0x01
-     mov rdi, rax
+     sub rbx, 0x02
+     mov rdi, rbx
      call :fib int
-     mov r12, rax
-     mov rax, rbp
-     sub rax, 0x02
-     mov rdi, rax
-     call :fib int
-     add r12, rax
-     jmp :2
+     add rbp, rax
+     jmp :1
 
-001: mov r12, 0x01
-002: mov rbp, r12
-     mov rax, rbx
-     sub rax, 0x02
-     mov rbx, rax
-     cmp rbx, 0x02
-     jle :3
-     mov rax, rbx
-     sub rax, 0x01
-     mov rdi, rax
-     call :fib int
-     mov r12, rax
-     mov rax, rbx
-     sub rax, 0x02
-     mov rdi, rax
-     call :fib int
-     add r12, rax
-     jmp :4
-
-003: mov r12, 0x01
-004: mov rax, r12
-     mov rcx, rbp
-     add rcx, rax
-     jmp :5
-
-000: mov rcx, 0x01
-005: mov rax, rcx
-     pop r12
+000: mov rbp, 0x01
+001: mov rax, rbp
+     add rsp, 0x08
      pop rbp
      pop rbx
      ret

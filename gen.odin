@@ -895,13 +895,20 @@ inline_and_optimize :: proc(
 			callee := &ctx.procs[sim.id]
 			if len(callee.stencil.mem) == 0 do continue
 
+			if sctx.scc_asoc[sim.id].scc_id == sctx.scc_asoc[m].scc_id {
+				continue
+			}
+
+			slt := &sctx.callee_to_caller[sim.id]
+
 			callee_wct := weight_cata(callee.stencil.weight)
-			if !weight_cata_can_merge(caller_wct, callee_wct) do continue
+			if !weight_cata_can_merge(caller_wct, callee_wct) && len(slt) > 1 {
+				continue
+			}
 
 			backend.graph_inline(ctx, sim.node, callee.stencil)
 			inline_count += 1
 
-			slt := &sctx.callee_to_caller[sim.id]
 			slt^ = slt^[:len(slt^) - 1]
 			if len(slt) == 0 {
 				delete(callee.stencil.mem, perm)

@@ -1032,96 +1032,127 @@ return_stru4:
      ret
 =========== OPT LEVEL: aggresive ===========
 main:
-     sub rsp, 0x28
-     mov dword ptr [rsp+0x07], 0x4030201
-     mov word ptr [rsp+0x0B], 0x605
-     mov byte ptr [rsp+0x0D], 0x07
+     push rbx
+     push rbp
+     push r12
+     push r13
+     push r14
+     push r15
+     mov dword ptr [rsp-0x43], 0x4030201
+     mov word ptr [rsp-0x3F], 0x605
+     mov byte ptr [rsp-0x3D], 0x07
      mov rax, 0xF0E0D0C0B0A0908
-     mov [rsp+0x0E], rax
-     mov esi, [rsp+0x0F]
-     mov rdi, [rsp+0x07]
-     movzx eax, word ptr [rsp+0x13]
+     mov [rsp-0x3C], rax
+     mov eax, [rsp-0x3B]
+     movzx ecx, word ptr [rsp-0x37]
+     movzx edx, byte ptr [rsp-0x35]
+     shl rcx, 0x20
+     or rax, rcx
+     shl rdx, 0x30
+     or rax, rdx
+     mov rcx, [rsp-0x43]
+     mov [rsp-0x34], rcx
+     mov rcx, rax
+     mov [rsp-0x2C], ecx
+     mov rcx, rax
+     shr rcx, 0x20
+     mov [rsp-0x28], cx
+     shr rax, 0x30
+     mov [rsp-0x26], al
+     movzx eax, word ptr [rsp-0x30]
+     mov ecx, [rsp-0x34]
+     movzx edx, byte ptr [rsp-0x2E]
      shl rax, 0x20
-     or rsi, rax
-     movzx eax, byte ptr [rsp+0x15]
-     shl rax, 0x30
-     or rsi, rax
-     call :compose
-     mov dword ptr [rsp], 0x4030201
-     mov word ptr [rsp+0x04], 0x605
-     mov byte ptr [rsp+0x06], 0x07
-     movzx ecx, byte ptr [rsp+0x05]
-     mov dword ptr [rsp+0x16], 0x4030201
-     mov word ptr [rsp+0x1A], 0x605
-     mov byte ptr [rsp+0x1C], 0x07
+     or rcx, rax
+     shl rdx, 0x30
+     or rcx, rdx
+     mov rax, rcx
+     mov [rsp-0x25], eax
+     mov rax, rcx
+     shr rax, 0x30
+     mov rsi, rax
+     shr rcx, 0x20
+     mov [rsp-0x21], cx
+     mov [rsp-0x1F], sil
+     movzx edx, byte ptr [rsp-0x27]
+     movzx ecx, word ptr [rsp-0x29]
+     mov eax, [rsp-0x2D]
+     shl rcx, 0x20
+     or rax, rcx
+     shl rdx, 0x30
+     or rax, rdx
+     movzx ecx, byte ptr [rsp-0x22]
+     mov rdi, rcx
+     movzx ecx, byte ptr [rsp-0x23]
+     mov r8, rcx
+     movzx ecx, byte ptr [rsp-0x24]
+     movzx edx, byte ptr [rsp-0x21]
+     mov r9, rdx
+     movzx edx, byte ptr [rsp-0x25]
+     mov r10, rdx
+     movzx edx, byte ptr [rsp-0x20]
+     mov r11, rdx
+     mov rdx, rax
+     mov [rsp-0x51], edx
+     mov rdx, rax
+     shr rdx, 0x30
+     shr rax, 0x20
+     mov [rsp-0x4D], ax
+     mov [rsp-0x4B], dl
+     movzx eax, byte ptr [rsp-0x4D]
+     mov rbx, rax
+     movzx eax, byte ptr [rsp-0x26]
+     mov rbp, rax
+     movzx eax, byte ptr [rsp-0x4E]
+     mov r12, rax
+     movzx eax, byte ptr [rsp-0x51]
+     mov r13, rax
+     movzx eax, byte ptr [rsp-0x50]
+     mov r14, rax
+     movzx eax, byte ptr [rsp-0x4C]
+     mov r15, rax
+     movzx eax, byte ptr [rsp-0x4F]
+     mov [rsp-0x1E], rax
+     mov dword ptr [rsp-0x58], 0x4030201
+     mov word ptr [rsp-0x54], 0x605
+     mov byte ptr [rsp-0x52], 0x07
+     movzx eax, byte ptr [rsp-0x53]
+     mov [rsp-0x16], rax
+     mov dword ptr [rsp-0x4A], 0x4030201
+     mov word ptr [rsp-0x46], 0x605
+     mov byte ptr [rsp-0x44], 0x07
+     mov rax, r10
+     add al, cl
+     add al, r8b
+     add al, dil
+     add al, r9b
+     add al, r11b
+     add al, sil
+     mov rcx, r13
+     add cl, r14b
+     mov rsi, [rsp-0x1E]
+     add cl, sil
+     add cl, r12b
+     add cl, bl
+     add cl, r15b
+     add cl, dl
+     add al, cl
+     add al, bpl
      movzx eax, al
+     mov rcx, [rsp-0x16]
      movzx ecx, cl
      lea rax, [rax+rcx*1+0xEC]
-     movzx ecx, byte ptr [rsp+0x18]
+     movzx ecx, byte ptr [rsp-0x48]
      movzx ecx, cl
      add rax, rcx
-     add rsp, 0x28
+     pop r15
+     pop r14
+     pop r13
+     pop r12
+     pop rbp
+     pop rbx
      ret
 compose:
-     mov [rsp-0x28], rdi
-     mov rax, rsi
-     mov [rsp-0x20], eax
-     mov rax, rsi
-     shr rax, 0x20
-     mov [rsp-0x1C], ax
-     mov rax, rsi
-     shr rax, 0x30
-     mov [rsp-0x1A], al
-     mov edx, [rsp-0x28]
-     movzx eax, byte ptr [rsp-0x22]
-     movzx ecx, word ptr [rsp-0x24]
-     shl rcx, 0x20
-     or rdx, rcx
-     shl rax, 0x30
-     or rdx, rax
-     mov rcx, rdx
-     shr rcx, 0x30
-     mov rax, rdx
-     mov [rsp-0x12], eax
-     shr rdx, 0x20
-     mov [rsp-0x0E], dx
-     mov [rsp-0x0C], cl
-     movzx eax, byte ptr [rsp-0x1B]
-     movzx edx, byte ptr [rsp-0x0F]
-     movzx esi, byte ptr [rsp-0x0E]
-     mov r11d, [rsp-0x21]
-     movzx edi, word ptr [rsp-0x1D]
-     movzx r8d, byte ptr [rsp-0x0D]
-     shl rdi, 0x20
-     or r11, rdi
-     shl rax, 0x30
-     or r11, rax
-     movzx eax, byte ptr [rsp-0x12]
-     movzx edi, byte ptr [rsp-0x10]
-     movzx r9d, byte ptr [rsp-0x11]
-     mov r10, r11
-     mov [rsp-0x19], r10d
-     mov r10, r11
-     shr r10, 0x30
-     shr r11, 0x20
-     mov [rsp-0x15], r11w
-     mov [rsp-0x13], r10b
-     movzx r11d, byte ptr [rsp-0x19]
-     add r11b, [rsp-0x18]
-     add r11b, [rsp-0x17]
-     add r11b, [rsp-0x16]
-     add al, r9b
-     add al, dil
-     add al, dl
-     add al, sil
-     add al, r8b
-     add al, cl
-     add r11b, [rsp-0x15]
-     add r11b, [rsp-0x14]
-     add r11b, r10b
-     add al, r11b
-     add al, [rsp-0x1A]
-     ret
 kentus:
 fortran:
 brahma:

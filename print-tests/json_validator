@@ -2959,238 +2959,6 @@ parse_string:
 002: mov rax, 0x00
 010: ret
 parse_number:
-     mov rax, [rdi+0x10]
-     cmp rax, [rdi+0x08]
-     jnl :0
-     mov rax, [rdi]
-     add rax, [rdi+0x10]
-     movzx eax, byte ptr [rax]
-     jmp :1
-
-000: mov rax, 0x00
-001: cmp al, 0x2D
-     jz :2
-     jmp :3
-
-002: add qword ptr [rdi+0x10], 0x01
-003: mov rax, [rdi+0x10]
-     cmp rax, [rdi+0x08]
-     jnl :4
-     mov rax, [rdi]
-     add rax, [rdi+0x10]
-     movzx eax, byte ptr [rax]
-     jmp :5
-
-004: mov rax, 0x00
-005: cmp al, 0x30
-     jz :6
-     cmp al, 0x31
-     setnb cl
-     movzx rcx, cl
-     cmp al, 0x39
-     setbe al
-     movzx rax, al
-     and cl, al
-     test cl, cl
-     jnz :7
-     mov rax, 0x00
-     jmp :8
-
-007: add qword ptr [rdi+0x10], 0x01
-014: mov rax, [rdi+0x10]
-     cmp rax, [rdi+0x08]
-     jnl :9
-     mov rax, [rdi]
-     add rax, [rdi+0x10]
-     movzx eax, byte ptr [rax]
-     jmp :10
-
-009: mov rax, 0x00
-010: cmp al, 0x30
-     setnb cl
-     movzx rcx, cl
-     cmp al, 0x39
-     setbe al
-     movzx rax, al
-     and cl, al
-     test cl, cl
-     jnz :11
-     mov rax, 0x00
-     jmp :12
-
-011: mov rax, 0x01
-012: cmp al, 0x00
-     jz :13
-     add qword ptr [rdi+0x10], 0x01
-     jmp :14
-
-006: add qword ptr [rdi+0x10], 0x01
-013: mov rax, [rdi+0x10]
-     cmp rax, [rdi+0x08]
-     jnl :15
-     mov rax, [rdi]
-     add rax, [rdi+0x10]
-     movzx eax, byte ptr [rax]
-     jmp :16
-
-015: mov rax, 0x00
-016: cmp al, 0x2E
-     jz :17
-     jmp :18
-
-017: add qword ptr [rdi+0x10], 0x01
-     mov rax, [rdi+0x10]
-     cmp rax, [rdi+0x08]
-     jnl :19
-     mov rax, [rdi]
-     add rax, [rdi+0x10]
-     movzx eax, byte ptr [rax]
-     jmp :20
-
-019: mov rax, 0x00
-020: cmp al, 0x30
-     setnb cl
-     movzx rcx, cl
-     cmp al, 0x39
-     setbe al
-     movzx rax, al
-     and cl, al
-     test cl, cl
-     jnz :21
-     mov rax, 0x00
-     jmp :22
-
-021: mov rax, 0x01
-022: cmp al, 0x00
-     jz :23
-028: mov rax, [rdi+0x10]
-     cmp rax, [rdi+0x08]
-     jnl :24
-     mov rax, [rdi]
-     add rax, [rdi+0x10]
-     movzx eax, byte ptr [rax]
-     jmp :25
-
-024: mov rax, 0x00
-025: cmp al, 0x30
-     setnb cl
-     movzx rcx, cl
-     cmp al, 0x39
-     setbe al
-     movzx rax, al
-     and cl, al
-     test cl, cl
-     jnz :26
-     mov rax, 0x00
-     jmp :27
-
-026: mov rax, 0x01
-027: cmp al, 0x00
-     jz :18
-     add qword ptr [rdi+0x10], 0x01
-     jmp :28
-
-018: mov rax, [rdi+0x10]
-     cmp rax, [rdi+0x08]
-     jnl :29
-     mov rax, [rdi]
-     add rax, [rdi+0x10]
-     movzx eax, byte ptr [rax]
-     jmp :30
-
-029: mov rax, 0x00
-030: cmp al, 0x65
-     setz cl
-     movzx rcx, cl
-     cmp al, 0x45
-     setz al
-     movzx rax, al
-     or cl, al
-     test cl, cl
-     jnz :31
-     jmp :32
-
-031: add qword ptr [rdi+0x10], 0x01
-     mov rax, [rdi+0x10]
-     cmp rax, [rdi+0x08]
-     jnl :33
-     mov rax, [rdi]
-     add rax, [rdi+0x10]
-     movzx eax, byte ptr [rax]
-     jmp :34
-
-033: mov rax, 0x00
-034: cmp al, 0x2B
-     setz cl
-     movzx rcx, cl
-     cmp al, 0x2D
-     setz al
-     movzx rax, al
-     or cl, al
-     test cl, cl
-     jnz :35
-     jmp :36
-
-035: add qword ptr [rdi+0x10], 0x01
-036: mov rax, [rdi+0x10]
-     cmp rax, [rdi+0x08]
-     jnl :37
-     mov rax, [rdi]
-     add rax, [rdi+0x10]
-     movzx eax, byte ptr [rax]
-     jmp :38
-
-037: mov rax, 0x00
-038: cmp al, 0x30
-     setnb cl
-     movzx rcx, cl
-     cmp al, 0x39
-     setbe al
-     movzx rax, al
-     and cl, al
-     test cl, cl
-     jnz :39
-     mov rax, 0x00
-     jmp :40
-
-039: mov rax, 0x01
-040: cmp al, 0x00
-     jz :41
-046: mov rax, [rdi+0x10]
-     cmp rax, [rdi+0x08]
-     jnl :42
-     mov rax, [rdi]
-     add rax, [rdi+0x10]
-     movzx eax, byte ptr [rax]
-     jmp :43
-
-042: mov rax, 0x00
-043: cmp al, 0x30
-     setnb cl
-     movzx rcx, cl
-     cmp al, 0x39
-     setbe al
-     movzx rax, al
-     and cl, al
-     test cl, cl
-     jnz :44
-     mov rax, 0x00
-     jmp :45
-
-044: mov rax, 0x01
-045: cmp al, 0x00
-     jz :32
-     add qword ptr [rdi+0x10], 0x01
-     jmp :46
-
-032: mov rax, 0x01
-     jmp :8
-
-041: mov rax, 0x00
-     jmp :8
-
-023: mov rax, 0x00
-008: ret
 parse_array:
      push rbx
      mov rbx, rdi
@@ -3534,7 +3302,7 @@ parse_object:
      ret
 parse_value:
      sub rsp, 0x08
-027: mov rax, [rdi+0x10]
+073: mov rax, [rdi+0x10]
      cmp rax, [rdi+0x08]
      jnl :0
      mov rax, [rdi]
@@ -3604,82 +3372,314 @@ parse_value:
      mov rax, 0x00
      jmp :14
 
-013: call :parse_number
+013: mov rax, [rdi+0x10]
+     cmp rax, [rdi+0x08]
+     jnl :15
+     mov rax, [rdi]
+     add rax, [rdi+0x10]
+     movzx eax, byte ptr [rax]
+     jmp :16
+
+015: mov rax, 0x00
+016: cmp al, 0x2D
+     jz :17
+     jmp :18
+
+017: add qword ptr [rdi+0x10], 0x01
+018: mov rax, [rdi+0x10]
+     cmp rax, [rdi+0x08]
+     jnl :19
+     mov rax, [rdi]
+     add rax, [rdi+0x10]
+     movzx eax, byte ptr [rax]
+     jmp :20
+
+019: mov rax, 0x00
+020: cmp al, 0x30
+     jz :21
+     cmp al, 0x31
+     setnb cl
+     movzx rcx, cl
+     cmp al, 0x39
+     setbe al
+     movzx rax, al
+     and cl, al
+     test cl, cl
+     jnz :22
+     mov rax, 0x00
+     jmp :14
+
+022: add qword ptr [rdi+0x10], 0x01
+028: mov rax, [rdi+0x10]
+     cmp rax, [rdi+0x08]
+     jnl :23
+     mov rax, [rdi]
+     add rax, [rdi+0x10]
+     movzx eax, byte ptr [rax]
+     jmp :24
+
+023: mov rax, 0x00
+024: cmp al, 0x30
+     setnb cl
+     movzx rcx, cl
+     cmp al, 0x39
+     setbe al
+     movzx rax, al
+     and cl, al
+     test cl, cl
+     jnz :25
+     mov rax, 0x00
+     jmp :26
+
+025: mov rax, 0x01
+026: cmp al, 0x00
+     jz :27
+     add qword ptr [rdi+0x10], 0x01
+     jmp :28
+
+021: add qword ptr [rdi+0x10], 0x01
+027: mov rax, [rdi+0x10]
+     cmp rax, [rdi+0x08]
+     jnl :29
+     mov rax, [rdi]
+     add rax, [rdi+0x10]
+     movzx eax, byte ptr [rax]
+     jmp :30
+
+029: mov rax, 0x00
+030: cmp al, 0x2E
+     jz :31
+     jmp :32
+
+031: mov rax, [rdi+0x10]
+     add rax, 0x01
+     mov [rdi+0x10], rax
+     cmp rax, [rdi+0x08]
+     jnl :33
+     mov rax, [rdi]
+     add rax, [rdi+0x10]
+     movzx eax, byte ptr [rax]
+     jmp :34
+
+033: mov rax, 0x00
+034: cmp al, 0x30
+     setnb cl
+     movzx rcx, cl
+     cmp al, 0x39
+     setbe al
+     movzx rax, al
+     and cl, al
+     test cl, cl
+     jnz :35
+     mov rax, 0x00
+     jmp :36
+
+035: mov rax, 0x01
+036: cmp al, 0x00
+     jz :37
+042: mov rax, [rdi+0x10]
+     cmp rax, [rdi+0x08]
+     jnl :38
+     mov rax, [rdi]
+     add rax, [rdi+0x10]
+     movzx eax, byte ptr [rax]
+     jmp :39
+
+038: mov rax, 0x00
+039: cmp al, 0x30
+     setnb cl
+     movzx rcx, cl
+     cmp al, 0x39
+     setbe al
+     movzx rax, al
+     and cl, al
+     test cl, cl
+     jnz :40
+     mov rax, 0x00
+     jmp :41
+
+040: mov rax, 0x01
+041: cmp al, 0x00
+     jz :32
+     add qword ptr [rdi+0x10], 0x01
+     jmp :42
+
+032: mov rax, [rdi+0x10]
+     cmp rax, [rdi+0x08]
+     jnl :43
+     mov rax, [rdi]
+     add rax, [rdi+0x10]
+     movzx eax, byte ptr [rax]
+     jmp :44
+
+043: mov rax, 0x00
+044: cmp al, 0x65
+     setz cl
+     movzx rcx, cl
+     cmp al, 0x45
+     setz al
+     movzx rax, al
+     or cl, al
+     test cl, cl
+     jnz :45
+     jmp :46
+
+045: mov rax, [rdi+0x10]
+     add rax, 0x01
+     mov [rdi+0x10], rax
+     cmp rax, [rdi+0x08]
+     jnl :47
+     mov rax, [rdi]
+     add rax, [rdi+0x10]
+     movzx eax, byte ptr [rax]
+     jmp :48
+
+047: mov rax, 0x00
+048: cmp al, 0x2B
+     setz cl
+     movzx rcx, cl
+     cmp al, 0x2D
+     setz al
+     movzx rax, al
+     or cl, al
+     test cl, cl
+     jnz :49
+     jmp :50
+
+049: add qword ptr [rdi+0x10], 0x01
+050: mov rax, [rdi+0x10]
+     cmp rax, [rdi+0x08]
+     jnl :51
+     mov rax, [rdi]
+     add rax, [rdi+0x10]
+     movzx eax, byte ptr [rax]
+     jmp :52
+
+051: mov rax, 0x00
+052: cmp al, 0x30
+     setnb cl
+     movzx rcx, cl
+     cmp al, 0x39
+     setbe al
+     movzx rax, al
+     and cl, al
+     test cl, cl
+     jnz :53
+     mov rax, 0x00
+     jmp :54
+
+053: mov rax, 0x01
+054: cmp al, 0x00
+     jz :55
+060: mov rax, [rdi+0x10]
+     cmp rax, [rdi+0x08]
+     jnl :56
+     mov rax, [rdi]
+     add rax, [rdi+0x10]
+     movzx eax, byte ptr [rax]
+     jmp :57
+
+056: mov rax, 0x00
+057: cmp al, 0x30
+     setnb cl
+     movzx rcx, cl
+     cmp al, 0x39
+     setbe al
+     movzx rax, al
+     and cl, al
+     test cl, cl
+     jnz :58
+     mov rax, 0x00
+     jmp :59
+
+058: mov rax, 0x01
+059: cmp al, 0x00
+     jz :46
+     add qword ptr [rdi+0x10], 0x01
+     jmp :60
+
+046: mov rax, 0x01
+     jmp :14
+
+055: mov rax, 0x00
+     jmp :14
+
+037: mov rax, 0x00
      jmp :14
 
 010: cmp rax, 0x04
-     jnl :15
+     jnl :61
      mov rcx, [rdi+0x10]
      cmp rcx, [rdi+0x08]
-     jnl :16
+     jnl :62
      mov rcx, [rdi]
      add rcx, [rdi+0x10]
      movzx ecx, byte ptr [rcx]
-     jmp :17
+     jmp :63
 
-016: mov rcx, 0x00
-017: lea rdx, [0x0000000000401381]
+062: mov rcx, 0x00
+063: lea rdx, [0x00000000004017A1]
      add rdx, rax
      cmp cl, [rdx]
-     jnz :18
+     jnz :64
      add qword ptr [rdi+0x10], 0x01
      add rax, 0x01
      jmp :10
 
-018: mov rax, 0x00
+064: mov rax, 0x00
      jmp :14
 
-015: mov rax, 0x01
+061: mov rax, 0x01
      jmp :14
 
 009: cmp rax, 0x05
-     jnl :19
+     jnl :65
      mov rcx, [rdi+0x10]
      cmp rcx, [rdi+0x08]
-     jnl :20
+     jnl :66
      mov rcx, [rdi]
      add rcx, [rdi+0x10]
      movzx ecx, byte ptr [rcx]
-     jmp :21
+     jmp :67
 
-020: mov rcx, 0x00
-021: lea rdx, [0x000000000040137C]
+066: mov rcx, 0x00
+067: lea rdx, [0x000000000040179C]
      add rdx, rax
      cmp cl, [rdx]
-     jnz :22
+     jnz :68
      add qword ptr [rdi+0x10], 0x01
      add rax, 0x01
      jmp :9
 
-022: mov rax, 0x00
+068: mov rax, 0x00
      jmp :14
 
-019: mov rax, 0x01
+065: mov rax, 0x01
      jmp :14
 
 008: cmp rax, 0x04
-     jnl :23
+     jnl :69
      mov rcx, [rdi+0x10]
      cmp rcx, [rdi+0x08]
-     jnl :24
+     jnl :70
      mov rcx, [rdi]
      add rcx, [rdi+0x10]
      movzx ecx, byte ptr [rcx]
-     jmp :25
+     jmp :71
 
-024: mov rcx, 0x00
-025: lea rdx, [0x0000000000401378]
+070: mov rcx, 0x00
+071: lea rdx, [0x0000000000401798]
      add rdx, rax
      cmp cl, [rdx]
-     jnz :26
+     jnz :72
      add qword ptr [rdi+0x10], 0x01
      add rax, 0x01
      jmp :8
 
-026: mov rax, 0x00
+072: mov rax, 0x00
      jmp :14
 
-023: mov rax, 0x01
+069: mov rax, 0x01
      jmp :14
 
 007: call :parse_string
@@ -3692,7 +3692,7 @@ parse_value:
 014: add rsp, 0x08
      ret
 002: add qword ptr [rdi+0x10], 0x01
-     jmp :27
+     jmp :73
 
 validate:
      sub rsp, 0x18

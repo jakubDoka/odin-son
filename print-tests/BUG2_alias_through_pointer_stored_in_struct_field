@@ -1,0 +1,46 @@
+=========== OPT LEVEL: none ===========
+main:
+     sub rsp, 0x18
+     mov rdx, 0x08
+     mov rsi, 0x00
+     lea rdi, [rsp]
+     call :$set
+     mov qword ptr [rsp], 0x01
+     lea rdi, [rsp+0x08]
+     mov rdx, 0x08
+     mov rsi, 0x00
+     call :$set
+     lea rax, [rsp]
+     mov [rsp+0x08], rax
+     mov rax, [rsp+0x08]
+     mov qword ptr [rax], 0x2A
+     mov rax, [rsp]
+     add rsp, 0x18
+     ret
+=========== OPT LEVEL: mininal ===========
+main:
+     sub rsp, 0x18
+     mov rdx, 0x08
+     mov rsi, 0x00
+     lea rdi, [rsp]
+     call :$set
+     mov qword ptr [rsp], 0x01
+     lea rdi, [rsp+0x08]
+     mov rdx, 0x08
+     mov rsi, 0x00
+     call :$set
+     lea rax, [rsp]
+     mov [rsp+0x08], rax
+     mov qword ptr [rsp], 0x2A
+     mov rax, [rsp]
+     add rsp, 0x18
+     ret
+=========== OPT LEVEL: moderate ===========
+main:
+     mov rax, 0x2A
+     ret
+=========== OPT LEVEL: all ===========
+main:
+     mov rax, 0x2A
+     ret
+=========== OPT LEVEL: aggresive ===========

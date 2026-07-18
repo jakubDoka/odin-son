@@ -6,8 +6,10 @@ import "core:fmt"
 import "core:mem"
 import "core:odin/ast"
 import "core:odin/tokenizer"
+import "core:os"
 import "core:slice"
 import "core:strconv"
+import "core:strings"
 import "meta"
 import "vendored/gam/util/arna"
 
@@ -1099,6 +1101,10 @@ emit_proc_code :: proc(
 	schedule: backend.Graph_Schedule
 	backend.graph_schedule(ctx, &schedule, arna.allocator(&ctx.mems.scratch))
 
+	if strings.starts_with(prc.name, "array_push struct {param_off") {
+		backend.graph_display(os.to_writer(os.stderr), ctx, &schedule)
+	}
+
 	backend.graph_schedule_peeps(ctx, &schedule)
 
 	ra: backend.Regalloc
@@ -1288,6 +1294,12 @@ emit_nodes :: proc(
 				}
 				if d.op.kind == .Eq {
 					if len(d.lhs) == 1 {
+						fmt.assertf(
+							get_node_type(lhs) == get_node_type(rhs),
+							"%v %v",
+							get_node_type(lhs),
+							get_node_type(rhs),
+						)
 						value := emit_nodes(ctx, {dest = sym.id}, rhs)
 						store_value(ctx, "asss", sym.id, value, lhs)
 					} else {
@@ -1639,6 +1651,7 @@ emit_nodes :: proc(
 		#partial switch f in d.field.derived {
 		case ^ast.Ident:
 			if pty, ok := base_ty.(Pointer); ok {
+				base.id = to_rvalue(ctx, base, pack_type(base_ty))
 				base_ty = unpack_type(pty^)
 				base.is_lvalue = true
 			}

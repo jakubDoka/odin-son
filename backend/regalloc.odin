@@ -915,13 +915,16 @@ regalloc_round :: proc(
 						split = split_after(ctx, "rcd", m)
 					}
 
-					split := split_before(
-						ctx,
-						out.id,
-						out.idx,
-						"rcu",
-						redirect = split,
-					)
+					split := split
+					if graph_get(graph, out.id).itype != .Split {
+						split = split_before(
+							ctx,
+							out.id,
+							out.idx,
+							"rcu",
+							redirect = split,
+						)
+					}
 
 					graph_set_input(graph, out.id, out.idx, split)
 				}

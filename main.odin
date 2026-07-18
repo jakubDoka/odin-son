@@ -95,7 +95,7 @@ main :: proc() {
 
 	level := Opt_Level {
 		name  = "all",
-		flags = {.Iter_Peeps, .Local_Peeps, .Mem_Opt, .Inline},
+		flags = {.Iter_Peeps, .Local_Peeps, .Inline, .Mem_Opt},
 	}
 
 	emit_ctx := backend.Codegen_Emit_Ctx {

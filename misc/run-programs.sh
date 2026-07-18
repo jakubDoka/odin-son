@@ -44,6 +44,9 @@ for dir in "$PROGRAMS_DIR"/*/; do
 	if [[ ! -f "$entry" ]]; then
 		continue
 	fi
+	#if [ "$name" != "lua" ]; then
+	#	continue
+	#fi
 
 	echo "=== $name ==="
 

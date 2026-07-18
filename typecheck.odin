@@ -4,12 +4,14 @@ import "backend"
 import "base:runtime"
 import "core:fmt"
 import "core:io"
+import "core:log"
 import "core:mem"
 import "core:odin/ast"
 import "core:odin/tokenizer"
 import "core:reflect"
 import "core:slice"
 import "core:strconv"
+import "core:strings"
 import "meta"
 import "vendored/gam/util/arna"
 
@@ -623,12 +625,6 @@ emit_type :: proc(
 		return pack_type(e)
 	case ^ast.Union_Type:
 		u := intern_decl(&ctx.unions, key, &ret) or_break
-
-		Geneva :: struct($T: typeid) {
-			v: T,
-		}
-
-		v := Geneva(u8){}
 
 		u.variants = make([]Type, len(d.variants), ctx.types.allocator)
 		max_size := 0
@@ -1542,6 +1538,14 @@ typecheck :: proc(
 
 				existing, ok := ctx.proc_insts[key]
 				if !ok {
+					name: strings.Builder
+					name.buf.allocator = ctx.types.allocator
+					append(&name.buf, prc.name)
+					for slot in polys {
+						assert(slot.type == .Typeid)
+						fmt.sbprintf(&name, " %v", slot.lit.typeida)
+					}
+					prc.name = string(name.buf[:])
 					prc.sig = sig
 					{context.allocator = ctx.types.allocator
 						prc.lit = ast.clone(prc.lit).derived.(^ast.Proc_Lit)
@@ -1860,6 +1864,7 @@ typecheck_program :: proc(ctx: ^Gen_Ctx) {
 
 		if len(prc.poly_names) != 0 && len(prc.poly_values) == 0 do continue
 
+		clear(&ctx.poly_types)
 		assert(len(prc.poly_names) == len(prc.poly_values))
 		for i in 0 ..< len(prc.poly_names) {
 			append(

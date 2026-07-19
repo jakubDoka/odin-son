@@ -471,9 +471,7 @@ For both of these tasks, spinn up a parallel agent.
 
 ### Add a wasm interpreter to the wasm test-program (DONE)
 
-### Add more test programs to the wasm example program
-
-NOTE: read AGENTS.md
+### Add more test programs to the wasm example program (DONE)
 
 Can you please add more example wasm blobs that can be run by the interpreter?
 You can make a subdirectory that will contain the test programs (in the wasm
@@ -483,3 +481,23 @@ test fn on all of them. This script is then callend from
 ./misc/run-programs.sh, but make it generic, look for a script with a
 conventional name, run if exists. If you find bugs in the compiler, immediately
 fix them once you are confident you understand what is wrong.
+
+### Rewrite the wasm test program
+
+NOTE: read AGENTS.md
+
+The test program uses horrible integer pointer convention. THe arena is
+basically a glorified dynamic array.
+
+Could you please rewrite the arena imlp to prereserve the pages once and then 
+map them as arena grows? The main allocation routeen should return a slice and
+then the Array struct should be generic over T and have a actual pointer in it.
+
+Once you do that, rewrite the interpreter and to not use stupid fixed arrays,
+but slices or dynamic arrays.
+
+This requires implementing parametrized structs so add them first and verify
+them with a small test (TESTS.md), generic functions need to work with these.
+
+If you can parallelize with agents, do so. I think you can develop the
+interpreter with the odin compiler in the mean time.

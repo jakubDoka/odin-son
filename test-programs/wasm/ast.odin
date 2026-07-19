@@ -161,58 +161,24 @@ Code :: struct {
 	local_total: int,
 }
 
+// Element types are now carried directly by each `Array(T)`; the old flat
+// stride table is gone.
 Module :: struct {
 	ok:            bool,
 	version:       u32,
 	section_count: int,
 	start_func:    int, // -1 when absent
-	types:         Array, // FuncType
-	valtypes:      Array, // int (param/result value types, referenced by FuncType)
-	imports:       Array, // Import
-	funcs:         Array, // int type index
-	mems:          Array, // Memory
-	globals:       Array, // Global
-	exports:       Array, // Export
-	locals:        Array, // Local (referenced by Code)
-	instrs:        Array, // Instr (referenced by Code)
-	codes:         Array, // Code
-	datas:         Array, // Data
-}
-
-// --- runtime struct strides (the JIT has no size_of) ------------------------
-
-stride_int: int
-stride_instr: int
-stride_local: int
-stride_ftype: int
-stride_import: int
-stride_export: int
-stride_global: int
-stride_memory: int
-stride_data: int
-stride_code: int
-
-strides_init :: proc() {
-	an: [2]int = {}
-	stride_int = int(uintptr(&an[1]) - uintptr(&an[0]))
-	ai: [2]Instr = {}
-	stride_instr = int(uintptr(&ai[1]) - uintptr(&ai[0]))
-	al: [2]Local = {}
-	stride_local = int(uintptr(&al[1]) - uintptr(&al[0]))
-	af: [2]FuncType = {}
-	stride_ftype = int(uintptr(&af[1]) - uintptr(&af[0]))
-	aim: [2]Import = {}
-	stride_import = int(uintptr(&aim[1]) - uintptr(&aim[0]))
-	ae: [2]Export = {}
-	stride_export = int(uintptr(&ae[1]) - uintptr(&ae[0]))
-	ag: [2]Global = {}
-	stride_global = int(uintptr(&ag[1]) - uintptr(&ag[0]))
-	am: [2]Memory = {}
-	stride_memory = int(uintptr(&am[1]) - uintptr(&am[0]))
-	ad: [2]Data = {}
-	stride_data = int(uintptr(&ad[1]) - uintptr(&ad[0]))
-	ac: [2]Code = {}
-	stride_code = int(uintptr(&ac[1]) - uintptr(&ac[0]))
+	types:         Array(FuncType),
+	valtypes:      Array(int), // param/result value types, referenced by FuncType
+	imports:       Array(Import),
+	funcs:         Array(int), // type index per function
+	mems:          Array(Memory),
+	globals:       Array(Global),
+	exports:       Array(Export),
+	locals:        Array(Local), // referenced by Code
+	instrs:        Array(Instr), // referenced by Code
+	codes:         Array(Code),
+	datas:         Array(Data),
 }
 
 // --- name lookups ----------------------------------------------------------

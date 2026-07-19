@@ -6,10 +6,8 @@ test_imm_shifts:
      mov rax, rcx
      sar rax, 0x03
      add rdx, rax
-     mov rax, rcx
-     shr rax, 0x05
-     mov rax, rax
-     add rdx, rax
+     shr rcx, 0x05
+     add rdx, rcx
      mov rax, rdx
      ret
 test_imm_inplace_shifts:
@@ -17,9 +15,7 @@ test_imm_inplace_shifts:
      sar qword ptr [rdi], 0x05
      shr qword ptr [rsi], 0x04
      mov rax, [rdi]
-     mov rcx, [rsi]
-     mov rcx, rcx
-     add rax, rcx
+     add rax, [rsi]
      ret
 test_inplace_shifts:
      mov rax, rdx
@@ -30,9 +26,7 @@ test_inplace_shifts:
      mov rcx, rax
      shr qword ptr [rsi], cl
      mov rax, [rdi]
-     mov rcx, [rsi]
-     mov rcx, rcx
-     add rax, rcx
+     add rax, [rsi]
      ret
 main:
      push rbx
@@ -76,9 +70,11 @@ test_imm_shifts:
 test_imm_inplace_shifts:
      shl qword ptr [rdi], 0x02
      sar qword ptr [rdi], 0x05
-     shr qword ptr [rsi], 0x04
+     mov rcx, [rsi]
+     shr rcx, 0x04
+     mov [rsi], rcx
      mov rax, [rdi]
-     add rax, [rsi]
+     add rax, rcx
      ret
 test_inplace_shifts:
      mov rax, rdx
@@ -86,10 +82,12 @@ test_inplace_shifts:
      shl qword ptr [rdi], cl
      mov rcx, rax
      sar qword ptr [rdi], cl
+     mov rdx, [rsi]
      mov rcx, rax
-     shr qword ptr [rsi], cl
+     shr rdx, cl
+     mov [rsi], rdx
      mov rax, [rdi]
-     add rax, [rsi]
+     add rax, rdx
      ret
 main:
      push rbx

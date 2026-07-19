@@ -4,6 +4,7 @@ import "backend"
 import "base:runtime"
 import "core:fmt"
 import "core:io"
+import "core:log"
 import "core:mem"
 import "core:odin/ast"
 import "core:odin/tokenizer"
@@ -397,9 +398,59 @@ intern_poly :: proc(ctx: ^Gen_Ctx, poly: Poly_Data) -> Type {
 	return pack_type(existing)
 }
 
+// instantiate_struct returns the concrete struct type produced by applying the
+// parametric struct declared at `base` (AST `node`) to `args`. Instances are
+// interned by (base, args) so identical instantiations share one `^Struct`.
+// When `args` are still polymorphic (a `$T` leaked in from an enclosing generic
+// signature) the fields/size are left unresolved: only the (base, args) shape is
+// needed there, and it is re-instantiated with concrete args at call time.
+instantiate_struct :: proc(
+	ctx: ^Gen_Ctx,
+	base: ^Struct,
+	args: []Type,
+) -> Type {
+	args := intern_type_slice(ctx, args)
+	key := Struct_Inst_Key{base, string(mem.slice_data_cast([]u8, args))}
+	if existing, ok := ctx.struct_insts[key]; ok do return pack_type(existing)
+
+	structa := new(Struct, ctx.types.allocator)
+	structa.align = 1
+	structa.params = args
+	ctx.struct_insts[key] = structa
+
+	polys: [dynamic]Check_Meta
+	for fld, i in base.param_names {
+		append(&polys, Check_Meta{.Typeid, {typeida = args[i]}})
+	}
+
+	structa.fields = make(
+		[]Struct_Field,
+		len(base.fields),
+		ctx.types.allocator,
+	)
+	for &field, i in structa.fields {
+		field = base.fields[i]
+		field.ty = instantiate_polys(ctx, polys[:], field.ty) or_else panic("")
+		// TODO: extract this to a layout computation
+		field.offset = mem.align_forward_int(
+			structa.size,
+			type_align(field.ty),
+		)
+		structa.size = field.offset + type_size(field.ty)
+		structa.align = max(structa.align, type_align(field.ty))
+	}
+	structa.size = mem.align_forward_int(structa.size, structa.align)
+
+	return pack_type(structa)
+}
+
 tmeta :: proc(ctx: ^Gen_Ctx, ty: Type) -> ^Check_Meta {
 	lit: Lit
 	return new_clone(Check_Meta{ty, lit}, ctx.types.allocator)
+}
+
+tpmeta :: proc(ctx: ^Gen_Ctx, ty: Type) -> ^Check_Meta {
+	return new_clone(Check_Meta{.Typeid, {typeida = ty}}, ctx.types.allocator)
 }
 
 proc_meta :: proc(ctx: ^Gen_Ctx, pid: Proc_ID) -> ^Check_Meta {
@@ -474,6 +525,16 @@ extract_polys :: proc(
 	case Pointer:
 		cr := unpack_type(croot).(Pointer) or_return
 		return extract_polys(ctx, slots, cr^, t^)
+	case Multi_Pointer:
+		cr := unpack_type(croot).(Multi_Pointer) or_return
+		return extract_polys(ctx, slots, cr^, t^)
+	case ^Struct:
+		if len(t.params) == 0 do break
+		ct := unpack_type(croot).(^Struct) or_return
+		for i in 0 ..< len(t.params) {
+			extract_polys(ctx, slots, ct.params[i], t.params[i]) or_return
+		}
+		return true
 	case ^Poly_Data:
 		if slots[t.idx].lit.typeida != .Void {
 			return slots[t.idx].lit.typeida == croot
@@ -503,6 +564,19 @@ instantiate_polys :: proc(
 				instantiate_polys(ctx, slots, t^) or_return,
 			),
 			true
+	case Multi_Pointer:
+		return intern_multi_pointer(
+				ctx,
+				instantiate_polys(ctx, slots, t^) or_return,
+			),
+			true
+	case ^Struct:
+		if len(t.params) == 0 do return root, true
+		new_args := make([]Type, len(t.params), context.temp_allocator)
+		for a, i in t.params {
+			new_args[i] = instantiate_polys(ctx, slots, a) or_return
+		}
+		return instantiate_struct(ctx, t, new_args), true
 	case ^Poly_Data:
 		if slots[t.idx].type == .Void {
 			return {}, false
@@ -529,159 +603,34 @@ find_module_global :: proc(
 	return nil, false
 }
 
-emit_type :: proc(
+intern_decl :: proc(
 	ctx: ^Gen_Ctx,
-	expr: ^ast.Node,
-	key: Maybe(Decl_Key) = nil,
+	mapa: ^map[Decl_Key]^$T,
+	key: Maybe(Decl_Key),
+	ret: ^^Check_Meta,
 ) -> (
-	ret: Type,
+	^T,
+	bool,
 ) {
-	if expr == nil do return .Void
-
-	intern_decl :: proc(
-		mapa: ^map[Decl_Key]^$T,
-		key: Maybe(Decl_Key),
-		ret: ^Type,
-	) -> (
-		^T,
-		bool,
-	) {
-		if key, ok := key.?; ok {
-			record, ok := mapa[key]
-			ret^ = pack_type(record)
-			if ok do return nil, false
-		}
-		record := new(T, mapa.allocator)
-		if key, ok := key.?; ok do mapa[key] = record
-		return record, true
+	if key, ok := key.?; ok {
+		record, ok := mapa[key]
+		ret^ = tpmeta(ctx, pack_type(record))
+		if ok do return nil, false
 	}
+	record := new(T, mapa.allocator)
+	if key, ok := key.?; ok do mapa[key] = record
+	return record, true
+}
 
-	#partial switch d in expr.derived {
-	case ^ast.Ident:
-		for ty in ctx.poly_types {
-			if ty.name == d.name {
-				assert(ty.meta.type == .Typeid)
-				return ty.meta.lit.typeida
-			}
-		}
-
-		if sdecl, dfile, dfid, ok := find_module_decl(ctx, ctx.module, d.name);
-		   ok {
-			key := Decl_Key{dfid, u32(sdecl.pos.offset)}
-			return emit_type(ctx, sdecl.values[0], key)
-		}
-
-		for name, kind in TYPE_NAMES {
-			if name == d.name do return kind
-		}
-
-		fmt.panicf("TODO: %#v", expr.derived)
-	case ^ast.Struct_Type:
-		structa := intern_decl(&ctx.structs, key, &ret) or_break
-
-		structa.fields = make(
-			[]Struct_Field,
-			len(d.fields.list),
-			ctx.types.allocator,
-		)
-		for &field, i in structa.fields {
-			ast_field := d.fields.list[i]
-			assert(len(ast_field.names) == 1)
-			field.name = ast_field.names[0].derived.(^ast.Ident).name
-			field.ty = emit_type(ctx, ast_field.type)
-			field.offset = mem.align_forward_int(
-				structa.size,
-				type_align(field.ty),
-			)
-			structa.size = field.offset + type_size(field.ty)
-			structa.align = max(structa.align, type_align(field.ty))
-		}
-		structa.size = mem.align_forward_int(structa.size, structa.align)
-		return pack_type(structa)
-	case ^ast.Enum_Type:
-		e := intern_decl(&ctx.enums, key, &ret) or_break
-
-		e.backing = d.base_type != nil ? emit_type(ctx, d.base_type) : .Int
-		e.variants = make([]Enum_Variant, len(d.fields), ctx.types.allocator)
-		next := i64(0)
-		for f, i in d.fields {
-			vname: string
-			vval := next
-			#partial switch fd in f.derived {
-			case ^ast.Ident:
-				vname = fd.name
-			case ^ast.Field_Value:
-				vname = fd.field.derived.(^ast.Ident).name
-				cv, cok := const_eval_int(fd.value)
-				assert(cok)
-				vval = cv
-			case:
-				fmt.panicf("TODO: enum field %#v", f.derived)
-			}
-			e.variants[i] = {vname, vval}
-			next = vval + 1
-		}
-		return pack_type(e)
-	case ^ast.Union_Type:
-		u := intern_decl(&ctx.unions, key, &ret) or_break
-
-		u.variants = make([]Type, len(d.variants), ctx.types.allocator)
-		max_size := 0
-		max_align := 1
-		for v, i in d.variants {
-			vt := emit_type(ctx, v)
-			u.variants[i] = vt
-			max_size = max(max_size, type_size(vt))
-			max_align = max(max_align, type_align(vt))
-		}
-		u.tag_ty = .I64
-		tag_size := type_size(u.tag_ty)
-		u.tag_offset = mem.align_forward_int(max_size, tag_size)
-		u.align = max(max_align, tag_size)
-		u.size = mem.align_forward_int(u.tag_offset + tag_size, u.align)
-		return pack_type(u)
-	case ^ast.Multi_Pointer_Type:
-		return intern_multi_pointer(ctx, emit_type(ctx, d.elem))
-	case ^ast.Pointer_Type:
-		return intern_pointer(ctx, emit_type(ctx, d.elem))
-	case ^ast.Array_Type:
-		elem := emit_type(ctx, d.elem)
-		if d.len == nil {
-			return intern_slice(ctx, elem)
-		}
-		len_node := d.len
-		if len_ident, is_ident := len_node.derived.(^ast.Ident); is_ident {
-			if sdecl, _, _, ok := find_module_decl(
-				ctx,
-				ctx.module,
-				len_ident.name,
-			); ok {
-				len_node = sdecl.values[0]
-			}
-		}
-		len_lit := len_node.derived.(^ast.Basic_Lit)
-		assert(len_lit.tok.kind == .Integer)
-		length, ok := strconv.parse_int(len_lit.tok.text)
-		assert(ok)
-		return intern_array(ctx, elem, length)
-	case ^ast.Poly_Type:
-		res := intern_poly(
-			ctx,
-			Poly_Data{len(ctx.poly_types), emit_type(ctx, d.specialization)},
-		)
-		append(
-			&ctx.poly_types,
-			Poly_Entry{d.type.name, {.Typeid, {typeida = res}}},
-		)
-		return res
-	case ^ast.Proc_Type:
-		sig, _, _ := typecheck_sig(ctx, d)
-		return pack_type(sig)
-	case:
-		fmt.panicf("TODO: %#v", expr.derived)
-	}
-
-	return
+emit_type :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> (ret: Type) {
+	res := typecheck(ctx, {inferred_ty = .Typeid}, expr)
+	fmt.assertf(
+		res.type == .Typeid || res.type == .Void,
+		"%v %#v",
+		res.type,
+		expr.derived,
+	)
+	return res.lit.typeida
 }
 
 Proc :: struct {
@@ -799,6 +748,11 @@ Global_Ctx :: struct {
 Proc_Type_Key :: string
 Type_Slice_Key :: string
 
+Struct_Inst_Key :: struct {
+	base: ^Struct,
+	args: string,
+}
+
 Proc_Inst_Key :: struct {
 	base:  Proc_ID,
 	polys: ^Proc_Type,
@@ -814,6 +768,7 @@ Types :: struct {
 	pointers:       map[Type]Pointer,
 	multi_pointers: map[Type]Multi_Pointer,
 	structs:        map[Decl_Key]^Struct,
+	struct_insts:   map[Struct_Inst_Key]^Struct,
 	enums:          map[Decl_Key]^Enum,
 	unions:         map[Decl_Key]^Union,
 	arrays:         map[Array]^Array,
@@ -843,6 +798,7 @@ types_init :: proc(types: ^Types) {
 	types.pointers.allocator = types.allocator
 	types.multi_pointers.allocator = types.allocator
 	types.structs.allocator = types.allocator
+	types.struct_insts.allocator = types.allocator
 	types.enums.allocator = types.allocator
 	types.unions.allocator = types.allocator
 	types.arrays.allocator = types.allocator
@@ -852,6 +808,7 @@ types_init :: proc(types: ^Types) {
 	types.type_slices.allocator = types.allocator
 	types.globals.allocator = types.allocator
 	types.global_vars.allocator = types.allocator
+	types.scope.allocator = types.allocator
 }
 
 types_deinit :: proc(types: ^Types) {
@@ -889,9 +846,11 @@ Decl_Key :: struct {
 }
 
 Struct :: struct {
-	fields: []Struct_Field,
-	size:   int,
-	align:  int,
+	param_names: []string,
+	params:      []Type,
+	fields:      []Struct_Field,
+	size:        int,
+	align:       int,
 }
 
 Struct_Field :: struct {
@@ -950,6 +909,131 @@ typecheck :: proc(
 	}
 
 	#partial switch d in node.derived {
+	case ^ast.Struct_Type:
+		structa := intern_decl(ctx, &ctx.structs, prop.key, &ty) or_break
+		structa.align = 1
+
+		prev := len(ctx.poly_types)
+		if d.poly_params != nil {
+			structa.param_names = make(
+				[]string,
+				len(d.poly_params.list),
+				ctx.types.allocator,
+			)
+			for param, i in d.poly_params.list {
+				d := param.derived.(^ast.Field).names[0].derived.(^ast.Poly_Type)
+				res := intern_poly(ctx, Poly_Data{len(ctx.poly_types), .Void})
+				append(
+					&ctx.poly_types,
+					Poly_Entry{d.type.name, {.Typeid, {typeida = res}}},
+				)
+				structa.param_names[i] = d.type.name
+			}
+		}
+
+		structa.fields = make(
+			[]Struct_Field,
+			len(d.fields.list),
+			ctx.types.allocator,
+		)
+		for &field, i in structa.fields {
+			ast_field := d.fields.list[i]
+			assert(len(ast_field.names) == 1)
+			field.name = ast_field.names[0].derived.(^ast.Ident).name
+			field.ty = emit_type(ctx, ast_field.type)
+			if d.poly_params == nil {
+				field.offset = mem.align_forward_int(
+					structa.size,
+					type_align(field.ty),
+				)
+				structa.size = field.offset + type_size(field.ty)
+				structa.align = max(structa.align, type_align(field.ty))
+			}
+		}
+		structa.size = mem.align_forward_int(structa.size, structa.align)
+
+		resize(&ctx.poly_types, prev)
+
+		return tpmeta(ctx, pack_type(structa))
+	case ^ast.Enum_Type:
+		e := intern_decl(ctx, &ctx.enums, prop.key, &ty) or_break
+
+		e.backing = d.base_type != nil ? emit_type(ctx, d.base_type) : .Int
+		e.variants = make([]Enum_Variant, len(d.fields), ctx.types.allocator)
+		next := i64(0)
+		for f, i in d.fields {
+			vname: string
+			vval := next
+			#partial switch fd in f.derived {
+			case ^ast.Ident:
+				vname = fd.name
+			case ^ast.Field_Value:
+				vname = fd.field.derived.(^ast.Ident).name
+				cv, cok := const_eval_int(fd.value)
+				assert(cok)
+				vval = cv
+			case:
+				fmt.panicf("TODO: enum field %#v", f.derived)
+			}
+			e.variants[i] = {vname, vval}
+			next = vval + 1
+		}
+		return tpmeta(ctx, pack_type(e))
+	case ^ast.Union_Type:
+		u := intern_decl(ctx, &ctx.unions, prop.key, &ty) or_break
+
+		u.variants = make([]Type, len(d.variants), ctx.types.allocator)
+		max_size := 0
+		max_align := 1
+		for v, i in d.variants {
+			vt := emit_type(ctx, v)
+			u.variants[i] = vt
+			max_size = max(max_size, type_size(vt))
+			max_align = max(max_align, type_align(vt))
+		}
+		u.tag_ty = .I64
+		tag_size := type_size(u.tag_ty)
+		u.tag_offset = mem.align_forward_int(max_size, tag_size)
+		u.align = max(max_align, tag_size)
+		u.size = mem.align_forward_int(u.tag_offset + tag_size, u.align)
+		return tpmeta(ctx, pack_type(u))
+	case ^ast.Multi_Pointer_Type:
+		return tpmeta(ctx, intern_multi_pointer(ctx, emit_type(ctx, d.elem)))
+	case ^ast.Pointer_Type:
+		return tpmeta(ctx, intern_pointer(ctx, emit_type(ctx, d.elem)))
+	case ^ast.Array_Type:
+		elem := emit_type(ctx, d.elem)
+		if d.len == nil {
+			return tpmeta(ctx, intern_slice(ctx, elem))
+		}
+		len_node := d.len
+		if len_ident, is_ident := len_node.derived.(^ast.Ident); is_ident {
+			if sdecl, _, _, ok := find_module_decl(
+				ctx,
+				ctx.module,
+				len_ident.name,
+			); ok {
+				len_node = sdecl.values[0]
+			}
+		}
+		len_lit := len_node.derived.(^ast.Basic_Lit)
+		assert(len_lit.tok.kind == .Integer)
+		length, ok := strconv.parse_int(len_lit.tok.text)
+		assert(ok)
+		return tpmeta(ctx, intern_array(ctx, elem, length))
+	case ^ast.Poly_Type:
+		res := intern_poly(
+			ctx,
+			Poly_Data{len(ctx.poly_types), emit_type(ctx, d.specialization)},
+		)
+		append(
+			&ctx.poly_types,
+			Poly_Entry{d.type.name, {.Typeid, {typeida = res}}},
+		)
+		return tpmeta(ctx, res)
+	case ^ast.Proc_Type:
+		sig, _, _ := typecheck_sig(ctx, d)
+		return tpmeta(ctx, pack_type(sig))
 	case ^ast.Block_Stmt:
 		prev_scope_len := len(ctx.scope)
 		for stmt in d.stmts {
@@ -1105,7 +1189,13 @@ typecheck :: proc(
 								{inferred_ty = field.ty},
 								e.value,
 							)
-							assert(fty.type == field.ty)
+							fmt.assertf(
+								fty.type == field.ty,
+								"%v == %v %#v",
+								fty.type,
+								field.ty,
+								e.value.derived,
+							)
 						}
 					}
 				case:
@@ -1198,27 +1288,31 @@ typecheck :: proc(
 				return proc_meta(ctx, pid)
 			}
 
-			if e, ok := unpack_type(base.type).(^Enum); ok {
-				for v in e.variants {
-					if v.name == f.name {
-						set_node_data(d.field, int(v.value))
-						return base
-					}
-				}
-				fmt.panicf("enum has no variant %q", f.name)
-			}
-
 			base_ty := base.type
 			if p, ok := unpack_type(base_ty).(Pointer); ok do base_ty = p^
 
+			if base.type == .Typeid {
+				base_ty = base.lit.typeida
+			}
+
 			#partial switch t in unpack_type(base_ty) {
+			case ^Enum:
+				for v in t.variants {
+					if v.name == f.name {
+						set_node_data(d.field, int(v.value))
+						return tmeta(ctx, base.lit.typeida)
+					}
+				}
+				fmt.panicf("enum has no variant %q", f.name)
 			case ^Struct:
 				for &field in t.fields {
 					if field.name == f.name {
+						assert(field.ty != .Void)
 						set_node_data(d.field, field.offset)
 						return tmeta(ctx, field.ty)
 					}
 				}
+				fmt.panicf("TODO: field not found %v %v", base_ty, f.name)
 			case:
 				fmt.panicf("TODO: %#v", t)
 			}
@@ -1275,9 +1369,10 @@ typecheck :: proc(
 		rhs_ty := typecheck(ctx, {inferred_ty = inferred_ty}, d.right)
 		fmt.assertf(
 			inferred_ty == rhs_ty.type,
-			"%v == %v",
+			"%v == %v %#v",
 			inferred_ty,
 			rhs_ty.type,
+			d,
 		)
 
 		if is_comparison {
@@ -1389,6 +1484,12 @@ typecheck :: proc(
 			}
 		}
 
+		for entry in ctx.poly_types {
+			if entry.name == d.name {
+				return new_clone(entry.meta)
+			}
+		}
+
 		if mid, ok := ctx.modules[ctx.module].imports[name]; ok {
 			return module_meta(ctx, Module_ID(mid))
 		}
@@ -1405,20 +1506,26 @@ typecheck :: proc(
 			return tmeta(ctx, .Bool)
 		}
 
+		if name == "nil" {
+			assert(prop.inferred_ty != .Void)
+			return tmeta(ctx, prop.inferred_ty)
+		}
+
 		if name == "_" {
 			return &VOID
 		}
 
-		if sdecl, _, _, ok := find_module_decl(ctx, ctx.module, name); ok {
-			if len(sdecl.values) == 1 {
-				if _, is_lit := sdecl.values[0].derived.(^ast.Basic_Lit);
-				   is_lit {
-					return typecheck(ctx, prop, sdecl.values[0])
-				}
-			}
+		if sdecl, _, dfid, ok := find_module_decl(ctx, ctx.module, name); ok {
+			prop := prop
+			prop.key = Decl_Key{dfid, u32(sdecl.pos.offset)}
+			return typecheck(ctx, prop, sdecl.values[0])
 		}
 
-		return tmeta(ctx, emit_type(ctx, node))
+		for name, kind in TYPE_NAMES {
+			if name == d.name do return tpmeta(ctx, kind)
+		}
+
+		fmt.panicf("TODO: %#v", node.derived)
 	case ^ast.Call_Expr:
 		switch get_builtin_proc(d.expr) {
 		case .nil:
@@ -1465,21 +1572,30 @@ typecheck :: proc(
 			case .syscall:
 				for arg in d.args {
 					pty := typecheck(ctx, {inferred_ty = .Uintptr}, arg)
-					assert(pty.type == .Uintptr)
+					fmt.assertf(
+						pty.type == .Uintptr,
+						"%v, %#v",
+						pty.type,
+						arg.derived,
+					)
 				}
 				return tmeta(ctx, .Uintptr)
 			}
 		case Module_Type:
 			fmt.panicf("Cant call a module")
-		case Multi_Pointer, Pointer:
-			assert(len(d.args) == 1)
-			typecheck(ctx, {inferred_ty = .Uintptr}, d.args[0])
-			return callee
-		case:
-			assert(is_builtin(callee.type) && callee.type != .Void)
-			assert(len(d.args) == 1)
-			typecheck(ctx, {}, d.args[0])
-			return callee
+		case Typeid_Type:
+			#partial switch t in unpack_type(callee.lit.typeida) {
+			case ^Struct:
+				args := make([]Type, len(d.args), context.temp_allocator)
+				for arg, i in d.args {
+					args[i] = emit_type(ctx, arg)
+				}
+				return tpmeta(ctx, instantiate_struct(ctx, t, args))
+			case:
+				assert(len(d.args) == 1)
+				typecheck(ctx, {}, d.args[0])
+				return tmeta(ctx, callee.lit.typeida)
+			}
 		}
 
 		if len(d.args) == 1 && len(d.args) != len(sig.params) {
@@ -1560,7 +1676,13 @@ typecheck :: proc(
 			} else {
 				for param, i in sig.params {
 					pty := typecheck(ctx, {inferred_ty = param}, d.args[i])
-					assert(pty.type == param)
+					fmt.assertf(
+						pty.type == param,
+						"%v == %v %#v",
+						pty.type,
+						param,
+						d.args[i],
+					)
 				}
 			}
 		}
@@ -1604,13 +1726,13 @@ typecheck :: proc(
 			}
 			typecheck(ctx, {inferred_ty = lhs_ty.type}, d.rhs[i])
 		}
-	case ^ast.Pointer_Type:
-		return tmeta(ctx, emit_type(ctx, node))
 	case:
 		fmt.panicf("TODO: %#v", node.derived)
 	}
 
-	return &VOID
+	if ty == nil do ty = &VOID
+
+	return
 }
 
 Var_Flag :: enum uintptr {
@@ -1844,6 +1966,8 @@ register_module_globals :: proc(ctx: ^Gen_Ctx, mid: Module_ID) {
 }
 
 typecheck_program :: proc(ctx: ^Gen_Ctx) {
+	ctx.poly_types.allocator = ctx.types.allocator
+
 	@(static) stt: ast.Proc_Lit
 	append(&ctx.procs, Proc{lit = &stt})
 

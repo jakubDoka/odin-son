@@ -6,7 +6,7 @@ main:
      push r13
      sub rsp, 0x98
      mov rax, 0x00
-     imul rbp, rax, 0x08
+     imul r12, rax, 0x08
      mov rdx, 0x40
      mov rsi, 0x00
      lea rdi, [rsp+0x50]
@@ -19,24 +19,24 @@ main:
      mov qword ptr [rsp+0x78], 0x11
      mov qword ptr [rsp+0x80], 0x37
      mov qword ptr [rsp+0x88], 0x02
-     mov rbx, 0x08
-     sub rbx, 0x00
+     mov rbp, 0x08
+     sub rbp, 0x00
      lea rax, [rsp+0x50]
-     add rax, rbp
-     mov r12, rax
+     add rax, r12
+     mov r13, rax
      lea rdi, [rsp]
      mov rsi, 0x00
      mov rdx, 0x10
      call :$set
-     mov [rsp], r12
-     mov [rsp+0x08], rbx
-     mov rcx, 0x00
-     mov rdx, 0x00
-001: cmp rcx, [rsp+0x08]
+     mov [rsp], r13
+     mov [rsp+0x08], rbp
+     mov rax, 0x00
+     mov rbx, 0x00
+001: cmp rax, [rsp+0x08]
      jnl :0
-     mov rax, [rsp]
-     add rdx, [rax+rcx*8]
-     add rcx, 0x01
+     mov rcx, [rsp]
+     add rbx, [rcx+rax*8]
+     add rax, 0x01
      jmp :1
 
 000: mov rax, [rsp+0x08]
@@ -45,44 +45,40 @@ main:
      add [rsp], rcx
      sub rax, 0x01
      mov [rsp+0x08], rax
-     mov rsi, 0x00
-003: cmp rsi, [rsp+0x08]
+     mov rax, 0x00
+003: cmp rax, [rsp+0x08]
      jnl :2
-     mov rax, [rsp]
-     add rdx, [rax+rsi*8]
-     add rsi, 0x01
+     mov rdx, [rsp]
+     add rbx, [rdx+rax*8]
+     add rax, 0x01
      jmp :3
 
-002: add [rsp], rbp
+002: add [rsp], r12
      mov rax, 0x05
      sub rax, 0x00
      mov [rsp+0x08], rax
-     mov rsi, rdx
-     mov rdx, 0x00
-005: cmp rdx, [rsp+0x08]
+     mov rax, 0x00
+005: cmp rax, [rsp+0x08]
      jnl :4
-     mov rax, [rsp]
-     add rsi, [rax+rdx*8]
-     add rdx, 0x01
+     mov rdx, [rsp]
+     add rbx, [rdx+rax*8]
+     add rax, 0x01
      jmp :5
 
 004: add [rsp], rcx
      mov rax, 0x03
      sub rax, 0x01
      mov [rsp+0x08], rax
-     mov rdx, 0x00
-     mov r13, rsi
-007: cmp rdx, [rsp+0x08]
+     mov rax, 0x00
+007: cmp rax, [rsp+0x08]
      jnl :6
-     mov rax, [rsp]
-     mov rcx, r13
-     add rcx, [rax+rdx*8]
-     add rdx, 0x01
-     mov r13, rcx
+     mov rcx, [rsp]
+     add rbx, [rcx+rax*8]
+     add rax, 0x01
      jmp :7
 
-006: mov rbp, 0x04
-     sub rbp, 0x04
+006: mov r12, 0x04
+     sub r12, 0x04
      lea rdi, [rsp+0x30]
      mov rdx, 0x20
      mov rsi, 0x00
@@ -91,62 +87,57 @@ main:
      mov qword ptr [rsp+0x38], 0x01
      mov qword ptr [rsp+0x40], 0x02
      mov qword ptr [rsp+0x48], 0x03
-     lea rax, [rsp+rbp*8+0x30]
+     lea rax, [rsp+r12*8+0x30]
      mov [rsp], rax
      mov rax, 0x04
-     sub rax, rbp
+     sub rax, r12
      mov [rsp+0x08], rax
-     mov rdx, 0x00
-009: cmp rdx, [rsp+0x08]
+     mov rax, 0x00
+009: cmp rax, [rsp+0x08]
      jnl :8
-     mov rax, [rsp]
-     mov rcx, r13
-     add rcx, [rax+rdx*8]
-     add rdx, 0x01
-     mov r13, rcx
+     mov rcx, [rsp]
+     add rbx, [rcx+rax*8]
+     add rax, 0x01
      jmp :9
 
 008: lea rdi, [rsp+0x10]
      mov rsi, 0x00
      mov rdx, 0x10
      call :$set
-     mov [rsp+0x10], r12
-     mov [rsp+0x18], rbx
+     mov [rsp+0x10], r13
+     mov [rsp+0x18], rbp
      mov rdi, [rsp+0x10]
      mov rsi, [rsp+0x18]
      call :quick_sort
-     mov rdx, 0x00
-     mov rbp, r13
-011: cmp rdx, 0x08
+     mov rcx, 0x00
+011: cmp rcx, 0x08
      jnl :10
-     mov rax, [rsp+rdx*8+0x50]
-     neg [rsp+rdx*8+0x50]
-     mov rcx, rdx
+     mov rax, [rsp+rcx*8+0x50]
+     neg [rsp+rcx*8+0x50]
      shl rax, cl
-     add rax, rbp
-     add rdx, 0x01
-     mov rbp, rax
+     add rcx, 0x01
+     add rax, rbx
+     mov rbx, rax
      jmp :11
 
 010: lea rdi, [rsp+0x20]
      mov rsi, 0x00
      mov rdx, 0x10
      call :$set
-     mov [rsp+0x20], r12
-     mov [rsp+0x28], rbx
+     mov [rsp+0x20], r13
+     mov [rsp+0x28], rbp
      mov rdi, [rsp+0x20]
      mov rsi, [rsp+0x28]
      call :bubble_sort
-     mov rax, rbp
-     mov rsi, 0x00
-013: cmp rsi, 0x08
+     mov rcx, 0x00
+     mov rax, rbx
+013: cmp rcx, 0x08
      jnl :12
-     neg [rsp+rsi*8+0x50]
-     mov rdx, [rsp+rsi*8+0x50]
-     mov rcx, rsi
+     neg [rsp+rcx*8+0x50]
+     mov rdx, [rsp+rcx*8+0x50]
      shl rdx, cl
+     add rcx, 0x01
      add rdx, rax
-     add rsi, 0x01
      mov rax, rdx
      jmp :13
 

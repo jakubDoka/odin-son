@@ -23,17 +23,8 @@ module_init :: proc(m: ^Module) {
 	m.version = 0
 	m.section_count = 0
 	m.start_func = -1
-	array_init(&m.types, stride_ftype)
-	array_init(&m.valtypes, stride_int)
-	array_init(&m.imports, stride_import)
-	array_init(&m.funcs, stride_int)
-	array_init(&m.mems, stride_memory)
-	array_init(&m.globals, stride_global)
-	array_init(&m.exports, stride_export)
-	array_init(&m.locals, stride_local)
-	array_init(&m.instrs, stride_instr)
-	array_init(&m.codes, stride_code)
-	array_init(&m.datas, stride_data)
+	// The Array(T) fields are already zero-valued (data=nil, len=cap=0) by the
+	// caller's `Module = {}`, so there is nothing else to set up: no strides.
 }
 
 decode_module :: proc(d: ^Decoder, a: ^Arena, m: ^Module) {
@@ -314,7 +305,7 @@ decode_const_expr :: proc(d: ^Decoder, op_out: ^int, val_out: ^i64) {
 // decode_expr decodes a flat instruction stream up to and including the `end`
 // that closes the function body (depth 0). Nested block/loop/if push a new
 // nesting level. Unknown opcodes flip the error flag and stop the stream.
-decode_expr :: proc(d: ^Decoder, a: ^Arena, instrs: ^Array) {
+decode_expr :: proc(d: ^Decoder, a: ^Arena, instrs: ^Array(Instr)) {
 	depth := 0
 	for {
 		if d.pos >= len(d.data) do break

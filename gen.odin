@@ -3,13 +3,12 @@ package main
 import "backend"
 import "base:runtime"
 import "core:fmt"
+import "core:log"
 import "core:mem"
 import "core:odin/ast"
 import "core:odin/tokenizer"
-import "core:os"
 import "core:slice"
 import "core:strconv"
-import "core:strings"
 import "meta"
 import "vendored/gam/util/arna"
 
@@ -271,6 +270,7 @@ Propagation :: struct {
 Ty_Propagation :: struct {
 	inferred_ty: Type,
 	referencing: bool,
+	key:         Maybe(Decl_Key),
 }
 
 ctx_ctrl :: proc(ctx: ^Gen_Ctx) -> backend.Node_ID {
@@ -453,8 +453,10 @@ module_const_lit :: proc(ctx: ^Gen_Ctx, id: ^ast.Ident) -> (^ast.Node, bool) {
 }
 
 ctx_lookup_lvalue :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Sym {
+	ty := get_node_type(expr)
 	if id, ok := expr.derived.(^ast.Ident); ok {
 		#reverse for var in ctx.scope {
+			fmt.assertf(var.name != "", "%#v", ctx.scope[:])
 			if var.name == id.name {
 				switch idx in var.idx {
 				case int:
@@ -470,6 +472,13 @@ ctx_lookup_lvalue :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Sym {
 			return Value(backend.graph_add_c_int(ctx, "false", .I8, 0))
 		case "true":
 			return Value(backend.graph_add_c_int(ctx, "true", .I8, 1))
+		case "nil":
+			#partial switch t in unpack_type(ty) {
+			case ^Slice:
+				return Value{id = alloca(ctx, "nilslc", ty), is_lvalue = true}
+			case:
+				fmt.panicf("TODO: %v", ty)
+			}
 		}
 
 		if gv, ok := find_module_global(ctx, ctx.module, id.name); ok {
@@ -479,7 +488,7 @@ ctx_lookup_lvalue :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Sym {
 			return Value{id = ptr, is_lvalue = true}
 		}
 
-		fmt.panicf("TODO: undefined variable: %v %#v", id.name, expr)
+		fmt.panicf("TODO: undefined variable: %v %#v", id.name, expr.derived)
 	} else {
 		return emit_nodes(ctx, {}, expr)
 	}
@@ -606,6 +615,13 @@ const_eval_int :: proc(node: ^ast.Expr) -> (value: i64, ok: bool) {
 		if d.op.text != "-" do return 0, false
 		inner := const_eval_int(d.expr) or_return
 		return -inner, true
+	case ^ast.Binary_Expr:
+		lhs, rhs :=
+			const_eval_int(d.left) or_return, const_eval_int(d.right) or_return
+		#partial switch d.op.kind {
+		case .Mul:
+			return lhs * rhs, true
+		}
 	case ^ast.Paren_Expr:
 		return const_eval_int(d.expr)
 	}
@@ -957,7 +973,17 @@ emit_proc :: proc(
 
 	backend.current_graph = ctx
 
-	clear(&ctx.scope)
+	ctx.mems.scratch.pos = 0
+	ctx.scope = make([dynamic]Variable, arna.allocator(&ctx.mems.scratch))
+
+	clear(&ctx.poly_types)
+	assert(len(prc.poly_names) == len(prc.poly_values))
+	for j in 0 ..< len(prc.poly_names) {
+		append(
+			&ctx.poly_types,
+			Poly_Entry{prc.poly_names[j], prc.poly_values[j]},
+		)
+	}
 
 	ctx.start = backend.graph_add_start(ctx, "start")
 	ctx.entry = backend.graph_add_entry(ctx, "entry", ctx.start)
@@ -1111,14 +1137,8 @@ emit_proc_code :: proc(
 
 	backend.graph_compact(ctx)
 
-	ctx.mems.scratch.pos = 0
-
 	schedule: backend.Graph_Schedule
 	backend.graph_schedule(ctx, &schedule, arna.allocator(&ctx.mems.scratch))
-
-	if strings.starts_with(prc.name, "array_push struct {param_off") {
-		backend.graph_display(os.to_writer(os.stderr), ctx, &schedule)
-	}
 
 	backend.graph_schedule_peeps(ctx, &schedule)
 
@@ -1169,6 +1189,7 @@ emit_stmts :: proc(
 			backend.graph_unpin(ctx, n)
 		}
 	}
+	assert(base.gen <= len(ctx.scope))
 	resize(&ctx.scope, base.gen)
 	backend.graph_truncate_scope(ctx, ctx.node_scope, base.node)
 }
@@ -1562,6 +1583,7 @@ emit_nodes :: proc(
 		assert(len(d.names) == len(d.values))
 		for i in 0 ..< len(d.names) {
 			name := meta.src_of(ctx.file^, d.names[i])
+			assert(name != "")
 			decl_ty := emit_type(ctx, d.type)
 			vty := decl_ty != .Void ? decl_ty : get_node_type(d.values[i])
 			flags := get_node_vflags(d.names[i])
@@ -1656,7 +1678,7 @@ emit_nodes :: proc(
 			fmt.panicf("TODO: %#v", d)
 		}
 	case ^ast.Selector_Expr:
-		if is_of(get_node_type(d.expr), ^Enum) {
+		if is_of(get_node_meta(d.expr).lit.typeida, ^Enum) {
 			val := get_node_data(d.field, int)
 			res = backend.graph_add_c_int(ctx, "enumv", dt, i64(val))
 			break
@@ -2043,10 +2065,8 @@ emit_nodes :: proc(
 			}
 		case base_ty == .Module:
 			panic("calling a module?")
-		case is_of(base_ty, Multi_Pointer), is_of(base_ty, Pointer):
-			res = to_rvalue(ctx, emit_nodes(ctx, {}, d.args[0]), d.args[0])
-		case is_builtin(base_ty):
-			dest_dt := type_to_dt(base_ty)
+		case base_ty == .Typeid:
+			dest_dt := type_to_dt(base_meta.lit.typeida)
 			src_ty := get_node_type(d.args[0])
 			src_dt := type_to_dt(src_ty)
 			arg := to_rvalue(ctx, emit_nodes(ctx, {}, d.args[0]), d.args[0])
@@ -2096,15 +2116,17 @@ emit_nodes :: proc(
 					dest_dt,
 					arg,
 				)
-			case:
+			case dest_dt != src_dt:
 				op: backend.Un_Op = .Uext
 				if src_ty in SIGNED_TYPES {
 					op = .Sext
 				}
-				if type_size(src_ty) > type_size(base_ty) {
+				if type_size(src_ty) > type_size(base_meta.lit.typeida) {
 					op = .Cast
 				}
 				res = backend.graph_add_un_op(ctx, "cst", op, dest_dt, arg)
+			case:
+				res = arg
 			}
 		case:
 			fmt.panicf("TODO: %v %v", base_ty, node)

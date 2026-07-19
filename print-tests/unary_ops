@@ -191,12 +191,10 @@ test_bitnot u32:
 test_bitnot i64:
      not [rdi]
      mov rax, [rdi]
-     mov rax, rax
      ret
 test_bitnot u64:
      not [rdi]
      mov rax, [rdi]
-     mov rax, rax
      ret
 test_neg i8:
      neg [rdi]
@@ -231,12 +229,10 @@ test_neg u32:
 test_neg i64:
      neg [rdi]
      mov rax, [rdi]
-     mov rax, rax
      ret
 test_neg u64:
      neg [rdi]
      mov rax, [rdi]
-     mov rax, rax
      ret
 =========== OPT LEVEL: mininal ===========
 test_not_reg:
@@ -421,12 +417,14 @@ test_bitnot u32:
      mov eax, eax
      ret
 test_bitnot i64:
-     not [rdi]
      mov rax, [rdi]
+     not rax
+     mov [rdi], rax
      ret
 test_bitnot u64:
-     not [rdi]
      mov rax, [rdi]
+     not rax
+     mov [rdi], rax
      ret
 test_neg i8:
      neg [rdi]
@@ -459,12 +457,14 @@ test_neg u32:
      mov eax, eax
      ret
 test_neg i64:
-     neg [rdi]
      mov rax, [rdi]
+     neg rax
+     mov [rdi], rax
      ret
 test_neg u64:
-     neg [rdi]
      mov rax, [rdi]
+     neg rax
+     mov [rdi], rax
      ret
 =========== OPT LEVEL: moderate ===========
 test_not_reg:

@@ -10595,3 +10595,115 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) parametrized_structs :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Vec :: struct($T: typeid) {
+	data: [^]T,
+	len:  int,
+}
+
+Pair :: struct {
+	a: int,
+	b: int,
+}
+
+vec_push :: proc(v: ^Vec($T), x: ^T) {
+	v.data[v.len] = x^
+	v.len += 1
+}
+
+vec_at :: proc(v: ^Vec($T), i: int) -> ^T {
+	return &v.data[i]
+}
+
+sum_ints :: proc(v: ^Vec(int)) -> int {
+	s := 0
+	i := 0
+	for {
+		if i >= v.len do break
+		s += vec_at(v, i)^
+		i += 1
+	}
+	return s
+}
+
+main_ :: proc() -> int {
+	ibuf: [8]int = {}
+	pbuf: [8]Pair = {}
+
+	iv: Vec(int) = {}
+	iv.data = raw_data(ibuf[:])
+	a := 11
+	b := 31
+	vec_push(&iv, &a)
+	vec_push(&iv, &b)
+
+	pv: Vec(Pair) = {}
+	pv.data = raw_data(pbuf[:])
+	p := Pair{3, 4}
+	vec_push(&pv, &p)
+
+	q := vec_at(&pv, 0)
+	return sum_ints(&iv) + q.a + q.b + iv.len + pv.len
+}
+
+run_test(t, `parametrized_structs`, `
+package main
+
+opt_level :: "none"
+
+Vec :: struct($T: typeid) {
+	data: [^]T,
+	len:  int,
+}
+
+Pair :: struct {
+	a: int,
+	b: int,
+}
+
+vec_push :: proc(v: ^Vec($T), x: ^T) {
+	v.data[v.len] = x^
+	v.len += 1
+}
+
+vec_at :: proc(v: ^Vec($T), i: int) -> ^T {
+	return &v.data[i]
+}
+
+sum_ints :: proc(v: ^Vec(int)) -> int {
+	s := 0
+	i := 0
+	for {
+		if i >= v.len do break
+		s += vec_at(v, i)^
+		i += 1
+	}
+	return s
+}
+
+main :: proc() -> int {
+	ibuf: [8]int = {}
+	pbuf: [8]Pair = {}
+
+	iv: Vec(int) = {}
+	iv.data = raw_data(ibuf[:])
+	a := 11
+	b := 31
+	vec_push(&iv, &a)
+	vec_push(&iv, &b)
+
+	pv: Vec(Pair) = {}
+	pv.data = raw_data(pbuf[:])
+	p := Pair{3, 4}
+	vec_push(&pv, &p)
+
+	q := vec_at(&pv, 0)
+	return sum_ints(&iv) + q.a + q.b + iv.len + pv.len
+}
+`, main_())
+}

@@ -37,7 +37,7 @@ run_module_impl :: proc(name: string, data: string, auto: bool) -> int {
 	print(" ===\n")
 
 	a: Arena = {}
-	arena_init(&a, 64 * 1024)
+	arena_init(&a, ARENA_RESERVE)
 	m: Module = {}
 	module_init(&m)
 
@@ -71,8 +71,7 @@ run_module_impl :: proc(name: string, data: string, auto: bool) -> int {
 	i := 0
 	for {
 		if i >= m.codes.len do break
-		c: Code = {}
-		array_get(&a, &m.codes, i, &c)
+		c := array_at(&m.codes, i)
 		acc += c.instr_count * 2
 		acc += c.local_total
 		acc += c.body_size
@@ -96,8 +95,6 @@ run_module_auto :: proc(name: string, data: string) -> int {
 }
 
 main :: proc() -> int {
-	strides_init()
-
 	acc := 0
 
 	acc += run_module("add", WASM_ADD)

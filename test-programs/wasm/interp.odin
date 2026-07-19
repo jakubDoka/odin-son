@@ -15,27 +15,23 @@ package main
 
 WASM_PAGE :: 65536
 
-// Per-call scratch limits. A function body may not exceed W_MAX_INSTRS decoded
-// instructions or W_MAX_LOCALS local slots (params + declared locals); both are
-// generous for the hand-crafted and compiler-generated modules exercised here.
-// A body past either limit traps deterministically rather than overrun a buffer
-// (which the reference build catches via bounds checks but the JIT build would
-// not, desyncing the parity comparison).
-W_MAX_INSTRS :: 1024
-W_MAX_LOCALS :: 256
+// The operand stack is reserved once per module (from the arena) at this size;
+// it is not a per-function bound, just a generous ceiling on live operands. A
+// push past it traps deterministically rather than overrun the reservation.
+W_STACK_CAP :: 65536
 
 // --- operand stack ----------------------------------------------------------
 
-wstack: [512]i64
+wstack: []i64 // reserved once per module by w_init
 wsp: int
 
 // --- mutable globals --------------------------------------------------------
 
-wglobals: [64]i64
+wglobals: []i64 // sized to the module's declared global count
 
 // --- single linear memory ---------------------------------------------------
 
-wmem_off: int // arena offset of the memory reservation
+wmem: []u8 // the whole reserved linear memory (cap pages), empty if no memory
 wmem_size: int // committed (accessible) bytes
 wmem_pages: int // committed pages
 wmem_cap: int // reserved pages (grow ceiling)
@@ -45,8 +41,24 @@ wmem_cap: int // reserved pages (grow ceiling)
 wtrap: int // set on any out-of-bounds / stack fault
 wifuncs: int // number of imported functions (index space offset)
 
+// arena_i64s allocates a zeroed (virgin) i64 slice of length `n` from the arena.
+arena_i64s :: proc(a: ^Arena, n: int) -> []i64 {
+	nn := n
+	if nn < 1 do nn = 1
+	b := arena_alloc(a, nn * 8, 8)
+	return ([^]i64)(raw_data(b))[0:nn]
+}
+
+// arena_ints allocates a zeroed (virgin) int slice of length `n` from the arena.
+arena_ints :: proc(a: ^Arena, n: int) -> []int {
+	nn := n
+	if nn < 1 do nn = 1
+	b := arena_alloc(a, nn * 8, 8)
+	return ([^]int)(raw_data(b))[0:nn]
+}
+
 wpush :: proc(v: i64) {
-	if wsp >= 512 {
+	if wsp >= len(wstack) {
 		wtrap = 1
 		return
 	}
@@ -89,12 +101,11 @@ w_mem_read :: proc(a: ^Arena, addr: int, n: int) -> i64 {
 		wtrap = 1
 		return 0
 	}
-	p := Byte_Ptr(a.base + uintptr(wmem_off))
 	r := u64(0)
 	i := 0
 	for {
 		if i >= n do break
-		r = r | (u64(p[addr + i]) << uint(i * 8))
+		r = r | (u64(wmem[addr + i]) << uint(i * 8))
 		i += 1
 	}
 	return i64(r)
@@ -109,12 +120,11 @@ w_mem_write :: proc(a: ^Arena, addr: int, n: int, val: i64) {
 		wtrap = 1
 		return
 	}
-	p := Byte_Ptr(a.base + uintptr(wmem_off))
 	u := u64(val)
 	i := 0
 	for {
 		if i >= n do break
-		p[addr + i] = u8(u >> uint(i * 8))
+		wmem[addr + i] = u8(u >> uint(i * 8))
 		i += 1
 	}
 }
@@ -151,8 +161,7 @@ w_find_func :: proc(a: ^Arena, m: ^Module, data: string, name: string) -> int {
 	ei := 0
 	for {
 		if ei >= m.exports.len do break
-		e: Export = {}
-		array_get(a, &m.exports, ei, &e)
+		e := array_at(&m.exports, ei)
 		if e.kind == EXT_FUNC {
 			if w_name_eq(data, e.nm_off, e.nm_len, name) do return e.index
 		}
@@ -170,8 +179,7 @@ w_load_globals :: proc(a: ^Arena, m: ^Module) {
 	gi := 0
 	for {
 		if gi >= m.globals.len do break
-		g: Global = {}
-		array_get(a, &m.globals, gi, &g)
+		g := array_at(&m.globals, gi)
 		wglobals[gi] = g.init_val
 		gi += 1
 	}
@@ -181,59 +189,69 @@ w_init :: proc(a: ^Arena, m: ^Module, data: string) {
 	wsp = 0
 	wtrap = 0
 
+	// Reserve the operand stack and the mutable-global slots once per module.
+	wstack = arena_i64s(a, W_STACK_CAP)
+	wglobals = arena_i64s(a, m.globals.len)
+
 	w_load_globals(a, m)
 
-	wmem_off = 0
+	wmem = nil
 	wmem_size = 0
 	wmem_pages = 0
 	wmem_cap = 0
 	if m.mems.len > 0 {
-		mem: Memory = {}
-		array_get(a, &m.mems, 0, &mem)
+		mem := array_at(&m.mems, 0)
 		cap_pages := mem.min
 		if mem.has_max == 1 do cap_pages = mem.max
 		if cap_pages < mem.min do cap_pages = mem.min
 		wmem_cap = cap_pages
 		wmem_pages = mem.min
 		wmem_size = mem.min * WASM_PAGE
-		wmem_off = arena_alloc(a, cap_pages * WASM_PAGE, 8)
+		wmem = arena_alloc(a, cap_pages * WASM_PAGE, 8)
 
-		p := Byte_Ptr(a.base + uintptr(wmem_off))
 		n := cap_pages * WASM_PAGE
 		z := 0
 		for {
 			if z >= n do break
-			p[z] = 0
+			wmem[z] = 0
 			z += 1
 		}
 
-		di := 0
-		for {
-			if di >= m.datas.len do break
-			ds: Data = {}
-			array_get(a, &m.datas, di, &ds)
-			base := int(ds.off_val)
-			pp := Byte_Ptr(a.base + uintptr(wmem_off))
-			k := 0
-			for {
-				if k >= ds.bytes_len do break
-				if base + k < wmem_size {
-					pp[base + k] = data[ds.bytes_off + k]
-				}
-				k += 1
-			}
-			di += 1
-		}
+		w_init_data(m, data)
 	}
 
 	wifuncs = 0
 	ii := 0
 	for {
 		if ii >= m.imports.len do break
-		im: Import = {}
-		array_get(a, &m.imports, ii, &im)
+		im := array_at(&m.imports, ii)
 		if im.kind == EXT_FUNC do wifuncs += 1
 		ii += 1
+	}
+}
+
+// w_init_data copies every active data segment into linear memory. Split into
+// its own proc so w_init keeps a single (non-nested) loop level per procedure,
+// which the JIT frontend requires.
+w_init_data :: proc(m: ^Module, data: string) {
+	di := 0
+	for {
+		if di >= m.datas.len do break
+		ds := array_at(&m.datas, di)
+		w_init_one_data(ds, data)
+		di += 1
+	}
+}
+
+w_init_one_data :: proc(ds: ^Data, data: string) {
+	base := int(ds.off_val)
+	k := 0
+	for {
+		if k >= ds.bytes_len do break
+		if base + k < wmem_size {
+			wmem[base + k] = data[ds.bytes_off + k]
+		}
+		k += 1
 	}
 }
 
@@ -252,23 +270,25 @@ w_exec :: proc(a: ^Arena, m: ^Module, func_index: int) {
 		return
 	}
 
-	type_index := 0
-	array_get(a, &m.funcs, defined, &type_index)
-	ft: FuncType = {}
-	array_get(a, &m.types, type_index, &ft)
-	c: Code = {}
-	array_get(a, &m.codes, defined, &c)
+	type_index := array_at(&m.funcs, defined)^
+	ft := array_at(&m.types, type_index)
+	c := array_at(&m.codes, defined)
 
-	if c.instr_count > W_MAX_INSTRS {
-		wtrap = 1
-		return
-	}
-	if ft.param_count + c.local_total > W_MAX_LOCALS {
-		wtrap = 1
-		return
-	}
+	// All per-call scratch is bump-allocated from the arena and freed on return
+	// by restoring `used` to this mark (children recurse above it and restore to
+	// their own marks first, so this call's scratch is never disturbed).
+	mark := a.used
 
-	locals: [W_MAX_LOCALS]i64 = {}
+	n := c.instr_count // instruction count == control-array sizing
+	nloc := ft.param_count + c.local_total
+
+	locals := arena_i64s(a, nloc)
+	li := 0
+	for {
+		if li >= nloc do break
+		locals[li] = 0
+		li += 1
+	}
 	nparams := ft.param_count
 	pi := nparams - 1
 	for {
@@ -278,21 +298,21 @@ w_exec :: proc(a: ^Arena, m: ^Module, func_index: int) {
 	}
 
 	// Pair each block/loop/if with its matching else/end in one forward scan.
-	match_end: [W_MAX_INSTRS]int = {}
-	match_else: [W_MAX_INSTRS]int = {}
+	match_end := arena_ints(a, n)
+	match_else := arena_ints(a, n)
 	zi := 0
 	for {
-		if zi >= c.instr_count do break
+		if zi >= n do break
+		match_end[zi] = 0
 		match_else[zi] = -1
 		zi += 1
 	}
-	scan: [W_MAX_INSTRS]int = {}
+	scan := arena_ints(a, n)
 	ssp := 0
 	si := 0
 	for {
 		if si >= c.instr_count do break
-		ins: Instr = {}
-		array_get(a, &m.instrs, c.instr_off + si, &ins)
+		ins := array_at(&m.instrs, c.instr_off + si)
 		op := ins.op
 		if (op == OP_BLOCK) | (op == OP_LOOP) | (op == OP_IF) {
 			scan[ssp] = si
@@ -309,17 +329,16 @@ w_exec :: proc(a: ^Arena, m: ^Module, func_index: int) {
 	}
 
 	// Control stack: one entry per currently-open structured region.
-	ctl_kind: [128]int = {}
-	ctl_head: [128]int = {}
-	ctl_end: [128]int = {}
+	ctl_kind := arena_ints(a, n)
+	ctl_head := arena_ints(a, n)
+	ctl_end := arena_ints(a, n)
 	depth := 0
 
 	pc := 0
 	for {
 		if wtrap != 0 do break
 		if pc >= c.instr_count do break
-		ins: Instr = {}
-		array_get(a, &m.instrs, c.instr_off + pc, &ins)
+		ins := array_at(&m.instrs, c.instr_off + pc)
 		op := ins.op
 
 		if (op == OP_BLOCK) | (op == OP_LOOP) {
@@ -441,6 +460,9 @@ w_exec :: proc(a: ^Arena, m: ^Module, func_index: int) {
 		wtrap = 1
 		break
 	}
+
+	// Free this call's scratch (see `mark` above).
+	a.used = mark
 }
 
 // w_simple executes an opcode that only touches the operand stack, the mutable
@@ -960,10 +982,8 @@ w_param_count :: proc(a: ^Arena, m: ^Module, fidx: int) -> int {
 	defined := fidx - wifuncs
 	if defined < 0 do return -1
 	if defined >= m.funcs.len do return -1
-	type_index := 0
-	array_get(a, &m.funcs, defined, &type_index)
-	ft: FuncType = {}
-	array_get(a, &m.types, type_index, &ft)
+	type_index := array_at(&m.funcs, defined)^
+	ft := array_at(&m.types, type_index)
 	return ft.param_count
 }
 
@@ -981,8 +1001,7 @@ w_run_auto :: proc(a: ^Arena, m: ^Module, data: string) -> i64 {
 	ei := 0
 	for {
 		if ei >= m.exports.len do break
-		e: Export = {}
-		array_get(a, &m.exports, ei, &e)
+		e := array_at(&m.exports, ei)
 		if e.kind == EXT_FUNC {
 			np := w_param_count(a, m, e.index)
 			if np >= 0 {

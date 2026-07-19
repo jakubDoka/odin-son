@@ -18,20 +18,18 @@ print_functype :: proc(a: ^Arena, m: ^Module, ft: ^FuncType) {
 	i := 0
 	for {
 		if i >= ft.param_count do break
-		v: int = 0
-		array_get(a, &m.valtypes, ft.param_off + i, &v)
+		v := array_at(&m.valtypes, ft.param_off + i)
 		if i > 0 do print(" ")
-		print(valtype_name(v))
+		print(valtype_name(v^))
 		i += 1
 	}
 	print(") -> (")
 	j := 0
 	for {
 		if j >= ft.result_count do break
-		v: int = 0
-		array_get(a, &m.valtypes, ft.result_off + j, &v)
+		v := array_at(&m.valtypes, ft.result_off + j)
 		if j > 0 do print(" ")
-		print(valtype_name(v))
+		print(valtype_name(v^))
 		j += 1
 	}
 	print(")")
@@ -93,12 +91,11 @@ dump_module :: proc(a: ^Arena, m: ^Module, data: string) {
 	ti := 0
 	for {
 		if ti >= m.types.len do break
-		ft: FuncType = {}
-		array_get(a, &m.types, ti, &ft)
+		ft := array_at(&m.types, ti)
 		print_indent(1)
 		print_int(i64(ti))
 		print(": ")
-		print_functype(a, m, &ft)
+		print_functype(a, m, ft)
 		print("\n")
 		ti += 1
 	}
@@ -110,8 +107,7 @@ dump_module :: proc(a: ^Arena, m: ^Module, data: string) {
 		ii := 0
 		for {
 			if ii >= m.imports.len do break
-			im: Import = {}
-			array_get(a, &m.imports, ii, &im)
+			im := array_at(&m.imports, ii)
 			print_indent(1)
 			print("\"")
 			print_name_bytes(data, im.mod_off, im.mod_len)
@@ -132,12 +128,11 @@ dump_module :: proc(a: ^Arena, m: ^Module, data: string) {
 	fi := 0
 	for {
 		if fi >= m.funcs.len do break
-		fti: int = 0
-		array_get(a, &m.funcs, fi, &fti)
+		fti := array_at(&m.funcs, fi)
 		print_indent(1)
 		print_int(i64(fi))
 		print(": type ")
-		print_int(i64(fti))
+		print_int(i64(fti^))
 		print("\n")
 		fi += 1
 	}
@@ -149,8 +144,7 @@ dump_module :: proc(a: ^Arena, m: ^Module, data: string) {
 		mi := 0
 		for {
 			if mi >= m.mems.len do break
-			mem: Memory = {}
-			array_get(a, &m.mems, mi, &mem)
+			mem := array_at(&m.mems, mi)
 			print_indent(1)
 			print_int(i64(mi))
 			print(": min ")
@@ -171,8 +165,7 @@ dump_module :: proc(a: ^Arena, m: ^Module, data: string) {
 		gi := 0
 		for {
 			if gi >= m.globals.len do break
-			g: Global = {}
-			array_get(a, &m.globals, gi, &g)
+			g := array_at(&m.globals, gi)
 			print_indent(1)
 			print_int(i64(gi))
 			print(": ")
@@ -195,8 +188,7 @@ dump_module :: proc(a: ^Arena, m: ^Module, data: string) {
 	ei := 0
 	for {
 		if ei >= m.exports.len do break
-		e: Export = {}
-		array_get(a, &m.exports, ei, &e)
+		e := array_at(&m.exports, ei)
 		print_indent(1)
 		print("\"")
 		print_name_bytes(data, e.nm_off, e.nm_len)
@@ -215,8 +207,7 @@ dump_module :: proc(a: ^Arena, m: ^Module, data: string) {
 		di := 0
 		for {
 			if di >= m.datas.len do break
-			ds: Data = {}
-			array_get(a, &m.datas, di, &ds)
+			ds := array_at(&m.datas, di)
 			print_indent(1)
 			print_int(i64(di))
 			print(": mem ")
@@ -242,8 +233,7 @@ dump_module :: proc(a: ^Arena, m: ^Module, data: string) {
 	ci := 0
 	for {
 		if ci >= m.codes.len do break
-		c: Code = {}
-		array_get(a, &m.codes, ci, &c)
+		c := array_at(&m.codes, ci)
 		print_indent(1)
 		print("func ")
 		print_int(i64(ci))
@@ -255,8 +245,7 @@ dump_module :: proc(a: ^Arena, m: ^Module, data: string) {
 		li := 0
 		for {
 			if li >= c.local_count do break
-			loc: Local = {}
-			array_get(a, &m.locals, c.local_off + li, &loc)
+			loc := array_at(&m.locals, c.local_off + li)
 			print_indent(2)
 			print("local x")
 			print_int(i64(loc.count))
@@ -268,12 +257,11 @@ dump_module :: proc(a: ^Arena, m: ^Module, data: string) {
 		insi := 0
 		for {
 			if insi >= c.instr_count do break
-			ins: Instr = {}
-			array_get(a, &m.instrs, c.instr_off + insi, &ins)
+			ins := array_at(&m.instrs, c.instr_off + insi)
 			print_indent(2)
 			print_int(i64(insi))
 			print(": ")
-			print_instr(&ins)
+			print_instr(ins)
 			print("\n")
 			insi += 1
 		}

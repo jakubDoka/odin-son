@@ -20,25 +20,23 @@ f:
      mov rsi, 0x00
      lea rdi, [rsp]
      call :$set
-     mov rax, 0x00
-001: mov rcx, rax
+     mov rsi, 0x00
+001: mov rcx, rsi
      cmp rbp, 0x00
      jz :0
-     mov rsi, rbx
-     mov rdi, [rsp+0x51]
+     mov rsi, [rsp+0x51]
      mov rax, rbp
      xor rdx, rdx
-     div rsi
-     mov rax, rdx
-     add rdi, rax
-     movzx eax, byte ptr [rdi]
+     div rbx
+     add rsi, rdx
+     movzx eax, byte ptr [rsi]
      mov [rsp+rcx*1], al
+     mov rsi, rcx
+     add rsi, 0x01
      mov rax, rbp
      xor rdx, rdx
-     div rsi
+     div rbx
      mov rbp, rax
-     mov rax, rcx
-     add rax, 0x01
      jmp :1
 
 000: mov rdi, 0x00

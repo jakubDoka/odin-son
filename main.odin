@@ -3,23 +3,28 @@ package main
 
 import "backend"
 import "backend/x64"
-import "typecheck"
 import "core:fmt"
 import "core:log"
 import "core:os"
+import "core:reflect"
 import "core:strings"
+import "core:time"
+import "typecheck"
 import "vendored/gam/util/arna"
 import "vendored/gam/util/hot"
 
 main :: proc() {
 	context.assertion_failure_proc = hot.init_trace()
 	context.logger = log.create_console_logger()
+	context.logger.options &= ~{.Time, .Date, .Level, .Procedure}
 
 	input: string
 	output := "a.o"
 
 	levels := OPT_LEVELS
 	level := levels[len(levels) - 1]
+	show_timings := false
+	show_stats := false
 
 	root := os.get_env("ODIN_ROOT", context.temp_allocator)
 
@@ -35,6 +40,10 @@ main :: proc() {
 				os.exit(1)
 			}
 			output = args[i]
+		case arg == "-show-timings":
+			show_timings = true
+		case arg == "-show-stats":
+			show_stats = true
 		case strings.has_prefix(arg, "-O:"):
 			name := arg[len("-O:"):]
 			found := false
@@ -107,8 +116,19 @@ main :: proc() {
 	ctx.cc = &x64.X64_SYSTEMV_CC
 	ctx.target_spec = &x64.SPEC
 
-	load_program(&ctx, input)
-	typecheck.typecheck_program(&ctx)
+	times: struct {
+		load:    time.Duration,
+		check:   time.Duration,
+		emit:    time.Duration,
+		inlinet: time.Duration,
+		flush:   time.Duration,
+	}
+
+	{time.SCOPED_TICK_DURATION(&times.load)
+		load_program(&ctx, input)}
+
+	{time.SCOPED_TICK_DURATION(&times.check)
+		typecheck.typecheck_program(&ctx)}
 
 	emit_ctx := backend.Codegen_Emit_Ctx {
 		lib_calls = {copy = {id = MEMCPY_ID}, set = {id = MEMSET_ID}},
@@ -117,19 +137,34 @@ main :: proc() {
 	clear(&ctx.globals)
 	emit_module_globals(&ctx)
 
-	for prc, i in ctx.procs {
-		if len(prc.poly_names) != len(prc.poly_values) do continue
-		emit_proc(&ctx, i, level, &emit_ctx)
-	}
+	{time.SCOPED_TICK_DURATION(&times.emit)
+		for prc, i in ctx.procs {
+			if len(prc.poly_names) != len(prc.poly_values) do continue
+			emit_proc(&ctx, i, level, &emit_ctx)
+		}}
 
 	if .Inline in level.flags {
-		inline_and_optimize(&ctx, &emit_ctx)
+		{time.SCOPED_TICK_DURATION(&times.inlinet)
+			inline_and_optimize(&ctx, &emit_ctx)}
 	}
 
-	elf := emit_elf(&ctx)
+	{time.SCOPED_TICK_DURATION(&times.flush)
+		elf := emit_elf(&ctx)
 
-	if werr := os.write_entire_file(output, elf); werr != nil {
-		fmt.eprintfln("failed to write %v: %v", output, werr)
-		os.exit(1)
+		if werr := os.write_entire_file(output, elf); werr != nil {
+			fmt.eprintfln("failed to write %v: %v", output, werr)
+			os.exit(1)
+		}
+	}
+
+	if show_timings {
+		for tf in reflect.struct_fields_zipped(type_of(times)) {
+			vl := reflect.struct_field_value(times, tf).(time.Duration)
+			fmt.eprintfln("% 10v: %v", tf.name, vl)
+		}
+	}
+
+	if show_stats {
+		log_stats(&ctx)
 	}
 }

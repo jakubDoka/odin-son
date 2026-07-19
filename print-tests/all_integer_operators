@@ -17,8 +17,8 @@ main:
      mov rax, 0x14
      mov rbp, rax
      mov rdi, rbp
-     mov rsi, 0x06
-     mov rdx, 0x07
+     mov sil, 0x06
+     mov dl, 0x07
      call :batch u8
      mov r12, rax
      mov rax, 0x14
@@ -35,10 +35,10 @@ main:
      mov rdx, 0x07
      call :batch u32
      mov [rsp], rax
-     mov rax, 0x07
+     mov al, 0x07
      neg al
      mov rdi, rbp
-     mov rsi, 0x06
+     mov sil, 0x06
      mov rdx, rax
      call :batch i8
      mov rbp, rax
@@ -56,7 +56,7 @@ main:
      mov rdx, rax
      call :batch i32
      mov rdx, rax
-     mov rax, 0x00
+     xor eax, eax
      add rax, rbx
      add rax, r12
      add rax, r14
@@ -78,7 +78,7 @@ batch int:
      mov rdi, rdx
      mov rax, rcx
      imul rax, rsi
-     mov r8, 0x00
+     xor r8d, r8d
      add r8, rax
      mov rax, rcx
      cqo
@@ -164,7 +164,7 @@ batch u8:
      mov rax, rsi
      imul dl
      movzx eax, al
-     mov r8, 0x00
+     xor r8d, r8d
      add r8, rax
      mov rax, rcx
      movzx eax, al
@@ -265,7 +265,7 @@ batch u16:
      mov rax, rcx
      imul ax, si
      movzx eax, ax
-     mov r8, 0x00
+     xor r8d, r8d
      add r8, rax
      mov rax, rcx
      xor rdx, rdx
@@ -361,7 +361,7 @@ batch u32:
      mov rax, rcx
      imul eax, esi
      mov eax, eax
-     mov r8, 0x00
+     xor r8d, r8d
      add r8, rax
      mov rax, rcx
      xor rdx, rdx
@@ -458,7 +458,7 @@ batch i8:
      mov rax, rsi
      imul dl
      movsx rax, al
-     mov r8, 0x00
+     xor r8d, r8d
      add r8, rax
      mov rax, rcx
      cbw
@@ -559,7 +559,7 @@ batch i16:
      mov rax, rcx
      imul ax, si
      movsx rax, ax
-     mov r8, 0x00
+     xor r8d, r8d
      add r8, rax
      mov rax, rcx
      cwd
@@ -655,7 +655,7 @@ batch i32:
      mov rax, rcx
      imul eax, esi
      movsxd rax, eax
-     mov r8, 0x00
+     xor r8d, r8d
      add r8, rax
      mov rax, rcx
      cdq
@@ -760,9 +760,9 @@ main:
      mov rdx, 0xFFFFFFFFFFFFFFF9
      call :batch int
      mov rbx, rax
-     mov rdx, 0x07
-     mov rdi, 0x14
-     mov rsi, 0x06
+     mov dl, 0x07
+     mov dil, 0x14
+     mov sil, 0x06
      call :batch u8
      mov rbp, rax
      mov rdx, 0x07
@@ -775,9 +775,9 @@ main:
      mov rsi, 0x06
      call :batch u32
      mov r13, rax
-     mov rdx, 0xFFFFFFFFFFFFFFF9
-     mov rdi, 0x14
-     mov rsi, 0x06
+     mov dl, 0xF9
+     mov dil, 0x14
+     mov sil, 0x06
      call :batch i8
      mov r14, rax
      mov rdx, 0xFFFFFFFFFFFFFFF9
@@ -790,7 +790,7 @@ main:
      mov rsi, 0x06
      call :batch i32
      mov rdx, rax
-     mov rax, 0x00
+     xor eax, eax
      add rax, rbx
      add rax, rbp
      add rax, r12
@@ -811,7 +811,7 @@ batch int:
      mov rdi, rdx
      mov rax, rcx
      imul rax, rsi
-     mov r8, 0x00
+     xor r8d, r8d
      add r8, rax
      mov rax, rcx
      cqo
@@ -898,7 +898,7 @@ batch u8:
      mov rax, rsi
      imul dl
      movzx eax, al
-     mov r8, 0x00
+     xor r8d, r8d
      add r8, rax
      mov rax, rcx
      movzx eax, al
@@ -1000,7 +1000,7 @@ batch u16:
      mov rax, rcx
      imul ax, si
      movzx eax, ax
-     mov r8, 0x00
+     xor r8d, r8d
      add r8, rax
      mov rax, rcx
      xor rdx, rdx
@@ -1097,7 +1097,7 @@ batch u32:
      mov rax, rcx
      imul eax, esi
      mov eax, eax
-     mov r8, 0x00
+     xor r8d, r8d
      add r8, rax
      mov rax, rcx
      xor rdx, rdx
@@ -1195,7 +1195,7 @@ batch i8:
      mov rax, rsi
      imul dl
      movsx rax, al
-     mov r8, 0x00
+     xor r8d, r8d
      add r8, rax
      mov rax, rcx
      cbw
@@ -1297,7 +1297,7 @@ batch i16:
      mov rax, rcx
      imul ax, si
      movsx rax, ax
-     mov r8, 0x00
+     xor r8d, r8d
      add r8, rax
      mov rax, rcx
      cwd
@@ -1394,7 +1394,7 @@ batch i32:
      mov rax, rcx
      imul eax, esi
      movsxd rax, eax
-     mov r8, 0x00
+     xor r8d, r8d
      add r8, rax
      mov rax, rcx
      cdq
@@ -1500,9 +1500,9 @@ main:
      mov rdx, 0xFFFFFFFFFFFFFFF9
      call :batch int
      mov rbx, rax
-     mov rdx, 0x07
-     mov rdi, 0x14
-     mov rsi, 0x06
+     mov dl, 0x07
+     mov dil, 0x14
+     mov sil, 0x06
      call :batch u8
      mov rbp, rax
      mov rdx, 0x07
@@ -1515,9 +1515,9 @@ main:
      mov rsi, 0x06
      call :batch u32
      mov r13, rax
-     mov rdx, 0xFFFFFFFFFFFFFFF9
-     mov rdi, 0x14
-     mov rsi, 0x06
+     mov dl, 0xF9
+     mov dil, 0x14
+     mov sil, 0x06
      call :batch i8
      mov r14, rax
      mov rdx, 0xFFFFFFFFFFFFFFF9
@@ -2190,9 +2190,9 @@ main:
      mov rdx, 0xFFFFFFFFFFFFFFF9
      call :batch int
      mov rbx, rax
-     mov rdx, 0x07
-     mov rdi, 0x14
-     mov rsi, 0x06
+     mov dl, 0x07
+     mov dil, 0x14
+     mov sil, 0x06
      call :batch u8
      mov rbp, rax
      mov rdx, 0x07
@@ -2205,9 +2205,9 @@ main:
      mov rsi, 0x06
      call :batch u32
      mov r13, rax
-     mov rdx, 0xFFFFFFFFFFFFFFF9
-     mov rdi, 0x14
-     mov rsi, 0x06
+     mov dl, 0xF9
+     mov dil, 0x14
+     mov sil, 0x06
      call :batch i8
      mov r14, rax
      mov rdx, 0xFFFFFFFFFFFFFFF9

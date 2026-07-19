@@ -1,6 +1,6 @@
 =========== OPT LEVEL: none ===========
 msrc:
-     mov rax, 0x00
+     xor eax, eax
      cmp edi, [rsi]
      setz cl
      movzx rcx, cl
@@ -35,7 +35,7 @@ msrc:
      add rax, rcx
      ret
 usrc:
-     mov rax, 0x00
+     xor eax, eax
      cmp edi, [rsi]
      setz cl
      movzx rcx, cl
@@ -70,7 +70,7 @@ usrc:
      add rax, rcx
      ret
 mdst:
-     mov rax, 0x00
+     xor eax, eax
      cmp dword ptr [rdi], 0x07
      setz cl
      movzx rcx, cl
@@ -105,7 +105,7 @@ mdst:
      add rax, rcx
      ret
 udst:
-     mov rax, 0x00
+     xor eax, eax
      cmp dword ptr [rdi], 0x07
      setz cl
      movzx rcx, cl
@@ -147,12 +147,12 @@ main:
      push r14
      push r15
      sub rsp, 0xA8
-     mov rax, 0x00
+     xor eax, eax
      sub eax, 0x05
      mov rbx, rax
      lea rdi, [rsp]
      mov rdx, 0x18
-     mov rsi, 0x00
+     xor esi, esi
      call :$set
      mov [rsp], ebx
      mov [rsp+0x04], ebx
@@ -160,7 +160,7 @@ main:
      mov [rsp+0x0C], ebx
      mov [rsp+0x10], ebx
      mov [rsp+0x14], ebx
-     mov rax, 0x00
+     xor eax, eax
      sub eax, 0x09
      lea rsi, [rsp]
      mov rdi, rax
@@ -176,7 +176,7 @@ main:
      mov r12, rax
      lea rdi, [rsp+0x18]
      mov rdx, 0x18
-     mov rsi, 0x00
+     xor esi, esi
      call :$set
      mov rax, 0xEE6B2800
      mov [rsp+0x18], eax
@@ -203,7 +203,7 @@ main:
      call :usrc
      mov r15, rax
      mov rdx, 0x18
-     mov rsi, 0x00
+     xor esi, esi
      lea rdi, [rsp+0x30]
      call :$set
      mov dword ptr [rsp+0x30], 0x03
@@ -216,7 +216,7 @@ main:
      call :mdst
      mov [rsp+0x90], rax
      mov rdx, 0x18
-     mov rsi, 0x00
+     xor esi, esi
      lea rdi, [rsp+0x48]
      call :$set
      mov dword ptr [rsp+0x48], 0x09
@@ -229,7 +229,7 @@ main:
      call :mdst
      mov [rsp+0x98], rax
      mov rdx, 0x18
-     mov rsi, 0x00
+     xor esi, esi
      lea rdi, [rsp+0x60]
      call :$set
      mov dword ptr [rsp+0x60], 0x03
@@ -242,7 +242,7 @@ main:
      call :udst
      mov [rsp+0xA0], rax
      mov rdx, 0x18
-     mov rsi, 0x00
+     xor esi, esi
      lea rdi, [rsp+0x78]
      call :$set
      mov rax, 0xEE6B2800
@@ -262,7 +262,7 @@ main:
      mov rdx, rbp
      add rdx, rbx
      add rdx, r12
-     mov rcx, 0x00
+     xor ecx, ecx
      add rcx, rdx
      mov rsi, r13
      add rsi, r14
@@ -287,7 +287,7 @@ main:
      ret
 =========== OPT LEVEL: mininal ===========
 msrc:
-     mov rax, 0x00
+     xor eax, eax
      cmp edi, [rsi]
      setz cl
      movzx rcx, cl
@@ -322,7 +322,7 @@ msrc:
      add rax, rcx
      ret
 usrc:
-     mov rax, 0x00
+     xor eax, eax
      cmp edi, [rsi]
      setz cl
      movzx rcx, cl
@@ -357,7 +357,7 @@ usrc:
      add rax, rcx
      ret
 mdst:
-     mov rax, 0x00
+     xor eax, eax
      cmp dword ptr [rdi], 0x07
      setz cl
      movzx rcx, cl
@@ -392,7 +392,7 @@ mdst:
      add rax, rcx
      ret
 udst:
-     mov rax, 0x00
+     xor eax, eax
      cmp dword ptr [rdi], 0x07
      setz cl
      movzx rcx, cl
@@ -436,7 +436,7 @@ main:
      sub rsp, 0xA8
      lea rdi, [rsp]
      mov rdx, 0x18
-     mov rsi, 0x00
+     xor esi, esi
      call :$set
      mov dword ptr [rsp], 0xFFFFFFFB
      mov dword ptr [rsp+0x04], 0xFFFFFFFB
@@ -458,7 +458,7 @@ main:
      mov r12, rax
      lea rdi, [rsp+0x18]
      mov rdx, 0x18
-     mov rsi, 0x00
+     xor esi, esi
      call :$set
      mov rax, 0xEE6B2800
      mov [rsp+0x18], eax
@@ -485,7 +485,7 @@ main:
      call :usrc
      mov r15, rax
      mov rdx, 0x18
-     mov rsi, 0x00
+     xor esi, esi
      lea rdi, [rsp+0x30]
      call :$set
      mov dword ptr [rsp+0x30], 0x03
@@ -498,7 +498,7 @@ main:
      call :mdst
      mov [rsp+0x90], rax
      mov rdx, 0x18
-     mov rsi, 0x00
+     xor esi, esi
      lea rdi, [rsp+0x48]
      call :$set
      mov dword ptr [rsp+0x48], 0x09
@@ -511,7 +511,7 @@ main:
      call :mdst
      mov [rsp+0x98], rax
      mov rdx, 0x18
-     mov rsi, 0x00
+     xor esi, esi
      lea rdi, [rsp+0x60]
      call :$set
      mov dword ptr [rsp+0x60], 0x03
@@ -524,7 +524,7 @@ main:
      call :udst
      mov [rsp+0xA0], rax
      mov rdx, 0x18
-     mov rsi, 0x00
+     xor esi, esi
      lea rdi, [rsp+0x78]
      call :$set
      mov rax, 0xEE6B2800
@@ -544,7 +544,7 @@ main:
      mov rdx, rbx
      add rdx, rbp
      add rdx, r12
-     mov rcx, 0x00
+     xor ecx, ecx
      add rcx, rdx
      mov rsi, r13
      add rsi, r14
@@ -1012,536 +1012,3 @@ main:
      pop rbx
      ret
 =========== OPT LEVEL: aggresive ===========
-msrc:
-usrc:
-mdst:
-udst:
-main:
-     push rbx
-     push rbp
-     push r12
-     push r13
-     push r14
-     push r15
-     sub rsp, 0x178
-     mov rax, 0xFFFFFFFBFFFFFFFB
-     mov [rsp-0x80], rax
-     mov [rsp-0x78], rax
-     mov [rsp-0x70], rax
-     movsxd rax, dword ptr [rsp-0x7C]
-     mov rsi, rax
-     movsxd rax, dword ptr [rsp-0x78]
-     mov rdi, rax
-     movsxd rax, dword ptr [rsp-0x74]
-     mov r8, rax
-     movsxd rax, dword ptr [rsp-0x70]
-     mov r14, rax
-     movsxd rax, dword ptr [rsp-0x6C]
-     mov r15, rax
-     movsxd rax, dword ptr [rsp-0x78]
-     mov r9, rax
-     movsxd r10, dword ptr [rsp-0x7C]
-     movsxd rax, dword ptr [rsp-0x74]
-     mov r11, rax
-     movsxd rax, dword ptr [rsp-0x6C]
-     mov [rsp+0x10], rax
-     movsxd rax, dword ptr [rsp-0x70]
-     mov [rsp+0x18], rax
-     movsxd rbx, dword ptr [rsp-0x80]
-     movsxd rax, dword ptr [rsp-0x78]
-     mov rbp, rax
-     movsxd rax, dword ptr [rsp-0x7C]
-     mov [rsp+0x20], rax
-     movsxd rax, dword ptr [rsp-0x6C]
-     mov [rsp+0x28], rax
-     movsxd rax, dword ptr [rsp-0x70]
-     mov [rsp+0x30], rax
-     movsxd rax, dword ptr [rsp-0x80]
-     mov [rsp+0x38], rax
-     movsxd rax, dword ptr [rsp-0x74]
-     mov [rsp+0x40], rax
-     movsxd rax, dword ptr [rsp-0x80]
-     mov [rsp+0x48], rax
-     mov rax, 0xEE6B2800EE6B2800
-     mov [rsp-0x68], rax
-     mov [rsp-0x60], rax
-     mov [rsp-0x58], rax
-     mov ecx, [rsp-0x64]
-     mov [rsp+0x50], rcx
-     mov ecx, [rsp-0x5C]
-     mov [rsp+0x58], rcx
-     mov ecx, [rsp-0x68]
-     mov [rsp+0x60], rcx
-     mov ecx, [rsp-0x60]
-     mov [rsp+0x68], rcx
-     mov ecx, [rsp-0x5C]
-     mov [rsp+0x70], rcx
-     mov ecx, [rsp-0x54]
-     mov [rsp+0x78], rcx
-     mov ecx, [rsp-0x58]
-     mov [rsp+0x80], rcx
-     mov ecx, [rsp-0x68]
-     mov [rsp+0x88], rcx
-     mov ecx, [rsp-0x64]
-     mov [rsp+0x90], rcx
-     mov ecx, [rsp-0x60]
-     mov [rsp+0x98], rcx
-     mov ecx, [rsp-0x58]
-     mov [rsp+0xA0], rcx
-     mov ecx, [rsp-0x54]
-     mov [rsp+0xA8], rcx
-     mov ecx, [rsp-0x58]
-     mov [rsp+0xB0], rcx
-     mov ecx, [rsp-0x68]
-     mov [rsp+0xB8], rcx
-     mov ecx, [rsp-0x64]
-     mov [rsp+0xC0], rcx
-     mov rcx, 0x300000003
-     mov edx, [rsp-0x54]
-     mov [rsp+0xC8], rdx
-     mov edx, [rsp-0x60]
-     mov [rsp+0xD0], rdx
-     mov edx, [rsp-0x5C]
-     mov [rsp+0xD8], rdx
-     mov [rsp-0x50], rcx
-     mov [rsp-0x48], rcx
-     mov [rsp-0x40], rcx
-     movsxd rdx, dword ptr [rsp-0x3C]
-     mov [rsp+0xE0], rdx
-     movsxd rdx, dword ptr [rsp-0x4C]
-     mov [rsp+0xE8], rdx
-     movsxd rdx, dword ptr [rsp-0x50]
-     mov [rsp+0xF0], rdx
-     mov rdx, 0x900000009
-     movsxd r12, dword ptr [rsp-0x48]
-     mov [rsp+0xF8], r12
-     movsxd r12, dword ptr [rsp-0x40]
-     mov [rsp+0x100], r12
-     movsxd r12, dword ptr [rsp-0x44]
-     mov [rsp+0x108], r12
-     mov [rsp-0x38], rdx
-     mov [rsp-0x30], rdx
-     mov [rsp-0x28], rdx
-     movsxd rdx, dword ptr [rsp-0x30]
-     mov [rsp+0x110], rdx
-     movsxd rdx, dword ptr [rsp-0x34]
-     mov [rsp+0x118], rdx
-     movsxd rdx, dword ptr [rsp-0x24]
-     mov [rsp+0x120], rdx
-     movsxd rdx, dword ptr [rsp-0x28]
-     mov [rsp+0x128], rdx
-     movsxd rdx, dword ptr [rsp-0x38]
-     movsxd r12, dword ptr [rsp-0x2C]
-     mov [rsp+0x130], r12
-     mov [rsp-0x20], rcx
-     mov [rsp-0x18], rcx
-     mov [rsp-0x10], rcx
-     mov ecx, [rsp-0x0C]
-     mov [rsp+0x138], rcx
-     mov ecx, [rsp-0x10]
-     mov [rsp+0x140], rcx
-     mov ecx, [rsp-0x18]
-     mov [rsp+0x148], rcx
-     mov ecx, [rsp-0x20]
-     mov [rsp+0x150], rcx
-     mov ecx, [rsp-0x1C]
-     mov [rsp+0x158], rcx
-     mov ecx, [rsp-0x14]
-     mov [rsp+0x160], rcx
-     mov [rsp-0x08], rax
-     mov [rsp], rax
-     mov [rsp+0x08], rax
-     mov r12, 0xEE6B2800
-     mov r13, 0xEE6B2801
-     mov rax, [rsp+0x48]
-     cmp eax, 0xFFFFFFF7
-     setz al
-     movzx rax, al
-     movzx eax, al
-     mov [rsp+0x48], rax
-     cmp ebx, 0xFFFFFFFB
-     setz al
-     movzx rax, al
-     movzx ebx, al
-     mov rax, [rsp+0x38]
-     cmp eax, 0x03
-     setz al
-     movzx rax, al
-     movzx eax, al
-     mov [rsp+0x38], rax
-     mov rax, [rsp+0x60]
-     cmp eax, 0x05
-     setz al
-     movzx rax, al
-     movzx eax, al
-     mov [rsp+0x60], rax
-     cmp dword ptr [rsp-0x08], 0x07
-     setz al
-     movzx rax, al
-     movzx eax, al
-     mov [rsp+0x168], rax
-     mov rax, [rsp+0x88]
-     cmp eax, r12d
-     setz al
-     movzx rax, al
-     movzx eax, al
-     mov [rsp+0x88], rax
-     mov rax, [rsp+0xB8]
-     cmp eax, r13d
-     setz al
-     movzx rax, al
-     movzx eax, al
-     mov [rsp+0xB8], rax
-     mov rax, [rsp+0xF0]
-     cmp eax, 0x07
-     setz al
-     movzx rax, al
-     movzx eax, al
-     mov [rsp+0xF0], rax
-     cmp dword ptr [rsp-0x04], 0x07
-     setnz al
-     movzx rax, al
-     movzx ecx, al
-     mov rax, [rsp+0x168]
-     lea rax, [rax+rcx*2]
-     mov [rsp+0x168], rax
-     cmp edx, 0x07
-     setz al
-     movzx rax, al
-     movzx eax, al
-     mov [rsp+0x170], rax
-     mov rax, [rsp+0x150]
-     cmp eax, 0x07
-     setz al
-     movzx rax, al
-     movzx edx, al
-     mov rax, [rsp+0xC0]
-     cmp eax, r13d
-     setnz al
-     movzx rax, al
-     movzx ecx, al
-     mov rax, [rsp+0xB8]
-     lea rax, [rax+rcx*2]
-     mov [rsp+0xB8], rax
-     mov rax, [rsp+0x158]
-     cmp eax, 0x07
-     setnz al
-     movzx rax, al
-     movzx eax, al
-     lea rax, [rdx+rax*2]
-     mov [rsp+0xC0], rax
-     cmp r10d, 0xFFFFFFFB
-     setnz al
-     movzx rax, al
-     movzx eax, al
-     lea rdx, [rbx+rax*2]
-     cmp esi, 0xFFFFFFF7
-     setnz al
-     movzx rax, al
-     movzx ecx, al
-     mov rax, [rsp+0x48]
-     lea rcx, [rax+rcx*2]
-     cmp edi, 0xFFFFFFF7
-     setnle al
-     movzx rax, al
-     movzx eax, al
-     lea rcx, [rcx+rax*4]
-     cmp r8d, 0xFFFFFFF7
-     setnl al
-     movzx rax, al
-     movzx eax, al
-     lea rax, [rcx+rax*8]
-     cmp r9d, 0xFFFFFFFB
-     setnle cl
-     movzx rcx, cl
-     movzx ecx, cl
-     lea rdx, [rdx+rcx*4]
-     mov rcx, [rsp+0x40]
-     cmp ecx, 0xFFFFFFFB
-     setnl cl
-     movzx rcx, cl
-     movzx ecx, cl
-     lea rdi, [rdx+rcx*8]
-     mov rcx, [rsp+0x20]
-     cmp ecx, 0x03
-     setnz cl
-     movzx rcx, cl
-     movzx edx, cl
-     mov rcx, [rsp+0x38]
-     lea rdx, [rcx+rdx*2]
-     cmp ebp, 0x03
-     setnle cl
-     movzx rcx, cl
-     movzx ecx, cl
-     lea rdx, [rdx+rcx*4]
-     cmp r11d, 0x03
-     setnl cl
-     movzx rcx, cl
-     movzx ecx, cl
-     lea r8, [rdx+rcx*8]
-     mov rcx, [rsp+0x50]
-     cmp ecx, 0x05
-     setnz cl
-     movzx rcx, cl
-     movzx edx, cl
-     mov rcx, [rsp+0x60]
-     lea rdx, [rcx+rdx*2]
-     mov rcx, [rsp+0xD0]
-     cmp ecx, 0x05
-     setnbe cl
-     movzx rcx, cl
-     movzx ecx, cl
-     lea rdx, [rdx+rcx*4]
-     mov rcx, [rsp+0xD8]
-     cmp ecx, 0x05
-     setnb cl
-     movzx rcx, cl
-     movzx ecx, cl
-     lea rsi, [rdx+rcx*8]
-     mov rcx, [rsp+0x90]
-     cmp ecx, r12d
-     setnz cl
-     movzx rcx, cl
-     movzx edx, cl
-     mov rcx, [rsp+0x88]
-     lea rdx, [rcx+rdx*2]
-     mov rcx, [rsp+0x68]
-     cmp ecx, r12d
-     setnbe cl
-     movzx rcx, cl
-     movzx ecx, cl
-     lea r9, [rdx+rcx*4]
-     cmp dword ptr [rsp], 0x07
-     setb cl
-     movzx rcx, cl
-     movzx edx, cl
-     mov rcx, [rsp+0x168]
-     lea rbp, [rcx+rdx*4]
-     mov rcx, [rsp+0x98]
-     cmp ecx, r13d
-     setnbe cl
-     movzx rcx, cl
-     movzx edx, cl
-     mov rcx, [rsp+0xB8]
-     lea rdx, [rcx+rdx*4]
-     mov rcx, [rsp+0x58]
-     cmp ecx, r12d
-     setnb cl
-     movzx rcx, cl
-     movzx ecx, cl
-     lea r9, [r9+rcx*8]
-     mov rcx, [rsp+0x70]
-     cmp ecx, r13d
-     setnb cl
-     movzx rcx, cl
-     movzx ecx, cl
-     lea r10, [rdx+rcx*8]
-     mov rcx, [rsp+0x148]
-     cmp ecx, 0x07
-     setb cl
-     movzx rcx, cl
-     movzx edx, cl
-     mov rcx, [rsp+0xC0]
-     lea rdx, [rcx+rdx*4]
-     mov rcx, [rsp+0xB0]
-     cmp ecx, r13d
-     setb cl
-     movzx rcx, cl
-     movzx ecx, cl
-     imul rcx, rcx, 0x10
-     add r10, rcx
-     mov rcx, [rsp+0x160]
-     cmp ecx, 0x07
-     setbe cl
-     movzx rcx, cl
-     movzx ecx, cl
-     lea r11, [rdx+rcx*8]
-     mov rcx, [rsp+0xE8]
-     cmp ecx, 0x07
-     setnz cl
-     movzx rcx, cl
-     movzx edx, cl
-     mov rcx, [rsp+0xF0]
-     lea rdx, [rcx+rdx*2]
-     mov rcx, [rsp+0xF8]
-     cmp ecx, 0x07
-     setl cl
-     movzx rcx, cl
-     movzx ecx, cl
-     lea rdx, [rdx+rcx*4]
-     mov rcx, [rsp+0x108]
-     cmp ecx, 0x07
-     setle cl
-     movzx rcx, cl
-     movzx ecx, cl
-     lea rbx, [rdx+rcx*8]
-     cmp dword ptr [rsp+0x04], 0x07
-     setbe cl
-     movzx rcx, cl
-     movzx ecx, cl
-     lea rbp, [rbp+rcx*8]
-     mov rcx, [rsp+0x118]
-     cmp ecx, 0x07
-     setnz cl
-     movzx rcx, cl
-     movzx edx, cl
-     mov rcx, [rsp+0x170]
-     lea rdx, [rcx+rdx*2]
-     mov rcx, [rsp+0x110]
-     cmp ecx, 0x07
-     setl cl
-     movzx rcx, cl
-     movzx ecx, cl
-     lea rdx, [rdx+rcx*4]
-     mov rcx, [rsp+0x130]
-     cmp ecx, 0x07
-     setle cl
-     movzx rcx, cl
-     movzx ecx, cl
-     lea rdx, [rdx+rcx*8]
-     cmp dword ptr [rsp+0x08], 0x07
-     setnbe cl
-     movzx rcx, cl
-     movzx ecx, cl
-     imul rcx, rcx, 0x10
-     add rbp, rcx
-     mov rcx, [rsp+0x140]
-     cmp ecx, 0x07
-     setnbe cl
-     movzx rcx, cl
-     movzx ecx, cl
-     imul rcx, rcx, 0x10
-     add r11, rcx
-     mov rcx, [rsp+0x80]
-     cmp ecx, r12d
-     setb cl
-     movzx rcx, cl
-     movzx ecx, cl
-     imul rcx, rcx, 0x10
-     add r9, rcx
-     mov rcx, [rsp+0x18]
-     cmp ecx, 0xFFFFFFFB
-     setl cl
-     movzx rcx, cl
-     movzx ecx, cl
-     imul rcx, rcx, 0x10
-     add rdi, rcx
-     cmp r14d, 0xFFFFFFF7
-     setl cl
-     movzx rcx, cl
-     movzx ecx, cl
-     imul rcx, rcx, 0x10
-     add rax, rcx
-     cmp r15d, 0xFFFFFFF7
-     setle cl
-     movzx rcx, cl
-     movzx ecx, cl
-     imul rcx, rcx, 0x20
-     add rax, rcx
-     mov rcx, [rsp+0x30]
-     cmp ecx, 0x03
-     setl cl
-     movzx rcx, cl
-     movzx ecx, cl
-     imul rcx, rcx, 0x10
-     add r8, rcx
-     mov rcx, [rsp+0xA0]
-     cmp ecx, 0x05
-     setb cl
-     movzx rcx, cl
-     movzx ecx, cl
-     imul rcx, rcx, 0x10
-     add rsi, rcx
-     mov rcx, [rsp+0xC8]
-     cmp ecx, 0x05
-     setbe cl
-     movzx rcx, cl
-     movzx ecx, cl
-     imul rcx, rcx, 0x20
-     add rsi, rcx
-     mov rcx, [rsp+0x78]
-     cmp ecx, r12d
-     setbe cl
-     movzx rcx, cl
-     movzx ecx, cl
-     imul rcx, rcx, 0x20
-     add r9, rcx
-     add rsi, r9
-     mov rcx, [rsp+0x10]
-     cmp ecx, 0xFFFFFFFB
-     setle cl
-     movzx rcx, cl
-     movzx ecx, cl
-     imul rcx, rcx, 0x20
-     add rdi, rcx
-     add rax, rdi
-     mov rcx, [rsp+0x100]
-     cmp ecx, 0x07
-     setnle cl
-     movzx rcx, cl
-     movzx ecx, cl
-     imul rcx, rcx, 0x10
-     add rbx, rcx
-     mov rcx, [rsp+0x128]
-     cmp ecx, 0x07
-     setnle cl
-     movzx rcx, cl
-     movzx ecx, cl
-     imul rcx, rcx, 0x10
-     add rdx, rcx
-     mov rcx, [rsp+0x28]
-     cmp ecx, 0x03
-     setle cl
-     movzx rcx, cl
-     movzx ecx, cl
-     imul rcx, rcx, 0x20
-     add r8, rcx
-     add rax, r8
-     mov rcx, [rsp+0xA8]
-     cmp ecx, r13d
-     setbe cl
-     movzx rcx, cl
-     movzx ecx, cl
-     imul rcx, rcx, 0x20
-     add r10, rcx
-     add rsi, r10
-     add rax, rsi
-     mov rcx, [rsp+0xE0]
-     cmp ecx, 0x07
-     setnl cl
-     movzx rcx, cl
-     movzx ecx, cl
-     imul rcx, rcx, 0x20
-     add rbx, rcx
-     add rax, rbx
-     mov rcx, [rsp+0x120]
-     cmp ecx, 0x07
-     setnl cl
-     movzx rcx, cl
-     movzx ecx, cl
-     imul rcx, rcx, 0x20
-     add rdx, rcx
-     add rax, rdx
-     mov rcx, [rsp+0x138]
-     cmp ecx, 0x07
-     setnb cl
-     movzx rcx, cl
-     movzx ecx, cl
-     imul rcx, rcx, 0x20
-     add r11, rcx
-     add rax, r11
-     cmp dword ptr [rsp+0x0C], 0x07
-     setnb cl
-     movzx rcx, cl
-     movzx ecx, cl
-     imul rcx, rcx, 0x20
-     add rbp, rcx
-     add rax, rbp
-     add rsp, 0x178
-     pop r15
-     pop r14
-     pop r13
-     pop r12
-     pop rbp
-     pop rbx
-     ret

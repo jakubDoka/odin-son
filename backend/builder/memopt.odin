@@ -17,9 +17,14 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 
 	emem := backend.graph_find_node(graph, .Mem) or_return
 
+	sroad := 0
+	total := 0
+	mismatches := 0
 	sroa: for mout in backend.graph_outs(graph, emem) {
 		mnode := backend.graph_expand(graph, mout.id)
 		if mnode.itype != .Local do continue
+
+		total += 1
 
 		slot_size := backend.graph_extra(graph, mnode, backend.Local).size
 
@@ -53,7 +58,10 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 					continue
 				}
 
-				if slot != new_slot do continue sroa
+				if slot != new_slot {
+					mismatches += 1
+					continue sroa
+				}
 
 				continue collect_slot
 			}
@@ -63,11 +71,13 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 			}
 		}
 
+		sroad += 1
 		if len(slots) == 1 do continue
 
 		for &slot in slots {
 			local := backend.graph_add_local(graph, "sroal", emem)
-			backend.graph_extra(graph, local, backend.Local).size = slot.end - slot.start
+			backend.graph_extra(graph, local, backend.Local).size =
+				slot.end - slot.start
 			slot.local = backend.graph_add_local_addr(graph, "sroadr", local)
 		}
 
@@ -94,6 +104,9 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 		}
 	}
 
+	backend.add_efficiency_stat(graph, .sroa_slot_mismatch, mismatches, 0)
+	backend.add_efficiency_stat(graph, .sroad_locals, total, sroad)
+
 	Edit_Slot :: struct {
 		prev: u32,
 		node: backend.Node_ID,
@@ -101,7 +114,7 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 
 	Value_Entry :: bit_field u32 {
 		node:    backend.Node_ID | 31,
-		is_loop: bool    | 1,
+		is_loop: bool            | 1,
 	}
 
 	Ctx :: struct {
@@ -130,7 +143,13 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 		ctx.slot_idx[node.gvn] = new + 1
 	}
 
-	get_edited_node_idx :: proc(ctx: ^Ctx, node: ^backend.Node) -> (u32, bool) {
+	get_edited_node_idx :: proc(
+		ctx: ^Ctx,
+		node: ^backend.Node,
+	) -> (
+		u32,
+		bool,
+	) {
 		return ctx.slot_idx[node.gvn] - 1, ctx.slot_idx[node.gvn] != 0
 	}
 
@@ -179,7 +198,11 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 		for n in wl.data[:wl.len] {
 			node := backend.graph_expand(graph, n)
 			node.in_worklist = false
-			fmt.assertf(u16(node.itype) < len(backend.IDEAL_CLASSES), "%v", node.node)
+			fmt.assertf(
+				u16(node.itype) < len(backend.IDEAL_CLASSES),
+				"%v",
+				node.node,
+			)
 		}
 	}
 
@@ -203,7 +226,10 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 			case .Call:
 				assert(len(cnode.outs) == 1)
 				cursor = cnode.outs[0].id
-				cursor = backend.graph_find_node(ctx, .Mem, cursor) or_else panic("")
+				cursor =
+					backend.graph_find_node(ctx, .Mem, cursor) or_else panic(
+						"",
+					)
 				continue
 			case .Mem, .Set, .Copy, .Phi, .Return:
 			case:
@@ -300,7 +326,10 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 										ctx,
 										u16(backend.Ideal_Node_Type.Phi),
 										backend.graph_get(ctx, res.node).dt,
-										mem.slice_data_cast([]backend.Node_ID, sloter),
+										mem.slice_data_cast(
+											[]backend.Node_ID,
+											sloter,
+										),
 									),
 								)
 							}
@@ -360,7 +389,11 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 										init.node,
 									)
 								} else {
-									backend.graph_connect(ctx, init.node, bnode.node)
+									backend.graph_connect(
+										ctx,
+										init.node,
+										bnode.node,
+									)
 									inode.itype = .Phi
 									backend.graph_intern(ctx, init.node)
 								}

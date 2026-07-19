@@ -926,22 +926,16 @@ w_finish :: proc(a: ^Arena, m: ^Module, fidx: int) -> i64 {
 // w_invoke pushes `nargs` of {a0, a1}, runs the function at `fidx` and prints its
 // result (via w_finish). The export lookup and the "  name(args) = " prefix are
 // done by the caller so this driver stays at six integer parameters.
-//
-// COMPILER BUG: at -O:aggresive a seventh, stack-passed integer parameter is
-// read incorrectly. The natural single driver
-//   w_call(a, m, data, name, a0, a1, nargs)
-// consumes all six SysV integer registers on a/m/data/name (each string is two
-// words), spilling a0/a1/nargs to the stack; `nargs` then came back as 2 instead
-// of 1, so fact/load ran with a bogus extra argument. Keeping the hot driver at
-// six register words sidesteps it.
-w_invoke :: proc(
+w_call :: proc(
 	a: ^Arena,
 	m: ^Module,
-	fidx: int,
+	data: string,
+	name: string,
 	a0: i64,
 	a1: i64,
 	nargs: int,
 ) -> i64 {
+	fidx := w_find_func(a, m, data, name)
 	if fidx < 0 {
 		print("<no export>\n")
 		return 0
@@ -962,16 +956,16 @@ w_run :: proc(name: string, a: ^Arena, m: ^Module, data: string) -> i64 {
 	acc: i64 = 0
 	if w_str_eq(name, "add") {
 		print("  add(20, 22) = ")
-		acc += w_invoke(a, m, w_find_func(a, m, data, "add"), 20, 22, 2)
+		acc += w_call(a, m, data, "add", 20, 22, 2)
 	} else if w_str_eq(name, "fact") {
 		print("  fact(6) = ")
-		acc += w_invoke(a, m, w_find_func(a, m, data, "fact"), 6, 0, 1)
+		acc += w_call(a, m, data, "fact", 6, 0, 1)
 	} else if w_str_eq(name, "mem") {
 		// two invocations exercise the persisted mutable global
 		print("  load(1) = ")
-		acc += w_invoke(a, m, w_find_func(a, m, data, "load"), 1, 0, 1)
+		acc += w_call(a, m, data, "load", 1, 0, 1)
 		print("  load(1) = ")
-		acc += w_invoke(a, m, w_find_func(a, m, data, "load"), 1, 0, 1)
+		acc += w_call(a, m, data, "load", 1, 0, 1)
 	}
 	return acc
 }

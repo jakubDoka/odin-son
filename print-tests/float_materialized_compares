@@ -1,6 +1,6 @@
 =========== OPT LEVEL: none ===========
 f32c:
-     mov rax, 0x00
+     xor eax, eax
      ucomiss xmm0, xmm1
      setz cl
      movzx rcx, cl
@@ -35,7 +35,7 @@ f32c:
      add rax, rcx
      ret
 f64c:
-     mov rax, 0x00
+     xor eax, eax
      ucomisd xmm0, xmm1
      setz cl
      movzx rcx, cl
@@ -75,33 +75,33 @@ main:
      push r12
      push r13
      push r14
-     movss xmm0, dword ptr [0x00000000004000DA]
-     movss xmm1, dword ptr [0x00000000004000E0]
+     movss xmm0, dword ptr [0x00000000004000D2]
+     movss xmm1, dword ptr [0x00000000004000D8]
      call :f32c
      mov rbx, rax
-     movss xmm1, dword ptr [0x00000000004000E0]
-     movss xmm0, dword ptr [0x00000000004000E0]
+     movss xmm1, dword ptr [0x00000000004000D8]
+     movss xmm0, dword ptr [0x00000000004000D8]
      call :f32c
      mov rbp, rax
-     movss xmm0, dword ptr [0x00000000004000E6]
-     movss xmm1, dword ptr [0x00000000004000E0]
+     movss xmm0, dword ptr [0x00000000004000DE]
+     movss xmm1, dword ptr [0x00000000004000D8]
      call :f32c
      mov r12, rax
-     movsd xmm0, qword ptr [0x00000000004000EC]
-     movsd xmm1, qword ptr [0x00000000004000F6]
+     movsd xmm0, qword ptr [0x00000000004000E4]
+     movsd xmm1, qword ptr [0x00000000004000EE]
      call :f64c
      mov r13, rax
-     movsd xmm1, qword ptr [0x00000000004000F6]
-     movsd xmm0, qword ptr [0x00000000004000F6]
+     movsd xmm1, qword ptr [0x00000000004000EE]
+     movsd xmm0, qword ptr [0x00000000004000EE]
      call :f64c
      mov r14, rax
-     movsd xmm0, qword ptr [0x0000000000400100]
-     movsd xmm1, qword ptr [0x00000000004000F6]
+     movsd xmm0, qword ptr [0x00000000004000F8]
+     movsd xmm1, qword ptr [0x00000000004000EE]
      call :f64c
      mov rdx, rbx
      add rdx, rbp
      add rdx, r12
-     mov rsi, 0x00
+     xor esi, esi
      add rsi, rdx
      mov rdx, r13
      add rdx, r14
@@ -116,7 +116,7 @@ main:
      ret
 =========== OPT LEVEL: mininal ===========
 f32c:
-     mov rax, 0x00
+     xor eax, eax
      ucomiss xmm0, xmm1
      setz cl
      movzx rcx, cl
@@ -151,7 +151,7 @@ f32c:
      add rax, rcx
      ret
 f64c:
-     mov rax, 0x00
+     xor eax, eax
      ucomisd xmm0, xmm1
      setz cl
      movzx rcx, cl
@@ -191,33 +191,33 @@ main:
      push r12
      push r13
      push r14
-     movss xmm0, dword ptr [0x00000000004000DA]
-     movss xmm1, dword ptr [0x00000000004000E0]
+     movss xmm0, dword ptr [0x00000000004000D2]
+     movss xmm1, dword ptr [0x00000000004000D8]
      call :f32c
      mov rbx, rax
-     movss xmm1, dword ptr [0x00000000004000E0]
-     movss xmm0, dword ptr [0x00000000004000E0]
+     movss xmm1, dword ptr [0x00000000004000D8]
+     movss xmm0, dword ptr [0x00000000004000D8]
      call :f32c
      mov rbp, rax
-     movss xmm0, dword ptr [0x00000000004000E6]
-     movss xmm1, dword ptr [0x00000000004000E0]
+     movss xmm0, dword ptr [0x00000000004000DE]
+     movss xmm1, dword ptr [0x00000000004000D8]
      call :f32c
      mov r12, rax
-     movsd xmm0, qword ptr [0x00000000004000EC]
-     movsd xmm1, qword ptr [0x00000000004000F6]
+     movsd xmm0, qword ptr [0x00000000004000E4]
+     movsd xmm1, qword ptr [0x00000000004000EE]
      call :f64c
      mov r13, rax
-     movsd xmm1, qword ptr [0x00000000004000F6]
-     movsd xmm0, qword ptr [0x00000000004000F6]
+     movsd xmm1, qword ptr [0x00000000004000EE]
+     movsd xmm0, qword ptr [0x00000000004000EE]
      call :f64c
      mov r14, rax
-     movsd xmm0, qword ptr [0x0000000000400100]
-     movsd xmm1, qword ptr [0x00000000004000F6]
+     movsd xmm0, qword ptr [0x00000000004000F8]
+     movsd xmm1, qword ptr [0x00000000004000EE]
      call :f64c
      mov rdx, rbx
      add rdx, rbp
      add rdx, r12
-     mov rsi, 0x00
+     xor esi, esi
      add rsi, rdx
      mov rdx, r13
      add rdx, r14
@@ -451,8 +451,3 @@ main:
      pop rbx
      ret
 =========== OPT LEVEL: aggresive ===========
-f32c:
-f64c:
-main:
-     mov rax, 0xD2
-     ret

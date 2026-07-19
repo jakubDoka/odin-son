@@ -1,6 +1,6 @@
 =========== OPT LEVEL: none ===========
 s8:
-     mov rax, 0x00
+     xor eax, eax
      cmp dil, sil
      setz cl
      movzx rcx, cl
@@ -35,7 +35,7 @@ s8:
      add rax, rcx
      ret
 s16:
-     mov rax, 0x00
+     xor eax, eax
      cmp di, si
      setz cl
      movzx rcx, cl
@@ -70,7 +70,7 @@ s16:
      add rax, rcx
      ret
 s32:
-     mov rax, 0x00
+     xor eax, eax
      cmp edi, esi
      setz cl
      movzx rcx, cl
@@ -105,7 +105,7 @@ s32:
      add rax, rcx
      ret
 s64:
-     mov rax, 0x00
+     xor eax, eax
      cmp rdi, rsi
      setz cl
      movzx rcx, cl
@@ -140,7 +140,7 @@ s64:
      add rax, rcx
      ret
 sint:
-     mov rax, 0x00
+     xor eax, eax
      cmp rdi, rsi
      setz cl
      movzx rcx, cl
@@ -182,23 +182,23 @@ main:
      push r14
      push r15
      sub rsp, 0x48
-     mov rax, 0x00
+     xor eax, eax
      sub al, 0x01
-     mov rsi, 0x01
+     mov sil, 0x01
      mov rdi, rax
      call :s8
      mov rbx, rax
-     mov rsi, 0x05
-     mov rdi, 0x05
+     mov sil, 0x05
+     mov dil, 0x05
      call :s8
      mov rbp, rax
-     mov rdi, 0x07
-     mov rax, 0x00
+     mov dil, 0x07
+     xor eax, eax
      sub al, 0x03
      mov rsi, rax
      call :s8
      mov r12, rax
-     mov rax, 0x00
+     xor eax, eax
      sub ax, 0x01
      mov rsi, 0x01
      mov rdi, rax
@@ -209,12 +209,12 @@ main:
      call :s16
      mov r14, rax
      mov rdi, 0x07
-     mov rax, 0x00
+     xor eax, eax
      sub ax, 0x03
      mov rsi, rax
      call :s16
      mov r15, rax
-     mov rax, 0x00
+     xor eax, eax
      sub eax, 0x01
      mov rsi, 0x01
      mov rdi, rax
@@ -225,12 +225,12 @@ main:
      call :s32
      mov [rsp+0x08], rax
      mov rdi, 0x07
-     mov rax, 0x00
+     xor eax, eax
      sub eax, 0x03
      mov rsi, rax
      call :s32
      mov [rsp+0x10], rax
-     mov rax, 0x00
+     xor eax, eax
      sub rax, 0x01
      mov [rsp+0x18], rax
      mov rdi, [rsp+0x18]
@@ -241,7 +241,7 @@ main:
      mov rdi, 0x05
      call :s64
      mov [rsp+0x28], rax
-     mov rax, 0x00
+     xor eax, eax
      sub rax, 0x03
      mov [rsp+0x30], rax
      mov rsi, [rsp+0x30]
@@ -264,7 +264,7 @@ main:
      add rax, rbp
      add rax, r12
      mov rdx, rax
-     mov rax, 0x00
+     xor eax, eax
      add rdx, rax
      mov rax, rdx
      mov rdx, r13
@@ -301,7 +301,7 @@ main:
      ret
 =========== OPT LEVEL: mininal ===========
 s8:
-     mov rax, 0x00
+     xor eax, eax
      cmp dil, sil
      setz cl
      movzx rcx, cl
@@ -336,7 +336,7 @@ s8:
      add rax, rcx
      ret
 s16:
-     mov rax, 0x00
+     xor eax, eax
      cmp di, si
      setz cl
      movzx rcx, cl
@@ -371,7 +371,7 @@ s16:
      add rax, rcx
      ret
 s32:
-     mov rax, 0x00
+     xor eax, eax
      cmp edi, esi
      setz cl
      movzx rcx, cl
@@ -406,7 +406,7 @@ s32:
      add rax, rcx
      ret
 s64:
-     mov rax, 0x00
+     xor eax, eax
      cmp rdi, rsi
      setz cl
      movzx rcx, cl
@@ -441,7 +441,7 @@ s64:
      add rax, rcx
      ret
 sint:
-     mov rax, 0x00
+     xor eax, eax
      cmp rdi, rsi
      setz cl
      movzx rcx, cl
@@ -483,16 +483,16 @@ main:
      push r14
      push r15
      sub rsp, 0x48
-     mov rdi, 0xFFFFFFFFFFFFFFFF
-     mov rsi, 0x01
+     mov dil, 0xFF
+     mov sil, 0x01
      call :s8
      mov rbx, rax
-     mov rsi, 0x05
-     mov rdi, 0x05
+     mov sil, 0x05
+     mov dil, 0x05
      call :s8
      mov rbp, rax
-     mov rdi, 0x07
-     mov rsi, 0xFFFFFFFFFFFFFFFD
+     mov dil, 0x07
+     mov sil, 0xFD
      call :s8
      mov r12, rax
      mov rdi, 0xFFFFFFFFFFFFFFFF
@@ -546,7 +546,7 @@ main:
      mov rax, rbx
      add rax, rbp
      add rax, r12
-     mov rdx, 0x00
+     xor edx, edx
      add rdx, rax
      mov rax, rdx
      mov rdx, r13
@@ -755,16 +755,16 @@ main:
      push r14
      push r15
      sub rsp, 0x48
-     mov rdi, 0xFFFFFFFFFFFFFFFF
-     mov rsi, 0x01
+     mov dil, 0xFF
+     mov sil, 0x01
      call :s8
      mov rbx, rax
-     mov rsi, 0x05
-     mov rdi, 0x05
+     mov sil, 0x05
+     mov dil, 0x05
      call :s8
      mov rbp, rax
-     mov rdi, 0x07
-     mov rsi, 0xFFFFFFFFFFFFFFFD
+     mov dil, 0x07
+     mov sil, 0xFD
      call :s8
      mov r12, rax
      mov rdi, 0xFFFFFFFFFFFFFFFF
@@ -1024,16 +1024,16 @@ main:
      push r14
      push r15
      sub rsp, 0x48
-     mov rdi, 0xFFFFFFFFFFFFFFFF
-     mov rsi, 0x01
+     mov dil, 0xFF
+     mov sil, 0x01
      call :s8
      mov rbx, rax
-     mov rsi, 0x05
-     mov rdi, 0x05
+     mov sil, 0x05
+     mov dil, 0x05
      call :s8
      mov rbp, rax
-     mov rdi, 0x07
-     mov rsi, 0xFFFFFFFFFFFFFFFD
+     mov dil, 0x07
+     mov sil, 0xFD
      call :s8
      mov r12, rax
      mov rdi, 0xFFFFFFFFFFFFFFFF
@@ -1120,11 +1120,3 @@ main:
      pop rbx
      ret
 =========== OPT LEVEL: aggresive ===========
-s8:
-s16:
-s32:
-s64:
-sint:
-main:
-     mov rax, 0x20D
-     ret

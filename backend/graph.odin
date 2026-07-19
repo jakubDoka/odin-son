@@ -1,10 +1,12 @@
 package backend
 
 import "../vendored/gam/util/arna"
+import "../vendored/gam/util/hot"
 import "base:intrinsics"
 import "base:runtime"
 import "core:container/queue"
 import "core:fmt"
+import "core:log"
 import "core:math"
 import "core:mem"
 import "core:reflect"
@@ -42,6 +44,15 @@ Efficiency_Stat_Kind :: enum int {
 	late_schedule_rounds,
 	ifg_rounds,
 	peephole_rounds,
+	splits_inserted,
+	clones,
+	inlines,
+	duplicated_nodes,
+	deleted_nodes,
+	immediate_deletes,
+	redundant_peep,
+	sroad_locals,
+	sroa_slot_mismatch,
 }
 
 Efficiency_Stat :: struct {
@@ -53,7 +64,7 @@ add_efficiency_stat :: proc(
 	stats: ^Stats,
 	kind: Efficiency_Stat_Kind,
 	#any_int total: int,
-	#any_int ideal: int,
+	#any_int ideal: int = 0,
 ) {
 	if stats == nil do return
 
@@ -203,6 +214,7 @@ Local :: struct {
 		offset:     i32,
 		rename_idx: i32,
 	},
+	idx:         u32,
 }
 
 No_Extra :: struct {}
@@ -414,7 +426,9 @@ graph_unpin :: proc(graph: ^Graph, id: Node_ID, no_delete := false) {
 	graph_remove_output(graph, id, {}, no_delete)
 }
 
-graph_peep :: proc(graph: ^Graph, id: Node_ID) -> Node_ID {
+graph_peep :: proc(graph: ^Graph, id: Node_ID) -> (r: Node_ID) {
+	defer add_efficiency_stat(graph, .redundant_peep, 1, int(id != r))
+
 	if .Local_Peeps not_in graph.opt_flags do return id
 	if id == 0 do return id
 
@@ -545,6 +559,8 @@ graph_compute_weight :: proc(graph: ^Graph, all: []Node_ID) {
 	WEIGHTS := #partial [Ideal_Node_Type]u8 {
 		.Loop = 5,
 		.Call = 10,
+		.CInt = 1,
+		.Neg ..= .F_Demote      = 1,
 		.Add ..= .And_Not      = 1,
 	}
 
@@ -696,6 +712,7 @@ graph_iter_peeps :: proc(ctx: Peep_Ctx) -> (optimized: bool) {
 	collect_nodes(graph, &worklist)
 
 	rounds := 0
+	triggered := 0
 	for n in worklist_next(graph, &worklist) {
 		rounds += 1
 
@@ -736,8 +753,11 @@ graph_iter_peeps :: proc(ctx: Peep_Ctx) -> (optimized: bool) {
 		} else {
 			graph_delete(graph, n, indirect = true)
 		}
+
+		triggered += 1
 	}
 
+	add_efficiency_stat(graph, .redundant_peep, rounds, triggered)
 	add_efficiency_stat(graph, .peephole_rounds, rounds, graph.gvn)
 
 	if !ODIN_DISABLE_ASSERT {
@@ -764,8 +784,6 @@ graph_iter_peeps :: proc(ctx: Peep_Ctx) -> (optimized: bool) {
 			)
 			new_node := graph.peep(ctx, node)
 			if new_node != 0 {
-				//log.info(graph)
-
 				fmt.assertf(
 					new_node == 0,
 					"\nnew: %v\nold: %v",
@@ -1206,7 +1224,6 @@ graph_set_input :: proc(
 	#any_int idx: int,
 	value: Node_ID,
 ) -> Node_ID {
-
 	node := graph_expand(graph, id)
 
 	assert(idx < len(node.inps))
@@ -1320,6 +1337,10 @@ graph_delete_node :: proc(graph: ^Graph, node: ^Node, indirect := false) {
 
 	size := node_approx_size(graph, node)
 
+	if size == graph.mem.pos - uint(id * PRECISION) {
+		add_efficiency_stat(graph, .immediate_deletes, 1)
+	}
+
 	graph.waste += int(node.input_cap * size_of(Node_ID))
 	graph.waste += int(node.output_count * size_of(Node_Output))
 	graph.waste += size_of(Node)
@@ -1328,6 +1349,8 @@ graph_delete_node :: proc(graph: ^Graph, node: ^Node, indirect := false) {
 	node^ = {
 		rtype = DEAD_NODE_KIND,
 	}
+
+	add_efficiency_stat(graph, .deleted_nodes, 1)
 }
 
 @(tag = "node_proc")
@@ -1353,6 +1376,7 @@ Expanded_Node :: struct {
 
 graph_expand :: proc(graph: ^Graph, id: Node_ID) -> Expanded_Node {
 	node := graph_get(graph, id)
+
 	assert(node.rtype != DEAD_NODE_KIND)
 	in_place := graph.inplace_slot_idxs[node.rtype]
 	in_place += i8(node.additional_data_start)
@@ -1371,6 +1395,7 @@ graph_inps_node :: #force_inline proc(
 	graph: ^Graph,
 	node: ^Node,
 ) -> []Node_ID {
+
 	return ([^]Node_ID)(graph.mem.ptr)[node.input_idx:][:node.input_count]
 }
 

@@ -2,6 +2,7 @@ package builder
 
 import backend ".."
 import "../../vendored/gam/util/arna"
+import "core:log"
 import "core:mem"
 import "core:sort"
 
@@ -352,6 +353,9 @@ graph_inline_graph :: proc(
 ) {
 	assert(graph.node_spec == &SPEC)
 
+	backend.add_efficiency_stat(graph, .inlines, 1)
+	backend.add_efficiency_stat(graph, .duplicated_nodes, from.gvn)
+
 	context.allocator, _ = arna.scrath()
 
 	graph.peeped = false
@@ -416,70 +420,37 @@ graph_inline_graph :: proc(
 
 	sort.quick_sort(params[:])
 
-	// TODO: we need to clean this up, its incredibly disgusting
-	gp_slots, fp_slots, local_slots: [dynamic]int
-	for p in backend.CALL_PREFIX ..< int(call.input_count) {
-		if backend.graph_get(graph, raw_data(call.inps)[p]).dt in
-		   backend.FLOAT_DTS {
-			append(&fp_slots, p)
-		} else {
-			append(&gp_slots, p)
-		}
-	}
-	for p in int(call.input_count) ..< int(call.input_cap) {
-		append(&local_slots, p)
-	}
-
-	local_used := make([]bool, len(local_slots))
-	local_cursor := 0
-	next_local :: proc(local_used: []bool, cursor: ^int) -> int {
-		for local_used[cursor^] do cursor^ += 1
-		local_used[cursor^] = true
-		return cursor^
-	}
-
 	for i in 0 ..< len(params) {
 		param := params[i]
 		pnode := backend.graph_expand(from, param.id)
-
-		call_idx: int
-		beyond: bool
+		arg_idx: int
 		if param.is_local_arg {
-			call_idx = local_slots[next_local(local_used, &local_cursor)]
-			beyond = true
+			arg_idx = int(backend.graph_extra(graph, pnode, backend.Local).idx)
 		} else {
-			arg_idx := int(backend.graph_extra(from, pnode, backend.Tup).idx)
-			slots := pnode.dt in backend.FLOAT_DTS ? fp_slots[:] : gp_slots[:]
-			if arg_idx < len(slots) {
-				call_idx = slots[arg_idx]
-			} else {
-				rank := arg_idx - len(slots)
-				local_used[rank] = true
-				call_idx = local_slots[rank]
-				beyond = true
-			}
+			arg_idx = int(backend.graph_extra(from, pnode, backend.Tup).idx)
 		}
-
-		arg := raw_data(call.inps)[call_idx]
+		arg_idx += backend.CALL_PREFIX
+		arg := raw_data(call.inps)[arg_idx]
 		node := backend.graph_expand(graph, arg)
-		if beyond {
+		if arg_idx < int(call.input_count) {
+			assert(node.itype != .Local)
+			assert(pnode.itype != .Local)
+		} else {
 			assert(node.inps[0] == graph.entry)
 			backend.graph_set_input(graph, arg, 0, graph.root_mem)
-			if pnode.itype != .Local {
+			if !param.is_local_arg {
+				// reach out for the store value
 				arg = node.outs[0].id
 				arg = backend.graph_outs(graph, arg)[0].id
 				arg = backend.graph_inps(graph, arg)[3]
 			} else {
+				// project the addr too or we get dups
 				ctx.projection[backend.graph_get(from, pnode.outs[0].id).gvn] =
 					node.outs[0].id
 			}
-		} else {
-			assert(node.itype != .Local)
-			assert(pnode.itype != .Local)
 		}
 		ctx.projection[param.gvn] = arg
 	}
-	for used in local_used do assert(used)
 
 	clone_along_cfg(&ctx, starter)
 
@@ -501,6 +472,10 @@ graph_inline_graph :: proc(
 
 	end_ctrl := backend.graph_get(from, ret.inps[0])
 	backend.graph_subsume(graph, ctx.projection[end_ctrl.gvn], call.outs[0].id)
+
+	for out in backend.graph_outs(graph, graph.start) {
+		assert(backend.graph_get(graph, out.id).itype != .Local)
+	}
 
 	clone_along_cfg :: proc(ctx: ^Ctx, root: backend.Node_ID) {
 		node := backend.graph_expand(ctx.from, root)

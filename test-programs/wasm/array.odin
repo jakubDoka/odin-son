@@ -16,21 +16,11 @@ Array :: struct($T: typeid) {
 // array_reserve makes room for at least `need` more elements, moving the buffer
 // to a fresh, bigger block in the arena and copying the live elements across.
 array_reserve :: proc(a: ^Arena, arr: ^Array($T), need: int) {
-	// Element byte size: the JIT has no size_of, so measure the distance
-	// between two adjacent elements of a [2]T directly.
-	//
-	// COMPILER BUG: this `[2]T` local (a generic-typed fixed array) must be
-	// declared BEFORE any `if`/branch in the proc; a branch preceding it makes
-	// the JIT backend segfault while placing the alloca. Repro: move this decl
-	// below the early-out `if` and rebuild.
-	//   if arr.len + need <= arr.cap do return   // <- crashes if probe is after
-	probe: [2]T = {}
-	stride := int(uintptr(&probe[1]) - uintptr(&probe[0]))
 	if arr.len + need <= arr.cap do return
 	newcap := arr.cap * 2
 	if newcap < arr.len + need do newcap = arr.len + need
 	if newcap < 8 do newcap = 8
-	block := arena_alloc(a, newcap * stride, 8)
+	block := arena_alloc(a, newcap * size_of(T), 8)
 	new_data := ([^]T)(raw_data(block))
 	i := 0
 	for {

@@ -126,8 +126,19 @@ decode_type_section :: proc(d: ^Decoder, a: ^Arena, m: ^Module) {
 			d.ok = false
 			ft.result_off = m.valtypes.len
 		}
+
 		array_push(a, &m.types, &ft)
+
 		i += 1
+	}
+
+	f := 0
+	for {
+		if f >= m.types.len do break
+		vl := array_at(&m.types, f)
+		print_functype(a, m, vl)
+		print("\n")
+		f += 1
 	}
 }
 

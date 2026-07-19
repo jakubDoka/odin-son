@@ -1,17 +1,8 @@
 package backend
 
-import "../vendored/gam/util/arna"
-import "../vendored/gam/util/bit_arr"
 import "base:intrinsics"
 import "base:runtime"
-import "core:container/queue"
-import "core:fmt"
-import "core:io"
-import "core:log"
 import "core:mem"
-import "core:slice"
-import "core:sort"
-import "core:strings"
 
 REGLOGS :: #config(REGLOGS, false)
 
@@ -138,8 +129,9 @@ Regalloc_Spec :: struct {
 }
 
 Regalloc :: struct {
-	using spec: ^Regalloc_Spec,
-	using cc:   ^Call_Conv,
+	using spec:  ^Regalloc_Spec,
+	using cc:    ^Call_Conv,
+	param_types: []Node_Datatype,
 }
 
 MASK_SIZE :: size_of(int) * 8

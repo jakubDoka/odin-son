@@ -6,9 +6,11 @@ import "backend/regalloc"
 import "backend/x64"
 import "base:runtime"
 import "core:fmt"
+import "core:log"
 import "core:mem"
 import "core:odin/ast"
 import "core:odin/tokenizer"
+import "core:os"
 import "core:slice"
 import "core:strconv"
 import "typecheck"
@@ -534,9 +536,11 @@ alloca :: proc(
 	ty: Type,
 	zeroed := true,
 	is_arg := false,
+	is_param := false,
 ) -> backend.Node_ID {
 	root := is_arg ? ctx.entry : ctx.root_mem
 	alloca := backend.graph_add_local(ctx, name, root)
+
 	backend.graph_extra(ctx, alloca, backend.Local).size = i32(
 		typecheck.type_size(ty),
 	)
@@ -867,7 +871,7 @@ inline_and_optimize :: proc(
 
 			slt := &sctx.callee_to_caller[sim.id]
 
-			callee_wct := weight_cata(callee.stencil.weight)
+			callee_wct := weight_cata(callee.stencil.weight * len(slt))
 			if !weight_cata_can_merge(caller_wct, callee_wct) && len(slt) > 1 {
 				continue
 			}
@@ -878,6 +882,7 @@ inline_and_optimize :: proc(
 			slt^ = slt^[:len(slt^) - 1]
 			if len(slt) == 0 {
 				delete(callee.stencil.mem, perm)
+				backend.add_efficiency_stat(ctx, .duplicated_nodes, -int(callee.stencil.gvn))
 				callee.stencil = {}
 			}
 		}
@@ -954,7 +959,6 @@ emit_proc :: proc(
 	ctx.ret_ptrs = nil
 
 	sm: Abi_Sm
-	arg_cnts: [backend.Reg_Kind]u32
 
 	ctx.ret_ptrs = make(
 		[]backend.Node_ID,
@@ -962,15 +966,19 @@ emit_proc :: proc(
 		context.temp_allocator,
 	)
 
+	arg_vls := make([dynamic]backend.Node_ID, context.temp_allocator)
+	spill_start := 0
+
 	for j in rabi.srets_start ..< len(rabi.extras) {
 		ctx.ret_ptrs[j] = backend.graph_add_arg(
 			ctx,
 			"sret",
 			.I64,
 			ctx.entry,
-			arg_cnts[.General],
+			0,
 		)
-		arg_cnts[.General] += 1
+		append(&arg_vls, ctx.ret_ptrs[j])
+		spill_start += 1
 		backend.graph_pin(ctx, ctx.ret_ptrs[j])
 		apa := abi_sm_add2(ctx, &sm, .I64) or_else panic("")
 		assert(!apa.spilled && !apa.by_ptr)
@@ -979,6 +987,7 @@ emit_proc :: proc(
 	for par, i in prc.params {
 		name := prc.param_names[i]
 		apa := abi_sm_add2(ctx, &sm, par) or_continue
+		spill_start += int(!apa.spilled)
 
 		value: backend.Node_ID
 		if apa.scalar {
@@ -989,9 +998,9 @@ emit_proc :: proc(
 				"arg",
 				dt,
 				ctx.entry,
-				arg_cnts[bank],
+				u32(apa.spilled),
 			)
-			arg_cnts[bank] += 1
+			append(&arg_vls, value)
 		} else {
 			value = alloca(
 				ctx,
@@ -999,19 +1008,18 @@ emit_proc :: proc(
 				par,
 				zeroed = false,
 				is_arg = !apa.copied,
+				is_param = !apa.copied,
 			)
+			if !apa.copied {
+				append(&arg_vls, backend.graph_inps(ctx, value)[0])
+			}
 		}
 
 		for dt, j in apa.dt[:(apa.size + 7) / 8] {
 			bank := ctx.target_spec.datatype_to_reg_kind[dt]
-			vl := backend.graph_add_arg(
-				ctx,
-				"arg",
-				dt,
-				ctx.entry,
-				arg_cnts[bank],
-			)
-			arg_cnts[bank] += 1
+			vl := backend.graph_add_arg(ctx, "arg", dt, ctx.entry, 0)
+			spill_start += int(j == 1)
+			append(&arg_vls, vl)
 			emit_arbitrary_store(ctx, value, vl, apa.size, j * 8, dt)
 		}
 
@@ -1030,17 +1038,42 @@ emit_proc :: proc(
 	}
 
 	for j in 0 ..< rabi.srets_start {
+		apa := abi_sm_add2(ctx, &sm, .I64) or_else panic("")
+		spill_start += int(!apa.spilled)
 		ctx.ret_ptrs[j] = backend.graph_add_arg(
 			ctx,
 			"retp",
 			.I64,
 			ctx.entry,
-			arg_cnts[.General],
+			u32(apa.spilled),
 		)
-		arg_cnts[.General] += 1
+		append(&arg_vls, ctx.ret_ptrs[j])
 		backend.graph_pin(ctx, ctx.ret_ptrs[j])
-		_ = abi_sm_add2(ctx, &sm, .I64) or_else panic("")
 	}
+
+	arg_tys := make([dynamic]backend.Node_Datatype, ctx.types.allocator)
+
+	j, ri: u32
+	for arg in arg_vls {
+		anode := backend.graph_get(ctx, arg)
+		if arga := backend.graph_extra(ctx, arg, backend.Tup); arga != nil {
+			append(&arg_tys, anode.dt)
+			if arga.idx == 0 {
+				arga.idx = j
+				j += 1
+			} else {
+				arga.idx = u32(spill_start) + ri
+				ri += 1
+			}
+		}
+
+		if loca := backend.graph_extra(ctx, arg, backend.Local); loca != nil {
+			loca.idx = u32(spill_start) + ri
+			ri += 1
+		}
+	}
+	prc.param_types = arg_tys[:]
+	fmt.assertf(int(j) == spill_start, "%v %v", j, spill_start)
 
 	emit_nodes(ctx, {}, prc.lit.body)
 	prc = &ctx.procs[i]
@@ -1098,6 +1131,7 @@ emit_proc_code :: proc(
 	ra: backend.Regalloc
 	ra.spec = spec
 	ra.cc = &x64.X64_SYSTEMV_CC
+	ra.param_types = prc.param_types
 
 	regs := regalloc.regalloc(
 		&ra,
@@ -2026,6 +2060,30 @@ emit_nodes :: proc(
 			case:
 				fmt.panicf("TODO: raw_data of %#v", t)
 			}
+			break match
+		case .size_of:
+			res = backend.graph_add_c_int(
+				ctx,
+				"cnst",
+				dt,
+				i64(
+					typecheck.type_size(
+						typecheck.get_node_meta(d.args[0]).lit.typeida,
+					),
+				),
+			)
+			break match
+		case .align_of:
+			res = backend.graph_add_c_int(
+				ctx,
+				"cnst",
+				dt,
+				i64(
+					typecheck.type_align(
+						typecheck.get_node_meta(d.args[0]).lit.typeida,
+					),
+				),
+			)
 			break match
 		}
 

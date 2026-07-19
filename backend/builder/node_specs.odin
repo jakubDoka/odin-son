@@ -452,7 +452,7 @@ SPEC := backend.Node_Spec{
 		0, // Phi -> No_Extra
 		0, // Mem -> No_Extra
 		0, // Sym -> No_Extra
-		1, // Local -> Local
+		2, // Local -> Local
 		0, // Local_Addr -> No_Extra
 		1, // Global -> Tup
 		0, // Global_Addr -> No_Extra

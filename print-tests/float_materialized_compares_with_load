@@ -1,7 +1,7 @@
 =========== OPT LEVEL: none ===========
 fld32:
      movss xmm1, dword ptr [rdi]
-     mov rax, 0x00
+     xor eax, eax
      ucomiss xmm0, xmm1
      setz cl
      movzx rcx, cl
@@ -37,7 +37,7 @@ fld32:
      ret
 fld64:
      movsd xmm1, qword ptr [rdi]
-     mov rax, 0x00
+     xor eax, eax
      ucomisd xmm0, xmm1
      setz cl
      movzx rcx, cl
@@ -78,37 +78,37 @@ main:
      push r13
      push r14
      sub rsp, 0x10
-     movss xmm0, dword ptr [0x00000000004000E2]
+     movss xmm0, dword ptr [0x00000000004000DA]
      movss [rsp], xmm0
-     movss xmm0, dword ptr [0x00000000004000E8]
+     movss xmm0, dword ptr [0x00000000004000E0]
      lea rdi, [rsp]
      call :fld32
      mov rbx, rax
      lea rdi, [rsp]
-     movss xmm0, dword ptr [0x00000000004000E2]
+     movss xmm0, dword ptr [0x00000000004000DA]
      call :fld32
      mov rbp, rax
-     movss xmm0, dword ptr [0x00000000004000EE]
+     movss xmm0, dword ptr [0x00000000004000E6]
      lea rdi, [rsp]
      call :fld32
      mov r12, rax
-     movsd xmm0, qword ptr [0x00000000004000F4]
+     movsd xmm0, qword ptr [0x00000000004000EC]
      movsd [rsp+0x04], xmm0
-     movsd xmm0, qword ptr [0x00000000004000FE]
+     movsd xmm0, qword ptr [0x00000000004000F6]
      lea rdi, [rsp+0x04]
      call :fld64
      mov r13, rax
      lea rdi, [rsp+0x04]
-     movsd xmm0, qword ptr [0x00000000004000F4]
+     movsd xmm0, qword ptr [0x00000000004000EC]
      call :fld64
      mov r14, rax
-     movsd xmm0, qword ptr [0x0000000000400108]
+     movsd xmm0, qword ptr [0x0000000000400100]
      lea rdi, [rsp+0x04]
      call :fld64
      mov rdx, rbx
      add rdx, rbp
      add rdx, r12
-     mov rsi, 0x00
+     xor esi, esi
      add rsi, rdx
      mov rdx, r13
      add rdx, r14
@@ -125,7 +125,7 @@ main:
 =========== OPT LEVEL: mininal ===========
 fld32:
      movss xmm1, dword ptr [rdi]
-     mov rax, 0x00
+     xor eax, eax
      ucomiss xmm0, xmm1
      setz cl
      movzx rcx, cl
@@ -161,7 +161,7 @@ fld32:
      ret
 fld64:
      movsd xmm1, qword ptr [rdi]
-     mov rax, 0x00
+     xor eax, eax
      ucomisd xmm0, xmm1
      setz cl
      movzx rcx, cl
@@ -202,37 +202,37 @@ main:
      push r13
      push r14
      sub rsp, 0x10
-     movss xmm0, dword ptr [0x00000000004000E2]
+     movss xmm0, dword ptr [0x00000000004000DA]
      movss [rsp], xmm0
-     movss xmm0, dword ptr [0x00000000004000E8]
+     movss xmm0, dword ptr [0x00000000004000E0]
      lea rdi, [rsp]
      call :fld32
      mov rbx, rax
      lea rdi, [rsp]
-     movss xmm0, dword ptr [0x00000000004000E2]
+     movss xmm0, dword ptr [0x00000000004000DA]
      call :fld32
      mov rbp, rax
-     movss xmm0, dword ptr [0x00000000004000EE]
+     movss xmm0, dword ptr [0x00000000004000E6]
      lea rdi, [rsp]
      call :fld32
      mov r12, rax
-     movsd xmm0, qword ptr [0x00000000004000F4]
+     movsd xmm0, qword ptr [0x00000000004000EC]
      movsd [rsp+0x04], xmm0
-     movsd xmm0, qword ptr [0x00000000004000FE]
+     movsd xmm0, qword ptr [0x00000000004000F6]
      lea rdi, [rsp+0x04]
      call :fld64
      mov r13, rax
      lea rdi, [rsp+0x04]
-     movsd xmm0, qword ptr [0x00000000004000F4]
+     movsd xmm0, qword ptr [0x00000000004000EC]
      call :fld64
      mov r14, rax
-     movsd xmm0, qword ptr [0x0000000000400108]
+     movsd xmm0, qword ptr [0x0000000000400100]
      lea rdi, [rsp+0x04]
      call :fld64
      mov rdx, rbx
      add rdx, rbp
      add rdx, r12
-     mov rsi, 0x00
+     xor esi, esi
      add rsi, rdx
      mov rdx, r13
      add rdx, r14
@@ -483,8 +483,3 @@ main:
      pop rbx
      ret
 =========== OPT LEVEL: aggresive ===========
-fld32:
-fld64:
-main:
-     mov rax, 0xD2
-     ret

@@ -1,15 +1,16 @@
 package regalloc
 
 import ".."
-import "../x64"
 import "../../vendored/gam/util/arna"
 import "../../vendored/gam/util/bit_arr"
+import "../x64"
 import "base:runtime"
 import "core:container/queue"
 import "core:fmt"
 import "core:io"
 import "core:log"
 import "core:mem"
+import "core:os"
 import "core:slice"
 import "core:sort"
 import "core:strings"
@@ -130,7 +131,11 @@ regalloc_round :: proc(
 						inode.inps[inode.inplace_slot],
 					)
 					if int(inplace_node.gvn) > len(ctx.lrg_table) {
-						log.info(graph)
+						backend.graph_display(
+							os.to_writer(os.stderr),
+							graph,
+							sched,
+						)
 						log.info(inode.node, inode.inplace_slot)
 					}
 					lrg = ctx.lrg_table[inplace_node.gvn]
@@ -985,6 +990,12 @@ regalloc_round :: proc(
 							continue
 						}
 					}
+
+					backend.add_efficiency_stat(
+						graph.stats,
+						.splits_inserted,
+						1,
+					)
 				}
 				keep -= 1
 				bb.instrs[keep] = instr
@@ -1219,6 +1230,7 @@ regalloc_round :: proc(
 				ctx.graph.gvn += 1
 				split = inp
 			} else {
+				backend.add_efficiency_stat(ctx.graph, .clones, 1)
 				split = backend.graph_clone(ctx.graph, inp)
 			}
 		} else {

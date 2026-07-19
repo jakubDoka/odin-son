@@ -5,6 +5,7 @@ import "../../vendored/gam/util/arna"
 import "../../vendored/gam/util/bit_arr"
 import "base:intrinsics"
 import "core:fmt"
+import "core:log"
 import "core:math"
 import "core:mem"
 import "core:reflect"
@@ -402,6 +403,9 @@ COMMAND :: "odin run backend/x64 -define:X64_GEN_SPEC=true"
 SPEC_NOT_PRESENT :: (#load("node_specs.odin", string) or_else "") == ""
 
 when SPEC_NOT_PRESENT {
+
+	Reg_Kind :: backend.Reg_Kind
+
 	inherit_idx_of :: proc($T: typeid) -> u8 {return 0}
 
 	X64_Node_Type :: enum u16 {
@@ -1121,14 +1125,19 @@ x64_reg_mask_of :: proc(
 		kind := ra.datatype_to_reg_kind[node.dt]
 		args := ra.args[kind]
 		arg_ext := backend.graph_extra(graph, node, backend.Tup)
-		if int(arg_ext.idx) < len(args) {
-			return backend.reg_mask_single(ra, args[arg_ext.idx])
+		idx := 0
+		for a in ra.param_types[:arg_ext.idx] {
+			idx += int(ra.datatype_to_reg_kind[a] == kind)
+		}
+
+		if int(idx) < len(args) {
+			return backend.reg_mask_single(ra, args[idx])
 		} else {
 			return backend.reg_mask_single(
 				ra,
 				{
 					kind = kind,
-					index = GPA_REG_COUNT + u16(arg_ext.idx) - u16(len(args)),
+					index = GPA_REG_COUNT + u16(idx) - u16(len(args)),
 				},
 			)
 		}
@@ -1279,7 +1288,12 @@ x64_emit_function :: proc(
 	// NOTE: the Arg and Local never get promoted to a different node so we can
 	// just order them by the node id, the allocation order matters tho so
 	// document that somewhere
-	args: [dynamic]backend.Node_ID
+
+	Slot :: bit_field u64 {
+		id:  backend.Node_ID | 32,
+		idx: u32             | 32,
+	}
+	args: [dynamic]Slot
 	find_args: for eout in backend.graph_outs(ctx, ctx.entry) {
 		enode := backend.graph_expand(ctx, eout.id)
 		if enode.itype != .Arg && enode.itype != .Local do continue
@@ -1293,7 +1307,18 @@ x64_emit_function :: proc(
 			}
 		}
 
-		append(&args, eout.id)
+		idx: u32
+		if arga := backend.graph_extra(ctx, eout.id, backend.Tup);
+		   arga != nil {
+			idx = arga.idx
+		}
+
+		if loca := backend.graph_extra(ctx, eout.id, backend.Local);
+		   loca != nil {
+			idx = loca.idx
+		}
+
+		append(&args, Slot{id = eout.id, idx = idx})
 	}
 
 	sort.quick_sort(args[:])
@@ -1324,19 +1349,20 @@ x64_emit_function :: proc(
 	}
 
 	param_offset := pushed + 8
-	#reverse for arg in args {
+	for arg in args {
+		arg := arg.id
 		enode := backend.graph_expand(ctx, arg)
 
 		if enode.itype == .Arg {
 			kind := ctx.datatype_to_reg_kind[enode.dt]
 			arg_ext := backend.graph_extra(ctx.graph, enode, backend.Tup)
-			// An Arg lives on the caller's stack iff its index is beyond the
-			// registers of its bank. Classify by the actual index rather than a
-			// running count of *present* Args -- dead lower-indexed args get
-			// eliminated, so a count would misclassify the survivors.
-			if int(arg_ext.idx) >= len(ctx.args[kind]) {
+			idx := int(reg_of(ctx, arg).index) - GPA_REG_COUNT
+			if idx >= 0 {
 				ctx.stack_size -= 8
-				append(&ctx.stack_param_offset[kind], i32(param_offset))
+				if len(ctx.stack_param_offset[kind]) <= idx {
+					resize(&ctx.stack_param_offset[kind], idx + 1)
+				}
+				ctx.stack_param_offset[kind][idx] = i32(param_offset)
 				param_offset += 8
 			}
 		}
@@ -1372,6 +1398,7 @@ x64_emit_function :: proc(
 	}
 
 	for arg in args {
+		arg := arg.id
 		enode := backend.graph_expand(ctx, arg)
 		if enode.itype == .Local {
 			extra := backend.graph_extra(ctx.graph, enode, backend.Local)
@@ -1882,15 +1909,31 @@ x64_emit_instr :: proc(
 		dst := reg_of(ctx, instr)
 		imm := backend.graph_extra(ctx, node, backend.CInt).value
 
+		if imm == 0 {
+			rx := rex(dst, dst, NO_INDEX, false)
+			emit(ctx.code, {rx, 0x33, mod_rm(.Direct, dst, dst)})
+			break
+		}
+
 		switch node.dt {
 		case .Void:
 			panic("")
-		case .I8 ..= .I64:
+		case .I8:
+			emit_single_op(ctx.code, 0xb0, dst)
+			emit(ctx.code, {u8(imm)})
+		case .I16 ..= .I64:
+			if i64(i32(imm)) == imm {
+				rx := rex(RAX, dst, RAX, true)
+				emit(ctx.code, {rx, 0xC7, mod_sm(.Direct, 0, dst)})
+				backend.emit_anys(ctx.code, i32(imm))
+				break
+			}
+
 			// mov $dst, $imm
 			emit_single_op(ctx.code, 0xb8, dst)
 			backend.emit_anys(ctx.code, imm)
 		case .F32, .F64:
-			d_spill := dst.index >= GPA_REG_COUNT
+			panic("")
 		}
 	case .X64_Add ..= .X64_Xor, .X64_Shl ..= .X64_U_Shr:
 		imm := mem_op.imm

@@ -4,7 +4,7 @@ opaque:
      ret
 main:
      sub rsp, 0x18
-     mov rsi, 0x00
+     xor esi, esi
      lea rdi, [rsp]
      mov rdx, 0x10
      call :$set
@@ -12,7 +12,7 @@ main:
      mov qword ptr [rsp+0x08], 0x00
      mov rdi, 0x05
      call :opaque
-     mov rcx, 0x00
+     xor ecx, ecx
 001: cmp rcx, rax
      jnl :0
      add [rsp], rcx
@@ -31,7 +31,7 @@ opaque:
      ret
 main:
      sub rsp, 0x18
-     mov rsi, 0x00
+     xor esi, esi
      lea rdi, [rsp]
      mov rdx, 0x10
      call :$set
@@ -39,7 +39,7 @@ main:
      mov qword ptr [rsp+0x08], 0x00
      mov rdi, 0x05
      call :opaque
-     mov rcx, 0x00
+     xor ecx, ecx
 001: cmp rcx, rax
      jnl :0
      add [rsp], rcx
@@ -62,7 +62,7 @@ main:
      mov qword ptr [rsp+0x08], 0x00
      mov rdi, 0x05
      call :opaque
-     mov rcx, 0x00
+     xor ecx, ecx
 001: cmp rcx, rax
      jnl :0
      add [rsp], rcx
@@ -83,9 +83,9 @@ main:
      sub rsp, 0x08
      mov rdi, 0x05
      call :opaque
-     mov rcx, 0x00
-     mov rdx, 0x00
-     mov rsi, 0x00
+     xor ecx, ecx
+     xor edx, edx
+     xor esi, esi
 001: cmp rdx, rax
      jnl :0
      add rcx, rdx
@@ -100,9 +100,9 @@ main:
 =========== OPT LEVEL: aggresive ===========
 opaque:
 main:
-     mov rax, 0x00
-     mov rdx, 0x00
-     mov rcx, 0x00
+     xor eax, eax
+     xor edx, edx
+     xor ecx, ecx
 001: cmp rdx, 0x05
      jnl :0
      add rax, rdx

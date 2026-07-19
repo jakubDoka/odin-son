@@ -6,6 +6,7 @@ import "../vendored/gam/util/arna"
 import "base:runtime"
 import "core:fmt"
 import "core:io"
+import "core:log"
 import "core:mem"
 import "core:odin/ast"
 import "core:odin/tokenizer"
@@ -710,6 +711,7 @@ Proc :: struct {
 	ret_names:   []string,
 	poly_names:  []string,
 	poly_values: []Check_Meta,
+	param_types: []backend.Node_Datatype,
 	using sig:   ^Proc_Type,
 	lit:         ^ast.Proc_Lit,
 	module:      Module_ID,
@@ -786,6 +788,8 @@ Builtin_Proc :: enum int {
 	nil,
 	len,
 	raw_data,
+	size_of,
+	align_of,
 }
 
 get_builtin_proc :: proc(node: ^ast.Node) -> Builtin_Proc {
@@ -1557,7 +1561,7 @@ typecheck :: proc(
 
 		for entry in ctx.poly_types {
 			if entry.name == d.name {
-				return new_clone(entry.meta)
+				return new_clone(entry.meta, ctx.types.allocator)
 			}
 		}
 
@@ -1628,6 +1632,13 @@ typecheck :: proc(
 			case:
 				fmt.panicf("TODO: raw_data of of %#v", t)
 			}
+		case .size_of, .align_of:
+			assert(len(d.args) == 1)
+			ty := emit_type(ctx, d.args[0])
+			return tmeta(
+				ctx,
+				prop.inferred_ty != .Void ? prop.inferred_ty : .Int,
+			)
 		}
 
 		callee := typecheck(ctx, {}, d.expr)

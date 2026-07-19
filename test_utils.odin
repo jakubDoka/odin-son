@@ -4,7 +4,6 @@ package main
 import zydis "./zydis"
 import "backend"
 import "backend/x64"
-import "typecheck"
 import "base:intrinsics"
 import "base:runtime"
 import "core:dynlib"
@@ -19,6 +18,7 @@ import "core:reflect"
 import "core:strings"
 import "core:sync"
 import "core:testing"
+import "typecheck"
 import "vendored/gam/util/arna"
 import "vendored/gam/util/hot"
 
@@ -234,18 +234,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 	@(static) log_lock: sync.Mutex
 	if false {sync.guard(&log_lock)
 		log.info(name)
-		for eff, kind in ctx.stats.efficiency {
-			name :=
-				reflect.enum_field_names(backend.Efficiency_Stat_Kind)[kind]
-			log.infof(
-				"  %s %s % -8d % -8d % -8f",
-				name,
-				strings.repeat(" ", 20 - len(name), context.temp_allocator),
-				eff.total,
-				eff.ideal,
-				f64(eff.total) / f64(eff.ideal),
-			)
-		}
+		log_stats(&ctx)
 	}
 
 	context.allocator = context.temp_allocator
@@ -274,6 +263,40 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 				log.error(string(dsb.buf[:]))
 			}
 		}
+	}
+}
+
+log_stats :: proc(ctx: ^Gen_Ctx) {
+	padded :: proc(vl: string, width: int) -> string {
+		return strings.concatenate(
+			{
+				vl,
+				strings.repeat(
+					" ",
+					max(width - len(vl), 0),
+					context.temp_allocator,
+				),
+			},
+			context.temp_allocator,
+		)
+	}
+
+	log.infof(
+		"  %s %s %s %s",
+		padded("name", 20),
+		padded("total", 8),
+		padded("ideal", 8),
+		padded("t/i", 8),
+	)
+	for eff, kind in ctx.stats.efficiency {
+		name := reflect.enum_field_names(backend.Efficiency_Stat_Kind)[kind]
+		log.infof(
+			"  %s % -8d % -8d % -8f",
+			padded(name, 20),
+			eff.total,
+			eff.ideal,
+			f64(eff.total) / f64(eff.ideal),
+		)
 	}
 }
 

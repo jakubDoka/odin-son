@@ -1,3 +1,4 @@
+#+build !wasm32
 package main
 
 import "core:fmt"
@@ -6,8 +7,6 @@ import "core:odin/parser"
 import "core:os"
 import "core:path/filepath"
 import "core:strings"
-
-MODULE_INTRINSICS :: 0
 
 load_program :: proc(ctx: ^Gen_Ctx, entry_file: string) {
 	ctx.files.allocator = ctx.types.allocator

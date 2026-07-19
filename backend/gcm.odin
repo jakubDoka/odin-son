@@ -6,7 +6,6 @@ import "base:runtime"
 import "core:container/queue"
 import "core:fmt"
 import "core:log"
-import "core:os"
 import "core:slice"
 
 Graph_Basic_Block :: struct {
@@ -583,9 +582,9 @@ graph_schedule :: proc(
 
 	gs.bbs = bbs[:]
 
-	if has_unscheduled {
-		graph_display(os.to_writer(os.stderr), graph, gs)
-	}
+	//if has_unscheduled {
+	//	graph_display(os.to_writer(os.stderr), graph, gs)
+	//}
 
 	if graph.end != 0 {
 		verify_schedule_integrity(graph, gs, ctx.antideps)

@@ -1,8 +1,10 @@
 #+build !wasm32
-package main
+package tests
 // NOTE: this file is generated: odin run meta
 
 import "core:testing"
+
+import main ".."
 
 @(test) simplest :: proc(t: ^testing.T) {
 
@@ -14,7 +16,7 @@ main_ :: proc() -> int {
 	return 69
 }
 
-run_test(t, `simplest`, `
+main.run_test(t, `simplest`, `
 package main
 
 opt_level :: "none"
@@ -34,7 +36,7 @@ main_ :: proc() -> int {
 	return 1 + 2 * 3
 }
 
-run_test(t, `basic_arithmetic`, `
+main.run_test(t, `basic_arithmetic`, `
 package main
 
 opt_level :: "none"
@@ -91,7 +93,7 @@ main_ :: proc() -> int {
 	return r
 }
 
-run_test(t, `all_integer_operators`, `
+main.run_test(t, `all_integer_operators`, `
 package main
 
 opt_level :: "none"
@@ -167,7 +169,7 @@ main_ :: proc() -> int {
 	return r
 }
 
-run_test(t, `all_unsigned_integer_operators`, `
+main.run_test(t, `all_unsigned_integer_operators`, `
 package main
 
 opt_level :: "none"
@@ -226,7 +228,7 @@ main_ :: proc() -> int {
 	return r
 }
 
-run_test(t, `all_signed_integer_operators`, `
+main.run_test(t, `all_signed_integer_operators`, `
 package main
 
 opt_level :: "none"
@@ -278,7 +280,7 @@ opaqe :: proc(i: int) -> int {
 	return i
 }
 
-run_test(t, `bitwise_ops_with_constants`, `
+main.run_test(t, `bitwise_ops_with_constants`, `
 package main
 
 opt_level :: "none"
@@ -330,7 +332,7 @@ xor_into :: proc(ptr: ^int, v: int) -> int {
 	return ptr^
 }
 
-run_test(t, `bitwise_ops_through_pointers`, `
+main.run_test(t, `bitwise_ops_through_pointers`, `
 package main
 
 opt_level :: "none"
@@ -405,7 +407,7 @@ and32 :: proc(ptr: ^i32, v: i32) -> i32 {
 	return ptr^
 }
 
-run_test(t, `bitwise_ops_sized_through_pointers`, `
+main.run_test(t, `bitwise_ops_sized_through_pointers`, `
 package main
 
 opt_level :: "none"
@@ -460,7 +462,7 @@ main_ :: proc() -> int {
 	return 2 + 2 * 2
 }
 
-run_test(t, `simple_2_adress_self_conflict`, `
+main.run_test(t, `simple_2_adress_self_conflict`, `
 package main
 
 opt_level :: "none"
@@ -480,7 +482,7 @@ main_ :: proc() -> int {
 	return 2 + 2 * 2 + 2 * 2 + 2 * 2 + 2 * 2
 }
 
-run_test(t, `more_complex_2_adress_self_conflict`, `
+main.run_test(t, `more_complex_2_adress_self_conflict`, `
 package main
 
 opt_level :: "none"
@@ -503,7 +505,7 @@ main_ :: proc() -> int {
         (((1 + 1) + (1 + 1)) + ((1 + 1) + (1 + 1))))
 }
 
-run_test(t, `force_spill_with_simple_addition`, `
+main.run_test(t, `force_spill_with_simple_addition`, `
 package main
 
 opt_level :: "none"
@@ -528,7 +530,7 @@ main_ :: proc() -> int {
 	return b * c
 }
 
-run_test(t, `simple_varialbes`, `
+main.run_test(t, `simple_varialbes`, `
 package main
 
 opt_level :: "none"
@@ -592,7 +594,7 @@ main_ :: proc() -> int {
 		a12 + a13 + a14 + a15
 }
 
-run_test(t, `variables_that_create_register_pressure`, `
+main.run_test(t, `variables_that_create_register_pressure`, `
 package main
 
 opt_level :: "none"
@@ -698,7 +700,7 @@ main_ :: proc() -> int {
 	)
 }
 
-run_test(t, `variables_that_create_even_more_register_pressure`, `
+main.run_test(t, `variables_that_create_even_more_register_pressure`, `
 package main
 
 opt_level :: "none"
@@ -768,7 +770,7 @@ main_ :: proc() -> int {
 	return a
 }
 
-run_test(t, `simple_if_statement`, `
+main.run_test(t, `simple_if_statement`, `
 package main
 
 opt_level :: "none"
@@ -861,7 +863,7 @@ main_ :: proc() -> int {
 		f0+f1+f2+f3
 }
 
-run_test(t, `if_statement_with_register_pressure`, `
+main.run_test(t, `if_statement_with_register_pressure`, `
 package main
 
 opt_level :: "none"
@@ -1013,7 +1015,7 @@ main_ :: proc() -> int {
 	return r
 }
 
-run_test(t, `if_statement_peepholes`, `
+main.run_test(t, `if_statement_peepholes`, `
 package main
 
 opt_level :: "none"
@@ -1121,7 +1123,7 @@ main_ :: proc() -> int {
 		test_inplace_shifts(&a, &b, 4)
 }
 
-run_test(t, `different_shift_peeps`, `
+main.run_test(t, `different_shift_peeps`, `
 package main
 
 opt_level :: "none"
@@ -1222,7 +1224,7 @@ main_ :: proc() -> int {
 	)
 }
 
-run_test(t, `exhaustive_mem_shift_peeps`, `
+main.run_test(t, `exhaustive_mem_shift_peeps`, `
 package main
 
 opt_level :: "none"
@@ -1369,7 +1371,7 @@ main_ :: proc() -> int {
 	return r
 }
 
-run_test(t, `unary_ops`, `
+main.run_test(t, `unary_ops`, `
 package main
 
 opt_level :: "none"
@@ -1459,7 +1461,7 @@ main_ :: proc() -> int {
 	return int(u8(vl))
 }
 
-run_test(t, `extend_reduce_integer_chain`, `
+main.run_test(t, `extend_reduce_integer_chain`, `
 package main
 
 opt_level :: "none"
@@ -1491,7 +1493,7 @@ main_ :: proc() -> int {
 	return a
 }
 
-run_test(t, `loops`, `
+main.run_test(t, `loops`, `
 package main
 
 opt_level :: "none"
@@ -1536,7 +1538,7 @@ main_ :: proc() -> int {
 	return sum
 }
 
-run_test(t, `nested_loops`, `
+main.run_test(t, `nested_loops`, `
 package main
 
 opt_level :: "none"
@@ -1609,7 +1611,7 @@ main_ :: proc() -> int {
 	return 0
 }
 
-run_test(t, `consecutive_loops`, `
+main.run_test(t, `consecutive_loops`, `
 package main
 
 opt_level :: "none"
@@ -1721,7 +1723,7 @@ main_ :: proc() -> int {
 	return r
 }
 
-run_test(t, `loop_edge_cases`, `
+main.run_test(t, `loop_edge_cases`, `
 package main
 
 opt_level :: "none"
@@ -1801,7 +1803,7 @@ main_ :: proc() -> int {
 	return 0
 }
 
-run_test(t, `infinite_loops`, `
+main.run_test(t, `infinite_loops`, `
 package main
 
 opt_level :: "none"
@@ -1847,7 +1849,7 @@ main_ :: proc() -> int {
 	return sum
 }
 
-run_test(t, `inner_loop_only_breaks_outer`, `
+main.run_test(t, `inner_loop_only_breaks_outer`, `
 package main
 
 opt_level :: "none"
@@ -1903,7 +1905,7 @@ main_ :: proc() -> int {
 	return sum
 }
 
-run_test(t, `inner_loop_continues_outer`, `
+main.run_test(t, `inner_loop_continues_outer`, `
 package main
 
 opt_level :: "none"
@@ -1945,7 +1947,7 @@ main_ :: proc() -> int {
 	return sum
 }
 
-run_test(t, `loop_unreachable_tail_after_labelled_break_crash`, `
+main.run_test(t, `loop_unreachable_tail_after_labelled_break_crash`, `
 package main
 
 opt_level :: "none"
@@ -1991,7 +1993,7 @@ main_ :: proc() -> int {
 	return sum
 }
 
-run_test(t, `loop_sibling_continue_outer_regalloc_blowup`, `
+main.run_test(t, `loop_sibling_continue_outer_regalloc_blowup`, `
 package main
 
 opt_level :: "none"
@@ -2040,7 +2042,7 @@ main_ :: proc() -> int {
       return sum
 }
 
-run_test(t, `nested_infinite_loop`, `
+main.run_test(t, `nested_infinite_loop`, `
 package main
 
 opt_level :: "none"
@@ -2076,7 +2078,7 @@ main_ :: proc() -> int {
 	return 0
 }
 
-run_test(t, `infinite_loop_with_control_flow`, `
+main.run_test(t, `infinite_loop_with_control_flow`, `
 package main
 
 opt_level :: "none"
@@ -2114,7 +2116,7 @@ fib :: proc(x: int) -> int {
 	return x
 }
 
-run_test(t, `functions`, `
+main.run_test(t, `functions`, `
 package main
 
 opt_level :: "none"
@@ -2200,7 +2202,7 @@ call :: proc(vl: int) -> int {
 	return vl
 }
 
-run_test(t, `regalloc_pressure_across_calls`, `
+main.run_test(t, `regalloc_pressure_across_calls`, `
 package main
 
 opt_level :: "none"
@@ -2288,7 +2290,7 @@ c :: proc(v: int) -> int {
 	return v * 3
 }
 
-run_test(t, `some_nested_fuction_calls`, `
+main.run_test(t, `some_nested_fuction_calls`, `
 package main
 
 opt_level :: "none"
@@ -2335,7 +2337,7 @@ c :: proc(v: int) -> int {
 	return v * 3
 }
 
-run_test(t, `multiple_returns`, `
+main.run_test(t, `multiple_returns`, `
 package main
 
 opt_level :: "none"
@@ -2380,7 +2382,7 @@ set :: proc(ptr: ^int) -> int {
 	return ptr^
 }
 
-run_test(t, `pointers`, `
+main.run_test(t, `pointers`, `
 package main
 
 opt_level :: "none"
@@ -2429,7 +2431,7 @@ add :: proc(ptr: ^$T, v: T) -> T {
 	return ptr^
 }
 
-run_test(t, `pointers_dynamic_add_opt`, `
+main.run_test(t, `pointers_dynamic_add_opt`, `
 package main
 
 opt_level :: "none"
@@ -2524,7 +2526,7 @@ main_ :: proc() -> int {
 	return 0
 }
 
-run_test(t, `loads_and_stores_of_different_sizes`, `
+main.run_test(t, `loads_and_stores_of_different_sizes`, `
 package main
 
 opt_level :: "none"
@@ -2612,7 +2614,7 @@ main_ :: proc() -> int {
 	return stcpy.a + stcpy.b.c + stcpy.b.d
 }
 
-run_test(t, `structs`, `
+main.run_test(t, `structs`, `
 package main
 
 opt_level :: "none"
@@ -2695,7 +2697,7 @@ main_ :: proc() -> int {
 	)
 }
 
-run_test(t, `structs_with_differnt_datatypes`, `
+main.run_test(t, `structs_with_differnt_datatypes`, `
 package main
 
 opt_level :: "none"
@@ -2773,7 +2775,7 @@ main_ :: proc() -> int {
 	return stru.a + stru.b
 }
 
-run_test(t, `structs_trigger_displacement_bug`, `
+main.run_test(t, `structs_trigger_displacement_bug`, `
 package main
 
 opt_level :: "none"
@@ -2804,7 +2806,7 @@ funnel :: proc(a: int, b: int, c: int) -> int {
 	return a + b + c
 }
 
-run_test(t, `frontend_peepholes_on_function_args`, `
+main.run_test(t, `frontend_peepholes_on_function_args`, `
 package main
 
 opt_level :: "none"
@@ -2850,7 +2852,7 @@ main_ :: proc() -> int {
 	return vl.a + vl.b + vl.c.a + vl.c.b + vl.c.c.a + vl.c.c.b
 }
 
-run_test(t, `stress_testing_structs`, `
+main.run_test(t, `stress_testing_structs`, `
 package main
 
 opt_level :: "none"
@@ -2905,7 +2907,7 @@ fn :: proc(s: Stru) -> int {
 	return int(s.v) + s.b
 }
 
-run_test(t, `mixed_2_register_op`, `
+main.run_test(t, `mixed_2_register_op`, `
 package main
 
 opt_level :: "none"
@@ -3016,7 +3018,7 @@ return_stru4 :: proc() -> Stru4 {
 	return {return_stru3(), return_stru3(), 70}
 }
 
-run_test(t, `pass_stack_in_calls`, `
+main.run_test(t, `pass_stack_in_calls`, `
 package main
 
 opt_level :: "none"
@@ -3128,7 +3130,7 @@ mutate :: proc(s: Stru) -> int {
 	return s.a + s.b
 }
 
-run_test(t, `struct_passed_by_value_is_copied`, `
+main.run_test(t, `struct_passed_by_value_is_copied`, `
 package main
 
 opt_level :: "none"
@@ -3177,7 +3179,7 @@ sum :: proc(o: Outer) -> int {
 	return o.a.x + o.a.y + o.b
 }
 
-run_test(t, `nested_struct_passed_by_value`, `
+main.run_test(t, `nested_struct_passed_by_value`, `
 package main
 
 opt_level :: "none"
@@ -3221,7 +3223,7 @@ main_ :: proc() -> int {
 	return r
 }
 
-run_test(t, `bool_values_stored_and_negated`, `
+main.run_test(t, `bool_values_stored_and_negated`, `
 package main
 
 opt_level :: "none"
@@ -3254,7 +3256,7 @@ main_ :: proc() -> int {
 	return x * 100 + y
 }
 
-run_test(t, `comparison_result_as_integer`, `
+main.run_test(t, `comparison_result_as_integer`, `
 package main
 
 opt_level :: "none"
@@ -3282,7 +3284,7 @@ main_ :: proc() -> int {
 	return a
 }
 
-run_test(t, `nested_pointer_double_deref`, `
+main.run_test(t, `nested_pointer_double_deref`, `
 package main
 
 opt_level :: "none"
@@ -3314,7 +3316,7 @@ main_ :: proc() -> int {
 	return int(c) + int(z)
 }
 
-run_test(t, `integer_multiplication_truncation`, `
+main.run_test(t, `integer_multiplication_truncation`, `
 package main
 
 opt_level :: "none"
@@ -3353,7 +3355,7 @@ opaque :: proc(x: int) -> int {
 	return x
 }
 
-run_test(t, `subword_register_multiply`, `
+main.run_test(t, `subword_register_multiply`, `
 package main
 
 opt_level :: "none"
@@ -3391,7 +3393,7 @@ opaque :: proc(x: int) -> int {
 	return x
 }
 
-run_test(t, `subword_signed_division`, `
+main.run_test(t, `subword_signed_division`, `
 package main
 
 opt_level :: "none"
@@ -3426,7 +3428,7 @@ main_ :: proc() -> int {
 	return a + int(b)
 }
 
-run_test(t, `compound_divide_and_modulo_assign`, `
+main.run_test(t, `compound_divide_and_modulo_assign`, `
 package main
 
 opt_level :: "none"
@@ -3459,7 +3461,7 @@ main_ :: proc() -> int {
 	return a
 }
 
-run_test(t, `compound_and_not_assign`, `
+main.run_test(t, `compound_and_not_assign`, `
 package main
 
 opt_level :: "none"
@@ -3491,7 +3493,7 @@ opaque :: proc(x: int) -> int {
 	return x
 }
 
-run_test(t, `unsigned_negation_wraps`, `
+main.run_test(t, `unsigned_negation_wraps`, `
 package main
 
 opt_level :: "none"
@@ -3519,7 +3521,7 @@ main_ :: proc() -> int {
 	return int(u32(a))
 }
 
-run_test(t, `unsigned_cast_wraps_to_max`, `
+main.run_test(t, `unsigned_cast_wraps_to_max`, `
 package main
 
 opt_level :: "none"
@@ -3548,7 +3550,7 @@ get16 :: proc() -> i16 {
 	return 0 - 1000
 }
 
-run_test(t, `subword_return_values`, `
+main.run_test(t, `subword_return_values`, `
 package main
 
 opt_level :: "none"
@@ -3587,7 +3589,7 @@ main_ :: proc() -> int {
 	return r
 }
 
-run_test(t, `signed_subword_division_widening_bug`, `
+main.run_test(t, `signed_subword_division_widening_bug`, `
 package main
 
 opt_level :: "none"
@@ -3620,7 +3622,7 @@ main_ :: proc() -> int {
 	return int(x) + int(y)
 }
 
-run_test(t, `signed_widening_cast_bug`, `
+main.run_test(t, `signed_widening_cast_bug`, `
 package main
 
 opt_level :: "none"
@@ -3645,7 +3647,7 @@ main_ :: proc() -> int {
 	return int(i8(b)) + int(i32(c))
 }
 
-run_test(t, `signed_cast_through_truncation_bug`, `
+main.run_test(t, `signed_cast_through_truncation_bug`, `
 package main
 
 opt_level :: "none"
@@ -3673,7 +3675,7 @@ main_ :: proc() -> int {
 	return int(s.b * 2)
 }
 
-run_test(t, `signed_subword_multiply_widening_bug`, `
+main.run_test(t, `signed_subword_multiply_widening_bug`, `
 package main
 
 opt_level :: "none"
@@ -3701,7 +3703,7 @@ main_ :: proc() -> int {
 	return a * 10 + b
 }
 
-run_test(t, `parallel_assignment_swap_bug`, `
+main.run_test(t, `parallel_assignment_swap_bug`, `
 package main
 
 opt_level :: "none"
@@ -3735,7 +3737,7 @@ opaque :: proc(x: int) -> int {
 	return x
 }
 
-run_test(t, `eight_bit_register_multiply_crash`, `
+main.run_test(t, `eight_bit_register_multiply_crash`, `
 package main
 
 opt_level :: "none"
@@ -3775,7 +3777,7 @@ opaque :: proc(x: int) -> int {
 	return x
 }
 
-run_test(t, `signed_i8_division_needs_cbw_not_cqo`, `
+main.run_test(t, `signed_i8_division_needs_cbw_not_cqo`, `
 package main
 
 opt_level :: "none"
@@ -3813,7 +3815,7 @@ opaque :: proc(x: int) -> int {
 	return x
 }
 
-run_test(t, `signed_i32_division_needs_cdq_not_cqo`, `
+main.run_test(t, `signed_i32_division_needs_cdq_not_cqo`, `
 package main
 
 opt_level :: "none"
@@ -3847,7 +3849,7 @@ opaque :: proc(x: int) -> int {
 	return x
 }
 
-run_test(t, `comparison_ge_gt_not_commutative`, `
+main.run_test(t, `comparison_ge_gt_not_commutative`, `
 package main
 
 opt_level :: "none"
@@ -3887,7 +3889,7 @@ opaque :: proc(x: int) -> int {
 	return x
 }
 
-run_test(t, `load_must_not_sink_past_aliasing_store`, `
+main.run_test(t, `load_must_not_sink_past_aliasing_store`, `
 package main
 
 opt_level :: "none"
@@ -3929,7 +3931,7 @@ opaque :: proc(x: int) -> int {
 	return x
 }
 
-run_test(t, `narrowing_cast_leaves_dirty_upper_bits`, `
+main.run_test(t, `narrowing_cast_leaves_dirty_upper_bits`, `
 package main
 
 opt_level :: "none"
@@ -3978,7 +3980,7 @@ main_ :: proc() -> int {
 	)
 }
 
-run_test(t, `two_register_struct_arg_fuel_accounting`, `
+main.run_test(t, `two_register_struct_arg_fuel_accounting`, `
 package main
 
 opt_level :: "none"
@@ -4029,7 +4031,7 @@ main_ :: proc() -> int {
 	return 0
 }
 
-run_test(t, `eliminate_phi_with_direct_cycle`, `
+main.run_test(t, `eliminate_phi_with_direct_cycle`, `
 package main
 
 opt_level :: "none"
@@ -4072,7 +4074,7 @@ copy :: proc(a: ^Stru, b: ^Stru) -> int {
 	return 0
 }
 
-run_test(t, `proper_stack_alignemnt`, `
+main.run_test(t, `proper_stack_alignemnt`, `
 package main
 
 opt_level :: "none"
@@ -4137,7 +4139,7 @@ cmps :: proc(a: int, b: ^int) -> int {
 	return r
 }
 
-run_test(t, `trigger_comparison_with_load`, `
+main.run_test(t, `trigger_comparison_with_load`, `
 package main
 
 opt_level :: "none"
@@ -4263,7 +4265,7 @@ main_ :: proc() -> int {
 	return sum
 }
 
-run_test(t, `basic_arrays`, `
+main.run_test(t, `basic_arrays`, `
 package main
 
 opt_level :: "none"
@@ -4404,7 +4406,7 @@ main_ :: proc() -> int {
 	return sum + cnt
 }
 
-run_test(t, `scaled_index_sib_operations`, `
+main.run_test(t, `scaled_index_sib_operations`, `
 package main
 
 opt_level :: "none"
@@ -4602,7 +4604,7 @@ quick_sort :: proc(array: []int) -> int {
 	return 0
 }
 
-run_test(t, `basic_slices`, `
+main.run_test(t, `basic_slices`, `
 package main
 
 opt_level :: "none"
@@ -4756,7 +4758,7 @@ main_ :: proc() -> int {
 	int(vl[:1][0]) + int(vl[2:4][1])
 }
 
-run_test(t, `basic_strings`, `
+main.run_test(t, `basic_strings`, `
 package main
 
 opt_level :: "none"
@@ -4780,7 +4782,7 @@ main_ :: proc() -> int {
 	return g
 }
 
-run_test(t, `mutable_global`, `
+main.run_test(t, `mutable_global`, `
 package main
 
 opt_level :: "none"
@@ -4812,7 +4814,7 @@ main_ :: proc() -> int {
 	return acc + cnt + flag
 }
 
-run_test(t, `global_peepholes`, `
+main.run_test(t, `global_peepholes`, `
 package main
 
 opt_level :: "none"
@@ -5041,7 +5043,7 @@ main_ :: proc() -> int {
 	return score
 }
 
-run_test(t, `json_validator`, `
+main.run_test(t, `json_validator`, `
 package main
 
 opt_level :: "none"
@@ -5273,7 +5275,7 @@ main_ :: proc() -> int {
 	return s.x + s.y + s.z
 }
 
-run_test(t, `mem2reg_local_struct_scalar_promotion`, `
+main.run_test(t, `mem2reg_local_struct_scalar_promotion`, `
 package main
 
 opt_level :: "none"
@@ -5321,7 +5323,7 @@ main_ :: proc() -> int {
 	return s.x + s.y
 }
 
-run_test(t, `mem2reg_struct_field_conditional_phi`, `
+main.run_test(t, `mem2reg_struct_field_conditional_phi`, `
 package main
 
 opt_level :: "none"
@@ -5374,7 +5376,7 @@ main_ :: proc() -> int {
 	return acc.x * 100 + acc.y
 }
 
-run_test(t, `mem2reg_struct_accumulator_in_loop`, `
+main.run_test(t, `mem2reg_struct_accumulator_in_loop`, `
 package main
 
 opt_level :: "none"
@@ -5429,7 +5431,7 @@ main_ :: proc() -> int {
 	return o.p.x * 1000 + o.p.y * 100 + o.q.x * 10 + o.q.y
 }
 
-run_test(t, `mem2reg_nested_struct_promotion`, `
+main.run_test(t, `mem2reg_nested_struct_promotion`, `
 package main
 
 opt_level :: "none"
@@ -5479,7 +5481,7 @@ main_ :: proc() -> int {
 	return s.x * 1000 + s.y * 100 + t.x * 10 + t.y
 }
 
-run_test(t, `mem2reg_struct_copy_promotion`, `
+main.run_test(t, `mem2reg_struct_copy_promotion`, `
 package main
 
 opt_level :: "none"
@@ -5527,7 +5529,7 @@ main_ :: proc() -> int {
 	return a.x * 100 + b.y + c.x + d.y
 }
 
-run_test(t, `mem2reg_multiple_structs_register_pressure`, `
+main.run_test(t, `mem2reg_multiple_structs_register_pressure`, `
 package main
 
 opt_level :: "none"
@@ -5574,7 +5576,7 @@ main_ :: proc() -> int {
 	return s.x + s.y + s.z
 }
 
-run_test(t, `mem2reg_partially_initialized_struct`, `
+main.run_test(t, `mem2reg_partially_initialized_struct`, `
 package main
 
 opt_level :: "none"
@@ -5621,7 +5623,7 @@ main_ :: proc() -> int {
 	return s.x * 100 + s.y
 }
 
-run_test(t, `mem2reg_struct_returned_then_mutated`, `
+main.run_test(t, `mem2reg_struct_returned_then_mutated`, `
 package main
 
 opt_level :: "none"
@@ -5677,7 +5679,7 @@ main_ :: proc() -> int {
 	return int(u64(m.a) + u64(m.b) + u64(m.c) + u64(m.d))
 }
 
-run_test(t, `mem2reg_mixed_size_field_promotion`, `
+main.run_test(t, `mem2reg_mixed_size_field_promotion`, `
 package main
 
 opt_level :: "none"
@@ -5731,7 +5733,7 @@ main_ :: proc() -> int {
 	return s.x * 100 + t.y * 10 + t.x
 }
 
-run_test(t, `mem2reg_struct_feeds_another_struct`, `
+main.run_test(t, `mem2reg_struct_feeds_another_struct`, `
 package main
 
 opt_level :: "none"
@@ -5775,7 +5777,7 @@ main_ :: proc() -> int {
 	return s.x * 100 + s.y
 }
 
-run_test(t, `mem2reg_struct_field_swap`, `
+main.run_test(t, `mem2reg_struct_field_swap`, `
 package main
 
 opt_level :: "none"
@@ -5820,7 +5822,7 @@ main_ :: proc() -> int {
 	return s.x + s.y + s.z
 }
 
-run_test(t, `mem2reg_local_pointer_to_struct_non_escaping`, `
+main.run_test(t, `mem2reg_local_pointer_to_struct_non_escaping`, `
 package main
 
 opt_level :: "none"
@@ -5879,7 +5881,7 @@ main_ :: proc() -> int {
 	return p.pos.x * 1000 + p.pos.y
 }
 
-run_test(t, `mem2reg_nested_struct_loop_with_conditional`, `
+main.run_test(t, `mem2reg_nested_struct_loop_with_conditional`, `
 package main
 
 opt_level :: "none"
@@ -5938,7 +5940,7 @@ main_ :: proc() -> int {
 	return s.x
 }
 
-run_test(t, `mem2reg_conditional_store_no_else`, `
+main.run_test(t, `mem2reg_conditional_store_no_else`, `
 package main
 
 opt_level :: "none"
@@ -5986,7 +5988,7 @@ main_ :: proc() -> int {
 	return s.x * 100 + s.y
 }
 
-run_test(t, `mem2reg_conditional_store_empty_then_reads_both`, `
+main.run_test(t, `mem2reg_conditional_store_empty_then_reads_both`, `
 package main
 
 opt_level :: "none"
@@ -6034,7 +6036,7 @@ main_ :: proc() -> int {
 	return s.x + s.y
 }
 
-run_test(t, `mem2reg_conditional_store_cross_field_after_merge`, `
+main.run_test(t, `mem2reg_conditional_store_cross_field_after_merge`, `
 package main
 
 opt_level :: "none"
@@ -6082,7 +6084,7 @@ main_ :: proc() -> int {
 	return s.x + s.y + a
 }
 
-run_test(t, `mem2reg_conditional_store_then_call_reads_merge`, `
+main.run_test(t, `mem2reg_conditional_store_then_call_reads_merge`, `
 package main
 
 opt_level :: "none"
@@ -6137,7 +6139,7 @@ main_ :: proc() -> int {
 	return s.a * 100 + s.b
 }
 
-run_test(t, `mem2reg_loop_continue_carries_field`, `
+main.run_test(t, `mem2reg_loop_continue_carries_field`, `
 package main
 
 opt_level :: "none"
@@ -6205,7 +6207,7 @@ main_ :: proc() -> int {
 	return sum * scale + c.hits - c.misses
 }
 
-run_test(t, `zero_initialized_static_aggregate`, `
+main.run_test(t, `zero_initialized_static_aggregate`, `
 package main
 
 opt_level :: "none"
@@ -6468,7 +6470,7 @@ main_ :: proc() -> int {
 	return score
 }
 
-run_test(t, `free_list_allocator`, `
+main.run_test(t, `free_list_allocator`, `
 package main
 
 opt_level :: "none"
@@ -6709,7 +6711,7 @@ main_ :: proc() -> int {
 	return q * 100 + r
 }
 
-run_test(t, `multi_return_two_scalars_destructured`, `
+main.run_test(t, `multi_return_two_scalars_destructured`, `
 package main
 
 opt_level :: "none"
@@ -6741,7 +6743,7 @@ main_ :: proc() -> int {
 	return x * 100 + y
 }
 
-run_test(t, `multi_return_two_scalars_into_existing_vars`, `
+main.run_test(t, `multi_return_two_scalars_into_existing_vars`, `
 package main
 
 opt_level :: "none"
@@ -6773,7 +6775,7 @@ main_ :: proc() -> int {
 	return int(a) * 1000 + int(b) * 100 + int(c) * 10 + int(d)
 }
 
-run_test(t, `multi_return_four_i32_fit_in_registers`, `
+main.run_test(t, `multi_return_four_i32_fit_in_registers`, `
 package main
 
 opt_level :: "none"
@@ -6803,7 +6805,7 @@ main_ :: proc() -> int {
 	return x * 100 + y * 10 + z
 }
 
-run_test(t, `multi_return_three_ints_overflow_registers`, `
+main.run_test(t, `multi_return_three_ints_overflow_registers`, `
 package main
 
 opt_level :: "none"
@@ -6833,7 +6835,7 @@ main_ :: proc() -> int {
 	return p + q + r + s
 }
 
-run_test(t, `multi_return_four_ints_overflow_registers`, `
+main.run_test(t, `multi_return_four_ints_overflow_registers`, `
 package main
 
 opt_level :: "none"
@@ -6870,7 +6872,7 @@ main_ :: proc() -> int {
 	return first * 1000 + second * 100 + big.a + big.b + big.c + big.d
 }
 
-run_test(t, `multi_return_last_value_large_struct`, `
+main.run_test(t, `multi_return_last_value_large_struct`, `
 package main
 
 opt_level :: "none"
@@ -6912,7 +6914,7 @@ main_ :: proc() -> int {
 	return scalar * 100 + int(pair.x) * 10 + int(pair.y)
 }
 
-run_test(t, `multi_return_scalar_and_small_struct`, `
+main.run_test(t, `multi_return_scalar_and_small_struct`, `
 package main
 
 opt_level :: "none"
@@ -6948,7 +6950,7 @@ main_ :: proc() -> int {
 	return sum * 100 + prod
 }
 
-run_test(t, `multi_return_ignore_some_values`, `
+main.run_test(t, `multi_return_ignore_some_values`, `
 package main
 
 opt_level :: "none"
@@ -6982,7 +6984,7 @@ main_ :: proc() -> int {
 	return consume(produce(4))
 }
 
-run_test(t, `multi_return_feeds_directly_into_call`, `
+main.run_test(t, `multi_return_feeds_directly_into_call`, `
 package main
 
 opt_level :: "none"
@@ -7015,7 +7017,7 @@ main_ :: proc() -> int {
 	return x * 100 + y * 10 + z
 }
 
-run_test(t, `multi_return_with_input_params`, `
+main.run_test(t, `multi_return_with_input_params`, `
 package main
 
 opt_level :: "none"
@@ -7050,7 +7052,7 @@ main_ :: proc() -> int {
 	return int(p.a) * 1000 + int(p.b) * 100 + int(q.a) * 10 + int(q.b)
 }
 
-run_test(t, `multi_return_two_small_structs`, `
+main.run_test(t, `multi_return_two_small_structs`, `
 package main
 
 opt_level :: "none"
@@ -7091,7 +7093,7 @@ main_ :: proc() -> int {
 	return span
 }
 
-run_test(t, `multi_return_used_in_expression`, `
+main.run_test(t, `multi_return_used_in_expression`, `
 package main
 
 opt_level :: "none"
@@ -7133,7 +7135,7 @@ main_ :: proc() -> int {
 	return first + int(second) * 10 + big.a + big.b + big.c
 }
 
-run_test(t, `multi_return_mixed_sizes_with_large_tail`, `
+main.run_test(t, `multi_return_mixed_sizes_with_large_tail`, `
 package main
 
 opt_level :: "none"
@@ -7168,7 +7170,7 @@ main_ :: proc() -> int {
 	return ptr[0] + ptr[1]
 }
 
-run_test(t, `multi_pointers`, `
+main.run_test(t, `multi_pointers`, `
 package main
 
 opt_level :: "none"
@@ -7217,7 +7219,7 @@ main_ :: proc() -> int {
 	return int(buf[0]) + int(buf[1]) + n  // 'f'+'f'+2 = 102+102+2=206
 }
 
-run_test(t, `memopt_crash_on_indexing_digits`, `
+main.run_test(t, `memopt_crash_on_indexing_digits`, `
 package main
 
 opt_level :: "none"
@@ -7262,7 +7264,7 @@ main_ :: proc() -> int {
 	return int(1.5 + 2.5 * 3.0)
 }
 
-run_test(t, `basic_float_arithmetic`, `
+main.run_test(t, `basic_float_arithmetic`, `
 package main
 
 opt_level :: "none"
@@ -7288,7 +7290,7 @@ main_ :: proc() -> int {
 	)
 }
 
-run_test(t, `float_force_spill_with_simple_addition`, `
+main.run_test(t, `float_force_spill_with_simple_addition`, `
 package main
 
 opt_level :: "none"
@@ -7338,7 +7340,7 @@ main_ :: proc() -> int {
 	return int(r)
 }
 
-run_test(t, `all_f32_operators`, `
+main.run_test(t, `all_f32_operators`, `
 package main
 
 opt_level :: "none"
@@ -7406,7 +7408,7 @@ main_ :: proc() -> int {
 	return int(r)
 }
 
-run_test(t, `all_f64_operators`, `
+main.run_test(t, `all_f64_operators`, `
 package main
 
 opt_level :: "none"
@@ -7463,7 +7465,7 @@ opaque :: proc(i: f32) -> f32 {
 	return i
 }
 
-run_test(t, `float_ops_with_constants`, `
+main.run_test(t, `float_ops_with_constants`, `
 package main
 
 opt_level :: "none"
@@ -7516,7 +7518,7 @@ mul_into :: proc(ptr: ^f64, v: f64) -> f64 {
 	return ptr^
 }
 
-run_test(t, `float_ops_through_pointers`, `
+main.run_test(t, `float_ops_through_pointers`, `
 package main
 
 opt_level :: "none"
@@ -7608,7 +7610,7 @@ main_ :: proc() -> int {
 	return int(a + f32(b))
 }
 
-run_test(t, `float_ops_sized_through_pointers`, `
+main.run_test(t, `float_ops_sized_through_pointers`, `
 package main
 
 opt_level :: "none"
@@ -7710,7 +7712,7 @@ main_ :: proc() -> int {
 	return int(r)
 }
 
-run_test(t, `float_unary_neg`, `
+main.run_test(t, `float_unary_neg`, `
 package main
 
 opt_level :: "none"
@@ -7825,7 +7827,7 @@ main_ :: proc() -> int {
 	return r
 }
 
-run_test(t, `float_comparison_peepholes`, `
+main.run_test(t, `float_comparison_peepholes`, `
 package main
 
 opt_level :: "none"
@@ -7940,7 +7942,7 @@ cmps :: proc(a: f32, b: ^f32) -> int {
 	return r
 }
 
-run_test(t, `float_comparison_with_load`, `
+main.run_test(t, `float_comparison_with_load`, `
 package main
 
 opt_level :: "none"
@@ -8053,7 +8055,7 @@ main_ :: proc() -> int {
 	return r
 }
 
-run_test(t, `float_conversions`, `
+main.run_test(t, `float_conversions`, `
 package main
 
 opt_level :: "none"
@@ -8164,7 +8166,7 @@ main_ :: proc() -> int {
 	return 0
 }
 
-run_test(t, `float_loads_and_stores_of_different_sizes`, `
+main.run_test(t, `float_loads_and_stores_of_different_sizes`, `
 package main
 
 opt_level :: "none"
@@ -8254,7 +8256,7 @@ main_ :: proc() -> int {
 		a12 + a13 + a14 + a15)
 }
 
-run_test(t, `float_variables_that_create_register_pressure`, `
+main.run_test(t, `float_variables_that_create_register_pressure`, `
 package main
 
 opt_level :: "none"
@@ -8360,7 +8362,7 @@ main_ :: proc() -> int {
 	)
 }
 
-run_test(t, `float_variables_that_create_even_more_register_pressure`, `
+main.run_test(t, `float_variables_that_create_even_more_register_pressure`, `
 package main
 
 opt_level :: "none"
@@ -8491,7 +8493,7 @@ main_ :: proc() -> int {
 		f0+f1+f2+f3)
 }
 
-run_test(t, `float_if_statement_with_register_pressure`, `
+main.run_test(t, `float_if_statement_with_register_pressure`, `
 package main
 
 opt_level :: "none"
@@ -8634,7 +8636,7 @@ call :: proc(vl: f64) -> f64 {
 	return vl
 }
 
-run_test(t, `float_regalloc_pressure_across_calls`, `
+main.run_test(t, `float_regalloc_pressure_across_calls`, `
 package main
 
 opt_level :: "none"
@@ -8743,7 +8745,7 @@ mixed :: proc(
 	return f64(a) + b + f64(c) + d + f64(e) + f + f64(g) + h + f64(i) + j
 }
 
-run_test(t, `float_args_passed_on_stack`, `
+main.run_test(t, `float_args_passed_on_stack`, `
 package main
 
 opt_level :: "none"
@@ -8831,7 +8833,7 @@ opaque :: proc(x: int) -> int {
 	return x
 }
 
-run_test(t, `float_subword_conversions_round_trip`, `
+main.run_test(t, `float_subword_conversions_round_trip`, `
 package main
 
 opt_level :: "none"
@@ -8949,7 +8951,7 @@ main_ :: proc() -> int {
 	return r
 }
 
-run_test(t, `signed_integer_materialized_compares`, `
+main.run_test(t, `signed_integer_materialized_compares`, `
 package main
 
 opt_level :: "none"
@@ -9096,7 +9098,7 @@ main_ :: proc() -> int {
 	return r
 }
 
-run_test(t, `unsigned_integer_materialized_compares`, `
+main.run_test(t, `unsigned_integer_materialized_compares`, `
 package main
 
 opt_level :: "none"
@@ -9207,7 +9209,7 @@ main_ :: proc() -> int {
 	return r
 }
 
-run_test(t, `float_materialized_compares`, `
+main.run_test(t, `float_materialized_compares`, `
 package main
 
 opt_level :: "none"
@@ -9305,7 +9307,7 @@ main_ :: proc() -> int {
 	return r
 }
 
-run_test(t, `integer_materialized_compares_with_immediate`, `
+main.run_test(t, `integer_materialized_compares_with_immediate`, `
 package main
 
 opt_level :: "none"
@@ -9406,7 +9408,7 @@ main_ :: proc() -> int {
 	return r
 }
 
-run_test(t, `integer_materialized_compares_with_load`, `
+main.run_test(t, `integer_materialized_compares_with_load`, `
 package main
 
 opt_level :: "none"
@@ -9486,7 +9488,7 @@ main_ :: proc() -> int {
 	return r
 }
 
-run_test(t, `float_materialized_compares_with_load`, `
+main.run_test(t, `float_materialized_compares_with_load`, `
 package main
 
 opt_level :: "none"
@@ -9617,7 +9619,7 @@ main_ :: proc() -> int {
 	return r
 }
 
-run_test(t, `integer_materialized_compares_with_folded_load`, `
+main.run_test(t, `integer_materialized_compares_with_folded_load`, `
 package main
 
 opt_level :: "none"
@@ -9766,7 +9768,7 @@ main_ :: proc() -> int {
 	return r
 }
 
-run_test(t, `float_materialized_compares_with_folded_load`, `
+main.run_test(t, `float_materialized_compares_with_folded_load`, `
 package main
 
 opt_level :: "none"
@@ -9856,7 +9858,7 @@ main_ :: proc() -> int {
 	return total % 251
 }
 
-run_test(t, `crash_in_gcm_on_two_loops_nested_in_a_loop`, `
+main.run_test(t, `crash_in_gcm_on_two_loops_nested_in_a_loop`, `
 package main
 
 main :: proc() -> int {
@@ -9905,7 +9907,7 @@ main_ :: proc() -> int {
 	return vl
 }
 
-run_test(t, `foreign_block`, `
+main.run_test(t, `foreign_block`, `
 package main
 
 foreign {
@@ -9939,7 +9941,7 @@ main_ :: proc() -> int {
 	return int(c)
 }
 
-run_test(t, `enum_basic_values`, `
+main.run_test(t, `enum_basic_values`, `
 package main
 
 opt_level :: "none"
@@ -9972,7 +9974,7 @@ main_ :: proc() -> int {
 	return int(Code.B) + int(Code.C)
 }
 
-run_test(t, `enum_explicit_values`, `
+main.run_test(t, `enum_explicit_values`, `
 package main
 
 opt_level :: "none"
@@ -10004,7 +10006,7 @@ main_ :: proc() -> int {
 	return int(f)
 }
 
-run_test(t, `enum_backing_type`, `
+main.run_test(t, `enum_backing_type`, `
 package main
 
 opt_level :: "none"
@@ -10041,7 +10043,7 @@ main_ :: proc() -> int {
 	return r
 }
 
-run_test(t, `enum_comparison`, `
+main.run_test(t, `enum_comparison`, `
 package main
 
 opt_level :: "none"
@@ -10079,7 +10081,7 @@ main_ :: proc() -> int {
 	return 0
 }
 
-run_test(t, `enum_implicit_selector`, `
+main.run_test(t, `enum_implicit_selector`, `
 package main
 
 opt_level :: "none"
@@ -10117,7 +10119,7 @@ main_ :: proc() -> int {
 	return int(b.k) + b.n
 }
 
-run_test(t, `enum_in_struct`, `
+main.run_test(t, `enum_in_struct`, `
 package main
 
 opt_level :: "none"
@@ -10164,7 +10166,7 @@ main_ :: proc() -> int {
 	return r
 }
 
-run_test(t, `enum_value_switch`, `
+main.run_test(t, `enum_value_switch`, `
 package main
 
 opt_level :: "none"
@@ -10210,7 +10212,7 @@ main_ :: proc() -> int {
 	return apply(.Neg, 9)
 }
 
-run_test(t, `enum_as_param`, `
+main.run_test(t, `enum_as_param`, `
 package main
 
 opt_level :: "none"
@@ -10246,7 +10248,7 @@ main_ :: proc() -> int {
 	return v.(int)
 }
 
-run_test(t, `union_assert`, `
+main.run_test(t, `union_assert`, `
 package main
 
 opt_level :: "none"
@@ -10285,7 +10287,7 @@ main_ :: proc() -> int {
 	return r
 }
 
-run_test(t, `union_type_switch`, `
+main.run_test(t, `union_type_switch`, `
 package main
 
 opt_level :: "none"
@@ -10327,7 +10329,7 @@ main_ :: proc() -> int {
 	return r
 }
 
-run_test(t, `union_nil_check`, `
+main.run_test(t, `union_nil_check`, `
 package main
 
 opt_level :: "none"
@@ -10363,7 +10365,7 @@ main_ :: proc() -> int {
 	return int(v.(i32))
 }
 
-run_test(t, `union_reassign_variant`, `
+main.run_test(t, `union_reassign_variant`, `
 package main
 
 opt_level :: "none"
@@ -10402,7 +10404,7 @@ main_ :: proc() -> int {
 	return p.x + p.y
 }
 
-run_test(t, `union_struct_member`, `
+main.run_test(t, `union_struct_member`, `
 package main
 
 opt_level :: "none"
@@ -10447,7 +10449,7 @@ main_ :: proc() -> int {
 	return r
 }
 
-run_test(t, `union_type_switch_default`, `
+main.run_test(t, `union_type_switch_default`, `
 package main
 
 opt_level :: "none"
@@ -10487,7 +10489,7 @@ fib :: proc(x: $T) -> T {
 	return fib(x - 1) + fib(x - 2)
 }
 
-run_test(t, `generic_fuctions`, `
+main.run_test(t, `generic_fuctions`, `
 package main
 
 opt_level :: "none"
@@ -10518,7 +10520,7 @@ d :: proc(f: proc() -> int) -> int {
 	return f()
 }
 
-run_test(t, `function_pointers`, `
+main.run_test(t, `function_pointers`, `
 package main
 
 opt_level :: "none"
@@ -10564,7 +10566,7 @@ main_ :: proc() -> int {
 	return local.x
 }
 
-run_test(t, `BUG2_alias_through_pointer_stored_in_struct_field`, `
+main.run_test(t, `BUG2_alias_through_pointer_stored_in_struct_field`, `
 package main
 
 opt_level :: "none"
@@ -10652,7 +10654,7 @@ main_ :: proc() -> int {
 	return sum_ints(&iv) + q.a + q.b + iv.len + pv.len
 }
 
-run_test(t, `parametrized_structs`, `
+main.run_test(t, `parametrized_structs`, `
 package main
 
 opt_level :: "none"

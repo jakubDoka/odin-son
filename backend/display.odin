@@ -376,3 +376,11 @@ graph_display_node_gvn :: proc(w: io.Writer, graph: ^Graph, id: Node_ID) {
 
 	ansi_end(w)
 }
+
+reg_kind_char :: proc(kind: Reg_Kind) -> rune {
+	table := [Reg_Kind]rune {
+		.General = 'g',
+		.Vector  = 'v',
+	}
+	return (table)[kind]
+}

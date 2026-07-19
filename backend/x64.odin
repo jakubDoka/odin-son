@@ -12,23 +12,23 @@ import "core:sort"
 
 NOOP_REX :: 0b0100_0000
 
-GPA_MASK :: []int{0xFFFF & ~int(1 << uint(RSP))}
-GPA_SPILL_MASK :: []int{~int(1 << uint(RSP))}
+GPA_MASK :: []i64{0xFFFF & ~i64(1 << uint(RSP))}
+GPA_SPILL_MASK :: []i64{~i64(1 << uint(RSP))}
 NO_INDEX :: RSP
-GPA_RET_MASK :: []int{1 << uint(RAX)}
-GPA_RET_MASK_SEC :: []int{1 << uint(RDX)}
-GPA_DIV_MASK :: []int {
+GPA_RET_MASK :: []i64{1 << uint(RAX)}
+GPA_RET_MASK_SEC :: []i64{1 << uint(RDX)}
+GPA_DIV_MASK :: []i64 {
 	0xFFFF &
-	~int(1 << uint(RSP)) &
-	~int(1 << uint(RAX)) &
-	~int(1 << uint(RDX)),
+	~i64(1 << uint(RSP)) &
+	~i64(1 << uint(RAX)) &
+	~i64(1 << uint(RDX)),
 }
-RAX_MASK :: []int{1 << uint(RAX)}
-RDI_MASK :: []int{1 << uint(RDI)}
-RSI_MASK :: []int{1 << uint(RSI)}
-RDX_MASK :: []int{1 << uint(RDX)}
+RAX_MASK :: []i64{1 << uint(RAX)}
+RDI_MASK :: []i64{1 << uint(RDI)}
+RSI_MASK :: []i64{1 << uint(RSI)}
+RDX_MASK :: []i64{1 << uint(RDX)}
 
-RCX_MASK :: []int{1 << uint(RCX)}
+RCX_MASK :: []i64{1 << uint(RCX)}
 
 VEC_BANK :: u16(Reg_Kind.Vector) << 12
 XMM0 :: Reg(VEC_BANK | 0)
@@ -48,8 +48,8 @@ XMM13 :: Reg(VEC_BANK | 13)
 XMM14 :: Reg(VEC_BANK | 14)
 XMM15 :: Reg(VEC_BANK | 15)
 
-XMM_MASK :: []int{0xFFFF}
-XMM_SPILL_MASK :: []int{~int(0)}
+XMM_MASK :: []i64{0xFFFF}
+XMM_SPILL_MASK :: []i64{~i64(0)}
 
 RAX :: Reg(0)
 RCX :: Reg(1)
@@ -993,7 +993,7 @@ x64_post_schedule_peep :: proc(
 
 // whole-bank mask helpers for the mixed-bank float nodes. a fresh copy is
 // returned so the caller may mutate it (def masks get intersected in place).
-reg_bank_mask :: proc(ra: ^Regalloc, kind: Reg_Kind, src: []int) -> Reg_Mask {
+reg_bank_mask :: proc(ra: ^Regalloc, kind: Reg_Kind, src: []i64) -> Reg_Mask {
 	mask := reg_mask_empty(ra, kind)
 	copy(mask.masks[:len(src)], src)
 	return mask

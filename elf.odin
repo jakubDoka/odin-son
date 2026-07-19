@@ -4,6 +4,10 @@ import "backend"
 import "core:mem"
 import "core:slice"
 
+LIBCALL_BASE :: backend.RELOC_BIG_CONSTANT_BASE - 32
+MEMCPY_ID :: LIBCALL_BASE
+MEMSET_ID :: LIBCALL_BASE + 1
+
 // Minimal writer for x86-64 ELF relocatable object files (ET_REL). The output
 // is a `.o` that can be handed to `zig cc` / `ld` to produce an executable.
 //

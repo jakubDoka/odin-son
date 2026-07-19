@@ -1,3 +1,4 @@
+#+build !wasm32
 package main
 
 import "backend"
@@ -7,10 +8,6 @@ import "core:os"
 import "core:strings"
 import "vendored/gam/util/arna"
 import "vendored/gam/util/hot"
-
-LIBCALL_BASE :: backend.RELOC_BIG_CONSTANT_BASE - 32
-MEMCPY_ID :: LIBCALL_BASE
-MEMSET_ID :: LIBCALL_BASE + 1
 
 main :: proc() {
 	context.assertion_failure_proc = hot.init_trace()
@@ -73,10 +70,6 @@ main :: proc() {
 		os.exit(1)
 	}
 
-	// These reservations are virtual address space committed on demand (see
-	// vendored/gam/util/arna), so being generous is essentially free and lets
-	// the compiler handle larger multi-file packages (e.g. test-programs/lua)
-	// without exhausting an arena and returning nil from `new`.
 	arna.scratch[0].reserved = 64 * 1024 * 1024
 	arna.scratch[1].reserved = 64 * 1024 * 1024
 

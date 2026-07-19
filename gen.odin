@@ -1,18 +1,21 @@
 package main
 
 import "backend"
+import "backend/regalloc"
 import "base:runtime"
 import "core:fmt"
-import "core:log"
 import "core:mem"
 import "core:odin/ast"
 import "core:odin/tokenizer"
 import "core:slice"
 import "core:strconv"
-import "meta"
+import "typecheck"
 import "vendored/gam/util/arna"
 
 CALL_PREFIX :: backend.CALL_PREFIX
+
+Gen_Ctx :: typecheck.Gen_Ctx
+Type :: typecheck.Type
 
 Opt_Level :: struct {
 	name:  string,
@@ -221,56 +224,8 @@ abi_sm_add2 :: proc(
 	return
 }
 
-Mems :: struct {
-	graph:    arna.Allocator,
-	regalloc: arna.Allocator,
-	scratch:  arna.Allocator,
-	code:     arna.Allocator,
-	reloc:    arna.Allocator,
-	type:     arna.Allocator,
-}
-
-Gen_Ctx :: struct {
-	using global: ^Global_Ctx,
-	using types:  ^Types,
-	using graph:  backend.Graph,
-	cc:           ^backend.Call_Conv,
-	target_spec:  ^backend.Node_Spec,
-	node_scope:   backend.Node_ID,
-	mem_slot:     int,
-	loop:         ^Loop_State,
-	file:         ^ast.File,
-	file_id:      File_ID,
-	module:       Module_ID,
-	prc:          Proc_ID,
-	ret_ptrs:     []backend.Node_ID,
-	poly_types:   #soa[dynamic]Poly_Entry,
-}
-
-Poly_Entry :: struct {
-	name: string,
-	meta: Check_Meta,
-}
-
-Loop_Control :: enum int {
-	Break,
-	Continue,
-}
-
-Loop_State :: struct {
-	parent:       ^Loop_State,
-	label:        string,
-	using bstate: backend.Loop_State,
-}
-
 Propagation :: struct {
 	dest: backend.Node_ID,
-}
-
-Ty_Propagation :: struct {
-	inferred_ty: Type,
-	referencing: bool,
-	key:         Maybe(Decl_Key),
 }
 
 ctx_ctrl :: proc(ctx: ^Gen_Ctx) -> backend.Node_ID {
@@ -604,28 +559,6 @@ is_static :: proc(d: ^ast.Value_Decl) -> bool {
 		}
 	}
 	return false
-}
-
-const_eval_int :: proc(node: ^ast.Expr) -> (value: i64, ok: bool) {
-	#partial switch d in node.derived {
-	case ^ast.Basic_Lit:
-		if d.tok.kind != .Integer do return 0, false
-		return i64(strconv.parse_u64(d.tok.text) or_return), true
-	case ^ast.Unary_Expr:
-		if d.op.text != "-" do return 0, false
-		inner := const_eval_int(d.expr) or_return
-		return -inner, true
-	case ^ast.Binary_Expr:
-		lhs, rhs :=
-			const_eval_int(d.left) or_return, const_eval_int(d.right) or_return
-		#partial switch d.op.kind {
-		case .Mul:
-			return lhs * rhs, true
-		}
-	case ^ast.Paren_Expr:
-		return const_eval_int(d.expr)
-	}
-	return 0, false
 }
 
 emit_module_globals :: proc(ctx: ^Gen_Ctx) {
@@ -1146,7 +1079,7 @@ emit_proc_code :: proc(
 	ra.spec = spec
 	ra.cc = &backend.X64_SYSTEMV_CC
 
-	regs := backend.regalloc(
+	regs := regalloc.regalloc(
 		&ra,
 		ctx,
 		&schedule,
@@ -1538,7 +1471,7 @@ emit_nodes :: proc(
 			)
 
 			for r, i in results {
-				name := meta.src_of(ctx.file^, d.names[i])
+				name := src_of(ctx.file^, d.names[i])
 				if name == "_" do continue
 				flags := get_node_vflags(d.names[i])
 				vty := ctx.procs[prc_id].rets[i]
@@ -1568,7 +1501,7 @@ emit_nodes :: proc(
 		if len(d.values) == 0 {
 			decl_ty := emit_type(ctx, d.type)
 			for i in 0 ..< len(d.names) {
-				name := meta.src_of(ctx.file^, d.names[i])
+				name := src_of(ctx.file^, d.names[i])
 				flags := get_node_vflags(d.names[i])
 				ptr := alloca(ctx, name, decl_ty, zeroed = true)
 				backend.graph_pin(ctx, ptr)
@@ -1582,7 +1515,7 @@ emit_nodes :: proc(
 
 		assert(len(d.names) == len(d.values))
 		for i in 0 ..< len(d.names) {
-			name := meta.src_of(ctx.file^, d.names[i])
+			name := src_of(ctx.file^, d.names[i])
 			assert(name != "")
 			decl_ty := emit_type(ctx, d.type)
 			vty := decl_ty != .Void ? decl_ty : get_node_type(d.values[i])
@@ -1882,7 +1815,7 @@ emit_nodes :: proc(
 		backend.graph_unpin(ctx, condv)
 	case ^ast.Type_Switch_Stmt:
 		tag := d.tag.derived.(^ast.Assign_Stmt)
-		binding := meta.src_of(ctx.file^, tag.lhs[0])
+		binding := src_of(ctx.file^, tag.lhs[0])
 		u := unpack_type(get_node_type(tag.rhs[0])).(^Union)
 
 		uv := emit_nodes(ctx, {}, tag.rhs[0])
@@ -1952,7 +1885,7 @@ emit_nodes :: proc(
 		assert(d.post == nil)
 
 		loop_state: Loop_State
-		loop_state.label = meta.src_of(ctx.file^, d.label)
+		loop_state.label = src_of(ctx.file^, d.label)
 		loop_state.parent = ctx.loop
 		ctx.loop = &loop_state
 
@@ -2132,7 +2065,7 @@ emit_nodes :: proc(
 			fmt.panicf("TODO: %v %v", base_ty, node)
 		}
 	case ^ast.Branch_Stmt:
-		label := meta.src_of(ctx.file^, d.label)
+		label := src_of(ctx.file^, d.label)
 
 		loop := ctx.loop
 		for ; loop != nil; loop = loop.parent {

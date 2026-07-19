@@ -3,13 +3,13 @@ alias gen-spec 'rm backend/node_specs.odin;\
 	odin check backend -define:GEN_SPEC=false -no-entry-point'
 
 # regenerate the tests and overloads
-alias gen-meta 'odin run meta'
+alias gen-meta 'odin run meta -o:none'
 
 set acc '-define:ACCEPT=true'
 set rlg '-define:REGLOGS=true'
 set dff '-define:DIFF=false'
  
-alias run-test 'odin test . -keep-executable -debug -define:ODIN_TEST_FANCY=false'
+alias run-test 'odin test tests -keep-executable -debug -define:ODIN_TEST_FANCY=false'
 
 alias measure 'rg --files --glob "!*.git/" --glob "!vendored" --glob \
 "!print-tests" --glob "!TESTS.md" --glob "!tests.odin" --glob "!zydis" --glob \

@@ -1,10 +1,10 @@
 package main
 
-import "backend"
+import "../backend"
+import "../vendored/gam/util/arna"
 import "base:runtime"
 import "core:fmt"
 import "core:io"
-import "core:log"
 import "core:mem"
 import "core:odin/ast"
 import "core:odin/tokenizer"
@@ -12,8 +12,56 @@ import "core:reflect"
 import "core:slice"
 import "core:strconv"
 import "core:strings"
-import "meta"
-import "vendored/gam/util/arna"
+
+MODULE_INTRINSICS :: 0
+
+Ty_Propagation :: struct {
+	inferred_ty: Type,
+	referencing: bool,
+	key:         Maybe(Decl_Key),
+}
+
+Mems :: struct {
+	graph:    arna.Allocator,
+	regalloc: arna.Allocator,
+	scratch:  arna.Allocator,
+	code:     arna.Allocator,
+	reloc:    arna.Allocator,
+	type:     arna.Allocator,
+}
+
+Gen_Ctx :: struct {
+	using global: ^Global_Ctx,
+	using types:  ^Types,
+	using graph:  backend.Graph,
+	cc:           ^backend.Call_Conv,
+	target_spec:  ^backend.Node_Spec,
+	node_scope:   backend.Node_ID,
+	mem_slot:     int,
+	loop:         ^Loop_State,
+	file:         ^ast.File,
+	file_id:      File_ID,
+	module:       Module_ID,
+	prc:          Proc_ID,
+	ret_ptrs:     []backend.Node_ID,
+	poly_types:   #soa[dynamic]Poly_Entry,
+}
+
+Poly_Entry :: struct {
+	name: string,
+	meta: Check_Meta,
+}
+
+Loop_Control :: enum int {
+	Break,
+	Continue,
+}
+
+Loop_State :: struct {
+	parent:       ^Loop_State,
+	label:        string,
+	using bstate: backend.Loop_State,
+}
 
 Lit :: struct #raw_union {
 	procid:    Proc_ID,
@@ -105,6 +153,28 @@ array_elem_stride :: proc(elem: Type) -> int {
 	return mem.align_forward_int(type_size(elem), type_align(elem))
 }
 
+const_eval_int :: proc(node: ^ast.Expr) -> (value: i64, ok: bool) {
+	#partial switch d in node.derived {
+	case ^ast.Basic_Lit:
+		if d.tok.kind != .Integer do return 0, false
+		return i64(strconv.parse_u64(d.tok.text) or_return), true
+	case ^ast.Unary_Expr:
+		if d.op.text != "-" do return 0, false
+		inner := const_eval_int(d.expr) or_return
+		return -inner, true
+	case ^ast.Binary_Expr:
+		lhs, rhs :=
+			const_eval_int(d.left) or_return, const_eval_int(d.right) or_return
+		#partial switch d.op.kind {
+		case .Mul:
+			return lhs * rhs, true
+		}
+	case ^ast.Paren_Expr:
+		return const_eval_int(d.expr)
+	}
+	return 0, false
+}
+
 type_size :: proc(ty: Type) -> int {
 	#partial switch t in unpack_type(ty) {
 	case ^Proc_Type, Pointer, Multi_Pointer:
@@ -189,9 +259,9 @@ SIGNED_TYPES :: bit_set[Type]{.Int, .I64, .I32, .I16, .I8}
 INTEGER_TYPES :: UNSIGNED_TYPES | SIGNED_TYPES
 FLOAT_TYPES :: bit_set[Type]{.F32, .F64}
 
-Raw_Type :: bit_field uintptr {
+Raw_Type :: bit_field u64 {
 	tag:  int     | 16,
-	data: uintptr | 48,
+	data: uintptr | min(48, size_of(uintptr) * 8),
 }
 
 Multi_Pointer :: distinct ^Type
@@ -490,7 +560,7 @@ find_module_decl :: proc(
 		for decl in file.decls {
 			sd := decl.derived_stmt.(^ast.Value_Decl) or_continue
 			if len(sd.names) == 0 do continue
-			if meta.src_of(file^, sd.names[0]) == name {
+			if src_of(file^, sd.names[0]) == name {
 				return sd, file, File_ID(module.file_start + i), true
 			}
 		}
@@ -1052,7 +1122,7 @@ typecheck :: proc(
 			rabi := ret_abi(sig.rets)
 
 			for i in 0 ..< len(d.names) {
-				name := meta.src_of(ctx.file^, d.names[i])
+				name := src_of(ctx.file^, d.names[i])
 				flags: Var_Flags
 				if ret_is_by_pointer(rabi, i) {
 					flags |= {.Referenced}
@@ -1078,7 +1148,7 @@ typecheck :: proc(
 			flags: Var_Flags
 			if type_to_dt(inferred_ty) == .Void do flags |= {.Referenced}
 			for i in 0 ..< len(d.names) {
-				name := meta.src_of(ctx.file^, d.names[i])
+				name := src_of(ctx.file^, d.names[i])
 				set_node_data(d.names[i], flags)
 				append(
 					&ctx.scope,
@@ -1096,7 +1166,7 @@ typecheck :: proc(
 		assert(len(d.names) == len(d.values))
 
 		for i in 0 ..< len(d.names) {
-			name := meta.src_of(ctx.file^, d.names[i])
+			name := src_of(ctx.file^, d.names[i])
 
 			if u, ok := unpack_type(inferred_ty).(^Union); ok {
 				value_ty := typecheck(ctx, {}, d.values[i])
@@ -1180,7 +1250,7 @@ typecheck :: proc(
 			for elem, i in d.elems {
 				#partial switch e in elem.derived {
 				case ^ast.Field_Value:
-					name := meta.src_of(ctx.file^, e.field)
+					name := src_of(ctx.file^, e.field)
 					for &field in t.fields {
 						if field.name == name {
 							set_node_data(e.field, field.offset)
@@ -1438,7 +1508,7 @@ typecheck :: proc(
 		return &VOID
 	case ^ast.Type_Switch_Stmt:
 		tag := d.tag.derived.(^ast.Assign_Stmt)
-		binding := meta.src_of(ctx.file^, tag.lhs[0])
+		binding := src_of(ctx.file^, tag.lhs[0])
 		union_ty := typecheck(ctx, {}, tag.rhs[0])
 		assert(is_of(union_ty.type, ^Union))
 		body := d.body.derived.(^ast.Block_Stmt)
@@ -1831,7 +1901,7 @@ register_module_procs :: proc(ctx: ^Gen_Ctx, mid: Module_ID) {
 				typecheck_proc(
 					ctx,
 					mid,
-					meta.src_of(ctx.file^, sdecl.names[0]),
+					src_of(ctx.file^, sdecl.names[0]),
 					prc,
 				)
 			}
@@ -1841,12 +1911,7 @@ register_module_procs :: proc(ctx: ^Gen_Ctx, mid: Module_ID) {
 			sdecl := decl.derived_stmt.(^ast.Value_Decl) or_continue
 			if len(sdecl.values) == 0 do continue
 			prc := sdecl.values[0].derived.(^ast.Proc_Lit) or_continue
-			typecheck_proc(
-				ctx,
-				mid,
-				meta.src_of(ctx.file^, sdecl.names[0]),
-				prc,
-			)
+			typecheck_proc(ctx, mid, src_of(ctx.file^, sdecl.names[0]), prc)
 		}
 	}
 
@@ -1885,7 +1950,7 @@ typecheck_sig :: proc(
 			assert(len(param.names) <= 1)
 			pname := ""
 			if len(param.names) == 1 {
-				pname = meta.src_of(ctx.file^, param.names[0])
+				pname = src_of(ctx.file^, param.names[0])
 			}
 
 			tys[i] = emit_type(ctx, param.type)
@@ -1945,7 +2010,7 @@ register_module_globals :: proc(ctx: ^Gen_Ctx, mid: Module_ID) {
 			if !sdecl.is_mutable do continue
 
 			for name_node, j in sdecl.names {
-				name := meta.src_of(ctx.file^, name_node)
+				name := src_of(ctx.file^, name_node)
 				if name == "_" do continue
 
 				ty: Type
@@ -2003,4 +2068,9 @@ typecheck_program :: proc(ctx: ^Gen_Ctx) {
 		typecheck(ctx, {}, prc.lit.body)
 	}
 
+}
+
+src_of :: proc(f: ast.File, node: ^ast.Node) -> string {
+	if node == nil do return ""
+	return f.src[node.pos.offset:node.end.offset]
 }

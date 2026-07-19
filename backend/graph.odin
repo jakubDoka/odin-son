@@ -1969,10 +1969,7 @@ Expanded_Node :: struct {
 	inplace_slot: int,
 }
 
-graph_expand :: #force_no_inline proc(
-	graph: ^Graph,
-	id: Node_ID,
-) -> Expanded_Node {
+graph_expand :: proc(graph: ^Graph, id: Node_ID) -> Expanded_Node {
 	node := graph_get(graph, id)
 	assert(node.rtype != DEAD_NODE_KIND)
 	in_place := graph.inplace_slot_idxs[node.rtype]

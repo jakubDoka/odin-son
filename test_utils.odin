@@ -1,3 +1,4 @@
+#+build !wasm32
 package main
 
 import zydis "./zydis"

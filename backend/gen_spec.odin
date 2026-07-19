@@ -203,8 +203,8 @@ Class_Spec :: struct {
 Reg_Class_Spec :: struct {
 	inplace_slot_idx: Maybe(int),
 	input_start_idx:  int,
-	clobbers:         [Reg_Kind]int,
-	reg_masks:        [Reg_Kind][][]int,
+	clobbers:         [Reg_Kind]i64,
+	reg_masks:        [Reg_Kind][][]i64,
 }
 
 SPEC_NOT_PRESENT :: (#load("node_specs.odin", string) or_else "") == ""

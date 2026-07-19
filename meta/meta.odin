@@ -104,14 +104,16 @@ main :: proc() {
 	}
 
 	{
-		file, err := os.open("tests.odin", {.Create, .Trunc, .Write})
+		file, err := os.open("tests/tests.odin", {.Create, .Trunc, .Write})
 		fmt.assertf(err == nil, "%v", err)
 		defer os.close(file)
 
-		os.write_string(file, "package main\n")
+		os.write_string(file, "#+build !wasm32\n")
+		os.write_string(file, "package tests\n")
 		os.write_string(file, "// NOTE: this file is generated: " + COMMAND)
 		os.write_string(file, "\n\n")
 		os.write_string(file, "import \"core:testing\"\n\n")
+		os.write_string(file, "import main \"..\"\n\n")
 
 		file_paths := []string{"TESTS.md"}
 		for file_path in file_paths {
@@ -162,7 +164,7 @@ main :: proc() {
 				fmt.fprintfln(file, "%v", inlined)
 				fmt.fprintfln(
 					file,
-					"run_test(t, `%v`, `%v`, main_())",
+					"main.run_test(t, `%v`, `%v`, main_())",
 					rall_name,
 					code,
 				)

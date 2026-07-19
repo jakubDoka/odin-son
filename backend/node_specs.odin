@@ -89,7 +89,7 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{.General = 0, .Vector = 0}, // Dead
 		},
 		interned_reg_masks = {
-			raw_data([]int{}),
+			raw_data([]i64{}),
 		},
 		reg_masks = {
 			{}, // Start
@@ -842,18 +842,18 @@ SPECS := [Node_Spec_Name]Node_Spec{
 			{.General = 0, .Vector = 0}, // X64_Fma_213
 		},
 		interned_reg_masks = {
-			raw_data([]int{}),
-			raw_data([]int{0xffef}),
-			raw_data([]int{0xffff}),
-			raw_data([]int{0x0}),
-			raw_data([]int{0x2}),
-			raw_data([]int{0x1}),
-			raw_data([]int{0xffea}),
-			raw_data([]int{0x4}),
-			raw_data([]int{0xffffffffffffffef}),
-			raw_data([]int{0xffffffffffffffff}),
-			raw_data([]int{0x80}),
-			raw_data([]int{0x40}),
+			raw_data([]i64{}),
+			raw_data([]i64{0xffef}),
+			raw_data([]i64{0xffff}),
+			raw_data([]i64{0x0}),
+			raw_data([]i64{0x2}),
+			raw_data([]i64{0x1}),
+			raw_data([]i64{0xffea}),
+			raw_data([]i64{0x4}),
+			raw_data([]i64{0xffffffffffffffef}),
+			raw_data([]i64{0xffffffffffffffff}),
+			raw_data([]i64{0x80}),
+			raw_data([]i64{0x40}),
 		},
 		reg_masks = {
 			{}, // Start

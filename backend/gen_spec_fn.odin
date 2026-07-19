@@ -99,12 +99,12 @@ generate_specs :: proc() {
 
 		interned_reg_masks[""] = 0
 
-		mask_key :: proc(masks: []int) -> string {
+		mask_key :: proc(masks: []i64) -> string {
 			return string(mem.slice_data_cast([]u8, masks))
 		}
 
-		key_mask :: proc(masks: string) -> []int {
-			return mem.slice_data_cast([]int, transmute([]u8)masks)
+		key_mask :: proc(masks: string) -> []i64 {
+			return mem.slice_data_cast([]i64, transmute([]u8)masks)
 		}
 
 		for classes, j in spec.classes {
@@ -153,7 +153,7 @@ generate_specs :: proc() {
 			for rclass in classes.regs {
 				for masks, kind in rclass.reg_masks {
 					for mask in masks {
-						full_mask := make([]int, reg_mask_lengths[kind])
+						full_mask := make([]i64, reg_mask_lengths[kind])
 						copy(full_mask, mask)
 
 						if mask_key(full_mask) not_in interned_reg_masks {
@@ -214,7 +214,7 @@ generate_specs :: proc() {
 		}
 		os.write_string(file, "\t\t},\n")
 
-		interned_reg_masks_arr := make([][]int, len(interned_reg_masks))
+		interned_reg_masks_arr := make([][]i64, len(interned_reg_masks))
 		for mask, idx in interned_reg_masks {
 			interned_reg_masks_arr[idx] = key_mask(mask)
 		}
@@ -242,7 +242,7 @@ generate_specs :: proc() {
 
 				for masks, kind in class.reg_masks {
 					for mask, j in masks {
-						full_mask := make([]int, reg_mask_lengths[kind])
+						full_mask := make([]i64, reg_mask_lengths[kind])
 						copy(full_mask, mask)
 
 						final[j][kind] = Mask_Intern_Key(

@@ -18,16 +18,16 @@ Decoder :: struct {
 	ok:   bool,
 }
 
-module_init :: proc(m: ^Module) {
+module_init :: proc(m: ^typecheck.Module) {
 	m.ok = false
 	m.version = 0
 	m.section_count = 0
 	m.start_func = -1
 	// The Array(T) fields are already zero-valued (data=nil, len=cap=0) by the
-	// caller's `Module = {}`, so there is nothing else to set up: no strides.
+	// caller's `typecheck.Module = {}`, so there is nothing else to set up: no strides.
 }
 
-decode_module :: proc(d: ^Decoder, a: ^Arena, m: ^Module) {
+decode_module :: proc(d: ^Decoder, a: ^Arena, m: ^typecheck.Module) {
 	// magic: \0asm
 	b0 := read_byte(d)
 	b1 := read_byte(d)
@@ -93,7 +93,7 @@ read_version :: proc(d: ^Decoder) -> u32 {
 	return v0 | (v1 << 8) | (v2 << 16) | (v3 << 24)
 }
 
-decode_type_section :: proc(d: ^Decoder, a: ^Arena, m: ^Module) {
+decode_type_section :: proc(d: ^Decoder, a: ^Arena, m: ^typecheck.Module) {
 	count := int(read_uleb32(d))
 	i := 0
 	for {
@@ -131,7 +131,7 @@ decode_type_section :: proc(d: ^Decoder, a: ^Arena, m: ^Module) {
 	}
 }
 
-decode_function_section :: proc(d: ^Decoder, a: ^Arena, m: ^Module) {
+decode_function_section :: proc(d: ^Decoder, a: ^Arena, m: ^typecheck.Module) {
 	count := int(read_uleb32(d))
 	i := 0
 	for {
@@ -143,7 +143,7 @@ decode_function_section :: proc(d: ^Decoder, a: ^Arena, m: ^Module) {
 	}
 }
 
-decode_memory_section :: proc(d: ^Decoder, a: ^Arena, m: ^Module) {
+decode_memory_section :: proc(d: ^Decoder, a: ^Arena, m: ^typecheck.Module) {
 	count := int(read_uleb32(d))
 	i := 0
 	for {
@@ -164,7 +164,7 @@ decode_memory_section :: proc(d: ^Decoder, a: ^Arena, m: ^Module) {
 	}
 }
 
-decode_global_section :: proc(d: ^Decoder, a: ^Arena, m: ^Module) {
+decode_global_section :: proc(d: ^Decoder, a: ^Arena, m: ^typecheck.Module) {
 	count := int(read_uleb32(d))
 	i := 0
 	for {
@@ -179,7 +179,7 @@ decode_global_section :: proc(d: ^Decoder, a: ^Arena, m: ^Module) {
 	}
 }
 
-decode_export_section :: proc(d: ^Decoder, a: ^Arena, m: ^Module) {
+decode_export_section :: proc(d: ^Decoder, a: ^Arena, m: ^typecheck.Module) {
 	count := int(read_uleb32(d))
 	i := 0
 	for {
@@ -197,7 +197,7 @@ decode_export_section :: proc(d: ^Decoder, a: ^Arena, m: ^Module) {
 	}
 }
 
-decode_import_section :: proc(d: ^Decoder, a: ^Arena, m: ^Module) {
+decode_import_section :: proc(d: ^Decoder, a: ^Arena, m: ^typecheck.Module) {
 	count := int(read_uleb32(d))
 	i := 0
 	for {
@@ -219,7 +219,7 @@ decode_import_section :: proc(d: ^Decoder, a: ^Arena, m: ^Module) {
 	}
 }
 
-decode_data_section :: proc(d: ^Decoder, a: ^Arena, m: ^Module) {
+decode_data_section :: proc(d: ^Decoder, a: ^Arena, m: ^typecheck.Module) {
 	count := int(read_uleb32(d))
 	i := 0
 	for {
@@ -246,7 +246,7 @@ decode_data_section :: proc(d: ^Decoder, a: ^Arena, m: ^Module) {
 	}
 }
 
-decode_code_section :: proc(d: ^Decoder, a: ^Arena, m: ^Module) {
+decode_code_section :: proc(d: ^Decoder, a: ^Arena, m: ^typecheck.Module) {
 	count := int(read_uleb32(d))
 	i := 0
 	for {

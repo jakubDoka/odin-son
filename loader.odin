@@ -7,17 +7,18 @@ import "core:odin/parser"
 import "core:os"
 import "core:path/filepath"
 import "core:strings"
+import "typecheck"
 
 load_program :: proc(ctx: ^Gen_Ctx, entry_file: string) {
 	ctx.files.allocator = ctx.types.allocator
 	ctx.modules.allocator = ctx.types.allocator
 
-	append(&ctx.modules, Module{name = "intrinsics"})
+	append(&ctx.modules, typecheck.Module{name = "intrinsics"})
 
 	entry_dir := filepath.dir(entry_file)
 	if entry_dir == "" do entry_dir = "."
 
-	loaded: map[string]Module_ID
+	loaded: map[string]typecheck.Module_ID
 	loaded.allocator = context.temp_allocator
 
 	load_dir(ctx, entry_dir, &loaded)
@@ -27,8 +28,8 @@ load_program :: proc(ctx: ^Gen_Ctx, entry_file: string) {
 load_dir :: proc(
 	ctx: ^Gen_Ctx,
 	dir: string,
-	loaded: ^map[string]Module_ID,
-) -> Module_ID {
+	loaded: ^map[string]typecheck.Module_ID,
+) -> typecheck.Module_ID {
 	abs, _ := filepath.abs(dir, context.temp_allocator)
 	if existing, ok := loaded[abs]; ok {
 		return existing
@@ -36,9 +37,9 @@ load_dir :: proc(
 
 	dir := strings.clone(dir, ctx.types.allocator)
 
-	mid := Module_ID(len(ctx.modules))
+	mid := typecheck.Module_ID(len(ctx.modules))
 	loaded[abs] = mid
-	append(&ctx.modules, Module{dir = dir})
+	append(&ctx.modules, typecheck.Module{dir = dir})
 	mod := &ctx.modules[mid]
 
 	handle, oerr := os.open(dir)
@@ -99,7 +100,8 @@ load_dir :: proc(
 			if col, ok := strings.split_iterator(&col_rel_path, ":");
 			   ok && col_rel_path != "" {
 				if col == "base" && col_rel_path == "intrinsics" {
-					ctx.modules[mid].imports[name] = MODULE_INTRINSICS
+					ctx.modules[mid].imports[name] =
+						typecheck.MODULE_INTRINSICS
 					continue
 				}
 

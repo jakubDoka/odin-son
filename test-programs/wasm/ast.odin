@@ -2,7 +2,7 @@ package main
 
 // In-memory representation of a decoded WASM module. Everything a future
 // interpreter needs is laid out flat and index/offset addressable: function
-// signatures resolve by index into `Module.types`, code bodies are flat
+// signatures resolve by index into `typecheck.Module.types`, code bodies are flat
 // instruction streams carrying their decoded immediates, and export/import/data
 // names are (offset, length) spans into the original module byte slice.
 //
@@ -163,7 +163,7 @@ Code :: struct {
 
 // Element types are now carried directly by each `Array(T)`; the old flat
 // stride table is gone.
-Module :: struct {
+typecheck.Module :: struct {
 	ok:            bool,
 	version:       u32,
 	section_count: int,

@@ -38,7 +38,7 @@ run_module_impl :: proc(name: string, data: string, auto: bool) -> int {
 
 	a: Arena = {}
 	arena_init(&a, ARENA_RESERVE)
-	m: Module = {}
+	m: typecheck.Module = {}
 	module_init(&m)
 
 	d: Decoder = {}

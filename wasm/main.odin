@@ -17,10 +17,10 @@ compile :: proc(opts: backend.Graph_Opt_Flags) -> []u8 {
 	types.mems.reloc.reserved = 4096 * 2048
 	types.mems.type.reserved = 4096 * 8192
 
-	piler.types_init(&types)
-	defer piler.types_deinit(&types)
+	piler.typecheck.types_init(&types)
+	defer piler.typecheck.types_deinit(&types)
 
-	global_ctx: piler.Global_Ctx
+	global_ctx: piler.typecheck.Global_Ctx
 
 	ctx: piler.Gen_Ctx
 	ctx.types = &types
@@ -28,7 +28,7 @@ compile :: proc(opts: backend.Graph_Opt_Flags) -> []u8 {
 	ctx.cc = &backend.X64_SYSTEMV_CC
 	ctx.target_spec = &backend.SPECS[.X64]
 
-	piler.typecheck_program(&ctx)
+	piler.typecheck.typecheck_program(&ctx)
 
 	emit_ctx := backend.Codegen_Emit_Ctx {
 		lib_calls = {

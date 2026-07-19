@@ -2,6 +2,7 @@
 package main
 
 import "backend"
+import "typecheck"
 import "core:fmt"
 import "core:log"
 import "core:os"
@@ -73,7 +74,7 @@ main :: proc() {
 	arna.scratch[0].reserved = 64 * 1024 * 1024
 	arna.scratch[1].reserved = 64 * 1024 * 1024
 
-	types: Types
+	types: typecheck.Types
 	types.mems.graph.reserved = 4096 * 16384
 	types.mems.regalloc.reserved = 4096 * 8192
 	types.mems.scratch.reserved = 4096 * 2048
@@ -81,13 +82,13 @@ main :: proc() {
 	types.mems.reloc.reserved = 4096 * 2048
 	types.mems.type.reserved = 4096 * 8192
 
-	types_init(&types)
-	defer types_deinit(&types)
+	typecheck.types_init(&types)
+	defer typecheck.types_deinit(&types)
 
 	backend.init_custom_fmt()
-	init_type_fmt()
+	typecheck.init_type_fmt()
 
-	global_ctx: Global_Ctx
+	global_ctx: typecheck.Global_Ctx
 	global_ctx.root = root
 
 	for col in ([]string{"base", "core", "vendor"}) {
@@ -106,7 +107,7 @@ main :: proc() {
 	ctx.target_spec = &backend.SPECS[.X64]
 
 	load_program(&ctx, input)
-	typecheck_program(&ctx)
+	typecheck.typecheck_program(&ctx)
 
 	emit_ctx := backend.Codegen_Emit_Ctx {
 		lib_calls = {copy = {id = MEMCPY_ID}, set = {id = MEMSET_ID}},

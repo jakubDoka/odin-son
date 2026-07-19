@@ -3,6 +3,7 @@ package main
 
 import zydis "./zydis"
 import "backend"
+import "typecheck"
 import "base:intrinsics"
 import "base:runtime"
 import "core:dynlib"
@@ -29,7 +30,7 @@ custom_fmt_once: sync.Once
 setup_custom_fmt :: proc() {
 	sync.once_do(&custom_fmt_once, proc() {
 		backend.init_custom_fmt()
-		init_type_fmt()
+		typecheck.init_type_fmt()
 	})
 }
 
@@ -40,7 +41,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 	arna.scratch[0].reserved = 1024 * 1024
 	arna.scratch[1].reserved = 1024 * 1024
 
-	types: Types
+	types: typecheck.Types
 	types.mems.graph.reserved = 4096 * 128
 	types.mems.regalloc.reserved = 4096 * 64
 	types.mems.scratch.reserved = 4096 * 16
@@ -48,8 +49,8 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 	types.mems.reloc.reserved = 4096 * 16
 	types.mems.type.reserved = 4096 * 128
 
-	types_init(&types)
-	defer types_deinit(&types)
+	typecheck.types_init(&types)
+	defer typecheck.types_deinit(&types)
 
 	// NOTE: this is intensly stupid, but we have to do this or there
 	// will be dataraces
@@ -66,7 +67,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 
 	setup_custom_fmt()
 
-	global_ctx: Global_Ctx
+	global_ctx: typecheck.Global_Ctx
 
 	p := parser.Parser{}
 	f := ast.File {
@@ -83,8 +84,8 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 	ctx.cc = &backend.X64_SYSTEMV_CC
 	ctx.target_spec = &backend.SPECS[.X64]
 
-	init_single_file_program(&ctx, &f)
-	typecheck_program(&ctx)
+	typecheck.init_single_file_program(&ctx, &f)
+	typecheck.typecheck_program(&ctx)
 
 	levels := OPT_LEVELS
 
@@ -207,7 +208,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		)
 		assert(oka)
 
-		main: ^Proc
+		main: ^typecheck.Proc
 		for &p in ctx.procs {
 			if p.name == "main" {
 				main = &p

@@ -372,22 +372,23 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 
 		os.write_string(file, "}\n\n")
 
-	}
+	} else {
 
-	for name, members in groups {
-		fmt.fprintfln(file, "%v :: enum u16 {{", name)
-		for member in members {
-			classes := spec.classes[member.class_group]
-			class := reflect.enum_fields_zipped(classes.enm)[member.class]
-			fmt.fprintfln(
-				file,
-				"\t%v = u16(%v.%v),",
-				class.name,
-				qualify_enm(q, classes.enm),
-				class.name,
-			)
+		for name, members in groups {
+			fmt.fprintfln(file, "%v :: enum u16 {{", name)
+			for member in members {
+				classes := spec.classes[member.class_group]
+				class := reflect.enum_fields_zipped(classes.enm)[member.class]
+				fmt.fprintfln(
+					file,
+					"\t%v = u16(%v.%v),",
+					class.name,
+					qualify_enm(q, classes.enm),
+					class.name,
+				)
+			}
+			os.write_string(file, "}\n")
 		}
-		os.write_string(file, "}\n")
 	}
 
 	fmt.fprintfln(file, "%v_Node_Type :: enum u16 {{", spec.name)

@@ -10,6 +10,9 @@ import "core:slice"
 import "core:sort"
 
 when !GEN_SPEC {
+	Un_Op :: backend.Un_Op
+	Bin_Op :: backend.Bin_Op
+
 	sext :: proc(oper: i64, ty: backend.Node_Datatype) -> (value: i64) {
 		bit_size := uint(backend.DT_SIZE[ty] * 8)
 		mask: i64 = -1 << bit_size

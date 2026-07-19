@@ -2,6 +2,7 @@ package wasm
 
 import piler ".."
 import "../backend"
+import "../backend/x64"
 import "../vendored/gam/util/arna"
 
 @(export)
@@ -25,8 +26,8 @@ compile :: proc(opts: backend.Graph_Opt_Flags) -> []u8 {
 	ctx: piler.Gen_Ctx
 	ctx.types = &types
 	ctx.global = &global_ctx
-	ctx.cc = &backend.X64_SYSTEMV_CC
-	ctx.target_spec = &backend.SPECS[.X64]
+	ctx.cc = &x64.X64_SYSTEMV_CC
+	ctx.target_spec = &x64.SPEC
 
 	piler.typecheck.typecheck_program(&ctx)
 

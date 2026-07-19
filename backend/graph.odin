@@ -10,7 +10,6 @@ import "core:mem"
 import "core:reflect"
 import "core:simd"
 import "core:slice"
-import "core:sort"
 
 when NODE_NAMES {
 	TAG_SIZE :: size_of(string)
@@ -62,17 +61,15 @@ add_efficiency_stat :: proc(
 	stats.efficiency[kind].ideal += ideal
 }
 
-Node_Spec_Name :: enum {
-	Builder,
-	X64,
-}
-
 Node_Spec :: struct {
 	node_extra_sizes:  []u8,
 	inheritance_table: []Inherit_Table_Elem,
 	node_flags:        []Class_Flags,
 	node_extra_types:  []typeid,
 	node_kind_name:    []string,
+	// only true for the pre-lowering/builder spec; every codegen-target
+	// spec leaves this false so generic drivers stay spec-agnostic
+	intern:            bool,
 	using regalloc:    Regalloc_Spec,
 	using codegen:     Codegen_Spec,
 }
@@ -173,10 +170,6 @@ Cfg :: struct {
 	},
 }
 
-Scope :: struct #align (4) {
-	done: bool,
-}
-
 CInt :: struct #raw_union #align (4) {
 	value:  i64,
 	fvalue: f64,
@@ -255,8 +248,6 @@ Node :: struct {
 	using spec:   struct #align (4) {
 		using _: struct #raw_union {
 			itype: Ideal_Node_Type,
-			btype: Builder_Node_Type,
-			xtype: X64_Node_Type,
 			rtype: u16,
 		},
 		using _: bit_field u16 {
@@ -371,74 +362,6 @@ peep_ctx_add_trigger :: proc(ctx: Peep_Ctx, triggerer: Node_ID, tar: Node_ID) {
 	if !slice.contains(ctx.triggers[gvn][:], tar) {
 		append(&ctx.triggers[gvn], tar)
 	}
-}
-
-If_State :: struct {
-	if_:     Node_ID,
-	using _: struct #raw_union {
-		else_scope: Node_ID,
-		then_scope: Node_ID,
-	},
-}
-
-graph_start_if :: proc(
-	graph: ^Graph,
-	scope: Node_ID,
-	state: ^If_State,
-	cond: Node_ID,
-) {
-	snode := graph_expand(graph, scope)
-	state.if_ = graph_add_if(graph, "if", snode.inps[0], cond)
-	state.else_scope = graph_clone(graph, scope)
-
-	then := graph_add_then(graph, "then", state.if_)
-	graph_set_input(graph, scope, 0, then)
-}
-
-graph_start_else :: proc(
-	graph: ^Graph,
-	then_scope: ^Node_ID,
-	state: ^If_State,
-) {
-	else_ := graph_add_else(graph, "else", state.if_)
-	graph_set_input(graph, state.else_scope, 0, else_)
-	then_scope^, state.then_scope = state.else_scope, then_scope^
-}
-
-graph_end_else :: proc(graph: ^Graph, else_scope: ^Node_ID, state: ^If_State) {
-	else_scope^ = graph_merge_scopes(graph, state.then_scope, else_scope^)
-}
-
-Block_State :: struct {
-	end_scope: Node_ID,
-}
-
-graph_start_block :: proc(state: ^Block_State) {
-	state^ = {}
-}
-
-graph_break_block :: proc(
-	graph: ^Graph,
-	scope: ^Node_ID,
-	state: ^Block_State,
-) {
-	state.end_scope = graph_merge_scopes(graph, state.end_scope, scope^)
-	scope^ = 0
-}
-
-graph_end_block :: proc(graph: ^Graph, scope: ^Node_ID, state: ^Block_State) {
-	state.end_scope = graph_merge_scopes(graph, state.end_scope, scope^)
-	scope^ = state.end_scope
-}
-
-Loop_Control :: enum int {
-	Break,
-	Continue,
-}
-
-Loop_State :: struct {
-	scope:  Node_ID,
-	scopes: [Loop_Control]Node_ID,
 }
 
 worklist_add :: proc(
@@ -613,327 +536,10 @@ graph_sym_iter_next :: proc(
 	return
 }
 
-graph_inline :: proc {
-	graph_inline_graph,
-	graph_inline_stencil,
-}
-
-graph_inline_stencil :: proc(graph: ^Graph, call: Node_ID, from: Stencil) {
-	slot: arna.Allocator
-	fromg: Graph
-	fromg.node_spec = &SPECS[.Builder]
-	fromg.mem = &slot
-	graph_mount_stencil(&fromg, from)
-	graph_inline_graph(graph, call, &fromg)
-}
-
-graph_inline_graph :: proc(graph: ^Graph, call: Node_ID, from: ^Graph) {
-	assert(graph.node_spec == &SPECS[.Builder])
-
-	context.allocator, _ = arna.scrath()
-
-	graph.peeped = false
-
-	Ctx :: struct {
-		graph:      ^Graph,
-		from:       ^Graph,
-		projection: []Node_ID,
-	}
-
-	proj_of :: proc(ctx: ^Ctx, id: Node_ID) -> ^Node_ID {
-		return &ctx.projection[graph_get(ctx.from, id).gvn]
-	}
-
-	ctx: Ctx
-	ctx.graph = graph
-	ctx.from = from
-	ctx.projection = make([]Node_ID, from.gvn)
-
-	call := graph_expand(graph, call)
-	assert(call.itype == .Call)
-	proj_of(&ctx, from.entry)^ = call.inps[0]
-	proj_of(&ctx, from.root_mem)^ = call.inps[1]
-	proj_of(&ctx, from.sym)^ = call.inps[2]
-
-	entry := graph_expand(from, from.entry)
-	Arg_Entry :: bit_field u64 {
-		id:           Node_ID | 32,
-		is_local_arg: bool    | 1,
-		gvn:          u32     | 31,
-	}
-	starter: Node_ID
-	params: [dynamic]Arg_Entry
-	for o in entry.outs {
-		onode := graph_expand(from, o.id)
-		is_local_arg := onode.itype == .Local
-		if is_local_arg {
-			for lo in onode.outs {
-				if graph_get(from, lo.id).itype == .Call {
-					is_local_arg = false
-					break
-				}
-			}
-		}
-
-		if onode.itype == .Arg || is_local_arg {
-			append(
-				&params,
-				Arg_Entry {
-					id = o.id,
-					gvn = onode.gvn,
-					is_local_arg = is_local_arg,
-				},
-			)
-		}
-
-		if is_cfg(from, o.id) {
-			assert(starter == 0)
-			starter = o.id
-		}
-	}
-
-	sort.quick_sort(params[:])
-
-	// TODO: we need to clean this up, its incredibly disgusting
-	gp_slots, fp_slots, local_slots: [dynamic]int
-	for p in CALL_PREFIX ..< int(call.input_count) {
-		if graph_get(graph, raw_data(call.inps)[p]).dt in FLOAT_DTS {
-			append(&fp_slots, p)
-		} else {
-			append(&gp_slots, p)
-		}
-	}
-	for p in int(call.input_count) ..< int(call.input_cap) {
-		append(&local_slots, p)
-	}
-
-	local_used := make([]bool, len(local_slots))
-	local_cursor := 0
-	next_local :: proc(local_used: []bool, cursor: ^int) -> int {
-		for local_used[cursor^] do cursor^ += 1
-		local_used[cursor^] = true
-		return cursor^
-	}
-
-	for i in 0 ..< len(params) {
-		param := params[i]
-		pnode := graph_expand(from, param.id)
-
-		call_idx: int
-		beyond: bool
-		if param.is_local_arg {
-			call_idx = local_slots[next_local(local_used, &local_cursor)]
-			beyond = true
-		} else {
-			arg_idx := int(graph_extra(from, pnode, Tup).idx)
-			slots := pnode.dt in FLOAT_DTS ? fp_slots[:] : gp_slots[:]
-			if arg_idx < len(slots) {
-				call_idx = slots[arg_idx]
-			} else {
-				rank := arg_idx - len(slots)
-				local_used[rank] = true
-				call_idx = local_slots[rank]
-				beyond = true
-			}
-		}
-
-		arg := raw_data(call.inps)[call_idx]
-		node := graph_expand(graph, arg)
-		if beyond {
-			assert(node.inps[0] == graph.entry)
-			graph_set_input(graph, arg, 0, graph.root_mem)
-			if pnode.itype != .Local {
-				arg = node.outs[0].id
-				arg = graph_outs(graph, arg)[0].id
-				arg = graph_inps(graph, arg)[3]
-			} else {
-				ctx.projection[graph_get(from, pnode.outs[0].id).gvn] =
-					node.outs[0].id
-			}
-		} else {
-			assert(node.itype != .Local)
-			assert(pnode.itype != .Local)
-		}
-		ctx.projection[param.gvn] = arg
-	}
-	for used in local_used do assert(used)
-
-	clone_along_cfg(&ctx, starter)
-
-	cend := graph_expand(graph, call.outs[0].id)
-	ret := graph_expand(from, from.end)
-
-	for o in cend.outs {
-		onode := graph_expand(ctx.graph, o.id)
-		if onode.itype == .Mem {
-			sub := graph_get(from, ret.inps[1])
-			graph_subsume(graph, ctx.projection[sub.gvn], o.id)
-		}
-		if onode.itype == .Ret {
-			idx := graph_extra(graph, onode, Tup).idx
-			sub := graph_get(from, ret.inps[RET_PREFIX + idx])
-			graph_subsume(graph, ctx.projection[sub.gvn], o.id)
-		}
-	}
-
-	end_ctrl := graph_get(from, ret.inps[0])
-	graph_subsume(graph, ctx.projection[end_ctrl.gvn], call.outs[0].id)
-
-	clone_along_cfg :: proc(ctx: ^Ctx, root: Node_ID) {
-		node := graph_expand(ctx.from, root)
-		if ctx.projection[node.gvn] != 0 do return
-
-		if node.itype == .Region {
-			for i in node.inps[:len(node.inps) - 1] {
-				inode := graph_expand(ctx.from, i)
-				if ctx.projection[inode.gvn] == 0 {
-					return
-				}
-			}
-
-			for out in node.outs {
-				onode := graph_expand(ctx.from, out.id)
-				if onode.itype == .Phi {
-					for inp in onode.inps[1:] {
-						clone_node(ctx, inp)
-					}
-				}
-			}
-		}
-
-		if node.itype == .Loop {
-			for out in node.outs {
-				onode := graph_expand(ctx.from, out.id)
-				if onode.itype == .Phi {
-					clone_node(ctx, onode.inps[1])
-				}
-			}
-		}
-
-		clone_node(ctx, root)
-		nid := ctx.projection[node.gvn]
-
-		for out in node.outs {
-			if !is_cfg(ctx.from, out.id) do continue
-
-			onode := graph_expand(ctx.from, out.id)
-
-			if onode.itype == .Loop && out.idx == 1 {
-				proj := ctx.projection[onode.gvn]
-				graph_connect(ctx.graph, proj, nid)
-
-				for lout in onode.outs {
-					lonode := graph_expand(ctx.from, lout.id)
-					if lonode.itype == .Phi {
-						clone_node(ctx, lonode.inps[2])
-						lproj := ctx.projection[lonode.gvn]
-						lpnode := graph_get(ctx.graph, lproj)
-						backedge := graph_get(ctx.from, lonode.inps[2])
-						bproj := ctx.projection[backedge.gvn]
-						assert(lpnode.btype == .Lazy_Phi)
-						lpnode.itype = .Phi
-						graph_connect(ctx.graph, lproj, bproj)
-						id := graph_intern(ctx.graph, lproj)
-						if id != lproj {
-							graph_subsume(ctx.graph, id, lproj)
-							ctx.projection[lonode.gvn] = id
-						}
-					}
-				}
-
-				continue
-			}
-
-			clone_along_cfg(ctx, out.id)
-		}
-	}
-
-	clone_node :: proc(ctx: ^Ctx, root: Node_ID) {
-		graph := ctx.graph
-
-		node := graph_expand(ctx.from, root)
-		if ctx.projection[node.gvn] != 0 do return
-
-		input_cap := node.input_cap
-		rtype := node.rtype
-		if node.itype not_in KEEP_CAPACITY {
-			input_cap = node.input_count
-		}
-
-		if node.itype == .Loop {
-			input_cap = 1
-		}
-
-		if node.itype == .Phi &&
-		   graph_get(ctx.from, node.inps[0]).itype == .Loop {
-			rtype = u16(Builder_Node_Type.Lazy_Phi)
-			input_cap = 2
-		}
-
-		inps := make([]Node_ID, input_cap)
-		for inp, i in raw_data(node.inps)[:input_cap] {
-			clone_node(ctx, inp)
-			inps[i] = ctx.projection[graph_get(ctx.from, inp).gvn]
-		}
-
-		if node.itype == .Local {
-			if node.inps[0] == ctx.from.root_mem {
-				inps[0] = graph.root_mem
-			}
-
-			if node.inps[0] == ctx.from.entry {
-				inps[0] = graph.entry
-			}
-		}
-
-		if node.itype == .Return do return
-
-		prev := graph.mem.pos
-
-		size :=
-			size_of(Node) +
-			int(graph.node_extra_sizes[node.rtype]) * PRECISION +
-			int(node.extra_dwords) * PRECISION
-		push_node_name(graph, graph_get_node_name(ctx.from, root))
-		slot := arna.alloc(graph.mem, uint(size), PRECISION)
-
-		mem.copy_non_overlapping(raw_data(slot), node.node, len(slot))
-
-		new_node := (^Node)(raw_data(slot))
-		new_node.rtype = rtype
-		new_node.gvn = graph.gvn
-		graph.gvn += 1
-
-		new_node.input_idx = u32(graph.mem.pos / PRECISION)
-		_ = arna.clone(graph.mem, inps)
-		new_node.input_cap = input_cap
-		new_node.input_count = min(new_node.input_count, input_cap)
-
-		new_node.output_idx = u32(graph.mem.pos / PRECISION)
-		_ = arna.alloc(graph.mem, uint(node.output_cap * PRECISION), PRECISION)
-		new_node.output_count = 0
-		new_node.output_cap = node.output_cap
-
-		id := graph_id(graph, new_node)
-		interned := graph_intern(graph, id)
-		if interned != id {
-			graph.mem.pos = prev
-			id = interned
-		} else {
-			for inp, i in inps {
-				graph_add_output(graph, inp, id, i)
-			}
-		}
-
-		ctx.projection[node.gvn] = id
-	}
-
-}
-
 KEEP_CAPACITY :: bit_set[Ideal_Node_Type]{.Call}
 
 graph_compute_weight :: proc(graph: ^Graph, all: []Node_ID) {
-	if graph.node_spec != &SPECS[.Builder] do return
+	if !graph.node_spec.intern do return
 
 	@(static, rodata)
 	WEIGHTS := #partial [Ideal_Node_Type]u8 {
@@ -1067,7 +673,7 @@ graph_compact :: proc(graph: ^Graph) {
 graph_iter_peeps :: proc(ctx: Peep_Ctx) -> (optimized: bool) {
 	graph := ctx.graph
 
-	is_builder := graph.node_spec == &SPECS[.Builder]
+	is_builder := graph.node_spec.intern
 
 	if graph.peeped && is_builder do return
 	graph.peeped = true
@@ -1259,9 +865,32 @@ is_noalias_ptrs :: proc(graph: ^Graph, a, b: Node_ID, as, bs: int) -> bool {
 	return false
 }
 
-base_and_offset :: proc(
+base_and_offset :: proc {
+	base_and_offset_proc,
+	base_and_offset_default,
+}
+
+base_and_offset_default :: proc(
 	graph: ^Graph,
 	node: Node_ID,
+) -> (
+	base: Node_ID,
+	off: int,
+) {
+	return base_and_offset_proc(graph, node, root_addr_add_offset)
+}
+
+base_and_offset_proc :: proc(
+	graph: ^Graph,
+	node: Node_ID,
+	$offn: proc(
+		graph: ^Graph,
+		node: Expanded_Node,
+	) -> (
+		base: Node_ID,
+		off: int,
+		ok: bool,
+	),
 ) -> (
 	base: Node_ID,
 	off: int,
@@ -1277,9 +906,9 @@ base_and_offset :: proc(
 			continue
 		}
 
-		if bnode.xtype == .X64_Add {
-			base = bnode.inps[0]
-			off += int(graph_extra(graph, bnode, X64_Mem_Op).imm)
+		if hbase, hoff, ok := offn(graph, bnode); ok {
+			base = hbase
+			off += hoff
 			continue
 		}
 
@@ -1334,148 +963,6 @@ offset_iter_next :: proc(
 		iter.out_idx += 1
 		return next, true
 	}
-}
-
-graph_start_loop :: proc(graph: ^Graph, scope: Node_ID, state: ^Loop_State) {
-	snode := graph_expand(graph, scope)
-	loop := graph_add_loop(graph, "loop", snode.inps[0])
-	graph_set_input(graph, scope, 0, loop)
-	state.scope = graph_clone(graph, scope)
-
-	graph_add_output(graph, state.scope, 0, 0)
-
-	snode = graph_expand(graph, scope)
-	for i in 1 ..< snode.input_count {
-		graph_set_input(graph, scope, i, state.scope)
-	}
-}
-
-graph_end_loop :: proc(
-	graph: ^Graph,
-	node_scope: ^Node_ID,
-	state: ^Loop_State,
-) {
-	node_scope^ = graph_merge_scopes(
-		graph,
-		node_scope^,
-		state.scopes[.Continue],
-	)
-
-	init := graph_expand(graph, state.scope)
-	loop := init.inps[0]
-	assert(graph_get(graph, loop).itype == .Loop)
-
-	bscope := node_scope^
-	if bscope != 0 {
-		backedge := graph_expand(graph, bscope)
-		assert(init.input_count == backedge.input_count)
-		for i in 1 ..< init.input_count {
-			init := init.inps[i]
-			inode := graph_expand(graph, init)
-			bnode := graph_expand(graph, backedge.inps[i])
-			if inode.btype != .Lazy_Phi || inode.inps[0] != loop do continue
-
-			for {
-				scp := graph_extra(graph, bnode, Scope)
-				if scp == nil || !scp.done || bnode.inps[0] == loop do break
-				bnode = graph_expand(graph, bnode.inps[i])
-			}
-
-			if bnode.btype == .Scope || inode.node == bnode.node {
-				graph_subsume(graph, inode.inps[1], init)
-			} else {
-				graph_connect(graph, init, graph_id(graph, bnode))
-				inode.itype = .Phi
-				id := graph_intern(graph, init)
-				if id != init do graph_subsume(graph, id, init)
-			}
-		}
-
-		assert(graph_get(graph, init.inps[0]).itype == .Loop)
-		graph_connect(graph, init.inps[0], backedge.inps[0])
-	}
-
-	node_scope^ = state.scopes[.Break]
-
-	if node_scope^ != 0 {
-		exit := graph_expand(graph, node_scope^)
-		for i in 1 ..< exit.input_count {
-			enode := graph_expand(graph, exit.inps[i])
-			if enode.btype == .Scope && enode.inps[0] == loop {
-				graph_set_input(graph, node_scope^, i, init.inps[i])
-			}
-		}
-	}
-
-	graph_extra(graph, state.scope, Scope).done = true
-	graph_remove_output(graph, state.scope, {id = 0, idx = 0})
-
-	if bscope != 0 {
-		graph_delete(graph, bscope)
-	} else {
-		for out in graph_outs(graph, loop) {
-			onode := graph_expand(graph, out.id)
-			if onode.btype == .Lazy_Phi {
-				graph_subsume(graph, onode.inps[1], out.id)
-			}
-		}
-
-		graph_subsume(graph, graph_inps(graph, loop)[0], loop)
-	}
-
-	return
-}
-
-graph_loop_control :: proc(
-	variant: Loop_Control,
-	ctx: ^Graph,
-	scope: Node_ID,
-	loop: ^Loop_State,
-) {
-	base_size := graph_get(ctx, loop.scope).input_count
-	graph_truncate_scope(ctx, scope, base_size)
-	loop.scopes[variant] = graph_merge_scopes(ctx, scope, loop.scopes[variant])
-}
-
-graph_merge_returns :: proc(graph: ^Graph, args: []Node_ID) -> Node_ID {
-	if graph.end == 0 {
-		args[0] = graph_add_region(graph, "rret", {args[0], graph.start})
-		for &a in args[1:] {
-			push_node_name(graph, "rphi")
-			a = graph_add_raw(
-				graph,
-				u16(Ideal_Node_Type.Phi),
-				graph_get(graph, a).dt,
-				{args[0], a},
-			)
-		}
-
-		graph.end = graph_add_return(graph, "ret", args)
-	} else {
-		end := graph_expand(graph, graph.end)
-
-		reg := graph_expand(graph, end.inps[0])
-
-		prev_cached := reg.inps[len(reg.inps) - 1]
-		reg.input_count -= 1
-		graph_remove_output(
-			graph,
-			prev_cached,
-			{idx = len(reg.inps) - 1, id = end.inps[0]},
-			no_delete = true,
-		)
-
-		graph_connect(graph, end.inps[0], args[0])
-
-		for i in 1 ..< len(end.inps) {
-			new := i < len(args) ? args[i] : graph_add_poison(graph, "rpsn")
-			graph_connect(graph, end.inps[i], new)
-		}
-
-		graph_connect(graph, end.inps[0], prev_cached)
-	}
-
-	return graph.end
 }
 
 graph_interner_zip :: proc(graph: ^Graph) -> (r: #soa[]SS_Entry(Node_ID)) {
@@ -1711,111 +1198,6 @@ graph_node_eq :: proc(graph: ^Graph, a, b: Node_ID) -> bool {
 	if !slice.equal(ad, bd) do return false
 
 	return true
-}
-
-graph_get_scope_value :: proc(
-	graph: ^Graph,
-	scope: Node_ID,
-	#any_int idx: int,
-) -> Node_ID {
-	snode := graph_get(graph, scope)
-	assert(snode.btype == .Scope)
-
-	val := graph_inps(graph, snode)[idx]
-	vnode := graph_expand(graph, val)
-	loop_scope := graph_extra(graph, vnode, Scope)
-	if loop_scope != nil {
-		pval := val
-		val = graph_get_scope_value(graph, val, idx)
-		cvnode := graph_expand(graph, val)
-		if (cvnode.btype != .Lazy_Phi || vnode.inps[0] != cvnode.inps[0]) &&
-		   !loop_scope.done {
-			assert(graph_get(graph, vnode.inps[0]).itype == .Loop)
-			val = graph_add_lazy_phi(
-				graph,
-				"lphi",
-				graph_get(graph, val).dt,
-				vnode.inps[0],
-				val,
-			)
-			graph_set_input(graph, pval, idx, val)
-		}
-		graph_set_input(graph, scope, idx, val)
-	}
-
-	return val
-}
-
-graph_push_scope_value :: proc(
-	graph: ^Graph,
-	scope: Node_ID,
-	value: Node_ID,
-) -> int {
-	scope_node := graph_get(graph, scope)
-	assert(scope_node.btype == .Scope)
-	return graph_connect(graph, scope, value)
-}
-
-graph_truncate_scope :: proc(
-	graph: ^Graph,
-	scope: Node_ID,
-	#any_int to_len: int,
-) {
-	if scope == 0 do return
-
-	snode := graph_expand(graph, scope)
-	assert(snode.btype == .Scope)
-	assert(to_len <= int(snode.input_count))
-
-	for &inp, i in snode.inps[to_len:] {
-		graph_remove_output(graph, inp, {idx = to_len + i, id = scope})
-		inp = 0
-	}
-
-	snode.input_count = u16(to_len)
-}
-
-graph_merge_scopes :: proc(
-	graph: ^Graph,
-	lctrl: Node_ID,
-	rctrl: Node_ID,
-) -> Node_ID {
-	if lctrl == 0 do return rctrl
-	if rctrl == 0 do return lctrl
-
-	lnode := graph_expand(graph, lctrl)
-	assert(lnode.btype == .Scope)
-	rnode := graph_expand(graph, rctrl)
-	assert(rnode.btype == .Scope)
-
-	assert(lnode.input_count == rnode.input_count)
-
-	region := graph_add_region(
-		graph,
-		"reg",
-		{lnode.inps[0], rnode.inps[0], graph.start},
-	)
-
-	for i in 1 ..< lnode.input_count {
-		if lnode.inps[i] == rnode.inps[i] do continue
-		lvalue := graph_get_scope_value(graph, lctrl, i)
-		rvalue := graph_get_scope_value(graph, rctrl, i)
-		if lvalue == rvalue do continue
-		phi := graph_add_phi(
-			graph,
-			"phi",
-			graph_get(graph, lvalue).dt,
-			region,
-			lvalue,
-			rvalue,
-		)
-		graph_set_input(graph, lctrl, i, phi)
-	}
-
-	graph_set_input(graph, lctrl, 0, region)
-	graph_delete(graph, rnode)
-
-	return lctrl
 }
 
 graph_set_input :: proc(
@@ -2073,6 +1455,47 @@ graph_add_raw :: proc(
 	graph.gvn += 1
 
 	return
+}
+
+graph_merge_returns :: proc(graph: ^Graph, args: []Node_ID) -> Node_ID {
+	if graph.end == 0 {
+		args[0] = graph_add_region(graph, "rret", {args[0], graph.start})
+		for &a in args[1:] {
+			push_node_name(graph, "rphi")
+			a = graph_add_raw(
+				graph,
+				u16(Ideal_Node_Type.Phi),
+				graph_get(graph, a).dt,
+				{args[0], a},
+			)
+		}
+
+		graph.end = graph_add_return(graph, "ret", args)
+	} else {
+		end := graph_expand(graph, graph.end)
+
+		reg := graph_expand(graph, end.inps[0])
+
+		prev_cached := reg.inps[len(reg.inps) - 1]
+		reg.input_count -= 1
+		graph_remove_output(
+			graph,
+			prev_cached,
+			{idx = len(reg.inps) - 1, id = end.inps[0]},
+			no_delete = true,
+		)
+
+		graph_connect(graph, end.inps[0], args[0])
+
+		for i in 1 ..< len(end.inps) {
+			new := i < len(args) ? args[i] : graph_add_poison(graph, "rpsn")
+			graph_connect(graph, end.inps[i], new)
+		}
+
+		graph_connect(graph, end.inps[0], prev_cached)
+	}
+
+	return graph.end
 }
 
 graph_connect :: proc(graph: ^Graph, use: Node_ID, def: Node_ID) -> int {

@@ -163,7 +163,7 @@ Code :: struct {
 
 // Element types are now carried directly by each `Array(T)`; the old flat
 // stride table is gone.
-typecheck.Module :: struct {
+Module :: struct {
 	ok:            bool,
 	version:       u32,
 	section_count: int,

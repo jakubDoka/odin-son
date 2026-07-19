@@ -13,7 +13,7 @@ print_name_bytes :: proc(data: string, off: int, length: int) {
 	}
 }
 
-print_functype :: proc(a: ^Arena, m: ^typecheck.Module, ft: ^FuncType) {
+print_functype :: proc(a: ^Arena, m: ^Module, ft: ^FuncType) {
 	print("(")
 	i := 0
 	for {
@@ -72,7 +72,7 @@ print_const_expr :: proc(op: int, val: i64) {
 	}
 }
 
-dump_module :: proc(a: ^Arena, m: ^typecheck.Module, data: string) {
+dump_module :: proc(a: ^Arena, m: ^Module, data: string) {
 	if m.ok {
 		print("magic ok version ")
 	} else {

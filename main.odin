@@ -2,6 +2,7 @@
 package main
 
 import "backend"
+import "backend/x64"
 import "typecheck"
 import "core:fmt"
 import "core:log"
@@ -103,8 +104,8 @@ main :: proc() {
 	ctx: Gen_Ctx
 	ctx.types = &types
 	ctx.global = &global_ctx
-	ctx.cc = &backend.X64_SYSTEMV_CC
-	ctx.target_spec = &backend.SPECS[.X64]
+	ctx.cc = &x64.X64_SYSTEMV_CC
+	ctx.target_spec = &x64.SPEC
 
 	load_program(&ctx, input)
 	typecheck.typecheck_program(&ctx)

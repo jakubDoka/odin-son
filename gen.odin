@@ -1,7 +1,9 @@
 package main
 
 import "backend"
+import "backend/builder"
 import "backend/regalloc"
+import "backend/x64"
 import "base:runtime"
 import "core:fmt"
 import "core:mem"
@@ -236,7 +238,7 @@ ctx_ctrl :: proc(ctx: ^Gen_Ctx) -> backend.Node_ID {
 }
 
 ctx_mem :: proc(ctx: ^Gen_Ctx) -> backend.Node_ID {
-	return backend.graph_get_scope_value(ctx, ctx.node_scope, ctx.mem_slot)
+	return builder.graph_get_scope_value(ctx, ctx.node_scope, ctx.mem_slot)
 }
 
 ctx_set_mem :: proc(ctx: ^Gen_Ctx, mem: backend.Node_ID) {
@@ -699,7 +701,7 @@ inline_and_optimize :: proc(
 
 		slot: arna.Allocator
 		graph: backend.Graph
-		graph.node_spec = &backend.SPECS[.Builder]
+		graph.node_spec = &builder.SPEC
 		graph.mem = &slot
 		backend.graph_mount_stencil(&graph, prc.stencil)
 
@@ -870,7 +872,7 @@ inline_and_optimize :: proc(
 				continue
 			}
 
-			backend.graph_inline(ctx, sim.node, callee.stencil)
+			builder.graph_inline(ctx, sim.node, callee.stencil)
 			inline_count += 1
 
 			slt^ = slt^[:len(slt^) - 1]
@@ -881,7 +883,7 @@ inline_and_optimize :: proc(
 		}
 
 		backend.graph_iter_peeps({graph = ctx})
-		backend.memopt(ctx)
+		builder.memopt(ctx)
 		backend.graph_iter_peeps({graph = ctx})
 		backend.graph_compact(ctx)
 
@@ -913,7 +915,7 @@ emit_proc :: proc(
 	ctx.file = prc.file
 	ctx.file_id = prc.file_id
 	ctx.graph = {}
-	ctx.node_spec = &backend.SPECS[.Builder]
+	ctx.node_spec = &builder.SPEC
 	ctx.mem = &ctx.mems.graph
 	ctx.mem.pos = backend.PRECISION
 	ctx.opt_flags = level.flags
@@ -941,8 +943,8 @@ emit_proc :: proc(
 	ctx.root_mem = backend.graph_add_mem(ctx, "emem", ctx.entry)
 	ctx.sym = backend.graph_add_sym(ctx, "sym", ctx.entry)
 
-	ctx.node_scope = backend.graph_add_scope(ctx, "scope", ctx.entry)
-	ctx.mem_slot = backend.graph_push_scope_value(
+	ctx.node_scope = builder.graph_add_scope(ctx, "scope", ctx.entry)
+	ctx.mem_slot = builder.graph_push_scope_value(
 		ctx,
 		ctx.node_scope,
 		ctx.root_mem,
@@ -1015,7 +1017,7 @@ emit_proc :: proc(
 
 		value_idx: typecheck.Varuable_Idx
 		if apa.scalar && !apa.by_ptr {
-			value_idx = backend.graph_push_scope_value(
+			value_idx = builder.graph_push_scope_value(
 				ctx,
 				ctx.node_scope,
 				value,
@@ -1059,7 +1061,7 @@ emit_proc :: proc(
 	peep_ctx.graph = ctx
 
 	backend.graph_iter_peeps(peep_ctx)
-	backend.memopt(ctx)
+	builder.memopt(ctx)
 
 	backend.graph_iter_peeps(peep_ctx)
 
@@ -1078,7 +1080,7 @@ emit_proc_code :: proc(
 	emit_ctx: ^backend.Codegen_Emit_Ctx,
 	prc: ^typecheck.Proc,
 ) {
-	spec := &backend.SPECS[.X64]
+	spec := &x64.SPEC
 	ctx.node_spec = spec
 
 	peep_ctx: backend.Peep_Ctx
@@ -1095,7 +1097,7 @@ emit_proc_code :: proc(
 
 	ra: backend.Regalloc
 	ra.spec = spec
-	ra.cc = &backend.X64_SYSTEMV_CC
+	ra.cc = &x64.X64_SYSTEMV_CC
 
 	regs := regalloc.regalloc(
 		&ra,
@@ -1142,7 +1144,7 @@ emit_stmts :: proc(
 	}
 	assert(base.gen <= len(ctx.scope))
 	resize(&ctx.scope, base.gen)
-	backend.graph_truncate_scope(ctx, ctx.node_scope, base.node)
+	builder.graph_truncate_scope(ctx, ctx.node_scope, base.node)
 }
 
 emit_nodes :: proc(
@@ -1261,7 +1263,7 @@ emit_nodes :: proc(
 						name,
 						op,
 						typecheck.type_to_dt(typecheck.get_node_type(lhs)),
-						backend.graph_get_scope_value(
+						builder.graph_get_scope_value(
 							ctx,
 							ctx.node_scope,
 							sym,
@@ -1519,7 +1521,7 @@ emit_nodes :: proc(
 					)
 				} else {
 					backend.graph_set_name(ctx, r.id, name)
-					idx := backend.graph_push_scope_value(
+					idx := builder.graph_push_scope_value(
 						ctx,
 						ctx.node_scope,
 						r.id,
@@ -1618,7 +1620,7 @@ emit_nodes :: proc(
 					d.values[i],
 				)
 				backend.graph_set_name(ctx, value, name)
-				idx := backend.graph_push_scope_value(
+				idx := builder.graph_push_scope_value(
 					ctx,
 					ctx.node_scope,
 					value,
@@ -1822,8 +1824,11 @@ emit_nodes :: proc(
 		sym := ctx_lookup_lvalue(ctx, d)
 		switch sym in sym {
 		case int:
-			res = backend.graph_get_scope_value(ctx, ctx.node_scope, sym)
-			assert(backend.graph_get(ctx, res).btype != .Scope)
+			res = builder.graph_get_scope_value(ctx, ctx.node_scope, sym)
+			assert(
+				builder.Builder_Node_Type(backend.graph_get(ctx, res).rtype) !=
+				.Scope,
+			)
 		case Value:
 			res, lvalue = unpack(sym)
 		}
@@ -1832,19 +1837,19 @@ emit_nodes :: proc(
 	case ^ast.If_Stmt:
 		cond := to_rvalue(ctx, emit_nodes(ctx, {}, d.cond), d.cond)
 
-		if_state: backend.If_State
-		backend.graph_start_if(ctx, ctx.node_scope, &if_state, cond)
+		if_state: builder.If_State
+		builder.graph_start_if(ctx, ctx.node_scope, &if_state, cond)
 		emit_nodes(ctx, {}, d.body)
-		backend.graph_start_else(ctx, &ctx.node_scope, &if_state)
+		builder.graph_start_else(ctx, &ctx.node_scope, &if_state)
 		emit_nodes(ctx, {}, d.else_stmt)
-		backend.graph_end_else(ctx, &ctx.node_scope, &if_state)
+		builder.graph_end_else(ctx, &ctx.node_scope, &if_state)
 	case ^ast.Switch_Stmt:
 		condv := to_rvalue(ctx, emit_nodes(ctx, {}, d.cond), d.cond)
 		backend.graph_pin(ctx, condv)
 
 		body := d.body.derived.(^ast.Block_Stmt)
-		sw: backend.Block_State
-		backend.graph_start_block(&sw)
+		sw: builder.Block_State
+		builder.graph_start_block(&sw)
 		default_clause: ^ast.Case_Clause
 		for clause_node in body.stmts {
 			clause := clause_node.derived.(^ast.Case_Clause)
@@ -1861,19 +1866,19 @@ emit_nodes :: proc(
 					cond == 0 ? eq : backend.graph_add_bin_op(ctx, "sor", .Or, .I8, cond, eq)
 			}
 
-			arm: backend.If_State
-			backend.graph_start_if(ctx, ctx.node_scope, &arm, cond)
+			arm: builder.If_State
+			builder.graph_start_if(ctx, ctx.node_scope, &arm, cond)
 			emit_stmts(ctx, clause.body)
-			backend.graph_break_block(ctx, &ctx.node_scope, &sw)
-			backend.graph_start_else(ctx, &ctx.node_scope, &arm)
-			backend.graph_end_else(ctx, &ctx.node_scope, &arm)
+			builder.graph_break_block(ctx, &ctx.node_scope, &sw)
+			builder.graph_start_else(ctx, &ctx.node_scope, &arm)
+			builder.graph_end_else(ctx, &ctx.node_scope, &arm)
 		}
 
 		if default_clause != nil {
 			emit_stmts(ctx, default_clause.body)
 		}
 
-		backend.graph_end_block(ctx, &ctx.node_scope, &sw)
+		builder.graph_end_block(ctx, &ctx.node_scope, &sw)
 
 		backend.graph_unpin(ctx, condv)
 	case ^ast.Type_Switch_Stmt:
@@ -1893,8 +1898,8 @@ emit_nodes :: proc(
 		backend.graph_pin(ctx, tagv)
 
 		body := d.body.derived.(^ast.Block_Stmt)
-		sw: backend.Block_State
-		backend.graph_start_block(&sw)
+		sw: builder.Block_State
+		builder.graph_start_block(&sw)
 		default_clause: ^ast.Case_Clause
 		for clause_node in body.stmts {
 			clause := clause_node.derived.(^ast.Case_Clause)
@@ -1908,8 +1913,8 @@ emit_nodes :: proc(
 			cval := backend.graph_add_c_int(ctx, "tsc", tag_dt, i64(idx + 1))
 			cond := backend.graph_add_bin_op(ctx, "tseq", .Eq, .I8, tagv, cval)
 
-			arm: backend.If_State
-			backend.graph_start_if(ctx, ctx.node_scope, &arm, cond)
+			arm: builder.If_State
+			builder.graph_start_if(ctx, ctx.node_scope, &arm, cond)
 			{
 				base := ctx_scope_base(ctx)
 				backend.graph_pin(ctx, ptr)
@@ -1924,10 +1929,10 @@ emit_nodes :: proc(
 					},
 				)
 				emit_stmts(ctx, clause.body, base)
-				backend.graph_break_block(ctx, &ctx.node_scope, &sw)
+				builder.graph_break_block(ctx, &ctx.node_scope, &sw)
 			}
-			backend.graph_start_else(ctx, &ctx.node_scope, &arm)
-			backend.graph_end_else(ctx, &ctx.node_scope, &arm)
+			builder.graph_start_else(ctx, &ctx.node_scope, &arm)
+			builder.graph_end_else(ctx, &ctx.node_scope, &arm)
 		}
 
 		if default_clause != nil {
@@ -1946,7 +1951,7 @@ emit_nodes :: proc(
 			emit_stmts(ctx, default_clause.body, base)
 		}
 
-		backend.graph_end_block(ctx, &ctx.node_scope, &sw)
+		builder.graph_end_block(ctx, &ctx.node_scope, &sw)
 
 		backend.graph_unpin(ctx, tagv)
 		backend.graph_unpin(ctx, ptr)
@@ -1960,10 +1965,10 @@ emit_nodes :: proc(
 		loop_state.parent = ctx.loop
 		ctx.loop = &loop_state
 
-		backend.graph_start_loop(ctx, ctx.node_scope, &loop_state)
+		builder.graph_start_loop(ctx, ctx.node_scope, &loop_state.bstate)
 		emit_nodes(ctx, {}, d.body)
 
-		backend.graph_end_loop(ctx, &ctx.node_scope, &loop_state)
+		builder.graph_end_loop(ctx, &ctx.node_scope, &loop_state.bstate)
 
 		ctx.loop = ctx.loop.parent
 	case ^ast.Call_Expr:
@@ -2152,7 +2157,7 @@ emit_nodes :: proc(
 		}
 		assert(loop != nil)
 
-		variant := backend.Loop_Control(-1)
+		variant := builder.Loop_Control(-1)
 		#partial switch d.tok.kind {
 		case .Break:
 			variant = .Break
@@ -2162,7 +2167,7 @@ emit_nodes :: proc(
 			fmt.panicf("TODO: %#v", node.derived)
 		}
 
-		backend.graph_loop_control(variant, ctx, ctx.node_scope, loop)
+		builder.graph_loop_control(variant, ctx, ctx.node_scope, &loop.bstate)
 		ctx.node_scope = 0
 	case ^ast.Proc_Lit:
 		meta := typecheck.get_node_meta(node)

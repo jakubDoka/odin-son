@@ -3,6 +3,7 @@ package main
 
 import zydis "./zydis"
 import "backend"
+import "backend/x64"
 import "typecheck"
 import "base:intrinsics"
 import "base:runtime"
@@ -81,8 +82,8 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 	ctx: Gen_Ctx
 	ctx.types = &types
 	ctx.global = &global_ctx
-	ctx.cc = &backend.X64_SYSTEMV_CC
-	ctx.target_spec = &backend.SPECS[.X64]
+	ctx.cc = &x64.X64_SYSTEMV_CC
+	ctx.target_spec = &x64.SPEC
 
 	typecheck.init_single_file_program(&ctx, &f)
 	typecheck.typecheck_program(&ctx)

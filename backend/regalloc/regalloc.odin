@@ -1,6 +1,7 @@
 package regalloc
 
 import ".."
+import "../x64"
 import "../../vendored/gam/util/arna"
 import "../../vendored/gam/util/bit_arr"
 import "base:runtime"
@@ -1173,7 +1174,7 @@ regalloc_round :: proc(
 						   readonly = true,
 					   ),
 				   ) or_else 0) >=
-			   backend.GPA_REG_COUNT {
+			   x64.GPA_REG_COUNT {
 			return use
 		}
 

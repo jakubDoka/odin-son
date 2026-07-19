@@ -1,6 +1,7 @@
 package typecheck
 
 import "../backend"
+import "../backend/builder"
 import "../vendored/gam/util/arna"
 import "base:runtime"
 import "core:fmt"
@@ -60,7 +61,7 @@ Loop_Control :: enum int {
 Loop_State :: struct {
 	parent:       ^Loop_State,
 	label:        string,
-	using bstate: backend.Loop_State,
+	using bstate: builder.Loop_State,
 }
 
 Lit :: struct #raw_union {

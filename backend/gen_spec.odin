@@ -174,16 +174,14 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 @(rodata)
 IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec{}
 
-@(rodata)
-BUILDER_REG_CLASSES := [Builder_Node_Type]Reg_Class_Spec{}
-
 Inherit_Table_Elem :: u16
 Mask_Intern_Key :: u8
 
 Class_Array :: struct {
-	enm:  typeid,
-	ids:  []Class_Spec,
-	regs: []Reg_Class_Spec,
+	enm:       typeid,
+	ids:       []Class_Spec,
+	regs:      []Reg_Class_Spec,
+	gen_ctors: bool,
 }
 
 Peep_Fn :: proc(_: Peep_Ctx, _: Expanded_Node) -> Node_ID
@@ -210,47 +208,7 @@ Reg_Class_Spec :: struct {
 SPEC_NOT_PRESENT :: (#load("node_specs.odin", string) or_else "") == ""
 
 when SPEC_NOT_PRESENT {
-	@(rodata)
-	SPECS := [Node_Spec_Name]Node_Spec{}
-
-	Builder_Node_Type :: enum u16 {
-		Scope,
-		Lazy_Phi,
-		Dead,
-	}
-
-	@(rodata)
-	BUILDER_CLASSES := [Builder_Node_Type]Class_Spec {
-		.Scope = {id = Scope, args = {"cfg"}, default_type = .Void},
-		.Lazy_Phi = {args = {"reg", "lhs"}, extra_capacity = 1},
-		.Dead = {default_type = .Void},
-	}
-
 	inherit_idx_of :: proc($T: typeid) -> u8 {return 0}
-
-	graph_add_split :: proc(
-		graph: ^Graph,
-		name: string,
-		dt: Node_Datatype,
-		src: Node_ID,
-	) -> Node_ID {return 0}
-
-	graph_add_phi :: proc(
-		graph: ^Graph,
-		name: string,
-		dt: Node_Datatype,
-		region: Node_ID,
-		lhs: Node_ID,
-		rhs: Node_ID,
-	) -> Node_ID {return 0}
-
-	graph_add_lazy_phi :: proc(
-		graph: ^Graph,
-		name: string,
-		dt: Node_Datatype,
-		region: Node_ID,
-		lhs: Node_ID,
-	) -> Node_ID {return 0}
 
 	graph_add_return :: proc(
 		graph: ^Graph,
@@ -263,40 +221,56 @@ when SPEC_NOT_PRESENT {
 		name: string,
 		ctrls: []Node_ID,
 	) -> Node_ID {return 0}
-	graph_add_if :: proc(
-		graph: ^Graph,
-		name: string,
-		ctrl: Node_ID,
-		cond: Node_ID,
-	) -> Node_ID {return 0}
 
 	graph_add_jump :: proc(
 		graph: ^Graph,
 		name: string,
 		ctrl: Node_ID,
 	) -> Node_ID {return 0}
-	graph_add_loop :: graph_add_jump
 	graph_add_always :: graph_add_jump
 	graph_add_then :: graph_add_jump
 	graph_add_else :: graph_add_jump
-	graph_add_local :: graph_add_jump
-	graph_add_local_addr :: graph_add_jump
-
 	graph_add_poison :: proc(graph: ^Graph, name: string) -> Node_ID {return 0}
-	graph_add_global :: graph_add_poison
-
 	when !GEN_SPEC {
 		#panic("Missing generated files, run `" + COMMAND + "`")
 	}
-} else {
-	@(rodata)
-	BUILDER_CLASSES := [Builder_Node_Type]Class_Spec{}
-	@(rodata)
-	X64_CLASSES := [X64_Node_Type]Class_Spec{}
+}
+
+// stubs for the unused-but-generated SPEC value below: nothing ever runs a
+// graph under root's own spec (every graph is Builder's or a codegen
+// target's), this generation pass only exists to derive inherit_idx_of
+root_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node, _: $T) -> Node_ID {
+	return 0
+}
+root_post_schedule_peep :: proc(
+	ctx: PS_Peep_Ctx,
+	node: Expanded_Node,
+	_: $T,
+) -> Node_ID {
+	return 0
+}
+root_addr_add_offset :: proc(
+	graph: ^Graph,
+	node: Expanded_Node,
+) -> (
+	base: Node_ID,
+	off: int,
+	ok: bool,
+) {
+	return
 }
 
 when GEN_SPEC {
 	main :: proc() {
-		generate_specs()
+		generate_spec(
+			Spec_Gen_Input {
+				package_name = "backend",
+				gen_command = COMMAND,
+				name = "Root",
+				classes = {ts(&IDEAL_CLASSES, &IDEAL_REG_CLASSES)},
+				no_spec_tables = true,
+			},
+			"backend/node_specs.odin",
+		)
 	}
 }

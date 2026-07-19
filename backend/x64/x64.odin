@@ -1,7 +1,8 @@
-package backend
+package x64
 
-import "../vendored/gam/util/arna"
-import "../vendored/gam/util/bit_arr"
+import backend ".."
+import "../../vendored/gam/util/arna"
+import "../../vendored/gam/util/bit_arr"
 import "base:intrinsics"
 import "core:fmt"
 import "core:math"
@@ -9,6 +10,25 @@ import "core:mem"
 import "core:reflect"
 import "core:slice"
 import "core:sort"
+
+xtype :: #force_inline proc(node: backend.Expanded_Node) -> X64_Node_Type {
+	return X64_Node_Type(node.rtype)
+}
+
+// mirrors backend.graph_extra, but resolved against this package's own
+// (generated) inherit_idx_of, since that generic proc's body is bound to
+// whichever package declares it and backend's copy knows nothing about
+// X64-only extra-data types such as X64_Mem_Op
+x64_extra :: #force_inline proc(
+	graph: ^backend.Graph,
+	node: ^backend.Node,
+	$T: typeid,
+) -> ^T {
+	if graph.inheritance_table[node.rtype] & (1 << inherit_idx_of(T)) == 0 {
+		return nil
+	}
+	return (^T)(&node.extra)
+}
 
 NOOP_REX :: 0b0100_0000
 
@@ -30,43 +50,43 @@ RDX_MASK :: []i64{1 << uint(RDX)}
 
 RCX_MASK :: []i64{1 << uint(RCX)}
 
-VEC_BANK :: u16(Reg_Kind.Vector) << 12
-XMM0 :: Reg(VEC_BANK | 0)
-XMM1 :: Reg(VEC_BANK | 1)
-XMM2 :: Reg(VEC_BANK | 2)
-XMM3 :: Reg(VEC_BANK | 3)
-XMM4 :: Reg(VEC_BANK | 4)
-XMM5 :: Reg(VEC_BANK | 5)
-XMM6 :: Reg(VEC_BANK | 6)
-XMM7 :: Reg(VEC_BANK | 7)
-XMM8 :: Reg(VEC_BANK | 8)
-XMM9 :: Reg(VEC_BANK | 9)
-XMM10 :: Reg(VEC_BANK | 10)
-XMM11 :: Reg(VEC_BANK | 11)
-XMM12 :: Reg(VEC_BANK | 12)
-XMM13 :: Reg(VEC_BANK | 13)
-XMM14 :: Reg(VEC_BANK | 14)
-XMM15 :: Reg(VEC_BANK | 15)
+VEC_BANK :: u16(backend.Reg_Kind.Vector) << 12
+XMM0 :: backend.Reg(VEC_BANK | 0)
+XMM1 :: backend.Reg(VEC_BANK | 1)
+XMM2 :: backend.Reg(VEC_BANK | 2)
+XMM3 :: backend.Reg(VEC_BANK | 3)
+XMM4 :: backend.Reg(VEC_BANK | 4)
+XMM5 :: backend.Reg(VEC_BANK | 5)
+XMM6 :: backend.Reg(VEC_BANK | 6)
+XMM7 :: backend.Reg(VEC_BANK | 7)
+XMM8 :: backend.Reg(VEC_BANK | 8)
+XMM9 :: backend.Reg(VEC_BANK | 9)
+XMM10 :: backend.Reg(VEC_BANK | 10)
+XMM11 :: backend.Reg(VEC_BANK | 11)
+XMM12 :: backend.Reg(VEC_BANK | 12)
+XMM13 :: backend.Reg(VEC_BANK | 13)
+XMM14 :: backend.Reg(VEC_BANK | 14)
+XMM15 :: backend.Reg(VEC_BANK | 15)
 
 XMM_MASK :: []i64{0xFFFF}
 XMM_SPILL_MASK :: []i64{~i64(0)}
 
-RAX :: Reg(0)
-RCX :: Reg(1)
-RDX :: Reg(2)
-RBX :: Reg(3)
-RSP :: Reg(4)
-RBP :: Reg(5)
-RSI :: Reg(6)
-RDI :: Reg(7)
-R8 :: Reg(8)
-R9 :: Reg(9)
-R10 :: Reg(10)
-R11 :: Reg(11)
-R12 :: Reg(12)
-R13 :: Reg(13)
-R14 :: Reg(14)
-R15 :: Reg(15)
+RAX :: backend.Reg(0)
+RCX :: backend.Reg(1)
+RDX :: backend.Reg(2)
+RBX :: backend.Reg(3)
+RSP :: backend.Reg(4)
+RBP :: backend.Reg(5)
+RSI :: backend.Reg(6)
+RDI :: backend.Reg(7)
+R8 :: backend.Reg(8)
+R9 :: backend.Reg(9)
+R10 :: backend.Reg(10)
+R11 :: backend.Reg(11)
+R12 :: backend.Reg(12)
+R13 :: backend.Reg(13)
+R14 :: backend.Reg(14)
+R15 :: backend.Reg(15)
 RIP :: RBP
 
 GPA_REG_COUNT :: 16
@@ -83,7 +103,7 @@ GPA_REG_COUNT :: 16
 // arguments
 
 @(rodata)
-X64_SYSTEMV_CC := Call_Conv {
+X64_SYSTEMV_CC := backend.Call_Conv {
 	name = "X64_SYSTEMV_CC",
 	callee_saved = #partial{.General = {RBX, RBP, R12, R13, R14, R15}},
 	caller_saved = #partial{
@@ -116,7 +136,7 @@ X64_SYSTEMV_CC := Call_Conv {
 }
 
 @(rodata)
-X64_LINUX_SYSCALL_CC := Call_Conv {
+X64_LINUX_SYSCALL_CC := backend.Call_Conv {
 	name = "X64_LINUX_SYSCALL_CC",
 	callee_saved = #partial{
 		.General = {RBX, RDX, RDI, RSI, RBP, R8, R9, R10, R12, R13, R14, R15},
@@ -127,21 +147,21 @@ X64_LINUX_SYSCALL_CC := Call_Conv {
 	is_syscall = true,
 }
 
-SIMPLE_BINOP_SPEC :: Reg_Class_Spec {
+SIMPLE_BINOP_SPEC :: backend.Reg_Class_Spec {
 	reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
 	inplace_slot_idx = 0,
 }
 
-SIMPLE_CMP_SPEC :: Reg_Class_Spec {
+SIMPLE_CMP_SPEC :: backend.Reg_Class_Spec {
 	reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK}},
 }
 
-SIMPLE_SHIFT_SPEC :: Reg_Class_Spec {
+SIMPLE_SHIFT_SPEC :: backend.Reg_Class_Spec {
 	reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, RCX_MASK}},
 	inplace_slot_idx = 0,
 }
 
-SIMPLE_UNOP_SPEC :: Reg_Class_Spec {
+SIMPLE_UNOP_SPEC :: backend.Reg_Class_Spec {
 	reg_masks = #partial{
 		.General = {GPA_MASK, GPA_MASK},
 		.Vector = {XMM_MASK, XMM_MASK},
@@ -149,33 +169,33 @@ SIMPLE_UNOP_SPEC :: Reg_Class_Spec {
 	inplace_slot_idx = 0,
 }
 
-RELAXED_UNOP_SPEC :: Reg_Class_Spec {
+RELAXED_UNOP_SPEC :: backend.Reg_Class_Spec {
 	reg_masks = #partial{.General = {GPA_MASK, GPA_MASK}},
 }
 
-DIV_SPEC :: Reg_Class_Spec {
+DIV_SPEC :: backend.Reg_Class_Spec {
 	reg_masks = #partial{.General = {RAX_MASK, RAX_MASK, GPA_DIV_MASK}},
 	inplace_slot_idx = 0,
 	clobbers = #partial{.General = 1 << uint(RDX)},
 }
 
-FLOAT_BINOP_SPEC :: Reg_Class_Spec {
+FLOAT_BINOP_SPEC :: backend.Reg_Class_Spec {
 	reg_masks = #partial{.Vector = {XMM_MASK, XMM_MASK, XMM_MASK}},
 	inplace_slot_idx = 0,
 }
 
-FLOAT_CMP_SPEC :: Reg_Class_Spec {
+FLOAT_CMP_SPEC :: backend.Reg_Class_Spec {
 	reg_masks = #partial{
 		.Vector = {{}, XMM_MASK, XMM_MASK},
 		.General = {GPA_MASK},
 	},
 }
 
-FLOAT_CONV_SPEC :: Reg_Class_Spec {
+FLOAT_CONV_SPEC :: backend.Reg_Class_Spec {
 	reg_masks = #partial{.Vector = {XMM_MASK, XMM_MASK}},
 }
 
-REM_SPEC :: Reg_Class_Spec {
+REM_SPEC :: backend.Reg_Class_Spec {
 	reg_masks = #partial{.General = {RDX_MASK, RAX_MASK, GPA_DIV_MASK}},
 	clobbers = #partial{.General = 1 << uint(RAX)},
 }
@@ -186,7 +206,7 @@ Instr_Info :: struct {
 }
 
 @(rodata)
-X64_IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec {
+X64_IDEAL_REG_CLASSES := [backend.Ideal_Node_Type]backend.Reg_Class_Spec {
 	.Start = {},
 	.Entry = {},
 	.Poison = {},
@@ -283,7 +303,7 @@ X64_IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec {
 	.Region = {},
 	.Loop = {},
 	.Always = {input_start_idx = 1},
-	.Call = {input_start_idx = CALL_PREFIX},
+	.Call = {input_start_idx = backend.CALL_PREFIX},
 	.Copy = {
 		input_start_idx = 2,
 		reg_masks = #partial{.General = {{}, RDI_MASK, RSI_MASK, RDX_MASK}},
@@ -300,16 +320,16 @@ X64_IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec {
 	},
 }
 
-X64_SIMPE_OP :: Reg_Class_Spec {
+X64_SIMPE_OP :: backend.Reg_Class_Spec {
 	inplace_slot_idx = 0,
 	reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK, GPA_MASK}},
 }
 
-X64_SIMPE_CMP_OP :: Reg_Class_Spec {
+X64_SIMPE_CMP_OP :: backend.Reg_Class_Spec {
 	reg_masks = #partial{.General = {GPA_MASK, GPA_MASK, GPA_MASK, GPA_MASK}},
 }
 
-X64_SIMPE_FCMP_OP :: Reg_Class_Spec {
+X64_SIMPE_FCMP_OP :: backend.Reg_Class_Spec {
 	reg_masks = #partial{
 		.General = {GPA_MASK, GPA_MASK, GPA_MASK, GPA_MASK},
 		.Vector = {XMM_MASK, XMM_MASK, XMM_MASK, XMM_MASK},
@@ -321,7 +341,7 @@ X64_SIMPE_FCMP_OP :: Reg_Class_Spec {
 // out of register allocation when it is rsp/rip relative (via data_start). the
 // per-index masks carry both banks so the same table works whether the first
 // data input is the gpr base or the xmm value.
-X64_FLOAT_SRC_OP :: Reg_Class_Spec {
+X64_FLOAT_SRC_OP :: backend.Reg_Class_Spec {
 	inplace_slot_idx = 0,
 	reg_masks = #partial{
 		.Vector = {XMM_MASK, XMM_MASK, XMM_MASK, {}},
@@ -330,7 +350,7 @@ X64_FLOAT_SRC_OP :: Reg_Class_Spec {
 }
 
 @(rodata)
-X64_REG_CLASSES := #partial [X64_Node_Type]Reg_Class_Spec {
+X64_REG_CLASSES := #partial [X64_Node_Type]backend.Reg_Class_Spec {
 	.X64_Add ..= .X64_Xor = X64_SIMPE_OP,
 	.X64_Eq ..= .X64_U_Ge = X64_SIMPE_CMP_OP,
 	.X64_Shl ..= .X64_U_Shr = SIMPLE_SHIFT_SPEC,
@@ -371,7 +391,15 @@ X64_REG_CLASSES := #partial [X64_Node_Type]Reg_Class_Spec {
 	},
 }
 
+GEN_SPEC :: #config(X64_GEN_SPEC, false)
+
+COMMAND :: "odin run backend/x64 -define:X64_GEN_SPEC=true"
+
+SPEC_NOT_PRESENT :: (#load("node_specs.odin", string) or_else "") == ""
+
 when SPEC_NOT_PRESENT {
+	inherit_idx_of :: proc($T: typeid) -> u8 {return 0}
+
 	X64_Node_Type :: enum u16 {
 		X64_Add,
 		X64_Sub,
@@ -412,23 +440,23 @@ when SPEC_NOT_PRESENT {
 		X64_Fma_213,
 	}
 
-	X64_SIMPLE_BIN_OP_SPEC :: Class_Spec {
+	X64_SIMPLE_BIN_OP_SPEC :: backend.Class_Spec {
 		id      = X64_Mem_Op,
 		no_ctor = true,
 	}
 
-	X64_SIMPLE_SHIFT_OP_SPEC :: Class_Spec {
+	X64_SIMPLE_SHIFT_OP_SPEC :: backend.Class_Spec {
 		id      = X64_Mem_Op,
 		no_ctor = true,
 	}
 
-	X64_SIMPLE_UN_OP_SPEC :: Class_Spec {
+	X64_SIMPLE_UN_OP_SPEC :: backend.Class_Spec {
 		id      = X64_Mem_Op,
 		no_ctor = true,
 	}
 
 	@(rodata)
-	X64_CLASSES := [X64_Node_Type]Class_Spec {
+	X64_CLASSES := [X64_Node_Type]backend.Class_Spec {
 		.X64_Add ..= .X64_U_Ge = X64_SIMPLE_BIN_OP_SPEC,
 		.X64_Shl ..= .X64_U_Shr = X64_SIMPLE_SHIFT_OP_SPEC,
 		.X64_Neg ..= .X64_Not = X64_SIMPLE_UN_OP_SPEC,
@@ -442,6 +470,13 @@ when SPEC_NOT_PRESENT {
 		.X64_F_Add ..= .X64_F_Div = {id = X64_Mem_Op, no_ctor = true},
 		.X64_Fma_213 = {id = X64_Mem_Op, no_ctor = true},
 	}
+
+	when !GEN_SPEC {
+		#panic("Missing generated files, run `" + COMMAND + "`")
+	}
+} else {
+	@(rodata)
+	X64_CLASSES := [X64_Node_Type]backend.Class_Spec{}
 }
 
 Mem_Mode :: enum u8 {
@@ -456,59 +491,68 @@ X64_Mem_Op :: struct {
 	scale:    u8,
 	signed:   bool,
 	mem_mode: Mem_Mode,
-	dt:       Node_Datatype,
+	dt:       backend.Node_Datatype,
 }
 
 BIN_OP_OFFSET :: transmute(u16)(i16(X64_Node_Type.X64_Add) -
-	i16(Ideal_Node_Type.Add))
+	i16(backend.Ideal_Node_Type.Add))
 
 UN_OP_OFFSET :: transmute(u16)(i16(X64_Node_Type.X64_Neg) -
-	i16(Ideal_Node_Type.Neg))
+	i16(backend.Ideal_Node_Type.Neg))
 
 FLOAT_BIN_OP_OFFSET :: transmute(u16)(i16(X64_Node_Type.X64_F_Add) -
-	i16(Ideal_Node_Type.F_Add))
+	i16(backend.Ideal_Node_Type.F_Add))
 
-x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node, _: $T) -> Node_ID {
+x64_peep :: proc(
+	ctx: backend.Peep_Ctx,
+	node: backend.Expanded_Node,
+	_: $T,
+) -> backend.Node_ID {
 	node := node
 
-	id := graph_id(ctx, node)
+	id := backend.graph_id(ctx, node)
 
-	rhs_const: ^CInt
-	val_const: ^CInt
+	rhs_const: ^backend.CInt
+	val_const: ^backend.CInt
 
-	slots := [2]^^CInt{&rhs_const, &val_const}
+	slots := [2]^^backend.CInt{&rhs_const, &val_const}
 	idxs := [2]int{1, 3}
 
 	for idx, i in idxs {
 		slot := slots[i]
 		if idx < len(node.inps) {
-			slot^ = graph_extra(ctx, node.inps[idx], CInt)
+			slot^ = backend.graph_extra(ctx, node.inps[idx], backend.CInt)
 			if slot^ != nil {
 				clamped := i64(i32(slot^.value))
 				if clamped != slot^.value ||
-				   graph_get(ctx, node.inps[idx]).dt == .F64 {slot^ = nil}
+				   backend.graph_get(ctx, node.inps[idx]).dt ==
+					   .F64 {slot^ = nil}
 			}
 		}
 	}
 
-	base, index: Node_ID
+	base, index: backend.Node_ID
 	scale: i32
 	displacement: i32
 	stack_base: bool
 
 	has_own_index :=
-		(node.xtype == .X64_Store || node.xtype == .X64_Load) &&
-		graph_extra(ctx, node, X64_Mem_Op).scale != 0
+		(xtype(node) == .X64_Store || xtype(node) == .X64_Load) &&
+		x64_extra(ctx, node, X64_Mem_Op).scale != 0
 
 	if 2 < len(node.inps) {
-		nbase, ndisplacement := base_and_offset(ctx, node.inps[2])
+		nbase, ndisplacement := backend.base_and_offset(
+			ctx,
+			node.inps[2],
+			x64_addr_add_offset,
+		)
 		if int(i32(ndisplacement)) == ndisplacement {
 			base, displacement = nbase, i32(ndisplacement)
 		}
 
-		bnode := graph_expand(ctx, nbase)
-		if bnode.xtype == .X64_Lea {
-			mem_op := graph_extra(ctx, bnode, X64_Mem_Op)
+		bnode := backend.graph_expand(ctx, nbase)
+		if xtype(bnode) == .X64_Lea {
+			mem_op := x64_extra(ctx, bnode, X64_Mem_Op)
 			scale = i32(mem_op.scale)
 			overflowed: bool
 			displacement, overflowed = intrinsics.overflow_add(
@@ -522,7 +566,7 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node, _: $T) -> Node_ID {
 			nbase = base
 		}
 
-		bnode = graph_expand(ctx, nbase)
+		bnode = backend.graph_expand(ctx, nbase)
 		if bnode.itype == .Local_Addr {
 			base = bnode.inps[0]
 			stack_base = true
@@ -535,19 +579,19 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node, _: $T) -> Node_ID {
 		}
 	}
 
-	mem_op := graph_extra(ctx, node, X64_Mem_Op)
+	mem_op := x64_extra(ctx, node, X64_Mem_Op)
 
-	#partial matchx: switch node.xtype {
+	#partial matchx: switch xtype(node) {
 	case .CInt:
-		cnst: ^CInt = graph_extra(ctx, node, CInt)
-		if node.dt in FLOAT_DTS {
-			mem := graph_find_node(ctx, .Mem) or_else panic("")
+		cnst: ^backend.CInt = backend.graph_extra(ctx, node, backend.CInt)
+		if node.dt in backend.FLOAT_DTS {
+			mem := backend.graph_find_node(ctx, .Mem) or_else panic("")
 
-			global := graph_add_global(ctx, "iglb")
-			tup: ^Tup = graph_extra(ctx, global, Tup)
+			global := backend.graph_add_global(ctx, "iglb")
+			tup: ^backend.Tup = backend.graph_extra(ctx, global, backend.Tup)
 			tup.is_inline = true
-			tup.align = DT_SIZE[node.dt]
-			tup.size = DT_SIZE[node.dt]
+			tup.align = backend.DT_SIZE[node.dt]
+			tup.size = backend.DT_SIZE[node.dt]
 
 			if node.dt == .F32 {
 				arna.clone(ctx.mem, reflect.as_bytes(f32(cnst.fvalue)))
@@ -556,12 +600,12 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node, _: $T) -> Node_ID {
 				arna.clone(ctx.mem, reflect.as_bytes(cnst.fvalue))
 			}
 
-			graph_get(ctx, global).extra_dwords = u32(
-				DT_SIZE[node.dt] / PRECISION,
+			backend.graph_get(ctx, global).extra_dwords = u32(
+				backend.DT_SIZE[node.dt] / backend.PRECISION,
 			)
 
-			push_node_name(ctx, graph_get_node_name(ctx, id))
-			return graph_add_raw(
+			backend.push_node_name(ctx, backend.graph_get_node_name(ctx, id))
+			return backend.graph_add_raw(
 				ctx,
 				u16(X64_Node_Type.X64_CLoad),
 				node.dt,
@@ -569,14 +613,14 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node, _: $T) -> Node_ID {
 			)
 		}
 	case .F_Add:
-		lhs := graph_expand(ctx, node.inps[0])
-		rhs := graph_expand(ctx, node.inps[1])
+		lhs := backend.graph_expand(ctx, node.inps[0])
+		rhs := backend.graph_expand(ctx, node.inps[1])
 
 		if rhs.itype == .F_Mul {
 			lhs, rhs = rhs, lhs
 		}
 
-		rhs_id := graph_id(ctx, rhs)
+		rhs_id := backend.graph_id(ctx, rhs)
 
 		if lhs.itype == .F_Mul {
 			return x64_make_node(
@@ -591,7 +635,7 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node, _: $T) -> Node_ID {
 		op := u16(node.itype) + BIN_OP_OFFSET
 
 		if node.dt == .I8 && node.itype == .Mul {
-			node.xtype = .X64_Mul8
+			node.rtype = u16(X64_Node_Type.X64_Mul8)
 			return id
 		}
 
@@ -599,7 +643,7 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node, _: $T) -> Node_ID {
 		if .Eq <= node.itype && node.itype <= .U_Ge {
 			if node.dt != .Void &&
 			   len(node.outs) == 1 &&
-			   graph_get(ctx, node.outs[0].id).itype == .If {
+			   backend.graph_get(ctx, node.outs[0].id).itype == .If {
 				node.dt = .Void
 				chanded = true
 			}
@@ -618,16 +662,20 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node, _: $T) -> Node_ID {
 		if chanded do return id
 
 		indexify: if node.itype == .Add {
-			rhs := graph_expand(ctx, node.inps[1])
+			rhs := backend.graph_expand(ctx, node.inps[1])
 
 			ascale: i32 = 1
 			aindex := node.inps[1]
 
-			if rhs.xtype == .X64_Mul {
-				ascale = graph_extra(ctx, rhs, X64_Mem_Op).imm
+			if xtype(rhs) == .X64_Mul {
+				ascale = x64_extra(ctx, rhs, X64_Mem_Op).imm
 				aindex = rhs.inps[0]
 			} else if rhs.itype == .Mul {
-				arhs_const := graph_extra(ctx, rhs.inps[1], CInt)
+				arhs_const := backend.graph_extra(
+					ctx,
+					rhs.inps[1],
+					backend.CInt,
+				)
 				if arhs_const != nil &&
 				   i64(i32(arhs_const.value)) == arhs_const.value {
 					ascale = i32(arhs_const.value)
@@ -639,14 +687,18 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node, _: $T) -> Node_ID {
 				break indexify
 			}
 
-			if graph_get(ctx, aindex).itype == .CInt do break indexify
+			if backend.graph_get(ctx, aindex).itype == .CInt do break indexify
 
-			abase, offset := base_and_offset(ctx, node.inps[0])
+			abase, offset := backend.base_and_offset(
+				ctx,
+				node.inps[0],
+				x64_addr_add_offset,
+			)
 			if int(i32(offset)) == offset {
 				displacement = i32(offset)
 			}
 
-			bnode := graph_expand(ctx, abase)
+			bnode := backend.graph_expand(ctx, abase)
 			if bnode.itype == .Local_Addr {
 				abase = bnode.inps[0]
 				stack_base = true
@@ -668,16 +720,21 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node, _: $T) -> Node_ID {
 	case .F_Eq ..= .F_Ge:
 		if node.dt != .Void &&
 		   len(node.outs) == 1 &&
-		   graph_get(ctx, node.outs[0].id).itype == .If {
+		   backend.graph_get(ctx, node.outs[0].id).itype == .If {
 			node.dt = .Void
 			return id
 		}
 	case .If:
 		node.additional_data_start = u8(
-			graph_get(ctx, node.inps[1]).dt == .Void,
+			backend.graph_get(ctx, node.inps[1]).dt == .Void,
 		)
 	case .Load, .Load_S:
-		load_inps := [4]Node_ID{node.inps[0], node.inps[1], base, index}
+		load_inps := [4]backend.Node_ID {
+			node.inps[0],
+			node.inps[1],
+			base,
+			index,
+		}
 		return x64_make_node(
 			ctx,
 			id,
@@ -692,7 +749,7 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node, _: $T) -> Node_ID {
 		)
 	case .Store:
 		immediate: i32
-		inps := [5]Node_ID {
+		inps := [5]backend.Node_ID {
 			node.inps[0],
 			node.inps[1],
 			base,
@@ -716,12 +773,12 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node, _: $T) -> Node_ID {
 				dis = displacement,
 				imm = immediate,
 				scale = u8(scale),
-				dt = graph_get(ctx, node.inps[3]).dt,
+				dt = backend.graph_get(ctx, node.inps[3]).dt,
 			},
 			additional_data_offset = u8(stack_base),
 		)
 
-		worklist_add(ctx, ctx.worklist, res)
+		backend.worklist_add(ctx, ctx.worklist, res)
 		return res
 	case .X64_Store, .X64_Load:
 		changed := false
@@ -731,19 +788,22 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node, _: $T) -> Node_ID {
 		}
 
 		if scale != 0 {
-			graph_connect(ctx, id, index)
+			backend.graph_connect(ctx, id, index)
 			mem_op.scale = u8(scale)
-			node = graph_expand(ctx, id)
+			node = backend.graph_expand(ctx, id)
 			changed = true
 		}
 
-		swap_out_imm :: proc(ctx: Peep_Ctx, node: Expanded_Node) {
-			id := graph_id(ctx, node)
-			outs := graph_outs(ctx, node.inps[4])
+		swap_out_imm :: proc(
+			ctx: backend.Peep_Ctx,
+			node: backend.Expanded_Node,
+		) {
+			id := backend.graph_id(ctx, node)
+			outs := backend.graph_outs(ctx, node.inps[4])
 			oi :=
 				slice.linear_search(
 					outs,
-					Node_Output{idx = 4, id = id},
+					backend.Node_Output{idx = 4, id = id},
 				) or_else panic("")
 			outs[oi].idx = 3
 			node.inps[3], node.inps[4] = node.inps[4], node.inps[3]
@@ -754,17 +814,17 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node, _: $T) -> Node_ID {
 		mem_op.dis += displacement
 
 		changed |= node.inps[2] != base
-		graph_set_input(ctx, id, 2, base)
+		backend.graph_set_input(ctx, id, 2, base)
 
 		node.additional_data_start = max(
 			node.additional_data_start,
 			u8(stack_base),
 		)
 
-		if node.xtype == .X64_Store &&
+		if xtype(node) == .X64_Store &&
 		   3 + int(mem_op.scale != 0) < len(node.inps) {
-			val := graph_expand(ctx, node.inps[3])
-			val_mem := graph_extra(ctx, val, X64_Mem_Op)
+			val := backend.graph_expand(ctx, node.inps[3])
+			val_mem := x64_extra(ctx, val, X64_Mem_Op)
 
 			X64_TRIGGER_OPS :: bit_set[X64_Node_Type] {
 				.X64_Add,
@@ -777,7 +837,7 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node, _: $T) -> Node_ID {
 				.X64_U_Shr,
 			}
 
-			IDEAL_TRIGGER_OPS :: bit_set[Ideal_Node_Type] {
+			IDEAL_TRIGGER_OPS :: bit_set[backend.Ideal_Node_Type] {
 				.Add,
 				.Sub,
 				.And,
@@ -790,16 +850,19 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node, _: $T) -> Node_ID {
 				.Neg,
 			}
 
-			IDEAL_TRIGGER_UN_OPS :: bit_set[Ideal_Node_Type]{.Not, .Neg}
+			IDEAL_TRIGGER_UN_OPS :: bit_set[backend.Ideal_Node_Type] {
+				.Not,
+				.Neg,
+			}
 
 			is_interesting :=
-				((val.xtype in X64_TRIGGER_OPS && len(val.inps) == 1) ||
+				((xtype(val) in X64_TRIGGER_OPS && len(val.inps) == 1) ||
 					val.itype in IDEAL_TRIGGER_OPS)
 
 			if is_interesting && len(val.outs) == 1 {
-				lhs := graph_expand(ctx, val.inps[0])
-				lhs_mem := graph_extra(ctx, lhs, X64_Mem_Op)
-				dest_op: if lhs.xtype == .X64_Load &&
+				lhs := backend.graph_expand(ctx, val.inps[0])
+				lhs_mem := x64_extra(ctx, lhs, X64_Mem_Op)
+				dest_op: if xtype(lhs) == .X64_Load &&
 				   lhs.inps[1] == node.inps[1] &&
 				   lhs.inps[2] == node.inps[2] &&
 				   lhs_mem.scale == mem_op.scale &&
@@ -809,7 +872,7 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node, _: $T) -> Node_ID {
 				   lhs_mem.dis == mem_op.dis {
 
 					needs_removal :=
-						val.xtype in X64_TRIGGER_OPS ||
+						xtype(val) in X64_TRIGGER_OPS ||
 						val.itype in IDEAL_TRIGGER_UN_OPS
 
 					rm_idx := 3 + int(lhs_mem.scale != 0)
@@ -817,17 +880,17 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node, _: $T) -> Node_ID {
 						swap_out_imm(ctx, node)
 					}
 
-					node.xtype = val.xtype
+					node.rtype = val.rtype
 
 					if val.itype in IDEAL_TRIGGER_UN_OPS {
-						assert(node.rtype < len(IDEAL_CLASSES))
+						assert(node.rtype < len(backend.IDEAL_CLASSES))
 						node.rtype += UN_OP_OFFSET
-					} else if val.xtype in X64_TRIGGER_OPS {
+					} else if xtype(val) in X64_TRIGGER_OPS {
 						mem_op.imm = val_mem.imm
 					}
 
 					if needs_removal {
-						graph_remove_output(
+						backend.graph_remove_output(
 							ctx,
 							node.inps[rm_idx],
 							{idx = 3, id = id},
@@ -835,9 +898,9 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node, _: $T) -> Node_ID {
 						node.input_count -= 1
 						node.inps = node.inps[:len(node.inps) - 1]
 					} else {
-						assert(node.rtype < len(IDEAL_CLASSES))
+						assert(node.rtype < len(backend.IDEAL_CLASSES))
 						node.rtype += BIN_OP_OFFSET
-						graph_set_input(ctx, id, 3, val.inps[1])
+						backend.graph_set_input(ctx, id, 3, val.inps[1])
 					}
 
 					mem_op.mem_mode = .Dest
@@ -845,9 +908,9 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node, _: $T) -> Node_ID {
 					node.additional_data_start += 2
 					changed = true
 				} else {
-					peep_ctx_add_trigger(ctx, val.inps[0], id)
-					if lhs.xtype == .X64_Load {
-						peep_ctx_add_trigger(ctx, lhs.inps[2], id)
+					backend.peep_ctx_add_trigger(ctx, val.inps[0], id)
+					if xtype(lhs) == .X64_Load {
+						backend.peep_ctx_add_trigger(ctx, lhs.inps[2], id)
 					}
 				}
 			}
@@ -861,47 +924,47 @@ x64_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node, _: $T) -> Node_ID {
 }
 
 x64_make_node :: proc(
-	graph: ^Graph,
-	from: Node_ID,
+	graph: ^backend.Graph,
+	from: backend.Node_ID,
 	type: u16,
-	inps: []Node_ID,
+	inps: []backend.Node_ID,
 	extra: X64_Mem_Op,
 	additional_data_offset: u8 = 0,
 	in_place_slot_offset: i8 = 0,
-) -> Node_ID {
-	push_node_name(graph, graph_get_node_name(graph, from))
-	fnode := graph_get(graph, from)
-	id := graph_add_raw(graph, type, fnode.dt, inps)
-	node := graph_get(graph, id)
+) -> backend.Node_ID {
+	backend.push_node_name(graph, backend.graph_get_node_name(graph, from))
+	fnode := backend.graph_get(graph, from)
+	id := backend.graph_add_raw(graph, type, fnode.dt, inps)
+	node := backend.graph_get(graph, id)
 	// NOTE: afaik this is sufficient since we don't insert load ops before
 	// scheduling
 	node.is_store = fnode.is_store
 	node.is_load = fnode.is_load || type == u16(X64_Node_Type.X64_Load)
 	node.additional_data_start = additional_data_offset
 	node.in_place_slot_offset = in_place_slot_offset
-	graph_extra(graph, node, X64_Mem_Op)^ = extra
+	x64_extra(graph, node, X64_Mem_Op)^ = extra
 	return id
 }
 
 x64_post_schedule_peep :: proc(
-	ctx: PS_Peep_Ctx,
-	node: Expanded_Node,
+	ctx: backend.PS_Peep_Ctx,
+	node: backend.Expanded_Node,
 	_: $T,
-) -> Node_ID {
-	id := graph_id(ctx, node)
-	#partial matchx: switch node.xtype {
+) -> backend.Node_ID {
+	id := backend.graph_id(ctx, node)
+	#partial matchx: switch xtype(node) {
 	case .Add ..= .Xor, .Eq ..= .U_Ge, .F_Add ..= .F_Div, .F_Eq ..= .F_Ge:
 		if node.itype == .F_Lt || node.itype == .F_Le do break
 
 		op := node.rtype + BIN_OP_OFFSET
-		rhs := graph_expand(ctx, node.inps[1])
-		if rhs.xtype == .X64_Load && len(rhs.outs) == 1 {
-			mem_op := graph_extra(ctx, rhs, X64_Mem_Op)
+		rhs := backend.graph_expand(ctx, node.inps[1])
+		if xtype(rhs) == .X64_Load && len(rhs.outs) == 1 {
+			mem_op := x64_extra(ctx, rhs, X64_Mem_Op)
 			if !has_no_clobbers(ctx, node.inps[1]) do break matchx
 			mem_op.mem_mode = .Src
 			mem_op.dt = rhs.dt
 
-			slots: [5]Node_ID
+			slots: [5]backend.Node_ID
 			copy(slots[:], rhs.inps)
 			slots[4] = slots[3]
 			slots[3] = node.inps[0]
@@ -915,13 +978,13 @@ x64_post_schedule_peep :: proc(
 				additional_data_offset = u8(rhs.data_start),
 				in_place_slot_offset = 1 - i8(rhs.data_start == 3),
 			)
-		} else if rhs.xtype == .X64_CLoad {
+		} else if xtype(rhs) == .X64_CLoad {
 			mem_op := X64_Mem_Op {
 				mem_mode = .Src,
 				dt       = rhs.dt,
 			}
 
-			slots := [?]Node_ID{rhs.inps[0], node.inps[0]}
+			slots := [?]backend.Node_ID{rhs.inps[0], node.inps[0]}
 
 			return x64_make_node(
 				ctx,
@@ -933,11 +996,11 @@ x64_post_schedule_peep :: proc(
 			)
 		}
 	case .X64_Eq ..= .X64_U_Ge:
-		mem_op := graph_extra(ctx, node, X64_Mem_Op)
+		mem_op := x64_extra(ctx, node, X64_Mem_Op)
 		if mem_op.mem_mode != .None do break matchx
-		lhs := graph_expand(ctx, node.inps[0])
-		if lhs.xtype == .X64_Load && len(lhs.outs) == 1 {
-			om_mem_op := graph_extra(ctx, lhs, X64_Mem_Op)
+		lhs := backend.graph_expand(ctx, node.inps[0])
+		if xtype(lhs) == .X64_Load && len(lhs.outs) == 1 {
+			om_mem_op := x64_extra(ctx, lhs, X64_Mem_Op)
 			if !has_no_clobbers(ctx, node.inps[0]) do break matchx
 			om_mem_op.imm = mem_op.imm
 			om_mem_op.mem_mode = .Dest
@@ -954,17 +1017,21 @@ x64_post_schedule_peep :: proc(
 			)
 		}
 	case .X64_Fma_213:
-		mem_op := graph_extra(ctx, node, X64_Mem_Op)
-		rhs := graph_expand(ctx, node.inps[2])
+		mem_op := x64_extra(ctx, node, X64_Mem_Op)
+		rhs := backend.graph_expand(ctx, node.inps[2])
 
-		if rhs.xtype == .X64_Load {
+		if xtype(rhs) == .X64_Load {
 			if !has_no_clobbers(ctx, node.inps[2]) do break matchx
 			panic("")
-		} else if rhs.xtype == .X64_CLoad {
+		} else if xtype(rhs) == .X64_CLoad {
 			mem_op.mem_mode = .Src
 			mem_op.dt = rhs.dt
 
-			slots := [?]Node_ID{rhs.inps[0], node.inps[0], node.inps[1]}
+			slots := [?]backend.Node_ID {
+				rhs.inps[0],
+				node.inps[0],
+				node.inps[1],
+			}
 
 			return x64_make_node(
 				ctx,
@@ -977,11 +1044,14 @@ x64_post_schedule_peep :: proc(
 		}
 	}
 
-	has_no_clobbers :: proc(ctx: PS_Peep_Ctx, inp: Node_ID) -> bool {
+	has_no_clobbers :: proc(
+		ctx: backend.PS_Peep_Ctx,
+		inp: backend.Node_ID,
+	) -> bool {
 		#reverse for pred in ctx.preds {
 			if pred == inp do return true
-			if graph_get(ctx, pred).rtype == DEAD_NODE_KIND do continue
-			pnode := graph_expand(ctx, pred)
+			if backend.graph_get(ctx, pred).rtype == backend.DEAD_NODE_KIND do continue
+			pnode := backend.graph_expand(ctx, pred)
 			if pnode.is_store do break
 		}
 
@@ -993,34 +1063,52 @@ x64_post_schedule_peep :: proc(
 
 // whole-bank mask helpers for the mixed-bank float nodes. a fresh copy is
 // returned so the caller may mutate it (def masks get intersected in place).
-reg_bank_mask :: proc(ra: ^Regalloc, kind: Reg_Kind, src: []i64) -> Reg_Mask {
-	mask := reg_mask_empty(ra, kind)
+reg_bank_mask :: proc(
+	ra: ^backend.Regalloc,
+	kind: backend.Reg_Kind,
+	src: []i64,
+) -> backend.Reg_Mask {
+	mask := backend.reg_mask_empty(ra, kind)
 	copy(mask.masks[:len(src)], src)
 	return mask
 }
 
 cc_reg_for_operand :: proc(
-	graph: ^Graph,
-	node: Expanded_Node,
-	banks: [Reg_Kind][]Reg,
+	graph: ^backend.Graph,
+	node: backend.Expanded_Node,
+	banks: [backend.Reg_Kind][]backend.Reg,
 	pos: int,
-) -> Reg {
-	counts: [Reg_Kind]int
-	for i in CALL_PREFIX ..< pos {
-		rk := graph.datatype_to_reg_kind[graph_get(graph, node.inps[i]).dt]
+) -> backend.Reg {
+	counts: [backend.Reg_Kind]int
+	for i in backend.CALL_PREFIX ..< pos {
+		rk :=
+			graph.datatype_to_reg_kind[backend.graph_get(graph, node.inps[i]).dt]
 		counts[rk] += 1
 	}
-	rk := graph.datatype_to_reg_kind[graph_get(graph, node.inps[pos]).dt]
+	rk :=
+		graph.datatype_to_reg_kind[backend.graph_get(graph, node.inps[pos]).dt]
 	return banks[rk][counts[rk]]
 }
 
+x64_addr_add_offset :: proc(
+	graph: ^backend.Graph,
+	node: backend.Expanded_Node,
+) -> (
+	base: backend.Node_ID,
+	off: int,
+	ok: bool,
+) {
+	if xtype(node) != .X64_Add do return
+	return node.inps[0], int(x64_extra(graph, node, X64_Mem_Op).imm), true
+}
+
 x64_reg_mask_of :: proc(
-	graph: ^Graph,
-	ra: ^Regalloc,
-	id: Node_ID,
+	graph: ^backend.Graph,
+	ra: ^backend.Regalloc,
+	id: backend.Node_ID,
 	idx: int,
-) -> Reg_Mask {
-	node := graph_expand(graph, id)
+) -> backend.Reg_Mask {
+	node := backend.graph_expand(graph, id)
 
 	pos := idx - 1 + node.data_start
 
@@ -1028,11 +1116,11 @@ x64_reg_mask_of :: proc(
 	case .Arg:
 		kind := ra.datatype_to_reg_kind[node.dt]
 		args := ra.args[kind]
-		arg_ext := graph_extra(graph, node, Tup)
+		arg_ext := backend.graph_extra(graph, node, backend.Tup)
 		if int(arg_ext.idx) < len(args) {
-			return reg_mask_single(ra, args[arg_ext.idx])
+			return backend.reg_mask_single(ra, args[arg_ext.idx])
 		} else {
-			return reg_mask_single(
+			return backend.reg_mask_single(
 				ra,
 				{
 					kind = kind,
@@ -1041,24 +1129,24 @@ x64_reg_mask_of :: proc(
 			)
 		}
 	case .Call:
-		call := graph_extra(graph, id, Call)
+		call := backend.graph_extra(graph, id, backend.Call)
 		if call.indirect && pos == len(node.inps) - 1 {
 			return reg_bank_mask(ra, .General, GPA_MASK)
 		}
 		cc := ra.cc_table[call.ccid]
 		reg := cc_reg_for_operand(graph, node, cc.args, pos)
-		return reg_mask_single(ra, reg)
+		return backend.reg_mask_single(ra, reg)
 	case .Ret:
-		cend := graph_expand(graph, node.inps[0])
-		call := graph_extra(graph, cend.inps[0], Call)
-		ret_ext := graph_extra(graph, node, Tup)
+		cend := backend.graph_expand(graph, node.inps[0])
+		call := backend.graph_extra(graph, cend.inps[0], backend.Call)
+		ret_ext := backend.graph_extra(graph, node, backend.Tup)
 		kind := ra.datatype_to_reg_kind[node.dt]
 		rets := ra.cc_table[call.ccid].rets[kind]
-		return reg_mask_single(ra, rets[ret_ext.idx])
+		return backend.reg_mask_single(ra, rets[ret_ext.idx])
 	case .Return:
 		assert(idx != 0)
 		reg := cc_reg_for_operand(graph, node, ra.rets, pos)
-		return reg_mask_single(ra, reg)
+		return backend.reg_mask_single(ra, reg)
 	case .Phi:
 		// TODO: fix this to have a borrow
 		kind := ra.datatype_to_reg_kind[node.dt]
@@ -1071,21 +1159,21 @@ x64_reg_mask_of :: proc(
 
 	fmt.panicf(
 		"TODO: %v %v %v",
-		node.xtype,
+		xtype(node),
 		idx,
-		graph_get(graph, node.inps[pos]),
+		backend.graph_get(graph, node.inps[pos]),
 	)
 }
 
 Ctx :: struct {
-	using inner:        Codegen_Emit_Ctx,
-	spill_slot_base:    [Reg_Kind]i32,
+	using inner:        backend.Codegen_Emit_Ctx,
+	spill_slot_base:    [backend.Reg_Kind]i32,
 	big_constants:      [dynamic]u8,
 	local_relocs:       [dynamic]Local_Reloc,
 	stack_size:         i32,
 	used:               bit_arr.Bit_Set,
 	code_start:         uint,
-	stack_param_offset: [Reg_Kind][dynamic]i32,
+	stack_param_offset: [backend.Reg_Kind][dynamic]i32,
 }
 
 Local_Reloc :: struct {
@@ -1108,14 +1196,16 @@ emit_big_constant :: proc(
 
 	append(&ctx.big_constants, u8(len(bytes)), u8(align))
 
-	id = RELOC_BIG_CONSTANT_BASE + u32(len(ctx.big_constants))
+	id = backend.RELOC_BIG_CONSTANT_BASE + u32(len(ctx.big_constants))
 
 	append(&ctx.big_constants, ..bytes)
 
 	return
 }
 
-x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
+x64_emit_function :: proc(
+	ectx: backend.Codegen_Emit_Ctx,
+) -> backend.Codegen_Output {
 	context.allocator, _ = arna.scrath()
 
 	reloc_start := ectx.relocs.pos
@@ -1129,41 +1219,41 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 
 	has_call := false
 	for bb in ctx.schedule.bbs {
-		bnode := graph_expand(ctx, bb.head)
+		bnode := backend.graph_expand(ctx, bb.head)
 
 		for ins in bb.instrs {
-			has_call |= graph_get(ctx, ins).itype in CALLS
+			has_call |= backend.graph_get(ctx, ins).itype in backend.CALLS
 		}
 
 		if bnode.itype != .Call_End do continue
-		cnode := graph_expand(ctx, bnode.inps[0])
+		cnode := backend.graph_expand(ctx, bnode.inps[0])
 		call_stack_size: i32
 		for inp in raw_data(cnode.inps)[cnode.input_count:cnode.input_cap] {
-			inode := graph_expand(ctx, inp)
+			inode := backend.graph_expand(ctx, inp)
 			if inode.itype != .Local do continue
-			iext := graph_extra(ctx, inode, Local)
+			iext := backend.graph_extra(ctx, inode, backend.Local)
 			call_stack_size += iext.size
 			iext.offset = call_stack_size - iext.size
 		}
 		ctx.stack_size = max(ctx.stack_size, call_stack_size)
 	}
 
-	emem, _ := graph_find_node(ctx.graph, .Mem)
-	mem_outs: []Node_Output
+	emem, _ := backend.graph_find_node(ctx.graph, .Mem)
+	mem_outs: []backend.Node_Output
 	if emem != 0 {
-		mem_outs = graph_outs(ctx.graph, emem)
+		mem_outs = backend.graph_outs(ctx.graph, emem)
 	}
 
 	Local_Slot :: bit_field u64 {
-		node:     Node_ID | 32,
-		priority: i32     | 32,
+		node:     backend.Node_ID | 32,
+		priority: i32             | 32,
 	}
 	locals: [dynamic]Local_Slot
 
 	for mout in mem_outs {
-		mnode := graph_expand(ctx.graph, mout.id)
+		mnode := backend.graph_expand(ctx.graph, mout.id)
 		if mnode.itype == .Local {
-			extra := graph_extra(ctx.graph, mnode, Local)
+			extra := backend.graph_extra(ctx.graph, mnode, backend.Local)
 			append(
 				&locals,
 				Local_Slot {
@@ -1177,7 +1267,7 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 	sort.quick_sort(locals[:])
 
 	for loc in locals {
-		extra := graph_extra(ctx.graph, loc.node, Local)
+		extra := backend.graph_extra(ctx.graph, loc.node, backend.Local)
 		ctx.stack_size += extra.size
 		extra.offset = ctx.stack_size - extra.size
 	}
@@ -1185,14 +1275,14 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 	// NOTE: the Arg and Local never get promoted to a different node so we can
 	// just order them by the node id, the allocation order matters tho so
 	// document that somewhere
-	args: [dynamic]Node_ID
-	find_args: for eout in graph_outs(ctx, ctx.entry) {
-		enode := graph_expand(ctx, eout.id)
+	args: [dynamic]backend.Node_ID
+	find_args: for eout in backend.graph_outs(ctx, ctx.entry) {
+		enode := backend.graph_expand(ctx, eout.id)
 		if enode.itype != .Arg && enode.itype != .Local do continue
 
 		if enode.itype == .Local {
 			for lout in enode.outs {
-				lonode := graph_expand(ctx, lout.id)
+				lonode := backend.graph_expand(ctx, lout.id)
 				if lonode.itype == .Call {
 					continue find_args
 				}
@@ -1204,7 +1294,7 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 
 	sort.quick_sort(args[:])
 
-	spill_slot_count: [Reg_Kind]i32
+	spill_slot_count: [backend.Reg_Kind]i32
 	for reg in ctx.allocs {
 		spill_slot_count[reg.kind] = max(
 			spill_slot_count[reg.kind],
@@ -1231,11 +1321,11 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 
 	param_offset := pushed + 8
 	#reverse for arg in args {
-		enode := graph_expand(ctx, arg)
+		enode := backend.graph_expand(ctx, arg)
 
 		if enode.itype == .Arg {
 			kind := ctx.datatype_to_reg_kind[enode.dt]
-			arg_ext := graph_extra(ctx.graph, enode, Tup)
+			arg_ext := backend.graph_extra(ctx.graph, enode, backend.Tup)
 			// An Arg lives on the caller's stack iff its index is beyond the
 			// registers of its bank. Classify by the actual index rather than a
 			// running count of *present* Args -- dead lower-indexed args get
@@ -1248,7 +1338,7 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 		}
 
 		if enode.itype == .Local {
-			extra := graph_extra(ctx.graph, enode, Local)
+			extra := backend.graph_extra(ctx.graph, enode, backend.Local)
 			extra.offset = param_offset
 			param_offset += extra.size
 		}
@@ -1268,7 +1358,7 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 	ctx.stack_size -= used_red_zone
 
 	for mout in mem_outs {
-		local := graph_extra(ctx, mout.id, Local)
+		local := backend.graph_extra(ctx, mout.id, backend.Local)
 		if local == nil do continue
 		local.offset -= used_red_zone
 	}
@@ -1278,9 +1368,9 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 	}
 
 	for arg in args {
-		enode := graph_expand(ctx, arg)
+		enode := backend.graph_expand(ctx, arg)
 		if enode.itype == .Local {
-			extra := graph_extra(ctx.graph, enode, Local)
+			extra := backend.graph_extra(ctx.graph, enode, backend.Local)
 			extra.offset += ctx.stack_size
 		}
 	}
@@ -1300,7 +1390,7 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 	for &bb, i in ctx.bbs {
 		bb.offset = u32(ctx.code.pos)
 
-		last := graph_expand(ctx, bb.instrs[len(bb.instrs) - 1])
+		last := backend.graph_expand(ctx, bb.instrs[len(bb.instrs) - 1])
 		is_consecutive :=
 			i + 1 < len(ctx.bbs) &&
 			0 < len(last.outs) &&
@@ -1325,10 +1415,11 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 			bb := &ctx.bbs[reloc.dest]
 
 			if len(bb.instrs) > 1 do break
-			jmp := graph_expand(ctx, bb.instrs[0])
+			jmp := backend.graph_expand(ctx, bb.instrs[0])
 			if jmp.itype != .Jump do break
 
-			reloc.dest = graph_get(ctx, jmp.outs[0].id).gvn - block_base
+			reloc.dest =
+				backend.graph_get(ctx, jmp.outs[0].id).gvn - block_base
 		}
 
 		dst_offset := ctx.bbs[reloc.dest].offset
@@ -1339,7 +1430,7 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 
 	code := ctx.code.ptr[ctx.code_start:ctx.code.pos]
 	relocs := mem.slice_data_cast(
-		[]Reloc,
+		[]backend.Reloc,
 		ctx.relocs.ptr[reloc_start:ctx.relocs.pos],
 	)
 	arna.alloc(ctx.code, 0, 8)
@@ -1351,7 +1442,7 @@ x64_emit_function :: proc(ectx: Codegen_Emit_Ctx) -> Codegen_Output {
 @(disabled = GEN_SPEC)
 x64_emit_instr :: proc(
 	ctx: ^Ctx,
-	instr: Node_ID,
+	instr: backend.Node_ID,
 	is_consecutive: bool,
 	_: $T,
 ) {
@@ -1499,9 +1590,9 @@ x64_emit_instr :: proc(
 	}
 
 	block_base := ctx.gvn - u32(len(ctx.bbs))
-	node := graph_expand(ctx, instr)
+	node := backend.graph_expand(ctx, instr)
 	mem_op_placeholder: X64_Mem_Op
-	mem_op := graph_extra(ctx, node, X64_Mem_Op)
+	mem_op := x64_extra(ctx, node, X64_Mem_Op)
 	if mem_op == nil {
 		mem_op = &mem_op_placeholder
 	}
@@ -1513,20 +1604,20 @@ x64_emit_instr :: proc(
 	pfx: u8 = node.dt == .F64 ? 0xF2 : 0xF3
 	wide := node.dt == .F64
 
-	switch node.xtype {
+	switch xtype(node) {
 	case .Global:
 	case .Local:
 	case .Local_Addr, .Global_Addr:
 		dst := reg_of(ctx, instr)
 		addr, dis, id := reg_and_disp_of(ctx, node.inps[0])
 		// lea $dst, [rsp/rip + $offset]
-		emit(ctx.code, {rex(dst, addr, RAX, true), 0x8d})
+		backend.emit(ctx.code, {rex(dst, addr, RAX, true), 0x8d})
 		emit_indirect_addr(ctx, dst, addr, NO_INDEX, 1, dis, id)
 	case .Proc_Addr:
-		id := graph_extra(ctx, instr, Tup).idx + 1
+		id := backend.graph_extra(ctx, instr, backend.Tup).idx + 1
 		dst := reg_of(ctx, instr)
 		// lea $dst, [rip + $offset]
-		emit(ctx.code, {rex(dst, RIP, NO_INDEX, true), 0x8d})
+		backend.emit(ctx.code, {rex(dst, RIP, NO_INDEX, true), 0x8d})
 		emit_indirect_addr(ctx, dst, RIP, NO_INDEX, 1, 0, id, kind = .Text)
 	case .X64_Lea:
 		dst := reg_of(ctx, instr)
@@ -1535,14 +1626,14 @@ x64_emit_instr :: proc(
 
 		// lea $dst, [$bse + $idx * $scl + $sdis + $dis]
 		rx := rex(dst, bse, idx, true)
-		emit(ctx.code, {rx, 0x8D})
+		backend.emit(ctx.code, {rx, 0x8D})
 		emit_indirect_addr(ctx, dst, bse, idx, scl, sdis + dis, id)
 	case .X64_CLoad:
 		dst := reg_of(ctx, instr)
 		bse, sdis, id := reg_and_disp_of(ctx, node.inps[0])
 
 		// movss/movsd $dst, [rsp + $src_off]
-		emit(ctx.code, {pfx, rex(dst, bse, RAX, false), 0x0f, 0x10})
+		backend.emit(ctx.code, {pfx, rex(dst, bse, RAX, false), 0x0f, 0x10})
 		emit_indirect_addr(ctx, dst, bse, NO_INDEX, 1, 0, id)
 	case .Store, .X64_Store:
 		bse, sdis, id := reg_and_disp_of(ctx, node.inps[2])
@@ -1550,24 +1641,24 @@ x64_emit_instr :: proc(
 		dt := mem_op.dt
 
 		if 3 + imm_boundary < len(node.inps) {
-			vdt := graph_get(ctx, node.inps[3]).dt
+			vdt := backend.graph_get(ctx, node.inps[3]).dt
 			val := reg_of(ctx, node.inps[3])
 
-			if vdt in FLOAT_DTS {
+			if vdt in backend.FLOAT_DTS {
 				// movss/movsd [$bse + ...], $val
 				pfx: u8 = vdt == .F64 ? 0xF2 : 0xF3
 				rx := rex(val, bse, idx, false)
-				emit(ctx.code, {pfx, rx, 0x0f, 0x11})
+				backend.emit(ctx.code, {pfx, rx, 0x0f, 0x11})
 				emit_indirect_addr(ctx, val, bse, idx, scl, dis + sdis, id)
 				break
 			}
 
-			rx := rex(val, bse, idx, DT_SIZE[vdt] == 8)
+			rx := rex(val, bse, idx, backend.DT_SIZE[vdt] == 8)
 			emit_sized_opcode(ctx.code, vdt, rx, 0x89)
 			emit_indirect_addr(ctx, val, bse, idx, scl, dis + sdis, id)
 		} else {
 			imm := mem_op.imm
-			rx := rex(RAX, bse, idx, DT_SIZE[dt] == 8)
+			rx := rex(RAX, bse, idx, backend.DT_SIZE[dt] == 8)
 			emit_sized_opcode(ctx.code, dt, rx, 0xC7)
 			emit_indirect_addr(
 				ctx,
@@ -1577,7 +1668,7 @@ x64_emit_instr :: proc(
 				scl,
 				dis + sdis,
 				id,
-				DT_SIZE[dt],
+				backend.DT_SIZE[dt],
 			)
 			emit_imm_for_dt(ctx.code, dt, imm)
 		}
@@ -1588,49 +1679,49 @@ x64_emit_instr :: proc(
 		dis := mem_op.dis
 		signed := mem_op.signed || node.itype == .Load_S
 
-		if dt in FLOAT_DTS {
+		if dt in backend.FLOAT_DTS {
 			// movss/movsd $val, [$bse + ...]
 			rx := rex(val, bse, idx, false)
-			emit(ctx.code, {pfx, rx, 0x0f, 0x10})
+			backend.emit(ctx.code, {pfx, rx, 0x0f, 0x10})
 			emit_indirect_addr(ctx, val, bse, idx, scl, dis + sdis, id)
 			break
 		}
 
-		rx := rex(val, bse, idx, DT_SIZE[dt] == 8 || signed)
+		rx := rex(val, bse, idx, backend.DT_SIZE[dt] == 8 || signed)
 		if signed {
 			#partial switch dt {
 			case .Void:
 			case .I8:
 				// movsx $val, [$bse]
-				emit(ctx.code, {rx, 0x0f, 0xbe})
+				backend.emit(ctx.code, {rx, 0x0f, 0xbe})
 			case .I16:
 				// movsx $val, [$bse]
-				emit(ctx.code, {rx, 0x0f, 0xbf})
+				backend.emit(ctx.code, {rx, 0x0f, 0xbf})
 			case .I32:
 				// movsxd $val, [$bse]
-				emit(ctx.code, {rx, 0x63})
+				backend.emit(ctx.code, {rx, 0x63})
 			case .I64:
 				// mov $val, [$bse]
-				emit(ctx.code, {rx, 0x8b})
+				backend.emit(ctx.code, {rx, 0x8b})
 			}
 		} else {
 			#partial switch dt {
 			case .Void:
 			case .I8:
 				// movzx $val, [$bse]
-				emit(ctx.code, {rx, 0x0f, 0xb6})
+				backend.emit(ctx.code, {rx, 0x0f, 0xb6})
 			case .I16:
 				// movzx $val, [$bse]
-				emit(ctx.code, {rx, 0x0f, 0xb7})
+				backend.emit(ctx.code, {rx, 0x0f, 0xb7})
 			case .I32, .I64:
 				// mov $val, [$bse]
-				emit(ctx.code, {rx, 0x8b})
+				backend.emit(ctx.code, {rx, 0x8b})
 			}
 		}
 
 		emit_indirect_addr(ctx, val, bse, idx, scl, dis + sdis, id)
 	case .Sext:
-		dt := graph_get(ctx, node.inps[0]).dt
+		dt := backend.graph_get(ctx, node.inps[0]).dt
 		dst := reg_of(ctx, instr)
 		src := reg_of(ctx, node.inps[0])
 
@@ -1639,54 +1730,54 @@ x64_emit_instr :: proc(
 		case .Void:
 		case .I8:
 			// movsx r64, r/m8
-			emit(ctx.code, {rx, 0x0f, 0xbe})
+			backend.emit(ctx.code, {rx, 0x0f, 0xbe})
 		case .I16:
 			// movsx r64, r/m16
-			emit(ctx.code, {rx, 0x0f, 0xbf})
+			backend.emit(ctx.code, {rx, 0x0f, 0xbf})
 		case .I32:
 			// movsxd r64, r/m32
-			emit(ctx.code, {rx, 0x63})
+			backend.emit(ctx.code, {rx, 0x63})
 		case .I64:
 			// mov r64, r/m64
-			emit(ctx.code, {rx, 0x8b})
+			backend.emit(ctx.code, {rx, 0x8b})
 		}
-		emit(ctx.code, {mod_rm(.Direct, dst, src)})
+		backend.emit(ctx.code, {mod_rm(.Direct, dst, src)})
 	case .Uext:
-		dt := graph_get(ctx, node.inps[0]).dt
+		dt := backend.graph_get(ctx, node.inps[0]).dt
 		dst := reg_of(ctx, instr)
 		src := reg_of(ctx, node.inps[0])
 
-		rx := rex(dst, src, RAX, DT_SIZE[dt] == 8)
+		rx := rex(dst, src, RAX, backend.DT_SIZE[dt] == 8)
 		#partial switch dt {
 		case .Void:
 		case .I8:
 			// movzx $val, [$bse]
-			emit(ctx.code, {rx, 0x0f, 0xb6})
+			backend.emit(ctx.code, {rx, 0x0f, 0xb6})
 		case .I16:
 			// movzx $val, [$bse]
-			emit(ctx.code, {rx, 0x0f, 0xb7})
+			backend.emit(ctx.code, {rx, 0x0f, 0xb7})
 		case .I32, .I64:
 			// mov $val, [$bse]
-			emit(ctx.code, {rx, 0x8b})
+			backend.emit(ctx.code, {rx, 0x8b})
 		}
-		emit(ctx.code, {mod_rm(.Direct, dst, src)})
+		backend.emit(ctx.code, {mod_rm(.Direct, dst, src)})
 	case .Cast:
 	case .Start, .Entry, .Then, .Else, .Region, .Loop, .Call_End:
 		fmt.panicf("Not reachable form here %v", node.node)
 	case .If:
-		cnode := graph_expand(ctx, node.inps[1])
+		cnode := backend.graph_expand(ctx, node.inps[1])
 		if cnode.dt != .Void {
 			// test $cond, $cond
 			cond := reg_of(ctx, node.inps[1])
-			rx := rex(cond, cond, RAX, DT_SIZE[cnode.dt] == 8)
+			rx := rex(cond, cond, RAX, backend.DT_SIZE[cnode.dt] == 8)
 			emit_sized_opcode(ctx.code, cnode.dt, rx, 0x85)
-			emit(ctx.code, {mod_rm(.Direct, cond, cond)})
+			backend.emit(ctx.code, {mod_rm(.Direct, cond, cond)})
 		}
 
 		append(
 			&ctx.local_relocs,
 			Local_Reloc {
-				dest = graph_get(ctx, node.outs[int(is_consecutive)].id).gvn -
+				dest = backend.graph_get(ctx, node.outs[int(is_consecutive)].id).gvn -
 				block_base,
 				offset = u32(ctx.code.pos) + 2,
 			},
@@ -1695,13 +1786,13 @@ x64_emit_instr :: proc(
 		op: X64_Node_Type = is_consecutive ? .Eq : .Ne
 		if cnode.dt == .Void {
 			// we do this anyway to normalize
-			op = CMP_OP_REVERSE[cnode.xtype]
+			op = CMP_OP_REVERSE[xtype(cnode)]
 			if !is_consecutive {
 				op = CMP_OP_REVERSE[op]
 			}
 		}
 
-		emit(ctx.code, {0x0f, JCC_TABLE[op], 0, 0, 0, 0})
+		backend.emit(ctx.code, {0x0f, JCC_TABLE[op], 0, 0, 0, 0})
 
 		if !is_consecutive do break
 
@@ -1715,27 +1806,31 @@ x64_emit_instr :: proc(
 		append(
 			&ctx.local_relocs,
 			Local_Reloc {
-				dest = graph_get(ctx, node.outs[0].id).gvn - block_base,
+				dest = backend.graph_get(ctx, node.outs[0].id).gvn -
+				block_base,
 				offset = u32(ctx.code.pos) + 1,
 			},
 		)
 
-		emit(ctx.code, {0xe9, 0, 0, 0, 0})
+		backend.emit(ctx.code, {0xe9, 0, 0, 0, 0})
 	case .Call:
-		call := graph_extra(ctx, node, Call)
+		call := backend.graph_extra(ctx, node, backend.Call)
 
 		cc := ctx.graph.cc_table[call.ccid]
 		if cc.is_syscall {
 			// syscall
-			emit(ctx.code, {0x0F, 0x05})
+			backend.emit(ctx.code, {0x0F, 0x05})
 		} else if call.indirect {
 			// call $ptr
 			ptr := reg_of(ctx, node.inps[len(node.inps) - 1])
-			emit(ctx.code, {0xFF, mod_sm(.Direct, 0b010, ptr)})
+			backend.emit(ctx.code, {0xFF, mod_sm(.Direct, 0b010, ptr)})
 		} else if call.imported && ctx.emit_got_imports {
 			// call [rip + $lib_call.id]
-			emit(ctx.code, {0xFF, mod_sm(.Indirect, 0b010, RIP), 0, 0, 0, 0})
-			add_reloc(ctx.relocs)^ = {
+			backend.emit(
+				ctx.code,
+				{0xFF, mod_sm(.Indirect, 0b010, RIP), 0, 0, 0, 0},
+			)
+			backend.add_reloc(ctx.relocs)^ = {
 				offset = u32(ctx.code.pos - ctx.code_start),
 				kind   = .Got,
 				size   = .r4,
@@ -1743,8 +1838,8 @@ x64_emit_instr :: proc(
 			}
 		} else {
 			// call $call.cid
-			emit(ctx.code, {0xe8, 0, 0, 0, 0})
-			add_reloc(ctx.relocs)^ = {
+			backend.emit(ctx.code, {0xe8, 0, 0, 0, 0})
+			backend.add_reloc(ctx.relocs)^ = {
 				offset = u32(ctx.code.pos - ctx.code_start),
 				kind   = .Text,
 				size   = .r4,
@@ -1752,7 +1847,7 @@ x64_emit_instr :: proc(
 			}
 		}
 	case .Copy, .Set:
-		lib_call: Lib_Call
+		lib_call: backend.Lib_Call
 		#partial switch node.itype {
 		case .Copy:
 			lib_call = ctx.lib_calls.copy
@@ -1764,8 +1859,11 @@ x64_emit_instr :: proc(
 
 		if lib_call.absolute {
 			// call [rip + $lib_call.id]
-			emit(ctx.code, {0xFF, mod_sm(.Indirect, 0b010, RIP), 0, 0, 0, 0})
-			add_reloc(ctx.relocs)^ = {
+			backend.emit(
+				ctx.code,
+				{0xFF, mod_sm(.Indirect, 0b010, RIP), 0, 0, 0, 0},
+			)
+			backend.add_reloc(ctx.relocs)^ = {
 				offset = u32(ctx.code.pos - ctx.code_start),
 				kind   = .Got,
 				size   = .r4,
@@ -1773,8 +1871,8 @@ x64_emit_instr :: proc(
 			}
 		} else {
 			// call $lib_call.id
-			emit(ctx.code, {0xe8, 0, 0, 0, 0})
-			add_reloc(ctx.relocs)^ = {
+			backend.emit(ctx.code, {0xe8, 0, 0, 0, 0})
+			backend.add_reloc(ctx.relocs)^ = {
 				offset = u32(ctx.code.pos - ctx.code_start),
 				kind   = .Text,
 				size   = .r4,
@@ -1784,7 +1882,7 @@ x64_emit_instr :: proc(
 	case .Poison, .Arg, .Phi, .Ret, .Mem, .Sym:
 	case .CInt:
 		dst := reg_of(ctx, instr)
-		imm := graph_extra(ctx, node, CInt).value
+		imm := backend.graph_extra(ctx, node, backend.CInt).value
 
 		switch node.dt {
 		case .Void:
@@ -1792,26 +1890,26 @@ x64_emit_instr :: proc(
 		case .I8 ..= .I64:
 			// mov $dst, $imm
 			emit_single_op(ctx.code, 0xb8, dst)
-			emit_anys(ctx.code, imm)
+			backend.emit_anys(ctx.code, imm)
 		case .F32, .F64:
 			d_spill := dst.index >= GPA_REG_COUNT
 		}
 	case .X64_Add ..= .X64_Xor, .X64_Shl ..= .X64_U_Shr:
 		imm := mem_op.imm
 
-		is_shift := .X64_Shl <= node.xtype && node.xtype <= .X64_U_Shr
+		is_shift := .X64_Shl <= xtype(node) && xtype(node) <= .X64_U_Shr
 
 		switch mem_op.mem_mode {
 		case .None:
-			op := OPCODE_TABLE[node.xtype]
+			op := OPCODE_TABLE[xtype(node)]
 			dst := reg_of(ctx, node.inps[0])
 
 			// add/sub/and/or/xor $dst, $imm
-			rx := rex(RAX, dst, RAX, DT_SIZE[node.dt] == 8)
+			rx := rex(RAX, dst, RAX, backend.DT_SIZE[node.dt] == 8)
 			emit_sized_opcode(ctx.code, node.dt, rx, op.opcode)
-			emit(ctx.code, {mod_sm(.Direct, op.ext, dst)})
+			backend.emit(ctx.code, {mod_sm(.Direct, op.ext, dst)})
 			if is_shift {
-				emit(ctx.code, {u8(imm)})
+				backend.emit(ctx.code, {u8(imm)})
 			} else {
 				emit_imm_for_dt(ctx.code, node.dt, imm)
 			}
@@ -1819,10 +1917,10 @@ x64_emit_instr :: proc(
 			dst, sdis, id := reg_and_disp_of(ctx, node.inps[2])
 			dis := mem_op.dis
 
-			op := OPCODE_TABLE[node.xtype]
-			src := Reg(op.ext)
+			op := OPCODE_TABLE[xtype(node)]
+			src := backend.Reg(op.ext)
 			if 3 + imm_boundary < len(node.inps) {
-				op = DEST_MODE_OPCODE_TABLE[node.xtype]
+				op = DEST_MODE_OPCODE_TABLE[xtype(node)]
 				if !is_shift {
 					src = reg_of(ctx, node.inps[3])
 				}
@@ -1830,17 +1928,17 @@ x64_emit_instr :: proc(
 
 			tb: int = 0
 			if 3 + imm_boundary >= len(node.inps) {
-				tb = is_shift ? 1 : DT_SIZE[mem_op.dt]
+				tb = is_shift ? 1 : backend.DT_SIZE[mem_op.dt]
 			}
 
 			// add/sub/and/or/xor [$dst + $idx * $scl + $sdis + $dis], $src/$imm
-			rx := rex(src, dst, idx, DT_SIZE[mem_op.dt] == 8)
+			rx := rex(src, dst, idx, backend.DT_SIZE[mem_op.dt] == 8)
 			emit_sized_opcode(ctx.code, mem_op.dt, rx, op.opcode)
 			emit_indirect_addr(ctx, src, dst, idx, scl, dis + sdis, id, tb)
 
 			if 3 + imm_boundary >= len(node.inps) {
 				if is_shift {
-					emit(ctx.code, {u8(imm)})
+					backend.emit(ctx.code, {u8(imm)})
 				} else {
 					emit_imm_for_dt(ctx.code, mem_op.dt, imm)
 				}
@@ -1851,10 +1949,10 @@ x64_emit_instr :: proc(
 			bse, sdis, id := reg_and_disp_of(ctx, node.inps[2])
 			dis := mem_op.dis
 
-			op := SRC_MODE_OPCODE_TABLE[node.xtype]
+			op := SRC_MODE_OPCODE_TABLE[xtype(node)]
 
 			// add/sub/and/or/xor $dst, [$bse + $sdis + $dis]
-			rx := rex(dst, bse, idx, DT_SIZE[node.dt] == 8)
+			rx := rex(dst, bse, idx, backend.DT_SIZE[node.dt] == 8)
 			emit_sized_opcode(ctx.code, node.dt, rx, op.opcode)
 			emit_indirect_addr(ctx, dst, bse, idx, scl, dis + sdis, id)
 		}
@@ -1862,10 +1960,10 @@ x64_emit_instr :: proc(
 		// add/sub/and/or/xor $dst, $rhs
 		dst := reg_of(ctx, node.inps[0])
 		rhs := reg_of(ctx, node.inps[1])
-		rx := rex(rhs, dst, RAX, DT_SIZE[node.dt] == 8)
-		op := OPCODE_TABLE[node.xtype].opcode
+		rx := rex(rhs, dst, RAX, backend.DT_SIZE[node.dt] == 8)
+		op := OPCODE_TABLE[xtype(node)].opcode
 		emit_sized_opcode(ctx.code, node.dt, rx, op)
-		emit(ctx.code, {mod_rm(.Direct, rhs, dst)})
+		backend.emit(ctx.code, {mod_rm(.Direct, rhs, dst)})
 	case .Eq ..= .U_Ge, .X64_Eq ..= .X64_U_Ge:
 		switch mem_op.mem_mode {
 		case .Dest:
@@ -1874,9 +1972,9 @@ x64_emit_instr :: proc(
 			op_dt := mem_op.dt
 
 			// cmp [$bse + $idx * $scl + $sdis + $dis], $imm
-			rx := rex(RAX, bse, idx, DT_SIZE[op_dt] == 8)
+			rx := rex(RAX, bse, idx, backend.DT_SIZE[op_dt] == 8)
 			emit_sized_opcode(ctx.code, op_dt, rx, 0x81)
-			tb := DT_SIZE[op_dt]
+			tb := backend.DT_SIZE[op_dt]
 			emit_indirect_addr(ctx, 0b111, bse, idx, scl, dis + sdis, id, tb)
 			emit_imm_for_dt(ctx.code, op_dt, mem_op.imm)
 		case .Src:
@@ -1886,23 +1984,23 @@ x64_emit_instr :: proc(
 			dis := mem_op.dis
 
 			// cmp $dst, [$bse + $idx * $scl + $sdis + $dis]
-			rx := rex(lhs, bse, idx, DT_SIZE[mem_op.dt] == 8)
+			rx := rex(lhs, bse, idx, backend.DT_SIZE[mem_op.dt] == 8)
 			emit_sized_opcode(ctx.code, mem_op.dt, rx, 0x3b)
 			emit_indirect_addr(ctx, lhs, bse, idx, scl, dis + sdis, id)
 		case .None:
 			lhs := reg_of(ctx, node.inps[0])
-			op_dt := graph_get(ctx, node.inps[0]).dt
+			op_dt := backend.graph_get(ctx, node.inps[0]).dt
 			if 1 < len(node.inps) {
 				// cmp $lhs, $rhs
 				rhs := reg_of(ctx, node.inps[1])
-				rx := rex(lhs, rhs, RAX, DT_SIZE[op_dt] == 8)
+				rx := rex(lhs, rhs, RAX, backend.DT_SIZE[op_dt] == 8)
 				emit_sized_opcode(ctx.code, op_dt, rx, 0x3b)
-				emit(ctx.code, {mod_rm(.Direct, lhs, rhs)})
+				backend.emit(ctx.code, {mod_rm(.Direct, lhs, rhs)})
 			} else {
 				// cmp $lhs, $imm
-				rx := rex(RAX, lhs, RAX, DT_SIZE[op_dt] == 8)
+				rx := rex(RAX, lhs, RAX, backend.DT_SIZE[op_dt] == 8)
 				emit_sized_opcode(ctx.code, op_dt, rx, 0x81)
-				emit(ctx.code, {mod_sm(.Direct, 0b111, lhs)})
+				backend.emit(ctx.code, {mod_sm(.Direct, 0b111, lhs)})
 				emit_imm_for_dt(ctx.code, op_dt, mem_op.imm)
 			}
 		}
@@ -1912,86 +2010,86 @@ x64_emit_instr :: proc(
 
 			// setcc $lhs
 			rx := rex(RAX, dst, RAX, true)
-			op := OPCODE_TABLE[node.xtype].opcode
-			emit(ctx.code, {rx, 0x0F, op, mod_sm(.Direct, 0b000, dst)})
+			op := OPCODE_TABLE[xtype(node)].opcode
+			backend.emit(ctx.code, {rx, 0x0F, op, mod_sm(.Direct, 0b000, dst)})
 
 			// movzx $lhs, $lhs
 			rx = rex(dst, dst, RAX, true)
-			emit(ctx.code, {rx, 0x0F, 0xB6, mod_rm(.Direct, dst, dst)})
+			backend.emit(ctx.code, {rx, 0x0F, 0xB6, mod_rm(.Direct, dst, dst)})
 		}
 	case .And_Not:
 		dst := reg_of(ctx, node.inps[1])
 		lhs := reg_of(ctx, node.inps[0])
 		// not $dst
-		rx := rex(RAX, dst, RAX, DT_SIZE[node.dt] == 8)
+		rx := rex(RAX, dst, RAX, backend.DT_SIZE[node.dt] == 8)
 		emit_sized_opcode(ctx.code, node.dt, rx, 0xf7)
-		emit(ctx.code, {mod_sm(.Direct, 0b010, dst)})
+		backend.emit(ctx.code, {mod_sm(.Direct, 0b010, dst)})
 		// and $dst, $lhs
-		rx = rex(lhs, dst, RAX, DT_SIZE[node.dt] == 8)
+		rx = rex(lhs, dst, RAX, backend.DT_SIZE[node.dt] == 8)
 		emit_sized_opcode(ctx.code, node.dt, rx, 0x21)
-		emit(ctx.code, {mod_rm(.Direct, lhs, dst)})
+		backend.emit(ctx.code, {mod_rm(.Direct, lhs, dst)})
 	case .Shl ..= .U_Shr:
 		// shl/shr $dst, cl
 		dst := reg_of(ctx, node.inps[0])
-		rx := rex(RAX, dst, RAX, DT_SIZE[node.dt] == 8)
-		op := OPCODE_TABLE[node.xtype].ext
+		rx := rex(RAX, dst, RAX, backend.DT_SIZE[node.dt] == 8)
+		op := OPCODE_TABLE[xtype(node)].ext
 		emit_sized_opcode(ctx.code, node.dt, rx, 0xd3)
-		emit(ctx.code, {mod_sm(.Direct, op, dst)})
+		backend.emit(ctx.code, {mod_sm(.Direct, op, dst)})
 	case .X64_Neg ..= .X64_Not:
 		assert(mem_op.mem_mode == .Dest)
 		dis := mem_op.dis
 		dst, sdis, id := reg_and_disp_of(ctx, node.inps[2])
 
-		op := DEST_MODE_OPCODE_TABLE[node.xtype]
+		op := DEST_MODE_OPCODE_TABLE[xtype(node)]
 
 		// neg/not [$dst + $idx * $scl + $sdis + $dis]
-		rx := rex(RAX, dst, idx, DT_SIZE[mem_op.dt] == 8)
+		rx := rex(RAX, dst, idx, backend.DT_SIZE[mem_op.dt] == 8)
 		emit_sized_opcode(ctx.code, mem_op.dt, rx, op.opcode)
 		emit_indirect_addr(ctx, op.ext, dst, idx, scl, dis + sdis, id)
 	case .Neg ..= .Not:
 		// neg/not $dst
 		dst := reg_of(ctx, node.inps[0])
-		op := OPCODE_TABLE[node.xtype]
-		rx := rex(RAX, dst, RAX, DT_SIZE[node.dt] == 8)
+		op := OPCODE_TABLE[xtype(node)]
+		rx := rex(RAX, dst, RAX, backend.DT_SIZE[node.dt] == 8)
 		emit_sized_opcode(ctx.code, node.dt, rx, op.opcode)
-		emit(ctx.code, {mod_sm(.Direct, op.ext, dst)})
+		backend.emit(ctx.code, {mod_sm(.Direct, op.ext, dst)})
 	case .Mul:
 		dst := reg_of(ctx, node.inps[0])
 		rhs := reg_of(ctx, node.inps[1])
 
 		// imul $dst, $rhs
-		rx := rex(dst, rhs, RAX, DT_SIZE[node.dt] == 8)
+		rx := rex(dst, rhs, RAX, backend.DT_SIZE[node.dt] == 8)
 		emit_extended_sized_opcode(ctx.code, node.dt, rx, 0xaf)
-		emit(ctx.code, {mod_rm(.Direct, dst, rhs)})
+		backend.emit(ctx.code, {mod_rm(.Direct, dst, rhs)})
 	case .X64_Mul:
 		dst := reg_of(ctx, instr)
 		lhs := reg_of(ctx, node.inps[0])
 		imm := mem_op.imm
 
 		// imul $dst, $lhs, $imm
-		rx := rex(dst, lhs, RAX, DT_SIZE[node.dt] == 8)
+		rx := rex(dst, lhs, RAX, backend.DT_SIZE[node.dt] == 8)
 		emit_sized_opcode(ctx.code, node.dt, rx, 0x69)
-		emit(ctx.code, {mod_rm(.Direct, dst, lhs)})
+		backend.emit(ctx.code, {mod_rm(.Direct, dst, lhs)})
 		emit_imm_for_dt(ctx.code, node.dt, imm)
 	case .X64_Mul8:
 		// imul $op
 		dst := reg_of(ctx, node.inps[0])
-		emit(ctx.code, {0xf6, mod_sm(.Direct, 0b101, dst)})
+		backend.emit(ctx.code, {0xf6, mod_sm(.Direct, 0b101, dst)})
 	case .F_Add ..= .F_Div:
 		// dst == lhs (in place); op dst, rhs
 		dst := reg_of(ctx, node.inps[0])
 		rhs := reg_of(ctx, node.inps[1])
 
 		rx := rex(dst, rhs, RAX, false)
-		op := OPCODE_TABLE[node.xtype].opcode
-		emit(ctx.code, {pfx, rx, 0x0f, op, mod_rm(.Direct, dst, rhs)})
+		op := OPCODE_TABLE[xtype(node)].opcode
+		backend.emit(ctx.code, {pfx, rx, 0x0f, op, mod_rm(.Direct, dst, rhs)})
 	case .X64_Fma_213:
 		switch mem_op.mem_mode {
 		case .None:
 			dst := reg_of(ctx, node.inps[0])
 			smul := reg_of(ctx, node.inps[1])
 			sadd := reg_of(ctx, node.inps[2])
-			emit(
+			backend.emit(
 				ctx.code,
 				{
 					vex3(dst, sadd, idx, smul, wide, ._0F38, .P66, false),
@@ -2005,7 +2103,7 @@ x64_emit_instr :: proc(
 			mem_idx := node.data_start == 1 ? 0 : 2
 			sadd, sdis, id := reg_and_disp_of(ctx, node.inps[mem_idx])
 			dis := mem_op.dis
-			emit(
+			backend.emit(
 				ctx.code,
 				{vex3(dst, sadd, idx, smul, wide, ._0F38, .P66, false), 0xa9},
 			)
@@ -2020,8 +2118,8 @@ x64_emit_instr :: proc(
 		dis := mem_op.dis
 
 		rx := rex(dst, bse, idx, false)
-		op := SRC_MODE_OPCODE_TABLE[node.xtype].opcode
-		emit(ctx.code, {pfx, rx, 0x0f, op})
+		op := SRC_MODE_OPCODE_TABLE[xtype(node)].opcode
+		backend.emit(ctx.code, {pfx, rx, 0x0f, op})
 		emit_indirect_addr(ctx, dst, bse, idx, scl, dis + sdis, id)
 	case .F_Eq ..= .F_Ge, .X64_F_Eq ..= .X64_F_Ge:
 		switch mem_op.mem_mode {
@@ -2032,65 +2130,80 @@ x64_emit_instr :: proc(
 			lhs := reg_of(ctx, node.inps[lhs_idx])
 			mem_idx := node.data_start == 1 ? 0 : 2
 			bse, sdis, id := reg_and_disp_of(ctx, node.inps[mem_idx])
-			odt := graph_get(ctx, node.inps[lhs_idx]).dt
+			odt := backend.graph_get(ctx, node.inps[lhs_idx]).dt
 			dis := mem_op.dis
 
 			// ucomiss/ucomisd $lhs, [$rhs + $idx * scl + $sdis + $dis]
-			if odt == .F64 do emit(ctx.code, {0x66})
+			if odt == .F64 do backend.emit(ctx.code, {0x66})
 			rx := rex(lhs, bse, RAX, false)
-			emit(ctx.code, {rx, 0x0f, 0x2e})
+			backend.emit(ctx.code, {rx, 0x0f, 0x2e})
 			emit_indirect_addr(ctx, lhs, bse, idx, scl, dis + sdis, id)
 		case .None:
 			// ucomiss/ucomisd $lhs, $rhs
 			lhs := reg_of(ctx, node.inps[0])
 			rhs := reg_of(ctx, node.inps[1])
-			odt := graph_get(ctx, node.inps[0]).dt
+			odt := backend.graph_get(ctx, node.inps[0]).dt
 
 			a, b := lhs, rhs
-			#partial switch node.xtype {
+			#partial switch xtype(node) {
 			case .F_Lt, .F_Le:
 				a, b = rhs, lhs
 			}
 
 			// [66] 0F 2E /r  (ucomisd needs the 0x66 prefix, ucomiss none)
-			if odt == .F64 do emit(ctx.code, {0x66})
+			if odt == .F64 do backend.emit(ctx.code, {0x66})
 			rx := rex(a, b, RAX, false)
-			emit(ctx.code, {rx, 0x0f, 0x2e, mod_rm(.Direct, a, b)})
+			backend.emit(ctx.code, {rx, 0x0f, 0x2e, mod_rm(.Direct, a, b)})
 		}
 
 		if node.dt != .Void {
-			setcc: u8 = OPCODE_TABLE[node.xtype].opcode
+			setcc: u8 = OPCODE_TABLE[xtype(node)].opcode
 
 			dst := reg_of(ctx, instr)
 			// setcc $dst
 			rxs := rex(RAX, dst, RAX, true)
-			emit(ctx.code, {rxs, 0x0F, setcc, mod_sm(.Direct, 0b000, dst)})
+			backend.emit(
+				ctx.code,
+				{rxs, 0x0F, setcc, mod_sm(.Direct, 0b000, dst)},
+			)
 			// movzx $dst, $dst
 			rxz := rex(dst, dst, RAX, true)
-			emit(ctx.code, {rxz, 0x0F, 0xB6, mod_rm(.Direct, dst, dst)})
+			backend.emit(
+				ctx.code,
+				{rxz, 0x0F, 0xB6, mod_rm(.Direct, dst, dst)},
+			)
 		}
 	case .F_From_I:
 		// cvtsi2ss/cvtsi2sd $dst(xmm), $src(gpr)
 		dst := reg_of(ctx, instr)
 		src := reg_of(ctx, node.inps[0])
-		sdt := graph_get(ctx, node.inps[0]).dt
-		rx := rex(dst, src, RAX, DT_SIZE[sdt] == 8)
-		emit(ctx.code, {pfx, rx, 0x0f, 0x2a, mod_rm(.Direct, dst, src)})
+		sdt := backend.graph_get(ctx, node.inps[0]).dt
+		rx := rex(dst, src, RAX, backend.DT_SIZE[sdt] == 8)
+		backend.emit(
+			ctx.code,
+			{pfx, rx, 0x0f, 0x2a, mod_rm(.Direct, dst, src)},
+		)
 	case .F_To_I:
 		// cvttss2si/cvttsd2si $dst(gpr), $src(xmm)
 		dst := reg_of(ctx, instr)
 		src := reg_of(ctx, node.inps[0])
-		sdt := graph_get(ctx, node.inps[0]).dt
+		sdt := backend.graph_get(ctx, node.inps[0]).dt
 		pfx: u8 = sdt == .F64 ? 0xF2 : 0xF3
-		rx := rex(dst, src, RAX, DT_SIZE[node.dt] == 8)
-		emit(ctx.code, {pfx, rx, 0x0f, 0x2c, mod_rm(.Direct, dst, src)})
+		rx := rex(dst, src, RAX, backend.DT_SIZE[node.dt] == 8)
+		backend.emit(
+			ctx.code,
+			{pfx, rx, 0x0f, 0x2c, mod_rm(.Direct, dst, src)},
+		)
 	case .F_Ext, .F_Demote:
 		// cvtss2sd $dst, $src (f32 -> f64)
 		dst := reg_of(ctx, instr)
 		src := reg_of(ctx, node.inps[0])
 		rx := rex(dst, src, RAX, false)
 		pfx: u8 = node.dt == .F64 ? 0xF3 : 0xF2
-		emit(ctx.code, {pfx, rx, 0x0f, 0x5a, mod_rm(.Direct, dst, src)})
+		backend.emit(
+			ctx.code,
+			{pfx, rx, 0x0f, 0x5a, mod_rm(.Direct, dst, src)},
+		)
 	case .Div, .Rem:
 		rhs := reg_of(ctx, node.inps[1])
 		#partial switch node.dt {
@@ -2098,43 +2211,43 @@ x64_emit_instr :: proc(
 			panic("")
 		case .I8:
 			// cbw
-			emit(ctx.code, {0x66, 0x98})
+			backend.emit(ctx.code, {0x66, 0x98})
 		case .I16:
 			// cwd
-			emit(ctx.code, {0x66, 0x99})
+			backend.emit(ctx.code, {0x66, 0x99})
 		case .I32:
 			// cdq
-			emit(ctx.code, {0x99})
+			backend.emit(ctx.code, {0x99})
 		case .I64:
 			// cqo
-			emit(ctx.code, {0x48, 0x99})
+			backend.emit(ctx.code, {0x48, 0x99})
 		}
 
 		// idiv $rhs
-		rx := rex(RAX, rhs, RAX, DT_SIZE[node.dt] == 8)
+		rx := rex(RAX, rhs, RAX, backend.DT_SIZE[node.dt] == 8)
 		emit_sized_opcode(ctx.code, node.dt, rx, 0xf7)
-		emit(ctx.code, {mod_sm(.Direct, 0b111, rhs)})
+		backend.emit(ctx.code, {mod_sm(.Direct, 0b111, rhs)})
 		if node.itype == .Rem && node.dt == .I8 {
 			// movzx edx, ah
-			emit(ctx.code, {0x0F, 0xB6, 0xD4})
+			backend.emit(ctx.code, {0x0F, 0xB6, 0xD4})
 		}
 	case .U_Div, .U_Rem:
 		rhs := reg_of(ctx, node.inps[1])
 		if node.dt != .I8 {
 			// xor rdx, rdx
 			rx := rex(RDX, RDX, RAX, true)
-			emit(ctx.code, {rx, 0x31, mod_rm(.Direct, RDX, RDX)})
+			backend.emit(ctx.code, {rx, 0x31, mod_rm(.Direct, RDX, RDX)})
 		} else {
 			// movzx ax, al
-			emit(ctx.code, {0x0F, 0xB6, 0xC0})
+			backend.emit(ctx.code, {0x0F, 0xB6, 0xC0})
 		}
 		// div $rhs
-		rx := rex(RAX, rhs, RAX, DT_SIZE[node.dt] == 8)
+		rx := rex(RAX, rhs, RAX, backend.DT_SIZE[node.dt] == 8)
 		emit_sized_opcode(ctx.code, node.dt, rx, 0xf7)
-		emit(ctx.code, {mod_sm(.Direct, 0b110, rhs)})
+		backend.emit(ctx.code, {mod_sm(.Direct, 0b110, rhs)})
 		if node.itype == .U_Rem && node.dt == .I8 {
 			// movsx edx, ah
-			emit(ctx.code, {0x0F, 0xBE, 0xD4})
+			backend.emit(ctx.code, {0x0F, 0xBE, 0xD4})
 		}
 	case .Split:
 		dst := reg_of(ctx, instr)
@@ -2153,22 +2266,28 @@ x64_emit_instr :: proc(
 				// the stack with push/pop, which never touches an xmm register.
 				// (slots are 8-byte sized, so this is correct for f32 too.)
 				// push [rsp + $src_off]
-				emit(ctx.code, {0xff})
-				spill_indirect_addr(ctx, Reg(0b110), src_off)
+				backend.emit(ctx.code, {0xff})
+				spill_indirect_addr(ctx, backend.Reg(0b110), src_off)
 				// pop [rsp + $dst_off]
-				emit(ctx.code, {0x8F})
-				spill_indirect_addr(ctx, Reg(0b000), dst_off - 8)
+				backend.emit(ctx.code, {0x8F})
+				spill_indirect_addr(ctx, backend.Reg(0b000), dst_off - 8)
 			} else if d_spill {
 				// movss/movsd [rsp + $dst_off], $src
-				emit(ctx.code, {pfx, rex(src, RSP, RAX, false), 0x0f, 0x11})
+				backend.emit(
+					ctx.code,
+					{pfx, rex(src, RSP, RAX, false), 0x0f, 0x11},
+				)
 				spill_indirect_addr(ctx, src, dst_off)
 			} else if s_spill {
 				// movss/movsd $dst, [rsp + $src_off]
-				emit(ctx.code, {pfx, rex(dst, RSP, RAX, false), 0x0f, 0x10})
+				backend.emit(
+					ctx.code,
+					{pfx, rex(dst, RSP, RAX, false), 0x0f, 0x10},
+				)
 				spill_indirect_addr(ctx, dst, src_off)
 			} else {
 				// movss/movsd $dst, $src
-				emit(
+				backend.emit(
 					ctx.code,
 					{
 						pfx,
@@ -2184,33 +2303,33 @@ x64_emit_instr :: proc(
 
 		if int(dst) >= 16 && int(src) >= 16 {
 			// push [rsp + $src_offset]
-			emit(ctx.code, {0xff})
-			spill_indirect_addr(ctx, Reg(0b110), src_off)
+			backend.emit(ctx.code, {0xff})
+			spill_indirect_addr(ctx, backend.Reg(0b110), src_off)
 			// pop [rsp + $dst_off]
-			emit(ctx.code, {0x8F})
-			spill_indirect_addr(ctx, Reg(0b000), dst_off)
+			backend.emit(ctx.code, {0x8F})
+			spill_indirect_addr(ctx, backend.Reg(0b000), dst_off)
 		} else if int(dst) >= 16 {
 			// mov [rsp + $dst_offset], $src
 			fmt.assertf(int(src) < 16, "%v", node.node)
 
-			emit(ctx.code, {rex(src, RSP, RAX, true), 0x89})
+			backend.emit(ctx.code, {rex(src, RSP, RAX, true), 0x89})
 			spill_indirect_addr(ctx, src, dst_off)
 		} else if int(src) >= 16 {
 			// mov $dst, [rsp + $src_offset]
 
-			emit(ctx.code, {rex(dst, RSP, RAX, true), 0x8b})
+			backend.emit(ctx.code, {rex(dst, RSP, RAX, true), 0x8b})
 			spill_indirect_addr(ctx, dst, src_off)
 		} else {
 			// mov $dst, $src
 			rx := rex(src, dst, RAX, true)
-			emit(ctx.code, {rx, 0x89, mod_rm(.Direct, src, dst)})
+			backend.emit(ctx.code, {rx, 0x89, mod_rm(.Direct, src, dst)})
 		}
 
-		spill_indirect_addr :: proc(ctx: ^Ctx, reg: Reg, off: i32) {
+		spill_indirect_addr :: proc(ctx: ^Ctx, reg: backend.Reg, off: i32) {
 			emit_indirect_addr(ctx, reg, RSP, NO_INDEX, 1, off, 0)
 		}
 
-		spill_slot_offset :: proc(ctx: ^Ctx, reg: Reg) -> i32 {
+		spill_slot_offset :: proc(ctx: ^Ctx, reg: backend.Reg) -> i32 {
 			if reg.index < GPA_REG_COUNT do return 0
 
 			param_count := len(ctx.stack_param_offset[reg.kind])
@@ -2238,20 +2357,30 @@ x64_emit_instr :: proc(
 		}
 
 		// ret
-		emit(ctx.code, {0xc3})
+		backend.emit(ctx.code, {0xc3})
 	}
 }
 
-reg_of :: proc(ctx: Codegen_Emit_Ctx, id: Node_ID) -> Reg {
-	node := graph_get(ctx, id)
+reg_of :: proc(
+	ctx: backend.Codegen_Emit_Ctx,
+	id: backend.Node_ID,
+) -> backend.Reg {
+	node := backend.graph_get(ctx, id)
 	assert(int(node.gvn) < len(ctx.allocs))
 	return ctx.allocs[node.gvn]
 }
 
-reg_and_disp_of :: proc(ctx: ^Ctx, id: Node_ID) -> (Reg, i32, u32) {
-	node := graph_get(ctx, id)
+reg_and_disp_of :: proc(
+	ctx: ^Ctx,
+	id: backend.Node_ID,
+) -> (
+	backend.Reg,
+	i32,
+	u32,
+) {
+	node := backend.graph_get(ctx, id)
 	if node.itype == .Global {
-		tup: ^Tup = graph_extra(ctx, node, Tup)
+		tup: ^backend.Tup = backend.graph_extra(ctx, node, backend.Tup)
 
 		if tup.is_inline {
 			tup.idx = emit_big_constant(
@@ -2266,13 +2395,18 @@ reg_and_disp_of :: proc(ctx: ^Ctx, id: Node_ID) -> (Reg, i32, u32) {
 		return RIP, 0, tup.idx + 1
 	}
 	if node.itype == .Local {
-		return RSP, i32(graph_extra(ctx, node, Local).offset), 0
+		return RSP,
+			i32(backend.graph_extra(ctx, node, backend.Local).offset),
+			0
 	}
 	return ctx.allocs[node.gvn], 0, 0
 }
 
-emit_single_op :: proc(code: ^arna.Allocator, op_base: u8, dst: Reg) {
-	emit(code, {rex(RAX, dst, RAX, true), op_base + u8(dst.index & 0b111)})
+emit_single_op :: proc(code: ^arna.Allocator, op_base: u8, dst: backend.Reg) {
+	backend.emit(
+		code,
+		{rex(RAX, dst, RAX, true), op_base + u8(dst.index & 0b111)},
+	)
 }
 
 mod_from_dis :: proc(dis: i64) -> Mod {
@@ -2294,26 +2428,35 @@ emit_indirect_addr :: proc {
 emit_indirect_addr_op :: #force_inline proc(
 	ctx: ^Ctx,
 	op: u8,
-	base: Reg,
-	index: Reg,
+	base: backend.Reg,
+	index: backend.Reg,
 	#any_int scale: u64,
 	#any_int dis: i64,
 	reloc: u32,
 	#any_int tb: i64 = 0,
 ) {
-	emit_indirect_addr(ctx, Reg(op), base, index, scale, dis, reloc, tb)
+	emit_indirect_addr(
+		ctx,
+		backend.Reg(op),
+		base,
+		index,
+		scale,
+		dis,
+		reloc,
+		tb,
+	)
 }
 
 emit_indirect_addr_reg :: proc(
 	ctx: ^Ctx,
-	reg: Reg,
-	base: Reg,
-	index: Reg,
+	reg: backend.Reg,
+	base: backend.Reg,
+	index: backend.Reg,
 	#any_int scale: u64,
 	#any_int dis: i64,
 	reloc: u32,
 	#any_int trailing_imm: i64 = 0,
-	kind: Reloc_Kind = .Global,
+	kind: backend.Reloc_Kind = .Global,
 ) {
 	scl := max(scale, 1)
 	timm := min(trailing_imm, 4)
@@ -2333,18 +2476,18 @@ emit_indirect_addr_reg :: proc(
 	}
 
 	if index != NO_INDEX || ill_base || scl != 1 {
-		emit(ctx.code, {mod_rm(mod, reg, RSP), sib(base, index, scl)})
+		backend.emit(ctx.code, {mod_rm(mod, reg, RSP), sib(base, index, scl)})
 	} else {
-		emit(ctx.code, {mod_rm(mod, reg, base)})
+		backend.emit(ctx.code, {mod_rm(mod, reg, base)})
 	}
 
 	switch mod {
 	case .Indirect:
-		if rip_relative do emit_anys(ctx.code, u32(dis - timm))
+		if rip_relative do backend.emit_anys(ctx.code, u32(dis - timm))
 	case .Indirect_Disp8:
-		emit(ctx.code, {u8(dis)})
+		backend.emit(ctx.code, {u8(dis)})
 	case .Indirect_Disp32:
-		emit_anys(ctx.code, u32(dis))
+		backend.emit_anys(ctx.code, u32(dis))
 	case .Direct:
 		fallthrough
 	case:
@@ -2352,7 +2495,7 @@ emit_indirect_addr_reg :: proc(
 	}
 
 	if reloc != 0 {
-		add_reloc(ctx.relocs)^ = {
+		backend.add_reloc(ctx.relocs)^ = {
 			offset = u32(ctx.code.pos - ctx.code_start),
 			kind   = kind,
 			size   = .r4,
@@ -2365,18 +2508,25 @@ emit_imm_op :: proc(
 	code: ^arna.Allocator,
 	op: u8,
 	mod: u8,
-	dst: Reg,
+	dst: backend.Reg,
 	#any_int imm: i64,
 ) {
 	is_small_imm := imm >= -128 && imm <= 127
 
 	rx := rex(dst, RAX, RAX, true)
-	emit(code, {rx, op + 2 * u8(is_small_imm), mod_rm(.Direct, Reg(mod), dst)})
+	backend.emit(
+		code,
+		{
+			rx,
+			op + 2 * u8(is_small_imm),
+			mod_rm(.Direct, backend.Reg(mod), dst),
+		},
+	)
 
 	if is_small_imm {
-		emit(code, {u8(imm)})
+		backend.emit(code, {u8(imm)})
 	} else {
-		emit_anys(code, u32(imm))
+		backend.emit_anys(code, u32(imm))
 	}
 }
 
@@ -2387,7 +2537,7 @@ Mod :: enum u8 {
 	Direct,
 }
 
-mod_rm :: proc(mod: Mod, reg: Reg, r_m: Reg) -> u8 {
+mod_rm :: proc(mod: Mod, reg: backend.Reg, r_m: backend.Reg) -> u8 {
 	Mod_Rm :: bit_field u8 {
 		r_m: u16 | 3,
 		reg: u16 | 3,
@@ -2397,11 +2547,15 @@ mod_rm :: proc(mod: Mod, reg: Reg, r_m: Reg) -> u8 {
 	return u8(Mod_Rm{mod = mod, reg = reg.index, r_m = r_m.index})
 }
 
-mod_sm :: #force_inline proc(mod: Mod, #any_int sub: int, r_m: Reg) -> u8 {
-	return mod_rm(mod, Reg(sub), r_m)
+mod_sm :: #force_inline proc(
+	mod: Mod,
+	#any_int sub: int,
+	r_m: backend.Reg,
+) -> u8 {
+	return mod_rm(mod, backend.Reg(sub), r_m)
 }
 
-sib :: proc(base: Reg, index: Reg, #any_int scale: int) -> u8 {
+sib :: proc(base: backend.Reg, index: backend.Reg, #any_int scale: int) -> u8 {
 	Sib :: bit_field u8 {
 		base:  u16 | 3,
 		index: u16 | 3,
@@ -2419,7 +2573,7 @@ sib :: proc(base: Reg, index: Reg, #any_int scale: int) -> u8 {
 	)
 }
 
-rex :: proc(reg, ptr, idx: Reg, wide: bool) -> u8 {
+rex :: proc(reg, ptr, idx: backend.Reg, wide: bool) -> u8 {
 	res: u8 = NOOP_REX
 
 	if wide do res |= 0b0000_1000
@@ -2448,7 +2602,7 @@ Vex_PP :: enum u8 {
 }
 
 vex3 :: proc(
-	reg, ptr, idx, vvvv: Reg,
+	reg, ptr, idx, vvvv: backend.Reg,
 	wide: bool,
 	mapa: Vex_Map,
 	pp: Vex_PP,
@@ -2475,16 +2629,20 @@ vex3 :: proc(
 	return 0xC4, b1, b2
 }
 
-emit_imm_for_dt :: proc(code: ^arna.Allocator, dt: Node_Datatype, imm: i32) {
+emit_imm_for_dt :: proc(
+	code: ^arna.Allocator,
+	dt: backend.Node_Datatype,
+	imm: i32,
+) {
 	switch dt {
 	case .Void:
 		panic("")
 	case .I8:
-		emit_anys(code, i8(imm))
+		backend.emit_anys(code, i8(imm))
 	case .I16:
-		emit_anys(code, i16(imm))
+		backend.emit_anys(code, i16(imm))
 	case .I64, .I32, .F32:
-		emit_anys(code, imm)
+		backend.emit_anys(code, imm)
 	case .F64:
 		panic("no")
 	}
@@ -2492,7 +2650,7 @@ emit_imm_for_dt :: proc(code: ^arna.Allocator, dt: Node_Datatype, imm: i32) {
 
 emit_extended_sized_opcode :: proc(
 	code: ^arna.Allocator,
-	dt: Node_Datatype,
+	dt: backend.Node_Datatype,
 	rx: u8,
 	op: u8,
 ) {
@@ -2500,11 +2658,11 @@ emit_extended_sized_opcode :: proc(
 	case .Void:
 		panic("")
 	case .I8:
-		emit(code, {rx, 0x0f, op - 1})
+		backend.emit(code, {rx, 0x0f, op - 1})
 	case .I16:
-		emit(code, {0x66, rx, 0x0f, op})
+		backend.emit(code, {0x66, rx, 0x0f, op})
 	case .I32, .I64:
-		emit(code, {rx, 0x0f, op})
+		backend.emit(code, {rx, 0x0f, op})
 	case .F32, .F64:
 		panic("no")
 	}
@@ -2512,7 +2670,7 @@ emit_extended_sized_opcode :: proc(
 
 emit_sized_opcode :: proc(
 	code: ^arna.Allocator,
-	dt: Node_Datatype,
+	dt: backend.Node_Datatype,
 	rx: u8,
 	op: u8,
 ) {
@@ -2520,11 +2678,11 @@ emit_sized_opcode :: proc(
 	case .Void:
 		panic("")
 	case .I8:
-		emit(code, {rx, op - 1})
+		backend.emit(code, {rx, op - 1})
 	case .I16:
-		emit(code, {0x66, rx, op})
+		backend.emit(code, {0x66, rx, op})
 	case .I32, .I64, .F32:
-		emit(code, {rx, op})
+		backend.emit(code, {rx, op})
 	case .F64:
 		panic("no")
 	}

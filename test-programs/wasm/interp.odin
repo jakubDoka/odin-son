@@ -157,7 +157,7 @@ w_name_eq :: proc(data: string, off: int, length: int, s: string) -> bool {
 }
 
 // w_find_func maps an exported function name to its function index, or -1.
-w_find_func :: proc(a: ^Arena, m: ^typecheck.Module, data: string, name: string) -> int {
+w_find_func :: proc(a: ^Arena, m: ^Module, data: string, name: string) -> int {
 	ei := 0
 	for {
 		if ei >= m.exports.len do break
@@ -175,7 +175,7 @@ w_find_func :: proc(a: ^Arena, m: ^typecheck.Module, data: string, name: string)
 // w_load_globals (re)installs each global's declared initial value. Split out of
 // w_init so the generic driver can reset mutable globals (e.g. the compiler's
 // linear-memory stack pointer) between independent invocations of a module.
-w_load_globals :: proc(a: ^Arena, m: ^typecheck.Module) {
+w_load_globals :: proc(a: ^Arena, m: ^Module) {
 	gi := 0
 	for {
 		if gi >= m.globals.len do break
@@ -185,7 +185,7 @@ w_load_globals :: proc(a: ^Arena, m: ^typecheck.Module) {
 	}
 }
 
-w_init :: proc(a: ^Arena, m: ^typecheck.Module, data: string) {
+w_init :: proc(a: ^Arena, m: ^Module, data: string) {
 	wsp = 0
 	wtrap = 0
 
@@ -233,7 +233,7 @@ w_init :: proc(a: ^Arena, m: ^typecheck.Module, data: string) {
 // w_init_data copies every active data segment into linear memory. Split into
 // its own proc so w_init keeps a single (non-nested) loop level per procedure,
 // which the JIT frontend requires.
-w_init_data :: proc(m: ^typecheck.Module, data: string) {
+w_init_data :: proc(m: ^Module, data: string) {
 	di := 0
 	for {
 		if di >= m.datas.len do break
@@ -258,7 +258,7 @@ w_init_one_data :: proc(ds: ^Data, data: string) {
 // w_exec runs the body of function `func_index`. Parameters are consumed from
 // the top of the operand stack (last parameter on top); the result, if any, is
 // left on the stack.
-w_exec :: proc(a: ^Arena, m: ^typecheck.Module, func_index: int) {
+w_exec :: proc(a: ^Arena, m: ^Module, func_index: int) {
 	if wtrap != 0 do return
 	defined := func_index - wifuncs
 	if defined < 0 {
@@ -906,7 +906,7 @@ w_simple :: proc(a: ^Arena, op: int, x: i64, y: i64) -> int {
 
 // w_finish runs the located function (params already pushed), prints the result
 // or a trap marker, and returns the numeric result for the checksum fold.
-w_finish :: proc(a: ^Arena, m: ^typecheck.Module, fidx: int) -> i64 {
+w_finish :: proc(a: ^Arena, m: ^Module, fidx: int) -> i64 {
 	if fidx < 0 {
 		print("<no export>\n")
 		return 0
@@ -936,7 +936,7 @@ w_finish :: proc(a: ^Arena, m: ^typecheck.Module, fidx: int) -> i64 {
 // six register words sidesteps it.
 w_invoke :: proc(
 	a: ^Arena,
-	m: ^typecheck.Module,
+	m: ^Module,
 	fidx: int,
 	a0: i64,
 	a1: i64,
@@ -955,7 +955,7 @@ w_invoke :: proc(
 
 // w_run sets up the runtime and drives the module's exported functions with a
 // fixed, deterministic set of arguments so the results feed the parity check.
-w_run :: proc(name: string, a: ^Arena, m: ^typecheck.Module, data: string) -> i64 {
+w_run :: proc(name: string, a: ^Arena, m: ^Module, data: string) -> i64 {
 	if !m.ok do return 0
 	print("run:\n")
 	w_init(a, m, data)
@@ -978,7 +978,7 @@ w_run :: proc(name: string, a: ^Arena, m: ^typecheck.Module, data: string) -> i6
 
 // w_param_count returns the declared parameter count of function `fidx`, or -1
 // when the index does not name a locally-defined function.
-w_param_count :: proc(a: ^Arena, m: ^typecheck.Module, fidx: int) -> int {
+w_param_count :: proc(a: ^Arena, m: ^Module, fidx: int) -> int {
 	defined := fidx - wifuncs
 	if defined < 0 do return -1
 	if defined >= m.funcs.len do return -1
@@ -993,7 +993,7 @@ w_param_count :: proc(a: ^Arena, m: ^typecheck.Module, fidx: int) -> int {
 // the results into the checksum. Mutable globals (the compiler's linear-memory
 // stack pointer) are reset before each call so one invocation cannot perturb the
 // next.
-w_run_auto :: proc(a: ^Arena, m: ^typecheck.Module, data: string) -> i64 {
+w_run_auto :: proc(a: ^Arena, m: ^Module, data: string) -> i64 {
 	if !m.ok do return 0
 	print("run:\n")
 	w_init(a, m, data)

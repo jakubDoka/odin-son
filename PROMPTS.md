@@ -484,8 +484,6 @@ fix them once you are confident you understand what is wrong.
 
 ### Rewrite the wasm test program
 
-NOTE: read AGENTS.md
-
 The test program uses horrible integer pointer convention. THe arena is
 basically a glorified dynamic array.
 
@@ -501,3 +499,19 @@ them with a small test (TESTS.md), generic functions need to work with these.
 
 If you can parallelize with agents, do so. I think you can develop the
 interpreter with the odin compiler in the mean time.
+
+### The backend module needs splitting
+
+NOTE: read AGENTS.md
+
+The backend module is getting bulky and bottle necks the compile times. Make a
+plan to split the backend module so that each Node_Spec is in its own module.
+
+The node spec array should be abolished and the big node spec should be placed
+into a file in each platform module. This also includes the Builder spec. The
+codegen function in backend/gen_spec_fn.odin should be parametrized by
+Codegen_Spec that is right now hardcoded. It should also intake a file path to
+generate. Each backend submodule than runts its spec gen separately. All reused
+spec is kept in the backend module. This is important change that will allow us
+to extend the backend with new architectures without editing the root backend
+module.

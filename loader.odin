@@ -50,6 +50,7 @@ load_dir :: proc(
 	fmt.assertf(rerr == nil, "cannot read module directory %q", dir)
 
 	mod.file_start = len(ctx.files)
+	decls: [dynamic]typecheck.Decl
 
 	for entry in entries {
 		if entry.type == .Directory do continue
@@ -70,18 +71,20 @@ load_dir :: proc(
 			fmt.assertf(pok, "failed to parse %q", entry.fullpath)
 		}
 
-		append(&ctx.files, f)
-
 		if mod.name == "" do mod.name = f.pkg_name
+
+		typecheck.collect_decls(f, &decls, typecheck.File_ID(len(ctx.files)))
+
+		append(&ctx.files, f)
 	}
+
+	typecheck.module_add_decls(ctx, mid, decls[:])
 
 	mod.file_count = len(ctx.files) - mod.file_start
 
 	if mod.name == "" {
 		mod.name = filepath.base(abs)
 	}
-
-	files := ctx.files[mod.file_start:][:mod.file_count]
 
 	for i in 0 ..< mod.file_count {
 		for decl in ctx.files[mod.file_start + i].decls[:] {

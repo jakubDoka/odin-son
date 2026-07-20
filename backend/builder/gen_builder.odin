@@ -17,12 +17,15 @@ when GEN_SPEC {
 				local_extra_types = {Scope},
 				name              = "Builder",
 				classes           = {
-					backend.ts(
+					backend.class_array(
 						&backend.IDEAL_CLASSES,
 						&IDEAL_REG_CLASSES,
 						gen_ctors = false,
 					),
-					backend.ts(&BUILDER_CLASSES, &BUILDER_REG_CLASSES),
+					backend.class_array(
+						&BUILDER_CLASSES,
+						&BUILDER_REG_CLASSES,
+					),
 				},
 				intern            = true,
 			},

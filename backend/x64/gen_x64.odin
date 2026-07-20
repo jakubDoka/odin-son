@@ -17,12 +17,12 @@ when GEN_SPEC {
 				local_extra_types = {X64_Mem_Op},
 				name = "X64",
 				classes = {
-					backend.ts(
+					backend.class_array(
 						&backend.IDEAL_CLASSES,
 						&X64_IDEAL_REG_CLASSES,
 						gen_ctors = false,
 					),
-					backend.ts(&X64_CLASSES, &X64_REG_CLASSES),
+					backend.class_array(&X64_CLASSES, &X64_REG_CLASSES),
 				},
 				datatype_to_reg_kind = #partial{
 					.I8 ..= .I64 = .General,

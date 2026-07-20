@@ -10,7 +10,6 @@ import "core:log"
 import "core:mem"
 import "core:odin/ast"
 import "core:odin/tokenizer"
-import "core:os"
 import "core:slice"
 import "core:strconv"
 import "typecheck"
@@ -404,15 +403,10 @@ module_const_lit :: proc(ctx: ^Gen_Ctx, id: ^ast.Ident) -> (^ast.Node, bool) {
 	#reverse for var in ctx.scope {
 		if var.name == id.name do return nil, false
 	}
-	if _, ok := typecheck.find_module_global(ctx, ctx.module, id.name); ok {
-		return nil, false
-	}
-	if sdecl, _, _, ok := typecheck.find_module_decl(ctx, ctx.module, id.name);
-	   ok {
-		if len(sdecl.values) == 1 {
-			if _, is_lit := sdecl.values[0].derived.(^ast.Basic_Lit); is_lit {
-				return sdecl.values[0], true
-			}
+	if sdecl, ok := typecheck.find_module_decl(ctx, ctx.module, id.name); ok {
+		if _, is_lit := sdecl.value.derived.(^ast.Basic_Lit);
+		   is_lit && !sdecl.is_mutable {
+			return sdecl.value, true
 		}
 	}
 	return nil, false
@@ -447,10 +441,10 @@ ctx_lookup_lvalue :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Sym {
 			}
 		}
 
-		if gv, ok := typecheck.find_module_global(ctx, ctx.module, id.name);
-		   ok {
+		if gv, ok := typecheck.find_module_decl(ctx, ctx.module, id.name); ok {
+			assert(gv.is_mutable)
 			g := backend.graph_add_global(ctx, gv.name)
-			backend.graph_extra(ctx, g, backend.Tup).idx = gv.idx
+			backend.graph_extra(ctx, g, backend.Tup).idx = gv.global_idx
 			ptr := backend.graph_add_global_addr(ctx, gv.name, g)
 			return Value{id = ptr, is_lvalue = true}
 		}
@@ -580,33 +574,6 @@ is_static :: proc(d: ^ast.Value_Decl) -> bool {
 		}
 	}
 	return false
-}
-
-emit_module_globals :: proc(ctx: ^Gen_Ctx) {
-	for &gv in ctx.global_vars {
-		size := typecheck.type_size(gv.type)
-		bytes := make([]u8, size, ctx.globals.allocator)
-
-		if gv.init != nil && typecheck.type_to_dt(gv.type) != .Void {
-			value, cok := typecheck.const_eval_int(gv.init)
-			if !cok {
-				fmt.panicf(
-					"TODO: non-constant global initializer: %v",
-					gv.name,
-				)
-			}
-			val_bytes := transmute([8]u8)value
-			copy(bytes, val_bytes[:size])
-		}
-
-		gv.idx = add_global(ctx, bytes, typecheck.type_align(gv.type))
-	}
-}
-
-add_global :: proc(ctx: ^Gen_Ctx, bytes: []u8, align: int) -> u32 {
-	idx := u32(len(ctx.globals))
-	append(&ctx.globals, typecheck.Global_Data{bytes = bytes, align = align})
-	return idx
 }
 
 field_offset :: proc(
@@ -871,6 +838,8 @@ inline_and_optimize :: proc(
 
 			slt := &sctx.callee_to_caller[sim.id]
 
+			if callee.stencil.weight > 1000 do continue
+
 			callee_wct := weight_cata(callee.stencil.weight * len(slt))
 			if !weight_cata_can_merge(caller_wct, callee_wct) && len(slt) > 1 {
 				continue
@@ -897,7 +866,7 @@ inline_and_optimize :: proc(
 		caller.stencil.mem = slice.clone(caller.stencil.mem, perm)
 	}
 
-	for &prc, i in ctx.procs {
+	for &prc in ctx.procs {
 		if len(prc.stencil.mem) == 0 do continue
 		backend.graph_mount_stencil(ctx, prc.stencil)
 		emit_proc_code(ctx, emit_ctx, &prc)
@@ -992,7 +961,6 @@ emit_proc :: proc(
 		value: backend.Node_ID
 		if apa.scalar {
 			dt := apa.dt[0]
-			bank := ctx.target_spec.datatype_to_reg_kind[dt]
 			value = backend.graph_add_arg(
 				ctx,
 				"arg",
@@ -1016,7 +984,6 @@ emit_proc :: proc(
 		}
 
 		for dt, j in apa.dt[:(apa.size + 7) / 8] {
-			bank := ctx.target_spec.datatype_to_reg_kind[dt]
 			vl := backend.graph_add_arg(ctx, "arg", dt, ctx.entry, 0)
 			spill_start += int(j == 1)
 			append(&arg_vls, vl)
@@ -1475,7 +1442,7 @@ emit_nodes :: proc(
 			store_value(ctx, "rpst", ptr, vl, typecheck.get_node_type(r))
 		}
 
-		for reg, j in rabi.reg_rets {
+		for j in 0 ..< len(rabi.reg_rets) {
 			emit_reg_ret(ctx, values, &i, d.results[len(ctx.ret_ptrs) + j])
 		}
 
@@ -1510,7 +1477,7 @@ emit_nodes :: proc(
 			)
 			assert(ok)
 
-			idx := add_global(ctx, transmute([]u8)str, 1)
+			idx := typecheck.add_global(ctx, transmute([]u8)str, 1)
 			g := backend.graph_add_global(ctx, "str")
 			backend.graph_extra(ctx, g, backend.Tup).idx = idx
 			addr := backend.graph_add_global_addr(ctx, "str", g)
@@ -1609,7 +1576,11 @@ emit_nodes :: proc(
 					copy(bytes, val_bytes[:size])
 				}
 
-				idx := add_global(ctx, bytes, typecheck.type_align(vty))
+				idx := typecheck.add_global(
+					ctx,
+					bytes,
+					typecheck.type_align(vty),
+				)
 				g := backend.graph_add_global(ctx, name)
 				backend.graph_extra(ctx, g, backend.Tup).idx = idx
 				ptr := backend.graph_add_global_addr(ctx, name, g)
@@ -1749,7 +1720,6 @@ emit_nodes :: proc(
 		}
 
 		base_ptr := base.id
-		base_is_ptr := false
 		if typecheck.is_of(
 			   typecheck.get_node_type(d.expr),
 			   ^typecheck.Slice,
@@ -2121,7 +2091,6 @@ emit_nodes :: proc(
 
 				call := backend.graph_add_call(ctx, "call", args, ~u32(0))
 				backend.graph_extra(ctx, call, backend.Call).ccid = 1
-				cnode := backend.graph_get(ctx, call)
 				for arg in args[CALL_PREFIX:] {
 					backend.graph_unpin(ctx, arg)
 				}

@@ -236,19 +236,6 @@ when SPEC_NOT_PRESENT {
 	}
 }
 
-// stubs for the unused-but-generated SPEC value below: nothing ever runs a
-// graph under root's own spec (every graph is Builder's or a codegen
-// target's), this generation pass only exists to derive inherit_idx_of
-root_peep :: proc(ctx: Peep_Ctx, node: Expanded_Node, _: $T) -> Node_ID {
-	return 0
-}
-root_post_schedule_peep :: proc(
-	ctx: PS_Peep_Ctx,
-	node: Expanded_Node,
-	_: $T,
-) -> Node_ID {
-	return 0
-}
 root_addr_add_offset :: proc(
 	graph: ^Graph,
 	node: Expanded_Node,
@@ -267,7 +254,7 @@ when GEN_SPEC {
 				package_name = "backend",
 				gen_command = COMMAND,
 				name = "Root",
-				classes = {ts(&IDEAL_CLASSES, &IDEAL_REG_CLASSES)},
+				classes = {class_array(&IDEAL_CLASSES, &IDEAL_REG_CLASSES)},
 				no_spec_tables = true,
 			},
 			"backend/node_specs.odin",

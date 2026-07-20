@@ -45,13 +45,9 @@ run_capture() {
 
 for dir in "$PROGRAMS_DIR"/*/; do
 	name="$(basename "$dir")"
-	entry="$dir/main.odin"
-	if [[ ! -f "$entry" ]]; then
-		continue
-	fi
 
 	if [ "${1:-}" != "" ]; then
-		if [ "$name" != "wasm" ]; then
+		if [ "$name" != "$1" ]; then
 			continue
 		fi
 	fi
@@ -73,6 +69,11 @@ for dir in "$PROGRAMS_DIR"/*/; do
 			failed_names+=("$name (generate)")
 			continue
 		fi
+	fi
+
+	entry="$dir/main.odin"
+	if [[ ! -f "$entry" ]]; then
+		continue
 	fi
 
 	# --- reference build with odin -------------------------------------

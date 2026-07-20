@@ -90,7 +90,7 @@ main :: proc() {
 	types.mems.scratch.reserved = 4096 * 2048
 	types.mems.code.reserved = 4096 * 4096
 	types.mems.reloc.reserved = 4096 * 2048
-	types.mems.type.reserved = 4096 * 8192
+	types.mems.type.reserved = 1024 * 1024 * 128
 
 	typecheck.types_init(&types)
 	defer typecheck.types_deinit(&types)
@@ -134,9 +134,6 @@ main :: proc() {
 		lib_calls = {copy = {id = MEMCPY_ID}, set = {id = MEMSET_ID}},
 	}
 
-	clear(&ctx.globals)
-	emit_module_globals(&ctx)
-
 	{time.SCOPED_TICK_DURATION(&times.emit)
 		for prc, i in ctx.procs {
 			if len(prc.poly_names) != len(prc.poly_values) do continue
@@ -158,9 +155,20 @@ main :: proc() {
 	}
 
 	if show_timings {
+		sum: time.Duration
 		for tf in reflect.struct_fields_zipped(type_of(times)) {
 			vl := reflect.struct_field_value(times, tf).(time.Duration)
-			fmt.eprintfln("% 10v: %v", tf.name, vl)
+			sum += vl
+		}
+
+		for tf in reflect.struct_fields_zipped(type_of(times)) {
+			vl := reflect.struct_field_value(times, tf).(time.Duration)
+			fmt.eprintfln(
+				"% 10v: - % 6f%% - %v ",
+				tf.name,
+				(f64(vl) / f64(sum)) * 100,
+				vl,
+			)
 		}
 	}
 

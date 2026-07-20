@@ -130,10 +130,6 @@ w_mem_write :: proc(a: ^Arena, addr: int, n: int, val: i64) {
 }
 
 // w_str_eq compares two strings byte by byte.
-//
-// COMPILER BUG: `string == string` crashes the JIT (gen.odin `assert(dt !=
-// .Void)` in to_rvalue_ty) because a string operand has no scalar data type.
-// The module dispatch in w_run would otherwise read `if name == "add"`.
 w_str_eq :: proc(x: string, y: string) -> bool {
 	if len(x) != len(y) do return false
 	i := 0

@@ -124,15 +124,6 @@ Root_Node_Type :: enum u16 {
 	F_Ext,
 	F_Demote,
 }
-
-root_peep_inst :: proc(ctx: Peep_Ctx, node: Expanded_Node) -> Node_ID {
-	return root_peep(ctx, node, struct{}{})
-}
-root_post_schedule_peep_inst :: proc(
-	ctx: PS_Peep_Ctx, node: Expanded_Node) -> Node_ID {
-	return root_post_schedule_peep(ctx, node, struct{}{})
-}
-
 #assert(size_of(Cfg) % PRECISION == 0)
 graph_add_start :: #force_inline proc(graph: ^Graph, name: string) -> (id: Node_ID) {
 	push_node_name(graph, name)

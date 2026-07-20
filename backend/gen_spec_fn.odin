@@ -22,14 +22,14 @@ Spec_Gen_Input :: struct {
 	no_spec_tables:       bool,
 }
 
-ts :: proc(
+class_array :: proc(
 	arr: ^[$E]Class_Spec,
 	regalloc: ^[E]Reg_Class_Spec,
 	gen_ctors: bool = true,
 ) -> Class_Array {
 	return {
 		E,
-		slice.clone(slice.enumerated_array(arr)),
+		slice.enumerated_array(arr),
 		slice.enumerated_array(regalloc),
 		gen_ctors,
 	}
@@ -399,9 +399,10 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 	}
 	os.write_string(file, "}\n")
 
-	fmt.fprintfln(
-		file,
-		`
+	if !spec.no_spec_tables {
+		fmt.fprintfln(
+			file,
+			`
 %v_peep_inst :: proc(ctx: %vPeep_Ctx, node: %vExpanded_Node) -> %vNode_ID {{
 	return %v_peep(ctx, node, struct{{}}{{}})
 }}
@@ -410,17 +411,18 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 	return %v_post_schedule_peep(ctx, node, struct{{}}{{}})
 }}
 `,
-		prefix,
-		q,
-		q,
-		q,
-		prefix,
-		prefix,
-		q,
-		q,
-		q,
-		prefix,
-	)
+			prefix,
+			q,
+			q,
+			q,
+			prefix,
+			prefix,
+			q,
+			q,
+			q,
+			prefix,
+		)
+	}
 
 	for classes in spec.classes {
 		for class, i in classes.ids {

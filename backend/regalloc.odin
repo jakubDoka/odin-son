@@ -1,7 +1,6 @@
 package backend
 
 import "base:intrinsics"
-import "base:runtime"
 import "core:mem"
 
 REGLOGS :: #config(REGLOGS, false)

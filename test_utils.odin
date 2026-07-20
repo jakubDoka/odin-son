@@ -281,7 +281,7 @@ log_stats :: proc(ctx: ^Gen_Ctx) {
 		)
 	}
 
-	log.infof(
+	fmt.eprintfln(
 		"  %s %s %s %s",
 		padded("name", 20),
 		padded("total", 8),
@@ -290,7 +290,7 @@ log_stats :: proc(ctx: ^Gen_Ctx) {
 	)
 	for eff, kind in ctx.stats.efficiency {
 		name := reflect.enum_field_names(backend.Efficiency_Stat_Kind)[kind]
-		log.infof(
+		fmt.eprintfln(
 			"  %s % -8d % -8d % -8f",
 			padded(name, 20),
 			eff.total,

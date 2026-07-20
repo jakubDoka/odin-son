@@ -5,6 +5,7 @@ import "../backend/builder"
 import "../vendored/gam/util/arna"
 import "base:runtime"
 import "core:fmt"
+import "core:hash"
 import "core:io"
 import "core:log"
 import "core:mem"
@@ -546,45 +547,143 @@ intrinsic_meta :: proc(ctx: ^Gen_Ctx, intr: Intrinsic) -> ^Check_Meta {
 	return m
 }
 
+hash_name :: proc(name: string) -> u8 {
+	return max(u8(hash.fnv32a(transmute([]u8)name)), 1)
+}
+
 find_module_decl :: proc(
 	ctx: ^Gen_Ctx,
 	mod: Module_ID,
 	name: string,
 ) -> (
-	sdecl: ^ast.Value_Decl,
-	f: ^ast.File,
-	fid: File_ID,
+	sdecl: ^Decl,
 	ok: bool,
 ) {
+	needle := hash_name(name)
+
 	module := &ctx.modules[mod]
-	for i in 0 ..< module.file_count {
-		file := &ctx.files[module.file_start + i]
-		for decl in file.decls {
-			sd := decl.derived_stmt.(^ast.Value_Decl) or_continue
-			if len(sd.names) == 0 do continue
-			if src_of(file^, sd.names[0]) == name {
-				return sd, file, File_ID(module.file_start + i), true
-			}
-		}
+	for iter := backend.simd_iter_from(
+		module.decl_idx.hash[:len(module.decl_idx)],
+		needle,
+	); idx in backend.simd_iter_next(&iter) {
+		decl := &module.decl_idx.id[idx]
+		if decl.name != name do continue
+		typecheck_decl(ctx, mod, decl)
+		return decl, true
 	}
+
 	return
 }
 
-// find_module_proc returns the global Proc_ID of a procedure named `name`
-// defined directly in `mod`, if any.
-find_module_proc :: proc(
+integrate_inferrence :: proc(
 	ctx: ^Gen_Ctx,
-	mod: Module_ID,
-	name: string,
-) -> (
-	Proc_ID,
-	bool,
-) {
-	m := ctx.modules[mod]
-	for i in m.proc_start ..< m.proc_start + m.proc_count {
-		if ctx.procs[i].name == name do return Proc_ID(i), true
+	decl: ^Decl,
+	inferred: Type,
+) -> ^Check_Meta {
+	meta := get_node_meta(decl.value)
+	if decl.is_mutable do return meta
+	if inferred == .Void do return meta
+	if meta.type == inferred do return meta
+	return new_clone(Check_Meta{inferred, meta.lit}, ctx.types.allocator)
+}
+
+typecheck_decl :: proc(
+	ctx: ^Gen_Ctx,
+	mid: Module_ID,
+	decl: ^Decl,
+) -> ^Check_Meta {
+	if len(decl.value.end.file) == 0 && decl.value != &nil_node {
+		return get_node_meta(decl.value)
 	}
-	return 0, false
+
+	prev_module := ctx.module
+	prev_file_id := ctx.file_id
+
+	defer {
+		ctx.module = prev_module
+		ctx.file_id = prev_file_id
+		ctx.file = &ctx.files[prev_file_id]
+	}
+
+	ctx.module = Module_ID(mid)
+	mod := &ctx.modules[mid]
+
+	ctx.file_id = decl.file
+	ctx.file = &ctx.files[ctx.file_id]
+
+	if decl.value == &nil_node {
+		decl.value = new_clone(nil_node, ctx.types.allocator)
+	}
+	ty := emit_type(ctx, decl.ty)
+	vl := typecheck(
+		ctx,
+		{
+			inferred_ty = ty,
+			key = Decl_Key{decl.name, decl.file, u32(decl.value.pos.offset)},
+		},
+		decl.value,
+	)
+	assert(vl.type == ty || ty == .Void)
+
+	return vl
+}
+
+module_add_decls :: proc(ctx: ^Gen_Ctx, mid: Module_ID, decls: []Decl) {
+	mod := &ctx.modules[mid]
+
+	backend.grow_search_space(
+		&mod.decl_idx,
+		mem.align_forward_int(len(decls), align_of(backend.Intern_Vec)),
+	)
+
+	for dcl, i in decls {
+		mod.decl_idx[i] = {hash_name(dcl.name), dcl}
+	}
+}
+
+nil_node: ast.Bad_Expr = {}
+
+collect_decls :: proc(f: ast.File, decls: ^[dynamic]Decl, file_id: File_ID) {
+	// TODO: put this into the global init once this ICE is fixed
+	nil_node.derived = &nil_node
+	nil_node.derived_expr = &nil_node
+
+	for stmt in f.decls {
+		if decl, ok := stmt.derived_stmt.(^ast.Value_Decl); ok {
+			for name, i in decl.names {
+
+				vl := &nil_node.node
+				if i < len(decl.values) do vl = decl.values[i]
+				append(
+					decls,
+					Decl {
+						name = src_of(f, name),
+						ty = decl.type,
+						value = vl,
+						file = file_id,
+						is_mutable = decl.is_mutable,
+					},
+				)
+			}
+		}
+
+		if block, ok := stmt.derived_stmt.(^ast.Foreign_Block_Decl); ok {
+			body := block.body.derived.(^ast.Block_Stmt) or_continue
+			for vl in body.stmts {
+				decl := vl.derived.(^ast.Value_Decl) or_continue
+				if len(decl.values) == 0 do continue
+				append(
+					decls,
+					Decl {
+						name = src_of(f, decl.names[0]),
+						ty = decl.type,
+						value = decl.values[0],
+						file = file_id,
+					},
+				)
+			}
+		}
+	}
 }
 
 extract_polys :: proc(
@@ -657,22 +756,6 @@ instantiate_polys :: proc(
 		return slots[t.idx].lit.typeida, true
 	}
 	return root, true
-}
-
-// find_module_global returns the global variable named `name` defined directly
-// in `mod`, if any.
-find_module_global :: proc(
-	ctx: ^Gen_Ctx,
-	mod: Module_ID,
-	name: string,
-) -> (
-	^Global_Var,
-	bool,
-) {
-	for &g in ctx.global_vars {
-		if g.module == mod && g.name == name do return &g, true
-	}
-	return nil, false
 }
 
 intern_decl :: proc(
@@ -800,9 +883,19 @@ get_builtin_proc :: proc(node: ^ast.Node) -> Builtin_Proc {
 	return {}
 }
 
+Decl :: struct {
+	name:       string,
+	ty:         ^ast.Expr,
+	value:      ^ast.Expr,
+	file:       File_ID,
+	is_mutable: bool,
+	global_idx: u32,
+}
+
 Module :: struct {
 	name:       string,
 	dir:        string,
+	decl_idx:   #soa[]backend.SS_Entry(Decl),
 	file_start: int,
 	file_count: int,
 	// range into ctx.procs occupied by this module's procedures
@@ -916,6 +1009,7 @@ Slice :: struct {
 File_ID :: distinct u32
 
 Decl_Key :: struct {
+	name:   string,
 	file:   File_ID,
 	offset: u32,
 }
@@ -984,6 +1078,8 @@ typecheck :: proc(
 	}
 
 	#partial switch d in node.derived {
+	case ^ast.Bad_Expr:
+		return tmeta(ctx, prop.inferred_ty)
 	case ^ast.Struct_Type:
 		structa := intern_decl(ctx, &ctx.structs, prop.key, &ty) or_break
 		structa.align = 1
@@ -1083,12 +1179,9 @@ typecheck :: proc(
 		}
 		len_node := d.len
 		if len_ident, is_ident := len_node.derived.(^ast.Ident); is_ident {
-			if sdecl, _, _, ok := find_module_decl(
-				ctx,
-				ctx.module,
-				len_ident.name,
-			); ok {
-				len_node = sdecl.values[0]
+			if sdecl, ok := find_module_decl(ctx, ctx.module, len_ident.name);
+			   ok {
+				len_node = sdecl.value
 			}
 		}
 		len_lit := len_node.derived.(^ast.Basic_Lit)
@@ -1217,7 +1310,7 @@ typecheck :: proc(
 			)
 		}
 	case ^ast.Proc_Lit:
-		return proc_meta(ctx, typecheck_proc(ctx, ctx.module, "", d))
+		return proc_meta(ctx, typecheck_proc(ctx, ctx.module, prop.key, d))
 	case ^ast.Basic_Lit:
 		#partial switch d.tok.kind {
 		case .Integer, .Rune:
@@ -1353,14 +1446,14 @@ typecheck :: proc(
 					)
 				}
 
-				pid, pok := find_module_proc(ctx, mid, f.name)
+				pid, pok := find_module_decl(ctx, mid, f.name)
 				fmt.assertf(
 					pok,
 					"module %q has no symbol %q",
 					ctx.modules[mid].name,
 					f.name,
 				)
-				return proc_meta(ctx, pid)
+				return integrate_inferrence(ctx, pid, prop.inferred_ty)
 			}
 
 			base_ty := base.type
@@ -1469,7 +1562,12 @@ typecheck :: proc(
 				d.expr,
 			)
 			if inferred_ty != .Void {
-				assert(inferred_ty == inner_ty.type)
+				fmt.assertf(
+					inferred_ty == inner_ty.type,
+					"%v == %v",
+					inferred_ty,
+					inner_ty.type,
+				)
 			}
 			return tmeta(ctx, intern_pointer(ctx, inner_ty.type))
 		case .Not:
@@ -1569,12 +1667,8 @@ typecheck :: proc(
 			return module_meta(ctx, Module_ID(mid))
 		}
 
-		if pid, ok := find_module_proc(ctx, ctx.module, name); ok {
-			return proc_meta(ctx, pid)
-		}
-
-		if g, ok := find_module_global(ctx, ctx.module, name); ok {
-			return tmeta(ctx, g.type)
+		if decl, ok := find_module_decl(ctx, ctx.module, name); ok {
+			return integrate_inferrence(ctx, decl, prop.inferred_ty)
 		}
 
 		if name == "false" || name == "true" {
@@ -1588,12 +1682,6 @@ typecheck :: proc(
 
 		if name == "_" {
 			return &VOID
-		}
-
-		if sdecl, _, dfid, ok := find_module_decl(ctx, ctx.module, name); ok {
-			prop := prop
-			prop.key = Decl_Key{dfid, u32(sdecl.pos.offset)}
-			return typecheck(ctx, prop, sdecl.values[0])
 		}
 
 		for name, kind in TYPE_NAMES {
@@ -1690,8 +1778,8 @@ typecheck :: proc(
 			}
 		} else {
 			assert(len(sig.params) == len(d.args))
-			if proc_id > 0 && len(ctx.procs[proc_id].poly_names) != 0 {
-				prc := ctx.procs[proc_id]
+			prc := ctx.procs[proc_id]
+			if len(prc.poly_names) != 0 {
 				assert(len(prc.poly_values) == 0)
 				polys := make([]Check_Meta, len(prc.poly_names))
 
@@ -1753,8 +1841,10 @@ typecheck :: proc(
 					ctx.proc_insts[key] = existing
 				}
 
+				callee = new_clone(callee^, ctx.types.allocator)
 				callee.type = pack_type(sig)
 				callee.lit.procid = existing
+				set_node_data(d.expr, callee)
 			} else {
 				for param, i in sig.params {
 					pty := typecheck(ctx, {inferred_ty = param}, d.args[i])
@@ -1891,43 +1981,10 @@ init_single_file_program :: proc(ctx: ^Gen_Ctx, f: ^ast.File) {
 	if f.pkg_name == "" do f.pkg_name = "main"
 	append(&ctx.files, f^)
 	append(&ctx.modules, Module{name = f.pkg_name, file_count = 1})
-}
 
-register_module_procs :: proc(ctx: ^Gen_Ctx, mid: Module_ID) {
-	ctx.module = mid
-	mod := &ctx.modules[mid]
-	mod.proc_start = len(ctx.procs)
-
-	for i in 0 ..< mod.file_count {
-		ctx.file_id = File_ID(mod.file_start + i)
-		ctx.file = &ctx.files[ctx.file_id]
-
-		for decl in ctx.file.decls {
-			block := decl.derived_stmt.(^ast.Foreign_Block_Decl) or_continue
-			body := block.body.derived.(^ast.Block_Stmt) or_continue
-			for vl in body.stmts {
-				sdecl := vl.derived.(^ast.Value_Decl) or_continue
-				if len(sdecl.values) == 0 do continue
-				prc := sdecl.values[0].derived.(^ast.Proc_Lit) or_continue
-				assert(prc.body == nil)
-				typecheck_proc(
-					ctx,
-					mid,
-					src_of(ctx.file^, sdecl.names[0]),
-					prc,
-				)
-			}
-		}
-
-		for decl in ctx.file.decls {
-			sdecl := decl.derived_stmt.(^ast.Value_Decl) or_continue
-			if len(sdecl.values) == 0 do continue
-			prc := sdecl.values[0].derived.(^ast.Proc_Lit) or_continue
-			typecheck_proc(ctx, mid, src_of(ctx.file^, sdecl.names[0]), prc)
-		}
-	}
-
-	mod.proc_count = len(ctx.procs) - mod.proc_start
+	decls := make([dynamic]Decl, context.temp_allocator)
+	collect_decls(f^, &decls, 0)
+	module_add_decls(ctx, 0, decls[:])
 }
 
 typecheck_sig :: proc(
@@ -1981,17 +2038,19 @@ typecheck_sig :: proc(
 typecheck_proc :: proc(
 	ctx: ^Gen_Ctx,
 	mid: Module_ID,
-	name: string,
+	decl: Maybe(Decl_Key),
 	prc: ^ast.Proc_Lit,
 ) -> Proc_ID {
 	context.allocator, _ = arna.scrath()
 
 	isig, param_names, ret_names := typecheck_sig(ctx, prc.type)
 
+	decl := decl.? or_else {}
+
 	append(
 		&ctx.procs,
 		Proc {
-			name = name,
+			name = decl.name,
 			lit = prc,
 			module = mid,
 			poly_names = slice.clone(
@@ -2006,40 +2065,9 @@ typecheck_proc :: proc(
 		},
 	)
 
+	clear(&ctx.poly_types)
+
 	return Proc_ID(len(ctx.procs) - 1)
-}
-
-register_module_globals :: proc(ctx: ^Gen_Ctx, mid: Module_ID) {
-	ctx.module = mid
-	mod := &ctx.modules[mid]
-
-	for i in 0 ..< mod.file_count {
-		ctx.file_id = File_ID(mod.file_start + i)
-		ctx.file = &ctx.files[ctx.file_id]
-
-		for decl in ctx.file.decls {
-			sdecl := decl.derived_stmt.(^ast.Value_Decl) or_continue
-			if !sdecl.is_mutable do continue
-
-			for name_node, j in sdecl.names {
-				name := src_of(ctx.file^, name_node)
-				if name == "_" do continue
-
-				ty: Type
-				if sdecl.type != nil {
-					ty = emit_type(ctx, sdecl.type)
-				} else {
-					assert(len(sdecl.values) == len(sdecl.names))
-					ty = typecheck(ctx, {}, sdecl.values[j]).type
-				}
-
-				init: ^ast.Expr
-				if j < len(sdecl.values) do init = sdecl.values[j]
-
-				append(&ctx.global_vars, Global_Var{name, mid, ty, 0, init})
-			}
-		}
-	}
 }
 
 typecheck_program :: proc(ctx: ^Gen_Ctx) {
@@ -2049,8 +2077,33 @@ typecheck_program :: proc(ctx: ^Gen_Ctx) {
 	append(&ctx.procs, Proc{lit = &stt})
 
 	for mid in 0 ..< len(ctx.modules) {
-		register_module_procs(ctx, Module_ID(mid))
-		register_module_globals(ctx, Module_ID(mid))
+		ctx.module = Module_ID(mid)
+		mod := &ctx.modules[mid]
+
+		for &decl in mod.decl_idx {
+			if decl.hash == 0 do break
+
+			vl := typecheck_decl(ctx, ctx.module, &decl.id)
+
+			if !decl.id.is_mutable do continue
+
+			size := type_size(vl.type)
+			bytes := make([]u8, size, ctx.globals.allocator)
+
+			if decl.id.value.derived != &nil_node {
+				value, cok := const_eval_int(decl.id.value)
+				if !cok {
+					fmt.panicf(
+						"TODO: non-constant global initializer: %v",
+						decl.id.name,
+					)
+				}
+				val_bytes := transmute([8]u8)value
+				copy(bytes, val_bytes[:size])
+			}
+
+			decl.id.global_idx = add_global(ctx, bytes, type_align(vl.type))
+		}
 	}
 
 	for i := 1; i < len(ctx.procs); i += 1 {
@@ -2085,4 +2138,10 @@ typecheck_program :: proc(ctx: ^Gen_Ctx) {
 src_of :: proc(f: ast.File, node: ^ast.Node) -> string {
 	if node == nil do return ""
 	return f.src[node.pos.offset:node.end.offset]
+}
+
+add_global :: proc(ctx: ^Gen_Ctx, bytes: []u8, align: int) -> u32 {
+	idx := u32(len(ctx.globals))
+	append(&ctx.globals, Global_Data{bytes = bytes, align = align})
+	return idx
 }

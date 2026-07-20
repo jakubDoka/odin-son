@@ -1,12 +1,10 @@
 package backend
 
 import "../vendored/gam/util/arna"
-import "../vendored/gam/util/hot"
 import "base:intrinsics"
 import "base:runtime"
 import "core:container/queue"
 import "core:fmt"
-import "core:log"
 import "core:math"
 import "core:mem"
 import "core:reflect"
@@ -338,25 +336,8 @@ Graph_Opt_Flag :: enum int {
 	Inline,
 }
 
-Stencil_Table :: struct {
-	data: rawptr,
-	get:  proc(_: rawptr, _: Sym_Ref) -> (Stencil, bool),
-}
-
-stencil_table_get :: proc(
-	table: Stencil_Table,
-	ref: Sym_Ref,
-) -> (
-	Stencil,
-	bool,
-) {
-	if table.get == nil do return {}, false
-	return table.get(table.data, ref)
-}
-
 Peep_Ctx :: struct {
 	using graph: ^Graph,
-	stencils:    Stencil_Table,
 }
 
 peep_ctx_graph_is_complete :: proc(ctx: Peep_Ctx) -> bool {
@@ -657,7 +638,10 @@ graph_compact :: proc(graph: ^Graph) {
 		}
 
 		for &out in node.outs {
-			out.id = project(&prev, worklist, out.id)
+			out = {
+				id  = project(&prev, worklist, out.id),
+				idx = out.idx,
+			}
 		}
 
 		if graph_has_flag(graph, node, .Interned) {
@@ -1102,6 +1086,7 @@ grow_search_space :: proc(
 	nodes, _ := mem.alloc_bytes(new_cap * size_of(V), align_of(V))
 
 	mem.copy_non_overlapping(raw_data(hashes), ss.hash, len(ss))
+	mem.zero_slice(hashes[len(ss):new_cap])
 	mem.copy_non_overlapping(raw_data(nodes), ss.id, len(ss) * size_of(V))
 
 	ss.hash = raw_data(hashes)
@@ -1468,7 +1453,6 @@ graph_add_raw :: proc(
 	inode := graph_intern(graph, id)
 	if inode != id {
 		graph.mem.pos = uint(id) * PRECISION
-		n := graph_get(graph, inode)
 		return inode
 	}
 

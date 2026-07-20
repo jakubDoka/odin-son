@@ -5569,3 +5569,18 @@ main :: proc() -> int {
 	return w_call(0, 1, "", "", 2, 3, 4) + f
 }
 ```
+
+#### float const
+```odin
+package main
+
+
+opt_level :: "none"
+
+VL :: 1.0
+
+main :: proc() -> int {
+	vl: f32
+	return int(vl + VL)
+}
+```

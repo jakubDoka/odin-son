@@ -10806,3 +10806,31 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) float_const :: proc(t: ^testing.T) {
+
+
+
+
+opt_level :: "none"
+
+VL :: 1.0
+
+main_ :: proc() -> int {
+	vl: f32
+	return int(vl + VL)
+}
+
+main.run_test(t, `float_const`, `
+package main
+
+
+opt_level :: "none"
+
+VL :: 1.0
+
+main :: proc() -> int {
+	vl: f32
+	return int(vl + VL)
+}
+`, main_())
+}

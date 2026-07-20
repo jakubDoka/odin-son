@@ -1822,6 +1822,7 @@ emit_nodes :: proc(
 	case ^ast.Ident:
 		if lit, is_const := module_const_lit(ctx, d); is_const {
 			res, lvalue = unpack(emit_nodes(ctx, prop, lit))
+			backend.graph_get(ctx, res).dt = dt
 			break
 		}
 

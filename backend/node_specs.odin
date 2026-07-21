@@ -53,7 +53,7 @@ Root_Node_Type :: enum u16 {
 	Start,
 	Entry,
 	Poison,
-	Arg,
+	Param,
 	CInt,
 	Add,
 	Sub,
@@ -142,12 +142,12 @@ graph_add_poison :: #force_inline proc(graph: ^Graph, name: string) -> (id: Node
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Poison), .Void, {})
 }
 #assert(size_of(Tup) % PRECISION == 0)
-graph_add_arg :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype, entry: Node_ID, idx: u32) -> (id: Node_ID) {
+graph_add_param :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype, entry: Node_ID, idx: u32) -> (id: Node_ID) {
 	push_node_name(graph, name)
-	(^Tup)(graph_get_next_extra_slot(graph, u16(Ideal_Node_Type.Arg)))^ = {
+	(^Tup)(graph_get_next_extra_slot(graph, u16(Ideal_Node_Type.Param)))^ = {
 		idx = idx
 	}
-	return graph_add_raw(graph, u16(Ideal_Node_Type.Arg), dt, {entry})
+	return graph_add_raw(graph, u16(Ideal_Node_Type.Param), dt, {entry})
 }
 #assert(size_of(CInt) % PRECISION == 0)
 graph_add_c_int :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype, value: i64) -> (id: Node_ID) {

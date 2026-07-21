@@ -214,7 +214,7 @@ X64_IDEAL_REG_CLASSES := [backend.Ideal_Node_Type]Reg_Class_Spec {
 	.Start = {},
 	.Entry = {},
 	.Poison = {},
-	.Arg = {input_start_idx = 1},
+	.Param = {input_start_idx = 1},
 	.CInt = {
 		reg_masks = #partial{.General = {GPA_MASK}, .Vector = {XMM_MASK}},
 	},
@@ -1120,7 +1120,7 @@ x64_reg_mask_of :: proc(
 	pos := idx - 1 + node.data_start
 
 	#partial switch node.itype {
-	case .Arg:
+	case .Param:
 		kind := ra.datatype_to_reg_kind[node.dt]
 		args := ra.args[kind]
 		arg_ext := backend.graph_extra(graph, node, backend.Tup)
@@ -1289,7 +1289,7 @@ x64_emit_function :: proc(
 	slice.fill(params, ctx.start)
 	find_args: for eout in backend.graph_outs(ctx, ctx.entry) {
 		enode := backend.graph_expand(ctx, eout.id)
-		if enode.itype != .Arg && enode.itype != .Local do continue
+		if enode.itype != .Param && enode.itype != .Local do continue
 
 		idx: u32
 		if arga := backend.graph_extra(ctx, eout.id, backend.Tup);
@@ -1885,7 +1885,7 @@ x64_emit_instr :: proc(
 				id     = lib_call.id,
 			}
 		}
-	case .Poison, .Arg, .Phi, .Ret, .Mem, .Sym:
+	case .Poison, .Param, .Phi, .Ret, .Mem, .Sym:
 	case .CInt:
 		dst := reg_of(ctx, instr)
 		imm := backend.graph_extra(ctx, node, backend.CInt).value

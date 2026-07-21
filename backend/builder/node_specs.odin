@@ -16,7 +16,7 @@ SPEC := backend.Node_Spec{
 		{.General = 0, .Vector = 0}, // Start
 		{.General = 0, .Vector = 0}, // Entry
 		{.General = 0, .Vector = 0}, // Poison
-		{.General = 0, .Vector = 0}, // Arg
+		{.General = 0, .Vector = 0}, // Param
 		{.General = 0, .Vector = 0}, // CInt
 		{.General = 0, .Vector = 0}, // Add
 		{.General = 0, .Vector = 0}, // Sub
@@ -97,7 +97,7 @@ SPEC := backend.Node_Spec{
 		{}, // Start
 		{}, // Entry
 		{}, // Poison
-		{}, // Arg
+		{}, // Param
 		{}, // CInt
 		{}, // Add
 		{}, // Sub
@@ -175,7 +175,7 @@ SPEC := backend.Node_Spec{
 		-16, //Start
 		-16, //Entry
 		-16, //Poison
-		-16, //Arg
+		-16, //Param
 		-16, //CInt
 		-16, //Add
 		-16, //Sub
@@ -256,7 +256,7 @@ SPEC := backend.Node_Spec{
 		0, //Start
 		0, //Entry
 		0, //Poison
-		0, //Arg
+		0, //Param
 		0, //CInt
 		0, //Add
 		0, //Sub
@@ -334,7 +334,7 @@ SPEC := backend.Node_Spec{
 		0b1, // Start
 		0b1, // Entry
 		0b10, // Poison
-		0b100, // Arg
+		0b100, // Param
 		0b1000, // CInt
 		0b10, // Add
 		0b10, // Sub
@@ -412,7 +412,7 @@ SPEC := backend.Node_Spec{
 		1, // Start -> Cfg
 		1, // Entry -> Cfg
 		0, // Poison -> No_Extra
-		1, // Arg -> Tup
+		1, // Param -> Tup
 		2, // CInt -> CInt
 		0, // Add -> No_Extra
 		0, // Sub -> No_Extra
@@ -490,7 +490,7 @@ SPEC := backend.Node_Spec{
 		{}, // Start
 		{Class_Flag.Is_Basic_Block_Start}, // Entry
 		{Class_Flag.Interned}, // Poison
-		{}, // Arg
+		{}, // Param
 		{Class_Flag.Interned, Class_Flag.Clonable}, // CInt
 		{Class_Flag.Interned, Class_Flag.Comutes}, // Add
 		{Class_Flag.Interned}, // Sub
@@ -646,7 +646,7 @@ SPEC := backend.Node_Spec{
 		`Start`,
 		`Entry`,
 		`Poison`,
-		`Arg`,
+		`Param`,
 		`CInt`,
 		`Add`,
 		`Sub`,
@@ -726,7 +726,7 @@ Builder_Node_Type :: enum u16 {
 	Start,
 	Entry,
 	Poison,
-	Arg,
+	Param,
 	CInt,
 	Add,
 	Sub,

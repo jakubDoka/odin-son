@@ -22,7 +22,7 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 	},
 	.Poison = {default_type = .Void, flags = {.Interned}},
 	// TODO: maybe its better to introduce a flag: Schedule_Early
-	.Arg = {id = Tup, args = {"entry"}, extra_args = {"idx"}},
+	.Param = {id = Tup, args = {"entry"}, extra_args = {"idx"}},
 	.CInt = {
 		id = CInt,
 		extra_args = {"value"},

@@ -29,7 +29,7 @@ class_array :: proc(
 ) -> Class_Array {
 	return {
 		E,
-		slice.enumerated_array(arr),
+		slice.clone(slice.enumerated_array(arr)),
 		slice.enumerated_array(regalloc),
 		gen_ctors,
 	}

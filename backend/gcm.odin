@@ -591,7 +591,7 @@ graph_schedule :: proc(
 	}
 
 	schedule_block :: proc(ctx: Ctx, bb: ^Graph_Basic_Block) {
-		PUSHED_UP :: bit_set[Ideal_Node_Type]{.Phi, .Ret, .Arg}
+		PUSHED_UP :: bit_set[Ideal_Node_Type]{.Phi, .Ret, .Param}
 
 		graph := ctx.graph
 

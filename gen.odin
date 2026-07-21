@@ -34,7 +34,7 @@ OPT_LEVELS :: [?]Opt_Level {
 
 Abi_Param :: struct {
 	by_ptr:     bool,
-	using base: backend.Abi_Param,
+	using base: builder.Abi_Param,
 }
 
 Abi_Type :: enum int {
@@ -55,14 +55,14 @@ X86_Reg_Class :: enum u8 {
 	Integer,
 }
 
-Arg_Gen :: struct {
+Param_Gen :: struct {
 	using sm:  Abi_Sm,
-	using gen: backend.Param_Gen,
+	using gen: builder.Param_Gen,
 }
 
 arg_gen_next :: proc(
 	ctx: ^Gen_Ctx,
-	gen: ^Arg_Gen,
+	gen: ^Param_Gen,
 	ty: Type,
 	name: string,
 ) -> (
@@ -73,7 +73,7 @@ arg_gen_next :: proc(
 	apa = abi_sm_add(ctx, gen, ty) or_return
 	ok = true
 	mem: backend.Node_ID
-	mem, value = backend.arg_gen_next(ctx, ctx_mem(ctx), gen, name, &apa)
+	mem, value = builder.arg_gen_next(ctx, ctx_mem(ctx), gen, name, &apa)
 	ctx_set_mem(ctx, mem)
 	return
 }
@@ -593,7 +593,7 @@ is_static :: proc(d: ^ast.Value_Decl) -> bool {
 	return false
 }
 
-field_offset :: backend.graph_add_field_offset
+field_offset :: builder.graph_add_field_offset
 
 field_load :: proc(
 	ctx: ^Gen_Ctx,
@@ -602,7 +602,7 @@ field_load :: proc(
 	base: backend.Node_ID,
 	offset: int = 0,
 ) -> backend.Node_ID {
-	return backend.graph_add_field_load(
+	return builder.graph_add_field_load(
 		ctx,
 		name,
 		dt,
@@ -622,7 +622,7 @@ field_store :: proc(
 ) {
 	ctx_set_mem(
 		ctx,
-		backend.graph_add_field_store(
+		builder.graph_add_field_store(
 			ctx,
 			name,
 			ctx_ctrl(ctx),
@@ -938,7 +938,7 @@ emit_proc :: proc(
 	rabi := typecheck.ret_abi(prc.rets[:])
 	ctx.ret_ptrs = nil
 
-	gen: Arg_Gen
+	gen: Param_Gen
 	gen.vls.allocator = context.temp_allocator
 	apa: Abi_Param
 
@@ -980,7 +980,7 @@ emit_proc :: proc(
 	}
 
 	{context.allocator = ctx.types.allocator
-		prc.param_types = backend.arg_gen_finalize(ctx, &gen)}
+		prc.param_types = builder.arg_gen_finalize(ctx, &gen)}
 
 	emit_nodes(ctx, {}, prc.lit.body)
 	prc = &ctx.procs[i]
@@ -2364,7 +2364,7 @@ emit_arbitrary_load :: proc(
 	extra_offset := 0,
 	unit: backend.Node_Datatype = .I64,
 ) -> backend.Node_ID {
-	return backend.graph_add_arbitrary_load(
+	return builder.graph_add_arbitrary_load(
 		ctx,
 		ctx_ctrl(ctx),
 		ctx_mem(ctx),
@@ -2385,7 +2385,7 @@ emit_arbitrary_store :: proc(
 ) {
 	ctx_set_mem(
 		ctx,
-		backend.graph_add_arbitrary_store(
+		builder.graph_add_arbitrary_store(
 			ctx,
 			ctx_ctrl(ctx),
 			ctx_mem(ctx),

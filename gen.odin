@@ -399,21 +399,8 @@ Sym :: union #no_nil {
 	int,
 }
 
-module_const_lit :: proc(ctx: ^Gen_Ctx, id: ^ast.Ident) -> (^ast.Node, bool) {
-	#reverse for var in ctx.scope {
-		if var.name == id.name do return nil, false
-	}
-	if sdecl, ok := typecheck.find_module_decl(ctx, ctx.module, id.name); ok {
-		if _, is_lit := sdecl.value.derived.(^ast.Basic_Lit);
-		   is_lit && !sdecl.is_mutable {
-			return sdecl.value, true
-		}
-	}
-	return nil, false
-}
-
-ctx_lookup_lvalue :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Sym {
-	ty := typecheck.get_node_type(expr)
+emit_lvalue :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Sym {
+	meta := typecheck.get_node_meta(expr)
 	if id, ok := expr.derived.(^ast.Ident); ok {
 		#reverse for var in ctx.scope {
 			fmt.assertf(var.name != "", "%#v", ctx.scope[:])
@@ -433,20 +420,31 @@ ctx_lookup_lvalue :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Sym {
 		case "true":
 			return Value(backend.graph_add_c_int(ctx, "true", .I8, 1))
 		case "nil":
-			#partial switch t in typecheck.unpack_type(ty) {
+			#partial switch t in typecheck.unpack_type(meta.type) {
 			case ^typecheck.Slice:
-				return Value{id = alloca(ctx, "nilslc", ty), is_lvalue = true}
+				return Value {
+					id = alloca(ctx, "nilslc", meta.type),
+					is_lvalue = true,
+				}
 			case:
-				fmt.panicf("TODO: %v", ty)
+				fmt.panicf("TODO: %v", meta.type)
 			}
 		}
 
 		if gv, ok := typecheck.find_module_decl(ctx, ctx.module, id.name); ok {
-			assert(gv.is_mutable)
-			g := backend.graph_add_global(ctx, gv.name)
-			backend.graph_extra(ctx, g, backend.Tup).idx = gv.global_idx
-			ptr := backend.graph_add_global_addr(ctx, gv.name, g)
-			return Value{id = ptr, is_lvalue = true}
+			if gv.is_mutable {
+				g := backend.graph_add_global(ctx, gv.name)
+				backend.graph_extra(ctx, g, backend.Tup).idx = gv.global_idx
+				ptr := backend.graph_add_global_addr(ctx, gv.name, g)
+				return Value{id = ptr, is_lvalue = true}
+			} else {
+				if blit, is_lit := gv.value.derived.(^ast.Basic_Lit); is_lit {
+					tmp, _ := arna.scrath()
+					blita := new_clone(blit^, tmp)
+					typecheck.set_node_data(blita, meta)
+					return emit_nodes(ctx, {}, blita)
+				}
+			}
 		}
 
 		fmt.panicf("TODO: undefined variable: %v %#v", id.name, expr.derived)
@@ -1190,7 +1188,7 @@ emit_nodes :: proc(
 				if id, iok := lhs.derived.(^ast.Ident); iok && id.name == "_" {
 					continue
 				}
-				syms[i] = ctx_lookup_lvalue(ctx, lhs)
+				syms[i] = emit_lvalue(ctx, lhs)
 				if v, vok := syms[i].(Value);
 				   vok && typecheck.ret_is_by_pointer(rabi, i) {
 					out_slots[i] = v.id
@@ -1246,7 +1244,7 @@ emit_nodes :: proc(
 				}
 				continue
 			}
-			sym := ctx_lookup_lvalue(ctx, lhs)
+			sym := emit_lvalue(ctx, lhs)
 			switch sym in sym {
 			case int:
 				value := to_rvalue(
@@ -1820,13 +1818,7 @@ emit_nodes :: proc(
 
 		res, lvalue = dest, high != 0
 	case ^ast.Ident:
-		if lit, is_const := module_const_lit(ctx, d); is_const {
-			res, lvalue = unpack(emit_nodes(ctx, prop, lit))
-			backend.graph_get(ctx, res).dt = dt
-			break
-		}
-
-		sym := ctx_lookup_lvalue(ctx, d)
+		sym := emit_lvalue(ctx, d)
 		switch sym in sym {
 		case int:
 			res = builder.graph_get_scope_value(ctx, ctx.node_scope, sym)

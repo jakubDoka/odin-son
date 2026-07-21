@@ -391,7 +391,7 @@ graph_schedule :: proc(
 			fmt.assertf(node.inps[0] != graph.start, "%v", node.node)
 			ctx.late_schedules[node.gvn] = node.inps[0]
 		} else {
-			assert(!node.is_store)
+			fmt.assertf(!node.is_store, "%v", node)
 			for out in node.outs {
 				onode := graph_expand(graph, out.id)
 				if ctx.late_schedules[onode.gvn] == 0 &&

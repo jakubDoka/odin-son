@@ -7,7 +7,6 @@ import "base:runtime"
 import "core:fmt"
 import "core:hash"
 import "core:io"
-import "core:log"
 import "core:mem"
 import "core:odin/ast"
 import "core:odin/tokenizer"
@@ -81,6 +80,26 @@ Poly_Data :: struct {
 Check_Meta :: struct {
 	type: Type,
 	lit:  Lit,
+}
+
+Ident_Meta_Kind :: enum int {
+	Local,
+	Poly,
+	Module,
+	Decl,
+	Const,
+	Discard,
+	Builtin,
+	Nil,
+}
+
+Ident_Meta :: struct {
+	kind:    Ident_Meta_Kind,
+	using _: struct #raw_union {
+		index: int,
+		decl:  ^Decl,
+		value: i64,
+	},
 }
 
 Proc_ID :: distinct int
@@ -794,7 +813,7 @@ Proc :: struct {
 	ret_names:   []string,
 	poly_names:  []string,
 	poly_values: []Check_Meta,
-	param_types: []backend.Node_Datatype,
+	param_types: []backend.Param_Spec,
 	using sig:   ^Proc_Type,
 	lit:         ^ast.Proc_Lit,
 	module:      Module_ID,
@@ -1221,6 +1240,7 @@ typecheck :: proc(
 
 			for i in 0 ..< len(d.names) {
 				name := src_of(ctx.file^, d.names[i])
+				if name == "_" do continue
 				flags: Var_Flags
 				if ret_is_by_pointer(rabi, i) {
 					flags |= {.Referenced}
@@ -1247,6 +1267,7 @@ typecheck :: proc(
 			if type_to_dt(inferred_ty) == .Void do flags |= {.Referenced}
 			for i in 0 ..< len(d.names) {
 				name := src_of(ctx.file^, d.names[i])
+				if name == "_" do continue
 				set_node_data(d.names[i], flags)
 				append(
 					&ctx.scope,
@@ -1265,6 +1286,7 @@ typecheck :: proc(
 
 		for i in 0 ..< len(d.names) {
 			name := src_of(ctx.file^, d.names[i])
+			if name == "_" do continue
 
 			if u, ok := unpack_type(inferred_ty).(^Union); ok {
 				value_ty := typecheck(ctx, {}, d.values[i])
@@ -1647,48 +1669,66 @@ typecheck :: proc(
 	case ^ast.Paren_Expr:
 		return typecheck(ctx, prop, d.expr)
 	case ^ast.Ident:
-		name := d.name
-		#reverse for &var in ctx.scope {
-			if var.name == name {
+		meta := new(Ident_Meta, ctx.types.allocator)
+		defer {
+			assert(len(d.name) != 0)
+			set_ident_meta(d, meta)
+		}
+
+		#reverse for &var, i in ctx.scope {
+			if var.name == d.name {
 				if prop.referencing {
 					var.flags |= {.Referenced}
 				}
+				meta.kind = .Local
+				meta.index = i
 				return tmeta(ctx, var.type)
 			}
 		}
 
 		for entry in ctx.poly_types {
 			if entry.name == d.name {
+				meta.kind = .Poly
 				return new_clone(entry.meta, ctx.types.allocator)
 			}
 		}
 
-		if mid, ok := ctx.modules[ctx.module].imports[name]; ok {
+		if mid, ok := ctx.modules[ctx.module].imports[d.name]; ok {
+			meta.kind = .Module
 			return module_meta(ctx, Module_ID(mid))
 		}
 
-		if decl, ok := find_module_decl(ctx, ctx.module, name); ok {
+		if decl, ok := find_module_decl(ctx, ctx.module, d.name); ok {
+			meta.kind = .Decl
+			meta.decl = decl
 			return integrate_inferrence(ctx, decl, prop.inferred_ty)
 		}
 
-		if name == "false" || name == "true" {
+		if d.name == "false" || d.name == "true" {
+			meta.kind = .Const
+			meta.value = i64(d.name == "true")
 			return tmeta(ctx, .Bool)
 		}
 
-		if name == "nil" {
+		if d.name == "nil" {
 			assert(prop.inferred_ty != .Void)
+			meta.kind = .Nil
 			return tmeta(ctx, prop.inferred_ty)
 		}
 
-		if name == "_" {
+		if d.name == "_" {
+			meta.kind = .Discard
 			return &VOID
 		}
 
 		for name, kind in TYPE_NAMES {
-			if name == d.name do return tpmeta(ctx, kind)
+			if name == d.name {
+				meta.kind = .Builtin
+				return tpmeta(ctx, kind)
+			}
 		}
 
-		fmt.panicf("TODO: %#v", node.derived)
+		if true do fmt.panicf("TODO: %#v", node.derived)
 	case ^ast.Call_Expr:
 		switch get_builtin_proc(d.expr) {
 		case .nil:
@@ -1914,6 +1954,7 @@ Var_Flag :: enum uintptr {
 Var_Flags :: bit_set[Var_Flag;uintptr]
 
 get_node_meta :: proc(node: ^ast.Node) -> ^Check_Meta {
+	if node == nil do return &VOID
 	return get_node_data(node, ^Check_Meta)
 }
 
@@ -1935,6 +1976,16 @@ get_node_vflags :: proc(node: ^ast.Node) -> Var_Flags {
 
 get_node_data :: proc(node: ^ast.Node, $T: typeid) -> T {
 	return transmute(T)raw_data(node.end.file)
+}
+
+set_ident_meta :: proc(node: ^ast.Ident, value: ^Ident_Meta) {
+	raw := (^runtime.Raw_Slice)(&node.name)
+	raw.data = value
+	raw.len = 0
+}
+
+get_ident_meta :: proc(node: ^ast.Ident) -> ^Ident_Meta {
+	return transmute(^Ident_Meta)raw_data(node.name)
 }
 
 set_node_data :: proc(node: ^ast.Node, value: $T) {

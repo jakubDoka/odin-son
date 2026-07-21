@@ -1555,6 +1555,8 @@ main :: proc() -> int {
 	vl += return_stru(1, 2).a
 	vl += int(return_stru3().f)
 	vl += int(return_stru3().c)
+	vl += stringa_dinga("", 1, "22", "333", 4, "55555",
+		"666666", 7, "88888888", "999999999", 10)
 	return vl
 }
 
@@ -1572,6 +1574,24 @@ fortran :: proc(a: Stru, b: Stru2) -> int {
 
 brahma :: proc(a: int, b: int, c: int, d: int, e: int, f: Stru) -> int {
 	return a + b + c + d + e + f.a + f.b
+}
+
+stringa_dinga :: proc(
+	a: string,
+	l: int,
+	b: string,
+	c: string,
+	m: int,
+	d: string,
+	e: string,
+	z: int,
+	f: string,
+	g: string,
+	h: int,
+) -> int {
+	return len(a) + 3 * l + 8 * len(b) + 12 * len(c) + 24 * m +
+		50 * len(d) + 100 * len(e) + 200 * z +
+		400 * len(f) + 500 * len(g) + 1000 * h
 }
 
 load_of_args :: proc(
@@ -5435,16 +5455,6 @@ d :: proc(f: proc() -> int) -> int {
 package main
 
 opt_level :: "none"
-
-// BUG 2 (alias tracking) - taking the address of local, storing that pointer
-// into a struct FIELD, then writing through the field (h.p.x = 42) loses the
-// alias in the JIT mem-opt pass: the later read of local.x sees the stale
-// initial value. A FAILURE of this test (at the .Mem_Opt opt levels) is the
-// demonstration of the bug.
-//   odin (and JIT at opt none): 42
-//   JIT at opt all / aggresive (with .Mem_Opt): 1  (stale)
-// Storing the address in a plain pointer local (not a struct field) works; the
-// struct-field storage is what breaks the alias tracking.
 
 Inner :: struct {
 	x: int,

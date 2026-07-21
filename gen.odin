@@ -6,7 +6,6 @@ import "backend/regalloc"
 import "backend/x64"
 import "base:runtime"
 import "core:fmt"
-import "core:log"
 import "core:mem"
 import "core:odin/ast"
 import "core:odin/tokenizer"
@@ -34,21 +33,8 @@ OPT_LEVELS :: [?]Opt_Level {
 }
 
 Abi_Param :: struct {
-	size:    int,
-	spilled: bool,
-	copied:  bool,
-	by_ptr:  bool,
-	scalar:  bool,
-	dt:      backend.Node_Datatype,
-}
-
-Abi_Param2 :: struct {
-	size:    int,
-	spilled: bool,
-	copied:  bool,
-	by_ptr:  bool,
-	scalar:  bool,
-	dt:      [dynamic; 2]backend.Node_Datatype,
+	by_ptr:     bool,
+	using base: backend.Abi_Param,
 }
 
 Abi_Type :: enum int {
@@ -67,6 +53,29 @@ X86_Reg_Class :: enum u8 {
 	Sse,
 	Sse_Up,
 	Integer,
+}
+
+Arg_Gen :: struct {
+	using sm:  Abi_Sm,
+	using gen: backend.Param_Gen,
+}
+
+arg_gen_next :: proc(
+	ctx: ^Gen_Ctx,
+	gen: ^Arg_Gen,
+	ty: Type,
+	name: string,
+) -> (
+	apa: Abi_Param,
+	value: backend.Node_ID,
+	ok: bool,
+) {
+	apa = abi_sm_add(ctx, gen, ty) or_return
+	ok = true
+	mem: backend.Node_ID
+	mem, value = backend.arg_gen_next(ctx, ctx_mem(ctx), gen, name, &apa)
+	ctx_set_mem(ctx, mem)
+	return
 }
 
 x86_reg_class_classify :: proc(
@@ -177,12 +186,12 @@ x86_reg_class_classify :: proc(
 	}
 }
 
-abi_sm_add2 :: proc(
+abi_sm_add :: proc(
 	ctx: ^Gen_Ctx,
 	sm: ^Abi_Sm,
 	ty: Type,
 ) -> (
-	par: Abi_Param2,
+	par: Abi_Param,
 	ok: bool,
 ) {
 	cata, oka := x86_reg_class_classify(ty)
@@ -190,6 +199,7 @@ abi_sm_add2 :: proc(
 	par.dt = cata
 
 	par.size = typecheck.type_size(ty)
+	par.real_size = par.size
 	forced_stack := typecheck.type_to_dt(ty) == .Void
 	par.scalar = !forced_stack
 
@@ -401,56 +411,66 @@ Sym :: union #no_nil {
 
 emit_lvalue :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Sym {
 	meta := typecheck.get_node_meta(expr)
-	if id, ok := expr.derived.(^ast.Ident); ok {
-		#reverse for var in ctx.scope {
-			fmt.assertf(var.name != "", "%#v", ctx.scope[:])
-			if var.name == id.name {
-				switch idx in var.idx {
-				case int:
-					return idx
-				case backend.Node_ID:
-					return Value{id = idx, is_lvalue = true}
-				}
-			}
-		}
-
-		switch id.name {
-		case "false":
-			return Value(backend.graph_add_c_int(ctx, "false", .I8, 0))
-		case "true":
-			return Value(backend.graph_add_c_int(ctx, "true", .I8, 1))
-		case "nil":
-			#partial switch t in typecheck.unpack_type(meta.type) {
-			case ^typecheck.Slice:
-				return Value {
-					id = alloca(ctx, "nilslc", meta.type),
-					is_lvalue = true,
-				}
-			case:
-				fmt.panicf("TODO: %v", meta.type)
-			}
-		}
-
-		if gv, ok := typecheck.find_module_decl(ctx, ctx.module, id.name); ok {
-			if gv.is_mutable {
-				g := backend.graph_add_global(ctx, gv.name)
-				backend.graph_extra(ctx, g, backend.Tup).idx = gv.global_idx
-				ptr := backend.graph_add_global_addr(ctx, gv.name, g)
-				return Value{id = ptr, is_lvalue = true}
-			} else {
-				if blit, is_lit := gv.value.derived.(^ast.Basic_Lit); is_lit {
-					tmp, _ := arna.scrath()
-					blita := new_clone(blit^, tmp)
-					typecheck.set_node_data(blita, meta)
-					return emit_nodes(ctx, {}, blita)
-				}
-			}
-		}
-
-		fmt.panicf("TODO: undefined variable: %v %#v", id.name, expr.derived)
-	} else {
+	id, ok := expr.derived.(^ast.Ident)
+	if !ok {
 		return emit_nodes(ctx, {}, expr)
 	}
+
+	idmt := typecheck.get_ident_meta(id)
+
+	switch idmt.kind {
+	case .Local:
+		fmt.assertf(idmt.index < len(ctx.scope), "%#v", id)
+		switch idx in ctx.scope[idmt.index].idx {
+		case int:
+			return idx
+		case backend.Node_ID:
+			return Value{id = idx, is_lvalue = true}
+		}
+	case .Decl:
+		gv := idmt.decl
+
+		if gv.is_mutable {
+			g := backend.graph_add_global(ctx, gv.name)
+			backend.graph_extra(ctx, g, backend.Tup).idx = gv.global_idx
+			ptr := backend.graph_add_global_addr(ctx, gv.name, g)
+			return Value{id = ptr, is_lvalue = true}
+		} else {
+			if blit, is_lit := gv.value.derived.(^ast.Basic_Lit); is_lit {
+				tmp, _ := arna.scrath()
+				blita := new_clone(blit^, tmp)
+				typecheck.set_node_data(blita, meta)
+				return emit_nodes(ctx, {}, blita)
+			}
+		}
+	case .Const:
+		return Value(
+			backend.graph_add_c_int(
+				ctx,
+				"cnst",
+				typecheck.type_to_dt(meta.type),
+				idmt.value,
+			),
+		)
+	case .Nil:
+		#partial switch t in typecheck.unpack_type(meta.type) {
+		case ^typecheck.Slice:
+			return Value {
+				id = alloca(ctx, "nilslc", meta.type),
+				is_lvalue = true,
+			}
+		case:
+			fmt.panicf("TODO: %v", meta.type)
+		}
+	case .Poly, .Module, .Discard, .Builtin:
+	}
+
+	fmt.panicf(
+		"TODO: undefined variable: %v %v %#v",
+		id.name,
+		idmt,
+		expr.derived,
+	)
 }
 
 store_value :: proc {
@@ -528,7 +548,6 @@ alloca :: proc(
 	ty: Type,
 	zeroed := true,
 	is_arg := false,
-	is_param := false,
 ) -> backend.Node_ID {
 	root := is_arg ? ctx.entry : ctx.root_mem
 	alloca := backend.graph_add_local(ctx, name, root)
@@ -574,14 +593,24 @@ is_static :: proc(d: ^ast.Value_Decl) -> bool {
 	return false
 }
 
-field_offset :: proc(
+field_offset :: backend.graph_add_field_offset
+
+field_load :: proc(
 	ctx: ^Gen_Ctx,
+	name: string,
+	dt: backend.Node_Datatype,
 	base: backend.Node_ID,
-	offset: int,
+	offset: int = 0,
 ) -> backend.Node_ID {
-	if offset == 0 do return base
-	off := backend.graph_add_c_int(ctx, "foff", .I64, i64(offset))
-	return backend.graph_add_bin_op(ctx, "fld", .Add, .I64, base, off)
+	return backend.graph_add_field_load(
+		ctx,
+		name,
+		dt,
+		ctx_ctrl(ctx),
+		ctx_mem(ctx),
+		base,
+		offset,
+	)
 }
 
 field_store :: proc(
@@ -593,31 +622,15 @@ field_store :: proc(
 ) {
 	ctx_set_mem(
 		ctx,
-		backend.graph_add_store(
+		backend.graph_add_field_store(
 			ctx,
 			name,
 			ctx_ctrl(ctx),
 			ctx_mem(ctx),
-			field_offset(ctx, base, offset),
+			base,
+			offset,
 			value,
 		),
-	)
-}
-
-field_load :: proc(
-	ctx: ^Gen_Ctx,
-	name: string,
-	dt: backend.Node_Datatype,
-	base: backend.Node_ID,
-	offset: int = 0,
-) -> backend.Node_ID {
-	return backend.graph_add_load(
-		ctx,
-		name,
-		dt,
-		ctx_ctrl(ctx),
-		ctx_mem(ctx),
-		field_offset(ctx, base, offset),
 	)
 }
 
@@ -925,7 +938,9 @@ emit_proc :: proc(
 	rabi := typecheck.ret_abi(prc.rets[:])
 	ctx.ret_ptrs = nil
 
-	sm: Abi_Sm
+	gen: Arg_Gen
+	gen.vls.allocator = context.temp_allocator
+	apa: Abi_Param
 
 	ctx.ret_ptrs = make(
 		[]backend.Node_ID,
@@ -933,60 +948,16 @@ emit_proc :: proc(
 		context.temp_allocator,
 	)
 
-	arg_vls := make([dynamic]backend.Node_ID, context.temp_allocator)
-	spill_start := 0
-
 	for j in rabi.srets_start ..< len(rabi.extras) {
-		ctx.ret_ptrs[j] = backend.graph_add_arg(
-			ctx,
-			"sret",
-			.I64,
-			ctx.entry,
-			0,
-		)
-		append(&arg_vls, ctx.ret_ptrs[j])
-		spill_start += 1
+		apa, ctx.ret_ptrs[j] =
+			arg_gen_next(ctx, &gen, .I64, "sret") or_else panic("")
 		backend.graph_pin(ctx, ctx.ret_ptrs[j])
-		apa := abi_sm_add2(ctx, &sm, .I64) or_else panic("")
 		assert(!apa.spilled && !apa.by_ptr)
 	}
 
 	for par, i in prc.params {
 		name := prc.param_names[i]
-		apa := abi_sm_add2(ctx, &sm, par) or_continue
-		spill_start += int(!apa.spilled)
-
-		value: backend.Node_ID
-		if apa.scalar {
-			dt := apa.dt[0]
-			value = backend.graph_add_arg(
-				ctx,
-				"arg",
-				dt,
-				ctx.entry,
-				u32(apa.spilled),
-			)
-			append(&arg_vls, value)
-		} else {
-			value = alloca(
-				ctx,
-				"sarg",
-				par,
-				zeroed = false,
-				is_arg = !apa.copied,
-				is_param = !apa.copied,
-			)
-			if !apa.copied {
-				append(&arg_vls, backend.graph_inps(ctx, value)[0])
-			}
-		}
-
-		for dt, j in apa.dt[:(apa.size + 7) / 8] {
-			vl := backend.graph_add_arg(ctx, "arg", dt, ctx.entry, 0)
-			spill_start += int(j == 1)
-			append(&arg_vls, vl)
-			emit_arbitrary_store(ctx, value, vl, apa.size, j * 8, dt)
-		}
+		apa, value := arg_gen_next(ctx, &gen, par, "arg") or_continue
 
 		value_idx: typecheck.Varuable_Idx
 		if apa.scalar && !apa.by_ptr {
@@ -1003,42 +974,13 @@ emit_proc :: proc(
 	}
 
 	for j in 0 ..< rabi.srets_start {
-		apa := abi_sm_add2(ctx, &sm, .I64) or_else panic("")
-		spill_start += int(!apa.spilled)
-		ctx.ret_ptrs[j] = backend.graph_add_arg(
-			ctx,
-			"retp",
-			.I64,
-			ctx.entry,
-			u32(apa.spilled),
-		)
-		append(&arg_vls, ctx.ret_ptrs[j])
+		_, ctx.ret_ptrs[j] =
+			arg_gen_next(ctx, &gen, .I64, "retp") or_else panic("")
 		backend.graph_pin(ctx, ctx.ret_ptrs[j])
 	}
 
-	arg_tys := make([dynamic]backend.Node_Datatype, ctx.types.allocator)
-
-	j, ri: u32
-	for arg in arg_vls {
-		anode := backend.graph_get(ctx, arg)
-		if arga := backend.graph_extra(ctx, arg, backend.Tup); arga != nil {
-			append(&arg_tys, anode.dt)
-			if arga.idx == 0 {
-				arga.idx = j
-				j += 1
-			} else {
-				arga.idx = u32(spill_start) + ri
-				ri += 1
-			}
-		}
-
-		if loca := backend.graph_extra(ctx, arg, backend.Local); loca != nil {
-			loca.idx = u32(spill_start) + ri
-			ri += 1
-		}
-	}
-	prc.param_types = arg_tys[:]
-	fmt.assertf(int(j) == spill_start, "%v %v", j, spill_start)
+	{context.allocator = ctx.types.allocator
+		prc.param_types = backend.arg_gen_finalize(ctx, &gen)}
 
 	emit_nodes(ctx, {}, prc.lit.body)
 	prc = &ctx.procs[i]
@@ -1067,10 +1009,9 @@ emit_proc :: proc(
 		backend.graph_compact(ctx)
 		prc.stencil = backend.graph_stencil(ctx)
 		prc.stencil.mem = slice.clone(prc.stencil.mem)
-		return
+	} else {
+		emit_proc_code(ctx, emit_ctx, prc)
 	}
-
-	emit_proc_code(ctx, emit_ctx, prc)
 }
 
 emit_proc_code :: proc(
@@ -1096,7 +1037,7 @@ emit_proc_code :: proc(
 	ra: backend.Regalloc
 	ra.spec = spec
 	ra.cc = &x64.X64_SYSTEMV_CC
-	ra.param_types = prc.param_types
+	ra.param_specs = prc.param_types
 
 	regs := regalloc.regalloc(
 		&ra,
@@ -1113,6 +1054,7 @@ emit_proc_code :: proc(
 		relocs = &ctx.mems.reloc,
 	}
 	emit_ctx.allocs = regs
+	emit_ctx.param_specs = prc.param_types
 
 	prc.out = spec.emit_function(emit_ctx^)
 }
@@ -1237,7 +1179,11 @@ emit_nodes :: proc(
 		for i in 0 ..< len(d.lhs) {
 			lhs := d.lhs[i]
 			rhs := d.rhs[i]
-			if id, iok := lhs.derived.(^ast.Ident); iok && id.name == "_" {
+			if id, iok := lhs.derived.(^ast.Ident);
+			   iok &&
+			   (id.name == "_" ||
+					   id.name == "" &&
+						   typecheck.get_ident_meta(id).kind == .Discard) {
 				node := emit_nodes(ctx, {}, rhs)
 				if node.id != 0 {
 					backend.graph_delete(ctx, node.id)
@@ -1535,7 +1481,7 @@ emit_nodes :: proc(
 		}
 
 		if len(d.values) == 0 {
-			decl_ty := typecheck.emit_type(ctx, d.type)
+			decl_ty := typecheck.get_node_meta(d.type).lit.typeida
 			for i in 0 ..< len(d.names) {
 				name := typecheck.src_of(ctx.file^, d.names[i])
 				flags := typecheck.get_node_vflags(d.names[i])
@@ -1553,7 +1499,7 @@ emit_nodes :: proc(
 		for i in 0 ..< len(d.names) {
 			name := typecheck.src_of(ctx.file^, d.names[i])
 			assert(name != "")
-			decl_ty := typecheck.emit_type(ctx, d.type)
+			decl_ty := typecheck.get_node_meta(d.type).lit.typeida
 			vty :=
 				decl_ty != .Void ? decl_ty : typecheck.get_node_type(d.values[i])
 			flags := typecheck.get_node_vflags(d.names[i])
@@ -1905,7 +1851,7 @@ emit_nodes :: proc(
 				continue
 			}
 
-			case_ty := typecheck.emit_type(ctx, clause.list[0])
+			case_ty := typecheck.get_node_meta(clause.list[0]).lit.typeida
 			idx, _ := typecheck.union_variant_index(u, case_ty)
 			cval := backend.graph_add_c_int(ctx, "tsc", tag_dt, i64(idx + 1))
 			cond := backend.graph_add_bin_op(ctx, "tseq", .Eq, .I8, tagv, cval)
@@ -2378,7 +2324,7 @@ emit_call :: proc(
 	) -> bool {
 		assert(vl.id != 0)
 
-		apa := abi_sm_add2(ctx, &lctx.sm, ty) or_return
+		apa := abi_sm_add(ctx, &lctx.sm, ty) or_return
 
 		for dt, i in apa.dt[:(apa.size + 7) / 8] {
 			assert(!apa.spilled)
@@ -2411,6 +2357,24 @@ emit_call :: proc(
 
 }
 
+emit_arbitrary_load :: proc(
+	ctx: ^Gen_Ctx,
+	addr: backend.Node_ID,
+	size: int,
+	extra_offset := 0,
+	unit: backend.Node_Datatype = .I64,
+) -> backend.Node_ID {
+	return backend.graph_add_arbitrary_load(
+		ctx,
+		ctx_ctrl(ctx),
+		ctx_mem(ctx),
+		addr,
+		size,
+		extra_offset,
+		unit,
+	)
+}
+
 emit_arbitrary_store :: proc(
 	ctx: ^Gen_Ctx,
 	addr: backend.Node_ID,
@@ -2419,95 +2383,17 @@ emit_arbitrary_store :: proc(
 	extra_offset := 0,
 	unit: backend.Node_Datatype = .I64,
 ) {
-	store_unit := unit
-	size := min(size - extra_offset, backend.DT_SIZE[unit])
-	offset: int
-
-	if store_unit in backend.FLOAT_DTS {
-		field_store(ctx, "asst", addr, offset + extra_offset, value)
-		return
-	}
-
-	for offset < size {
-		for backend.DT_SIZE[store_unit] + offset > size {
-			store_unit = backend.Node_Datatype(u8(store_unit) - 1)
-			assert(store_unit != .Void)
-		}
-
-		value := backend.graph_add_un_op(
+	ctx_set_mem(
+		ctx,
+		backend.graph_add_arbitrary_store(
 			ctx,
-			"rvl",
-			.Cast,
-			store_unit,
-			backend.graph_add_bin_op(
-				ctx,
-				"stsh",
-				.U_Shr,
-				.I64,
-				value,
-				backend.graph_add_c_int(ctx, "stshoff", .I64, i64(offset * 8)),
-			),
-		)
-
-		field_store(ctx, "asst", addr, offset + extra_offset, value)
-
-		offset += backend.DT_SIZE[store_unit]
-	}
-}
-
-emit_arbitrary_load :: proc(
-	ctx: ^Gen_Ctx,
-	addr: backend.Node_ID,
-	size: int,
-	extra_offset := 0,
-	unit: backend.Node_Datatype = .I64,
-) -> backend.Node_ID {
-	load_unit := unit
-	size := min(size - extra_offset, backend.DT_SIZE[unit])
-	offset: int
-	value: backend.Node_ID
-
-	if load_unit in backend.FLOAT_DTS {
-		return field_load(ctx, "asld", load_unit, addr, offset + extra_offset)
-	}
-
-	for offset < size {
-		for backend.DT_SIZE[load_unit] + offset > size {
-			assert(load_unit not_in backend.FLOAT_DTS)
-			load_unit = backend.Node_Datatype(u8(load_unit) - 1)
-			assert(load_unit != .Void)
-		}
-
-		load := field_load(ctx, "asld", load_unit, addr, offset + extra_offset)
-
-		if value == 0 {
-			value = load
-			assert(offset == 0)
-		} else {
-			value = backend.graph_add_bin_op(
-				ctx,
-				"aor",
-				.Or,
-				.I64,
-				value,
-				backend.graph_add_bin_op(
-					ctx,
-					"ash",
-					.Shl,
-					.I64,
-					load,
-					backend.graph_add_c_int(
-						ctx,
-						"ssham",
-						.I64,
-						i64(offset * 8),
-					),
-				),
-			)
-		}
-
-		offset += backend.DT_SIZE[load_unit]
-	}
-
-	return value
+			ctx_ctrl(ctx),
+			ctx_mem(ctx),
+			addr,
+			value,
+			size,
+			extra_offset,
+			unit,
+		),
+	)
 }

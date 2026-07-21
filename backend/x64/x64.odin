@@ -1125,8 +1125,9 @@ x64_reg_mask_of :: proc(
 		args := ra.args[kind]
 		arg_ext := backend.graph_extra(graph, node, backend.Tup)
 		idx := 0
-		for a in ra.param_types[:arg_ext.idx] {
-			idx += int(ra.datatype_to_reg_kind[a] == kind)
+		for a in ra.param_specs[:arg_ext.idx] {
+			if a.dt == .Void do continue
+			idx += int(ra.datatype_to_reg_kind[a.dt] == kind)
 		}
 
 		if int(idx) < len(args) {
@@ -1284,27 +1285,11 @@ x64_emit_function :: proc(
 		extra.offset = ctx.stack_size - extra.size
 	}
 
-	// NOTE: the Arg and Local never get promoted to a different node so we can
-	// just order them by the node id, the allocation order matters tho so
-	// document that somewhere
-
-	Slot :: bit_field u64 {
-		id:  backend.Node_ID | 32,
-		idx: u32             | 32,
-	}
-	args: [dynamic]Slot
+	params := make([]backend.Node_ID, len(ctx.param_specs))
+	slice.fill(params, ctx.start)
 	find_args: for eout in backend.graph_outs(ctx, ctx.entry) {
 		enode := backend.graph_expand(ctx, eout.id)
 		if enode.itype != .Arg && enode.itype != .Local do continue
-
-		if enode.itype == .Local {
-			for lout in enode.outs {
-				lonode := backend.graph_expand(ctx, lout.id)
-				if lonode.itype == .Call {
-					continue find_args
-				}
-			}
-		}
 
 		idx: u32
 		if arga := backend.graph_extra(ctx, eout.id, backend.Tup);
@@ -1314,13 +1299,13 @@ x64_emit_function :: proc(
 
 		if loca := backend.graph_extra(ctx, eout.id, backend.Local);
 		   loca != nil {
+			if !loca.is_param do continue
+
 			idx = loca.idx
 		}
 
-		append(&args, Slot{id = eout.id, idx = idx})
+		params[idx] = eout.id
 	}
-
-	sort.quick_sort(args[:])
 
 	spill_slot_count: [Reg_Kind]i32
 	for reg in ctx.allocs {
@@ -1348,29 +1333,27 @@ x64_emit_function :: proc(
 	}
 
 	param_offset := pushed + 8
-	for arg in args {
-		arg := arg.id
-		enode := backend.graph_expand(ctx, arg)
+	for param, i in ctx.param_specs {
+		param_id := params[i]
 
-		if enode.itype == .Arg {
-			kind := ctx.datatype_to_reg_kind[enode.dt]
-			arg_ext := backend.graph_extra(ctx.graph, enode, backend.Tup)
-			idx := int(reg_of(ctx, arg).index) - GPA_REG_COUNT
-			if idx >= 0 {
-				ctx.stack_size -= 8
-				if len(ctx.stack_param_offset[kind]) <= idx {
-					resize(&ctx.stack_param_offset[kind], idx + 1)
-				}
-				ctx.stack_param_offset[kind][idx] = i32(param_offset)
-				param_offset += 8
-			}
-		}
-
-		if enode.itype == .Local {
-			extra := backend.graph_extra(ctx.graph, enode, backend.Local)
+		extra := backend.graph_extra(ctx.graph, param_id, backend.Local)
+		if extra != nil {
+			fmt.assertf(
+				extra.size == param.size,
+				"%v == %v",
+				extra.size,
+				param.size,
+			)
 			extra.offset = param_offset
-			param_offset += extra.size
 		}
+
+		if param.size > 0 && param.dt != .Void {
+			ctx.stack_size -= param.size
+			kind := ctx.datatype_to_reg_kind[param.dt]
+			append(&ctx.stack_param_offset[kind], i32(param_offset))
+		}
+
+		param_offset += param.size
 	}
 
 	if has_call || ctx.stack_size != 0 {
@@ -1396,9 +1379,8 @@ x64_emit_function :: proc(
 		slot -= used_red_zone
 	}
 
-	for arg in args {
-		arg := arg.id
-		enode := backend.graph_expand(ctx, arg)
+	for param in params {
+		enode := backend.graph_expand(ctx, param)
 		if enode.itype == .Local {
 			extra := backend.graph_extra(ctx.graph, enode, backend.Local)
 			extra.offset += ctx.stack_size

@@ -127,10 +127,15 @@ Regalloc_Spec :: struct {
 	) -> Reg_Mask,
 }
 
+Param_Spec :: struct {
+	dt:   Node_Datatype,
+	size: i32,
+}
+
 Regalloc :: struct {
 	using spec:  ^Regalloc_Spec,
 	using cc:    ^Call_Conv,
-	param_types: []Node_Datatype,
+	param_specs: []Param_Spec,
 }
 
 MASK_SIZE :: size_of(int) * 8

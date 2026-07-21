@@ -34,6 +34,7 @@ Codegen_Emit_Ctx :: struct {
 	emit_got_imports: bool,
 	lib_calls:        Lib_Calls,
 	allocs:           []Reg,
+	param_specs:      []Param_Spec,
 }
 
 Lib_Calls :: struct {

@@ -6,7 +6,6 @@ cd $(dirname $0)
 
 rm *.odin || true
 
-
 FILE_COUNT=10
 DEPTH=5
 next_id=0

@@ -2,7 +2,6 @@ package builder
 
 import backend ".."
 import "../../vendored/gam/util/arna"
-import "core:log"
 import "core:mem"
 import "core:sort"
 
@@ -382,29 +381,23 @@ graph_inline_graph :: proc(
 	proj_of(&ctx, from.sym)^ = call.inps[2]
 
 	entry := backend.graph_expand(from, from.entry)
-	Arg_Entry :: bit_field u64 {
+	Param_Entry :: bit_field u64 {
 		id:           backend.Node_ID | 32,
 		is_local_arg: bool            | 1,
 		gvn:          u32             | 31,
 	}
 	starter: backend.Node_ID
-	params: [dynamic]Arg_Entry
+	params: [dynamic]Param_Entry
 	for o in entry.outs {
 		onode := backend.graph_expand(from, o.id)
 		is_local_arg := onode.itype == .Local
-		if is_local_arg {
-			for lo in onode.outs {
-				if backend.graph_get(from, lo.id).itype == .Call {
-					is_local_arg = false
-					break
-				}
-			}
-		}
+		is_local_arg &&=
+			backend.graph_extra(from, onode, backend.Local).is_param
 
 		if onode.itype == .Arg || is_local_arg {
 			append(
 				&params,
-				Arg_Entry {
+				Param_Entry {
 					id = o.id,
 					gvn = onode.gvn,
 					is_local_arg = is_local_arg,

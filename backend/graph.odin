@@ -212,7 +212,10 @@ Local :: struct {
 		offset:     i32,
 		rename_idx: i32,
 	},
-	idx:         u32,
+	using _:     bit_field u32 {
+		idx:      u32  | 31,
+		is_param: bool | 1,
+	},
 }
 
 No_Extra :: struct {}
@@ -1613,4 +1616,283 @@ graph_has_flag_node :: #force_inline proc(
 	flag: Class_Flag,
 ) -> bool {
 	return flag in graph.node_flags[node.rtype]
+}
+
+graph_add_field_offset :: proc(
+	graph: ^Graph,
+	base: Node_ID,
+	offset: int,
+) -> Node_ID {
+	if offset == 0 do return base
+	off := graph_add_c_int(graph, "foff", .I64, i64(offset))
+	return graph_add_bin_op(graph, "fld", .Add, .I64, base, off)
+}
+
+graph_add_field_store :: proc(
+	ctx: ^Graph,
+	name: string,
+	cfg: Node_ID,
+	mem: Node_ID,
+	base: Node_ID,
+	offset: int,
+	value: Node_ID,
+) -> Node_ID {
+	return graph_add_store(
+		ctx,
+		name,
+		cfg,
+		mem,
+		graph_add_field_offset(ctx, base, offset),
+		value,
+	)
+}
+
+graph_add_arbitrary_store :: proc(
+	ctx: ^Graph,
+	cfg: Node_ID,
+	mem: Node_ID,
+	addr: Node_ID,
+	value: Node_ID,
+	size: int,
+	extra_offset := 0,
+	unit: Node_Datatype = .I64,
+) -> (
+	omem: Node_ID,
+) {
+	omem = mem
+
+	store_unit := unit
+	size := min(size - extra_offset, DT_SIZE[unit])
+	offset: int
+
+	if store_unit in FLOAT_DTS {
+		omem = graph_add_field_store(
+			ctx,
+			"asst",
+			cfg,
+			omem,
+			addr,
+			offset + extra_offset,
+			value,
+		)
+		return
+	}
+
+	for offset < size {
+		for DT_SIZE[store_unit] + offset > size {
+			store_unit = Node_Datatype(u8(store_unit) - 1)
+			assert(store_unit != .Void)
+		}
+
+		value := graph_add_un_op(
+			ctx,
+			"rvl",
+			.Cast,
+			store_unit,
+			graph_add_bin_op(
+				ctx,
+				"stsh",
+				.U_Shr,
+				.I64,
+				value,
+				graph_add_c_int(ctx, "stshoff", .I64, i64(offset * 8)),
+			),
+		)
+
+		omem = graph_add_field_store(
+			ctx,
+			"asst",
+			cfg,
+			omem,
+			addr,
+			offset + extra_offset,
+			value,
+		)
+
+		offset += DT_SIZE[store_unit]
+	}
+
+	return
+}
+
+graph_add_field_load :: proc(
+	ctx: ^Graph,
+	name: string,
+	dt: Node_Datatype,
+	cfg: Node_ID,
+	mem: Node_ID,
+	base: Node_ID,
+	offset: int = 0,
+) -> Node_ID {
+	return graph_add_load(
+		ctx,
+		name,
+		dt,
+		cfg,
+		mem,
+		graph_add_field_offset(ctx, base, offset),
+	)
+}
+
+graph_add_arbitrary_load :: proc(
+	ctx: ^Graph,
+	cfg: Node_ID,
+	mem: Node_ID,
+	addr: Node_ID,
+	size: int,
+	extra_offset := 0,
+	unit: Node_Datatype = .I64,
+) -> Node_ID {
+	load_unit := unit
+	size := min(size - extra_offset, DT_SIZE[unit])
+	offset: int
+	value: Node_ID
+
+	if load_unit in FLOAT_DTS {
+		return graph_add_field_load(
+			ctx,
+			"asld",
+			load_unit,
+			cfg,
+			mem,
+			addr,
+			offset + extra_offset,
+		)
+	}
+
+	for offset < size {
+		for DT_SIZE[load_unit] + offset > size {
+			assert(load_unit not_in FLOAT_DTS)
+			load_unit = Node_Datatype(u8(load_unit) - 1)
+			assert(load_unit != .Void)
+		}
+
+		load := graph_add_field_load(
+			ctx,
+			"asld",
+			load_unit,
+			cfg,
+			mem,
+			addr,
+			offset + extra_offset,
+		)
+
+		if value == 0 {
+			value = load
+			assert(offset == 0)
+		} else {
+			value = graph_add_bin_op(
+				ctx,
+				"aor",
+				.Or,
+				.I64,
+				value,
+				graph_add_bin_op(
+					ctx,
+					"ash",
+					.Shl,
+					.I64,
+					load,
+					graph_add_c_int(ctx, "ssham", .I64, i64(offset * 8)),
+				),
+			)
+		}
+
+		offset += DT_SIZE[load_unit]
+	}
+
+	return value
+}
+
+Param_Gen :: struct {
+	vls:         [dynamic]Node_ID,
+	spill_start: int,
+}
+
+Abi_Param :: struct {
+	dt:        [dynamic; 2]Node_Datatype,
+	size:      int,
+	real_size: int,
+	spilled:   bool,
+	scalar:    bool,
+	copied:    bool,
+}
+
+arg_gen_next :: proc(
+	ctx: ^Graph,
+	mem: Node_ID,
+	gen: ^Param_Gen,
+	name: string,
+	apa: ^Abi_Param,
+) -> (
+	omem: Node_ID,
+	value: Node_ID,
+) {
+	omem = mem
+	gen.spill_start += int(!apa.spilled)
+
+	if apa.scalar {
+		dt := apa.dt[0]
+		value = graph_add_arg(ctx, name, dt, ctx.entry, u32(apa.spilled))
+		append(&gen.vls, value)
+	} else {
+		nd := apa.copied ? ctx.root_mem : ctx.entry
+		alloca := graph_add_local(ctx, name, nd)
+		graph_extra(ctx, alloca, Local).size = i32(apa.real_size)
+		graph_extra(ctx, alloca, Local).is_param = !apa.copied
+		value = graph_add_local_addr(ctx, name, alloca)
+
+		if !apa.copied {
+			append(&gen.vls, alloca)
+		}
+	}
+
+	for dt, j in apa.dt[:(apa.size + 7) / 8] {
+		vl := graph_add_arg(ctx, name, dt, ctx.entry, 0)
+		gen.spill_start += int(j == 1)
+		append(&gen.vls, vl)
+		omem = graph_add_arbitrary_store(
+			ctx,
+			ctx.entry,
+			omem,
+			value,
+			vl,
+			apa.size,
+			j * 8,
+			dt,
+		)
+	}
+
+	return
+}
+
+arg_gen_finalize :: proc(ctx: ^Graph, gen: ^Param_Gen) -> []Param_Spec {
+	arg_tys := make([]Param_Spec, len(gen.vls))
+
+	j, ri: u32
+	for arg in gen.vls {
+		anode := graph_get(ctx, arg)
+		if arga := graph_extra(ctx, arg, Tup); arga != nil {
+			size: i32
+			if arga.idx == 0 {
+				arga.idx = j
+				j += 1
+			} else {
+				arga.idx = u32(gen.spill_start) + ri
+				size = 8
+				ri += 1
+			}
+			arg_tys[arga.idx] = Param_Spec{anode.dt, size}
+		}
+
+		if loca := graph_extra(ctx, arg, Local); loca != nil {
+			loca.size = i32(mem.align_forward_int(int(loca.size), 8))
+			loca.idx = u32(gen.spill_start) + ri
+			arg_tys[loca.idx] = Param_Spec{.Void, loca.size}
+			loca.is_param = true
+			ri += 1
+		}
+	}
+	fmt.assertf(int(j) == gen.spill_start, "%v %v", j, gen.spill_start)
+	return arg_tys
 }

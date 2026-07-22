@@ -264,8 +264,8 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 
 		if reg_mask_lengths != {} {
 			fmt.fprintf(file, "\treg_mask_of = %v_reg_mask_of,\n", prefix)
-			fmt.fprintf(file, "\temit_function = %v_emit_function,\n", prefix)
 		}
+		fmt.fprintf(file, "\temit_function = %v_emit_function,\n", prefix)
 		fmt.fprintf(file, "\tpeep = %v_peep_inst,\n", prefix)
 		fmt.fprintf(
 			file,

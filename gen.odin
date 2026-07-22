@@ -1,6 +1,7 @@
 package main
 
 import "backend"
+import "backend/anal"
 import "backend/builder"
 import "backend/regalloc"
 import "backend/x64"
@@ -219,14 +220,14 @@ abi_sm_add :: proc(
 	}
 
 	for p in cata {
-		rk := ctx.target_spec.datatype_to_reg_kind[p]
-		par.spilled |= sm.used_regs[rk] >= len(ctx.cc.args[rk])
+		rk := ctx.target.spec.datatype_to_reg_kind[p]
+		par.spilled |= sm.used_regs[rk] >= len(ctx.target.cc.args[rk])
 		sm.used_regs[rk] += 1
 	}
 
 	if par.spilled {
 		for p in cata {
-			rk := ctx.target_spec.datatype_to_reg_kind[p]
+			rk := ctx.target.spec.datatype_to_reg_kind[p]
 			sm.used_regs[rk] -= 1
 		}
 	}
@@ -1019,8 +1020,10 @@ emit_proc_code :: proc(
 	emit_ctx: ^backend.Codegen_Emit_Ctx,
 	prc: ^typecheck.Proc,
 ) {
-	spec := &x64.SPEC
-	ctx.node_spec = spec
+	ctx.node_spec = ctx.target.spec
+	if ctx.check {
+		ctx.node_spec = &anal.SPEC
+	}
 
 	peep_ctx: backend.Peep_Ctx
 	peep_ctx.graph = ctx
@@ -1035,7 +1038,7 @@ emit_proc_code :: proc(
 	backend.graph_schedule_peeps(ctx, &schedule)
 
 	ra: backend.Regalloc
-	ra.spec = spec
+	ra.spec = ctx.node_spec
 	ra.cc = &x64.X64_SYSTEMV_CC
 	ra.param_specs = prc.param_types
 
@@ -1056,7 +1059,7 @@ emit_proc_code :: proc(
 	emit_ctx.allocs = regs
 	emit_ctx.param_specs = prc.param_types
 
-	prc.out = spec.emit_function(emit_ctx^)
+	prc.out = ctx.node_spec.emit_function(emit_ctx^)
 }
 
 Scope_Base :: struct {

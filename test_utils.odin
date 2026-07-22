@@ -82,27 +82,46 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 	ctx: Gen_Ctx
 	ctx.types = &types
 	ctx.global = &global_ctx
-	ctx.cc = &x64.X64_SYSTEMV_CC
-	ctx.target_spec = &x64.SPEC
+	ctx.target.cc = &x64.X64_SYSTEMV_CC
+	ctx.target.spec = &x64.SPEC
 
 	typecheck.init_single_file_program(&ctx, &f)
 	typecheck.typecheck_program(&ctx)
 
 	levels := OPT_LEVELS
 
+	Test_Conf :: struct {
+		using level: Opt_Level,
+		check:       bool,
+	}
+
+	confs: [dynamic]Test_Conf
+	confs.allocator = context.temp_allocator
+
+	for level in levels {
+		append(&confs, Test_Conf{level = level})
+	}
+
+	//append(&confs, Test_Conf{level = levels[len(levels) - 2], check = true})
+
 	lib, did_load := dynlib.load_library("")
 	assert(did_load, dynlib.last_error())
 
 	dsb: strings.Builder
 	dsb.buf.allocator = context.temp_allocator
-	for level in levels {
-		fmt.sbprintfln(
-			&dsb,
-			"=========== OPT LEVEL: %v ===========",
-			level.name,
-		)
+	for level in confs {
+		if level.check {
+			fmt.sbprintfln(&dsb, "============= check run =============")
+		} else {
+			fmt.sbprintfln(
+				&dsb,
+				"=========== OPT LEVEL: %v ===========",
+				level.name,
+			)
+		}
 		types.mems.code.pos = 0
 		types.mems.reloc.pos = 0
+		types.check = level.check
 		clear(&ctx.globals)
 
 		for &prc in ctx.procs do prc.out = {}
@@ -197,6 +216,20 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 					slot.addend_4 += jump
 				}
 			}
+		}
+
+		if ctx.check {
+			for prc in ctx.procs {
+				if len(prc.out.code) == 0 do continue
+
+				fmt.sbprintfln(&dsb, "%v: anal errors:", prc.name)
+				cursor := string(prc.out.code)
+				for line in strings.split_lines_iterator(&cursor) {
+					fmt.sbprintfln(&dsb, "  %v", line)
+				}
+			}
+
+			continue
 		}
 
 		{context.allocator = context.temp_allocator

@@ -9,139 +9,136 @@ import "core:math"
 import "core:slice"
 import "core:sort"
 
-when !GEN_SPEC {
-	Un_Op :: backend.Un_Op
-	Bin_Op :: backend.Bin_Op
+Un_Op :: backend.Un_Op
+Bin_Op :: backend.Bin_Op
 
-	sext :: proc(oper: i64, ty: backend.Node_Datatype) -> (value: i64) {
-		bit_size := uint(backend.DT_SIZE[ty] * 8)
-		mask: i64 = -1 << bit_size
+sext :: proc(oper: i64, ty: backend.Node_Datatype) -> (value: i64) {
+	bit_size := uint(backend.DT_SIZE[ty] * 8)
+	mask: i64 = -1 << bit_size
 
-		if oper & (1 << (bit_size - 1)) == 0 {
-			value = oper &~ mask
-		} else {
-			value = oper | mask
-		}
-
-		return
+	if oper & (1 << (bit_size - 1)) == 0 {
+		value = oper &~ mask
+	} else {
+		value = oper | mask
 	}
 
-	fold_un_op :: proc(
-		op: Un_Op,
-		oper: i64,
-		dst_ty: backend.Node_Datatype,
-		src_ty: backend.Node_Datatype,
-	) -> (
-		value: i64,
-	) {
-		bit_size := uint(backend.DT_SIZE[src_ty] * 8)
-		mask: i64 = -1 << bit_size
+	return
+}
 
-		switch op {
-		case .Not:
-			value = ~oper
-		case .Neg:
-			value = -oper
-		case .Uext:
-			value = oper &~ mask
-		case .Cast:
-			value = oper &~ (-1 << uint(backend.DT_SIZE[dst_ty] * 8))
-		case .Sext:
-			value = sext(oper, src_ty)
-		case .F_Ext, .F_Demote:
-			value = oper
-		case .F_From_I:
-			value = transmute(i64)(f64(oper))
-		case .F_To_I:
-			value = i64(transmute(f64)oper)
-		}
-		return
+fold_un_op :: proc(
+	op: Un_Op,
+	oper: i64,
+	dst_ty: backend.Node_Datatype,
+	src_ty: backend.Node_Datatype,
+) -> (
+	value: i64,
+) {
+	bit_size := uint(backend.DT_SIZE[src_ty] * 8)
+	mask: i64 = -1 << bit_size
+
+	switch op {
+	case .Not:
+		value = ~oper
+	case .Neg:
+		value = -oper
+	case .Uext:
+		value = oper &~ mask
+	case .Cast:
+		value = oper &~ (-1 << uint(backend.DT_SIZE[dst_ty] * 8))
+	case .Sext:
+		value = sext(oper, src_ty)
+	case .F_Ext, .F_Demote:
+		value = oper
+	case .F_From_I:
+		value = transmute(i64)(f64(oper))
+	case .F_To_I:
+		value = i64(transmute(f64)oper)
 	}
+	return
+}
 
-	fold_bin_op :: proc(
-		lhs: i64,
-		op: Bin_Op,
-		rhs: i64,
-		ty: backend.Node_Datatype,
-	) -> (
-		value: i64,
-	) {
-		switch op {
-		case .Add:
-			value = lhs + rhs
-		case .Sub:
-			value = lhs - rhs
-		case .Mul:
-			value = lhs * rhs
-		case .Div:
-			value = sext(lhs, ty) / sext(rhs, ty)
-		case .Rem:
-			value = lhs % rhs
-		case .And:
-			value = lhs & rhs
-		case .Or:
-			value = lhs | rhs
-		case .Xor:
-			value = lhs ~ rhs
-		case .And_Not:
-			value = lhs &~ rhs
-		case .Shl:
-			value = sext(lhs << u64(rhs), ty)
-		case .Shr:
-			value = lhs >> u64(rhs)
-		case .Eq:
-			value = i64(lhs == rhs)
-		case .Ne:
-			value = i64(lhs != rhs)
-		case .Le:
-			value = i64(lhs <= rhs)
-		case .Lt:
-			value = i64(lhs < rhs)
-		case .Gt:
-			value = i64(lhs > rhs)
-		case .Ge:
-			value = i64(lhs >= rhs)
-		case .U_Lt:
-			value = i64(u64(lhs) < u64(rhs))
-		case .U_Gt:
-			value = i64(u64(lhs) > u64(rhs))
-		case .U_Le:
-			value = i64(u64(lhs) <= u64(rhs))
-		case .U_Ge:
-			value = i64(u64(lhs) >= u64(rhs))
-		case .U_Div:
-			value = i64(u64(lhs) / u64(rhs))
-		case .U_Rem:
-			value = i64(u64(lhs) % u64(rhs))
-		case .U_Shr:
-			value = i64(u64(lhs) >> u64(rhs))
-		case .F_Ne:
-			value = i64(tf(lhs) != tf(rhs))
-		case .F_Eq:
-			value = i64(tf(lhs) == tf(rhs))
-		case .F_Le:
-			value = i64(tf(lhs) <= tf(rhs))
-		case .F_Lt:
-			value = i64(tf(lhs) < tf(rhs))
-		case .F_Gt:
-			value = i64(tf(lhs) > tf(rhs))
-		case .F_Ge:
-			value = i64(tf(lhs) >= tf(rhs))
-		case .F_Add:
-			value = ti(tf(lhs) + tf(rhs))
-		case .F_Sub:
-			value = ti(tf(lhs) - tf(rhs))
-		case .F_Mul:
-			value = ti(tf(lhs) * tf(rhs))
-		case .F_Div:
-			value = ti(tf(lhs) / tf(rhs))
-		}
-		return
-
-		tf :: proc(i: i64) -> f64 {return transmute(f64)i}
-		ti :: proc(i: f64) -> i64 {return transmute(i64)i}
+fold_bin_op :: proc(
+	lhs: i64,
+	op: Bin_Op,
+	rhs: i64,
+	ty: backend.Node_Datatype,
+) -> (
+	value: i64,
+) {
+	switch op {
+	case .Add:
+		value = lhs + rhs
+	case .Sub:
+		value = lhs - rhs
+	case .Mul:
+		value = lhs * rhs
+	case .Div:
+		value = sext(lhs, ty) / sext(rhs, ty)
+	case .Rem:
+		value = lhs % rhs
+	case .And:
+		value = lhs & rhs
+	case .Or:
+		value = lhs | rhs
+	case .Xor:
+		value = lhs ~ rhs
+	case .And_Not:
+		value = lhs &~ rhs
+	case .Shl:
+		value = sext(lhs << u64(rhs), ty)
+	case .Shr:
+		value = lhs >> u64(rhs)
+	case .Eq:
+		value = i64(lhs == rhs)
+	case .Ne:
+		value = i64(lhs != rhs)
+	case .Le:
+		value = i64(lhs <= rhs)
+	case .Lt:
+		value = i64(lhs < rhs)
+	case .Gt:
+		value = i64(lhs > rhs)
+	case .Ge:
+		value = i64(lhs >= rhs)
+	case .U_Lt:
+		value = i64(u64(lhs) < u64(rhs))
+	case .U_Gt:
+		value = i64(u64(lhs) > u64(rhs))
+	case .U_Le:
+		value = i64(u64(lhs) <= u64(rhs))
+	case .U_Ge:
+		value = i64(u64(lhs) >= u64(rhs))
+	case .U_Div:
+		value = i64(u64(lhs) / u64(rhs))
+	case .U_Rem:
+		value = i64(u64(lhs) % u64(rhs))
+	case .U_Shr:
+		value = i64(u64(lhs) >> u64(rhs))
+	case .F_Ne:
+		value = i64(tf(lhs) != tf(rhs))
+	case .F_Eq:
+		value = i64(tf(lhs) == tf(rhs))
+	case .F_Le:
+		value = i64(tf(lhs) <= tf(rhs))
+	case .F_Lt:
+		value = i64(tf(lhs) < tf(rhs))
+	case .F_Gt:
+		value = i64(tf(lhs) > tf(rhs))
+	case .F_Ge:
+		value = i64(tf(lhs) >= tf(rhs))
+	case .F_Add:
+		value = ti(tf(lhs) + tf(rhs))
+	case .F_Sub:
+		value = ti(tf(lhs) - tf(rhs))
+	case .F_Mul:
+		value = ti(tf(lhs) * tf(rhs))
+	case .F_Div:
+		value = ti(tf(lhs) / tf(rhs))
 	}
+	return
 
+	tf :: proc(i: i64) -> f64 {return transmute(f64)i}
+	ti :: proc(i: f64) -> i64 {return transmute(i64)i}
 }
 
 builder_peep :: proc(
@@ -994,4 +991,11 @@ builder_post_schedule_peep :: proc(
 	_: $T,
 ) -> backend.Node_ID {
 	return 0
+}
+
+builder_emit_function :: proc(
+	ectx: backend.Codegen_Emit_Ctx,
+) -> backend.Codegen_Output {
+
+	return {}
 }

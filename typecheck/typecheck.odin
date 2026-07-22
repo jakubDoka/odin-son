@@ -32,12 +32,16 @@ Mems :: struct {
 	type:     arna.Allocator,
 }
 
+Target :: struct {
+	name: string,
+	cc:   ^backend.Call_Conv,
+	spec: ^backend.Node_Spec,
+}
+
 Gen_Ctx :: struct {
 	using global: ^Global_Ctx,
 	using types:  ^Types,
 	using graph:  backend.Graph,
-	cc:           ^backend.Call_Conv,
-	target_spec:  ^backend.Node_Spec,
 	node_scope:   backend.Node_ID,
 	mem_slot:     int,
 	loop:         ^Loop_State,
@@ -946,6 +950,8 @@ Proc_Inst_Key :: struct {
 }
 
 Types :: struct {
+	target:         Target,
+	check:          bool,
 	tstats:         backend.Stats,
 	mems:           Mems,
 	allocator:      runtime.Allocator,

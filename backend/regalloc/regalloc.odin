@@ -21,6 +21,8 @@ regalloc :: proc(
 	sched: ^backend.Graph_Schedule,
 	scratch: runtime.Allocator,
 ) -> []backend.Reg {
+	if graph.node_spec.reg_mask_of == nil do return {}
+
 	for i in 0 ..< 7 {
 		res, ok := regalloc_round(ra, graph, sched, scratch, i)
 		if ok {
@@ -107,13 +109,31 @@ regalloc_round :: proc(
 				lrg: ^backend.Lrg
 
 				if backend.graph_has_flag(graph, inode, .Comutes) {
-					if backend.graph_get(graph, inode.inps[0]).output_count >
-						   1 &&
-					   backend.graph_get(graph, inode.inps[1]).output_count ==
-						   1 {
-						backend.graph_outs(graph, inode.inps[1])[0].idx = 0
+					lhs := backend.graph_expand(graph, inode.inps[0])
+					rhs := backend.graph_expand(graph, inode.inps[1])
 
-						for &out in backend.graph_outs(graph, inode.inps[0]) {
+					swap_becuase_use := true
+					swap_becuase_use &= rhs.output_count == 1
+					swap_becuase_use &= lhs.output_count > 1
+					swap_becuase_use &=
+						len(inode.outs) != 1 ||
+						inode.outs[0].id != inode.inps[0]
+
+					swap_becuase_lrg := true && false
+					//swap_becuase_lrg &= rhs.output_count == 1
+					//swap_becuase_lrg &=
+					//	len(inode.outs) == 1 &&
+					//	inode.outs[0].id == inode.inps[1]
+
+					if swap_becuase_use || swap_becuase_lrg {
+						for &out in rhs.outs {
+							if out.id == instr && out.idx == 1 {
+								out.idx = 0
+								break
+							}
+						}
+
+						for &out in lhs.outs {
 							if out.id == instr && out.idx == 0 {
 								out.idx = 1
 								break
@@ -963,10 +983,47 @@ regalloc_round :: proc(
 				inode := backend.graph_expand(graph, instr)
 
 				if inode.itype == .Split {
-					inp := backend.graph_get(graph, inode.inps[0])
+					inp := backend.graph_expand(graph, inode.inps[0])
 
 					if res[inode.gvn] == res[inp.gvn] {
 						continue
+					}
+
+					if inp.output_count == 1 &&
+					   0 < i &&
+					   bb.instrs[i - 1] == inode.inps[0] &&
+					   inp.inplace_slot >= 0 {
+
+						in_slot_id := inp.inps[inp.inplace_slot]
+						in_slot_node := backend.graph_expand(graph, in_slot_id)
+
+						umask := backend.reg_mask_of(
+							graph,
+							ra,
+							inode.inps[0],
+							inp.inplace_slot + 1 - inp.data_start,
+						)
+
+						overlaps := backend.reg_mask_contains(
+							umask,
+							res[inode.gvn].index,
+						)
+
+						if overlaps &&
+						   1 < i &&
+						   bb.instrs[i - 2] == in_slot_id &&
+						   in_slot_node.output_count == 1 &&
+						   in_slot_node.itype == .Split {
+
+							if res[backend.graph_get(graph, in_slot_node.inps[0]).gvn] ==
+							   res[inode.gvn] {
+
+								res[inp.gvn] = res[inode.gvn]
+								res[in_slot_node.gvn] = res[inode.gvn]
+								//if true do panic("")
+								continue
+							}
+						}
 					}
 
 					if i + 1 < len(bb.instrs) &&
@@ -981,10 +1038,12 @@ regalloc_round :: proc(
 							o.idx + 1 - onode.data_start,
 						)
 
-						if backend.reg_mask_contains(
-							   umask,
-							   res[inp.gvn].index,
-						   ) &&
+						overlaps := backend.reg_mask_contains(
+							umask,
+							res[inp.gvn].index,
+						)
+
+						if overlaps &&
 						   get_lrg(ctx, instr) != get_lrg(ctx, o.id) {
 							backend.graph_subsume(graph, inode.inps[0], instr)
 							continue
@@ -997,6 +1056,7 @@ regalloc_round :: proc(
 						1,
 					)
 				}
+
 				keep -= 1
 				bb.instrs[keep] = instr
 			}

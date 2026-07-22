@@ -10,6 +10,7 @@ import "core:reflect"
 import "core:strings"
 import "core:time"
 import "typecheck"
+import "vendor:curl"
 import "vendored/gam/util/arna"
 import "vendored/gam/util/hot"
 
@@ -25,6 +26,7 @@ main :: proc() {
 	level := levels[len(levels) - 1]
 	show_timings := false
 	show_stats := false
+	check := false
 
 	root := os.get_env("ODIN_ROOT", context.temp_allocator)
 
@@ -44,6 +46,8 @@ main :: proc() {
 			show_timings = true
 		case arg == "-show-stats":
 			show_stats = true
+		case arg == "-check":
+			check = true
 		case strings.has_prefix(arg, "-O:"):
 			name := arg[len("-O:"):]
 			found := false
@@ -113,8 +117,9 @@ main :: proc() {
 	ctx: Gen_Ctx
 	ctx.types = &types
 	ctx.global = &global_ctx
-	ctx.cc = &x64.X64_SYSTEMV_CC
-	ctx.target_spec = &x64.SPEC
+	ctx.target.cc = &x64.X64_SYSTEMV_CC
+	ctx.target.spec = &x64.SPEC
+	ctx.check = check
 
 	times: struct {
 		load:    time.Duration,
@@ -146,11 +151,23 @@ main :: proc() {
 	}
 
 	{time.SCOPED_TICK_DURATION(&times.flush)
-		elf := emit_elf(&ctx)
+		if ctx.check {
+			for prc in ctx.procs {
+				if len(prc.out.code) == 0 do continue
 
-		if werr := os.write_entire_file(output, elf); werr != nil {
-			fmt.eprintfln("failed to write %v: %v", output, werr)
-			os.exit(1)
+				fmt.eprintfln("%v: anal errors:", prc.name)
+				cursor := string(prc.out.code)
+				for line in strings.split_lines_iterator(&cursor) {
+					fmt.eprintfln("  %v", line)
+				}
+			}
+		} else {
+			elf := emit_elf(&ctx)
+
+			if werr := os.write_entire_file(output, elf); werr != nil {
+				fmt.eprintfln("failed to write %v: %v", output, werr)
+				os.exit(1)
+			}
 		}
 	}
 

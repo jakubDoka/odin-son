@@ -1,8 +1,8 @@
-package builder
+package anal
 import backend ".."
 Reg_Kind :: backend.Reg_Kind
 Class_Flag :: backend.Class_Flag
-// NOTE: this file is generated: odin run backend/builder -define:BUILDER_GEN_SPEC=true
+// NOTE: this file is generated: odin run backend/anal -define:ANAL_GEN_SPEC=true
 
 when !GEN_SPEC {
 SPEC := backend.Node_Spec{
@@ -86,9 +86,6 @@ SPEC := backend.Node_Spec{
 		{.General = 0, .Vector = 0}, // F_From_I
 		{.General = 0, .Vector = 0}, // F_Ext
 		{.General = 0, .Vector = 0}, // F_Demote
-		{.General = 0, .Vector = 0}, // Scope
-		{.General = 0, .Vector = 0}, // Lazy_Phi
-		{.General = 0, .Vector = 0}, // Dead
 	},
 	interned_reg_masks = {
 		raw_data([]i64{}),
@@ -167,9 +164,6 @@ SPEC := backend.Node_Spec{
 		{}, // F_From_I
 		{}, // F_Ext
 		{}, // F_Demote
-		{}, // Scope
-		{}, // Lazy_Phi
-		{}, // Dead
 	},
 	inplace_slot_idxs = {
 		-16, //Start
@@ -245,14 +239,11 @@ SPEC := backend.Node_Spec{
 		-16, //F_From_I
 		-16, //F_Ext
 		-16, //F_Demote
-		-16, //Scope
-		-16, //Lazy_Phi
-		-16, //Dead
 	},
-	emit_function = builder_emit_function,
-	peep = builder_peep_inst,
-	post_schedule_peep = builder_post_schedule_peep_inst,
-	intern = true,
+	emit_function = anal_emit_function,
+	peep = anal_peep_inst,
+	post_schedule_peep = anal_post_schedule_peep_inst,
+	intern = false,
 	first_input_idxs = {
 		0, //Start
 		0, //Entry
@@ -327,9 +318,6 @@ SPEC := backend.Node_Spec{
 		0, //F_From_I
 		0, //F_Ext
 		0, //F_Demote
-		0, //Scope
-		0, //Lazy_Phi
-		0, //Dead
 	},
 	inheritance_table = {
 		0b1, // Start
@@ -405,9 +393,6 @@ SPEC := backend.Node_Spec{
 		0b10, // F_From_I
 		0b10, // F_Ext
 		0b10, // F_Demote
-		0b1000000, // Scope
-		0b10, // Lazy_Phi
-		0b10, // Dead
 	},
 	node_extra_sizes = {
 		1, // Start -> Cfg
@@ -483,9 +468,6 @@ SPEC := backend.Node_Spec{
 		0, // F_From_I -> No_Extra
 		0, // F_Ext -> No_Extra
 		0, // F_Demote -> No_Extra
-		1, // Scope -> Scope
-		0, // Lazy_Phi -> No_Extra
-		0, // Dead -> No_Extra
 	},
 	node_flags = {
 		{}, // Start
@@ -561,9 +543,6 @@ SPEC := backend.Node_Spec{
 		{Class_Flag.Interned}, // F_From_I
 		{Class_Flag.Interned}, // F_Ext
 		{Class_Flag.Interned}, // F_Demote
-		{}, // Scope
-		{}, // Lazy_Phi
-		{}, // Dead
 	},
 	node_extra_types = {
 		backend.Cfg,
@@ -637,9 +616,6 @@ SPEC := backend.Node_Spec{
 		backend.No_Extra,
 		backend.No_Extra,
 		backend.No_Extra,
-		backend.No_Extra,
-		backend.No_Extra,
-		Scope,
 		backend.No_Extra,
 		backend.No_Extra,
 	},
@@ -717,13 +693,10 @@ SPEC := backend.Node_Spec{
 		`F_From_I`,
 		`F_Ext`,
 		`F_Demote`,
-		`Scope`,
-		`Lazy_Phi`,
-		`Dead`,
 	},
 }
 
-Builder_Node_Type :: enum u16 {
+ANAL_Node_Type :: enum u16 {
 	Start,
 	Entry,
 	Poison,
@@ -797,17 +770,14 @@ Builder_Node_Type :: enum u16 {
 	F_From_I,
 	F_Ext,
 	F_Demote,
-	Scope,
-	Lazy_Phi,
-	Dead,
 }
 
-builder_peep_inst :: proc(ctx: backend.Peep_Ctx, node: backend.Expanded_Node) -> backend.Node_ID {
-	return builder_peep(ctx, node, struct{}{})
+anal_peep_inst :: proc(ctx: backend.Peep_Ctx, node: backend.Expanded_Node) -> backend.Node_ID {
+	return anal_peep(ctx, node, struct{}{})
 }
-builder_post_schedule_peep_inst :: proc(
+anal_post_schedule_peep_inst :: proc(
 	ctx: backend.PS_Peep_Ctx, node: backend.Expanded_Node) -> backend.Node_ID {
-	return builder_post_schedule_peep(ctx, node, struct{}{})
+	return anal_post_schedule_peep(ctx, node, struct{}{})
 }
 
 #assert(size_of(backend.Cfg) % backend.PRECISION == 0)
@@ -883,32 +853,15 @@ builder_post_schedule_peep_inst :: proc(
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
-#assert(size_of(Scope) % backend.PRECISION == 0)
-graph_add_scope :: #force_inline proc(graph: ^backend.Graph, name: string, cfg: backend.Node_ID) -> (id: backend.Node_ID) {
-	backend.push_node_name(graph, name)
-	(^Scope)(backend.graph_get_next_extra_slot(graph, u16(Builder_Node_Type.Scope)))^ = {}
-	return backend.graph_add_raw(graph, u16(Builder_Node_Type.Scope), .Void, {cfg})
-}
-#assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
-graph_add_lazy_phi :: #force_inline proc(graph: ^backend.Graph, name: string, dt: backend.Node_Datatype, reg: backend.Node_ID, lhs: backend.Node_ID) -> (id: backend.Node_ID) {
-	backend.push_node_name(graph, name)
-	return backend.graph_add_raw(graph, u16(Builder_Node_Type.Lazy_Phi), dt, {reg, lhs}, extra_capacity = 1)
-}
-#assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
-graph_add_dead :: #force_inline proc(graph: ^backend.Graph, name: string) -> (id: backend.Node_ID) {
-	backend.push_node_name(graph, name)
-	return backend.graph_add_raw(graph, u16(Builder_Node_Type.Dead), .Void, {})
-}
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	when false {}
 	else when T == backend.CInt {return 3}
 	else when T == backend.Tup {return 2}
 	else when T == backend.Local {return 4}
-	else when T == Scope {return 6}
+	else when T == backend.Cfg {return 0}
 	else when T == backend.No_Extra {return 1}
 	else when T == backend.Call {return 5}
-	else when T == backend.Cfg {return 0}
 	else {#panic(`the passed type is not subclass of anything`)}
 }
 }

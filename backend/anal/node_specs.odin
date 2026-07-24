@@ -73,6 +73,7 @@ SPEC := backend.Node_Spec{
 		{.General = 0, .Vector = 0}, // Region
 		{.General = 0, .Vector = 0}, // Loop
 		{.General = 0, .Vector = 0}, // Always
+		{.General = 0, .Vector = 0}, // Trap
 		{.General = 0, .Vector = 0}, // Call
 		{.General = 0, .Vector = 0}, // Call_End
 		{.General = 0, .Vector = 0}, // Ret
@@ -151,6 +152,7 @@ SPEC := backend.Node_Spec{
 		{}, // Region
 		{}, // Loop
 		{}, // Always
+		{}, // Trap
 		{}, // Call
 		{}, // Call_End
 		{}, // Ret
@@ -226,6 +228,7 @@ SPEC := backend.Node_Spec{
 		-16, //Region
 		-16, //Loop
 		-16, //Always
+		-16, //Trap
 		-16, //Call
 		-16, //Call_End
 		-16, //Ret
@@ -305,6 +308,7 @@ SPEC := backend.Node_Spec{
 		0, //Region
 		0, //Loop
 		0, //Always
+		0, //Trap
 		0, //Call
 		0, //Call_End
 		0, //Ret
@@ -380,6 +384,7 @@ SPEC := backend.Node_Spec{
 		0b1, // Region
 		0b1, // Loop
 		0b1, // Always
+		0b1, // Trap
 		0b100001, // Call
 		0b1, // Call_End
 		0b100, // Ret
@@ -455,6 +460,7 @@ SPEC := backend.Node_Spec{
 		1, // Region -> Cfg
 		1, // Loop -> Cfg
 		1, // Always -> Cfg
+		1, // Trap -> Cfg
 		3, // Call -> Call
 		1, // Call_End -> Cfg
 		1, // Ret -> Tup
@@ -530,6 +536,7 @@ SPEC := backend.Node_Spec{
 		{Class_Flag.Is_Basic_Block_Start}, // Region
 		{Class_Flag.Is_Basic_Block_Start}, // Loop
 		{}, // Always
+		{}, // Trap
 		{}, // Call
 		{Class_Flag.Is_Basic_Block_Start}, // Call_End
 		{}, // Ret
@@ -598,6 +605,7 @@ SPEC := backend.Node_Spec{
 		backend.No_Extra,
 		backend.No_Extra,
 		backend.No_Extra,
+		backend.Cfg,
 		backend.Cfg,
 		backend.Cfg,
 		backend.Cfg,
@@ -680,6 +688,7 @@ SPEC := backend.Node_Spec{
 		`Region`,
 		`Loop`,
 		`Always`,
+		`Trap`,
 		`Call`,
 		`Call_End`,
 		`Ret`,
@@ -757,6 +766,7 @@ ANAL_Node_Type :: enum u16 {
 	Region,
 	Loop,
 	Always,
+	Trap,
 	Call,
 	Call_End,
 	Ret,
@@ -833,6 +843,7 @@ anal_post_schedule_peep_inst :: proc(
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
+#assert(size_of(backend.Cfg) % backend.PRECISION == 0)
 #assert(size_of(backend.Cfg) % backend.PRECISION == 0)
 #assert(size_of(backend.Cfg) % backend.PRECISION == 0)
 #assert(size_of(backend.Cfg) % backend.PRECISION == 0)

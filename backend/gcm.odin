@@ -55,6 +55,7 @@ graph_idom_node :: proc(graph: ^Graph, node: ^Node) -> Node_ID {
 	     .Loop,
 	     .Call,
 	     .Call_End,
+	     .Trap,
 	     .Always:
 		return inps[0]
 	case .Region:
@@ -100,6 +101,7 @@ graph_idepth_node :: proc(graph: ^Graph, node: ^Node) -> u32 {
 	     .Loop,
 	     .Call_End,
 	     .Call,
+	     .Trap,
 	     .Always:
 		extra.idepth = 1 + graph_idepth(graph, inps[0])
 	case .Region:
@@ -560,18 +562,19 @@ graph_schedule :: proc(
 
 	ctx.late_schedules[graph_get(graph, graph.sym).gvn] = graph.entry
 
-	for node, i in ctx.nodes {
-		if node == 0 do continue
+	for n, i in ctx.nodes {
+		if n == 0 do continue
+		node := graph_get(graph, n)
 		late := ctx.late_schedules[i]
 		early := ctx.early_schedules[i]
 		sched := graph.end == 0 ? early : late
 		if sched == 0 {
-			log.error("not scheduled:", graph_get(graph, node))
+			log.error("not scheduled:", node)
 			has_unscheduled = true
 			continue
 		}
 		bb := ctx.late_schedules[graph_get(graph, sched).gvn]
-		append(&bbs[bb].instrs, node)
+		append(&bbs[bb].instrs, n)
 	}
 
 	for &bb in bbs {

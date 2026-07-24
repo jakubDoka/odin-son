@@ -364,9 +364,10 @@ graph_inline_graph :: proc(
 	graph.peeped = false
 
 	Ctx :: struct {
-		graph:      ^backend.Graph,
-		from:       ^backend.Graph,
-		projection: []backend.Node_ID,
+		graph:       ^backend.Graph,
+		from:        ^backend.Graph,
+		projection:  []backend.Node_ID,
+		dprojection: []backend.D_Node_ID,
 	}
 
 	proj_of :: proc(ctx: ^Ctx, id: backend.Node_ID) -> ^backend.Node_ID {
@@ -377,6 +378,7 @@ graph_inline_graph :: proc(
 	ctx.graph = graph
 	ctx.from = from
 	ctx.projection = make([]backend.Node_ID, from.gvn)
+	ctx.dprojection = make([]backend.D_Node_ID, from.gdn)
 
 	call := backend.graph_expand(graph, call)
 	assert(call.itype == .Call)
@@ -586,8 +588,7 @@ graph_inline_graph :: proc(
 		prev := graph.mem.pos
 
 		size :=
-			size_of(backend.Node) +
-			int(graph.node_extra_sizes[node.rtype]) * backend.PRECISION +
+			backend.graph_size(graph, node.rtype) +
 			int(node.extra_dwords) * backend.PRECISION
 		backend.push_node_name(
 			graph,
@@ -627,6 +628,19 @@ graph_inline_graph :: proc(
 			}
 		}
 
+		dn := backend.graph_dbg_slot(ctx.from, node)^
+		did: backend.D_Node_ID
+
+		if dn != 0 &&
+		   ctx.dprojection[backend.graph_getd(ctx.from, dn).gdn] == 0 {
+			did := backend.D_Node_ID(graph.mem.pos / backend.PRECISION)
+			size := size_of(backend.D_Node)
+			bytes := arna.alloc(graph.mem, uint(size), backend.PRECISION)
+			mem.copy_non_overlapping(raw_data(bytes), node.node, len(bytes))
+			ctx.dprojection[backend.graph_getd(ctx.from, dn).gdn] = did
+		}
+
+		backend.graph_dbg_slot(graph, new_node)^ = did
 		ctx.projection[node.gvn] = id
 	}
 }

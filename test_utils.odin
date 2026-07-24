@@ -48,6 +48,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 	types.mems.scratch.reserved = 4096 * 16
 	types.mems.code.reserved = 4096 * 16
 	types.mems.reloc.reserved = 4096 * 16
+	types.mems.sloc.reserved = 4096 * 128
 	types.mems.type.reserved = 4096 * 128
 
 	typecheck.types_init(&types)
@@ -93,6 +94,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 	Test_Conf :: struct {
 		using level: Opt_Level,
 		check:       bool,
+		debug:       bool,
 	}
 
 	confs: [dynamic]Test_Conf
@@ -100,6 +102,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 
 	for level in levels {
 		append(&confs, Test_Conf{level = level})
+		append(&confs, Test_Conf{level = level, debug = true})
 	}
 
 	//append(&confs, Test_Conf{level = levels[len(levels) - 2], check = true})
@@ -122,6 +125,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		types.mems.code.pos = 0
 		types.mems.reloc.pos = 0
 		types.check = level.check
+		ctx.has_dbg = level.debug
 		clear(&ctx.globals)
 
 		for &prc in ctx.procs do prc.out = {}

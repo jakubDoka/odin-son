@@ -10,7 +10,6 @@ import "core:reflect"
 import "core:strings"
 import "core:time"
 import "typecheck"
-import "vendor:curl"
 import "vendored/gam/util/arna"
 import "vendored/gam/util/hot"
 
@@ -94,6 +93,7 @@ main :: proc() {
 	types.mems.scratch.reserved = 4096 * 2048
 	types.mems.code.reserved = 4096 * 4096
 	types.mems.reloc.reserved = 4096 * 2048
+	types.mems.sloc.reserved = 4096 * 4096
 	types.mems.type.reserved = 1024 * 1024 * 128
 
 	typecheck.types_init(&types)

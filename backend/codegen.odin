@@ -50,10 +50,12 @@ Lib_Call :: bit_field u32 {
 Codegen_Emit_Buf :: struct {
 	code:   ^arna.Allocator,
 	relocs: ^arna.Allocator,
+	slocs:  ^arna.Allocator,
 }
 
 Codegen_Output :: struct {
 	relocs:    []Reloc,
+	slocs:     []Sloc,
 	code:      []u8,
 	constants: []u8,
 }
@@ -108,4 +110,8 @@ emit_aligned :: #force_no_inline proc(buf: ^arna.Allocator, vl: $T) -> ^T {
 
 add_reloc :: #force_no_inline proc(buf: ^arna.Allocator) -> ^Reloc {
 	return (^Reloc)(raw_data(arna.alloc(buf, size_of(Reloc), align_of(Reloc))))
+}
+
+add_sloc :: #force_no_inline proc(buf: ^arna.Allocator) -> ^Sloc {
+	return (^Sloc)(raw_data(arna.alloc(buf, size_of(Sloc), align_of(Sloc))))
 }

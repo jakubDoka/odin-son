@@ -482,7 +482,7 @@ test fn on all of them. This script is then callend from
 conventional name, run if exists. If you find bugs in the compiler, immediately
 fix them once you are confident you understand what is wrong.
 
-### Rewrite the wasm test program
+### Rewrite the wasm test program (DONE)
 
 The test program uses horrible integer pointer convention. THe arena is
 basically a glorified dynamic array.
@@ -500,9 +500,7 @@ them with a small test (TESTS.md), generic functions need to work with these.
 If you can parallelize with agents, do so. I think you can develop the
 interpreter with the odin compiler in the mean time.
 
-### The backend module needs splitting
-
-NOTE: read AGENTS.md
+### The backend module needs splitting (DONE)
 
 The backend module is getting bulky and bottle necks the compile times. Make a
 plan to split the backend module so that each Node_Spec is in its own module.
@@ -515,3 +513,23 @@ generate. Each backend submodule than runts its spec gen separately. All reused
 spec is kept in the backend module. This is important change that will allow us
 to extend the backend with new architectures without editing the root backend
 module.
+
+### implement dwarf line info emission
+
+NOTE: read AGENTS.md
+
+As of right now we already emit sloc information for each instruction when we
+`emit_function`. But its not used at all yet, can you extend the `elf.odin` to
+emit the line information, (no stacktrace yet) so that when you ran gdb on
+`test-programs/trap` It will show the line/file at which the trap occured.
+
+The dward line information has many option on how to emit the final
+statemachine instructions. Lets for now emit the most basic ones, even if they
+take more space.
+
+You can ran gdb to verify this works.
+
+The sloc information is tored in the `Codegen_Output` as an array of `Sloc`
+structs. There is a sloc for each instruction and it stores the size of it, so,
+to compute the offset you need to go linearly and accumulate the sizes. The
+output is stored in the `Proc` struct.

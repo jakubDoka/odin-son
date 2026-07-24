@@ -307,6 +307,7 @@ X64_IDEAL_REG_CLASSES := [backend.Ideal_Node_Type]Reg_Class_Spec {
 	.Region = {},
 	.Loop = {},
 	.Always = {input_start_idx = 1},
+	.Trap = {input_start_idx = 1},
 	.Call = {input_start_idx = backend.CALL_PREFIX},
 	.Copy = {
 		input_start_idx = 2,
@@ -1187,6 +1188,8 @@ Ctx :: struct {
 	used:               bit_arr.Bit_Set,
 	code_start:         uint,
 	stack_param_offset: [Reg_Kind][dynamic]i32,
+	last_off:           uint,
+	sloc:               backend.Sloc,
 }
 
 Local_Reloc :: struct {
@@ -1222,6 +1225,7 @@ x64_emit_function :: proc(
 	context.allocator, _ = arna.scrath()
 
 	reloc_start := ectx.relocs.pos
+	sloc_start := ectx.slocs.pos
 
 	ctx: Ctx
 	ctx.code_start = ectx.code.pos
@@ -1318,11 +1322,15 @@ x64_emit_function :: proc(
 		}
 	}
 
+	mount_sloc(&ctx, ctx.entry)
+
 	pushed: i32
 	for reg in ctx.callee_saved[.General] {
 		if bit_arr.contains(ctx.used, int(reg)) {
 			// push $reg
 			emit_single_op(ctx.code, 0x50, reg)
+			next_sloc(&ctx)
+
 			pushed += 8
 		}
 	}
@@ -1445,10 +1453,27 @@ x64_emit_function :: proc(
 		[]backend.Reloc,
 		ctx.relocs.ptr[reloc_start:ctx.relocs.pos],
 	)
+	slocs := mem.slice_data_cast(
+		[]backend.Sloc,
+		ctx.slocs.ptr[sloc_start:ctx.slocs.pos],
+	)
 	arna.alloc(ctx.code, 0, 8)
 	constants := arna.clone(ctx.code, ctx.big_constants[:])
 
-	return {code = code, relocs = relocs, constants = constants}
+	return {code = code, relocs = relocs, constants = constants, slocs = slocs}
+}
+
+next_sloc :: proc(ctx: ^Ctx) {
+	cx := ctx.sloc
+	cx.range = u32(ctx.code.pos - ctx.last_off)
+	backend.add_sloc(ctx.slocs)^ = cx
+	ctx.last_off = ctx.code.pos
+}
+
+mount_sloc :: proc(ctx: ^Ctx, node: backend.Node_ID) {
+	dn := backend.graph_dbg_slot(ctx, backend.graph_get(ctx, node))^
+	if dn != 0 do ctx.sloc = backend.graph_getd(ctx, dn).sloc
+	ctx.last_off = ctx.code.pos
 }
 
 @(disabled = GEN_SPEC)
@@ -1615,6 +1640,8 @@ x64_emit_instr :: proc(
 	imm_boundary := int(scl != 0)
 	pfx: u8 = node.dt == .F64 ? 0xF2 : 0xF3
 	wide := node.dt == .F64
+
+	mount_sloc(ctx, instr)
 
 	switch xtype(node) {
 	case .Global:
@@ -1784,6 +1811,7 @@ x64_emit_instr :: proc(
 			rx := rex(cond, cond, RAX, backend.DT_SIZE[cnode.dt] == 8)
 			emit_sized_opcode(ctx.code, cnode.dt, rx, 0x85)
 			emit(ctx.code, {mod_rm(.Direct, cond, cond)})
+			next_sloc(ctx)
 		}
 
 		append(
@@ -1808,6 +1836,7 @@ x64_emit_instr :: proc(
 
 		if !is_consecutive do break
 
+		next_sloc(ctx)
 		fallthrough
 	case .Always:
 		fallthrough
@@ -1825,6 +1854,8 @@ x64_emit_instr :: proc(
 		)
 
 		emit(ctx.code, {0xe9, 0, 0, 0, 0})
+	case .Trap:
+		emit(ctx.code, {0x0F, 0x0B})
 	case .Call:
 		call := backend.graph_extra(ctx, node, backend.Call)
 
@@ -2028,12 +2059,16 @@ x64_emit_instr :: proc(
 		}
 
 		if node.dt != .Void {
+			next_sloc(ctx)
+
 			dst := reg_of(ctx, instr)
 
 			// setcc $lhs
 			rx := rex(RAX, dst, RAX, true)
 			op := OPCODE_TABLE[xtype(node)].opcode
 			emit(ctx.code, {rx, 0x0F, op, mod_sm(.Direct, 0b000, dst)})
+
+			next_sloc(ctx)
 
 			// movzx $lhs, $lhs
 			rx = rex(dst, dst, RAX, true)
@@ -2046,6 +2081,9 @@ x64_emit_instr :: proc(
 		rx := rex(RAX, dst, RAX, backend.DT_SIZE[node.dt] == 8)
 		emit_sized_opcode(ctx.code, node.dt, rx, 0xf7)
 		emit(ctx.code, {mod_sm(.Direct, 0b010, dst)})
+
+		next_sloc(ctx)
+
 		// and $dst, $lhs
 		rx = rex(lhs, dst, RAX, backend.DT_SIZE[node.dt] == 8)
 		emit_sized_opcode(ctx.code, node.dt, rx, 0x21)
@@ -2179,12 +2217,17 @@ x64_emit_instr :: proc(
 		}
 
 		if node.dt != .Void {
+			next_sloc(ctx)
+
 			setcc: u8 = OPCODE_TABLE[xtype(node)].opcode
 
 			dst := reg_of(ctx, instr)
 			// setcc $dst
 			rxs := rex(RAX, dst, RAX, true)
 			emit(ctx.code, {rxs, 0x0F, setcc, mod_sm(.Direct, 0b000, dst)})
+
+			next_sloc(ctx)
+
 			// movzx $dst, $dst
 			rxz := rex(dst, dst, RAX, true)
 			emit(ctx.code, {rxz, 0x0F, 0xB6, mod_rm(.Direct, dst, dst)})
@@ -2235,6 +2278,7 @@ x64_emit_instr :: proc(
 		emit_sized_opcode(ctx.code, node.dt, rx, 0xf7)
 		emit(ctx.code, {mod_sm(.Direct, 0b111, rhs)})
 		if node.itype == .Rem && node.dt == .I8 {
+			next_sloc(ctx)
 			// movzx edx, ah
 			emit(ctx.code, {0x0F, 0xB6, 0xD4})
 		}
@@ -2248,11 +2292,16 @@ x64_emit_instr :: proc(
 			// movzx ax, al
 			emit(ctx.code, {0x0F, 0xB6, 0xC0})
 		}
+
+		next_sloc(ctx)
+
 		// div $rhs
 		rx := rex(RAX, rhs, RAX, backend.DT_SIZE[node.dt] == 8)
 		emit_sized_opcode(ctx.code, node.dt, rx, 0xf7)
 		emit(ctx.code, {mod_sm(.Direct, 0b110, rhs)})
 		if node.itype == .U_Rem && node.dt == .I8 {
+			next_sloc(ctx)
+
 			// movsx edx, ah
 			emit(ctx.code, {0x0F, 0xBE, 0xD4})
 		}
@@ -2275,6 +2324,8 @@ x64_emit_instr :: proc(
 				// push [rsp + $src_off]
 				emit(ctx.code, {0xff})
 				spill_indirect_addr(ctx, Reg(0b110), src_off)
+				next_sloc(ctx)
+
 				// pop [rsp + $dst_off]
 				emit(ctx.code, {0x8F})
 				spill_indirect_addr(ctx, Reg(0b000), dst_off - 8)
@@ -2306,6 +2357,8 @@ x64_emit_instr :: proc(
 			// push [rsp + $src_offset]
 			emit(ctx.code, {0xff})
 			spill_indirect_addr(ctx, Reg(0b110), src_off)
+			next_sloc(ctx)
+
 			// pop [rsp + $dst_off]
 			emit(ctx.code, {0x8F})
 			spill_indirect_addr(ctx, Reg(0b000), dst_off)
@@ -2345,21 +2398,42 @@ x64_emit_instr :: proc(
 			)
 		}
 	case .Return:
+		is_unreachable := true
+
+		cfg := backend.graph_expand(ctx, node.inps[0])
+		if cfg.itype != .Trap {
+			if cfg.itype == .Region {
+				for inp in cfg.inps {
+					if backend.graph_get(ctx, inp).itype != .Trap {
+						is_unreachable = false
+					}
+				}
+			} else {
+				is_unreachable = false
+			}
+		}
+
+		if is_unreachable do break
+
 		if ctx.stack_size != 0 {
 			// sub rsp, -$ctx.stack_size
 			emit_imm_op(ctx.code, 0x81, 0b000, RSP, ctx.stack_size)
+			next_sloc(ctx)
 		}
 
 		#reverse for reg in ctx.callee_saved[.General] {
 			if bit_arr.contains(ctx.used, int(reg)) {
 				// pop $reg
 				emit_single_op(ctx.code, 0x58, reg)
+				next_sloc(ctx)
 			}
 		}
 
 		// ret
 		emit(ctx.code, {0xc3})
 	}
+
+	next_sloc(ctx)
 }
 
 reg_of :: proc(ctx: backend.Codegen_Emit_Ctx, id: backend.Node_ID) -> Reg {
@@ -2377,7 +2451,7 @@ reg_and_disp_of :: proc(ctx: ^Ctx, id: backend.Node_ID) -> (Reg, i32, u32) {
 			tup.idx = emit_big_constant(
 				ctx,
 				tup.align,
-				raw_data(&tup.end)[:tup.size],
+				([^]u8)(node)[backend.graph_size(ctx, node.rtype):][:tup.size],
 			)
 		}
 

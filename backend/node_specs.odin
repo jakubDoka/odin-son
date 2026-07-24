@@ -3,15 +3,15 @@ package backend
 
 when !GEN_SPEC {
 Un_Op :: enum u16 {
-	F_To_I = u16(Ideal_Node_Type.F_To_I),
 	Cast = u16(Ideal_Node_Type.Cast),
-	F_Ext = u16(Ideal_Node_Type.F_Ext),
-	F_From_I = u16(Ideal_Node_Type.F_From_I),
-	Not = u16(Ideal_Node_Type.Not),
-	Neg = u16(Ideal_Node_Type.Neg),
 	Uext = u16(Ideal_Node_Type.Uext),
+	F_From_I = u16(Ideal_Node_Type.F_From_I),
+	F_To_I = u16(Ideal_Node_Type.F_To_I),
+	Neg = u16(Ideal_Node_Type.Neg),
 	Sext = u16(Ideal_Node_Type.Sext),
+	Not = u16(Ideal_Node_Type.Not),
 	F_Demote = u16(Ideal_Node_Type.F_Demote),
+	F_Ext = u16(Ideal_Node_Type.F_Ext),
 }
 Bin_Op :: enum u16 {
 	Add = u16(Ideal_Node_Type.Add),
@@ -110,6 +110,7 @@ Root_Node_Type :: enum u16 {
 	Region,
 	Loop,
 	Always,
+	Trap,
 	Call,
 	Call_End,
 	Ret,
@@ -309,6 +310,12 @@ graph_add_always :: #force_inline proc(graph: ^Graph, name: string, ctrl: Node_I
 	push_node_name(graph, name)
 	(^Cfg)(graph_get_next_extra_slot(graph, u16(Ideal_Node_Type.Always)))^ = {}
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Always), .Void, {ctrl})
+}
+#assert(size_of(Cfg) % PRECISION == 0)
+graph_add_trap :: #force_inline proc(graph: ^Graph, name: string, ctrl: Node_ID) -> (id: Node_ID) {
+	push_node_name(graph, name)
+	(^Cfg)(graph_get_next_extra_slot(graph, u16(Ideal_Node_Type.Trap)))^ = {}
+	return graph_add_raw(graph, u16(Ideal_Node_Type.Trap), .Void, {ctrl})
 }
 #assert(size_of(Call) % PRECISION == 0)
 graph_add_call :: #force_inline proc(graph: ^Graph, name: string, inputs: []Node_ID, cid: u32) -> (id: Node_ID) {

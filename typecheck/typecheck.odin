@@ -29,6 +29,7 @@ Mems :: struct {
 	scratch:  arna.Allocator,
 	code:     arna.Allocator,
 	reloc:    arna.Allocator,
+	sloc:     arna.Allocator,
 	type:     arna.Allocator,
 }
 
@@ -51,6 +52,7 @@ Gen_Ctx :: struct {
 	prc:          Proc_ID,
 	ret_ptrs:     []backend.Node_ID,
 	poly_types:   #soa[dynamic]Poly_Entry,
+	slocs:        map[backend.Sloc]backend.D_Node_ID,
 }
 
 Poly_Entry :: struct {
@@ -888,6 +890,7 @@ Module_ID :: distinct int
 
 Intrinsic :: enum int {
 	syscall,
+	trap,
 }
 
 Builtin_Proc :: enum int {
@@ -982,6 +985,7 @@ types_init :: proc(types: ^Types) {
 		&types.mems.scratch,
 		&types.mems.code,
 		&types.mems.reloc,
+		&types.mems.sloc,
 		&types.mems.type,
 	)
 
@@ -1013,6 +1017,7 @@ types_deinit :: proc(types: ^Types) {
 		&types.mems.scratch,
 		&types.mems.code,
 		&types.mems.reloc,
+		&types.mems.sloc,
 		&types.mems.type,
 	)
 }
@@ -1102,7 +1107,7 @@ typecheck :: proc(
 		set_node_data(node, ty)
 	}
 
-	#partial switch d in node.derived {
+	#partial match: switch d in node.derived {
 	case ^ast.Bad_Expr:
 		return tmeta(ctx, prop.inferred_ty)
 	case ^ast.Struct_Type:
@@ -1796,6 +1801,9 @@ typecheck :: proc(
 					)
 				}
 				return tmeta(ctx, .Uintptr)
+			case .trap:
+				assert(len(d.args) == 0)
+				break match
 			}
 		case Module_Type:
 			fmt.panicf("Cant call a module")

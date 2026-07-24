@@ -39,7 +39,7 @@ failed_names=()
 run_capture() {
 	# $1 = binary, writes exit code to REPLY_CODE, stdout/stderr to files
 	local bin="$1" out="$2" err="$3"
-	"$bin" >"$out" 2>"$err"
+	{ "$bin" >"$out" 2>"$err"; } 2>/dev/null
 	REPLY_CODE=$?
 }
 

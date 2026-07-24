@@ -19,8 +19,12 @@ graph_delete_node_id :: #force_inline proc(graph: ^Graph, id: Node_ID, indirect 
 	graph_delete_node(graph, graph_get(graph, id), indirect)
 }
 graph_extra_dwords :: proc{graph_extra_dwords_node, graph_extra_dwords_node_id}
-graph_extra_dwords_node_id :: #force_inline proc(graph: ^Graph, id: Node_ID) -> []u32 {
-	return graph_extra_dwords_node(graph, graph_get(graph, id))
+graph_extra_dwords_node_id :: #force_inline proc(
+	graph: ^Graph,
+	id: Node_ID,
+	consider_dbg := false,
+) -> []u32 {
+	return graph_extra_dwords_node(graph, graph_get(graph, id), consider_dbg)
 }
 graph_inps :: proc{graph_inps_node, graph_inps_node_id}
 graph_inps_node_id :: #force_inline proc(

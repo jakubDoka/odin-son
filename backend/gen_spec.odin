@@ -150,6 +150,7 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 		extra_capacity = 1,
 	},
 	.Always = {id = Cfg, args = {"ctrl"}, default_type = .Void},
+	.Trap = {id = Cfg, args = {"ctrl"}, default_type = .Void},
 	.Call = {
 		id = Call,
 		varargs = true,

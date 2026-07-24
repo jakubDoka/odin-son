@@ -900,7 +900,9 @@ emit_proc :: proc(
 	ctx.module = prc.module
 	ctx.file = prc.file
 	ctx.file_id = prc.file_id
-	ctx.graph = {}
+	ctx.graph = {
+		has_dbg = ctx.graph.has_dbg,
+	}
 	ctx.node_spec = &builder.SPEC
 	ctx.mem = &ctx.mems.graph
 	ctx.mem.pos = backend.PRECISION
@@ -914,6 +916,7 @@ emit_proc :: proc(
 		[dynamic]typecheck.Variable,
 		arna.allocator(&ctx.mems.scratch),
 	)
+	ctx.slocs = make(type_of(ctx.slocs), ctx.scope.allocator)
 
 	clear(&ctx.poly_types)
 	assert(len(prc.poly_names) == len(prc.poly_values))
@@ -1055,6 +1058,7 @@ emit_proc_code :: proc(
 	emit_ctx.buf = {
 		code   = &ctx.mems.code,
 		relocs = &ctx.mems.reloc,
+		slocs  = &ctx.mems.sloc,
 	}
 	emit_ctx.allocs = regs
 	emit_ctx.param_specs = prc.param_types
@@ -1091,6 +1095,23 @@ emit_stmts :: proc(
 	builder.graph_truncate_scope(ctx, ctx.node_scope, base.node)
 }
 
+ctx_sloc_of :: proc(ctx: ^Gen_Ctx, node: ^ast.Node) -> backend.D_Node_ID {
+	sloc := backend.Sloc {
+		file = u32(ctx.file_id),
+		line = u32(node.pos.line),
+		col  = u32(node.pos.column),
+	}
+
+	if e, ok := ctx.slocs[sloc]; ok {
+		return e
+	}
+
+	e := backend.graph_add_sloc(ctx, sloc)
+	ctx.slocs[sloc] = e
+
+	return e
+}
+
 emit_nodes :: proc(
 	ctx: ^Gen_Ctx,
 	prop: Propagation,
@@ -1100,6 +1121,7 @@ emit_nodes :: proc(
 
 	ty := typecheck.get_node_type(node)
 	dt := typecheck.type_to_dt(ty)
+	sloc := ctx_sloc_of(ctx, node)
 
 	res: backend.Node_ID
 	lvalue: bool
@@ -1108,6 +1130,7 @@ emit_nodes :: proc(
 		return vl.id, vl.is_lvalue
 	}
 
+	//backend.graph_sloc_scope(ctx, sloc)
 	tmp, _ := arna.scrath(context.temp_allocator)
 
 	#partial match: switch d in node.derived {
@@ -2043,6 +2066,12 @@ emit_nodes :: proc(
 
 				res = backend.graph_add_ret(ctx, "cret", .I64, call_end, 0)
 
+				break match
+			case .trap:
+				trap := backend.graph_add_trap(ctx, "trap", ctx_ctrl(ctx))
+				backend.graph_merge_returns(ctx, {trap, ctx_mem(ctx)})
+				backend.graph_delete(ctx, ctx.node_scope)
+				ctx.node_scope = 0
 				break match
 			}
 		case base_ty == .Module:

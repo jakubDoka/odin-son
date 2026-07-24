@@ -4,6 +4,8 @@ package tests
 
 import "core:testing"
 
+import "base:intrinsics"
+
 import main ".."
 
 @(test) simplest :: proc(t: ^testing.T) {
@@ -10830,7 +10832,6 @@ main :: proc() -> int {
 
 
 
-
 opt_level :: "none"
 
 VL :: 1.0
@@ -10843,7 +10844,6 @@ main_ :: proc() -> int {
 main.run_test(t, `float_const`, `
 package main
 
-
 opt_level :: "none"
 
 VL :: 1.0
@@ -10851,6 +10851,128 @@ VL :: 1.0
 main :: proc() -> int {
 	vl: f32
 	return int(vl + VL)
+}
+`, main_())
+}
+@(test) basic_simd :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+LANES :: 16
+
+T :: u8
+
+from_slice :: proc(slice: []$E) -> #simd[LANES]E {
+	array: [LANES]E
+	i := 0
+	#no_bounds_check for {
+		if i >= LANES do break
+		array[i] = slice[i]
+		i += 1
+	}
+	return transmute(#simd[LANES]E)array
+}
+
+
+linear_search :: proc (array: []$T, key: T) -> (index: int, found: bool) {
+	for x, i in array {
+		if x == key {
+			return i, true
+		}
+	}
+	return -1, false
+}
+
+simd_search :: proc(haistack: []$T, needle: T) -> (int, bool) {
+	//LANES :: 16 / size_of(T)
+
+	i := 0
+	for {
+		if i >= len(haistack) / LANES do break
+		chunk := from_slice(haistack[i * LANES:][:LANES])
+		mask := intrinsics.simd_lanes_eq(chunk, (#simd[LANES]T)(needle))
+		bits := transmute(u16)intrinsics.simd_extract_lsbs(mask)
+		if bits != 0 {
+			return i * LANES +
+				int(intrinsics.count_trailing_zeros(bits)), true
+		}
+		i += 1
+	}
+
+	idx, _ := linear_search(
+		haistack[len(haistack) / LANES * LANES:],
+		needle,
+	)
+	if idx < 0 do return -1, false
+	return len(haistack) / LANES * LANES + idx, true
+}
+
+main_ :: proc() -> int {
+	haystack := "0123456789abcdefghijklmnopqrstuvxyz"
+	res, _ := simd_search(transmute([]u8)haystack, 'z')
+	return res
+}
+
+main.run_test(t, `basic_simd`, `
+package main
+
+opt_level :: "none"
+
+LANES :: 16
+
+T :: u8
+
+from_slice :: proc(slice: []$E) -> #simd[LANES]E {
+	array: [LANES]E
+	i := 0
+	#no_bounds_check for {
+		if i >= LANES do break
+		array[i] = slice[i]
+		i += 1
+	}
+	return transmute(#simd[LANES]E)array
+}
+
+
+linear_search :: proc (array: []$T, key: T) -> (index: int, found: bool) {
+	for x, i in array {
+		if x == key {
+			return i, true
+		}
+	}
+	return -1, false
+}
+
+simd_search :: proc(haistack: []$T, needle: T) -> (int, bool) {
+	//LANES :: 16 / size_of(T)
+
+	i := 0
+	for {
+		if i >= len(haistack) / LANES do break
+		chunk := from_slice(haistack[i * LANES:][:LANES])
+		mask := intrinsics.simd_lanes_eq(chunk, (#simd[LANES]T)(needle))
+		bits := transmute(u16)intrinsics.simd_extract_lsbs(mask)
+		if bits != 0 {
+			return i * LANES +
+				int(intrinsics.count_trailing_zeros(bits)), true
+		}
+		i += 1
+	}
+
+	idx, _ := linear_search(
+		haistack[len(haistack) / LANES * LANES:],
+		needle,
+	)
+	if idx < 0 do return -1, false
+	return len(haistack) / LANES * LANES + idx, true
+}
+
+main :: proc() -> int {
+	haystack := "0123456789abcdefghijklmnopqrstuvxyz"
+	res, _ := simd_search(transmute([]u8)haystack, 'z')
+	return res
 }
 `, main_())
 }

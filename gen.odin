@@ -405,6 +405,15 @@ emit_float_const :: proc(
 	return backend.graph_add_c_int(ctx, "fbits", dt, transmute(i64)value)
 }
 
+simd_lane_of :: proc(simd_ty: Type) -> backend.Lane_Type {
+	sd := typecheck.unpack_type(simd_ty).(^typecheck.Simd)
+	return(
+		backend.lane_from_dt(typecheck.type_to_dt(sd.elem)) or_else panic(
+			"wrong simd lane type",
+		) \
+	)
+}
+
 Sym :: union #no_nil {
 	Value,
 	int,
@@ -1629,7 +1638,7 @@ emit_nodes :: proc(
 			}
 			res, lvalue = dest, true
 		case ^typecheck.Array:
-			stride := typecheck.array_elem_stride(t.elem)
+			stride := typecheck.type_size(t.elem)
 			for elem, i in d.elems {
 				elem_ptr := field_offset(ctx, dest, i * stride)
 				value := emit_nodes(ctx, {dest = elem_ptr}, elem)
@@ -1700,7 +1709,7 @@ emit_nodes :: proc(
 
 		idx := to_rvalue(ctx, emit_nodes(ctx, {}, d.index), d.index)
 
-		stride := typecheck.array_elem_stride(ty)
+		stride := typecheck.type_size(ty)
 		res = index_offset(ctx, base_ptr, idx, stride)
 		lvalue = true
 	case ^ast.Slice_Expr:
@@ -1709,7 +1718,7 @@ emit_nodes :: proc(
 		stride: int
 		#partial switch t in typecheck.unpack_type(ty) {
 		case ^typecheck.Slice:
-			stride = typecheck.array_elem_stride(t.elem)
+			stride = typecheck.type_size(t.elem)
 		case typecheck.String_Type:
 			stride = 1
 		case:
@@ -1803,6 +1812,14 @@ emit_nodes :: proc(
 		}
 	case ^ast.Paren_Expr:
 		res, lvalue = unpack(emit_nodes(ctx, prop, d.expr))
+	case ^ast.Type_Cast:
+		dst_ty := typecheck.get_node_type(node)
+		inner := emit_nodes(ctx, {}, d.expr)
+		if typecheck.type_to_dt(dst_ty) == .Void {
+			res, lvalue = inner.id, inner.is_lvalue
+		} else {
+			res = to_rvalue(ctx, inner, dst_ty)
+		}
 	case ^ast.If_Stmt:
 		cond := to_rvalue(ctx, emit_nodes(ctx, {}, d.cond), d.cond)
 
@@ -1839,8 +1856,7 @@ emit_nodes :: proc(
 			builder.graph_start_if(ctx, ctx.node_scope, &arm, cond)
 			emit_stmts(ctx, clause.body)
 			builder.graph_break_block(ctx, &ctx.node_scope, &sw)
-			builder.graph_start_else(ctx, &ctx.node_scope, &arm)
-			builder.graph_end_else(ctx, &ctx.node_scope, &arm)
+			builder.graph_end_if(ctx, &ctx.node_scope, &arm)
 		}
 
 		if default_clause != nil {
@@ -1900,8 +1916,7 @@ emit_nodes :: proc(
 				emit_stmts(ctx, clause.body, base)
 				builder.graph_break_block(ctx, &ctx.node_scope, &sw)
 			}
-			builder.graph_start_else(ctx, &ctx.node_scope, &arm)
-			builder.graph_end_else(ctx, &ctx.node_scope, &arm)
+			builder.graph_end_if(ctx, &ctx.node_scope, &arm)
 		}
 
 		if default_clause != nil {
@@ -1940,6 +1955,115 @@ emit_nodes :: proc(
 		builder.graph_end_loop(ctx, &ctx.node_scope, &loop_state.bstate)
 
 		ctx.loop = ctx.loop.parent
+	case ^ast.Range_Stmt:
+		expr_ty := typecheck.get_node_type(d.expr)
+		base := emit_nodes(ctx, {}, d.expr)
+
+		data_ptr, length: backend.Node_ID
+		elem_ty: Type
+		#partial switch t in typecheck.unpack_type(expr_ty) {
+		case ^typecheck.Slice:
+			assert(base.is_lvalue)
+			data_ptr = field_load(ctx, "rdata", .I64, base.id, 0)
+			length = field_load(ctx, "rlen", .I64, base.id, 8)
+			elem_ty = t.elem
+		case ^typecheck.Array:
+			assert(base.is_lvalue)
+			data_ptr = base.id
+			length = backend.graph_add_c_int(ctx, "rlen", .I64, i64(t.len))
+			elem_ty = t.elem
+		case:
+			fmt.panicf("TODO: range over %v", expr_ty)
+		}
+
+		backend.graph_pin(ctx, data_ptr)
+		backend.graph_pin(ctx, length)
+
+		stride := typecheck.type_size(elem_ty)
+		sbase := ctx_scope_base(ctx)
+
+		iinit := backend.graph_add_c_int(ctx, "rz", .I64, 0)
+		idx_slot := builder.graph_push_scope_value(ctx, ctx.node_scope, iinit)
+
+		loop_state: typecheck.Loop_State
+		loop_state.label = typecheck.src_of(ctx.file^, d.label)
+		loop_state.parent = ctx.loop
+		ctx.loop = &loop_state
+
+		builder.graph_start_loop(ctx, ctx.node_scope, &loop_state.bstate)
+
+		idxv := builder.graph_get_scope_value(ctx, ctx.node_scope, idx_slot)
+		cond := backend.graph_add_bin_op(ctx, "rge", .Ge, .I8, idxv, length)
+
+		if_state: builder.If_State
+		builder.graph_start_if(ctx, ctx.node_scope, &if_state, cond)
+		builder.graph_loop_control(
+			.Break,
+			ctx,
+			ctx.node_scope,
+			&loop_state.bstate,
+		)
+		ctx.node_scope = 0
+		builder.graph_end_if(ctx, &ctx.node_scope, &if_state)
+
+		elem_addr := index_offset(ctx, data_ptr, idxv, stride)
+
+		v := d.vals[0]
+		backend.graph_pin(ctx, elem_addr)
+		append(
+			&ctx.scope,
+			typecheck.Variable {
+				typecheck.src_of(ctx.file^, v),
+				elem_addr,
+				elem_ty,
+				v,
+				typecheck.get_node_vflags(v),
+			},
+		)
+
+		if 1 < len(d.vals) {
+			v := d.vals[1]
+			name := typecheck.src_of(ctx.file^, v)
+			flags := typecheck.get_node_vflags(v)
+			append(
+				&ctx.scope,
+				typecheck.Variable{name, idx_slot, .Int, v, flags},
+			)
+		}
+
+		emit_nodes(ctx, {}, d.body)
+
+		builder.graph_start_loop_increment(
+			ctx,
+			&ctx.node_scope,
+			&loop_state.bstate,
+		)
+
+		if ctx.node_scope != 0 {
+			idxv3 := builder.graph_get_scope_value(
+				ctx,
+				ctx.node_scope,
+				idx_slot,
+			)
+			one := backend.graph_add_c_int(ctx, "r1", .I64, 1)
+			nidx := backend.graph_add_bin_op(
+				ctx,
+				"rinc",
+				.Add,
+				.I64,
+				idxv3,
+				one,
+			)
+			backend.graph_set_input(ctx, ctx.node_scope, idx_slot, nidx)
+		}
+
+		builder.graph_end_loop(ctx, &ctx.node_scope, &loop_state.bstate)
+		ctx.loop = ctx.loop.parent
+
+		emit_stmts(ctx, {}, sbase)
+
+		backend.graph_unpin(ctx, data_ptr)
+		backend.graph_unpin(ctx, length)
 	case ^ast.Call_Expr:
 		switch typecheck.get_builtin_proc(d.expr) {
 		case .nil:
@@ -2073,6 +2197,37 @@ emit_nodes :: proc(
 				backend.graph_delete(ctx, ctx.node_scope)
 				ctx.node_scope = 0
 				break match
+			case .simd_lanes_eq:
+				a := to_rvalue(ctx, emit_nodes(ctx, {}, d.args[0]), d.args[0])
+				b := to_rvalue(ctx, emit_nodes(ctx, {}, d.args[1]), d.args[1])
+				res = backend.graph_add_bin_op(ctx, "seq", .Eq, .V128, a, b)
+				backend.graph_get(ctx, res).lane = simd_lane_of(
+					typecheck.get_node_type(d.args[0]),
+				)
+				break match
+			case .simd_extract_lsbs:
+				a := to_rvalue(ctx, emit_nodes(ctx, {}, d.args[0]), d.args[0])
+				res = backend.graph_add_un_op(
+					ctx,
+					"elsb",
+					.Simd_Extract_Lsbs,
+					typecheck.type_to_dt(typecheck.get_node_type(node)),
+					a,
+				)
+				backend.graph_get(ctx, res).lane = simd_lane_of(
+					typecheck.get_node_type(d.args[0]),
+				)
+				break match
+			case .count_trailing_zeros:
+				a := to_rvalue(ctx, emit_nodes(ctx, {}, d.args[0]), d.args[0])
+				res = backend.graph_add_un_op(
+					ctx,
+					"ctz",
+					.Ctz,
+					typecheck.type_to_dt(typecheck.get_node_type(node)),
+					a,
+				)
+				break match
 			}
 		case base_ty == .Module:
 			panic("calling a module?")
@@ -2081,6 +2236,20 @@ emit_nodes :: proc(
 			src_ty := typecheck.get_node_type(d.args[0])
 			src_dt := typecheck.type_to_dt(src_ty)
 			arg := to_rvalue(ctx, emit_nodes(ctx, {}, d.args[0]), d.args[0])
+
+			if typecheck.is_of(base_meta.lit.typeida, ^typecheck.Simd) {
+				res = backend.graph_add_un_op(
+					ctx,
+					"splat",
+					.Splat,
+					dest_dt,
+					arg,
+				)
+				backend.graph_get(ctx, res).lane = simd_lane_of(
+					base_meta.lit.typeida,
+				)
+				break match
+			}
 
 			dst_float := dest_dt in backend.FLOAT_DTS
 			src_float := src_dt in backend.FLOAT_DTS

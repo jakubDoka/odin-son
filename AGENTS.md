@@ -1,8 +1,8 @@
 This codebase contains a in progress implementation of the JIT compiler and a
 Odin frontend to dogfood the JIT.
 
-The tests are generated with `gen-meta` (look into misc/profiles.fish) and node
-spec is generated with `gen-spec`, you can run tests with `run-test`.
+The tests are generated with `gen-meta` (look into `misc/profiles.fish`) and
+node spec is generated with `gen-spec`, you can run tests with `run-test`.
 
 The backend is split into `backend` (the generic engine, shared node spec, and
 codegen scaffolding) plus one subpackage per architecture, e.g. `backend/x64`

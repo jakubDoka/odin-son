@@ -15,7 +15,7 @@ SPEC := backend.Node_Spec{
 		{.General = 2051, .Vector = 0},
 	},
 	class_lengths = {.General = 1, .Vector = 1},
-	datatype_to_reg_kind = {.Void = Reg_Kind.General, .I8 = Reg_Kind.General, .I16 = Reg_Kind.General, .I32 = Reg_Kind.General, .I64 = Reg_Kind.General, .F32 = Reg_Kind.Vector, .F64 = Reg_Kind.Vector},
+	datatype_to_reg_kind = {.Void = Reg_Kind.General, .I8 = Reg_Kind.General, .I16 = Reg_Kind.General, .I32 = Reg_Kind.General, .I64 = Reg_Kind.General, .F32 = Reg_Kind.Vector, .F64 = Reg_Kind.Vector, .V128 = Reg_Kind.Vector, .V256 = Reg_Kind.Vector, .V512 = Reg_Kind.Vector},
 	clobbers = {
 		{.General = 0, .Vector = 0}, // Start
 		{.General = 0, .Vector = 0}, // Entry
@@ -91,6 +91,10 @@ SPEC := backend.Node_Spec{
 		{.General = 0, .Vector = 0}, // F_From_I
 		{.General = 0, .Vector = 0}, // F_Ext
 		{.General = 0, .Vector = 0}, // F_Demote
+		{.General = 0, .Vector = 0}, // Splat
+		{.General = 0, .Vector = 0}, // Ctz
+		{.General = 0, .Vector = 0}, // Simd_Extract_Lsbs
+		{.General = 0, .Vector = 0}, // CV128
 		{.General = 0, .Vector = 0}, // X64_Add
 		{.General = 0, .Vector = 0}, // X64_Sub
 		{.General = 0, .Vector = 0}, // X64_And
@@ -128,6 +132,7 @@ SPEC := backend.Node_Spec{
 		{.General = 0, .Vector = 0}, // X64_Not
 		{.General = 0, .Vector = 0}, // X64_Mul8
 		{.General = 0, .Vector = 0}, // X64_Fma_213
+		{.General = 0, .Vector = 0}, // X64_Pcmpeq
 	},
 	interned_reg_masks = {
 		raw_data([]i64{}),
@@ -218,6 +223,10 @@ SPEC := backend.Node_Spec{
 		{{.General = 3, .Vector = 2}, {.General = 1, .Vector = 0}}, // F_From_I
 		{{.General = 0, .Vector = 2}, {.General = 0, .Vector = 2}}, // F_Ext
 		{{.General = 0, .Vector = 2}, {.General = 0, .Vector = 2}}, // F_Demote
+		{{.General = 3, .Vector = 2}, {.General = 1, .Vector = 0}}, // Splat
+		{{.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}}, // Ctz
+		{{.General = 1, .Vector = 3}, {.General = 0, .Vector = 2}}, // Simd_Extract_Lsbs
+		{{.General = 0, .Vector = 2}}, // CV128
 		{{.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}}, // X64_Add
 		{{.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}}, // X64_Sub
 		{{.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}}, // X64_And
@@ -255,6 +264,7 @@ SPEC := backend.Node_Spec{
 		{{.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}}, // X64_Not
 		{{.General = 5, .Vector = 0}, {.General = 1, .Vector = 0}, {.General = 5, .Vector = 0}}, // X64_Mul8
 		{{.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}}, // X64_Fma_213
+		{{.General = 3, .Vector = 2}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 3}}, // X64_Pcmpeq
 	},
 	inplace_slot_idxs = {
 		-16, //Start
@@ -331,6 +341,10 @@ SPEC := backend.Node_Spec{
 		-16, //F_From_I
 		-16, //F_Ext
 		-16, //F_Demote
+		-16, //Splat
+		0, //Ctz
+		-16, //Simd_Extract_Lsbs
+		-16, //CV128
 		0, //X64_Add
 		0, //X64_Sub
 		0, //X64_And
@@ -368,6 +382,7 @@ SPEC := backend.Node_Spec{
 		0, //X64_Not
 		-16, //X64_Mul8
 		0, //X64_Fma_213
+		0, //X64_Pcmpeq
 	},
 	reg_mask_of = x64_reg_mask_of,
 	emit_function = x64_emit_function,
@@ -449,6 +464,10 @@ SPEC := backend.Node_Spec{
 		0, //F_From_I
 		0, //F_Ext
 		0, //F_Demote
+		0, //Splat
+		0, //Ctz
+		0, //Simd_Extract_Lsbs
+		0, //CV128
 		0, //X64_Add
 		0, //X64_Sub
 		0, //X64_And
@@ -486,6 +505,7 @@ SPEC := backend.Node_Spec{
 		0, //X64_Not
 		0, //X64_Mul8
 		0, //X64_Fma_213
+		0, //X64_Pcmpeq
 	},
 	inheritance_table = {
 		0b1, // Start
@@ -562,43 +582,48 @@ SPEC := backend.Node_Spec{
 		0b10, // F_From_I
 		0b10, // F_Ext
 		0b10, // F_Demote
-		0b1000000, // X64_Add
-		0b1000000, // X64_Sub
-		0b1000000, // X64_And
-		0b1000000, // X64_Or
-		0b1000000, // X64_Xor
-		0b1000000, // X64_Eq
-		0b1000000, // X64_Ne
-		0b1000000, // X64_Le
-		0b1000000, // X64_Lt
-		0b1000000, // X64_Gt
-		0b1000000, // X64_Ge
-		0b1000000, // X64_U_Lt
-		0b1000000, // X64_U_Gt
-		0b1000000, // X64_U_Le
-		0b1000000, // X64_U_Ge
-		0b1000000, // X64_F_Add
-		0b1000000, // X64_F_Sub
-		0b1000000, // X64_F_Mul
-		0b1000000, // X64_F_Div
-		0b1000000, // X64_F_Eq
-		0b1000000, // X64_F_Ne
-		0b1000000, // X64_F_Le
-		0b1000000, // X64_F_Lt
-		0b1000000, // X64_F_Gt
-		0b1000000, // X64_F_Ge
-		0b1000000, // X64_Shl
-		0b1000000, // X64_Shr
-		0b1000000, // X64_U_Shr
-		0b1000000, // X64_Mul
-		0b1000000, // X64_Lea
-		0b1000000, // X64_Load
-		0b1000000, // X64_Store
+		0b10, // Splat
+		0b10, // Ctz
+		0b10, // Simd_Extract_Lsbs
+		0b1000000, // CV128
+		0b10000000, // X64_Add
+		0b10000000, // X64_Sub
+		0b10000000, // X64_And
+		0b10000000, // X64_Or
+		0b10000000, // X64_Xor
+		0b10000000, // X64_Eq
+		0b10000000, // X64_Ne
+		0b10000000, // X64_Le
+		0b10000000, // X64_Lt
+		0b10000000, // X64_Gt
+		0b10000000, // X64_Ge
+		0b10000000, // X64_U_Lt
+		0b10000000, // X64_U_Gt
+		0b10000000, // X64_U_Le
+		0b10000000, // X64_U_Ge
+		0b10000000, // X64_F_Add
+		0b10000000, // X64_F_Sub
+		0b10000000, // X64_F_Mul
+		0b10000000, // X64_F_Div
+		0b10000000, // X64_F_Eq
+		0b10000000, // X64_F_Ne
+		0b10000000, // X64_F_Le
+		0b10000000, // X64_F_Lt
+		0b10000000, // X64_F_Gt
+		0b10000000, // X64_F_Ge
+		0b10000000, // X64_Shl
+		0b10000000, // X64_Shr
+		0b10000000, // X64_U_Shr
+		0b10000000, // X64_Mul
+		0b10000000, // X64_Lea
+		0b10000000, // X64_Load
+		0b10000000, // X64_Store
 		0b10, // X64_CLoad
-		0b1000000, // X64_Neg
-		0b1000000, // X64_Not
+		0b10000000, // X64_Neg
+		0b10000000, // X64_Not
 		0b10, // X64_Mul8
-		0b1000000, // X64_Fma_213
+		0b10000000, // X64_Fma_213
+		0b10, // X64_Pcmpeq
 	},
 	node_extra_sizes = {
 		1, // Start -> Cfg
@@ -675,6 +700,10 @@ SPEC := backend.Node_Spec{
 		0, // F_From_I -> No_Extra
 		0, // F_Ext -> No_Extra
 		0, // F_Demote -> No_Extra
+		0, // Splat -> No_Extra
+		0, // Ctz -> No_Extra
+		0, // Simd_Extract_Lsbs -> No_Extra
+		4, // CV128 -> CV128
 		3, // X64_Add -> X64_Mem_Op
 		3, // X64_Sub -> X64_Mem_Op
 		3, // X64_And -> X64_Mem_Op
@@ -712,6 +741,7 @@ SPEC := backend.Node_Spec{
 		3, // X64_Not -> X64_Mem_Op
 		0, // X64_Mul8 -> No_Extra
 		3, // X64_Fma_213 -> X64_Mem_Op
+		0, // X64_Pcmpeq -> No_Extra
 	},
 	node_flags = {
 		{}, // Start
@@ -788,6 +818,10 @@ SPEC := backend.Node_Spec{
 		{Class_Flag.Interned}, // F_From_I
 		{Class_Flag.Interned}, // F_Ext
 		{Class_Flag.Interned}, // F_Demote
+		{Class_Flag.Interned}, // Splat
+		{Class_Flag.Interned}, // Ctz
+		{Class_Flag.Interned}, // Simd_Extract_Lsbs
+		{Class_Flag.Interned, Class_Flag.Clonable}, // CV128
 		{}, // X64_Add
 		{}, // X64_Sub
 		{}, // X64_And
@@ -825,6 +859,7 @@ SPEC := backend.Node_Spec{
 		{}, // X64_Not
 		{}, // X64_Mul8
 		{}, // X64_Fma_213
+		{}, // X64_Pcmpeq
 	},
 	node_extra_types = {
 		backend.Cfg,
@@ -901,6 +936,10 @@ SPEC := backend.Node_Spec{
 		backend.No_Extra,
 		backend.No_Extra,
 		backend.No_Extra,
+		backend.No_Extra,
+		backend.No_Extra,
+		backend.No_Extra,
+		backend.CV128,
 		X64_Mem_Op,
 		X64_Mem_Op,
 		X64_Mem_Op,
@@ -938,6 +977,7 @@ SPEC := backend.Node_Spec{
 		X64_Mem_Op,
 		backend.No_Extra,
 		X64_Mem_Op,
+		backend.No_Extra,
 	},
 	node_kind_name = {
 		`Start`,
@@ -1014,6 +1054,10 @@ SPEC := backend.Node_Spec{
 		`F_From_I`,
 		`F_Ext`,
 		`F_Demote`,
+		`Splat`,
+		`Ctz`,
+		`Simd_Extract_Lsbs`,
+		`CV128`,
 		`X64_Add`,
 		`X64_Sub`,
 		`X64_And`,
@@ -1051,6 +1095,7 @@ SPEC := backend.Node_Spec{
 		`X64_Not`,
 		`X64_Mul8`,
 		`X64_Fma_213`,
+		`X64_Pcmpeq`,
 	},
 }
 
@@ -1129,6 +1174,10 @@ X64_Node_Type :: enum u16 {
 	F_From_I,
 	F_Ext,
 	F_Demote,
+	Splat,
+	Ctz,
+	Simd_Extract_Lsbs,
+	CV128,
 	X64_Add,
 	X64_Sub,
 	X64_And,
@@ -1166,6 +1215,7 @@ X64_Node_Type :: enum u16 {
 	X64_Not,
 	X64_Mul8,
 	X64_Fma_213,
+	X64_Pcmpeq,
 }
 
 x64_peep_inst :: proc(ctx: backend.Peep_Ctx, node: backend.Expanded_Node) -> backend.Node_ID {
@@ -1250,6 +1300,10 @@ x64_post_schedule_peep_inst :: proc(
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
+#assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
+#assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
+#assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
+#assert(size_of(backend.CV128) % backend.PRECISION == 0)
 #assert(size_of(X64_Mem_Op) % backend.PRECISION == 0)
 #assert(size_of(X64_Mem_Op) % backend.PRECISION == 0)
 #assert(size_of(X64_Mem_Op) % backend.PRECISION == 0)
@@ -1287,6 +1341,7 @@ x64_post_schedule_peep_inst :: proc(
 #assert(size_of(X64_Mem_Op) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(X64_Mem_Op) % backend.PRECISION == 0)
+#assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	when false {}
@@ -1295,8 +1350,9 @@ inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	else when T == backend.Local {return 4}
 	else when T == backend.No_Extra {return 1}
 	else when T == backend.Call {return 5}
-	else when T == X64_Mem_Op {return 6}
+	else when T == X64_Mem_Op {return 7}
 	else when T == backend.Cfg {return 0}
+	else when T == backend.CV128 {return 6}
 	else {#panic(`the passed type is not subclass of anything`)}
 }
 }

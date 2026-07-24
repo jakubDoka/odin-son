@@ -36,7 +36,7 @@ fold_un_op :: proc(
 	bit_size := uint(backend.DT_SIZE[src_ty] * 8)
 	mask: i64 = -1 << bit_size
 
-	switch op {
+	#partial switch op {
 	case .Not:
 		value = ~oper
 	case .Neg:

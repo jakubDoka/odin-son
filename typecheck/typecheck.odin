@@ -3,10 +3,12 @@ package typecheck
 import "../backend"
 import "../backend/builder"
 import "../vendored/gam/util/arna"
+import "base:intrinsics"
 import "base:runtime"
 import "core:fmt"
 import "core:hash"
 import "core:io"
+import "core:math"
 import "core:mem"
 import "core:odin/ast"
 import "core:odin/tokenizer"
@@ -117,16 +119,16 @@ Type :: enum uintptr {
 	Intrinsic,
 	Module,
 	Bool,
-	Int,
-	I64,
-	I32,
-	I16,
 	I8,
-	Uint,
-	U64,
-	U32,
-	U16,
+	I16,
+	I32,
+	I64,
+	Int,
 	U8,
+	U16,
+	U32,
+	U64,
+	Uint,
 	Uintptr,
 	Rawptr,
 	String,
@@ -170,15 +172,13 @@ type_align :: proc(ty: Type) -> int {
 		return type_align(t.backing)
 	case ^Union:
 		return t.align
+	case ^Simd:
+		return type_size(t.elem) * t.len
 	case ^Poly_Data:
 		fmt.panicf("POLY TODO: %v", ty)
 	}
 	if ty == .String do return 8
 	return TYPE_SIZES[ty]
-}
-
-array_elem_stride :: proc(elem: Type) -> int {
-	return mem.align_forward_int(type_size(elem), type_align(elem))
 }
 
 const_eval_int :: proc(node: ^ast.Expr) -> (value: i64, ok: bool) {
@@ -210,13 +210,15 @@ type_size :: proc(ty: Type) -> int {
 	case ^Struct:
 		return t.size
 	case ^Array:
-		return array_elem_stride(t.elem) * t.len
+		return type_size(t.elem) * t.len
 	case ^Slice:
 		return 16
 	case ^Enum:
 		return type_size(t.backing)
 	case ^Union:
 		return t.size
+	case ^Simd:
+		return type_size(t.elem) * t.len
 	case ^Poly_Data:
 		fmt.panicf("POLY TODO: %v", ty)
 	}
@@ -276,6 +278,8 @@ type_to_dt :: proc(ty: Type) -> backend.Node_Datatype {
 		return type_to_dt(t.backing)
 	case ^Struct, ^Array, ^Slice, ^Union:
 		return .Void
+	case ^Simd:
+		return simd_dt(type_size(t.elem) * t.len)
 	case ^Poly_Data:
 		fmt.panicf("POLY TODO: %v", ty)
 	}
@@ -347,6 +351,7 @@ Type_Data :: union #no_nil {
 	^Slice,
 	^Enum,
 	^Union,
+	^Simd,
 }
 
 Raw_Type_Data :: struct {
@@ -385,6 +390,9 @@ type_display :: proc(w: io.Writer, ty: Type) {
 		type_display(w, t.elem)
 	case ^Array:
 		fmt.wprintf(w, "[%v]", t.len)
+		type_display(w, t.elem)
+	case ^Simd:
+		fmt.wprintf(w, "#simd[%v]", t.len)
 		type_display(w, t.elem)
 	case ^Struct:
 		io.write_string(w, "struct {")
@@ -488,6 +496,30 @@ intern_slice :: proc(ctx: ^Gen_Ctx, elem: Type) -> Type {
 	existing := ctx.slices[key] or_else new_clone(key, ctx.types.allocator)
 	ctx.slices[key] = existing
 	return pack_type(existing)
+}
+
+intern_simd :: proc(ctx: ^Gen_Ctx, elem: Type, length: int) -> Type {
+	key := Simd{elem, length}
+	existing := ctx.simds[key] or_else new_clone(key, ctx.types.allocator)
+	ctx.simds[key] = existing
+	return pack_type(existing)
+}
+
+simd_dt :: proc(size: int) -> backend.Node_Datatype {
+	assert(math.is_power_of_two(size))
+	assert(16 <= size)
+	assert(size <= 64)
+	return backend.Node_Datatype(
+		int(backend.Node_Datatype.V128) +
+		intrinsics.count_trailing_zeros(size) -
+		intrinsics.count_trailing_zeros(16),
+	)
+}
+
+int_type_for_size :: proc(size: int) -> Type {
+	assert(math.is_power_of_two(size))
+	assert(size <= 8)
+	return Type(int(Type.U8) + intrinsics.count_trailing_zeros(size))
 }
 
 intern_poly :: proc(ctx: ^Gen_Ctx, poly: Poly_Data) -> Type {
@@ -731,6 +763,17 @@ extract_polys :: proc(
 			extract_polys(ctx, slots, ct.params[i], t.params[i]) or_return
 		}
 		return true
+	case ^Slice:
+		ct := unpack_type(croot).(^Slice) or_return
+		return extract_polys(ctx, slots, ct.elem, t.elem)
+	case ^Array:
+		ct := unpack_type(croot).(^Array) or_return
+		if ct.len != t.len do return false
+		return extract_polys(ctx, slots, ct.elem, t.elem)
+	case ^Simd:
+		ct := unpack_type(croot).(^Simd) or_return
+		if ct.len != t.len do return false
+		return extract_polys(ctx, slots, ct.elem, t.elem)
 	case ^Poly_Data:
 		if slots[t.idx].lit.typeida != .Void {
 			return slots[t.idx].lit.typeida == croot
@@ -773,6 +816,26 @@ instantiate_polys :: proc(
 			new_args[i] = instantiate_polys(ctx, slots, a) or_return
 		}
 		return instantiate_struct(ctx, t, new_args), true
+	case ^Slice:
+		return intern_slice(
+				ctx,
+				instantiate_polys(ctx, slots, t.elem) or_return,
+			),
+			true
+	case ^Array:
+		return intern_array(
+				ctx,
+				instantiate_polys(ctx, slots, t.elem) or_return,
+				t.len,
+			),
+			true
+	case ^Simd:
+		return intern_simd(
+				ctx,
+				instantiate_polys(ctx, slots, t.elem) or_return,
+				t.len,
+			),
+			true
 	case ^Poly_Data:
 		if slots[t.idx].type == .Void {
 			return {}, false
@@ -891,6 +954,9 @@ Module_ID :: distinct int
 Intrinsic :: enum int {
 	syscall,
 	trap,
+	simd_lanes_eq,
+	simd_extract_lsbs,
+	count_trailing_zeros,
 }
 
 Builtin_Proc :: enum int {
@@ -968,6 +1034,7 @@ Types :: struct {
 	enums:          map[Decl_Key]^Enum,
 	unions:         map[Decl_Key]^Union,
 	arrays:         map[Array]^Array,
+	simds:          map[Simd]^Simd,
 	slices:         map[Slice]^Slice,
 	polys:          map[Poly_Data]^Poly_Data,
 	proc_types:     map[Proc_Type_Key]^Proc_Type,
@@ -1034,6 +1101,11 @@ Array :: struct {
 
 Slice :: struct {
 	elem: Type,
+}
+
+Simd :: struct {
+	elem: Type,
+	len:  int,
 }
 
 File_ID :: distinct u32
@@ -1218,6 +1290,12 @@ typecheck :: proc(
 		assert(len_lit.tok.kind == .Integer)
 		length, ok := strconv.parse_int(len_lit.tok.text)
 		assert(ok)
+		if d.tag != nil {
+			if tag, is_tag := d.tag.derived.(^ast.Basic_Directive);
+			   is_tag && tag.name == "simd" {
+				return tpmeta(ctx, intern_simd(ctx, elem, length))
+			}
+		}
 		return tpmeta(ctx, intern_array(ctx, elem, length))
 	case ^ast.Poly_Type:
 		res := intern_poly(
@@ -1675,10 +1753,49 @@ typecheck :: proc(
 		assert(d.post == nil)
 
 		typecheck(ctx, {}, d.body)
+	case ^ast.Range_Stmt:
+		assert(d.init == nil)
+		expr_meta := typecheck(ctx, {}, d.expr)
+		elem: Type
+		#partial switch t in unpack_type(expr_meta.type) {
+		case ^Slice:
+			elem = t.elem
+		case ^Array:
+			elem = t.elem
+		case String_Type:
+			elem = .U8
+		case:
+			fmt.panicf("TODO: range over %v", expr_meta.type)
+		}
+
+		prev := len(ctx.scope)
+		val_types := [2]Type{elem, .Int}
+		for v, i in d.vals {
+			id := v.derived.(^ast.Ident)
+			append(
+				&ctx.scope,
+				Variable {
+					name = src_of(ctx.file^, id),
+					type = val_types[i],
+					ident = v,
+				},
+			)
+		}
+		typecheck(ctx, {}, d.body)
+		for var in ctx.scope[prev:] {
+			set_node_data(var.ident, var.flags)
+		}
+		resize(&ctx.scope, prev)
 	case ^ast.Branch_Stmt:
 		return &VOID
 	case ^ast.Paren_Expr:
 		return typecheck(ctx, prop, d.expr)
+	case ^ast.Type_Cast:
+		assert(d.tok.kind == .Transmute)
+		dst := emit_type(ctx, d.type)
+		src := typecheck(ctx, {}, d.expr)
+		assert(type_size(dst) == type_size(src.type))
+		return tmeta(ctx, dst)
 	case ^ast.Ident:
 		meta := new(Ident_Meta, ctx.types.allocator)
 		defer {
@@ -1804,6 +1921,28 @@ typecheck :: proc(
 			case .trap:
 				assert(len(d.args) == 0)
 				break match
+			case .simd_lanes_eq:
+				assert(len(d.args) == 2)
+				a := typecheck(ctx, {}, d.args[0])
+				b := typecheck(ctx, {inferred_ty = a.type}, d.args[1])
+				assert(is_of(a.type, ^Simd))
+				assert(a.type == b.type)
+				return tmeta(ctx, a.type)
+			case .simd_extract_lsbs:
+				assert(len(d.args) == 1)
+				a := typecheck(ctx, {}, d.args[0])
+				sd := unpack_type(a.type).(^Simd)
+				bytes := (sd.len + 7) / 8
+				return tmeta(ctx, int_type_for_size(bytes))
+			case .count_trailing_zeros:
+				assert(len(d.args) == 1)
+				a := typecheck(
+					ctx,
+					{inferred_ty = prop.inferred_ty},
+					d.args[0],
+				)
+				assert(a.type in INTEGER_TYPES)
+				return tmeta(ctx, a.type)
 			}
 		case Module_Type:
 			fmt.panicf("Cant call a module")
@@ -2046,6 +2185,8 @@ init_single_file_program :: proc(ctx: ^Gen_Ctx, f: ^ast.File) {
 	if f.pkg_name == "" do f.pkg_name = "main"
 	append(&ctx.files, f^)
 	append(&ctx.modules, Module{name = f.pkg_name, file_count = 1})
+	ctx.modules[0].imports.allocator = ctx.types.allocator
+	ctx.modules[0].imports["intrinsics"] = MODULE_INTRINSICS
 
 	decls := make([dynamic]Decl, context.temp_allocator)
 	collect_decls(f^, &decls, 0)

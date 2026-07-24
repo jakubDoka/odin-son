@@ -10,8 +10,11 @@ Un_Op :: enum u16 {
 	Neg = u16(Ideal_Node_Type.Neg),
 	Sext = u16(Ideal_Node_Type.Sext),
 	Not = u16(Ideal_Node_Type.Not),
+	Simd_Extract_Lsbs = u16(Ideal_Node_Type.Simd_Extract_Lsbs),
 	F_Demote = u16(Ideal_Node_Type.F_Demote),
 	F_Ext = u16(Ideal_Node_Type.F_Ext),
+	Ctz = u16(Ideal_Node_Type.Ctz),
+	Splat = u16(Ideal_Node_Type.Splat),
 }
 Bin_Op :: enum u16 {
 	Add = u16(Ideal_Node_Type.Add),
@@ -124,6 +127,10 @@ Root_Node_Type :: enum u16 {
 	F_From_I,
 	F_Ext,
 	F_Demote,
+	Splat,
+	Ctz,
+	Simd_Extract_Lsbs,
+	CV128,
 }
 #assert(size_of(Cfg) % PRECISION == 0)
 graph_add_start :: #force_inline proc(graph: ^Graph, name: string) -> (id: Node_ID) {
@@ -146,7 +153,7 @@ graph_add_poison :: #force_inline proc(graph: ^Graph, name: string) -> (id: Node
 graph_add_param :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype, entry: Node_ID, idx: u32) -> (id: Node_ID) {
 	push_node_name(graph, name)
 	(^Tup)(graph_get_next_extra_slot(graph, u16(Ideal_Node_Type.Param)))^ = {
-		idx = idx
+		idx = idx,
 	}
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Param), dt, {entry})
 }
@@ -154,7 +161,7 @@ graph_add_param :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Data
 graph_add_c_int :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype, value: i64) -> (id: Node_ID) {
 	push_node_name(graph, name)
 	(^CInt)(graph_get_next_extra_slot(graph, u16(Ideal_Node_Type.CInt)))^ = {
-		value = value
+		value = value,
 	}
 	return graph_add_raw(graph, u16(Ideal_Node_Type.CInt), dt, {})
 }
@@ -321,7 +328,7 @@ graph_add_trap :: #force_inline proc(graph: ^Graph, name: string, ctrl: Node_ID)
 graph_add_call :: #force_inline proc(graph: ^Graph, name: string, inputs: []Node_ID, cid: u32) -> (id: Node_ID) {
 	push_node_name(graph, name)
 	(^Call)(graph_get_next_extra_slot(graph, u16(Ideal_Node_Type.Call)))^ = {
-		cid = cid
+		cid = cid,
 	}
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Call), .Void, inputs)
 }
@@ -335,7 +342,7 @@ graph_add_call_end :: #force_inline proc(graph: ^Graph, name: string, call: Node
 graph_add_ret :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype, call_end: Node_ID, idx: u32) -> (id: Node_ID) {
 	push_node_name(graph, name)
 	(^Tup)(graph_get_next_extra_slot(graph, u16(Ideal_Node_Type.Ret)))^ = {
-		idx = idx
+		idx = idx,
 	}
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Ret), dt, {call_end})
 }
@@ -358,15 +365,28 @@ graph_add_un_op :: #force_inline proc(graph: ^Graph, name: string, type: Un_Op, 
 #assert(size_of(No_Extra) % PRECISION == 0)
 #assert(size_of(No_Extra) % PRECISION == 0)
 #assert(size_of(No_Extra) % PRECISION == 0)
+#assert(size_of(No_Extra) % PRECISION == 0)
+#assert(size_of(No_Extra) % PRECISION == 0)
+#assert(size_of(No_Extra) % PRECISION == 0)
+#assert(size_of(CV128) % PRECISION == 0)
+graph_add_cv128 :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype, lo: u64, hi: u64) -> (id: Node_ID) {
+	push_node_name(graph, name)
+	(^CV128)(graph_get_next_extra_slot(graph, u16(Ideal_Node_Type.CV128)))^ = {
+		lo = lo,
+		hi = hi,
+	}
+	return graph_add_raw(graph, u16(Ideal_Node_Type.CV128), dt, {})
+}
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	when false {}
 	else when T == CInt {return 3}
 	else when T == Tup {return 2}
 	else when T == Local {return 4}
-	else when T == Cfg {return 0}
 	else when T == No_Extra {return 1}
 	else when T == Call {return 5}
+	else when T == Cfg {return 0}
+	else when T == CV128 {return 6}
 	else {#panic(`the passed type is not subclass of anything`)}
 }
 }

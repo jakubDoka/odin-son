@@ -244,6 +244,14 @@ X64_IDEAL_REG_CLASSES := [backend.Ideal_Node_Type]Reg_Class_Spec {
 	.F_To_I = {
 		reg_masks = #partial{.General = {GPA_MASK}, .Vector = {{}, XMM_MASK}},
 	},
+	.Splat = {
+		reg_masks = #partial{.General = {{}, GPA_MASK}, .Vector = {XMM_MASK}},
+	},
+	.Ctz = SIMPLE_UNOP_SPEC,
+	.Simd_Extract_Lsbs = {
+		reg_masks = #partial{.General = {GPA_MASK}, .Vector = {{}, XMM_MASK}},
+	},
+	.CV128 = {reg_masks = #partial{.Vector = {XMM_MASK}}},
 	.Split = {
 		reg_masks = #partial{
 			.General = {GPA_SPILL_MASK, GPA_SPILL_MASK},
@@ -394,6 +402,7 @@ X64_REG_CLASSES := #partial [X64_Node_Type]Reg_Class_Spec {
 		},
 		inplace_slot_idx = 0,
 	},
+	.X64_Pcmpeq = X64_FLOAT_SRC_OP,
 }
 
 GEN_SPEC :: #config(X64_GEN_SPEC, false)
@@ -446,6 +455,7 @@ when SPEC_NOT_PRESENT {
 		X64_Not,
 		X64_Mul8,
 		X64_Fma_213,
+		X64_Pcmpeq,
 	}
 
 	X64_SIMPLE_BIN_OP_SPEC :: backend.Class_Spec {
@@ -469,6 +479,7 @@ when SPEC_NOT_PRESENT {
 		.X64_Shl ..= .X64_U_Shr = X64_SIMPLE_SHIFT_OP_SPEC,
 		.X64_Neg ..= .X64_Not = X64_SIMPLE_UN_OP_SPEC,
 		.X64_F_Eq ..= .X64_F_Ge = X64_SIMPLE_BIN_OP_SPEC,
+		.X64_Pcmpeq = {no_ctor = true},
 		.X64_Mul = X64_SIMPLE_BIN_OP_SPEC,
 		.X64_Lea = {id = X64_Mem_Op, no_ctor = true},
 		.X64_Load = {id = X64_Mem_Op, flags = {.Load}, no_ctor = true},
@@ -644,6 +655,11 @@ x64_peep :: proc(
 
 		if node.dt == .I8 && node.itype == .Mul {
 			node.rtype = u16(X64_Node_Type.X64_Mul8)
+			return id
+		}
+
+		if node.dt == .V128 && node.itype == .Eq {
+			node.rtype = u16(X64_Node_Type.X64_Pcmpeq)
 			return id
 		}
 
@@ -1644,6 +1660,37 @@ x64_emit_instr :: proc(
 	mount_sloc(ctx, instr)
 
 	switch xtype(node) {
+	case .CV128:
+		panic("TODO: CV128 load-from-static emit not implemented")
+	case .Splat:
+		// broadcast the low byte of $src across all 16 lanes of xmm $dst
+		dst := reg_of(ctx, instr)
+		src := reg_of(ctx, node.inps[0])
+
+		// movd $dst, $src
+		rx := rex(dst, src, RAX, false)
+		emit(ctx.code, {0x66, rx, 0x0f, 0x6e, mod_rm(.Direct, dst, src)})
+		// punpcklbw $dst, $dst
+		rx = rex(dst, dst, RAX, false)
+		emit(ctx.code, {0x66, rx, 0x0f, 0x60, mod_rm(.Direct, dst, dst)})
+		// punpcklwd $dst, $dst
+		rx = rex(dst, dst, RAX, false)
+		emit(ctx.code, {0x66, rx, 0x0f, 0x61, mod_rm(.Direct, dst, dst)})
+		// pshufd $dst, $dst, 0
+		rx = rex(dst, dst, RAX, false)
+		emit(ctx.code, {0x66, rx, 0x0f, 0x70, mod_rm(.Direct, dst, dst), 0})
+	case .Simd_Extract_Lsbs:
+		// pmovmskb $dst(gpr), $src(xmm)
+		dst := reg_of(ctx, instr)
+		src := reg_of(ctx, node.inps[0])
+		rx := rex(dst, src, RAX, false)
+		emit(ctx.code, {0x66, rx, 0x0f, 0xd7, mod_rm(.Direct, dst, src)})
+	case .Ctz:
+		// tzcnt $dst, $src (dst == src in place)
+		dst := reg_of(ctx, instr)
+		src := reg_of(ctx, node.inps[0])
+		rx := rex(dst, src, RAX, false)
+		emit(ctx.code, {0xf3, rx, 0x0f, 0xbc, mod_rm(.Direct, dst, src)})
 	case .Global:
 	case .Local:
 	case .Local_Addr, .Global_Addr:
@@ -1692,6 +1739,15 @@ x64_emit_instr :: proc(
 				break
 			}
 
+			if vdt == .V128 || vdt == .V256 || vdt == .V512 {
+				assert(vdt == .V128, "TODO")
+				// movups [$bse + ...], $val
+				rx := rex(val, bse, idx, false)
+				emit(ctx.code, {rx, 0x0f, 0x11})
+				emit_indirect_addr(ctx, val, bse, idx, scl, dis + sdis, id)
+				break
+			}
+
 			rx := rex(val, bse, idx, backend.DT_SIZE[vdt] == 8)
 			emit_sized_opcode(ctx.code, vdt, rx, 0x89)
 			emit_indirect_addr(ctx, val, bse, idx, scl, dis + sdis, id)
@@ -1722,6 +1778,16 @@ x64_emit_instr :: proc(
 			// movss/movsd $val, [$bse + ...]
 			rx := rex(val, bse, idx, false)
 			emit(ctx.code, {pfx, rx, 0x0f, 0x10})
+			emit_indirect_addr(ctx, val, bse, idx, scl, dis + sdis, id)
+			break
+		}
+
+		if dt == .V128 || dt == .V256 || dt == .V512 {
+			assert(dt == .V128, "TODO")
+
+			// movups $val, [$bse + ...]
+			rx := rex(val, bse, idx, false)
+			emit(ctx.code, {rx, 0x0f, 0x10})
 			emit_indirect_addr(ctx, val, bse, idx, scl, dis + sdis, id)
 			break
 		}
@@ -1944,7 +2010,7 @@ x64_emit_instr :: proc(
 			// mov $dst, $imm
 			emit_single_op(ctx.code, 0xb8, dst)
 			backend.emit_anys(ctx.code, imm)
-		case .F32, .F64:
+		case .F32, .F64, .V128, .V256, .V512:
 			panic("")
 		}
 	case .X64_Add ..= .X64_Xor, .X64_Shl ..= .X64_U_Shr:
@@ -2017,6 +2083,16 @@ x64_emit_instr :: proc(
 		op := OPCODE_TABLE[xtype(node)].opcode
 		emit_sized_opcode(ctx.code, node.dt, rx, op)
 		emit(ctx.code, {mod_rm(.Direct, rhs, dst)})
+	case .X64_Pcmpeq:
+		dst := reg_of(ctx, node.inps[0])
+		rhs := reg_of(ctx, node.inps[1])
+
+		assert(node.dt == .V128)
+		assert(node.lane == .I8)
+
+		// pcmpeq* $dst, $src
+		rx := rex(dst, rhs, RAX, false)
+		emit(ctx.code, {0x66, rx, 0x0f, 0x74, mod_rm(.Direct, dst, rhs)})
 	case .Eq ..= .U_Ge, .X64_Eq ..= .X64_U_Ge:
 		switch mem_op.mem_mode {
 		case .Dest:
@@ -2685,7 +2761,7 @@ emit_imm_for_dt :: proc(
 		backend.emit_anys(code, i16(imm))
 	case .I64, .I32, .F32:
 		backend.emit_anys(code, imm)
-	case .F64:
+	case .F64, .V128, .V256, .V512:
 		panic("no")
 	}
 }
@@ -2705,7 +2781,7 @@ emit_extended_sized_opcode :: proc(
 		emit(code, {0x66, rx, 0x0f, op})
 	case .I32, .I64:
 		emit(code, {rx, 0x0f, op})
-	case .F32, .F64:
+	case .F32, .F64, .V128, .V256, .V512:
 		panic("no")
 	}
 }
@@ -2725,7 +2801,7 @@ emit_sized_opcode :: proc(
 		emit(code, {0x66, rx, op})
 	case .I32, .I64, .F32:
 		emit(code, {rx, op})
-	case .F64:
+	case .F64, .V128, .V256, .V512:
 		panic("no")
 	}
 }

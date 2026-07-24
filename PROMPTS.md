@@ -514,9 +514,7 @@ spec is kept in the backend module. This is important change that will allow us
 to extend the backend with new architectures without editing the root backend
 module.
 
-### implement dwarf line info emission
-
-NOTE: read AGENTS.md
+### implement dwarf line info emission (DONE)
 
 As of right now we already emit sloc information for each instruction when we
 `emit_function`. But its not used at all yet, can you extend the `elf.odin` to
@@ -533,3 +531,47 @@ The sloc information is tored in the `Codegen_Output` as an array of `Sloc`
 structs. There is a sloc for each instruction and it stores the size of it, so,
 to compute the offset you need to go linearly and accumulate the sizes. The
 output is stored in the `Proc` struct.
+
+### implement minimal vector ops to compile the new test
+
+NOTE: read AGENTS.md
+
+There is a new test I added that compiles with odin compiler, but the jit
+compiler can not compile it. I have added 
+`lane:              Lane_Type     | 3,` to the node, so the already existing
+node types should be able to support various lane configurations when their
+type is set to `V128-512`. What you should do is:
+
+1. The frontend is missing the casting code for `transmute(T)`, so add it.
+1. The frontend is also missing `#simd[$LANE_COUNT]$T`, so add it.
+1. If there is anything I missed that can not be typechecked fix it as well.
+1. Make sure the program typechecks.
+1. Add missing unary ops for the intrinsics. Again these will be generic across
+   all widths. Keep the codegen as TODO. The `intrinsics.simd_lanes_eq` should
+   be implemented in terms of Eq node.
+1. Add a CV128 constant node vor V128 type with the appropriate payload size.
+   This node will the be translated the same way the floating point constants
+   are (A load froma a static), TODO for now.
+1. Make sure that when we load `#simd` from memory, the memops get the right
+   type (.V128 for now).
+1. Implement the code emmision in the frontend. For now, just set the lane
+   field on the nodes manually after creating them. The builder support is out
+   of scope. Nodes that dont need lanes (loads, stores), dont expect them to
+   be set so don't set them.
+1. Make sure the example finishes the ir emission. Again if I forgot about
+   something fix that as well.
+1. Make sure the example crashes in the `backend/x64/x64.odin`, it should
+   complain that V128 is not handled for comparison. And the unary ops you
+   added are not handled yet.
+1. Verify that the emitted nodes make sense. Log the ir and glance it.
+1. Now dive into implementing the todos in the x64. This is a big one, for now
+   the code duplication is fine, don't overcomplicate things. I will clean the
+   code up. Note that bare minimum implementation here is fine.
+
+The task ends when the final disasembly contains the vector instructions and it
+passes with `$dff` (see `profile.fish`) flag.
+
+Before you start tell me if there is something unclear and you have questions,
+ask them.
+
+

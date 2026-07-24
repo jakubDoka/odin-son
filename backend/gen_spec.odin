@@ -79,6 +79,18 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 	.F_From_I = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
 	.F_Ext = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
 	.F_Demote = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
+	.Splat = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
+	.Ctz = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
+	.Simd_Extract_Lsbs = {
+		args = {"oprnd"},
+		group = "Un_Op",
+		flags = {.Interned},
+	},
+	.CV128 = {
+		id = CV128,
+		extra_args = {"lo", "hi"},
+		flags = {.Interned, .Clonable},
+	},
 	.Shl = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
 	.Shr = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
 	.U_Lt = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},

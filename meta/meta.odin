@@ -113,6 +113,7 @@ main :: proc() {
 		os.write_string(file, "// NOTE: this file is generated: " + COMMAND)
 		os.write_string(file, "\n\n")
 		os.write_string(file, "import \"core:testing\"\n\n")
+		os.write_string(file, "import \"base:intrinsics\"\n\n")
 		os.write_string(file, "import main \"..\"\n\n")
 
 		file_paths := []string{"TESTS.md"}

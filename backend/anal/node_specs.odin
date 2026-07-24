@@ -11,7 +11,7 @@ SPEC := backend.Node_Spec{
 	call_clobbers = {
 	},
 	class_lengths = {.General = 0, .Vector = 0},
-	datatype_to_reg_kind = {.Void = Reg_Kind.General, .I8 = Reg_Kind.General, .I16 = Reg_Kind.General, .I32 = Reg_Kind.General, .I64 = Reg_Kind.General, .F32 = Reg_Kind.General, .F64 = Reg_Kind.General},
+	datatype_to_reg_kind = {.Void = Reg_Kind.General, .I8 = Reg_Kind.General, .I16 = Reg_Kind.General, .I32 = Reg_Kind.General, .I64 = Reg_Kind.General, .F32 = Reg_Kind.General, .F64 = Reg_Kind.General, .V128 = Reg_Kind.General, .V256 = Reg_Kind.General, .V512 = Reg_Kind.General},
 	clobbers = {
 		{.General = 0, .Vector = 0}, // Start
 		{.General = 0, .Vector = 0}, // Entry
@@ -87,6 +87,10 @@ SPEC := backend.Node_Spec{
 		{.General = 0, .Vector = 0}, // F_From_I
 		{.General = 0, .Vector = 0}, // F_Ext
 		{.General = 0, .Vector = 0}, // F_Demote
+		{.General = 0, .Vector = 0}, // Splat
+		{.General = 0, .Vector = 0}, // Ctz
+		{.General = 0, .Vector = 0}, // Simd_Extract_Lsbs
+		{.General = 0, .Vector = 0}, // CV128
 	},
 	interned_reg_masks = {
 		raw_data([]i64{}),
@@ -166,6 +170,10 @@ SPEC := backend.Node_Spec{
 		{}, // F_From_I
 		{}, // F_Ext
 		{}, // F_Demote
+		{}, // Splat
+		{}, // Ctz
+		{}, // Simd_Extract_Lsbs
+		{}, // CV128
 	},
 	inplace_slot_idxs = {
 		-16, //Start
@@ -242,6 +250,10 @@ SPEC := backend.Node_Spec{
 		-16, //F_From_I
 		-16, //F_Ext
 		-16, //F_Demote
+		-16, //Splat
+		-16, //Ctz
+		-16, //Simd_Extract_Lsbs
+		-16, //CV128
 	},
 	emit_function = anal_emit_function,
 	peep = anal_peep_inst,
@@ -322,6 +334,10 @@ SPEC := backend.Node_Spec{
 		0, //F_From_I
 		0, //F_Ext
 		0, //F_Demote
+		0, //Splat
+		0, //Ctz
+		0, //Simd_Extract_Lsbs
+		0, //CV128
 	},
 	inheritance_table = {
 		0b1, // Start
@@ -398,6 +414,10 @@ SPEC := backend.Node_Spec{
 		0b10, // F_From_I
 		0b10, // F_Ext
 		0b10, // F_Demote
+		0b10, // Splat
+		0b10, // Ctz
+		0b10, // Simd_Extract_Lsbs
+		0b1000000, // CV128
 	},
 	node_extra_sizes = {
 		1, // Start -> Cfg
@@ -474,6 +494,10 @@ SPEC := backend.Node_Spec{
 		0, // F_From_I -> No_Extra
 		0, // F_Ext -> No_Extra
 		0, // F_Demote -> No_Extra
+		0, // Splat -> No_Extra
+		0, // Ctz -> No_Extra
+		0, // Simd_Extract_Lsbs -> No_Extra
+		4, // CV128 -> CV128
 	},
 	node_flags = {
 		{}, // Start
@@ -550,6 +574,10 @@ SPEC := backend.Node_Spec{
 		{Class_Flag.Interned}, // F_From_I
 		{Class_Flag.Interned}, // F_Ext
 		{Class_Flag.Interned}, // F_Demote
+		{Class_Flag.Interned}, // Splat
+		{Class_Flag.Interned}, // Ctz
+		{Class_Flag.Interned}, // Simd_Extract_Lsbs
+		{Class_Flag.Interned, Class_Flag.Clonable}, // CV128
 	},
 	node_extra_types = {
 		backend.Cfg,
@@ -626,6 +654,10 @@ SPEC := backend.Node_Spec{
 		backend.No_Extra,
 		backend.No_Extra,
 		backend.No_Extra,
+		backend.No_Extra,
+		backend.No_Extra,
+		backend.No_Extra,
+		backend.CV128,
 	},
 	node_kind_name = {
 		`Start`,
@@ -702,6 +734,10 @@ SPEC := backend.Node_Spec{
 		`F_From_I`,
 		`F_Ext`,
 		`F_Demote`,
+		`Splat`,
+		`Ctz`,
+		`Simd_Extract_Lsbs`,
+		`CV128`,
 	},
 }
 
@@ -780,6 +816,10 @@ ANAL_Node_Type :: enum u16 {
 	F_From_I,
 	F_Ext,
 	F_Demote,
+	Splat,
+	Ctz,
+	Simd_Extract_Lsbs,
+	CV128,
 }
 
 anal_peep_inst :: proc(ctx: backend.Peep_Ctx, node: backend.Expanded_Node) -> backend.Node_ID {
@@ -864,15 +904,20 @@ anal_post_schedule_peep_inst :: proc(
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
+#assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
+#assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
+#assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
+#assert(size_of(backend.CV128) % backend.PRECISION == 0)
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	when false {}
 	else when T == backend.CInt {return 3}
 	else when T == backend.Tup {return 2}
 	else when T == backend.Local {return 4}
-	else when T == backend.Cfg {return 0}
 	else when T == backend.No_Extra {return 1}
 	else when T == backend.Call {return 5}
+	else when T == backend.Cfg {return 0}
+	else when T == backend.CV128 {return 6}
 	else {#panic(`the passed type is not subclass of anything`)}
 }
 }

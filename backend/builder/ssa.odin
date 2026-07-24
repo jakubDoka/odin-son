@@ -63,6 +63,15 @@ graph_start_if :: proc(
 	backend.graph_set_input(graph, scope, 0, then)
 }
 
+graph_end_if :: proc(
+	graph: ^backend.Graph,
+	then_scope: ^backend.Node_ID,
+	state: ^If_State,
+) {
+	graph_start_else(graph, then_scope, state)
+	graph_end_else(graph, then_scope, state)
+}
+
 graph_start_else :: proc(
 	graph: ^backend.Graph,
 	then_scope: ^backend.Node_ID,
@@ -135,7 +144,7 @@ graph_start_loop :: proc(
 	}
 }
 
-graph_end_loop :: proc(
+graph_start_loop_increment :: proc(
 	graph: ^backend.Graph,
 	node_scope: ^backend.Node_ID,
 	state: ^Loop_State,
@@ -145,6 +154,15 @@ graph_end_loop :: proc(
 		node_scope^,
 		state.scopes[.Continue],
 	)
+	state.scopes[.Continue] = 0
+}
+
+graph_end_loop :: proc(
+	graph: ^backend.Graph,
+	node_scope: ^backend.Node_ID,
+	state: ^Loop_State,
+) {
+	graph_start_loop_increment(graph, node_scope, state)
 
 	init := backend.graph_expand(graph, state.scope)
 	loop := init.inps[0]

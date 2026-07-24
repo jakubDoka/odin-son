@@ -490,7 +490,7 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 					name,
 				)
 				for earg in class.extra_args {
-					fmt.fprintf(file, "\t\t%v = %v\n", earg, earg)
+					fmt.fprintf(file, "\t\t%v = %v,\n", earg, earg)
 				}
 				os.write_string(file, "\t}\n")
 			} else if reflect.size_of_typeid(class.id) > 0 {

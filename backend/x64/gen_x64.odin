@@ -26,7 +26,7 @@ when GEN_SPEC {
 				},
 				datatype_to_reg_kind = #partial{
 					.I8 ..= .I64 = .General,
-					.F32 ..= .F64 = .Vector,
+					.F32 ..= .V512 = .Vector,
 				},
 				cc_table = {X64_SYSTEMV_CC, X64_LINUX_SYSCALL_CC},
 			},

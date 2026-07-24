@@ -186,6 +186,10 @@ Ideal_Node_Type :: enum u16 {
 	F_From_I,
 	F_Ext,
 	F_Demote,
+	Splat,
+	Ctz,
+	Simd_Extract_Lsbs,
+	CV128,
 }
 
 Class_Flags :: bit_set[Class_Flag;u8]
@@ -209,6 +213,11 @@ Cfg :: struct {
 CInt :: struct #raw_union #align (4) {
 	value:  i64,
 	fvalue: f64,
+}
+
+CV128 :: struct #align (4) {
+	lo: u64,
+	hi: u64,
 }
 
 Call :: struct {
@@ -255,6 +264,11 @@ Lane_Type :: enum u8 {
 	F64,
 }
 
+lane_from_dt :: proc(ty: Node_Datatype) -> (Lane_Type, bool) {
+	return Lane_Type(u8(ty) - (u8(Node_Datatype.I8) - u8(Lane_Type.I8))),
+		.I8 <= ty && ty <= .F64
+}
+
 Node_Datatype :: enum u8 {
 	Void,
 	I8,
@@ -263,6 +277,9 @@ Node_Datatype :: enum u8 {
 	I64,
 	F32,
 	F64,
+	V128,
+	V256,
+	V512,
 }
 
 DT_SIZE := [Node_Datatype]int {
@@ -273,6 +290,9 @@ DT_SIZE := [Node_Datatype]int {
 	.I64  = 8,
 	.F32  = 4,
 	.F64  = 8,
+	.V128 = 16,
+	.V256 = 32,
+	.V512 = 64,
 }
 
 FLOAT_DTS :: bit_set[Node_Datatype]{.F64, .F32}
@@ -307,11 +327,11 @@ Node :: struct {
 		},
 	},
 	using gvn_group: bit_field u32 {
-		gvn:                   u32  | 25,
+		gvn:                   u32  | 23,
 		in_worklist:           bool | 1,
 		in_place_slot_offset:  i8   | 2,
 		additional_data_start: u8   | 2,
-		extra_dwords:          u32  | 2,
+		extra_dwords:          u32  | 4,
 	},
 	input_idx:       u32,
 	input_count:     u16,

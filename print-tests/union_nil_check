@@ -1,63 +1,68 @@
 =========== OPT LEVEL: none ===========
 main:
-     sub rsp, 0x18
-     xor esi, esi
-     lea rdi, [rsp]
-     mov rdx, 0x10
-     call :$set
-     xor eax, eax
-     cmp qword ptr [rsp+0x08], 0x00
-     jz :0
-     jmp :1
-
-000: add rax, 0x01
-001: mov qword ptr [rsp], 0x05
-     mov qword ptr [rsp+0x08], 0x01
-     cmp qword ptr [rsp+0x08], 0x00
-     jnz :2
-     jmp :3
-
-002: add rax, 0x02
-003: add rsp, 0x18
-     ret
+    sub rsp, 0x18
+    xor esi, esi
+    lea rdi, [rsp]
+    mov rdx, 0x10
+    call.q [rip - 0x20]
+    xor eax, eax
+    cmp.q [rsp + 0x8], 0
+    jz 0
+    jmp 1
+0:
+    add rax, 1
+1:
+    mov.q [rsp], 5
+    mov.q [rsp + 0x8], 1
+    cmp.q [rsp + 0x8], 0
+    jne 2
+    jmp 3
+2:
+    add rax, 2
+3:
+    add rsp, 0x18
+    ret
 =========== OPT LEVEL: mininal ===========
 main:
-     sub rsp, 0x18
-     xor esi, esi
-     lea rdi, [rsp]
-     mov rdx, 0x10
-     call :$set
-     xor eax, eax
-     cmp qword ptr [rsp+0x08], 0x00
-     jz :0
-     jmp :1
-
-000: add rax, 0x01
-001: mov qword ptr [rsp], 0x05
-     mov qword ptr [rsp+0x08], 0x01
-     mov rcx, [rsp+0x08]
-     test rcx, rcx
-     jnz :2
-     jmp :3
-
-002: add rax, 0x02
-003: add rsp, 0x18
-     ret
+    sub rsp, 0x18
+    xor esi, esi
+    lea rdi, [rsp]
+    mov rdx, 0x10
+    call.q [rip - 0x20]
+    xor eax, eax
+    cmp.q [rsp + 0x8], 0
+    jz 0
+    jmp 1
+0:
+    add rax, 1
+1:
+    mov.q [rsp], 5
+    mov.q [rsp + 0x8], 1
+    mov.q rcx, [rsp + 0x8]
+    test rcx, rcx
+    jne 2
+    jmp 3
+2:
+    add rax, 2
+3:
+    add rsp, 0x18
+    ret
 =========== OPT LEVEL: moderate ===========
 main:
-     mov qword ptr [rsp-0x10], 0x00
-     cmp qword ptr [rsp-0x10], 0x00
-     jz :0
-     xor eax, eax
-     jmp :1
-
-000: mov rax, 0x01
-001: mov qword ptr [rsp-0x18], 0x05
-     mov qword ptr [rsp-0x10], 0x01
-     add rax, 0x02
-     ret
+    mov.q [rsp - 0x10], 0
+    cmp.q [rsp - 0x10], 0
+    jz 0
+    xor eax, eax
+    jmp 1
+0:
+    mov rax, 1
+1:
+    mov.q [rsp - 0x18], 5
+    mov.q [rsp - 0x10], 1
+    add rax, 2
+    ret
 =========== OPT LEVEL: all ===========
 main:
-     mov rax, 0x03
-     ret
+    mov rax, 3
+    ret
 =========== OPT LEVEL: aggresive ===========

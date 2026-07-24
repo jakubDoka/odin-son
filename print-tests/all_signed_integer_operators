@@ -1,115 +1,125 @@
 =========== OPT LEVEL: none ===========
 main:
-     xor eax, eax
-     sub rax, 0x06
-     mov rcx, rax
-     xor eax, eax
-     sub rax, 0x07
-     mov rsi, rax
-     mov rdi, rcx
-     mov rax, 0x14
-     cqo
-     idiv rdi
-     mov rdx, rax
-     xor eax, eax
-     add rdx, rax
-     mov r8, rdx
-     mov rdi, rcx
-     mov rax, 0x14
-     cqo
-     idiv rdi
-     add r8, rdx
-     mov rdi, rcx
-     mov rax, rsi
-     cqo
-     idiv rdi
-     add r8, rax
-     mov rdi, rcx
-     mov rax, rsi
-     cqo
-     idiv rdi
-     add r8, rdx
-     mov rax, rsi
-     sar rax, 0x01
-     add r8, rax
-     mov rax, rcx
-     sar rax, 0x01
-     add r8, rax
-     cmp rcx, 0x14
-     jl :0
-     jmp :1
-
-000: add r8, 0x01
-001: mov rdi, r8
-     cmp rsi, rcx
-     jl :2
-     jmp :3
-
-002: add rdi, 0x02
-003: mov rax, rcx
-     mov rdx, 0x14
-     cmp rdx, rax
-     jnle :4
-     jmp :5
-
-004: add rdi, 0x04
-005: cmp rcx, rsi
-     jle :6
-     jmp :7
-
-006: add rdi, 0x08
-007: mov rax, rcx
-     mov rcx, 0x14
-     cmp rcx, rax
-     jnl :8
-     jmp :9
-
-008: add rdi, 0x10
-009: mov rax, rdi
-     ret
+    xor eax, eax
+    sub rax, 6
+    mov rcx, rax
+    xor eax, eax
+    sub rax, 7
+    mov rsi, rax
+    mov rdi, rcx
+    mov rax, 0x14
+    cqo
+    idiv rdi
+    mov rdx, rax
+    xor eax, eax
+    add rdx, rax
+    mov r8, rdx
+    mov rdi, rcx
+    mov rax, 0x14
+    cqo
+    idiv rdi
+    add r8, rdx
+    mov rdi, rcx
+    mov rax, rsi
+    cqo
+    idiv rdi
+    add r8, rax
+    mov rdi, rcx
+    mov rax, rsi
+    cqo
+    idiv rdi
+    add r8, rdx
+    mov rax, rsi
+    sar rax, 1
+    add r8, rax
+    mov rax, rcx
+    sar rax, 1
+    add r8, rax
+    cmp rcx, 0x14
+    jnge 0
+    jmp 1
+0:
+    add r8, 1
+1:
+    mov rdi, r8
+    cmp rsi, rcx
+    jnge 2
+    jmp 3
+2:
+    add rdi, 2
+3:
+    mov rax, rcx
+    mov rdx, 0x14
+    cmp rdx, rax
+    jnle 4
+    jmp 5
+4:
+    add rdi, 4
+5:
+    cmp rcx, rsi
+    jle 6
+    jmp 7
+6:
+    add rdi, 8
+7:
+    mov rax, rcx
+    mov rcx, 0x14
+    cmp rcx, rax
+    jnl 8
+    jmp 9
+8:
+    add rdi, 0x10
+9:
+    mov rax, rdi
+    ret
 =========== OPT LEVEL: mininal ===========
 main:
-     mov cl, 0x01
-     xor eax, eax
-     add rax, 0xFFFFFFFFFFFFFFFD
-     add rax, 0x02
-     add rax, 0x01
-     add rax, 0xFFFFFFFFFFFFFFFF
-     add rax, 0xFFFFFFFFFFFFFFFC
-     add rax, 0xFFFFFFFFFFFFFFFD
-     test cl, cl
-     jnz :0
-     jmp :1
-
-000: add rax, 0x01
-001: test cl, cl
-     jnz :2
-     jmp :3
-
-002: add rax, 0x02
-003: test cl, cl
-     jnz :4
-     jmp :5
-
-004: add rax, 0x04
-005: xor edx, edx
-     test dl, dl
-     jnz :6
-     jmp :7
-
-006: add rax, 0x08
-007: test cl, cl
-     jnz :8
-     jmp :9
-
-008: add rax, 0x10
-009: ret
+    mov cl, 1
+    xor eax, eax
+    add rax, -3
+    add rax, 2
+    add rax, 1
+    add rax, -1
+    add rax, -4
+    add rax, -3
+    test cl, cl
+    jne 0
+    jmp 1
+0:
+    add rax, 1
+1:
+    test cl, cl
+    jne 2
+    jmp 3
+2:
+    add rax, 2
+3:
+    test cl, cl
+    jne 4
+    jmp 5
+4:
+    add rax, 4
+5:
+    xor edx, edx
+    test dl, dl
+    jne 6
+    jmp 7
+6:
+    add rax, 8
+7:
+    test cl, cl
+    jne 8
+    jmp 9
+8:
+    add rax, 0x10
+9:
+    ret
 =========== OPT LEVEL: moderate ===========
 main:
-     mov rax, 0x0F
-     ret
+    mov rax, 0xf
+    ret
 =========== OPT LEVEL: all ===========
 main:
-     mov rax, 0x0F
-     ret
+    mov rax, 0xf
+    ret
 =========== OPT LEVEL: aggresive ===========

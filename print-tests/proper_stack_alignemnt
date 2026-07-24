@@ -1,89 +1,89 @@
 =========== OPT LEVEL: none ===========
 main:
-     sub rsp, 0x08
-     mov rdx, 0x01
-     xor esi, esi
-     lea rdi, [rsp]
-     call :$set
-     lea rdi, [rsp+0x01]
-     mov rdx, 0x01
-     xor esi, esi
-     call :$set
-     lea rsi, [rsp+0x01]
-     lea rdi, [rsp]
-     call :copy
-     xor eax, eax
-     add rsp, 0x08
-     ret
+    sub rsp, 8
+    mov rdx, 1
+    xor esi, esi
+    lea rdi, [rsp]
+    call.q [rip - 0x20]
+    lea rdi, [rsp + 0x1]
+    mov rdx, 1
+    xor esi, esi
+    call.q [rip - 0x35]
+    lea rsi, [rsp + 0x1]
+    lea rdi, [rsp]
+    call +0xd
+    xor eax, eax
+    add rsp, 8
+    ret
 copy:
-     sub rsp, 0x08
-     mov rdx, 0x01
-     call :$copy
-     xor eax, eax
-     add rsp, 0x08
-     ret
+    sub rsp, 8
+    mov rdx, 1
+    call.q [rip - 0x69]
+    xor eax, eax
+    add rsp, 8
+    ret
 =========== OPT LEVEL: mininal ===========
 main:
-     sub rsp, 0x08
-     mov rdx, 0x01
-     xor esi, esi
-     lea rdi, [rsp]
-     call :$set
-     lea rdi, [rsp+0x01]
-     mov rdx, 0x01
-     xor esi, esi
-     call :$set
-     lea rsi, [rsp+0x01]
-     lea rdi, [rsp]
-     call :copy
-     xor eax, eax
-     add rsp, 0x08
-     ret
+    sub rsp, 8
+    mov rdx, 1
+    xor esi, esi
+    lea rdi, [rsp]
+    call.q [rip - 0x20]
+    lea rdi, [rsp + 0x1]
+    mov rdx, 1
+    xor esi, esi
+    call.q [rip - 0x35]
+    lea rsi, [rsp + 0x1]
+    lea rdi, [rsp]
+    call +0xd
+    xor eax, eax
+    add rsp, 8
+    ret
 copy:
-     sub rsp, 0x08
-     mov rdx, 0x01
-     call :$copy
-     xor eax, eax
-     add rsp, 0x08
-     ret
+    sub rsp, 8
+    mov rdx, 1
+    call.q [rip - 0x69]
+    xor eax, eax
+    add rsp, 8
+    ret
 =========== OPT LEVEL: moderate ===========
 main:
-     sub rsp, 0x08
-     mov byte ptr [rsp], 0x00
-     mov byte ptr [rsp+0x01], 0x00
-     lea rdi, [rsp]
-     lea rsi, [rsp+0x01]
-     call :copy
-     xor eax, eax
-     add rsp, 0x08
-     ret
+    sub rsp, 8
+    mov.b [rsp], 0
+    mov.b [rsp + 0x1], 0
+    lea rdi, [rsp]
+    lea rsi, [rsp + 0x1]
+    call +0xb
+    xor eax, eax
+    add rsp, 8
+    ret
 copy:
-     sub rsp, 0x08
-     mov rdx, 0x01
-     call :$copy
-     xor eax, eax
-     add rsp, 0x08
-     ret
+    sub rsp, 8
+    mov rdx, 1
+    call.q [rip - 0x49]
+    xor eax, eax
+    add rsp, 8
+    ret
 =========== OPT LEVEL: all ===========
 main:
-     sub rsp, 0x08
-     mov byte ptr [rsp], 0x00
-     mov byte ptr [rsp+0x01], 0x00
-     lea rdi, [rsp]
-     lea rsi, [rsp+0x01]
-     call :copy
-     xor eax, eax
-     add rsp, 0x08
-     ret
+    sub rsp, 8
+    mov.b [rsp], 0
+    mov.b [rsp + 0x1], 0
+    lea rdi, [rsp]
+    lea rsi, [rsp + 0x1]
+    call +0xb
+    xor eax, eax
+    add rsp, 8
+    ret
 copy:
-     sub rsp, 0x08
-     mov rdx, 0x01
-     call :$copy
-     xor eax, eax
-     add rsp, 0x08
-     ret
+    sub rsp, 8
+    mov rdx, 1
+    call.q [rip - 0x49]
+    xor eax, eax
+    add rsp, 8
+    ret
 =========== OPT LEVEL: aggresive ===========
 main:
-     xor eax, eax
-     ret
+    xor eax, eax
+    ret
 copy:

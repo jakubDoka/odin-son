@@ -1,130 +1,130 @@
 =========== OPT LEVEL: none ===========
 main:
-     sub rsp, 0x18
-     call :ofn
-     shr rax, 0x00
-     mov [rsp], rax
-     shr rdx, 0x00
-     mov [rsp+0x08], rdx
-     mov rdi, [rsp]
-     mov rsi, [rsp+0x08]
-     call :fn
-     add rsp, 0x18
-     ret
+    sub rsp, 0x18
+    call +0x27
+    shr rax, 0
+    mov.q [rsp], rax
+    shr rdx, 0
+    mov.q [rsp + 0x8], rdx
+    mov.q rdi, [rsp]
+    mov.q rsi, [rsp + 0x8]
+    call +0x40
+    add rsp, 0x18
+    ret
 ofn:
-     sub rsp, 0x18
-     xor esi, esi
-     lea rdi, [rsp]
-     mov rdx, 0x10
-     call :$set
-     mov dword ptr [rsp], 0x00
-     mov qword ptr [rsp+0x08], 0x01
-     mov rax, [rsp]
-     mov rdx, [rsp+0x08]
-     add rsp, 0x18
-     ret
+    sub rsp, 0x18
+    xor esi, esi
+    lea rdi, [rsp]
+    mov rdx, 0x10
+    call.q [rip - 0x50]
+    mov.d [rsp], 0
+    mov.q [rsp + 0x8], 1
+    mov.q rax, [rsp]
+    mov.q rdx, [rsp + 0x8]
+    add rsp, 0x18
+    ret
 fn:
-     shr rdi, 0x00
-     mov [rsp-0x18], rdi
-     shr rsi, 0x00
-     mov [rsp-0x10], rsi
-     movss xmm0, dword ptr [rsp-0x18]
-     cvttss2si rax, xmm0
-     add rax, [rsp-0x10]
-     ret
+    shr rdi, 0
+    mov.q [rsp - 0x18], rdi
+    shr rsi, 0
+    mov.q [rsp - 0x10], rsi
+    movss.d xmm0, [rsp - 0x18]
+    cvttss2si rax, xmm0
+    add.q rax, [rsp - 0x10]
+    ret
 =========== OPT LEVEL: mininal ===========
 main:
-     sub rsp, 0x18
-     call :ofn
-     shr rax, 0x00
-     mov [rsp], rax
-     shr rdx, 0x00
-     mov [rsp+0x08], rdx
-     mov rdi, [rsp]
-     mov rsi, [rsp+0x08]
-     call :fn
-     add rsp, 0x18
-     ret
+    sub rsp, 0x18
+    call +0x27
+    shr rax, 0
+    mov.q [rsp], rax
+    shr rdx, 0
+    mov.q [rsp + 0x8], rdx
+    mov.q rdi, [rsp]
+    mov.q rsi, [rsp + 0x8]
+    call +0x40
+    add rsp, 0x18
+    ret
 ofn:
-     sub rsp, 0x18
-     xor esi, esi
-     lea rdi, [rsp]
-     mov rdx, 0x10
-     call :$set
-     mov dword ptr [rsp], 0x00
-     mov qword ptr [rsp+0x08], 0x01
-     mov rax, [rsp]
-     mov rdx, [rsp+0x08]
-     add rsp, 0x18
-     ret
+    sub rsp, 0x18
+    xor esi, esi
+    lea rdi, [rsp]
+    mov rdx, 0x10
+    call.q [rip - 0x50]
+    mov.d [rsp], 0
+    mov.q [rsp + 0x8], 1
+    mov.q rax, [rsp]
+    mov.q rdx, [rsp + 0x8]
+    add rsp, 0x18
+    ret
 fn:
-     shr rdi, 0x00
-     mov [rsp-0x18], rdi
-     shr rsi, 0x00
-     mov [rsp-0x10], rsi
-     movss xmm0, dword ptr [rsp-0x18]
-     cvttss2si rax, xmm0
-     add rax, [rsp-0x10]
-     ret
+    shr rdi, 0
+    mov.q [rsp - 0x18], rdi
+    shr rsi, 0
+    mov.q [rsp - 0x10], rsi
+    movss.d xmm0, [rsp - 0x18]
+    cvttss2si rax, xmm0
+    add.q rax, [rsp - 0x10]
+    ret
 =========== OPT LEVEL: moderate ===========
 main:
-     sub rsp, 0x08
-     call :ofn
-     mov rcx, rdx
-     mov rdi, rax
-     mov rsi, rcx
-     call :fn
-     add rsp, 0x08
-     ret
+    sub rsp, 8
+    call +0x17
+    mov rcx, rdx
+    mov rdi, rax
+    mov rsi, rcx
+    call +0x31
+    add rsp, 8
+    ret
 ofn:
-     mov dword ptr [rsp-0x14], 0x00
-     mov dword ptr [rsp-0x18], 0x00
-     mov qword ptr [rsp-0x10], 0x01
-     mov rax, [rsp-0x18]
-     mov rdx, 0x01
-     ret
+    mov.d [rsp - 0x14], 0
+    mov.d [rsp - 0x18], 0
+    mov.q [rsp - 0x10], 1
+    mov.q rax, [rsp - 0x18]
+    mov rdx, 1
+    ret
 fn:
-     mov [rsp-0x18], rdi
-     mov [rsp-0x10], rsi
-     movss xmm0, dword ptr [rsp-0x18]
-     cvttss2si rax, xmm0
-     add rax, rsi
-     ret
+    mov.q [rsp - 0x18], rdi
+    mov.q [rsp - 0x10], rsi
+    movss.d xmm0, [rsp - 0x18]
+    cvttss2si rax, xmm0
+    add rax, rsi
+    ret
 =========== OPT LEVEL: all ===========
 main:
-     sub rsp, 0x08
-     call :ofn
-     mov rcx, rdx
-     mov rdi, rax
-     mov rsi, rcx
-     call :fn
-     add rsp, 0x08
-     ret
+    sub rsp, 8
+    call +0x17
+    mov rcx, rdx
+    mov rdi, rax
+    mov rsi, rcx
+    call +0x31
+    add rsp, 8
+    ret
 ofn:
-     mov dword ptr [rsp-0x14], 0x00
-     mov dword ptr [rsp-0x18], 0x00
-     mov qword ptr [rsp-0x10], 0x01
-     mov rax, [rsp-0x18]
-     mov rdx, 0x01
-     ret
+    mov.d [rsp - 0x14], 0
+    mov.d [rsp - 0x18], 0
+    mov.q [rsp - 0x10], 1
+    mov.q rax, [rsp - 0x18]
+    mov rdx, 1
+    ret
 fn:
-     mov [rsp-0x18], rdi
-     mov [rsp-0x10], rsi
-     movss xmm0, dword ptr [rsp-0x18]
-     cvttss2si rax, xmm0
-     add rax, rsi
-     ret
+    mov.q [rsp - 0x18], rdi
+    mov.q [rsp - 0x10], rsi
+    movss.d xmm0, [rsp - 0x18]
+    cvttss2si rax, xmm0
+    add rax, rsi
+    ret
 =========== OPT LEVEL: aggresive ===========
 main:
-     mov dword ptr [rsp-0x14], 0x00
-     mov dword ptr [rsp-0x18], 0x00
-     mov qword ptr [rsp-0x10], 0x01
-     mov rax, [rsp-0x18]
-     mov [rsp-0x28], rax
-     mov qword ptr [rsp-0x20], 0x01
-     movss xmm0, dword ptr [rsp-0x28]
-     cvttss2si rax, xmm0
-     add rax, 0x01
-     ret
+    mov.d [rsp - 0x14], 0
+    mov.d [rsp - 0x18], 0
+    mov.q [rsp - 0x10], 1
+    mov.q rax, [rsp - 0x18]
+    mov.q [rsp - 0x28], rax
+    mov.q [rsp - 0x20], 1
+    movss.d xmm0, [rsp - 0x28]
+    cvttss2si rax, xmm0
+    add rax, 1
+    ret
 ofn:
 fn:

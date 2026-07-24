@@ -1,135 +1,151 @@
 =========== OPT LEVEL: none ===========
 main:
-     movsd xmm0, qword ptr [0x00000000004001AA]
-     movsd xmm1, qword ptr [0x00000000004001B4]
-     movsd xmm2, qword ptr [0x00000000004001BE]
-     movsd xmm3, qword ptr [0x00000000004001BE]
-     subsd xmm3, [0x00000000004001C8]
-     movsd xmm4, qword ptr [0x00000000004001B4]
-     addsd xmm4, [0x00000000004001AA]
-     addsd xmm4, xmm2
-     movsd xmm2, qword ptr [0x00000000004001B4]
-     subsd xmm2, [0x00000000004001AA]
-     addsd xmm4, xmm2
-     movsd xmm5, qword ptr [0x00000000004001B4]
-     vfmadd213sd xmm5, xmm0, xmm4
-     movsd xmm2, qword ptr [0x00000000004001B4]
-     divsd xmm2, [0x00000000004001AA]
-     addsd xmm5, xmm2
-     movsd xmm2, xmm3
-     divsd xmm2, [0x00000000004001AA]
-     addsd xmm5, xmm2
-     movsd xmm4, xmm3
-     vfmadd213sd xmm4, xmm0, xmm5
-     movsd xmm2, qword ptr [0x00000000004001BE]
-     subsd xmm2, [0x00000000004001B4]
-     addsd xmm4, xmm2
-     movsd xmm2, qword ptr [0x00000000004001BE]
-     subsd xmm2, xmm3
-     addsd xmm4, xmm2
-     ucomisd xmm1, [0x00000000004001AA]
-     jnbe :0
-     jmp :1
-
-000: addsd xmm4, [0x00000000004001D2]
-001: ucomisd xmm1, xmm0
-     jnbe :2
-     jmp :3
-
-002: addsd xmm4, [0x00000000004001DC]
-003: ucomisd xmm1, [0x00000000004001AA]
-     jnb :4
-     jmp :5
-
-004: addsd xmm4, [0x00000000004001E6]
-005: ucomisd xmm0, xmm1
-     jnb :6
-     jmp :7
-
-006: addsd xmm4, [0x00000000004001F0]
-007: ucomisd xmm1, [0x00000000004001B4]
-     jz :8
-     jmp :9
-
-008: addsd xmm4, [0x00000000004001FA]
-009: ucomisd xmm1, [0x00000000004001AA]
-     jnz :10
-     jmp :11
-
-010: addsd xmm4, [0x0000000000400204]
-011: ucomisd xmm0, xmm3
-     jnbe :12
-     jmp :13
-
-012: addsd xmm4, [0x000000000040020E]
-013: ucomisd xmm3, xmm3
-     jnb :14
-     jmp :15
-
-014: addsd xmm4, [0x0000000000400218]
-015: cvttsd2si rax, xmm4
-     ret
+    movsd.q xmm0, [rip + 0x1a1]
+    movsd.q xmm1, [rip + 0x1a2]
+    movsd.q xmm2, [rip + 0x1a3]
+    movsd.q xmm3, [rip + 0x19a]
+    subsd.q xmm3, [rip + 0x19b]
+    movsd.q xmm4, [rip + 0x17e]
+    addsd.q xmm4, [rip + 0x16b]
+    addsd xmm4, xmm2
+    movsd.q xmm2, [rip + 0x167]
+    subsd.q xmm2, [rip + 0x154]
+    addsd xmm4, xmm2
+    movsd.q xmm5, [rip + 0x150]
+    vfmadd213sd xmm5, xmm0, xmm4
+    movsd.q xmm2, [rip + 0x142]
+    divsd.q xmm2, [rip + 0x12f]
+    addsd xmm5, xmm2
+    movsd xmm2, xmm3
+    divsd.q xmm2, [rip + 0x11c]
+    addsd xmm5, xmm2
+    movsd xmm4, xmm3
+    vfmadd213sd xmm4, xmm0, xmm5
+    movsd.q xmm2, [rip + 0x118]
+    subsd.q xmm2, [rip + 0x105]
+    addsd xmm4, xmm2
+    movsd.q xmm2, [rip + 0x101]
+    subsd xmm2, xmm3
+    addsd xmm4, xmm2
+    ucomisd.q xmm1, [rip + 0xda]
+    jnbe 0
+    jmp 1
+0:
+    addsd.q xmm4, [rip + 0xee]
+1:
+    ucomisd xmm1, xmm0
+    jnbe 2
+    jmp 3
+2:
+    addsd.q xmm4, [rip + 0xdf]
+3:
+    ucomisd.q xmm1, [rip + 0xa4]
+    jnc 4
+    jmp 5
+4:
+    addsd.q xmm4, [rip + 0xcc]
+5:
+    ucomisd xmm0, xmm1
+    jnc 6
+    jmp 7
+6:
+    addsd.q xmm4, [rip + 0xbd]
+7:
+    ucomisd.q xmm1, [rip + 0x78]
+    jz 8
+    jmp 9
+8:
+    addsd.q xmm4, [rip + 0xaa]
+9:
+    ucomisd.q xmm1, [rip + 0x51]
+    jne 10
+    jmp 11
+10:
+    addsd.q xmm4, [rip + 0x97]
+11:
+    ucomisd xmm0, xmm3
+    jnbe 12
+    jmp 13
+12:
+    addsd.q xmm4, [rip + 0x88]
+13:
+    ucomisd xmm3, xmm3
+    jnc 14
+    jmp 15
+14:
+    addsd.q xmm4, [rip + 0x79]
+15:
+    cvttsd2si rax, xmm4
+    ret
 =========== OPT LEVEL: mininal ===========
 main:
-     mov al, 0x01
-     movsd xmm0, qword ptr [0x000000000040011A]
-     addsd xmm0, [0x0000000000400124]
-     addsd xmm0, [0x000000000040012E]
-     addsd xmm0, [0x0000000000400138]
-     addsd xmm0, [0x0000000000400142]
-     addsd xmm0, [0x000000000040014C]
-     addsd xmm0, [0x0000000000400156]
-     addsd xmm0, [0x0000000000400160]
-     addsd xmm0, [0x000000000040016A]
-     test al, al
-     jnz :0
-     jmp :1
-
-000: addsd xmm0, [0x0000000000400174]
-001: test al, al
-     jnz :2
-     jmp :3
-
-002: addsd xmm0, [0x000000000040017E]
-003: test al, al
-     jnz :4
-     jmp :5
-
-004: addsd xmm0, [0x0000000000400188]
-005: xor ecx, ecx
-     test cl, cl
-     jnz :6
-     jmp :7
-
-006: addsd xmm0, [0x0000000000400192]
-007: test al, al
-     jnz :8
-     jmp :9
-
-008: addsd xmm0, [0x000000000040019C]
-009: test al, al
-     jnz :10
-     jmp :11
-
-010: addsd xmm0, [0x00000000004001A6]
-011: test al, al
-     jnz :12
-     jmp :13
-
-012: addsd xmm0, [0x00000000004001B0]
-013: test al, al
-     jnz :14
-     jmp :15
-
-014: addsd xmm0, [0x00000000004001BA]
-015: cvttsd2si rax, xmm0
-     ret
+    mov al, 1
+    movsd.q xmm0, [rip + 0x10e]
+    addsd.q xmm0, [rip + 0x10f]
+    addsd.q xmm0, [rip + 0x110]
+    addsd.q xmm0, [rip + 0x111]
+    addsd.q xmm0, [rip + 0x112]
+    addsd.q xmm0, [rip + 0x113]
+    addsd.q xmm0, [rip + 0x114]
+    addsd.q xmm0, [rip + 0x115]
+    addsd.q xmm0, [rip + 0x116]
+    test al, al
+    jne 0
+    jmp 1
+0:
+    addsd.q xmm0, [rip + 0x109]
+1:
+    test al, al
+    jne 2
+    jmp 3
+2:
+    addsd.q xmm0, [rip + 0xfc]
+3:
+    test al, al
+    jne 4
+    jmp 5
+4:
+    addsd.q xmm0, [rip + 0xef]
+5:
+    xor ecx, ecx
+    test cl, cl
+    jne 6
+    jmp 7
+6:
+    addsd.q xmm0, [rip + 0xdf]
+7:
+    test al, al
+    jne 8
+    jmp 9
+8:
+    addsd.q xmm0, [rip + 0xd2]
+9:
+    test al, al
+    jne 10
+    jmp 11
+10:
+    addsd.q xmm0, [rip + 0xc5]
+11:
+    test al, al
+    jne 12
+    jmp 13
+12:
+    addsd.q xmm0, [rip + 0xb8]
+13:
+    test al, al
+    jne 14
+    jmp 15
+14:
+    addsd.q xmm0, [rip + 0xab]
+15:
+    cvttsd2si rax, xmm0
+    ret
 =========== OPT LEVEL: moderate ===========
 main:
-     mov rax, 0x162
-     ret
+    mov rax, 0x162
+    ret
 =========== OPT LEVEL: all ===========
 main:
-     mov rax, 0x162
-     ret
+    mov rax, 0x162
+    ret
 =========== OPT LEVEL: aggresive ===========

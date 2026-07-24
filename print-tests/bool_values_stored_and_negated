@@ -1,56 +1,62 @@
 =========== OPT LEVEL: none ===========
 main:
-     mov rcx, 0x05
-     xor eax, eax
-     cmp rcx, 0x0A
-     setl dl
-     movzx rdx, dl
-     test dl, dl
-     jnz :0
-     jmp :1
-
-000: add rax, 0x01
-001: cmp rcx, 0x0A
-     setz cl
-     movzx rcx, cl
-     cmp cl, 0x00
-     jz :2
-     jmp :3
-
-002: add rax, 0x02
-003: cmp dl, 0x00
-     jz :4
-     jmp :5
-
-004: add rax, 0x04
-005: ret
+    mov rcx, 5
+    xor eax, eax
+    cmp rcx, 0xa
+    setnge dl
+    movzx rdx, dl
+    test dl, dl
+    jne 0
+    jmp 1
+0:
+    add rax, 1
+1:
+    cmp rcx, 0xa
+    setz cl
+    movzx rcx, cl
+    cmp cl, 0
+    jz 2
+    jmp 3
+2:
+    add rax, 2
+3:
+    cmp dl, 0
+    jz 4
+    jmp 5
+4:
+    add rax, 4
+5:
+    ret
 =========== OPT LEVEL: mininal ===========
 main:
-     mov cl, 0x01
-     xor eax, eax
-     test cl, cl
-     jnz :0
-     jmp :1
-
-000: add rax, 0x01
-001: test cl, cl
-     jnz :2
-     jmp :3
-
-002: add rax, 0x02
-003: xor ecx, ecx
-     test cl, cl
-     jnz :4
-     jmp :5
-
-004: add rax, 0x04
-005: ret
+    mov cl, 1
+    xor eax, eax
+    test cl, cl
+    jne 0
+    jmp 1
+0:
+    add rax, 1
+1:
+    test cl, cl
+    jne 2
+    jmp 3
+2:
+    add rax, 2
+3:
+    xor ecx, ecx
+    test cl, cl
+    jne 4
+    jmp 5
+4:
+    add rax, 4
+5:
+    ret
 =========== OPT LEVEL: moderate ===========
 main:
-     mov rax, 0x03
-     ret
+    mov rax, 3
+    ret
 =========== OPT LEVEL: all ===========
 main:
-     mov rax, 0x03
-     ret
+    mov rax, 3
+    ret
 =========== OPT LEVEL: aggresive ===========

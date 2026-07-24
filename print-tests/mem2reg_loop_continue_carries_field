@@ -1,191 +1,197 @@
 =========== OPT LEVEL: none ===========
 opaque:
-     mov rax, rdi
-     ret
+    mov rax, rdi
+    ret
 main:
-     sub rsp, 0x18
-     xor esi, esi
-     lea rdi, [rsp]
-     mov rdx, 0x10
-     call :$set
-     mov rdi, 0x01
-     call :opaque
-     mov [rsp], rax
-     xor edi, edi
-     call :opaque
-     mov [rsp+0x08], rax
-     mov rdi, 0x09
-     call :opaque
-     mov rcx, rax
-     xor edi, edi
-002: cmp rdi, rcx
-     jnl :0
-     add qword ptr [rsp], 0x01
-     mov rax, [rsp]
-     mov rsi, 0x02
-     cqo
-     idiv rsi
-     cmp rdx, 0x00
-     jz :1
-     mov rax, [rsp]
-     add [rsp+0x08], rax
-     jmp :1
-
-001: add rdi, 0x01
-     jmp :2
-
-000: mov rax, [rsp]
-     imul rax, rax, 0x64
-     add rax, [rsp+0x08]
-     add rsp, 0x18
-     ret
+    sub rsp, 0x18
+    xor esi, esi
+    lea rdi, [rsp]
+    mov rdx, 0x10
+    call.q [rip - 0x28]
+    mov rdi, 1
+    call -0x2c
+    mov.q [rsp], rax
+    xor edi, edi
+    call -0x38
+    mov.q [rsp + 0x8], rax
+    mov rdi, 9
+    call -0x49
+    mov rcx, rax
+    xor edi, edi
+2:
+    cmp rdi, rcx
+    jnl 0
+    add.q [rsp], 1
+    mov.q rax, [rsp]
+    mov rsi, 2
+    cqo
+    idiv rsi
+    cmp rdx, 0
+    jz 1
+    mov.q rax, [rsp]
+    add.q [rsp + 0x8], rax
+    jmp 1
+1:
+    add rdi, 1
+    jmp 2
+0:
+    mov.q rax, [rsp]
+    imul rax, rax, 0x64
+    add.q rax, [rsp + 0x8]
+    add rsp, 0x18
+    ret
 =========== OPT LEVEL: mininal ===========
 opaque:
-     mov rax, rdi
-     ret
+    mov rax, rdi
+    ret
 main:
-     sub rsp, 0x18
-     xor esi, esi
-     lea rdi, [rsp]
-     mov rdx, 0x10
-     call :$set
-     mov rdi, 0x01
-     call :opaque
-     mov [rsp], rax
-     xor edi, edi
-     call :opaque
-     mov [rsp+0x08], rax
-     mov rdi, 0x09
-     call :opaque
-     mov rcx, rax
-     xor edi, edi
-002: cmp rdi, rcx
-     jnl :0
-     add qword ptr [rsp], 0x01
-     mov rax, [rsp]
-     mov rsi, 0x02
-     cqo
-     idiv rsi
-     cmp rdx, 0x00
-     jz :1
-     mov rax, [rsp]
-     add [rsp+0x08], rax
-     jmp :1
-
-001: add rdi, 0x01
-     jmp :2
-
-000: mov rax, [rsp]
-     imul rax, rax, 0x64
-     add rax, [rsp+0x08]
-     add rsp, 0x18
-     ret
+    sub rsp, 0x18
+    xor esi, esi
+    lea rdi, [rsp]
+    mov rdx, 0x10
+    call.q [rip - 0x28]
+    mov rdi, 1
+    call -0x2c
+    mov.q [rsp], rax
+    xor edi, edi
+    call -0x38
+    mov.q [rsp + 0x8], rax
+    mov rdi, 9
+    call -0x49
+    mov rcx, rax
+    xor edi, edi
+2:
+    cmp rdi, rcx
+    jnl 0
+    add.q [rsp], 1
+    mov.q rax, [rsp]
+    mov rsi, 2
+    cqo
+    idiv rsi
+    cmp rdx, 0
+    jz 1
+    mov.q rax, [rsp]
+    add.q [rsp + 0x8], rax
+    jmp 1
+1:
+    add rdi, 1
+    jmp 2
+0:
+    mov.q rax, [rsp]
+    imul rax, rax, 0x64
+    add.q rax, [rsp + 0x8]
+    add rsp, 0x18
+    ret
 =========== OPT LEVEL: moderate ===========
 opaque:
-     mov rax, rdi
-     ret
+    mov rax, rdi
+    ret
 main:
-     sub rsp, 0x18
-     mov qword ptr [rsp], 0x00
-     mov qword ptr [rsp+0x08], 0x00
-     mov rdi, 0x01
-     call :opaque
-     mov [rsp], rax
-     xor edi, edi
-     call :opaque
-     mov [rsp+0x08], rax
-     mov rdi, 0x09
-     call :opaque
-     mov rcx, rax
-     xor edi, edi
-002: cmp rdi, rcx
-     jnl :0
-     mov rax, [rsp]
-     add rax, 0x01
-     mov [rsp], rax
-     mov rsi, 0x02
-     cqo
-     idiv rsi
-     cmp rdx, 0x00
-     jz :1
-     mov rax, [rsp]
-     add [rsp+0x08], rax
-     jmp :1
-
-001: add rdi, 0x01
-     jmp :2
-
-000: mov rax, [rsp]
-     imul rax, rax, 0x64
-     add rax, [rsp+0x08]
-     add rsp, 0x18
-     ret
+    sub rsp, 0x18
+    mov.q [rsp], 0
+    mov.q [rsp + 0x8], 0
+    mov rdi, 1
+    call -0x29
+    mov.q [rsp], rax
+    xor edi, edi
+    call -0x35
+    mov.q [rsp + 0x8], rax
+    mov rdi, 9
+    call -0x46
+    mov rcx, rax
+    xor edi, edi
+2:
+    cmp rdi, rcx
+    jnl 0
+    mov.q rax, [rsp]
+    add rax, 1
+    mov.q [rsp], rax
+    mov rsi, 2
+    cqo
+    idiv rsi
+    cmp rdx, 0
+    jz 1
+    mov.q rax, [rsp]
+    add.q [rsp + 0x8], rax
+    jmp 1
+1:
+    add rdi, 1
+    jmp 2
+0:
+    mov.q rax, [rsp]
+    imul rax, rax, 0x64
+    add.q rax, [rsp + 0x8]
+    add rsp, 0x18
+    ret
 =========== OPT LEVEL: all ===========
 opaque:
-     mov rax, rdi
-     ret
+    mov rax, rdi
+    ret
 main:
-     push rbx
-     push rbp
-     sub rsp, 0x08
-     mov rdi, 0x01
-     call :opaque
-     mov rbx, rax
-     xor edi, edi
-     call :opaque
-     mov rbp, rax
-     mov rdi, 0x09
-     call :opaque
-     mov rcx, rax
-     xor r8d, r8d
-003: cmp r8, rcx
-     jnl :0
-     mov rsi, rbx
-     add rsi, 0x01
-     mov rdi, 0x02
-     mov rax, rsi
-     cqo
-     idiv rdi
-     cmp rdx, 0x00
-     jz :1
-     mov rax, rsi
-     mov rdx, rbp
-     add rdx, rax
-     jmp :2
-
-001: mov rdx, rbp
-002: mov rbp, rdx
-     add r8, 0x01
-     mov rbx, rsi
-     jmp :3
-
-000: imul rax, rbx, 0x64
-     add rax, rbp
-     add rsp, 0x08
-     pop rbp
-     pop rbx
-     ret
+    push rbx
+    push rbp
+    sub rsp, 8
+    mov rdi, 1
+    call -0x1c
+    mov rbx, rax
+    xor edi, edi
+    call -0x27
+    mov rbp, rax
+    mov rdi, 9
+    call -0x36
+    mov rcx, rax
+    xor r8d, r8d
+3:
+    cmp r8, rcx
+    jnl 0
+    mov rsi, rbx
+    add rsi, 1
+    mov rdi, 2
+    mov rax, rsi
+    cqo
+    idiv rdi
+    cmp rdx, 0
+    jz 1
+    mov rax, rsi
+    mov rdx, rbp
+    add rdx, rax
+    jmp 2
+1:
+    mov rdx, rbp
+2:
+    mov rbp, rdx
+    add r8, 1
+    mov rbx, rsi
+    jmp 3
+0:
+    imul rax, rbx, 0x64
+    add rax, rbp
+    add rsp, 8
+    pop rbp
+    pop rbx
+    ret
 =========== OPT LEVEL: aggresive ===========
 opaque:
 main:
-     mov rcx, 0x01
-     xor r8d, r8d
-     xor edi, edi
-002: cmp r8, 0x09
-     jnl :0
-     add rcx, 0x01
-     mov rsi, 0x02
-     mov rax, rcx
-     cqo
-     idiv rsi
-     cmp rdx, 0x00
-     jz :1
-     add rdi, rcx
-     jmp :1
-
-001: add r8, 0x01
-     jmp :2
-
-000: imul rax, rcx, 0x64
-     add rax, rdi
-     ret
+    mov rcx, 1
+    xor r8d, r8d
+    xor edi, edi
+2:
+    cmp r8, 9
+    jnl 0
+    add rcx, 1
+    mov rsi, 2
+    mov rax, rcx
+    cqo
+    idiv rsi
+    cmp rdx, 0
+    jz 1
+    add rdi, rcx
+    jmp 1
+1:
+    add r8, 1
+    jmp 2
+0:
+    imul rax, rcx, 0x64
+    add rax, rdi
+    ret

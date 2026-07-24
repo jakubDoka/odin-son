@@ -1,497 +1,545 @@
 =========== OPT LEVEL: none ===========
 main:
-     push rbx
-     push rbp
-     push r12
-     push r13
-     push r14
-     push r15
-     sub rsp, 0x18
-     mov rbx, 0x01
-     neg rbx
-     mov qword ptr [rsp], 0x01
-     mov [rsp+0x08], rbx
-     lea rsi, [rsp]
-     mov rdi, rbx
-     call :cmps
-     mov rbp, rax
-     lea rsi, [rsp]
-     mov rdi, 0x01
-     call :cmps
-     mov r12, rax
-     lea rsi, [rsp+0x08]
-     mov rdi, rbx
-     call :cmps
-     mov rbx, rax
-     lea rsi, [rsp+0x08]
-     mov rdi, 0x01
-     call :cmps
-     mov r13, rax
-     lea rdi, [rsp]
-     call :imm_cmps
-     mov r14, rax
-     lea rdi, [rsp]
-     call :imm_cmps
-     mov r15, rax
-     lea rdi, [rsp+0x08]
-     call :imm_cmps
-     mov [rsp+0x10], rax
-     lea rdi, [rsp+0x08]
-     call :imm_cmps
-     mov rdx, rbp
-     add rdx, r12
-     add rdx, rbx
-     add rdx, r13
-     add rdx, r14
-     add rdx, r15
-     mov rcx, [rsp+0x10]
-     add rdx, rcx
-     add rdx, rax
-     mov rax, rdx
-     add rsp, 0x18
-     pop r15
-     pop r14
-     pop r13
-     pop r12
-     pop rbp
-     pop rbx
-     ret
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    push r15
+    sub rsp, 0x18
+    mov rbx, 1
+    neg rbx
+    mov.q [rsp], 1
+    mov.q [rsp + 0x8], rbx
+    lea rsi, [rsp]
+    mov rdi, rbx
+    call +0x12d
+    mov rbp, rax
+    lea rsi, [rsp]
+    mov rdi, 1
+    call +0x11a
+    mov r12, rax
+    lea rsi, [rsp + 0x8]
+    mov rdi, rbx
+    call +0x10a
+    mov rbx, rax
+    lea rsi, [rsp + 0x8]
+    mov rdi, 1
+    call +0xf6
+    mov r13, rax
+    lea rdi, [rsp]
+    call +0x5a
+    mov r14, rax
+    lea rdi, [rsp]
+    call +0x4e
+    mov r15, rax
+    lea rdi, [rsp + 0x8]
+    call +0x41
+    mov.q [rsp + 0x10], rax
+    lea rdi, [rsp + 0x8]
+    call +0x32
+    mov rdx, rbp
+    add rdx, r12
+    add rdx, rbx
+    add rdx, r13
+    add rdx, r14
+    add rdx, r15
+    mov.q rcx, [rsp + 0x10]
+    add rdx, rcx
+    add rdx, rax
+    mov rax, rdx
+    add rsp, 0x18
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
 imm_cmps:
-     xor eax, eax
-     cmp rax, [rdi]
-     jz :0
-     xor ecx, ecx
-     jmp :1
-
-000: xor ecx, ecx
-     add rcx, 0x01
-001: cmp rax, [rdi]
-     jnz :2
-     jmp :3
-
-002: add rcx, 0x02
-003: cmp rax, [rdi]
-     jnl :4
-     jmp :5
-
-004: add rcx, 0x04
-005: cmp rax, [rdi]
-     jle :6
-     jmp :7
-
-006: add rcx, 0x08
-007: cmp rax, [rdi]
-     jnle :8
-     jmp :9
-
-008: add rcx, 0x10
-009: cmp rax, [rdi]
-     jl :10
-     mov rax, rcx
-     jmp :11
-
-010: mov rax, rcx
-     add rax, 0x20
-011: ret
+    xor eax, eax
+    cmp.q rax, [rdi]
+    jz 0
+    xor ecx, ecx
+    jmp 1
+0:
+    xor ecx, ecx
+    add rcx, 1
+1:
+    cmp.q rax, [rdi]
+    jne 2
+    jmp 3
+2:
+    add rcx, 2
+3:
+    cmp.q rax, [rdi]
+    jnl 4
+    jmp 5
+4:
+    add rcx, 4
+5:
+    cmp.q rax, [rdi]
+    jle 6
+    jmp 7
+6:
+    add rcx, 8
+7:
+    cmp.q rax, [rdi]
+    jnle 8
+    jmp 9
+8:
+    add rcx, 0x10
+9:
+    cmp.q rax, [rdi]
+    jnge 10
+    mov rax, rcx
+    jmp 11
+10:
+    mov rax, rcx
+    add rax, 0x20
+11:
+    ret
 cmps:
-     xor eax, eax
-     cmp rdi, [rsi]
-     jz :0
-     jmp :1
-
-000: add rax, 0x01
-001: cmp rdi, [rsi]
-     jnz :2
-     jmp :3
-
-002: add rax, 0x02
-003: cmp rdi, [rsi]
-     jnl :4
-     jmp :5
-
-004: add rax, 0x04
-005: cmp rdi, [rsi]
-     jle :6
-     jmp :7
-
-006: add rax, 0x08
-007: cmp rdi, [rsi]
-     jnle :8
-     jmp :9
-
-008: add rax, 0x10
-009: cmp rdi, [rsi]
-     jl :10
-     jmp :11
-
-010: add rax, 0x20
-011: ret
+    xor eax, eax
+    cmp.q rdi, [rsi]
+    jz 0
+    jmp 1
+0:
+    add rax, 1
+1:
+    cmp.q rdi, [rsi]
+    jne 2
+    jmp 3
+2:
+    add rax, 2
+3:
+    cmp.q rdi, [rsi]
+    jnl 4
+    jmp 5
+4:
+    add rax, 4
+5:
+    cmp.q rdi, [rsi]
+    jle 6
+    jmp 7
+6:
+    add rax, 8
+7:
+    cmp.q rdi, [rsi]
+    jnle 8
+    jmp 9
+8:
+    add rax, 0x10
+9:
+    cmp.q rdi, [rsi]
+    jnge 10
+    jmp 11
+10:
+    add rax, 0x20
+11:
+    ret
 =========== OPT LEVEL: mininal ===========
 main:
-     push rbx
-     push rbp
-     push r12
-     push r13
-     push r14
-     push r15
-     sub rsp, 0x18
-     mov qword ptr [rsp], 0x01
-     mov qword ptr [rsp+0x08], 0xFFFFFFFFFFFFFFFF
-     lea rsi, [rsp]
-     mov rdi, 0xFFFFFFFFFFFFFFFF
-     call :cmps
-     mov rbx, rax
-     lea rsi, [rsp]
-     mov rdi, 0x01
-     call :cmps
-     mov rbp, rax
-     lea rsi, [rsp+0x08]
-     mov rdi, 0xFFFFFFFFFFFFFFFF
-     call :cmps
-     mov r12, rax
-     lea rsi, [rsp+0x08]
-     mov rdi, 0x01
-     call :cmps
-     mov r13, rax
-     lea rdi, [rsp]
-     call :imm_cmps
-     mov r14, rax
-     lea rdi, [rsp]
-     call :imm_cmps
-     mov r15, rax
-     lea rdi, [rsp+0x08]
-     call :imm_cmps
-     mov [rsp+0x10], rax
-     lea rdi, [rsp+0x08]
-     call :imm_cmps
-     mov rdx, rbx
-     add rdx, rbp
-     add rdx, r12
-     add rdx, r13
-     add rdx, r14
-     add rdx, r15
-     mov rcx, [rsp+0x10]
-     add rdx, rcx
-     add rdx, rax
-     mov rax, rdx
-     add rsp, 0x18
-     pop r15
-     pop r14
-     pop r13
-     pop r12
-     pop rbp
-     pop rbx
-     ret
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    push r15
+    sub rsp, 0x18
+    mov.q [rsp], 1
+    mov.q [rsp + 0x8], -1
+    lea rsi, [rsp]
+    mov rdi, -1
+    call +0x147
+    mov rbx, rax
+    lea rsi, [rsp]
+    mov rdi, 1
+    call +0x134
+    mov rbp, rax
+    lea rsi, [rsp + 0x8]
+    mov rdi, -1
+    call +0x120
+    mov r12, rax
+    lea rsi, [rsp + 0x8]
+    mov rdi, 1
+    call +0x10c
+    mov r13, rax
+    lea rdi, [rsp]
+    call +0x60
+    mov r14, rax
+    lea rdi, [rsp]
+    call +0x54
+    mov r15, rax
+    lea rdi, [rsp + 0x8]
+    call +0x47
+    mov.q [rsp + 0x10], rax
+    lea rdi, [rsp + 0x8]
+    call +0x38
+    mov rdx, rbx
+    add rdx, rbp
+    add rdx, r12
+    add rdx, r13
+    add rdx, r14
+    add rdx, r15
+    mov.q rcx, [rsp + 0x10]
+    add rdx, rcx
+    add rdx, rax
+    mov rax, rdx
+    add rsp, 0x18
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
 imm_cmps:
-     xor eax, eax
-     cmp qword ptr [rdi], 0x00
-     jz :0
-     jmp :1
-
-000: add rax, 0x01
-001: cmp qword ptr [rdi], 0x00
-     jnz :2
-     jmp :3
-
-002: add rax, 0x02
-003: cmp qword ptr [rdi], 0x00
-     jle :4
-     jmp :5
-
-004: add rax, 0x04
-005: cmp qword ptr [rdi], 0x00
-     jnl :6
-     jmp :7
-
-006: add rax, 0x08
-007: cmp qword ptr [rdi], 0x00
-     jl :8
-     jmp :9
-
-008: add rax, 0x10
-009: cmp qword ptr [rdi], 0x00
-     jnle :10
-     jmp :11
-
-010: add rax, 0x20
-011: ret
+    xor eax, eax
+    cmp.q [rdi], 0
+    jz 0
+    jmp 1
+0:
+    add rax, 1
+1:
+    cmp.q [rdi], 0
+    jne 2
+    jmp 3
+2:
+    add rax, 2
+3:
+    cmp.q [rdi], 0
+    jle 4
+    jmp 5
+4:
+    add rax, 4
+5:
+    cmp.q [rdi], 0
+    jnl 6
+    jmp 7
+6:
+    add rax, 8
+7:
+    cmp.q [rdi], 0
+    jnge 8
+    jmp 9
+8:
+    add rax, 0x10
+9:
+    cmp.q [rdi], 0
+    jnle 10
+    jmp 11
+10:
+    add rax, 0x20
+11:
+    ret
 cmps:
-     xor eax, eax
-     cmp rdi, [rsi]
-     jz :0
-     jmp :1
-
-000: add rax, 0x01
-001: cmp rdi, [rsi]
-     jnz :2
-     jmp :3
-
-002: add rax, 0x02
-003: cmp rdi, [rsi]
-     jnl :4
-     jmp :5
-
-004: add rax, 0x04
-005: cmp rdi, [rsi]
-     jle :6
-     jmp :7
-
-006: add rax, 0x08
-007: cmp rdi, [rsi]
-     jnle :8
-     jmp :9
-
-008: add rax, 0x10
-009: cmp rdi, [rsi]
-     jl :10
-     jmp :11
-
-010: add rax, 0x20
-011: ret
+    xor eax, eax
+    cmp.q rdi, [rsi]
+    jz 0
+    jmp 1
+0:
+    add rax, 1
+1:
+    cmp.q rdi, [rsi]
+    jne 2
+    jmp 3
+2:
+    add rax, 2
+3:
+    cmp.q rdi, [rsi]
+    jnl 4
+    jmp 5
+4:
+    add rax, 4
+5:
+    cmp.q rdi, [rsi]
+    jle 6
+    jmp 7
+6:
+    add rax, 8
+7:
+    cmp.q rdi, [rsi]
+    jnle 8
+    jmp 9
+8:
+    add rax, 0x10
+9:
+    cmp.q rdi, [rsi]
+    jnge 10
+    jmp 11
+10:
+    add rax, 0x20
+11:
+    ret
 =========== OPT LEVEL: moderate ===========
 main:
-     push rbx
-     push rbp
-     push r12
-     push r13
-     push r14
-     push r15
-     sub rsp, 0x18
-     mov qword ptr [rsp], 0x01
-     mov qword ptr [rsp+0x08], 0xFFFFFFFFFFFFFFFF
-     lea rsi, [rsp]
-     mov rdi, 0xFFFFFFFFFFFFFFFF
-     call :cmps
-     mov rbx, rax
-     lea rsi, [rsp]
-     mov rdi, 0x01
-     call :cmps
-     mov rbp, rax
-     lea rsi, [rsp+0x08]
-     mov rdi, 0xFFFFFFFFFFFFFFFF
-     call :cmps
-     mov r12, rax
-     lea rsi, [rsp+0x08]
-     mov rdi, 0x01
-     call :cmps
-     mov r13, rax
-     lea rdi, [rsp]
-     call :imm_cmps
-     mov r14, rax
-     lea rdi, [rsp]
-     call :imm_cmps
-     mov r15, rax
-     lea rdi, [rsp+0x08]
-     call :imm_cmps
-     mov [rsp+0x10], rax
-     lea rdi, [rsp+0x08]
-     call :imm_cmps
-     mov rdx, rbx
-     add rdx, rbp
-     add rdx, r12
-     add rdx, r13
-     add rdx, r14
-     add rdx, r15
-     mov rcx, [rsp+0x10]
-     add rdx, rcx
-     add rdx, rax
-     mov rax, rdx
-     add rsp, 0x18
-     pop r15
-     pop r14
-     pop r13
-     pop r12
-     pop rbp
-     pop rbx
-     ret
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    push r15
+    sub rsp, 0x18
+    mov.q [rsp], 1
+    mov.q [rsp + 0x8], -1
+    lea rsi, [rsp]
+    mov rdi, -1
+    call +0x147
+    mov rbx, rax
+    lea rsi, [rsp]
+    mov rdi, 1
+    call +0x134
+    mov rbp, rax
+    lea rsi, [rsp + 0x8]
+    mov rdi, -1
+    call +0x120
+    mov r12, rax
+    lea rsi, [rsp + 0x8]
+    mov rdi, 1
+    call +0x10c
+    mov r13, rax
+    lea rdi, [rsp]
+    call +0x60
+    mov r14, rax
+    lea rdi, [rsp]
+    call +0x54
+    mov r15, rax
+    lea rdi, [rsp + 0x8]
+    call +0x47
+    mov.q [rsp + 0x10], rax
+    lea rdi, [rsp + 0x8]
+    call +0x38
+    mov rdx, rbx
+    add rdx, rbp
+    add rdx, r12
+    add rdx, r13
+    add rdx, r14
+    add rdx, r15
+    mov.q rcx, [rsp + 0x10]
+    add rdx, rcx
+    add rdx, rax
+    mov rax, rdx
+    add rsp, 0x18
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
 imm_cmps:
-     cmp qword ptr [rdi], 0x00
-     jz :0
-     xor eax, eax
-     jmp :1
-
-000: mov rax, 0x01
-001: mov rcx, [rdi]
-     test rcx, rcx
-     jnz :2
-     jmp :3
-
-002: add rax, 0x02
-003: cmp qword ptr [rdi], 0x00
-     jle :4
-     jmp :5
-
-004: add rax, 0x04
-005: cmp qword ptr [rdi], 0x00
-     jnl :6
-     jmp :7
-
-006: add rax, 0x08
-007: cmp qword ptr [rdi], 0x00
-     jl :8
-     jmp :9
-
-008: add rax, 0x10
-009: cmp qword ptr [rdi], 0x00
-     jnle :10
-     jmp :11
-
-010: add rax, 0x20
-011: ret
+    cmp.q [rdi], 0
+    jz 0
+    xor eax, eax
+    jmp 1
+0:
+    mov rax, 1
+1:
+    mov.q rcx, [rdi]
+    test rcx, rcx
+    jne 2
+    jmp 3
+2:
+    add rax, 2
+3:
+    cmp.q [rdi], 0
+    jle 4
+    jmp 5
+4:
+    add rax, 4
+5:
+    cmp.q [rdi], 0
+    jnl 6
+    jmp 7
+6:
+    add rax, 8
+7:
+    cmp.q [rdi], 0
+    jnge 8
+    jmp 9
+8:
+    add rax, 0x10
+9:
+    cmp.q [rdi], 0
+    jnle 10
+    jmp 11
+10:
+    add rax, 0x20
+11:
+    ret
 cmps:
-     cmp rdi, [rsi]
-     jz :0
-     xor eax, eax
-     jmp :1
-
-000: mov rax, 0x01
-001: cmp rdi, [rsi]
-     jnz :2
-     jmp :3
-
-002: add rax, 0x02
-003: cmp rdi, [rsi]
-     jnl :4
-     jmp :5
-
-004: add rax, 0x04
-005: cmp rdi, [rsi]
-     jle :6
-     jmp :7
-
-006: add rax, 0x08
-007: cmp rdi, [rsi]
-     jnle :8
-     jmp :9
-
-008: add rax, 0x10
-009: cmp rdi, [rsi]
-     jl :10
-     jmp :11
-
-010: add rax, 0x20
-011: ret
+    cmp.q rdi, [rsi]
+    jz 0
+    xor eax, eax
+    jmp 1
+0:
+    mov rax, 1
+1:
+    cmp.q rdi, [rsi]
+    jne 2
+    jmp 3
+2:
+    add rax, 2
+3:
+    cmp.q rdi, [rsi]
+    jnl 4
+    jmp 5
+4:
+    add rax, 4
+5:
+    cmp.q rdi, [rsi]
+    jle 6
+    jmp 7
+6:
+    add rax, 8
+7:
+    cmp.q rdi, [rsi]
+    jnle 8
+    jmp 9
+8:
+    add rax, 0x10
+9:
+    cmp.q rdi, [rsi]
+    jnge 10
+    jmp 11
+10:
+    add rax, 0x20
+11:
+    ret
 =========== OPT LEVEL: all ===========
 main:
-     push rbx
-     push rbp
-     push r12
-     push r13
-     push r14
-     push r15
-     sub rsp, 0x18
-     mov qword ptr [rsp], 0x01
-     mov qword ptr [rsp+0x08], 0xFFFFFFFFFFFFFFFF
-     lea rsi, [rsp]
-     mov rdi, 0xFFFFFFFFFFFFFFFF
-     call :cmps
-     mov rbx, rax
-     lea rsi, [rsp]
-     mov rdi, 0x01
-     call :cmps
-     mov rbp, rax
-     lea rsi, [rsp+0x08]
-     mov rdi, 0xFFFFFFFFFFFFFFFF
-     call :cmps
-     mov r12, rax
-     lea rsi, [rsp+0x08]
-     mov rdi, 0x01
-     call :cmps
-     mov r13, rax
-     lea rdi, [rsp]
-     call :imm_cmps
-     mov r14, rax
-     lea rdi, [rsp]
-     call :imm_cmps
-     mov r15, rax
-     lea rdi, [rsp+0x08]
-     call :imm_cmps
-     mov [rsp+0x10], rax
-     lea rdi, [rsp+0x08]
-     call :imm_cmps
-     mov rdx, rbx
-     add rdx, rbp
-     add rdx, r12
-     add rdx, r13
-     add rdx, r14
-     add rdx, r15
-     mov rcx, [rsp+0x10]
-     add rdx, rcx
-     add rdx, rax
-     mov rax, rdx
-     add rsp, 0x18
-     pop r15
-     pop r14
-     pop r13
-     pop r12
-     pop rbp
-     pop rbx
-     ret
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    push r15
+    sub rsp, 0x18
+    mov.q [rsp], 1
+    mov.q [rsp + 0x8], -1
+    lea rsi, [rsp]
+    mov rdi, -1
+    call +0x147
+    mov rbx, rax
+    lea rsi, [rsp]
+    mov rdi, 1
+    call +0x134
+    mov rbp, rax
+    lea rsi, [rsp + 0x8]
+    mov rdi, -1
+    call +0x120
+    mov r12, rax
+    lea rsi, [rsp + 0x8]
+    mov rdi, 1
+    call +0x10c
+    mov r13, rax
+    lea rdi, [rsp]
+    call +0x60
+    mov r14, rax
+    lea rdi, [rsp]
+    call +0x54
+    mov r15, rax
+    lea rdi, [rsp + 0x8]
+    call +0x47
+    mov.q [rsp + 0x10], rax
+    lea rdi, [rsp + 0x8]
+    call +0x38
+    mov rdx, rbx
+    add rdx, rbp
+    add rdx, r12
+    add rdx, r13
+    add rdx, r14
+    add rdx, r15
+    mov.q rcx, [rsp + 0x10]
+    add rdx, rcx
+    add rdx, rax
+    mov rax, rdx
+    add rsp, 0x18
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
 imm_cmps:
-     cmp qword ptr [rdi], 0x00
-     jz :0
-     xor eax, eax
-     jmp :1
-
-000: mov rax, 0x01
-001: mov rcx, [rdi]
-     test rcx, rcx
-     jnz :2
-     jmp :3
-
-002: add rax, 0x02
-003: cmp qword ptr [rdi], 0x00
-     jle :4
-     jmp :5
-
-004: add rax, 0x04
-005: cmp qword ptr [rdi], 0x00
-     jnl :6
-     jmp :7
-
-006: add rax, 0x08
-007: cmp qword ptr [rdi], 0x00
-     jl :8
-     jmp :9
-
-008: add rax, 0x10
-009: cmp qword ptr [rdi], 0x00
-     jnle :10
-     jmp :11
-
-010: add rax, 0x20
-011: ret
+    cmp.q [rdi], 0
+    jz 0
+    xor eax, eax
+    jmp 1
+0:
+    mov rax, 1
+1:
+    mov.q rcx, [rdi]
+    test rcx, rcx
+    jne 2
+    jmp 3
+2:
+    add rax, 2
+3:
+    cmp.q [rdi], 0
+    jle 4
+    jmp 5
+4:
+    add rax, 4
+5:
+    cmp.q [rdi], 0
+    jnl 6
+    jmp 7
+6:
+    add rax, 8
+7:
+    cmp.q [rdi], 0
+    jnge 8
+    jmp 9
+8:
+    add rax, 0x10
+9:
+    cmp.q [rdi], 0
+    jnle 10
+    jmp 11
+10:
+    add rax, 0x20
+11:
+    ret
 cmps:
-     cmp rdi, [rsi]
-     jz :0
-     xor eax, eax
-     jmp :1
-
-000: mov rax, 0x01
-001: cmp rdi, [rsi]
-     jnz :2
-     jmp :3
-
-002: add rax, 0x02
-003: cmp rdi, [rsi]
-     jnl :4
-     jmp :5
-
-004: add rax, 0x04
-005: cmp rdi, [rsi]
-     jle :6
-     jmp :7
-
-006: add rax, 0x08
-007: cmp rdi, [rsi]
-     jnle :8
-     jmp :9
-
-008: add rax, 0x10
-009: cmp rdi, [rsi]
-     jl :10
-     jmp :11
-
-010: add rax, 0x20
-011: ret
+    cmp.q rdi, [rsi]
+    jz 0
+    xor eax, eax
+    jmp 1
+0:
+    mov rax, 1
+1:
+    cmp.q rdi, [rsi]
+    jne 2
+    jmp 3
+2:
+    add rax, 2
+3:
+    cmp.q rdi, [rsi]
+    jnl 4
+    jmp 5
+4:
+    add rax, 4
+5:
+    cmp.q rdi, [rsi]
+    jle 6
+    jmp 7
+6:
+    add rax, 8
+7:
+    cmp.q rdi, [rsi]
+    jnle 8
+    jmp 9
+8:
+    add rax, 0x10
+9:
+    cmp.q rdi, [rsi]
+    jnge 10
+    jmp 11
+10:
+    add rax, 0x20
+11:
+    ret
 =========== OPT LEVEL: aggresive ===========

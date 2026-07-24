@@ -93,7 +93,7 @@ load_dir :: proc(
 			name := imp.name.text
 			if name == "" {
 				name = path
-				strings.split_iterator(&name, ":")
+				_, _ = strings.split_iterator(&name, ":")
 				if name == "" do name = path
 				_, name = os.split_path(name)
 				name, _ = os.split_filename_all(name)

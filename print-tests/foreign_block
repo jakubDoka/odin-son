@@ -2,54 +2,54 @@
 malloc:
 free:
 main:
-     push rbx
-     mov rdi, 0x08
-     call :$malloc
-     mov qword ptr [rax], 0x00
-     mov rbx, [rax]
-     mov rdi, rax
-     call :$free
-     mov rax, rbx
-     pop rbx
-     ret
+    push rbx
+    mov rdi, 8
+    call.q [rip - 0x2f]
+    mov.q [rax], 0
+    mov.q rbx, [rax]
+    mov rdi, rax
+    call.q [rip - 0x3a]
+    mov rax, rbx
+    pop rbx
+    ret
 =========== OPT LEVEL: mininal ===========
 malloc:
 free:
 main:
-     push rbx
-     mov rdi, 0x08
-     call :$malloc
-     mov qword ptr [rax], 0x00
-     mov rbx, [rax]
-     mov rdi, rax
-     call :$free
-     mov rax, rbx
-     pop rbx
-     ret
+    push rbx
+    mov rdi, 8
+    call.q [rip - 0x2f]
+    mov.q [rax], 0
+    mov.q rbx, [rax]
+    mov rdi, rax
+    call.q [rip - 0x3a]
+    mov rax, rbx
+    pop rbx
+    ret
 =========== OPT LEVEL: moderate ===========
 malloc:
 free:
 main:
-     sub rsp, 0x08
-     mov rdi, 0x08
-     call :$malloc
-     mov qword ptr [rax], 0x00
-     mov rdi, rax
-     call :$free
-     xor eax, eax
-     add rsp, 0x08
-     ret
+    sub rsp, 8
+    mov rdi, 8
+    call.q [rip - 0x31]
+    mov.q [rax], 0
+    mov rdi, rax
+    call.q [rip - 0x39]
+    xor eax, eax
+    add rsp, 8
+    ret
 =========== OPT LEVEL: all ===========
 malloc:
 free:
 main:
-     sub rsp, 0x08
-     mov rdi, 0x08
-     call :$malloc
-     mov qword ptr [rax], 0x00
-     mov rdi, rax
-     call :$free
-     xor eax, eax
-     add rsp, 0x08
-     ret
+    sub rsp, 8
+    mov rdi, 8
+    call.q [rip - 0x31]
+    mov.q [rax], 0
+    mov rdi, rax
+    call.q [rip - 0x39]
+    xor eax, eax
+    add rsp, 8
+    ret
 =========== OPT LEVEL: aggresive ===========

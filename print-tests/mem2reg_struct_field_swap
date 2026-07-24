@@ -1,91 +1,91 @@
 =========== OPT LEVEL: none ===========
 opaque:
-     mov rax, rdi
-     ret
+    mov rax, rdi
+    ret
 main:
-     sub rsp, 0x18
-     xor esi, esi
-     lea rdi, [rsp]
-     mov rdx, 0x10
-     call :$set
-     mov rdi, 0x03
-     call :opaque
-     mov [rsp], rax
-     mov rdi, 0x08
-     call :opaque
-     mov [rsp+0x08], rax
-     mov rax, [rsp+0x08]
-     mov rcx, [rsp]
-     mov [rsp], rax
-     mov [rsp+0x08], rcx
-     mov rax, [rsp]
-     imul rax, rax, 0x64
-     add rax, [rsp+0x08]
-     add rsp, 0x18
-     ret
+    sub rsp, 0x18
+    xor esi, esi
+    lea rdi, [rsp]
+    mov rdx, 0x10
+    call.q [rip - 0x28]
+    mov rdi, 3
+    call -0x2c
+    mov.q [rsp], rax
+    mov rdi, 8
+    call -0x3c
+    mov.q [rsp + 0x8], rax
+    mov.q rax, [rsp + 0x8]
+    mov.q rcx, [rsp]
+    mov.q [rsp], rax
+    mov.q [rsp + 0x8], rcx
+    mov.q rax, [rsp]
+    imul rax, rax, 0x64
+    add.q rax, [rsp + 0x8]
+    add rsp, 0x18
+    ret
 =========== OPT LEVEL: mininal ===========
 opaque:
-     mov rax, rdi
-     ret
+    mov rax, rdi
+    ret
 main:
-     sub rsp, 0x18
-     xor esi, esi
-     lea rdi, [rsp]
-     mov rdx, 0x10
-     call :$set
-     mov rdi, 0x03
-     call :opaque
-     mov [rsp], rax
-     mov rdi, 0x08
-     call :opaque
-     mov [rsp+0x08], rax
-     mov rax, [rsp+0x08]
-     mov rcx, [rsp]
-     mov [rsp], rax
-     mov [rsp+0x08], rcx
-     mov rax, [rsp]
-     imul rax, rax, 0x64
-     add rax, [rsp+0x08]
-     add rsp, 0x18
-     ret
+    sub rsp, 0x18
+    xor esi, esi
+    lea rdi, [rsp]
+    mov rdx, 0x10
+    call.q [rip - 0x28]
+    mov rdi, 3
+    call -0x2c
+    mov.q [rsp], rax
+    mov rdi, 8
+    call -0x3c
+    mov.q [rsp + 0x8], rax
+    mov.q rax, [rsp + 0x8]
+    mov.q rcx, [rsp]
+    mov.q [rsp], rax
+    mov.q [rsp + 0x8], rcx
+    mov.q rax, [rsp]
+    imul rax, rax, 0x64
+    add.q rax, [rsp + 0x8]
+    add rsp, 0x18
+    ret
 =========== OPT LEVEL: moderate ===========
 opaque:
-     mov rax, rdi
-     ret
+    mov rax, rdi
+    ret
 main:
-     sub rsp, 0x18
-     mov qword ptr [rsp], 0x00
-     mov qword ptr [rsp+0x08], 0x00
-     mov rdi, 0x03
-     call :opaque
-     mov [rsp], rax
-     mov rdi, 0x08
-     call :opaque
-     mov [rsp+0x08], rax
-     mov rcx, [rsp]
-     mov [rsp], rax
-     mov [rsp+0x08], rcx
-     imul rax, rax, 0x64
-     add rax, rcx
-     add rsp, 0x18
-     ret
+    sub rsp, 0x18
+    mov.q [rsp], 0
+    mov.q [rsp + 0x8], 0
+    mov rdi, 3
+    call -0x29
+    mov.q [rsp], rax
+    mov rdi, 8
+    call -0x39
+    mov.q [rsp + 0x8], rax
+    mov.q rcx, [rsp]
+    mov.q [rsp], rax
+    mov.q [rsp + 0x8], rcx
+    imul rax, rax, 0x64
+    add rax, rcx
+    add rsp, 0x18
+    ret
 =========== OPT LEVEL: all ===========
 opaque:
-     mov rax, rdi
-     ret
+    mov rax, rdi
+    ret
 main:
-     push rbx
-     mov rdi, 0x03
-     call :opaque
-     mov rbx, rax
-     mov rdi, 0x08
-     call :opaque
-     imul rax, rax, 0x64
-     add rax, rbx
-     pop rbx
-     ret
+    push rbx
+    mov rdi, 3
+    call -0x16
+    mov rbx, rax
+    mov rdi, 8
+    call -0x25
+    imul rax, rax, 0x64
+    add rax, rbx
+    pop rbx
+    ret
 =========== OPT LEVEL: aggresive ===========
 opaque:
 main:
-     mov rax, 0x323
-     ret
+    mov rax, 0x323
+    ret

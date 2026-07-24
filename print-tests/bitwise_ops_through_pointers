@@ -1,112 +1,112 @@
 =========== OPT LEVEL: none ===========
 main:
-     sub rsp, 0x18
-     mov qword ptr [rsp], 0x0C
-     and qword ptr [rsp], 0x0A
-     mov qword ptr [rsp+0x08], 0x0A
-     mov qword ptr [rsp+0x10], 0x06
-     lea rdi, [rsp+0x08]
-     mov rsi, 0x05
-     call :or_into
-     lea rdi, [rsp+0x10]
-     mov rsi, 0x03
-     call :xor_into
-     mov rax, [rsp]
-     add rax, [rsp+0x08]
-     add rax, [rsp+0x10]
-     add rsp, 0x18
-     ret
+    sub rsp, 0x18
+    mov.q [rsp], 0xc
+    and.q [rsp], 0xa
+    mov.q [rsp + 0x8], 0xa
+    mov.q [rsp + 0x10], 6
+    lea rdi, [rsp + 0x8]
+    mov rsi, 5
+    call +0x29
+    lea rdi, [rsp + 0x10]
+    mov rsi, 3
+    call +0x20
+    mov.q rax, [rsp]
+    add.q rax, [rsp + 0x8]
+    add.q rax, [rsp + 0x10]
+    add rsp, 0x18
+    ret
 or_into:
-     or [rdi], rsi
-     mov rax, [rdi]
-     ret
+    or.q [rdi], rsi
+    mov.q rax, [rdi]
+    ret
 xor_into:
-     xor [rdi], rsi
-     mov rax, [rdi]
-     ret
+    xor.q [rdi], rsi
+    mov.q rax, [rdi]
+    ret
 =========== OPT LEVEL: mininal ===========
 main:
-     sub rsp, 0x18
-     mov qword ptr [rsp], 0x0C
-     and qword ptr [rsp], 0x0A
-     mov qword ptr [rsp+0x08], 0x0A
-     mov qword ptr [rsp+0x10], 0x06
-     lea rdi, [rsp+0x08]
-     mov rsi, 0x05
-     call :or_into
-     lea rdi, [rsp+0x10]
-     mov rsi, 0x03
-     call :xor_into
-     mov rax, [rsp]
-     add rax, [rsp+0x08]
-     add rax, [rsp+0x10]
-     add rsp, 0x18
-     ret
+    sub rsp, 0x18
+    mov.q [rsp], 0xc
+    and.q [rsp], 0xa
+    mov.q [rsp + 0x8], 0xa
+    mov.q [rsp + 0x10], 6
+    lea rdi, [rsp + 0x8]
+    mov rsi, 5
+    call +0x29
+    lea rdi, [rsp + 0x10]
+    mov rsi, 3
+    call +0x20
+    mov.q rax, [rsp]
+    add.q rax, [rsp + 0x8]
+    add.q rax, [rsp + 0x10]
+    add rsp, 0x18
+    ret
 or_into:
-     or [rdi], rsi
-     mov rax, [rdi]
-     ret
+    or.q [rdi], rsi
+    mov.q rax, [rdi]
+    ret
 xor_into:
-     xor [rdi], rsi
-     mov rax, [rdi]
-     ret
+    xor.q [rdi], rsi
+    mov.q rax, [rdi]
+    ret
 =========== OPT LEVEL: moderate ===========
 main:
-     sub rsp, 0x18
-     mov qword ptr [rsp], 0x0C
-     mov qword ptr [rsp], 0x08
-     mov qword ptr [rsp+0x08], 0x0A
-     mov qword ptr [rsp+0x10], 0x06
-     lea rdi, [rsp+0x08]
-     mov rsi, 0x05
-     call :or_into
-     lea rdi, [rsp+0x10]
-     mov rsi, 0x03
-     call :xor_into
-     mov rax, [rsp]
-     add rax, [rsp+0x08]
-     add rax, [rsp+0x10]
-     add rsp, 0x18
-     ret
+    sub rsp, 0x18
+    mov.q [rsp], 0xc
+    mov.q [rsp], 8
+    mov.q [rsp + 0x8], 0xa
+    mov.q [rsp + 0x10], 6
+    lea rdi, [rsp + 0x8]
+    mov rsi, 5
+    call +0x29
+    lea rdi, [rsp + 0x10]
+    mov rsi, 3
+    call +0x28
+    mov.q rax, [rsp]
+    add.q rax, [rsp + 0x8]
+    add.q rax, [rsp + 0x10]
+    add rsp, 0x18
+    ret
 or_into:
-     mov rax, [rdi]
-     or rax, rsi
-     mov [rdi], rax
-     ret
+    mov.q rax, [rdi]
+    or rax, rsi
+    mov.q [rdi], rax
+    ret
 xor_into:
-     mov rax, [rdi]
-     xor rax, rsi
-     mov [rdi], rax
-     ret
+    mov.q rax, [rdi]
+    xor rax, rsi
+    mov.q [rdi], rax
+    ret
 =========== OPT LEVEL: all ===========
 main:
-     sub rsp, 0x18
-     mov qword ptr [rsp+0x08], 0x0A
-     mov qword ptr [rsp], 0x06
-     lea rdi, [rsp+0x08]
-     mov rsi, 0x05
-     call :or_into
-     lea rdi, [rsp]
-     mov rsi, 0x03
-     call :xor_into
-     mov rax, [rsp+0x08]
-     mov rcx, [rsp]
-     lea rax, [rax+rcx*1+0x08]
-     add rsp, 0x18
-     ret
+    sub rsp, 0x18
+    mov.q [rsp + 0x8], 0xa
+    mov.q [rsp], 6
+    lea rdi, [rsp + 0x8]
+    mov rsi, 5
+    call +0x2a
+    lea rdi, [rsp]
+    mov rsi, 3
+    call +0x2a
+    mov.q rax, [rsp + 0x8]
+    mov.q rcx, [rsp]
+    lea rax, [rax + rcx + 0x8]
+    add rsp, 0x18
+    ret
 or_into:
-     mov rax, [rdi]
-     or rax, rsi
-     mov [rdi], rax
-     ret
+    mov.q rax, [rdi]
+    or rax, rsi
+    mov.q [rdi], rax
+    ret
 xor_into:
-     mov rax, [rdi]
-     xor rax, rsi
-     mov [rdi], rax
-     ret
+    mov.q rax, [rdi]
+    xor rax, rsi
+    mov.q [rdi], rax
+    ret
 =========== OPT LEVEL: aggresive ===========
 main:
-     mov rax, 0x1C
-     ret
+    mov rax, 0x1c
+    ret
 or_into:
 xor_into:

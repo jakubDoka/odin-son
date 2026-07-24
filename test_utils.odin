@@ -1,12 +1,12 @@
 #+build !wasm32
 package main
 
-import zydis "./zydis"
 import "backend"
 import "backend/x64"
 import "base:intrinsics"
 import "base:runtime"
 import "core:dynlib"
+import "core:flags"
 import "core:fmt"
 import "core:log"
 import "core:mem"
@@ -15,6 +15,7 @@ import "core:odin/ast"
 import "core:odin/parser"
 import "core:os"
 import "core:reflect"
+import "core:rexcode/isa/x86"
 import "core:strings"
 import "core:sync"
 import "core:testing"
@@ -442,146 +443,38 @@ print_diff :: proc(out: ^strings.Builder, a, b: string) {
 }
 
 disasm :: proc(sb: ^strings.Builder, ctx: Gen_Ctx) {
-	runtime_address: zydis.U64 = 0x0040_0000
-
-	jumps: map[int]int
-
-	is_jump :: proc(mne: zydis.Mnemonic) -> bool {
-		return(
-			mne == .JZ ||
-			mne == .JNZ ||
-			mne == .JL ||
-			mne == .JLE ||
-			mne == .JB ||
-			mne == .JBE ||
-			mne == .JNB ||
-			mne == .JMP ||
-			mne == .JNLE ||
-			mne == .JNL ||
-			mne == .JNBE \
-		)
-	}
-
 	for prc in ctx.procs[1:] {
-		clear(&jumps)
 		fmt.sbprintfln(sb, "%v:", prc.name)
 
 		instructions := prc.out.code
 
-		offset: int
-		for offset < len(instructions) {
-			instr: zydis.DisassembledInstruction
-			status := zydis.DisassembleIntel(
-				.LONG_64,
-				runtime_address + zydis.U64(offset),
-				&instructions[offset],
-				zydis.USize(uint(len(instructions)) - uint(offset)),
-				&instr,
-			)
-			if !zydis.SUCCESS(status) {
-				break
-			}
+		decoded_instrs: [dynamic]x86.Instruction
+		decoded_instr_info: [dynamic]x86.Instruction_Info
+		decoded_label_infos: [dynamic]x86.Label_Definition
+		errors: [dynamic]x86.Error
+		x86.decode(
+			instructions,
+			nil,
+			&decoded_instrs,
+			&decoded_instr_info,
+			&decoded_label_infos,
+			&errors,
+		)
 
-			length := int(instr.info.length)
-
-			if is_jump(instr.info.mnemonic) {
-				off := offset + length + int(instr.operands[0].imm.value.s)
-				if off not_in jumps {
-					jumps[off] = len(jumps)
-				}
-			}
-
-			offset += length
-
-			if length == 0 {
-				break
-			}
+		for err in errors {
+			fmt.sbprintln(sb, err)
 		}
 
-		offset = 0
-		for offset < len(instructions) {
-			instr: zydis.DisassembledInstruction
-			status := zydis.DisassembleIntel(
-				.LONG_64,
-				runtime_address + zydis.U64(offset),
-				&instructions[offset],
-				zydis.USize(uint(len(instructions)) - uint(offset)),
-				&instr,
-			)
-			if !zydis.SUCCESS(status) {
-				fmt.sbprintfln(
-					sb,
-					"0x%08x  <decode failed: %#x>",
-					runtime_address + zydis.U64(offset),
-					status,
-				)
-				break
-			}
+		opts := x86.DEFAULT_PRINT_OPTIONS
+		opts.label_prefix = ""
 
-			if off, ok := jumps[offset]; ok {
-				fmt.sbprintf(sb, "%03i: ", off)
-			} else {
-				fmt.sbprint(sb, "     ")
-			}
-
-			length := int(instr.info.length)
-
-			text := string(cstring(&instr.text[0]))
-			if is_jump(instr.info.mnemonic) {
-				off := offset + length + int(instr.operands[0].imm.value.s)
-				text = fmt.tprintf(
-					"%v :%v",
-					zydis.MnemonicGetString(instr.info.mnemonic),
-					jumps[off],
-				)
-			} else if instr.info.mnemonic == .CALL {
-				for reloc in prc.out.relocs {
-					if int(reloc.offset) == offset + length {
-						switch reloc.kind {
-						case .Text:
-							text = fmt.tprintf(
-								"%v :%v",
-								zydis.MnemonicGetString(instr.info.mnemonic),
-								ctx.procs[reloc.id].name,
-							)
-						case .Got:
-							names := [2]string{"copy", "set"}
-							name: string
-
-							fuel := reloc.id
-							for p in ctx.procs[1:] {
-								if p.lit.body == nil {
-									fuel -= 1
-									if fuel == 0 {
-										name = p.name
-										break
-									}
-								}
-							}
-
-							if fuel > 0 {
-								name = names[fuel - 1]
-							}
-
-							text = fmt.tprintf(
-								"%v :$%v",
-								zydis.MnemonicGetString(instr.info.mnemonic),
-								name,
-							)
-						case .Global:
-						}
-					}
-				}
-			}
-
-			fmt.sbprintfln(sb, "%s", text)
-
-			if instr.info.mnemonic == .JMP {
-				append(&sb.buf, "\n")
-			}
-
-			offset += length
-		}
+		x86.sbprint(
+			sb,
+			decoded_instrs[:],
+			decoded_instr_info[:],
+			decoded_label_infos[:],
+			options = &opts,
+		)
 	}
 
 }

@@ -1,36 +1,36 @@
 =========== OPT LEVEL: none ===========
 main:
-     sub rsp, 0x08
-     xor esi, esi
-     lea rdi, [rsp]
-     mov rdx, 0x04
-     call :$set
-     movss xmm0, dword ptr [rsp]
-     addss xmm0, [0x000000000040003A]
-     cvttss2si rax, xmm0
-     add rsp, 0x08
-     ret
+    sub rsp, 8
+    xor esi, esi
+    lea rdi, [rsp]
+    mov rdx, 4
+    call.q [rip - 0x20]
+    movss.d xmm0, [rsp]
+    addss.d xmm0, [rip + 0x13]
+    cvttss2si rax, xmm0
+    add rsp, 8
+    ret
 =========== OPT LEVEL: mininal ===========
 main:
-     sub rsp, 0x08
-     xor esi, esi
-     lea rdi, [rsp]
-     mov rdx, 0x04
-     call :$set
-     movss xmm0, dword ptr [rsp]
-     addss xmm0, [0x000000000040003A]
-     cvttss2si rax, xmm0
-     add rsp, 0x08
-     ret
+    sub rsp, 8
+    xor esi, esi
+    lea rdi, [rsp]
+    mov rdx, 4
+    call.q [rip - 0x20]
+    movss.d xmm0, [rsp]
+    addss.d xmm0, [rip + 0x13]
+    cvttss2si rax, xmm0
+    add rsp, 8
+    ret
 =========== OPT LEVEL: moderate ===========
 main:
-     mov dword ptr [rsp-0x08], 0x00
-     movss xmm0, dword ptr [rsp-0x08]
-     addss xmm0, [0x0000000000400022]
-     cvttss2si rax, xmm0
-     ret
+    mov.d [rsp - 0x8], 0
+    movss.d xmm0, [rsp - 0x8]
+    addss.d xmm0, [rip + 0x9]
+    cvttss2si rax, xmm0
+    ret
 =========== OPT LEVEL: all ===========
 main:
-     mov rax, 0x01
-     ret
+    mov rax, 1
+    ret
 =========== OPT LEVEL: aggresive ===========

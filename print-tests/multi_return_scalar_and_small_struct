@@ -1,142 +1,142 @@
 =========== OPT LEVEL: none ===========
 mix:
-     push rbx
-     sub rsp, 0x10
-     mov rbx, rdi
-     imul rax, rbx, 0x02
-     mov [rsi], rax
-     lea rdi, [rsp]
-     xor esi, esi
-     mov rdx, 0x08
-     call :$set
-     mov rax, rbx
-     mov [rsp], eax
-     add rbx, 0x01
-     mov [rsp+0x04], ebx
-     mov rax, [rsp]
-     add rsp, 0x10
-     pop rbx
-     ret
+    push rbx
+    sub rsp, 0x10
+    mov rbx, rdi
+    imul rax, rbx, 2
+    mov.q [rsi], rax
+    lea rdi, [rsp]
+    xor esi, esi
+    mov rdx, 8
+    call.q [rip - 0x2f]
+    mov rax, rbx
+    mov.d [rsp], eax
+    add rbx, 1
+    mov.d [rsp + 0x4], ebx
+    mov.q rax, [rsp]
+    add rsp, 0x10
+    pop rbx
+    ret
 main:
-     sub rsp, 0x18
-     mov rdi, 0x07
-     lea rsi, [rsp]
-     call :mix
-     shr rax, 0x00
-     mov [rsp+0x08], rax
-     mov rax, [rsp]
-     imul rax, rax, 0x64
-     movsxd rcx, dword ptr [rsp+0x08]
-     movsxd rcx, ecx
-     imul rcx, rcx, 0x0A
-     add rax, rcx
-     movsxd rcx, dword ptr [rsp+0x0C]
-     movsxd rcx, ecx
-     add rax, rcx
-     add rsp, 0x18
-     ret
+    sub rsp, 0x18
+    mov rdi, 7
+    lea rsi, [rsp]
+    call -0x5c
+    shr rax, 0
+    mov.q [rsp + 0x8], rax
+    mov.q rax, [rsp]
+    imul rax, rax, 0x64
+    movsxd.d rcx, [rsp + 0x8]
+    movsxd rcx, ecx
+    imul rcx, rcx, 0xa
+    add rax, rcx
+    movsxd.d rcx, [rsp + 0xc]
+    movsxd rcx, ecx
+    add rax, rcx
+    add rsp, 0x18
+    ret
 =========== OPT LEVEL: mininal ===========
 mix:
-     push rbx
-     sub rsp, 0x10
-     mov rbx, rdi
-     imul rax, rbx, 0x02
-     mov [rsi], rax
-     lea rdi, [rsp]
-     xor esi, esi
-     mov rdx, 0x08
-     call :$set
-     mov rax, rbx
-     mov [rsp], eax
-     add rbx, 0x01
-     mov [rsp+0x04], ebx
-     mov rax, [rsp]
-     add rsp, 0x10
-     pop rbx
-     ret
+    push rbx
+    sub rsp, 0x10
+    mov rbx, rdi
+    imul rax, rbx, 2
+    mov.q [rsi], rax
+    lea rdi, [rsp]
+    xor esi, esi
+    mov rdx, 8
+    call.q [rip - 0x2f]
+    mov rax, rbx
+    mov.d [rsp], eax
+    add rbx, 1
+    mov.d [rsp + 0x4], ebx
+    mov.q rax, [rsp]
+    add rsp, 0x10
+    pop rbx
+    ret
 main:
-     sub rsp, 0x18
-     mov rdi, 0x07
-     lea rsi, [rsp]
-     call :mix
-     shr rax, 0x00
-     mov [rsp+0x08], rax
-     mov rax, [rsp]
-     imul rax, rax, 0x64
-     movsxd rcx, dword ptr [rsp+0x08]
-     movsxd rcx, ecx
-     imul rcx, rcx, 0x0A
-     add rax, rcx
-     movsxd rcx, dword ptr [rsp+0x0C]
-     movsxd rcx, ecx
-     add rax, rcx
-     add rsp, 0x18
-     ret
+    sub rsp, 0x18
+    mov rdi, 7
+    lea rsi, [rsp]
+    call -0x5c
+    shr rax, 0
+    mov.q [rsp + 0x8], rax
+    mov.q rax, [rsp]
+    imul rax, rax, 0x64
+    movsxd.d rcx, [rsp + 0x8]
+    movsxd rcx, ecx
+    imul rcx, rcx, 0xa
+    add rax, rcx
+    movsxd.d rcx, [rsp + 0xc]
+    movsxd rcx, ecx
+    add rax, rcx
+    add rsp, 0x18
+    ret
 =========== OPT LEVEL: moderate ===========
 mix:
-     imul rax, rdi, 0x02
-     mov [rsi], rax
-     mov rax, rdi
-     mov [rsp-0x08], eax
-     mov rax, rdi
-     add rax, 0x01
-     mov [rsp-0x04], eax
-     mov rax, [rsp-0x08]
-     ret
+    imul rax, rdi, 2
+    mov.q [rsi], rax
+    mov rax, rdi
+    mov.d [rsp - 0x8], eax
+    mov rax, rdi
+    add rax, 1
+    mov.d [rsp - 0x4], eax
+    mov.q rax, [rsp - 0x8]
+    ret
 main:
-     sub rsp, 0x18
-     mov rdi, 0x07
-     lea rsi, [rsp]
-     call :mix
-     mov [rsp+0x08], rax
-     mov rax, [rsp]
-     imul rax, rax, 0x64
-     movsxd rcx, dword ptr [rsp+0x08]
-     movsxd rcx, ecx
-     imul rcx, rcx, 0x0A
-     add rax, rcx
-     movsxd rcx, dword ptr [rsp+0x0C]
-     movsxd rcx, ecx
-     add rax, rcx
-     add rsp, 0x18
-     ret
+    sub rsp, 0x18
+    mov rdi, 7
+    lea rsi, [rsp]
+    call -0x3c
+    mov.q [rsp + 0x8], rax
+    mov.q rax, [rsp]
+    imul rax, rax, 0x64
+    movsxd.d rcx, [rsp + 0x8]
+    movsxd rcx, ecx
+    imul rcx, rcx, 0xa
+    add rax, rcx
+    movsxd.d rcx, [rsp + 0xc]
+    movsxd rcx, ecx
+    add rax, rcx
+    add rsp, 0x18
+    ret
 =========== OPT LEVEL: all ===========
 mix:
-     imul rax, rdi, 0x02
-     mov [rsi], rax
-     mov rax, rdi
-     mov [rsp-0x08], eax
-     mov rax, rdi
-     add rax, 0x01
-     mov [rsp-0x04], eax
-     mov rax, [rsp-0x08]
-     ret
+    imul rax, rdi, 2
+    mov.q [rsi], rax
+    mov rax, rdi
+    mov.d [rsp - 0x8], eax
+    mov rax, rdi
+    add rax, 1
+    mov.d [rsp - 0x4], eax
+    mov.q rax, [rsp - 0x8]
+    ret
 main:
-     sub rsp, 0x18
-     mov rdi, 0x07
-     lea rsi, [rsp]
-     call :mix
-     mov [rsp+0x08], rax
-     mov rax, [rsp]
-     imul rax, rax, 0x64
-     movsxd rcx, dword ptr [rsp+0x08]
-     movsxd rcx, ecx
-     imul rcx, rcx, 0x0A
-     add rax, rcx
-     movsxd rcx, dword ptr [rsp+0x0C]
-     movsxd rcx, ecx
-     add rax, rcx
-     add rsp, 0x18
-     ret
+    sub rsp, 0x18
+    mov rdi, 7
+    lea rsi, [rsp]
+    call -0x3c
+    mov.q [rsp + 0x8], rax
+    mov.q rax, [rsp]
+    imul rax, rax, 0x64
+    movsxd.d rcx, [rsp + 0x8]
+    movsxd rcx, ecx
+    imul rcx, rcx, 0xa
+    add rax, rcx
+    movsxd.d rcx, [rsp + 0xc]
+    movsxd rcx, ecx
+    add rax, rcx
+    add rsp, 0x18
+    ret
 =========== OPT LEVEL: aggresive ===========
 mix:
 main:
-     mov rax, 0x800000007
-     mov [rsp-0x08], rax
-     movsxd rax, dword ptr [rsp-0x08]
-     movsxd rax, eax
-     imul rax, rax, 0x0A
-     movsxd rcx, dword ptr [rsp-0x04]
-     movsxd rcx, ecx
-     lea rax, [rax+rcx*1+0x578]
-     ret
+    movabs rax, 0x800000007
+    mov.q [rsp - 0x8], rax
+    movsxd.d rax, [rsp - 0x8]
+    movsxd rax, eax
+    imul rax, rax, 0xa
+    movsxd.d rcx, [rsp - 0x4]
+    movsxd rcx, ecx
+    lea rax, [rax + rcx + 0x578]
+    ret

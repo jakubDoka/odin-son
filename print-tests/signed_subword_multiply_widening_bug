@@ -1,37 +1,37 @@
 =========== OPT LEVEL: none ===========
 main:
-     sub rsp, 0x08
-     xor esi, esi
-     lea rdi, [rsp]
-     mov rdx, 0x02
-     call :$set
-     xor eax, eax
-     sub ax, 0x3E8
-     mov [rsp], ax
-     movsx rax, word ptr [rsp]
-     imul ax, ax, 0x02
-     movsx rax, ax
-     add rsp, 0x08
-     ret
+    sub rsp, 8
+    xor esi, esi
+    lea rdi, [rsp]
+    mov rdx, 2
+    call.q [rip - 0x20]
+    xor eax, eax
+    sub ax, 0x3e8
+    mov.w [rsp], ax
+    movsx.w rax, [rsp]
+    imul ax, ax, 2
+    movsx rax, ax
+    add rsp, 8
+    ret
 =========== OPT LEVEL: mininal ===========
 main:
-     sub rsp, 0x08
-     xor esi, esi
-     lea rdi, [rsp]
-     mov rdx, 0x02
-     call :$set
-     mov word ptr [rsp], 0xFC18
-     movsx rax, word ptr [rsp]
-     imul ax, ax, 0x02
-     movsx rax, ax
-     add rsp, 0x08
-     ret
+    sub rsp, 8
+    xor esi, esi
+    lea rdi, [rsp]
+    mov rdx, 2
+    call.q [rip - 0x20]
+    mov.w [rsp], -0x3e8
+    movsx.w rax, [rsp]
+    imul ax, ax, 2
+    movsx rax, ax
+    add rsp, 8
+    ret
 =========== OPT LEVEL: moderate ===========
 main:
-     mov rax, 0xFFFFFFFFFFFFF830
-     ret
+    mov rax, -0x7d0
+    ret
 =========== OPT LEVEL: all ===========
 main:
-     mov rax, 0xFFFFFFFFFFFFF830
-     ret
+    mov rax, -0x7d0
+    ret
 =========== OPT LEVEL: aggresive ===========

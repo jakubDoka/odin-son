@@ -1,104 +1,104 @@
 =========== OPT LEVEL: none ===========
 main:
-     sub rsp, 0x18
-     xor esi, esi
-     lea rdi, [rsp]
-     mov rdx, 0x10
-     call :$set
-     mov qword ptr [rsp], 0x01
-     mov qword ptr [rsp+0x08], 0x02
-     mov rdi, [rsp]
-     mov rsi, [rsp+0x08]
-     call :mutate
-     mov rax, [rsp]
-     add rax, [rsp+0x08]
-     add rsp, 0x18
-     ret
+    sub rsp, 0x18
+    xor esi, esi
+    lea rdi, [rsp]
+    mov rdx, 0x10
+    call.q [rip - 0x20]
+    mov.q [rsp], 1
+    mov.q [rsp + 0x8], 2
+    mov.q rdi, [rsp]
+    mov.q rsi, [rsp + 0x8]
+    call +0x11
+    mov.q rax, [rsp]
+    add.q rax, [rsp + 0x8]
+    add rsp, 0x18
+    ret
 mutate:
-     sub rsp, 0x28
-     shr rdi, 0x00
-     mov [rsp], rdi
-     shr rsi, 0x00
-     mov [rsp+0x08], rsi
-     xor esi, esi
-     mov rdx, 0x10
-     lea rdi, [rsp+0x10]
-     call :$set
-     lea rsi, [rsp]
-     mov rdx, 0x10
-     lea rdi, [rsp+0x10]
-     call :$copy
-     mov qword ptr [rsp+0x10], 0x64
-     mov qword ptr [rsp+0x18], 0xC8
-     mov rax, [rsp+0x10]
-     add rax, [rsp+0x18]
-     add rsp, 0x28
-     ret
+    sub rsp, 0x28
+    shr rdi, 0
+    mov.q [rsp], rdi
+    shr rsi, 0
+    mov.q [rsp + 0x8], rsi
+    xor esi, esi
+    mov rdx, 0x10
+    lea rdi, [rsp + 0x10]
+    call.q [rip - 0x7a]
+    lea rsi, [rsp]
+    mov rdx, 0x10
+    lea rdi, [rsp + 0x10]
+    call.q [rip - 0x98]
+    mov.q [rsp + 0x10], 0x64
+    mov.q [rsp + 0x18], 0xc8
+    mov.q rax, [rsp + 0x10]
+    add.q rax, [rsp + 0x18]
+    add rsp, 0x28
+    ret
 =========== OPT LEVEL: mininal ===========
 main:
-     sub rsp, 0x18
-     xor esi, esi
-     lea rdi, [rsp]
-     mov rdx, 0x10
-     call :$set
-     mov qword ptr [rsp], 0x01
-     mov qword ptr [rsp+0x08], 0x02
-     mov rdi, [rsp]
-     mov rsi, [rsp+0x08]
-     call :mutate
-     mov rax, [rsp]
-     add rax, [rsp+0x08]
-     add rsp, 0x18
-     ret
+    sub rsp, 0x18
+    xor esi, esi
+    lea rdi, [rsp]
+    mov rdx, 0x10
+    call.q [rip - 0x20]
+    mov.q [rsp], 1
+    mov.q [rsp + 0x8], 2
+    mov.q rdi, [rsp]
+    mov.q rsi, [rsp + 0x8]
+    call +0x11
+    mov.q rax, [rsp]
+    add.q rax, [rsp + 0x8]
+    add rsp, 0x18
+    ret
 mutate:
-     sub rsp, 0x28
-     shr rdi, 0x00
-     mov [rsp], rdi
-     shr rsi, 0x00
-     mov [rsp+0x08], rsi
-     xor esi, esi
-     mov rdx, 0x10
-     lea rdi, [rsp+0x10]
-     call :$set
-     lea rsi, [rsp]
-     mov rdx, 0x10
-     lea rdi, [rsp+0x10]
-     call :$copy
-     mov qword ptr [rsp+0x10], 0x64
-     mov qword ptr [rsp+0x18], 0xC8
-     mov rax, [rsp+0x10]
-     add rax, [rsp+0x18]
-     add rsp, 0x28
-     ret
+    sub rsp, 0x28
+    shr rdi, 0
+    mov.q [rsp], rdi
+    shr rsi, 0
+    mov.q [rsp + 0x8], rsi
+    xor esi, esi
+    mov rdx, 0x10
+    lea rdi, [rsp + 0x10]
+    call.q [rip - 0x7a]
+    lea rsi, [rsp]
+    mov rdx, 0x10
+    lea rdi, [rsp + 0x10]
+    call.q [rip - 0x98]
+    mov.q [rsp + 0x10], 0x64
+    mov.q [rsp + 0x18], 0xc8
+    mov.q rax, [rsp + 0x10]
+    add.q rax, [rsp + 0x18]
+    add rsp, 0x28
+    ret
 =========== OPT LEVEL: moderate ===========
 main:
-     sub rsp, 0x18
-     mov qword ptr [rsp], 0x01
-     mov qword ptr [rsp+0x08], 0x02
-     mov rdi, 0x01
-     mov rsi, 0x02
-     call :mutate
-     mov rax, [rsp]
-     add rax, [rsp+0x08]
-     add rsp, 0x18
-     ret
+    sub rsp, 0x18
+    mov.q [rsp], 1
+    mov.q [rsp + 0x8], 2
+    mov rdi, 1
+    mov rsi, 2
+    call +0x10
+    mov.q rax, [rsp]
+    add.q rax, [rsp + 0x8]
+    add rsp, 0x18
+    ret
 mutate:
-     mov rax, 0x12C
-     ret
+    mov rax, 0x12c
+    ret
 =========== OPT LEVEL: all ===========
 main:
-     sub rsp, 0x08
-     mov rdi, 0x01
-     mov rsi, 0x02
-     call :mutate
-     mov rax, 0x03
-     add rsp, 0x08
-     ret
+    sub rsp, 8
+    mov rdi, 1
+    mov rsi, 2
+    call +0x11
+    mov rax, 3
+    add rsp, 8
+    ret
 mutate:
-     mov rax, 0x12C
-     ret
+    mov rax, 0x12c
+    ret
 =========== OPT LEVEL: aggresive ===========
 main:
-     mov rax, 0x03
-     ret
+    mov rax, 3
+    ret
 mutate:

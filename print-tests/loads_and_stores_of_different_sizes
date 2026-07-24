@@ -1,141 +1,143 @@
 =========== OPT LEVEL: none ===========
 main:
-     mov byte ptr [rsp-0x28], 0x00
-     mov byte ptr [rsp-0x28], 0x01
-     cmp byte ptr [rsp-0x28], 0x01
-     jnz :0
-     mov word ptr [rsp-0x26], 0x00
-     mov word ptr [rsp-0x26], 0x01
-     cmp word ptr [rsp-0x26], 0x01
-     jnz :1
-     mov dword ptr [rsp-0x22], 0x00
-     mov dword ptr [rsp-0x22], 0x01
-     cmp dword ptr [rsp-0x22], 0x01
-     jnz :2
-     mov qword ptr [rsp-0x1A], 0x00
-     mov qword ptr [rsp-0x1A], 0x01
-     cmp qword ptr [rsp-0x1A], 0x01
-     jnz :3
-     xor eax, eax
-     sub al, 0x01
-     mov byte ptr [rsp-0x27], 0x00
-     mov [rsp-0x27], al
-     movsx rcx, byte ptr [rsp-0x27]
-     cmp cl, al
-     jnz :4
-     xor eax, eax
-     sub ax, 0x01
-     mov word ptr [rsp-0x24], 0x00
-     mov [rsp-0x24], ax
-     movsx rcx, word ptr [rsp-0x24]
-     cmp cx, ax
-     jnz :5
-     xor eax, eax
-     sub eax, 0x01
-     mov dword ptr [rsp-0x1E], 0x00
-     mov [rsp-0x1E], eax
-     movsxd rcx, dword ptr [rsp-0x1E]
-     cmp ecx, eax
-     jnz :6
-     xor eax, eax
-     sub rax, 0x01
-     mov qword ptr [rsp-0x12], 0x00
-     mov [rsp-0x12], rax
-     mov rcx, [rsp-0x12]
-     cmp rcx, rax
-     jnz :7
-     xor eax, eax
-     jmp :8
-
-007: mov rax, 0x08
-     jmp :8
-
-006: mov rax, 0x07
-     jmp :8
-
-005: mov rax, 0x06
-     jmp :8
-
-004: mov rax, 0x05
-     jmp :8
-
-003: mov rax, 0x04
-     jmp :8
-
-002: mov rax, 0x03
-     jmp :8
-
-001: mov rax, 0x02
-     jmp :8
-
-000: mov rax, 0x01
-008: ret
+    mov.b [rsp - 0x28], 0
+    mov.b [rsp - 0x28], 1
+    cmp.b [rsp - 0x28], 1
+    jne 0
+    mov.w [rsp - 0x26], 0
+    mov.w [rsp - 0x26], 1
+    cmp.w [rsp - 0x26], 1
+    jne 1
+    mov.d [rsp - 0x22], 0
+    mov.d [rsp - 0x22], 1
+    cmp.d [rsp - 0x22], 1
+    jne 2
+    mov.q [rsp - 0x1a], 0
+    mov.q [rsp - 0x1a], 1
+    cmp.q [rsp - 0x1a], 1
+    jne 3
+    xor eax, eax
+    sub al, 1
+    mov.b [rsp - 0x27], 0
+    mov.b [rsp - 0x27], al
+    movsx.b rcx, [rsp - 0x27]
+    cmp cl, al
+    jne 4
+    xor eax, eax
+    sub ax, 1
+    mov.w [rsp - 0x24], 0
+    mov.w [rsp - 0x24], ax
+    movsx.w rcx, [rsp - 0x24]
+    cmp cx, ax
+    jne 5
+    xor eax, eax
+    sub eax, 1
+    mov.d [rsp - 0x1e], 0
+    mov.d [rsp - 0x1e], eax
+    movsxd.d rcx, [rsp - 0x1e]
+    cmp ecx, eax
+    jne 6
+    xor eax, eax
+    sub rax, 1
+    mov.q [rsp - 0x12], 0
+    mov.q [rsp - 0x12], rax
+    mov.q rcx, [rsp - 0x12]
+    cmp rcx, rax
+    jne 7
+    xor eax, eax
+    jmp 8
+7:
+    mov rax, 8
+    jmp 8
+6:
+    mov rax, 7
+    jmp 8
+5:
+    mov rax, 6
+    jmp 8
+4:
+    mov rax, 5
+    jmp 8
+3:
+    mov rax, 4
+    jmp 8
+2:
+    mov rax, 3
+    jmp 8
+1:
+    mov rax, 2
+    jmp 8
+0:
+    mov rax, 1
+8:
+    ret
 =========== OPT LEVEL: mininal ===========
 main:
-     mov byte ptr [rsp-0x28], 0x00
-     mov byte ptr [rsp-0x28], 0x01
-     cmp byte ptr [rsp-0x28], 0x01
-     jnz :0
-     mov word ptr [rsp-0x26], 0x00
-     mov word ptr [rsp-0x26], 0x01
-     cmp word ptr [rsp-0x26], 0x01
-     jnz :1
-     mov dword ptr [rsp-0x22], 0x00
-     mov dword ptr [rsp-0x22], 0x01
-     cmp dword ptr [rsp-0x22], 0x01
-     jnz :2
-     mov qword ptr [rsp-0x1A], 0x00
-     mov qword ptr [rsp-0x1A], 0x01
-     cmp qword ptr [rsp-0x1A], 0x01
-     jnz :3
-     mov byte ptr [rsp-0x27], 0x00
-     mov byte ptr [rsp-0x27], 0xFF
-     cmp byte ptr [rsp-0x27], 0xFF
-     jnz :4
-     mov word ptr [rsp-0x24], 0x00
-     mov word ptr [rsp-0x24], 0xFFFF
-     cmp word ptr [rsp-0x24], 0xFFFF
-     jnz :5
-     mov dword ptr [rsp-0x1E], 0x00
-     mov dword ptr [rsp-0x1E], 0xFFFFFFFF
-     cmp dword ptr [rsp-0x1E], 0xFFFFFFFF
-     jnz :6
-     mov qword ptr [rsp-0x12], 0x00
-     mov qword ptr [rsp-0x12], 0xFFFFFFFFFFFFFFFF
-     cmp qword ptr [rsp-0x12], 0xFFFFFFFFFFFFFFFF
-     jnz :7
-     xor eax, eax
-     jmp :8
-
-007: mov rax, 0x08
-     jmp :8
-
-006: mov rax, 0x07
-     jmp :8
-
-005: mov rax, 0x06
-     jmp :8
-
-004: mov rax, 0x05
-     jmp :8
-
-003: mov rax, 0x04
-     jmp :8
-
-002: mov rax, 0x03
-     jmp :8
-
-001: mov rax, 0x02
-     jmp :8
-
-000: mov rax, 0x01
-008: ret
+    mov.b [rsp - 0x28], 0
+    mov.b [rsp - 0x28], 1
+    cmp.b [rsp - 0x28], 1
+    jne 0
+    mov.w [rsp - 0x26], 0
+    mov.w [rsp - 0x26], 1
+    cmp.w [rsp - 0x26], 1
+    jne 1
+    mov.d [rsp - 0x22], 0
+    mov.d [rsp - 0x22], 1
+    cmp.d [rsp - 0x22], 1
+    jne 2
+    mov.q [rsp - 0x1a], 0
+    mov.q [rsp - 0x1a], 1
+    cmp.q [rsp - 0x1a], 1
+    jne 3
+    mov.b [rsp - 0x27], 0
+    mov.b [rsp - 0x27], -1
+    cmp.b [rsp - 0x27], -1
+    jne 4
+    mov.w [rsp - 0x24], 0
+    mov.w [rsp - 0x24], -1
+    cmp.w [rsp - 0x24], -1
+    jne 5
+    mov.d [rsp - 0x1e], 0
+    mov.d [rsp - 0x1e], -1
+    cmp.d [rsp - 0x1e], -1
+    jne 6
+    mov.q [rsp - 0x12], 0
+    mov.q [rsp - 0x12], -1
+    cmp.q [rsp - 0x12], -1
+    jne 7
+    xor eax, eax
+    jmp 8
+7:
+    mov rax, 8
+    jmp 8
+6:
+    mov rax, 7
+    jmp 8
+5:
+    mov rax, 6
+    jmp 8
+4:
+    mov rax, 5
+    jmp 8
+3:
+    mov rax, 4
+    jmp 8
+2:
+    mov rax, 3
+    jmp 8
+1:
+    mov rax, 2
+    jmp 8
+0:
+    mov rax, 1
+8:
+    ret
 =========== OPT LEVEL: moderate ===========
 main:
-     xor eax, eax
-     ret
+    xor eax, eax
+    ret
 =========== OPT LEVEL: all ===========
 main:
-     xor eax, eax
-     ret
+    xor eax, eax
+    ret
 =========== OPT LEVEL: aggresive ===========

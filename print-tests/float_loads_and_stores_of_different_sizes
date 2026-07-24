@@ -1,95 +1,97 @@
 =========== OPT LEVEL: none ===========
 main:
-     movss xmm0, dword ptr [0x000000000040010A]
-     mov dword ptr [rsp-0x18], 0x00
-     movss [rsp-0x18], xmm0
-     movss xmm0, dword ptr [rsp-0x18]
-     ucomiss xmm0, [0x000000000040010A]
-     jnz :0
-     movsd xmm0, qword ptr [0x0000000000400110]
-     movsd xmm1, qword ptr [0x000000000040011A]
-     movsd [rsp-0x10], xmm1
-     movsd [rsp-0x10], xmm0
-     movsd xmm0, qword ptr [rsp-0x10]
-     ucomisd xmm0, [0x0000000000400110]
-     jnz :1
-     movss xmm0, dword ptr [0x0000000000400124]
-     movss xmm2, dword ptr [0x0000000000400124]
-     subss xmm2, [0x000000000040012A]
-     movss [rsp-0x14], xmm0
-     movss [rsp-0x14], xmm2
-     movss xmm0, dword ptr [rsp-0x14]
-     ucomiss xmm0, xmm2
-     jnz :2
-     movsd xmm0, qword ptr [0x000000000040011A]
-     subsd xmm0, [0x0000000000400130]
-     movsd [rsp-0x08], xmm1
-     movsd [rsp-0x08], xmm0
-     movsd xmm1, qword ptr [rsp-0x08]
-     ucomisd xmm1, xmm0
-     jnz :3
-     xor eax, eax
-     jmp :4
-
-003: mov rax, 0x04
-     jmp :4
-
-002: mov rax, 0x03
-     jmp :4
-
-001: mov rax, 0x02
-     jmp :4
-
-000: mov rax, 0x01
-004: ret
+    movss.d xmm0, [rip + 0x101]
+    mov.d [rsp - 0x18], 0
+    movss.d [rsp - 0x18], xmm0
+    movss.d xmm0, [rsp - 0x18]
+    ucomiss.d xmm0, [rip + 0xe2]
+    jne 0
+    movsd.q xmm0, [rip + 0xd9]
+    movsd.q xmm1, [rip + 0xda]
+    movsd.q [rsp - 0x10], xmm1
+    movsd.q [rsp - 0x10], xmm0
+    movsd.q xmm0, [rsp - 0x10]
+    ucomisd.q xmm0, [rip + 0xb2]
+    jne 1
+    movss.d xmm0, [rip + 0xb7]
+    movss.d xmm2, [rip + 0xae]
+    subss.d xmm2, [rip + 0xab]
+    movss.d [rsp - 0x14], xmm0
+    movss.d [rsp - 0x14], xmm2
+    movss.d xmm0, [rsp - 0x14]
+    ucomiss xmm0, xmm2
+    jne 2
+    movsd.q xmm0, [rip + 0x73]
+    subsd.q xmm0, [rip + 0x80]
+    movsd.q [rsp - 0x8], xmm1
+    movsd.q [rsp - 0x8], xmm0
+    movsd.q xmm1, [rsp - 0x8]
+    ucomisd xmm1, xmm0
+    jne 3
+    xor eax, eax
+    jmp 4
+3:
+    mov rax, 4
+    jmp 4
+2:
+    mov rax, 3
+    jmp 4
+1:
+    mov rax, 2
+    jmp 4
+0:
+    mov rax, 1
+4:
+    ret
 =========== OPT LEVEL: mininal ===========
 main:
-     movss xmm0, dword ptr [0x0000000000400102]
-     mov dword ptr [rsp-0x18], 0x00
-     movss [rsp-0x18], xmm0
-     movss xmm0, dword ptr [rsp-0x18]
-     ucomiss xmm0, [0x0000000000400102]
-     jnz :0
-     movsd xmm0, qword ptr [0x0000000000400108]
-     movsd xmm1, qword ptr [0x0000000000400112]
-     movsd [rsp-0x10], xmm1
-     movsd [rsp-0x10], xmm0
-     movsd xmm0, qword ptr [rsp-0x10]
-     ucomisd xmm0, [0x0000000000400108]
-     jnz :1
-     movss xmm0, dword ptr [0x000000000040011C]
-     movss xmm2, dword ptr [0x0000000000400122]
-     movss [rsp-0x14], xmm2
-     movss [rsp-0x14], xmm0
-     movss xmm0, dword ptr [rsp-0x14]
-     ucomiss xmm0, [0x000000000040011C]
-     jnz :2
-     movsd xmm0, qword ptr [0x0000000000400128]
-     movsd [rsp-0x08], xmm1
-     movsd [rsp-0x08], xmm0
-     movsd xmm0, qword ptr [rsp-0x08]
-     ucomisd xmm0, [0x0000000000400128]
-     jnz :3
-     xor eax, eax
-     jmp :4
-
-003: mov rax, 0x04
-     jmp :4
-
-002: mov rax, 0x03
-     jmp :4
-
-001: mov rax, 0x02
-     jmp :4
-
-000: mov rax, 0x01
-004: ret
+    movss.d xmm0, [rip + 0xf9]
+    mov.d [rsp - 0x18], 0
+    movss.d [rsp - 0x18], xmm0
+    movss.d xmm0, [rsp - 0x18]
+    ucomiss.d xmm0, [rip + 0xda]
+    jne 0
+    movsd.q xmm0, [rip + 0xd1]
+    movsd.q xmm1, [rip + 0xd2]
+    movsd.q [rsp - 0x10], xmm1
+    movsd.q [rsp - 0x10], xmm0
+    movsd.q xmm0, [rsp - 0x10]
+    ucomisd.q xmm0, [rip + 0xaa]
+    jne 1
+    movss.d xmm0, [rip + 0xaf]
+    movss.d xmm2, [rip + 0xac]
+    movss.d [rsp - 0x14], xmm2
+    movss.d [rsp - 0x14], xmm0
+    movss.d xmm0, [rsp - 0x14]
+    ucomiss.d xmm0, [rip + 0x89]
+    jne 2
+    movsd.q xmm0, [rip + 0x86]
+    movsd.q [rsp - 0x8], xmm1
+    movsd.q [rsp - 0x8], xmm0
+    movsd.q xmm0, [rsp - 0x8]
+    ucomisd.q xmm0, [rip + 0x68]
+    jne 3
+    xor eax, eax
+    jmp 4
+3:
+    mov rax, 4
+    jmp 4
+2:
+    mov rax, 3
+    jmp 4
+1:
+    mov rax, 2
+    jmp 4
+0:
+    mov rax, 1
+4:
+    ret
 =========== OPT LEVEL: moderate ===========
 main:
-     xor eax, eax
-     ret
+    xor eax, eax
+    ret
 =========== OPT LEVEL: all ===========
 main:
-     xor eax, eax
-     ret
+    xor eax, eax
+    ret
 =========== OPT LEVEL: aggresive ===========

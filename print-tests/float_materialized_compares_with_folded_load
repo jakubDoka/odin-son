@@ -1,589 +1,589 @@
 =========== OPT LEVEL: none ===========
 fsrc32:
-     xor eax, eax
-     ucomiss xmm0, [rdi]
-     setz cl
-     movzx rcx, cl
-     movzx ecx, cl
-     add rax, rcx
-     ucomiss xmm0, [rdi+0x04]
-     setnz cl
-     movzx rcx, cl
-     movzx ecx, cl
-     lea rax, [rax+rcx*2]
-     movss xmm1, dword ptr [rdi+0x08]
-     ucomiss xmm1, xmm0
-     setnbe cl
-     movzx rcx, cl
-     movzx ecx, cl
-     lea rax, [rax+rcx*4]
-     movss xmm1, dword ptr [rdi+0x0C]
-     ucomiss xmm1, xmm0
-     setnb cl
-     movzx rcx, cl
-     movzx ecx, cl
-     lea rax, [rax+rcx*8]
-     ucomiss xmm0, [rdi+0x10]
-     setnbe cl
-     movzx rcx, cl
-     movzx ecx, cl
-     imul rcx, rcx, 0x10
-     add rax, rcx
-     ucomiss xmm0, [rdi+0x14]
-     setnb cl
-     movzx rcx, cl
-     movzx ecx, cl
-     imul rcx, rcx, 0x20
-     add rax, rcx
-     ret
+    xor eax, eax
+    ucomiss.d xmm0, [rdi]
+    setz cl
+    movzx rcx, cl
+    movzx ecx, cl
+    add rax, rcx
+    ucomiss.d xmm0, [rdi + 0x4]
+    setnz cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*2]
+    movss.d xmm1, [rdi + 0x8]
+    ucomiss xmm1, xmm0
+    setnbe cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*4]
+    movss.d xmm1, [rdi + 0xc]
+    ucomiss xmm1, xmm0
+    setnc cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*8]
+    ucomiss.d xmm0, [rdi + 0x10]
+    setnbe cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x10
+    add rax, rcx
+    ucomiss.d xmm0, [rdi + 0x14]
+    setnc cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x20
+    add rax, rcx
+    ret
 fsrc64:
-     xor eax, eax
-     ucomisd xmm0, [rdi]
-     setz cl
-     movzx rcx, cl
-     movzx ecx, cl
-     add rax, rcx
-     ucomisd xmm0, [rdi+0x08]
-     setnz cl
-     movzx rcx, cl
-     movzx ecx, cl
-     lea rax, [rax+rcx*2]
-     movsd xmm1, qword ptr [rdi+0x10]
-     ucomisd xmm1, xmm0
-     setnbe cl
-     movzx rcx, cl
-     movzx ecx, cl
-     lea rax, [rax+rcx*4]
-     movsd xmm1, qword ptr [rdi+0x18]
-     ucomisd xmm1, xmm0
-     setnb cl
-     movzx rcx, cl
-     movzx ecx, cl
-     lea rax, [rax+rcx*8]
-     ucomisd xmm0, [rdi+0x20]
-     setnbe cl
-     movzx rcx, cl
-     movzx ecx, cl
-     imul rcx, rcx, 0x10
-     add rax, rcx
-     ucomisd xmm0, [rdi+0x28]
-     setnb cl
-     movzx rcx, cl
-     movzx ecx, cl
-     imul rcx, rcx, 0x20
-     add rax, rcx
-     ret
+    xor eax, eax
+    ucomisd.q xmm0, [rdi]
+    setz cl
+    movzx rcx, cl
+    movzx ecx, cl
+    add rax, rcx
+    ucomisd.q xmm0, [rdi + 0x8]
+    setnz cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*2]
+    movsd.q xmm1, [rdi + 0x10]
+    ucomisd xmm1, xmm0
+    setnbe cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*4]
+    movsd.q xmm1, [rdi + 0x18]
+    ucomisd xmm1, xmm0
+    setnc cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*8]
+    ucomisd.q xmm0, [rdi + 0x20]
+    setnbe cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x10
+    add rax, rcx
+    ucomisd.q xmm0, [rdi + 0x28]
+    setnc cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x20
+    add rax, rcx
+    ret
 main:
-     push rbx
-     push rbp
-     push r12
-     push r13
-     push r14
-     sub rsp, 0x50
-     mov rdx, 0x18
-     lea rdi, [rsp]
-     xor esi, esi
-     call :$set
-     movss xmm0, dword ptr [0x00000000004001AA]
-     movss [rsp], xmm0
-     movss xmm0, dword ptr [0x00000000004001AA]
-     movss [rsp+0x04], xmm0
-     movss xmm0, dword ptr [0x00000000004001AA]
-     movss [rsp+0x08], xmm0
-     movss xmm0, dword ptr [0x00000000004001AA]
-     movss [rsp+0x0C], xmm0
-     movss xmm0, dword ptr [0x00000000004001AA]
-     movss [rsp+0x10], xmm0
-     movss xmm0, dword ptr [0x00000000004001AA]
-     movss [rsp+0x14], xmm0
-     movss xmm0, dword ptr [0x00000000004001B0]
-     lea rdi, [rsp]
-     call :fsrc32
-     mov rbx, rax
-     movss xmm0, dword ptr [0x00000000004001AA]
-     lea rdi, [rsp]
-     call :fsrc32
-     mov rbp, rax
-     movss xmm0, dword ptr [0x00000000004001B6]
-     lea rdi, [rsp]
-     call :fsrc32
-     mov r12, rax
-     mov rdx, 0x30
-     xor esi, esi
-     lea rdi, [rsp+0x18]
-     call :$set
-     movsd xmm0, qword ptr [0x00000000004001BC]
-     movsd [rsp+0x18], xmm0
-     movsd xmm0, qword ptr [0x00000000004001BC]
-     movsd [rsp+0x20], xmm0
-     movsd xmm0, qword ptr [0x00000000004001BC]
-     movsd [rsp+0x28], xmm0
-     movsd xmm0, qword ptr [0x00000000004001BC]
-     movsd [rsp+0x30], xmm0
-     movsd xmm0, qword ptr [0x00000000004001BC]
-     movsd [rsp+0x38], xmm0
-     movsd xmm0, qword ptr [0x00000000004001BC]
-     movsd [rsp+0x40], xmm0
-     movsd xmm0, qword ptr [0x00000000004001C6]
-     lea rdi, [rsp+0x18]
-     call :fsrc64
-     mov r13, rax
-     lea rdi, [rsp+0x18]
-     movsd xmm0, qword ptr [0x00000000004001BC]
-     call :fsrc64
-     mov r14, rax
-     movsd xmm0, qword ptr [0x00000000004001D0]
-     lea rdi, [rsp+0x18]
-     call :fsrc64
-     mov rdx, rbx
-     add rdx, rbp
-     add rdx, r12
-     xor esi, esi
-     add rsi, rdx
-     mov rdx, r13
-     add rdx, r14
-     add rdx, rax
-     add rsi, rdx
-     mov rax, rsi
-     add rsp, 0x50
-     pop r14
-     pop r13
-     pop r12
-     pop rbp
-     pop rbx
-     ret
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    sub rsp, 0x50
+    mov rdx, 0x18
+    lea rdi, [rsp]
+    xor esi, esi
+    call.q [rip - 0x162]
+    movss.d xmm0, [rip + 0x17f]
+    movss.d [rsp], xmm0
+    movss.d xmm0, [rip + 0x170]
+    movss.d [rsp + 0x4], xmm0
+    movss.d xmm0, [rip + 0x160]
+    movss.d [rsp + 0x8], xmm0
+    movss.d xmm0, [rip + 0x150]
+    movss.d [rsp + 0xc], xmm0
+    movss.d xmm0, [rip + 0x140]
+    movss.d [rsp + 0x10], xmm0
+    movss.d xmm0, [rip + 0x130]
+    movss.d [rsp + 0x14], xmm0
+    movss.d xmm0, [rip + 0x126]
+    lea rdi, [rsp]
+    call -0x1cb
+    mov rbx, rax
+    movss.d xmm0, [rip + 0x10b]
+    lea rdi, [rsp]
+    call -0x1e0
+    mov rbp, rax
+    movss.d xmm0, [rip + 0x102]
+    lea rdi, [rsp]
+    call -0x1f5
+    mov r12, rax
+    mov rdx, 0x30
+    xor esi, esi
+    lea rdi, [rsp + 0x18]
+    call.q [rip - 0x215]
+    movsd.q xmm0, [rip + 0xde]
+    movsd.q [rsp + 0x18], xmm0
+    movsd.q xmm0, [rip + 0xce]
+    movsd.q [rsp + 0x20], xmm0
+    movsd.q xmm0, [rip + 0xbe]
+    movsd.q [rsp + 0x28], xmm0
+    movsd.q xmm0, [rip + 0xae]
+    movsd.q [rsp + 0x30], xmm0
+    movsd.q xmm0, [rip + 0x9e]
+    movsd.q [rsp + 0x38], xmm0
+    movsd.q xmm0, [rip + 0x8e]
+    movsd.q [rsp + 0x40], xmm0
+    movsd.q xmm0, [rip + 0x88]
+    lea rdi, [rsp + 0x18]
+    call -0x1e8
+    mov r13, rax
+    lea rdi, [rsp + 0x18]
+    movsd.q xmm0, [rip + 0x63]
+    call -0x1fe
+    mov r14, rax
+    movsd.q xmm0, [rip + 0x66]
+    lea rdi, [rsp + 0x18]
+    call -0x214
+    mov rdx, rbx
+    add rdx, rbp
+    add rdx, r12
+    xor esi, esi
+    add rsi, rdx
+    mov rdx, r13
+    add rdx, r14
+    add rdx, rax
+    add rsi, rdx
+    mov rax, rsi
+    add rsp, 0x50
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
 =========== OPT LEVEL: mininal ===========
 fsrc32:
-     xor eax, eax
-     ucomiss xmm0, [rdi]
-     setz cl
-     movzx rcx, cl
-     movzx ecx, cl
-     add rax, rcx
-     ucomiss xmm0, [rdi+0x04]
-     setnz cl
-     movzx rcx, cl
-     movzx ecx, cl
-     lea rax, [rax+rcx*2]
-     movss xmm1, dword ptr [rdi+0x08]
-     ucomiss xmm1, xmm0
-     setnbe cl
-     movzx rcx, cl
-     movzx ecx, cl
-     lea rax, [rax+rcx*4]
-     movss xmm1, dword ptr [rdi+0x0C]
-     ucomiss xmm1, xmm0
-     setnb cl
-     movzx rcx, cl
-     movzx ecx, cl
-     lea rax, [rax+rcx*8]
-     ucomiss xmm0, [rdi+0x10]
-     setnbe cl
-     movzx rcx, cl
-     movzx ecx, cl
-     imul rcx, rcx, 0x10
-     add rax, rcx
-     ucomiss xmm0, [rdi+0x14]
-     setnb cl
-     movzx rcx, cl
-     movzx ecx, cl
-     imul rcx, rcx, 0x20
-     add rax, rcx
-     ret
+    xor eax, eax
+    ucomiss.d xmm0, [rdi]
+    setz cl
+    movzx rcx, cl
+    movzx ecx, cl
+    add rax, rcx
+    ucomiss.d xmm0, [rdi + 0x4]
+    setnz cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*2]
+    movss.d xmm1, [rdi + 0x8]
+    ucomiss xmm1, xmm0
+    setnbe cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*4]
+    movss.d xmm1, [rdi + 0xc]
+    ucomiss xmm1, xmm0
+    setnc cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*8]
+    ucomiss.d xmm0, [rdi + 0x10]
+    setnbe cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x10
+    add rax, rcx
+    ucomiss.d xmm0, [rdi + 0x14]
+    setnc cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x20
+    add rax, rcx
+    ret
 fsrc64:
-     xor eax, eax
-     ucomisd xmm0, [rdi]
-     setz cl
-     movzx rcx, cl
-     movzx ecx, cl
-     add rax, rcx
-     ucomisd xmm0, [rdi+0x08]
-     setnz cl
-     movzx rcx, cl
-     movzx ecx, cl
-     lea rax, [rax+rcx*2]
-     movsd xmm1, qword ptr [rdi+0x10]
-     ucomisd xmm1, xmm0
-     setnbe cl
-     movzx rcx, cl
-     movzx ecx, cl
-     lea rax, [rax+rcx*4]
-     movsd xmm1, qword ptr [rdi+0x18]
-     ucomisd xmm1, xmm0
-     setnb cl
-     movzx rcx, cl
-     movzx ecx, cl
-     lea rax, [rax+rcx*8]
-     ucomisd xmm0, [rdi+0x20]
-     setnbe cl
-     movzx rcx, cl
-     movzx ecx, cl
-     imul rcx, rcx, 0x10
-     add rax, rcx
-     ucomisd xmm0, [rdi+0x28]
-     setnb cl
-     movzx rcx, cl
-     movzx ecx, cl
-     imul rcx, rcx, 0x20
-     add rax, rcx
-     ret
+    xor eax, eax
+    ucomisd.q xmm0, [rdi]
+    setz cl
+    movzx rcx, cl
+    movzx ecx, cl
+    add rax, rcx
+    ucomisd.q xmm0, [rdi + 0x8]
+    setnz cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*2]
+    movsd.q xmm1, [rdi + 0x10]
+    ucomisd xmm1, xmm0
+    setnbe cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*4]
+    movsd.q xmm1, [rdi + 0x18]
+    ucomisd xmm1, xmm0
+    setnc cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*8]
+    ucomisd.q xmm0, [rdi + 0x20]
+    setnbe cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x10
+    add rax, rcx
+    ucomisd.q xmm0, [rdi + 0x28]
+    setnc cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x20
+    add rax, rcx
+    ret
 main:
-     push rbx
-     push rbp
-     push r12
-     push r13
-     push r14
-     sub rsp, 0x50
-     mov rdx, 0x18
-     lea rdi, [rsp]
-     xor esi, esi
-     call :$set
-     movss xmm0, dword ptr [0x00000000004001AA]
-     movss [rsp], xmm0
-     movss xmm0, dword ptr [0x00000000004001AA]
-     movss [rsp+0x04], xmm0
-     movss xmm0, dword ptr [0x00000000004001AA]
-     movss [rsp+0x08], xmm0
-     movss xmm0, dword ptr [0x00000000004001AA]
-     movss [rsp+0x0C], xmm0
-     movss xmm0, dword ptr [0x00000000004001AA]
-     movss [rsp+0x10], xmm0
-     movss xmm0, dword ptr [0x00000000004001AA]
-     movss [rsp+0x14], xmm0
-     movss xmm0, dword ptr [0x00000000004001B0]
-     lea rdi, [rsp]
-     call :fsrc32
-     mov rbx, rax
-     movss xmm0, dword ptr [0x00000000004001AA]
-     lea rdi, [rsp]
-     call :fsrc32
-     mov rbp, rax
-     movss xmm0, dword ptr [0x00000000004001B6]
-     lea rdi, [rsp]
-     call :fsrc32
-     mov r12, rax
-     mov rdx, 0x30
-     xor esi, esi
-     lea rdi, [rsp+0x18]
-     call :$set
-     movsd xmm0, qword ptr [0x00000000004001BC]
-     movsd [rsp+0x18], xmm0
-     movsd xmm0, qword ptr [0x00000000004001BC]
-     movsd [rsp+0x20], xmm0
-     movsd xmm0, qword ptr [0x00000000004001BC]
-     movsd [rsp+0x28], xmm0
-     movsd xmm0, qword ptr [0x00000000004001BC]
-     movsd [rsp+0x30], xmm0
-     movsd xmm0, qword ptr [0x00000000004001BC]
-     movsd [rsp+0x38], xmm0
-     movsd xmm0, qword ptr [0x00000000004001BC]
-     movsd [rsp+0x40], xmm0
-     movsd xmm0, qword ptr [0x00000000004001C6]
-     lea rdi, [rsp+0x18]
-     call :fsrc64
-     mov r13, rax
-     lea rdi, [rsp+0x18]
-     movsd xmm0, qword ptr [0x00000000004001BC]
-     call :fsrc64
-     mov r14, rax
-     movsd xmm0, qword ptr [0x00000000004001D0]
-     lea rdi, [rsp+0x18]
-     call :fsrc64
-     mov rdx, rbx
-     add rdx, rbp
-     add rdx, r12
-     xor esi, esi
-     add rsi, rdx
-     mov rdx, r13
-     add rdx, r14
-     add rdx, rax
-     add rsi, rdx
-     mov rax, rsi
-     add rsp, 0x50
-     pop r14
-     pop r13
-     pop r12
-     pop rbp
-     pop rbx
-     ret
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    sub rsp, 0x50
+    mov rdx, 0x18
+    lea rdi, [rsp]
+    xor esi, esi
+    call.q [rip - 0x162]
+    movss.d xmm0, [rip + 0x17f]
+    movss.d [rsp], xmm0
+    movss.d xmm0, [rip + 0x170]
+    movss.d [rsp + 0x4], xmm0
+    movss.d xmm0, [rip + 0x160]
+    movss.d [rsp + 0x8], xmm0
+    movss.d xmm0, [rip + 0x150]
+    movss.d [rsp + 0xc], xmm0
+    movss.d xmm0, [rip + 0x140]
+    movss.d [rsp + 0x10], xmm0
+    movss.d xmm0, [rip + 0x130]
+    movss.d [rsp + 0x14], xmm0
+    movss.d xmm0, [rip + 0x126]
+    lea rdi, [rsp]
+    call -0x1cb
+    mov rbx, rax
+    movss.d xmm0, [rip + 0x10b]
+    lea rdi, [rsp]
+    call -0x1e0
+    mov rbp, rax
+    movss.d xmm0, [rip + 0x102]
+    lea rdi, [rsp]
+    call -0x1f5
+    mov r12, rax
+    mov rdx, 0x30
+    xor esi, esi
+    lea rdi, [rsp + 0x18]
+    call.q [rip - 0x215]
+    movsd.q xmm0, [rip + 0xde]
+    movsd.q [rsp + 0x18], xmm0
+    movsd.q xmm0, [rip + 0xce]
+    movsd.q [rsp + 0x20], xmm0
+    movsd.q xmm0, [rip + 0xbe]
+    movsd.q [rsp + 0x28], xmm0
+    movsd.q xmm0, [rip + 0xae]
+    movsd.q [rsp + 0x30], xmm0
+    movsd.q xmm0, [rip + 0x9e]
+    movsd.q [rsp + 0x38], xmm0
+    movsd.q xmm0, [rip + 0x8e]
+    movsd.q [rsp + 0x40], xmm0
+    movsd.q xmm0, [rip + 0x88]
+    lea rdi, [rsp + 0x18]
+    call -0x1e8
+    mov r13, rax
+    lea rdi, [rsp + 0x18]
+    movsd.q xmm0, [rip + 0x63]
+    call -0x1fe
+    mov r14, rax
+    movsd.q xmm0, [rip + 0x66]
+    lea rdi, [rsp + 0x18]
+    call -0x214
+    mov rdx, rbx
+    add rdx, rbp
+    add rdx, r12
+    xor esi, esi
+    add rsi, rdx
+    mov rdx, r13
+    add rdx, r14
+    add rdx, rax
+    add rsi, rdx
+    mov rax, rsi
+    add rsp, 0x50
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
 =========== OPT LEVEL: moderate ===========
 fsrc32:
-     ucomiss xmm0, [rdi]
-     setz al
-     movzx rax, al
-     movzx eax, al
-     ucomiss xmm0, [rdi+0x04]
-     setnz cl
-     movzx rcx, cl
-     movzx ecx, cl
-     lea rax, [rax+rcx*2]
-     movss xmm1, dword ptr [rdi+0x08]
-     ucomiss xmm1, xmm0
-     setnbe cl
-     movzx rcx, cl
-     movzx ecx, cl
-     lea rax, [rax+rcx*4]
-     movss xmm1, dword ptr [rdi+0x0C]
-     ucomiss xmm1, xmm0
-     setnb cl
-     movzx rcx, cl
-     movzx ecx, cl
-     lea rax, [rax+rcx*8]
-     ucomiss xmm0, [rdi+0x10]
-     setnbe cl
-     movzx rcx, cl
-     movzx ecx, cl
-     imul rcx, rcx, 0x10
-     add rax, rcx
-     ucomiss xmm0, [rdi+0x14]
-     setnb cl
-     movzx rcx, cl
-     movzx ecx, cl
-     imul rcx, rcx, 0x20
-     add rax, rcx
-     ret
+    ucomiss.d xmm0, [rdi]
+    setz al
+    movzx rax, al
+    movzx eax, al
+    ucomiss.d xmm0, [rdi + 0x4]
+    setnz cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*2]
+    movss.d xmm1, [rdi + 0x8]
+    ucomiss xmm1, xmm0
+    setnbe cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*4]
+    movss.d xmm1, [rdi + 0xc]
+    ucomiss xmm1, xmm0
+    setnc cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*8]
+    ucomiss.d xmm0, [rdi + 0x10]
+    setnbe cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x10
+    add rax, rcx
+    ucomiss.d xmm0, [rdi + 0x14]
+    setnc cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x20
+    add rax, rcx
+    ret
 fsrc64:
-     ucomisd xmm0, [rdi]
-     setz al
-     movzx rax, al
-     movzx eax, al
-     ucomisd xmm0, [rdi+0x08]
-     setnz cl
-     movzx rcx, cl
-     movzx ecx, cl
-     lea rax, [rax+rcx*2]
-     movsd xmm1, qword ptr [rdi+0x10]
-     ucomisd xmm1, xmm0
-     setnbe cl
-     movzx rcx, cl
-     movzx ecx, cl
-     lea rax, [rax+rcx*4]
-     movsd xmm1, qword ptr [rdi+0x18]
-     ucomisd xmm1, xmm0
-     setnb cl
-     movzx rcx, cl
-     movzx ecx, cl
-     lea rax, [rax+rcx*8]
-     ucomisd xmm0, [rdi+0x20]
-     setnbe cl
-     movzx rcx, cl
-     movzx ecx, cl
-     imul rcx, rcx, 0x10
-     add rax, rcx
-     ucomisd xmm0, [rdi+0x28]
-     setnb cl
-     movzx rcx, cl
-     movzx ecx, cl
-     imul rcx, rcx, 0x20
-     add rax, rcx
-     ret
+    ucomisd.q xmm0, [rdi]
+    setz al
+    movzx rax, al
+    movzx eax, al
+    ucomisd.q xmm0, [rdi + 0x8]
+    setnz cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*2]
+    movsd.q xmm1, [rdi + 0x10]
+    ucomisd xmm1, xmm0
+    setnbe cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*4]
+    movsd.q xmm1, [rdi + 0x18]
+    ucomisd xmm1, xmm0
+    setnc cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*8]
+    ucomisd.q xmm0, [rdi + 0x20]
+    setnbe cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x10
+    add rax, rcx
+    ucomisd.q xmm0, [rdi + 0x28]
+    setnc cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x20
+    add rax, rcx
+    ret
 main:
-     push rbx
-     push rbp
-     push r12
-     push r13
-     push r14
-     sub rsp, 0x50
-     movss xmm0, dword ptr [0x000000000040017A]
-     movss [rsp], xmm0
-     movss xmm0, dword ptr [0x000000000040017A]
-     movss [rsp+0x04], xmm0
-     movss xmm0, dword ptr [0x000000000040017A]
-     movss [rsp+0x08], xmm0
-     movss xmm0, dword ptr [0x000000000040017A]
-     movss [rsp+0x0C], xmm0
-     movss xmm0, dword ptr [0x000000000040017A]
-     movss [rsp+0x10], xmm0
-     movss xmm0, dword ptr [0x000000000040017A]
-     movss [rsp+0x14], xmm0
-     movss xmm0, dword ptr [0x0000000000400180]
-     lea rdi, [rsp]
-     call :fsrc32
-     mov rbx, rax
-     movss xmm0, dword ptr [0x000000000040017A]
-     lea rdi, [rsp]
-     call :fsrc32
-     mov rbp, rax
-     movss xmm0, dword ptr [0x0000000000400186]
-     lea rdi, [rsp]
-     call :fsrc32
-     mov r12, rax
-     movsd xmm0, qword ptr [0x000000000040018C]
-     movsd [rsp+0x18], xmm0
-     movsd xmm0, qword ptr [0x000000000040018C]
-     movsd [rsp+0x20], xmm0
-     movsd xmm0, qword ptr [0x000000000040018C]
-     movsd [rsp+0x28], xmm0
-     movsd xmm0, qword ptr [0x000000000040018C]
-     movsd [rsp+0x30], xmm0
-     movsd xmm0, qword ptr [0x000000000040018C]
-     movsd [rsp+0x38], xmm0
-     movsd xmm0, qword ptr [0x000000000040018C]
-     movsd [rsp+0x40], xmm0
-     movsd xmm0, qword ptr [0x0000000000400196]
-     lea rdi, [rsp+0x18]
-     call :fsrc64
-     mov r13, rax
-     lea rdi, [rsp+0x18]
-     movsd xmm0, qword ptr [0x000000000040018C]
-     call :fsrc64
-     mov r14, rax
-     movsd xmm0, qword ptr [0x00000000004001A0]
-     lea rdi, [rsp+0x18]
-     call :fsrc64
-     mov rdx, rbx
-     add rdx, rbp
-     add rdx, r12
-     mov rsi, r13
-     add rsi, r14
-     add rsi, rax
-     add rdx, rsi
-     mov rax, rdx
-     add rsp, 0x50
-     pop r14
-     pop r13
-     pop r12
-     pop rbp
-     pop rbx
-     ret
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    sub rsp, 0x50
+    movss.d xmm0, [rip + 0x163]
+    movss.d [rsp], xmm0
+    movss.d xmm0, [rip + 0x154]
+    movss.d [rsp + 0x4], xmm0
+    movss.d xmm0, [rip + 0x144]
+    movss.d [rsp + 0x8], xmm0
+    movss.d xmm0, [rip + 0x134]
+    movss.d [rsp + 0xc], xmm0
+    movss.d xmm0, [rip + 0x124]
+    movss.d [rsp + 0x10], xmm0
+    movss.d xmm0, [rip + 0x114]
+    movss.d [rsp + 0x14], xmm0
+    movss.d xmm0, [rip + 0x10a]
+    lea rdi, [rsp]
+    call -0x1a7
+    mov rbx, rax
+    movss.d xmm0, [rip + 0xef]
+    lea rdi, [rsp]
+    call -0x1bc
+    mov rbp, rax
+    movss.d xmm0, [rip + 0xe6]
+    lea rdi, [rsp]
+    call -0x1d1
+    mov r12, rax
+    movsd.q xmm0, [rip + 0xd7]
+    movsd.q [rsp + 0x18], xmm0
+    movsd.q xmm0, [rip + 0xc7]
+    movsd.q [rsp + 0x20], xmm0
+    movsd.q xmm0, [rip + 0xb7]
+    movsd.q [rsp + 0x28], xmm0
+    movsd.q xmm0, [rip + 0xa7]
+    movsd.q [rsp + 0x30], xmm0
+    movsd.q xmm0, [rip + 0x97]
+    movsd.q [rsp + 0x38], xmm0
+    movsd.q xmm0, [rip + 0x87]
+    movsd.q [rsp + 0x40], xmm0
+    movsd.q xmm0, [rip + 0x81]
+    lea rdi, [rsp + 0x18]
+    call -0x1b7
+    mov r13, rax
+    lea rdi, [rsp + 0x18]
+    movsd.q xmm0, [rip + 0x5c]
+    call -0x1cd
+    mov r14, rax
+    movsd.q xmm0, [rip + 0x5f]
+    lea rdi, [rsp + 0x18]
+    call -0x1e3
+    mov rdx, rbx
+    add rdx, rbp
+    add rdx, r12
+    mov rsi, r13
+    add rsi, r14
+    add rsi, rax
+    add rdx, rsi
+    mov rax, rdx
+    add rsp, 0x50
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
 =========== OPT LEVEL: all ===========
 fsrc32:
-     ucomiss xmm0, [rdi]
-     setz al
-     movzx rax, al
-     movzx eax, al
-     ucomiss xmm0, [rdi+0x04]
-     setnz cl
-     movzx rcx, cl
-     movzx ecx, cl
-     lea rax, [rax+rcx*2]
-     movss xmm1, dword ptr [rdi+0x08]
-     ucomiss xmm1, xmm0
-     setnbe cl
-     movzx rcx, cl
-     movzx ecx, cl
-     lea rax, [rax+rcx*4]
-     movss xmm1, dword ptr [rdi+0x0C]
-     ucomiss xmm1, xmm0
-     setnb cl
-     movzx rcx, cl
-     movzx ecx, cl
-     lea rax, [rax+rcx*8]
-     ucomiss xmm0, [rdi+0x10]
-     setnbe cl
-     movzx rcx, cl
-     movzx ecx, cl
-     imul rcx, rcx, 0x10
-     add rax, rcx
-     ucomiss xmm0, [rdi+0x14]
-     setnb cl
-     movzx rcx, cl
-     movzx ecx, cl
-     imul rcx, rcx, 0x20
-     add rax, rcx
-     ret
+    ucomiss.d xmm0, [rdi]
+    setz al
+    movzx rax, al
+    movzx eax, al
+    ucomiss.d xmm0, [rdi + 0x4]
+    setnz cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*2]
+    movss.d xmm1, [rdi + 0x8]
+    ucomiss xmm1, xmm0
+    setnbe cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*4]
+    movss.d xmm1, [rdi + 0xc]
+    ucomiss xmm1, xmm0
+    setnc cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*8]
+    ucomiss.d xmm0, [rdi + 0x10]
+    setnbe cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x10
+    add rax, rcx
+    ucomiss.d xmm0, [rdi + 0x14]
+    setnc cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x20
+    add rax, rcx
+    ret
 fsrc64:
-     ucomisd xmm0, [rdi]
-     setz al
-     movzx rax, al
-     movzx eax, al
-     ucomisd xmm0, [rdi+0x08]
-     setnz cl
-     movzx rcx, cl
-     movzx ecx, cl
-     lea rax, [rax+rcx*2]
-     movsd xmm1, qword ptr [rdi+0x10]
-     ucomisd xmm1, xmm0
-     setnbe cl
-     movzx rcx, cl
-     movzx ecx, cl
-     lea rax, [rax+rcx*4]
-     movsd xmm1, qword ptr [rdi+0x18]
-     ucomisd xmm1, xmm0
-     setnb cl
-     movzx rcx, cl
-     movzx ecx, cl
-     lea rax, [rax+rcx*8]
-     ucomisd xmm0, [rdi+0x20]
-     setnbe cl
-     movzx rcx, cl
-     movzx ecx, cl
-     imul rcx, rcx, 0x10
-     add rax, rcx
-     ucomisd xmm0, [rdi+0x28]
-     setnb cl
-     movzx rcx, cl
-     movzx ecx, cl
-     imul rcx, rcx, 0x20
-     add rax, rcx
-     ret
+    ucomisd.q xmm0, [rdi]
+    setz al
+    movzx rax, al
+    movzx eax, al
+    ucomisd.q xmm0, [rdi + 0x8]
+    setnz cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*2]
+    movsd.q xmm1, [rdi + 0x10]
+    ucomisd xmm1, xmm0
+    setnbe cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*4]
+    movsd.q xmm1, [rdi + 0x18]
+    ucomisd xmm1, xmm0
+    setnc cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*8]
+    ucomisd.q xmm0, [rdi + 0x20]
+    setnbe cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x10
+    add rax, rcx
+    ucomisd.q xmm0, [rdi + 0x28]
+    setnc cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x20
+    add rax, rcx
+    ret
 main:
-     push rbx
-     push rbp
-     push r12
-     push r13
-     push r14
-     sub rsp, 0x50
-     movss xmm0, dword ptr [0x000000000040017A]
-     movss [rsp], xmm0
-     movss xmm0, dword ptr [0x000000000040017A]
-     movss [rsp+0x04], xmm0
-     movss xmm0, dword ptr [0x000000000040017A]
-     movss [rsp+0x08], xmm0
-     movss xmm0, dword ptr [0x000000000040017A]
-     movss [rsp+0x0C], xmm0
-     movss xmm0, dword ptr [0x000000000040017A]
-     movss [rsp+0x10], xmm0
-     movss xmm0, dword ptr [0x000000000040017A]
-     movss [rsp+0x14], xmm0
-     movss xmm0, dword ptr [0x0000000000400180]
-     lea rdi, [rsp]
-     call :fsrc32
-     mov rbx, rax
-     movss xmm0, dword ptr [0x000000000040017A]
-     lea rdi, [rsp]
-     call :fsrc32
-     mov rbp, rax
-     movss xmm0, dword ptr [0x0000000000400186]
-     lea rdi, [rsp]
-     call :fsrc32
-     mov r12, rax
-     movsd xmm0, qword ptr [0x000000000040018C]
-     movsd [rsp+0x18], xmm0
-     movsd xmm0, qword ptr [0x000000000040018C]
-     movsd [rsp+0x20], xmm0
-     movsd xmm0, qword ptr [0x000000000040018C]
-     movsd [rsp+0x28], xmm0
-     movsd xmm0, qword ptr [0x000000000040018C]
-     movsd [rsp+0x30], xmm0
-     movsd xmm0, qword ptr [0x000000000040018C]
-     movsd [rsp+0x38], xmm0
-     movsd xmm0, qword ptr [0x000000000040018C]
-     movsd [rsp+0x40], xmm0
-     movsd xmm0, qword ptr [0x0000000000400196]
-     lea rdi, [rsp+0x18]
-     call :fsrc64
-     mov r13, rax
-     lea rdi, [rsp+0x18]
-     movsd xmm0, qword ptr [0x000000000040018C]
-     call :fsrc64
-     mov r14, rax
-     movsd xmm0, qword ptr [0x00000000004001A0]
-     lea rdi, [rsp+0x18]
-     call :fsrc64
-     mov rdx, rbx
-     add rdx, rbp
-     add rdx, r12
-     mov rsi, r13
-     add rsi, r14
-     add rsi, rax
-     add rdx, rsi
-     mov rax, rdx
-     add rsp, 0x50
-     pop r14
-     pop r13
-     pop r12
-     pop rbp
-     pop rbx
-     ret
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    sub rsp, 0x50
+    movss.d xmm0, [rip + 0x163]
+    movss.d [rsp], xmm0
+    movss.d xmm0, [rip + 0x154]
+    movss.d [rsp + 0x4], xmm0
+    movss.d xmm0, [rip + 0x144]
+    movss.d [rsp + 0x8], xmm0
+    movss.d xmm0, [rip + 0x134]
+    movss.d [rsp + 0xc], xmm0
+    movss.d xmm0, [rip + 0x124]
+    movss.d [rsp + 0x10], xmm0
+    movss.d xmm0, [rip + 0x114]
+    movss.d [rsp + 0x14], xmm0
+    movss.d xmm0, [rip + 0x10a]
+    lea rdi, [rsp]
+    call -0x1a7
+    mov rbx, rax
+    movss.d xmm0, [rip + 0xef]
+    lea rdi, [rsp]
+    call -0x1bc
+    mov rbp, rax
+    movss.d xmm0, [rip + 0xe6]
+    lea rdi, [rsp]
+    call -0x1d1
+    mov r12, rax
+    movsd.q xmm0, [rip + 0xd7]
+    movsd.q [rsp + 0x18], xmm0
+    movsd.q xmm0, [rip + 0xc7]
+    movsd.q [rsp + 0x20], xmm0
+    movsd.q xmm0, [rip + 0xb7]
+    movsd.q [rsp + 0x28], xmm0
+    movsd.q xmm0, [rip + 0xa7]
+    movsd.q [rsp + 0x30], xmm0
+    movsd.q xmm0, [rip + 0x97]
+    movsd.q [rsp + 0x38], xmm0
+    movsd.q xmm0, [rip + 0x87]
+    movsd.q [rsp + 0x40], xmm0
+    movsd.q xmm0, [rip + 0x81]
+    lea rdi, [rsp + 0x18]
+    call -0x1b7
+    mov r13, rax
+    lea rdi, [rsp + 0x18]
+    movsd.q xmm0, [rip + 0x5c]
+    call -0x1cd
+    mov r14, rax
+    movsd.q xmm0, [rip + 0x5f]
+    lea rdi, [rsp + 0x18]
+    call -0x1e3
+    mov rdx, rbx
+    add rdx, rbp
+    add rdx, r12
+    mov rsi, r13
+    add rsi, r14
+    add rsi, rax
+    add rdx, rsi
+    mov rax, rdx
+    add rsp, 0x50
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
 =========== OPT LEVEL: aggresive ===========

@@ -1,73 +1,73 @@
 =========== OPT LEVEL: none ===========
 main:
-     sub rsp, 0x18
-     xor esi, esi
-     mov rdx, 0x18
-     lea rdi, [rsp]
-     call :$set
-     mov qword ptr [rsp], 0x01
-     mov qword ptr [rsp+0x08], 0x02
-     mov qword ptr [rsp+0x10], 0x03
-     lea rdi, [rsp]
-     call :sum
-     add rsp, 0x18
-     ret
+    sub rsp, 0x18
+    xor esi, esi
+    mov rdx, 0x18
+    lea rdi, [rsp]
+    call.q [rip - 0x20]
+    mov.q [rsp], 1
+    mov.q [rsp + 0x8], 2
+    mov.q [rsp + 0x10], 3
+    lea rdi, [rsp]
+    call +0x5
+    add rsp, 0x18
+    ret
 sum:
-     mov rax, [rdi]
-     add rax, [rdi+0x08]
-     add rax, [rdi+0x10]
-     ret
+    mov.q rax, [rdi]
+    add.q rax, [rdi + 0x8]
+    add.q rax, [rdi + 0x10]
+    ret
 =========== OPT LEVEL: mininal ===========
 main:
-     sub rsp, 0x18
-     xor esi, esi
-     mov rdx, 0x18
-     lea rdi, [rsp]
-     call :$set
-     mov qword ptr [rsp], 0x01
-     mov qword ptr [rsp+0x08], 0x02
-     mov qword ptr [rsp+0x10], 0x03
-     lea rdi, [rsp]
-     call :sum
-     add rsp, 0x18
-     ret
+    sub rsp, 0x18
+    xor esi, esi
+    mov rdx, 0x18
+    lea rdi, [rsp]
+    call.q [rip - 0x20]
+    mov.q [rsp], 1
+    mov.q [rsp + 0x8], 2
+    mov.q [rsp + 0x10], 3
+    lea rdi, [rsp]
+    call +0x5
+    add rsp, 0x18
+    ret
 sum:
-     mov rax, [rdi]
-     add rax, [rdi+0x08]
-     add rax, [rdi+0x10]
-     ret
+    mov.q rax, [rdi]
+    add.q rax, [rdi + 0x8]
+    add.q rax, [rdi + 0x10]
+    ret
 =========== OPT LEVEL: moderate ===========
 main:
-     sub rsp, 0x18
-     mov qword ptr [rsp], 0x01
-     mov qword ptr [rsp+0x08], 0x02
-     mov qword ptr [rsp+0x10], 0x03
-     lea rdi, [rsp]
-     call :sum
-     add rsp, 0x18
-     ret
+    sub rsp, 0x18
+    mov.q [rsp], 1
+    mov.q [rsp + 0x8], 2
+    mov.q [rsp + 0x10], 3
+    lea rdi, [rsp]
+    call +0x9
+    add rsp, 0x18
+    ret
 sum:
-     mov rax, [rdi]
-     add rax, [rdi+0x08]
-     add rax, [rdi+0x10]
-     ret
+    mov.q rax, [rdi]
+    add.q rax, [rdi + 0x8]
+    add.q rax, [rdi + 0x10]
+    ret
 =========== OPT LEVEL: all ===========
 main:
-     sub rsp, 0x18
-     mov qword ptr [rsp], 0x01
-     mov qword ptr [rsp+0x08], 0x02
-     mov qword ptr [rsp+0x10], 0x03
-     lea rdi, [rsp]
-     call :sum
-     add rsp, 0x18
-     ret
+    sub rsp, 0x18
+    mov.q [rsp], 1
+    mov.q [rsp + 0x8], 2
+    mov.q [rsp + 0x10], 3
+    lea rdi, [rsp]
+    call +0x9
+    add rsp, 0x18
+    ret
 sum:
-     mov rax, [rdi]
-     add rax, [rdi+0x08]
-     add rax, [rdi+0x10]
-     ret
+    mov.q rax, [rdi]
+    add.q rax, [rdi + 0x8]
+    add.q rax, [rdi + 0x10]
+    ret
 =========== OPT LEVEL: aggresive ===========
 main:
-     mov rax, 0x06
-     ret
+    mov rax, 6
+    ret
 sum:

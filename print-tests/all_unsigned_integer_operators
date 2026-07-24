@@ -1,169 +1,191 @@
 =========== OPT LEVEL: none ===========
 main:
-     mov rcx, 0x06
-     mov rax, 0x14
-     xor rdx, rdx
-     div rcx
-     cmp rax, 0x03
-     jz :0
-     xor esi, esi
-     jmp :1
-
-000: xor esi, esi
-     add rsi, 0x01
-001: mov rax, 0x14
-     xor rdx, rdx
-     div rcx
-     cmp rdx, 0x02
-     jz :2
-     jmp :3
-
-002: add rsi, 0x02
-003: xor eax, eax
-     sub rax, 0x07
-     mov rdi, rax
-     mov rax, rdi
-     xor rdx, rdx
-     div rcx
-     cmp rax, 0x14
-     jnbe :4
-     jmp :5
-
-004: add rsi, 0x04
-005: mov rax, rdi
-     xor rdx, rdx
-     div rcx
-     cmp rdx, 0x03
-     jz :6
-     jmp :7
-
-006: add rsi, 0x08
-007: mov rax, rdi
-     shr rax, 0x3C
-     cmp rax, 0x0F
-     jz :8
-     jmp :9
-
-008: add rsi, 0x10
-009: mov rax, 0x14
-     shr rax, 0x02
-     cmp rax, 0x05
-     jz :10
-     jmp :11
-
-010: add rsi, 0x20
-011: cmp rdi, 0x06
-     jnbe :12
-     jmp :13
-
-012: add rsi, 0x40
-013: cmp rdi, 0x14
-     jnb :14
-     jmp :15
-
-014: add rsi, 0x80
-015: cmp rcx, rdi
-     jb :16
-     jmp :17
-
-016: add rsi, 0x100
-017: mov rdx, rsi
-     cmp rcx, rdi
-     jbe :18
-     jmp :19
-
-018: add rdx, 0x200
-019: mov rax, 0x14
-     cmp rax, rdi
-     jb :20
-     jmp :21
-
-020: add rdx, 0x400
-021: mov rax, rdx
-     ret
+    mov rcx, 6
+    mov rax, 0x14
+    xor rdx, rdx
+    div rcx
+    cmp rax, 3
+    jz 0
+    xor esi, esi
+    jmp 1
+0:
+    xor esi, esi
+    add rsi, 1
+1:
+    mov rax, 0x14
+    xor rdx, rdx
+    div rcx
+    cmp rdx, 2
+    jz 2
+    jmp 3
+2:
+    add rsi, 2
+3:
+    xor eax, eax
+    sub rax, 7
+    mov rdi, rax
+    mov rax, rdi
+    xor rdx, rdx
+    div rcx
+    cmp rax, 0x14
+    jnbe 4
+    jmp 5
+4:
+    add rsi, 4
+5:
+    mov rax, rdi
+    xor rdx, rdx
+    div rcx
+    cmp rdx, 3
+    jz 6
+    jmp 7
+6:
+    add rsi, 8
+7:
+    mov rax, rdi
+    shr rax, 0x3c
+    cmp rax, 0xf
+    jz 8
+    jmp 9
+8:
+    add rsi, 0x10
+9:
+    mov rax, 0x14
+    shr rax, 2
+    cmp rax, 5
+    jz 10
+    jmp 11
+10:
+    add rsi, 0x20
+11:
+    cmp rdi, 6
+    jnbe 12
+    jmp 13
+12:
+    add rsi, 0x40
+13:
+    cmp rdi, 0x14
+    jnc 14
+    jmp 15
+14:
+    add rsi, 0x80
+15:
+    cmp rcx, rdi
+    jnae 16
+    jmp 17
+16:
+    add rsi, 0x100
+17:
+    mov rdx, rsi
+    cmp rcx, rdi
+    jna 18
+    jmp 19
+18:
+    add rdx, 0x200
+19:
+    mov rax, 0x14
+    cmp rax, rdi
+    jnae 20
+    jmp 21
+20:
+    add rdx, 0x400
+21:
+    mov rax, rdx
+    ret
 =========== OPT LEVEL: mininal ===========
 main:
-     mov cl, 0x01
-     test cl, cl
-     jnz :0
-     xor esi, esi
-     jmp :1
-
-000: xor esi, esi
-     add rsi, 0x01
-001: test cl, cl
-     jnz :2
-     jmp :3
-
-002: add rsi, 0x02
-003: mov rdi, 0x06
-     xor eax, eax
-     sub rax, 0x07
-     mov r8, rax
-     mov rax, r8
-     xor rdx, rdx
-     div rdi
-     cmp rax, 0x14
-     jnbe :4
-     jmp :5
-
-004: add rsi, 0x04
-005: mov rax, r8
-     xor rdx, rdx
-     div rdi
-     cmp rdx, 0x03
-     jz :6
-     jmp :7
-
-006: add rsi, 0x08
-007: mov rax, r8
-     shr rax, 0x3C
-     cmp rax, 0x0F
-     jz :8
-     jmp :9
-
-008: add rsi, 0x10
-009: test cl, cl
-     jnz :10
-     jmp :11
-
-010: add rsi, 0x20
-011: cmp r8, 0x06
-     setnbe al
-     movzx rax, al
-     test al, al
-     jnz :12
-     jmp :13
-
-012: add rsi, 0x40
-013: cmp r8, 0x14
-     jnb :14
-     jmp :15
-
-014: add rsi, 0x80
-015: test al, al
-     jnz :16
-     jmp :17
-
-016: add rsi, 0x100
-017: cmp r8, 0x06
-     jnb :18
-     jmp :19
-
-018: add rsi, 0x200
-019: cmp r8, 0x14
-     jnbe :20
-     jmp :21
-
-020: add rsi, 0x400
-021: mov rax, rsi
-     ret
+    mov cl, 1
+    test cl, cl
+    jne 0
+    xor esi, esi
+    jmp 1
+0:
+    xor esi, esi
+    add rsi, 1
+1:
+    test cl, cl
+    jne 2
+    jmp 3
+2:
+    add rsi, 2
+3:
+    mov rdi, 6
+    xor eax, eax
+    sub rax, 7
+    mov r8, rax
+    mov rax, r8
+    xor rdx, rdx
+    div rdi
+    cmp rax, 0x14
+    jnbe 4
+    jmp 5
+4:
+    add rsi, 4
+5:
+    mov rax, r8
+    xor rdx, rdx
+    div rdi
+    cmp rdx, 3
+    jz 6
+    jmp 7
+6:
+    add rsi, 8
+7:
+    mov rax, r8
+    shr rax, 0x3c
+    cmp rax, 0xf
+    jz 8
+    jmp 9
+8:
+    add rsi, 0x10
+9:
+    test cl, cl
+    jne 10
+    jmp 11
+10:
+    add rsi, 0x20
+11:
+    cmp r8, 6
+    setnbe al
+    movzx rax, al
+    test al, al
+    jne 12
+    jmp 13
+12:
+    add rsi, 0x40
+13:
+    cmp r8, 0x14
+    jnc 14
+    jmp 15
+14:
+    add rsi, 0x80
+15:
+    test al, al
+    jne 16
+    jmp 17
+16:
+    add rsi, 0x100
+17:
+    cmp r8, 6
+    jnc 18
+    jmp 19
+18:
+    add rsi, 0x200
+19:
+    cmp r8, 0x14
+    jnbe 20
+    jmp 21
+20:
+    add rsi, 0x400
+21:
+    mov rax, rsi
+    ret
 =========== OPT LEVEL: moderate ===========
 main:
-     mov rax, 0x7FF
-     ret
+    mov rax, 0x7ff
+    ret
 =========== OPT LEVEL: all ===========
 main:
-     mov rax, 0x7FF
-     ret
+    mov rax, 0x7ff
+    ret
 =========== OPT LEVEL: aggresive ===========

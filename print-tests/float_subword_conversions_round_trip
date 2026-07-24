@@ -1,102 +1,102 @@
 =========== OPT LEVEL: none ===========
 main:
-     sub rsp, 0x08
-     xor edi, edi
-     sub rdi, 0x2A
-     call :opaque
-     mov rsi, rax
-     movsd xmm0, qword ptr [0x00000000004000B2]
-     cvtsi2ss xmm1, rsi
-     cvttss2si rcx, xmm1
-     movsd xmm1, qword ptr [0x00000000004000BC]
-     movss xmm2, dword ptr [0x00000000004000C6]
-     cvtss2sd xmm2, xmm2
-     cvtsd2ss xmm2, xmm2
-     cvttss2si rax, xmm2
-     xor edx, edx
-     add rax, rdx
-     subsd xmm1, [0x00000000004000CC]
-     cvtsd2ss xmm1, xmm1
-     cvtss2sd xmm1, xmm1
-     cvttsd2si rdx, xmm1
-     add rax, rdx
-     cvtsi2sd xmm1, rsi
-     cvttsd2si rdx, xmm1
-     add rcx, rdx
-     add rax, rcx
-     cvttsd2si ecx, xmm0
-     movsx rcx, cl
-     add rax, rcx
-     cvttsd2si ecx, xmm0
-     movsx rcx, cx
-     add rax, rcx
-     cvttsd2si ecx, xmm0
-     movsxd rcx, ecx
-     add rax, rcx
-     cvttsd2si rcx, xmm0
-     add rax, rcx
-     add rsp, 0x08
-     ret
+    sub rsp, 8
+    xor edi, edi
+    sub rdi, 0x2a
+    call +0xc1
+    mov rsi, rax
+    movsd.q xmm0, [rip + 0x93]
+    cvtsi2ss xmm1, rsi
+    cvttss2si rcx, xmm1
+    movsd.q xmm1, [rip + 0x8a]
+    movss.d xmm2, [rip + 0x8b]
+    cvtss2sd xmm2, xmm2
+    cvtsd2ss xmm2, xmm2
+    cvttss2si rax, xmm2
+    xor edx, edx
+    add rax, rdx
+    subsd.q xmm1, [rip + 0x73]
+    cvtsd2ss xmm1, xmm1
+    cvtss2sd xmm1, xmm1
+    cvttsd2si rdx, xmm1
+    add rax, rdx
+    cvtsi2sd xmm1, rsi
+    cvttsd2si rdx, xmm1
+    add rcx, rdx
+    add rax, rcx
+    cvttsd2si ecx, xmm0
+    movsx rcx, cl
+    add rax, rcx
+    cvttsd2si ecx, xmm0
+    movsx rcx, cx
+    add rax, rcx
+    cvttsd2si ecx, xmm0
+    movsxd rcx, ecx
+    add rax, rcx
+    cvttsd2si rcx, xmm0
+    add rax, rcx
+    add rsp, 8
+    ret
 opaque:
-     mov rax, rdi
-     ret
+    mov rax, rdi
+    ret
 =========== OPT LEVEL: mininal ===========
 main:
-     sub rsp, 0x08
-     mov rdi, 0xFFFFFFFFFFFFFFD6
-     call :opaque
-     cvtsi2ss xmm0, rax
-     cvttss2si rcx, xmm0
-     xor edx, edx
-     cvtsi2sd xmm0, rax
-     cvttsd2si rax, xmm0
-     add rcx, rax
-     lea rax, [rdx+rcx*1-0x96]
-     add rax, 0x7B
-     add rax, 0x7B
-     add rax, 0x7B
-     add rax, 0x7B
-     add rsp, 0x08
-     ret
+    sub rsp, 8
+    mov rdi, -0x2a
+    call +0x48
+    cvtsi2ss xmm0, rax
+    cvttss2si rcx, xmm0
+    xor edx, edx
+    cvtsi2sd xmm0, rax
+    cvttsd2si rax, xmm0
+    add rcx, rax
+    lea rax, [rdx + rcx - 0x96]
+    add rax, 0x7b
+    add rax, 0x7b
+    add rax, 0x7b
+    add rax, 0x7b
+    add rsp, 8
+    ret
 opaque:
-     mov rax, rdi
-     ret
+    mov rax, rdi
+    ret
 =========== OPT LEVEL: moderate ===========
 main:
-     sub rsp, 0x08
-     mov rdi, 0xFFFFFFFFFFFFFFD6
-     call :opaque
-     mov rcx, rax
-     cvtsi2ss xmm0, rcx
-     cvttss2si rax, xmm0
-     cvtsi2sd xmm0, rcx
-     cvttsd2si rcx, xmm0
-     add rax, rcx
-     add rax, 0x156
-     add rsp, 0x08
-     ret
+    sub rsp, 8
+    mov rdi, -0x2a
+    call +0x28
+    mov rcx, rax
+    cvtsi2ss xmm0, rcx
+    cvttss2si rax, xmm0
+    cvtsi2sd xmm0, rcx
+    cvttsd2si rcx, xmm0
+    add rax, rcx
+    add rax, 0x156
+    add rsp, 8
+    ret
 opaque:
-     mov rax, rdi
-     ret
+    mov rax, rdi
+    ret
 =========== OPT LEVEL: all ===========
 main:
-     sub rsp, 0x08
-     mov rdi, 0xFFFFFFFFFFFFFFD6
-     call :opaque
-     mov rcx, rax
-     cvtsi2ss xmm0, rcx
-     cvttss2si rax, xmm0
-     cvtsi2sd xmm0, rcx
-     cvttsd2si rcx, xmm0
-     add rax, rcx
-     add rax, 0x156
-     add rsp, 0x08
-     ret
+    sub rsp, 8
+    mov rdi, -0x2a
+    call +0x28
+    mov rcx, rax
+    cvtsi2ss xmm0, rcx
+    cvttss2si rax, xmm0
+    cvtsi2sd xmm0, rcx
+    cvttsd2si rcx, xmm0
+    add rax, rcx
+    add rax, 0x156
+    add rsp, 8
+    ret
 opaque:
-     mov rax, rdi
-     ret
+    mov rax, rdi
+    ret
 =========== OPT LEVEL: aggresive ===========
 main:
-     mov rax, 0x102
-     ret
+    mov rax, 0x102
+    ret
 opaque:

@@ -1,766 +1,788 @@
 =========== OPT LEVEL: none ===========
 opaque32:
-     ret
+    ret
 test_f32:
-     ucomiss xmm0, xmm1
-     jz :0
-     ucomiss xmm0, xmm1
-     jnz :1
-     ucomiss xmm1, xmm0
-     jnbe :2
-     ucomiss xmm0, xmm1
-     jnb :3
-     ucomiss xmm0, xmm1
-     jnbe :4
-     ucomiss xmm1, xmm0
-     jnb :5
-     xor eax, eax
-     jmp :6
-
-005: mov rax, 0x06
-     jmp :6
-
-004: mov rax, 0x05
-     jmp :6
-
-003: mov rax, 0x04
-     jmp :6
-
-002: mov rax, 0x03
-     jmp :6
-
-001: mov rax, 0x02
-     jmp :6
-
-000: mov rax, 0x01
-006: ret
+    ucomiss xmm0, xmm1
+    jz 0
+    ucomiss xmm0, xmm1
+    jne 1
+    ucomiss xmm1, xmm0
+    jnbe 2
+    ucomiss xmm0, xmm1
+    jnc 3
+    ucomiss xmm0, xmm1
+    jnbe 4
+    ucomiss xmm1, xmm0
+    jnc 5
+    xor eax, eax
+    jmp 6
+5:
+    mov rax, 6
+    jmp 6
+4:
+    mov rax, 5
+    jmp 6
+3:
+    mov rax, 4
+    jmp 6
+2:
+    mov rax, 3
+    jmp 6
+1:
+    mov rax, 2
+    jmp 6
+0:
+    mov rax, 1
+6:
+    ret
 test_f64:
-     ucomisd xmm0, xmm1
-     jz :0
-     ucomisd xmm0, xmm1
-     jnz :1
-     ucomisd xmm1, xmm0
-     jnbe :2
-     ucomisd xmm0, xmm1
-     jnb :3
-     ucomisd xmm0, xmm1
-     jnbe :4
-     ucomisd xmm1, xmm0
-     jnb :5
-     xor eax, eax
-     jmp :6
-
-005: mov rax, 0x3C
-     jmp :6
-
-004: mov rax, 0x32
-     jmp :6
-
-003: mov rax, 0x28
-     jmp :6
-
-002: mov rax, 0x1E
-     jmp :6
-
-001: mov rax, 0x14
-     jmp :6
-
-000: mov rax, 0x0A
-006: ret
+    ucomisd xmm0, xmm1
+    jz 0
+    ucomisd xmm0, xmm1
+    jne 1
+    ucomisd xmm1, xmm0
+    jnbe 2
+    ucomisd xmm0, xmm1
+    jnc 3
+    ucomisd xmm0, xmm1
+    jnbe 4
+    ucomisd xmm1, xmm0
+    jnc 5
+    xor eax, eax
+    jmp 6
+5:
+    mov rax, 0x3c
+    jmp 6
+4:
+    mov rax, 0x32
+    jmp 6
+3:
+    mov rax, 0x28
+    jmp 6
+2:
+    mov rax, 0x1e
+    jmp 6
+1:
+    mov rax, 0x14
+    jmp 6
+0:
+    mov rax, 0xa
+6:
+    ret
 test_mixed_patterns:
-     sub rsp, 0x18
-     movss [rsp], xmm0
-     movss xmm0, dword ptr [rsp]
-     call :opaque32
-     movss [rsp+0x08], xmm0
-     movss xmm0, dword ptr [rsp]
-     addss xmm0, [0x00000000004000D2]
-     call :opaque32
-     movss xmm1, dword ptr [rsp+0x08]
-     ucomiss xmm0, xmm1
-     jnbe :0
-     jmp :1
-
-000: movss xmm1, dword ptr [rsp+0x08]
-     ucomiss xmm0, xmm1
-     jnb :2
-     jmp :1
-
-002: movss xmm1, dword ptr [rsp+0x08]
-     ucomiss xmm1, xmm0
-     jnz :3
-001: movss xmm1, dword ptr [rsp+0x08]
-     ucomiss xmm1, xmm0
-     jnbe :4
-     jmp :5
-
-004: movss xmm1, dword ptr [rsp+0x08]
-     ucomiss xmm1, xmm0
-     jnb :6
-     jmp :5
-
-006: movss xmm1, dword ptr [rsp+0x08]
-     ucomiss xmm1, xmm0
-     jz :7
-005: xor eax, eax
-     jmp :8
-
-007: mov rax, 0xC8
-     jmp :8
-
-003: mov rax, 0x64
-008: add rsp, 0x18
-     ret
+    sub rsp, 0x18
+    movss.d [rsp], xmm0
+    movss.d xmm0, [rsp]
+    call -0x135
+    movss.d [rsp + 0x8], xmm0
+    movss.d xmm0, [rsp]
+    addss.d xmm0, [rip + 0xa7]
+    call -0x150
+    movss.d xmm1, [rsp + 0x8]
+    ucomiss xmm0, xmm1
+    jnbe 0
+    jmp 1
+0:
+    movss.d xmm1, [rsp + 0x8]
+    ucomiss xmm0, xmm1
+    jnc 2
+    jmp 1
+2:
+    movss.d xmm1, [rsp + 0x8]
+    ucomiss xmm1, xmm0
+    jne 3
+1:
+    movss.d xmm1, [rsp + 0x8]
+    ucomiss xmm1, xmm0
+    jnbe 4
+    jmp 5
+4:
+    movss.d xmm1, [rsp + 0x8]
+    ucomiss xmm1, xmm0
+    jnc 6
+    jmp 5
+6:
+    movss.d xmm1, [rsp + 0x8]
+    ucomiss xmm1, xmm0
+    jz 7
+5:
+    xor eax, eax
+    jmp 8
+7:
+    mov rax, 0xc8
+    jmp 8
+3:
+    mov rax, 0x64
+8:
+    add rsp, 0x18
+    ret
 main:
-     push rbx
-     push rbp
-     push r12
-     push r13
-     push r14
-     push r15
-     sub rsp, 0x08
-     movss xmm0, dword ptr [0x00000000004000EC]
-     movss xmm1, dword ptr [0x00000000004000F2]
-     call :test_f32
-     mov rbx, rax
-     movss xmm1, dword ptr [0x00000000004000F2]
-     movss xmm0, dword ptr [0x00000000004000F2]
-     call :test_f32
-     mov rbp, rax
-     movss xmm0, dword ptr [0x00000000004000F8]
-     movss xmm1, dword ptr [0x00000000004000EC]
-     call :test_f32
-     mov r12, rax
-     movsd xmm0, qword ptr [0x00000000004000FE]
-     movsd xmm1, qword ptr [0x0000000000400108]
-     call :test_f64
-     mov r13, rax
-     movsd xmm1, qword ptr [0x0000000000400108]
-     movsd xmm0, qword ptr [0x0000000000400108]
-     call :test_f64
-     mov r14, rax
-     movsd xmm0, qword ptr [0x0000000000400112]
-     movsd xmm1, qword ptr [0x00000000004000FE]
-     call :test_f64
-     mov r15, rax
-     movss xmm0, dword ptr [0x000000000040011C]
-     call :test_mixed_patterns
-     mov rdx, rax
-     xor eax, eax
-     add rax, rbx
-     add rax, rbp
-     add rax, r12
-     add rax, r13
-     add rax, r14
-     add rax, r15
-     add rax, rdx
-     add rsp, 0x08
-     pop r15
-     pop r14
-     pop r13
-     pop r12
-     pop rbp
-     pop rbx
-     ret
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    push r15
+    sub rsp, 8
+    movss.d xmm0, [rip + 0xd3]
+    movss.d xmm1, [rip + 0xd0]
+    call -0x215
+    mov rbx, rax
+    movss.d xmm1, [rip + 0xbf]
+    movss.d xmm0, [rip + 0xb6]
+    call -0x22f
+    mov rbp, rax
+    movss.d xmm0, [rip + 0xab]
+    movss.d xmm1, [rip + 0x96]
+    call -0x249
+    mov r12, rax
+    movsd.q xmm0, [rip + 0x97]
+    movsd.q xmm1, [rip + 0x98]
+    call -0x1db
+    mov r13, rax
+    movsd.q xmm1, [rip + 0x87]
+    movsd.q xmm0, [rip + 0x7e]
+    call -0x1f5
+    mov r14, rax
+    movsd.q xmm0, [rip + 0x77]
+    movsd.q xmm1, [rip + 0x5a]
+    call -0x20f
+    mov r15, rax
+    movss.d xmm0, [rip + 0x67]
+    call -0x190
+    mov rdx, rax
+    xor eax, eax
+    add rax, rbx
+    add rax, rbp
+    add rax, r12
+    add rax, r13
+    add rax, r14
+    add rax, r15
+    add rax, rdx
+    add rsp, 8
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
 =========== OPT LEVEL: mininal ===========
 opaque32:
-     ret
+    ret
 test_f32:
-     ucomiss xmm0, xmm1
-     jz :0
-     ucomiss xmm0, xmm1
-     jnz :1
-     ucomiss xmm1, xmm0
-     jnbe :2
-     ucomiss xmm0, xmm1
-     jnb :3
-     ucomiss xmm0, xmm1
-     jnbe :4
-     ucomiss xmm1, xmm0
-     jnb :5
-     xor eax, eax
-     jmp :6
-
-005: mov rax, 0x06
-     jmp :6
-
-004: mov rax, 0x05
-     jmp :6
-
-003: mov rax, 0x04
-     jmp :6
-
-002: mov rax, 0x03
-     jmp :6
-
-001: mov rax, 0x02
-     jmp :6
-
-000: mov rax, 0x01
-006: ret
+    ucomiss xmm0, xmm1
+    jz 0
+    ucomiss xmm0, xmm1
+    jne 1
+    ucomiss xmm1, xmm0
+    jnbe 2
+    ucomiss xmm0, xmm1
+    jnc 3
+    ucomiss xmm0, xmm1
+    jnbe 4
+    ucomiss xmm1, xmm0
+    jnc 5
+    xor eax, eax
+    jmp 6
+5:
+    mov rax, 6
+    jmp 6
+4:
+    mov rax, 5
+    jmp 6
+3:
+    mov rax, 4
+    jmp 6
+2:
+    mov rax, 3
+    jmp 6
+1:
+    mov rax, 2
+    jmp 6
+0:
+    mov rax, 1
+6:
+    ret
 test_f64:
-     ucomisd xmm0, xmm1
-     jz :0
-     ucomisd xmm0, xmm1
-     jnz :1
-     ucomisd xmm1, xmm0
-     jnbe :2
-     ucomisd xmm0, xmm1
-     jnb :3
-     ucomisd xmm0, xmm1
-     jnbe :4
-     ucomisd xmm1, xmm0
-     jnb :5
-     xor eax, eax
-     jmp :6
-
-005: mov rax, 0x3C
-     jmp :6
-
-004: mov rax, 0x32
-     jmp :6
-
-003: mov rax, 0x28
-     jmp :6
-
-002: mov rax, 0x1E
-     jmp :6
-
-001: mov rax, 0x14
-     jmp :6
-
-000: mov rax, 0x0A
-006: ret
+    ucomisd xmm0, xmm1
+    jz 0
+    ucomisd xmm0, xmm1
+    jne 1
+    ucomisd xmm1, xmm0
+    jnbe 2
+    ucomisd xmm0, xmm1
+    jnc 3
+    ucomisd xmm0, xmm1
+    jnbe 4
+    ucomisd xmm1, xmm0
+    jnc 5
+    xor eax, eax
+    jmp 6
+5:
+    mov rax, 0x3c
+    jmp 6
+4:
+    mov rax, 0x32
+    jmp 6
+3:
+    mov rax, 0x28
+    jmp 6
+2:
+    mov rax, 0x1e
+    jmp 6
+1:
+    mov rax, 0x14
+    jmp 6
+0:
+    mov rax, 0xa
+6:
+    ret
 test_mixed_patterns:
-     sub rsp, 0x18
-     movss [rsp], xmm0
-     movss xmm0, dword ptr [rsp]
-     call :opaque32
-     movss [rsp+0x08], xmm0
-     movss xmm0, dword ptr [rsp]
-     addss xmm0, [0x00000000004000D2]
-     call :opaque32
-     movss xmm1, dword ptr [rsp+0x08]
-     ucomiss xmm0, xmm1
-     jnbe :0
-     jmp :1
-
-000: movss xmm1, dword ptr [rsp+0x08]
-     ucomiss xmm0, xmm1
-     jnb :2
-     jmp :1
-
-002: movss xmm1, dword ptr [rsp+0x08]
-     ucomiss xmm1, xmm0
-     jnz :3
-001: movss xmm1, dword ptr [rsp+0x08]
-     ucomiss xmm1, xmm0
-     jnbe :4
-     jmp :5
-
-004: movss xmm1, dword ptr [rsp+0x08]
-     ucomiss xmm1, xmm0
-     jnb :6
-     jmp :5
-
-006: movss xmm1, dword ptr [rsp+0x08]
-     ucomiss xmm1, xmm0
-     jz :7
-005: xor eax, eax
-     jmp :8
-
-007: mov rax, 0xC8
-     jmp :8
-
-003: mov rax, 0x64
-008: add rsp, 0x18
-     ret
+    sub rsp, 0x18
+    movss.d [rsp], xmm0
+    movss.d xmm0, [rsp]
+    call -0x135
+    movss.d [rsp + 0x8], xmm0
+    movss.d xmm0, [rsp]
+    addss.d xmm0, [rip + 0xa7]
+    call -0x150
+    movss.d xmm1, [rsp + 0x8]
+    ucomiss xmm0, xmm1
+    jnbe 0
+    jmp 1
+0:
+    movss.d xmm1, [rsp + 0x8]
+    ucomiss xmm0, xmm1
+    jnc 2
+    jmp 1
+2:
+    movss.d xmm1, [rsp + 0x8]
+    ucomiss xmm1, xmm0
+    jne 3
+1:
+    movss.d xmm1, [rsp + 0x8]
+    ucomiss xmm1, xmm0
+    jnbe 4
+    jmp 5
+4:
+    movss.d xmm1, [rsp + 0x8]
+    ucomiss xmm1, xmm0
+    jnc 6
+    jmp 5
+6:
+    movss.d xmm1, [rsp + 0x8]
+    ucomiss xmm1, xmm0
+    jz 7
+5:
+    xor eax, eax
+    jmp 8
+7:
+    mov rax, 0xc8
+    jmp 8
+3:
+    mov rax, 0x64
+8:
+    add rsp, 0x18
+    ret
 main:
-     push rbx
-     push rbp
-     push r12
-     push r13
-     push r14
-     push r15
-     sub rsp, 0x08
-     movss xmm0, dword ptr [0x00000000004000EC]
-     movss xmm1, dword ptr [0x00000000004000F2]
-     call :test_f32
-     mov rbx, rax
-     movss xmm1, dword ptr [0x00000000004000F2]
-     movss xmm0, dword ptr [0x00000000004000F2]
-     call :test_f32
-     mov rbp, rax
-     movss xmm0, dword ptr [0x00000000004000F8]
-     movss xmm1, dword ptr [0x00000000004000EC]
-     call :test_f32
-     mov r12, rax
-     movsd xmm0, qword ptr [0x00000000004000FE]
-     movsd xmm1, qword ptr [0x0000000000400108]
-     call :test_f64
-     mov r13, rax
-     movsd xmm1, qword ptr [0x0000000000400108]
-     movsd xmm0, qword ptr [0x0000000000400108]
-     call :test_f64
-     mov r14, rax
-     movsd xmm0, qword ptr [0x0000000000400112]
-     movsd xmm1, qword ptr [0x00000000004000FE]
-     call :test_f64
-     mov r15, rax
-     movss xmm0, dword ptr [0x000000000040011C]
-     call :test_mixed_patterns
-     mov rdx, rax
-     xor eax, eax
-     add rax, rbx
-     add rax, rbp
-     add rax, r12
-     add rax, r13
-     add rax, r14
-     add rax, r15
-     add rax, rdx
-     add rsp, 0x08
-     pop r15
-     pop r14
-     pop r13
-     pop r12
-     pop rbp
-     pop rbx
-     ret
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    push r15
+    sub rsp, 8
+    movss.d xmm0, [rip + 0xd3]
+    movss.d xmm1, [rip + 0xd0]
+    call -0x215
+    mov rbx, rax
+    movss.d xmm1, [rip + 0xbf]
+    movss.d xmm0, [rip + 0xb6]
+    call -0x22f
+    mov rbp, rax
+    movss.d xmm0, [rip + 0xab]
+    movss.d xmm1, [rip + 0x96]
+    call -0x249
+    mov r12, rax
+    movsd.q xmm0, [rip + 0x97]
+    movsd.q xmm1, [rip + 0x98]
+    call -0x1db
+    mov r13, rax
+    movsd.q xmm1, [rip + 0x87]
+    movsd.q xmm0, [rip + 0x7e]
+    call -0x1f5
+    mov r14, rax
+    movsd.q xmm0, [rip + 0x77]
+    movsd.q xmm1, [rip + 0x5a]
+    call -0x20f
+    mov r15, rax
+    movss.d xmm0, [rip + 0x67]
+    call -0x190
+    mov rdx, rax
+    xor eax, eax
+    add rax, rbx
+    add rax, rbp
+    add rax, r12
+    add rax, r13
+    add rax, r14
+    add rax, r15
+    add rax, rdx
+    add rsp, 8
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
 =========== OPT LEVEL: moderate ===========
 opaque32:
-     ret
+    ret
 test_f32:
-     ucomiss xmm0, xmm1
-     jz :0
-     ucomiss xmm0, xmm1
-     jnz :1
-     ucomiss xmm1, xmm0
-     jnbe :2
-     ucomiss xmm0, xmm1
-     jnb :3
-     ucomiss xmm0, xmm1
-     jnbe :4
-     ucomiss xmm1, xmm0
-     jnb :5
-     xor eax, eax
-     jmp :6
-
-005: mov rax, 0x06
-     jmp :6
-
-004: mov rax, 0x05
-     jmp :6
-
-003: mov rax, 0x04
-     jmp :6
-
-002: mov rax, 0x03
-     jmp :6
-
-001: mov rax, 0x02
-     jmp :6
-
-000: mov rax, 0x01
-006: ret
+    ucomiss xmm0, xmm1
+    jz 0
+    ucomiss xmm0, xmm1
+    jne 1
+    ucomiss xmm1, xmm0
+    jnbe 2
+    ucomiss xmm0, xmm1
+    jnc 3
+    ucomiss xmm0, xmm1
+    jnbe 4
+    ucomiss xmm1, xmm0
+    jnc 5
+    xor eax, eax
+    jmp 6
+5:
+    mov rax, 6
+    jmp 6
+4:
+    mov rax, 5
+    jmp 6
+3:
+    mov rax, 4
+    jmp 6
+2:
+    mov rax, 3
+    jmp 6
+1:
+    mov rax, 2
+    jmp 6
+0:
+    mov rax, 1
+6:
+    ret
 test_f64:
-     ucomisd xmm0, xmm1
-     jz :0
-     ucomisd xmm0, xmm1
-     jnz :1
-     ucomisd xmm1, xmm0
-     jnbe :2
-     ucomisd xmm0, xmm1
-     jnb :3
-     ucomisd xmm0, xmm1
-     jnbe :4
-     ucomisd xmm1, xmm0
-     jnb :5
-     xor eax, eax
-     jmp :6
-
-005: mov rax, 0x3C
-     jmp :6
-
-004: mov rax, 0x32
-     jmp :6
-
-003: mov rax, 0x28
-     jmp :6
-
-002: mov rax, 0x1E
-     jmp :6
-
-001: mov rax, 0x14
-     jmp :6
-
-000: mov rax, 0x0A
-006: ret
+    ucomisd xmm0, xmm1
+    jz 0
+    ucomisd xmm0, xmm1
+    jne 1
+    ucomisd xmm1, xmm0
+    jnbe 2
+    ucomisd xmm0, xmm1
+    jnc 3
+    ucomisd xmm0, xmm1
+    jnbe 4
+    ucomisd xmm1, xmm0
+    jnc 5
+    xor eax, eax
+    jmp 6
+5:
+    mov rax, 0x3c
+    jmp 6
+4:
+    mov rax, 0x32
+    jmp 6
+3:
+    mov rax, 0x28
+    jmp 6
+2:
+    mov rax, 0x1e
+    jmp 6
+1:
+    mov rax, 0x14
+    jmp 6
+0:
+    mov rax, 0xa
+6:
+    ret
 test_mixed_patterns:
-     sub rsp, 0x18
-     movss [rsp], xmm0
-     movss xmm0, dword ptr [rsp]
-     call :opaque32
-     movss [rsp+0x08], xmm0
-     movss xmm0, dword ptr [rsp]
-     addss xmm0, [0x00000000004000D2]
-     call :opaque32
-     movss xmm1, dword ptr [rsp+0x08]
-     ucomiss xmm0, xmm1
-     jnbe :0
-     jmp :1
-
-000: movss xmm1, dword ptr [rsp+0x08]
-     ucomiss xmm0, xmm1
-     jnb :2
-     jmp :1
-
-002: movss xmm1, dword ptr [rsp+0x08]
-     ucomiss xmm1, xmm0
-     jnz :3
-001: movss xmm1, dword ptr [rsp+0x08]
-     ucomiss xmm1, xmm0
-     jnbe :4
-     jmp :5
-
-004: movss xmm1, dword ptr [rsp+0x08]
-     ucomiss xmm1, xmm0
-     jnb :6
-     jmp :5
-
-006: movss xmm1, dword ptr [rsp+0x08]
-     ucomiss xmm1, xmm0
-     jz :7
-005: xor eax, eax
-     jmp :8
-
-007: mov rax, 0xC8
-     jmp :8
-
-003: mov rax, 0x64
-008: add rsp, 0x18
-     ret
+    sub rsp, 0x18
+    movss.d [rsp], xmm0
+    movss.d xmm0, [rsp]
+    call -0x135
+    movss.d [rsp + 0x8], xmm0
+    movss.d xmm0, [rsp]
+    addss.d xmm0, [rip + 0xa7]
+    call -0x150
+    movss.d xmm1, [rsp + 0x8]
+    ucomiss xmm0, xmm1
+    jnbe 0
+    jmp 1
+0:
+    movss.d xmm1, [rsp + 0x8]
+    ucomiss xmm0, xmm1
+    jnc 2
+    jmp 1
+2:
+    movss.d xmm1, [rsp + 0x8]
+    ucomiss xmm1, xmm0
+    jne 3
+1:
+    movss.d xmm1, [rsp + 0x8]
+    ucomiss xmm1, xmm0
+    jnbe 4
+    jmp 5
+4:
+    movss.d xmm1, [rsp + 0x8]
+    ucomiss xmm1, xmm0
+    jnc 6
+    jmp 5
+6:
+    movss.d xmm1, [rsp + 0x8]
+    ucomiss xmm1, xmm0
+    jz 7
+5:
+    xor eax, eax
+    jmp 8
+7:
+    mov rax, 0xc8
+    jmp 8
+3:
+    mov rax, 0x64
+8:
+    add rsp, 0x18
+    ret
 main:
-     push rbx
-     push rbp
-     push r12
-     push r13
-     push r14
-     push r15
-     sub rsp, 0x08
-     movss xmm0, dword ptr [0x00000000004000EC]
-     movss xmm1, dword ptr [0x00000000004000F2]
-     call :test_f32
-     mov rbx, rax
-     movss xmm1, dword ptr [0x00000000004000F2]
-     movss xmm0, dword ptr [0x00000000004000F2]
-     call :test_f32
-     mov rbp, rax
-     movss xmm0, dword ptr [0x00000000004000F8]
-     movss xmm1, dword ptr [0x00000000004000EC]
-     call :test_f32
-     mov r12, rax
-     movsd xmm0, qword ptr [0x00000000004000FE]
-     movsd xmm1, qword ptr [0x0000000000400108]
-     call :test_f64
-     mov r13, rax
-     movsd xmm1, qword ptr [0x0000000000400108]
-     movsd xmm0, qword ptr [0x0000000000400108]
-     call :test_f64
-     mov r14, rax
-     movsd xmm0, qword ptr [0x0000000000400112]
-     movsd xmm1, qword ptr [0x00000000004000FE]
-     call :test_f64
-     mov r15, rax
-     movss xmm0, dword ptr [0x000000000040011C]
-     call :test_mixed_patterns
-     mov rdx, rbx
-     add rdx, rbp
-     add rdx, r12
-     add rdx, r13
-     add rdx, r14
-     add rdx, r15
-     add rdx, rax
-     mov rax, rdx
-     add rsp, 0x08
-     pop r15
-     pop r14
-     pop r13
-     pop r12
-     pop rbp
-     pop rbx
-     ret
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    push r15
+    sub rsp, 8
+    movss.d xmm0, [rip + 0xd3]
+    movss.d xmm1, [rip + 0xd0]
+    call -0x215
+    mov rbx, rax
+    movss.d xmm1, [rip + 0xbf]
+    movss.d xmm0, [rip + 0xb6]
+    call -0x22f
+    mov rbp, rax
+    movss.d xmm0, [rip + 0xab]
+    movss.d xmm1, [rip + 0x96]
+    call -0x249
+    mov r12, rax
+    movsd.q xmm0, [rip + 0x97]
+    movsd.q xmm1, [rip + 0x98]
+    call -0x1db
+    mov r13, rax
+    movsd.q xmm1, [rip + 0x87]
+    movsd.q xmm0, [rip + 0x7e]
+    call -0x1f5
+    mov r14, rax
+    movsd.q xmm0, [rip + 0x77]
+    movsd.q xmm1, [rip + 0x5a]
+    call -0x20f
+    mov r15, rax
+    movss.d xmm0, [rip + 0x67]
+    call -0x190
+    mov rdx, rbx
+    add rdx, rbp
+    add rdx, r12
+    add rdx, r13
+    add rdx, r14
+    add rdx, r15
+    add rdx, rax
+    mov rax, rdx
+    add rsp, 8
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
 =========== OPT LEVEL: all ===========
 opaque32:
-     ret
+    ret
 test_f32:
-     ucomiss xmm0, xmm1
-     jz :0
-     ucomiss xmm0, xmm1
-     jnz :1
-     ucomiss xmm1, xmm0
-     jnbe :2
-     ucomiss xmm0, xmm1
-     jnb :3
-     ucomiss xmm0, xmm1
-     jnbe :4
-     ucomiss xmm1, xmm0
-     jnb :5
-     xor eax, eax
-     jmp :6
-
-005: mov rax, 0x06
-     jmp :6
-
-004: mov rax, 0x05
-     jmp :6
-
-003: mov rax, 0x04
-     jmp :6
-
-002: mov rax, 0x03
-     jmp :6
-
-001: mov rax, 0x02
-     jmp :6
-
-000: mov rax, 0x01
-006: ret
+    ucomiss xmm0, xmm1
+    jz 0
+    ucomiss xmm0, xmm1
+    jne 1
+    ucomiss xmm1, xmm0
+    jnbe 2
+    ucomiss xmm0, xmm1
+    jnc 3
+    ucomiss xmm0, xmm1
+    jnbe 4
+    ucomiss xmm1, xmm0
+    jnc 5
+    xor eax, eax
+    jmp 6
+5:
+    mov rax, 6
+    jmp 6
+4:
+    mov rax, 5
+    jmp 6
+3:
+    mov rax, 4
+    jmp 6
+2:
+    mov rax, 3
+    jmp 6
+1:
+    mov rax, 2
+    jmp 6
+0:
+    mov rax, 1
+6:
+    ret
 test_f64:
-     ucomisd xmm0, xmm1
-     jz :0
-     ucomisd xmm0, xmm1
-     jnz :1
-     ucomisd xmm1, xmm0
-     jnbe :2
-     ucomisd xmm0, xmm1
-     jnb :3
-     ucomisd xmm0, xmm1
-     jnbe :4
-     ucomisd xmm1, xmm0
-     jnb :5
-     xor eax, eax
-     jmp :6
-
-005: mov rax, 0x3C
-     jmp :6
-
-004: mov rax, 0x32
-     jmp :6
-
-003: mov rax, 0x28
-     jmp :6
-
-002: mov rax, 0x1E
-     jmp :6
-
-001: mov rax, 0x14
-     jmp :6
-
-000: mov rax, 0x0A
-006: ret
+    ucomisd xmm0, xmm1
+    jz 0
+    ucomisd xmm0, xmm1
+    jne 1
+    ucomisd xmm1, xmm0
+    jnbe 2
+    ucomisd xmm0, xmm1
+    jnc 3
+    ucomisd xmm0, xmm1
+    jnbe 4
+    ucomisd xmm1, xmm0
+    jnc 5
+    xor eax, eax
+    jmp 6
+5:
+    mov rax, 0x3c
+    jmp 6
+4:
+    mov rax, 0x32
+    jmp 6
+3:
+    mov rax, 0x28
+    jmp 6
+2:
+    mov rax, 0x1e
+    jmp 6
+1:
+    mov rax, 0x14
+    jmp 6
+0:
+    mov rax, 0xa
+6:
+    ret
 test_mixed_patterns:
-     sub rsp, 0x18
-     movss [rsp], xmm0
-     movss xmm0, dword ptr [rsp]
-     call :opaque32
-     movss [rsp+0x08], xmm0
-     movss xmm0, dword ptr [rsp]
-     addss xmm0, [0x00000000004000D2]
-     call :opaque32
-     movss xmm1, dword ptr [rsp+0x08]
-     ucomiss xmm0, xmm1
-     jnbe :0
-     jmp :1
-
-000: movss xmm1, dword ptr [rsp+0x08]
-     ucomiss xmm0, xmm1
-     jnb :2
-     jmp :1
-
-002: movss xmm1, dword ptr [rsp+0x08]
-     ucomiss xmm1, xmm0
-     jnz :3
-001: movss xmm1, dword ptr [rsp+0x08]
-     ucomiss xmm1, xmm0
-     jnbe :4
-     jmp :5
-
-004: movss xmm1, dword ptr [rsp+0x08]
-     ucomiss xmm1, xmm0
-     jnb :6
-     jmp :5
-
-006: movss xmm1, dword ptr [rsp+0x08]
-     ucomiss xmm1, xmm0
-     jz :7
-005: xor eax, eax
-     jmp :8
-
-007: mov rax, 0xC8
-     jmp :8
-
-003: mov rax, 0x64
-008: add rsp, 0x18
-     ret
+    sub rsp, 0x18
+    movss.d [rsp], xmm0
+    movss.d xmm0, [rsp]
+    call -0x135
+    movss.d [rsp + 0x8], xmm0
+    movss.d xmm0, [rsp]
+    addss.d xmm0, [rip + 0xa7]
+    call -0x150
+    movss.d xmm1, [rsp + 0x8]
+    ucomiss xmm0, xmm1
+    jnbe 0
+    jmp 1
+0:
+    movss.d xmm1, [rsp + 0x8]
+    ucomiss xmm0, xmm1
+    jnc 2
+    jmp 1
+2:
+    movss.d xmm1, [rsp + 0x8]
+    ucomiss xmm1, xmm0
+    jne 3
+1:
+    movss.d xmm1, [rsp + 0x8]
+    ucomiss xmm1, xmm0
+    jnbe 4
+    jmp 5
+4:
+    movss.d xmm1, [rsp + 0x8]
+    ucomiss xmm1, xmm0
+    jnc 6
+    jmp 5
+6:
+    movss.d xmm1, [rsp + 0x8]
+    ucomiss xmm1, xmm0
+    jz 7
+5:
+    xor eax, eax
+    jmp 8
+7:
+    mov rax, 0xc8
+    jmp 8
+3:
+    mov rax, 0x64
+8:
+    add rsp, 0x18
+    ret
 main:
-     push rbx
-     push rbp
-     push r12
-     push r13
-     push r14
-     push r15
-     sub rsp, 0x08
-     movss xmm0, dword ptr [0x00000000004000EC]
-     movss xmm1, dword ptr [0x00000000004000F2]
-     call :test_f32
-     mov rbx, rax
-     movss xmm1, dword ptr [0x00000000004000F2]
-     movss xmm0, dword ptr [0x00000000004000F2]
-     call :test_f32
-     mov rbp, rax
-     movss xmm0, dword ptr [0x00000000004000F8]
-     movss xmm1, dword ptr [0x00000000004000EC]
-     call :test_f32
-     mov r12, rax
-     movsd xmm0, qword ptr [0x00000000004000FE]
-     movsd xmm1, qword ptr [0x0000000000400108]
-     call :test_f64
-     mov r13, rax
-     movsd xmm1, qword ptr [0x0000000000400108]
-     movsd xmm0, qword ptr [0x0000000000400108]
-     call :test_f64
-     mov r14, rax
-     movsd xmm0, qword ptr [0x0000000000400112]
-     movsd xmm1, qword ptr [0x00000000004000FE]
-     call :test_f64
-     mov r15, rax
-     movss xmm0, dword ptr [0x000000000040011C]
-     call :test_mixed_patterns
-     mov rdx, rbx
-     add rdx, rbp
-     add rdx, r12
-     add rdx, r13
-     add rdx, r14
-     add rdx, r15
-     add rdx, rax
-     mov rax, rdx
-     add rsp, 0x08
-     pop r15
-     pop r14
-     pop r13
-     pop r12
-     pop rbp
-     pop rbx
-     ret
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    push r15
+    sub rsp, 8
+    movss.d xmm0, [rip + 0xd3]
+    movss.d xmm1, [rip + 0xd0]
+    call -0x215
+    mov rbx, rax
+    movss.d xmm1, [rip + 0xbf]
+    movss.d xmm0, [rip + 0xb6]
+    call -0x22f
+    mov rbp, rax
+    movss.d xmm0, [rip + 0xab]
+    movss.d xmm1, [rip + 0x96]
+    call -0x249
+    mov r12, rax
+    movsd.q xmm0, [rip + 0x97]
+    movsd.q xmm1, [rip + 0x98]
+    call -0x1db
+    mov r13, rax
+    movsd.q xmm1, [rip + 0x87]
+    movsd.q xmm0, [rip + 0x7e]
+    call -0x1f5
+    mov r14, rax
+    movsd.q xmm0, [rip + 0x77]
+    movsd.q xmm1, [rip + 0x5a]
+    call -0x20f
+    mov r15, rax
+    movss.d xmm0, [rip + 0x67]
+    call -0x190
+    mov rdx, rbx
+    add rdx, rbp
+    add rdx, r12
+    add rdx, r13
+    add rdx, r14
+    add rdx, r15
+    add rdx, rax
+    mov rax, rdx
+    add rsp, 8
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
 =========== OPT LEVEL: aggresive ===========
 opaque32:
 test_f32:
-     ucomiss xmm0, xmm1
-     jz :0
-     ucomiss xmm0, xmm1
-     jnz :1
-     ucomiss xmm1, xmm0
-     jnbe :2
-     ucomiss xmm0, xmm1
-     jnb :3
-     ucomiss xmm0, xmm1
-     jnbe :4
-     ucomiss xmm1, xmm0
-     jnb :5
-     xor eax, eax
-     jmp :6
-
-005: mov rax, 0x06
-     jmp :6
-
-004: mov rax, 0x05
-     jmp :6
-
-003: mov rax, 0x04
-     jmp :6
-
-002: mov rax, 0x03
-     jmp :6
-
-001: mov rax, 0x02
-     jmp :6
-
-000: mov rax, 0x01
-006: ret
+    ucomiss xmm0, xmm1
+    jz 0
+    ucomiss xmm0, xmm1
+    jne 1
+    ucomiss xmm1, xmm0
+    jnbe 2
+    ucomiss xmm0, xmm1
+    jnc 3
+    ucomiss xmm0, xmm1
+    jnbe 4
+    ucomiss xmm1, xmm0
+    jnc 5
+    xor eax, eax
+    jmp 6
+5:
+    mov rax, 6
+    jmp 6
+4:
+    mov rax, 5
+    jmp 6
+3:
+    mov rax, 4
+    jmp 6
+2:
+    mov rax, 3
+    jmp 6
+1:
+    mov rax, 2
+    jmp 6
+0:
+    mov rax, 1
+6:
+    ret
 test_f64:
-     ucomisd xmm0, xmm1
-     jz :0
-     ucomisd xmm0, xmm1
-     jnz :1
-     ucomisd xmm1, xmm0
-     jnbe :2
-     ucomisd xmm0, xmm1
-     jnb :3
-     ucomisd xmm0, xmm1
-     jnbe :4
-     ucomisd xmm1, xmm0
-     jnb :5
-     xor eax, eax
-     jmp :6
-
-005: mov rax, 0x3C
-     jmp :6
-
-004: mov rax, 0x32
-     jmp :6
-
-003: mov rax, 0x28
-     jmp :6
-
-002: mov rax, 0x1E
-     jmp :6
-
-001: mov rax, 0x14
-     jmp :6
-
-000: mov rax, 0x0A
-006: ret
+    ucomisd xmm0, xmm1
+    jz 0
+    ucomisd xmm0, xmm1
+    jne 1
+    ucomisd xmm1, xmm0
+    jnbe 2
+    ucomisd xmm0, xmm1
+    jnc 3
+    ucomisd xmm0, xmm1
+    jnbe 4
+    ucomisd xmm1, xmm0
+    jnc 5
+    xor eax, eax
+    jmp 6
+5:
+    mov rax, 0x3c
+    jmp 6
+4:
+    mov rax, 0x32
+    jmp 6
+3:
+    mov rax, 0x28
+    jmp 6
+2:
+    mov rax, 0x1e
+    jmp 6
+1:
+    mov rax, 0x14
+    jmp 6
+0:
+    mov rax, 0xa
+6:
+    ret
 test_mixed_patterns:
 main:
-     push rbx
-     push rbp
-     push r12
-     push r13
-     push r14
-     movss xmm0, dword ptr [0x00000000004000D2]
-     movss xmm1, dword ptr [0x00000000004000D8]
-     call :test_f32
-     mov rbx, rax
-     movss xmm1, dword ptr [0x00000000004000D8]
-     movss xmm0, dword ptr [0x00000000004000D8]
-     call :test_f32
-     mov rbp, rax
-     movss xmm0, dword ptr [0x00000000004000DE]
-     movss xmm1, dword ptr [0x00000000004000D2]
-     call :test_f32
-     mov r12, rax
-     movsd xmm0, qword ptr [0x00000000004000E4]
-     movsd xmm1, qword ptr [0x00000000004000EE]
-     call :test_f64
-     mov r13, rax
-     movsd xmm1, qword ptr [0x00000000004000EE]
-     movsd xmm0, qword ptr [0x00000000004000EE]
-     call :test_f64
-     mov r14, rax
-     movsd xmm0, qword ptr [0x00000000004000F8]
-     movsd xmm1, qword ptr [0x00000000004000E4]
-     call :test_f64
-     mov rdx, rbx
-     add rdx, rbp
-     add rdx, r12
-     add rdx, r13
-     add rdx, r14
-     add rdx, rax
-     mov rax, rdx
-     add rax, 0x64
-     pop r14
-     pop r13
-     pop r12
-     pop rbp
-     pop rbx
-     ret
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    movss.d xmm0, [rip + 0xbf]
+    movss.d xmm1, [rip + 0xbc]
+    call -0x139
+    mov rbx, rax
+    movss.d xmm1, [rip + 0xab]
+    movss.d xmm0, [rip + 0xa2]
+    call -0x153
+    mov rbp, rax
+    movss.d xmm0, [rip + 0x97]
+    movss.d xmm1, [rip + 0x82]
+    call -0x16d
+    mov r12, rax
+    movsd.q xmm0, [rip + 0x83]
+    movsd.q xmm1, [rip + 0x84]
+    call -0xff
+    mov r13, rax
+    movsd.q xmm1, [rip + 0x73]
+    movsd.q xmm0, [rip + 0x6a]
+    call -0x119
+    mov r14, rax
+    movsd.q xmm0, [rip + 0x63]
+    movsd.q xmm1, [rip + 0x46]
+    call -0x133
+    mov rdx, rbx
+    add rdx, rbp
+    add rdx, r12
+    add rdx, r13
+    add rdx, r14
+    add rdx, rax
+    mov rax, rdx
+    add rax, 0x64
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret

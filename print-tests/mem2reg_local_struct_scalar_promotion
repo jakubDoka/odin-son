@@ -1,115 +1,115 @@
 =========== OPT LEVEL: none ===========
 opaque:
-     mov rax, rdi
-     ret
+    mov rax, rdi
+    ret
 main:
-     sub rsp, 0x18
-     xor esi, esi
-     lea rdi, [rsp]
-     mov rdx, 0x18
-     call :$set
-     mov rdi, 0x0A
-     call :opaque
-     mov [rsp], rax
-     mov rdi, 0x14
-     call :opaque
-     mov [rsp+0x08], rax
-     mov rdi, 0x1E
-     call :opaque
-     mov [rsp+0x10], rax
-     mov rax, [rsp+0x08]
-     add [rsp], rax
-     mov rax, [rsp]
-     add [rsp+0x10], rax
-     mov rax, [rsp]
-     add rax, [rsp+0x08]
-     add rax, [rsp+0x10]
-     add rsp, 0x18
-     ret
+    sub rsp, 0x18
+    xor esi, esi
+    lea rdi, [rsp]
+    mov rdx, 0x18
+    call.q [rip - 0x28]
+    mov rdi, 0xa
+    call -0x2c
+    mov.q [rsp], rax
+    mov rdi, 0x14
+    call -0x3c
+    mov.q [rsp + 0x8], rax
+    mov rdi, 0x1e
+    call -0x4d
+    mov.q [rsp + 0x10], rax
+    mov.q rax, [rsp + 0x8]
+    add.q [rsp], rax
+    mov.q rax, [rsp]
+    add.q [rsp + 0x10], rax
+    mov.q rax, [rsp]
+    add.q rax, [rsp + 0x8]
+    add.q rax, [rsp + 0x10]
+    add rsp, 0x18
+    ret
 =========== OPT LEVEL: mininal ===========
 opaque:
-     mov rax, rdi
-     ret
+    mov rax, rdi
+    ret
 main:
-     sub rsp, 0x18
-     xor esi, esi
-     lea rdi, [rsp]
-     mov rdx, 0x18
-     call :$set
-     mov rdi, 0x0A
-     call :opaque
-     mov [rsp], rax
-     mov rdi, 0x14
-     call :opaque
-     mov [rsp+0x08], rax
-     mov rdi, 0x1E
-     call :opaque
-     mov [rsp+0x10], rax
-     mov rax, [rsp+0x08]
-     add [rsp], rax
-     mov rax, [rsp]
-     add [rsp+0x10], rax
-     mov rax, [rsp]
-     add rax, [rsp+0x08]
-     add rax, [rsp+0x10]
-     add rsp, 0x18
-     ret
+    sub rsp, 0x18
+    xor esi, esi
+    lea rdi, [rsp]
+    mov rdx, 0x18
+    call.q [rip - 0x28]
+    mov rdi, 0xa
+    call -0x2c
+    mov.q [rsp], rax
+    mov rdi, 0x14
+    call -0x3c
+    mov.q [rsp + 0x8], rax
+    mov rdi, 0x1e
+    call -0x4d
+    mov.q [rsp + 0x10], rax
+    mov.q rax, [rsp + 0x8]
+    add.q [rsp], rax
+    mov.q rax, [rsp]
+    add.q [rsp + 0x10], rax
+    mov.q rax, [rsp]
+    add.q rax, [rsp + 0x8]
+    add.q rax, [rsp + 0x10]
+    add rsp, 0x18
+    ret
 =========== OPT LEVEL: moderate ===========
 opaque:
-     mov rax, rdi
-     ret
+    mov rax, rdi
+    ret
 main:
-     sub rsp, 0x18
-     mov qword ptr [rsp], 0x00
-     mov qword ptr [rsp+0x08], 0x00
-     mov qword ptr [rsp+0x10], 0x00
-     mov rdi, 0x0A
-     call :opaque
-     mov [rsp], rax
-     mov rdi, 0x14
-     call :opaque
-     mov [rsp+0x08], rax
-     mov rdi, 0x1E
-     call :opaque
-     mov rdx, rax
-     mov [rsp+0x10], rdx
-     mov rax, [rsp]
-     add rax, [rsp+0x08]
-     add rdx, rax
-     mov [rsp], rax
-     mov [rsp+0x10], rdx
-     add rax, [rsp+0x08]
-     add rax, rdx
-     add rsp, 0x18
-     ret
+    sub rsp, 0x18
+    mov.q [rsp], 0
+    mov.q [rsp + 0x8], 0
+    mov.q [rsp + 0x10], 0
+    mov rdi, 0xa
+    call -0x32
+    mov.q [rsp], rax
+    mov rdi, 0x14
+    call -0x42
+    mov.q [rsp + 0x8], rax
+    mov rdi, 0x1e
+    call -0x53
+    mov rdx, rax
+    mov.q [rsp + 0x10], rdx
+    mov.q rax, [rsp]
+    add.q rax, [rsp + 0x8]
+    add rdx, rax
+    mov.q [rsp], rax
+    mov.q [rsp + 0x10], rdx
+    add.q rax, [rsp + 0x8]
+    add rax, rdx
+    add rsp, 0x18
+    ret
 =========== OPT LEVEL: all ===========
 opaque:
-     mov rax, rdi
-     ret
+    mov rax, rdi
+    ret
 main:
-     push rbx
-     push rbp
-     sub rsp, 0x08
-     mov rdi, 0x0A
-     call :opaque
-     mov rbp, rax
-     mov rdi, 0x14
-     call :opaque
-     mov rbx, rax
-     mov rdi, 0x1E
-     call :opaque
-     add rbp, rbx
-     mov rdx, rbp
-     add rdx, rbx
-     add rax, rbp
-     add rdx, rax
-     mov rax, rdx
-     add rsp, 0x08
-     pop rbp
-     pop rbx
-     ret
+    push rbx
+    push rbp
+    sub rsp, 8
+    mov rdi, 0xa
+    call -0x1c
+    mov rbp, rax
+    mov rdi, 0x14
+    call -0x2b
+    mov rbx, rax
+    mov rdi, 0x1e
+    call -0x3a
+    add rbp, rbx
+    mov rdx, rbp
+    add rdx, rbx
+    add rax, rbp
+    add rdx, rax
+    mov rax, rdx
+    add rsp, 8
+    pop rbp
+    pop rbx
+    ret
 =========== OPT LEVEL: aggresive ===========
 opaque:
 main:
-     mov rax, 0x6E
-     ret
+    mov rax, 0x6e
+    ret

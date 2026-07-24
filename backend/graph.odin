@@ -246,6 +246,15 @@ Local :: struct {
 
 No_Extra :: struct {}
 
+Lane_Type :: enum u8 {
+	I8,
+	I16,
+	I32,
+	I64,
+	F32,
+	F64,
+}
+
 Node_Datatype :: enum u8 {
 	Void,
 	I8,
@@ -284,30 +293,33 @@ Node_Output :: bit_field u32 {
 }
 
 Node :: struct {
-	using spec:   struct #align (4) {
+	using spec:      struct #align (4) {
 		using type: struct #raw_union {
 			itype: Ideal_Node_Type,
 			rtype: u16,
 		},
 		using meta: bit_field u16 {
-			dt:                    Node_Datatype | 4,
-			in_worklist:           bool          | 1,
-			is_store:              bool          | 1,
-			is_load:               bool          | 1,
-			in_place_slot_offset:  i8            | 2,
-			additional_data_start: u8            | 2,
-			mem_alignment_pow:     u32           | 3,
-			extra_dwords:          u32           | 2,
+			dt:                Node_Datatype | 4,
+			is_store:          bool          | 1,
+			is_load:           bool          | 1,
+			mem_alignment_pow: u32           | 3,
+			lane:              Lane_Type     | 3,
 		},
 	},
-	gvn:          u32,
-	input_idx:    u32,
-	input_count:  u16,
-	input_cap:    u16,
-	output_idx:   u32,
-	output_count: u16,
-	output_cap:   u16,
-	extra:        [0]u32,
+	using gvn_group: bit_field u32 {
+		gvn:                   u32  | 25,
+		in_worklist:           bool | 1,
+		in_place_slot_offset:  i8   | 2,
+		additional_data_start: u8   | 2,
+		extra_dwords:          u32  | 2,
+	},
+	input_idx:       u32,
+	input_count:     u16,
+	input_cap:       u16,
+	output_idx:      u32,
+	output_count:    u16,
+	output_cap:      u16,
+	extra:           [0]u32,
 }
 
 #assert(size_of(Node) == 24)

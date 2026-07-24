@@ -26,6 +26,7 @@ main :: proc() {
 	show_timings := false
 	show_stats := false
 	check := false
+	debug := false
 
 	root := os.get_env("ODIN_ROOT", context.temp_allocator)
 
@@ -47,6 +48,8 @@ main :: proc() {
 			show_stats = true
 		case arg == "-check":
 			check = true
+		case arg == "-debug" || arg == "-g":
+			debug = true
 		case strings.has_prefix(arg, "-O:"):
 			name := arg[len("-O:"):]
 			found := false
@@ -80,7 +83,9 @@ main :: proc() {
 	}
 
 	if input == "" {
-		fmt.eprintln("usage: jit <entry.odin> [-o output.o] [-O:<level>]")
+		fmt.eprintln(
+			"usage: jit <entry.odin> [-o output.o] [-O:<level>] [-debug]",
+		)
 		os.exit(1)
 	}
 
@@ -120,6 +125,7 @@ main :: proc() {
 	ctx.target.cc = &x64.X64_SYSTEMV_CC
 	ctx.target.spec = &x64.SPEC
 	ctx.check = check
+	ctx.graph.has_dbg = debug
 
 	times: struct {
 		load:    time.Duration,

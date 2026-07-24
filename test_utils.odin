@@ -113,14 +113,16 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 	dsb: strings.Builder
 	dsb.buf.allocator = context.temp_allocator
 	for level in confs {
-		if level.check {
-			fmt.sbprintfln(&dsb, "============= check run =============")
-		} else {
-			fmt.sbprintfln(
-				&dsb,
-				"=========== OPT LEVEL: %v ===========",
-				level.name,
-			)
+		if !level.debug {
+			if level.check {
+				fmt.sbprintfln(&dsb, "============= check run =============")
+			} else {
+				fmt.sbprintfln(
+					&dsb,
+					"=========== OPT LEVEL: %v ===========",
+					level.name,
+				)
+			}
 		}
 		types.mems.code.pos = 0
 		types.mems.reloc.pos = 0
@@ -236,7 +238,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 			continue
 		}
 
-		{context.allocator = context.temp_allocator
+		if !level.debug {context.allocator = context.temp_allocator
 			disasm(&dsb, ctx)}
 
 		oka := virtual.protect(

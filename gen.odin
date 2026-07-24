@@ -1130,7 +1130,7 @@ emit_nodes :: proc(
 		return vl.id, vl.is_lvalue
 	}
 
-	//backend.graph_sloc_scope(ctx, sloc)
+	backend.graph_sloc_scope(ctx, sloc)
 	tmp, _ := arna.scrath(context.temp_allocator)
 
 	#partial match: switch d in node.derived {

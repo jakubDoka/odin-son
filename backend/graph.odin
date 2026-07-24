@@ -285,11 +285,11 @@ Node_Output :: bit_field u32 {
 
 Node :: struct {
 	using spec:   struct #align (4) {
-		using _: struct #raw_union {
+		using type: struct #raw_union {
 			itype: Ideal_Node_Type,
 			rtype: u16,
 		},
-		using _: bit_field u16 {
+		using meta: bit_field u16 {
 			dt:                    Node_Datatype | 4,
 			in_worklist:           bool          | 1,
 			is_store:              bool          | 1,
@@ -524,6 +524,29 @@ graph_mount_stencil :: proc(graph: ^Graph, stencil: Stencil) {
 	graph.meta = stencil.meta
 }
 
+graph_clone_dnode :: proc(
+	graph: ^Graph,
+	prev: ^Graph,
+	dn: D_Node_ID,
+	dnodes: []D_Node_ID,
+) -> D_Node_ID {
+	if dn == 0 do return 0
+
+	mapped := dnodes[graph_getd(prev, dn).gdn]
+	if mapped == 0 {
+		mapped = D_Node_ID(graph.mem.pos / PRECISION)
+		size := size_of(D_Node)
+		bytes := arna.alloc(graph.mem, uint(size), PRECISION)
+		mem.copy_non_overlapping(
+			raw_data(bytes),
+			graph_getd(prev, dn),
+			len(bytes),
+		)
+		dnodes[graph_getd(prev, dn).gdn] = mapped
+	}
+	return mapped
+}
+
 graph_compact :: proc(graph: ^Graph) {
 	context.allocator, _ = arna.scrath()
 
@@ -550,15 +573,8 @@ graph_compact :: proc(graph: ^Graph) {
 		node := graph_expand(&prev, n)
 
 		dn := graph_dbg_slot(&prev, node)^
-		did: D_Node_ID
 
-		if dn != 0 && dnodes[graph_getd(&prev, dn).gdn] == 0 {
-			did := D_Node_ID(graph.mem.pos / PRECISION)
-			size := size_of(D_Node)
-			bytes := arna.alloc(graph.mem, uint(size), PRECISION)
-			mem.copy_non_overlapping(raw_data(bytes), node.node, len(bytes))
-			dnodes[graph_getd(&prev, dn).gdn] = did
-		}
+		did := graph_clone_dnode(graph, &prev, dn, dnodes)
 
 		interned_count += int(graph_has_flag(&prev, node, .Interned))
 		if node.itype not_in KEEP_CAPACITY {
@@ -1507,7 +1523,7 @@ graph_dbg_slot :: proc(graph: ^Graph, node: ^Node) -> ^D_Node_ID {
 graph_add_sloc :: proc(graph: ^Graph, sloc: Sloc) -> D_Node_ID {
 	id := D_Node_ID(graph.mem.pos / PRECISION)
 
-	size := size_of(Sloc)
+	size := size_of(D_Node)
 	slot := arna.alloc(graph.mem, uint(size), PRECISION)
 
 	dnode := (^D_Node)(raw_data(slot))

@@ -46,7 +46,17 @@ If the test segfaults use -define:NO_RUN=true to view the disassembly.
 
 Use the fff MCP tools for all file search operations instead of default tools.
 
-Is important that whenever you work around a compiler bug, denote it in the
+It's important that whenever you work around a compiler bug, denote it in the
 test code with a comment starting with `COMPILER BUG:`, you can then fff for
 this when they need to be fixed. Also place the code that broke in a comment so
 that the you can later uncomment it to test.
+
+When you need to allocate memory local to a function, use `context.allocator, _
+:= arna.scrath()`. If the function takes out allocator and returns a heap, then
+use the `arna.scratch(allocator)`.
+
+It's good to note that common source of memory corruption is if the allocator
+was not set on a `[dynamic]T` or map or anything that grabs the allocator from
+the context. So basically, grep the value and verify the allocator was properly
+set. Reason this happens is becuause its common to override the main allocator
+with a scoped arena. As mentioned above.

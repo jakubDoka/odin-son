@@ -629,17 +629,7 @@ graph_inline_graph :: proc(
 		}
 
 		dn := backend.graph_dbg_slot(ctx.from, node)^
-		did: backend.D_Node_ID
-
-		if dn != 0 &&
-		   ctx.dprojection[backend.graph_getd(ctx.from, dn).gdn] == 0 {
-			did := backend.D_Node_ID(graph.mem.pos / backend.PRECISION)
-			size := size_of(backend.D_Node)
-			bytes := arna.alloc(graph.mem, uint(size), backend.PRECISION)
-			mem.copy_non_overlapping(raw_data(bytes), node.node, len(bytes))
-			ctx.dprojection[backend.graph_getd(ctx.from, dn).gdn] = did
-		}
-
+		did := backend.graph_clone_dnode(graph, ctx.from, dn, ctx.dprojection)
 		backend.graph_dbg_slot(graph, new_node)^ = did
 		ctx.projection[node.gvn] = id
 	}

@@ -77,8 +77,6 @@ regalloc_round :: proc(
 	rev_gvn -= 1
 	backend.graph_get(graph, graph.start).gvn = u32(rev_gvn)
 
-	//	if i == 0 do log_lrgs(&ctx)
-
 	for bb, j in sched.bbs {
 		backend.graph_get(graph, bb.head).gvn = u32(block_base + j)
 		for instr in bb.instrs {

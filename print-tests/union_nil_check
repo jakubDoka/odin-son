@@ -7,19 +7,19 @@ main:
     call.q [rip - 0x20]
     xor eax, eax
     cmp.q [rsp + 0x8], 0
-    jz 0
-    jmp 1
-0:
-    add rax, 1
+    jz 1
+    jmp 2
 1:
+    add rax, 1
+2:
     mov.q [rsp], 5
     mov.q [rsp + 0x8], 1
     cmp.q [rsp + 0x8], 0
-    jne 2
-    jmp 3
-2:
-    add rax, 2
+    jne 3
+    jmp 4
 3:
+    add rax, 2
+4:
     add rsp, 0x18
     ret
 =========== OPT LEVEL: mininal ===========
@@ -31,32 +31,32 @@ main:
     call.q [rip - 0x20]
     xor eax, eax
     cmp.q [rsp + 0x8], 0
-    jz 0
-    jmp 1
-0:
-    add rax, 1
+    jz 1
+    jmp 2
 1:
+    add rax, 1
+2:
     mov.q [rsp], 5
     mov.q [rsp + 0x8], 1
     mov.q rcx, [rsp + 0x8]
     test rcx, rcx
-    jne 2
-    jmp 3
-2:
-    add rax, 2
+    jne 3
+    jmp 4
 3:
+    add rax, 2
+4:
     add rsp, 0x18
     ret
 =========== OPT LEVEL: moderate ===========
 main:
     mov.q [rsp - 0x10], 0
     cmp.q [rsp - 0x10], 0
-    jz 0
+    jz 1
     xor eax, eax
-    jmp 1
-0:
-    mov rax, 1
+    jmp 2
 1:
+    mov rax, 1
+2:
     mov.q [rsp - 0x18], 5
     mov.q [rsp - 0x10], 1
     add rax, 2

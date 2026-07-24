@@ -9,18 +9,18 @@ main:
     mov rdx, 0x10
     call.q [rip - 0x28]
     mov rdi, 3
-    call -0x2c
+    call opaque
     mov.q [rsp], rax
     mov rdi, 5
-    call -0x3c
+    call opaque
     mov.q [rsp + 0x8], rax
     mov rdi, 1
-    call -0x4d
+    call opaque
     cmp rax, 0
-    jnle 0
+    jnle 2
     mov.q [rsp], 0x64
-    jmp 0
-0:
+    jmp 2
+2:
     mov.q rax, [rsp]
     add rsp, 0x18
     ret
@@ -35,18 +35,18 @@ main:
     mov rdx, 0x10
     call.q [rip - 0x28]
     mov rdi, 3
-    call -0x2c
+    call opaque
     mov.q [rsp], rax
     mov rdi, 5
-    call -0x3c
+    call opaque
     mov.q [rsp + 0x8], rax
     mov rdi, 1
-    call -0x4d
+    call opaque
     cmp rax, 0
-    jnle 0
+    jnle 2
     mov.q [rsp], 0x64
-    jmp 0
-0:
+    jmp 2
+2:
     mov.q rax, [rsp]
     add rsp, 0x18
     ret
@@ -59,18 +59,18 @@ main:
     mov.q [rsp], 0
     mov.q [rsp + 0x8], 0
     mov rdi, 3
-    call -0x29
+    call opaque
     mov.q [rsp], rax
     mov rdi, 5
-    call -0x39
+    call opaque
     mov.q [rsp + 0x8], rax
     mov rdi, 1
-    call -0x4a
+    call opaque
     cmp rax, 0
-    jnle 0
+    jnle 2
     mov.q [rsp], 0x64
-    jmp 0
-0:
+    jmp 2
+2:
     mov.q rax, [rsp]
     add rsp, 0x18
     ret
@@ -81,22 +81,21 @@ opaque:
 main:
     push rbx
     mov rdi, 3
-    call -0x16
+    call opaque
     mov rbx, rax
     mov rdi, 5
-    call -0x25
+    call opaque
     mov rdi, 1
-    call -0x31
+    call opaque
     cmp rax, 0
-    jnle 0
+    jnle 2
     mov rbx, 0x64
-    jmp 0
-0:
+    jmp 2
+2:
     mov rax, rbx
     pop rbx
     ret
 =========== OPT LEVEL: aggresive ===========
-opaque:
 main:
     mov rax, 3
     ret

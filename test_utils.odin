@@ -443,40 +443,57 @@ print_diff :: proc(out: ^strings.Builder, a, b: string) {
 }
 
 disasm :: proc(sb: ^strings.Builder, ctx: Gen_Ctx) {
-	for prc in ctx.procs[1:] {
-		fmt.sbprintfln(sb, "%v:", prc.name)
+	decoded_instrs: [dynamic]x86.Instruction
+	decoded_instr_info: [dynamic]x86.Instruction_Info
+	decoded_label_info: [dynamic]x86.Label_Definition
+	errors: [dynamic]x86.Error
+	labels: map[u32]string
 
+	for prc in ctx.procs[1:] {
 		instructions := prc.out.code
 
-		decoded_instrs: [dynamic]x86.Instruction
-		decoded_instr_info: [dynamic]x86.Instruction_Info
-		decoded_label_infos: [dynamic]x86.Label_Definition
-		errors: [dynamic]x86.Error
+		offset := u32(
+			uintptr(raw_data(instructions)) - uintptr(ctx.types.mems.code.ptr),
+		)
+
+		label_base := len(decoded_label_info)
+		info_base := len(decoded_instr_info)
+		labels[u32(len(decoded_label_info))] = prc.name
+		append(&decoded_label_info, 0)
+
 		x86.decode(
 			instructions,
 			nil,
 			&decoded_instrs,
 			&decoded_instr_info,
-			&decoded_label_infos,
+			&decoded_label_info,
 			&errors,
 		)
 
-		for err in errors {
-			fmt.sbprintln(sb, err)
+		for &lbl in decoded_label_info[label_base:] {
+			lbl += x86.Label_Definition(offset)
 		}
 
-		opts := x86.DEFAULT_PRINT_OPTIONS
-		opts.label_prefix = ""
-
-		x86.sbprint(
-			sb,
-			decoded_instrs[:],
-			decoded_instr_info[:],
-			decoded_label_infos[:],
-			options = &opts,
-		)
+		for &info in decoded_instr_info[info_base:] {
+			info.offset += u32(offset)
+		}
 	}
 
+	for err in errors {
+		fmt.sbprintln(sb, err)
+	}
+
+	opts := x86.DEFAULT_PRINT_OPTIONS
+	opts.label_prefix = ""
+
+	x86.sbprint(
+		sb,
+		decoded_instrs[:],
+		decoded_instr_info[:],
+		decoded_label_info[:],
+		options = &opts,
+		label_names = &labels,
+	)
 }
 
 highlight_disasm :: proc(disasm: string) -> string {

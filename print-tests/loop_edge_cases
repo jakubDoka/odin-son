@@ -2,237 +2,236 @@
 main:
     xor eax, eax
     xor ecx, ecx
-2:
-    add rax, 1
-    cmp rax, 2
-    jz 0
-    cmp rax, 1
-    jz 1
-    add rax, 1
-    mov rcx, 1
-    jmp 1
-1:
-    jmp 2
-0:
-    cmp rcx, 0
-    jz 3
-    jmp 4
 3:
-    xor eax, eax
-6:
-    add rax, 1
-    cmp rax, 3
+    add rcx, 1
+    cmp rcx, 2
+    jz 1
+    cmp rcx, 1
+    jz 2
+    add rcx, 1
+    mov rax, 1
+    jmp 2
+2:
+    jmp 3
+1:
+    cmp rax, 0
     jz 4
-    cmp rax, 2
-    jz 5
-    cmp rax, 1
-    jz 5
-    add rax, 1
-    mov rcx, 2
     jmp 5
-5:
-    jmp 6
 4:
-    cmp rcx, 0
-    jne 7
-    mov rax, rcx
-    jmp 8
+    xor ecx, ecx
 7:
+    add rcx, 1
+    cmp rcx, 3
+    jz 5
+    cmp rcx, 2
+    jz 6
+    cmp rcx, 1
+    jz 6
+    add rcx, 1
+    mov rax, 2
+    jmp 6
+6:
+    jmp 7
+5:
+    cmp rax, 0
+    jne 8
+    jmp 9
+8:
     xor eax, eax
-11:
+12:
     add rax, 1
     cmp rax, 3
-    jz 9
+    jz 10
     add rax, 1
     cmp rax, 4
-    jz 10
-    jmp 11
-10:
+    jz 11
+    jmp 12
+11:
     mov rax, 3
-    jmp 8
-9:
+    jmp 9
+10:
     mov rax, 1
-8:
+9:
     ret
 =========== OPT LEVEL: mininal ===========
 main:
-    xor ecx, ecx
     xor eax, eax
-2:
+    xor ecx, ecx
+3:
     add rcx, 1
     cmp rcx, 2
-    jz 0
-    cmp rcx, 1
     jz 1
+    cmp rcx, 1
+    jz 2
     add rcx, 1
     mov rax, 1
-    jmp 1
-1:
     jmp 2
-0:
+2:
+    jmp 3
+1:
     cmp rax, 0
-    jz 3
-    jmp 4
-3:
+    jz 4
+    jmp 5
+4:
     xor ecx, ecx
-6:
+7:
     add rcx, 1
     cmp rcx, 3
-    jz 4
+    jz 5
     cmp rcx, 2
-    jz 5
+    jz 6
     cmp rcx, 1
-    jz 5
+    jz 6
     add rcx, 1
     mov rax, 2
-    jmp 5
-5:
     jmp 6
-4:
+6:
+    jmp 7
+5:
     test rax, rax
-    jne 7
-    jmp 8
-7:
+    jne 8
+    jmp 9
+8:
     xor eax, eax
-11:
+12:
     add rax, 1
     cmp rax, 3
-    jz 9
+    jz 10
     add rax, 1
     cmp rax, 4
-    jz 10
-    jmp 11
-10:
+    jz 11
+    jmp 12
+11:
     mov rax, 3
-    jmp 8
-9:
+    jmp 9
+10:
     mov rax, 1
-8:
+9:
     ret
 =========== OPT LEVEL: moderate ===========
 main:
     xor ecx, ecx
     xor edx, edx
-3:
-    mov rax, rdx
-    add rax, 1
-    cmp rax, 2
-    jz 0
-    cmp rax, 1
-    jz 1
-    add rdx, 2
-    mov rcx, 1
-    jmp 2
-1:
-    mov rdx, rax
-2:
-    jmp 3
-0:
-    cmp rcx, 0
-    jz 4
-    jmp 5
 4:
-    xor edx, edx
-8:
-    mov rax, rdx
+    mov rax, rcx
     add rax, 1
-    cmp rax, 3
-    jz 5
     cmp rax, 2
-    jz 6
+    jz 1
     cmp rax, 1
-    jz 6
-    add rdx, 2
-    mov rcx, 2
-    jmp 7
-6:
-    mov rdx, rax
-7:
-    jmp 8
+    jz 2
+    add rcx, 2
+    mov rdx, 1
+    jmp 3
+2:
+    mov rcx, rax
+3:
+    jmp 4
+1:
+    cmp rdx, 0
+    jz 5
+    jmp 6
 5:
-    test rcx, rcx
-    jne 9
-    mov rax, rcx
-    jmp 10
-9:
     xor ecx, ecx
-13:
+9:
     mov rax, rcx
     add rax, 1
     cmp rax, 3
-    jz 11
+    jz 6
+    cmp rax, 2
+    jz 7
+    cmp rax, 1
+    jz 7
+    add rcx, 2
+    mov rdx, 2
+    jmp 8
+7:
+    mov rcx, rax
+8:
+    jmp 9
+6:
+    test rdx, rdx
+    jne 10
+    mov rax, rdx
+    jmp 11
+10:
+    xor ecx, ecx
+14:
+    mov rax, rcx
+    add rax, 1
+    cmp rax, 3
+    jz 12
     add rcx, 2
     cmp rcx, 4
-    jz 12
-    jmp 13
-12:
+    jz 13
+    jmp 14
+13:
     mov rax, 3
-    jmp 10
-11:
+    jmp 11
+12:
     mov rax, 1
-10:
+11:
     ret
 =========== OPT LEVEL: all ===========
 main:
     xor ecx, ecx
     xor edx, edx
-3:
-    mov rax, rdx
-    add rax, 1
-    cmp rax, 2
-    jz 0
-    cmp rax, 1
-    jz 1
-    add rdx, 2
-    mov rcx, 1
-    jmp 2
-1:
-    mov rdx, rax
-2:
-    jmp 3
-0:
-    cmp rcx, 0
-    jz 4
-    jmp 5
 4:
-    xor edx, edx
-8:
-    mov rax, rdx
+    mov rax, rcx
     add rax, 1
-    cmp rax, 3
-    jz 5
     cmp rax, 2
-    jz 6
+    jz 1
     cmp rax, 1
-    jz 6
-    add rdx, 2
-    mov rcx, 2
-    jmp 7
-6:
-    mov rdx, rax
-7:
-    jmp 8
+    jz 2
+    add rcx, 2
+    mov rdx, 1
+    jmp 3
+2:
+    mov rcx, rax
+3:
+    jmp 4
+1:
+    cmp rdx, 0
+    jz 5
+    jmp 6
 5:
-    test rcx, rcx
-    jne 9
-    mov rax, rcx
-    jmp 10
-9:
     xor ecx, ecx
-13:
+9:
     mov rax, rcx
     add rax, 1
     cmp rax, 3
-    jz 11
+    jz 6
+    cmp rax, 2
+    jz 7
+    cmp rax, 1
+    jz 7
+    add rcx, 2
+    mov rdx, 2
+    jmp 8
+7:
+    mov rcx, rax
+8:
+    jmp 9
+6:
+    test rdx, rdx
+    jne 10
+    mov rax, rdx
+    jmp 11
+10:
+    xor ecx, ecx
+14:
+    mov rax, rcx
+    add rax, 1
+    cmp rax, 3
+    jz 12
     add rcx, 2
     cmp rcx, 4
-    jz 12
-    jmp 13
-12:
+    jz 13
+    jmp 14
+13:
     mov rax, 3
-    jmp 10
-11:
+    jmp 11
+12:
     mov rax, 1
-10:
+11:
     ret
 =========== OPT LEVEL: aggresive ===========

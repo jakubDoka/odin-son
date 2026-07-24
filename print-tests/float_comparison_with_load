@@ -15,25 +15,25 @@ main:
     movss.d [rsp + 0x4], xmm0
     movss.d xmm0, [rsp + 0x8]
     lea rdi, [rsp]
-    call +0x12a
+    call cmps
     mov rbx, rax
     movss.d xmm0, [rip + 0x78]
     lea rdi, [rsp]
-    call +0x115
+    call cmps
     mov rbp, rax
     movss.d xmm0, [rsp + 0x8]
     lea rdi, [rsp + 0x4]
-    call +0x101
+    call cmps
     mov r12, rax
     movss.d xmm0, [rip + 0x4f]
     lea rdi, [rsp + 0x4]
-    call +0xeb
+    call cmps
     mov r13, rax
     lea rdi, [rsp]
-    call +0x3d
+    call imm_cmps
     mov r14, rax
     lea rdi, [rsp + 0x4]
-    call +0x30
+    call imm_cmps
     mov rdx, rbx
     add rdx, rbp
     add rdx, r12
@@ -52,84 +52,84 @@ imm_cmps:
     xor eax, eax
     movss.d xmm0, [rip + 0x92]
     ucomiss.d xmm0, [rdi]
-    jz 0
-    jmp 1
-0:
-    add rax, 1
-1:
-    ucomiss.d xmm0, [rdi]
-    jne 2
+    jz 2
     jmp 3
 2:
-    add rax, 2
+    add rax, 1
 3:
     ucomiss.d xmm0, [rdi]
-    jnc 4
+    jne 4
     jmp 5
 4:
-    add rax, 4
+    add rax, 2
 5:
-    movss.d xmm1, [rdi]
-    ucomiss xmm1, xmm0
+    ucomiss.d xmm0, [rdi]
     jnc 6
     jmp 7
 6:
-    add rax, 8
+    add rax, 4
 7:
-    ucomiss.d xmm0, [rdi]
-    jnbe 8
-    jmp 9
-8:
-    add rax, 0x10
-9:
     movss.d xmm1, [rdi]
     ucomiss xmm1, xmm0
+    jnc 8
+    jmp 9
+8:
+    add rax, 8
+9:
+    ucomiss.d xmm0, [rdi]
     jnbe 10
     jmp 11
 10:
-    add rax, 0x20
+    add rax, 0x10
 11:
+    movss.d xmm1, [rdi]
+    ucomiss xmm1, xmm0
+    jnbe 12
+    jmp 13
+12:
+    add rax, 0x20
+13:
     ret
 cmps:
     xor eax, eax
     ucomiss.d xmm0, [rdi]
-    jz 0
-    jmp 1
-0:
+    jz 15
+    jmp 16
+15:
     add rax, 1
-1:
+16:
     ucomiss.d xmm0, [rdi]
-    jne 2
-    jmp 3
-2:
+    jne 17
+    jmp 18
+17:
     add rax, 2
-3:
+18:
     ucomiss.d xmm0, [rdi]
-    jnc 4
-    jmp 5
-4:
+    jnc 19
+    jmp 20
+19:
     add rax, 4
-5:
+20:
     movss.d xmm1, [rdi]
     ucomiss xmm1, xmm0
-    jnc 6
-    jmp 7
-6:
+    jnc 21
+    jmp 22
+21:
     add rax, 8
-7:
+22:
     ucomiss.d xmm0, [rdi]
-    jnbe 8
-    jmp 9
-8:
+    jnbe 23
+    jmp 24
+23:
     add rax, 0x10
-9:
+24:
     movss.d xmm1, [rdi]
     ucomiss xmm1, xmm0
-    jnbe 10
-    jmp 11
-10:
+    jnbe 25
+    jmp 26
+25:
     add rax, 0x20
-11:
+26:
     ret
 =========== OPT LEVEL: mininal ===========
 main:
@@ -145,25 +145,25 @@ main:
     movss.d [rsp + 0x4], xmm0
     movss.d xmm0, [rip + 0x92]
     lea rdi, [rsp]
-    call +0x157
+    call cmps
     mov rbx, rax
     movss.d xmm0, [rip + 0x77]
     lea rdi, [rsp]
-    call +0x142
+    call cmps
     mov rbp, rax
     movss.d xmm0, [rip + 0x68]
     lea rdi, [rsp + 0x4]
-    call +0x12c
+    call cmps
     mov r12, rax
     movss.d xmm0, [rip + 0x4c]
     lea rdi, [rsp + 0x4]
-    call +0x116
+    call cmps
     mov r13, rax
     lea rdi, [rsp]
-    call +0x40
+    call imm_cmps
     mov r14, rax
     lea rdi, [rsp + 0x4]
-    call +0x33
+    call imm_cmps
     mov rdx, rbx
     add rdx, rbp
     add rdx, r12
@@ -183,87 +183,87 @@ imm_cmps:
     movss.d xmm0, [rip + 0xba]
     movss.d xmm1, [rdi]
     ucomiss.d xmm1, [rip + 0xad]
-    jz 0
-    jmp 1
-0:
-    add rax, 1
-1:
-    movss.d xmm1, [rdi]
-    ucomiss.d xmm1, [rip + 0x8e]
-    jne 2
+    jz 2
     jmp 3
 2:
-    add rax, 2
+    add rax, 1
 3:
     movss.d xmm1, [rdi]
-    ucomiss xmm0, xmm1
-    jnc 4
+    ucomiss.d xmm1, [rip + 0x8e]
+    jne 4
     jmp 5
 4:
-    add rax, 4
+    add rax, 2
 5:
     movss.d xmm1, [rdi]
-    ucomiss.d xmm1, [rip + 0x54]
+    ucomiss xmm0, xmm1
     jnc 6
     jmp 7
 6:
-    add rax, 8
+    add rax, 4
 7:
     movss.d xmm1, [rdi]
-    ucomiss xmm0, xmm1
-    jnbe 8
+    ucomiss.d xmm1, [rip + 0x54]
+    jnc 8
     jmp 9
 8:
-    add rax, 0x10
+    add rax, 8
 9:
-    movss.d xmm0, [rdi]
-    ucomiss.d xmm0, [rip + 0x1a]
+    movss.d xmm1, [rdi]
+    ucomiss xmm0, xmm1
     jnbe 10
     jmp 11
 10:
-    add rax, 0x20
+    add rax, 0x10
 11:
+    movss.d xmm0, [rdi]
+    ucomiss.d xmm0, [rip + 0x1a]
+    jnbe 12
+    jmp 13
+12:
+    add rax, 0x20
+13:
     ret
 cmps:
     xor eax, eax
     ucomiss.d xmm0, [rdi]
-    jz 0
-    jmp 1
-0:
+    jz 15
+    jmp 16
+15:
     add rax, 1
-1:
+16:
     ucomiss.d xmm0, [rdi]
-    jne 2
-    jmp 3
-2:
+    jne 17
+    jmp 18
+17:
     add rax, 2
-3:
+18:
     ucomiss.d xmm0, [rdi]
-    jnc 4
-    jmp 5
-4:
+    jnc 19
+    jmp 20
+19:
     add rax, 4
-5:
+20:
     movss.d xmm1, [rdi]
     ucomiss xmm1, xmm0
-    jnc 6
-    jmp 7
-6:
+    jnc 21
+    jmp 22
+21:
     add rax, 8
-7:
+22:
     ucomiss.d xmm0, [rdi]
-    jnbe 8
-    jmp 9
-8:
+    jnbe 23
+    jmp 24
+23:
     add rax, 0x10
-9:
+24:
     movss.d xmm1, [rdi]
     ucomiss xmm1, xmm0
-    jnbe 10
-    jmp 11
-10:
+    jnbe 25
+    jmp 26
+25:
     add rax, 0x20
-11:
+26:
     ret
 =========== OPT LEVEL: moderate ===========
 main:
@@ -279,25 +279,25 @@ main:
     movss.d [rsp + 0x4], xmm0
     movss.d xmm0, [rip + 0x92]
     lea rdi, [rsp]
-    call +0x157
+    call cmps
     mov rbx, rax
     movss.d xmm0, [rip + 0x77]
     lea rdi, [rsp]
-    call +0x142
+    call cmps
     mov rbp, rax
     movss.d xmm0, [rip + 0x68]
     lea rdi, [rsp + 0x4]
-    call +0x12c
+    call cmps
     mov r12, rax
     movss.d xmm0, [rip + 0x4c]
     lea rdi, [rsp + 0x4]
-    call +0x116
+    call cmps
     mov r13, rax
     lea rdi, [rsp]
-    call +0x40
+    call imm_cmps
     mov r14, rax
     lea rdi, [rsp + 0x4]
-    call +0x33
+    call imm_cmps
     mov rdx, rbx
     add rdx, rbp
     add rdx, r12
@@ -316,88 +316,88 @@ imm_cmps:
     movss.d xmm0, [rip + 0xbd]
     movss.d xmm1, [rdi]
     ucomiss.d xmm1, [rip + 0xb0]
-    jz 0
+    jz 2
     xor eax, eax
-    jmp 1
-0:
-    mov rax, 1
-1:
-    movss.d xmm1, [rdi]
-    ucomiss.d xmm1, [rip + 0x8e]
-    jne 2
     jmp 3
 2:
-    add rax, 2
+    mov rax, 1
 3:
     movss.d xmm1, [rdi]
-    ucomiss xmm0, xmm1
-    jnc 4
+    ucomiss.d xmm1, [rip + 0x8e]
+    jne 4
     jmp 5
 4:
-    add rax, 4
+    add rax, 2
 5:
     movss.d xmm1, [rdi]
-    ucomiss.d xmm1, [rip + 0x54]
+    ucomiss xmm0, xmm1
     jnc 6
     jmp 7
 6:
-    add rax, 8
+    add rax, 4
 7:
     movss.d xmm1, [rdi]
-    ucomiss xmm0, xmm1
-    jnbe 8
+    ucomiss.d xmm1, [rip + 0x54]
+    jnc 8
     jmp 9
 8:
-    add rax, 0x10
+    add rax, 8
 9:
-    movss.d xmm0, [rdi]
-    ucomiss.d xmm0, [rip + 0x1a]
+    movss.d xmm1, [rdi]
+    ucomiss xmm0, xmm1
     jnbe 10
     jmp 11
 10:
-    add rax, 0x20
+    add rax, 0x10
 11:
+    movss.d xmm0, [rdi]
+    ucomiss.d xmm0, [rip + 0x1a]
+    jnbe 12
+    jmp 13
+12:
+    add rax, 0x20
+13:
     ret
 cmps:
     ucomiss.d xmm0, [rdi]
-    jz 0
+    jz 15
     xor eax, eax
-    jmp 1
-0:
+    jmp 16
+15:
     mov rax, 1
-1:
+16:
     ucomiss.d xmm0, [rdi]
-    jne 2
-    jmp 3
-2:
+    jne 17
+    jmp 18
+17:
     add rax, 2
-3:
+18:
     ucomiss.d xmm0, [rdi]
-    jnc 4
-    jmp 5
-4:
+    jnc 19
+    jmp 20
+19:
     add rax, 4
-5:
+20:
     movss.d xmm1, [rdi]
     ucomiss xmm1, xmm0
-    jnc 6
-    jmp 7
-6:
+    jnc 21
+    jmp 22
+21:
     add rax, 8
-7:
+22:
     ucomiss.d xmm0, [rdi]
-    jnbe 8
-    jmp 9
-8:
+    jnbe 23
+    jmp 24
+23:
     add rax, 0x10
-9:
+24:
     movss.d xmm1, [rdi]
     ucomiss xmm1, xmm0
-    jnbe 10
-    jmp 11
-10:
+    jnbe 25
+    jmp 26
+25:
     add rax, 0x20
-11:
+26:
     ret
 =========== OPT LEVEL: all ===========
 main:
@@ -413,25 +413,25 @@ main:
     movss.d [rsp + 0x4], xmm0
     movss.d xmm0, [rip + 0x92]
     lea rdi, [rsp]
-    call +0x157
+    call cmps
     mov rbx, rax
     movss.d xmm0, [rip + 0x77]
     lea rdi, [rsp]
-    call +0x142
+    call cmps
     mov rbp, rax
     movss.d xmm0, [rip + 0x68]
     lea rdi, [rsp + 0x4]
-    call +0x12c
+    call cmps
     mov r12, rax
     movss.d xmm0, [rip + 0x4c]
     lea rdi, [rsp + 0x4]
-    call +0x116
+    call cmps
     mov r13, rax
     lea rdi, [rsp]
-    call +0x40
+    call imm_cmps
     mov r14, rax
     lea rdi, [rsp + 0x4]
-    call +0x33
+    call imm_cmps
     mov rdx, rbx
     add rdx, rbp
     add rdx, r12
@@ -450,87 +450,87 @@ imm_cmps:
     movss.d xmm0, [rip + 0xbd]
     movss.d xmm1, [rdi]
     ucomiss.d xmm1, [rip + 0xb0]
-    jz 0
+    jz 2
     xor eax, eax
-    jmp 1
-0:
-    mov rax, 1
-1:
-    movss.d xmm1, [rdi]
-    ucomiss.d xmm1, [rip + 0x8e]
-    jne 2
     jmp 3
 2:
-    add rax, 2
+    mov rax, 1
 3:
     movss.d xmm1, [rdi]
-    ucomiss xmm0, xmm1
-    jnc 4
+    ucomiss.d xmm1, [rip + 0x8e]
+    jne 4
     jmp 5
 4:
-    add rax, 4
+    add rax, 2
 5:
     movss.d xmm1, [rdi]
-    ucomiss.d xmm1, [rip + 0x54]
+    ucomiss xmm0, xmm1
     jnc 6
     jmp 7
 6:
-    add rax, 8
+    add rax, 4
 7:
     movss.d xmm1, [rdi]
-    ucomiss xmm0, xmm1
-    jnbe 8
+    ucomiss.d xmm1, [rip + 0x54]
+    jnc 8
     jmp 9
 8:
-    add rax, 0x10
+    add rax, 8
 9:
-    movss.d xmm0, [rdi]
-    ucomiss.d xmm0, [rip + 0x1a]
+    movss.d xmm1, [rdi]
+    ucomiss xmm0, xmm1
     jnbe 10
     jmp 11
 10:
-    add rax, 0x20
+    add rax, 0x10
 11:
+    movss.d xmm0, [rdi]
+    ucomiss.d xmm0, [rip + 0x1a]
+    jnbe 12
+    jmp 13
+12:
+    add rax, 0x20
+13:
     ret
 cmps:
     ucomiss.d xmm0, [rdi]
-    jz 0
+    jz 15
     xor eax, eax
-    jmp 1
-0:
+    jmp 16
+15:
     mov rax, 1
-1:
+16:
     ucomiss.d xmm0, [rdi]
-    jne 2
-    jmp 3
-2:
+    jne 17
+    jmp 18
+17:
     add rax, 2
-3:
+18:
     ucomiss.d xmm0, [rdi]
-    jnc 4
-    jmp 5
-4:
+    jnc 19
+    jmp 20
+19:
     add rax, 4
-5:
+20:
     movss.d xmm1, [rdi]
     ucomiss xmm1, xmm0
-    jnc 6
-    jmp 7
-6:
+    jnc 21
+    jmp 22
+21:
     add rax, 8
-7:
+22:
     ucomiss.d xmm0, [rdi]
-    jnbe 8
-    jmp 9
-8:
+    jnbe 23
+    jmp 24
+23:
     add rax, 0x10
-9:
+24:
     movss.d xmm1, [rdi]
     ucomiss xmm1, xmm0
-    jnbe 10
-    jmp 11
-10:
+    jnbe 25
+    jmp 26
+25:
     add rax, 0x20
-11:
+26:
     ret
 =========== OPT LEVEL: aggresive ===========

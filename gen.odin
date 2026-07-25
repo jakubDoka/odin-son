@@ -1704,7 +1704,7 @@ emit_nodes :: proc(
 			   ^typecheck.Slice,
 		   ) ||
 		   typecheck.get_node_type(d.expr) == .String {
-			base_ptr = field_load(ctx, "sdata", .I64, base.id)
+			base_ptr = field_load(ctx, "sdti", .I64, base.id)
 		}
 
 		idx := to_rvalue(ctx, emit_nodes(ctx, {}, d.index), d.index)
@@ -1748,11 +1748,11 @@ emit_nodes :: proc(
 			src_len = backend.graph_add_c_int(ctx, "alen", .I64, i64(t.len))
 		case typecheck.String_Type:
 			assert(base.is_lvalue)
-			base_ptr = field_load(ctx, "sdata", .I64, base.id)
+			base_ptr = field_load(ctx, "sdtstr", .I64, base.id)
 			src_len = field_load(ctx, "slen", .I64, base.id, 8)
 		case ^typecheck.Slice:
 			assert(base.is_lvalue)
-			base_ptr = field_load(ctx, "sdata", .I64, base.id)
+			base_ptr = field_load(ctx, "sdts", .I64, base.id)
 			src_len = field_load(ctx, "slen", .I64, base.id, 8)
 		case typecheck.Multi_Pointer:
 			base_ptr = to_rvalue(ctx, base, d.expr)

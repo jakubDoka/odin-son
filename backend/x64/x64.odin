@@ -603,7 +603,7 @@ x64_peep :: proc(
 	#partial matchx: switch xtype(node) {
 	case .CInt:
 		cnst: ^backend.CInt = backend.graph_extra(ctx, node, backend.CInt)
-		if node.dt in backend.FLOAT_DTS {
+		if node.dt in backend.FLOAT_DTS && cnst.value != 0 {
 			mem := backend.graph_find_node(ctx, .Mem) or_else panic("")
 
 			global := backend.graph_add_global(ctx, "iglb")
@@ -1663,7 +1663,6 @@ x64_emit_instr :: proc(
 	case .CV128:
 		panic("TODO: CV128 load-from-static emit not implemented")
 	case .Splat:
-		// broadcast the low byte of $src across all 16 lanes of xmm $dst
 		dst := reg_of(ctx, instr)
 		src := reg_of(ctx, node.inps[0])
 
@@ -1986,6 +1985,12 @@ x64_emit_instr :: proc(
 	case .CInt:
 		dst := reg_of(ctx, instr)
 		imm := backend.graph_extra(ctx, node, backend.CInt).value
+
+		if imm == 0 && dst.kind == .Vector {
+			rx := rex(dst, dst, NO_INDEX, false)
+			emit(ctx.code, {0x66, rx, 0x0f, 0xEF, mod_rm(.Direct, dst, dst)})
+			break
+		}
 
 		if imm == 0 {
 			rx := rex(dst, dst, NO_INDEX, false)

@@ -47,6 +47,8 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 			size := backend.mem_op_size(graph, out.id) or_continue sroa
 			if i32(iter.offset + size) > slot_size do continue sroa
 			if out.idx != 2 do continue sroa
+			onode := backend.graph_get(graph, out.id)
+			if onode.itype == .Copy || onode.itype == .Set do continue sroa
 
 			new_slot := Slot {
 				start = i32(iter.offset),
@@ -169,6 +171,9 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 		for op in backend.offset_iter_next(graph, &iter) {
 			if iter.offset != 0 do continue collect_rename_slot
 			if op.idx != 2 do continue collect_rename_slot
+			onode := backend.graph_get(graph, op.id)
+			if onode.itype == .Copy ||
+			   onode.itype == .Set {continue collect_rename_slot}
 			backend.mem_op_size(graph, op.id) or_continue collect_rename_slot
 		}
 

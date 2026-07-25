@@ -46,8 +46,9 @@ main:
     movsx rcx, al
     mov.q rax, [rsp]
     mov edx, eax
-    movss.d xmm0, [rip + 0x19e]
-    cvtss2sd xmm0, xmm0
+    pxor xmm0, xmm0
+    movss.d xmm2, [rip + 0x199]
+    cvtss2sd xmm2, xmm2
     mov rax, rbp
     movsx rsi, ax
     mov rax, r12
@@ -56,20 +57,19 @@ main:
     movzx r8d, al
     mov rax, r15
     movzx r9d, ax
-    addsd.q xmm0, [rip + 0x17b]
-    cvtsd2ss xmm0, xmm0
-    cvttss2si rax, xmm0
+    addsd.q xmm2, [rip + 0x176]
+    cvtsd2ss xmm2, xmm2
+    cvttss2si rax, xmm2
     xor r11d, r11d
     add rax, r11
-    movss.d xmm2, [rip + 0x16c]
-    cvtsi2ss xmm0, rcx
-    cvttss2si r11, xmm0
+    movss.d xmm2, [rip + 0x167]
+    cvtsi2ss xmm3, rcx
+    cvttss2si r11, xmm3
     add rax, r11
-    cvtsi2sd xmm0, rcx
-    cvttsd2si rcx, xmm0
+    cvtsi2sd xmm3, rcx
+    cvttsd2si rcx, xmm3
     add rax, rcx
-    movsd.q xmm0, [rip + 0x14f]
-    subsd.q xmm0, [rip + 0x150]
+    subsd.q xmm0, [rip + 0x14a]
     cvtsi2ss xmm3, rsi
     cvttss2si rcx, xmm3
     add rax, rcx
@@ -125,7 +125,7 @@ main:
     cvttsd2si ecx, xmm1
     movzx ecx, cl
     add rax, rcx
-    movss.d xmm0, [rip + 0x69]
+    movss.d xmm0, [rip + 0x63]
     cvttss2si ecx, xmm0
     movzx ecx, cx
     add rax, rcx

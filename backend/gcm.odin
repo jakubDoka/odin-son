@@ -6,6 +6,7 @@ import "base:runtime"
 import "core:container/queue"
 import "core:fmt"
 import "core:log"
+import "core:os"
 import "core:slice"
 
 Graph_Basic_Block :: struct {
@@ -586,7 +587,7 @@ graph_schedule :: proc(
 	gs.bbs = bbs[:]
 
 	//if has_unscheduled {
-	//	graph_display(os.to_writer(os.stderr), graph, gs)
+	//graph_display(os.to_writer(os.stderr), graph, gs)
 	//}
 
 	if graph.end != 0 {
@@ -658,7 +659,12 @@ verify_schedule_integrity :: proc(
 
 			if inode.itype != .Phi {
 				for oinstr in bb.instrs[i + 1:] {
-					assert(!slice.contains(inode.inps, oinstr))
+					fmt.assertf(
+						!slice.contains(inode.inps, oinstr),
+						"\n%v\n%v",
+						inode,
+						graph_get(graph, oinstr),
+					)
 					if len(antys) != 0 {
 						assert(!slice.contains(antys[inode.gvn][:], oinstr))
 					}

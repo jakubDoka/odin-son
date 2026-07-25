@@ -1,32 +1,31 @@
 =========== OPT LEVEL: none ===========
 main:
-    movss.d xmm0, [rip + 0x101]
+    movss.d xmm0, [rip + 0xf1]
     mov.d [rsp - 0x18], 0
     movss.d [rsp - 0x18], xmm0
     movss.d xmm0, [rsp - 0x18]
-    ucomiss.d xmm0, [rip + 0xe2]
+    ucomiss.d xmm0, [rip + 0xd2]
     jne 1
-    movsd.q xmm0, [rip + 0xd9]
-    movsd.q xmm1, [rip + 0xda]
-    movsd.q [rsp - 0x10], xmm1
+    pxor xmm0, xmm0
+    movsd.q xmm1, [rip + 0xc4]
     movsd.q [rsp - 0x10], xmm0
-    movsd.q xmm0, [rsp - 0x10]
-    ucomisd.q xmm0, [rip + 0xb2]
+    movsd.q [rsp - 0x10], xmm1
+    movsd.q xmm1, [rsp - 0x10]
+    ucomisd.q xmm1, [rip + 0xa6]
     jne 2
-    movss.d xmm0, [rip + 0xb7]
-    movss.d xmm2, [rip + 0xae]
-    subss.d xmm2, [rip + 0xab]
-    movss.d [rsp - 0x14], xmm0
-    movss.d [rsp - 0x14], xmm2
-    movss.d xmm0, [rsp - 0x14]
-    ucomiss xmm0, xmm2
+    pxor xmm1, xmm1
+    subss.d xmm1, [rip + 0x9c]
+    mov.d [rsp - 0x14], 0
+    movss.d [rsp - 0x14], xmm1
+    movss.d xmm2, [rsp - 0x14]
+    ucomiss xmm2, xmm1
     jne 3
-    movsd.q xmm0, [rip + 0x73]
-    subsd.q xmm0, [rip + 0x80]
-    movsd.q [rsp - 0x8], xmm1
+    pxor xmm1, xmm1
+    subsd.q xmm1, [rip + 0x73]
     movsd.q [rsp - 0x8], xmm0
-    movsd.q xmm1, [rsp - 0x8]
-    ucomisd xmm1, xmm0
+    movsd.q [rsp - 0x8], xmm1
+    movsd.q xmm0, [rsp - 0x8]
+    ucomisd xmm0, xmm1
     jne 4
     xor eax, eax
     jmp 5
@@ -45,31 +44,30 @@ main:
     ret
 =========== OPT LEVEL: mininal ===========
 main:
-    movss.d xmm0, [rip + 0xf9]
+    movss.d xmm0, [rip + 0xe9]
     mov.d [rsp - 0x18], 0
     movss.d [rsp - 0x18], xmm0
     movss.d xmm0, [rsp - 0x18]
-    ucomiss.d xmm0, [rip + 0xda]
+    ucomiss.d xmm0, [rip + 0xca]
     jne 1
-    movsd.q xmm0, [rip + 0xd1]
-    movsd.q xmm1, [rip + 0xd2]
-    movsd.q [rsp - 0x10], xmm1
+    pxor xmm0, xmm0
+    movsd.q xmm1, [rip + 0xbc]
     movsd.q [rsp - 0x10], xmm0
-    movsd.q xmm0, [rsp - 0x10]
-    ucomisd.q xmm0, [rip + 0xaa]
+    movsd.q [rsp - 0x10], xmm1
+    movsd.q xmm1, [rsp - 0x10]
+    ucomisd.q xmm1, [rip + 0x9e]
     jne 2
-    movss.d xmm0, [rip + 0xaf]
-    movss.d xmm2, [rip + 0xac]
-    movss.d [rsp - 0x14], xmm2
-    movss.d [rsp - 0x14], xmm0
-    movss.d xmm0, [rsp - 0x14]
-    ucomiss.d xmm0, [rip + 0x89]
+    movss.d xmm1, [rip + 0x99]
+    mov.d [rsp - 0x14], 0
+    movss.d [rsp - 0x14], xmm1
+    movss.d xmm1, [rsp - 0x14]
+    ucomiss.d xmm1, [rip + 0x7a]
     jne 3
-    movsd.q xmm0, [rip + 0x86]
-    movsd.q [rsp - 0x8], xmm1
+    movsd.q xmm1, [rip + 0x71]
     movsd.q [rsp - 0x8], xmm0
+    movsd.q [rsp - 0x8], xmm1
     movsd.q xmm0, [rsp - 0x8]
-    ucomisd.q xmm0, [rip + 0x68]
+    ucomisd.q xmm0, [rip + 0x53]
     jne 4
     xor eax, eax
     jmp 5

@@ -6,6 +6,7 @@ import "base:runtime"
 import "core:container/queue"
 import "core:fmt"
 import "core:math"
+import "core:mem"
 import "core:slice"
 import "core:sort"
 
@@ -227,6 +228,8 @@ builder_peep :: proc(
 			if root.itype != .Mem do break forward
 
 			forward_candidate: backend.Node_ID
+			rev_forward_candidate: backend.Node_ID
+			load_base: backend.Node_ID
 			op_count := 0
 
 			iter: backend.Offset_Iter
@@ -234,6 +237,14 @@ builder_peep :: proc(
 			for user in backend.offset_iter_next(ctx, &iter) {
 				unode := backend.graph_expand(ctx, user.id)
 				op_count += 1
+
+				if unode.itype == .Copy &&
+				   user.idx == 2 &&
+				   rev_forward_candidate == 0 {
+					rev_forward_candidate = user.id
+					continue
+				}
+
 				if unode.itype in STORES && user.idx == 2 {
 					continue
 				}
@@ -245,30 +256,46 @@ builder_peep :: proc(
 					continue
 				}
 
+				if unode.itype == .Load && load_base == 0 {
+					load_base = unode.inps[1]
+					continue
+				}
+
 				backend.peep_ctx_add_trigger(ctx, user.id, id)
 				break forward
 			}
 
-			assert(forward_candidate != 0)
-
-			fnode := backend.graph_expand(ctx, forward_candidate)
-
-			cursor := fnode.inps[1]
-			op_count -= 1
-			for op_count > 0 {
-				cnode := backend.graph_expand(ctx, cursor)
-				if cnode.itype not_in STORES do break forward
-				base, _ := backend.base_and_offset(ctx, cnode.inps[2])
-				if base != id &&
-				   !backend.is_noalias(ctx, cursor, forward_candidate) {
-					backend.peep_ctx_add_trigger(ctx, cursor, id)
-					break forward
-				}
-				cursor = cnode.inps[1]
-				op_count -= int(base == id)
+			if load_base != 0 &&
+			   (((load_base != rev_forward_candidate) &&
+						   forward_candidate == 0) ||
+					   forward_candidate != 0) {
+				break forward
 			}
 
-			return fnode.inps[2]
+			if forward_candidate != 0 {
+				fnode := backend.graph_expand(ctx, forward_candidate)
+				cursor := fnode.inps[1]
+				op_count -= 1
+				for op_count > 0 {
+					cnode := backend.graph_expand(ctx, cursor)
+					if cnode.itype not_in STORES do break forward
+					base, _ := backend.base_and_offset(ctx, cnode.inps[2])
+					if base != id &&
+					   !backend.is_noalias(ctx, cursor, forward_candidate) {
+						backend.peep_ctx_add_trigger(ctx, cursor, id)
+						break forward
+					}
+					cursor = cnode.inps[1]
+					op_count -= int(base == id)
+				}
+
+				return fnode.inps[2]
+			}
+
+			fnode := backend.graph_expand(ctx, rev_forward_candidate)
+			if op_count == 2 {
+				return fnode.inps[3]
+			}
 		}
 	case .Region:
 		#reverse for inp, i in node.inps {
@@ -374,9 +401,9 @@ builder_peep :: proc(
 
 		return 0
 	case .Phi:
-		if Builder_Node_Type(backend.graph_get(ctx, node.inps[0]).rtype) ==
-			   .Dead &&
-		   2 < len(node.inps) {
+		ctrl := backend.graph_expand(ctx, node.inps[0])
+
+		if Builder_Node_Type(ctrl.rtype) == .Dead && 2 < len(node.inps) {
 			ordered_remove(ctx, &node, 2)
 
 			if node.rtype == backend.DEAD_NODE_KIND do break match
@@ -393,6 +420,81 @@ builder_peep :: proc(
 
 		if 2 < len(node.inps) && node.inps[2] == id {
 			return node.inps[1]
+		}
+
+		memcpify: if node.dt == .Void && ctrl.itype == .Loop {
+			if len(ctrl.outs) != 3 do break memcpify
+
+			els := backend.graph_expand(ctx, ctrl.inps[1])
+			if els.itype != .Else do break memcpify
+			if len(els.outs) != 3 do break memcpify
+			ifo := backend.graph_expand(ctx, els.inps[0])
+			if ifo.itype != .If do break memcpify
+
+			cnd := backend.graph_expand(ctx, ifo.inps[1])
+			if cnd.itype != .Ge do break memcpify
+			idx := backend.graph_expand(ctx, cnd.inps[0])
+			if idx.itype != .Phi do break memcpify
+			if idx.inps[0] != node.inps[0] do break memcpify
+			if len(idx.outs) != 4 do break memcpify
+
+			add := backend.graph_expand(ctx, idx.inps[2])
+			if add.itype != .Add do break memcpify
+			if add.inps[0] != cnd.inps[0] do break memcpify
+			inc := backend.graph_expand(ctx, add.inps[1])
+			if inc.itype != .CInt do break memcpify
+			if backend.graph_extra(ctx, inc, backend.CInt).value != 1 {
+				break memcpify
+			}
+
+			cnt := backend.graph_expand(ctx, cnd.inps[1])
+
+			store := backend.graph_expand(ctx, node.inps[2])
+			if store.itype != .Store do break memcpify
+			if store.inps[1] != id do break memcpify
+
+			load := backend.graph_expand(ctx, store.inps[3])
+			if load.itype != .Load do break memcpify
+			if load.inps[1] != id do break memcpify
+
+			src_cur := backend.graph_expand(ctx, load.inps[2])
+			if src_cur.itype != .Add do break memcpify
+			if src_cur.inps[1] != cnd.inps[0] do break memcpify
+
+			dst_cur := backend.graph_expand(ctx, store.inps[2])
+			if dst_cur.itype != .Add do break memcpify
+			if dst_cur.inps[1] != cnd.inps[0] do break memcpify
+
+			src := src_cur.inps[0]
+			dst := dst_cur.inps[0]
+
+			for out in node.outs {
+				// NOTE: For now, free floating ops cancel this opt, and this
+				// needs to be deferred to the loop elimination pass
+				onode := backend.graph_expand(ctx, out.id)
+				if onode.inps[0] == 0 do break memcpify
+			}
+
+			pcount := 0
+			for out in ctrl.outs {
+				pcount += int(backend.graph_get(ctx, out.id).itype == .Phi)
+			}
+			if pcount != 2 do break memcpify
+
+			backend.worklist_add(ctx, ctx.worklist, els.inps[0])
+			backend.graph_subsume(ctx, ctrl.inps[0], node.inps[0])
+			backend.graph_subsume(ctx, ctrl.inps[0], ifo.outs[0].id)
+			backend.graph_subsume(ctx, idx.inps[0], cnd.inps[0])
+
+			return backend.graph_add_copy(
+				ctx,
+				"lcpi",
+				ctrl.inps[0],
+				node.inps[1],
+				dst,
+				src,
+				cnd.inps[1],
+			)
 		}
 	case .Then, .Else:
 		if_ := backend.graph_expand(ctx, node.inps[0])
@@ -675,6 +777,56 @@ builder_peep :: proc(
 			}
 		}
 
+		eliminate: {
+			fuel := 4
+
+			cursor := id
+			size := backend.mem_op_size(ctx, id) or_else panic("")
+			base, off := backend.base_and_offset(ctx, node.inps[2])
+			for {
+				cnode := backend.graph_expand(ctx, cursor)
+				cursor = 0
+				for out in cnode.outs {
+					onode := backend.graph_expand(ctx, out.id)
+					if !onode.is_store ||
+					   (onode.itype == .Copy &&
+							   onode.inps[2] == onode.inps[3]) {
+						backend.peep_ctx_add_trigger(ctx, out.id, id)
+						break eliminate
+					}
+				}
+				for out in cnode.outs {
+					clobbered := true
+					defer if clobbered {
+						backend.peep_ctx_add_trigger(ctx, out.id, id)
+					}
+
+					onode := backend.graph_expand(ctx, out.id)
+					if backend.is_noalias(ctx, id, out.id) {
+						if cursor != 0 do break eliminate
+						cursor = out.id
+						continue
+					}
+					osize := backend.mem_op_size(
+						ctx,
+						out.id,
+					) or_break eliminate
+					obase, ooff := backend.base_and_offset(ctx, onode.inps[2])
+					if base != obase {
+						break eliminate
+					}
+
+					if ooff <= off && off + size <= ooff + osize {
+						clobbered = false
+						return node.inps[1]
+					}
+
+					break eliminate
+				}
+
+				if cursor == 0 do break
+			}
+		}
 	case .Set:
 		if !is_complete do break
 

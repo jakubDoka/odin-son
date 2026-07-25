@@ -106,6 +106,8 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		append(&confs, Test_Conf{level = level, debug = true})
 	}
 
+	//remove_range(&confs, 0, len(confs) - 1)
+
 	//append(&confs, Test_Conf{level = levels[len(levels) - 2], check = true})
 
 	lib, did_load := dynlib.load_library("")

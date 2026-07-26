@@ -78,6 +78,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		fullpath = "test",
 	}
 	{context.allocator = context.temp_allocator
+		//p.err = parser.default_error_handler
 		ok := parser.parse_file(&p, &f); assert(ok)
 	}
 

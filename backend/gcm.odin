@@ -121,6 +121,7 @@ graph_schedule :: proc(
 	graph: ^Graph,
 	gs: ^Graph_Schedule,
 	scratch: runtime.Allocator,
+	no_late_pass := false,
 ) {
 	context.allocator, _ = arna.scrath(scratch)
 
@@ -357,7 +358,7 @@ graph_schedule :: proc(
 
 	worklist: queue.Queue(Node_ID)
 	queue.init(&worklist, int(graph.gvn))
-	if graph.end != 0 {
+	if graph.end != 0 && !no_late_pass {
 		worklist_add(graph, &worklist, graph.end)
 	}
 
@@ -567,7 +568,7 @@ graph_schedule :: proc(
 		node := graph_get(graph, n)
 		late := ctx.late_schedules[i]
 		early := ctx.early_schedules[i]
-		sched := graph.end == 0 ? early : late
+		sched := graph.end == 0 || no_late_pass ? early : late
 		if sched == 0 {
 			log.error("not scheduled:", node)
 			has_unscheduled = true

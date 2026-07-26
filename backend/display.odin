@@ -291,6 +291,20 @@ graph_display_extra :: proc(
 			if .raw_union in info.flags do break
 		}
 		return
+	case runtime.Type_Info_Bit_Field:
+		slt: i64
+		for fld in reflect.bit_fields_zipped(extra.id) {
+			copy(mem.ptr_to_bytes(&slt), reflect.as_bytes(extra))
+			slt >>= fld.offset
+			slt &~= (i64(-1) << fld.size)
+			graph_display_extra(
+				w,
+				any{&slt, fld.type.id},
+				fld.name,
+				written_one,
+			)
+		}
+		return
 	}
 
 	if !mem.check_zero(reflect.as_bytes(extra)) {

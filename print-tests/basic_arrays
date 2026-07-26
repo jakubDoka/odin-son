@@ -3,15 +3,15 @@ main:
     push rbx
     sub rsp, 0x90
     lea rdi, [rsp + 0x48]
-    mov rdx, 0x20
     xor esi, esi
+    mov rdx, 0x20
     call.q [rip - 0x26]
     xor edx, edx
 2:
     cmp rdx, 0x20
     jnl 1
-    mov rcx, rdx
-    mov.b [rsp + rdx + 0x48], cl
+    mov rax, rdx
+    mov.b [rsp + rdx + 0x48], al
     add rdx, 1
     jmp 2
 1:
@@ -29,8 +29,8 @@ main:
     jmp 4
 3:
     lea rdi, [rsp + 0x68]
-    mov rdx, 0x20
     xor esi, esi
+    mov rdx, 0x20
     call.q [rip - 0x91]
     mov.q [rsp + 0x68], 0x10
     mov.q [rsp + 0x70], 0x19
@@ -123,15 +123,15 @@ main:
     push rbx
     sub rsp, 0x90
     lea rdi, [rsp + 0x48]
-    mov rdx, 0x20
     xor esi, esi
+    mov rdx, 0x20
     call.q [rip - 0x26]
     xor edx, edx
 2:
     cmp rdx, 0x20
     jnl 1
-    mov rcx, rdx
-    mov.b [rsp + rdx + 0x48], cl
+    mov rax, rdx
+    mov.b [rsp + rdx + 0x48], al
     add rdx, 1
     jmp 2
 1:
@@ -149,8 +149,8 @@ main:
     jmp 4
 3:
     lea rdi, [rsp + 0x68]
-    mov rdx, 0x20
     xor esi, esi
+    mov rdx, 0x20
     call.q [rip - 0x91]
     mov.q [rsp + 0x68], 0x10
     mov.q [rsp + 0x70], 0x19
@@ -242,16 +242,15 @@ main:
 main:
     push rbx
     sub rsp, 0x90
-    mov.q [rsp + 0x48], 0
-    mov.q [rsp + 0x50], 0
-    mov.q [rsp + 0x58], 0
-    mov.q [rsp + 0x60], 0
+    pxor xmm0, xmm0
+    movups.x [rsp + 0x48], xmm0
+    movups.x [rsp + 0x58], xmm0
     xor edx, edx
 2:
     cmp rdx, 0x20
     jnl 1
-    mov rcx, rdx
-    mov.b [rsp + rdx + 0x48], cl
+    mov rax, rdx
+    mov.b [rsp + rdx + 0x48], al
     add rdx, 1
     jmp 2
 1:
@@ -311,7 +310,7 @@ main:
     xor esi, esi
     mov rdx, 0x48
     lea rdi, [rsp]
-    call.q [rip - 0x168]
+    call.q [rip - 0x155]
     xor edi, edi
 16:
     cmp rdi, 3
@@ -358,16 +357,15 @@ main:
 main:
     push rbx
     sub rsp, 0x90
-    mov.q [rsp + 0x48], 0
-    mov.q [rsp + 0x50], 0
-    mov.q [rsp + 0x58], 0
-    mov.q [rsp + 0x60], 0
+    pxor xmm0, xmm0
+    movups.x [rsp + 0x48], xmm0
+    movups.x [rsp + 0x58], xmm0
     xor edx, edx
 2:
     cmp rdx, 0x20
     jnl 1
-    mov rcx, rdx
-    mov.b [rsp + rdx + 0x48], cl
+    mov rax, rdx
+    mov.b [rsp + rdx + 0x48], al
     add rdx, 1
     jmp 2
 1:
@@ -427,7 +425,7 @@ main:
     xor esi, esi
     mov rdx, 0x48
     lea rdi, [rsp]
-    call.q [rip - 0x168]
+    call.q [rip - 0x155]
     xor edi, edi
 16:
     cmp rdi, 3

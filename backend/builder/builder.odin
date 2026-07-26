@@ -6,7 +6,6 @@ import "base:runtime"
 import "core:container/queue"
 import "core:fmt"
 import "core:math"
-import "core:mem"
 import "core:slice"
 import "core:sort"
 
@@ -274,6 +273,12 @@ builder_peep :: proc(
 
 			if forward_candidate != 0 {
 				fnode := backend.graph_expand(ctx, forward_candidate)
+
+				bse, _ := backend.base_and_offset(ctx, fnode.inps[2])
+				subs := backend.graph_get(ctx, bse)
+				if subs.itype != .Local_Addr &&
+				   subs.itype != .Param {break forward}
+
 				cursor := fnode.inps[1]
 				op_count -= 1
 				for op_count > 0 {
@@ -1016,7 +1021,7 @@ builder_peep :: proc(
 			return 1 << uint(intrinsics.count_trailing_zeros(offset))
 		}
 
-		MAX_STORE_UNIT :: 8
+		MAX_STORE_UNIT :: 16
 
 		align := min(align_of(dst_size), MAX_STORE_UNIT)
 		assert(align != 0)
@@ -1098,7 +1103,7 @@ builder_peep :: proc(
 		mem_thread := mm
 		for slot in slots {
 			idx := intrinsics.count_trailing_zeros(slot.size)
-			table := [4]backend.Node_Datatype{.I8, .I16, .I32, .I64}
+			table := [?]backend.Node_Datatype{.I8, .I16, .I32, .I64, .V128}
 			dt := table[idx]
 			vl := backend.graph_add_c_int(ctx, "zrsp", dt, 0)
 			off := backend.graph_add_c_int(

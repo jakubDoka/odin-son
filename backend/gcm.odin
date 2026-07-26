@@ -6,6 +6,7 @@ import "base:runtime"
 import "core:container/queue"
 import "core:fmt"
 import "core:log"
+import "core:math/rand"
 import "core:os"
 import "core:slice"
 
@@ -610,7 +611,7 @@ graph_schedule :: proc(
 
 		// TODO: this is extremely stupid but works, fix later
 		changed := true
-		for _ in 0 ..< 1000 {
+		for i in 0 ..< 1000 {
 			changed = false
 
 			for &instr, i in bb.instrs {
@@ -620,8 +621,10 @@ graph_schedule :: proc(
 					for &oinstr in bb.instrs[i + 1:] {
 						if slice.contains(inode.inps, oinstr) ||
 						   slice.contains(ctx.antideps[inode.gvn][:], oinstr) {
+
 							instr, oinstr = oinstr, instr
 							changed = true
+							break
 						}
 					}
 				}

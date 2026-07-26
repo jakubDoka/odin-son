@@ -5649,9 +5649,29 @@ simd_search :: proc(haistack: []$T, needle: T) -> (int, bool) {
 	return len(haistack) / LANES * LANES + idx, true
 }
 
+sum :: proc(slc: []u8) -> u8 {
+	acc: #simd[LANES]u8
+
+	i := 0
+	for {
+		if i + LANES >= len(slc) do break
+		acc += from_slice(slc[i:i + LANES])
+		i += LANES
+	}
+
+	sacc: u8
+	for el in slc {
+		sacc += el
+	}
+
+	return intrinsics.simd_reduce_add_bisect(acc) + sacc
+}
+
 main :: proc() -> int {
 	haystack := "0123456789abcdefghijklmnopqrstuvxyz"
 	res, _ := simd_search(transmute([]u8)haystack, 'z')
-	return res
+	res2, _ := simd_search(transmute([]u8)haystack, 'a')
+	res3 := sum(transmute([]u8)haystack)
+	return res + res2 * 10 + int(res3) * 100
 }
 ```

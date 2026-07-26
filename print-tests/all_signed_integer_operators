@@ -1,12 +1,12 @@
 =========== OPT LEVEL: none ===========
 main:
     xor eax, eax
-    sub rax, 6
+    sub rax, 7
     mov rcx, rax
     xor eax, eax
-    sub rax, 7
+    sub rax, 6
     mov rsi, rax
-    mov rdi, rcx
+    mov rdi, rsi
     mov rax, 0x14
     cqo
     idiv rdi
@@ -14,41 +14,41 @@ main:
     xor eax, eax
     add rdx, rax
     mov r8, rdx
-    mov rdi, rcx
+    mov rdi, rsi
     mov rax, 0x14
     cqo
     idiv rdi
     add r8, rdx
-    mov rdi, rcx
-    mov rax, rsi
+    mov rdi, rsi
+    mov rax, rcx
     cqo
     idiv rdi
     add r8, rax
-    mov rdi, rcx
-    mov rax, rsi
+    mov rdi, rsi
+    mov rax, rcx
     cqo
     idiv rdi
     add r8, rdx
-    mov rax, rsi
-    sar rax, 1
-    add r8, rax
     mov rax, rcx
     sar rax, 1
     add r8, rax
-    cmp rcx, 0x14
+    mov rax, rsi
+    sar rax, 1
+    add r8, rax
+    cmp rsi, 0x14
     jnge 1
     jmp 2
 1:
     add r8, 1
 2:
     mov rdi, r8
-    cmp rsi, rcx
+    cmp rcx, rsi
     jnge 3
     jmp 4
 3:
     add rdi, 2
 4:
-    mov rax, rcx
+    mov rax, rsi
     mov rdx, 0x14
     cmp rdx, rax
     jnle 5
@@ -56,13 +56,13 @@ main:
 5:
     add rdi, 4
 6:
-    cmp rcx, rsi
+    cmp rsi, rcx
     jle 7
     jmp 8
 7:
     add rdi, 8
 8:
-    mov rax, rcx
+    mov rax, rsi
     mov rcx, 0x14
     cmp rcx, rax
     jnl 9

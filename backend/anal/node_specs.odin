@@ -90,6 +90,7 @@ SPEC := backend.Node_Spec{
 		{.General = 0, .Vector = 0}, // Splat
 		{.General = 0, .Vector = 0}, // Ctz
 		{.General = 0, .Vector = 0}, // Simd_Extract_Lsbs
+		{.General = 0, .Vector = 0}, // Simd_Reduce_Add_Bisect
 		{.General = 0, .Vector = 0}, // CV128
 	},
 	interned_reg_masks = {
@@ -173,6 +174,7 @@ SPEC := backend.Node_Spec{
 		{}, // Splat
 		{}, // Ctz
 		{}, // Simd_Extract_Lsbs
+		{}, // Simd_Reduce_Add_Bisect
 		{}, // CV128
 	},
 	inplace_slot_idxs = {
@@ -253,6 +255,7 @@ SPEC := backend.Node_Spec{
 		-16, //Splat
 		-16, //Ctz
 		-16, //Simd_Extract_Lsbs
+		-16, //Simd_Reduce_Add_Bisect
 		-16, //CV128
 	},
 	emit_function = anal_emit_function,
@@ -337,6 +340,7 @@ SPEC := backend.Node_Spec{
 		0, //Splat
 		0, //Ctz
 		0, //Simd_Extract_Lsbs
+		0, //Simd_Reduce_Add_Bisect
 		0, //CV128
 	},
 	inheritance_table = {
@@ -417,6 +421,7 @@ SPEC := backend.Node_Spec{
 		0b10, // Splat
 		0b10, // Ctz
 		0b10, // Simd_Extract_Lsbs
+		0b10, // Simd_Reduce_Add_Bisect
 		0b1000000, // CV128
 	},
 	node_extra_sizes = {
@@ -497,6 +502,7 @@ SPEC := backend.Node_Spec{
 		0, // Splat -> No_Extra
 		0, // Ctz -> No_Extra
 		0, // Simd_Extract_Lsbs -> No_Extra
+		0, // Simd_Reduce_Add_Bisect -> No_Extra
 		4, // CV128 -> CV128
 	},
 	node_flags = {
@@ -577,6 +583,7 @@ SPEC := backend.Node_Spec{
 		{Class_Flag.Interned}, // Splat
 		{Class_Flag.Interned}, // Ctz
 		{Class_Flag.Interned}, // Simd_Extract_Lsbs
+		{Class_Flag.Interned}, // Simd_Reduce_Add_Bisect
 		{Class_Flag.Interned, Class_Flag.Clonable}, // CV128
 	},
 	node_extra_types = {
@@ -645,6 +652,7 @@ SPEC := backend.Node_Spec{
 		backend.Cfg,
 		backend.Tup,
 		backend.Cfg,
+		backend.No_Extra,
 		backend.No_Extra,
 		backend.No_Extra,
 		backend.No_Extra,
@@ -737,6 +745,7 @@ SPEC := backend.Node_Spec{
 		`Splat`,
 		`Ctz`,
 		`Simd_Extract_Lsbs`,
+		`Simd_Reduce_Add_Bisect`,
 		`CV128`,
 	},
 }
@@ -819,6 +828,7 @@ ANAL_Node_Type :: enum u16 {
 	Splat,
 	Ctz,
 	Simd_Extract_Lsbs,
+	Simd_Reduce_Add_Bisect,
 	CV128,
 }
 
@@ -895,6 +905,7 @@ anal_post_schedule_peep_inst :: proc(
 #assert(size_of(backend.Cfg) % backend.PRECISION == 0)
 #assert(size_of(backend.Tup) % backend.PRECISION == 0)
 #assert(size_of(backend.Cfg) % backend.PRECISION == 0)
+#assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)

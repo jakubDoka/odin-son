@@ -1,13 +1,10 @@
 =========== OPT LEVEL: none ===========
 main:
-    push rbx
-    sub rsp, 0x30
-    xor eax, eax
-    imul rbx, rax, 8
+    sub rsp, 0x38
     mov rdx, 0x20
-    xor esi, esi
     lea rdi, [rsp + 0x10]
-    call.q [rip - 0x2d]
+    xor esi, esi
+    call.q [rip - 0x21]
     mov.q [rsp + 0x10], 1
     mov.q [rsp + 0x18], 2
     mov.q [rsp + 0x20], 3
@@ -15,23 +12,24 @@ main:
     mov rdx, 0x10
     xor esi, esi
     lea rdi, [rsp]
-    call.q [rip - 0x65]
-    lea rax, [rsp + 0x10]
-    add rax, rbx
-    mov.q [rsp], rax
-    mov rax, 2
-    sub rax, 0
-    mov.q [rsp + 0x8], rax
+    call.q [rip - 0x59]
+    xor eax, eax
+    imul rax, rax, 8
+    lea rcx, [rsp + 0x10]
+    add rcx, rax
+    mov.q [rsp], rcx
+    mov rcx, 2
+    sub rcx, 0
+    mov.q [rsp + 0x8], rcx
     mov.q rcx, [rsp]
-    mov rax, rcx
-    add rax, rbx
-    mov.q rax, [rax]
+    mov rdx, rcx
+    add rdx, rax
+    mov.q rax, [rdx]
     mov rdx, 1
     imul rdx, rdx, 8
     add rdx, rcx
     add.q rax, [rdx]
-    add rsp, 0x30
-    pop rbx
+    add rsp, 0x38
     ret
 =========== OPT LEVEL: mininal ===========
 main:
@@ -40,17 +38,17 @@ main:
     sub rsp, 0x38
     xor eax, eax
     imul rbx, rax, 8
-    lea rax, [rsp + 0x10]
-    add rax, rbx
-    mov rbp, rax
     mov rdx, 0x20
-    xor esi, esi
     lea rdi, [rsp + 0x10]
-    call.q [rip - 0x3a]
+    xor esi, esi
+    call.q [rip - 0x2f]
     mov.q [rsp + 0x10], 1
     mov.q [rsp + 0x18], 2
     mov.q [rsp + 0x20], 3
     mov.q [rsp + 0x28], 4
+    lea rax, [rsp + 0x10]
+    add rax, rbx
+    mov rbp, rax
     mov rdx, 0x10
     xor esi, esi
     lea rdi, [rsp]

@@ -460,6 +460,7 @@ disasm :: proc(sb: ^strings.Builder, ctx: Gen_Ctx) {
 
 		label_base := len(decoded_label_info)
 		info_base := len(decoded_instr_info)
+		error_base := len(errors)
 		labels[u32(len(decoded_label_info))] = prc.name
 		append(&decoded_label_info, 0)
 
@@ -478,6 +479,18 @@ disasm :: proc(sb: ^strings.Builder, ctx: Gen_Ctx) {
 
 		for &info in decoded_instr_info[info_base:] {
 			info.offset += u32(offset)
+		}
+
+		for err in errors[error_base:] {
+			prev_instr := decoded_instr_info[err.inst_idx - 1]
+			prev_i := decoded_instrs[err.inst_idx - 1]
+			fmt.sbprintfln(
+				sb,
+				"%x",
+				instructions[prev_instr.offset -
+				offset +
+				u32(prev_i.length):][:10],
+			)
 		}
 	}
 

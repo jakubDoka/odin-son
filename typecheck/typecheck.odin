@@ -956,6 +956,7 @@ Intrinsic :: enum int {
 	trap,
 	simd_lanes_eq,
 	simd_extract_lsbs,
+	simd_reduce_add_bisect,
 	count_trailing_zeros,
 }
 
@@ -1553,7 +1554,7 @@ typecheck :: proc(
 						reflect.enum_from_name(
 							Intrinsic,
 							f.name,
-						) or_else panic(""),
+						) or_else fmt.panicf("%v", f.name),
 					)
 				}
 
@@ -1943,6 +1944,11 @@ typecheck :: proc(
 				)
 				assert(a.type in INTEGER_TYPES)
 				return tmeta(ctx, a.type)
+			case .simd_reduce_add_bisect:
+				assert(len(d.args) == 1)
+				a := typecheck(ctx, {}, d.args[0])
+				sd := unpack_type(a.type).(^Simd)
+				return tmeta(ctx, sd.elem)
 			}
 		case Module_Type:
 			fmt.panicf("Cant call a module")

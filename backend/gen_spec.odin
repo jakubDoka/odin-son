@@ -86,6 +86,11 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 		group = "Un_Op",
 		flags = {.Interned},
 	},
+	.Simd_Reduce_Add_Bisect = {
+		args = {"oprnd"},
+		group = "Un_Op",
+		flags = {.Interned},
+	},
 	.CV128 = {
 		id = CV128,
 		extra_args = {"lo", "hi"},

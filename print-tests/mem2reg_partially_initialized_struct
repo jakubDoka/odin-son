@@ -4,8 +4,8 @@ opaque:
     ret
 main:
     sub rsp, 0x18
-    xor esi, esi
     lea rdi, [rsp]
+    xor esi, esi
     mov rdx, 0x18
     call.q [rip - 0x28]
     mov rdi, 0x2a
@@ -22,8 +22,8 @@ opaque:
     ret
 main:
     sub rsp, 0x18
-    xor esi, esi
     lea rdi, [rsp]
+    xor esi, esi
     mov rdx, 0x18
     call.q [rip - 0x28]
     mov rdi, 0x2a
@@ -40,8 +40,8 @@ opaque:
     ret
 main:
     sub rsp, 0x18
-    mov.q [rsp], 0
-    mov.q [rsp + 0x8], 0
+    pxor xmm0, xmm0
+    movups.x [rsp], xmm0
     mov.q [rsp + 0x10], 0
     mov rdi, 0x2a
     call opaque
@@ -57,12 +57,25 @@ opaque:
     mov rax, rdi
     ret
 main:
-    sub rsp, 8
+    sub rsp, 0x18
+    pxor xmm0, xmm0
+    movups.x [rsp], xmm0
+    mov.q [rsp + 0x10], 0
     mov rdi, 0x2a
     call opaque
-    add rsp, 8
+    mov rcx, rax
+    mov.q [rsp + 0x8], rcx
+    mov.q rax, [rsp]
+    add rax, rcx
+    add.q rax, [rsp + 0x10]
+    add rsp, 0x18
     ret
 =========== OPT LEVEL: aggresive ===========
 main:
-    mov rax, 0x2a
+    pxor xmm0, xmm0
+    movups.x [rsp - 0x18], xmm0
+    mov.q [rsp - 0x8], 0
+    mov.q [rsp - 0x10], 0x2a
+    mov.q rax, [rsp - 0x18]
+    add rax, 0x2a
     ret

@@ -189,6 +189,7 @@ Ideal_Node_Type :: enum u16 {
 	Splat,
 	Ctz,
 	Simd_Extract_Lsbs,
+	Simd_Reduce_Add_Bisect,
 	CV128,
 }
 

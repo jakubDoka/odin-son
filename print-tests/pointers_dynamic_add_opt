@@ -107,8 +107,8 @@ add i8:
 =========== OPT LEVEL: moderate ===========
 main:
     sub rsp, 0x18
-    mov.q [rsp], 0
-    mov.q [rsp + 0x8], 0
+    pxor xmm0, xmm0
+    movups.x [rsp], xmm0
     mov rsi, 1
     lea rdi, [rsp]
     call add int
@@ -162,8 +162,8 @@ add i8:
 =========== OPT LEVEL: all ===========
 main:
     sub rsp, 0x18
-    mov.q [rsp], 0
-    mov.q [rsp + 0x8], 0
+    pxor xmm0, xmm0
+    movups.x [rsp], xmm0
     mov rsi, 1
     lea rdi, [rsp]
     call add int
@@ -216,20 +216,23 @@ add i8:
     ret
 =========== OPT LEVEL: aggresive ===========
 main:
-    mov.q [rsp - 0x10], 0
-    mov.q [rsp - 0x18], 1
-    movsxd.d rax, [rsp - 0x10]
-    add eax, 1
-    mov.d [rsp - 0x10], eax
-    movsx.w rcx, [rsp - 0xc]
-    add cx, 1
-    mov.w [rsp - 0xc], cx
-    movsx.b rdx, [rsp - 0xa]
-    add dl, 1
-    mov.b [rsp - 0xa], dl
-    movsxd rax, eax
-    movsx rcx, cx
+    pxor xmm0, xmm0
+    movups.x [rsp - 0x18], xmm0
+    mov.q rax, [rsp - 0x18]
+    add.q [rsp - 0x18], 1
+    movsxd.d rcx, [rsp - 0x10]
+    add ecx, 1
+    mov.d [rsp - 0x10], ecx
+    movsx.w rdx, [rsp - 0xc]
+    add dx, 1
+    mov.w [rsp - 0xc], dx
+    movsx.b rsi, [rsp - 0xa]
+    add sil, 1
+    mov.b [rsp - 0xa], sil
+    movsxd rcx, ecx
     lea rax, [rax + rcx + 0x1]
-    movsx rcx, dl
+    movsx rcx, dx
+    add rax, rcx
+    movsx rcx, sil
     add rax, rcx
     ret

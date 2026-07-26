@@ -10,6 +10,7 @@ Un_Op :: enum u16 {
 	Neg = u16(Ideal_Node_Type.Neg),
 	Sext = u16(Ideal_Node_Type.Sext),
 	Not = u16(Ideal_Node_Type.Not),
+	Simd_Reduce_Add_Bisect = u16(Ideal_Node_Type.Simd_Reduce_Add_Bisect),
 	Simd_Extract_Lsbs = u16(Ideal_Node_Type.Simd_Extract_Lsbs),
 	F_Demote = u16(Ideal_Node_Type.F_Demote),
 	F_Ext = u16(Ideal_Node_Type.F_Ext),
@@ -130,6 +131,7 @@ Root_Node_Type :: enum u16 {
 	Splat,
 	Ctz,
 	Simd_Extract_Lsbs,
+	Simd_Reduce_Add_Bisect,
 	CV128,
 }
 #assert(size_of(Cfg) % PRECISION == 0)
@@ -357,6 +359,7 @@ graph_add_un_op :: #force_inline proc(graph: ^Graph, name: string, type: Un_Op, 
 	push_node_name(graph, name)
 	return graph_add_raw(graph, u16(type), dt, {oprnd})
 }
+#assert(size_of(No_Extra) % PRECISION == 0)
 #assert(size_of(No_Extra) % PRECISION == 0)
 #assert(size_of(No_Extra) % PRECISION == 0)
 #assert(size_of(No_Extra) % PRECISION == 0)

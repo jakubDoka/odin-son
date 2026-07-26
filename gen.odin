@@ -2228,6 +2228,16 @@ emit_nodes :: proc(
 					a,
 				)
 				break match
+			case .simd_reduce_add_bisect:
+				a := to_rvalue(ctx, emit_nodes(ctx, {}, d.args[0]), d.args[0])
+				res = backend.graph_add_un_op(
+					ctx,
+					"ctz",
+					.Simd_Reduce_Add_Bisect,
+					typecheck.type_to_dt(typecheck.get_node_type(node)),
+					a,
+				)
+				break match
 			}
 		case base_ty == .Module:
 			panic("calling a module?")

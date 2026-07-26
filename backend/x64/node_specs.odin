@@ -94,6 +94,7 @@ SPEC := backend.Node_Spec{
 		{.General = 0, .Vector = 0}, // Splat
 		{.General = 0, .Vector = 0}, // Ctz
 		{.General = 0, .Vector = 0}, // Simd_Extract_Lsbs
+		{.General = 0, .Vector = 0}, // Simd_Reduce_Add_Bisect
 		{.General = 0, .Vector = 0}, // CV128
 		{.General = 0, .Vector = 0}, // X64_Add
 		{.General = 0, .Vector = 0}, // X64_Sub
@@ -133,6 +134,8 @@ SPEC := backend.Node_Spec{
 		{.General = 0, .Vector = 0}, // X64_Mul8
 		{.General = 0, .Vector = 0}, // X64_Fma_213
 		{.General = 0, .Vector = 0}, // X64_Pcmpeq
+		{.General = 0, .Vector = 0}, // X64_Pshufd
+		{.General = 0, .Vector = 0}, // X64_Psadbw
 	},
 	interned_reg_masks = {
 		raw_data([]i64{}),
@@ -154,11 +157,11 @@ SPEC := backend.Node_Spec{
 		{}, // Poison
 		{}, // Param
 		{{.General = 1, .Vector = 2}}, // CInt
-		{{.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}}, // Add
-		{{.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}}, // Sub
-		{{.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}}, // And
-		{{.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}}, // Or
-		{{.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}}, // Xor
+		{{.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}}, // Add
+		{{.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}}, // Sub
+		{{.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}}, // And
+		{{.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}}, // Or
+		{{.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}}, // Xor
 		{{.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}}, // Eq
 		{{.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}}, // Ne
 		{{.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}}, // Le
@@ -182,7 +185,7 @@ SPEC := backend.Node_Spec{
 		{{.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}, {.General = 4, .Vector = 0}}, // Shl
 		{{.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}, {.General = 4, .Vector = 0}}, // Shr
 		{{.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}, {.General = 4, .Vector = 0}}, // U_Shr
-		{{.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}}, // Mul
+		{{.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}}, // Mul
 		{{.General = 5, .Vector = 0}, {.General = 5, .Vector = 0}, {.General = 6, .Vector = 0}}, // Div
 		{{.General = 5, .Vector = 0}, {.General = 5, .Vector = 0}, {.General = 6, .Vector = 0}}, // U_Div
 		{{.General = 7, .Vector = 0}, {.General = 5, .Vector = 0}, {.General = 6, .Vector = 0}}, // Rem
@@ -226,12 +229,13 @@ SPEC := backend.Node_Spec{
 		{{.General = 3, .Vector = 2}, {.General = 1, .Vector = 0}}, // Splat
 		{{.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}}, // Ctz
 		{{.General = 1, .Vector = 3}, {.General = 0, .Vector = 2}}, // Simd_Extract_Lsbs
+		{}, // Simd_Reduce_Add_Bisect
 		{{.General = 0, .Vector = 2}}, // CV128
-		{{.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}}, // X64_Add
-		{{.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}}, // X64_Sub
-		{{.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}}, // X64_And
-		{{.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}}, // X64_Or
-		{{.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}}, // X64_Xor
+		{{.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}}, // X64_Add
+		{{.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}}, // X64_Sub
+		{{.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}}, // X64_And
+		{{.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}}, // X64_Or
+		{{.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}}, // X64_Xor
 		{{.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}}, // X64_Eq
 		{{.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}}, // X64_Ne
 		{{.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}, {.General = 1, .Vector = 0}}, // X64_Le
@@ -265,6 +269,8 @@ SPEC := backend.Node_Spec{
 		{{.General = 5, .Vector = 0}, {.General = 1, .Vector = 0}, {.General = 5, .Vector = 0}}, // X64_Mul8
 		{{.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}}, // X64_Fma_213
 		{{.General = 3, .Vector = 2}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 3}}, // X64_Pcmpeq
+		{{.General = 0, .Vector = 2}, {.General = 0, .Vector = 2}}, // X64_Pshufd
+		{{.General = 0, .Vector = 2}, {.General = 0, .Vector = 2}, {.General = 0, .Vector = 2}}, // X64_Psadbw
 	},
 	inplace_slot_idxs = {
 		-16, //Start
@@ -336,7 +342,7 @@ SPEC := backend.Node_Spec{
 		0, //Not
 		-16, //Sext
 		-16, //Uext
-		0, //Cast
+		-16, //Cast
 		-16, //F_To_I
 		-16, //F_From_I
 		-16, //F_Ext
@@ -344,6 +350,7 @@ SPEC := backend.Node_Spec{
 		-16, //Splat
 		0, //Ctz
 		-16, //Simd_Extract_Lsbs
+		-16, //Simd_Reduce_Add_Bisect
 		-16, //CV128
 		0, //X64_Add
 		0, //X64_Sub
@@ -383,6 +390,8 @@ SPEC := backend.Node_Spec{
 		-16, //X64_Mul8
 		0, //X64_Fma_213
 		0, //X64_Pcmpeq
+		-16, //X64_Pshufd
+		0, //X64_Psadbw
 	},
 	reg_mask_of = x64_reg_mask_of,
 	emit_function = x64_emit_function,
@@ -467,6 +476,7 @@ SPEC := backend.Node_Spec{
 		0, //Splat
 		0, //Ctz
 		0, //Simd_Extract_Lsbs
+		0, //Simd_Reduce_Add_Bisect
 		0, //CV128
 		0, //X64_Add
 		0, //X64_Sub
@@ -506,6 +516,8 @@ SPEC := backend.Node_Spec{
 		0, //X64_Mul8
 		0, //X64_Fma_213
 		0, //X64_Pcmpeq
+		0, //X64_Pshufd
+		0, //X64_Psadbw
 	},
 	inheritance_table = {
 		0b1, // Start
@@ -585,6 +597,7 @@ SPEC := backend.Node_Spec{
 		0b10, // Splat
 		0b10, // Ctz
 		0b10, // Simd_Extract_Lsbs
+		0b10, // Simd_Reduce_Add_Bisect
 		0b1000000, // CV128
 		0b10000000, // X64_Add
 		0b10000000, // X64_Sub
@@ -624,6 +637,8 @@ SPEC := backend.Node_Spec{
 		0b10, // X64_Mul8
 		0b10000000, // X64_Fma_213
 		0b10, // X64_Pcmpeq
+		0b10000000, // X64_Pshufd
+		0b10, // X64_Psadbw
 	},
 	node_extra_sizes = {
 		1, // Start -> Cfg
@@ -703,6 +718,7 @@ SPEC := backend.Node_Spec{
 		0, // Splat -> No_Extra
 		0, // Ctz -> No_Extra
 		0, // Simd_Extract_Lsbs -> No_Extra
+		0, // Simd_Reduce_Add_Bisect -> No_Extra
 		4, // CV128 -> CV128
 		3, // X64_Add -> X64_Mem_Op
 		3, // X64_Sub -> X64_Mem_Op
@@ -742,6 +758,8 @@ SPEC := backend.Node_Spec{
 		0, // X64_Mul8 -> No_Extra
 		3, // X64_Fma_213 -> X64_Mem_Op
 		0, // X64_Pcmpeq -> No_Extra
+		3, // X64_Pshufd -> X64_Mem_Op
+		0, // X64_Psadbw -> No_Extra
 	},
 	node_flags = {
 		{}, // Start
@@ -821,6 +839,7 @@ SPEC := backend.Node_Spec{
 		{Class_Flag.Interned}, // Splat
 		{Class_Flag.Interned}, // Ctz
 		{Class_Flag.Interned}, // Simd_Extract_Lsbs
+		{Class_Flag.Interned}, // Simd_Reduce_Add_Bisect
 		{Class_Flag.Interned, Class_Flag.Clonable}, // CV128
 		{}, // X64_Add
 		{}, // X64_Sub
@@ -860,6 +879,8 @@ SPEC := backend.Node_Spec{
 		{}, // X64_Mul8
 		{}, // X64_Fma_213
 		{}, // X64_Pcmpeq
+		{}, // X64_Pshufd
+		{}, // X64_Psadbw
 	},
 	node_extra_types = {
 		backend.Cfg,
@@ -939,6 +960,7 @@ SPEC := backend.Node_Spec{
 		backend.No_Extra,
 		backend.No_Extra,
 		backend.No_Extra,
+		backend.No_Extra,
 		backend.CV128,
 		X64_Mem_Op,
 		X64_Mem_Op,
@@ -974,6 +996,8 @@ SPEC := backend.Node_Spec{
 		X64_Mem_Op,
 		backend.No_Extra,
 		X64_Mem_Op,
+		X64_Mem_Op,
+		backend.No_Extra,
 		X64_Mem_Op,
 		backend.No_Extra,
 		X64_Mem_Op,
@@ -1057,6 +1081,7 @@ SPEC := backend.Node_Spec{
 		`Splat`,
 		`Ctz`,
 		`Simd_Extract_Lsbs`,
+		`Simd_Reduce_Add_Bisect`,
 		`CV128`,
 		`X64_Add`,
 		`X64_Sub`,
@@ -1096,6 +1121,8 @@ SPEC := backend.Node_Spec{
 		`X64_Mul8`,
 		`X64_Fma_213`,
 		`X64_Pcmpeq`,
+		`X64_Pshufd`,
+		`X64_Psadbw`,
 	},
 }
 
@@ -1177,6 +1204,7 @@ X64_Node_Type :: enum u16 {
 	Splat,
 	Ctz,
 	Simd_Extract_Lsbs,
+	Simd_Reduce_Add_Bisect,
 	CV128,
 	X64_Add,
 	X64_Sub,
@@ -1216,6 +1244,8 @@ X64_Node_Type :: enum u16 {
 	X64_Mul8,
 	X64_Fma_213,
 	X64_Pcmpeq,
+	X64_Pshufd,
+	X64_Psadbw,
 }
 
 x64_peep_inst :: proc(ctx: backend.Peep_Ctx, node: backend.Expanded_Node) -> backend.Node_ID {
@@ -1303,6 +1333,7 @@ x64_post_schedule_peep_inst :: proc(
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
+#assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.CV128) % backend.PRECISION == 0)
 #assert(size_of(X64_Mem_Op) % backend.PRECISION == 0)
 #assert(size_of(X64_Mem_Op) % backend.PRECISION == 0)
@@ -1342,6 +1373,12 @@ x64_post_schedule_peep_inst :: proc(
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(X64_Mem_Op) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
+#assert(size_of(X64_Mem_Op) % backend.PRECISION == 0)
+#assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
+graph_add_x64_psadbw :: #force_inline proc(graph: ^backend.Graph, name: string, dt: backend.Node_Datatype, lhs: backend.Node_ID, rhs: backend.Node_ID) -> (id: backend.Node_ID) {
+	backend.push_node_name(graph, name)
+	return backend.graph_add_raw(graph, u16(X64_Node_Type.X64_Psadbw), dt, {lhs, rhs})
+}
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	when false {}

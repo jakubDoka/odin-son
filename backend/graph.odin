@@ -164,7 +164,6 @@ Ideal_Node_Type :: enum u16 {
 	Set,
 	Store,
 	Load,
-	Load_S,
 	If,
 	Then,
 	Else,
@@ -955,7 +954,7 @@ mem_op_size :: proc(
 	#partial switch node.itype {
 	case .Store:
 		size = DT_SIZE[graph_get(graph, node.inps[3]).dt]
-	case .Load, .Load_S:
+	case .Load:
 		size = DT_SIZE[node.dt]
 	case .Set, .Copy:
 		size_cnst := graph_extra(graph, node.inps[4], CInt)

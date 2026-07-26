@@ -3,19 +3,19 @@ package backend
 
 when !GEN_SPEC {
 Un_Op :: enum u16 {
-	Cast = u16(Ideal_Node_Type.Cast),
-	Uext = u16(Ideal_Node_Type.Uext),
-	F_From_I = u16(Ideal_Node_Type.F_From_I),
 	F_To_I = u16(Ideal_Node_Type.F_To_I),
-	Neg = u16(Ideal_Node_Type.Neg),
-	Sext = u16(Ideal_Node_Type.Sext),
-	Not = u16(Ideal_Node_Type.Not),
-	Simd_Reduce_Add_Bisect = u16(Ideal_Node_Type.Simd_Reduce_Add_Bisect),
-	Simd_Extract_Lsbs = u16(Ideal_Node_Type.Simd_Extract_Lsbs),
-	F_Demote = u16(Ideal_Node_Type.F_Demote),
+	Cast = u16(Ideal_Node_Type.Cast),
 	F_Ext = u16(Ideal_Node_Type.F_Ext),
-	Ctz = u16(Ideal_Node_Type.Ctz),
+	F_From_I = u16(Ideal_Node_Type.F_From_I),
+	Not = u16(Ideal_Node_Type.Not),
+	Neg = u16(Ideal_Node_Type.Neg),
+	Uext = u16(Ideal_Node_Type.Uext),
+	Sext = u16(Ideal_Node_Type.Sext),
+	Simd_Reduce_Add_Bisect = u16(Ideal_Node_Type.Simd_Reduce_Add_Bisect),
 	Splat = u16(Ideal_Node_Type.Splat),
+	F_Demote = u16(Ideal_Node_Type.F_Demote),
+	Simd_Extract_Lsbs = u16(Ideal_Node_Type.Simd_Extract_Lsbs),
+	Ctz = u16(Ideal_Node_Type.Ctz),
 }
 Bin_Op :: enum u16 {
 	Add = u16(Ideal_Node_Type.Add),
@@ -106,7 +106,6 @@ Root_Node_Type :: enum u16 {
 	Set,
 	Store,
 	Load,
-	Load_S,
 	If,
 	Then,
 	Else,
@@ -272,11 +271,6 @@ graph_add_store :: #force_inline proc(graph: ^Graph, name: string, ctrl: Node_ID
 graph_add_load :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype, ctrl: Node_ID, mem: Node_ID, addr: Node_ID) -> (id: Node_ID) {
 	push_node_name(graph, name)
 	return graph_add_raw(graph, u16(Ideal_Node_Type.Load), dt, {ctrl, mem, addr})
-}
-#assert(size_of(No_Extra) % PRECISION == 0)
-graph_add_load_s :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Datatype, ctrl: Node_ID, mem: Node_ID, addr: Node_ID) -> (id: Node_ID) {
-	push_node_name(graph, name)
-	return graph_add_raw(graph, u16(Ideal_Node_Type.Load_S), dt, {ctrl, mem, addr})
 }
 #assert(size_of(Cfg) % PRECISION == 0)
 graph_add_if :: #force_inline proc(graph: ^Graph, name: string, ctrl: Node_ID, cond: Node_ID) -> (id: Node_ID) {

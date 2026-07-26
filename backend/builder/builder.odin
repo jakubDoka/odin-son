@@ -688,7 +688,7 @@ builder_peep :: proc(
 			backend.worklist_add(ctx, ctx.worklist, id)
 			return id
 		}
-	case .Load, .Load_S:
+	case .Load:
 		florward_loads: {
 			cursor := node.inps[1]
 			for {
@@ -906,7 +906,7 @@ builder_peep :: proc(
 				break match
 			}
 
-			AUX :: bit_set[backend.Ideal_Node_Type]{.Load_S, .Load}
+			AUX :: bit_set[backend.Ideal_Node_Type]{.Load}
 
 			#reverse for &slot, i in slots {
 				send := slot.offset + slot.size
@@ -972,7 +972,6 @@ builder_peep :: proc(
 				ALLOWED := bit_set[backend.Ideal_Node_Type] {
 					.Store,
 					.Load,
-					.Load_S,
 					.Set,
 					.Copy,
 				}
@@ -989,7 +988,7 @@ builder_peep :: proc(
 					if cursor != 0 do break traverse
 					cursor = out.id
 					offset = off
-				case .Load, .Load_S:
+				case .Load:
 					for &slot in slots {
 						if slot.offset == off {
 							assert(slot.size == backend.DT_SIZE[onode.dt])

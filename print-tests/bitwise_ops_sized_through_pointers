@@ -20,35 +20,29 @@ main:
     mov rsi, 6
     call and32
     movsx.b rax, [rsp]
-    movsx rax, al
     movsx.w rcx, [rsp + 0x2]
-    movsx rcx, cx
     add rax, rcx
     movsxd.d rcx, [rsp + 0x6]
-    movsxd rcx, ecx
     add rax, rcx
     movsx.b rcx, [rsp + 0x1]
-    movsx rcx, cl
     add rax, rcx
     movsx.w rcx, [rsp + 0x4]
-    movsx rcx, cx
     add rax, rcx
     movsxd.d rcx, [rsp + 0xa]
-    movsxd rcx, ecx
     add rax, rcx
     add rsp, 0x18
     ret
 or8:
     or.b [rdi], sil
-    movsx.b rax, [rdi]
+    movzx.b eax, [rdi]
     ret
 xor16:
     xor.w [rdi], si
-    movsx.w rax, [rdi]
+    movzx.w eax, [rdi]
     ret
 and32:
     and.d [rdi], esi
-    movsxd.d rax, [rdi]
+    mov.d eax, [rdi]
     ret
 =========== OPT LEVEL: mininal ===========
 main:
@@ -72,35 +66,29 @@ main:
     mov rsi, 6
     call and32
     movsx.b rax, [rsp]
-    movsx rax, al
     movsx.w rcx, [rsp + 0x2]
-    movsx rcx, cx
     add rax, rcx
     movsxd.d rcx, [rsp + 0x6]
-    movsxd rcx, ecx
     add rax, rcx
     movsx.b rcx, [rsp + 0x1]
-    movsx rcx, cl
     add rax, rcx
     movsx.w rcx, [rsp + 0x4]
-    movsx rcx, cx
     add rax, rcx
     movsxd.d rcx, [rsp + 0xa]
-    movsxd rcx, ecx
     add rax, rcx
     add rsp, 0x18
     ret
 or8:
     or.b [rdi], sil
-    movsx.b rax, [rdi]
+    movzx.b eax, [rdi]
     ret
 xor16:
     xor.w [rdi], si
-    movsx.w rax, [rdi]
+    movzx.w eax, [rdi]
     ret
 and32:
     and.d [rdi], esi
-    movsxd.d rax, [rdi]
+    mov.d eax, [rdi]
     ret
 =========== OPT LEVEL: moderate ===========
 main:
@@ -124,36 +112,30 @@ main:
     mov rsi, 6
     call and32
     movsx.b rax, [rsp]
-    movsx rax, al
     movsx.w rcx, [rsp + 0x2]
-    movsx rcx, cx
     add rax, rcx
     movsxd.d rcx, [rsp + 0x6]
-    movsxd rcx, ecx
     add rax, rcx
     movsx.b rcx, [rsp + 0x1]
-    movsx rcx, cl
     add rax, rcx
     movsx.w rcx, [rsp + 0x4]
-    movsx rcx, cx
     add rax, rcx
     movsxd.d rcx, [rsp + 0xa]
-    movsxd rcx, ecx
     add rax, rcx
     add rsp, 0x18
     ret
 or8:
-    movsx.b rax, [rdi]
+    movzx.b eax, [rdi]
     or al, sil
     mov.b [rdi], al
     ret
 xor16:
-    movsx.w rax, [rdi]
+    movzx.w eax, [rdi]
     xor ax, si
     mov.w [rdi], ax
     ret
 and32:
-    movsxd.d rax, [rdi]
+    mov.d eax, [rdi]
     and eax, esi
     mov.d [rdi], eax
     ret
@@ -173,27 +155,24 @@ main:
     mov rsi, 6
     call and32
     movsx.b rax, [rsp]
-    movsx rax, al
     movsx.w rcx, [rsp + 0x1]
-    movsx rcx, cx
     lea rax, [rax + rcx + 0x22]
     movsxd.d rcx, [rsp + 0x3]
-    movsxd rcx, ecx
     add rax, rcx
     add rsp, 8
     ret
 or8:
-    movsx.b rax, [rdi]
+    movzx.b eax, [rdi]
     or al, sil
     mov.b [rdi], al
     ret
 xor16:
-    movsx.w rax, [rdi]
+    movzx.w eax, [rdi]
     xor ax, si
     mov.w [rdi], ax
     ret
 and32:
-    movsxd.d rax, [rdi]
+    mov.d eax, [rdi]
     and eax, esi
     mov.d [rdi], eax
     ret

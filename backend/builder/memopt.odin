@@ -245,7 +245,7 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 			for cout in slice.clone(cnode.outs) {
 				conode := backend.graph_expand(ctx, cout.id)
 				#partial switch conode.itype {
-				case .Load, .Load_S:
+				case .Load:
 					id := get_edited_node_idx(ctx, conode) or_break
 					value := get_scope_value(ctx, ctx.scope, id)
 					backend.graph_subsume(ctx, value, cout.id)
@@ -271,7 +271,7 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 				conode := backend.graph_expand(ctx, cout.id)
 				#partial switch conode.itype {
 				case .Local:
-				case .Load, .Load_S:
+				case .Load:
 				case .Phi:
 					reg := backend.graph_get(ctx, conode.inps[0])
 

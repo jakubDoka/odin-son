@@ -121,7 +121,6 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 		flags = {.Clonable, .Interned},
 	},
 	.Load = {args = {"ctrl", "mem", "addr"}, flags = {.Interned, .Load}},
-	.Load_S = {args = {"ctrl", "mem", "addr"}, flags = {.Interned, .Load}},
 	.Store = {
 		args = {"ctrl", "mem", "addr", "value"},
 		default_type = .Void,

@@ -25,13 +25,10 @@ main:
     call add i8
     mov.q rax, [rsp]
     movsxd.d rcx, [rsp + 0x8]
-    movsxd rcx, ecx
     add rax, rcx
     movsx.w rcx, [rsp + 0xc]
-    movsx rcx, cx
     add rax, rcx
     movsx.b rcx, [rsp + 0xe]
-    movsx rcx, cl
     add rax, rcx
     add rsp, 0x18
     ret
@@ -41,15 +38,15 @@ add int:
     ret
 add i32:
     add.d [rdi], esi
-    movsxd.d rax, [rdi]
+    mov.d eax, [rdi]
     ret
 add i16:
     add.w [rdi], si
-    movsx.w rax, [rdi]
+    movzx.w eax, [rdi]
     ret
 add i8:
     add.b [rdi], sil
-    movsx.b rax, [rdi]
+    movzx.b eax, [rdi]
     ret
 =========== OPT LEVEL: mininal ===========
 main:
@@ -78,13 +75,10 @@ main:
     call add i8
     mov.q rax, [rsp]
     movsxd.d rcx, [rsp + 0x8]
-    movsxd rcx, ecx
     add rax, rcx
     movsx.w rcx, [rsp + 0xc]
-    movsx rcx, cx
     add rax, rcx
     movsx.b rcx, [rsp + 0xe]
-    movsx rcx, cl
     add rax, rcx
     add rsp, 0x18
     ret
@@ -94,15 +88,15 @@ add int:
     ret
 add i32:
     add.d [rdi], esi
-    movsxd.d rax, [rdi]
+    mov.d eax, [rdi]
     ret
 add i16:
     add.w [rdi], si
-    movsx.w rax, [rdi]
+    movzx.w eax, [rdi]
     ret
 add i8:
     add.b [rdi], sil
-    movsx.b rax, [rdi]
+    movzx.b eax, [rdi]
     ret
 =========== OPT LEVEL: moderate ===========
 main:
@@ -129,13 +123,10 @@ main:
     call add i8
     mov.q rax, [rsp]
     movsxd.d rcx, [rsp + 0x8]
-    movsxd rcx, ecx
     add rax, rcx
     movsx.w rcx, [rsp + 0xc]
-    movsx rcx, cx
     add rax, rcx
     movsx.b rcx, [rsp + 0xe]
-    movsx rcx, cl
     add rax, rcx
     add rsp, 0x18
     ret
@@ -145,17 +136,17 @@ add int:
     mov.q [rdi], rax
     ret
 add i32:
-    movsxd.d rax, [rdi]
+    mov.d eax, [rdi]
     add eax, esi
     mov.d [rdi], eax
     ret
 add i16:
-    movsx.w rax, [rdi]
+    movzx.w eax, [rdi]
     add ax, si
     mov.w [rdi], ax
     ret
 add i8:
-    movsx.b rax, [rdi]
+    movzx.b eax, [rdi]
     add al, sil
     mov.b [rdi], al
     ret
@@ -184,13 +175,10 @@ main:
     call add i8
     mov.q rax, [rsp]
     movsxd.d rcx, [rsp + 0x8]
-    movsxd rcx, ecx
     add rax, rcx
     movsx.w rcx, [rsp + 0xc]
-    movsx rcx, cx
     add rax, rcx
     movsx.b rcx, [rsp + 0xe]
-    movsx rcx, cl
     add rax, rcx
     add rsp, 0x18
     ret
@@ -200,17 +188,17 @@ add int:
     mov.q [rdi], rax
     ret
 add i32:
-    movsxd.d rax, [rdi]
+    mov.d eax, [rdi]
     add eax, esi
     mov.d [rdi], eax
     ret
 add i16:
-    movsx.w rax, [rdi]
+    movzx.w eax, [rdi]
     add ax, si
     mov.w [rdi], ax
     ret
 add i8:
-    movsx.b rax, [rdi]
+    movzx.b eax, [rdi]
     add al, sil
     mov.b [rdi], al
     ret
@@ -220,13 +208,13 @@ main:
     movups.x [rsp - 0x18], xmm0
     mov.q rax, [rsp - 0x18]
     add.q [rsp - 0x18], 1
-    movsxd.d rcx, [rsp - 0x10]
+    mov.d ecx, [rsp - 0x10]
     add ecx, 1
     mov.d [rsp - 0x10], ecx
-    movsx.w rdx, [rsp - 0xc]
+    movzx.w edx, [rsp - 0xc]
     add dx, 1
     mov.w [rsp - 0xc], dx
-    movsx.b rsi, [rsp - 0xa]
+    movzx.b esi, [rsp - 0xa]
     add sil, 1
     mov.b [rsp - 0xa], sil
     movsxd rcx, ecx

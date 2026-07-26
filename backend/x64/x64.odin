@@ -8,7 +8,6 @@ import "core:fmt"
 import "core:math"
 import "core:mem"
 import "core:reflect"
-import "core:rexcode/isa/x86"
 import "core:slice"
 import "core:sort"
 
@@ -303,10 +302,6 @@ X64_IDEAL_REG_CLASSES := [backend.Ideal_Node_Type]Reg_Class_Spec {
 	},
 	.Proc_Addr = {reg_masks = #partial{.General = {GPA_MASK}}},
 	.Load = {
-		input_start_idx = 2,
-		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK}},
-	},
-	.Load_S = {
 		input_start_idx = 2,
 		reg_masks = #partial{.General = {GPA_MASK, GPA_MASK}},
 	},
@@ -850,25 +845,24 @@ x64_peep :: proc(
 		node.additional_data_start = u8(
 			backend.graph_get(ctx, node.inps[1]).dt == .Void,
 		)
-	case .Load, .Load_S:
+	case .Load:
 		load_inps := [4]backend.Node_ID {
 			node.inps[0],
 			node.inps[1],
 			base,
 			index,
 		}
-		return x64_make_node(
+		res := x64_make_node(
 			ctx,
 			id,
 			u16(X64_Node_Type.X64_Load),
 			load_inps[:3 + int(scale != 0)],
-			{
-				dis = displacement,
-				scale = u8(scale),
-				signed = node.itype == .Load_S,
-			},
+			{dis = displacement, scale = u8(scale), dt = node.dt},
 			additional_data_offset = u8(stack_base),
 		)
+
+		backend.worklist_add(ctx, ctx.worklist, res)
+		return res
 	case .Store:
 		immediate: i32
 		inps := [5]backend.Node_ID {
@@ -903,6 +897,11 @@ x64_peep :: proc(
 
 		backend.worklist_add(ctx, ctx.worklist, res)
 		return res
+	case .Sext, .Uext:
+		inp := backend.graph_get(ctx, node.inps[0])
+		if backend.DT_SIZE[inp.dt] >= backend.DT_SIZE[node.dt] {
+			return node.inps[0]
+		}
 	case .X64_Store, .X64_Load:
 		changed := false
 
@@ -941,6 +940,23 @@ x64_peep :: proc(
 			node.additional_data_start,
 			u8(stack_base),
 		)
+
+		widen_load: if xtype(node) == .X64_Load && node.dt < .I64 {
+			dominant: backend.Ideal_Node_Type
+			for out in node.outs {
+				onode := backend.graph_get(ctx, out.id)
+				if dominant != {} {
+					if dominant != onode.itype do break widen_load
+				}
+				dominant = onode.itype
+			}
+			if dominant == .Sext || dominant == .Uext {
+				mem_op.dt = node.dt
+				node.dt = .I64
+				mem_op.signed = dominant == .Sext
+				changed = true
+			}
+		}
 
 		if xtype(node) == .X64_Store &&
 		   3 + int(mem_op.scale != 0) < len(node.inps) {
@@ -1083,6 +1099,7 @@ x64_post_schedule_peep :: proc(
 		rhs := backend.graph_expand(ctx, node.inps[1])
 		if xtype(rhs) == .X64_Load && len(rhs.outs) == 1 {
 			mem_op := x64_extra(ctx, rhs, X64_Mem_Op)
+			if mem_op.dt != rhs.dt do break matchx
 			if !has_no_clobbers(ctx, node.inps[1]) do break matchx
 			mem_op.mem_mode = .Src
 			mem_op.dt = rhs.dt
@@ -1124,6 +1141,7 @@ x64_post_schedule_peep :: proc(
 		lhs := backend.graph_expand(ctx, node.inps[0])
 		if xtype(lhs) == .X64_Load && len(lhs.outs) == 1 {
 			om_mem_op := x64_extra(ctx, lhs, X64_Mem_Op)
+			if om_mem_op.dt != lhs.dt do break matchx
 			if !has_no_clobbers(ctx, node.inps[0]) do break matchx
 			om_mem_op.imm = mem_op.imm
 			om_mem_op.mem_mode = .Dest
@@ -1914,12 +1932,12 @@ x64_emit_instr :: proc(
 			)
 			emit_imm_for_dt(ctx.code, dt, imm)
 		}
-	case .Load, .X64_Load, .Load_S:
-		dt := node.dt
+	case .Load, .X64_Load:
+		dt := mem_op.dt
 		bse, sdis, id := reg_and_disp_of(ctx, node.inps[2])
 		val := reg_of(ctx, instr)
 		dis := mem_op.dis
-		signed := mem_op.signed || node.itype == .Load_S
+		signed := mem_op.signed
 
 		if dt in backend.FLOAT_DTS {
 			// movss/movsd $val, [$bse + ...]

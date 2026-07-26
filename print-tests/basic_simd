@@ -176,9 +176,8 @@ simd_search u8:
     mov.q rsi, [rsp + 0x30]
     call from_slice u8
     movd xmm1, r15d
-    punpcklbw xmm1, xmm1
-    punpcklwd xmm1, xmm1
-    pshufd xmm1, xmm1, 0
+    pxor xmm2, xmm2
+    pshufb xmm1, xmm2
     pcmpeqb xmm0, xmm1
     pmovmskb eax, xmm0
     cmp ax, 0
@@ -200,7 +199,7 @@ simd_search u8:
     lea rdi, [rsp + 0x38]
     xor esi, esi
     mov rdx, 0x10
-    call.q [rip - 0x369]
+    call.q [rip - 0x364]
     mov rax, r12
     cqo
     idiv rbp
@@ -450,9 +449,8 @@ simd_search u8:
     mov.q rsi, [rsp + 0x30]
     call from_slice u8
     movd xmm1, r15d
-    punpcklbw xmm1, xmm1
-    punpcklwd xmm1, xmm1
-    pshufd xmm1, xmm1, 0
+    pxor xmm2, xmm2
+    pshufb xmm1, xmm2
     pcmpeqb xmm0, xmm1
     pmovmskb eax, xmm0
     test ax, ax
@@ -474,7 +472,7 @@ simd_search u8:
     lea rdi, [rsp + 0x38]
     xor esi, esi
     mov rdx, 0x10
-    call.q [rip - 0x367]
+    call.q [rip - 0x362]
     mov rax, r12
     cqo
     idiv rbp
@@ -665,9 +663,8 @@ simd_search u8:
     mov rsi, 0x10
     call from_slice u8
     movd xmm1, r12d
-    punpcklbw xmm1, xmm1
-    punpcklwd xmm1, xmm1
-    pshufd xmm1, xmm1, 0
+    pxor xmm2, xmm2
+    pshufb xmm1, xmm2
     pcmpeqb xmm0, xmm1
     pmovmskb eax, xmm0
     test ax, ax
@@ -844,9 +841,8 @@ simd_search u8:
     mov rsi, 0x10
     call from_slice u8
     movd xmm1, r13d
-    punpcklbw xmm1, xmm1
-    punpcklwd xmm1, xmm1
-    pshufd xmm1, xmm1, 0
+    pxor xmm2, xmm2
+    pshufb xmm1, xmm2
     pcmpeqb xmm0, xmm1
     pmovmskb eax, xmm0
     test ax, ax
@@ -982,15 +978,14 @@ simd_search u8:
     cmp rsi, rax
     jnl 11
     imul rax, rsi, 0x10
+    movd xmm0, r9d
     mov rdx, rdi
     add rdx, rax
-    movups.x xmm0, [rdx]
-    movd xmm1, r9d
-    punpcklbw xmm1, xmm1
-    punpcklwd xmm1, xmm1
-    pshufd xmm1, xmm1, 0
-    pcmpeqb xmm0, xmm1
-    pmovmskb edx, xmm0
+    movups.x xmm1, [rdx]
+    pxor xmm2, xmm2
+    pshufb xmm0, xmm2
+    pcmpeqb xmm1, xmm0
+    pmovmskb edx, xmm1
     test dx, dx
     jne 12
     add rsi, 1

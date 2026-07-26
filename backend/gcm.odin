@@ -6,8 +6,6 @@ import "base:runtime"
 import "core:container/queue"
 import "core:fmt"
 import "core:log"
-import "core:math/rand"
-import "core:os"
 import "core:slice"
 
 Graph_Basic_Block :: struct {

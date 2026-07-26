@@ -270,16 +270,6 @@ to_rvalue_ty :: proc(
 	if !value.is_lvalue do return value.id
 	dt := typecheck.type_to_dt(ty)
 	assert(dt != .Void)
-	if is_signed_subword(ty) {
-		return backend.graph_add_load_s(
-			ctx,
-			"sltr",
-			dt,
-			ctx_ctrl(ctx),
-			ctx_mem(ctx),
-			value.id,
-		)
-	}
 	return field_load(ctx, "ultr", dt, value.id)
 }
 

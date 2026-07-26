@@ -65,7 +65,6 @@ SPEC := backend.Node_Spec{
 		{.General = 0, .Vector = 0}, // Set
 		{.General = 0, .Vector = 0}, // Store
 		{.General = 0, .Vector = 0}, // Load
-		{.General = 0, .Vector = 0}, // Load_S
 		{.General = 0, .Vector = 0}, // If
 		{.General = 0, .Vector = 0}, // Then
 		{.General = 0, .Vector = 0}, // Else
@@ -152,7 +151,6 @@ SPEC := backend.Node_Spec{
 		{}, // Set
 		{}, // Store
 		{}, // Load
-		{}, // Load_S
 		{}, // If
 		{}, // Then
 		{}, // Else
@@ -236,7 +234,6 @@ SPEC := backend.Node_Spec{
 		-16, //Set
 		-16, //Store
 		-16, //Load
-		-16, //Load_S
 		-16, //If
 		-16, //Then
 		-16, //Else
@@ -324,7 +321,6 @@ SPEC := backend.Node_Spec{
 		0, //Set
 		0, //Store
 		0, //Load
-		0, //Load_S
 		0, //If
 		0, //Then
 		0, //Else
@@ -408,7 +404,6 @@ SPEC := backend.Node_Spec{
 		0b10, // Set
 		0b10, // Store
 		0b10, // Load
-		0b10, // Load_S
 		0b1, // If
 		0b1, // Then
 		0b1, // Else
@@ -492,7 +487,6 @@ SPEC := backend.Node_Spec{
 		0, // Set -> No_Extra
 		0, // Store -> No_Extra
 		0, // Load -> No_Extra
-		0, // Load_S -> No_Extra
 		1, // If -> Cfg
 		1, // Then -> Cfg
 		1, // Else -> Cfg
@@ -576,7 +570,6 @@ SPEC := backend.Node_Spec{
 		{Class_Flag.Store}, // Set
 		{Class_Flag.Store}, // Store
 		{Class_Flag.Interned, Class_Flag.Load}, // Load
-		{Class_Flag.Interned, Class_Flag.Load}, // Load_S
 		{}, // If
 		{Class_Flag.Is_Basic_Block_Start}, // Then
 		{Class_Flag.Is_Basic_Block_Start}, // Else
@@ -656,7 +649,6 @@ SPEC := backend.Node_Spec{
 		backend.Tup,
 		backend.No_Extra,
 		backend.Tup,
-		backend.No_Extra,
 		backend.No_Extra,
 		backend.No_Extra,
 		backend.No_Extra,
@@ -744,7 +736,6 @@ SPEC := backend.Node_Spec{
 		`Set`,
 		`Store`,
 		`Load`,
-		`Load_S`,
 		`If`,
 		`Then`,
 		`Else`,
@@ -830,7 +821,6 @@ Builder_Node_Type :: enum u16 {
 	Set,
 	Store,
 	Load,
-	Load_S,
 	If,
 	Then,
 	Else,
@@ -918,7 +908,6 @@ builder_post_schedule_peep_inst :: proc(
 #assert(size_of(backend.Tup) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.Tup) % backend.PRECISION == 0)
-#assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)

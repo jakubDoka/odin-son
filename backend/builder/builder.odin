@@ -276,8 +276,13 @@ builder_peep :: proc(
 
 				bse, _ := backend.base_and_offset(ctx, fnode.inps[2])
 				subs := backend.graph_get(ctx, bse)
-				if subs.itype != .Local_Addr &&
-				   subs.itype != .Param {break forward}
+
+				VALID :: bit_set[backend.Ideal_Node_Type] {
+					.Local_Addr,
+					.Param,
+					.Global_Addr,
+				}
+				if subs.itype not_in VALID {break forward}
 
 				cursor := fnode.inps[1]
 				op_count -= 1

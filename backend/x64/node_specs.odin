@@ -136,6 +136,7 @@ SPEC := backend.Node_Spec{
 		{.General = 0, .Vector = 0}, // X64_Pcmpeq
 		{.General = 0, .Vector = 0}, // X64_Pshufd
 		{.General = 0, .Vector = 0}, // X64_Psadbw
+		{.General = 0, .Vector = 0}, // X64_Pshufb
 	},
 	interned_reg_masks = {
 		raw_data([]i64{}),
@@ -271,6 +272,7 @@ SPEC := backend.Node_Spec{
 		{{.General = 3, .Vector = 2}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 2}, {.General = 1, .Vector = 3}}, // X64_Pcmpeq
 		{{.General = 0, .Vector = 2}, {.General = 0, .Vector = 2}}, // X64_Pshufd
 		{{.General = 0, .Vector = 2}, {.General = 0, .Vector = 2}, {.General = 0, .Vector = 2}}, // X64_Psadbw
+		{{.General = 0, .Vector = 2}, {.General = 0, .Vector = 2}, {.General = 0, .Vector = 2}}, // X64_Pshufb
 	},
 	inplace_slot_idxs = {
 		-16, //Start
@@ -392,6 +394,7 @@ SPEC := backend.Node_Spec{
 		0, //X64_Pcmpeq
 		-16, //X64_Pshufd
 		0, //X64_Psadbw
+		0, //X64_Pshufb
 	},
 	reg_mask_of = x64_reg_mask_of,
 	emit_function = x64_emit_function,
@@ -518,6 +521,7 @@ SPEC := backend.Node_Spec{
 		0, //X64_Pcmpeq
 		0, //X64_Pshufd
 		0, //X64_Psadbw
+		0, //X64_Pshufb
 	},
 	inheritance_table = {
 		0b1, // Start
@@ -639,6 +643,7 @@ SPEC := backend.Node_Spec{
 		0b10, // X64_Pcmpeq
 		0b10000000, // X64_Pshufd
 		0b10, // X64_Psadbw
+		0b10000000, // X64_Pshufb
 	},
 	node_extra_sizes = {
 		1, // Start -> Cfg
@@ -760,6 +765,7 @@ SPEC := backend.Node_Spec{
 		0, // X64_Pcmpeq -> No_Extra
 		3, // X64_Pshufd -> X64_Mem_Op
 		0, // X64_Psadbw -> No_Extra
+		3, // X64_Pshufb -> X64_Mem_Op
 	},
 	node_flags = {
 		{}, // Start
@@ -881,6 +887,7 @@ SPEC := backend.Node_Spec{
 		{}, // X64_Pcmpeq
 		{}, // X64_Pshufd
 		{}, // X64_Psadbw
+		{}, // X64_Pshufb
 	},
 	node_extra_types = {
 		backend.Cfg,
@@ -1002,6 +1009,7 @@ SPEC := backend.Node_Spec{
 		backend.No_Extra,
 		X64_Mem_Op,
 		backend.No_Extra,
+		X64_Mem_Op,
 	},
 	node_kind_name = {
 		`Start`,
@@ -1123,6 +1131,7 @@ SPEC := backend.Node_Spec{
 		`X64_Pcmpeq`,
 		`X64_Pshufd`,
 		`X64_Psadbw`,
+		`X64_Pshufb`,
 	},
 }
 
@@ -1246,6 +1255,7 @@ X64_Node_Type :: enum u16 {
 	X64_Pcmpeq,
 	X64_Pshufd,
 	X64_Psadbw,
+	X64_Pshufb,
 }
 
 x64_peep_inst :: proc(ctx: backend.Peep_Ctx, node: backend.Expanded_Node) -> backend.Node_ID {
@@ -1379,6 +1389,7 @@ graph_add_x64_psadbw :: #force_inline proc(graph: ^backend.Graph, name: string, 
 	backend.push_node_name(graph, name)
 	return backend.graph_add_raw(graph, u16(X64_Node_Type.X64_Psadbw), dt, {lhs, rhs})
 }
+#assert(size_of(X64_Mem_Op) % backend.PRECISION == 0)
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	when false {}

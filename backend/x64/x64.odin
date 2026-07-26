@@ -419,6 +419,10 @@ X64_REG_CLASSES := #partial [X64_Node_Type]Reg_Class_Spec {
 	},
 	.X64_Pcmpeq = X64_FLOAT_SRC_OP,
 	.X64_Pshufd = {reg_masks = #partial{.Vector = {XMM_MASK, XMM_MASK}}},
+	.X64_Pshufb = {
+		reg_masks = #partial{.Vector = {XMM_MASK, XMM_MASK, XMM_MASK}},
+		inplace_slot_idx = 0,
+	},
 	.X64_Psadbw = {
 		reg_masks = #partial{.Vector = {XMM_MASK, XMM_MASK, XMM_MASK}},
 		inplace_slot_idx = 0,
@@ -478,6 +482,7 @@ when SPEC_NOT_PRESENT {
 		X64_Pcmpeq,
 		X64_Pshufd,
 		X64_Psadbw,
+		X64_Pshufb,
 	}
 
 	X64_SIMPLE_BIN_OP_SPEC :: backend.Class_Spec {
@@ -504,6 +509,7 @@ when SPEC_NOT_PRESENT {
 		.X64_Pcmpeq = {no_ctor = true},
 		.X64_Psadbw = {args = {"lhs", "rhs"}},
 		.X64_Pshufd = {id = X64_Mem_Op, no_ctor = true},
+		.X64_Pshufb = {id = X64_Mem_Op, no_ctor = true},
 		.X64_Mul = X64_SIMPLE_BIN_OP_SPEC,
 		.X64_Lea = {id = X64_Mem_Op, no_ctor = true},
 		.X64_Load = {id = X64_Mem_Op, flags = {.Load}, no_ctor = true},
@@ -576,9 +582,8 @@ x64_peep :: proc(
 			slot^ = backend.graph_extra(ctx, node.inps[idx], backend.CInt)
 			if slot^ != nil {
 				clamped := i64(i32(slot^.value))
-				if clamped != slot^.value ||
-				   backend.graph_get(ctx, node.inps[idx]).dt ==
-					   .F64 {slot^ = nil}
+				nd := backend.graph_get(ctx, node.inps[idx])
+				if clamped != slot^.value || nd.dt >= .F64 {slot^ = nil}
 			}
 		}
 	}
@@ -664,6 +669,30 @@ x64_peep :: proc(
 				{global},
 			)
 		}
+	case .Splat:
+		inp := backend.graph_expand(ctx, node.inps[0])
+		assert(inp.dt == .I8)
+
+		vec := backend.graph_add_un_op(ctx, "elem", .Cast, .V128, node.inps[0])
+		zero := backend.graph_add_c_int(ctx, "zro", node.dt, 0)
+
+		backend.push_node_name(ctx, "pshufb")
+		slot := (^X64_Mem_Op)(
+			backend.graph_get_next_extra_slot(
+				ctx,
+				u16(X64_Node_Type.X64_Pshufb),
+			),
+		)
+		slot^ = {}
+		pshufb := backend.graph_add_raw(
+			ctx,
+			u16(X64_Node_Type.X64_Pshufb),
+			node.dt,
+			{vec, zero},
+		)
+		backend.graph_get(ctx, pshufb).lane = node.lane
+
+		return pshufb
 	case .Simd_Reduce_Add_Bisect:
 		inp := backend.graph_expand(ctx, node.inps[0])
 		assert(inp.dt == .V128)
@@ -851,7 +880,7 @@ x64_peep :: proc(
 		}
 		count := 4
 		vl := backend.graph_get(ctx, node.inps[3])
-		if val_const != nil && vl.dt != .V128 {
+		if val_const != nil {
 			immediate = i32(val_const.value)
 			inps[3] = index
 			count = 3
@@ -1734,21 +1763,7 @@ x64_emit_instr :: proc(
 	case .CV128:
 		panic("TODO: CV128 load-from-static emit not implemented")
 	case .Splat:
-		dst := reg_of(ctx, instr)
-		src := reg_of(ctx, node.inps[0])
-
-		// movd $dst, $src
-		rx := rex(dst, src, RAX, false)
-		emit(ctx.code, {0x66, rx, 0x0f, 0x6e, mod_rm(.Direct, dst, src)})
-		// punpcklbw $dst, $dst
-		rx = rex(dst, dst, RAX, false)
-		emit(ctx.code, {0x66, rx, 0x0f, 0x60, mod_rm(.Direct, dst, dst)})
-		// punpcklwd $dst, $dst
-		rx = rex(dst, dst, RAX, false)
-		emit(ctx.code, {0x66, rx, 0x0f, 0x61, mod_rm(.Direct, dst, dst)})
-		// pshufd $dst, $dst, 0
-		rx = rex(dst, dst, RAX, false)
-		emit(ctx.code, {0x66, rx, 0x0f, 0x70, mod_rm(.Direct, dst, dst), 0})
+		panic("no")
 	case .Simd_Extract_Lsbs:
 		// pmovmskb $dst(gpr), $src(xmm)
 		dst := reg_of(ctx, instr)
@@ -1768,6 +1783,16 @@ x64_emit_instr :: proc(
 			ctx.code,
 			{0x66, rx, 0xf, 0x70, mod_rm(.Direct, dst, src), mem_op.aux},
 		)
+	case .X64_Pshufb:
+		dst := reg_of(ctx, node.inps[0])
+		proj := reg_of(ctx, node.inps[1])
+
+		assert(node.dt == .V128)
+		assert(node.lane == .I8)
+
+		// pshufb $dst, $proj
+		rx := rex(dst, proj, NO_INDEX, false)
+		emit(ctx.code, {0x66, rx, 0xf, 0x38, 0, mod_rm(.Direct, dst, proj)})
 	case .X64_Psadbw:
 		dst := reg_of(ctx, instr)
 		rhs := reg_of(ctx, node.inps[1])
@@ -1978,13 +2003,13 @@ x64_emit_instr :: proc(
 		#partial switch dt {
 		case .Void:
 		case .I8:
-			// movzx $val, [$bse]
+			// movzx $val, $src
 			emit(ctx.code, {rx, 0x0f, 0xb6})
 		case .I16:
-			// movzx $val, [$bse]
+			// movzx $val, $src
 			emit(ctx.code, {rx, 0x0f, 0xb7})
 		case .I32, .I64:
-			// mov $val, [$bse]
+			// mov $val, $src
 			emit(ctx.code, {rx, 0x8b})
 		}
 		emit(ctx.code, {mod_rm(.Direct, dst, src)})
@@ -1995,6 +2020,7 @@ x64_emit_instr :: proc(
 		if src == dst do break
 
 		if src.kind == dst.kind {
+			assert(dst.kind == .General)
 			rx := rex(src, dst, RAX, true)
 			emit(ctx.code, {rx, 0x89, mod_rm(.Direct, src, dst)})
 		} else {
@@ -2006,7 +2032,7 @@ x64_emit_instr :: proc(
 			a, b := dst, src
 			if dst.kind == .General do a, b = b, a
 			rx := rex(a, b, NO_INDEX, backend.DT_SIZE[node.dt] == 8)
-			emit(ctx.code, {0x66, rx, 0x0f, op, mod_rm(.Direct, src, dst)})
+			emit(ctx.code, {0x66, rx, 0x0f, op, mod_rm(.Direct, a, b)})
 		}
 	case .Start, .Entry, .Then, .Else, .Region, .Loop, .Call_End:
 		fmt.panicf("Not reachable form here %v", node.node)

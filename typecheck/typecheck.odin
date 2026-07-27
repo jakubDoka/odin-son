@@ -55,6 +55,7 @@ Gen_Ctx :: struct {
 	ret_ptrs:     []backend.Node_ID,
 	poly_types:   #soa[dynamic]Poly_Entry,
 	slocs:        map[backend.Sloc]backend.D_Node_ID,
+	eval_depth:   int,
 }
 
 Poly_Entry :: struct {
@@ -78,6 +79,10 @@ Lit :: struct #raw_union {
 	module:    Module_ID,
 	typeida:   Type,
 	intrinsic: Intrinsic,
+	int:       i64,
+	rune:      rune,
+	float:     f64,
+	string:    ^string,
 }
 
 Poly_Data :: struct {
@@ -86,8 +91,9 @@ Poly_Data :: struct {
 }
 
 Check_Meta :: struct {
-	type: Type,
-	lit:  Lit,
+	type:      Type,
+	known:     bool,
+	using lit: Lit,
 }
 
 Ident_Meta_Kind :: enum int {
@@ -499,6 +505,7 @@ intern_slice :: proc(ctx: ^Gen_Ctx, elem: Type) -> Type {
 }
 
 intern_simd :: proc(ctx: ^Gen_Ctx, elem: Type, length: int) -> Type {
+	fmt.assertf(math.is_power_of_two(length), "%v", length)
 	key := Simd{elem, length}
 	existing := ctx.simds[key] or_else new_clone(key, ctx.types.allocator)
 	ctx.simds[key] = existing
@@ -506,8 +513,8 @@ intern_simd :: proc(ctx: ^Gen_Ctx, elem: Type, length: int) -> Type {
 }
 
 simd_dt :: proc(size: int) -> backend.Node_Datatype {
-	assert(math.is_power_of_two(size))
-	assert(16 <= size)
+	fmt.assertf(math.is_power_of_two(size), "%v", size)
+	fmt.assertf(16 <= size, "%v", size)
 	assert(size <= 64)
 	return backend.Node_Datatype(
 		int(backend.Node_Datatype.V128) +
@@ -550,7 +557,10 @@ instantiate_struct :: proc(
 
 	polys: [dynamic]Check_Meta
 	for fld, i in base.param_names {
-		append(&polys, Check_Meta{.Typeid, {typeida = args[i]}})
+		append(
+			&polys,
+			Check_Meta{type = .Typeid, known = true, typeida = args[i]},
+		)
 	}
 
 	structa.fields = make(
@@ -575,17 +585,27 @@ instantiate_struct :: proc(
 }
 
 tmeta :: proc(ctx: ^Gen_Ctx, ty: Type) -> ^Check_Meta {
-	lit: Lit
-	return new_clone(Check_Meta{ty, lit}, ctx.types.allocator)
+	return new_clone(Check_Meta{type = ty}, ctx.types.allocator)
+}
+
+tcmeta :: proc(ctx: ^Gen_Ctx, ty: Type, value: Lit) -> ^Check_Meta {
+	return new_clone(
+		Check_Meta{type = ty, known = true, lit = value},
+		ctx.types.allocator,
+	)
 }
 
 tpmeta :: proc(ctx: ^Gen_Ctx, ty: Type) -> ^Check_Meta {
-	return new_clone(Check_Meta{.Typeid, {typeida = ty}}, ctx.types.allocator)
+	return new_clone(
+		Check_Meta{type = .Typeid, known = true, typeida = ty},
+		ctx.types.allocator,
+	)
 }
 
 proc_meta :: proc(ctx: ^Gen_Ctx, pid: Proc_ID) -> ^Check_Meta {
 	m := new(Check_Meta, ctx.types.allocator)
 	m.type = pack_type(ctx.procs[pid].sig)
+	m.known = true
 	m.lit.procid = pid
 	return m
 }
@@ -641,7 +661,10 @@ integrate_inferrence :: proc(
 	if decl.is_mutable do return meta
 	if inferred == .Void do return meta
 	if meta.type == inferred do return meta
-	return new_clone(Check_Meta{inferred, meta.lit}, ctx.types.allocator)
+	return new_clone(
+		Check_Meta{type = inferred, known = meta.known, lit = meta.lit},
+		ctx.types.allocator,
+	)
 }
 
 typecheck_decl :: proc(
@@ -672,7 +695,7 @@ typecheck_decl :: proc(
 		decl.value = new_clone(nil_node, ctx.types.allocator)
 	}
 	ty := emit_type(ctx, decl.ty)
-	vl := typecheck(
+	vl := typecheck_eval(
 		ctx,
 		{
 			inferred_ty = ty,
@@ -778,7 +801,11 @@ extract_polys :: proc(
 		if slots[t.idx].lit.typeida != .Void {
 			return slots[t.idx].lit.typeida == croot
 		}
-		slots[t.idx] = {.Typeid, {typeida = croot}}
+		slots[t.idx] = {
+			type    = .Typeid,
+			known   = true,
+			typeida = croot,
+		}
 		if t.specialization != .Void {
 			return extract_polys(ctx, slots, croot, t.specialization)
 		}
@@ -939,6 +966,7 @@ call_sig :: proc(ctx: ^Gen_Ctx, node: ^ast.Node) -> (^Proc_Type, bool) {
 Varuable_Idx :: union #no_nil {
 	int,
 	backend.Node_ID,
+	Lit,
 }
 
 Variable :: struct {
@@ -1165,6 +1193,19 @@ VOID := Check_Meta {
 	type = .Void,
 }
 
+typecheck_eval :: proc(
+	ctx: ^Gen_Ctx,
+	prop: Ty_Propagation,
+	node: ^ast.Node,
+) -> (
+	ty: ^Check_Meta,
+) {
+	ctx.eval_depth += 1
+	defer ctx.eval_depth -= 1
+	defer fmt.assertf(ty.known, "%v", ty.type)
+	return typecheck(ctx, prop, node)
+}
+
 typecheck :: proc(
 	ctx: ^Gen_Ctx,
 	prop: Ty_Propagation,
@@ -1178,6 +1219,7 @@ typecheck :: proc(
 
 	defer {
 		set_node_data(node, ty)
+		assert(ty.known || ctx.eval_depth == 0)
 	}
 
 	#partial match: switch d in node.derived {
@@ -1199,7 +1241,10 @@ typecheck :: proc(
 				res := intern_poly(ctx, Poly_Data{len(ctx.poly_types), .Void})
 				append(
 					&ctx.poly_types,
-					Poly_Entry{d.type.name, {.Typeid, {typeida = res}}},
+					Poly_Entry {
+						d.type.name,
+						{type = .Typeid, known = true, typeida = res},
+					},
 				)
 				structa.param_names[i] = d.type.name
 			}
@@ -1280,24 +1325,15 @@ typecheck :: proc(
 		if d.len == nil {
 			return tpmeta(ctx, intern_slice(ctx, elem))
 		}
-		len_node := d.len
-		if len_ident, is_ident := len_node.derived.(^ast.Ident); is_ident {
-			if sdecl, ok := find_module_decl(ctx, ctx.module, len_ident.name);
-			   ok {
-				len_node = sdecl.value
-			}
-		}
-		len_lit := len_node.derived.(^ast.Basic_Lit)
-		assert(len_lit.tok.kind == .Integer)
-		length, ok := strconv.parse_int(len_lit.tok.text)
-		assert(ok)
+		res := typecheck_eval(ctx, {inferred_ty = .Int}, d.len)
+		fmt.assertf(res.type == .Int, "%v", res.type)
 		if d.tag != nil {
 			if tag, is_tag := d.tag.derived.(^ast.Basic_Directive);
 			   is_tag && tag.name == "simd" {
-				return tpmeta(ctx, intern_simd(ctx, elem, length))
+				return tpmeta(ctx, intern_simd(ctx, elem, int(res.lit.int)))
 			}
 		}
-		return tpmeta(ctx, intern_array(ctx, elem, length))
+		return tpmeta(ctx, intern_array(ctx, elem, int(res.lit.int)))
 	case ^ast.Poly_Type:
 		res := intern_poly(
 			ctx,
@@ -1305,7 +1341,10 @@ typecheck :: proc(
 		)
 		append(
 			&ctx.poly_types,
-			Poly_Entry{d.type.name, {.Typeid, {typeida = res}}},
+			Poly_Entry {
+				d.type.name,
+				{type = .Typeid, known = true, typeida = res},
+			},
 		)
 		return tpmeta(ctx, res)
 	case ^ast.Proc_Type:
@@ -1313,6 +1352,30 @@ typecheck :: proc(
 		return tpmeta(ctx, pack_type(sig))
 	case ^ast.Block_Stmt:
 		prev_scope_len := len(ctx.scope)
+
+		for stmt in d.stmts {
+			decl := stmt.derived.(^ast.Value_Decl) or_continue
+
+			if len(decl.names) == 0 do continue
+			if decl.is_mutable do continue
+
+			ty := emit_type(ctx, decl.type)
+
+			assert(len(decl.names) == len(decl.values))
+			for name, i in decl.names {
+				res := typecheck_eval(ctx, {inferred_ty = ty}, decl.values[i])
+				append(
+					&ctx.scope,
+					Variable {
+						name = src_of(ctx.file^, name),
+						type = res.type,
+						idx = res.lit,
+						ident = name,
+					},
+				)
+			}
+		}
+
 		for stmt in d.stmts {
 			typecheck(ctx, {}, stmt)
 		}
@@ -1321,6 +1384,8 @@ typecheck :: proc(
 		}
 		resize(&ctx.scope, prev_scope_len)
 	case ^ast.Value_Decl:
+		if !d.is_mutable do return &VOID
+
 		if len(d.values) == 1 && len(d.names) > 1 {
 			typecheck(ctx, {}, d.values[0])
 			sig, ok := call_sig(ctx, d.values[0])
@@ -1424,32 +1489,44 @@ typecheck :: proc(
 	case ^ast.Proc_Lit:
 		return proc_meta(ctx, typecheck_proc(ctx, ctx.module, prop.key, d))
 	case ^ast.Basic_Lit:
+		ty := prop.inferred_ty
+
 		#partial switch d.tok.kind {
-		case .Integer, .Rune:
+		case .Integer:
 			fmt.assertf(
-				prop.inferred_ty == .Void ||
-				prop.inferred_ty in INTEGER_TYPES ||
-				prop.inferred_ty in FLOAT_TYPES,
+				ty == .Void || ty in INTEGER_TYPES || ty in FLOAT_TYPES,
 				"TODO: missing literal typecheck %#v, inferred_ty: %v",
 				d,
-				prop.inferred_ty,
+				ty,
 			)
-			return tmeta(
-				ctx,
-				prop.inferred_ty != .Void ? prop.inferred_ty : .Int,
-			)
+
+			if ty == .Void do ty = .Int
+
+			value, ok := strconv.parse_u64(d.tok.text)
+			assert(ok)
+
+			if ty in INTEGER_TYPES {
+				return tcmeta(ctx, ty, {int = i64(value)})
+			} else {
+				return tcmeta(ctx, ty, {float = f64(value)})
+			}
 		case .Float:
-			assert(
-				prop.inferred_ty == .Void || prop.inferred_ty in FLOAT_TYPES,
-			)
-			return tmeta(
-				ctx,
-				prop.inferred_ty != .Void ? prop.inferred_ty : .F64,
-			)
+			assert(ty == .Void || ty in FLOAT_TYPES)
+			if ty == .Void do ty = .F64
+			value, ok := strconv.parse_f64(d.tok.text)
+			assert(ok)
+			return tcmeta(ctx, ty, {float = f64(value)})
+		case .Rune:
+			assert(ty == .Void || ty in INTEGER_TYPES)
+			if ty == .Void do ty = .U8
+			inner := d.tok.text[1:len(d.tok.text) - 1]
+			r, _, _, ok := strconv.unquote_char(inner, '\'')
+			assert(ok)
+			return tcmeta(ctx, ty, {rune = r})
 		case .String:
-			return tmeta(ctx, .String)
+			return tcmeta(ctx, .String, {string = &d.tok.text})
 		case:
-			fmt.panicf("TODO: missing literal typecheck %v", d)
+			fmt.panicf("TODO: %#v", node.derived)
 		}
 	case ^ast.Comp_Lit:
 		inferred_ty := emit_type(ctx, d.type)
@@ -1638,7 +1715,19 @@ typecheck :: proc(
 			rhs_ty := typecheck(ctx, {}, d.right)
 			lhs_ty := typecheck(ctx, {inferred_ty = rhs_ty.type}, d.left)
 			assert(lhs_ty.type == rhs_ty.type)
-			return is_comparison ? tmeta(ctx, .Bool) : rhs_ty
+
+			if lhs_ty.known && rhs_ty.known {
+				#partial switch d.op.kind {
+				case .Quo:
+					lhs_ty.int /= rhs_ty.int
+				case:
+					panic("TODO")
+				}
+
+				assert(!is_comparison)
+			}
+
+			return is_comparison ? tmeta(ctx, .Bool) : lhs_ty
 		}
 
 		lhs_ty := typecheck(ctx, prop, d.left)
@@ -1772,14 +1861,16 @@ typecheck :: proc(
 		prev := len(ctx.scope)
 		val_types := [2]Type{elem, .Int}
 		for v, i in d.vals {
-			id := v.derived.(^ast.Ident)
+			id: ^ast.Ident
+			#partial switch t in v.derived {
+			case ^ast.Ident:
+				id = t
+			case ^ast.Unary_Expr:
+				id = t.expr.derived.(^ast.Ident)
+			}
 			append(
 				&ctx.scope,
-				Variable {
-					name = src_of(ctx.file^, id),
-					type = val_types[i],
-					ident = v,
-				},
+				Variable{name = id.name, type = val_types[i], ident = v},
 			)
 		}
 		typecheck(ctx, {}, d.body)
@@ -1800,9 +1891,10 @@ typecheck :: proc(
 	case ^ast.Ident:
 		meta := new(Ident_Meta, ctx.types.allocator)
 		defer {
-			assert(len(d.name) != 0)
 			set_ident_meta(d, meta)
 		}
+
+		fmt.assertf(len(d.name) != 0, "%v %#v", get_ident_meta(d), d)
 
 		#reverse for &var, i in ctx.scope {
 			if var.name == d.name {
@@ -1811,6 +1903,11 @@ typecheck :: proc(
 				}
 				meta.kind = .Local
 				meta.index = i
+
+				if lit, ok := var.idx.(Lit); ok {
+					return tcmeta(ctx, var.type, lit)
+				}
+
 				return tmeta(ctx, var.type)
 			}
 		}
@@ -1859,7 +1956,8 @@ typecheck :: proc(
 
 		if true do fmt.panicf("TODO: %#v", node.derived)
 	case ^ast.Call_Expr:
-		switch get_builtin_proc(d.expr) {
+		bprc := get_builtin_proc(d.expr)
+		switch bprc {
 		case .nil:
 		case .len:
 			assert(len(d.args) == 1)
@@ -1892,9 +1990,10 @@ typecheck :: proc(
 		case .size_of, .align_of:
 			assert(len(d.args) == 1)
 			ty := emit_type(ctx, d.args[0])
-			return tmeta(
+			return tcmeta(
 				ctx,
 				prop.inferred_ty != .Void ? prop.inferred_ty : .Int,
+				{int = i64(bprc == .size_of ? type_size(ty) : type_align(ty))},
 			)
 		}
 
@@ -1986,6 +2085,24 @@ typecheck :: proc(
 				rets := make([]Type, len(prc.rets))
 
 				for param, i in sig.params {
+					if strings.starts_with(prc.param_names[i], "$") {
+						poly_idx: int
+						for nm, j in prc.poly_names {
+							if nm == prc.param_names[i][1:] {
+								poly_idx = j
+								break
+							}
+						}
+
+						polys[i] = typecheck_eval(
+							ctx,
+							{inferred_ty = param},
+							d.args[i],
+						)^
+
+						continue
+					}
+
 					inferred_ty: Type
 					inferred_ty =
 						instantiate_polys(
@@ -2026,8 +2143,12 @@ typecheck :: proc(
 					name.buf.allocator = ctx.types.allocator
 					append(&name.buf, prc.name)
 					for slot in polys {
-						assert(slot.type == .Typeid)
-						fmt.sbprintf(&name, " %v", slot.lit.typeida)
+						if slot.type == .Typeid {
+							fmt.sbprintf(&name, " %v", slot.lit.typeida)
+						} else {
+							assert(slot.type == .Int)
+							fmt.sbprintf(&name, " =%v", slot.lit.int)
+						}
 					}
 					prc.name = string(name.buf[:])
 					prc.sig = sig
@@ -2236,6 +2357,16 @@ typecheck_sig :: proc(
 
 			tys[i] = emit_type(ctx, param.type)
 			names[i] = pname
+
+			if strings.starts_with(pname, "$") {
+				pname = pname[1:]
+
+				res := intern_poly(ctx, Poly_Data{len(ctx.poly_types), .Void})
+				append(
+					&ctx.poly_types,
+					Poly_Entry{pname, {type = tys[i], known = true}},
+				)
+			}
 		}
 	}
 

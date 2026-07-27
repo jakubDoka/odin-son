@@ -426,6 +426,8 @@ emit_lvalue :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Sym {
 			return idx
 		case backend.Node_ID:
 			return Value{id = idx, is_lvalue = true}
+		case typecheck.Lit:
+			panic("TODO")
 		}
 	case .Decl:
 		gv := idmt.decl
@@ -2007,7 +2009,7 @@ emit_nodes :: proc(
 				elem_addr,
 				elem_ty,
 				v,
-				typecheck.get_node_vflags(v),
+				{},
 			},
 		)
 

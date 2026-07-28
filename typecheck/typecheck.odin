@@ -85,11 +85,6 @@ Lit :: struct #raw_union {
 	string:    ^string,
 }
 
-Poly_Data :: struct {
-	idx:            int,
-	specialization: Type,
-}
-
 Check_Meta :: struct {
 	type:      Type,
 	known:     bool,
@@ -120,7 +115,6 @@ Proc_ID :: distinct int
 
 Type :: enum uintptr {
 	Void,
-	Poly,
 	Typeid,
 	Intrinsic,
 	Module,
@@ -180,8 +174,6 @@ type_align :: proc(ty: Type) -> int {
 		return t.align
 	case ^Simd:
 		return type_size(t.elem) * t.len
-	case ^Poly_Data:
-		fmt.panicf("POLY TODO: %v", ty)
 	}
 	if ty == .String do return 8
 	return TYPE_SIZES[ty]
@@ -225,8 +217,6 @@ type_size :: proc(ty: Type) -> int {
 		return t.size
 	case ^Simd:
 		return type_size(t.elem) * t.len
-	case ^Poly_Data:
-		fmt.panicf("POLY TODO: %v", ty)
 	}
 	return TYPE_SIZES[ty]
 }
@@ -286,8 +276,6 @@ type_to_dt :: proc(ty: Type) -> backend.Node_Datatype {
 		return .Void
 	case ^Simd:
 		return simd_dt(type_size(t.elem) * t.len)
-	case ^Poly_Data:
-		fmt.panicf("POLY TODO: %v", ty)
 	}
 	return TYPE_TO_DT[ty]
 }
@@ -329,7 +317,6 @@ F64_Type :: struct {}
 
 Type_Data :: union #no_nil {
 	Void_Type,
-	^Poly_Data,
 	Typeid_Type,
 	Intrinsic_Type,
 	Module_Type,
@@ -437,9 +424,8 @@ type_display :: proc(w: io.Writer, ty: Type) {
 				type_display(w, a)
 			}
 		}
-	case ^Poly_Data:
-		fmt.wprintf(w, "$poly%v", t.idx)
 	case:
+		assert(ty <= .F64)
 		fmt.wprint(w, TYPE_NAMES[ty])
 	}
 }
@@ -529,12 +515,6 @@ int_type_for_size :: proc(size: int) -> Type {
 	return Type(int(Type.U8) + intrinsics.count_trailing_zeros(size))
 }
 
-intern_poly :: proc(ctx: ^Gen_Ctx, poly: Poly_Data) -> Type {
-	existing := ctx.polys[poly] or_else new_clone(poly, ctx.types.allocator)
-	ctx.polys[poly] = existing
-	return pack_type(existing)
-}
-
 // instantiate_struct returns the concrete struct type produced by applying the
 // parametric struct declared at `base` (AST `node`) to `args`. Instances are
 // interned by (base, args) so identical instantiations share one `^Struct`.
@@ -546,6 +526,8 @@ instantiate_struct :: proc(
 	base: ^Struct,
 	args: []Type,
 ) -> Type {
+	context.allocator, _ = arna.scrath()
+
 	args := intern_type_slice(ctx, args)
 	key := Struct_Inst_Key{base, string(mem.slice_data_cast([]u8, args))}
 	if existing, ok := ctx.struct_insts[key]; ok do return pack_type(existing)
@@ -555,11 +537,15 @@ instantiate_struct :: proc(
 	structa.params = args
 	ctx.struct_insts[key] = structa
 
-	polys: [dynamic]Check_Meta
+	prev_polys := len(ctx.poly_types)
+	defer resize(&ctx.poly_types, prev_polys)
 	for fld, i in base.param_names {
 		append(
-			&polys,
-			Check_Meta{type = .Typeid, known = true, typeida = args[i]},
+			&ctx.poly_types,
+			Poly_Entry {
+				name = fld,
+				meta = {type = .Typeid, known = true, typeida = args[i]},
+			},
 		)
 	}
 
@@ -570,7 +556,7 @@ instantiate_struct :: proc(
 	)
 	for &field, i in structa.fields {
 		field = base.fields[i]
-		field.ty = instantiate_polys(ctx, polys[:], field.ty) or_else panic("")
+		field.ty = emit_type(ctx, ast.clone(field.ty_ast))
 		// TODO: extract this to a layout computation
 		field.offset = mem.align_forward_int(
 			structa.size,
@@ -766,111 +752,97 @@ collect_decls :: proc(f: ast.File, decls: ^[dynamic]Decl, file_id: File_ID) {
 	}
 }
 
-extract_polys :: proc(
-	ctx: ^Gen_Ctx,
-	slots: []Check_Meta,
-	croot: Type,
-	proot: Type,
-) -> bool {
-	#partial switch t in unpack_type(proot) {
-	case Pointer:
-		cr := unpack_type(croot).(Pointer) or_return
-		return extract_polys(ctx, slots, cr^, t^)
-	case Multi_Pointer:
-		cr := unpack_type(croot).(Multi_Pointer) or_return
-		return extract_polys(ctx, slots, cr^, t^)
-	case ^Struct:
-		if len(t.params) == 0 do break
-		ct := unpack_type(croot).(^Struct) or_return
-		for i in 0 ..< len(t.params) {
-			extract_polys(ctx, slots, ct.params[i], t.params[i]) or_return
-		}
-		return true
-	case ^Slice:
-		ct := unpack_type(croot).(^Slice) or_return
-		return extract_polys(ctx, slots, ct.elem, t.elem)
-	case ^Array:
-		ct := unpack_type(croot).(^Array) or_return
-		if ct.len != t.len do return false
-		return extract_polys(ctx, slots, ct.elem, t.elem)
-	case ^Simd:
-		ct := unpack_type(croot).(^Simd) or_return
-		if ct.len != t.len do return false
-		return extract_polys(ctx, slots, ct.elem, t.elem)
-	case ^Poly_Data:
-		if slots[t.idx].lit.typeida != .Void {
-			return slots[t.idx].lit.typeida == croot
-		}
-		slots[t.idx] = {
-			type    = .Typeid,
-			known   = true,
-			typeida = croot,
-		}
-		if t.specialization != .Void {
-			return extract_polys(ctx, slots, croot, t.specialization)
-		}
-		return true
-	}
-
-	return croot == proot
+has_polys :: proc(ctx: ^Gen_Ctx, root: ^ast.Expr) -> (found: bool) {
+	context.user_ptr = &found
+	ast.inspect(root, proc(n: ^ast.Node) -> bool {
+			if n == nil do return false
+			found := (^bool)(context.user_ptr)
+			_, ok := n.derived.(^ast.Poly_Type)
+			found^ |= ok
+			return !found^
+		})
+	return
 }
 
-instantiate_polys :: proc(
+extract_polys :: proc(
 	ctx: ^Gen_Ctx,
-	slots: []Check_Meta,
-	root: Type,
-) -> (
-	t: Type,
-	ok: bool,
-) {
-	#partial switch t in unpack_type(root) {
-	case Pointer:
-		return intern_pointer(
+	slots: ^#soa[dynamic]Poly_Entry,
+	croot: Check_Meta,
+	proot: ^ast.Expr,
+) -> bool {
+	#partial switch d in proot.derived {
+	case ^ast.Pointer_Type:
+		if croot.type != .Typeid do return false
+		ptr := unpack_type(croot.typeida).(Pointer) or_return
+		return extract_polys(
+			ctx,
+			slots,
+			{type = .Typeid, typeida = ptr^},
+			d.elem,
+		)
+	case ^ast.Multi_Pointer_Type:
+		if croot.type != .Typeid do return false
+		ptr := unpack_type(croot.typeida).(Multi_Pointer) or_return
+		return extract_polys(
+			ctx,
+			slots,
+			{type = .Typeid, typeida = ptr^},
+			d.elem,
+		)
+	case ^ast.Call_Expr:
+		if croot.type != .Typeid do return false
+		stru := unpack_type(croot.typeida).(^Struct) or_return
+		for arg, i in stru.params {
+			extract_polys(
 				ctx,
-				instantiate_polys(ctx, slots, t^) or_return,
-			),
-			true
-	case Multi_Pointer:
-		return intern_multi_pointer(
-				ctx,
-				instantiate_polys(ctx, slots, t^) or_return,
-			),
-			true
-	case ^Struct:
-		if len(t.params) == 0 do return root, true
-		new_args := make([]Type, len(t.params), context.temp_allocator)
-		for a, i in t.params {
-			new_args[i] = instantiate_polys(ctx, slots, a) or_return
+				slots,
+				{type = .Typeid, typeida = arg},
+				d.args[i],
+			) or_return
 		}
-		return instantiate_struct(ctx, t, new_args), true
-	case ^Slice:
-		return intern_slice(
+	case ^ast.Array_Type:
+		if croot.type != .Typeid do return false
+		if d.len == nil {
+			slc := unpack_type(croot.typeida).(^Slice) or_return
+			return extract_polys(
 				ctx,
-				instantiate_polys(ctx, slots, t.elem) or_return,
-			),
-			true
-	case ^Array:
-		return intern_array(
-				ctx,
-				instantiate_polys(ctx, slots, t.elem) or_return,
-				t.len,
-			),
-			true
-	case ^Simd:
-		return intern_simd(
-				ctx,
-				instantiate_polys(ctx, slots, t.elem) or_return,
-				t.len,
-			),
-			true
-	case ^Poly_Data:
-		if slots[t.idx].type == .Void {
-			return {}, false
+				slots,
+				{type = .Typeid, typeida = slc.elem},
+				d.elem,
+			)
 		}
-		assert(slots[t.idx].type == .Typeid)
-		return slots[t.idx].lit.typeida, true
+
+		if d.tag != nil {
+			if tag, is_tag := d.tag.derived.(^ast.Basic_Directive);
+			   is_tag && tag.name == "simd" {
+				simd := unpack_type(croot.typeida).(^Simd) or_return
+				return(
+					extract_polys(
+						ctx,
+						slots,
+						{type = .Int, int = i64(simd.len)},
+						d.len,
+					) &&
+					extract_polys(
+						ctx,
+						slots,
+						{type = .Typeid, typeida = simd.elem},
+						d.elem,
+					) \
+				)
+			}
+		}
+	case ^ast.Poly_Type:
+		croot := croot
+		croot.known = true
+		append(slots, Poly_Entry{d.type.name, croot})
+		if d.specialization != nil {
+			extract_polys(ctx, slots, croot, d.specialization)
+		}
+	case:
 	}
-	return root, true
+
+	return true
 }
 
 intern_decl :: proc(
@@ -905,10 +877,7 @@ emit_type :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> (ret: Type) {
 
 Proc :: struct {
 	name:        string,
-	param_names: []string,
-	ret_names:   []string,
-	poly_names:  []string,
-	poly_values: []Check_Meta,
+	polys:       #soa[]Poly_Entry,
 	param_types: []backend.Param_Spec,
 	using sig:   ^Proc_Type,
 	lit:         ^ast.Proc_Lit,
@@ -1044,7 +1013,7 @@ Struct_Inst_Key :: struct {
 
 Proc_Inst_Key :: struct {
 	base:  Proc_ID,
-	polys: ^Proc_Type,
+	polys: string,
 }
 
 Types :: struct {
@@ -1065,7 +1034,6 @@ Types :: struct {
 	arrays:         map[Array]^Array,
 	simds:          map[Simd]^Simd,
 	slices:         map[Slice]^Slice,
-	polys:          map[Poly_Data]^Poly_Data,
 	proc_types:     map[Proc_Type_Key]^Proc_Type,
 	type_slices:    map[Type_Slice_Key][]Type,
 	globals:        [dynamic]Global_Data,
@@ -1096,12 +1064,12 @@ types_init :: proc(types: ^Types) {
 	types.unions.allocator = types.allocator
 	types.arrays.allocator = types.allocator
 	types.slices.allocator = types.allocator
-	types.polys.allocator = types.allocator
 	types.proc_types.allocator = types.allocator
 	types.type_slices.allocator = types.allocator
 	types.globals.allocator = types.allocator
 	types.global_vars.allocator = types.allocator
 	types.scope.allocator = types.allocator
+	types.simds.allocator = types.allocator
 }
 
 types_deinit :: proc(types: ^Types) {
@@ -1154,9 +1122,12 @@ Struct :: struct {
 }
 
 Struct_Field :: struct {
-	name:   string,
-	ty:     Type,
-	offset: int,
+	name:    string,
+	using _: struct #raw_union {
+		ty:     Type,
+		ty_ast: ^ast.Expr,
+	},
+	offset:  int,
 }
 
 Enum :: struct {
@@ -1217,9 +1188,18 @@ typecheck :: proc(
 
 	if node == nil do return &VOID
 
+	for p in ctx.procs[1:] {
+		assert(p.lit.type != nil)
+	}
+
 	defer {
 		set_node_data(node, ty)
-		assert(ty.known || ctx.eval_depth == 0)
+		fmt.assertf(
+			ty.known || ctx.eval_depth == 0,
+			"%v %#v",
+			ty,
+			node.derived,
+		)
 	}
 
 	#partial match: switch d in node.derived {
@@ -1238,14 +1218,6 @@ typecheck :: proc(
 			)
 			for param, i in d.poly_params.list {
 				d := param.derived.(^ast.Field).names[0].derived.(^ast.Poly_Type)
-				res := intern_poly(ctx, Poly_Data{len(ctx.poly_types), .Void})
-				append(
-					&ctx.poly_types,
-					Poly_Entry {
-						d.type.name,
-						{type = .Typeid, known = true, typeida = res},
-					},
-				)
 				structa.param_names[i] = d.type.name
 			}
 		}
@@ -1259,14 +1231,17 @@ typecheck :: proc(
 			ast_field := d.fields.list[i]
 			assert(len(ast_field.names) == 1)
 			field.name = ast_field.names[0].derived.(^ast.Ident).name
-			field.ty = emit_type(ctx, ast_field.type)
+
 			if d.poly_params == nil {
+				field.ty = emit_type(ctx, ast_field.type)
 				field.offset = mem.align_forward_int(
 					structa.size,
 					type_align(field.ty),
 				)
 				structa.size = field.offset + type_size(field.ty)
 				structa.align = max(structa.align, type_align(field.ty))
+			} else {
+				field.ty_ast = ast_field.type
 			}
 		}
 		structa.size = mem.align_forward_int(structa.size, structa.align)
@@ -1335,20 +1310,9 @@ typecheck :: proc(
 		}
 		return tpmeta(ctx, intern_array(ctx, elem, int(res.lit.int)))
 	case ^ast.Poly_Type:
-		res := intern_poly(
-			ctx,
-			Poly_Data{len(ctx.poly_types), emit_type(ctx, d.specialization)},
-		)
-		append(
-			&ctx.poly_types,
-			Poly_Entry {
-				d.type.name,
-				{type = .Typeid, known = true, typeida = res},
-			},
-		)
-		return tpmeta(ctx, res)
+		panic("should never be reached")
 	case ^ast.Proc_Type:
-		sig, _, _ := typecheck_sig(ctx, d)
+		sig := typecheck_sig(ctx, d) or_else panic("should be concrete")
 		return tpmeta(ctx, pack_type(sig))
 	case ^ast.Block_Stmt:
 		prev_scope_len := len(ctx.scope)
@@ -1720,8 +1684,10 @@ typecheck :: proc(
 				#partial switch d.op.kind {
 				case .Quo:
 					lhs_ty.int /= rhs_ty.int
+				case .Add:
+					lhs_ty.int += rhs_ty.int
 				case:
-					panic("TODO")
+					fmt.panicf("TODO %v", d.op.kind)
 				}
 
 				assert(!is_comparison)
@@ -2005,6 +1971,7 @@ typecheck :: proc(
 		case ^Proc_Type:
 			sig = v
 			proc_id = callee.lit.procid
+			assert(sig != nil || proc_id != 0)
 		case Intrinsic_Type:
 			switch callee.lit.intrinsic {
 			case .syscall:
@@ -2026,7 +1993,7 @@ typecheck :: proc(
 				a := typecheck(ctx, {}, d.args[0])
 				b := typecheck(ctx, {inferred_ty = a.type}, d.args[1])
 				assert(is_of(a.type, ^Simd))
-				assert(a.type == b.type)
+				fmt.assertf(a.type == b.type, "%v == %v", a.type, b.type)
 				return tmeta(ctx, a.type)
 			case .simd_extract_lsbs:
 				assert(len(d.args) == 1)
@@ -2066,7 +2033,7 @@ typecheck :: proc(
 			}
 		}
 
-		if len(d.args) == 1 && len(d.args) != len(sig.params) {
+		if sig != nil && len(d.args) == 1 && len(d.args) != len(sig.params) {
 			typecheck(ctx, {}, d.args[0])
 			inner_sig, ok := call_sig(ctx, d.args[0])
 			assert(ok)
@@ -2075,67 +2042,65 @@ typecheck :: proc(
 				assert(param == inner_sig.rets[i])
 			}
 		} else {
-			assert(len(sig.params) == len(d.args))
 			prc := ctx.procs[proc_id]
-			if len(prc.poly_names) != 0 {
-				assert(len(prc.poly_values) == 0)
-				polys := make([]Check_Meta, len(prc.poly_names))
+			if prc.sig == nil && proc_id != 0 {
+				assert(len(prc.polys) == 0)
 
-				params := make([]Type, len(prc.params))
-				rets := make([]Type, len(prc.rets))
+				prev_polys := len(ctx.poly_types)
 
-				for param, i in sig.params {
-					if strings.starts_with(prc.param_names[i], "$") {
-						poly_idx: int
-						for nm, j in prc.poly_names {
-							if nm == prc.param_names[i][1:] {
-								poly_idx = j
-								break
-							}
-						}
+				ar_rets: []^ast.Field
+				if prc.lit.type.results != nil {
+					ar_rets = prc.lit.type.results.list
+				}
 
-						polys[i] = typecheck_eval(
-							ctx,
-							{inferred_ty = param},
-							d.args[i],
-						)^
+				params := make([]Type, len(prc.lit.type.params.list))
 
-						continue
+				for param_ast, i in prc.lit.type.params.list {
+					assert(len(param_ast.names) == 1)
+
+					inferred_ty := Type.Void
+					if !has_polys(ctx, param_ast.type) {
+						ast := ast.clone(param_ast.type)
+						inferred_ty = emit_type(ctx, ast)
 					}
 
-					inferred_ty: Type
-					inferred_ty =
-						instantiate_polys(
+					res: ^Check_Meta
+					if poly, ok := param_ast.names[0].derived.(^ast.Poly_Type);
+					   ok {
+						res = typecheck_eval(
 							ctx,
-							polys,
-							param,
-						) or_else inferred_ty
+							{inferred_ty = inferred_ty},
+							d.args[i],
+						)
 
-					pty := typecheck(
+						append(
+							&ctx.poly_types,
+							Poly_Entry{poly.type.name, res^},
+						)
+					} else {
+						res = typecheck(
+							ctx,
+							{inferred_ty = inferred_ty},
+							d.args[i],
+						)
+					}
+
+					ok := extract_polys(
 						ctx,
-						{inferred_ty = inferred_ty},
-						d.args[i],
+						&ctx.poly_types,
+						{type = .Typeid, typeida = res.type},
+						param_ast.type,
 					)
-					ok := extract_polys(ctx, polys, pty.type, param)
 					assert(ok)
-					params[i] = pty.type
+
+					params[i] = res.type
 				}
 
-				for poly in polys {
-					assert(poly.type != .Void)
-				}
-
-				for ret, i in sig.rets {
-					rets[i] =
-						instantiate_polys(ctx, polys, ret) or_else panic("")
-				}
-
-				params = intern_type_slice(ctx, params)
-				rets = intern_type_slice(ctx, rets)
-				ptype := Proc_Type{params, rets}
-				sig = intern_proc_type(ctx, &ptype)
-
-				key := Proc_Inst_Key{proc_id, sig}
+				names := ctx.poly_types.name[prev_polys:len(ctx.poly_types)]
+				polys := ctx.poly_types.meta[prev_polys:len(ctx.poly_types)]
+				assert(len(polys) != 0)
+				poly_bytes := string(mem.slice_data_cast([]u8, polys))
+				key := Proc_Inst_Key{proc_id, poly_bytes}
 
 				existing, ok := ctx.proc_insts[key]
 				if !ok {
@@ -2151,21 +2116,46 @@ typecheck :: proc(
 						}
 					}
 					prc.name = string(name.buf[:])
-					prc.sig = sig
 					{context.allocator = ctx.types.allocator
 						prc.lit = ast.clone(prc.lit).derived.(^ast.Proc_Lit)
 					}
-					prc.poly_values = slice.clone(polys, ctx.types.allocator)
+
+					rets := make([]Type, len(ar_rets))
+
+					ast_rets: []^ast.Field
+					if prc.lit.type.results != nil {
+						ast_rets = prc.lit.type.results.list
+					}
+
+					for ret, i in ast_rets {
+						rets[i] = emit_type(ctx, ret.type)
+					}
+
+					params = intern_type_slice(ctx, params)
+					rets = intern_type_slice(ctx, rets)
+					ptype := Proc_Type{params, rets}
+					prc.sig = intern_proc_type(ctx, &ptype)
+
+					names = slice.clone(names, ctx.types.allocator)
+					polys = slice.clone(polys, ctx.types.allocator)
+					prc.polys = soa_zip(name = names, meta = polys)
+					key.polys = string(mem.slice_data_cast([]u8, polys))
+
 					existing = Proc_ID(len(ctx.types.procs))
 					append(&ctx.types.procs, prc)
 					ctx.proc_insts[key] = existing
 				}
+
+				sig = ctx.procs[existing].sig
+
+				resize(&ctx.poly_types, prev_polys)
 
 				callee = new_clone(callee^, ctx.types.allocator)
 				callee.type = pack_type(sig)
 				callee.lit.procid = existing
 				set_node_data(d.expr, callee)
 			} else {
+				assert(len(sig.params) == len(d.args))
 				for param, i in sig.params {
 					pty := typecheck(ctx, {inferred_ty = param}, d.args[i])
 					fmt.assertf(
@@ -2324,10 +2314,11 @@ typecheck_sig :: proc(
 	ctx: ^Gen_Ctx,
 	prc: ^ast.Proc_Type,
 ) -> (
-	^Proc_Type,
-	[]string,
-	[]string,
+	ty: ^Proc_Type,
+	concrete: bool,
 ) {
+	if has_polys(ctx, prc) do return
+
 	plist := prc.params.list
 	rlist: []^ast.Field
 	if prc.results != nil {
@@ -2335,18 +2326,14 @@ typecheck_sig :: proc(
 	}
 
 	params := make([]Type, len(plist))
-	param_names := make([]string, len(plist), ctx.types.allocator)
 	rets := make([]Type, len(rlist))
-	ret_names := make([]string, len(rlist), ctx.types.allocator)
 
 	lists := [][]^ast.Field{plist, rlist}
 	tys := [][]Type{params, rets}
-	names := [][]string{param_names, ret_names}
 
 	clear(&ctx.poly_types)
 	for list, j in lists {
 		tys := tys[j]
-		names := names[j]
 
 		for param, i in list {
 			assert(len(param.names) <= 1)
@@ -2356,17 +2343,6 @@ typecheck_sig :: proc(
 			}
 
 			tys[i] = emit_type(ctx, param.type)
-			names[i] = pname
-
-			if strings.starts_with(pname, "$") {
-				pname = pname[1:]
-
-				res := intern_poly(ctx, Poly_Data{len(ctx.poly_types), .Void})
-				append(
-					&ctx.poly_types,
-					Poly_Entry{pname, {type = tys[i], known = true}},
-				)
-			}
 		}
 	}
 
@@ -2375,7 +2351,7 @@ typecheck_sig :: proc(
 		rets   = intern_type_slice(ctx, rets),
 	}
 
-	return intern_proc_type(ctx, &sig), param_names, ret_names
+	return intern_proc_type(ctx, &sig), true
 }
 
 typecheck_proc :: proc(
@@ -2386,9 +2362,11 @@ typecheck_proc :: proc(
 ) -> Proc_ID {
 	context.allocator, _ = arna.scrath()
 
-	isig, param_names, ret_names := typecheck_sig(ctx, prc.type)
+	isig, generic := typecheck_sig(ctx, prc.type)
 
 	decl := decl.? or_else {}
+
+	assert(prc.type != nil)
 
 	append(
 		&ctx.procs,
@@ -2396,15 +2374,9 @@ typecheck_proc :: proc(
 			name = decl.name,
 			lit = prc,
 			module = mid,
-			poly_names = slice.clone(
-				ctx.poly_types.name[:len(ctx.poly_types)],
-				ctx.types.allocator,
-			),
 			file = ctx.file,
 			file_id = ctx.file_id,
 			sig = isig,
-			param_names = param_names,
-			ret_names = ret_names,
 		},
 	)
 
@@ -2451,6 +2423,8 @@ typecheck_program :: proc(ctx: ^Gen_Ctx) {
 
 	for i := 1; i < len(ctx.procs); i += 1 {
 		prc := ctx.procs[i]
+		if prc.sig == nil do continue
+
 		ctx.prc = auto_cast i
 		ctx.module = prc.module
 		ctx.file = prc.file
@@ -2458,19 +2432,23 @@ typecheck_program :: proc(ctx: ^Gen_Ctx) {
 		ctx.mems.scratch.pos = 0
 		ctx.scope = make([dynamic]Variable, arna.allocator(&ctx.mems.scratch))
 
-		if len(prc.poly_names) != 0 && len(prc.poly_values) == 0 do continue
-
 		clear(&ctx.poly_types)
-		assert(len(prc.poly_names) == len(prc.poly_values))
-		for i in 0 ..< len(prc.poly_names) {
-			append(
-				&ctx.poly_types,
-				Poly_Entry{prc.poly_names[i], prc.poly_values[i]},
-			)
+		for e in prc.polys {
+			append(&ctx.poly_types, e)
 		}
 
 		for par, i in prc.params {
-			append(&ctx.scope, Variable{name = prc.param_names[i], type = par})
+			asta := prc.lit.type.params.list[i]
+			assert(len(asta.names) == 1)
+
+			#partial switch d in asta.names[0].derived {
+			case ^ast.Ident:
+				append(&ctx.scope, Variable{name = d.name, type = par})
+			case ^ast.Poly_Type:
+			case:
+				panic("NO")
+			}
+
 		}
 
 		typecheck(ctx, {}, prc.lit.body)

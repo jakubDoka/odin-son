@@ -165,8 +165,6 @@ x86_reg_class_classify :: proc(
 			}
 			classify(t.tag_ty, slots, t.tag_offset)
 			return true
-		case ^typecheck.Poly_Data:
-			fmt.panicf("POLY TODO: %v", ty)
 		}
 
 		@(static, rodata)
@@ -896,6 +894,7 @@ emit_proc :: proc(
 ) {
 	prc := &ctx.procs[i]
 	if prc.lit.body == nil do return
+	if prc.sig == nil do return
 
 	ctx.prc = auto_cast i
 	ctx.module = prc.module
@@ -920,12 +919,8 @@ emit_proc :: proc(
 	ctx.slocs = make(type_of(ctx.slocs), ctx.scope.allocator)
 
 	clear(&ctx.poly_types)
-	assert(len(prc.poly_names) == len(prc.poly_values))
-	for j in 0 ..< len(prc.poly_names) {
-		append(
-			&ctx.poly_types,
-			typecheck.Poly_Entry{prc.poly_names[j], prc.poly_values[j]},
-		)
+	for e in prc.polys {
+		append(&ctx.poly_types, e)
 	}
 
 	ctx.start = backend.graph_add_start(ctx, "start")
@@ -960,8 +955,11 @@ emit_proc :: proc(
 		assert(!apa.spilled && !apa.by_ptr)
 	}
 
-	for par, i in prc.params {
-		name := prc.param_names[i]
+	for ast_par, i in prc.lit.type.params.list {
+		assert(len(ast_par.names) == 1)
+		name := ast_par.names[0].derived.(^ast.Ident) or_continue
+		par := prc.sig.params[i]
+
 		apa, value := arg_gen_next(ctx, &gen, par, "arg") or_continue
 
 		value_idx: typecheck.Varuable_Idx
@@ -975,7 +973,10 @@ emit_proc :: proc(
 			value_idx = value
 		}
 
-		append(&ctx.scope, typecheck.Variable{name, value_idx, par, nil, {}})
+		append(
+			&ctx.scope,
+			typecheck.Variable{name.name, value_idx, par, nil, {}},
+		)
 	}
 
 	for j in 0 ..< rabi.srets_start {

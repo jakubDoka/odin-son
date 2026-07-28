@@ -147,7 +147,6 @@ main :: proc() {
 
 	{time.SCOPED_TICK_DURATION(&times.emit)
 		for prc, i in ctx.procs {
-			if len(prc.poly_names) != len(prc.poly_values) do continue
 			emit_proc(&ctx, i, level, &emit_ctx)
 		}}
 

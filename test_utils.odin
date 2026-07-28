@@ -170,7 +170,6 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		)
 
 		for &prc, i in ctx.procs {
-			if len(prc.poly_names) != len(prc.poly_values) do continue
 			emit_proc(&ctx, i, level, &emit_ctx)
 		}
 

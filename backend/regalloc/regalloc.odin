@@ -229,7 +229,11 @@ regalloc_round :: proc(
 
 	liveouts_clone_into :: proc(into: ^Liveouts, from: Liveouts) {
 		if len(into.data) < len(from.data) {
-			backend.grow_search_space(&into.data, len(from.data))
+			backend.grow_search_space(
+				&into.data,
+				len(from.data),
+				context.allocator,
+			)
 		}
 
 		mem.zero_slice(into.data.hash[from.len:max(into.len, from.len)])
@@ -293,7 +297,7 @@ regalloc_round :: proc(
 
 		if into.len == len(into.data) {
 			new_cap := len(into.data) + size_of(backend.Intern_Vec)
-			backend.grow_search_space(&into.data, new_cap)
+			backend.grow_search_space(&into.data, new_cap, context.allocator)
 		}
 
 		into.data.hash[into.len] = lrg_hash(lrg)

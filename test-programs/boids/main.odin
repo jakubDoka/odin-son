@@ -364,7 +364,7 @@ emit_uint :: proc(value: int) {
 	n := 0
 	for {
 		if v == 0 do break
-		tmp[n] = u8('0' + (v % 10))
+		tmp[n] = u8('0' + u8(v % 10))
 		v /= 10
 		n += 1
 	}

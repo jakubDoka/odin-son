@@ -446,7 +446,7 @@ builder_peep :: proc(
 			idx := backend.graph_expand(ctx, cnd.inps[0])
 			if idx.itype != .Phi do break memcpify
 			if idx.inps[0] != node.inps[0] do break memcpify
-			if len(idx.outs) != 4 do break memcpify
+			if len(idx.outs) > 4 do break memcpify
 
 			add := backend.graph_expand(ctx, idx.inps[2])
 			if add.itype != .Add do break memcpify
@@ -467,16 +467,31 @@ builder_peep :: proc(
 			if load.itype != .Load do break memcpify
 			if load.inps[1] != id do break memcpify
 
+			factor: backend.Node_ID
+
 			src_cur := backend.graph_expand(ctx, load.inps[2])
 			if src_cur.itype != .Add do break memcpify
-			if src_cur.inps[1] != cnd.inps[0] do break memcpify
+			src_cur_idx := backend.graph_expand(ctx, src_cur.inps[1])
+			if src_cur_idx.itype == .Mul {
+				factor = src_cur_idx.inps[1]
+				if src_cur_idx.inps[0] != cnd.inps[0] do break memcpify
+			} else {
+				if src_cur.inps[1] != cnd.inps[0] do break memcpify
+			}
 
 			dst_cur := backend.graph_expand(ctx, store.inps[2])
 			if dst_cur.itype != .Add do break memcpify
-			if dst_cur.inps[1] != cnd.inps[0] do break memcpify
+			dst_cur_idx := backend.graph_expand(ctx, dst_cur.inps[1])
+			if dst_cur_idx.itype == .Mul {
+				if dst_cur_idx.inps[1] != factor do break memcpify
+				if dst_cur_idx.inps[0] != cnd.inps[0] do break memcpify
+			} else {
+				if dst_cur.inps[1] != cnd.inps[0] do break memcpify
+			}
 
 			src := src_cur.inps[0]
 			dst := dst_cur.inps[0]
+			count := cnd.inps[1]
 
 			for out in node.outs {
 				// NOTE: For now, free floating ops cancel this opt, and this
@@ -496,6 +511,18 @@ builder_peep :: proc(
 			backend.graph_subsume(ctx, ctrl.inps[0], ifo.outs[0].id)
 			backend.graph_subsume(ctx, idx.inps[0], cnd.inps[0])
 
+			if factor != 0 {
+				count = backend.graph_add_bin_op(
+					ctx,
+					"cfc",
+					.Mul,
+					.I64,
+					count,
+					factor,
+				)
+				backend.worklist_add(ctx, ctx.worklist, count)
+			}
+
 			return backend.graph_add_copy(
 				ctx,
 				"lcpi",
@@ -503,7 +530,7 @@ builder_peep :: proc(
 				node.inps[1],
 				dst,
 				src,
-				cnd.inps[1],
+				count,
 			)
 		}
 	case .Then, .Else:

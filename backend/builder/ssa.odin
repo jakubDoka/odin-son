@@ -700,7 +700,7 @@ graph_add_arbitrary_store :: proc(
 	size := min(size - extra_offset, backend.DT_SIZE[unit])
 	offset: int
 
-	if store_unit in backend.FLOAT_DTS {
+	if backend.DT_SIZE[store_unit] == size {
 		omem = graph_add_field_store(
 			ctx,
 			"asst",

@@ -40,7 +40,7 @@ print_uint :: proc(value: u64) {
 	n := 0
 	for {
 		if v == 0 do break
-		tmp[n] = u8('0' + int(v % 10))
+		tmp[n] = u8('0' + u8(v % 10))
 		v /= 10
 		n += 1
 	}

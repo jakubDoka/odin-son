@@ -11047,7 +11047,7 @@ simd_fold :: proc(slc: []$T) -> T {
 	}
 
 	sacc: T
-	for el in slc {
+	for el in slc[i:] {
 		sacc += el
 		sacc &= el
 		sacc ~= el
@@ -11112,7 +11112,7 @@ simd_fold :: proc(slc: []$T) -> T {
 	}
 
 	sacc: T
-	for el in slc {
+	for el in slc[i:] {
 		sacc += el
 		sacc &= el
 		sacc ~= el

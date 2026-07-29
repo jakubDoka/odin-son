@@ -422,6 +422,9 @@ X64_REG_CLASSES := #partial [X64_Node_Type]Reg_Class_Spec {
 		reg_masks = #partial{.Vector = {XMM_MASK, XMM_MASK, XMM_MASK}},
 		inplace_slot_idx = 0,
 	},
+	.X64_Pextr = {
+		reg_masks = #partial{.Vector = {{}, XMM_MASK}, .General = {GPA_MASK}},
+	},
 }
 
 GEN_SPEC :: #config(X64_GEN_SPEC, false)
@@ -478,6 +481,7 @@ when SPEC_NOT_PRESENT {
 		X64_Pshufd,
 		X64_Psadbw,
 		X64_Pshufb,
+		X64_Pextr,
 	}
 
 	X64_SIMPLE_BIN_OP_SPEC :: backend.Class_Spec {
@@ -505,6 +509,7 @@ when SPEC_NOT_PRESENT {
 		.X64_Psadbw = {args = {"lhs", "rhs"}},
 		.X64_Pshufd = {id = X64_Mem_Op, no_ctor = true},
 		.X64_Pshufb = {id = X64_Mem_Op, no_ctor = true},
+		.X64_Pextr = {id = X64_Mem_Op, no_ctor = true},
 		.X64_Mul = X64_SIMPLE_BIN_OP_SPEC,
 		.X64_Lea = {id = X64_Mem_Op, no_ctor = true},
 		.X64_Load = {id = X64_Mem_Op, flags = {.Load}, no_ctor = true},
@@ -671,59 +676,169 @@ x64_peep :: proc(
 		vec := backend.graph_add_un_op(ctx, "elem", .Cast, .V128, node.inps[0])
 		zero := backend.graph_add_c_int(ctx, "zro", node.dt, 0)
 
-		backend.push_node_name(ctx, "pshufb")
-		slot := (^X64_Mem_Op)(
-			backend.graph_get_next_extra_slot(
-				ctx,
-				u16(X64_Node_Type.X64_Pshufb),
-			),
-		)
-		slot^ = {}
-		pshufb := backend.graph_add_raw(
+		pnode, pshufb := x64_add_node(
 			ctx,
-			u16(X64_Node_Type.X64_Pshufb),
+			"pshufb",
+			.X64_Pshufb,
 			node.dt,
 			{vec, zero},
 		)
-		backend.graph_get(ctx, pshufb).lane = node.lane
+		pnode.lane = node.lane
 
 		return pshufb
 	case .Simd_Reduce_Add_Bisect:
 		inp := backend.graph_expand(ctx, node.inps[0])
 		assert(inp.dt == .V128)
 
-		backend.push_node_name(ctx, "pshufd")
-		slot := (^X64_Mem_Op)(
-			backend.graph_get_next_extra_slot(
+		#partial switch node.lane {
+		case .I8:
+			_, pshufd := x64_add_node(
 				ctx,
-				u16(X64_Node_Type.X64_Pshufd),
-			),
-		)
-		slot^ = {
-			aux = 0b11101110,
+				"pshufd",
+				.X64_Pshufd,
+				inp.dt,
+				{node.inps[0]},
+				{aux = 0b11101110},
+			)
+
+			add := backend.graph_add_bin_op(
+				ctx,
+				"radd",
+				.Add,
+				inp.dt,
+				pshufd,
+				node.inps[0],
+			)
+			backend.graph_get(ctx, add).lane = node.lane
+			zero := backend.graph_add_c_int(ctx, "zro", inp.dt, 0)
+
+			psadbw := graph_add_x64_psadbw(ctx, "psadbw", inp.dt, add, zero)
+			backend.graph_get(ctx, psadbw).lane = node.lane
+
+			return backend.graph_add_un_op(ctx, "sum", .Cast, .I16, psadbw)
+		case .I16:
+			_, pshufd := x64_add_node(
+				ctx,
+				"pshufd",
+				.X64_Pshufd,
+				inp.dt,
+				{node.inps[0]},
+				{aux = 0b11101110},
+			)
+
+			add := backend.graph_add_bin_op(
+				ctx,
+				"radd",
+				.Add,
+				inp.dt,
+				pshufd,
+				node.inps[0],
+			)
+			backend.graph_get(ctx, add).lane = node.lane
+
+			_, pshufd2 := x64_add_node(
+				ctx,
+				"pshufd",
+				.X64_Pshufd,
+				inp.dt,
+				{node.inps[0]},
+				{aux = 0b01010101},
+			)
+
+			add2 := backend.graph_add_bin_op(
+				ctx,
+				"radd",
+				.Add,
+				inp.dt,
+				pshufd2,
+				add,
+			)
+			backend.graph_get(ctx, add).lane = node.lane
+
+			_, lhs := x64_add_node(
+				ctx,
+				"pextrw",
+				.X64_Pextr,
+				node.dt,
+				{add2},
+				{aux = 1},
+			)
+			rhs := backend.graph_add_un_op(ctx, "rhs", .Cast, node.dt, add2)
+			return backend.graph_add_bin_op(
+				ctx,
+				"sum",
+				.Add,
+				node.dt,
+				lhs,
+				rhs,
+			)
+		case .I32:
+			_, pshufd := x64_add_node(
+				ctx,
+				"pshufd",
+				.X64_Pshufd,
+				inp.dt,
+				{node.inps[0]},
+				{aux = 0b11101110},
+			)
+
+			add := backend.graph_add_bin_op(
+				ctx,
+				"radd",
+				.Add,
+				inp.dt,
+				pshufd,
+				node.inps[0],
+			)
+			backend.graph_get(ctx, add).lane = node.lane
+
+			_, lhs := x64_add_node(
+				ctx,
+				"pextrd",
+				.X64_Pextr,
+				node.dt,
+				{add},
+				{aux = 1},
+			)
+			rhs := backend.graph_add_un_op(ctx, "rhs", .Cast, node.dt, add)
+			return backend.graph_add_bin_op(
+				ctx,
+				"sum",
+				.Add,
+				node.dt,
+				lhs,
+				rhs,
+			)
+		case .I64:
+			_, lhs := x64_add_node(
+				ctx,
+				"pextrq",
+				.X64_Pextr,
+				node.dt,
+				{node.inps[0]},
+				{aux = 1},
+			)
+			rhs := backend.graph_add_un_op(
+				ctx,
+				"rhs",
+				.Cast,
+				.I64,
+				node.inps[0],
+			)
+			return backend.graph_add_bin_op(
+				ctx,
+				"sum",
+				.Add,
+				node.dt,
+				lhs,
+				rhs,
+			)
+		case:
+			fmt.panicf("TODO: %v", node.lane)
 		}
-		pshufd := backend.graph_add_raw(
-			ctx,
-			u16(X64_Node_Type.X64_Pshufd),
-			inp.dt,
-			{node.inps[0]},
-		)
-		backend.graph_get(ctx, pshufd).lane = node.lane
 
-		add := backend.graph_add_bin_op(
-			ctx,
-			"addb",
-			.Add,
-			inp.dt,
-			pshufd,
-			node.inps[0],
-		)
-		zero := backend.graph_add_c_int(ctx, "zro", inp.dt, 0)
-
-		psadbw := graph_add_x64_psadbw(ctx, "psadbw", inp.dt, add, zero)
-		backend.graph_get(ctx, psadbw).lane = node.lane
-
-		return backend.graph_add_un_op(ctx, "sum", .Cast, .I16, psadbw)
+		if node.lane == .I8 {
+		}
 	case .F_Add:
 		lhs := backend.graph_expand(ctx, node.inps[0])
 		rhs := backend.graph_expand(ctx, node.inps[1])
@@ -1062,6 +1177,24 @@ x64_peep :: proc(
 	return 0
 }
 
+x64_add_node :: proc(
+	ctx: ^backend.Graph,
+	name: string,
+	type: X64_Node_Type,
+	dt: backend.Node_Datatype,
+	inps: []backend.Node_ID,
+	extra: X64_Mem_Op = {},
+) -> (
+	^backend.Node,
+	backend.Node_ID,
+) {
+	backend.push_node_name(ctx, name)
+	slot := (^X64_Mem_Op)(backend.graph_get_next_extra_slot(ctx, u16(type)))
+	slot^ = extra
+	id := backend.graph_add_raw(ctx, u16(type), dt, inps)
+	return backend.graph_get(ctx, id), id
+}
+
 x64_make_node :: proc(
 	graph: ^backend.Graph,
 	from: backend.Node_ID,
@@ -1075,12 +1208,14 @@ x64_make_node :: proc(
 	fnode := backend.graph_get(graph, from)
 	id := backend.graph_add_raw(graph, type, fnode.dt, inps)
 	node := backend.graph_get(graph, id)
+	// TODO: I no longer understand this, needs better comment
 	// NOTE: afaik this is sufficient since we don't insert load ops before
 	// scheduling
 	node.is_store = fnode.is_store
 	node.is_load = fnode.is_load || type == u16(X64_Node_Type.X64_Load)
 	node.additional_data_start = additional_data_offset
 	node.in_place_slot_offset = in_place_slot_offset
+	node.lane = fnode.lane
 	x64_extra(graph, node, X64_Mem_Op)^ = extra
 	return id
 }
@@ -1303,6 +1438,8 @@ x64_reg_mask_of :: proc(
 			kind == .Vector ? XMM_SPILL_MASK : GPA_SPILL_MASK,
 		)
 	}
+
+	fmt.assertf(pos >= 0, "%v", node)
 
 	fmt.panicf(
 		"TODO: %v %v %v",
@@ -1777,7 +1914,9 @@ x64_emit_instr :: proc(
 
 	mount_sloc(ctx, instr)
 
-	switch xtype(node) {
+	type := xtype(node)
+
+	switch type {
 	case .CV128:
 		panic("TODO: CV128 load-from-static emit not implemented")
 	case .Splat:
@@ -1821,6 +1960,28 @@ x64_emit_instr :: proc(
 		// psadbw $dst, $tmp
 		rx := rex(dst, rhs, NO_INDEX, false)
 		emit(ctx.code, {0x66, rx, 0x0f, 0xF6, mod_rm(.Direct, dst, rhs)})
+	case .X64_Pextr:
+		dst := reg_of(ctx, instr)
+		src := reg_of(ctx, node.inps[0])
+		aux := mem_op.aux
+
+		if node.dt != .I16 {
+			dst, src = src, dst
+		}
+
+		rx := rex(dst, src, NO_INDEX, backend.DT_SIZE[node.dt] == 8)
+		rm := mod_rm(.Direct, dst, src)
+		#partial switch node.dt {
+		case .I8:
+			// pextrb $dst, $src, $auc
+			emit(ctx.code, {0x66, rx, 0x0f, 0x3A, 0x14, rm, aux})
+		case .I16:
+			// pextrw $dst, $src, $auc
+			emit(ctx.code, {0x66, rx, 0x0f, 0xC5, rm, aux})
+		case .I32, .I64:
+			// pextrd $dst, $src, $auc
+			emit(ctx.code, {0x66, rx, 0x0f, 0x3A, 0x16, rm, aux})
+		}
 	case .Simd_Reduce_Add_Bisect:
 		when false {
 			// TODO: maybe exploding this into more primitive nodes can help
@@ -2282,13 +2443,22 @@ x64_emit_instr :: proc(
 		dst := reg_of(ctx, node.inps[0])
 		rhs := reg_of(ctx, node.inps[1])
 
+		@(static, rodata)
+		TABLE := #partial [X64_Node_Type][backend.Lane_Type]u8 {
+			.Add = #partial{.I8 = 0xFC, .I16 = 0xFD, .I32 = 0xFE, .I64 = 0xD4},
+			.Sub = #partial{.I8 = 0xF8, .I16 = 0xF9, .I32 = 0xFA, .I64 = 0xFB},
+			.And = #partial{.I8 ..= .I64 = 0xDB},
+			.Or = #partial{.I8 ..= .I64 = 0xEB},
+			.Xor = #partial{.I8 ..= .I64 = 0xEF},
+		}
+
 		if node.dt == .V128 {
-			assert(node.itype == .Add)
-			assert(node.lane == .I8)
+			opcode := TABLE[type][node.lane]
+			fmt.assertf(opcode != 0, "%v %v", type, node.lane)
 
 			// paddb $dst, $rhs
 			rx := rex(dst, rhs, NO_INDEX, false)
-			emit(ctx.code, {0x66, rx, 0x0f, 0xfc, mod_rm(.Direct, dst, rhs)})
+			emit(ctx.code, {0x66, rx, 0x0f, opcode, mod_rm(.Direct, dst, rhs)})
 			break
 		}
 

@@ -1194,7 +1194,7 @@ SS_Entry :: struct($V: typeid) {
 grow_search_space :: proc(
 	ss: ^#soa[]SS_Entry($V),
 	new_cap: int,
-	allocator := context.temp_allocator,
+	allocator: runtime.Allocator,
 ) {
 	context.allocator = allocator
 	assert(mem.is_aligned(rawptr(uintptr(new_cap)), align_of(Intern_Vec)))

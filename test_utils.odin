@@ -36,6 +36,20 @@ setup_custom_fmt :: proc() {
 	})
 }
 
+init_single_file_program :: proc(ctx: ^Gen_Ctx, f: ^ast.File) {
+	ctx.files.allocator = ctx.types.allocator
+	ctx.modules.allocator = ctx.types.allocator
+	if f.pkg_name == "" do f.pkg_name = "main"
+	append(&ctx.files, f^)
+	append(&ctx.modules, typecheck.Module{name = f.pkg_name, file_count = 1})
+	ctx.modules[0].imports.allocator = ctx.types.allocator
+	ctx.modules[0].imports["intrinsics"] = typecheck.MODULE_INTRINSICS
+
+	decls := make([dynamic]typecheck.Decl, context.temp_allocator)
+	typecheck.collect_decls(f^, &decls, 0)
+	typecheck.module_add_decls(ctx, 0, decls[:])
+}
+
 run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 	context.logger.options &= ~{.Time, .Date, .Level, .Procedure}
 	context.assertion_failure_proc = hot.init_trace()
@@ -59,7 +73,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 	// will be dataraces
 	@(static) once: sync.Once
 	sync.once_do(&once, proc() {
-		context.allocator = context.temp_allocator
+		context.allocator, _ = arna.scrath()
 		p := parser.Parser{}
 		f := ast.File {
 			src      = "package main",
@@ -88,7 +102,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 	ctx.target.cc = &x64.X64_SYSTEMV_CC
 	ctx.target.spec = &x64.SPEC
 
-	typecheck.init_single_file_program(&ctx, &f)
+	init_single_file_program(&ctx, &f)
 	typecheck.typecheck_program(&ctx)
 
 	levels := OPT_LEVELS

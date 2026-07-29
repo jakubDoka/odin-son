@@ -681,14 +681,34 @@ typecheck_decl :: proc(
 		decl.value = new_clone(nil_node, ctx.types.allocator)
 	}
 	ty := emit_type(ctx, decl.ty)
-	vl := typecheck_eval(
-		ctx,
-		{
-			inferred_ty = ty,
-			key = Decl_Key{decl.name, decl.file, u32(decl.value.pos.offset)},
-		},
-		decl.value,
-	)
+	vl: ^Check_Meta
+	if decl.is_mutable {
+		vl = typecheck(
+			ctx,
+			{
+				inferred_ty = ty,
+				key = Decl_Key {
+					decl.name,
+					decl.file,
+					u32(decl.value.pos.offset),
+				},
+			},
+			decl.value,
+		)
+	} else {
+		vl = typecheck_eval(
+			ctx,
+			{
+				inferred_ty = ty,
+				key = Decl_Key {
+					decl.name,
+					decl.file,
+					u32(decl.value.pos.offset),
+				},
+			},
+			decl.value,
+		)
+	}
 	assert(vl.type == ty || ty == .Void)
 
 	return vl
@@ -700,6 +720,7 @@ module_add_decls :: proc(ctx: ^Gen_Ctx, mid: Module_ID, decls: []Decl) {
 	backend.grow_search_space(
 		&mod.decl_idx,
 		mem.align_forward_int(len(decls), align_of(backend.Intern_Vec)),
+		ctx.types.allocator,
 	)
 
 	for dcl, i in decls {
@@ -1878,9 +1899,10 @@ typecheck :: proc(
 			}
 		}
 
-		for entry in ctx.poly_types {
+		for entry, i in ctx.poly_types {
 			if entry.name == d.name {
 				meta.kind = .Poly
+				meta.index = i
 				return new_clone(entry.meta, ctx.types.allocator)
 			}
 		}
@@ -2021,7 +2043,7 @@ typecheck :: proc(
 		case Typeid_Type:
 			#partial switch t in unpack_type(callee.lit.typeida) {
 			case ^Struct:
-				args := make([]Type, len(d.args), context.temp_allocator)
+				args := make([]Type, len(d.args))
 				for arg, i in d.args {
 					args[i] = emit_type(ctx, arg)
 				}
@@ -2294,20 +2316,6 @@ is_nil_lit :: proc(node: ^ast.Node) -> bool {
 is_of :: proc(vl: Type, $K: typeid) -> bool {
 	_, ok := unpack_type(vl).(K)
 	return ok
-}
-
-init_single_file_program :: proc(ctx: ^Gen_Ctx, f: ^ast.File) {
-	ctx.files.allocator = ctx.types.allocator
-	ctx.modules.allocator = ctx.types.allocator
-	if f.pkg_name == "" do f.pkg_name = "main"
-	append(&ctx.files, f^)
-	append(&ctx.modules, Module{name = f.pkg_name, file_count = 1})
-	ctx.modules[0].imports.allocator = ctx.types.allocator
-	ctx.modules[0].imports["intrinsics"] = MODULE_INTRINSICS
-
-	decls := make([dynamic]Decl, context.temp_allocator)
-	collect_decls(f^, &decls, 0)
-	module_add_decls(ctx, 0, decls[:])
 }
 
 typecheck_sig :: proc(

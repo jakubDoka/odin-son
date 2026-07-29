@@ -29,7 +29,7 @@ set acc '-define:ACCEPT=true'
 set rlg '-define:REGLOGS=true'
 set dff '-define:DIFF=false'
  
-alias run-test 'odin test tests -keep-executable -debug -define:ODIN_TEST_FANCY=false -o:none'
+alias run-test 'odin test tests -keep-executable -debug -define:ODIN_TEST_FANCY=false'
 
 alias measure 'rg --files --glob "!*.git/" --glob "!vendored" --glob \
 "!print-tests" --glob "!TESTS.md" --glob "!tests.odin" --glob \

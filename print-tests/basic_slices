@@ -158,22 +158,18 @@ main:
     pop rbx
     ret
 bubble_sort:
-    shr rdi, 0
-    mov rcx, rdi
-    mov.q [rsp - 0x18], rcx
-    shr rsi, 0
-    mov rcx, rsi
-    mov.q [rsp - 0x10], rcx
+    mov.q [rsp - 0x18], rdi
+    mov.q [rsp - 0x10], rsi
     mov.q rcx, [rsp - 0x10]
     sub rcx, 1
     mov r11, rcx
-    xor r9d, r9d
+    xor edx, edx
 27:
     mov rcx, 1
     neg rcx
-    mov r10, r9
     mov r8, rcx
     mov r9, rcx
+    mov r10, rdx
 21:
     cmp r10, r11
     jnl 16
@@ -215,6 +211,7 @@ bubble_sort:
     jmp 26
 25:
     mov r11, r8
+    mov rdx, r9
     jmp 27
 22:
     xor eax, eax
@@ -225,20 +222,16 @@ quick_sort:
     push rbp
     push r12
     sub rsp, 0x40
-    shr rdi, 0
-    mov rax, rdi
-    mov.q [rsp], rax
-    shr rsi, 0
-    mov rax, rsi
-    mov.q [rsp + 0x8], rax
+    mov.q [rsp], rdi
+    mov.q [rsp + 0x8], rsi
     lea rdi, [rsp + 0x10]
     xor esi, esi
     mov rdx, 0x10
-    call.q [rip - 0x406]
+    call.q [rip - 0x3e8]
     lea rsi, [rsp]
     lea rdi, [rsp + 0x10]
     mov rdx, 0x10
-    call.q [rip - 0x424]
+    call.q [rip - 0x406]
     mov.q rax, [rsp + 0x18]
     mov rbp, rax
     cmp rbp, 2
@@ -290,7 +283,7 @@ quick_sort:
     lea rdi, [rsp + 0x20]
     xor esi, esi
     mov rdx, 0x10
-    call.q [rip - 0x4ed]
+    call.q [rip - 0x4cf]
     xor eax, eax
     imul rax, rax, 8
     add rbx, rax
@@ -305,7 +298,7 @@ quick_sort:
     lea rdi, [rsp + 0x30]
     xor esi, esi
     mov rdx, 0x10
-    call.q [rip - 0x537]
+    call.q [rip - 0x519]
     lea rax, [rbx]
     mov.q [rsp + 0x30], rax
     mov rcx, rbp
@@ -484,16 +477,14 @@ main:
     pop rbx
     ret
 bubble_sort:
-    shr rsi, 0
-    mov rdx, rsi
-    shr rdi, 0
-    mov rcx, rdi
-    mov.q [rsp - 0x18], rcx
-    mov.q [rsp - 0x10], rdx
-    sub rdx, 1
-    mov r10, rdx
-    xor r9d, r9d
+    mov.q [rsp - 0x18], rdi
+    mov.q [rsp - 0x10], rsi
+    mov rcx, rsi
+    sub rcx, 1
+    mov r10, rcx
+    xor r8d, r8d
 27:
+    mov r9, r8
     mov rdi, -1
     mov r8, -1
 21:
@@ -536,7 +527,6 @@ bubble_sort:
     jmp 25
     jmp 26
 25:
-    mov r9, r8
     mov r10, rdi
     jmp 27
 22:
@@ -548,20 +538,16 @@ quick_sort:
     push rbp
     push r12
     sub rsp, 0x40
-    shr rdi, 0
-    mov rax, rdi
-    mov.q [rsp], rax
-    shr rsi, 0
-    mov rax, rsi
-    mov.q [rsp + 0x8], rax
+    mov.q [rsp], rdi
+    mov.q [rsp + 0x8], rsi
     lea rdi, [rsp + 0x10]
     xor esi, esi
     mov rdx, 0x10
-    call.q [rip - 0x3fe]
+    call.q [rip - 0x3e0]
     lea rsi, [rsp]
     lea rdi, [rsp + 0x10]
     mov rdx, 0x10
-    call.q [rip - 0x41c]
+    call.q [rip - 0x3fe]
     mov.q rax, [rsp + 0x18]
     mov rbp, rax
     cmp rbp, 2
@@ -613,7 +599,7 @@ quick_sort:
     lea rdi, [rsp + 0x20]
     xor esi, esi
     mov rdx, 0x10
-    call.q [rip - 0x4e5]
+    call.q [rip - 0x4c7]
     xor eax, eax
     imul rax, rax, 8
     add rbx, rax
@@ -628,7 +614,7 @@ quick_sort:
     lea rdi, [rsp + 0x30]
     xor esi, esi
     mov rdx, 0x10
-    call.q [rip - 0x52f]
+    call.q [rip - 0x511]
     lea rax, [rbx]
     mov.q [rsp + 0x30], rax
     mov rcx, rbp

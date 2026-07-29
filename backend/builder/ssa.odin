@@ -6,8 +6,8 @@ import "core:fmt"
 import "core:mem"
 import "core:sort"
 
-Node_ID :: backend.Node_ID
 Graph :: backend.Graph
+graph_get :: backend.graph_get
 
 btype :: #force_inline proc(node: backend.Expanded_Node) -> Builder_Node_Type {
 	return Builder_Node_Type(node.rtype)
@@ -38,7 +38,7 @@ builder_extra_node_id :: #force_inline proc(
 	id: backend.Node_ID,
 	$T: typeid,
 ) -> ^T {
-	return builder_extra_node(graph, backend.graph_get(graph, id), T)
+	return builder_extra_node(graph, graph_get(graph, id), T)
 }
 
 If_State :: struct {
@@ -55,7 +55,7 @@ graph_start_if :: proc(
 	state: ^If_State,
 	cond: backend.Node_ID,
 ) {
-	snode := backend.graph_expand(graph, scope)
+	snode := graph_expand(graph, scope)
 	state.if_ = backend.graph_add_if(graph, "if", snode.inps[0], cond)
 	state.else_scope = backend.graph_clone(graph, scope)
 
@@ -131,14 +131,14 @@ graph_start_loop :: proc(
 	scope: backend.Node_ID,
 	state: ^Loop_State,
 ) {
-	snode := backend.graph_expand(graph, scope)
+	snode := graph_expand(graph, scope)
 	loop := backend.graph_add_loop(graph, "loop", snode.inps[0])
 	backend.graph_set_input(graph, scope, 0, loop)
 	state.scope = backend.graph_clone(graph, scope)
 
 	backend.graph_add_output(graph, state.scope, 0, 0)
 
-	snode = backend.graph_expand(graph, scope)
+	snode = graph_expand(graph, scope)
 	for i in 1 ..< snode.input_count {
 		backend.graph_set_input(graph, scope, i, state.scope)
 	}
@@ -164,24 +164,24 @@ graph_end_loop :: proc(
 ) {
 	graph_start_loop_increment(graph, node_scope, state)
 
-	init := backend.graph_expand(graph, state.scope)
+	init := graph_expand(graph, state.scope)
 	loop := init.inps[0]
-	assert(backend.graph_get(graph, loop).itype == .Loop)
+	assert(graph_get(graph, loop).itype == .Loop)
 
 	bscope := node_scope^
 	if bscope != 0 {
-		backedge := backend.graph_expand(graph, bscope)
+		backedge := graph_expand(graph, bscope)
 		assert(init.input_count == backedge.input_count)
 		for i in 1 ..< init.input_count {
 			init := init.inps[i]
-			inode := backend.graph_expand(graph, init)
-			bnode := backend.graph_expand(graph, backedge.inps[i])
+			inode := graph_expand(graph, init)
+			bnode := graph_expand(graph, backedge.inps[i])
 			if btype(inode) != .Lazy_Phi || inode.inps[0] != loop do continue
 
 			for {
 				scp := builder_extra(graph, bnode, Scope)
 				if scp == nil || !scp.done || bnode.inps[0] == loop do break
-				bnode = backend.graph_expand(graph, bnode.inps[i])
+				bnode = graph_expand(graph, bnode.inps[i])
 			}
 
 			if btype(bnode) == .Scope || inode.node == bnode.node {
@@ -198,16 +198,16 @@ graph_end_loop :: proc(
 			}
 		}
 
-		assert(backend.graph_get(graph, init.inps[0]).itype == .Loop)
+		assert(graph_get(graph, init.inps[0]).itype == .Loop)
 		backend.graph_connect(graph, init.inps[0], backedge.inps[0])
 	}
 
 	node_scope^ = state.scopes[.Break]
 
 	if node_scope^ != 0 {
-		exit := backend.graph_expand(graph, node_scope^)
+		exit := graph_expand(graph, node_scope^)
 		for i in 1 ..< exit.input_count {
-			enode := backend.graph_expand(graph, exit.inps[i])
+			enode := graph_expand(graph, exit.inps[i])
 			if btype(enode) == .Scope && enode.inps[0] == loop {
 				backend.graph_set_input(graph, node_scope^, i, init.inps[i])
 			}
@@ -221,7 +221,7 @@ graph_end_loop :: proc(
 		backend.graph_delete(graph, bscope)
 	} else {
 		for out in backend.graph_outs(graph, loop) {
-			onode := backend.graph_expand(graph, out.id)
+			onode := graph_expand(graph, out.id)
 			if btype(onode) == .Lazy_Phi {
 				backend.graph_subsume(graph, onode.inps[1], out.id)
 			}
@@ -239,7 +239,7 @@ graph_loop_control :: proc(
 	scope: backend.Node_ID,
 	loop: ^Loop_State,
 ) {
-	base_size := backend.graph_get(ctx, loop.scope).input_count
+	base_size := graph_get(ctx, loop.scope).input_count
 	graph_truncate_scope(ctx, scope, base_size)
 	loop.scopes[variant] = graph_merge_scopes(ctx, scope, loop.scopes[variant])
 }
@@ -249,23 +249,23 @@ graph_get_scope_value :: proc(
 	scope: backend.Node_ID,
 	#any_int idx: int,
 ) -> backend.Node_ID {
-	snode := backend.graph_get(graph, scope)
+	snode := graph_get(graph, scope)
 	assert(Builder_Node_Type(snode.rtype) == .Scope)
 
 	val := backend.graph_inps(graph, snode)[idx]
-	vnode := backend.graph_expand(graph, val)
+	vnode := graph_expand(graph, val)
 	loop_scope := builder_extra(graph, vnode, Scope)
 	if loop_scope != nil {
 		pval := val
 		val = graph_get_scope_value(graph, val, idx)
-		cvnode := backend.graph_expand(graph, val)
+		cvnode := graph_expand(graph, val)
 		if (btype(cvnode) != .Lazy_Phi || vnode.inps[0] != cvnode.inps[0]) &&
 		   !loop_scope.done {
-			assert(backend.graph_get(graph, vnode.inps[0]).itype == .Loop)
+			assert(graph_get(graph, vnode.inps[0]).itype == .Loop)
 			val = graph_add_lazy_phi(
 				graph,
 				"lphi",
-				backend.graph_get(graph, val).dt,
+				graph_get(graph, val).dt,
 				vnode.inps[0],
 				val,
 			)
@@ -282,7 +282,7 @@ graph_push_scope_value :: proc(
 	scope: backend.Node_ID,
 	value: backend.Node_ID,
 ) -> int {
-	scope_node := backend.graph_get(graph, scope)
+	scope_node := graph_get(graph, scope)
 	assert(Builder_Node_Type(scope_node.rtype) == .Scope)
 	return backend.graph_connect(graph, scope, value)
 }
@@ -294,7 +294,7 @@ graph_truncate_scope :: proc(
 ) {
 	if scope == 0 do return
 
-	snode := backend.graph_expand(graph, scope)
+	snode := graph_expand(graph, scope)
 	assert(btype(snode) == .Scope)
 	assert(to_len <= int(snode.input_count))
 
@@ -314,9 +314,9 @@ graph_merge_scopes :: proc(
 	if lctrl == 0 do return rctrl
 	if rctrl == 0 do return lctrl
 
-	lnode := backend.graph_expand(graph, lctrl)
+	lnode := graph_expand(graph, lctrl)
 	assert(btype(lnode) == .Scope)
-	rnode := backend.graph_expand(graph, rctrl)
+	rnode := graph_expand(graph, rctrl)
 	assert(btype(rnode) == .Scope)
 
 	assert(lnode.input_count == rnode.input_count)
@@ -335,7 +335,7 @@ graph_merge_scopes :: proc(
 		phi := backend.graph_add_phi(
 			graph,
 			"phi",
-			backend.graph_get(graph, lvalue).dt,
+			graph_get(graph, lvalue).dt,
 			region,
 			lvalue,
 			rvalue,
@@ -389,7 +389,7 @@ graph_inline_graph :: proc(
 	}
 
 	proj_of :: proc(ctx: ^Ctx, id: backend.Node_ID) -> ^backend.Node_ID {
-		return &ctx.projection[backend.graph_get(ctx.from, id).gvn]
+		return &ctx.projection[graph_get(ctx.from, id).gvn]
 	}
 
 	ctx: Ctx
@@ -398,13 +398,13 @@ graph_inline_graph :: proc(
 	ctx.projection = make([]backend.Node_ID, from.gvn)
 	ctx.dprojection = make([]backend.D_Node_ID, from.gdn)
 
-	call := backend.graph_expand(graph, call)
+	call := graph_expand(graph, call)
 	assert(call.itype == .Call)
 	proj_of(&ctx, from.entry)^ = call.inps[0]
 	proj_of(&ctx, from.root_mem)^ = call.inps[1]
 	proj_of(&ctx, from.sym)^ = call.inps[2]
 
-	entry := backend.graph_expand(from, from.entry)
+	entry := graph_expand(from, from.entry)
 	Param_Entry :: bit_field u64 {
 		id:           backend.Node_ID | 32,
 		is_local_arg: bool            | 1,
@@ -413,7 +413,7 @@ graph_inline_graph :: proc(
 	starter: backend.Node_ID
 	params: [dynamic]Param_Entry
 	for o in entry.outs {
-		onode := backend.graph_expand(from, o.id)
+		onode := graph_expand(from, o.id)
 		is_local_arg := onode.itype == .Local
 		is_local_arg &&=
 			backend.graph_extra(from, onode, backend.Local).is_param
@@ -439,7 +439,7 @@ graph_inline_graph :: proc(
 
 	for i in 0 ..< len(params) {
 		param := params[i]
-		pnode := backend.graph_expand(from, param.id)
+		pnode := graph_expand(from, param.id)
 		arg_idx: int
 		if param.is_local_arg {
 			arg_idx = int(backend.graph_extra(graph, pnode, backend.Local).idx)
@@ -448,7 +448,7 @@ graph_inline_graph :: proc(
 		}
 		arg_idx += backend.CALL_PREFIX
 		arg := raw_data(call.inps)[arg_idx]
-		node := backend.graph_expand(graph, arg)
+		node := graph_expand(graph, arg)
 		if arg_idx < int(call.input_count) {
 			assert(node.itype != .Local)
 			assert(pnode.itype != .Local)
@@ -462,7 +462,7 @@ graph_inline_graph :: proc(
 				arg = backend.graph_inps(graph, arg)[3]
 			} else {
 				// project the addr too or we get dups
-				ctx.projection[backend.graph_get(from, pnode.outs[0].id).gvn] =
+				ctx.projection[graph_get(from, pnode.outs[0].id).gvn] =
 					node.outs[0].id
 			}
 		}
@@ -471,43 +471,43 @@ graph_inline_graph :: proc(
 
 	clone_along_cfg(&ctx, starter)
 
-	cend := backend.graph_expand(graph, call.outs[0].id)
-	ret := backend.graph_expand(from, from.end)
+	cend := graph_expand(graph, call.outs[0].id)
+	ret := graph_expand(from, from.end)
 
 	for o in cend.outs {
-		onode := backend.graph_expand(ctx.graph, o.id)
+		onode := graph_expand(ctx.graph, o.id)
 		if onode.itype == .Mem {
-			sub := backend.graph_get(from, ret.inps[1])
+			sub := graph_get(from, ret.inps[1])
 			backend.graph_subsume(graph, ctx.projection[sub.gvn], o.id)
 		}
 		if onode.itype == .Ret {
 			idx := backend.graph_extra(graph, onode, backend.Tup).idx
-			sub := backend.graph_get(from, ret.inps[backend.RET_PREFIX + idx])
+			sub := graph_get(from, ret.inps[backend.RET_PREFIX + idx])
 			backend.graph_subsume(graph, ctx.projection[sub.gvn], o.id)
 		}
 	}
 
-	end_ctrl := backend.graph_get(from, ret.inps[0])
+	end_ctrl := graph_get(from, ret.inps[0])
 	backend.graph_subsume(graph, ctx.projection[end_ctrl.gvn], call.outs[0].id)
 
 	for out in backend.graph_outs(graph, graph.start) {
-		assert(backend.graph_get(graph, out.id).itype != .Local)
+		assert(graph_get(graph, out.id).itype != .Local)
 	}
 
 	clone_along_cfg :: proc(ctx: ^Ctx, root: backend.Node_ID) {
-		node := backend.graph_expand(ctx.from, root)
+		node := graph_expand(ctx.from, root)
 		if ctx.projection[node.gvn] != 0 do return
 
 		if node.itype == .Region {
 			for i in node.inps[:len(node.inps) - 1] {
-				inode := backend.graph_expand(ctx.from, i)
+				inode := graph_expand(ctx.from, i)
 				if ctx.projection[inode.gvn] == 0 {
 					return
 				}
 			}
 
 			for out in node.outs {
-				onode := backend.graph_expand(ctx.from, out.id)
+				onode := graph_expand(ctx.from, out.id)
 				if onode.itype == .Phi {
 					for inp in onode.inps[1:] {
 						clone_node(ctx, inp)
@@ -518,7 +518,7 @@ graph_inline_graph :: proc(
 
 		if node.itype == .Loop {
 			for out in node.outs {
-				onode := backend.graph_expand(ctx.from, out.id)
+				onode := graph_expand(ctx.from, out.id)
 				if onode.itype == .Phi {
 					clone_node(ctx, onode.inps[1])
 				}
@@ -531,19 +531,19 @@ graph_inline_graph :: proc(
 		for out in node.outs {
 			if !backend.is_cfg(ctx.from, out.id) do continue
 
-			onode := backend.graph_expand(ctx.from, out.id)
+			onode := graph_expand(ctx.from, out.id)
 
 			if onode.itype == .Loop && out.idx == 1 {
 				proj := ctx.projection[onode.gvn]
 				backend.graph_connect(ctx.graph, proj, nid)
 
 				for lout in onode.outs {
-					lonode := backend.graph_expand(ctx.from, lout.id)
+					lonode := graph_expand(ctx.from, lout.id)
 					if lonode.itype == .Phi {
 						clone_node(ctx, lonode.inps[2])
 						lproj := ctx.projection[lonode.gvn]
-						lpnode := backend.graph_get(ctx.graph, lproj)
-						backedge := backend.graph_get(ctx.from, lonode.inps[2])
+						lpnode := graph_get(ctx.graph, lproj)
+						backedge := graph_get(ctx.from, lonode.inps[2])
 						bproj := ctx.projection[backedge.gvn]
 						assert(Builder_Node_Type(lpnode.rtype) == .Lazy_Phi)
 						lpnode.itype = .Phi
@@ -566,7 +566,7 @@ graph_inline_graph :: proc(
 	clone_node :: proc(ctx: ^Ctx, root: backend.Node_ID) {
 		graph := ctx.graph
 
-		node := backend.graph_expand(ctx.from, root)
+		node := graph_expand(ctx.from, root)
 		if ctx.projection[node.gvn] != 0 do return
 
 		input_cap := node.input_cap
@@ -580,7 +580,7 @@ graph_inline_graph :: proc(
 		}
 
 		if node.itype == .Phi &&
-		   backend.graph_get(ctx.from, node.inps[0]).itype == .Loop {
+		   graph_get(ctx.from, node.inps[0]).itype == .Loop {
 			rtype = u16(Builder_Node_Type.Lazy_Phi)
 			input_cap = 2
 		}
@@ -588,7 +588,7 @@ graph_inline_graph :: proc(
 		inps := make([]backend.Node_ID, input_cap)
 		for inp, i in raw_data(node.inps)[:input_cap] {
 			clone_node(ctx, inp)
-			inps[i] = ctx.projection[backend.graph_get(ctx.from, inp).gvn]
+			inps[i] = ctx.projection[graph_get(ctx.from, inp).gvn]
 		}
 
 		if node.itype == .Local {
@@ -922,7 +922,7 @@ arg_gen_finalize :: proc(
 
 	j, ri: u32
 	for arg in gen.vls {
-		anode := backend.graph_get(ctx, arg)
+		anode := graph_get(ctx, arg)
 		if arga := backend.graph_extra(ctx, arg, backend.Tup); arga != nil {
 			size: i32
 			if arga.idx == 0 {

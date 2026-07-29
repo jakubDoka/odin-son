@@ -3,6 +3,7 @@ package anal
 import backend ".."
 import "../../vendored/gam/util/arna"
 import "core:fmt"
+Node_ID :: backend.Node_ID
 
 GEN_SPEC :: #config(ANAL_GEN_SPEC, false)
 
@@ -17,13 +18,13 @@ anal_peep :: proc(
 	ctx: backend.Peep_Ctx,
 	node: backend.Expanded_Node,
 	_: $T,
-) -> backend.Node_ID {return 0}
+) -> Node_ID {return 0}
 
 anal_post_schedule_peep :: proc(
 	ctx: backend.PS_Peep_Ctx,
 	node: backend.Expanded_Node,
 	_: $T,
-) -> backend.Node_ID {
+) -> Node_ID {
 	return 0
 }
 

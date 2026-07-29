@@ -15,7 +15,7 @@ package main
 //   * no two `for` loops nested inside a single procedure -- inner loops are
 //     factored into their own procs
 
-foreign {
+foreign _ {
 	InitWindow :: proc(width: i32, height: i32, title: ^u8) ---
 	CloseWindow :: proc() ---
 	WindowShouldClose :: proc() -> bool ---

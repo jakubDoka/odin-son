@@ -31,10 +31,12 @@ set dff '-define:DIFF=false'
  
 alias run-test 'odin test tests -keep-executable -debug -define:ODIN_TEST_FANCY=false'
 
-alias measure 'rg --files --glob "!*.git/" --glob "!vendored" --glob \
+alias rel-files 'rg --files --glob "!*.git/" --glob "!vendored" --glob \
 "!print-tests" --glob "!TESTS.md" --glob "!tests.odin" --glob \
-"!backend/**/node_specs.odin" --glob "!test-programs" --glob "!examples" | xargs \
-wc -l | sort -n'
+"!backend/**/node_specs.odin" --glob "!*meta_overloads.odin" \
+--glob "!test-programs" --glob "!examples"'
+
+alias measure 'rel-files | xargs wc -l | sort -n'
 
 function run-test-program
 	odin build . -debug $argv[2..]

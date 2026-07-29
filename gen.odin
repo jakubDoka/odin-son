@@ -16,10 +16,16 @@ import "typecheck"
 import "vendored/gam/util/arna"
 
 CALL_PREFIX :: backend.CALL_PREFIX
+get_node_type :: typecheck.get_node_type
+type_to_dt :: typecheck.type_to_dt
+type_size :: typecheck.type_size
+unpack_type :: typecheck.unpack_type
 
 Gen_Ctx :: typecheck.Gen_Ctx
 Type :: typecheck.Type
 Node_ID :: backend.Node_ID
+graph_expand :: backend.graph_expand
+graph_get :: backend.graph_get
 
 Opt_Level :: struct {
 	name:  string,
@@ -89,7 +95,7 @@ x86_reg_class_classify :: proc(
 	MAX_SIZE :: 512 / 64
 	class_slots: [MAX_SIZE]X86_Reg_Class
 
-	size := typecheck.type_size(ty)
+	size := type_size(ty)
 
 	if size > MAX_SIZE * 8 do return
 
@@ -126,7 +132,7 @@ x86_reg_class_classify :: proc(
 			typecheck.type_align(ty),
 		) or_return
 
-		#partial switch t in typecheck.unpack_type(ty) {
+		#partial switch t in unpack_type(ty) {
 
 		case typecheck.Pointer, ^typecheck.Proc_Type, typecheck.Multi_Pointer:
 			slots[offset / 8] = .Integer
@@ -145,14 +151,14 @@ x86_reg_class_classify :: proc(
 				if i + 1 < len(t.fields) {
 					next_offset = t.fields[i + 1].offset
 				}
-				field_end := f.offset + typecheck.type_size(f.ty)
+				field_end := f.offset + type_size(f.ty)
 				for i in field_end ..< next_offset {
 					classify(.I8, slots, offset + i)
 				}
 			}
 			return true
 		case ^typecheck.Array:
-			step := typecheck.type_size(t.elem)
+			step := type_size(t.elem)
 			for i in 0 ..< t.len {
 				classify(t.elem, slots, offset + i * step) or_return
 			}
@@ -198,9 +204,9 @@ abi_sm_add :: proc(
 
 	par.dt = cata
 
-	par.size = typecheck.type_size(ty)
+	par.size = type_size(ty)
 	par.real_size = par.size
-	forced_stack := typecheck.type_to_dt(ty) == .Void
+	forced_stack := type_to_dt(ty) == .Void
 	par.scalar = !forced_stack
 
 	if !oka {
@@ -236,7 +242,7 @@ abi_sm_add :: proc(
 
 	ok = len(par.dt) != 0
 	if !par.copied do par.size = 0
-	if par.scalar do par.dt = {typecheck.type_to_dt(ty)}
+	if par.scalar do par.dt = {type_to_dt(ty)}
 	return
 }
 
@@ -263,7 +269,7 @@ Value :: bit_field u32 {
 
 to_rvalue_ty :: proc(ctx: ^Gen_Ctx, value: Value, ty: Type) -> Node_ID {
 	if !value.is_lvalue do return value.id
-	dt := typecheck.type_to_dt(ty)
+	dt := type_to_dt(ty)
 	assert(dt != .Void)
 	return field_load(ctx, "ultr", dt, value.id)
 }
@@ -278,15 +284,12 @@ to_rvalue_expr :: proc(
 	value: Value,
 	node: ^ast.Node,
 ) -> Node_ID {
-	return to_rvalue(ctx, value, typecheck.get_node_type(node))
+	return to_rvalue(ctx, value, get_node_type(node))
 }
 
 is_signed_subword :: proc(ty: Type) -> bool {
 	if !typecheck.is_builtin(ty) do return false
-	return(
-		ty in typecheck.SIGNED_TYPES &&
-		backend.DT_SIZE[typecheck.type_to_dt(ty)] < 8 \
-	)
+	return ty in typecheck.SIGNED_TYPES && backend.DT_SIZE[type_to_dt(ty)] < 8
 }
 
 tok_to_binop :: proc(
@@ -298,9 +301,8 @@ tok_to_binop :: proc(
 	lane: backend.Lane_Type,
 ) {
 	ty := ty
-	if e, ok := typecheck.unpack_type(ty).(^typecheck.Enum);
-	   ok {ty = e.backing}
-	if s, ok := typecheck.unpack_type(ty).(^typecheck.Simd);
+	if e, ok := unpack_type(ty).(^typecheck.Enum); ok {ty = e.backing}
+	if s, ok := unpack_type(ty).(^typecheck.Simd);
 	   ok {lane = simd_lane_of(s.elem)}
 
 	Op_Info :: struct {
@@ -396,7 +398,7 @@ emit_float_const :: proc(
 
 simd_lane_of :: proc(simd_ty: Type) -> backend.Lane_Type {
 	return(
-		backend.lane_from_dt(typecheck.type_to_dt(simd_ty)) or_else panic(
+		backend.lane_from_dt(type_to_dt(simd_ty)) or_else panic(
 			"wrong simd lane type",
 		) \
 	)
@@ -424,7 +426,7 @@ emit_lvalue :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Sym {
 			backend.graph_add_c_int(
 				ctx,
 				"cnst",
-				typecheck.type_to_dt(meta.type),
+				type_to_dt(meta.type),
 				vl.meta.int,
 			),
 		)
@@ -459,12 +461,12 @@ emit_lvalue :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Sym {
 			backend.graph_add_c_int(
 				ctx,
 				"cnst",
-				typecheck.type_to_dt(meta.type),
+				type_to_dt(meta.type),
 				idmt.value,
 			),
 		)
 	case .Nil:
-		#partial switch t in typecheck.unpack_type(meta.type) {
+		#partial switch t in unpack_type(meta.type) {
 		case ^typecheck.Slice:
 			return Value {
 				id = alloca(ctx, "nilslc", meta.type),
@@ -496,7 +498,7 @@ store_value_expr :: proc(
 	value: Value,
 	node: ^ast.Node,
 ) {
-	store_value(ctx, name, ptr, value, typecheck.get_node_type(node))
+	store_value(ctx, name, ptr, value, get_node_type(node))
 }
 
 store_value_ty :: proc(
@@ -510,7 +512,7 @@ store_value_ty :: proc(
 		return
 	}
 
-	if typecheck.type_to_dt(ty) == .Void {
+	if type_to_dt(ty) == .Void {
 		fmt.assertf(value.is_lvalue, "%v %v", value, ty)
 		ctx_set_mem(
 			ctx,
@@ -525,7 +527,7 @@ store_value_ty :: proc(
 					ctx,
 					"msize",
 					.I32,
-					i64(typecheck.type_size(ty)),
+					i64(type_size(ty)),
 				),
 			),
 		)
@@ -547,7 +549,7 @@ store_union :: proc(
 	tag := backend.graph_add_c_int(
 		ctx,
 		"utag",
-		typecheck.type_to_dt(u.tag_ty),
+		type_to_dt(u.tag_ty),
 		i64(idx + 1),
 	)
 	field_store(ctx, "utagst", dest, u.tag_offset, tag)
@@ -563,19 +565,12 @@ alloca :: proc(
 	root := is_arg ? ctx.entry : ctx.root_mem
 	alloca := backend.graph_add_local(ctx, name, root)
 
-	backend.graph_extra(ctx, alloca, backend.Local).size = i32(
-		typecheck.type_size(ty),
-	)
+	backend.graph_extra(ctx, alloca, backend.Local).size = i32(type_size(ty))
 	ptr := backend.graph_add_local_addr(ctx, name, alloca)
 
 	if zeroed {
 		zero := backend.graph_add_c_int(ctx, "zero", .I8, 0)
-		size := backend.graph_add_c_int(
-			ctx,
-			"size",
-			.I32,
-			i64(typecheck.type_size(ty)),
-		)
+		size := backend.graph_add_c_int(ctx, "size", .I32, i64(type_size(ty)))
 		ctx_set_mem(
 			ctx,
 			backend.graph_add_set(
@@ -1083,7 +1078,7 @@ Scope_Base :: struct {
 }
 
 ctx_scope_base :: proc(ctx: ^Gen_Ctx) -> Scope_Base {
-	return {len(ctx.scope), backend.graph_get(ctx, ctx.node_scope).input_count}
+	return {len(ctx.scope), graph_get(ctx, ctx.node_scope).input_count}
 }
 
 emit_stmts :: proc(
@@ -1130,8 +1125,8 @@ emit_rvalue :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Node_ID {
 emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 	if node == nil do return {}
 
-	ty := typecheck.get_node_type(node)
-	dt := typecheck.type_to_dt(ty)
+	ty := get_node_type(node)
+	dt := type_to_dt(ty)
 	sloc := ctx_sloc_of(ctx, node)
 
 	res: Node_ID
@@ -1234,18 +1229,18 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				value := to_rvalue(
 					ctx,
 					emit_nodes(ctx, {}, rhs),
-					typecheck.get_node_type(rhs),
+					get_node_type(rhs),
 				)
 				if d.op.kind != .Eq {
 					op, name, lane := tok_to_binop(
-						typecheck.get_node_type(rhs),
+						get_node_type(rhs),
 						d.op.kind,
 					)
 					value = backend.graph_add_bin_op(
 						ctx,
 						name,
 						op,
-						typecheck.type_to_dt(typecheck.get_node_type(lhs)),
+						type_to_dt(get_node_type(lhs)),
 						builder.graph_get_scope_value(
 							ctx,
 							ctx.node_scope,
@@ -1253,7 +1248,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 						),
 						value,
 					)
-					backend.graph_get(ctx, value).lane = lane
+					graph_get(ctx, value).lane = lane
 				}
 
 				backend.graph_pin(ctx, value)
@@ -1261,29 +1256,20 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				append(&values, Value_Slot{sym, value})
 			case Value:
 				assert(sym.is_lvalue)
-				lhs_ty := typecheck.get_node_type(lhs)
-				if u, uok := typecheck.unpack_type(lhs_ty).(^typecheck.Union);
-				   uok &&
-				   d.op.kind == .Eq &&
-				   typecheck.get_node_type(rhs) != lhs_ty {
+				lhs_ty := get_node_type(lhs)
+				if u, uok := unpack_type(lhs_ty).(^typecheck.Union);
+				   uok && d.op.kind == .Eq && get_node_type(rhs) != lhs_ty {
 					value := emit_nodes(ctx, {dest = sym.id}, rhs)
-					store_union(
-						ctx,
-						sym.id,
-						value,
-						u,
-						typecheck.get_node_type(rhs),
-					)
+					store_union(ctx, sym.id, value, u, get_node_type(rhs))
 					continue
 				}
 				if d.op.kind == .Eq {
 					if len(d.lhs) == 1 {
 						fmt.assertf(
-							typecheck.get_node_type(lhs) ==
-							typecheck.get_node_type(rhs),
+							get_node_type(lhs) == get_node_type(rhs),
 							"%v %v",
-							typecheck.get_node_type(lhs),
-							typecheck.get_node_type(rhs),
+							get_node_type(lhs),
+							get_node_type(rhs),
 						)
 						value := emit_nodes(ctx, {dest = sym.id}, rhs)
 						store_value(ctx, "asss", sym.id, value, lhs)
@@ -1291,14 +1277,14 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 						value := to_rvalue(
 							ctx,
 							emit_nodes(ctx, {}, rhs),
-							typecheck.get_node_type(rhs),
+							get_node_type(rhs),
 						)
 						backend.graph_pin(ctx, value)
 						append(&mem_stores, Mem_Store{sym.id, value, lhs})
 					}
 				} else {
 					op, name, lane := tok_to_binop(
-						typecheck.get_node_type(rhs),
+						get_node_type(rhs),
 						d.op.kind,
 					)
 					vl := to_rvalue(ctx, sym, rhs)
@@ -1307,15 +1293,15 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 						ctx,
 						name,
 						op,
-						typecheck.type_to_dt(typecheck.get_node_type(lhs)),
+						type_to_dt(get_node_type(lhs)),
 						vl,
 						to_rvalue(
 							ctx,
 							emit_nodes(ctx, {}, rhs),
-							typecheck.get_node_type(rhs),
+							get_node_type(rhs),
 						),
 					)
-					backend.graph_get(ctx, value).lane = lane
+					graph_get(ctx, value).lane = lane
 					backend.graph_unpin(ctx, vl)
 					store_value(ctx, "asss", sym.id, Value(value), lhs)
 				}
@@ -1334,12 +1320,10 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 	case ^ast.Binary_Expr:
 		if typecheck.is_nil_lit(d.left) || typecheck.is_nil_lit(d.right) {
 			union_expr := typecheck.is_nil_lit(d.left) ? d.right : d.left
-			u := typecheck.unpack_type(
-				typecheck.get_node_type(union_expr),
-			).(^typecheck.Union)
+			u := unpack_type(get_node_type(union_expr)).(^typecheck.Union)
 			uv := emit_nodes(ctx, {}, union_expr)
 			assert(uv.is_lvalue)
-			tag_dt := typecheck.type_to_dt(u.tag_ty)
+			tag_dt := type_to_dt(u.tag_ty)
 			tag := field_load(ctx, "ntag", tag_dt, uv.id, u.tag_offset)
 			zero := backend.graph_add_c_int(ctx, "nzero", tag_dt, 0)
 			op: backend.Bin_Op = d.op.kind == .Cmp_Eq ? .Eq : .Ne
@@ -1351,12 +1335,9 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		backend.graph_pin(ctx, lhsv.id)
 		rhsv := emit_nodes(ctx, {}, d.right)
 		lhs, rhs := to_rvalue(ctx, lhsv, d.left), to_rvalue(ctx, rhsv, d.right)
-		kind, name, lane := tok_to_binop(
-			typecheck.get_node_type(d.left),
-			d.op.kind,
-		)
+		kind, name, lane := tok_to_binop(get_node_type(d.left), d.op.kind)
 		res = backend.graph_add_bin_op(ctx, name, kind, dt, lhs, rhs)
-		backend.graph_get(ctx, res).lane = lane
+		graph_get(ctx, res).lane = lane
 		backend.graph_unpin(ctx, lhsv.id)
 	case ^ast.Unary_Expr:
 		#partial switch d.op.kind {
@@ -1369,7 +1350,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			zero := backend.graph_add_c_int(ctx, "zero", dt, 0)
 			res = backend.graph_add_bin_op(ctx, "lnot", .Eq, dt, operand, zero)
 		case .Sub, .Xor:
-			oty := typecheck.get_node_type(d.expr)
+			oty := get_node_type(d.expr)
 			operand := emit_rvalue(ctx, {}, d.expr)
 
 			if d.op.kind == .Sub && dt in backend.FLOAT_DTS {
@@ -1407,11 +1388,11 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			i: ^int,
 			r: ^ast.Node,
 		) {
-			ty := typecheck.get_node_type(r)
+			ty := get_node_type(r)
 			vl := emit_nodes(ctx, {}, r)
-			if typecheck.type_to_dt(ty) == .Void {
+			if type_to_dt(ty) == .Void {
 				assert(vl.is_lvalue)
-				size := typecheck.type_size(ty)
+				size := type_size(ty)
 				values[i^] = emit_arbitrary_load(ctx, vl.id, size)
 				i^ += 1
 				if size > 8 {
@@ -1427,7 +1408,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		for ptr, j in ctx.ret_ptrs {
 			r := d.results[j]
 			vl := emit_nodes(ctx, {dest = ptr}, r)
-			store_value(ctx, "rpst", ptr, vl, typecheck.get_node_type(r))
+			store_value(ctx, "rpst", ptr, vl, get_node_type(r))
 		}
 
 		for j in 0 ..< len(rabi.reg_rets) {
@@ -1526,7 +1507,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		}
 
 		if len(d.values) == 0 {
-			decl_ty := typecheck.get_node_meta(d.type).lit.typeida
+			decl_ty := typecheck.get_node_meta(d.type).typeida
 			for i in 0 ..< len(d.names) {
 				name := typecheck.src_of(ctx.file^, d.names[i])
 				flags := typecheck.get_node_vflags(d.names[i])
@@ -1544,16 +1525,15 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		for i in 0 ..< len(d.names) {
 			name := typecheck.src_of(ctx.file^, d.names[i])
 			assert(name != "")
-			decl_ty := typecheck.get_node_meta(d.type).lit.typeida
-			vty :=
-				decl_ty != .Void ? decl_ty : typecheck.get_node_type(d.values[i])
+			decl_ty := typecheck.get_node_meta(d.type).typeida
+			vty := decl_ty != .Void ? decl_ty : get_node_type(d.values[i])
 			flags := typecheck.get_node_vflags(d.names[i])
 
 			if is_static(d) {
-				size := typecheck.type_size(vty)
+				size := type_size(vty)
 				bytes := make([]u8, size, ctx.globals.allocator)
 
-				if typecheck.type_to_dt(vty) != .Void {
+				if type_to_dt(vty) != .Void {
 					value, cok := typecheck.const_eval_int(d.values[i])
 					if !cok {
 						fmt.panicf(
@@ -1579,26 +1559,19 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 					&ctx.scope,
 					typecheck.Variable{name, ptr, vty, d.names[i], flags},
 				)
-			} else if .Referenced in flags ||
-			   typecheck.type_to_dt(vty) == .Void {
+			} else if .Referenced in flags || type_to_dt(vty) == .Void {
 				ptr := alloca(
 					ctx,
 					name,
 					vty,
-					zeroed = typecheck.type_to_dt(vty) == .Void,
+					zeroed = type_to_dt(vty) == .Void,
 				)
 				backend.graph_pin(ctx, ptr)
 
 				value := emit_nodes(ctx, {dest = ptr}, d.values[i])
-				if u, uok := typecheck.unpack_type(vty).(^typecheck.Union);
-				   uok && typecheck.get_node_type(d.values[i]) != vty {
-					store_union(
-						ctx,
-						ptr,
-						value,
-						u,
-						typecheck.get_node_type(d.values[i]),
-					)
+				if u, uok := unpack_type(vty).(^typecheck.Union);
+				   uok && get_node_type(d.values[i]) != vty {
+					store_union(ctx, ptr, value, u, get_node_type(d.values[i]))
 				} else {
 					store_value(ctx, "init", ptr, value, vty)
 				}
@@ -1628,7 +1601,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 	case ^ast.Comp_Lit:
 		dest := prop.dest != 0 ? prop.dest : alloca(ctx, "comp", ty)
 
-		#partial switch t in typecheck.unpack_type(ty) {
+		#partial switch t in unpack_type(ty) {
 		case ^typecheck.Struct:
 			for elem, i in d.elems {
 				offset: int
@@ -1648,7 +1621,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			}
 			res, lvalue = dest, true
 		case ^typecheck.Array:
-			stride := typecheck.type_size(t.elem)
+			stride := type_size(t.elem)
 			for elem, i in d.elems {
 				elem_ptr := field_offset(ctx, dest, i * stride)
 				value := emit_nodes(ctx, {dest = elem_ptr}, elem)
@@ -1660,7 +1633,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		}
 	case ^ast.Selector_Expr:
 		if typecheck.is_of(
-			typecheck.get_node_meta(d.expr).lit.typeida,
+			typecheck.get_node_meta(d.expr).typeida,
 			^typecheck.Enum,
 		) {
 			val := typecheck.get_node_data(d.field, int)
@@ -1668,12 +1641,12 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			break
 		}
 		base := emit_nodes(ctx, {}, d.expr)
-		base_ty := typecheck.unpack_type(typecheck.get_node_type(d.expr))
+		base_ty := unpack_type(get_node_type(d.expr))
 		#partial switch f in d.field.derived {
 		case ^ast.Ident:
 			if pty, ok := base_ty.(typecheck.Pointer); ok {
 				base.id = to_rvalue(ctx, base, typecheck.pack_type(base_ty))
-				base_ty = typecheck.unpack_type(pty^)
+				base_ty = unpack_type(pty^)
 				base.is_lvalue = true
 			}
 
@@ -1699,36 +1672,30 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 	case ^ast.Index_Expr:
 		base := emit_nodes(ctx, {}, d.expr)
 
-		if typecheck.is_of(
-			typecheck.get_node_type(d.expr),
-			typecheck.Multi_Pointer,
-		) {
+		if typecheck.is_of(get_node_type(d.expr), typecheck.Multi_Pointer) {
 			base = Value(to_rvalue(ctx, base, d.expr))
 		} else {
 			assert(base.is_lvalue)
 		}
 
 		base_ptr := base.id
-		if typecheck.is_of(
-			   typecheck.get_node_type(d.expr),
-			   ^typecheck.Slice,
-		   ) ||
-		   typecheck.get_node_type(d.expr) == .String {
+		if typecheck.is_of(get_node_type(d.expr), ^typecheck.Slice) ||
+		   get_node_type(d.expr) == .String {
 			base_ptr = field_load(ctx, "sdti", .I64, base.id)
 		}
 
 		idx := emit_rvalue(ctx, {}, d.index)
 
-		stride := typecheck.type_size(ty)
+		stride := type_size(ty)
 		res = index_offset(ctx, base_ptr, idx, stride)
 		lvalue = true
 	case ^ast.Slice_Expr:
 		base := emit_nodes(ctx, {}, d.expr)
 
 		stride: int
-		#partial switch t in typecheck.unpack_type(ty) {
+		#partial switch t in unpack_type(ty) {
 		case ^typecheck.Slice:
-			stride = typecheck.type_size(t.elem)
+			stride = type_size(t.elem)
 		case typecheck.String_Type:
 			stride = 1
 		case:
@@ -1737,17 +1704,11 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 
 		base_ptr: Node_ID
 		src_len: Node_ID
-		#partial switch t in typecheck.unpack_type(
-			typecheck.get_node_type(d.expr),
-		) {
+		#partial switch t in unpack_type(get_node_type(d.expr)) {
 		case typecheck.Pointer:
-			#partial switch nt in typecheck.unpack_type(t^) {
+			#partial switch nt in unpack_type(t^) {
 			case ^typecheck.Array:
-				base_ptr = to_rvalue(
-					ctx,
-					base,
-					typecheck.get_node_type(d.expr),
-				)
+				base_ptr = to_rvalue(ctx, base, get_node_type(d.expr))
 				src_len = backend.graph_add_c_int(
 					ctx,
 					"alen",
@@ -1818,8 +1779,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		case int:
 			res = builder.graph_get_scope_value(ctx, ctx.node_scope, sym)
 			assert(
-				builder.Builder_Node_Type(backend.graph_get(ctx, res).rtype) !=
-				.Scope,
+				builder.Builder_Node_Type(graph_get(ctx, res).rtype) != .Scope,
 			)
 		case Value:
 			res, lvalue = unpack(sym)
@@ -1827,9 +1787,9 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 	case ^ast.Paren_Expr:
 		res, lvalue = unpack(emit_nodes(ctx, prop, d.expr))
 	case ^ast.Type_Cast:
-		dst_ty := typecheck.get_node_type(node)
+		dst_ty := get_node_type(node)
 		inner := emit_nodes(ctx, {}, d.expr)
-		if typecheck.type_to_dt(dst_ty) == .Void {
+		if type_to_dt(dst_ty) == .Void {
 			res, lvalue = inner.id, inner.is_lvalue
 		} else {
 			res = to_rvalue(ctx, inner, dst_ty)
@@ -1883,16 +1843,14 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 	case ^ast.Type_Switch_Stmt:
 		tag := d.tag.derived.(^ast.Assign_Stmt)
 		binding := typecheck.src_of(ctx.file^, tag.lhs[0])
-		u := typecheck.unpack_type(
-			typecheck.get_node_type(tag.rhs[0]),
-		).(^typecheck.Union)
+		u := unpack_type(get_node_type(tag.rhs[0])).(^typecheck.Union)
 
 		uv := emit_nodes(ctx, {}, tag.rhs[0])
 		assert(uv.is_lvalue)
 		ptr := uv.id
 		backend.graph_pin(ctx, ptr)
 
-		tag_dt := typecheck.type_to_dt(u.tag_ty)
+		tag_dt := type_to_dt(u.tag_ty)
 		tagv := field_load(ctx, "tstag", tag_dt, ptr, u.tag_offset)
 		backend.graph_pin(ctx, tagv)
 
@@ -1907,7 +1865,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				continue
 			}
 
-			case_ty := typecheck.get_node_meta(clause.list[0]).lit.typeida
+			case_ty := typecheck.get_node_meta(clause.list[0]).typeida
 			idx, _ := typecheck.union_variant_index(u, case_ty)
 			cval := backend.graph_add_c_int(ctx, "tsc", tag_dt, i64(idx + 1))
 			cond := backend.graph_add_bin_op(ctx, "tseq", .Eq, .I8, tagv, cval)
@@ -1941,7 +1899,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				typecheck.Variable {
 					binding,
 					ptr,
-					typecheck.get_node_type(tag.rhs[0]),
+					get_node_type(tag.rhs[0]),
 					tag.lhs[0],
 					{.Referenced},
 				},
@@ -1970,12 +1928,12 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 
 		ctx.loop = ctx.loop.parent
 	case ^ast.Range_Stmt:
-		expr_ty := typecheck.get_node_type(d.expr)
+		expr_ty := get_node_type(d.expr)
 		base := emit_nodes(ctx, {}, d.expr)
 
 		data_ptr, length: Node_ID
 		elem_ty: Type
-		#partial switch t in typecheck.unpack_type(expr_ty) {
+		#partial switch t in unpack_type(expr_ty) {
 		case ^typecheck.Slice:
 			assert(base.is_lvalue)
 			data_ptr = field_load(ctx, "rdata", .I64, base.id, 0)
@@ -1993,7 +1951,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		backend.graph_pin(ctx, data_ptr)
 		backend.graph_pin(ctx, length)
 
-		stride := typecheck.type_size(elem_ty)
+		stride := type_size(elem_ty)
 		sbase := ctx_scope_base(ctx)
 
 		iinit := backend.graph_add_c_int(ctx, "rz", .I64, 0)
@@ -2082,9 +2040,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		switch typecheck.get_builtin_proc(d.expr) {
 		case .nil:
 		case .len:
-			#partial switch t in typecheck.unpack_type(
-				typecheck.get_node_type(d.args[0]),
-			) {
+			#partial switch t in unpack_type(get_node_type(d.args[0])) {
 			case ^typecheck.Array:
 				res = backend.graph_add_c_int(ctx, "len", dt, i64(t.len))
 			case ^typecheck.Slice:
@@ -2096,7 +2052,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				assert(slc.is_lvalue)
 				res = field_load(ctx, "slen", dt, slc.id, 8)
 			case typecheck.Pointer:
-				#partial switch nt in typecheck.unpack_type(t^) {
+				#partial switch nt in unpack_type(t^) {
 				case ^typecheck.Array:
 					res = backend.graph_add_c_int(ctx, "len", dt, i64(nt.len))
 				case:
@@ -2107,9 +2063,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			}
 			break match
 		case .raw_data:
-			#partial switch t in typecheck.unpack_type(
-				typecheck.get_node_type(d.args[0]),
-			) {
+			#partial switch t in unpack_type(get_node_type(d.args[0])) {
 			case ^typecheck.Array:
 				slc := emit_nodes(ctx, {}, d.args[0])
 				assert(slc.is_lvalue)
@@ -2123,7 +2077,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				assert(slc.is_lvalue)
 				res = field_load(ctx, "slen", dt, slc.id, 0)
 			case typecheck.Pointer:
-				#partial switch nt in typecheck.unpack_type(t^) {
+				#partial switch nt in unpack_type(t^) {
 				case ^typecheck.Array:
 					slc := emit_nodes(ctx, {}, d.args[0])
 					res = to_rvalue(ctx, slc, d.args[0])
@@ -2139,11 +2093,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				ctx,
 				"cnst",
 				dt,
-				i64(
-					typecheck.type_size(
-						typecheck.get_node_meta(d.args[0]).lit.typeida,
-					),
-				),
+				i64(type_size(typecheck.get_node_meta(d.args[0]).typeida)),
 			)
 			break match
 		case .align_of:
@@ -2153,7 +2103,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				dt,
 				i64(
 					typecheck.type_align(
-						typecheck.get_node_meta(d.args[0]).lit.typeida,
+						typecheck.get_node_meta(d.args[0]).typeida,
 					),
 				),
 			)
@@ -2170,7 +2120,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			siga: ^typecheck.Proc_Type
 			if base_meta.lit.procid == 0 {
 				fptr = emit_rvalue(ctx, {}, d.expr)
-				siga = typecheck.unpack_type(base_ty).(^typecheck.Proc_Type)
+				siga = unpack_type(base_ty).(^typecheck.Proc_Type)
 			}
 
 			results := emit_call(
@@ -2224,9 +2174,9 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				a := emit_rvalue(ctx, {}, d.args[0])
 				b := emit_rvalue(ctx, {}, d.args[1])
 				res = backend.graph_add_bin_op(ctx, "seq", .Eq, .V128, a, b)
-				ty := typecheck.get_node_type(d.args[0])
-				backend.graph_get(ctx, res).lane = simd_lane_of(
-					typecheck.unpack_type(ty).(^typecheck.Simd).elem,
+				ty := get_node_type(d.args[0])
+				graph_get(ctx, res).lane = simd_lane_of(
+					unpack_type(ty).(^typecheck.Simd).elem,
 				)
 				break match
 			case .simd_extract_lsbs:
@@ -2235,13 +2185,13 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 					ctx,
 					"elsb",
 					.Simd_Extract_Lsbs,
-					typecheck.type_to_dt(typecheck.get_node_type(node)),
+					type_to_dt(get_node_type(node)),
 					a,
 				)
 
-				ty := typecheck.get_node_type(d.args[0])
-				backend.graph_get(ctx, res).lane = simd_lane_of(
-					typecheck.unpack_type(ty).(^typecheck.Simd).elem,
+				ty := get_node_type(d.args[0])
+				graph_get(ctx, res).lane = simd_lane_of(
+					unpack_type(ty).(^typecheck.Simd).elem,
 				)
 				break match
 			case .count_trailing_zeros:
@@ -2250,7 +2200,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 					ctx,
 					"ctz",
 					.Ctz,
-					typecheck.type_to_dt(typecheck.get_node_type(node)),
+					type_to_dt(get_node_type(node)),
 					a,
 				)
 				break match
@@ -2260,26 +2210,24 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 					ctx,
 					"ctz",
 					.Simd_Reduce_Add_Bisect,
-					typecheck.type_to_dt(typecheck.get_node_type(node)),
+					type_to_dt(get_node_type(node)),
 					a,
 				)
-				ty := typecheck.get_node_type(d.args[0])
-				backend.graph_get(ctx, res).lane = simd_lane_of(
-					typecheck.unpack_type(ty).(^typecheck.Simd).elem,
+				ty := get_node_type(d.args[0])
+				graph_get(ctx, res).lane = simd_lane_of(
+					unpack_type(ty).(^typecheck.Simd).elem,
 				)
 				break match
 			}
 		case base_ty == .Module:
 			panic("calling a module?")
 		case base_ty == .Typeid:
-			dest_dt := typecheck.type_to_dt(base_meta.lit.typeida)
-			src_ty := typecheck.get_node_type(d.args[0])
-			src_dt := typecheck.type_to_dt(src_ty)
+			dest_dt := type_to_dt(base_meta.typeida)
+			src_ty := get_node_type(d.args[0])
+			src_dt := type_to_dt(src_ty)
 			arg := emit_rvalue(ctx, {}, d.args[0])
 
-			if s, ok := typecheck.unpack_type(
-				   base_meta.lit.typeida,
-			   ).(^typecheck.Simd); ok {
+			if s, ok := unpack_type(base_meta.typeida).(^typecheck.Simd); ok {
 				res = backend.graph_add_un_op(
 					ctx,
 					"splat",
@@ -2287,7 +2235,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 					dest_dt,
 					arg,
 				)
-				backend.graph_get(ctx, res).lane = simd_lane_of(s.elem)
+				graph_get(ctx, res).lane = simd_lane_of(s.elem)
 				break match
 			}
 
@@ -2342,8 +2290,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				if src_ty in typecheck.SIGNED_TYPES {
 					op = .Sext
 				}
-				if typecheck.type_size(src_ty) >
-				   typecheck.type_size(base_meta.lit.typeida) {
+				if type_size(src_ty) > type_size(base_meta.typeida) {
 					op = .Cast
 				}
 				res = backend.graph_add_un_op(ctx, "cst", op, dest_dt, arg)
@@ -2481,7 +2428,7 @@ emit_call :: proc(
 				}
 			}
 
-			ty := typecheck.get_node_type(arg)
+			ty := get_node_type(arg)
 			vl := emit_nodes(ctx, {}, arg)
 			lower_call_arg(ctx, args, &lctx, ty, vl)
 		}
@@ -2513,7 +2460,7 @@ emit_call :: proc(
 	call := backend.graph_add_call(ctx, "call", args[:ln], u32(prc_id))
 	backend.graph_extra(ctx, call, backend.Call).imported = imported
 	backend.graph_extra(ctx, call, backend.Call).indirect = prc_id == 0
-	cnode := backend.graph_get(ctx, call)
+	cnode := graph_get(ctx, call)
 	cnode.input_count = u16(lctx.i)
 	for arg in args[CALL_PREFIX:ln] {
 		backend.graph_unpin(ctx, arg)
@@ -2529,7 +2476,7 @@ emit_call :: proc(
 
 	for r in results {
 		if r.id == 0 do continue
-		backend.graph_expand(ctx, r.id)
+		graph_expand(ctx, r.id)
 	}
 
 	for j in 0 ..< len(rabi.reg_rets) {
@@ -2537,10 +2484,10 @@ emit_call :: proc(
 
 		ty := rets[res_idx]
 		dest := out_slots != nil ? out_slots[res_idx] : prop_dest
-		dt := typecheck.type_to_dt(ty)
+		dt := type_to_dt(ty)
 
 		if dt == .Void {
-			size := typecheck.type_size(ty)
+			size := type_size(ty)
 			d := dest != 0 ? dest : alloca(ctx, "sret", ty, zeroed = false)
 
 			for i in 0 ..< (size + 7) / 8 {

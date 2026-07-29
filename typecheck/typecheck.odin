@@ -17,6 +17,10 @@ import "core:slice"
 import "core:strconv"
 import "core:strings"
 
+Call :: backend.Call
+Node_ID :: backend.Node_ID
+Call_Conv :: backend.Call_Conv
+
 MODULE_INTRINSICS :: 0
 
 Ty_Propagation :: struct {
@@ -37,7 +41,7 @@ Mems :: struct {
 
 Target :: struct {
 	name: string,
-	cc:   ^backend.Call_Conv,
+	cc:   ^Call_Conv,
 	spec: ^backend.Node_Spec,
 }
 
@@ -45,14 +49,14 @@ Gen_Ctx :: struct {
 	using global: ^Global_Ctx,
 	using types:  ^Types,
 	using graph:  backend.Graph,
-	node_scope:   backend.Node_ID,
+	node_scope:   Node_ID,
 	mem_slot:     int,
 	loop:         ^Loop_State,
 	file:         ^ast.File,
 	file_id:      File_ID,
 	module:       Module_ID,
 	prc:          Proc_ID,
-	ret_ptrs:     []backend.Node_ID,
+	ret_ptrs:     []Node_ID,
 	poly_types:   #soa[dynamic]Poly_Entry,
 	slocs:        map[backend.Sloc]backend.D_Node_ID,
 	eval_depth:   int,
@@ -955,7 +959,7 @@ call_sig :: proc(ctx: ^Gen_Ctx, node: ^ast.Node) -> (^Proc_Type, bool) {
 
 Varuable_Idx :: union #no_nil {
 	int,
-	backend.Node_ID,
+	Node_ID,
 	Lit,
 }
 

@@ -7,6 +7,10 @@ import "core:fmt"
 import "core:mem"
 import "core:slice"
 
+Local :: backend.Local
+Node_ID :: backend.Node_ID
+graph_expand :: backend.graph_expand
+
 memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 	assert(graph.node_spec == &SPEC)
 
@@ -21,22 +25,22 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 	total := 0
 	mismatches := 0
 	sroa: for mout in backend.graph_outs(graph, emem) {
-		mnode := backend.graph_expand(graph, mout.id)
+		mnode := graph_expand(graph, mout.id)
 		if mnode.itype != .Local do continue
 
 		total += 1
 
-		slot_size := backend.graph_extra(graph, mnode, backend.Local).size
+		slot_size := backend.graph_extra(graph, mnode, Local).size
 
 		assert(len(mnode.outs) == 1)
-		local_addr := backend.graph_expand(graph, mnode.outs[0].id)
+		local_addr := graph_expand(graph, mnode.outs[0].id)
 
 		assert(local_addr.itype == .Local_Addr)
 
 		Slot :: struct {
 			start: i32,
 			end:   i32,
-			local: backend.Node_ID,
+			local: Node_ID,
 		}
 
 		slots: [dynamic; 8]Slot
@@ -47,7 +51,7 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 			size := backend.mem_op_size(graph, out.id) or_continue sroa
 			if i32(iter.offset + size) > slot_size do continue sroa
 			if out.idx != 2 do continue sroa
-			onode := backend.graph_get(graph, out.id)
+			onode := graph_get(graph, out.id)
 			if onode.itype == .Copy || onode.itype == .Set do continue sroa
 
 			new_slot := Slot {
@@ -78,14 +82,14 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 
 		for &slot in slots {
 			local := backend.graph_add_local(graph, "sroal", emem)
-			backend.graph_extra(graph, local, backend.Local).size =
+			backend.graph_extra(graph, local, Local).size =
 				slot.end - slot.start
 			slot.local = backend.graph_add_local_addr(graph, "sroadr", local)
 		}
 
 		Op :: struct {
-			local: backend.Node_ID,
-			id:    backend.Node_ID,
+			local: Node_ID,
+			id:    Node_ID,
 		}
 
 		ops: [dynamic]Op
@@ -111,18 +115,18 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 
 	Edit_Slot :: struct {
 		prev: u32,
-		node: backend.Node_ID,
+		node: Node_ID,
 	}
 
 	Value_Entry :: bit_field u32 {
-		node:    backend.Node_ID | 31,
-		is_loop: bool            | 1,
+		node:    Node_ID | 31,
+		is_loop: bool    | 1,
 	}
 
 	Ctx :: struct {
 		using graph:       ^backend.Graph,
 		slot_count:        u32,
-		deleted_lazy_phys: [dynamic]backend.Node_ID,
+		deleted_lazy_phys: [dynamic]Node_ID,
 		joins:             [dynamic]Join,
 		loops:             [dynamic]Loop,
 		scope:             []Value_Entry,
@@ -131,7 +135,7 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 
 	Loop :: struct {
 		scope:     []Value_Entry,
-		loop_node: backend.Node_ID,
+		loop_node: Node_ID,
 		done:      bool,
 	}
 
@@ -140,8 +144,8 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 		filled:  int,
 	}
 
-	edit_node_id :: proc(ctx: ^Ctx, id: backend.Node_ID, new: u32) {
-		node := backend.graph_get(ctx, id)
+	edit_node_id :: proc(ctx: ^Ctx, id: Node_ID, new: u32) {
+		node := graph_get(ctx, id)
 		ctx.slot_idx[node.gvn] = new + 1
 	}
 
@@ -161,7 +165,7 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 	ctx.graph.dont_delete = true
 
 	collect_rename_slot: for mout in backend.graph_outs(graph, emem) {
-		mnode := backend.graph_expand(graph, mout.id)
+		mnode := graph_expand(graph, mout.id)
 		if mnode.itype != .Local do continue
 
 		assert(len(mnode.outs) == 1)
@@ -171,7 +175,7 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 		for op in backend.offset_iter_next(graph, &iter) {
 			if iter.offset != 0 do continue collect_rename_slot
 			if op.idx != 2 do continue collect_rename_slot
-			onode := backend.graph_get(graph, op.id)
+			onode := graph_get(graph, op.id)
 			if onode.itype == .Copy ||
 			   onode.itype == .Set {continue collect_rename_slot}
 			backend.mem_op_size(graph, op.id) or_continue collect_rename_slot
@@ -191,17 +195,17 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 	ctx.dont_delete = false
 
 	for phi in ctx.deleted_lazy_phys {
-		if backend.graph_get(graph, phi).rtype == backend.DEAD_NODE_KIND do continue
+		if graph_get(graph, phi).rtype == backend.DEAD_NODE_KIND do continue
 		backend.graph_subsume(graph, backend.graph_inps(graph, phi)[1], phi)
 	}
 
 	if !ODIN_DISABLE_ASSERT {
-		wl: queue.Queue(backend.Node_ID)
+		wl: queue.Queue(Node_ID)
 		queue.init(&wl, int(graph.gvn))
 		backend.collect_nodes(graph, &wl)
 
 		for n in wl.data[:wl.len] {
-			node := backend.graph_expand(graph, n)
+			node := graph_expand(graph, n)
 			node.in_worklist = false
 			fmt.assertf(
 				u16(node.itype) < len(backend.IDEAL_CLASSES),
@@ -213,10 +217,10 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 
 	return true
 
-	walk_thread :: proc(ctx: ^Ctx, thread: backend.Node_ID) {
+	walk_thread :: proc(ctx: ^Ctx, thread: Node_ID) {
 		cursor := thread
 		for {
-			cnode := backend.graph_expand(ctx, cursor)
+			cnode := graph_expand(ctx, cursor)
 			pcursor := cursor
 			cursor = 0
 
@@ -243,7 +247,7 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 
 			outs: [dynamic]backend.Node_Output
 			for cout in slice.clone(cnode.outs) {
-				conode := backend.graph_expand(ctx, cout.id)
+				conode := graph_expand(ctx, cout.id)
 				#partial switch conode.itype {
 				case .Load:
 					id := get_edited_node_idx(ctx, conode) or_break
@@ -254,7 +258,7 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 				}
 			}
 
-			cnode = backend.graph_expand(ctx, pcursor)
+			cnode = graph_expand(ctx, pcursor)
 
 			original_scope := ctx.scope
 
@@ -268,12 +272,12 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 					ctx.scope = slice.clone(original_scope)
 				}
 
-				conode := backend.graph_expand(ctx, cout.id)
+				conode := graph_expand(ctx, cout.id)
 				#partial switch conode.itype {
 				case .Local:
 				case .Load:
 				case .Phi:
-					reg := backend.graph_get(ctx, conode.inps[0])
+					reg := graph_get(ctx, conode.inps[0])
 
 					if reg.itype == .Region {
 						id, ok := get_edited_node_idx(ctx, conode)
@@ -330,11 +334,8 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 									backend.graph_add_raw(
 										ctx,
 										u16(backend.Ideal_Node_Type.Phi),
-										backend.graph_get(ctx, res.node).dt,
-										mem.slice_data_cast(
-											[]backend.Node_ID,
-											sloter,
-										),
+										graph_get(ctx, res.node).dt,
+										mem.slice_data_cast([]Node_ID, sloter),
 									),
 								)
 							}
@@ -353,7 +354,7 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 							for &s, i in scope {
 								if loop_scope[i] != {} {
 									s = Value_Entry {
-										node    = backend.Node_ID(id),
+										node    = Node_ID(id),
 										is_loop = true,
 									}
 								}
@@ -375,7 +376,7 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 								if init.is_loop do continue
 								if init.node == 0 do continue
 
-								inode := backend.graph_expand(ctx, init.node)
+								inode := graph_expand(ctx, init.node)
 								if btype(inode) != .Lazy_Phi do continue
 
 								for bnode.is_loop {
@@ -428,12 +429,12 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 				ctx: ^Ctx,
 				scope: []Value_Entry,
 				#any_int idx: int,
-			) -> backend.Node_ID {
+			) -> Node_ID {
 				val := scope[idx].node
 				if scope[idx].is_loop {
 					loop := &ctx.loops[val]
 					val = get_scope_value(ctx, loop.scope, idx)
-					vnode := backend.graph_expand(ctx, val)
+					vnode := graph_expand(ctx, val)
 					if (btype(vnode) != .Lazy_Phi ||
 						   vnode.inps[0] != loop.loop_node) &&
 					   !loop.done {

@@ -35,15 +35,15 @@ when SPEC_NOT_PRESENT {
 		graph: ^backend.Graph,
 		name: string,
 		dt: backend.Node_Datatype,
-		region: backend.Node_ID,
-		lhs: backend.Node_ID,
-	) -> backend.Node_ID {return 0}
+		region: Node_ID,
+		lhs: Node_ID,
+	) -> Node_ID {return 0}
 
 	graph_add_scope :: proc(
 		graph: ^backend.Graph,
 		name: string,
-		cfg: backend.Node_ID,
-	) -> backend.Node_ID {return 0}
+		cfg: Node_ID,
+	) -> Node_ID {return 0}
 
 	when !GEN_SPEC {
 		#panic("Missing generated files, run `" + COMMAND + "`")

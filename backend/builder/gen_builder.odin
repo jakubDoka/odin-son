@@ -19,13 +19,9 @@ when GEN_SPEC {
 				classes           = {
 					backend.class_array(
 						&backend.IDEAL_CLASSES,
-						&IDEAL_REG_CLASSES,
 						gen_ctors = false,
 					),
-					backend.class_array(
-						&BUILDER_CLASSES,
-						&BUILDER_REG_CLASSES,
-					),
+					backend.class_array(&BUILDER_CLASSES),
 				},
 				intern            = true,
 			},

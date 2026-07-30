@@ -1346,7 +1346,6 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			zero := backend.graph_add_c_int(ctx, "zero", dt, 0)
 			res = backend.graph_add_bin_op(ctx, "lnot", .Eq, dt, operand, zero)
 		case .Sub, .Xor:
-			oty := get_node_type(d.expr)
 			operand := emit_rvalue(ctx, {}, d.expr)
 
 			if d.op.kind == .Sub && dt in backend.FLOAT_DTS {

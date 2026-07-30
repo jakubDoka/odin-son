@@ -188,16 +188,12 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 	},
 }
 
-@(rodata)
-IDEAL_REG_CLASSES := [Ideal_Node_Type]Reg_Class_Spec{}
-
 Inherit_Table_Elem :: u16
 Mask_Intern_Key :: u8
 
 Class_Array :: struct {
 	enm:       typeid,
 	ids:       []Class_Spec,
-	regs:      []Reg_Class_Spec,
 	gen_ctors: bool,
 }
 
@@ -213,13 +209,6 @@ Class_Spec :: struct {
 	flags:          Class_Flags,
 	extra_capacity: int,
 	no_ctor:        bool,
-}
-
-Reg_Class_Spec :: struct {
-	inplace_slot_idx: Maybe(int),
-	input_start_idx:  int,
-	clobbers:         [Reg_Kind]i64,
-	reg_masks:        [Reg_Kind][][]i64,
 }
 
 SPEC_NOT_PRESENT :: (#load("node_specs.odin", string) or_else "") == ""
@@ -271,7 +260,7 @@ when GEN_SPEC {
 				package_name = "backend",
 				gen_command = COMMAND,
 				name = "Root",
-				classes = {class_array(&IDEAL_CLASSES, &IDEAL_REG_CLASSES)},
+				classes = {class_array(&IDEAL_CLASSES)},
 				no_spec_tables = true,
 			},
 			"backend/node_specs.odin",

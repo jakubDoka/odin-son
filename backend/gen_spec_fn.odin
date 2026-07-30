@@ -2,7 +2,6 @@
 package backend
 
 import "core:fmt"
-import "core:mem"
 import "core:os"
 import "core:reflect"
 import "core:slice"
@@ -20,19 +19,14 @@ Spec_Gen_Input :: struct {
 	cc_table:             []Call_Conv,
 	intern:               bool,
 	no_spec_tables:       bool,
+	does_regalloc:        bool,
 }
 
 class_array :: proc(
 	arr: ^[$E]Class_Spec,
-	regalloc: ^[E]Reg_Class_Spec,
 	gen_ctors: bool = true,
 ) -> Class_Array {
-	return {
-		E,
-		slice.clone(slice.enumerated_array(arr)),
-		slice.enumerated_array(regalloc),
-		gen_ctors,
-	}
+	return {E, slice.clone(slice.enumerated_array(arr)), gen_ctors}
 }
 
 qualify_type :: proc(qual: string, locals: []typeid, id: typeid) -> string {
@@ -78,20 +72,7 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 
 	groups: map[string]map[Group_Member]struct{}
 
-	reg_mask_lengths: [Reg_Kind]int
-	// NOTE: the string here is really a view of []int
-	interned_reg_masks: map[string]int
 	inheritable: map[typeid]int
-
-	interned_reg_masks[""] = 0
-
-	mask_key :: proc(masks: []i64) -> string {
-		return string(mem.slice_data_cast([]u8, masks))
-	}
-
-	key_mask :: proc(masks: string) -> []i64 {
-		return mem.slice_data_cast([]i64, transmute([]u8)masks)
-	}
 
 	prefix := strings.to_snake_case(spec.name)
 
@@ -122,36 +103,7 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 			}
 		}
 
-		for rclass in classes.regs {
-			for masks, kind in rclass.reg_masks {
-				for mask in masks {
-					reg_mask_lengths[kind] = max(
-						reg_mask_lengths[kind],
-						len(mask),
-					)
-				}
-			}
-		}
 	}
-
-	for classes in spec.classes {
-		for rclass in classes.regs {
-			for masks, kind in rclass.reg_masks {
-				for mask in masks {
-					full_mask := make([]i64, reg_mask_lengths[kind])
-					copy(full_mask, mask)
-
-					if mask_key(full_mask) not_in interned_reg_masks {
-						interned_reg_masks[mask_key(full_mask)] = len(
-							interned_reg_masks,
-						)
-					}
-				}
-			}
-		}
-	}
-
-	assert(len(interned_reg_masks) <= 1 << size_of(Mask_Intern_Key) * 8)
 
 	fmt.assertf(
 		len(inheritable) <= size_of(Inherit_Table_Elem) * 8,
@@ -182,46 +134,13 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 		}
 		os.write_string(file, "\t},\n")
 
-		fmt.fprintf(file, "\tclass_lengths = %w,\n", reg_mask_lengths)
 		fmt.fprintf(
 			file,
 			"\tdatatype_to_reg_kind = %w,\n",
 			spec.datatype_to_reg_kind,
 		)
 
-		os.write_string(file, "\tclobbers = {\n")
-		for classes in spec.classes {
-			for class, i in classes.regs {
-				fmt.fprintfln(
-					file,
-					"\t\t%w, // %v",
-					class.clobbers,
-					reflect.enum_field_names(classes.enm)[i],
-				)
-			}
-		}
-		os.write_string(file, "\t},\n")
-
-		interned_reg_masks_arr := make([][]i64, len(interned_reg_masks))
-		for mask, idx in interned_reg_masks {
-			interned_reg_masks_arr[idx] = key_mask(mask)
-		}
-
-		os.write_string(file, "\tinplace_slot_idxs = {\n")
-		for classes in spec.classes {
-			for class, i in classes.regs {
-				fmt.fprintf(
-					file,
-					"\t\t%v, //%v\n",
-					class.inplace_slot_idx.? or_else -16,
-					reflect.enum_field_names(classes.enm)[i],
-				)
-			}
-		}
-		os.write_string(file, "\t},\n")
-
-		if reg_mask_lengths != {} {
-			fmt.fprintf(file, "\treg_mask_of = %v_reg_mask_of,\n", prefix)
+		if spec.does_regalloc {
 			fmt.fprintf(file, "\tcollect_meta = %v_collect_meta,\n", prefix)
 		}
 		fmt.fprintf(file, "\temit_function = %v_emit_function,\n", prefix)
@@ -232,19 +151,6 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 			prefix,
 		)
 		fmt.fprintf(file, "\tintern = %v,\n", spec.intern)
-
-		os.write_string(file, "\tfirst_input_idxs = {\n")
-		for classes in spec.classes {
-			for class, i in classes.regs {
-				fmt.fprintf(
-					file,
-					"\t\t%v, //%v\n",
-					class.input_start_idx,
-					reflect.enum_field_names(classes.enm)[i],
-				)
-			}
-		}
-		os.write_string(file, "\t},\n")
 
 		os.write_string(file, "\tinheritance_table = {\n")
 		for classes in spec.classes {
@@ -383,7 +289,7 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 		)
 	}
 
-	if reg_mask_lengths != {} {
+	if spec.does_regalloc {
 		fmt.fprintfln(
 			file,
 			`

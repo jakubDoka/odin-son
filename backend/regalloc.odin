@@ -32,26 +32,12 @@ reg_mask_clone :: proc(rm: Reg_Mask) -> (res: Reg_Mask) {
 	return
 }
 
-reg_mask_single :: proc(ra: ^Regalloc, reg: Reg) -> (rm: Reg_Mask) {
-	rm = reg_mask_empty(ra, reg.kind)
-	reg_mask_set(rm, reg.index)
-	return
-}
-
 reg_mask_set :: proc(rm: Reg_Mask, #any_int index: u32, value := true) {
 	assert(index < rm.bit_length)
 	if value {
 		rm.masks[index / MASK_SIZE] |= 1 << uint(index % MASK_SIZE)
 	} else {
 		rm.masks[index / MASK_SIZE] &= ~(1 << uint(index % MASK_SIZE))
-	}
-}
-
-reg_mask_empty :: proc(ra: ^Regalloc, kind: Reg_Kind) -> Reg_Mask {
-	return {
-		masks = raw_data(make([]i64, ra.class_lengths[kind])),
-		bit_length = u32(ra.class_lengths[kind]) * MASK_SIZE,
-		kind = kind,
 	}
 }
 
@@ -119,21 +105,9 @@ reg_mask_contains :: proc(bset: Reg_Mask, #any_int index: u32) -> bool {
 }
 
 Regalloc_Spec :: struct {
-	class_lengths:        [Reg_Kind]u8,
 	datatype_to_reg_kind: [Node_Datatype]Reg_Kind,
-	inplace_slot_idxs:    []i8,
-	first_input_idxs:     []u8,
-	clobbers:             [][Reg_Kind]i64,
-	interned_reg_masks:   [][^]i64,
-	reg_masks:            [][][Reg_Kind]Mask_Intern_Key,
 	cc_table:             []Call_Conv,
 	call_clobbers:        [][Reg_Kind]i64,
-	reg_mask_of:          proc(
-		_: ^Graph,
-		_: ^Regalloc,
-		_: Node_ID,
-		_: int,
-	) -> Reg_Mask,
 	collect_meta:         proc(
 		graph: ^Graph,
 		ra: ^Regalloc,
@@ -304,16 +278,6 @@ regalloc_collect_meta :: proc(
 }
 
 MASK_SIZE :: size_of(int) * 8
-
-reg_mask_of :: proc(
-	graph: ^Graph,
-	re: ^Regalloc,
-	id: Node_ID,
-	#any_int idx: int,
-	readonly := false,
-) -> Reg_Mask {
-	panic("")
-}
 
 Lrg_Meta :: bit_field u32 {
 	index: u32 | 24,

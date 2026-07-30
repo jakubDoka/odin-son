@@ -17,7 +17,6 @@ when GEN_SPEC {
 				classes = {
 					backend.class_array(
 						&backend.IDEAL_CLASSES,
-						&ANAL_IDEAL_REG_CLASSES,
 						gen_ctors = false,
 					),
 				},

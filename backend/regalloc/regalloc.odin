@@ -399,24 +399,16 @@ regalloc_round :: proc(
 				}
 			}
 
-			clobbers := ra.clobbers[inode.rtype]
+			clobbers_tmp := ctx.metas[inode.gvn].clobbers
+			clobbers := [backend.Reg_Kind]i64 {
+				.Vector  = i64(clobbers_tmp[.Vector]),
+				.General = i64(clobbers_tmp[.General]),
+			}
 			if inode.itype == .Call {
 				call := backend.graph_extra(graph, inode, Call)
 				clobbers = ra.call_clobbers[call.ccid]
 			} else if inode.itype in backend.CALLS {
 				clobbers = ra.call_clobbers[0]
-			} else {
-				oclobbers := ctx.metas[inode.gvn].clobbers
-				for a, kind in clobbers {
-					fmt.assertf(
-						i64(oclobbers[kind]) == a,
-						"%v == %v %v %v",
-						i64(oclobbers[kind]),
-						a,
-						inode,
-						ctx.metas[inode.gvn],
-					)
-				}
 			}
 
 			if clobbers != {} {
@@ -793,10 +785,6 @@ regalloc_round :: proc(
 							backend.graph_inps(ctx.graph, onode.inps[0])[out.idx - 1]
 						oblock = get_node_block(ctx, last)
 					}
-
-					// TODO: we request reg masks needlessly since we never
-					// modify them, maybe if it shows up, adda readonly flag to
-					// the backend.reg_mask_of
 
 					if redirect == m {
 						redirect = split_after(ctx, "kla", m)

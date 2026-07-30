@@ -11,9 +11,6 @@ COMMAND :: "odin run backend/anal -define:ANAL_GEN_SPEC=true"
 
 SPEC_NOT_PRESENT :: (#load("node_specs.odin", string) or_else "") == ""
 
-@(rodata)
-ANAL_IDEAL_REG_CLASSES := [backend.Ideal_Node_Type]backend.Reg_Class_Spec{}
-
 anal_peep :: proc(
 	ctx: backend.Peep_Ctx,
 	node: backend.Expanded_Node,

@@ -52,9 +52,3 @@ when SPEC_NOT_PRESENT {
 	@(rodata)
 	BUILDER_CLASSES := [Builder_Node_Type]backend.Class_Spec{}
 }
-
-@(rodata)
-BUILDER_REG_CLASSES := [Builder_Node_Type]backend.Reg_Class_Spec{}
-
-@(rodata)
-IDEAL_REG_CLASSES := [backend.Ideal_Node_Type]backend.Reg_Class_Spec{}

@@ -773,6 +773,25 @@ graph_schedule_peeps :: proc(graph: ^Graph, schedule: ^Graph_Schedule) {
 	)
 }
 
+graph_has_unreachable_return :: proc(graph: ^Graph) -> bool {
+	inp := graph_inps(graph, graph.end)[0]
+	cfg := graph_expand(graph, inp)
+	if cfg.itype != .Trap {
+		if cfg.itype == .Region {
+			for inp in cfg.inps {
+				if graph_get(graph, inp).itype != .Trap {
+					peep_ctx_add_trigger({graph}, inp, graph.end)
+					return false
+				}
+			}
+		} else {
+			return false
+		}
+	}
+
+	return true
+}
+
 graph_iter_peeps :: proc(ctx: Peep_Ctx) -> (optimized: bool) {
 	graph := ctx.graph
 

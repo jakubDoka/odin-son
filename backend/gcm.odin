@@ -157,6 +157,17 @@ graph_schedule :: proc(
 			remove_count,
 			len(end.inps),
 		)
+
+		if graph_has_unreachable_return(graph) {
+			for rv, i in end.inps[RET_PREFIX:] {
+				graph_remove_output(
+					graph,
+					rv,
+					{id = graph.end, idx = i + RET_PREFIX},
+				)
+			}
+			end.input_count = RET_PREFIX
+		}
 	}
 
 	tree_depth :: proc(tree: ^Loop_Tree) -> u32 {

@@ -152,6 +152,14 @@ regalloc_round :: proc(
 				}
 
 				if inode.inplace_slot >= 0 {
+					fmt.assertf(
+						inode.inplace_slot ==
+						int(ctx.metas[inode.gvn].in_place_slot),
+						"%v == %v %v",
+						inode.inplace_slot,
+						int(ctx.metas[inode.gvn].in_place_slot),
+						inode,
+					)
 					inplace_node := graph_get(
 						graph,
 						inode.inps[inode.inplace_slot],
@@ -179,6 +187,10 @@ regalloc_round :: proc(
 				}
 
 				mask := backend.reg_mask_of(graph, ra, instr, 0)
+				umask := backend.rm_get(ctx.ra, ctx.metas[inode.gvn].out)
+
+				assert_matching_masks(mask, umask, inode)
+
 				if lrg == nil {
 					lrg = &lrgs[used_lrgs]
 					lrg.node = instr
@@ -207,6 +219,8 @@ regalloc_round :: proc(
 						o.id,
 						o.idx + 1 - onode.data_start,
 					)
+					oumask := rm_getu(ctx, onode, o.idx)
+					assert_matching_masks(umask, oumask, onode)
 					intersect(lrg, umask)
 				}
 
@@ -412,6 +426,18 @@ regalloc_round :: proc(
 				clobbers = ra.call_clobbers[call.ccid]
 			} else if inode.itype in backend.CALLS {
 				clobbers = ra.call_clobbers[0]
+			} else {
+				oclobbers := ctx.metas[inode.gvn].clobbers
+				for a, kind in clobbers {
+					fmt.assertf(
+						i64(oclobbers[kind]) == a,
+						"%v == %v %v %v",
+						i64(oclobbers[kind]),
+						a,
+						inode,
+						ctx.metas[inode.gvn],
+					)
+				}
 			}
 
 			if clobbers != {} {
@@ -1002,12 +1028,20 @@ regalloc_round :: proc(
 						in_slot_id := inp.inps[inp.inplace_slot]
 						in_slot_node := graph_expand(graph, in_slot_id)
 
-						umask := backend.reg_mask_of(
+						oumask := backend.reg_mask_of(
 							graph,
 							ra,
 							inode.inps[0],
 							inp.inplace_slot + 1 - inp.data_start,
 						)
+
+						umask := rm_getu(
+							ctx,
+							inp,
+							ctx.metas[inp.gvn].in_place_slot,
+						)
+
+						assert_matching_masks(oumask, umask, inp)
 
 						overlaps := backend.reg_mask_contains(
 							umask,
@@ -1043,6 +1077,9 @@ regalloc_round :: proc(
 							o.idx + 1 - onode.data_start,
 						)
 
+						oumask := rm_getu(ctx, onode, o.idx)
+						assert_matching_masks(umask, oumask, onode)
+
 						overlaps := backend.reg_mask_contains(
 							umask,
 							res[inp.gvn].index,
@@ -1071,6 +1108,46 @@ regalloc_round :: proc(
 	}
 
 	return
+
+	assert_matching_masks :: proc(
+		a, b: backend.Reg_Mask,
+		node: ^backend.Node,
+	) {
+		fmt.assertf(
+			backend.reg_mask_intersection_pop_count(a, b) ==
+			backend.reg_mask_pop_count(b),
+			"%v != %v %v",
+			a,
+			b,
+			node,
+		)
+	}
+
+	rm_getu :: proc(
+		ctx: Ctx,
+		node: ^backend.Node,
+		#any_int pos: int,
+	) -> backend.Reg_Mask {
+		meta := &ctx.metas[node.gvn]
+		idx := i8(pos) - i8(meta.input_start)
+		if !(0 <= idx && int(idx) < len(meta.masks)) {
+			backend.graph_display(
+				os.to_writer(os.stderr),
+				ctx.graph,
+				ctx.sched,
+			)
+		}
+		fmt.assertf(
+			0 <= idx && int(idx) < len(meta.masks),
+			"%v %v %v %v",
+			node,
+			pos,
+			meta.input_start,
+			len(meta.masks),
+		)
+		umask_idx := meta.masks[idx]
+		return backend.rm_get(ctx.ra, umask_idx)
+	}
 
 	@(disabled = ODIN_DISABLE_ASSERT)
 	verify_alloc_integrity :: proc(ctx: Ctx, res: []backend.Reg) {
@@ -1229,17 +1306,22 @@ regalloc_round :: proc(
 		graph := ctx.graph
 		fnode := graph_get(graph, use)
 
-		if backend.graph_has_flag(graph, fnode, .Clonable) ||
-		   (backend.reg_mask_first_set(
-					   backend.reg_mask_of(
-						   ctx.graph,
-						   ctx.ra,
-						   use,
-						   0,
-						   readonly = true,
-					   ),
-				   ) or_else 0) >=
-			   x64.GPA_REG_COUNT {
+		if backend.graph_has_flag(graph, fnode, .Clonable) {
+			return use
+		}
+
+		umask := backend.reg_mask_of(
+			ctx.graph,
+			ctx.ra,
+			use,
+			0,
+			readonly = true,
+		)
+
+		oumask := backend.rm_get(ctx.ra, ctx.metas[fnode.gvn].out)
+		assert_matching_masks(oumask, umask, fnode)
+
+		if (backend.reg_mask_first_set(umask) or_else 0) >= x64.GPA_REG_COUNT {
 			return use
 		}
 

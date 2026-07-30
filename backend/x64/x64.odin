@@ -38,8 +38,6 @@ x64_extra :: #force_inline proc(
 
 NOOP_REX :: 0b0100_0000
 
-GPA_MASK :: []i64{0xFFFF & ~i64(1 << uint(RSP))}
-GPA_SPILL_MASK :: []i64{~i64(1 << uint(RSP))}
 NO_INDEX :: RSP
 GPA_RET_MASK :: []i64{1 << uint(RAX)}
 GPA_RET_MASK_SEC :: []i64{1 << uint(RDX)}
@@ -74,6 +72,8 @@ XMM13 :: Reg(VEC_BANK | 13)
 XMM14 :: Reg(VEC_BANK | 14)
 XMM15 :: Reg(VEC_BANK | 15)
 
+GPA_MASK :: []i64{0xFFFF & ~i64(1 << uint(RSP))}
+GPA_SPILL_MASK :: []i64{~i64(1 << uint(RSP))}
 XMM_MASK :: []i64{0xFFFF}
 XMM_SPILL_MASK :: []i64{~i64(0)}
 
@@ -1377,9 +1377,18 @@ GPA_MASK_IDX :: backend.RM_Intern_Idx{}
 XMM_MASK_IDX :: backend.RM_Intern_Idx {
 	kind = .Vector,
 }
+GPA_SPILL_MASK_IDX :: backend.RM_Intern_Idx {
+	index = 1,
+}
+XMM_SPILL_MASK_IDX :: backend.RM_Intern_Idx {
+	kind  = .Vector,
+	index = 1,
+}
 
+@(rodata)
 GPA_MASKS := [6]backend.RM_Intern_Idx{}
 
+@(rodata)
 XMM_MASKS := [6]backend.RM_Intern_Idx {
 	XMM_MASK_IDX,
 	XMM_MASK_IDX,
@@ -1389,12 +1398,53 @@ XMM_MASKS := [6]backend.RM_Intern_Idx {
 	XMM_MASK_IDX,
 }
 
+@(rodata)
+GPA_SPILL_MASKS := [6]backend.RM_Intern_Idx {
+	GPA_SPILL_MASK_IDX,
+	GPA_SPILL_MASK_IDX,
+	GPA_SPILL_MASK_IDX,
+	GPA_SPILL_MASK_IDX,
+	GPA_SPILL_MASK_IDX,
+	GPA_SPILL_MASK_IDX,
+}
+
+@(rodata)
+XMM_SPILL_MASKS := [6]backend.RM_Intern_Idx {
+	XMM_SPILL_MASK_IDX,
+	XMM_SPILL_MASK_IDX,
+	XMM_SPILL_MASK_IDX,
+	XMM_SPILL_MASK_IDX,
+	XMM_SPILL_MASK_IDX,
+	XMM_SPILL_MASK_IDX,
+}
+
 x64_meta_of :: proc(
 	graph: ^backend.Graph,
 	ra: ^backend.Regalloc,
 	node: backend.Expanded_Node,
 	_: $T,
 ) -> backend.Regalloc_Node_Meta {
+	@(static, rodata)
+	GPA_MASK := [?]i64{0xFFFF & ~i64(1 << uint(RSP))}
+	@(static, rodata)
+	GPA_SPILL_MASK := [?]i64{~i64(1 << uint(RSP))}
+	@(static, rodata)
+	XMM_MASK := [?]i64{0xFFFF}
+	@(static, rodata)
+	XMM_SPILL_MASK := [?]i64{~i64(0)}
+
+	@(static, rodata)
+	GPA_DIV_MASK := [?]i64 {
+		0xFFFF &
+		~i64(1 << uint(RSP)) &
+		~i64(1 << uint(RAX)) &
+		~i64(1 << uint(RDX)),
+	}
+
+	assert(rslice(ra, .General, GPA_MASK[:]) == GPA_MASK_IDX)
+	assert(rslice(ra, .Vector, XMM_MASK[:]) == XMM_MASK_IDX)
+	assert(rslice(ra, .General, GPA_SPILL_MASK[:]) == GPA_SPILL_MASK_IDX)
+	assert(rslice(ra, .Vector, XMM_SPILL_MASK[:]) == XMM_SPILL_MASK_IDX)
 
 	single :: backend.rm_intern_single
 	rslice :: backend.rm_intern_slice
@@ -1410,9 +1460,17 @@ x64_meta_of :: proc(
 		.Vector  = XMM_MASKS[:],
 	}
 
+	smasks := [backend.Reg_Kind][]backend.RM_Intern_Idx {
+		.General = GPA_SPILL_MASKS[:],
+		.Vector  = XMM_SPILL_MASKS[:],
+	}
+
 	nkind := ra.datatype_to_reg_kind[node.dt]
 	nmasks := masks[nkind]
 	out := nmasks[0]
+
+	snmasks := smasks[nkind]
+	sout := snmasks[0]
 
 	mem_op: ^X64_Mem_Op = x64_extra(graph, node, X64_Mem_Op)
 
@@ -1469,31 +1527,39 @@ x64_meta_of :: proc(
 		return {
 			out = GPA_MASK_IDX,
 			masks = dup({GPA_MASK_IDX, single(ra, RCX)}),
+			in_place_slot = 1,
 		}
 	case .Div, .U_Div:
 		rax := single(ra, RAX)
 		return {
 			out = rax,
-			masks = dup({rax, rslice(ra, .General, GPA_DIV_MASK)}),
-			clobbers = #partial{.General = 1 << RCX.index},
+			masks = dup({rax, rslice(ra, .General, GPA_DIV_MASK[:])}),
+			clobbers = #partial{.General = 1 << uint(RDX)},
+			in_place_slot = 1,
 		}
 	case .Rem, .U_Rem:
 		return {
-			out = single(ra, RCX),
-			masks = dup({single(ra, RAX), rslice(ra, .General, GPA_DIV_MASK)}),
-			clobbers = #partial{.General = 1 << RAX.index},
+			out = single(ra, RDX),
+			masks = dup(
+				{single(ra, RAX), rslice(ra, .General, GPA_DIV_MASK[:])},
+			),
+			clobbers = #partial{.General = 1 << uint(RAX)},
 		}
 	case .And_Not:
 		return {out = out, masks = nmasks[:2], in_place_slot = 2}
 	case .Split:
-		return {out = out, masks = nmasks[:1]}
+		return {out = sout, masks = snmasks[:1]}
 	case .Phi:
-		if len(nmasks) < len(node.inps) - 1 {
-			elem := out
-			nmasks = make(type_of(nmasks), len(node.inps) - 1)
-			slice.fill(nmasks, elem)
+		if len(snmasks) < len(node.inps) - 1 {
+			elem := sout
+			snmasks = make(type_of(snmasks), len(node.inps) - 1)
+			slice.fill(snmasks, elem)
 		}
-		return {out = out, masks = nmasks[:len(node.inps) - 1]}
+		return {
+			out = sout,
+			masks = snmasks[:len(node.inps) - 1],
+			input_start = 1,
+		}
 	case .Global, .Mem, .Sym, .Local, .Jump, .Always, .Trap:
 		return {input_start = 1}
 	case .Local_Addr:
@@ -1513,22 +1579,23 @@ x64_meta_of :: proc(
 
 		nmasks = make(type_of(nmasks), len(node.inps) - prefix)
 
+		inited := prefix
 		if call != nil && call.indirect {
 			nmasks[0] = GPA_MASK_IDX
-			prefix += 1
+			inited += 1
 		}
 
 		banks := cc.args
 		if node.itype == .Return do banks = ra.rets
 
 		counts: [Reg_Kind]int
-		for n, i in node.inps[prefix:] {
+		for n, i in node.inps[inited:] {
 			rk := graph.datatype_to_reg_kind[graph_get(graph, n).dt]
 			nmasks[i] = single(ra, banks[rk][counts[rk]])
 			counts[rk] += 1
 		}
 
-		return {masks = nmasks, input_start = backend.CALL_PREFIX}
+		return {masks = nmasks, input_start = u8(prefix)}
 	case .Store:
 		return {masks = dup({GPA_MASK_IDX, out}), input_start = 2}
 	case .Load:
@@ -1576,8 +1643,20 @@ x64_meta_of :: proc(
 		masks: [dynamic; 4]backend.RM_Intern_Idx
 		append(&masks, out)
 
+		is_cload := graph_get(graph, node.inps[0]).itype == .Global
+
 		#partial switch xtype(node) {
-		case .X64_Add ..= .X64_Xor, .X64_F_Add ..= .X64_F_Div:
+		case .X64_Shl ..= .X64_U_Shr:
+			masks[0] = single(ra, RCX)
+
+		}
+		#partial switch xtype(node) {
+		case .X64_Add ..=
+		     .X64_Xor,
+		     .X64_F_Add ..=
+		     .X64_F_Div,
+		     .X64_Shl ..=
+		     .X64_U_Shr:
 			switch mem_op.mem_mode {
 			case .None:
 				in_place_slot = 1
@@ -1590,19 +1669,22 @@ x64_meta_of :: proc(
 		case .X64_Neg, .X64_Not:
 			masks = {}
 		case .X64_Fma_213:
+			in_place_slot = 1 + i8(is_cload)
 			append(&masks, out)
 		}
 
 		switch mem_op.mem_mode {
 		case .None:
+			append(&masks, out)
 		case .Dest, .Src:
-			is_cload := graph_get(graph, node.inps[0]).itype == .Global
-
 			if is_cload {
 				start = 1
+				in_place_slot -= 1
 			} else {
 				start = 2
-				start += u8(graph_get(graph, node.inps[start]).dt == .Void)
+				extra_start := graph_get(graph, node.inps[start]).dt == .Void
+				start += u8(extra_start)
+				in_place_slot -= i8(extra_start)
 				if start == 2 {
 					inject_at(&masks, 0, GPA_MASK_IDX)
 				}
@@ -1622,7 +1704,11 @@ x64_meta_of :: proc(
 	case .X64_Lea:
 		return {out = out, masks = nmasks[:1 + int(mem_op.scale != 0)]}
 	case .X64_Load:
-		return {out = out, masks = GPA_MASKS[:1 + int(mem_op.scale != 0)]}
+		return {
+			out = out,
+			masks = GPA_MASKS[:1 + int(mem_op.scale != 0)],
+			input_start = 2,
+		}
 	case .X64_CLoad:
 		return {out = out, input_start = 1}
 	case .X64_Mul8:
@@ -2892,11 +2978,14 @@ x64_emit_instr :: proc(
 			panic("")
 		}
 	case .X64_F_Add ..= .X64_F_Div:
-		// op dst, [$bse + $idx * $scl + $sdis + $dis].
-		dst := reg_of(ctx, node.inps[node.inplace_slot])
-		bse, sdis, id := reg_and_disp_of(ctx, node.inps[node.inplace_slot - 1])
+		is_cload := graph_get(ctx, node.inps[0]).itype == .Global
+		mem_idx := is_cload ? 0 : 2
+
+		dst := reg_of(ctx, node.inps[mem_idx + 1])
+		bse, sdis, id := reg_and_disp_of(ctx, node.inps[mem_idx])
 		dis := mem_op.dis
 
+		// op dst, [$bse + $idx * $scl + $sdis + $dis].
 		rx := rex(dst, bse, idx, false)
 		op := SRC_MODE_OPCODE_TABLE[xtype(node)].opcode
 		emit(ctx.code, {pfx, rx, 0x0f, op})
@@ -3139,20 +3228,7 @@ x64_emit_instr :: proc(
 	case .Return:
 		is_unreachable := true
 
-		cfg := graph_expand(ctx, node.inps[0])
-		if cfg.itype != .Trap {
-			if cfg.itype == .Region {
-				for inp in cfg.inps {
-					if graph_get(ctx, inp).itype != .Trap {
-						is_unreachable = false
-					}
-				}
-			} else {
-				is_unreachable = false
-			}
-		}
-
-		if is_unreachable do break
+		if backend.graph_has_unreachable_return(ctx) do break
 
 		if ctx.stack_size != 0 {
 			// sub rsp, -$ctx.stack_size

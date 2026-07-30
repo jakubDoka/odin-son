@@ -1,6 +1,8 @@
 package backend
 
+import "../vendored/gam/util/bit_arr"
 import "base:intrinsics"
+import "core:fmt"
 import "core:mem"
 import "core:slice"
 
@@ -194,7 +196,15 @@ rm_intern_single :: proc(interner: ^RM_Interner, reg: Reg) -> RM_Intern_Idx {
 		bit_length = interner.mask_len,
 	}
 	reg_mask_set(mask, reg.index)
-	return rm_intern(interner, mask)
+	idx := rm_intern(interner, mask)
+
+	if rm_get(interner, idx).masks == mask.masks {
+		interner.slots[idx.kind][idx.index].id = raw_data(
+			slice.clone(buf[:interner.mask_len / MASK_SIZE]),
+		)
+	}
+
+	return idx
 }
 
 rm_intern :: proc(interner: ^RM_Interner, mask: Reg_Mask) -> RM_Intern_Idx {
@@ -264,12 +274,23 @@ regalloc_collect_meta :: proc(
 ) -> []Regalloc_Node_Meta {
 	slots := make([]Regalloc_Node_Meta, int(graph.gvn) - len(sched.bbs))
 
+	when !ODIN_DISABLE_ASSERT {
+		seen := bit_arr.init(graph.gvn)
+	}
+
 	for bb in sched.bbs {
 		for instr in bb.instrs {
 			inode := graph_expand(graph, instr)
+			when !ODIN_DISABLE_ASSERT {
+				fmt.assertf(bit_arr.set(seen, inode.gvn), "%v", inode)
+			}
 			slots[inode.gvn] = meta_of(graph, ra, inode)
 			slots[inode.gvn].in_place_slot -= 1
-			slots[inode.gvn].in_place_slot += i8(slots[inode.gvn].input_start)
+			if slots[inode.gvn].in_place_slot >= 0 {
+				slots[inode.gvn].in_place_slot += i8(
+					slots[inode.gvn].input_start,
+				)
+			}
 		}
 	}
 

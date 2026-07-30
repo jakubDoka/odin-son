@@ -397,6 +397,7 @@ SPEC := backend.Node_Spec{
 		-16, //X64_Pextr
 	},
 	reg_mask_of = x64_reg_mask_of,
+	collect_meta = x64_collect_meta,
 	emit_function = x64_emit_function,
 	peep = x64_peep_inst,
 	post_schedule_peep = x64_post_schedule_peep_inst,
@@ -1264,6 +1265,17 @@ x64_peep_inst :: proc(ctx: backend.Peep_Ctx, node: backend.Expanded_Node) -> bac
 x64_post_schedule_peep_inst :: proc(
 	ctx: backend.PS_Peep_Ctx, node: backend.Expanded_Node) -> backend.Node_ID {
 	return x64_post_schedule_peep(ctx, node, struct{}{})
+}
+
+
+x64_collect_meta :: proc(ctx: ^backend.Graph,
+	ra: ^backend.Regalloc, sched: ^backend.Graph_Schedule) -> []backend.Regalloc_Node_Meta {
+
+	meta_of :: proc(ctx: ^backend.Graph, ra: ^backend.Regalloc,
+		node: backend.Expanded_Node) -> backend.Regalloc_Node_Meta {
+		return x64_meta_of(ctx, ra, node, struct{}{})
+	}
+	return backend.regalloc_collect_meta(ctx, ra, sched, meta_of)
 }
 
 #assert(size_of(backend.Cfg) % backend.PRECISION == 0)

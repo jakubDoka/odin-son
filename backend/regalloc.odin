@@ -2,6 +2,7 @@ package backend
 
 import "base:intrinsics"
 import "core:mem"
+import "core:slice"
 
 REGLOGS :: #config(REGLOGS, false)
 
@@ -15,7 +16,7 @@ Reg :: bit_field u16 {
 	kind:  Reg_Kind | 4,
 }
 
-// TODO: make this COW
+// TODO: this can be a single pointer
 Reg_Mask :: struct {
 	masks:      [^]i64,
 	kind:       Reg_Kind,
@@ -125,6 +126,11 @@ Regalloc_Spec :: struct {
 		_: Node_ID,
 		_: int,
 	) -> Reg_Mask,
+	collect_meta:         proc(
+		graph: ^Graph,
+		ra: ^Regalloc,
+		sched: ^Graph_Schedule,
+	) -> []Regalloc_Node_Meta,
 }
 
 Param_Spec :: struct {
@@ -135,7 +141,139 @@ Param_Spec :: struct {
 Regalloc :: struct {
 	using spec:  ^Regalloc_Spec,
 	using cc:    ^Call_Conv,
+	using rms:   RM_Interner,
 	param_specs: []Param_Spec,
+}
+
+RM_Interner :: struct {
+	slots:    [Reg_Kind]#soa[]SS_Entry([^]i64),
+	lens:     [Reg_Kind]int,
+	mask_len: u32,
+}
+
+rm_hash :: proc(data: []i64) -> u8 {
+	h: u64 = cast(u64)len(data)
+
+	for x in data {
+		h ~= transmute(u64)x
+		h *= 0x9e3779b185ebca87
+		h ~= h >> 32
+	}
+
+	return max(u8(h), 1)
+}
+
+rm_get :: proc(interner: ^RM_Interner, idx: RM_Intern_Idx) -> Reg_Mask {
+	return {
+		masks = interner.slots[idx.kind][idx.index].id,
+		bit_length = interner.mask_len,
+		kind = idx.kind,
+	}
+}
+
+rm_intern_slice :: proc(
+	interner: ^RM_Interner,
+	kind: Reg_Kind,
+	masks: []i64,
+) -> RM_Intern_Idx {
+	return rm_intern(
+		interner,
+		{
+			kind = kind,
+			masks = raw_data(masks),
+			bit_length = u32(len(masks)) * MASK_SIZE,
+		},
+	)
+}
+
+rm_intern_single :: proc(interner: ^RM_Interner, reg: Reg) -> RM_Intern_Idx {
+	buf: [4]i64
+	mask := Reg_Mask {
+		masks      = raw_data(&buf),
+		kind       = reg.kind,
+		bit_length = interner.mask_len,
+	}
+	reg_mask_set(mask, reg.index)
+	return rm_intern(interner, mask)
+}
+
+rm_intern :: proc(interner: ^RM_Interner, mask: Reg_Mask) -> RM_Intern_Idx {
+	assert(mask.bit_length == interner.mask_len)
+
+	masks := mask.masks[:mask.bit_length / MASK_SIZE]
+	hash := rm_hash(masks)
+
+	slot := &interner.slots[mask.kind]
+	ln := &interner.lens[mask.kind]
+
+	ex, ok := find(slot^, hash, masks)
+	if ok do return {index = ex, kind = mask.kind}
+
+	if ln^ == len(slot) {
+		grow_search_space(
+			slot,
+			len(slot) + size_of(Intern_Vec),
+			context.allocator,
+		)
+	}
+
+	slot[ln^] = {hash, mask.masks}
+	ln^ += 1
+
+	return {index = ln^ - 1, kind = mask.kind}
+
+	find :: proc(
+		l: #soa[]SS_Entry([^]i64),
+		hash: u8,
+		mask: []i64,
+	) -> (
+		int,
+		bool,
+	) {
+		iter := simd_iter_from(l.hash[:len(l)], hash)
+		for idx in simd_iter_next(&iter) {
+			if slice.equal(l.id[idx][:len(mask)], mask) do return idx, true
+		}
+		return -1, false
+	}
+}
+
+RM_Intern_Idx :: bit_field u16 {
+	index: int      | 15,
+	kind:  Reg_Kind | 1,
+}
+
+// TODO: compress this
+Regalloc_Node_Meta :: struct {
+	masks:         []RM_Intern_Idx,
+	out:           RM_Intern_Idx,
+	in_place_slot: i8,
+	input_start:   u8,
+	clobbers:      [Reg_Kind]u16,
+}
+
+regalloc_collect_meta :: proc(
+	graph: ^Graph,
+	ra: ^Regalloc,
+	sched: ^Graph_Schedule,
+	$meta_of: proc(
+		_: ^Graph,
+		_: ^Regalloc,
+		_: Expanded_Node,
+	) -> Regalloc_Node_Meta,
+) -> []Regalloc_Node_Meta {
+	slots := make([]Regalloc_Node_Meta, int(graph.gvn) - len(sched.bbs))
+
+	for bb in sched.bbs {
+		for instr in bb.instrs {
+			inode := graph_expand(graph, instr)
+			slots[inode.gvn] = meta_of(graph, ra, inode)
+			slots[inode.gvn].in_place_slot -= 1
+			slots[inode.gvn].in_place_slot += i8(slots[inode.gvn].input_start)
+		}
+	}
+
+	return slots
 }
 
 MASK_SIZE :: size_of(int) * 8

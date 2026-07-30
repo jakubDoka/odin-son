@@ -361,11 +361,6 @@ X64_SIMPE_FCMP_OP :: Reg_Class_Spec {
 	},
 }
 
-// float op with a folded memory source operand. the shape mirrors the integer
-// src-mode ops: inputs are [ctrl, mem, base, value, index] with the base kept
-// out of register allocation when it is rsp/rip relative (via data_start). the
-// per-index masks carry both banks so the same table works whether the first
-// data input is the gpr base or the xmm value.
 X64_FLOAT_SRC_OP :: Reg_Class_Spec {
 	inplace_slot_idx = 0,
 	reg_masks = #partial{
@@ -1378,6 +1373,270 @@ x64_addr_add_offset :: proc(
 	return node.inps[0], int(x64_extra(graph, node, X64_Mem_Op).imm), true
 }
 
+GPA_MASK_IDX :: backend.RM_Intern_Idx{}
+XMM_MASK_IDX :: backend.RM_Intern_Idx {
+	kind = .Vector,
+}
+
+GPA_MASKS := [6]backend.RM_Intern_Idx{}
+
+XMM_MASKS := [6]backend.RM_Intern_Idx {
+	XMM_MASK_IDX,
+	XMM_MASK_IDX,
+	XMM_MASK_IDX,
+	XMM_MASK_IDX,
+	XMM_MASK_IDX,
+	XMM_MASK_IDX,
+}
+
+x64_meta_of :: proc(
+	graph: ^backend.Graph,
+	ra: ^backend.Regalloc,
+	node: backend.Expanded_Node,
+	_: $T,
+) -> backend.Regalloc_Node_Meta {
+
+	single :: backend.rm_intern_single
+	rslice :: backend.rm_intern_slice
+
+	dup :: #force_inline proc(
+		msks: []backend.RM_Intern_Idx,
+	) -> []backend.RM_Intern_Idx {
+		return slice.clone(msks)
+	}
+
+	masks := [backend.Reg_Kind][]backend.RM_Intern_Idx {
+		.General = GPA_MASKS[:],
+		.Vector  = XMM_MASKS[:],
+	}
+
+	nkind := ra.datatype_to_reg_kind[node.dt]
+	nmasks := masks[nkind]
+	out := nmasks[0]
+
+	mem_op: ^X64_Mem_Op = x64_extra(graph, node, X64_Mem_Op)
+
+	switch xtype(node) {
+	case .Simd_Reduce_Add_Bisect,
+	     .Splat,
+	     .Then,
+	     .Else,
+	     .Start,
+	     .Entry,
+	     .Region,
+	     .Loop,
+	     .Call_End:
+		fmt.panicf("should not reach these: %v", node)
+	case .Poison:
+		return {}
+	case .Param:
+		kind := ra.datatype_to_reg_kind[node.dt]
+		args := ra.args[kind]
+		arg_ext := backend.graph_extra(graph, node, backend.Tup)
+		idx := 0
+		for a in ra.param_specs[:arg_ext.idx] {
+			if a.dt == .Void do continue
+			idx += int(ra.datatype_to_reg_kind[a.dt] == kind)
+		}
+
+		mask: backend.RM_Intern_Idx
+		if int(idx) < len(args) {
+			mask = single(ra, args[idx])
+		} else {
+			mask = single(
+				ra,
+				{
+					kind = kind,
+					index = GPA_REG_COUNT + u16(idx) - u16(len(args)),
+				},
+			)
+		}
+		return {out = mask, input_start = 1}
+	case .CInt:
+		return {out = out}
+	case .X64_Pcmpeq,
+	     .X64_Psadbw,
+	     .X64_Pshufb,
+	     .Add ..=
+	     .Xor,
+	     .F_Add ..=
+	     .F_Div,
+	     .Mul:
+		return {out = out, masks = nmasks[:2], in_place_slot = 1}
+	case .Eq ..= .U_Ge, .F_Eq ..= .F_Ge:
+		return {out = out, masks = nmasks[:2]}
+	case .Shl ..= .U_Shr:
+		return {
+			out = GPA_MASK_IDX,
+			masks = dup({GPA_MASK_IDX, single(ra, RCX)}),
+		}
+	case .Div, .U_Div:
+		rax := single(ra, RAX)
+		return {
+			out = rax,
+			masks = dup({rax, rslice(ra, .General, GPA_DIV_MASK)}),
+			clobbers = #partial{.General = 1 << RCX.index},
+		}
+	case .Rem, .U_Rem:
+		return {
+			out = single(ra, RCX),
+			masks = dup({single(ra, RAX), rslice(ra, .General, GPA_DIV_MASK)}),
+			clobbers = #partial{.General = 1 << RAX.index},
+		}
+	case .And_Not:
+		return {out = out, masks = nmasks[:2], in_place_slot = 2}
+	case .Split:
+		return {out = out, masks = nmasks[:1]}
+	case .Phi:
+		if len(nmasks) < len(node.inps) - 1 {
+			elem := out
+			nmasks = make(type_of(nmasks), len(node.inps) - 1)
+			slice.fill(nmasks, elem)
+		}
+		return {out = out, masks = nmasks[:len(node.inps) - 1]}
+	case .Global, .Mem, .Sym, .Local, .Jump, .Always, .Trap:
+		return {input_start = 1}
+	case .Local_Addr:
+		return {out = out}
+	case .Global_Addr:
+		return {out = out}
+	case .Proc_Addr:
+		return {out = out}
+	case .Copy, .Set, .Call, .Return:
+		cc := &X64_SYSTEMV_CC
+		prefix := 2
+		call: ^backend.Call = backend.graph_extra(graph, node, backend.Call)
+		if call != nil {
+			prefix = backend.CALL_PREFIX
+			cc = &graph.cc_table[call.ccid]
+		}
+
+		nmasks = make(type_of(nmasks), len(node.inps) - prefix)
+
+		if call != nil && call.indirect {
+			nmasks[0] = GPA_MASK_IDX
+			prefix += 1
+		}
+
+		banks := cc.args
+		if node.itype == .Return do banks = ra.rets
+
+		counts: [Reg_Kind]int
+		for n, i in node.inps[prefix:] {
+			rk := graph.datatype_to_reg_kind[graph_get(graph, n).dt]
+			nmasks[i] = single(ra, banks[rk][counts[rk]])
+			counts[rk] += 1
+		}
+
+		return {masks = nmasks, input_start = backend.CALL_PREFIX}
+	case .Store:
+		return {masks = dup({GPA_MASK_IDX, out}), input_start = 2}
+	case .Load:
+		return {out = out, masks = GPA_MASKS[:1], input_start = 2}
+	case .If:
+		cond := graph_get(graph, node.inps[1])
+		return {masks = nmasks[:int(cond.dt != .Void)], input_start = 1}
+	case .Ret:
+		// TODO: this is actually incorrect, we need to iterate the previous
+		// rets to figure this out safely
+		cend := graph_expand(graph, node.inps[0])
+		call := backend.graph_extra(graph, cend.inps[0], backend.Call)
+		ret_ext := backend.graph_extra(graph, node, backend.Tup)
+		kind := ra.datatype_to_reg_kind[node.dt]
+		rets := ra.cc_table[call.ccid].rets[kind]
+		return {out = single(ra, rets[ret_ext.idx]), input_start = 1}
+	case .Ctz, .Not, .Neg:
+		assert(nkind == .General)
+		return {out = out, masks = nmasks[:1], in_place_slot = 1}
+	case .Sext, .Uext:
+		return {out = out, masks = nmasks[:1]}
+	case .F_To_I, .F_From_I, .F_Ext, .F_Demote, .Cast:
+		inp := graph_get(graph, node.inps[0])
+		return {out = out, masks = masks[ra.datatype_to_reg_kind[inp.dt]][:1]}
+	case .Simd_Extract_Lsbs:
+		return {out = out, masks = XMM_MASKS[:1]}
+	case .CV128:
+		panic("TODO")
+	case .X64_Shl ..=
+	     .X64_U_Shr,
+	     .X64_F_Eq ..=
+	     .X64_F_Ge,
+	     .X64_F_Add ..=
+	     .X64_F_Div,
+	     .X64_Add ..=
+	     .X64_Xor,
+	     .X64_Eq ..=
+	     .X64_U_Ge,
+	     .X64_Store,
+	     .X64_Neg,
+	     .X64_Not,
+	     .X64_Fma_213:
+		start: u8 = 0
+		in_place_slot: i8 = 0
+		masks: [dynamic; 4]backend.RM_Intern_Idx
+		append(&masks, out)
+
+		#partial switch xtype(node) {
+		case .X64_Add ..= .X64_Xor, .X64_F_Add ..= .X64_F_Div:
+			switch mem_op.mem_mode {
+			case .None:
+				in_place_slot = 1
+			case .Src:
+				in_place_slot = 2
+			case .Dest:
+			}
+		case .X64_Store:
+			mem_op.mem_mode = .Dest
+		case .X64_Neg, .X64_Not:
+			masks = {}
+		case .X64_Fma_213:
+			append(&masks, out)
+		}
+
+		switch mem_op.mem_mode {
+		case .None:
+		case .Dest, .Src:
+			is_cload := graph_get(graph, node.inps[0]).itype == .Global
+
+			if is_cload {
+				start = 1
+			} else {
+				start = 2
+				start += u8(graph_get(graph, node.inps[start]).dt == .Void)
+				if start == 2 {
+					inject_at(&masks, 0, GPA_MASK_IDX)
+				}
+			}
+		}
+
+		if mem_op.scale != 0 do append(&masks, GPA_MASK_IDX)
+
+		return {
+			out = out,
+			masks = dup(masks[:]),
+			input_start = start,
+			in_place_slot = in_place_slot,
+		}
+	case .X64_Mul:
+		return {out = out, masks = nmasks[:1]}
+	case .X64_Lea:
+		return {out = out, masks = nmasks[:1 + int(mem_op.scale != 0)]}
+	case .X64_Load:
+		return {out = out, masks = GPA_MASKS[:1 + int(mem_op.scale != 0)]}
+	case .X64_CLoad:
+		return {out = out, input_start = 1}
+	case .X64_Mul8:
+		rax := single(ra, RAX)
+		return {out = rax, masks = dup({GPA_MASK_IDX, rax})}
+	case .X64_Pshufd:
+		return {out = out, masks = nmasks[:1]}
+	case .X64_Pextr:
+		return {out = out, masks = XMM_MASKS[:1], in_place_slot = 1}
+	}
+
+	fmt.panicf("TODO %v", node)
+}
+
 x64_reg_mask_of :: proc(
 	graph: ^backend.Graph,
 	ra: ^backend.Regalloc,
@@ -1956,7 +2215,7 @@ x64_emit_instr :: proc(
 		assert(node.dt == .V128)
 		assert(node.lane == .I8)
 
-		// psadbw $dst, $tmp
+		// psadbw $dst, $rhs
 		rx := rex(dst, rhs, NO_INDEX, false)
 		emit(ctx.code, {0x66, rx, 0x0f, 0xF6, mod_rm(.Direct, dst, rhs)})
 	case .X64_Pextr:
@@ -2626,11 +2885,14 @@ x64_emit_instr :: proc(
 				{vex3(dst, sadd, idx, smul, wide, ._0F38, .P66, false), 0xa9},
 			)
 			emit_indirect_addr(ctx, dst, sadd, idx, scl, sdis + dis, id)
+			if mem_idx == 2 {
+				panic("bra")
+			}
 		case .Dest:
 			panic("")
 		}
 	case .X64_F_Add ..= .X64_F_Div:
-		// dst == value (in place); op dst, [$bse + $idx * $scl + $sdis + $dis].
+		// op dst, [$bse + $idx * $scl + $sdis + $dis].
 		dst := reg_of(ctx, node.inps[node.inplace_slot])
 		bse, sdis, id := reg_and_disp_of(ctx, node.inps[node.inplace_slot - 1])
 		dis := mem_op.dis
@@ -2644,9 +2906,11 @@ x64_emit_instr :: proc(
 		case .Dest:
 			panic("never")
 		case .Src:
-			lhs_idx := node.data_start == 1 ? 1 : 3
+			is_cload := graph_get(ctx, node.inps[0]).itype == .Global
+
+			lhs_idx := is_cload ? 1 : 3
 			lhs := reg_of(ctx, node.inps[lhs_idx])
-			mem_idx := node.data_start == 1 ? 0 : 2
+			mem_idx := is_cload ? 0 : 2
 			bse, sdis, id := reg_and_disp_of(ctx, node.inps[mem_idx])
 			odt := graph_get(ctx, node.inps[lhs_idx]).dt
 			dis := mem_op.dis

@@ -264,6 +264,7 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 
 		if reg_mask_lengths != {} {
 			fmt.fprintf(file, "\treg_mask_of = %v_reg_mask_of,\n", prefix)
+			fmt.fprintf(file, "\tcollect_meta = %v_collect_meta,\n", prefix)
 		}
 		fmt.fprintf(file, "\temit_function = %v_emit_function,\n", prefix)
 		fmt.fprintf(file, "\tpeep = %v_peep_inst,\n", prefix)
@@ -421,6 +422,34 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 			q,
 			q,
 			prefix,
+		)
+	}
+
+	if reg_mask_lengths != {} {
+		fmt.fprintfln(
+			file,
+			`
+%v_collect_meta :: proc(ctx: ^%vGraph,
+	ra: ^%vRegalloc, sched: ^%vGraph_Schedule) -> []%vRegalloc_Node_Meta {{
+
+	meta_of :: proc(ctx: ^%vGraph, ra: ^%vRegalloc,
+		node: %vExpanded_Node) -> %vRegalloc_Node_Meta {{
+		return %v_meta_of(ctx, ra, node, struct{{}}{{}})
+	}}
+	return %vregalloc_collect_meta(ctx, ra, sched, meta_of)
+}}
+`,
+			prefix,
+			q,
+			q,
+			q,
+			q,
+			q,
+			q,
+			q,
+			q,
+			prefix,
+			q,
 		)
 	}
 

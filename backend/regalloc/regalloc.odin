@@ -48,7 +48,6 @@ regalloc_round :: proc(
 	res: []backend.Reg,
 	ok: bool = true,
 ) {
-
 	context.allocator, _ = arna.scrath(scratch)
 
 	graph.dont_intern = true
@@ -66,10 +65,13 @@ regalloc_round :: proc(
 		lrg_table:       []^backend.Lrg,
 		self_conflicts:  map[Self_Conflict]struct{},
 		adj:             [][]^backend.Lrg,
+		metas:           []backend.Regalloc_Node_Meta,
 	}
 
 	ctx: Ctx
 	ctx.ra = ra
+	ctx.ra.slots = {}
+	ctx.ra.lens = {}
 	ctx.graph = graph
 	ctx.sched = sched
 
@@ -97,6 +99,8 @@ regalloc_round :: proc(
 			}
 		}
 	}
+
+	ctx.metas = graph.collect_meta(graph, ra, sched)
 
 	lrgs := make([]backend.Lrg, max_lrg_count)
 	used_lrgs: u32

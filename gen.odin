@@ -287,11 +287,6 @@ to_rvalue_expr :: proc(
 	return to_rvalue(ctx, value, get_node_type(node))
 }
 
-is_signed_subword :: proc(ty: Type) -> bool {
-	if !typecheck.is_builtin(ty) do return false
-	return ty in typecheck.SIGNED_TYPES && backend.DT_SIZE[type_to_dt(ty)] < 8
-}
-
 tok_to_binop :: proc(
 	ty: Type,
 	tok: tokenizer.Token_Kind,
@@ -1050,6 +1045,7 @@ emit_proc_code :: proc(
 	ra.spec = ctx.node_spec
 	ra.cc = &x64.X64_SYSTEMV_CC
 	ra.param_specs = prc.param_types
+	ra.mask_len = 64
 
 	regs := regalloc.regalloc(
 		&ra,

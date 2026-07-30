@@ -2258,13 +2258,6 @@ get_node_type :: proc(node: ^ast.Node) -> Type {
 	return get_node_meta(node).type
 }
 
-// is_builtin reports whether `ty` is one of the zero sized builtin types (the
-// low, data less variants of Type_Data), i.e. it is stored as the bare enum
-// value.
-is_builtin :: proc(ty: Type) -> bool {
-	return Raw_Type(ty).tag < len(reflect.enum_field_names(Type))
-}
-
 get_node_vflags :: proc(node: ^ast.Node) -> Var_Flags {
 	_ = node.derived.(^ast.Ident)
 	return get_node_data(node, Var_Flags)

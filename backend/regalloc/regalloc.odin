@@ -151,26 +151,16 @@ regalloc_round :: proc(
 					}
 				}
 
-				if inode.inplace_slot >= 0 {
-					fmt.assertf(
-						inode.inplace_slot ==
-						int(ctx.metas[inode.gvn].in_place_slot),
-						"%v == %v %v",
-						inode.inplace_slot,
-						int(ctx.metas[inode.gvn].in_place_slot),
-						inode,
-					)
-					inplace_node := graph_get(
-						graph,
-						inode.inps[inode.inplace_slot],
-					)
+				inplace_slot := ctx.metas[inode.gvn].in_place_slot
+				if inplace_slot >= 0 {
+					inplace_node := graph_get(graph, inode.inps[inplace_slot])
 					if int(inplace_node.gvn) > len(ctx.lrg_table) {
 						backend.graph_display(
 							os.to_writer(os.stderr),
 							graph,
 							sched,
 						)
-						log.info(inode.node, inode.inplace_slot)
+						log.info(inode.node, inplace_slot)
 					}
 					lrg = ctx.lrg_table[inplace_node.gvn]
 				} else if inode.itype == .Phi {
@@ -181,7 +171,7 @@ regalloc_round :: proc(
 
 				for o in inode.outs {
 					onode := graph_expand(graph, o.id)
-					if onode.inplace_slot == o.idx {
+					if ctx.metas[onode.gvn].in_place_slot == i8(o.idx) {
 						lrg = unify(lrg, ctx.lrg_table[onode.gvn])
 					}
 				}
@@ -200,7 +190,7 @@ regalloc_round :: proc(
 
 				for o in inode.outs {
 					onode := graph_expand(graph, o.id)
-					if int(o.idx) < onode.data_start ||
+					if int(o.idx) < int(ctx.metas[onode.gvn].input_start) ||
 					   u16(o.idx) >= onode.input_count {
 						continue
 					}
@@ -441,7 +431,7 @@ regalloc_round :: proc(
 			}
 
 			if inode.itype != .Phi {
-				for inp in inode.inps[inode.data_start:] {
+				for inp in inode.inps[ctx.metas[inode.gvn].input_start:] {
 					inp_node := graph_get(graph, inp)
 					lrg := ctx.lrg_table[inp_node.gvn]
 
@@ -506,8 +496,6 @@ regalloc_round :: proc(
 	}
 
 	backend.add_efficiency_stat(graph, .ifg_rounds, rounds, len(sched.bbs))
-
-	//log_lrgs(graph, sched, lrg_table)
 
 	used_lrgs_check := used_lrgs
 	for lrg in lrgs {
@@ -928,7 +916,10 @@ regalloc_round :: proc(
 		last_split: Node_ID
 
 		for inp, j in node.inps {
-			if j != int(node.inplace_slot) && node.itype != .Phi {
+			if get_lrg(ctx, inp) == nil do continue
+
+			if j != int(ctx.metas[node.gvn].in_place_slot) &&
+			   node.itype != .Phi {
 				continue
 			}
 
@@ -972,7 +963,8 @@ regalloc_round :: proc(
 			if onode.dt == .Void do continue
 			if onode.gvn >= prev_gvn do continue
 
-			if out.idx == onode.inplace_slot || onode.itype == .Phi {
+			if out.idx == int(ctx.metas[onode.gvn].in_place_slot) ||
+			   onode.itype == .Phi {
 				split: Node_ID
 				if last_split != 0 &&
 				   last_split_out == out.id &&
@@ -1012,9 +1004,10 @@ regalloc_round :: proc(
 					if inp.output_count == 1 &&
 					   0 < i &&
 					   bb.instrs[i - 1] == inode.inps[0] &&
-					   inp.inplace_slot >= 0 {
+					   ctx.metas[inp.gvn].in_place_slot >= 0 {
 
-						in_slot_id := inp.inps[inp.inplace_slot]
+						in_slot_id :=
+							inp.inps[ctx.metas[inp.gvn].in_place_slot]
 						in_slot_node := graph_expand(graph, in_slot_id)
 
 						umask := rm_getu(
@@ -1136,7 +1129,7 @@ regalloc_round :: proc(
 			for instr, i in bb.instrs {
 				inode := graph_expand(ctx.graph, instr)
 				if inode.dt == .Void && inode.itype == .Phi do continue
-				for inp, idx in inode.inps[inode.data_start:] {
+				for inp, idx in inode.inps[ctx.metas[inode.gvn].input_start:] {
 
 					block := &bb
 					i := i
@@ -1519,7 +1512,7 @@ regalloc_round :: proc(
 			strings.to_writer(&sb),
 			ctx.graph,
 			ctx.sched,
-			//prefix = prefix,
+			prefix = prefix,
 		)
 
 		prefix :: proc(
@@ -1530,7 +1523,8 @@ regalloc_round :: proc(
 			ctx := (^Ctx)(context.user_ptr)
 			if len(ctx.lrg_table) == 0 do return
 			if instr.dt != .Void {
-				lrg := ctx.lrg_table[instr.gvn]
+				lrg := get_lrg(ctx^, backend.graph_id(ctx.graph, instr))
+				if lrg == nil do return
 				fmt.wprintf(w, "%v:", lrg.mask)
 				backend.ansi_start(w, lrg.index)
 				fmt.wprintf(w, "%3i", lrg.index)

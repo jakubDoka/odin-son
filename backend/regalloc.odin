@@ -3,7 +3,6 @@ package backend
 import "../vendored/gam/util/bit_arr"
 import "base:intrinsics"
 import "core:fmt"
-import "core:mem"
 import "core:slice"
 
 REGLOGS :: #config(REGLOGS, false)
@@ -98,6 +97,7 @@ reg_mask_intersects :: proc(a, b: Reg_Mask) -> bool {
 
 reg_mask_intersection :: proc(a, b: Reg_Mask) {
 	ml := min(a.bit_length, b.bit_length) / MASK_SIZE
+	if a.kind != b.kind do ml = 0
 	for i in 0 ..< ml {
 		a.masks[i] &= b.masks[i]
 	}
@@ -312,36 +312,7 @@ reg_mask_of :: proc(
 	#any_int idx: int,
 	readonly := false,
 ) -> Reg_Mask {
-	node := graph_expand(graph, id)
-
-	masks := re.reg_masks[node.rtype]
-	dt := node.dt
-	if idx != 0 {
-		inp := graph_get(graph, node.inps[idx - 1 + node.data_start])
-		dt = inp.dt
-	}
-	reg_kind := re.datatype_to_reg_kind[dt]
-	if idx < len(masks) {
-		id := masks[idx][reg_kind]
-		if id != 0 {
-			if idx != 0 || readonly {
-				return {
-					masks = re.interned_reg_masks[id],
-					kind = reg_kind,
-					bit_length = u32(re.class_lengths[reg_kind]) * MASK_SIZE,
-				}
-			}
-			mask := reg_mask_empty(re, reg_kind)
-			mem.copy_non_overlapping(
-				mask.masks,
-				re.interned_reg_masks[id],
-				int(re.class_lengths[reg_kind]) * size_of(int),
-			)
-			return mask
-		}
-	}
-
-	return re.reg_mask_of(graph, re, id, idx)
+	panic("")
 }
 
 Lrg_Meta :: bit_field u32 {

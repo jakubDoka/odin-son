@@ -943,7 +943,6 @@ x64_peep :: proc(
 				u16(X64_Node_Type.X64_Lea),
 				{abase, aindex},
 				{scale = u8(ascale), dis = displacement},
-				additional_data_offset = u8(stack_base),
 			)
 		}
 	case .F_Eq ..= .F_Ge:
@@ -953,10 +952,6 @@ x64_peep :: proc(
 			node.dt = .Void
 			return id
 		}
-	case .If:
-		node.additional_data_start = u8(
-			graph_get(ctx, node.inps[1]).dt == .Void,
-		)
 	case .Load:
 		load_inps := [4]backend.Node_ID {
 			node.inps[0],
@@ -970,7 +965,6 @@ x64_peep :: proc(
 			u16(X64_Node_Type.X64_Load),
 			load_inps[:3 + int(scale != 0)],
 			{dis = displacement, scale = u8(scale), dt = node.dt},
-			additional_data_offset = u8(stack_base),
 		)
 
 		backend.worklist_add(ctx, ctx.worklist, res)
@@ -1004,7 +998,6 @@ x64_peep :: proc(
 				scale = u8(scale),
 				dt = vl.dt,
 			},
-			additional_data_offset = u8(stack_base),
 		)
 
 		backend.worklist_add(ctx, ctx.worklist, res)
@@ -1047,11 +1040,6 @@ x64_peep :: proc(
 
 		changed |= node.inps[2] != base
 		backend.graph_set_input(ctx, id, 2, base)
-
-		node.additional_data_start = max(
-			node.additional_data_start,
-			u8(stack_base),
-		)
 
 		widen_load: if xtype(node) == .X64_Load && node.dt < .I64 {
 			dominant: backend.Ideal_Node_Type
@@ -1155,8 +1143,6 @@ x64_peep :: proc(
 					}
 
 					mem_op.mem_mode = .Dest
-					node.in_place_slot_offset = -1
-					node.additional_data_start += 2
 					changed = true
 				} else {
 					backend.peep_ctx_add_trigger(ctx, val.inps[0], id)
@@ -1198,8 +1184,6 @@ x64_make_node :: proc(
 	type: u16,
 	inps: []backend.Node_ID,
 	extra: X64_Mem_Op,
-	additional_data_offset: u8 = 0,
-	in_place_slot_offset: i8 = 0,
 ) -> backend.Node_ID {
 	backend.push_node_name(graph, backend.graph_get_node_name(graph, from))
 	fnode := graph_get(graph, from)
@@ -1210,8 +1194,6 @@ x64_make_node :: proc(
 	// scheduling
 	node.is_store = fnode.is_store
 	node.is_load = fnode.is_load || type == u16(X64_Node_Type.X64_Load)
-	node.additional_data_start = additional_data_offset
-	node.in_place_slot_offset = in_place_slot_offset
 	node.lane = fnode.lane
 	x64_extra(graph, node, X64_Mem_Op)^ = extra
 	return id
@@ -1247,8 +1229,6 @@ x64_post_schedule_peep :: proc(
 				op,
 				slots[:len(slots) - int(slots[4] == 0)],
 				mem_op^,
-				additional_data_offset = u8(rhs.data_start),
-				in_place_slot_offset = 1 - i8(rhs.data_start == 3),
 			)
 		} else if xtype(rhs) == .X64_CLoad {
 			mem_op := X64_Mem_Op {
@@ -1258,14 +1238,7 @@ x64_post_schedule_peep :: proc(
 
 			slots := [?]backend.Node_ID{rhs.inps[0], node.inps[0]}
 
-			return x64_make_node(
-				ctx,
-				id,
-				op,
-				slots[:],
-				mem_op,
-				additional_data_offset = 1,
-			)
+			return x64_make_node(ctx, id, op, slots[:], mem_op)
 		}
 	case .X64_Eq ..= .X64_U_Ge:
 		mem_op := x64_extra(ctx, node, X64_Mem_Op)
@@ -1279,15 +1252,7 @@ x64_post_schedule_peep :: proc(
 			om_mem_op.mem_mode = .Dest
 			om_mem_op.dt = lhs.dt
 
-			return x64_make_node(
-				ctx,
-				id,
-				node.rtype,
-				lhs.inps,
-				om_mem_op^,
-				additional_data_offset = u8(lhs.data_start),
-				in_place_slot_offset = 0,
-			)
+			return x64_make_node(ctx, id, node.rtype, lhs.inps, om_mem_op^)
 		}
 	case .X64_Fma_213:
 		mem_op := x64_extra(ctx, node, X64_Mem_Op)
@@ -1306,14 +1271,7 @@ x64_post_schedule_peep :: proc(
 				node.inps[1],
 			}
 
-			return x64_make_node(
-				ctx,
-				id,
-				node.rtype,
-				slots[:],
-				mem_op^,
-				additional_data_offset = 1,
-			)
+			return x64_make_node(ctx, id, node.rtype, slots[:], mem_op^)
 		}
 	}
 
@@ -1455,20 +1413,19 @@ x64_meta_of :: proc(
 		return slice.clone(msks)
 	}
 
+	nkind := ra.datatype_to_reg_kind[node.dt]
+
 	masks := [backend.Reg_Kind][]backend.RM_Intern_Idx {
 		.General = GPA_MASKS[:],
 		.Vector  = XMM_MASKS[:],
 	}
+	nmasks := masks[nkind]
+	out := nmasks[0]
 
 	smasks := [backend.Reg_Kind][]backend.RM_Intern_Idx {
 		.General = GPA_SPILL_MASKS[:],
 		.Vector  = XMM_SPILL_MASKS[:],
 	}
-
-	nkind := ra.datatype_to_reg_kind[node.dt]
-	nmasks := masks[nkind]
-	out := nmasks[0]
-
 	snmasks := smasks[nkind]
 	sout := snmasks[0]
 
@@ -1562,14 +1519,12 @@ x64_meta_of :: proc(
 			masks = snmasks[:len(node.inps) - 1],
 			input_start = 1,
 		}
-	case .Global, .Mem, .Sym, .Local, .Jump, .Always, .Trap:
+	case .Global, .Proc_Addr:
+		return {}
+	case .Mem, .Sym, .Local, .Jump, .Always, .Trap:
 		return {input_start = 1}
-	case .Local_Addr:
-		return {out = out}
-	case .Global_Addr:
-		return {out = out}
-	case .Proc_Addr:
-		return {out = out}
+	case .Local_Addr, .Global_Addr:
+		return {out = out, input_start = 1}
 	case .Copy, .Set, .Call, .Return:
 		cc := &X64_SYSTEMV_CC
 		prefix := 2
@@ -1604,7 +1559,10 @@ x64_meta_of :: proc(
 		return {out = out, masks = GPA_MASKS[:1], input_start = 2}
 	case .If:
 		cond := graph_get(graph, node.inps[1])
-		return {masks = nmasks[:int(cond.dt != .Void)], input_start = 1}
+		return {
+			masks = nmasks[:int(cond.dt != .Void)],
+			input_start = 1 + u8(cond.dt == .Void),
+		}
 	case .Ret:
 		// TODO: this is actually incorrect, we need to iterate the previous
 		// rets to figure this out safely
@@ -1726,12 +1684,17 @@ x64_meta_of :: proc(
 	case .X64_Mul:
 		return {out = out, masks = nmasks[:1]}
 	case .X64_Lea:
-		return {out = out, masks = nmasks[:1 + int(mem_op.scale != 0)]}
+		inp := graph_get(graph, node.inps[0])
+		return {
+			out = out,
+			masks = nmasks[:1 + int(mem_op.scale != 0) - int(inp.dt == .Void)],
+			input_start = u8(inp.dt == .Void),
+		}
 	case .X64_Load:
 		return {
 			out = out,
 			masks = GPA_MASKS[:1 + int(mem_op.scale != 0)],
-			input_start = 2,
+			input_start = 2 + u8(graph_get(graph, node.inps[2]).dt == .Void),
 		}
 	case .X64_CLoad:
 		return {out = out, input_start = 1}
@@ -1741,7 +1704,7 @@ x64_meta_of :: proc(
 	case .X64_Pshufd:
 		return {out = out, masks = nmasks[:1]}
 	case .X64_Pextr:
-		return {out = out, masks = XMM_MASKS[:1], in_place_slot = 1}
+		return {out = out, masks = XMM_MASKS[:1]}
 	}
 
 	fmt.panicf("TODO %v", node)
@@ -1753,69 +1716,7 @@ x64_reg_mask_of :: proc(
 	id: backend.Node_ID,
 	idx: int,
 ) -> backend.Reg_Mask {
-	node := graph_expand(graph, id)
-
-	pos := idx - 1 + node.data_start
-
-	#partial switch node.itype {
-	case .Param:
-		kind := ra.datatype_to_reg_kind[node.dt]
-		args := ra.args[kind]
-		arg_ext := backend.graph_extra(graph, node, backend.Tup)
-		idx := 0
-		for a in ra.param_specs[:arg_ext.idx] {
-			if a.dt == .Void do continue
-			idx += int(ra.datatype_to_reg_kind[a.dt] == kind)
-		}
-
-		if int(idx) < len(args) {
-			return backend.reg_mask_single(ra, args[idx])
-		} else {
-			return backend.reg_mask_single(
-				ra,
-				{
-					kind = kind,
-					index = GPA_REG_COUNT + u16(idx) - u16(len(args)),
-				},
-			)
-		}
-	case .Call:
-		call := backend.graph_extra(graph, id, backend.Call)
-		if call.indirect && pos == len(node.inps) - 1 {
-			return reg_bank_mask(ra, .General, GPA_MASK)
-		}
-		cc := ra.cc_table[call.ccid]
-		reg := cc_reg_for_operand(graph, node, cc.args, pos)
-		return backend.reg_mask_single(ra, reg)
-	case .Ret:
-		cend := graph_expand(graph, node.inps[0])
-		call := backend.graph_extra(graph, cend.inps[0], backend.Call)
-		ret_ext := backend.graph_extra(graph, node, backend.Tup)
-		kind := ra.datatype_to_reg_kind[node.dt]
-		rets := ra.cc_table[call.ccid].rets[kind]
-		return backend.reg_mask_single(ra, rets[ret_ext.idx])
-	case .Return:
-		assert(idx != 0)
-		reg := cc_reg_for_operand(graph, node, ra.rets, pos)
-		return backend.reg_mask_single(ra, reg)
-	case .Phi:
-		// TODO: fix this to have a borrow
-		kind := ra.datatype_to_reg_kind[node.dt]
-		return reg_bank_mask(
-			ra,
-			kind,
-			kind == .Vector ? XMM_SPILL_MASK : GPA_SPILL_MASK,
-		)
-	}
-
-	fmt.assertf(pos >= 0, "%v", node)
-
-	fmt.panicf(
-		"TODO: %v %v %v",
-		xtype(node),
-		idx,
-		graph_get(graph, node.inps[pos]),
-	)
+	fmt.panicf("TODO")
 }
 
 Ctx :: struct {
@@ -2987,7 +2888,7 @@ x64_emit_instr :: proc(
 		case .Src:
 			dst := reg_of(ctx, node.inps[1])
 			smul := reg_of(ctx, node.inps[2])
-			mem_idx := node.data_start == 1 ? 0 : 2
+			mem_idx := graph_get(ctx, node.inps[0]).itype == .Global ? 0 : 2
 			sadd, sdis, id := reg_and_disp_of(ctx, node.inps[mem_idx])
 			dis := mem_op.dis
 			emit(

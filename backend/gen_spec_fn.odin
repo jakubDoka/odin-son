@@ -207,48 +207,6 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 			interned_reg_masks_arr[idx] = key_mask(mask)
 		}
 
-		os.write_string(file, "\tinterned_reg_masks = {\n")
-		for masks in interned_reg_masks_arr {
-			fmt.fprintf(file, "\t\traw_data(%T{{", masks)
-			for mask, i in masks {
-				if i != 0 do os.write_string(file, ", ")
-				fmt.fprintf(file, "0x%x", uint(mask))
-			}
-			os.write_string(file, "}),\n")
-		}
-		os.write_string(file, "\t},\n")
-
-		os.write_string(file, "\treg_masks = {\n")
-		for classes in spec.classes {
-			for class, i in classes.regs {
-				mx := 0
-				for masks in class.reg_masks {
-					mx = max(mx, len(masks))
-				}
-
-				final := make([][Reg_Kind]Mask_Intern_Key, mx)
-
-				for masks, kind in class.reg_masks {
-					for mask, j in masks {
-						full_mask := make([]i64, reg_mask_lengths[kind])
-						copy(full_mask, mask)
-
-						final[j][kind] = Mask_Intern_Key(
-							interned_reg_masks[mask_key(full_mask)] or_else -1,
-						)
-					}
-				}
-
-				fmt.fprintf(
-					file,
-					"\t\t%w, // %v\n",
-					final,
-					reflect.enum_field_names(classes.enm)[i],
-				)
-			}
-		}
-		os.write_string(file, "\t},\n")
-
 		os.write_string(file, "\tinplace_slot_idxs = {\n")
 		for classes in spec.classes {
 			for class, i in classes.regs {

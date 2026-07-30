@@ -327,11 +327,9 @@ Node :: struct {
 		},
 	},
 	using gvn_group: bit_field u32 {
-		gvn:                   u32  | 23,
-		in_worklist:           bool | 1,
-		in_place_slot_offset:  i8   | 2,
-		additional_data_start: u8   | 2,
-		extra_dwords:          u32  | 4,
+		gvn:          u32  | 23,
+		in_worklist:  bool | 1,
+		extra_dwords: u32  | 4,
 	},
 	input_idx:       u32,
 	input_count:     u16,
@@ -1494,27 +1492,16 @@ graph_get :: #force_inline proc(graph: ^Graph, id: Node_ID) -> ^Node {
 }
 
 Expanded_Node :: struct {
-	using node:   ^Node,
-	inps:         []Node_ID,
-	outs:         []Node_Output,
-	data_start:   int,
-	inplace_slot: int,
+	using node: ^Node,
+	inps:       []Node_ID,
+	outs:       []Node_Output,
 }
 
 graph_expand :: proc(graph: ^Graph, id: Node_ID) -> Expanded_Node {
 	node := graph_get(graph, id)
 
 	assert(node.rtype != DEAD_NODE_KIND)
-	in_place := graph.inplace_slot_idxs[node.rtype]
-	in_place += i8(node.additional_data_start)
-	in_place += node.in_place_slot_offset
-	return {
-		node,
-		graph_inps(graph, node),
-		graph_outs(graph, node),
-		int(graph.first_input_idxs[node.rtype] + node.additional_data_start),
-		int(in_place),
-	}
+	return {node, graph_inps(graph, node), graph_outs(graph, node)}
 }
 
 @(tag = "node_proc")

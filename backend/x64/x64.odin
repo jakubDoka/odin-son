@@ -1521,8 +1521,10 @@ x64_meta_of :: proc(
 	     .F_Div,
 	     .Mul:
 		return {out = out, masks = nmasks[:2], in_place_slot = 1}
-	case .Eq ..= .U_Ge, .F_Eq ..= .F_Ge:
+	case .Eq ..= .U_Ge:
 		return {out = out, masks = nmasks[:2]}
+	case .F_Eq ..= .F_Ge:
+		return {out = out, masks = XMM_MASKS[:2]}
 	case .Shl ..= .U_Shr:
 		return {
 			out = GPA_MASK_IDX,
@@ -1638,17 +1640,39 @@ x64_meta_of :: proc(
 	     .X64_Neg,
 	     .X64_Not,
 	     .X64_Fma_213:
+		const_off := int(mem_op.scale != 0)
+
+		#partial switch xtype(node) {
+		case .X64_F_Eq ..= .X64_F_Ge:
+			nmasks = XMM_MASKS[:]
+		}
+
+		if xtype(node) == .X64_Store && len(node.inps) - const_off == 4 {
+			dt := graph_get(graph, node.inps[3]).dt
+			nmasks = masks[ra.datatype_to_reg_kind[dt]]
+		}
+
 		start: u8 = 0
 		in_place_slot: i8 = 0
 		masks: [dynamic; 4]backend.RM_Intern_Idx
-		append(&masks, out)
+		append(&masks, nmasks[0])
 
 		is_cload := graph_get(graph, node.inps[0]).itype == .Global
 
 		#partial switch xtype(node) {
 		case .X64_Shl ..= .X64_U_Shr:
-			masks[0] = single(ra, RCX)
-
+			switch mem_op.mem_mode {
+			case .None:
+				masks = {}
+			case .Src:
+				panic("does not support")
+			case .Dest:
+				if len(node.inps) - const_off == 4 {
+					masks[0] = single(ra, RCX)
+				} else {
+					masks = {}
+				}
+			}
 		}
 		#partial switch xtype(node) {
 		case .X64_Add ..=

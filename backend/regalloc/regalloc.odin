@@ -25,7 +25,7 @@ regalloc :: proc(
 	sched: ^backend.Graph_Schedule,
 	scratch: runtime.Allocator,
 ) -> []backend.Reg {
-	if graph.node_spec.reg_mask_of == nil do return {}
+	if graph.node_spec.collect_meta == nil do return {}
 
 	for i in 0 ..< 7 {
 		res, ok := regalloc_round(ra, graph, sched, scratch, i)
@@ -186,16 +186,12 @@ regalloc_round :: proc(
 					}
 				}
 
-				mask := backend.reg_mask_of(graph, ra, instr, 0)
-				umask := backend.rm_get(ctx.ra, ctx.metas[inode.gvn].out)
-
-				assert_matching_masks(mask, umask, inode)
-
+				mask := backend.rm_get(ctx.ra, ctx.metas[inode.gvn].out)
 				if lrg == nil {
 					lrg = &lrgs[used_lrgs]
 					lrg.node = instr
 					lrg.index = used_lrgs
-					lrg.mask = mask
+					lrg.mask = backend.reg_mask_clone(mask)
 					lrg.reg = -1
 					used_lrgs += 1
 				} else {
@@ -213,14 +209,7 @@ regalloc_round :: proc(
 						lrg = unify(lrg, ctx.lrg_table[onode.gvn])
 					}
 
-					umask := backend.reg_mask_of(
-						graph,
-						ra,
-						o.id,
-						o.idx + 1 - onode.data_start,
-					)
-					oumask := rm_getu(ctx, onode, o.idx)
-					assert_matching_masks(umask, oumask, onode)
+					umask := rm_getu(ctx, onode, o.idx)
 					intersect(lrg, umask)
 				}
 
@@ -1028,20 +1017,11 @@ regalloc_round :: proc(
 						in_slot_id := inp.inps[inp.inplace_slot]
 						in_slot_node := graph_expand(graph, in_slot_id)
 
-						oumask := backend.reg_mask_of(
-							graph,
-							ra,
-							inode.inps[0],
-							inp.inplace_slot + 1 - inp.data_start,
-						)
-
 						umask := rm_getu(
 							ctx,
 							inp,
 							ctx.metas[inp.gvn].in_place_slot,
 						)
-
-						assert_matching_masks(oumask, umask, inp)
 
 						overlaps := backend.reg_mask_contains(
 							umask,
@@ -1070,16 +1050,8 @@ regalloc_round :: proc(
 					   inode.outs[0].id == bb.instrs[keep] {
 						o := inode.outs[0]
 						onode := graph_expand(graph, o.id)
-						umask := backend.reg_mask_of(
-							graph,
-							ra,
-							o.id,
-							o.idx + 1 - onode.data_start,
-						)
 
-						oumask := rm_getu(ctx, onode, o.idx)
-						assert_matching_masks(umask, oumask, onode)
-
+						umask := rm_getu(ctx, onode, o.idx)
 						overlaps := backend.reg_mask_contains(
 							umask,
 							res[inp.gvn].index,
@@ -1115,7 +1087,7 @@ regalloc_round :: proc(
 	) {
 		fmt.assertf(
 			backend.reg_mask_intersection_pop_count(a, b) ==
-			backend.reg_mask_pop_count(b),
+			max(backend.reg_mask_pop_count(a), backend.reg_mask_pop_count(b)),
 			"%v != %v %v",
 			a,
 			b,
@@ -1310,17 +1282,7 @@ regalloc_round :: proc(
 			return use
 		}
 
-		umask := backend.reg_mask_of(
-			ctx.graph,
-			ctx.ra,
-			use,
-			0,
-			readonly = true,
-		)
-
-		oumask := backend.rm_get(ctx.ra, ctx.metas[fnode.gvn].out)
-		assert_matching_masks(oumask, umask, fnode)
-
+		umask := backend.rm_get(ctx.ra, ctx.metas[fnode.gvn].out)
 		if (backend.reg_mask_first_set(umask) or_else 0) >= x64.GPA_REG_COUNT {
 			return use
 		}

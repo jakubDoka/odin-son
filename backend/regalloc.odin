@@ -27,6 +27,12 @@ Reg_Mask :: struct {
 
 CALLS :: bit_set[Ideal_Node_Type]{.Call, .Set, .Copy}
 
+reg_mask_clone :: proc(rm: Reg_Mask) -> (res: Reg_Mask) {
+	res = rm
+	res.masks = raw_data(slice.clone(rm.masks[:rm.bit_length / MASK_SIZE]))
+	return
+}
+
 reg_mask_single :: proc(ra: ^Regalloc, reg: Reg) -> (rm: Reg_Mask) {
 	rm = reg_mask_empty(ra, reg.kind)
 	reg_mask_set(rm, reg.index)

@@ -70,8 +70,7 @@ regalloc_round :: proc(
 
 	ctx: Ctx
 	ctx.ra = ra
-	ctx.ra.slots = {}
-	ctx.ra.lens = {}
+	ctx.ra.rms = {}
 	ctx.graph = graph
 	ctx.sched = sched
 

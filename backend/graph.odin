@@ -516,6 +516,42 @@ graph_sym_iter_next :: proc(
 	return
 }
 
+assemble_args :: proc(
+	ctx: ^Graph,
+	param_count: int,
+) -> (
+	res: []Node_ID,
+	starter: Node_ID,
+) {
+	prev := current_graph
+	current_graph = ctx
+	defer current_graph = prev
+
+	params := make([]Node_ID, param_count)
+	slice.fill(params, ctx.start)
+	find_args: for eout in graph_outs(ctx, ctx.entry) {
+		enode := graph_expand(ctx, eout.id)
+
+		if is_cfg(ctx, eout.id) do starter = eout.id
+
+		if enode.itype != .Param && enode.itype != .Local do continue
+
+		idx: u32
+		if param := graph_extra(ctx, eout.id, Tup); param != nil {
+			idx = param.idx
+		}
+
+		if locp := graph_extra(ctx, eout.id, Local); locp != nil {
+			if !locp.is_param do continue
+			idx = locp.idx
+		}
+
+		fmt.assertf(int(idx) < len(params), "%v %v", param_count, enode)
+		params[idx] = eout.id
+	}
+	return params, starter
+}
+
 KEEP_CAPACITY :: bit_set[Ideal_Node_Type]{.Call}
 
 graph_compute_weight :: proc(graph: ^Graph, all: []Node_ID) {

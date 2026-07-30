@@ -4,7 +4,6 @@ import backend ".."
 import "../../vendored/gam/util/arna"
 import "core:fmt"
 import "core:mem"
-import "core:sort"
 
 Graph :: backend.Graph
 graph_get :: backend.graph_get
@@ -405,68 +404,35 @@ graph_inline_graph :: proc(
 	proj_of(&ctx, from.sym)^ = call.inps[2]
 
 	entry := graph_expand(from, from.entry)
-	Param_Entry :: bit_field u64 {
-		id:           backend.Node_ID | 32,
-		is_local_arg: bool            | 1,
-		gvn:          u32             | 31,
-	}
-	starter: backend.Node_ID
-	params: [dynamic]Param_Entry
-	for o in entry.outs {
-		onode := graph_expand(from, o.id)
-		is_local_arg := onode.itype == .Local
-		is_local_arg &&=
-			backend.graph_extra(from, onode, backend.Local).is_param
+	params, starter := backend.assemble_args(
+		from,
+		int(call.input_cap) - backend.CALL_PREFIX,
+	)
 
-		if onode.itype == .Param || is_local_arg {
-			append(
-				&params,
-				Param_Entry {
-					id = o.id,
-					gvn = onode.gvn,
-					is_local_arg = is_local_arg,
-				},
-			)
-		}
-
-		if backend.is_cfg(from, o.id) {
-			assert(starter == 0)
-			starter = o.id
-		}
-	}
-
-	sort.quick_sort(params[:])
-
-	for i in 0 ..< len(params) {
-		param := params[i]
-		pnode := graph_expand(from, param.id)
-		arg_idx: int
-		if param.is_local_arg {
-			arg_idx = int(backend.graph_extra(graph, pnode, backend.Local).idx)
-		} else {
-			arg_idx = int(backend.graph_extra(from, pnode, backend.Tup).idx)
-		}
-		arg_idx += backend.CALL_PREFIX
+	for param, arg_idx in params {
+		pnode := graph_expand(from, param)
+		arg_idx := arg_idx + backend.CALL_PREFIX
 		arg := raw_data(call.inps)[arg_idx]
 		node := graph_expand(graph, arg)
+		if pnode.itype == .Start do continue
 		if arg_idx < int(call.input_count) {
 			assert(node.itype != .Local)
 			assert(pnode.itype != .Local)
 		} else {
 			assert(node.inps[0] == graph.entry)
 			backend.graph_set_input(graph, arg, 0, graph.root_mem)
-			if !param.is_local_arg {
+			if pnode.itype == .Local {
+				// project the addr too or we get dups
+				ctx.projection[graph_get(from, pnode.outs[0].id).gvn] =
+					node.outs[0].id
+			} else {
 				// reach out for the store value
 				arg = node.outs[0].id
 				arg = backend.graph_outs(graph, arg)[0].id
 				arg = backend.graph_inps(graph, arg)[3]
-			} else {
-				// project the addr too or we get dups
-				ctx.projection[graph_get(from, pnode.outs[0].id).gvn] =
-					node.outs[0].id
 			}
 		}
-		ctx.projection[param.gvn] = arg
+		ctx.projection[pnode.gvn] = arg
 	}
 
 	clone_along_cfg(&ctx, starter)

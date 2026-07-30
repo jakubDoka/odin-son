@@ -38,20 +38,6 @@ x64_extra :: #force_inline proc(
 NOOP_REX :: 0b0100_0000
 
 NO_INDEX :: RSP
-GPA_RET_MASK :: []i64{1 << uint(RAX)}
-GPA_RET_MASK_SEC :: []i64{1 << uint(RDX)}
-GPA_DIV_MASK :: []i64 {
-	0xFFFF &
-	~i64(1 << uint(RSP)) &
-	~i64(1 << uint(RAX)) &
-	~i64(1 << uint(RDX)),
-}
-RAX_MASK :: []i64{1 << uint(RAX)}
-RDI_MASK :: []i64{1 << uint(RDI)}
-RSI_MASK :: []i64{1 << uint(RSI)}
-RDX_MASK :: []i64{1 << uint(RDX)}
-
-RCX_MASK :: []i64{1 << uint(RCX)}
 
 VEC_BANK :: u16(Reg_Kind.Vector) << 12
 XMM0 :: Reg(VEC_BANK | 0)
@@ -70,11 +56,6 @@ XMM12 :: Reg(VEC_BANK | 12)
 XMM13 :: Reg(VEC_BANK | 13)
 XMM14 :: Reg(VEC_BANK | 14)
 XMM15 :: Reg(VEC_BANK | 15)
-
-GPA_MASK :: []i64{0xFFFF & ~i64(1 << uint(RSP))}
-GPA_SPILL_MASK :: []i64{~i64(1 << uint(RSP))}
-XMM_MASK :: []i64{0xFFFF}
-XMM_SPILL_MASK :: []i64{~i64(0)}
 
 RAX :: Reg(0)
 RCX :: Reg(1)
@@ -95,6 +76,7 @@ R15 :: Reg(15)
 RIP :: RBP
 
 GPA_REG_COUNT :: 16
+MASK_SIZE :: backend.MASK_SIZE
 
 //* Large parameters (> 16 bytes) will be implicitly passed by pointer
 //* Multiple return values are handled as the following
@@ -164,7 +146,6 @@ COMMAND :: "odin run backend/x64 -define:X64_GEN_SPEC=true"
 SPEC_NOT_PRESENT :: (#load("node_specs.odin", string) or_else "") == ""
 
 when SPEC_NOT_PRESENT {
-
 	Reg_Kind :: backend.Reg_Kind
 
 	inherit_idx_of :: proc($T: typeid) -> u8 {return 0}
@@ -372,8 +353,6 @@ x64_peep :: proc(
 	case .CInt:
 		cnst: ^backend.CInt = backend.graph_extra(ctx, node, backend.CInt)
 		if node.dt in backend.FLOAT_DTS && cnst.value != 0 {
-			mem := backend.graph_find_node(ctx, .Mem) or_else panic("")
-
 			global := backend.graph_add_global(ctx, "iglb")
 			tup: ^backend.Tup = backend.graph_extra(ctx, global, backend.Tup)
 			tup.is_inline = true
@@ -1025,21 +1004,6 @@ x64_post_schedule_peep :: proc(
 	return 0
 }
 
-cc_reg_for_operand :: proc(
-	graph: ^backend.Graph,
-	node: backend.Expanded_Node,
-	banks: [Reg_Kind][]Reg,
-	pos: int,
-) -> Reg {
-	counts: [Reg_Kind]int
-	for i in backend.CALL_PREFIX ..< pos {
-		rk := graph.datatype_to_reg_kind[graph_get(graph, node.inps[i]).dt]
-		counts[rk] += 1
-	}
-	rk := graph.datatype_to_reg_kind[graph_get(graph, node.inps[pos]).dt]
-	return banks[rk][counts[rk]]
-}
-
 x64_addr_add_offset :: proc(
 	graph: ^backend.Graph,
 	node: backend.Expanded_Node,
@@ -1120,10 +1084,13 @@ x64_meta_of :: proc(
 		~i64(1 << uint(RDX)),
 	}
 
-	assert(rslice(ra, .General, GPA_MASK[:]) == GPA_MASK_IDX)
-	assert(rslice(ra, .Vector, XMM_MASK[:]) == XMM_MASK_IDX)
-	assert(rslice(ra, .General, GPA_SPILL_MASK[:]) == GPA_SPILL_MASK_IDX)
-	assert(rslice(ra, .Vector, XMM_SPILL_MASK[:]) == XMM_SPILL_MASK_IDX)
+	if node.gvn == 0 {
+		ra.mask_len = MASK_SIZE
+		rslice(ra, .General, GPA_MASK[:])
+		rslice(ra, .Vector, XMM_MASK[:])
+		rslice(ra, .General, GPA_SPILL_MASK[:])
+		rslice(ra, .Vector, XMM_SPILL_MASK[:])
+	}
 
 	single :: backend.rm_intern_single
 	rslice :: backend.rm_intern_slice
@@ -1541,27 +1508,7 @@ x64_emit_function :: proc(
 		extra.offset = ctx.stack_size - extra.size
 	}
 
-	params := make([]backend.Node_ID, len(ctx.param_specs))
-	slice.fill(params, ctx.start)
-	find_args: for eout in backend.graph_outs(ctx, ctx.entry) {
-		enode := graph_expand(ctx, eout.id)
-		if enode.itype != .Param && enode.itype != .Local do continue
-
-		idx: u32
-		if arga := backend.graph_extra(ctx, eout.id, backend.Tup);
-		   arga != nil {
-			idx = arga.idx
-		}
-
-		if loca := backend.graph_extra(ctx, eout.id, backend.Local);
-		   loca != nil {
-			if !loca.is_param do continue
-
-			idx = loca.idx
-		}
-
-		params[idx] = eout.id
-	}
+	params, _ := backend.assemble_args(ctx, len(ctx.param_specs))
 
 	spill_slot_count: [Reg_Kind]i32
 	for reg in ctx.allocs {
@@ -2027,7 +1974,7 @@ x64_emit_instr :: proc(
 
 		// movss/movsd $dst, [rsp + $src_off]
 		emit(ctx.code, {pfx, rex(dst, bse, RAX, false), 0x0f, 0x10})
-		emit_indirect_addr(ctx, dst, bse, NO_INDEX, 1, 0, id)
+		emit_indirect_addr(ctx, dst, bse, NO_INDEX, 1, sdis, id)
 	case .Store, .X64_Store:
 		bse, sdis, id := reg_and_disp_of(ctx, node.inps[2])
 		dis := mem_op.dis
@@ -2863,8 +2810,6 @@ x64_emit_instr :: proc(
 			)
 		}
 	case .Return:
-		is_unreachable := true
-
 		if backend.graph_has_unreachable_return(ctx) do break
 
 		if ctx.stack_size != 0 {

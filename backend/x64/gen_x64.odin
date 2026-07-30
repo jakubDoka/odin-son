@@ -3,6 +3,8 @@ package x64
 
 import backend ".."
 
+_ :: backend
+
 when GEN_SPEC {
 	main :: proc() {
 		backend.generate_spec(

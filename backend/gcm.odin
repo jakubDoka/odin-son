@@ -225,6 +225,12 @@ graph_schedule :: proc(
 			deepest = tree.parent
 
 			if tree.infinite {
+				prev_sloc := graph_push_sloc(
+					ctx,
+					graph_dbg_slot(ctx, node.node)^,
+				)
+				defer graph_pop_sloc(ctx, prev_sloc)
+
 				always := graph_add_always(ctx, "alw", node.inps[1])
 				then := graph_add_then(ctx, "athn", always)
 				ctx.loop_trees[graph_get(ctx, then).gvn] = tree
@@ -285,7 +291,12 @@ graph_schedule :: proc(
 				   node.itype != .Jump &&
 				   node.itype != .Trap &&
 				   root != graph.start {
+					prev := graph_push_sloc(
+						graph,
+						graph_dbg_slot(graph, node.node)^,
+					)
 					jmp := graph_add_jump(graph, "jump", root)
+					graph_pop_sloc(graph, prev)
 					graph_set_input(graph, o.id, o.idx, jmp)
 					cfg_reverse_postorder(graph, jmp, cfg_rpos, visited)
 				} else {

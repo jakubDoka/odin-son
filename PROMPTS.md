@@ -574,8 +574,6 @@ ask them.
 
 ### Implement a dwarf unwind information (DONE)
 
-NOTE: read AGENTS.md
-
 Currently the compiler emits enough dwarf to show line information for the
 current frame and the previous frame, but after that the stacttrace gets
 corrupted.
@@ -591,3 +589,22 @@ dont do the standard c frames (we use rbp as gpr). So .eh_frame section is
 needed. This also means we need to give the information about the frame to the
 frontend. Could you please first design how this shoud work, then come back and
 let me review it. Once I approve you can implement it.
+
+### Figure out why inlining causes the line info to not show up (DONE)
+
+Run:
+```sh
+odin build . -debug && ./jit test-programs/boids/ -debug && zig cc a.o &&\
+gdb -batch -ex run -ex bt -ex quit ./a.out
+```
+
+The innermost frame has not source location information, find out why this
+happends and fix it.
+
+### Clean up elf.odin
+
+NOTE: read AGENTS.md
+
+Could you go trough the elf.odin file and convert the constants into enums and
+use them in the appropriate structures? Odin also has bit_set construct that
+you can use for bitflags.

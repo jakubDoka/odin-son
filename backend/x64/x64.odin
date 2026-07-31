@@ -1632,6 +1632,7 @@ x64_emit_function :: proc(
 	if ctx.stack_size != 0 {
 		// sub rsp, $ctx.stack_size
 		emit_imm_op(ctx.code, 0x81, 0b101, RSP, ctx.stack_size)
+		next_sloc(&ctx)
 		emit_cfi(
 			&ctx,
 			.Def_Cfa_Offset,

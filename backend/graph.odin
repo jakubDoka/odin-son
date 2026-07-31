@@ -600,6 +600,7 @@ graph_mount_stencil :: proc(graph: ^Graph, stencil: Stencil) {
 		arna.clone(graph.mem, stencil.mem)
 	}
 	graph.meta = stencil.meta
+	graph.current_dnode = 0
 }
 
 graph_clone_dnode :: proc(
@@ -620,6 +621,7 @@ graph_clone_dnode :: proc(
 			graph_getd(prev, dn),
 			len(bytes),
 		)
+		(^D_Node)(raw_data(bytes)).visit_mark = graph.dbgn_flip
 		dnodes[graph_getd(prev, dn).gdn] = mapped
 	}
 	return mapped

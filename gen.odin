@@ -1061,6 +1061,7 @@ emit_proc_code :: proc(
 		code   = &ctx.mems.code,
 		relocs = &ctx.mems.reloc,
 		slocs  = &ctx.mems.sloc,
+		cfi    = &ctx.mems.cfi,
 	}
 	emit_ctx.allocs = regs
 	emit_ctx.param_specs = prc.param_types

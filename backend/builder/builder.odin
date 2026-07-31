@@ -160,23 +160,6 @@ builder_peep :: proc(
 		}
 	}
 
-	ordered_remove :: proc(
-		ctx: backend.Peep_Ctx,
-		node: ^backend.Expanded_Node,
-		i: int,
-	) {
-		par := backend.graph_id(ctx, node)
-		for inp, j in node.inps[i + 1:] {
-			backend.graph_add_output(ctx, inp, par, j + i)
-			backend.graph_remove_output(ctx, inp, {idx = j + i + 1, id = par})
-		}
-		inp := node.inps[i]
-		slice.rotate_left(node.inps[i:], 1)
-		node.inps = node.inps[:len(node.inps) - 1]
-		node.input_count -= 1
-		backend.graph_remove_output(ctx, inp, {idx = i, id = par})
-	}
-
 	STORES := bit_set[backend.Ideal_Node_Type]{.Store, .Set, .Copy}
 
 	emilinate_dead_local: if node.itype in STORES {
@@ -307,6 +290,17 @@ builder_peep :: proc(
 			if op_count == 2 {
 				return fnode.inps[3]
 			}
+		}
+	case .Loop:
+		bedge := graph_expand(ctx, node.inps[1])
+		if btype(bedge) == .Dead {
+			#reverse for out in node.outs {
+				onode := graph_expand(ctx, out.id)
+				if onode.itype == .Phi {
+					backend.graph_subsume(ctx, onode.inps[1], out.id)
+				}
+			}
+			return node.inps[0]
 		}
 	case .Region:
 		#reverse for inp, i in node.inps {

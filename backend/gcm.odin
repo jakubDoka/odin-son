@@ -86,6 +86,8 @@ graph_idepth_node :: proc(graph: ^Graph, node: ^Node) -> u32 {
 	extra := graph_extra(graph, node, Cfg)
 	inps := graph_inps(graph, node)
 
+	fmt.assertf(extra != nil, "%v", node)
+
 	if extra.idepth != 0 {
 		return extra.idepth
 	}
@@ -137,11 +139,13 @@ graph_schedule :: proc(
 
 	lctx.root = new(Loop_Tree, scratch)
 
+	end := graph_expand(graph, graph.end)
 	if graph.end != 0 {
-		end := graph_expand(graph, graph.end)
 		lctx.loop_trees[end.gvn] = lctx.root
 		build_loop_tree(&lctx, graph.entry, lctx.root, scratch)
+	}
 
+	if graph.end != 0 {
 		remove_count := 0
 		#reverse for inp, i in end.inps {
 			inode := graph_expand(graph, inp)
@@ -279,6 +283,7 @@ graph_schedule :: proc(
 			if is_cfg(graph, o.id) {
 				if (onode.itype == .Region || onode.itype == .Loop) &&
 				   node.itype != .Jump &&
+				   node.itype != .Trap &&
 				   root != graph.start {
 					jmp := graph_add_jump(graph, "jump", root)
 					graph_set_input(graph, o.id, o.idx, jmp)

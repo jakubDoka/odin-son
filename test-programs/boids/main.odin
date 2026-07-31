@@ -315,6 +315,8 @@ dir_char :: proc(dvx: f64, dvy: f64) -> u8 {
 
 // dir_color maps a heading to one of 4 ANSI foreground colours (31..36).
 dir_color :: proc(dvx: f64, dvy: f64) -> u8 {
+	if true do intrinsics.trap()
+
 	ax := dvx
 	if ax < 0.0 do ax = -ax
 	ay := dvy

@@ -99,6 +99,7 @@ main :: proc() {
 	types.mems.code.reserved = 4096 * 4096
 	types.mems.reloc.reserved = 4096 * 2048
 	types.mems.sloc.reserved = 4096 * 4096
+	types.mems.cfi.reserved = 4096 * 2048
 	types.mems.type.reserved = 1024 * 1024 * 128
 
 	typecheck.types_init(&types)

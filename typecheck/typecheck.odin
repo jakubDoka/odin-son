@@ -36,6 +36,7 @@ Mems :: struct {
 	code:     arna.Allocator,
 	reloc:    arna.Allocator,
 	sloc:     arna.Allocator,
+	cfi:      arna.Allocator,
 	type:     arna.Allocator,
 }
 
@@ -1075,6 +1076,7 @@ types_init :: proc(types: ^Types) {
 		&types.mems.code,
 		&types.mems.reloc,
 		&types.mems.sloc,
+		&types.mems.cfi,
 		&types.mems.type,
 	)
 
@@ -1107,6 +1109,7 @@ types_deinit :: proc(types: ^Types) {
 		&types.mems.code,
 		&types.mems.reloc,
 		&types.mems.sloc,
+		&types.mems.cfi,
 		&types.mems.type,
 	)
 }

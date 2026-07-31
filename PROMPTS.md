@@ -532,9 +532,7 @@ structs. There is a sloc for each instruction and it stores the size of it, so,
 to compute the offset you need to go linearly and accumulate the sizes. The
 output is stored in the `Proc` struct.
 
-### implement minimal vector ops to compile the new test
-
-NOTE: read AGENTS.md
+### implement minimal vector ops to compile the new test (DONE)
 
 There is a new test I added that compiles with odin compiler, but the jit
 compiler can not compile it. I have added 
@@ -574,4 +572,22 @@ passes with `$dff` (see `profile.fish`) flag.
 Before you start tell me if there is something unclear and you have questions,
 ask them.
 
+### Implement a dwarf unwind information (DONE)
 
+NOTE: read AGENTS.md
+
+Currently the compiler emits enough dwarf to show line information for the
+current frame and the previous frame, but after that the stacttrace gets
+corrupted.
+
+Could you please fix this? The way to test this is be running this command
+`odin build . -debug && ./jit test-programs/boids/ -debug -O:none && zig cc\
+a.o && gdb -batch -ex run -ex bt -ex quit ./a.out`.
+
+First you should check how we emmit elf in `./elf.odin`, we emit dwarf there.
+Then diagnose why this is happening. You can use elf-dump and other tools to
+view dwarf info. I recod we need an extra frame information as in assembly we
+dont do the standard c frames (we use rbp as gpr). So .eh_frame section is
+needed. This also means we need to give the information about the frame to the
+frontend. Could you please first design how this shoud work, then come back and
+let me review it. Once I approve you can implement it.

@@ -162,14 +162,14 @@ bubble_sort:
     mov.q [rsp - 0x10], rsi
     mov.q rcx, [rsp - 0x10]
     sub rcx, 1
+    xor r9d, r9d
     mov r11, rcx
-    xor edx, edx
 27:
     mov rcx, 1
     neg rcx
+    mov r10, r9
     mov r8, rcx
     mov r9, rcx
-    mov r10, rdx
 21:
     cmp r10, r11
     jnl 16
@@ -211,7 +211,6 @@ bubble_sort:
     jmp 26
 25:
     mov r11, r8
-    mov rdx, r9
     jmp 27
 22:
     xor eax, eax
@@ -975,12 +974,11 @@ main:
     ret
 bubble_sort:
     sub rsi, 1
-    xor ecx, ecx
     mov r10, rsi
+    xor r9d, r9d
 27:
     mov rsi, -1
     mov r8, -1
-    mov r9, rcx
 21:
     cmp r9, r10
     jnl 16
@@ -1018,8 +1016,8 @@ bubble_sort:
     jmp 25
     jmp 26
 25:
+    mov r9, r8
     mov r10, rsi
-    mov rcx, r8
     jmp 27
 22:
     xor eax, eax
@@ -1185,22 +1183,22 @@ main:
     mov r8, 7
     xor edi, edi
 29:
-    mov rdx, -1
     mov rsi, -1
+    mov rdx, -1
 24:
     cmp rdi, r8
     jnl 19
-    mov rax, rdi
-    add rax, 1
-    mov.q rcx, [rsp + rdi*8 + 0x20]
-    cmp.q rcx, [rsp + rax*8 + 0x20]
+    mov.q rax, [rsp + rdi*8 + 0x20]
+    mov rcx, rdi
+    add rcx, 1
+    cmp.q rax, [rsp + rcx*8 + 0x20]
     jnle 20
     jmp 21
 20:
-    mov.q rcx, [rsp + rax*8 + 0x20]
+    mov.q rax, [rsp + rcx*8 + 0x20]
     mov.q rdx, [rsp + rdi*8 + 0x20]
-    mov.q [rsp + rax*8 + 0x20], rdx
-    mov.q [rsp + rdi*8 + 0x20], rcx
+    mov.q [rsp + rcx*8 + 0x20], rdx
+    mov.q [rsp + rdi*8 + 0x20], rax
     cmp rsi, -1
     jz 22
     jmp 23
@@ -1209,7 +1207,7 @@ main:
 23:
     mov rdx, rdi
 21:
-    mov rdi, rax
+    mov rdi, rcx
     jmp 24
 19:
     cmp rdx, -1
@@ -1223,8 +1221,8 @@ main:
 27:
     jmp 28
 28:
-    mov r8, rdx
     mov rdi, rsi
+    mov r8, rdx
     jmp 29
 25:
     xor ecx, ecx

@@ -131,22 +131,7 @@ regalloc_round :: proc(
 					//	inode.outs[0].id == inode.inps[1]
 
 					if swap_becuase_use || swap_becuase_lrg {
-						for &out in rhs.outs {
-							if out.id == instr && out.idx == 1 {
-								out.idx = 0
-								break
-							}
-						}
-
-						for &out in lhs.outs {
-							if out.id == instr && out.idx == 0 {
-								out.idx = 1
-								break
-							}
-						}
-
-						inode.inps[0], inode.inps[1] =
-							inode.inps[1], inode.inps[0]
+						backend.swap_inputs(ctx.graph, inode, 0, 1)
 					}
 				}
 
@@ -1165,19 +1150,31 @@ regalloc_round :: proc(
 			for j in idx + 1 ..< sindex {
 				clobber := graph_expand(ctx.graph, bb.instrs[j])
 				if clobber.dt == .Void do continue
-				fmt.assertf(
-					res[inpnode.gvn] != res[clobber.gvn],
-					"%v %v",
-					inpnode.node,
-					clobber.node,
-				)
+				if res[inpnode.gvn] == res[clobber.gvn] {
+					//backend.graph_display(
+					//	os.to_writer(os.stderr),
+					//	ctx.graph,
+					//	ctx.sched,
+					//)
+					fmt.assertf(
+						false,
+						"%v %v %v %v %v",
+						inpnode.node,
+						clobber.node,
+						cb,
+						rawptr(bb),
+						rawptr(block),
+					)
+				}
 			}
 
 			if block == bb {
 				return
 			}
 
-			for cbinp in cbnode.inps {
+			is_reg := int(cbnode.itype == .Region)
+
+			for cbinp in cbnode.inps[:len(cbnode.inps) - is_reg] {
 				if backend.is_cfg(ctx.graph, cbinp) {
 					b := get_node_block(ctx, cbinp)
 					check_blocks(ctx, res, inp, b.head, len(b.instrs), seen)

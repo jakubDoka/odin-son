@@ -368,7 +368,7 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 
 			fmt.fprintf(file, ") -> (id: %vNode_ID) {{\n", q)
 
-			fmt.fprintf(file, "\t%vpush_node_name(graph, name)\n", q)
+			fmt.fprintf(file, "\t%vgraph_push_tag(graph, name)\n", q)
 
 			extra_type := qualify_type(q, locals, class.id)
 

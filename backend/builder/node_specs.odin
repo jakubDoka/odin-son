@@ -604,18 +604,18 @@ builder_post_schedule_peep_inst :: proc(
 #assert(size_of(backend.CV128) % backend.PRECISION == 0)
 #assert(size_of(Scope) % backend.PRECISION == 0)
 graph_add_scope :: #force_inline proc(graph: ^backend.Graph, name: string, cfg: backend.Node_ID) -> (id: backend.Node_ID) {
-	backend.push_node_name(graph, name)
+	backend.graph_push_tag(graph, name)
 	(^Scope)(backend.graph_get_next_extra_slot(graph, u16(Builder_Node_Type.Scope)))^ = {}
 	return backend.graph_add_raw(graph, u16(Builder_Node_Type.Scope), .Void, {cfg})
 }
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 graph_add_lazy_phi :: #force_inline proc(graph: ^backend.Graph, name: string, dt: backend.Node_Datatype, reg: backend.Node_ID, lhs: backend.Node_ID) -> (id: backend.Node_ID) {
-	backend.push_node_name(graph, name)
+	backend.graph_push_tag(graph, name)
 	return backend.graph_add_raw(graph, u16(Builder_Node_Type.Lazy_Phi), dt, {reg, lhs}, extra_capacity = 1)
 }
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 graph_add_dead :: #force_inline proc(graph: ^backend.Graph, name: string) -> (id: backend.Node_ID) {
-	backend.push_node_name(graph, name)
+	backend.graph_push_tag(graph, name)
 	return backend.graph_add_raw(graph, u16(Builder_Node_Type.Dead), .Void, {})
 }
 

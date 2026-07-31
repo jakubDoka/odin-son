@@ -4,6 +4,11 @@ package builder
 import backend ".."
 
 when GEN_SPEC {
+	graph_add_dead :: proc(
+		graph: ^backend.Graph,
+		name: string,
+	) -> Node_ID {return 0}
+
 	main :: proc() {
 		backend.generate_spec(
 			backend.Spec_Gen_Input {

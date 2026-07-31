@@ -78,6 +78,19 @@ RIP :: RBP
 GPA_REG_COUNT :: 16
 MASK_SIZE :: backend.MASK_SIZE
 
+// DWARF numbers the x86-64 general purpose registers in a different order than
+// the instruction encoding does, so the two have to be mapped explicitly.
+@(rodata)
+DWARF_GPR := [GPA_REG_COUNT]u8{0, 2, 1, 3, 7, 6, 4, 5, 8, 9, 10, 11, 12, 13, 14, 15}
+
+X64_CFI_SPEC :: backend.Cfi_Spec {
+	cfa_reg            = 7, // rsp
+	return_addr_reg    = 16,
+	initial_cfa_offset = 8,
+	code_align         = 1,
+	data_align         = -8,
+}
+
 //* Large parameters (> 16 bytes) will be implicitly passed by pointer
 //* Multiple return values are handled as the following
 //  * If all of the return value can be passed in a register if they were
@@ -120,6 +133,7 @@ X64_SYSTEMV_CC := backend.Call_Conv {
 	},
 	rets = #partial{.General = {RAX, RDX}, .Vector = {XMM0, XMM1}},
 	red_zone_size = 128,
+	cfi_spec = X64_CFI_SPEC,
 }
 
 @(rodata)
@@ -132,6 +146,7 @@ X64_LINUX_SYSCALL_CC := backend.Call_Conv {
 	args = #partial{.General = {RAX, RDI, RSI, RDX, R10, R8, R9}},
 	rets = #partial{.General = {RAX}},
 	is_syscall = true,
+	cfi_spec = X64_CFI_SPEC,
 }
 
 Instr_Info :: struct {
@@ -370,7 +385,7 @@ x64_peep :: proc(
 				backend.DT_SIZE[node.dt] / backend.PRECISION,
 			)
 
-			backend.push_node_name(ctx, backend.graph_get_node_name(ctx, id))
+			backend.graph_push_tag(ctx, backend.graph_get_tag(ctx, id))
 			return backend.graph_add_raw(
 				ctx,
 				u16(X64_Node_Type.X64_CLoad),
@@ -883,7 +898,7 @@ x64_add_node :: proc(
 	^backend.Node,
 	backend.Node_ID,
 ) {
-	backend.push_node_name(ctx, name)
+	backend.graph_push_tag(ctx, name)
 	slot := (^X64_Mem_Op)(backend.graph_get_next_extra_slot(ctx, u16(type)))
 	slot^ = extra
 	id := backend.graph_add_raw(ctx, u16(type), dt, inps)
@@ -897,7 +912,7 @@ x64_make_node :: proc(
 	inps: []backend.Node_ID,
 	extra: X64_Mem_Op,
 ) -> backend.Node_ID {
-	backend.push_node_name(graph, backend.graph_get_node_name(graph, from))
+	backend.graph_push_tag(graph, backend.graph_get_tag(graph, from))
 	fnode := graph_get(graph, from)
 	id := backend.graph_add_raw(graph, type, fnode.dt, inps)
 	node := graph_get(graph, id)
@@ -1409,6 +1424,7 @@ Ctx :: struct {
 	stack_param_offset: [Reg_Kind][dynamic]i32,
 	last_off:           uint,
 	sloc:               backend.Sloc,
+	pushed:             i32,
 }
 
 Local_Reloc :: struct {
@@ -1445,6 +1461,7 @@ x64_emit_function :: proc(
 
 	reloc_start := ectx.relocs.pos
 	sloc_start := ectx.slocs.pos
+	cfi_start := ectx.cfi.pos
 
 	ctx: Ctx
 	ctx.code_start = ectx.code.pos
@@ -1531,6 +1548,17 @@ x64_emit_function :: proc(
 			next_sloc(&ctx)
 
 			pushed += 8
+			emit_cfi(
+				&ctx,
+				.Def_Cfa_Offset,
+				arg = u32(pushed) + X64_CFI_SPEC.initial_cfa_offset,
+			)
+			emit_cfi(
+				&ctx,
+				.Save_Reg,
+				reg = DWARF_GPR[reg.index],
+				arg = u32(pushed) + X64_CFI_SPEC.initial_cfa_offset,
+			)
 		}
 	}
 
@@ -1599,9 +1627,17 @@ x64_emit_function :: proc(
 		for &off in group do off += i32(ctx.stack_size)
 	}
 
+	ctx.pushed = pushed
+
 	if ctx.stack_size != 0 {
 		// sub rsp, $ctx.stack_size
 		emit_imm_op(ctx.code, 0x81, 0b101, RSP, ctx.stack_size)
+		emit_cfi(
+			&ctx,
+			.Def_Cfa_Offset,
+			arg = u32(pushed + ctx.stack_size) +
+			X64_CFI_SPEC.initial_cfa_offset,
+		)
 	}
 
 	ctx.local_relocs = make([dynamic]Local_Reloc, 0, len(ctx.bbs))
@@ -1656,10 +1692,30 @@ x64_emit_function :: proc(
 		[]backend.Sloc,
 		ctx.slocs.ptr[sloc_start:ctx.slocs.pos],
 	)
+	cfi := mem.slice_data_cast(
+		[]backend.Cfi_Op,
+		ctx.cfi.ptr[cfi_start:ctx.cfi.pos],
+	)
 	arna.alloc(ctx.code, 0, 8)
 	constants := arna.clone(ctx.code, ctx.big_constants[:])
 
-	return {code = code, relocs = relocs, constants = constants, slocs = slocs}
+	return {
+		code = code,
+		relocs = relocs,
+		constants = constants,
+		slocs = slocs,
+		cfi = cfi,
+	}
+}
+
+emit_cfi :: proc(ctx: ^Ctx, kind: backend.Cfi_Kind, reg: u8 = 0, arg: u32 = 0) {
+	if !ctx.has_dbg do return
+	backend.add_cfi(ctx.cfi)^ = {
+		offset = u32(ctx.code.pos - ctx.code_start),
+		arg    = arg,
+		kind   = kind,
+		reg    = reg,
+	}
 }
 
 next_sloc :: proc(ctx: ^Ctx) {
@@ -2812,10 +2868,15 @@ x64_emit_instr :: proc(
 	case .Return:
 		if backend.graph_has_unreachable_return(ctx) do break
 
+		emit_cfi(ctx, .Remember_State)
+
+		cfa := u32(ctx.pushed) + X64_CFI_SPEC.initial_cfa_offset
+
 		if ctx.stack_size != 0 {
 			// sub rsp, -$ctx.stack_size
 			emit_imm_op(ctx.code, 0x81, 0b000, RSP, ctx.stack_size)
 			next_sloc(ctx)
+			emit_cfi(ctx, .Def_Cfa_Offset, arg = cfa)
 		}
 
 		#reverse for reg in ctx.callee_saved[.General] {
@@ -2823,11 +2884,16 @@ x64_emit_instr :: proc(
 				// pop $reg
 				emit_single_op(ctx.code, 0x58, reg)
 				next_sloc(ctx)
+
+				cfa -= 8
+				emit_cfi(ctx, .Restore_Reg, reg = DWARF_GPR[reg.index])
+				emit_cfi(ctx, .Def_Cfa_Offset, arg = cfa)
 			}
 		}
 
 		// ret
 		emit(ctx.code, {0xc3})
+		emit_cfi(ctx, .Restore_State)
 	}
 
 	next_sloc(ctx)

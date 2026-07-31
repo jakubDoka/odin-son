@@ -147,7 +147,7 @@ graph_display :: proc(
 		for instr in bb.instrs {
 			inode := graph_get(graph, instr)
 			if inode.itype == .Phi {
-				continue
+				//continue
 			}
 
 			fmt.wprint(w, "  ")
@@ -367,14 +367,9 @@ ansi_end :: proc(w: io.Writer) {
 	}
 }
 
-graph_get_node_name :: proc(graph: ^Graph, id: Node_ID) -> (name: string) {
-	when NODE_NAMES {
-		copy(
-			reflect.as_bytes(name),
-			graph.mem.ptr[int(id) * PRECISION - TAG_SIZE:][:TAG_SIZE],
-		)
-	}
-	return
+graph_get_tag :: proc(graph: ^Graph, id: Node_ID) -> Tag {
+	if tag := get_tag(graph, id); tag != nil do return tag^
+	return {}
 }
 
 graph_display_node_gvn :: proc(w: io.Writer, graph: ^Graph, id: Node_ID) {
@@ -384,9 +379,16 @@ graph_display_node_gvn :: proc(w: io.Writer, graph: ^Graph, id: Node_ID) {
 	}
 	n := graph_get(graph, id)
 
-	ansi_start(w, n.gvn)
+	tag := graph_get_tag(graph, id)
+	if tag.stable_id == 0 do tag.stable_id = n.gvn
 
-	fmt.wprintf(w, "#%v%v", n.gvn, graph_get_node_name(graph, id))
+	ansi_start(w, tag.stable_id)
+
+	fmt.wprintf(w, "#%v%v", tag.stable_id, tag.name)
+
+	if tag.stable_id != n.gvn {
+		fmt.wprintf(w, "%v", n.gvn)
+	}
 
 	ansi_end(w)
 }

@@ -5742,3 +5742,34 @@ main :: proc() -> int {
 	return res
 }
 ```
+
+#### inlined trap before normal control flow
+```odin
+package main
+
+opt_level :: "none"
+
+
+main :: proc() -> int {
+	@(static)
+	c := 0
+	if c != 0 {
+		foo()
+		
+		@(static)
+		g := 0
+
+		if g == 0 {
+			return 1
+		} else {
+			return 0
+		}
+	}
+
+	return 0
+}
+
+foo :: proc() {
+	intrinsics.trap()
+}
+```

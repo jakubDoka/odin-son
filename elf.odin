@@ -402,6 +402,104 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	put_u32(&dbg_info, 0)
 	patch_u32(&dbg_info, info_unit_len_pos, u32(len(dbg_info) - info_base))
 
+	// --- .eh_frame --------------------------------------------------------
+	// The generated code keeps no frame pointer (rbp is an allocatable GPR),
+	// so an unwinder has nothing to walk without explicit CFI. One CIE plus
+	// one FDE per procedure, built from the frame deltas the backend recorded.
+	eh_frame: [dynamic]u8
+	eh_rels: [dynamic]Elf64_Rel
+
+	if ctx.has_dbg {
+		spec := ctx.target.cc.cfi_spec
+
+		cie_len_pos := len(eh_frame)
+		put_u32(&eh_frame, 0)
+		cie_base := len(eh_frame)
+		put_u32(&eh_frame, 0) // CIE_id
+		append(&eh_frame, 1) // version
+		append(&eh_frame, "zR")
+		append(&eh_frame, 0)
+		uleb(&eh_frame, u64(spec.code_align))
+		sleb(&eh_frame, i64(spec.data_align))
+		uleb(&eh_frame, u64(spec.return_addr_reg))
+		uleb(&eh_frame, 1) // augmentation data length
+		append(&eh_frame, DW_EH_PE_pcrel | DW_EH_PE_sdata4)
+		append(&eh_frame, DW_CFA_def_cfa)
+		uleb(&eh_frame, u64(spec.cfa_reg))
+		uleb(&eh_frame, u64(spec.initial_cfa_offset))
+		append(&eh_frame, DW_CFA_offset | spec.return_addr_reg)
+		uleb(&eh_frame, u64(spec.initial_cfa_offset) / u64(-spec.data_align))
+		for len(eh_frame) % 8 != 0 do append(&eh_frame, DW_CFA_nop)
+		patch_u32(&eh_frame, cie_len_pos, u32(len(eh_frame) - cie_base))
+
+		for &prc, i in ctx.procs {
+			if prc.lit.body == nil do continue
+			if len(prc.out.cfi) == 0 do continue
+
+			fde_len_pos := len(eh_frame)
+			put_u32(&eh_frame, 0)
+			fde_base := len(eh_frame)
+			// distance back to the CIE, which starts at offset 0
+			put_u32(&eh_frame, u32(len(eh_frame) - cie_len_pos))
+			// initial_location: pcrel, so the addend is 0 and S - P is exactly
+			// the displacement we want the slot to hold.
+			append(
+				&eh_rels,
+				Elf64_Rel {
+					r_offset = u64(len(eh_frame)),
+					r_info = (u64(proc_sym[i]) << 32) | R_X86_64_PC32,
+				},
+			)
+			put_u32(&eh_frame, 0)
+			put_u32(&eh_frame, u32(len(prc.out.code))) // address_range
+			uleb(&eh_frame, 0) // augmentation data length
+
+			cur := u32(0)
+			for op in prc.out.cfi {
+				// an advance past the end of the procedure would take the row
+				// outside the FDE's range
+				if op.offset >= u32(len(prc.out.code)) do continue
+
+				if op.offset > cur {
+					delta := (op.offset - cur) / spec.code_align
+					switch {
+					case delta < 64:
+						append(&eh_frame, DW_CFA_advance_loc | u8(delta))
+					case delta < 0x100:
+						append(&eh_frame, DW_CFA_advance_loc1, u8(delta))
+					case delta < 0x10000:
+						append(&eh_frame, DW_CFA_advance_loc2)
+						put_u16(&eh_frame, u16(delta))
+					case:
+						append(&eh_frame, DW_CFA_advance_loc4)
+						put_u32(&eh_frame, delta)
+					}
+					cur = op.offset
+				}
+
+				switch op.kind {
+				case .Def_Cfa_Offset:
+					append(&eh_frame, DW_CFA_def_cfa_offset)
+					uleb(&eh_frame, u64(op.arg))
+				case .Save_Reg:
+					append(&eh_frame, DW_CFA_offset | op.reg)
+					uleb(&eh_frame, u64(op.arg) / u64(-spec.data_align))
+				case .Restore_Reg:
+					append(&eh_frame, DW_CFA_restore | op.reg)
+				case .Remember_State:
+					append(&eh_frame, DW_CFA_remember_state)
+				case .Restore_State:
+					append(&eh_frame, DW_CFA_restore_state)
+				}
+			}
+
+			for len(eh_frame) % 8 != 0 do append(&eh_frame, DW_CFA_nop)
+			patch_u32(&eh_frame, fde_len_pos, u32(len(eh_frame) - fde_base))
+		}
+
+		put_u32(&eh_frame, 0) // terminator
+	}
+
 	// combine local then global symbols; first global index is sh_info
 	symtab: [dynamic]Elf64_Sym
 	append(&symtab, Elf64_Sym{}) // null symbol
@@ -420,6 +518,8 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	name_rel_dbg_info := strtab_add(&shstr, ".rel.debug_info")
 	name_dbg_line := strtab_add(&shstr, ".debug_line")
 	name_rel_dbg_line := strtab_add(&shstr, ".rel.debug_line")
+	name_eh_frame := strtab_add(&shstr, ".eh_frame")
+	name_rel_eh_frame := strtab_add(&shstr, ".rel.eh_frame")
 	name_symtab := strtab_add(&shstr, ".symtab")
 	name_strtab := strtab_add(&shstr, ".strtab")
 	name_shstrtab := strtab_add(&shstr, ".shstrtab")
@@ -452,6 +552,13 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	eb_align(&b, 8)
 	rel_dbg_line_off := len(b.buf)
 	for r in line_rels do eb_struct(&b, r)
+
+	eb_align(&b, 8)
+	eh_frame_off := eb_bytes(&b, eh_frame[:])
+
+	eb_align(&b, 8)
+	rel_eh_frame_off := len(b.buf)
+	for r in eh_rels do eb_struct(&b, r)
 
 	eb_align(&b, 8)
 	sym_off := len(b.buf)
@@ -541,7 +648,27 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 			sh_addralign = 8,
 			sh_entsize = size_of(Elf64_Rel),
 		},
-		// 9: .symtab
+		// 9: .eh_frame
+		{
+			sh_name = name_eh_frame,
+			sh_type = SHT_PROGBITS,
+			sh_flags = SHF_ALLOC,
+			sh_offset = u64(eh_frame_off),
+			sh_size = u64(len(eh_frame)),
+			sh_addralign = 8,
+		},
+		// 10: .rel.eh_frame
+		{
+			sh_name = name_rel_eh_frame,
+			sh_type = SHT_REL,
+			sh_offset = u64(rel_eh_frame_off),
+			sh_size = u64(len(eh_rels) * size_of(Elf64_Rel)),
+			sh_link = SEC_SYMTAB,
+			sh_info = SEC_EH_FRAME,
+			sh_addralign = 8,
+			sh_entsize = size_of(Elf64_Rel),
+		},
+		// 11: .symtab
 		{
 			sh_name = name_symtab,
 			sh_type = SHT_SYMTAB,
@@ -552,7 +679,7 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 			sh_addralign = 8,
 			sh_entsize = size_of(Elf64_Sym),
 		},
-		// 10: .strtab
+		// 12: .strtab
 		{
 			sh_name = name_strtab,
 			sh_type = SHT_STRTAB,
@@ -560,7 +687,7 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 			sh_size = u64(len(str.buf)),
 			sh_addralign = 1,
 		},
-		// 11: .shstrtab
+		// 13: .shstrtab
 		{
 			sh_name = name_shstrtab,
 			sh_type = SHT_STRTAB,
@@ -686,9 +813,10 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	SEC_DEBUG_ABBREV :: 4
 	SEC_DEBUG_INFO :: 5
 	SEC_DEBUG_LINE :: 7
-	SEC_SYMTAB :: 9
-	SEC_STRTAB :: 10
-	SEC_SHSTRTAB :: 11
+	SEC_EH_FRAME :: 9
+	SEC_SYMTAB :: 11
+	SEC_STRTAB :: 12
+	SEC_SHSTRTAB :: 13
 
 	// DWARF v4 constants used by the debug sections
 	DW_TAG_compile_unit :: 0x11
@@ -713,6 +841,20 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	DW_LNS_set_file :: 4
 	DW_LNE_end_sequence :: 1
 	DW_LNE_set_address :: 2
+	// call frame information
+	DW_EH_PE_pcrel :: 0x10
+	DW_EH_PE_sdata4 :: 0x0b
+	DW_CFA_nop :: 0x00
+	DW_CFA_advance_loc :: 0x40
+	DW_CFA_offset :: 0x80
+	DW_CFA_restore :: 0xc0
+	DW_CFA_advance_loc1 :: 0x02
+	DW_CFA_advance_loc2 :: 0x03
+	DW_CFA_advance_loc4 :: 0x04
+	DW_CFA_def_cfa :: 0x0c
+	DW_CFA_def_cfa_offset :: 0x0e
+	DW_CFA_remember_state :: 0x0a
+	DW_CFA_restore_state :: 0x0b
 	DW_LINE_BASE :: 0xfb // -5 as u8
 	DW_LINE_RANGE :: 14
 	DW_OPCODE_BASE :: 13

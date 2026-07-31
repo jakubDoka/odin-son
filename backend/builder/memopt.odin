@@ -329,7 +329,7 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 							}
 
 							if dirty {
-								backend.push_node_name(ctx, "srphi")
+								backend.graph_push_tag(ctx, "srphi")
 								res = Value_Entry(
 									backend.graph_add_raw(
 										ctx,

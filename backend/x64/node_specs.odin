@@ -893,7 +893,7 @@ x64_collect_meta :: proc(ctx: ^backend.Graph,
 #assert(size_of(X64_Mem_Op) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 graph_add_x64_psadbw :: #force_inline proc(graph: ^backend.Graph, name: string, dt: backend.Node_Datatype, lhs: backend.Node_ID, rhs: backend.Node_ID) -> (id: backend.Node_ID) {
-	backend.push_node_name(graph, name)
+	backend.graph_push_tag(graph, name)
 	return backend.graph_add_raw(graph, u16(X64_Node_Type.X64_Psadbw), dt, {lhs, rhs})
 }
 #assert(size_of(X64_Mem_Op) % backend.PRECISION == 0)

@@ -11,12 +11,40 @@ Call_Conv :: struct {
 	rets:          [Reg_Kind][]Reg,
 	red_zone_size: i32,
 	is_syscall:    bool,
+	cfi_spec:      Cfi_Spec,
 }
 
 Codegen_Spec :: struct {
 	emit_function:      proc(_: Codegen_Emit_Ctx) -> Codegen_Output,
 	peep:               Peep_Fn,
 	post_schedule_peep: PS_Peep_Fn,
+}
+
+// The fixed part of a DWARF CIE: everything the unwinder needs before the
+// first Cfi_Op of a procedure is applied.
+Cfi_Spec :: struct {
+	cfa_reg:            u8,
+	return_addr_reg:    u8,
+	initial_cfa_offset: u32,
+	code_align:         u32,
+	data_align:         i32,
+}
+
+Cfi_Kind :: enum u8 {
+	Def_Cfa_Offset,
+	Save_Reg,
+	Restore_Reg,
+	Remember_State,
+	Restore_State,
+}
+
+// A frame state change that becomes current at `offset` (procedure relative,
+// i.e. right after the instruction that performed it).
+Cfi_Op :: struct {
+	offset: u32,
+	arg:    u32,
+	kind:   Cfi_Kind,
+	reg:    u8,
 }
 
 PS_Peep_Fn :: proc(_: PS_Peep_Ctx, node: Expanded_Node) -> Node_ID
@@ -51,11 +79,13 @@ Codegen_Emit_Buf :: struct {
 	code:   ^arna.Allocator,
 	relocs: ^arna.Allocator,
 	slocs:  ^arna.Allocator,
+	cfi:    ^arna.Allocator,
 }
 
 Codegen_Output :: struct {
 	relocs:    []Reloc,
 	slocs:     []Sloc,
+	cfi:       []Cfi_Op,
 	code:      []u8,
 	constants: []u8,
 }
@@ -114,4 +144,8 @@ add_reloc :: #force_no_inline proc(buf: ^arna.Allocator) -> ^Reloc {
 
 add_sloc :: #force_no_inline proc(buf: ^arna.Allocator) -> ^Sloc {
 	return (^Sloc)(raw_data(arna.alloc(buf, size_of(Sloc), align_of(Sloc))))
+}
+
+add_cfi :: #force_no_inline proc(buf: ^arna.Allocator) -> ^Cfi_Op {
+	return (^Cfi_Op)(raw_data(arna.alloc(buf, size_of(Cfi_Op), align_of(Cfi_Op))))
 }

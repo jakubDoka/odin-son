@@ -87,6 +87,7 @@ SPEC := backend.Node_Spec{
 		0b10, // Cast
 		0b10, // F_To_I
 		0b10, // F_From_I
+		0b10, // U_F_From_I
 		0b10, // F_Ext
 		0b10, // F_Demote
 		0b10, // Splat
@@ -170,6 +171,7 @@ SPEC := backend.Node_Spec{
 		0, // Cast -> No_Extra
 		0, // F_To_I -> No_Extra
 		0, // F_From_I -> No_Extra
+		0, // U_F_From_I -> No_Extra
 		0, // F_Ext -> No_Extra
 		0, // F_Demote -> No_Extra
 		0, // Splat -> No_Extra
@@ -253,6 +255,7 @@ SPEC := backend.Node_Spec{
 		{Class_Flag.Interned}, // Cast
 		{Class_Flag.Interned}, // F_To_I
 		{Class_Flag.Interned}, // F_From_I
+		{Class_Flag.Interned}, // U_F_From_I
 		{Class_Flag.Interned}, // F_Ext
 		{Class_Flag.Interned}, // F_Demote
 		{Class_Flag.Interned}, // Splat
@@ -329,6 +332,7 @@ SPEC := backend.Node_Spec{
 		backend.Cfg,
 		backend.Tup,
 		backend.Cfg,
+		backend.No_Extra,
 		backend.No_Extra,
 		backend.No_Extra,
 		backend.No_Extra,
@@ -419,6 +423,7 @@ SPEC := backend.Node_Spec{
 		`Cast`,
 		`F_To_I`,
 		`F_From_I`,
+		`U_F_From_I`,
 		`F_Ext`,
 		`F_Demote`,
 		`Splat`,
@@ -504,6 +509,7 @@ Builder_Node_Type :: enum u16 {
 	Cast,
 	F_To_I,
 	F_From_I,
+	U_F_From_I,
 	F_Ext,
 	F_Demote,
 	Splat,
@@ -588,6 +594,7 @@ builder_post_schedule_peep_inst :: proc(
 #assert(size_of(backend.Cfg) % backend.PRECISION == 0)
 #assert(size_of(backend.Tup) % backend.PRECISION == 0)
 #assert(size_of(backend.Cfg) % backend.PRECISION == 0)
+#assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)

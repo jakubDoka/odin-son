@@ -66,6 +66,18 @@ fold_bin_op :: proc(
 ) -> (
 	value: i64,
 ) {
+	lhs := lhs
+	rhs := rhs
+	#partial switch op {
+	case .Div, .Rem, .Shr, .Shl, .Le ..= .Ge:
+		lhs = sext(lhs, ty)
+	}
+
+	#partial switch op {
+	case .Div, .Rem, .Le ..= .Ge:
+		rhs = sext(rhs, ty)
+	}
+
 	switch op {
 	case .Add:
 		value = lhs + rhs
@@ -74,8 +86,10 @@ fold_bin_op :: proc(
 	case .Mul:
 		value = lhs * rhs
 	case .Div:
-		value = sext(lhs, ty) / sext(rhs, ty)
+		if rhs == 0 do return 0
+		value = lhs / rhs
 	case .Rem:
+		if rhs == 0 do return 0
 		value = lhs % rhs
 	case .And:
 		value = lhs & rhs
@@ -88,7 +102,7 @@ fold_bin_op :: proc(
 	case .Shl:
 		value = sext(lhs << u64(rhs), ty)
 	case .Shr:
-		value = lhs >> u64(rhs)
+		value = sext(lhs, ty) >> u64(rhs)
 	case .Eq:
 		value = i64(lhs == rhs)
 	case .Ne:
@@ -441,6 +455,8 @@ builder_peep :: proc(
 			idx := graph_expand(ctx, cnd.inps[0])
 			if idx.itype != .Phi do break memcpify
 			if idx.inps[0] != node.inps[0] do break memcpify
+			init := backend.graph_extra(ctx, idx.inps[1], CInt)
+			if init == nil || init.value != 0 do break memcpify
 			if len(idx.outs) > 4 do break memcpify
 
 			add := graph_expand(ctx, idx.inps[2])
@@ -482,6 +498,14 @@ builder_peep :: proc(
 				if dst_cur_idx.inps[0] != cnd.inps[0] do break memcpify
 			} else {
 				if dst_cur.inps[1] != cnd.inps[0] do break memcpify
+			}
+
+			if factor != 0 {
+				const := backend.graph_extra(ctx, factor, CInt)
+				if const == nil ||
+				   int(const.value) != backend.DT_SIZE[load.dt] {
+					break memcpify
+				}
 			}
 
 			src := src_cur.inps[0]
@@ -581,7 +605,6 @@ builder_peep :: proc(
 				.Shl,
 				.Xor,
 				.And_Not,
-				.Ne,
 			}
 			if op in ZERO_IS_NEUTRAL && crhs.value == 0 {
 				return node.inps[0]
@@ -721,8 +744,8 @@ builder_peep :: proc(
 					ctx,
 					cnode.inps[2],
 					node.inps[2],
-					backend.DT_SIZE[node.dt],
 					backend.DT_SIZE[graph_get(ctx, cnode.inps[3]).dt],
+					backend.DT_SIZE[node.dt],
 				) {
 					break
 				}
@@ -740,6 +763,11 @@ builder_peep :: proc(
 				backend.peep_ctx_add_trigger(ctx, cursor, id)
 				if fnode.itype == .Store {
 					backend.peep_ctx_add_trigger(ctx, fnode.inps[2], id)
+					base, _ := backend.base_and_offset(ctx, fnode.inps[2])
+					bnode := graph_expand(ctx, base)
+					if bnode.itype == .Add {
+						backend.peep_ctx_add_trigger(ctx, bnode.inps[1], id)
+					}
 				}
 			}
 		}
@@ -838,6 +866,8 @@ builder_peep :: proc(
 						cursor = out.id
 						continue
 					}
+					if onode.itype == .Copy &&
+					   backend.is_noalias(ctx, node.inps[2], onode.inps[3]) {}
 					osize := backend.mem_op_size(
 						ctx,
 						out.id,
@@ -1073,7 +1103,7 @@ builder_peep :: proc(
 					size   = min(current_align, gap),
 					offset = rev_offset,
 				}
-				assert(fill.size != 0)
+				assert(math.is_power_of_two(fill.size))
 				rev_offset += fill.size
 				if len(slots) >= cap(slots) {
 					break match
@@ -1098,7 +1128,8 @@ builder_peep :: proc(
 			for &slot in slots[1:] {
 				curr := &slots[keep]
 
-				if slot.offset == curr.offset + curr.size {
+				if slot.offset == curr.offset + curr.size &&
+				   math.is_power_of_two(curr.size + slot.size) {
 					curr.size += slot.size
 				} else {
 					keep += 1
@@ -1107,16 +1138,37 @@ builder_peep :: proc(
 			}
 			resize(&slots, keep + 1)
 
-			for {
-				curr := &slots[len(slots) - 1]
-				if curr.size <= MAX_STORE_UNIT do break
-				new_slot := Slot {
-					size   = curr.size - MAX_STORE_UNIT,
-					state  = .Needs_Init,
-					offset = curr.offset + MAX_STORE_UNIT,
+			for i in 0 ..< len(slots) {
+				for {
+					curr := &slots[i]
+					if curr.size <= MAX_STORE_UNIT do break
+					new_slot := Slot {
+						size   = curr.size - MAX_STORE_UNIT,
+						state  = .Needs_Init,
+						offset = curr.offset + MAX_STORE_UNIT,
+					}
+					assert(math.is_power_of_two(new_slot.size))
+					curr.size = MAX_STORE_UNIT
+					if !inject_at(&slots, i, new_slot) {
+						break match
+					}
 				}
-				curr.size = MAX_STORE_UNIT
-				append(&slots, new_slot)
+			}
+
+			for i := 0; i < len(slots); i += 1 {
+				slot := &slots[i]
+				for !math.is_power_of_two(slot.size) {
+					chip := min(align_of(slot.offset), slot.size)
+					inject_at(
+						&slots,
+						i + 1,
+						Slot {
+							offset = slot.offset + chip,
+							size = slot.size - chip,
+						},
+					)
+					slot.size = chip
+				}
 			}
 		}
 
@@ -1127,6 +1179,12 @@ builder_peep :: proc(
 
 		mem_thread := mm
 		for slot in slots {
+			fmt.assertf(
+				math.is_power_of_two(slot.size),
+				"%v %#v",
+				slot.size,
+				slots,
+			)
 			idx := intrinsics.count_trailing_zeros(slot.size)
 			table := [?]backend.Node_Datatype{.I8, .I16, .I32, .I64, .V128}
 			dt := table[idx]

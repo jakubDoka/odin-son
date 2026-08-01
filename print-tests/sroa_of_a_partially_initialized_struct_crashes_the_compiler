@@ -1,0 +1,68 @@
+=========== OPT LEVEL: none ===========
+sink:
+    movzx.b eax, [rdi]
+    movzx.w ecx, [rdi + 0x2]
+    lea rax, [rax + rcx*4]
+    ret
+main:
+    sub rsp, 8
+    xor esi, esi
+    mov rdx, 4
+    lea rdi, [rsp]
+    call.q [rip - 0x30]
+    mov.b [rsp], 1
+    lea rdi, [rsp]
+    call sink
+    add rsp, 8
+    ret
+=========== OPT LEVEL: mininal ===========
+sink:
+    movzx.b eax, [rdi]
+    movzx.w ecx, [rdi + 0x2]
+    lea rax, [rax + rcx*4]
+    ret
+main:
+    sub rsp, 8
+    xor esi, esi
+    mov rdx, 4
+    lea rdi, [rsp]
+    call.q [rip - 0x30]
+    mov.b [rsp], 1
+    lea rdi, [rsp]
+    call sink
+    add rsp, 8
+    ret
+=========== OPT LEVEL: moderate ===========
+sink:
+    movzx.b eax, [rdi]
+    movzx.w ecx, [rdi + 0x2]
+    lea rax, [rax + rcx*4]
+    ret
+main:
+    sub rsp, 8
+    mov.b [rsp + 0x1], 0
+    mov.w [rsp + 0x2], 0
+    mov.b [rsp], 1
+    lea rdi, [rsp]
+    call sink
+    add rsp, 8
+    ret
+=========== OPT LEVEL: all ===========
+sink:
+    movzx.b eax, [rdi]
+    movzx.w ecx, [rdi + 0x2]
+    lea rax, [rax + rcx*4]
+    ret
+main:
+    sub rsp, 8
+    mov.b [rsp + 0x1], 0
+    mov.w [rsp + 0x2], 0
+    mov.b [rsp], 1
+    lea rdi, [rsp]
+    call sink
+    add rsp, 8
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    mov rax, 1
+    ret

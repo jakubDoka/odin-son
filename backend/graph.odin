@@ -184,6 +184,7 @@ Ideal_Node_Type :: enum u16 {
 	Cast,
 	F_To_I,
 	F_From_I,
+	U_F_From_I,
 	F_Ext,
 	F_Demote,
 	Splat,
@@ -1040,6 +1041,9 @@ is_noalias :: proc {
 }
 
 is_noalias_ops :: proc(graph: ^Graph, a, b: Node_ID) -> bool {
+	a, b := a, b
+	if graph_get(graph, a).itype == .Copy do a, b = b, a
+
 	sizes: [2]int
 	nodes := [?]Node_ID{a, b}
 
@@ -1047,6 +1051,13 @@ is_noalias_ops :: proc(graph: ^Graph, a, b: Node_ID) -> bool {
 		node := graph_expand(graph, n)
 		sizes[i] = mem_op_size(graph, n) or_return
 		n = node.inps[2]
+	}
+
+	bn := graph_expand(graph, b)
+
+	if bn.itype == .Copy &&
+	   !is_noalias(graph, nodes[0], bn.inps[3], sizes[0], sizes[1]) {
+		return false
 	}
 
 	return is_noalias(graph, nodes[0], nodes[1], sizes[0], sizes[1])

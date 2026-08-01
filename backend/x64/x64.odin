@@ -81,7 +81,24 @@ MASK_SIZE :: backend.MASK_SIZE
 // DWARF numbers the x86-64 general purpose registers in a different order than
 // the instruction encoding does, so the two have to be mapped explicitly.
 @(rodata)
-DWARF_GPR := [GPA_REG_COUNT]u8{0, 2, 1, 3, 7, 6, 4, 5, 8, 9, 10, 11, 12, 13, 14, 15}
+DWARF_GPR := [GPA_REG_COUNT]u8 {
+	0,
+	2,
+	1,
+	3,
+	7,
+	6,
+	4,
+	5,
+	8,
+	9,
+	10,
+	11,
+	12,
+	13,
+	14,
+	15,
+}
 
 X64_CFI_SPEC :: backend.Cfi_Spec {
 	cfa_reg            = 7, // rsp
@@ -1280,6 +1297,8 @@ x64_meta_of :: proc(
 		return {out = out, masks = nmasks[:1], in_place_slot = 1}
 	case .Sext, .Uext:
 		return {out = out, masks = nmasks[:1]}
+	case .U_F_From_I:
+		panic("TODO")
 	case .F_To_I, .F_From_I, .F_Ext, .F_Demote, .Cast:
 		inp := graph_get(graph, node.inps[0])
 		return {out = out, masks = masks[ra.datatype_to_reg_kind[inp.dt]][:1]}
@@ -1709,7 +1728,12 @@ x64_emit_function :: proc(
 	}
 }
 
-emit_cfi :: proc(ctx: ^Ctx, kind: backend.Cfi_Kind, reg: u8 = 0, arg: u32 = 0) {
+emit_cfi :: proc(
+	ctx: ^Ctx,
+	kind: backend.Cfi_Kind,
+	reg: u8 = 0,
+	arg: u32 = 0,
+) {
 	if !ctx.has_dbg do return
 	backend.add_cfi(ctx.cfi)^ = {
 		offset = u32(ctx.code.pos - ctx.code_start),
@@ -2262,7 +2286,8 @@ x64_emit_instr :: proc(
 		} else if call.indirect {
 			// call $ptr
 			ptr := reg_of(ctx, node.inps[len(node.inps) - 1])
-			emit(ctx.code, {0xFF, mod_sm(.Direct, 0b010, ptr)})
+			rx := rex(RAX, ptr, NO_INDEX, false)
+			emit(ctx.code, {rx, 0xFF, mod_sm(.Direct, 0b010, ptr)})
 		} else if call.imported && ctx.emit_got_imports {
 			// call [rip + $lib_call.id]
 			emit(ctx.code, {0xFF, mod_sm(.Indirect, 0b010, RIP), 0, 0, 0, 0})
@@ -2578,7 +2603,8 @@ x64_emit_instr :: proc(
 	case .X64_Mul8:
 		// imul $op
 		dst := reg_of(ctx, node.inps[0])
-		emit(ctx.code, {0xf6, mod_sm(.Direct, 0b101, dst)})
+		rx := rex(RAX, dst, NO_INDEX, false)
+		emit(ctx.code, {rx, 0xf6, mod_sm(.Direct, 0b101, dst)})
 	case .F_Add ..= .F_Div:
 		// dst == lhs (in place); op dst, rhs
 		dst := reg_of(ctx, node.inps[0])
@@ -2647,7 +2673,7 @@ x64_emit_instr :: proc(
 
 			// ucomiss/ucomisd $lhs, [$rhs + $idx * scl + $sdis + $dis]
 			if odt == .F64 do emit(ctx.code, {0x66})
-			rx := rex(lhs, bse, RAX, false)
+			rx := rex(lhs, bse, idx, false)
 			emit(ctx.code, {rx, 0x0f, 0x2e})
 			emit_indirect_addr(ctx, lhs, bse, idx, scl, dis + sdis, id)
 		case .None:
@@ -2684,6 +2710,8 @@ x64_emit_instr :: proc(
 			rxz := rex(dst, dst, RAX, true)
 			emit(ctx.code, {rxz, 0x0F, 0xB6, mod_rm(.Direct, dst, dst)})
 		}
+	case .U_F_From_I:
+		panic("TODO")
 	case .F_From_I:
 		// cvtsi2ss/cvtsi2sd $dst(xmm), $src(gpr)
 		dst := reg_of(ctx, instr)
@@ -2801,7 +2829,7 @@ x64_emit_instr :: proc(
 
 				// pop [rsp + $dst_off]
 				emit(ctx.code, {0x8F})
-				spill_indirect_addr(ctx, Reg(0b000), dst_off - 8)
+				spill_indirect_addr(ctx, Reg(0b000), dst_off)
 			} else if d_spill {
 				// movss/movsd [rsp + $dst_off], $src
 				emit(ctx.code, {pfx, rex(src, RSP, RAX, false), 0x0f, 0x11})

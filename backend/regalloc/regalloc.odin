@@ -169,6 +169,7 @@ regalloc_round :: proc(
 					lrg.reg = -1
 					used_lrgs += 1
 				} else {
+					lrg = find(lrg)
 					intersect(lrg, mask)
 				}
 
@@ -713,21 +714,19 @@ regalloc_round :: proc(
 					is_internal = false
 				}
 
-				if is_internal do continue
-
 				id = m
 				fnode := graph_get(graph, m)
 
 				assert(fnode.output_count > 0)
 
 				if fnode.itype != .Split {
-					id = split_after(ctx, "sdef", m)
+					id = split_after(ctx, "sdef", m, must = is_internal)
 					fnode = graph_get(graph, id)
 				}
 
 				for out in slice.clone(backend.graph_outs(graph, m)) {
 					olrg := get_lrg(ctx, out.id)
-					if olrg == &lrg || olrg == nil do continue
+					if olrg == nil do continue
 
 					out_node := graph_get(graph, out.id)
 
@@ -748,6 +747,10 @@ regalloc_round :: proc(
 
 				if fnode.output_count == 0 {
 					block, idx := get_node_block_and_idx(ctx, m)
+					for graph_get(ctx.graph, block.instrs[idx + 1]).itype ==
+					    .Phi {
+						idx += 1
+					}
 					ordered_remove(&block.instrs, idx + 1)
 					backend.graph_delete(ctx.graph, fnode)
 				}
@@ -1251,11 +1254,16 @@ regalloc_round :: proc(
 		return ctx.lrg_table[node.gvn]
 	}
 
-	split_after :: proc(ctx: Ctx, name: string, use: Node_ID) -> Node_ID {
+	split_after :: proc(
+		ctx: Ctx,
+		name: string,
+		use: Node_ID,
+		must := false,
+	) -> Node_ID {
 		graph := ctx.graph
 		fnode := graph_get(graph, use)
 
-		if backend.graph_has_flag(graph, fnode, .Clonable) {
+		if backend.graph_has_flag(graph, fnode, .Clonable) && !must {
 			return use
 		}
 
@@ -1284,6 +1292,7 @@ regalloc_round :: proc(
 		#any_int idx: int,
 		name: string,
 		redirect: Node_ID = 0,
+		must := false,
 	) -> Node_ID {
 		node := graph_expand(ctx.graph, id)
 		inp := redirect if redirect != 0 else node.inps[idx]
@@ -1292,7 +1301,7 @@ regalloc_round :: proc(
 		if inp_node.dt == .Void do return inp
 
 		split: Node_ID
-		if backend.graph_has_flag(ctx.graph, inp_node, .Clonable) {
+		if backend.graph_has_flag(ctx.graph, inp_node, .Clonable) && !must {
 			if int(inp_node.gvn) > len(ctx.instr_placement) {
 				// NOTE: means we already split this to the largest extent
 				return inp
@@ -1410,6 +1419,12 @@ regalloc_round :: proc(
 						max(1000 - int((onode.gvn - fnode.gvn) * 100), 0),
 					)
 				}
+
+				if ctx.lrg_table[onode.gvn] == ctx.lrg_table[fnode.gvn] &&
+				   onode.itype == .Phi {
+					_, idx := get_node_block_and_idx(ctx, id)
+					return u32(max(idx * 100, 0))
+				}
 			}
 		}
 
@@ -1463,6 +1478,7 @@ regalloc_round :: proc(
 	}
 
 	intersect :: proc(l: ^backend.Lrg, mask: backend.Reg_Mask) {
+		assert(l.parent == nil)
 		backend.reg_mask_intersection(l.mask, mask)
 		if backend.reg_mask_is_empty(l.mask) {
 			l.reg_conflict = true

@@ -259,7 +259,7 @@ ctx_mem :: proc(ctx: ^Gen_Ctx) -> Node_ID {
 }
 
 ctx_set_mem :: proc(ctx: ^Gen_Ctx, mem: Node_ID) {
-	backend.graph_set_input(ctx, ctx.node_scope, ctx.mem_slot, mem)
+	builder.graph_set_scope_value(ctx, ctx.node_scope, ctx.mem_slot, mem)
 }
 
 Value :: bit_field u32 {
@@ -370,6 +370,10 @@ tok_to_binop :: proc(
 		.Lt_Eq  = {.F_Le, "fle"},
 		.Gt     = {.F_Gt, "fgt"},
 		.Gt_Eq  = {.F_Ge, "fge"},
+	}
+
+	defer {
+		assert(int(kind) != 0)
 	}
 
 	if ty in typecheck.FLOAT_TYPES {
@@ -653,6 +657,7 @@ index_offset :: proc(
 			index,
 			backend.graph_add_c_int(ctx, "sst", .I64, i64(stride)),
 		)
+		index = backend.graph_peep(ctx, index)
 	}
 
 	return backend.graph_add_bin_op(ctx, "snd", .Add, .I64, base, index)
@@ -1185,7 +1190,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				switch sym in syms[i] {
 				case int:
 					rv := to_rvalue_ty(ctx, r, vty)
-					backend.graph_set_input(ctx, ctx.node_scope, sym, rv)
+					builder.graph_set_scope_value(ctx, ctx.node_scope, sym, rv)
 				case Value:
 					store_value(ctx, "masss", sym.id, r, vty)
 				}
@@ -1306,7 +1311,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		}
 
 		for s in values {
-			backend.graph_set_input(ctx, ctx.node_scope, s.idx, s.vl)
+			builder.graph_set_scope_value(ctx, ctx.node_scope, s.idx, s.vl)
 			backend.graph_unpin(ctx, s.vl)
 		}
 
@@ -2022,7 +2027,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				idxv3,
 				one,
 			)
-			backend.graph_set_input(ctx, ctx.node_scope, idx_slot, nidx)
+			builder.graph_set_scope_value(ctx, ctx.node_scope, idx_slot, nidx)
 		}
 
 		builder.graph_end_loop(ctx, &ctx.node_scope, &loop_state.bstate)

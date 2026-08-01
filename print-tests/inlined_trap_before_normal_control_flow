@@ -21,14 +21,13 @@ foo:
 =========== OPT LEVEL: mininal ===========
 main:
     sub rsp, 8
-    mov.q rax, [rip + 0xfe5]
-    test rax, rax
+    cmp.q [rip + 0xfe1], 0
     jne 1
     xor eax, eax
     jmp 2
 1:
     call foo
-    cmp.q [rip + 0xfcc], 0
+    cmp.q [rip + 0xfcb], 0
     jz 3
     xor eax, eax
     jmp 2
@@ -42,14 +41,13 @@ foo:
 =========== OPT LEVEL: moderate ===========
 main:
     sub rsp, 8
-    mov.q rax, [rip + 0xfe5]
-    test rax, rax
+    cmp.q [rip + 0xfe1], 0
     jne 1
     xor eax, eax
     jmp 2
 1:
     call foo
-    cmp.q [rip + 0xfcc], 0
+    cmp.q [rip + 0xfcb], 0
     jz 3
     xor eax, eax
     jmp 2
@@ -63,14 +61,13 @@ foo:
 =========== OPT LEVEL: all ===========
 main:
     sub rsp, 8
-    mov.q rax, [rip + 0xfe5]
-    test rax, rax
+    cmp.q [rip + 0xfe1], 0
     jne 1
     xor eax, eax
     jmp 2
 1:
     call foo
-    cmp.q [rip + 0xfcc], 0
+    cmp.q [rip + 0xfcb], 0
     jz 3
     xor eax, eax
     jmp 2
@@ -83,8 +80,7 @@ foo:
     ud2
 =========== OPT LEVEL: aggresive ===========
 main:
-    mov.q rcx, [rip + 0xfe9]
-    test rcx, rcx
+    cmp.q [rip + 0xfe5], 0
     jne 1
     xor eax, eax
     jmp 2

@@ -5773,3 +5773,789 @@ foo :: proc() {
 	intrinsics.trap()
 }
 ```
+
+<!-- backend/builder/builder.odin:575-588 `.Ne` is listed in ZERO_IS_NEUTRAL, so `x != 0` is rewritten to `x` itself; correct only when the result is used as a branch condition, wrong when the boolean is materialized. expected 1, actual 5 -->
+
+#### ne with zero is not identity
+```odin
+package main
+
+opt_level :: "mininal"
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main :: proc() -> int {
+	a := opaque(5)
+	return int(a != 0)
+}
+```
+
+<!-- backend/builder/builder.odin:811-846 store elimination only compares the *destination* of a `.Copy` user (is_noalias_ops always uses inps[2]), so a `.Copy` that READS the stored location is treated as a pure write; the store is then deleted because a later store covers it. expected 253 (5 + 6*10 + 7*100 mod 256), actual 248 (0 + 6*10 + 7*100 mod 256) -->
+
+#### store feeding a memcpy source is wrongly dead store eliminated
+```odin
+package main
+
+opt_level :: "moderate"
+
+V :: struct {
+	a: i64,
+	b: i64,
+}
+
+Pair :: struct {
+	x: V,
+	y: V,
+}
+
+ident :: proc(p: ^Pair) -> ^Pair {
+	return p
+}
+
+main :: proc() -> int {
+	pr: Pair
+	p := ident(&pr)
+	p.x.a = 5
+	p.x.b = 6
+	p.y = p.x
+	p.x.a = 7
+	return int(p.y.a) + int(p.y.b) * 10 + int(p.x.a) * 100
+}
+```
+
+<!-- backend/builder/builder.odin:430-522 the `memcpify:` loop-to-`Copy` idiom recognizer never checks that the induction phi starts at 0 (it only checks the step and the exit compare), so `for i := 2; i < n; i += 1 { dst[i] = src[i] }` becomes `copy(dst, src, n)` starting at element 0. expected 248, actual 204 -->
+
+#### memcpify ignores the loop start index
+```odin
+package main
+
+opt_level :: "moderate"
+
+cpy :: proc(dst: [^]u8, src: [^]u8, n: int) {
+	i := 2
+	for {
+		if i >= n do break
+		dst[i] = src[i]
+		i += 1
+	}
+}
+
+main :: proc() -> int {
+	a: [8]u8
+	b: [8]u8
+	i := 0
+	for {
+		if i >= 8 do break
+		a[i] = u8(i + 1)
+		b[i] = 100
+		i += 1
+	}
+	cpy(([^]u8)(&b[0]), ([^]u8)(&a[0]), 8)
+	r := 0
+	i = 0
+	for {
+		if i >= 8 do break
+		r += int(b[i]) * (i + 1)
+		i += 1
+	}
+	return r % 251
+}
+```
+
+<!-- backend/builder/builder.odin:467-490 `memcpify` takes the index scale (`factor`) from the address `Mul` and emits `Copy` of `count * factor` bytes without ever checking that `factor` equals the element size, so a strided loop `dst[i*2] = src[i*2]` is turned into a contiguous copy of 2*n bytes. expected 76, actual 204 -->
+
+#### memcpify turns a strided loop into a contiguous copy
+```odin
+package main
+
+opt_level :: "moderate"
+
+cpy :: proc(dst: [^]u8, src: [^]u8, n: int) {
+	i := 0
+	for {
+		if i >= n do break
+		dst[i * 2] = src[i * 2]
+		i += 1
+	}
+}
+
+main :: proc() -> int {
+	a: [8]u8
+	b: [8]u8
+	i := 0
+	for {
+		if i >= 8 do break
+		a[i] = u8(i + 1)
+		b[i] = 100
+		i += 1
+	}
+	cpy(([^]u8)(&b[0]), ([^]u8)(&a[0]), 4)
+	r := 0
+	i = 0
+	for {
+		if i >= 8 do break
+		r += int(b[i]) * (i + 1)
+		i += 1
+	}
+	return r % 251
+}
+```
+
+<!-- backend/builder/builder.odin:73-77 `fold_bin_op` evaluates `.Div`/`.Rem` (and `.U_Div`/`.U_Rem`) unconditionally, so constant folding a never-executed `1 / 0` (or `min(i64) / -1`) kills the compiler itself with SIGILL/SIGFPE. expected exit 7, actual: jit crashes while compiling -->
+
+#### constant folding a division by zero crashes the compiler
+```odin
+package main
+
+opt_level :: "aggresive"
+
+dv :: proc(a: int, b: int) -> int {
+	return a / b
+}
+
+pick :: proc(x: int) -> int {
+	return x
+}
+
+main :: proc() -> int {
+	n := pick(3)
+	if n > 100 {
+		return dv(1, 0)
+	}
+	return 7
+}
+```
+
+<!-- NOT my area (memopt/SROA) but confirmed: backend/builder/memopt.odin:255 calls backend.graph_subsume with a 0 node id -> assert `id != 0` at backend/graph.odin:1608. expected exit 1, actual: jit crashes while compiling at -O:aggresive -->
+
+#### sroa of a partially initialized struct crashes the compiler
+```odin
+package main
+
+opt_level :: "aggresive"
+
+S :: struct {
+	a: u8,
+	c: u16,
+}
+
+sink :: proc(p: ^S) -> int {
+	return int(p.a) + int(p.c) * 4
+}
+
+main :: proc() -> int {
+	s: S
+	s.a = 1
+	return sink(&s)
+}
+```
+
+<!-- x64.odin:2578-2581 `.X64_Mul8` emits `{0xf6, mod_sm(...)}` with no REX prefix, so an 8-bit operand in rsi/rdi/rsp/rbp is encoded as dh/bh/ah/ch (and r8-r15 lose REX.B). `imul %bh` instead of `imul %dil`. expected 63, got 0 -->
+
+#### i8 multiply missing REX on imul r m8
+```odin
+package main
+
+opt_level :: "none"
+
+mul8 :: proc(a: i8, b: i8) -> i8 {
+	return a * b
+}
+
+main :: proc() -> int {
+	return int(mul8(7, 9))
+}
+```
+
+<!-- x64.odin:2262-2265 indirect `.Call` emits `{0xFF, mod_sm(.Direct, 0b010, ptr)}` with no REX, so a callee-saved function pointer allocated to r8-r15 is called as the low register (`call *%rsi` instead of `call *%r14`). expected 35, got SIGSEGV -->
+
+#### indirect call through high register missing REX B
+```odin
+package main
+
+opt_level :: "none"
+
+d :: proc(a: int, b: int, c: int, e: int, f: proc() -> int) -> int {
+	r := f()
+	r += a
+	r += b
+	r += c
+	r += e
+	r += f()
+	return r
+}
+
+main :: proc() -> int {
+	return d(1, 2, 4, 8, proc() -> int {return 10})
+}
+```
+
+<!-- x64.odin:2535-2541 `.Shl ..= .U_Shr` lowers to a bare `shl/shr r, cl`, which masks the count to 5/6 bits, but Odin defines a shift by >= the operand width as 0. expected 0, got 7 -->
+
+#### shift count larger than operand width
+```!odin
+package main
+
+opt_level :: "none"
+
+sh :: proc(a: uint, n: uint) -> uint {
+	return a << n
+}
+
+main :: proc() -> int {
+	return int(sh(1, 64) + sh(3, 65))
+}
+```
+
+<!-- x64.odin:1858-1859/2674 float Eq/Ne map straight to sete/setne (and je/jne) after ucomisd; the unordered result sets ZF=1 so `NaN == x` yields true and `NaN != x` yields false (PF is never consulted). expected 2, got 1 -->
+
+#### float equality with NaN ignores the parity flag
+```!odin
+package main
+
+opt_level :: "none"
+
+nan :: proc(x: f64) -> f64 {
+	return x / (x - x)
+}
+
+main :: proc() -> int {
+	n := nan(0)
+	return int(n == 1) + 2 * int(n != 1)
+}
+```
+
+<!-- x64.odin:608-616 folds a constant shift amount into X64_Shl/X64_Shr without range-checking it, and x64.odin:2368/2397 emit it as a raw `shl/shr r, imm8`, which the CPU masks to 5/6 bits; Odin defines a shift by >= the operand width as 0. expected 0, got 3 -->
+
+#### constant shift amount larger than operand width
+```!odin
+package main
+
+opt_level :: "none"
+
+shifts :: proc(x: u32) -> u32 {
+	return (x << 40) + (x >> 33)
+}
+
+main :: proc() -> int {
+	return int(shifts(7))
+}
+```
+
+<!-- x64.odin:2687-2693 `.F_From_I` always emits the signed `cvtsi2sd`, so a u64 with bit 63 set converts to a negative double. expected 18, got 0 -->
+
+#### u64 to f64 conversion uses signed cvtsi2sd
+```!odin
+package main
+
+opt_level :: "none"
+
+id :: proc(x: $T) -> T {return x}
+
+main :: proc() -> int {
+	c := id(u64(18446744073709551615))
+	return int(f64(c) / 1e18)
+}
+```
+
+<!-- x64.odin:2694-2701 `.F_To_I` always emits the signed `cvttsd2si`, so a float that does not fit the signed range of the destination yields the "integer indefinite" value instead of the unsigned result. expected 160, got 99 -->
+
+#### f64 to u32 conversion uses signed cvttsd2si
+```odin
+package main
+
+opt_level :: "none"
+
+id :: proc(x: $T) -> T {return x}
+
+main :: proc() -> int {
+	d := id(f64(4.0e9))
+	return int(u32(d) / 1000000)
+}
+```
+
+<!-- x64.odin:2804 the xmm spill-to-spill move emits `pop [rsp + dst_off - 8]`, but POP with an rsp-relative destination computes the address *after* RSP is incremented, so no bias is needed (the GPR path at x64.odin:2832 correctly uses dst_off); every float spill-to-spill copy writes 8 bytes below the intended slot. expected 116, got 49 -->
+
+#### float spill to spill move writes 8 bytes below the slot
+```odin
+package main
+
+opt_level :: "none"
+
+src :: proc(x: f64) -> f64 {
+	return x * 1.5 + 1.0
+}
+
+main :: proc() -> int {
+	a := src(1)
+	b := src(2)
+	c := src(3)
+	d := src(4)
+	e := src(5)
+	f := src(6)
+	g := src(7)
+	h := src(8)
+	i := src(9)
+	j := src(10)
+	k := src(11)
+	l := src(12)
+	m := src(13)
+	n := src(14)
+	o := src(15)
+	p := src(16)
+	q := 0
+	for {
+		if q == 2 do break
+		t := a
+		a = b; b = c; c = d; d = e; e = f; f = g; g = h; h = i
+		i = j; j = k; k = l; l = m; m = n; n = o; o = p; p = t
+		q += 1
+	}
+	return int(a + b*2 + c*3 + d*4 + e*5 + f*6 + g*7 + h*8 + i*9 + j*10 + k*11 + l*12 + m*13 + n*14 + o*15 + p*16) % 241
+}
+```
+
+<!-- x64.odin:2650 the memory-operand form of ucomiss/ucomisd builds its REX with `rex(lhs, bse, RAX, false)` while `emit_indirect_addr` is handed the real `idx`, so REX.X is dropped and an index register in r8-r15 is encoded as the matching low register (`ucomisd 0x0(%rbp,%rbp,8)` instead of `(%rbp,%r13,8)`). expected 4, got SIGSEGV -->
+
+#### float compare against indexed memory drops REX X
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	@(static)
+	garr: [8]f64
+	@(static)
+	gi: [12]int
+
+	i := 0
+	for {
+		if i == 8 do break
+		garr[i] = f64(i)
+		i += 1
+	}
+	a0 := gi[0]
+	a1 := gi[1]
+	a2 := gi[2]
+	a3 := gi[3]
+	a4 := gi[4]
+	a5 := gi[5]
+	a6 := gi[6]
+	a7 := gi[7]
+	a8 := gi[8]
+	a9 := gi[9]
+	x := f64(3.5)
+	r := 0
+	j := 0
+	for {
+		if j == 8 do break
+		if x > garr[j] do r += 1
+		j += 1
+	}
+	return r + a0 + a1 + a2 + a3 + a4 + a5 + a6 + a7 + a8 + a9
+}
+```
+
+<!-- regalloc.odin:750-752 removes `block.instrs[idx + 1]` assuming `split_after` put the new split right after `m`, but split_after (regalloc.odin:1269-1276) skips over trailing Phi/Mem instrs first; when `m` is a Phi followed by more Phis the wrong instr is unscheduled and the deleted split stays in the schedule -> `graph.odin:1621 node.rtype != DEAD_NODE_KIND`. expected exit 115, actual: compiler crash. -->
+#### regalloc split cleanup removes wrong phi from schedule
+```odin
+package main
+
+opt_level :: "none"
+
+opaque :: proc(x: int) -> int {
+	return x * 3 + 1
+}
+
+main :: proc() -> int {
+	v0 := 1
+	v1 := 2
+	v2 := 3
+	v3 := 4
+	v4 := 5
+	v5 := 6
+	v6 := 7
+	v7 := 8
+	i := 0
+	for {
+		if i == 5 do break
+		i += 1
+		t := opaque(v0 + i)
+		v0 = v0 + v1 + t
+		v1 = v1 + v2 + t
+		v2 = v2 + v3 + t
+		v3 = v3 + v4 + t
+		v4 = v4 + v5 + t
+		v5 = v5 + v6 + t
+		v6 = v6 + v7 + t
+		v7 = v7 + v0 + t
+	}
+	return (v0 + v1 * 2 + v2 * 3 + v3 * 4 + v4 * 5 + v5 * 6 + v6 * 7 + v7 * 8) % 251
+}
+```
+
+<!-- regalloc.odin:30-38: with more loop-carried values than allocatable GPRs the split/recolor loop never converges and `regalloc` panics with "Ralloc took too many rounds"; loop-carried (phi) live ranges are never spilled to stack slots (straight-line code with the same pressure spills fine). expected exit 116, actual: compiler crash. -->
+#### too many loop carried values panics regalloc
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	v0 := 1
+	v1 := 2
+	v2 := 3
+	v3 := 4
+	v4 := 5
+	v5 := 6
+	v6 := 7
+	v7 := 8
+	v8 := 9
+	v9 := 10
+	v10 := 11
+	v11 := 12
+	v12 := 13
+	v13 := 14
+	v14 := 15
+	i := 0
+	for {
+		if i == 7 do break
+		i += 1
+		v0 = v0 + v1
+		v1 = v1 ~ v2
+		v2 = v2 + v3
+		v3 = v3 ~ v4
+		v4 = v4 + v5
+		v5 = v5 ~ v6
+		v6 = v6 + v7
+		v7 = v7 ~ v8
+		v8 = v8 + v9
+		v9 = v9 ~ v10
+		v10 = v10 + v11
+		v11 = v11 ~ v12
+		v12 = v12 + v13
+		v13 = v13 ~ v14
+		v14 = v14 ~ v0
+	}
+	r := 0
+	r += v0 * 1
+	r += v1 * 2
+	r += v2 * 3
+	r += v3 * 4
+	r += v4 * 5
+	r += v5 * 6
+	r += v6 * 7
+	r += v7 * 8
+	r += v8 * 9
+	r += v9 * 10
+	r += v10 * 11
+	r += v11 * 12
+	r += v12 * 13
+	r += v13 * 14
+	r += v14 * 15
+	return r % 251
+}
+```
+
+<!-- loop phi whose only use is after the loop collapses to its entry value (builder/ssa.odin graph_get_scope_value / lazy-phi resolution): `v4` is written but never read inside the loop, and after the loop it still reads 42. expected exit 10, actual 42 (codegen emits `mov $0x2a,%rax`). -->
+#### loop variable only written inside loop keeps pre loop value
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	v4 := 42
+	c := 0
+	for {
+		if c == 3 do break
+		c += 1
+		v4 = c + 7
+	}
+	return v4
+}
+```
+
+<!-- regalloc split-coalescing (backend/regalloc/regalloc.odin:523-602) merges two live ranges that are actually simultaneously live: the interference graph is missing the edge, so `unify(ilrg, inlrg)` + `graph_subsume` gives both values the same register. Disabling only that loop (`for &bb in sched.bbs { ... itype != .Split ... }`) makes the program produce the right answer at every -O level; making the coalescing heuristic maximally conservative (only `total < leeway`) does NOT help, so the interference info itself is incomplete. expected exit 147, actual 100. -->
+#### regalloc coalescing merges interfering live ranges
+```odin
+package main
+
+opt_level :: "moderate"
+opaque :: proc(x: int, y: int) -> int {
+	return (x * 3 + y * 5 + 1) & 0xffff
+}
+main :: proc() -> int {
+	v0 := 25
+	v1 := 49
+	v2 := 33
+	v3 := 22
+	v4 := 34
+	v5 := 13
+	v6 := 6
+	v7 := 19
+	v8 := 16
+	v9 := 23
+	v10 := 1
+	v11 := 25
+	v12 := 41
+	v13 := 13
+	c1 := 0
+	for {
+		if c1 == 5 do break
+		c1 += 1
+		v2, v4, v13, v5, v6, v3 = v4, v13, v5, v6, v3, v2
+		v6 = (v6 * ((v13 | v1))) & 0xffff
+		v6, v1, v7 = v1, v7, v6
+	}
+	c2 := 0
+	for {
+		if c2 == 5 do break
+		c2 += 1
+		v6 = (v6 * ((v0 - v5))) & 0xffff
+		c3 := 0
+		for {
+			if c3 == 2 do break
+			c3 += 1
+			v10, v1, v5, v11, v4, v13 = v1, v5, v11, v4, v13, v10
+			v4 = (v4 - ((v7 << uint(v0 & 7)))) & 0xffff
+		}
+		v12, v1, v8, v4, v13 = v1, v8, v4, v13, v12
+		v13 = (v13 * ((v13 - v10))) & 0xffff
+		v6 = (v6 & ((v8 >> uint(v9 & 7)))) & 0xffff
+	}
+	v5 = (v5 + ((v5 / (v1 & 7 + 1)))) & 0xffff
+	r := 0
+	r += v1 * 2
+	r += v2 * 3
+	r += v3 * 4
+	r += v4 * 5
+	r += v5 * 6
+	r += v6 * 7
+	r += v7 * 8
+	r += v8 * 9
+	r += v9 * 10
+	r += v10 * 11
+	r += v11 * 12
+	r += v12 * 13
+	r += v13 * 14
+	return r % 251
+}
+```
+
+<!-- backend/builder/ssa.odin:206-216 graph_end_loop: a break scope entry that still points at the loop Scope node (no Lazy_Phi was ever forced because the variable is never *read* inside the loop) is rewritten to init.inps[i], the loop-*entry* value, instead of the loop phi; a variable that is only written after the break site loses the write. expected 105, got 102 -->
+
+#### loop write only variable lost on early break
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	b := 2
+	i := 0
+	for {
+		i += 1
+		if i > 1 do break
+		b = 5
+	}
+	return b + 100
+}
+```
+
+<!-- gen.odin:2299-2320 (^ast.Branch_Stmt) always resolves an unlabelled `break` against ctx.loop; the enclosing switch's builder.Block_State (gen.odin:1807) is never consulted, so `break` inside a switch case exits the loop. expected 35, got 1 -->
+
+#### break inside switch case exits the enclosing loop
+```!odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	s := 0
+	i := 0
+	for {
+		i += 1
+		if i > 3 do break
+		switch i {
+		case 1:
+			s += 1
+			break
+		case:
+			s += 2
+		}
+		s += 10
+	}
+	return s
+}
+```
+
+<!-- backend/builder/builder.odin:48 fold_un_op .Cast masks the constant to the destination width (so i32(-8) becomes 0xFFFFFFF8), but fold_bin_op never sign-extends: .Rem (line 80), .Shr (line 91) and the signed compares .Le/.Lt/.Gt/.Ge (lines 96-103) operate on the raw i64. Only .Div sign-extends. expected 115, got 104 -->
+
+#### signed constant folding on narrowed integers
+```odin
+package main
+
+opt_level :: "mininal"
+
+main :: proc() -> int {
+	a: i64 = -8
+	b := i32(a)
+	r := 0
+	if b < 0 do r += 1
+	if b > 5 do r += 2
+	if (b >> 1) == -4 do r += 16
+	r += int(b % 3)
+	return r + 100
+}
+```
+
+<!-- backend/builder/builder.odin:51-52 fold_un_op treats .F_Demote as identity, but float constants are stored as f64 bits (gen.odin:386 emit_float_const), so f32(x) of a folded constant keeps full f64 precision instead of rounding to f32. expected 146, got 0 -->
+
+#### f32 demotion of a constant does not round
+```!odin
+package main
+
+opt_level :: "mininal"
+
+main :: proc() -> int {
+	x: f64 = 0.1
+	y := f32(x)
+	z := f64(y)
+	return int((z - 0.1) * 1e18) % 251
+}
+```
+
+<!-- backend/builder/builder.odin:1110-1121 (.Set zero-init peep) only splits the *last* merged slot down to MAX_STORE_UNIT; an earlier merged run of 32 bytes reaches builder.odin:1130-1132 where table[count_trailing_zeros(32)] = table[5] indexes the 5-element datatype table -> compiler crash "Index 5 is out of range 0..<5" -->
+
+#### zero init slot splitting index out of range
+```odin
+package main
+
+opt_level :: "moderate"
+
+S :: struct {
+	a: [4]int,
+	m: int,
+	b: [4]int,
+}
+
+main :: proc() -> int {
+	x := S{}
+	x.m = 5
+	return x.a[0] + x.m + x.b[3] + 10
+}
+```
+
+<!-- backend/builder/builder.odin:1096-1121 (.Set zero-init peep) merges adjacent uninitialised slots without re-splitting non-last runs, so a 24-byte run survives; builder.odin:1130-1133 then picks table[count_trailing_zeros(24)] = .I64 and emits a single 8-byte zero store for 24 bytes, leaving 16 bytes of the struct uninitialised. expected 90, got a garbage-dependent value (varies per run) -->
+
+#### zero init only partially zeroes non power of two run
+```odin
+package main
+
+opt_level :: "aggresive"
+
+S :: struct {
+	a: [3]int,
+	m: int,
+	b: [2]int,
+}
+
+dirty :: proc() -> int {
+	junk: [64]int
+	i := 0
+	for {
+		if i >= 64 do break
+		junk[i] = 0x55
+		i += 1
+	}
+	return junk[3]
+}
+
+main :: proc() -> int {
+	d := dirty()
+	x := S{}
+	x.m = 5
+	s := x.a[0] + x.a[1] + x.a[2] + x.m + x.b[0] + x.b[1]
+	return (s + d) % 251
+}
+```
+
+<!-- gen.odin:310-339 tok_to_binop has no entry for .Cmp_And / .Cmp_Or (and none for .Mod_Mod either), so the zero value Op_Info{.Add, ""} is used and gen.odin:1336 builds a bogus node with an empty tag; the compiler then dies in regalloc ("Index 13 is out of range 0..<4"). Any `&&`, `||` or `%%` in the source crashes the compiler instead of erroring out. -->
+
+#### short circuit and or crashes the compiler
+```!odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	r := 3
+	x := 0
+	if r > 0 && r < 5 do x += 1
+	return x + 10
+}
+```
+
+<!-- backend/builder/builder.odin:720-727 passes the load size and the store size to `is_noalias` in the wrong order (address `cnode.inps[2]` is paired with `DT_SIZE[node.dt]`, the *load*'s size), so an overlapping store is judged non-aliasing and the load forwards past it; expected 123, got 0 at -O:moderate and above. -->
+#### load_forwarding_past_overlapping_store_of_different_size
+```odin
+package main
+
+opt_level :: "moderate"
+
+main :: proc() -> int {
+	arr: [16]u8
+	p := transmute(^u64)&arr[0]
+	p^ = 0
+	arr[4] = 1
+	return int(p^ % 251)
+}
+```
+
+<!-- backend/builder/memopt.odin:167-190 (`collect_rename_slot`) only requires every op on a local to sit at offset 0; it never requires the ops to have the same access size, so a `u8` load at offset 0 is renamed to the `u64` value stored there; expected 52, got 142 at -O:all. -->
+#### memopt renames local with mismatched access sizes
+```odin
+package main
+
+opt_level :: "all"
+
+main :: proc() -> int {
+	x: u64 = 0x1234
+	p := transmute(^u8)&x
+	return int(p^) % 251
+}
+```
+
+<!-- Same root cause (backend/builder/memopt.odin:167-190): the narrow store is treated as writing the whole slot, so the following wide load reads 3 instead of 0x1203; expected 93, got 3 at -O:all. -->
+#### memopt narrow store into wide slot
+```odin
+package main
+
+opt_level :: "all"
+
+main :: proc() -> int {
+	x: u64 = 0x1234
+	p := transmute(^u8)&x
+	p^ = 3
+	return int(x % 251)
+}
+```
+
+<!-- Iter-peeps fixpoint verification fails (backend/graph.odin:952): the load-forwarding peep in backend/builder/builder.odin:713-743 (`florward_loads`) only registers triggers on the final `cursor` (and its address), not on the non-aliasing stores it walked over, so the load is never re-peeped after they change; expected exit 0, got a compiler assertion at -O:moderate and above. -->
+#### load forwarding does not reach a peephole fixpoint
+```odin
+package main
+
+opt_level :: "moderate"
+
+main :: proc() -> int {
+	arr: [3]int
+	arr[2] = arr[1]
+	arr[1] = arr[0]
+	return arr[2]
+}
+```

@@ -3050,13 +3050,13 @@ parse_string:
     push rbx
     push rbp
     sub rsp, 8
-    mov rbp, rdi
-    mov rdi, rbp
+    mov rbx, rdi
+    mov rdi, rbx
     call advance
     cmp al, 0x22
     jne 17
 31:
-    mov rdi, rbp
+    mov rdi, rbx
     call advance
     cmp al, 0x22
     jz 18
@@ -3071,7 +3071,7 @@ parse_string:
     xor eax, eax
     jmp 23
 20:
-    mov rdi, rbp
+    mov rdi, rbx
     call advance
     cmp al, 0x22
     jz 22
@@ -3094,11 +3094,11 @@ parse_string:
     xor eax, eax
     jmp 23
 24:
-    xor ebx, ebx
+    xor ebp, ebp
 30:
-    cmp rbx, 4
+    cmp rbp, 4
     jnl 22
-    mov rdi, rbp
+    mov rdi, rbx
     call advance
     cmp al, 0x30
     setnc cl
@@ -3140,7 +3140,7 @@ parse_string:
 28:
     cmp al, 0
     jz 29
-    add rbx, 1
+    add rbp, 1
     jmp 30
 29:
     xor eax, eax

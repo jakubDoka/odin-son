@@ -245,6 +245,16 @@ graph_loop_control :: proc(
 	loop.scopes[variant] = graph_merge_scopes(ctx, scope, loop.scopes[variant])
 }
 
+graph_set_scope_value :: proc(
+	graph: ^backend.Graph,
+	scope: backend.Node_ID,
+	#any_int idx: int,
+	value: backend.Node_ID,
+) {
+	graph_get_scope_value(graph, scope, idx)
+	backend.graph_set_input(graph, scope, idx, value)
+}
+
 graph_get_scope_value :: proc(
 	graph: ^backend.Graph,
 	scope: backend.Node_ID,

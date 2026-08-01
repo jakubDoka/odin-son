@@ -601,10 +601,18 @@ gdb -batch -ex run -ex bt -ex quit ./a.out
 The innermost frame has not source location information, find out why this
 happends and fix it.
 
-### Clean up elf.odin
-
-NOTE: read AGENTS.md
+### Clean up elf.odin (DONE)
 
 Could you go trough the elf.odin file and convert the constants into enums and
 use them in the appropriate structures? Odin also has bit_set construct that
 you can use for bitflags.
+
+### Search for bugs
+
+NOTE: read AGENTS.md
+
+Search for bugs in the code. Spinn up at most 5 subagents that will go trought
+the `./backend/` code and review it. If an agent suspects a bug, It will try to
+reporduce it with a small project odin module. Once its confirmed, it will add
+it to the `TESTS.md`. Try to not run in to asserts that just serve as TODOs.
+Once everithing is reviewed stop.

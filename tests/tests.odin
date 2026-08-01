@@ -11208,3 +11208,1075 @@ foo :: proc() {
 }
 `, main_())
 }
+@(test) ne_with_zero_is_not_identity :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "mininal"
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main_ :: proc() -> int {
+	a := opaque(5)
+	return int(a != 0)
+}
+
+main.run_test(t, `ne_with_zero_is_not_identity`, `
+package main
+
+opt_level :: "mininal"
+
+opaque :: proc(x: int) -> int {
+	return x
+}
+
+main :: proc() -> int {
+	a := opaque(5)
+	return int(a != 0)
+}
+`, main_())
+}
+@(test) store_feeding_a_memcpy_source_is_wrongly_dead_store_eliminated :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "moderate"
+
+V :: struct {
+	a: i64,
+	b: i64,
+}
+
+Pair :: struct {
+	x: V,
+	y: V,
+}
+
+ident :: proc(p: ^Pair) -> ^Pair {
+	return p
+}
+
+main_ :: proc() -> int {
+	pr: Pair
+	p := ident(&pr)
+	p.x.a = 5
+	p.x.b = 6
+	p.y = p.x
+	p.x.a = 7
+	return int(p.y.a) + int(p.y.b) * 10 + int(p.x.a) * 100
+}
+
+main.run_test(t, `store_feeding_a_memcpy_source_is_wrongly_dead_store_eliminated`, `
+package main
+
+opt_level :: "moderate"
+
+V :: struct {
+	a: i64,
+	b: i64,
+}
+
+Pair :: struct {
+	x: V,
+	y: V,
+}
+
+ident :: proc(p: ^Pair) -> ^Pair {
+	return p
+}
+
+main :: proc() -> int {
+	pr: Pair
+	p := ident(&pr)
+	p.x.a = 5
+	p.x.b = 6
+	p.y = p.x
+	p.x.a = 7
+	return int(p.y.a) + int(p.y.b) * 10 + int(p.x.a) * 100
+}
+`, main_())
+}
+@(test) memcpify_ignores_the_loop_start_index :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "moderate"
+
+cpy :: proc(dst: [^]u8, src: [^]u8, n: int) {
+	i := 2
+	for {
+		if i >= n do break
+		dst[i] = src[i]
+		i += 1
+	}
+}
+
+main_ :: proc() -> int {
+	a: [8]u8
+	b: [8]u8
+	i := 0
+	for {
+		if i >= 8 do break
+		a[i] = u8(i + 1)
+		b[i] = 100
+		i += 1
+	}
+	cpy(([^]u8)(&b[0]), ([^]u8)(&a[0]), 8)
+	r := 0
+	i = 0
+	for {
+		if i >= 8 do break
+		r += int(b[i]) * (i + 1)
+		i += 1
+	}
+	return r % 251
+}
+
+main.run_test(t, `memcpify_ignores_the_loop_start_index`, `
+package main
+
+opt_level :: "moderate"
+
+cpy :: proc(dst: [^]u8, src: [^]u8, n: int) {
+	i := 2
+	for {
+		if i >= n do break
+		dst[i] = src[i]
+		i += 1
+	}
+}
+
+main :: proc() -> int {
+	a: [8]u8
+	b: [8]u8
+	i := 0
+	for {
+		if i >= 8 do break
+		a[i] = u8(i + 1)
+		b[i] = 100
+		i += 1
+	}
+	cpy(([^]u8)(&b[0]), ([^]u8)(&a[0]), 8)
+	r := 0
+	i = 0
+	for {
+		if i >= 8 do break
+		r += int(b[i]) * (i + 1)
+		i += 1
+	}
+	return r % 251
+}
+`, main_())
+}
+@(test) memcpify_turns_a_strided_loop_into_a_contiguous_copy :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "moderate"
+
+cpy :: proc(dst: [^]u8, src: [^]u8, n: int) {
+	i := 0
+	for {
+		if i >= n do break
+		dst[i * 2] = src[i * 2]
+		i += 1
+	}
+}
+
+main_ :: proc() -> int {
+	a: [8]u8
+	b: [8]u8
+	i := 0
+	for {
+		if i >= 8 do break
+		a[i] = u8(i + 1)
+		b[i] = 100
+		i += 1
+	}
+	cpy(([^]u8)(&b[0]), ([^]u8)(&a[0]), 4)
+	r := 0
+	i = 0
+	for {
+		if i >= 8 do break
+		r += int(b[i]) * (i + 1)
+		i += 1
+	}
+	return r % 251
+}
+
+main.run_test(t, `memcpify_turns_a_strided_loop_into_a_contiguous_copy`, `
+package main
+
+opt_level :: "moderate"
+
+cpy :: proc(dst: [^]u8, src: [^]u8, n: int) {
+	i := 0
+	for {
+		if i >= n do break
+		dst[i * 2] = src[i * 2]
+		i += 1
+	}
+}
+
+main :: proc() -> int {
+	a: [8]u8
+	b: [8]u8
+	i := 0
+	for {
+		if i >= 8 do break
+		a[i] = u8(i + 1)
+		b[i] = 100
+		i += 1
+	}
+	cpy(([^]u8)(&b[0]), ([^]u8)(&a[0]), 4)
+	r := 0
+	i = 0
+	for {
+		if i >= 8 do break
+		r += int(b[i]) * (i + 1)
+		i += 1
+	}
+	return r % 251
+}
+`, main_())
+}
+@(test) constant_folding_a_division_by_zero_crashes_the_compiler :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "aggresive"
+
+dv :: proc(a: int, b: int) -> int {
+	return a / b
+}
+
+pick :: proc(x: int) -> int {
+	return x
+}
+
+main_ :: proc() -> int {
+	n := pick(3)
+	if n > 100 {
+		return dv(1, 0)
+	}
+	return 7
+}
+
+main.run_test(t, `constant_folding_a_division_by_zero_crashes_the_compiler`, `
+package main
+
+opt_level :: "aggresive"
+
+dv :: proc(a: int, b: int) -> int {
+	return a / b
+}
+
+pick :: proc(x: int) -> int {
+	return x
+}
+
+main :: proc() -> int {
+	n := pick(3)
+	if n > 100 {
+		return dv(1, 0)
+	}
+	return 7
+}
+`, main_())
+}
+@(test) sroa_of_a_partially_initialized_struct_crashes_the_compiler :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "aggresive"
+
+S :: struct {
+	a: u8,
+	c: u16,
+}
+
+sink :: proc(p: ^S) -> int {
+	return int(p.a) + int(p.c) * 4
+}
+
+main_ :: proc() -> int {
+	s: S
+	s.a = 1
+	return sink(&s)
+}
+
+main.run_test(t, `sroa_of_a_partially_initialized_struct_crashes_the_compiler`, `
+package main
+
+opt_level :: "aggresive"
+
+S :: struct {
+	a: u8,
+	c: u16,
+}
+
+sink :: proc(p: ^S) -> int {
+	return int(p.a) + int(p.c) * 4
+}
+
+main :: proc() -> int {
+	s: S
+	s.a = 1
+	return sink(&s)
+}
+`, main_())
+}
+@(test) i8_multiply_missing_REX_on_imul_r_m8 :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+mul8 :: proc(a: i8, b: i8) -> i8 {
+	return a * b
+}
+
+main_ :: proc() -> int {
+	return int(mul8(7, 9))
+}
+
+main.run_test(t, `i8_multiply_missing_REX_on_imul_r_m8`, `
+package main
+
+opt_level :: "none"
+
+mul8 :: proc(a: i8, b: i8) -> i8 {
+	return a * b
+}
+
+main :: proc() -> int {
+	return int(mul8(7, 9))
+}
+`, main_())
+}
+@(test) indirect_call_through_high_register_missing_REX_B :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+d :: proc(a: int, b: int, c: int, e: int, f: proc() -> int) -> int {
+	r := f()
+	r += a
+	r += b
+	r += c
+	r += e
+	r += f()
+	return r
+}
+
+main_ :: proc() -> int {
+	return d(1, 2, 4, 8, proc() -> int {return 10})
+}
+
+main.run_test(t, `indirect_call_through_high_register_missing_REX_B`, `
+package main
+
+opt_level :: "none"
+
+d :: proc(a: int, b: int, c: int, e: int, f: proc() -> int) -> int {
+	r := f()
+	r += a
+	r += b
+	r += c
+	r += e
+	r += f()
+	return r
+}
+
+main :: proc() -> int {
+	return d(1, 2, 4, 8, proc() -> int {return 10})
+}
+`, main_())
+}
+@(test) float_spill_to_spill_move_writes_8_bytes_below_the_slot :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+src :: proc(x: f64) -> f64 {
+	return x * 1.5 + 1.0
+}
+
+main_ :: proc() -> int {
+	a := src(1)
+	b := src(2)
+	c := src(3)
+	d := src(4)
+	e := src(5)
+	f := src(6)
+	g := src(7)
+	h := src(8)
+	i := src(9)
+	j := src(10)
+	k := src(11)
+	l := src(12)
+	m := src(13)
+	n := src(14)
+	o := src(15)
+	p := src(16)
+	q := 0
+	for {
+		if q == 2 do break
+		t := a
+		a = b; b = c; c = d; d = e; e = f; f = g; g = h; h = i
+		i = j; j = k; k = l; l = m; m = n; n = o; o = p; p = t
+		q += 1
+	}
+	return int(a + b*2 + c*3 + d*4 + e*5 + f*6 + g*7 + h*8 + i*9 + j*10 + k*11 + l*12 + m*13 + n*14 + o*15 + p*16) % 241
+}
+
+main.run_test(t, `float_spill_to_spill_move_writes_8_bytes_below_the_slot`, `
+package main
+
+opt_level :: "none"
+
+src :: proc(x: f64) -> f64 {
+	return x * 1.5 + 1.0
+}
+
+main :: proc() -> int {
+	a := src(1)
+	b := src(2)
+	c := src(3)
+	d := src(4)
+	e := src(5)
+	f := src(6)
+	g := src(7)
+	h := src(8)
+	i := src(9)
+	j := src(10)
+	k := src(11)
+	l := src(12)
+	m := src(13)
+	n := src(14)
+	o := src(15)
+	p := src(16)
+	q := 0
+	for {
+		if q == 2 do break
+		t := a
+		a = b; b = c; c = d; d = e; e = f; f = g; g = h; h = i
+		i = j; j = k; k = l; l = m; m = n; n = o; o = p; p = t
+		q += 1
+	}
+	return int(a + b*2 + c*3 + d*4 + e*5 + f*6 + g*7 + h*8 + i*9 + j*10 + k*11 + l*12 + m*13 + n*14 + o*15 + p*16) % 241
+}
+`, main_())
+}
+@(test) float_compare_against_indexed_memory_drops_REX_X :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	@(static)
+	garr: [8]f64
+	@(static)
+	gi: [12]int
+
+	i := 0
+	for {
+		if i == 8 do break
+		garr[i] = f64(i)
+		i += 1
+	}
+	a0 := gi[0]
+	a1 := gi[1]
+	a2 := gi[2]
+	a3 := gi[3]
+	a4 := gi[4]
+	a5 := gi[5]
+	a6 := gi[6]
+	a7 := gi[7]
+	a8 := gi[8]
+	a9 := gi[9]
+	x := f64(3.5)
+	r := 0
+	j := 0
+	for {
+		if j == 8 do break
+		if x > garr[j] do r += 1
+		j += 1
+	}
+	return r + a0 + a1 + a2 + a3 + a4 + a5 + a6 + a7 + a8 + a9
+}
+
+main.run_test(t, `float_compare_against_indexed_memory_drops_REX_X`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	@(static)
+	garr: [8]f64
+	@(static)
+	gi: [12]int
+
+	i := 0
+	for {
+		if i == 8 do break
+		garr[i] = f64(i)
+		i += 1
+	}
+	a0 := gi[0]
+	a1 := gi[1]
+	a2 := gi[2]
+	a3 := gi[3]
+	a4 := gi[4]
+	a5 := gi[5]
+	a6 := gi[6]
+	a7 := gi[7]
+	a8 := gi[8]
+	a9 := gi[9]
+	x := f64(3.5)
+	r := 0
+	j := 0
+	for {
+		if j == 8 do break
+		if x > garr[j] do r += 1
+		j += 1
+	}
+	return r + a0 + a1 + a2 + a3 + a4 + a5 + a6 + a7 + a8 + a9
+}
+`, main_())
+}
+@(test) regalloc_split_cleanup_removes_wrong_phi_from_schedule :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+opaque :: proc(x: int) -> int {
+	return x * 3 + 1
+}
+
+main_ :: proc() -> int {
+	v0 := 1
+	v1 := 2
+	v2 := 3
+	v3 := 4
+	v4 := 5
+	v5 := 6
+	v6 := 7
+	v7 := 8
+	i := 0
+	for {
+		if i == 5 do break
+		i += 1
+		t := opaque(v0 + i)
+		v0 = v0 + v1 + t
+		v1 = v1 + v2 + t
+		v2 = v2 + v3 + t
+		v3 = v3 + v4 + t
+		v4 = v4 + v5 + t
+		v5 = v5 + v6 + t
+		v6 = v6 + v7 + t
+		v7 = v7 + v0 + t
+	}
+	return (v0 + v1 * 2 + v2 * 3 + v3 * 4 + v4 * 5 + v5 * 6 + v6 * 7 + v7 * 8) % 251
+}
+
+main.run_test(t, `regalloc_split_cleanup_removes_wrong_phi_from_schedule`, `
+package main
+
+opt_level :: "none"
+
+opaque :: proc(x: int) -> int {
+	return x * 3 + 1
+}
+
+main :: proc() -> int {
+	v0 := 1
+	v1 := 2
+	v2 := 3
+	v3 := 4
+	v4 := 5
+	v5 := 6
+	v6 := 7
+	v7 := 8
+	i := 0
+	for {
+		if i == 5 do break
+		i += 1
+		t := opaque(v0 + i)
+		v0 = v0 + v1 + t
+		v1 = v1 + v2 + t
+		v2 = v2 + v3 + t
+		v3 = v3 + v4 + t
+		v4 = v4 + v5 + t
+		v5 = v5 + v6 + t
+		v6 = v6 + v7 + t
+		v7 = v7 + v0 + t
+	}
+	return (v0 + v1 * 2 + v2 * 3 + v3 * 4 + v4 * 5 + v5 * 6 + v6 * 7 + v7 * 8) % 251
+}
+`, main_())
+}
+@(test) too_many_loop_carried_values_panics_regalloc :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	v0 := 1
+	v1 := 2
+	v2 := 3
+	v3 := 4
+	v4 := 5
+	v5 := 6
+	v6 := 7
+	v7 := 8
+	v8 := 9
+	v9 := 10
+	v10 := 11
+	v11 := 12
+	v12 := 13
+	v13 := 14
+	v14 := 15
+	i := 0
+	for {
+		if i == 7 do break
+		i += 1
+		v0 = v0 + v1
+		v1 = v1 ~ v2
+		v2 = v2 + v3
+		v3 = v3 ~ v4
+		v4 = v4 + v5
+		v5 = v5 ~ v6
+		v6 = v6 + v7
+		v7 = v7 ~ v8
+		v8 = v8 + v9
+		v9 = v9 ~ v10
+		v10 = v10 + v11
+		v11 = v11 ~ v12
+		v12 = v12 + v13
+		v13 = v13 ~ v14
+		v14 = v14 ~ v0
+	}
+	r := 0
+	r += v0 * 1
+	r += v1 * 2
+	r += v2 * 3
+	r += v3 * 4
+	r += v4 * 5
+	r += v5 * 6
+	r += v6 * 7
+	r += v7 * 8
+	r += v8 * 9
+	r += v9 * 10
+	r += v10 * 11
+	r += v11 * 12
+	r += v12 * 13
+	r += v13 * 14
+	r += v14 * 15
+	return r % 251
+}
+
+main.run_test(t, `too_many_loop_carried_values_panics_regalloc`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	v0 := 1
+	v1 := 2
+	v2 := 3
+	v3 := 4
+	v4 := 5
+	v5 := 6
+	v6 := 7
+	v7 := 8
+	v8 := 9
+	v9 := 10
+	v10 := 11
+	v11 := 12
+	v12 := 13
+	v13 := 14
+	v14 := 15
+	i := 0
+	for {
+		if i == 7 do break
+		i += 1
+		v0 = v0 + v1
+		v1 = v1 ~ v2
+		v2 = v2 + v3
+		v3 = v3 ~ v4
+		v4 = v4 + v5
+		v5 = v5 ~ v6
+		v6 = v6 + v7
+		v7 = v7 ~ v8
+		v8 = v8 + v9
+		v9 = v9 ~ v10
+		v10 = v10 + v11
+		v11 = v11 ~ v12
+		v12 = v12 + v13
+		v13 = v13 ~ v14
+		v14 = v14 ~ v0
+	}
+	r := 0
+	r += v0 * 1
+	r += v1 * 2
+	r += v2 * 3
+	r += v3 * 4
+	r += v4 * 5
+	r += v5 * 6
+	r += v6 * 7
+	r += v7 * 8
+	r += v8 * 9
+	r += v9 * 10
+	r += v10 * 11
+	r += v11 * 12
+	r += v12 * 13
+	r += v13 * 14
+	r += v14 * 15
+	return r % 251
+}
+`, main_())
+}
+@(test) loop_variable_only_written_inside_loop_keeps_pre_loop_value :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	v4 := 42
+	c := 0
+	for {
+		if c == 3 do break
+		c += 1
+		v4 = c + 7
+	}
+	return v4
+}
+
+main.run_test(t, `loop_variable_only_written_inside_loop_keeps_pre_loop_value`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	v4 := 42
+	c := 0
+	for {
+		if c == 3 do break
+		c += 1
+		v4 = c + 7
+	}
+	return v4
+}
+`, main_())
+}
+@(test) regalloc_coalescing_merges_interfering_live_ranges :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "moderate"
+opaque :: proc(x: int, y: int) -> int {
+	return (x * 3 + y * 5 + 1) & 0xffff
+}
+main_ :: proc() -> int {
+	v0 := 25
+	v1 := 49
+	v2 := 33
+	v3 := 22
+	v4 := 34
+	v5 := 13
+	v6 := 6
+	v7 := 19
+	v8 := 16
+	v9 := 23
+	v10 := 1
+	v11 := 25
+	v12 := 41
+	v13 := 13
+	c1 := 0
+	for {
+		if c1 == 5 do break
+		c1 += 1
+		v2, v4, v13, v5, v6, v3 = v4, v13, v5, v6, v3, v2
+		v6 = (v6 * ((v13 | v1))) & 0xffff
+		v6, v1, v7 = v1, v7, v6
+	}
+	c2 := 0
+	for {
+		if c2 == 5 do break
+		c2 += 1
+		v6 = (v6 * ((v0 - v5))) & 0xffff
+		c3 := 0
+		for {
+			if c3 == 2 do break
+			c3 += 1
+			v10, v1, v5, v11, v4, v13 = v1, v5, v11, v4, v13, v10
+			v4 = (v4 - ((v7 << uint(v0 & 7)))) & 0xffff
+		}
+		v12, v1, v8, v4, v13 = v1, v8, v4, v13, v12
+		v13 = (v13 * ((v13 - v10))) & 0xffff
+		v6 = (v6 & ((v8 >> uint(v9 & 7)))) & 0xffff
+	}
+	v5 = (v5 + ((v5 / (v1 & 7 + 1)))) & 0xffff
+	r := 0
+	r += v1 * 2
+	r += v2 * 3
+	r += v3 * 4
+	r += v4 * 5
+	r += v5 * 6
+	r += v6 * 7
+	r += v7 * 8
+	r += v8 * 9
+	r += v9 * 10
+	r += v10 * 11
+	r += v11 * 12
+	r += v12 * 13
+	r += v13 * 14
+	return r % 251
+}
+
+main.run_test(t, `regalloc_coalescing_merges_interfering_live_ranges`, `
+package main
+
+opt_level :: "moderate"
+opaque :: proc(x: int, y: int) -> int {
+	return (x * 3 + y * 5 + 1) & 0xffff
+}
+main :: proc() -> int {
+	v0 := 25
+	v1 := 49
+	v2 := 33
+	v3 := 22
+	v4 := 34
+	v5 := 13
+	v6 := 6
+	v7 := 19
+	v8 := 16
+	v9 := 23
+	v10 := 1
+	v11 := 25
+	v12 := 41
+	v13 := 13
+	c1 := 0
+	for {
+		if c1 == 5 do break
+		c1 += 1
+		v2, v4, v13, v5, v6, v3 = v4, v13, v5, v6, v3, v2
+		v6 = (v6 * ((v13 | v1))) & 0xffff
+		v6, v1, v7 = v1, v7, v6
+	}
+	c2 := 0
+	for {
+		if c2 == 5 do break
+		c2 += 1
+		v6 = (v6 * ((v0 - v5))) & 0xffff
+		c3 := 0
+		for {
+			if c3 == 2 do break
+			c3 += 1
+			v10, v1, v5, v11, v4, v13 = v1, v5, v11, v4, v13, v10
+			v4 = (v4 - ((v7 << uint(v0 & 7)))) & 0xffff
+		}
+		v12, v1, v8, v4, v13 = v1, v8, v4, v13, v12
+		v13 = (v13 * ((v13 - v10))) & 0xffff
+		v6 = (v6 & ((v8 >> uint(v9 & 7)))) & 0xffff
+	}
+	v5 = (v5 + ((v5 / (v1 & 7 + 1)))) & 0xffff
+	r := 0
+	r += v1 * 2
+	r += v2 * 3
+	r += v3 * 4
+	r += v4 * 5
+	r += v5 * 6
+	r += v6 * 7
+	r += v7 * 8
+	r += v8 * 9
+	r += v9 * 10
+	r += v10 * 11
+	r += v11 * 12
+	r += v12 * 13
+	r += v13 * 14
+	return r % 251
+}
+`, main_())
+}
+@(test) loop_write_only_variable_lost_on_early_break :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	b := 2
+	i := 0
+	for {
+		i += 1
+		if i > 1 do break
+		b = 5
+	}
+	return b + 100
+}
+
+main.run_test(t, `loop_write_only_variable_lost_on_early_break`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	b := 2
+	i := 0
+	for {
+		i += 1
+		if i > 1 do break
+		b = 5
+	}
+	return b + 100
+}
+`, main_())
+}
+@(test) zero_init_only_partially_zeroes_non_power_of_two_run :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "aggresive"
+
+S :: struct {
+	a: [3]int,
+	m: int,
+	b: [2]int,
+}
+
+dirty :: proc() -> int {
+	junk: [64]int
+	i := 0
+	for {
+		if i >= 64 do break
+		junk[i] = 0x55
+		i += 1
+	}
+	return junk[3]
+}
+
+main_ :: proc() -> int {
+	d := dirty()
+	x := S{}
+	x.m = 5
+	s := x.a[0] + x.a[1] + x.a[2] + x.m + x.b[0] + x.b[1]
+	return (s + d) % 251
+}
+
+main.run_test(t, `zero_init_only_partially_zeroes_non_power_of_two_run`, `
+package main
+
+opt_level :: "aggresive"
+
+S :: struct {
+	a: [3]int,
+	m: int,
+	b: [2]int,
+}
+
+dirty :: proc() -> int {
+	junk: [64]int
+	i := 0
+	for {
+		if i >= 64 do break
+		junk[i] = 0x55
+		i += 1
+	}
+	return junk[3]
+}
+
+main :: proc() -> int {
+	d := dirty()
+	x := S{}
+	x.m = 5
+	s := x.a[0] + x.a[1] + x.a[2] + x.m + x.b[0] + x.b[1]
+	return (s + d) % 251
+}
+`, main_())
+}
+@(test) memopt_renames_local_with_mismatched_access_sizes :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "all"
+
+main_ :: proc() -> int {
+	x: u64 = 0x1234
+	p := transmute(^u8)&x
+	return int(p^) % 251
+}
+
+main.run_test(t, `memopt_renames_local_with_mismatched_access_sizes`, `
+package main
+
+opt_level :: "all"
+
+main :: proc() -> int {
+	x: u64 = 0x1234
+	p := transmute(^u8)&x
+	return int(p^) % 251
+}
+`, main_())
+}
+@(test) memopt_narrow_store_into_wide_slot :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "all"
+
+main_ :: proc() -> int {
+	x: u64 = 0x1234
+	p := transmute(^u8)&x
+	p^ = 3
+	return int(x % 251)
+}
+
+main.run_test(t, `memopt_narrow_store_into_wide_slot`, `
+package main
+
+opt_level :: "all"
+
+main :: proc() -> int {
+	x: u64 = 0x1234
+	p := transmute(^u8)&x
+	p^ = 3
+	return int(x % 251)
+}
+`, main_())
+}
+@(test) load_forwarding_does_not_reach_a_peephole_fixpoint :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "moderate"
+
+main_ :: proc() -> int {
+	arr: [3]int
+	arr[2] = arr[1]
+	arr[1] = arr[0]
+	return arr[2]
+}
+
+main.run_test(t, `load_forwarding_does_not_reach_a_peephole_fixpoint`, `
+package main
+
+opt_level :: "moderate"
+
+main :: proc() -> int {
+	arr: [3]int
+	arr[2] = arr[1]
+	arr[1] = arr[0]
+	return arr[2]
+}
+`, main_())
+}

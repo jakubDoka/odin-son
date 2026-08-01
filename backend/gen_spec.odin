@@ -77,6 +77,7 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 	.F_Ge = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
 	.F_To_I = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
 	.F_From_I = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
+	.U_F_From_I = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
 	.F_Ext = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
 	.F_Demote = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
 	.Splat = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},

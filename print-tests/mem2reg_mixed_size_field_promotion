@@ -87,21 +87,25 @@ main:
     mov.d [rsp + 0x4], eax
     mov rdi, 0x1f4
     call opaque
-    mov.q [rsp + 0x8], rax
+    mov rdi, rax
+    mov.q [rsp + 0x8], rdi
     movzx.b eax, [rsp]
     add al, 1
     mov.b [rsp], al
-    add.w [rsp + 0x2], 2
-    add.d [rsp + 0x4], 3
-    mov.q rcx, [rsp + 0x8]
-    add rcx, 4
-    mov.q [rsp + 0x8], rcx
-    movzx eax, al
-    movzx.w edx, [rsp + 0x2]
-    add rax, rdx
+    movzx.w ecx, [rsp + 0x2]
+    add cx, 2
+    mov.w [rsp + 0x2], cx
+    add rdi, 4
     mov.d edx, [rsp + 0x4]
-    add rax, rdx
+    add edx, 3
+    mov.d [rsp + 0x4], edx
+    mov.q [rsp + 0x8], rdi
+    movzx eax, al
+    movzx ecx, cx
     add rax, rcx
+    mov ecx, edx
+    add rax, rcx
+    add rax, rdi
     add rsp, 0x18
     ret
 =========== OPT LEVEL: all ===========
@@ -123,38 +127,28 @@ main:
     mov.d [rsp + 0x4], eax
     mov rdi, 0x1f4
     call opaque
-    mov.q [rsp + 0x8], rax
+    mov rdi, rax
+    mov.q [rsp + 0x8], rdi
     movzx.b eax, [rsp]
     add al, 1
     mov.b [rsp], al
-    add.w [rsp + 0x2], 2
-    add.d [rsp + 0x4], 3
-    mov.q rcx, [rsp + 0x8]
-    add rcx, 4
-    mov.q [rsp + 0x8], rcx
-    movzx eax, al
-    movzx.w edx, [rsp + 0x2]
-    add rax, rdx
+    movzx.w ecx, [rsp + 0x2]
+    add cx, 2
+    mov.w [rsp + 0x2], cx
+    add rdi, 4
     mov.d edx, [rsp + 0x4]
-    add rax, rdx
+    add edx, 3
+    mov.d [rsp + 0x4], edx
+    mov.q [rsp + 0x8], rdi
+    movzx eax, al
+    movzx ecx, cx
     add rax, rcx
+    mov ecx, edx
+    add rax, rcx
+    add rax, rdi
     add rsp, 0x18
     ret
 =========== OPT LEVEL: aggresive ===========
 main:
-    pxor xmm0, xmm0
-    movups.x [rsp - 0x18], xmm0
-    mov.w [rsp - 0x16], 0x12c
-    mov.d [rsp - 0x14], 0x11170
-    mov.q [rsp - 0x10], 0x1f4
-    mov.b [rsp - 0x18], 0x65
-    add.w [rsp - 0x16], 2
-    add.d [rsp - 0x14], 3
-    mov.q rcx, [rsp - 0x10]
-    add rcx, 4
-    mov.q [rsp - 0x10], rcx
-    movzx.w eax, [rsp - 0x16]
-    mov.d edx, [rsp - 0x14]
-    lea rax, [rax + rdx + 0x65]
-    add rax, rcx
+    mov rax, 0x114fe
     ret

@@ -1,0 +1,90 @@
+=========== OPT LEVEL: none ===========
+nan:
+    movsd xmm1, xmm0
+    subsd xmm1, xmm0
+    divsd xmm0, xmm1
+    ret
+main:
+    sub rsp, 8
+    pxor xmm0, xmm0
+    call nan
+    mov rcx, 2
+    ucomisd.q xmm0, [rip + 0x34]
+    setz al
+    movzx rax, al
+    movzx eax, al
+    ucomisd.q xmm0, [rip + 0x1f]
+    setnz dl
+    movzx rdx, dl
+    movzx edx, dl
+    imul rcx, rdx
+    add rax, rcx
+    add rsp, 8
+    ret
+=========== OPT LEVEL: mininal ===========
+nan:
+    movsd xmm1, xmm0
+    subsd xmm1, xmm0
+    divsd xmm0, xmm1
+    ret
+main:
+    sub rsp, 8
+    pxor xmm0, xmm0
+    call nan
+    ucomisd.q xmm0, [rip + 0x33]
+    setz al
+    movzx rax, al
+    movzx eax, al
+    ucomisd.q xmm0, [rip + 0x1e]
+    setnz cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*2]
+    add rsp, 8
+    ret
+=========== OPT LEVEL: moderate ===========
+nan:
+    movsd xmm1, xmm0
+    subsd xmm1, xmm0
+    divsd xmm0, xmm1
+    ret
+main:
+    sub rsp, 8
+    pxor xmm0, xmm0
+    call nan
+    ucomisd.q xmm0, [rip + 0x33]
+    setz al
+    movzx rax, al
+    movzx eax, al
+    ucomisd.q xmm0, [rip + 0x1e]
+    setnz cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*2]
+    add rsp, 8
+    ret
+=========== OPT LEVEL: all ===========
+nan:
+    movsd xmm1, xmm0
+    subsd xmm1, xmm0
+    divsd xmm0, xmm1
+    ret
+main:
+    sub rsp, 8
+    pxor xmm0, xmm0
+    call nan
+    ucomisd.q xmm0, [rip + 0x33]
+    setz al
+    movzx rax, al
+    movzx eax, al
+    ucomisd.q xmm0, [rip + 0x1e]
+    setnz cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*2]
+    add rsp, 8
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    mov rax, 2
+    ret

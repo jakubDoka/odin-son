@@ -5,17 +5,18 @@ when !GEN_SPEC {
 Un_Op :: enum u16 {
 	F_To_I = u16(Ideal_Node_Type.F_To_I),
 	Cast = u16(Ideal_Node_Type.Cast),
-	F_Ext = u16(Ideal_Node_Type.F_Ext),
+	U_F_From_I = u16(Ideal_Node_Type.U_F_From_I),
 	F_From_I = u16(Ideal_Node_Type.F_From_I),
 	Not = u16(Ideal_Node_Type.Not),
 	Neg = u16(Ideal_Node_Type.Neg),
 	Uext = u16(Ideal_Node_Type.Uext),
 	Sext = u16(Ideal_Node_Type.Sext),
 	Simd_Reduce_Add_Bisect = u16(Ideal_Node_Type.Simd_Reduce_Add_Bisect),
-	Splat = u16(Ideal_Node_Type.Splat),
-	F_Demote = u16(Ideal_Node_Type.F_Demote),
 	Simd_Extract_Lsbs = u16(Ideal_Node_Type.Simd_Extract_Lsbs),
+	F_Demote = u16(Ideal_Node_Type.F_Demote),
+	F_Ext = u16(Ideal_Node_Type.F_Ext),
 	Ctz = u16(Ideal_Node_Type.Ctz),
+	Splat = u16(Ideal_Node_Type.Splat),
 }
 Bin_Op :: enum u16 {
 	Add = u16(Ideal_Node_Type.Add),
@@ -125,6 +126,7 @@ Root_Node_Type :: enum u16 {
 	Cast,
 	F_To_I,
 	F_From_I,
+	U_F_From_I,
 	F_Ext,
 	F_Demote,
 	Splat,
@@ -353,6 +355,7 @@ graph_add_un_op :: #force_inline proc(graph: ^Graph, name: string, type: Un_Op, 
 	graph_push_tag(graph, name)
 	return graph_add_raw(graph, u16(type), dt, {oprnd})
 }
+#assert(size_of(No_Extra) % PRECISION == 0)
 #assert(size_of(No_Extra) % PRECISION == 0)
 #assert(size_of(No_Extra) % PRECISION == 0)
 #assert(size_of(No_Extra) % PRECISION == 0)

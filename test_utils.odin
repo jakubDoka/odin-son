@@ -50,7 +50,12 @@ init_single_file_program :: proc(ctx: ^Gen_Ctx, f: ^ast.File) {
 	typecheck.module_add_decls(ctx, 0, decls[:])
 }
 
+@(thread_local)
+name_str: string
+
 run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
+
+	name_str = name
 	context.logger.options &= ~{.Time, .Date, .Level, .Procedure}
 	context.assertion_failure_proc = hot.init_trace()
 

@@ -167,6 +167,7 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 	collect_rename_slot: for mout in backend.graph_outs(graph, emem) {
 		mnode := graph_expand(graph, mout.id)
 		if mnode.itype != .Local do continue
+		size := int(backend.graph_extra(graph, mnode, backend.Local).size)
 
 		assert(len(mnode.outs) == 1)
 
@@ -178,7 +179,11 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 			onode := graph_get(graph, op.id)
 			if onode.itype == .Copy ||
 			   onode.itype == .Set {continue collect_rename_slot}
-			backend.mem_op_size(graph, op.id) or_continue collect_rename_slot
+			lsize := backend.mem_op_size(
+				graph,
+				op.id,
+			) or_continue collect_rename_slot
+			if size != lsize do continue collect_rename_slot
 		}
 
 		iter = {}

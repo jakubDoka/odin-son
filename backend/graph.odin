@@ -1670,13 +1670,13 @@ graph_push_tag :: proc {
 	push_node_tag_new,
 }
 
-@(disabled = !NODE_NAMES)
 push_node_tag_new :: proc(graph: ^Graph, tag: string) {
-	graph.stable_id += 1
-	push_node_tag_full(graph, {tag, graph.stable_id})
+	when NODE_NAMES {
+		graph.stable_id += 1
+		push_node_tag_full(graph, {tag, graph.stable_id})
+	}
 }
 
-@(disabled = !NODE_NAMES)
 push_node_tag_full :: proc(graph: ^Graph, tag: Tag) {
 	when NODE_NAMES {
 		slot := arna.alloc(graph.mem, size_of(Tag), align_of(Tag))

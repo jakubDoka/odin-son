@@ -61,6 +61,8 @@ Gen_Ctx :: struct {
 	poly_types:   #soa[dynamic]Poly_Entry,
 	slocs:        map[backend.Sloc]backend.D_Node_ID,
 	eval_depth:   int,
+	error_cnt:    int,
+	errors:       io.Writer,
 }
 
 Poly_Entry :: struct {
@@ -120,6 +122,7 @@ Proc_ID :: distinct int
 
 Type :: enum uintptr {
 	Void,
+	Invalid_Type,
 	Typeid,
 	Intrinsic,
 	Module,
@@ -161,6 +164,20 @@ TYPE_SIZES := #partial [Type]int {
 	.String  = 16,
 	.F32     = 4,
 	.F64     = 8,
+}
+
+error :: proc(
+	ctx: ^Gen_Ctx,
+	node: ^ast.Node,
+	msg: string,
+	args: ..any,
+) -> ^Check_Meta {
+	ctx.error_cnt += 1
+	pos := node.pos
+	fmt.wprintf(ctx.errors, "%s(%d:%d): ", pos.file, pos.line, pos.column)
+	fmt.wprintf(ctx.errors, msg, ..args)
+	fmt.wprintf(ctx.errors, "\n")
+	return &INVALID
 }
 
 type_align :: proc(ty: Type) -> int {
@@ -228,24 +245,25 @@ type_size :: proc(ty: Type) -> int {
 
 @(rodata)
 TYPE_NAMES := #partial [Type]string {
-	.Void    = "void",
-	.Typeid  = "typeid",
-	.Bool    = "bool",
-	.Int     = "int",
-	.I64     = "i64",
-	.I32     = "i32",
-	.I16     = "i16",
-	.I8      = "i8",
-	.Uint    = "uint",
-	.U64     = "u64",
-	.U32     = "u32",
-	.U16     = "u16",
-	.U8      = "u8",
-	.Uintptr = "uintptr",
-	.Rawptr  = "rawptr",
-	.String  = "string",
-	.F32     = "f32",
-	.F64     = "f64",
+	.Void         = "void",
+	.Invalid_Type = "invalid type",
+	.Typeid       = "typeid",
+	.Bool         = "bool",
+	.Int          = "int",
+	.I64          = "i64",
+	.I32          = "i32",
+	.I16          = "i16",
+	.I8           = "i8",
+	.Uint         = "uint",
+	.U64          = "u64",
+	.U32          = "u32",
+	.U16          = "u16",
+	.U8           = "u8",
+	.Uintptr      = "uintptr",
+	.Rawptr       = "rawptr",
+	.String       = "string",
+	.F32          = "f32",
+	.F64          = "f64",
 }
 
 type_to_dt :: proc(ty: Type) -> backend.Node_Datatype {
@@ -300,6 +318,7 @@ Pointer :: distinct ^Type
 Builtin :: distinct Type
 
 Void_Type :: struct {}
+Invalid_Type :: struct {}
 Typeid_Type :: struct {}
 Intrinsic_Type :: struct {}
 Module_Type :: struct {}
@@ -322,6 +341,7 @@ F64_Type :: struct {}
 
 Type_Data :: union #no_nil {
 	Void_Type,
+	Invalid_Type,
 	Typeid_Type,
 	Intrinsic_Type,
 	Module_Type,
@@ -1190,6 +1210,11 @@ union_variant_index :: proc(u: ^Union, ty: Type) -> (int, bool) {
 @(rodata)
 VOID := Check_Meta {
 	type = .Void,
+}
+
+@(rodata)
+INVALID := Check_Meta {
+	type = .Invalid_Type,
 }
 
 typecheck_eval :: proc(

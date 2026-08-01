@@ -102,11 +102,15 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		ok := parser.parse_file(&p, &f); assert(ok)
 	}
 
+	dsb: strings.Builder
+	dsb.buf.allocator = context.temp_allocator
+
 	ctx: Gen_Ctx
 	ctx.types = &types
 	ctx.global = &global_ctx
 	ctx.target.cc = &x64.X64_SYSTEMV_CC
 	ctx.target.spec = &x64.SPEC
+	ctx.errors = strings.to_writer(&dsb)
 
 	init_single_file_program(&ctx, &f)
 	typecheck.typecheck_program(&ctx)
@@ -127,15 +131,11 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		append(&confs, Test_Conf{level = level, debug = true})
 	}
 
-	//remove_range(&confs, 0, len(confs) - 1)
-
-	//append(&confs, Test_Conf{level = levels[len(levels) - 2], check = true})
+	if ctx.error_cnt > 0 do clear(&confs)
 
 	lib, did_load := dynlib.load_library("")
 	assert(did_load, dynlib.last_error())
 
-	dsb: strings.Builder
-	dsb.buf.allocator = context.temp_allocator
 	for level in confs {
 		if !level.debug {
 			if level.check {

@@ -607,12 +607,37 @@ Could you go trough the elf.odin file and convert the constants into enums and
 use them in the appropriate structures? Odin also has bit_set construct that
 you can use for bitflags.
 
-### Search for bugs
-
-NOTE: read AGENTS.md
+### Search for bugs (DONE)
 
 Search for bugs in the code. Spinn up at most 5 subagents that will go trought
 the `./backend/` code and review it. If an agent suspects a bug, It will try to
 reporduce it with a small project odin module. Once its confirmed, it will add
 it to the `TESTS.md`. Try to not run in to asserts that just serve as TODOs.
 Once everithing is reviewed stop.
+
+### Eliminate all panics and asserts from typecheck.odin
+
+NOTE: read AGENTS.md
+
+The typecheck.odin is not really typechecking, it just computes the types,
+crashing on any mismatches, which is not that helpfull. Instead its better to
+report the errors into a writer.
+
+I already added the `error` proc to the typecheck.odin, you should do the
+following:
+
+1. Find a assert/panic and write a test for it to trigger it, if its
+   reasonable, extend an existing test you wrote to cover this. We also want to
+   test recovery.
+2. Make the test pass, logging the diagnostics into the golden file.
+3. Go to 1. if there are more asserts or panics that should be handled.
+
+Note that the current `error` proc might not have a good api. What I am going
+for here, thing trough what would be the best solution that minimizes the
+branches in the code and also the amount of code. Meaning we don't have to
+constantly check, did this `typecheck` call fail? The `error` proc returns a
+placeholder `Check_Meta`, this is so that you can do `if fail {return
+error(..)}`. Idea is that the typechecker should just let this value to flow
+trough. We don't want to change the signature of `typecheck`.
+
+Dont inspect other files unless you have to. The files of interest are only ones that have changes in the last commit. With exception of `PROMPTS.md`.

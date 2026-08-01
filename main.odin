@@ -127,6 +127,7 @@ main :: proc() {
 	ctx.target.spec = &x64.SPEC
 	ctx.check = check
 	ctx.graph.has_dbg = debug
+	ctx.errors = os.to_writer(os.stderr)
 
 	times: struct {
 		load:    time.Duration,
@@ -141,6 +142,8 @@ main :: proc() {
 
 	{time.SCOPED_TICK_DURATION(&times.check)
 		typecheck.typecheck_program(&ctx)}
+
+	if ctx.error_cnt > 0 do os.exit(1)
 
 	emit_ctx := backend.Codegen_Emit_Ctx {
 		lib_calls = {copy = {id = MEMCPY_ID}, set = {id = MEMSET_ID}},

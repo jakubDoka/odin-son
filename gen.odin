@@ -437,7 +437,7 @@ emit_lvalue :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Sym {
 		case Node_ID:
 			return Value{id = idx, is_lvalue = true}
 		case typecheck.Lit:
-			panic("TODO")
+			fmt.panicf("TODO %#v", expr.derived)
 		}
 	case .Decl:
 		gv := idmt.decl
@@ -448,12 +448,7 @@ emit_lvalue :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Sym {
 			ptr := backend.graph_add_global_addr(ctx, gv.name, g)
 			return Value{id = ptr, is_lvalue = true}
 		} else {
-			if blit, is_lit := gv.value.derived.(^ast.Basic_Lit); is_lit {
-				tmp, _ := arna.scrath()
-				blita := new_clone(blit^, tmp)
-				typecheck.set_node_data(blita, meta)
-				return emit_nodes(ctx, {}, blita)
-			}
+			panic("no")
 		}
 	case .Const:
 		return Value(
@@ -1143,7 +1138,29 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 
 	#partial match: switch d in node.derived {
 	case ^ast.Block_Stmt:
-		emit_stmts(ctx, d.stmts)
+		base := ctx_scope_base(ctx)
+
+		for stmt in d.stmts {
+			decl := stmt.derived.(^ast.Value_Decl) or_continue
+
+			if len(decl.names) == 0 do continue
+			if decl.is_mutable do continue
+
+			for name, i in decl.names {
+				meta := typecheck.get_node_meta(decl.values[i])
+				append(
+					&ctx.scope,
+					typecheck.Variable {
+						name = typecheck.src_of(ctx.file^, name),
+						type = meta.type,
+						idx = meta.lit,
+						ident = name,
+					},
+				)
+			}
+		}
+
+		emit_stmts(ctx, d.stmts, base)
 	case ^ast.Expr_Stmt:
 		node := emit_nodes(ctx, {}, d.expr)
 		if node.id != 0 {
@@ -1464,6 +1481,8 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			fmt.panicf("TODO: %#v", node.derived)
 		}
 	case ^ast.Value_Decl:
+		if !d.is_mutable do break
+
 		if len(d.values) == 1 && len(d.names) > 1 {
 			prc_id, ok := call_proc_of(ctx, d.values[0])
 			assert(ok)
@@ -2302,15 +2321,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			fmt.panicf("TODO: %v %v", base_ty, node)
 		}
 	case ^ast.Branch_Stmt:
-		label := typecheck.src_of(ctx.file^, d.label)
-
-		loop := ctx.loop
-		for ; loop != nil; loop = loop.parent {
-			if loop.label == label || label == "" {
-				break
-			}
-		}
-		assert(loop != nil)
+		loop := typecheck.find_loop(ctx, d.label)
 
 		variant := builder.Loop_Control(-1)
 		#partial switch d.tok.kind {

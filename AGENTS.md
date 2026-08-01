@@ -23,6 +23,11 @@ be compilable with odin compiler and SHOULD NEVER CONTAIN REACHABLE INFINITE
 LOOP since ist ran before the actual test starts to extract the return value
 that is then asserted for changes.
 
+The TESTS.md snippets double as the corpus for the AFL++ fuzzer, run it with
+`./misc/fuzz.sh` (`--help` for the flags). It only compiles, never runs the
+generated code. `gen-meta` imports whatever crashed into `fuzz/crashes/` and
+turns each one into a test.
+
 Another category of tests we have are `test-programs`, that can be ran with
 `./misc/run-programs.sh`, the scripts asserts that exit codes and stdout/err
 are identical in programs compiled with each compiler.

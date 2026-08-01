@@ -62,6 +62,7 @@ Gen_Ctx :: struct {
 	slocs:        map[backend.Sloc]backend.D_Node_ID,
 	eval_depth:   int,
 	error_cnt:    int,
+	reachable:    ^bool,
 	errors:       io.Writer,
 }
 
@@ -78,6 +79,7 @@ Loop_Control :: enum int {
 Loop_State :: struct {
 	parent:       ^Loop_State,
 	label:        string,
+	broken:       bool,
 	using bstate: builder.Loop_State,
 }
 
@@ -95,6 +97,7 @@ Lit :: struct #raw_union {
 Check_Meta :: struct {
 	type:      Type,
 	known:     bool,
+	lvalue:    bool,
 	using lit: Lit,
 }
 
@@ -237,7 +240,9 @@ unwrap_type :: proc(
 
 type_align :: proc(ty: Type) -> int {
 	#partial switch t in unpack_type(ty) {
-	case ^Proc_Type, Pointer, Multi_Pointer:
+	case Invalid_Type, Void_Type:
+		return 1
+	case ^Proc_Type, Pointer, Multi_Pointer, String_Type:
 		return 8
 	case ^Struct:
 		return t.align
@@ -252,10 +257,8 @@ type_align :: proc(ty: Type) -> int {
 	case ^Simd:
 		return type_size(t.elem) * t.len
 	}
-	if ty == .String do return 8
 	// a poisoned type still gets laid out, and a 0 alignment would trip the
 	// alignment math
-	if ty == .Invalid_Type do return 1
 	return TYPE_SIZES[ty]
 }
 
@@ -298,6 +301,7 @@ type_size :: proc(ty: Type) -> int {
 	case ^Simd:
 		return type_size(t.elem) * t.len
 	}
+	assert(ty <= .F64)
 	return TYPE_SIZES[ty]
 }
 
@@ -499,6 +503,11 @@ type_display :: proc(w: io.Writer, ty: Type) {
 		}
 		io.write_rune(w, '}')
 	case ^Proc_Type:
+		if t == nil {
+			io.write_string(w, "generic proc")
+			break
+		}
+
 		io.write_string(w, "proc(")
 		for a, i in t.params {
 			if i != 0 do io.write_string(w, ", ")
@@ -729,13 +738,16 @@ find_module_decl :: proc(
 
 integrate_inferrence :: proc(
 	ctx: ^Gen_Ctx,
+	mod: Module_ID,
 	decl: ^Decl,
 	inferred: Type,
 ) -> ^Check_Meta {
 	meta := get_node_meta(decl.value)
+	if meta == &INVALID do return error(ctx, decl.value, "Accessing invalid global")
 	if decl.is_mutable do return meta
 	if inferred == .Void do return meta
 	if meta.type == inferred do return meta
+	if !in_set(inferred, INTEGER_TYPES) do return meta
 	return new_clone(
 		Check_Meta{type = inferred, known = meta.known, lit = meta.lit},
 		ctx.types.allocator,
@@ -748,6 +760,7 @@ typecheck_decl :: proc(
 	decl: ^Decl,
 ) -> ^Check_Meta {
 	if len(decl.value.end.file) == 0 && decl.value != &nil_node {
+		fmt.assertf(get_node_meta(decl.value) != nil, "%v", decl)
 		return get_node_meta(decl.value)
 	}
 
@@ -769,7 +782,11 @@ typecheck_decl :: proc(
 	if decl.value == &nil_node {
 		decl.value = new_clone(nil_node, ctx.types.allocator)
 	}
-	ty := emit_type(ctx, decl.ty)
+	set_node_data(decl.value, &INVALID)
+
+	dty := decl.ty
+	{context.allocator, _ = arna.scrath(); dty = ast.clone(dty)}
+	ty := emit_type(ctx, dty)
 	vl: ^Check_Meta
 	if decl.is_mutable {
 		vl = typecheck(
@@ -798,6 +815,7 @@ typecheck_decl :: proc(
 			decl.value,
 		)
 	}
+	assert(get_node_meta(decl.value) != nil)
 
 	return expect(ctx, decl.value, vl, ty)
 }
@@ -826,7 +844,6 @@ collect_decls :: proc(f: ast.File, decls: ^[dynamic]Decl, file_id: File_ID) {
 	for stmt in f.decls {
 		if decl, ok := stmt.derived_stmt.(^ast.Value_Decl); ok {
 			for name, i in decl.names {
-
 				vl := &nil_node.node
 				if i < len(decl.values) do vl = decl.values[i]
 				append(
@@ -844,14 +861,15 @@ collect_decls :: proc(f: ast.File, decls: ^[dynamic]Decl, file_id: File_ID) {
 
 		if block, ok := stmt.derived_stmt.(^ast.Foreign_Block_Decl); ok {
 			body := block.body.derived.(^ast.Block_Stmt) or_continue
-			for vl in body.stmts {
+			for vl, i in body.stmts {
 				decl := vl.derived.(^ast.Value_Decl) or_continue
 				if len(decl.values) == 0 do continue
+				cln: ^ast.Expr
 				append(
 					decls,
 					Decl {
 						name = src_of(f, decl.names[0]),
-						ty = decl.type,
+						ty = cln,
 						value = decl.values[0],
 						file = file_id,
 					},
@@ -1357,8 +1375,9 @@ typecheck_eval :: proc(
 ) {
 	ctx.eval_depth += 1
 	defer ctx.eval_depth -= 1
-	defer fmt.assertf(ty.known, "%v", ty.type)
-	return typecheck(ctx, prop, node)
+	res := typecheck(ctx, prop, node)
+	if !res.known do error(ctx, node, "expression is not constant")
+	return res
 }
 
 typecheck :: proc(
@@ -1377,18 +1396,17 @@ typecheck :: proc(
 	}
 
 	defer {
+		fmt.assertf(ty != nil, "%#v", node.derived)
 		set_node_data(node, ty)
-		fmt.assertf(
-			ty.known || ctx.eval_depth == 0,
-			"%v %#v",
-			ty,
-			node.derived,
-		)
 	}
 
 	#partial match: switch d in node.derived {
 	case ^ast.Bad_Expr:
-		return tmeta(ctx, prop.inferred_ty)
+		if d.derived == &nil_node {
+			return tcmeta(ctx, prop.inferred_ty, {})
+		} else {
+			return error(ctx, node, "bad expr")
+		}
 	case ^ast.Struct_Type:
 		structa := intern_decl(ctx, &ctx.structs, prop.key, &ty) or_break
 		structa.align = 1
@@ -1732,6 +1750,9 @@ typecheck :: proc(
 			}
 			if ty == .Void do ty = .U8
 			inner := d.tok.text[1:len(d.tok.text) - 1]
+			if len(inner) == 0 {
+				return error(ctx, node, "char literal cant be empty")
+			}
 			r, _, _, ok := strconv.unquote_char(inner, '\'')
 			if !ok do return error(ctx, node, "malformed rune literal")
 			return tcmeta(ctx, ty, {rune = r})
@@ -1874,7 +1895,7 @@ typecheck :: proc(
 					f.name,
 				)
 			}
-			return integrate_inferrence(ctx, pid, prop.inferred_ty)
+			return integrate_inferrence(ctx, mid, pid, prop.inferred_ty)
 		}
 
 		base_ty := base.type
@@ -2029,7 +2050,17 @@ typecheck :: proc(
 		case .Not:
 			typecheck_as(ctx, .Bool, d.expr)
 			return tmeta(ctx, .Bool)
-		case .Sub, .Xor:
+		case .Xor:
+			vl := typecheck(ctx, prop, d.expr)
+			if !in_set(vl.type, INTEGER_TYPES) {
+				return error(
+					ctx,
+					node,
+					"only integers support this, TODO: vectors",
+				)
+			}
+			return vl
+		case .Sub:
 			return typecheck(ctx, prop, d.expr)
 		case:
 			return error(ctx, node, "TODO: unary %v", d.op.text)
@@ -2054,8 +2085,12 @@ typecheck :: proc(
 	case ^ast.If_Stmt:
 		if d.init != nil do error(ctx, d.init, "TODO: an if with an initializer")
 		typecheck_as(ctx, .Bool, d.cond)
-		typecheck(ctx, {}, d.body)
-		typecheck(ctx, {}, d.else_stmt)
+		then_reachable := typecheck_branch(ctx, d.body)
+		if d.else_stmt != nil {
+			if !typecheck_branch(ctx, d.else_stmt) && !then_reachable {
+				mark_unreachable(ctx)
+			}
+		}
 		return &VOID
 	case ^ast.Switch_Stmt:
 		if d.init != nil {
@@ -2064,6 +2099,7 @@ typecheck :: proc(
 		cond_ty := typecheck(ctx, {}, d.cond)
 		body := d.body.derived.(^ast.Block_Stmt) or_else nil
 		if body == nil do return error(ctx, d.body, "expected a switch body")
+		reachable, has_default: bool
 		for clause_node in body.stmts {
 			clause := clause_node.derived.(^ast.Case_Clause) or_else nil
 			if clause == nil do continue
@@ -2071,9 +2107,11 @@ typecheck :: proc(
 				typecheck(ctx, {inferred_ty = cond_ty.type}, v)
 			}
 			prev := len(ctx.scope)
-			for stmt in clause.body do typecheck(ctx, {}, stmt)
+			if len(clause.list) == 0 do has_default = true
+			if typecheck_clause(ctx, clause.body) do reachable = true
 			resize(&ctx.scope, prev)
 		}
+		if has_default && !reachable do mark_unreachable(ctx)
 		return &VOID
 	case ^ast.Type_Switch_Stmt:
 		tag, is_assign := d.tag.derived.(^ast.Assign_Stmt)
@@ -2091,13 +2129,19 @@ typecheck :: proc(
 		) or_return
 		body := d.body.derived.(^ast.Block_Stmt) or_else nil
 		if body == nil do return error(ctx, d.body, "expected a switch body")
+		reachable, has_default: bool
+		covered := 0
 		for clause_node in body.stmts {
 			clause := clause_node.derived.(^ast.Case_Clause) or_else nil
 			if clause == nil do continue
 			bind_ty := union_ty.type
-			if len(clause.list) > 0 {
+			if len(clause.list) == 0 {
+				has_default = true
+			} else {
 				bind_ty = emit_type(ctx, clause.list[0])
-				if _, found := union_variant_index(uni, bind_ty); !found {
+				if _, found := union_variant_index(uni, bind_ty); found {
+					covered += 1
+				} else {
 					error(
 						ctx,
 						clause.list[0],
@@ -2118,16 +2162,26 @@ typecheck :: proc(
 					flags = {.Referenced},
 				},
 			)
-			for stmt in clause.body do typecheck(ctx, {}, stmt)
+			if typecheck_clause(ctx, clause.body) do reachable = true
 			resize(&ctx.scope, prev)
 		}
+		exhaustive := has_default || covered == len(uni.variants)
+		if exhaustive && !reachable do mark_unreachable(ctx)
 		return &VOID
 	case ^ast.For_Stmt:
 		if d.init != nil || d.cond != nil || d.post != nil {
 			error(ctx, node, "TODO: only `for {{ .. }}` is supported")
 		}
 
-		typecheck(ctx, {}, d.body)
+		loop := Loop_State {
+			parent = ctx.loop,
+			label  = src_of(ctx.file^, d.label),
+		}
+		ctx.loop = &loop
+		defer ctx.loop = loop.parent
+
+		typecheck_branch(ctx, d.body)
+		if !loop.broken do mark_unreachable(ctx)
 	case ^ast.Range_Stmt:
 		if d.init != nil do error(ctx, d.init, "TODO: a for with an initializer")
 		expr_meta := typecheck(ctx, {}, d.expr)
@@ -2148,6 +2202,14 @@ typecheck :: proc(
 			)
 		}
 
+		loop := Loop_State {
+			parent = ctx.loop,
+			label  = src_of(ctx.file^, d.label),
+			broken = true,
+		}
+		ctx.loop = &loop
+		defer ctx.loop = loop.parent
+
 		prev := len(ctx.scope)
 		val_types := [2]Type{elem, .Int}
 		for v, i in d.vals {
@@ -2167,12 +2229,20 @@ typecheck :: proc(
 				Variable{name = id.name, type = val_types[i], ident = v},
 			)
 		}
-		typecheck(ctx, {}, d.body)
+		typecheck_branch(ctx, d.body)
+		if !loop.broken do mark_unreachable(ctx)
 		for var in ctx.scope[prev:] {
 			set_node_data(var.ident, var.flags)
 		}
 		resize(&ctx.scope, prev)
 	case ^ast.Branch_Stmt:
+		loop := find_loop(ctx, d.label)
+		if loop == nil {
+			error(ctx, node, "no matchin loop for the control")
+		} else {
+			if d.tok.kind == .Break do loop.broken = true
+			mark_unreachable(ctx)
+		}
 		return &VOID
 	case ^ast.Paren_Expr:
 		return typecheck(ctx, prop, d.expr)
@@ -2197,6 +2267,7 @@ typecheck :: proc(
 	case ^ast.Ident:
 		meta := new(Ident_Meta, ctx.types.allocator)
 		defer {
+			assert(ty != nil)
 			set_ident_meta(d, meta)
 		}
 
@@ -2211,6 +2282,7 @@ typecheck :: proc(
 				meta.index = i
 
 				if lit, ok := var.idx.(Lit); ok {
+					meta.kind = .Const
 					return tcmeta(ctx, var.type, lit)
 				}
 
@@ -2234,7 +2306,17 @@ typecheck :: proc(
 		if decl, ok := find_module_decl(ctx, ctx.module, d.name); ok {
 			meta.kind = .Decl
 			meta.decl = decl
-			return integrate_inferrence(ctx, decl, prop.inferred_ty)
+			res := integrate_inferrence(
+				ctx,
+				ctx.module,
+				decl,
+				prop.inferred_ty,
+			)
+			if !decl.is_mutable {
+				meta.kind = .Const
+				meta.value = res.int
+			}
+			return res
 		}
 
 		if d.name == "false" || d.name == "true" {
@@ -2572,6 +2654,7 @@ typecheck :: proc(
 		return &VOID
 	case ^ast.Return_Stmt:
 		prc := &ctx.procs[ctx.prc]
+		mark_unreachable(ctx)
 		if len(d.results) != len(prc.rets) {
 			return error(
 				ctx,
@@ -2606,6 +2689,7 @@ typecheck :: proc(
 		}
 		for i in 0 ..< len(d.lhs) {
 			lhs_ty := typecheck(ctx, {}, d.lhs[i])
+			if !lhs_ty.lvalue do error(ctx, d.lhs[i], "cant assign to this")
 			if is_of(lhs_ty.type, ^Union) {
 				rhs_ty := typecheck(ctx, {}, d.rhs[i])
 				expect(ctx, d.rhs[i], rhs_ty, lhs_ty.type)
@@ -2800,6 +2884,7 @@ typecheck_program :: proc(ctx: ^Gen_Ctx) {
 						decl.id.value,
 						"TODO: non constant global initializer",
 					)
+					continue
 				}
 				val_bytes := transmute([8]u8)value
 				copy(bytes, val_bytes[:size])
@@ -2836,12 +2921,56 @@ typecheck_program :: proc(ctx: ^Gen_Ctx) {
 			case:
 				error(ctx, asta.names[0], "expected a parameter name")
 			}
-
 		}
 
-		typecheck(ctx, {}, prc.lit.body)
-	}
+		if prc.lit.body == nil do continue
 
+		if typecheck_branch(ctx, prc.lit.body) && prc.lit.type.results != nil {
+			error(ctx, prc.lit.type.results, "expected return value")
+		}
+	}
+}
+
+typecheck_branch :: #force_inline proc(
+	ctx: ^Gen_Ctx,
+	node: ^ast.Node,
+) -> (
+	reachable: bool,
+) {
+	reachable = true
+	prev := begin_branch(ctx, &reachable)
+	typecheck(ctx, {}, node)
+	end_branch(ctx, prev)
+	return
+}
+
+typecheck_clause :: proc(
+	ctx: ^Gen_Ctx,
+	stmts: []^ast.Stmt,
+) -> (
+	reachable: bool,
+) {
+	reachable = true
+	prev := begin_branch(ctx, &reachable)
+	for stmt in stmts do typecheck(ctx, {}, stmt)
+	end_branch(ctx, prev)
+	return
+}
+
+begin_branch :: proc(ctx: ^Gen_Ctx, branch: ^bool) -> (prev: ^bool) {
+	prev = ctx.reachable
+	ctx.reachable = branch
+	return
+}
+
+end_branch :: proc(ctx: ^Gen_Ctx, prev: ^bool) {
+	ctx.reachable = prev
+}
+
+mark_unreachable :: proc(ctx: ^Gen_Ctx) {
+	// constant expressions are evaluated outside of any proc body
+	if ctx.reachable == nil do return
+	ctx.reachable^ = false
 }
 
 src_of :: proc(f: ast.File, node: ^ast.Node) -> string {
@@ -2853,4 +2982,17 @@ add_global :: proc(ctx: ^Gen_Ctx, bytes: []u8, align: int) -> u32 {
 	idx := u32(len(ctx.globals))
 	append(&ctx.globals, Global_Data{bytes = bytes, align = align})
 	return idx
+}
+
+find_loop :: proc(ctx: ^Gen_Ctx, label: ^ast.Node) -> ^Loop_State {
+	label := src_of(ctx.file^, label)
+
+	loop := ctx.loop
+	for ; loop != nil; loop = loop.parent {
+		if loop.label == label || label == "" {
+			break
+		}
+	}
+
+	return loop
 }

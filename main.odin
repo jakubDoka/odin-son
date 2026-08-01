@@ -14,6 +14,11 @@ import "vendored/gam/util/arna"
 import "vendored/gam/util/hot"
 
 main :: proc() {
+	when #config(FUZZ, false) {
+		fuzz_main()
+		return
+	}
+
 	context.assertion_failure_proc = hot.init_trace()
 	context.logger = log.create_console_logger()
 	context.logger.options &= ~{.Time, .Date, .Level, .Procedure}

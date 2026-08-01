@@ -615,9 +615,7 @@ reporduce it with a small project odin module. Once its confirmed, it will add
 it to the `TESTS.md`. Try to not run in to asserts that just serve as TODOs.
 Once everithing is reviewed stop.
 
-### Eliminate all panics and asserts from typecheck.odin
-
-NOTE: read AGENTS.md
+### Eliminate all panics and asserts from typecheck.odin (DONE)
 
 The typecheck.odin is not really typechecking, it just computes the types,
 crashing on any mismatches, which is not that helpfull. Instead its better to
@@ -640,4 +638,39 @@ placeholder `Check_Meta`, this is so that you can do `if fail {return
 error(..)}`. Idea is that the typechecker should just let this value to flow
 trough. We don't want to change the signature of `typecheck`.
 
-Dont inspect other files unless you have to. The files of interest are only ones that have changes in the last commit. With exception of `PROMPTS.md`.
+Dont inspect other files unless you have to. The files of interest are only
+ones that have changes in the last commit. With exception of `PROMPTS.md`.
+
+### Set up a fuzzer (DONE)
+
+I would like to use the tests in `TESTS.md` as a corpus for a fuzzer. I already
+have a afl fuzzer installed so use that. It should be possible to run the
+fuzzer on multiple threads.
+
+The fuzzed code should only include compilation, no program runs, since fuzzer
+can generate code that crashes. I thing we can reuse the `run_test` proc in
+`test_utils.odin` but build with -define:NO_RUN and no active logger.
+
+Extend the `meta/` to generate the corupus for the fuzzer. I should be able to
+specify how long the fuzzer should run for and also make it just crash on the
+first error.
+
+Then also make the `meta/` look for the crashing inputs dumped by the fuzzer,
+and generate tests based on them as well.
+
+The script to run the fuzzer should be in `misc/`, do not wait for the fuzzer
+for more them 10 seconds so you don't waste time when debugging the setup. The
+script should build the instrumented artifact to fuzz and boot the fuzzer, Also
+take a flag to skip the build as it tends to take a lot of time. The build
+should be optimized but preserve all the safety checks.
+
+### Add reachability analysis
+
+NOTE: read AGENTS.md
+
+Currently the typechecker does not catch if the function does not return
+properly on all pahts. Could you please add these checks to the `typecheck/`
+module. I have added some basic tools to do this, just make sure the non FUZZ
+tests all pass.
+
+### Add lva

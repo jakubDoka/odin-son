@@ -168,7 +168,12 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		append(&imported_offsets, 0)
 		for p in ctx.procs[1:] {
 			if p.lit.body == nil {
-				addr := dynlib.symbol_address(lib, p.name) or_else panic("")
+				// fuzzed sources name symbols that exist nowhere, and nothing
+				// is ever called under NO_RUN, so a null slot is harmless
+				addr := dynlib.symbol_address(lib, p.name)
+				when !#config(NO_RUN, false) {
+					fmt.assertf(addr != nil, "missing symbol: %v", p.name)
+				}
 				slot := backend.emit_aligned(&types.mems.code, addr)
 				append(&imported_offsets, uintptr(slot))
 			}
@@ -272,22 +277,25 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		)
 		assert(oka)
 
-		main: ^typecheck.Proc
-		for &p in ctx.procs {
-			if p.name == "main" {
-				main = &p
-			}
-		}
-
-		ptr := transmute(proc() -> int)(raw_data(main.out.code))
-		if #config(NO_RUN, false) {
+		when #config(NO_RUN, false) {
 			log.error("running compiled code disabled")
 		} else {
-			vl := ptr()
-			if vl != exit_code {
-				log.error(level)
-				testing.expect_value(t, vl, exit_code)
+			main: ^typecheck.Proc
+			for &p in ctx.procs {
+				if p.name == "main" {
+					main = &p
+				}
 			}
+
+			if main != nil {
+				ptr := transmute(proc() -> int)(raw_data(main.out.code))
+				vl := ptr()
+				if vl != exit_code {
+					log.error(level)
+					testing.expect_value(t, vl, exit_code)
+				}
+			}
+
 		}
 
 		oka = virtual.protect(types.mems.code.ptr, code_until, {.Read, .Write})

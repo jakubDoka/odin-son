@@ -31,6 +31,9 @@ set dff '-define:DIFF=false'
  
 alias run-test 'odin test tests -keep-executable -debug -define:ODIN_TEST_FANCY=false'
 
+# ./misc/fuzz.sh [-t <secs>] [-j <jobs>] [--until-crash] [--skip-build]
+alias fuzz './misc/fuzz.sh'
+
 alias rel-files 'rg --files --glob "!*.git/" --glob "!vendored" --glob \
 "!print-tests" --glob "!TESTS.md" --glob "!tests.odin" --glob \
 "!backend/**/node_specs.odin" --glob "!*meta_overloads.odin" \

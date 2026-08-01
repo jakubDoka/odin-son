@@ -1004,7 +1004,7 @@ x64_post_schedule_peep :: proc(
 
 		if xtype(rhs) == .X64_Load {
 			if !has_no_clobbers(ctx, node.inps[2]) do break matchx
-			panic("")
+			//panic("")
 		} else if xtype(rhs) == .X64_CLoad {
 			mem_op.mem_mode = .Src
 			mem_op.dt = rhs.dt

@@ -6559,3 +6559,217 @@ main :: proc() -> int {
 	return arr[2]
 }
 ```
+
+<!-- The `fail ...` tests below are rejected by the typechecker, so they are
+never compiled by odin nor run; the golden file only holds the diagnostics.
+Every one of them checks recovery too: each statement is checked independently,
+so all of the mistakes have to be reported in one run. -->
+
+#### fail type mismatches
+```odin
+package main
+
+Foo :: struct {
+	a: int,
+	b: f32,
+}
+
+takes_int :: proc(a: int) -> int {
+	return a
+}
+
+main :: proc() -> int {
+	a: int = "hello"
+	b: f32 = takes_int(1)
+	c := takes_int("nope")
+	d := takes_int()
+	e := takes_int(1, 2)
+	f: Foo = {a = "x", c = 1}
+	g := f.missing
+	return b
+}
+```
+
+#### fail undeclared names
+```odin
+package main
+
+main :: proc() -> int {
+	x := undefined_thing
+	y: NotAType = 0
+	z := undefined_proc(1)
+	w := x + y + z
+	return 0
+}
+```
+
+#### fail bad control flow
+```odin
+package main
+
+main :: proc() -> int {
+	s := "not a bool"
+	if s {
+	}
+
+	n := 1
+	for v in n {
+	}
+
+	for i := 0; i < 10; i += 1 {
+	}
+
+	return 0
+}
+```
+
+#### fail bad operands
+```odin
+package main
+
+main :: proc() -> int {
+	a := 1
+	b := a[0]
+	c := a[1:2]
+	d := a^
+	e := transmute(i32)a
+	f := !a
+	g := a + "str"
+	return 0
+}
+```
+
+#### fail bad enums and unions
+```odin
+package main
+
+En :: enum {
+	A,
+	B,
+}
+
+Un :: union {
+	int,
+	f32,
+}
+
+main :: proc() -> int {
+	e := En.C
+	f: En = .D
+	u: Un = "str"
+	v := u.(bool)
+	w := 1
+	switch x in w {
+	case int:
+	}
+	switch y in u {
+	case bool:
+	}
+	return 0
+}
+```
+
+#### fail bad generics
+```odin
+package main
+
+Vec :: struct($T: typeid) {
+	x: T,
+}
+
+sum :: proc(a: $T, b: T) -> T {
+	return a + b
+}
+
+main :: proc() -> int {
+	v: Vec(int, f32)
+	s := sum(1, "two")
+	t := sum(1)
+	return 0
+}
+```
+
+#### fail bad returns and builtins
+```odin
+package main
+
+pair :: proc() -> (int, int) {
+	return 1, 2
+}
+
+main :: proc() -> int {
+	return 1, 2
+}
+
+other :: proc() -> int {
+	a := len(1)
+	b := raw_data(1)
+	c := size_of()
+	d, e, f := pair()
+	g := 1(2)
+	return 0
+}
+```
+
+#### fail bad literals and types
+```odin
+package main
+
+En :: enum {
+	A = "no",
+}
+
+main :: proc() -> int {
+	a: bool = 1.5
+	b: string = 'c'
+	c: [4]u8 = {1, 2, 3, 4, 5}
+	d: #simd[3]u8
+	e: #simd[2]u8
+	f := nil
+	g: ^int = nil
+	h := g == nil
+	i := En.A
+	return 0
+}
+```
+
+#### fail unsupported constructs
+```odin
+package main
+
+Bad :: struct {
+	a, b: int,
+}
+
+two_names :: proc(a, b: int) -> int {
+	return a
+}
+
+main :: proc() -> int {
+	x := intrinsics.nonexistent(1)
+	y := intrinsics(1)
+	s := "str"
+	z := s[s]
+	w := cast(int)1
+	v := +s
+	if q := 1; q > 0 {
+	}
+	switch r := 1; 2 {
+	case:
+	}
+	return 0
+}
+```
+
+#### fail uninferable polymorphism
+```odin
+package main
+
+only_ret :: proc(a: int) -> $T {
+	return 0
+}
+
+main :: proc() -> int {
+	return only_ret(1)
+}
+```

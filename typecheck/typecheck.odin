@@ -61,6 +61,7 @@ Gen_Ctx :: struct {
 	poly_types:   #soa[dynamic]Poly_Entry,
 	slocs:        map[backend.Sloc]backend.D_Node_ID,
 	eval_depth:   int,
+	type_depth:   int,
 	error_cnt:    int,
 	reachable:    ^bool,
 	errors:       io.Writer,
@@ -89,6 +90,7 @@ Lit :: struct #raw_union {
 	typeida:   Type,
 	intrinsic: Intrinsic,
 	int:       i64,
+	uint:      u64,
 	rune:      rune,
 	float:     f64,
 	string:    ^string,
@@ -107,7 +109,6 @@ Ident_Meta_Kind :: enum int {
 	Module,
 	Decl,
 	Const,
-	Discard,
 	Builtin,
 	Nil,
 }
@@ -118,6 +119,7 @@ Ident_Meta :: struct {
 		index: int,
 		decl:  ^Decl,
 		value: i64,
+		lit:   Lit,
 	},
 }
 
@@ -362,6 +364,8 @@ type_to_dt :: proc(ty: Type) -> backend.Node_Datatype {
 	case ^Simd:
 		return simd_dt(type_size(t.elem) * t.len)
 	}
+
+	fmt.assertf(ty <= .F64, "%v", rawptr(ty))
 	return TYPE_TO_DT[ty]
 }
 
@@ -375,6 +379,7 @@ UNSIGNED_TYPES :: bit_set[Type]{.Uint, .U64, .U32, .U16, .U8, .Bool, .Uintptr}
 SIGNED_TYPES :: bit_set[Type]{.Int, .I64, .I32, .I16, .I8}
 INTEGER_TYPES :: UNSIGNED_TYPES | SIGNED_TYPES
 FLOAT_TYPES :: bit_set[Type]{.F32, .F64}
+NUMBER_TYPES :: INTEGER_TYPES | FLOAT_TYPES
 
 Raw_Type :: bit_field u64 {
 	tag:  int     | 16,
@@ -747,7 +752,7 @@ integrate_inferrence :: proc(
 	if decl.is_mutable do return meta
 	if inferred == .Void do return meta
 	if meta.type == inferred do return meta
-	if !in_set(inferred, INTEGER_TYPES) do return meta
+	if !in_set(inferred, NUMBER_TYPES) do return meta
 	return new_clone(
 		Check_Meta{type = inferred, known = meta.known, lit = meta.lit},
 		ctx.types.allocator,
@@ -784,8 +789,8 @@ typecheck_decl :: proc(
 	}
 	set_node_data(decl.value, &INVALID)
 
-	dty := decl.ty
-	{context.allocator, _ = arna.scrath(); dty = ast.clone(dty)}
+	context.allocator, _ = arna.scrath()
+	dty := ast.clone(decl.ty)
 	ty := emit_type(ctx, dty)
 	vl: ^Check_Meta
 	if decl.is_mutable {
@@ -801,6 +806,7 @@ typecheck_decl :: proc(
 			},
 			decl.value,
 		)
+		vl.known = false
 	} else {
 		vl = typecheck_eval(
 			ctx,
@@ -897,6 +903,8 @@ extract_polys :: proc(
 	croot: Check_Meta,
 	proot: ^ast.Expr,
 ) -> bool {
+	if proot == nil do return true
+
 	#partial switch d in proot.derived {
 	case ^ast.Pointer_Type:
 		if croot.type != .Typeid do return false
@@ -993,6 +1001,8 @@ intern_decl :: proc(
 }
 
 emit_type :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> (ret: Type) {
+	ctx.type_depth += 1
+	defer ctx.type_depth -= 1
 	res := typecheck(ctx, {inferred_ty = .Typeid}, expr)
 	if res.type == .Void do return .Void
 	if res.type != .Typeid {
@@ -1395,8 +1405,14 @@ typecheck :: proc(
 		assert(p.lit.type != nil)
 	}
 
+	lvalue := false
 	defer {
 		fmt.assertf(ty != nil, "%#v", node.derived)
+		// direct set is not safe since we use global sentinels
+		if lvalue && ty != &INVALID {
+			ty.lvalue = true
+		}
+		if !lvalue && ty.lvalue do ty.lvalue = false
 		set_node_data(node, ty)
 	}
 
@@ -1592,14 +1608,15 @@ typecheck :: proc(
 				continue
 			}
 			for name, i in decl.names {
+				ident := extract_var_ident(ctx, name) or_continue
 				res := typecheck_eval(ctx, {inferred_ty = ty}, decl.values[i])
 				append(
 					&ctx.scope,
 					Variable {
-						name = src_of(ctx.file^, name),
+						name = ident.name,
 						type = res.type,
 						idx = res.lit,
-						ident = name,
+						ident = ident,
 					},
 				)
 			}
@@ -1621,8 +1638,8 @@ typecheck :: proc(
 			rabi := ret_abi(sig.rets)
 
 			for i in 0 ..< len(d.names) {
-				name := src_of(ctx.file^, d.names[i])
-				if name == "_" do continue
+				ident := extract_var_ident(ctx, d.names[i]) or_continue
+				if ident.name == "_" do continue
 				flags: Var_Flags
 				if ret_is_by_pointer(rabi, i) {
 					flags |= {.Referenced}
@@ -1631,9 +1648,9 @@ typecheck :: proc(
 				append(
 					&ctx.scope,
 					Variable {
-						name = name,
+						name = ident.name,
 						type = sig.rets[i],
-						ident = d.names[i],
+						ident = ident,
 						flags = flags,
 					},
 				)
@@ -1650,15 +1667,15 @@ typecheck :: proc(
 			flags: Var_Flags
 			if type_to_dt(inferred_ty) == .Void do flags |= {.Referenced}
 			for i in 0 ..< len(d.names) {
-				name := src_of(ctx.file^, d.names[i])
-				if name == "_" do continue
+				ident := extract_var_ident(ctx, d.names[i]) or_continue
+				if ident.name == "_" do continue
 				set_node_data(d.names[i], flags)
 				append(
 					&ctx.scope,
 					Variable {
-						name = name,
+						name = ident.name,
 						type = inferred_ty,
-						ident = d.names[i],
+						ident = ident,
 						flags = flags,
 					},
 				)
@@ -1677,8 +1694,7 @@ typecheck :: proc(
 		}
 
 		for i in 0 ..< len(d.names) {
-			name := src_of(ctx.file^, d.names[i])
-			if name == "_" do continue
+			ident := extract_var_ident(ctx, d.names[i]) or_continue
 
 			if is_of(inferred_ty, ^Union) {
 				value_ty := typecheck(ctx, {}, d.values[i])
@@ -1688,9 +1704,9 @@ typecheck :: proc(
 				append(
 					&ctx.scope,
 					Variable {
-						name = name,
+						name = ident.name,
 						type = inferred_ty,
-						ident = d.names[i],
+						ident = ident,
 						flags = flags,
 					},
 				)
@@ -1698,26 +1714,26 @@ typecheck :: proc(
 			}
 
 			value_ty := typecheck_as(ctx, inferred_ty, d.values[i])
+			if ident.name == "_" do continue
 			set_node_data(d.names[i], Var_Flags{})
 			append(
 				&ctx.scope,
 				Variable {
-					name = name,
+					name = ident.name,
 					type = value_ty.type,
-					ident = d.names[i],
+					ident = ident,
 				},
 			)
 		}
 	case ^ast.Proc_Lit:
+		if ctx.type_depth > 0 do return error(ctx, node, "not allowed in types")
 		return proc_meta(ctx, typecheck_proc(ctx, ctx.module, prop.key, d))
 	case ^ast.Basic_Lit:
 		ty := prop.inferred_ty
 
 		#partial switch d.tok.kind {
 		case .Integer:
-			if ty != .Void &&
-			   !in_set(ty, INTEGER_TYPES) &&
-			   !in_set(ty, FLOAT_TYPES) {
+			if ty != .Void && !in_set(ty, NUMBER_TYPES) {
 				return error(
 					ctx,
 					node,
@@ -1737,10 +1753,10 @@ typecheck :: proc(
 				return tcmeta(ctx, ty, {float = f64(value)})
 			}
 		case .Float:
-			if ty != .Void && !in_set(ty, FLOAT_TYPES) {
+			if ty != .Void && !in_set(ty, NUMBER_TYPES) {
 				return error(ctx, node, "a float literal can not be a %v", ty)
 			}
-			if ty == .Void do ty = .F64
+			if !in_set(ty, FLOAT_TYPES) do ty = .F64
 			value, ok := strconv.parse_f64(d.tok.text)
 			if !ok do return error(ctx, node, "malformed float literal")
 			return tcmeta(ctx, ty, {float = f64(value)})
@@ -1749,14 +1765,19 @@ typecheck :: proc(
 				return error(ctx, node, "a rune literal can not be a %v", ty)
 			}
 			if ty == .Void do ty = .U8
-			inner := d.tok.text[1:len(d.tok.text) - 1]
-			if len(inner) == 0 {
+			if len(d.tok.text) < 3 {
 				return error(ctx, node, "char literal cant be empty")
 			}
+			inner := d.tok.text[1:len(d.tok.text) - 1]
 			r, _, _, ok := strconv.unquote_char(inner, '\'')
 			if !ok do return error(ctx, node, "malformed rune literal")
 			return tcmeta(ctx, ty, {rune = r})
 		case .String:
+			_, _, ok := strconv.unquote_string(d.tok.text)
+			if !ok {
+				return error(ctx, node, "invalid string literal")
+			}
+
 			return expect(
 				ctx,
 				node,
@@ -1836,8 +1857,10 @@ typecheck :: proc(
 		expect_integer(ctx, d.index)
 		#partial switch t in unpack_type(base.type) {
 		case ^Array:
+			lvalue = base.lvalue
 			return tmeta(ctx, t.elem)
 		case ^Slice:
+			lvalue = true
 			return tmeta(ctx, t.elem)
 		case String_Type:
 			return tmeta(ctx, .U8)
@@ -1846,6 +1869,7 @@ typecheck :: proc(
 				return tmeta(ctx, intern_multi_pointer(ctx, nt.elem))
 			}
 		case Multi_Pointer:
+			lvalue = true
 			return tmeta(ctx, t^)
 		}
 		return error(ctx, d.expr, "can not index a %v", base.type)
@@ -1857,7 +1881,7 @@ typecheck :: proc(
 		case ^Array:
 			return tmeta(ctx, intern_slice(ctx, t.elem))
 		case ^Slice:
-			return base
+			return new_clone(base^, ctx.types.allocator)
 		case String_Type:
 			return tmeta(ctx, .String)
 		case Pointer:
@@ -1895,11 +1919,16 @@ typecheck :: proc(
 					f.name,
 				)
 			}
+			lvalue = pid.is_mutable
 			return integrate_inferrence(ctx, mid, pid, prop.inferred_ty)
 		}
 
 		base_ty := base.type
-		if p, ok := unpack_type(base_ty).(Pointer); ok do base_ty = p^
+		through_ptr := false
+		if p, ok := unpack_type(base_ty).(Pointer); ok {
+			base_ty = p^
+			through_ptr = true
+		}
 
 		if base.type == .Typeid {
 			base_ty = base.lit.typeida
@@ -1918,6 +1947,7 @@ typecheck :: proc(
 			for &field in t.fields {
 				if field.name == f.name {
 					set_node_data(d.field, field.offset)
+					lvalue = through_ptr || base.lvalue
 					return tmeta(ctx, field.ty)
 				}
 			}
@@ -1972,6 +2002,8 @@ typecheck :: proc(
 		prop := prop
 		if is_comparison do prop.inferred_ty = .Void
 
+		rhs_ty, lhs_ty: ^Check_Meta
+
 		if is_nil_lit(d.left) || is_nil_lit(d.right) {
 			operand := is_nil_lit(d.left) ? d.right : d.left
 			oty := typecheck(ctx, {}, operand)
@@ -1982,49 +2014,83 @@ typecheck :: proc(
 				^Union,
 				"only a union can be compared to nil, found %v",
 			) or_return
-			return tmeta(ctx, .Bool)
+
+			rhs_ty = oty
+			lhs_ty = oty
 		}
 
 		if is_num_lit(d.left) &&
 		   !is_num_lit(d.right) &&
 		   prop.inferred_ty == .Void {
-			rhs_ty := typecheck(ctx, {}, d.right)
-			lhs_ty := typecheck_as(ctx, rhs_ty.type, d.left)
+			rhs_ty = typecheck(ctx, {}, d.right)
+			lhs_ty = typecheck_as(ctx, rhs_ty.type, d.left)
+		}
 
-			if !is_comparison &&
-			   lhs_ty.known &&
-			   rhs_ty.known &&
-			   in_set(lhs_ty.type, INTEGER_TYPES) {
-				#partial switch d.op.kind {
-				case .Quo:
-					if rhs_ty.int == 0 {
-						return error(ctx, d.right, "division by zero")
-					}
-					lhs_ty.int /= rhs_ty.int
-				case .Add:
-					lhs_ty.int += rhs_ty.int
-				case:
-					return error(
-						ctx,
-						node,
-						"TODO: constant folding of %v",
-						d.op.text,
-					)
-				}
+		if rhs_ty == nil {
+			lhs_ty = typecheck(ctx, prop, d.left)
+			inferred_ty := lhs_ty.type
+			if d.op.kind == .Shl || d.op.kind == .Shr {
+				inferred_ty = .Uint
 			}
-
-			return is_comparison ? tmeta(ctx, .Bool) : lhs_ty
+			rhs_ty = typecheck_as(ctx, inferred_ty, d.right)
 		}
 
-		lhs_ty := typecheck(ctx, prop, d.left)
-		inferred_ty := lhs_ty.type
-		if d.op.kind == .Shl || d.op.kind == .Shr {
-			inferred_ty = .Uint
+		if d.op.kind != .Shl && d.op.kind != .Shr {
+			expect(ctx, node, lhs_ty, rhs_ty.type)
 		}
-		typecheck_as(ctx, inferred_ty, d.right)
+
+		valid_binop(ctx, lhs_ty.type, node, d.op.kind) or_return
+
+		if lhs_ty.known && rhs_ty.known {
+			is_float := lhs_ty.type in FLOAT_TYPES
+			is_signed := lhs_ty.type in SIGNED_TYPES
+			#partial switch d.op.kind {
+			case .Quo:
+				if rhs_ty.int == 0 {
+					return error(ctx, d.right, "division by zero")
+				}
+				if is_float {
+					lhs_ty.float /= rhs_ty.float
+				} else if is_signed {
+					lhs_ty.uint /= rhs_ty.uint
+				} else {
+					lhs_ty.int /= rhs_ty.int
+				}
+			case .Mul:
+				if is_float {
+					lhs_ty.float *= rhs_ty.float
+				} else {
+					lhs_ty.int *= rhs_ty.int
+				}
+			case .Add:
+				if is_float {
+					lhs_ty.float += rhs_ty.float
+				} else {
+					lhs_ty.int += rhs_ty.int
+				}
+			case .Sub:
+				if is_float {
+					lhs_ty.float -= rhs_ty.float
+				} else {
+					lhs_ty.int -= rhs_ty.int
+				}
+			case:
+				return error(
+					ctx,
+					node,
+					"TODO: constant folding of %v",
+					d.op.text,
+				)
+			}
+		} else {
+			lhs_ty = tmeta(ctx, lhs_ty.type)
+		}
 
 		if is_comparison {
-			return tmeta(ctx, .Bool)
+			res := tmeta(ctx, .Bool)
+			res.known = lhs_ty.known
+			res.lit = rhs_ty.lit
+			lhs_ty = res
 		}
 
 		return lhs_ty
@@ -2036,19 +2102,20 @@ typecheck :: proc(
 				inferred_ty = ptr^
 			}
 
-			inner_ty := expect(
+			res := typecheck(
 				ctx,
+				{inferred_ty = inferred_ty, referencing = true},
 				d.expr,
-				typecheck(
-					ctx,
-					{inferred_ty = inferred_ty, referencing = true},
-					d.expr,
-				),
-				inferred_ty,
 			)
+			if !res.lvalue do return error(ctx, d.expr, "cant reference this")
+
+			inner_ty := expect(ctx, d.expr, res, inferred_ty)
 			return tmeta(ctx, intern_pointer(ctx, inner_ty.type))
 		case .Not:
-			typecheck_as(ctx, .Bool, d.expr)
+			vl := typecheck_as(ctx, .Bool, d.expr)
+			if vl.type == .Bool {
+				if vl.known do vl.int = i64(vl.int == 0)
+			}
 			return tmeta(ctx, .Bool)
 		case .Xor:
 			vl := typecheck(ctx, prop, d.expr)
@@ -2059,9 +2126,19 @@ typecheck :: proc(
 					"only integers support this, TODO: vectors",
 				)
 			}
+			if vl.known do vl.int ~= -1
 			return vl
 		case .Sub:
-			return typecheck(ctx, prop, d.expr)
+			vl := typecheck(ctx, prop, d.expr)
+			if !in_set(vl.type, NUMBER_TYPES) {
+				return error(
+					ctx,
+					node,
+					"only numbers support this, TODO: vectors",
+				)
+			}
+			if vl.known do vl.int = -vl.int
+			return vl
 		case:
 			return error(ctx, node, "TODO: unary %v", d.op.text)
 		}
@@ -2079,6 +2156,7 @@ typecheck :: proc(
 			Pointer,
 			"can not dereference a %v",
 		) or_return
+		lvalue = true
 		return tmeta(ctx, ptr^)
 	case ^ast.Expr_Stmt:
 		return typecheck(ctx, {}, d.expr)
@@ -2226,7 +2304,7 @@ typecheck :: proc(
 			}
 			append(
 				&ctx.scope,
-				Variable{name = id.name, type = val_types[i], ident = v},
+				Variable{name = id.name, type = val_types[i], ident = inner},
 			)
 		}
 		typecheck_branch(ctx, d.body)
@@ -2283,9 +2361,11 @@ typecheck :: proc(
 
 				if lit, ok := var.idx.(Lit); ok {
 					meta.kind = .Const
+					meta.lit = lit
 					return tcmeta(ctx, var.type, lit)
 				}
 
+				lvalue = .Immutable not_in var.flags
 				return tmeta(ctx, var.type)
 			}
 		}
@@ -2315,6 +2395,8 @@ typecheck :: proc(
 			if !decl.is_mutable {
 				meta.kind = .Const
 				meta.value = res.int
+			} else {
+				lvalue = true
 			}
 			return res
 		}
@@ -2331,11 +2413,6 @@ typecheck :: proc(
 			}
 			meta.kind = .Nil
 			return tmeta(ctx, prop.inferred_ty)
-		}
-
-		if d.name == "_" {
-			meta.kind = .Discard
-			return &VOID
 		}
 
 		for name, kind in TYPE_NAMES {
@@ -2480,10 +2557,37 @@ typecheck :: proc(
 					args[i] = emit_type(ctx, arg)
 				}
 				return tpmeta(ctx, instantiate_struct(ctx, t, args))
+			case ^Simd:
+				expect_args(ctx, d, d.args, 1) or_return
+				typecheck_as(ctx, t.elem, d.args[0])
+				return tmeta(ctx, callee.typeida)
 			case:
-				args := expect_args(ctx, node, d.args, 1) or_return
-				typecheck(ctx, {}, args[0])
-				return tmeta(ctx, callee.lit.typeida)
+				expect_args(ctx, d, d.args, 1) or_return
+				src := typecheck(
+					ctx,
+					{inferred_ty = callee.typeida},
+					d.args[0],
+				)
+
+				valid_conv_type :: proc(type: Type) -> bool {
+					return(
+						type in NUMBER_TYPES ||
+						type == .Rawptr ||
+						is_of(type, Pointer) ||
+						is_of(type, ^Enum) ||
+						is_of(type, Multi_Pointer) \
+					)
+				}
+
+				if !valid_conv_type(src.type) {
+					return error(ctx, d.args[0], "TODO: unsupported cast src")
+				}
+
+				if !valid_conv_type(callee.typeida) {
+					return error(ctx, d.args[0], "TODO: unsupported cast dst")
+				}
+
+				return tmeta(ctx, callee.typeida)
 			}
 		case:
 			return error(ctx, d.expr, "can not call a %v", callee.type)
@@ -2673,6 +2777,7 @@ typecheck :: proc(
 			sig := destructured_sig(ctx, d.rhs[0], len(d.lhs)) or_return
 			for i in 0 ..< len(d.lhs) {
 				lhs_ty := typecheck(ctx, {}, d.lhs[i])
+				if !lhs_ty.lvalue do return error(ctx, d.lhs[i], "cant assign to this")
 				expect(ctx, d.lhs[i], lhs_ty, sig.rets[i])
 			}
 			return &VOID
@@ -2689,13 +2794,14 @@ typecheck :: proc(
 		}
 		for i in 0 ..< len(d.lhs) {
 			lhs_ty := typecheck(ctx, {}, d.lhs[i])
-			if !lhs_ty.lvalue do error(ctx, d.lhs[i], "cant assign to this")
+			if !lhs_ty.lvalue do return error(ctx, d.lhs[i], "cant assign to this")
 			if is_of(lhs_ty.type, ^Union) {
 				rhs_ty := typecheck(ctx, {}, d.rhs[i])
 				expect(ctx, d.rhs[i], rhs_ty, lhs_ty.type)
 				continue
 			}
 			typecheck_as(ctx, lhs_ty.type, d.rhs[i])
+			valid_binop(ctx, lhs_ty.type, node, d.op.kind) or_return
 		}
 	case:
 		return error(
@@ -2713,6 +2819,7 @@ typecheck :: proc(
 
 Var_Flag :: enum uintptr {
 	Referenced,
+	Immutable,
 }
 
 Var_Flags :: bit_set[Var_Flag;uintptr]
@@ -2746,6 +2853,9 @@ get_ident_meta :: proc(node: ^ast.Ident) -> ^Ident_Meta {
 }
 
 set_node_data :: proc(node: ^ast.Node, value: $T) {
+	when T == Var_Flags {
+		_ = node.derived.(^ast.Ident)
+	}
 	raw := (^runtime.Raw_Slice)(&node.end.file)
 	raw.data = transmute(rawptr)value
 	raw.len = 0
@@ -2754,6 +2864,7 @@ set_node_data :: proc(node: ^ast.Node, value: $T) {
 is_num_lit :: proc(node: ^ast.Node) -> bool {
 	n := node
 	for {
+		if n == nil do return false
 		#partial switch d in n.derived {
 		case ^ast.Paren_Expr:
 			n = d.expr
@@ -2790,18 +2901,24 @@ typecheck_sig :: proc(
 	ty: ^Proc_Type,
 	concrete: bool,
 ) {
-	if has_polys(ctx, prc) do return
-
 	plist := prc.params.list
 	rlist: []^ast.Field
 	if prc.results != nil {
 		rlist = prc.results.list
 	}
 
+	lists := [][]^ast.Field{plist, rlist}
+
+	for param, i in plist {
+		if len(param.names) != 1 {
+			error(ctx, param, "TODO: a parameter needs at most one name")
+		}
+	}
+
+	if has_polys(ctx, prc) do return
+
 	params := make([]Type, len(plist))
 	rets := make([]Type, len(rlist))
-
-	lists := [][]^ast.Field{plist, rlist}
 	tys := [][]Type{params, rets}
 
 	clear(&ctx.poly_types)
@@ -2809,10 +2926,6 @@ typecheck_sig :: proc(
 		tys := tys[j]
 
 		for param, i in list {
-			if len(param.names) > 1 {
-				error(ctx, param, "TODO: a parameter needs at most one name")
-			}
-
 			tys[i] = emit_type(ctx, param.type)
 		}
 	}
@@ -2916,7 +3029,10 @@ typecheck_program :: proc(ctx: ^Gen_Ctx) {
 
 			#partial switch d in asta.names[0].derived {
 			case ^ast.Ident:
-				append(&ctx.scope, Variable{name = d.name, type = par})
+				append(
+					&ctx.scope,
+					Variable{name = d.name, type = par, flags = {.Immutable}},
+				)
 			case ^ast.Poly_Type:
 			case:
 				error(ctx, asta.names[0], "expected a parameter name")
@@ -2995,4 +3111,138 @@ find_loop :: proc(ctx: ^Gen_Ctx, label: ^ast.Node) -> ^Loop_State {
 	}
 
 	return loop
+}
+
+simd_lane_of :: proc(simd_ty: Type) -> backend.Lane_Type {
+	return(
+		backend.lane_from_dt(type_to_dt(simd_ty)) or_else panic(
+			"wrong simd lane type",
+		) \
+	)
+}
+
+valid_binop :: proc(
+	ctx: ^Gen_Ctx,
+	ty: Type,
+	node: ^ast.Node,
+	tok: tokenizer.Token_Kind,
+) -> ^Check_Meta {
+	if tok == .Eq do return nil
+	_, _, _, ok := tok_to_binop(ty, tok)
+	if ok do return nil
+	return error(ctx, node, "operator not supported for %v", ty)
+}
+
+tok_to_binop :: proc(
+	ty: Type,
+	tok: tokenizer.Token_Kind,
+) -> (
+	kind: backend.Bin_Op,
+	name: string,
+	lane: backend.Lane_Type,
+	ok: bool,
+) {
+	ty := ty
+	if e, ok := unpack_type(ty).(^Enum); ok do ty = e.backing
+	if s, ok := unpack_type(ty).(^Simd); ok {
+		ty = s.elem
+		lane = simd_lane_of(s.elem)
+	}
+
+	Op_Info :: struct {
+		kind: backend.Bin_Op,
+		name: string,
+	}
+
+	@(static)
+	@(rodata)
+	SIGNED_TABLE := #partial [tokenizer.Token_Kind]Op_Info {
+		.Add        = {.Add, "add"},
+		.Add_Eq     = {.Add, "adde"},
+		.Sub        = {.Sub, "sub"},
+		.Sub_Eq     = {.Sub, "sube"},
+		.Mul        = {.Mul, "mul"},
+		.Mul_Eq     = {.Mul, "mule"},
+		.Cmp_Eq     = {.Eq, "eq"},
+		.Not_Eq     = {.Ne, "ne"},
+		.Lt         = {.Lt, "lt"},
+		.Lt_Eq      = {.Le, "le"},
+		.Gt         = {.Gt, "gt"},
+		.Gt_Eq      = {.Ge, "ge"},
+		.Quo        = {.Div, "div"},
+		.Quo_Eq     = {.Div, "dive"},
+		.Mod        = {.Rem, "rem"},
+		.Mod_Eq     = {.Rem, "reme"},
+		.And        = {.And, "and"},
+		.And_Eq     = {.And, "ande"},
+		.Or         = {.Or, "or"},
+		.Or_Eq      = {.Or, "ore"},
+		.Xor        = {.Xor, "xor"},
+		.Xor_Eq     = {.Xor, "xore"},
+		.And_Not    = {.And_Not, "andn"},
+		.And_Not_Eq = {.And_Not, "andne"},
+		.Shl        = {.Shl, "shl"},
+		.Shl_Eq     = {.Shl, "shle"},
+		.Shr        = {.Shr, "shr"},
+		.Shr_Eq     = {.Shr, "shre"},
+	}
+
+	@(static)
+	@(rodata)
+	UNSIGNED_TABLE := #partial [tokenizer.Token_Kind]Op_Info {
+		.Lt     = {.U_Lt, "ltu"},
+		.Lt_Eq  = {.U_Le, "leu"},
+		.Gt     = {.U_Gt, "gtu"},
+		.Gt_Eq  = {.U_Ge, "geu"},
+		.Quo    = {.U_Div, "divu"},
+		.Quo_Eq = {.U_Div, "diveu"},
+		.Mod    = {.U_Rem, "remu"},
+		.Mod_Eq = {.U_Rem, "remeu"},
+		.Shr    = {.U_Shr, "shru"},
+		.Shr_Eq = {.U_Shr, "shreu"},
+	}
+
+	@(static)
+	@(rodata)
+	FLOAT_TABLE := #partial [tokenizer.Token_Kind]Op_Info {
+		.Add    = {.F_Add, "fadd"},
+		.Add_Eq = {.F_Add, "fadde"},
+		.Sub    = {.F_Sub, "fsub"},
+		.Sub_Eq = {.F_Sub, "fsube"},
+		.Mul    = {.F_Mul, "fmul"},
+		.Mul_Eq = {.F_Mul, "fmule"},
+		.Quo    = {.F_Div, "fdiv"},
+		.Quo_Eq = {.F_Div, "fdive"},
+		.Cmp_Eq = {.F_Eq, "feq"},
+		.Not_Eq = {.F_Ne, "fne"},
+		.Lt     = {.F_Lt, "flt"},
+		.Lt_Eq  = {.F_Le, "fle"},
+		.Gt     = {.F_Gt, "fgt"},
+		.Gt_Eq  = {.F_Ge, "fge"},
+	}
+
+	if ty in FLOAT_TYPES {
+		finfo := FLOAT_TABLE[tok]
+		return finfo.kind, finfo.name, lane, int(finfo.kind) != 0
+	}
+
+	info := SIGNED_TABLE[tok]
+	uinfo := UNSIGNED_TABLE[tok]
+	if ty in UNSIGNED_TYPES && uinfo.kind != {} do info = uinfo
+	return info.kind, info.name, lane, int(info.kind) != 0
+}
+
+extract_var_ident :: proc(
+	ctx: ^Gen_Ctx,
+	name: ^ast.Node,
+) -> (
+	^ast.Ident,
+	bool,
+) {
+	ident, ok := name.derived.(^ast.Ident)
+	if !ok {
+		error(ctx, name, "expected identifier")
+		return nil, false
+	}
+	return ident, true
 }

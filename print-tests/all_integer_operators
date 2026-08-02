@@ -7,62 +7,48 @@ main:
     push r14
     push r15
     sub rsp, 8
-    mov rsi, 6
-    mov rdx, 7
-    neg rdx
     mov rdi, 0x14
+    mov rsi, 6
+    mov rdx, -7
     call batch int
     mov rbx, rax
-    mov rax, 0x14
-    mov rbp, rax
-    mov rdi, rbp
-    mov sil, 6
     mov dl, 7
-    call batch u8
-    mov r12, rax
-    mov rax, 0x14
-    mov r13, rax
-    mov rdi, r13
-    mov rsi, 6
-    mov rdx, 7
-    call batch u16
-    mov r14, rax
-    mov rax, 0x14
-    mov r15, rax
-    mov rdi, r15
-    mov rsi, 6
-    mov rdx, 7
-    call batch u32
-    mov.q [rsp], rax
-    mov al, 7
-    neg al
-    mov rdi, rbp
+    mov dil, 0x14
     mov sil, 6
-    mov rdx, rax
-    call batch i8
+    call batch u8
     mov rbp, rax
-    mov rax, 7
-    neg ax
-    mov rdi, r13
+    mov rdx, 7
+    mov rdi, 0x14
     mov rsi, 6
-    mov rdx, rax
-    call batch i16
+    call batch u16
+    mov r12, rax
+    mov rdx, 7
+    mov rdi, 0x14
+    mov rsi, 6
+    call batch u32
     mov r13, rax
-    mov rax, 7
-    neg eax
-    mov rdi, r15
+    mov dl, -7
+    mov dil, 0x14
+    mov sil, 6
+    call batch i8
+    mov r14, rax
+    mov rdx, -7
+    mov rdi, 0x14
     mov rsi, 6
-    mov rdx, rax
+    call batch i16
+    mov r15, rax
+    mov rdx, -7
+    mov rdi, 0x14
+    mov rsi, 6
     call batch i32
     mov rdx, rax
     xor eax, eax
     add rax, rbx
-    add rax, r12
-    add rax, r14
-    mov.q rcx, [rsp]
-    add rax, rcx
     add rax, rbp
+    add rax, r12
     add rax, r13
+    add rax, r14
+    add rax, r15
     add rax, rdx
     add rsp, 8
     pop r15
@@ -781,15 +767,16 @@ batch i32:
 102:
     cmp ecx, esi
     jne 103
-    jmp +0x7
+    jmp 104
 103:
     add rdx, 0x20
-    cmp edi, esi
-    jnge 104
-    jmp 105
 104:
-    add rdx, 0x40
+    cmp edi, esi
+    jnge 105
+    jmp 106
 105:
+    add rdx, 0x40
+106:
     mov rax, rdx
     ret
 =========== OPT LEVEL: mininal ===========

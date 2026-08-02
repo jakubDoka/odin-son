@@ -136,6 +136,8 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 	lib, did_load := dynlib.load_library("")
 	assert(did_load, dynlib.last_error())
 
+	prev_glob_count := len(ctx.globals)
+
 	for level in confs {
 		if !level.debug {
 			if level.check {
@@ -153,7 +155,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		types.mems.cfi.pos = 0
 		types.check = level.check
 		ctx.has_dbg = level.debug
-		clear(&ctx.globals)
+		resize(&ctx.globals, prev_glob_count)
 
 		for &prc in ctx.procs do prc.out = {}
 
@@ -278,7 +280,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		assert(oka)
 
 		when #config(NO_RUN, false) {
-			log.error("running compiled code disabled")
+			//log.error("running compiled code disabled")
 		} else {
 			main: ^typecheck.Proc
 			for &p in ctx.procs {

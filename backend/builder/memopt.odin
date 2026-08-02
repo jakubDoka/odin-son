@@ -167,23 +167,24 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 	collect_rename_slot: for mout in backend.graph_outs(graph, emem) {
 		mnode := graph_expand(graph, mout.id)
 		if mnode.itype != .Local do continue
-		size := int(backend.graph_extra(graph, mnode, backend.Local).size)
 
 		assert(len(mnode.outs) == 1)
 
 		iter: backend.Offset_Iter
 		iter.curr = mnode.outs[0].id
+		type: backend.Node_Datatype
 		for op in backend.offset_iter_next(graph, &iter) {
 			if iter.offset != 0 do continue collect_rename_slot
 			if op.idx != 2 do continue collect_rename_slot
 			onode := graph_get(graph, op.id)
 			if onode.itype == .Copy ||
 			   onode.itype == .Set {continue collect_rename_slot}
-			lsize := backend.mem_op_size(
+			otype := backend.mem_op_dt(
 				graph,
 				op.id,
 			) or_continue collect_rename_slot
-			if size != lsize do continue collect_rename_slot
+			if type != .Void && otype != type do continue collect_rename_slot
+			type = otype
 		}
 
 		iter = {}

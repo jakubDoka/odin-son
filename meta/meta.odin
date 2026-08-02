@@ -166,7 +166,10 @@ main :: proc() {
 					{FUZZ_CORPUS_DIR, fmt.tprintf("%v.odin", rall_name)},
 					context.allocator,
 				)
-				cerr := os.write_entire_file(corpus_path, transmute([]byte)code)
+				cerr := os.write_entire_file(
+					corpus_path,
+					transmute([]byte)code,
+				)
 				fmt.assertf(cerr == nil, "%v: %v", corpus_path, cerr)
 
 				fmt.fprintfln(
@@ -221,29 +224,17 @@ gen_fuzz_crash_tests :: proc(file: ^os.File) {
 		context.allocator,
 	)
 	if werr == nil do for worker in workers {
-		crash_dir, _ := os.join_path(
-			{worker.fullpath, "crashes"},
-			context.allocator,
-		)
-		crashes, cerr := os.read_all_directory_by_path(
-			crash_dir,
-			context.allocator,
-		)
+		crash_dir, _ := os.join_path({worker.fullpath, "crashes"}, context.allocator)
+		crashes, cerr := os.read_all_directory_by_path(crash_dir, context.allocator)
 		if cerr != nil do continue
 
 		for crash in crashes {
 			if !strings.has_prefix(crash.name, "id:") do continue
 
-			data, derr := os.read_entire_file(
-				crash.fullpath,
-				context.allocator,
-			)
+			data, derr := os.read_entire_file(crash.fullpath, context.allocator)
 			if derr != nil do continue
 
-			dst, _ := os.join_path(
-				{FUZZ_CRASH_DIR, fmt.tprintf("%v.odin", hash_name(data))},
-				context.allocator,
-			)
+			dst, _ := os.join_path({FUZZ_CRASH_DIR, fmt.tprintf("%v.odin", hash_name(data))}, context.allocator)
 			if os.exists(dst) do continue
 			werr := os.write_entire_file(dst, data)
 			fmt.assertf(werr == nil, "%v: %v", dst, werr)

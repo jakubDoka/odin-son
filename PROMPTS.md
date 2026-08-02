@@ -664,13 +664,24 @@ script should build the instrumented artifact to fuzz and boot the fuzzer, Also
 take a flag to skip the build as it tends to take a lot of time. The build
 should be optimized but preserve all the safety checks.
 
-### Add reachability analysis
-
-NOTE: read AGENTS.md
+### Add reachability analysis (DONE)
 
 Currently the typechecker does not catch if the function does not return
 properly on all pahts. Could you please add these checks to the `typecheck/`
 module. I have added some basic tools to do this, just make sure the non FUZZ
 tests all pass.
 
-### Add lva
+### Add lvalue checking for the typechecker
+
+NOTE: read AGENTS.md
+
+The typechecker does not check if a value is actually assignable in
+Assign_Stmt. I have added a new field to `Check_Meta` in `typecheck/` and also
+the main check on assignment, all thats left is to set the flag when
+appropriate, I have set you up for success, just make all non fuzzing tests
+pass.
+
+To make this change more streamlined I prepared the
+`typecheck/typecheck.odin:1398` you should be bale to just set the lvalue
+variable to true whenever there is a lvalue, if you ran into problems with this
+approach come back and present what is the problem, I might be able to fix it.

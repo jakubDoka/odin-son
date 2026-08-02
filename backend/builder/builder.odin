@@ -124,8 +124,11 @@ fold_bin_op :: proc(
 	case .U_Ge:
 		value = i64(u64(lhs) >= u64(rhs))
 	case .U_Div:
+		// TODO: actually report this, maybe emit a special node
+		if rhs == 0 do return 0
 		value = i64(u64(lhs) / u64(rhs))
 	case .U_Rem:
+		if rhs == 0 do return 0
 		value = i64(u64(lhs) % u64(rhs))
 	case .U_Shr:
 		value = i64(u64(lhs) >> u64(rhs))
@@ -362,11 +365,22 @@ builder_peep :: proc(
 
 				not_covered_count := phi_count
 				for out in inode.outs {
+
 					onode := graph_expand(ctx, out.id)
 					if onode.itype == .Region do continue
 
-					if onode.itype != .Phi do continue merge
-					if len(onode.outs) != 1 do continue merge
+					if onode.itype != .Phi {
+						backend.peep_ctx_add_trigger(ctx, out.id, id)
+						continue merge
+					}
+					if len(onode.outs) != 1 {
+						for o in onode.outs {
+							if o.id != id {
+								backend.peep_ctx_add_trigger(ctx, o.id, id)
+							}
+						}
+						continue merge
+					}
 					if backend.graph_inps(ctx, onode.outs[0].id)[0] != id {
 						continue merge
 					}

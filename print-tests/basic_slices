@@ -84,20 +84,19 @@ main:
     add rsi, 1
     jmp 8
 7:
-    lea rdi, [rsp + 0x30]
-    mov rbp, 4
-    sub rbp, 4
     mov rdx, 0x20
     xor esi, esi
-    call.q [rip - 0x1c2]
+    lea rdi, [rsp + 0x30]
+    call.q [rip - 0x1b4]
     mov.q [rsp + 0x30], 0
     mov.q [rsp + 0x38], 1
     mov.q [rsp + 0x40], 2
     mov.q [rsp + 0x48], 3
-    lea rax, [rsp + rbp*8 + 0x30]
+    lea rax, [rsp + 0x30]
+    add rax, rbp
     mov.q [rsp], rax
     mov rax, 4
-    sub rax, rbp
+    sub rax, 0
     mov.q [rsp + 0x8], rax
     xor esi, esi
 10:
@@ -111,7 +110,7 @@ main:
     lea rdi, [rsp + 0x10]
     xor esi, esi
     mov rdx, 0x10
-    call.q [rip - 0x235]
+    call.q [rip - 0x22e]
     mov.q [rsp + 0x10], r12
     mov.q [rsp + 0x18], rbx
     mov.q rdi, [rsp + 0x10]
@@ -132,7 +131,7 @@ main:
     lea rdi, [rsp + 0x20]
     xor esi, esi
     mov rdx, 0x10
-    call.q [rip - 0x292]
+    call.q [rip - 0x28b]
     mov.q [rsp + 0x20], r12
     mov.q [rsp + 0x28], rbx
     mov.q rdi, [rsp + 0x20]
@@ -162,55 +161,54 @@ bubble_sort:
     mov.q [rsp - 0x10], rsi
     mov.q rcx, [rsp - 0x10]
     sub rcx, 1
-    xor r9d, r9d
-    mov r11, rcx
+    xor edx, edx
+    mov r10, rcx
 27:
-    mov rcx, 1
-    neg rcx
-    mov r10, r9
-    mov r8, rcx
-    mov r9, rcx
+    mov rdi, -1
+    mov r8, -1
+    mov r9, rdx
 21:
-    cmp r10, r11
+    cmp r9, r10
     jnl 16
-    mov.q rdx, [rsp - 0x18]
-    mov rsi, r10
-    add rsi, 1
-    mov.q rdi, [rdx + r10*8]
-    cmp.q rdi, [rdx + rsi*8]
+    mov.q rcx, [rsp - 0x18]
+    mov rdx, r9
+    add rdx, 1
+    mov.q rsi, [rcx + r9*8]
+    cmp.q rsi, [rcx + rdx*8]
     jnle 17
     jmp 18
 17:
-    mov.q rdx, [rsp - 0x18]
-    mov.q rdi, [rdx + r10*8]
-    mov.q r8, [rdx + rsi*8]
-    mov.q [rdx + rsi*8], rdi
-    mov.q rdx, [rsp - 0x18]
-    mov.q [rdx + r10*8], r8
-    cmp r9, rcx
+    mov.q rcx, [rsp - 0x18]
+    mov.q rsi, [rcx + r9*8]
+    mov.q rdi, [rcx + rdx*8]
+    mov.q [rcx + rdx*8], rsi
+    mov.q rcx, [rsp - 0x18]
+    mov.q [rcx + r9*8], rdi
+    cmp r8, -1
     jz 19
     jmp 20
 19:
-    mov r9, r10
+    mov r8, r9
 20:
-    mov r8, r10
+    mov rdi, r9
 18:
-    mov r10, rsi
+    mov r9, rdx
     jmp 21
 16:
-    cmp r8, rcx
+    cmp rdi, -1
     jz 22
-    sub r9, 1
-    cmp r9, 0
+    sub r8, 1
+    cmp r8, 0
     jnge 23
     jmp 24
 23:
-    xor r9d, r9d
+    xor r8d, r8d
 24:
     jmp 25
     jmp 26
 25:
-    mov r11, r8
+    mov rdx, r8
+    mov r10, rdi
     jmp 27
 22:
     xor eax, eax

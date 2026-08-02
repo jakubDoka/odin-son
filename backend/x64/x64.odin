@@ -2930,7 +2930,7 @@ x64_emit_instr :: proc(
 
 reg_of :: proc(ctx: backend.Codegen_Emit_Ctx, id: backend.Node_ID) -> Reg {
 	node := graph_get(ctx, id)
-	assert(int(node.gvn) < len(ctx.allocs))
+	fmt.assertf(int(node.gvn) < len(ctx.allocs), "%v", node)
 	return ctx.allocs[node.gvn]
 }
 

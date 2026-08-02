@@ -362,7 +362,7 @@ Graph :: struct {
 	using node_spec: ^Node_Spec,
 	using stats:     ^Stats,
 	worklist:        ^queue.Queue(Node_ID),
-	triggers:        ^[dynamic][dynamic; 4]Node_ID,
+	triggers:        ^[dynamic][dynamic]Node_ID,
 	mem:             ^arna.Allocator,
 	current_dnode:   D_Node_ID,
 	using meta:      Graph_Meta,
@@ -421,7 +421,8 @@ peep_ctx_add_trigger :: proc(ctx: Peep_Ctx, triggerer: Node_ID, tar: Node_ID) {
 		resize(ctx.triggers, gvn + 1)
 	}
 	if !slice.contains(ctx.triggers[gvn][:], tar) {
-		append(&ctx.triggers[gvn], tar)
+		cnt := append(&ctx.triggers[gvn], tar)
+		assert(cnt == 1)
 	}
 }
 
@@ -869,7 +870,7 @@ graph_iter_peeps :: proc(ctx: Peep_Ctx) -> (optimized: bool) {
 	worklist: queue.Queue(Node_ID)
 	queue.init(&worklist, int(graph.gvn))
 
-	triggers: [dynamic][dynamic; 4]Node_ID
+	triggers: [dynamic][dynamic]Node_ID
 
 	graph.worklist = &worklist
 	graph.triggers = &triggers
@@ -1061,6 +1062,23 @@ is_noalias_ops :: proc(graph: ^Graph, a, b: Node_ID) -> bool {
 	}
 
 	return is_noalias(graph, nodes[0], nodes[1], sizes[0], sizes[1])
+}
+
+mem_op_dt :: proc(
+	graph: ^Graph,
+	n: Node_ID,
+) -> (
+	dt: Node_Datatype,
+	ok: bool = true,
+) {
+	node := graph_expand(graph, n)
+	#partial switch node.itype {
+	case .Store:
+		dt = graph_get(graph, node.inps[3]).dt
+	case .Load:
+		dt = node.dt
+	}
+	return
 }
 
 mem_op_size :: proc(
@@ -1488,7 +1506,7 @@ graph_clone :: proc(graph: ^Graph, id: Node_ID) -> Node_ID {
 	node := graph_expand(graph, id)
 	assert(node.itype != .Call)
 	graph.dont_intern = true
-	graph_push_tag(graph, graph_get_tag(graph, id))
+	graph_push_tag(graph, graph_get_tag(graph, id).name)
 	idx := graph_get_next_extra_slot(graph, node.rtype)
 	extra := graph_extra_dwords(graph, node, consider_dbg = true)
 	copy(idx[:len(extra)], extra)

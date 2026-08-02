@@ -7,22 +7,20 @@ main:
     push r14
     push r15
     sub rsp, 0x18
-    mov rbx, 1
-    neg rbx
     mov.q [rsp], 1
-    mov.q [rsp + 0x8], rbx
+    mov.q [rsp + 0x8], -1
     lea rsi, [rsp]
-    mov rdi, rbx
+    mov rdi, -1
     call cmps
-    mov rbp, rax
+    mov rbx, rax
     lea rsi, [rsp]
     mov rdi, 1
     call cmps
-    mov r12, rax
+    mov rbp, rax
     lea rsi, [rsp + 0x8]
-    mov rdi, rbx
+    mov rdi, -1
     call cmps
-    mov rbx, rax
+    mov r12, rax
     lea rsi, [rsp + 0x8]
     mov rdi, 1
     call cmps
@@ -38,9 +36,9 @@ main:
     mov.q [rsp + 0x10], rax
     lea rdi, [rsp + 0x8]
     call imm_cmps
-    mov rdx, rbp
+    mov rdx, rbx
+    add rdx, rbp
     add rdx, r12
-    add rdx, rbx
     add rdx, r13
     add rdx, r14
     add rdx, r15

@@ -753,8 +753,17 @@ integrate_inferrence :: proc(
 	if inferred == .Void do return meta
 	if meta.type == inferred do return meta
 	if !in_set(inferred, NUMBER_TYPES) do return meta
+
+	vl := meta.lit
+	if inferred in FLOAT_TYPES && meta.type in INTEGER_TYPES {
+		vl.float = f64(vl.int)
+	}
+	if inferred in INTEGER_TYPES && meta.type in FLOAT_TYPES {
+		vl.int = i64(vl.float)
+	}
+
 	return new_clone(
-		Check_Meta{type = inferred, known = meta.known, lit = meta.lit},
+		Check_Meta{type = inferred, known = meta.known, lit = vl},
 		ctx.types.allocator,
 	)
 }
@@ -2019,10 +2028,8 @@ typecheck :: proc(
 			lhs_ty = oty
 		}
 
-		if is_num_lit(d.left) &&
-		   !is_num_lit(d.right) &&
-		   prop.inferred_ty == .Void {
-			rhs_ty = typecheck(ctx, {}, d.right)
+		if is_num_lit(d.left) && !is_num_lit(d.right) {
+			rhs_ty = typecheck(ctx, prop, d.right)
 			lhs_ty = typecheck_as(ctx, rhs_ty.type, d.left)
 		}
 
@@ -2042,6 +2049,7 @@ typecheck :: proc(
 		valid_binop(ctx, lhs_ty.type, node, d.op.kind) or_return
 
 		if lhs_ty.known && rhs_ty.known {
+			lhs_ty = new_clone(lhs_ty^, ctx.types.allocator)
 			is_float := lhs_ty.type in FLOAT_TYPES
 			is_signed := lhs_ty.type in SIGNED_TYPES
 			#partial switch d.op.kind {
@@ -2113,10 +2121,11 @@ typecheck :: proc(
 			return tmeta(ctx, intern_pointer(ctx, inner_ty.type))
 		case .Not:
 			vl := typecheck_as(ctx, .Bool, d.expr)
-			if vl.type == .Bool {
-				if vl.known do vl.int = i64(vl.int == 0)
+			if vl.known {
+				vl = new_clone(vl^, ctx.types.allocator)
+				vl.int = i64(vl.int == 0)
 			}
-			return tmeta(ctx, .Bool)
+			return vl
 		case .Xor:
 			vl := typecheck(ctx, prop, d.expr)
 			if !in_set(vl.type, INTEGER_TYPES) {
@@ -2126,10 +2135,14 @@ typecheck :: proc(
 					"only integers support this, TODO: vectors",
 				)
 			}
-			if vl.known do vl.int ~= -1
+			if vl.known {
+				vl = new_clone(vl^, ctx.types.allocator)
+				vl.int ~= -1
+			}
 			return vl
 		case .Sub:
 			vl := typecheck(ctx, prop, d.expr)
+			is_float := in_set(vl.type, FLOAT_TYPES)
 			if !in_set(vl.type, NUMBER_TYPES) {
 				return error(
 					ctx,
@@ -2137,7 +2150,14 @@ typecheck :: proc(
 					"only numbers support this, TODO: vectors",
 				)
 			}
-			if vl.known do vl.int = -vl.int
+			if vl.known {
+				vl = new_clone(vl^, ctx.types.allocator)
+				if is_float {
+					vl.float = -vl.float
+				} else {
+					vl.int = -vl.int
+				}
+			}
 			return vl
 		case:
 			return error(ctx, node, "TODO: unary %v", d.op.text)
@@ -2776,6 +2796,8 @@ typecheck :: proc(
 			typecheck(ctx, {}, d.rhs[0])
 			sig := destructured_sig(ctx, d.rhs[0], len(d.lhs)) or_return
 			for i in 0 ..< len(d.lhs) {
+				if id, ok := d.lhs[i].derived.(^ast.Ident);
+				   ok && id.name == "_" {continue}
 				lhs_ty := typecheck(ctx, {}, d.lhs[i])
 				if !lhs_ty.lvalue do return error(ctx, d.lhs[i], "cant assign to this")
 				expect(ctx, d.lhs[i], lhs_ty, sig.rets[i])
@@ -2793,6 +2815,10 @@ typecheck :: proc(
 			)
 		}
 		for i in 0 ..< len(d.lhs) {
+			if id, ok := d.lhs[i].derived.(^ast.Ident); ok && id.name == "_" {
+				typecheck(ctx, {}, d.rhs[i])
+				continue
+			}
 			lhs_ty := typecheck(ctx, {}, d.lhs[i])
 			if !lhs_ty.lvalue do return error(ctx, d.lhs[i], "cant assign to this")
 			if is_of(lhs_ty.type, ^Union) {

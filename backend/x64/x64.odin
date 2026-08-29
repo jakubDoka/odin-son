@@ -1241,13 +1241,16 @@ x64_meta_of :: proc(
 		}
 	case .Global, .Proc_Addr:
 		return {}
-	case .Mem, .Sym, .Local, .Jump, .Always, .Trap:
+	case .Mem, .Root_Mem, .Sym, .Local, .Jump, .Always, .Trap:
 		return {input_start = 1}
 	case .Local_Addr, .Global_Addr:
 		return {out = out, input_start = 1}
 	case .Copy, .Set, .Call, .Return:
 		cc := &X64_SYSTEMV_CC
-		prefix := 2
+		// NOTE: this handles the edge case where there is no memory returned,
+		// this happens when we only have infinite loops that terminate the
+		// function
+		prefix := min(2, len(node.inps))
 		call: ^backend.Call = backend.graph_extra(graph, node, backend.Call)
 		if call != nil {
 			prefix = backend.CALL_PREFIX
@@ -1510,11 +1513,8 @@ x64_emit_function :: proc(
 		ctx.stack_size = max(ctx.stack_size, call_stack_size)
 	}
 
-	emem, _ := backend.graph_find_node(ctx.graph, .Mem)
-	mem_outs: []backend.Node_Output
-	if emem != 0 {
-		mem_outs = backend.graph_outs(ctx.graph, emem)
-	}
+	emem := ctx.graph.root_mem
+	mem_outs := backend.graph_outs(ctx.graph, emem)
 
 	Local_Slot :: bit_field u64 {
 		node:     backend.Node_ID | 32,
@@ -2337,7 +2337,7 @@ x64_emit_instr :: proc(
 				id     = lib_call.id,
 			}
 		}
-	case .Poison, .Param, .Phi, .Ret, .Mem, .Sym:
+	case .Poison, .Param, .Phi, .Ret, .Mem, .Root_Mem, .Sym:
 	case .CInt:
 		dst := reg_of(ctx, instr)
 		imm := backend.graph_extra(ctx, node, backend.CInt).value

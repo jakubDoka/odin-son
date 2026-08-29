@@ -321,7 +321,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		assert(werr == nil)
 	} else if err == .Not_Exist {
 		if DO_DIFFING {
-			log.error("\n", highlight_disasm(string(dsb.buf[:])), sep = "")
+			//log.error("\n", highlight_disasm(string(dsb.buf[:])), sep = "")
 		}
 	} else {
 		if DO_DIFFING {

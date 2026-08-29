@@ -65,6 +65,7 @@ Gen_Ctx :: struct {
 	error_cnt:    int,
 	reachable:    ^bool,
 	errors:       io.Writer,
+	stack_top:    uintptr,
 }
 
 Poly_Entry :: struct {
@@ -181,15 +182,18 @@ error :: proc(
 	msg: string,
 	args: ..any,
 ) -> ^Check_Meta {
+
 	for arg in args {
 		if ty, ok := arg.(Type); ok && ty == .Invalid_Type do return &INVALID
 	}
 
 	ctx.error_cnt += 1
-	pos := node.pos
-	fmt.wprintf(ctx.errors, "%s(%d:%d): ", pos.file, pos.line, pos.column)
-	fmt.wprintf(ctx.errors, msg, ..args)
-	fmt.wprintf(ctx.errors, "\n")
+	if node != nil {
+		pos := node.pos
+		fmt.wprintf(ctx.errors, "%s(%d:%d): ", pos.file, pos.line, pos.column)
+		fmt.wprintf(ctx.errors, msg, ..args)
+		fmt.wprintf(ctx.errors, "\n")
+	}
 	return &INVALID
 }
 
@@ -815,7 +819,9 @@ typecheck_decl :: proc(
 			},
 			decl.value,
 		)
-		vl.known = false
+		if vl != &INVALID && vl != &VOID {
+			vl.known = false
+		}
 	} else {
 		vl = typecheck_eval(
 			ctx,
@@ -1071,11 +1077,12 @@ ret_is_by_pointer :: proc(abi: Ret_ABI, idx: int) -> bool {
 	return idx < len(abi.extras) || abi.srets_start < len(abi.extras)
 }
 
-call_sig :: proc(ctx: ^Gen_Ctx, node: ^ast.Node) -> (^Proc_Type, bool) {
-	call, cok := node.derived.(^ast.Call_Expr)
-	if !cok do return {}, false
+call_sig :: proc(ctx: ^Gen_Ctx, node: ^ast.Node) -> (v: ^Proc_Type, ok: bool) {
+	call := node.derived.(^ast.Call_Expr) or_return
 	ty := get_node_type(call.expr)
-	return unpack_type(ty).(^Proc_Type)
+	prc := unpack_type(ty).(^Proc_Type) or_return
+	if prc == nil do return
+	return prc, true
 }
 
 // expect_integer checks an index like expression, any integer width will do
@@ -1399,6 +1406,11 @@ typecheck_eval :: proc(
 	return res
 }
 
+get_stack_pointer :: #force_no_inline proc() -> uintptr {
+	marker: [0]u8
+	return uintptr(&marker)
+}
+
 typecheck :: proc(
 	ctx: ^Gen_Ctx,
 	prop: Ty_Propagation,
@@ -1409,6 +1421,16 @@ typecheck :: proc(
 	context.allocator, _ = arna.scrath()
 
 	if node == nil do return &VOID
+
+	STACK_LIMIT :: 1024 * 1024 - 1024 * 16
+
+	if ctx.stack_top - get_stack_pointer() > STACK_LIMIT {
+		return error(
+			ctx,
+			node,
+			"reached the stack limit when typechecking this",
+		)
+	}
 
 	for p in ctx.procs[1:] {
 		assert(p.lit.type != nil)
@@ -2996,6 +3018,8 @@ typecheck_proc :: proc(
 }
 
 typecheck_program :: proc(ctx: ^Gen_Ctx) {
+	ctx.stack_top = get_stack_pointer()
+
 	ctx.poly_types.allocator = ctx.types.allocator
 
 	@(static) stt: ast.Proc_Lit

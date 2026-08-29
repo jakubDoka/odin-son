@@ -6,6 +6,7 @@ import "base:runtime"
 import "core:container/queue"
 import "core:fmt"
 import "core:log"
+import "core:os"
 import "core:slice"
 
 Graph_Basic_Block :: struct {
@@ -139,13 +140,14 @@ graph_schedule :: proc(
 
 	lctx.root = new(Loop_Tree, scratch)
 
-	end := graph_expand(graph, graph.end)
 	if graph.end != 0 {
+		end := graph_expand(graph, graph.end)
 		lctx.loop_trees[end.gvn] = lctx.root
-		build_loop_tree(&lctx, graph.entry, lctx.root, scratch)
 	}
+	build_loop_tree(&lctx, graph.entry, lctx.root, scratch)
 
 	if graph.end != 0 {
+		end := graph_expand(graph, graph.end)
 		remove_count := 0
 		#reverse for inp, i in end.inps {
 			inode := graph_expand(graph, inp)
@@ -171,6 +173,17 @@ graph_schedule :: proc(
 				)
 			}
 			end.input_count = RET_PREFIX
+		}
+
+		// NOTE: this might happen when we eliminate the old return and at the
+		// same time bind with a loop trap
+		ret := graph_expand(graph, graph.end)
+		#reverse for vl, i in ret.inps[1:] {
+			val := graph_get(graph, vl)
+			if val.itype == .Poison {
+				ret.input_count -= 1
+				graph_remove_output(graph, vl, {id = graph.end, idx = 1 + i})
+			}
 		}
 	}
 
@@ -240,6 +253,13 @@ graph_schedule :: proc(
 				ctx.loop_trees[graph_get(ctx, else_).gvn] = ctx.root
 				reg := graph_merge_returns(ctx, {else_})
 				ctx.loop_trees[graph_get(ctx, reg).gvn] = ctx.root
+
+				reg_gvn := graph_get(ctx, graph_inps(ctx, reg)[0]).gvn
+				// NOTE: we might have created a region here if there was no
+				// returnt node
+				if ctx.loop_trees[reg_gvn] == nil {
+					ctx.loop_trees[reg_gvn] = ctx.root
+				}
 			}
 		} else {
 			ctx.loop_trees[node.gvn] = deepest
@@ -559,7 +579,7 @@ graph_schedule :: proc(
 
 			if graph.end != 0 {
 				if loop_tree == nil {
-					log.error("missing loop tree at %v", block)
+					log.error("missing loop tree at", block)
 					loop_tree = new(Loop_Tree)
 				}
 				tree_depth(loop_tree)
@@ -589,6 +609,7 @@ graph_schedule :: proc(
 	has_unscheduled := false
 
 	ctx.late_schedules[graph_get(graph, graph.sym).gvn] = graph.entry
+	ctx.late_schedules[graph_get(graph, graph.root_mem).gvn] = graph.entry
 
 	for n, i in ctx.nodes {
 		if n == 0 do continue
@@ -613,9 +634,9 @@ graph_schedule :: proc(
 
 	gs.bbs = bbs[:]
 
-	//if has_unscheduled {
-	//graph_display(os.to_writer(os.stderr), graph, gs)
-	//}
+	if 1 == 0 {
+		graph_display(os.to_writer(os.stderr), graph, gs)
+	}
 
 	if graph.end != 0 {
 		verify_schedule_integrity(graph, gs, ctx.antideps)

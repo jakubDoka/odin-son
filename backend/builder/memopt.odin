@@ -19,7 +19,7 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 
 	context.allocator, _ = arna.scrath()
 
-	emem := backend.graph_find_node(graph, .Mem) or_return
+	emem := graph.root_mem
 
 	sroad := 0
 	total := 0
@@ -246,7 +246,7 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 						"",
 					)
 				continue
-			case .Mem, .Set, .Copy, .Phi, .Return:
+			case .Mem, .Root_Mem, .Set, .Copy, .Phi, .Return:
 			case:
 				fmt.panicf("%v", cnode.node)
 			}

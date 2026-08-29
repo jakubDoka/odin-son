@@ -496,10 +496,10 @@ main:
     mov.q [rsp + 0x10], 3
     mov.q [rsp + 0x18], 4
     mov.q rax, [rsp + 0x28]
+    lea rsi, [rsp + 0x10]
     mov.q rdi, [rsp + 0x20]
     imul rax, rax, 0x10
     add rdi, rax
-    lea rsi, [rsp + 0x10]
     mov rdx, 0x10
     call.q [rip - 0xec]
     add.q [rsp + 0x28], 1
@@ -507,14 +507,14 @@ main:
     xor edx, edx
     xor esi, esi
 5:
-    cmp.q rsi, [rsp + 0x8]
+    cmp.q rdx, [rsp + 0x8]
     jnl 4
     mov.q rax, [rsp]
-    add.q rdx, [rax + rsi*8]
-    add rsi, 1
+    add.q rsi, [rax + rdx*8]
+    add rdx, 1
     jmp 5
 4:
-    mov rax, rdx
+    mov rax, rsi
     add.q rax, [rcx]
     add.q rax, [rcx + 0x8]
     add.q rax, [rsp + 0x8]

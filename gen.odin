@@ -10,7 +10,6 @@ import "core:fmt"
 import "core:mem"
 import "core:odin/ast"
 import "core:odin/tokenizer"
-import "core:os"
 import "core:slice"
 import "core:strconv"
 import "typecheck"
@@ -838,7 +837,7 @@ emit_proc :: proc(
 
 	ctx.start = backend.graph_add_start(ctx, "start")
 	ctx.entry = backend.graph_add_entry(ctx, "entry", ctx.start)
-	ctx.root_mem = backend.graph_add_mem(ctx, "emem", ctx.entry)
+	ctx.root_mem = backend.graph_add_root_mem(ctx, "emem", ctx.entry)
 	ctx.sym = backend.graph_add_sym(ctx, "sym", ctx.entry)
 
 	ctx.node_scope = builder.graph_add_scope(ctx, "scope", ctx.entry)

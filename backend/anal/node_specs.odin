@@ -58,6 +58,7 @@ SPEC := backend.Node_Spec{
 		0b10, // Split
 		0b10, // Phi
 		0b10, // Mem
+		0b10, // Root_Mem
 		0b10, // Sym
 		0b10000, // Local
 		0b10, // Local_Addr
@@ -139,6 +140,7 @@ SPEC := backend.Node_Spec{
 		0, // Split -> No_Extra
 		0, // Phi -> No_Extra
 		0, // Mem -> No_Extra
+		0, // Root_Mem -> No_Extra
 		0, // Sym -> No_Extra
 		2, // Local -> Local
 		0, // Local_Addr -> No_Extra
@@ -219,7 +221,8 @@ SPEC := backend.Node_Spec{
 		{Class_Flag.Interned}, // And_Not
 		{}, // Split
 		{Class_Flag.Interned}, // Phi
-		{Class_Flag.Store}, // Mem
+		{Class_Flag.Immortal, Class_Flag.Store}, // Mem
+		{Class_Flag.Immortal, Class_Flag.Store}, // Root_Mem
 		{Class_Flag.Immortal}, // Sym
 		{}, // Local
 		{Class_Flag.Clonable}, // Local_Addr
@@ -264,6 +267,7 @@ SPEC := backend.Node_Spec{
 		backend.No_Extra,
 		backend.Tup,
 		backend.CInt,
+		backend.No_Extra,
 		backend.No_Extra,
 		backend.No_Extra,
 		backend.No_Extra,
@@ -382,6 +386,7 @@ SPEC := backend.Node_Spec{
 		`Split`,
 		`Phi`,
 		`Mem`,
+		`Root_Mem`,
 		`Sym`,
 		`Local`,
 		`Local_Addr`,
@@ -465,6 +470,7 @@ ANAL_Node_Type :: enum u16 {
 	Split,
 	Phi,
 	Mem,
+	Root_Mem,
 	Sym,
 	Local,
 	Local_Addr,
@@ -517,6 +523,7 @@ anal_post_schedule_peep_inst :: proc(
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.Tup) % backend.PRECISION == 0)
 #assert(size_of(backend.CInt) % backend.PRECISION == 0)
+#assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)

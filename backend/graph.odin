@@ -155,6 +155,7 @@ Ideal_Node_Type :: enum u16 {
 	Split,
 	Phi,
 	Mem,
+	Root_Mem,
 	Sym,
 	Local,
 	Local_Addr,
@@ -725,6 +726,7 @@ graph_compact :: proc(graph: ^Graph) {
 	assert(graph.start != graph.root_mem)
 
 	for &n in mem.slice_data_cast([]Node_ID, mem.ptr_to_bytes(&graph.pinned)) {
+		if n == 0 do continue
 		n = project(&prev, worklist, n)
 	}
 
@@ -852,6 +854,27 @@ graph_has_unreachable_return :: proc(graph: ^Graph) -> bool {
 	return true
 }
 
+peep_subsume :: proc(graph: Peep_Ctx, with: Node_ID, target: Node_ID) {
+	node := graph_expand(graph, target)
+
+	for out in node.outs {
+		worklist_add(graph, graph.worklist, out.id)
+	}
+
+	if int(node.gvn) < len(graph.triggers) {
+		for trig in graph.triggers[node.gvn] {
+			worklist_add(graph, graph.worklist, trig)
+		}
+		graph.triggers[node.gvn] = {}
+	}
+
+	for inp in node.inps {
+		worklist_add(graph, graph.worklist, inp)
+	}
+
+	graph_subsume(graph, with, target)
+}
+
 graph_iter_peeps :: proc(ctx: Peep_Ctx) -> (optimized: bool) {
 	graph := ctx.graph
 
@@ -916,7 +939,7 @@ graph_iter_peeps :: proc(ctx: Peep_Ctx) -> (optimized: bool) {
 		}
 
 		if new_node != 0 {
-			graph_subsume(graph, new_node, n, &worklist)
+			graph_subsume(graph, new_node, n)
 		} else {
 			graph_delete(graph, n, indirect = true)
 		}
@@ -1021,12 +1044,17 @@ assert_live_pins :: proc(graph: ^Graph) {
 	prev := current_graph
 	current_graph = graph
 	defer current_graph = prev
-	expected := [?]Ideal_Node_Type{.Start, .Entry, .Mem, .Sym, .Return}
+	expected := [?]Ideal_Node_Type{.Start, .Entry, .Root_Mem, .Sym, .Return}
 	for &n, i in mem.slice_data_cast(
 		[]Node_ID,
 		mem.ptr_to_bytes(&graph.pinned),
 	) {
-		assert(graph_get(graph, n).rtype != DEAD_NODE_KIND)
+		if expected[i] == .Return && n == 0 do continue
+		fmt.assertf(
+			graph_get(graph, n).rtype != DEAD_NODE_KIND,
+			"%v",
+			expected[i],
+		)
 		fmt.assertf(
 			graph_get(graph, n).itype == expected[i],
 			"%v %v",
@@ -1388,7 +1416,6 @@ graph_subsume :: proc(
 	graph: ^Graph,
 	with: Node_ID,
 	target: Node_ID,
-	worklist: ^queue.Queue(Node_ID) = nil,
 	dont_delete: bool = false,
 ) {
 	//assert(with != graph.start)
@@ -1842,6 +1869,16 @@ graph_merge_returns :: proc(graph: ^Graph, args: []Node_ID) -> Node_ID {
 		)
 
 		graph_connect(graph, end.inps[0], args[0])
+
+		for i in 1 ..< len(end.inps) {
+			fmt.assertf(
+				int(graph_get(graph, end.inps[i]).input_count) ==
+				len(reg.inps),
+				"%v %v",
+				reg,
+				graph_get(graph, end.inps[i]),
+			)
+		}
 
 		for i in 1 ..< len(end.inps) {
 			new := i < len(args) ? args[i] : graph_add_poison(graph, "rpsn")

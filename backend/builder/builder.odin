@@ -168,7 +168,7 @@ builder_peep :: proc(
 	id := backend.graph_id(ctx, node)
 	is_complete := backend.peep_ctx_graph_is_complete(ctx)
 
-	DEAD_EXCEPTIONS := bit_set[backend.Ideal_Node_Type]{.Region, .Start}
+	DEAD_EXCEPTIONS := bit_set[backend.Ideal_Node_Type]{.Region, .Start, .Loop}
 
 	if backend.is_cfg(ctx, id) && node.itype not_in DEAD_EXCEPTIONS {
 		idom := graph_expand(ctx, node.inps[0])
@@ -196,7 +196,7 @@ builder_peep :: proc(
 		slot := graph_expand(ctx, node.inps[0])
 		root := graph_expand(ctx, slot.inps[0])
 		mark_dead: {
-			if root.itype != .Mem do break mark_dead
+			if root.itype != .Root_Mem do break mark_dead
 
 			slot_local := backend.graph_extra(ctx, slot, Local)
 			if slot_local.size == backend.DEAD_LOCAL do break match
@@ -225,7 +225,7 @@ builder_peep :: proc(
 		}
 
 		forward: {
-			if root.itype != .Mem do break forward
+			if root.itype != .Root_Mem do break forward
 
 			forward_candidate: Node_ID
 			rev_forward_candidate: Node_ID
@@ -310,24 +310,37 @@ builder_peep :: proc(
 		}
 	case .Loop:
 		bedge := graph_expand(ctx, node.inps[1])
-		if btype(bedge) == .Dead {
+		init := graph_expand(ctx, node.inps[0])
+		if btype(bedge) == .Dead || btype(init) == .Dead {
 			#reverse for out in node.outs {
 				onode := graph_expand(ctx, out.id)
 				if onode.itype == .Phi {
-					backend.graph_subsume(ctx, onode.inps[1], out.id)
+					backend.peep_subsume(ctx, onode.inps[1], out.id)
 				}
 			}
 			return node.inps[0]
 		}
 	case .Region:
-		#reverse for inp, i in node.inps {
+		for o in node.outs {
+			n := graph_get(ctx, o.id)
+			if n.itype == .Phi {
+				fmt.assertf(
+					n.input_count == node.input_count,
+					"%v %v",
+					n,
+					node,
+				)
+			}
+		}
+
+		#reverse for inp, i in node.inps[:len(node.inps) - 1] {
 			inode := graph_expand(ctx, inp)
 			if btype(inode) != .Dead do continue
 			ordered_remove(ctx, &node, i)
 
 			for out in node.outs {
 				onode := graph_expand(ctx, out.id)
-				if onode.itype == .Phi && len(onode.inps) > 2 {
+				if onode.itype == .Phi {
 					ordered_remove(ctx, &onode, i + 1)
 				}
 			}
@@ -343,6 +356,14 @@ builder_peep :: proc(
 					break elim
 				}
 			}
+
+			#reverse for out in node.outs {
+				onode := graph_expand(ctx, out.id)
+				if onode.itype == .Phi {
+					backend.peep_subsume(ctx, onode.inps[1], out.id)
+				}
+			}
+
 			return node.inps[0]
 		}
 
@@ -359,13 +380,13 @@ builder_peep :: proc(
 
 			node = graph_expand(ctx, id)
 
+			// TODO: remove this redundant clone
 			merge: #reverse for inp, i in slice.clone(node.inps) {
 				inode := graph_expand(ctx, inp)
 				if inode.itype != .Region do continue
 
 				not_covered_count := phi_count
 				for out in inode.outs {
-
 					onode := graph_expand(ctx, out.id)
 					if onode.itype == .Region do continue
 
@@ -432,13 +453,24 @@ builder_peep :: proc(
 			}
 		}
 
+		for o in node.outs {
+			n := graph_get(ctx, o.id)
+			if n.itype == .Phi {
+				fmt.assertf(
+					n.input_count == node.input_count,
+					"%v %v",
+					n,
+					node,
+				)
+			}
+		}
+
 		return 0
 	case .Phi:
 		ctrl := graph_expand(ctx, node.inps[0])
 
 		if Builder_Node_Type(ctrl.rtype) == .Dead && 2 < len(node.inps) {
 			ordered_remove(ctx, &node, 2)
-
 			if node.rtype == backend.DEAD_NODE_KIND do break match
 		}
 

@@ -187,11 +187,12 @@ graph_schedule :: proc(
 		}
 	}
 
-	tree_depth :: proc(tree: ^Loop_Tree) -> u32 {
+	tree_depth :: proc(tree: ^Loop_Tree, depht := 0) -> u32 {
 		assert(tree != nil)
+		assert(depht < 1024)
 		if tree.parent == nil do return 0
 		if tree.depth == 0 {
-			tree.depth = 1 + tree_depth(tree.parent)
+			tree.depth = 1 + tree_depth(tree.parent, depht + 1)
 		}
 		return tree.depth
 	}
@@ -636,6 +637,7 @@ graph_schedule :: proc(
 
 	if 1 == 0 {
 		graph_display(os.to_writer(os.stderr), graph, gs)
+		if has_unscheduled do panic("")
 	}
 
 	if graph.end != 0 {

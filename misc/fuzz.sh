@@ -5,6 +5,8 @@
 #
 # Odin has no AFL frontend, so the build goes through LLVM IR: odin emits one
 # .ll per package and afl-clang-fast instruments them on the way to the binary.
+# misc/fuzz_harness.c drives odin's fuzz_one in an AFL persistent loop
+# (shared-memory testcases, many inputs per process).
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -60,8 +62,15 @@ if [ "$SKIP_BUILD" -eq 0 ]; then
 		-define:FUZZ=true -define:NO_RUN=true -define:DIFF=false
 
 	echo ">> instrumenting"
-	afl-clang-fast -O2 $(find "$BUILD_DIR" -name "*.ll") -o "$TARGET" \
-		-lm -lpthread -ldl
+	# The harness loop must stay uninstrumented: the first iteration of every
+	# fresh persistent child enters the loop through a different edge than the
+	# backedge iterations, and afl-fuzz blames that one-byte difference on
+	# whatever testcase is calibrated first in the child.
+	denylist="$BUILD_DIR/denylist.txt"
+	printf '%s\n' "fuzz_harness.c" >"$denylist"
+	AFL_LLVM_DENYLIST="$denylist" \
+		afl-clang-fast -O2 misc/fuzz_harness.c $(find "$BUILD_DIR" -name "*.ll") \
+		-o "$TARGET" -lm -lpthread -ldl
 fi
 
 if [ ! -x "$TARGET" ]; then
@@ -99,7 +108,7 @@ for i in $(seq 1 "$JOBS"); do
 
 	AFL_NO_UI=1 timeout --foreground -s INT "$DURATION" \
 		afl-fuzz -i "$CORPUS" -o "$OUT" -t 500+ "${role[@]}" \
-		-- "$TARGET" @@ >"$log" 2>&1 &
+		-- "$TARGET" >"$log" 2>&1 &
 	pids+=($!)
 done
 

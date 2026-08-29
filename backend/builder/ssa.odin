@@ -464,86 +464,102 @@ graph_inline_graph :: proc(
 	assert(proj_of(&ctx, starter)^ == 0)
 
 	clone_along_cfg(&ctx, starter)
-	assert(ctx.reached_return)
 
 	cend := graph_expand(graph, call.outs[0].id)
 	ret := graph_expand(from, from.end)
 
-	for o in cend.outs {
-		onode := graph_expand(ctx.graph, o.id)
-		if onode.itype == .Mem {
-			sub := graph_get(from, ret.inps[1])
-			backend.graph_subsume(graph, ctx.projection[sub.gvn], o.id)
-		}
-		if onode.itype == .Ret {
-			idx := backend.graph_extra(graph, onode, backend.Tup).idx
-			sidex := backend.RET_PREFIX + idx
-			if int(sidex) < len(ret.inps) {
-				sub := graph_get(from, ret.inps[sidex])
+	if ctx.reached_return {
+		for o in cend.outs {
+			onode := graph_expand(ctx.graph, o.id)
+			if onode.itype == .Mem {
+				sub := graph_get(from, ret.inps[1])
 				backend.graph_subsume(graph, ctx.projection[sub.gvn], o.id)
-			} else {
-				psn := backend.graph_add_poison(graph, "irps")
-				backend.graph_subsume(graph, psn, o.id)
 			}
-		}
-	}
-
-	rins := backend.graph_inps(graph, graph.end)
-	greg := rins[0]
-
-	end_ctrl := graph_get(from, ret.inps[0])
-	reg := graph_expand(graph, ctx.projection[end_ctrl.gvn])
-
-	prev_len := graph_get(graph, greg).input_count
-
-	backend.assert_live_pins(graph)
-
-	#reverse for inp, i in reg.inps[:len(reg.inps) - 1] {
-		inode := graph_expand(graph, inp)
-		if inode.itype == .Trap {
-			backend.graph_connect(graph, greg, inp)
-
-			#reverse for rn, j in rins[1:] {
-				if 1 + j < len(ret.inps) {
-					fnode := graph_get(from, ret.inps[1 + j])
-					assert(fnode.itype == .Phi)
-					gnode := graph_expand(graph, ctx.projection[fnode.gvn])
-					assert(gnode.itype == .Phi)
-					inp := gnode.inps[1 + i]
-					assert(!backend.is_cfg(graph, inp))
-					backend.graph_connect(graph, rn, inp)
-					ordered_remove(graph, &gnode, 1 + i)
+			if onode.itype == .Ret {
+				idx := backend.graph_extra(graph, onode, backend.Tup).idx
+				sidex := backend.RET_PREFIX + idx
+				if int(sidex) < len(ret.inps) {
+					sub := graph_get(from, ret.inps[sidex])
+					backend.graph_subsume(graph, ctx.projection[sub.gvn], o.id)
 				} else {
-					inp := backend.graph_add_poison(graph, "trps")
-					backend.graph_connect(graph, rn, inp)
+					psn := backend.graph_add_poison(graph, "irps")
+					backend.graph_subsume(graph, psn, o.id)
 				}
 			}
-
-			ordered_remove(graph, &reg, i)
 		}
-	}
 
-	backend.assert_live_pins(graph)
+		for inp in ret.inps {
+			inode := graph_get(from, inp)
+			nd := ctx.projection[inode.gvn]
+			if nd != 0 {
+				backend.graph_delete(graph, nd)
+			}
+		}
 
-	gregn := graph_expand(graph, greg)
-	if int(prev_len) < len(gregn.inps) {
-		backend.swap_inputs(
+		rins := backend.graph_inps(graph, graph.end)
+		greg := rins[0]
+
+		end_ctrl := graph_get(from, ret.inps[0])
+		reg := graph_expand(graph, ctx.projection[end_ctrl.gvn])
+
+		prev_len := graph_get(graph, greg).input_count
+
+		backend.assert_live_pins(graph)
+
+		#reverse for inp, i in reg.inps[:len(reg.inps) - 1] {
+			inode := graph_expand(graph, inp)
+			if inode.itype == .Trap {
+				backend.graph_connect(graph, greg, inp)
+
+				#reverse for rn, j in rins[1:] {
+					if 1 + j < len(ret.inps) {
+						fnode := graph_get(from, ret.inps[1 + j])
+						assert(fnode.itype == .Phi)
+						gnode := graph_expand(graph, ctx.projection[fnode.gvn])
+						assert(gnode.itype == .Phi)
+						inp := gnode.inps[1 + i]
+						assert(!backend.is_cfg(graph, inp))
+						backend.graph_connect(graph, rn, inp)
+						ordered_remove(graph, &gnode, 1 + i)
+					} else {
+						inp := backend.graph_add_poison(graph, "trps")
+						backend.graph_connect(graph, rn, inp)
+					}
+				}
+
+				ordered_remove(graph, &reg, i)
+			}
+		}
+
+		backend.assert_live_pins(graph)
+
+		gregn := graph_expand(graph, greg)
+		if int(prev_len) < len(gregn.inps) {
+			backend.swap_inputs(
+				graph,
+				gregn,
+				int(prev_len) - 1,
+				len(gregn.inps) - 1,
+			)
+		}
+
+		for inp in gregn.inps {
+			assert(backend.is_cfg(graph, inp))
+		}
+
+		if len(reg.inps) == 1 {
+			ctx.projection[end_ctrl.gvn] = graph_add_dead(graph, "rdead")
+		}
+
+		backend.graph_subsume(
 			graph,
-			gregn,
-			int(prev_len) - 1,
-			len(gregn.inps) - 1,
+			ctx.projection[end_ctrl.gvn],
+			call.outs[0].id,
 		)
+	} else {
+		dead := graph_add_dead(graph, "inlnd")
+		backend.graph_subsume(graph, dead, call.outs[0].id)
 	}
-
-	for inp in gregn.inps {
-		assert(backend.is_cfg(graph, inp))
-	}
-
-	if len(reg.inps) == 1 {
-		ctx.projection[end_ctrl.gvn] = graph_add_dead(graph, "rdead")
-	}
-
-	backend.graph_subsume(graph, ctx.projection[end_ctrl.gvn], call.outs[0].id)
 
 	for out in backend.graph_outs(graph, graph.start) {
 		assert(graph_get(graph, out.id).itype != .Local)
@@ -558,7 +574,12 @@ graph_inline_graph :: proc(
 		wl: queue.Queue(Node_ID)
 		queue.init(&wl)
 		backend.collect_nodes(graph, &wl)
-		for n in backend.worklist_next(graph, &wl) {}
+		for n in backend.worklist_next(graph, &wl) {
+			if len(backend.graph_outs(graph, n)) == 0 &&
+			   !backend.graph_has_flag(graph, n, .Immortal) {
+				fmt.panicf("wut %v", backend.graph_get(graph, n))
+			}
+		}
 	}
 
 	clone_along_cfg :: proc(ctx: ^Ctx, root: backend.Node_ID) {
@@ -655,7 +676,9 @@ graph_inline_graph :: proc(
 
 		inps := make([]backend.Node_ID, input_cap)
 		for inp, i in raw_data(node.inps)[:input_cap] {
+
 			clone_node(ctx, inp)
+
 			if graph_get(ctx.from, inp).itype == .Start {
 				backend.current_graph = ctx.from
 				fmt.assertf(
@@ -694,6 +717,7 @@ graph_inline_graph :: proc(
 			graph,
 			backend.graph_get_tag(ctx.from, root).name,
 		)
+
 		slot := arna.alloc(graph.mem, uint(size), backend.PRECISION)
 
 		mem.copy_non_overlapping(raw_data(slot), node.node, len(slot))

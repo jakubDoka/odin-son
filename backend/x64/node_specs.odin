@@ -310,7 +310,7 @@ SPEC := backend.Node_Spec{
 		{Class_Flag.Interned}, // And_Not
 		{}, // Split
 		{Class_Flag.Interned}, // Phi
-		{Class_Flag.Immortal, Class_Flag.Store}, // Mem
+		{Class_Flag.Store}, // Mem
 		{Class_Flag.Immortal, Class_Flag.Store}, // Root_Mem
 		{Class_Flag.Immortal}, // Sym
 		{}, // Local

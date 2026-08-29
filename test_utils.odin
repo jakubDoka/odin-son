@@ -54,10 +54,10 @@ init_single_file_program :: proc(ctx: ^Gen_Ctx, f: ^ast.File) {
 name_str: string
 
 run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
-
 	name_str = name
 	context.logger.options &= ~{.Time, .Date, .Level, .Procedure}
 	context.assertion_failure_proc = hot.init_trace()
+	context.random_generator = {}
 
 	arna.scratch[0].reserved = 1024 * 1024
 	arna.scratch[1].reserved = 1024 * 1024

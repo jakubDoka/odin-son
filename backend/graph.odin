@@ -2,6 +2,7 @@ package backend
 
 import "../vendored/gam/util/arna"
 import "../vendored/gam/util/bit_arr"
+import "../vendored/gam/util/hot"
 import "base:intrinsics"
 import "base:runtime"
 import "core:container/queue"
@@ -669,7 +670,9 @@ graph_compact :: proc(graph: ^Graph) {
 
 		size :=
 			graph_size(graph, node.rtype) + int(node.extra_dwords) * PRECISION
-		graph_push_tag(graph, graph_get_tag(&prev, n))
+
+		tag := graph_get_tag(&prev, n)
+		graph_push_tag(graph, tag)
 		slot := arna.alloc(graph.mem, uint(size), PRECISION)
 
 		mem.copy_non_overlapping(raw_data(slot), node.node, len(slot))
@@ -687,6 +690,7 @@ graph_compact :: proc(graph: ^Graph) {
 		graph_dbg_slot(graph, new_node)^ = did
 
 		n = graph_id(graph, new_node)
+
 	}
 
 	graph.interner.len = 0
@@ -1030,7 +1034,8 @@ collect_nodes :: proc(graph: ^Graph, worklist: ^queue.Queue(Node_ID)) {
 		context.allocator, _ = arna.scrath()
 		seen := bit_arr.init(graph.gvn)
 		for n in worklist.data[:worklist.len] {
-			assert(bit_arr.set(seen, graph_get(graph, n).gvn))
+			node := graph_get(graph, n)
+			assert(bit_arr.set(seen, node.gvn))
 		}
 	}
 
@@ -1554,6 +1559,9 @@ graph_remove_output_node :: proc(
 	out_idx := slice.linear_search(outs, out) or_else fmt.panicf("%v", node)
 	outs[out_idx] = outs[len(outs) - 1]
 	node.output_count -= 1
+
+	tag := graph_get_tag(graph, graph_id(graph, node))
+
 	if !no_delete {
 		graph_delete(graph, node, indirect = true)
 	}
@@ -1717,8 +1725,10 @@ graph_push_tag :: proc {
 
 push_node_tag_new :: proc(graph: ^Graph, tag: string) {
 	when NODE_NAMES {
-		graph.stable_id += 1
-		push_node_tag_full(graph, {tag, graph.stable_id})
+		@(static) stable_id: u32
+
+		stable_id += 1
+		push_node_tag_full(graph, {tag, stable_id})
 	}
 }
 

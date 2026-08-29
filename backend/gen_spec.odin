@@ -107,11 +107,7 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 	.U_Rem = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
 	.U_Shr = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
 	.Sym = {args = {"entry"}, default_type = .Void, flags = {.Immortal}},
-	.Mem = {
-		args = {"ctrl"},
-		default_type = .Void,
-		flags = {.Store, .Immortal},
-	},
+	.Mem = {args = {"ctrl"}, default_type = .Void, flags = {.Store}},
 	.Root_Mem = {
 		args = {"ctrl"},
 		default_type = .Void,

@@ -466,9 +466,10 @@ graph_inline_graph :: proc(
 	clone_along_cfg(&ctx, starter)
 
 	cend := graph_expand(graph, call.outs[0].id)
-	ret := graph_expand(from, from.end)
 
 	if ctx.reached_return {
+		ret := graph_expand(from, from.end)
+
 		for o in cend.outs {
 			onode := graph_expand(ctx.graph, o.id)
 			if onode.itype == .Mem {
@@ -496,59 +497,70 @@ graph_inline_graph :: proc(
 			}
 		}
 
-		rins := backend.graph_inps(graph, graph.end)
-		greg := rins[0]
-
 		end_ctrl := graph_get(from, ret.inps[0])
-		reg := graph_expand(graph, ctx.projection[end_ctrl.gvn])
 
-		prev_len := graph_get(graph, greg).input_count
+		if graph.end != 0 {
+			rins := backend.graph_inps(graph, graph.end)
+			greg := rins[0]
 
-		backend.assert_live_pins(graph)
+			reg := graph_expand(graph, ctx.projection[end_ctrl.gvn])
 
-		#reverse for inp, i in reg.inps[:len(reg.inps) - 1] {
-			inode := graph_expand(graph, inp)
-			if inode.itype == .Trap {
-				backend.graph_connect(graph, greg, inp)
+			prev_len := graph_get(graph, greg).input_count
 
-				#reverse for rn, j in rins[1:] {
-					if 1 + j < len(ret.inps) {
-						fnode := graph_get(from, ret.inps[1 + j])
-						assert(fnode.itype == .Phi)
-						gnode := graph_expand(graph, ctx.projection[fnode.gvn])
-						assert(gnode.itype == .Phi)
-						inp := gnode.inps[1 + i]
-						assert(!backend.is_cfg(graph, inp))
-						backend.graph_connect(graph, rn, inp)
-						ordered_remove(graph, &gnode, 1 + i)
-					} else {
-						inp := backend.graph_add_poison(graph, "trps")
-						backend.graph_connect(graph, rn, inp)
+			backend.assert_live_pins(graph)
+
+			#reverse for inp, i in reg.inps[:len(reg.inps) - 1] {
+				inode := graph_expand(graph, inp)
+				if inode.itype == .Trap {
+					backend.graph_connect(graph, greg, inp)
+
+					#reverse for rn, j in rins[1:] {
+						if 1 + j < len(ret.inps) {
+							fnode := graph_get(from, ret.inps[1 + j])
+							assert(fnode.itype == .Phi)
+							gnode := graph_expand(
+								graph,
+								ctx.projection[fnode.gvn],
+							)
+							assert(gnode.itype == .Phi)
+							inp := gnode.inps[1 + i]
+							assert(!backend.is_cfg(graph, inp))
+							backend.graph_connect(graph, rn, inp)
+							ordered_remove(graph, &gnode, 1 + i)
+						} else {
+							inp := backend.graph_add_poison(graph, "trps")
+							backend.graph_connect(graph, rn, inp)
+						}
 					}
+
+					ordered_remove(graph, &reg, i)
 				}
-
-				ordered_remove(graph, &reg, i)
 			}
-		}
 
-		backend.assert_live_pins(graph)
+			backend.assert_live_pins(graph)
 
-		gregn := graph_expand(graph, greg)
-		if int(prev_len) < len(gregn.inps) {
-			backend.swap_inputs(
-				graph,
-				gregn,
-				int(prev_len) - 1,
-				len(gregn.inps) - 1,
-			)
-		}
+			gregn := graph_expand(graph, greg)
+			if int(prev_len) < len(gregn.inps) {
+				backend.swap_inputs(
+					graph,
+					gregn,
+					int(prev_len) - 1,
+					len(gregn.inps) - 1,
+				)
+			}
 
-		for inp in gregn.inps {
-			assert(backend.is_cfg(graph, inp))
-		}
+			for inp in gregn.inps {
+				fmt.assertf(
+					backend.is_cfg(graph, inp) ||
+					btype(graph_expand(graph, inp)) == .Dead,
+					"%v",
+					graph_get(graph, inp),
+				)
+			}
 
-		if len(reg.inps) == 1 {
-			ctx.projection[end_ctrl.gvn] = graph_add_dead(graph, "rdead")
+			if len(reg.inps) == 1 {
+				ctx.projection[end_ctrl.gvn] = graph_add_dead(graph, "rdead")
+			}
 		}
 
 		backend.graph_subsume(

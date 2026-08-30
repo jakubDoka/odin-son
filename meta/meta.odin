@@ -261,7 +261,8 @@ gen_fuzz_crash_tests :: proc(file: ^os.File) {
 		// the input is raw fuzzer output, so it can't be inlined as a literal
 		fmt.fprintfln(
 			file,
-			"main.run_test(t, `%v`, string(#load(\"../%v/%v\")), 0)",
+			`main.run_test(t, "%v", string(#load("../%v/%v")), 0,
+				diff = false, no_run = true)`,
 			name,
 			FUZZ_CRASH_DIR,
 			crash.name,

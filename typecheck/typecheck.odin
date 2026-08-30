@@ -490,6 +490,11 @@ type_display :: proc(w: io.Writer, ty: Type) {
 		fmt.wprintf(w, "#simd[%v]", t.len)
 		type_display(w, t.elem)
 	case ^Struct:
+		if len(t.param_names) != 0 {
+			io.write_string(w, "struct()")
+			break
+		}
+
 		io.write_string(w, "struct {")
 		for field, i in t.fields {
 			if i != 0 do io.write_string(w, ", ")
@@ -532,8 +537,9 @@ type_display :: proc(w: io.Writer, ty: Type) {
 			}
 		}
 	case:
-		assert(ty <= .F64)
-		fmt.wprint(w, TYPE_NAMES[ty])
+		norm := Type(u16(ty))
+		fmt.assertf(norm <= .F64, "%v", rawptr(ty))
+		fmt.wprint(w, TYPE_NAMES[norm])
 	}
 }
 
@@ -661,9 +667,11 @@ instantiate_struct :: proc(
 		len(base.fields),
 		ctx.types.allocator,
 	)
+
 	for &field, i in structa.fields {
 		field = base.fields[i]
 		field.ty = emit_type(ctx, ast.clone(field.ty_ast))
+
 		// TODO: extract this to a layout computation
 		field.offset = mem.align_forward_int(
 			structa.size,
@@ -1466,7 +1474,18 @@ typecheck :: proc(
 				ctx.types.allocator,
 			)
 			for param, i in d.poly_params.list {
-				pd, is_poly := param.derived.(^ast.Field).names[0].derived.(^ast.Poly_Type)
+				fld, is_fld := param.derived.(^ast.Field)
+				if !is_fld {
+					return error(ctx, param, "expected field expr")
+				}
+				if len(fld.names) != 1 {
+					return error(
+						ctx,
+						param,
+						"TODO: support multiple identifiers",
+					)
+				}
+				pd, is_poly := fld.names[0].derived.(^ast.Poly_Type)
 				if !is_poly {
 					return error(
 						ctx,
@@ -2030,6 +2049,7 @@ typecheck :: proc(
 			.B_Comparison_Begin < d.op.kind && d.op.kind < .B_Comparison_End
 
 		// the result type of a comparison says nothing about its operands
+		validate := true
 		prop := prop
 		if is_comparison do prop.inferred_ty = .Void
 
@@ -2048,6 +2068,7 @@ typecheck :: proc(
 
 			rhs_ty = oty
 			lhs_ty = oty
+			validate = false
 		}
 
 		if is_num_lit(d.left) && !is_num_lit(d.right) {
@@ -2068,12 +2089,25 @@ typecheck :: proc(
 			expect(ctx, node, lhs_ty, rhs_ty.type)
 		}
 
-		valid_binop(ctx, lhs_ty.type, node, d.op.kind) or_return
+		if validate {
+			valid_binop(ctx, lhs_ty.type, node, d.op.kind) or_return
+		}
 
 		if lhs_ty.known && rhs_ty.known {
 			lhs_ty = new_clone(lhs_ty^, ctx.types.allocator)
 			is_float := lhs_ty.type in FLOAT_TYPES
 			is_signed := lhs_ty.type in SIGNED_TYPES
+			is_unsigned := lhs_ty.type in UNSIGNED_TYPES
+
+			if !is_float && !is_signed && !is_unsigned {
+				return error(
+					ctx,
+					node,
+					"operation not supported for %v",
+					lhs_ty.type,
+				)
+			}
+
 			#partial switch d.op.kind {
 			case .Quo:
 				if rhs_ty.int == 0 {
@@ -2238,6 +2272,9 @@ typecheck :: proc(
 		if !is_assign {
 			return error(ctx, d.tag, "TODO: a type switch needs a binding")
 		}
+		if _, ok := tag.lhs[0].derived.(^ast.Ident); !ok {
+			return error(ctx, tag.lhs[0], "Expected identifier here")
+		}
 		binding := src_of(ctx.file^, tag.lhs[0])
 		union_ty := typecheck(ctx, {}, tag.rhs[0])
 		uni := unwrap_type(
@@ -2338,7 +2375,7 @@ typecheck :: proc(
 				break
 			}
 			inner := v
-			if un, is_un := v.derived.(^ast.Unary_Expr); is_un do inner = un.expr
+			if un, is_un := v.derived.(^ast.Unary_Expr); is_un && i == 0 do inner = un.expr
 			id, is_ident := inner.derived.(^ast.Ident)
 			if !is_ident {
 				error(ctx, v, "expected a binding name")
@@ -2452,6 +2489,14 @@ typecheck :: proc(
 		if d.name == "nil" {
 			if prop.inferred_ty == .Void {
 				return error(ctx, node, "can not infer the type of nil")
+			}
+			if !is_of(prop.inferred_ty, ^Union) {
+				return error(
+					ctx,
+					d,
+					"TODO: suport materializing %v",
+					prop.inferred_ty,
+				)
 			}
 			meta.kind = .Nil
 			return tmeta(ctx, prop.inferred_ty)
@@ -2969,7 +3014,6 @@ typecheck_sig :: proc(
 	rets := make([]Type, len(rlist))
 	tys := [][]Type{params, rets}
 
-	clear(&ctx.poly_types)
 	for list, j in lists {
 		tys := tys[j]
 
@@ -3037,6 +3081,16 @@ typecheck_program :: proc(ctx: ^Gen_Ctx) {
 			if !decl.id.is_mutable do continue
 
 			size := type_size(vl.type)
+			MAX_GLOBAL_SIZE :: 1024 * 1024
+			if size > MAX_GLOBAL_SIZE {
+				error(
+					ctx,
+					decl.id.value,
+					"Globals bigger then %vb are not supported",
+					1024 * 1024,
+				)
+				continue
+			}
 			bytes := make([]u8, size, ctx.globals.allocator)
 
 			if decl.id.value.derived != &nil_node {
@@ -3180,7 +3234,7 @@ valid_binop :: proc(
 	if tok == .Eq do return nil
 	_, _, _, ok := tok_to_binop(ty, tok)
 	if ok do return nil
-	return error(ctx, node, "operator not supported for %v", ty)
+	return error(ctx, node, "operator %v not supported for %v", tok, ty)
 }
 
 tok_to_binop :: proc(
@@ -3193,10 +3247,16 @@ tok_to_binop :: proc(
 	ok: bool,
 ) {
 	ty := ty
+	has_lane := false
 	if e, ok := unpack_type(ty).(^Enum); ok do ty = e.backing
 	if s, ok := unpack_type(ty).(^Simd); ok {
 		ty = s.elem
 		lane = simd_lane_of(s.elem)
+		has_lane = true
+	}
+
+	if type_to_dt(ty) == .Void {
+		return
 	}
 
 	Op_Info :: struct {
@@ -3204,8 +3264,7 @@ tok_to_binop :: proc(
 		name: string,
 	}
 
-	@(static)
-	@(rodata)
+	@(static, rodata)
 	SIGNED_TABLE := #partial [tokenizer.Token_Kind]Op_Info {
 		.Add        = {.Add, "add"},
 		.Add_Eq     = {.Add, "adde"},
@@ -3237,8 +3296,7 @@ tok_to_binop :: proc(
 		.Shr_Eq     = {.Shr, "shre"},
 	}
 
-	@(static)
-	@(rodata)
+	@(static, rodata)
 	UNSIGNED_TABLE := #partial [tokenizer.Token_Kind]Op_Info {
 		.Lt     = {.U_Lt, "ltu"},
 		.Lt_Eq  = {.U_Le, "leu"},
@@ -3252,8 +3310,7 @@ tok_to_binop :: proc(
 		.Shr_Eq = {.U_Shr, "shreu"},
 	}
 
-	@(static)
-	@(rodata)
+	@(static, rodata)
 	FLOAT_TABLE := #partial [tokenizer.Token_Kind]Op_Info {
 		.Add    = {.F_Add, "fadd"},
 		.Add_Eq = {.F_Add, "fadde"},
@@ -3271,15 +3328,27 @@ tok_to_binop :: proc(
 		.Gt_Eq  = {.F_Ge, "fge"},
 	}
 
-	if ty in FLOAT_TYPES {
-		finfo := FLOAT_TABLE[tok]
-		return finfo.kind, finfo.name, lane, int(finfo.kind) != 0
+	@(static, rodata)
+	ALLOWED_SIMD := #partial [backend.Lane_Type]bit_set[backend.Bin_Op] {
+		.I8 ..= .I64 = {.Add, .Sub, .And, .Xor, .Or},
 	}
 
-	info := SIGNED_TABLE[tok]
-	uinfo := UNSIGNED_TABLE[tok]
-	if ty in UNSIGNED_TYPES && uinfo.kind != {} do info = uinfo
-	return info.kind, info.name, lane, int(info.kind) != 0
+	info: Op_Info
+
+	if ty in FLOAT_TYPES {
+		info = FLOAT_TABLE[tok]
+	} else {
+		info = SIGNED_TABLE[tok]
+		uinfo := UNSIGNED_TABLE[tok]
+		if ty in UNSIGNED_TYPES && uinfo.kind != {} {
+			info = uinfo
+		}
+	}
+
+	valid := int(info.kind) != 0
+	valid &= !has_lane || info.kind in ALLOWED_SIMD[lane]
+
+	return info.kind, info.name, lane, valid
 }
 
 extract_var_ident :: proc(

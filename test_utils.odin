@@ -53,7 +53,17 @@ init_single_file_program :: proc(ctx: ^Gen_Ctx, f: ^ast.File) {
 @(thread_local)
 name_str: string
 
-run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
+DO_DIFFING :: #config(DIFF, true)
+NO_RUN :: #config(NO_RUN, false)
+
+run_test :: proc(
+	t: ^testing.T,
+	name: string,
+	source: string,
+	exit_code: int,
+	diff := DO_DIFFING,
+	no_run := NO_RUN,
+) {
 	name_str = name
 	context.logger.options &= ~{.Time, .Date, .Level, .Procedure}
 	context.assertion_failure_proc = hot.init_trace()
@@ -173,7 +183,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 				// fuzzed sources name symbols that exist nowhere, and nothing
 				// is ever called under NO_RUN, so a null slot is harmless
 				addr := dynlib.symbol_address(lib, p.name)
-				when !#config(NO_RUN, false) {
+				if !no_run {
 					fmt.assertf(addr != nil, "missing symbol: %v", p.name)
 				}
 				slot := backend.emit_aligned(&types.mems.code, addr)
@@ -279,7 +289,7 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 		)
 		assert(oka)
 
-		when #config(NO_RUN, false) {
+		if no_run {
 			//log.error("running compiled code disabled")
 		} else {
 			main: ^typecheck.Proc
@@ -314,17 +324,15 @@ run_test :: proc(t: ^testing.T, name: string, source: string, exit_code: int) {
 	diff_path, _ := os.join_path({TEST_OUT_DIR, name}, context.allocator)
 	file, err := os.read_entire_file(diff_path, context.allocator)
 
-	DO_DIFFING :: #config(DIFF, true)
-
 	if #config(ACCEPT, false) {
 		werr := os.write_entire_file(diff_path, dsb.buf[:])
 		assert(werr == nil)
 	} else if err == .Not_Exist {
-		if DO_DIFFING {
+		if diff {
 			//log.error("\n", highlight_disasm(string(dsb.buf[:])), sep = "")
 		}
 	} else {
-		if DO_DIFFING {
+		if diff {
 			assert(err == nil)
 			new, old := string(dsb.buf[:]), string(file)
 			if new != old {

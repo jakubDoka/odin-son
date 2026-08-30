@@ -1260,10 +1260,6 @@ x64_meta_of :: proc(
 		nmasks = make(type_of(nmasks), len(node.inps) - prefix)
 
 		inited := prefix
-		if call != nil && call.indirect {
-			nmasks[0] = GPA_MASK_IDX
-			inited += 1
-		}
 
 		banks := cc.args
 		if node.itype == .Return do banks = ra.rets
@@ -1273,6 +1269,10 @@ x64_meta_of :: proc(
 			rk := graph.datatype_to_reg_kind[graph_get(graph, n).dt]
 			nmasks[i] = single(ra, banks[rk][counts[rk]])
 			counts[rk] += 1
+		}
+
+		if call != nil && call.indirect {
+			nmasks[len(nmasks) - 1] = GPA_MASK_IDX
 		}
 
 		return {masks = nmasks, input_start = u8(prefix)}
@@ -1906,6 +1906,34 @@ x64_emit_instr :: proc(
 		.X64_F_Div = {0x5E, 0},
 	}
 
+	ADD_LANE_TABLE :: #partial [backend.Lane_Type]u8 {
+		.I8  = 0xFC,
+		.I16 = 0xFD,
+		.I32 = 0xFE,
+		.I64 = 0xD4,
+	}
+
+	SUB_LANE_TABLE :: #partial [backend.Lane_Type]u8 {
+		.I8  = 0xF8,
+		.I16 = 0xF9,
+		.I32 = 0xFA,
+		.I64 = 0xFB,
+	}
+
+	@(static, rodata)
+	SIMD_OPCODE_TABLE := #partial [X64_Node_Type][backend.Lane_Type]u8 {
+		.X64_Add = ADD_LANE_TABLE,
+		.X64_Sub = SUB_LANE_TABLE,
+		.X64_And = #partial{.I8 ..= .I64 = 0xDB},
+		.X64_Or = #partial{.I8 ..= .I64 = 0xEB},
+		.X64_Xor = #partial{.I8 ..= .I64 = 0xEF},
+		.Add = ADD_LANE_TABLE,
+		.Sub = SUB_LANE_TABLE,
+		.And = #partial{.I8 ..= .I64 = 0xDB},
+		.Or = #partial{.I8 ..= .I64 = 0xEB},
+		.Xor = #partial{.I8 ..= .I64 = 0xEF},
+	}
+
 	block_base := ctx.gvn - u32(len(ctx.bbs))
 	node := graph_expand(ctx, instr)
 	mem_op_placeholder: X64_Mem_Op
@@ -2432,12 +2460,11 @@ x64_emit_instr :: proc(
 			dis := mem_op.dis
 
 			if node.dt == .V128 {
-				fmt.assertf(xtype(node) == .X64_Add, "%v", node)
-				assert(node.lane == .I8)
-
 				// paddb $dst, [$bse + $idx * $scl + $sdis + $dis]
 				rx := rex(dst, bse, idx, false)
-				emit(ctx.code, {0x66, rx, 0x0f, 0xfc})
+				op := SIMD_OPCODE_TABLE[type][node.lane]
+				assert(op != 0)
+				emit(ctx.code, {0x66, rx, 0x0f, op})
 				emit_indirect_addr(ctx, dst, bse, idx, scl, dis + sdis, id)
 				break
 			}
@@ -2452,17 +2479,8 @@ x64_emit_instr :: proc(
 		dst := reg_of(ctx, node.inps[0])
 		rhs := reg_of(ctx, node.inps[1])
 
-		@(static, rodata)
-		TABLE := #partial [X64_Node_Type][backend.Lane_Type]u8 {
-			.Add = #partial{.I8 = 0xFC, .I16 = 0xFD, .I32 = 0xFE, .I64 = 0xD4},
-			.Sub = #partial{.I8 = 0xF8, .I16 = 0xF9, .I32 = 0xFA, .I64 = 0xFB},
-			.And = #partial{.I8 ..= .I64 = 0xDB},
-			.Or = #partial{.I8 ..= .I64 = 0xEB},
-			.Xor = #partial{.I8 ..= .I64 = 0xEF},
-		}
-
 		if node.dt == .V128 {
-			opcode := TABLE[type][node.lane]
+			opcode := SIMD_OPCODE_TABLE[type][node.lane]
 			fmt.assertf(opcode != 0, "%v %v", type, node.lane)
 
 			// paddb $dst, $rhs

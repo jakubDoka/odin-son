@@ -1478,6 +1478,12 @@ regalloc_round :: proc(
 	}
 
 	intersect :: proc(l: ^backend.Lrg, mask: backend.Reg_Mask) {
+		fmt.assertf(
+			l.mask.kind == mask.kind,
+			"%v == %v",
+			l.mask.kind,
+			mask.kind,
+		)
 		assert(l.parent == nil)
 		backend.reg_mask_intersection(l.mask, mask)
 		if backend.reg_mask_is_empty(l.mask) {

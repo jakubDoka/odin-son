@@ -270,7 +270,7 @@ Value :: bit_field u32 {
 to_rvalue_ty :: proc(ctx: ^Gen_Ctx, value: Value, ty: Type) -> Node_ID {
 	if !value.is_lvalue do return value.id
 	dt := type_to_dt(ty)
-	assert(dt != .Void)
+	fmt.assertf(dt != .Void, "%v", ty)
 	return field_load(ctx, "ultr", dt, value.id)
 }
 

@@ -312,11 +312,22 @@ builder_peep :: proc(
 		bedge := graph_expand(ctx, node.inps[1])
 		init := graph_expand(ctx, node.inps[0])
 		if btype(bedge) == .Dead || btype(init) == .Dead {
-			#reverse for out in node.outs {
-				onode := graph_expand(ctx, out.id)
-				if onode.itype == .Phi {
-					backend.peep_subsume(ctx, onode.inps[1], out.id)
+
+			retry: for {
+				#reverse for out in node.outs {
+					onode := graph_expand(ctx, out.id)
+					if onode.itype == .Phi {
+						prev := node.output_count
+						backend.peep_subsume(ctx, onode.inps[1], out.id)
+						// NOTE: this might happen if the phys are entangled
+						if node.output_count != prev - 1 {
+							node = graph_expand(ctx, id)
+							continue retry
+						}
+					}
 				}
+
+				break
 			}
 			return node.inps[0]
 		}

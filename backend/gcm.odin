@@ -226,6 +226,7 @@ graph_schedule :: proc(
 			other := build_loop_tree(ctx, o.id, tree, scratch)
 			deepest = select(deepest, other, true)
 			if other != tree {
+				//fmt.assertf(tree != ctx.root, "%v", rawptr(other))
 				tree.parent = select(tree.parent, other, true)
 				tree.infinite = false
 			}
@@ -234,6 +235,7 @@ graph_schedule :: proc(
 		if node.itype == .Loop {
 			tree.depth = 0
 			if tree.parent == nil {
+				assert(tree != ctx.root)
 				tree.parent = prev_tree
 			}
 			deepest = tree.parent
@@ -261,6 +263,9 @@ graph_schedule :: proc(
 				if ctx.loop_trees[reg_gvn] == nil {
 					ctx.loop_trees[reg_gvn] = ctx.root
 				}
+
+				deepest = ctx.root
+				tree.parent = ctx.root
 			}
 		} else {
 			ctx.loop_trees[node.gvn] = deepest

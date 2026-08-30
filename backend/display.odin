@@ -388,6 +388,8 @@ graph_display_node_gvn :: proc(w: io.Writer, graph: ^Graph, id: Node_ID) {
 
 	if tag.stable_id != n.gvn {
 		fmt.wprintf(w, "%v", n.gvn)
+	} else {
+		fmt.wprintf(w, "%%")
 	}
 
 	ansi_end(w)

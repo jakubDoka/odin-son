@@ -10,10 +10,11 @@ import "core:fmt"
 import "core:io"
 import "core:log"
 import "core:mem"
-import "core:os"
+// import "core:os"
 import "core:slice"
 import "core:sort"
 import "core:strings"
+
 Call :: backend.Call
 Node_ID :: backend.Node_ID
 graph_expand :: backend.graph_expand
@@ -139,11 +140,11 @@ regalloc_round :: proc(
 				if inplace_slot >= 0 {
 					inplace_node := graph_get(graph, inode.inps[inplace_slot])
 					if int(inplace_node.gvn) > len(ctx.lrg_table) {
-						backend.graph_display(
-							os.to_writer(os.stderr),
-							graph,
-							sched,
-						)
+						// backend.graph_display(
+						// 	os.to_writer(os.stderr),
+						// 	graph,
+						// 	sched,
+						// )
 						log.info(inode.node, inplace_slot)
 					}
 					lrg = ctx.lrg_table[inplace_node.gvn]
@@ -1070,13 +1071,13 @@ regalloc_round :: proc(
 	) -> backend.Reg_Mask {
 		meta := &ctx.metas[node.gvn]
 		idx := i8(pos) - i8(meta.input_start)
-		if !(0 <= idx && int(idx) < len(meta.masks)) {
-			backend.graph_display(
-				os.to_writer(os.stderr),
-				ctx.graph,
-				ctx.sched,
-			)
-		}
+		// if !(0 <= idx && int(idx) < len(meta.masks)) {
+		// 	backend.graph_display(
+		// 		os.to_writer(os.stderr),
+		// 		ctx.graph,
+		// 		ctx.sched,
+		// 	)
+		// }
 		fmt.assertf(
 			0 <= idx && int(idx) < len(meta.masks),
 			"%v %v %v %v",

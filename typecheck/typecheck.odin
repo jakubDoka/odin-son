@@ -1289,6 +1289,26 @@ types_init :: proc(types: ^Types) {
 		&types.mems.type,
 	)
 
+	types_bind_allocators(types)
+}
+
+types_reset :: proc(types: ^Types) {
+	mems := types.mems
+	arna.reset(&mems.graph, false)
+	arna.reset(&mems.regalloc, false)
+	arna.reset(&mems.scratch, false)
+	arna.reset(&mems.code, false)
+	arna.reset(&mems.reloc, false)
+	arna.reset(&mems.sloc, false)
+	arna.reset(&mems.cfi, false)
+	arna.reset(&mems.type, false)
+	types^ = {}
+	types.mems = mems
+	types_bind_allocators(types)
+}
+
+@(private = "file")
+types_bind_allocators :: proc(types: ^Types) {
 	types.allocator = arna.allocator(&types.mems.type)
 	types.procs.allocator = types.allocator
 	types.proc_insts.allocator = types.allocator

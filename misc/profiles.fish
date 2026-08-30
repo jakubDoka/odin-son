@@ -34,6 +34,12 @@ alias run-test 'odin test tests -keep-executable -debug -define:ODIN_TEST_FANCY=
 # ./misc/fuzz.sh [-t <secs>] [-j <jobs>] [--until-crash] [--skip-build]
 alias fuzz './misc/fuzz.sh'
 
+function build-wasm
+	odin build wasm -target:js_wasm32 -no-entry-point -o:size \
+		-disable-assert -no-bounds-check -no-type-assert \
+		-extra-linker-flags:"-z stack-size=8388608 --export=source_buffer --export=output_buffer --export=__stack_pointer" $argv
+end
+
 alias rel-files 'rg --files --glob "!*.git/" --glob "!vendored" --glob \
 "!print-tests" --glob "!TESTS.md" --glob "!tests.odin" --glob \
 "!backend/**/node_specs.odin" --glob "!*meta_overloads.odin" \

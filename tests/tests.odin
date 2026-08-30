@@ -12625,6 +12625,10 @@ main.run_test(t, "fuzz_3f7c88eb2c7a7fd8", string(#load("../fuzz/crashes/3f7c88eb
 main.run_test(t, "fuzz_405a628c1c0b8ed6", string(#load("../fuzz/crashes/405a628c1c0b8ed6.odin")), 0,
 				diff = false, no_run = true)
 }
+@(test) fuzz_40affc6de18ecd36 :: proc(t: ^testing.T) {
+main.run_test(t, "fuzz_40affc6de18ecd36", string(#load("../fuzz/crashes/40affc6de18ecd36.odin")), 0,
+				diff = false, no_run = true)
+}
 @(test) fuzz_417892a93d85da25 :: proc(t: ^testing.T) {
 main.run_test(t, "fuzz_417892a93d85da25", string(#load("../fuzz/crashes/417892a93d85da25.odin")), 0,
 				diff = false, no_run = true)
@@ -12689,6 +12693,10 @@ main.run_test(t, "fuzz_6fead3d00de19a0c", string(#load("../fuzz/crashes/6fead3d0
 main.run_test(t, "fuzz_706e77973e3c3dec", string(#load("../fuzz/crashes/706e77973e3c3dec.odin")), 0,
 				diff = false, no_run = true)
 }
+@(test) fuzz_722c698b882de32e :: proc(t: ^testing.T) {
+main.run_test(t, "fuzz_722c698b882de32e", string(#load("../fuzz/crashes/722c698b882de32e.odin")), 0,
+				diff = false, no_run = true)
+}
 @(test) fuzz_725439d16b44056b :: proc(t: ^testing.T) {
 main.run_test(t, "fuzz_725439d16b44056b", string(#load("../fuzz/crashes/725439d16b44056b.odin")), 0,
 				diff = false, no_run = true)
@@ -12733,6 +12741,10 @@ main.run_test(t, "fuzz_8e7adf24c72ed700", string(#load("../fuzz/crashes/8e7adf24
 main.run_test(t, "fuzz_924e995f1998bc23", string(#load("../fuzz/crashes/924e995f1998bc23.odin")), 0,
 				diff = false, no_run = true)
 }
+@(test) fuzz_9282598c7f5c620e :: proc(t: ^testing.T) {
+main.run_test(t, "fuzz_9282598c7f5c620e", string(#load("../fuzz/crashes/9282598c7f5c620e.odin")), 0,
+				diff = false, no_run = true)
+}
 @(test) fuzz_95c899471dc3037f :: proc(t: ^testing.T) {
 main.run_test(t, "fuzz_95c899471dc3037f", string(#load("../fuzz/crashes/95c899471dc3037f.odin")), 0,
 				diff = false, no_run = true)
@@ -12775,6 +12787,10 @@ main.run_test(t, "fuzz_b043053bf06bec8d", string(#load("../fuzz/crashes/b043053b
 }
 @(test) fuzz_b73ac5f02a10fb25 :: proc(t: ^testing.T) {
 main.run_test(t, "fuzz_b73ac5f02a10fb25", string(#load("../fuzz/crashes/b73ac5f02a10fb25.odin")), 0,
+				diff = false, no_run = true)
+}
+@(test) fuzz_b866701a7cd788b6 :: proc(t: ^testing.T) {
+main.run_test(t, "fuzz_b866701a7cd788b6", string(#load("../fuzz/crashes/b866701a7cd788b6.odin")), 0,
 				diff = false, no_run = true)
 }
 @(test) fuzz_ba2f517f1932aa02 :: proc(t: ^testing.T) {

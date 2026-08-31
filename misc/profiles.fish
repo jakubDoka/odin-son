@@ -35,9 +35,11 @@ alias run-test 'odin test tests -keep-executable -debug -define:ODIN_TEST_FANCY=
 alias fuzz './misc/fuzz.sh'
 
 function build-wasm
-	odin build wasm -target:js_wasm32 -no-entry-point -o:size \
+	odin build wasm -target:freestanding_wasm32 -no-entry-point -o:size \
 		-disable-assert -no-bounds-check -no-type-assert \
 		-extra-linker-flags:"-z stack-size=8388608 --export=source_buffer --export=output_buffer --export=__stack_pointer" $argv
+	wasm-opt -Oz wasm.wasm -o wasm.wasm
+	mv wasm.wasm mini-odin
 end
 
 alias rel-files 'rg --files --glob "!*.git/" --glob "!vendored" --glob \
@@ -61,3 +63,5 @@ function dump-test-program
 	./jit test-programs/$argv[1]/
 	objdump -d --no-show-raw-insn "a.o" | perl -p -e 's/^\s+(\S+):\t//'
 end
+
+alias deploy-mini-odin 'scp -r mini-odin root@95.217.156.80:/var/www/'

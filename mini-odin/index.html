@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+</head>
+
+<body style="height: 100vh; padding: 0; margin: 0; position: relative;">
+	<div style="
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		padding: 10px;
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: 0;
+		right: 0;
+	">
+		<h1>Mini Odin</h1>
+
+		<p>
+			This site provides a compiler for a subset of odin code. The
+			compiler is compiled to wasm, and runs locally.
+			<a href="https://github.com/jakubDoka/odin-son.git" target="_blank">
+				Source Code</a>
+		</p>
+
+		<style>
+			textarea:focus {
+				border: none;
+				outline: none;
+			}
+
+			button:hover {
+				background-color: #eee !important;
+			}
+		</style>
+
+		<div style="
+			flex-grow: 1;
+			display: flex;
+			position: relative;
+		">
+			<div style="
+				flex-grow: 1;
+				display: flex;
+				font-family: monospace;
+				gap: 10px;
+				font-size: 15px;
+				line-height: 1.3;
+				scroll: vertically;
+				position: absolute;
+				top: 0;
+				bottom: 0;
+				left: 0;
+				right: 0;
+				background: #eee;
+			">
+				<div id="line_numbers" style="
+					background-color: lightgray;
+					padding: 5px 5px;
+					overflow: hidden;
+				">
+					<div>1</div>
+				</div>
+				<textarea id="source" cols="80" style="
+					flex-grow: 1;
+					resize: none;
+					padding: 0;
+					border: 0;
+ 					padding: 5px 0px;
+					line-height: inherit;
+					font-size: inherit;
+					background-color: transparent;
+				">
+				</textarea>
+			</div>
+		</div>
+
+		<textarea id="output" style="
+			border: none;
+			height: 200px;
+			resize: none;
+			background-color: #eee;
+ 			padding: 5px;
+		" placeholder="Output..."></textarea>
+
+		<div style="
+			display: flex;
+			gap: 10px;
+		">
+			<button id="code_download" style="
+				padding-top: 5px;
+				border: none;
+				background-color: lightgray;
+			" disabled>Download the object file</button>
+		</div>
+	</div>
+</body>
+
+<script type="module">
+
+	const init_source =
+		"package main\n" +
+		"\n" +
+		"main :: proc() -> int {\n" +
+		"    return 69\n" +
+		"}\n";
+
+	source.textContent = init_source
+	setupCodeEditor(source, line_numbers)
+
+	const result = await WebAssembly.instantiateStreaming(
+		fetch("/wasm.wasm")
+	);
+
+	const {instance: {
+		exports: {
+			compiler_compile,
+			compiler_init,
+			compiler_output_size,
+			memory,
+			output_buffer,
+			source_buffer,
+			__stack_pointer
+		}
+	}} = result;
+
+	const STATUS_TO_STR = [
+		"Success",
+		"Not_Initialized",
+		"Source_Too_Large",
+		"Parse_Error",
+		"Type_Error",
+		"Out_Of_Memory",
+	]
+
+	let code = new Uint8Array()
+
+	code_download.onclick = () => {
+		const blob = new Blob([code], {
+			type: "application/x-object"
+		});
+
+		const url = URL.createObjectURL(blob);
+
+		const a = document.createElement("a");
+		a.href = url;
+		a.download = "suspicious.o";
+
+		a.click();
+
+		URL.revokeObjectURL(url);
+	}
+
+	source.oninput = () => {
+		writeString(source_buffer, memory, source.value)
+		let res = compiler_init(source.value.length)
+		console.log("Init Status:", STATUS_TO_STR[res])
+
+		res = compiler_compile()
+		console.log("Compile Status:", STATUS_TO_STR[res])
+
+		let length = compiler_output_size()
+		console.log("Compiled binary size:", length)
+
+		if (STATUS_TO_STR[res] == "Type_Error") {
+			output.textContent = readString(output_buffer, memory, length)
+			code = new Uint8Array()
+		} else {
+			output.textContent =
+				"Compiled, can't run the instructions for the target." +
+				" You can download the obj file tho."
+
+			const offset = output_buffer.value;
+			code = new Uint8Array(memory.buffer, offset, length);
+		}
+
+		code_download.disabled = code.length === 0
+	}
+
+	source.oninput()
+
+	function writeString(global, memory, str) {
+		const offset = global.value;
+
+		const bytes = new TextEncoder().encode(str);
+		const buffer = new Uint8Array(memory.buffer);
+
+		buffer.set(bytes, offset);
+	}
+
+	function readString(global, memory, length) {
+		const offset = global.value;
+		const buffer = new Uint8Array(memory.buffer, offset, length);
+
+		return new TextDecoder().decode(buffer);
+	}
+
+	function setupCodeEditor(textarea, line_numbers) {
+		textarea.style.fontFamily = "monospace";
+		textarea.style.whiteSpace = "pre";
+		textarea.style.tabSize = "4";
+		textarea.spellcheck = false;
+		textarea.wrap = "off";
+
+		updateLineNumbers()
+
+		function updateLineNumbers() {
+			const lineCount = textarea.value.split("\n").length;
+
+			line_numbers.innerHTML = Array.from(
+				{length: lineCount},
+				(_, i) => `<div>${i + 1}</div>`
+			).join("");
+
+			line_numbers.scrollTop = textarea.scrollTop;
+		}
+
+		textarea.addEventListener("input", updateLineNumbers);
+
+		textarea.addEventListener("scroll", () => {
+			line_numbers.scrollTop = textarea.scrollTop;
+		});
+
+		textarea.addEventListener("keydown", (e) => {
+			if (e.key === "Tab") {
+				e.preventDefault();
+
+				const start = textarea.selectionStart;
+				const end = textarea.selectionEnd;
+				const value = textarea.value;
+
+				if (e.shiftKey) {
+					const lineStart = value.lastIndexOf("\n", start - 1) + 1;
+
+					if (value.slice(lineStart, lineStart + 4) === "    ") {
+						textarea.value =
+							value.slice(0, lineStart) +
+							value.slice(lineStart + 4);
+
+						textarea.selectionStart = Math.max(start - 4, lineStart);
+						textarea.selectionEnd = Math.max(end - 4, lineStart);
+					}
+
+					return;
+				}
+
+				if (start !== end && value.slice(start, end).includes("\n")) {
+					const lineStart = value.lastIndexOf("\n", start - 1) + 1;
+					const selected = value.slice(lineStart, end);
+
+					const indented = selected.replace(/^/gm, "    ");
+
+					textarea.value =
+						value.slice(0, lineStart) +
+						indented +
+						value.slice(end);
+
+					textarea.selectionStart = lineStart;
+					textarea.selectionEnd = lineStart + indented.length;
+					return;
+				}
+
+				textarea.setRangeText(
+					"    ",
+					start,
+					end,
+					"end"
+				);
+
+				return;
+			}
+
+			if (e.key === "Enter") {
+				e.preventDefault();
+
+				const start = textarea.selectionStart;
+				const value = textarea.value;
+
+				const lineStart = value.lastIndexOf("\n", start - 1) + 1;
+				const line = value.slice(lineStart, start);
+
+				const indentation = line.match(/^[ \t]*/)?.[0] ?? "";
+
+				const extraIndent = /[{[(]\s*$/.test(line) ? "    " : "";
+
+				textarea.setRangeText(
+					"\n" + indentation + extraIndent,
+					start,
+					textarea.selectionEnd,
+					"end"
+				);
+
+				updateLineNumbers()
+				return;
+			}
+		});
+	}
+</script>
+
+</html>

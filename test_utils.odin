@@ -324,15 +324,13 @@ run_test :: proc(
 	diff_path, _ := os.join_path({TEST_OUT_DIR, name}, context.allocator)
 	file, err := os.read_entire_file(diff_path, context.allocator)
 
-	if #config(ACCEPT, false) {
-		werr := os.write_entire_file(diff_path, dsb.buf[:])
-		assert(werr == nil)
-	} else if err == .Not_Exist {
-		if diff {
+	if diff {
+		if #config(ACCEPT, false) {
+			werr := os.write_entire_file(diff_path, dsb.buf[:])
+			assert(werr == nil)
+		} else if err == .Not_Exist {
 			//log.error("\n", highlight_disasm(string(dsb.buf[:])), sep = "")
-		}
-	} else {
-		if diff {
+		} else {
 			assert(err == nil)
 			new, old := string(dsb.buf[:]), string(file)
 			if new != old {
@@ -488,19 +486,29 @@ disasm :: proc(sb: ^strings.Builder, ctx: Gen_Ctx) {
 	decoded_instr_info: [dynamic]x86.Instruction_Info
 	decoded_label_info: [dynamic]x86.Label_Definition
 	errors: [dynamic]x86.Error
-	labels: map[u32]string
+	labels: map[x86.Label_Offset]string
+
+	mn := max(uintptr)
+	for prc in ctx.procs[1:] {
+		instructions := prc.out.code
+		offset :=
+			uintptr(raw_data(instructions)) - uintptr(ctx.types.mems.code.ptr)
+		mn = min(mn, offset)
+	}
 
 	for prc in ctx.procs[1:] {
 		instructions := prc.out.code
 
 		offset := u32(
-			uintptr(raw_data(instructions)) - uintptr(ctx.types.mems.code.ptr),
+			uintptr(raw_data(instructions)) -
+			uintptr(ctx.types.mems.code.ptr) -
+			mn,
 		)
 
 		label_base := len(decoded_label_info)
 		info_base := len(decoded_instr_info)
 		error_base := len(errors)
-		labels[u32(len(decoded_label_info))] = prc.name
+		labels[x86.Label_Offset(len(decoded_label_info))] = prc.name
 		append(&decoded_label_info, 0)
 
 		x86.decode(

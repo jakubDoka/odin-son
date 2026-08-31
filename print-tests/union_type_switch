@@ -9,23 +9,23 @@ main:
     mov.q [rsp + 0x8], 1
     mov.q rcx, [rsp + 0x8]
     cmp rcx, 1
-    jz 1
+    jz 4
     xor eax, eax
     cmp rcx, 2
-    jz 2
-    jmp 3
-2:
+    jz 1
+    jmp 5
+1:
     movzx.b ecx, [rsp]
     test cl, cl
-    jne 4
+    jnz 2
+    jmp 3
+2:
+    mov rax, 0x64
+3:
     jmp 5
 4:
-    mov rax, 0x64
-5:
-    jmp 3
-1:
     mov.q rax, [rsp]
-3:
+5:
     add rsp, 0x18
     ret
 =========== OPT LEVEL: mininal ===========
@@ -39,23 +39,23 @@ main:
     mov.q [rsp + 0x8], 1
     mov.q rcx, [rsp + 0x8]
     cmp rcx, 1
-    jz 1
+    jz 4
     xor eax, eax
     cmp rcx, 2
-    jz 2
-    jmp 3
-2:
+    jz 1
+    jmp 5
+1:
     movzx.b ecx, [rsp]
     test cl, cl
-    jne 4
+    jnz 2
+    jmp 3
+2:
+    mov rax, 0x64
+3:
     jmp 5
 4:
-    mov rax, 0x64
-5:
-    jmp 3
-1:
     mov.q rax, [rsp]
-3:
+5:
     add rsp, 0x18
     ret
 =========== OPT LEVEL: moderate ===========

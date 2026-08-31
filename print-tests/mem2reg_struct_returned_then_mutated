@@ -2,7 +2,7 @@
 opaque:
     mov rax, rdi
     ret
-mk:
+3:
     push rbx
     push rbp
     sub rsp, 0x18
@@ -20,7 +20,7 @@ mk:
     pop rbp
     pop rbx
     ret
-main:
+4:
     push rbx
     sub rsp, 0x10
     lea rdi, [rsp]
@@ -34,7 +34,7 @@ main:
     call opaque
     mov rdi, rbx
     mov rsi, rax
-    call mk
+    call 3
     mov.q [rsp], rax
     mov.q [rsp + 0x8], rdx
     mov.q rax, [rsp + 0x8]
@@ -49,7 +49,7 @@ main:
 opaque:
     mov rax, rdi
     ret
-mk:
+3:
     push rbx
     push rbp
     sub rsp, 0x18
@@ -67,7 +67,7 @@ mk:
     pop rbp
     pop rbx
     ret
-main:
+4:
     push rbx
     sub rsp, 0x10
     lea rdi, [rsp]
@@ -81,7 +81,7 @@ main:
     call opaque
     mov rdi, rbx
     mov rsi, rax
-    call mk
+    call 3
     mov.q [rsp], rax
     mov.q [rsp + 0x8], rdx
     mov.q rax, [rsp + 0x8]
@@ -96,12 +96,12 @@ main:
 opaque:
     mov rax, rdi
     ret
-mk:
+3:
     mov rax, rdi
     mov rcx, rsi
     mov rdx, rcx
     ret
-main:
+4:
     push rbx
     mov rdi, 6
     call opaque
@@ -110,7 +110,7 @@ main:
     call opaque
     mov rdi, rbx
     mov rsi, rax
-    call mk
+    call 3
     add rax, rdx
     imul rax, rax, 0x64
     add rax, rdx
@@ -120,12 +120,12 @@ main:
 opaque:
     mov rax, rdi
     ret
-mk:
+3:
     mov rax, rdi
     mov rcx, rsi
     mov rdx, rcx
     ret
-main:
+4:
     push rbx
     mov rdi, 6
     call opaque
@@ -134,13 +134,13 @@ main:
     call opaque
     mov rdi, rbx
     mov rsi, rax
-    call mk
+    call 3
     add rax, rdx
     imul rax, rax, 0x64
     add rax, rdx
     pop rbx
     ret
 =========== OPT LEVEL: aggresive ===========
-main:
+opaque:
     mov rax, 0x5e5
     ret

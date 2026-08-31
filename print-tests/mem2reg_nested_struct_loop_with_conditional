@@ -2,7 +2,7 @@
 opaque:
     mov rax, rdi
     ret
-main:
+2:
     sub rsp, 0x28
     lea rdi, [rsp]
     xor esi, esi
@@ -21,22 +21,22 @@ main:
     call opaque
     mov.q [rsp + 0x18], rax
     xor ecx, ecx
-5:
+3:
     cmp rcx, 0xa
-    jnl 2
+    jnl 6
     mov.q rax, [rsp + 0x10]
     add.q [rsp], rax
     mov.q rax, [rsp + 0x18]
     add.q [rsp + 0x8], rax
     cmp.q [rsp], 5
-    jnle 3
-    jmp 4
-3:
-    add.q [rsp + 0x10], 1
-4:
-    add rcx, 1
+    jnle 4
     jmp 5
-2:
+4:
+    add.q [rsp + 0x10], 1
+5:
+    add rcx, 1
+    jmp 3
+6:
     mov.q rax, [rsp]
     imul rax, rax, 0x3e8
     add.q rax, [rsp + 0x8]
@@ -46,7 +46,7 @@ main:
 opaque:
     mov rax, rdi
     ret
-main:
+2:
     sub rsp, 0x28
     lea rdi, [rsp]
     xor esi, esi
@@ -65,22 +65,22 @@ main:
     call opaque
     mov.q [rsp + 0x18], rax
     xor ecx, ecx
-5:
+3:
     cmp rcx, 0xa
-    jnl 2
+    jnl 6
     mov.q rax, [rsp + 0x10]
     add.q [rsp], rax
     mov.q rax, [rsp + 0x18]
     add.q [rsp + 0x8], rax
     cmp.q [rsp], 5
-    jnle 3
-    jmp 4
-3:
-    add.q [rsp + 0x10], 1
-4:
-    add rcx, 1
+    jnle 4
     jmp 5
-2:
+4:
+    add.q [rsp + 0x10], 1
+5:
+    add rcx, 1
+    jmp 3
+6:
     mov.q rax, [rsp]
     imul rax, rax, 0x3e8
     add.q rax, [rsp + 0x8]
@@ -90,7 +90,7 @@ main:
 opaque:
     mov rax, rdi
     ret
-main:
+2:
     sub rsp, 0x28
     pxor xmm0, xmm0
     movups.x [rsp], xmm0
@@ -108,23 +108,23 @@ main:
     call opaque
     mov.q [rsp + 0x18], rax
     xor edx, edx
-5:
+3:
     cmp rdx, 0xa
-    jnl 2
+    jnl 6
     mov.q rax, [rsp]
     add.q rax, [rsp + 0x10]
     mov.q [rsp], rax
     mov.q rcx, [rsp + 0x18]
     add.q [rsp + 0x8], rcx
     cmp rax, 5
-    jnle 3
-    jmp 4
-3:
-    add.q [rsp + 0x10], 1
-4:
-    add rdx, 1
+    jnle 4
     jmp 5
-2:
+4:
+    add.q [rsp + 0x10], 1
+5:
+    add rdx, 1
+    jmp 3
+6:
     mov.q rax, [rsp]
     imul rax, rax, 0x3e8
     add.q rax, [rsp + 0x8]
@@ -134,7 +134,7 @@ main:
 opaque:
     mov rax, rdi
     ret
-main:
+2:
     sub rsp, 0x28
     pxor xmm0, xmm0
     movups.x [rsp], xmm0
@@ -152,30 +152,30 @@ main:
     call opaque
     mov.q [rsp + 0x18], rax
     xor edx, edx
-5:
+3:
     cmp rdx, 0xa
-    jnl 2
+    jnl 6
     mov.q rax, [rsp]
     add.q rax, [rsp + 0x10]
     mov.q [rsp], rax
     mov.q rcx, [rsp + 0x18]
     add.q [rsp + 0x8], rcx
     cmp rax, 5
-    jnle 3
-    jmp 4
-3:
-    add.q [rsp + 0x10], 1
-4:
-    add rdx, 1
+    jnle 4
     jmp 5
-2:
+4:
+    add.q [rsp + 0x10], 1
+5:
+    add rdx, 1
+    jmp 3
+6:
     mov.q rax, [rsp]
     imul rax, rax, 0x3e8
     add.q rax, [rsp + 0x8]
     add rsp, 0x28
     ret
 =========== OPT LEVEL: aggresive ===========
-main:
+opaque:
     pxor xmm0, xmm0
     movups.x [rsp - 0x28], xmm0
     movups.x [rsp - 0x18], xmm0
@@ -184,9 +184,9 @@ main:
     mov.q [rsp - 0x18], 1
     mov.q [rsp - 0x10], 2
     xor eax, eax
-5:
+2:
     cmp rax, 0xa
-    jnl 2
+    jnl 5
     mov.q rcx, [rsp - 0x28]
     add.q rcx, [rsp - 0x18]
     mov.q [rsp - 0x28], rcx
@@ -199,8 +199,8 @@ main:
     add.q [rsp - 0x18], 1
 4:
     add rax, 1
-    jmp 5
-2:
+    jmp 2
+5:
     mov.q rax, [rsp - 0x28]
     imul rax, rax, 0x3e8
     add.q rax, [rsp - 0x20]

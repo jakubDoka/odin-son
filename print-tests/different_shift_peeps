@@ -1,8 +1,9 @@
 =========== OPT LEVEL: none ===========
 test_imm_shifts:
     mov rcx, rdi
+main:
     mov rdx, rcx
-    shl rdx, 3
+    sal rdx, 3
     mov rax, rcx
     sar rax, 3
     add rdx, rax
@@ -10,17 +11,17 @@ test_imm_shifts:
     add rdx, rcx
     mov rax, rdx
     ret
-test_imm_inplace_shifts:
-    shl.q [rdi], 2
+4:
+    sal.q [rdi], 2
     sar.q [rdi], 5
     shr.q [rsi], 4
     mov.q rax, [rdi]
     add.q rax, [rsi]
     ret
-test_inplace_shifts:
+5:
     mov rax, rdx
     mov rcx, rax
-    shl.q [rdi], cl
+    sal.q [rdi], cl
     mov rcx, rax
     sar.q [rdi], cl
     mov rcx, rax
@@ -28,7 +29,7 @@ test_inplace_shifts:
     mov.q rax, [rdi]
     add.q rax, [rsi]
     ret
-main:
+6:
     push rbx
     push rbp
     sub rsp, 0x18
@@ -39,12 +40,12 @@ main:
     mov rbp, rax
     lea rdi, [rsp]
     lea rsi, [rsp + 0x8]
-    call test_imm_inplace_shifts
+    call 4
     mov rbx, rax
     mov rdx, 4
     lea rdi, [rsp]
     lea rsi, [rsp + 0x8]
-    call test_inplace_shifts
+    call 5
     add rbp, rbx
     add rbp, rax
     mov rax, rbp
@@ -55,8 +56,9 @@ main:
 =========== OPT LEVEL: mininal ===========
 test_imm_shifts:
     mov rcx, rdi
+main:
     mov rdx, rcx
-    shl rdx, 3
+    sal rdx, 3
     mov rax, rcx
     sar rax, 3
     add rdx, rax
@@ -64,8 +66,8 @@ test_imm_shifts:
     add rdx, rcx
     mov rax, rdx
     ret
-test_imm_inplace_shifts:
-    shl.q [rdi], 2
+4:
+    sal.q [rdi], 2
     sar.q [rdi], 5
     mov.q rcx, [rsi]
     shr rcx, 4
@@ -73,10 +75,10 @@ test_imm_inplace_shifts:
     mov.q rax, [rdi]
     add rax, rcx
     ret
-test_inplace_shifts:
+5:
     mov rax, rdx
     mov rcx, rax
-    shl.q [rdi], cl
+    sal.q [rdi], cl
     mov rcx, rax
     sar.q [rdi], cl
     mov.q rdx, [rsi]
@@ -86,7 +88,7 @@ test_inplace_shifts:
     mov.q rax, [rdi]
     add rax, rdx
     ret
-main:
+6:
     push rbx
     push rbp
     sub rsp, 0x18
@@ -97,12 +99,12 @@ main:
     mov rbp, rax
     lea rdi, [rsp]
     lea rsi, [rsp + 0x8]
-    call test_imm_inplace_shifts
+    call 4
     mov rbx, rax
     mov rdx, 4
     lea rdi, [rsp]
     lea rsi, [rsp + 0x8]
-    call test_inplace_shifts
+    call 5
     add rbp, rbx
     add rbp, rax
     mov rax, rbp
@@ -113,8 +115,9 @@ main:
 =========== OPT LEVEL: moderate ===========
 test_imm_shifts:
     mov rcx, rdi
+main:
     mov rdx, rcx
-    shl rdx, 3
+    sal rdx, 3
     mov rax, rcx
     sar rax, 3
     add rdx, rax
@@ -122,9 +125,9 @@ test_imm_shifts:
     add rdx, rcx
     mov rax, rdx
     ret
-test_imm_inplace_shifts:
+4:
     mov.q rax, [rdi]
-    shl rax, 2
+    sal rax, 2
     sar rax, 5
     mov.q [rdi], rax
     mov.q rcx, [rsi]
@@ -133,11 +136,11 @@ test_imm_inplace_shifts:
     mov.q rax, [rdi]
     add rax, rcx
     ret
-test_inplace_shifts:
+5:
     mov rax, rdx
     mov.q rdx, [rdi]
     mov rcx, rax
-    shl rdx, cl
+    sal rdx, cl
     mov rcx, rax
     sar rdx, cl
     mov.q [rdi], rdx
@@ -148,7 +151,7 @@ test_inplace_shifts:
     mov.q rax, [rdi]
     add rax, rdx
     ret
-main:
+6:
     push rbx
     push rbp
     sub rsp, 0x18
@@ -159,12 +162,12 @@ main:
     mov rbp, rax
     lea rdi, [rsp]
     lea rsi, [rsp + 0x8]
-    call test_imm_inplace_shifts
+    call 4
     mov rbx, rax
     mov rdx, 4
     lea rdi, [rsp]
     lea rsi, [rsp + 0x8]
-    call test_inplace_shifts
+    call 5
     add rbp, rbx
     add rbp, rax
     mov rax, rbp
@@ -175,8 +178,9 @@ main:
 =========== OPT LEVEL: all ===========
 test_imm_shifts:
     mov rcx, rdi
+main:
     mov rdx, rcx
-    shl rdx, 3
+    sal rdx, 3
     mov rax, rcx
     sar rax, 3
     add rdx, rax
@@ -184,9 +188,9 @@ test_imm_shifts:
     add rdx, rcx
     mov rax, rdx
     ret
-test_imm_inplace_shifts:
+4:
     mov.q rax, [rdi]
-    shl rax, 2
+    sal rax, 2
     sar rax, 5
     mov.q [rdi], rax
     mov.q rcx, [rsi]
@@ -195,11 +199,11 @@ test_imm_inplace_shifts:
     mov.q rax, [rdi]
     add rax, rcx
     ret
-test_inplace_shifts:
+5:
     mov rax, rdx
     mov.q rdx, [rdi]
     mov rcx, rax
-    shl rdx, cl
+    sal rdx, cl
     mov rcx, rax
     sar rdx, cl
     mov.q [rdi], rdx
@@ -210,7 +214,7 @@ test_inplace_shifts:
     mov.q rax, [rdi]
     add rax, rdx
     ret
-main:
+6:
     push rbx
     push rbp
     sub rsp, 0x18
@@ -221,12 +225,12 @@ main:
     mov rbp, rax
     lea rdi, [rsp]
     lea rsi, [rsp + 0x8]
-    call test_imm_inplace_shifts
+    call 4
     mov rbx, rax
     mov rdx, 4
     lea rdi, [rsp]
     lea rsi, [rsp + 0x8]
-    call test_inplace_shifts
+    call 5
     add rbp, rbx
     add rbp, rax
     mov rax, rbp
@@ -235,6 +239,6 @@ main:
     pop rbx
     ret
 =========== OPT LEVEL: aggresive ===========
-main:
+test_imm_shifts:
     movabs rax, 0x7fffffffffffff5
     ret

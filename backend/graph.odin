@@ -402,6 +402,7 @@ Graph_Opt_Flag :: enum int {
 	Iter_Peeps,
 	Local_Peeps,
 	Mem_Opt,
+	Loop_Opt,
 	Inline,
 }
 
@@ -914,7 +915,9 @@ graph_iter_peeps :: proc(ctx: Peep_Ctx) -> (optimized: bool) {
 		prev_hash := graph_node_hash(graph, node)
 		new_node := graph.peep(ctx, node)
 		if node.rtype == DEAD_NODE_KIND do continue
-		if new_node == 0 && node.output_count != 0 do continue
+		if new_node == 0 &&
+		   (node.output_count != 0 ||
+				   graph_has_flag(graph, node, .Immortal)) {continue}
 
 		optimized = true
 

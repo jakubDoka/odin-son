@@ -913,10 +913,12 @@ emit_proc :: proc(
 	peep_ctx: backend.Peep_Ctx
 	peep_ctx.graph = ctx
 
-	backend.graph_iter_peeps(peep_ctx)
-	builder.memopt(ctx)
-
-	backend.graph_iter_peeps(peep_ctx)
+	for dirty := true; dirty; {
+		dirty = false
+		dirty |= backend.graph_iter_peeps(peep_ctx)
+		dirty |= builder.memopt(ctx)
+		dirty |= builder.loopopt(ctx)
+	}
 
 	if .Inline in level.flags {
 		backend.graph_compact(ctx)
@@ -940,6 +942,7 @@ emit_proc_code :: proc(
 	peep_ctx: backend.Peep_Ctx
 	peep_ctx.graph = ctx
 
+	// We are doing this with different spec now
 	backend.graph_iter_peeps(peep_ctx)
 
 	backend.graph_compact(ctx)

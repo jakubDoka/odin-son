@@ -1,28 +1,29 @@
 =========== OPT LEVEL: none ===========
 main:
     sub rsp, 0x18
+add i16:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp]
     call.q [rip - 0x20]
     mov rsi, 1
     lea rdi, [rsp]
-    call add int
+    call 6
     lea rax, [rsp]
     add rax, 8
     mov rsi, 1
     mov rdi, rax
-    call add i32
+    call 7
     lea rax, [rsp]
     add rax, 0xc
     mov rsi, 1
     mov rdi, rax
-    call add i16
+    call 8
     lea rax, [rsp]
     add rax, 0xe
     mov sil, 1
     mov rdi, rax
-    call add i8
+    call 9
     mov.q rax, [rsp]
     movsxd.d rcx, [rsp + 0x8]
     add rax, rcx
@@ -32,47 +33,48 @@ main:
     add rax, rcx
     add rsp, 0x18
     ret
-add int:
+6:
     add.q [rdi], rsi
     mov.q rax, [rdi]
     ret
-add i32:
+7:
     add.d [rdi], esi
     mov.d eax, [rdi]
     ret
-add i16:
+8:
     add.w [rdi], si
     movzx.w eax, [rdi]
     ret
-add i8:
+9:
     add.b [rdi], sil
     movzx.b eax, [rdi]
     ret
 =========== OPT LEVEL: mininal ===========
 main:
     sub rsp, 0x18
+add i16:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp]
     call.q [rip - 0x20]
     mov rsi, 1
     lea rdi, [rsp]
-    call add int
+    call 6
     lea rax, [rsp]
     add rax, 8
     mov rsi, 1
     mov rdi, rax
-    call add i32
+    call 7
     lea rax, [rsp]
     add rax, 0xc
     mov rsi, 1
     mov rdi, rax
-    call add i16
+    call 8
     lea rax, [rsp]
     add rax, 0xe
     mov sil, 1
     mov rdi, rax
-    call add i8
+    call 9
     mov.q rax, [rsp]
     movsxd.d rcx, [rsp + 0x8]
     add rax, rcx
@@ -82,45 +84,46 @@ main:
     add rax, rcx
     add rsp, 0x18
     ret
-add int:
+6:
     add.q [rdi], rsi
     mov.q rax, [rdi]
     ret
-add i32:
+7:
     add.d [rdi], esi
     mov.d eax, [rdi]
     ret
-add i16:
+8:
     add.w [rdi], si
     movzx.w eax, [rdi]
     ret
-add i8:
+9:
     add.b [rdi], sil
     movzx.b eax, [rdi]
     ret
 =========== OPT LEVEL: moderate ===========
 main:
     sub rsp, 0x18
+add i16:
     mov.q [rsp], 0
     mov.q [rsp + 0x8], 0
     mov rsi, 1
     lea rdi, [rsp]
-    call add int
+    call 6
     lea rax, [rsp]
     add rax, 8
     mov rsi, 1
     mov rdi, rax
-    call add i32
+    call 7
     lea rax, [rsp]
     add rax, 0xc
     mov rsi, 1
     mov rdi, rax
-    call add i16
+    call 8
     lea rax, [rsp]
     add rax, 0xe
     mov sil, 1
     mov rdi, rax
-    call add i8
+    call 9
     mov.q rax, [rsp]
     movsxd.d rcx, [rsp + 0x8]
     add rax, rcx
@@ -130,22 +133,22 @@ main:
     add rax, rcx
     add rsp, 0x18
     ret
-add int:
+6:
     mov.q rax, [rdi]
     add rax, rsi
     mov.q [rdi], rax
     ret
-add i32:
+7:
     mov.d eax, [rdi]
     add eax, esi
     mov.d [rdi], eax
     ret
-add i16:
+8:
     movzx.w eax, [rdi]
     add ax, si
     mov.w [rdi], ax
     ret
-add i8:
+9:
     movzx.b eax, [rdi]
     add al, sil
     mov.b [rdi], al
@@ -153,26 +156,27 @@ add i8:
 =========== OPT LEVEL: all ===========
 main:
     sub rsp, 0x18
+add i16:
     mov.q [rsp], 0
     mov.q [rsp + 0x8], 0
     mov rsi, 1
     lea rdi, [rsp]
-    call add int
+    call 6
     lea rax, [rsp]
     add rax, 8
     mov rsi, 1
     mov rdi, rax
-    call add i32
+    call 7
     lea rax, [rsp]
     add rax, 0xc
     mov rsi, 1
     mov rdi, rax
-    call add i16
+    call 8
     lea rax, [rsp]
     add rax, 0xe
     mov sil, 1
     mov rdi, rax
-    call add i8
+    call 9
     mov.q rax, [rsp]
     movsxd.d rcx, [rsp + 0x8]
     add rax, rcx
@@ -182,22 +186,22 @@ main:
     add rax, rcx
     add rsp, 0x18
     ret
-add int:
+6:
     mov.q rax, [rdi]
     add rax, rsi
     mov.q [rdi], rax
     ret
-add i32:
+7:
     mov.d eax, [rdi]
     add eax, esi
     mov.d [rdi], eax
     ret
-add i16:
+8:
     movzx.w eax, [rdi]
     add ax, si
     mov.w [rdi], ax
     ret
-add i8:
+9:
     movzx.b eax, [rdi]
     add al, sil
     mov.b [rdi], al

@@ -1,90 +1,94 @@
 =========== OPT LEVEL: none ===========
 main:
     sub rsp, 8
+foo:
     cmp.q [rip + 0xfe1], 0
-    jne 1
+    jnz 2
     xor eax, eax
-    jmp 2
-1:
-    call foo
+    jmp 4
+2:
+    call 5
     cmp.q [rip + 0xfcb], 0
     jz 3
     xor eax, eax
-    jmp 2
+    jmp 4
 3:
     mov rax, 1
-2:
+4:
     add rsp, 8
     ret
-foo:
+5:
     ud2
 =========== OPT LEVEL: mininal ===========
 main:
     sub rsp, 8
+foo:
     cmp.q [rip + 0xfe1], 0
-    jne 1
+    jnz 2
     xor eax, eax
-    jmp 2
-1:
-    call foo
+    jmp 4
+2:
+    call 5
     cmp.q [rip + 0xfcb], 0
     jz 3
     xor eax, eax
-    jmp 2
+    jmp 4
 3:
     mov rax, 1
-2:
+4:
     add rsp, 8
     ret
-foo:
+5:
     ud2
 =========== OPT LEVEL: moderate ===========
 main:
     sub rsp, 8
+foo:
     cmp.q [rip + 0xfe1], 0
-    jne 1
+    jnz 2
     xor eax, eax
-    jmp 2
-1:
-    call foo
+    jmp 4
+2:
+    call 5
     cmp.q [rip + 0xfcb], 0
     jz 3
     xor eax, eax
-    jmp 2
+    jmp 4
 3:
     mov rax, 1
-2:
+4:
     add rsp, 8
     ret
-foo:
+5:
     ud2
 =========== OPT LEVEL: all ===========
 main:
     sub rsp, 8
+foo:
     cmp.q [rip + 0xfe1], 0
-    jne 1
+    jnz 2
     xor eax, eax
-    jmp 2
-1:
-    call foo
+    jmp 4
+2:
+    call 5
     cmp.q [rip + 0xfcb], 0
     jz 3
     xor eax, eax
-    jmp 2
+    jmp 4
 3:
     mov rax, 1
-2:
+4:
     add rsp, 8
     ret
-foo:
+5:
     ud2
 =========== OPT LEVEL: aggresive ===========
 main:
     cmp.q [rip + 0xfe5], 0
-    jne 1
+    jnz 2
     xor eax, eax
-    jmp 2
-1:
-    ud2
+    jmp 3
 2:
+    ud2
+3:
     ret

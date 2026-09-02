@@ -82,17 +82,19 @@ two_small:
     ret
 =========== OPT LEVEL: moderate ===========
 two_small:
+    sub rsp, 8
     mov.d [rsi], edi
     mov rax, rdi
     add eax, 1
     mov.d [rsi + 0x4], eax
     mov rax, rdi
     add eax, 2
-    mov.d [rsp - 0x8], eax
+    mov.d [rsp], eax
     mov rax, rdi
     add eax, 3
-    mov.d [rsp - 0x4], eax
-    mov.q rax, [rsp - 0x8]
+    mov.d [rsp + 0x4], eax
+    mov.q rax, [rsp]
+    add rsp, 8
     ret
 2:
     sub rsp, 0x18
@@ -114,17 +116,19 @@ two_small:
     ret
 =========== OPT LEVEL: all ===========
 two_small:
+    sub rsp, 8
     mov.d [rsi], edi
     mov rax, rdi
     add eax, 1
     mov.d [rsi + 0x4], eax
     mov rax, rdi
     add eax, 2
-    mov.d [rsp - 0x8], eax
+    mov.d [rsp], eax
     mov rax, rdi
     add eax, 3
-    mov.d [rsp - 0x4], eax
-    mov.q rax, [rsp - 0x8]
+    mov.d [rsp + 0x4], eax
+    mov.q rax, [rsp]
+    add rsp, 8
     ret
 2:
     sub rsp, 0x18
@@ -146,18 +150,20 @@ two_small:
     ret
 =========== OPT LEVEL: aggresive ===========
 two_small:
+    sub rsp, 0x18
     movabs rax, 0xb0000000a
-    mov.q [rsp - 0x18], rax
+    mov.q [rsp], rax
     movabs rax, 0xd0000000c
-    mov.q [rsp - 0x10], rax
-    movsxd.d rax, [rsp - 0x18]
+    mov.q [rsp + 0x8], rax
+    movsxd.d rax, [rsp]
     imul rax, rax, 0x3e8
-    movsxd.d rcx, [rsp - 0x14]
+    movsxd.d rcx, [rsp + 0x4]
     imul rcx, rcx, 0x64
     add rax, rcx
-    movsxd.d rcx, [rsp - 0x10]
+    movsxd.d rcx, [rsp + 0x8]
     imul rcx, rcx, 0xa
     add rax, rcx
-    movsxd.d rcx, [rsp - 0xc]
+    movsxd.d rcx, [rsp + 0xc]
     add rax, rcx
+    add rsp, 0x18
     ret

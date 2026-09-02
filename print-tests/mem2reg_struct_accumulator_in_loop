@@ -86,34 +86,34 @@ opaque:
     sub rsp, 8
     mov rdi, 5
     call opaque
+    xor ecx, ecx
     xor edx, edx
     xor esi, esi
-    xor ecx, ecx
 3:
-    cmp rsi, rax
+    cmp rdx, rax
     jnl 4
-    add rcx, rsi
-    add rsi, 1
+    add rcx, rdx
     add rdx, 1
+    add rsi, 1
     jmp 3
 4:
     imul rax, rcx, 0x64
-    add rax, rdx
+    add rax, rsi
     add rsp, 8
     ret
 =========== OPT LEVEL: aggresive ===========
 opaque:
-    xor ecx, ecx
     xor eax, eax
     xor edx, edx
+    xor ecx, ecx
 2:
     cmp rax, 5
     jnl 3
-    add rdx, rax
+    add rcx, rax
     add rax, 1
-    add rcx, 1
+    add rdx, 1
     jmp 2
 3:
-    imul rax, rdx, 0x64
-    add rax, rcx
+    imul rax, rcx, 0x64
+    add rax, rdx
     ret

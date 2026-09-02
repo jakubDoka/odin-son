@@ -1513,6 +1513,13 @@ x64_emit_function :: proc(
 		ctx.stack_size = max(ctx.stack_size, call_stack_size)
 	}
 
+	used_red_zone: i32
+	if !has_call {
+		// TODO: the mem2mem moves mess up the stack if we use red zone, so
+		// disable it for now
+		//used_red_zone = min(ctx.red_zone_size, ctx.stack_size)
+	}
+
 	emem := ctx.graph.root_mem
 	mem_outs := backend.graph_outs(ctx.graph, emem)
 
@@ -1615,11 +1622,6 @@ x64_emit_function :: proc(
 		to_align := pushed + 8 + ctx.stack_size
 		padding := i32(mem.align_forward_int(int(to_align), 16)) - to_align
 		ctx.stack_size += padding
-	}
-
-	used_red_zone: i32
-	if !has_call {
-		used_red_zone = min(ctx.red_zone_size, ctx.stack_size)
 	}
 
 	ctx.stack_size -= used_red_zone
@@ -2846,7 +2848,7 @@ x64_emit_instr :: proc(
 				next_sloc(ctx)
 
 				// pop [rsp + $dst_off]
-				emit(ctx.code, {0x8F})
+				emit(ctx.code, {rex(RAX, RAX, NO_INDEX, true), 0x8F})
 				spill_indirect_addr(ctx, Reg(0b000), dst_off)
 			} else if d_spill {
 				// movss/movsd [rsp + $dst_off], $src
@@ -2874,7 +2876,7 @@ x64_emit_instr :: proc(
 			next_sloc(ctx)
 
 			// pop [rsp + $dst_off]
-			emit(ctx.code, {0x8F})
+			emit(ctx.code, {rex(RAX, RAX, NO_INDEX, true), 0x8F})
 			spill_indirect_addr(ctx, Reg(0b000), dst_off)
 		} else if d_spill {
 			// mov [rsp + $dst_offset], $src

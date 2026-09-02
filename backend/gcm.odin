@@ -6,7 +6,7 @@ import "base:runtime"
 import "core:container/queue"
 import "core:fmt"
 import "core:log"
-// import "core:os"
+import "core:os"
 import "core:slice"
 
 Graph_Basic_Block :: struct {
@@ -148,21 +148,23 @@ graph_schedule :: proc(
 
 	if graph.end != 0 {
 		end := graph_expand(graph, graph.end)
-		remove_count := 0
-		#reverse for inp, i in end.inps {
-			inode := graph_expand(graph, inp)
-			idx := int(inode.itype == .Phi)
-			if len(inode.inps) == 2 {
-				graph_set_input(graph, graph.end, i, inode.inps[idx])
-				remove_count += 1
+		if !no_late_pass {
+			remove_count := 0
+			#reverse for inp, i in end.inps {
+				inode := graph_expand(graph, inp)
+				idx := int(inode.itype == .Phi)
+				if len(inode.inps) == 2 {
+					graph_set_input(graph, graph.end, i, inode.inps[idx])
+					remove_count += 1
+				}
 			}
+			fmt.assertf(
+				remove_count == 0 || remove_count == len(end.inps),
+				"%v %v",
+				remove_count,
+				len(end.inps),
+			)
 		}
-		fmt.assertf(
-			remove_count == 0 || remove_count == len(end.inps),
-			"%v %v",
-			remove_count,
-			len(end.inps),
-		)
 
 		if graph_has_unreachable_return(graph) {
 			for rv, i in end.inps[RET_PREFIX:] {
@@ -295,13 +297,20 @@ graph_schedule :: proc(
 	cfg_rpos: [dynamic]Node_ID
 	visited := bit_arr.init(graph.gvn * 2)
 
-	cfg_reverse_postorder(graph, graph.start, &cfg_rpos, visited)
+	cfg_reverse_postorder(
+		graph,
+		graph.start,
+		&cfg_rpos,
+		visited,
+		!no_late_pass,
+	)
 
 	cfg_reverse_postorder :: proc(
 		graph: ^Graph,
 		root: Node_ID,
 		cfg_rpos: ^[dynamic]Node_ID,
 		visited: bit_arr.Bit_Set,
+		insert_jumps: bool,
 	) {
 		node := graph_expand(graph, root)
 
@@ -316,7 +325,9 @@ graph_schedule :: proc(
 				if (onode.itype == .Region || onode.itype == .Loop) &&
 				   node.itype != .Jump &&
 				   node.itype != .Trap &&
-				   root != graph.start {
+				   node.itype != .If &&
+				   root != graph.start &&
+				   insert_jumps {
 					prev := graph_push_sloc(
 						graph,
 						graph_dbg_slot(graph, node.node)^,
@@ -324,9 +335,21 @@ graph_schedule :: proc(
 					jmp := graph_add_jump(graph, "jump", root)
 					graph_pop_sloc(graph, prev)
 					graph_set_input(graph, o.id, o.idx, jmp)
-					cfg_reverse_postorder(graph, jmp, cfg_rpos, visited)
+					cfg_reverse_postorder(
+						graph,
+						jmp,
+						cfg_rpos,
+						visited,
+						insert_jumps,
+					)
 				} else {
-					cfg_reverse_postorder(graph, o.id, cfg_rpos, visited)
+					cfg_reverse_postorder(
+						graph,
+						o.id,
+						cfg_rpos,
+						visited,
+						insert_jumps,
+					)
 				}
 			}
 		}
@@ -355,8 +378,13 @@ graph_schedule :: proc(
 
 	for id in cfg_rpos {
 		cfg := graph_extra(graph, id, Cfg)
-		assert(cfg.idepth == 0)
 		ctrl := graph_expand(graph, id)
+		if ctx.graph.invalid_idoms {
+			cfg.idepth = 0
+			if ctrl.itype == .Region {
+				graph_set_input(graph, id, len(ctrl.inps) - 1, graph.start)
+			}
+		}
 		ctx.early_schedules[ctrl.gvn] = id
 
 		for out in ctrl.outs {
@@ -366,6 +394,8 @@ graph_schedule :: proc(
 			ctx.nodes[onode.gvn] = out.id
 		}
 	}
+
+	graph.invalid_idoms = false
 
 	for id in cfg_rpos {
 		ctrl := graph_expand(graph, id)
@@ -492,7 +522,7 @@ graph_schedule :: proc(
 				lca = graph_lca(graph, lca, olca)
 			}
 
-			if !graph_has_flag(graph, lca, .Is_Basic_Block_Start) {
+			for !graph_has_flag(graph, lca, .Is_Basic_Block_Start) {
 				lca = graph_idom(graph, lca)
 				assert(lca != 0)
 			}
@@ -598,7 +628,11 @@ graph_schedule :: proc(
 			   !graph_has_flag(graph, cfg_rpos[i + 1], .Is_Basic_Block_Start) {
 				tail = cfg_rpos[i + 1]
 			} else {
-				log.error("oob gcm schedule")
+				for out in graph_outs(graph, id) {
+					if is_cfg(graph, out.id) {
+						tail = out.id
+					}
+				}
 			}
 			append(
 				&bbs,
@@ -641,12 +675,12 @@ graph_schedule :: proc(
 	gs.bbs = bbs[:]
 
 	// if 1 == 0 {
-	// 	graph_display(os.to_writer(os.stderr), graph, gs)
+	//graph_display(os.to_writer(os.stderr), graph, gs)
 	// 	if has_unscheduled do panic("")
 	// }
 
 	if graph.end != 0 {
-		verify_schedule_integrity(graph, gs, ctx.antideps)
+		verify_schedule_integrity(graph, gs, ctx.antideps, no_late_pass)
 	}
 
 	schedule_block :: proc(ctx: Ctx, bb: ^Graph_Basic_Block) {
@@ -699,6 +733,16 @@ graph_schedule :: proc(
 				}
 			}
 		}
+
+		#reverse for instr, i in bb.instrs {
+			inode := graph_expand(graph, instr)
+			if inode.output_count == 1 &&
+			   ctx.extra_outputs[inode.gvn] == 0 &&
+			   inode.outs[0].id == bb.instrs[len(bb.instrs) - 1] {
+				slice.rotate_left(bb.instrs[i:len(bb.instrs) - 1], 1)
+				break
+			}
+		}
 	}
 }
 
@@ -707,6 +751,7 @@ verify_schedule_integrity :: proc(
 	graph: ^Graph,
 	sched: ^Graph_Schedule,
 	antys: [][dynamic]Node_ID = {},
+	no_late_pass := false,
 ) {
 	schedules := make([]Node_ID, graph.gvn)
 
@@ -728,6 +773,8 @@ verify_schedule_integrity :: proc(
 				}
 			}
 
+			if graph_has_flag(graph, instr, .Is_Basic_Block_Start) do continue
+
 			fmt.assertf(schedules[inode.gvn] == 0, "%v", inode.node)
 			schedules[inode.gvn] = bb.head
 		}
@@ -735,9 +782,11 @@ verify_schedule_integrity :: proc(
 
 	for bb in sched.bbs {
 		for instr in bb.instrs {
+			if graph_has_flag(graph, instr, .Is_Basic_Block_Start) do continue
 			inode := graph_expand(graph, instr)
 			if len(inode.outs) == 0 &&
-			   !graph_has_flag(graph, instr, .Immortal) {
+			   !graph_has_flag(graph, instr, .Immortal) &&
+			   !no_late_pass {
 				log.error("dead node in the schedule:", inode.node)
 			}
 
@@ -746,14 +795,19 @@ verify_schedule_integrity :: proc(
 				if is_cfg(graph, inp) do continue
 
 				insched := schedules[innode.gvn]
+				fmt.assertf(insched != 0, "%v", inode)
 
 				latest := schedules[inode.gvn]
+				fmt.assertf(latest != 0, "%v", inode)
 				if inode.itype == .Phi {
-					jmp := graph_inps(graph, inode.inps[0])[i - 1]
-					latest = graph_inps(graph, jmp)[0]
+					latest = graph_inps(graph, inode.inps[0])[i - 1]
+					if graph_get(graph, latest).itype == .Jump {
+						latest = graph_inps(graph, latest)[0]
+					}
 				}
 
 				for insched != latest {
+					fmt.assertf(latest != 0, "%v %v", inode, innode)
 					latest = graph_idom(graph, latest)
 				}
 			}

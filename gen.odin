@@ -36,8 +36,8 @@ OPT_LEVELS :: [?]Opt_Level {
 	{"none", {}},
 	{"mininal", {.Local_Peeps}},
 	{"moderate", {.Iter_Peeps, .Local_Peeps}},
-	{"all", {.Iter_Peeps, .Local_Peeps, .Mem_Opt}},
-	{"aggresive", {.Iter_Peeps, .Local_Peeps, .Mem_Opt, .Inline}},
+	{"all", {.Iter_Peeps, .Local_Peeps, .Mem_Opt, .Loop_Opt}},
+	{"aggresive", {.Iter_Peeps, .Local_Peeps, .Mem_Opt, .Inline, .Loop_Opt}},
 }
 
 Abi_Param :: struct {
@@ -913,7 +913,7 @@ emit_proc :: proc(
 	peep_ctx: backend.Peep_Ctx
 	peep_ctx.graph = ctx
 
-	for dirty := true; dirty; {
+	for dirty, limit := true, 100; dirty && limit > 0; limit -= 1 {
 		dirty = false
 		dirty |= backend.graph_iter_peeps(peep_ctx)
 		dirty |= builder.memopt(ctx)

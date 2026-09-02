@@ -164,27 +164,29 @@ opaque:
     ret
 =========== OPT LEVEL: aggresive ===========
 opaque:
+    sub rsp, 0x38
     pxor xmm0, xmm0
-    movups.x [rsp - 0x38], xmm0
-    mov.q [rsp - 0x38], 2
-    mov.q [rsp - 0x30], 3
-    mov.q [rsp - 0x28], 4
-    movups.x [rsp - 0x20], xmm0
-    mov.q [rsp - 0x10], 0
-    mov.q rax, [rsp - 0x38]
-    add.q rax, [rsp - 0x30]
-    mov.q [rsp - 0x20], rax
-    mov.q rcx, [rsp - 0x30]
-    add.q rcx, [rsp - 0x28]
-    mov.q [rsp - 0x18], rcx
-    mov.q rcx, [rsp - 0x28]
-    add.q rcx, [rsp - 0x38]
+    movups.x [rsp], xmm0
+    mov.q [rsp], 2
+    mov.q [rsp + 0x8], 3
+    mov.q [rsp + 0x10], 4
+    movups.x [rsp + 0x18], xmm0
+    mov.q [rsp + 0x28], 0
+    mov.q rax, [rsp]
+    add.q rax, [rsp + 0x8]
+    mov.q [rsp + 0x18], rax
+    mov.q rcx, [rsp + 0x8]
+    add.q rcx, [rsp + 0x10]
+    mov.q [rsp + 0x20], rcx
+    mov.q rcx, [rsp + 0x10]
+    add.q rcx, [rsp]
     add rax, rcx
-    mov.q [rsp - 0x10], rcx
-    mov.q [rsp - 0x38], rax
+    mov.q [rsp + 0x28], rcx
+    mov.q [rsp], rax
     imul rax, rax, 0x64
-    mov.q rcx, [rsp - 0x18]
+    mov.q rcx, [rsp + 0x20]
     imul rcx, rcx, 0xa
     add rax, rcx
-    add.q rax, [rsp - 0x20]
+    add.q rax, [rsp + 0x18]
+    add rsp, 0x38
     ret

@@ -386,13 +386,13 @@ graph_add_cv128 :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Data
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	when false {}
-	else when T == CInt {return 3}
-	else when T == Tup {return 2}
-	else when T == Local {return 4}
 	else when T == No_Extra {return 1}
+	else when T == CInt {return 3}
 	else when T == Call {return 5}
-	else when T == Cfg {return 0}
+	else when T == Tup {return 2}
 	else when T == CV128 {return 6}
+	else when T == Cfg {return 0}
+	else when T == Local {return 4}
 	else {#panic(`the passed type is not subclass of anything`)}
 }
 }

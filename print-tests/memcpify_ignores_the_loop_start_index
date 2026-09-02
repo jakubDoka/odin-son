@@ -240,8 +240,9 @@ cpy:
     ret
 =========== OPT LEVEL: aggresive ===========
 cpy:
-    mov.q [rsp - 0x18], 0
-    mov.q [rsp - 0x10], 0
+    sub rsp, 0x18
+    mov.q [rsp], 0
+    mov.q [rsp + 0x8], 0
     xor edx, edx
 2:
     cmp rdx, 8
@@ -249,8 +250,8 @@ cpy:
     mov rax, rdx
     add rax, 1
     mov rcx, rax
-    mov.b [rsp + rdx - 0x18], cl
-    mov.b [rsp + rdx - 0x10], 0x64
+    mov.b [rsp + rdx], cl
+    mov.b [rsp + rdx + 0x8], 0x64
     mov rdx, rax
     jmp 2
 3:
@@ -258,8 +259,8 @@ cpy:
 4:
     cmp rax, 8
     jnl 5
-    movzx.b ecx, [rsp + rax - 0x18]
-    mov.b [rsp + rax - 0x10], cl
+    movzx.b ecx, [rsp + rax]
+    mov.b [rsp + rax + 0x8], cl
     add rax, 1
     jmp 4
 5:
@@ -270,7 +271,7 @@ cpy:
     jnl 7
     mov rcx, rdx
     add rcx, 1
-    movzx.b edx, [rsp + rdx - 0x10]
+    movzx.b edx, [rsp + rdx + 0x8]
     imul rdx, rcx
     add rax, rdx
     mov rdx, rcx
@@ -280,4 +281,5 @@ cpy:
     cqo
     idiv rcx
     mov rax, rdx
+    add rsp, 0x18
     ret

@@ -915,14 +915,14 @@ graph_add_x64_psadbw :: #force_inline proc(graph: ^backend.Graph, name: string, 
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	when false {}
-	else when T == backend.CInt {return 3}
-	else when T == backend.Tup {return 2}
-	else when T == backend.Local {return 4}
 	else when T == backend.No_Extra {return 1}
+	else when T == backend.CInt {return 3}
 	else when T == backend.Call {return 5}
+	else when T == backend.Tup {return 2}
+	else when T == backend.CV128 {return 6}
 	else when T == X64_Mem_Op {return 7}
 	else when T == backend.Cfg {return 0}
-	else when T == backend.CV128 {return 6}
+	else when T == backend.Local {return 4}
 	else {#panic(`the passed type is not subclass of anything`)}
 }
 }

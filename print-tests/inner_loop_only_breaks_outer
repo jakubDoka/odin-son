@@ -4,7 +4,7 @@ main:
 1:
     add rcx, 1
     cmp rcx, 4
-    jz 5
+    jz 6
     xor eax, eax
 2:
     add rax, 1
@@ -17,14 +17,17 @@ main:
     xor eax, eax
     xor ecx, ecx
 4:
-    add rax, 1
     add rcx, 1
-    cmp rcx, 5
-    jz 6
+    add rax, 1
+    cmp rax, 5
+    jz 5
     jmp 4
 5:
-    xor eax, eax
+    mov rax, rcx
+    jmp 7
 6:
+    xor eax, eax
+7:
     ret
 =========== OPT LEVEL: mininal ===========
 main:
@@ -32,6 +35,37 @@ main:
 1:
     add rcx, 1
     cmp rcx, 4
+    jz 6
+    xor eax, eax
+2:
+    add rax, 1
+    cmp rax, 4
+    jz 1
+    cmp rax, 2
+    jz 3
+    jmp 2
+3:
+    xor eax, eax
+    xor ecx, ecx
+4:
+    add rcx, 1
+    add rax, 1
+    cmp rax, 5
+    jz 5
+    jmp 4
+5:
+    mov rax, rcx
+    jmp 7
+6:
+    xor eax, eax
+7:
+    ret
+=========== OPT LEVEL: moderate ===========
+main:
+    xor ecx, ecx
+1:
+    add rcx, 1
+    cmp rcx, 4
     jz 5
     xor eax, eax
 2:
@@ -54,44 +88,13 @@ main:
     xor eax, eax
 6:
     ret
-=========== OPT LEVEL: moderate ===========
-main:
-    xor ecx, ecx
-1:
-    add rcx, 1
-    cmp rcx, 4
-    jz 6
-    xor eax, eax
-2:
-    add rax, 1
-    cmp rax, 4
-    jz 1
-    cmp rax, 2
-    jz 3
-    jmp 2
-3:
-    xor ecx, ecx
-    xor eax, eax
-4:
-    add rcx, 1
-    add rax, 1
-    cmp rax, 5
-    jz 5
-    jmp 4
-5:
-    mov rax, rcx
-    jmp 7
-6:
-    xor eax, eax
-7:
-    ret
 =========== OPT LEVEL: all ===========
 main:
     xor ecx, ecx
 1:
     add rcx, 1
     cmp rcx, 4
-    jz 6
+    jz 5
     xor eax, eax
 2:
     add rax, 1
@@ -101,19 +104,16 @@ main:
     jz 3
     jmp 2
 3:
-    xor ecx, ecx
     xor eax, eax
+    xor ecx, ecx
 4:
-    add rcx, 1
     add rax, 1
-    cmp rax, 5
-    jz 5
+    add rcx, 1
+    cmp rcx, 5
+    jz 6
     jmp 4
 5:
-    mov rax, rcx
-    jmp 7
-6:
     xor eax, eax
-7:
+6:
     ret
 =========== OPT LEVEL: aggresive ===========

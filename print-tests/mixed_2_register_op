@@ -22,11 +22,13 @@ main:
     add rsp, 0x18
     ret
 4:
-    mov.q [rsp - 0x18], rdi
-    mov.q [rsp - 0x10], rsi
-    movss.d xmm0, [rsp - 0x18]
+    sub rsp, 0x18
+    mov.q [rsp], rdi
+    mov.q [rsp + 0x8], rsi
+    movss.d xmm0, [rsp]
     cvttss2si rax, xmm0
-    add.q rax, [rsp - 0x10]
+    add.q rax, [rsp + 0x8]
+    add rsp, 0x18
     ret
 =========== OPT LEVEL: mininal ===========
 main:
@@ -52,11 +54,13 @@ main:
     add rsp, 0x18
     ret
 4:
-    mov.q [rsp - 0x18], rdi
-    mov.q [rsp - 0x10], rsi
-    movss.d xmm0, [rsp - 0x18]
+    sub rsp, 0x18
+    mov.q [rsp], rdi
+    mov.q [rsp + 0x8], rsi
+    movss.d xmm0, [rsp]
     cvttss2si rax, xmm0
-    add.q rax, [rsp - 0x10]
+    add.q rax, [rsp + 0x8]
+    add rsp, 0x18
     ret
 =========== OPT LEVEL: moderate ===========
 main:
@@ -69,18 +73,22 @@ main:
     add rsp, 8
     ret
 3:
-    mov.d [rsp - 0x14], 0
-    mov.d [rsp - 0x18], 0
-    mov.q [rsp - 0x10], 1
-    mov.q rax, [rsp - 0x18]
+    sub rsp, 0x18
+    mov.d [rsp + 0x4], 0
+    mov.d [rsp], 0
+    mov.q [rsp + 0x8], 1
+    mov.q rax, [rsp]
     mov rdx, 1
+    add rsp, 0x18
     ret
 4:
-    mov.q [rsp - 0x18], rdi
-    mov.q [rsp - 0x10], rsi
-    movss.d xmm0, [rsp - 0x18]
+    sub rsp, 0x18
+    mov.q [rsp], rdi
+    mov.q [rsp + 0x8], rsi
+    movss.d xmm0, [rsp]
     cvttss2si rax, xmm0
     add rax, rsi
+    add rsp, 0x18
     ret
 =========== OPT LEVEL: all ===========
 main:
@@ -93,28 +101,34 @@ main:
     add rsp, 8
     ret
 3:
-    mov.d [rsp - 0x14], 0
-    mov.d [rsp - 0x18], 0
-    mov.q [rsp - 0x10], 1
-    mov.q rax, [rsp - 0x18]
+    sub rsp, 0x18
+    mov.d [rsp + 0x4], 0
+    mov.d [rsp], 0
+    mov.q [rsp + 0x8], 1
+    mov.q rax, [rsp]
     mov rdx, 1
+    add rsp, 0x18
     ret
 4:
-    mov.q [rsp - 0x18], rdi
-    mov.q [rsp - 0x10], rsi
-    movss.d xmm0, [rsp - 0x18]
+    sub rsp, 0x18
+    mov.q [rsp], rdi
+    mov.q [rsp + 0x8], rsi
+    movss.d xmm0, [rsp]
     cvttss2si rax, xmm0
     add rax, rsi
+    add rsp, 0x18
     ret
 =========== OPT LEVEL: aggresive ===========
 main:
-    mov.d [rsp - 0x14], 0
-    mov.d [rsp - 0x18], 0
-    mov.q [rsp - 0x10], 1
-    mov.q rax, [rsp - 0x18]
-    mov.q [rsp - 0x28], rax
-    mov.q [rsp - 0x20], 1
-    movss.d xmm0, [rsp - 0x28]
+    sub rsp, 0x28
+    mov.d [rsp + 0x14], 0
+    mov.d [rsp + 0x10], 0
+    mov.q [rsp + 0x18], 1
+    mov.q rax, [rsp + 0x10]
+    mov.q [rsp], rax
+    mov.q [rsp + 0x8], 1
+    movss.d xmm0, [rsp]
     cvttss2si rax, xmm0
     add rax, 1
+    add rsp, 0x28
     ret

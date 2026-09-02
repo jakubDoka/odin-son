@@ -1564,6 +1564,44 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) exemplar_affine_loop :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	arr: [8]int
+	i := 0
+	for {
+		if i < len(arr) {
+			arr[i] = i
+			i += 1
+		} else do break
+	}
+
+	return 0
+}
+
+main.run_test(t, `exemplar_affine_loop`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	arr: [8]int
+	i := 0
+	for {
+		if i < len(arr) {
+			arr[i] = i
+			i += 1
+		} else do break
+	}
+
+	return 0
+}
+`, main_())
+}
 @(test) consecutive_loops :: proc(t: ^testing.T) {
 
 
@@ -11829,57 +11867,57 @@ main :: proc() -> int {
 opt_level :: "none"
 
 main_ :: proc() -> int {
-	v0 := 1
-	v1 := 2
-	v2 := 3
-	v3 := 4
-	v4 := 5
-	v5 := 6
-	v6 := 7
-	v7 := 8
-	v8 := 9
-	v9 := 10
-	v10 := 11
-	v11 := 12
-	v12 := 13
-	v13 := 14
-	v14 := 15
+	v1 := 1
+	v2 := 2
+	v3 := 3
+	v4 := 4
+	v5 := 5
+	v6 := 6
+	v7 := 7
+	v8 := 8
+	v9 := 9
+	v10 := 10
+	v11 := 11
+	v12 := 12
+	v13 := 13
+	v14 := 14
+	v15 := 15
 	i := 0
 	for {
 		if i == 7 do break
 		i += 1
-		v0 = v0 + v1
-		v1 = v1 ~ v2
-		v2 = v2 + v3
-		v3 = v3 ~ v4
-		v4 = v4 + v5
-		v5 = v5 ~ v6
-		v6 = v6 + v7
-		v7 = v7 ~ v8
-		v8 = v8 + v9
-		v9 = v9 ~ v10
-		v10 = v10 + v11
-		v11 = v11 ~ v12
-		v12 = v12 + v13
-		v13 = v13 ~ v14
-		v14 = v14 ~ v0
+		v1 = v1 + v2
+		v2 = v2 ~ v3
+		v3 = v3 + v4
+		v4 = v4 ~ v5
+		v5 = v5 + v6
+		v6 = v6 ~ v7
+		v7 = v7 + v8
+		v8 = v8 ~ v9
+		v9 = v9 + v10
+		v10 = v10 ~ v11
+		v11 = v11 + v12
+		v12 = v12 ~ v13
+		v13 = v13 + v14
+		v14 = v14 ~ v15
+		v15 = v15 ~ v1
 	}
 	r := 0
-	r += v0 * 1
-	r += v1 * 2
-	r += v2 * 3
-	r += v3 * 4
-	r += v4 * 5
-	r += v5 * 6
-	r += v6 * 7
-	r += v7 * 8
-	r += v8 * 9
-	r += v9 * 10
-	r += v10 * 11
-	r += v11 * 12
-	r += v12 * 13
-	r += v13 * 14
-	r += v14 * 15
+	r += v1 * 1
+	r += v2 * 2
+	r += v3 * 3
+	r += v4 * 4
+	r += v5 * 5
+	r += v6 * 6
+	r += v7 * 7
+	r += v8 * 8
+	r += v9 * 9
+	r += v10 * 10
+	r += v11 * 11
+	r += v12 * 12
+	r += v13 * 13
+	r += v14 * 14
+	r += v15 * 15
 	return r % 251
 }
 
@@ -11889,57 +11927,57 @@ package main
 opt_level :: "none"
 
 main :: proc() -> int {
-	v0 := 1
-	v1 := 2
-	v2 := 3
-	v3 := 4
-	v4 := 5
-	v5 := 6
-	v6 := 7
-	v7 := 8
-	v8 := 9
-	v9 := 10
-	v10 := 11
-	v11 := 12
-	v12 := 13
-	v13 := 14
-	v14 := 15
+	v1 := 1
+	v2 := 2
+	v3 := 3
+	v4 := 4
+	v5 := 5
+	v6 := 6
+	v7 := 7
+	v8 := 8
+	v9 := 9
+	v10 := 10
+	v11 := 11
+	v12 := 12
+	v13 := 13
+	v14 := 14
+	v15 := 15
 	i := 0
 	for {
 		if i == 7 do break
 		i += 1
-		v0 = v0 + v1
-		v1 = v1 ~ v2
-		v2 = v2 + v3
-		v3 = v3 ~ v4
-		v4 = v4 + v5
-		v5 = v5 ~ v6
-		v6 = v6 + v7
-		v7 = v7 ~ v8
-		v8 = v8 + v9
-		v9 = v9 ~ v10
-		v10 = v10 + v11
-		v11 = v11 ~ v12
-		v12 = v12 + v13
-		v13 = v13 ~ v14
-		v14 = v14 ~ v0
+		v1 = v1 + v2
+		v2 = v2 ~ v3
+		v3 = v3 + v4
+		v4 = v4 ~ v5
+		v5 = v5 + v6
+		v6 = v6 ~ v7
+		v7 = v7 + v8
+		v8 = v8 ~ v9
+		v9 = v9 + v10
+		v10 = v10 ~ v11
+		v11 = v11 + v12
+		v12 = v12 ~ v13
+		v13 = v13 + v14
+		v14 = v14 ~ v15
+		v15 = v15 ~ v1
 	}
 	r := 0
-	r += v0 * 1
-	r += v1 * 2
-	r += v2 * 3
-	r += v3 * 4
-	r += v4 * 5
-	r += v5 * 6
-	r += v6 * 7
-	r += v7 * 8
-	r += v8 * 9
-	r += v9 * 10
-	r += v10 * 11
-	r += v11 * 12
-	r += v12 * 13
-	r += v13 * 14
-	r += v14 * 15
+	r += v1 * 1
+	r += v2 * 2
+	r += v3 * 3
+	r += v4 * 4
+	r += v5 * 5
+	r += v6 * 6
+	r += v7 * 7
+	r += v8 * 8
+	r += v9 * 9
+	r += v10 * 10
+	r += v11 * 11
+	r += v12 * 12
+	r += v13 * 13
+	r += v14 * 14
+	r += v15 * 15
 	return r % 251
 }
 `, main_())

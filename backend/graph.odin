@@ -370,6 +370,7 @@ Graph :: struct {
 	dont_intern:     bool,
 	dont_delete:     bool,
 	peeped:          bool,
+	invalid_idoms:   bool,
 	opt_flags:       Graph_Opt_Flags,
 }
 
@@ -1558,7 +1559,8 @@ graph_remove_output_node :: proc(
 	no_delete := false,
 ) {
 	outs := graph_outs(graph, node)
-	out_idx := slice.linear_search(outs, out) or_else fmt.panicf("%v", node)
+	out_idx :=
+		slice.linear_search(outs, out) or_else fmt.panicf("%v %v", node, out)
 	outs[out_idx] = outs[len(outs) - 1]
 	node.output_count -= 1
 
@@ -1727,10 +1729,10 @@ graph_push_tag :: proc {
 
 push_node_tag_new :: proc(graph: ^Graph, tag: string) {
 	when NODE_NAMES {
-		@(static) stable_id: u32
+		//@(static) stable_id: u32
 
-		stable_id += 1
-		push_node_tag_full(graph, {tag, stable_id})
+		//stable_id += 1
+		push_node_tag_full(graph, {tag, graph.stable_id})
 	}
 }
 

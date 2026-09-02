@@ -228,10 +228,11 @@ simd_search:
     pop rbx
     ret
 22:
-    mov.q [rsp - 0x18], rdi
-    mov.q [rsp - 0x10], rsi
-    mov.q rax, [rsp - 0x10]
-    mov.q rsi, [rsp - 0x18]
+    sub rsp, 0x18
+    mov.q [rsp], rdi
+    mov.q [rsp + 0x8], rsi
+    mov.q rax, [rsp + 0x8]
+    mov.q rsi, [rsp]
     xor edi, edi
 23:
     cmp rdi, rax
@@ -251,6 +252,7 @@ simd_search:
     mov.q [rcx], -1
     xor eax, eax
 26:
+    add rsp, 0x18
     ret
 =========== OPT LEVEL: mininal ===========
 from_slice:
@@ -482,10 +484,11 @@ simd_search:
     pop rbx
     ret
 22:
-    mov.q [rsp - 0x18], rdi
-    mov.q [rsp - 0x10], rsi
-    mov.q rax, [rsp - 0x10]
-    mov.q rsi, [rsp - 0x18]
+    sub rsp, 0x18
+    mov.q [rsp], rdi
+    mov.q [rsp + 0x8], rsi
+    mov.q rax, [rsp + 0x8]
+    mov.q rsi, [rsp]
     xor edi, edi
 23:
     cmp rdi, rax
@@ -505,6 +508,7 @@ simd_search:
     mov.q [rcx], -1
     xor eax, eax
 26:
+    add rsp, 0x18
     ret
 =========== OPT LEVEL: moderate ===========
 from_slice:
@@ -589,22 +593,24 @@ simd_search:
     add rsp, 0x28
     ret
 13:
-    mov.q [rsp - 0x28], rdi
-    mov.q [rsp - 0x20], rsi
+    sub rsp, 0x28
+    mov.q [rsp], rdi
+    mov.q [rsp + 0x8], rsi
     pxor xmm0, xmm0
-    movups.x [rsp - 0x18], xmm0
+    movups.x [rsp + 0x10], xmm0
     xor eax, eax
 14:
     cmp rax, 0x10
     jnl 15
-    mov.q rcx, [rsp - 0x28]
+    mov.q rcx, [rsp]
     add rcx, rax
     movzx.b ecx, [rcx]
-    mov.b [rsp + rax - 0x18], cl
+    mov.b [rsp + rax + 0x10], cl
     add rax, 1
     jmp 14
 15:
-    movups.x xmm0, [rsp - 0x18]
+    movups.x xmm0, [rsp + 0x10]
+    add rsp, 0x28
     ret
 16:
     push rbx

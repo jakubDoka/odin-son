@@ -72,10 +72,12 @@ opaque:
     ret
 =========== OPT LEVEL: aggresive ===========
 opaque:
+    sub rsp, 0x18
     pxor xmm0, xmm0
-    movups.x [rsp - 0x18], xmm0
-    mov.q [rsp - 0x8], 0
-    mov.q [rsp - 0x10], 0x2a
-    mov.q rax, [rsp - 0x18]
+    movups.x [rsp], xmm0
+    mov.q [rsp + 0x10], 0
+    mov.q [rsp + 0x8], 0x2a
+    mov.q rax, [rsp]
     add rax, 0x2a
+    add rsp, 0x18
     ret

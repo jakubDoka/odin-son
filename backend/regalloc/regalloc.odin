@@ -185,7 +185,7 @@ regalloc_round :: proc(
 						lrg = unify(lrg, ctx.lrg_table[onode.gvn])
 					}
 
-					umask := rm_getu(ctx, onode, o.idx)
+					umask := rm_get_use(ctx, onode, o.idx)
 					intersect(lrg, umask)
 				}
 
@@ -960,11 +960,9 @@ regalloc_round :: proc(
 		}
 	}
 
-	log_lrgs(&ctx)
-
 	backend.verify_schedule_integrity(ctx.graph, ctx.sched)
-	if ok do verify_alloc_integrity(ctx, res)
 	if ok {
+		log_lrgs(&ctx)
 		for &bb in sched.bbs {
 			keep := len(bb.instrs) - 1
 			#reverse for instr, i in bb.instrs[:keep] {
@@ -986,7 +984,7 @@ regalloc_round :: proc(
 							inp.inps[ctx.metas[inp.gvn].in_place_slot]
 						in_slot_node := graph_expand(graph, in_slot_id)
 
-						umask := rm_getu(
+						umask := rm_get_use(
 							ctx,
 							inp,
 							ctx.metas[inp.gvn].in_place_slot,
@@ -1020,7 +1018,7 @@ regalloc_round :: proc(
 						o := inode.outs[0]
 						onode := graph_expand(graph, o.id)
 
-						umask := rm_getu(ctx, onode, o.idx)
+						umask := rm_get_use(ctx, onode, o.idx)
 						overlaps := backend.reg_mask_contains(
 							umask,
 							res[inp.gvn].index,
@@ -1046,7 +1044,9 @@ regalloc_round :: proc(
 
 			remove_range(&bb.instrs, 0, keep)
 		}
+		log_lrgs(&ctx)
 	}
+	if ok do verify_alloc_integrity(ctx, res)
 
 	return
 
@@ -1064,7 +1064,7 @@ regalloc_round :: proc(
 		)
 	}
 
-	rm_getu :: proc(
+	rm_get_use :: proc(
 		ctx: Ctx,
 		node: ^backend.Node,
 		#any_int pos: int,
@@ -1105,7 +1105,9 @@ regalloc_round :: proc(
 			for instr, i in bb.instrs {
 				inode := graph_expand(ctx.graph, instr)
 				if inode.dt == .Void && inode.itype == .Phi do continue
+
 				for inp, idx in inode.inps[ctx.metas[inode.gvn].input_start:] {
+					inp := inp
 
 					block := &bb
 					i := i
@@ -1113,8 +1115,15 @@ regalloc_round :: proc(
 						last :=
 							backend.graph_inps(ctx.graph, inode.inps[0])[idx]
 						block = get_node_block(ctx, last)
-						assert(block != &bb)
 						i = len(block.instrs)
+					}
+
+					for {
+						iblck := get_node_block(ctx, inp)
+						if slice.contains(iblck.instrs[:], inp) do break
+						inode := graph_expand(ctx.graph, inp)
+						assert(inode.itype == .Split)
+						inp = inode.inps[0]
 					}
 
 					bit_arr.set_all(seen, value = false)
@@ -1138,9 +1147,6 @@ regalloc_round :: proc(
 			seen: bit_arr.Bit_Set,
 		) {
 			cbnode := graph_expand(ctx.graph, cb)
-			if !bit_arr.set(seen, cbnode.gvn) {
-				return
-			}
 
 			bb: ^backend.Graph_Basic_Block
 			for &b in ctx.sched.bbs {
@@ -1180,6 +1186,10 @@ regalloc_round :: proc(
 
 			for cbinp in cbnode.inps[:len(cbnode.inps) - is_reg] {
 				if backend.is_cfg(ctx.graph, cbinp) {
+					cbinode := graph_expand(ctx.graph, cbinp)
+					if !bit_arr.set(seen, cbinode.gvn) {
+						return
+					}
 					b := get_node_block(ctx, cbinp)
 					check_blocks(ctx, res, inp, b.head, len(b.instrs), seen)
 				}
@@ -1223,25 +1233,15 @@ regalloc_round :: proc(
 
 		v, ok := liveouts_slot(louts, lrg.index)
 		if ok {
-			if !add_conflict(ctx, lrg, n.node, v.node) do return
+			if !add_conflict(ctx, lrg, n.node, v.node) {
+				return
+			}
 		}
 		chanded = v.node != n.node
 		n.area = max(n.area, v.area)
 		v^ = n
 
 		return
-
-		// TODO: there is most likey a bug in the builting hash map
-		// implementation, once it gets fixed, we will use this again
-
-		//k, slot, just_inserted, err := map_entry(louts, lrg)
-		//assert(k^ == lrg)
-		//assert(err == nil)
-		//if !just_inserted {
-		//	add_conflict(ctx, lrg, n.node, slot^.node)
-		//}
-		//n.area = max(n.area, slot.area)
-		//slot^ = n
 	}
 
 	get_lrg :: proc(ctx: Ctx, node: Node_ID, logg := false) -> ^backend.Lrg {
@@ -1353,7 +1353,8 @@ regalloc_round :: proc(
 		idx: int,
 	) {
 		block = get_node_block(ctx, id)
-		idx = arna.simd_search(block.instrs[:], id) or_else panic("")
+		idx =
+			arna.simd_search(block.instrs[:], id) or_else fmt.panicf("%v", id)
 		return
 	}
 
@@ -1538,9 +1539,9 @@ regalloc_round :: proc(
 				backend.ansi_end(w)
 				if len(ctx.adj) != 0 {
 					priority := color_priority(ctx^, lrg, ctx.adj[lrg.index])
-					fmt.wprintf(w, " %04i ", priority)
+					fmt.wprintf(w, " %04i %02i ", priority, lrg.reg)
 				} else {
-					fmt.wprint(w, "      ")
+					fmt.wprint(w, "            ")
 				}
 			} else {
 				fmt.wprint(w, "                           ")

@@ -208,20 +208,23 @@ add i16:
     ret
 =========== OPT LEVEL: aggresive ===========
 main:
-    mov.q [rsp - 0x10], 0
-    mov.q [rsp - 0x18], 1
-    mov.d eax, [rsp - 0x10]
+    sub rsp, 0x18
+add i16:
+    mov.q [rsp + 0x8], 0
+    mov.q [rsp], 1
+    mov.d eax, [rsp + 0x8]
     add eax, 1
-    mov.d [rsp - 0x10], eax
-    movzx.w ecx, [rsp - 0xc]
+    mov.d [rsp + 0x8], eax
+    movzx.w ecx, [rsp + 0xc]
     add cx, 1
-    mov.w [rsp - 0xc], cx
-    movzx.b edx, [rsp - 0xa]
+    mov.w [rsp + 0xc], cx
+    movzx.b edx, [rsp + 0xe]
     add dl, 1
-    mov.b [rsp - 0xa], dl
+    mov.b [rsp + 0xe], dl
     movsxd rax, eax
     movsx rcx, cx
     lea rax, [rax + rcx + 0x1]
     movsx rcx, dl
     add rax, rcx
+    add rsp, 0x18
     ret

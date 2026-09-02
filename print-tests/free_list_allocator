@@ -307,13 +307,14 @@ coalesce:
     pop rbx
     ret
 40:
-    mov.q [rsp - 0x18], rdi
-    mov.q [rsp - 0x10], rsi
+    sub rsp, 0x18
+    mov.q [rsp], rdi
+    mov.q [rsp + 0x8], rsi
     xor eax, eax
 41:
-    cmp.q rax, [rsp - 0x10]
+    cmp.q rax, [rsp + 0x8]
     jnl 42
-    mov.q rcx, [rsp - 0x18]
+    mov.q rcx, [rsp]
     add rcx, rax
     movzx esi, dl
     add rsi, rax
@@ -321,15 +322,17 @@ coalesce:
     add rax, 1
     jmp 41
 42:
+    add rsp, 0x18
     ret
 43:
-    mov.q [rsp - 0x18], rdi
-    mov.q [rsp - 0x10], rsi
+    sub rsp, 0x18
+    mov.q [rsp], rdi
+    mov.q [rsp + 0x8], rsi
     xor eax, eax
 44:
-    cmp.q rax, [rsp - 0x10]
+    cmp.q rax, [rsp + 0x8]
     jnl 46
-    mov.q rcx, [rsp - 0x18]
+    mov.q rcx, [rsp]
     add rcx, rax
     movzx.b ecx, [rcx]
     movzx esi, dl
@@ -344,10 +347,11 @@ coalesce:
 46:
     mov al, 1
 47:
+    add rsp, 0x18
     ret
 48:
-    xor esi, esi
     xor eax, eax
+    xor esi, esi
 49:
     cmp.q rsi, [rdi + 0x610]
     jnl 52
@@ -376,7 +380,7 @@ coalesce:
     mov rdx, 0x618
     xor esi, esi
     lea rdi, [rsp]
-    call.q [rip - 0x5b9]
+    call.q [rip - 0x5c9]
     mov.q rsi, [rsp + 0x618]
     mov.q rdx, [rsp + 0x620]
     lea rdi, [rsp]
@@ -459,13 +463,13 @@ coalesce:
     mov rdx, 0x618
     lea rdi, [rsp]
     xor esi, esi
-    call.q [rip - 0x727]
+    call.q [rip - 0x737]
     lea rdi, [rsp + 0x618]
     xor esi, esi
     mov rdx, 0x10
-    call.q [rip - 0x73f]
-    lea rbx, [rip + 0x8b2]
-    lea rax, [rip + 0x8ab]
+    call.q [rip - 0x74f]
+    lea rbx, [rip + 0x8a2]
+    lea rax, [rip + 0x89b]
     add rax, 0
     mov.q [rsp + 0x618], rax
     mov rax, 0x400
@@ -541,9 +545,9 @@ coalesce:
     lea rdi, [rsp + 0x628]
     xor esi, esi
     mov rdx, 0x10
-    call.q [rip - 0x8be]
+    call.q [rip - 0x8ce]
     mov rax, rbp
-    lea rcx, [rip + 0x730]
+    lea rcx, [rip + 0x720]
     add rcx, rax
     mov.q [rsp + 0x628], rcx
     mov rcx, rbp
@@ -553,7 +557,7 @@ coalesce:
     lea rdi, [rsp + 0x638]
     xor esi, esi
     mov rdx, 0x10
-    call.q [rip - 0x900]
+    call.q [rip - 0x910]
     mov rax, r12
     add rax, rbx
     mov.q [rsp + 0x638], rax
@@ -564,7 +568,7 @@ coalesce:
     lea rdi, [rsp + 0x648]
     xor esi, esi
     mov rdx, 0x10
-    call.q [rip - 0x93b]
+    call.q [rip - 0x94b]
     mov rax, r13
     add rax, rbx
     mov.q [rsp + 0x648], rax
@@ -575,9 +579,9 @@ coalesce:
     lea rdi, [rsp + 0x658]
     xor esi, esi
     mov rdx, 0x10
-    call.q [rip - 0x976]
+    call.q [rip - 0x986]
     mov rax, r14
-    lea rcx, [rip + 0x678]
+    lea rcx, [rip + 0x668]
     add rcx, rax
     mov.q [rsp + 0x658], rcx
     mov rcx, r14
@@ -649,8 +653,8 @@ coalesce:
     lea rdi, [rsp + 0x668]
     xor esi, esi
     mov rdx, 0x10
-    call.q [rip - 0xae4]
-    lea rax, [rip + 0x90d]
+    call.q [rip - 0xaf4]
+    lea rax, [rip + 0x8fd]
     add rax, 0
     mov.q [rsp + 0x668], rax
     mov rax, 0x200
@@ -679,9 +683,9 @@ coalesce:
     lea rdi, [rsp + 0x678]
     xor esi, esi
     mov rdx, 0x10
-    call.q [rip - 0xb85]
+    call.q [rip - 0xb95]
     mov rax, rbx
-    lea rcx, [rip + 0x469]
+    lea rcx, [rip + 0x459]
     add rcx, rax
     mov.q [rsp + 0x678], rcx
     mov rcx, rbx
@@ -697,30 +701,31 @@ coalesce:
     mov dl, -0x38
     call 43
     test al, al
-    jnz +0x5
-    jmp 83
-    add r15, 0x1000
+    jnz 83
+    jmp 84
 83:
+    add r15, 0x1000
+84:
     mov.q rdi, [rsp + 0x628]
     mov.q rsi, [rsp + 0x630]
     mov dl, 1
     call 43
     test al, al
-    jnz 84
-    jmp 85
-84:
-    add r15, 0x2000
+    jnz 85
+    jmp 86
 85:
+    add r15, 0x2000
+86:
     mov rsi, 0x186a0
     lea rdi, [rsp]
     mov rdx, 8
     call 12
     cmp rax, 0
-    jnge 86
-    jmp 87
-86:
-    add r15, 0x4000
+    jnge 87
+    jmp 88
 87:
+    add r15, 0x4000
+88:
     mov rax, r15
     add rsp, 0x688
     pop r15
@@ -1027,13 +1032,14 @@ free_block_count:
     pop rbx
     ret
 40:
-    mov.q [rsp - 0x18], rdi
-    mov.q [rsp - 0x10], rsi
+    sub rsp, 0x18
+    mov.q [rsp], rdi
+    mov.q [rsp + 0x8], rsi
     xor eax, eax
 41:
-    cmp.q rax, [rsp - 0x10]
+    cmp.q rax, [rsp + 0x8]
     jnl 42
-    mov.q rcx, [rsp - 0x18]
+    mov.q rcx, [rsp]
     add rcx, rax
     movzx esi, dl
     add rsi, rax
@@ -1041,15 +1047,17 @@ free_block_count:
     add rax, 1
     jmp 41
 42:
+    add rsp, 0x18
     ret
 43:
-    mov.q [rsp - 0x18], rdi
-    mov.q [rsp - 0x10], rsi
+    sub rsp, 0x18
+    mov.q [rsp], rdi
+    mov.q [rsp + 0x8], rsi
     xor eax, eax
 44:
-    cmp.q rax, [rsp - 0x10]
+    cmp.q rax, [rsp + 0x8]
     jnl 46
-    mov.q rcx, [rsp - 0x18]
+    mov.q rcx, [rsp]
     add rcx, rax
     movzx.b ecx, [rcx]
     movzx esi, dl
@@ -1064,10 +1072,11 @@ free_block_count:
 46:
     mov al, 1
 47:
+    add rsp, 0x18
     ret
 48:
-    xor esi, esi
     xor eax, eax
+    xor esi, esi
 49:
     cmp.q rsi, [rdi + 0x610]
     jnl 52
@@ -1096,7 +1105,7 @@ free_block_count:
     mov rdx, 0x618
     xor esi, esi
     lea rdi, [rsp]
-    call.q [rip - 0x589]
+    call.q [rip - 0x599]
     mov.q rsi, [rsp + 0x618]
     mov.q rdx, [rsp + 0x620]
     lea rdi, [rsp]
@@ -1179,13 +1188,13 @@ free_block_count:
     mov rdx, 0x618
     lea rdi, [rsp]
     xor esi, esi
-    call.q [rip - 0x6f7]
+    call.q [rip - 0x707]
     lea rdi, [rsp + 0x618]
     xor esi, esi
     mov rdx, 0x10
-    call.q [rip - 0x70f]
-    lea rbx, [rip + 0x8e2]
-    lea rax, [rip + 0x8db]
+    call.q [rip - 0x71f]
+    lea rbx, [rip + 0x8d2]
+    lea rax, [rip + 0x8cb]
     add rax, 0
     mov.q [rsp + 0x618], rax
     mov rax, 0x400
@@ -1261,9 +1270,9 @@ free_block_count:
     lea rdi, [rsp + 0x628]
     xor esi, esi
     mov rdx, 0x10
-    call.q [rip - 0x88e]
+    call.q [rip - 0x89e]
     mov rax, rbp
-    lea rcx, [rip + 0x760]
+    lea rcx, [rip + 0x750]
     add rcx, rax
     mov.q [rsp + 0x628], rcx
     mov rcx, rbp
@@ -1273,7 +1282,7 @@ free_block_count:
     lea rdi, [rsp + 0x638]
     xor esi, esi
     mov rdx, 0x10
-    call.q [rip - 0x8d0]
+    call.q [rip - 0x8e0]
     mov rax, r12
     add rax, rbx
     mov.q [rsp + 0x638], rax
@@ -1284,7 +1293,7 @@ free_block_count:
     lea rdi, [rsp + 0x648]
     xor esi, esi
     mov rdx, 0x10
-    call.q [rip - 0x90b]
+    call.q [rip - 0x91b]
     mov rax, r13
     add rax, rbx
     mov.q [rsp + 0x648], rax
@@ -1295,9 +1304,9 @@ free_block_count:
     lea rdi, [rsp + 0x658]
     xor esi, esi
     mov rdx, 0x10
-    call.q [rip - 0x946]
+    call.q [rip - 0x956]
     mov rax, r14
-    lea rcx, [rip + 0x6a8]
+    lea rcx, [rip + 0x698]
     add rcx, rax
     mov.q [rsp + 0x658], rcx
     mov rcx, r14
@@ -1369,8 +1378,8 @@ free_block_count:
     lea rdi, [rsp + 0x668]
     xor esi, esi
     mov rdx, 0x10
-    call.q [rip - 0xab4]
-    lea rax, [rip + 0x93d]
+    call.q [rip - 0xac4]
+    lea rax, [rip + 0x92d]
     add rax, 0
     mov.q [rsp + 0x668], rax
     mov rax, 0x200
@@ -1399,9 +1408,9 @@ free_block_count:
     lea rdi, [rsp + 0x678]
     xor esi, esi
     mov rdx, 0x10
-    call.q [rip - 0xb55]
+    call.q [rip - 0xb65]
     mov rax, rbx
-    lea rcx, [rip + 0x499]
+    lea rcx, [rip + 0x489]
     add rcx, rax
     mov.q [rsp + 0x678], rcx
     mov rcx, rbx
@@ -1437,11 +1446,9 @@ free_block_count:
     mov rdx, 8
     call 12
     cmp rax, 0
-    jnge 87
-    jmp 88
-87:
+    jnge +0x5
+    jmp +0x7
     add r15, 0x4000
-88:
     mov rax, r15
     add rsp, 0x688
     pop r15
@@ -1740,13 +1747,14 @@ free_block_count:
     pop rbx
     ret
 40:
-    mov.q [rsp - 0x18], rdi
-    mov.q [rsp - 0x10], rsi
+    sub rsp, 0x18
+    mov.q [rsp], rdi
+    mov.q [rsp + 0x8], rsi
     xor eax, eax
 41:
-    cmp.q rax, [rsp - 0x10]
+    cmp.q rax, [rsp + 0x8]
     jnl 42
-    mov.q rcx, [rsp - 0x18]
+    mov.q rcx, [rsp]
     add rcx, rax
     movzx esi, dl
     add rsi, rax
@@ -1754,15 +1762,17 @@ free_block_count:
     add rax, 1
     jmp 41
 42:
+    add rsp, 0x18
     ret
 43:
-    mov.q [rsp - 0x18], rdi
-    mov.q [rsp - 0x10], rsi
+    sub rsp, 0x18
+    mov.q [rsp], rdi
+    mov.q [rsp + 0x8], rsi
     xor eax, eax
 44:
-    cmp.q rax, [rsp - 0x10]
+    cmp.q rax, [rsp + 0x8]
     jnl 46
-    mov.q rcx, [rsp - 0x18]
+    mov.q rcx, [rsp]
     add rcx, rax
     movzx.b ecx, [rcx]
     movzx esi, dl
@@ -1777,10 +1787,11 @@ free_block_count:
 46:
     mov al, 1
 47:
+    add rsp, 0x18
     ret
 48:
-    xor esi, esi
     xor eax, eax
+    xor esi, esi
 49:
     cmp.q rsi, [rdi + 0x610]
     jnl 52
@@ -1809,7 +1820,7 @@ free_block_count:
     mov rdx, 0x618
     xor esi, esi
     lea rdi, [rsp]
-    call.q [rip - 0x569]
+    call.q [rip - 0x579]
     mov.q rsi, [rsp + 0x618]
     mov.q rdx, [rsp + 0x620]
     lea rdi, [rsp]
@@ -1890,9 +1901,9 @@ free_block_count:
     xor esi, esi
     mov rdx, 0x618
     lea rdi, [rsp]
-    call.q [rip - 0x6d3]
+    call.q [rip - 0x6e3]
     mov rdx, 0x400
-    lea rsi, [rip + 0x917]
+    lea rsi, [rip + 0x907]
     lea rdi, [rsp]
     call alloc_init
     mov rsi, 0x64
@@ -1956,28 +1967,28 @@ free_block_count:
     add rdx, 0x20
 70:
     mov r13, rdx
-    lea rdx, [rip + 0x7f2]
+    lea rdx, [rip + 0x7e2]
     add rdx, rbx
     mov.q [rsp + 0x628], rdx
     mov rdx, rbx
     add rdx, 0x64
     sub rdx, rbx
     mov.q [rsp + 0x630], rdx
-    lea rdx, [rip + 0x7cb]
+    lea rdx, [rip + 0x7bb]
     add rdx, rbp
     mov.q [rsp + 0x638], rdx
     mov rdx, rbp
     add rdx, 0x28
     sub rdx, rbp
     mov.q [rsp + 0x640], rdx
-    lea rdx, [rip + 0x7a4]
+    lea rdx, [rip + 0x794]
     add rdx, r12
     mov.q [rsp + 0x648], rdx
     mov rdx, r12
     add rdx, 7
     sub rdx, r12
     mov.q [rsp + 0x650], rdx
-    lea rdx, [rip + 0x77d]
+    lea rdx, [rip + 0x76d]
     add rdx, rax
     mov.q [rsp + 0x658], rdx
     mov rcx, rax
@@ -2046,7 +2057,7 @@ free_block_count:
     mov rsi, r12
     lea rdi, [rsp]
     call 30
-    lea rdi, [rip + 0xa2a]
+    lea rdi, [rip + 0xa1a]
     mov rsi, 0x200
     call 53
     test al, al
@@ -2066,7 +2077,7 @@ free_block_count:
 81:
     add r13, 0x800
 82:
-    lea rcx, [rip + 0x5cf]
+    lea rcx, [rip + 0x5bf]
     add rcx, rdx
     mov rax, rdx
     add rax, 0x2d
@@ -2437,8 +2448,8 @@ free_block_count:
 47:
     ret
 48:
-    xor esi, esi
     xor eax, eax
+    xor esi, esi
 49:
     cmp.q rsi, [rdi + 0x610]
     jnl 52

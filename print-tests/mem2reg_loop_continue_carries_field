@@ -166,30 +166,32 @@ opaque:
     ret
 =========== OPT LEVEL: aggresive ===========
 opaque:
+    sub rsp, 0x18
     pxor xmm0, xmm0
-    movups.x [rsp - 0x18], xmm0
-    mov.q [rsp - 0x18], 1
-    mov.q [rsp - 0x10], 0
+    movups.x [rsp], xmm0
+    mov.q [rsp], 1
+    mov.q [rsp + 0x8], 0
     xor ecx, ecx
 2:
     cmp rcx, 9
     jnl 4
-    mov.q rax, [rsp - 0x18]
+    mov.q rax, [rsp]
     add rax, 1
-    mov.q [rsp - 0x18], rax
+    mov.q [rsp], rax
     mov rsi, 2
     cqo
     idiv rsi
     cmp rdx, 0
     jz 3
-    mov.q rax, [rsp - 0x18]
-    add.q [rsp - 0x10], rax
+    mov.q rax, [rsp]
+    add.q [rsp + 0x8], rax
     jmp 3
 3:
     add rcx, 1
     jmp 2
 4:
-    mov.q rax, [rsp - 0x18]
+    mov.q rax, [rsp]
     imul rax, rax, 0x64
-    add.q rax, [rsp - 0x10]
+    add.q rax, [rsp + 0x8]
+    add rsp, 0x18
     ret

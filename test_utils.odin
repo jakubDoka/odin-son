@@ -329,7 +329,7 @@ run_test :: proc(
 			werr := os.write_entire_file(diff_path, dsb.buf[:])
 			assert(werr == nil)
 		} else if err == .Not_Exist {
-			//log.error("\n", highlight_disasm(string(dsb.buf[:])), sep = "")
+			log.error("\n", highlight_disasm(string(dsb.buf[:])), sep = "")
 		} else {
 			assert(err == nil)
 			new, old := string(dsb.buf[:]), string(file)

@@ -18,9 +18,9 @@ f:
     mov rdx, 0x41
     xor esi, esi
     call.q [rip - 0x5e]
-    xor esi, esi
+    xor edx, edx
 2:
-    mov rcx, rsi
+    mov rcx, rdx
     cmp rbp, 0
     jz 3
     mov.q rsi, [rsp + 0x51]
@@ -28,14 +28,14 @@ f:
     xor rdx, rdx
     div rbx
     add rsi, rdx
-    movzx.b eax, [rsi]
-    mov.b [rsp + rcx], al
-    mov rsi, rcx
-    add rsi, 1
+    movzx.b esi, [rsi]
     mov rax, rbp
     xor rdx, rdx
     div rbx
     mov rbp, rax
+    mov rdx, rcx
+    add rdx, 1
+    mov.b [rsp + rcx], sil
     jmp 2
 3:
     xor edi, edi
@@ -105,9 +105,9 @@ f:
     mov rdx, 0x41
     xor esi, esi
     call.q [rip - 0x5e]
-    xor esi, esi
+    xor edx, edx
 2:
-    mov rcx, rsi
+    mov rcx, rdx
     cmp rbp, 0
     jz 3
     mov.q rsi, [rsp + 0x51]
@@ -115,14 +115,14 @@ f:
     xor rdx, rdx
     div rbx
     add rsi, rdx
-    movzx.b eax, [rsi]
-    mov.b [rsp + rcx], al
-    mov rsi, rcx
-    add rsi, 1
+    movzx.b esi, [rsi]
     mov rax, rbp
     xor rdx, rdx
     div rbx
     mov rbp, rax
+    mov rdx, rcx
+    add rdx, 1
+    mov.b [rsp + rcx], sil
     jmp 2
 3:
     xor edi, edi
@@ -188,9 +188,9 @@ f:
     mov.q [rsp + 0x59], 0x23
     mov rdx, 0x41
     call.q [rip - 0x49]
-    xor esi, esi
+    xor edx, edx
 2:
-    mov rcx, rsi
+    mov rcx, rdx
     cmp rbp, 0
     jz 3
     mov.q rsi, [rsp + 0x51]
@@ -198,14 +198,14 @@ f:
     xor rdx, rdx
     div rbx
     add rsi, rdx
-    movzx.b eax, [rsi]
-    mov.b [rsp + rcx], al
-    mov rsi, rcx
-    add rsi, 1
+    movzx.b esi, [rsi]
     mov rax, rbp
     xor rdx, rdx
     div rbx
     mov rbp, rax
+    mov rdx, rcx
+    add rdx, 1
+    mov.b [rsp + rcx], sil
     jmp 2
 3:
     xor edi, edi
@@ -258,9 +258,9 @@ f:
     xor esi, esi
     mov rdx, 0x41
     call.q [rip - 0x2f]
-    xor esi, esi
+    xor r8d, r8d
 2:
-    mov rcx, rsi
+    mov rcx, r8
     cmp r12, 0
     jz 3
     lea rsi, [rip + 0xfaf]
@@ -268,14 +268,14 @@ f:
     xor rdx, rdx
     div rbp
     add rsi, rdx
-    movzx.b eax, [rsi]
-    mov.b [rsp + rcx], al
-    mov rsi, rcx
-    add rsi, 1
+    mov r8, rcx
+    add r8, 1
     mov rax, r12
     xor rdx, rdx
     div rbp
     mov r12, rax
+    movzx.b eax, [rsi]
+    mov.b [rsp + rcx], al
     jmp 2
 3:
     xor eax, eax
@@ -338,13 +338,15 @@ f:
     xor rdx, rdx
     div rcx
     add rsi, rdx
-    movzx.b eax, [rsi]
-    mov.b [rsp + r8 + 0x41], al
     mov rax, rdi
     xor rdx, rdx
     div rcx
     mov rdi, rax
-    add r8, 1
+    mov rax, r8
+    add rax, 1
+    movzx.b ecx, [rsi]
+    mov.b [rsp + r8 + 0x41], cl
+    mov r8, rax
     jmp 2
 3:
     xor ecx, ecx

@@ -2283,6 +2283,17 @@ x64_emit_instr :: proc(
 			}
 		}
 
+		// NOTE: this means we are a latch that has its Else branch replaced
+		// with direct loop backedge
+		inverted := true
+		for o in node.outs {
+			inverted &= backend.graph_get(ctx, o.id).itype != .Then
+		}
+
+		if inverted {
+			//op = CMP_OP_REVERSE[op]
+		}
+
 		emit(ctx.code, {0x0f, JCC_TABLE[op], 0, 0, 0, 0})
 
 		if !is_consecutive do break

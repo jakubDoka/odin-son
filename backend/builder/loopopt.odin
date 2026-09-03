@@ -42,6 +42,8 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 		no_late_pass = true,
 	)
 
+	reserve(&ctx.sched.bbs, len(ctx.sched.bbs) * 2)
+
 	for &bb in ctx.sched.bbs {
 		hnode := graph_get(ctx.graph, bb.head)
 		ctx.node_blocks[hnode.gvn] = &bb
@@ -58,8 +60,28 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 
 		hnode := backend.graph_expand(ctx, bb.head)
 		if hnode.itype != .Loop do continue
+
+		bnd := graph_expand(ctx, hnode.inps[1])
+
 		// NOTE: this should mean rotation does noting/already rotated
-		if graph_get(ctx, hnode.inps[1]).itype == .If do continue
+		if bnd.itype == .If do continue
+		if len(block_of(ctx, hnode.inps[1]).instrs) == 1 &&
+		   (bnd.itype == .Else || bnd.itype == .Then) &&
+		   graph_get(ctx, bnd.inps[0]).itype == .If &&
+		   block_of(ctx, bnd.inps[0]).loop_tree == bb.loop_tree {
+
+			already_latch := false
+			for out in backend.graph_outs(ctx, bnd.inps[0]) {
+				if graph_get(ctx, out.id).itype == .Loop {
+					already_latch = true
+				}
+			}
+
+			if !already_latch {
+				backend.graph_subsume(ctx, bnd.inps[0], hnode.inps[1])
+				continue
+			}
+		}
 
 		next_ctrl := bb.instrs[len(bb.instrs) - 1]
 
@@ -83,6 +105,10 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 
 		// NOTE: this if actually does not break out of the loop
 		if break_branch == nil do continue
+
+		assert(
+			graph_get(ctx, break_branch.head).rtype != backend.DEAD_NODE_KIND,
+		)
 
 		cond_is_inverted := then_else_bb[0] == break_branch
 
@@ -123,6 +149,9 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 			{guard_skip, break_branch.head, graph.start},
 		)
 
+		append(&ctx.sched.bbs, backend.Graph_Basic_Block{head = join})
+		ctx.node_blocks[graph_get(ctx, join).gvn] = &ctx.sched.bbs[len(ctx.sched.bbs) - 1]
+
 		bouts := backend.graph_outs(ctx, break_branch.head)
 		#reverse for out in bouts[:len(bouts) - 1] {
 			backend.graph_set_input(ctx, out.id, out.idx, join)
@@ -140,10 +169,9 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 					onode.inps[2],
 				)
 
-				oouts := backend.graph_outs(ctx, onode.inps[2])
-				assert(oouts[len(oouts) - 1].id == nphy)
+				oouts := backend.graph_outs(ctx, out.id)
 
-				rewire: #reverse for pout in oouts[:len(oouts) - 1] {
+				rewire: #reverse for pout in oouts {
 					blk := block_of(ctx, pout.id)
 
 					for cursor := blk.loop_tree;

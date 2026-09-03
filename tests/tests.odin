@@ -1564,6 +1564,54 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) rotated_nested_loops :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	x := 3
+	sum := 0
+	i := 0
+	for {
+		j := 0
+		for {
+			sum += i * j
+			j += 1
+			if j > x do break
+		}
+		i += 1
+		if i > x do break
+	}
+
+	return sum
+}
+
+main.run_test(t, `rotated_nested_loops`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	x := 3
+	sum := 0
+	i := 0
+	for {
+		j := 0
+		for {
+			sum += i * j
+			j += 1
+			if j > x do break
+		}
+		i += 1
+		if i > x do break
+	}
+
+	return sum
+}
+`, main_())
+}
 @(test) exemplar_affine_loop :: proc(t: ^testing.T) {
 
 
@@ -1595,6 +1643,54 @@ main :: proc() -> int {
 		if i < len(arr) {
 			arr[i] = i
 			i += 1
+		} else do break
+	}
+
+	return 0
+}
+`, main_())
+}
+@(test) affine_loop_different_liverange_induction :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	arr: [8]int
+	i := 0
+	for {
+		if i < len(arr) {
+			arr[i] = i
+			i += 1
+			if i > 4 {
+				i /= 2
+				i *= 2
+				i += 1
+			}
+		} else do break
+	}
+
+	return 0
+}
+
+main.run_test(t, `affine_loop_different_liverange_induction`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	arr: [8]int
+	i := 0
+	for {
+		if i < len(arr) {
+			arr[i] = i
+			i += 1
+			if i > 4 {
+				i /= 2
+				i *= 2
+				i += 1
+			}
 		} else do break
 	}
 
@@ -4105,10 +4201,10 @@ main_ :: proc() -> int {
 	for {
 		i += b
 		j += 1
-		if j == 3 do break
+		if j >= 3 do break
 	}
 
-	return 0
+	return j
 }
 
 main.run_test(t, `eliminate_phi_with_direct_cycle`, `
@@ -4123,10 +4219,10 @@ main :: proc() -> int {
 	for {
 		i += b
 		j += 1
-		if j == 3 do break
+		if j >= 3 do break
 	}
 
-	return 0
+	return j
 }
 `, main_())
 }

@@ -1,0 +1,123 @@
+=========== OPT LEVEL: none ===========
+main:
+    sub rsp, 0x48
+    lea rdi, [rsp]
+    xor esi, esi
+    mov rdx, 0x40
+    call.q [rip - 0x20]
+    xor ecx, ecx
+1:
+    cmp rcx, 8
+    jnge 2
+    xor eax, eax
+    add rsp, 0x48
+    ret
+2:
+    mov rax, rcx
+    add rax, 1
+    mov.q [rsp + rcx*8], rcx
+    cmp rax, 4
+    jnle 3
+    jmp 4
+3:
+    mov rcx, 2
+    cqo
+    idiv rcx
+    imul rax, rax, 2
+    add rax, 1
+4:
+    mov rcx, rax
+    jmp 1
+=========== OPT LEVEL: mininal ===========
+main:
+    sub rsp, 0x48
+    lea rdi, [rsp]
+    xor esi, esi
+    mov rdx, 0x40
+    call.q [rip - 0x20]
+    xor ecx, ecx
+1:
+    cmp rcx, 8
+    jnge 2
+    xor eax, eax
+    add rsp, 0x48
+    ret
+2:
+    mov rax, rcx
+    add rax, 1
+    mov.q [rsp + rcx*8], rcx
+    cmp rax, 4
+    jnle 3
+    jmp 4
+3:
+    mov rcx, 2
+    cqo
+    idiv rcx
+    imul rax, rax, 2
+    add rax, 1
+4:
+    mov rcx, rax
+    jmp 1
+=========== OPT LEVEL: moderate ===========
+main:
+    sub rsp, 0x48
+    pxor xmm0, xmm0
+    movups.x [rsp + 0x10], xmm0
+    movups.x [rsp], xmm0
+    movups.x [rsp + 0x30], xmm0
+    movups.x [rsp + 0x20], xmm0
+    xor ecx, ecx
+1:
+    cmp rcx, 8
+    jnge 2
+    xor eax, eax
+    add rsp, 0x48
+    ret
+2:
+    mov rax, rcx
+    add rax, 1
+    mov.q [rsp + rcx*8], rcx
+    cmp rax, 4
+    jnle 3
+    jmp 4
+3:
+    mov rcx, 2
+    cqo
+    idiv rcx
+    imul rax, rax, 2
+    add rax, 1
+4:
+    mov rcx, rax
+    jmp 1
+=========== OPT LEVEL: all ===========
+main:
+    sub rsp, 0x48
+    pxor xmm0, xmm0
+    movups.x [rsp + 0x10], xmm0
+    movups.x [rsp], xmm0
+    movups.x [rsp + 0x30], xmm0
+    movups.x [rsp + 0x20], xmm0
+    xor ecx, ecx
+1:
+    cmp rcx, 8
+    jnge 2
+    xor eax, eax
+    add rsp, 0x48
+    ret
+2:
+    mov rax, rcx
+    add rax, 1
+    mov.q [rsp + rcx*8], rcx
+    cmp rax, 4
+    jnle 3
+    jmp 4
+3:
+    mov rcx, 2
+    cqo
+    idiv rcx
+    imul rax, rax, 2
+    add rax, 1
+4:
+    mov rcx, rax
+    jmp 1
+=========== OPT LEVEL: aggresive ===========

@@ -812,7 +812,12 @@ graph_schedule_peeps :: proc(graph: ^Graph, schedule: ^Graph_Schedule) {
 	}
 
 	for &bb in schedule.bbs {
-		phi_shift: #reverse for instr, i in bb.instrs {
+		until := len(bb.instrs)
+		for ; until > 0 && graph_get(graph, bb.instrs[until - 1]).dt == .Void;
+		    until -= 1 {
+		}
+
+		phi_shift: #reverse for instr, i in bb.instrs[:until] {
 			inode := graph_expand(graph, instr)
 			if inode.output_count == 1 &&
 			   graph_get(graph, inode.outs[0].id).itype == .Phi &&
@@ -829,7 +834,7 @@ graph_schedule_peeps :: proc(graph: ^Graph, schedule: ^Graph_Schedule) {
 					}
 				}
 
-				slice.rotate_left(bb.instrs[i:len(bb.instrs) - 1], 1)
+				slice.rotate_left(bb.instrs[i:until - 1], 1)
 			}
 		}
 	}

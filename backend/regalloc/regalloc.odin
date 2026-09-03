@@ -428,12 +428,14 @@ regalloc_round :: proc(
 			if pred == graph.start do break
 
 			pred_block := graph_get(graph, backend.graph_idom(graph, pred))
-			assert(
+			fmt.assertf(
 				backend.graph_has_flag(
 					graph,
 					pred_block,
 					.Is_Basic_Block_Start,
 				),
+				"%v",
+				pred_block,
 			)
 
 			pred_bb_idx := int(pred_block.gvn) - block_base
@@ -1044,9 +1046,10 @@ regalloc_round :: proc(
 
 			remove_range(&bb.instrs, 0, keep)
 		}
-		log_lrgs(&ctx)
 	}
 	if ok do verify_alloc_integrity(ctx, res)
+
+	log_lrgs(&ctx)
 
 	return
 

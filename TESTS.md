@@ -806,6 +806,31 @@ main :: proc() -> int {
 }
 ```
 
+#### rotated nested loops
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	x := 3
+	sum := 0
+	i := 0
+	for {
+		j := 0
+		for {
+			sum += i * j
+			j += 1
+			if j > x do break
+		}
+		i += 1
+		if i > x do break
+	}
+
+	return sum
+}
+```
+
 #### exemplar affine loop
 ```odin
 package main
@@ -819,6 +844,31 @@ main :: proc() -> int {
 		if i < len(arr) {
 			arr[i] = i
 			i += 1
+		} else do break
+	}
+
+	return 0
+}
+```
+
+#### affine loop different liverange induction
+```odin
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	arr: [8]int
+	i := 0
+	for {
+		if i < len(arr) {
+			arr[i] = i
+			i += 1
+			if i > 4 {
+				i /= 2
+				i *= 2
+				i += 1
+			}
 		} else do break
 	}
 
@@ -2133,10 +2183,10 @@ main :: proc() -> int {
 	for {
 		i += b
 		j += 1
-		if j == 3 do break
+		if j >= 3 do break
 	}
 
-	return 0
+	return j
 }
 ```
 

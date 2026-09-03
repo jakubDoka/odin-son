@@ -278,32 +278,32 @@ main:
     jnz 1
     mov r11, 0xc6
     mov r9, 0xa2
-    mov r8, 0x82
-    mov rax, 0x66
+    mov r8, 0x66
+    mov rax, 0x82
     jmp 2
 1:
     mov r11, 0x325
     mov r9, 0x1f4
-    mov r8, 0x113
-    mov rax, 0x76
+    mov r8, 0x76
+    mov rax, 0x113
 2:
-    mov rcx, rax
-    imul rcx, r8
+    mov rcx, r8
+    imul rcx, rax
     add rcx, 0x3c
     mov rdx, r9
     imul rdx, r11
     add rdx, 0x6c
-    mov rsi, rax
+    mov rsi, r8
     imul rsi, r9
     add rsi, 0xac
-    mov rdi, r8
+    mov rdi, rax
     imul rdi, r11
     add rdi, 0xfc
     test r10b, r10b
     jnz 3
-    mov rbx, rdx
-    mov r12, rdi
     mov r10, rcx
+    mov r12, rdi
+    mov rbx, rdx
     mov rbp, rsi
     jmp 4
 3:
@@ -316,7 +316,7 @@ main:
     imul r12, rdi, 8
     add r12, 9
 4:
-    lea rax, [rax + r8 + 0x528]
+    lea rax, [r8 + rax + 0x528]
     add rax, r9
     add rax, r11
     add rax, rcx

@@ -18,7 +18,7 @@ Graph_Basic_Block :: struct {
 }
 
 Graph_Schedule :: struct {
-	bbs: []Graph_Basic_Block,
+	bbs: [dynamic]Graph_Basic_Block,
 }
 
 Loop_Tree :: struct {
@@ -139,12 +139,14 @@ graph_schedule :: proc(
 	lctx.loop_trees = make([]^Loop_Tree, graph.gvn * 2)
 
 	lctx.root = new(Loop_Tree, scratch)
+	lctx.root.depth = 1
 
 	if graph.end != 0 {
 		end := graph_expand(graph, graph.end)
 		lctx.loop_trees[end.gvn] = lctx.root
 	}
 	build_loop_tree(&lctx, graph.entry, lctx.root, scratch)
+	lctx.root.depth = 0
 
 	if graph.end != 0 {
 		end := graph_expand(graph, graph.end)
@@ -226,7 +228,15 @@ graph_schedule :: proc(
 		for o in node.outs {
 			if !is_cfg(ctx, o.id) do continue
 			other := build_loop_tree(ctx, o.id, tree, scratch)
-			deepest = select(deepest, other, true)
+
+			// The other != tree check is not enough, rotated loops cause the
+			// tree to be different from both if branches
+			new_deepest := select(deepest, other, true)
+			if new_deepest != deepest && deepest != nil {
+				new_deepest.infinite = false
+			}
+			deepest = new_deepest
+
 			if other != tree {
 				//fmt.assertf(tree != ctx.root, "%v", rawptr(other))
 				tree.parent = select(tree.parent, other, true)
@@ -242,12 +252,19 @@ graph_schedule :: proc(
 			}
 			deepest = tree.parent
 
+			//tree.infinite &= graph_get(ctx, node.inps[1]).itype != .If
 			if tree.infinite {
 				prev_sloc := graph_push_sloc(
 					ctx,
 					graph_dbg_slot(ctx, node.node)^,
 				)
 				defer graph_pop_sloc(ctx, prev_sloc)
+
+				fmt.assertf(
+					graph_get(ctx, node.inps[1]).itype != .If,
+					"%v",
+					graph_get(ctx, node.inps[1]),
+				)
 
 				always := graph_add_always(ctx, "alw", node.inps[1])
 				then := graph_add_then(ctx, "athn", always)
@@ -280,6 +297,8 @@ graph_schedule :: proc(
 			b: ^Loop_Tree,
 			deepest: bool,
 		) -> ^Loop_Tree {
+			assert(a == nil || a.depth != 0)
+			assert(b == nil || b.depth != 0)
 			if a == nil do return b
 			if b == nil do return a
 			if deepest {
@@ -672,7 +691,7 @@ graph_schedule :: proc(
 		schedule_block(ctx, &bb)
 	}
 
-	gs.bbs = bbs[:]
+	gs.bbs = bbs
 
 	// if 1 == 0 {
 	//graph_display(os.to_writer(os.stderr), graph, gs)

@@ -611,6 +611,7 @@ builder_peep :: proc(
 		}
 	case .Then, .Else:
 		if_ := graph_expand(ctx, node.inps[0])
+		if if_.itype != .If do break
 		cond_const := backend.graph_extra(ctx, if_.inps[1], CInt)
 		if cond_const != nil {
 			if (cond_const.value == 0) ~ (node.itype == .Else) {

@@ -150,7 +150,7 @@ graph_schedule :: proc(
 
 	if graph.end != 0 {
 		end := graph_expand(graph, graph.end)
-		if !no_late_pass {
+		if !no_late_pass && false {
 			remove_count := 0
 			#reverse for inp, i in end.inps {
 				inode := graph_expand(graph, inp)
@@ -233,6 +233,7 @@ graph_schedule :: proc(
 			// tree to be different from both if branches
 			new_deepest := select(deepest, other, true)
 			if new_deepest != deepest && deepest != nil {
+				new_deepest.parent = select(new_deepest.parent, deepest, true)
 				new_deepest.infinite = false
 			}
 			deepest = new_deepest
@@ -252,7 +253,6 @@ graph_schedule :: proc(
 			}
 			deepest = tree.parent
 
-			//tree.infinite &= graph_get(ctx, node.inps[1]).itype != .If
 			if tree.infinite {
 				prev_sloc := graph_push_sloc(
 					ctx,
@@ -262,8 +262,9 @@ graph_schedule :: proc(
 
 				fmt.assertf(
 					graph_get(ctx, node.inps[1]).itype != .If,
-					"%v",
+					"%v %v",
 					graph_get(ctx, node.inps[1]),
+					rawptr(tree),
 				)
 
 				always := graph_add_always(ctx, "alw", node.inps[1])
@@ -341,11 +342,12 @@ graph_schedule :: proc(
 		for o in node.outs {
 			onode := graph_get(graph, o.id)
 			if is_cfg(graph, o.id) {
-				if (onode.itype == .Region || onode.itype == .Loop) &&
+				if ((onode.itype == .Region &&
+						   o.idx != int(onode.input_count - 1)) ||
+					   onode.itype == .Loop) &&
 				   node.itype != .Jump &&
 				   node.itype != .Trap &&
 				   node.itype != .If &&
-				   root != graph.start &&
 				   insert_jumps {
 					prev := graph_push_sloc(
 						graph,
@@ -693,10 +695,10 @@ graph_schedule :: proc(
 
 	gs.bbs = bbs
 
-	// if 1 == 0 {
-	//graph_display(os.to_writer(os.stderr), graph, gs)
-	// 	if has_unscheduled do panic("")
-	// }
+	if 0 == 1 {
+		graph_display(os.to_writer(os.stderr), graph, gs)
+		// 	if has_unscheduled do panic("")
+	}
 
 	if graph.end != 0 {
 		verify_schedule_integrity(graph, gs, ctx.antideps, no_late_pass)
@@ -752,16 +754,6 @@ graph_schedule :: proc(
 				}
 			}
 		}
-
-		#reverse for instr, i in bb.instrs {
-			inode := graph_expand(graph, instr)
-			if inode.output_count == 1 &&
-			   ctx.extra_outputs[inode.gvn] == 0 &&
-			   inode.outs[0].id == bb.instrs[len(bb.instrs) - 1] {
-				slice.rotate_left(bb.instrs[i:len(bb.instrs) - 1], 1)
-				break
-			}
-		}
 	}
 }
 
@@ -800,6 +792,14 @@ verify_schedule_integrity :: proc(
 	}
 
 	for bb in sched.bbs {
+		seen_phi := false
+		#reverse for instr in bb.instrs {
+			inode := graph_get(graph, instr)
+			is_phi_or_mem := inode.itype == .Phi || inode.itype == .Mem
+			fmt.assertf(!seen_phi || is_phi_or_mem, "%v", inode)
+			seen_phi |= inode.itype == .Phi
+		}
+
 		for instr in bb.instrs {
 			if graph_has_flag(graph, instr, .Is_Basic_Block_Start) do continue
 			inode := graph_expand(graph, instr)
@@ -820,9 +820,13 @@ verify_schedule_integrity :: proc(
 				fmt.assertf(latest != 0, "%v", inode)
 				if inode.itype == .Phi {
 					latest = graph_inps(graph, inode.inps[0])[i - 1]
-					if graph_get(graph, latest).itype == .Jump {
+					if graph_get(graph, latest).itype == .Jump ||
+					   graph_get(graph, latest).itype == .If {
 						latest = graph_inps(graph, latest)[0]
 					}
+					assert(
+						graph_has_flag(graph, latest, .Is_Basic_Block_Start),
+					)
 				}
 
 				for insched != latest {

@@ -996,6 +996,8 @@ graph_iter_peeps :: proc(ctx: Peep_Ctx) -> (optimized: bool) {
 		}
 	}
 
+	walk(graph)
+
 	graph.worklist = nil
 	graph.triggers = nil
 
@@ -1521,6 +1523,31 @@ graph_node_eq :: proc(graph: ^Graph, a, b: Node_ID) -> bool {
 	return true
 }
 
+@(disabled = ODIN_DISABLE_ASSERT)
+walk :: proc(graph: ^Graph) {
+	seen_intern_slots := bit_arr.init(graph.interner.len)
+	wl: queue.Queue(Node_ID)
+	queue.init(&wl)
+	collect_nodes(graph, &wl)
+	for n in worklist_next(graph, &wl) {
+		if len(graph_outs(graph, n)) == 0 &&
+		   !graph_has_flag(graph, n, .Immortal) {
+			fmt.panicf("%v", graph_get(graph, n))
+		}
+		if graph_has_flag(graph, n, .Interned) {
+			fmt.println(graph_get(graph, n))
+			idx, _ := graph_interner_find(graph, n, 0) or_else panic("")
+			fmt.assertf(
+				bit_arr.set(seen_intern_slots, idx),
+				"%v",
+				graph_get(graph, n),
+			)
+		}
+	}
+
+	assert(bit_arr.pop_count(seen_intern_slots) == graph.interner.len)
+}
+
 graph_set_input :: proc(
 	graph: ^Graph,
 	id: Node_ID,
@@ -1528,6 +1555,12 @@ graph_set_input :: proc(
 	value: Node_ID,
 ) -> Node_ID {
 	node := graph_expand(graph, id)
+
+	if get_tag(graph, value).stable_id == 271 && node.itype == .Return {
+		panic("")
+	}
+
+	assert(value != 0)
 
 	assert(idx < len(node.inps))
 	if node.inps[idx] == value do return id
@@ -1737,6 +1770,7 @@ push_node_tag_new :: proc(graph: ^Graph, tag: string) {
 		//@(static) stable_id: u32
 
 		//stable_id += 1
+		graph.stable_id += 1
 		push_node_tag_full(graph, {tag, graph.stable_id})
 	}
 }
@@ -1989,10 +2023,13 @@ graph_add_output_node :: proc(
 	graph_ensure_available_output_cap(graph, node, 1)
 
 	if out != 0 {
-		assert(
+		fmt.assertf(
 			graph_extra(graph, node, Cfg) == nil ||
 			graph_get(graph, out).itype != .Phi ||
 			i == 0,
+			"%v %v",
+			node,
+			out,
 		)
 	}
 

@@ -4646,10 +4646,11 @@ opt_level :: "none"
 
 main_ :: proc() -> int {
 	arr := [8]int{3, 14, 25, 8, 40, 17, 55, 2}
-
-	slc: []int = arr[:]
 	sum := 0
 	i := 0
+
+if false {
+	slc: []int = arr[:]
 	for {
 		if i >= len(slc) do break
 		sum += slc[i]
@@ -4688,8 +4689,9 @@ main_ :: proc() -> int {
 		sum += slc[i]
 		i += 1
 	}
+}
 
-	quick_sort(arr[:])
+	//quick_sort(arr[:])
 
 	i = 0
 	for {
@@ -4701,6 +4703,7 @@ main_ :: proc() -> int {
 
 	bubble_sort(arr[:])
 
+if false {
 	i = 0
 	for {
 		if i >= len(arr) do break
@@ -4708,6 +4711,7 @@ main_ :: proc() -> int {
 		sum += arr[i] << uint(i)
 		i += 1
 	}
+}
 
 	return sum
 }
@@ -4787,10 +4791,11 @@ opt_level :: "none"
 
 main :: proc() -> int {
 	arr := [8]int{3, 14, 25, 8, 40, 17, 55, 2}
-
-	slc: []int = arr[:]
 	sum := 0
 	i := 0
+
+if false {
+	slc: []int = arr[:]
 	for {
 		if i >= len(slc) do break
 		sum += slc[i]
@@ -4829,8 +4834,9 @@ main :: proc() -> int {
 		sum += slc[i]
 		i += 1
 	}
+}
 
-	quick_sort(arr[:])
+	//quick_sort(arr[:])
 
 	i = 0
 	for {
@@ -4842,6 +4848,7 @@ main :: proc() -> int {
 
 	bubble_sort(arr[:])
 
+if false {
 	i = 0
 	for {
 		if i >= len(arr) do break
@@ -4849,6 +4856,7 @@ main :: proc() -> int {
 		sum += arr[i] << uint(i)
 		i += 1
 	}
+}
 
 	return sum
 }

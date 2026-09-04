@@ -2,7 +2,6 @@ package builder
 
 import backend ".."
 import "../../vendored/gam/util/arna"
-import "core:container/queue"
 import "core:fmt"
 import "core:mem"
 import "core:slice"
@@ -195,7 +194,9 @@ graph_end_loop :: proc(
 				)
 				inode.itype = .Phi
 				id := backend.graph_intern(graph, init)
-				if id != init do backend.graph_subsume(graph, id, init)
+				if id != init {
+					backend.graph_subsume(graph, id, init)
+				}
 			}
 		}
 
@@ -390,9 +391,32 @@ graph_inline_graph :: proc(
 
 	context.allocator, _ = arna.scrath()
 
-	walk(graph)
+	if !ODIN_DISABLE_ASSERT {
+		sched: backend.Graph_Schedule
+		backend.graph_schedule(
+			graph,
+			&sched,
+			context.allocator,
+			no_late_pass = true,
+		)
+	}
+
+	if !ODIN_DISABLE_ASSERT {
+		backend.current_graph = from
+		defer backend.current_graph = graph
+		sched: backend.Graph_Schedule
+		backend.graph_schedule(
+			from,
+			&sched,
+			context.allocator,
+			no_late_pass = true,
+		)
+	}
+
+	backend.verify(graph)
 
 	graph.peeped = false
+	graph.invalid_idoms = true
 
 	Ctx :: struct {
 		graph:          ^backend.Graph,
@@ -579,19 +603,16 @@ graph_inline_graph :: proc(
 
 	backend.assert_live_pins(graph)
 
-	walk(graph)
+	backend.verify(graph)
 
-	@(disabled = ODIN_DISABLE_ASSERT)
-	walk :: proc(graph: ^backend.Graph) {
-		wl: queue.Queue(Node_ID)
-		queue.init(&wl)
-		backend.collect_nodes(graph, &wl)
-		for n in backend.worklist_next(graph, &wl) {
-			if len(backend.graph_outs(graph, n)) == 0 &&
-			   !backend.graph_has_flag(graph, n, .Immortal) {
-				fmt.panicf("wut %v", backend.graph_get(graph, n))
-			}
-		}
+	if !ODIN_DISABLE_ASSERT {
+		sched: backend.Graph_Schedule
+		backend.graph_schedule(
+			graph,
+			&sched,
+			context.allocator,
+			no_late_pass = true,
+		)
 	}
 
 	clone_along_cfg :: proc(ctx: ^Ctx, root: backend.Node_ID) {
@@ -755,6 +776,7 @@ graph_inline_graph :: proc(
 
 		id := backend.graph_id(graph, new_node)
 		interned := backend.graph_intern(graph, id)
+
 		if interned != id {
 			graph.mem.pos = prev
 			id = interned

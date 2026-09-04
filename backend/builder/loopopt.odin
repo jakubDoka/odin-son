@@ -2,6 +2,7 @@ package builder
 
 import backend ".."
 import "../../vendored/gam/util/arna"
+import "../../vendored/gam/util/bit_arr"
 import "core:fmt"
 import "core:mem"
 import "core:slice"
@@ -14,11 +15,14 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 	defer graph.peeped &= !optimized
 
 	Ctx :: struct {
-		using graph: ^backend.Graph,
-		sched:       backend.Graph_Schedule,
-		cloned:      []Node_ID,
-		node_blocks: []^backend.Graph_Basic_Block,
-		instrs:      []Node_ID,
+		using graph:   ^backend.Graph,
+		sched:         backend.Graph_Schedule,
+		cloned_up:     []Node_ID,
+		cloned_down:   []Node_ID,
+		node_blocks:   []^backend.Graph_Basic_Block,
+		in_loop_nodes: bit_arr.Bit_Set,
+		instrs:        []Node_ID,
+		current_loop:  Node_ID,
 	}
 
 	block_of :: proc(
@@ -33,8 +37,10 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 
 	ctx: Ctx
 	ctx.graph = graph
-	ctx.cloned = make([]Node_ID, graph.gvn * 2)
+	ctx.cloned_up = make([]Node_ID, graph.gvn * 2)
+	ctx.cloned_down = make([]Node_ID, graph.gvn * 2)
 	ctx.node_blocks = make(type_of(ctx.node_blocks), graph.gvn * 2)
+	ctx.in_loop_nodes = bit_arr.init(graph.gvn * 2)
 	backend.graph_schedule(
 		graph,
 		&ctx.sched,
@@ -48,12 +54,17 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 		hnode := graph_get(ctx.graph, bb.head)
 		ctx.node_blocks[hnode.gvn] = &bb
 		for instr in bb.instrs {
+			if backend.graph_has_flag(
+				ctx.graph,
+				instr,
+				.Is_Basic_Block_Start,
+			) {continue}
 			inode := graph_get(ctx.graph, instr)
 			ctx.node_blocks[inode.gvn] = &bb
 		}
 	}
 
-	for bb, i in ctx.sched.bbs {
+	rotate: for &bb, i in ctx.sched.bbs {
 		if graph_get(ctx, bb.head).rtype == backend.DEAD_NODE_KIND {
 			continue
 		}
@@ -106,14 +117,40 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 		// NOTE: this if actually does not break out of the loop
 		if break_branch == nil do continue
 
+		fmt.assertf(
+			continue_branch != nil,
+			"%v %v",
+			then_else_bb,
+			bb.loop_tree,
+		)
+
 		assert(
 			graph_get(ctx, break_branch.head).rtype != backend.DEAD_NODE_KIND,
 		)
 
 		cond_is_inverted := then_else_bb[0] == break_branch
 
+		ctx.current_loop = bb.head
 		ctx.instrs = bb.instrs[:]
 
+		to_clone: [dynamic]Node_ID
+
+		bit_arr.set_all(ctx.in_loop_nodes, false)
+
+		#reverse for instr in bb.instrs[:len(bb.instrs) - 1] {
+			nd := graph_expand(ctx, instr)
+			for out in nd.outs {
+				blk := block_of(ctx, out.id)
+				if !in_loop(bb.loop_tree, blk.loop_tree) {
+					append(&to_clone, instr)
+					break
+				}
+			}
+		}
+
+		for node in to_clone {
+			if !check_valid_ops(ctx, node) do continue rotate
+		}
 		if !check_valid_ops(ctx, nnode.inps[1]) do continue
 
 		optimized = true
@@ -126,10 +163,16 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 		)
 
 		guard := backend.graph_add_if(ctx, "urlg", hnode.inps[0], guard_cond)
-		guard_loop := backend.graph_add_then(ctx, "urltn", guard)
-		guard_skip := backend.graph_add_else(ctx, "urles", guard)
+		ctx.node_blocks[graph_get(ctx, guard).gvn] = block_of(
+			ctx,
+			hnode.inps[0],
+		)
 
-		slice.fill(ctx.cloned, 0)
+		guard_loop := backend.graph_add_then(ctx, "urltn", guard)
+		wire_up_new_block(&ctx, guard_loop, bb.loop_tree.parent)
+		guard_skip := backend.graph_add_else(ctx, "urles", guard)
+		wire_up_new_block(&ctx, guard_skip, bb.loop_tree.parent)
+
 		back_cond := clone_by(
 			ctx,
 			nnode.inps[1],
@@ -148,43 +191,132 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 			"urljn",
 			{guard_skip, break_branch.head, graph.start},
 		)
+		join_bb := wire_up_new_block(&ctx, join, bb.loop_tree.parent)
 
-		append(&ctx.sched.bbs, backend.Graph_Basic_Block{head = join})
-		ctx.node_blocks[graph_get(ctx, join).gvn] = &ctx.sched.bbs[len(ctx.sched.bbs) - 1]
+		wire_up_new_block :: proc(
+			ctx: ^Ctx,
+			node: Node_ID,
+			ltree: ^backend.Loop_Tree,
+		) -> ^backend.Graph_Basic_Block {
+			append(
+				&ctx.sched.bbs,
+				backend.Graph_Basic_Block{head = node, loop_tree = ltree},
+			)
+			join_bb := &ctx.sched.bbs[len(ctx.sched.bbs) - 1]
+			ctx.node_blocks[graph_get(ctx, node).gvn] = join_bb
+			return join_bb
+		}
 
 		bouts := backend.graph_outs(ctx, break_branch.head)
 		#reverse for out in bouts[:len(bouts) - 1] {
 			backend.graph_set_input(ctx, out.id, out.idx, join)
 		}
 
-		#reverse for out in hnode.outs {
-			onode := graph_expand(ctx, out.id)
-			if onode.itype == .Phi {
-				nphy := backend.graph_add_phi(
-					ctx,
-					"urlph",
-					onode.dt,
-					join,
-					onode.inps[1],
-					onode.inps[2],
-				)
+		for instr in break_branch.instrs {
+			if !backend.graph_has_flag(ctx, instr, .Is_Basic_Block_Start) {
+				ctx.node_blocks[graph_get(ctx, instr).gvn] = join_bb
+			}
+		}
 
-				oouts := backend.graph_outs(ctx, out.id)
+		if !ODIN_DISABLE_ASSERT {
+			for &bb in ctx.sched.bbs {
+				if graph_get(ctx, bb.head).rtype == backend.DEAD_NODE_KIND do continue
+				assert(block_of(ctx, bb.head) == &bb)
+			}
+		}
 
-				rewire: #reverse for pout in oouts {
-					blk := block_of(ctx, pout.id)
+		hnode = graph_expand(ctx, bb.head)
 
-					for cursor := blk.loop_tree;
-					    cursor != nil;
-					    cursor = cursor.parent {
-						if cursor == bb.loop_tree do continue rewire
-					}
+		#reverse for out in to_clone {
+			init := clone_by(ctx, out, 1, block_of(ctx, hnode.inps[0]))
+			back := clone_by(ctx, out, 2, block_of(ctx, hnode.inps[1]))
 
-					backend.graph_set_input(ctx, pout.id, pout.idx, nphy)
+			onode := graph_expand(ctx, out)
+			nphy := backend.graph_add_phi(
+				ctx,
+				"urlph",
+				onode.dt,
+				join,
+				init,
+				back,
+			)
+			ctx.node_blocks[graph_get(ctx, nphy).gvn] = join_bb
+
+			oouts := backend.graph_outs(ctx, out)
+
+			rewire: #reverse for pout in oouts {
+				blk := block_of(ctx, pout.id)
+				ponode := graph_get(ctx, pout.id)
+
+				if in_loop(bb.loop_tree, blk.loop_tree) {
+					continue
 				}
 
-				backend.graph_delete(ctx, nphy)
+				dblk := blk.head
+				if ponode.itype == .Phi {
+					dblk = graph_expand(ctx, dblk).inps[pout.idx - 1]
+					if graph_get(ctx, dblk).itype == .If {
+						dblk = graph_expand(ctx, dblk).inps[0]
+					}
+					fmt.assertf(
+						backend.graph_has_flag(
+							ctx,
+							dblk,
+							.Is_Basic_Block_Start,
+						),
+						"%v",
+						graph_get(ctx, dblk),
+					)
+				}
+
+				pdblk := dblk
+
+				for {
+					if !ODIN_DISABLE_ASSERT && dblk == ctx.start {
+						ctx.sched = {}
+						fmt.eprintln(join, pdblk, bb)
+						backend.graph_schedule(
+							ctx,
+							&ctx.sched,
+							context.allocator,
+							no_late_pass = true,
+						)
+						panic("")
+					}
+
+					if bb.head == dblk {
+						assert(bb.loop_tree == block_of(ctx, dblk).loop_tree)
+					}
+
+					if in_loop(bb.loop_tree, block_of(ctx, dblk).loop_tree) {
+						continue rewire
+					}
+
+					if dblk == join {
+						break
+					}
+
+					// NOTE: this should be fine since we never move the join
+					dblk = backend.graph_idom(ctx, dblk)
+				}
+
+				backend.graph_set_input(ctx, pout.id, pout.idx, nphy)
 			}
+		}
+
+		in_loop :: proc(
+			this: ^backend.Loop_Tree,
+			tested: ^backend.Loop_Tree,
+		) -> bool {
+			assert(tested != nil)
+			assert(this != nil)
+			for cursor := tested; cursor != nil; cursor = cursor.parent {
+				if cursor == this {
+					return true
+				}
+			}
+
+			return false
 		}
 
 		backend.graph_pin(ctx, continue_branch.head)
@@ -237,16 +369,28 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 		phy_idx: int,
 		ctrl: ^backend.Graph_Basic_Block,
 	) -> Node_ID {
+		if root == ctx.current_loop {
+			return ctrl.head
+		}
+
 		if !slice.contains(ctx.instrs, root) do return root
 
-		node := graph_expand(ctx, root)
+		cloned := ctx.cloned_down
+		if phy_idx == 1 {
+			cloned = ctx.cloned_up
+		} else {
+			assert(phy_idx == 2)
+		}
 
-		if ctx.cloned[node.gvn] == 0 {
-			if node.itype == .Phi {
-				ctx.cloned[node.gvn] = node.inps[phy_idx]
+		node := graph_expand(ctx, root)
+		if cloned[node.gvn] == 0 {
+			if node.itype == .Phi && node.inps[0] == ctx.current_loop {
+				cloned[node.gvn] = node.inps[phy_idx]
 			} else {
 				graph := ctx.graph
 				PRECISION :: backend.PRECISION
+
+				prev := graph.mem.pos
 
 				inps := make([]Node_ID, len(node.inps))
 
@@ -283,15 +427,23 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 				new_node.output_count = 0
 				new_node.output_cap = node.output_cap
 
-				ctx.cloned[node.gvn] = backend.graph_id(graph, new_node)
-				ctx.node_blocks[new_node.gvn] = ctrl
-
-				for inp, i in inps {
-					backend.graph_add_output(ctx, inp, ctx.cloned[node.gvn], i)
+				id := backend.graph_id(graph, new_node)
+				interned := backend.graph_intern(graph, id)
+				if interned != id {
+					graph.mem.pos = prev
+					id = interned
+					graph.gvn -= 1
+					cloned[node.gvn] = id
+				} else {
+					ctx.node_blocks[new_node.gvn] = ctrl
+					cloned[node.gvn] = id
+					for inp, i in inps {
+						backend.graph_add_output(ctx, inp, cloned[node.gvn], i)
+					}
 				}
 			}
 		}
 
-		return ctx.cloned[node.gvn]
+		return cloned[node.gvn]
 	}
 }

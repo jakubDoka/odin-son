@@ -779,6 +779,7 @@ inline_and_optimize :: proc(
 		backend.graph_iter_peeps({graph = ctx})
 		builder.memopt(ctx)
 		backend.graph_iter_peeps({graph = ctx})
+
 		backend.graph_compact(ctx)
 
 		delete(caller.stencil.mem, perm)
@@ -944,6 +945,16 @@ emit_proc_code :: proc(
 
 	// We are doing this with different spec now
 	backend.graph_iter_peeps(peep_ctx)
+
+	if !ODIN_DISABLE_ASSERT {
+		sched: backend.Graph_Schedule
+		backend.graph_schedule(
+			ctx,
+			&sched,
+			context.allocator,
+			no_late_pass = true,
+		)
+	}
 
 	backend.graph_compact(ctx)
 

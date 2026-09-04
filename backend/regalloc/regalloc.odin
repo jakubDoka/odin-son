@@ -64,7 +64,7 @@ regalloc_round :: proc(
 		sched:           ^backend.Graph_Schedule,
 		instr_placement: []Instr_Placement,
 		lrg_table:       []^backend.Lrg,
-		self_conflicts:  map[Self_Conflict]struct{},
+		self_conflicts:  map[Self_Conflict]Node_ID,
 		adj:             [][]^backend.Lrg,
 		metas:           []backend.Regalloc_Node_Meta,
 	}
@@ -882,7 +882,7 @@ regalloc_round :: proc(
 		}
 	}
 
-	for sc in ctx.self_conflicts {
+	resolve: for sc, oth in ctx.self_conflicts {
 		lrg := &lrgs[sc.lrg]
 		id := sc.node
 
@@ -893,15 +893,31 @@ regalloc_round :: proc(
 		// are at it, lets reuse the immediate split
 		last_split: Node_ID
 
+		for out in node.outs {
+			onode := graph_expand(graph, out.id)
+
+			if oth == out.id && onode.itype == .Phi {
+				nd := split_after(ctx, "scp", oth, must = true)
+				onode = graph_expand(graph, out.id)
+
+				#reverse for out in onode.outs[:len(onode.outs) - 1] {
+					backend.graph_set_input(ctx.graph, out.id, out.idx, nd)
+				}
+
+				continue resolve
+			}
+		}
+
 		for inp, j in node.inps {
 			if get_lrg(ctx, inp) == nil do continue
+
+			inode := graph_get(graph, inp)
 
 			if j != int(ctx.metas[node.gvn].in_place_slot) &&
 			   node.itype != .Phi {
 				continue
 			}
 
-			inode := graph_get(graph, inp)
 			if inode.dt == .Void do continue
 			if inode.gvn >= prev_gvn {
 				if graph_get(graph, inp).itype == .Split {
@@ -938,6 +954,7 @@ regalloc_round :: proc(
 		last_split_out: Node_ID
 		for out in slice.clone(node.outs) {
 			onode := graph_expand(graph, out.id)
+
 			if onode.dt == .Void do continue
 			if onode.gvn >= prev_gvn do continue
 
@@ -1097,12 +1114,14 @@ regalloc_round :: proc(
 	verify_alloc_integrity :: proc(ctx: Ctx, res: []backend.Reg) {
 		seen := bit_arr.init(ctx.graph.gvn)
 		for &bb in ctx.sched.bbs {
-			seen_phi := false
-			#reverse for instr in bb.instrs {
-				inode := graph_get(ctx.graph, instr)
-				is_phi_or_mem := inode.itype == .Phi || inode.itype == .Mem
-				fmt.assertf(!seen_phi || is_phi_or_mem, "%v", inode)
-				seen_phi |= inode.itype == .Phi
+			if !ODIN_DISABLE_ASSERT {
+				seen_phi := false
+				#reverse for instr in bb.instrs {
+					inode := graph_get(ctx.graph, instr)
+					is_phi_or_mem := inode.itype == .Phi || inode.itype == .Mem
+					fmt.assertf(!seen_phi || is_phi_or_mem, "%v", inode)
+					seen_phi |= inode.itype == .Phi
+				}
 			}
 
 			for instr, i in bb.instrs {
@@ -1237,6 +1256,7 @@ regalloc_round :: proc(
 		v, ok := liveouts_slot(louts, lrg.index)
 		if ok {
 			if !add_conflict(ctx, lrg, n.node, v.node) {
+				//fmt.println(n.node, v.node, louts.data.id[:louts.len])
 				return
 			}
 		}
@@ -1451,8 +1471,8 @@ regalloc_round :: proc(
 
 		if a != b {
 			lrg.self_conflict = true
-			ctx.self_conflicts[Self_Conflict{lrg.index, a}] = {}
-			ctx.self_conflicts[Self_Conflict{lrg.index, b}] = {}
+			ctx.self_conflicts[Self_Conflict{lrg.index, a}] = b
+			ctx.self_conflicts[Self_Conflict{lrg.index, b}] = a
 		}
 
 		return a == b
@@ -1532,8 +1552,7 @@ regalloc_round :: proc(
 			bb: backend.Graph_Basic_Block,
 		) {
 			ctx := (^Ctx)(context.user_ptr)
-			if len(ctx.lrg_table) == 0 do return
-			if instr.dt != .Void {
+			if instr.dt != .Void && len(ctx.lrg_table) != 0 {
 				lrg := get_lrg(ctx^, backend.graph_id(ctx.graph, instr))
 				if lrg == nil do return
 				fmt.wprintf(w, "%v:", lrg.mask)
@@ -1547,7 +1566,7 @@ regalloc_round :: proc(
 					fmt.wprint(w, "            ")
 				}
 			} else {
-				fmt.wprint(w, "                           ")
+				fmt.wprint(w, "                                 ")
 			}
 		}
 

@@ -163,8 +163,11 @@ builder_peep :: proc(
 	ctx: backend.Peep_Ctx,
 	node: backend.Expanded_Node,
 	_: $T,
-) -> Node_ID {
+) -> (
+	res: Node_ID,
+) {
 	node := node
+
 	id := backend.graph_id(ctx, node)
 	is_complete := backend.peep_ctx_graph_is_complete(ctx)
 

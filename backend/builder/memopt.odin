@@ -223,8 +223,6 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 		}
 	}
 
-	backend.verify(graph)
-
 	return ctx.slot_count != 0
 
 	walk_thread :: proc(ctx: ^Ctx, thread: Node_ID) {

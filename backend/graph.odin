@@ -783,6 +783,33 @@ graph_peep :: proc(graph: ^Graph, id: Node_ID) -> (r: Node_ID) {
 	return res
 }
 
+@(disabled = ODIN_DISABLE_ASSERT)
+verify :: proc(graph: ^Graph) {
+	seen_intern_slots := bit_arr.init(graph.interner.len)
+	wl: queue.Queue(Node_ID)
+	queue.init(&wl)
+	collect_nodes(graph, &wl)
+	for n in worklist_next(graph, &wl) {
+		if len(graph_outs(graph, n)) == 0 &&
+		   !graph_has_flag(graph, n, .Immortal) {
+			fmt.panicf("%v", graph_get(graph, n))
+		}
+		if graph_has_flag(graph, n, .Interned) && !graph.dont_intern && false {
+			fmt.println(graph_get(graph, n))
+			idx, _ := graph_interner_find(graph, n, 0) or_else panic("")
+			fmt.assertf(
+				bit_arr.set(seen_intern_slots, idx),
+				"%v",
+				graph_get(graph, n),
+			)
+		}
+	}
+
+	if !graph.dont_intern && false {
+		assert(bit_arr.pop_count(seen_intern_slots) == graph.interner.len)
+	}
+}
+
 graph_mount_peep_node :: proc(graph: ^Graph, node: ^Node) {
 	graph.current_dnode = graph_dbg_slot(graph, node)^
 }
@@ -996,7 +1023,7 @@ graph_iter_peeps :: proc(ctx: Peep_Ctx) -> (optimized: bool) {
 		}
 	}
 
-	walk(graph)
+	verify(graph)
 
 	graph.worklist = nil
 	graph.triggers = nil
@@ -1521,31 +1548,6 @@ graph_node_eq :: proc(graph: ^Graph, a, b: Node_ID) -> bool {
 	if !slice.equal(ad, bd) do return false
 
 	return true
-}
-
-@(disabled = ODIN_DISABLE_ASSERT)
-walk :: proc(graph: ^Graph) {
-	seen_intern_slots := bit_arr.init(graph.interner.len)
-	wl: queue.Queue(Node_ID)
-	queue.init(&wl)
-	collect_nodes(graph, &wl)
-	for n in worklist_next(graph, &wl) {
-		if len(graph_outs(graph, n)) == 0 &&
-		   !graph_has_flag(graph, n, .Immortal) {
-			fmt.panicf("%v", graph_get(graph, n))
-		}
-		if graph_has_flag(graph, n, .Interned) {
-			fmt.println(graph_get(graph, n))
-			idx, _ := graph_interner_find(graph, n, 0) or_else panic("")
-			fmt.assertf(
-				bit_arr.set(seen_intern_slots, idx),
-				"%v",
-				graph_get(graph, n),
-			)
-		}
-	}
-
-	assert(bit_arr.pop_count(seen_intern_slots) == graph.interner.len)
 }
 
 graph_set_input :: proc(

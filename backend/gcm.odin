@@ -150,7 +150,7 @@ graph_schedule :: proc(
 
 	if graph.end != 0 {
 		end := graph_expand(graph, graph.end)
-		if !no_late_pass && false {
+		if !no_late_pass {
 			remove_count := 0
 			#reverse for inp, i in end.inps {
 				inode := graph_expand(graph, inp)
@@ -695,7 +695,7 @@ graph_schedule :: proc(
 
 	gs.bbs = bbs
 
-	if 0 == 1 {
+	if 1 == 1 {
 		graph_display(os.to_writer(os.stderr), graph, gs)
 		// 	if has_unscheduled do panic("")
 	}

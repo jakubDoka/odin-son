@@ -750,12 +750,12 @@ regalloc_round :: proc(
 				}
 
 				if fnode.output_count == 0 {
-					block, idx := get_node_block_and_idx(ctx, m)
-					for graph_get(ctx.graph, block.instrs[idx + 1]).itype ==
-					    .Phi {
-						idx += 1
-					}
-					ordered_remove(&block.instrs, idx + 1)
+					block := get_node_block(ctx, m)
+					idx :=
+						slice.linear_search(block.instrs[:], id) or_else panic(
+							"",
+						)
+					ordered_remove(&block.instrs, idx)
 					backend.graph_delete(ctx.graph, fnode)
 				}
 			}

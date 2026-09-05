@@ -3,14 +3,15 @@ two_small:
     push rbx
     sub rsp, 0x10
     mov rbx, rdi
-    mov.d [rsi], ebx
+    mov rdx, rsi
+    mov.d [rdx], ebx
     mov rax, rbx
     add eax, 1
-    mov.d [rsi + 0x4], eax
-    lea rdi, [rsp]
     xor esi, esi
+    lea rdi, [rsp]
+    mov.d [rdx + 0x4], eax
     mov rdx, 8
-    call.q [rip - 0x36]
+    call.q [rip - 0x39]
     mov rax, rbx
     add eax, 2
     mov.d [rsp], eax
@@ -27,16 +28,16 @@ two_small:
     lea rsi, [rsp]
     call two_small
     mov.q [rsp + 0x8], rax
-    movsxd.d rax, [rsp]
-    imul rax, rax, 0x3e8
-    movsxd.d rcx, [rsp + 0x4]
-    imul rcx, rcx, 0x64
+    movsxd.d rax, [rsp + 0x4]
+    movsxd.d rcx, [rsp]
+    movsxd.d rdx, [rsp + 0x8]
+    imul rsi, rax, 0x64
+    imul rax, rcx, 0x3e8
+    imul rcx, rdx, 0xa
+    add rax, rsi
+    movsxd.d rdx, [rsp + 0xc]
     add rax, rcx
-    movsxd.d rcx, [rsp + 0x8]
-    imul rcx, rcx, 0xa
-    add rax, rcx
-    movsxd.d rcx, [rsp + 0xc]
-    add rax, rcx
+    add rax, rdx
     add rsp, 0x18
     ret
 =========== OPT LEVEL: mininal ===========
@@ -44,14 +45,15 @@ two_small:
     push rbx
     sub rsp, 0x10
     mov rbx, rdi
-    mov.d [rsi], ebx
+    mov rdx, rsi
+    mov.d [rdx], ebx
     mov rax, rbx
     add eax, 1
-    mov.d [rsi + 0x4], eax
-    lea rdi, [rsp]
     xor esi, esi
+    lea rdi, [rsp]
+    mov.d [rdx + 0x4], eax
     mov rdx, 8
-    call.q [rip - 0x36]
+    call.q [rip - 0x39]
     mov rax, rbx
     add eax, 2
     mov.d [rsp], eax
@@ -68,16 +70,16 @@ two_small:
     lea rsi, [rsp]
     call two_small
     mov.q [rsp + 0x8], rax
-    movsxd.d rax, [rsp]
-    imul rax, rax, 0x3e8
-    movsxd.d rcx, [rsp + 0x4]
-    imul rcx, rcx, 0x64
+    movsxd.d rax, [rsp + 0x4]
+    movsxd.d rcx, [rsp]
+    movsxd.d rdx, [rsp + 0x8]
+    imul rsi, rax, 0x64
+    imul rax, rcx, 0x3e8
+    imul rcx, rdx, 0xa
+    add rax, rsi
+    movsxd.d rdx, [rsp + 0xc]
     add rax, rcx
-    movsxd.d rcx, [rsp + 0x8]
-    imul rcx, rcx, 0xa
-    add rax, rcx
-    movsxd.d rcx, [rsp + 0xc]
-    add rax, rcx
+    add rax, rdx
     add rsp, 0x18
     ret
 =========== OPT LEVEL: moderate ===========
@@ -102,16 +104,16 @@ two_small:
     lea rsi, [rsp]
     call two_small
     mov.q [rsp + 0x8], rax
-    movsxd.d rax, [rsp]
-    imul rax, rax, 0x3e8
-    movsxd.d rcx, [rsp + 0x4]
-    imul rcx, rcx, 0x64
+    movsxd.d rax, [rsp + 0x4]
+    movsxd.d rcx, [rsp]
+    movsxd.d rdx, [rsp + 0x8]
+    imul rsi, rax, 0x64
+    imul rax, rcx, 0x3e8
+    imul rcx, rdx, 0xa
+    add rax, rsi
+    movsxd.d rdx, [rsp + 0xc]
     add rax, rcx
-    movsxd.d rcx, [rsp + 0x8]
-    imul rcx, rcx, 0xa
-    add rax, rcx
-    movsxd.d rcx, [rsp + 0xc]
-    add rax, rcx
+    add rax, rdx
     add rsp, 0x18
     ret
 =========== OPT LEVEL: all ===========
@@ -136,16 +138,16 @@ two_small:
     lea rsi, [rsp]
     call two_small
     mov.q [rsp + 0x8], rax
-    movsxd.d rax, [rsp]
-    imul rax, rax, 0x3e8
-    movsxd.d rcx, [rsp + 0x4]
-    imul rcx, rcx, 0x64
+    movsxd.d rax, [rsp + 0x4]
+    movsxd.d rcx, [rsp]
+    movsxd.d rdx, [rsp + 0x8]
+    imul rsi, rax, 0x64
+    imul rax, rcx, 0x3e8
+    imul rcx, rdx, 0xa
+    add rax, rsi
+    movsxd.d rdx, [rsp + 0xc]
     add rax, rcx
-    movsxd.d rcx, [rsp + 0x8]
-    imul rcx, rcx, 0xa
-    add rax, rcx
-    movsxd.d rcx, [rsp + 0xc]
-    add rax, rcx
+    add rax, rdx
     add rsp, 0x18
     ret
 =========== OPT LEVEL: aggresive ===========
@@ -155,13 +157,13 @@ two_small:
     mov.q [rsp], rax
     movabs rax, 0xd0000000c
     mov.q [rsp + 0x8], rax
+    movsxd.d rcx, [rsp + 0x4]
     movsxd.d rax, [rsp]
     imul rax, rax, 0x3e8
-    movsxd.d rcx, [rsp + 0x4]
+    movsxd.d rdx, [rsp + 0x8]
     imul rcx, rcx, 0x64
     add rax, rcx
-    movsxd.d rcx, [rsp + 0x8]
-    imul rcx, rcx, 0xa
+    imul rcx, rdx, 0xa
     add rax, rcx
     movsxd.d rcx, [rsp + 0xc]
     add rax, rcx

@@ -342,7 +342,7 @@ ansi_start :: proc(w: io.Writer, #any_int gvn: int) {
 			{fg = ansi.FG_BLACK, bg = ansi.BG_RED},
 			{fg = ansi.FG_BLACK, bg = ansi.BG_GREEN},
 			{fg = ansi.FG_BLACK, bg = ansi.BG_YELLOW},
-			{fg = ansi.FG_WHITE, bg = ansi.BG_BLUE},
+			{fg = ansi.FG_BLACK, bg = ansi.BG_BLUE},
 			{fg = ansi.FG_WHITE, bg = ansi.BG_BRIGHT_BLACK},
 			{fg = ansi.FG_BLACK, bg = ansi.BG_MAGENTA},
 			{fg = ansi.FG_BLACK, bg = ansi.BG_CYAN},

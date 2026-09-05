@@ -49,6 +49,7 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 	)
 
 	reserve(&ctx.sched.bbs, len(ctx.sched.bbs) * 2)
+	ctx.sched.bbs.allocator = {}
 
 	for &bb in ctx.sched.bbs {
 		hnode := graph_get(ctx.graph, bb.head)
@@ -271,36 +272,60 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 
 				pdblk := dblk
 
-				for {
-					if !ODIN_DISABLE_ASSERT && dblk == ctx.start {
-						ctx.sched = {}
-						fmt.eprintln(join, pdblk, bb)
-						backend.graph_schedule(
-							ctx,
-							&ctx.sched,
-							context.allocator,
-							no_late_pass = true,
-						)
-						panic("brah")
+				res := walk_dblk(ctx, dblk, join, out, nphy, bb.loop_tree)
+
+				walk_dblk :: proc(
+					ctx: Ctx,
+					root: Node_ID,
+					guard: Node_ID,
+					out: Node_ID,
+					nphy: Node_ID,
+					to_loop: ^backend.Loop_Tree,
+				) -> Node_ID {
+
+					node := graph_expand(ctx, root)
+					if root == guard do return nphy
+
+					if in_loop(to_loop, block_of(ctx, root).loop_tree) {
+						return out
 					}
 
-					if bb.head == dblk {
-						assert(bb.loop_tree == block_of(ctx, dblk).loop_tree)
+					loop_or_region :=
+						node.itype == .Loop || node.itype == .Region
+					edges: [dynamic]Node_ID
+					for inp in node.inps[:len(node.inps) - int(loop_or_region)] {
+						if backend.is_cfg(ctx, inp) {
+							vl := walk_dblk(
+								ctx,
+								inp,
+								guard,
+								out,
+								nphy,
+								to_loop,
+							)
+							append(&edges, vl)
+						}
 					}
 
-					if in_loop(bb.loop_tree, block_of(ctx, dblk).loop_tree) {
-						continue rewire
+					ref := edges[0]
+					for oth in edges[1:] {
+						if oth != ref {
+							inject_at(&edges, 0, root)
+							backend.graph_push_tag(ctx, "urlj")
+							ref = backend.graph_add_raw(
+								ctx,
+								u16(backend.Ideal_Node_Type.Phi),
+								graph_get(ctx, ref).dt,
+								edges[:],
+							)
+							break
+						}
 					}
 
-					if dblk == join {
-						break
-					}
-
-					// NOTE: this should be fine since we never move the join
-					dblk = backend.graph_idom(ctx, dblk)
+					return ref
 				}
 
-				backend.graph_set_input(ctx, pout.id, pout.idx, nphy)
+				backend.graph_set_input(ctx, pout.id, pout.idx, res)
 			}
 		}
 
@@ -436,6 +461,7 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 					cloned[node.gvn] = id
 				} else {
 					ctx.node_blocks[new_node.gvn] = ctrl
+					append(&ctrl.instrs, id)
 					cloned[node.gvn] = id
 					for inp, i in inps {
 						backend.graph_add_output(ctx, inp, cloned[node.gvn], i)

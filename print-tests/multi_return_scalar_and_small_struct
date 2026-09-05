@@ -3,16 +3,18 @@ mix:
     push rbx
     sub rsp, 0x10
     mov rbx, rdi
+    mov rcx, rsi
     imul rax, rbx, 2
-    mov.q [rsi], rax
-    lea rdi, [rsp]
     xor esi, esi
+    lea rdi, [rsp]
+    mov.q [rcx], rax
     mov rdx, 8
-    call.q [rip - 0x2f]
+    call.q [rip - 0x32]
+    mov rcx, rbx
+    add rcx, 1
     mov rax, rbx
     mov.d [rsp], eax
-    add rbx, 1
-    mov rax, rbx
+    mov rax, rcx
     mov.d [rsp + 0x4], eax
     mov.q rax, [rsp]
     add rsp, 0x10
@@ -24,12 +26,12 @@ mix:
     lea rsi, [rsp]
     call mix
     mov.q [rsp + 0x8], rax
-    mov.q rax, [rsp]
-    imul rax, rax, 0x64
-    movsxd.d rcx, [rsp + 0x8]
-    imul rcx, rcx, 0xa
-    add rax, rcx
+    movsxd.d rax, [rsp + 0x8]
+    mov.q rcx, [rsp]
+    imul rdx, rax, 0xa
+    imul rax, rcx, 0x64
     movsxd.d rcx, [rsp + 0xc]
+    add rax, rdx
     add rax, rcx
     add rsp, 0x18
     ret
@@ -38,16 +40,18 @@ mix:
     push rbx
     sub rsp, 0x10
     mov rbx, rdi
+    mov rcx, rsi
     imul rax, rbx, 2
-    mov.q [rsi], rax
-    lea rdi, [rsp]
     xor esi, esi
+    lea rdi, [rsp]
+    mov.q [rcx], rax
     mov rdx, 8
-    call.q [rip - 0x2f]
+    call.q [rip - 0x32]
+    mov rcx, rbx
+    add rcx, 1
     mov rax, rbx
     mov.d [rsp], eax
-    add rbx, 1
-    mov rax, rbx
+    mov rax, rcx
     mov.d [rsp + 0x4], eax
     mov.q rax, [rsp]
     add rsp, 0x10
@@ -59,12 +63,12 @@ mix:
     lea rsi, [rsp]
     call mix
     mov.q [rsp + 0x8], rax
-    mov.q rax, [rsp]
-    imul rax, rax, 0x64
-    movsxd.d rcx, [rsp + 0x8]
-    imul rcx, rcx, 0xa
-    add rax, rcx
+    movsxd.d rax, [rsp + 0x8]
+    mov.q rcx, [rsp]
+    imul rdx, rax, 0xa
+    imul rax, rcx, 0x64
     movsxd.d rcx, [rsp + 0xc]
+    add rax, rdx
     add rax, rcx
     add rsp, 0x18
     ret
@@ -74,9 +78,9 @@ mix:
     imul rax, rdi, 2
     mov.q [rsi], rax
     mov rax, rdi
-    mov.d [rsp], eax
-    add rdi, 1
-    mov rax, rdi
+    add rax, 1
+    mov rcx, rdi
+    mov.d [rsp], ecx
     mov.d [rsp + 0x4], eax
     mov.q rax, [rsp]
     add rsp, 8
@@ -87,12 +91,12 @@ mix:
     lea rsi, [rsp]
     call mix
     mov.q [rsp + 0x8], rax
-    mov.q rax, [rsp]
-    imul rax, rax, 0x64
-    movsxd.d rcx, [rsp + 0x8]
-    imul rcx, rcx, 0xa
-    add rax, rcx
+    movsxd.d rax, [rsp + 0x8]
+    mov.q rcx, [rsp]
+    imul rdx, rax, 0xa
+    imul rax, rcx, 0x64
     movsxd.d rcx, [rsp + 0xc]
+    add rax, rdx
     add rax, rcx
     add rsp, 0x18
     ret
@@ -102,9 +106,9 @@ mix:
     imul rax, rdi, 2
     mov.q [rsi], rax
     mov rax, rdi
-    mov.d [rsp], eax
-    add rdi, 1
-    mov rax, rdi
+    add rax, 1
+    mov rcx, rdi
+    mov.d [rsp], ecx
     mov.d [rsp + 0x4], eax
     mov.q rax, [rsp]
     add rsp, 8
@@ -115,12 +119,12 @@ mix:
     lea rsi, [rsp]
     call mix
     mov.q [rsp + 0x8], rax
-    mov.q rax, [rsp]
-    imul rax, rax, 0x64
-    movsxd.d rcx, [rsp + 0x8]
-    imul rcx, rcx, 0xa
-    add rax, rcx
+    movsxd.d rax, [rsp + 0x8]
+    mov.q rcx, [rsp]
+    imul rdx, rax, 0xa
+    imul rax, rcx, 0x64
     movsxd.d rcx, [rsp + 0xc]
+    add rax, rdx
     add rax, rcx
     add rsp, 0x18
     ret

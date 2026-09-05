@@ -6,8 +6,8 @@ add i16:
     mov rdx, 0x10
     lea rdi, [rsp]
     call.q [rip - 0x20]
-    mov rsi, 1
     lea rdi, [rsp]
+    mov rsi, 1
     call 6
     lea rax, [rsp]
     add rax, 8
@@ -24,12 +24,12 @@ add i16:
     mov sil, 1
     mov rdi, rax
     call 9
-    mov.q rax, [rsp]
     movsxd.d rcx, [rsp + 0x8]
-    add rax, rcx
-    movsx.w rcx, [rsp + 0xc]
+    mov.q rax, [rsp]
+    movsx.w rdx, [rsp + 0xc]
     add rax, rcx
     movsx.b rcx, [rsp + 0xe]
+    add rax, rdx
     add rax, rcx
     add rsp, 0x18
     ret
@@ -57,8 +57,8 @@ add i16:
     mov rdx, 0x10
     lea rdi, [rsp]
     call.q [rip - 0x20]
-    mov rsi, 1
     lea rdi, [rsp]
+    mov rsi, 1
     call 6
     lea rax, [rsp]
     add rax, 8
@@ -75,12 +75,12 @@ add i16:
     mov sil, 1
     mov rdi, rax
     call 9
-    mov.q rax, [rsp]
     movsxd.d rcx, [rsp + 0x8]
-    add rax, rcx
-    movsx.w rcx, [rsp + 0xc]
+    mov.q rax, [rsp]
+    movsx.w rdx, [rsp + 0xc]
     add rax, rcx
     movsx.b rcx, [rsp + 0xe]
+    add rax, rdx
     add rax, rcx
     add rsp, 0x18
     ret
@@ -104,9 +104,9 @@ add i16:
 main:
     sub rsp, 0x18
 add i16:
+    mov rsi, 1
     mov.q [rsp], 0
     mov.q [rsp + 0x8], 0
-    mov rsi, 1
     lea rdi, [rsp]
     call 6
     lea rax, [rsp]
@@ -124,12 +124,12 @@ add i16:
     mov sil, 1
     mov rdi, rax
     call 9
-    mov.q rax, [rsp]
     movsxd.d rcx, [rsp + 0x8]
-    add rax, rcx
-    movsx.w rcx, [rsp + 0xc]
+    mov.q rax, [rsp]
+    movsx.w rdx, [rsp + 0xc]
     add rax, rcx
     movsx.b rcx, [rsp + 0xe]
+    add rax, rdx
     add rax, rcx
     add rsp, 0x18
     ret
@@ -157,9 +157,9 @@ add i16:
 main:
     sub rsp, 0x18
 add i16:
+    mov rsi, 1
     mov.q [rsp], 0
     mov.q [rsp + 0x8], 0
-    mov rsi, 1
     lea rdi, [rsp]
     call 6
     lea rax, [rsp]
@@ -177,12 +177,12 @@ add i16:
     mov sil, 1
     mov rdi, rax
     call 9
-    mov.q rax, [rsp]
     movsxd.d rcx, [rsp + 0x8]
-    add rax, rcx
-    movsx.w rcx, [rsp + 0xc]
+    mov.q rax, [rsp]
+    movsx.w rdx, [rsp + 0xc]
     add rax, rcx
     movsx.b rcx, [rsp + 0xe]
+    add rax, rdx
     add rax, rcx
     add rsp, 0x18
     ret
@@ -220,11 +220,11 @@ add i16:
     mov.w [rsp + 0xc], cx
     movzx.b edx, [rsp + 0xe]
     add dl, 1
-    mov.b [rsp + 0xe], dl
     movsxd rax, eax
     movsx rcx, cx
     lea rax, [rax + rcx + 0x1]
     movsx rcx, dl
+    mov.b [rsp + 0xe], dl
     add rax, rcx
     add rsp, 0x18
     ret

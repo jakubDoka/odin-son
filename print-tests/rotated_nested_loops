@@ -1,85 +1,92 @@
 =========== OPT LEVEL: none ===========
 main:
-    xor esi, esi
     xor eax, eax
+    xor edi, edi
 1:
-    xor edx, edx
+    xor esi, esi
 2:
     mov rcx, rsi
-    imul rcx, rdx
-    add rax, rcx
-    add rdx, 1
-    cmp rdx, 3
+    add rcx, 1
+    mov rdx, rdi
+    imul rdx, rsi
+    add rax, rdx
+    cmp rcx, 3
     jnle 3
+    mov rsi, rcx
     jmp 2
 3:
-    add rsi, 1
-    cmp rsi, 3
+    add rdi, 1
+    cmp rdi, 3
     jnle 4
     jmp 1
 4:
     ret
 =========== OPT LEVEL: mininal ===========
 main:
-    xor esi, esi
     xor eax, eax
+    xor edi, edi
 1:
-    xor edx, edx
+    xor esi, esi
 2:
     mov rcx, rsi
-    imul rcx, rdx
-    add rax, rcx
-    add rdx, 1
-    cmp rdx, 3
+    add rcx, 1
+    mov rdx, rdi
+    imul rdx, rsi
+    add rax, rdx
+    cmp rcx, 3
     jnle 3
+    mov rsi, rcx
     jmp 2
 3:
-    add rsi, 1
-    cmp rsi, 3
+    add rdi, 1
+    cmp rdi, 3
     jnle 4
     jmp 1
 4:
     ret
 =========== OPT LEVEL: moderate ===========
 main:
-    xor esi, esi
     xor eax, eax
+    xor edi, edi
 1:
-    xor edx, edx
+    xor esi, esi
 2:
     mov rcx, rsi
-    imul rcx, rdx
-    add rax, rcx
-    add rdx, 1
-    cmp rdx, 3
+    add rcx, 1
+    mov rdx, rdi
+    imul rdx, rsi
+    add rax, rdx
+    cmp rcx, 3
     jnle 3
+    mov rsi, rcx
     jmp 2
 3:
-    add rsi, 1
-    cmp rsi, 3
+    add rdi, 1
+    cmp rdi, 3
     jnle 4
     jmp 1
 4:
     ret
 =========== OPT LEVEL: all ===========
 main:
-    xor esi, esi
-    xor eax, eax
+    xor edi, edi
+    xor r8d, r8d
 1:
-    xor edx, edx
+    xor esi, esi
 2:
     mov rcx, rsi
-    imul rcx, rdx
-    add rax, rcx
-    add rdx, 1
-    cmp rdx, 3
-    jnle 3
-    jmp 2
-3:
-    add rsi, 1
-    cmp rsi, 3
-    jnle 4
-    jmp 1
-4:
+    add rcx, 1
+    mov rdx, r8
+    imul rdx, rsi
+    mov rax, rdi
+    add rax, rdx
+    cmp rcx, 3
+    mov rsi, rcx
+    mov rdi, rax
+    jng 2
+    add r8, 1
+    cmp r8, 3
+    mov rdi, rax
+    jng 1
     ret
 =========== OPT LEVEL: aggresive ===========

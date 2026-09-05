@@ -1,145 +1,152 @@
 =========== OPT LEVEL: none ===========
 main:
-    xor edx, edx
     xor eax, eax
+    xor edx, edx
 1:
     add rdx, 1
     cmp rdx, 8
     jz 8
     xor ecx, ecx
-    mov rsi, rax
 2:
     add rcx, 1
     cmp rcx, 5
     jz 3
     cmp rcx, 2
     jz 5
-    add rsi, 1
+    add rax, 1
     jmp 2
 3:
-    xor eax, eax
+    xor ecx, ecx
 4:
-    add rax, 1
-    cmp rax, 5
+    add rcx, 1
+    cmp rcx, 5
     jz 6
-    cmp rax, 3
+    cmp rcx, 3
     jz 5
-    add rsi, 2
+    add rax, 2
     jmp 4
 5:
     jmp 7
 6:
-    add rsi, 0x64
+    add rax, 0x64
 7:
-    mov rax, rsi
     jmp 1
 8:
     ret
 =========== OPT LEVEL: mininal ===========
 main:
-    xor edx, edx
     xor eax, eax
+    xor edx, edx
 1:
     add rdx, 1
     cmp rdx, 8
     jz 8
     xor ecx, ecx
-    mov rsi, rax
 2:
     add rcx, 1
     cmp rcx, 5
     jz 3
     cmp rcx, 2
     jz 5
-    add rsi, 1
+    add rax, 1
     jmp 2
 3:
-    xor eax, eax
+    xor ecx, ecx
 4:
-    add rax, 1
-    cmp rax, 5
+    add rcx, 1
+    cmp rcx, 5
     jz 6
-    cmp rax, 3
+    cmp rcx, 3
     jz 5
-    add rsi, 2
+    add rax, 2
     jmp 4
 5:
     jmp 7
 6:
-    add rsi, 0x64
+    add rax, 0x64
 7:
-    mov rax, rsi
     jmp 1
 8:
     ret
 =========== OPT LEVEL: moderate ===========
 main:
     xor edx, edx
-    xor eax, eax
+    xor ecx, ecx
 1:
+    mov rax, rcx
     add rdx, 1
     cmp rdx, 8
-    jz 7
+    jz 8
     xor ecx, ecx
-    mov rsi, rax
 2:
     add rcx, 1
     cmp rcx, 5
-    jz 3
+    jz 4
     cmp rcx, 2
-    jz 6
-    add rsi, 1
+    jz 3
+    add rax, 1
     jmp 2
 3:
-    xor eax, eax
+    mov rcx, rax
+    jmp 7
 4:
+    mov rcx, rax
+    xor eax, eax
+5:
     add rax, 1
     cmp rax, 5
-    jz 5
-    cmp rax, 3
     jz 6
-    add rsi, 2
-    jmp 4
-5:
-    add rsi, 0x64
+    cmp rax, 3
+    jz 7
+    add rcx, 2
+    jmp 5
 6:
-    mov rax, rsi
-    jmp 1
+    add rcx, 0x64
 7:
+    jmp 1
+8:
     ret
 =========== OPT LEVEL: all ===========
 main:
-    xor edx, edx
-    xor eax, eax
-1:
-    add rdx, 1
-    cmp rdx, 8
-    jz 7
+    xor edi, edi
     xor ecx, ecx
-    mov rsi, rax
+1:
+    xor eax, eax
 2:
-    add rcx, 1
-    cmp rcx, 5
-    jz 3
-    cmp rcx, 2
-    jz 6
+    mov rdx, rcx
+    add rax, 1
+    mov rsi, rdi
     add rsi, 1
-    jmp 2
+    cmp rax, 5
+    jz 3
+    mov rcx, rdx
+    add rcx, 1
+    cmp rax, 2
+    jnz 2
+    mov rax, rdx
+    jmp 6
 3:
     xor eax, eax
 4:
+    mov rcx, rdx
     add rax, 1
     cmp rax, 5
     jz 5
+    mov rdx, rcx
+    add rdx, 2
     cmp rax, 3
-    jz 6
-    add rsi, 2
-    jmp 4
+    jnz 4
+    mov rax, rcx
+    jmp 6
 5:
-    add rsi, 0x64
+    add rcx, 0x64
+    mov rax, rcx
 6:
-    mov rax, rsi
-    jmp 1
-7:
+    mov rcx, rsi
+    add rcx, 1
+    cmp rcx, 8
+    mov rdi, rsi
+    mov rcx, rax
+    jnz 1
     ret
 =========== OPT LEVEL: aggresive ===========

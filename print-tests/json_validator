@@ -38,33 +38,33 @@ parse_string:
 18:
     ret
 19:
+    mov al, 1
     cmp dil, 0x30
     setnc cl
     movzx rcx, cl
-    mov al, 1
     cmp dil, 0x39
     setna dl
     movzx rdx, dl
     and cl, dl
     test cl, cl
     jnz 20
-    cmp dil, 0x61
-    setnc cl
-    movzx rcx, cl
     cmp dil, 0x66
-    setna dl
-    movzx rdx, dl
-    and cl, dl
-    test cl, cl
-    jnz 20
-    cmp dil, 0x41
-    setnc cl
+    setna cl
     movzx rcx, cl
-    cmp dil, 0x46
-    setna dl
+    cmp dil, 0x61
+    setnc dl
     movzx rdx, dl
-    and cl, dl
-    test cl, cl
+    and dl, cl
+    test dl, dl
+    jnz 20
+    cmp dil, 0x46
+    setna cl
+    movzx rcx, cl
+    cmp dil, 0x41
+    setnc dl
+    movzx rdx, dl
+    and dl, cl
+    test dl, dl
     jnz 20
     xor eax, eax
     jmp 20
@@ -105,8 +105,8 @@ parse_string:
     sub rsp, 0x18
     mov rbx, rdi
     mov.q [rsp], rsi
-    mov.q [rsp + 0x8], rdx
     xor ebp, ebp
+    mov.q [rsp + 0x8], rdx
 25:
     cmp.q rbp, [rsp + 0x8]
     jnl 27
@@ -116,8 +116,8 @@ parse_string:
     add rcx, rbp
     cmp.b al, [rcx]
     jnz 26
-    add.q [rbx + 0x10], 1
     add rbp, 1
+    add.q [rbx + 0x10], 1
     jmp 25
 26:
     xor eax, eax
@@ -222,14 +222,14 @@ parse_string:
     call peek
     cmp al, 0x30
     jz 46
-    cmp al, 0x31
-    setnc cl
-    movzx rcx, cl
     cmp al, 0x39
-    setna al
+    setna cl
+    movzx rcx, cl
+    cmp al, 0x31
+    setnc al
     movzx rax, al
-    and cl, al
-    test cl, cl
+    and al, cl
+    test al, al
     jnz 44
     xor eax, eax
     jmp 58
@@ -479,8 +479,8 @@ parse_string:
     lea rax, [rip + 0x923]
     mov.q [rsp + 0x20], rax
     mov.q [rsp + 0x28], 4
-    mov.q rsi, [rsp + 0x20]
     mov.q rdx, [rsp + 0x28]
+    mov.q rsi, [rsp + 0x20]
     mov rdi, rbx
     call 24
     jmp 84
@@ -488,16 +488,16 @@ parse_string:
     lea rax, [rip + 0x8f2]
     mov.q [rsp + 0x10], rax
     mov.q [rsp + 0x18], 5
-    mov.q rsi, [rsp + 0x10]
     mov.q rdx, [rsp + 0x18]
+    mov.q rsi, [rsp + 0x10]
     mov rdi, rbx
     call 24
     jmp 84
     lea rax, [rip + 0x8c2]
     mov.q [rsp], rax
     mov.q [rsp + 0x8], 4
-    mov.q rsi, [rsp]
     mov.q rdx, [rsp + 0x8]
+    mov.q rsi, [rsp]
     mov rdi, rbx
     call 24
     jmp 84
@@ -525,9 +525,9 @@ parse_string:
     xor esi, esi
     lea rdi, [rsp]
     call.q [rip - 0x7aa]
-    lea rsi, [rsp + 0x18]
     mov rdx, 0x10
     lea rdi, [rsp]
+    lea rsi, [rsp + 0x18]
     call.q [rip - 0x7c8]
     mov.q [rsp + 0x10], 0
     lea rdi, [rsp]
@@ -815,33 +815,33 @@ parse_string:
 18:
     ret
 19:
+    mov al, 1
     cmp dil, 0x30
     setnc cl
     movzx rcx, cl
-    mov al, 1
     cmp dil, 0x39
     setna dl
     movzx rdx, dl
     and cl, dl
     test cl, cl
     jnz 20
-    cmp dil, 0x61
-    setnc cl
-    movzx rcx, cl
     cmp dil, 0x66
-    setna dl
-    movzx rdx, dl
-    and cl, dl
-    test cl, cl
-    jnz 20
-    cmp dil, 0x41
-    setnc cl
+    setna cl
     movzx rcx, cl
-    cmp dil, 0x46
-    setna dl
+    cmp dil, 0x61
+    setnc dl
     movzx rdx, dl
-    and cl, dl
-    test cl, cl
+    and dl, cl
+    test dl, dl
+    jnz 20
+    cmp dil, 0x46
+    setna cl
+    movzx rcx, cl
+    cmp dil, 0x41
+    setnc dl
+    movzx rdx, dl
+    and dl, cl
+    test dl, dl
     jnz 20
     xor eax, eax
     jmp 20
@@ -882,8 +882,8 @@ parse_string:
     sub rsp, 0x18
     mov rbx, rdi
     mov.q [rsp], rsi
-    mov.q [rsp + 0x8], rdx
     xor ebp, ebp
+    mov.q [rsp + 0x8], rdx
 25:
     cmp.q rbp, [rsp + 0x8]
     jnl 27
@@ -893,8 +893,8 @@ parse_string:
     add rcx, rbp
     cmp.b al, [rcx]
     jnz 26
-    add.q [rbx + 0x10], 1
     add rbp, 1
+    add.q [rbx + 0x10], 1
     jmp 25
 26:
     xor eax, eax
@@ -999,14 +999,14 @@ parse_string:
     call peek
     cmp al, 0x30
     jz 46
-    cmp al, 0x31
-    setnc cl
-    movzx rcx, cl
     cmp al, 0x39
-    setna al
+    setna cl
+    movzx rcx, cl
+    cmp al, 0x31
+    setnc al
     movzx rax, al
-    and cl, al
-    test cl, cl
+    and al, cl
+    test al, al
     jnz 44
     xor eax, eax
     jmp 58
@@ -1256,8 +1256,8 @@ parse_string:
     lea rax, [rip + 0x923]
     mov.q [rsp + 0x20], rax
     mov.q [rsp + 0x28], 4
-    mov.q rsi, [rsp + 0x20]
     mov.q rdx, [rsp + 0x28]
+    mov.q rsi, [rsp + 0x20]
     mov rdi, rbx
     call 24
     jmp 84
@@ -1265,16 +1265,16 @@ parse_string:
     lea rax, [rip + 0x8f2]
     mov.q [rsp + 0x10], rax
     mov.q [rsp + 0x18], 5
-    mov.q rsi, [rsp + 0x10]
     mov.q rdx, [rsp + 0x18]
+    mov.q rsi, [rsp + 0x10]
     mov rdi, rbx
     call 24
     jmp 84
     lea rax, [rip + 0x8c2]
     mov.q [rsp], rax
     mov.q [rsp + 0x8], 4
-    mov.q rsi, [rsp]
     mov.q rdx, [rsp + 0x8]
+    mov.q rsi, [rsp]
     mov rdi, rbx
     call 24
     jmp 84
@@ -1302,9 +1302,9 @@ parse_string:
     xor esi, esi
     lea rdi, [rsp]
     call.q [rip - 0x7aa]
-    lea rsi, [rsp + 0x18]
     mov rdx, 0x10
     lea rdi, [rsp]
+    lea rsi, [rsp + 0x18]
     call.q [rip - 0x7c8]
     mov.q [rsp + 0x10], 0
     lea rdi, [rsp]
@@ -1592,33 +1592,33 @@ parse_string:
 18:
     ret
 19:
+    mov al, 1
     cmp dil, 0x30
     setnc cl
     movzx rcx, cl
-    mov al, 1
     cmp dil, 0x39
     setna dl
     movzx rdx, dl
     and cl, dl
     test cl, cl
     jnz 20
-    cmp dil, 0x61
-    setnc cl
-    movzx rcx, cl
     cmp dil, 0x66
-    setna dl
-    movzx rdx, dl
-    and cl, dl
-    test cl, cl
-    jnz 20
-    cmp dil, 0x41
-    setnc cl
+    setna cl
     movzx rcx, cl
-    cmp dil, 0x46
-    setna dl
+    cmp dil, 0x61
+    setnc dl
     movzx rdx, dl
-    and cl, dl
-    test cl, cl
+    and dl, cl
+    test dl, dl
+    jnz 20
+    cmp dil, 0x46
+    setna cl
+    movzx rcx, cl
+    cmp dil, 0x41
+    setnc dl
+    movzx rdx, dl
+    and dl, cl
+    test dl, dl
     jnz 20
     xor eax, eax
     jmp 20
@@ -1659,8 +1659,8 @@ parse_string:
     sub rsp, 0x18
     mov rbx, rdi
     mov.q [rsp], rsi
-    mov.q [rsp + 0x8], rdx
     xor ebp, ebp
+    mov.q [rsp + 0x8], rdx
 25:
     cmp.q rbp, [rsp + 0x8]
     jnl 27
@@ -1670,8 +1670,8 @@ parse_string:
     add rcx, rbp
     cmp.b al, [rcx]
     jnz 26
-    add.q [rbx + 0x10], 1
     add rbp, 1
+    add.q [rbx + 0x10], 1
     jmp 25
 26:
     xor eax, eax
@@ -1776,14 +1776,14 @@ parse_string:
     call peek
     cmp al, 0x30
     jz 46
-    cmp al, 0x31
-    setnc cl
-    movzx rcx, cl
     cmp al, 0x39
-    setna al
+    setna cl
+    movzx rcx, cl
+    cmp al, 0x31
+    setnc al
     movzx rax, al
-    and cl, al
-    test cl, cl
+    and al, cl
+    test al, al
     jnz 44
     xor eax, eax
     jmp 58
@@ -2036,8 +2036,8 @@ parse_string:
     call 24
     jmp 85
 80:
-    lea rsi, [rip + 0x903]
     mov rdx, 5
+    lea rsi, [rip + 0x8fc]
     mov rdi, rbx
     call 24
     jmp 85
@@ -2276,9 +2276,10 @@ parse_string:
     mov rdi, rbx
     call peek
     add.q [rbx + 0x10], 1
+parse_value:
     pop rbx
     ret
-13:
+14:
     cmp dil, 0x30
     setnc al
     movzx rax, al
@@ -2295,33 +2296,33 @@ parse_string:
 18:
     ret
 19:
+    mov al, 1
     cmp dil, 0x30
     setnc cl
     movzx rcx, cl
-    mov al, 1
     cmp dil, 0x39
     setna dl
     movzx rdx, dl
     and cl, dl
     test cl, cl
     jnz 20
-    cmp dil, 0x61
-    setnc cl
-    movzx rcx, cl
     cmp dil, 0x66
-    setna dl
-    movzx rdx, dl
-    and cl, dl
-    test cl, cl
-    jnz 20
-    cmp dil, 0x41
-    setnc cl
+    setna cl
     movzx rcx, cl
-    cmp dil, 0x46
-    setna dl
+    cmp dil, 0x61
+    setnc dl
     movzx rdx, dl
-    and cl, dl
-    test cl, cl
+    and dl, cl
+    test dl, dl
+    jnz 20
+    cmp dil, 0x46
+    setna cl
+    movzx rcx, cl
+    cmp dil, 0x41
+    setnc dl
+    movzx rdx, dl
+    and dl, cl
+    test dl, dl
     jnz 20
     xor eax, eax
     jmp 20
@@ -2362,22 +2363,24 @@ parse_string:
     push r12
     push r13
     sub rsp, 8
-    mov rbp, rdi
-    mov r12, rsi
-    mov r13, rdx
-    xor ebx, ebx
+    mov rbx, rdx
+    mov rbp, rsi
+    mov r12, rdi
+    cmp rbx, 0
+    jng 27
+    xor r13d, r13d
 25:
-    cmp rbx, r13
-    jnl 27
-    mov rdi, rbp
+    mov rdi, r12
     call peek
-    mov rcx, r12
-    add rcx, rbx
+    mov rcx, rbp
+    add rcx, r13
     cmp.b al, [rcx]
     jnz 26
-    add.q [rbp + 0x10], 1
-    add rbx, 1
-    jmp 25
+    add r13, 1
+    add.q [r12 + 0x10], 1
+    cmp r13, rbx
+    jnge 25
+    jmp 27
 26:
     xor eax, eax
     jmp 28
@@ -2398,139 +2401,137 @@ parse_string:
     mov rdi, rbx
     call 10
     cmp al, 0x22
-    jnz 39
+    jnz 38
 30:
     mov rdi, rbx
     call 10
     cmp al, 0x22
-    jz 38
-    cmp al, 0
     jz 37
+    cmp al, 0
+    jz 36
     cmp al, 0x5c
     jz 32
     cmp al, 0x20
     jc 31
-    jmp 36
+    jmp 35
 31:
     xor eax, eax
-    jmp 40
+    jmp 39
 32:
     mov rdi, rbx
     call 10
     cmp al, 0x22
-    jz 36
+    jz 35
     cmp al, 0x5c
-    jz 36
+    jz 35
     cmp al, 0x2f
-    jz 36
+    jz 35
     cmp al, 0x62
-    jz 36
+    jz 35
     cmp al, 0x66
-    jz 36
+    jz 35
     cmp al, 0x6e
-    jz 36
+    jz 35
     cmp al, 0x72
-    jz 36
+    jz 35
     cmp al, 0x74
-    jz 36
+    jz 35
     cmp al, 0x75
     jz 33
     xor eax, eax
-    jmp 40
+    jmp 39
 33:
     xor ebp, ebp
 34:
     cmp rbp, 4
-    jnl 36
+    jnl 35
     mov rdi, rbx
     call 10
     mov rdi, rax
     call 19
-    cmp al, 0
-    jz 35
     add rbp, 1
-    jmp 34
+    cmp al, 0
+    jnz 34
+    xor eax, eax
+    jmp 39
 35:
-    xor eax, eax
-    jmp 40
-36:
     jmp 30
+36:
+    xor eax, eax
+    jmp 39
 37:
-    xor eax, eax
-    jmp 40
-38:
     mov al, 1
-    jmp 40
-39:
+    jmp 39
+38:
     xor eax, eax
-40:
+39:
     add rsp, 8
     pop rbp
     pop rbx
     ret
-41:
+40:
     push rbx
     mov rbx, rdi
     mov rdi, rbx
     call peek
     cmp al, 0x2d
-    jz 42
-    jmp 43
-42:
+    jz 41
+    jmp 42
+41:
     add.q [rbx + 0x10], 1
-43:
+42:
     mov rdi, rbx
     call peek
     cmp al, 0x30
-    jz 46
-    cmp al, 0x31
-    setnc cl
-    movzx rcx, cl
+    jz 45
     cmp al, 0x39
-    setna al
+    setna cl
+    movzx rcx, cl
+    cmp al, 0x31
+    setnc al
     movzx rax, al
-    and cl, al
-    test cl, cl
-    jnz 44
+    and al, cl
+    test al, al
+    jnz 43
     xor eax, eax
-    jmp 58
-44:
+    jmp 57
+43:
     add.q [rbx + 0x10], 1
-45:
+44:
     mov rdi, rbx
     call peek
     mov rdi, rax
-    call 13
+    call 14
     cmp al, 0
-    jz 47
+    jz 46
     add.q [rbx + 0x10], 1
-    jmp 45
+    jmp 44
+45:
+    add.q [rbx + 0x10], 1
 46:
-    add.q [rbx + 0x10], 1
-47:
     mov rdi, rbx
     call peek
     cmp al, 0x2e
-    jz 48
-    jmp 50
-48:
-    add.q [rbx + 0x10], 1
-    mov rdi, rbx
-    call peek
-    mov rdi, rax
-    call 13
-    cmp al, 0
-    jz 57
-49:
-    mov rdi, rbx
-    call peek
-    mov rdi, rax
-    call 13
-    cmp al, 0
-    jz 50
-    add.q [rbx + 0x10], 1
+    jz 47
     jmp 49
-50:
+47:
+    add.q [rbx + 0x10], 1
+    mov rdi, rbx
+    call peek
+    mov rdi, rax
+    call 14
+    cmp al, 0
+    jz 56
+48:
+    mov rdi, rbx
+    call peek
+    mov rdi, rax
+    call 14
+    cmp al, 0
+    jz 49
+    add.q [rbx + 0x10], 1
+    jmp 48
+49:
     mov rdi, rbx
     call peek
     cmp al, 0x65
@@ -2541,9 +2542,9 @@ parse_string:
     movzx rax, al
     or cl, al
     test cl, cl
-    jnz 51
-    jmp 55
-51:
+    jnz 50
+    jmp 54
+50:
     add.q [rbx + 0x10], 1
     mov rdi, rbx
     call peek
@@ -2555,152 +2556,147 @@ parse_string:
     movzx rax, al
     or cl, al
     test cl, cl
-    jnz 52
-    jmp 53
-52:
+    jnz 51
+    jmp 52
+51:
     add.q [rbx + 0x10], 1
+52:
+    mov rdi, rbx
+    call peek
+    mov rdi, rax
+    call 14
+    cmp al, 0
+    jz 55
 53:
     mov rdi, rbx
     call peek
     mov rdi, rax
-    call 13
+    call 14
     cmp al, 0
-    jz 56
-54:
-    mov rdi, rbx
-    call peek
-    mov rdi, rax
-    call 13
-    cmp al, 0
-    jz 55
+    jz 54
     add.q [rbx + 0x10], 1
-    jmp 54
-55:
+    jmp 53
+54:
     mov al, 1
-    jmp 58
+    jmp 57
+55:
+    xor eax, eax
+    jmp 57
 56:
     xor eax, eax
-    jmp 58
 57:
-    xor eax, eax
-58:
     pop rbx
     ret
-59:
+58:
     push rbx
     mov rbx, rdi
     mov rdi, rbx
     call 10
     cmp al, 0x5b
-    jnz 64
+    jnz 62
     mov rdi, rbx
     call 21
     mov rdi, rbx
     call peek
     cmp al, 0x5d
-    jz 63
-60:
+    jz 61
+59:
     mov rdi, rbx
-    call 77
+    call 73
     cmp al, 0
-    jz 62
+    jz 60
     mov rdi, rbx
     call 21
     mov rdi, rbx
     call 10
     cmp al, 0x5d
-    jz 61
+    jz +0x12
     cmp al, 0x2c
-    jnz +0x5
-    jmp 60
+    jz 59
     xor eax, eax
-    jmp 65
-61:
+    jmp 63
     mov al, 1
-    jmp 65
-62:
+    jmp 63
+60:
     xor eax, eax
-    jmp 65
-63:
+    jmp 63
+61:
     add.q [rbx + 0x10], 1
     mov al, 1
-    jmp 65
-64:
+    jmp 63
+62:
     xor eax, eax
-65:
+63:
     pop rbx
     ret
-66:
+64:
     push rbx
     mov rbx, rdi
     mov rdi, rbx
     call 10
     cmp al, 0x7b
-    jnz 75
+    jnz +0xd6
     mov rdi, rbx
     call 21
     mov rdi, rbx
     call peek
     cmp al, 0x7d
-    jz 74
-67:
+    jz 71
+65:
     mov rdi, rbx
     call 21
     mov rdi, rbx
     call peek
     cmp al, 0x22
-    jnz 73
+    jnz 70
     mov rdi, rbx
     call 29
     cmp al, 0
-    jz 72
+    jz 69
     mov rdi, rbx
     call 21
     mov rdi, rbx
     call 10
     cmp al, 0x3a
-    jnz 71
+    jnz 68
     mov rdi, rbx
-    call 77
+    call 73
     cmp al, 0
-    jz 70
+    jz 67
     mov rdi, rbx
     call 21
     mov rdi, rbx
     call 10
     cmp al, 0x7d
-    jz 69
+    jz 66
     cmp al, 0x2c
-    jnz 68
-    jmp 67
+    jz 65
+    xor eax, eax
+    jmp 72
+66:
+    mov al, 1
+    jmp 72
+67:
+    xor eax, eax
+    jmp 72
 68:
     xor eax, eax
-    jmp 76
+    jmp 72
 69:
-    mov al, 1
-    jmp 76
+    xor eax, eax
+    jmp 72
 70:
     xor eax, eax
-    jmp 76
+    jmp 72
 71:
-    xor eax, eax
-    jmp 76
-72:
-    xor eax, eax
-    jmp 76
-73:
-    xor eax, eax
-    jmp 76
-74:
     add.q [rbx + 0x10], 1
     mov al, 1
-    jmp 76
-75:
+    jmp 72
     xor eax, eax
-76:
+72:
     pop rbx
     ret
-77:
+73:
     push rbx
     push rbp
     sub rsp, 8
@@ -2711,65 +2707,65 @@ parse_string:
     call peek
     mov rbp, rax
     cmp bpl, 0x7b
-    jz 84
+    jz 80
     cmp bpl, 0x5b
-    jz 83
+    jz 79
     cmp bpl, 0x22
-    jz 82
+    jz 78
     mov rdx, 4
     cmp bpl, 0x74
-    jz 81
+    jz 77
     cmp bpl, 0x66
-    jz 80
+    jz 76
     cmp bpl, 0x6e
-    jz 79
+    jz 75
     mov rdi, rbp
-    call 13
+    call 14
     cmp bpl, 0x2d
     setz cl
     movzx rcx, cl
     or cl, al
     test cl, cl
-    jnz 78
+    jnz 74
     xor eax, eax
-    jmp 85
-78:
+    jmp 81
+74:
     mov rdi, rbx
-    call 41
-    jmp 85
-79:
+    call 40
+    jmp 81
+75:
     lea rsi, [rip + 0x91c]
     mov rdi, rbx
     call 24
-    jmp 85
-80:
-    lea rsi, [rip + 0x903]
+    jmp 81
+76:
     mov rdx, 5
+    lea rsi, [rip + 0x8fc]
     mov rdi, rbx
     call 24
-    jmp 85
-81:
+    jmp 81
+77:
     lea rsi, [rip + 0x8e4]
     mov rdi, rbx
     call 24
-    jmp 85
-82:
+    jmp 81
+78:
     mov rdi, rbx
     call 29
-    jmp 85
-83:
+    jmp 81
+79:
     mov rdi, rbx
-    call 59
-    jmp 85
-84:
+    call 58
+    jmp 81
+80:
     mov rdi, rbx
-    call 66
-85:
+    call 64
+81:
     add rsp, 8
     pop rbp
     pop rbx
     ret
-86:
+82:
     sub rsp, 0x18
     mov.q [rsp], rdi
     mov.q [rsp + 0x8], rsi
@@ -2777,188 +2773,188 @@ parse_string:
     lea rdi, [rsp]
     call 21
     lea rdi, [rsp]
-    call 77
+    call 73
     cmp al, 0
-    jz 88
+    jz 84
     lea rdi, [rsp]
     call 21
     mov.q rax, [rsp + 0x10]
     cmp.q rax, [rsp + 0x8]
-    jnz 87
+    jnz 83
     mov al, 1
-    jmp 89
-87:
+    jmp 85
+83:
     xor eax, eax
-    jmp 89
-88:
+    jmp 85
+84:
     xor eax, eax
-89:
+85:
     add rsp, 0x18
     ret
-90:
+86:
     push rbx
     lea rdi, [rip + 0x844]
     mov rsi, 4
-    call 86
+    call 82
     test al, al
-    jnz 91
+    jnz 87
     xor ebx, ebx
-    jmp 92
-91:
+    jmp 88
+87:
     mov rbx, 1
-92:
+88:
     lea rdi, [rip + 0x81d]
     mov rsi, 5
-    call 86
+    call 82
+    test al, al
+    jnz 89
+    jmp 90
+89:
+    add rbx, 2
+90:
+    lea rdi, [rip + 0x7fa]
+    mov rsi, 4
+    call 82
+    test al, al
+    jnz 91
+    jmp 92
+91:
+    add rbx, 4
+92:
+    lea rdi, [rip + 0x7d6]
+    mov rsi, 3
+    call 82
     test al, al
     jnz 93
     jmp 94
 93:
-    add rbx, 2
+    add rbx, 8
 94:
-    lea rdi, [rip + 0x7fa]
-    mov rsi, 4
-    call 86
+    lea rdi, [rip + 0x7b1]
+    mov rsi, 7
+    call 82
     test al, al
     jnz 95
     jmp 96
 95:
-    add rbx, 4
+    add rbx, 0x10
 96:
-    lea rdi, [rip + 0x7d6]
-    mov rsi, 3
-    call 86
+    lea rdi, [rip + 0x790]
+    mov rsi, 7
+    call 82
     test al, al
     jnz 97
     jmp 98
 97:
-    add rbx, 8
+    add rbx, 0x20
 98:
-    lea rdi, [rip + 0x7b1]
-    mov rsi, 7
-    call 86
+    lea rdi, [rip + 0x76f]
+    mov rsi, 9
+    call 82
     test al, al
     jnz 99
     jmp 100
 99:
-    add rbx, 0x10
+    add rbx, 0x40
 100:
-    lea rdi, [rip + 0x790]
-    mov rsi, 7
-    call 86
+    lea rdi, [rip + 0x750]
+    mov rsi, 0x1b
+    call 82
     test al, al
     jnz 101
     jmp 102
 101:
-    add rbx, 0x20
+    add rbx, 0x80
 102:
-    lea rdi, [rip + 0x76f]
-    mov rsi, 9
-    call 86
+    lea rdi, [rip + 0x743]
+    mov rsi, 8
+    call 82
     test al, al
     jnz 103
     jmp 104
 103:
-    add rbx, 0x40
+    add rbx, 0x100
 104:
-    lea rdi, [rip + 0x750]
-    mov rsi, 0x1b
-    call 86
+    lea rdi, [rip + 0x723]
+    mov rsi, 2
+    call 82
     test al, al
     jnz 105
     jmp 106
 105:
-    add rbx, 0x80
-106:
-    lea rdi, [rip + 0x743]
-    mov rsi, 8
-    call 86
-    test al, al
-    jnz 107
-    jmp 108
-107:
-    add rbx, 0x100
-108:
-    lea rdi, [rip + 0x723]
-    mov rsi, 2
-    call 86
-    test al, al
-    jnz 109
-    jmp 110
-109:
     add rbx, 0x200
-110:
+106:
     lea rdi, [rip + 0x6fd]
     xor esi, esi
-    call 86
+    call 82
+    cmp al, 0
+    jz 107
+    jmp 108
+107:
+    add rbx, 0x400
+108:
+    lea rdi, [rip + 0x6d8]
+    mov rsi, 1
+    call 82
+    cmp al, 0
+    jz 109
+    jmp 110
+109:
+    add rbx, 0x800
+110:
+    lea rdi, [rip + 0x6b0]
+    mov rsi, 4
+    call 82
     cmp al, 0
     jz 111
     jmp 112
 111:
-    add rbx, 0x400
+    add rbx, 0x1000
 112:
-    lea rdi, [rip + 0x6d8]
-    mov rsi, 1
-    call 86
+    lea rdi, [rip + 0x68b]
+    mov rsi, 5
+    call 82
     cmp al, 0
     jz 113
     jmp 114
 113:
-    add rbx, 0x800
+    add rbx, 0x2000
 114:
-    lea rdi, [rip + 0x6b0]
-    mov rsi, 4
-    call 86
+    lea rdi, [rip + 0x667]
+    mov rsi, 2
+    call 82
     cmp al, 0
     jz 115
     jmp 116
 115:
-    add rbx, 0x1000
+    add rbx, 0x4000
 116:
-    lea rdi, [rip + 0x68b]
-    mov rsi, 5
-    call 86
+    lea rdi, [rip + 0x640]
+    mov rsi, 6
+    call 82
     cmp al, 0
     jz 117
     jmp 118
 117:
-    add rbx, 0x2000
+    add rbx, 0x8000
 118:
-    lea rdi, [rip + 0x667]
-    mov rsi, 2
-    call 86
+    lea rdi, [rip + 0x61d]
+    mov rsi, 7
+    call 82
     cmp al, 0
     jz 119
     jmp 120
 119:
-    add rbx, 0x4000
-120:
-    lea rdi, [rip + 0x640]
-    mov rsi, 6
-    call 86
-    cmp al, 0
-    jz 121
-    jmp 122
-121:
-    add rbx, 0x8000
-122:
-    lea rdi, [rip + 0x61d]
-    mov rsi, 7
-    call 86
-    cmp al, 0
-    jz 123
-    jmp 124
-123:
     add rbx, 0x10000
-124:
+120:
     lea rdi, [rip + 0x5fb]
     mov rsi, 3
-    call 86
+    call 82
     cmp al, 0
     jz +0x5
-    jmp 125
+    jmp 121
     add rbx, 0x20000
-125:
+121:
     mov rax, rbx
     pop rbx
     ret
@@ -2972,12 +2968,12 @@ skip_ws:
     mov.q rax, [rdi]
     add.q rax, [rdi + 0x10]
     movzx.b eax, [rax]
-    jmp parse_array
+    jmp 10
 7:
     xor eax, eax
-parse_array:
+10:
     ret
-parse_object:
+12:
     push rbx
     mov rbx, rdi
     mov rdi, rbx
@@ -2985,26 +2981,28 @@ parse_object:
     add.q [rbx + 0x10], 1
     pop rbx
     ret
-12:
+14:
     cmp dil, 0x30
     setnc al
+validate:
     movzx rax, al
+main:
     cmp dil, 0x39
     setna cl
     movzx rcx, cl
     and al, cl
     test al, al
-    jnz 15
+    jnz 17
     xor eax, eax
-    jmp 16
-15:
-    mov al, 1
-16:
-    ret
+    jmp 18
 17:
+    mov al, 1
+18:
+    ret
+19:
     push rbx
     mov rbx, rdi
-18:
+20:
     mov rdi, rbx
     call peek
     cmp al, 0x20
@@ -3023,101 +3021,103 @@ parse_object:
     movzx rax, al
     or cl, al
     test cl, cl
-    jnz 19
+    jnz 21
     mov al, 1
     pop rbx
     ret
-19:
+21:
     add.q [rbx + 0x10], 1
-    jmp 18
-20:
+    jmp 20
+22:
     push rbx
     push rbp
     push r12
     push r13
     sub rsp, 8
-    mov rbp, rdi
-    mov r12, rsi
-    mov r13, rdx
-    xor ebx, ebx
-21:
-    cmp rbx, r13
-    jnl 23
-    mov rdi, rbp
-    call peek
-    mov rcx, r12
-    add rcx, rbx
-    cmp.b al, [rcx]
-    jnz 22
-    add.q [rbp + 0x10], 1
-    add rbx, 1
-    jmp 21
-22:
-    xor eax, eax
-    jmp 24
+    mov rbx, rdx
+    mov rbp, rsi
+    mov r12, rdi
+    cmp rbx, 0
+    jng 25
+    xor r13d, r13d
 23:
-    mov al, 1
+    mov rdi, r12
+    call peek
+    mov rcx, rbp
+    add rcx, r13
+    cmp.b al, [rcx]
+    jnz 24
+    add r13, 1
+    add.q [r12 + 0x10], 1
+    cmp r13, rbx
+    jnge 23
+    jmp 25
 24:
+    xor eax, eax
+    jmp 26
+25:
+    mov al, 1
+26:
     add rsp, 8
     pop r13
     pop r12
     pop rbp
     pop rbx
     ret
-25:
+27:
     push rbx
     push rbp
     sub rsp, 8
     mov rbx, rdi
     mov rdi, rbx
-    call parse_object
+    call 12
     cmp al, 0x22
-    jnz 39
-26:
-    mov rdi, rbx
-    call parse_object
-    cmp al, 0x22
-    jz 38
-    cmp al, 0
-    jz 37
-    cmp al, 0x5c
-    jz 28
-    cmp al, 0x20
-    jc 27
-    jmp 36
-27:
-    xor eax, eax
-    jmp 40
+    jnz 40
 28:
     mov rdi, rbx
-    call parse_object
+    call 12
     cmp al, 0x22
-    jz 36
+    jz 39
+    cmp al, 0
+    jz 38
     cmp al, 0x5c
-    jz 36
-    cmp al, 0x2f
-    jz 36
-    cmp al, 0x62
-    jz 36
-    cmp al, 0x66
-    jz 36
-    cmp al, 0x6e
-    jz 36
-    cmp al, 0x72
-    jz 36
-    cmp al, 0x74
-    jz 36
-    cmp al, 0x75
-    jz 29
-    xor eax, eax
-    jmp 40
+    jz 30
+    cmp al, 0x20
+    jc 29
+    jmp 37
 29:
-    xor ebp, ebp
+    xor eax, eax
+    jmp 41
 30:
-    cmp rbp, 4
-    jnl 36
     mov rdi, rbx
-    call parse_object
+    call 12
+    cmp al, 0x22
+    jz 37
+    cmp al, 0x5c
+    jz 37
+    cmp al, 0x2f
+    jz 37
+    cmp al, 0x62
+    jz 37
+    cmp al, 0x66
+    jz 37
+    cmp al, 0x6e
+    jz 37
+    cmp al, 0x72
+    jz 37
+    cmp al, 0x74
+    jz 37
+    cmp al, 0x75
+    jz 31
+    xor eax, eax
+    jmp 41
+31:
+    xor ebp, ebp
+32:
+    cmp rbp, 4
+    jnl 37
+    mov rdi, rbx
+    call 12
     cmp al, 0x30
     setnc cl
     movzx rcx, cl
@@ -3126,88 +3126,84 @@ parse_object:
     movzx rdx, dl
     and cl, dl
     test cl, cl
-    jnz 33
-    cmp al, 0x61
-    setnc cl
-    movzx rcx, cl
+    jnz 35
     cmp al, 0x66
-    setna dl
-    movzx rdx, dl
-    and cl, dl
-    test cl, cl
-    jnz 32
-    cmp al, 0x41
-    setnc cl
+    setna cl
     movzx rcx, cl
+    cmp al, 0x61
+    setnc dl
+    movzx rdx, dl
+    and dl, cl
+    test dl, dl
+    jnz 34
     cmp al, 0x46
-    setna al
+    setna cl
+    movzx rcx, cl
+    cmp al, 0x41
+    setnc al
     movzx rax, al
-    and cl, al
-    test cl, cl
-    jnz 31
+    and al, cl
+    test al, al
+    jnz 33
     xor eax, eax
-    jmp 34
-31:
-    mov al, 1
-    jmp 34
-32:
-    mov al, 1
-    jmp 34
+    jmp 36
 33:
     mov al, 1
+    jmp 36
 34:
-    cmp al, 0
-    jz 35
-    add rbp, 1
-    jmp 30
-35:
-    xor eax, eax
-    jmp 40
-36:
-    jmp 26
-37:
-    xor eax, eax
-    jmp 40
-38:
     mov al, 1
-    jmp 40
-39:
+    jmp 36
+35:
+    mov al, 1
+36:
+    add rbp, 1
+    cmp al, 0
+    jnz 32
     xor eax, eax
+    jmp 41
+37:
+    jmp 28
+38:
+    xor eax, eax
+    jmp 41
+39:
+    mov al, 1
+    jmp 41
 40:
+    xor eax, eax
+41:
     add rsp, 8
     pop rbp
     pop rbx
     ret
-41:
+42:
     push rbx
     mov rbx, rdi
     mov rdi, rbx
-    call parse_object
+    call 12
     cmp al, 0x5b
     jnz 46
     mov rdi, rbx
-    call 17
+    call 19
     mov rdi, rbx
     call peek
     cmp al, 0x5d
     jz 45
-42:
+43:
     mov rdi, rbx
-    call 59
+    call 57
     cmp al, 0
     jz 44
     mov rdi, rbx
-    call 17
+    call 19
     mov rdi, rbx
-    call parse_object
+    call 12
     cmp al, 0x5d
-    jz 43
+    jz +0x12
     cmp al, 0x2c
-    jnz +0x5
-    jmp 42
+    jz 43
     xor eax, eax
     jmp 47
-43:
     mov al, 1
     jmp 47
 44:
@@ -3226,166 +3222,163 @@ parse_object:
     push rbx
     mov rbx, rdi
     mov rdi, rbx
-    call parse_object
+    call 12
     cmp al, 0x7b
-    jnz 57
+    jnz 55
     mov rdi, rbx
-    call 17
+    call 19
     mov rdi, rbx
     call peek
     cmp al, 0x7d
-    jz 56
+    jz 54
 49:
     mov rdi, rbx
-    call 17
+    call 19
     mov rdi, rbx
     call peek
     cmp al, 0x22
-    jnz 55
-    mov rdi, rbx
-    call 25
-    cmp al, 0
-    jz 54
-    mov rdi, rbx
-    call 17
-    mov rdi, rbx
-    call parse_object
-    cmp al, 0x3a
     jnz 53
     mov rdi, rbx
-    call 59
+    call 27
     cmp al, 0
     jz 52
     mov rdi, rbx
-    call 17
+    call 19
     mov rdi, rbx
-    call parse_object
-    cmp al, 0x7d
+    call 12
+    cmp al, 0x3a
+    jnz +0x4e
+    mov rdi, rbx
+    call 57
+    cmp al, 0
     jz 51
+    mov rdi, rbx
+    call 19
+    mov rdi, rbx
+    call 12
+    cmp al, 0x7d
+    jz 50
     cmp al, 0x2c
-    jnz 50
-    jmp 49
-50:
+    jz 49
     xor eax, eax
-    jmp 58
-51:
+    jmp 56
+50:
     mov al, 1
-    jmp 58
+    jmp 56
+51:
+    xor eax, eax
+    jmp 56
+    xor eax, eax
+    jmp 56
 52:
     xor eax, eax
-    jmp 58
+    jmp 56
 53:
     xor eax, eax
-    jmp 58
+    jmp 56
 54:
-    xor eax, eax
-    jmp 58
-55:
-    xor eax, eax
-    jmp 58
-56:
     add.q [rbx + 0x10], 1
     mov al, 1
-    jmp 58
-57:
+    jmp 56
+55:
     xor eax, eax
-58:
+56:
     pop rbx
     ret
-59:
+57:
     push rbx
     push rbp
     sub rsp, 8
     mov rbx, rdi
     mov rdi, rbx
-    call 17
+    call 19
     mov rdi, rbx
     call peek
     mov rbp, rax
     cmp bpl, 0x7b
-    jz 81
-    cmp bpl, 0x5b
-    jz +0x266
-    cmp bpl, 0x22
     jz 80
+    cmp bpl, 0x5b
+    jz 79
+    cmp bpl, 0x22
+    jz 78
     mov rdx, 4
     cmp bpl, 0x74
-    jz 79
-    cmp bpl, 0x66
-    jz 78
-    cmp bpl, 0x6e
     jz 77
+    cmp bpl, 0x66
+    jz 76
+    cmp bpl, 0x6e
+    jz 75
     mov rdi, rbp
-    call 12
+    call 14
     cmp bpl, 0x2d
     setz cl
     movzx rcx, cl
     or cl, al
     test cl, cl
-    jnz 60
+    jnz 58
     xor eax, eax
-    jmp 82
-60:
+    jmp 81
+58:
     mov rdi, rbx
     call peek
     cmp al, 0x2d
-    jz 61
-    jmp 62
+    jz 59
+    jmp 60
+59:
+    add.q [rbx + 0x10], 1
+60:
+    mov rdi, rbx
+    call peek
+    cmp al, 0x30
+    jz 63
+    cmp al, 0x39
+    setna cl
+    movzx rcx, cl
+    cmp al, 0x31
+    setnc al
+    movzx rax, al
+    and al, cl
+    test al, al
+    jnz 61
+    xor eax, eax
+    jmp 81
 61:
     add.q [rbx + 0x10], 1
 62:
     mov rdi, rbx
     call peek
-    cmp al, 0x30
-    jz 65
-    cmp al, 0x31
-    setnc cl
-    movzx rcx, cl
-    cmp al, 0x39
-    setna al
-    movzx rax, al
-    and cl, al
-    test cl, cl
-    jnz 63
-    xor eax, eax
-    jmp 82
+    mov rdi, rax
+    call 14
+    cmp al, 0
+    jz 64
+    add.q [rbx + 0x10], 1
+    jmp 62
 63:
     add.q [rbx + 0x10], 1
 64:
     mov rdi, rbx
     call peek
-    mov rdi, rax
-    call 12
-    cmp al, 0
-    jz 66
-    add.q [rbx + 0x10], 1
-    jmp 64
+    cmp al, 0x2e
+    jz 65
+    jmp 67
 65:
     add.q [rbx + 0x10], 1
+    mov rdi, rbx
+    call peek
+    mov rdi, rax
+    call 14
+    cmp al, 0
+    jz 74
 66:
     mov rdi, rbx
     call peek
-    cmp al, 0x2e
+    mov rdi, rax
+    call 14
+    cmp al, 0
     jz 67
-    jmp 69
+    add.q [rbx + 0x10], 1
+    jmp 66
 67:
-    add.q [rbx + 0x10], 1
-    mov rdi, rbx
-    call peek
-    mov rdi, rax
-    call 12
-    cmp al, 0
-    jz 76
-68:
-    mov rdi, rbx
-    call peek
-    mov rdi, rax
-    call 12
-    cmp al, 0
-    jz 69
-    add.q [rbx + 0x10], 1
-    jmp 68
-69:
     mov rdi, rbx
     call peek
     cmp al, 0x65
@@ -3396,9 +3389,9 @@ parse_object:
     movzx rax, al
     or cl, al
     test cl, cl
-    jnz 70
-    jmp 74
-70:
+    jnz 68
+    jmp 72
+68:
     add.q [rbx + 0x10], 1
     mov rdi, rbx
     call peek
@@ -3410,255 +3403,254 @@ parse_object:
     movzx rax, al
     or cl, al
     test cl, cl
-    jnz 71
-    jmp 72
+    jnz 69
+    jmp 70
+69:
+    add.q [rbx + 0x10], 1
+70:
+    mov rdi, rbx
+    call peek
+    mov rdi, rax
+    call 14
+    cmp al, 0
+    jz 73
 71:
+    mov rdi, rbx
+    call peek
+    mov rdi, rax
+    call 14
+    cmp al, 0
+    jz 72
     add.q [rbx + 0x10], 1
+    jmp 71
 72:
-    mov rdi, rbx
-    call peek
-    mov rdi, rax
-    call 12
-    cmp al, 0
-    jz 75
-73:
-    mov rdi, rbx
-    call peek
-    mov rdi, rax
-    call 12
-    cmp al, 0
-    jz 74
-    add.q [rbx + 0x10], 1
-    jmp 73
-74:
     mov al, 1
-    jmp 82
+    jmp 81
+73:
+    xor eax, eax
+    jmp 81
+74:
+    xor eax, eax
+    jmp 81
 75:
-    xor eax, eax
-    jmp 82
-76:
-    xor eax, eax
-    jmp 82
-77:
     lea rsi, [rip + 0x92a]
     mov rdi, rbx
-    call 20
-    jmp 82
-78:
-    lea rsi, [rip + 0x911]
+    call 22
+    jmp 81
+76:
     mov rdx, 5
+    lea rsi, [rip + 0x90a]
     mov rdi, rbx
-    call 20
-    jmp 82
-79:
+    call 22
+    jmp 81
+77:
     lea rsi, [rip + 0x8f2]
     mov rdi, rbx
-    call 20
-    jmp 82
+    call 22
+    jmp 81
+78:
+    mov rdi, rbx
+    call 27
+    jmp 81
+79:
+    mov rdi, rbx
+    call 42
+    jmp 81
 80:
     mov rdi, rbx
-    call 25
-    jmp 82
-    mov rdi, rbx
-    call 41
-    jmp 82
-81:
-    mov rdi, rbx
     call 48
-82:
+81:
     add rsp, 8
     pop rbp
     pop rbx
     ret
-83:
+82:
     sub rsp, 0x18
     mov.q [rsp], rdi
     mov.q [rsp + 0x8], rsi
     mov.q [rsp + 0x10], 0
     lea rdi, [rsp]
-    call 17
+    call 19
     lea rdi, [rsp]
-    call 59
+    call 57
     cmp al, 0
-    jz 85
+    jz 84
     lea rdi, [rsp]
-    call 17
+    call 19
     mov.q rax, [rsp + 0x10]
     cmp.q rax, [rsp + 0x8]
-    jnz 84
+    jnz 83
     mov al, 1
-    jmp 86
+    jmp 85
+83:
+    xor eax, eax
+    jmp 85
 84:
     xor eax, eax
-    jmp 86
 85:
-    xor eax, eax
-86:
     add rsp, 0x18
     ret
-87:
+86:
     push rbx
     lea rdi, [rip + 0x854]
     mov rsi, 4
-    call 83
+    call 82
     test al, al
-    jnz 88
+    jnz 87
     xor ebx, ebx
-    jmp 89
-88:
+    jmp 88
+87:
     mov rbx, 1
-89:
+88:
     lea rdi, [rip + 0x82d]
     mov rsi, 5
-    call 83
+    call 82
     test al, al
-    jnz 90
-    jmp 91
-90:
+    jnz 89
+    jmp 90
+89:
     add rbx, 2
-91:
+90:
     lea rdi, [rip + 0x80a]
     mov rsi, 4
-    call 83
+    call 82
     test al, al
-    jnz 92
-    jmp 93
-92:
+    jnz 91
+    jmp 92
+91:
     add rbx, 4
-93:
+92:
     lea rdi, [rip + 0x7e6]
     mov rsi, 3
-    call 83
+    call 82
     test al, al
-    jnz 94
-    jmp 95
-94:
+    jnz 93
+    jmp 94
+93:
     add rbx, 8
-95:
+94:
     lea rdi, [rip + 0x7c1]
     mov rsi, 7
-    call 83
+    call 82
     test al, al
-    jnz 96
-    jmp 97
-96:
+    jnz 95
+    jmp 96
+95:
     add rbx, 0x10
-97:
+96:
     lea rdi, [rip + 0x7a0]
     mov rsi, 7
-    call 83
+    call 82
     test al, al
-    jnz 98
-    jmp 99
-98:
+    jnz 97
+    jmp 98
+97:
     add rbx, 0x20
-99:
+98:
     lea rdi, [rip + 0x77f]
     mov rsi, 9
-    call 83
+    call 82
     test al, al
-    jnz 100
-    jmp 101
-100:
+    jnz 99
+    jmp 100
+99:
     add rbx, 0x40
-101:
+100:
     lea rdi, [rip + 0x760]
     mov rsi, 0x1b
-    call 83
+    call 82
     test al, al
-    jnz 102
-    jmp 103
-102:
+    jnz 101
+    jmp 102
+101:
     add rbx, 0x80
-103:
+102:
     lea rdi, [rip + 0x753]
     mov rsi, 8
-    call 83
+    call 82
+    test al, al
+    jnz 103
+    jmp +0x7
+103:
+    add rbx, 0x100
+    lea rdi, [rip + 0x733]
+    mov rsi, 2
+    call 82
     test al, al
     jnz 104
     jmp 105
 104:
-    add rbx, 0x100
-105:
-    lea rdi, [rip + 0x733]
-    mov rsi, 2
-    call 83
-    test al, al
-    jnz 106
-    jmp 107
-106:
     add rbx, 0x200
-107:
+105:
     lea rdi, [rip + 0x70d]
     xor esi, esi
-    call 83
+    call 82
+    cmp al, 0
+    jz 106
+    jmp 107
+106:
+    add rbx, 0x400
+107:
+    lea rdi, [rip + 0x6e8]
+    mov rsi, 1
+    call 82
     cmp al, 0
     jz 108
     jmp 109
 108:
-    add rbx, 0x400
+    add rbx, 0x800
 109:
-    lea rdi, [rip + 0x6e8]
-    mov rsi, 1
-    call 83
+    lea rdi, [rip + 0x6c0]
+    mov rsi, 4
+    call 82
     cmp al, 0
     jz 110
     jmp 111
 110:
-    add rbx, 0x800
+    add rbx, 0x1000
 111:
-    lea rdi, [rip + 0x6c0]
-    mov rsi, 4
-    call 83
+    lea rdi, [rip + 0x69b]
+    mov rsi, 5
+    call 82
     cmp al, 0
     jz 112
     jmp 113
 112:
-    add rbx, 0x1000
+    add rbx, 0x2000
 113:
-    lea rdi, [rip + 0x69b]
-    mov rsi, 5
-    call 83
+    lea rdi, [rip + 0x677]
+    mov rsi, 2
+    call 82
     cmp al, 0
     jz 114
     jmp 115
 114:
-    add rbx, 0x2000
+    add rbx, 0x4000
 115:
-    lea rdi, [rip + 0x677]
-    mov rsi, 2
-    call 83
+    lea rdi, [rip + 0x650]
+    mov rsi, 6
+    call 82
     cmp al, 0
     jz 116
     jmp 117
 116:
-    add rbx, 0x4000
-117:
-    lea rdi, [rip + 0x650]
-    mov rsi, 6
-    call 83
-    cmp al, 0
-    jz 118
-    jmp 119
-118:
     add rbx, 0x8000
-119:
+117:
     lea rdi, [rip + 0x62d]
     mov rsi, 7
-    call 83
+    call 82
     cmp al, 0
-    jz 120
-    jmp 121
-120:
+    jz 118
+    jmp +0x7
+118:
     add rbx, 0x10000
-121:
     lea rdi, [rip + 0x60b]
     mov rsi, 3
-    call 83
+    call 82
     cmp al, 0
-    jz 122
+    jz 119
     jmp +0x7
-122:
+119:
     add rbx, 0x20000
     mov rax, rbx
     pop rbx

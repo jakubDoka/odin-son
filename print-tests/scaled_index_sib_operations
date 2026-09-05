@@ -13,45 +13,50 @@ main:
     mov.q [rsp + 0x28], 0x11
     mov.q [rsp + 0x30], 0x37
     mov.q [rsp + 0x38], 2
-    xor ecx, ecx
     xor edx, edx
+    xor eax, eax
 1:
+    mov rcx, rax
     cmp rdx, 8
     jnl 4
     cmp.q [rsp + rdx*8], 0x14
     jnle 2
-    mov rax, rcx
     jmp 3
 2:
-    mov rax, rcx
-    add rax, 1
+    add rcx, 1
 3:
+    mov rax, rcx
     add rdx, 1
-    mov rcx, rax
     jmp 1
 4:
-    xor eax, eax
+    xor edx, edx
 5:
-    cmp rax, 8
+    cmp rdx, 8
     jnl 6
-    neg.q [rsp + rax*8]
+    mov rax, rdx
     add rax, 1
+    neg.q [rsp + rdx*8]
+    mov rdx, rax
     jmp 5
 6:
-    xor eax, eax
+    xor edx, edx
 7:
-    cmp rax, 8
+    cmp rdx, 8
     jnl 8
-    not.q [rsp + rax*8]
+    mov rax, rdx
     add rax, 1
+    not.q [rsp + rdx*8]
+    mov rdx, rax
     jmp 7
 8:
-    xor eax, eax
+    xor edx, edx
 9:
-    cmp rax, 8
+    cmp rdx, 8
     jnl 10
-    add.q [rsp + rax*8], 7
+    mov rax, rdx
     add rax, 1
+    add.q [rsp + rdx*8], 7
+    mov rdx, rax
     jmp 9
 10:
     xor edx, edx
@@ -69,17 +74,19 @@ main:
     add rdx, 1
     jmp 11
 14:
-    xor eax, eax
     xor edx, edx
+    xor esi, esi
 15:
-    cmp rax, 8
+    cmp rsi, 8
     jnl 16
-    add.q rdx, [rsp + rax*8]
+    mov rax, rsi
     add rax, 1
+    add.q rdx, [rsp + rsi*8]
+    mov rsi, rax
     jmp 15
 16:
+    add rdx, rcx
     mov rax, rdx
-    add rax, rcx
     add rsp, 0x48
     ret
 =========== OPT LEVEL: mininal ===========
@@ -97,45 +104,50 @@ main:
     mov.q [rsp + 0x28], 0x11
     mov.q [rsp + 0x30], 0x37
     mov.q [rsp + 0x38], 2
-    xor ecx, ecx
     xor edx, edx
+    xor eax, eax
 1:
+    mov rcx, rax
     cmp rdx, 8
     jnl 4
     cmp.q [rsp + rdx*8], 0x14
     jnle 2
-    mov rax, rcx
     jmp 3
 2:
-    mov rax, rcx
-    add rax, 1
+    add rcx, 1
 3:
+    mov rax, rcx
     add rdx, 1
-    mov rcx, rax
     jmp 1
 4:
-    xor eax, eax
+    xor edx, edx
 5:
-    cmp rax, 8
+    cmp rdx, 8
     jnl 6
-    neg.q [rsp + rax*8]
+    mov rax, rdx
     add rax, 1
+    neg.q [rsp + rdx*8]
+    mov rdx, rax
     jmp 5
 6:
-    xor eax, eax
+    xor edx, edx
 7:
-    cmp rax, 8
+    cmp rdx, 8
     jnl 8
-    not.q [rsp + rax*8]
+    mov rax, rdx
     add rax, 1
+    not.q [rsp + rdx*8]
+    mov rdx, rax
     jmp 7
 8:
-    xor eax, eax
+    xor edx, edx
 9:
-    cmp rax, 8
+    cmp rdx, 8
     jnl 10
-    add.q [rsp + rax*8], 7
+    mov rax, rdx
     add rax, 1
+    add.q [rsp + rdx*8], 7
+    mov rdx, rax
     jmp 9
 10:
     xor edx, edx
@@ -153,17 +165,19 @@ main:
     add rdx, 1
     jmp 11
 14:
-    xor eax, eax
     xor edx, edx
+    xor esi, esi
 15:
-    cmp rax, 8
+    cmp rsi, 8
     jnl 16
-    add.q rdx, [rsp + rax*8]
+    mov rax, rsi
     add rax, 1
+    add.q rdx, [rsp + rsi*8]
+    mov rsi, rax
     jmp 15
 16:
+    add rdx, rcx
     mov rax, rdx
-    add rax, rcx
     add rsp, 0x48
     ret
 =========== OPT LEVEL: moderate ===========
@@ -194,28 +208,34 @@ main:
     mov rcx, rax
     jmp 1
 4:
-    xor eax, eax
+    xor edx, edx
 5:
-    cmp rax, 8
+    cmp rdx, 8
     jnl 6
-    neg.q [rsp + rax*8]
+    mov rax, rdx
     add rax, 1
+    neg.q [rsp + rdx*8]
+    mov rdx, rax
     jmp 5
 6:
-    xor eax, eax
+    xor edx, edx
 7:
-    cmp rax, 8
+    cmp rdx, 8
     jnl 8
-    not.q [rsp + rax*8]
+    mov rax, rdx
     add rax, 1
+    not.q [rsp + rdx*8]
+    mov rdx, rax
     jmp 7
 8:
-    xor eax, eax
+    xor edx, edx
 9:
-    cmp rax, 8
+    cmp rdx, 8
     jnl 10
-    add.q [rsp + rax*8], 7
+    mov rax, rdx
     add rax, 1
+    add.q [rsp + rdx*8], 7
+    mov rdx, rax
     jmp 9
 10:
     xor edx, edx
@@ -233,15 +253,18 @@ main:
     add rdx, 1
     jmp 11
 14:
-    xor eax, eax
     xor edx, edx
+    xor esi, esi
 15:
-    cmp rdx, 8
+    cmp rsi, 8
     jnl 16
-    add.q rax, [rsp + rdx*8]
-    add rdx, 1
+    mov rax, rsi
+    add rax, 1
+    add.q rdx, [rsp + rsi*8]
+    mov rsi, rax
     jmp 15
 16:
+    mov rax, rdx
     add rax, rcx
     add rsp, 0x48
     ret
@@ -256,71 +279,70 @@ main:
     mov.q [rsp + 0x28], 0x11
     mov.q [rsp + 0x30], 0x37
     mov.q [rsp + 0x38], 2
-    xor ecx, ecx
+    xor eax, eax
     xor edx, edx
 1:
-    cmp rdx, 8
-    jnl 4
-    cmp.q [rsp + rdx*8], 0x14
+    cmp.q [rsp + rax*8], 0x14
     jnle 2
-    mov rax, rcx
+    mov rcx, rdx
     jmp 3
 2:
-    mov rax, rcx
-    add rax, 1
-3:
     add rdx, 1
-    mov rcx, rax
-    jmp 1
-4:
-    xor eax, eax
-5:
-    cmp rax, 8
-    jnl 6
-    neg.q [rsp + rax*8]
+    mov rcx, rdx
+3:
     add rax, 1
-    jmp 5
-6:
-    xor eax, eax
-7:
     cmp rax, 8
-    jnl 8
-    not.q [rsp + rax*8]
-    add rax, 1
-    jmp 7
-8:
-    xor eax, eax
-9:
-    cmp rax, 8
-    jnl 10
-    add.q [rsp + rax*8], 7
-    add rax, 1
-    jmp 9
-10:
+    mov rdx, rcx
+    jnge 1
     xor edx, edx
-11:
-    cmp rdx, 8
-    jnl 14
+4:
+    mov rax, rdx
+    add rax, 1
+    neg.q [rsp + rdx*8]
+    cmp rax, 8
+    mov rdx, rax
+    jnge 4
+    xor edx, edx
+5:
+    mov rax, rdx
+    add rax, 1
+    not.q [rsp + rdx*8]
+    cmp rax, 8
+    mov rdx, rax
+    jnge 5
+    xor edx, edx
+6:
+    mov rax, rdx
+    add rax, 1
+    add.q [rsp + rdx*8], 7
+    cmp rax, 8
+    mov rdx, rax
+    jnge 6
+    xor edx, edx
+7:
     mov rax, rdx
     and rax, 1
     cmp rax, 0
-    jz 12
-    jmp 13
-12:
+    jz 8
+    jmp 9
+8:
     mov.q [rsp + rdx*8], 0x64
-13:
+9:
     add rdx, 1
-    jmp 11
-14:
-    xor eax, eax
-    xor edx, edx
-15:
     cmp rdx, 8
-    jnl 16
-    add.q rax, [rsp + rdx*8]
-    add rdx, 1
-    jmp 15
-16:
+    jnge 7
+    xor esi, esi
+    xor edi, edi
+10:
+    mov rax, rsi
+    add rax, 1
+    mov rdx, rdi
+    add.q rdx, [rsp + rsi*8]
+    cmp rax, 8
+    mov rsi, rax
+    mov rdi, rdx
+    jnge 10
+    mov rax, rdx
     add rax, rcx
     add rsp, 0x48
     ret

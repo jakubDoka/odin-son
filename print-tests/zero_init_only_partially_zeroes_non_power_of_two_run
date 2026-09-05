@@ -5,12 +5,14 @@ dirty:
     mov rdx, 0x200
     lea rdi, [rsp]
     call.q [rip - 0x23]
-    xor eax, eax
+    xor ecx, ecx
 2:
-    cmp rax, 0x40
+    cmp rcx, 0x40
     jnl 3
-    mov.q [rsp + rax*8], 0x55
+    mov rax, rcx
     add rax, 1
+    mov.q [rsp + rcx*8], 0x55
+    mov rcx, rax
     jmp 2
 3:
     mov rax, 3
@@ -27,38 +29,38 @@ dirty:
     sub rsp, 0x30
     call dirty
     mov rbp, rax
-    xor esi, esi
     lea rax, [rsp]
     add rax, 0x20
     mov r12, rax
-    mov rax, 1
+    xor eax, eax
     imul rbx, rax, 8
+    xor esi, esi
     mov rdx, 0x30
     lea rdi, [rsp]
-    call.q [rip - 0xaa]
+    call.q [rip - 0xae]
     mov.q [rsp + 0x18], 5
-    xor eax, eax
+    mov rax, 1
     imul rcx, rax, 8
-    lea rax, [rsp]
-    add rax, rcx
-    mov.q rax, [rax]
-    lea rdx, [rsp]
-    add rdx, rbx
-    add.q rax, [rdx]
     mov rdx, 2
+    lea rax, [rsp]
+    add rax, rbx
+    mov.q rax, [rax]
     imul rdx, rdx, 8
+    lea rsi, [rsp]
+    add rsi, rcx
+    add.q rax, [rsi]
     lea rsi, [rsp]
     add rdx, rsi
     add.q rax, [rdx]
-    add.q rax, [rsp + 0x18]
     mov rdx, r12
-    add rdx, rcx
+    add rdx, rbx
+    add.q rax, [rsp + 0x18]
+    mov rsi, r12
+    add rsi, rcx
     add.q rax, [rdx]
-    mov rcx, r12
-    add rcx, rbx
-    add.q rax, [rcx]
-    add rax, rbp
+    add.q rax, [rsi]
     mov rcx, 0xfb
+    add rax, rbp
     cqo
     idiv rcx
     mov rax, rdx
@@ -70,16 +72,18 @@ dirty:
 =========== OPT LEVEL: mininal ===========
 dirty:
     sub rsp, 0x208
-    lea rdi, [rsp]
     xor esi, esi
+    lea rdi, [rsp]
     mov rdx, 0x200
     call.q [rip - 0x23]
-    xor eax, eax
+    xor ecx, ecx
 2:
-    cmp rax, 0x40
+    cmp rcx, 0x40
     jnl 3
-    mov.q [rsp + rax*8], 0x55
+    mov rax, rcx
     add rax, 1
+    mov.q [rsp + rcx*8], 0x55
+    mov rcx, rax
     jmp 2
 3:
     mov.q rax, [rsp + 0x18]
@@ -93,7 +97,7 @@ dirty:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0x30
-    call.q [rip - 0x7a]
+    call.q [rip - 0x82]
     mov.q [rsp + 0x18], 5
     mov.q rax, [rsp]
     add.q rax, [rsp + 0x8]
@@ -101,8 +105,8 @@ dirty:
     add.q rax, [rsp + 0x18]
     add.q rax, [rsp + 0x20]
     add.q rax, [rsp + 0x28]
-    add rax, rbx
     mov rcx, 0xfb
+    add rax, rbx
     cqo
     idiv rcx
     mov rax, rdx
@@ -112,16 +116,18 @@ dirty:
 =========== OPT LEVEL: moderate ===========
 dirty:
     sub rsp, 0x208
-    lea rdi, [rsp]
     xor esi, esi
+    lea rdi, [rsp]
     mov rdx, 0x200
     call.q [rip - 0x23]
-    xor eax, eax
+    xor ecx, ecx
 2:
-    cmp rax, 0x40
+    cmp rcx, 0x40
     jnl 3
-    mov.q [rsp + rax*8], 0x55
+    mov rax, rcx
     add rax, 1
+    mov.q [rsp + rcx*8], 0x55
+    mov rcx, rax
     jmp 2
 3:
     mov.q rax, [rsp + 0x18]
@@ -141,8 +147,8 @@ dirty:
     mov.q rcx, [rsp + 0x20]
     lea rax, [rax + rcx + 0x5]
     add.q rax, [rsp + 0x28]
-    add rax, rdx
     mov rcx, 0xfb
+    add rax, rdx
     cqo
     idiv rcx
     mov rax, rdx
@@ -151,22 +157,22 @@ dirty:
 =========== OPT LEVEL: all ===========
 dirty:
     sub rsp, 0x208
-    lea rdi, [rsp]
     xor esi, esi
+    lea rdi, [rsp]
     mov rdx, 0x200
     call.q [rip - 0x23]
-    xor eax, eax
+    xor ecx, ecx
 2:
-    cmp rax, 0x40
-    jnl 3
+    mov rax, rcx
+    mov rcx, rax
+    add rcx, 1
     mov.q [rsp + rax*8], 0x55
-    add rax, 1
-    jmp 2
-3:
+    cmp rcx, 0x40
+    jnge 2
     mov.q rax, [rsp + 0x18]
     add rsp, 0x208
     ret
-4:
+3:
     sub rsp, 0x38
     call dirty
     mov rdx, rax
@@ -180,8 +186,8 @@ dirty:
     mov.q rcx, [rsp + 0x20]
     lea rax, [rax + rcx + 0x5]
     add.q rax, [rsp + 0x28]
-    add rax, rdx
     mov rcx, 0xfb
+    add rax, rdx
     cqo
     idiv rcx
     mov rax, rdx
@@ -190,33 +196,33 @@ dirty:
 =========== OPT LEVEL: aggresive ===========
 dirty:
     sub rsp, 0x238
-    lea rdi, [rsp + 0x30]
     xor esi, esi
+    lea rdi, [rsp + 0x30]
     mov rdx, 0x200
     call.q [rip - 0x24]
-    xor eax, eax
+    xor ecx, ecx
 2:
-    cmp rax, 0x40
-    jnl 3
-    mov.q [rsp + rax*8 + 0x30], 0x55
+    mov rax, rcx
     add rax, 1
-    jmp 2
-3:
-    mov.q rcx, [rsp + 0x48]
+    mov.q [rsp + rcx*8 + 0x30], 0x55
+    cmp rax, 0x40
+    mov rcx, rax
+    jnge 2
     pxor xmm0, xmm0
+    mov.q rcx, [rsp + 0x48]
     movups.x [rsp], xmm0
     mov.q [rsp + 0x10], 0
     movups.x [rsp + 0x20], xmm0
     mov.q [rsp + 0x18], 5
     mov.q rax, [rsp]
-    add.q rax, [rsp + 0x8]
     mov.q rdx, [rsp + 0x20]
+    add.q rax, [rsp + 0x8]
     lea rax, [rax + rdx + 0x5]
     add.q rax, [rsp + 0x28]
+    mov rsi, 0xfb
     add rax, rcx
-    mov rcx, 0xfb
     cqo
-    idiv rcx
+    idiv rsi
     mov rax, rdx
     add rsp, 0x238
     ret

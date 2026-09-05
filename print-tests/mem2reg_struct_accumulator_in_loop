@@ -4,21 +4,21 @@ opaque:
     ret
 2:
     sub rsp, 0x18
-    lea rdi, [rsp]
     xor esi, esi
+    lea rdi, [rsp]
     mov rdx, 0x10
     call.q [rip - 0x28]
+    mov rdi, 5
     mov.q [rsp], 0
     mov.q [rsp + 0x8], 0
-    mov rdi, 5
     call opaque
     xor ecx, ecx
 3:
     cmp rcx, rax
     jnl 4
     add.q [rsp], rcx
-    add.q [rsp + 0x8], 1
     add rcx, 1
+    add.q [rsp + 0x8], 1
     jmp 3
 4:
     mov.q rax, [rsp]
@@ -32,21 +32,21 @@ opaque:
     ret
 2:
     sub rsp, 0x18
-    lea rdi, [rsp]
     xor esi, esi
+    lea rdi, [rsp]
     mov rdx, 0x10
     call.q [rip - 0x28]
+    mov rdi, 5
     mov.q [rsp], 0
     mov.q [rsp + 0x8], 0
-    mov rdi, 5
     call opaque
     xor ecx, ecx
 3:
     cmp rcx, rax
     jnl 4
     add.q [rsp], rcx
-    add.q [rsp + 0x8], 1
     add rcx, 1
+    add.q [rsp + 0x8], 1
     jmp 3
 4:
     mov.q rax, [rsp]
@@ -60,17 +60,17 @@ opaque:
     ret
 2:
     sub rsp, 0x18
+    mov rdi, 5
     mov.q [rsp], 0
     mov.q [rsp + 0x8], 0
-    mov rdi, 5
     call opaque
     xor ecx, ecx
 3:
     cmp rcx, rax
     jnl 4
     add.q [rsp], rcx
-    add.q [rsp + 0x8], 1
     add rcx, 1
+    add.q [rsp + 0x8], 1
     jmp 3
 4:
     mov.q rax, [rsp]
@@ -86,38 +86,48 @@ opaque:
     sub rsp, 8
     mov rdi, 5
     call opaque
-    xor edx, edx
+    mov rcx, rax
+    xor eax, eax
+    cmp rcx, 0
+    jng 4
     xor edi, edi
-    xor esi, esi
+    xor r9d, r9d
+    xor r8d, r8d
 3:
-    cmp rdi, rax
-    jnl 4
-    mov rcx, rdi
-    add rcx, 1
-    add rsi, 1
-    add rdx, rdi
-    mov rdi, rcx
-    jmp 3
+    mov rax, r8
+    add rax, 1
+    mov rdx, r9
+    add rdx, 1
+    mov rsi, rdi
+    add rsi, r8
+    cmp rax, rcx
+    mov rdi, rsi
+    mov r8, rax
+    mov r9, rdx
+    jnge 3
+    imul rax, rsi, 0x64
+    add rax, rdx
+    jmp 4
 4:
-    imul rax, rdx, 0x64
-    add rax, rsi
     add rsp, 8
     ret
 =========== OPT LEVEL: aggresive ===========
 opaque:
-    xor edx, edx
-    xor ecx, ecx
+    xor edi, edi
     xor esi, esi
+    xor r8d, r8d
 2:
-    cmp rdx, 5
-    jnl 3
-    mov rax, rdx
+    mov rax, rsi
     add rax, 1
+    mov rcx, rdi
     add rcx, 1
-    add rsi, rdx
-    mov rdx, rax
-    jmp 2
-3:
-    imul rax, rsi, 0x64
+    mov rdx, r8
+    add rdx, rsi
+    cmp rax, 5
+    mov rsi, rax
+    mov rdi, rcx
+    mov r8, rdx
+    jnge 2
+    imul rax, rdx, 0x64
     add rax, rcx
     ret

@@ -180,60 +180,64 @@ main:
 1:
     mov rax, rcx
     add rax, 1
-    cmp rax, 2
-    jz 4
     cmp rax, 1
     jz 2
     add rcx, 2
-    mov rdx, 1
+    mov rsi, 1
     jmp 3
 2:
+    mov rsi, rdx
     mov rcx, rax
 3:
-    jmp 1
-4:
-    cmp rdx, 0
-    jz 5
-    jmp 9
-5:
-    xor ecx, ecx
-6:
     mov rax, rcx
     add rax, 1
-    cmp rax, 3
-    jz 9
     cmp rax, 2
-    jz 7
-    cmp rax, 1
-    jz 7
-    add rcx, 2
-    mov rdx, 2
+    mov rdx, rsi
+    jnz 1
+    cmp rsi, 0
+    jz 4
     jmp 8
-7:
-    mov rcx, rax
-8:
-    jmp 6
-9:
-    cmp rdx, 0
-    jnz 10
-    mov rax, rdx
-    jmp 14
-10:
+4:
     xor ecx, ecx
-11:
+5:
+    mov rax, rcx
+    add rax, 1
+    cmp rax, 2
+    jz 6
+    cmp rax, 1
+    jz 6
+    add rcx, 2
+    mov rax, 2
+    jmp 7
+6:
+    mov rcx, rax
+    mov rax, rsi
+7:
+    mov rdx, rcx
+    add rdx, 1
+    cmp rdx, 3
+    mov rsi, rax
+    jnz 5
+    mov rsi, rax
+8:
+    cmp rsi, 0
+    jnz 9
+    mov rax, rsi
+    jmp 12
+9:
+    xor ecx, ecx
+10:
     mov rax, rcx
     add rax, 1
     cmp rax, 3
-    jz 13
+    jz 11
     add rcx, 2
     cmp rcx, 4
-    jz 12
-    jmp 11
-12:
+    jnz 10
     mov rax, 3
-    jmp 14
-13:
+    jmp 12
+11:
     mov rax, 1
-14:
+12:
     ret
 =========== OPT LEVEL: aggresive ===========

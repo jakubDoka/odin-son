@@ -387,12 +387,15 @@ graph_schedule :: proc(
 	slice.reverse(cfg_rpos[:])
 
 	Ctx :: struct {
-		graph:           ^Graph,
-		early_schedules: []Node_ID,
-		late_schedules:  []Node_ID,
-		nodes:           []Node_ID,
-		antideps:        [][dynamic]Node_ID,
-		extra_outputs:   []u16,
+		graph:          ^Graph,
+		using _:        struct #raw_union {
+			early_schedules: []Node_ID,
+			block_idxs:      []u32,
+		},
+		late_schedules: []Node_ID,
+		nodes:          []Node_ID,
+		antideps:       [][dynamic]Node_ID,
+		extra_outputs:  []u16,
 	}
 
 	ctx: Ctx
@@ -682,82 +685,159 @@ graph_schedule :: proc(
 		late := ctx.late_schedules[i]
 		early := ctx.early_schedules[i]
 		sched := graph.end == 0 || no_late_pass ? early : late
+		ctx.late_schedules[i] = sched
 		if sched == 0 {
 			log.error("not scheduled:", node)
 			has_unscheduled = true
 			continue
 		}
 		bb := ctx.late_schedules[graph_get(graph, sched).gvn]
+		ctx.block_idxs[i] = u32(len(bbs[bb].instrs))
 		append(&bbs[bb].instrs, n)
 	}
 
 	for &bb in bbs {
 		if bb.tail == 0 do continue
 		append(&bb.instrs, bb.tail)
+		ctx.late_schedules[graph_get(graph, bb.tail).gvn] = bb.head
 		schedule_block(ctx, &bb)
 	}
 
 	gs.bbs = bbs
+
+	if graph.end != 0 {
+		verify_schedule_integrity(graph, gs, ctx.antideps, no_late_pass)
+	}
 
 	if 0 == 1 {
 		graph_display(os.to_writer(os.stderr), graph, gs)
 		// 	if has_unscheduled do panic("")
 	}
 
-	if graph.end != 0 {
-		verify_schedule_integrity(graph, gs, ctx.antideps, no_late_pass)
-	}
-
 	schedule_block :: proc(ctx: Ctx, bb: ^Graph_Basic_Block) {
-		PUSHED_UP :: bit_set[Ideal_Node_Type]{.Phi, .Ret, .Param}
+		PUSHED_UP :: bit_set[Ideal_Node_Type] {
+			.Phi,
+			.Ret,
+			.Param,
+			.Mem,
+			.Root_Mem,
+			.Sym,
+		}
+
+		context.allocator, _ = arna.scrath()
 
 		graph := ctx.graph
 
-		phi_count := 0
-		for instr, i in bb.instrs {
-			if graph_get(graph, instr).itype in PUSHED_UP {
-				ordered_remove(&bb.instrs, i)
-				inject_at(&bb.instrs, phi_count, instr)
-				phi_count += 1
+		Meta :: struct {
+			instr:               Node_ID,
+			priority:            int,
+			remining_dependants: int,
+		}
+
+		metas := make([]Meta, len(bb.instrs))
+		for instr, i in bb.instrs do metas[i].instr = instr
+
+		cursor := len(bb.instrs) - 1
+		schedulable := cursor - 1
+
+		for i := 0; i <= schedulable; {
+			meta := &metas[i]
+
+			inode := graph_expand(ctx.graph, meta.instr)
+
+			if inode.itype in PUSHED_UP {
+				meta.priority = 1000
+			} else if inode.output_count == 1 {
+				if graph_get(ctx.graph, inode.outs[0].id).itype == .If {
+					meta.priority = 1
+				} else if graph_get(ctx.graph, inode.outs[0].id).itype ==
+				   .Phi {
+					meta.priority = 5
+				} else {
+					meta.priority = 10
+				}
+			} else {
+				meta.priority = 100
+			}
+
+			for out in inode.outs {
+				onode := graph_get(ctx.graph, out.id)
+				if ctx.late_schedules[onode.gvn] == bb.head &&
+				   onode.itype != .Phi {
+					meta.remining_dependants += 1
+				}
+			}
+
+			meta.remining_dependants += int(ctx.extra_outputs[inode.gvn])
+
+			if meta.remining_dependants == 0 {
+				metas[i], metas[schedulable] = metas[schedulable], metas[i]
+				schedulable -= 1
+			} else {
+				i += 1
 			}
 		}
 
-		// TODO: this is extremely stupid but works, fix later
-		changed := true
-		for i in 0 ..< 1000 {
-			changed = false
+		for cursor >= 0 {
+			fmt.assertf(schedulable < cursor, "%v", metas[cursor])
+			best := &metas[cursor]
+			for i := schedulable + 1; i < cursor; i += 1 {
+				if best.priority > metas[i].priority {
+					best = &metas[i]
+				}
+			}
 
-			for &instr, i in bb.instrs {
-				inode := graph_expand(graph, instr)
+			assert(best.remining_dependants == 0)
 
-				if inode.itype not_in PUSHED_UP {
-					for &oinstr in bb.instrs[i + 1:] {
-						if slice.contains(inode.inps, oinstr) ||
-						   slice.contains(ctx.antideps[inode.gvn][:], oinstr) {
+			inode := graph_expand(ctx.graph, best.instr)
+			len := len(inode.inps)
+			if inode.itype == .Call {
+				len = int(inode.input_cap)
+			}
 
-							instr, oinstr = oinstr, instr
-							changed = true
-							break
+			inp_grouns := [?][]Node_ID {
+				raw_data(inode.inps)[:len],
+				ctx.antideps[inode.gvn][:],
+			}
+
+			if inode.itype == .Phi do inp_grouns = {}
+
+			for inpg in inp_grouns {
+				dec: for inp in inpg {
+					if is_cfg(ctx.graph, inp) do continue
+
+					inode := graph_get(ctx.graph, inp)
+					if ctx.late_schedules[inode.gvn] == bb.head {
+						for i := schedulable; i >= 0; i -= 1 {
+							if metas[i].instr == inp {
+								assert(metas[i].remining_dependants > 0)
+								metas[i].remining_dependants -= 1
+								if metas[i].remining_dependants == 0 {
+									metas[i], metas[schedulable] =
+										metas[schedulable], metas[i]
+									schedulable -= 1
+								}
+								continue dec
+							}
 						}
+
+						fmt.panicf(
+							"wut %v %v",
+							inode,
+							schedulable,
+							ctx.late_schedules[inode.gvn],
+						)
 					}
 				}
 			}
 
-			if !changed do break
+			best^, metas[cursor] = metas[cursor], best^
+			cursor -= 1
 		}
 
-		#reverse for instr, i in bb.instrs {
-			inode := graph_expand(graph, instr)
-			#reverse for inp in inode.inps {
-				innode := graph_expand(graph, inp)
-				if innode.output_count + ctx.extra_outputs[innode.gvn] == 1 &&
-				   innode.itype not_in PUSHED_UP {
-					pos := slice.linear_search(bb.instrs[:i], inp) or_continue
-					slice.rotate_left(bb.instrs[pos:i], 1)
-					break
-				}
-			}
-		}
+		assert(schedulable == -1)
+
+		for m, i in metas do bb.instrs[i] = m.instr
 	}
 }
 
@@ -792,7 +872,9 @@ verify_schedule_integrity :: proc(
 
 			fmt.assertf(schedules[inode.gvn] == 0, "%v", inode.node)
 			schedules[inode.gvn] = bb.head
+
 		}
+		assert(is_cfg(graph, bb.instrs[len(bb.instrs) - 1]))
 	}
 
 	for bb in sched.bbs {

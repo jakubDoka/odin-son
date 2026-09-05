@@ -795,7 +795,6 @@ verify :: proc(graph: ^Graph) {
 			fmt.panicf("%v", graph_get(graph, n))
 		}
 		if graph_has_flag(graph, n, .Interned) && !graph.dont_intern && false {
-			fmt.println(graph_get(graph, n))
 			idx, _ := graph_interner_find(graph, n, 0) or_else panic("")
 			fmt.assertf(
 				bit_arr.set(seen_intern_slots, idx),

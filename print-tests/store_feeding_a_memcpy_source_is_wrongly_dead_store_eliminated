@@ -13,20 +13,20 @@ ident:
     call ident
     mov rbx, rax
     mov.q [rbx], 5
-    mov.q [rbx + 0x8], 6
+    mov rdx, 0x10
     mov rax, rbx
     add rax, 0x10
-    mov rdx, 0x10
+    mov.q [rbx + 0x8], 6
     mov rsi, rbx
     mov rdi, rax
     call.q [rip - 0x6a]
     mov.q [rbx], 7
-    mov.q rax, [rbx + 0x10]
-    mov.q rcx, [rbx + 0x18]
-    imul rcx, rcx, 0xa
-    add rax, rcx
+    mov.q rax, [rbx + 0x18]
     mov.q rcx, [rbx]
+    imul rdx, rax, 0xa
+    mov.q rax, [rbx + 0x10]
     imul rcx, rcx, 0x64
+    add rax, rdx
     add rax, rcx
     add rsp, 0x20
     pop rbx
@@ -46,17 +46,17 @@ ident:
     call ident
     mov rbx, rax
     mov.q [rbx], 5
-    mov.q [rbx + 0x8], 6
+    mov rdx, 0x10
     mov rax, rbx
     add rax, 0x10
-    mov rdx, 0x10
+    mov.q [rbx + 0x8], 6
     mov rsi, rbx
     mov rdi, rax
     call.q [rip - 0x6a]
     mov.q [rbx], 7
+    mov.q rax, [rbx + 0x18]
+    imul rcx, rax, 0xa
     mov.q rax, [rbx + 0x10]
-    mov.q rcx, [rbx + 0x18]
-    imul rcx, rcx, 0xa
     add rax, rcx
     add rax, 0x2bc
     add rsp, 0x20
@@ -70,23 +70,23 @@ ident:
     push rbx
     sub rsp, 0x20
     pxor xmm0, xmm0
+    lea rdi, [rsp]
     movups.x [rsp + 0x10], xmm0
     movups.x [rsp], xmm0
-    lea rdi, [rsp]
     call ident
     mov rbx, rax
     mov.q [rbx], 5
-    mov.q [rbx + 0x8], 6
+    mov rdx, 0x10
     mov rax, rbx
     add rax, 0x10
-    mov rdx, 0x10
+    mov.q [rbx + 0x8], 6
     mov rsi, rbx
     mov rdi, rax
     call.q [rip - 0x66]
     mov.q [rbx], 7
+    mov.q rax, [rbx + 0x18]
+    imul rcx, rax, 0xa
     mov.q rax, [rbx + 0x10]
-    mov.q rcx, [rbx + 0x18]
-    imul rcx, rcx, 0xa
     add rax, rcx
     add rax, 0x2bc
     add rsp, 0x20
@@ -100,23 +100,23 @@ ident:
     push rbx
     sub rsp, 0x20
     pxor xmm0, xmm0
+    lea rdi, [rsp]
     movups.x [rsp + 0x10], xmm0
     movups.x [rsp], xmm0
-    lea rdi, [rsp]
     call ident
     mov rbx, rax
     mov.q [rbx], 5
-    mov.q [rbx + 0x8], 6
+    mov rdx, 0x10
     mov rax, rbx
     add rax, 0x10
-    mov rdx, 0x10
+    mov.q [rbx + 0x8], 6
     mov rsi, rbx
     mov rdi, rax
     call.q [rip - 0x66]
     mov.q [rbx], 7
+    mov.q rax, [rbx + 0x18]
+    imul rcx, rax, 0xa
     mov.q rax, [rbx + 0x10]
-    mov.q rcx, [rbx + 0x18]
-    imul rcx, rcx, 0xa
     add rax, rcx
     add rax, 0x2bc
     add rsp, 0x20
@@ -128,16 +128,16 @@ ident:
     pxor xmm0, xmm0
     movups.x [rsp], xmm0
     mov.q [rsp], 5
-    mov.q [rsp + 0x8], 6
     lea rax, [rsp]
     add rax, 0x10
+    mov.q [rsp + 0x8], 6
     mov rdx, 0x10
     lea rsi, [rsp]
     mov rdi, rax
     call.q [rip - 0x4e]
     mov.q [rsp], 7
-    mov.q rax, [rsp + 0x10]
     mov.q rcx, [rsp + 0x18]
+    mov.q rax, [rsp + 0x10]
     imul rcx, rcx, 0xa
     add rax, rcx
     add rax, 0x2bc

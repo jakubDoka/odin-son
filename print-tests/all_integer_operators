@@ -13,6 +13,7 @@ batch int:
     mov rdx, -7
     call 9
     mov rbx, rax
+batch u32:
     mov dl, 7
     mov dil, 0x14
     mov sil, 6
@@ -20,30 +21,28 @@ batch int:
     mov rbp, rax
     mov rdx, 7
     mov rdi, 0x14
-batch i16:
     mov rsi, 6
-    call 39
+    call 38
     mov r12, rax
-batch i32:
     mov rdx, 7
     mov rdi, 0x14
     mov rsi, 6
-    call 53
+    call 52
     mov r13, rax
     mov dl, -7
     mov dil, 0x14
     mov sil, 6
-    call 68
+    call 67
     mov r14, rax
     mov rdx, -7
     mov rdi, 0x14
     mov rsi, 6
-    call 83
+    call 82
     mov r15, rax
     mov rdx, -7
     mov rdi, 0x14
     mov rsi, 6
-    call 98
+    call 97
     mov rdx, rax
     xor eax, eax
     add rax, rbx
@@ -153,63 +152,67 @@ batch i32:
     mov rax, rdx
     ret
 24:
-    mov rcx, rdi
+    mov rcx, rsi
+    mov rsi, rdi
     mov rdi, rdx
-    mov rdx, rcx
-    mov rax, rsi
-    imul dl
+    mov rax, rcx
+    imul sil
     movzx eax, al
     xor r8d, r8d
     add r8, rax
-    mov rax, rcx
+    mov r9, rcx
+    mov rax, rsi
     movzx eax, al
-    div sil
+    div r9b
     movzx eax, al
     mov r9, r8
     add r9, rax
+    mov r8, rcx
+    mov rax, rsi
+    movzx eax, al
+    div r8b
+    movsx edx, ah
+    movzx eax, dl
+    add r9, rax
+    mov r8, rcx
+    mov rax, rdi
+    movzx eax, al
+    div r8b
+    movzx eax, al
+    add r9, rax
+    mov r8, rcx
+    mov rax, rdi
+    movzx eax, al
+    div r8b
+    movsx edx, ah
+    movzx eax, dl
+    add r9, rax
     mov rax, rcx
-    movzx eax, al
-    div sil
-    movsx edx, ah
-    movzx eax, dl
-    add r9, rax
-    mov r8, rsi
-    mov rax, rdi
-    movzx eax, al
-    div r8b
-    movzx eax, al
-    add r9, rax
-    mov r8, rsi
-    mov rax, rdi
-    movzx eax, al
-    div r8b
-    movsx edx, ah
-    movzx eax, dl
-    add r9, rax
-    mov rdx, rcx
-    and dl, sil
+    mov rdx, rsi
+    and dl, al
     movzx eax, dl
     mov r8, r9
     add r8, rax
-    mov rdx, rcx
-    or dl, sil
-    movzx eax, dl
-    add r8, rax
-    mov rdx, rcx
-    xor dl, sil
+    mov rax, rcx
+    mov rdx, rsi
+    or dl, al
     movzx eax, dl
     add r8, rax
     mov rax, rcx
     mov rdx, rsi
-    not dl
-    and dl, al
+    xor dl, al
     movzx eax, dl
     add r8, rax
-    mov rax, rcx
+    mov rdx, rcx
+    not dl
+    and dl, sil
+    movzx eax, dl
+    add r8, rax
+    mov rax, rsi
     shl al, 2
     movzx eax, al
     add r8, rax
-    mov rax, rcx
+    mov rax, rsi
     shr al, 2
     movzx eax, al
     add r8, rax
@@ -217,51 +220,50 @@ batch i32:
     shr al, 2
     movzx eax, al
     add r8, rax
-    cmp cl, sil
+    cmp sil, cl
     jnbe 25
-    jmp 26
+    jmp +0x7
 25:
     add r8, 1
+    cmp cl, sil
+    jc 26
+    jmp 27
 26:
-    cmp sil, cl
-    jc 27
-    jmp 28
-27:
     add r8, 2
+27:
+    cmp sil, cl
+    jnc 28
+    jmp 29
 28:
-    cmp cl, sil
-    jnc 29
-    jmp 30
-29:
     add r8, 4
+29:
+    cmp sil, cl
+    jbe 30
+    jmp 31
 30:
-    cmp cl, sil
-    jbe 31
-    jmp 32
-31:
     add r8, 8
+31:
+    cmp sil, sil
+    jz 32
+    jmp 33
 32:
-    cmp cl, cl
-    jz 33
-    jmp 34
-33:
     add r8, 0x10
+33:
+    cmp sil, cl
+    jnz 34
+    jmp 35
 34:
-    cmp cl, sil
-    jnz 35
-    jmp 36
-35:
     add r8, 0x20
+35:
+    cmp dil, cl
+    jc 36
+    jmp 37
 36:
-    cmp dil, sil
-    jc 37
-    jmp 38
-37:
     add r8, 0x40
-38:
+37:
     mov rax, r8
     ret
-39:
+38:
     mov rcx, rdi
     mov rdi, rdx
     mov rax, rcx
@@ -320,50 +322,50 @@ batch i32:
     movzx eax, ax
     add r8, rax
     cmp cx, si
-    jnbe 40
-    jmp 41
-40:
+    jnbe 39
+    jmp 40
+39:
     add r8, 1
-41:
+40:
     mov rdx, r8
     cmp si, cx
     jc +0x5
-    jmp 42
+    jmp 41
     add rdx, 2
+41:
+    cmp cx, si
+    jnc 42
+    jmp 43
 42:
-    cmp cx, si
-    jnc 43
-    jmp 44
-43:
     add rdx, 4
+43:
+    cmp cx, si
+    jbe 44
+    jmp 45
 44:
-    cmp cx, si
-    jbe 45
-    jmp 46
-45:
     add rdx, 8
-46:
+45:
     cmp cx, cx
-    jz 47
-    jmp 48
-47:
+    jz 46
+    jmp 47
+46:
     add rdx, 0x10
-48:
+47:
     cmp cx, si
-    jnz 49
-    jmp 50
-49:
+    jnz 48
+    jmp 49
+48:
     add rdx, 0x20
-50:
+49:
     cmp di, si
-    jc 51
-    jmp 52
-51:
+    jc 50
+    jmp 51
+50:
     add rdx, 0x40
-52:
+51:
     mov rax, rdx
     ret
-53:
+52:
     mov rcx, rdi
     mov rdi, rdx
     mov rax, rcx
@@ -422,108 +424,112 @@ batch i32:
     mov eax, eax
     add r8, rax
     cmp ecx, esi
-    jnbe 54
-    jmp 55
-54:
+    jnbe 53
+    jmp 54
+53:
     add r8, 1
-55:
+54:
     mov rdx, r8
     cmp esi, ecx
-    jc 56
-    jmp 57
-56:
+    jc 55
+    jmp 56
+55:
     add rdx, 2
+56:
+    cmp ecx, esi
+    jnc 57
+    jmp 58
 57:
-    cmp ecx, esi
-    jnc 58
-    jmp 59
-58:
     add rdx, 4
+58:
+    cmp ecx, esi
+    jbe 59
+    jmp 60
 59:
-    cmp ecx, esi
-    jbe 60
-    jmp 61
-60:
     add rdx, 8
-61:
+60:
     cmp ecx, ecx
-    jz 62
-    jmp 63
-62:
+    jz 61
+    jmp 62
+61:
     add rdx, 0x10
-63:
+62:
     cmp ecx, esi
-    jnz 64
-    jmp 65
-64:
+    jnz 63
+    jmp 64
+63:
     add rdx, 0x20
-65:
+64:
     cmp edi, esi
-    jc 66
-    jmp 67
-66:
+    jc 65
+    jmp 66
+65:
     add rdx, 0x40
-67:
+66:
     mov rax, rdx
     ret
-68:
-    mov rcx, rdi
+67:
+    mov rcx, rsi
+    mov rsi, rdi
     mov rdi, rdx
-    mov rdx, rcx
-    mov rax, rsi
-    imul dl
+    mov rax, rcx
+    imul sil
     movsx rax, al
     xor r8d, r8d
     add r8, rax
-    mov rax, rcx
+    mov r9, rcx
+    mov rax, rsi
     cbw
-    idiv sil
+    idiv r9b
     movsx rax, al
     mov r9, r8
     add r9, rax
-    mov rax, rcx
+    mov r8, rcx
+    mov rax, rsi
     cbw
-    idiv sil
+    idiv r8b
     movzx edx, ah
     movsx rax, dl
     add r9, rax
-    mov r8, rsi
+    mov r8, rcx
     mov rax, rdi
     cbw
     idiv r8b
     movsx rax, al
     add r9, rax
-    mov r8, rsi
+    mov r8, rcx
     mov rax, rdi
     cbw
     idiv r8b
     movzx edx, ah
     movsx rax, dl
     add r9, rax
-    mov rdx, rcx
-    and dl, sil
+    mov rax, rcx
+    mov rdx, rsi
+    and dl, al
     movsx rax, dl
     mov r8, r9
     add r8, rax
-    mov rdx, rcx
-    or dl, sil
-    movsx rax, dl
-    add r8, rax
-    mov rdx, rcx
-    xor dl, sil
+    mov rax, rcx
+    mov rdx, rsi
+    or dl, al
     movsx rax, dl
     add r8, rax
     mov rax, rcx
     mov rdx, rsi
-    not dl
-    and dl, al
+    xor dl, al
     movsx rax, dl
     add r8, rax
-    mov rax, rcx
+    mov rdx, rcx
+    not dl
+    and dl, sil
+    movsx rax, dl
+    add r8, rax
+    mov rax, rsi
     shl al, 2
     movsx rax, al
     add r8, rax
-    mov rax, rcx
+    mov rax, rsi
     sar al, 2
     movsx rax, al
     add r8, rax
@@ -531,51 +537,51 @@ batch i32:
     sar al, 2
     movsx rax, al
     add r8, rax
-    cmp cl, sil
-    jnle 69
-    jmp 70
-69:
-    add r8, 1
-70:
     cmp sil, cl
-    jnge 71
-    jmp 72
-71:
+    jnle 68
+    jmp 69
+68:
+    add r8, 1
+69:
+    cmp cl, sil
+    jnge 70
+    jmp 71
+70:
     add r8, 2
+71:
+    cmp sil, cl
+    jnl 72
+    jmp 73
 72:
-    cmp cl, sil
-    jnl 73
-    jmp 74
-73:
     add r8, 4
+73:
+    cmp sil, cl
+    jng 74
+    jmp 75
 74:
-    cmp cl, sil
-    jng 75
-    jmp 76
-75:
     add r8, 8
+75:
+    cmp sil, sil
+    jz 76
+    jmp 77
 76:
-    cmp cl, cl
-    jz 77
-    jmp 78
-77:
     add r8, 0x10
+77:
+    cmp sil, cl
+    jnz 78
+    jmp 79
 78:
-    cmp cl, sil
-    jnz 79
-    jmp 80
-79:
     add r8, 0x20
+79:
+    cmp dil, cl
+    jnge 80
+    jmp 81
 80:
-    cmp dil, sil
-    jnge 81
-    jmp 82
-81:
     add r8, 0x40
-82:
+81:
     mov rax, r8
     ret
-83:
+82:
     mov rcx, rdi
     mov rdi, rdx
     mov rax, rcx
@@ -634,51 +640,51 @@ batch i32:
     movsx rax, ax
     add r8, rax
     cmp cx, si
-    jnle 84
-    jmp 85
-84:
+    jnle 83
+    jmp 84
+83:
     add r8, 1
-85:
+84:
     mov rdx, r8
     cmp si, cx
-    jnge 86
-    jmp 87
-86:
+    jnge 85
+    jmp 86
+85:
     add rdx, 2
+86:
+    cmp cx, si
+    jnl 87
+    jmp 88
 87:
-    cmp cx, si
-    jnl 88
-    jmp 89
-88:
     add rdx, 4
+88:
+    cmp cx, si
+    jng 89
+    jmp 90
 89:
-    cmp cx, si
-    jng 90
-    jmp 91
-90:
     add rdx, 8
-91:
+90:
     cmp cx, cx
-    jz 92
-    jmp 93
-92:
+    jz 91
+    jmp 92
+91:
     add rdx, 0x10
-93:
+92:
     cmp cx, si
-    jnz 94
-    jmp 95
-94:
+    jnz 93
+    jmp 94
+93:
     add rdx, 0x20
-95:
+94:
     cmp di, si
-    jnge 96
-    jmp 97
-96:
+    jnge 95
+    jmp 96
+95:
     add rdx, 0x40
-97:
+96:
     mov rax, rdx
     ret
-98:
+97:
     mov rcx, rdi
     mov rdi, rdx
     mov rax, rcx
@@ -737,48 +743,48 @@ batch i32:
     movsxd rax, eax
     add r8, rax
     cmp ecx, esi
-    jnle 99
-    jmp 100
-99:
+    jnle 98
+    jmp 99
+98:
     add r8, 1
-100:
+99:
     mov rdx, r8
     cmp esi, ecx
-    jnge 101
-    jmp 102
-101:
+    jnge 100
+    jmp 101
+100:
     add rdx, 2
+101:
+    cmp ecx, esi
+    jnl 102
+    jmp 103
 102:
-    cmp ecx, esi
-    jnl 103
-    jmp 104
-103:
     add rdx, 4
+103:
+    cmp ecx, esi
+    jng 104
+    jmp 105
 104:
-    cmp ecx, esi
-    jng 105
-    jmp 106
-105:
     add rdx, 8
-106:
+105:
     cmp ecx, ecx
-    jz 107
-    jmp 108
-107:
+    jz 106
+    jmp 107
+106:
     add rdx, 0x10
-108:
+107:
     cmp ecx, esi
-    jnz 109
-    jmp 110
-109:
+    jnz 108
+    jmp 109
+108:
     add rdx, 0x20
-110:
+109:
     cmp edi, esi
-    jnge 111
-    jmp 112
-111:
+    jnge 110
+    jmp 111
+110:
     add rdx, 0x40
-112:
+111:
     mov rax, rdx
     ret
 =========== OPT LEVEL: mininal ===========
@@ -796,6 +802,7 @@ batch int:
     mov rdx, -7
     call 9
     mov rbx, rax
+batch u32:
     mov dl, 7
     mov dil, 0x14
     mov sil, 6
@@ -803,30 +810,28 @@ batch int:
     mov rbp, rax
     mov rdx, 7
     mov rdi, 0x14
-batch i16:
     mov rsi, 6
-    call 39
+    call 38
     mov r12, rax
-batch i32:
     mov rdx, 7
     mov rdi, 0x14
     mov rsi, 6
-    call 53
+    call 52
     mov r13, rax
     mov dl, -7
     mov dil, 0x14
     mov sil, 6
-    call 68
+    call 67
     mov r14, rax
     mov rdx, -7
     mov rdi, 0x14
     mov rsi, 6
-    call 83
+    call 82
     mov r15, rax
     mov rdx, -7
     mov rdi, 0x14
     mov rsi, 6
-    call 98
+    call 97
     mov rdx, rax
     xor eax, eax
     add rax, rbx
@@ -937,63 +942,67 @@ batch i32:
     mov rax, rdx
     ret
 24:
-    mov rcx, rdi
+    mov rcx, rsi
+    mov rsi, rdi
     mov rdi, rdx
-    mov rdx, rcx
-    mov rax, rsi
-    imul dl
+    mov rax, rcx
+    imul sil
     movzx eax, al
     xor r8d, r8d
     add r8, rax
-    mov rax, rcx
+    mov r9, rcx
+    mov rax, rsi
     movzx eax, al
-    div sil
+    div r9b
     movzx eax, al
     mov r9, r8
     add r9, rax
+    mov r8, rcx
+    mov rax, rsi
+    movzx eax, al
+    div r8b
+    movsx edx, ah
+    movzx eax, dl
+    add r9, rax
+    mov r8, rcx
+    mov rax, rdi
+    movzx eax, al
+    div r8b
+    movzx eax, al
+    add r9, rax
+    mov r8, rcx
+    mov rax, rdi
+    movzx eax, al
+    div r8b
+    movsx edx, ah
+    movzx eax, dl
+    add r9, rax
     mov rax, rcx
-    movzx eax, al
-    div sil
-    movsx edx, ah
-    movzx eax, dl
-    add r9, rax
-    mov r8, rsi
-    mov rax, rdi
-    movzx eax, al
-    div r8b
-    movzx eax, al
-    add r9, rax
-    mov r8, rsi
-    mov rax, rdi
-    movzx eax, al
-    div r8b
-    movsx edx, ah
-    movzx eax, dl
-    add r9, rax
-    mov rdx, rcx
-    and dl, sil
+    mov rdx, rsi
+    and dl, al
     movzx eax, dl
     mov r8, r9
     add r8, rax
-    mov rdx, rcx
-    or dl, sil
-    movzx eax, dl
-    add r8, rax
-    mov rdx, rcx
-    xor dl, sil
+    mov rax, rcx
+    mov rdx, rsi
+    or dl, al
     movzx eax, dl
     add r8, rax
     mov rax, rcx
     mov rdx, rsi
-    not dl
-    and dl, al
+    xor dl, al
     movzx eax, dl
     add r8, rax
-    mov rax, rcx
+    mov rdx, rcx
+    not dl
+    and dl, sil
+    movzx eax, dl
+    add r8, rax
+    mov rax, rsi
     shl al, 2
     movzx eax, al
     add r8, rax
-    mov rax, rcx
+    mov rax, rsi
     shr al, 2
     movzx eax, al
     add r8, rax
@@ -1001,52 +1010,51 @@ batch i32:
     shr al, 2
     movzx eax, al
     add r8, rax
-    cmp cl, sil
+    cmp sil, cl
     jnbe 25
-    jmp 26
+    jmp +0x7
 25:
     add r8, 1
+    cmp cl, sil
+    jc 26
+    jmp 27
 26:
-    cmp sil, cl
-    jc 27
-    jmp 28
-27:
     add r8, 2
+27:
+    cmp sil, cl
+    jnc 28
+    jmp 29
 28:
-    cmp cl, sil
-    jnc 29
-    jmp 30
-29:
     add r8, 4
+29:
+    cmp sil, cl
+    jbe 30
+    jmp 31
 30:
-    cmp cl, sil
-    jbe 31
-    jmp 32
-31:
     add r8, 8
-32:
+31:
     mov rax, 1
     test rax, rax
-    jnz 33
-    jmp 34
-33:
+    jnz 32
+    jmp 33
+32:
     add r8, 0x10
+33:
+    cmp sil, cl
+    jnz 34
+    jmp 35
 34:
-    cmp cl, sil
-    jnz 35
-    jmp 36
-35:
     add r8, 0x20
+35:
+    cmp dil, cl
+    jc 36
+    jmp 37
 36:
-    cmp dil, sil
-    jc 37
-    jmp 38
-37:
     add r8, 0x40
-38:
+37:
     mov rax, r8
     ret
-39:
+38:
     mov rcx, rdi
     mov rdi, rdx
     mov rax, rcx
@@ -1105,51 +1113,51 @@ batch i32:
     movzx eax, ax
     add r8, rax
     cmp cx, si
-    jnbe 40
-    jmp 41
-40:
+    jnbe 39
+    jmp 40
+39:
     add r8, 1
-41:
+40:
     mov rdx, r8
     cmp si, cx
     jc +0x5
-    jmp 42
+    jmp 41
     add rdx, 2
+41:
+    cmp cx, si
+    jnc 42
+    jmp 43
 42:
-    cmp cx, si
-    jnc 43
-    jmp 44
-43:
     add rdx, 4
-44:
+43:
     cmp cx, si
-    jbe 45
-    jmp 46
-45:
+    jbe 44
+    jmp 45
+44:
     add rdx, 8
-46:
+45:
     mov rax, 1
     test rax, rax
-    jnz 47
-    jmp 48
-47:
+    jnz 46
+    jmp 47
+46:
     add rdx, 0x10
-48:
+47:
     cmp cx, si
-    jnz 49
-    jmp 50
-49:
+    jnz 48
+    jmp 49
+48:
     add rdx, 0x20
-50:
+49:
     cmp di, si
-    jc 51
-    jmp 52
-51:
+    jc 50
+    jmp 51
+50:
     add rdx, 0x40
-52:
+51:
     mov rax, rdx
     ret
-53:
+52:
     mov rcx, rdi
     mov rdi, rdx
     mov rax, rcx
@@ -1208,109 +1216,113 @@ batch i32:
     mov eax, eax
     add r8, rax
     cmp ecx, esi
-    jnbe 54
-    jmp 55
-54:
+    jnbe 53
+    jmp 54
+53:
     add r8, 1
-55:
+54:
     mov rdx, r8
     cmp esi, ecx
-    jc 56
-    jmp 57
-56:
+    jc 55
+    jmp 56
+55:
     add rdx, 2
+56:
+    cmp ecx, esi
+    jnc 57
+    jmp 58
 57:
-    cmp ecx, esi
-    jnc 58
-    jmp 59
-58:
     add rdx, 4
-59:
+58:
     cmp ecx, esi
-    jbe 60
-    jmp 61
-60:
+    jbe 59
+    jmp 60
+59:
     add rdx, 8
-61:
+60:
     mov rax, 1
     test rax, rax
-    jnz 62
-    jmp 63
-62:
+    jnz 61
+    jmp 62
+61:
     add rdx, 0x10
-63:
+62:
     cmp ecx, esi
-    jnz 64
-    jmp 65
-64:
+    jnz 63
+    jmp 64
+63:
     add rdx, 0x20
-65:
+64:
     cmp edi, esi
-    jc 66
-    jmp 67
-66:
+    jc 65
+    jmp 66
+65:
     add rdx, 0x40
-67:
+66:
     mov rax, rdx
     ret
-68:
-    mov rcx, rdi
+67:
+    mov rcx, rsi
+    mov rsi, rdi
     mov rdi, rdx
-    mov rdx, rcx
-    mov rax, rsi
-    imul dl
+    mov rax, rcx
+    imul sil
     movsx rax, al
     xor r8d, r8d
     add r8, rax
-    mov rax, rcx
+    mov r9, rcx
+    mov rax, rsi
     cbw
-    idiv sil
+    idiv r9b
     movsx rax, al
     mov r9, r8
     add r9, rax
-    mov rax, rcx
+    mov r8, rcx
+    mov rax, rsi
     cbw
-    idiv sil
+    idiv r8b
     movzx edx, ah
     movsx rax, dl
     add r9, rax
-    mov r8, rsi
+    mov r8, rcx
     mov rax, rdi
     cbw
     idiv r8b
     movsx rax, al
     add r9, rax
-    mov r8, rsi
+    mov r8, rcx
     mov rax, rdi
     cbw
     idiv r8b
     movzx edx, ah
     movsx rax, dl
     add r9, rax
-    mov rdx, rcx
-    and dl, sil
+    mov rax, rcx
+    mov rdx, rsi
+    and dl, al
     movsx rax, dl
     mov r8, r9
     add r8, rax
-    mov rdx, rcx
-    or dl, sil
-    movsx rax, dl
-    add r8, rax
-    mov rdx, rcx
-    xor dl, sil
+    mov rax, rcx
+    mov rdx, rsi
+    or dl, al
     movsx rax, dl
     add r8, rax
     mov rax, rcx
     mov rdx, rsi
-    not dl
-    and dl, al
+    xor dl, al
     movsx rax, dl
     add r8, rax
-    mov rax, rcx
+    mov rdx, rcx
+    not dl
+    and dl, sil
+    movsx rax, dl
+    add r8, rax
+    mov rax, rsi
     shl al, 2
     movsx rax, al
     add r8, rax
-    mov rax, rcx
+    mov rax, rsi
     sar al, 2
     movsx rax, al
     add r8, rax
@@ -1318,52 +1330,52 @@ batch i32:
     sar al, 2
     movsx rax, al
     add r8, rax
-    cmp cl, sil
-    jnle 69
-    jmp 70
-69:
-    add r8, 1
-70:
     cmp sil, cl
-    jnge 71
-    jmp 72
-71:
+    jnle 68
+    jmp 69
+68:
+    add r8, 1
+69:
+    cmp cl, sil
+    jnge 70
+    jmp 71
+70:
     add r8, 2
+71:
+    cmp sil, cl
+    jnl 72
+    jmp 73
 72:
-    cmp cl, sil
-    jnl 73
-    jmp 74
-73:
     add r8, 4
+73:
+    cmp sil, cl
+    jng 74
+    jmp 75
 74:
-    cmp cl, sil
-    jng 75
-    jmp 76
-75:
     add r8, 8
-76:
+75:
     mov rax, 1
     test rax, rax
-    jnz 77
-    jmp 78
-77:
+    jnz 76
+    jmp 77
+76:
     add r8, 0x10
+77:
+    cmp sil, cl
+    jnz 78
+    jmp 79
 78:
-    cmp cl, sil
-    jnz 79
-    jmp 80
-79:
     add r8, 0x20
+79:
+    cmp dil, cl
+    jnge 80
+    jmp 81
 80:
-    cmp dil, sil
-    jnge 81
-    jmp 82
-81:
     add r8, 0x40
-82:
+81:
     mov rax, r8
     ret
-83:
+82:
     mov rcx, rdi
     mov rdi, rdx
     mov rax, rcx
@@ -1422,52 +1434,52 @@ batch i32:
     movsx rax, ax
     add r8, rax
     cmp cx, si
-    jnle 84
-    jmp 85
-84:
+    jnle 83
+    jmp 84
+83:
     add r8, 1
-85:
+84:
     mov rdx, r8
     cmp si, cx
-    jnge 86
-    jmp 87
-86:
+    jnge 85
+    jmp 86
+85:
     add rdx, 2
+86:
+    cmp cx, si
+    jnl 87
+    jmp 88
 87:
-    cmp cx, si
-    jnl 88
-    jmp 89
-88:
     add rdx, 4
-89:
+88:
     cmp cx, si
-    jng 90
-    jmp 91
-90:
+    jng 89
+    jmp 90
+89:
     add rdx, 8
-91:
+90:
     mov rax, 1
     test rax, rax
-    jnz 92
-    jmp 93
-92:
+    jnz 91
+    jmp 92
+91:
     add rdx, 0x10
-93:
+92:
     cmp cx, si
-    jnz 94
-    jmp 95
-94:
+    jnz 93
+    jmp 94
+93:
     add rdx, 0x20
-95:
+94:
     cmp di, si
-    jnge 96
-    jmp 97
-96:
+    jnge 95
+    jmp 96
+95:
     add rdx, 0x40
-97:
+96:
     mov rax, rdx
     ret
-98:
+97:
     mov rcx, rdi
     mov rdi, rdx
     mov rax, rcx
@@ -1526,49 +1538,49 @@ batch i32:
     movsxd rax, eax
     add r8, rax
     cmp ecx, esi
-    jnle 99
-    jmp 100
-99:
+    jnle 98
+    jmp 99
+98:
     add r8, 1
-100:
+99:
     mov rdx, r8
     cmp esi, ecx
-    jnge 101
-    jmp 102
-101:
+    jnge 100
+    jmp 101
+100:
     add rdx, 2
+101:
+    cmp ecx, esi
+    jnl 102
+    jmp 103
 102:
-    cmp ecx, esi
-    jnl 103
-    jmp 104
-103:
     add rdx, 4
-104:
+103:
     cmp ecx, esi
-    jng 105
-    jmp 106
-105:
+    jng 104
+    jmp 105
+104:
     add rdx, 8
-106:
+105:
     mov rax, 1
     test rax, rax
-    jnz 107
-    jmp 108
-107:
+    jnz 106
+    jmp 107
+106:
     add rdx, 0x10
-108:
+107:
     cmp ecx, esi
-    jnz 109
-    jmp 110
-109:
+    jnz 108
+    jmp 109
+108:
     add rdx, 0x20
-110:
+109:
     cmp edi, esi
-    jnge 111
-    jmp 112
-111:
+    jnge 110
+    jmp 111
+110:
     add rdx, 0x40
-112:
+111:
     mov rax, rdx
     ret
 =========== OPT LEVEL: moderate ===========
@@ -1717,61 +1729,65 @@ batch i8:
     mov rax, rdx
     ret
 22:
-    mov rcx, rdi
+    mov rcx, rsi
+    mov rsi, rdi
     mov rdi, rdx
-    mov rdx, rcx
-    mov rax, rsi
-    imul dl
-    movzx r8d, al
     mov rax, rcx
+    imul sil
+    movzx r8d, al
+    mov r9, rcx
+    mov rax, rsi
     movzx eax, al
-    div sil
+    div r9b
     movzx eax, al
     mov r9, r8
     add r9, rax
+    mov r8, rcx
+    mov rax, rsi
+    movzx eax, al
+    div r8b
+    movsx edx, ah
+    movzx eax, dl
+    add r9, rax
+    mov r8, rcx
+    mov rax, rdi
+    movzx eax, al
+    div r8b
+    movzx eax, al
+    add r9, rax
+    mov r8, rcx
+    mov rax, rdi
+    movzx eax, al
+    div r8b
+    movsx edx, ah
+    movzx eax, dl
+    add r9, rax
     mov rax, rcx
-    movzx eax, al
-    div sil
-    movsx edx, ah
-    movzx eax, dl
-    add r9, rax
-    mov r8, rsi
-    mov rax, rdi
-    movzx eax, al
-    div r8b
-    movzx eax, al
-    add r9, rax
-    mov r8, rsi
-    mov rax, rdi
-    movzx eax, al
-    div r8b
-    movsx edx, ah
-    movzx eax, dl
-    add r9, rax
-    mov rdx, rcx
-    and dl, sil
+    mov rdx, rsi
+    and dl, al
     movzx eax, dl
     mov r8, r9
     add r8, rax
-    mov rdx, rcx
-    or dl, sil
-    movzx eax, dl
-    add r8, rax
-    mov rdx, rcx
-    xor dl, sil
+    mov rax, rcx
+    mov rdx, rsi
+    or dl, al
     movzx eax, dl
     add r8, rax
     mov rax, rcx
     mov rdx, rsi
-    not dl
-    and dl, al
+    xor dl, al
     movzx eax, dl
     add r8, rax
-    mov rax, rcx
+    mov rdx, rcx
+    not dl
+    and dl, sil
+    movzx eax, dl
+    add r8, rax
+    mov rax, rsi
     shl al, 2
     movzx eax, al
     add r8, rax
-    mov rax, rcx
+    mov rax, rsi
     shr al, 2
     movzx eax, al
     add r8, rax
@@ -1779,38 +1795,38 @@ batch i8:
     shr al, 2
     movzx eax, al
     add r8, rax
-    cmp cl, sil
+    cmp sil, cl
     jnbe 23
     jmp 24
 23:
     add r8, 1
 24:
-    cmp sil, cl
+    cmp cl, sil
     jc 25
     jmp 26
 25:
     add r8, 2
 26:
-    cmp cl, sil
+    cmp sil, cl
     jnc 27
     jmp 28
 27:
     add r8, 4
 28:
-    cmp cl, sil
+    cmp sil, cl
     jbe 29
     jmp 30
 29:
     add r8, 8
 30:
-    cmp cl, sil
+    cmp sil, cl
     jnz 31
     add r8, 0x10
     jmp 32
 31:
     add r8, 0x30
 32:
-    cmp dil, sil
+    cmp dil, cl
     jc 33
     jmp 34
 33:
@@ -2011,61 +2027,65 @@ batch i8:
     mov rax, rdx
     ret
 61:
-    mov rcx, rdi
+    mov rcx, rsi
+    mov rsi, rdi
     mov rdi, rdx
-    mov rdx, rcx
-    mov rax, rsi
-    imul dl
-    movsx r8, al
     mov rax, rcx
+    imul sil
+    movsx r8, al
+    mov r9, rcx
+    mov rax, rsi
     cbw
-    idiv sil
+    idiv r9b
     movsx rax, al
     mov r9, r8
     add r9, rax
-    mov rax, rcx
+    mov r8, rcx
+    mov rax, rsi
     cbw
-    idiv sil
+    idiv r8b
     movzx edx, ah
     movsx rax, dl
     add r9, rax
-    mov r8, rsi
+    mov r8, rcx
     mov rax, rdi
     cbw
     idiv r8b
     movsx rax, al
     add r9, rax
-    mov r8, rsi
+    mov r8, rcx
     mov rax, rdi
     cbw
     idiv r8b
     movzx edx, ah
     movsx rax, dl
     add r9, rax
-    mov rdx, rcx
-    and dl, sil
+    mov rax, rcx
+    mov rdx, rsi
+    and dl, al
     movsx rax, dl
     mov r8, r9
     add r8, rax
-    mov rdx, rcx
-    or dl, sil
-    movsx rax, dl
-    add r8, rax
-    mov rdx, rcx
-    xor dl, sil
+    mov rax, rcx
+    mov rdx, rsi
+    or dl, al
     movsx rax, dl
     add r8, rax
     mov rax, rcx
     mov rdx, rsi
-    not dl
-    and dl, al
+    xor dl, al
     movsx rax, dl
     add r8, rax
-    mov rax, rcx
+    mov rdx, rcx
+    not dl
+    and dl, sil
+    movsx rax, dl
+    add r8, rax
+    mov rax, rsi
     shl al, 2
     movsx rax, al
     add r8, rax
-    mov rax, rcx
+    mov rax, rsi
     sar al, 2
     movsx rax, al
     add r8, rax
@@ -2073,38 +2093,38 @@ batch i8:
     sar al, 2
     movsx rax, al
     add r8, rax
-    cmp cl, sil
+    cmp sil, cl
     jnle 62
     jmp 63
 62:
     add r8, 1
 63:
-    cmp sil, cl
+    cmp cl, sil
     jnge 64
     jmp 65
 64:
     add r8, 2
 65:
-    cmp cl, sil
+    cmp sil, cl
     jnl 66
     jmp 67
 66:
     add r8, 4
 67:
-    cmp cl, sil
+    cmp sil, cl
     jng 68
     jmp 69
 68:
     add r8, 8
 69:
-    cmp cl, sil
+    cmp sil, cl
     jnz 70
     add r8, 0x10
     jmp 71
 70:
     add r8, 0x30
 71:
-    cmp dil, sil
+    cmp dil, cl
     jnge 72
     jmp 73
 72:
@@ -2450,61 +2470,65 @@ batch i8:
     mov rax, rdx
     ret
 22:
-    mov rcx, rdi
+    mov rcx, rsi
+    mov rsi, rdi
     mov rdi, rdx
-    mov rdx, rcx
-    mov rax, rsi
-    imul dl
-    movzx r8d, al
     mov rax, rcx
+    imul sil
+    movzx r8d, al
+    mov r9, rcx
+    mov rax, rsi
     movzx eax, al
-    div sil
+    div r9b
     movzx eax, al
     mov r9, r8
     add r9, rax
+    mov r8, rcx
+    mov rax, rsi
+    movzx eax, al
+    div r8b
+    movsx edx, ah
+    movzx eax, dl
+    add r9, rax
+    mov r8, rcx
+    mov rax, rdi
+    movzx eax, al
+    div r8b
+    movzx eax, al
+    add r9, rax
+    mov r8, rcx
+    mov rax, rdi
+    movzx eax, al
+    div r8b
+    movsx edx, ah
+    movzx eax, dl
+    add r9, rax
     mov rax, rcx
-    movzx eax, al
-    div sil
-    movsx edx, ah
-    movzx eax, dl
-    add r9, rax
-    mov r8, rsi
-    mov rax, rdi
-    movzx eax, al
-    div r8b
-    movzx eax, al
-    add r9, rax
-    mov r8, rsi
-    mov rax, rdi
-    movzx eax, al
-    div r8b
-    movsx edx, ah
-    movzx eax, dl
-    add r9, rax
-    mov rdx, rcx
-    and dl, sil
+    mov rdx, rsi
+    and dl, al
     movzx eax, dl
     mov r8, r9
     add r8, rax
-    mov rdx, rcx
-    or dl, sil
-    movzx eax, dl
-    add r8, rax
-    mov rdx, rcx
-    xor dl, sil
+    mov rax, rcx
+    mov rdx, rsi
+    or dl, al
     movzx eax, dl
     add r8, rax
     mov rax, rcx
     mov rdx, rsi
-    not dl
-    and dl, al
+    xor dl, al
     movzx eax, dl
     add r8, rax
-    mov rax, rcx
+    mov rdx, rcx
+    not dl
+    and dl, sil
+    movzx eax, dl
+    add r8, rax
+    mov rax, rsi
     shl al, 2
     movzx eax, al
     add r8, rax
-    mov rax, rcx
+    mov rax, rsi
     shr al, 2
     movzx eax, al
     add r8, rax
@@ -2512,38 +2536,38 @@ batch i8:
     shr al, 2
     movzx eax, al
     add r8, rax
-    cmp cl, sil
+    cmp sil, cl
     jnbe 23
     jmp 24
 23:
     add r8, 1
 24:
-    cmp sil, cl
+    cmp cl, sil
     jc 25
     jmp 26
 25:
     add r8, 2
 26:
-    cmp cl, sil
+    cmp sil, cl
     jnc 27
     jmp 28
 27:
     add r8, 4
 28:
-    cmp cl, sil
+    cmp sil, cl
     jbe 29
     jmp 30
 29:
     add r8, 8
 30:
-    cmp cl, sil
+    cmp sil, cl
     jnz 31
     add r8, 0x10
     jmp 32
 31:
     add r8, 0x30
 32:
-    cmp dil, sil
+    cmp dil, cl
     jc 33
     jmp 34
 33:
@@ -2744,61 +2768,65 @@ batch i8:
     mov rax, rdx
     ret
 61:
-    mov rcx, rdi
+    mov rcx, rsi
+    mov rsi, rdi
     mov rdi, rdx
-    mov rdx, rcx
-    mov rax, rsi
-    imul dl
-    movsx r8, al
     mov rax, rcx
+    imul sil
+    movsx r8, al
+    mov r9, rcx
+    mov rax, rsi
     cbw
-    idiv sil
+    idiv r9b
     movsx rax, al
     mov r9, r8
     add r9, rax
-    mov rax, rcx
+    mov r8, rcx
+    mov rax, rsi
     cbw
-    idiv sil
+    idiv r8b
     movzx edx, ah
     movsx rax, dl
     add r9, rax
-    mov r8, rsi
+    mov r8, rcx
     mov rax, rdi
     cbw
     idiv r8b
     movsx rax, al
     add r9, rax
-    mov r8, rsi
+    mov r8, rcx
     mov rax, rdi
     cbw
     idiv r8b
     movzx edx, ah
     movsx rax, dl
     add r9, rax
-    mov rdx, rcx
-    and dl, sil
+    mov rax, rcx
+    mov rdx, rsi
+    and dl, al
     movsx rax, dl
     mov r8, r9
     add r8, rax
-    mov rdx, rcx
-    or dl, sil
-    movsx rax, dl
-    add r8, rax
-    mov rdx, rcx
-    xor dl, sil
+    mov rax, rcx
+    mov rdx, rsi
+    or dl, al
     movsx rax, dl
     add r8, rax
     mov rax, rcx
     mov rdx, rsi
-    not dl
-    and dl, al
+    xor dl, al
     movsx rax, dl
     add r8, rax
-    mov rax, rcx
+    mov rdx, rcx
+    not dl
+    and dl, sil
+    movsx rax, dl
+    add r8, rax
+    mov rax, rsi
     shl al, 2
     movsx rax, al
     add r8, rax
-    mov rax, rcx
+    mov rax, rsi
     sar al, 2
     movsx rax, al
     add r8, rax
@@ -2806,38 +2834,38 @@ batch i8:
     sar al, 2
     movsx rax, al
     add r8, rax
-    cmp cl, sil
+    cmp sil, cl
     jnle 62
     jmp 63
 62:
     add r8, 1
 63:
-    cmp sil, cl
+    cmp cl, sil
     jnge 64
     jmp 65
 64:
     add r8, 2
 65:
-    cmp cl, sil
+    cmp sil, cl
     jnl 66
     jmp 67
 66:
     add r8, 4
 67:
-    cmp cl, sil
+    cmp sil, cl
     jng 68
     jmp 69
 68:
     add r8, 8
 69:
-    cmp cl, sil
+    cmp sil, cl
     jnz 70
     add r8, 0x10
     jmp 71
 70:
     add r8, 0x30
 71:
-    cmp dil, sil
+    cmp dil, cl
     jnge 72
     jmp 73
 72:

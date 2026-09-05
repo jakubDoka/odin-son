@@ -102,24 +102,24 @@ main:
     xor eax, eax
     xor edx, edx
 1:
-    add rdx, 1
-    cmp rdx, 3
-    jz 5
     xor ecx, ecx
 2:
     add rcx, 1
     cmp rcx, 3
-    jz 3
-    jmp 2
-3:
+    jnz 2
     xor ecx, ecx
-4:
+3:
     add rcx, 1
     cmp rcx, 2
-    jz 5
+    jz 4
     cmp rcx, 3
-    jz 1
+    jnz 3
+    mov rcx, rdx
+    add rcx, 2
+    add rdx, 1
+    cmp rcx, 3
+    jnz 1
     jmp 4
-5:
+4:
     ret
 =========== OPT LEVEL: aggresive ===========

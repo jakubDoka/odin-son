@@ -1,35 +1,31 @@
 =========== OPT LEVEL: none ===========
 main:
+    xor edi, edi
     xor eax, eax
-    xor r8d, r8d
 1:
-    cmp r8, 4
+    cmp rdi, 4
     jnl 6
     xor edx, edx
-    xor esi, esi
+    xor ecx, ecx
 2:
-    cmp rdx, 4
+    cmp rcx, 4
     jnl 3
-    mov rcx, rdx
+    add rdx, rcx
     add rcx, 1
-    add rsi, rdx
-    mov rdx, rcx
     jmp 2
 3:
-    xor edx, edx
-    xor edi, edi
+    xor ecx, ecx
+    xor esi, esi
 4:
-    cmp rdx, 4
+    cmp rcx, 4
     jnl 5
-    mov rcx, rdx
+    lea rsi, [rsi + rcx*2]
     add rcx, 1
-    lea rdi, [rdi + rdx*2]
-    mov rdx, rcx
     jmp 4
 5:
-    add rsi, rdi
-    add r8, 1
-    add rax, rsi
+    add rdx, rsi
+    add rdi, 1
+    add rax, rdx
     jmp 1
 6:
     mov rcx, 0xfb
@@ -39,36 +35,32 @@ main:
     ret
 =========== OPT LEVEL: mininal ===========
 main:
+    xor edi, edi
     xor eax, eax
-    xor r8d, r8d
 1:
-    cmp r8, 4
+    cmp rdi, 4
     jnl 6
     xor edx, edx
-    xor esi, esi
+    xor ecx, ecx
 2:
-    cmp rdx, 4
+    cmp rcx, 4
     jnl 3
-    mov rcx, rdx
+    add rdx, rcx
     add rcx, 1
-    add rsi, rdx
-    mov rdx, rcx
     jmp 2
 3:
-    xor edx, edx
-    xor edi, edi
+    xor ecx, ecx
+    xor esi, esi
 4:
-    cmp rdx, 4
+    cmp rcx, 4
     jnl 5
-    mov rcx, rdx
+    lea rsi, [rsi + rcx*2]
     add rcx, 1
-    lea rdi, [rdi + rdx*2]
-    mov rdx, rcx
     jmp 4
 5:
-    add rsi, rdi
-    add r8, 1
-    add rax, rsi
+    add rdx, rsi
+    add rdi, 1
+    add rax, rdx
     jmp 1
 6:
     mov rcx, 0xfb
@@ -78,36 +70,32 @@ main:
     ret
 =========== OPT LEVEL: moderate ===========
 main:
+    xor edi, edi
     xor eax, eax
-    xor r8d, r8d
 1:
-    cmp r8, 4
+    cmp rdi, 4
     jnl 6
     xor edx, edx
-    xor esi, esi
+    xor ecx, ecx
 2:
-    cmp rdx, 4
+    cmp rcx, 4
     jnl 3
-    mov rcx, rdx
+    add rdx, rcx
     add rcx, 1
-    add rsi, rdx
-    mov rdx, rcx
     jmp 2
 3:
-    xor edx, edx
-    xor edi, edi
+    xor ecx, ecx
+    xor esi, esi
 4:
-    cmp rdx, 4
+    cmp rcx, 4
     jnl 5
-    mov rcx, rdx
+    lea rsi, [rsi + rcx*2]
     add rcx, 1
-    lea rdi, [rdi + rdx*2]
-    mov rdx, rcx
     jmp 4
 5:
-    add rsi, rdi
-    add r8, 1
-    add rax, rsi
+    add rdx, rsi
+    add rdi, 1
+    add rax, rdx
     jmp 1
 6:
     mov rcx, 0xfb
@@ -117,38 +105,37 @@ main:
     ret
 =========== OPT LEVEL: all ===========
 main:
-    xor eax, eax
+    xor r9d, r9d
     xor r8d, r8d
 1:
-    cmp r8, 4
-    jnl 6
+    xor ecx, ecx
     xor edx, edx
-    xor esi, esi
 2:
-    cmp rdx, 4
-    jnl 3
-    mov rcx, rdx
-    add rcx, 1
-    add rsi, rdx
-    mov rdx, rcx
-    jmp 2
-3:
+    mov rdi, rdx
+    mov rdx, rdi
+    add rdx, rcx
+    mov rax, rcx
+    add rax, 1
+    cmp rcx, 4
+    mov rcx, rax
+    jnge 2
+    xor esi, esi
     xor edx, edx
-    xor edi, edi
-4:
-    cmp rdx, 4
-    jnl 5
-    mov rcx, rdx
+3:
+    mov rax, rdx
+    mov rcx, rsi
     add rcx, 1
-    lea rdi, [rdi + rdx*2]
-    mov rdx, rcx
-    jmp 4
-5:
-    add rsi, rdi
-    add r8, 1
-    add rax, rsi
-    jmp 1
-6:
+    lea rdx, [rax + rsi*2]
+    cmp rsi, 4
+    mov rsi, rcx
+    jnge 3
+    add r9, 1
+    add rdi, rax
+    mov rax, r8
+    add rax, rdi
+    cmp r9, 4
+    mov r8, rax
+    jnge 1
     mov rcx, 0xfb
     cqo
     idiv rcx

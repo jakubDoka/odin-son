@@ -3,33 +3,33 @@ main:
     sub rsp, 8
     mov rdi, -0x2a
     call 2
-    mov rsi, rax
+    mov rdx, rax
     movsd.q xmm0, [rip + 0x86]
-    cvtsi2ss xmm1, rsi
-    cvttss2si rcx, xmm1
+    movss.d xmm1, [rip + 0x87]
+    cvtss2sd xmm1, xmm1
+    cvtsd2ss xmm1, xmm1
+    movsd.q xmm2, [rip + 0x7a]
     xor eax, eax
-    movss.d xmm1, [rip + 0x7a]
-    cvtss2sd xmm1, xmm1
-    cvtsd2ss xmm1, xmm1
-    cvttss2si rdx, xmm1
-    add rax, rdx
-    movsd.q xmm1, [rip + 0x65]
-    cvtsd2ss xmm1, xmm1
-    cvtss2sd xmm1, xmm1
-    cvttsd2si rdx, xmm1
-    add rax, rdx
-    cvtsi2sd xmm1, rsi
-    cvttsd2si rdx, xmm1
-    add rcx, rdx
+    cvtsd2ss xmm2, xmm2
+    cvtsi2ss xmm3, rdx
+    cvtss2sd xmm2, xmm2
+    cvttss2si rcx, xmm1
     add rax, rcx
+    cvtsi2sd xmm1, rdx
+    cvttsd2si rcx, xmm1
+    cvttss2si rdx, xmm3
+    cvttsd2si rsi, xmm2
+    add rax, rsi
+    cvttsd2si esi, xmm0
+    add rdx, rcx
+    add rax, rdx
     cvttsd2si ecx, xmm0
-    movsx rcx, cl
-    add rax, rcx
-    cvttsd2si ecx, xmm0
+    movsx rdx, sil
+    add rax, rdx
+    cvttsd2si edx, xmm0
     movsx rcx, cx
     add rax, rcx
-    cvttsd2si ecx, xmm0
-    movsxd rcx, ecx
+    movsxd rcx, edx
     add rax, rcx
     cvttsd2si rcx, xmm0
     add rax, rcx
@@ -43,13 +43,13 @@ main:
     sub rsp, 8
     mov rdi, -0x2a
     call 2
-    cvtsi2ss xmm0, rax
-    cvttss2si rcx, xmm0
-    xor edx, edx
     cvtsi2sd xmm0, rax
-    cvttsd2si rax, xmm0
-    add rcx, rax
-    lea rax, [rdx + rcx - 0x96]
+    cvtsi2ss xmm1, rax
+    cvttss2si rax, xmm1
+    cvttsd2si rcx, xmm0
+    xor edx, edx
+    add rax, rcx
+    lea rax, [rdx + rax - 0x96]
     add rax, 0x7b
     add rax, 0x7b
     add rax, 0x7b
@@ -64,10 +64,9 @@ main:
     sub rsp, 8
     mov rdi, -0x2a
     call 2
-    mov rcx, rax
-    cvtsi2ss xmm0, rcx
-    cvttss2si rax, xmm0
-    cvtsi2sd xmm0, rcx
+    cvtsi2sd xmm0, rax
+    cvtsi2ss xmm1, rax
+    cvttss2si rax, xmm1
     cvttsd2si rcx, xmm0
     add rax, rcx
     add rax, 0x156
@@ -81,10 +80,9 @@ main:
     sub rsp, 8
     mov rdi, -0x2a
     call 2
-    mov rcx, rax
-    cvtsi2ss xmm0, rcx
-    cvttss2si rax, xmm0
-    cvtsi2sd xmm0, rcx
+    cvtsi2sd xmm0, rax
+    cvtsi2ss xmm1, rax
+    cvttss2si rax, xmm1
     cvttsd2si rcx, xmm0
     add rax, rcx
     add rax, 0x156

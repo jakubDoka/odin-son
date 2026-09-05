@@ -13,41 +13,48 @@ main:
     ret
 =========== OPT LEVEL: mininal ===========
 main:
-    xor ecx, ecx
+    xor edx, edx
     mov rax, 0x2a
 1:
-    cmp rcx, 3
+    cmp rdx, 3
     jz 2
+    mov rax, rdx
+    add rax, 1
+    mov rcx, rdx
+    add rcx, 8
+    mov rdx, rax
     mov rax, rcx
-    add rax, 8
-    add rcx, 1
     jmp 1
 2:
     ret
 =========== OPT LEVEL: moderate ===========
 main:
-    xor ecx, ecx
+    xor edx, edx
     mov rax, 0x2a
 1:
-    cmp rcx, 3
+    cmp rdx, 3
     jz 2
+    mov rax, rdx
+    add rax, 1
+    mov rcx, rdx
+    add rcx, 8
+    mov rdx, rax
     mov rax, rcx
-    add rax, 8
-    add rcx, 1
     jmp 1
 2:
     ret
 =========== OPT LEVEL: all ===========
 main:
-    xor ecx, ecx
-    mov rax, 0x2a
+    xor edx, edx
+    mov rsi, 0x2a
 1:
-    cmp rcx, 3
-    jz 2
-    mov rax, rcx
-    add rax, 8
+    mov rax, rsi
+    mov rsi, rdx
+    add rsi, 8
+    mov rcx, rdx
     add rcx, 1
-    jmp 1
-2:
+    cmp rdx, 3
+    mov rdx, rcx
+    jnz 1
     ret
 =========== OPT LEVEL: aggresive ===========

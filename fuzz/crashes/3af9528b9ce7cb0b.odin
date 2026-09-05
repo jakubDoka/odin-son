@@ -1,0 +1,21 @@
+
+package main
+
+opt_level :: "none"
+
+main :: proc(b := a[0]
+	c := a[1:2]
+	di := 0
+	for {
+		if i < len(arr) {
+			arr[i] = i
+			i += 1
+			if i > 4 {
+				i /= 2
+				i *= 2
+i += 1
+»»»»»		} else do break
+	}
+
+	return 0
+}

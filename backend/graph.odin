@@ -961,7 +961,7 @@ graph_iter_peeps :: proc(ctx: Peep_Ctx) -> (optimized: bool) {
 			for trig in triggers[node.gvn] {
 				worklist_add(graph, &worklist, trig)
 			}
-			triggers[node.gvn] = {}
+			clear(&triggers[node.gvn])
 		}
 
 		if new_node == n {
@@ -1657,7 +1657,7 @@ graph_delete_node :: proc(graph: ^Graph, node: ^Node, indirect := false) {
 		for trig in graph.triggers[node.gvn] {
 			worklist_add(graph, graph.worklist, trig)
 		}
-		graph.triggers[node.gvn] = {}
+		clear(&graph.triggers[node.gvn])
 	}
 
 	if node.itype in KEEP_CAPACITY {
@@ -1679,6 +1679,10 @@ graph_delete_node :: proc(graph: ^Graph, node: ^Node, indirect := false) {
 	if size == graph.mem.pos - uint(id * PRECISION) {
 		add_efficiency_stat(graph, .immediate_deletes, 1)
 	}
+
+	//if get_tag(graph, id).stable_id == 174 && node.itype == .Then {
+	//	panic("")
+	//}
 
 	graph.waste += int(node.input_cap * size_of(Node_ID))
 	graph.waste += int(node.output_cap * size_of(Node_Output))

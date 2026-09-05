@@ -4,31 +4,31 @@ opaque:
     ret
 2:
     sub rsp, 0x18
-    xor esi, esi
     lea rdi, [rsp]
+    xor esi, esi
     mov rdx, 0x10
     call.q [rip - 0x28]
     mov rdi, 0x64
     call opaque
-    mov rdi, 0x12c
     mov.b [rsp], al
+    mov rdi, 0x12c
     call opaque
-    mov rdi, 0x11170
     mov.w [rsp + 0x2], ax
+    mov rdi, 0x11170
     call opaque
-    mov rdi, 0x1f4
     mov.d [rsp + 0x4], eax
+    mov rdi, 0x1f4
     call opaque
     mov.q [rsp + 0x8], rax
     add.b [rsp], 1
     add.w [rsp + 0x2], 2
     add.d [rsp + 0x4], 3
     add.q [rsp + 0x8], 4
-    movzx.w ecx, [rsp + 0x2]
     movzx.b eax, [rsp]
-    mov.d edx, [rsp + 0x4]
+    movzx.w ecx, [rsp + 0x2]
     add rax, rcx
-    add rax, rdx
+    mov.d ecx, [rsp + 0x4]
+    add rax, rcx
     add.q rax, [rsp + 0x8]
     add rsp, 0x18
     ret
@@ -38,20 +38,20 @@ opaque:
     ret
 2:
     sub rsp, 0x18
-    xor esi, esi
     lea rdi, [rsp]
+    xor esi, esi
     mov rdx, 0x10
     call.q [rip - 0x28]
     mov rdi, 0x64
     call opaque
-    mov rdi, 0x12c
     mov.b [rsp], al
+    mov rdi, 0x12c
     call opaque
-    mov rdi, 0x11170
     mov.w [rsp + 0x2], ax
+    mov rdi, 0x11170
     call opaque
-    mov rdi, 0x1f4
     mov.d [rsp + 0x4], eax
+    mov rdi, 0x1f4
     call opaque
     mov.q [rsp + 0x8], rax
     add.b [rsp], 1
@@ -60,11 +60,11 @@ opaque:
     mov.q rcx, [rsp + 0x8]
     add rcx, 4
     mov.q [rsp + 0x8], rcx
-    movzx.w edx, [rsp + 0x2]
     movzx.b eax, [rsp]
-    mov.d esi, [rsp + 0x4]
+    movzx.w edx, [rsp + 0x2]
     add rax, rdx
-    add rax, rsi
+    mov.d edx, [rsp + 0x4]
+    add rax, rdx
     add rax, rcx
     add rsp, 0x18
     ret
@@ -74,38 +74,38 @@ opaque:
     ret
 2:
     sub rsp, 0x18
-    mov rdi, 0x64
     pxor xmm0, xmm0
     movups.x [rsp], xmm0
+    mov rdi, 0x64
     call opaque
-    mov rdi, 0x12c
     mov.b [rsp], al
+    mov rdi, 0x12c
     call opaque
-    mov rdi, 0x11170
     mov.w [rsp + 0x2], ax
+    mov rdi, 0x11170
     call opaque
-    mov rdi, 0x1f4
     mov.d [rsp + 0x4], eax
+    mov rdi, 0x1f4
     call opaque
-    mov rsi, rax
-    mov.q [rsp + 0x8], rsi
+    mov rdi, rax
+    mov.q [rsp + 0x8], rdi
     movzx.b eax, [rsp]
     add al, 1
     mov.b [rsp], al
     movzx.w ecx, [rsp + 0x2]
     add cx, 2
     mov.w [rsp + 0x2], cx
-    add rsi, 4
+    add rdi, 4
     mov.d edx, [rsp + 0x4]
     add edx, 3
+    mov.d [rsp + 0x4], edx
+    mov.q [rsp + 0x8], rdi
     movzx eax, al
     movzx ecx, cx
     add rax, rcx
     mov ecx, edx
     add rax, rcx
-    mov.d [rsp + 0x4], edx
-    add rax, rsi
-    mov.q [rsp + 0x8], rsi
+    add rax, rdi
     add rsp, 0x18
     ret
 =========== OPT LEVEL: all ===========
@@ -114,38 +114,38 @@ opaque:
     ret
 2:
     sub rsp, 0x18
-    mov rdi, 0x64
     pxor xmm0, xmm0
     movups.x [rsp], xmm0
+    mov rdi, 0x64
     call opaque
-    mov rdi, 0x12c
     mov.b [rsp], al
+    mov rdi, 0x12c
     call opaque
-    mov rdi, 0x11170
     mov.w [rsp + 0x2], ax
+    mov rdi, 0x11170
     call opaque
-    mov rdi, 0x1f4
     mov.d [rsp + 0x4], eax
+    mov rdi, 0x1f4
     call opaque
-    mov rsi, rax
-    mov.q [rsp + 0x8], rsi
+    mov rdi, rax
+    mov.q [rsp + 0x8], rdi
     movzx.b eax, [rsp]
     add al, 1
     mov.b [rsp], al
     movzx.w ecx, [rsp + 0x2]
     add cx, 2
     mov.w [rsp + 0x2], cx
-    add rsi, 4
+    add rdi, 4
     mov.d edx, [rsp + 0x4]
     add edx, 3
+    mov.d [rsp + 0x4], edx
+    mov.q [rsp + 0x8], rdi
     movzx eax, al
     movzx ecx, cx
     add rax, rcx
     mov ecx, edx
     add rax, rcx
-    mov.d [rsp + 0x4], edx
-    add rax, rsi
-    mov.q [rsp + 0x8], rsi
+    add rax, rdi
     add rsp, 0x18
     ret
 =========== OPT LEVEL: aggresive ===========

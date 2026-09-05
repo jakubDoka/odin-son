@@ -9,8 +9,8 @@ cpy:
     movzx.b ecx, [rcx]
     mov r8, rdi
     add r8, rax
-    add rax, 1
     mov.b [r8], cl
+    add rax, 1
     jmp 2
 3:
     ret
@@ -21,8 +21,8 @@ cpy:
     mov rdx, 8
     call.q [rip - 0x50]
     xor esi, esi
-    lea rdi, [rsp + 0x8]
     mov rdx, 8
+    lea rdi, [rsp + 0x8]
     call.q [rip - 0x65]
     xor esi, esi
 5:
@@ -36,13 +36,13 @@ cpy:
     mov rsi, rax
     jmp 5
 6:
-    mov rdx, 8
-    lea rax, [rsp]
+    lea rax, [rsp + 0x8]
     add rax, 0
-    lea rcx, [rsp + 0x8]
+    lea rcx, [rsp]
     add rcx, 0
-    mov rsi, rax
-    mov rdi, rcx
+    mov rdx, 8
+    mov rsi, rcx
+    mov rdi, rax
     call cpy
     xor esi, esi
     xor ecx, ecx
@@ -75,8 +75,8 @@ cpy:
     movzx.b ecx, [rcx]
     mov r8, rdi
     add r8, rax
-    add rax, 1
     mov.b [r8], cl
+    add rax, 1
     jmp 2
 3:
     ret
@@ -87,8 +87,8 @@ cpy:
     mov rdx, 8
     call.q [rip - 0x50]
     xor esi, esi
-    lea rdi, [rsp + 0x8]
     mov rdx, 8
+    lea rdi, [rsp + 0x8]
     call.q [rip - 0x65]
     xor esi, esi
 5:
@@ -137,8 +137,8 @@ cpy:
     movzx.b ecx, [rcx]
     mov r8, rdi
     add r8, rax
-    add rax, 1
     mov.b [r8], cl
+    add rax, 1
     jmp 2
 3:
     ret
@@ -158,9 +158,9 @@ cpy:
     mov rsi, rax
     jmp 5
 6:
-    mov rdx, 8
     lea rsi, [rsp]
     lea rdi, [rsp + 0x8]
+    mov rdx, 8
     call cpy
     xor ecx, ecx
     xor esi, esi
@@ -193,10 +193,10 @@ cpy:
     add r9, 1
     mov rcx, rsi
     add rcx, rax
+    movzx.b ecx, [rcx]
     mov r8, rdi
     add r8, rax
-    movzx.b eax, [rcx]
-    mov.b [r8], al
+    mov.b [r8], cl
     cmp r9, rdx
     jnge 2
     jmp 3
@@ -216,9 +216,9 @@ cpy:
     mov.b [rsp + rdx + 0x8], 0x64
     cmp rsi, 8
     jnge 5
-    mov rdx, 8
     lea rsi, [rsp]
     lea rdi, [rsp + 0x8]
+    mov rdx, 8
     call cpy
     xor esi, esi
     xor eax, eax
@@ -255,14 +255,12 @@ cpy:
     cmp rax, 8
     mov rdx, rax
     jnge 2
-    mov rdx, 2
+    mov rax, 2
 3:
-    mov rax, rdx
+    movzx.b ecx, [rsp + rax]
+    mov.b [rsp + rax + 0x8], cl
     add rax, 1
-    movzx.b ecx, [rsp + rdx]
-    mov.b [rsp + rdx + 0x8], cl
     cmp rax, 8
-    mov rdx, rax
     jnge 3
     xor esi, esi
     xor edx, edx

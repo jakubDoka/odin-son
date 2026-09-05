@@ -10,8 +10,8 @@ opaque:
     call.q [rip - 0x28]
     mov rdi, 3
     call opaque
-    mov rdi, 4
     mov.q [rsp], rax
+    mov rdi, 4
     call opaque
     mov.q [rsp + 0x8], rax
     xor esi, esi
@@ -24,13 +24,13 @@ opaque:
     call.q [rip - 0x7c]
     add.q [rsp + 0x10], 1
     add.q [rsp + 0x18], 1
-    mov.q rax, [rsp + 0x8]
-    mov.q rcx, [rsp]
-    mov.q rdx, [rsp + 0x10]
-    imul rsi, rax, 0x64
-    imul rax, rcx, 0x3e8
-    imul rcx, rdx, 0xa
-    add rax, rsi
+    mov.q rax, [rsp]
+    imul rax, rax, 0x3e8
+    mov.q rcx, [rsp + 0x8]
+    imul rcx, rcx, 0x64
+    add rax, rcx
+    mov.q rcx, [rsp + 0x10]
+    imul rcx, rcx, 0xa
     add rax, rcx
     add.q rax, [rsp + 0x18]
     add rsp, 0x28
@@ -47,8 +47,8 @@ opaque:
     call.q [rip - 0x28]
     mov rdi, 3
     call opaque
-    mov rdi, 4
     mov.q [rsp], rax
+    mov rdi, 4
     call opaque
     mov.q [rsp + 0x8], rax
     xor esi, esi
@@ -61,13 +61,13 @@ opaque:
     call.q [rip - 0x7c]
     add.q [rsp + 0x10], 1
     add.q [rsp + 0x18], 1
-    mov.q rax, [rsp + 0x8]
-    mov.q rcx, [rsp]
-    mov.q rdx, [rsp + 0x10]
-    imul rsi, rax, 0x64
-    imul rax, rcx, 0x3e8
-    imul rcx, rdx, 0xa
-    add rax, rsi
+    mov.q rax, [rsp]
+    imul rax, rax, 0x3e8
+    mov.q rcx, [rsp + 0x8]
+    imul rcx, rcx, 0x64
+    add rax, rcx
+    mov.q rcx, [rsp + 0x10]
+    imul rcx, rcx, 0xa
     add rax, rcx
     add.q rax, [rsp + 0x18]
     add rsp, 0x28
@@ -78,17 +78,17 @@ opaque:
     ret
 2:
     sub rsp, 0x28
-    mov rdi, 3
     pxor xmm0, xmm0
     movups.x [rsp], xmm0
+    mov rdi, 3
     call opaque
-    mov rdi, 4
     mov.q [rsp], rax
+    mov rdi, 4
     call opaque
-    mov rdx, 0x10
+    mov.q [rsp + 0x8], rax
     lea rsi, [rsp]
     lea rdi, [rsp + 0x10]
-    mov.q [rsp + 0x8], rax
+    mov rdx, 0x10
     call.q [rip - 0x5d]
     mov.q rcx, [rsp + 0x10]
     add rcx, 1
@@ -96,12 +96,12 @@ opaque:
     mov.q rdx, [rsp + 0x18]
     add rdx, 1
     mov.q [rsp + 0x18], rdx
-    mov.q rax, [rsp + 0x8]
-    mov.q rsi, [rsp]
-    imul rdi, rax, 0x64
-    imul rax, rsi, 0x3e8
+    mov.q rax, [rsp]
+    imul rax, rax, 0x3e8
+    mov.q rsi, [rsp + 0x8]
+    imul rsi, rsi, 0x64
+    add rax, rsi
     imul rcx, rcx, 0xa
-    add rax, rdi
     add rax, rcx
     add rax, rdx
     add rsp, 0x28
@@ -112,17 +112,17 @@ opaque:
     ret
 2:
     sub rsp, 0x28
-    mov rdi, 3
     pxor xmm0, xmm0
     movups.x [rsp], xmm0
+    mov rdi, 3
     call opaque
-    mov rdi, 4
     mov.q [rsp], rax
+    mov rdi, 4
     call opaque
-    mov rdx, 0x10
+    mov.q [rsp + 0x8], rax
     lea rsi, [rsp]
     lea rdi, [rsp + 0x10]
-    mov.q [rsp + 0x8], rax
+    mov rdx, 0x10
     call.q [rip - 0x5d]
     mov.q rcx, [rsp + 0x10]
     add rcx, 1
@@ -130,12 +130,12 @@ opaque:
     mov.q rdx, [rsp + 0x18]
     add rdx, 1
     mov.q [rsp + 0x18], rdx
-    mov.q rax, [rsp + 0x8]
-    mov.q rsi, [rsp]
-    imul rdi, rax, 0x64
-    imul rax, rsi, 0x3e8
+    mov.q rax, [rsp]
+    imul rax, rax, 0x3e8
+    mov.q rsi, [rsp + 0x8]
+    imul rsi, rsi, 0x64
+    add rax, rsi
     imul rcx, rcx, 0xa
-    add rax, rdi
     add rax, rcx
     add rax, rdx
     add rsp, 0x28
@@ -146,9 +146,9 @@ opaque:
     pxor xmm0, xmm0
     movups.x [rsp], xmm0
     mov.q [rsp], 3
-    lea rsi, [rsp]
-    lea rdi, [rsp + 0x10]
     mov.q [rsp + 0x8], 4
+    lea rdi, [rsp + 0x10]
+    lea rsi, [rsp]
     mov rdx, 0x10
     call.q [rip - 0x45]
     mov.q rcx, [rsp + 0x10]
@@ -157,9 +157,9 @@ opaque:
     mov.q rdx, [rsp + 0x18]
     add rdx, 1
     mov.q [rsp + 0x18], rdx
-    mov.q rsi, [rsp + 0x8]
     mov.q rax, [rsp]
     imul rax, rax, 0x3e8
+    mov.q rsi, [rsp + 0x8]
     imul rsi, rsi, 0x64
     add rax, rsi
     imul rcx, rcx, 0xa

@@ -21,8 +21,8 @@ test_mem_imm_shifts i64 u64:
     mov.q [rsp + 0xe], -0x75bcd15
     mov.q [rsp + 0x16], 0x75bcd15
     lea rdi, [rsp]
-    mov rdx, 3
     lea rsi, [rsp + 0x1]
+    mov rdx, 3
     call 11
     mov rbx, rax
     mov rdx, 3
@@ -202,8 +202,8 @@ test_mem_imm_shifts i64 u64:
     mov.q [rsp + 0xe], -0x75bcd15
     mov.q [rsp + 0x16], 0x75bcd15
     lea rdi, [rsp]
-    mov rdx, 3
     lea rsi, [rsp + 0x1]
+    mov rdx, 3
     call 11
     mov rbx, rax
     mov rdx, 3
@@ -315,9 +315,9 @@ test_mem_imm_shifts i64 u64:
     mov.q rdi, [rsi]
     mov rcx, rax
     sal rdi, cl
+    mov.q [rsi], rdi
     xor eax, eax
     add rax, rdx
-    mov.q [rsi], rdi
     add rax, rdi
     ret
 15:
@@ -361,9 +361,9 @@ test_mem_imm_shifts i64 u64:
     shr.q [rsi], 2
     mov.q rdx, [rsi]
     sal rdx, 2
+    mov.q [rsi], rdx
     xor eax, eax
     add rax, rcx
-    mov.q [rsi], rdx
     add rax, rdx
     ret
 =========== OPT LEVEL: moderate ===========
@@ -389,8 +389,8 @@ test_mem_imm_shifts i64 u64:
     mov.q [rsp + 0xe], -0x75bcd15
     mov.q [rsp + 0x16], 0x75bcd15
     lea rdi, [rsp]
-    mov rdx, 3
     lea rsi, [rsp + 0x1]
+    mov rdx, 3
     call 11
     mov rbx, rax
     mov rdx, 3
@@ -454,9 +454,9 @@ test_mem_imm_shifts i64 u64:
     shr dil, cl
     mov rcx, rax
     sal dil, cl
+    mov.b [rsi], dil
     movsx rax, dl
     movzx ecx, dil
-    mov.b [rsi], dil
     add rax, rcx
     ret
 12:
@@ -472,9 +472,9 @@ test_mem_imm_shifts i64 u64:
     shr di, cl
     mov rcx, rax
     sal di, cl
+    mov.w [rsi], di
     movsx rax, dx
     movzx ecx, di
-    mov.w [rsi], di
     add rax, rcx
     ret
 13:
@@ -490,9 +490,9 @@ test_mem_imm_shifts i64 u64:
     shr edi, cl
     mov rcx, rax
     sal edi, cl
+    mov.d [rsi], edi
     movsxd rax, edx
     mov ecx, edi
-    mov.d [rsi], edi
     add rax, rcx
     ret
 14:
@@ -518,10 +518,10 @@ test_mem_imm_shifts i64 u64:
     movzx.b ecx, [rsi]
     shr cl, 2
     shl cl, 2
-    movsx rax, al
-    movzx edx, cl
     mov.b [rsi], cl
-    add rax, rdx
+    movsx rax, al
+    movzx ecx, cl
+    add rax, rcx
     ret
 16:
     movzx.w eax, [rdi]
@@ -531,10 +531,10 @@ test_mem_imm_shifts i64 u64:
     movzx.w ecx, [rsi]
     shr cx, 2
     sal cx, 2
-    movsx rax, ax
-    movzx edx, cx
     mov.w [rsi], cx
-    add rax, rdx
+    movsx rax, ax
+    movzx ecx, cx
+    add rax, rcx
     ret
 17:
     mov.d eax, [rdi]
@@ -544,10 +544,10 @@ test_mem_imm_shifts i64 u64:
     mov.d ecx, [rsi]
     shr ecx, 2
     sal ecx, 2
-    movsxd rax, eax
-    mov edx, ecx
     mov.d [rsi], ecx
-    add rax, rdx
+    movsxd rax, eax
+    mov ecx, ecx
+    add rax, rcx
     ret
 18:
     mov.q rax, [rdi]
@@ -583,8 +583,8 @@ test_mem_imm_shifts i64 u64:
     mov.q [rsp + 0xe], -0x75bcd15
     mov.q [rsp + 0x16], 0x75bcd15
     lea rdi, [rsp]
-    mov rdx, 3
     lea rsi, [rsp + 0x1]
+    mov rdx, 3
     call 11
     mov rbx, rax
     mov rdx, 3
@@ -648,9 +648,9 @@ test_mem_imm_shifts i64 u64:
     shr dil, cl
     mov rcx, rax
     sal dil, cl
+    mov.b [rsi], dil
     movsx rax, dl
     movzx ecx, dil
-    mov.b [rsi], dil
     add rax, rcx
     ret
 12:
@@ -666,9 +666,9 @@ test_mem_imm_shifts i64 u64:
     shr di, cl
     mov rcx, rax
     sal di, cl
+    mov.w [rsi], di
     movsx rax, dx
     movzx ecx, di
-    mov.w [rsi], di
     add rax, rcx
     ret
 13:
@@ -684,9 +684,9 @@ test_mem_imm_shifts i64 u64:
     shr edi, cl
     mov rcx, rax
     sal edi, cl
+    mov.d [rsi], edi
     movsxd rax, edx
     mov ecx, edi
-    mov.d [rsi], edi
     add rax, rcx
     ret
 14:
@@ -712,10 +712,10 @@ test_mem_imm_shifts i64 u64:
     movzx.b ecx, [rsi]
     shr cl, 2
     shl cl, 2
-    movsx rax, al
-    movzx edx, cl
     mov.b [rsi], cl
-    add rax, rdx
+    movsx rax, al
+    movzx ecx, cl
+    add rax, rcx
     ret
 16:
     movzx.w eax, [rdi]
@@ -725,10 +725,10 @@ test_mem_imm_shifts i64 u64:
     movzx.w ecx, [rsi]
     shr cx, 2
     sal cx, 2
-    movsx rax, ax
-    movzx edx, cx
     mov.w [rsi], cx
-    add rax, rdx
+    movsx rax, ax
+    movzx ecx, cx
+    add rax, rcx
     ret
 17:
     mov.d eax, [rdi]
@@ -738,10 +738,10 @@ test_mem_imm_shifts i64 u64:
     mov.d ecx, [rsi]
     shr ecx, 2
     sal ecx, 2
-    movsxd rax, eax
-    mov edx, ecx
     mov.d [rsi], ecx
-    add rax, rdx
+    movsxd rax, eax
+    mov ecx, ecx
+    add rax, rcx
     ret
 18:
     mov.q rax, [rdi]

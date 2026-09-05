@@ -700,13 +700,17 @@ graph_schedule :: proc(
 		if bb.tail == 0 do continue
 		append(&bb.instrs, bb.tail)
 		ctx.late_schedules[graph_get(graph, bb.tail).gvn] = bb.head
-		schedule_block(ctx, &bb)
+		if !no_late_pass {
+			schedule_block2(ctx, &bb)
+		}
 	}
 
 	gs.bbs = bbs
 
 	if graph.end != 0 {
-		verify_schedule_integrity(graph, gs, ctx.antideps, no_late_pass)
+		if !no_late_pass {
+			verify_schedule_integrity(graph, gs, ctx.antideps, no_late_pass)
+		}
 	}
 
 	if 0 == 1 {
@@ -714,6 +718,60 @@ graph_schedule :: proc(
 		// 	if has_unscheduled do panic("")
 	}
 
+	schedule_block2 :: proc(ctx: Ctx, bb: ^Graph_Basic_Block) {
+		PUSHED_UP :: bit_set[Ideal_Node_Type]{.Phi, .Ret, .Param}
+
+		graph := ctx.graph
+
+		phi_count := 0
+		for instr, i in bb.instrs {
+			if graph_get(graph, instr).itype in PUSHED_UP {
+				ordered_remove(&bb.instrs, i)
+				inject_at(&bb.instrs, phi_count, instr)
+				phi_count += 1
+			}
+		}
+
+		// TODO: this is extremely stupid but works, fix later
+		changed := true
+		for i in 0 ..< 1000 {
+			changed = false
+
+			for &instr, i in bb.instrs {
+				inode := graph_expand(graph, instr)
+
+				if inode.itype not_in PUSHED_UP {
+					for &oinstr in bb.instrs[i + 1:] {
+						if slice.contains(inode.inps, oinstr) ||
+						   slice.contains(ctx.antideps[inode.gvn][:], oinstr) {
+
+							instr, oinstr = oinstr, instr
+							changed = true
+							break
+						}
+					}
+				}
+			}
+
+			if !changed do break
+		}
+
+		#reverse for instr, i in bb.instrs {
+			inode := graph_expand(graph, instr)
+			#reverse for inp in inode.inps {
+				innode := graph_expand(graph, inp)
+				if innode.output_count + ctx.extra_outputs[innode.gvn] == 1 &&
+				   innode.itype not_in PUSHED_UP {
+					pos := slice.linear_search(bb.instrs[:i], inp) or_continue
+					slice.rotate_left(bb.instrs[pos:i], 1)
+					break
+				}
+			}
+		}
+	}
+
+	// TODO: this is slow, but I suspect its just because the schedule quality
+	// is worse
 	schedule_block :: proc(ctx: Ctx, bb: ^Graph_Basic_Block) {
 		PUSHED_UP :: bit_set[Ideal_Node_Type] {
 			.Phi,

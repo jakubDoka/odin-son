@@ -16,10 +16,10 @@ opaque:
     sub rsp, 0x38
     xor edi, edi
     mov rcx, 0x31
-    mov rsi, 6
-    mov rdx, 0x13
-    mov r10, 0xd
-    mov r11, 0xd
+    mov r11, 6
+    mov r10, 0x13
+    mov rsi, 0xd
+    mov rdx, 0xd
     mov rbp, 0x16
     mov r9, 0x22
     mov rbx, 0x21
@@ -28,10 +28,9 @@ opaque:
     mov r8, rbx
     mov.q [rsp + 0x20], r9
     mov r9, rbp
-    mov.q [rsp + 0x28], r10
-    mov rbx, r11
-    mov r10, rdx
-    mov r12, rsi
+    mov.q [rsp + 0x28], rsi
+    mov rbx, rdx
+    mov r12, r11
     mov.q [rsp + 0x10], rcx
     cmp rax, 5
     jz 4
@@ -39,12 +38,14 @@ opaque:
     mov rdx, rbx
     or rdx, rcx
     imul rdx, r9
+    mov r9, rdx
     add rax, 1
-    and rdx, 0xffff
-    mov.q rsi, [rsp + 0x10]
-    mov r11, r12
+    and r9, 0xffff
+    mov.q r11, [rsp + 0x10]
+    mov rdx, r12
     mov rcx, r10
-    mov r10, rbx
+    mov rsi, rbx
+    mov r10, r9
     mov.q r9, [rsp + 0x28]
     mov.q rbx, [rsp + 0x20]
     mov rbp, r8
@@ -81,47 +82,42 @@ opaque:
     mov rcx, rax
     mov rax, r14
     sub rax, rcx
-    mov rcx, rdx
-    add rcx, 1
     and rax, 0xffff
     mov.q [rsp + 0x20], rax
+    mov rax, rdx
+    add rax, 1
     mov.q r14, [rsp]
     push.q [rsp + 0x18]
     pop.q [rsp + 0x10]
     mov.q [rsp + 0x18], r13
-    mov rdx, rcx
+    mov rdx, rax
     jmp 6
 7:
     mov rax, rbx
     mov rcx, 0x19
     sub rcx, rax
+    imul rcx, r12
+    and rcx, 0xffff
     mov rdx, rcx
-    mov rax, 0x17
-    and rax, 7
-    mov rbx, rax
-    imul rdx, r12
-    mov rax, r15
-    mov rcx, rbx
-    sar rax, cl
-    mov rbx, rax
-    and rdx, 0xffff
     mov.q rcx, [rsp]
     mov rax, r11
     sub rax, rcx
-    mov r12, rax
-    mov rax, rdx
-    and rax, rbx
     mov rcx, rax
-    mov rax, r11
-    mov rdx, r12
-    imul rdx, rax
-    mov rax, rdx
+    imul rcx, r11
     and rcx, 0xffff
-    mov r12, rcx
+    mov.q [rsp + 0x28], rcx
+    mov rax, 0x17
+    and rax, 7
+    mov rcx, rax
+    mov rax, r15
+    sar rax, cl
+    mov rcx, rax
+    mov rax, rdx
+    and rax, rcx
     mov rdx, rsi
     add rdx, 1
     and rax, 0xffff
-    mov.q [rsp + 0x28], rax
+    mov r12, rax
     mov.q rcx, [rsp + 0x8]
     mov.q [rsp + 0x10], rbp
     mov.q rax, [rsp]
@@ -133,44 +129,42 @@ opaque:
     jmp 5
 8:
     mov.q rax, [rsp + 0x10]
-    and rax, 7
-    add rax, 1
-    mov rcx, rax
+    lea rax, [rdi + rax*2]
+    imul rcx, r8, 3
+    add rax, rcx
+    lea rcx, [rax + r9*4]
+    mov.q rax, [rsp + 0x20]
+    imul rax, rax, 5
+    add rcx, rax
+    mov.q rsi, [rsp + 0x10]
+    and rsi, 7
+    add rsi, 1
     mov rax, rbx
     cqo
-    idiv rcx
+    idiv rsi
     mov rdx, rax
-    imul rax, r8, 3
-    mov.q rcx, [rsp + 0x10]
-    lea rcx, [rdi + rcx*2]
     add rdx, rbx
+    and rdx, 0xffff
+    imul rax, rdx, 6
     add rcx, rax
-    mov rsi, rdx
-    and rsi, 0xffff
-    mov.q rax, [rsp + 0x20]
-    imul rdx, rax, 5
-    lea rax, [rcx + r9*4]
-    imul rcx, rsi, 6
-    add rax, rdx
-    imul rdx, r12, 7
-    add rax, rcx
-    add rax, rdx
+    imul rax, r12, 7
+    add rcx, rax
+    lea rax, [rcx + r10*8]
     imul rcx, rbp, 9
-    lea rax, [rax + r10*8]
-    mov rdx, 0x17
-    imul rdx, rdx, 0xa
+    add rax, rcx
+    mov rcx, 0x17
+    imul rcx, rcx, 0xa
     add rax, rcx
     mov.q rcx, [rsp + 0x8]
     imul rcx, rcx, 0xb
-    add rax, rdx
-    imul rdx, r15, 0xc
+    add rax, rcx
+    imul rcx, r15, 0xc
     add rax, rcx
     imul rcx, r11, 0xd
-    add rax, rdx
-    imul rdx, r14, 0xe
+    add rax, rcx
+    imul rcx, r14, 0xe
     add rax, rcx
     mov rcx, 0xfb
-    add rax, rdx
     cqo
     idiv rcx
     mov rax, rdx
@@ -200,10 +194,10 @@ opaque:
     sub rsp, 0x38
     xor edi, edi
     mov rcx, 0x31
-    mov rsi, 6
-    mov rdx, 0x13
-    mov r10, 0xd
-    mov r11, 0xd
+    mov r11, 6
+    mov r10, 0x13
+    mov rsi, 0xd
+    mov rdx, 0xd
     mov rbp, 0x16
     mov r9, 0x22
     mov rbx, 0x21
@@ -212,10 +206,9 @@ opaque:
     mov r8, rbx
     mov.q [rsp + 0x20], r9
     mov r9, rbp
-    mov.q [rsp + 0x28], r10
-    mov rbx, r11
-    mov r10, rdx
-    mov r12, rsi
+    mov.q [rsp + 0x28], rsi
+    mov rbx, rdx
+    mov r12, r11
     mov.q [rsp + 0x10], rcx
     cmp rax, 5
     jz 4
@@ -223,12 +216,14 @@ opaque:
     mov rdx, rbx
     or rdx, rcx
     imul rdx, r9
+    mov r9, rdx
     add rax, 1
-    and rdx, 0xffff
-    mov.q rsi, [rsp + 0x10]
-    mov r11, r12
+    and r9, 0xffff
+    mov.q r11, [rsp + 0x10]
+    mov rdx, r12
     mov rcx, r10
-    mov r10, rbx
+    mov rsi, rbx
+    mov r10, r9
     mov.q r9, [rsp + 0x28]
     mov.q rbx, [rsp + 0x20]
     mov rbp, r8
@@ -265,46 +260,41 @@ opaque:
     mov rcx, rax
     mov rax, r14
     sub rax, rcx
-    mov rcx, rdx
-    add rcx, 1
     and rax, 0xffff
     mov.q [rsp + 0x20], rax
+    mov rax, rdx
+    add rax, 1
     mov.q r14, [rsp]
     push.q [rsp + 0x18]
     pop.q [rsp + 0x10]
     mov.q [rsp + 0x18], r13
-    mov rdx, rcx
+    mov rdx, rax
     jmp 6
 7:
-    mov rcx, 0x17
     mov rax, rbx
-    mov rdx, 0x19
-    sub rdx, rax
-    mov rax, rdx
-    and rcx, 7
-    imul rax, r12
-    mov rdx, rax
-    mov rax, r15
-    sar rax, cl
-    mov rbx, rax
-    and rdx, 0xffff
+    mov rcx, 0x19
+    sub rcx, rax
+    imul rcx, r12
+    and rcx, 0xffff
+    mov rdx, rcx
     mov.q rcx, [rsp]
     mov rax, r11
     sub rax, rcx
-    mov r12, rax
-    mov rax, rdx
-    and rax, rbx
     mov rcx, rax
-    mov rax, r11
-    mov rdx, r12
-    imul rdx, rax
-    mov rax, rdx
+    imul rcx, r11
     and rcx, 0xffff
-    mov r12, rcx
+    mov.q [rsp + 0x28], rcx
+    mov rcx, 0x17
+    and rcx, 7
+    mov rax, r15
+    sar rax, cl
+    mov rcx, rax
+    mov rax, rdx
+    and rax, rcx
     mov rdx, rsi
     add rdx, 1
     and rax, 0xffff
-    mov.q [rsp + 0x28], rax
+    mov r12, rax
     mov.q rcx, [rsp + 0x8]
     mov.q [rsp + 0x10], rbp
     mov.q rax, [rsp]
@@ -316,42 +306,40 @@ opaque:
     jmp 5
 8:
     mov.q rax, [rsp + 0x10]
-    and rax, 7
-    add rax, 1
-    mov rcx, rax
+    lea rax, [rdi + rax*2]
+    imul rcx, r8, 3
+    add rax, rcx
+    lea rcx, [rax + r9*4]
+    mov.q rax, [rsp + 0x20]
+    imul rax, rax, 5
+    add rcx, rax
+    mov.q rsi, [rsp + 0x10]
+    and rsi, 7
+    add rsi, 1
     mov rax, rbx
     cqo
-    idiv rcx
+    idiv rsi
     mov rdx, rax
-    imul rax, r8, 3
-    mov.q rcx, [rsp + 0x10]
-    lea rcx, [rdi + rcx*2]
     add rdx, rbx
+    and rdx, 0xffff
+    imul rax, rdx, 6
     add rcx, rax
-    mov rsi, rdx
-    and rsi, 0xffff
-    mov.q rax, [rsp + 0x20]
-    imul rdx, rax, 5
-    lea rax, [rcx + r9*4]
-    imul rcx, rsi, 6
-    add rax, rdx
-    imul rdx, r12, 7
-    add rax, rcx
-    add rax, rdx
+    imul rax, r12, 7
+    add rcx, rax
+    lea rax, [rcx + r10*8]
     imul rcx, rbp, 9
-    lea rax, [rax + r10*8]
     add rax, rcx
+    add rax, 0xe6
     mov.q rcx, [rsp + 0x8]
     imul rcx, rcx, 0xb
-    add rax, 0xe6
-    imul rdx, r15, 0xc
+    add rax, rcx
+    imul rcx, r15, 0xc
     add rax, rcx
     imul rcx, r11, 0xd
-    add rax, rdx
-    imul rdx, r14, 0xe
+    add rax, rcx
+    imul rcx, r14, 0xe
     add rax, rcx
     mov rcx, 0xfb
-    add rax, rdx
     cqo
     idiv rcx
     mov rax, rdx
@@ -379,38 +367,38 @@ opaque:
     push r14
     push r15
     sub rsp, 0x28
-    mov r10, 0x31
-    mov rcx, 6
+    mov rax, 0x31
+    mov rsi, 6
     mov rdx, 0x13
     mov r9, 0xd
-    mov rsi, 0xd
+    mov r10, 0xd
     mov rbx, 0x16
     mov r8, 0x22
     mov r11, 0x21
-    xor eax, eax
+    xor ecx, ecx
 3:
     mov rdi, r11
-    mov.q [rsp + 0x18], r8
+    mov.q [rsp + 0x10], r8
     mov r8, rbx
-    mov.q [rsp + 0x20], r9
-    mov r11, rsi
+    mov r11, r9
+    mov.q [rsp + 0x18], r10
     mov r9, rdx
-    mov rbp, rcx
-    mov.q [rsp + 0x8], r10
-    cmp rax, 5
+    mov rbp, rsi
+    mov.q [rsp + 0x8], rax
+    cmp rcx, 5
     jz 4
-    mov.q rcx, [rsp + 0x8]
-    mov rdx, r11
-    or rdx, rcx
+    mov.q rax, [rsp + 0x8]
+    mov.q rdx, [rsp + 0x18]
+    or rdx, rax
     imul rdx, r8
-    add rax, 1
+    add rcx, 1
     and rdx, 0xffff
-    mov.q rcx, [rsp + 0x8]
-    mov rsi, rbp
-    mov r10, r9
-    mov r9, r11
-    mov.q r8, [rsp + 0x20]
-    mov.q r11, [rsp + 0x18]
+    mov.q rsi, [rsp + 0x8]
+    mov r10, rbp
+    mov rax, r9
+    mov.q r9, [rsp + 0x18]
+    mov r8, r11
+    mov.q r11, [rsp + 0x10]
     mov rbx, rdi
     jmp 3
 4:
@@ -422,15 +410,16 @@ opaque:
 5:
     mov r14, r10
     mov.q [rsp], rax
-    mov.q r13, [rsp + 0x20]
+    mov r13, r11
     mov r10, rcx
+    mov.q r11, [rsp + 0x18]
     cmp rsi, 5
     jz 8
-    mov.q [rsp + 0x10], r11
+    mov.q [rsp + 0x18], r11
     xor edx, edx
 6:
     mov r12, r14
-    mov.q r14, [rsp + 0x18]
+    mov.q r14, [rsp + 0x10]
     mov.q r15, [rsp]
     push.q [rsp + 0x8]
     pop.q [rsp]
@@ -441,86 +430,83 @@ opaque:
     mov rcx, rax
     mov rax, r13
     sub rax, rcx
-    mov rcx, rdx
-    add rcx, 1
     and rax, 0xffff
-    mov.q [rsp + 0x18], rax
+    mov.q [rsp + 0x10], rax
+    mov rax, rdx
+    add rax, 1
     mov r13, r15
-    push.q [rsp + 0x10]
+    push.q [rsp + 0x18]
     pop.q [rsp + 0x8]
-    mov.q [rsp + 0x10], r12
-    mov rdx, rcx
+    mov.q [rsp + 0x18], r12
+    mov rdx, rax
     jmp 6
 7:
     mov rax, r11
     mov rcx, 0x19
     sub rcx, rax
-    imul rcx, rbp
+    mov rax, rcx
+    mov rcx, rbp
+    mov rdx, rax
+    imul rdx, rcx
+    and rdx, 0xffff
     mov rax, r14
     sar rax, 7
-    mov rdx, rax
-    and rcx, 0xffff
-    mov r11, rcx
-    mov rcx, r15
-    mov rax, r10
-    sub rax, rcx
-    mov rcx, rax
-    mov rax, r11
-    and rax, rdx
-    imul rcx, r10
-    and rax, 0xffff
-    mov rbp, rax
+    and rdx, rax
+    and rdx, 0xffff
+    mov rbp, rdx
+    mov rax, r15
+    mov rcx, r10
+    sub rcx, rax
+    mov rax, rcx
+    imul rax, r10
     mov rdx, rsi
     add rdx, 1
-    mov rax, rcx
     and rax, 0xffff
-    mov.q [rsp + 0x20], rax
+    mov r11, rax
     mov.q rcx, [rsp]
     mov.q [rsp + 0x8], rbx
     mov rax, r15
-    mov.q r11, [rsp + 0x10]
     mov rbx, r14
-    mov.q [rsp + 0x18], r13
+    mov.q [rsp + 0x10], r13
     mov r10, r12
     mov rsi, rdx
     jmp 5
 8:
-    mov.q rcx, [rsp + 0x8]
-    and rcx, 7
-    add rcx, 1
+    mov.q rax, [rsp + 0x8]
+    imul rax, rax, 2
+    imul rcx, rdi, 3
+    add rax, rcx
+    lea rcx, [rax + r8*4]
+    mov.q rax, [rsp + 0x10]
+    imul rax, rax, 5
+    add rcx, rax
+    mov.q rsi, [rsp + 0x8]
+    and rsi, 7
+    add rsi, 1
     mov rax, r11
     cqo
-    idiv rcx
+    idiv rsi
     mov rdx, rax
-    imul rax, rdi, 3
-    mov.q rcx, [rsp + 0x8]
-    imul rcx, rcx, 2
     add rdx, r11
+    and rdx, 0xffff
+    imul rax, rdx, 6
     add rcx, rax
-    mov rsi, rdx
-    and rsi, 0xffff
-    mov.q rax, [rsp + 0x18]
-    imul rdx, rax, 5
-    lea rax, [rcx + r8*4]
-    imul rcx, rsi, 6
-    add rax, rdx
-    imul rdx, rbp, 7
-    add rax, rcx
-    add rax, rdx
+    imul rax, rbp, 7
+    add rcx, rax
+    lea rax, [rcx + r9*8]
     imul rcx, rbx, 9
-    lea rax, [rax + r9*8]
     add rax, rcx
+    add rax, 0xe6
     mov.q rcx, [rsp]
     imul rcx, rcx, 0xb
-    add rax, 0xe6
-    imul rdx, r14, 0xc
+    add rax, rcx
+    imul rcx, r14, 0xc
     add rax, rcx
     imul rcx, r10, 0xd
-    add rax, rdx
-    imul rdx, r13, 0xe
+    add rax, rcx
+    imul rcx, r13, 0xe
     add rax, rcx
     mov rcx, 0xfb
-    add rax, rdx
     cqo
     idiv rcx
     mov rax, rdx
@@ -548,41 +534,42 @@ opaque:
     push r14
     push r15
     sub rsp, 0x38
-    mov rbp, 0x13
-    mov rbx, 0x31
-    mov rdi, 6
-    mov rcx, 0xd
+    mov rbp, 0x31
+    mov r11, 6
+    mov r13, 0x13
     mov r12, 0xd
-    mov r13, 0x16
+    mov rbx, 0xd
+    mov rcx, 0x16
+    mov rsi, 0x22
     mov rax, 0x21
-    mov rdx, 0x22
-    xor esi, esi
+    xor edx, edx
 3:
-    mov.q [rsp], rdx
-    mov r8, rax
-    mov.q [rsp + 0x8], rcx
+    mov rdi, rax
+    mov.q [rsp], rsi
+    mov r8, rcx
+    mov.q [rsp + 0x8], r12
+    mov.q [rsp + 0x30], rbx
     mov r9, r13
-    mov.q [rsp + 0x30], r12
-    mov.q [rsp + 0x28], rdi
-    mov.q [rsp + 0x10], rbx
-    mov r10, rbp
+    mov.q [rsp + 0x28], r11
+    mov.q [rsp + 0x10], rbp
     mov.q rax, [rsp + 0x10]
     mov.q rcx, [rsp + 0x30]
     or rcx, rax
-    imul rcx, r9
-    mov r11, rsi
-    add r11, 1
-    and rcx, 0xffff
-    cmp rsi, 5
-    mov rbx, r10
-    mov.q rdi, [rsp + 0x10]
-    mov rbp, rcx
-    mov.q r12, [rsp + 0x28]
-    mov.q rcx, [rsp + 0x30]
-    mov.q rdx, [rsp + 0x8]
-    mov r13, r8
+    imul rcx, r8
+    mov rax, rcx
+    mov r10, rdx
+    add r10, 1
+    and rax, 0xffff
+    cmp rdx, 5
+    mov.q r11, [rsp + 0x10]
+    mov.q rbx, [rsp + 0x28]
+    mov rbp, r9
+    mov.q r12, [rsp + 0x30]
+    mov r13, rax
+    mov.q rsi, [rsp + 0x8]
     mov.q rax, [rsp]
-    mov rsi, r11
+    mov rcx, rdi
+    mov rdx, r10
     jnz 3
     mov rax, 0x10
     mov.q [rsp + 0x20], rax
@@ -591,46 +578,40 @@ opaque:
     mov rax, 1
     xor edx, edx
 4:
-    mov rdi, rdx
+    mov r10, rdx
     mov.q [rsp + 0x18], rcx
+    mov rcx, rax
     mov.q r11, [rsp + 0x20]
     push.q [rsp + 0x30]
     pop.q [rsp + 0x20]
     xor edx, edx
 5:
     mov.q rbx, [rsp + 0x18]
-    mov.q rbp, [rsp]
-    mov.q r12, [rsp + 0x20]
-    mov r13, rax
-    mov.q r14, [rsp + 0x8]
+    mov.q rbp, [rsp + 0x8]
+    mov.q r12, [rsp]
+    mov.q r13, [rsp + 0x20]
+    mov r14, rcx
     mov.q r15, [rsp + 0x10]
-    mov rax, r10
+    mov rax, r9
     sal rax, 1
     mov rcx, rax
-    mov rax, r14
+    mov rax, rbp
     sub rax, rcx
-    mov rcx, rdx
-    add rcx, 1
     and rax, 0xffff
     mov.q [rsp], rax
+    mov rax, rdx
+    add rax, 1
     cmp rdx, 2
-    mov rax, r15
-    mov.q [rsp + 0x8], r13
-    mov.q [rsp + 0x10], r12
-    mov.q [rsp + 0x18], rbp
+    mov rcx, r15
+    mov.q [rsp + 0x8], r14
+    mov.q [rsp + 0x10], r13
+    mov.q [rsp + 0x18], r12
     mov.q [rsp + 0x20], rbx
-    mov rdx, rcx
+    mov rdx, rax
     jnz 5
-    mov rax, rdi
+    mov rax, r10
     add rax, 1
     mov rdx, rax
-    mov rcx, r13
-    mov rax, rsi
-    sub rax, rcx
-    mov rcx, rax
-    imul rcx, rsi
-    and rcx, 0xffff
-    mov rdi, rcx
     mov.q rax, [rsp + 0x30]
     mov rcx, 0x19
     sub rcx, rax
@@ -638,56 +619,62 @@ opaque:
     mov.q rcx, [rsp + 0x28]
     imul rcx, rax
     and rcx, 0xffff
-    mov rax, rbp
+    mov rax, r12
     sar rax, 7
     and rcx, rax
     and rcx, 0xffff
-    mov.q [rsp + 0x18], rcx
+    mov r10, rcx
+    mov rax, r14
+    mov rcx, rsi
+    sub rcx, rax
+    mov rax, rcx
+    imul rax, rsi
+    and rax, 0xffff
+    mov.q [rsp + 0x18], rax
     cmp rdx, 5
     mov rsi, r15
     mov.q [rsp + 0x10], r11
-    mov.q [rsp], r14
-    push.q [rsp + 0x18]
-    pop.q [rsp + 0x28]
-    mov rax, r13
-    mov.q [rsp + 0x30], r12
-    mov.q [rsp + 0x20], rbp
+    mov.q [rsp + 0x28], r10
+    mov rax, r14
+    mov.q [rsp + 0x30], r13
+    mov.q [rsp + 0x20], r12
+    mov.q [rsp], rbp
     mov rcx, rbx
-    mov.q [rsp + 0x8], rdi
+    push.q [rsp + 0x18]
+    pop.q [rsp + 0x8]
     jnz 4
-    mov rcx, r11
-    and rcx, 7
-    add rcx, 1
-    mov rax, r12
-    cqo
-    idiv rcx
-    mov rdx, rax
-    imul rax, r8, 3
-    imul rcx, r11, 2
-    add rdx, r12
+    imul rax, r11, 2
+    imul rcx, rdi, 3
+    add rax, rcx
+    lea rcx, [rax + r8*4]
+    imul rax, rbp, 5
     add rcx, rax
-    and rdx, 0xffff
-    imul rsi, r14, 5
-    lea rax, [rcx + r9*4]
-    imul rcx, rdx, 6
-    add rax, rsi
-    mov.q rdx, [rsp + 0x18]
-    imul rdx, rdx, 7
+    mov rsi, r11
+    and rsi, 7
+    add rsi, 1
+    mov rax, r13
+    cqo
+    idiv rsi
+    add rax, r13
+    and rax, 0xffff
+    imul rax, rax, 6
+    add rcx, rax
+    imul rax, r10, 7
+    add rcx, rax
+    lea rax, [rcx + r9*8]
+    imul rcx, r12, 9
     add rax, rcx
-    add rax, rdx
-    imul rcx, rbp, 9
-    lea rax, [rax + r10*8]
-    add rax, rcx
-    imul rcx, r13, 0xb
     add rax, 0xe6
-    imul rdx, rbx, 0xc
+    imul rcx, r14, 0xb
+    add rax, rcx
+    imul rcx, rbx, 0xc
     add rax, rcx
     imul rcx, r15, 0xd
-    add rax, rdx
-    imul rdx, rdi, 0xe
+    add rax, rcx
+    mov.q rcx, [rsp + 0x18]
+    imul rcx, rcx, 0xe
     add rax, rcx
     mov rcx, 0xfb
-    add rax, rdx
     cqo
     idiv rcx
     mov rax, rdx

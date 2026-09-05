@@ -293,14 +293,14 @@ const_eval_int :: proc(node: ^ast.Expr) -> (value: i64, ok: bool) {
 	return 0, false
 }
 
-type_size :: proc(ty: Type) -> int {
+type_size :: proc(ty: Type) -> (res: int) {
 	#partial switch t in unpack_type(ty) {
 	case ^Proc_Type, Pointer, Multi_Pointer:
 		return 8
 	case ^Struct:
 		return t.size
 	case ^Array:
-		return type_size(t.elem) * t.len
+		return int(min(uint(type_size(t.elem) * t.len), uint(max(int))))
 	case ^Slice:
 		return 16
 	case ^Enum:
@@ -308,7 +308,7 @@ type_size :: proc(ty: Type) -> int {
 	case ^Union:
 		return t.size
 	case ^Simd:
-		return type_size(t.elem) * t.len
+		return int(min(uint(type_size(t.elem) * t.len), uint(max(int))))
 	}
 	assert(ty <= .F64)
 	return TYPE_SIZES[ty]
@@ -1474,7 +1474,7 @@ typecheck :: proc(
 	}
 
 	for v in ctx.scope {
-		assert(v.type != .Void)
+		fmt.assertf(v.type != .Void, "%v %#v", v.name, node.derived)
 	}
 
 	lvalue := false
@@ -3188,6 +3188,9 @@ typecheck_sig :: proc(
 
 		for param, i in list {
 			tys[i] = emit_type(ctx, param.type)
+			if tys[i] == .Void {
+				error(ctx, param, "TODO: support default parameters")
+			}
 		}
 	}
 
@@ -3299,6 +3302,7 @@ typecheck_program :: proc(ctx: ^Gen_Ctx) {
 		for par, i in prc.params {
 			asta := prc.lit.type.params.list[i]
 			if len(asta.names) != 1 do continue
+			if par == .Void do continue
 
 			#partial switch d in asta.names[0].derived {
 			case ^ast.Ident:

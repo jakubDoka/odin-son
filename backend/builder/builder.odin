@@ -206,15 +206,26 @@ builder_peep :: proc(
 
 			iter: backend.Offset_Iter
 			iter.curr = id
+			failed := false
 			for user in backend.offset_iter_next(ctx, &iter) {
 				unode := graph_expand(ctx, user.id)
 				if unode.itype in STORES && user.idx == 2 {
 					continue
 				}
 
+				if graph_get(ctx, user.id).itype == .Add {
+					backend.peep_ctx_add_trigger(
+						ctx,
+						backend.graph_inps(ctx, user.id)[1],
+						id,
+					)
+				}
+
 				backend.peep_ctx_add_trigger(ctx, user.id, id)
-				break mark_dead
+				failed = true
 			}
+
+			if failed do break mark_dead
 
 			slot_local.size = backend.DEAD_LOCAL
 
@@ -314,8 +325,32 @@ builder_peep :: proc(
 	case .Loop:
 		bedge := graph_expand(ctx, node.inps[1])
 		init := graph_expand(ctx, node.inps[0])
-		if btype(bedge) == .Dead || btype(init) == .Dead {
 
+		dead_by_latch := false
+		if bedge.itype == .If {
+			cond_const := backend.graph_extra(ctx, bedge.inps[1], CInt)
+			if cond_const != nil {
+				we_are_alive := len(bedge.outs) == 1
+				for out in bedge.outs {
+					if out.id != id {
+						we_are_alive =
+							(graph_get(ctx, out.id).itype == .Else) ~
+							(cond_const.value == 0)
+					}
+				}
+
+				if !we_are_alive {
+					dead_by_latch = true
+				} else {
+					backend.graph_set_input(ctx, id, 1, bedge.inps[0])
+					return 0
+				}
+			} else {
+				backend.peep_ctx_add_trigger(ctx, bedge.inps[1], id)
+			}
+		}
+
+		if btype(bedge) == .Dead || btype(init) == .Dead || dead_by_latch {
 			retry: for {
 				#reverse for out in node.outs {
 					onode := graph_expand(ctx, out.id)

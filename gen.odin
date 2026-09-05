@@ -467,12 +467,14 @@ alloca :: proc(
 	root := is_arg ? ctx.entry : ctx.root_mem
 	alloca := backend.graph_add_local(ctx, name, root)
 
-	backend.graph_extra(ctx, alloca, backend.Local).size = i32(type_size(ty))
+	size := i32(min(type_size(ty), int(max(i32))))
+
+	backend.graph_extra(ctx, alloca, backend.Local).size = size
 	ptr := backend.graph_add_local_addr(ctx, name, alloca)
 
 	if zeroed {
 		zero := backend.graph_add_c_int(ctx, "zero", .I8, 0)
-		size := backend.graph_add_c_int(ctx, "size", .I32, i64(type_size(ty)))
+		size := backend.graph_add_c_int(ctx, "size", .I32, i64(size))
 		ctx_set_mem(
 			ctx,
 			backend.graph_add_set(

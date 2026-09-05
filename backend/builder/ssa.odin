@@ -391,28 +391,6 @@ graph_inline_graph :: proc(
 
 	context.allocator, _ = arna.scrath()
 
-	if !ODIN_DISABLE_ASSERT {
-		sched: backend.Graph_Schedule
-		backend.graph_schedule(
-			graph,
-			&sched,
-			context.allocator,
-			no_late_pass = true,
-		)
-	}
-
-	if !ODIN_DISABLE_ASSERT {
-		backend.current_graph = from
-		defer backend.current_graph = graph
-		sched: backend.Graph_Schedule
-		backend.graph_schedule(
-			from,
-			&sched,
-			context.allocator,
-			no_late_pass = true,
-		)
-	}
-
 	backend.verify(graph)
 
 	graph.peeped = false
@@ -524,21 +502,21 @@ graph_inline_graph :: proc(
 		end_ctrl := graph_get(from, ret.inps[0])
 
 		if graph.end != 0 {
-			rins := backend.graph_inps(graph, graph.end)
-			greg := rins[0]
+			end_inps := backend.graph_inps(graph, graph.end)
+			end_reg := end_inps[0]
 
-			reg := graph_expand(graph, ctx.projection[end_ctrl.gvn])
+			reg_proj := graph_expand(graph, ctx.projection[end_ctrl.gvn])
 
-			prev_len := graph_get(graph, greg).input_count
+			prev_len := graph_get(graph, end_reg).input_count
 
 			backend.assert_live_pins(graph)
 
-			#reverse for inp, i in reg.inps[:len(reg.inps) - 1] {
+			#reverse for inp, i in reg_proj.inps[:len(reg_proj.inps) - 1] {
 				inode := graph_expand(graph, inp)
 				if inode.itype == .Trap {
-					backend.graph_connect(graph, greg, inp)
+					backend.graph_connect(graph, end_reg, inp)
 
-					#reverse for rn, j in rins[1:] {
+					#reverse for rn, j in end_inps[1:] {
 						if 1 + j < len(ret.inps) {
 							fnode := graph_get(from, ret.inps[1 + j])
 							assert(fnode.itype == .Phi)
@@ -557,13 +535,13 @@ graph_inline_graph :: proc(
 						}
 					}
 
-					ordered_remove(graph, &reg, i)
+					ordered_remove(graph, &reg_proj, i)
 				}
 			}
 
 			backend.assert_live_pins(graph)
 
-			gregn := graph_expand(graph, greg)
+			gregn := graph_expand(graph, end_reg)
 			if int(prev_len) < len(gregn.inps) {
 				backend.swap_inputs(
 					graph,
@@ -582,7 +560,7 @@ graph_inline_graph :: proc(
 				)
 			}
 
-			if len(reg.inps) == 1 {
+			if len(reg_proj.inps) == 1 {
 				ctx.projection[end_ctrl.gvn] = graph_add_dead(graph, "rdead")
 			}
 		}
@@ -604,16 +582,6 @@ graph_inline_graph :: proc(
 	backend.assert_live_pins(graph)
 
 	backend.verify(graph)
-
-	if !ODIN_DISABLE_ASSERT {
-		sched: backend.Graph_Schedule
-		backend.graph_schedule(
-			graph,
-			&sched,
-			context.allocator,
-			no_late_pass = true,
-		)
-	}
 
 	clone_along_cfg :: proc(ctx: ^Ctx, root: backend.Node_ID) {
 		node := graph_expand(ctx.from, root)

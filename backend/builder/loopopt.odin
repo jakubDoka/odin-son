@@ -10,7 +10,7 @@ import "core:slice"
 loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 	context.allocator, _ = arna.scrath()
 
-	if .Loop_Opt not_in graph.opt_flags || true do return
+	if .Loop_Opt not_in graph.opt_flags do return
 
 	defer graph.peeped &= !optimized
 
@@ -281,7 +281,7 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 							context.allocator,
 							no_late_pass = true,
 						)
-						panic("")
+						panic("brah")
 					}
 
 					if bb.head == dblk {

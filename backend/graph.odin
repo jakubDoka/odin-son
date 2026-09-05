@@ -1558,10 +1558,6 @@ graph_set_input :: proc(
 ) -> Node_ID {
 	node := graph_expand(graph, id)
 
-	if get_tag(graph, value).stable_id == 271 && node.itype == .Return {
-		panic("")
-	}
-
 	assert(value != 0)
 
 	assert(idx < len(node.inps))

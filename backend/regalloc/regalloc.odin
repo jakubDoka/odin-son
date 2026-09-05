@@ -174,6 +174,7 @@ regalloc_round :: proc(
 					intersect(lrg, mask)
 				}
 
+				//fmt.println(inode)
 				for o in inode.outs {
 					onode := graph_expand(graph, o.id)
 					if int(o.idx) < int(ctx.metas[onode.gvn].input_start) ||
@@ -1505,9 +1506,10 @@ regalloc_round :: proc(
 	intersect :: proc(l: ^backend.Lrg, mask: backend.Reg_Mask) {
 		fmt.assertf(
 			l.mask.kind == mask.kind,
-			"%v == %v",
+			"%v == %v %v",
 			l.mask.kind,
 			mask.kind,
+			l,
 		)
 		assert(l.parent == nil)
 		backend.reg_mask_intersection(l.mask, mask)

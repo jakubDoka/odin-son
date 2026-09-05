@@ -72,7 +72,7 @@ graph_idom_node :: proc(graph: ^Graph, node: ^Node) -> Node_ID {
 			lca = graph_lca(graph, lca, inp)
 		}
 
-		graph_set_input(graph, graph_id(graph, node), len(inps) - 1, lca)
+		//graph_set_input(graph, graph_id(graph, node), len(inps) - 1, lca)
 
 		assert(lca != graph.start && lca != 0)
 
@@ -144,8 +144,11 @@ graph_schedule :: proc(
 	if graph.end != 0 {
 		end := graph_expand(graph, graph.end)
 		lctx.loop_trees[end.gvn] = lctx.root
+
+		end_ctrl := graph_expand(graph, end.inps[0])
+		lctx.loop_trees[end_ctrl.gvn] = lctx.root
 	}
-	build_loop_tree(&lctx, graph.entry, lctx.root, scratch)
+	build_loop_tree(&lctx, graph.entry, lctx.root, !no_late_pass, scratch)
 	lctx.root.depth = 0
 
 	if graph.end != 0 {
@@ -205,6 +208,7 @@ graph_schedule :: proc(
 		ctx: ^Loop_Ctx,
 		root: Node_ID,
 		tree: ^Loop_Tree,
+		emit_always: bool,
 		scratch: runtime.Allocator,
 	) -> ^Loop_Tree {
 		tree := tree
@@ -227,7 +231,7 @@ graph_schedule :: proc(
 		deepest: ^Loop_Tree
 		for o in node.outs {
 			if !is_cfg(ctx, o.id) do continue
-			other := build_loop_tree(ctx, o.id, tree, scratch)
+			other := build_loop_tree(ctx, o.id, tree, emit_always, scratch)
 
 			// The other != tree check is not enough, rotated loops cause the
 			// tree to be different from both if branches
@@ -254,34 +258,36 @@ graph_schedule :: proc(
 			deepest = tree.parent
 
 			if tree.infinite {
-				prev_sloc := graph_push_sloc(
-					ctx,
-					graph_dbg_slot(ctx, node.node)^,
-				)
-				defer graph_pop_sloc(ctx, prev_sloc)
+				if emit_always {
+					prev_sloc := graph_push_sloc(
+						ctx,
+						graph_dbg_slot(ctx, node.node)^,
+					)
+					defer graph_pop_sloc(ctx, prev_sloc)
 
-				fmt.assertf(
-					graph_get(ctx, node.inps[1]).itype != .If,
-					"%v %v",
-					graph_get(ctx, node.inps[1]),
-					rawptr(tree),
-				)
+					fmt.assertf(
+						graph_get(ctx, node.inps[1]).itype != .If,
+						"%v %v",
+						graph_get(ctx, node.inps[1]),
+						rawptr(tree),
+					)
 
-				always := graph_add_always(ctx, "alw", node.inps[1])
-				then := graph_add_then(ctx, "athn", always)
-				ctx.loop_trees[graph_get(ctx, then).gvn] = tree
-				graph_set_input(ctx, root, 1, then)
+					always := graph_add_always(ctx, "alw", node.inps[1])
+					then := graph_add_then(ctx, "athn", always)
+					ctx.loop_trees[graph_get(ctx, then).gvn] = tree
+					graph_set_input(ctx, root, 1, then)
 
-				else_ := graph_add_else(ctx, "aels", always)
-				ctx.loop_trees[graph_get(ctx, else_).gvn] = ctx.root
-				reg := graph_merge_returns(ctx, {else_})
-				ctx.loop_trees[graph_get(ctx, reg).gvn] = ctx.root
+					else_ := graph_add_else(ctx, "aels", always)
+					ctx.loop_trees[graph_get(ctx, else_).gvn] = ctx.root
+					reg := graph_merge_returns(ctx, {else_})
+					ctx.loop_trees[graph_get(ctx, reg).gvn] = ctx.root
 
-				reg_gvn := graph_get(ctx, graph_inps(ctx, reg)[0]).gvn
-				// NOTE: we might have created a region here if there was no
-				// returnt node
-				if ctx.loop_trees[reg_gvn] == nil {
-					ctx.loop_trees[reg_gvn] = ctx.root
+					reg_gvn := graph_get(ctx, graph_inps(ctx, reg)[0]).gvn
+					// NOTE: we might have created a region here if there was no
+					// returnt node
+					if ctx.loop_trees[reg_gvn] == nil {
+						ctx.loop_trees[reg_gvn] = ctx.root
+					}
 				}
 
 				deepest = ctx.root
@@ -400,11 +406,9 @@ graph_schedule :: proc(
 	for id in cfg_rpos {
 		cfg := graph_extra(graph, id, Cfg)
 		ctrl := graph_expand(graph, id)
-		if ctx.graph.invalid_idoms {
-			cfg.idepth = 0
-			if ctrl.itype == .Region {
-				graph_set_input(graph, id, len(ctrl.inps) - 1, graph.start)
-			}
+		cfg.idepth = 0
+		if ctrl.itype == .Region {
+			graph_set_input(graph, id, len(ctrl.inps) - 1, graph.start)
 		}
 		ctx.early_schedules[ctrl.gvn] = id
 
@@ -695,7 +699,7 @@ graph_schedule :: proc(
 
 	gs.bbs = bbs
 
-	if 1 == 1 {
+	if 0 == 1 {
 		graph_display(os.to_writer(os.stderr), graph, gs)
 		// 	if has_unscheduled do panic("")
 	}
@@ -800,6 +804,19 @@ verify_schedule_integrity :: proc(
 			seen_phi |= inode.itype == .Phi
 		}
 
+		if bb.head != graph.entry {
+			nd := graph_expand(graph, bb.head)
+			for inp in nd.inps[:len(nd.inps) - int(nd.itype == .Loop)] {
+				if !is_cfg(graph, inp) do continue
+				fmt.assertf(
+					graph_idepth(graph, inp) < graph_idepth(graph, bb.head),
+					"%v %v",
+					graph_expand(graph, inp),
+					nd,
+				)
+			}
+		}
+
 		for instr in bb.instrs {
 			if graph_has_flag(graph, instr, .Is_Basic_Block_Start) do continue
 			inode := graph_expand(graph, instr)
@@ -821,11 +838,14 @@ verify_schedule_integrity :: proc(
 				if inode.itype == .Phi {
 					latest = graph_inps(graph, inode.inps[0])[i - 1]
 					if graph_get(graph, latest).itype == .Jump ||
-					   graph_get(graph, latest).itype == .If {
+					   graph_get(graph, latest).itype == .If ||
+					   graph_get(graph, latest).itype == .Trap {
 						latest = graph_inps(graph, latest)[0]
 					}
-					assert(
+					fmt.assertf(
 						graph_has_flag(graph, latest, .Is_Basic_Block_Start),
+						"%v",
+						latest,
 					)
 				}
 

@@ -441,8 +441,7 @@ graph_inline_graph :: proc(
 		arg := raw_data(call.inps)[arg_idx]
 		arg_node := graph_expand(graph, arg)
 		if pnode.itype == .Start do continue
-		if arg_idx < int(call.input_count) {
-			assert(arg_node.itype != .Local)
+		if arg_node.itype != .Local {
 			assert(pnode.itype != .Local)
 		} else {
 			assert(arg_node.inps[0] == graph.entry)
@@ -672,9 +671,7 @@ graph_inline_graph :: proc(
 
 		input_cap := node.input_cap
 		rtype := node.rtype
-		if node.itype not_in backend.KEEP_CAPACITY {
-			input_cap = node.input_count
-		}
+		input_cap = node.input_count
 
 		if node.itype == .Loop {
 			input_cap = 1
@@ -687,7 +684,7 @@ graph_inline_graph :: proc(
 		}
 
 		inps := make([]backend.Node_ID, input_cap)
-		for inp, i in raw_data(node.inps)[:input_cap] {
+		for inp, i in node.inps[:input_cap] {
 
 			clone_node(ctx, inp)
 

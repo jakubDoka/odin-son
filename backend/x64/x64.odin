@@ -1256,15 +1256,19 @@ x64_meta_of :: proc(
 			cc = &graph.cc_table[call.ccid]
 		}
 
-		nmasks = make(type_of(nmasks), len(node.inps) - prefix)
+		real_len := len(node.inps)
+		for ; graph_get(graph, node.inps[real_len - 1]).itype == .Local;
+		    real_len -= 1 {}
 
 		inited := prefix
+
+		nmasks = make(type_of(nmasks), real_len - inited)
 
 		banks := cc.args
 		if node.itype == .Return do banks = ra.rets
 
 		counts: [Reg_Kind]int
-		for n, i in node.inps[inited:] {
+		for n, i in node.inps[inited:real_len] {
 			rk := graph.datatype_to_reg_kind[graph_get(graph, n).dt]
 			nmasks[i] = single(ra, banks[rk][counts[rk]])
 			counts[rk] += 1
@@ -1502,7 +1506,7 @@ x64_emit_function :: proc(
 		if bnode.itype != .Call_End do continue
 		cnode := graph_expand(ctx, bnode.inps[0])
 		call_stack_size: i32
-		for inp in raw_data(cnode.inps)[cnode.input_count:cnode.input_cap] {
+		for inp in cnode.inps {
 			inode := graph_expand(ctx, inp)
 			if inode.itype != .Local do continue
 			iext := backend.graph_extra(ctx, inode, backend.Local)
@@ -2325,7 +2329,9 @@ x64_emit_instr :: proc(
 			emit(ctx.code, {0x0F, 0x05})
 		} else if call.indirect {
 			// call $ptr
-			ptr := reg_of(ctx, node.inps[len(node.inps) - 1])
+			idx := len(node.inps) - 1
+			for ; graph_get(ctx, node.inps[idx]).itype == .Local; idx -= 1 {}
+			ptr := reg_of(ctx, node.inps[idx])
 			rx := rex(RAX, ptr, NO_INDEX, false)
 			emit(ctx.code, {rx, 0xFF, mod_sm(.Direct, 0b010, ptr)})
 		} else if call.imported && ctx.emit_got_imports {

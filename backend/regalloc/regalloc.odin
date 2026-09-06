@@ -177,10 +177,7 @@ regalloc_round :: proc(
 				//fmt.println(inode)
 				for o in inode.outs {
 					onode := graph_expand(graph, o.id)
-					if int(o.idx) < int(ctx.metas[onode.gvn].input_start) ||
-					   u16(o.idx) >= onode.input_count {
-						continue
-					}
+					if !is_data_dep(ctx, onode, o.idx) do continue
 
 					if onode.itype == .Phi {
 						lrg = unify(lrg, ctx.lrg_table[onode.gvn])
@@ -410,7 +407,7 @@ regalloc_round :: proc(
 			}
 
 			if inode.itype != .Phi {
-				for inp in inode.inps[ctx.metas[inode.gvn].input_start:] {
+				for inp in data_deps(ctx, inode) {
 					inp_node := graph_get(graph, inp)
 					lrg := ctx.lrg_table[inp_node.gvn]
 
@@ -1129,7 +1126,7 @@ regalloc_round :: proc(
 				inode := graph_expand(ctx.graph, instr)
 				if inode.dt == .Void && inode.itype == .Phi do continue
 
-				for inp, idx in inode.inps[ctx.metas[inode.gvn].input_start:] {
+				for inp, idx in data_deps(ctx, inode) {
 					inp := inp
 
 					block := &bb
@@ -1573,5 +1570,25 @@ regalloc_round :: proc(
 		}
 
 		log.info(string(sb.buf[:]))
+	}
+
+	is_data_dep :: proc(
+		ctx: Ctx,
+		inode: backend.Expanded_Node,
+		#any_int idx: int,
+	) -> bool {
+		meta := ctx.metas[inode.gvn]
+		if idx < int(meta.input_start) do return false
+		if idx >=
+		   min(len(meta.masks) + int(meta.input_start), len(inode.inps)) {
+			return false
+		}
+		return true
+	}
+
+	data_deps :: proc(ctx: Ctx, inode: backend.Expanded_Node) -> []Node_ID {
+		meta := ctx.metas[inode.gvn]
+		len := min(len(meta.masks), len(inode.inps) - int(meta.input_start))
+		return inode.inps[meta.input_start:][:len]
 	}
 }

@@ -9,7 +9,6 @@ import "core:fmt"
 import "core:math"
 import "core:mem"
 import "core:mem/virtual"
-import "core:reflect"
 import "core:simd"
 import "core:slice"
 
@@ -568,8 +567,6 @@ assemble_args :: proc(
 	return params, starter
 }
 
-KEEP_CAPACITY :: bit_set[Ideal_Node_Type]{.Call}
-
 graph_compute_weight :: proc(graph: ^Graph, all: []Node_ID) {
 	if !graph.node_spec.intern do return
 
@@ -673,9 +670,7 @@ graph_compact :: proc(graph: ^Graph) {
 		did := graph_clone_dnode(graph, &prev, dn, dnodes)
 
 		interned_count += int(graph_has_flag(&prev, node, .Interned))
-		if node.itype not_in KEEP_CAPACITY {
-			node.input_cap = node.input_count
-		}
+		node.input_cap = node.input_count
 		node.output_cap = node.output_count
 
 		size :=
@@ -689,7 +684,7 @@ graph_compact :: proc(graph: ^Graph) {
 		graph_init_counts(graph, new_node)
 
 		new_node.input_idx = u32(graph.mem.pos / PRECISION)
-		_ = arna.clone(graph.mem, raw_data(node.inps)[:node.input_cap])
+		_ = arna.clone(graph.mem, node.inps)
 
 		new_node.output_idx = u32(graph.mem.pos / PRECISION)
 		_ = arna.clone(graph.mem, node.outs)
@@ -713,7 +708,7 @@ graph_compact :: proc(graph: ^Graph) {
 		node := graph_expand(graph, n)
 		node.in_worklist = false
 
-		for &inp in raw_data(node.inps)[:node.input_cap] {
+		for &inp in node.inps {
 			if inp == 0 do continue
 			inp = project(&prev, worklist, inp)
 		}
@@ -1672,10 +1667,6 @@ graph_delete_node :: proc(graph: ^Graph, node: ^Node, indirect := false) {
 			worklist_add(graph, graph.worklist, trig)
 		}
 		clear(&graph.triggers[node.gvn])
-	}
-
-	if node.itype in KEEP_CAPACITY {
-		node.input_count = node.input_cap
 	}
 
 	for inp, i in graph_inps(graph, node) {

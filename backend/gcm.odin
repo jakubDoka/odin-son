@@ -852,15 +852,8 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule, purpose: enum {
 			assert(best.remining_dependants == 0)
 
 			inode := graph_expand(ctx.graph, best.instr)
-			len := len(inode.inps)
-			if inode.itype == .Call {
-				len = int(inode.input_cap)
-			}
 
-			inp_grouns := [?][]Node_ID {
-				raw_data(inode.inps)[:len],
-				ctx.antideps[inode.gvn][:],
-			}
+			inp_grouns := [?][]Node_ID{inode.inps, ctx.antideps[inode.gvn][:]}
 
 			if inode.itype == .Phi do inp_grouns = {}
 

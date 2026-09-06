@@ -2370,7 +2370,6 @@ emit_call :: proc(
 	backend.graph_extra(ctx, call, backend.Call).imported = imported
 	backend.graph_extra(ctx, call, backend.Call).indirect = prc_id == 0
 	cnode := graph_get(ctx, call)
-	cnode.input_count = u16(lctx.i)
 	for arg in args[CALL_PREFIX:ln] {
 		backend.graph_unpin(ctx, arg)
 	}

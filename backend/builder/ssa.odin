@@ -394,7 +394,8 @@ graph_inline_graph :: proc(
 	backend.verify(graph)
 
 	graph.peeped = false
-	graph.invalid_idoms = true
+	graph.max_idepth = max(graph.max_idepth, from.max_idepth)
+	backend.graph_invalidate_idepth(graph)
 
 	Ctx :: struct {
 		graph:          ^backend.Graph,
@@ -438,22 +439,22 @@ graph_inline_graph :: proc(
 		pnode := graph_expand(from, param)
 		arg_idx := arg_idx + backend.CALL_PREFIX
 		arg := raw_data(call.inps)[arg_idx]
-		node := graph_expand(graph, arg)
+		arg_node := graph_expand(graph, arg)
 		if pnode.itype == .Start do continue
 		if arg_idx < int(call.input_count) {
-			assert(node.itype != .Local)
+			assert(arg_node.itype != .Local)
 			assert(pnode.itype != .Local)
 		} else {
-			assert(node.inps[0] == graph.entry)
+			assert(arg_node.inps[0] == graph.entry)
 			backend.graph_set_input(graph, arg, 0, graph.root_mem)
 			if pnode.itype == .Local {
 				// project the addr too or we get dups
 				assert(ctx.projection[pnode.gvn] == 0)
 				ctx.projection[graph_get(from, pnode.outs[0].id).gvn] =
-					node.outs[0].id
+					arg_node.outs[0].id
 			} else {
 				// reach out for the store value
-				arg = node.outs[0].id
+				arg = arg_node.outs[0].id
 				arg = backend.graph_outs(graph, arg)[0].id
 				arg = backend.graph_inps(graph, arg)[3]
 			}
@@ -467,111 +468,121 @@ graph_inline_graph :: proc(
 
 	clone_along_cfg(&ctx, starter)
 
-	cend := graph_expand(graph, call.outs[0].id)
+	call_end := graph_expand(graph, call.outs[0].id)
 
 	if ctx.reached_return {
-		ret := graph_expand(from, from.end)
+		from_ret := graph_expand(from, from.end)
 
-		for o in cend.outs {
-			onode := graph_expand(ctx.graph, o.id)
-			if onode.itype == .Mem {
-				sub := graph_get(from, ret.inps[1])
-				backend.graph_subsume(graph, ctx.projection[sub.gvn], o.id)
+		for co in call_end.outs {
+			coonode := graph_expand(ctx.graph, co.id)
+			if coonode.itype == .Mem {
+				sub := graph_get(from, from_ret.inps[1])
+				backend.graph_subsume(graph, ctx.projection[sub.gvn], co.id)
 			}
-			if onode.itype == .Ret {
-				idx := backend.graph_extra(graph, onode, backend.Tup).idx
-				sidex := backend.RET_PREFIX + idx
-				if int(sidex) < len(ret.inps) {
-					sub := graph_get(from, ret.inps[sidex])
-					backend.graph_subsume(graph, ctx.projection[sub.gvn], o.id)
+			if coonode.itype == .Ret {
+				idx := backend.graph_extra(graph, coonode, backend.Tup).idx
+				ret_idx := backend.RET_PREFIX + idx
+				if int(ret_idx) < len(from_ret.inps) {
+					sub := graph_get(from, from_ret.inps[ret_idx])
+					backend.graph_subsume(
+						graph,
+						ctx.projection[sub.gvn],
+						co.id,
+					)
 				} else {
 					psn := backend.graph_add_poison(graph, "irps")
-					backend.graph_subsume(graph, psn, o.id)
+					backend.graph_subsume(graph, psn, co.id)
 				}
 			}
 		}
 
-		for inp in ret.inps {
-			inode := graph_get(from, inp)
-			nd := ctx.projection[inode.gvn]
+		for ri in from_ret.inps {
+			rinode := graph_get(from, ri)
+			nd := ctx.projection[rinode.gvn]
 			if nd != 0 {
 				backend.graph_delete(graph, nd)
 			}
 		}
 
-		end_ctrl := graph_get(from, ret.inps[0])
+		from_end_ctrl := graph_get(from, from_ret.inps[0])
 
 		if graph.end != 0 {
 			end_inps := backend.graph_inps(graph, graph.end)
 			end_reg := end_inps[0]
 
-			reg_proj := graph_expand(graph, ctx.projection[end_ctrl.gvn])
+			from_ret_reg := graph_expand(
+				graph,
+				ctx.projection[from_end_ctrl.gvn],
+			)
 
-			prev_len := graph_get(graph, end_reg).input_count
+			prev_ent_reg_len := graph_get(graph, end_reg).input_count
 
 			backend.assert_live_pins(graph)
 
-			#reverse for inp, i in reg_proj.inps[:len(reg_proj.inps) - 1] {
-				inode := graph_expand(graph, inp)
-				if inode.itype == .Trap {
-					backend.graph_connect(graph, end_reg, inp)
+			#reverse for ri, i in from_ret_reg.inps[:len(from_ret_reg.inps) - 1] {
+				rinode := graph_expand(graph, ri)
+				if rinode.itype == .Trap {
+					backend.graph_connect(graph, end_reg, ri)
 
-					#reverse for rn, j in end_inps[1:] {
-						if 1 + j < len(ret.inps) {
-							fnode := graph_get(from, ret.inps[1 + j])
-							assert(fnode.itype == .Phi)
-							gnode := graph_expand(
+					#reverse for ei, j in end_inps[1:] {
+						if 1 + j < len(from_ret.inps) {
+							frnode := graph_get(from, from_ret.inps[1 + j])
+							assert(frnode.itype == .Phi)
+							rnode := graph_expand(
 								graph,
-								ctx.projection[fnode.gvn],
+								ctx.projection[frnode.gvn],
 							)
-							assert(gnode.itype == .Phi)
-							inp := gnode.inps[1 + i]
-							assert(!backend.is_cfg(graph, inp))
-							backend.graph_connect(graph, rn, inp)
-							ordered_remove(graph, &gnode, 1 + i)
+							assert(rnode.itype == .Phi)
+							rinp := rnode.inps[1 + i]
+							assert(!backend.is_cfg(graph, rinp))
+							backend.graph_connect(graph, ei, rinp)
+							ordered_remove(graph, &rnode, 1 + i)
 						} else {
 							inp := backend.graph_add_poison(graph, "trps")
-							backend.graph_connect(graph, rn, inp)
+							backend.graph_connect(graph, ei, inp)
 						}
 					}
 
-					ordered_remove(graph, &reg_proj, i)
+					ordered_remove(graph, &from_ret_reg, i)
 				}
 			}
 
 			backend.assert_live_pins(graph)
 
-			gregn := graph_expand(graph, end_reg)
-			if int(prev_len) < len(gregn.inps) {
+			ernode := graph_expand(graph, end_reg)
+			if int(prev_ent_reg_len) < len(ernode.inps) {
 				backend.swap_inputs(
 					graph,
-					gregn,
-					int(prev_len) - 1,
-					len(gregn.inps) - 1,
+					ernode,
+					int(prev_ent_reg_len) - 1,
+					len(ernode.inps) - 1,
 				)
 			}
 
-			for inp in gregn.inps {
+			for inp in ernode.inps {
 				fmt.assertf(
 					backend.is_cfg(graph, inp) ||
-					btype(graph_expand(graph, inp)) == .Dead,
+					graph_expand(graph, inp).itype == .Dead,
 					"%v",
 					graph_get(graph, inp),
 				)
 			}
 
-			if len(reg_proj.inps) == 1 {
-				ctx.projection[end_ctrl.gvn] = graph_add_dead(graph, "rdead")
+			if len(from_ret_reg.inps) == 1 {
+				ctx.projection[from_end_ctrl.gvn] = backend.graph_add_dead(
+					graph,
+					"rdead",
+				)
 			}
 		}
 
 		backend.graph_subsume(
 			graph,
-			ctx.projection[end_ctrl.gvn],
+			ctx.projection[from_end_ctrl.gvn],
 			call.outs[0].id,
 		)
 	} else {
-		dead := graph_add_dead(graph, "inlnd")
+		dead := backend.graph_add_dead(graph, "inlnd")
 		backend.graph_subsume(graph, dead, call.outs[0].id)
 	}
 
@@ -584,18 +595,18 @@ graph_inline_graph :: proc(
 	backend.verify(graph)
 
 	clone_along_cfg :: proc(ctx: ^Ctx, root: backend.Node_ID) {
-		node := graph_expand(ctx.from, root)
-		if ctx.projection[node.gvn] != 0 do return
+		rnode := graph_expand(ctx.from, root)
+		if ctx.projection[rnode.gvn] != 0 do return
 
-		if node.itype == .Region {
-			for i in node.inps[:len(node.inps) - 1] {
+		if rnode.itype == .Region {
+			for i in rnode.inps[:len(rnode.inps) - 1] {
 				inode := graph_expand(ctx.from, i)
 				if ctx.projection[inode.gvn] == 0 {
 					return
 				}
 			}
 
-			for out in node.outs {
+			for out in rnode.outs {
 				onode := graph_expand(ctx.from, out.id)
 				if onode.itype == .Phi {
 					for inp in onode.inps[1:] {
@@ -605,8 +616,8 @@ graph_inline_graph :: proc(
 			}
 		}
 
-		if node.itype == .Loop {
-			for out in node.outs {
+		if rnode.itype == .Loop {
+			for out in rnode.outs {
 				onode := graph_expand(ctx.from, out.id)
 				if onode.itype == .Phi {
 					clone_node(ctx, onode.inps[1])
@@ -615,9 +626,9 @@ graph_inline_graph :: proc(
 		}
 
 		clone_node(ctx, root)
-		nid := ctx.projection[node.gvn]
+		nid := ctx.projection[rnode.gvn]
 
-		for out in node.outs {
+		for out in rnode.outs {
 			if !backend.is_cfg(ctx.from, out.id) do continue
 
 			onode := graph_expand(ctx.from, out.id)
@@ -714,10 +725,6 @@ graph_inline_graph :: proc(
 		size :=
 			backend.graph_size(graph, node.rtype) +
 			int(node.extra_dwords) * backend.PRECISION
-		backend.graph_push_tag(
-			graph,
-			backend.graph_get_tag(ctx.from, root).name,
-		)
 
 		slot := arna.alloc(graph.mem, uint(size), backend.PRECISION)
 
@@ -725,8 +732,7 @@ graph_inline_graph :: proc(
 
 		new_node := (^backend.Node)(raw_data(slot))
 		new_node.rtype = rtype
-		new_node.gvn = graph.gvn
-		graph.gvn += 1
+		backend.graph_init_counts(graph, new_node)
 
 		new_node.input_idx = u32(graph.mem.pos / backend.PRECISION)
 		_ = arna.clone(graph.mem, inps)

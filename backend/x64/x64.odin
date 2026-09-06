@@ -402,9 +402,9 @@ x64_peep :: proc(
 				backend.DT_SIZE[node.dt] / backend.PRECISION,
 			)
 
-			backend.graph_push_tag(ctx, backend.graph_get_tag(ctx, id))
 			return backend.graph_add_raw(
 				ctx,
+				node.name,
 				u16(X64_Node_Type.X64_CLoad),
 				node.dt,
 				{global},
@@ -915,10 +915,9 @@ x64_add_node :: proc(
 	^backend.Node,
 	backend.Node_ID,
 ) {
-	backend.graph_push_tag(ctx, name)
 	slot := (^X64_Mem_Op)(backend.graph_get_next_extra_slot(ctx, u16(type)))
 	slot^ = extra
-	id := backend.graph_add_raw(ctx, u16(type), dt, inps)
+	id := backend.graph_add_raw(ctx, name, u16(type), dt, inps)
 	return graph_get(ctx, id), id
 }
 
@@ -929,9 +928,8 @@ x64_make_node :: proc(
 	inps: []backend.Node_ID,
 	extra: X64_Mem_Op,
 ) -> backend.Node_ID {
-	backend.graph_push_tag(graph, backend.graph_get_tag(graph, from))
 	fnode := graph_get(graph, from)
-	id := backend.graph_add_raw(graph, type, fnode.dt, inps)
+	id := backend.graph_add_raw(graph, fnode.name, type, fnode.dt, inps)
 	node := graph_get(graph, id)
 	// TODO: I no longer understand this, needs better comment
 	// NOTE: afaik this is sufficient since we don't insert load ops before
@@ -1160,6 +1158,7 @@ x64_meta_of :: proc(
 	     .Entry,
 	     .Region,
 	     .Loop,
+	     .Dead,
 	     .Call_End:
 		fmt.panicf("should not reach these: %v", node)
 	case .Poison:
@@ -2252,7 +2251,7 @@ x64_emit_instr :: proc(
 			rx := rex(a, b, NO_INDEX, backend.DT_SIZE[node.dt] == 8)
 			emit(ctx.code, {0x66, rx, 0x0f, op, mod_rm(.Direct, a, b)})
 		}
-	case .Start, .Entry, .Then, .Else, .Region, .Loop, .Call_End:
+	case .Start, .Entry, .Then, .Else, .Region, .Loop, .Call_End, .Dead:
 		fmt.panicf("Not reachable form here %v", node.node)
 	case .If:
 		cnode := graph_expand(ctx, node.inps[1])

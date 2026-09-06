@@ -12631,6 +12631,46 @@ main :: proc() -> int {
 }
 `, 0)
 }
+@(test) nested_ifs_with_identical_condition :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc() -> int {
+	@(static) v1 := 0
+	g := v1
+
+	if g == 1 do return 0
+	if g == 1 do return 1
+
+	g = v1
+	for {
+		if g == 0 do break
+		if g == 0 do break
+	}
+
+	return 10
+}
+
+main.run_test(t, `nested_ifs_with_identical_condition`, `
+package main
+
+main :: proc() -> int {
+	@(static) v1 := 0
+	g := v1
+
+	if g == 1 do return 0
+	if g == 1 do return 1
+
+	g = v1
+	for {
+		if g == 0 do break
+		if g == 0 do break
+	}
+
+	return 10
+}
+`, main_())
+}
 @(test) fuzz_0092546c2ab7b49f :: proc(t: ^testing.T) {
 main.run_test(t, "fuzz_0092546c2ab7b49f", string(#load("../fuzz/crashes/0092546c2ab7b49f.odin")), 0,
 				diff = false, no_run = true)

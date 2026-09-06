@@ -171,11 +171,16 @@ builder_peep :: proc(
 	id := backend.graph_id(ctx, node)
 	is_complete := backend.peep_ctx_graph_is_complete(ctx)
 
-	DEAD_EXCEPTIONS := bit_set[backend.Ideal_Node_Type]{.Region, .Start, .Loop}
+	DEAD_EXCEPTIONS := bit_set[backend.Ideal_Node_Type] {
+		.Region,
+		.Start,
+		.Loop,
+		.Dead,
+	}
 
 	if backend.is_cfg(ctx, id) && node.itype not_in DEAD_EXCEPTIONS {
 		idom := graph_expand(ctx, node.inps[0])
-		if btype(idom) == .Dead {
+		if idom.itype == .Dead {
 			return node.inps[0]
 		}
 	}
@@ -350,7 +355,7 @@ builder_peep :: proc(
 			}
 		}
 
-		if btype(bedge) == .Dead || btype(init) == .Dead || dead_by_latch {
+		if bedge.itype == .Dead || init.itype == .Dead || dead_by_latch {
 			retry: for {
 				#reverse for out in node.outs {
 					onode := graph_expand(ctx, out.id)
@@ -384,7 +389,7 @@ builder_peep :: proc(
 
 		#reverse for inp, i in node.inps[:len(node.inps) - 1] {
 			inode := graph_expand(ctx, inp)
-			if btype(inode) != .Dead do continue
+			if inode.itype != .Dead do continue
 			ordered_remove(ctx, &node, i)
 
 			for out in node.outs {
@@ -647,13 +652,48 @@ builder_peep :: proc(
 				count,
 			)
 		}
+	case .If:
+		if len(node.outs) < 2 {
+			break
+		}
+
+		if backend.graph_extra(ctx, node.inps[1], CInt) != nil {
+			break
+		}
+
+		for cursor, prev_cursor, fuel := node.inps[0], id, 5;
+		    cursor != ctx.start && fuel > 0;
+		    cursor, prev_cursor = backend.graph_idom(ctx, cursor), cursor {
+			fuel -= 1
+
+			pcnode := graph_expand(ctx, prev_cursor)
+			cnode := graph_expand(ctx, cursor)
+			if cnode.itype == .If && pcnode.itype != .Region {
+				if cnode.inps[1] == node.inps[1] {
+					backend.graph_set_input(
+						ctx,
+						id,
+						1,
+						backend.graph_add_c_int(
+							ctx,
+							"shfld",
+							.I8,
+							i64(pcnode.itype != .Else),
+						),
+					)
+					return id
+				}
+
+				backend.peep_ctx_add_trigger(ctx, cnode.inps[1], id)
+			}
+		}
 	case .Then, .Else:
 		if_ := graph_expand(ctx, node.inps[0])
 		if if_.itype != .If do break
 		cond_const := backend.graph_extra(ctx, if_.inps[1], CInt)
 		if cond_const != nil {
 			if (cond_const.value == 0) ~ (node.itype == .Else) {
-				return graph_add_dead(ctx, "dead")
+				return backend.graph_add_dead(ctx, "dead")
 			} else {
 				return if_.inps[0]
 			}

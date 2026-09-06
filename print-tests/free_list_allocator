@@ -2290,25 +2290,26 @@ free_block_count:
     jnle 25
     jmp 27
 25:
-    mov.q rdx, [rbp + 0x610]
-    sub rdx, 1
-    cmp rdx, r12
+    mov.q rsi, [rbp + 0x610]
+    sub rsi, 1
+    cmp rsi, r12
     jng 27
 26:
-    mov rcx, rbp
-    add rcx, 0x10
-    mov rbx, rdx
+    mov rdx, rbp
+    add rdx, 0x10
+    mov rbx, rsi
     sub rbx, 1
     mov rax, r15
-    add rax, rdx
-    imul rdi, rax, 0x18
-    add rdi, rcx
-    imul rsi, rdx, 0x18
-    add rsi, rcx
+    mov rcx, rsi
+    add rcx, rax
+    imul rdi, rcx, 0x18
+    add rdi, rdx
+    imul rsi, rsi, 0x18
+    add rsi, rdx
     mov rdx, 0x18
-    call.q [rip - 0x2d5]
+    call.q [rip - 0x2d8]
     cmp rbx, r12
-    mov rdx, rbx
+    mov rsi, rbx
     jnle 26
     jmp 27
 27:
@@ -2330,7 +2331,7 @@ free_block_count:
     mov rsi, rdx
     mov rdi, rax
     mov rdx, 0x18
-    call.q [rip - 0x33a]
+    call.q [rip - 0x33d]
     cmp rbx, r13
     mov rdx, rbx
     jnge 28
@@ -2384,8 +2385,8 @@ free_block_count:
     jz 40
     cmp.q [rbp + 0x610], 1
     jng 38
-    mov rbx, 1
     xor edi, edi
+    mov rbx, 1
 35:
     mov rax, rbp
     add rax, 0x10
@@ -2413,8 +2414,8 @@ free_block_count:
     mov rax, rbx
     add rax, 1
     cmp.q rax, [rbp + 0x610]
-    mov rbx, rax
     mov rdi, rdx
+    mov rbx, rax
     jnge 35
     add rdx, 1
     jmp 39
@@ -2433,16 +2434,15 @@ free_block_count:
     jng 43
     xor r9d, r9d
 42:
-    mov rax, r9
-    mov rcx, rdi
-    add rcx, rax
-    mov r9, rax
-    add r9, 1
+    mov rax, rdi
+    add rax, r9
+    mov rcx, r9
+    add rcx, 1
     movzx r8d, dl
-    add r8, rax
-    mov rax, r8
-    mov.b [rcx], al
-    cmp r9, rsi
+    add r8, r9
+    mov.b [rax], r8b
+    cmp rcx, rsi
+    mov r9, rcx
     jnge 42
     jmp 43
 43:
@@ -2470,25 +2470,25 @@ free_block_count:
     xor eax, eax
     cmp.q [rdi + 0x610], 0
     jng 52
-    xor esi, esi
     xor edx, edx
+    xor esi, esi
 49:
     mov rcx, rdi
     add rcx, 0x10
-    imul rax, rsi, 0x18
+    imul rax, rdx, 0x18
     add rcx, rax
     movzx.b eax, [rcx + 0x10]
     test al, al
     jnz 50
-    mov rax, rdx
+    mov rax, rsi
     jmp 51
 50:
-    mov rax, rdx
+    mov rax, rsi
     add rax, 1
 51:
-    add rsi, 1
-    cmp.q rsi, [rdi + 0x610]
-    mov rdx, rax
+    add rdx, 1
+    cmp.q rdx, [rdi + 0x610]
+    mov rsi, rax
     jnge 49
     jmp 52
 52:
@@ -3047,8 +3047,8 @@ free_block_count:
     jz 35
     cmp.q [rbp + 0x610], 1
     jng 33
-    mov rbx, 1
     xor edx, edx
+    mov rbx, 1
 30:
     imul rax, rdx, 0x18
     add rax, r12
@@ -3101,16 +3101,15 @@ free_block_count:
     jng 40
     xor r9d, r9d
 39:
-    mov rax, r9
-    mov rcx, rdi
-    add rcx, rax
-    mov r9, rax
-    add r9, 1
+    mov rax, rdi
+    add rax, r9
+    mov rcx, r9
+    add rcx, 1
     movzx r8d, dl
-    add r8, rax
-    mov rax, r8
-    mov.b [rcx], al
-    cmp r9, rsi
+    add r8, r9
+    mov.b [rax], r8b
+    cmp rcx, rsi
+    mov r9, rcx
     jnge 39
     jmp 40
 40:
@@ -3138,25 +3137,25 @@ free_block_count:
     xor eax, eax
     cmp.q [rdi + 0x610], 0
     jng 49
-    xor esi, esi
     xor edx, edx
+    xor esi, esi
 46:
     mov rcx, rdi
     add rcx, 0x10
-    imul rax, rsi, 0x18
+    imul rax, rdx, 0x18
     add rcx, rax
     movzx.b eax, [rcx + 0x10]
     test al, al
     jnz 47
-    mov rax, rdx
+    mov rax, rsi
     jmp 48
 47:
-    mov rax, rdx
+    mov rax, rsi
     add rax, 1
 48:
-    add rsi, 1
-    cmp.q rsi, [rdi + 0x610]
-    mov rdx, rax
+    add rdx, 1
+    cmp.q rdx, [rdi + 0x610]
+    mov rsi, rax
     jnge 46
     jmp 49
 49:

@@ -73,6 +73,7 @@ SPEC := backend.Node_Spec{
 		0b1, // Then
 		0b1, // Else
 		0b1, // Jump
+		0b1, // Dead
 		0b1, // Region
 		0b1, // Loop
 		0b1, // Always
@@ -155,6 +156,7 @@ SPEC := backend.Node_Spec{
 		1, // Then -> Cfg
 		1, // Else -> Cfg
 		1, // Jump -> Cfg
+		1, // Dead -> Cfg
 		1, // Region -> Cfg
 		1, // Loop -> Cfg
 		1, // Always -> Cfg
@@ -237,6 +239,7 @@ SPEC := backend.Node_Spec{
 		{Class_Flag.Is_Basic_Block_Start}, // Then
 		{Class_Flag.Is_Basic_Block_Start}, // Else
 		{}, // Jump
+		{}, // Dead
 		{Class_Flag.Is_Basic_Block_Start}, // Region
 		{Class_Flag.Is_Basic_Block_Start}, // Loop
 		{}, // Always
@@ -323,6 +326,7 @@ SPEC := backend.Node_Spec{
 		backend.Cfg,
 		backend.Cfg,
 		backend.Cfg,
+		backend.Cfg,
 		backend.Call,
 		backend.Cfg,
 		backend.Tup,
@@ -401,6 +405,7 @@ SPEC := backend.Node_Spec{
 		`Then`,
 		`Else`,
 		`Jump`,
+		`Dead`,
 		`Region`,
 		`Loop`,
 		`Always`,
@@ -485,6 +490,7 @@ ANAL_Node_Type :: enum u16 {
 	Then,
 	Else,
 	Jump,
+	Dead,
 	Region,
 	Loop,
 	Always,
@@ -571,6 +577,7 @@ anal_post_schedule_peep_inst :: proc(
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
+#assert(size_of(backend.Cfg) % backend.PRECISION == 0)
 #assert(size_of(backend.Cfg) % backend.PRECISION == 0)
 #assert(size_of(backend.Cfg) % backend.PRECISION == 0)
 #assert(size_of(backend.Cfg) % backend.PRECISION == 0)

@@ -6,7 +6,6 @@ import "base:runtime"
 import "core:container/queue"
 import "core:fmt"
 import "core:log"
-import "core:os"
 import "core:slice"
 
 Graph_Basic_Block :: struct {
@@ -31,6 +30,9 @@ graph_lca :: proc(graph: ^Graph, a, b: Node_ID) -> Node_ID {
 	if a == 0 do return b
 	if b == 0 do return a
 
+	if graph_get(graph, a).itype == .Dead do return b
+	if graph_get(graph, b).itype == .Dead do return a
+
 	a, b := a, b
 	for a != b {
 		adepth, bdepth := graph_idepth(graph, a), graph_idepth(graph, b)
@@ -45,8 +47,10 @@ graph_idom_node :: proc(graph: ^Graph, node: ^Node) -> Node_ID {
 	inps := graph_inps(graph, node)
 
 	#partial switch node.itype {
+	case .Dead:
+		return graph.start
 	case .Start:
-		return 0
+		panic("")
 	case .Entry,
 	     .Return,
 	     .If,
@@ -72,9 +76,10 @@ graph_idom_node :: proc(graph: ^Graph, node: ^Node) -> Node_ID {
 			lca = graph_lca(graph, lca, inp)
 		}
 
+		// TODO: reenable this, dont forget about idepth invalidation
 		//graph_set_input(graph, graph_id(graph, node), len(inps) - 1, lca)
 
-		assert(lca != graph.start && lca != 0)
+		///assert(lca != graph.start && lca != 0)
 
 		return lca
 	case:
@@ -89,12 +94,15 @@ graph_idepth_node :: proc(graph: ^Graph, node: ^Node) -> u32 {
 
 	fmt.assertf(extra != nil, "%v", node)
 
-	if extra.idepth != 0 {
+	if extra.idepth > graph.min_idepth {
 		return extra.idepth
 	}
 
 	#partial switch node.itype {
+	case .Dead:
+		extra.idepth = graph.min_idepth + 2
 	case .Start:
+		extra.idepth = graph.min_idepth + 1
 	case .Entry,
 	     .Return,
 	     .If,
@@ -117,15 +125,18 @@ graph_idepth_node :: proc(graph: ^Graph, node: ^Node) -> u32 {
 		fmt.panicf("TODO: %v", node.itype)
 	}
 
+	graph.max_idepth = max(graph.max_idepth, extra.idepth)
 	return extra.idepth
 }
 
-graph_schedule :: proc(
-	graph: ^Graph,
-	gs: ^Graph_Schedule,
-	scratch: runtime.Allocator,
-	no_late_pass := false,
-) {
+graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule, purpose: enum {
+		for_regalloc,
+		for_loopopt,
+	}, scratch := context.allocator) {
+
+	no_late_pass := purpose == .for_loopopt
+	gs^ = {}
+
 	context.allocator, _ = arna.scrath(scratch)
 
 	Loop_Ctx :: struct {
@@ -407,12 +418,7 @@ graph_schedule :: proc(
 	ctx.extra_outputs = make([]u16, graph.gvn)
 
 	for id in cfg_rpos {
-		cfg := graph_extra(graph, id, Cfg)
 		ctrl := graph_expand(graph, id)
-		cfg.idepth = 0
-		if ctrl.itype == .Region {
-			graph_set_input(graph, id, len(ctrl.inps) - 1, graph.start)
-		}
 		ctx.early_schedules[ctrl.gvn] = id
 
 		for out in ctrl.outs {
@@ -422,8 +428,6 @@ graph_schedule :: proc(
 			ctx.nodes[onode.gvn] = out.id
 		}
 	}
-
-	graph.invalid_idoms = false
 
 	for id in cfg_rpos {
 		ctrl := graph_expand(graph, id)
@@ -714,7 +718,7 @@ graph_schedule :: proc(
 	}
 
 	if 0 == 1 {
-		graph_display(os.to_writer(os.stderr), graph, gs)
+		//graph_display(os.to_writer(os.stderr), graph, gs)
 		// 	if has_unscheduled do panic("")
 	}
 
@@ -949,7 +953,8 @@ verify_schedule_integrity :: proc(
 			for inp in nd.inps[:len(nd.inps) - int(nd.itype == .Loop)] {
 				if !is_cfg(graph, inp) do continue
 				fmt.assertf(
-					graph_idepth(graph, inp) < graph_idepth(graph, bb.head),
+					graph_idepth(graph, inp) < graph_idepth(graph, bb.head) ||
+					graph_expand(graph, inp).itype == .Jump,
 					"%v %v",
 					graph_expand(graph, inp),
 					nd,

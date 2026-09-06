@@ -940,8 +940,8 @@ main:
     lea rdi, [rip + 0xfbc]
     call 11
     pxor xmm0, xmm0
-    pxor xmm2, xmm2
     xor edx, edx
+    pxor xmm2, xmm2
 8:
     movups xmm1, xmm2
     movups.x [rsp + 0x10], xmm0
@@ -960,19 +960,19 @@ main:
     add rax, 0x10
     add rdx, 0x20
     cmp rdx, 0x23
-    movups xmm2, xmm1
     mov rdx, rax
+    movups xmm2, xmm1
     jnge 8
     xor ecx, ecx
     xor esi, esi
 10:
     mov rax, rsi
-    mov rsi, rax
-    add rsi, 1
-    lea rdx, [rip + 0xf2d]
-    add rdx, rax
+    add rax, 1
+    lea rdx, [rip + 0xf30]
+    add rdx, rsi
     add.b cl, [rdx]
-    cmp rsi, 0x23
+    cmp rax, 0x23
+    mov rsi, rax
     jnge 10
     mov.q rax, [rsp + 0x8]
     mov.q rdx, [rsp]

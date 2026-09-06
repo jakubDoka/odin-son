@@ -164,6 +164,7 @@ IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
 		default_type = .Void,
 		flags = {.Is_Basic_Block_Start},
 	},
+	.Dead = {id = Cfg, default_type = .Void},
 	.Loop = {
 		id = Cfg,
 		args = {"ctrl"},

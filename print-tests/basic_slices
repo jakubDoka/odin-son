@@ -174,12 +174,12 @@ main:
     mov.q rcx, [rsp + 0x8]
     sub rcx, 1
     xor eax, eax
-    xor edx, edx
+    xor r8d, r8d
     mov r10, rcx
 21:
+    mov r9, r8
     mov rdi, -1
     mov r8, -1
-    mov r9, rdx
 22:
     cmp r9, r10
     jnl 27
@@ -209,7 +209,7 @@ main:
     jmp 22
 27:
     cmp rdi, -1
-    jz 30
+    jz +0x24
     sub r8, 1
     cmp r8, 0
     jnge 28
@@ -217,13 +217,11 @@ main:
 28:
     xor r8d, r8d
 29:
-    mov rdx, r8
     mov r10, rdi
     jmp 21
-30:
     add rsp, 0x18
     ret
-31:
+30:
     push rbx
     push rbp
     push r12
@@ -241,7 +239,7 @@ main:
     mov.q rax, [rsp + 0x18]
     mov rbx, rax
     cmp rbx, 2
-    jnge 36
+    jnge 35
     mov.q rcx, [rsp + 0x10]
     mov rdi, rbx
     sub rdi, 1
@@ -251,26 +249,26 @@ main:
     idiv rsi
     mov.q rax, [rcx + rax*8]
     xor ecx, ecx
-32:
+31:
     mov r8, rdi
-33:
+32:
     mov rbp, rcx
     mov rcx, rbp
     add rcx, 1
     mov.q rdx, [rsp + 0x10]
     mov.q rdx, [rdx + rbp*8]
     cmp rdx, rax
-    jnl 34
-    jmp 33
-34:
+    jnl 33
+    jmp 32
+33:
     mov rdx, r8
     sub rdx, 1
     mov.q rsi, [rsp + 0x10]
     cmp.q rax, [rsi + r8*8]
-    jnl 35
+    jnl 34
     mov r8, rdx
-    jmp 34
-35:
+    jmp 33
+34:
     cmp rbp, r8
     jnl +0x22
     mov.q rsi, [rsp + 0x10]
@@ -280,7 +278,7 @@ main:
     mov.q rsi, [rsp + 0x10]
     mov.q [rsi + rbp*8], r9
     mov rdi, rdx
-    jmp 32
+    jmp 31
     mov.q r12, [rsp + 0x10]
     lea rdi, [rsp + 0x20]
     xor esi, esi
@@ -295,7 +293,7 @@ main:
     mov.q [rsp + 0x28], rax
     mov.q rdi, [rsp + 0x20]
     mov.q rsi, [rsp + 0x28]
-    call 31
+    call 30
     mov.q r12, [rsp + 0x10]
     lea rdi, [rsp + 0x30]
     xor esi, esi
@@ -308,12 +306,12 @@ main:
     mov.q [rsp + 0x38], rcx
     mov.q rdi, [rsp + 0x30]
     mov.q rsi, [rsp + 0x38]
-    call 31
+    call 30
     xor eax, eax
-    jmp 37
+    jmp 36
+35:
+    xor eax, eax
 36:
-    xor eax, eax
-37:
     add rsp, 0x40
     pop r12
     pop rbp
@@ -884,8 +882,8 @@ quick_sort:
 11:
     mov rsi, -2
     mov rdx, -1
-    mov al, 1
     mov cl, 1
+    mov al, 1
 12:
     test cl, cl
     jnz 15
@@ -1032,8 +1030,8 @@ bubble_sort:
 9:
     mov rdi, -2
     mov rsi, -1
-    mov cl, 1
     mov dl, 1
+    mov cl, 1
 10:
     test dl, dl
     jnz 13

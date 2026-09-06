@@ -337,10 +337,10 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 							}
 
 							if dirty {
-								backend.graph_push_tag(ctx, "srphi")
 								res = Value_Entry(
 									backend.graph_add_raw(
 										ctx,
+										"srphi",
 										u16(backend.Ideal_Node_Type.Phi),
 										graph_get(ctx, res.node).dt,
 										mem.slice_data_cast([]Node_ID, sloter),

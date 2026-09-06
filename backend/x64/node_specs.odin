@@ -78,6 +78,7 @@ SPEC := backend.Node_Spec{
 		0b1, // Then
 		0b1, // Else
 		0b1, // Jump
+		0b1, // Dead
 		0b1, // Region
 		0b1, // Loop
 		0b1, // Always
@@ -202,6 +203,7 @@ SPEC := backend.Node_Spec{
 		1, // Then -> Cfg
 		1, // Else -> Cfg
 		1, // Jump -> Cfg
+		1, // Dead -> Cfg
 		1, // Region -> Cfg
 		1, // Loop -> Cfg
 		1, // Always -> Cfg
@@ -326,6 +328,7 @@ SPEC := backend.Node_Spec{
 		{Class_Flag.Is_Basic_Block_Start}, // Then
 		{Class_Flag.Is_Basic_Block_Start}, // Else
 		{}, // Jump
+		{}, // Dead
 		{Class_Flag.Is_Basic_Block_Start}, // Region
 		{Class_Flag.Is_Basic_Block_Start}, // Loop
 		{}, // Always
@@ -454,6 +457,7 @@ SPEC := backend.Node_Spec{
 		backend.Cfg,
 		backend.Cfg,
 		backend.Cfg,
+		backend.Cfg,
 		backend.Call,
 		backend.Cfg,
 		backend.Tup,
@@ -574,6 +578,7 @@ SPEC := backend.Node_Spec{
 		`Then`,
 		`Else`,
 		`Jump`,
+		`Dead`,
 		`Region`,
 		`Loop`,
 		`Always`,
@@ -700,6 +705,7 @@ X64_Node_Type :: enum u16 {
 	Then,
 	Else,
 	Jump,
+	Dead,
 	Region,
 	Loop,
 	Always,
@@ -847,6 +853,7 @@ x64_collect_meta :: proc(ctx: ^backend.Graph,
 #assert(size_of(backend.Cfg) % backend.PRECISION == 0)
 #assert(size_of(backend.Cfg) % backend.PRECISION == 0)
 #assert(size_of(backend.Cfg) % backend.PRECISION == 0)
+#assert(size_of(backend.Cfg) % backend.PRECISION == 0)
 #assert(size_of(backend.Call) % backend.PRECISION == 0)
 #assert(size_of(backend.Cfg) % backend.PRECISION == 0)
 #assert(size_of(backend.Tup) % backend.PRECISION == 0)
@@ -907,8 +914,7 @@ x64_collect_meta :: proc(ctx: ^backend.Graph,
 #assert(size_of(X64_Mem_Op) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 graph_add_x64_psadbw :: #force_inline proc(graph: ^backend.Graph, name: string, dt: backend.Node_Datatype, lhs: backend.Node_ID, rhs: backend.Node_ID) -> (id: backend.Node_ID) {
-	backend.graph_push_tag(graph, name)
-	return backend.graph_add_raw(graph, u16(X64_Node_Type.X64_Psadbw), dt, {lhs, rhs})
+	return backend.graph_add_raw(graph, name, u16(X64_Node_Type.X64_Psadbw), dt, {lhs, rhs})
 }
 #assert(size_of(X64_Mem_Op) % backend.PRECISION == 0)
 #assert(size_of(X64_Mem_Op) % backend.PRECISION == 0)

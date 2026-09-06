@@ -368,8 +368,6 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 
 			fmt.fprintf(file, ") -> (id: %vNode_ID) {{\n", q)
 
-			fmt.fprintf(file, "\t%vgraph_push_tag(graph, name)\n", q)
-
 			extra_type := qualify_type(q, locals, class.id)
 
 			if len(class.extra_args) != 0 {
@@ -401,7 +399,7 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 			if k == "" {
 				fmt.fprintf(
 					file,
-					"\treturn %vgraph_add_raw(graph, u16(%v.%v), ",
+					"\treturn %vgraph_add_raw(graph, name, u16(%v.%v), ",
 					q,
 					qualify_enm(q, classes.enm),
 					name,
@@ -409,7 +407,7 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 			} else {
 				fmt.fprintf(
 					file,
-					"\treturn %vgraph_add_raw(graph, u16(type), ",
+					"\treturn %vgraph_add_raw(graph, name, u16(type), ",
 					q,
 				)
 			}

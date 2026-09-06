@@ -937,6 +937,8 @@ emit_proc_code :: proc(
 	emit_ctx: ^backend.Codegen_Emit_Ctx,
 	prc: ^typecheck.Proc,
 ) {
+	context.allocator, _ = arna.scrath()
+
 	ctx.node_spec = ctx.target.spec
 	if ctx.check {
 		ctx.node_spec = &anal.SPEC
@@ -951,7 +953,7 @@ emit_proc_code :: proc(
 	backend.graph_compact(ctx)
 
 	schedule: backend.Graph_Schedule
-	backend.graph_schedule(ctx, &schedule, arna.allocator(&ctx.mems.scratch))
+	backend.graph_schedule(ctx, &schedule, .for_regalloc)
 
 	backend.graph_schedule_peeps(ctx, &schedule)
 
@@ -961,12 +963,7 @@ emit_proc_code :: proc(
 	ra.param_specs = prc.param_types
 	ra.mask_len = 64
 
-	regs := regalloc.regalloc(
-		&ra,
-		ctx,
-		&schedule,
-		arna.allocator(&ctx.mems.scratch),
-	)
+	regs := regalloc.regalloc(&ra, ctx, &schedule, context.allocator)
 
 	emit_ctx.graph = ctx
 	emit_ctx.schedule = &schedule
@@ -1414,7 +1411,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 						typecheck.Variable{name, r.id, vty, d.names[i], flags},
 					)
 				} else {
-					backend.graph_set_name(ctx, r.id, name)
+					graph_get(ctx, r.id).name = name
 					idx := builder.graph_push_scope_value(
 						ctx,
 						ctx.node_scope,
@@ -1509,7 +1506,8 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 					emit_nodes(ctx, {}, d.values[i]),
 					d.values[i],
 				)
-				backend.graph_set_name(ctx, value, name)
+
+				graph_get(ctx, value).name = name
 				idx := builder.graph_push_scope_value(
 					ctx,
 					ctx.node_scope,

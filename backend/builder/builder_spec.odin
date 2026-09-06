@@ -21,14 +21,12 @@ when SPEC_NOT_PRESENT {
 	Builder_Node_Type :: enum u16 {
 		Scope,
 		Lazy_Phi,
-		Dead,
 	}
 
 	@(rodata)
 	BUILDER_CLASSES := [Builder_Node_Type]backend.Class_Spec {
 		.Scope = {id = Scope, args = {"cfg"}, default_type = .Void},
 		.Lazy_Phi = {args = {"reg", "lhs"}, extra_capacity = 1},
-		.Dead = {default_type = .Void},
 	}
 
 	graph_add_lazy_phi :: proc(

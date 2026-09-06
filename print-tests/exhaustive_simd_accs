@@ -2374,13 +2374,13 @@ from_slice =8 u16:
     jng 16
     xor edx, edx
 15:
-    mov rax, rdx
-    mov rcx, rdi
-    add rcx, rax
-    mov rdx, rax
-    add rdx, 1
-    mov.b [rcx], al
-    cmp rdx, rsi
+    mov rax, rdi
+    add rax, rdx
+    mov rcx, rdx
+    add rcx, 1
+    mov.b [rax], dl
+    cmp rcx, rsi
+    mov rdx, rcx
     jnge 15
     jmp 16
 16:
@@ -2391,11 +2391,11 @@ from_slice =8 u16:
     xor edx, edx
 18:
     mov rax, rdx
+    add rax, 1
+    mov rcx, rdx
+    mov.w [rdi + rdx*2], cx
+    cmp rax, rsi
     mov rdx, rax
-    add rdx, 1
-    mov rcx, rax
-    mov.w [rdi + rax*2], cx
-    cmp rdx, rsi
     jnge 18
     jmp 19
 19:
@@ -3274,11 +3274,11 @@ from_slice =2 u64:
     xor edx, edx
 30:
     mov rax, rdx
+    add rax, 1
+    mov rcx, rdx
+    mov.w [rdi + rdx*2], cx
+    cmp rax, rsi
     mov rdx, rax
-    add rdx, 1
-    mov rcx, rax
-    mov.w [rdi + rax*2], cx
-    cmp rdx, rsi
     jnge 30
     jmp 31
 31:

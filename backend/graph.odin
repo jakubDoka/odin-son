@@ -14,9 +14,11 @@ import "core:simd"
 import "core:slice"
 
 Tag :: struct #align (4) {
-	name:      string,
-	stable_id: u32,
+	name:      Tag_Name,
+	stable_id: Stable_Id,
 }
+Stable_Id :: [int(NODE_NAMES)]u32
+Tag_Name :: [int(NODE_NAMES)]string
 
 CALL_PREFIX :: 3
 RET_PREFIX :: 2
@@ -170,6 +172,7 @@ Ideal_Node_Type :: enum u16 {
 	Then,
 	Else,
 	Jump,
+	Dead,
 	Region,
 	Loop,
 	Always,
@@ -316,6 +319,7 @@ Node_Output :: bit_field u32 {
 }
 
 Node :: struct {
+	using tag:       Tag,
 	using spec:      struct #align (4) {
 		using type: struct #raw_union {
 			itype: Ideal_Node_Type,
@@ -343,7 +347,7 @@ Node :: struct {
 	extra:           [0]u32,
 }
 
-#assert(size_of(Node) == 24)
+#assert(size_of(Node) - size_of(Tag) == 24)
 
 Node_Intern_Entry :: struct {
 	hash: u8,
@@ -370,7 +374,6 @@ Graph :: struct {
 	dont_intern:     bool,
 	dont_delete:     bool,
 	peeped:          bool,
-	invalid_idoms:   bool,
 	opt_flags:       Graph_Opt_Flags,
 }
 
@@ -381,6 +384,8 @@ Graph_Meta :: struct {
 	gvn:          u32,
 	gdn:          u32,
 	stable_id:    u32,
+	min_idepth:   u32,
+	max_idepth:   u32,
 	has_dbg:      bool,
 	dbgn_flip:    bool,
 	using pinned: struct {
@@ -409,6 +414,10 @@ Graph_Opt_Flag :: enum int {
 
 Peep_Ctx :: struct {
 	using graph: ^Graph,
+}
+
+graph_invalidate_idepth :: proc(graph: ^Graph) {
+	graph.min_idepth = graph.max_idepth
 }
 
 peep_ctx_graph_is_complete :: proc(ctx: Peep_Ctx) -> bool {
@@ -672,15 +681,12 @@ graph_compact :: proc(graph: ^Graph) {
 		size :=
 			graph_size(graph, node.rtype) + int(node.extra_dwords) * PRECISION
 
-		tag := graph_get_tag(&prev, n)
-		graph_push_tag(graph, tag)
 		slot := arna.alloc(graph.mem, uint(size), PRECISION)
 
 		mem.copy_non_overlapping(raw_data(slot), node.node, len(slot))
 
 		new_node := (^Node)(raw_data(slot))
-		new_node.gvn = graph.gvn
-		graph.gvn += 1
+		graph_init_counts(graph, new_node)
 
 		new_node.input_idx = u32(graph.mem.pos / PRECISION)
 		_ = arna.clone(graph.mem, raw_data(node.inps)[:node.input_cap])
@@ -754,6 +760,15 @@ graph_compact :: proc(graph: ^Graph) {
 	)
 
 	assert_live_pins(graph)
+}
+
+graph_init_counts :: proc(graph: ^Graph, new_node: ^Node) {
+	new_node.gvn = graph.gvn
+	graph.gvn += 1
+	if NODE_NAMES {
+		graph.stable_id += 1
+		new_node.stable_id = graph.stable_id
+	}
 }
 
 graph_peep :: proc(graph: ^Graph, id: Node_ID) -> (r: Node_ID) {
@@ -843,7 +858,7 @@ graph_schedule_peeps :: proc(graph: ^Graph, schedule: ^Graph_Schedule) {
 		    until -= 1 {
 		}
 
-		phi_shift: #reverse for instr, i in bb.instrs[:until] {
+		#reverse for instr, i in bb.instrs[:until] {
 			inode := graph_expand(graph, instr)
 			if inode.output_count == 1 &&
 			   graph_get(graph, inode.outs[0].id).itype == .Phi &&
@@ -854,11 +869,14 @@ graph_schedule_peeps :: proc(graph: ^Graph, schedule: ^Graph_Schedule) {
 							   graph_get(graph, inode.inps[0]).output_count >
 								   1)) {
 
+				has_phy_inp := false
 				for inp in inode.inps[min(1, len(inode.inps)):] {
 					if graph_get(graph, inp).itype == .Phi {
-						continue phi_shift
+						has_phy_inp = true
+						break
 					}
 				}
+				if has_phy_inp do continue
 
 				slice.rotate_left(bb.instrs[i:until - 1], 1)
 			}
@@ -1474,8 +1492,7 @@ graph_subsume :: proc(
 			fmt.assertf(
 				graph_get(graph, out.id).itype != .Region ||
 				is_cfg(graph, with) ||
-				int(wnode.rtype) >=
-					len(reflect.enum_field_names(Ideal_Node_Type)),
+				graph_get(graph, with).itype == .Dead,
 				"%v %v %v",
 				wnode,
 				tnode,
@@ -1576,11 +1593,10 @@ graph_clone :: proc(graph: ^Graph, id: Node_ID) -> Node_ID {
 	node := graph_expand(graph, id)
 	assert(node.itype != .Call)
 	graph.dont_intern = true
-	graph_push_tag(graph, graph_get_tag(graph, id).name)
 	idx := graph_get_next_extra_slot(graph, node.rtype)
 	extra := graph_extra_dwords(graph, node, consider_dbg = true)
 	copy(idx[:len(extra)], extra)
-	new := graph_add_raw(graph, node.rtype, node.dt, node.inps)
+	new := graph_add_raw(graph, node.name, node.rtype, node.dt, node.inps)
 	graph_get(graph, new).input_count = node.input_count
 	graph.dont_intern = false
 	return new
@@ -1598,8 +1614,6 @@ graph_remove_output_node :: proc(
 		slice.linear_search(outs, out) or_else fmt.panicf("%v %v", node, out)
 	outs[out_idx] = outs[len(outs) - 1]
 	node.output_count -= 1
-
-	tag := graph_get_tag(graph, graph_id(graph, node))
 
 	if !no_delete {
 		graph_delete(graph, node, indirect = true)
@@ -1761,39 +1775,12 @@ graph_get_next_extra_slot :: proc(graph: ^Graph, type: u16) -> [^]u32 {
 	return ([^]u32)(raw_data(slot)[size_of(Node):])
 }
 
-graph_push_tag :: proc {
-	push_node_tag_full,
-	push_node_tag_new,
-}
-
-push_node_tag_new :: proc(graph: ^Graph, tag: string) {
-	when NODE_NAMES {
-		//@(static) stable_id: u32
-
-		//stable_id += 1
-		graph.stable_id += 1
-		push_node_tag_full(graph, {tag, graph.stable_id})
-	}
-}
-
-push_node_tag_full :: proc(graph: ^Graph, tag: Tag) {
-	when NODE_NAMES {
-		slot := arna.alloc(graph.mem, size_of(Tag), align_of(Tag))
-		(^Tag)(raw_data(slot))^ = tag
-	}
-}
-
 get_tag :: proc(graph: ^Graph, node: Node_ID) -> ^Tag {
 	when NODE_NAMES {
-		return (^Tag)(graph.mem.ptr[int(node) * PRECISION - size_of(Tag):])
+		return &graph_get(graph, node).tag
 	} else {
 		return nil
 	}
-}
-
-@(disabled = !NODE_NAMES)
-graph_set_name :: proc(graph: ^Graph, node: Node_ID, name: string) {
-	if t := get_tag(graph, node); t != nil do t.name = name
 }
 
 graph_dbg_slot :: proc(graph: ^Graph, node: ^Node) -> ^D_Node_ID {
@@ -1821,6 +1808,7 @@ graph_add_sloc :: proc(graph: ^Graph, sloc: Sloc) -> D_Node_ID {
 
 graph_add_raw :: proc(
 	graph: ^Graph,
+	name: Tag_Name,
 	type: u16,
 	dt: Node_Datatype,
 	inps: []Node_ID,
@@ -1835,6 +1823,7 @@ graph_add_raw :: proc(
 
 	node := (^Node)(raw_data(slot))
 	node^ = {
+		name        = name,
 		rtype       = type,
 		dt          = dt,
 		gvn         = graph.gvn,
@@ -1898,9 +1887,9 @@ graph_merge_returns :: proc(graph: ^Graph, args: []Node_ID) -> Node_ID {
 	if graph.end == 0 {
 		args[0] = graph_add_region(graph, "rret", {args[0], graph.start})
 		for &a in args[1:] {
-			graph_push_tag(graph, "rphi")
 			a = graph_add_raw(
 				graph,
+				"rphi",
 				u16(Ideal_Node_Type.Phi),
 				graph_get(graph, a).dt,
 				{args[0], a},

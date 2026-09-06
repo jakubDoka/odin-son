@@ -116,7 +116,7 @@ graph_display :: proc(
 	our_ctx: Graph_Schedule
 
 	if ctx == nil {
-		graph_schedule(graph, &our_ctx, context.allocator)
+		graph_schedule(graph, &our_ctx, .for_regalloc)
 		ctx = &our_ctx
 	}
 
@@ -367,11 +367,6 @@ ansi_end :: proc(w: io.Writer) {
 	}
 }
 
-graph_get_tag :: proc(graph: ^Graph, id: Node_ID) -> Tag {
-	if tag := get_tag(graph, id); tag != nil do return tag^
-	return {}
-}
-
 graph_display_node_gvn :: proc(w: io.Writer, graph: ^Graph, id: Node_ID) {
 	if id == 0 {
 		fmt.wprint(w, "nl")
@@ -379,14 +374,18 @@ graph_display_node_gvn :: proc(w: io.Writer, graph: ^Graph, id: Node_ID) {
 	}
 	n := graph_get(graph, id)
 
-	tag := graph_get_tag(graph, id)
-	if tag.stable_id == 0 do tag.stable_id = n.gvn
+	stable_id := n.gvn
+	name := ""
+	when NODE_NAMES {
+		if n.stable_id != 0 do stable_id = n.stable_id[0]
+		name = n.name[0]
+	}
 
-	ansi_start(w, tag.stable_id)
+	ansi_start(w, stable_id)
 
-	fmt.wprintf(w, "#%v%v", tag.stable_id, tag.name)
+	fmt.wprintf(w, "#%v%v", stable_id, name)
 
-	if tag.stable_id != n.gvn {
+	if stable_id != n.gvn {
 		fmt.wprintf(w, "%v", n.gvn)
 	} else {
 		fmt.wprintf(w, "%%")

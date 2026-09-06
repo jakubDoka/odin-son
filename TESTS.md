@@ -6848,6 +6848,27 @@ main :: proc() -> int {
 }
 ```
 
+#### nested ifs with identical condition
+```odin
+package main
+
+main :: proc() -> int {
+	@(static) v1 := 0
+	g := v1
+
+	if g == 1 do return 0
+	if g == 1 do return 1
+
+	g = v1
+	for {
+		if g == 0 do break
+		if g == 0 do break
+	}
+
+	return 10
+}
+```
+
 #### fail infinite loop mangling
 ```!odin
 package main

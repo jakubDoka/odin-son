@@ -73,6 +73,7 @@ SPEC := backend.Node_Spec{
 		0b1, // Then
 		0b1, // Else
 		0b1, // Jump
+		0b1, // Dead
 		0b1, // Region
 		0b1, // Loop
 		0b1, // Always
@@ -98,7 +99,6 @@ SPEC := backend.Node_Spec{
 		0b1000000, // CV128
 		0b10000000, // Scope
 		0b10, // Lazy_Phi
-		0b10, // Dead
 	},
 	node_extra_sizes = {
 		1, // Start -> Cfg
@@ -158,6 +158,7 @@ SPEC := backend.Node_Spec{
 		1, // Then -> Cfg
 		1, // Else -> Cfg
 		1, // Jump -> Cfg
+		1, // Dead -> Cfg
 		1, // Region -> Cfg
 		1, // Loop -> Cfg
 		1, // Always -> Cfg
@@ -183,7 +184,6 @@ SPEC := backend.Node_Spec{
 		4, // CV128 -> CV128
 		1, // Scope -> Scope
 		0, // Lazy_Phi -> No_Extra
-		0, // Dead -> No_Extra
 	},
 	node_flags = {
 		{}, // Start
@@ -243,6 +243,7 @@ SPEC := backend.Node_Spec{
 		{Class_Flag.Is_Basic_Block_Start}, // Then
 		{Class_Flag.Is_Basic_Block_Start}, // Else
 		{}, // Jump
+		{}, // Dead
 		{Class_Flag.Is_Basic_Block_Start}, // Region
 		{Class_Flag.Is_Basic_Block_Start}, // Loop
 		{}, // Always
@@ -268,7 +269,6 @@ SPEC := backend.Node_Spec{
 		{Class_Flag.Interned, Class_Flag.Clonable}, // CV128
 		{}, // Scope
 		{}, // Lazy_Phi
-		{}, // Dead
 	},
 	node_extra_types = {
 		backend.Cfg,
@@ -332,6 +332,7 @@ SPEC := backend.Node_Spec{
 		backend.Cfg,
 		backend.Cfg,
 		backend.Cfg,
+		backend.Cfg,
 		backend.Call,
 		backend.Cfg,
 		backend.Tup,
@@ -352,7 +353,6 @@ SPEC := backend.Node_Spec{
 		backend.No_Extra,
 		backend.CV128,
 		Scope,
-		backend.No_Extra,
 		backend.No_Extra,
 	},
 	node_kind_name = {
@@ -413,6 +413,7 @@ SPEC := backend.Node_Spec{
 		`Then`,
 		`Else`,
 		`Jump`,
+		`Dead`,
 		`Region`,
 		`Loop`,
 		`Always`,
@@ -438,7 +439,6 @@ SPEC := backend.Node_Spec{
 		`CV128`,
 		`Scope`,
 		`Lazy_Phi`,
-		`Dead`,
 	},
 }
 
@@ -500,6 +500,7 @@ Builder_Node_Type :: enum u16 {
 	Then,
 	Else,
 	Jump,
+	Dead,
 	Region,
 	Loop,
 	Always,
@@ -525,7 +526,6 @@ Builder_Node_Type :: enum u16 {
 	CV128,
 	Scope,
 	Lazy_Phi,
-	Dead,
 }
 
 builder_peep_inst :: proc(ctx: backend.Peep_Ctx, node: backend.Expanded_Node) -> backend.Node_ID {
@@ -597,6 +597,7 @@ builder_post_schedule_peep_inst :: proc(
 #assert(size_of(backend.Cfg) % backend.PRECISION == 0)
 #assert(size_of(backend.Cfg) % backend.PRECISION == 0)
 #assert(size_of(backend.Cfg) % backend.PRECISION == 0)
+#assert(size_of(backend.Cfg) % backend.PRECISION == 0)
 #assert(size_of(backend.Call) % backend.PRECISION == 0)
 #assert(size_of(backend.Cfg) % backend.PRECISION == 0)
 #assert(size_of(backend.Tup) % backend.PRECISION == 0)
@@ -618,19 +619,12 @@ builder_post_schedule_peep_inst :: proc(
 #assert(size_of(backend.CV128) % backend.PRECISION == 0)
 #assert(size_of(Scope) % backend.PRECISION == 0)
 graph_add_scope :: #force_inline proc(graph: ^backend.Graph, name: string, cfg: backend.Node_ID) -> (id: backend.Node_ID) {
-	backend.graph_push_tag(graph, name)
 	(^Scope)(backend.graph_get_next_extra_slot(graph, u16(Builder_Node_Type.Scope)))^ = {}
-	return backend.graph_add_raw(graph, u16(Builder_Node_Type.Scope), .Void, {cfg})
+	return backend.graph_add_raw(graph, name, u16(Builder_Node_Type.Scope), .Void, {cfg})
 }
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 graph_add_lazy_phi :: #force_inline proc(graph: ^backend.Graph, name: string, dt: backend.Node_Datatype, reg: backend.Node_ID, lhs: backend.Node_ID) -> (id: backend.Node_ID) {
-	backend.graph_push_tag(graph, name)
-	return backend.graph_add_raw(graph, u16(Builder_Node_Type.Lazy_Phi), dt, {reg, lhs}, extra_capacity = 1)
-}
-#assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
-graph_add_dead :: #force_inline proc(graph: ^backend.Graph, name: string) -> (id: backend.Node_ID) {
-	backend.graph_push_tag(graph, name)
-	return backend.graph_add_raw(graph, u16(Builder_Node_Type.Dead), .Void, {})
+	return backend.graph_add_raw(graph, name, u16(Builder_Node_Type.Lazy_Phi), dt, {reg, lhs}, extra_capacity = 1)
 }
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {

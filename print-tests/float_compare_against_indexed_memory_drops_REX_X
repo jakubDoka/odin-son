@@ -183,15 +183,15 @@ main:
     xor esi, esi
     mov rdx, 0x60
     call.q [rip - 0x4c]
-    xor eax, eax
+    xor ecx, ecx
 1:
-    cmp rax, 8
+    cmp rcx, 8
     jz 2
-    mov rcx, rax
-    add rcx, 1
-    cvtsi2sd xmm0, rax
-    movsd.q [rsp + rax*8 + 0x60], xmm0
     mov rax, rcx
+    add rax, 1
+    cvtsi2sd xmm0, rcx
+    movsd.q [rsp + rcx*8 + 0x60], xmm0
+    mov rcx, rax
     jmp 1
 2:
     mov.q rax, [rsp]

@@ -1709,6 +1709,10 @@ typecheck :: proc(
 			for name, i in decl.names {
 				ident := extract_var_ident(ctx, name) or_continue
 				res := typecheck_eval(ctx, {inferred_ty = ty}, decl.values[i])
+				if res.type == .Void {
+					error(ctx, decl.values[i], "expected this to have a type")
+					continue
+				}
 				append(
 					&ctx.scope,
 					Variable {
@@ -1802,6 +1806,8 @@ typecheck :: proc(
 			break match
 		}
 
+		is_static := is_static(d)
+
 		for i in 0 ..< len(d.names) {
 			ident := extract_var_ident(ctx, d.names[i]) or_continue
 
@@ -1822,16 +1828,23 @@ typecheck :: proc(
 				continue
 			}
 
-			value_ty := typecheck_as(ctx, inferred_ty, d.values[i])
+			value_ty: Type
+			if is_static {
+				value_ty =
+					typecheck_eval(ctx, {inferred_ty = inferred_ty}, d.values[i]).type
+			} else {
+				value_ty = typecheck_as(ctx, inferred_ty, d.values[i]).type
+			}
+
+			if value_ty == .Void {
+				error(ctx, d.values[i], "expected this to have a type")
+				continue
+			}
 			if ident.name == "_" do continue
 			set_node_data(d.names[i], Var_Flags{})
 			append(
 				&ctx.scope,
-				Variable {
-					name = ident.name,
-					type = value_ty.type,
-					ident = ident,
-				},
+				Variable{name = ident.name, type = value_ty, ident = ident},
 			)
 		}
 	case ^ast.Proc_Lit:
@@ -3231,6 +3244,17 @@ typecheck_proc :: proc(
 	clear(&ctx.poly_types)
 
 	return Proc_ID(len(ctx.procs) - 1)
+}
+
+is_static :: proc(d: ^ast.Value_Decl) -> bool {
+	for attr in d.attributes {
+		for elem in attr.elems {
+			if id, ok := elem.derived.(^ast.Ident); ok {
+				if id.name == "static" do return true
+			}
+		}
+	}
+	return false
 }
 
 typecheck_program :: proc(ctx: ^Gen_Ctx) {

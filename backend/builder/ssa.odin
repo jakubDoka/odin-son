@@ -495,6 +495,8 @@ graph_inline_graph :: proc(
 			}
 		}
 
+		backend.graph_pin(graph, proj_of(&ctx, from_ret.inps[0])^)
+
 		for ri in from_ret.inps {
 			rinode := graph_get(from, ri)
 			nd := ctx.projection[rinode.gvn]
@@ -502,6 +504,12 @@ graph_inline_graph :: proc(
 				backend.graph_delete(graph, nd)
 			}
 		}
+
+		backend.graph_unpin(
+			graph,
+			proj_of(&ctx, from_ret.inps[0])^,
+			no_delete = true,
+		)
 
 		from_end_ctrl := graph_get(from, from_ret.inps[0])
 
@@ -685,21 +693,19 @@ graph_inline_graph :: proc(
 
 		inps := make([]backend.Node_ID, input_cap)
 		for inp, i in node.inps[:input_cap] {
-
 			clone_node(ctx, inp)
 
 			if graph_get(ctx.from, inp).itype == .Start {
 				backend.current_graph = ctx.from
 				fmt.assertf(
-					graph_get(graph, ctx.projection[graph_get(ctx.from, inp).gvn]).itype ==
-					.Start,
+					graph_get(graph, proj_of(ctx, inp)^).itype == .Start,
 					"%v %v",
 					inp,
 					node,
 				)
 				backend.current_graph = graph
 			}
-			inps[i] = ctx.projection[graph_get(ctx.from, inp).gvn]
+			inps[i] = proj_of(ctx, inp)^
 		}
 
 		if node.itype == .Local {
@@ -719,15 +725,7 @@ graph_inline_graph :: proc(
 
 		prev := graph.mem.pos
 
-		size :=
-			backend.graph_size(graph, node.rtype) +
-			int(node.extra_dwords) * backend.PRECISION
-
-		slot := arna.alloc(graph.mem, uint(size), backend.PRECISION)
-
-		mem.copy_non_overlapping(raw_data(slot), node.node, len(slot))
-
-		new_node := (^backend.Node)(raw_data(slot))
+		new_node, id := backend.graph_shallow_clone(graph, node)
 		new_node.rtype = rtype
 		backend.graph_init_counts(graph, new_node)
 
@@ -745,9 +743,7 @@ graph_inline_graph :: proc(
 		new_node.output_count = 0
 		new_node.output_cap = node.output_cap
 
-		id := backend.graph_id(graph, new_node)
 		interned := backend.graph_intern(graph, id)
-
 		if interned != id {
 			graph.mem.pos = prev
 			id = interned

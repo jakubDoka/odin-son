@@ -717,7 +717,7 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule, purpose: enum {
 		}
 	}
 
-	if 0 == 1 {
+	if 1 == 1 {
 		//graph_display(os.to_writer(os.stderr), graph, gs)
 		// 	if has_unscheduled do panic("")
 	}

@@ -3293,8 +3293,8 @@ Counters :: struct {
 }
 
 main :: proc() -> int {
-	@(static) buf := [16]u8{}
-	@(static) c := Counters{}
+	@(static) buf : [16]u8
+	@(static) c : Counters
 	@(static) scale := 3
 
 	i := 0
@@ -3491,8 +3491,8 @@ test_coalesce :: proc(buf: []u8) -> bool {
 }
 
 main :: proc() -> int {
-	@(static) backing := [1024]u8{}
-	@(static) coalesce_buf := [512]u8{}
+	@(static) backing : [1024]u8
+	@(static) coalesce_buf : [512]u8
 
 	a: Allocator = {}
 	alloc_init(&a, backing[:])

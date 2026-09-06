@@ -673,14 +673,7 @@ graph_compact :: proc(graph: ^Graph) {
 		node.input_cap = node.input_count
 		node.output_cap = node.output_count
 
-		size :=
-			graph_size(graph, node.rtype) + int(node.extra_dwords) * PRECISION
-
-		slot := arna.alloc(graph.mem, uint(size), PRECISION)
-
-		mem.copy_non_overlapping(raw_data(slot), node.node, len(slot))
-
-		new_node := (^Node)(raw_data(slot))
+		new_node, id := graph_shallow_clone(graph, node)
 		graph_init_counts(graph, new_node)
 
 		new_node.input_idx = u32(graph.mem.pos / PRECISION)
@@ -691,8 +684,7 @@ graph_compact :: proc(graph: ^Graph) {
 
 		graph_dbg_slot(graph, new_node)^ = did
 
-		n = graph_id(graph, new_node)
-
+		n = id
 	}
 
 	graph.interner.len = 0
@@ -755,6 +747,13 @@ graph_compact :: proc(graph: ^Graph) {
 	)
 
 	assert_live_pins(graph)
+}
+
+graph_shallow_clone :: proc(graph: ^Graph, node: ^Node) -> (^Node, Node_ID) {
+	size := graph_size(graph, node.rtype) + int(node.extra_dwords) * PRECISION
+	slot := arna.alloc(graph.mem, uint(size), PRECISION)
+	mem.copy_non_overlapping(raw_data(slot), node, len(slot))
+	return (^Node)(raw_data(slot)), graph_id(graph, (^Node)(raw_data(slot)))
 }
 
 graph_init_counts :: proc(graph: ^Graph, new_node: ^Node) {
@@ -1592,7 +1591,6 @@ graph_clone :: proc(graph: ^Graph, id: Node_ID) -> Node_ID {
 	extra := graph_extra_dwords(graph, node, consider_dbg = true)
 	copy(idx[:len(extra)], extra)
 	new := graph_add_raw(graph, node.name, node.rtype, node.dt, node.inps)
-	graph_get(graph, new).input_count = node.input_count
 	graph.dont_intern = false
 	return new
 }
@@ -1815,6 +1813,7 @@ graph_add_raw :: proc(
 	node := (^Node)(raw_data(slot))
 	node^ = {
 		name        = name,
+		stable_id   = graph.stable_id,
 		rtype       = type,
 		dt          = dt,
 		gvn         = graph.gvn,
@@ -1844,6 +1843,7 @@ graph_add_raw :: proc(
 	}
 
 	graph.gvn += 1
+	graph.stable_id += 1
 
 	graph_dbg_slot(graph, node)^ = graph.current_dnode
 

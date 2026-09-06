@@ -492,17 +492,6 @@ alloca :: proc(
 	return ptr
 }
 
-is_static :: proc(d: ^ast.Value_Decl) -> bool {
-	for attr in d.attributes {
-		for elem in attr.elems {
-			if id, ok := elem.derived.(^ast.Ident); ok {
-				if id.name == "static" do return true
-			}
-		}
-	}
-	return false
-}
-
 field_offset :: builder.graph_add_field_offset
 
 field_load :: proc(
@@ -1427,16 +1416,37 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		}
 
 		if len(d.values) == 0 {
-			decl_ty := typecheck.get_node_meta(d.type).typeida
+			vty := typecheck.get_node_meta(d.type).typeida
 			for i in 0 ..< len(d.names) {
 				name := typecheck.src_of(ctx.file^, d.names[i])
 				flags := typecheck.get_node_vflags(d.names[i])
-				ptr := alloca(ctx, name, decl_ty, zeroed = true)
-				backend.graph_pin(ctx, ptr)
-				append(
-					&ctx.scope,
-					typecheck.Variable{name, ptr, decl_ty, d.names[i], flags},
-				)
+
+				if typecheck.is_static(d) {
+					size := type_size(vty)
+					bytes := make([]u8, size, ctx.globals.allocator)
+
+					idx := typecheck.add_global(
+						ctx,
+						bytes,
+						typecheck.type_align(vty),
+					)
+					g := backend.graph_add_global(ctx, name)
+					backend.graph_extra(ctx, g, backend.Tup).idx = idx
+					ptr := backend.graph_add_global_addr(ctx, name, g)
+					backend.graph_pin(ctx, ptr)
+
+					append(
+						&ctx.scope,
+						typecheck.Variable{name, ptr, vty, d.names[i], flags},
+					)
+				} else {
+					ptr := alloca(ctx, name, vty, zeroed = true)
+					backend.graph_pin(ctx, ptr)
+					append(
+						&ctx.scope,
+						typecheck.Variable{name, ptr, vty, d.names[i], flags},
+					)
+				}
 			}
 			break
 		}
@@ -1449,7 +1459,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			vty := decl_ty != .Void ? decl_ty : get_node_type(d.values[i])
 			flags := typecheck.get_node_vflags(d.names[i])
 
-			if is_static(d) {
+			if typecheck.is_static(d) {
 				size := type_size(vty)
 				bytes := make([]u8, size, ctx.globals.allocator)
 

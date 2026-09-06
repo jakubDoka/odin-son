@@ -1082,14 +1082,11 @@ builder_peep :: proc(
 			size := backend.mem_op_size(ctx, out.id) or_continue
 			assert(size != 0)
 
-			if size > dst_size {
-				break match
-			}
-
 			end := iter.offset + size
 			offset := iter.offset
 
-			if end > dst_size {
+			if size > dst_size || end > dst_size {
+				backend.peep_ctx_add_trigger(ctx, out.id, id)
 				break match
 			}
 

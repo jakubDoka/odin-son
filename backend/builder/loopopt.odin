@@ -152,6 +152,7 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 		back_cond := clone_by(ctx, nnode.inps[1], 2, exit_blk)
 
 		backend.graph_set_input(ctx, next_ctrl, 1, back_cond)
+		ctx.node_blocks[graph_get(ctx, next_ctrl).gvn] = exit_blk
 
 		if cond_is_inverted do guard_loop, guard_skip = guard_skip, guard_loop
 
@@ -240,7 +241,7 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 					)
 				}
 
-				res := walk_dblk(
+				res := walk_use_blocks(
 					ctx,
 					dblk,
 					join,
@@ -285,7 +286,7 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 		return ctx.node_blocks[graph_get(ctx, node).gvn]
 	}
 
-	walk_dblk :: proc(
+	walk_use_blocks :: proc(
 		ctx: Ctx,
 		root: Node_ID,
 		guard: Node_ID,
@@ -304,7 +305,7 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 		edges: [dynamic]Node_ID
 		for inp in node.inps[:len(node.inps) - int(loop_or_region)] {
 			if backend.is_cfg(ctx, inp) {
-				vl := walk_dblk(ctx, inp, guard, out, nphy, to_loop)
+				vl := walk_use_blocks(ctx, inp, guard, out, nphy, to_loop)
 				append(&edges, vl)
 			}
 		}
@@ -395,15 +396,7 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 					inp = clone_by(ctx, node.inps[i], phy_idx, ctrl)
 				}
 
-				size :=
-					backend.graph_size(graph, node.rtype) +
-					int(node.extra_dwords) * PRECISION
-
-				slot := arna.alloc(graph.mem, uint(size), PRECISION)
-
-				mem.copy_non_overlapping(raw_data(slot), node.node, len(slot))
-
-				new_node := (^backend.Node)(raw_data(slot))
+				new_node, id := backend.graph_shallow_clone(graph, node)
 				backend.graph_init_counts(graph, new_node)
 
 				new_node.input_idx = u32(graph.mem.pos / backend.PRECISION)
@@ -421,7 +414,6 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 				new_node.output_count = 0
 				new_node.output_cap = node.output_cap
 
-				id := backend.graph_id(graph, new_node)
 				interned := backend.graph_intern(graph, id)
 				if interned != id {
 					graph.mem.pos = prev
@@ -435,6 +427,7 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 					for inp, i in inps {
 						backend.graph_add_output(ctx, inp, cloned[node.gvn], i)
 					}
+					// NOTE: no need to clone the debug info
 				}
 			}
 		}

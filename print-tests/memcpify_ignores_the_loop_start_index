@@ -1,16 +1,16 @@
 =========== OPT LEVEL: none ===========
 cpy:
-    mov rax, 2
+    mov r8, 2
 2:
-    cmp rax, rdx
+    cmp r8, rdx
     jnl 3
-    mov rcx, rsi
-    add rcx, rax
-    movzx.b ecx, [rcx]
-    mov r8, rdi
-    add r8, rax
-    mov.b [r8], cl
-    add rax, 1
+    mov rax, rsi
+    add rax, r8
+    movzx.b ecx, [rax]
+    mov rax, rdi
+    add rax, r8
+    mov.b [rax], cl
+    add r8, 1
     jmp 2
 3:
     ret
@@ -24,41 +24,41 @@ cpy:
     mov rdx, 8
     lea rdi, [rsp + 0x8]
     call.q [rip - 0x65]
-    xor esi, esi
+    xor eax, eax
 5:
-    cmp rsi, 8
+    cmp rax, 8
     jnl 6
-    mov rax, rsi
-    add rax, 1
-    mov rcx, rax
-    mov.b [rsp + rsi], cl
-    mov.b [rsp + rsi + 0x8], 0x64
     mov rsi, rax
+    add rsi, 1
+    mov rdx, rsi
+    mov.b [rsp + rax], dl
+    mov.b [rsp + rax + 0x8], 0x64
+    mov rax, rsi
     jmp 5
 6:
-    lea rax, [rsp + 0x8]
-    add rax, 0
-    lea rcx, [rsp]
+    lea rcx, [rsp + 0x8]
     add rcx, 0
+    lea rax, [rsp]
+    add rax, 0
     mov rdx, 8
-    mov rsi, rcx
-    mov rdi, rax
+    mov rsi, rax
+    mov rdi, rcx
     call cpy
-    xor esi, esi
-    xor ecx, ecx
+    xor edx, edx
+    xor eax, eax
 7:
-    cmp rcx, 8
+    cmp rax, 8
     jnl 8
-    mov rax, rcx
-    add rax, 1
-    movzx.b ecx, [rsp + rcx + 0x8]
-    imul rcx, rax
-    add rsi, rcx
-    mov rcx, rax
+    mov rsi, rax
+    add rsi, 1
+    movzx.b ecx, [rsp + rax + 0x8]
+    imul rcx, rsi
+    add rdx, rcx
+    mov rax, rsi
     jmp 7
 8:
     mov rcx, 0xfb
-    mov rax, rsi
+    mov rax, rdx
     cqo
     idiv rcx
     mov rax, rdx
@@ -66,17 +66,17 @@ cpy:
     ret
 =========== OPT LEVEL: mininal ===========
 cpy:
-    mov rax, 2
+    mov r8, 2
 2:
-    cmp rax, rdx
+    cmp r8, rdx
     jnl 3
-    mov rcx, rsi
-    add rcx, rax
-    movzx.b ecx, [rcx]
-    mov r8, rdi
-    add r8, rax
-    mov.b [r8], cl
-    add rax, 1
+    mov rax, rsi
+    add rax, r8
+    movzx.b ecx, [rax]
+    mov rax, rdi
+    add rax, r8
+    mov.b [rax], cl
+    add r8, 1
     jmp 2
 3:
     ret
@@ -90,16 +90,16 @@ cpy:
     mov rdx, 8
     lea rdi, [rsp + 0x8]
     call.q [rip - 0x65]
-    xor esi, esi
+    xor eax, eax
 5:
-    cmp rsi, 8
+    cmp rax, 8
     jnl 6
-    mov rax, rsi
-    add rax, 1
-    mov rcx, rax
-    mov.b [rsp + rsi], cl
-    mov.b [rsp + rsi + 0x8], 0x64
     mov rsi, rax
+    add rsi, 1
+    mov rdx, rsi
+    mov.b [rsp + rax], dl
+    mov.b [rsp + rax + 0x8], 0x64
+    mov rax, rsi
     jmp 5
 6:
     mov rdx, 8
@@ -107,20 +107,19 @@ cpy:
     lea rdi, [rsp + 0x8]
     call cpy
     xor ecx, ecx
-    xor esi, esi
+    xor eax, eax
 7:
     cmp rcx, 8
     jnl 8
-    mov rax, rcx
-    add rax, 1
-    movzx.b ecx, [rsp + rcx + 0x8]
-    imul rcx, rax
-    add rsi, rcx
-    mov rcx, rax
+    mov rsi, rcx
+    add rsi, 1
+    movzx.b edx, [rsp + rcx + 0x8]
+    imul rdx, rsi
+    add rax, rdx
+    mov rcx, rsi
     jmp 7
 8:
     mov rcx, 0xfb
-    mov rax, rsi
     cqo
     idiv rcx
     mov rax, rdx
@@ -128,17 +127,17 @@ cpy:
     ret
 =========== OPT LEVEL: moderate ===========
 cpy:
-    mov rax, 2
+    mov r8, 2
 2:
-    cmp rax, rdx
+    cmp r8, rdx
     jnl 3
-    mov rcx, rsi
-    add rcx, rax
-    movzx.b ecx, [rcx]
-    mov r8, rdi
-    add r8, rax
-    mov.b [r8], cl
-    add rax, 1
+    mov rax, rsi
+    add rax, r8
+    movzx.b ecx, [rax]
+    mov rax, rdi
+    add rax, r8
+    mov.b [rax], cl
+    add r8, 1
     jmp 2
 3:
     ret
@@ -146,16 +145,16 @@ cpy:
     sub rsp, 0x18
     mov.q [rsp], 0
     mov.q [rsp + 0x8], 0
-    xor esi, esi
+    xor eax, eax
 5:
-    cmp rsi, 8
+    cmp rax, 8
     jnl 6
-    mov rax, rsi
-    add rax, 1
-    mov rcx, rax
-    mov.b [rsp + rsi], cl
-    mov.b [rsp + rsi + 0x8], 0x64
     mov rsi, rax
+    add rsi, 1
+    mov rdx, rsi
+    mov.b [rsp + rax], dl
+    mov.b [rsp + rax + 0x8], 0x64
+    mov rax, rsi
     jmp 5
 6:
     lea rsi, [rsp]
@@ -163,20 +162,19 @@ cpy:
     mov rdx, 8
     call cpy
     xor ecx, ecx
-    xor esi, esi
+    xor eax, eax
 7:
     cmp rcx, 8
     jnl 8
-    mov rax, rcx
-    add rax, 1
-    movzx.b ecx, [rsp + rcx + 0x8]
-    imul rcx, rax
-    add rsi, rcx
-    mov rcx, rax
+    mov rsi, rcx
+    add rsi, 1
+    movzx.b edx, [rsp + rcx + 0x8]
+    imul rdx, rsi
+    add rax, rdx
+    mov rcx, rsi
     jmp 7
 8:
     mov rcx, 0xfb
-    mov rax, rsi
     cqo
     idiv rcx
     mov rax, rdx
@@ -186,18 +184,18 @@ cpy:
 cpy:
     cmp rdx, 2
     jng 3
-    mov r9, 2
+    mov rax, 2
 2:
-    mov rax, r9
     mov r9, rax
-    add r9, 1
+    mov rax, r9
+    add rax, 1
     mov rcx, rsi
-    add rcx, rax
-    movzx.b ecx, [rcx]
-    mov r8, rdi
-    add r8, rax
-    mov.b [r8], cl
-    cmp r9, rdx
+    add rcx, r9
+    movzx.b r8d, [rcx]
+    mov rcx, rdi
+    add rcx, r9
+    mov.b [rcx], r8b
+    cmp rax, rdx
     jnge 2
     jmp 3
 3:
@@ -206,31 +204,31 @@ cpy:
     sub rsp, 0x18
     mov.q [rsp], 0
     mov.q [rsp + 0x8], 0
-    xor esi, esi
+    xor eax, eax
 5:
-    mov rdx, rsi
-    mov rsi, rdx
-    add rsi, 1
-    mov rax, rsi
-    mov.b [rsp + rdx], al
-    mov.b [rsp + rdx + 0x8], 0x64
-    cmp rsi, 8
+    mov rcx, rax
+    mov rax, rcx
+    add rax, 1
+    mov rsi, rax
+    mov.b [rsp + rcx], sil
+    mov.b [rsp + rcx + 0x8], 0x64
+    cmp rax, 8
     jnge 5
     lea rsi, [rsp]
     lea rdi, [rsp + 0x8]
     mov rdx, 8
     call cpy
-    xor esi, esi
+    xor ecx, ecx
     xor eax, eax
 6:
     mov rdx, rax
-    mov rax, rsi
-    mov rsi, rax
-    add rsi, 1
-    movzx.b eax, [rsp + rax + 0x8]
-    imul rax, rsi
-    add rdx, rax
-    cmp rsi, 8
+    mov rax, rcx
+    mov rcx, rax
+    add rcx, 1
+    movzx.b esi, [rsp + rax + 0x8]
+    imul rsi, rcx
+    add rdx, rsi
+    cmp rcx, 8
     mov rax, rdx
     jnge 6
     mov rcx, 0xfb
@@ -245,35 +243,35 @@ cpy:
     sub rsp, 0x18
     mov.q [rsp], 0
     mov.q [rsp + 0x8], 0
-    xor edx, edx
+    xor eax, eax
 2:
-    mov rax, rdx
-    add rax, 1
-    mov rcx, rax
-    mov.b [rsp + rdx], cl
-    mov.b [rsp + rdx + 0x8], 0x64
-    cmp rax, 8
     mov rdx, rax
-    jnge 2
-    mov rax, 2
-3:
-    movzx.b ecx, [rsp + rax]
-    mov.b [rsp + rax + 0x8], cl
-    add rax, 1
-    cmp rax, 8
-    jnge 3
-    xor edx, edx
-    xor esi, esi
-4:
+    add rdx, 1
     mov rcx, rdx
+    mov.b [rsp + rax], cl
+    mov.b [rsp + rax + 0x8], 0x64
+    cmp rdx, 8
+    mov rax, rdx
+    jnge 2
+    mov rcx, 2
+3:
+    movzx.b eax, [rsp + rcx]
+    mov.b [rsp + rcx + 0x8], al
     add rcx, 1
-    movzx.b edx, [rsp + rdx + 0x8]
-    imul rdx, rcx
-    mov rax, rsi
-    add rax, rdx
     cmp rcx, 8
-    mov rsi, rax
-    mov rdx, rcx
+    jnge 3
+    xor ecx, ecx
+    xor edx, edx
+4:
+    mov rsi, rcx
+    add rsi, 1
+    movzx.b ecx, [rsp + rcx + 0x8]
+    imul rcx, rsi
+    mov rax, rdx
+    add rax, rcx
+    cmp rsi, 8
+    mov rdx, rax
+    mov rcx, rsi
     jnge 4
     mov rcx, 0xfb
     cqo

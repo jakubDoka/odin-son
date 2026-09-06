@@ -16,10 +16,10 @@ opaque:
     mov.q [rsp + 0x8], rax
     mov rdi, 9
     call opaque
-    mov rcx, rax
-    xor edi, edi
+    mov rdi, rax
+    xor ecx, ecx
 3:
-    cmp rdi, rcx
+    cmp rcx, rdi
     jnl 5
     add.q [rsp], 1
     mov.q rax, [rsp]
@@ -32,7 +32,7 @@ opaque:
     add.q [rsp + 0x8], rax
     jmp 4
 4:
-    add rdi, 1
+    add rcx, 1
     jmp 3
 5:
     mov.q rax, [rsp]
@@ -58,10 +58,10 @@ opaque:
     mov.q [rsp + 0x8], rax
     mov rdi, 9
     call opaque
-    mov rcx, rax
-    xor edi, edi
+    mov rdi, rax
+    xor ecx, ecx
 3:
-    cmp rdi, rcx
+    cmp rcx, rdi
     jnl 5
     add.q [rsp], 1
     mov.q rax, [rsp]
@@ -74,7 +74,7 @@ opaque:
     add.q [rsp + 0x8], rax
     jmp 4
 4:
-    add rdi, 1
+    add rcx, 1
     jmp 3
 5:
     mov.q rax, [rsp]
@@ -98,10 +98,10 @@ opaque:
     mov.q [rsp + 0x8], rax
     mov rdi, 9
     call opaque
-    mov rcx, rax
-    xor edi, edi
+    mov rdi, rax
+    xor ecx, ecx
 3:
-    cmp rdi, rcx
+    cmp rcx, rdi
     jnl 5
     mov.q rax, [rsp]
     add rax, 1
@@ -115,7 +115,7 @@ opaque:
     add.q [rsp + 0x8], rax
     jmp 4
 4:
-    add rdi, 1
+    add rcx, 1
     jmp 3
 5:
     mov.q rax, [rsp]
@@ -139,10 +139,10 @@ opaque:
     mov.q [rsp + 0x8], rax
     mov rdi, 9
     call opaque
-    mov rcx, rax
-    cmp rcx, 0
+    mov rdi, rax
+    cmp rdi, 0
     jng 5
-    xor edi, edi
+    xor ecx, ecx
 3:
     mov.q rax, [rsp]
     add rax, 1
@@ -156,8 +156,8 @@ opaque:
     add.q [rsp + 0x8], rax
     jmp 4
 4:
-    add rdi, 1
-    cmp rdi, rcx
+    add rcx, 1
+    cmp rcx, rdi
     jnge 3
     jmp 5
 5:
@@ -173,22 +173,22 @@ opaque:
     movups.x [rsp], xmm0
     mov.q [rsp], 1
     mov.q [rsp + 0x8], 0
-    xor ecx, ecx
+    xor esi, esi
 2:
     mov.q rax, [rsp]
     add rax, 1
     mov.q [rsp], rax
-    mov rsi, 2
+    mov rcx, 2
     cqo
-    idiv rsi
+    idiv rcx
     cmp rdx, 0
     jz 3
     mov.q rax, [rsp]
     add.q [rsp + 0x8], rax
     jmp 3
 3:
-    add rcx, 1
-    cmp rcx, 9
+    add rsi, 1
+    cmp rsi, 9
     jnge 2
     mov.q rax, [rsp]
     imul rax, rax, 0x64

@@ -767,9 +767,13 @@ inline_and_optimize :: proc(
 			}
 		}
 
-		backend.graph_iter_peeps({graph = ctx})
-		builder.memopt(ctx)
-		backend.graph_iter_peeps({graph = ctx})
+		for dirty, limit := true, 100; dirty; limit -= 1 {
+			assert(limit > 0)
+			dirty = false
+			dirty |= backend.graph_iter_peeps({ctx})
+			dirty |= builder.memopt(ctx)
+			dirty |= builder.loopopt(ctx)
+		}
 
 		backend.graph_compact(ctx)
 
@@ -905,7 +909,8 @@ emit_proc :: proc(
 	peep_ctx: backend.Peep_Ctx
 	peep_ctx.graph = ctx
 
-	for dirty, limit := true, 100; dirty && limit > 0; limit -= 1 {
+	for dirty, limit := true, 100; dirty; limit -= 1 {
+		assert(limit > 0)
 		dirty = false
 		dirty |= backend.graph_iter_peeps(peep_ctx)
 		dirty |= builder.memopt(ctx)

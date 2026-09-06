@@ -1,27 +1,27 @@
 =========== OPT LEVEL: none ===========
 si:
-    xor eax, eax
+    xor ecx, ecx
 uil:
     cmp edi, 7
-    setz cl
-    movzx rcx, cl
-    movzx ecx, cl
-    add rax, rcx
+    setz al
+    movzx rax, al
+    movzx eax, al
+    add rcx, rax
     cmp edi, 7
-    setnz cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*2]
+    setnz al
+    movzx rax, al
+    movzx eax, al
+    lea rcx, [rcx + rax*2]
     cmp edi, 7
-    setnge cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*4]
+    setnge al
+    movzx rax, al
+    movzx eax, al
+    lea rcx, [rcx + rax*4]
     cmp edi, 7
-    setng cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*8]
+    setng al
+    movzx rax, al
+    movzx eax, al
+    lea rax, [rcx + rax*8]
     cmp edi, 7
     setnle cl
     movzx rcx, cl
@@ -36,27 +36,27 @@ uil:
     add rax, rcx
     ret
 5:
-    xor eax, eax
+    xor ecx, ecx
     cmp rdi, 7
-    setz cl
-    movzx rcx, cl
-    movzx ecx, cl
-    add rax, rcx
+    setz al
+    movzx rax, al
+    movzx eax, al
+    add rcx, rax
     cmp rdi, 7
-    setnz cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*2]
+    setnz al
+    movzx rax, al
+    movzx eax, al
+    lea rcx, [rcx + rax*2]
     cmp rdi, 7
-    setnge cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*4]
+    setnge al
+    movzx rax, al
+    movzx eax, al
+    lea rcx, [rcx + rax*4]
     cmp rdi, 7
-    setng cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*8]
+    setng al
+    movzx rax, al
+    movzx eax, al
+    lea rax, [rcx + rax*8]
     cmp rdi, 7
     setnle cl
     movzx rcx, cl
@@ -71,27 +71,27 @@ uil:
     add rax, rcx
     ret
 6:
-    xor eax, eax
+    xor ecx, ecx
     cmp edi, 7
-    setz cl
-    movzx rcx, cl
-    movzx ecx, cl
-    add rax, rcx
+    setz al
+    movzx rax, al
+    movzx eax, al
+    add rcx, rax
     cmp edi, 7
-    setnz cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*2]
+    setnz al
+    movzx rax, al
+    movzx eax, al
+    lea rcx, [rcx + rax*2]
     cmp edi, 7
-    setnae cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*4]
+    setnae al
+    movzx rax, al
+    movzx eax, al
+    lea rcx, [rcx + rax*4]
     cmp edi, 7
-    setna cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*8]
+    setna al
+    movzx rax, al
+    movzx eax, al
+    lea rax, [rcx + rax*8]
     cmp edi, 7
     setnbe cl
     movzx rcx, cl
@@ -106,27 +106,27 @@ uil:
     add rax, rcx
     ret
 7:
-    xor eax, eax
+    xor ecx, ecx
     cmp rdi, 7
-    setz cl
-    movzx rcx, cl
-    movzx ecx, cl
-    add rax, rcx
+    setz al
+    movzx rax, al
+    movzx eax, al
+    add rcx, rax
     cmp rdi, 7
-    setnz cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*2]
+    setnz al
+    movzx rax, al
+    movzx eax, al
+    lea rcx, [rcx + rax*2]
     cmp rdi, 7
-    setnae cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*4]
+    setnae al
+    movzx rax, al
+    movzx eax, al
+    lea rcx, [rcx + rax*4]
     cmp rdi, 7
-    setna cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*8]
+    setna al
+    movzx rax, al
+    movzx eax, al
+    lea rax, [rcx + rax*8]
     cmp rdi, 7
     setnbe cl
     movzx rcx, cl
@@ -150,61 +150,61 @@ uil:
     sub rsp, 0x28
     mov rdi, 3
     call si
-    mov rbx, rax
+    mov.q [rsp + 0x20], rax
     mov rdi, 7
     call si
-    mov rbp, rax
+    mov.q [rsp + 0x18], rax
     mov rdi, -3
     call si
-    mov r12, rax
+    mov.q [rsp + 0x10], rax
     mov rdi, 3
     call 5
-    mov r13, rax
+    mov.q [rsp + 0x8], rax
     mov rdi, 7
     call 5
-    mov r14, rax
+    mov.q [rsp], rax
     mov rdi, -3
     call 5
     mov r15, rax
     mov rdi, 3
     call 6
-    mov.q [rsp], rax
+    mov r14, rax
     mov rdi, 7
     call 6
-    mov.q [rsp + 0x8], rax
+    mov r13, rax
     movabs rdi, 0xee6b2800
     call 6
-    mov.q [rsp + 0x10], rax
+    mov r12, rax
     mov rdi, 3
     call 7
-    mov.q [rsp + 0x18], rax
+    mov rbp, rax
     mov rdi, 7
     call 7
-    mov.q [rsp + 0x20], rax
+    mov rbx, rax
     movabs rdi, -0x7538dcfb76180000
     call 7
-    mov rdx, rbx
-    add rdx, rbp
-    add rdx, r12
-    xor ecx, ecx
-    add rcx, rdx
-    mov rsi, r13
-    add rsi, r14
-    add rsi, r15
-    add rcx, rsi
-    mov.q rsi, [rsp]
-    mov.q rdx, [rsp + 0x8]
-    add rsi, rdx
-    mov.q rdx, [rsp + 0x10]
-    add rsi, rdx
-    mov rdi, rcx
-    add rdi, rsi
-    mov.q rdx, [rsp + 0x18]
-    mov.q rcx, [rsp + 0x20]
-    add rdx, rcx
+    mov rsi, rax
+    mov.q rax, [rsp + 0x20]
+    mov.q rcx, [rsp + 0x18]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x10]
+    add rax, rcx
+    xor edx, edx
     add rdx, rax
-    add rdi, rdx
-    mov rax, rdi
+    mov.q rax, [rsp + 0x8]
+    mov.q rcx, [rsp]
+    add rax, rcx
+    add rax, r15
+    add rdx, rax
+    mov rcx, r14
+    add rcx, r13
+    add rcx, r12
+    mov rax, rdx
+    add rax, rcx
+    mov rcx, rbp
+    add rcx, rbx
+    add rcx, rsi
+    add rax, rcx
     add rsp, 0x28
     pop r15
     pop r14
@@ -215,28 +215,28 @@ uil:
     ret
 =========== OPT LEVEL: mininal ===========
 si:
-    xor eax, eax
+    xor ecx, ecx
 uil:
     cmp edi, 7
-    setz cl
-    movzx rcx, cl
-    movzx ecx, cl
-    add rax, rcx
+    setz al
+    movzx rax, al
+    movzx eax, al
+    add rcx, rax
     cmp edi, 7
-    setnz cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*2]
+    setnz al
+    movzx rax, al
+    movzx eax, al
+    lea rcx, [rcx + rax*2]
     cmp edi, 7
-    setnge cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*4]
+    setnge al
+    movzx rax, al
+    movzx eax, al
+    lea rcx, [rcx + rax*4]
     cmp edi, 7
-    setng cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*8]
+    setng al
+    movzx rax, al
+    movzx eax, al
+    lea rax, [rcx + rax*8]
     cmp edi, 7
     setnle cl
     movzx rcx, cl
@@ -251,27 +251,27 @@ uil:
     add rax, rcx
     ret
 5:
-    xor eax, eax
+    xor ecx, ecx
     cmp rdi, 7
-    setz cl
-    movzx rcx, cl
-    movzx ecx, cl
-    add rax, rcx
+    setz al
+    movzx rax, al
+    movzx eax, al
+    add rcx, rax
     cmp rdi, 7
-    setnz cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*2]
+    setnz al
+    movzx rax, al
+    movzx eax, al
+    lea rcx, [rcx + rax*2]
     cmp rdi, 7
-    setnge cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*4]
+    setnge al
+    movzx rax, al
+    movzx eax, al
+    lea rcx, [rcx + rax*4]
     cmp rdi, 7
-    setng cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*8]
+    setng al
+    movzx rax, al
+    movzx eax, al
+    lea rax, [rcx + rax*8]
     cmp rdi, 7
     setnle cl
     movzx rcx, cl
@@ -286,27 +286,27 @@ uil:
     add rax, rcx
     ret
 6:
-    xor eax, eax
+    xor ecx, ecx
     cmp edi, 7
-    setz cl
-    movzx rcx, cl
-    movzx ecx, cl
-    add rax, rcx
+    setz al
+    movzx rax, al
+    movzx eax, al
+    add rcx, rax
     cmp edi, 7
-    setnz cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*2]
+    setnz al
+    movzx rax, al
+    movzx eax, al
+    lea rcx, [rcx + rax*2]
     cmp edi, 7
-    setnae cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*4]
+    setnae al
+    movzx rax, al
+    movzx eax, al
+    lea rcx, [rcx + rax*4]
     cmp edi, 7
-    setna cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*8]
+    setna al
+    movzx rax, al
+    movzx eax, al
+    lea rax, [rcx + rax*8]
     cmp edi, 7
     setnbe cl
     movzx rcx, cl
@@ -321,27 +321,27 @@ uil:
     add rax, rcx
     ret
 7:
-    xor eax, eax
+    xor ecx, ecx
     cmp rdi, 7
-    setz cl
-    movzx rcx, cl
-    movzx ecx, cl
-    add rax, rcx
+    setz al
+    movzx rax, al
+    movzx eax, al
+    add rcx, rax
     cmp rdi, 7
-    setnz cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*2]
+    setnz al
+    movzx rax, al
+    movzx eax, al
+    lea rcx, [rcx + rax*2]
     cmp rdi, 7
-    setnae cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*4]
+    setnae al
+    movzx rax, al
+    movzx eax, al
+    lea rcx, [rcx + rax*4]
     cmp rdi, 7
-    setna cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*8]
+    setna al
+    movzx rax, al
+    movzx eax, al
+    lea rax, [rcx + rax*8]
     cmp rdi, 7
     setnbe cl
     movzx rcx, cl
@@ -365,61 +365,61 @@ uil:
     sub rsp, 0x28
     mov rdi, 3
     call si
-    mov rbx, rax
+    mov.q [rsp + 0x20], rax
     mov rdi, 7
     call si
-    mov rbp, rax
+    mov.q [rsp + 0x18], rax
     mov rdi, -3
     call si
-    mov r12, rax
+    mov.q [rsp + 0x10], rax
     mov rdi, 3
     call 5
-    mov r13, rax
+    mov.q [rsp + 0x8], rax
     mov rdi, 7
     call 5
-    mov r14, rax
+    mov.q [rsp], rax
     mov rdi, -3
     call 5
     mov r15, rax
     mov rdi, 3
     call 6
-    mov.q [rsp], rax
+    mov r14, rax
     mov rdi, 7
     call 6
-    mov.q [rsp + 0x8], rax
+    mov r13, rax
     movabs rdi, 0xee6b2800
     call 6
-    mov.q [rsp + 0x10], rax
+    mov r12, rax
     mov rdi, 3
     call 7
-    mov.q [rsp + 0x18], rax
+    mov rbp, rax
     mov rdi, 7
     call 7
-    mov.q [rsp + 0x20], rax
+    mov rbx, rax
     movabs rdi, -0x7538dcfb76180000
     call 7
-    mov rdx, rbx
-    add rdx, rbp
-    add rdx, r12
-    xor ecx, ecx
-    add rcx, rdx
-    mov rsi, r13
-    add rsi, r14
-    add rsi, r15
-    add rcx, rsi
-    mov.q rsi, [rsp]
-    mov.q rdx, [rsp + 0x8]
-    add rsi, rdx
-    mov.q rdx, [rsp + 0x10]
-    add rsi, rdx
-    mov rdi, rcx
-    add rdi, rsi
-    mov.q rdx, [rsp + 0x18]
-    mov.q rcx, [rsp + 0x20]
-    add rdx, rcx
+    mov rsi, rax
+    mov.q rax, [rsp + 0x20]
+    mov.q rcx, [rsp + 0x18]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x10]
+    add rax, rcx
+    xor edx, edx
     add rdx, rax
-    add rdi, rdx
-    mov rax, rdi
+    mov.q rax, [rsp + 0x8]
+    mov.q rcx, [rsp]
+    add rax, rcx
+    add rax, r15
+    add rdx, rax
+    mov rcx, r14
+    add rcx, r13
+    add rcx, r12
+    mov rax, rdx
+    add rax, rcx
+    mov rcx, rbp
+    add rcx, rbx
+    add rcx, rsi
+    add rax, rcx
     add rsp, 0x28
     pop r15
     pop r14
@@ -433,22 +433,22 @@ si:
     cmp edi, 7
     setz al
     movzx rax, al
+    movzx ecx, al
+    cmp edi, 7
+    setnz al
+    movzx rax, al
     movzx eax, al
+    lea rcx, [rcx + rax*2]
     cmp edi, 7
-    setnz cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*2]
+    setnge al
+    movzx rax, al
+    movzx eax, al
+    lea rcx, [rcx + rax*4]
     cmp edi, 7
-    setnge cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*4]
-    cmp edi, 7
-    setng cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*8]
+    setng al
+    movzx rax, al
+    movzx eax, al
+    lea rax, [rcx + rax*8]
     cmp edi, 7
     setnle cl
     movzx rcx, cl
@@ -466,22 +466,22 @@ si:
     cmp rdi, 7
     setz al
     movzx rax, al
+    movzx ecx, al
+    cmp rdi, 7
+    setnz al
+    movzx rax, al
     movzx eax, al
+    lea rcx, [rcx + rax*2]
     cmp rdi, 7
-    setnz cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*2]
+    setnge al
+    movzx rax, al
+    movzx eax, al
+    lea rcx, [rcx + rax*4]
     cmp rdi, 7
-    setnge cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*4]
-    cmp rdi, 7
-    setng cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*8]
+    setng al
+    movzx rax, al
+    movzx eax, al
+    lea rax, [rcx + rax*8]
     cmp rdi, 7
     setnle cl
     movzx rcx, cl
@@ -499,22 +499,22 @@ si:
     cmp edi, 7
     setz al
     movzx rax, al
+    movzx ecx, al
+    cmp edi, 7
+    setnz al
+    movzx rax, al
     movzx eax, al
+    lea rcx, [rcx + rax*2]
     cmp edi, 7
-    setnz cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*2]
+    setnae al
+    movzx rax, al
+    movzx eax, al
+    lea rcx, [rcx + rax*4]
     cmp edi, 7
-    setnae cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*4]
-    cmp edi, 7
-    setna cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*8]
+    setna al
+    movzx rax, al
+    movzx eax, al
+    lea rax, [rcx + rax*8]
     cmp edi, 7
     setnbe cl
     movzx rcx, cl
@@ -532,22 +532,22 @@ si:
     cmp rdi, 7
     setz al
     movzx rax, al
+    movzx ecx, al
+    cmp rdi, 7
+    setnz al
+    movzx rax, al
     movzx eax, al
+    lea rcx, [rcx + rax*2]
     cmp rdi, 7
-    setnz cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*2]
+    setnae al
+    movzx rax, al
+    movzx eax, al
+    lea rcx, [rcx + rax*4]
     cmp rdi, 7
-    setnae cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*4]
-    cmp rdi, 7
-    setna cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*8]
+    setna al
+    movzx rax, al
+    movzx eax, al
+    lea rax, [rcx + rax*8]
     cmp rdi, 7
     setnbe cl
     movzx rcx, cl
@@ -571,61 +571,61 @@ si:
     sub rsp, 0x28
     mov rdi, 3
     call si
-    mov rbx, rax
+    mov.q [rsp + 0x20], rax
     mov rdi, 7
     call si
-    mov rbp, rax
+    mov.q [rsp + 0x18], rax
     mov rdi, -3
     call si
-    mov r12, rax
+    mov.q [rsp + 0x10], rax
     mov rdi, 3
     call 5
-    mov r13, rax
+    mov.q [rsp + 0x8], rax
     mov rdi, 7
     call 5
-    mov r14, rax
+    mov.q [rsp], rax
     mov rdi, -3
     call 5
     mov r15, rax
     mov rdi, 3
     call 6
-    mov.q [rsp], rax
+    mov r14, rax
     mov rdi, 7
     call 6
-    mov.q [rsp + 0x8], rax
+    mov r13, rax
     movabs rdi, 0xee6b2800
     call 6
-    mov.q [rsp + 0x10], rax
+    mov r12, rax
     mov rdi, 3
     call 7
-    mov.q [rsp + 0x18], rax
+    mov rbp, rax
     mov rdi, 7
     call 7
-    mov.q [rsp + 0x20], rax
+    mov rbx, rax
     movabs rdi, -0x7538dcfb76180000
     call 7
-    mov rcx, rbx
-    add rcx, rbp
-    mov rdx, rcx
-    add rdx, r12
-    mov rsi, r13
-    add rsi, r14
-    add rsi, r15
-    mov rcx, rdx
-    add rcx, rsi
-    mov.q rsi, [rsp]
-    mov.q rdx, [rsp + 0x8]
-    add rsi, rdx
-    mov.q rdx, [rsp + 0x10]
-    add rsi, rdx
-    mov rdx, rcx
-    add rdx, rsi
-    mov.q rsi, [rsp + 0x18]
+    mov rsi, rax
     mov.q rcx, [rsp + 0x20]
-    add rsi, rcx
-    add rsi, rax
-    add rdx, rsi
-    mov rax, rdx
+    mov.q rax, [rsp + 0x18]
+    add rcx, rax
+    mov rdx, rcx
+    mov.q rax, [rsp + 0x10]
+    add rdx, rax
+    mov.q rax, [rsp + 0x8]
+    mov.q rcx, [rsp]
+    add rax, rcx
+    add rax, r15
+    add rdx, rax
+    mov rax, r14
+    add rax, r13
+    add rax, r12
+    mov rcx, rdx
+    add rcx, rax
+    mov rax, rbp
+    add rax, rbx
+    add rax, rsi
+    add rcx, rax
+    mov rax, rcx
     add rsp, 0x28
     pop r15
     pop r14
@@ -639,22 +639,22 @@ si:
     cmp edi, 7
     setz al
     movzx rax, al
+    movzx ecx, al
+    cmp edi, 7
+    setnz al
+    movzx rax, al
     movzx eax, al
+    lea rcx, [rcx + rax*2]
     cmp edi, 7
-    setnz cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*2]
+    setnge al
+    movzx rax, al
+    movzx eax, al
+    lea rcx, [rcx + rax*4]
     cmp edi, 7
-    setnge cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*4]
-    cmp edi, 7
-    setng cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*8]
+    setng al
+    movzx rax, al
+    movzx eax, al
+    lea rax, [rcx + rax*8]
     cmp edi, 7
     setnle cl
     movzx rcx, cl
@@ -672,22 +672,22 @@ si:
     cmp rdi, 7
     setz al
     movzx rax, al
+    movzx ecx, al
+    cmp rdi, 7
+    setnz al
+    movzx rax, al
     movzx eax, al
+    lea rcx, [rcx + rax*2]
     cmp rdi, 7
-    setnz cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*2]
+    setnge al
+    movzx rax, al
+    movzx eax, al
+    lea rcx, [rcx + rax*4]
     cmp rdi, 7
-    setnge cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*4]
-    cmp rdi, 7
-    setng cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*8]
+    setng al
+    movzx rax, al
+    movzx eax, al
+    lea rax, [rcx + rax*8]
     cmp rdi, 7
     setnle cl
     movzx rcx, cl
@@ -705,22 +705,22 @@ si:
     cmp edi, 7
     setz al
     movzx rax, al
+    movzx ecx, al
+    cmp edi, 7
+    setnz al
+    movzx rax, al
     movzx eax, al
+    lea rcx, [rcx + rax*2]
     cmp edi, 7
-    setnz cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*2]
+    setnae al
+    movzx rax, al
+    movzx eax, al
+    lea rcx, [rcx + rax*4]
     cmp edi, 7
-    setnae cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*4]
-    cmp edi, 7
-    setna cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*8]
+    setna al
+    movzx rax, al
+    movzx eax, al
+    lea rax, [rcx + rax*8]
     cmp edi, 7
     setnbe cl
     movzx rcx, cl
@@ -738,22 +738,22 @@ si:
     cmp rdi, 7
     setz al
     movzx rax, al
+    movzx ecx, al
+    cmp rdi, 7
+    setnz al
+    movzx rax, al
     movzx eax, al
+    lea rcx, [rcx + rax*2]
     cmp rdi, 7
-    setnz cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*2]
+    setnae al
+    movzx rax, al
+    movzx eax, al
+    lea rcx, [rcx + rax*4]
     cmp rdi, 7
-    setnae cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*4]
-    cmp rdi, 7
-    setna cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*8]
+    setna al
+    movzx rax, al
+    movzx eax, al
+    lea rax, [rcx + rax*8]
     cmp rdi, 7
     setnbe cl
     movzx rcx, cl
@@ -777,61 +777,61 @@ si:
     sub rsp, 0x28
     mov rdi, 3
     call si
-    mov rbx, rax
+    mov.q [rsp + 0x20], rax
     mov rdi, 7
     call si
-    mov rbp, rax
+    mov.q [rsp + 0x18], rax
     mov rdi, -3
     call si
-    mov r12, rax
+    mov.q [rsp + 0x10], rax
     mov rdi, 3
     call 5
-    mov r13, rax
+    mov.q [rsp + 0x8], rax
     mov rdi, 7
     call 5
-    mov r14, rax
+    mov.q [rsp], rax
     mov rdi, -3
     call 5
     mov r15, rax
     mov rdi, 3
     call 6
-    mov.q [rsp], rax
+    mov r14, rax
     mov rdi, 7
     call 6
-    mov.q [rsp + 0x8], rax
+    mov r13, rax
     movabs rdi, 0xee6b2800
     call 6
-    mov.q [rsp + 0x10], rax
+    mov r12, rax
     mov rdi, 3
     call 7
-    mov.q [rsp + 0x18], rax
+    mov rbp, rax
     mov rdi, 7
     call 7
-    mov.q [rsp + 0x20], rax
+    mov rbx, rax
     movabs rdi, -0x7538dcfb76180000
     call 7
-    mov rcx, rbx
-    add rcx, rbp
-    mov rdx, rcx
-    add rdx, r12
-    mov rsi, r13
-    add rsi, r14
-    add rsi, r15
-    mov rcx, rdx
-    add rcx, rsi
-    mov.q rsi, [rsp]
-    mov.q rdx, [rsp + 0x8]
-    add rsi, rdx
-    mov.q rdx, [rsp + 0x10]
-    add rsi, rdx
-    mov rdx, rcx
-    add rdx, rsi
-    mov.q rsi, [rsp + 0x18]
+    mov rsi, rax
     mov.q rcx, [rsp + 0x20]
-    add rsi, rcx
-    add rsi, rax
-    add rdx, rsi
-    mov rax, rdx
+    mov.q rax, [rsp + 0x18]
+    add rcx, rax
+    mov rdx, rcx
+    mov.q rax, [rsp + 0x10]
+    add rdx, rax
+    mov.q rax, [rsp + 0x8]
+    mov.q rcx, [rsp]
+    add rax, rcx
+    add rax, r15
+    add rdx, rax
+    mov rax, r14
+    add rax, r13
+    add rax, r12
+    mov rcx, rdx
+    add rcx, rax
+    mov rax, rbp
+    add rax, rbx
+    add rax, rsi
+    add rcx, rax
+    mov rax, rcx
     add rsp, 0x28
     pop r15
     pop r14

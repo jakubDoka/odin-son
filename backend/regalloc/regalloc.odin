@@ -28,12 +28,21 @@ regalloc :: proc(
 ) -> []backend.Reg {
 	if graph.node_spec.collect_meta == nil do return {}
 
+	base := int(graph.gvn)
+	total := base
 	for i in 0 ..< 7 {
 		res, ok := regalloc_round(ra, graph, sched, scratch, i)
 		if ok {
+			backend.add_efficiency_stat(
+				graph.stats,
+				.regalloc_rounds,
+				total,
+				base,
+			)
 			if backend.REGLOGS do log.info("regalloc rounds:", i)
 			return res
 		}
+		total += int(graph.gvn)
 	}
 
 	panic("Ralloc took too many rounds")
@@ -67,6 +76,7 @@ regalloc_round :: proc(
 		self_conflicts:  map[Self_Conflict]Node_ID,
 		adj:             [][]^backend.Lrg,
 		metas:           []backend.Regalloc_Node_Meta,
+		color_ord:       []u32,
 	}
 
 	ctx: Ctx
@@ -75,7 +85,7 @@ regalloc_round :: proc(
 	ctx.graph = graph
 	ctx.sched = sched
 
-	max_lrg_count := 0
+	def_count := 0
 	block_base := int(graph.gvn) - len(sched.bbs)
 	ctx.instr_placement = make([]Instr_Placement, block_base)
 	rev_gvn := block_base
@@ -88,8 +98,8 @@ regalloc_round :: proc(
 		for instr in bb.instrs {
 			instr_node := graph_get(graph, instr)
 			if instr_node.dt != .Void {
-				instr_node.gvn = u32(max_lrg_count)
-				max_lrg_count += 1
+				instr_node.gvn = u32(def_count)
+				def_count += 1
 			} else {
 				rev_gvn -= 1
 				instr_node.gvn = u32(rev_gvn)
@@ -102,10 +112,10 @@ regalloc_round :: proc(
 
 	ctx.metas = graph.collect_meta(graph, ra, sched)
 
-	lrgs := make([]backend.Lrg, max_lrg_count)
+	lrgs := make([]backend.Lrg, def_count)
 	used_lrgs: u32
 
-	ctx.lrg_table = make([]^backend.Lrg, max_lrg_count)
+	ctx.lrg_table = make([]^backend.Lrg, def_count)
 
 	for bb in sched.bbs {
 		for instr in bb.instrs {
@@ -174,7 +184,6 @@ regalloc_round :: proc(
 					intersect(lrg, mask)
 				}
 
-				//fmt.println(inode)
 				for o in inode.outs {
 					onode := graph_expand(graph, o.id)
 					if !is_data_dep(ctx, onode, o.idx) do continue
@@ -196,6 +205,24 @@ regalloc_round :: proc(
 	for &l in ctx.lrg_table {
 		failed_any |= l.fails != {}
 		l = find(l)
+	}
+
+	projection := make([]u32, used_lrgs)
+	preserved: u32
+	for &lrg, i in lrgs[:used_lrgs] {
+		if lrg.parent == nil {
+			projection[i] = preserved
+			lrg.index = preserved
+			lrgs[preserved] = lrg
+			preserved += 1
+		}
+	}
+
+	used_lrgs = preserved
+
+	for &lrg in ctx.lrg_table {
+		idx := (uintptr(lrg) - uintptr(raw_data(lrgs))) / size_of(backend.Lrg)
+		lrg = &lrgs[projection[idx]]
 	}
 
 	//log_lrgs(graph, sched, lrg_table)
@@ -493,6 +520,13 @@ regalloc_round :: proc(
 	slice_base := 0
 	slice_cursor := 0
 
+	backend.add_efficiency_stat(
+		graph,
+		.regalloc_memory_overhead,
+		len(slices),
+		used_lrgs,
+	)
+
 	iter := bit_arr.iter(interference)
 	for edge in bit_arr.iter_next(&iter) {
 		assert(edge != cursor)
@@ -597,6 +631,7 @@ regalloc_round :: proc(
 			winner.longest_use_area = inlrg.longest_use_area
 			winner.longest_def = inlrg.longest_def
 			ifg[winner.index] = buf
+			ifg[other.index] = {}
 
 			ordered_remove(&bb.instrs, j)
 			backend.graph_subsume(graph, inode.inps[0], instr)
@@ -626,35 +661,138 @@ regalloc_round :: proc(
 		}
 	}
 
-	color_order := make([]bit_field u64 {
-			idx:      u32 | 32,
-			priority: u32 | 32,
-		}, len(ifg))
+	failed := 0
+	when !ODIN_DISABLE_ASSERT {
+		sum := 0
+		for i in ifg {
+			sum += len(i)
+		}
+	}
+
+	color_ord := make(type_of(ctx.color_ord), len(ifg))
 
 	alive_lrgs := 0
 	for &lrg in lrgs[:used_lrgs] {
 		if !ok do break
 		if lrg.parent != nil do continue
-		color_order[alive_lrgs] = {
-			idx      = u32(lrg.index),
-			priority = 10000 - color_priority(ctx, &lrg, ifg[lrg.index]),
-		}
+		color_ord[alive_lrgs] = lrg.index
+		lrg.color_ord_idx = alive_lrgs
 		alive_lrgs += 1
 	}
 
-	color_order = color_order[:alive_lrgs]
+	ctx.color_ord = color_ord[:alive_lrgs]
 
-	sort.quick_sort(color_order)
+	ready := 0
+	done := 0
 
-	if failed_any do color_order = {}
+	for elm, i in ctx.color_ord {
+		lrg := &lrgs[elm]
+		if is_colorable(ctx, lrg, ready) {
+			swap_ord(ctx, lrg, &lrgs[ctx.color_ord[ready]])
+			ready += 1
+		}
+	}
 
-	for co in color_order {
-		n := ifg[co.idx]
-		lrg := &lrgs[co.idx]
+	for {
+		for ; done < ready; done += 1 {
+			lrg := &lrgs[ctx.color_ord[done]]
+			remove_from_ifg(ctx, lrg)
+
+			for olrg in ctx.adj[lrg.index] {
+				if is_colorable(ctx, olrg, ready) {
+					swap_ord(ctx, olrg, &lrgs[ctx.color_ord[ready]])
+					ready += 1
+				}
+			}
+		}
+
+		if done >= len(ctx.color_ord) do break
+
+		// this will basically fail, but pick somebody who is low cost to
+		// spill
+
+		best := ready
+		for pick in ready + 1 ..< len(ctx.color_ord) {
+			blrg := &lrgs[ctx.color_ord[best]]
+			lrg := &lrgs[ctx.color_ord[pick]]
+
+			if blrg.longest_use_area > lrg.longest_use_area {
+				continue
+			}
+
+			if len(ifg[blrg.index]) > len(ifg[lrg.index]) {
+				continue
+			}
+
+			best = pick
+		}
+
+		swap_ord(ctx, &lrgs[ctx.color_ord[ready]], &lrgs[ctx.color_ord[best]])
+		ready += 1
+
+		assert(ready <= len(ctx.color_ord))
+
+		failed += 1
+	}
+
+	swap_ord :: proc(ctx: Ctx, a, b: ^backend.Lrg) {
+		assert(ctx.color_ord[a.color_ord_idx] == a.index)
+		assert(ctx.color_ord[b.color_ord_idx] == b.index)
+
+		a.color_ord_idx, b.color_ord_idx = b.color_ord_idx, a.color_ord_idx
+		ctx.color_ord[a.color_ord_idx], ctx.color_ord[b.color_ord_idx] =
+			ctx.color_ord[b.color_ord_idx], ctx.color_ord[a.color_ord_idx]
+
+		assert(ctx.color_ord[a.color_ord_idx] == a.index)
+		assert(ctx.color_ord[b.color_ord_idx] == b.index)
+	}
+
+	remove_from_ifg :: proc(ctx: Ctx, lrg: ^backend.Lrg) {
+		for adj in ctx.adj[lrg.index] {
+			slc := &ctx.adj[adj.index]
+			idx :=
+				slice.linear_search(slc^, lrg) or_else panic(
+					"removed a lrg twice",
+				)
+			slc[idx], slc[len(slc) - 1] = slc[len(slc) - 1], slc[idx]
+			slc^ = slc[:len(slc) - 1]
+		}
+	}
+
+	is_colorable :: #force_inline proc(
+		ctx: Ctx,
+		lrg: ^backend.Lrg,
+		ready: int,
+	) -> (
+		yes: bool,
+	) {
+		return(
+			backend.reg_mask_pop_count(lrg.mask) > len(ctx.adj[lrg.index]) &&
+			lrg.color_ord_idx >= ready \
+		)
+	}
+
+	if failed_any do ctx.color_ord = {}
+
+	failed_to_color := false
+
+	#reverse for co in ctx.color_ord {
+		n := ifg[co]
+		lrg := &lrgs[co]
 		assert(lrg.parent == nil)
+
 		for inter in n {
-			if inter.reg == -1 do continue
-			backend.reg_mask_set(lrg.mask, inter.reg, false)
+			adjs := &ifg[inter.index]
+			adjs^ = raw_data(adjs^)[:len(adjs) + 1]
+			fmt.assertf(
+				adjs[len(adjs) - 1] == lrg,
+				"%v %v",
+				adjs[len(adjs) - 1],
+				lrg,
+			)
+			if inter.reg != -1 {
+				backend.reg_mask_set(lrg.mask, inter.reg, false)
+			}
 		}
 
 		if lrg.mask.masks[0] & ctx.ra.call_clobbers[0][lrg.mask.kind] != 0 {
@@ -663,6 +801,7 @@ regalloc_round :: proc(
 
 		first_set, fok := backend.reg_mask_first_set(lrg.mask)
 		if !fok {
+			failed_to_color = true
 			lrg.failed_to_color = true
 			continue
 		}
@@ -672,10 +811,21 @@ regalloc_round :: proc(
 		lrg.reg = i16(first_set)
 	}
 
-	//log_lrgs(&ctx)
+	when !ODIN_DISABLE_ASSERT {
+		for i in ifg {
+			sum -= len(i)
+		}
+		assert(sum == 0)
+	}
 
-	res = make([]backend.Reg, max_lrg_count)
+	backend.add_efficiency_stat(
+		graph.stats,
+		.regalloc_wasted_lrgs,
+		used_lrgs,
+		len(ctx.color_ord),
+	)
 
+	res = make([]backend.Reg, def_count)
 	for lrg, j in ctx.lrg_table {
 		res[j] = {
 			kind  = lrg.mask.kind,
@@ -1066,6 +1216,8 @@ regalloc_round :: proc(
 
 	log_lrgs(&ctx)
 
+	assert(!failed_to_color || failed != 0)
+
 	return
 
 	assert_matching_masks :: proc(
@@ -1399,16 +1551,11 @@ regalloc_round :: proc(
 		return id
 	}
 
-	color_priority :: proc(
-		ctx: Ctx,
-		lrg: ^backend.Lrg,
-		adj: []^backend.Lrg,
-	) -> (
-		vl: u32,
-	) {
+	color_priority :: proc(ctx: Ctx, lrg: ^backend.Lrg) -> (vl: u32) {
 		graph := ctx.graph
 		lrg_table := ctx.lrg_table
 		instr_placement := ctx.instr_placement
+		adj := ctx.adj[lrg.index]
 
 		if backend.reg_mask_pop_count(lrg.mask) > len(adj) {
 			return 0
@@ -1559,7 +1706,7 @@ regalloc_round :: proc(
 				fmt.wprintf(w, "%3i", lrg.index)
 				backend.ansi_end(w)
 				if len(ctx.adj) != 0 {
-					priority := color_priority(ctx^, lrg, ctx.adj[lrg.index])
+					priority := color_priority(ctx^, lrg)
 					fmt.wprintf(w, " %04i %02i ", priority, lrg.reg)
 				} else {
 					fmt.wprint(w, "            ")

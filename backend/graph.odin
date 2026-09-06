@@ -43,6 +43,9 @@ Efficiency_Stat_Kind :: enum int {
 	graph_waste,
 	late_schedule_rounds,
 	ifg_rounds,
+	regalloc_rounds,
+	regalloc_memory_overhead,
+	regalloc_wasted_lrgs,
 	peephole_rounds,
 	splits_inserted,
 	clones,
@@ -58,6 +61,15 @@ Efficiency_Stat_Kind :: enum int {
 Efficiency_Stat :: struct {
 	total: int,
 	ideal: int,
+}
+
+aggregate_effeciency_stats :: proc(dest: ^Stats, src: ^Stats) {
+	for i in 0 ..< len(dest.efficiency) {
+		i := Efficiency_Stat_Kind(i)
+		dest.efficiency[i].total += src.efficiency[i].total
+		dest.efficiency[i].ideal += src.efficiency[i].ideal
+	}
+	src^ = {}
 }
 
 add_efficiency_stat :: proc(

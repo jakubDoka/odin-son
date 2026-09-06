@@ -24,17 +24,17 @@ test_mem_imm_shifts i64 u64:
     lea rsi, [rsp + 0x1]
     mov rdx, 3
     call 11
-    mov rbx, rax
+    mov.q [rsp + 0x1e], rax
     mov rdx, 3
     lea rdi, [rsp + 0x2]
     lea rsi, [rsp + 0x4]
     call 12
-    mov rbp, rax
+    mov r15, rax
     mov rdx, 3
     lea rdi, [rsp + 0x6]
     lea rsi, [rsp + 0xa]
     call 13
-    mov r12, rax
+    mov r14, rax
     mov rdx, 3
     lea rdi, [rsp + 0xe]
     lea rsi, [rsp + 0x16]
@@ -43,28 +43,28 @@ test_mem_imm_shifts i64 u64:
     lea rdi, [rsp]
     lea rsi, [rsp + 0x1]
     call 15
-    mov r14, rax
+    mov r12, rax
     lea rdi, [rsp + 0x2]
     lea rsi, [rsp + 0x4]
     call 16
-    mov r15, rax
+    mov rbp, rax
     lea rdi, [rsp + 0x6]
     lea rsi, [rsp + 0xa]
     call 17
-    mov.q [rsp + 0x1e], rax
+    mov rbx, rax
     lea rdi, [rsp + 0xe]
     lea rsi, [rsp + 0x16]
     call 18
-    mov rdx, rbx
-    add rdx, rbp
-    add rdx, r12
-    add rdx, r13
-    add rdx, r14
-    add rdx, r15
+    mov rdx, rax
     mov.q rcx, [rsp + 0x1e]
-    add rdx, rcx
-    add rdx, rax
-    mov rax, rdx
+    add rcx, r15
+    add rcx, r14
+    add rcx, r13
+    add rcx, r12
+    add rcx, rbp
+    add rcx, rbx
+    add rcx, rdx
+    mov rax, rcx
     add rsp, 0x28
     pop r15
     pop r14
@@ -205,17 +205,17 @@ test_mem_imm_shifts i64 u64:
     lea rsi, [rsp + 0x1]
     mov rdx, 3
     call 11
-    mov rbx, rax
+    mov.q [rsp + 0x1e], rax
     mov rdx, 3
     lea rdi, [rsp + 0x2]
     lea rsi, [rsp + 0x4]
     call 12
-    mov rbp, rax
+    mov r15, rax
     mov rdx, 3
     lea rdi, [rsp + 0x6]
     lea rsi, [rsp + 0xa]
     call 13
-    mov r12, rax
+    mov r14, rax
     mov rdx, 3
     lea rdi, [rsp + 0xe]
     lea rsi, [rsp + 0x16]
@@ -224,28 +224,28 @@ test_mem_imm_shifts i64 u64:
     lea rdi, [rsp]
     lea rsi, [rsp + 0x1]
     call 15
-    mov r14, rax
+    mov r12, rax
     lea rdi, [rsp + 0x2]
     lea rsi, [rsp + 0x4]
     call 16
-    mov r15, rax
+    mov rbp, rax
     lea rdi, [rsp + 0x6]
     lea rsi, [rsp + 0xa]
     call 17
-    mov.q [rsp + 0x1e], rax
+    mov rbx, rax
     lea rdi, [rsp + 0xe]
     lea rsi, [rsp + 0x16]
     call 18
-    mov rdx, rbx
-    add rdx, rbp
-    add rdx, r12
-    add rdx, r13
-    add rdx, r14
-    add rdx, r15
+    mov rdx, rax
     mov.q rcx, [rsp + 0x1e]
-    add rdx, rcx
-    add rdx, rax
-    mov rax, rdx
+    add rcx, r15
+    add rcx, r14
+    add rcx, r13
+    add rcx, r12
+    add rcx, rbp
+    add rcx, rbx
+    add rcx, rdx
+    mov rax, rcx
     add rsp, 0x28
     pop r15
     pop r14
@@ -306,19 +306,19 @@ test_mem_imm_shifts i64 u64:
     mov rax, rdx
     mov rcx, rax
     sal.q [rdi], cl
-    mov.q rdx, [rdi]
+    mov.q r8, [rdi]
     mov rcx, rax
-    sar rdx, cl
-    mov.q [rdi], rdx
+    sar r8, cl
+    mov.q [rdi], r8
     mov rcx, rax
     shr.q [rsi], cl
-    mov.q rdi, [rsi]
+    mov.q rdx, [rsi]
     mov rcx, rax
-    sal rdi, cl
-    mov.q [rsi], rdi
+    sal rdx, cl
+    mov.q [rsi], rdx
     xor eax, eax
+    add rax, r8
     add rax, rdx
-    add rax, rdi
     ret
 15:
     shl.b [rdi], 3
@@ -355,16 +355,16 @@ test_mem_imm_shifts i64 u64:
     ret
 18:
     sal.q [rdi], 3
-    mov.q rcx, [rdi]
-    sar rcx, 3
-    mov.q [rdi], rcx
+    mov.q rdx, [rdi]
+    sar rdx, 3
+    mov.q [rdi], rdx
     shr.q [rsi], 2
-    mov.q rdx, [rsi]
-    sal rdx, 2
-    mov.q [rsi], rdx
+    mov.q rcx, [rsi]
+    sal rcx, 2
+    mov.q [rsi], rcx
     xor eax, eax
-    add rax, rcx
     add rax, rdx
+    add rax, rcx
     ret
 =========== OPT LEVEL: moderate ===========
 test_mem_shifts:
@@ -392,17 +392,17 @@ test_mem_imm_shifts i64 u64:
     lea rsi, [rsp + 0x1]
     mov rdx, 3
     call 11
-    mov rbx, rax
+    mov.q [rsp + 0x1e], rax
     mov rdx, 3
     lea rdi, [rsp + 0x2]
     lea rsi, [rsp + 0x4]
     call 12
-    mov rbp, rax
+    mov r15, rax
     mov rdx, 3
     lea rdi, [rsp + 0x6]
     lea rsi, [rsp + 0xa]
     call 13
-    mov r12, rax
+    mov r14, rax
     mov rdx, 3
     lea rdi, [rsp + 0xe]
     lea rsi, [rsp + 0x16]
@@ -411,28 +411,28 @@ test_mem_imm_shifts i64 u64:
     lea rdi, [rsp]
     lea rsi, [rsp + 0x1]
     call 15
-    mov r14, rax
+    mov r12, rax
     lea rdi, [rsp + 0x2]
     lea rsi, [rsp + 0x4]
     call 16
-    mov r15, rax
+    mov rbp, rax
     lea rdi, [rsp + 0x6]
     lea rsi, [rsp + 0xa]
     call 17
-    mov.q [rsp + 0x1e], rax
+    mov rbx, rax
     lea rdi, [rsp + 0xe]
     lea rsi, [rsp + 0x16]
     call 18
-    mov rdx, rbx
-    add rdx, rbp
-    add rdx, r12
-    add rdx, r13
-    add rdx, r14
-    add rdx, r15
+    mov rdx, rax
     mov.q rcx, [rsp + 0x1e]
-    add rdx, rcx
-    add rdx, rax
-    mov rax, rdx
+    add rcx, r15
+    add rcx, r14
+    add rcx, r13
+    add rcx, r12
+    add rcx, rbp
+    add rcx, rbx
+    add rcx, rdx
+    mov rax, rcx
     add rsp, 0x28
     pop r15
     pop r14
@@ -442,73 +442,74 @@ test_mem_imm_shifts i64 u64:
     pop rbx
     ret
 11:
-    mov rax, rdx
-    movzx.b edx, [rdi]
-    mov rcx, rax
+    mov r8, rdx
+    movzx.b eax, [rdi]
+    mov rcx, r8
+    sal al, cl
+    mov rcx, r8
+    sar al, cl
+    mov.b [rdi], al
+    movzx.b edx, [rsi]
+    mov rcx, r8
+    shr dl, cl
+    mov rcx, r8
     sal dl, cl
-    mov rcx, rax
-    sar dl, cl
-    mov.b [rdi], dl
-    movzx.b edi, [rsi]
-    mov rcx, rax
-    shr dil, cl
-    mov rcx, rax
-    sal dil, cl
-    mov.b [rsi], dil
-    movsx rax, dl
-    movzx ecx, dil
+    mov.b [rsi], dl
+    movsx rax, al
+    movzx ecx, dl
     add rax, rcx
     ret
 12:
-    mov rax, rdx
-    movzx.w edx, [rdi]
-    mov rcx, rax
+    mov r8, rdx
+    movzx.w eax, [rdi]
+    mov rcx, r8
+    sal ax, cl
+    mov rcx, r8
+    sar ax, cl
+    mov.w [rdi], ax
+    movzx.w edx, [rsi]
+    mov rcx, r8
+    shr dx, cl
+    mov rcx, r8
     sal dx, cl
-    mov rcx, rax
-    sar dx, cl
-    mov.w [rdi], dx
-    movzx.w edi, [rsi]
-    mov rcx, rax
-    shr di, cl
-    mov rcx, rax
-    sal di, cl
-    mov.w [rsi], di
-    movsx rax, dx
-    movzx ecx, di
+    mov.w [rsi], dx
+    movsx rax, ax
+    movzx ecx, dx
     add rax, rcx
     ret
 13:
-    mov rax, rdx
-    mov.d edx, [rdi]
-    mov rcx, rax
+    mov r8, rdx
+    mov.d eax, [rdi]
+    mov rcx, r8
+    sal eax, cl
+    mov rcx, r8
+    sar eax, cl
+    mov.d [rdi], eax
+    mov.d edx, [rsi]
+    mov rcx, r8
+    shr edx, cl
+    mov rcx, r8
     sal edx, cl
-    mov rcx, rax
-    sar edx, cl
-    mov.d [rdi], edx
-    mov.d edi, [rsi]
-    mov rcx, rax
-    shr edi, cl
-    mov rcx, rax
-    sal edi, cl
-    mov.d [rsi], edi
-    movsxd rax, edx
-    mov ecx, edi
+    mov.d [rsi], edx
+    movsxd rax, eax
+    mov ecx, edx
     add rax, rcx
     ret
 14:
+    mov r8, rdx
     mov.q rax, [rdi]
-    mov rcx, rdx
+    mov rcx, r8
     sal rax, cl
-    mov rcx, rdx
+    mov rcx, r8
     sar rax, cl
     mov.q [rdi], rax
-    mov.q rdi, [rsi]
-    mov rcx, rdx
-    shr rdi, cl
-    mov rcx, rdx
-    sal rdi, cl
-    mov.q [rsi], rdi
-    add rax, rdi
+    mov.q rdx, [rsi]
+    mov rcx, r8
+    shr rdx, cl
+    mov rcx, r8
+    sal rdx, cl
+    mov.q [rsi], rdx
+    add rax, rdx
     ret
 15:
     movzx.b eax, [rdi]
@@ -586,17 +587,17 @@ test_mem_imm_shifts i64 u64:
     lea rsi, [rsp + 0x1]
     mov rdx, 3
     call 11
-    mov rbx, rax
+    mov.q [rsp + 0x1e], rax
     mov rdx, 3
     lea rdi, [rsp + 0x2]
     lea rsi, [rsp + 0x4]
     call 12
-    mov rbp, rax
+    mov r15, rax
     mov rdx, 3
     lea rdi, [rsp + 0x6]
     lea rsi, [rsp + 0xa]
     call 13
-    mov r12, rax
+    mov r14, rax
     mov rdx, 3
     lea rdi, [rsp + 0xe]
     lea rsi, [rsp + 0x16]
@@ -605,28 +606,28 @@ test_mem_imm_shifts i64 u64:
     lea rdi, [rsp]
     lea rsi, [rsp + 0x1]
     call 15
-    mov r14, rax
+    mov r12, rax
     lea rdi, [rsp + 0x2]
     lea rsi, [rsp + 0x4]
     call 16
-    mov r15, rax
+    mov rbp, rax
     lea rdi, [rsp + 0x6]
     lea rsi, [rsp + 0xa]
     call 17
-    mov.q [rsp + 0x1e], rax
+    mov rbx, rax
     lea rdi, [rsp + 0xe]
     lea rsi, [rsp + 0x16]
     call 18
-    mov rdx, rbx
-    add rdx, rbp
-    add rdx, r12
-    add rdx, r13
-    add rdx, r14
-    add rdx, r15
+    mov rdx, rax
     mov.q rcx, [rsp + 0x1e]
-    add rdx, rcx
-    add rdx, rax
-    mov rax, rdx
+    add rcx, r15
+    add rcx, r14
+    add rcx, r13
+    add rcx, r12
+    add rcx, rbp
+    add rcx, rbx
+    add rcx, rdx
+    mov rax, rcx
     add rsp, 0x28
     pop r15
     pop r14
@@ -636,73 +637,74 @@ test_mem_imm_shifts i64 u64:
     pop rbx
     ret
 11:
-    mov rax, rdx
-    movzx.b edx, [rdi]
-    mov rcx, rax
+    mov r8, rdx
+    movzx.b eax, [rdi]
+    mov rcx, r8
+    sal al, cl
+    mov rcx, r8
+    sar al, cl
+    mov.b [rdi], al
+    movzx.b edx, [rsi]
+    mov rcx, r8
+    shr dl, cl
+    mov rcx, r8
     sal dl, cl
-    mov rcx, rax
-    sar dl, cl
-    mov.b [rdi], dl
-    movzx.b edi, [rsi]
-    mov rcx, rax
-    shr dil, cl
-    mov rcx, rax
-    sal dil, cl
-    mov.b [rsi], dil
-    movsx rax, dl
-    movzx ecx, dil
+    mov.b [rsi], dl
+    movsx rax, al
+    movzx ecx, dl
     add rax, rcx
     ret
 12:
-    mov rax, rdx
-    movzx.w edx, [rdi]
-    mov rcx, rax
+    mov r8, rdx
+    movzx.w eax, [rdi]
+    mov rcx, r8
+    sal ax, cl
+    mov rcx, r8
+    sar ax, cl
+    mov.w [rdi], ax
+    movzx.w edx, [rsi]
+    mov rcx, r8
+    shr dx, cl
+    mov rcx, r8
     sal dx, cl
-    mov rcx, rax
-    sar dx, cl
-    mov.w [rdi], dx
-    movzx.w edi, [rsi]
-    mov rcx, rax
-    shr di, cl
-    mov rcx, rax
-    sal di, cl
-    mov.w [rsi], di
-    movsx rax, dx
-    movzx ecx, di
+    mov.w [rsi], dx
+    movsx rax, ax
+    movzx ecx, dx
     add rax, rcx
     ret
 13:
-    mov rax, rdx
-    mov.d edx, [rdi]
-    mov rcx, rax
+    mov r8, rdx
+    mov.d eax, [rdi]
+    mov rcx, r8
+    sal eax, cl
+    mov rcx, r8
+    sar eax, cl
+    mov.d [rdi], eax
+    mov.d edx, [rsi]
+    mov rcx, r8
+    shr edx, cl
+    mov rcx, r8
     sal edx, cl
-    mov rcx, rax
-    sar edx, cl
-    mov.d [rdi], edx
-    mov.d edi, [rsi]
-    mov rcx, rax
-    shr edi, cl
-    mov rcx, rax
-    sal edi, cl
-    mov.d [rsi], edi
-    movsxd rax, edx
-    mov ecx, edi
+    mov.d [rsi], edx
+    movsxd rax, eax
+    mov ecx, edx
     add rax, rcx
     ret
 14:
+    mov r8, rdx
     mov.q rax, [rdi]
-    mov rcx, rdx
+    mov rcx, r8
     sal rax, cl
-    mov rcx, rdx
+    mov rcx, r8
     sar rax, cl
     mov.q [rdi], rax
-    mov.q rdi, [rsi]
-    mov rcx, rdx
-    shr rdi, cl
-    mov rcx, rdx
-    sal rdi, cl
-    mov.q [rsi], rdi
-    add rax, rdi
+    mov.q rdx, [rsi]
+    mov rcx, r8
+    shr rdx, cl
+    mov rcx, r8
+    sal rdx, cl
+    mov.q [rsi], rdx
+    add rax, rdx
     ret
 15:
     movzx.b eax, [rdi]

@@ -1,67 +1,67 @@
 =========== OPT LEVEL: none ===========
 main:
-    mov rcx, -6
+    mov rsi, -6
     mov rax, 0x14
     cqo
-    idiv rcx
-    xor esi, esi
-    add rsi, rax
+    idiv rsi
+    xor ecx, ecx
+    add rcx, rax
     mov rax, 0x14
     cqo
-    idiv rcx
-    add rsi, rdx
+    idiv rsi
+    add rcx, rdx
     mov rax, -7
     cqo
-    idiv rcx
-    add rsi, rax
+    idiv rsi
+    add rcx, rax
     mov rax, -7
     cqo
-    idiv rcx
-    add rsi, rdx
+    idiv rsi
+    add rcx, rdx
     mov rax, -7
     sar rax, 1
-    add rsi, rax
+    add rcx, rax
     mov rax, -6
     sar rax, 1
-    add rsi, rax
-    cmp rcx, 0x14
+    add rcx, rax
+    cmp rsi, 0x14
     jnge 1
     jmp 2
 1:
-    add rsi, 1
+    add rcx, 1
 2:
     mov rax, -7
     cmp rax, -6
     jnge 3
     jmp 4
 3:
-    add rsi, 2
+    add rcx, 2
 4:
     mov rax, 0x14
     cmp rax, -6
     jnle 5
     jmp 6
 5:
-    add rsi, 4
+    add rcx, 4
 6:
-    cmp rcx, -7
+    cmp rsi, -7
     jng 7
     jmp 8
 7:
-    add rsi, 8
+    add rcx, 8
 8:
     mov rax, 0x14
     cmp rax, -6
     jnl 9
     jmp 10
 9:
-    add rsi, 0x10
+    add rcx, 0x10
 10:
-    mov rax, rsi
+    mov rax, rcx
     ret
 =========== OPT LEVEL: mininal ===========
 main:
-    mov cl, 1
+    mov dl, 1
     xor eax, eax
     add rax, -3
     add rax, 2
@@ -69,32 +69,32 @@ main:
     add rax, -1
     add rax, -4
     add rax, -3
-    test cl, cl
+    test dl, dl
     jnz 1
     jmp 2
 1:
     add rax, 1
 2:
-    test cl, cl
+    test dl, dl
     jnz 3
     jmp 4
 3:
     add rax, 2
 4:
-    test cl, cl
+    test dl, dl
     jnz 5
     jmp 6
 5:
     add rax, 4
 6:
-    xor edx, edx
-    test dl, dl
+    xor ecx, ecx
+    test cl, cl
     jnz 7
     jmp 8
 7:
     add rax, 8
 8:
-    test cl, cl
+    test dl, dl
     jnz 9
     jmp 10
 9:

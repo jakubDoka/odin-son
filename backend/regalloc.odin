@@ -302,4 +302,5 @@ Lrg :: struct {
 	reg:              i16,
 	longest_use_area: u32,
 	longest_def:      Node_ID,
+	color_ord_idx:    int,
 }

@@ -14,10 +14,10 @@ dirty:
     jmp 2
 3:
     mov rax, 3
-    imul rax, rax, 8
-    lea rcx, [rsp]
-    add rax, rcx
-    mov.q rax, [rax]
+    imul rcx, rax, 8
+    lea rax, [rsp]
+    add rcx, rax
+    mov.q rax, [rcx]
     add rsp, 0x208
     ret
 4:
@@ -26,11 +26,11 @@ dirty:
     push r12
     sub rsp, 0x30
     call dirty
-    mov rbp, rax
+    mov r12, rax
     xor esi, esi
     lea rax, [rsp]
     add rax, 0x20
-    mov r12, rax
+    mov rbp, rax
     mov rax, 1
     imul rbx, rax, 8
     mov rdx, 0x30
@@ -38,26 +38,26 @@ dirty:
     call.q [rip - 0xaa]
     mov.q [rsp + 0x18], 5
     xor eax, eax
-    imul rcx, rax, 8
+    imul rsi, rax, 8
     lea rax, [rsp]
-    add rax, rcx
+    add rax, rsi
     mov.q rax, [rax]
-    lea rdx, [rsp]
-    add rdx, rbx
-    add.q rax, [rdx]
-    mov rdx, 2
-    imul rdx, rdx, 8
-    lea rsi, [rsp]
-    add rdx, rsi
-    add.q rax, [rdx]
-    add.q rax, [rsp + 0x18]
-    mov rdx, r12
-    add rdx, rcx
-    add.q rax, [rdx]
-    mov rcx, r12
+    lea rcx, [rsp]
     add rcx, rbx
     add.q rax, [rcx]
-    add rax, rbp
+    mov rcx, 2
+    imul rdx, rcx, 8
+    lea rcx, [rsp]
+    add rdx, rcx
+    add.q rax, [rdx]
+    add.q rax, [rsp + 0x18]
+    mov rcx, rbp
+    add rcx, rsi
+    add.q rax, [rcx]
+    mov rcx, rbp
+    add rcx, rbx
+    add.q rax, [rcx]
+    add rax, r12
     mov rcx, 0xfb
     cqo
     idiv rcx
@@ -130,18 +130,18 @@ dirty:
 4:
     sub rsp, 0x38
     call dirty
-    mov rdx, rax
+    mov rcx, rax
     pxor xmm0, xmm0
     movups.x [rsp], xmm0
     mov.q [rsp + 0x10], 0
     movups.x [rsp + 0x20], xmm0
     mov.q [rsp + 0x18], 5
-    mov.q rax, [rsp]
-    add.q rax, [rsp + 0x8]
-    mov.q rcx, [rsp + 0x20]
-    lea rax, [rax + rcx + 0x5]
+    mov.q rdx, [rsp]
+    add.q rdx, [rsp + 0x8]
+    mov.q rax, [rsp + 0x20]
+    lea rax, [rdx + rax + 0x5]
     add.q rax, [rsp + 0x28]
-    add rax, rdx
+    add rax, rcx
     mov rcx, 0xfb
     cqo
     idiv rcx
@@ -167,18 +167,18 @@ dirty:
 3:
     sub rsp, 0x38
     call dirty
-    mov rdx, rax
+    mov rcx, rax
     pxor xmm0, xmm0
     movups.x [rsp], xmm0
     mov.q [rsp + 0x10], 0
     movups.x [rsp + 0x20], xmm0
     mov.q [rsp + 0x18], 5
-    mov.q rax, [rsp]
-    add.q rax, [rsp + 0x8]
-    mov.q rcx, [rsp + 0x20]
-    lea rax, [rax + rcx + 0x5]
+    mov.q rdx, [rsp]
+    add.q rdx, [rsp + 0x8]
+    mov.q rax, [rsp + 0x20]
+    lea rax, [rdx + rax + 0x5]
     add.q rax, [rsp + 0x28]
-    add rax, rdx
+    add rax, rcx
     mov rcx, 0xfb
     cqo
     idiv rcx
@@ -198,18 +198,18 @@ dirty:
     add rax, 1
     cmp rax, 0x40
     jnge 2
-    mov.q rcx, [rsp + 0x48]
+    mov.q rdx, [rsp + 0x48]
     pxor xmm0, xmm0
     movups.x [rsp], xmm0
     mov.q [rsp + 0x10], 0
     movups.x [rsp + 0x20], xmm0
     mov.q [rsp + 0x18], 5
-    mov.q rax, [rsp]
-    add.q rax, [rsp + 0x8]
-    mov.q rdx, [rsp + 0x20]
-    lea rax, [rax + rdx + 0x5]
+    mov.q rcx, [rsp]
+    add.q rcx, [rsp + 0x8]
+    mov.q rax, [rsp + 0x20]
+    lea rax, [rcx + rax + 0x5]
     add.q rax, [rsp + 0x28]
-    add rax, rcx
+    add rax, rdx
     mov rcx, 0xfb
     cqo
     idiv rcx

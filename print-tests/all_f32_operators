@@ -1,84 +1,84 @@
 =========== OPT LEVEL: none ===========
 main:
-    movss.d xmm0, [rip + 0x191]
+    movss.d xmm4, [rip + 0x191]
     pxor xmm1, xmm1
-    movss.d xmm2, [rip + 0x189]
-    movss.d xmm3, [rip + 0x186]
-    movss.d xmm4, [rip + 0x171]
-    addss.d xmm4, [rip + 0x174]
-    addss xmm4, xmm1
+    movss.d xmm3, [rip + 0x189]
+    movss.d xmm2, [rip + 0x186]
+    movss.d xmm0, [rip + 0x171]
+    addss.d xmm0, [rip + 0x174]
+    addss xmm0, xmm1
     movss.d xmm1, [rip + 0x15a]
     subss.d xmm1, [rip + 0x15d]
-    addss xmm4, xmm1
-    movss.d xmm5, [rip + 0x143]
-    vfmadd213ss xmm5, xmm3, xmm4
-    movss.d xmm1, [rip + 0x135]
-    divss.d xmm1, [rip + 0x138]
-    addss xmm5, xmm1
-    movss.d xmm1, [rip + 0x124]
-    divss.d xmm1, [rip + 0x121]
-    addss xmm5, xmm1
-    movss.d xmm4, [rip + 0x10d]
-    vfmadd213ss xmm4, xmm3, xmm5
+    addss xmm0, xmm1
+    movss.d xmm1, [rip + 0x143]
+    vfmadd213ss xmm1, xmm2, xmm0
+    movss.d xmm0, [rip + 0x135]
+    divss.d xmm0, [rip + 0x138]
+    addss xmm1, xmm0
+    movss.d xmm0, [rip + 0x124]
+    divss.d xmm0, [rip + 0x121]
+    addss xmm1, xmm0
+    movss.d xmm0, [rip + 0x10d]
+    vfmadd213ss xmm0, xmm2, xmm1
     pxor xmm1, xmm1
     subss.d xmm1, [rip + 0xf4]
-    addss xmm4, xmm1
+    addss xmm0, xmm1
     pxor xmm1, xmm1
     subss.d xmm1, [rip + 0xe7]
-    addss xmm4, xmm1
-    ucomiss.d xmm0, [rip + 0xe0]
+    addss xmm0, xmm1
+    ucomiss.d xmm4, [rip + 0xe0]
     jnbe 1
     jmp 2
 1:
-    addss.d xmm4, [rip + 0xd2]
+    addss.d xmm0, [rip + 0xd2]
 2:
-    ucomiss xmm0, xmm3
+    ucomiss xmm4, xmm2
     jnbe 3
     jmp 4
 3:
-    addss.d xmm4, [rip + 0xc0]
+    addss.d xmm0, [rip + 0xc0]
 4:
-    ucomiss.d xmm0, [rip + 0xac]
+    ucomiss.d xmm4, [rip + 0xac]
     jnc 5
     jmp 6
 5:
-    addss.d xmm4, [rip + 0xaa]
+    addss.d xmm0, [rip + 0xaa]
 6:
-    ucomiss xmm3, xmm0
+    ucomiss xmm2, xmm4
     jnc 7
     jmp 8
 7:
-    addss.d xmm4, [rip + 0x98]
+    addss.d xmm0, [rip + 0x98]
 8:
-    ucomiss.d xmm0, [rip + 0x6c]
+    ucomiss.d xmm4, [rip + 0x6c]
     jz 9
     jmp 10
 9:
-    addss.d xmm4, [rip + 0x82]
+    addss.d xmm0, [rip + 0x82]
 10:
-    ucomiss.d xmm0, [rip + 0x5c]
+    ucomiss.d xmm4, [rip + 0x5c]
     jnz 11
     jmp 12
 11:
-    addss.d xmm4, [rip + 0x6c]
+    addss.d xmm0, [rip + 0x6c]
 12:
-    ucomiss xmm3, xmm2
+    ucomiss xmm2, xmm3
     jnbe 13
     jmp 14
 13:
-    addss.d xmm4, [rip + 0x5a]
+    addss.d xmm0, [rip + 0x5a]
 14:
-    ucomiss xmm2, xmm2
+    ucomiss xmm3, xmm3
     jnc 15
     jmp 16
 15:
-    addss.d xmm4, [rip + 0x48]
+    addss.d xmm0, [rip + 0x48]
 16:
-    cvttss2si rax, xmm4
+    cvttss2si rax, xmm0
     ret
 =========== OPT LEVEL: mininal ===========
 main:
-    mov al, 1
+    mov cl, 1
     pxor xmm0, xmm0
     addss.d xmm0, [rip + 0x109]
     addss.d xmm0, [rip + 0x106]
@@ -88,50 +88,50 @@ main:
     addss.d xmm0, [rip + 0xfa]
     addss.d xmm0, [rip + 0xf7]
     addss.d xmm0, [rip + 0xf4]
-    test al, al
+    test cl, cl
     jnz 1
     jmp 2
 1:
     addss.d xmm0, [rip + 0xe3]
 2:
-    test al, al
+    test cl, cl
     jnz 3
     jmp 4
 3:
     addss.d xmm0, [rip + 0xd2]
 4:
-    test al, al
+    test cl, cl
     jnz 5
     jmp 6
 5:
     addss.d xmm0, [rip + 0xc1]
 6:
-    xor ecx, ecx
-    test cl, cl
+    xor eax, eax
+    test al, al
     jnz 7
     jmp 8
 7:
     addss.d xmm0, [rip + 0xad]
 8:
-    test al, al
+    test cl, cl
     jnz 9
     jmp 10
 9:
     addss.d xmm0, [rip + 0x9c]
 10:
-    test al, al
+    test cl, cl
     jnz 11
     jmp 12
 11:
     addss.d xmm0, [rip + 0x8b]
 12:
-    test al, al
+    test cl, cl
     jnz 13
     jmp 14
 13:
     addss.d xmm0, [rip + 0x7a]
 14:
-    test al, al
+    test cl, cl
     jnz 15
     jmp 16
 15:

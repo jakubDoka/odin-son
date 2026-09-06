@@ -57,15 +57,15 @@ opaque:
     add.b [rsp], 1
     add.w [rsp + 0x2], 2
     add.d [rsp + 0x4], 3
-    mov.q rcx, [rsp + 0x8]
-    add rcx, 4
-    mov.q [rsp + 0x8], rcx
+    mov.q rdx, [rsp + 0x8]
+    add rdx, 4
+    mov.q [rsp + 0x8], rdx
     movzx.b eax, [rsp]
-    movzx.w edx, [rsp + 0x2]
-    add rax, rdx
-    mov.d edx, [rsp + 0x4]
-    add rax, rdx
+    movzx.w ecx, [rsp + 0x2]
     add rax, rcx
+    mov.d ecx, [rsp + 0x4]
+    add rax, rcx
+    add rax, rdx
     add rsp, 0x18
     ret
 =========== OPT LEVEL: moderate ===========
@@ -87,25 +87,25 @@ opaque:
     mov.d [rsp + 0x4], eax
     mov rdi, 0x1f4
     call opaque
-    mov rdi, rax
-    mov.q [rsp + 0x8], rdi
-    movzx.b eax, [rsp]
-    add al, 1
-    mov.b [rsp], al
-    movzx.w ecx, [rsp + 0x2]
-    add cx, 2
-    mov.w [rsp + 0x2], cx
-    add rdi, 4
-    mov.d edx, [rsp + 0x4]
-    add edx, 3
-    mov.d [rsp + 0x4], edx
-    mov.q [rsp + 0x8], rdi
-    movzx eax, al
-    movzx ecx, cx
+    mov rcx, rax
+    mov.q [rsp + 0x8], rcx
+    movzx.b edi, [rsp]
+    add dil, 1
+    mov.b [rsp], dil
+    movzx.w edx, [rsp + 0x2]
+    add dx, 2
+    mov.w [rsp + 0x2], dx
+    add rcx, 4
+    mov.d esi, [rsp + 0x4]
+    add esi, 3
+    mov.d [rsp + 0x4], esi
+    mov.q [rsp + 0x8], rcx
+    movzx eax, dil
+    movzx edx, dx
+    add rax, rdx
+    mov edx, esi
+    add rax, rdx
     add rax, rcx
-    mov ecx, edx
-    add rax, rcx
-    add rax, rdi
     add rsp, 0x18
     ret
 =========== OPT LEVEL: all ===========
@@ -127,25 +127,25 @@ opaque:
     mov.d [rsp + 0x4], eax
     mov rdi, 0x1f4
     call opaque
-    mov rdi, rax
-    mov.q [rsp + 0x8], rdi
-    movzx.b eax, [rsp]
-    add al, 1
-    mov.b [rsp], al
-    movzx.w ecx, [rsp + 0x2]
-    add cx, 2
-    mov.w [rsp + 0x2], cx
-    add rdi, 4
-    mov.d edx, [rsp + 0x4]
-    add edx, 3
-    mov.d [rsp + 0x4], edx
-    mov.q [rsp + 0x8], rdi
-    movzx eax, al
-    movzx ecx, cx
+    mov rcx, rax
+    mov.q [rsp + 0x8], rcx
+    movzx.b edi, [rsp]
+    add dil, 1
+    mov.b [rsp], dil
+    movzx.w edx, [rsp + 0x2]
+    add dx, 2
+    mov.w [rsp + 0x2], dx
+    add rcx, 4
+    mov.d esi, [rsp + 0x4]
+    add esi, 3
+    mov.d [rsp + 0x4], esi
+    mov.q [rsp + 0x8], rcx
+    movzx eax, dil
+    movzx edx, dx
+    add rax, rdx
+    mov edx, esi
+    add rax, rdx
     add rax, rcx
-    mov ecx, edx
-    add rax, rcx
-    add rax, rdi
     add rsp, 0x18
     ret
 =========== OPT LEVEL: aggresive ===========

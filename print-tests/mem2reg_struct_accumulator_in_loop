@@ -86,48 +86,48 @@ opaque:
     sub rsp, 8
     mov rdi, 5
     call opaque
-    mov rcx, rax
+    mov r9, rax
     xor eax, eax
-    cmp rcx, 0
+    cmp r9, 0
     jng 4
-    xor r9d, r9d
-    xor edi, edi
-    xor r8d, r8d
+    xor eax, eax
+    xor edx, edx
+    xor ecx, ecx
 3:
-    mov rax, rdi
-    add rax, 1
-    mov rdx, r9
-    add rdx, 1
-    mov rsi, r8
-    add rsi, rdi
-    cmp rax, rcx
+    mov r8, rdx
+    add r8, 1
     mov rdi, rax
-    mov r8, rsi
-    mov r9, rdx
+    add rdi, 1
+    mov rsi, rcx
+    add rsi, rdx
+    cmp r8, r9
+    mov rdx, r8
+    mov rcx, rsi
+    mov rax, rdi
     jnge 3
     imul rax, rsi, 0x64
-    add rax, rdx
+    add rax, rdi
     jmp 4
 4:
     add rsp, 8
     ret
 =========== OPT LEVEL: aggresive ===========
 opaque:
-    xor edi, edi
-    xor esi, esi
-    xor r8d, r8d
+    xor ecx, ecx
+    xor edx, edx
+    xor eax, eax
 2:
-    mov rax, rsi
-    add rax, 1
-    mov rcx, rdi
-    add rcx, 1
-    mov rdx, r8
-    add rdx, rsi
-    cmp rax, 5
-    mov rsi, rax
-    mov rdi, rcx
     mov r8, rdx
+    add r8, 1
+    mov rdi, rcx
+    add rdi, 1
+    mov rsi, rax
+    add rsi, rdx
+    cmp r8, 5
+    mov rdx, r8
+    mov rcx, rdi
+    mov rax, rsi
     jnge 2
-    imul rax, rdx, 0x64
-    add rax, rcx
+    imul rax, rsi, 0x64
+    add rax, rdi
     ret

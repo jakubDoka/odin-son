@@ -17,8 +17,8 @@ return_stru3:
     call.q [rip - 0x33]
     mov.q [rsp + 0x95], 0x10
     mov.q [rsp + 0x9d], 0x14
-    mov.q rbx, [rsp + 0x95]
-    mov.q rbp, [rsp + 0x9d]
+    mov.q rbp, [rsp + 0x95]
+    mov.q rbx, [rsp + 0x9d]
     mov rdx, 0x18
     lea rdi, [rsp + 0x7d]
     xor esi, esi
@@ -27,10 +27,10 @@ return_stru3:
     mov.q [rsp + 0x85], 0x2e
     mov.q [rsp + 0x8d], 0x32
     lea rdx, [rsp + 0x7d]
-    mov rdi, rbx
-    mov rsi, rbp
+    mov rdi, rbp
+    mov rsi, rbx
     call 12
-    mov r13, rax
+    mov.q [rsp + 0x155], rax
     mov.q [rsp], 7
     mov.q [rsp + 0x8], 8
     mov.q [rsp + 0x10], 9
@@ -41,28 +41,28 @@ return_stru3:
     mov rdx, 3
     mov r8, 5
     call 15
-    mov r14, rax
+    mov.q [rsp + 0x14d], rax
     lea rdi, [rsp + 0xa5]
     xor esi, esi
     mov rdx, 0x10
-    call.q [rip - 0x108]
+    call.q [rip - 0x112]
     mov.q [rsp + 0xa5], 6
     mov.q [rsp + 0xad], 7
     lea rdi, [rsp]
     lea rsi, [rsp + 0xa5]
     mov rdx, 0x10
-    call.q [rip - 0x141]
+    call.q [rip - 0x14b]
     mov rdi, 1
     mov rcx, 4
     mov rsi, 2
     mov rdx, 3
     mov r8, 5
     call 13
-    mov r15, rax
+    mov.q [rsp + 0x145], rax
     lea rdi, [rsp + 0x60]
     mov rdx, 0xf
     xor esi, esi
-    call.q [rip - 0x179]
+    call.q [rip - 0x188]
     mov.b [rsp + 0x60], 1
     mov.b [rsp + 0x61], 2
     mov.b [rsp + 0x62], 3
@@ -87,13 +87,13 @@ return_stru3:
     sal rax, 0x30
     or rsi, rax
     call 10
-    mov.q [rsp + 0x135], rax
+    mov.q [rsp + 0x13d], rax
     mov rdi, 1
     mov rsi, 2
     call 16
     mov.q [rsp + 0xb5], rax
     mov.q [rsp + 0xbd], rdx
-    mov.q rbx, [rsp + 0xb5]
+    mov.q r12, [rsp + 0xb5]
     call 17
     mov rcx, rax
     shr rcx, 0
@@ -114,21 +114,21 @@ return_stru3:
     mov.w [rsp + 0x7a], cx
     shr rax, 0x30
     mov.b [rsp + 0x7c], al
-    movzx.b r12d, [rsp + 0x78]
-    lea rax, [rip + 0xd64]
+    movzx.b ebx, [rsp + 0x78]
+    lea rax, [rip + 0xd55]
     mov.q [rsp + 0xc5], rax
     mov.q [rsp + 0xcd], 0
     mov.q rax, [rsp + 0xc5]
-    mov.q [rsp + 0x13d], rax
+    mov.q [rsp + 0x135], rax
     mov.q rax, [rsp + 0xcd]
-    mov.q [rsp + 0x145], rax
-    lea rax, [rip + 0xd29]
+    mov r15, rax
+    lea rax, [rip + 0xd1f]
     mov.q [rsp + 0xd5], rax
     mov.q [rsp + 0xdd], 2
     mov.q rax, [rsp + 0xdd]
-    mov.q [rsp + 0x14d], rax
+    mov r14, rax
     mov.q rax, [rsp + 0xd5]
-    mov.q [rsp + 0x155], rax
+    mov r13, rax
     lea rax, [rip + 0xcf0]
     mov.q [rsp + 0xe5], rax
     mov.q [rsp + 0xed], 3
@@ -167,23 +167,26 @@ return_stru3:
     mov.q [rsp + 0x58], 0xa
     mov rdx, 1
     mov r9, 4
-    mov.q rdi, [rsp + 0x13d]
-    mov.q rsi, [rsp + 0x145]
-    mov.q r8, [rsp + 0x14d]
-    mov.q rcx, [rsp + 0x155]
+    mov.q rdi, [rsp + 0x135]
+    mov rsi, r15
+    mov r8, r14
+    mov rcx, r13
     call 14
-    mov rdx, rax
+    mov rcx, rax
     xor eax, eax
-    add rax, r13
-    add rax, r14
-    add rax, r15
-    mov.q rcx, [rsp + 0x135]
-    movzx ecx, cl
-    add rax, rcx
-    add rax, rbx
-    add rax, rbp
-    add rax, r12
+    mov.q rdx, [rsp + 0x155]
     add rax, rdx
+    mov.q rdx, [rsp + 0x14d]
+    add rax, rdx
+    mov.q rdx, [rsp + 0x145]
+    add rax, rdx
+    mov.q rdx, [rsp + 0x13d]
+    movzx edx, dl
+    add rax, rdx
+    add rax, r12
+    add rax, rbp
+    add rax, rbx
+    add rax, rcx
     add rsp, 0x168
     pop r15
     pop r14
@@ -276,18 +279,18 @@ return_stru3:
     mov.q [rsp + 0x10], rcx
     mov.q [rsp + 0x18], r8
     mov.q rax, [rsp + 0x8]
-    mov r10, 8
+    mov rbx, 8
     mov r11, 0xc
-    mov rcx, 0x32
-    mov rsi, 0x64
-    mov rdi, 0x190
-    mov r8, 0x1f4
-    mov rbx, 3
-    imul rbx, rdx
-    add rax, rbx
-    mov.q rdx, [rsp + 0x18]
+    mov r8, 0x32
+    mov rdi, 0x64
+    mov rsi, 0x190
+    mov rcx, 0x1f4
+    mov r10, 3
     imul r10, rdx
     add rax, r10
+    mov.q rdx, [rsp + 0x18]
+    imul rbx, rdx
+    add rax, rbx
     mov.q rdx, [rsp + 0x38]
     imul r11, rdx
     add rax, r11
@@ -295,25 +298,25 @@ return_stru3:
     imul rdx, r9
     add rax, rdx
     mov.q rdx, [rsp + 0x48]
-    imul rcx, rdx
-    add rax, rcx
-    mov.q rcx, [rsp + 0x58]
-    imul rsi, rcx
-    add rax, rsi
-    mov rcx, 0xc8
-    mov.q rdx, [rsp + 0x60]
-    imul rcx, rdx
-    add rax, rcx
-    mov.q rcx, [rsp + 0x70]
-    imul rdi, rcx
-    add rax, rdi
-    mov.q rcx, [rsp + 0x80]
-    imul r8, rcx
+    imul r8, rdx
     add rax, r8
-    mov rcx, 0x3e8
-    mov.q rdx, [rsp + 0x88]
+    mov.q rdx, [rsp + 0x58]
+    imul rdi, rdx
+    add rax, rdi
+    mov rdi, 0xc8
+    mov.q rdx, [rsp + 0x60]
+    imul rdi, rdx
+    add rax, rdi
+    mov.q rdx, [rsp + 0x70]
+    imul rsi, rdx
+    add rax, rsi
+    mov.q rdx, [rsp + 0x80]
     imul rcx, rdx
     add rax, rcx
+    mov rdx, 0x3e8
+    mov.q rcx, [rsp + 0x88]
+    imul rdx, rcx
+    add rax, rdx
     add rsp, 0x20
     pop rbx
     ret
@@ -337,14 +340,14 @@ return_stru3:
     push rbx
     push rbp
     sub rsp, 0x18
-    mov rbx, rdi
-    mov rbp, rsi
+    mov rbp, rdi
+    mov rbx, rsi
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0x10
-    call.q [rip - 0x6f2]
-    mov.q [rsp], rbx
-    mov.q [rsp + 0x8], rbp
+    call.q [rip - 0x6fa]
+    mov.q [rsp], rbp
+    mov.q [rsp + 0x8], rbx
     mov.q rax, [rsp]
     mov.q rdx, [rsp + 0x8]
     add rsp, 0x18
@@ -356,7 +359,7 @@ return_stru3:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 7
-    call.q [rip - 0x728]
+    call.q [rip - 0x730]
     mov.b [rsp], 1
     mov.b [rsp + 0x1], 2
     mov.b [rsp + 0x2], 3
@@ -378,7 +381,7 @@ return_stru3:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0xf
-    call.q [rip - 0x790]
+    call.q [rip - 0x798]
     call 17
     mov rcx, rax
     shr rcx, 0
@@ -427,8 +430,8 @@ return_stru3:
     call.q [rip - 0x33]
     mov.q [rsp + 0x95], 0x10
     mov.q [rsp + 0x9d], 0x14
-    mov.q rbx, [rsp + 0x95]
-    mov.q rbp, [rsp + 0x9d]
+    mov.q rbp, [rsp + 0x95]
+    mov.q rbx, [rsp + 0x9d]
     mov rdx, 0x18
     lea rdi, [rsp + 0x7d]
     xor esi, esi
@@ -437,10 +440,10 @@ return_stru3:
     mov.q [rsp + 0x85], 0x2e
     mov.q [rsp + 0x8d], 0x32
     lea rdx, [rsp + 0x7d]
-    mov rdi, rbx
-    mov rsi, rbp
+    mov rdi, rbp
+    mov rsi, rbx
     call 12
-    mov r13, rax
+    mov.q [rsp + 0x155], rax
     mov.q [rsp], 7
     mov.q [rsp + 0x8], 8
     mov.q [rsp + 0x10], 9
@@ -451,28 +454,28 @@ return_stru3:
     mov rdx, 3
     mov r8, 5
     call 15
-    mov r14, rax
+    mov.q [rsp + 0x14d], rax
     lea rdi, [rsp + 0xa5]
     xor esi, esi
     mov rdx, 0x10
-    call.q [rip - 0x108]
+    call.q [rip - 0x112]
     mov.q [rsp + 0xa5], 6
     mov.q [rsp + 0xad], 7
     lea rdi, [rsp]
     lea rsi, [rsp + 0xa5]
     mov rdx, 0x10
-    call.q [rip - 0x141]
+    call.q [rip - 0x14b]
     mov rdi, 1
     mov rcx, 4
     mov rsi, 2
     mov rdx, 3
     mov r8, 5
     call 13
-    mov r15, rax
+    mov.q [rsp + 0x145], rax
     lea rdi, [rsp + 0x60]
     mov rdx, 0xf
     xor esi, esi
-    call.q [rip - 0x179]
+    call.q [rip - 0x188]
     mov.b [rsp + 0x60], 1
     mov.b [rsp + 0x61], 2
     mov.b [rsp + 0x62], 3
@@ -497,13 +500,13 @@ return_stru3:
     sal rax, 0x30
     or rsi, rax
     call 10
-    mov.q [rsp + 0x135], rax
+    mov.q [rsp + 0x13d], rax
     mov rdi, 1
     mov rsi, 2
     call 16
     mov.q [rsp + 0xb5], rax
     mov.q [rsp + 0xbd], rdx
-    mov.q rbx, [rsp + 0xb5]
+    mov.q r12, [rsp + 0xb5]
     call 17
     mov rcx, rax
     shr rcx, 0
@@ -524,21 +527,21 @@ return_stru3:
     mov.w [rsp + 0x7a], cx
     shr rax, 0x30
     mov.b [rsp + 0x7c], al
-    movzx.b r12d, [rsp + 0x78]
-    lea rax, [rip + 0xd64]
+    movzx.b ebx, [rsp + 0x78]
+    lea rax, [rip + 0xd55]
     mov.q [rsp + 0xc5], rax
     mov.q [rsp + 0xcd], 0
     mov.q rax, [rsp + 0xc5]
-    mov.q [rsp + 0x13d], rax
+    mov.q [rsp + 0x135], rax
     mov.q rax, [rsp + 0xcd]
-    mov.q [rsp + 0x145], rax
-    lea rax, [rip + 0xd29]
+    mov r15, rax
+    lea rax, [rip + 0xd1f]
     mov.q [rsp + 0xd5], rax
     mov.q [rsp + 0xdd], 2
     mov.q rax, [rsp + 0xdd]
-    mov.q [rsp + 0x14d], rax
+    mov r14, rax
     mov.q rax, [rsp + 0xd5]
-    mov.q [rsp + 0x155], rax
+    mov r13, rax
     lea rax, [rip + 0xcf0]
     mov.q [rsp + 0xe5], rax
     mov.q [rsp + 0xed], 3
@@ -577,23 +580,26 @@ return_stru3:
     mov.q [rsp + 0x58], 0xa
     mov rdx, 1
     mov r9, 4
-    mov.q rdi, [rsp + 0x13d]
-    mov.q rsi, [rsp + 0x145]
-    mov.q r8, [rsp + 0x14d]
-    mov.q rcx, [rsp + 0x155]
+    mov.q rdi, [rsp + 0x135]
+    mov rsi, r15
+    mov r8, r14
+    mov rcx, r13
     call 14
-    mov rdx, rax
+    mov rcx, rax
     xor eax, eax
-    add rax, r13
-    add rax, r14
-    add rax, r15
-    mov.q rcx, [rsp + 0x135]
-    movzx ecx, cl
-    add rax, rcx
-    add rax, rbx
-    add rax, rbp
-    add rax, r12
+    mov.q rdx, [rsp + 0x155]
     add rax, rdx
+    mov.q rdx, [rsp + 0x14d]
+    add rax, rdx
+    mov.q rdx, [rsp + 0x145]
+    add rax, rdx
+    mov.q rdx, [rsp + 0x13d]
+    movzx edx, dl
+    add rax, rdx
+    add rax, r12
+    add rax, rbp
+    add rax, rbx
+    add rax, rcx
     add rsp, 0x168
     pop r15
     pop r14
@@ -684,10 +690,10 @@ return_stru3:
     mov.q [rsp + 0x8], rsi
     mov.q [rsp + 0x10], rcx
     mov.q [rsp + 0x18], r8
-    mov.q rax, [rsp + 0x8]
-    imul rcx, rdx, 3
-    add rax, rcx
-    lea rax, [rax + r8*8]
+    mov.q rcx, [rsp + 0x8]
+    imul rax, rdx, 3
+    add rcx, rax
+    lea rax, [rcx + r8*8]
     mov.q rcx, [rsp + 0x38]
     imul rcx, rcx, 0xc
     add rax, rcx
@@ -733,14 +739,14 @@ return_stru3:
     push rbx
     push rbp
     sub rsp, 0x18
-    mov rbx, rdi
-    mov rbp, rsi
+    mov rbp, rdi
+    mov rbx, rsi
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0x10
-    call.q [rip - 0x6ba]
-    mov.q [rsp], rbx
-    mov.q [rsp + 0x8], rbp
+    call.q [rip - 0x6c2]
+    mov.q [rsp], rbp
+    mov.q [rsp + 0x8], rbx
     mov.q rax, [rsp]
     mov.q rdx, [rsp + 0x8]
     add rsp, 0x18
@@ -752,7 +758,7 @@ return_stru3:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 7
-    call.q [rip - 0x6f0]
+    call.q [rip - 0x6f8]
     mov.b [rsp], 1
     mov.b [rsp + 0x1], 2
     mov.b [rsp + 0x2], 3
@@ -774,7 +780,7 @@ return_stru3:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0xf
-    call.q [rip - 0x758]
+    call.q [rip - 0x760]
     call 17
     mov rcx, rax
     shr rcx, 0
@@ -824,7 +830,7 @@ return_stru3:
     mov rsi, 0x14
     lea rdx, [rsp + 0x7d]
     call 12
-    mov r12, rax
+    mov.q [rsp + 0x95], rax
     mov.q [rsp], 7
     mov.q [rsp + 0x8], 8
     mov.q [rsp + 0x10], 9
@@ -835,7 +841,7 @@ return_stru3:
     mov rdx, 3
     mov r8, 5
     call 15
-    mov r13, rax
+    mov r15, rax
     mov.q [rsp], 6
     mov.q [rsp + 0x8], 7
     mov rdi, 1
@@ -859,11 +865,11 @@ return_stru3:
     sal rax, 0x30
     or rsi, rax
     call 10
-    mov r15, rax
+    mov r13, rax
     mov rdi, 1
     mov rsi, 2
     call 16
-    mov.q [rsp + 0x95], rax
+    mov r12, rax
     call 17
     mov rcx, rax
     mov.d [rsp + 0x67], ecx
@@ -872,7 +878,7 @@ return_stru3:
     mov.w [rsp + 0x6b], cx
     shr rax, 0x30
     mov.b [rsp + 0x6d], al
-    movzx.b ebx, [rsp + 0x6c]
+    movzx.b ebp, [rsp + 0x6c]
     call 17
     mov rcx, rax
     mov.d [rsp + 0x60], ecx
@@ -882,7 +888,7 @@ return_stru3:
     xor esi, esi
     shr rax, 0x30
     mov.b [rsp + 0x66], al
-    movzx.b ebp, [rsp + 0x62]
+    movzx.b ebx, [rsp + 0x62]
     lea rax, [rip + 0xe52]
     mov.q [rsp], rax
     mov.q [rsp + 0x8], 3
@@ -906,17 +912,17 @@ return_stru3:
     mov r8, 2
     mov r9, 4
     call 14
-    mov rdx, r12
-    add rdx, r13
-    add rdx, r14
-    movzx ecx, r15b
-    add rdx, rcx
+    mov rdx, rax
     mov.q rcx, [rsp + 0x95]
-    add rdx, rcx
-    add rdx, rbx
-    add rdx, rbp
-    add rdx, rax
-    mov rax, rdx
+    add rcx, r15
+    add rcx, r14
+    movzx eax, r13b
+    add rcx, rax
+    add rcx, r12
+    add rcx, rbp
+    add rcx, rbx
+    add rcx, rdx
+    mov rax, rcx
     add rsp, 0xa8
     pop r15
     pop r14
@@ -1100,7 +1106,7 @@ return_stru3:
     mov rsi, 0x14
     lea rdx, [rsp + 0x7d]
     call 12
-    mov r12, rax
+    mov.q [rsp + 0x95], rax
     mov.q [rsp], 7
     mov.q [rsp + 0x8], 8
     mov.q [rsp + 0x10], 9
@@ -1111,7 +1117,7 @@ return_stru3:
     mov rdx, 3
     mov r8, 5
     call 15
-    mov r13, rax
+    mov r15, rax
     mov.q [rsp], 6
     mov.q [rsp + 0x8], 7
     mov rdi, 1
@@ -1135,11 +1141,11 @@ return_stru3:
     sal rax, 0x30
     or rsi, rax
     call 10
-    mov r15, rax
+    mov r13, rax
     mov rdi, 1
     mov rsi, 2
     call 16
-    mov.q [rsp + 0x95], rax
+    mov r12, rax
     call 17
     mov rcx, rax
     mov.d [rsp + 0x67], ecx
@@ -1148,7 +1154,7 @@ return_stru3:
     mov.w [rsp + 0x6b], cx
     shr rax, 0x30
     mov.b [rsp + 0x6d], al
-    movzx.b ebx, [rsp + 0x6c]
+    movzx.b ebp, [rsp + 0x6c]
     call 17
     mov rcx, rax
     mov.d [rsp + 0x60], ecx
@@ -1158,7 +1164,7 @@ return_stru3:
     xor esi, esi
     shr rax, 0x30
     mov.b [rsp + 0x66], al
-    movzx.b ebp, [rsp + 0x62]
+    movzx.b ebx, [rsp + 0x62]
     lea rax, [rip + 0xe52]
     mov.q [rsp], rax
     mov.q [rsp + 0x8], 3
@@ -1182,17 +1188,17 @@ return_stru3:
     mov r8, 2
     mov r9, 4
     call 14
-    mov rdx, r12
-    add rdx, r13
-    add rdx, r14
-    movzx ecx, r15b
-    add rdx, rcx
+    mov rdx, rax
     mov.q rcx, [rsp + 0x95]
-    add rdx, rcx
-    add rdx, rbx
-    add rdx, rbp
-    add rdx, rax
-    mov rax, rdx
+    add rcx, r15
+    add rcx, r14
+    movzx eax, r13b
+    add rcx, rax
+    add rcx, r12
+    add rcx, rbp
+    add rcx, rbx
+    add rcx, rdx
+    mov rax, rcx
     add rsp, 0xa8
     pop r15
     pop r14
@@ -1367,22 +1373,21 @@ load_of_args:
     mov.b [rsp + 0x23], 7
     movabs rax, 0xf0e0d0c0b0a0908
     mov.q [rsp + 0x24], rax
-    mov.d esi, [rsp + 0x25]
-    movzx.w eax, [rsp + 0x29]
-    mov.q rcx, [rsp + 0x1d]
-    movzx.b edx, [rsp + 0x2b]
-    mov.q [rsp + 0x7], rcx
-    sal rax, 0x20
-    or rsi, rax
-    sal rdx, 0x30
-    or rsi, rdx
-    mov rax, rsi
-    mov.d [rsp + 0xf], eax
-    mov rax, rsi
-    shr rax, 0x20
-    mov.w [rsp + 0x13], ax
-    shr rsi, 0x30
-    mov rax, rsi
+    mov.d eax, [rsp + 0x25]
+    movzx.w esi, [rsp + 0x29]
+    mov.q rdx, [rsp + 0x1d]
+    movzx.b ecx, [rsp + 0x2b]
+    mov.q [rsp + 0x7], rdx
+    sal rsi, 0x20
+    or rax, rsi
+    sal rcx, 0x30
+    or rax, rcx
+    mov rcx, rax
+    mov.d [rsp + 0xf], ecx
+    mov rcx, rax
+    shr rcx, 0x20
+    mov.w [rsp + 0x13], cx
+    shr rax, 0x30
     mov.b [rsp + 0x15], al
     mov.d edi, [rsp + 0x7]
     movzx.w eax, [rsp + 0xb]
@@ -1401,18 +1406,18 @@ load_of_args:
     sal rax, 0x30
     or rdi, rax
     call 10
-    movzx.b ecx, [rsp + 0x15]
+    movzx.b edx, [rsp + 0x15]
     mov.d [rsp + 0x16], 0x4030201
     mov.w [rsp + 0x1a], 0x605
     mov.b [rsp + 0x1c], 7
-    movzx.b edx, [rsp + 0x1b]
+    movzx.b ecx, [rsp + 0x1b]
     mov.d [rsp], 0x4030201
     mov.w [rsp + 0x4], 0x605
     mov.b [rsp + 0x6], 7
     add bl, al
-    add bl, cl
+    add bl, dl
     movzx eax, bl
-    lea rax, [rax + rdx + 0xec]
+    lea rax, [rax + rcx + 0xec]
     movzx.b ecx, [rsp + 0x2]
     add rax, rcx
     add rax, 0x4e85
@@ -1444,7 +1449,7 @@ load_of_args:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0xf
-    call.q [rip - 0x198]
+    call.q [rip - 0x190]
     mov.d [rsp], 0x4030201
     mov.w [rsp + 0x4], 0x605
     movabs rax, 0x706050403020107

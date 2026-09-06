@@ -4,24 +4,24 @@ main:
 1:
     cmp rax, 0x10
     jnl 2
-    lea rcx, [rip + 0xfd9]
-    add rcx, rax
-    mov rdx, rax
-    add rdx, 1
-    mov.b [rcx], al
-    mov rax, rdx
+    lea rdx, [rip + 0xfd9]
+    add rdx, rax
+    mov rcx, rax
+    add rcx, 1
+    mov.b [rdx], al
+    mov rax, rcx
     jmp 1
 2:
     xor ecx, ecx
-    xor edx, edx
+    xor eax, eax
 3:
-    cmp rdx, 0x10
+    cmp rax, 0x10
     jnl 4
-    lea rax, [rip + 0xfa7]
-    add rax, rdx
-    movzx.b eax, [rax]
-    add rcx, rax
-    add rdx, 1
+    lea rdx, [rip + 0xfa7]
+    add rdx, rax
+    movzx.b edx, [rdx]
+    add rcx, rdx
+    add rax, 1
     jmp 3
 4:
     mov.q [rip + 0xf96], 7
@@ -37,24 +37,24 @@ main:
 1:
     cmp rax, 0x10
     jnl 2
-    lea rcx, [rip + 0xfd9]
-    add rcx, rax
-    mov rdx, rax
-    add rdx, 1
-    mov.b [rcx], al
-    mov rax, rdx
+    lea rdx, [rip + 0xfd9]
+    add rdx, rax
+    mov rcx, rax
+    add rcx, 1
+    mov.b [rdx], al
+    mov rax, rcx
     jmp 1
 2:
     xor ecx, ecx
-    xor edx, edx
+    xor eax, eax
 3:
-    cmp rdx, 0x10
+    cmp rax, 0x10
     jnl 4
-    lea rax, [rip + 0xfa7]
-    add rax, rdx
-    movzx.b eax, [rax]
-    add rcx, rax
-    add rdx, 1
+    lea rdx, [rip + 0xfa7]
+    add rdx, rax
+    movzx.b edx, [rdx]
+    add rcx, rdx
+    add rax, 1
     jmp 3
 4:
     mov.q [rip + 0xf96], 7
@@ -66,28 +66,28 @@ main:
     ret
 =========== OPT LEVEL: moderate ===========
 main:
-    xor edx, edx
+    xor eax, eax
 1:
-    cmp rdx, 0x10
+    cmp rax, 0x10
     jnl 2
-    lea rax, [rip + 0xfd9]
-    add rax, rdx
-    mov rcx, rdx
+    lea rdx, [rip + 0xfd9]
+    add rdx, rax
+    mov rcx, rax
     add rcx, 1
-    mov.b [rax], dl
-    mov rdx, rcx
+    mov.b [rdx], al
+    mov rax, rcx
     jmp 1
 2:
     xor ecx, ecx
-    xor edx, edx
+    xor eax, eax
 3:
-    cmp rdx, 0x10
+    cmp rax, 0x10
     jnl 4
-    lea rax, [rip + 0xfa7]
-    add rax, rdx
-    movzx.b eax, [rax]
-    add rcx, rax
-    add rdx, 1
+    lea rdx, [rip + 0xfa7]
+    add rdx, rax
+    movzx.b edx, [rdx]
+    add rcx, rdx
+    add rax, 1
     jmp 3
 4:
     mov.q [rip + 0xf96], 7
@@ -99,29 +99,29 @@ main:
     ret
 =========== OPT LEVEL: all ===========
 main:
-    xor edx, edx
+    xor eax, eax
 1:
-    mov rax, rdx
-    add rax, 1
-    lea rcx, [rip + 0xfdc]
-    add rcx, rdx
-    mov.b [rcx], dl
-    cmp rax, 0x10
     mov rdx, rax
+    add rdx, 1
+    lea rcx, [rip + 0xfdc]
+    add rcx, rax
+    mov.b [rcx], al
+    cmp rdx, 0x10
+    mov rax, rdx
     jnge 1
-    xor esi, esi
-    xor edi, edi
+    xor ecx, ecx
+    xor eax, eax
 2:
-    mov rax, rsi
-    add rax, 1
-    lea rcx, [rip + 0xfaf]
-    add rcx, rsi
-    movzx.b ecx, [rcx]
-    mov rdx, rdi
+    mov rsi, rcx
+    add rsi, 1
+    lea rdx, [rip + 0xfaf]
     add rdx, rcx
-    cmp rax, 0x10
-    mov rsi, rax
-    mov rdi, rdx
+    movzx.b ecx, [rdx]
+    mov rdx, rax
+    add rdx, rcx
+    cmp rsi, 0x10
+    mov rcx, rsi
+    mov rax, rdx
     jnge 2
     mov.q [rip + 0xf94], 7
     mov.q [rip + 0xf91], 2

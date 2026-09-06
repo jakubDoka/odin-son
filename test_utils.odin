@@ -115,8 +115,11 @@ run_test :: proc(
 	dsb: strings.Builder
 	dsb.buf.allocator = context.temp_allocator
 
+	stats: backend.Stats
+
 	ctx: Gen_Ctx
 	ctx.types = &types
+	ctx.stats = &stats
 	ctx.global = &global_ctx
 	ctx.target.cc = &x64.X64_SYSTEMV_CC
 	ctx.target.spec = &x64.SPEC
@@ -314,10 +317,14 @@ run_test :: proc(
 		assert(oka)
 	}
 
-	@(static) log_lock: sync.Mutex
-	if false {sync.guard(&log_lock)
-		log.info(name)
-		log_stats(&ctx)
+	if #config(LOG_STATS, false) {
+		@(static) log_lock: sync.Mutex
+		@(static) g_stats: backend.Stats
+
+		sync.guard(&log_lock)
+		backend.aggregate_effeciency_stats(&g_stats, ctx.stats)
+		fmt.println("")
+		log_stats(&g_stats)
 	}
 
 	context.allocator = context.temp_allocator
@@ -345,7 +352,7 @@ run_test :: proc(
 	}
 }
 
-log_stats :: proc(ctx: ^Gen_Ctx) {
+log_stats :: proc(ctx: ^backend.Stats) {
 	padded :: proc(vl: string, width: int) -> string {
 		return strings.concatenate(
 			{
@@ -360,18 +367,23 @@ log_stats :: proc(ctx: ^Gen_Ctx) {
 		)
 	}
 
+	max_name_len := 0
+	for enm in reflect.enum_fields_zipped(backend.Efficiency_Stat_Kind) {
+		max_name_len = max(max_name_len, len(enm.name))
+	}
+
 	fmt.eprintfln(
 		"  %s %s %s %s",
-		padded("name", 20),
+		padded("name", max_name_len),
 		padded("total", 8),
 		padded("ideal", 8),
 		padded("t/i", 8),
 	)
-	for eff, kind in ctx.stats.efficiency {
+	for eff, kind in ctx.efficiency {
 		name := reflect.enum_field_names(backend.Efficiency_Stat_Kind)[kind]
 		fmt.eprintfln(
 			"  %s % -8d % -8d % -8f",
-			padded(name, 20),
+			padded(name, max_name_len),
 			eff.total,
 			eff.ideal,
 			f64(eff.total) / f64(eff.ideal),

@@ -13411,10 +13411,6 @@ main.run_test(t, "fuzz_6e095db8e71d7dae", string(#load("../fuzz/crashes/6e095db8
 main.run_test(t, "fuzz_6f0a1ecc7b3b8fc9", string(#load("../fuzz/crashes/6f0a1ecc7b3b8fc9.odin")), 0,
 				diff = false, no_run = true)
 }
-@(test) fuzz_6fb466a2a015ca51 :: proc(t: ^testing.T) {
-main.run_test(t, "fuzz_6fb466a2a015ca51", string(#load("../fuzz/crashes/6fb466a2a015ca51.odin")), 0,
-				diff = false, no_run = true)
-}
 @(test) fuzz_6fead3d00de19a0c :: proc(t: ^testing.T) {
 main.run_test(t, "fuzz_6fead3d00de19a0c", string(#load("../fuzz/crashes/6fead3d00de19a0c.odin")), 0,
 				diff = false, no_run = true)

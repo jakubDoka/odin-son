@@ -957,7 +957,7 @@ emit_proc_code :: proc(
 	ra.param_specs = prc.param_types
 	ra.mask_len = 64
 
-	regs := regalloc.regalloc(&ra, ctx, &schedule)
+	regs := regalloc.regalloc(&ra, ctx, &schedule, .with_coloring)
 
 	emit_ctx.graph = ctx
 	emit_ctx.schedule = &schedule

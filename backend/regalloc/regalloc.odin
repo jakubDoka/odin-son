@@ -19,10 +19,16 @@ Node_ID :: backend.Node_ID
 graph_expand :: backend.graph_expand
 graph_get :: backend.graph_get
 
+Mode :: enum {
+	with_coloring,
+	with_scan,
+}
+
 regalloc :: proc(
 	ra: ^backend.Regalloc,
 	graph: ^backend.Graph,
 	sched: ^backend.Graph_Schedule,
+	mode: Mode,
 	scratch := context.allocator,
 ) -> []backend.Reg {
 	if graph.node_spec.collect_meta == nil do return {}
@@ -30,7 +36,7 @@ regalloc :: proc(
 	base := int(graph.gvn)
 	total := base
 	for i in 0 ..< 7 {
-		res, ok := regalloc_round(ra, graph, sched, scratch, i)
+		res, ok := regalloc_round(ra, graph, sched, scratch, mode)
 		if ok {
 			backend.add_efficiency_stat(graph, .regalloc_rounds, total, base)
 			if backend.REGLOGS do log.info("regalloc rounds:", i)
@@ -47,7 +53,7 @@ regalloc_round :: proc(
 	graph: ^backend.Graph,
 	sched: ^backend.Graph_Schedule,
 	scratch: runtime.Allocator,
-	i: int,
+	mode: Mode,
 ) -> (
 	res: []backend.Reg,
 	ok: bool = true,
@@ -223,6 +229,7 @@ regalloc_round :: proc(
 	Liveouts :: struct {
 		data: #soa[]backend.SS_Entry(Liveout),
 		len:  int,
+		old:  int,
 	}
 
 	liveouts_clone_into :: proc(into: ^Liveouts, from: Liveouts) {
@@ -234,12 +241,18 @@ regalloc_round :: proc(
 			)
 		}
 
-		mem.zero_slice(into.data.hash[from.len:max(into.len, from.len)])
-		into.len = from.len
-		mem.copy_non_overlapping(into.data.hash, from.data.hash, into.len)
+		mem.zero_slice(
+			into.data.hash[from.len - from.old:max(into.len, from.len)],
+		)
+		into.len = from.len - from.old
+		mem.copy_non_overlapping(
+			into.data.hash,
+			from.data.hash[from.old:],
+			into.len,
+		)
 		mem.copy_non_overlapping(
 			into.data.id,
-			from.data.id,
+			from.data.id[from.old:],
 			into.len * size_of(Liveout),
 		)
 
@@ -255,7 +268,10 @@ regalloc_round :: proc(
 
 	liveouts_find :: proc(l: ^Liveouts, lrg: u32) -> (int, bool) {
 		iter := backend.simd_iter_from(
-			l.data.hash[:len(l.data)],
+			l.data.hash[:mem.align_forward_int(
+				l.len,
+				size_of(backend.Intern_Vec),
+			)],
 			lrg_hash(lrg),
 		)
 		for idx in backend.simd_iter_next(&iter) {
@@ -265,6 +281,8 @@ regalloc_round :: proc(
 	}
 
 	liveouts_delete :: proc(into: ^Liveouts, lrg: u32) -> (v: Liveout) {
+		assert(into.old == 0)
+
 		idx, ok := liveouts_find(into, lrg)
 		if !ok do return
 
@@ -338,7 +356,7 @@ regalloc_round :: proc(
 
 	rounds: int
 
-	current_liveouts: Liveouts
+	curr_live: Liveouts
 	for b in queue.pop_front_safe(&worklist) {
 		bit_arr.set(in_queue, b, value = false)
 		rounds += 1
@@ -346,14 +364,16 @@ regalloc_round :: proc(
 		bb := sched.bbs[b]
 		lbb := &blocks[b]
 
-		liveouts_clone_into(&current_liveouts, lbb.liveouts)
+		visited := lbb.liveouts.old != 0
+		liveouts_clone_into(&curr_live, lbb.liveouts)
+		lbb.liveouts.old = lbb.liveouts.len
 
 		#reverse for instr, j in bb.instrs {
 			inode := graph_expand(graph, instr)
 
 			if inode.dt != .Void {
 				lrg := ctx.lrg_table[inode.gvn]
-				v := liveouts_delete(&current_liveouts, lrg.index)
+				v := liveouts_delete(&curr_live, lrg.index)
 				if v.node != 0 {
 					if add_conflict(&ctx, lrg, v.node, instr) {
 						v.area += v.last_pos - u32(j)
@@ -361,7 +381,7 @@ regalloc_round :: proc(
 					}
 				}
 
-				for l in current_liveouts.data.id[:current_liveouts.len] {
+				for l in curr_live.data.id[:curr_live.len] {
 					l := &lrgs[l.lrg]
 					if !backend.reg_mask_intersects(l.mask, lrg.mask) do continue
 
@@ -409,7 +429,7 @@ regalloc_round :: proc(
 			}
 
 			if clobbers != {} {
-				for l in current_liveouts.data.id[:current_liveouts.len] {
+				for l in curr_live.data.id[:curr_live.len] {
 					l := &lrgs[l.lrg]
 					assert(l.mask.bit_length != 0)
 					l.mask.masks[0] &= ~clobbers[l.mask.kind]
@@ -419,14 +439,14 @@ regalloc_round :: proc(
 				}
 			}
 
-			if inode.itype != .Phi {
+			if inode.itype != .Phi && !visited {
 				for inp in data_deps(ctx, inode) {
 					inp_node := graph_get(graph, inp)
 					lrg := ctx.lrg_table[inp_node.gvn]
 
 					add_liveout(
 						&ctx,
-						&current_liveouts,
+						&curr_live,
 						lrg,
 						{node = inp, last_pos = u32(j)},
 					)
@@ -457,7 +477,7 @@ regalloc_round :: proc(
 
 			changed := false
 
-			for vl in current_liveouts.data[:current_liveouts.len] {
+			for vl in curr_live.data[:curr_live.len] {
 				lrg := &lrgs[vl.id.lrg]
 				n := vl.id
 				n.area += n.last_pos
@@ -465,18 +485,20 @@ regalloc_round :: proc(
 				changed |= add_liveout(&ctx, pred_liveouts, lrg, n)
 			}
 
-			for out in head.outs {
-				onode := graph_expand(graph, out.id)
-				if onode.itype == .Phi && onode.dt != .Void {
-					lrg := ctx.lrg_table[onode.gvn]
-					n := onode.inps[1 + j]
+			if !visited {
+				for out in head.outs {
+					onode := graph_expand(graph, out.id)
+					if onode.itype == .Phi && onode.dt != .Void {
+						lrg := ctx.lrg_table[onode.gvn]
+						n := onode.inps[1 + j]
 
-					changed |= add_liveout(
-						&ctx,
-						pred_liveouts,
-						lrg,
-						{node = n, last_pos = u32(len(pred_bb.instrs))},
-					)
+						changed |= add_liveout(
+							&ctx,
+							pred_liveouts,
+							lrg,
+							{node = n, last_pos = u32(len(pred_bb.instrs))},
+						)
+					}
 				}
 			}
 

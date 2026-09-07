@@ -56,6 +56,9 @@ name_str: string
 DO_DIFFING :: #config(DIFF, true)
 NO_RUN :: #config(NO_RUN, false)
 
+@(thread_local)
+types: typecheck.Types
+
 run_test :: proc(
 	t: ^testing.T,
 	name: string,
@@ -69,21 +72,28 @@ run_test :: proc(
 	context.assertion_failure_proc = hot.init_trace()
 	context.random_generator = {}
 
-	arna.scratch[0].reserved = 1024 * 1024
-	arna.scratch[1].reserved = 1024 * 1024
+	if types.mems.graph.reserved == 0 {
 
-	types: typecheck.Types
-	types.mems.graph.reserved = 4096 * 128
-	types.mems.regalloc.reserved = 4096 * 64
-	types.mems.scratch.reserved = 4096 * 16
-	types.mems.code.reserved = 4096 * 16
-	types.mems.reloc.reserved = 4096 * 16
-	types.mems.sloc.reserved = 4096 * 128
-	types.mems.cfi.reserved = 4096 * 128
-	types.mems.type.reserved = 4096 * 256
+		arna.scratch[0].reserved = 1024 * 1024
+		arna.scratch[1].reserved = 1024 * 1024
 
-	typecheck.types_init(&types)
-	defer typecheck.types_deinit(&types)
+		types.mems.graph.reserved = 4096 * 128
+		types.mems.regalloc.reserved = 4096 * 64
+		types.mems.scratch.reserved = 4096 * 16
+		types.mems.code.reserved = 4096 * 16
+		types.mems.reloc.reserved = 4096 * 16
+		types.mems.sloc.reserved = 4096 * 128
+		types.mems.cfi.reserved = 4096 * 128
+		types.mems.type.reserved = 4096 * 256
+
+		typecheck.types_init(&types)
+	} else {
+		typecheck.types_reset(&types)
+	}
+
+	defer {
+		free_all(context.temp_allocator)
+	}
 
 	// NOTE: this is intensly stupid, but we have to do this or there
 	// will be dataraces

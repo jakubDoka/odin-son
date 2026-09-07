@@ -10,7 +10,6 @@ import "core:fmt"
 import "core:io"
 import "core:log"
 import "core:mem"
-// import "core:os"
 import "core:slice"
 import "core:sort"
 import "core:strings"
@@ -24,7 +23,7 @@ regalloc :: proc(
 	ra: ^backend.Regalloc,
 	graph: ^backend.Graph,
 	sched: ^backend.Graph_Schedule,
-	scratch: runtime.Allocator,
+	scratch := context.allocator,
 ) -> []backend.Reg {
 	if graph.node_spec.collect_meta == nil do return {}
 
@@ -33,12 +32,7 @@ regalloc :: proc(
 	for i in 0 ..< 7 {
 		res, ok := regalloc_round(ra, graph, sched, scratch, i)
 		if ok {
-			backend.add_efficiency_stat(
-				graph.stats,
-				.regalloc_rounds,
-				total,
-				base,
-			)
+			backend.add_efficiency_stat(graph, .regalloc_rounds, total, base)
 			if backend.REGLOGS do log.info("regalloc rounds:", i)
 			return res
 		}
@@ -149,14 +143,6 @@ regalloc_round :: proc(
 				inplace_slot := ctx.metas[inode.gvn].in_place_slot
 				if inplace_slot >= 0 {
 					inplace_node := graph_get(graph, inode.inps[inplace_slot])
-					if int(inplace_node.gvn) > len(ctx.lrg_table) {
-						// backend.graph_display(
-						// 	os.to_writer(os.stderr),
-						// 	graph,
-						// 	sched,
-						// )
-						log.info(inode.node, inplace_slot)
-					}
 					lrg = ctx.lrg_table[inplace_node.gvn]
 				} else if inode.itype == .Phi {
 					for inp in inode.inps[1:] {
@@ -661,7 +647,6 @@ regalloc_round :: proc(
 		}
 	}
 
-	failed := 0
 	when !ODIN_DISABLE_ASSERT {
 		sum := 0
 		for i in ifg {
@@ -676,7 +661,7 @@ regalloc_round :: proc(
 		if !ok do break
 		if lrg.parent != nil do continue
 		color_ord[alive_lrgs] = lrg.index
-		lrg.color_ord_idx = alive_lrgs
+		lrg.color_ord_idx = u32(alive_lrgs)
 		alive_lrgs += 1
 	}
 
@@ -732,7 +717,6 @@ regalloc_round :: proc(
 
 		assert(ready <= len(ctx.color_ord))
 
-		failed += 1
 	}
 
 	swap_ord :: proc(ctx: Ctx, a, b: ^backend.Lrg) {
@@ -768,13 +752,11 @@ regalloc_round :: proc(
 	) {
 		return(
 			backend.reg_mask_pop_count(lrg.mask) > len(ctx.adj[lrg.index]) &&
-			lrg.color_ord_idx >= ready \
+			lrg.color_ord_idx >= u32(ready) \
 		)
 	}
 
 	if failed_any do ctx.color_ord = {}
-
-	failed_to_color := false
 
 	#reverse for co in ctx.color_ord {
 		n := ifg[co]
@@ -784,12 +766,7 @@ regalloc_round :: proc(
 		for inter in n {
 			adjs := &ifg[inter.index]
 			adjs^ = raw_data(adjs^)[:len(adjs) + 1]
-			fmt.assertf(
-				adjs[len(adjs) - 1] == lrg,
-				"%v %v",
-				adjs[len(adjs) - 1],
-				lrg,
-			)
+			assert(adjs[len(adjs) - 1] == lrg)
 			if inter.reg != -1 {
 				backend.reg_mask_set(lrg.mask, inter.reg, false)
 			}
@@ -801,7 +778,6 @@ regalloc_round :: proc(
 
 		first_set, fok := backend.reg_mask_first_set(lrg.mask)
 		if !fok {
-			failed_to_color = true
 			lrg.failed_to_color = true
 			continue
 		}
@@ -819,7 +795,7 @@ regalloc_round :: proc(
 	}
 
 	backend.add_efficiency_stat(
-		graph.stats,
+		graph,
 		.regalloc_wasted_lrgs,
 		used_lrgs,
 		len(ctx.color_ord),
@@ -1198,11 +1174,7 @@ regalloc_round :: proc(
 						}
 					}
 
-					backend.add_efficiency_stat(
-						graph.stats,
-						.splits_inserted,
-						1,
-					)
+					backend.add_efficiency_stat(graph, .splits_inserted, 1)
 				}
 
 				keep -= 1
@@ -1215,8 +1187,6 @@ regalloc_round :: proc(
 	if ok do verify_alloc_integrity(ctx, res)
 
 	log_lrgs(&ctx)
-
-	assert(!failed_to_color || failed != 0)
 
 	return
 

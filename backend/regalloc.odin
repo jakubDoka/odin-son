@@ -302,5 +302,7 @@ Lrg :: struct {
 	reg:              i16,
 	longest_use_area: u32,
 	longest_def:      Node_ID,
-	color_ord_idx:    int,
+	color_ord_idx:    u32,
 }
+
+#assert(size_of(Lrg) == 48)

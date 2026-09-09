@@ -52,6 +52,19 @@ reg_mask_first_set :: proc(rm: Reg_Mask) -> (int, bool) {
 	return -1, false
 }
 
+reg_mask_first_common_set :: proc(a, b: Reg_Mask) -> (int, bool) {
+	assert(a.bit_length == b.bit_length)
+	for i in 0 ..< a.bit_length / MASK_SIZE {
+		inter := a.masks[i] & b.masks[i]
+		if inter != 0 {
+			return int(i) * MASK_SIZE +
+				int(intrinsics.count_trailing_zeros(inter)),
+				true
+		}
+	}
+	return -1, false
+}
+
 reg_mask_pop_count :: proc(rm: Reg_Mask) -> (count: int) {
 	for i in 0 ..< rm.bit_length / MASK_SIZE {
 		count += int(intrinsics.count_ones(rm.masks[i]))
@@ -286,7 +299,7 @@ Lrg_Meta :: bit_field u32 {
 
 Lrg_Fails :: bit_field u8 {
 	killed:          bool | 1,
-	failed_to_color: bool | 1,
+	failed_to_alloc: bool | 1,
 	reg_conflict:    bool | 1,
 	self_conflict:   bool | 1,
 	pushed_out:      bool | 1,
@@ -303,6 +316,14 @@ Lrg :: struct {
 	longest_use_area: u32,
 	longest_def:      Node_ID,
 	color_ord_idx:    u32,
+}
+
+Slrg :: struct {
+	start:    int,
+	end:      int,
+	lrg:      ^Lrg,
+	reg:      int,
+	last_def: Node_ID,
 }
 
 #assert(size_of(Lrg) == 48)

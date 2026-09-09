@@ -987,8 +987,10 @@ verify_schedule_integrity :: proc(
 					)
 				}
 
+				fmt.println(insched)
 				for insched != latest {
-					fmt.assertf(latest != 0, "%v %v", inode, innode)
+					fmt.println("", latest)
+					fmt.assertf(latest != graph.start, "%v %v", inode, innode)
 					latest = graph_idom(graph, latest)
 				}
 			}

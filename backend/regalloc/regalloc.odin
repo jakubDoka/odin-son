@@ -71,15 +71,22 @@ regalloc_round :: proc(
 		graph:           ^backend.Graph,
 		ra:              ^backend.Regalloc,
 		sched:           ^backend.Graph_Schedule,
+		mode:            Mode,
 		instr_placement: []Instr_Placement,
 		lrg_table:       []^backend.Lrg,
 		self_conflicts:  map[Self_Conflict]Node_ID,
 		adj:             [][]^backend.Lrg,
-		metas:           []backend.Regalloc_Node_Meta,
+		gmetas:          []backend.Regalloc_Node_Meta,
+		smetas:          []Lrg_Meta,
 		color_ord:       []u32,
+		slrgs:           [dynamic]Slrg,
+		slrg_table:      []Slrg_ID,
+		block_offset:    int,
+		res:             []backend.Reg,
 	}
 
 	ctx: Ctx
+	ctx.mode = mode
 	ctx.ra = ra
 	ctx.ra.rms = {}
 	ctx.graph = graph
@@ -110,7 +117,7 @@ regalloc_round :: proc(
 		}
 	}
 
-	ctx.metas = graph.collect_meta(graph, ra, sched)
+	ctx.gmetas = graph.collect_meta(graph, ra, sched)
 
 	lrgs := make([]backend.Lrg, def_count)
 	used_lrgs: u32
@@ -135,18 +142,12 @@ regalloc_round :: proc(
 						len(inode.outs) != 1 ||
 						inode.outs[0].id != inode.inps[0]
 
-					swap_becuase_lrg := true && false
-					//swap_becuase_lrg &= rhs.output_count == 1
-					//swap_becuase_lrg &=
-					//	len(inode.outs) == 1 &&
-					//	inode.outs[0].id == inode.inps[1]
-
-					if swap_becuase_use || swap_becuase_lrg {
+					if swap_becuase_use {
 						backend.swap_inputs(ctx.graph, inode, 0, 1)
 					}
 				}
 
-				inplace_slot := ctx.metas[inode.gvn].in_place_slot
+				inplace_slot := ctx.gmetas[inode.gvn].in_place_slot
 				if inplace_slot >= 0 {
 					inplace_node := graph_get(graph, inode.inps[inplace_slot])
 					lrg = ctx.lrg_table[inplace_node.gvn]
@@ -158,12 +159,12 @@ regalloc_round :: proc(
 
 				for o in inode.outs {
 					onode := graph_expand(graph, o.id)
-					if ctx.metas[onode.gvn].in_place_slot == i8(o.idx) {
+					if ctx.gmetas[onode.gvn].in_place_slot == i8(o.idx) {
 						lrg = unify(lrg, ctx.lrg_table[onode.gvn])
 					}
 				}
 
-				mask := backend.rm_get(ctx.ra, ctx.metas[inode.gvn].out)
+				mask := backend.rm_get(ctx.ra, ctx.gmetas[inode.gvn].out)
 				if lrg == nil {
 					lrg = &lrgs[used_lrgs]
 					lrg.node = instr
@@ -216,8 +217,6 @@ regalloc_round :: proc(
 		idx := (uintptr(lrg) - uintptr(raw_data(lrgs))) / size_of(backend.Lrg)
 		lrg = &lrgs[projection[idx]]
 	}
-
-	//log_lrgs(graph, sched, lrg_table)
 
 	Liveout :: struct {
 		lrg:      u32,
@@ -323,11 +322,21 @@ regalloc_round :: proc(
 		return
 	}
 
+	Slrg :: backend.Slrg
+
 	Block :: struct {
 		liveouts: Liveouts,
+		start:    int,
 	}
 
-	interference := bit_arr.init(used_lrgs * used_lrgs)
+	interference: bit_arr.Bit_Set
+
+	switch mode {
+	case .with_scan:
+	case .with_coloring:
+		interference = bit_arr.init(used_lrgs * used_lrgs)
+	}
+
 	blocks := make([]Block, len(sched.bbs))
 
 	Self_Conflict :: struct {
@@ -341,29 +350,27 @@ regalloc_round :: proc(
 
 	if !failed_any {
 		bit_arr.set_all(in_queue)
-		for _, j in sched.bbs {
+		instr_count := 0
+		for b, j in sched.bbs {
+			blocks[j].start = instr_count
+			instr_count += len(b.instrs)
 			queue.push_front(&worklist, u32(j))
 		}
 	}
 
-	// TODO: used only once for now, dont forget to inline
-	add_area :: proc(lrg: ^backend.Lrg, out: Liveout) {
-		if out.area > lrg.longest_use_area {
-			lrg.longest_use_area = out.area
-			lrg.longest_def = out.node
-		}
-	}
-
 	rounds: int
-
 	curr_live: Liveouts
 	for b in queue.pop_front_safe(&worklist) {
+		context.user_index = int(b)
 		bit_arr.set(in_queue, b, value = false)
 		rounds += 1
 
 		bb := sched.bbs[b]
 		lbb := &blocks[b]
 
+		// NOTE: we are only interested in the new liveranges that force us to
+		// rewalk a block so we mark others as old and dont resseed then to the
+		// current liveouts next time
 		visited := lbb.liveouts.old != 0
 		liveouts_clone_into(&curr_live, lbb.liveouts)
 		lbb.liveouts.old = lbb.liveouts.len
@@ -377,46 +384,52 @@ regalloc_round :: proc(
 				if v.node != 0 {
 					if add_conflict(&ctx, lrg, v.node, instr) {
 						v.area += v.last_pos - u32(j)
-						add_area(lrg, v)
+
+						if v.area > lrg.longest_use_area {
+							lrg.longest_use_area = v.area
+							lrg.longest_def = v.node
+						}
 					}
 				}
 
-				for l in curr_live.data.id[:curr_live.len] {
-					l := &lrgs[l.lrg]
-					if !backend.reg_mask_intersects(l.mask, lrg.mask) do continue
+				if interference.bit_length != 0 {
+					for l in curr_live.data.id[:curr_live.len] {
+						l := &lrgs[l.lrg]
+						if !backend.reg_mask_intersects(l.mask, lrg.mask) do continue
 
-					pair := []^backend.Lrg{lrg, l}
+						pair := []^backend.Lrg{lrg, l}
 
-					for k in 0 ..< 2 {
-						ll, rl := pair[k], pair[1 - k]
+						for k in 0 ..< 2 {
+							ll, rl := pair[k], pair[1 - k]
 
-						// TODO: this could be a single operation
-						if backend.reg_mask_pop_count(ll.mask) == 1 {
-							backend.reg_mask_set(
-								rl.mask,
-								backend.reg_mask_first_set(
-									ll.mask,
-								) or_else panic(""),
-								false,
-							)
+							// TODO: this could be a single operation
+							if backend.reg_mask_pop_count(ll.mask) == 1 {
+								backend.reg_mask_set(
+									rl.mask,
+									backend.reg_mask_first_set(
+										ll.mask,
+									) or_else panic(""),
+									false,
+								)
 
-							// TODO: one of them will fail, and its pretty
-							// arbitrary maby its worth selecting here based on
-							// a longer liverange
-							if backend.reg_mask_is_empty(rl.mask) {
-								rl.killed = true
+								// TODO: one of them will fail, and its pretty
+								// arbitrary maby its worth selecting here based on
+								// a longer liverange
+								if backend.reg_mask_is_empty(rl.mask) {
+									rl.killed = true
+								}
 							}
-						}
 
-						bit_arr.set(
-							interference,
-							rl.index * used_lrgs + ll.index,
-						)
+							bit_arr.set(
+								interference,
+								rl.index * used_lrgs + ll.index,
+							)
+						}
 					}
 				}
 			}
 
-			clobbers_tmp := ctx.metas[inode.gvn].clobbers
+			clobbers_tmp := ctx.gmetas[inode.gvn].clobbers
 			clobbers := [backend.Reg_Kind]i64 {
 				.Vector  = i64(clobbers_tmp[.Vector]),
 				.General = i64(clobbers_tmp[.General]),
@@ -439,17 +452,19 @@ regalloc_round :: proc(
 				}
 			}
 
-			if inode.itype != .Phi && !visited {
-				for inp in data_deps(ctx, inode) {
-					inp_node := graph_get(graph, inp)
-					lrg := ctx.lrg_table[inp_node.gvn]
+			if !visited {
+				if inode.itype != .Phi {
+					for inp in data_deps(ctx, inode) {
+						inp_node := graph_get(graph, inp)
+						lrg := ctx.lrg_table[inp_node.gvn]
 
-					add_liveout(
-						&ctx,
-						&curr_live,
-						lrg,
-						{node = inp, last_pos = u32(j)},
-					)
+						add_liveout(
+							&ctx,
+							&curr_live,
+							lrg,
+							{node = inp, last_pos = u32(j)},
+						)
+					}
 				}
 			}
 		}
@@ -492,6 +507,8 @@ regalloc_round :: proc(
 						lrg := ctx.lrg_table[onode.gvn]
 						n := onode.inps[1 + j]
 
+						if graph_get(graph, n).itype == .Poison do continue
+
 						changed |= add_liveout(
 							&ctx,
 							pred_liveouts,
@@ -505,6 +522,50 @@ regalloc_round :: proc(
 			if changed && bit_arr.set(in_queue, pred_bb_idx, value = true) {
 				queue.push_back(&worklist, u32(pred_bb_idx))
 			}
+		}
+
+		add_liveout :: proc(
+			ctx: ^Ctx,
+			louts: ^Liveouts,
+			lrg: ^backend.Lrg,
+			n: Liveout,
+		) -> (
+			chanded: bool,
+		) {
+			n := n
+			n.lrg = lrg.index
+			assert(n.node != 0)
+
+			v, ok := liveouts_slot(louts, lrg.index)
+			if ok {
+				if !add_conflict(ctx, lrg, n.node, v.node) {
+					//fmt.println(n.node, v.node, louts.data.id[:louts.len])
+					return
+				}
+			}
+			chanded = v.node != n.node
+			n.area = max(n.area, v.area)
+			n.last_pos = max(n.last_pos, v.last_pos)
+			v^ = n
+
+			return
+		}
+
+		add_conflict :: proc(
+			ctx: ^Ctx,
+			lrg: ^backend.Lrg,
+			a, b: Node_ID,
+		) -> bool {
+			assert(a != 0)
+			assert(b != 0)
+
+			if a != b {
+				lrg.self_conflict = true
+				ctx.self_conflicts[Self_Conflict{lrg.index, a}] = b
+				ctx.self_conflicts[Self_Conflict{lrg.index, b}] = a
+			}
+
+			return a == b
 		}
 	}
 
@@ -521,319 +582,692 @@ regalloc_round :: proc(
 		ok = false
 	}
 
-	ifg := make([][]^backend.Lrg, used_lrgs)
-	ctx.adj = ifg
-	slices := make([]^backend.Lrg, bit_arr.pop_count(interference))
-	cursor := 0
-	slice_base := 0
-	slice_cursor := 0
+	log_lrgs(&ctx)
 
-	backend.add_efficiency_stat(
-		graph,
-		.regalloc_memory_overhead,
-		len(slices),
-		used_lrgs,
-	)
+	Slrg_ID :: distinct int
 
-	iter := bit_arr.iter(interference)
-	for edge in bit_arr.iter_next(&iter) {
-		assert(edge != cursor)
-
-		assert(ok)
-
-		for {
-			base := cursor * int(used_lrgs)
-			end := base + int(used_lrgs)
-
-			if edge >= end {
-				ifg[cursor] = slices[slice_base:slice_cursor]
-				slice_base = slice_cursor
-				cursor += 1
-				continue
-			}
-
-			slices[slice_cursor] = &lrgs[edge - base]
-			slice_cursor += 1
-			break
-		}
+	Lrg_Meta :: struct {
+		current_slrg: Slrg_ID,
 	}
 
-	if len(ifg) != 0 {
-		ifg[cursor] = slices[slice_base:slice_cursor]
-	}
+	switch mode {
+	case .with_scan:
+		// NOTE: Good estimate but still can grow on pathological cases. Thats
+		// why we use ids
+		ctx.slrgs = make([dynamic]Slrg, 1, max(1, used_lrgs * 2))
 
-	//log_lrgs(&ctx)
+		ctx.smetas = make([]Lrg_Meta, used_lrgs)
+		ctx.slrg_table = make([]Slrg_ID, len(ctx.lrg_table))
 
-	coalesced := false
-	// TODO: add priority to at least the blocks by loop depth
-	for &bb in sched.bbs {
-		if !ok do break
+		for bb, bi in sched.bbs {
+			if !ok do break
 
-		#reverse for instr, j in bb.instrs {
-			inode := graph_expand(graph, instr)
-			if inode.itype != .Split do continue
+			slrg_checkpoint := len(ctx.slrgs)
 
-			ilrg := find(get_lrg(ctx, instr))
-			inlrg := find(get_lrg(ctx, inode.inps[0]))
+			for instr, i in bb.instrs {
+				instr_idx := ctx.block_offset + i
+				inode := graph_expand(ctx.graph, instr)
 
-			assert(graph_get(graph, inlrg.longest_def).dt != .Void)
-			assert(graph_get(graph, ilrg.longest_def).dt != .Void)
-
-			if ilrg == inlrg do continue
-
-			iadj, inadj := ifg[ilrg.index], ifg[inlrg.index]
-
-			collision := false
-			to_move := 0
-			for &a in iadj {
-				collision |= a == inlrg
-				if !slice.contains(inadj, a) {
-					a, iadj[to_move] = iadj[to_move], a
-					to_move += 1
-				}
-			}
-			if collision {
-				continue
-			}
-			total := to_move + len(inadj)
-
-			leeway := backend.reg_mask_intersection_pop_count(
-				ilrg.mask,
-				inlrg.mask,
-			)
-
-			if total >= leeway &&
-			   (leeway == 0 ||
-					   max(len(inadj), len(iadj)) != total ||
-					   graph_get(graph, inode.inps[0]).itype != .Split ||
-					   j == 0 ||
-					   bb.instrs[j - 1] != inode.inps[0]) {
-				continue
-			}
-
-			coalesced = true
-
-			buf := make([]^backend.Lrg, total)
-			copy(buf, iadj[:to_move])
-			copy(buf[to_move:], inadj)
-
-			winner := unify(ilrg, inlrg)
-			fmt.assertf(winner.fails == {}, "%v", winner.fails)
-
-			to_patch := winner == ilrg ? inadj : iadj
-			other := winner == ilrg ? inlrg : ilrg
-			for adj in to_patch {
-				assert(adj.parent == nil)
-				oadj := ifg[adj.index]
-				idx, _ := slice.linear_search(oadj, other)
-
-				if slice.contains(oadj, winner) {
-					oadj[idx] = oadj[len(oadj) - 1]
-					ifg[adj.index] = oadj[:len(oadj) - 1]
-				} else {
-					oadj[idx] = winner
-				}
-			}
-
-			winner.node = inlrg.node
-			winner.longest_use_area = inlrg.longest_use_area
-			winner.longest_def = inlrg.longest_def
-			ifg[winner.index] = buf
-			ifg[other.index] = {}
-
-			ordered_remove(&bb.instrs, j)
-			backend.graph_subsume(graph, inode.inps[0], instr)
-		}
-	}
-
-	if coalesced {
-		when !ODIN_DISABLE_ASSERT {
-			for adj, i in ifg {
-				if lrgs[i].parent != nil do continue
-
-				for a, i in adj {
-					for b, j in adj {
-						if i == j do continue
-						assert(a != b)
+				if inode.dt != .Void || inode.itype != .Phi {
+					for dd in data_deps(ctx, inode) {
+						ddnode := graph_expand(ctx.graph, dd)
+						if ddnode.itype == .Poison do continue
+						add_slrg_use(&ctx, ctx.lrg_table[ddnode.gvn], i)
 					}
 				}
 
-				for a in adj {
-					assert(slice.contains(ifg[a.index], &lrgs[i]))
+				if inode.dt != .Void {
+					lrg := ctx.lrg_table[inode.gvn]
+					meta := &ctx.smetas[lrg.index]
+					if meta.current_slrg == 0 {
+						meta.current_slrg = alloc_slrg(
+							&ctx,
+							{start = instr_idx, lrg = lrg},
+						)
+					}
+					ctx.slrgs[meta.current_slrg].last_def = instr
+					ctx.slrgs[meta.current_slrg].end = instr_idx
 				}
 			}
-		}
 
-		for &l in ctx.lrg_table {
-			l = find(l)
-		}
-	}
-
-	when !ODIN_DISABLE_ASSERT {
-		sum := 0
-		for i in ifg {
-			sum += len(i)
-		}
-	}
-
-	color_ord := make(type_of(ctx.color_ord), len(ifg))
-
-	alive_lrgs := 0
-	for &lrg in lrgs[:used_lrgs] {
-		if !ok do break
-		if lrg.parent != nil do continue
-		color_ord[alive_lrgs] = lrg.index
-		lrg.color_ord_idx = u32(alive_lrgs)
-		alive_lrgs += 1
-	}
-
-	ctx.color_ord = color_ord[:alive_lrgs]
-
-	ready := 0
-	done := 0
-
-	for elm, i in ctx.color_ord {
-		lrg := &lrgs[elm]
-		if is_colorable(ctx, lrg, ready) {
-			swap_ord(ctx, lrg, &lrgs[ctx.color_ord[ready]])
-			ready += 1
-		}
-	}
-
-	for {
-		for ; done < ready; done += 1 {
-			lrg := &lrgs[ctx.color_ord[done]]
-			remove_from_ifg(ctx, lrg)
-
-			for olrg in ctx.adj[lrg.index] {
-				if is_colorable(ctx, olrg, ready) {
-					swap_ord(ctx, olrg, &lrgs[ctx.color_ord[ready]])
-					ready += 1
-				}
+			louts := &blocks[bi].liveouts
+			for lout in louts.data[:louts.len] {
+				add_slrg_use(&ctx, &lrgs[lout.id.lrg], len(bb.instrs))
 			}
-		}
+			ctx.block_offset += len(bb.instrs)
 
-		if done >= len(ctx.color_ord) do break
-
-		// this will basically fail, but pick somebody who is low cost to
-		// spill
-
-		best := ready
-		for pick in ready + 1 ..< len(ctx.color_ord) {
-			blrg := &lrgs[ctx.color_ord[best]]
-			lrg := &lrgs[ctx.color_ord[pick]]
-
-			if blrg.longest_use_area > lrg.longest_use_area {
-				continue
-			}
-
-			if len(ifg[blrg.index]) > len(ifg[lrg.index]) {
-				continue
-			}
-
-			best = pick
-		}
-
-		swap_ord(ctx, &lrgs[ctx.color_ord[ready]], &lrgs[ctx.color_ord[best]])
-		ready += 1
-
-		assert(ready <= len(ctx.color_ord))
-
-	}
-
-	swap_ord :: proc(ctx: Ctx, a, b: ^backend.Lrg) {
-		assert(ctx.color_ord[a.color_ord_idx] == a.index)
-		assert(ctx.color_ord[b.color_ord_idx] == b.index)
-
-		a.color_ord_idx, b.color_ord_idx = b.color_ord_idx, a.color_ord_idx
-		ctx.color_ord[a.color_ord_idx], ctx.color_ord[b.color_ord_idx] =
-			ctx.color_ord[b.color_ord_idx], ctx.color_ord[a.color_ord_idx]
-
-		assert(ctx.color_ord[a.color_ord_idx] == a.index)
-		assert(ctx.color_ord[b.color_ord_idx] == b.index)
-	}
-
-	remove_from_ifg :: proc(ctx: Ctx, lrg: ^backend.Lrg) {
-		for adj in ctx.adj[lrg.index] {
-			slc := &ctx.adj[adj.index]
-			idx :=
-				slice.linear_search(slc^, lrg) or_else panic(
-					"removed a lrg twice",
+			// NOTE: The scan liveranges are sorted cross blocks but not
+			// nescessarly sorted within blocks, insertion sort is good here,
+			// because casual blocks are sorted anyway so sort with O(N) on
+			// sorted list is good
+			insertion_sort_slrg(ctx.slrgs[slrg_checkpoint:])
+			for slrg, i in ctx.slrgs[slrg_checkpoint:] {
+				ctx.smetas[slrg.lrg.index].current_slrg = Slrg_ID(
+					slrg_checkpoint + i,
 				)
-			slc[idx], slc[len(slc) - 1] = slc[len(slc) - 1], slc[idx]
-			slc^ = slc[:len(slc) - 1]
-		}
-	}
+			}
 
-	is_colorable :: #force_inline proc(
-		ctx: Ctx,
-		lrg: ^backend.Lrg,
-		ready: int,
-	) -> (
-		yes: bool,
-	) {
-		return(
-			backend.reg_mask_pop_count(lrg.mask) > len(ctx.adj[lrg.index]) &&
-			lrg.color_ord_idx >= u32(ready) \
-		)
-	}
+			// NOTE: this should be valid since all of the slrgs are ensured to
+			// be up to date
+			for instr, i in bb.instrs {
+				inode := graph_expand(ctx.graph, instr)
+				if inode.dt != .Void {
+					lrg := ctx.lrg_table[inode.gvn]
+					ctx.slrg_table[inode.gvn] =
+						ctx.smetas[lrg.index].current_slrg
+				}
+			}
 
-	if failed_any do ctx.color_ord = {}
+			add_slrg_use :: proc(ctx: ^Ctx, lrg: ^backend.Lrg, end: int) {
+				meta := &ctx.smetas[lrg.index]
+				assert(ctx.slrgs[meta.current_slrg].lrg == lrg)
+				if ctx.slrgs[meta.current_slrg].end < ctx.block_offset {
+					meta.current_slrg = alloc_slrg(
+						ctx,
+						{
+							start = ctx.block_offset,
+							lrg = lrg,
+							last_def = ctx.slrgs[meta.current_slrg].last_def,
+						},
+					)
+				}
+				ctx.slrgs[meta.current_slrg].end = ctx.block_offset + end
+			}
 
-	#reverse for co in ctx.color_ord {
-		n := ifg[co]
-		lrg := &lrgs[co]
-		assert(lrg.parent == nil)
+			alloc_slrg :: proc(ctx: ^Ctx, init: Slrg) -> Slrg_ID {
+				append(&ctx.slrgs, init)
+				return Slrg_ID(len(ctx.slrgs) - 1)
+			}
 
-		for inter in n {
-			adjs := &ifg[inter.index]
-			adjs^ = raw_data(adjs^)[:len(adjs) + 1]
-			assert(adjs[len(adjs) - 1] == lrg)
-			if inter.reg != -1 {
-				backend.reg_mask_set(lrg.mask, inter.reg, false)
+			insertion_sort_slrg :: proc(items: []Slrg) {
+				for i := 1; i < len(items); i += 1 {
+					key := items[i]
+					j := i - 1
+					for j >= 0 && items[j].start > key.start {
+						items[j + 1] = items[j]
+						j -= 1
+					}
+					items[j + 1] = key
+				}
 			}
 		}
 
-		if lrg.mask.masks[0] & ctx.ra.call_clobbers[0][lrg.mask.kind] != 0 {
-			lrg.mask.masks[0] &= ctx.ra.call_clobbers[0][lrg.mask.kind]
+		assert(slice.is_sorted_by(ctx.slrgs[:], proc(a, b: Slrg) -> bool {
+				return a.start < b.start}))
+
+		slice.fill(ctx.smetas, Lrg_Meta{})
+
+		Split :: struct {
+			using slrg: ^Slrg,
+			next_srlg:  ^Slrg,
 		}
 
-		first_set, fok := backend.reg_mask_first_set(lrg.mask)
-		if !fok {
-			lrg.failed_to_color = true
-			continue
+		splits: [dynamic]Split
+
+		for i in 0 ..< 3 {
+			if !ok do break
+
+			free_regs_slots: [backend.Reg_Kind][8]i64
+			free_regs: [backend.Reg_Kind]backend.Reg_Mask
+			for &s, kind in free_regs_slots {
+				slice.fill(s[:], -1)
+				free_regs[kind] = {
+					masks      = raw_data(&s),
+					bit_length = ctx.ra.mask_len,
+					kind       = kind,
+				}
+			}
+
+			assert(i < 2)
+			active_slrgs: [backend.Reg_Kind][dynamic]^Slrg
+			crossed_slrgs := 1
+			recoverable_failure := false
+
+			for &slrg in ctx.slrgs[1:] {
+				slrg.reg = -1
+				slrg.lrg.reg = -1
+			}
+
+			// TODO: we could skip program points that cause no changes, mabye a
+			// bitset
+			for j in 0 ..< ctx.block_offset {
+				for &active in active_slrgs {
+					keep := 0
+					for slrg in active {
+						if slrg.end == j {
+							backend.reg_mask_set(
+								free_regs[slrg.lrg.mask.kind],
+								slrg.reg,
+							)
+						} else {
+							active[keep] = slrg
+							keep += 1
+						}
+					}
+					resize(&active, keep)
+				}
+
+				for ; crossed_slrgs < len(ctx.slrgs) &&
+				    ctx.slrgs[crossed_slrgs].start == j;
+				    crossed_slrgs += 1 {
+
+					slrg := &ctx.slrgs[crossed_slrgs]
+					available := free_regs[slrg.lrg.mask.kind]
+
+					reg := -1
+					if slrg.lrg.reg != -1 &&
+					   backend.reg_mask_contains(available, slrg.lrg.reg) {
+						reg = int(slrg.lrg.reg)
+					} else {
+						reg, _ = backend.reg_mask_first_common_set(
+							available,
+							slrg.lrg.mask,
+						)
+
+						if slrg.lrg.reg != -1 {
+							prev := &ctx.slrgs[ctx.smetas[slrg.lrg.index].current_slrg]
+							append(&splits, Split{prev, slrg})
+						}
+					}
+
+					recoverable_failure |= reg == -1
+
+					// NOTE: we do this even if we already failed as we
+					// also mark the killed lrgs
+					if backend.reg_mask_pop_count(slrg.lrg.mask) == 1 &&
+					   i == 0 {
+						reg =
+							backend.reg_mask_first_set(
+								slrg.lrg.mask,
+							) or_else panic("")
+						for oslrg in active_slrgs[slrg.lrg.mask.kind] {
+							backend.reg_mask_set(
+								oslrg.lrg.mask,
+								reg,
+								value = false,
+							)
+							if backend.reg_mask_pop_count(oslrg.lrg.mask) ==
+							   0 {
+								ok = false
+								oslrg.lrg.killed = true
+							}
+						}
+					} else {
+						ok &= reg != -1
+					}
+
+					// TODO: i don't know if its better to migrate the main lrg
+					// here to this new register, it might not matter
+					slrg.reg = reg
+					if slrg.lrg.reg == -1 {
+						slrg.lrg.reg = i16(reg)
+					}
+
+					if slrg.reg != -1 {
+						append(&active_slrgs[slrg.lrg.mask.kind], slrg)
+						backend.reg_mask_set(available, slrg.reg, false)
+						ctx.smetas[slrg.lrg.index].current_slrg = Slrg_ID(
+							crossed_slrgs,
+						)
+					} else {
+						slrg.lrg.failed_to_alloc = true
+					}
+				}
+
+			}
+
+			if !ok || !recoverable_failure do break
 		}
 
-		assert(first_set != -1)
+		split_regs: [dynamic]backend.Reg
+		for split in splits {
+			// TODO: do binary search here
+			sblk, _ := slice.binary_search_by(
+				blocks,
+				split.end,
+				proc(b: Block, e: int) -> slice.Ordering {
+					return slice.Ordering(sort.compare_ints(b.start, e))
+				},
+			)
+			sblk -= 1
+			eblk, _ := slice.binary_search_by(
+				blocks,
+				split.next_srlg.start,
+				proc(b: Block, e: int) -> slice.Ordering {
+					return slice.Ordering(sort.compare_ints(b.start, e))
+				},
+			)
+			bb := &sched.bbs[sblk]
+			block := &blocks[sblk]
 
-		lrg.reg = i16(first_set)
+			assert(
+				block.start < split.end &&
+				split.end <= block.start + len(bb.instrs),
+			)
+
+			def := graph_expand(ctx.graph, split.last_def)
+			outs := slice.clone(def.outs)
+
+			splt := backend.graph_add_split(
+				ctx.graph,
+				"slrg",
+				def.dt,
+				split.last_def,
+			)
+
+			inject_at(&bb.instrs, len(bb.instrs) - 1, splt)
+			append(
+				&split_regs,
+				backend.Reg {
+					kind = split.lrg.mask.kind,
+					index = u16(split.next_srlg.reg),
+				},
+			)
+
+			for out in outs {
+				onode := graph_get(ctx.graph, out.id)
+				block := ctx.instr_placement[onode.gvn].block
+				fmt.println("", block, onode)
+				if sblk < int(block) && int(block) < eblk {
+					backend.graph_set_input(ctx.graph, out.id, out.idx, splt)
+				}
+			}
+		}
+
+		res = make([]backend.Reg, def_count + len(split_regs))
+		for id, j in ctx.slrg_table {
+			if id == 0 {
+				res[j] = {
+					kind  = .General,
+					index = 4095,
+				}
+				continue
+			}
+			slrg := &ctx.slrgs[id]
+			res[j] = {
+				kind  = slrg.lrg.mask.kind,
+				index = u16(slrg.reg),
+			}
+		}
+
+		copy(res[def_count:], split_regs[:])
+	case .with_coloring:
+		ifg := make([][]^backend.Lrg, used_lrgs)
+		ctx.adj = ifg
+		slices := make([]^backend.Lrg, bit_arr.pop_count(interference))
+		cursor := 0
+		slice_base := 0
+		slice_cursor := 0
+
+		backend.add_efficiency_stat(
+			graph,
+			.regalloc_memory_overhead,
+			len(slices),
+			used_lrgs,
+		)
+
+		iter := bit_arr.iter(interference)
+		for edge in bit_arr.iter_next(&iter) {
+			assert(edge != cursor)
+
+			assert(ok)
+
+			for {
+				base := cursor * int(used_lrgs)
+				end := base + int(used_lrgs)
+
+				if edge >= end {
+					ifg[cursor] = slices[slice_base:slice_cursor]
+					slice_base = slice_cursor
+					cursor += 1
+					continue
+				}
+
+				slices[slice_cursor] = &lrgs[edge - base]
+				slice_cursor += 1
+				break
+			}
+		}
+
+		if len(ifg) != 0 {
+			ifg[cursor] = slices[slice_base:slice_cursor]
+		}
+
+		coalesced := false
+		// TODO: add priority to at least the blocks by loop depth
+		for &bb in sched.bbs {
+			if !ok do break
+
+			#reverse for instr, j in bb.instrs {
+				inode := graph_expand(graph, instr)
+				if inode.itype != .Split do continue
+
+				ilrg := find(get_lrg(ctx, instr))
+				inlrg := find(get_lrg(ctx, inode.inps[0]))
+
+				assert(graph_get(graph, inlrg.longest_def).dt != .Void)
+				assert(graph_get(graph, ilrg.longest_def).dt != .Void)
+
+				if ilrg == inlrg do continue
+
+				iadj, inadj := ifg[ilrg.index], ifg[inlrg.index]
+
+				collision := false
+				to_move := 0
+				for &a in iadj {
+					collision |= a == inlrg
+					if !slice.contains(inadj, a) {
+						a, iadj[to_move] = iadj[to_move], a
+						to_move += 1
+					}
+				}
+				if collision {
+					continue
+				}
+				total := to_move + len(inadj)
+
+				leeway := backend.reg_mask_intersection_pop_count(
+					ilrg.mask,
+					inlrg.mask,
+				)
+
+				if total >= leeway &&
+				   (leeway == 0 ||
+						   max(len(inadj), len(iadj)) != total ||
+						   graph_get(graph, inode.inps[0]).itype != .Split ||
+						   j == 0 ||
+						   bb.instrs[j - 1] != inode.inps[0]) {
+					continue
+				}
+
+				coalesced = true
+
+				buf := make([]^backend.Lrg, total)
+				copy(buf, iadj[:to_move])
+				copy(buf[to_move:], inadj)
+
+				winner := unify(ilrg, inlrg)
+				fmt.assertf(winner.fails == {}, "%v", winner.fails)
+
+				to_patch := winner == ilrg ? inadj : iadj
+				other := winner == ilrg ? inlrg : ilrg
+				for adj in to_patch {
+					assert(adj.parent == nil)
+					oadj := ifg[adj.index]
+					idx, _ := slice.linear_search(oadj, other)
+
+					if slice.contains(oadj, winner) {
+						oadj[idx] = oadj[len(oadj) - 1]
+						ifg[adj.index] = oadj[:len(oadj) - 1]
+					} else {
+						oadj[idx] = winner
+					}
+				}
+
+				winner.node = inlrg.node
+				winner.longest_use_area = inlrg.longest_use_area
+				winner.longest_def = inlrg.longest_def
+				ifg[winner.index] = buf
+				ifg[other.index] = {}
+
+				ordered_remove(&bb.instrs, j)
+				backend.graph_subsume(graph, inode.inps[0], instr)
+			}
+		}
+
+		if coalesced {
+			when !ODIN_DISABLE_ASSERT {
+				for adj, i in ifg {
+					if lrgs[i].parent != nil do continue
+
+					for a, i in adj {
+						for b, j in adj {
+							if i == j do continue
+							assert(a != b)
+						}
+					}
+
+					for a in adj {
+						assert(slice.contains(ifg[a.index], &lrgs[i]))
+					}
+				}
+			}
+
+			for &l in ctx.lrg_table {
+				l = find(l)
+			}
+		}
+
+		when !ODIN_DISABLE_ASSERT {
+			sum := 0
+			for i in ifg {
+				sum += len(i)
+			}
+		}
+
+		ctx.color_ord = make(type_of(ctx.color_ord), len(ifg))
+
+		alive_lrgs := 0
+		for &lrg in lrgs[:used_lrgs] {
+			if !ok do break
+			if lrg.parent != nil do continue
+			ctx.color_ord[alive_lrgs] = lrg.index
+			lrg.color_ord_idx = u32(alive_lrgs)
+			alive_lrgs += 1
+		}
+
+		ctx.color_ord = ctx.color_ord[:alive_lrgs]
+
+		backend.add_efficiency_stat(
+			graph,
+			.regalloc_wasted_lrgs,
+			used_lrgs,
+			len(ctx.color_ord),
+		)
+
+		ready := 0
+		done := 0
+
+		for elm, i in ctx.color_ord {
+			lrg := &lrgs[elm]
+			if is_colorable(ctx, lrg, ready) {
+				swap_ord(ctx, lrg, &lrgs[ctx.color_ord[ready]])
+				ready += 1
+			}
+		}
+
+		for {
+			for ; done < ready; done += 1 {
+				lrg := &lrgs[ctx.color_ord[done]]
+				remove_from_ifg(ctx, lrg)
+
+				for olrg in ctx.adj[lrg.index] {
+					if is_colorable(ctx, olrg, ready) {
+						swap_ord(ctx, olrg, &lrgs[ctx.color_ord[ready]])
+						ready += 1
+					}
+				}
+			}
+
+			if done >= len(ctx.color_ord) do break
+
+			// this will basically fail, but pick somebody who is low cost to
+			// spill
+
+			best := ready
+			for pick in ready + 1 ..< len(ctx.color_ord) {
+				blrg := &lrgs[ctx.color_ord[best]]
+				lrg := &lrgs[ctx.color_ord[pick]]
+
+				if blrg.longest_use_area > lrg.longest_use_area {
+					continue
+				}
+
+				if len(ifg[blrg.index]) > len(ifg[lrg.index]) {
+					continue
+				}
+
+				best = pick
+			}
+
+			swap_ord(
+				ctx,
+				&lrgs[ctx.color_ord[ready]],
+				&lrgs[ctx.color_ord[best]],
+			)
+			ready += 1
+
+			assert(ready <= len(ctx.color_ord))
+		}
+
+		swap_ord :: proc(ctx: Ctx, a, b: ^backend.Lrg) {
+			assert(ctx.color_ord[a.color_ord_idx] == a.index)
+			assert(ctx.color_ord[b.color_ord_idx] == b.index)
+
+			a.color_ord_idx, b.color_ord_idx = b.color_ord_idx, a.color_ord_idx
+			ctx.color_ord[a.color_ord_idx], ctx.color_ord[b.color_ord_idx] =
+				ctx.color_ord[b.color_ord_idx], ctx.color_ord[a.color_ord_idx]
+
+			assert(ctx.color_ord[a.color_ord_idx] == a.index)
+			assert(ctx.color_ord[b.color_ord_idx] == b.index)
+		}
+
+		remove_from_ifg :: proc(ctx: Ctx, lrg: ^backend.Lrg) {
+			for adj in ctx.adj[lrg.index] {
+				slc := &ctx.adj[adj.index]
+				idx :=
+					slice.linear_search(slc^, lrg) or_else panic(
+						"removed a lrg twice",
+					)
+				slc[idx], slc[len(slc) - 1] = slc[len(slc) - 1], slc[idx]
+				slc^ = slc[:len(slc) - 1]
+			}
+		}
+
+		is_colorable :: #force_inline proc(
+			ctx: Ctx,
+			lrg: ^backend.Lrg,
+			ready: int,
+		) -> (
+			yes: bool,
+		) {
+			return(
+				backend.reg_mask_pop_count(lrg.mask) >
+					len(ctx.adj[lrg.index]) &&
+				lrg.color_ord_idx >= u32(ready) \
+			)
+		}
+
+		if failed_any do ctx.color_ord = {}
+
+		#reverse for co in ctx.color_ord {
+			n := ifg[co]
+			lrg := &lrgs[co]
+			assert(lrg.parent == nil)
+
+			for inter in n {
+				adjs := &ifg[inter.index]
+				adjs^ = raw_data(adjs^)[:len(adjs) + 1]
+				assert(adjs[len(adjs) - 1] == lrg)
+				if inter.reg != -1 {
+					backend.reg_mask_set(lrg.mask, inter.reg, false)
+				}
+			}
+
+			clobbs := ctx.ra.call_clobbers[0][lrg.mask.kind]
+			if lrg.mask.masks[0] & clobbs != 0 {
+				lrg.mask.masks[0] &= clobbs
+			}
+
+			first_set, fok := backend.reg_mask_first_set(lrg.mask)
+			if !fok {
+				lrg.failed_to_alloc = true
+				continue
+			}
+
+			assert(first_set != -1)
+
+			lrg.reg = i16(first_set)
+		}
+
+		when !ODIN_DISABLE_ASSERT {
+			for i in ifg {
+				sum -= len(i)
+			}
+			assert(sum == 0)
+		}
+
+		res = make([]backend.Reg, def_count)
+		for lrg, j in ctx.lrg_table {
+			res[j] = {
+				kind  = lrg.mask.kind,
+				index = u16(lrg.reg),
+			}
+		}
 	}
 
-	when !ODIN_DISABLE_ASSERT {
-		for i in ifg {
-			sum -= len(i)
+	ctx.res = res
+
+	unify :: proc(a, b: ^backend.Lrg) -> ^backend.Lrg {
+		a, b := a, b
+		if a == nil do return b
+		if b == nil do return a
+		if a == b do return a
+
+		a, b = find(a), find(b)
+		if a == b do return a
+
+		if a.rank < b.rank {
+			a, b = b, a
 		}
-		assert(sum == 0)
+
+		b.parent = a
+
+		intersect(a, b.mask)
+
+		if a.rank == b.rank {
+			a.rank += 1
+		}
+
+		return a
 	}
 
-	backend.add_efficiency_stat(
-		graph,
-		.regalloc_wasted_lrgs,
-		used_lrgs,
-		len(ctx.color_ord),
-	)
-
-	res = make([]backend.Reg, def_count)
-	for lrg, j in ctx.lrg_table {
-		res[j] = {
-			kind  = lrg.mask.kind,
-			index = u16(lrg.reg),
+	intersect :: proc(l: ^backend.Lrg, mask: backend.Reg_Mask) {
+		fmt.assertf(
+			l.mask.kind == mask.kind,
+			"%v == %v %v",
+			l.mask.kind,
+			mask.kind,
+			l,
+		)
+		assert(l.parent == nil)
+		backend.reg_mask_intersection(l.mask, mask)
+		if backend.reg_mask_is_empty(l.mask) {
+			l.reg_conflict = true
 		}
+	}
+
+	find :: proc(l: ^backend.Lrg) -> ^backend.Lrg {
+		if l == nil do return nil
+		if l.parent == nil do return l
+		if l.parent.parent == nil do return l.parent
+
+		cursor := l
+		for cursor.parent != nil {
+			assert(cursor.parent.rank > cursor.rank)
+			root := cursor.parent.parent
+			if root == nil do root = cursor.parent
+			cursor, cursor.parent = cursor.parent, root
+		}
+
+		return cursor
 	}
 
 	prev_gvn := graph.gvn
 
 	color_fails: int
+
+	any_fails := false
 
 	for &lrg in lrgs[:used_lrgs_check] {
 		id := lrg.node
@@ -843,12 +1277,14 @@ regalloc_round :: proc(
 			continue
 		}
 
+		any_fails = true
+
 		members := collect_lrg_members(ctx, &lrg)
 
 		ok = false
 
-		if lrg.failed_to_color {
-			color_fails += int(lrg.failed_to_color)
+		if lrg.failed_to_alloc {
+			color_fails += int(lrg.failed_to_alloc)
 
 			for m in members {
 				is_internal := true
@@ -979,6 +1415,8 @@ regalloc_round :: proc(
 		}
 	}
 
+	assert(any_fails == !ok)
+
 	if color_fails > 0 {
 		ocursor := 0
 		order := make([]bit_field u64 {
@@ -1059,7 +1497,7 @@ regalloc_round :: proc(
 
 			inode := graph_get(graph, inp)
 
-			if j != int(ctx.metas[node.gvn].in_place_slot) &&
+			if j != int(ctx.gmetas[node.gvn].in_place_slot) &&
 			   node.itype != .Phi {
 				continue
 			}
@@ -1104,7 +1542,7 @@ regalloc_round :: proc(
 			if onode.dt == .Void do continue
 			if onode.gvn >= prev_gvn do continue
 
-			if out.idx == int(ctx.metas[onode.gvn].in_place_slot) ||
+			if out.idx == int(ctx.gmetas[onode.gvn].in_place_slot) ||
 			   onode.itype == .Phi {
 				split: Node_ID
 				if last_split != 0 &&
@@ -1125,6 +1563,7 @@ regalloc_round :: proc(
 		}
 	}
 
+	log_lrgs(&ctx)
 	backend.verify_schedule_integrity(ctx.graph, ctx.sched)
 	if ok {
 		log_lrgs(&ctx)
@@ -1143,16 +1582,16 @@ regalloc_round :: proc(
 					if inp.output_count == 1 &&
 					   0 < i &&
 					   bb.instrs[i - 1] == inode.inps[0] &&
-					   ctx.metas[inp.gvn].in_place_slot >= 0 {
+					   ctx.gmetas[inp.gvn].in_place_slot >= 0 {
 
 						in_slot_id :=
-							inp.inps[ctx.metas[inp.gvn].in_place_slot]
+							inp.inps[ctx.gmetas[inp.gvn].in_place_slot]
 						in_slot_node := graph_expand(graph, in_slot_id)
 
 						umask := rm_get_use(
 							ctx,
 							inp,
-							ctx.metas[inp.gvn].in_place_slot,
+							ctx.gmetas[inp.gvn].in_place_slot,
 						)
 
 						overlaps := backend.reg_mask_contains(
@@ -1206,9 +1645,9 @@ regalloc_round :: proc(
 			remove_range(&bb.instrs, 0, keep)
 		}
 	}
-	if ok do verify_alloc_integrity(ctx, res)
 
 	log_lrgs(&ctx)
+	if ok do verify_alloc_integrity(ctx, res)
 
 	return
 
@@ -1231,7 +1670,17 @@ regalloc_round :: proc(
 		node: ^backend.Node,
 		#any_int pos: int,
 	) -> backend.Reg_Mask {
-		meta := &ctx.metas[node.gvn]
+		if node.scan_split {
+			@(static, rodata)
+			slts: [8]i64
+			return {
+				bit_length = ctx.ra.mask_len,
+				kind = .General,
+				masks = raw_data(&slts),
+			}
+		}
+
+		meta := &ctx.gmetas[node.gvn]
 		idx := i8(pos) - i8(meta.input_start)
 		// if !(0 <= idx && int(idx) < len(meta.masks)) {
 		// 	backend.graph_display(
@@ -1383,32 +1832,6 @@ regalloc_round :: proc(
 		return members[:]
 	}
 
-	add_liveout :: proc(
-		ctx: ^Ctx,
-		louts: ^Liveouts,
-		lrg: ^backend.Lrg,
-		n: Liveout,
-	) -> (
-		chanded: bool,
-	) {
-		n := n
-		n.lrg = lrg.index
-		assert(n.node != 0)
-
-		v, ok := liveouts_slot(louts, lrg.index)
-		if ok {
-			if !add_conflict(ctx, lrg, n.node, v.node) {
-				//fmt.println(n.node, v.node, louts.data.id[:louts.len])
-				return
-			}
-		}
-		chanded = v.node != n.node
-		n.area = max(n.area, v.area)
-		v^ = n
-
-		return
-	}
-
 	get_lrg :: proc(ctx: Ctx, node: Node_ID, logg := false) -> ^backend.Lrg {
 		node := graph_get(ctx.graph, node)
 		if int(node.gvn) >= len(ctx.lrg_table) {
@@ -1433,7 +1856,7 @@ regalloc_round :: proc(
 			return use
 		}
 
-		umask := backend.rm_get(ctx.ra, ctx.metas[fnode.gvn].out)
+		umask := backend.rm_get(ctx.ra, ctx.gmetas[fnode.gvn].out)
 		if (backend.reg_mask_first_set(umask) or_else 0) >= x64.GPA_REG_COUNT {
 			return use
 		}
@@ -1543,133 +1966,6 @@ regalloc_round :: proc(
 		return id
 	}
 
-	color_priority :: proc(ctx: Ctx, lrg: ^backend.Lrg) -> (vl: u32) {
-		graph := ctx.graph
-		lrg_table := ctx.lrg_table
-		instr_placement := ctx.instr_placement
-		adj := ctx.adj[lrg.index]
-
-		if backend.reg_mask_pop_count(lrg.mask) > len(adj) {
-			return 0
-		}
-
-		id := forward_lrg(graph, lrg, lrg_table)
-
-		members := collect_lrg_members(ctx, lrg)
-
-		has_non_split := false
-		for m in members {
-			for o in backend.graph_outs(graph, m) {
-				has_non_split |= graph_get(graph, o.id).itype != .Split
-			}
-		}
-		if !has_non_split {
-			return 0
-		}
-
-		fnode := graph_expand(graph, id)
-
-		if fnode.output_count == 1 {
-			onode := graph_get(graph, fnode.outs[0].id)
-			if int(onode.gvn) < len(ctx.lrg_table) {
-
-				if instr_placement[onode.gvn].block ==
-					   instr_placement[fnode.gvn].block &&
-				   ctx.lrg_table[onode.gvn] != ctx.lrg_table[fnode.gvn] {
-					assert(onode.gvn > fnode.gvn)
-					return u32(
-						max(1000 - int((onode.gvn - fnode.gvn) * 100), 0),
-					)
-				}
-
-				if ctx.lrg_table[onode.gvn] == ctx.lrg_table[fnode.gvn] &&
-				   onode.itype == .Phi {
-					_, idx := get_node_block_and_idx(ctx, id)
-					return u32(max(idx * 100, 0))
-				}
-			}
-		}
-
-		if fnode.itype == .Split {
-			if graph_get(graph, fnode.inps[0]).itype == .Split {
-				if fnode.output_count == 1 {
-					return 30
-				}
-			}
-			return 10
-		}
-
-		return 100 + (u32(len(members)) - 1) * 100
-	}
-
-	add_conflict :: proc(ctx: ^Ctx, lrg: ^backend.Lrg, a, b: Node_ID) -> bool {
-		assert(a != 0)
-		assert(b != 0)
-
-		if a != b {
-			lrg.self_conflict = true
-			ctx.self_conflicts[Self_Conflict{lrg.index, a}] = b
-			ctx.self_conflicts[Self_Conflict{lrg.index, b}] = a
-		}
-
-		return a == b
-	}
-
-	unify :: proc(a, b: ^backend.Lrg) -> ^backend.Lrg {
-		a, b := a, b
-		if a == nil do return b
-		if b == nil do return a
-		if a == b do return a
-
-		a, b = find(a), find(b)
-		if a == b do return a
-
-		if a.rank < b.rank {
-			a, b = b, a
-		}
-
-		b.parent = a
-
-		intersect(a, b.mask)
-
-		if a.rank == b.rank {
-			a.rank += 1
-		}
-
-		return a
-	}
-
-	intersect :: proc(l: ^backend.Lrg, mask: backend.Reg_Mask) {
-		fmt.assertf(
-			l.mask.kind == mask.kind,
-			"%v == %v %v",
-			l.mask.kind,
-			mask.kind,
-			l,
-		)
-		assert(l.parent == nil)
-		backend.reg_mask_intersection(l.mask, mask)
-		if backend.reg_mask_is_empty(l.mask) {
-			l.reg_conflict = true
-		}
-	}
-
-	find :: proc(l: ^backend.Lrg) -> ^backend.Lrg {
-		if l == nil do return nil
-		if l.parent == nil do return l
-		if l.parent.parent == nil do return l.parent
-
-		cursor := l
-		for cursor.parent != nil {
-			assert(cursor.parent.rank > cursor.rank)
-			root := cursor.parent.parent
-			if root == nil do root = cursor.parent
-			cursor, cursor.parent = cursor.parent, root
-		}
-
-		return cursor
-	}
-
 	@(disabled = !backend.REGLOGS)
 	log_lrgs :: proc(ctx: ^Ctx) {
 		sb: strings.Builder
@@ -1697,14 +1993,13 @@ regalloc_round :: proc(
 				backend.ansi_start(w, lrg.index)
 				fmt.wprintf(w, "%3i", lrg.index)
 				backend.ansi_end(w)
-				if len(ctx.adj) != 0 {
-					priority := color_priority(ctx^, lrg)
-					fmt.wprintf(w, " %04i %02i ", priority, lrg.reg)
+				if len(ctx.res) != 0 {
+					fmt.wprintf(w, " %02i ", ctx.res[instr.gvn].index)
 				} else {
-					fmt.wprint(w, "            ")
+					fmt.wprint(w, "       ")
 				}
 			} else {
-				fmt.wprint(w, "                                 ")
+				fmt.wprint(w, "                            ")
 			}
 		}
 
@@ -1716,7 +2011,7 @@ regalloc_round :: proc(
 		inode: backend.Expanded_Node,
 		#any_int idx: int,
 	) -> bool {
-		meta := ctx.metas[inode.gvn]
+		meta := ctx.gmetas[inode.gvn]
 		if idx < int(meta.input_start) do return false
 		if idx >=
 		   min(len(meta.masks) + int(meta.input_start), len(inode.inps)) {
@@ -1726,7 +2021,7 @@ regalloc_round :: proc(
 	}
 
 	data_deps :: proc(ctx: Ctx, inode: backend.Expanded_Node) -> []Node_ID {
-		meta := ctx.metas[inode.gvn]
+		meta := ctx.gmetas[inode.gvn]
 		len := min(len(meta.masks), len(inode.inps) - int(meta.input_start))
 		return inode.inps[meta.input_start:][:len]
 	}

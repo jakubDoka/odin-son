@@ -122,6 +122,7 @@ graph_display :: proc(
 
 	seen_loop_trees: map[^Loop_Tree]int
 
+	instr_idx := 0
 	for bb in ctx.bbs {
 		if bb.loop_tree != nil {
 			if bb.loop_tree not_in seen_loop_trees {
@@ -150,7 +151,8 @@ graph_display :: proc(
 				//continue
 			}
 
-			fmt.wprint(w, "  ")
+			fmt.wprintf(w, " %03i ", instr_idx)
+			instr_idx += 1
 			if len(regs) != 0 {
 				if inode.dt != .Void {
 					reg := regs[inode.gvn]

@@ -347,6 +347,7 @@ Node :: struct {
 	using gvn_group: bit_field u32 {
 		gvn:          u32  | 23,
 		in_worklist:  bool | 1,
+		scan_split:   bool | 1,
 		extra_dwords: u32  | 4,
 	},
 	input_idx:       u32,

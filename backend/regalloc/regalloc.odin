@@ -594,12 +594,14 @@ regalloc_round :: proc(
 
 	switch mode {
 	case .with_scan:
-		// NOTE: Good estimate but still can grow on pathological cases. Thats
-		// why we use ids
-		ctx.slrgs = make([dynamic]Slrg, 1, max(1, used_lrgs * 2))
+		if ok {
+			// NOTE: Good estimate but still can grow on pathological cases. Thats
+			// why we use ids
+			ctx.slrgs = make([dynamic]Slrg, 1, max(1, used_lrgs * 2))
 
-		ctx.smetas = make([]Lrg_Meta, used_lrgs)
-		ctx.slrg_table = make([]Slrg_ID, len(ctx.lrg_table))
+			ctx.smetas = make([]Lrg_Meta, used_lrgs)
+			ctx.slrg_table = make([]Slrg_ID, len(ctx.lrg_table))
+		}
 
 		for bb, bi in sched.bbs {
 			if !ok do break
@@ -627,7 +629,6 @@ regalloc_round :: proc(
 							{start = instr_idx, lrg = lrg},
 						)
 					}
-					ctx.slrgs[meta.current_slrg].last_def = instr
 					ctx.slrgs[meta.current_slrg].end = instr_idx
 				}
 			}
@@ -670,15 +671,11 @@ regalloc_round :: proc(
 			) {
 				meta := &ctx.smetas[lrg.index]
 				assert(ctx.slrgs[meta.current_slrg].lrg == lrg)
-				if ctx.slrgs[meta.current_slrg].end < ctx.block_offset {
+				if false &&
+				   ctx.slrgs[meta.current_slrg].end < ctx.block_offset {
 					meta.current_slrg = alloc_slrg(
 						ctx,
-						{
-							start = ctx.block_offset,
-							lrg = lrg,
-							last_def = ctx.slrgs[meta.current_slrg].last_def,
-							prev = meta.current_slrg,
-						},
+						{start = ctx.block_offset, lrg = lrg},
 					)
 				}
 				ctx.slrgs[meta.current_slrg].end = ctx.block_offset + end
@@ -837,245 +834,7 @@ regalloc_round :: proc(
 			if !ok || !recoverable_failure do break
 		}
 
-		Move :: struct {
-			src:  Node_ID,
-			dst:  backend.Node_Output,
-			slrg: Slrg_ID,
-			regs: struct {
-				src: backend.Reg,
-				dst: backend.Reg,
-			},
-		}
-
-		Block_Splits :: struct {
-			sides: [enum {
-				start,
-				end,
-			}][dynamic]Move,
-		}
-
-		splits := make([]Block_Splits, len(sched.bbs))
-
-		crossed_slrgs := 1
-		instr_idx := 0
-		for bb, bi in sched.bbs {
-			if !ok do break
-
-			block := &blocks[bi]
-
-			for instr, i in bb.instrs {
-				for ; crossed_slrgs < len(ctx.slrgs) &&
-				    ctx.slrgs[crossed_slrgs].start == instr_idx;
-				    crossed_slrgs += 1 {
-
-					ctx.smetas[ctx.slrgs[crossed_slrgs].lrg.index].current_slrg =
-						Slrg_ID(crossed_slrgs)
-				}
-
-				inode := graph_expand(graph, instr)
-				if inode.itype != .Phi || inode.dt != .Void {
-					for dd, i in data_deps(ctx, inode) {
-						idx := int(ctx.gmetas[inode.gvn].input_start) + i
-						ddnode := graph_expand(graph, dd)
-						if ddnode.itype == .Poison do continue
-						dslrg := &ctx.slrgs[ctx.slrg_table[ddnode.gvn]]
-						uid := ctx.smetas[dslrg.lrg.index].current_slrg
-						slrg := &ctx.slrgs[uid]
-
-						if slrg.reg != dslrg.reg {
-							list: ^[dynamic]Move
-							if inode.itype == .Phi {
-								last :=
-									backend.graph_inps(ctx.graph, inode.inps[0])[i]
-								last_gvn := graph_get(ctx.graph, last).gvn
-								block := ctx.instr_placement[last_gvn].block
-								list = &splits[block].sides[.end]
-							} else {
-								block := bi
-								final_block := block
-								treefy: for block > 0 {
-									pred := sched.bbs[block]
-
-									idom := backend.graph_idom(
-										graph,
-										pred.head,
-									)
-									idom_id := graph_get(graph, idom).gvn
-									next_block := int(
-										ctx.instr_placement[idom_id].block,
-									)
-
-									blocka := &blocks[next_block]
-
-									if slrg.start <= blocka.start {
-										final_block = next_block
-									}
-
-									for {
-										pslrg := ctx.slrgs[slrg.prev]
-
-										preceded := pslrg.end <= blocka.start
-										passed :=
-											blocka.start +
-												len(
-													sched.bbs[next_block].instrs,
-												) <=
-											pslrg.start
-
-										assert(!passed || !preceded)
-
-										if passed {
-											slrg.prev = pslrg.prev
-										}
-
-										if !preceded && !passed {
-											break treefy
-										}
-
-										if preceded {
-											break
-										}
-									}
-
-									block = next_block
-								}
-								list = &splits[final_block].sides[.start]
-							}
-
-							split := Move {
-								dd,
-								{id = instr, idx = idx},
-								uid,
-								{
-									{
-										index = u16(dslrg.reg),
-										kind = dslrg.lrg.mask.kind,
-									},
-									{
-										index = u16(slrg.reg),
-										kind = dslrg.lrg.mask.kind,
-									},
-								},
-							}
-
-							append(list, split)
-						}
-					}
-				}
-				instr_idx += 1
-			}
-		}
-
-		// TODO: write them directly to the res
-		split_regs: [dynamic]backend.Reg
-		last_split := make([]Node_ID, len(ctx.slrgs))
-
-		for &bb, bi in sched.bbs {
-			if !ok do break
-
-			block := &splits[bi]
-
-			insert_idx := 0
-			for ; graph_get(graph, bb.instrs[insert_idx]).itype == .Phi;
-			    insert_idx += 1 {}
-
-			for &side, kind in block.sides {
-
-				order_moves(&side)
-
-				Reused_Split :: struct {
-					dest:  backend.Reg,
-					split: Node_ID,
-				}
-
-				rsplits: [dynamic]Reused_Split
-
-				for move in side {
-					sid := move.src
-					snode := graph_expand(graph, sid)
-
-					prev := last_split[ctx.slrgs[move.slrg].prev]
-					if prev != 0 {
-						sid = prev
-						snode = graph_expand(graph, sid)
-					}
-
-					split: Node_ID
-
-					for rsplit in rsplits {
-						if rsplit.dest == move.regs.dst {
-							split = rsplit.split
-							break
-						}
-					}
-
-					should_insert := split == 0
-					if should_insert {
-						if len(ctx.instr_placement) < int(block_base) {
-							resize(&ctx.instr_placement, block_base)
-						}
-
-						split = backend.graph_add_split(
-							graph,
-							"sslrg",
-							snode.dt,
-							sid,
-						)
-						if kind == .start {
-							last_split[move.slrg] = split
-						}
-						graph_get(graph, split).scan_split = true
-						graph_get(graph, split).gvn = u32(
-							block_base + len(split_regs),
-						)
-						append(&split_regs, move.regs.dst)
-
-						append(&rsplits, Reused_Split{move.regs.dst, split})
-						append(&ctx.instr_placement, Instr_Placement{u32(bi)})
-						assert(
-							block_base + len(split_regs) ==
-							len(ctx.instr_placement),
-						)
-					}
-
-					backend.graph_set_input(
-						graph,
-						move.dst.id,
-						move.dst.idx,
-						split,
-					)
-
-					if should_insert {
-						insert_idx += 1
-						insert_idx := insert_idx - 1
-						if kind == .end do insert_idx = len(bb.instrs) - 1
-						inject_at(&bb.instrs, insert_idx, split)
-					}
-				}
-			}
-		}
-
-		order_moves :: proc(list: ^[dynamic]Move) {
-			retry: for _ in 0 ..< 100 {
-				swapped := false
-				for &splt, i in list {
-					for &oth in list[i + 1:] {
-						if oth.regs.src == splt.regs.dst {
-							splt, oth = oth, splt
-							swapped = true
-						}
-					}
-				}
-
-				if !swapped {
-					return
-				}
-			}
-
-			panic("Has a cycle")
-		}
-
-		res = make([]backend.Reg, block_base + len(split_regs))
+		res = make([]backend.Reg, len(ctx.slrg_table))
 		for id, j in ctx.slrg_table {
 			if id == 0 do continue
 			slrg := &ctx.slrgs[id]
@@ -1083,14 +842,6 @@ regalloc_round :: proc(
 				kind  = slrg.lrg.mask.kind,
 				index = u16(slrg.reg),
 			}
-		}
-
-		copy(res[block_base:], split_regs[:])
-
-		for bb, i in sched.bbs {
-			graph_get(graph, bb.head).gvn = u32(
-				block_base + len(split_regs) + i,
-			)
 		}
 	case .with_coloring:
 		ifg := make([][]^backend.Lrg, used_lrgs)

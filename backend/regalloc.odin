@@ -326,8 +326,6 @@ Slrg :: struct {
 	end:      int,
 	lrg:      ^Lrg,
 	reg:      int,
-	last_def: Node_ID,
-	prev:     Slrg_ID,
 }
 
 #assert(size_of(Lrg) == 48)

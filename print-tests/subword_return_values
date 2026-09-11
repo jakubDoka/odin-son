@@ -1,3 +1,23 @@
+=========== OPT LEVEL: none-quick ===========
+main:
+    sub rsp, 0x18
+    call 3
+    mov.q [rsp], rax
+    call 4
+    mov.q [rsp + 0x8], rax
+    mov.q rax, [rsp]
+    movsx rax, al
+    mov.q rcx, [rsp + 0x8]
+    movsx rcx, cx
+    add rax, rcx
+    add rsp, 0x18
+    ret
+3:
+    mov al, -0xa
+    ret
+4:
+    mov rax, -0x3e8
+    ret
 =========== OPT LEVEL: none ===========
 main:
     push rbx
@@ -17,6 +37,26 @@ get16:
 4:
     mov rax, -0x3e8
     ret
+=========== OPT LEVEL: mininal-quick ===========
+main:
+    sub rsp, 0x18
+    call 3
+    mov.q [rsp], rax
+    call 4
+    mov.q [rsp + 0x8], rax
+    mov.q rax, [rsp]
+    movsx rax, al
+    mov.q rcx, [rsp + 0x8]
+    movsx rcx, cx
+    add rax, rcx
+    add rsp, 0x18
+    ret
+3:
+    mov al, -0xa
+    ret
+4:
+    mov rax, -0x3e8
+    ret
 =========== OPT LEVEL: mininal ===========
 main:
     push rbx
@@ -29,6 +69,26 @@ get16:
     movsx rcx, cx
     add rax, rcx
     pop rbx
+    ret
+3:
+    mov al, -0xa
+    ret
+4:
+    mov rax, -0x3e8
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+main:
+    sub rsp, 0x18
+    call 3
+    mov.q [rsp], rax
+    call 4
+    mov.q [rsp + 0x8], rax
+    mov.q rax, [rsp]
+    movsx rax, al
+    mov.q rcx, [rsp + 0x8]
+    movsx rcx, cx
+    add rax, rcx
+    add rsp, 0x18
     ret
 3:
     mov al, -0xa

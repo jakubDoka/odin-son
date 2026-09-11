@@ -28,16 +28,24 @@ graph_expand :: backend.graph_expand
 graph_get :: backend.graph_get
 
 Opt_Level :: struct {
-	name:  string,
-	flags: backend.Graph_Opt_Flags,
+	name:        string,
+	flags:       backend.Graph_Opt_Flags,
+	ralloc_mode: regalloc.Mode,
 }
 
 OPT_LEVELS :: [?]Opt_Level {
-	{"none", {}},
-	{"mininal", {.Local_Peeps}},
-	{"moderate", {.Iter_Peeps, .Local_Peeps}},
-	{"all", {.Iter_Peeps, .Local_Peeps, .Mem_Opt, .Loop_Opt}},
-	{"aggresive", {.Iter_Peeps, .Local_Peeps, .Mem_Opt, .Inline, .Loop_Opt}},
+	{"none-quick", {}, .with_scan},
+	{"none", {}, .with_coloring},
+	{"mininal-quick", {.Local_Peeps}, .with_scan},
+	{"mininal", {.Local_Peeps}, .with_coloring},
+	{"moderate-quick", {.Iter_Peeps, .Local_Peeps}, .with_scan},
+	{"moderate", {.Iter_Peeps, .Local_Peeps}, .with_coloring},
+	{"all", {.Iter_Peeps, .Local_Peeps, .Mem_Opt, .Loop_Opt}, .with_coloring},
+	{
+		"aggresive",
+		{.Iter_Peeps, .Local_Peeps, .Mem_Opt, .Inline, .Loop_Opt},
+		.with_coloring,
+	},
 }
 
 Abi_Param :: struct {
@@ -957,7 +965,7 @@ emit_proc_code :: proc(
 	ra.param_specs = prc.param_types
 	ra.mask_len = 64
 
-	regs := regalloc.regalloc(&ra, ctx, &schedule, .with_scan)
+	regs := regalloc.regalloc(&ra, ctx, &schedule, ctx.ralloc_mode)
 
 	emit_ctx.graph = ctx
 	emit_ctx.schedule = &schedule

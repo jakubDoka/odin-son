@@ -1,3 +1,100 @@
+=========== OPT LEVEL: none-quick ===========
+main:
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    sub rsp, 0x10
+    xor eax, eax
+    xor ecx, ecx
+1:
+    lea rdx, [rip + 0xfd5]
+    cmp rcx, 8
+    jz 2
+    mov rbx, rcx
+    add rbx, 1
+    cvtsi2sd xmm0, rcx
+    movsd.q [rdx + rcx*8], xmm0
+    mov rcx, rbx
+    jmp 1
+2:
+    lea rcx, [rip + 0xfe4]
+    imul rax, rax, 8
+    add rax, rcx
+    mov.q rax, [rax]
+    mov rbx, 1
+    imul rbx, rbx, 8
+    add rbx, rcx
+    mov.q rbx, [rbx]
+    mov rbp, 2
+    imul rbp, rbp, 8
+    add rbp, rcx
+    mov.q rbp, [rbp]
+    mov rsi, 3
+    imul rsi, rsi, 8
+    add rsi, rcx
+    mov.q rsi, [rsi]
+    mov rdi, 4
+    imul rdi, rdi, 8
+    add rdi, rcx
+    mov.q rdi, [rdi]
+    mov r8, 5
+    imul r8, r8, 8
+    add r8, rcx
+    mov.q r8, [r8]
+    mov r9, 6
+    imul r9, r9, 8
+    add r9, rcx
+    mov.q r9, [r9]
+    mov r10, 7
+    imul r10, r10, 8
+    add r10, rcx
+    mov.q r10, [r10]
+    mov r11, 8
+    imul r11, r11, 8
+    add r11, rcx
+    mov.q r11, [r11]
+    mov r12, 9
+    imul r12, r12, 8
+    add r12, rcx
+    mov.q rcx, [r12]
+    xor r12d, r12d
+    xor r13d, r13d
+3:
+    cmp r13, 8
+    jz 6
+    movsd.q xmm0, [rip + 0x67]
+    ucomisd.q xmm0, [rdx + r13*8]
+    jnbe 4
+    mov.q [rsp], r12
+    jmp 5
+4:
+    mov r14, r12
+    add r14, 1
+    mov.q [rsp], r14
+5:
+    add r13, 1
+    mov.q r12, [rsp]
+    jmp 3
+6:
+    add rax, r12
+    add rax, rbx
+    add rax, rbp
+    add rax, rsi
+    add rax, rdi
+    add rax, r8
+    add rax, r9
+    add rax, r10
+    add rax, r11
+    add rax, rcx
+    add rsp, 0x10
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
 =========== OPT LEVEL: none ===========
 main:
     push rbx
@@ -87,6 +184,75 @@ main:
     pop rbp
     pop rbx
     ret
+=========== OPT LEVEL: mininal-quick ===========
+main:
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    sub rsp, 0x10
+    xor eax, eax
+1:
+    mov rcx, rax
+    lea rdx, [rip + 0xfd5]
+    cmp rcx, 8
+    jz 2
+    mov rbx, rcx
+    add rbx, 1
+    cvtsi2sd xmm0, rcx
+    movsd.q [rdx + rcx*8], xmm0
+    mov rax, rbx
+    jmp 1
+2:
+    mov.q rcx, [rip + 0xfec]
+    mov.q rbx, [rip + 0xfed]
+    mov.q rbp, [rip + 0xfee]
+    mov.q rsi, [rip + 0xfef]
+    mov.q rdi, [rip + 0xff0]
+    mov.q r8, [rip + 0xff1]
+    mov.q r9, [rip + 0xff2]
+    mov.q r10, [rip + 0xff3]
+    mov.q r11, [rip + 0xff4]
+    mov.q rax, [rip + 0xfa5]
+    xor r12d, r12d
+    xor r13d, r13d
+3:
+    cmp r13, 8
+    jz 6
+    movsd.q xmm0, [rip + 0x6b]
+    ucomisd.q xmm0, [rdx + r13*8]
+    jnbe 4
+    mov.q [rsp], r12
+    jmp 5
+4:
+    mov r14, r12
+    add r14, 1
+    mov.q [rsp], r14
+5:
+    mov r14, r13
+    add r14, 1
+    mov.q r12, [rsp]
+    mov r13, r14
+    jmp 3
+6:
+    add rax, r12
+    add rax, rcx
+    add rax, rbx
+    add rax, rbp
+    add rax, rsi
+    add rax, rdi
+    add rax, r8
+    add rax, r9
+    add rax, r10
+    add rax, r11
+    add rsp, 0x10
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
 =========== OPT LEVEL: mininal ===========
 main:
     push rbx
@@ -140,6 +306,76 @@ main:
     add rax, r9
     add rax, r8
     add rax, rdi
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+main:
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    sub rsp, 0x10
+    xor eax, eax
+1:
+    mov rcx, rax
+    lea rdx, [rip + 0xfd5]
+    cmp rcx, 8
+    jz 2
+    mov rbx, rcx
+    add rbx, 1
+    cvtsi2sd xmm0, rcx
+    movsd.q [rdx + rcx*8], xmm0
+    mov rax, rbx
+    jmp 1
+2:
+    mov.q rcx, [rip + 0xfec]
+    mov.q rbx, [rip + 0xfed]
+    mov.q rbp, [rip + 0xfee]
+    mov.q rsi, [rip + 0xfef]
+    mov.q rdi, [rip + 0xff0]
+    mov.q r8, [rip + 0xff1]
+    mov.q r9, [rip + 0xff2]
+    mov.q r10, [rip + 0xff3]
+    mov.q r11, [rip + 0xff4]
+    mov.q rax, [rip + 0xfa5]
+    xor r12d, r12d
+    xor r13d, r13d
+3:
+    cmp r13, 8
+    jz 6
+    movsd.q xmm0, [rdx + r13*8]
+    movsd.q xmm1, [rip + 0x6d]
+    ucomisd xmm1, xmm0
+    jnbe 4
+    mov.q [rsp], r12
+    jmp 5
+4:
+    mov r14, r12
+    add r14, 1
+    mov.q [rsp], r14
+5:
+    mov r14, r13
+    add r14, 1
+    mov.q r12, [rsp]
+    mov r13, r14
+    jmp 3
+6:
+    add rax, r12
+    add rax, rcx
+    add rax, rbx
+    add rax, rbp
+    add rax, rsi
+    add rax, rdi
+    add rax, r8
+    add rax, r9
+    add rax, r10
+    add rax, r11
+    add rsp, 0x10
+    pop r14
     pop r13
     pop r12
     pop rbp

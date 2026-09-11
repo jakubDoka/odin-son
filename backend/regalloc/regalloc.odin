@@ -19,8 +19,8 @@ graph_expand :: backend.graph_expand
 graph_get :: backend.graph_get
 
 Mode :: enum {
-	with_coloring,
 	with_scan,
+	with_coloring,
 }
 
 regalloc :: proc(
@@ -35,7 +35,7 @@ regalloc :: proc(
 	base := int(graph.gvn)
 	total := base
 	for i in 0 ..< 7 {
-		res, ok := regalloc_round(ra, graph, sched, scratch, mode)
+		res, ok := regalloc_round(ra, graph, sched, scratch, mode, i)
 		if ok {
 			backend.add_efficiency_stat(graph, .regalloc_rounds, total, base)
 			if backend.REGLOGS do log.info("regalloc rounds:", i)
@@ -53,6 +53,7 @@ regalloc_round :: proc(
 	sched: ^backend.Graph_Schedule,
 	scratch: runtime.Allocator,
 	mode: Mode,
+	round: int,
 ) -> (
 	res: []backend.Reg,
 	ok: bool = true,
@@ -79,7 +80,6 @@ regalloc_round :: proc(
 		smetas:          []Lrg_Meta,
 		color_ord:       []u32,
 		slrgs:           [dynamic]Slrg,
-		slrg_table:      []Slrg_ID,
 		block_offset:    int,
 		blocks:          []Block,
 		res:             []backend.Reg,
@@ -385,6 +385,8 @@ regalloc_round :: proc(
 				lrg := ctx.lrg_table[inode.gvn]
 				v := liveouts_delete(&curr_live, lrg.index)
 				if v.node != 0 {
+					// NOTE: this will not happen twice for a given def since
+					// we make sure to not repropagate old lrgs
 					if add_conflict(&ctx, lrg, v.node, instr) {
 						v.area += v.last_pos - u32(j)
 
@@ -599,7 +601,6 @@ regalloc_round :: proc(
 			ctx.slrgs = make([dynamic]Slrg, 1, max(1, used_lrgs * 2))
 
 			ctx.smetas = make([]Lrg_Meta, used_lrgs)
-			ctx.slrg_table = make([]Slrg_ID, len(ctx.lrg_table))
 		}
 
 		for bb, bi in sched.bbs {
@@ -647,17 +648,6 @@ regalloc_round :: proc(
 				ctx.slrgs[keep] = slrg
 				ctx.smetas[slrg.lrg.index].current_slrg = Slrg_ID(keep)
 				keep += 1
-			}
-
-			// NOTE: this should be valid since all of the slrgs are ensured to
-			// be up to date
-			for instr, i in bb.instrs {
-				inode := graph_expand(ctx.graph, instr)
-				if inode.dt != .Void {
-					lrg := ctx.lrg_table[inode.gvn]
-					ctx.slrg_table[inode.gvn] =
-						ctx.smetas[lrg.index].current_slrg
-				}
 			}
 
 			ctx.block_offset += len(bb.instrs)
@@ -721,7 +711,6 @@ regalloc_round :: proc(
 			recoverable_failure := false
 
 			for &slrg in ctx.slrgs[1:] {
-				slrg.reg = -1
 				slrg.lrg.reg = -1
 			}
 
@@ -734,7 +723,7 @@ regalloc_round :: proc(
 						if slrg.end == j {
 							backend.reg_mask_set(
 								free_regs[slrg.lrg.mask.kind],
-								slrg.reg,
+								slrg.lrg.reg,
 							)
 						} else {
 							active[keep] = slrg
@@ -748,11 +737,21 @@ regalloc_round :: proc(
 				    ctx.slrgs[crossed_slrgs].start == j;
 				    crossed_slrgs += 1 {
 
+					can_spill :: proc(ctx: Ctx, lrg: ^backend.Lrg) -> bool {
+						spill_boundary := ctx.ra.spill_boundary[lrg.mask.kind]
+						// TODO: remove this, its a hack, sepecific to x64
+						return(
+							(backend.reg_mask_last_set(lrg.mask) or_else 0) >
+							spill_boundary \
+						)
+					}
+
 					slrg := &ctx.slrgs[crossed_slrgs]
 					available := free_regs[slrg.lrg.mask.kind]
+					spill_boundary := ctx.ra.spill_boundary[slrg.lrg.mask.kind]
 					// TODO: remove this, its a hack, sepecific to x64
-					if backend.reg_mask_pop_count(slrg.lrg.mask) > 16 {
-						slrg.lrg.mask.masks[0] &= -1 << 16
+					if can_spill(ctx, slrg.lrg) {
+						slrg.lrg.mask.masks[0] &= -1 << uint(spill_boundary)
 					}
 
 					reg := -1
@@ -795,23 +794,19 @@ regalloc_round :: proc(
 					// TODO: i don't know if its better to migrate the main lrg
 					// here to this new register, it might not matter
 
-					slrg.reg = reg
+					slrg.lrg.reg = i16(reg)
 
-					if slrg.reg != -1 {
+					if slrg.lrg.reg != -1 {
 						append(&active_slrgs[slrg.lrg.mask.kind], slrg)
-						backend.reg_mask_set(available, slrg.reg, false)
+						backend.reg_mask_set(available, slrg.lrg.reg, false)
 					} else {
 						best := slrg
 						best_idx := -1
 						for oslrg, i in active_slrgs[slrg.lrg.mask.kind] {
 							if (oslrg.start < best.start &&
 								   oslrg.lrg.fails == {} &&
-								   backend.reg_mask_pop_count(
-									   oslrg.lrg.mask,
-								   ) <=
-									   16) ||
-							   backend.reg_mask_pop_count(best.lrg.mask) >
-								   16 ||
+								   !can_spill(ctx, oslrg.lrg)) ||
+							   can_spill(ctx, best.lrg) ||
 							   best.lrg.fails != {} {
 								best = oslrg
 								best_idx = i
@@ -820,7 +815,7 @@ regalloc_round :: proc(
 						best.lrg.failed_to_assign = true
 						if best_idx >= 0 {
 							active_slrgs[slrg.lrg.mask.kind][best_idx] = slrg
-							slrg.reg = best.reg
+							slrg.lrg.reg = best.lrg.reg
 						}
 					}
 
@@ -831,16 +826,6 @@ regalloc_round :: proc(
 			}
 
 			if !ok || !recoverable_failure do break
-		}
-
-		res = make([]backend.Reg, len(ctx.slrg_table))
-		for id, j in ctx.slrg_table {
-			if id == 0 do continue
-			slrg := &ctx.slrgs[id]
-			res[j] = {
-				kind  = slrg.lrg.mask.kind,
-				index = u16(slrg.reg),
-			}
 		}
 	case .with_coloring:
 		ifg := make([][]^backend.Lrg, used_lrgs)
@@ -1148,12 +1133,13 @@ regalloc_round :: proc(
 			assert(sum == 0)
 		}
 
-		res = make([]backend.Reg, def_count)
-		for lrg, j in ctx.lrg_table {
-			res[j] = {
-				kind  = lrg.mask.kind,
-				index = u16(lrg.reg),
-			}
+	}
+
+	res = make([]backend.Reg, def_count)
+	for lrg, j in ctx.lrg_table {
+		res[j] = {
+			kind  = lrg.mask.kind,
+			index = u16(lrg.reg),
 		}
 	}
 
@@ -1216,9 +1202,9 @@ regalloc_round :: proc(
 
 	prev_gvn := graph.gvn
 
-	color_fails: int
-
 	any_fails := false
+
+	fail_count := 0
 
 	for &lrg in lrgs[:used_lrgs_check] {
 		id := lrg.node
@@ -1228,6 +1214,7 @@ regalloc_round :: proc(
 			continue
 		}
 
+		fail_count += 1
 		any_fails = true
 
 		members := collect_lrg_members(ctx, &lrg)
@@ -1235,10 +1222,8 @@ regalloc_round :: proc(
 		ok = false
 
 		if lrg.failed_to_color {
-			color_fails += 1
-
+			inserted_splits := 0
 			for m in members {
-
 				is_internal := true
 				for out in backend.graph_outs(graph, m) {
 					if get_lrg(ctx, out.id) == &lrg do continue
@@ -1261,6 +1246,7 @@ regalloc_round :: proc(
 				if fnode.itype != .Split {
 					id = split_after(ctx, "sdef", m, must = is_internal)
 					fnode = graph_get(graph, id)
+					inserted_splits += 1
 				}
 
 				for out in outs {
@@ -1276,6 +1262,7 @@ regalloc_round :: proc(
 							"suse",
 							redirect = id,
 						)
+						inserted_splits += 1
 					}
 
 					backend.graph_set_input(graph, out.id, out.idx, split)
@@ -1292,12 +1279,19 @@ regalloc_round :: proc(
 				}
 			}
 
+			backend.add_efficiency_stat(
+				graph,
+				.pressure_splits_inserted,
+				inserted_splits,
+				1,
+			)
+
 			continue
 		}
 
 		if lrg.killed {
+			inserted_splits := 0
 			for m in members {
-
 				mnode := graph_expand(graph, m)
 				redirect := m
 				for out in slice.clone(mnode.outs) {
@@ -1311,6 +1305,7 @@ regalloc_round :: proc(
 
 					if redirect == m {
 						redirect = split_after(ctx, "kla", m)
+						inserted_splits += int(redirect != m)
 					}
 
 					split := redirect
@@ -1322,15 +1317,24 @@ regalloc_round :: proc(
 							"klb",
 							redirect,
 						)
+						inserted_splits += int(split != redirect)
 					}
 					backend.graph_set_input(graph, out.id, out.idx, split)
 				}
 			}
 
+			backend.add_efficiency_stat(
+				graph,
+				.kill_splits_inserted,
+				inserted_splits,
+				1,
+			)
+
 			continue
 		}
 
 		if lrg.reg_conflict {
+			inserted_splits := 0
 			for m in members {
 				split := m
 
@@ -1345,27 +1349,38 @@ regalloc_round :: proc(
 				for out in backend.graph_outs(graph, m) {
 					if split == m {
 						split = split_after(ctx, "rcd", m)
+						inserted_splits += int(split != m)
 					}
 
-					split := split
+					splita := split
 					if graph_get(graph, out.id).itype != .Split {
-						split = split_before(
+						splita = split_before(
 							ctx,
 							out.id,
 							out.idx,
 							"rcu",
 							redirect = split,
 						)
+						inserted_splits += int(splita != split)
 					}
 
-					backend.graph_set_input(graph, out.id, out.idx, split)
+					backend.graph_set_input(graph, out.id, out.idx, splita)
 				}
 			}
+
+			backend.add_efficiency_stat(
+				graph,
+				.conflict_splits_inserted,
+				inserted_splits,
+				1,
+			)
 
 			continue
 		}
 
 		if lrg.failed_to_assign {
+			inserted_splits := 0
+
 			for m in members {
 				mnode := graph_expand(graph, m)
 				redirect := m
@@ -1385,6 +1400,7 @@ regalloc_round :: proc(
 							m,
 							must = onode.itype == .Phi,
 						)
+						inserted_splits += 1
 					}
 
 					split := redirect
@@ -1396,14 +1412,29 @@ regalloc_round :: proc(
 							"assb",
 							redirect,
 						)
+						inserted_splits += 1
 					}
 					backend.graph_set_input(graph, out.id, out.idx, split)
 				}
 			}
 
+			backend.add_efficiency_stat(
+				graph,
+				.pressure_splits_inserted,
+				inserted_splits,
+				1,
+			)
+
 			continue
 		}
 	}
+
+	backend.add_efficiency_stat(
+		graph,
+		.fail_count_ratio,
+		int(fail_count == 1 && round > 0),
+		0,
+	)
 
 	assert(any_fails == !ok)
 
@@ -1507,12 +1538,17 @@ regalloc_round :: proc(
 	log_lrgs(&ctx)
 	backend.verify_schedule_integrity(ctx.graph, ctx.sched)
 	if ok {
+		total_splits := 0
+		redundant_splits := 0
+
 		for &bb in sched.bbs {
 			keep := len(bb.instrs) - 1
 			#reverse for instr, i in bb.instrs[:keep] {
 				inode := graph_expand(graph, instr)
 
 				if inode.itype == .Split {
+					total_splits += 1
+					redundant_splits += 1
 					inp := graph_expand(graph, inode.inps[0])
 
 					if res[inode.gvn] == res[inp.gvn] {
@@ -1576,7 +1612,7 @@ regalloc_round :: proc(
 						}
 					}
 
-					backend.add_efficiency_stat(graph, .splits_inserted, 1)
+					redundant_splits -= 1
 				}
 
 				keep -= 1
@@ -1585,6 +1621,13 @@ regalloc_round :: proc(
 
 			remove_range(&bb.instrs, 0, keep)
 		}
+
+		backend.add_efficiency_stat(
+			graph,
+			.splits_inserted,
+			total_splits,
+			total_splits - redundant_splits,
+		)
 	}
 
 	if ok do verify_alloc_integrity(ctx, res)

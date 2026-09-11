@@ -1,3 +1,49 @@
+=========== OPT LEVEL: none-quick ===========
+d:
+    sub rsp, 0x38
+    mov.q [rsp], rdi
+    mov.q [rsp + 0x8], rsi
+    mov.q [rsp + 0x10], rdx
+    mov.q [rsp + 0x18], rcx
+    mov.q [rsp + 0x20], r8
+    mov.q rax, [rsp + 0x20]
+    call rax
+    mov.q [rsp + 0x28], rax
+    mov.q rax, [rsp + 0x20]
+    call rax
+    mov.q rcx, [rsp]
+    mov.q rdx, [rsp + 0x28]
+    add rdx, rcx
+    mov.q [rsp], rdx
+    mov.q rcx, [rsp + 0x8]
+    mov.q rdx, [rsp]
+    add rdx, rcx
+    mov.q [rsp], rdx
+    mov.q rcx, [rsp + 0x10]
+    mov.q rdx, [rsp]
+    add rdx, rcx
+    mov.q [rsp], rdx
+    mov.q rcx, [rsp + 0x18]
+    mov.q rdx, [rsp]
+    add rdx, rcx
+    mov rcx, rdx
+    add rcx, rax
+    mov rax, rcx
+    add rsp, 0x38
+    ret
+3:
+    sub rsp, 8
+    mov rdi, 1
+    mov rsi, 2
+    mov rdx, 4
+    mov rcx, 8
+    lea r8, [rip + 0x11]
+    call d
+    add rsp, 8
+    ret
+4:
+    mov rax, 0xa
+    ret
 =========== OPT LEVEL: none ===========
 d:
     push rbx
@@ -46,6 +92,52 @@ d:
 4:
     mov rax, 0xa
     ret
+=========== OPT LEVEL: mininal-quick ===========
+d:
+    sub rsp, 0x38
+    mov.q [rsp], rdi
+    mov.q [rsp + 0x8], rsi
+    mov.q [rsp + 0x10], rdx
+    mov.q [rsp + 0x18], rcx
+    mov.q [rsp + 0x20], r8
+    mov.q rax, [rsp + 0x20]
+    call rax
+    mov.q [rsp + 0x28], rax
+    mov.q rax, [rsp + 0x20]
+    call rax
+    mov.q rcx, [rsp]
+    mov.q rdx, [rsp + 0x28]
+    add rdx, rcx
+    mov.q [rsp], rdx
+    mov.q rcx, [rsp + 0x8]
+    mov.q rdx, [rsp]
+    add rdx, rcx
+    mov.q [rsp], rdx
+    mov.q rcx, [rsp + 0x10]
+    mov.q rdx, [rsp]
+    add rdx, rcx
+    mov.q [rsp], rdx
+    mov.q rcx, [rsp + 0x18]
+    mov.q rdx, [rsp]
+    add rdx, rcx
+    mov rcx, rdx
+    add rcx, rax
+    mov rax, rcx
+    add rsp, 0x38
+    ret
+3:
+    sub rsp, 8
+    mov rdi, 1
+    mov rsi, 2
+    mov rdx, 4
+    mov rcx, 8
+    lea r8, [rip + 0x11]
+    call d
+    add rsp, 8
+    ret
+4:
+    mov rax, 0xa
+    ret
 =========== OPT LEVEL: mininal ===========
 d:
     push rbx
@@ -80,6 +172,52 @@ d:
     pop r12
     pop rbp
     pop rbx
+    ret
+3:
+    sub rsp, 8
+    mov rdi, 1
+    mov rsi, 2
+    mov rdx, 4
+    mov rcx, 8
+    lea r8, [rip + 0x11]
+    call d
+    add rsp, 8
+    ret
+4:
+    mov rax, 0xa
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+d:
+    sub rsp, 0x38
+    mov.q [rsp], rdi
+    mov.q [rsp + 0x8], rsi
+    mov.q [rsp + 0x10], rdx
+    mov.q [rsp + 0x18], rcx
+    mov.q [rsp + 0x20], r8
+    mov.q rax, [rsp + 0x20]
+    call rax
+    mov.q [rsp + 0x28], rax
+    mov.q rax, [rsp + 0x20]
+    call rax
+    mov.q rcx, [rsp]
+    mov.q rdx, [rsp + 0x28]
+    add rdx, rcx
+    mov.q [rsp], rdx
+    mov.q rcx, [rsp + 0x8]
+    mov.q rdx, [rsp]
+    add rdx, rcx
+    mov.q [rsp], rdx
+    mov.q rcx, [rsp + 0x10]
+    mov.q rdx, [rsp]
+    add rdx, rcx
+    mov.q [rsp], rdx
+    mov.q rcx, [rsp + 0x18]
+    mov.q rdx, [rsp]
+    add rdx, rcx
+    mov rcx, rdx
+    add rcx, rax
+    mov rax, rcx
+    add rsp, 0x38
     ret
 3:
     sub rsp, 8

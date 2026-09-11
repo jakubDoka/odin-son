@@ -1,4 +1,64 @@
+=========== OPT LEVEL: none-quick ===========
+main:
+    sub rsp, 0x18
+    lea rdi, [rsp]
+    xor esi, esi
+    mov rdx, 0x10
+    call.q [rip - 0x20]
+    mov.q [rsp], 7
+    mov.q [rsp + 0x8], 1
+    mov.q rcx, [rsp + 0x8]
+    cmp rcx, 1
+    jz 4
+    xor eax, eax
+    cmp rcx, 2
+    jz 1
+    jmp 5
+1:
+    movzx.b ecx, [rsp]
+    test cl, cl
+    jnz 2
+    jmp 3
+2:
+    mov rax, 0x64
+3:
+    jmp 5
+4:
+    mov.q rax, [rsp]
+5:
+    add rsp, 0x18
+    ret
 =========== OPT LEVEL: none ===========
+main:
+    sub rsp, 0x18
+    lea rdi, [rsp]
+    xor esi, esi
+    mov rdx, 0x10
+    call.q [rip - 0x20]
+    mov.q [rsp], 7
+    mov.q [rsp + 0x8], 1
+    mov.q rcx, [rsp + 0x8]
+    cmp rcx, 1
+    jz 4
+    xor eax, eax
+    cmp rcx, 2
+    jz 1
+    jmp 5
+1:
+    movzx.b ecx, [rsp]
+    test cl, cl
+    jnz 2
+    jmp 3
+2:
+    mov rax, 0x64
+3:
+    jmp 5
+4:
+    mov.q rax, [rsp]
+5:
+    add rsp, 0x18
+    ret
+=========== OPT LEVEL: mininal-quick ===========
 main:
     sub rsp, 0x18
     lea rdi, [rsp]
@@ -57,6 +117,10 @@ main:
     mov.q rax, [rsp]
 5:
     add rsp, 0x18
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+main:
+    mov rax, 7
     ret
 =========== OPT LEVEL: moderate ===========
 main:

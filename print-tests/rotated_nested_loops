@@ -1,3 +1,39 @@
+=========== OPT LEVEL: none-quick ===========
+main:
+    push rbx
+    push rbp
+    sub rsp, 0x18
+    xor ecx, ecx
+    xor edx, edx
+1:
+    mov.q [rsp], rcx
+    xor ebx, ebx
+    mov.q [rsp + 0x8], rdx
+2:
+    mov.q rbp, [rsp]
+    imul rbp, rbx
+    mov.q rax, [rsp + 0x8]
+    add rax, rbp
+    mov rbp, rbx
+    add rbp, 1
+    cmp rbp, 3
+    jnle 3
+    mov.q [rsp + 0x8], rax
+    mov rbx, rbp
+    jmp 2
+3:
+    mov.q rbx, [rsp]
+    add rbx, 1
+    cmp rbx, 3
+    jnle 4
+    mov rcx, rbx
+    mov rdx, rax
+    jmp 1
+4:
+    add rsp, 0x18
+    pop rbp
+    pop rbx
+    ret
 =========== OPT LEVEL: none ===========
 main:
     xor ecx, ecx
@@ -19,6 +55,42 @@ main:
     jmp 1
 4:
     ret
+=========== OPT LEVEL: mininal-quick ===========
+main:
+    push rbx
+    push rbp
+    sub rsp, 0x18
+    xor ecx, ecx
+    xor edx, edx
+1:
+    mov.q [rsp], rcx
+    xor ebx, ebx
+    mov.q [rsp + 0x8], rdx
+2:
+    mov.q rbp, [rsp]
+    imul rbp, rbx
+    mov.q rax, [rsp + 0x8]
+    add rax, rbp
+    mov rbp, rbx
+    add rbp, 1
+    cmp rbp, 3
+    jnle 3
+    mov.q [rsp + 0x8], rax
+    mov rbx, rbp
+    jmp 2
+3:
+    mov.q rbx, [rsp]
+    add rbx, 1
+    cmp rbx, 3
+    jnle 4
+    mov rcx, rbx
+    mov rdx, rax
+    jmp 1
+4:
+    add rsp, 0x18
+    pop rbp
+    pop rbx
+    ret
 =========== OPT LEVEL: mininal ===========
 main:
     xor ecx, ecx
@@ -39,6 +111,42 @@ main:
     jnle 4
     jmp 1
 4:
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+main:
+    push rbx
+    push rbp
+    sub rsp, 0x18
+    xor ecx, ecx
+    xor edx, edx
+1:
+    mov.q [rsp], rcx
+    xor ebx, ebx
+    mov.q [rsp + 0x8], rdx
+2:
+    mov.q rbp, [rsp]
+    imul rbp, rbx
+    mov.q rax, [rsp + 0x8]
+    add rax, rbp
+    mov rbp, rbx
+    add rbp, 1
+    cmp rbp, 3
+    jnle 3
+    mov.q [rsp + 0x8], rax
+    mov rbx, rbp
+    jmp 2
+3:
+    mov.q rbx, [rsp]
+    add rbx, 1
+    cmp rbx, 3
+    jnle 4
+    mov rcx, rbx
+    mov rdx, rax
+    jmp 1
+4:
+    add rsp, 0x18
+    pop rbp
+    pop rbx
     ret
 =========== OPT LEVEL: moderate ===========
 main:

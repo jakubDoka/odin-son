@@ -1,4 +1,96 @@
+=========== OPT LEVEL: none-quick ===========
+main:
+    sub rsp, 0x18
+    mov.b [rsp], 0xc
+    mov.w [rsp + 0x2], 0xc
+    mov.d [rsp + 0x6], 0xd
+    and.b [rsp], 0xa
+    or.w [rsp + 0x2], 3
+    xor.d [rsp + 0x6], 6
+    mov.b [rsp + 0x1], 0xa
+    mov.w [rsp + 0x4], 0xf
+    mov.d [rsp + 0xa], 0xb
+    lea rdi, [rsp + 0x1]
+    mov sil, 5
+    call 4
+    lea rdi, [rsp + 0x4]
+    mov rsi, 6
+    call 5
+    lea rdi, [rsp + 0xa]
+    mov rsi, 6
+    call 6
+    movsx.b rax, [rsp]
+    movsx.w rcx, [rsp + 0x2]
+    add rax, rcx
+    movsxd.d rcx, [rsp + 0x6]
+    add rax, rcx
+    movsx.b rcx, [rsp + 0x1]
+    add rax, rcx
+    movsx.w rcx, [rsp + 0x4]
+    add rax, rcx
+    movsxd.d rcx, [rsp + 0xa]
+    add rax, rcx
+    add rsp, 0x18
+    ret
+4:
+    or.b [rdi], sil
+    movzx.b eax, [rdi]
+    ret
+5:
+    xor.w [rdi], si
+    movzx.w eax, [rdi]
+    ret
+6:
+    and.d [rdi], esi
+    mov.d eax, [rdi]
+    ret
 =========== OPT LEVEL: none ===========
+main:
+    sub rsp, 0x18
+    mov.b [rsp], 0xc
+    mov.w [rsp + 0x2], 0xc
+    mov.d [rsp + 0x6], 0xd
+    and.b [rsp], 0xa
+    or.w [rsp + 0x2], 3
+    xor.d [rsp + 0x6], 6
+    mov.b [rsp + 0x1], 0xa
+    mov.w [rsp + 0x4], 0xf
+    mov.d [rsp + 0xa], 0xb
+    lea rdi, [rsp + 0x1]
+    mov sil, 5
+    call 4
+    lea rdi, [rsp + 0x4]
+    mov rsi, 6
+    call 5
+    lea rdi, [rsp + 0xa]
+    mov rsi, 6
+    call 6
+    movsx.b rax, [rsp]
+    movsx.w rcx, [rsp + 0x2]
+    add rax, rcx
+    movsxd.d rcx, [rsp + 0x6]
+    add rax, rcx
+    movsx.b rcx, [rsp + 0x1]
+    add rax, rcx
+    movsx.w rcx, [rsp + 0x4]
+    add rax, rcx
+    movsxd.d rcx, [rsp + 0xa]
+    add rax, rcx
+    add rsp, 0x18
+    ret
+4:
+    or.b [rdi], sil
+    movzx.b eax, [rdi]
+    ret
+5:
+    xor.w [rdi], si
+    movzx.w eax, [rdi]
+    ret
+6:
+    and.d [rdi], esi
+    mov.d eax, [rdi]
+    ret
+=========== OPT LEVEL: mininal-quick ===========
 main:
     sub rsp, 0x18
     mov.b [rsp], 0xc
@@ -89,6 +181,55 @@ main:
 6:
     and.d [rdi], esi
     mov.d eax, [rdi]
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+main:
+    sub rsp, 0x18
+    mov.b [rsp], 0xc
+    mov.w [rsp + 0x2], 0xc
+    mov.d [rsp + 0x6], 0xd
+    and.b [rsp], 0xa
+    or.w [rsp + 0x2], 3
+    xor.d [rsp + 0x6], 6
+    mov.b [rsp + 0x1], 0xa
+    mov.w [rsp + 0x4], 0xf
+    mov.d [rsp + 0xa], 0xb
+    lea rdi, [rsp + 0x1]
+    mov sil, 5
+    call 4
+    lea rdi, [rsp + 0x4]
+    mov rsi, 6
+    call 5
+    lea rdi, [rsp + 0xa]
+    mov rsi, 6
+    call 6
+    movsx.b rax, [rsp]
+    movsx.w rcx, [rsp + 0x2]
+    add rax, rcx
+    movsxd.d rcx, [rsp + 0x6]
+    add rax, rcx
+    movsx.b rcx, [rsp + 0x1]
+    add rax, rcx
+    movsx.w rcx, [rsp + 0x4]
+    add rax, rcx
+    movsxd.d rcx, [rsp + 0xa]
+    add rax, rcx
+    add rsp, 0x18
+    ret
+4:
+    movzx.b eax, [rdi]
+    or al, sil
+    mov.b [rdi], al
+    ret
+5:
+    movzx.w eax, [rdi]
+    xor ax, si
+    mov.w [rdi], ax
+    ret
+6:
+    mov.d eax, [rdi]
+    and eax, esi
+    mov.d [rdi], eax
     ret
 =========== OPT LEVEL: moderate ===========
 main:

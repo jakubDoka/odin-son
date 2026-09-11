@@ -1,3 +1,38 @@
+=========== OPT LEVEL: none-quick ===========
+mix:
+    sub rsp, 0x18
+    mov.q [rsp + 0x8], rdi
+    mov.q rax, [rsp + 0x8]
+    imul rax, rax, 2
+    mov.q [rsi], rax
+    lea rdi, [rsp]
+    xor esi, esi
+    mov rdx, 8
+    call.q [rip - 0x34]
+    mov.q rax, [rsp + 0x8]
+    mov.d [rsp], eax
+    mov.q rax, [rsp + 0x8]
+    add rax, 1
+    mov rax, rax
+    mov.d [rsp + 0x4], eax
+    mov.q rax, [rsp]
+    add rsp, 0x18
+    ret
+2:
+    sub rsp, 0x18
+    mov rdi, 7
+    lea rsi, [rsp]
+    call mix
+    mov.q [rsp + 0x8], rax
+    mov.q rax, [rsp]
+    imul rax, rax, 0x64
+    movsxd.d rcx, [rsp + 0x8]
+    imul rcx, rcx, 0xa
+    add rax, rcx
+    movsxd.d rcx, [rsp + 0xc]
+    add rax, rcx
+    add rsp, 0x18
+    ret
 =========== OPT LEVEL: none ===========
 mix:
     push rbx
@@ -33,6 +68,41 @@ mix:
     add rax, rcx
     add rsp, 0x18
     ret
+=========== OPT LEVEL: mininal-quick ===========
+mix:
+    sub rsp, 0x18
+    mov.q [rsp + 0x8], rdi
+    mov.q rax, [rsp + 0x8]
+    imul rax, rax, 2
+    mov.q [rsi], rax
+    lea rdi, [rsp]
+    xor esi, esi
+    mov rdx, 8
+    call.q [rip - 0x34]
+    mov.q rax, [rsp + 0x8]
+    mov.d [rsp], eax
+    mov.q rax, [rsp + 0x8]
+    add rax, 1
+    mov rax, rax
+    mov.d [rsp + 0x4], eax
+    mov.q rax, [rsp]
+    add rsp, 0x18
+    ret
+2:
+    sub rsp, 0x18
+    mov rdi, 7
+    lea rsi, [rsp]
+    call mix
+    mov.q [rsp + 0x8], rax
+    mov.q rax, [rsp]
+    imul rax, rax, 0x64
+    movsxd.d rcx, [rsp + 0x8]
+    imul rcx, rcx, 0xa
+    add rax, rcx
+    movsxd.d rcx, [rsp + 0xc]
+    add rax, rcx
+    add rsp, 0x18
+    ret
 =========== OPT LEVEL: mininal ===========
 mix:
     push rbx
@@ -52,6 +122,34 @@ mix:
     mov.q rax, [rsp]
     add rsp, 0x10
     pop rbx
+    ret
+2:
+    sub rsp, 0x18
+    mov rdi, 7
+    lea rsi, [rsp]
+    call mix
+    mov.q [rsp + 0x8], rax
+    mov.q rax, [rsp]
+    imul rax, rax, 0x64
+    movsxd.d rcx, [rsp + 0x8]
+    imul rcx, rcx, 0xa
+    add rax, rcx
+    movsxd.d rcx, [rsp + 0xc]
+    add rax, rcx
+    add rsp, 0x18
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+mix:
+    sub rsp, 8
+    imul rax, rdi, 2
+    mov.q [rsi], rax
+    mov rax, rdi
+    mov.d [rsp], eax
+    add rdi, 1
+    mov rax, rdi
+    mov.d [rsp + 0x4], eax
+    mov.q rax, [rsp]
+    add rsp, 8
     ret
 2:
     sub rsp, 0x18

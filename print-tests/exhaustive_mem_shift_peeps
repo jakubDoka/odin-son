@@ -1,3 +1,188 @@
+=========== OPT LEVEL: none-quick ===========
+test_mem_shifts:
+    sub rsp, 0x58
+test_mem_shifts i16 u16:
+    mov.b [rsp], -0x21
+test_mem_imm_shifts i32 u32:
+    mov.b [rsp + 0x1], -0x37
+    mov.w [rsp + 0x2], -0x4d2
+    mov.w [rsp + 0x4], -0x2bcf
+    mov.d [rsp + 0x6], -0x1e240
+    mov.d [rsp + 0xa], 0x1e240
+    mov.q [rsp + 0xe], -0x75bcd15
+    mov.q [rsp + 0x16], 0x75bcd15
+    lea rdi, [rsp]
+    lea rsi, [rsp + 0x1]
+    mov rdx, 3
+    call 11
+    mov.q [rsp + 0x1e], rax
+    mov rdx, 3
+    lea rdi, [rsp + 0x2]
+    lea rsi, [rsp + 0x4]
+    call 12
+    mov.q [rsp + 0x26], rax
+    mov rdx, 3
+    lea rdi, [rsp + 0x6]
+    lea rsi, [rsp + 0xa]
+    call 13
+    mov.q [rsp + 0x2e], rax
+    mov rdx, 3
+    lea rdi, [rsp + 0xe]
+    lea rsi, [rsp + 0x16]
+    call 14
+    mov.q [rsp + 0x36], rax
+    lea rdi, [rsp]
+    lea rsi, [rsp + 0x1]
+    call 15
+    mov.q [rsp + 0x3e], rax
+    lea rdi, [rsp + 0x2]
+    lea rsi, [rsp + 0x4]
+    call 16
+    mov.q [rsp + 0x46], rax
+    lea rdi, [rsp + 0x6]
+    lea rsi, [rsp + 0xa]
+    call 17
+    mov.q [rsp + 0x4e], rax
+    lea rdi, [rsp + 0xe]
+    lea rsi, [rsp + 0x16]
+    call 18
+    mov.q rcx, [rsp + 0x1e]
+    mov.q rdx, [rsp + 0x26]
+    add rcx, rdx
+    mov rcx, rcx
+    mov.q rdx, [rsp + 0x2e]
+    add rcx, rdx
+    mov rcx, rcx
+    mov.q rdx, [rsp + 0x36]
+    add rcx, rdx
+    mov rcx, rcx
+    mov.q rdx, [rsp + 0x3e]
+    add rcx, rdx
+    mov rcx, rcx
+    mov.q rdx, [rsp + 0x46]
+    add rcx, rdx
+    mov rcx, rcx
+    mov.q rdx, [rsp + 0x4e]
+    add rcx, rdx
+    mov rcx, rcx
+    add rcx, rax
+    mov rax, rcx
+    add rsp, 0x58
+    ret
+11:
+    sub rsp, 8
+    mov.q [rsp], rdx
+    mov.q rcx, [rsp]
+    sal.b [rdi], cl
+    mov.q rcx, [rsp]
+    sar.b [rdi], cl
+    movsx.b rdx, [rdi]
+    mov.q rcx, [rsp]
+    shr.b [rsi], cl
+    mov.q rcx, [rsp]
+    sal.b [rsi], cl
+    xor eax, eax
+    add rax, rdx
+    movzx.b ecx, [rsi]
+    add rax, rcx
+    add rsp, 8
+    ret
+12:
+    sub rsp, 8
+    mov.q [rsp], rdx
+    mov.q rcx, [rsp]
+    sal.w [rdi], cl
+    mov.q rcx, [rsp]
+    sar.w [rdi], cl
+    movsx.w rdx, [rdi]
+    mov.q rcx, [rsp]
+    shr.w [rsi], cl
+    mov.q rcx, [rsp]
+    sal.w [rsi], cl
+    xor eax, eax
+    add rax, rdx
+    movzx.w ecx, [rsi]
+    add rax, rcx
+    add rsp, 8
+    ret
+13:
+    sub rsp, 8
+    mov.q [rsp], rdx
+    mov.q rcx, [rsp]
+    sal.d [rdi], cl
+    mov.q rcx, [rsp]
+    sar.d [rdi], cl
+    movsxd.d rdx, [rdi]
+    mov.q rcx, [rsp]
+    shr.d [rsi], cl
+    mov.q rcx, [rsp]
+    sal.d [rsi], cl
+    xor eax, eax
+    add rax, rdx
+    mov.d ecx, [rsi]
+    add rax, rcx
+    add rsp, 8
+    ret
+14:
+    sub rsp, 8
+    mov.q [rsp], rdx
+    mov.q rcx, [rsp]
+    sal.q [rdi], cl
+    mov.q rcx, [rsp]
+    sar.q [rdi], cl
+    mov.q rdx, [rdi]
+    mov.q rcx, [rsp]
+    shr.q [rsi], cl
+    mov.q rcx, [rsp]
+    sal.q [rsi], cl
+    xor eax, eax
+    add rax, rdx
+    add.q rax, [rsi]
+    add rsp, 8
+    ret
+15:
+    shl.b [rdi], 3
+    sar.b [rdi], 3
+    movsx.b rcx, [rdi]
+    shr.b [rsi], 2
+    shl.b [rsi], 2
+    xor eax, eax
+    add rax, rcx
+    movzx.b ecx, [rsi]
+    add rax, rcx
+    ret
+16:
+    sal.w [rdi], 3
+    sar.w [rdi], 3
+    movsx.w rcx, [rdi]
+    shr.w [rsi], 2
+    sal.w [rsi], 2
+    xor eax, eax
+    add rax, rcx
+    movzx.w ecx, [rsi]
+    add rax, rcx
+    ret
+17:
+    sal.d [rdi], 3
+    sar.d [rdi], 3
+    movsxd.d rcx, [rdi]
+    shr.d [rsi], 2
+    sal.d [rsi], 2
+    xor eax, eax
+    add rax, rcx
+    mov.d ecx, [rsi]
+    add rax, rcx
+    ret
+18:
+    sal.q [rdi], 3
+    sar.q [rdi], 3
+    mov.q rcx, [rdi]
+    shr.q [rsi], 2
+    sal.q [rsi], 2
+    xor eax, eax
+    add rax, rcx
+    add.q rax, [rsi]
+    ret
 =========== OPT LEVEL: none ===========
 test_mem_shifts:
     push rbx
@@ -178,6 +363,199 @@ test_mem_imm_shifts i64 u64:
     xor eax, eax
     add rax, rcx
     add.q rax, [rsi]
+    ret
+=========== OPT LEVEL: mininal-quick ===========
+test_mem_shifts:
+    sub rsp, 0x58
+test_mem_shifts i16 u16:
+    mov.b [rsp], -0x21
+test_mem_imm_shifts i32 u32:
+    mov.b [rsp + 0x1], -0x37
+    mov.w [rsp + 0x2], -0x4d2
+    mov.w [rsp + 0x4], -0x2bcf
+    mov.d [rsp + 0x6], -0x1e240
+    mov.d [rsp + 0xa], 0x1e240
+    mov.q [rsp + 0xe], -0x75bcd15
+    mov.q [rsp + 0x16], 0x75bcd15
+    lea rdi, [rsp]
+    lea rsi, [rsp + 0x1]
+    mov rdx, 3
+    call 11
+    mov.q [rsp + 0x1e], rax
+    mov rdx, 3
+    lea rdi, [rsp + 0x2]
+    lea rsi, [rsp + 0x4]
+    call 12
+    mov.q [rsp + 0x26], rax
+    mov rdx, 3
+    lea rdi, [rsp + 0x6]
+    lea rsi, [rsp + 0xa]
+    call 13
+    mov.q [rsp + 0x2e], rax
+    mov rdx, 3
+    lea rdi, [rsp + 0xe]
+    lea rsi, [rsp + 0x16]
+    call 14
+    mov.q [rsp + 0x36], rax
+    lea rdi, [rsp]
+    lea rsi, [rsp + 0x1]
+    call 15
+    mov.q [rsp + 0x3e], rax
+    lea rdi, [rsp + 0x2]
+    lea rsi, [rsp + 0x4]
+    call 16
+    mov.q [rsp + 0x46], rax
+    lea rdi, [rsp + 0x6]
+    lea rsi, [rsp + 0xa]
+    call 17
+    mov.q [rsp + 0x4e], rax
+    lea rdi, [rsp + 0xe]
+    lea rsi, [rsp + 0x16]
+    call 18
+    mov.q rcx, [rsp + 0x1e]
+    mov.q rdx, [rsp + 0x26]
+    add rcx, rdx
+    mov rcx, rcx
+    mov.q rdx, [rsp + 0x2e]
+    add rcx, rdx
+    mov rcx, rcx
+    mov.q rdx, [rsp + 0x36]
+    add rcx, rdx
+    mov rcx, rcx
+    mov.q rdx, [rsp + 0x3e]
+    add rcx, rdx
+    mov rcx, rcx
+    mov.q rdx, [rsp + 0x46]
+    add rcx, rdx
+    mov rcx, rcx
+    mov.q rdx, [rsp + 0x4e]
+    add rcx, rdx
+    mov rcx, rcx
+    add rcx, rax
+    mov rax, rcx
+    add rsp, 0x58
+    ret
+11:
+    sub rsp, 8
+    mov.q [rsp], rdx
+    mov.q rcx, [rsp]
+    sal.b [rdi], cl
+    mov.q rcx, [rsp]
+    sar.b [rdi], cl
+    movsx.b rdx, [rdi]
+    mov.q rcx, [rsp]
+    shr.b [rsi], cl
+    mov.q rcx, [rsp]
+    sal.b [rsi], cl
+    xor eax, eax
+    add rax, rdx
+    movzx.b ecx, [rsi]
+    add rax, rcx
+    add rsp, 8
+    ret
+12:
+    sub rsp, 8
+    mov.q [rsp], rdx
+    mov.q rcx, [rsp]
+    sal.w [rdi], cl
+    mov.q rcx, [rsp]
+    sar.w [rdi], cl
+    movsx.w rdx, [rdi]
+    mov.q rcx, [rsp]
+    shr.w [rsi], cl
+    mov.q rcx, [rsp]
+    sal.w [rsi], cl
+    xor eax, eax
+    add rax, rdx
+    movzx.w ecx, [rsi]
+    add rax, rcx
+    add rsp, 8
+    ret
+13:
+    sub rsp, 8
+    mov.q [rsp], rdx
+    mov.q rcx, [rsp]
+    sal.d [rdi], cl
+    mov.q rcx, [rsp]
+    sar.d [rdi], cl
+    movsxd.d rdx, [rdi]
+    mov.q rcx, [rsp]
+    shr.d [rsi], cl
+    mov.q rcx, [rsp]
+    sal.d [rsi], cl
+    xor eax, eax
+    add rax, rdx
+    mov.d ecx, [rsi]
+    add rax, rcx
+    add rsp, 8
+    ret
+14:
+    push rbx
+    sub rsp, 0x10
+    mov.q [rsp], rdx
+    mov.q rcx, [rsp]
+    sal.q [rdi], cl
+    mov.q rdx, [rdi]
+    mov.q rcx, [rsp]
+    sar rdx, cl
+    mov.q [rdi], rdx
+    mov.q rcx, [rsp]
+    shr.q [rsi], cl
+    mov.q rbx, [rsi]
+    mov.q rcx, [rsp]
+    sal rbx, cl
+    mov.q [rsi], rbx
+    xor eax, eax
+    add rax, rdx
+    add rax, rbx
+    add rsp, 0x10
+    pop rbx
+    ret
+15:
+    shl.b [rdi], 3
+    sar.b [rdi], 3
+    movsx.b rcx, [rdi]
+    shr.b [rsi], 2
+    shl.b [rsi], 2
+    xor eax, eax
+    add rax, rcx
+    movzx.b ecx, [rsi]
+    add rax, rcx
+    ret
+16:
+    sal.w [rdi], 3
+    sar.w [rdi], 3
+    movsx.w rcx, [rdi]
+    shr.w [rsi], 2
+    sal.w [rsi], 2
+    xor eax, eax
+    add rax, rcx
+    movzx.w ecx, [rsi]
+    add rax, rcx
+    ret
+17:
+    sal.d [rdi], 3
+    sar.d [rdi], 3
+    movsxd.d rcx, [rdi]
+    shr.d [rsi], 2
+    sal.d [rsi], 2
+    xor eax, eax
+    add rax, rcx
+    mov.d ecx, [rsi]
+    add rax, rcx
+    ret
+18:
+    sal.q [rdi], 3
+    mov.q rcx, [rdi]
+    sar rcx, 3
+    mov.q [rdi], rcx
+    shr.q [rsi], 2
+    mov.q rdx, [rsi]
+    sal rdx, 2
+    mov.q [rsi], rdx
+    xor eax, eax
+    add rax, rcx
+    add rax, rdx
     ret
 =========== OPT LEVEL: mininal ===========
 test_mem_shifts:
@@ -364,6 +742,205 @@ test_mem_imm_shifts i64 u64:
     mov.q [rsi], rcx
     xor eax, eax
     add rax, rdx
+    add rax, rcx
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+test_mem_shifts:
+    sub rsp, 0x58
+test_mem_shifts i16 u16:
+    mov.b [rsp], -0x21
+test_mem_imm_shifts i32 u32:
+    mov.b [rsp + 0x1], -0x37
+    mov.w [rsp + 0x2], -0x4d2
+    mov.w [rsp + 0x4], -0x2bcf
+    mov.d [rsp + 0x6], -0x1e240
+    mov.d [rsp + 0xa], 0x1e240
+    mov.q [rsp + 0xe], -0x75bcd15
+    mov.q [rsp + 0x16], 0x75bcd15
+    lea rdi, [rsp]
+    lea rsi, [rsp + 0x1]
+    mov rdx, 3
+    call 11
+    mov.q [rsp + 0x1e], rax
+    mov rdx, 3
+    lea rdi, [rsp + 0x2]
+    lea rsi, [rsp + 0x4]
+    call 12
+    mov.q [rsp + 0x26], rax
+    mov rdx, 3
+    lea rdi, [rsp + 0x6]
+    lea rsi, [rsp + 0xa]
+    call 13
+    mov.q [rsp + 0x2e], rax
+    mov rdx, 3
+    lea rdi, [rsp + 0xe]
+    lea rsi, [rsp + 0x16]
+    call 14
+    mov.q [rsp + 0x36], rax
+    lea rdi, [rsp]
+    lea rsi, [rsp + 0x1]
+    call 15
+    mov.q [rsp + 0x3e], rax
+    lea rdi, [rsp + 0x2]
+    lea rsi, [rsp + 0x4]
+    call 16
+    mov.q [rsp + 0x46], rax
+    lea rdi, [rsp + 0x6]
+    lea rsi, [rsp + 0xa]
+    call 17
+    mov.q [rsp + 0x4e], rax
+    lea rdi, [rsp + 0xe]
+    lea rsi, [rsp + 0x16]
+    call 18
+    mov.q rcx, [rsp + 0x1e]
+    mov.q rdx, [rsp + 0x26]
+    add rcx, rdx
+    mov rcx, rcx
+    mov.q rdx, [rsp + 0x2e]
+    add rcx, rdx
+    mov rcx, rcx
+    mov.q rdx, [rsp + 0x36]
+    add rcx, rdx
+    mov rcx, rcx
+    mov.q rdx, [rsp + 0x3e]
+    add rcx, rdx
+    mov rcx, rcx
+    mov.q rdx, [rsp + 0x46]
+    add rcx, rdx
+    mov rcx, rcx
+    mov.q rdx, [rsp + 0x4e]
+    add rcx, rdx
+    mov rcx, rcx
+    add rcx, rax
+    mov rax, rcx
+    add rsp, 0x58
+    ret
+11:
+    sub rsp, 8
+    mov.q [rsp], rdx
+    movzx.b eax, [rdi]
+    mov.q rcx, [rsp]
+    sal al, cl
+    mov.q rcx, [rsp]
+    sar al, cl
+    mov.b [rdi], al
+    movzx.b edx, [rsi]
+    mov.q rcx, [rsp]
+    shr dl, cl
+    mov.q rcx, [rsp]
+    sal dl, cl
+    mov.b [rsi], dl
+    movsx rax, al
+    movzx ecx, dl
+    add rax, rcx
+    add rsp, 8
+    ret
+12:
+    sub rsp, 8
+    mov.q [rsp], rdx
+    movzx.w eax, [rdi]
+    mov.q rcx, [rsp]
+    sal ax, cl
+    mov.q rcx, [rsp]
+    sar ax, cl
+    mov.w [rdi], ax
+    movzx.w edx, [rsi]
+    mov.q rcx, [rsp]
+    shr dx, cl
+    mov.q rcx, [rsp]
+    sal dx, cl
+    mov.w [rsi], dx
+    movsx rax, ax
+    movzx ecx, dx
+    add rax, rcx
+    add rsp, 8
+    ret
+13:
+    sub rsp, 8
+    mov.q [rsp], rdx
+    mov.d eax, [rdi]
+    mov.q rcx, [rsp]
+    sal eax, cl
+    mov.q rcx, [rsp]
+    sar eax, cl
+    mov.d [rdi], eax
+    mov.d edx, [rsi]
+    mov.q rcx, [rsp]
+    shr edx, cl
+    mov.q rcx, [rsp]
+    sal edx, cl
+    mov.d [rsi], edx
+    movsxd rax, eax
+    mov ecx, edx
+    add rax, rcx
+    add rsp, 8
+    ret
+14:
+    sub rsp, 8
+    mov.q [rsp], rdx
+    mov.q rax, [rdi]
+    mov.q rcx, [rsp]
+    sal rax, cl
+    mov.q rcx, [rsp]
+    sar rax, cl
+    mov.q [rdi], rax
+    mov.q rdx, [rsi]
+    mov.q rcx, [rsp]
+    shr rdx, cl
+    mov.q rcx, [rsp]
+    sal rdx, cl
+    mov.q [rsi], rdx
+    add rax, rdx
+    add rsp, 8
+    ret
+15:
+    movzx.b eax, [rdi]
+    shl al, 3
+    sar al, 3
+    mov.b [rdi], al
+    movzx.b ecx, [rsi]
+    shr cl, 2
+    shl cl, 2
+    mov.b [rsi], cl
+    movsx rax, al
+    movzx ecx, cl
+    add rax, rcx
+    ret
+16:
+    movzx.w eax, [rdi]
+    sal ax, 3
+    sar ax, 3
+    mov.w [rdi], ax
+    movzx.w ecx, [rsi]
+    shr cx, 2
+    sal cx, 2
+    mov.w [rsi], cx
+    movsx rax, ax
+    movzx ecx, cx
+    add rax, rcx
+    ret
+17:
+    mov.d eax, [rdi]
+    sal eax, 3
+    sar eax, 3
+    mov.d [rdi], eax
+    mov.d ecx, [rsi]
+    shr ecx, 2
+    sal ecx, 2
+    mov.d [rsi], ecx
+    movsxd rax, eax
+    mov ecx, ecx
+    add rax, rcx
+    ret
+18:
+    mov.q rax, [rdi]
+    sal rax, 3
+    sar rax, 3
+    mov.q [rdi], rax
+    mov.q rcx, [rsi]
+    shr rcx, 2
+    sal rcx, 2
+    mov.q [rsi], rcx
     add rax, rcx
     ret
 =========== OPT LEVEL: moderate ===========

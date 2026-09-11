@@ -1,3 +1,33 @@
+=========== OPT LEVEL: none-quick ===========
+divmod:
+    sub rsp, 0x18
+    mov.q [rsp], rdi
+    mov.q [rsp + 0x8], rdx
+    mov.q rax, [rsp]
+    cqo
+    idiv rsi
+    mov rax, rax
+    mov.q rcx, [rsp + 0x8]
+    mov.q [rcx], rax
+    mov.q rax, [rsp]
+    cqo
+    idiv rsi
+    mov rax, rdx
+    add rsp, 0x18
+    ret
+2:
+    sub rsp, 0x18
+    mov rdi, 0x2f
+    mov rsi, 5
+    lea rdx, [rsp]
+    call divmod
+    mov.q [rsp + 0x8], rax
+    mov.q rax, [rsp]
+    imul rax, rax, 0x64
+    mov.q rcx, [rsp + 0x8]
+    add rax, rcx
+    add rsp, 0x18
+    ret
 =========== OPT LEVEL: none ===========
 divmod:
     mov rcx, rdx
@@ -22,6 +52,36 @@ divmod:
     add rax, rcx
     add rsp, 8
     ret
+=========== OPT LEVEL: mininal-quick ===========
+divmod:
+    sub rsp, 0x18
+    mov.q [rsp], rdi
+    mov.q [rsp + 0x8], rdx
+    mov.q rax, [rsp]
+    cqo
+    idiv rsi
+    mov rax, rax
+    mov.q rcx, [rsp + 0x8]
+    mov.q [rcx], rax
+    mov.q rax, [rsp]
+    cqo
+    idiv rsi
+    mov rax, rdx
+    add rsp, 0x18
+    ret
+2:
+    sub rsp, 0x18
+    mov rdi, 0x2f
+    mov rsi, 5
+    lea rdx, [rsp]
+    call divmod
+    mov.q [rsp + 0x8], rax
+    mov.q rax, [rsp]
+    imul rax, rax, 0x64
+    mov.q rcx, [rsp + 0x8]
+    add rax, rcx
+    add rsp, 0x18
+    ret
 =========== OPT LEVEL: mininal ===========
 divmod:
     mov rcx, rdx
@@ -45,6 +105,36 @@ divmod:
     imul rax, rax, 0x64
     add rax, rcx
     add rsp, 8
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+divmod:
+    sub rsp, 0x18
+    mov.q [rsp], rdi
+    mov.q [rsp + 0x8], rdx
+    mov.q rax, [rsp]
+    cqo
+    idiv rsi
+    mov rax, rax
+    mov.q rcx, [rsp + 0x8]
+    mov.q [rcx], rax
+    mov.q rax, [rsp]
+    cqo
+    idiv rsi
+    mov rax, rdx
+    add rsp, 0x18
+    ret
+2:
+    sub rsp, 0x18
+    mov rdi, 0x2f
+    mov rsi, 5
+    lea rdx, [rsp]
+    call divmod
+    mov.q [rsp + 0x8], rax
+    mov.q rax, [rsp]
+    imul rax, rax, 0x64
+    mov.q rcx, [rsp + 0x8]
+    add rax, rcx
+    add rsp, 0x18
     ret
 =========== OPT LEVEL: moderate ===========
 divmod:

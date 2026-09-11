@@ -1,3 +1,19 @@
+=========== OPT LEVEL: none-quick ===========
+malloc:
+    sub rsp, 0x18
+    mov rdi, 8
+    call.q [rip - 0x31]
+    mov.q [rsp], rax
+    mov.q rax, [rsp]
+    mov.q [rax], 0
+    mov.q rax, [rsp]
+    mov.q rax, [rax]
+    mov.q [rsp + 0x8], rax
+    mov.q rdi, [rsp]
+    call.q [rip - 0x4e]
+    mov.q rax, [rsp + 0x8]
+    add rsp, 0x18
+    ret
 =========== OPT LEVEL: none ===========
 malloc:
     push rbx
@@ -12,6 +28,22 @@ main:
     mov rax, rbx
     pop rbx
     ret
+=========== OPT LEVEL: mininal-quick ===========
+malloc:
+    sub rsp, 0x18
+    mov rdi, 8
+    call.q [rip - 0x31]
+    mov.q [rsp], rax
+    mov.q rax, [rsp]
+    mov.q [rax], 0
+    mov.q rax, [rsp]
+    mov.q rax, [rax]
+    mov.q [rsp + 0x8], rax
+    mov.q rdi, [rsp]
+    call.q [rip - 0x4e]
+    mov.q rax, [rsp + 0x8]
+    add rsp, 0x18
+    ret
 =========== OPT LEVEL: mininal ===========
 malloc:
     push rbx
@@ -25,6 +57,19 @@ main:
     call.q [rip - 0x3d]
     mov rax, rbx
     pop rbx
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+malloc:
+    sub rsp, 8
+    mov rdi, 8
+    call.q [rip - 0x31]
+    mov.q [rsp], rax
+    mov.q rax, [rsp]
+    mov.q [rax], 0
+    mov.q rdi, [rsp]
+    call.q [rip - 0x42]
+    xor eax, eax
+    add rsp, 8
     ret
 =========== OPT LEVEL: moderate ===========
 malloc:

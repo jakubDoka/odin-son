@@ -1,3 +1,27 @@
+=========== OPT LEVEL: none-quick ===========
+four:
+    mov.q [rsi], rdi
+    imul rax, rdi, 2
+    mov.q [rdx], rax
+    imul rax, rdi, 3
+    mov.q [rcx], rax
+    imul rax, rdi, 4
+    ret
+2:
+    sub rsp, 0x28
+    mov rdi, 5
+    lea rsi, [rsp]
+    lea rdx, [rsp + 0x8]
+    lea rcx, [rsp + 0x10]
+    call four
+    mov.q [rsp + 0x18], rax
+    mov.q rax, [rsp]
+    add.q rax, [rsp + 0x8]
+    add.q rax, [rsp + 0x10]
+    mov.q rcx, [rsp + 0x18]
+    add rax, rcx
+    add rsp, 0x28
+    ret
 =========== OPT LEVEL: none ===========
 four:
     mov.q [rsi], rdi
@@ -21,6 +45,30 @@ four:
     add rax, rcx
     add rsp, 0x18
     ret
+=========== OPT LEVEL: mininal-quick ===========
+four:
+    mov.q [rsi], rdi
+    imul rax, rdi, 2
+    mov.q [rdx], rax
+    imul rax, rdi, 3
+    mov.q [rcx], rax
+    imul rax, rdi, 4
+    ret
+2:
+    sub rsp, 0x28
+    mov rdi, 5
+    lea rsi, [rsp]
+    lea rdx, [rsp + 0x8]
+    lea rcx, [rsp + 0x10]
+    call four
+    mov.q [rsp + 0x18], rax
+    mov.q rax, [rsp]
+    add.q rax, [rsp + 0x8]
+    add.q rax, [rsp + 0x10]
+    mov.q rcx, [rsp + 0x18]
+    add rax, rcx
+    add rsp, 0x28
+    ret
 =========== OPT LEVEL: mininal ===========
 four:
     mov.q [rsi], rdi
@@ -43,6 +91,30 @@ four:
     add.q rax, [rsp + 0x10]
     add rax, rcx
     add rsp, 0x18
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+four:
+    mov.q [rsi], rdi
+    imul rax, rdi, 2
+    mov.q [rdx], rax
+    imul rax, rdi, 3
+    mov.q [rcx], rax
+    imul rax, rdi, 4
+    ret
+2:
+    sub rsp, 0x28
+    mov rdi, 5
+    lea rsi, [rsp]
+    lea rdx, [rsp + 0x8]
+    lea rcx, [rsp + 0x10]
+    call four
+    mov.q [rsp + 0x18], rax
+    mov.q rax, [rsp]
+    add.q rax, [rsp + 0x8]
+    add.q rax, [rsp + 0x10]
+    mov.q rcx, [rsp + 0x18]
+    add rax, rcx
+    add rsp, 0x28
     ret
 =========== OPT LEVEL: moderate ===========
 four:

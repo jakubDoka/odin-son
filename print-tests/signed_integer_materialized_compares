@@ -1,3 +1,285 @@
+=========== OPT LEVEL: none-quick ===========
+s8:
+    xor eax, eax
+s64:
+    cmp dil, sil
+    setz cl
+    movzx rcx, cl
+    movzx ecx, cl
+    add rax, rcx
+    cmp dil, sil
+    setnz cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*2]
+    cmp dil, sil
+    setnge cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*4]
+    cmp dil, sil
+    setng cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*8]
+    cmp dil, sil
+    setnle cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x10
+    add rax, rcx
+    cmp dil, sil
+    setnl cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x20
+    add rax, rcx
+    ret
+6:
+    xor eax, eax
+    cmp di, si
+    setz cl
+    movzx rcx, cl
+    movzx ecx, cl
+    add rax, rcx
+    cmp di, si
+    setnz cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*2]
+    cmp di, si
+    setnge cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*4]
+    cmp di, si
+    setng cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*8]
+    cmp di, si
+    setnle cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x10
+    add rax, rcx
+    cmp di, si
+    setnl cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x20
+    add rax, rcx
+    ret
+7:
+    xor eax, eax
+    cmp edi, esi
+    setz cl
+    movzx rcx, cl
+    movzx ecx, cl
+    add rax, rcx
+    cmp edi, esi
+    setnz cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*2]
+    cmp edi, esi
+    setnge cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*4]
+    cmp edi, esi
+    setng cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*8]
+    cmp edi, esi
+    setnle cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x10
+    add rax, rcx
+    cmp edi, esi
+    setnl cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x20
+    add rax, rcx
+    ret
+8:
+    xor eax, eax
+    cmp rdi, rsi
+    setz cl
+    movzx rcx, cl
+    movzx ecx, cl
+    add rax, rcx
+    cmp rdi, rsi
+    setnz cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*2]
+    cmp rdi, rsi
+    setnge cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*4]
+    cmp rdi, rsi
+    setng cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*8]
+    cmp rdi, rsi
+    setnle cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x10
+    add rax, rcx
+    cmp rdi, rsi
+    setnl cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x20
+    add rax, rcx
+    ret
+9:
+    xor eax, eax
+    cmp rdi, rsi
+    setz cl
+    movzx rcx, cl
+    movzx ecx, cl
+    add rax, rcx
+    cmp rdi, rsi
+    setnz cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*2]
+    cmp rdi, rsi
+    setnge cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*4]
+    cmp rdi, rsi
+    setng cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*8]
+    cmp rdi, rsi
+    setnle cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x10
+    add rax, rcx
+    cmp rdi, rsi
+    setnl cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x20
+    add rax, rcx
+    ret
+10:
+    sub rsp, 0x78
+    mov dil, -1
+    mov sil, 1
+    call s8
+    mov.q [rsp], rax
+    mov sil, 5
+    mov dil, 5
+    call s8
+    mov.q [rsp + 0x8], rax
+    mov dil, 7
+    mov sil, -3
+    call s8
+    mov.q [rsp + 0x10], rax
+    mov rdi, -1
+    mov rsi, 1
+    call 6
+    mov.q [rsp + 0x18], rax
+    mov rsi, 5
+    mov rdi, 5
+    call 6
+    mov.q [rsp + 0x20], rax
+    mov rdi, 7
+    mov rsi, -3
+    call 6
+    mov.q [rsp + 0x28], rax
+    mov rdi, -1
+    mov rsi, 1
+    call 7
+    mov.q [rsp + 0x30], rax
+    mov rsi, 5
+    mov rdi, 5
+    call 7
+    mov.q [rsp + 0x38], rax
+    mov rdi, 7
+    mov rsi, -3
+    call 7
+    mov.q [rsp + 0x40], rax
+    mov rdi, -1
+    mov rsi, 1
+    call 8
+    mov.q [rsp + 0x48], rax
+    mov rsi, 5
+    mov rdi, 5
+    call 8
+    mov.q [rsp + 0x50], rax
+    mov rdi, 7
+    mov rsi, -3
+    call 8
+    mov.q [rsp + 0x58], rax
+    mov rdi, -1
+    mov rsi, 1
+    call 9
+    mov.q [rsp + 0x60], rax
+    mov rsi, 5
+    mov rdi, 5
+    call 9
+    mov.q [rsp + 0x68], rax
+    mov rdi, 7
+    mov rsi, -3
+    call 9
+    mov.q [rsp + 0x70], rax
+    xor eax, eax
+    mov.q rcx, [rsp]
+    mov.q rdx, [rsp + 0x8]
+    add rcx, rdx
+    mov rcx, rcx
+    mov.q rdx, [rsp + 0x10]
+    add rcx, rdx
+    mov rcx, rcx
+    add rax, rcx
+    mov.q rcx, [rsp + 0x18]
+    mov.q rdx, [rsp + 0x20]
+    add rcx, rdx
+    mov rcx, rcx
+    mov.q rdx, [rsp + 0x28]
+    add rcx, rdx
+    mov rcx, rcx
+    add rax, rcx
+    mov.q rcx, [rsp + 0x30]
+    mov.q rdx, [rsp + 0x38]
+    add rcx, rdx
+    mov rcx, rcx
+    mov.q rdx, [rsp + 0x40]
+    add rcx, rdx
+    mov rcx, rcx
+    add rax, rcx
+    mov.q rcx, [rsp + 0x48]
+    mov.q rdx, [rsp + 0x50]
+    add rcx, rdx
+    mov rcx, rcx
+    mov.q rdx, [rsp + 0x58]
+    add rcx, rdx
+    mov rcx, rcx
+    add rax, rcx
+    mov.q rcx, [rsp + 0x60]
+    mov.q rdx, [rsp + 0x68]
+    add rcx, rdx
+    mov rcx, rcx
+    mov.q rdx, [rsp + 0x70]
+    add rcx, rdx
+    mov rcx, rcx
+    add rax, rcx
+    add rsp, 0x78
+    ret
 =========== OPT LEVEL: none ===========
 s8:
     xor ecx, ecx
@@ -281,6 +563,288 @@ s64:
     pop rbp
     pop rbx
     ret
+=========== OPT LEVEL: mininal-quick ===========
+s8:
+    xor eax, eax
+s64:
+    cmp dil, sil
+    setz cl
+    movzx rcx, cl
+    movzx ecx, cl
+    add rax, rcx
+    cmp dil, sil
+    setnz cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*2]
+    cmp dil, sil
+    setnge cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*4]
+    cmp dil, sil
+    setng cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*8]
+    cmp dil, sil
+    setnle cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x10
+    add rax, rcx
+    cmp dil, sil
+    setnl cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x20
+    add rax, rcx
+    ret
+6:
+    xor eax, eax
+    cmp di, si
+    setz cl
+    movzx rcx, cl
+    movzx ecx, cl
+    add rax, rcx
+    cmp di, si
+    setnz cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*2]
+    cmp di, si
+    setnge cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*4]
+    cmp di, si
+    setng cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*8]
+    cmp di, si
+    setnle cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x10
+    add rax, rcx
+    cmp di, si
+    setnl cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x20
+    add rax, rcx
+    ret
+7:
+    xor eax, eax
+    cmp edi, esi
+    setz cl
+    movzx rcx, cl
+    movzx ecx, cl
+    add rax, rcx
+    cmp edi, esi
+    setnz cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*2]
+    cmp edi, esi
+    setnge cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*4]
+    cmp edi, esi
+    setng cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*8]
+    cmp edi, esi
+    setnle cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x10
+    add rax, rcx
+    cmp edi, esi
+    setnl cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x20
+    add rax, rcx
+    ret
+8:
+    xor eax, eax
+    cmp rdi, rsi
+    setz cl
+    movzx rcx, cl
+    movzx ecx, cl
+    add rax, rcx
+    cmp rdi, rsi
+    setnz cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*2]
+    cmp rdi, rsi
+    setnge cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*4]
+    cmp rdi, rsi
+    setng cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*8]
+    cmp rdi, rsi
+    setnle cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x10
+    add rax, rcx
+    cmp rdi, rsi
+    setnl cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x20
+    add rax, rcx
+    ret
+9:
+    xor eax, eax
+    cmp rdi, rsi
+    setz cl
+    movzx rcx, cl
+    movzx ecx, cl
+    add rax, rcx
+    cmp rdi, rsi
+    setnz cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*2]
+    cmp rdi, rsi
+    setnge cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*4]
+    cmp rdi, rsi
+    setng cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*8]
+    cmp rdi, rsi
+    setnle cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x10
+    add rax, rcx
+    cmp rdi, rsi
+    setnl cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x20
+    add rax, rcx
+    ret
+10:
+    sub rsp, 0x78
+    mov dil, -1
+    mov sil, 1
+    call s8
+    mov.q [rsp], rax
+    mov sil, 5
+    mov dil, 5
+    call s8
+    mov.q [rsp + 0x8], rax
+    mov dil, 7
+    mov sil, -3
+    call s8
+    mov.q [rsp + 0x10], rax
+    mov rdi, -1
+    mov rsi, 1
+    call 6
+    mov.q [rsp + 0x18], rax
+    mov rsi, 5
+    mov rdi, 5
+    call 6
+    mov.q [rsp + 0x20], rax
+    mov rdi, 7
+    mov rsi, -3
+    call 6
+    mov.q [rsp + 0x28], rax
+    mov rdi, -1
+    mov rsi, 1
+    call 7
+    mov.q [rsp + 0x30], rax
+    mov rsi, 5
+    mov rdi, 5
+    call 7
+    mov.q [rsp + 0x38], rax
+    mov rdi, 7
+    mov rsi, -3
+    call 7
+    mov.q [rsp + 0x40], rax
+    mov rdi, -1
+    mov rsi, 1
+    call 8
+    mov.q [rsp + 0x48], rax
+    mov rsi, 5
+    mov rdi, 5
+    call 8
+    mov.q [rsp + 0x50], rax
+    mov rdi, 7
+    mov rsi, -3
+    call 8
+    mov.q [rsp + 0x58], rax
+    mov rdi, -1
+    mov rsi, 1
+    call 9
+    mov.q [rsp + 0x60], rax
+    mov rsi, 5
+    mov rdi, 5
+    call 9
+    mov.q [rsp + 0x68], rax
+    mov rdi, 7
+    mov rsi, -3
+    call 9
+    mov.q [rsp + 0x70], rax
+    xor eax, eax
+    mov.q rcx, [rsp]
+    mov.q rdx, [rsp + 0x8]
+    add rcx, rdx
+    mov rcx, rcx
+    mov.q rdx, [rsp + 0x10]
+    add rcx, rdx
+    mov rcx, rcx
+    add rax, rcx
+    mov.q rcx, [rsp + 0x18]
+    mov.q rdx, [rsp + 0x20]
+    add rcx, rdx
+    mov rcx, rcx
+    mov.q rdx, [rsp + 0x28]
+    add rcx, rdx
+    mov rcx, rcx
+    add rax, rcx
+    mov.q rcx, [rsp + 0x30]
+    mov.q rdx, [rsp + 0x38]
+    add rcx, rdx
+    mov rcx, rcx
+    mov.q rdx, [rsp + 0x40]
+    add rcx, rdx
+    mov rcx, rcx
+    add rax, rcx
+    mov.q rcx, [rsp + 0x48]
+    mov.q rdx, [rsp + 0x50]
+    add rcx, rdx
+    mov rcx, rcx
+    mov.q rdx, [rsp + 0x58]
+    add rcx, rdx
+    mov rcx, rcx
+    add rax, rcx
+    mov.q rcx, [rsp + 0x60]
+    mov.q rdx, [rsp + 0x68]
+    add rcx, rdx
+    mov rcx, rcx
+    mov.q rdx, [rsp + 0x70]
+    add rcx, rdx
+    mov rcx, rcx
+    add rax, rcx
+    add rsp, 0x78
+    ret
 =========== OPT LEVEL: mininal ===========
 s8:
     xor ecx, ecx
@@ -563,6 +1127,286 @@ s64:
     pop r12
     pop rbp
     pop rbx
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+s8:
+    cmp dil, sil
+s64:
+    setz al
+    movzx rax, al
+    movzx eax, al
+    cmp dil, sil
+    setnz cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*2]
+    cmp dil, sil
+    setnge cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*4]
+    cmp dil, sil
+    setng cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*8]
+    cmp dil, sil
+    setnle cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x10
+    add rax, rcx
+    cmp dil, sil
+    setnl cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x20
+    add rax, rcx
+    ret
+6:
+    cmp di, si
+    setz al
+    movzx rax, al
+    movzx eax, al
+    cmp di, si
+    setnz cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*2]
+    cmp di, si
+    setnge cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*4]
+    cmp di, si
+    setng cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*8]
+    cmp di, si
+    setnle cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x10
+    add rax, rcx
+    cmp di, si
+    setnl cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x20
+    add rax, rcx
+    ret
+7:
+    cmp edi, esi
+    setz al
+    movzx rax, al
+    movzx eax, al
+    cmp edi, esi
+    setnz cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*2]
+    cmp edi, esi
+    setnge cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*4]
+    cmp edi, esi
+    setng cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*8]
+    cmp edi, esi
+    setnle cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x10
+    add rax, rcx
+    cmp edi, esi
+    setnl cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x20
+    add rax, rcx
+    ret
+8:
+    cmp rdi, rsi
+    setz al
+    movzx rax, al
+    movzx eax, al
+    cmp rdi, rsi
+    setnz cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*2]
+    cmp rdi, rsi
+    setnge cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*4]
+    cmp rdi, rsi
+    setng cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*8]
+    cmp rdi, rsi
+    setnle cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x10
+    add rax, rcx
+    cmp rdi, rsi
+    setnl cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x20
+    add rax, rcx
+    ret
+9:
+    cmp rdi, rsi
+    setz al
+    movzx rax, al
+    movzx eax, al
+    cmp rdi, rsi
+    setnz cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*2]
+    cmp rdi, rsi
+    setnge cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*4]
+    cmp rdi, rsi
+    setng cl
+    movzx rcx, cl
+    movzx ecx, cl
+    lea rax, [rax + rcx*8]
+    cmp rdi, rsi
+    setnle cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x10
+    add rax, rcx
+    cmp rdi, rsi
+    setnl cl
+    movzx rcx, cl
+    movzx ecx, cl
+    imul rcx, rcx, 0x20
+    add rax, rcx
+    ret
+10:
+    sub rsp, 0x78
+    mov dil, -1
+    mov sil, 1
+    call s8
+    mov.q [rsp], rax
+    mov sil, 5
+    mov dil, 5
+    call s8
+    mov.q [rsp + 0x8], rax
+    mov dil, 7
+    mov sil, -3
+    call s8
+    mov.q [rsp + 0x10], rax
+    mov rdi, -1
+    mov rsi, 1
+    call 6
+    mov.q [rsp + 0x18], rax
+    mov rsi, 5
+    mov rdi, 5
+    call 6
+    mov.q [rsp + 0x20], rax
+    mov rdi, 7
+    mov rsi, -3
+    call 6
+    mov.q [rsp + 0x28], rax
+    mov rdi, -1
+    mov rsi, 1
+    call 7
+    mov.q [rsp + 0x30], rax
+    mov rsi, 5
+    mov rdi, 5
+    call 7
+    mov.q [rsp + 0x38], rax
+    mov rdi, 7
+    mov rsi, -3
+    call 7
+    mov.q [rsp + 0x40], rax
+    mov rdi, -1
+    mov rsi, 1
+    call 8
+    mov.q [rsp + 0x48], rax
+    mov rsi, 5
+    mov rdi, 5
+    call 8
+    mov.q [rsp + 0x50], rax
+    mov rdi, 7
+    mov rsi, -3
+    call 8
+    mov.q [rsp + 0x58], rax
+    mov rdi, -1
+    mov rsi, 1
+    call 9
+    mov.q [rsp + 0x60], rax
+    mov rsi, 5
+    mov rdi, 5
+    call 9
+    mov.q [rsp + 0x68], rax
+    mov rdi, 7
+    mov rsi, -3
+    call 9
+    mov.q rcx, [rsp]
+    mov.q rdx, [rsp + 0x8]
+    add rcx, rdx
+    mov rcx, rcx
+    mov.q rdx, [rsp + 0x10]
+    add rcx, rdx
+    mov.q [rsp], rcx
+    mov.q rcx, [rsp + 0x18]
+    mov.q rdx, [rsp + 0x20]
+    add rcx, rdx
+    mov rcx, rcx
+    mov.q rdx, [rsp + 0x28]
+    add rcx, rdx
+    mov.q [rsp + 0x8], rcx
+    mov.q rcx, [rsp]
+    mov.q rdx, [rsp + 0x8]
+    add rcx, rdx
+    mov.q [rsp], rcx
+    mov.q rcx, [rsp + 0x30]
+    mov.q rdx, [rsp + 0x38]
+    add rcx, rdx
+    mov rcx, rcx
+    mov.q rdx, [rsp + 0x40]
+    add rcx, rdx
+    mov.q [rsp + 0x8], rcx
+    mov.q rcx, [rsp]
+    mov.q rdx, [rsp + 0x8]
+    add rcx, rdx
+    mov.q [rsp], rcx
+    mov.q rcx, [rsp + 0x48]
+    mov.q rdx, [rsp + 0x50]
+    add rcx, rdx
+    mov rcx, rcx
+    mov.q rdx, [rsp + 0x58]
+    add rcx, rdx
+    mov.q [rsp + 0x8], rcx
+    mov.q rcx, [rsp]
+    mov.q rdx, [rsp + 0x8]
+    add rcx, rdx
+    mov.q [rsp], rcx
+    mov.q rcx, [rsp + 0x60]
+    mov.q rdx, [rsp + 0x68]
+    add rcx, rdx
+    mov rcx, rcx
+    add rcx, rax
+    mov.q [rsp + 0x8], rcx
+    mov.q rax, [rsp]
+    mov.q rcx, [rsp + 0x8]
+    add rax, rcx
+    mov rax, rax
+    add rsp, 0x78
     ret
 =========== OPT LEVEL: moderate ===========
 s8:

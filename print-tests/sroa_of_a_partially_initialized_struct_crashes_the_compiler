@@ -1,8 +1,42 @@
+=========== OPT LEVEL: none-quick ===========
+sink:
+    movzx.b eax, [rdi]
+    movzx.w ecx, [rdi + 0x2]
+    lea rax, [rax + rcx*4]
+    ret
+2:
+    sub rsp, 8
+    xor esi, esi
+    mov rdx, 4
+    lea rdi, [rsp]
+    call.q [rip - 0x30]
+    mov.b [rsp], 1
+    lea rdi, [rsp]
+    call sink
+    add rsp, 8
+    ret
 =========== OPT LEVEL: none ===========
 sink:
     movzx.b ecx, [rdi]
     movzx.w eax, [rdi + 0x2]
     lea rax, [rcx + rax*4]
+    ret
+2:
+    sub rsp, 8
+    xor esi, esi
+    mov rdx, 4
+    lea rdi, [rsp]
+    call.q [rip - 0x30]
+    mov.b [rsp], 1
+    lea rdi, [rsp]
+    call sink
+    add rsp, 8
+    ret
+=========== OPT LEVEL: mininal-quick ===========
+sink:
+    movzx.b eax, [rdi]
+    movzx.w ecx, [rdi + 0x2]
+    lea rax, [rax + rcx*4]
     ret
 2:
     sub rsp, 8
@@ -27,6 +61,21 @@ sink:
     mov rdx, 4
     lea rdi, [rsp]
     call.q [rip - 0x30]
+    mov.b [rsp], 1
+    lea rdi, [rsp]
+    call sink
+    add rsp, 8
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+sink:
+    movzx.b eax, [rdi]
+    movzx.w ecx, [rdi + 0x2]
+    lea rax, [rax + rcx*4]
+    ret
+2:
+    sub rsp, 8
+    mov.b [rsp + 0x1], 0
+    mov.w [rsp + 0x2], 0
     mov.b [rsp], 1
     lea rdi, [rsp]
     call sink

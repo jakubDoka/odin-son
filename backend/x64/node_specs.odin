@@ -15,6 +15,7 @@ SPEC := backend.Node_Spec{
 		{.General = 2051, .Vector = 0},
 	},
 	datatype_to_reg_kind = {.Void = Reg_Kind.General, .I8 = Reg_Kind.General, .I16 = Reg_Kind.General, .I32 = Reg_Kind.General, .I64 = Reg_Kind.General, .F32 = Reg_Kind.Vector, .F64 = Reg_Kind.Vector, .V128 = Reg_Kind.Vector, .V256 = Reg_Kind.Vector, .V512 = Reg_Kind.Vector},
+	spill_boundary = {.General = 16, .Vector = 16},
 	collect_meta = x64_collect_meta,
 	emit_function = x64_emit_function,
 	peep = x64_peep_inst,

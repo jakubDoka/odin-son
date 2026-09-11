@@ -2,6 +2,7 @@ package typecheck
 
 import "../backend"
 import "../backend/builder"
+import ra "../backend/regalloc"
 import "../vendored/gam/util/arna"
 import "base:intrinsics"
 import "base:runtime"
@@ -67,6 +68,7 @@ Gen_Ctx :: struct {
 	errors:       io.Writer,
 	stack_top:    uintptr,
 	depht:        int,
+	ralloc_mode:  ra.Mode,
 }
 
 Poly_Entry :: struct {

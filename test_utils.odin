@@ -181,6 +181,7 @@ run_test :: proc(
 		types.mems.cfi.pos = 0
 		types.check = level.check
 		ctx.has_dbg = level.debug
+		ctx.ralloc_mode = level.ralloc_mode
 		resize(&ctx.globals, prev_glob_count)
 
 		for &prc in ctx.procs do prc.out = {}

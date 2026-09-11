@@ -16,6 +16,7 @@ Spec_Gen_Input :: struct {
 	name:                 string,
 	classes:              []Class_Array,
 	datatype_to_reg_kind: [Node_Datatype]Reg_Kind,
+	spill_boundary:       [Reg_Kind]int,
 	cc_table:             []Call_Conv,
 	intern:               bool,
 	no_spec_tables:       bool,
@@ -139,6 +140,8 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 			"\tdatatype_to_reg_kind = %w,\n",
 			spec.datatype_to_reg_kind,
 		)
+
+		fmt.fprintf(file, "\tspill_boundary = %w,\n", spec.spill_boundary)
 
 		if spec.does_regalloc {
 			fmt.fprintf(file, "\tcollect_meta = %v_collect_meta,\n", prefix)

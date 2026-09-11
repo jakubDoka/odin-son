@@ -52,6 +52,20 @@ reg_mask_first_set :: proc(rm: Reg_Mask) -> (int, bool) {
 	return -1, false
 }
 
+reg_mask_last_set :: proc(rm: Reg_Mask) -> (int, bool) {
+	for i in 0 ..< rm.bit_length / MASK_SIZE {
+		i := rm.bit_length / MASK_SIZE - i - 1
+		if rm.masks[i] != 0 {
+			return int(i) * MASK_SIZE +
+				MASK_SIZE -
+				int(intrinsics.count_leading_zeros(rm.masks[i])) -
+				1,
+				true
+		}
+	}
+	return -1, false
+}
+
 reg_mask_first_common_set :: proc(a, b: Reg_Mask) -> (int, bool) {
 	assert(a.bit_length == b.bit_length)
 	for i in 0 ..< a.bit_length / MASK_SIZE {
@@ -119,6 +133,7 @@ reg_mask_contains :: proc(bset: Reg_Mask, #any_int index: u32) -> bool {
 
 Regalloc_Spec :: struct {
 	datatype_to_reg_kind: [Node_Datatype]Reg_Kind,
+	spill_boundary:       [Reg_Kind]int,
 	cc_table:             []Call_Conv,
 	call_clobbers:        [][Reg_Kind]i64,
 	collect_meta:         proc(
@@ -322,10 +337,7 @@ Lrg :: struct {
 Slrg_ID :: distinct int
 
 Slrg :: struct {
-	start:    int,
-	end:      int,
-	lrg:      ^Lrg,
-	reg:      int,
+	start: int,
+	end:   int,
+	lrg:   ^Lrg,
 }
-
-#assert(size_of(Lrg) == 48)

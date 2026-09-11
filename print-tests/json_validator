@@ -1,3 +1,898 @@
+=========== OPT LEVEL: none-quick ===========
+peek:
+    mov.q rax, [rdi + 0x10]
+is_digit:
+    cmp.q rax, [rdi + 0x8]
+    jnl 8
+    mov.q rax, [rdi]
+parse_string:
+    add.q rax, [rdi + 0x10]
+    movzx.b eax, [rax]
+    jmp 9
+8:
+    xor eax, eax
+9:
+    ret
+10:
+    sub rsp, 8
+    mov.q [rsp], rdi
+    mov.q rdi, [rsp]
+    call peek
+    mov.q rcx, [rsp]
+    add.q [rcx + 0x10], 1
+    add rsp, 8
+    ret
+16:
+    cmp dil, 0x30
+    setnc al
+    movzx rax, al
+    cmp dil, 0x39
+    setna cl
+    movzx rcx, cl
+    and al, cl
+    test al, al
+    jnz 17
+    xor eax, eax
+    jmp 18
+17:
+    mov al, 1
+18:
+    ret
+19:
+    cmp dil, 0x30
+    setnc cl
+    movzx rcx, cl
+    mov al, 1
+    cmp dil, 0x39
+    setna dl
+    movzx rdx, dl
+    and cl, dl
+    test cl, cl
+    jnz 20
+    cmp dil, 0x61
+    setnc cl
+    movzx rcx, cl
+    cmp dil, 0x66
+    setna dl
+    movzx rdx, dl
+    and cl, dl
+    test cl, cl
+    jnz 20
+    cmp dil, 0x41
+    setnc cl
+    movzx rcx, cl
+    cmp dil, 0x46
+    setna dl
+    movzx rdx, dl
+    and cl, dl
+    test cl, cl
+    jnz 20
+    xor eax, eax
+    jmp 20
+20:
+    ret
+21:
+    sub rsp, 8
+    mov.q [rsp], rdi
+22:
+    mov.q rdi, [rsp]
+    call peek
+    cmp al, 0x20
+    setz cl
+    movzx rcx, cl
+    cmp al, 9
+    setz dl
+    movzx rdx, dl
+    or cl, dl
+    cmp al, 0xa
+    setz dl
+    movzx rdx, dl
+    or cl, dl
+    cmp al, 0xd
+    setz al
+    movzx rax, al
+    or cl, al
+    test cl, cl
+    jnz 23
+    mov al, 1
+    add rsp, 8
+    ret
+23:
+    mov.q rax, [rsp]
+    add.q [rax + 0x10], 1
+    jmp 22
+24:
+    push rbx
+    sub rsp, 0x20
+    mov.q [rsp + 0x10], rdi
+    mov.q [rsp], rsi
+    mov.q [rsp + 0x8], rdx
+    xor ebx, ebx
+25:
+    cmp.q rbx, [rsp + 0x8]
+    jnl 27
+    mov.q rdi, [rsp + 0x10]
+    call peek
+    mov.q rcx, [rsp]
+    add rcx, rbx
+    cmp.b al, [rcx]
+    jnz 26
+    mov.q rax, [rsp + 0x10]
+    add.q [rax + 0x10], 1
+    add rbx, 1
+    jmp 25
+26:
+    xor eax, eax
+    jmp 28
+27:
+    mov al, 1
+28:
+    add rsp, 0x20
+    pop rbx
+    ret
+29:
+    push rbx
+    sub rsp, 0x10
+    mov.q [rsp], rdi
+    mov.q rdi, [rsp]
+    call 10
+    cmp al, 0x22
+    jnz 39
+30:
+    mov.q rdi, [rsp]
+    call 10
+    cmp al, 0x22
+    jz 38
+    cmp al, 0
+    jz 37
+    cmp al, 0x5c
+    jz 32
+    cmp al, 0x20
+    jc 31
+    jmp 36
+31:
+    xor ecx, ecx
+    jmp 40
+32:
+    mov.q rdi, [rsp]
+    call 10
+    cmp al, 0x22
+    jz 36
+    cmp al, 0x5c
+    jz 36
+    cmp al, 0x2f
+    jz 36
+    cmp al, 0x62
+    jz 36
+    cmp al, 0x66
+    jz 36
+    cmp al, 0x6e
+    jz 36
+    cmp al, 0x72
+    jz 36
+    cmp al, 0x74
+    jz 36
+    cmp al, 0x75
+    jz 33
+    xor ecx, ecx
+    jmp 40
+33:
+    xor ebx, ebx
+34:
+    cmp rbx, 4
+    jnl 36
+    mov.q rdi, [rsp]
+    call 10
+    mov rdi, rax
+    call 19
+    cmp al, 0
+    jz 35
+    add rbx, 1
+    jmp 34
+35:
+    xor ecx, ecx
+    jmp 40
+36:
+    jmp 30
+37:
+    xor ecx, ecx
+    jmp 40
+38:
+    mov cl, 1
+    jmp 40
+39:
+    xor ecx, ecx
+40:
+    mov rax, rcx
+    add rsp, 0x10
+    pop rbx
+    ret
+41:
+    sub rsp, 0x18
+    mov.q [rsp], rdi
+    mov.q rdi, [rsp]
+    call peek
+    cmp al, 0x2d
+    jz 42
+    jmp 43
+42:
+    mov.q rax, [rsp]
+    add.q [rax + 0x10], 1
+43:
+    mov.q rdi, [rsp]
+    call peek
+    cmp al, 0x30
+    jz 46
+    cmp al, 0x31
+    setnc cl
+    movzx rcx, cl
+    cmp al, 0x39
+    setna al
+    movzx rax, al
+    and cl, al
+    test cl, cl
+    jnz 44
+    xor ecx, ecx
+    jmp 57
+44:
+    mov.q rax, [rsp]
+    add.q [rax + 0x10], 1
+45:
+    mov.q rdi, [rsp]
+    call peek
+    mov rdi, rax
+    call 16
+    cmp al, 0
+    jz 47
+    mov.q rax, [rsp]
+    add.q [rax + 0x10], 1
+    jmp 45
+46:
+    mov.q rax, [rsp]
+    add.q [rax + 0x10], 1
+47:
+    mov.q rdi, [rsp]
+    call peek
+    cmp al, 0x2e
+    jz 48
+    jmp 50
+48:
+    mov.q rax, [rsp]
+    add.q [rax + 0x10], 1
+    mov.q rdi, [rsp]
+    call peek
+    mov rdi, rax
+    call 16
+    cmp al, 0
+    jz +0xff
+49:
+    mov.q rdi, [rsp]
+    call peek
+    mov rdi, rax
+    call 16
+    cmp al, 0
+    jz 50
+    mov.q rax, [rsp]
+    add.q [rax + 0x10], 1
+    jmp 49
+50:
+    mov.q rdi, [rsp]
+    call peek
+    cmp al, 0x65
+    setz dl
+    movzx rdx, dl
+    cmp al, 0x45
+    setz al
+    movzx rax, al
+    or dl, al
+    test dl, dl
+    jnz 51
+    jmp 55
+51:
+    mov.q rax, [rsp]
+    add.q [rax + 0x10], 1
+    mov.q rdi, [rsp]
+    call peek
+    cmp al, 0x2b
+    setz dl
+    movzx rdx, dl
+    cmp al, 0x2d
+    setz al
+    movzx rax, al
+    or dl, al
+    test dl, dl
+    jnz 52
+    jmp 53
+52:
+    mov.q rax, [rsp]
+    add.q [rax + 0x10], 1
+53:
+    mov.q rdi, [rsp]
+    call peek
+    mov rdi, rax
+    call 16
+    cmp al, 0
+    jz 56
+54:
+    mov.q rdi, [rsp]
+    call peek
+    mov rdi, rax
+    call 16
+    cmp al, 0
+    jz 55
+    mov.q rax, [rsp]
+    add.q [rax + 0x10], 1
+    jmp 54
+55:
+    mov cl, 1
+    jmp 57
+56:
+    xor ecx, ecx
+    jmp 57
+    xor ecx, ecx
+57:
+    mov rax, rcx
+    add rsp, 0x18
+    ret
+58:
+    sub rsp, 8
+    mov.q [rsp], rdi
+    mov.q rdi, [rsp]
+    call 10
+    cmp al, 0x5b
+    jnz 64
+    mov.q rdi, [rsp]
+    call 21
+    mov.q rdi, [rsp]
+    call peek
+    cmp al, 0x5d
+    jz 63
+59:
+    mov.q rdi, [rsp]
+    call 77
+    cmp al, 0
+    jz 62
+    mov.q rdi, [rsp]
+    call 21
+    mov.q rdi, [rsp]
+    call 10
+    cmp al, 0x5d
+    jz 61
+    cmp al, 0x2c
+    jnz 60
+    jmp 59
+60:
+    xor eax, eax
+    jmp 65
+61:
+    mov al, 1
+    jmp 65
+62:
+    xor eax, eax
+    jmp 65
+63:
+    mov.q rcx, [rsp]
+    add.q [rcx + 0x10], 1
+    mov al, 1
+    jmp 65
+64:
+    xor eax, eax
+65:
+    mov rax, rax
+    add rsp, 8
+    ret
+66:
+    sub rsp, 8
+    mov.q [rsp], rdi
+    mov.q rdi, [rsp]
+    call 10
+    cmp al, 0x7b
+    jnz 75
+    mov.q rdi, [rsp]
+    call 21
+    mov.q rdi, [rsp]
+    call peek
+    cmp al, 0x7d
+    jz 74
+67:
+    mov.q rdi, [rsp]
+    call 21
+    mov.q rdi, [rsp]
+    call peek
+    cmp al, 0x22
+    jnz 73
+    mov.q rdi, [rsp]
+    call 29
+    cmp al, 0
+    jz 72
+    mov.q rdi, [rsp]
+    call 21
+    mov.q rdi, [rsp]
+    call 10
+    cmp al, 0x3a
+    jnz 71
+    mov.q rdi, [rsp]
+    call 77
+    cmp al, 0
+    jz 70
+    mov.q rdi, [rsp]
+    call 21
+    mov.q rdi, [rsp]
+    call 10
+    cmp al, 0x7d
+    jz 69
+    cmp al, 0x2c
+    jnz 68
+    jmp 67
+68:
+    xor eax, eax
+    jmp 76
+69:
+    mov al, 1
+    jmp 76
+70:
+    xor eax, eax
+    jmp 76
+71:
+    xor eax, eax
+    jmp 76
+72:
+    xor eax, eax
+    jmp 76
+73:
+    xor eax, eax
+    jmp 76
+74:
+    mov.q rcx, [rsp]
+    add.q [rcx + 0x10], 1
+    mov al, 1
+    jmp 76
+75:
+    xor eax, eax
+76:
+    mov rax, rax
+    add rsp, 8
+    ret
+77:
+    sub rsp, 0x48
+    mov.q [rsp + 0x30], rdi
+    mov.q rdi, [rsp + 0x30]
+    call 21
+    mov.q rdi, [rsp + 0x30]
+    call peek
+    mov.q [rsp + 0x38], rax
+    mov.q rax, [rsp + 0x38]
+    cmp al, 0x7b
+    jz 84
+    mov.q rax, [rsp + 0x38]
+    cmp al, 0x5b
+    jz 83
+    mov.q rax, [rsp + 0x38]
+    cmp al, 0x22
+    jz 82
+    mov.q rax, [rsp + 0x38]
+    cmp al, 0x74
+    jz 81
+    mov.q rax, [rsp + 0x38]
+    cmp al, 0x66
+    jz 80
+    mov.q rax, [rsp + 0x38]
+    cmp al, 0x6e
+    jz 79
+    mov.q rdi, [rsp + 0x38]
+    call 16
+    mov.q rcx, [rsp + 0x38]
+    cmp cl, 0x2d
+    setz cl
+    movzx rcx, cl
+    or cl, al
+    test cl, cl
+    jnz 78
+    xor eax, eax
+    jmp 85
+78:
+    mov.q rdi, [rsp + 0x30]
+    call 41
+    jmp 85
+79:
+    lea rcx, [rip + 0x1888]
+    mov.q [rsp + 0x20], rcx
+    mov.q [rsp + 0x28], 4
+    mov.q rsi, [rsp + 0x20]
+    mov.q rdx, [rsp + 0x28]
+    mov.q rdi, [rsp + 0x30]
+    call 24
+    jmp 85
+80:
+    lea rcx, [rip + 0x1855]
+    mov.q [rsp + 0x10], rcx
+    mov.q [rsp + 0x18], 5
+    mov.q rsi, [rsp + 0x10]
+    mov.q rdx, [rsp + 0x18]
+    mov.q rdi, [rsp + 0x30]
+    call 24
+    jmp 85
+81:
+    lea rcx, [rip + 0x1823]
+    mov.q [rsp], rcx
+    mov.q [rsp + 0x8], 4
+    mov.q rsi, [rsp]
+    mov.q rdx, [rsp + 0x8]
+    mov.q rdi, [rsp + 0x30]
+    call 24
+    jmp 85
+82:
+    mov.q rdi, [rsp + 0x30]
+    call 29
+    jmp 85
+83:
+    mov.q rdi, [rsp + 0x30]
+    call 58
+    jmp 85
+84:
+    mov.q rdi, [rsp + 0x30]
+    call 66
+85:
+    add rsp, 0x48
+    ret
+86:
+    sub rsp, 0x38
+    mov.q [rsp + 0x18], rdi
+    mov.q [rsp + 0x20], rsi
+    mov rdx, 0x18
+    xor esi, esi
+    lea rdi, [rsp]
+    call.q [rip - 0x84a]
+    lea rsi, [rsp + 0x18]
+    mov rdx, 0x10
+    lea rdi, [rsp]
+    call.q [rip - 0x868]
+    mov.q [rsp + 0x10], 0
+    lea rdi, [rsp]
+    call 21
+    lea rdi, [rsp]
+    call 77
+    cmp al, 0
+    jz 88
+    lea rdi, [rsp]
+    call 21
+    mov.q rax, [rsp + 0x10]
+    cmp.q rax, [rsp + 0x8]
+    jnz 87
+    mov al, 1
+    jmp 89
+87:
+    xor eax, eax
+    jmp 89
+88:
+    xor eax, eax
+89:
+    mov rax, rax
+    add rsp, 0x38
+    ret
+90:
+    sub rsp, 0x138
+    lea rax, [rip + 0x1737]
+    mov.q [rsp], rax
+    mov.q [rsp + 0x8], 4
+    mov.q rdi, [rsp]
+    mov.q rsi, [rsp + 0x8]
+    call 86
+    test al, al
+    jnz 91
+    xor eax, eax
+    jmp 92
+91:
+    xor ecx, ecx
+    add rcx, 1
+    mov rax, rcx
+92:
+    mov.q [rsp + 0x120], rax
+    lea rax, [rip + 0x16f3]
+    mov.q [rsp + 0x10], rax
+    mov.q [rsp + 0x18], 5
+    mov.q rdi, [rsp + 0x10]
+    mov.q rsi, [rsp + 0x18]
+    call 86
+    test al, al
+    jnz 93
+    push.q [rsp + 0x120]
+    pop.q [rsp + 0x128]
+    jmp 94
+93:
+    mov.q rax, [rsp + 0x120]
+    add rax, 2
+    mov.q [rsp + 0x128], rax
+94:
+    push.q [rsp + 0x128]
+    pop.q [rsp + 0x120]
+    lea rax, [rip + 0x1691]
+    mov.q [rsp + 0x20], rax
+    mov.q [rsp + 0x28], 4
+    mov.q rdi, [rsp + 0x20]
+    mov.q rsi, [rsp + 0x28]
+    call 86
+    test al, al
+    jnz +0x14
+    push.q [rsp + 0x120]
+    pop.q [rsp + 0x128]
+    jmp 95
+    mov.q rax, [rsp + 0x120]
+    add rax, 4
+    mov.q [rsp + 0x128], rax
+95:
+    push.q [rsp + 0x128]
+    pop.q [rsp + 0x120]
+    lea rax, [rip + 0x162e]
+    mov.q [rsp + 0x30], rax
+    mov.q [rsp + 0x38], 3
+    mov.q rdi, [rsp + 0x30]
+    mov.q rsi, [rsp + 0x38]
+    call 86
+    test al, al
+    jnz 96
+    push.q [rsp + 0x120]
+    pop.q [rsp + 0x128]
+    jmp 97
+96:
+    mov.q rax, [rsp + 0x120]
+    add rax, 8
+    mov.q [rsp + 0x128], rax
+97:
+    push.q [rsp + 0x128]
+    pop.q [rsp + 0x120]
+    lea rax, [rip + 0x15ca]
+    mov.q [rsp + 0x40], rax
+    mov.q [rsp + 0x48], 7
+    mov.q rdi, [rsp + 0x40]
+    mov.q rsi, [rsp + 0x48]
+    call 86
+    test al, al
+    jnz +0x14
+    push.q [rsp + 0x120]
+    pop.q [rsp + 0x128]
+    jmp 98
+    mov.q rax, [rsp + 0x120]
+    add rax, 0x10
+    mov.q [rsp + 0x128], rax
+98:
+    push.q [rsp + 0x128]
+    pop.q [rsp + 0x120]
+    lea rax, [rip + 0x156a]
+    mov.q [rsp + 0x50], rax
+    mov.q [rsp + 0x58], 7
+    mov.q rdi, [rsp + 0x50]
+    mov.q rsi, [rsp + 0x58]
+    call 86
+    test al, al
+    jnz 99
+    push.q [rsp + 0x120]
+    pop.q [rsp + 0x128]
+    jmp 100
+99:
+    mov.q rax, [rsp + 0x120]
+    add rax, 0x20
+    mov.q [rsp + 0x128], rax
+100:
+    push.q [rsp + 0x128]
+    pop.q [rsp + 0x120]
+    lea rax, [rip + 0x150a]
+    mov.q [rsp + 0x60], rax
+    mov.q [rsp + 0x68], 9
+    mov.q rdi, [rsp + 0x60]
+    mov.q rsi, [rsp + 0x68]
+    call 86
+    test al, al
+    jnz 101
+    push.q [rsp + 0x120]
+    pop.q [rsp + 0x128]
+    jmp 102
+101:
+    mov.q rax, [rsp + 0x120]
+    add rax, 0x40
+    mov.q [rsp + 0x128], rax
+102:
+    push.q [rsp + 0x128]
+    pop.q [rsp + 0x120]
+    lea rax, [rip + 0x14ac]
+    mov.q [rsp + 0x70], rax
+    mov.q [rsp + 0x78], 0x1b
+    mov.q rdi, [rsp + 0x70]
+    mov.q rsi, [rsp + 0x78]
+    call 86
+    test al, al
+    jnz 103
+    push.q [rsp + 0x120]
+    pop.q [rsp + 0x128]
+    jmp 104
+103:
+    mov.q rax, [rsp + 0x120]
+    add rax, 0x80
+    mov.q [rsp + 0x128], rax
+104:
+    push.q [rsp + 0x128]
+    pop.q [rsp + 0x120]
+    lea rax, [rip + 0x1460]
+    mov.q [rsp + 0x80], rax
+    mov.q [rsp + 0x88], 8
+    mov.q rdi, [rsp + 0x80]
+    mov.q rsi, [rsp + 0x88]
+    call 86
+    test al, al
+    jnz 105
+    push.q [rsp + 0x120]
+    pop.q [rsp + 0x128]
+    jmp 106
+105:
+    mov.q rax, [rsp + 0x120]
+    add rax, 0x100
+    mov.q [rsp + 0x128], rax
+106:
+    push.q [rsp + 0x128]
+    pop.q [rsp + 0x120]
+    lea rax, [rip + 0x13f5]
+    mov.q [rsp + 0x90], rax
+    mov.q [rsp + 0x98], 2
+    mov.q rdi, [rsp + 0x90]
+    mov.q rsi, [rsp + 0x98]
+    call 86
+    test al, al
+    jnz 107
+    push.q [rsp + 0x120]
+    pop.q [rsp + 0x128]
+    jmp 108
+107:
+    mov.q rax, [rsp + 0x120]
+    add rax, 0x200
+    mov.q [rsp + 0x128], rax
+108:
+    push.q [rsp + 0x128]
+    pop.q [rsp + 0x120]
+    lea rax, [rip + 0x1384]
+    mov.q [rsp + 0xa0], rax
+    mov.q [rsp + 0xa8], 0
+    mov.q rdi, [rsp + 0xa0]
+    mov.q rsi, [rsp + 0xa8]
+    call 86
+    cmp al, 0
+    jz 109
+    push.q [rsp + 0x120]
+    pop.q [rsp + 0x128]
+    jmp 110
+109:
+    mov.q rax, [rsp + 0x120]
+    add rax, 0x400
+    mov.q [rsp + 0x128], rax
+110:
+    push.q [rsp + 0x128]
+    pop.q [rsp + 0x120]
+    lea rax, [rip + 0x1310]
+    mov.q [rsp + 0xb0], rax
+    mov.q [rsp + 0xb8], 1
+    mov.q rdi, [rsp + 0xb0]
+    mov.q rsi, [rsp + 0xb8]
+    call 86
+    cmp al, 0
+    jz 111
+    push.q [rsp + 0x120]
+    pop.q [rsp + 0x128]
+    jmp 112
+111:
+    mov.q rax, [rsp + 0x120]
+    add rax, 0x800
+    mov.q [rsp + 0x128], rax
+112:
+    push.q [rsp + 0x128]
+    pop.q [rsp + 0x120]
+    lea rax, [rip + 0x129d]
+    mov.q [rsp + 0xc0], rax
+    mov.q [rsp + 0xc8], 4
+    mov.q rdi, [rsp + 0xc0]
+    mov.q rsi, [rsp + 0xc8]
+    call 86
+    cmp al, 0
+    jz 113
+    push.q [rsp + 0x120]
+    pop.q [rsp + 0x128]
+    jmp 114
+113:
+    mov.q rax, [rsp + 0x120]
+    add rax, 0x1000
+    mov.q [rsp + 0x128], rax
+114:
+    push.q [rsp + 0x128]
+    pop.q [rsp + 0x120]
+    lea rax, [rip + 0x122d]
+    mov.q [rsp + 0xd0], rax
+    mov.q [rsp + 0xd8], 5
+    mov.q rdi, [rsp + 0xd0]
+    mov.q rsi, [rsp + 0xd8]
+    call 86
+    cmp al, 0
+    jz 115
+    push.q [rsp + 0x120]
+    pop.q [rsp + 0x128]
+    jmp 116
+115:
+    mov.q rax, [rsp + 0x120]
+    add rax, 0x2000
+    mov.q [rsp + 0x128], rax
+116:
+    push.q [rsp + 0x128]
+    pop.q [rsp + 0x120]
+    lea rax, [rip + 0x11be]
+    mov.q [rsp + 0xe0], rax
+    mov.q [rsp + 0xe8], 2
+    mov.q rdi, [rsp + 0xe0]
+    mov.q rsi, [rsp + 0xe8]
+    call 86
+    cmp al, 0
+    jz 117
+    push.q [rsp + 0x120]
+    pop.q [rsp + 0x128]
+    jmp 118
+117:
+    mov.q rax, [rsp + 0x120]
+    add rax, 0x4000
+    mov.q [rsp + 0x128], rax
+118:
+    push.q [rsp + 0x128]
+    pop.q [rsp + 0x120]
+    lea rax, [rip + 0x114c]
+    mov.q [rsp + 0xf0], rax
+    mov.q [rsp + 0xf8], 6
+    mov.q rdi, [rsp + 0xf0]
+    mov.q rsi, [rsp + 0xf8]
+    call 86
+    cmp al, 0
+    jz 119
+    push.q [rsp + 0x120]
+    pop.q [rsp + 0x128]
+    jmp 120
+119:
+    mov.q rax, [rsp + 0x120]
+    add rax, 0x8000
+    mov.q [rsp + 0x128], rax
+120:
+    push.q [rsp + 0x128]
+    pop.q [rsp + 0x120]
+    lea rax, [rip + 0x10de]
+    mov.q [rsp + 0x100], rax
+    mov.q [rsp + 0x108], 7
+    mov.q rdi, [rsp + 0x100]
+    mov.q rsi, [rsp + 0x108]
+    call 86
+    cmp al, 0
+    jz 121
+    push.q [rsp + 0x120]
+    pop.q [rsp + 0x128]
+    jmp 122
+121:
+    mov.q rax, [rsp + 0x120]
+    add rax, 0x10000
+    mov.q [rsp + 0x128], rax
+122:
+    push.q [rsp + 0x128]
+    pop.q [rsp + 0x120]
+    lea rax, [rip + 0x1071]
+    mov.q [rsp + 0x110], rax
+    mov.q [rsp + 0x118], 3
+    mov.q rdi, [rsp + 0x110]
+    mov.q rsi, [rsp + 0x118]
+    call 86
+    cmp al, 0
+    jz 123
+    push.q [rsp + 0x120]
+    pop.q [rsp + 0x128]
+    jmp 124
+123:
+    mov.q rax, [rsp + 0x120]
+    add rax, 0x20000
+    mov.q [rsp + 0x128], rax
+124:
+    mov.q rax, [rsp + 0x128]
+    add rsp, 0x138
+    ret
 =========== OPT LEVEL: none ===========
 peek:
     mov.q rax, [rdi + 0x10]
@@ -775,6 +1670,901 @@ parse_string:
     add rsp, 0x120
     pop rbx
     ret
+=========== OPT LEVEL: mininal-quick ===========
+peek:
+    mov.q rax, [rdi + 0x10]
+is_digit:
+    cmp.q rax, [rdi + 0x8]
+    jnl 8
+    mov.q rax, [rdi]
+parse_string:
+    add.q rax, [rdi + 0x10]
+    movzx.b eax, [rax]
+    jmp 9
+8:
+    xor eax, eax
+9:
+    ret
+10:
+    sub rsp, 8
+    mov.q [rsp], rdi
+    mov.q rdi, [rsp]
+    call peek
+    mov.q rcx, [rsp]
+    add.q [rcx + 0x10], 1
+    add rsp, 8
+    ret
+16:
+    cmp dil, 0x30
+    setnc al
+    movzx rax, al
+    cmp dil, 0x39
+    setna cl
+    movzx rcx, cl
+    and al, cl
+    test al, al
+    jnz 17
+    xor eax, eax
+    jmp 18
+17:
+    mov al, 1
+18:
+    ret
+19:
+    cmp dil, 0x30
+    setnc cl
+    movzx rcx, cl
+    mov al, 1
+    cmp dil, 0x39
+    setna dl
+    movzx rdx, dl
+    and cl, dl
+    test cl, cl
+    jnz 20
+    cmp dil, 0x61
+    setnc cl
+    movzx rcx, cl
+    cmp dil, 0x66
+    setna dl
+    movzx rdx, dl
+    and cl, dl
+    test cl, cl
+    jnz 20
+    cmp dil, 0x41
+    setnc cl
+    movzx rcx, cl
+    cmp dil, 0x46
+    setna dl
+    movzx rdx, dl
+    and cl, dl
+    test cl, cl
+    jnz 20
+    xor eax, eax
+    jmp 20
+20:
+    ret
+21:
+    sub rsp, 8
+    mov.q [rsp], rdi
+22:
+    mov.q rdi, [rsp]
+    call peek
+    cmp al, 0x20
+    setz cl
+    movzx rcx, cl
+    cmp al, 9
+    setz dl
+    movzx rdx, dl
+    or cl, dl
+    cmp al, 0xa
+    setz dl
+    movzx rdx, dl
+    or cl, dl
+    cmp al, 0xd
+    setz al
+    movzx rax, al
+    or cl, al
+    test cl, cl
+    jnz 23
+    mov al, 1
+    add rsp, 8
+    ret
+23:
+    mov.q rax, [rsp]
+    add.q [rax + 0x10], 1
+    jmp 22
+24:
+    push rbx
+    sub rsp, 0x20
+    mov.q [rsp + 0x10], rdi
+    mov.q [rsp], rsi
+    mov.q [rsp + 0x8], rdx
+    xor ebx, ebx
+25:
+    cmp.q rbx, [rsp + 0x8]
+    jnl 27
+    mov.q rdi, [rsp + 0x10]
+    call peek
+    mov.q rcx, [rsp]
+    add rcx, rbx
+    cmp.b al, [rcx]
+    jnz 26
+    mov.q rax, [rsp + 0x10]
+    add.q [rax + 0x10], 1
+    add rbx, 1
+    jmp 25
+26:
+    xor eax, eax
+    jmp 28
+27:
+    mov al, 1
+28:
+    add rsp, 0x20
+    pop rbx
+    ret
+29:
+    push rbx
+    sub rsp, 0x10
+    mov.q [rsp], rdi
+    mov.q rdi, [rsp]
+    call 10
+    cmp al, 0x22
+    jnz 39
+30:
+    mov.q rdi, [rsp]
+    call 10
+    cmp al, 0x22
+    jz 38
+    cmp al, 0
+    jz 37
+    cmp al, 0x5c
+    jz 32
+    cmp al, 0x20
+    jc 31
+    jmp 36
+31:
+    xor ecx, ecx
+    jmp 40
+32:
+    mov.q rdi, [rsp]
+    call 10
+    cmp al, 0x22
+    jz 36
+    cmp al, 0x5c
+    jz 36
+    cmp al, 0x2f
+    jz 36
+    cmp al, 0x62
+    jz 36
+    cmp al, 0x66
+    jz 36
+    cmp al, 0x6e
+    jz 36
+    cmp al, 0x72
+    jz 36
+    cmp al, 0x74
+    jz 36
+    cmp al, 0x75
+    jz 33
+    xor ecx, ecx
+    jmp 40
+33:
+    xor ebx, ebx
+34:
+    cmp rbx, 4
+    jnl 36
+    mov.q rdi, [rsp]
+    call 10
+    mov rdi, rax
+    call 19
+    cmp al, 0
+    jz 35
+    add rbx, 1
+    jmp 34
+35:
+    xor ecx, ecx
+    jmp 40
+36:
+    jmp 30
+37:
+    xor ecx, ecx
+    jmp 40
+38:
+    mov cl, 1
+    jmp 40
+39:
+    xor ecx, ecx
+40:
+    mov rax, rcx
+    add rsp, 0x10
+    pop rbx
+    ret
+41:
+    sub rsp, 0x18
+    mov.q [rsp], rdi
+    mov.q rdi, [rsp]
+    call peek
+    cmp al, 0x2d
+    jz 42
+    jmp 43
+42:
+    mov.q rax, [rsp]
+    add.q [rax + 0x10], 1
+43:
+    mov.q rdi, [rsp]
+    call peek
+    cmp al, 0x30
+    jz 46
+    cmp al, 0x31
+    setnc cl
+    movzx rcx, cl
+    cmp al, 0x39
+    setna al
+    movzx rax, al
+    and cl, al
+    test cl, cl
+    jnz 44
+    xor ecx, ecx
+    jmp 57
+44:
+    mov.q rax, [rsp]
+    add.q [rax + 0x10], 1
+45:
+    mov.q rdi, [rsp]
+    call peek
+    mov rdi, rax
+    call 16
+    cmp al, 0
+    jz 47
+    mov.q rax, [rsp]
+    add.q [rax + 0x10], 1
+    jmp 45
+46:
+    mov.q rax, [rsp]
+    add.q [rax + 0x10], 1
+47:
+    mov.q rdi, [rsp]
+    call peek
+    cmp al, 0x2e
+    jz 48
+    jmp 50
+48:
+    mov.q rax, [rsp]
+    add.q [rax + 0x10], 1
+    mov.q rdi, [rsp]
+    call peek
+    mov rdi, rax
+    call 16
+    cmp al, 0
+    jz +0xff
+49:
+    mov.q rdi, [rsp]
+    call peek
+    mov rdi, rax
+    call 16
+    cmp al, 0
+    jz 50
+    mov.q rax, [rsp]
+    add.q [rax + 0x10], 1
+    jmp 49
+50:
+    mov.q rdi, [rsp]
+    call peek
+    cmp al, 0x65
+    setz dl
+    movzx rdx, dl
+    cmp al, 0x45
+    setz al
+    movzx rax, al
+    or dl, al
+    test dl, dl
+    jnz 51
+    jmp 55
+51:
+    mov.q rax, [rsp]
+    add.q [rax + 0x10], 1
+    mov.q rdi, [rsp]
+    call peek
+    cmp al, 0x2b
+    setz dl
+    movzx rdx, dl
+    cmp al, 0x2d
+    setz al
+    movzx rax, al
+    or dl, al
+    test dl, dl
+    jnz 52
+    jmp 53
+52:
+    mov.q rax, [rsp]
+    add.q [rax + 0x10], 1
+53:
+    mov.q rdi, [rsp]
+    call peek
+    mov rdi, rax
+    call 16
+    cmp al, 0
+    jz 56
+54:
+    mov.q rdi, [rsp]
+    call peek
+    mov rdi, rax
+    call 16
+    cmp al, 0
+    jz 55
+    mov.q rax, [rsp]
+    add.q [rax + 0x10], 1
+    jmp 54
+55:
+    mov cl, 1
+    jmp 57
+56:
+    xor ecx, ecx
+    jmp 57
+    xor ecx, ecx
+57:
+    mov rax, rcx
+    add rsp, 0x18
+    ret
+58:
+    sub rsp, 8
+    mov.q [rsp], rdi
+    mov.q rdi, [rsp]
+    call 10
+    cmp al, 0x5b
+    jnz 64
+    mov.q rdi, [rsp]
+    call 21
+    mov.q rdi, [rsp]
+    call peek
+    cmp al, 0x5d
+    jz 63
+59:
+    mov.q rdi, [rsp]
+    call 77
+    cmp al, 0
+    jz 62
+    mov.q rdi, [rsp]
+    call 21
+    mov.q rdi, [rsp]
+    call 10
+    cmp al, 0x5d
+    jz 61
+    cmp al, 0x2c
+    jnz 60
+    jmp 59
+60:
+    xor eax, eax
+    jmp 65
+61:
+    mov al, 1
+    jmp 65
+62:
+    xor eax, eax
+    jmp 65
+63:
+    mov.q rcx, [rsp]
+    add.q [rcx + 0x10], 1
+    mov al, 1
+    jmp 65
+64:
+    xor eax, eax
+65:
+    mov rax, rax
+    add rsp, 8
+    ret
+66:
+    sub rsp, 8
+    mov.q [rsp], rdi
+    mov.q rdi, [rsp]
+    call 10
+    cmp al, 0x7b
+    jnz 75
+    mov.q rdi, [rsp]
+    call 21
+    mov.q rdi, [rsp]
+    call peek
+    cmp al, 0x7d
+    jz 74
+67:
+    mov.q rdi, [rsp]
+    call 21
+    mov.q rdi, [rsp]
+    call peek
+    cmp al, 0x22
+    jnz 73
+    mov.q rdi, [rsp]
+    call 29
+    cmp al, 0
+    jz 72
+    mov.q rdi, [rsp]
+    call 21
+    mov.q rdi, [rsp]
+    call 10
+    cmp al, 0x3a
+    jnz 71
+    mov.q rdi, [rsp]
+    call 77
+    cmp al, 0
+    jz 70
+    mov.q rdi, [rsp]
+    call 21
+    mov.q rdi, [rsp]
+    call 10
+    cmp al, 0x7d
+    jz 69
+    cmp al, 0x2c
+    jnz 68
+    jmp 67
+68:
+    xor eax, eax
+    jmp 76
+69:
+    mov al, 1
+    jmp 76
+70:
+    xor eax, eax
+    jmp 76
+71:
+    xor eax, eax
+    jmp 76
+72:
+    xor eax, eax
+    jmp 76
+73:
+    xor eax, eax
+    jmp 76
+74:
+    mov.q rcx, [rsp]
+    add.q [rcx + 0x10], 1
+    mov al, 1
+    jmp 76
+75:
+    xor eax, eax
+76:
+    mov rax, rax
+    add rsp, 8
+    ret
+77:
+    sub rsp, 0x48
+    mov.q [rsp + 0x30], rdi
+    mov.q rdi, [rsp + 0x30]
+    call 21
+    mov.q rdi, [rsp + 0x30]
+    call peek
+    mov.q [rsp + 0x38], rax
+    mov.q rax, [rsp + 0x38]
+    cmp al, 0x7b
+    jz 84
+    mov.q rax, [rsp + 0x38]
+    cmp al, 0x5b
+    jz 83
+    mov.q rax, [rsp + 0x38]
+    cmp al, 0x22
+    jz 82
+    mov.q rax, [rsp + 0x38]
+    cmp al, 0x74
+    jz 81
+    mov.q rax, [rsp + 0x38]
+    cmp al, 0x66
+    jz 80
+    mov.q rax, [rsp + 0x38]
+    cmp al, 0x6e
+    jz 79
+    mov.q rdi, [rsp + 0x38]
+    call 16
+    mov.q rcx, [rsp + 0x38]
+    cmp cl, 0x2d
+    setz cl
+    movzx rcx, cl
+    or cl, al
+    test cl, cl
+    jnz 78
+    xor eax, eax
+    jmp 85
+78:
+    mov.q rdi, [rsp + 0x30]
+    call 41
+    jmp 85
+79:
+    lea rcx, [rip + 0x1888]
+    mov.q [rsp + 0x20], rcx
+    mov.q [rsp + 0x28], 4
+    mov.q rsi, [rsp + 0x20]
+    mov.q rdx, [rsp + 0x28]
+    mov.q rdi, [rsp + 0x30]
+    call 24
+    jmp 85
+80:
+    lea rcx, [rip + 0x1855]
+    mov.q [rsp + 0x10], rcx
+    mov.q [rsp + 0x18], 5
+    mov.q rsi, [rsp + 0x10]
+    mov.q rdx, [rsp + 0x18]
+    mov.q rdi, [rsp + 0x30]
+    call 24
+    jmp 85
+81:
+    lea rcx, [rip + 0x1823]
+    mov.q [rsp], rcx
+    mov.q [rsp + 0x8], 4
+    mov.q rsi, [rsp]
+    mov.q rdx, [rsp + 0x8]
+    mov.q rdi, [rsp + 0x30]
+    call 24
+    jmp 85
+82:
+    mov.q rdi, [rsp + 0x30]
+    call 29
+    jmp 85
+83:
+    mov.q rdi, [rsp + 0x30]
+    call 58
+    jmp 85
+84:
+    mov.q rdi, [rsp + 0x30]
+    call 66
+85:
+    add rsp, 0x48
+    ret
+86:
+    sub rsp, 0x38
+    mov.q [rsp + 0x18], rdi
+    mov.q [rsp + 0x20], rsi
+    mov rdx, 0x18
+    xor esi, esi
+    lea rdi, [rsp]
+    call.q [rip - 0x84a]
+    lea rsi, [rsp + 0x18]
+    mov rdx, 0x10
+    lea rdi, [rsp]
+    call.q [rip - 0x868]
+    mov.q [rsp + 0x10], 0
+    lea rdi, [rsp]
+    call 21
+    lea rdi, [rsp]
+    call 77
+    cmp al, 0
+    jz 88
+    lea rdi, [rsp]
+    call 21
+    mov.q rax, [rsp + 0x10]
+    cmp.q rax, [rsp + 0x8]
+    jnz 87
+    mov al, 1
+    jmp 89
+87:
+    xor eax, eax
+    jmp 89
+88:
+    xor eax, eax
+89:
+    mov rax, rax
+    add rsp, 0x38
+    ret
+90:
+    sub rsp, 0x138
+    lea rax, [rip + 0x1737]
+    mov.q [rsp], rax
+    mov.q [rsp + 0x8], 4
+    mov.q rdi, [rsp]
+    mov.q rsi, [rsp + 0x8]
+    call 86
+    test al, al
+    jnz 91
+    xor eax, eax
+    jmp 92
+91:
+    xor ecx, ecx
+    add rcx, 1
+    mov rax, rcx
+92:
+    mov.q [rsp + 0x120], rax
+    lea rax, [rip + 0x16f3]
+    mov.q [rsp + 0x10], rax
+    mov.q [rsp + 0x18], 5
+    mov.q rdi, [rsp + 0x10]
+    mov.q rsi, [rsp + 0x18]
+    call 86
+    test al, al
+    jnz 93
+    push.q [rsp + 0x120]
+    pop.q [rsp + 0x128]
+    jmp 94
+93:
+    mov.q rax, [rsp + 0x120]
+    add rax, 2
+    mov.q [rsp + 0x128], rax
+94:
+    push.q [rsp + 0x128]
+    pop.q [rsp + 0x120]
+    lea rax, [rip + 0x1691]
+    mov.q [rsp + 0x20], rax
+    mov.q [rsp + 0x28], 4
+    mov.q rdi, [rsp + 0x20]
+    mov.q rsi, [rsp + 0x28]
+    call 86
+    test al, al
+    jnz +0x14
+    push.q [rsp + 0x120]
+    pop.q [rsp + 0x128]
+    jmp 95
+    mov.q rax, [rsp + 0x120]
+    add rax, 4
+    mov.q [rsp + 0x128], rax
+95:
+    push.q [rsp + 0x128]
+    pop.q [rsp + 0x120]
+    lea rax, [rip + 0x162e]
+    mov.q [rsp + 0x30], rax
+    mov.q [rsp + 0x38], 3
+    mov.q rdi, [rsp + 0x30]
+    mov.q rsi, [rsp + 0x38]
+    call 86
+    test al, al
+    jnz 96
+    push.q [rsp + 0x120]
+    pop.q [rsp + 0x128]
+    jmp 97
+96:
+    mov.q rax, [rsp + 0x120]
+    add rax, 8
+    mov.q [rsp + 0x128], rax
+97:
+    push.q [rsp + 0x128]
+    pop.q [rsp + 0x120]
+    lea rax, [rip + 0x15ca]
+    mov.q [rsp + 0x40], rax
+    mov.q [rsp + 0x48], 7
+    mov.q rdi, [rsp + 0x40]
+    mov.q rsi, [rsp + 0x48]
+    call 86
+    test al, al
+    jnz +0x14
+    push.q [rsp + 0x120]
+    pop.q [rsp + 0x128]
+    jmp 98
+    mov.q rax, [rsp + 0x120]
+    add rax, 0x10
+    mov.q [rsp + 0x128], rax
+98:
+    push.q [rsp + 0x128]
+    pop.q [rsp + 0x120]
+    lea rax, [rip + 0x156a]
+    mov.q [rsp + 0x50], rax
+    mov.q [rsp + 0x58], 7
+    mov.q rdi, [rsp + 0x50]
+    mov.q rsi, [rsp + 0x58]
+    call 86
+    test al, al
+    jnz 99
+    push.q [rsp + 0x120]
+    pop.q [rsp + 0x128]
+    jmp 100
+99:
+    mov.q rax, [rsp + 0x120]
+    add rax, 0x20
+    mov.q [rsp + 0x128], rax
+100:
+    push.q [rsp + 0x128]
+    pop.q [rsp + 0x120]
+    lea rax, [rip + 0x150a]
+    mov.q [rsp + 0x60], rax
+    mov.q [rsp + 0x68], 9
+    mov.q rdi, [rsp + 0x60]
+    mov.q rsi, [rsp + 0x68]
+    call 86
+    test al, al
+    jnz 101
+    push.q [rsp + 0x120]
+    pop.q [rsp + 0x128]
+    jmp 102
+101:
+    mov.q rax, [rsp + 0x120]
+    add rax, 0x40
+    mov.q [rsp + 0x128], rax
+102:
+    push.q [rsp + 0x128]
+    pop.q [rsp + 0x120]
+    lea rax, [rip + 0x14ac]
+    mov.q [rsp + 0x70], rax
+    mov.q [rsp + 0x78], 0x1b
+    mov.q rdi, [rsp + 0x70]
+    mov.q rsi, [rsp + 0x78]
+    call 86
+    test al, al
+    jnz 103
+    push.q [rsp + 0x120]
+    pop.q [rsp + 0x128]
+    jmp 104
+103:
+    mov.q rax, [rsp + 0x120]
+    add rax, 0x80
+    mov.q [rsp + 0x128], rax
+104:
+    push.q [rsp + 0x128]
+    pop.q [rsp + 0x120]
+    lea rax, [rip + 0x1460]
+    mov.q [rsp + 0x80], rax
+    mov.q [rsp + 0x88], 8
+    mov.q rdi, [rsp + 0x80]
+    mov.q rsi, [rsp + 0x88]
+    call 86
+    test al, al
+    jnz 105
+    push.q [rsp + 0x120]
+    pop.q [rsp + 0x128]
+    jmp 106
+105:
+    mov.q rax, [rsp + 0x120]
+    add rax, 0x100
+    mov.q [rsp + 0x128], rax
+106:
+    push.q [rsp + 0x128]
+    pop.q [rsp + 0x120]
+    lea rax, [rip + 0x13f5]
+    mov.q [rsp + 0x90], rax
+    mov.q [rsp + 0x98], 2
+    mov.q rdi, [rsp + 0x90]
+    mov.q rsi, [rsp + 0x98]
+    call 86
+    test al, al
+    jnz 107
+    push.q [rsp + 0x120]
+    pop.q [rsp + 0x128]
+    jmp 108
+107:
+    mov.q rax, [rsp + 0x120]
+    add rax, 0x200
+    mov.q [rsp + 0x128], rax
+108:
+    push.q [rsp + 0x128]
+    pop.q [rsp + 0x120]
+    lea rax, [rip + 0x1384]
+    mov.q [rsp + 0xa0], rax
+    mov.q [rsp + 0xa8], 0
+    mov.q rdi, [rsp + 0xa0]
+    mov.q rsi, [rsp + 0xa8]
+    call 86
+    cmp al, 0
+    jz 109
+    push.q [rsp + 0x120]
+    pop.q [rsp + 0x128]
+    jmp 110
+109:
+    mov.q rax, [rsp + 0x120]
+    add rax, 0x400
+    mov.q [rsp + 0x128], rax
+110:
+    push.q [rsp + 0x128]
+    pop.q [rsp + 0x120]
+    lea rax, [rip + 0x1310]
+    mov.q [rsp + 0xb0], rax
+    mov.q [rsp + 0xb8], 1
+    mov.q rdi, [rsp + 0xb0]
+    mov.q rsi, [rsp + 0xb8]
+    call 86
+    cmp al, 0
+    jz 111
+    push.q [rsp + 0x120]
+    pop.q [rsp + 0x128]
+    jmp 112
+111:
+    mov.q rax, [rsp + 0x120]
+    add rax, 0x800
+    mov.q [rsp + 0x128], rax
+112:
+    push.q [rsp + 0x128]
+    pop.q [rsp + 0x120]
+    lea rax, [rip + 0x129d]
+    mov.q [rsp + 0xc0], rax
+    mov.q [rsp + 0xc8], 4
+    mov.q rdi, [rsp + 0xc0]
+    mov.q rsi, [rsp + 0xc8]
+    call 86
+    cmp al, 0
+    jz 113
+    push.q [rsp + 0x120]
+    pop.q [rsp + 0x128]
+    jmp 114
+113:
+    mov.q rax, [rsp + 0x120]
+    add rax, 0x1000
+    mov.q [rsp + 0x128], rax
+114:
+    push.q [rsp + 0x128]
+    pop.q [rsp + 0x120]
+    lea rax, [rip + 0x122d]
+    mov.q [rsp + 0xd0], rax
+    mov.q [rsp + 0xd8], 5
+    mov.q rdi, [rsp + 0xd0]
+    mov.q rsi, [rsp + 0xd8]
+    call 86
+    cmp al, 0
+    jz 115
+    push.q [rsp + 0x120]
+    pop.q [rsp + 0x128]
+    jmp 116
+115:
+    mov.q rax, [rsp + 0x120]
+    add rax, 0x2000
+    mov.q [rsp + 0x128], rax
+116:
+    push.q [rsp + 0x128]
+    pop.q [rsp + 0x120]
+    lea rax, [rip + 0x11be]
+    mov.q [rsp + 0xe0], rax
+    mov.q [rsp + 0xe8], 2
+    mov.q rdi, [rsp + 0xe0]
+    mov.q rsi, [rsp + 0xe8]
+    call 86
+    cmp al, 0
+    jz 117
+    push.q [rsp + 0x120]
+    pop.q [rsp + 0x128]
+    jmp 118
+117:
+    mov.q rax, [rsp + 0x120]
+    add rax, 0x4000
+    mov.q [rsp + 0x128], rax
+118:
+    push.q [rsp + 0x128]
+    pop.q [rsp + 0x120]
+    lea rax, [rip + 0x114c]
+    mov.q [rsp + 0xf0], rax
+    mov.q [rsp + 0xf8], 6
+    mov.q rdi, [rsp + 0xf0]
+    mov.q rsi, [rsp + 0xf8]
+    call 86
+    cmp al, 0
+    jz 119
+    push.q [rsp + 0x120]
+    pop.q [rsp + 0x128]
+    jmp 120
+119:
+    mov.q rax, [rsp + 0x120]
+    add rax, 0x8000
+    mov.q [rsp + 0x128], rax
+120:
+    push.q [rsp + 0x128]
+    pop.q [rsp + 0x120]
+    lea rax, [rip + 0x10de]
+    mov.q [rsp + 0x100], rax
+    mov.q [rsp + 0x108], 7
+    mov.q rdi, [rsp + 0x100]
+    mov.q rsi, [rsp + 0x108]
+    call 86
+    cmp al, 0
+    jz 121
+    push.q [rsp + 0x120]
+    pop.q [rsp + 0x128]
+    jmp 122
+121:
+    mov.q rax, [rsp + 0x120]
+    add rax, 0x10000
+    mov.q [rsp + 0x128], rax
+122:
+    push.q [rsp + 0x128]
+    pop.q [rsp + 0x120]
+    lea rax, [rip + 0x1071]
+    mov.q [rsp + 0x110], rax
+    mov.q [rsp + 0x118], 3
+    mov.q rdi, [rsp + 0x110]
+    mov.q rsi, [rsp + 0x118]
+    call 86
+    cmp al, 0
+    jz 123
+    push.q [rsp + 0x120]
+    pop.q [rsp + 0x128]
+    jmp 124
+123:
+    mov.q rax, [rsp + 0x120]
+    add rax, 0x20000
+    mov.q [rsp + 0x128], rax
+124:
+    mov.q rax, [rsp + 0x128]
+    add rsp, 0x138
+    ret
 =========== OPT LEVEL: mininal ===========
 peek:
     mov.q rax, [rdi + 0x10]
@@ -1551,6 +3341,828 @@ parse_string:
     mov rax, rbx
     add rsp, 0x120
     pop rbx
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+peek:
+    mov.q rax, [rdi + 0x10]
+is_digit:
+    cmp.q rax, [rdi + 0x8]
+    jnl 8
+    mov.q rax, [rdi]
+parse_string:
+    add.q rax, [rdi + 0x10]
+    movzx.b eax, [rax]
+    jmp 9
+8:
+    xor eax, eax
+9:
+    ret
+10:
+    sub rsp, 8
+    mov.q [rsp], rdi
+    mov.q rdi, [rsp]
+    call peek
+    mov.q rcx, [rsp]
+    add.q [rcx + 0x10], 1
+    add rsp, 8
+    ret
+16:
+    cmp dil, 0x30
+    setnc al
+    movzx rax, al
+    cmp dil, 0x39
+    setna cl
+    movzx rcx, cl
+    and al, cl
+    test al, al
+    jnz 17
+    xor eax, eax
+    jmp 18
+17:
+    mov al, 1
+18:
+    ret
+19:
+    cmp dil, 0x30
+    setnc cl
+    movzx rcx, cl
+    mov al, 1
+    cmp dil, 0x39
+    setna dl
+    movzx rdx, dl
+    and cl, dl
+    test cl, cl
+    jnz 20
+    cmp dil, 0x61
+    setnc cl
+    movzx rcx, cl
+    cmp dil, 0x66
+    setna dl
+    movzx rdx, dl
+    and cl, dl
+    test cl, cl
+    jnz 20
+    cmp dil, 0x41
+    setnc cl
+    movzx rcx, cl
+    cmp dil, 0x46
+    setna dl
+    movzx rdx, dl
+    and cl, dl
+    test cl, cl
+    jnz 20
+    xor eax, eax
+    jmp 20
+20:
+    ret
+21:
+    sub rsp, 8
+    mov.q [rsp], rdi
+22:
+    mov.q rdi, [rsp]
+    call peek
+    cmp al, 0x20
+    setz cl
+    movzx rcx, cl
+    cmp al, 9
+    setz dl
+    movzx rdx, dl
+    or cl, dl
+    cmp al, 0xa
+    setz dl
+    movzx rdx, dl
+    or cl, dl
+    cmp al, 0xd
+    setz al
+    movzx rax, al
+    or cl, al
+    test cl, cl
+    jnz 23
+    mov al, 1
+    add rsp, 8
+    ret
+23:
+    mov.q rax, [rsp]
+    add.q [rax + 0x10], 1
+    jmp 22
+24:
+    push rbx
+    sub rsp, 0x20
+    mov.q [rsp + 0x10], rdi
+    mov.q [rsp], rsi
+    mov.q [rsp + 0x8], rdx
+    xor ebx, ebx
+25:
+    cmp.q rbx, [rsp + 0x8]
+    jnl 27
+    mov.q rdi, [rsp + 0x10]
+    call peek
+    mov.q rcx, [rsp]
+    add rcx, rbx
+    cmp.b al, [rcx]
+    jnz 26
+    mov.q rax, [rsp + 0x10]
+    add.q [rax + 0x10], 1
+    add rbx, 1
+    jmp 25
+26:
+    xor eax, eax
+    jmp 28
+27:
+    mov al, 1
+28:
+    add rsp, 0x20
+    pop rbx
+    ret
+29:
+    push rbx
+    sub rsp, 0x10
+    mov.q [rsp], rdi
+    mov.q rdi, [rsp]
+    call 10
+    cmp al, 0x22
+    jnz 39
+30:
+    mov.q rdi, [rsp]
+    call 10
+    cmp al, 0x22
+    jz 38
+    cmp al, 0
+    jz 37
+    cmp al, 0x5c
+    jz 32
+    cmp al, 0x20
+    jc 31
+    jmp 36
+31:
+    xor ecx, ecx
+    jmp 40
+32:
+    mov.q rdi, [rsp]
+    call 10
+    cmp al, 0x22
+    jz 36
+    cmp al, 0x5c
+    jz 36
+    cmp al, 0x2f
+    jz 36
+    cmp al, 0x62
+    jz 36
+    cmp al, 0x66
+    jz 36
+    cmp al, 0x6e
+    jz 36
+    cmp al, 0x72
+    jz 36
+    cmp al, 0x74
+    jz 36
+    cmp al, 0x75
+    jz 33
+    xor ecx, ecx
+    jmp 40
+33:
+    xor ebx, ebx
+34:
+    cmp rbx, 4
+    jnl 36
+    mov.q rdi, [rsp]
+    call 10
+    mov rdi, rax
+    call 19
+    cmp al, 0
+    jz 35
+    add rbx, 1
+    jmp 34
+35:
+    xor ecx, ecx
+    jmp 40
+36:
+    jmp 30
+37:
+    xor ecx, ecx
+    jmp 40
+38:
+    mov cl, 1
+    jmp 40
+39:
+    xor ecx, ecx
+40:
+    mov rax, rcx
+    add rsp, 0x10
+    pop rbx
+    ret
+41:
+    sub rsp, 0x18
+    mov.q [rsp], rdi
+    mov.q rdi, [rsp]
+    call peek
+    cmp al, 0x2d
+    jz 42
+    jmp 43
+42:
+    mov.q rax, [rsp]
+    add.q [rax + 0x10], 1
+43:
+    mov.q rdi, [rsp]
+    call peek
+    cmp al, 0x30
+    jz 46
+    cmp al, 0x31
+    setnc cl
+    movzx rcx, cl
+    cmp al, 0x39
+    setna al
+    movzx rax, al
+    and cl, al
+    test cl, cl
+    jnz 44
+    xor ecx, ecx
+    jmp 57
+44:
+    mov.q rax, [rsp]
+    add.q [rax + 0x10], 1
+45:
+    mov.q rdi, [rsp]
+    call peek
+    mov rdi, rax
+    call 16
+    cmp al, 0
+    jz 47
+    mov.q rax, [rsp]
+    add.q [rax + 0x10], 1
+    jmp 45
+46:
+    mov.q rax, [rsp]
+    add.q [rax + 0x10], 1
+47:
+    mov.q rdi, [rsp]
+    call peek
+    cmp al, 0x2e
+    jz 48
+    jmp 50
+48:
+    mov.q rax, [rsp]
+    add.q [rax + 0x10], 1
+    mov.q rdi, [rsp]
+    call peek
+    mov rdi, rax
+    call 16
+    cmp al, 0
+    jz +0xff
+49:
+    mov.q rdi, [rsp]
+    call peek
+    mov rdi, rax
+    call 16
+    cmp al, 0
+    jz 50
+    mov.q rax, [rsp]
+    add.q [rax + 0x10], 1
+    jmp 49
+50:
+    mov.q rdi, [rsp]
+    call peek
+    cmp al, 0x65
+    setz dl
+    movzx rdx, dl
+    cmp al, 0x45
+    setz al
+    movzx rax, al
+    or dl, al
+    test dl, dl
+    jnz 51
+    jmp 55
+51:
+    mov.q rax, [rsp]
+    add.q [rax + 0x10], 1
+    mov.q rdi, [rsp]
+    call peek
+    cmp al, 0x2b
+    setz dl
+    movzx rdx, dl
+    cmp al, 0x2d
+    setz al
+    movzx rax, al
+    or dl, al
+    test dl, dl
+    jnz 52
+    jmp 53
+52:
+    mov.q rax, [rsp]
+    add.q [rax + 0x10], 1
+53:
+    mov.q rdi, [rsp]
+    call peek
+    mov rdi, rax
+    call 16
+    cmp al, 0
+    jz 56
+54:
+    mov.q rdi, [rsp]
+    call peek
+    mov rdi, rax
+    call 16
+    cmp al, 0
+    jz 55
+    mov.q rax, [rsp]
+    add.q [rax + 0x10], 1
+    jmp 54
+55:
+    mov cl, 1
+    jmp 57
+56:
+    xor ecx, ecx
+    jmp 57
+    xor ecx, ecx
+57:
+    mov rax, rcx
+    add rsp, 0x18
+    ret
+58:
+    sub rsp, 8
+    mov.q [rsp], rdi
+    mov.q rdi, [rsp]
+    call 10
+    cmp al, 0x5b
+    jnz 64
+    mov.q rdi, [rsp]
+    call 21
+    mov.q rdi, [rsp]
+    call peek
+    cmp al, 0x5d
+    jz 63
+59:
+    mov.q rdi, [rsp]
+    call 77
+    cmp al, 0
+    jz 62
+    mov.q rdi, [rsp]
+    call 21
+    mov.q rdi, [rsp]
+    call 10
+    cmp al, 0x5d
+    jz 61
+    cmp al, 0x2c
+    jnz 60
+    jmp 59
+60:
+    xor eax, eax
+    jmp 65
+61:
+    mov al, 1
+    jmp 65
+62:
+    xor eax, eax
+    jmp 65
+63:
+    mov.q rcx, [rsp]
+    add.q [rcx + 0x10], 1
+    mov al, 1
+    jmp 65
+64:
+    xor eax, eax
+65:
+    mov rax, rax
+    add rsp, 8
+    ret
+66:
+    sub rsp, 8
+    mov.q [rsp], rdi
+    mov.q rdi, [rsp]
+    call 10
+    cmp al, 0x7b
+    jnz 75
+    mov.q rdi, [rsp]
+    call 21
+    mov.q rdi, [rsp]
+    call peek
+    cmp al, 0x7d
+    jz 74
+67:
+    mov.q rdi, [rsp]
+    call 21
+    mov.q rdi, [rsp]
+    call peek
+    cmp al, 0x22
+    jnz 73
+    mov.q rdi, [rsp]
+    call 29
+    cmp al, 0
+    jz 72
+    mov.q rdi, [rsp]
+    call 21
+    mov.q rdi, [rsp]
+    call 10
+    cmp al, 0x3a
+    jnz 71
+    mov.q rdi, [rsp]
+    call 77
+    cmp al, 0
+    jz 70
+    mov.q rdi, [rsp]
+    call 21
+    mov.q rdi, [rsp]
+    call 10
+    cmp al, 0x7d
+    jz 69
+    cmp al, 0x2c
+    jnz 68
+    jmp 67
+68:
+    xor eax, eax
+    jmp 76
+69:
+    mov al, 1
+    jmp 76
+70:
+    xor eax, eax
+    jmp 76
+71:
+    xor eax, eax
+    jmp 76
+72:
+    xor eax, eax
+    jmp 76
+73:
+    xor eax, eax
+    jmp 76
+74:
+    mov.q rcx, [rsp]
+    add.q [rcx + 0x10], 1
+    mov al, 1
+    jmp 76
+75:
+    xor eax, eax
+76:
+    mov rax, rax
+    add rsp, 8
+    ret
+77:
+    sub rsp, 0x18
+    mov.q [rsp], rdi
+    mov.q rdi, [rsp]
+    call 21
+    mov.q rdi, [rsp]
+    call peek
+    mov.q [rsp + 0x8], rax
+    mov.q rax, [rsp + 0x8]
+    cmp al, 0x7b
+    jz 84
+    mov.q rax, [rsp + 0x8]
+    cmp al, 0x5b
+    jz 83
+    mov.q rax, [rsp + 0x8]
+    cmp al, 0x22
+    jz 82
+    mov.q rax, [rsp + 0x8]
+    cmp al, 0x74
+    jz 81
+    mov.q rax, [rsp + 0x8]
+    cmp al, 0x66
+    jz 80
+    mov.q rax, [rsp + 0x8]
+    cmp al, 0x6e
+    jz 79
+    mov.q rdi, [rsp + 0x8]
+    call 16
+    mov.q rcx, [rsp + 0x8]
+    cmp cl, 0x2d
+    setz cl
+    movzx rcx, cl
+    or cl, al
+    test cl, cl
+    jnz 78
+    xor eax, eax
+    jmp 85
+78:
+    mov.q rdi, [rsp]
+    call 41
+    jmp 85
+79:
+    lea rsi, [rip + 0x88c]
+    mov.q rdi, [rsp]
+    mov rdx, 4
+    call 24
+    jmp 85
+80:
+    lea rsi, [rip + 0x86b]
+    mov rdx, 5
+    mov.q rdi, [rsp]
+    call 24
+    jmp 85
+81:
+    lea rsi, [rip + 0x84b]
+    mov.q rdi, [rsp]
+    mov rdx, 4
+    call 24
+    jmp 85
+82:
+    mov.q rdi, [rsp]
+    call 29
+    jmp 85
+83:
+    mov.q rdi, [rsp]
+    call 58
+    jmp 85
+84:
+    mov.q rdi, [rsp]
+    call 66
+85:
+    add rsp, 0x18
+    ret
+86:
+    sub rsp, 0x28
+    mov.q [rsp], rdi
+    mov.q [rsp + 0x8], rsi
+    mov.q [rsp + 0x10], 0
+    lea rdi, [rsp]
+    call 21
+    lea rdi, [rsp]
+    call 77
+    cmp al, 0
+    jz 88
+    lea rdi, [rsp]
+    call 21
+    mov.q rax, [rsp + 0x10]
+    cmp.q rax, [rsp + 0x8]
+    jnz 87
+    mov al, 1
+    jmp 89
+87:
+    xor eax, eax
+    jmp 89
+88:
+    xor eax, eax
+89:
+    mov rax, rax
+    add rsp, 0x28
+    ret
+90:
+    sub rsp, 0x18
+    lea rdi, [rip + 0x7a2]
+    mov rsi, 4
+    call 86
+    test al, al
+    jnz +0x8
+    xor eax, eax
+    jmp 91
+    mov rax, 1
+91:
+    mov.q [rsp], rax
+    lea rdi, [rip + 0x777]
+    mov rsi, 5
+    call 86
+    test al, al
+    jnz 92
+    push.q [rsp]
+    pop.q [rsp + 0x8]
+    jmp 93
+92:
+    mov.q rax, [rsp]
+    add rax, 2
+    mov.q [rsp + 0x8], rax
+93:
+    push.q [rsp + 0x8]
+    pop.q [rsp]
+    lea rdi, [rip + 0x73b]
+    mov rsi, 4
+    call 86
+    test al, al
+    jnz 94
+    push.q [rsp]
+    pop.q [rsp + 0x8]
+    jmp 95
+94:
+    mov.q rax, [rsp]
+    add rax, 4
+    mov.q [rsp + 0x8], rax
+95:
+    push.q [rsp + 0x8]
+    pop.q [rsp]
+    lea rdi, [rip + 0x6fe]
+    mov rsi, 3
+    call 86
+    test al, al
+    jnz 96
+    push.q [rsp]
+    pop.q [rsp + 0x8]
+    jmp 97
+96:
+    mov.q rax, [rsp]
+    add rax, 8
+    mov.q [rsp + 0x8], rax
+97:
+    push.q [rsp + 0x8]
+    pop.q [rsp]
+    lea rdi, [rip + 0x6c0]
+    mov rsi, 7
+    call 86
+    test al, al
+    jnz 98
+    push.q [rsp]
+    pop.q [rsp + 0x8]
+    jmp 99
+98:
+    mov.q rax, [rsp]
+    add rax, 0x10
+    mov.q [rsp + 0x8], rax
+99:
+    push.q [rsp + 0x8]
+    pop.q [rsp]
+    lea rdi, [rip + 0x686]
+    mov rsi, 7
+    call 86
+    test al, al
+    jnz 100
+    push.q [rsp]
+    pop.q [rsp + 0x8]
+    jmp 101
+100:
+    mov.q rax, [rsp]
+    add rax, 0x20
+    mov.q [rsp + 0x8], rax
+101:
+    push.q [rsp + 0x8]
+    pop.q [rsp]
+    lea rdi, [rip + 0x64c]
+    mov rsi, 9
+    call 86
+    test al, al
+    jnz 102
+    push.q [rsp]
+    pop.q [rsp + 0x8]
+    jmp 103
+102:
+    mov.q rax, [rsp]
+    add rax, 0x40
+    mov.q [rsp + 0x8], rax
+103:
+    push.q [rsp + 0x8]
+    pop.q [rsp]
+    lea rdi, [rip + 0x614]
+    mov rsi, 0x1b
+    call 86
+    test al, al
+    jnz 104
+    push.q [rsp]
+    pop.q [rsp + 0x8]
+    jmp 105
+104:
+    mov.q rax, [rsp]
+    add rax, 0x80
+    mov.q [rsp + 0x8], rax
+105:
+    push.q [rsp + 0x8]
+    pop.q [rsp]
+    lea rdi, [rip + 0x5ee]
+    mov rsi, 8
+    call 86
+    test al, al
+    jnz +0xd
+    push.q [rsp]
+    pop.q [rsp + 0x8]
+    jmp 106
+    mov.q rax, [rsp]
+    add rax, 0x100
+    mov.q [rsp + 0x8], rax
+106:
+    push.q [rsp + 0x8]
+    pop.q [rsp]
+    lea rdi, [rip + 0x5b5]
+    mov rsi, 2
+    call 86
+    test al, al
+    jnz 107
+    push.q [rsp]
+    pop.q [rsp + 0x8]
+    jmp 108
+107:
+    mov.q rax, [rsp]
+    add rax, 0x200
+    mov.q [rsp + 0x8], rax
+108:
+    push.q [rsp + 0x8]
+    pop.q [rsp]
+    lea rdi, [rip + 0x576]
+    xor esi, esi
+    call 86
+    cmp al, 0
+    jz 109
+    push.q [rsp]
+    pop.q [rsp + 0x8]
+    jmp 110
+109:
+    mov.q rax, [rsp]
+    add rax, 0x400
+    mov.q [rsp + 0x8], rax
+110:
+    push.q [rsp + 0x8]
+    pop.q [rsp]
+    lea rdi, [rip + 0x538]
+    mov rsi, 1
+    call 86
+    cmp al, 0
+    jz 111
+    push.q [rsp]
+    pop.q [rsp + 0x8]
+    jmp 112
+111:
+    mov.q rax, [rsp]
+    add rax, 0x800
+    mov.q [rsp + 0x8], rax
+112:
+    push.q [rsp + 0x8]
+    pop.q [rsp]
+    lea rdi, [rip + 0x4f7]
+    mov rsi, 4
+    call 86
+    cmp al, 0
+    jz 113
+    push.q [rsp]
+    pop.q [rsp + 0x8]
+    jmp 114
+113:
+    mov.q rax, [rsp]
+    add rax, 0x1000
+    mov.q [rsp + 0x8], rax
+114:
+    push.q [rsp + 0x8]
+    pop.q [rsp]
+    lea rdi, [rip + 0x4b9]
+    mov rsi, 5
+    call 86
+    cmp al, 0
+    jz 115
+    push.q [rsp]
+    pop.q [rsp + 0x8]
+    jmp 116
+115:
+    mov.q rax, [rsp]
+    add rax, 0x2000
+    mov.q [rsp + 0x8], rax
+116:
+    push.q [rsp + 0x8]
+    pop.q [rsp]
+    lea rdi, [rip + 0x47c]
+    mov rsi, 2
+    call 86
+    cmp al, 0
+    jz 117
+    push.q [rsp]
+    pop.q [rsp + 0x8]
+    jmp 118
+117:
+    mov.q rax, [rsp]
+    add rax, 0x4000
+    mov.q [rsp + 0x8], rax
+118:
+    push.q [rsp + 0x8]
+    pop.q [rsp]
+    lea rdi, [rip + 0x43c]
+    mov rsi, 6
+    call 86
+    cmp al, 0
+    jz 119
+    push.q [rsp]
+    pop.q [rsp + 0x8]
+    jmp 120
+119:
+    mov.q rax, [rsp]
+    add rax, 0x8000
+    mov.q [rsp + 0x8], rax
+120:
+    push.q [rsp + 0x8]
+    pop.q [rsp]
+    lea rdi, [rip + 0x400]
+    mov rsi, 7
+    call 86
+    cmp al, 0
+    jz 121
+    push.q [rsp]
+    pop.q [rsp + 0x8]
+    jmp 122
+121:
+    mov.q rax, [rsp]
+    add rax, 0x10000
+    mov.q [rsp + 0x8], rax
+122:
+    push.q [rsp + 0x8]
+    pop.q [rsp]
+    lea rdi, [rip + 0x3c5]
+    mov rsi, 3
+    call 86
+    cmp al, 0
+    jz 123
+    push.q [rsp]
+    pop.q [rsp + 0x8]
+    jmp 124
+123:
+    mov.q rax, [rsp]
+    add rax, 0x20000
+    mov.q [rsp + 0x8], rax
+124:
+    mov.q rax, [rsp + 0x8]
+    add rsp, 0x18
     ret
 =========== OPT LEVEL: moderate ===========
 peek:

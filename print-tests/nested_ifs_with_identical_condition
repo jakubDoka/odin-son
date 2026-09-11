@@ -1,3 +1,32 @@
+=========== OPT LEVEL: none-quick ===========
+main:
+    cmp.q [rip + 0xfe5], 1
+    setz al
+    movzx rax, al
+    test al, al
+    jnz 4
+    test al, al
+    jnz 3
+    mov.q rax, [rip + 0xfc4]
+1:
+    cmp rax, 0
+    setz cl
+    movzx rcx, cl
+    test cl, cl
+    jnz 2
+    test cl, cl
+    jnz 2
+    jmp 1
+2:
+    mov rax, 0xa
+    jmp 5
+3:
+    mov rax, 1
+    jmp 5
+4:
+    xor eax, eax
+5:
+    ret
 =========== OPT LEVEL: none ===========
 main:
     cmp.q [rip + 0xfe5], 1
@@ -15,6 +44,35 @@ main:
     test al, al
     jnz 2
     test al, al
+    jnz 2
+    jmp 1
+2:
+    mov rax, 0xa
+    jmp 5
+3:
+    mov rax, 1
+    jmp 5
+4:
+    xor eax, eax
+5:
+    ret
+=========== OPT LEVEL: mininal-quick ===========
+main:
+    cmp.q [rip + 0xfe5], 1
+    setz al
+    movzx rax, al
+    test al, al
+    jnz 4
+    test al, al
+    jnz 3
+    mov.q rax, [rip + 0xfc4]
+1:
+    cmp rax, 0
+    setz cl
+    movzx rcx, cl
+    test cl, cl
+    jnz 2
+    test cl, cl
     jnz 2
     jmp 1
 2:
@@ -55,6 +113,22 @@ main:
 4:
     xor eax, eax
 5:
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+main:
+    cmp.q [rip + 0xfe5], 1
+    jz 3
+    mov.q rax, [rip + 0xfd8]
+1:
+    cmp rax, 0
+    jz 2
+    jmp 1
+2:
+    mov rax, 0xa
+    jmp 4
+3:
+    xor eax, eax
+4:
     ret
 =========== OPT LEVEL: moderate ===========
 main:

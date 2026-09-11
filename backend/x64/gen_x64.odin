@@ -30,6 +30,7 @@ when GEN_SPEC {
 					.I8 ..= .I64 = .General,
 					.F32 ..= .V512 = .Vector,
 				},
+				spill_boundary = {.General = 16, .Vector = 16},
 				cc_table = {X64_SYSTEMV_CC, X64_LINUX_SYSCALL_CC},
 			},
 			"backend/x64/node_specs.odin",

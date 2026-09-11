@@ -1,3 +1,31 @@
+=========== OPT LEVEL: none-quick ===========
+main:
+    push rbx
+    sub rsp, 0x20
+    xor esi, esi
+    mov rdx, 0x18
+    lea rdi, [rsp]
+    call.q [rip - 0x22]
+    mov rax, 1
+    imul rax, rax, 8
+    lea rcx, [rsp]
+    add rax, rcx
+    mov rcx, 2
+    imul rcx, rcx, 8
+    lea rdx, [rsp]
+    add rcx, rdx
+    mov.q rdx, [rax]
+    mov.q [rcx], rdx
+    xor edx, edx
+    imul rdx, rdx, 8
+    lea rbx, [rsp]
+    add rdx, rbx
+    mov.q rdx, [rdx]
+    mov.q [rax], rdx
+    mov.q rax, [rcx]
+    add rsp, 0x20
+    pop rbx
+    ret
 =========== OPT LEVEL: none ===========
 main:
     sub rsp, 0x18
@@ -24,6 +52,20 @@ main:
     mov.q rax, [rdx]
     add rsp, 0x18
     ret
+=========== OPT LEVEL: mininal-quick ===========
+main:
+    sub rsp, 0x18
+    lea rdi, [rsp]
+    xor esi, esi
+    mov rdx, 0x18
+    call.q [rip - 0x20]
+    mov.q rax, [rsp + 0x8]
+    mov.q [rsp + 0x10], rax
+    mov.q rax, [rsp]
+    mov.q [rsp + 0x8], rax
+    mov.q rax, [rsp + 0x10]
+    add rsp, 0x18
+    ret
 =========== OPT LEVEL: mininal ===========
 main:
     sub rsp, 0x18
@@ -36,6 +78,17 @@ main:
     mov.q rax, [rsp]
     mov.q [rsp + 0x8], rax
     mov.q rax, [rsp + 0x10]
+    add rsp, 0x18
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+main:
+    sub rsp, 0x18
+    pxor xmm0, xmm0
+    movups.x [rsp], xmm0
+    mov.q rax, [rsp + 0x8]
+    mov.q [rsp + 0x10], rax
+    mov.q rcx, [rsp]
+    mov.q [rsp + 0x8], rcx
     add rsp, 0x18
     ret
 =========== OPT LEVEL: moderate ===========

@@ -1,3 +1,41 @@
+=========== OPT LEVEL: none-quick ===========
+main:
+    push rbx
+    sub rsp, 0x10
+    mov rcx, 7
+    mov rbx, 7
+    mov rax, -0x64
+    cdq
+    idiv ebx
+    movsxd rax, eax
+    xor edx, edx
+    add rdx, rax
+    mov.q [rsp], rdx
+    mov rax, -0x64
+    cdq
+    idiv ebx
+    movsxd rax, edx
+    mov.q rdx, [rsp]
+    add rdx, rax
+    mov.q [rsp], rdx
+    mov rax, -0x64
+    cwd
+    idiv cx
+    mov rax, rax
+    movsx rax, ax
+    mov.q rdx, [rsp]
+    add rdx, rax
+    mov.q [rsp], rdx
+    mov rax, -0x64
+    cwd
+    idiv cx
+    movsx rax, dx
+    mov.q rcx, [rsp]
+    add rcx, rax
+    mov rax, rcx
+    add rsp, 0x10
+    pop rbx
+    ret
 =========== OPT LEVEL: none ===========
 main:
     mov rdi, 7
@@ -25,6 +63,14 @@ main:
     add rcx, rax
     mov rax, rcx
     ret
+=========== OPT LEVEL: mininal-quick ===========
+main:
+    xor eax, eax
+    add rax, -0xe
+    add rax, -2
+    add rax, -0xe
+    add rax, -2
+    ret
 =========== OPT LEVEL: mininal ===========
 main:
     xor eax, eax
@@ -32,6 +78,10 @@ main:
     add rax, -2
     add rax, -0xe
     add rax, -2
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+main:
+    mov rax, -0x20
     ret
 =========== OPT LEVEL: moderate ===========
 main:

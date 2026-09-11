@@ -1,3 +1,224 @@
+=========== OPT LEVEL: none-quick ===========
+test_not_reg:
+    cmp dil, 0
+test_neg_reg:
+    setz al
+test_bitnot i8:
+    movzx rax, al
+test_bitnot i32:
+    ret
+test_neg i8:
+    cmp.b [rdi], 0
+test_neg i32:
+    setz al
+    movzx rax, al
+    mov.b [rdi], al
+    movzx.b eax, [rdi]
+    ret
+24:
+    sub rsp, 8
+    mov.q [rsp], rdi
+    mov.q rax, [rsp]
+    not rax
+    mov rax, rax
+    add rsp, 8
+    ret
+25:
+    sub rsp, 8
+    mov.q [rsp], rdi
+    mov.q rax, [rsp]
+    neg rax
+    mov rax, rax
+    add rsp, 8
+    ret
+26:
+    not dil
+    movzx eax, dil
+    ret
+27:
+    sub rsp, 0xc8
+    mov.b [rsp], -5
+    mov.b [rsp + 0x1], -0x38
+    mov.w [rsp + 0x2], -0x3e8
+    mov.w [rsp + 0x4], -0x63c0
+    mov.d [rsp + 0x6], -0x186a0
+    mov.d [rsp + 0xa], 0x186a0
+    mov.q [rsp + 0xe], -0x5f5e100
+    mov.q [rsp + 0x16], 0x5f5e100
+    xor edi, edi
+    call test_not_reg
+    mov.q [rsp + 0x1e], rax
+    mov dil, 1
+    call test_not_reg
+    mov.q [rsp + 0x26], rax
+    mov rdi, 0x7b
+    call 24
+    mov.q [rsp + 0x2e], rax
+    mov dil, 0x7b
+    call 26
+    mov.q [rsp + 0x36], rax
+    lea rdi, [rsp]
+    call 28
+    mov.q [rsp + 0x3e], rax
+    lea rdi, [rsp + 0x1]
+    call 29
+    mov.q [rsp + 0x46], rax
+    lea rdi, [rsp + 0x2]
+    call 30
+    mov.q [rsp + 0x4e], rax
+    lea rdi, [rsp + 0x4]
+    call 31
+    mov.q [rsp + 0x56], rax
+    lea rdi, [rsp + 0x6]
+    call 32
+    mov.q [rsp + 0x5e], rax
+    lea rdi, [rsp + 0xa]
+    call 33
+    mov.q [rsp + 0x66], rax
+    lea rdi, [rsp + 0xe]
+    call 34
+    mov.q [rsp + 0x6e], rax
+    lea rdi, [rsp + 0x16]
+    call 35
+    mov.q [rsp + 0x76], rax
+    mov rdi, 7
+    call 25
+    mov.q [rsp + 0x7e], rax
+    lea rdi, [rsp]
+    call 36
+    mov.q [rsp + 0x86], rax
+    lea rdi, [rsp + 0x1]
+    call 37
+    mov.q [rsp + 0x8e], rax
+    lea rdi, [rsp + 0x2]
+    call 38
+    mov.q [rsp + 0x96], rax
+    lea rdi, [rsp + 0x4]
+    call 39
+    mov.q [rsp + 0x9e], rax
+    lea rdi, [rsp + 0x6]
+    call 40
+    mov.q [rsp + 0xa6], rax
+    lea rdi, [rsp + 0xa]
+    call 41
+    mov.q [rsp + 0xae], rax
+    lea rdi, [rsp + 0xe]
+    call 42
+    mov.q [rsp + 0xb6], rax
+    lea rdi, [rsp + 0x16]
+    call 43
+    mov.q [rsp + 0xbe], rax
+    xor eax, eax
+    mov.q rcx, [rsp + 0x1e]
+    movzx ecx, cl
+    add rax, rcx
+    mov.q rcx, [rsp + 0x26]
+    movzx ecx, cl
+    add rax, rcx
+    mov.q rcx, [rsp + 0x2e]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x36]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x3e]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x46]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x4e]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x56]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x5e]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x66]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x6e]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x76]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x7e]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x86]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x8e]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x96]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x9e]
+    add rax, rcx
+    mov.q rcx, [rsp + 0xa6]
+    add rax, rcx
+    mov.q rcx, [rsp + 0xae]
+    add rax, rcx
+    mov.q rcx, [rsp + 0xb6]
+    add rax, rcx
+    mov.q rcx, [rsp + 0xbe]
+    add rax, rcx
+    add rsp, 0xc8
+    ret
+28:
+    not.b [rdi]
+    movsx.b rax, [rdi]
+    ret
+29:
+    not.b [rdi]
+    movzx.b eax, [rdi]
+    ret
+30:
+    not.w [rdi]
+    movsx.w rax, [rdi]
+    ret
+31:
+    not.w [rdi]
+    movzx.w eax, [rdi]
+    ret
+32:
+    not.d [rdi]
+    movsxd.d rax, [rdi]
+    ret
+33:
+    not.d [rdi]
+    mov.d eax, [rdi]
+    ret
+34:
+    not.q [rdi]
+    mov.q rax, [rdi]
+    ret
+35:
+    not.q [rdi]
+    mov.q rax, [rdi]
+    ret
+36:
+    neg.b [rdi]
+    movsx.b rax, [rdi]
+    ret
+37:
+    neg.b [rdi]
+    movzx.b eax, [rdi]
+    ret
+38:
+    neg.w [rdi]
+    movsx.w rax, [rdi]
+    ret
+39:
+    neg.w [rdi]
+    movzx.w eax, [rdi]
+    ret
+40:
+    neg.d [rdi]
+    movsxd.d rax, [rdi]
+    ret
+41:
+    neg.d [rdi]
+    mov.d eax, [rdi]
+    ret
+42:
+    neg.q [rdi]
+    mov.q rax, [rdi]
+    ret
+43:
+    neg.q [rdi]
+    mov.q rax, [rdi]
+    ret
 =========== OPT LEVEL: none ===========
 test_not_reg:
     cmp dil, 0
@@ -216,6 +437,231 @@ test_neg i32:
     neg.q [rdi]
     mov.q rax, [rdi]
     ret
+=========== OPT LEVEL: mininal-quick ===========
+test_not_reg:
+    cmp dil, 0
+test_neg_reg:
+    setz al
+test_bitnot i8:
+    movzx rax, al
+test_bitnot i32:
+    ret
+test_neg i8:
+    cmp.b [rdi], 0
+test_neg i32:
+    setz al
+    movzx rax, al
+    mov.b [rdi], al
+    movzx.b eax, [rdi]
+    ret
+24:
+    sub rsp, 8
+    mov.q [rsp], rdi
+    mov.q rax, [rsp]
+    not rax
+    mov rax, rax
+    add rsp, 8
+    ret
+25:
+    sub rsp, 8
+    mov.q [rsp], rdi
+    mov.q rax, [rsp]
+    neg rax
+    mov rax, rax
+    add rsp, 8
+    ret
+26:
+    not dil
+    movzx eax, dil
+    ret
+27:
+    sub rsp, 0xc8
+    mov.b [rsp], -5
+    mov.b [rsp + 0x1], -0x38
+    mov.w [rsp + 0x2], -0x3e8
+    mov.w [rsp + 0x4], -0x63c0
+    mov.d [rsp + 0x6], -0x186a0
+    mov.d [rsp + 0xa], 0x186a0
+    mov.q [rsp + 0xe], -0x5f5e100
+    mov.q [rsp + 0x16], 0x5f5e100
+    xor edi, edi
+    call test_not_reg
+    mov.q [rsp + 0x1e], rax
+    mov dil, 1
+    call test_not_reg
+    mov.q [rsp + 0x26], rax
+    mov rdi, 0x7b
+    call 24
+    mov.q [rsp + 0x2e], rax
+    mov dil, 0x7b
+    call 26
+    mov.q [rsp + 0x36], rax
+    lea rdi, [rsp]
+    call 28
+    mov.q [rsp + 0x3e], rax
+    lea rdi, [rsp + 0x1]
+    call 29
+    mov.q [rsp + 0x46], rax
+    lea rdi, [rsp + 0x2]
+    call 30
+    mov.q [rsp + 0x4e], rax
+    lea rdi, [rsp + 0x4]
+    call 31
+    mov.q [rsp + 0x56], rax
+    lea rdi, [rsp + 0x6]
+    call 32
+    mov.q [rsp + 0x5e], rax
+    lea rdi, [rsp + 0xa]
+    call 33
+    mov.q [rsp + 0x66], rax
+    lea rdi, [rsp + 0xe]
+    call 34
+    mov.q [rsp + 0x6e], rax
+    lea rdi, [rsp + 0x16]
+    call 35
+    mov.q [rsp + 0x76], rax
+    mov rdi, 7
+    call 25
+    mov.q [rsp + 0x7e], rax
+    lea rdi, [rsp]
+    call 36
+    mov.q [rsp + 0x86], rax
+    lea rdi, [rsp + 0x1]
+    call 37
+    mov.q [rsp + 0x8e], rax
+    lea rdi, [rsp + 0x2]
+    call 38
+    mov.q [rsp + 0x96], rax
+    lea rdi, [rsp + 0x4]
+    call 39
+    mov.q [rsp + 0x9e], rax
+    lea rdi, [rsp + 0x6]
+    call 40
+    mov.q [rsp + 0xa6], rax
+    lea rdi, [rsp + 0xa]
+    call 41
+    mov.q [rsp + 0xae], rax
+    lea rdi, [rsp + 0xe]
+    call 42
+    mov.q [rsp + 0xb6], rax
+    lea rdi, [rsp + 0x16]
+    call 43
+    mov.q [rsp + 0xbe], rax
+    xor eax, eax
+    mov.q rcx, [rsp + 0x1e]
+    movzx ecx, cl
+    add rax, rcx
+    mov.q rcx, [rsp + 0x26]
+    movzx ecx, cl
+    add rax, rcx
+    mov.q rcx, [rsp + 0x2e]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x36]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x3e]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x46]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x4e]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x56]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x5e]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x66]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x6e]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x76]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x7e]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x86]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x8e]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x96]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x9e]
+    add rax, rcx
+    mov.q rcx, [rsp + 0xa6]
+    add rax, rcx
+    mov.q rcx, [rsp + 0xae]
+    add rax, rcx
+    mov.q rcx, [rsp + 0xb6]
+    add rax, rcx
+    mov.q rcx, [rsp + 0xbe]
+    add rax, rcx
+    add rsp, 0xc8
+    ret
+28:
+    not.b [rdi]
+    movsx.b rax, [rdi]
+    ret
+29:
+    not.b [rdi]
+    movzx.b eax, [rdi]
+    ret
+30:
+    not.w [rdi]
+    movsx.w rax, [rdi]
+    ret
+31:
+    not.w [rdi]
+    movzx.w eax, [rdi]
+    ret
+32:
+    not.d [rdi]
+    movsxd.d rax, [rdi]
+    ret
+33:
+    not.d [rdi]
+    mov.d eax, [rdi]
+    ret
+34:
+    mov.q rax, [rdi]
+    not rax
+    mov.q [rdi], rax
+    ret
+35:
+    mov.q rax, [rdi]
+    not rax
+    mov.q [rdi], rax
+    ret
+36:
+    neg.b [rdi]
+    movsx.b rax, [rdi]
+    ret
+37:
+    neg.b [rdi]
+    movzx.b eax, [rdi]
+    ret
+38:
+    neg.w [rdi]
+    movsx.w rax, [rdi]
+    ret
+39:
+    neg.w [rdi]
+    movzx.w eax, [rdi]
+    ret
+40:
+    neg.d [rdi]
+    movsxd.d rax, [rdi]
+    ret
+41:
+    neg.d [rdi]
+    mov.d eax, [rdi]
+    ret
+42:
+    mov.q rax, [rdi]
+    neg rax
+    mov.q [rdi], rax
+    ret
+43:
+    mov.q rax, [rdi]
+    neg rax
+    mov.q [rdi], rax
+    ret
 =========== OPT LEVEL: mininal ===========
 test_not_reg:
     cmp dil, 0
@@ -427,6 +873,252 @@ test_neg i32:
 41:
     neg.d [rdi]
     mov.d eax, [rdi]
+    ret
+42:
+    mov.q rax, [rdi]
+    neg rax
+    mov.q [rdi], rax
+    ret
+43:
+    mov.q rax, [rdi]
+    neg rax
+    mov.q [rdi], rax
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+test_not_reg:
+    cmp dil, 0
+test_neg_reg:
+    setz al
+test_bitnot i8:
+    movzx rax, al
+test_bitnot i32:
+    ret
+test_neg i8:
+    cmp.b [rdi], 0
+test_neg i32:
+    setz al
+    movzx rax, al
+    mov.b [rdi], al
+    ret
+24:
+    sub rsp, 8
+    mov.q [rsp], rdi
+    mov.q rax, [rsp]
+    not rax
+    mov rax, rax
+    add rsp, 8
+    ret
+25:
+    sub rsp, 8
+    mov.q [rsp], rdi
+    mov.q rax, [rsp]
+    neg rax
+    mov rax, rax
+    add rsp, 8
+    ret
+26:
+    not dil
+    movzx eax, dil
+    ret
+27:
+    sub rsp, 0xc8
+    mov.b [rsp], -5
+    mov.b [rsp + 0x1], -0x38
+    mov.w [rsp + 0x2], -0x3e8
+    mov.w [rsp + 0x4], -0x63c0
+    mov.d [rsp + 0x6], -0x186a0
+    mov.d [rsp + 0xa], 0x186a0
+    mov.q [rsp + 0xe], -0x5f5e100
+    mov.q [rsp + 0x16], 0x5f5e100
+    xor edi, edi
+    call test_not_reg
+    mov.q [rsp + 0x1e], rax
+    mov dil, 1
+    call test_not_reg
+    mov.q [rsp + 0x26], rax
+    mov rdi, 0x7b
+    call 24
+    mov.q [rsp + 0x2e], rax
+    mov dil, 0x7b
+    call 26
+    mov.q [rsp + 0x36], rax
+    lea rdi, [rsp]
+    call 28
+    mov.q [rsp + 0x3e], rax
+    lea rdi, [rsp + 0x1]
+    call 29
+    mov.q [rsp + 0x46], rax
+    lea rdi, [rsp + 0x2]
+    call 30
+    mov.q [rsp + 0x4e], rax
+    lea rdi, [rsp + 0x4]
+    call 31
+    mov.q [rsp + 0x56], rax
+    lea rdi, [rsp + 0x6]
+    call 32
+    mov.q [rsp + 0x5e], rax
+    lea rdi, [rsp + 0xa]
+    call 33
+    mov.q [rsp + 0x66], rax
+    lea rdi, [rsp + 0xe]
+    call 34
+    mov.q [rsp + 0x6e], rax
+    lea rdi, [rsp + 0x16]
+    call 35
+    mov.q [rsp + 0x76], rax
+    mov rdi, 7
+    call 25
+    mov.q [rsp + 0x7e], rax
+    lea rdi, [rsp]
+    call 36
+    mov.q [rsp + 0x86], rax
+    lea rdi, [rsp + 0x1]
+    call 37
+    mov.q [rsp + 0x8e], rax
+    lea rdi, [rsp + 0x2]
+    call 38
+    mov.q [rsp + 0x96], rax
+    lea rdi, [rsp + 0x4]
+    call 39
+    mov.q [rsp + 0x9e], rax
+    lea rdi, [rsp + 0x6]
+    call 40
+    mov.q [rsp + 0xa6], rax
+    lea rdi, [rsp + 0xa]
+    call 41
+    mov.q [rsp + 0xae], rax
+    lea rdi, [rsp + 0xe]
+    call 42
+    mov.q [rsp + 0xb6], rax
+    lea rdi, [rsp + 0x16]
+    call 43
+    mov.q [rsp + 0xbe], rax
+    mov.q rax, [rsp + 0x1e]
+    movzx eax, al
+    mov.q rcx, [rsp + 0x26]
+    movzx ecx, cl
+    add rax, rcx
+    mov.q rcx, [rsp + 0x2e]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x36]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x3e]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x46]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x4e]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x56]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x5e]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x66]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x6e]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x76]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x7e]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x86]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x8e]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x96]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x9e]
+    add rax, rcx
+    mov.q rcx, [rsp + 0xa6]
+    add rax, rcx
+    mov.q rcx, [rsp + 0xae]
+    add rax, rcx
+    mov.q rcx, [rsp + 0xb6]
+    add rax, rcx
+    mov.q rcx, [rsp + 0xbe]
+    add rax, rcx
+    add rsp, 0xc8
+    ret
+28:
+    movzx.b eax, [rdi]
+    not al
+    mov.b [rdi], al
+    movsx rax, al
+    ret
+29:
+    movzx.b eax, [rdi]
+    not al
+    mov.b [rdi], al
+    movzx eax, al
+    ret
+30:
+    movzx.w eax, [rdi]
+    not ax
+    mov.w [rdi], ax
+    movsx rax, ax
+    ret
+31:
+    movzx.w eax, [rdi]
+    not ax
+    mov.w [rdi], ax
+    movzx eax, ax
+    ret
+32:
+    mov.d eax, [rdi]
+    not eax
+    mov.d [rdi], eax
+    movsxd rax, eax
+    ret
+33:
+    mov.d eax, [rdi]
+    not eax
+    mov.d [rdi], eax
+    mov eax, eax
+    ret
+34:
+    mov.q rax, [rdi]
+    not rax
+    mov.q [rdi], rax
+    ret
+35:
+    mov.q rax, [rdi]
+    not rax
+    mov.q [rdi], rax
+    ret
+36:
+    movzx.b eax, [rdi]
+    neg al
+    mov.b [rdi], al
+    movsx rax, al
+    ret
+37:
+    movzx.b eax, [rdi]
+    neg al
+    mov.b [rdi], al
+    movzx eax, al
+    ret
+38:
+    movzx.w eax, [rdi]
+    neg ax
+    mov.w [rdi], ax
+    movsx rax, ax
+    ret
+39:
+    movzx.w eax, [rdi]
+    neg ax
+    mov.w [rdi], ax
+    movzx eax, ax
+    ret
+40:
+    mov.d eax, [rdi]
+    neg eax
+    mov.d [rdi], eax
+    movsxd rax, eax
+    ret
+41:
+    mov.d eax, [rdi]
+    neg eax
+    mov.d [rdi], eax
+    mov eax, eax
     ret
 42:
     mov.q rax, [rdi]

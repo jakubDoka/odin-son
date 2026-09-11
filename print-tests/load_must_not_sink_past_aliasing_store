@@ -1,3 +1,39 @@
+=========== OPT LEVEL: none-quick ===========
+main:
+    sub rsp, 0x18
+opaque:
+    mov rdi, 0xa
+    call 6
+    mov.q [rsp], rax
+    lea rdi, [rsp]
+    call 5
+    mov.q rax, [rax]
+    mov.q [rsp + 0x8], rax
+    mov.q [rsp], 0x63
+    mov rdi, 1
+    call 6
+    cmp rax, 1
+    jz 3
+    xor eax, eax
+    jmp 4
+3:
+    mov.q rax, [rsp + 0x8]
+4:
+    mov rax, rax
+    add rsp, 0x18
+    ret
+5:
+    sub rsp, 8
+    mov.q [rsp], rdi
+    mov.q rax, [rsp]
+    add rsp, 8
+    ret
+6:
+    sub rsp, 8
+    mov.q [rsp], rdi
+    mov.q rax, [rsp]
+    add rsp, 8
+    ret
 =========== OPT LEVEL: none ===========
 main:
     push rbx
@@ -27,6 +63,42 @@ opaque_ptr:
 5:
     mov rax, rdi
     ret
+=========== OPT LEVEL: mininal-quick ===========
+main:
+    sub rsp, 0x18
+opaque:
+    mov rdi, 0xa
+    call 6
+    mov.q [rsp], rax
+    lea rdi, [rsp]
+    call 5
+    mov.q rax, [rax]
+    mov.q [rsp + 0x8], rax
+    mov.q [rsp], 0x63
+    mov rdi, 1
+    call 6
+    cmp rax, 1
+    jz 3
+    xor eax, eax
+    jmp 4
+3:
+    mov.q rax, [rsp + 0x8]
+4:
+    mov rax, rax
+    add rsp, 0x18
+    ret
+5:
+    sub rsp, 8
+    mov.q [rsp], rdi
+    mov.q rax, [rsp]
+    add rsp, 8
+    ret
+6:
+    sub rsp, 8
+    mov.q [rsp], rdi
+    mov.q rax, [rsp]
+    add rsp, 8
+    ret
 =========== OPT LEVEL: mininal ===========
 main:
     push rbx
@@ -55,6 +127,42 @@ opaque_ptr:
     ret
 5:
     mov rax, rdi
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+main:
+    sub rsp, 0x18
+opaque:
+    mov rdi, 0xa
+    call 6
+    mov.q [rsp], rax
+    lea rdi, [rsp]
+    call 5
+    mov.q rax, [rax]
+    mov.q [rsp + 0x8], rax
+    mov.q [rsp], 0x63
+    mov rdi, 1
+    call 6
+    cmp rax, 1
+    jz 3
+    xor eax, eax
+    jmp 4
+3:
+    mov.q rax, [rsp + 0x8]
+4:
+    mov rax, rax
+    add rsp, 0x18
+    ret
+5:
+    sub rsp, 8
+    mov.q [rsp], rdi
+    mov.q rax, [rsp]
+    add rsp, 8
+    ret
+6:
+    sub rsp, 8
+    mov.q [rsp], rdi
+    mov.q rax, [rsp]
+    add rsp, 8
     ret
 =========== OPT LEVEL: moderate ===========
 main:

@@ -1,3 +1,68 @@
+=========== OPT LEVEL: none-quick ===========
+test_imm_shifts:
+    sub rsp, 0x18
+    mov.q [rsp], rdi
+    mov.q rax, [rsp]
+    sal rax, 3
+    mov.q [rsp + 0x8], rax
+    mov.q rax, [rsp]
+    sar rax, 3
+    mov.q [rsp + 0x10], rax
+    mov.q rax, [rsp + 0x8]
+    mov.q rcx, [rsp + 0x10]
+    add rax, rcx
+    mov.q [rsp + 0x8], rax
+    mov.q rax, [rsp]
+    shr rax, 5
+    mov rax, rax
+    mov.q rcx, [rsp + 0x8]
+    add rcx, rax
+    mov rax, rcx
+    add rsp, 0x18
+    ret
+4:
+    sal.q [rdi], 2
+    sar.q [rdi], 5
+    shr.q [rsi], 4
+    mov.q rax, [rdi]
+    add.q rax, [rsi]
+    ret
+5:
+    sub rsp, 8
+    mov.q [rsp], rdx
+    mov.q rcx, [rsp]
+    sal.q [rdi], cl
+    mov.q rcx, [rsp]
+    sar.q [rdi], cl
+    mov.q rcx, [rsp]
+    shr.q [rsi], cl
+    mov.q rax, [rdi]
+    add.q rax, [rsi]
+    add rsp, 8
+    ret
+6:
+    sub rsp, 0x28
+    mov.q [rsp], -5
+    mov.q [rsp + 0x8], 0x14
+    mov rdi, -1
+    call test_imm_shifts
+    mov.q [rsp + 0x10], rax
+    lea rdi, [rsp]
+    lea rsi, [rsp + 0x8]
+    call 4
+    mov.q [rsp + 0x18], rax
+    mov rdx, 4
+    lea rdi, [rsp]
+    lea rsi, [rsp + 0x8]
+    call 5
+    mov.q rcx, [rsp + 0x10]
+    mov.q rdx, [rsp + 0x18]
+    add rcx, rdx
+    mov rcx, rcx
+    add rcx, rax
+    mov rax, rcx
+    add rsp, 0x28
+    ret
 =========== OPT LEVEL: none ===========
 test_imm_shifts:
     mov rcx, rdi
@@ -51,6 +116,75 @@ main:
     add rsp, 0x18
     pop rbp
     pop rbx
+    ret
+=========== OPT LEVEL: mininal-quick ===========
+test_imm_shifts:
+    sub rsp, 0x18
+    mov.q [rsp], rdi
+    mov.q rax, [rsp]
+    sal rax, 3
+    mov.q [rsp + 0x8], rax
+    mov.q rax, [rsp]
+    sar rax, 3
+    mov.q [rsp + 0x10], rax
+    mov.q rax, [rsp + 0x8]
+    mov.q rcx, [rsp + 0x10]
+    add rax, rcx
+    mov.q [rsp + 0x8], rax
+    mov.q rax, [rsp]
+    shr rax, 5
+    mov rax, rax
+    mov.q rcx, [rsp + 0x8]
+    add rcx, rax
+    mov rax, rcx
+    add rsp, 0x18
+    ret
+4:
+    sal.q [rdi], 2
+    sar.q [rdi], 5
+    mov.q rcx, [rsi]
+    shr rcx, 4
+    mov.q [rsi], rcx
+    mov.q rax, [rdi]
+    add rax, rcx
+    ret
+5:
+    sub rsp, 8
+    mov.q [rsp], rdx
+    mov.q rcx, [rsp]
+    sal.q [rdi], cl
+    mov.q rcx, [rsp]
+    sar.q [rdi], cl
+    mov.q rdx, [rsi]
+    mov.q rcx, [rsp]
+    shr rdx, cl
+    mov.q [rsi], rdx
+    mov.q rax, [rdi]
+    add rax, rdx
+    add rsp, 8
+    ret
+6:
+    sub rsp, 0x28
+    mov.q [rsp], -5
+    mov.q [rsp + 0x8], 0x14
+    mov rdi, -1
+    call test_imm_shifts
+    mov.q [rsp + 0x10], rax
+    lea rdi, [rsp]
+    lea rsi, [rsp + 0x8]
+    call 4
+    mov.q [rsp + 0x18], rax
+    mov rdx, 4
+    lea rdi, [rsp]
+    lea rsi, [rsp + 0x8]
+    call 5
+    mov.q rcx, [rsp + 0x10]
+    mov.q rdx, [rsp + 0x18]
+    add rcx, rdx
+    mov rcx, rcx
+    add rcx, rax
+    mov rax, rcx
+    add rsp, 0x28
     ret
 =========== OPT LEVEL: mininal ===========
 test_imm_shifts:
@@ -109,6 +243,79 @@ main:
     add rsp, 0x18
     pop rbp
     pop rbx
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+test_imm_shifts:
+    sub rsp, 0x18
+    mov.q [rsp], rdi
+    mov.q rax, [rsp]
+    sal rax, 3
+    mov.q [rsp + 0x8], rax
+    mov.q rax, [rsp]
+    sar rax, 3
+    mov.q [rsp + 0x10], rax
+    mov.q rax, [rsp + 0x8]
+    mov.q rcx, [rsp + 0x10]
+    add rax, rcx
+    mov.q [rsp + 0x8], rax
+    mov.q rax, [rsp]
+    shr rax, 5
+    mov rax, rax
+    mov.q rcx, [rsp + 0x8]
+    add rcx, rax
+    mov rax, rcx
+    add rsp, 0x18
+    ret
+4:
+    mov.q rax, [rdi]
+    sal rax, 2
+    sar rax, 5
+    mov.q [rdi], rax
+    mov.q rcx, [rsi]
+    shr rcx, 4
+    mov.q [rsi], rcx
+    mov.q rax, [rdi]
+    add rax, rcx
+    ret
+5:
+    sub rsp, 8
+    mov.q [rsp], rdx
+    mov.q rax, [rdi]
+    mov.q rcx, [rsp]
+    sal rax, cl
+    mov.q rcx, [rsp]
+    sar rax, cl
+    mov.q [rdi], rax
+    mov.q rdx, [rsi]
+    mov.q rcx, [rsp]
+    shr rdx, cl
+    mov.q [rsi], rdx
+    mov.q rax, [rdi]
+    add rax, rdx
+    add rsp, 8
+    ret
+6:
+    sub rsp, 0x28
+    mov.q [rsp], -5
+    mov.q [rsp + 0x8], 0x14
+    mov rdi, -1
+    call test_imm_shifts
+    mov.q [rsp + 0x10], rax
+    lea rdi, [rsp]
+    lea rsi, [rsp + 0x8]
+    call 4
+    mov.q [rsp + 0x18], rax
+    mov rdx, 4
+    lea rdi, [rsp]
+    lea rsi, [rsp + 0x8]
+    call 5
+    mov.q rcx, [rsp + 0x10]
+    mov.q rdx, [rsp + 0x18]
+    add rcx, rdx
+    mov rcx, rcx
+    add rcx, rax
+    mov rax, rcx
+    add rsp, 0x28
     ret
 =========== OPT LEVEL: moderate ===========
 test_imm_shifts:

@@ -1,3 +1,167 @@
+=========== OPT LEVEL: none-quick ===========
+opaques:
+    sub rsp, 8
+    mov.q [rsp], rdi
+    mov.q rax, [rsp]
+    add rsp, 8
+    ret
+5:
+    cmp rdi, rsi
+    jz 11
+    cmp rdi, rsi
+    jnz 10
+    cmp rdi, rsi
+    jnge 9
+    cmp rdi, rsi
+    jnl 8
+    cmp rdi, rsi
+    jnle 7
+    cmp rdi, rsi
+    jng 6
+    xor eax, eax
+    jmp 12
+6:
+    mov rax, 6
+    jmp 12
+7:
+    mov rax, 5
+    jmp 12
+8:
+    mov rax, 4
+    jmp 12
+9:
+    mov rax, 3
+    jmp 12
+10:
+    mov rax, 2
+    jmp 12
+11:
+    mov rax, 1
+12:
+    ret
+13:
+    cmp rdi, rsi
+    jz +0x71
+    cmp rdi, rsi
+    jnz +0x5c
+    cmp rdi, rsi
+    jc +0x47
+    cmp rdi, rsi
+    jnc +0x32
+    cmp rdi, rsi
+    jnbe 15
+    cmp rdi, rsi
+    jbe 14
+    xor eax, eax
+    jmp 16
+14:
+    mov rax, 0x3c
+    jmp 16
+15:
+    mov rax, 0x32
+    jmp 16
+    mov rax, 0x28
+    jmp 16
+    mov rax, 0x1e
+    jmp 16
+    mov rax, 0x14
+    jmp 16
+    mov rax, 0xa
+16:
+    ret
+17:
+    sub rsp, 0x18
+    mov.q [rsp], rdi
+    mov.q rdi, [rsp]
+    call opaques
+    mov.q [rsp + 0x8], rax
+    mov.q rax, [rsp]
+    add rax, 1
+    mov rdi, rax
+    call opaques
+    mov.q rcx, [rsp + 0x8]
+    cmp rcx, rax
+    jnge 18
+    jmp 20
+18:
+    mov.q rcx, [rsp + 0x8]
+    cmp rcx, rax
+    jng 19
+    jmp 20
+19:
+    mov.q rcx, [rsp + 0x8]
+    cmp rcx, rax
+    jnz 24
+20:
+    mov.q rcx, [rsp + 0x8]
+    cmp rcx, rax
+    jnle 21
+    jmp 23
+21:
+    mov.q rcx, [rsp + 0x8]
+    cmp rcx, rax
+    jnl 22
+    jmp 23
+22:
+    mov.q rcx, [rsp + 0x8]
+    cmp rcx, rax
+    jz +0x8
+23:
+    xor eax, eax
+    jmp 25
+    mov rax, 0xc8
+    jmp 25
+24:
+    mov rax, 0x64
+25:
+    add rsp, 0x18
+    ret
+26:
+    sub rsp, 0x38
+    mov rdi, 0xa
+    mov rsi, 0x14
+    call 5
+    mov.q [rsp], rax
+    mov rsi, 0x14
+    mov rdi, 0x14
+    call 5
+    mov.q [rsp + 0x8], rax
+    mov rsi, 0xa
+    mov rdi, 0x1e
+    call 5
+    mov.q [rsp + 0x10], rax
+    mov rdi, 0xa
+    mov rsi, 0x14
+    call 13
+    mov.q [rsp + 0x18], rax
+    mov rsi, 0x14
+    mov rdi, 0x14
+    call 13
+    mov.q [rsp + 0x20], rax
+    mov rsi, 0xa
+    mov rdi, 0x1e
+    call 13
+    mov.q [rsp + 0x28], rax
+    mov rdi, 0x2a
+    call 17
+    mov.q [rsp + 0x30], rax
+    xor eax, eax
+    mov.q rcx, [rsp]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x8]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x10]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x18]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x20]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x28]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x30]
+    add rax, rcx
+    add rsp, 0x38
+    ret
 =========== OPT LEVEL: none ===========
 opaques:
     mov rax, rdi
@@ -167,6 +331,170 @@ test_mixed_patterns:
     pop rbp
     pop rbx
     ret
+=========== OPT LEVEL: mininal-quick ===========
+opaques:
+    sub rsp, 8
+    mov.q [rsp], rdi
+    mov.q rax, [rsp]
+    add rsp, 8
+    ret
+5:
+    cmp rdi, rsi
+    jz 11
+    cmp rdi, rsi
+    jnz 10
+    cmp rdi, rsi
+    jnge 9
+    cmp rdi, rsi
+    jnl 8
+    cmp rdi, rsi
+    jnle 7
+    cmp rdi, rsi
+    jng 6
+    xor eax, eax
+    jmp 12
+6:
+    mov rax, 6
+    jmp 12
+7:
+    mov rax, 5
+    jmp 12
+8:
+    mov rax, 4
+    jmp 12
+9:
+    mov rax, 3
+    jmp 12
+10:
+    mov rax, 2
+    jmp 12
+11:
+    mov rax, 1
+12:
+    ret
+13:
+    cmp rdi, rsi
+    jz +0x71
+    cmp rdi, rsi
+    jnz +0x5c
+    cmp rdi, rsi
+    jc +0x47
+    cmp rdi, rsi
+    jnc +0x32
+    cmp rdi, rsi
+    jnbe 15
+    cmp rdi, rsi
+    jbe 14
+    xor eax, eax
+    jmp 16
+14:
+    mov rax, 0x3c
+    jmp 16
+15:
+    mov rax, 0x32
+    jmp 16
+    mov rax, 0x28
+    jmp 16
+    mov rax, 0x1e
+    jmp 16
+    mov rax, 0x14
+    jmp 16
+    mov rax, 0xa
+16:
+    ret
+17:
+    sub rsp, 0x18
+    mov.q [rsp], rdi
+    mov.q rdi, [rsp]
+    call opaques
+    mov.q [rsp + 0x8], rax
+    mov.q rax, [rsp]
+    add rax, 1
+    mov rdi, rax
+    call opaques
+    mov.q rcx, [rsp + 0x8]
+    cmp rcx, rax
+    jnge 18
+    jmp 20
+18:
+    mov.q rcx, [rsp + 0x8]
+    cmp rcx, rax
+    jng 19
+    jmp 20
+19:
+    mov.q rcx, [rsp + 0x8]
+    cmp rcx, rax
+    jnz 24
+20:
+    mov.q rcx, [rsp + 0x8]
+    cmp rcx, rax
+    jnle 21
+    jmp 23
+21:
+    mov.q rcx, [rsp + 0x8]
+    cmp rcx, rax
+    jnl 22
+    jmp 23
+22:
+    mov.q rcx, [rsp + 0x8]
+    cmp rcx, rax
+    jz +0x8
+23:
+    xor eax, eax
+    jmp 25
+    mov rax, 0xc8
+    jmp 25
+24:
+    mov rax, 0x64
+25:
+    add rsp, 0x18
+    ret
+26:
+    sub rsp, 0x38
+    mov rdi, 0xa
+    mov rsi, 0x14
+    call 5
+    mov.q [rsp], rax
+    mov rsi, 0x14
+    mov rdi, 0x14
+    call 5
+    mov.q [rsp + 0x8], rax
+    mov rsi, 0xa
+    mov rdi, 0x1e
+    call 5
+    mov.q [rsp + 0x10], rax
+    mov rdi, 0xa
+    mov rsi, 0x14
+    call 13
+    mov.q [rsp + 0x18], rax
+    mov rsi, 0x14
+    mov rdi, 0x14
+    call 13
+    mov.q [rsp + 0x20], rax
+    mov rsi, 0xa
+    mov rdi, 0x1e
+    call 13
+    mov.q [rsp + 0x28], rax
+    mov rdi, 0x2a
+    call 17
+    mov.q [rsp + 0x30], rax
+    xor eax, eax
+    mov.q rcx, [rsp]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x8]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x10]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x18]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x20]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x28]
+    add rax, rcx
+    mov.q rcx, [rsp + 0x30]
+    add rax, rcx
+    add rsp, 0x38
+    ret
 =========== OPT LEVEL: mininal ===========
 opaques:
     mov rax, rdi
@@ -335,6 +663,172 @@ test_mixed_patterns:
     pop r12
     pop rbp
     pop rbx
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+opaques:
+    sub rsp, 8
+    mov.q [rsp], rdi
+    mov.q rax, [rsp]
+    add rsp, 8
+    ret
+5:
+    cmp rdi, rsi
+    jz 11
+    cmp rdi, rsi
+    jnz 10
+    cmp rdi, rsi
+    jnge 9
+    cmp rdi, rsi
+    jnl 8
+    cmp rdi, rsi
+    jnle 7
+    cmp rdi, rsi
+    jng 6
+    xor eax, eax
+    jmp 12
+6:
+    mov rax, 6
+    jmp 12
+7:
+    mov rax, 5
+    jmp 12
+8:
+    mov rax, 4
+    jmp 12
+9:
+    mov rax, 3
+    jmp 12
+10:
+    mov rax, 2
+    jmp 12
+11:
+    mov rax, 1
+12:
+    ret
+13:
+    cmp rdi, rsi
+    jz +0x71
+    cmp rdi, rsi
+    jnz +0x5c
+    cmp rdi, rsi
+    jc +0x47
+    cmp rdi, rsi
+    jnc +0x32
+    cmp rdi, rsi
+    jnbe 15
+    cmp rdi, rsi
+    jbe 14
+    xor eax, eax
+    jmp 16
+14:
+    mov rax, 0x3c
+    jmp 16
+15:
+    mov rax, 0x32
+    jmp 16
+    mov rax, 0x28
+    jmp 16
+    mov rax, 0x1e
+    jmp 16
+    mov rax, 0x14
+    jmp 16
+    mov rax, 0xa
+16:
+    ret
+17:
+    sub rsp, 0x18
+    mov.q [rsp], rdi
+    mov.q rdi, [rsp]
+    call opaques
+    mov.q [rsp + 0x8], rax
+    mov.q rax, [rsp]
+    add rax, 1
+    mov rdi, rax
+    call opaques
+    mov.q rcx, [rsp + 0x8]
+    cmp rcx, rax
+    jnge 18
+    jmp 20
+18:
+    mov.q rcx, [rsp + 0x8]
+    cmp rcx, rax
+    jng 19
+    jmp 20
+19:
+    mov.q rcx, [rsp + 0x8]
+    cmp rcx, rax
+    jnz 24
+20:
+    mov.q rcx, [rsp + 0x8]
+    cmp rcx, rax
+    jnle 21
+    jmp 23
+21:
+    mov.q rcx, [rsp + 0x8]
+    cmp rcx, rax
+    jnl 22
+    jmp 23
+22:
+    mov.q rcx, [rsp + 0x8]
+    cmp rcx, rax
+    jz +0x8
+23:
+    xor eax, eax
+    jmp 25
+    mov rax, 0xc8
+    jmp 25
+24:
+    mov rax, 0x64
+25:
+    add rsp, 0x18
+    ret
+26:
+    sub rsp, 0x38
+    mov rdi, 0xa
+    mov rsi, 0x14
+    call 5
+    mov.q [rsp], rax
+    mov rsi, 0x14
+    mov rdi, 0x14
+    call 5
+    mov.q [rsp + 0x8], rax
+    mov rsi, 0xa
+    mov rdi, 0x1e
+    call 5
+    mov.q [rsp + 0x10], rax
+    mov rdi, 0xa
+    mov rsi, 0x14
+    call 13
+    mov.q [rsp + 0x18], rax
+    mov rsi, 0x14
+    mov rdi, 0x14
+    call 13
+    mov.q [rsp + 0x20], rax
+    mov rsi, 0xa
+    mov rdi, 0x1e
+    call 13
+    mov.q [rsp + 0x28], rax
+    mov rdi, 0x2a
+    call 17
+    mov.q rcx, [rsp]
+    mov.q rdx, [rsp + 0x8]
+    add rcx, rdx
+    mov rcx, rcx
+    mov.q rdx, [rsp + 0x10]
+    add rcx, rdx
+    mov rcx, rcx
+    mov.q rdx, [rsp + 0x18]
+    add rcx, rdx
+    mov rcx, rcx
+    mov.q rdx, [rsp + 0x20]
+    add rcx, rdx
+    mov rcx, rcx
+    mov.q rdx, [rsp + 0x28]
+    add rcx, rdx
+    mov rcx, rcx
+    add rcx, rax
+    mov rax, rcx
+    add rsp, 0x38
     ret
 =========== OPT LEVEL: moderate ===========
 opaques:

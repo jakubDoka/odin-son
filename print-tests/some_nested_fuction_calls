@@ -1,3 +1,29 @@
+=========== OPT LEVEL: none-quick ===========
+main:
+    sub rsp, 8
+    mov rdi, 1
+    mov rsi, 2
+    call 4
+    add rsp, 8
+    ret
+4:
+    sub rsp, 0x18
+    mov.q [rsp], rsi
+    call 5
+    mov.q [rsp + 0x8], rax
+    mov.q rdi, [rsp]
+    call 6
+    mov.q rcx, [rsp + 0x8]
+    add rcx, rax
+    mov rax, rcx
+    add rsp, 0x18
+    ret
+5:
+    imul rax, rdi, 2
+    ret
+6:
+    imul rax, rdi, 3
+    ret
 =========== OPT LEVEL: none ===========
 main:
     sub rsp, 8
@@ -27,6 +53,32 @@ main:
 6:
     imul rax, rdi, 3
     ret
+=========== OPT LEVEL: mininal-quick ===========
+main:
+    sub rsp, 8
+    mov rdi, 1
+    mov rsi, 2
+    call 4
+    add rsp, 8
+    ret
+4:
+    sub rsp, 0x18
+    mov.q [rsp], rsi
+    call 5
+    mov.q [rsp + 0x8], rax
+    mov.q rdi, [rsp]
+    call 6
+    mov.q rcx, [rsp + 0x8]
+    add rcx, rax
+    mov rax, rcx
+    add rsp, 0x18
+    ret
+5:
+    imul rax, rdi, 2
+    ret
+6:
+    imul rax, rdi, 3
+    ret
 =========== OPT LEVEL: mininal ===========
 main:
     sub rsp, 8
@@ -49,6 +101,32 @@ main:
     add rsp, 8
     pop rbp
     pop rbx
+    ret
+5:
+    imul rax, rdi, 2
+    ret
+6:
+    imul rax, rdi, 3
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+main:
+    sub rsp, 8
+    mov rdi, 1
+    mov rsi, 2
+    call 4
+    add rsp, 8
+    ret
+4:
+    sub rsp, 0x18
+    mov.q [rsp], rsi
+    call 5
+    mov.q [rsp + 0x8], rax
+    mov.q rdi, [rsp]
+    call 6
+    mov.q rcx, [rsp + 0x8]
+    add rcx, rax
+    mov rax, rcx
+    add rsp, 0x18
     ret
 5:
     imul rax, rdi, 2

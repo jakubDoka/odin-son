@@ -72,7 +72,7 @@ regalloc_round :: proc(
 		ra:              ^backend.Regalloc,
 		sched:           ^backend.Graph_Schedule,
 		mode:            Mode,
-		instr_placement: []Instr_Placement,
+		instr_placement: [dynamic]Instr_Placement,
 		lrg_table:       []^backend.Lrg,
 		self_conflicts:  map[Self_Conflict]Node_ID,
 		adj:             [][]^backend.Lrg,
@@ -82,7 +82,9 @@ regalloc_round :: proc(
 		slrgs:           [dynamic]Slrg,
 		slrg_table:      []Slrg_ID,
 		block_offset:    int,
+		blocks:          []Block,
 		res:             []backend.Reg,
+		block_base:      int,
 	}
 
 	ctx: Ctx
@@ -94,7 +96,8 @@ regalloc_round :: proc(
 
 	def_count := 0
 	block_base := int(graph.gvn) - len(sched.bbs)
-	ctx.instr_placement = make([]Instr_Placement, block_base)
+	ctx.block_base = block_base
+	ctx.instr_placement = make([dynamic]Instr_Placement, block_base)
 	rev_gvn := block_base
 
 	rev_gvn -= 1
@@ -338,6 +341,7 @@ regalloc_round :: proc(
 	}
 
 	blocks := make([]Block, len(sched.bbs))
+	ctx.blocks = blocks
 
 	Self_Conflict :: struct {
 		lrg:  u32,
@@ -582,9 +586,7 @@ regalloc_round :: proc(
 		ok = false
 	}
 
-	log_lrgs(&ctx)
-
-	Slrg_ID :: distinct int
+	Slrg_ID :: backend.Slrg_ID
 
 	Lrg_Meta :: struct {
 		current_slrg: Slrg_ID,
@@ -612,7 +614,7 @@ regalloc_round :: proc(
 					for dd in data_deps(ctx, inode) {
 						ddnode := graph_expand(ctx.graph, dd)
 						if ddnode.itype == .Poison do continue
-						add_slrg_use(&ctx, ctx.lrg_table[ddnode.gvn], i)
+						add_slrg_use(&ctx, ctx.lrg_table[ddnode.gvn], bi, i)
 					}
 				}
 
@@ -632,19 +634,19 @@ regalloc_round :: proc(
 
 			louts := &blocks[bi].liveouts
 			for lout in louts.data[:louts.len] {
-				add_slrg_use(&ctx, &lrgs[lout.id.lrg], len(bb.instrs))
+				add_slrg_use(&ctx, &lrgs[lout.id.lrg], bi, len(bb.instrs))
 			}
-			ctx.block_offset += len(bb.instrs)
 
 			// NOTE: The scan liveranges are sorted cross blocks but not
 			// nescessarly sorted within blocks, insertion sort is good here,
 			// because casual blocks are sorted anyway so sort with O(N) on
 			// sorted list is good
 			insertion_sort_slrg(ctx.slrgs[slrg_checkpoint:])
+			keep := slrg_checkpoint
 			for slrg, i in ctx.slrgs[slrg_checkpoint:] {
-				ctx.smetas[slrg.lrg.index].current_slrg = Slrg_ID(
-					slrg_checkpoint + i,
-				)
+				ctx.slrgs[keep] = slrg
+				ctx.smetas[slrg.lrg.index].current_slrg = Slrg_ID(keep)
+				keep += 1
 			}
 
 			// NOTE: this should be valid since all of the slrgs are ensured to
@@ -658,7 +660,14 @@ regalloc_round :: proc(
 				}
 			}
 
-			add_slrg_use :: proc(ctx: ^Ctx, lrg: ^backend.Lrg, end: int) {
+			ctx.block_offset += len(bb.instrs)
+
+			add_slrg_use :: proc(
+				ctx: ^Ctx,
+				lrg: ^backend.Lrg,
+				current_block: int,
+				end: int,
+			) {
 				meta := &ctx.smetas[lrg.index]
 				assert(ctx.slrgs[meta.current_slrg].lrg == lrg)
 				if ctx.slrgs[meta.current_slrg].end < ctx.block_offset {
@@ -668,6 +677,7 @@ regalloc_round :: proc(
 							start = ctx.block_offset,
 							lrg = lrg,
 							last_def = ctx.slrgs[meta.current_slrg].last_def,
+							prev = meta.current_slrg,
 						},
 					)
 				}
@@ -694,15 +704,6 @@ regalloc_round :: proc(
 
 		assert(slice.is_sorted_by(ctx.slrgs[:], proc(a, b: Slrg) -> bool {
 				return a.start < b.start}))
-
-		slice.fill(ctx.smetas, Lrg_Meta{})
-
-		Split :: struct {
-			using slrg: ^Slrg,
-			next_srlg:  ^Slrg,
-		}
-
-		splits: [dynamic]Split
 
 		for i in 0 ..< 3 {
 			if !ok do break
@@ -753,6 +754,10 @@ regalloc_round :: proc(
 
 					slrg := &ctx.slrgs[crossed_slrgs]
 					available := free_regs[slrg.lrg.mask.kind]
+					// TODO: remove this, its a hack, sepecific to x64
+					if backend.reg_mask_pop_count(slrg.lrg.mask) > 16 {
+						slrg.lrg.mask.masks[0] &= -1 << 16
+					}
 
 					reg := -1
 					if slrg.lrg.reg != -1 &&
@@ -763,11 +768,6 @@ regalloc_round :: proc(
 							available,
 							slrg.lrg.mask,
 						)
-
-						if slrg.lrg.reg != -1 {
-							prev := &ctx.slrgs[ctx.smetas[slrg.lrg.index].current_slrg]
-							append(&splits, Split{prev, slrg})
-						}
 					}
 
 					recoverable_failure |= reg == -1
@@ -798,91 +798,286 @@ regalloc_round :: proc(
 
 					// TODO: i don't know if its better to migrate the main lrg
 					// here to this new register, it might not matter
+
 					slrg.reg = reg
-					if slrg.lrg.reg == -1 {
-						slrg.lrg.reg = i16(reg)
-					}
 
 					if slrg.reg != -1 {
 						append(&active_slrgs[slrg.lrg.mask.kind], slrg)
 						backend.reg_mask_set(available, slrg.reg, false)
-						ctx.smetas[slrg.lrg.index].current_slrg = Slrg_ID(
-							crossed_slrgs,
-						)
 					} else {
-						slrg.lrg.failed_to_alloc = true
+						best := slrg
+						best_idx := -1
+						for oslrg, i in active_slrgs[slrg.lrg.mask.kind] {
+							if (oslrg.start < best.start &&
+								   oslrg.lrg.fails == {} &&
+								   backend.reg_mask_pop_count(
+									   oslrg.lrg.mask,
+								   ) <=
+									   16) ||
+							   backend.reg_mask_pop_count(best.lrg.mask) >
+								   16 ||
+							   best.lrg.fails != {} {
+								best = oslrg
+								best_idx = i
+							}
+						}
+						best.lrg.failed_to_assign = true
+						if best_idx >= 0 {
+							active_slrgs[slrg.lrg.mask.kind][best_idx] = slrg
+							slrg.reg = best.reg
+						}
+					}
+
+					if slrg.lrg.reg == -1 {
+						slrg.lrg.reg = i16(reg)
 					}
 				}
-
 			}
 
 			if !ok || !recoverable_failure do break
 		}
 
+		Move :: struct {
+			src:  Node_ID,
+			dst:  backend.Node_Output,
+			slrg: Slrg_ID,
+			regs: struct {
+				src: backend.Reg,
+				dst: backend.Reg,
+			},
+		}
+
+		Block_Splits :: struct {
+			sides: [enum {
+				start,
+				end,
+			}][dynamic]Move,
+		}
+
+		splits := make([]Block_Splits, len(sched.bbs))
+
+		crossed_slrgs := 1
+		instr_idx := 0
+		for bb, bi in sched.bbs {
+			if !ok do break
+
+			block := &blocks[bi]
+
+			for instr, i in bb.instrs {
+				for ; crossed_slrgs < len(ctx.slrgs) &&
+				    ctx.slrgs[crossed_slrgs].start == instr_idx;
+				    crossed_slrgs += 1 {
+
+					ctx.smetas[ctx.slrgs[crossed_slrgs].lrg.index].current_slrg =
+						Slrg_ID(crossed_slrgs)
+				}
+
+				inode := graph_expand(graph, instr)
+				if inode.itype != .Phi || inode.dt != .Void {
+					for dd, i in data_deps(ctx, inode) {
+						idx := int(ctx.gmetas[inode.gvn].input_start) + i
+						ddnode := graph_expand(graph, dd)
+						if ddnode.itype == .Poison do continue
+						dslrg := &ctx.slrgs[ctx.slrg_table[ddnode.gvn]]
+						uid := ctx.smetas[dslrg.lrg.index].current_slrg
+						slrg := &ctx.slrgs[uid]
+
+						if slrg.reg != dslrg.reg {
+							list: ^[dynamic]Move
+							if inode.itype == .Phi {
+								last :=
+									backend.graph_inps(ctx.graph, inode.inps[0])[i]
+								last_gvn := graph_get(ctx.graph, last).gvn
+								block := ctx.instr_placement[last_gvn].block
+								list = &splits[block].sides[.end]
+							} else {
+								block := bi
+								final_block := block
+								treefy: for block > 0 {
+									pred := sched.bbs[block]
+
+									idom := backend.graph_idom(
+										graph,
+										pred.head,
+									)
+									idom_id := graph_get(graph, idom).gvn
+									next_block := int(
+										ctx.instr_placement[idom_id].block,
+									)
+
+									blocka := &blocks[next_block]
+
+									if slrg.start <= blocka.start {
+										final_block = next_block
+									}
+
+									for {
+										pslrg := ctx.slrgs[slrg.prev]
+
+										preceded := pslrg.end <= blocka.start
+										passed :=
+											blocka.start +
+												len(
+													sched.bbs[next_block].instrs,
+												) <=
+											pslrg.start
+
+										assert(!passed || !preceded)
+
+										if passed {
+											slrg.prev = pslrg.prev
+										}
+
+										if !preceded && !passed {
+											break treefy
+										}
+
+										if preceded {
+											break
+										}
+									}
+
+									block = next_block
+								}
+								list = &splits[final_block].sides[.start]
+							}
+
+							split := Move {
+								dd,
+								{id = instr, idx = idx},
+								uid,
+								{
+									{
+										index = u16(dslrg.reg),
+										kind = dslrg.lrg.mask.kind,
+									},
+									{
+										index = u16(slrg.reg),
+										kind = dslrg.lrg.mask.kind,
+									},
+								},
+							}
+
+							append(list, split)
+						}
+					}
+				}
+				instr_idx += 1
+			}
+		}
+
+		// TODO: write them directly to the res
 		split_regs: [dynamic]backend.Reg
-		for split in splits {
-			// TODO: do binary search here
-			sblk, _ := slice.binary_search_by(
-				blocks,
-				split.end,
-				proc(b: Block, e: int) -> slice.Ordering {
-					return slice.Ordering(sort.compare_ints(b.start, e))
-				},
-			)
-			sblk -= 1
-			eblk, _ := slice.binary_search_by(
-				blocks,
-				split.next_srlg.start,
-				proc(b: Block, e: int) -> slice.Ordering {
-					return slice.Ordering(sort.compare_ints(b.start, e))
-				},
-			)
-			bb := &sched.bbs[sblk]
-			block := &blocks[sblk]
+		last_split := make([]Node_ID, len(ctx.slrgs))
 
-			assert(
-				block.start < split.end &&
-				split.end <= block.start + len(bb.instrs),
-			)
+		for &bb, bi in sched.bbs {
+			if !ok do break
 
-			def := graph_expand(ctx.graph, split.last_def)
-			outs := slice.clone(def.outs)
+			block := &splits[bi]
 
-			splt := backend.graph_add_split(
-				ctx.graph,
-				"slrg",
-				def.dt,
-				split.last_def,
-			)
+			insert_idx := 0
+			for ; graph_get(graph, bb.instrs[insert_idx]).itype == .Phi;
+			    insert_idx += 1 {}
 
-			inject_at(&bb.instrs, len(bb.instrs) - 1, splt)
-			append(
-				&split_regs,
-				backend.Reg {
-					kind = split.lrg.mask.kind,
-					index = u16(split.next_srlg.reg),
-				},
-			)
+			for &side, kind in block.sides {
 
-			for out in outs {
-				onode := graph_get(ctx.graph, out.id)
-				block := ctx.instr_placement[onode.gvn].block
-				fmt.println("", block, onode)
-				if sblk < int(block) && int(block) < eblk {
-					backend.graph_set_input(ctx.graph, out.id, out.idx, splt)
+				order_moves(&side)
+
+				Reused_Split :: struct {
+					dest:  backend.Reg,
+					split: Node_ID,
+				}
+
+				rsplits: [dynamic]Reused_Split
+
+				for move in side {
+					sid := move.src
+					snode := graph_expand(graph, sid)
+
+					prev := last_split[ctx.slrgs[move.slrg].prev]
+					if prev != 0 {
+						sid = prev
+						snode = graph_expand(graph, sid)
+					}
+
+					split: Node_ID
+
+					for rsplit in rsplits {
+						if rsplit.dest == move.regs.dst {
+							split = rsplit.split
+							break
+						}
+					}
+
+					should_insert := split == 0
+					if should_insert {
+						if len(ctx.instr_placement) < int(block_base) {
+							resize(&ctx.instr_placement, block_base)
+						}
+
+						split = backend.graph_add_split(
+							graph,
+							"sslrg",
+							snode.dt,
+							sid,
+						)
+						if kind == .start {
+							last_split[move.slrg] = split
+						}
+						graph_get(graph, split).scan_split = true
+						graph_get(graph, split).gvn = u32(
+							block_base + len(split_regs),
+						)
+						append(&split_regs, move.regs.dst)
+
+						append(&rsplits, Reused_Split{move.regs.dst, split})
+						append(&ctx.instr_placement, Instr_Placement{u32(bi)})
+						assert(
+							block_base + len(split_regs) ==
+							len(ctx.instr_placement),
+						)
+					}
+
+					backend.graph_set_input(
+						graph,
+						move.dst.id,
+						move.dst.idx,
+						split,
+					)
+
+					if should_insert {
+						insert_idx += 1
+						insert_idx := insert_idx - 1
+						if kind == .end do insert_idx = len(bb.instrs) - 1
+						inject_at(&bb.instrs, insert_idx, split)
+					}
 				}
 			}
 		}
 
-		res = make([]backend.Reg, def_count + len(split_regs))
-		for id, j in ctx.slrg_table {
-			if id == 0 {
-				res[j] = {
-					kind  = .General,
-					index = 4095,
+		order_moves :: proc(list: ^[dynamic]Move) {
+			retry: for _ in 0 ..< 100 {
+				swapped := false
+				for &splt, i in list {
+					for &oth in list[i + 1:] {
+						if oth.regs.src == splt.regs.dst {
+							splt, oth = oth, splt
+							swapped = true
+						}
+					}
 				}
-				continue
+
+				if !swapped {
+					return
+				}
 			}
+
+			panic("Has a cycle")
+		}
+
+		res = make([]backend.Reg, block_base + len(split_regs))
+		for id, j in ctx.slrg_table {
+			if id == 0 do continue
 			slrg := &ctx.slrgs[id]
 			res[j] = {
 				kind  = slrg.lrg.mask.kind,
@@ -890,7 +1085,13 @@ regalloc_round :: proc(
 			}
 		}
 
-		copy(res[def_count:], split_regs[:])
+		copy(res[block_base:], split_regs[:])
+
+		for bb, i in sched.bbs {
+			graph_get(graph, bb.head).gvn = u32(
+				block_base + len(split_regs) + i,
+			)
+		}
 	case .with_coloring:
 		ifg := make([][]^backend.Lrg, used_lrgs)
 		ctx.adj = ifg
@@ -1181,7 +1382,7 @@ regalloc_round :: proc(
 
 			first_set, fok := backend.reg_mask_first_set(lrg.mask)
 			if !fok {
-				lrg.failed_to_alloc = true
+				lrg.failed_to_color = true
 				continue
 			}
 
@@ -1283,8 +1484,8 @@ regalloc_round :: proc(
 
 		ok = false
 
-		if lrg.failed_to_alloc {
-			color_fails += int(lrg.failed_to_alloc)
+		if lrg.failed_to_color {
+			color_fails += 1
 
 			for m in members {
 				is_internal := true
@@ -1407,6 +1608,45 @@ regalloc_round :: proc(
 						)
 					}
 
+					backend.graph_set_input(graph, out.id, out.idx, split)
+				}
+			}
+
+			continue
+		}
+
+		if lrg.failed_to_assign {
+			for m in members {
+				mnode := graph_expand(graph, m)
+				redirect := m
+				for out in slice.clone(mnode.outs) {
+					onode := graph_expand(graph, out.id)
+					oblock := get_node_block(ctx, out.id)
+					if onode.itype == .Phi {
+						last :=
+							backend.graph_inps(ctx.graph, onode.inps[0])[out.idx - 1]
+						oblock = get_node_block(ctx, last)
+					}
+
+					if redirect == m {
+						redirect = split_after(
+							ctx,
+							"assa",
+							m,
+							must = onode.itype == .Phi,
+						)
+					}
+
+					split := redirect
+					if onode.itype != .Split && onode.itype != .Phi {
+						split = split_before(
+							ctx,
+							out.id,
+							out.idx,
+							"assb",
+							redirect,
+						)
+					}
 					backend.graph_set_input(graph, out.id, out.idx, split)
 				}
 			}
@@ -1566,7 +1806,6 @@ regalloc_round :: proc(
 	log_lrgs(&ctx)
 	backend.verify_schedule_integrity(ctx.graph, ctx.sched)
 	if ok {
-		log_lrgs(&ctx)
 		for &bb in sched.bbs {
 			keep := len(bb.instrs) - 1
 			#reverse for instr, i in bb.instrs[:keep] {
@@ -1582,6 +1821,7 @@ regalloc_round :: proc(
 					if inp.output_count == 1 &&
 					   0 < i &&
 					   bb.instrs[i - 1] == inode.inps[0] &&
+					   !inp.scan_split &&
 					   ctx.gmetas[inp.gvn].in_place_slot >= 0 {
 
 						in_slot_id :=
@@ -1646,7 +1886,6 @@ regalloc_round :: proc(
 		}
 	}
 
-	log_lrgs(&ctx)
 	if ok do verify_alloc_integrity(ctx, res)
 
 	return
@@ -1682,13 +1921,6 @@ regalloc_round :: proc(
 
 		meta := &ctx.gmetas[node.gvn]
 		idx := i8(pos) - i8(meta.input_start)
-		// if !(0 <= idx && int(idx) < len(meta.masks)) {
-		// 	backend.graph_display(
-		// 		os.to_writer(os.stderr),
-		// 		ctx.graph,
-		// 		ctx.sched,
-		// 	)
-		// }
 		fmt.assertf(
 			0 <= idx && int(idx) < len(meta.masks),
 			"%v %v %v %v",
@@ -1719,7 +1951,12 @@ regalloc_round :: proc(
 				inode := graph_expand(ctx.graph, instr)
 				if inode.dt == .Void && inode.itype == .Phi do continue
 
-				for inp, idx in data_deps(ctx, inode) {
+				deps := inode.inps
+				if inode.itype != .Split {
+					deps = data_deps(ctx, inode)
+				}
+
+				for inp, idx in deps {
 					inp := inp
 
 					block := &bb
@@ -1929,7 +2166,12 @@ regalloc_round :: proc(
 		node: Node_ID,
 	) -> ^backend.Graph_Basic_Block {
 		node := graph_get(ctx.graph, node)
-		assert(int(node.gvn) < len(ctx.instr_placement))
+		fmt.assertf(
+			int(node.gvn) < len(ctx.instr_placement),
+			"%v %v",
+			len(ctx.instr_placement[:]),
+			node,
+		)
 		return &ctx.sched.bbs[ctx.instr_placement[node.gvn].block]
 	}
 
@@ -1988,7 +2230,9 @@ regalloc_round :: proc(
 			ctx := (^Ctx)(context.user_ptr)
 			if instr.dt != .Void && len(ctx.lrg_table) != 0 {
 				lrg := get_lrg(ctx^, backend.graph_id(ctx.graph, instr))
-				if lrg == nil do return
+				if lrg == nil {
+					return
+				}
 				fmt.wprintf(w, "%v:", lrg.mask)
 				backend.ansi_start(w, lrg.index)
 				fmt.wprintf(w, "%3i", lrg.index)

@@ -927,7 +927,6 @@ verify_schedule_integrity :: proc(
 
 			fmt.assertf(schedules[inode.gvn] == 0, "%v", inode.node)
 			schedules[inode.gvn] = bb.head
-
 		}
 		assert(is_cfg(graph, bb.instrs[len(bb.instrs) - 1]))
 	}
@@ -987,9 +986,7 @@ verify_schedule_integrity :: proc(
 					)
 				}
 
-				fmt.println(insched)
 				for insched != latest {
-					fmt.println("", latest)
 					fmt.assertf(latest != graph.start, "%v %v", inode, innode)
 					latest = graph_idom(graph, latest)
 				}

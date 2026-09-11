@@ -298,11 +298,12 @@ Lrg_Meta :: bit_field u32 {
 }
 
 Lrg_Fails :: bit_field u8 {
-	killed:          bool | 1,
-	failed_to_alloc: bool | 1,
-	reg_conflict:    bool | 1,
-	self_conflict:   bool | 1,
-	pushed_out:      bool | 1,
+	killed:           bool | 1,
+	failed_to_color:  bool | 1,
+	failed_to_assign: bool | 1,
+	reg_conflict:     bool | 1,
+	self_conflict:    bool | 1,
+	pushed_out:       bool | 1,
 }
 
 Lrg :: struct {
@@ -318,12 +319,15 @@ Lrg :: struct {
 	color_ord_idx:    u32,
 }
 
+Slrg_ID :: distinct int
+
 Slrg :: struct {
 	start:    int,
 	end:      int,
 	lrg:      ^Lrg,
 	reg:      int,
 	last_def: Node_ID,
+	prev:     Slrg_ID,
 }
 
 #assert(size_of(Lrg) == 48)

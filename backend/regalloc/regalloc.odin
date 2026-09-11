@@ -11,7 +11,6 @@ import "core:io"
 import "core:log"
 import "core:mem"
 import "core:slice"
-import "core:sort"
 import "core:strings"
 
 Call :: backend.Call
@@ -1239,6 +1238,7 @@ regalloc_round :: proc(
 			color_fails += 1
 
 			for m in members {
+
 				is_internal := true
 				for out in backend.graph_outs(graph, m) {
 					if get_lrg(ctx, out.id) == &lrg do continue
@@ -1254,17 +1254,16 @@ regalloc_round :: proc(
 				id = m
 				fnode := graph_get(graph, m)
 
-				assert(fnode.output_count > 0)
+				fmt.assertf(fnode.output_count > 0, "%v", members)
+
+				outs := slice.clone(backend.graph_outs(graph, m))
 
 				if fnode.itype != .Split {
 					id = split_after(ctx, "sdef", m, must = is_internal)
 					fnode = graph_get(graph, id)
 				}
 
-				for out in slice.clone(backend.graph_outs(graph, m)) {
-					olrg := get_lrg(ctx, out.id)
-					if olrg == nil do continue
-
+				for out in outs {
 					out_node := graph_get(graph, out.id)
 
 					split := id
@@ -1407,55 +1406,6 @@ regalloc_round :: proc(
 	}
 
 	assert(any_fails == !ok)
-
-	if color_fails > 0 {
-		ocursor := 0
-		order := make([]bit_field u64 {
-				id:            u32 | 32,
-				biggest_split: u32 | 32,
-			}, used_lrgs_check)
-
-		for lrg in lrgs[:used_lrgs_check] {
-			if lrg.parent != nil do continue
-			order[ocursor] = {
-				id            = u32(lrg.index),
-				biggest_split = 100000 - lrg.longest_use_area,
-			}
-			ocursor += 1
-		}
-		order = order[:ocursor]
-
-		sort.quick_sort(order)
-
-		for ord in order[:min(16, len(order))] {
-			lrg := lrgs[ord.id]
-			id := lrg.longest_def
-
-			fnode := graph_expand(graph, id)
-
-			split: if lrg.longest_def != 0 && lrg.longest_use_area > 1 {
-
-				fnode.outs = slice.clone(fnode.outs)
-
-				split := split_after(ctx, "cdef", id)
-
-				for o in fnode.outs {
-					onode := graph_get(graph, o.id)
-					split := split
-					if onode.itype != .Split {
-						split = split_before(
-							ctx,
-							o.id,
-							o.idx,
-							"cuse",
-							redirect = split,
-						)
-					}
-					backend.graph_set_input(graph, o.id, o.idx, split)
-				}
-			}
-		}
-	}
 
 	resolve: for sc, oth in ctx.self_conflicts {
 		lrg := &lrgs[sc.lrg]

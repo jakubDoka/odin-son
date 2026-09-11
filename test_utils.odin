@@ -67,6 +67,9 @@ run_test :: proc(
 	diff := DO_DIFFING,
 	no_run := NO_RUN,
 ) {
+	@(static) test_rc := 0
+	intrinsics.atomic_add(&test_rc, 1)
+
 	name_str = name
 	context.logger.options &= ~{.Time, .Date, .Level, .Procedure}
 	context.assertion_failure_proc = hot.init_trace()
@@ -333,8 +336,9 @@ run_test :: proc(
 
 		sync.guard(&log_lock)
 		backend.aggregate_effeciency_stats(&g_stats, ctx.stats)
-		fmt.println("")
-		log_stats(&g_stats)
+		if intrinsics.atomic_sub(&test_rc, 1) == 1 {
+			log_stats(&g_stats)
+		}
 	}
 
 	context.allocator = context.temp_allocator

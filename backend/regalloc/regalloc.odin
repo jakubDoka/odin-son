@@ -221,10 +221,8 @@ regalloc_round :: proc(
 	}
 
 	Liveout :: struct {
-		lrg:      u32,
-		node:     Node_ID,
-		area:     u32,
-		last_pos: u32,
+		lrg:  u32,
+		node: Node_ID,
 	}
 
 	Liveouts :: struct {
@@ -388,12 +386,7 @@ regalloc_round :: proc(
 					// NOTE: this will not happen twice for a given def since
 					// we make sure to not repropagate old lrgs
 					if add_conflict(&ctx, lrg, v.node, instr) {
-						v.area += v.last_pos - u32(j)
 
-						if v.area > lrg.longest_use_area {
-							lrg.longest_use_area = v.area
-							lrg.longest_def = v.node
-						}
 					}
 				}
 
@@ -463,12 +456,7 @@ regalloc_round :: proc(
 						inp_node := graph_get(graph, inp)
 						lrg := ctx.lrg_table[inp_node.gvn]
 
-						add_liveout(
-							&ctx,
-							&curr_live,
-							lrg,
-							{node = inp, last_pos = u32(j)},
-						)
+						add_liveout(&ctx, &curr_live, lrg, {node = inp})
 					}
 				}
 			}
@@ -500,8 +488,6 @@ regalloc_round :: proc(
 			for vl in curr_live.data[:curr_live.len] {
 				lrg := &lrgs[vl.id.lrg]
 				n := vl.id
-				n.area += n.last_pos
-				n.last_pos = u32(len(pred_bb.instrs))
 				changed |= add_liveout(&ctx, pred_liveouts, lrg, n)
 			}
 
@@ -518,7 +504,7 @@ regalloc_round :: proc(
 							&ctx,
 							pred_liveouts,
 							lrg,
-							{node = n, last_pos = u32(len(pred_bb.instrs))},
+							{node = n},
 						)
 					}
 				}
@@ -549,8 +535,6 @@ regalloc_round :: proc(
 				}
 			}
 			chanded = v.node != n.node
-			n.area = max(n.area, v.area)
-			n.last_pos = max(n.last_pos, v.last_pos)
 			v^ = n
 
 			return
@@ -713,7 +697,30 @@ regalloc_round :: proc(
 
 			assert(i < 2)
 
-			active_slrgs: [backend.Reg_Kind][dynamic]^Slrg
+			Entry :: backend.SS_Entry
+
+			Active :: struct {
+				items: #soa[]Entry(^Slrg),
+				len:   int,
+			}
+
+			end_hash :: proc(end: int) -> u8 {
+				return min(u8(end), 254) + 1
+			}
+
+			active_push :: proc(active: ^Active, slrg: ^Slrg) {
+				if len(active.items) == active.len {
+					backend.grow_search_space(
+						&active.items,
+						len(active.items) + size_of(backend.Intern_Vec),
+						context.allocator,
+					)
+				}
+				active.items[active.len] = {end_hash(slrg.end), slrg}
+				active.len += 1
+			}
+
+			active_slrgs: [backend.Reg_Kind]Active
 			crossed_slrgs := 1
 			recoverable_failure := false
 
@@ -721,23 +728,43 @@ regalloc_round :: proc(
 				slrg.lrg.reg = -1
 			}
 
+			to_remove: [dynamic]int
+
 			// TODO: we could skip program points that cause no changes, mabye a
 			// bitset
 			for j in 0 ..< ctx.block_offset {
-				for &active in active_slrgs {
-					keep := 0
-					for slrg in active {
-						if slrg.end == j {
-							backend.reg_mask_set(
-								free_regs[slrg.lrg.mask.kind],
-								slrg.lrg.reg,
-							)
-						} else {
-							active[keep] = slrg
-							keep += 1
+				for &active, kind in active_slrgs {
+					clear(&to_remove)
+
+					siter := backend.simd_iter_from(
+						active.items.hash[:mem.align_forward_int(
+							active.len,
+							size_of(backend.Intern_Vec),
+						)],
+						end_hash(j),
+					)
+
+					for i in backend.simd_iter_next(&siter) {
+						if active.items.id[i].end == j {
+							append(&to_remove, i)
 						}
 					}
-					resize(&active, keep)
+
+					#reverse for i in to_remove {
+						backend.reg_mask_set(
+							free_regs[kind],
+							active.items.id[i].lrg.reg,
+						)
+						active.len -= 1
+						active.items[active.len], active.items[i] =
+							active.items[i], active.items[active.len]
+					}
+
+					if !ODIN_DISABLE_ASSERT {
+						for i in active.items.id[:active.len] {
+							assert(i.end != j)
+						}
+					}
 				}
 
 				for ; crossed_slrgs < len(ctx.slrgs) &&
@@ -747,6 +774,7 @@ regalloc_round :: proc(
 					slrg := &ctx.slrgs[crossed_slrgs]
 					available := free_regs[slrg.lrg.mask.kind]
 					spill_boundary := ctx.ra.spill_boundary[slrg.lrg.mask.kind]
+					active := &active_slrgs[slrg.lrg.mask.kind]
 					// TODO: remove this, its a hack, sepecific to x64
 					if can_spill(ctx, slrg.lrg) {
 						slrg.lrg.mask.masks[0] &= -1 << uint(spill_boundary)
@@ -773,7 +801,7 @@ regalloc_round :: proc(
 							backend.reg_mask_first_set(
 								slrg.lrg.mask,
 							) or_else panic("")
-						for oslrg in active_slrgs[slrg.lrg.mask.kind] {
+						for oslrg in active.items.id[:active.len] {
 							backend.reg_mask_set(
 								oslrg.lrg.mask,
 								reg,
@@ -795,12 +823,12 @@ regalloc_round :: proc(
 					slrg.lrg.reg = i16(reg)
 
 					if slrg.lrg.reg != -1 {
-						append(&active_slrgs[slrg.lrg.mask.kind], slrg)
+						active_push(active, slrg)
 						backend.reg_mask_set(available, slrg.lrg.reg, false)
 					} else {
 						best := slrg
 						best_idx := -1
-						for oslrg, i in active_slrgs[slrg.lrg.mask.kind] {
+						for oslrg, i in active.items.id[:active.len] {
 							if (oslrg.start < best.start &&
 								   oslrg.lrg.fails == {} &&
 								   !can_spill(ctx, oslrg.lrg)) ||
@@ -812,7 +840,7 @@ regalloc_round :: proc(
 						}
 						best.lrg.failed_to_assign = true
 						if best_idx >= 0 {
-							active_slrgs[slrg.lrg.mask.kind][best_idx] = slrg
+							active.items[best_idx] = {end_hash(slrg.end), slrg}
 							slrg.lrg.reg = best.lrg.reg
 						}
 					}
@@ -882,9 +910,6 @@ regalloc_round :: proc(
 				ilrg := find(get_lrg(ctx, instr))
 				inlrg := find(get_lrg(ctx, inode.inps[0]))
 
-				assert(graph_get(graph, inlrg.longest_def).dt != .Void)
-				assert(graph_get(graph, ilrg.longest_def).dt != .Void)
-
 				if ilrg == inlrg do continue
 
 				iadj, inadj := ifg[ilrg.index], ifg[inlrg.index]
@@ -942,8 +967,6 @@ regalloc_round :: proc(
 				}
 
 				winner.node = inlrg.node
-				winner.longest_use_area = inlrg.longest_use_area
-				winner.longest_def = inlrg.longest_def
 				ifg[winner.index] = buf
 				ifg[other.index] = {}
 
@@ -1044,16 +1067,9 @@ regalloc_round :: proc(
 					continue
 				}
 
-				if false {
-					if blrg.longest_use_area > lrg.longest_use_area {
-						continue
-					}
-				}
-
 				best = pick
 			}
 
-			lrgs[ctx.color_ord[best]].low_cost_spill = true
 			swap_ord(
 				ctx,
 				&lrgs[ctx.color_ord[ready]],
@@ -1239,8 +1255,6 @@ regalloc_round :: proc(
 		ok = false
 
 		if lrg.failed_to_color {
-			assert(lrg.low_cost_spill)
-
 			inserted_splits := 0
 			for m in members {
 				is_internal := true

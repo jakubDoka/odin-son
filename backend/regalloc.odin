@@ -322,17 +322,14 @@ Lrg_Fails :: bit_field u8 {
 }
 
 Lrg :: struct {
-	node:             Node_ID,
-	using _:          Lrg_Meta,
-	mask:             Reg_Mask,
-	parent:           ^Lrg,
+	node:          Node_ID,
+	using _:       Lrg_Meta,
+	mask:          Reg_Mask,
+	parent:        ^Lrg,
 	// TODO: this should go into meta instead of the index
-	using fails:      Lrg_Fails,
-	low_cost_spill:   bool,
-	reg:              i16,
-	longest_use_area: u32,
-	longest_def:      Node_ID,
-	color_ord_idx:    u32,
+	using fails:   Lrg_Fails,
+	reg:           i16,
+	color_ord_idx: u32,
 }
 
 Slrg_ID :: distinct int

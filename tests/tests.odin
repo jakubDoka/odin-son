@@ -12671,6 +12671,30 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) grouped_procedure_parameters_count_as_separate_arguments :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc() -> int {
+	return add(20, 22)
+}
+
+add :: proc(a, b: int) -> int {
+	return a + b
+}
+
+main.run_test(t, `grouped_procedure_parameters_count_as_separate_arguments`, `
+package main
+
+main :: proc() -> int {
+	return add(20, 22)
+}
+
+add :: proc(a, b: int) -> int {
+	return a + b
+}
+`, main_())
+}
 @(test) fuzz_0092546c2ab7b49f :: proc(t: ^testing.T) {
 main.run_test(t, "fuzz_0092546c2ab7b49f", string(#load("../fuzz/crashes/0092546c2ab7b49f.odin")), 0,
 				diff = false, no_run = true)
@@ -14465,6 +14489,7 @@ fail_bad_literals_and_types(nil)
 fail_unsupported_constructs(nil)
 fail_uninferable_polymorphism(nil)
 nested_ifs_with_identical_condition(nil)
+grouped_procedure_parameters_count_as_separate_arguments(nil)
 fuzz_0092546c2ab7b49f(nil)
 fuzz_00f1be4a1ea4c499(nil)
 fuzz_0203aad88c140351(nil)

@@ -132,6 +132,7 @@ main :: proc() {
 	ctx.target.spec = &x64.SPEC
 	ctx.check = check
 	ctx.graph.has_dbg = debug
+	ctx.ralloc_mode = level.ralloc_mode
 	ctx.errors = os.to_writer(os.stderr)
 
 	times: struct {

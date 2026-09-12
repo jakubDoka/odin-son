@@ -75,7 +75,7 @@ regalloc_round :: proc(
 		instr_placement: [dynamic]Instr_Placement,
 		lrg_table:       []^backend.Lrg,
 		self_conflicts:  map[Self_Conflict]Node_ID,
-		adj:             [][]^backend.Lrg,
+		adj:             [][]u32,
 		gmetas:          []backend.Regalloc_Node_Meta,
 		smetas:          []Lrg_Meta,
 		color_ord:       []u32,
@@ -593,6 +593,12 @@ regalloc_round :: proc(
 		current_slrg: Slrg_ID,
 	}
 
+	can_spill :: proc(ctx: Ctx, lrg: ^backend.Lrg) -> bool {
+		spill_boundary := ctx.ra.spill_boundary[lrg.mask.kind]
+		// TODO: remove this, its a hack, sepecific to x64
+		return (backend.reg_mask_last_set(lrg.mask) or_else 0) > spill_boundary
+	}
+
 	switch mode {
 	case .with_scan:
 		if ok {
@@ -706,6 +712,7 @@ regalloc_round :: proc(
 			}
 
 			assert(i < 2)
+
 			active_slrgs: [backend.Reg_Kind][dynamic]^Slrg
 			crossed_slrgs := 1
 			recoverable_failure := false
@@ -736,15 +743,6 @@ regalloc_round :: proc(
 				for ; crossed_slrgs < len(ctx.slrgs) &&
 				    ctx.slrgs[crossed_slrgs].start == j;
 				    crossed_slrgs += 1 {
-
-					can_spill :: proc(ctx: Ctx, lrg: ^backend.Lrg) -> bool {
-						spill_boundary := ctx.ra.spill_boundary[lrg.mask.kind]
-						// TODO: remove this, its a hack, sepecific to x64
-						return(
-							(backend.reg_mask_last_set(lrg.mask) or_else 0) >
-							spill_boundary \
-						)
-					}
 
 					slrg := &ctx.slrgs[crossed_slrgs]
 					available := free_regs[slrg.lrg.mask.kind]
@@ -828,9 +826,10 @@ regalloc_round :: proc(
 			if !ok || !recoverable_failure do break
 		}
 	case .with_coloring:
-		ifg := make([][]^backend.Lrg, used_lrgs)
+		ifg := make([][]u32, used_lrgs)
+		ifg_counts := make([]int, used_lrgs)
 		ctx.adj = ifg
-		slices := make([]^backend.Lrg, bit_arr.pop_count(interference))
+		slices := make([]u32, bit_arr.pop_count(interference))
 		cursor := 0
 		slice_base := 0
 		slice_cursor := 0
@@ -854,12 +853,13 @@ regalloc_round :: proc(
 
 				if edge >= end {
 					ifg[cursor] = slices[slice_base:slice_cursor]
+					ifg_counts[cursor] = len(ifg[cursor])
 					slice_base = slice_cursor
 					cursor += 1
 					continue
 				}
 
-				slices[slice_cursor] = &lrgs[edge - base]
+				slices[slice_cursor] = u32(edge - base)
 				slice_cursor += 1
 				break
 			}
@@ -867,6 +867,7 @@ regalloc_round :: proc(
 
 		if len(ifg) != 0 {
 			ifg[cursor] = slices[slice_base:slice_cursor]
+			ifg_counts[cursor] = len(ifg[cursor])
 		}
 
 		coalesced := false
@@ -891,8 +892,8 @@ regalloc_round :: proc(
 				collision := false
 				to_move := 0
 				for &a in iadj {
-					collision |= a == inlrg
-					if !slice.contains(inadj, a) {
+					collision |= a == inlrg.index
+					if !lrg_contains(inadj, a) {
 						a, iadj[to_move] = iadj[to_move], a
 						to_move += 1
 					}
@@ -918,7 +919,7 @@ regalloc_round :: proc(
 
 				coalesced = true
 
-				buf := make([]^backend.Lrg, total)
+				buf := make([]u32, total)
 				copy(buf, iadj[:to_move])
 				copy(buf[to_move:], inadj)
 
@@ -928,15 +929,15 @@ regalloc_round :: proc(
 				to_patch := winner == ilrg ? inadj : iadj
 				other := winner == ilrg ? inlrg : ilrg
 				for adj in to_patch {
-					assert(adj.parent == nil)
-					oadj := ifg[adj.index]
-					idx, _ := slice.linear_search(oadj, other)
+					assert(lrgs[adj].parent == nil)
+					oadj := ifg[adj]
+					idx, _ := lrg_search(oadj, other.index)
 
-					if slice.contains(oadj, winner) {
+					if lrg_contains(oadj, winner.index) {
 						oadj[idx] = oadj[len(oadj) - 1]
-						ifg[adj.index] = oadj[:len(oadj) - 1]
+						ifg[adj] = oadj[:len(oadj) - 1]
 					} else {
-						oadj[idx] = winner
+						oadj[idx] = winner.index
 					}
 				}
 
@@ -964,7 +965,7 @@ regalloc_round :: proc(
 					}
 
 					for a in adj {
-						assert(slice.contains(ifg[a.index], &lrgs[i]))
+						assert(lrg_contains(ifg[a], u32(i)))
 					}
 				}
 			}
@@ -1018,8 +1019,8 @@ regalloc_round :: proc(
 				remove_from_ifg(ctx, lrg)
 
 				for olrg in ctx.adj[lrg.index] {
-					if is_colorable(ctx, olrg, ready) {
-						swap_ord(ctx, olrg, &lrgs[ctx.color_ord[ready]])
+					if is_colorable(ctx, &lrgs[olrg], ready) {
+						swap_ord(ctx, &lrgs[olrg], &lrgs[ctx.color_ord[ready]])
 						ready += 1
 					}
 				}
@@ -1035,17 +1036,24 @@ regalloc_round :: proc(
 				blrg := &lrgs[ctx.color_ord[best]]
 				lrg := &lrgs[ctx.color_ord[pick]]
 
-				if blrg.longest_use_area > lrg.longest_use_area {
+				if can_spill(ctx, blrg) {
 					continue
 				}
 
-				if len(ifg[blrg.index]) > len(ifg[lrg.index]) {
+				if ifg_counts[blrg.index] > ifg_counts[lrg.index] {
 					continue
+				}
+
+				if false {
+					if blrg.longest_use_area > lrg.longest_use_area {
+						continue
+					}
 				}
 
 				best = pick
 			}
 
+			lrgs[ctx.color_ord[best]].low_cost_spill = true
 			swap_ord(
 				ctx,
 				&lrgs[ctx.color_ord[ready]],
@@ -1070,9 +1078,9 @@ regalloc_round :: proc(
 
 		remove_from_ifg :: proc(ctx: Ctx, lrg: ^backend.Lrg) {
 			for adj in ctx.adj[lrg.index] {
-				slc := &ctx.adj[adj.index]
+				slc := &ctx.adj[adj]
 				idx :=
-					slice.linear_search(slc^, lrg) or_else panic(
+					lrg_search(slc^, lrg.index) or_else panic(
 						"removed a lrg twice",
 					)
 				slc[idx], slc[len(slc) - 1] = slc[len(slc) - 1], slc[idx]
@@ -1102,11 +1110,11 @@ regalloc_round :: proc(
 			assert(lrg.parent == nil)
 
 			for inter in n {
-				adjs := &ifg[inter.index]
+				adjs := &ifg[inter]
 				adjs^ = raw_data(adjs^)[:len(adjs) + 1]
-				assert(adjs[len(adjs) - 1] == lrg)
-				if inter.reg != -1 {
-					backend.reg_mask_set(lrg.mask, inter.reg, false)
+				assert(adjs[len(adjs) - 1] == lrg.index)
+				if lrgs[inter].reg != -1 {
+					backend.reg_mask_set(lrg.mask, lrgs[inter].reg, false)
 				}
 			}
 
@@ -1118,6 +1126,7 @@ regalloc_round :: proc(
 			first_set, fok := backend.reg_mask_first_set(lrg.mask)
 			if !fok {
 				lrg.failed_to_color = true
+				//assert(lrg.low_cost_spill)
 				continue
 			}
 
@@ -1144,6 +1153,15 @@ regalloc_round :: proc(
 	}
 
 	ctx.res = res
+
+	lrg_search :: proc(lrgs: []u32, vl: u32) -> (int, bool) {
+		return arna.simd_search(lrgs, vl)
+	}
+
+	lrg_contains :: proc(lrgs: []u32, vl: u32) -> bool {
+		_, ok := lrg_search(lrgs, vl)
+		return ok
+	}
 
 	unify :: proc(a, b: ^backend.Lrg) -> ^backend.Lrg {
 		a, b := a, b
@@ -1218,10 +1236,11 @@ regalloc_round :: proc(
 		any_fails = true
 
 		members := collect_lrg_members(ctx, &lrg)
-
 		ok = false
 
 		if lrg.failed_to_color {
+			assert(lrg.low_cost_spill)
+
 			inserted_splits := 0
 			for m in members {
 				is_internal := true

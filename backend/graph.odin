@@ -465,7 +465,7 @@ worklist_add :: proc(
 	node := graph_get(graph, id)
 	if node.rtype == DEAD_NODE_KIND do return
 	if node.in_worklist {
-		if !ODIN_DISABLE_ASSERT {
+		if !ODIN_DISABLE_ASSERT && false {
 			for elem in worklist.data {
 				if elem == id do return
 			}

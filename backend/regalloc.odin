@@ -328,6 +328,7 @@ Lrg :: struct {
 	parent:           ^Lrg,
 	// TODO: this should go into meta instead of the index
 	using fails:      Lrg_Fails,
+	low_cost_spill:   bool,
 	reg:              i16,
 	longest_use_area: u32,
 	longest_def:      Node_ID,

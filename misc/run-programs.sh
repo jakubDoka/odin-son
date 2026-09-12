@@ -18,19 +18,22 @@ PROGRAMS_DIR="$ROOT/test-programs"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
-JIT="$ROOT/jit"
-
 # The optimization levels mirror OPT_LEVELS in gen.odin / the unit-test harness
 # in test_utils.odin. Each program is compiled once per level and every level is
 # compared against the same (jit-agnostic) reference Odin binary.
-LEVELS=(none mininal moderate all aggresive)
+LEVELS=(none-quick none mininal moderate all aggresive)
 
 # Build the compiler unless one was already provided.
-echo "building jit compiler..."
-(cd "$ROOT" && odin build . -out:jit -debug) || {
-	echo "failed to build jit compiler"
-	exit 1
-}
+if [[ -n "${JIT:-}" ]]; then
+	echo "using jit compiler: $JIT"
+else
+	JIT="$ROOT/jit"
+	echo "building jit compiler..."
+	(cd "$ROOT" && odin build . -out:jit -debug) || {
+		echo "failed to build jit compiler"
+		exit 1
+	}
+fi
 
 pass=0
 fail=0

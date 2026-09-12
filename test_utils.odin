@@ -535,7 +535,7 @@ disasm :: proc(sb: ^strings.Builder, ctx: Gen_Ctx) {
 		label_base := len(decoded_label_info)
 		info_base := len(decoded_instr_info)
 		error_base := len(errors)
-		labels[x86.Label_Offset(len(decoded_label_info))] = prc.name
+		labels[x86.Label_Offset(offset)] = prc.name
 		append(&decoded_label_info, 0)
 
 		x86.decode(

@@ -6,13 +6,13 @@ dirty:
     lea rdi, [rsp]
     call.q [rip - 0x23]
     xor eax, eax
-2:
+1:
     cmp rax, 0x40
-    jnl 3
+    jnl 2
     mov.q [rsp + rax*8], 0x55
     add rax, 1
-    jmp 2
-3:
+    jmp 1
+2:
     mov rax, 3
     imul rax, rax, 8
     lea rcx, [rsp]
@@ -20,7 +20,7 @@ dirty:
     mov.q rax, [rax]
     add rsp, 0x208
     ret
-4:
+main:
     push rbx
     push rbp
     sub rsp, 0x48
@@ -78,13 +78,13 @@ dirty:
     lea rdi, [rsp]
     call.q [rip - 0x23]
     xor eax, eax
-2:
+1:
     cmp rax, 0x40
-    jnl 3
+    jnl 2
     mov.q [rsp + rax*8], 0x55
     add rax, 1
-    jmp 2
-3:
+    jmp 1
+2:
     mov rax, 3
     imul rcx, rax, 8
     lea rax, [rsp]
@@ -92,7 +92,7 @@ dirty:
     mov.q rax, [rcx]
     add rsp, 0x208
     ret
-4:
+main:
     push rbx
     push rbp
     push r12
@@ -147,17 +147,17 @@ dirty:
     mov rdx, 0x200
     call.q [rip - 0x23]
     xor eax, eax
-2:
+1:
     cmp rax, 0x40
-    jnl 3
+    jnl 2
     mov.q [rsp + rax*8], 0x55
     add rax, 1
-    jmp 2
-3:
+    jmp 1
+2:
     mov.q rax, [rsp + 0x18]
     add rsp, 0x208
     ret
-4:
+main:
     sub rsp, 0x38
     call dirty
     mov.q [rsp + 0x30], rax
@@ -188,17 +188,17 @@ dirty:
     mov rdx, 0x200
     call.q [rip - 0x23]
     xor eax, eax
-2:
+1:
     cmp rax, 0x40
-    jnl 3
+    jnl 2
     mov.q [rsp + rax*8], 0x55
     add rax, 1
-    jmp 2
-3:
+    jmp 1
+2:
     mov.q rax, [rsp + 0x18]
     add rsp, 0x208
     ret
-4:
+main:
     push rbx
     sub rsp, 0x30
     call dirty
@@ -230,17 +230,17 @@ dirty:
     mov rdx, 0x200
     call.q [rip - 0x23]
     xor eax, eax
-2:
+1:
     cmp rax, 0x40
-    jnl 3
+    jnl 2
     mov.q [rsp + rax*8], 0x55
     add rax, 1
-    jmp 2
-3:
+    jmp 1
+2:
     mov.q rax, [rsp + 0x18]
     add rsp, 0x208
     ret
-4:
+main:
     sub rsp, 0x38
     call dirty
     mov.q [rsp + 0x30], rax
@@ -270,17 +270,17 @@ dirty:
     mov rdx, 0x200
     call.q [rip - 0x23]
     xor eax, eax
-2:
+1:
     cmp rax, 0x40
-    jnl 3
+    jnl 2
     mov.q [rsp + rax*8], 0x55
     add rax, 1
-    jmp 2
-3:
+    jmp 1
+2:
     mov.q rax, [rsp + 0x18]
     add rsp, 0x208
     ret
-4:
+main:
     sub rsp, 0x38
     call dirty
     mov rcx, rax
@@ -309,15 +309,15 @@ dirty:
     mov rdx, 0x200
     call.q [rip - 0x23]
     xor eax, eax
-2:
+1:
     mov.q [rsp + rax*8], 0x55
     add rax, 1
     cmp rax, 0x40
-    jnge 2
+    jnge 1
     mov.q rax, [rsp + 0x18]
     add rsp, 0x208
     ret
-3:
+main:
     sub rsp, 0x38
     call dirty
     mov rcx, rax
@@ -339,18 +339,18 @@ dirty:
     add rsp, 0x38
     ret
 =========== OPT LEVEL: aggresive ===========
-dirty:
+main:
     sub rsp, 0x238
     lea rdi, [rsp + 0x30]
     xor esi, esi
     mov rdx, 0x200
     call.q [rip - 0x24]
     xor eax, eax
-2:
+1:
     mov.q [rsp + rax*8 + 0x30], 0x55
     add rax, 1
     cmp rax, 0x40
-    jnge 2
+    jnge 1
     mov.q rdx, [rsp + 0x48]
     pxor xmm0, xmm0
     movups.x [rsp], xmm0

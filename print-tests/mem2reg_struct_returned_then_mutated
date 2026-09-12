@@ -5,7 +5,7 @@ opaque:
     mov.q rax, [rsp]
     add rsp, 8
     ret
-3:
+mk:
     sub rsp, 0x28
     mov.q [rsp + 0x10], rdi
     mov.q [rsp + 0x18], rsi
@@ -21,7 +21,7 @@ opaque:
     mov.q rdx, [rsp + 0x8]
     add rsp, 0x28
     ret
-4:
+main:
     sub rsp, 0x28
     lea rdi, [rsp]
     xor esi, esi
@@ -35,7 +35,7 @@ opaque:
     mov.q [rsp + 0x18], rax
     mov.q rdi, [rsp + 0x10]
     mov.q rsi, [rsp + 0x18]
-    call 3
+    call mk
     mov.q [rsp], rax
     mov.q [rsp + 0x8], rdx
     mov.q rax, [rsp + 0x8]
@@ -49,7 +49,7 @@ opaque:
 opaque:
     mov rax, rdi
     ret
-3:
+mk:
     push rbx
     push rbp
     sub rsp, 0x18
@@ -67,7 +67,7 @@ opaque:
     pop rbp
     pop rbx
     ret
-4:
+main:
     push rbx
     sub rsp, 0x10
     lea rdi, [rsp]
@@ -81,7 +81,7 @@ opaque:
     call opaque
     mov rdi, rbx
     mov rsi, rax
-    call 3
+    call mk
     mov.q [rsp], rax
     mov.q [rsp + 0x8], rdx
     mov.q rax, [rsp + 0x8]
@@ -99,7 +99,7 @@ opaque:
     mov.q rax, [rsp]
     add rsp, 8
     ret
-3:
+mk:
     sub rsp, 0x28
     mov.q [rsp + 0x10], rdi
     mov.q [rsp + 0x18], rsi
@@ -115,7 +115,7 @@ opaque:
     mov.q rdx, [rsp + 0x8]
     add rsp, 0x28
     ret
-4:
+main:
     sub rsp, 0x28
     lea rdi, [rsp]
     xor esi, esi
@@ -129,7 +129,7 @@ opaque:
     mov.q [rsp + 0x18], rax
     mov.q rdi, [rsp + 0x10]
     mov.q rsi, [rsp + 0x18]
-    call 3
+    call mk
     mov.q [rsp], rax
     mov.q [rsp + 0x8], rdx
     mov.q rax, [rsp + 0x8]
@@ -143,7 +143,7 @@ opaque:
 opaque:
     mov rax, rdi
     ret
-3:
+mk:
     push rbx
     push rbp
     sub rsp, 0x18
@@ -161,7 +161,7 @@ opaque:
     pop rbp
     pop rbx
     ret
-4:
+main:
     push rbx
     sub rsp, 0x10
     lea rdi, [rsp]
@@ -175,7 +175,7 @@ opaque:
     call opaque
     mov rdi, rbx
     mov rsi, rax
-    call 3
+    call mk
     mov.q [rsp], rax
     mov.q [rsp + 0x8], rdx
     mov.q rax, [rsp + 0x8]
@@ -193,7 +193,7 @@ opaque:
     mov.q rax, [rsp]
     add rsp, 8
     ret
-3:
+mk:
     sub rsp, 0x18
     mov.q [rsp], rdi
     mov.q [rsp + 0x8], rsi
@@ -201,7 +201,7 @@ opaque:
     mov.q rdx, [rsp + 0x8]
     add rsp, 0x18
     ret
-4:
+main:
     sub rsp, 0x18
     mov rdi, 6
     call opaque
@@ -211,7 +211,7 @@ opaque:
     mov.q [rsp + 0x8], rax
     mov.q rdi, [rsp]
     mov.q rsi, [rsp + 0x8]
-    call 3
+    call mk
     add rax, rdx
     imul rax, rax, 0x64
     add rax, rdx
@@ -221,12 +221,12 @@ opaque:
 opaque:
     mov rax, rdi
     ret
-3:
+mk:
     mov rax, rdi
     mov rcx, rsi
     mov rdx, rcx
     ret
-4:
+main:
     push rbx
     mov rdi, 6
     call opaque
@@ -235,7 +235,7 @@ opaque:
     call opaque
     mov rdi, rbx
     mov rsi, rax
-    call 3
+    call mk
     add rax, rdx
     imul rax, rax, 0x64
     add rax, rdx
@@ -245,12 +245,12 @@ opaque:
 opaque:
     mov rax, rdi
     ret
-3:
+mk:
     mov rax, rdi
     mov rcx, rsi
     mov rdx, rcx
     ret
-4:
+main:
     push rbx
     mov rdi, 6
     call opaque
@@ -259,13 +259,13 @@ opaque:
     call opaque
     mov rdi, rbx
     mov rsi, rax
-    call 3
+    call mk
     add rax, rdx
     imul rax, rax, 0x64
     add rax, rdx
     pop rbx
     ret
 =========== OPT LEVEL: aggresive ===========
-opaque:
+main:
     mov rax, 0x5e5
     ret

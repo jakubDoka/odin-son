@@ -3,57 +3,57 @@ main:
     sub rsp, 8
     mov rdi, 1
     mov rsi, 2
-    call 4
+    call a
     add rsp, 8
     ret
-4:
+a:
     sub rsp, 0x18
     mov.q [rsp], rdi
     mov.q [rsp + 0x8], rsi
     mov.q rax, [rsp]
     cmp rax, 0
-    jz 7
+    jz 4
     mov.q rax, [rsp + 0x8]
     cmp rax, 2
-    jz 6
+    jz 3
     mov.q rax, [rsp]
     cmp rax, 1
-    jz 5
+    jz 2
     mov.q rdi, [rsp]
-    call 9
+    call b
     mov.q [rsp + 0x10], rax
     mov.q rdi, [rsp + 0x8]
-    call 10
+    call c
     mov.q rcx, [rsp + 0x10]
     add rcx, rax
     mov rcx, rcx
-    jmp 8
-5:
+    jmp 5
+2:
     mov.q rdi, [rsp]
-    call 9
+    call b
     mov.q [rsp], rax
     mov.q rax, [rsp + 0x8]
     imul rdi, rax, 2
-    call 10
+    call c
     mov.q rdx, [rsp]
     add rdx, rax
     mov rcx, rdx
-    jmp 8
-6:
+    jmp 5
+3:
     mov.q rax, [rsp + 0x8]
     imul rax, rax, 6
     mov rcx, rax
-    jmp 8
-7:
+    jmp 5
+4:
     xor ecx, ecx
-8:
+5:
     mov rax, rcx
     add rsp, 0x18
     ret
-9:
+b:
     imul rax, rdi, 2
     ret
-10:
+c:
     imul rax, rdi, 3
     ret
 =========== OPT LEVEL: none ===========
@@ -61,48 +61,48 @@ main:
     sub rsp, 8
     mov rdi, 1
     mov rsi, 2
-    call 4
+    call a
     add rsp, 8
     ret
-4:
+a:
     push rbx
     push rbp
     sub rsp, 8
     mov rbp, rsi
     cmp rdi, 0
-    jz 7
+    jz 4
     cmp rbp, 2
-    jz 6
+    jz 3
     cmp rdi, 1
-    jz 5
-    call 9
+    jz 2
+    call b
     mov rbx, rax
     mov rdi, rbp
-    call 10
+    call c
     add rbx, rax
-    jmp 8
-5:
-    call 9
+    jmp 5
+2:
+    call b
     mov rbx, rax
     imul rdi, rbp, 2
-    call 10
+    call c
     add rbx, rax
-    jmp 8
-6:
+    jmp 5
+3:
     imul rbx, rbp, 6
-    jmp 8
-7:
+    jmp 5
+4:
     xor ebx, ebx
-8:
+5:
     mov rax, rbx
     add rsp, 8
     pop rbp
     pop rbx
     ret
-9:
+b:
     imul rax, rdi, 2
     ret
-10:
+c:
     imul rax, rdi, 3
     ret
 =========== OPT LEVEL: mininal-quick ===========
@@ -110,57 +110,57 @@ main:
     sub rsp, 8
     mov rdi, 1
     mov rsi, 2
-    call 4
+    call a
     add rsp, 8
     ret
-4:
+a:
     sub rsp, 0x18
     mov.q [rsp], rdi
     mov.q [rsp + 0x8], rsi
     mov.q rax, [rsp]
     cmp rax, 0
-    jz 7
+    jz 4
     mov.q rax, [rsp + 0x8]
     cmp rax, 2
-    jz 6
+    jz 3
     mov.q rax, [rsp]
     cmp rax, 1
-    jz 5
+    jz 2
     mov.q rdi, [rsp]
-    call 9
+    call b
     mov.q [rsp + 0x10], rax
     mov.q rdi, [rsp + 0x8]
-    call 10
+    call c
     mov.q rcx, [rsp + 0x10]
     add rcx, rax
     mov rcx, rcx
-    jmp 8
-5:
+    jmp 5
+2:
     mov.q rdi, [rsp]
-    call 9
+    call b
     mov.q [rsp], rax
     mov.q rax, [rsp + 0x8]
     imul rdi, rax, 2
-    call 10
+    call c
     mov.q rdx, [rsp]
     add rdx, rax
     mov rcx, rdx
-    jmp 8
-6:
+    jmp 5
+3:
     mov.q rax, [rsp + 0x8]
     imul rax, rax, 6
     mov rcx, rax
-    jmp 8
-7:
+    jmp 5
+4:
     xor ecx, ecx
-8:
+5:
     mov rax, rcx
     add rsp, 0x18
     ret
-9:
+b:
     imul rax, rdi, 2
     ret
-10:
+c:
     imul rax, rdi, 3
     ret
 =========== OPT LEVEL: mininal ===========
@@ -168,48 +168,48 @@ main:
     sub rsp, 8
     mov rdi, 1
     mov rsi, 2
-    call 4
+    call a
     add rsp, 8
     ret
-4:
+a:
     push rbx
     push rbp
     sub rsp, 8
     mov rbp, rsi
     cmp rdi, 0
-    jz 7
+    jz 4
     cmp rbp, 2
-    jz 6
+    jz 3
     cmp rdi, 1
-    jz 5
-    call 9
+    jz 2
+    call b
     mov rbx, rax
     mov rdi, rbp
-    call 10
+    call c
     add rbx, rax
-    jmp 8
-5:
-    call 9
+    jmp 5
+2:
+    call b
     mov rbx, rax
     imul rdi, rbp, 2
-    call 10
+    call c
     add rbx, rax
-    jmp 8
-6:
+    jmp 5
+3:
     imul rbx, rbp, 6
-    jmp 8
-7:
+    jmp 5
+4:
     xor ebx, ebx
-8:
+5:
     mov rax, rbx
     add rsp, 8
     pop rbp
     pop rbx
     ret
-9:
+b:
     imul rax, rdi, 2
     ret
-10:
+c:
     imul rax, rdi, 3
     ret
 =========== OPT LEVEL: moderate-quick ===========
@@ -217,57 +217,57 @@ main:
     sub rsp, 8
     mov rdi, 1
     mov rsi, 2
-    call 4
+    call a
     add rsp, 8
     ret
-4:
+a:
     sub rsp, 0x18
     mov.q [rsp], rdi
     mov.q [rsp + 0x8], rsi
     mov.q rax, [rsp]
     cmp rax, 0
-    jz 7
+    jz 4
     mov.q rax, [rsp + 0x8]
     cmp rax, 2
-    jz 6
+    jz 3
     mov.q rax, [rsp]
     cmp rax, 1
-    jz 5
+    jz 2
     mov.q rdi, [rsp]
-    call 9
+    call b
     mov.q [rsp + 0x10], rax
     mov.q rdi, [rsp + 0x8]
-    call 10
+    call c
     mov.q rcx, [rsp + 0x10]
     add rcx, rax
     mov rcx, rcx
-    jmp 8
-5:
+    jmp 5
+2:
     mov.q rdi, [rsp]
-    call 9
+    call b
     mov.q [rsp], rax
     mov.q rax, [rsp + 0x8]
     imul rdi, rax, 2
-    call 10
+    call c
     mov.q rdx, [rsp]
     add rdx, rax
     mov rcx, rdx
-    jmp 8
-6:
+    jmp 5
+3:
     mov.q rax, [rsp + 0x8]
     imul rax, rax, 6
     mov rcx, rax
-    jmp 8
-7:
+    jmp 5
+4:
     xor ecx, ecx
-8:
+5:
     mov rax, rcx
     add rsp, 0x18
     ret
-9:
+b:
     imul rax, rdi, 2
     ret
-10:
+c:
     imul rax, rdi, 3
     ret
 =========== OPT LEVEL: moderate ===========
@@ -275,48 +275,48 @@ main:
     sub rsp, 8
     mov rdi, 1
     mov rsi, 2
-    call 4
+    call a
     add rsp, 8
     ret
-4:
+a:
     push rbx
     push rbp
     sub rsp, 8
     mov rbp, rsi
     cmp rdi, 0
-    jz 7
+    jz 4
     cmp rbp, 2
-    jz 6
+    jz 3
     cmp rdi, 1
-    jz 5
-    call 9
+    jz 2
+    call b
     mov rbx, rax
     mov rdi, rbp
-    call 10
+    call c
     add rbx, rax
-    jmp 8
-5:
-    call 9
+    jmp 5
+2:
+    call b
     mov rbx, rax
     imul rdi, rbp, 2
-    call 10
+    call c
     add rbx, rax
-    jmp 8
-6:
+    jmp 5
+3:
     imul rbx, rbp, 6
-    jmp 8
-7:
+    jmp 5
+4:
     xor ebx, ebx
-8:
+5:
     mov rax, rbx
     add rsp, 8
     pop rbp
     pop rbx
     ret
-9:
+b:
     imul rax, rdi, 2
     ret
-10:
+c:
     imul rax, rdi, 3
     ret
 =========== OPT LEVEL: all ===========
@@ -324,48 +324,48 @@ main:
     sub rsp, 8
     mov rdi, 1
     mov rsi, 2
-    call 4
+    call a
     add rsp, 8
     ret
-4:
+a:
     push rbx
     push rbp
     sub rsp, 8
     mov rbp, rsi
     cmp rdi, 0
-    jz 7
+    jz 4
     cmp rbp, 2
-    jz 6
+    jz 3
     cmp rdi, 1
-    jz 5
-    call 9
+    jz 2
+    call b
     mov rbx, rax
     mov rdi, rbp
-    call 10
+    call c
     add rbx, rax
-    jmp 8
-5:
-    call 9
+    jmp 5
+2:
+    call b
     mov rbx, rax
     imul rdi, rbp, 2
-    call 10
+    call c
     add rbx, rax
-    jmp 8
-6:
+    jmp 5
+3:
     imul rbx, rbp, 6
-    jmp 8
-7:
+    jmp 5
+4:
     xor ebx, ebx
-8:
+5:
     mov rax, rbx
     add rsp, 8
     pop rbp
     pop rbx
     ret
-9:
+b:
     imul rax, rdi, 2
     ret
-10:
+c:
     imul rax, rdi, 3
     ret
 =========== OPT LEVEL: aggresive ===========

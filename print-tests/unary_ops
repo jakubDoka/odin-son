@@ -1,21 +1,17 @@
 =========== OPT LEVEL: none-quick ===========
 test_not_reg:
     cmp dil, 0
-test_neg_reg:
     setz al
-test_bitnot i8:
     movzx rax, al
-test_bitnot i32:
     ret
-test_neg i8:
+test_not_i8:
     cmp.b [rdi], 0
-test_neg i32:
     setz al
     movzx rax, al
     mov.b [rdi], al
     movzx.b eax, [rdi]
     ret
-24:
+test_bitnot_reg:
     sub rsp, 8
     mov.q [rsp], rdi
     mov.q rax, [rsp]
@@ -23,7 +19,7 @@ test_neg i32:
     mov rax, rax
     add rsp, 8
     ret
-25:
+test_neg_reg:
     sub rsp, 8
     mov.q [rsp], rdi
     mov.q rax, [rsp]
@@ -31,11 +27,11 @@ test_neg i32:
     mov rax, rax
     add rsp, 8
     ret
-26:
+test_bitnot_reg_u8:
     not dil
     movzx eax, dil
     ret
-27:
+main:
     sub rsp, 0xc8
     mov.b [rsp], -5
     mov.b [rsp + 0x1], -0x38
@@ -52,61 +48,61 @@ test_neg i32:
     call test_not_reg
     mov.q [rsp + 0x26], rax
     mov rdi, 0x7b
-    call 24
+    call test_bitnot_reg
     mov.q [rsp + 0x2e], rax
     mov dil, 0x7b
-    call 26
+    call test_bitnot_reg_u8
     mov.q [rsp + 0x36], rax
     lea rdi, [rsp]
-    call 28
+    call test_bitnot i8
     mov.q [rsp + 0x3e], rax
     lea rdi, [rsp + 0x1]
-    call 29
+    call test_bitnot u8
     mov.q [rsp + 0x46], rax
     lea rdi, [rsp + 0x2]
-    call 30
+    call test_bitnot i16
     mov.q [rsp + 0x4e], rax
     lea rdi, [rsp + 0x4]
-    call 31
+    call test_bitnot u16
     mov.q [rsp + 0x56], rax
     lea rdi, [rsp + 0x6]
-    call 32
+    call test_bitnot i32
     mov.q [rsp + 0x5e], rax
     lea rdi, [rsp + 0xa]
-    call 33
+    call test_bitnot u32
     mov.q [rsp + 0x66], rax
     lea rdi, [rsp + 0xe]
-    call 34
+    call test_bitnot i64
     mov.q [rsp + 0x6e], rax
     lea rdi, [rsp + 0x16]
-    call 35
+    call test_bitnot u64
     mov.q [rsp + 0x76], rax
     mov rdi, 7
-    call 25
+    call test_neg_reg
     mov.q [rsp + 0x7e], rax
     lea rdi, [rsp]
-    call 36
+    call test_neg i8
     mov.q [rsp + 0x86], rax
     lea rdi, [rsp + 0x1]
-    call 37
+    call test_neg u8
     mov.q [rsp + 0x8e], rax
     lea rdi, [rsp + 0x2]
-    call 38
+    call test_neg i16
     mov.q [rsp + 0x96], rax
     lea rdi, [rsp + 0x4]
-    call 39
+    call test_neg u16
     mov.q [rsp + 0x9e], rax
     lea rdi, [rsp + 0x6]
-    call 40
+    call test_neg i32
     mov.q [rsp + 0xa6], rax
     lea rdi, [rsp + 0xa]
-    call 41
+    call test_neg u32
     mov.q [rsp + 0xae], rax
     lea rdi, [rsp + 0xe]
-    call 42
+    call test_neg i64
     mov.q [rsp + 0xb6], rax
     lea rdi, [rsp + 0x16]
-    call 43
+    call test_neg u64
     mov.q [rsp + 0xbe], rax
     xor eax, eax
     mov.q rcx, [rsp + 0x1e]
@@ -155,100 +151,96 @@ test_neg i32:
     add rax, rcx
     add rsp, 0xc8
     ret
-28:
+test_bitnot i8:
     not.b [rdi]
     movsx.b rax, [rdi]
     ret
-29:
+test_bitnot u8:
     not.b [rdi]
     movzx.b eax, [rdi]
     ret
-30:
+test_bitnot i16:
     not.w [rdi]
     movsx.w rax, [rdi]
     ret
-31:
+test_bitnot u16:
     not.w [rdi]
     movzx.w eax, [rdi]
     ret
-32:
+test_bitnot i32:
     not.d [rdi]
     movsxd.d rax, [rdi]
     ret
-33:
+test_bitnot u32:
     not.d [rdi]
     mov.d eax, [rdi]
     ret
-34:
+test_bitnot i64:
     not.q [rdi]
     mov.q rax, [rdi]
     ret
-35:
+test_bitnot u64:
     not.q [rdi]
     mov.q rax, [rdi]
     ret
-36:
+test_neg i8:
     neg.b [rdi]
     movsx.b rax, [rdi]
     ret
-37:
+test_neg u8:
     neg.b [rdi]
     movzx.b eax, [rdi]
     ret
-38:
+test_neg i16:
     neg.w [rdi]
     movsx.w rax, [rdi]
     ret
-39:
+test_neg u16:
     neg.w [rdi]
     movzx.w eax, [rdi]
     ret
-40:
+test_neg i32:
     neg.d [rdi]
     movsxd.d rax, [rdi]
     ret
-41:
+test_neg u32:
     neg.d [rdi]
     mov.d eax, [rdi]
     ret
-42:
+test_neg i64:
     neg.q [rdi]
     mov.q rax, [rdi]
     ret
-43:
+test_neg u64:
     neg.q [rdi]
     mov.q rax, [rdi]
     ret
 =========== OPT LEVEL: none ===========
 test_not_reg:
     cmp dil, 0
-test_neg_reg:
     setz al
-test_bitnot i8:
     movzx rax, al
-test_bitnot i32:
     ret
-test_neg i8:
+test_not_i8:
     cmp.b [rdi], 0
-test_neg i32:
     setz al
     movzx rax, al
     mov.b [rdi], al
     movzx.b eax, [rdi]
     ret
-24:
+test_bitnot_reg:
     mov rax, rdi
     not rax
     ret
-25:
+test_neg_reg:
     mov rax, rdi
     neg rax
     ret
-26:
+test_bitnot_reg_u8:
     not dil
     movzx eax, dil
     ret
-27:
+main:
     push rbx
     push rbp
     push r12
@@ -271,61 +263,61 @@ test_neg i32:
     call test_not_reg
     mov.q [rsp + 0x7e], rax
     mov rdi, 0x7b
-    call 24
+    call test_bitnot_reg
     mov.q [rsp + 0x76], rax
     mov dil, 0x7b
-    call 26
+    call test_bitnot_reg_u8
     mov.q [rsp + 0x6e], rax
     lea rdi, [rsp]
-    call 28
+    call test_bitnot i8
     mov.q [rsp + 0x66], rax
     lea rdi, [rsp + 0x1]
-    call 29
+    call test_bitnot u8
     mov.q [rsp + 0x5e], rax
     lea rdi, [rsp + 0x2]
-    call 30
+    call test_bitnot i16
     mov.q [rsp + 0x56], rax
     lea rdi, [rsp + 0x4]
-    call 31
+    call test_bitnot u16
     mov.q [rsp + 0x4e], rax
     lea rdi, [rsp + 0x6]
-    call 32
+    call test_bitnot i32
     mov.q [rsp + 0x46], rax
     lea rdi, [rsp + 0xa]
-    call 33
+    call test_bitnot u32
     mov.q [rsp + 0x3e], rax
     lea rdi, [rsp + 0xe]
-    call 34
+    call test_bitnot i64
     mov.q [rsp + 0x36], rax
     lea rdi, [rsp + 0x16]
-    call 35
+    call test_bitnot u64
     mov.q [rsp + 0x2e], rax
     mov rdi, 7
-    call 25
+    call test_neg_reg
     mov.q [rsp + 0x26], rax
     lea rdi, [rsp]
-    call 36
+    call test_neg i8
     mov.q [rsp + 0x1e], rax
     lea rdi, [rsp + 0x1]
-    call 37
+    call test_neg u8
     mov r15, rax
     lea rdi, [rsp + 0x2]
-    call 38
+    call test_neg i16
     mov r14, rax
     lea rdi, [rsp + 0x4]
-    call 39
+    call test_neg u16
     mov r13, rax
     lea rdi, [rsp + 0x6]
-    call 40
+    call test_neg i32
     mov r12, rax
     lea rdi, [rsp + 0xa]
-    call 41
+    call test_neg u32
     mov rbp, rax
     lea rdi, [rsp + 0xe]
-    call 42
+    call test_neg i64
     mov rbx, rax
     lea rdi, [rsp + 0x16]
-    call 43
+    call test_neg u64
     mov rdx, rax
     xor eax, eax
     mov.q rcx, [rsp + 0x86]
@@ -373,88 +365,84 @@ test_neg i32:
     pop rbp
     pop rbx
     ret
-28:
+test_bitnot i8:
     not.b [rdi]
     movsx.b rax, [rdi]
     ret
-29:
+test_bitnot u8:
     not.b [rdi]
     movzx.b eax, [rdi]
     ret
-30:
+test_bitnot i16:
     not.w [rdi]
     movsx.w rax, [rdi]
     ret
-31:
+test_bitnot u16:
     not.w [rdi]
     movzx.w eax, [rdi]
     ret
-32:
+test_bitnot i32:
     not.d [rdi]
     movsxd.d rax, [rdi]
     ret
-33:
+test_bitnot u32:
     not.d [rdi]
     mov.d eax, [rdi]
     ret
-34:
+test_bitnot i64:
     not.q [rdi]
     mov.q rax, [rdi]
     ret
-35:
+test_bitnot u64:
     not.q [rdi]
     mov.q rax, [rdi]
     ret
-36:
+test_neg i8:
     neg.b [rdi]
     movsx.b rax, [rdi]
     ret
-37:
+test_neg u8:
     neg.b [rdi]
     movzx.b eax, [rdi]
     ret
-38:
+test_neg i16:
     neg.w [rdi]
     movsx.w rax, [rdi]
     ret
-39:
+test_neg u16:
     neg.w [rdi]
     movzx.w eax, [rdi]
     ret
-40:
+test_neg i32:
     neg.d [rdi]
     movsxd.d rax, [rdi]
     ret
-41:
+test_neg u32:
     neg.d [rdi]
     mov.d eax, [rdi]
     ret
-42:
+test_neg i64:
     neg.q [rdi]
     mov.q rax, [rdi]
     ret
-43:
+test_neg u64:
     neg.q [rdi]
     mov.q rax, [rdi]
     ret
 =========== OPT LEVEL: mininal-quick ===========
 test_not_reg:
     cmp dil, 0
-test_neg_reg:
     setz al
-test_bitnot i8:
     movzx rax, al
-test_bitnot i32:
     ret
-test_neg i8:
+test_not_i8:
     cmp.b [rdi], 0
-test_neg i32:
     setz al
     movzx rax, al
     mov.b [rdi], al
     movzx.b eax, [rdi]
     ret
-24:
+test_bitnot_reg:
     sub rsp, 8
     mov.q [rsp], rdi
     mov.q rax, [rsp]
@@ -462,7 +450,7 @@ test_neg i32:
     mov rax, rax
     add rsp, 8
     ret
-25:
+test_neg_reg:
     sub rsp, 8
     mov.q [rsp], rdi
     mov.q rax, [rsp]
@@ -470,11 +458,11 @@ test_neg i32:
     mov rax, rax
     add rsp, 8
     ret
-26:
+test_bitnot_reg_u8:
     not dil
     movzx eax, dil
     ret
-27:
+main:
     sub rsp, 0xc8
     mov.b [rsp], -5
     mov.b [rsp + 0x1], -0x38
@@ -491,61 +479,61 @@ test_neg i32:
     call test_not_reg
     mov.q [rsp + 0x26], rax
     mov rdi, 0x7b
-    call 24
+    call test_bitnot_reg
     mov.q [rsp + 0x2e], rax
     mov dil, 0x7b
-    call 26
+    call test_bitnot_reg_u8
     mov.q [rsp + 0x36], rax
     lea rdi, [rsp]
-    call 28
+    call test_bitnot i8
     mov.q [rsp + 0x3e], rax
     lea rdi, [rsp + 0x1]
-    call 29
+    call test_bitnot u8
     mov.q [rsp + 0x46], rax
     lea rdi, [rsp + 0x2]
-    call 30
+    call test_bitnot i16
     mov.q [rsp + 0x4e], rax
     lea rdi, [rsp + 0x4]
-    call 31
+    call test_bitnot u16
     mov.q [rsp + 0x56], rax
     lea rdi, [rsp + 0x6]
-    call 32
+    call test_bitnot i32
     mov.q [rsp + 0x5e], rax
     lea rdi, [rsp + 0xa]
-    call 33
+    call test_bitnot u32
     mov.q [rsp + 0x66], rax
     lea rdi, [rsp + 0xe]
-    call 34
+    call test_bitnot i64
     mov.q [rsp + 0x6e], rax
     lea rdi, [rsp + 0x16]
-    call 35
+    call test_bitnot u64
     mov.q [rsp + 0x76], rax
     mov rdi, 7
-    call 25
+    call test_neg_reg
     mov.q [rsp + 0x7e], rax
     lea rdi, [rsp]
-    call 36
+    call test_neg i8
     mov.q [rsp + 0x86], rax
     lea rdi, [rsp + 0x1]
-    call 37
+    call test_neg u8
     mov.q [rsp + 0x8e], rax
     lea rdi, [rsp + 0x2]
-    call 38
+    call test_neg i16
     mov.q [rsp + 0x96], rax
     lea rdi, [rsp + 0x4]
-    call 39
+    call test_neg u16
     mov.q [rsp + 0x9e], rax
     lea rdi, [rsp + 0x6]
-    call 40
+    call test_neg i32
     mov.q [rsp + 0xa6], rax
     lea rdi, [rsp + 0xa]
-    call 41
+    call test_neg u32
     mov.q [rsp + 0xae], rax
     lea rdi, [rsp + 0xe]
-    call 42
+    call test_neg i64
     mov.q [rsp + 0xb6], rax
     lea rdi, [rsp + 0x16]
-    call 43
+    call test_neg u64
     mov.q [rsp + 0xbe], rax
     xor eax, eax
     mov.q rcx, [rsp + 0x1e]
@@ -594,70 +582,70 @@ test_neg i32:
     add rax, rcx
     add rsp, 0xc8
     ret
-28:
+test_bitnot i8:
     not.b [rdi]
     movsx.b rax, [rdi]
     ret
-29:
+test_bitnot u8:
     not.b [rdi]
     movzx.b eax, [rdi]
     ret
-30:
+test_bitnot i16:
     not.w [rdi]
     movsx.w rax, [rdi]
     ret
-31:
+test_bitnot u16:
     not.w [rdi]
     movzx.w eax, [rdi]
     ret
-32:
+test_bitnot i32:
     not.d [rdi]
     movsxd.d rax, [rdi]
     ret
-33:
+test_bitnot u32:
     not.d [rdi]
     mov.d eax, [rdi]
     ret
-34:
+test_bitnot i64:
     mov.q rax, [rdi]
     not rax
     mov.q [rdi], rax
     ret
-35:
+test_bitnot u64:
     mov.q rax, [rdi]
     not rax
     mov.q [rdi], rax
     ret
-36:
+test_neg i8:
     neg.b [rdi]
     movsx.b rax, [rdi]
     ret
-37:
+test_neg u8:
     neg.b [rdi]
     movzx.b eax, [rdi]
     ret
-38:
+test_neg i16:
     neg.w [rdi]
     movsx.w rax, [rdi]
     ret
-39:
+test_neg u16:
     neg.w [rdi]
     movzx.w eax, [rdi]
     ret
-40:
+test_neg i32:
     neg.d [rdi]
     movsxd.d rax, [rdi]
     ret
-41:
+test_neg u32:
     neg.d [rdi]
     mov.d eax, [rdi]
     ret
-42:
+test_neg i64:
     mov.q rax, [rdi]
     neg rax
     mov.q [rdi], rax
     ret
-43:
+test_neg u64:
     mov.q rax, [rdi]
     neg rax
     mov.q [rdi], rax
@@ -665,33 +653,29 @@ test_neg i32:
 =========== OPT LEVEL: mininal ===========
 test_not_reg:
     cmp dil, 0
-test_neg_reg:
     setz al
-test_bitnot i8:
     movzx rax, al
-test_bitnot i32:
     ret
-test_neg i8:
+test_not_i8:
     cmp.b [rdi], 0
-test_neg i32:
     setz al
     movzx rax, al
     mov.b [rdi], al
     movzx.b eax, [rdi]
     ret
-24:
+test_bitnot_reg:
     mov rax, rdi
     not rax
     ret
-25:
+test_neg_reg:
     mov rax, rdi
     neg rax
     ret
-26:
+test_bitnot_reg_u8:
     not dil
     movzx eax, dil
     ret
-27:
+main:
     push rbx
     push rbp
     push r12
@@ -714,61 +698,61 @@ test_neg i32:
     call test_not_reg
     mov.q [rsp + 0x7e], rax
     mov rdi, 0x7b
-    call 24
+    call test_bitnot_reg
     mov.q [rsp + 0x76], rax
     mov dil, 0x7b
-    call 26
+    call test_bitnot_reg_u8
     mov.q [rsp + 0x6e], rax
     lea rdi, [rsp]
-    call 28
+    call test_bitnot i8
     mov.q [rsp + 0x66], rax
     lea rdi, [rsp + 0x1]
-    call 29
+    call test_bitnot u8
     mov.q [rsp + 0x5e], rax
     lea rdi, [rsp + 0x2]
-    call 30
+    call test_bitnot i16
     mov.q [rsp + 0x56], rax
     lea rdi, [rsp + 0x4]
-    call 31
+    call test_bitnot u16
     mov.q [rsp + 0x4e], rax
     lea rdi, [rsp + 0x6]
-    call 32
+    call test_bitnot i32
     mov.q [rsp + 0x46], rax
     lea rdi, [rsp + 0xa]
-    call 33
+    call test_bitnot u32
     mov.q [rsp + 0x3e], rax
     lea rdi, [rsp + 0xe]
-    call 34
+    call test_bitnot i64
     mov.q [rsp + 0x36], rax
     lea rdi, [rsp + 0x16]
-    call 35
+    call test_bitnot u64
     mov.q [rsp + 0x2e], rax
     mov rdi, 7
-    call 25
+    call test_neg_reg
     mov.q [rsp + 0x26], rax
     lea rdi, [rsp]
-    call 36
+    call test_neg i8
     mov.q [rsp + 0x1e], rax
     lea rdi, [rsp + 0x1]
-    call 37
+    call test_neg u8
     mov r15, rax
     lea rdi, [rsp + 0x2]
-    call 38
+    call test_neg i16
     mov r14, rax
     lea rdi, [rsp + 0x4]
-    call 39
+    call test_neg u16
     mov r13, rax
     lea rdi, [rsp + 0x6]
-    call 40
+    call test_neg i32
     mov r12, rax
     lea rdi, [rsp + 0xa]
-    call 41
+    call test_neg u32
     mov rbp, rax
     lea rdi, [rsp + 0xe]
-    call 42
+    call test_neg i64
     mov rbx, rax
     lea rdi, [rsp + 0x16]
-    call 43
+    call test_neg u64
     mov rdx, rax
     xor eax, eax
     mov.q rcx, [rsp + 0x86]
@@ -816,70 +800,70 @@ test_neg i32:
     pop rbp
     pop rbx
     ret
-28:
+test_bitnot i8:
     not.b [rdi]
     movsx.b rax, [rdi]
     ret
-29:
+test_bitnot u8:
     not.b [rdi]
     movzx.b eax, [rdi]
     ret
-30:
+test_bitnot i16:
     not.w [rdi]
     movsx.w rax, [rdi]
     ret
-31:
+test_bitnot u16:
     not.w [rdi]
     movzx.w eax, [rdi]
     ret
-32:
+test_bitnot i32:
     not.d [rdi]
     movsxd.d rax, [rdi]
     ret
-33:
+test_bitnot u32:
     not.d [rdi]
     mov.d eax, [rdi]
     ret
-34:
+test_bitnot i64:
     mov.q rax, [rdi]
     not rax
     mov.q [rdi], rax
     ret
-35:
+test_bitnot u64:
     mov.q rax, [rdi]
     not rax
     mov.q [rdi], rax
     ret
-36:
+test_neg i8:
     neg.b [rdi]
     movsx.b rax, [rdi]
     ret
-37:
+test_neg u8:
     neg.b [rdi]
     movzx.b eax, [rdi]
     ret
-38:
+test_neg i16:
     neg.w [rdi]
     movsx.w rax, [rdi]
     ret
-39:
+test_neg u16:
     neg.w [rdi]
     movzx.w eax, [rdi]
     ret
-40:
+test_neg i32:
     neg.d [rdi]
     movsxd.d rax, [rdi]
     ret
-41:
+test_neg u32:
     neg.d [rdi]
     mov.d eax, [rdi]
     ret
-42:
+test_neg i64:
     mov.q rax, [rdi]
     neg rax
     mov.q [rdi], rax
     ret
-43:
+test_neg u64:
     mov.q rax, [rdi]
     neg rax
     mov.q [rdi], rax
@@ -887,20 +871,16 @@ test_neg i32:
 =========== OPT LEVEL: moderate-quick ===========
 test_not_reg:
     cmp dil, 0
-test_neg_reg:
     setz al
-test_bitnot i8:
     movzx rax, al
-test_bitnot i32:
     ret
-test_neg i8:
+test_not_i8:
     cmp.b [rdi], 0
-test_neg i32:
     setz al
     movzx rax, al
     mov.b [rdi], al
     ret
-24:
+test_bitnot_reg:
     sub rsp, 8
     mov.q [rsp], rdi
     mov.q rax, [rsp]
@@ -908,7 +888,7 @@ test_neg i32:
     mov rax, rax
     add rsp, 8
     ret
-25:
+test_neg_reg:
     sub rsp, 8
     mov.q [rsp], rdi
     mov.q rax, [rsp]
@@ -916,11 +896,11 @@ test_neg i32:
     mov rax, rax
     add rsp, 8
     ret
-26:
+test_bitnot_reg_u8:
     not dil
     movzx eax, dil
     ret
-27:
+main:
     sub rsp, 0xc8
     mov.b [rsp], -5
     mov.b [rsp + 0x1], -0x38
@@ -937,61 +917,61 @@ test_neg i32:
     call test_not_reg
     mov.q [rsp + 0x26], rax
     mov rdi, 0x7b
-    call 24
+    call test_bitnot_reg
     mov.q [rsp + 0x2e], rax
     mov dil, 0x7b
-    call 26
+    call test_bitnot_reg_u8
     mov.q [rsp + 0x36], rax
     lea rdi, [rsp]
-    call 28
+    call test_bitnot i8
     mov.q [rsp + 0x3e], rax
     lea rdi, [rsp + 0x1]
-    call 29
+    call test_bitnot u8
     mov.q [rsp + 0x46], rax
     lea rdi, [rsp + 0x2]
-    call 30
+    call test_bitnot i16
     mov.q [rsp + 0x4e], rax
     lea rdi, [rsp + 0x4]
-    call 31
+    call test_bitnot u16
     mov.q [rsp + 0x56], rax
     lea rdi, [rsp + 0x6]
-    call 32
+    call test_bitnot i32
     mov.q [rsp + 0x5e], rax
     lea rdi, [rsp + 0xa]
-    call 33
+    call test_bitnot u32
     mov.q [rsp + 0x66], rax
     lea rdi, [rsp + 0xe]
-    call 34
+    call test_bitnot i64
     mov.q [rsp + 0x6e], rax
     lea rdi, [rsp + 0x16]
-    call 35
+    call test_bitnot u64
     mov.q [rsp + 0x76], rax
     mov rdi, 7
-    call 25
+    call test_neg_reg
     mov.q [rsp + 0x7e], rax
     lea rdi, [rsp]
-    call 36
+    call test_neg i8
     mov.q [rsp + 0x86], rax
     lea rdi, [rsp + 0x1]
-    call 37
+    call test_neg u8
     mov.q [rsp + 0x8e], rax
     lea rdi, [rsp + 0x2]
-    call 38
+    call test_neg i16
     mov.q [rsp + 0x96], rax
     lea rdi, [rsp + 0x4]
-    call 39
+    call test_neg u16
     mov.q [rsp + 0x9e], rax
     lea rdi, [rsp + 0x6]
-    call 40
+    call test_neg i32
     mov.q [rsp + 0xa6], rax
     lea rdi, [rsp + 0xa]
-    call 41
+    call test_neg u32
     mov.q [rsp + 0xae], rax
     lea rdi, [rsp + 0xe]
-    call 42
+    call test_neg i64
     mov.q [rsp + 0xb6], rax
     lea rdi, [rsp + 0x16]
-    call 43
+    call test_neg u64
     mov.q [rsp + 0xbe], rax
     mov.q rax, [rsp + 0x1e]
     movzx eax, al
@@ -1038,94 +1018,94 @@ test_neg i32:
     add rax, rcx
     add rsp, 0xc8
     ret
-28:
+test_bitnot i8:
     movzx.b eax, [rdi]
     not al
     mov.b [rdi], al
     movsx rax, al
     ret
-29:
+test_bitnot u8:
     movzx.b eax, [rdi]
     not al
     mov.b [rdi], al
     movzx eax, al
     ret
-30:
+test_bitnot i16:
     movzx.w eax, [rdi]
     not ax
     mov.w [rdi], ax
     movsx rax, ax
     ret
-31:
+test_bitnot u16:
     movzx.w eax, [rdi]
     not ax
     mov.w [rdi], ax
     movzx eax, ax
     ret
-32:
+test_bitnot i32:
     mov.d eax, [rdi]
     not eax
     mov.d [rdi], eax
     movsxd rax, eax
     ret
-33:
+test_bitnot u32:
     mov.d eax, [rdi]
     not eax
     mov.d [rdi], eax
     mov eax, eax
     ret
-34:
+test_bitnot i64:
     mov.q rax, [rdi]
     not rax
     mov.q [rdi], rax
     ret
-35:
+test_bitnot u64:
     mov.q rax, [rdi]
     not rax
     mov.q [rdi], rax
     ret
-36:
+test_neg i8:
     movzx.b eax, [rdi]
     neg al
     mov.b [rdi], al
     movsx rax, al
     ret
-37:
+test_neg u8:
     movzx.b eax, [rdi]
     neg al
     mov.b [rdi], al
     movzx eax, al
     ret
-38:
+test_neg i16:
     movzx.w eax, [rdi]
     neg ax
     mov.w [rdi], ax
     movsx rax, ax
     ret
-39:
+test_neg u16:
     movzx.w eax, [rdi]
     neg ax
     mov.w [rdi], ax
     movzx eax, ax
     ret
-40:
+test_neg i32:
     mov.d eax, [rdi]
     neg eax
     mov.d [rdi], eax
     movsxd rax, eax
     ret
-41:
+test_neg u32:
     mov.d eax, [rdi]
     neg eax
     mov.d [rdi], eax
     mov eax, eax
     ret
-42:
+test_neg i64:
     mov.q rax, [rdi]
     neg rax
     mov.q [rdi], rax
     ret
-43:
+test_neg u64:
     mov.q rax, [rdi]
     neg rax
     mov.q [rdi], rax
@@ -1133,32 +1113,28 @@ test_neg i32:
 =========== OPT LEVEL: moderate ===========
 test_not_reg:
     cmp dil, 0
-test_neg_reg:
     setz al
-test_bitnot i8:
     movzx rax, al
-test_bitnot i32:
     ret
-test_neg i8:
+test_not_i8:
     cmp.b [rdi], 0
-test_neg i32:
     setz al
     movzx rax, al
     mov.b [rdi], al
     ret
-24:
+test_bitnot_reg:
     mov rax, rdi
     not rax
     ret
-25:
+test_neg_reg:
     mov rax, rdi
     neg rax
     ret
-26:
+test_bitnot_reg_u8:
     not dil
     movzx eax, dil
     ret
-27:
+main:
     push rbx
     push rbp
     push r12
@@ -1181,61 +1157,61 @@ test_neg i32:
     call test_not_reg
     mov.q [rsp + 0x7e], rax
     mov rdi, 0x7b
-    call 24
+    call test_bitnot_reg
     mov.q [rsp + 0x76], rax
     mov dil, 0x7b
-    call 26
+    call test_bitnot_reg_u8
     mov.q [rsp + 0x6e], rax
     lea rdi, [rsp]
-    call 28
+    call test_bitnot i8
     mov.q [rsp + 0x66], rax
     lea rdi, [rsp + 0x1]
-    call 29
+    call test_bitnot u8
     mov.q [rsp + 0x5e], rax
     lea rdi, [rsp + 0x2]
-    call 30
+    call test_bitnot i16
     mov.q [rsp + 0x56], rax
     lea rdi, [rsp + 0x4]
-    call 31
+    call test_bitnot u16
     mov.q [rsp + 0x4e], rax
     lea rdi, [rsp + 0x6]
-    call 32
+    call test_bitnot i32
     mov.q [rsp + 0x46], rax
     lea rdi, [rsp + 0xa]
-    call 33
+    call test_bitnot u32
     mov.q [rsp + 0x3e], rax
     lea rdi, [rsp + 0xe]
-    call 34
+    call test_bitnot i64
     mov.q [rsp + 0x36], rax
     lea rdi, [rsp + 0x16]
-    call 35
+    call test_bitnot u64
     mov.q [rsp + 0x2e], rax
     mov rdi, 7
-    call 25
+    call test_neg_reg
     mov.q [rsp + 0x26], rax
     lea rdi, [rsp]
-    call 36
+    call test_neg i8
     mov.q [rsp + 0x1e], rax
     lea rdi, [rsp + 0x1]
-    call 37
+    call test_neg u8
     mov r15, rax
     lea rdi, [rsp + 0x2]
-    call 38
+    call test_neg i16
     mov r14, rax
     lea rdi, [rsp + 0x4]
-    call 39
+    call test_neg u16
     mov r13, rax
     lea rdi, [rsp + 0x6]
-    call 40
+    call test_neg i32
     mov r12, rax
     lea rdi, [rsp + 0xa]
-    call 41
+    call test_neg u32
     mov rbp, rax
     lea rdi, [rsp + 0xe]
-    call 42
+    call test_neg i64
     mov rbx, rax
     lea rdi, [rsp + 0x16]
-    call 43
+    call test_neg u64
     mov rdx, rax
     mov.q rax, [rsp + 0x86]
     movzx eax, al
@@ -1281,94 +1257,94 @@ test_neg i32:
     pop rbp
     pop rbx
     ret
-28:
+test_bitnot i8:
     movzx.b eax, [rdi]
     not al
     mov.b [rdi], al
     movsx rax, al
     ret
-29:
+test_bitnot u8:
     movzx.b eax, [rdi]
     not al
     mov.b [rdi], al
     movzx eax, al
     ret
-30:
+test_bitnot i16:
     movzx.w eax, [rdi]
     not ax
     mov.w [rdi], ax
     movsx rax, ax
     ret
-31:
+test_bitnot u16:
     movzx.w eax, [rdi]
     not ax
     mov.w [rdi], ax
     movzx eax, ax
     ret
-32:
+test_bitnot i32:
     mov.d eax, [rdi]
     not eax
     mov.d [rdi], eax
     movsxd rax, eax
     ret
-33:
+test_bitnot u32:
     mov.d eax, [rdi]
     not eax
     mov.d [rdi], eax
     mov eax, eax
     ret
-34:
+test_bitnot i64:
     mov.q rax, [rdi]
     not rax
     mov.q [rdi], rax
     ret
-35:
+test_bitnot u64:
     mov.q rax, [rdi]
     not rax
     mov.q [rdi], rax
     ret
-36:
+test_neg i8:
     movzx.b eax, [rdi]
     neg al
     mov.b [rdi], al
     movsx rax, al
     ret
-37:
+test_neg u8:
     movzx.b eax, [rdi]
     neg al
     mov.b [rdi], al
     movzx eax, al
     ret
-38:
+test_neg i16:
     movzx.w eax, [rdi]
     neg ax
     mov.w [rdi], ax
     movsx rax, ax
     ret
-39:
+test_neg u16:
     movzx.w eax, [rdi]
     neg ax
     mov.w [rdi], ax
     movzx eax, ax
     ret
-40:
+test_neg i32:
     mov.d eax, [rdi]
     neg eax
     mov.d [rdi], eax
     movsxd rax, eax
     ret
-41:
+test_neg u32:
     mov.d eax, [rdi]
     neg eax
     mov.d [rdi], eax
     mov eax, eax
     ret
-42:
+test_neg i64:
     mov.q rax, [rdi]
     neg rax
     mov.q [rdi], rax
     ret
-43:
+test_neg u64:
     mov.q rax, [rdi]
     neg rax
     mov.q [rdi], rax
@@ -1376,32 +1352,28 @@ test_neg i32:
 =========== OPT LEVEL: all ===========
 test_not_reg:
     cmp dil, 0
-test_neg_reg:
     setz al
-test_bitnot i8:
     movzx rax, al
-test_bitnot i32:
     ret
-test_neg i8:
+test_not_i8:
     cmp.b [rdi], 0
-test_neg i32:
     setz al
     movzx rax, al
     mov.b [rdi], al
     ret
-24:
+test_bitnot_reg:
     mov rax, rdi
     not rax
     ret
-25:
+test_neg_reg:
     mov rax, rdi
     neg rax
     ret
-26:
+test_bitnot_reg_u8:
     not dil
     movzx eax, dil
     ret
-27:
+main:
     push rbx
     push rbp
     push r12
@@ -1424,61 +1396,61 @@ test_neg i32:
     call test_not_reg
     mov.q [rsp + 0x7e], rax
     mov rdi, 0x7b
-    call 24
+    call test_bitnot_reg
     mov.q [rsp + 0x76], rax
     mov dil, 0x7b
-    call 26
+    call test_bitnot_reg_u8
     mov.q [rsp + 0x6e], rax
     lea rdi, [rsp]
-    call 28
+    call test_bitnot i8
     mov.q [rsp + 0x66], rax
     lea rdi, [rsp + 0x1]
-    call 29
+    call test_bitnot u8
     mov.q [rsp + 0x5e], rax
     lea rdi, [rsp + 0x2]
-    call 30
+    call test_bitnot i16
     mov.q [rsp + 0x56], rax
     lea rdi, [rsp + 0x4]
-    call 31
+    call test_bitnot u16
     mov.q [rsp + 0x4e], rax
     lea rdi, [rsp + 0x6]
-    call 32
+    call test_bitnot i32
     mov.q [rsp + 0x46], rax
     lea rdi, [rsp + 0xa]
-    call 33
+    call test_bitnot u32
     mov.q [rsp + 0x3e], rax
     lea rdi, [rsp + 0xe]
-    call 34
+    call test_bitnot i64
     mov.q [rsp + 0x36], rax
     lea rdi, [rsp + 0x16]
-    call 35
+    call test_bitnot u64
     mov.q [rsp + 0x2e], rax
     mov rdi, 7
-    call 25
+    call test_neg_reg
     mov.q [rsp + 0x26], rax
     lea rdi, [rsp]
-    call 36
+    call test_neg i8
     mov.q [rsp + 0x1e], rax
     lea rdi, [rsp + 0x1]
-    call 37
+    call test_neg u8
     mov r15, rax
     lea rdi, [rsp + 0x2]
-    call 38
+    call test_neg i16
     mov r14, rax
     lea rdi, [rsp + 0x4]
-    call 39
+    call test_neg u16
     mov r13, rax
     lea rdi, [rsp + 0x6]
-    call 40
+    call test_neg i32
     mov r12, rax
     lea rdi, [rsp + 0xa]
-    call 41
+    call test_neg u32
     mov rbp, rax
     lea rdi, [rsp + 0xe]
-    call 42
+    call test_neg i64
     mov rbx, rax
     lea rdi, [rsp + 0x16]
-    call 43
+    call test_neg u64
     mov rdx, rax
     mov.q rax, [rsp + 0x86]
     movzx eax, al
@@ -1524,109 +1496,105 @@ test_neg i32:
     pop rbp
     pop rbx
     ret
-28:
+test_bitnot i8:
     movzx.b eax, [rdi]
     not al
     mov.b [rdi], al
     movsx rax, al
     ret
-29:
+test_bitnot u8:
     movzx.b eax, [rdi]
     not al
     mov.b [rdi], al
     movzx eax, al
     ret
-30:
+test_bitnot i16:
     movzx.w eax, [rdi]
     not ax
     mov.w [rdi], ax
     movsx rax, ax
     ret
-31:
+test_bitnot u16:
     movzx.w eax, [rdi]
     not ax
     mov.w [rdi], ax
     movzx eax, ax
     ret
-32:
+test_bitnot i32:
     mov.d eax, [rdi]
     not eax
     mov.d [rdi], eax
     movsxd rax, eax
     ret
-33:
+test_bitnot u32:
     mov.d eax, [rdi]
     not eax
     mov.d [rdi], eax
     mov eax, eax
     ret
-34:
+test_bitnot i64:
     mov.q rax, [rdi]
     not rax
     mov.q [rdi], rax
     ret
-35:
+test_bitnot u64:
     mov.q rax, [rdi]
     not rax
     mov.q [rdi], rax
     ret
-36:
+test_neg i8:
     movzx.b eax, [rdi]
     neg al
     mov.b [rdi], al
     movsx rax, al
     ret
-37:
+test_neg u8:
     movzx.b eax, [rdi]
     neg al
     mov.b [rdi], al
     movzx eax, al
     ret
-38:
+test_neg i16:
     movzx.w eax, [rdi]
     neg ax
     mov.w [rdi], ax
     movsx rax, ax
     ret
-39:
+test_neg u16:
     movzx.w eax, [rdi]
     neg ax
     mov.w [rdi], ax
     movzx eax, ax
     ret
-40:
+test_neg i32:
     mov.d eax, [rdi]
     neg eax
     mov.d [rdi], eax
     movsxd rax, eax
     ret
-41:
+test_neg u32:
     mov.d eax, [rdi]
     neg eax
     mov.d [rdi], eax
     mov eax, eax
     ret
-42:
+test_neg i64:
     mov.q rax, [rdi]
     neg rax
     mov.q [rdi], rax
     ret
-43:
+test_neg u64:
     mov.q rax, [rdi]
     neg rax
     mov.q [rdi], rax
     ret
 =========== OPT LEVEL: aggresive ===========
-test_not_reg:
+test_not_i8:
     cmp.b [rdi], 0
-test_neg_reg:
     setz al
-test_bitnot i8:
     movzx rax, al
-test_bitnot i32:
     mov.b [rdi], al
-test_bitnot u64:
     ret
-test_neg i8:
+main:
     movabs rax, 0x100010102
     ret

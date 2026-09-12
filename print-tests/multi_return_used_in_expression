@@ -1,34 +1,33 @@
 =========== OPT LEVEL: none-quick ===========
 opaque:
     sub rsp, 8
-main:
     mov.q [rsp], rdi
     mov.q rax, [rsp]
     add rsp, 8
     ret
-3:
+minmax:
     sub rsp, 0x18
     mov.q [rsp], rdi
     mov.q [rsp + 0x8], rsi
     mov.q rax, [rsp + 0x8]
     mov.q rcx, [rsp]
     cmp rcx, rax
-    jnge 4
+    jnge 2
     mov.q rax, [rsp + 0x8]
     mov.q [rdx], rax
     push.q [rsp]
     pop.q [rsp + 0x10]
-    jmp 5
-4:
+    jmp 3
+2:
     mov.q rax, [rsp]
     mov.q [rdx], rax
     push.q [rsp + 0x8]
     pop.q [rsp + 0x10]
-5:
+3:
     mov.q rax, [rsp + 0x10]
     add rsp, 0x18
     ret
-6:
+main:
     sub rsp, 0x18
     mov rdi, 9
     call opaque
@@ -39,7 +38,7 @@ main:
     lea rdx, [rsp]
     mov.q rdi, [rsp + 0x8]
     mov.q rsi, [rsp + 0x10]
-    call 3
+    call minmax
     mov.q rcx, [rsp]
     sub rax, rcx
     imul rax, rax, 2
@@ -50,19 +49,19 @@ main:
 opaque:
     mov rax, rdi
     ret
-3:
+minmax:
     mov rax, rdi
     mov rcx, rsi
     cmp rax, rcx
-    jnge 4
+    jnge 2
     mov.q [rdx], rcx
-    jmp 5
-4:
+    jmp 3
+2:
     mov.q [rdx], rax
     mov rax, rcx
-5:
+3:
     ret
-6:
+main:
     push rbx
     sub rsp, 0x10
     mov rdi, 9
@@ -73,7 +72,7 @@ opaque:
     lea rdx, [rsp]
     mov rdi, rbx
     mov rsi, rax
-    call 3
+    call minmax
     mov.q rcx, [rsp]
     sub rax, rcx
     imul rax, rax, 2
@@ -84,34 +83,33 @@ opaque:
 =========== OPT LEVEL: mininal-quick ===========
 opaque:
     sub rsp, 8
-main:
     mov.q [rsp], rdi
     mov.q rax, [rsp]
     add rsp, 8
     ret
-3:
+minmax:
     sub rsp, 0x18
     mov.q [rsp], rdi
     mov.q [rsp + 0x8], rsi
     mov.q rax, [rsp + 0x8]
     mov.q rcx, [rsp]
     cmp rcx, rax
-    jnge 4
+    jnge 2
     mov.q rax, [rsp + 0x8]
     mov.q [rdx], rax
     push.q [rsp]
     pop.q [rsp + 0x10]
-    jmp 5
-4:
+    jmp 3
+2:
     mov.q rax, [rsp]
     mov.q [rdx], rax
     push.q [rsp + 0x8]
     pop.q [rsp + 0x10]
-5:
+3:
     mov.q rax, [rsp + 0x10]
     add rsp, 0x18
     ret
-6:
+main:
     sub rsp, 0x18
     mov rdi, 9
     call opaque
@@ -122,7 +120,7 @@ main:
     lea rdx, [rsp]
     mov.q rdi, [rsp + 0x8]
     mov.q rsi, [rsp + 0x10]
-    call 3
+    call minmax
     mov.q rcx, [rsp]
     sub rax, rcx
     imul rax, rax, 2
@@ -133,19 +131,19 @@ main:
 opaque:
     mov rax, rdi
     ret
-3:
+minmax:
     mov rax, rdi
     mov rcx, rsi
     cmp rax, rcx
-    jnge 4
+    jnge 2
     mov.q [rdx], rcx
-    jmp 5
-4:
+    jmp 3
+2:
     mov.q [rdx], rax
     mov rax, rcx
-5:
+3:
     ret
-6:
+main:
     push rbx
     sub rsp, 0x10
     mov rdi, 9
@@ -156,7 +154,7 @@ opaque:
     lea rdx, [rsp]
     mov rdi, rbx
     mov rsi, rax
-    call 3
+    call minmax
     mov.q rcx, [rsp]
     sub rax, rcx
     imul rax, rax, 2
@@ -167,34 +165,33 @@ opaque:
 =========== OPT LEVEL: moderate-quick ===========
 opaque:
     sub rsp, 8
-main:
     mov.q [rsp], rdi
     mov.q rax, [rsp]
     add rsp, 8
     ret
-3:
+minmax:
     sub rsp, 0x18
     mov.q [rsp], rdi
     mov.q [rsp + 0x8], rsi
     mov.q rax, [rsp + 0x8]
     mov.q rcx, [rsp]
     cmp rcx, rax
-    jnge 4
+    jnge 2
     mov.q rax, [rsp + 0x8]
     mov.q [rdx], rax
     push.q [rsp]
     pop.q [rsp + 0x10]
-    jmp 5
-4:
+    jmp 3
+2:
     mov.q rax, [rsp]
     mov.q [rdx], rax
     push.q [rsp + 0x8]
     pop.q [rsp + 0x10]
-5:
+3:
     mov.q rax, [rsp + 0x10]
     add rsp, 0x18
     ret
-6:
+main:
     sub rsp, 0x18
     mov rdi, 9
     call opaque
@@ -205,7 +202,7 @@ main:
     lea rdx, [rsp]
     mov.q rdi, [rsp + 0x8]
     mov.q rsi, [rsp + 0x10]
-    call 3
+    call minmax
     mov.q rcx, [rsp]
     sub rax, rcx
     imul rax, rax, 2
@@ -216,19 +213,19 @@ main:
 opaque:
     mov rax, rdi
     ret
-3:
+minmax:
     mov rax, rdi
     mov rcx, rsi
     cmp rax, rcx
-    jnge 4
+    jnge 2
     mov.q [rdx], rcx
-    jmp 5
-4:
+    jmp 3
+2:
     mov.q [rdx], rax
     mov rax, rcx
-5:
+3:
     ret
-6:
+main:
     push rbx
     sub rsp, 0x10
     mov rdi, 9
@@ -239,7 +236,7 @@ opaque:
     lea rdx, [rsp]
     mov rdi, rbx
     mov rsi, rax
-    call 3
+    call minmax
     mov.q rcx, [rsp]
     sub rax, rcx
     imul rax, rax, 2
@@ -251,19 +248,19 @@ opaque:
 opaque:
     mov rax, rdi
     ret
-3:
+minmax:
     mov rax, rdi
     mov rcx, rsi
     cmp rax, rcx
-    jnge 4
+    jnge 2
     mov.q [rdx], rcx
-    jmp 5
-4:
+    jmp 3
+2:
     mov.q [rdx], rax
     mov rax, rcx
-5:
+3:
     ret
-6:
+main:
     push rbx
     sub rsp, 0x10
     mov rdi, 9
@@ -274,7 +271,7 @@ opaque:
     lea rdx, [rsp]
     mov rdi, rbx
     mov rsi, rax
-    call 3
+    call minmax
     mov.q rcx, [rsp]
     sub rax, rcx
     imul rax, rax, 2
@@ -283,6 +280,6 @@ opaque:
     pop rbx
     ret
 =========== OPT LEVEL: aggresive ===========
-opaque:
+main:
     mov rax, 0xe
     ret

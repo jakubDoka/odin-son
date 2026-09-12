@@ -1,11 +1,8 @@
 =========== OPT LEVEL: none-quick ===========
 main:
     push rbx
-kentus:
     push rbp
-brahma:
     push r12
-load_of_args:
     sub rsp, 0x180
     lea rdi, [rsp + 0x95]
     xor esi, esi
@@ -27,7 +24,7 @@ load_of_args:
     lea rdx, [rsp + 0x7d]
     mov.q rsi, [rsp + 0x135]
     mov.q rdi, [rsp + 0x13d]
-    call 12
+    call fortran
     mov.q [rsp + 0x135], rax
     mov.q [rsp], 7
     mov.q [rsp + 0x8], 8
@@ -38,7 +35,7 @@ load_of_args:
     mov rsi, 2
     mov rdx, 3
     mov r8, 5
-    call 15
+    call load_of_args
     mov.q [rsp + 0x13d], rax
     lea rdi, [rsp + 0xa5]
     xor esi, esi
@@ -55,7 +52,7 @@ load_of_args:
     mov rsi, 2
     mov rdx, 3
     mov r8, 5
-    call 13
+    call brahma
     mov.q [rsp + 0x145], rax
     lea rdi, [rsp + 0x60]
     mov rdx, 0xf
@@ -84,15 +81,15 @@ load_of_args:
     movzx.b eax, [rsp + 0x6e]
     sal rax, 0x30
     or rsi, rax
-    call 10
+    call compose
     mov.q [rsp + 0x14d], rax
     mov rdi, 1
     mov rsi, 2
-    call 16
+    call return_stru
     mov.q [rsp + 0xb5], rax
     mov.q [rsp + 0xbd], rdx
     mov.q rbx, [rsp + 0xb5]
-    call 17
+    call return_stru3
     mov rcx, rax
     shr rcx, 0
     mov.d [rsp + 0x6f], ecx
@@ -102,7 +99,7 @@ load_of_args:
     shr rax, 0x30
     mov.b [rsp + 0x75], al
     movzx.b ebp, [rsp + 0x74]
-    call 17
+    call return_stru3
     lea rdi, [rsp]
     mov rcx, rax
     shr rcx, 0
@@ -169,7 +166,7 @@ load_of_args:
     mov.q rsi, [rsp + 0x15d]
     mov.q rcx, [rsp + 0x165]
     mov.q r8, [rsp + 0x16d]
-    call 14
+    call stringa_dinga
     mov.q [rsp + 0x155], rax
     xor eax, eax
     mov.q rcx, [rsp + 0x135]
@@ -191,7 +188,7 @@ load_of_args:
     pop rbp
     pop rbx
     ret
-10:
+compose:
     sub rsp, 0x18
     mov.q [rsp], rdi
     mov rax, rsi
@@ -210,7 +207,7 @@ load_of_args:
     movzx.b eax, [rsp + 0x6]
     sal rax, 0x30
     or rdi, rax
-    call 11
+    call kentus
     mov.q [rsp + 0xf], rax
     mov.d edi, [rsp + 0x7]
     movzx.w eax, [rsp + 0xb]
@@ -219,7 +216,7 @@ load_of_args:
     movzx.b eax, [rsp + 0xd]
     sal rax, 0x30
     or rdi, rax
-    call 11
+    call kentus
     mov.q rcx, [rsp + 0xf]
     add cl, al
     mov rax, rcx
@@ -227,7 +224,7 @@ load_of_args:
     mov rax, rax
     add rsp, 0x18
     ret
-11:
+kentus:
     sub rsp, 8
     mov rax, rdi
     shr rax, 0
@@ -247,7 +244,7 @@ load_of_args:
     add.b al, [rsp + 0x6]
     add rsp, 8
     ret
-12:
+fortran:
     sub rsp, 0x18
     mov.q [rsp], rdi
     mov.q [rsp + 0x8], rsi
@@ -258,7 +255,7 @@ load_of_args:
     add.q rax, [rdx + 0x10]
     add rsp, 0x18
     ret
-13:
+brahma:
     sub rsp, 8
     mov.q [rsp], rdi
     mov.q rax, [rsp]
@@ -276,7 +273,7 @@ load_of_args:
     mov rax, rax
     add rsp, 8
     ret
-14:
+stringa_dinga:
     push rbx
     push rbp
     sub rsp, 0x28
@@ -327,7 +324,7 @@ load_of_args:
     pop rbp
     pop rbx
     ret
-15:
+load_of_args:
     sub rsp, 8
     mov.q [rsp], rdi
     mov.q rax, [rsp]
@@ -352,7 +349,7 @@ load_of_args:
     mov rax, rax
     add rsp, 8
     ret
-16:
+return_stru:
     sub rsp, 0x28
     mov.q [rsp + 0x10], rdi
     mov.q [rsp + 0x18], rsi
@@ -368,7 +365,7 @@ load_of_args:
     mov.q rdx, [rsp + 0x8]
     add rsp, 0x28
     ret
-17:
+return_stru3:
     sub rsp, 8
     lea rdi, [rsp]
     xor esi, esi
@@ -390,13 +387,13 @@ load_of_args:
     or rax, rcx
     add rsp, 8
     ret
-18:
+return_stru4:
     sub rsp, 0x18
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0xf
     call.q [rip - 0x820]
-    call 17
+    call return_stru3
     mov rcx, rax
     shr rcx, 0
     mov.d [rsp], ecx
@@ -405,7 +402,7 @@ load_of_args:
     mov.w [rsp + 0x4], cx
     shr rax, 0x30
     mov.b [rsp + 0x6], al
-    call 17
+    call return_stru3
     mov rcx, rax
     shr rcx, 0
     mov.d [rsp + 0x7], ecx
@@ -428,13 +425,9 @@ load_of_args:
 =========== OPT LEVEL: none ===========
 main:
     push rbx
-kentus:
     push rbp
-brahma:
     push r12
-load_of_args:
     push r13
-return_stru3:
     push r14
     push r15
     sub rsp, 0x168
@@ -456,7 +449,7 @@ return_stru3:
     lea rdx, [rsp + 0x7d]
     mov rsi, rbp
     mov rdi, rbx
-    call 12
+    call fortran
     mov.q [rsp + 0x155], rax
     mov.q [rsp], 7
     mov.q [rsp + 0x8], 8
@@ -467,7 +460,7 @@ return_stru3:
     mov rsi, 2
     mov rdx, 3
     mov r8, 5
-    call 15
+    call load_of_args
     mov.q [rsp + 0x14d], rax
     lea rdi, [rsp + 0xa5]
     xor esi, esi
@@ -484,7 +477,7 @@ return_stru3:
     mov rsi, 2
     mov rdx, 3
     mov r8, 5
-    call 13
+    call brahma
     mov.q [rsp + 0x145], rax
     lea rdi, [rsp + 0x60]
     mov rdx, 0xf
@@ -513,15 +506,15 @@ return_stru3:
     movzx.b eax, [rsp + 0x6e]
     sal rax, 0x30
     or rsi, rax
-    call 10
+    call compose
     mov.q [rsp + 0x13d], rax
     mov rdi, 1
     mov rsi, 2
-    call 16
+    call return_stru
     mov.q [rsp + 0xb5], rax
     mov.q [rsp + 0xbd], rdx
     mov.q r12, [rsp + 0xb5]
-    call 17
+    call return_stru3
     mov rcx, rax
     shr rcx, 0
     mov.d [rsp + 0x6f], ecx
@@ -531,7 +524,7 @@ return_stru3:
     shr rax, 0x30
     mov.b [rsp + 0x75], al
     movzx.b ebp, [rsp + 0x74]
-    call 17
+    call return_stru3
     lea rdi, [rsp]
     mov rcx, rax
     shr rcx, 0
@@ -598,7 +591,7 @@ return_stru3:
     mov rsi, r15
     mov rcx, r14
     mov r8, r13
-    call 14
+    call stringa_dinga
     mov rcx, rax
     xor eax, eax
     mov.q rdx, [rsp + 0x155]
@@ -622,7 +615,7 @@ return_stru3:
     pop rbp
     pop rbx
     ret
-10:
+compose:
     push rbx
     sub rsp, 0x10
     mov.q [rsp], rdi
@@ -642,7 +635,7 @@ return_stru3:
     movzx.b eax, [rsp + 0x6]
     sal rax, 0x30
     or rdi, rax
-    call 11
+    call kentus
     mov rbx, rax
     mov.d edi, [rsp + 0x7]
     movzx.w eax, [rsp + 0xb]
@@ -651,14 +644,14 @@ return_stru3:
     movzx.b eax, [rsp + 0xd]
     sal rax, 0x30
     or rdi, rax
-    call 11
+    call kentus
     add bl, al
     mov rax, rbx
     add.b al, [rsp + 0xe]
     add rsp, 0x10
     pop rbx
     ret
-11:
+kentus:
     sub rsp, 8
     mov rax, rdi
     shr rax, 0
@@ -678,7 +671,7 @@ return_stru3:
     add.b al, [rsp + 0x6]
     add rsp, 8
     ret
-12:
+fortran:
     sub rsp, 0x18
     mov.q [rsp], rdi
     mov.q [rsp + 0x8], rsi
@@ -689,7 +682,7 @@ return_stru3:
     add.q rax, [rdx + 0x10]
     add rsp, 0x18
     ret
-13:
+brahma:
     mov rax, rdi
     add rax, rsi
     add rax, rdx
@@ -698,7 +691,7 @@ return_stru3:
     add.q rax, [rsp + 0x8]
     add.q rax, [rsp + 0x10]
     ret
-14:
+stringa_dinga:
     push rbx
     sub rsp, 0x20
     mov.q [rsp], rdi
@@ -747,7 +740,7 @@ return_stru3:
     add rsp, 0x20
     pop rbx
     ret
-15:
+load_of_args:
     mov rax, rdi
     add rax, rsi
     mov rsi, rax
@@ -763,7 +756,7 @@ return_stru3:
     add rsi, rax
     mov rax, rsi
     ret
-16:
+return_stru:
     push rbx
     push rbp
     sub rsp, 0x18
@@ -781,7 +774,7 @@ return_stru3:
     pop rbp
     pop rbx
     ret
-17:
+return_stru3:
     sub rsp, 8
     lea rdi, [rsp]
     xor esi, esi
@@ -803,13 +796,13 @@ return_stru3:
     or rax, rcx
     add rsp, 8
     ret
-18:
+return_stru4:
     sub rsp, 0x18
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0xf
     call.q [rip - 0x798]
-    call 17
+    call return_stru3
     mov rcx, rax
     shr rcx, 0
     mov.d [rsp], ecx
@@ -818,7 +811,7 @@ return_stru3:
     mov.w [rsp + 0x4], cx
     shr rax, 0x30
     mov.b [rsp + 0x6], al
-    call 17
+    call return_stru3
     mov rcx, rax
     shr rcx, 0
     mov.d [rsp + 0x7], ecx
@@ -841,11 +834,8 @@ return_stru3:
 =========== OPT LEVEL: mininal-quick ===========
 main:
     push rbx
-kentus:
     push rbp
-brahma:
     push r12
-load_of_args:
     sub rsp, 0x180
     lea rdi, [rsp + 0x95]
     xor esi, esi
@@ -867,7 +857,7 @@ load_of_args:
     lea rdx, [rsp + 0x7d]
     mov.q rsi, [rsp + 0x135]
     mov.q rdi, [rsp + 0x13d]
-    call 12
+    call fortran
     mov.q [rsp + 0x135], rax
     mov.q [rsp], 7
     mov.q [rsp + 0x8], 8
@@ -878,7 +868,7 @@ load_of_args:
     mov rsi, 2
     mov rdx, 3
     mov r8, 5
-    call 15
+    call load_of_args
     mov.q [rsp + 0x13d], rax
     lea rdi, [rsp + 0xa5]
     xor esi, esi
@@ -895,7 +885,7 @@ load_of_args:
     mov rsi, 2
     mov rdx, 3
     mov r8, 5
-    call 13
+    call brahma
     mov.q [rsp + 0x145], rax
     lea rdi, [rsp + 0x60]
     mov rdx, 0xf
@@ -924,15 +914,15 @@ load_of_args:
     movzx.b eax, [rsp + 0x6e]
     sal rax, 0x30
     or rsi, rax
-    call 10
+    call compose
     mov.q [rsp + 0x14d], rax
     mov rdi, 1
     mov rsi, 2
-    call 16
+    call return_stru
     mov.q [rsp + 0xb5], rax
     mov.q [rsp + 0xbd], rdx
     mov.q rbx, [rsp + 0xb5]
-    call 17
+    call return_stru3
     mov rcx, rax
     shr rcx, 0
     mov.d [rsp + 0x6f], ecx
@@ -942,7 +932,7 @@ load_of_args:
     shr rax, 0x30
     mov.b [rsp + 0x75], al
     movzx.b ebp, [rsp + 0x74]
-    call 17
+    call return_stru3
     lea rdi, [rsp]
     mov rcx, rax
     shr rcx, 0
@@ -1009,7 +999,7 @@ load_of_args:
     mov.q rsi, [rsp + 0x15d]
     mov.q rcx, [rsp + 0x165]
     mov.q r8, [rsp + 0x16d]
-    call 14
+    call stringa_dinga
     mov.q [rsp + 0x155], rax
     xor eax, eax
     mov.q rcx, [rsp + 0x135]
@@ -1031,7 +1021,7 @@ load_of_args:
     pop rbp
     pop rbx
     ret
-10:
+compose:
     sub rsp, 0x18
     mov.q [rsp], rdi
     mov rax, rsi
@@ -1050,7 +1040,7 @@ load_of_args:
     movzx.b eax, [rsp + 0x6]
     sal rax, 0x30
     or rdi, rax
-    call 11
+    call kentus
     mov.q [rsp + 0xf], rax
     mov.d edi, [rsp + 0x7]
     movzx.w eax, [rsp + 0xb]
@@ -1059,7 +1049,7 @@ load_of_args:
     movzx.b eax, [rsp + 0xd]
     sal rax, 0x30
     or rdi, rax
-    call 11
+    call kentus
     mov.q rcx, [rsp + 0xf]
     add cl, al
     mov rax, rcx
@@ -1067,7 +1057,7 @@ load_of_args:
     mov rax, rax
     add rsp, 0x18
     ret
-11:
+kentus:
     sub rsp, 8
     mov rax, rdi
     shr rax, 0
@@ -1087,7 +1077,7 @@ load_of_args:
     add.b al, [rsp + 0x6]
     add rsp, 8
     ret
-12:
+fortran:
     sub rsp, 0x18
     mov.q [rsp], rdi
     mov.q [rsp + 0x8], rsi
@@ -1098,7 +1088,7 @@ load_of_args:
     add.q rax, [rdx + 0x10]
     add rsp, 0x18
     ret
-13:
+brahma:
     sub rsp, 8
     mov.q [rsp], rdi
     mov.q rax, [rsp]
@@ -1116,7 +1106,7 @@ load_of_args:
     mov rax, rax
     add rsp, 8
     ret
-14:
+stringa_dinga:
     sub rsp, 0x28
     mov.q [rsp], rdi
     mov.q [rsp + 0x8], rsi
@@ -1151,7 +1141,7 @@ load_of_args:
     add rax, rcx
     add rsp, 0x28
     ret
-15:
+load_of_args:
     sub rsp, 8
     mov.q [rsp], rdi
     mov.q rax, [rsp]
@@ -1176,7 +1166,7 @@ load_of_args:
     mov rax, rax
     add rsp, 8
     ret
-16:
+return_stru:
     sub rsp, 0x28
     mov.q [rsp + 0x10], rdi
     mov.q [rsp + 0x18], rsi
@@ -1192,7 +1182,7 @@ load_of_args:
     mov.q rdx, [rsp + 0x8]
     add rsp, 0x28
     ret
-17:
+return_stru3:
     sub rsp, 8
     lea rdi, [rsp]
     xor esi, esi
@@ -1214,13 +1204,13 @@ load_of_args:
     or rax, rcx
     add rsp, 8
     ret
-18:
+return_stru4:
     sub rsp, 0x18
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0xf
     call.q [rip - 0x7e0]
-    call 17
+    call return_stru3
     mov rcx, rax
     shr rcx, 0
     mov.d [rsp], ecx
@@ -1229,7 +1219,7 @@ load_of_args:
     mov.w [rsp + 0x4], cx
     shr rax, 0x30
     mov.b [rsp + 0x6], al
-    call 17
+    call return_stru3
     mov rcx, rax
     shr rcx, 0
     mov.d [rsp + 0x7], ecx
@@ -1252,13 +1242,9 @@ load_of_args:
 =========== OPT LEVEL: mininal ===========
 main:
     push rbx
-kentus:
     push rbp
-brahma:
     push r12
-load_of_args:
     push r13
-return_stru3:
     push r14
     push r15
     sub rsp, 0x168
@@ -1280,7 +1266,7 @@ return_stru3:
     lea rdx, [rsp + 0x7d]
     mov rsi, rbp
     mov rdi, rbx
-    call 12
+    call fortran
     mov.q [rsp + 0x155], rax
     mov.q [rsp], 7
     mov.q [rsp + 0x8], 8
@@ -1291,7 +1277,7 @@ return_stru3:
     mov rsi, 2
     mov rdx, 3
     mov r8, 5
-    call 15
+    call load_of_args
     mov.q [rsp + 0x14d], rax
     lea rdi, [rsp + 0xa5]
     xor esi, esi
@@ -1308,7 +1294,7 @@ return_stru3:
     mov rsi, 2
     mov rdx, 3
     mov r8, 5
-    call 13
+    call brahma
     mov.q [rsp + 0x145], rax
     lea rdi, [rsp + 0x60]
     mov rdx, 0xf
@@ -1337,15 +1323,15 @@ return_stru3:
     movzx.b eax, [rsp + 0x6e]
     sal rax, 0x30
     or rsi, rax
-    call 10
+    call compose
     mov.q [rsp + 0x13d], rax
     mov rdi, 1
     mov rsi, 2
-    call 16
+    call return_stru
     mov.q [rsp + 0xb5], rax
     mov.q [rsp + 0xbd], rdx
     mov.q r12, [rsp + 0xb5]
-    call 17
+    call return_stru3
     mov rcx, rax
     shr rcx, 0
     mov.d [rsp + 0x6f], ecx
@@ -1355,7 +1341,7 @@ return_stru3:
     shr rax, 0x30
     mov.b [rsp + 0x75], al
     movzx.b ebp, [rsp + 0x74]
-    call 17
+    call return_stru3
     lea rdi, [rsp]
     mov rcx, rax
     shr rcx, 0
@@ -1422,7 +1408,7 @@ return_stru3:
     mov rsi, r15
     mov rcx, r14
     mov r8, r13
-    call 14
+    call stringa_dinga
     mov rcx, rax
     xor eax, eax
     mov.q rdx, [rsp + 0x155]
@@ -1446,7 +1432,7 @@ return_stru3:
     pop rbp
     pop rbx
     ret
-10:
+compose:
     push rbx
     sub rsp, 0x10
     mov.q [rsp], rdi
@@ -1466,7 +1452,7 @@ return_stru3:
     movzx.b eax, [rsp + 0x6]
     sal rax, 0x30
     or rdi, rax
-    call 11
+    call kentus
     mov rbx, rax
     mov.d edi, [rsp + 0x7]
     movzx.w eax, [rsp + 0xb]
@@ -1475,14 +1461,14 @@ return_stru3:
     movzx.b eax, [rsp + 0xd]
     sal rax, 0x30
     or rdi, rax
-    call 11
+    call kentus
     add bl, al
     mov rax, rbx
     add.b al, [rsp + 0xe]
     add rsp, 0x10
     pop rbx
     ret
-11:
+kentus:
     sub rsp, 8
     mov rax, rdi
     shr rax, 0
@@ -1502,7 +1488,7 @@ return_stru3:
     add.b al, [rsp + 0x6]
     add rsp, 8
     ret
-12:
+fortran:
     sub rsp, 0x18
     mov.q [rsp], rdi
     mov.q [rsp + 0x8], rsi
@@ -1513,7 +1499,7 @@ return_stru3:
     add.q rax, [rdx + 0x10]
     add rsp, 0x18
     ret
-13:
+brahma:
     mov rax, rdi
     add rax, rsi
     add rax, rdx
@@ -1522,7 +1508,7 @@ return_stru3:
     add.q rax, [rsp + 0x8]
     add.q rax, [rsp + 0x10]
     ret
-14:
+stringa_dinga:
     sub rsp, 0x28
     mov.q [rsp], rdi
     mov.q [rsp + 0x8], rsi
@@ -1557,7 +1543,7 @@ return_stru3:
     add rax, rcx
     add rsp, 0x28
     ret
-15:
+load_of_args:
     mov rax, rdi
     add rax, rsi
     mov rsi, rax
@@ -1573,7 +1559,7 @@ return_stru3:
     add rsi, rax
     mov rax, rsi
     ret
-16:
+return_stru:
     push rbx
     push rbp
     sub rsp, 0x18
@@ -1591,7 +1577,7 @@ return_stru3:
     pop rbp
     pop rbx
     ret
-17:
+return_stru3:
     sub rsp, 8
     lea rdi, [rsp]
     xor esi, esi
@@ -1613,13 +1599,13 @@ return_stru3:
     or rax, rcx
     add rsp, 8
     ret
-18:
+return_stru4:
     sub rsp, 0x18
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0xf
     call.q [rip - 0x760]
-    call 17
+    call return_stru3
     mov rcx, rax
     shr rcx, 0
     mov.d [rsp], ecx
@@ -1628,7 +1614,7 @@ return_stru3:
     mov.w [rsp + 0x4], cx
     shr rax, 0x30
     mov.b [rsp + 0x6], al
-    call 17
+    call return_stru3
     mov rcx, rax
     shr rcx, 0
     mov.d [rsp + 0x7], ecx
@@ -1651,9 +1637,7 @@ return_stru3:
 =========== OPT LEVEL: moderate-quick ===========
 main:
     push rbx
-kentus:
     push rbp
-brahma:
     sub rsp, 0xc8
     mov.q [rsp + 0x7d], 0x1e
     mov.q [rsp + 0x85], 0x2e
@@ -1661,7 +1645,7 @@ brahma:
     mov rdi, 0x10
     mov rsi, 0x14
     lea rdx, [rsp + 0x7d]
-    call 12
+    call fortran
     mov.q [rsp + 0x95], rax
     mov.q [rsp], 7
     mov.q [rsp + 0x8], 8
@@ -1672,7 +1656,7 @@ brahma:
     mov rcx, 4
     mov rdx, 3
     mov r8, 5
-    call 15
+    call load_of_args
     mov.q [rsp + 0x9d], rax
     mov.q [rsp], 6
     mov.q [rsp + 0x8], 7
@@ -1681,7 +1665,7 @@ brahma:
     mov rcx, 4
     mov rdx, 3
     mov r8, 5
-    call 13
+    call brahma
     mov.q [rsp + 0xa5], rax
     mov.d [rsp + 0x6e], 0x4030201
     mov.w [rsp + 0x72], 0x605
@@ -1696,13 +1680,13 @@ brahma:
     movzx.b eax, [rsp + 0x7c]
     sal rax, 0x30
     or rsi, rax
-    call 10
+    call compose
     mov.q [rsp + 0xad], rax
     mov rdi, 1
     mov rsi, 2
-    call 16
+    call return_stru
     mov.q [rsp + 0xb5], rax
-    call 17
+    call return_stru3
     mov rcx, rax
     mov.d [rsp + 0x67], ecx
     mov rcx, rax
@@ -1711,7 +1695,7 @@ brahma:
     shr rax, 0x30
     mov.b [rsp + 0x6d], al
     movzx.b ebx, [rsp + 0x6c]
-    call 17
+    call return_stru3
     mov rcx, rax
     mov.d [rsp + 0x60], ecx
     mov rcx, rax
@@ -1743,7 +1727,7 @@ brahma:
     mov rdx, 1
     mov r8, 2
     mov r9, 4
-    call 14
+    call stringa_dinga
     mov.q rcx, [rsp + 0x95]
     mov.q rdx, [rsp + 0x9d]
     add rcx, rdx
@@ -1769,7 +1753,7 @@ brahma:
     pop rbp
     pop rbx
     ret
-10:
+compose:
     sub rsp, 0x18
     mov.q [rsp], rdi
     mov rax, rsi
@@ -1787,7 +1771,7 @@ brahma:
     movzx.b eax, [rsp + 0x6]
     sal rax, 0x30
     or rdi, rax
-    call 11
+    call kentus
     mov.q [rsp + 0xf], rax
     mov.d edi, [rsp + 0x7]
     movzx.w eax, [rsp + 0xb]
@@ -1796,7 +1780,7 @@ brahma:
     movzx.b eax, [rsp + 0xd]
     sal rax, 0x30
     or rdi, rax
-    call 11
+    call kentus
     mov.q rcx, [rsp + 0xf]
     add cl, al
     mov rax, rcx
@@ -1804,7 +1788,7 @@ brahma:
     mov rax, rax
     add rsp, 0x18
     ret
-11:
+kentus:
     sub rsp, 8
     mov rax, rdi
     mov.d [rsp], eax
@@ -1824,7 +1808,7 @@ brahma:
     add al, cl
     add rsp, 8
     ret
-12:
+fortran:
     sub rsp, 8
     mov.q [rsp], rdi
     mov.q rax, [rsp]
@@ -1838,7 +1822,7 @@ brahma:
     mov rax, rax
     add rsp, 8
     ret
-13:
+brahma:
     sub rsp, 8
     mov.q [rsp], rdi
     mov.q rax, [rsp]
@@ -1856,7 +1840,7 @@ brahma:
     mov rax, rax
     add rsp, 8
     ret
-14:
+stringa_dinga:
     imul rax, rdx, 3
     add rsi, rax
     lea rax, [rsi + r8*8]
@@ -1884,7 +1868,7 @@ brahma:
     imul rcx, rcx, 0x3e8
     add rax, rcx
     ret
-15:
+load_of_args:
     sub rsp, 8
     mov.q [rsp], rdi
     mov.q rax, [rsp]
@@ -1909,7 +1893,7 @@ brahma:
     mov rax, rax
     add rsp, 8
     ret
-16:
+return_stru:
     sub rsp, 0x18
     mov.q [rsp], rdi
     mov.q [rsp + 0x8], rsi
@@ -1917,16 +1901,16 @@ brahma:
     mov.q rdx, [rsp + 0x8]
     add rsp, 0x18
     ret
-17:
+return_stru3:
     movabs rax, 0x7060504030201
     ret
-18:
+return_stru4:
     sub rsp, 0x18
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0xf
     call.q [rip - 0x530]
-    call 17
+    call return_stru3
     mov rcx, rax
     mov.d [rsp], ecx
     mov rcx, rax
@@ -1934,7 +1918,7 @@ brahma:
     mov.w [rsp + 0x4], cx
     shr rax, 0x30
     mov.b [rsp + 0x6], al
-    call 17
+    call return_stru3
     mov rcx, rax
     mov.d [rsp + 0x7], ecx
     mov rcx, rax
@@ -1955,13 +1939,9 @@ brahma:
 =========== OPT LEVEL: moderate ===========
 main:
     push rbx
-kentus:
     push rbp
-brahma:
     push r12
-load_of_args:
     push r13
-return_stru3:
     push r14
     push r15
     sub rsp, 0xa8
@@ -1971,7 +1951,7 @@ return_stru3:
     mov rdi, 0x10
     mov rsi, 0x14
     lea rdx, [rsp + 0x7d]
-    call 12
+    call fortran
     mov.q [rsp + 0x95], rax
     mov.q [rsp], 7
     mov.q [rsp + 0x8], 8
@@ -1982,7 +1962,7 @@ return_stru3:
     mov rcx, 4
     mov rdx, 3
     mov r8, 5
-    call 15
+    call load_of_args
     mov r15, rax
     mov.q [rsp], 6
     mov.q [rsp + 0x8], 7
@@ -1991,7 +1971,7 @@ return_stru3:
     mov rcx, 4
     mov rdx, 3
     mov r8, 5
-    call 13
+    call brahma
     mov r14, rax
     mov.d [rsp + 0x6e], 0x4030201
     mov.w [rsp + 0x72], 0x605
@@ -2006,13 +1986,13 @@ return_stru3:
     movzx.b eax, [rsp + 0x7c]
     sal rax, 0x30
     or rsi, rax
-    call 10
+    call compose
     mov r13, rax
     mov rdi, 1
     mov rsi, 2
-    call 16
+    call return_stru
     mov r12, rax
-    call 17
+    call return_stru3
     mov rcx, rax
     mov.d [rsp + 0x67], ecx
     mov rcx, rax
@@ -2021,7 +2001,7 @@ return_stru3:
     shr rax, 0x30
     mov.b [rsp + 0x6d], al
     movzx.b ebp, [rsp + 0x6c]
-    call 17
+    call return_stru3
     mov rcx, rax
     mov.d [rsp + 0x60], ecx
     mov rcx, rax
@@ -2053,7 +2033,7 @@ return_stru3:
     mov rdx, 1
     mov r8, 2
     mov r9, 4
-    call 14
+    call stringa_dinga
     mov rdx, rax
     mov.q rcx, [rsp + 0x95]
     add rcx, r15
@@ -2073,7 +2053,7 @@ return_stru3:
     pop rbp
     pop rbx
     ret
-10:
+compose:
     push rbx
     sub rsp, 0x10
     mov.q [rsp], rdi
@@ -2092,7 +2072,7 @@ return_stru3:
     movzx.b eax, [rsp + 0x6]
     sal rax, 0x30
     or rdi, rax
-    call 11
+    call kentus
     mov rbx, rax
     mov.d edi, [rsp + 0x7]
     movzx.w eax, [rsp + 0xb]
@@ -2101,14 +2081,14 @@ return_stru3:
     movzx.b eax, [rsp + 0xd]
     sal rax, 0x30
     or rdi, rax
-    call 11
+    call kentus
     add bl, al
     mov rax, rbx
     add.b al, [rsp + 0xe]
     add rsp, 0x10
     pop rbx
     ret
-11:
+kentus:
     sub rsp, 8
     mov rax, rdi
     mov.d [rsp], eax
@@ -2128,14 +2108,14 @@ return_stru3:
     add al, cl
     add rsp, 8
     ret
-12:
+fortran:
     mov rax, rdi
     add rax, rsi
     add.q rax, [rdx]
     add.q rax, [rdx + 0x8]
     add.q rax, [rdx + 0x10]
     ret
-13:
+brahma:
     mov rax, rdi
     add rax, rsi
     add rax, rdx
@@ -2144,7 +2124,7 @@ return_stru3:
     add.q rax, [rsp + 0x8]
     add.q rax, [rsp + 0x10]
     ret
-14:
+stringa_dinga:
     imul rax, rdx, 3
     add rsi, rax
     lea rax, [rsi + r8*8]
@@ -2172,7 +2152,7 @@ return_stru3:
     imul rcx, rcx, 0x3e8
     add rax, rcx
     ret
-15:
+load_of_args:
     mov rax, rdi
     add rax, rsi
     mov rsi, rax
@@ -2188,21 +2168,21 @@ return_stru3:
     add rsi, rax
     mov rax, rsi
     ret
-16:
+return_stru:
     mov rax, rdi
     mov rcx, rsi
     mov rdx, rcx
     ret
-17:
+return_stru3:
     movabs rax, 0x7060504030201
     ret
-18:
+return_stru4:
     sub rsp, 0x18
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0xf
     call.q [rip - 0x488]
-    call 17
+    call return_stru3
     mov rcx, rax
     mov.d [rsp], ecx
     mov rcx, rax
@@ -2210,7 +2190,7 @@ return_stru3:
     mov.w [rsp + 0x4], cx
     shr rax, 0x30
     mov.b [rsp + 0x6], al
-    call 17
+    call return_stru3
     mov rcx, rax
     mov.d [rsp + 0x7], ecx
     mov rcx, rax
@@ -2231,13 +2211,9 @@ return_stru3:
 =========== OPT LEVEL: all ===========
 main:
     push rbx
-kentus:
     push rbp
-brahma:
     push r12
-load_of_args:
     push r13
-return_stru3:
     push r14
     push r15
     sub rsp, 0xa8
@@ -2247,7 +2223,7 @@ return_stru3:
     mov rdi, 0x10
     mov rsi, 0x14
     lea rdx, [rsp + 0x7d]
-    call 12
+    call fortran
     mov.q [rsp + 0x95], rax
     mov.q [rsp], 7
     mov.q [rsp + 0x8], 8
@@ -2258,7 +2234,7 @@ return_stru3:
     mov rcx, 4
     mov rdx, 3
     mov r8, 5
-    call 15
+    call load_of_args
     mov r15, rax
     mov.q [rsp], 6
     mov.q [rsp + 0x8], 7
@@ -2267,7 +2243,7 @@ return_stru3:
     mov rcx, 4
     mov rdx, 3
     mov r8, 5
-    call 13
+    call brahma
     mov r14, rax
     mov.d [rsp + 0x6e], 0x4030201
     mov.w [rsp + 0x72], 0x605
@@ -2282,13 +2258,13 @@ return_stru3:
     movzx.b eax, [rsp + 0x7c]
     sal rax, 0x30
     or rsi, rax
-    call 10
+    call compose
     mov r13, rax
     mov rdi, 1
     mov rsi, 2
-    call 16
+    call return_stru
     mov r12, rax
-    call 17
+    call return_stru3
     mov rcx, rax
     mov.d [rsp + 0x67], ecx
     mov rcx, rax
@@ -2297,7 +2273,7 @@ return_stru3:
     shr rax, 0x30
     mov.b [rsp + 0x6d], al
     movzx.b ebp, [rsp + 0x6c]
-    call 17
+    call return_stru3
     mov rcx, rax
     mov.d [rsp + 0x60], ecx
     mov rcx, rax
@@ -2329,7 +2305,7 @@ return_stru3:
     mov rdx, 1
     mov r8, 2
     mov r9, 4
-    call 14
+    call stringa_dinga
     mov rdx, rax
     mov.q rcx, [rsp + 0x95]
     add rcx, r15
@@ -2349,7 +2325,7 @@ return_stru3:
     pop rbp
     pop rbx
     ret
-10:
+compose:
     push rbx
     sub rsp, 0x10
     mov.q [rsp], rdi
@@ -2368,7 +2344,7 @@ return_stru3:
     movzx.b eax, [rsp + 0x6]
     sal rax, 0x30
     or rdi, rax
-    call 11
+    call kentus
     mov rbx, rax
     mov.d edi, [rsp + 0x7]
     movzx.w eax, [rsp + 0xb]
@@ -2377,14 +2353,14 @@ return_stru3:
     movzx.b eax, [rsp + 0xd]
     sal rax, 0x30
     or rdi, rax
-    call 11
+    call kentus
     add bl, al
     mov rax, rbx
     add.b al, [rsp + 0xe]
     add rsp, 0x10
     pop rbx
     ret
-11:
+kentus:
     sub rsp, 8
     mov rax, rdi
     mov.d [rsp], eax
@@ -2404,14 +2380,14 @@ return_stru3:
     add al, cl
     add rsp, 8
     ret
-12:
+fortran:
     mov rax, rdi
     add rax, rsi
     add.q rax, [rdx]
     add.q rax, [rdx + 0x8]
     add.q rax, [rdx + 0x10]
     ret
-13:
+brahma:
     mov rax, rdi
     add rax, rsi
     add rax, rdx
@@ -2420,7 +2396,7 @@ return_stru3:
     add.q rax, [rsp + 0x8]
     add.q rax, [rsp + 0x10]
     ret
-14:
+stringa_dinga:
     imul rax, rdx, 3
     add rsi, rax
     lea rax, [rsi + r8*8]
@@ -2448,7 +2424,7 @@ return_stru3:
     imul rcx, rcx, 0x3e8
     add rax, rcx
     ret
-15:
+load_of_args:
     mov rax, rdi
     add rax, rsi
     mov rsi, rax
@@ -2464,21 +2440,21 @@ return_stru3:
     add rsi, rax
     mov rax, rsi
     ret
-16:
+return_stru:
     mov rax, rdi
     mov rcx, rsi
     mov rdx, rcx
     ret
-17:
+return_stru3:
     movabs rax, 0x7060504030201
     ret
-18:
+return_stru4:
     sub rsp, 0x18
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0xf
     call.q [rip - 0x488]
-    call 17
+    call return_stru3
     mov rcx, rax
     mov.d [rsp], ecx
     mov rcx, rax
@@ -2486,7 +2462,7 @@ return_stru3:
     mov.w [rsp + 0x4], cx
     shr rax, 0x30
     mov.b [rsp + 0x6], al
-    call 17
+    call return_stru3
     mov rcx, rax
     mov.d [rsp + 0x7], ecx
     mov rcx, rax
@@ -2507,9 +2483,7 @@ return_stru3:
 =========== OPT LEVEL: aggresive ===========
 main:
     push rbx
-kentus:
     sub rsp, 0x30
-load_of_args:
     mov.d [rsp + 0x1d], 0x4030201
     mov.w [rsp + 0x21], 0x605
     mov.b [rsp + 0x23], 7
@@ -2538,7 +2512,7 @@ load_of_args:
     movzx.b eax, [rsp + 0xd]
     sal rax, 0x30
     or rdi, rax
-    call 10
+    call kentus
     mov rbx, rax
     mov.d edi, [rsp + 0xe]
     movzx.w eax, [rsp + 0x12]
@@ -2547,7 +2521,7 @@ load_of_args:
     movzx.b eax, [rsp + 0x14]
     sal rax, 0x30
     or rdi, rax
-    call 10
+    call kentus
     movzx.b edx, [rsp + 0x15]
     mov.d [rsp + 0x16], 0x4030201
     mov.w [rsp + 0x1a], 0x605
@@ -2566,7 +2540,7 @@ load_of_args:
     add rsp, 0x30
     pop rbx
     ret
-10:
+kentus:
     sub rsp, 8
     mov rax, rdi
     mov.d [rsp], eax
@@ -2586,7 +2560,7 @@ load_of_args:
     add al, cl
     add rsp, 8
     ret
-11:
+return_stru4:
     sub rsp, 0x18
     lea rdi, [rsp]
     xor esi, esi

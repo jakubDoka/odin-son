@@ -1,16 +1,16 @@
 =========== OPT LEVEL: none-quick ===========
 cpy:
     xor eax, eax
-main:
+1:
     cmp rax, rdx
     jnl 2
     movzx.b ecx, [rsi + rax*2]
     mov.b [rdi + rax*2], cl
     add rax, 1
-    jmp main
+    jmp 1
 2:
     ret
-3:
+main:
     push rbx
     sub rsp, 0x30
     lea rdi, [rsp]
@@ -80,16 +80,16 @@ main:
 =========== OPT LEVEL: none ===========
 cpy:
     xor ecx, ecx
-main:
+1:
     cmp rcx, rdx
     jnl 2
     movzx.b eax, [rsi + rcx*2]
     mov.b [rdi + rcx*2], al
     add rcx, 1
-    jmp main
+    jmp 1
 2:
     ret
-3:
+main:
     sub rsp, 0x18
     lea rdi, [rsp]
     xor esi, esi
@@ -142,16 +142,16 @@ main:
 =========== OPT LEVEL: mininal-quick ===========
 cpy:
     xor eax, eax
-main:
+1:
     cmp rax, rdx
     jnl 2
     movzx.b ecx, [rsi + rax*2]
     mov.b [rdi + rax*2], cl
     add rax, 1
-    jmp main
+    jmp 1
 2:
     ret
-3:
+main:
     push rbx
     sub rsp, 0x30
     lea rdi, [rsp]
@@ -216,16 +216,16 @@ main:
 =========== OPT LEVEL: mininal ===========
 cpy:
     xor ecx, ecx
-main:
+1:
     cmp rcx, rdx
     jnl 2
     movzx.b eax, [rsi + rcx*2]
     mov.b [rdi + rcx*2], al
     add rcx, 1
-    jmp main
+    jmp 1
 2:
     ret
-3:
+main:
     sub rsp, 0x18
     lea rdi, [rsp]
     xor esi, esi
@@ -273,16 +273,16 @@ main:
 =========== OPT LEVEL: moderate-quick ===========
 cpy:
     xor eax, eax
-main:
+1:
     cmp rax, rdx
     jnl 2
     movzx.b ecx, [rsi + rax*2]
     mov.b [rdi + rax*2], cl
     add rax, 1
-    jmp main
+    jmp 1
 2:
     ret
-3:
+main:
     push rbx
     sub rsp, 0x30
     mov.q [rsp], 0
@@ -341,16 +341,16 @@ main:
 =========== OPT LEVEL: moderate ===========
 cpy:
     xor ecx, ecx
-main:
+1:
     cmp rcx, rdx
     jnl 2
     movzx.b eax, [rsi + rcx*2]
     mov.b [rdi + rcx*2], al
     add rcx, 1
-    jmp main
+    jmp 1
 2:
     ret
-3:
+main:
     sub rsp, 0x18
     mov.q [rsp], 0
     mov.q [rsp + 0x8], 0
@@ -392,23 +392,23 @@ main:
 =========== OPT LEVEL: all ===========
 cpy:
     cmp rdx, 0
-    jng 3
+    jng 2
     xor ecx, ecx
-2:
+1:
     movzx.b eax, [rsi + rcx*2]
     mov.b [rdi + rcx*2], al
     add rcx, 1
     cmp rcx, rdx
-    jnge 2
-    jmp 3
-3:
+    jnge 1
+    jmp 2
+2:
     ret
-4:
+main:
     sub rsp, 0x18
     mov.q [rsp], 0
     mov.q [rsp + 0x8], 0
     xor eax, eax
-5:
+4:
     mov rcx, rax
     mov rax, rcx
     add rax, 1
@@ -416,14 +416,14 @@ cpy:
     mov.b [rsp + rcx], sil
     mov.b [rsp + rcx + 0x8], 0x64
     cmp rax, 8
-    jnge 5
+    jnge 4
     lea rsi, [rsp]
     lea rdi, [rsp + 0x8]
     mov rdx, 4
     call cpy
     xor ecx, ecx
     xor eax, eax
-6:
+5:
     mov rdx, rax
     mov rax, rcx
     mov rcx, rax
@@ -433,7 +433,7 @@ cpy:
     add rdx, rsi
     cmp rcx, 8
     mov rax, rdx
-    jnge 6
+    jnge 5
     mov rcx, 0xfb
     mov rax, rdx
     cqo
@@ -442,12 +442,12 @@ cpy:
     add rsp, 0x18
     ret
 =========== OPT LEVEL: aggresive ===========
-cpy:
+main:
     sub rsp, 0x18
     mov.q [rsp], 0
     mov.q [rsp + 0x8], 0
     xor eax, eax
-2:
+1:
     mov rdx, rax
     add rdx, 1
     mov rcx, rdx
@@ -455,17 +455,17 @@ cpy:
     mov.b [rsp + rax + 0x8], 0x64
     cmp rdx, 8
     mov rax, rdx
-    jnge 2
+    jnge 1
     xor eax, eax
-3:
+2:
     movzx.b ecx, [rsp + rax*2]
     mov.b [rsp + rax*2 + 0x8], cl
     add rax, 1
     cmp rax, 4
-    jnge 3
+    jnge 2
     xor edx, edx
     xor ecx, ecx
-4:
+3:
     mov rsi, rdx
     add rsi, 1
     movzx.b edx, [rsp + rdx + 0x8]
@@ -475,7 +475,7 @@ cpy:
     cmp rsi, 8
     mov rdx, rsi
     mov rcx, rax
-    jnge 4
+    jnge 3
     mov rcx, 0xfb
     cqo
     idiv rcx

@@ -1,22 +1,20 @@
 =========== OPT LEVEL: none-quick ===========
-vec_push:
-    push rbx
 sum_ints:
+    push rbx
     sub rsp, 0x20
-vec_at int:
     mov.q [rsp], rdi
     xor ecx, ecx
     xor edx, edx
-8:
+1:
     mov.q [rsp + 0x8], rdx
     mov.q [rsp + 0x10], rcx
     mov.q rax, [rsp + 0x10]
     mov.q rbx, [rsp]
     cmp.q rax, [rbx + 0x8]
-    jnl 9
+    jnl 2
     mov.q rsi, [rsp + 0x10]
     mov.q rdi, [rsp]
-    call 11
+    call vec_at int
     mov.q rbx, [rsp + 0x10]
     add rbx, 1
     mov.q [rsp + 0x10], rbx
@@ -25,13 +23,13 @@ vec_at int:
     mov.q [rsp + 0x18], rbx
     mov.q rcx, [rsp + 0x10]
     mov.q rdx, [rsp + 0x18]
-    jmp 8
-9:
+    jmp 1
+2:
     mov.q rax, [rsp + 0x8]
     add rsp, 0x20
     pop rbx
     ret
-10:
+main:
     push rbx
     sub rsp, 0x130
     mov rdx, 0x40
@@ -64,10 +62,10 @@ vec_at int:
     mov.q [rsp + 0x8], 0x1f
     lea rsi, [rsp]
     lea rdi, [rsp + 0x10]
-    call 12
+    call vec_push int
     lea rsi, [rsp + 0x8]
     lea rdi, [rsp + 0x10]
-    call 12
+    call vec_push int
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x30]
@@ -92,13 +90,13 @@ vec_at int:
     mov.q [rsp + 0x58], 4
     lea rsi, [rsp + 0x50]
     lea rdi, [rsp + 0x30]
-    call 13
+    call vec_push struct {a: int, b: int}
     xor esi, esi
     lea rdi, [rsp + 0x30]
-    call 14
+    call vec_at struct {a: int, b: int}
     mov.q [rsp + 0x120], rax
     lea rdi, [rsp + 0x10]
-    call vec_push
+    call sum_ints
     mov.q rcx, [rsp + 0x120]
     add.q rax, [rcx]
     mov.q rcx, [rsp + 0x120]
@@ -108,18 +106,18 @@ vec_at int:
     add rsp, 0x130
     pop rbx
     ret
-11:
+vec_at int:
     mov.q rax, [rdi]
     lea rax, [rax + rsi*8]
     ret
-12:
+vec_push int:
     mov.q rax, [rdi]
     mov.q rcx, [rdi + 0x8]
     mov.q rdx, [rsi]
     mov.q [rax + rcx*8], rdx
     add.q [rdi + 0x8], 1
     ret
-13:
+vec_push struct {a: int, b: int}:
     sub rsp, 8
     mov.q [rsp], rdi
     mov.q rax, [rsp]
@@ -134,42 +132,39 @@ vec_at int:
     add.q [rax + 0x8], 1
     add rsp, 8
     ret
-14:
+vec_at struct {a: int, b: int}:
     mov.q rax, [rdi]
     imul rcx, rsi, 0x10
     add rax, rcx
     ret
 =========== OPT LEVEL: none ===========
-vec_push:
-    push rbx
 sum_ints:
+    push rbx
     push rbp
     push r12
-vec_at int:
     mov r12, rdi
-vec_at struct {a: int, b: int}:
     xor edx, edx
     xor ecx, ecx
-8:
+1:
     mov rbp, rcx
     mov rbx, rdx
     cmp.q rbx, [r12 + 0x8]
-    jnl 9
+    jnl 2
     mov rsi, rbx
     mov rdi, r12
-    call 11
+    call vec_at int
     mov rdx, rbx
     add rdx, 1
     mov rcx, rbp
     add.q rcx, [rax]
-    jmp 8
-9:
+    jmp 1
+2:
     mov rax, rbp
     pop r12
     pop rbp
     pop rbx
     ret
-10:
+main:
     push rbx
     sub rsp, 0x120
     mov rdx, 0x40
@@ -202,10 +197,10 @@ vec_at struct {a: int, b: int}:
     mov.q [rsp + 0x8], 0x1f
     lea rsi, [rsp]
     lea rdi, [rsp + 0x10]
-    call 12
+    call vec_push int
     lea rsi, [rsp + 0x8]
     lea rdi, [rsp + 0x10]
-    call 12
+    call vec_push int
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x30]
@@ -230,13 +225,13 @@ vec_at struct {a: int, b: int}:
     mov.q [rsp + 0x58], 4
     lea rsi, [rsp + 0x50]
     lea rdi, [rsp + 0x30]
-    call 13
+    call vec_push struct {a: int, b: int}
     xor esi, esi
     lea rdi, [rsp + 0x30]
-    call 14
+    call vec_at struct {a: int, b: int}
     mov rbx, rax
     lea rdi, [rsp + 0x10]
-    call vec_push
+    call sum_ints
     add.q rax, [rbx]
     add.q rax, [rbx + 0x8]
     add.q rax, [rsp + 0x18]
@@ -244,18 +239,18 @@ vec_at struct {a: int, b: int}:
     add rsp, 0x120
     pop rbx
     ret
-11:
+vec_at int:
     mov.q rax, [rdi]
     lea rax, [rax + rsi*8]
     ret
-12:
+vec_push int:
     mov.q rdx, [rdi]
     mov.q rcx, [rdi + 0x8]
     mov.q rax, [rsi]
     mov.q [rdx + rcx*8], rax
     add.q [rdi + 0x8], 1
     ret
-13:
+vec_push struct {a: int, b: int}:
     push rbx
     mov rbx, rdi
     mov.q rdi, [rbx]
@@ -267,30 +262,28 @@ vec_at struct {a: int, b: int}:
     add.q [rbx + 0x8], 1
     pop rbx
     ret
-14:
+vec_at struct {a: int, b: int}:
     mov.q rax, [rdi]
     imul rcx, rsi, 0x10
     add rax, rcx
     ret
 =========== OPT LEVEL: mininal-quick ===========
-vec_push:
-    push rbx
 sum_ints:
+    push rbx
     sub rsp, 0x20
-vec_at int:
     mov.q [rsp], rdi
     xor ecx, ecx
     xor edx, edx
-8:
+1:
     mov.q [rsp + 0x8], rdx
     mov.q [rsp + 0x10], rcx
     mov.q rax, [rsp + 0x10]
     mov.q rbx, [rsp]
     cmp.q rax, [rbx + 0x8]
-    jnl 9
+    jnl 2
     mov.q rsi, [rsp + 0x10]
     mov.q rdi, [rsp]
-    call 11
+    call vec_at int
     mov.q rbx, [rsp + 0x10]
     add rbx, 1
     mov.q [rsp + 0x10], rbx
@@ -299,13 +292,13 @@ vec_at int:
     mov.q [rsp + 0x18], rbx
     mov.q rcx, [rsp + 0x10]
     mov.q rdx, [rsp + 0x18]
-    jmp 8
-9:
+    jmp 1
+2:
     mov.q rax, [rsp + 0x8]
     add rsp, 0x20
     pop rbx
     ret
-10:
+main:
     push rbx
     sub rsp, 0x130
     mov rdx, 0x40
@@ -338,10 +331,10 @@ vec_at int:
     mov.q [rsp + 0x8], 0x1f
     lea rsi, [rsp]
     lea rdi, [rsp + 0x10]
-    call 12
+    call vec_push int
     lea rsi, [rsp + 0x8]
     lea rdi, [rsp + 0x10]
-    call 12
+    call vec_push int
     lea rax, [rsp + 0xa0]
     add rax, 0
     mov.q [rsp + 0x120], rax
@@ -366,13 +359,13 @@ vec_at int:
     mov.q [rsp + 0x58], 4
     lea rsi, [rsp + 0x50]
     lea rdi, [rsp + 0x30]
-    call 13
+    call vec_push struct {a: int, b: int}
     xor esi, esi
     lea rdi, [rsp + 0x30]
-    call 14
+    call vec_at struct {a: int, b: int}
     mov.q [rsp + 0x120], rax
     lea rdi, [rsp + 0x10]
-    call vec_push
+    call sum_ints
     mov.q rcx, [rsp + 0x120]
     add.q rax, [rcx]
     mov.q rcx, [rsp + 0x120]
@@ -382,18 +375,18 @@ vec_at int:
     add rsp, 0x130
     pop rbx
     ret
-11:
+vec_at int:
     mov.q rax, [rdi]
     lea rax, [rax + rsi*8]
     ret
-12:
+vec_push int:
     mov.q rax, [rdi]
     mov.q rcx, [rdi + 0x8]
     mov.q rdx, [rsi]
     mov.q [rax + rcx*8], rdx
     add.q [rdi + 0x8], 1
     ret
-13:
+vec_push struct {a: int, b: int}:
     sub rsp, 8
     mov.q [rsp], rdi
     mov.q rax, [rsp]
@@ -408,42 +401,39 @@ vec_at int:
     add.q [rax + 0x8], 1
     add rsp, 8
     ret
-14:
+vec_at struct {a: int, b: int}:
     mov.q rax, [rdi]
     imul rcx, rsi, 0x10
     add rax, rcx
     ret
 =========== OPT LEVEL: mininal ===========
-vec_push:
-    push rbx
 sum_ints:
+    push rbx
     push rbp
     push r12
-vec_at int:
     mov r12, rdi
-vec_at struct {a: int, b: int}:
     xor edx, edx
     xor ecx, ecx
-8:
+1:
     mov rbp, rcx
     mov rbx, rdx
     cmp.q rbx, [r12 + 0x8]
-    jnl 9
+    jnl 2
     mov rsi, rbx
     mov rdi, r12
-    call 11
+    call vec_at int
     mov rdx, rbx
     add rdx, 1
     mov rcx, rbp
     add.q rcx, [rax]
-    jmp 8
-9:
+    jmp 1
+2:
     mov rax, rbp
     pop r12
     pop rbp
     pop rbx
     ret
-10:
+main:
     push rbx
     push rbp
     sub rsp, 0x128
@@ -474,10 +464,10 @@ vec_at struct {a: int, b: int}:
     mov.q [rsp + 0x8], 0x1f
     lea rsi, [rsp]
     lea rdi, [rsp + 0x10]
-    call 12
+    call vec_push int
     lea rsi, [rsp + 0x8]
     lea rdi, [rsp + 0x10]
-    call 12
+    call vec_push int
     lea rbx, [rsp + 0xa0]
     add rbx, 0
     xor esi, esi
@@ -499,13 +489,13 @@ vec_at struct {a: int, b: int}:
     mov.q [rsp + 0x58], 4
     lea rsi, [rsp + 0x50]
     lea rdi, [rsp + 0x30]
-    call 13
+    call vec_push struct {a: int, b: int}
     xor esi, esi
     lea rdi, [rsp + 0x30]
-    call 14
+    call vec_at struct {a: int, b: int}
     mov rbx, rax
     lea rdi, [rsp + 0x10]
-    call vec_push
+    call sum_ints
     add.q rax, [rbx]
     add.q rax, [rbx + 0x8]
     add.q rax, [rsp + 0x18]
@@ -514,18 +504,18 @@ vec_at struct {a: int, b: int}:
     pop rbp
     pop rbx
     ret
-11:
+vec_at int:
     mov.q rax, [rdi]
     lea rax, [rax + rsi*8]
     ret
-12:
+vec_push int:
     mov.q rdx, [rdi]
     mov.q rcx, [rdi + 0x8]
     mov.q rax, [rsi]
     mov.q [rdx + rcx*8], rax
     add.q [rdi + 0x8], 1
     ret
-13:
+vec_push struct {a: int, b: int}:
     push rbx
     mov rbx, rdi
     mov.q rdi, [rbx]
@@ -537,30 +527,28 @@ vec_at struct {a: int, b: int}:
     add.q [rbx + 0x8], 1
     pop rbx
     ret
-14:
+vec_at struct {a: int, b: int}:
     mov.q rax, [rdi]
     imul rcx, rsi, 0x10
     add rax, rcx
     ret
 =========== OPT LEVEL: moderate-quick ===========
-vec_push:
-    push rbx
 sum_ints:
+    push rbx
     sub rsp, 0x20
-vec_at int:
     mov.q [rsp], rdi
     xor ecx, ecx
     xor edx, edx
-8:
+1:
     mov.q [rsp + 0x8], rdx
     mov.q [rsp + 0x10], rcx
     mov.q rax, [rsp + 0x10]
     mov.q rbx, [rsp]
     cmp.q rax, [rbx + 0x8]
-    jnl 9
+    jnl 2
     mov.q rsi, [rsp + 0x10]
     mov.q rdi, [rsp]
-    call 11
+    call vec_at int
     mov.q rbx, [rsp + 0x10]
     add rbx, 1
     mov.q [rsp + 0x10], rbx
@@ -569,13 +557,13 @@ vec_at int:
     mov.q [rsp + 0x18], rbx
     mov.q rcx, [rsp + 0x10]
     mov.q rdx, [rsp + 0x18]
-    jmp 8
-9:
+    jmp 1
+2:
     mov.q rax, [rsp + 0x8]
     add rsp, 0x20
     pop rbx
     ret
-10:
+main:
     sub rsp, 0x108
     pxor xmm0, xmm0
     movups.x [rsp + 0x50], xmm0
@@ -597,10 +585,10 @@ vec_at int:
     mov.q [rsp + 0x8], 0x1f
     lea rsi, [rsp]
     lea rdi, [rsp + 0x10]
-    call 12
+    call vec_push int
     lea rsi, [rsp + 0x8]
     lea rdi, [rsp + 0x10]
-    call 12
+    call vec_push int
     pxor xmm0, xmm0
     movups.x [rsp + 0x30], xmm0
     lea rax, [rsp + 0x80]
@@ -609,13 +597,13 @@ vec_at int:
     mov.q [rsp + 0x28], 4
     lea rsi, [rsp + 0x20]
     lea rdi, [rsp + 0x30]
-    call 13
+    call vec_push struct {a: int, b: int}
     xor esi, esi
     lea rdi, [rsp + 0x30]
-    call 14
+    call vec_at struct {a: int, b: int}
     mov.q [rsp + 0x100], rax
     lea rdi, [rsp + 0x10]
-    call vec_push
+    call sum_ints
     mov.q rcx, [rsp + 0x100]
     add.q rax, [rcx]
     mov.q rcx, [rsp + 0x100]
@@ -624,18 +612,18 @@ vec_at int:
     add.q rax, [rsp + 0x38]
     add rsp, 0x108
     ret
-11:
+vec_at int:
     mov.q rax, [rdi]
     lea rax, [rax + rsi*8]
     ret
-12:
+vec_push int:
     mov.q rax, [rdi]
     mov.q rcx, [rdi + 0x8]
     mov.q rdx, [rsi]
     mov.q [rax + rcx*8], rdx
     add.q [rdi + 0x8], 1
     ret
-13:
+vec_push struct {a: int, b: int}:
     sub rsp, 8
     mov.q [rsp], rdi
     mov.q rax, [rsp]
@@ -650,42 +638,39 @@ vec_at int:
     add.q [rax + 0x8], 1
     add rsp, 8
     ret
-14:
+vec_at struct {a: int, b: int}:
     mov.q rax, [rdi]
     imul rcx, rsi, 0x10
     add rax, rcx
     ret
 =========== OPT LEVEL: moderate ===========
-vec_push:
-    push rbx
 sum_ints:
+    push rbx
     push rbp
     push r12
-vec_at int:
     mov r12, rdi
-vec_at struct {a: int, b: int}:
     xor edx, edx
     xor ecx, ecx
-8:
+1:
     mov rbp, rcx
     mov rbx, rdx
     cmp.q rbx, [r12 + 0x8]
-    jnl 9
+    jnl 2
     mov rsi, rbx
     mov rdi, r12
-    call 11
+    call vec_at int
     mov rdx, rbx
     add rdx, 1
     mov rcx, rbp
     add.q rcx, [rax]
-    jmp 8
-9:
+    jmp 1
+2:
     mov rax, rbp
     pop r12
     pop rbp
     pop rbx
     ret
-10:
+main:
     push rbx
     sub rsp, 0x100
     pxor xmm0, xmm0
@@ -708,10 +693,10 @@ vec_at struct {a: int, b: int}:
     mov.q [rsp + 0x8], 0x1f
     lea rsi, [rsp]
     lea rdi, [rsp + 0x10]
-    call 12
+    call vec_push int
     lea rsi, [rsp + 0x8]
     lea rdi, [rsp + 0x10]
-    call 12
+    call vec_push int
     pxor xmm0, xmm0
     movups.x [rsp + 0x30], xmm0
     lea rax, [rsp + 0x80]
@@ -720,13 +705,13 @@ vec_at struct {a: int, b: int}:
     mov.q [rsp + 0x28], 4
     lea rsi, [rsp + 0x20]
     lea rdi, [rsp + 0x30]
-    call 13
+    call vec_push struct {a: int, b: int}
     xor esi, esi
     lea rdi, [rsp + 0x30]
-    call 14
+    call vec_at struct {a: int, b: int}
     mov rbx, rax
     lea rdi, [rsp + 0x10]
-    call vec_push
+    call sum_ints
     add.q rax, [rbx]
     add.q rax, [rbx + 0x8]
     add.q rax, [rsp + 0x18]
@@ -734,18 +719,18 @@ vec_at struct {a: int, b: int}:
     add rsp, 0x100
     pop rbx
     ret
-11:
+vec_at int:
     mov.q rax, [rdi]
     lea rax, [rax + rsi*8]
     ret
-12:
+vec_push int:
     mov.q rdx, [rdi]
     mov.q rcx, [rdi + 0x8]
     mov.q rax, [rsi]
     mov.q [rdx + rcx*8], rax
     add.q [rdi + 0x8], 1
     ret
-13:
+vec_push struct {a: int, b: int}:
     push rbx
     mov rbx, rdi
     mov.q rdi, [rbx]
@@ -757,29 +742,26 @@ vec_at struct {a: int, b: int}:
     add.q [rbx + 0x8], 1
     pop rbx
     ret
-14:
+vec_at struct {a: int, b: int}:
     mov.q rax, [rdi]
     imul rcx, rsi, 0x10
     add rax, rcx
     ret
 =========== OPT LEVEL: all ===========
-vec_push:
-    push rbx
 sum_ints:
+    push rbx
     push rbp
     push r12
-main:
     mov r12, rdi
-vec_push struct {a: int, b: int}:
     cmp.q [r12 + 0x8], 0
-    jng 9
+    jng 2
     xor ebx, ebx
     xor eax, eax
-8:
+1:
     mov rbp, rax
     mov rsi, rbx
     mov rdi, r12
-    call 12
+    call vec_at int
     mov rsi, rbx
     add rsi, 1
     mov rcx, rbp
@@ -787,17 +769,17 @@ vec_push struct {a: int, b: int}:
     cmp.q rsi, [r12 + 0x8]
     mov rbx, rsi
     mov rax, rcx
-    jnge 8
-    jmp 10
-9:
+    jnge 1
+    jmp 3
+2:
     xor ecx, ecx
-10:
+3:
     mov rax, rcx
     pop r12
     pop rbp
     pop rbx
     ret
-11:
+main:
     push rbx
     sub rsp, 0x100
     pxor xmm0, xmm0
@@ -820,10 +802,10 @@ vec_push struct {a: int, b: int}:
     mov.q [rsp + 0x8], 0x1f
     lea rsi, [rsp]
     lea rdi, [rsp + 0x10]
-    call 13
+    call vec_push int
     lea rsi, [rsp + 0x8]
     lea rdi, [rsp + 0x10]
-    call 13
+    call vec_push int
     pxor xmm0, xmm0
     movups.x [rsp + 0x30], xmm0
     lea rax, [rsp + 0x80]
@@ -832,13 +814,13 @@ vec_push struct {a: int, b: int}:
     mov.q [rsp + 0x28], 4
     lea rsi, [rsp + 0x20]
     lea rdi, [rsp + 0x30]
-    call 14
+    call vec_push struct {a: int, b: int}
     xor esi, esi
     lea rdi, [rsp + 0x30]
-    call 15
+    call vec_at struct {a: int, b: int}
     mov rbx, rax
     lea rdi, [rsp + 0x10]
-    call vec_push
+    call sum_ints
     add.q rax, [rbx]
     add.q rax, [rbx + 0x8]
     add.q rax, [rsp + 0x18]
@@ -846,18 +828,18 @@ vec_push struct {a: int, b: int}:
     add rsp, 0x100
     pop rbx
     ret
-12:
+vec_at int:
     mov.q rax, [rdi]
     lea rax, [rax + rsi*8]
     ret
-13:
+vec_push int:
     mov.q rdx, [rdi]
     mov.q rcx, [rdi + 0x8]
     mov.q rax, [rsi]
     mov.q [rdx + rcx*8], rax
     add.q [rdi + 0x8], 1
     ret
-14:
+vec_push struct {a: int, b: int}:
     push rbx
     mov rbx, rdi
     mov.q rdi, [rbx]
@@ -869,15 +851,14 @@ vec_push struct {a: int, b: int}:
     add.q [rbx + 0x8], 1
     pop rbx
     ret
-15:
+vec_at struct {a: int, b: int}:
     mov.q rax, [rdi]
     imul rcx, rsi, 0x10
     add rax, rcx
     ret
 =========== OPT LEVEL: aggresive ===========
-vec_push:
+main:
     sub rsp, 0xf8
-vec_push int:
     pxor xmm0, xmm0
     movups.x [rsp + 0x40], xmm0
     pxor xmm0, xmm0
@@ -919,20 +900,20 @@ vec_push int:
     mov.q rdi, [rsp + 0x20]
     xor eax, eax
     cmp.q [rsp + 0x8], 0
-    jng 9
+    jng 2
     xor ecx, ecx
     xor eax, eax
-8:
+1:
     mov.q rsi, [rsp]
     mov rdx, rcx
     add.q rdx, [rsi + rax*8]
     add rax, 1
     cmp.q rax, [rsp + 0x8]
     mov rcx, rdx
-    jnge 8
+    jnge 1
     mov rax, rdx
-    jmp 9
-9:
+    jmp 2
+2:
     add.q rax, [rdi]
     add.q rax, [rdi + 0x8]
     add.q rax, [rsp + 0x8]

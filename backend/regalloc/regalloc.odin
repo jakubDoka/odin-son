@@ -1226,6 +1226,8 @@ regalloc_round :: proc(
 		return cursor
 	}
 
+	log_lrgs(&ctx)
+
 	prev_gvn := graph.gvn
 
 	any_fails := false

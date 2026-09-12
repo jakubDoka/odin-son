@@ -784,6 +784,30 @@ ordered_remove :: proc(
 	backend.graph_remove_output(ctx, inp, {idx = i, id = par})
 }
 
+graph_index_offset :: proc(
+	ctx: ^backend.Graph,
+	base: Node_ID,
+	index: Node_ID,
+	#any_int stride: i64,
+) -> Node_ID {
+	if stride == 0 do return base
+
+	index := index
+	if stride > 1 {
+		index = backend.graph_add_bin_op(
+			ctx,
+			"snoff",
+			.Mul,
+			.I64,
+			index,
+			backend.graph_add_c_int(ctx, "sst", .I64, stride),
+		)
+		index = backend.graph_peep(ctx, index)
+	}
+
+	return backend.graph_add_bin_op(ctx, "snd", .Add, .I64, base, index)
+}
+
 graph_add_field_offset :: proc(
 	graph: ^Graph,
 	base: Node_ID,

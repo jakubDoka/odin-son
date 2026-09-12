@@ -5259,32 +5259,19 @@ simd_fold u64:
     pop rbx
     ret
 from_slice =16 u8:
-    sub rsp, 0x18
-    pxor xmm0, xmm0
-    movups.x [rsp], xmm0
-    xor ecx, ecx
-33:
-    mov rax, rdi
-    add rax, rcx
-    movzx.b eax, [rax]
-    mov.b [rsp + rcx], al
-    add rcx, 1
-    cmp rcx, 0x10
-    jnge 33
-    movups.x xmm0, [rsp]
-    add rsp, 0x18
+    movups.x xmm0, [rdi]
     ret
 from_slice =8 u16:
     sub rsp, 0x18
     pxor xmm0, xmm0
     movups.x [rsp], xmm0
     xor ecx, ecx
-35:
+34:
     movzx.w eax, [rdi + rcx*2]
     mov.w [rsp + rcx*2], ax
     add rcx, 1
     cmp rcx, 8
-    jnge 35
+    jnge 34
     movups.x xmm0, [rsp]
     add rsp, 0x18
     ret
@@ -5293,12 +5280,12 @@ from_slice =4 u32:
     pxor xmm0, xmm0
     movups.x [rsp], xmm0
     xor ecx, ecx
-37:
+36:
     mov.d eax, [rdi + rcx*4]
     mov.d [rsp + rcx*4], eax
     add rcx, 1
     cmp rcx, 4
-    jnge 37
+    jnge 36
     movups.x xmm0, [rsp]
     add rsp, 0x18
     ret
@@ -5307,12 +5294,12 @@ from_slice =2 u64:
     pxor xmm0, xmm0
     movups.x [rsp], xmm0
     xor ecx, ecx
-39:
+38:
     mov.q rax, [rdi + rcx*8]
     mov.q [rsp + rcx*8], rax
     add rcx, 1
     cmp rcx, 2
-    jnge 39
+    jnge 38
     movups.x xmm0, [rsp]
     add rsp, 0x18
     ret
@@ -5360,55 +5347,25 @@ main:
     xor eax, eax
     pxor xmm0, xmm0
 2:
-    movups.x [rsp + 0xd7], xmm0
-    mov r13, rax
-    lea rax, [rsp + r13]
-    mov r12, rax
-    mov rax, r13
-    add rax, 0x10
-    mov rbp, rax
-    mov rax, r13
-    mov rbx, rbp
-    sub rbx, rax
-    mov rsi, rbx
-    mov rdi, r12
-    call from_slice =16 u8
-    movups.x [rsp + 0xc7], xmm0
-    mov rsi, rbx
-    mov rdi, r12
-    call from_slice =16 u8
-    movups.x [rsp + 0xb7], xmm0
-    mov rsi, rbx
-    mov rdi, r12
-    call from_slice =16 u8
-    movups.x [rsp + 0xa7], xmm0
-    mov rsi, rbx
-    mov rdi, r12
-    call from_slice =16 u8
-    movups.x [rsp + 0x97], xmm0
-    mov rsi, rbx
-    mov rdi, r12
-    call from_slice =16 u8
-    movups.x xmm2, [rsp + 0xd7]
-    movups.x xmm1, [rsp + 0xc7]
-    paddb xmm2, xmm1
-    movups.x xmm1, [rsp + 0xb7]
-    pand xmm2, xmm1
-    movups.x xmm1, [rsp + 0xa7]
-    pxor xmm2, xmm1
-    movups.x xmm1, [rsp + 0x97]
-    por xmm2, xmm1
+    movups xmm2, xmm0
+    movups.x xmm0, [rsp + rax]
+    mov rcx, rax
+    add rcx, 0x10
+    mov r9, rcx
+    paddb xmm2, xmm0
+    pand xmm2, xmm0
+    pxor xmm2, xmm0
+    por xmm2, xmm0
     psubb xmm2, xmm0
-    mov rax, r13
     add rax, 0x20
     cmp rax, 0x21
-    mov rax, rbp
+    mov rax, r9
     movups xmm0, xmm2
     jnge 2
     pshufd xmm1, xmm2, -0x12
     paddb xmm1, xmm2
     mov r8, 0x21
-    sub r8, rbp
+    sub r8, r9
     pxor xmm0, xmm0
     psadbw xmm1, xmm0
     movd edi, xmm1
@@ -5420,7 +5377,7 @@ main:
     mov rcx, rax
     mov rsi, rdx
     add rsi, 1
-    lea rax, [rsp + rbp]
+    lea rax, [rsp + r9]
     add rax, rdx
     movzx.b eax, [rax]
     add cl, al
@@ -5701,33 +5658,17 @@ init_inc u16:
     jmp 18
 18:
     ret
-from_slice =16 u8:
-    sub rsp, 0x18
-    pxor xmm0, xmm0
-    movups.x [rsp], xmm0
-    xor ecx, ecx
-20:
-    mov rax, rdi
-    add rax, rcx
-    movzx.b eax, [rax]
-    mov.b [rsp + rcx], al
-    add rcx, 1
-    cmp rcx, 0x10
-    jnge 20
-    movups.x xmm0, [rsp]
-    add rsp, 0x18
-    ret
 from_slice =8 u16:
     sub rsp, 0x18
     pxor xmm0, xmm0
     movups.x [rsp], xmm0
     xor ecx, ecx
-22:
+20:
     movzx.w eax, [rdi + rcx*2]
     mov.w [rsp + rcx*2], ax
     add rcx, 1
     cmp rcx, 8
-    jnge 22
+    jnge 20
     movups.x xmm0, [rsp]
     add rsp, 0x18
     ret
@@ -5736,12 +5677,12 @@ from_slice =4 u32:
     pxor xmm0, xmm0
     movups.x [rsp], xmm0
     xor ecx, ecx
-24:
+22:
     mov.d eax, [rdi + rcx*4]
     mov.d [rsp + rcx*4], eax
     add rcx, 1
     cmp rcx, 4
-    jnge 24
+    jnge 22
     movups.x xmm0, [rsp]
     add rsp, 0x18
     ret
@@ -5750,12 +5691,12 @@ from_slice =2 u64:
     pxor xmm0, xmm0
     movups.x [rsp], xmm0
     xor ecx, ecx
-26:
+24:
     mov.q rax, [rdi + rcx*8]
     mov.q [rsp + rcx*8], rax
     add rcx, 1
     cmp rcx, 2
-    jnge 26
+    jnge 24
     movups.x xmm0, [rsp]
     add rsp, 0x18
     ret

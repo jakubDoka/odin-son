@@ -26,6 +26,7 @@ Type :: typecheck.Type
 Node_ID :: backend.Node_ID
 graph_expand :: backend.graph_expand
 graph_get :: backend.graph_get
+index_offset :: builder.graph_index_offset
 
 Opt_Level :: struct {
 	name:        string,
@@ -539,30 +540,6 @@ field_store :: proc(
 			value,
 		),
 	)
-}
-
-index_offset :: proc(
-	ctx: ^Gen_Ctx,
-	base: Node_ID,
-	index: Node_ID,
-	stride: int,
-) -> Node_ID {
-	if stride == 0 do return base
-
-	index := index
-	if stride > 1 {
-		index = backend.graph_add_bin_op(
-			ctx,
-			"snoff",
-			.Mul,
-			.I64,
-			index,
-			backend.graph_add_c_int(ctx, "sst", .I64, i64(stride)),
-		)
-		index = backend.graph_peep(ctx, index)
-	}
-
-	return backend.graph_add_bin_op(ctx, "snd", .Add, .I64, base, index)
 }
 
 inline_and_optimize :: proc(

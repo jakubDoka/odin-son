@@ -335,7 +335,12 @@ builder_peep :: proc(
 		if bedge.itype == .If {
 			cond_const := backend.graph_extra(ctx, bedge.inps[1], CInt)
 			if cond_const != nil {
-				we_are_alive := len(bedge.outs) == 1
+				out_ctrl_cnt := 0
+				for out in backend.graph_outs(ctx, bedge.inps[0]) {
+					out_ctrl_cnt += int(backend.is_cfg(ctx, out.id))
+				}
+
+				we_are_alive := len(bedge.outs) == 1 && out_ctrl_cnt == 1
 				for out in bedge.outs {
 					if out.id != id {
 						we_are_alive =

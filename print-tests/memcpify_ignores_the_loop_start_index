@@ -421,30 +421,22 @@ main:
     ret
 =========== OPT LEVEL: all ===========
 cpy:
+    sub rsp, 8
     cmp rdx, 2
-    jng 2
-    mov rax, 2
+    jng 1
+    add rdi, 2
+    add rsi, 2
+    call.q [rip - 0x35]
+    jmp 1
 1:
-    mov r9, rax
-    mov rax, r9
-    add rax, 1
-    mov rcx, rsi
-    add rcx, r9
-    movzx.b r8d, [rcx]
-    mov rcx, rdi
-    add rcx, r9
-    mov.b [rcx], r8b
-    cmp rax, rdx
-    jnge 1
-    jmp 2
-2:
+    add rsp, 8
     ret
 main:
     sub rsp, 0x18
     mov.q [rsp], 0
     mov.q [rsp + 0x8], 0
     xor eax, eax
-4:
+3:
     mov rcx, rax
     mov rax, rcx
     add rax, 1
@@ -452,14 +444,14 @@ main:
     mov.b [rsp + rcx], sil
     mov.b [rsp + rcx + 0x8], 0x64
     cmp rax, 8
-    jnge 4
+    jnge 3
     lea rsi, [rsp]
     lea rdi, [rsp + 0x8]
     mov rdx, 8
     call cpy
     xor ecx, ecx
     xor eax, eax
-5:
+4:
     mov rdx, rax
     mov rax, rcx
     mov rcx, rax
@@ -469,7 +461,7 @@ main:
     add rdx, rsi
     cmp rcx, 8
     mov rax, rdx
-    jnge 5
+    jnge 4
     mov rcx, 0xfb
     mov rax, rdx
     cqo
@@ -484,35 +476,35 @@ main:
     mov.q [rsp + 0x8], 0
     xor eax, eax
 1:
-    mov rdx, rax
-    add rdx, 1
-    mov rcx, rdx
-    mov.b [rsp + rax], cl
-    mov.b [rsp + rax + 0x8], 0x64
-    cmp rdx, 8
-    mov rax, rdx
+    mov rcx, rax
+    mov rax, rcx
+    add rax, 1
+    mov rsi, rax
+    mov.b [rsp + rcx], sil
+    mov.b [rsp + rcx + 0x8], 0x64
+    cmp rax, 8
     jnge 1
-    mov rcx, 2
-2:
-    movzx.b eax, [rsp + rcx]
-    mov.b [rsp + rcx + 0x8], al
-    add rcx, 1
-    cmp rcx, 8
-    jnge 2
+    lea rdi, [rsp + 0x8]
+    add rdi, 2
+    lea rsi, [rsp]
+    add rsi, 2
+    mov rdx, 8
+    call.q [rip - 0x73]
     xor ecx, ecx
-    xor edx, edx
-3:
-    mov rsi, rcx
-    add rsi, 1
-    movzx.b ecx, [rsp + rcx + 0x8]
-    imul rcx, rsi
-    mov rax, rdx
-    add rax, rcx
-    cmp rsi, 8
+    xor eax, eax
+2:
     mov rdx, rax
-    mov rcx, rsi
-    jnge 3
+    mov rax, rcx
+    mov rcx, rax
+    add rcx, 1
+    movzx.b esi, [rsp + rax + 0x8]
+    imul rsi, rcx
+    add rdx, rsi
+    cmp rcx, 8
+    mov rax, rdx
+    jnge 2
     mov rcx, 0xfb
+    mov rax, rdx
     cqo
     idiv rcx
     mov rax, rdx

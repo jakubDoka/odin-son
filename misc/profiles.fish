@@ -45,7 +45,8 @@ end
 alias rel-files 'rg --files --glob "!*.git/" --glob "!vendored" --glob \
 "!print-tests" --glob "!TESTS.md" --glob "!tests.odin" --glob \
 "!backend/**/node_specs.odin" --glob "!*meta_overloads.odin" \
---glob "!test-programs" --glob "!examples"'
+--glob "!test-programs" --glob "!examples" --glob "!fuzz/crashes/*" \
+--glob "!*.wasm"'
 
 alias measure 'rel-files | xargs wc -l | sort -n'
 

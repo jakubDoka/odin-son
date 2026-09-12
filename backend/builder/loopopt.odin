@@ -2,6 +2,7 @@ package builder
 
 import backend ".."
 import "../../vendored/gam/util/arna"
+import "../../vendored/gam/util/bit_arr"
 import "core:fmt"
 import "core:mem"
 import "core:slice"
@@ -46,6 +47,8 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 			ctx.node_blocks[inode.gvn] = &bb
 		}
 	}
+
+	rotated := false
 
 	rotate: for &bb, i in ctx.sched.bbs {
 		if graph_get(ctx, bb.head).rtype == backend.DEAD_NODE_KIND {
@@ -102,9 +105,11 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 
 		fmt.assertf(
 			continue_branch != nil,
-			"%v %v",
+			"%#v %v\n%v\n%v",
 			then_else_bb,
 			bb.loop_tree,
+			hnode,
+			nnode,
 		)
 
 		assert(
@@ -134,7 +139,7 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 			if !check_valid_ops(ctx, node) do continue rotate
 		}
 
-		optimized = true
+		rotated = true
 
 		entry_blk := block_of(ctx, hnode.inps[0])
 		exit_blk := block_of(ctx, hnode.inps[1])
@@ -266,12 +271,257 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 		backend.graph_unpin(ctx, continue_branch.head)
 	}
 
-	if optimized {
+	optimized |= rotated
+
+	if rotated {
 		backend.graph_invalidate_idepth(graph)
+		backend.graph_schedule(ctx, &ctx.sched, .for_loopopt)
 	}
 
 	if !ODIN_DISABLE_ASSERT {
 		backend.graph_schedule(ctx, &ctx.sched, .for_loopopt)
+	}
+
+	for &bb in ctx.sched.bbs {
+		head := graph_expand(ctx, bb.head)
+		if head.itype != .Loop do continue
+
+		bedge := graph_expand(ctx, head.inps[1])
+		if bedge.itype != .If do continue
+		if bedge.inps[0] != bb.head do continue
+
+		inverted := bedge.outs[0].id != bb.head
+		cond := graph_expand(ctx, bedge.inps[1])
+
+		@(rodata, static)
+		CMP_OP_REVERSE :=
+			#partial [backend.Ideal_Node_Type]backend.Ideal_Node_Type {
+				.Eq = .Ne,
+				.Ne = .Eq,
+				.Lt = .Ge,
+				.Le = .Gt,
+				.Gt = .Le,
+				.Ge = .Lt,
+			}
+
+		@(rodata, static)
+		CMP_OP_FLIP :=
+			#partial [backend.Ideal_Node_Type]backend.Ideal_Node_Type {
+				.Eq = .Eq,
+				.Ne = .Ne,
+				.Lt = .Gt,
+				.Le = .Ge,
+				.Gt = .Lt,
+				.Ge = .Le,
+			}
+
+		effective_op := cond.itype
+		if CMP_OP_REVERSE[effective_op] == {} do continue
+		if inverted do effective_op = CMP_OP_REVERSE[effective_op]
+
+		Inductor :: struct {
+			phy:       Node_ID,
+			stride:    Node_ID,
+			bound:     Node_ID,
+			stride_vl: i64,
+		}
+
+		inductors: [dynamic]Inductor
+		terminates := false
+
+		for out in head.outs {
+			onode := graph_expand(ctx, out.id)
+			if onode.itype != .Phi do continue
+
+			init := graph_expand(ctx, onode.inps[1])
+			bvl := graph_expand(ctx, onode.inps[2])
+
+			if bvl.itype != .Add do continue
+			if bvl.inps[0] != out.id do continue
+			if slice.contains(bb.instrs[:], bvl.inps[1]) do continue
+
+			stride := backend.graph_extra(ctx, bvl.inps[1], backend.CInt)
+			stride_vl: i64
+			if stride != nil {
+				stride_vl = stride.value
+			}
+
+			bound: Node_ID
+			for bout in bvl.outs {
+				bonode := graph_expand(ctx, bout.id)
+				if bout.id == bedge.inps[1] {
+					bound = cond.inps[1 - bout.idx]
+					terminates = true
+					break
+				}
+			}
+
+			if slice.contains(bb.instrs[:], bound) do bound = 0
+
+			append(&inductors, Inductor{out.id, bvl.inps[1], bound, stride_vl})
+		}
+
+		for ind in inductors {
+			phy := graph_expand(ctx, ind.phy)
+
+			// candidate for memset or memcpy
+			stores: [dynamic]Node_ID
+			store_bases: [dynamic]Node_ID
+			loads: [dynamic]Node_ID
+			load_bases: [dynamic]Node_ID
+			for out in phy.outs {
+				onode := graph_expand(ctx, out.id)
+				if out.id == phy.inps[2] do continue
+				if onode.itype == .Add {
+					other := onode.inps[1 - out.idx]
+					otnode := graph_expand(ctx, other)
+					if slice.contains(bb.instrs[:], other) {
+						continue
+					}
+
+					for otout in onode.outs {
+						otonode := graph_expand(ctx, otout.id)
+
+						if otonode.itype == .Store {
+							append(&stores, otout.id)
+							append(&store_bases, other)
+						}
+						if otonode.itype == .Load {
+							append(&loads, otout.id)
+							append(&load_bases, other)
+						}
+					}
+				}
+			}
+
+			for store, i in stores {
+				snode := graph_expand(ctx, store)
+				vl := graph_expand(ctx, snode.inps[3])
+
+				mem := graph_expand(ctx, snode.inps[1])
+				if mem.itype != .Phi || mem.inps[0] != bb.head do continue
+
+				for out in snode.outs {
+					if graph_get(ctx, out.id).itype != .Phi &&
+					   slice.contains(bb.instrs[:], out.id) {
+						// NOTE: the loop has other garbage, we cant decide no yet
+						continue
+					}
+				}
+
+				lidx, lok := slice.linear_search(loads[:], snode.inps[3])
+
+				if lok &&
+				   backend.DT_SIZE[vl.dt] == int(ind.stride_vl) &&
+				   vl.inps[1] == snode.inps[1] &&
+				   effective_op == .Lt {
+
+					cpy := backend.graph_add_copy(
+						graph,
+						"mcpf",
+						head.inps[0],
+						mem.inps[1],
+						graph_index_offset(
+							ctx,
+							store_bases[i],
+							phy.inps[1],
+							ind.stride_vl,
+						),
+						graph_index_offset(
+							ctx,
+							load_bases[lidx],
+							phy.inps[1],
+							ind.stride_vl,
+						),
+						ind.bound,
+					)
+
+					backend.graph_set_input(graph, snode.inps[1], 1, cpy)
+					backend.graph_subsume(graph, snode.inps[1], store)
+
+					optimized = true
+				}
+			}
+		}
+
+		head = graph_expand(ctx, bb.head)
+		keep := 0
+		for instr in bb.instrs {
+			if graph_get(ctx, instr).rtype != backend.DEAD_NODE_KIND {
+				bb.instrs[keep] = instr
+				keep += 1
+			}
+		}
+		resize(&bb.instrs, keep)
+
+		eliminate: if terminates {
+			req_sched := bit_arr.init(len(bb.instrs))
+			for {
+				changed := false
+
+				#reverse for instr, i in bb.instrs {
+					inode := graph_expand(ctx, instr)
+					if inode.inps[0] == bb.head {
+						changed |= bit_arr.set(req_sched, i)
+						continue
+					}
+					if bit_arr.contains(req_sched, i) do continue
+					for out in inode.outs {
+						onode := graph_expand(ctx, out.id)
+						if onode.itype == .Phi && onode.inps[0] == bb.head {
+							changed |= bit_arr.set(req_sched, i)
+							break
+						}
+
+						idx := slice.linear_search(
+							bb.instrs[:],
+							out.id,
+						) or_continue
+
+						if bit_arr.contains(req_sched, idx) {
+							ok := bit_arr.set(req_sched, i)
+							assert(ok)
+							changed = true
+							break
+						}
+					}
+				}
+
+				if !changed do break
+			}
+
+			for it := bit_arr.iter(req_sched); i in bit_arr.iter_next(&it) {
+				instr := bb.instrs[i]
+				inode := graph_expand(ctx, instr)
+
+				if backend.is_cfg(ctx, instr) {
+					continue
+				}
+
+				if inode.itype == .Phi && inode.inps[2] == instr {
+					// phy is essentially dead
+					continue
+				}
+
+				for out in inode.outs {
+					idx, ok := slice.linear_search(bb.instrs[:], out.id)
+					if !ok || !bit_arr.contains(req_sched, idx) {
+						break eliminate
+					}
+				}
+			}
+
+			assert(graph_get(ctx, head.inps[1]).itype == .If)
+
+			backend.graph_set_input(
+				ctx,
+				head.inps[1],
+				1,
+				backend.graph_add_c_int(ctx, "ulfld", .I8, i64(inverted)),
+			)
+
+			optimized = true
+		}
 	}
 
 	return

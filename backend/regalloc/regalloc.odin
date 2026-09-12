@@ -728,14 +728,10 @@ regalloc_round :: proc(
 				slrg.lrg.reg = -1
 			}
 
-			to_remove: [dynamic]int
-
 			// TODO: we could skip program points that cause no changes, mabye a
 			// bitset
 			for j in 0 ..< ctx.block_offset {
 				for &active, kind in active_slrgs {
-					clear(&to_remove)
-
 					siter := backend.simd_iter_from(
 						active.items.hash[:mem.align_forward_int(
 							active.len,
@@ -744,24 +740,20 @@ regalloc_round :: proc(
 						end_hash(j),
 					)
 
-					for i in backend.simd_iter_next(&siter) {
+					for i in backend.simd_iter_next_rev(&siter) {
 						if active.items.id[i].end == j {
-							append(&to_remove, i)
+							backend.reg_mask_set(
+								free_regs[kind],
+								active.items.id[i].lrg.reg,
+							)
+							active.len -= 1
+							active.items[active.len], active.items[i] =
+								active.items[i], active.items[active.len]
 						}
 					}
 
-					#reverse for i in to_remove {
-						backend.reg_mask_set(
-							free_regs[kind],
-							active.items.id[i].lrg.reg,
-						)
-						active.len -= 1
-						active.items[active.len], active.items[i] =
-							active.items[i], active.items[active.len]
-					}
-
 					if !ODIN_DISABLE_ASSERT {
-						for i in active.items.id[:active.len] {
+						for i, k in active.items.id[:active.len] {
 							assert(i.end != j)
 						}
 					}

@@ -3,54 +3,56 @@ main:
     push rbx
     sub rsp, 0x20
     xor esi, esi
+    mov rax, 1
+    imul rbx, rax, 8
+    lea rax, [rsp]
+    add rbx, rax
     mov rdx, 0x18
     lea rdi, [rsp]
-    call.q [rip - 0x22]
-    mov rax, 1
+    call.q [rip - 0x37]
+    mov rax, 2
     imul rax, rax, 8
     lea rcx, [rsp]
     add rax, rcx
-    mov rcx, 2
+    mov.q rcx, [rbx]
+    mov.q [rax], rcx
+    xor ecx, ecx
     imul rcx, rcx, 8
     lea rdx, [rsp]
     add rcx, rdx
-    mov.q rdx, [rax]
-    mov.q [rcx], rdx
-    xor edx, edx
-    imul rdx, rdx, 8
-    lea rbx, [rsp]
-    add rdx, rbx
-    mov.q rdx, [rdx]
-    mov.q [rax], rdx
-    mov.q rax, [rcx]
+    mov.q rcx, [rcx]
+    mov.q [rbx], rcx
+    mov.q rax, [rax]
     add rsp, 0x20
     pop rbx
     ret
 =========== OPT LEVEL: none ===========
 main:
-    sub rsp, 0x18
+    push rbx
+    sub rsp, 0x20
     xor esi, esi
+    mov rax, 1
+    imul rbx, rax, 8
+    lea rax, [rsp]
+    add rbx, rax
     mov rdx, 0x18
     lea rdi, [rsp]
-    call.q [rip - 0x20]
-    mov rax, 1
-    imul rsi, rax, 8
-    lea rax, [rsp]
-    add rsi, rax
+    call.q [rip - 0x37]
     mov rax, 2
     imul rdx, rax, 8
     lea rax, [rsp]
     add rdx, rax
-    mov.q rax, [rsi]
+    mov.q rax, [rbx]
     mov.q [rdx], rax
     xor eax, eax
     imul rcx, rax, 8
     lea rax, [rsp]
     add rcx, rax
     mov.q rax, [rcx]
-    mov.q [rsi], rax
+    mov.q [rbx], rax
     mov.q rax, [rdx]
-    add rsp, 0x18
+    add rsp, 0x20
+    pop rbx
     ret
 =========== OPT LEVEL: mininal-quick ===========
 main:

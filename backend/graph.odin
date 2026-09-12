@@ -1348,6 +1348,33 @@ simd_iter_from :: #force_no_inline proc(
 	}
 }
 
+simd_iter_next_rev :: proc(siter: ^Simd_Iter) -> (int, bool) {
+	for {
+		if siter.mask != 0 {
+			leading := simd.count_leading_zeros(siter.mask)
+			idx :=
+				(len(siter.haystack) - siter.i + 1) * size_of(Intern_Vec) -
+				int(leading) -
+				1
+
+			siter.mask &= max(u16) >> (leading + 1)
+
+			return idx, true
+		}
+
+		if siter.i < len(siter.haystack) {
+			mask := simd.lanes_eq(
+				siter.haystack[len(siter.haystack) - siter.i - 1],
+				Intern_Vec(siter.needle),
+			)
+			siter.mask = transmute(u16)simd.extract_lsbs(mask)
+			siter.i += 1
+		} else {
+			return -1, false
+		}
+	}
+}
+
 simd_iter_next :: proc(siter: ^Simd_Iter) -> (int, bool) {
 	for {
 		if siter.mask != 0 {

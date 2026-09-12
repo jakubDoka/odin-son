@@ -736,7 +736,6 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule, purpose: enum {
 			}
 		}
 
-		// TODO: this is extremely stupid but works, fix later
 		changed := true
 		for i in 0 ..< 1000 {
 			changed = false
@@ -745,13 +744,17 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule, purpose: enum {
 				inode := graph_expand(graph, instr)
 
 				if inode.itype not_in PUSHED_UP {
-					for &oinstr in bb.instrs[i + 1:] {
-						if slice.contains(inode.inps, oinstr) ||
-						   slice.contains(ctx.antideps[inode.gvn][:], oinstr) {
-
-							instr, oinstr = oinstr, instr
+					slcs := [][]Node_ID{inode.inps, ctx.antideps[inode.gvn][:]}
+					search: for slc in slcs {
+						for inp in slc {
+							idx := arna.simd_search(
+								bb.instrs[i + 1:],
+								inp,
+							) or_continue
+							instr, bb.instrs[i + 1 + idx] =
+								bb.instrs[i + 1 + idx], instr
 							changed = true
-							break
+							break search
 						}
 					}
 				}

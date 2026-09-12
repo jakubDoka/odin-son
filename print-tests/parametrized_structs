@@ -34,24 +34,24 @@ vec_at int:
 10:
     push rbx
     sub rsp, 0x130
-    mov rbx, 8
-    sub rbx, 0
     mov rdx, 0x40
     lea rdi, [rsp + 0x60]
     xor esi, esi
-    call.q [rip - 0xac]
+    call.q [rip - 0x9e]
     mov rdx, 0x80
     xor esi, esi
     lea rdi, [rsp + 0xa0]
-    call.q [rip - 0xc4]
-    lea rdi, [rsp + 0x10]
+    call.q [rip - 0xb6]
     xor esi, esi
+    lea rdi, [rsp + 0x10]
     mov rdx, 0x10
-    call.q [rip - 0xd9]
+    call.q [rip - 0xcb]
     lea rdi, [rsp + 0x20]
     xor esi, esi
     mov rdx, 0x10
-    call.q [rip - 0xee]
+    call.q [rip - 0xe0]
+    mov rbx, 8
+    sub rbx, 0
     xor eax, eax
     imul rax, rax, 8
     lea rcx, [rsp + 0x60]
@@ -172,24 +172,24 @@ vec_at struct {a: int, b: int}:
 10:
     push rbx
     sub rsp, 0x120
-    mov rbx, 8
-    sub rbx, 0
     mov rdx, 0x40
     lea rdi, [rsp + 0x60]
     xor esi, esi
-    call.q [rip - 0x84]
+    call.q [rip - 0x76]
     mov rdx, 0x80
     xor esi, esi
     lea rdi, [rsp + 0xa0]
-    call.q [rip - 0x9c]
-    lea rdi, [rsp + 0x10]
+    call.q [rip - 0x8e]
     xor esi, esi
+    lea rdi, [rsp + 0x10]
     mov rdx, 0x10
-    call.q [rip - 0xb1]
+    call.q [rip - 0xa3]
     lea rdi, [rsp + 0x20]
     xor esi, esi
     mov rdx, 0x10
-    call.q [rip - 0xc6]
+    call.q [rip - 0xb8]
+    mov rbx, 8
+    sub rbx, 0
     xor eax, eax
     imul rcx, rax, 8
     lea rax, [rsp + 0x60]
@@ -308,21 +308,21 @@ vec_at int:
 10:
     push rbx
     sub rsp, 0x130
-    lea rax, [rsp + 0x60]
-    add rax, 0
-    mov.q [rsp + 0x120], rax
     mov rdx, 0x40
     lea rdi, [rsp + 0x60]
     xor esi, esi
-    call.q [rip - 0xb2]
+    call.q [rip - 0x9e]
     mov rdx, 0x80
     xor esi, esi
     lea rdi, [rsp + 0xa0]
-    call.q [rip - 0xca]
-    lea rdi, [rsp + 0x10]
+    call.q [rip - 0xb6]
     xor esi, esi
+    lea rdi, [rsp + 0x10]
     mov rdx, 0x10
-    call.q [rip - 0xdf]
+    call.q [rip - 0xcb]
+    lea rax, [rsp + 0x60]
+    add rax, 0
+    mov.q [rsp + 0x120], rax
     mov rbx, 8
     sub rbx, 0
     lea rdi, [rsp + 0x20]
@@ -447,20 +447,20 @@ vec_at struct {a: int, b: int}:
     push rbx
     push rbp
     sub rsp, 0x128
-    lea rbx, [rsp + 0x60]
-    add rbx, 0
     mov rdx, 0x40
     lea rdi, [rsp + 0x60]
     xor esi, esi
-    call.q [rip - 0x84]
+    call.q [rip - 0x78]
     mov rdx, 0x80
     xor esi, esi
     lea rdi, [rsp + 0xa0]
-    call.q [rip - 0x9c]
-    lea rdi, [rsp + 0x10]
+    call.q [rip - 0x90]
     xor esi, esi
+    lea rdi, [rsp + 0x10]
     mov rdx, 0x10
-    call.q [rip - 0xb1]
+    call.q [rip - 0xa5]
+    lea rbx, [rsp + 0x60]
+    add rbx, 0
     mov rbp, 8
     sub rbp, 0
     lea rdi, [rsp + 0x20]
@@ -899,7 +899,6 @@ vec_push int:
     mov.q rcx, [rsp + 0x8]
     add rcx, 1
     mov.q [rsp + 0x8], rcx
-    lea rsi, [rsp + 0x10]
     mov.q rax, [rsp]
     mov.q [rax + rcx*8], 0x1f
     add.q [rsp + 0x8], 1
@@ -909,8 +908,9 @@ vec_push int:
     mov.q [rsp + 0x20], rax
     mov.q [rsp + 0x10], 3
     mov.q [rsp + 0x18], 4
-    mov.q rdi, [rsp + 0x20]
+    lea rsi, [rsp + 0x10]
     mov.q rax, [rsp + 0x28]
+    mov.q rdi, [rsp + 0x20]
     imul rax, rax, 0x10
     add rdi, rax
     mov rdx, 0x10

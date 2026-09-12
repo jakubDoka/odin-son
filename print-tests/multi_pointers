@@ -1,69 +1,73 @@
 =========== OPT LEVEL: none-quick ===========
 main:
-    sub rsp, 0x38
+    push rbx
+    sub rsp, 0x40
     mov rdx, 0x20
     lea rdi, [rsp + 0x10]
     xor esi, esi
-    call.q [rip - 0x21]
+    call.q [rip - 0x23]
     mov.q [rsp + 0x10], 1
     mov.q [rsp + 0x18], 2
     mov.q [rsp + 0x20], 3
     mov.q [rsp + 0x28], 4
+    lea rdi, [rsp]
+    xor eax, eax
+    imul rbx, rax, 8
     mov rdx, 0x10
     xor esi, esi
-    lea rdi, [rsp]
-    call.q [rip - 0x59]
-    xor eax, eax
-    imul rax, rax, 8
-    lea rcx, [rsp + 0x10]
-    add rcx, rax
-    mov rcx, rcx
-    mov.q [rsp], rcx
-    mov rcx, 2
-    sub rcx, 0
-    mov.q [rsp + 0x8], rcx
+    call.q [rip - 0x65]
+    lea rax, [rsp + 0x10]
+    add rax, rbx
+    mov rax, rax
+    mov.q [rsp], rax
+    mov rax, 2
+    sub rax, 0
+    mov.q [rsp + 0x8], rax
     mov.q rcx, [rsp]
-    mov rdx, rcx
-    add rdx, rax
-    mov.q rax, [rdx]
+    mov rax, rcx
+    add rax, rbx
+    mov.q rax, [rax]
     mov rdx, 1
     imul rdx, rdx, 8
     add rdx, rcx
     add.q rax, [rdx]
-    add rsp, 0x38
+    add rsp, 0x40
+    pop rbx
     ret
 =========== OPT LEVEL: none ===========
 main:
-    sub rsp, 0x38
+    push rbx
+    sub rsp, 0x30
     mov rdx, 0x20
     lea rdi, [rsp + 0x10]
     xor esi, esi
-    call.q [rip - 0x21]
+    call.q [rip - 0x23]
     mov.q [rsp + 0x10], 1
     mov.q [rsp + 0x18], 2
     mov.q [rsp + 0x20], 3
     mov.q [rsp + 0x28], 4
+    lea rdi, [rsp]
+    xor eax, eax
+    imul rbx, rax, 8
     mov rdx, 0x10
     xor esi, esi
-    lea rdi, [rsp]
-    call.q [rip - 0x59]
-    xor eax, eax
-    imul rcx, rax, 8
+    call.q [rip - 0x65]
     lea rax, [rsp + 0x10]
-    add rax, rcx
+    add rax, rbx
     mov.q [rsp], rax
     mov rax, 2
     sub rax, 0
     mov.q [rsp + 0x8], rax
     mov.q rdx, [rsp]
     mov rax, rdx
-    add rax, rcx
+    add rax, rbx
     mov.q rax, [rax]
     mov rcx, 1
     imul rcx, rcx, 8
     add rcx, rdx
     add.q rax, [rcx]
-    add rsp, 0x38
+    add rsp, 0x30
+    pop rbx
     ret
 =========== OPT LEVEL: mininal-quick ===========
 main:

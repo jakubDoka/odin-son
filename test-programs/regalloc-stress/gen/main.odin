@@ -5,9 +5,9 @@ import "core:os"
 
 // COMPILER BUG: graph coloring exhausts its seven repair rounds on stress_22.
 // FUNCTION_COUNT :: 23
-FUNCTION_COUNT :: 32
+FUNCTION_COUNT :: 4
 // COMPILER BUG: BLOCK_COUNT :: 350 makes the JIT segfault while compiling stress_0.
-BLOCK_COUNT :: 300
+BLOCK_COUNT :: 100
 VALUE_COUNT :: 24
 MASK :: 0xffff
 

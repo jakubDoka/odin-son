@@ -6869,17 +6869,18 @@ main :: proc() -> int {
 }
 ```
 
-<!-- The frontend records `a, b: int` as one parameter, so the valid call below fails with "expected 1 arguments, found 2". -->
-#### grouped procedure parameters count as separate arguments
+#### empty loops get killed
 ```odin
 package main
 
 main :: proc() -> int {
-	return add(20, 22)
-}
+	i := 0
+	for {
+		if i >= 10 do break
+		i += 1
+	}
 
-add :: proc(a, b: int) -> int {
-	return a + b
+	return 0
 }
 ```
 

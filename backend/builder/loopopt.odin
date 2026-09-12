@@ -347,16 +347,19 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 			}
 
 			bound: Node_ID
-			for bout in bvl.outs {
-				bonode := graph_expand(ctx, bout.id)
-				if bout.id == bedge.inps[1] {
-					bound = cond.inps[1 - bout.idx]
-					terminates = true
-					break
+			slcs := [][]backend.Node_Output{bvl.outs, onode.outs}
+			find_bound: for slc in slcs {
+				for bout in slc {
+					bonode := graph_expand(ctx, bout.id)
+					if bout.id == bedge.inps[1] {
+						bound = cond.inps[1 - bout.idx]
+						break find_bound
+					}
 				}
 			}
 
 			if slice.contains(bb.instrs[:], bound) do bound = 0
+			terminates |= bound != 0
 
 			append(&inductors, Inductor{out.id, bvl.inps[1], bound, stride_vl})
 		}
@@ -414,7 +417,8 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 				if lok &&
 				   backend.DT_SIZE[vl.dt] == int(ind.stride_vl) &&
 				   vl.inps[1] == snode.inps[1] &&
-				   effective_op == .Lt {
+				   effective_op == .Lt &&
+				   ind.bound != 0 {
 
 					cpy := backend.graph_add_copy(
 						graph,
@@ -433,7 +437,26 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 							phy.inps[1],
 							ind.stride_vl,
 						),
-						ind.bound,
+						backend.graph_add_bin_op(
+							ctx,
+							"lnscl",
+							.Mul,
+							.I64,
+							backend.graph_add_bin_op(
+								ctx,
+								"ln",
+								.Sub,
+								.I64,
+								ind.bound,
+								phy.inps[1],
+							),
+							backend.graph_add_c_int(
+								ctx,
+								"scl",
+								.I64,
+								ind.stride_vl,
+							),
+						),
 					)
 
 					backend.graph_set_input(graph, snode.inps[1], 1, cpy)

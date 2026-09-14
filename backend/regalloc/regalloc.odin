@@ -1226,8 +1226,6 @@ regalloc_round :: proc(
 		return cursor
 	}
 
-	log_lrgs(&ctx)
-
 	prev_gvn := graph.gvn
 
 	any_fails := false
@@ -1562,7 +1560,6 @@ regalloc_round :: proc(
 		}
 	}
 
-	log_lrgs(&ctx)
 	backend.verify_schedule_integrity(ctx.graph, ctx.sched)
 	if ok {
 		total_splits := 0
@@ -1658,6 +1655,8 @@ regalloc_round :: proc(
 	}
 
 	if ok do verify_alloc_integrity(ctx, res)
+
+	log_lrgs(&ctx)
 
 	return
 

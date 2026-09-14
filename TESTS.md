@@ -1152,6 +1152,44 @@ main :: proc() -> int {
 }
 ```
 
+#### induction strength reduction
+```odin
+package main
+
+opt_level :: "none"
+
+Stru :: struct {
+	a: u32,
+	b: u32,
+	c: u32,
+	d: u32,
+	e: u32,
+	f: u32,
+	g: u32,
+}
+
+main :: proc() -> int {
+	strus: [32]Stru
+
+	i := 0
+	for {
+		if i >= len(strus) do break
+		strus[i].a = u32(i)
+		i += 1
+	}
+
+	sum := 0
+	i = 0
+	for {
+		if i >= len(strus) do break
+		sum += int(strus[i].a)
+		i += 1
+	}
+
+	return sum
+}
+```
+
 #### functions
 ```odin
 package main
@@ -6877,6 +6915,15 @@ main :: proc() -> int {
 	i := 0
 	for {
 		if i >= 10 do break
+		i += 1
+	}
+
+	mem: [16]u8
+
+	i = 0
+	for {
+		if i >= len(mem) do break
+		mem[i] = 1
 		i += 1
 	}
 

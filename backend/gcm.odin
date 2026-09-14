@@ -564,6 +564,7 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule, purpose: enum {
 		}
 
 		lca = add_antydeps(ctx, node, lca)
+		ctx.late_schedules[node.gvn] = lca
 
 		add_antydeps :: proc(
 			ctx: Ctx,
@@ -767,6 +768,7 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule, purpose: enum {
 			inode := graph_expand(graph, instr)
 			#reverse for inp in inode.inps {
 				innode := graph_expand(graph, inp)
+
 				if innode.output_count + ctx.extra_outputs[innode.gvn] == 1 &&
 				   innode.itype not_in PUSHED_UP {
 					pos := slice.linear_search(bb.instrs[:i], inp) or_continue
@@ -775,127 +777,42 @@ graph_schedule :: proc(graph: ^Graph, gs: ^Graph_Schedule, purpose: enum {
 				}
 			}
 		}
-	}
 
-	// TODO: this is slow, but I suspect its just because the schedule quality
-	// is worse
-	schedule_block :: proc(ctx: Ctx, bb: ^Graph_Basic_Block) {
-		PUSHED_UP :: bit_set[Ideal_Node_Type] {
-			.Phi,
-			.Ret,
-			.Param,
-			.Mem,
-			.Root_Mem,
-			.Sym,
-		}
+		// NOTE: we shift the phy backedge s as late as possible, regalloc
+		// likes that more
+		push_down: if graph_get(graph, bb.head).itype == .Loop {
+			boundary := len(bb.instrs) - 1
+			for ; boundary > 0 &&
+			    graph_get(graph, bb.instrs[boundary - 1]).dt == .Void;
+			    boundary -= 1 {}
 
-		context.allocator, _ = arna.scrath()
+			if phi_count > boundary do break push_down
 
-		graph := ctx.graph
+			for instr in bb.instrs[:phi_count] {
+				inode := graph_expand(graph, instr)
+				if inode.dt == .Void do continue
+				pos := slice.linear_search(
+					bb.instrs[phi_count:boundary],
+					inode.inps[2],
+				) or_continue
+				pos += phi_count
 
-		Meta :: struct {
-			instr:               Node_ID,
-			priority:            int,
-			remining_dependants: int,
-		}
+				next := graph_expand(graph, inode.inps[2])
 
-		metas := make([]Meta, len(bb.instrs))
-		for instr, i in bb.instrs do metas[i].instr = instr
-
-		cursor := len(bb.instrs) - 1
-		schedulable := cursor - 1
-
-		for i := 0; i <= schedulable; {
-			meta := &metas[i]
-
-			inode := graph_expand(ctx.graph, meta.instr)
-
-			if inode.itype in PUSHED_UP {
-				meta.priority = 1000
-			} else if inode.output_count == 1 {
-				if graph_get(ctx.graph, inode.outs[0].id).itype == .If {
-					meta.priority = 1
-				} else if graph_get(ctx.graph, inode.outs[0].id).itype ==
-				   .Phi {
-					meta.priority = 5
-				} else {
-					meta.priority = 10
+				lowest_schedule := boundary
+				for out in next.outs {
+					if out.id == instr do continue
+					posa := slice.linear_search(
+						bb.instrs[pos:lowest_schedule],
+						out.id,
+					) or_continue
+					posa += pos
+					lowest_schedule = min(lowest_schedule, posa)
 				}
-			} else {
-				meta.priority = 100
-			}
 
-			for out in inode.outs {
-				onode := graph_get(ctx.graph, out.id)
-				if ctx.late_schedules[onode.gvn] == bb.head &&
-				   onode.itype != .Phi {
-					meta.remining_dependants += 1
-				}
-			}
-
-			meta.remining_dependants += int(ctx.extra_outputs[inode.gvn])
-
-			if meta.remining_dependants == 0 {
-				metas[i], metas[schedulable] = metas[schedulable], metas[i]
-				schedulable -= 1
-			} else {
-				i += 1
+				slice.rotate_left(bb.instrs[pos:lowest_schedule], 1)
 			}
 		}
-
-		for cursor >= 0 {
-			fmt.assertf(schedulable < cursor, "%v", metas[cursor])
-			best := &metas[cursor]
-			for i := schedulable + 1; i < cursor; i += 1 {
-				if best.priority > metas[i].priority {
-					best = &metas[i]
-				}
-			}
-
-			assert(best.remining_dependants == 0)
-
-			inode := graph_expand(ctx.graph, best.instr)
-
-			inp_grouns := [?][]Node_ID{inode.inps, ctx.antideps[inode.gvn][:]}
-
-			if inode.itype == .Phi do inp_grouns = {}
-
-			for inpg in inp_grouns {
-				dec: for inp in inpg {
-					if is_cfg(ctx.graph, inp) do continue
-
-					inode := graph_get(ctx.graph, inp)
-					if ctx.late_schedules[inode.gvn] == bb.head {
-						for i := schedulable; i >= 0; i -= 1 {
-							if metas[i].instr == inp {
-								assert(metas[i].remining_dependants > 0)
-								metas[i].remining_dependants -= 1
-								if metas[i].remining_dependants == 0 {
-									metas[i], metas[schedulable] =
-										metas[schedulable], metas[i]
-									schedulable -= 1
-								}
-								continue dec
-							}
-						}
-
-						fmt.panicf(
-							"wut %v %v",
-							inode,
-							schedulable,
-							ctx.late_schedules[inode.gvn],
-						)
-					}
-				}
-			}
-
-			best^, metas[cursor] = metas[cursor], best^
-			cursor -= 1
-		}
-
-		assert(schedulable == -1)
-
-		for m, i in metas do bb.instrs[i] = m.instr
 	}
 }
 

@@ -425,10 +425,8 @@ main:
     xor eax, eax
 5:
     mov rdx, rax
-    mov rax, rcx
-    mov rcx, rax
+    movzx.b esi, [rsp + rcx + 0x8]
     add rcx, 1
-    movzx.b esi, [rsp + rax + 0x8]
     imul rsi, rcx
     add rdx, rsi
     cmp rcx, 8
@@ -466,14 +464,12 @@ main:
     xor edx, edx
     xor ecx, ecx
 3:
-    mov rsi, rdx
-    add rsi, 1
-    movzx.b edx, [rsp + rdx + 0x8]
-    imul rdx, rsi
+    movzx.b esi, [rsp + rdx + 0x8]
+    add rdx, 1
+    imul rsi, rdx
     mov rax, rcx
-    add rax, rdx
-    cmp rsi, 8
-    mov rdx, rsi
+    add rax, rsi
+    cmp rdx, 8
     mov rcx, rax
     jnge 3
     mov rcx, 0xfb

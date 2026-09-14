@@ -532,15 +532,15 @@ main:
 1:
     cmp.q [rsp + rcx*8], 0x14
     jnle 2
-    mov rsi, rax
+    mov rdi, rax
     jmp 3
 2:
     add rax, 1
-    mov rsi, rax
+    mov rdi, rax
 3:
     add rcx, 1
     cmp rcx, 8
-    mov rax, rsi
+    mov rax, rdi
     jnge 1
     xor eax, eax
 4:
@@ -576,14 +576,16 @@ main:
     xor ecx, ecx
     xor eax, eax
 10:
+    mov rsi, rcx
+    add rsi, 1
     mov rdx, rax
     add.q rdx, [rsp + rcx*8]
-    add rcx, 1
-    cmp rcx, 8
+    cmp rsi, 8
+    mov rcx, rsi
     mov rax, rdx
     jnge 10
     mov rax, rdx
-    add rax, rsi
+    add rax, rdi
     add rsp, 0x48
     ret
 =========== OPT LEVEL: aggresive ===========

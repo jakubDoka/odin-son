@@ -969,9 +969,9 @@ main:
     xor eax, eax
 1:
     mov rcx, rax
+    mov rdx, rcx
     mov rax, rcx
     add rax, 1
-    mov rdx, rcx
     mov.b [rsp + rcx + 0x48], dl
     cmp rax, 0x20
     jnge 1
@@ -979,9 +979,9 @@ main:
     xor eax, eax
 2:
     movzx.b ecx, [rsp + rax + 0x48]
+    add rax, 1
     add rdx, rcx
     mov rcx, rdx
-    add rax, 1
     cmp rax, 0x20
     mov rdx, rcx
     jnge 2
@@ -1013,16 +1013,18 @@ main:
     jnge 5
     xor eax, eax
 6:
-    add.q rcx, [rsp + rax*8 + 0x68]
-    mov rbx, rcx
+    mov rdx, rax
+    mov rax, rdx
     add rax, 1
+    add.q rcx, [rsp + rdx*8 + 0x68]
+    mov rbx, rcx
     cmp rax, 4
     mov rcx, rbx
     jnge 6
     xor esi, esi
     mov rdx, 0x48
     lea rdi, [rsp]
-    call.q [rip - 0x13f]
+    call.q [rip - 0x145]
     xor eax, eax
 7:
     xor ecx, ecx

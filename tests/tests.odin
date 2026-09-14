@@ -2232,6 +2232,80 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) induction_strength_reduction :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Stru :: struct {
+	a: u32,
+	b: u32,
+	c: u32,
+	d: u32,
+	e: u32,
+	f: u32,
+	g: u32,
+}
+
+main_ :: proc() -> int {
+	strus: [32]Stru
+
+	i := 0
+	for {
+		if i >= len(strus) do break
+		strus[i].a = u32(i)
+		i += 1
+	}
+
+	sum := 0
+	i = 0
+	for {
+		if i >= len(strus) do break
+		sum += int(strus[i].a)
+		i += 1
+	}
+
+	return sum
+}
+
+main.run_test(t, `induction_strength_reduction`, `
+package main
+
+opt_level :: "none"
+
+Stru :: struct {
+	a: u32,
+	b: u32,
+	c: u32,
+	d: u32,
+	e: u32,
+	f: u32,
+	g: u32,
+}
+
+main :: proc() -> int {
+	strus: [32]Stru
+
+	i := 0
+	for {
+		if i >= len(strus) do break
+		strus[i].a = u32(i)
+		i += 1
+	}
+
+	sum := 0
+	i = 0
+	for {
+		if i >= len(strus) do break
+		sum += int(strus[i].a)
+		i += 1
+	}
+
+	return sum
+}
+`, main_())
+}
 @(test) functions :: proc(t: ^testing.T) {
 
 
@@ -12682,6 +12756,15 @@ main_ :: proc() -> int {
 		i += 1
 	}
 
+	mem: [16]u8
+
+	i = 0
+	for {
+		if i >= len(mem) do break
+		mem[i] = 1
+		i += 1
+	}
+
 	return 0
 }
 
@@ -12692,6 +12775,15 @@ main :: proc() -> int {
 	i := 0
 	for {
 		if i >= 10 do break
+		i += 1
+	}
+
+	mem: [16]u8
+
+	i = 0
+	for {
+		if i >= len(mem) do break
+		mem[i] = 1
 		i += 1
 	}
 
@@ -14328,6 +14420,7 @@ loop_unreachable_tail_after_labelled_break_crash(nil)
 loop_sibling_continue_outer_regalloc_blowup(nil)
 nested_infinite_loop(nil)
 infinite_loop_with_control_flow(nil)
+induction_strength_reduction(nil)
 functions(nil)
 regalloc_pressure_across_calls(nil)
 some_nested_fuction_calls(nil)

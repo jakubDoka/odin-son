@@ -897,25 +897,27 @@ main:
     mov rdx, 0x10
     call.q [rip - 0xec]
     add.q [rsp + 0x28], 1
-    mov.q rdi, [rsp + 0x20]
+    mov.q r8, [rsp + 0x20]
     xor eax, eax
     cmp.q [rsp + 0x8], 0
     jng 2
     xor ecx, ecx
     xor eax, eax
 1:
-    mov.q rsi, [rsp]
+    mov.q rdi, [rsp]
+    mov rsi, rax
+    add rsi, 1
     mov rdx, rcx
-    add.q rdx, [rsi + rax*8]
-    add rax, 1
-    cmp.q rax, [rsp + 0x8]
+    add.q rdx, [rdi + rax*8]
+    cmp.q rsi, [rsp + 0x8]
     mov rcx, rdx
+    mov rax, rsi
     jnge 1
     mov rax, rdx
     jmp 2
 2:
-    add.q rax, [rdi]
-    add.q rax, [rdi + 0x8]
+    add.q rax, [r8]
+    add.q rax, [r8 + 0x8]
     add.q rax, [rsp + 0x8]
     add.q rax, [rsp + 0x28]
     add rsp, 0xf8

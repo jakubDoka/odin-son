@@ -1513,11 +1513,9 @@ sum:
     xor edi, edi
     xor ecx, ecx
 4:
-    mov rsi, rcx
-    mov rcx, rsi
-    add rcx, 1
     mov rdx, r13
-    add rdx, rsi
+    add rdx, rcx
+    add rcx, 1
     add.b dil, [rdx]
     cmp rcx, r12
     jnge 4
@@ -1535,15 +1533,15 @@ main:
     mov dl, 0x7a
     lea rcx, [rsp + 0x8]
     mov rsi, 0x23
-    lea rdi, [rip + 0xece]
+    lea rdi, [rip + 0xed6]
     call simd_search u8
     mov dl, 0x61
     lea rcx, [rsp]
     mov rsi, 0x23
-    lea rdi, [rip + 0xeb4]
+    lea rdi, [rip + 0xebc]
     call simd_search u8
     mov rsi, 0x23
-    lea rdi, [rip + 0xea1]
+    lea rdi, [rip + 0xea9]
     call sum
     mov rcx, rax
     mov.q rax, [rsp + 0x8]
@@ -1597,7 +1595,7 @@ simd_search u8:
     add rcx, rbx
     mov.q [r12], rcx
     mov al, 1
-    jmp 12
+    jmp 11
 10:
     mov rax, r13
     mov rcx, 0x10
@@ -1614,7 +1612,7 @@ simd_search u8:
     mov rdx, r14
     call linear_search u8
     cmp.q [rsp], 0
-    jnge 11
+    jnge +0x26
     mov rax, r13
     mov rcx, 0x10
     cqo
@@ -1623,11 +1621,10 @@ simd_search u8:
     add.q rcx, [rsp]
     mov.q [r12], rcx
     mov al, 1
-    jmp 12
-11:
+    jmp 11
     mov.q [r12], -1
     xor eax, eax
-12:
+11:
     add rsp, 8
     pop r15
     pop r14
@@ -1638,24 +1635,24 @@ simd_search u8:
     ret
 linear_search u8:
     xor eax, eax
-14:
+13:
     mov r9, rax
     cmp r9, rsi
-    jnl 15
+    jnl 14
     mov r8, rdi
     add r8, r9
     mov rax, r9
     add rax, 1
     movzx.b r8d, [r8]
     cmp r8b, dl
-    jnz 14
+    jnz 13
     mov.q [rcx], r9
     mov al, 1
-    jmp 16
-15:
+    jmp 15
+14:
     mov.q [rcx], -1
     xor eax, eax
-16:
+15:
     ret
 =========== OPT LEVEL: aggresive ===========
 main:
@@ -1675,23 +1672,20 @@ main:
 1:
     lea rcx, [rip + 0xfa8]
     add rcx, rax
-    paddb.x xmm0, [rcx]
-    mov rcx, rax
-    add rcx, 0x10
-    add rax, 0x20
-    cmp rax, 0x23
-    mov rax, rcx
-    jnge 1
-    xor esi, esi
-    xor eax, eax
-2:
     mov rdx, rax
-    add rdx, 1
-    lea rcx, [rip + 0xf68]
-    add rcx, rax
-    add.b sil, [rcx]
+    add rdx, 0x20
+    add rax, 0x10
+    paddb.x xmm0, [rcx]
     cmp rdx, 0x23
-    mov rax, rdx
+    jnge 1
+    xor edx, edx
+    xor ecx, ecx
+2:
+    lea rax, [rip + 0xf75]
+    add rax, rcx
+    add rcx, 1
+    add.b dl, [rax]
+    cmp rcx, 0x23
     jnge 2
     mov.q rax, [rsp + 0x8]
     mov.q rcx, [rsp]
@@ -1702,7 +1696,7 @@ main:
     pxor xmm0, xmm0
     psadbw xmm1, xmm0
     movd ecx, xmm1
-    add cl, sil
+    add cl, dl
     movzx ecx, cl
     imul rcx, rcx, 0x64
     add rax, rcx

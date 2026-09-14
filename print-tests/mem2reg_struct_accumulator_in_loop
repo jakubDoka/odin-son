@@ -183,19 +183,19 @@ main:
     xor edx, edx
     xor ecx, ecx
 2:
-    mov r8, rdx
+    mov r8, rax
     add r8, 1
-    mov rdi, rax
+    mov rdi, rdx
     add rdi, 1
     mov rsi, rcx
     add rsi, rdx
-    cmp r8, r9
-    mov rdx, r8
+    cmp rdi, r9
+    mov rdx, rdi
     mov rcx, rsi
-    mov rax, rdi
+    mov rax, r8
     jnge 2
     imul rax, rsi, 0x64
-    add rax, rdi
+    add rax, r8
     jmp 3
 3:
     add rsp, 8
@@ -206,14 +206,14 @@ main:
     xor edx, edx
     xor eax, eax
 1:
-    mov r8, rdx
-    add r8, 1
     mov rdi, rcx
     add rdi, 1
+    mov rcx, rdx
+    add rcx, 1
     mov rsi, rax
     add rsi, rdx
-    cmp r8, 5
-    mov rdx, r8
+    cmp rcx, 5
+    mov rdx, rcx
     mov rcx, rdi
     mov rax, rsi
     jnge 1

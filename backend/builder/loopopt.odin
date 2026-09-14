@@ -4,6 +4,7 @@ import backend ".."
 import "../../vendored/gam/util/arna"
 import "../../vendored/gam/util/bit_arr"
 import "core:fmt"
+import "core:math"
 import "core:mem"
 import "core:slice"
 
@@ -367,38 +368,174 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 		for ind in inductors {
 			phy := graph_expand(ctx, ind.phy)
 
+			Op :: struct {
+				node:   Node_ID,
+				base:   Node_ID,
+				stride: i64,
+			}
+
+			Indexing :: struct {
+				base:       Node_ID,
+				stride:     Node_ID,
+				to_subsume: Node_ID,
+			}
+
 			// candidate for memset or memcpy
-			stores: [dynamic]Node_ID
-			store_bases: [dynamic]Node_ID
-			loads: [dynamic]Node_ID
-			load_bases: [dynamic]Node_ID
+			stores: #soa[dynamic]Op
+			loads: #soa[dynamic]Op
+			indexings: [dynamic]Indexing
 			for out in phy.outs {
+				out := out
 				onode := graph_expand(ctx, out.id)
 				if out.id == phy.inps[2] do continue
-				if onode.itype == .Add {
-					other := onode.inps[1 - out.idx]
-					otnode := graph_expand(ctx, other)
-					if slice.contains(bb.instrs[:], other) {
+
+				stride_node: Node_ID
+				if onode.itype == .Mul {
+					stride_node = onode.inps[1 - out.idx]
+					otnode := graph_expand(ctx, stride_node)
+					if slice.contains(bb.instrs[:], stride_node) {
 						continue
 					}
 
-					for otout in onode.outs {
-						otonode := graph_expand(ctx, otout.id)
+					for oout in onode.outs {
+						oonode := graph_expand(ctx, oout.id)
+						if oonode.itype == .Add {
+							out = oout
+							onode = oonode
+							break
+						}
+					}
+				}
 
-						if otonode.itype == .Store {
-							append(&stores, otout.id)
-							append(&store_bases, other)
+				if onode.itype == .Add {
+					base := onode.inps[1 - out.idx]
+					otnode := graph_expand(ctx, base)
+
+					if slice.contains(bb.instrs[:], base) do continue
+
+					stride: i64
+					stride_vl: ^backend.CInt
+
+					if stride_node != 0 {
+						stride_vl = backend.graph_extra(
+							ctx,
+							stride_node,
+							backend.CInt,
+						)
+					} else {
+						stride_vl = &CInt{value = 1}
+					}
+					if stride_vl != nil do stride = stride_vl.value
+
+					if stride_vl != nil {
+						for otout in onode.outs {
+							otonode := graph_expand(ctx, otout.id)
+
+							if otonode.itype == .Store {
+								append(&stores, Op{otout.id, base, stride})
+							}
+							if otonode.itype == .Load {
+								append(&loads, Op{otout.id, base, stride})
+							}
 						}
-						if otonode.itype == .Load {
-							append(&loads, otout.id)
-							append(&load_bases, other)
-						}
+					}
+
+					stride_is_pow2 := math.is_power_of_two(int(stride))
+					if stride_node != 0 && (!stride_is_pow2 || stride > 8) {
+						append(
+							&indexings,
+							Indexing {
+								base,
+								stride_node,
+								backend.graph_id(ctx, onode),
+							},
+						)
 					}
 				}
 			}
 
+			for idx in indexings {
+				if true do break
+				fmt.assertf(
+					!slice.contains(bb.instrs[:], idx.base),
+					"%v",
+					graph_get(ctx, idx.base),
+				)
+				fmt.assertf(
+					!slice.contains(bb.instrs[:], idx.stride),
+					"%v",
+					graph_get(ctx, idx.stride),
+				)
+
+				graph_dyn_index_offset :: proc(
+					ctx: ^Graph,
+					base, idx, stride: Node_ID,
+				) -> Node_ID {
+					index := idx
+
+					index = backend.graph_add_bin_op(
+						ctx,
+						"snoff",
+						.Mul,
+						.I64,
+						index,
+						stride,
+					)
+					index = backend.graph_peep(ctx, index)
+
+					return backend.graph_add_bin_op(
+						ctx,
+						"snd",
+						.Add,
+						.I64,
+						base,
+						index,
+					)
+				}
+
+				init := graph_dyn_index_offset(
+					ctx,
+					idx.base,
+					phy.inps[1],
+					idx.stride,
+				)
+
+				nphy := graph_add_lazy_phi(ctx, "srdph", phy.dt, bb.head, init)
+				next := backend.graph_add_bin_op(
+					ctx,
+					"srdnt",
+					.Add,
+					phy.dt,
+					nphy,
+					idx.stride,
+				)
+				backend.graph_connect(ctx, nphy, next)
+				graph_get(ctx, nphy).itype = .Phi
+				nphy = backend.graph_intern(ctx, nphy)
+
+				backend.graph_subsume(ctx, nphy, idx.to_subsume)
+
+				if ind.bound != 0 && effective_op == .Lt {
+					new_bound := graph_dyn_index_offset(
+						ctx,
+						idx.base,
+						ind.bound,
+						idx.stride,
+					)
+					ncmp := backend.graph_add_bin_op(
+						ctx,
+						"srdcp",
+						Bin_Op(cond.itype),
+						.I8,
+						next,
+						new_bound,
+					)
+					backend.graph_subsume(ctx, ncmp, bedge.inps[1])
+				}
+			}
+
 			for store, i in stores {
-				snode := graph_expand(ctx, store)
+				snode := graph_expand(ctx, store.node)
 				vl := graph_expand(ctx, snode.inps[3])
 
 				mem := graph_expand(ctx, snode.inps[1])
@@ -412,32 +549,30 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 					}
 				}
 
-				lidx, lok := slice.linear_search(loads[:], snode.inps[3])
+				stride := ind.stride_vl * store.stride
 
-				if lok &&
-				   backend.DT_SIZE[vl.dt] == int(ind.stride_vl) &&
-				   vl.inps[1] == snode.inps[1] &&
+				continuous: if backend.DT_SIZE[vl.dt] == int(stride) &&
 				   effective_op == .Lt &&
 				   ind.bound != 0 {
 
-					cpy := backend.graph_add_copy(
-						graph,
-						"mcpf",
-						head.inps[0],
-						mem.inps[1],
-						graph_index_offset(
-							ctx,
-							store_bases[i],
-							phy.inps[1],
-							ind.stride_vl,
-						),
-						graph_index_offset(
-							ctx,
-							load_bases[lidx],
-							phy.inps[1],
-							ind.stride_vl,
-						),
-						backend.graph_add_bin_op(
+					can_memset :=
+						!slice.contains(bb.instrs[:], snode.inps[3]) &&
+						stride == 1
+
+					lidx, lok := slice.linear_search(
+						loads.node[:len(loads)],
+						snode.inps[3],
+					)
+					can_memcpy :=
+						lok &&
+						vl.inps[1] == snode.inps[1] &&
+						loads[lidx].stride == store.stride
+					optimized |= can_memset | can_memcpy
+
+					size, dst, cpy: Node_ID
+
+					if can_memset || can_memcpy {
+						size = backend.graph_add_bin_op(
 							ctx,
 							"lnscl",
 							.Mul,
@@ -454,17 +589,62 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 								ctx,
 								"scl",
 								.I64,
-								ind.stride_vl,
+								store.stride,
 							),
-						),
-					)
+						)
+						dst = graph_index_offset(
+							ctx,
+							store.base,
+							phy.inps[1],
+							stride,
+						)
+					}
 
-					backend.graph_set_input(graph, snode.inps[1], 1, cpy)
-					backend.graph_subsume(graph, snode.inps[1], store)
+					if can_memset {
+						cpy = backend.graph_add_set(
+							graph,
+							"mstf",
+							head.inps[0],
+							mem.inps[1],
+							dst,
+							snode.inps[3],
+							size,
+						)
+					}
 
-					optimized = true
+					if can_memcpy {
+						cpy = backend.graph_add_copy(
+							graph,
+							"mcpf",
+							head.inps[0],
+							mem.inps[1],
+							dst,
+							graph_index_offset(
+								ctx,
+								loads[lidx].base,
+								phy.inps[1],
+								stride,
+							),
+							size,
+						)
+					}
+
+					if cpy != 0 {
+						backend.graph_set_input(graph, snode.inps[1], 1, cpy)
+						backend.graph_subsume(graph, snode.inps[1], store.node)
+						continue
+					}
 				}
 			}
+		}
+
+		for ind in inductors {
+			phy := graph_expand(ctx, ind.phy)
+			next := graph_expand(ctx, phy.inps[2])
+			if len(phy.outs) > 1 do continue
+			if len(next.outs) > 1 do continue
+
+			backend.graph_subsume(ctx, phy.inps[1], ind.phy)
 		}
 
 		head = graph_expand(ctx, bb.head)

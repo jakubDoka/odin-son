@@ -225,31 +225,28 @@ main:
 main:
     xor eax, eax
 1:
-    mov rdx, rax
-    add rdx, 1
-    lea rcx, [rip + 0xfdc]
-    add rcx, rax
-    mov.b [rcx], al
-    cmp rdx, 0x10
-    mov rax, rdx
+    lea rdx, [rip + 0xfe6]
+    add rdx, rax
+    mov rcx, rax
+    add rax, 1
+    mov.b [rdx], cl
+    cmp rax, 0x10
     jnge 1
     xor ecx, ecx
     xor eax, eax
 2:
-    mov rsi, rcx
-    add rsi, 1
-    lea rdx, [rip + 0xfaf]
+    lea rdx, [rip + 0xfbc]
     add rdx, rcx
-    movzx.b ecx, [rdx]
+    movzx.b esi, [rdx]
+    add rcx, 1
     mov rdx, rax
-    add rdx, rcx
-    cmp rsi, 0x10
-    mov rcx, rsi
+    add rdx, rsi
+    cmp rcx, 0x10
     mov rax, rdx
     jnge 2
-    mov.q [rip + 0xf94], 7
-    mov.q [rip + 0xf91], 2
-    mov.q rax, [rip + 0xf92]
+    mov.q [rip + 0xf9d], 7
+    mov.q [rip + 0xf9a], 2
+    mov.q rax, [rip + 0xf9b]
     imul rax, rdx
     add rax, 7
     sub rax, 2

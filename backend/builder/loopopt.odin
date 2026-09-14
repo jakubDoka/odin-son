@@ -735,7 +735,7 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 	) -> (
 		v: ^backend.Graph_Basic_Block,
 	) {
-		defer fmt.assertf(v != nil, "%v", graph_get(ctx, node))
+		defer fmt.assertf(v != nil, "%v %v", graph_get(ctx, node), int(node))
 		return ctx.node_blocks[graph_get(ctx, node).gvn]
 	}
 
@@ -880,6 +880,8 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 					for inp, i in inps {
 						backend.graph_add_output(ctx, inp, cloned[node.gvn], i)
 					}
+
+					backend.graph_on_node_creation(graph, new_node)
 					// NOTE: no need to clone the debug info
 				}
 			}

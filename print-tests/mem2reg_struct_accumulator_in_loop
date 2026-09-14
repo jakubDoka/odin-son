@@ -175,48 +175,42 @@ main:
     sub rsp, 8
     mov rdi, 5
     call opaque
-    mov r9, rax
-    xor eax, eax
-    cmp r9, 0
-    jng 3
-    xor eax, eax
-    xor edx, edx
     xor ecx, ecx
+    xor edx, edx
+    xor esi, esi
 2:
-    mov r8, rax
-    add r8, 1
+    mov r9, rsi
+    mov r8, rcx
     mov rdi, rdx
     add rdi, 1
-    mov rsi, rcx
+    mov rcx, r8
+    add rcx, 1
+    mov rsi, r9
     add rsi, rdx
-    cmp rdi, r9
+    cmp rdx, rax
     mov rdx, rdi
-    mov rcx, rsi
-    mov rax, r8
     jnge 2
-    imul rax, rsi, 0x64
+    imul rax, r9, 0x64
     add rax, r8
-    jmp 3
-3:
     add rsp, 8
     ret
 =========== OPT LEVEL: aggresive ===========
 main:
-    xor ecx, ecx
-    xor edx, edx
     xor eax, eax
+    xor edx, edx
+    xor ecx, ecx
 1:
+    mov r8, rdx
     mov rdi, rcx
-    add rdi, 1
-    mov rcx, rdx
-    add rcx, 1
     mov rsi, rax
-    add rsi, rdx
-    cmp rcx, 5
-    mov rdx, rcx
+    add rsi, 1
     mov rcx, rdi
+    add rcx, 1
+    mov rdx, r8
+    add rdx, rax
+    cmp rax, 5
     mov rax, rsi
     jnge 1
-    imul rax, rsi, 0x64
+    imul rax, r8, 0x64
     add rax, rdi
     ret

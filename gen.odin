@@ -752,14 +752,7 @@ inline_and_optimize :: proc(
 			}
 		}
 
-		for dirty, limit := true, 100; dirty; limit -= 1 {
-			assert(limit > 0)
-			dirty = false
-			dirty |= backend.graph_iter_peeps({ctx})
-			dirty |= builder.memopt(ctx)
-			dirty |= builder.loopopt(ctx)
-		}
-
+		opt(ctx)
 		backend.graph_compact(ctx)
 
 		delete(caller.stencil.mem, perm)
@@ -891,6 +884,18 @@ emit_proc :: proc(
 		ctx.node_scope = 0
 	}
 
+	opt(ctx)
+
+	if .Inline in level.flags {
+		backend.graph_compact(ctx)
+		prc.stencil = backend.graph_stencil(ctx)
+		prc.stencil.mem = slice.clone(prc.stencil.mem, glob)
+	} else {
+		emit_proc_code(ctx, emit_ctx, prc)
+	}
+}
+
+opt :: proc(ctx: ^backend.Graph) {
 	peep_ctx: backend.Peep_Ctx
 	peep_ctx.graph = ctx
 
@@ -899,15 +904,8 @@ emit_proc :: proc(
 		dirty = false
 		dirty |= backend.graph_iter_peeps(peep_ctx)
 		dirty |= builder.memopt(ctx)
+		dirty |= backend.graph_iter_peeps(peep_ctx)
 		dirty |= builder.loopopt(ctx)
-	}
-
-	if .Inline in level.flags {
-		backend.graph_compact(ctx)
-		prc.stencil = backend.graph_stencil(ctx)
-		prc.stencil.mem = slice.clone(prc.stencil.mem, glob)
-	} else {
-		emit_proc_code(ctx, emit_ctx, prc)
 	}
 }
 
@@ -1025,8 +1023,7 @@ emit_known :: proc(
 	case typecheck.String_Type:
 		return {id = emit_string(ctx, prop, meta.string^), is_lvalue = true}
 	case ^typecheck.Proc_Type:
-		res := backend.graph_add_proc_addr(ctx, "fptr")
-		backend.graph_extra(ctx, res, backend.Tup).idx = u32(meta.procid)
+		res := backend.graph_add_proc_addr(ctx, "fptr", u32(meta.procid))
 		return Value(res)
 	case:
 		fmt.panicf("TODO: %v", meta)
@@ -1182,8 +1179,8 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 							sym,
 						),
 						value,
+						lane,
 					)
-					graph_get(ctx, value).lane = lane
 				}
 
 				backend.graph_pin(ctx, value)
@@ -1236,8 +1233,8 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 							emit_nodes(ctx, {}, rhs),
 							get_node_type(rhs),
 						),
+						lane,
 					)
-					graph_get(ctx, value).lane = lane
 					backend.graph_unpin(ctx, vl)
 					store_value(ctx, "asss", sym.id, Value(value), lhs)
 				}
@@ -1276,8 +1273,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				get_node_type(d.left),
 				d.op.kind,
 			) or_else panic("")
-		res = backend.graph_add_bin_op(ctx, name, kind, dt, lhs, rhs)
-		graph_get(ctx, res).lane = lane
+		res = backend.graph_add_bin_op(ctx, name, kind, dt, lhs, rhs, lane)
 		backend.graph_unpin(ctx, lhsv.id)
 	case ^ast.Unary_Expr:
 		#partial switch d.op.kind {
@@ -2094,26 +2090,33 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			case .simd_lanes_eq:
 				a := emit_rvalue(ctx, {}, d.args[0])
 				b := emit_rvalue(ctx, {}, d.args[1])
-				res = backend.graph_add_bin_op(ctx, "seq", .Eq, .V128, a, b)
 				ty := get_node_type(d.args[0])
-				graph_get(ctx, res).lane = typecheck.simd_lane_of(
-					unpack_type(ty).(^typecheck.Simd).elem,
+				res = backend.graph_add_bin_op(
+					ctx,
+					"seq",
+					.Eq,
+					.V128,
+					a,
+					b,
+					typecheck.simd_lane_of(
+						unpack_type(ty).(^typecheck.Simd).elem,
+					),
 				)
 				break match
 			case .simd_extract_lsbs:
 				a := emit_rvalue(ctx, {}, d.args[0])
+				ty := get_node_type(d.args[0])
 				res = backend.graph_add_un_op(
 					ctx,
 					"elsb",
 					.Simd_Extract_Lsbs,
 					type_to_dt(get_node_type(node)),
 					a,
+					typecheck.simd_lane_of(
+						unpack_type(ty).(^typecheck.Simd).elem,
+					),
 				)
 
-				ty := get_node_type(d.args[0])
-				graph_get(ctx, res).lane = typecheck.simd_lane_of(
-					unpack_type(ty).(^typecheck.Simd).elem,
-				)
 				break match
 			case .count_trailing_zeros:
 				a := emit_rvalue(ctx, {}, d.args[0])
@@ -2127,16 +2130,16 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				break match
 			case .simd_reduce_add_bisect:
 				a := emit_rvalue(ctx, {}, d.args[0])
+				ty := get_node_type(d.args[0])
 				res = backend.graph_add_un_op(
 					ctx,
 					"ctz",
 					.Simd_Reduce_Add_Bisect,
 					type_to_dt(get_node_type(node)),
 					a,
-				)
-				ty := get_node_type(d.args[0])
-				graph_get(ctx, res).lane = typecheck.simd_lane_of(
-					unpack_type(ty).(^typecheck.Simd).elem,
+					typecheck.simd_lane_of(
+						unpack_type(ty).(^typecheck.Simd).elem,
+					),
 				)
 				break match
 			}
@@ -2155,8 +2158,8 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 					.Splat,
 					dest_dt,
 					arg,
+					typecheck.simd_lane_of(s.elem),
 				)
-				graph_get(ctx, res).lane = typecheck.simd_lane_of(s.elem)
 				break match
 			}
 

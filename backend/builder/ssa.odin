@@ -761,6 +761,8 @@ graph_inline_graph :: proc(
 			)
 			backend.graph_dbg_slot(graph, new_node)^ = did
 			assert(ctx.projection[node.gvn] == 0)
+
+			backend.graph_on_node_creation(graph, new_node)
 		}
 
 		ctx.projection[node.gvn] = id
@@ -778,9 +780,12 @@ ordered_remove :: proc(
 		backend.graph_remove_output(ctx, inp, {idx = j + i + 1, id = par})
 	}
 	inp := node.inps[i]
+	backend.graph_unintern(ctx, par)
 	slice.rotate_left(node.inps[i:], 1)
 	node.inps = node.inps[:len(node.inps) - 1]
 	node.input_count -= 1
+	nid := backend.graph_intern(ctx, par)
+	assert(par == nid)
 	backend.graph_remove_output(ctx, inp, {idx = i, id = par})
 }
 

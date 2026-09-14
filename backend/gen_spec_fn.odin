@@ -337,6 +337,8 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 			k, _ := delete_key(&groups, class.group)
 			if k != class.group do continue
 
+			pass_lane := k == "Bin_Op" || k == "Un_Op"
+
 			fname := name
 			if k != "" do fname = k
 
@@ -369,7 +371,11 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 				fmt.fprintf(file, ", %v: %v", earg, field.type)
 			}
 
-			fmt.fprintf(file, ") -> (id: %vNode_ID) {{\n", q)
+			if pass_lane {
+				fmt.fprintf(file, ", lane: %vLane_Type = {{}}", q)
+			}
+
+			fmt.fprintf(file, ") -> (_id: %vNode_ID) {{\n", q)
 
 			extra_type := qualify_type(q, locals, class.id)
 

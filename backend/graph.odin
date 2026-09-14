@@ -2,6 +2,7 @@ package backend
 
 import "../vendored/gam/util/arna"
 import "../vendored/gam/util/bit_arr"
+import "../vendored/gam/util/hot"
 import "base:intrinsics"
 import "base:runtime"
 import "core:container/queue"
@@ -734,6 +735,8 @@ graph_compact :: proc(graph: ^Graph) {
 			iview[graph.interner.len] = {hash, n}
 			graph.interner.len += 1
 		}
+
+		graph_on_node_creation(graph, node)
 	}
 
 	assert(graph.interner.len == interned_count)
@@ -811,6 +814,25 @@ graph_peep :: proc(graph: ^Graph, id: Node_ID) -> (r: Node_ID) {
 
 @(disabled = ODIN_DISABLE_ASSERT)
 verify :: proc(graph: ^Graph) {
+	CHECK_INTERN_INTEGRITY :: true
+
+	if !graph.dont_intern && CHECK_INTERN_INTEGRITY {
+		for entry in graph_interner_zip(graph) {
+			if entry.hash == 0 {
+				assert(entry.id == 0)
+			} else {
+				fmt.assertf(
+					entry.hash == graph_node_hash(graph, entry.id),
+					"%v %v %v %v",
+					graph_get(graph, entry.id),
+					int(entry.id),
+					entry.hash,
+					graph_node_hash(graph, entry.id),
+				)
+			}
+		}
+	}
+
 	seen_intern_slots := bit_arr.init(graph.interner.len)
 	wl: queue.Queue(Node_ID)
 	queue.init(&wl)
@@ -820,18 +842,59 @@ verify :: proc(graph: ^Graph) {
 		   !graph_has_flag(graph, n, .Immortal) {
 			fmt.panicf("%v", graph_get(graph, n))
 		}
-		if graph_has_flag(graph, n, .Interned) && !graph.dont_intern && false {
-			idx, _ := graph_interner_find(graph, n, 0) or_else panic("")
+		if graph_has_flag(graph, n, .Interned) &&
+		   !graph.dont_intern &&
+		   CHECK_INTERN_INTEGRITY {
+			idx, _ :=
+				graph_interner_find(graph, n, 0) or_else fmt.panicf(
+					"%v %v %v %#v",
+					graph_get(graph, n),
+					int(n),
+					graph_node_hash(graph, n),
+					graph_interner_zip(graph),
+				)
 			fmt.assertf(
 				bit_arr.set(seen_intern_slots, idx),
-				"%v",
+				"%v %v",
 				graph_get(graph, n),
+				int(n),
 			)
 		}
 	}
 
-	if !graph.dont_intern && false {
+	if !graph.dont_intern && CHECK_INTERN_INTEGRITY {
+		for it := bit_arr.iter(
+			seen_intern_slots,
+			inverted = true,
+		); idx in bit_arr.iter_next(&it) {
+			if idx < seen_intern_slots.bit_length {
+				arr := graph_interner_zip(graph)
+				grub := graph_get(graph, arr[idx].id)
+				// TODO: this is insufficient, we need to adress this in the
+				// dont_delete sections
+				if grub.output_count + grub.input_count == 0 {
+					bit_arr.set(seen_intern_slots, idx)
+				} else {
+					fmt.eprintln(
+						idx,
+						u32(arr[idx].id),
+						grub,
+						graph.interner.len,
+					)
+				}
+			}
+		}
 		assert(bit_arr.pop_count(seen_intern_slots) == graph.interner.len)
+	}
+}
+
+// NOTE: for debugging purposes to trace where a node was created
+@(disabled = ODIN_DISABLE_ASSERT)
+graph_on_node_creation :: proc(graph: ^Graph, node: ^Node) {
+	id := graph_id(graph, node)
+	if id == 1084 && false {
+		fmt.println(node)
+		hot.dump_trace()
 	}
 }
 
@@ -977,8 +1040,10 @@ graph_iter_peeps :: proc(ctx: Peep_Ctx) -> (optimized: bool) {
 		new_node := graph.peep(ctx, node)
 		if node.rtype == DEAD_NODE_KIND do continue
 		if new_node == 0 &&
-		   (node.output_count != 0 ||
-				   graph_has_flag(graph, node, .Immortal)) {continue}
+		   (node.output_count != 0 || graph_has_flag(graph, node, .Immortal)) {
+			assert(prev_hash == graph_node_hash(graph, node))
+			continue
+		}
 
 		optimized = true
 
@@ -1427,6 +1492,7 @@ graph_interner_find :: proc(
 	return -1, needle, false
 }
 
+@(require_results)
 graph_intern :: proc(graph: ^Graph, id: Node_ID) -> Node_ID {
 	if !graph_has_flag(graph, id, .Interned) || graph.dont_intern {
 		return id
@@ -1444,6 +1510,10 @@ graph_intern :: proc(graph: ^Graph, id: Node_ID) -> Node_ID {
 	}
 
 	iview[graph.interner.len] = {hash, id}
+	if iview[graph.interner.len].id == 659 && false {
+		fmt.println("intern", hash, graph_get(graph, id))
+		hot.dump_trace()
+	}
 	graph.interner.len += 1
 
 	return id
@@ -1488,10 +1558,17 @@ graph_interner_grow :: proc(graph: ^Graph, new_cap: int) {
 graph_unintern :: proc(graph: ^Graph, id: Node_ID, precomputed_hash: u8 = 0) {
 	if !graph_has_flag(graph, id, .Interned) || graph.dont_intern do return
 
-	idx, _, _ := graph_interner_find(graph, id, precomputed_hash)
+	idx, hash, _ := graph_interner_find(graph, id, precomputed_hash)
 	if idx < 0 do return
 
+	if id == 91 && false {
+		fmt.println("unintern", graph_get(graph, id), int(id))
+		hot.dump_trace()
+	}
+
 	iview := graph_interner_zip(graph)
+
+	if iview[idx].id != id do return
 
 	graph.interner.len -= 1
 	iview[idx] = iview[graph.interner.len]
@@ -1580,8 +1657,10 @@ graph_subsume :: proc(
 	}
 	tnode.outs = tnode.outs[:keep]
 
-	for out in tnode.outs {
-		graph_intern(graph, out.id)
+	#reverse for out in tnode.outs {
+		if graph_get(graph, out.id).rtype == DEAD_NODE_KIND do continue
+		id := graph_intern(graph, out.id)
+		if id != out.id do graph_subsume(graph, id, out.id)
 	}
 
 	graph_unpin(graph, with)
@@ -1624,18 +1703,23 @@ graph_set_input :: proc(
 
 	graph_unintern(graph, id)
 	node.inps[idx] = value
-	return graph_intern(graph, id)
+	nid := graph_intern(graph, id)
+	assert(nid == id)
+	return nid
 }
 
 graph_clone :: proc(graph: ^Graph, id: Node_ID) -> Node_ID {
 	node := graph_expand(graph, id)
+	fmt.assertf(
+		!graph_has_flag(graph, node, .Interned) || graph.dont_intern,
+		"%v",
+		node,
+	)
 	assert(node.itype != .Call)
-	graph.dont_intern = true
 	idx := graph_get_next_extra_slot(graph, node.rtype)
 	extra := graph_extra_dwords(graph, node, consider_dbg = true)
 	copy(idx[:len(extra)], extra)
 	new := graph_add_raw(graph, node.name, node.rtype, node.dt, node.inps)
-	graph.dont_intern = false
 	return new
 }
 
@@ -1719,7 +1803,7 @@ graph_delete_node :: proc(graph: ^Graph, node: ^Node, indirect := false) {
 		graph_remove_output(graph, inp, {idx = i, id = id})
 	}
 
-	graph_unintern(graph, graph_id(graph, node))
+	graph_unintern(graph, id)
 
 	size := node_approx_size(graph, node)
 
@@ -1846,6 +1930,7 @@ graph_add_raw :: proc(
 	dt: Node_Datatype,
 	inps: []Node_ID,
 	extra_capacity: int = 0,
+	lane: Lane_Type = .I8,
 ) -> (
 	id: Node_ID,
 ) {
@@ -1890,6 +1975,8 @@ graph_add_raw :: proc(
 	graph.stable_id += 1
 
 	graph_dbg_slot(graph, node)^ = graph.current_dnode
+
+	graph_on_node_creation(graph, node)
 
 	return
 }
@@ -1988,7 +2075,10 @@ swap_inputs :: proc(graph: ^Graph, node: Expanded_Node, i, j: int) {
 		}
 	}
 
+	graph_unintern(graph, id)
 	node.inps[j], node.inps[i] = node.inps[i], node.inps[j]
+	nid := graph_intern(graph, id)
+	assert(nid == id)
 }
 
 graph_connect :: proc(graph: ^Graph, use: Node_ID, def: Node_ID) -> int {
@@ -2015,8 +2105,13 @@ graph_add_input_node :: proc(graph: ^Graph, node: ^Node, inp: Node_ID) -> int {
 		node.input_idx = base
 	}
 
+	id := graph_id(graph, node)
+
+	graph_unintern(graph, id)
 	raw_data(graph_inps(graph, node))[free_idx] = inp
 	node.input_count += 1
+	nid := graph_intern(graph, id)
+	assert(nid == id)
 
 	return free_idx
 }

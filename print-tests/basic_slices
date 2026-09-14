@@ -1702,17 +1702,17 @@ quick_sort:
     push rbx
     push rbp
     sub rsp, 0x48
+    mov.q [rsp + 0x10], rsi
     mov.q [rsp], rdi
-    mov.q [rsp + 0x8], rsi
-    mov.q rax, [rsp + 0x8]
-    mov.q [rsp + 0x10], rax
+    mov.q rax, [rsp + 0x10]
+    mov.q [rsp + 0x8], rax
     mov.q rax, [rsp + 0x10]
     cmp rax, 2
     jnge 21
-    mov.q rcx, [rsp]
     mov.q rax, [rsp + 0x10]
     sub rax, 1
     mov.q [rsp + 0x18], rax
+    mov.q rcx, [rsp]
     mov rbx, 2
     mov.q rax, [rsp + 0x10]
     cqo
@@ -1891,15 +1891,14 @@ quick_sort:
     push rbx
     push rbp
     sub rsp, 0x18
+    mov rbp, rsi
     mov.q [rsp], rdi
-    mov.q [rsp + 0x8], rsi
-    mov.q rax, [rsp + 0x8]
-    mov rbp, rax
+    mov.q [rsp + 0x8], rbp
     cmp rbp, 2
     jnge 20
-    mov.q rdi, [rsp]
     mov rcx, rbp
     sub rcx, 1
+    mov.q rdi, [rsp]
     mov rsi, 2
     mov rax, rbp
     cqo

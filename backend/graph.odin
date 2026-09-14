@@ -2,7 +2,6 @@ package backend
 
 import "../vendored/gam/util/arna"
 import "../vendored/gam/util/bit_arr"
-import "../vendored/gam/util/hot"
 import "base:intrinsics"
 import "base:runtime"
 import "core:container/queue"
@@ -875,12 +874,14 @@ verify :: proc(graph: ^Graph) {
 				if grub.output_count + grub.input_count == 0 {
 					bit_arr.set(seen_intern_slots, idx)
 				} else {
-					fmt.eprintln(
-						idx,
-						u32(arr[idx].id),
-						grub,
-						graph.interner.len,
-					)
+					when !ODIN_DISABLE_ASSERT {
+						fmt.eprintln(
+							idx,
+							u32(arr[idx].id),
+							grub,
+							graph.interner.len,
+						)
+					}
 				}
 			}
 		}
@@ -892,10 +893,6 @@ verify :: proc(graph: ^Graph) {
 @(disabled = ODIN_DISABLE_ASSERT)
 graph_on_node_creation :: proc(graph: ^Graph, node: ^Node) {
 	id := graph_id(graph, node)
-	if id == 1084 && false {
-		fmt.println(node)
-		hot.dump_trace()
-	}
 }
 
 graph_mount_peep_node :: proc(graph: ^Graph, node: ^Node) {
@@ -1510,10 +1507,6 @@ graph_intern :: proc(graph: ^Graph, id: Node_ID) -> Node_ID {
 	}
 
 	iview[graph.interner.len] = {hash, id}
-	if iview[graph.interner.len].id == 659 && false {
-		fmt.println("intern", hash, graph_get(graph, id))
-		hot.dump_trace()
-	}
 	graph.interner.len += 1
 
 	return id
@@ -1560,11 +1553,6 @@ graph_unintern :: proc(graph: ^Graph, id: Node_ID, precomputed_hash: u8 = 0) {
 
 	idx, hash, _ := graph_interner_find(graph, id, precomputed_hash)
 	if idx < 0 do return
-
-	if id == 91 && false {
-		fmt.println("unintern", graph_get(graph, id), int(id))
-		hot.dump_trace()
-	}
 
 	iview := graph_interner_zip(graph)
 

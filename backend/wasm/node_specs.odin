@@ -1,20 +1,23 @@
-package anal
+package wasm
 import backend ".."
 Reg_Kind :: backend.Reg_Kind
 Class_Flag :: backend.Class_Flag
-// NOTE: this file is generated: odin run backend/anal -define:ANAL_GEN_SPEC=true
+// NOTE: this file is generated: odin run backend/wasm -define:WASM_GEN_SPEC=true
 
 when !GEN_SPEC {
 SPEC := backend.Node_Spec{
 	cc_table = {
+		WASM_SYSTEMV_CC,
 	},
 	call_clobbers = {
+		{.General = 0, .Vector = 0},
 	},
-	datatype_to_reg_kind = {.Void = Reg_Kind.General, .I8 = Reg_Kind.General, .I16 = Reg_Kind.General, .I32 = Reg_Kind.General, .I64 = Reg_Kind.General, .F32 = Reg_Kind.General, .F64 = Reg_Kind.General, .V128 = Reg_Kind.General, .V256 = Reg_Kind.General, .V512 = Reg_Kind.General},
-	spill_boundary = {.General = 0, .Vector = 0},
-	emit_function = anal_emit_function,
-	peep = anal_peep_inst,
-	post_schedule_peep = anal_post_schedule_peep_inst,
+	datatype_to_reg_kind = {.Void = Reg_Kind.General, .I8 = Reg_Kind.General, .I16 = Reg_Kind.General, .I32 = Reg_Kind.General, .I64 = Reg_Kind.General, .F32 = Reg_Kind.Vector, .F64 = Reg_Kind.Vector, .V128 = Reg_Kind.Vector, .V256 = Reg_Kind.Vector, .V512 = Reg_Kind.Vector},
+	spill_boundary = {.General = 64, .Vector = 64},
+	collect_meta = wasm_collect_meta,
+	emit_function = wasm_emit_function,
+	peep = wasm_peep_inst,
+	post_schedule_peep = wasm_post_schedule_peep_inst,
 	intern = false,
 	inheritance_table = {
 		0b1, // Start
@@ -433,7 +436,7 @@ SPEC := backend.Node_Spec{
 	},
 }
 
-ANAL_Node_Type :: enum u16 {
+WASM_Node_Type :: enum u16 {
 	Start,
 	Entry,
 	Poison,
@@ -517,12 +520,23 @@ ANAL_Node_Type :: enum u16 {
 	CV128,
 }
 
-anal_peep_inst :: proc(ctx: backend.Peep_Ctx, node: backend.Expanded_Node) -> backend.Node_ID {
-	return anal_peep(ctx, node, struct{}{})
+wasm_peep_inst :: proc(ctx: backend.Peep_Ctx, node: backend.Expanded_Node) -> backend.Node_ID {
+	return wasm_peep(ctx, node, struct{}{})
 }
-anal_post_schedule_peep_inst :: proc(
+wasm_post_schedule_peep_inst :: proc(
 	ctx: backend.PS_Peep_Ctx, node: backend.Expanded_Node) -> backend.Node_ID {
-	return anal_post_schedule_peep(ctx, node, struct{}{})
+	return wasm_post_schedule_peep(ctx, node, struct{}{})
+}
+
+
+wasm_collect_meta :: proc(ctx: ^backend.Graph,
+	ra: ^backend.Regalloc, sched: ^backend.Graph_Schedule) -> []backend.Regalloc_Node_Meta {
+
+	meta_of :: proc(ctx: ^backend.Graph, ra: ^backend.Regalloc,
+		node: backend.Expanded_Node) -> backend.Regalloc_Node_Meta {
+		return wasm_meta_of(ctx, ra, node, struct{}{})
+	}
+	return backend.regalloc_collect_meta(ctx, ra, sched, meta_of)
 }
 
 #assert(size_of(backend.Cfg) % backend.PRECISION == 0)

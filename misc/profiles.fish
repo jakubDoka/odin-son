@@ -34,6 +34,8 @@ alias run-test 'odin test tests -keep-executable -debug -define:ODIN_TEST_FANCY=
 # ./misc/fuzz.sh [-t <secs>] [-j <jobs>] [--until-crash] [--skip-build]
 alias fuzz './misc/fuzz.sh'
 
+alias build-toywasm 'cmake -S vendored/toywasm -B vendored/toywasm/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_C_FLAGS= -DUSE_IPO=OFF -DTOYWASM_BUILD_CLI=OFF -DBUILD_TESTING=OFF; and cmake --build vendored/toywasm/build --target toywasm-lib-core --parallel; and cp vendored/toywasm/build/lib/libtoywasm-core.a toywasm/libtoywasm-core.a; and clang -std=c11 -O2 -fshort-enums -D_POSIX_C_SOURCE=199506L -Ivendored/toywasm/lib -Ivendored/toywasm/build -c toywasm/run.c -o toywasm/run.o'
+
 function build-wasm
 	odin build wasm -target:freestanding_wasm32 -no-entry-point -o:size \
 		-disable-assert -no-bounds-check -no-type-assert \

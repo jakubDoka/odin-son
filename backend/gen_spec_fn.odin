@@ -56,7 +56,11 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 		}
 	}
 
-	file, err := os.open(out_path, {.Create, .Trunc, .Write})
+	file, err := os.open(
+		out_path,
+		{.Create, .Trunc, .Write},
+		os.Permissions_Default - os.Permissions_Execute_All,
+	)
 	fmt.assertf(err == nil, "%v", err)
 	defer os.close(file)
 

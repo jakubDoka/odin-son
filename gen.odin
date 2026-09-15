@@ -4,7 +4,6 @@ import "backend"
 import "backend/anal"
 import "backend/builder"
 import "backend/regalloc"
-import "backend/x64"
 import "base:runtime"
 import "core:fmt"
 import "core:mem"
@@ -936,7 +935,7 @@ emit_proc_code :: proc(
 
 	ra: backend.Regalloc
 	ra.spec = ctx.node_spec
-	ra.cc = &x64.X64_SYSTEMV_CC
+	ra.cc = ctx.target.cc
 	ra.param_specs = prc.param_types
 	ra.mask_len = 64
 

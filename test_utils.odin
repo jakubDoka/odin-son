@@ -2,6 +2,7 @@
 package main
 
 import "backend"
+import "backend/wasm"
 import "backend/x64"
 import "base:intrinsics"
 import "base:runtime"
@@ -15,10 +16,13 @@ import "core:odin/ast"
 import "core:odin/parser"
 import "core:os"
 import "core:reflect"
+import "core:rexcode/ir"
+import rex_wasm "core:rexcode/ir/wasm"
 import "core:rexcode/isa/x86"
 import "core:strings"
 import "core:sync"
 import "core:testing"
+import "toywasm"
 import "typecheck"
 import "vendored/gam/util/arna"
 import "vendored/gam/util/hot"
@@ -134,8 +138,6 @@ run_test :: proc(
 	ctx.types = &types
 	ctx.stats = &stats
 	ctx.global = &global_ctx
-	ctx.target.cc = &x64.X64_SYSTEMV_CC
-	ctx.target.spec = &x64.SPEC
 	ctx.errors = strings.to_writer(&dsb)
 
 	init_single_file_program(&ctx, &f)
@@ -143,10 +145,16 @@ run_test :: proc(
 
 	levels := OPT_LEVELS
 
+	Test_Vm :: enum {
+		Native,
+		Wasm,
+		Check,
+	}
+
 	Test_Conf :: struct {
 		using level: Opt_Level,
-		check:       bool,
 		debug:       bool,
+		vm:          Test_Vm,
 	}
 
 	confs: [dynamic]Test_Conf
@@ -155,6 +163,9 @@ run_test :: proc(
 	for level in levels {
 		append(&confs, Test_Conf{level = level})
 		append(&confs, Test_Conf{level = level, debug = true})
+	}
+	for level in levels {
+		//append(&confs, Test_Conf{level = level, vm = .Wasm})
 	}
 
 	if ctx.error_cnt > 0 do clear(&confs)
@@ -166,7 +177,7 @@ run_test :: proc(
 
 	for level in confs {
 		if !level.debug {
-			if level.check {
+			if level.vm == .Check {
 				fmt.sbprintfln(&dsb, "============= check run =============")
 			} else {
 				fmt.sbprintfln(
@@ -179,110 +190,186 @@ run_test :: proc(
 		types.mems.code.pos = 0
 		types.mems.reloc.pos = 0
 		types.mems.cfi.pos = 0
-		types.check = level.check
+		types.check = level.vm == .Check
 		ctx.has_dbg = level.debug
 		ctx.ralloc_mode = level.ralloc_mode
 		resize(&ctx.globals, prev_glob_count)
 
 		for &prc in ctx.procs do prc.out = {}
 
-		_copy :: proc "contextless" (dst, src: rawptr, len: int) -> rawptr {
-			vl: #simd[16]u8
-			_ = intrinsics.volatile_load(&vl)
-			return mem.copy(dst, src, len)
-		}
+		switch level.vm {
+		case .Native:
+			ctx.target.cc = &x64.X64_SYSTEMV_CC
+			ctx.target.spec = &x64.SPEC
 
-		imported_offsets: [dynamic]uintptr
-		imported_offsets.allocator = context.temp_allocator
-		append(&imported_offsets, 0)
-		for p in ctx.procs[1:] {
-			if p.lit.body == nil {
-				// fuzzed sources name symbols that exist nowhere, and nothing
-				// is ever called under NO_RUN, so a null slot is harmless
-				addr := dynlib.symbol_address(lib, p.name)
-				if !no_run {
-					fmt.assertf(addr != nil, "missing symbol: %v", p.name)
-				}
-				slot := backend.emit_aligned(&types.mems.code, addr)
-				append(&imported_offsets, uintptr(slot))
+			_copy :: proc "contextless" (
+				dst, src: rawptr,
+				len: int,
+			) -> rawptr {
+				vl: #simd[16]u8
+				_ = intrinsics.volatile_load(&vl)
+				return mem.copy(dst, src, len)
 			}
-		}
 
-		emit_ctx := backend.Codegen_Emit_Ctx {
-			lib_calls = {
-				copy = {id = u32(len(imported_offsets)), absolute = true},
-				set = {id = u32(len(imported_offsets)) + 1, absolute = true},
-			},
-			emit_got_imports = true,
-		}
-		append(
-			&imported_offsets,
-			auto_cast backend.emit_aligned(&types.mems.code, _copy),
-		)
-		append(
-			&imported_offsets,
-			auto_cast backend.emit_aligned(&types.mems.code, mem.set),
-		)
+			imported_offsets: [dynamic]uintptr
+			imported_offsets.allocator = context.temp_allocator
+			append(&imported_offsets, 0)
+			for p in ctx.procs[1:] {
+				if p.lit.body == nil {
+					// fuzzed sources name symbols that exist nowhere, and nothing
+					// is ever called under NO_RUN, so a null slot is harmless
+					addr := dynlib.symbol_address(lib, p.name)
+					if !no_run {
+						fmt.assertf(addr != nil, "missing symbol: %v", p.name)
+					}
+					slot := backend.emit_aligned(&types.mems.code, addr)
+					append(&imported_offsets, uintptr(slot))
+				}
+			}
 
-		for &prc, i in ctx.procs {
-			emit_proc(&ctx, i, level, &emit_ctx)
-		}
+			emit_ctx := backend.Codegen_Emit_Ctx {
+				lib_calls = {
+					copy = {id = u32(len(imported_offsets)), absolute = true},
+					set = {
+						id = u32(len(imported_offsets)) + 1,
+						absolute = true,
+					},
+				},
+				emit_got_imports = true,
+			}
+			append(
+				&imported_offsets,
+				auto_cast backend.emit_aligned(&types.mems.code, _copy),
+			)
+			append(
+				&imported_offsets,
+				auto_cast backend.emit_aligned(&types.mems.code, mem.set),
+			)
 
-		defer for prc in ctx.procs do delete(prc.stencil.mem)
+			for &prc, i in ctx.procs {
+				emit_proc(&ctx, i, level, &emit_ctx)
+			}
 
-		if .Inline in level.flags {
-			if !inline_and_optimize(&ctx, &emit_ctx) do continue
-		}
+			defer for prc in ctx.procs do delete(prc.stencil.mem)
 
-		arna.alloc(&types.mems.code, 0, 4096)
-		code_until := types.mems.code.pos
+			if .Inline in level.flags {
+				if !inline_and_optimize(&ctx, &emit_ctx) do continue
+			}
 
-		global_addrs := make(
-			[]uintptr,
-			len(ctx.globals),
-			context.temp_allocator,
-		)
-		for glob, i in ctx.globals {
-			align := uint(max(glob.align, 1))
-			slot := arna.alloc(&types.mems.code, len(glob.bytes), align)
-			copy(slot, glob.bytes)
-			global_addrs[i] = uintptr(raw_data(slot))
-		}
+			arna.alloc(&types.mems.code, 0, 4096)
+			code_until := types.mems.code.pos
 
-		for p in ctx.procs {
-			for rel in p.out.relocs {
-				target_off: uintptr
-				switch rel.kind {
-				case .Text:
-					target := &ctx.procs[rel.id]
-					target_off = uintptr(raw_data(target.out.code))
-				case .Got:
-					target_off = imported_offsets[rel.id]
-				case .Global:
-					if rel.id >= backend.RELOC_BIG_CONSTANT_BASE {
-						target_off =
-							uintptr(rel.id - backend.RELOC_BIG_CONSTANT_BASE) +
-							uintptr(raw_data(p.out.constants))
-					} else {
-						target_off = global_addrs[rel.id]
+			global_addrs := make(
+				[]uintptr,
+				len(ctx.globals),
+				context.temp_allocator,
+			)
+			for glob, i in ctx.globals {
+				align := uint(max(glob.align, 1))
+				slot := arna.alloc(&types.mems.code, len(glob.bytes), align)
+				copy(slot, glob.bytes)
+				global_addrs[i] = uintptr(raw_data(slot))
+			}
+
+			for p in ctx.procs {
+				for rel in p.out.relocs {
+					target_off: uintptr
+					switch rel.kind {
+					case .Text:
+						target := &ctx.procs[rel.id]
+						target_off = uintptr(raw_data(target.out.code))
+					case .Got:
+						target_off = imported_offsets[rel.id]
+					case .Global:
+						if rel.id >= backend.RELOC_BIG_CONSTANT_BASE {
+							target_off =
+								uintptr(
+									rel.id - backend.RELOC_BIG_CONSTANT_BASE,
+								) +
+								uintptr(raw_data(p.out.constants))
+						} else {
+							target_off = global_addrs[rel.id]
+						}
+					}
+
+					source :=
+						uintptr(raw_data(p.out.code)) + uintptr(rel.offset)
+					jump := u32(target_off - source)
+
+					size := backend.RELOC_SIZE[rel.size]
+					slot := (^backend.Reloc_Slot)(
+						raw_data(p.out.code[rel.offset - size:][:size]),
+					)
+					switch rel.size {
+					case .r4:
+						slot.addend_4 += jump
+					}
+				}
+			}
+
+			if !level.debug {context.allocator = context.temp_allocator
+				disasm_x64(&dsb, ctx)}
+
+			oka := virtual.protect(
+				types.mems.code.ptr,
+				code_until,
+				{.Read, .Execute},
+			)
+			assert(oka)
+
+			if no_run {
+				//log.error("running compiled code disabled")
+			} else {
+				main: ^typecheck.Proc
+				for &p in ctx.procs {
+					if p.name == "main" {
+						main = &p
 					}
 				}
 
-				source := uintptr(raw_data(p.out.code)) + uintptr(rel.offset)
-				jump := u32(target_off - source)
-
-				size := backend.RELOC_SIZE[rel.size]
-				slot := (^backend.Reloc_Slot)(
-					raw_data(p.out.code[rel.offset - size:][:size]),
-				)
-				switch rel.size {
-				case .r4:
-					slot.addend_4 += jump
+				if main != nil {
+					ptr := transmute(proc() -> int)(raw_data(main.out.code))
+					vl := ptr()
+					if vl != exit_code {
+						log.error(level)
+						testing.expect_value(t, vl, exit_code)
+					}
 				}
 			}
-		}
 
-		if ctx.check {
+			oka = virtual.protect(
+				types.mems.code.ptr,
+				code_until,
+				{.Read, .Write},
+			)
+			assert(oka)
+		case .Wasm:
+			ctx.target.cc = &wasm.WASM_SYSTEMV_CC
+			ctx.target.spec = &wasm.SPEC
+
+			emit_ctx := backend.Codegen_Emit_Ctx{}
+
+			for &prc, i in ctx.procs {
+				emit_proc(&ctx, i, level, &emit_ctx)
+			}
+
+			defer for prc in ctx.procs do delete(prc.stencil.mem)
+
+			if .Inline in level.flags {
+				if !inline_and_optimize(&ctx, &emit_ctx) do continue
+			}
+
+			module := emit_wasm_module(&ctx, context.temp_allocator)
+
+			{context.allocator = context.temp_allocator
+				disasm_wasm(&dsb, module)}
+
+			vl := int(toywasm.run_module(module, "main"))
+			if vl != exit_code {
+				log.error(level)
+				testing.expect_value(t, vl, exit_code)
+			}
+		case .Check:
 			for prc in ctx.procs {
 				if len(prc.out.code) == 0 do continue
 
@@ -292,43 +379,7 @@ run_test :: proc(
 					fmt.sbprintfln(&dsb, "  %v", line)
 				}
 			}
-
-			continue
 		}
-
-		if !level.debug {context.allocator = context.temp_allocator
-			disasm(&dsb, ctx)}
-
-		oka := virtual.protect(
-			types.mems.code.ptr,
-			code_until,
-			{.Read, .Execute},
-		)
-		assert(oka)
-
-		if no_run {
-			//log.error("running compiled code disabled")
-		} else {
-			main: ^typecheck.Proc
-			for &p in ctx.procs {
-				if p.name == "main" {
-					main = &p
-				}
-			}
-
-			if main != nil {
-				ptr := transmute(proc() -> int)(raw_data(main.out.code))
-				vl := ptr()
-				if vl != exit_code {
-					log.error(level)
-					testing.expect_value(t, vl, exit_code)
-				}
-			}
-
-		}
-
-		oka = virtual.protect(types.mems.code.ptr, code_until, {.Read, .Write})
-		assert(oka)
 	}
 
 	if #config(LOG_STATS, false) {
@@ -508,7 +559,21 @@ print_diff :: proc(out: ^strings.Builder, a, b: string) {
 	}
 }
 
-disasm :: proc(sb: ^strings.Builder, ctx: Gen_Ctx) {
+disasm_wasm :: proc(sb: ^strings.Builder, module: []u8) {
+	m: rex_wasm.Module
+	errors: [dynamic]ir.Error
+
+	ln, ok := rex_wasm.decode(module, &m, &errors)
+	for err in errors {
+		fmt.sbprintln(sb, err)
+	}
+	assert(ok)
+	assert(int(ln) == len(module))
+
+	rex_wasm.print(m, sb)
+}
+
+disasm_x64 :: proc(sb: ^strings.Builder, ctx: Gen_Ctx) {
 	decoded_instrs: [dynamic]x86.Instruction
 	decoded_instr_info: [dynamic]x86.Instruction_Info
 	decoded_label_info: [dynamic]x86.Label_Definition

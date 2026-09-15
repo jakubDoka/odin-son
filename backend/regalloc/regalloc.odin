@@ -84,6 +84,7 @@ regalloc_round :: proc(
 		blocks:          []Block,
 		res:             []backend.Reg,
 		block_base:      int,
+		pre_split_gvn:   u32,
 	}
 
 	ctx: Ctx
@@ -93,33 +94,21 @@ regalloc_round :: proc(
 	ctx.graph = graph
 	ctx.sched = sched
 
-	def_count := 0
 	block_base := int(graph.gvn) - len(sched.bbs)
 	ctx.block_base = block_base
-	ctx.instr_placement = make([dynamic]Instr_Placement, block_base)
-	rev_gvn := block_base
+	def_count: int
+	ctx.gmetas, def_count = graph.collect_meta(graph, ra, sched)
 
-	rev_gvn -= 1
-	graph_get(graph, graph.start).gvn = u32(rev_gvn)
+	ctx.instr_placement = make([dynamic]Instr_Placement, block_base)
 
 	for bb, j in sched.bbs {
-		graph_get(graph, bb.head).gvn = u32(block_base + j)
 		for instr in bb.instrs {
 			instr_node := graph_get(graph, instr)
-			if instr_node.dt != .Void {
-				instr_node.gvn = u32(def_count)
-				def_count += 1
-			} else {
-				rev_gvn -= 1
-				instr_node.gvn = u32(rev_gvn)
-			}
 			ctx.instr_placement[instr_node.gvn] = {
 				block = u32(j),
 			}
 		}
 	}
-
-	ctx.gmetas = graph.collect_meta(graph, ra, sched)
 
 	lrgs := make([]backend.Lrg, def_count)
 	used_lrgs: u32
@@ -130,7 +119,7 @@ regalloc_round :: proc(
 		for instr in bb.instrs {
 			inode := graph_expand(graph, instr)
 
-			if inode.dt != .Void {
+			if is_def(ctx, inode) {
 				lrg: ^backend.Lrg
 
 				if backend.graph_has_flag(graph, inode, .Comutes) {
@@ -379,7 +368,7 @@ regalloc_round :: proc(
 		#reverse for instr, j in bb.instrs {
 			inode := graph_expand(graph, instr)
 
-			if inode.dt != .Void {
+			if is_def(ctx, inode) {
 				lrg := ctx.lrg_table[inode.gvn]
 				v := liveouts_delete(&curr_live, lrg.index)
 				if v.node != 0 {
@@ -589,7 +578,6 @@ regalloc_round :: proc(
 			// NOTE: Good estimate but still can grow on pathological cases. Thats
 			// why we use ids
 			ctx.slrgs = make([dynamic]Slrg, 1, max(1, used_lrgs * 2))
-
 			ctx.smetas = make([]Lrg_Meta, used_lrgs)
 		}
 
@@ -602,7 +590,7 @@ regalloc_round :: proc(
 				instr_idx := ctx.block_offset + i
 				inode := graph_expand(ctx.graph, instr)
 
-				if inode.dt != .Void || inode.itype != .Phi {
+				if is_def(ctx, inode) || inode.itype != .Phi {
 					for dd in data_deps(ctx, inode) {
 						ddnode := graph_expand(ctx.graph, dd)
 						if ddnode.itype == .Poison do continue
@@ -610,7 +598,7 @@ regalloc_round :: proc(
 					}
 				}
 
-				if inode.dt != .Void {
+				if is_def(ctx, inode) {
 					lrg := ctx.lrg_table[inode.gvn]
 					meta := &ctx.smetas[lrg.index]
 					if meta.current_slrg == 0 {
@@ -1226,7 +1214,7 @@ regalloc_round :: proc(
 		return cursor
 	}
 
-	prev_gvn := graph.gvn
+	ctx.pre_split_gvn = graph.gvn
 
 	any_fails := false
 
@@ -1279,7 +1267,7 @@ regalloc_round :: proc(
 
 					split := id
 					if out_node.itype != .Split {
-						assert(out_node.gvn < prev_gvn)
+						assert(out_node.gvn < ctx.pre_split_gvn)
 						split = split_before(
 							ctx,
 							out.id,
@@ -1499,8 +1487,8 @@ regalloc_round :: proc(
 				continue
 			}
 
-			if inode.dt == .Void do continue
-			if inode.gvn >= prev_gvn {
+			if !is_def(ctx, inode) do continue
+			if inode.gvn >= ctx.pre_split_gvn {
 				if graph_get(graph, inp).itype == .Split {
 					last_split = inp
 				}
@@ -1536,8 +1524,8 @@ regalloc_round :: proc(
 		for out in slice.clone(node.outs) {
 			onode := graph_expand(graph, out.id)
 
-			if onode.dt == .Void do continue
-			if onode.gvn >= prev_gvn do continue
+			if !is_def_while_splitting(ctx, onode) do continue
+			if onode.gvn >= ctx.pre_split_gvn do continue
 
 			if out.idx == int(ctx.gmetas[onode.gvn].in_place_slot) ||
 			   onode.itype == .Phi {
@@ -1751,7 +1739,7 @@ regalloc_round :: proc(
 					nd := graph_get(ctx.graph, inp)
 					if nd.itype == .Poison do continue
 
-					fmt.assertf(nd.dt != .Void, "%v", nd)
+					fmt.assertf(is_def(ctx, nd), "%v", nd)
 
 					check_blocks(ctx, res, inp, block.head, i, seen)
 				}
@@ -1779,7 +1767,7 @@ regalloc_round :: proc(
 			if block != bb do idx = -1
 			for j in idx + 1 ..< sindex {
 				clobber := graph_expand(ctx.graph, bb.instrs[j])
-				if clobber.dt == .Void do continue
+				if !is_def(ctx, clobber) do continue
 				if res[inpnode.gvn] == res[clobber.gvn] {
 					//backend.graph_display(
 					//	os.to_writer(os.stderr),
@@ -1894,7 +1882,7 @@ regalloc_round :: proc(
 		inp := redirect if redirect != 0 else node.inps[idx]
 		inp_node := graph_get(ctx.graph, inp)
 
-		if inp_node.dt == .Void do return inp
+		if !is_def_while_splitting(ctx, inp_node) do return inp
 
 		split: Node_ID
 		if backend.graph_has_flag(ctx.graph, inp_node, .Clonable) && !must {
@@ -1998,7 +1986,7 @@ regalloc_round :: proc(
 			bb: backend.Graph_Basic_Block,
 		) {
 			ctx := (^Ctx)(context.user_ptr)
-			if instr.dt != .Void && len(ctx.lrg_table) != 0 {
+			if is_def_while_splitting(ctx^, instr) && len(ctx.lrg_table) != 0 {
 				lrg := get_lrg(ctx^, backend.graph_id(ctx.graph, instr))
 				if lrg == nil {
 					return
@@ -2018,6 +2006,14 @@ regalloc_round :: proc(
 		}
 
 		log.info(string(sb.buf[:]))
+	}
+
+	is_def :: proc(ctx: Ctx, node: ^backend.Node) -> bool {
+		return ctx.gmetas[node.gvn].out != backend.INVALID_RM_INDEX
+	}
+
+	is_def_while_splitting :: proc(ctx: Ctx, node: ^backend.Node) -> bool {
+		return node.gvn >= ctx.pre_split_gvn || is_def(ctx, node)
 	}
 
 	is_data_dep :: proc(

@@ -33,7 +33,7 @@ reg_mask_clone :: proc(rm: Reg_Mask) -> (res: Reg_Mask) {
 }
 
 reg_mask_set :: proc(rm: Reg_Mask, #any_int index: u32, value := true) {
-	assert(index < rm.bit_length)
+	fmt.assertf(index < rm.bit_length, "%v < %v", index, rm.bit_length)
 	if value {
 		rm.masks[index / MASK_SIZE] |= 1 << uint(index % MASK_SIZE)
 	} else {
@@ -140,7 +140,10 @@ Regalloc_Spec :: struct {
 		graph: ^Graph,
 		ra: ^Regalloc,
 		sched: ^Graph_Schedule,
-	) -> []Regalloc_Node_Meta,
+	) -> (
+		slots: []Regalloc_Node_Meta,
+		def_count: int,
+	),
 }
 
 Param_Spec :: struct {
@@ -174,6 +177,7 @@ rm_hash :: proc(data: []i64) -> u8 {
 }
 
 rm_get :: proc(interner: ^RM_Interner, idx: RM_Intern_Idx) -> Reg_Mask {
+	assert(idx != INVALID_RM_INDEX)
 	return {
 		masks = interner.slots[idx.kind][idx.index].id,
 		bit_length = interner.mask_len,
@@ -256,6 +260,8 @@ rm_intern :: proc(interner: ^RM_Interner, mask: Reg_Mask) -> RM_Intern_Idx {
 	}
 }
 
+INVALID_RM_INDEX :: RM_Intern_Idx(max(u16))
+
 RM_Intern_Idx :: bit_field u16 {
 	index: int      | 15,
 	kind:  Reg_Kind | 1,
@@ -270,29 +276,52 @@ Regalloc_Node_Meta :: struct {
 	clobbers:      [Reg_Kind]u16,
 }
 
-regalloc_collect_meta :: proc(
+regalloc_collect_meta :: #force_inline proc(
 	graph: ^Graph,
 	ra: ^Regalloc,
 	sched: ^Graph_Schedule,
-	$meta_of: proc(
+	meta_of: proc(
 		_: ^Graph,
 		_: ^Regalloc,
 		_: Expanded_Node,
 	) -> Regalloc_Node_Meta,
-) -> []Regalloc_Node_Meta {
-	slots := make([]Regalloc_Node_Meta, int(graph.gvn) - len(sched.bbs))
+) -> (
+	slots: []Regalloc_Node_Meta,
+	def_count: int,
+) {
+	slots = make([]Regalloc_Node_Meta, int(graph.gvn) - len(sched.bbs))
+	rev_count := int(graph.gvn) - len(sched.bbs)
 
 	when !ODIN_DISABLE_ASSERT {
 		seen := bit_arr.init(graph.gvn)
 	}
 
-	for bb in sched.bbs {
+	rev_count -= 1
+	graph_get(graph, graph.start).gvn = u32(rev_count)
+
+	idx := 0
+	for bb, j in sched.bbs {
+		graph_get(graph, bb.head).gvn = u32(len(slots) + j)
 		for instr in bb.instrs {
 			inode := graph_expand(graph, instr)
 			when !ODIN_DISABLE_ASSERT {
 				fmt.assertf(bit_arr.set(seen, inode.gvn), "%v", inode)
 			}
-			slots[inode.gvn] = meta_of(graph, ra, inode)
+
+			inode.gvn = u32(idx)
+			idx += 1
+
+			meta := meta_of(graph, ra, inode)
+
+			if meta.out == INVALID_RM_INDEX {
+				rev_count -= 1
+				inode.gvn = u32(rev_count)
+			} else {
+				inode.gvn = u32(def_count)
+				def_count += 1
+			}
+
+			slots[inode.gvn] = meta
 			slots[inode.gvn].in_place_slot -= 1
 			if slots[inode.gvn].in_place_slot >= 0 {
 				slots[inode.gvn].in_place_slot += i8(
@@ -302,7 +331,7 @@ regalloc_collect_meta :: proc(
 		}
 	}
 
-	return slots
+	return
 }
 
 MASK_SIZE :: size_of(int) * 8

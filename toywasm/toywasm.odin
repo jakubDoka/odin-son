@@ -6,11 +6,11 @@ import "core:testing"
 foreign import toywasm {"run.o", "libtoywasm-core.a"}
 
 foreign toywasm {
-	toywasm_run_module :: proc(bytes: [^]u8, size: uintptr, entry_data: [^]u8, entry_size: uintptr, result: ^i32) -> c.int ---
+	toywasm_run_module :: proc(bytes: [^]u8, size: uintptr, entry_data: [^]u8, entry_size: uintptr, result: ^i64) -> c.int ---
 }
 
-run_module :: proc(module_bytes: []u8, entry_name: string) -> int {
-	result: i32
+run_module :: proc(module_bytes: []u8, entry_name: string) -> i64 {
+	result: i64
 	status := toywasm_run_module(
 		raw_data(module_bytes),
 		uintptr(len(module_bytes)),
@@ -21,7 +21,7 @@ run_module :: proc(module_bytes: []u8, entry_name: string) -> int {
 	if status != 0 {
 		panic(fmt.tprintf("toywasm failed with status %d", status))
 	}
-	return int(result)
+	return result
 }
 
 @(test)
@@ -72,4 +72,57 @@ sanity_check :: proc(t: ^testing.T) {
 
 	res := run_module(module_bytes, entry_name)
 	testing.expect_value(t, res, 69)
+}
+
+@(test)
+i64_result :: proc(t: ^testing.T) {
+	module_bytes :: []u8 {
+		0x00,
+		0x61,
+		0x73,
+		0x6d,
+		0x01,
+		0x00,
+		0x00,
+		0x00,
+		0x01,
+		0x05,
+		0x01,
+		0x60,
+		0x00,
+		0x01,
+		0x7e,
+		0x03,
+		0x02,
+		0x01,
+		0x00,
+		0x07,
+		0x0a,
+		0x01,
+		0x06,
+		0x5f,
+		0x73,
+		0x74,
+		0x61,
+		0x72,
+		0x74,
+		0x00,
+		0x00,
+		0x0a,
+		0x0a,
+		0x01,
+		0x08,
+		0x00,
+		0x42,
+		0x80,
+		0x80,
+		0x80,
+		0x80,
+		0x10,
+		0x0b,
+	}
+	entry_name :: "_start"
+
+	res := run_module(module_bytes, entry_name)
+	testing.expect_value(t, res, 4_294_967_296)
 }

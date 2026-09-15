@@ -1114,6 +1114,8 @@ x64_meta_of :: proc(
 		~i64(1 << uint(RDX)),
 	}
 
+	IOUT :: backend.INVALID_RM_INDEX
+
 	if node.gvn == 0 {
 		ra.mask_len = MASK_SIZE
 		rslice(ra, .General, GPA_MASK[:])
@@ -1147,6 +1149,11 @@ x64_meta_of :: proc(
 	snmasks := smasks[nkind]
 	sout := snmasks[0]
 
+	if node.dt == .Void {
+		out = IOUT
+		sout = IOUT
+	}
+
 	mem_op: ^X64_Mem_Op = x64_extra(graph, node, X64_Mem_Op)
 
 	switch xtype(node) {
@@ -1162,7 +1169,7 @@ x64_meta_of :: proc(
 	     .Call_End:
 		fmt.panicf("should not reach these: %v", node)
 	case .Poison:
-		return {}
+		return {out = out}
 	case .Param:
 		kind := ra.datatype_to_reg_kind[node.dt]
 		args := ra.args[kind]
@@ -1239,9 +1246,9 @@ x64_meta_of :: proc(
 			input_start = 1,
 		}
 	case .Global, .Proc_Addr:
-		return {}
+		return {out = out}
 	case .Mem, .Root_Mem, .Sym, .Local, .Jump, .Always, .Trap:
-		return {input_start = 1}
+		return {out = out, input_start = 1}
 	case .Local_Addr, .Global_Addr:
 		return {out = out, input_start = 1}
 	case .Copy, .Set, .Call, .Return:
@@ -1278,14 +1285,15 @@ x64_meta_of :: proc(
 			nmasks[len(nmasks) - 1] = GPA_MASK_IDX
 		}
 
-		return {masks = nmasks, input_start = u8(prefix)}
+		return {masks = nmasks, out = out, input_start = u8(prefix)}
 	case .Store:
-		return {masks = dup({GPA_MASK_IDX, out}), input_start = 2}
+		return {masks = dup({GPA_MASK_IDX, out}), out = out, input_start = 2}
 	case .Load:
 		return {out = out, masks = GPA_MASKS[:1], input_start = 2}
 	case .If:
 		cond := graph_get(graph, node.inps[1])
 		return {
+			out = out,
 			masks = nmasks[:int(cond.dt != .Void)],
 			input_start = 1 + u8(cond.dt == .Void),
 		}

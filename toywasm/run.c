@@ -14,7 +14,7 @@
 
 int
 toywasm_run_module(const uint8_t *bytes, size_t size, const char *entry_data,
-                   size_t entry_size, int32_t *result)
+                   size_t entry_size, int64_t *result)
 {
         struct mem_context mctx;
         struct module *module = NULL;
@@ -48,7 +48,8 @@ toywasm_run_module(const uint8_t *bytes, size_t size, const char *entry_data,
 
         const struct functype *type = module_functype(module, funcidx);
         if (type->parameter.ntypes != 0 || type->result.ntypes != 1 ||
-            type->result.types[0] != TYPE_i32) {
+            (type->result.types[0] != TYPE_i32 &&
+             type->result.types[0] != TYPE_i64)) {
                 ret = EINVAL;
                 goto done;
         }
@@ -69,7 +70,11 @@ toywasm_run_module(const uint8_t *bytes, size_t size, const char *entry_data,
         if (ret == 0) {
                 struct val value;
                 exec_pop_vals(&ectx, &type->result, &value);
-                *result = (int32_t)value.u.i32;
+                if (type->result.types[0] == TYPE_i32) {
+                        *result = (int64_t)(int32_t)value.u.i32;
+                } else {
+                        *result = (int64_t)value.u.i64;
+                }
         }
         exec_context_clear(&ectx);
 

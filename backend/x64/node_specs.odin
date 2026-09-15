@@ -784,7 +784,7 @@ x64_post_schedule_peep_inst :: proc(
 
 
 x64_collect_meta :: proc(ctx: ^backend.Graph,
-	ra: ^backend.Regalloc, sched: ^backend.Graph_Schedule) -> []backend.Regalloc_Node_Meta {
+	ra: ^backend.Regalloc, sched: ^backend.Graph_Schedule) -> ([]backend.Regalloc_Node_Meta, int) {
 
 	meta_of :: proc(ctx: ^backend.Graph, ra: ^backend.Regalloc,
 		node: backend.Expanded_Node) -> backend.Regalloc_Node_Meta {

@@ -301,7 +301,7 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 			file,
 			`
 %v_collect_meta :: proc(ctx: ^%vGraph,
-	ra: ^%vRegalloc, sched: ^%vGraph_Schedule) -> []%vRegalloc_Node_Meta {{
+	ra: ^%vRegalloc, sched: ^%vGraph_Schedule) -> ([]%vRegalloc_Node_Meta, int) {{
 
 	meta_of :: proc(ctx: ^%vGraph, ra: ^%vRegalloc,
 		node: %vExpanded_Node) -> %vRegalloc_Node_Meta {{

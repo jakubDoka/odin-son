@@ -944,51 +944,6 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	DW_LINE_RANGE :: 14
 	DW_OPCODE_BASE :: 13
 
-	uleb :: proc(b: ^[dynamic]u8, value: u64) {
-		v := value
-		for {
-			byte := u8(v & 0x7f)
-			v >>= 7
-			if v != 0 do byte |= 0x80
-			append(b, byte)
-			if v == 0 do break
-		}
-	}
-
-	sleb :: proc(b: ^[dynamic]u8, value: i64) {
-		v := value
-		for {
-			byte := u8(v & 0x7f)
-			v >>= 7
-			sign := (byte & 0x40) != 0
-			done := (v == 0 && !sign) || (v == -1 && sign)
-			if !done do byte |= 0x80
-			append(b, byte)
-			if done do break
-		}
-	}
-
-	putb :: #force_inline proc(b: ^[dynamic]u8, vl: $T) {
-		append(b, transmute(u8)vl)
-	}
-
-	put_u16 :: proc(b: ^[dynamic]u8, v: u16) {
-		x := v
-		append(b, ..mem.ptr_to_bytes(&x))
-	}
-	put_u32 :: proc(b: ^[dynamic]u8, v: u32) {
-		x := v
-		append(b, ..mem.ptr_to_bytes(&x))
-	}
-	put_u64 :: proc(b: ^[dynamic]u8, v: u64) {
-		x := v
-		append(b, ..mem.ptr_to_bytes(&x))
-	}
-	patch_u32 :: proc(b: ^[dynamic]u8, at: int, v: u32) {
-		x := v
-		mem.copy(&b[at], &x, 4)
-	}
-
 	Elf_Builder :: struct {
 		buf: [dynamic]u8,
 	}
@@ -1022,4 +977,49 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 		append(&s.buf, 0)
 		return off
 	}
+}
+
+uleb :: proc(b: ^[dynamic]u8, value: u64) {
+	v := value
+	for {
+		byte := u8(v & 0x7f)
+		v >>= 7
+		if v != 0 do byte |= 0x80
+		append(b, byte)
+		if v == 0 do break
+	}
+}
+
+sleb :: proc(b: ^[dynamic]u8, value: i64) {
+	v := value
+	for {
+		byte := u8(v & 0x7f)
+		v >>= 7
+		sign := (byte & 0x40) != 0
+		done := (v == 0 && !sign) || (v == -1 && sign)
+		if !done do byte |= 0x80
+		append(b, byte)
+		if done do break
+	}
+}
+
+putb :: #force_inline proc(b: ^[dynamic]u8, vl: $T) {
+	append(b, transmute(u8)vl)
+}
+
+put_u16 :: proc(b: ^[dynamic]u8, v: u16) {
+	x := v
+	append(b, ..mem.ptr_to_bytes(&x))
+}
+put_u32 :: proc(b: ^[dynamic]u8, v: u32) {
+	x := v
+	append(b, ..mem.ptr_to_bytes(&x))
+}
+put_u64 :: proc(b: ^[dynamic]u8, v: u64) {
+	x := v
+	append(b, ..mem.ptr_to_bytes(&x))
+}
+patch_u32 :: proc(b: ^[dynamic]u8, at: int, v: u32) {
+	x := v
+	mem.copy(&b[at], &x, 4)
 }

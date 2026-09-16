@@ -32,6 +32,10 @@ regalloc :: proc(
 ) -> []backend.Reg {
 	if graph.node_spec.collect_meta == nil do return {}
 
+	if graph.node_spec.pre_regalloc_hook != nil {
+		graph.node_spec.pre_regalloc_hook(ra, graph, sched)
+	}
+
 	base := int(graph.gvn)
 	total := base
 	for i in 0 ..< 7 {
@@ -347,6 +351,8 @@ regalloc_round :: proc(
 			queue.push_front(&worklist, u32(j))
 		}
 	}
+
+	log_lrgs(&ctx)
 
 	rounds: int
 	curr_live: Liveouts
@@ -2009,7 +2015,7 @@ regalloc_round :: proc(
 	}
 
 	is_def :: proc(ctx: Ctx, node: ^backend.Node) -> bool {
-		return ctx.gmetas[node.gvn].out != backend.INVALID_RM_INDEX
+		return backend.is_def(ctx.gmetas[node.gvn])
 	}
 
 	is_def_while_splitting :: proc(ctx: Ctx, node: ^backend.Node) -> bool {
@@ -2021,18 +2027,10 @@ regalloc_round :: proc(
 		inode: backend.Expanded_Node,
 		#any_int idx: int,
 	) -> bool {
-		meta := ctx.gmetas[inode.gvn]
-		if idx < int(meta.input_start) do return false
-		if idx >=
-		   min(len(meta.masks) + int(meta.input_start), len(inode.inps)) {
-			return false
-		}
-		return true
+		return backend.is_data_dep(ctx.gmetas[inode.gvn], inode, idx)
 	}
 
 	data_deps :: proc(ctx: Ctx, inode: backend.Expanded_Node) -> []Node_ID {
-		meta := ctx.gmetas[inode.gvn]
-		len := min(len(meta.masks), len(inode.inps) - int(meta.input_start))
-		return inode.inps[meta.input_start:][:len]
+		return backend.data_deps(ctx.gmetas[inode.gvn], inode)
 	}
 }

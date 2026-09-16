@@ -26,6 +26,7 @@ when GEN_SPEC {
 					backend.class_array(&WASM_CLASSES),
 				},
 				does_regalloc = true,
+				has_regalloc_preprocess_hook = true,
 				datatype_to_reg_kind = #partial{
 					.I8 ..= .I64 = .General,
 					.F32 ..= .V512 = .Vector,

@@ -1,6 +1,8 @@
 package backend
 
 import "../vendored/gam/util/arna"
+import "base:intrinsics"
+import "core:encoding/varint"
 import "core:reflect"
 
 Call_Conv :: struct {
@@ -18,6 +20,7 @@ Codegen_Spec :: struct {
 	emit_function:      proc(_: Codegen_Emit_Ctx) -> Codegen_Output,
 	peep:               Peep_Fn,
 	post_schedule_peep: PS_Peep_Fn,
+	pre_regalloc_hook:  Pre_Regalloc_Hook,
 }
 
 // The fixed part of a DWARF CIE: everything the unwinder needs before the
@@ -48,6 +51,8 @@ Cfi_Op :: struct {
 }
 
 PS_Peep_Fn :: proc(_: PS_Peep_Ctx, node: Expanded_Node) -> Node_ID
+
+Pre_Regalloc_Hook :: proc(_: ^Regalloc, _: ^Graph, _: ^Graph_Schedule)
 
 PS_Peep_Ctx :: struct {
 	using graph: ^Graph,
@@ -147,5 +152,22 @@ add_sloc :: #force_no_inline proc(buf: ^arna.Allocator) -> ^Sloc {
 }
 
 add_cfi :: #force_no_inline proc(buf: ^arna.Allocator) -> ^Cfi_Op {
-	return (^Cfi_Op)(raw_data(arna.alloc(buf, size_of(Cfi_Op), align_of(Cfi_Op))))
+	return (^Cfi_Op)(
+		raw_data(arna.alloc(buf, size_of(Cfi_Op), align_of(Cfi_Op))),
+	)
+}
+
+emit_leb :: proc(buf: ^arna.Allocator, value: $T) {
+	when intrinsics.type_is_unsigned(T) {
+		encode :: varint.encode_uleb128
+		up :: u128
+	} else {
+		encode :: varint.encode_ileb128
+		up :: i128
+	}
+
+	LEB_MAX_BYTES :: 10
+	bf := arna.alloc(buf, LEB_MAX_BYTES, 1)
+	size := encode(bf, up(value)) or_else panic("")
+	buf.pos -= len(bf) - uint(size)
 }

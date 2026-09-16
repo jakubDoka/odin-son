@@ -8,19 +8,20 @@ import "core:slice"
 import "core:strings"
 
 Spec_Gen_Input :: struct {
-	package_name:         string,
-	gen_command:          string,
-	header_import:        string,
-	qual:                 string,
-	local_extra_types:    []typeid,
-	name:                 string,
-	classes:              []Class_Array,
-	datatype_to_reg_kind: [Node_Datatype]Reg_Kind,
-	spill_boundary:       [Reg_Kind]int,
-	cc_table:             []Call_Conv,
-	intern:               bool,
-	no_spec_tables:       bool,
-	does_regalloc:        bool,
+	package_name:                 string,
+	gen_command:                  string,
+	header_import:                string,
+	qual:                         string,
+	local_extra_types:            []typeid,
+	name:                         string,
+	classes:                      []Class_Array,
+	datatype_to_reg_kind:         [Node_Datatype]Reg_Kind,
+	spill_boundary:               [Reg_Kind]int,
+	cc_table:                     []Call_Conv,
+	intern:                       bool,
+	no_spec_tables:               bool,
+	does_regalloc:                bool,
+	has_regalloc_preprocess_hook: bool,
 }
 
 class_array :: proc(
@@ -149,6 +150,13 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 
 		if spec.does_regalloc {
 			fmt.fprintf(file, "\tcollect_meta = %v_collect_meta,\n", prefix)
+		}
+		if spec.has_regalloc_preprocess_hook {
+			fmt.fprintf(
+				file,
+				"\tpre_regalloc_hook = %v_pre_regalloc_hook,\n",
+				prefix,
+			)
 		}
 		fmt.fprintf(file, "\temit_function = %v_emit_function,\n", prefix)
 		fmt.fprintf(file, "\tpeep = %v_peep_inst,\n", prefix)

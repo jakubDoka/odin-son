@@ -461,7 +461,8 @@ and32 :: proc(ptr: ^i32, v: i32) -> i32 {
 opt_level :: "none"
 
 main_ :: proc() -> int {
-	return 2 + 2 * 2
+	v := 2
+	return 2 + v * 2
 }
 
 main.run_test(t, `simple_2_adress_self_conflict`, `
@@ -470,7 +471,8 @@ package main
 opt_level :: "none"
 
 main :: proc() -> int {
-	return 2 + 2 * 2
+	v := 2
+	return 2 + v * 2
 }
 `, main_())
 }
@@ -481,7 +483,8 @@ main :: proc() -> int {
 opt_level :: "none"
 
 main_ :: proc() -> int {
-	return 2 + 2 * 2 + 2 * 2 + 2 * 2 + 2 * 2
+	v := 2
+	return v + v * v + v * v + v * v + v * v
 }
 
 main.run_test(t, `more_complex_2_adress_self_conflict`, `
@@ -490,7 +493,8 @@ package main
 opt_level :: "none"
 
 main :: proc() -> int {
-	return 2 + 2 * 2 + 2 * 2 + 2 * 2 + 2 * 2
+	v := 2
+	return v + v * v + v * v + v * v + v * v
 }
 `, main_())
 }

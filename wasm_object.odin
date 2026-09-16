@@ -1,17 +1,18 @@
 package main
 
 import "backend"
+import "backend/wasm"
+import "core:slice"
 import "typecheck"
 import "vendored/gam/util/arna"
 
-emit_wasm_module :: proc(
-	ctx: ^Gen_Ctx,
-	allocator := context.allocator,
-) -> []u8 {
-	context.allocator, _ = arna.scrath()
+emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
+	context.allocator, _ = arna.scrath(scratch)
 
 	magic := [?]u8{0x00, 0x61, 0x73, 0x6D}
 	VERSION: u32 : 1
+
+	Type :: wasm.Type
 
 	Name_Section_Type :: enum u8 {
 		module,
@@ -39,17 +40,8 @@ emit_wasm_module :: proc(
 		tag,
 	}
 
-	Type :: enum u8 {
-		fnc = 0x60,
-		vec = 0x7b,
-		f64 = 0x7c,
-		f32 = 0x7d,
-		i64 = 0x7e,
-		i32 = 0x7f,
-	}
-
 	@(static, rodata)
-	DT_TO_VALTYPE := #partial [backend.Node_Datatype]Type {
+	DT_TO_VALTYPE := #partial [backend.Node_Datatype]wasm.Type {
 		.I8 ..= .I32      = .i32,
 		.I64  = .i64,
 		.F64  = .f64,
@@ -68,12 +60,18 @@ emit_wasm_module :: proc(
 
 	uleb(&sections[.type], u64(func_count))
 	uleb(&sections[.function], u64(func_count))
+	uleb(&sections[.export], u64(func_count))
 	uleb(&sections[.code], u64(func_count))
 	uleb(&name_sections[.function], u64(func_count))
 
 	idx := 0
 	for prc in ctx.procs[1:] {
 		if prc.lit.body != nil {
+			uleb(&sections[.export], u64(len(prc.name)))
+			append(&sections[.export], prc.name)
+			putb(&sections[.export], u8(0))
+			uleb(&sections[.export], u64(idx))
+
 			uleb(&name_sections[.function], u64(idx))
 			uleb(&name_sections[.function], u64(len(prc.name)))
 			append(&name_sections[.function], prc.name)
@@ -98,7 +96,7 @@ emit_wasm_module :: proc(
 		if len(name_section) == 0 do continue
 
 		putb(&sections[.custom], kind)
-		uleb(&sections[.custom], len(name_sections))
+		uleb(&sections[.custom], u64(len(name_section)))
 		append(&sections[.custom], ..name_section[:])
 	}
 
@@ -114,6 +112,8 @@ emit_wasm_module :: proc(
 		uleb(&bytes, u64(len(section)))
 		append(&bytes, ..section[:])
 	}
+
+	return slice.clone(bytes[:], scratch)
 
 	encode_func_type :: proc(
 		buf: ^[dynamic]u8,
@@ -140,5 +140,4 @@ emit_wasm_module :: proc(
 		}
 	}
 
-	panic("TODO")
 }

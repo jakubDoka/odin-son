@@ -1,7 +1,6 @@
 package toywasm
 
 import "core:c"
-import "core:fmt"
 import "core:testing"
 foreign import toywasm {"run.o", "libtoywasm-core.a"}
 
@@ -9,7 +8,7 @@ foreign toywasm {
 	toywasm_run_module :: proc(bytes: [^]u8, size: uintptr, entry_data: [^]u8, entry_size: uintptr, result: ^i64) -> c.int ---
 }
 
-run_module :: proc(module_bytes: []u8, entry_name: string) -> i64 {
+run_module :: proc(module_bytes: []u8, entry_name: string) -> (i64, i32) {
 	result: i64
 	status := toywasm_run_module(
 		raw_data(module_bytes),
@@ -18,10 +17,7 @@ run_module :: proc(module_bytes: []u8, entry_name: string) -> i64 {
 		uintptr(len(entry_name)),
 		&result,
 	)
-	if status != 0 {
-		panic(fmt.tprintf("toywasm failed with status %d", status))
-	}
-	return result
+	return result, status
 }
 
 @(test)
@@ -70,7 +66,7 @@ sanity_check :: proc(t: ^testing.T) {
 	}
 	entry_name :: "_start"
 
-	res := run_module(module_bytes, entry_name)
+	res, _ := run_module(module_bytes, entry_name)
 	testing.expect_value(t, res, 69)
 }
 
@@ -123,6 +119,6 @@ i64_result :: proc(t: ^testing.T) {
 	}
 	entry_name :: "_start"
 
-	res := run_module(module_bytes, entry_name)
+	res, _ := run_module(module_bytes, entry_name)
 	testing.expect_value(t, res, 4_294_967_296)
 }

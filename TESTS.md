@@ -242,7 +242,8 @@ package main
 opt_level :: "none"
 
 main :: proc() -> int {
-	return 2 + 2 * 2
+	v := 2
+	return 2 + v * 2
 }
 ```
 
@@ -253,7 +254,8 @@ package main
 opt_level :: "none"
 
 main :: proc() -> int {
-	return 2 + 2 * 2 + 2 * 2 + 2 * 2 + 2 * 2
+	v := 2
+	return v + v * v + v * v + v * v + v * v
 }
 ```
 

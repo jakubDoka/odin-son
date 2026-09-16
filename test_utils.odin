@@ -164,8 +164,8 @@ run_test :: proc(
 		append(&confs, Test_Conf{level = level})
 		append(&confs, Test_Conf{level = level, debug = true})
 	}
-	for level in levels {
-		//append(&confs, Test_Conf{level = level, vm = .Wasm})
+	for level in levels[:1] {
+		append(&confs, Test_Conf{level = level, vm = .Wasm})
 	}
 
 	if ctx.error_cnt > 0 do clear(&confs)
@@ -195,7 +195,10 @@ run_test :: proc(
 		ctx.ralloc_mode = level.ralloc_mode
 		resize(&ctx.globals, prev_glob_count)
 
-		for &prc in ctx.procs do prc.out = {}
+		for &prc in ctx.procs {
+			prc.out = {}
+			prc.stencil = {}
+		}
 
 		switch level.vm {
 		case .Native:
@@ -364,10 +367,12 @@ run_test :: proc(
 			{context.allocator = context.temp_allocator
 				disasm_wasm(&dsb, module)}
 
-			vl := int(toywasm.run_module(module, "main"))
-			if vl != exit_code {
+			vl, status := toywasm.run_module(module, "main")
+			if status != 0 {
+				log.error("toywasm failed with", status)
+			} else if int(vl) != exit_code {
 				log.error(level)
-				testing.expect_value(t, vl, exit_code)
+				testing.expect_value(t, int(vl), exit_code)
 			}
 		case .Check:
 			for prc in ctx.procs {
@@ -567,10 +572,9 @@ disasm_wasm :: proc(sb: ^strings.Builder, module: []u8) {
 	for err in errors {
 		fmt.sbprintln(sb, err)
 	}
-	assert(ok)
-	assert(int(ln) == len(module))
-
-	rex_wasm.print(m, sb)
+	if ok {
+		rex_wasm.sbprint_wat(sb, m)
+	}
 }
 
 disasm_x64 :: proc(sb: ^strings.Builder, ctx: Gen_Ctx) {

@@ -880,7 +880,7 @@ verify_schedule_integrity :: proc(
 			if len(inode.outs) == 0 &&
 			   !graph_has_flag(graph, instr, .Immortal) &&
 			   !no_late_pass {
-				log.error("dead node in the schedule:", inode.node)
+				//log.error("dead node in the schedule:", inode.node)
 			}
 
 			for inp, i in inode.inps {

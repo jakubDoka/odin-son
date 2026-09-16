@@ -15,6 +15,7 @@ SPEC := backend.Node_Spec{
 	datatype_to_reg_kind = {.Void = Reg_Kind.General, .I8 = Reg_Kind.General, .I16 = Reg_Kind.General, .I32 = Reg_Kind.General, .I64 = Reg_Kind.General, .F32 = Reg_Kind.Vector, .F64 = Reg_Kind.Vector, .V128 = Reg_Kind.Vector, .V256 = Reg_Kind.Vector, .V512 = Reg_Kind.Vector},
 	spill_boundary = {.General = 64, .Vector = 64},
 	collect_meta = wasm_collect_meta,
+	pre_regalloc_hook = wasm_pre_regalloc_hook,
 	emit_function = wasm_emit_function,
 	peep = wasm_peep_inst,
 	post_schedule_peep = wasm_post_schedule_peep_inst,
@@ -101,6 +102,9 @@ SPEC := backend.Node_Spec{
 		0b10, // Simd_Extract_Lsbs
 		0b10, // Simd_Reduce_Add_Bisect
 		0b1000000, // CV128
+		0b10, // Get_Local
+		0b10, // Set_Local
+		0b10, // Tee_Local
 	},
 	node_extra_sizes = {
 		1, // Start -> Cfg
@@ -184,6 +188,9 @@ SPEC := backend.Node_Spec{
 		0, // Simd_Extract_Lsbs -> No_Extra
 		0, // Simd_Reduce_Add_Bisect -> No_Extra
 		4, // CV128 -> CV128
+		0, // Get_Local -> No_Extra
+		0, // Set_Local -> No_Extra
+		0, // Tee_Local -> No_Extra
 	},
 	node_flags = {
 		{}, // Start
@@ -267,6 +274,9 @@ SPEC := backend.Node_Spec{
 		{Class_Flag.Interned}, // Simd_Extract_Lsbs
 		{Class_Flag.Interned}, // Simd_Reduce_Add_Bisect
 		{Class_Flag.Interned, Class_Flag.Clonable}, // CV128
+		{}, // Get_Local
+		{}, // Set_Local
+		{}, // Tee_Local
 	},
 	node_extra_types = {
 		backend.Cfg,
@@ -350,6 +360,9 @@ SPEC := backend.Node_Spec{
 		backend.No_Extra,
 		backend.No_Extra,
 		backend.CV128,
+		backend.No_Extra,
+		backend.No_Extra,
+		backend.No_Extra,
 	},
 	node_kind_name = {
 		`Start`,
@@ -433,6 +446,9 @@ SPEC := backend.Node_Spec{
 		`Simd_Extract_Lsbs`,
 		`Simd_Reduce_Add_Bisect`,
 		`CV128`,
+		`Get_Local`,
+		`Set_Local`,
+		`Tee_Local`,
 	},
 }
 
@@ -518,6 +534,9 @@ WASM_Node_Type :: enum u16 {
 	Simd_Extract_Lsbs,
 	Simd_Reduce_Add_Bisect,
 	CV128,
+	Get_Local,
+	Set_Local,
+	Tee_Local,
 }
 
 wasm_peep_inst :: proc(ctx: backend.Peep_Ctx, node: backend.Expanded_Node) -> backend.Node_ID {
@@ -620,6 +639,9 @@ wasm_collect_meta :: proc(ctx: ^backend.Graph,
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.CV128) % backend.PRECISION == 0)
+#assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
+#assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
+#assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	when false {}

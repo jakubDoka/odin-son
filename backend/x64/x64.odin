@@ -1192,7 +1192,7 @@ x64_meta_of :: proc(
 				},
 			)
 		}
-		return {out = mask, input_start = 1}
+		return {out = mask}
 	case .CInt:
 		return {out = out}
 	case .X64_Pcmpeq,
@@ -1248,9 +1248,9 @@ x64_meta_of :: proc(
 	case .Global, .Proc_Addr:
 		return {out = out}
 	case .Mem, .Root_Mem, .Sym, .Local, .Jump, .Always, .Trap:
-		return {out = out, input_start = 1}
+		return {out = out}
 	case .Local_Addr, .Global_Addr:
-		return {out = out, input_start = 1}
+		return {out = out}
 	case .Copy, .Set, .Call, .Return:
 		cc := &X64_SYSTEMV_CC
 		// NOTE: this handles the edge case where there is no memory returned,
@@ -1305,7 +1305,7 @@ x64_meta_of :: proc(
 		ret_ext := backend.graph_extra(graph, node, backend.Tup)
 		kind := ra.datatype_to_reg_kind[node.dt]
 		rets := ra.cc_table[call.ccid].rets[kind]
-		return {out = single(ra, rets[ret_ext.idx]), input_start = 1}
+		return {out = single(ra, rets[ret_ext.idx])}
 	case .Ctz, .Not, .Neg:
 		assert(nkind == .General)
 		return {out = out, masks = nmasks[:1], in_place_slot = 1}

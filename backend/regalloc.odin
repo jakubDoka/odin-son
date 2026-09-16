@@ -289,7 +289,7 @@ regalloc_collect_meta :: #force_inline proc(
 	slots: []Regalloc_Node_Meta,
 	def_count: int,
 ) {
-	slots = make([]Regalloc_Node_Meta, int(graph.gvn) - len(sched.bbs))
+	slots = make([]Regalloc_Node_Meta, int(graph.gvn) - len(sched.bbs) - 1)
 	rev_count := int(graph.gvn) - len(sched.bbs)
 
 	when !ODIN_DISABLE_ASSERT {
@@ -301,7 +301,7 @@ regalloc_collect_meta :: #force_inline proc(
 
 	idx := 0
 	for bb, j in sched.bbs {
-		graph_get(graph, bb.head).gvn = u32(len(slots) + j)
+		graph_get(graph, bb.head).gvn = u32(len(slots) + 1 + j)
 		for instr in bb.instrs {
 			inode := graph_expand(graph, instr)
 			when !ODIN_DISABLE_ASSERT {
@@ -332,6 +332,30 @@ regalloc_collect_meta :: #force_inline proc(
 	}
 
 	return
+}
+
+is_def :: #force_inline proc(meta: Regalloc_Node_Meta) -> bool {
+	return meta.out != INVALID_RM_INDEX
+}
+
+is_data_dep :: proc(
+	meta: Regalloc_Node_Meta,
+	inode: Expanded_Node,
+	#any_int idx: int,
+) -> bool {
+	if idx < int(meta.input_start) do return false
+	if idx >= min(len(meta.masks) + int(meta.input_start), len(inode.inps)) {
+		return false
+	}
+	return true
+}
+
+data_deps :: proc(
+	meta: Regalloc_Node_Meta,
+	inode: Expanded_Node,
+) -> []Node_ID {
+	len := min(len(meta.masks), len(inode.inps) - int(meta.input_start))
+	return inode.inps[meta.input_start:][:len]
 }
 
 MASK_SIZE :: size_of(int) * 8

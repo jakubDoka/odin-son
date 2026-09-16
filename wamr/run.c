@@ -1,157 +1,113 @@
-#define _GNU_SOURCE
-
-#include <dlfcn.h>
 #include <errno.h>
-#include <link.h>
 #include <pthread.h>
 #include <stdbool.h>
+#include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-typedef void *wasm_module_t;
-typedef void *wasm_module_inst_t;
-typedef void *wasm_exec_env_t;
-typedef void *wasm_function_inst_t;
+#include "aot_export.h"
+#include "wasm_export.h"
 
-typedef struct wasm_val_t {
-        uint8_t kind;
-        uint8_t padding[7];
-        union {
-                int32_t i32;
-                int64_t i64;
-                float f32;
-                double f64;
-                uintptr_t foreign;
-                void *ref;
-        } of;
-} wasm_val_t;
-
-enum {
-        WASM_I32,
-        WASM_I64,
-};
-
-struct wamr_api {
-        const char *library;
-        void *handle;
-        bool ready;
-        bool (*runtime_init)(void);
-        void (*runtime_destroy)(void);
-        bool (*runtime_init_thread_env)(void);
-        void (*runtime_destroy_thread_env)(void);
-        bool (*runtime_thread_env_inited)(void);
-        wasm_module_t (*runtime_load)(uint8_t *, uint32_t, char *, uint32_t);
-        void (*runtime_unload)(wasm_module_t);
-        wasm_module_inst_t (*runtime_instantiate)(wasm_module_t, uint32_t,
-                                                  uint32_t, char *, uint32_t);
-        void (*runtime_deinstantiate)(wasm_module_inst_t);
-        wasm_exec_env_t (*runtime_create_exec_env)(wasm_module_inst_t,
-                                                    uint32_t);
-        void (*runtime_destroy_exec_env)(wasm_exec_env_t);
-        wasm_function_inst_t (*runtime_lookup_function)(wasm_module_inst_t,
-                                                        const char *);
-        uint32_t (*func_get_param_count)(wasm_function_inst_t,
-                                         wasm_module_inst_t);
-        uint32_t (*func_get_result_count)(wasm_function_inst_t,
-                                          wasm_module_inst_t);
-        void (*func_get_result_types)(wasm_function_inst_t, wasm_module_inst_t,
-                                      uint8_t *);
-        bool (*runtime_call_wasm_a)(wasm_exec_env_t, wasm_function_inst_t,
-                                    uint32_t, wasm_val_t *, uint32_t,
-                                    wasm_val_t *);
-};
-
-static struct wamr_api simd_api = { .library = "libiwasm-simd.so" };
-static struct wamr_api memory64_api = { .library = "libiwasm-memory64.so" };
-static pthread_once_t init_once = PTHREAD_ONCE_INIT;
 static pthread_mutex_t run_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static void *
-load_library(const char *path)
+int
+bh_platform_init(void)
 {
-        return dlmopen(LM_ID_NEWLM, path, RTLD_NOW | RTLD_LOCAL);
+        return 0;
 }
 
-static void *
-open_runtime(const char *library)
+void
+bh_platform_destroy(void)
 {
-        const char *directory = getenv("WAMR_LIB_DIR");
-        char path[4096];
-
-        if (directory != NULL
-            && snprintf(path, sizeof(path), "%s/%s", directory, library) > 0) {
-                void *handle = load_library(path);
-                if (handle != NULL) {
-                        return handle;
-                }
-        }
-
-        if (snprintf(path, sizeof(path), "wamr/%s", library) > 0) {
-                void *handle = load_library(path);
-                if (handle != NULL) {
-                        return handle;
-                }
-        }
-        return load_library(library);
 }
 
-#define LOAD_SYMBOL(api, field, name)                                        \
-        do {                                                                 \
-                *(void **)(&(api)->field) = dlsym((api)->handle, name);       \
-                if ((api)->field == NULL)                                    \
-                        return;                                              \
-        } while (0)
-
-static void
-init_api(struct wamr_api *api)
+static bool
+is_compiler_banner(const char *format)
 {
-        api->handle = open_runtime(api->library);
-        if (api->handle == NULL)
-                return;
-
-        LOAD_SYMBOL(api, runtime_init, "wasm_runtime_init");
-        LOAD_SYMBOL(api, runtime_destroy, "wasm_runtime_destroy");
-        LOAD_SYMBOL(api, runtime_init_thread_env,
-                    "wasm_runtime_init_thread_env");
-        LOAD_SYMBOL(api, runtime_destroy_thread_env,
-                    "wasm_runtime_destroy_thread_env");
-        LOAD_SYMBOL(api, runtime_thread_env_inited,
-                    "wasm_runtime_thread_env_inited");
-        LOAD_SYMBOL(api, runtime_load, "wasm_runtime_load");
-        LOAD_SYMBOL(api, runtime_unload, "wasm_runtime_unload");
-        LOAD_SYMBOL(api, runtime_instantiate, "wasm_runtime_instantiate");
-        LOAD_SYMBOL(api, runtime_deinstantiate,
-                    "wasm_runtime_deinstantiate");
-        LOAD_SYMBOL(api, runtime_create_exec_env,
-                    "wasm_runtime_create_exec_env");
-        LOAD_SYMBOL(api, runtime_destroy_exec_env,
-                    "wasm_runtime_destroy_exec_env");
-        LOAD_SYMBOL(api, runtime_lookup_function,
-                    "wasm_runtime_lookup_function");
-        LOAD_SYMBOL(api, func_get_param_count, "wasm_func_get_param_count");
-        LOAD_SYMBOL(api, func_get_result_count, "wasm_func_get_result_count");
-        LOAD_SYMBOL(api, func_get_result_types, "wasm_func_get_result_types");
-        LOAD_SYMBOL(api, runtime_call_wasm_a, "wasm_runtime_call_wasm_a");
-        api->ready = true;
+        return strcmp(format, "Create AoT compiler with:\n") == 0
+               || strcmp(format, "  target:        %s\n") == 0
+               || strcmp(format, "  target cpu:    %s\n") == 0
+               || strcmp(format, "  target triple: %s\n") == 0
+               || strcmp(format, "  cpu features:  %s\n") == 0
+               || strcmp(format, "  opt level:     %d\n") == 0
+               || strcmp(format, "  size level:    %d\n") == 0
+               || strncmp(format, "  output format: ", 17) == 0;
 }
 
-static void
-init_runtimes(void)
+int
+os_printf(const char *format, ...)
 {
-        init_api(&simd_api);
-        init_api(&memory64_api);
+        va_list args;
+        int result;
+
+        if (is_compiler_banner(format))
+                return 0;
+        va_start(args, format);
+        result = vprintf(format, args);
+        va_end(args);
+        return result;
 }
 
-enum run_status {
-        RUN_OK,
-        RUN_LOAD_FAILED = -1,
-};
+int
+os_vprintf(const char *format, va_list args)
+{
+        return vprintf(format, args);
+}
 
 static int
-run_with(struct wamr_api *api, const uint8_t *bytes, uint32_t size,
-         const char *entry, int64_t *result)
+compile_module(uint8_t *bytes, uint32_t size, uint8_t **aot_bytes,
+               uint32_t *aot_size)
+{
+        char error[256];
+        wasm_module_t module = NULL;
+        aot_comp_data_t comp_data = NULL;
+        aot_comp_context_t comp_ctx = NULL;
+        AOTCompOption option = { 0 };
+        int status = ENOEXEC;
+
+        module = wasm_runtime_load(bytes, size, error, sizeof(error));
+        if (module == NULL)
+                goto done;
+
+        comp_data = aot_create_comp_data(module, NULL, true);
+        if (comp_data == NULL)
+                goto done;
+
+        option.opt_level = 0;
+        option.size_level = 0;
+        option.output_format = AOT_FORMAT_FILE;
+        option.bounds_checks = 2;
+        option.stack_bounds_checks = 2;
+        option.enable_simd = true;
+        option.enable_aux_stack_check = true;
+        option.enable_bulk_memory = true;
+        option.enable_gc = true;
+        option.disable_llvm_lto = true;
+        aot_call_stack_features_init_default(&option.call_stack_features);
+
+        comp_ctx = aot_create_comp_context(comp_data, &option);
+        if (comp_ctx == NULL || !aot_compile_wasm(comp_ctx))
+                goto done;
+
+        *aot_bytes = aot_emit_aot_file_buf(comp_ctx, comp_data, aot_size);
+        if (*aot_bytes != NULL)
+                status = 0;
+
+done:
+        if (comp_ctx != NULL)
+                aot_destroy_comp_context(comp_ctx);
+        if (comp_data != NULL)
+                aot_destroy_comp_data(comp_data);
+        if (module != NULL)
+                wasm_runtime_unload(module);
+        return status;
+}
+
+static int
+execute_module(uint8_t *aot_bytes, uint32_t aot_size, const char *entry,
+               int64_t *result)
 {
         char error[256];
         wasm_module_t module = NULL;
@@ -159,87 +115,50 @@ run_with(struct wamr_api *api, const uint8_t *bytes, uint32_t size,
         wasm_exec_env_t exec_env = NULL;
         wasm_function_inst_t function;
         wasm_val_t value = { 0 };
-        uint8_t result_type;
-        uint8_t *module_bytes = NULL;
-        bool destroy_thread_env = false;
+        wasm_valkind_t result_type;
         int status = ENOEXEC;
 
-        if (!api->ready)
-                return RUN_LOAD_FAILED;
-        if (!api->runtime_thread_env_inited()) {
-                if (!api->runtime_init_thread_env())
-                        return ENOMEM;
-                destroy_thread_env = true;
-        }
-
-        module_bytes = malloc(size);
-        if (module_bytes == NULL) {
-                status = ENOMEM;
+        module = wasm_runtime_load(aot_bytes, aot_size, error, sizeof(error));
+        if (module == NULL)
                 goto done;
-        }
-        memcpy(module_bytes, bytes, size);
-
-        module = api->runtime_load(module_bytes, size, error, sizeof(error));
-        if (module == NULL) {
-                status = RUN_LOAD_FAILED;
-                goto done;
-        }
-        instance = api->runtime_instantiate(module, 512 * 1024, 0, error,
+        instance = wasm_runtime_instantiate(module, 512 * 1024, 0, error,
                                             sizeof(error));
         if (instance == NULL)
                 goto done;
-        exec_env = api->runtime_create_exec_env(instance, 512 * 1024);
+        exec_env = wasm_runtime_create_exec_env(instance, 512 * 1024);
         if (exec_env == NULL) {
                 status = ENOMEM;
                 goto done;
         }
-        function = api->runtime_lookup_function(instance, entry);
+        function = wasm_runtime_lookup_function(instance, entry);
         if (function == NULL) {
                 status = ENOENT;
                 goto done;
         }
-        if (api->func_get_param_count(function, instance) != 0
-            || api->func_get_result_count(function, instance) != 1) {
+        if (wasm_func_get_param_count(function, instance) != 0
+            || wasm_func_get_result_count(function, instance) != 1) {
                 status = EINVAL;
                 goto done;
         }
-        api->func_get_result_types(function, instance, &result_type);
+        wasm_func_get_result_types(function, instance, &result_type);
         if (result_type != WASM_I32 && result_type != WASM_I64) {
                 status = EINVAL;
                 goto done;
         }
-        if (!api->runtime_call_wasm_a(exec_env, function, 1, &value, 0, NULL))
+        if (!wasm_runtime_call_wasm_a(exec_env, function, 1, &value, 0, NULL))
                 goto done;
 
         *result = result_type == WASM_I32 ? (int64_t)value.of.i32
                                           : value.of.i64;
-        status = RUN_OK;
+        status = 0;
 
 done:
         if (exec_env != NULL)
-                api->runtime_destroy_exec_env(exec_env);
+                wasm_runtime_destroy_exec_env(exec_env);
         if (instance != NULL)
-                api->runtime_deinstantiate(instance);
+                wasm_runtime_deinstantiate(instance);
         if (module != NULL)
-                api->runtime_unload(module);
-        free(module_bytes);
-        if (destroy_thread_env)
-                api->runtime_destroy_thread_env();
-        return status;
-}
-
-static int
-run_initialized(struct wamr_api *api, const uint8_t *bytes, uint32_t size,
-                const char *entry, int64_t *result)
-{
-        int status;
-
-        if (!api->ready)
-                return RUN_LOAD_FAILED;
-        if (!api->runtime_init())
-                return ENOMEM;
-        status = run_with(api, bytes, size, entry, result);
-        api->runtime_destroy();
+                wasm_runtime_unload(module);
         return status;
 }
 
@@ -247,7 +166,10 @@ int
 wamr_run_module(const uint8_t *bytes, size_t size, const char *entry_data,
                 size_t entry_size, int64_t *result)
 {
-        char *entry;
+        uint8_t *module_bytes = NULL;
+        uint8_t *aot_bytes = NULL;
+        uint32_t aot_size = 0;
+        char *entry = NULL;
         int status;
 
         if (bytes == NULL || size == 0 || size > UINT32_MAX
@@ -255,21 +177,33 @@ wamr_run_module(const uint8_t *bytes, size_t size, const char *entry_data,
             || result == NULL)
                 return EINVAL;
 
+        module_bytes = malloc(size);
         entry = malloc(entry_size + 1);
-        if (entry == NULL)
-                return ENOMEM;
+        if (module_bytes == NULL || entry == NULL) {
+                status = ENOMEM;
+                goto done;
+        }
+        memcpy(module_bytes, bytes, size);
         memcpy(entry, entry_data, entry_size);
         entry[entry_size] = '\0';
 
-        pthread_once(&init_once, init_runtimes);
         pthread_mutex_lock(&run_mutex);
-        status = run_initialized(&simd_api, bytes, (uint32_t)size, entry,
-                                 result);
-        if (status == RUN_LOAD_FAILED)
-                status = run_initialized(&memory64_api, bytes, (uint32_t)size,
-                                         entry, result);
-        pthread_mutex_unlock(&run_mutex);
+        if (!wasm_runtime_init()) {
+                status = ENOMEM;
+                goto unlock;
+        }
+        status = compile_module(module_bytes, (uint32_t)size, &aot_bytes,
+                                &aot_size);
+        if (status == 0)
+                status = execute_module(aot_bytes, aot_size, entry, result);
+        if (aot_bytes != NULL)
+                wasm_runtime_free(aot_bytes);
+        wasm_runtime_destroy();
 
+unlock:
+        pthread_mutex_unlock(&run_mutex);
+done:
         free(entry);
-        return status == RUN_LOAD_FAILED ? ENOEXEC : status;
+        free(module_bytes);
+        return status;
 }

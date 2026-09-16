@@ -35,28 +35,38 @@ alias run-test 'odin test tests -keep-executable -debug -define:ODIN_TEST_FANCY=
 alias fuzz './misc/fuzz.sh'
 
 function build-wamr
-	set -l source vendored/wasm-micro-runtime/product-mini/platforms/linux
-	set -l common -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang \
-		-DBUILD_SHARED_LIBS=ON -DWAMR_BUILD_INTERP=1 -DWAMR_BUILD_AOT=0 \
-		-DWAMR_BUILD_LIBC_BUILTIN=0 -DWAMR_BUILD_LIBC_WASI=0
+	set -l source vendored/wasm-micro-runtime/wamr-compiler
+	set -l build vendored/wasm-micro-runtime/build-aot
+	set -l llvm_dir (llvm-config --cmakedir)
 
-	cmake -S $source -B vendored/wasm-micro-runtime/build-simd $common \
-		-DWAMR_BUILD_FAST_INTERP=1 -DWAMR_BUILD_SIMD=1 -DWAMR_BUILD_MEMORY64=0
+	cmake -S $source -B $build -DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ \
+		-DLLVM_DIR=$llvm_dir -DLLVM_LINK_LLVM_DYLIB=ON -DWAMR_BUILD_SIMD=1
 	or return 1
-	cmake --build vendored/wasm-micro-runtime/build-simd --target vmlib --parallel
+	cmake --build $build --target vmlib aotclib --parallel
 	or return 1
-	cp vendored/wasm-micro-runtime/build-simd/libiwasm.so wamr/libiwasm-simd.so
-	or return 1
-
-	cmake -S $source -B vendored/wasm-micro-runtime/build-memory64 $common \
-		-DWAMR_BUILD_FAST_INTERP=0 -DWAMR_BUILD_SIMD=0 -DWAMR_BUILD_MEMORY64=1
-	or return 1
-	cmake --build vendored/wasm-micro-runtime/build-memory64 --target vmlib --parallel
-	or return 1
-	cp vendored/wasm-micro-runtime/build-memory64/libiwasm.so wamr/libiwasm-memory64.so
+	cp $build/libvmlib.a $build/libaotclib.a wamr/
 	or return 1
 
-	clang -std=c11 -O2 -c wamr/run.c -o wamr/run.o
+	clang -std=c11 -O2 -Ivendored/wasm-micro-runtime/core/iwasm/include \
+		-c wamr/run.c -o wamr/run.o
+	or return 1
+	clang -std=c11 -O2 -D_GNU_SOURCE -include wamr/aot_config.h \
+		-Ivendored/wasm-micro-runtime/core/iwasm/include \
+		-Ivendored/wasm-micro-runtime/core/iwasm/aot \
+		-Ivendored/wasm-micro-runtime/core/iwasm/aot/arch \
+		-Ivendored/wasm-micro-runtime/core/iwasm/common \
+		-Ivendored/wasm-micro-runtime/core/iwasm/common/gc \
+		-Ivendored/wasm-micro-runtime/core/iwasm/common/gc/stringref \
+		-Ivendored/wasm-micro-runtime/core/iwasm/compilation \
+		-Ivendored/wasm-micro-runtime/core/iwasm/interpreter \
+		-Ivendored/wasm-micro-runtime/core/iwasm/libraries/libc-wasi/sandboxed-system-primitives/src \
+		-Ivendored/wasm-micro-runtime/core/shared/include \
+		-Ivendored/wasm-micro-runtime/core/shared/platform/include \
+		-Ivendored/wasm-micro-runtime/core/shared/platform/linux \
+		-Ivendored/wasm-micro-runtime/core/shared/utils \
+		-c vendored/wasm-micro-runtime/core/iwasm/aot/arch/aot_reloc_x86_64.c \
+		-o wamr/aot_reloc.o
 end
 
 function build-wasm

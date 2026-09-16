@@ -93,17 +93,17 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 	global_count := 0
 
 	global_count += 1 // __stack_pointer
-	//export_count += 1
+	export_count += 1
 
-	//uleb(&sections[.global], u64(global_count))
+	uleb(&sections[.global], u64(global_count))
 
-	//stack_pointer: {
-	//	putb(&sections[.global], wasm.Type.i64)
-	//	putb(&sections[.global], Mutability.mut)
-	//	putb(&sections[.global], wasm.Wasm_Opcode.I64_Const)
-	//	sleb(&sections[.global], STACK_SIZE)
-	//	putb(&sections[.global], wasm.Wasm_Opcode.End)
-	//}
+	stack_pointer: {
+		putb(&sections[.global], wasm.Type.i64)
+		putb(&sections[.global], Mutability.mut)
+		putb(&sections[.global], wasm.Wasm_Opcode.I64_Const)
+		sleb(&sections[.global], STACK_SIZE)
+		putb(&sections[.global], wasm.Wasm_Opcode.End)
+	}
 
 	func_count := 0
 
@@ -154,7 +154,7 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 		}
 	}
 
-	//export(&sections[.export], "__stack_pointer", .global, 0)
+	export(&sections[.export], "__stack_pointer", .global, 0)
 	export(&sections[.export], "memory", .mem, 0)
 
 	uleb(&sections[.custom], 4)
@@ -174,11 +174,17 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 	put_u32(&bytes, VERSION)
 
 	for section, kind in sections {
-		if len(section) == 0 do continue
+		if kind == .custom || len(section) == 0 do continue
 
 		putb(&bytes, kind)
 		uleb(&bytes, u64(len(section)))
 		append(&bytes, ..section[:])
+	}
+
+	if len(sections[.custom]) != 0 {
+		putb(&bytes, Section_Type.custom)
+		uleb(&bytes, u64(len(sections[.custom])))
+		append(&bytes, ..sections[.custom][:])
 	}
 
 	return slice.clone(bytes[:], scratch)

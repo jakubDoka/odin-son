@@ -22,10 +22,10 @@ import "core:rexcode/isa/x86"
 import "core:strings"
 import "core:sync"
 import "core:testing"
-import "toywasm"
 import "typecheck"
 import "vendored/gam/util/arna"
 import "vendored/gam/util/hot"
+import "wamr"
 
 TEST_OUT_DIR :: "print-tests"
 
@@ -367,9 +367,9 @@ run_test :: proc(
 			{context.allocator = context.temp_allocator
 				disasm_wasm(&dsb, module)}
 
-			vl, status := toywasm.run_module(module, "main")
+			vl, status := wamr.run_module(module, "main")
 			if status != 0 {
-				log.error("toywasm failed with", status)
+				log.error("wamr failed with", status)
 			} else if int(vl) != exit_code {
 				log.error(level)
 				testing.expect_value(t, int(vl), exit_code)

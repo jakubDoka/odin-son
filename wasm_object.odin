@@ -49,28 +49,93 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 		.V128 = .vec,
 	}
 
+	Export_Type :: enum u8 {
+		func,
+		table,
+		mem,
+		global,
+		tag,
+	}
+
+	Mutability :: enum u8 {
+		const,
+		mut,
+	}
+
+	Limit_Type :: enum u8 {
+		I32_Open   = 0,
+		I32_Closed = 1,
+		I64_Open   = 4,
+		I64_Closed = 5,
+	}
+
 	sections: [Section_Type][dynamic]u8
 	name_sections: #sparse[Name_Section_Type][dynamic]u8
+
+	PAGE_SIZE :: 1 << 16
+	STACK_SIZE :: 1 << 20
+
+	export_count := 0
+
+	mem_init_size := STACK_SIZE
+	mem_count := 0
+
+	mem_count += 1 // memory
+	export_count += 1
+
+	uleb(&sections[.memory], u64(mem_count))
+
+	memory: {
+		putb(&sections[.memory], Limit_Type.I64_Open)
+		uleb(&sections[.memory], u64(mem_init_size / PAGE_SIZE))
+	}
+
+	global_count := 0
+
+	global_count += 1 // __stack_pointer
+	//export_count += 1
+
+	//uleb(&sections[.global], u64(global_count))
+
+	//stack_pointer: {
+	//	putb(&sections[.global], wasm.Type.i64)
+	//	putb(&sections[.global], Mutability.mut)
+	//	putb(&sections[.global], wasm.Wasm_Opcode.I64_Const)
+	//	sleb(&sections[.global], STACK_SIZE)
+	//	putb(&sections[.global], wasm.Wasm_Opcode.End)
+	//}
 
 	func_count := 0
 
 	for prc in ctx.procs[1:] {
 		func_count += int(prc.lit.body != nil)
+		if prc.name == "main" do export_count += 1
 	}
 
 	uleb(&sections[.type], u64(func_count))
 	uleb(&sections[.function], u64(func_count))
-	uleb(&sections[.export], u64(func_count))
+	uleb(&sections[.export], u64(export_count))
 	uleb(&sections[.code], u64(func_count))
 	uleb(&name_sections[.function], u64(func_count))
+
+	export :: proc(
+		sec: ^[dynamic]u8,
+		name: string,
+		type: Export_Type,
+		#any_int idx: u64,
+	) {
+		uleb(sec, u64(len(name)))
+		append(sec, name)
+		putb(sec, type)
+		uleb(sec, idx)
+	}
 
 	idx := 0
 	for prc in ctx.procs[1:] {
 		if prc.lit.body != nil {
-			uleb(&sections[.export], u64(len(prc.name)))
-			append(&sections[.export], prc.name)
-			putb(&sections[.export], u8(0))
-			uleb(&sections[.export], u64(idx))
+			if prc.name == "main" {
+				export(&sections[.export], prc.name, .func, idx)
+			}
 
 			uleb(&name_sections[.function], u64(idx))
 			uleb(&name_sections[.function], u64(len(prc.name)))
@@ -88,6 +153,9 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 			idx += 1
 		}
 	}
+
+	//export(&sections[.export], "__stack_pointer", .global, 0)
+	export(&sections[.export], "memory", .mem, 0)
 
 	uleb(&sections[.custom], 4)
 	append(&sections[.custom], "name")

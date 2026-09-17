@@ -244,9 +244,10 @@ CV128 :: struct #align (4) {
 Call :: struct {
 	using _: Cfg,
 	using _: bit_field u32 {
-		ccid:     u32  | 30,
-		imported: bool | 1,
-		indirect: bool | 1,
+		ccid:      u32  | 22,
+		ret_count: int  | 8,
+		imported:  bool | 1,
+		indirect:  bool | 1,
 	},
 	cid:     u32,
 }

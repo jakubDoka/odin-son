@@ -105,6 +105,7 @@ SPEC := backend.Node_Spec{
 		0b10, // Get_Local
 		0b10, // Set_Local
 		0b10, // Tee_Local
+		0b10, // Drop
 	},
 	node_extra_sizes = {
 		1, // Start -> Cfg
@@ -191,6 +192,7 @@ SPEC := backend.Node_Spec{
 		0, // Get_Local -> No_Extra
 		0, // Set_Local -> No_Extra
 		0, // Tee_Local -> No_Extra
+		0, // Drop -> No_Extra
 	},
 	node_flags = {
 		{}, // Start
@@ -277,6 +279,7 @@ SPEC := backend.Node_Spec{
 		{}, // Get_Local
 		{}, // Set_Local
 		{}, // Tee_Local
+		{}, // Drop
 	},
 	node_extra_types = {
 		backend.Cfg,
@@ -360,6 +363,7 @@ SPEC := backend.Node_Spec{
 		backend.No_Extra,
 		backend.No_Extra,
 		backend.CV128,
+		backend.No_Extra,
 		backend.No_Extra,
 		backend.No_Extra,
 		backend.No_Extra,
@@ -449,6 +453,7 @@ SPEC := backend.Node_Spec{
 		`Get_Local`,
 		`Set_Local`,
 		`Tee_Local`,
+		`Drop`,
 	},
 }
 
@@ -537,6 +542,7 @@ WASM_Node_Type :: enum u16 {
 	Get_Local,
 	Set_Local,
 	Tee_Local,
+	Drop,
 }
 
 wasm_peep_inst :: proc(ctx: backend.Peep_Ctx, node: backend.Expanded_Node) -> backend.Node_ID {
@@ -639,6 +645,7 @@ wasm_collect_meta :: proc(ctx: ^backend.Graph,
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.CV128) % backend.PRECISION == 0)
+#assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)

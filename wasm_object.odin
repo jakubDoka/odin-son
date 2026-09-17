@@ -2,6 +2,7 @@ package main
 
 import "backend"
 import "backend/wasm"
+import "core:fmt"
 import "core:slice"
 import "typecheck"
 import "vendored/gam/util/arna"
@@ -107,7 +108,10 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 
 	func_count := 0
 
-	for prc in ctx.procs[1:] {
+	func_idxes := make([]int, len(ctx.procs))
+
+	for prc, i in ctx.procs[1:] {
+		func_idxes[1 + i] = func_count
 		func_count += int(prc.lit.body != nil)
 		if prc.name == "main" do export_count += 1
 	}
@@ -145,7 +149,17 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 			rets := typecheck.ret_abi(prc.rets)
 			encode_func_type(&sections[.type], params, rets.reg_rets)
 
-			assert(len(prc.out.relocs) == 0)
+			for reloc in prc.out.relocs {
+				opcode := wasm.Wasm_Opcode(prc.out.code[reloc.offset - 1])
+				#partial switch opcode {
+				case .Call:
+					id := func_idxes[reloc.id]
+					fixed_uleb(prc.out.code[reloc.offset:][:4], u64(id))
+				case:
+					fmt.panicf("TODO: reloc opcode %v", opcode)
+				}
+			}
+
 			uleb(&sections[.code], u64(len(prc.out.code)))
 			append(&sections[.code], ..prc.out.code)
 

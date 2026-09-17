@@ -979,6 +979,18 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	}
 }
 
+fixed_uleb :: proc(buf: []u8, value: u64) {
+	v := value
+	for i in 0 ..< len(buf) {
+		buf[i] = u8(v & 0x7f)
+		v >>= 7
+
+		if i != len(buf) - 1 {
+			buf[i] |= 0x80
+		}
+	}
+}
+
 uleb :: proc(b: ^[dynamic]u8, value: u64) {
 	v := value
 	for {

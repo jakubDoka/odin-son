@@ -2069,6 +2069,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 
 				call := backend.graph_add_call(ctx, "call", args, ~u32(0))
 				backend.graph_extra(ctx, call, backend.Call).ccid = 1
+				backend.graph_extra(ctx, call, backend.Call).ret_count = 1
 				for arg in args[CALL_PREFIX:] {
 					backend.graph_unpin(ctx, arg)
 				}
@@ -2370,6 +2371,7 @@ emit_call :: proc(
 
 	call := backend.graph_add_call(ctx, "call", args[:ln], u32(prc_id))
 	backend.graph_extra(ctx, call, backend.Call).imported = imported
+	backend.graph_extra(ctx, call, backend.Call).ret_count = len(rabi.reg_rets)
 	backend.graph_extra(ctx, call, backend.Call).indirect = prc_id == 0
 	cnode := graph_get(ctx, call)
 	for arg in args[CALL_PREFIX:ln] {
@@ -2382,11 +2384,6 @@ emit_call :: proc(
 
 	for s in slots {
 		if s != 0 do backend.graph_unpin(ctx, s)
-	}
-
-	for r in results {
-		if r.id == 0 do continue
-		graph_expand(ctx, r.id)
 	}
 
 	for j in 0 ..< len(rabi.reg_rets) {

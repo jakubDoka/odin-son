@@ -367,12 +367,15 @@ run_test :: proc(
 			{context.allocator = context.temp_allocator
 				disasm_wasm(&dsb, module)}
 
-			vl, status := wamr.run_module(module, "main")
-			if status != 0 {
-				log.error("wamr failed with", status)
-			} else if int(vl) != exit_code {
-				log.error(level)
-				testing.expect_value(t, int(vl), exit_code)
+			if no_run {
+			} else {
+				vl, status := wamr.run_module(module, "main")
+				if status != 0 {
+					log.error("wamr failed with", status)
+				} else if int(vl) != exit_code {
+					log.error(level)
+					testing.expect_value(t, int(vl), exit_code)
+				}
 			}
 		case .Check:
 			for prc in ctx.procs {

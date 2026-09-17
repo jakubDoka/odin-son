@@ -9,7 +9,6 @@ import "core:math"
 import "core:mem"
 import "core:reflect"
 import "core:slice"
-import "core:sort"
 
 Reg :: backend.Reg
 emit :: backend.emit
@@ -1503,63 +1502,13 @@ x64_emit_function :: proc(
 	slot: [2]int
 	ctx.used = bit_arr.init_from_masks(slot[:])
 
-	has_call := false
-	for bb in ctx.schedule.bbs {
-		bnode := graph_expand(ctx, bb.head)
-
-		for ins in bb.instrs {
-			has_call |= graph_get(ctx, ins).itype in backend.CALLS
-		}
-
-		if bnode.itype != .Call_End do continue
-		cnode := graph_expand(ctx, bnode.inps[0])
-		call_stack_size: i32
-		for inp in cnode.inps {
-			inode := graph_expand(ctx, inp)
-			if inode.itype != .Local do continue
-			iext := backend.graph_extra(ctx, inode, backend.Local)
-			call_stack_size += iext.size
-			iext.offset = call_stack_size - iext.size
-		}
-		ctx.stack_size = max(ctx.stack_size, call_stack_size)
-	}
+	has_call := backend.layout_stack(ctx.graph, ctx.schedule, &ctx.stack_size)
 
 	used_red_zone: i32
 	if !has_call {
 		// TODO: the mem2mem moves mess up the stack if we use red zone, so
 		// disable it for now
 		//used_red_zone = min(ctx.red_zone_size, ctx.stack_size)
-	}
-
-	emem := ctx.graph.root_mem
-	mem_outs := backend.graph_outs(ctx.graph, emem)
-
-	Local_Slot :: bit_field u64 {
-		node:     backend.Node_ID | 32,
-		priority: i32             | 32,
-	}
-	locals: [dynamic]Local_Slot
-
-	for mout in mem_outs {
-		mnode := graph_expand(ctx.graph, mout.id)
-		if mnode.itype == .Local {
-			extra := backend.graph_extra(ctx.graph, mnode, backend.Local)
-			append(
-				&locals,
-				Local_Slot {
-					node = mout.id,
-					priority = intrinsics.count_trailing_zeros(extra.size),
-				},
-			)
-		}
-	}
-
-	sort.quick_sort(locals[:])
-
-	for loc in locals {
-		extra := backend.graph_extra(ctx.graph, loc.node, backend.Local)
-		ctx.stack_size += extra.size
-		extra.offset = ctx.stack_size - extra.size
 	}
 
 	params, _ := backend.assemble_args(ctx, len(ctx.param_specs))
@@ -1635,16 +1584,18 @@ x64_emit_function :: proc(
 		ctx.stack_size += padding
 	}
 
-	ctx.stack_size -= used_red_zone
+	when false {
+		ctx.stack_size -= used_red_zone
 
-	for mout in mem_outs {
-		local := backend.graph_extra(ctx, mout.id, backend.Local)
-		if local == nil do continue
-		local.offset -= used_red_zone
-	}
+		for mout in mem_outs {
+			local := backend.graph_extra(ctx, mout.id, backend.Local)
+			if local == nil do continue
+			local.offset -= used_red_zone
+		}
 
-	for &slot in ctx.spill_slot_base {
-		slot -= used_red_zone
+		for &slot in ctx.spill_slot_base {
+			slot -= used_red_zone
+		}
 	}
 
 	for param in params {

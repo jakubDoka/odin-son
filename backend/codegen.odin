@@ -4,6 +4,7 @@ import "../vendored/gam/util/arna"
 import "base:intrinsics"
 import "core:encoding/varint"
 import "core:reflect"
+import "core:sort"
 
 Call_Conv :: struct {
 	name:          string,
@@ -170,4 +171,65 @@ emit_leb :: proc(buf: ^arna.Allocator, value: $T) {
 	bf := arna.alloc(buf, LEB_MAX_BYTES, 1)
 	size := encode(bf, up(value)) or_else panic("")
 	buf.pos -= len(bf) - uint(size)
+}
+
+layout_stack :: proc(
+	ctx: ^Graph,
+	schedule: ^Graph_Schedule,
+	stack_size: ^i32,
+) -> (
+	has_call: bool,
+) {
+	for bb in schedule.bbs {
+		bnode := graph_expand(ctx, bb.head)
+
+		for ins in bb.instrs {
+			has_call |= graph_get(ctx, ins).itype in CALLS
+		}
+
+		if bnode.itype != .Call_End do continue
+		cnode := graph_expand(ctx, bnode.inps[0])
+		call_stack_size: i32
+		for inp in cnode.inps {
+			inode := graph_expand(ctx, inp)
+			if inode.itype != .Local do continue
+			iext := graph_extra(ctx, inode, Local)
+			call_stack_size += iext.size
+			iext.offset = call_stack_size - iext.size
+		}
+		stack_size^ = max(stack_size^, call_stack_size)
+	}
+
+	emem := ctx.root_mem
+	mem_outs := graph_outs(ctx, emem)
+
+	Local_Slot :: bit_field u64 {
+		node:     Node_ID | 32,
+		priority: i32     | 32,
+	}
+	locals: [dynamic]Local_Slot
+
+	for mout in mem_outs {
+		mnode := graph_expand(ctx, mout.id)
+		if mnode.itype == .Local {
+			extra := graph_extra(ctx, mnode, Local)
+			append(
+				&locals,
+				Local_Slot {
+					node = mout.id,
+					priority = intrinsics.count_trailing_zeros(extra.size),
+				},
+			)
+		}
+	}
+
+	sort.quick_sort(locals[:])
+
+	for loc in locals {
+		extra := graph_extra(ctx, loc.node, Local)
+		stack_size^ += extra.size
+		extra.offset = stack_size^ - extra.size
+	}
+
+	return
 }

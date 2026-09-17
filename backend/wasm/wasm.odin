@@ -2,8 +2,11 @@ package wasm
 
 import backend ".."
 import "../../vendored/gam/util/arna"
+import "base:runtime"
 import "core:fmt"
+import "core:mem"
 import "core:slice"
+import "core:sort"
 
 Reg :: backend.Reg
 emit :: backend.emit
@@ -34,9 +37,12 @@ COMMAND :: "odin run backend/wasm -define:WASM_GEN_SPEC=true"
 
 SPEC_NOT_PRESENT :: (#load("node_specs.odin", string) or_else "") == ""
 
-@(rodata)
 WASM_SYSTEMV_CC := backend.Call_Conv {
 	name = "WASM_SYSTEMV_CC",
+	args = {
+		.Vector = transmute([]Reg)runtime.Raw_Slice{len = 64},
+		.General = transmute([]Reg)runtime.Raw_Slice{len = 64},
+	},
 }
 
 when SPEC_NOT_PRESENT {
@@ -59,6 +65,7 @@ when SPEC_NOT_PRESENT {
 		Get_Local,
 		Set_Local,
 		Tee_Local,
+		Drop,
 	}
 
 	@(rodata)
@@ -66,6 +73,7 @@ when SPEC_NOT_PRESENT {
 		.Get_Local = {no_ctor = true},
 		.Set_Local = {no_ctor = true},
 		.Tee_Local = {no_ctor = true},
+		.Drop = {no_ctor = true},
 	}
 
 	when !GEN_SPEC {
@@ -127,14 +135,24 @@ wasm_meta_of :: #force_inline proc(
 		     .Eq,
 		     .If,
 		     .Jump,
-		     .Split:
+		     .Split,
+		     .Local,
+		     .Local_Addr,
+		     .Call,
+		     .Store,
+		     .Ret,
+		     .Mem:
 			return {out = out}
 		case .Phi:
+			if node.dt == .Void do return {out = out}
 			return {
 				out = I64_MASK_IDX,
 				input_start = 1,
 				masks = I64_MASK_SLOTS[:len(node.inps) - 1],
 			}
+		case .Param:
+			idx := backend.graph_extra(graph, node, backend.Tup).idx
+			return {out = single(ra, {kind = .General, index = u16(idx)})}
 		case .Tee_Local:
 			return {out = I64_MASK_IDX}
 		case .Set_Local:
@@ -144,15 +162,28 @@ wasm_meta_of :: #force_inline proc(
 		}
 	} else {
 		#partial switch wtype(node) {
-		case .Root_Mem, .Sym, .Jump:
+		case .Root_Mem, .Sym, .Jump, .Local, .Mem:
 			return {out = out}
+		case .Store:
+			return {
+				out = I64_MASK_IDX,
+				input_start = 2,
+				masks = I64_MASK_SLOTS[:2],
+			}
 		case .Return:
 			return {out = out, input_start = 2, masks = I64_MASK_SLOTS[:]}
 		case .If:
 			return {out = out, input_start = 1, masks = I64_MASK_SLOTS[:1]}
 		case .Split:
 			return {out = I64_MASK_IDX, masks = I64_MASK_SLOTS[:1]}
+		case .Call:
+			return {
+				out = out,
+				input_start = 3,
+				masks = I64_MASK_SLOTS[:len(node.inps) - 3],
+			}
 		case .Phi:
+			if node.dt == .Void do return {out = out}
 			return {
 				out = I64_MASK_IDX,
 				input_start = 1,
@@ -160,7 +191,7 @@ wasm_meta_of :: #force_inline proc(
 			}
 		case .Mul, .Add, .Eq:
 			return {out = I64_MASK_IDX, masks = I64_MASK_SLOTS[:2]}
-		case .CInt:
+		case .CInt, .Local_Addr, .Ret, .Param:
 			return {out = I64_MASK_IDX}
 		}
 	}
@@ -246,6 +277,57 @@ wasm_pre_regalloc_hook :: proc(
 			}
 		}
 
+		hnode := graph_expand(ctx, bb.head)
+		if hnode.itype == .Call_End {
+			ret_count := 0
+			for instr in bb.instrs {
+				inode := graph_expand(ctx, instr)
+				if inode.itype != .Ret do break
+				ret_count += 1
+			}
+
+			context.user_ptr = &ctx
+			sort.bubble_sort_proc(
+				bb.instrs[:ret_count],
+				proc(a, b: backend.Node_ID) -> int {
+					ctx := (^Ctx)(context.user_ptr)
+					return (sort.compare_u32s(
+								backend.graph_extra(ctx, b, backend.Tup).idx,
+								backend.graph_extra(ctx, a, backend.Tup).idx,
+							))
+				},
+			)
+
+			add_drop :: proc(ctx: Ctx) -> backend.Node_ID {
+				return backend.graph_add_raw(
+					ctx,
+					"rdrp",
+					u16(WASM_Node_Type.Drop),
+					.Void,
+					{},
+				)
+			}
+
+			real_ret_count :=
+				backend.graph_extra(ctx, hnode.inps[0], backend.Call).ret_count
+
+			// NOTE: we need to insert drops ofr the rets that are dead
+			laxt_idx := real_ret_count
+			for i := 0; i < real_ret_count; i += 1 {
+				// NOTE: we rely on the fact there is at least one non ret node
+				ret := bb.instrs[i]
+				idx := -1
+				if graph_get(ctx, ret).itype == .Ret {
+					idx = int(backend.graph_extra(ctx, ret, backend.Tup).idx)
+				}
+				for _ in idx ..< laxt_idx - 1 {
+					inject_at(&bb.instrs, i, add_drop(ctx))
+					i += 1
+				}
+				laxt_idx = idx
+			}
+		}
+
 		for ctx.cursor > 0 {
 			stackify(&ctx)
 		}
@@ -258,10 +340,12 @@ wasm_pre_regalloc_hook :: proc(
 			if inode.itype == .Phi do return
 
 			deps := backend.data_deps(ctx.metas[inode.gvn], inode)
-			for dep, i in deps {
+			#reverse for dep, i in deps {
 				dnode := graph_expand(ctx, dep)
 
 				shift: {
+					if dnode.itype == .Ret do break shift
+					if dnode.itype == .Param do break shift
 					if dnode.itype == .Phi do break shift
 
 					pos := slice.linear_search(
@@ -284,7 +368,7 @@ wasm_pre_regalloc_hook :: proc(
 				}
 
 				dep := dep
-				if dnode.itype != .Phi {
+				if dnode.itype != .Phi && dnode.itype != .Param {
 					dep = get_or_add_set(ctx, dnode.gvn)
 				}
 
@@ -346,8 +430,11 @@ wasm_pre_regalloc_hook :: proc(
 
 Ctx :: struct {
 	using inner: backend.Codegen_Emit_Ctx,
+	stack_size:  i32,
+	code_start:  u32,
 	bb_metas:    []BB_Meta,
 	block_stack: [dynamic]int,
+	final_order: [dynamic]int,
 	blocks:      [dynamic]Block,
 }
 
@@ -380,12 +467,17 @@ wasm_emit_function :: proc(
 		.i64 = .i64,
 	}
 
-	alloc_ty :: proc(reg: backend.Reg) -> (Local_Type, u16) {
+	@(static, rodata)
+	DT_TO_LOCAL_TYPE := #partial [backend.Node_Datatype]Local_Type {
+		.I64 = .i64,
+	}
+
+	alloc_ty :: proc(reg: backend.Reg) -> (Local_Type, i16) {
 		switch reg.kind {
 		case .General:
 			switch reg.index {
 			case 0 ..< 32:
-				return .i64, reg.index
+				return .i64, i16(reg.index)
 			case:
 				panic("TODO")
 			}
@@ -396,77 +488,96 @@ wasm_emit_function :: proc(
 		panic("no")
 	}
 
-	code_start := ctx.code.pos
+	ctx.code_start = u32(ctx.code.pos)
+	reloc_start := ctx.relocs.pos
 
-	ctx.blocks = make([dynamic]Block, 1, len(ctx.schedule.bbs) + 1)
+	backend.layout_stack(ctx.graph, ctx.schedule, &ctx.stack_size)
 
-	for bb, i in ctx.schedule.bbs {
-		graph_get(ctx, bb.head).gvn = u32(i)
-	}
+	compute_blocks: {
+		ctx.blocks = make([dynamic]Block, 1, len(ctx.schedule.bbs) + 1)
 
-	blocks := &ctx.blocks
+		for bb, i in ctx.schedule.bbs {
+			graph_get(ctx, bb.head).gvn = u32(i)
+		}
 
-	for bb, i in ctx.schedule.bbs {
-		tail := bb.instrs[len(bb.instrs) - 1]
-		tnode := graph_expand(ctx, tail)
-		for next in tnode.outs {
-			nnode := graph_expand(ctx, next.id)
-			assert(next.idx != len(nnode.inps) - 1 || nnode.itype != .Region)
-			if int(nnode.gvn) != i + 1 {
-				append(
-					blocks,
-					Block{start = i, origin = i, end = int(nnode.gvn)},
+		blocks := &ctx.blocks
+
+		for bb, i in ctx.schedule.bbs {
+			tail := bb.instrs[len(bb.instrs) - 1]
+			tnode := graph_expand(ctx, tail)
+			for next in tnode.outs {
+				nnode := graph_expand(ctx, next.id)
+				assert(
+					next.idx != len(nnode.inps) - 1 || nnode.itype != .Region,
 				)
+				if int(nnode.gvn) != i + 1 {
+					append(
+						blocks,
+						Block{start = i, origin = i, end = int(nnode.gvn)},
+					)
+				}
 			}
 		}
+
+		slice.sort_by(
+			blocks[1:],
+			proc(a, b: Block) -> bool {return a.end > b.end},
+		)
+
+		ctx.bb_metas = make([]BB_Meta, len(ctx.schedule.bbs))
+
+		ctx.final_order = make([dynamic]int, 0, len(blocks))
+		ctx.block_stack = make([dynamic]int, 0, len(blocks))
+		cursor := 1
+		for i := len(ctx.schedule.bbs) - 1; i >= 0; i -= 1 {
+			for len(ctx.block_stack) > 0 &&
+			    blocks[ctx.block_stack[len(ctx.block_stack) - 1]].start >= i {
+				idx := pop(&ctx.block_stack)
+				blocks[idx].start = i
+				append(&ctx.final_order, idx)
+			}
+
+			// NOTE: create a linked list of guys that coalesce into the best block
+			best_start := len(ctx.schedule.bbs)
+			best := 0
+			for ; cursor < len(blocks) && blocks[cursor].end == i;
+			    cursor += 1 {
+				if blocks[cursor].start <= best_start {
+					blocks[cursor].worse = best
+					best = cursor
+				} else {
+					blocks[cursor].worse = blocks[best].worse
+					blocks[best].worse = cursor
+				}
+			}
+
+			if best != 0 {
+				append(&ctx.block_stack, best)
+
+				for cursor := best;
+				    cursor != 0;
+				    cursor = blocks[cursor].worse {
+					ctx.bb_metas[blocks[cursor].origin].break_block = cursor
+				}
+			}
+		}
+
+		assert(len(ctx.block_stack) == 0)
 	}
 
-	slice.sort_by(
-		blocks[1:],
-		proc(a: Block, b: Block) -> bool {return a.end > b.end},
-	)
-
-	ctx.bb_metas = make([]BB_Meta, len(ctx.schedule.bbs))
-
-	final_order := make([dynamic]int, 0, len(blocks))
-	ctx.block_stack = make([dynamic]int, 0, len(blocks))
-	cursor := 1
-	for i := len(ctx.schedule.bbs) - 1; i >= 0; i -= 1 {
-		for len(ctx.block_stack) > 0 &&
-		    blocks[ctx.block_stack[len(ctx.block_stack) - 1]].start >= i {
-			idx := pop(&ctx.block_stack)
-			blocks[idx].start = i
-			append(&final_order, idx)
-		}
-
-		// NOTE: create a linked list of guys that coalesce into the best block
-		best_start := len(ctx.schedule.bbs)
-		best := 0
-		for ; cursor < len(blocks) && blocks[cursor].end == i; cursor += 1 {
-			if blocks[cursor].start <= best_start {
-				blocks[cursor].worse = best
-				best = cursor
-			} else {
-				blocks[cursor].worse = blocks[best].worse
-				blocks[best].worse = cursor
-			}
-		}
-
-		if best != 0 {
-			append(&ctx.block_stack, best)
-
-			for cursor := best; cursor != 0; cursor = blocks[cursor].worse {
-				ctx.bb_metas[blocks[cursor].origin].break_block = cursor
-			}
-		}
+	param_counts: [Local_Type]i16
+	for param in ctx.param_specs {
+		if param.dt == .Void do continue
+		param_counts[DT_TO_LOCAL_TYPE[param.dt]] += 1
 	}
 
-	assert(len(ctx.block_stack) == 0)
-
-	local_counts: [Local_Type]u16
+	local_counts: [Local_Type]i16
 	for alloc in ctx.allocs {
 		kind, index := alloc_ty(alloc)
-		local_counts[kind] = max(local_counts[kind], index + 1)
+		local_counts[kind] = max(
+			local_counts[kind],
+			index + 1 - param_counts[kind],
+		)
 	}
 
 	local_count := 0
@@ -482,18 +593,30 @@ wasm_emit_function :: proc(
 		}
 	}
 
-	cursor = len(final_order) - 1
+	prolog: if ctx.stack_size != 0 {
+		emit_op(ctx.code, .Global_Get)
+		emit_leb(ctx.code, u64(0))
+		emit_op(ctx.code, .I64_Const)
+		emit_leb(ctx.code, ctx.stack_size)
+		emit_op(ctx.code, .I64_Sub)
+		emit_op(ctx.code, .Global_Set)
+		emit_leb(ctx.code, u64(0))
+	}
+
+	cursor := len(ctx.final_order) - 1
 	for bb, i in ctx.schedule.bbs {
 		for len(ctx.block_stack) > 0 &&
-		    blocks[ctx.block_stack[len(ctx.block_stack) - 1]].end == i {
+		    ctx.blocks[ctx.block_stack[len(ctx.block_stack) - 1]].end == i {
 			pop(&ctx.block_stack)
 			emit_op(ctx.code, .End)
 		}
 
-		for ; cursor >= 0 && blocks[final_order[cursor]].start == i;
+		for ; cursor >= 0 && ctx.blocks[ctx.final_order[cursor]].start == i;
 		    cursor -= 1 {
-			blocks[final_order[cursor]].stack_pos = len(ctx.block_stack)
-			append(&ctx.block_stack, final_order[cursor])
+			ctx.blocks[ctx.final_order[cursor]].stack_pos = len(
+				ctx.block_stack,
+			)
+			append(&ctx.block_stack, ctx.final_order[cursor])
 			emit_op(ctx.code, .Block)
 			emit(ctx.code, {0x40})
 		}
@@ -504,7 +627,12 @@ wasm_emit_function :: proc(
 	}
 	emit_op(ctx.code, .End)
 
-	return {code = ctx.code.ptr[code_start:ctx.code.pos]}
+	relocs := mem.slice_data_cast(
+		[]backend.Reloc,
+		ctx.relocs.ptr[reloc_start:ctx.relocs.pos],
+	)
+
+	return {code = ctx.code.ptr[ctx.code_start:ctx.code.pos], relocs = relocs}
 }
 
 @(disabled = GEN_SPEC)
@@ -525,7 +653,7 @@ wasm_emit_instr :: proc(ctx: ^Ctx, instr: backend.Node_ID, block: int, _: $T) {
 	}
 
 	#partial switch kind {
-	case .Root_Mem, .Sym, .Phi:
+	case .Root_Mem, .Sym, .Phi, .Local, .Ret, .Mem, .Param:
 	case .CInt:
 		cint := backend.graph_extra(ctx, node, backend.CInt)
 
@@ -555,7 +683,28 @@ wasm_emit_instr :: proc(ctx: ^Ctx, instr: backend.Node_ID, block: int, _: $T) {
 	case .Tee_Local, .Set_Local:
 		emit_op(ctx.code, NODE_TO_OP[kind])
 		emit_leb(ctx.code, loc_of(ctx, instr))
+	case .Call:
+		call := backend.graph_extra(ctx, node, backend.Call)
+
+		emit_op(ctx.code, .Call)
+		backend.add_reloc(ctx.relocs)^ = {
+			offset = u32(ctx.code.pos) - ctx.code_start,
+			kind   = .Text,
+			size   = .r4,
+			id     = call.cid,
+		}
+		emit(ctx.code, {0, 0, 0, 0})
 	case .Return:
+		epilog: if ctx.stack_size != 0 {
+			emit_op(ctx.code, .Global_Get)
+			emit_leb(ctx.code, u64(0))
+			emit_op(ctx.code, .I64_Const)
+			emit_leb(ctx.code, ctx.stack_size)
+			emit_op(ctx.code, .I64_Add)
+			emit_op(ctx.code, .Global_Set)
+			emit_leb(ctx.code, u64(0))
+		}
+
 		emit_op(ctx.code, .Return)
 	case .Jump:
 		if block != &ctx.blocks[0] {

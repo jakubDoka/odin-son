@@ -482,7 +482,7 @@ alloca :: proc(
 
 	if zeroed {
 		zero := backend.graph_add_c_int(ctx, "zero", .I8, 0)
-		size := backend.graph_add_c_int(ctx, "size", .I32, i64(size))
+		size := backend.graph_add_c_int(ctx, "size", .I64, i64(size))
 		ctx_set_mem(
 			ctx,
 			backend.graph_add_set(

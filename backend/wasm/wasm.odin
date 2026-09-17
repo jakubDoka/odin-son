@@ -89,6 +89,27 @@ wasm_peep :: proc(
 	node: backend.Expanded_Node,
 	_: $T,
 ) -> backend.Node_ID {
+	id := backend.graph_id(ctx, node)
+	kind := wtype(node)
+	#partial switch kind {
+	case .And_Not:
+		return backend.graph_add_bin_op(
+			ctx,
+			"ana",
+			.And,
+			node.dt,
+			node.inps[0],
+			backend.graph_add_bin_op(
+				ctx,
+				"ann",
+				.Xor,
+				node.dt,
+				node.inps[1],
+				backend.graph_add_c_int(ctx, "acn", node.dt, -1),
+			),
+		)
+	}
+
 	return 0
 }
 
@@ -130,9 +151,8 @@ wasm_meta_of :: #force_inline proc(
 		     .Sym,
 		     .Return,
 		     .CInt,
-		     .Mul,
-		     .Add,
-		     .Eq,
+		     .Add ..=
+		     .U_Rem,
 		     .If,
 		     .Jump,
 		     .Split,
@@ -143,7 +163,11 @@ wasm_meta_of :: #force_inline proc(
 		     .Load,
 		     .Ret,
 		     .Mem,
-		     .Drop:
+		     .Drop,
+		     .Set,
+		     .And_Not,
+		     .Uext,
+		     .Sext:
 			return {out = out}
 		case .Phi:
 			if node.dt == .Void do return {out = out}
@@ -164,7 +188,7 @@ wasm_meta_of :: #force_inline proc(
 		}
 	} else {
 		#partial switch wtype(node) {
-		case .Root_Mem, .Sym, .Jump, .Local, .Mem, .Drop:
+		case .Root_Mem, .Sym, .Jump, .Local, .Mem, .Drop, .And_Not:
 			return {out = out}
 		case .Load:
 			return {
@@ -186,6 +210,8 @@ wasm_meta_of :: #force_inline proc(
 				input_start = 3,
 				masks = I64_MASK_SLOTS[:len(node.inps) - 3],
 			}
+		case .Set:
+			return {out = out, input_start = 2, masks = I64_MASK_SLOTS[:3]}
 		case .Phi:
 			if node.dt == .Void do return {out = out}
 			return {
@@ -193,8 +219,10 @@ wasm_meta_of :: #force_inline proc(
 				input_start = 1,
 				masks = I64_MASK_SLOTS[:len(node.inps) - 1],
 			}
-		case .Mul, .Add, .Eq:
+		case .Add ..= .U_Rem:
 			return {out = I64_MASK_IDX, masks = I64_MASK_SLOTS[:2]}
+		case .Uext, .Sext:
+			return {out = I64_MASK_IDX, masks = I64_MASK_SLOTS[:1]}
 		case .CInt, .Local_Addr, .Ret, .Param:
 			return {out = I64_MASK_IDX}
 		}
@@ -641,22 +669,58 @@ wasm_emit_function :: proc(
 
 @(disabled = GEN_SPEC)
 wasm_emit_instr :: proc(ctx: ^Ctx, instr: backend.Node_ID, block: int, _: $T) {
+
+	@(static, rodata)
+	NODE_TO_OP := #partial [WASM_Node_Type][backend.Node_Datatype]Wasm_Opcode {
+		.Add = #partial{.I8 ..= .I32 = .I32_Add, .I64 = .I64_Add},
+		.Sub = #partial{.I8 ..= .I32 = .I32_Sub, .I64 = .I64_Sub},
+		.Mul = #partial{.I8 ..= .I32 = .I32_Mul, .I64 = .I64_Mul},
+		.And = #partial{.I8 ..= .I32 = .I32_And, .I64 = .I64_And},
+		.Or = #partial{.I8 ..= .I32 = .I32_Or, .I64 = .I64_Or},
+		.Xor = #partial{.I8 ..= .I32 = .I32_Xor, .I64 = .I64_Xor},
+		.Eq = #partial{.I8 ..= .I32 = .I32_Eq, .I64 = .I64_Eq},
+		.Ne = #partial{.I8 ..= .I32 = .I32_Ne, .I64 = .I64_Ne},
+		.Lt = #partial{.I8 ..= .I32 = .I32_Lt_S, .I64 = .I64_Lt_S},
+		.Le = #partial{.I8 ..= .I32 = .I32_Le_S, .I64 = .I64_Le_S},
+		.Gt = #partial{.I8 ..= .I32 = .I32_Gt_S, .I64 = .I64_Gt_S},
+		.Ge = #partial{.I8 ..= .I32 = .I32_Ge_S, .I64 = .I64_Ge_S},
+		.U_Lt = #partial{.I8 ..= .I32 = .I32_Lt_U, .I64 = .I64_Lt_U},
+		.U_Gt = #partial{.I8 ..= .I32 = .I32_Gt_U, .I64 = .I64_Gt_U},
+		.U_Le = #partial{.I8 ..= .I32 = .I32_Le_U, .I64 = .I64_Le_U},
+		.U_Ge = #partial{.I8 ..= .I32 = .I32_Ge_U, .I64 = .I64_Ge_U},
+		.Shl = #partial{.I8 ..= .I32 = .I32_Shl, .I64 = .I64_Shl},
+		.Shr = #partial{.I8 ..= .I32 = .I32_Shr_S, .I64 = .I64_Shr_S},
+		.U_Shr = #partial{.I8 ..= .I32 = .I32_Shr_U, .I64 = .I64_Shr_U},
+		.Div = #partial{.I8 ..= .I32 = .I32_Div_S, .I64 = .I64_Div_S},
+		.U_Div = #partial{.I8 ..= .I32 = .I32_Div_U, .I64 = .I64_Div_U},
+		.Rem = #partial{.I8 ..= .I32 = .I32_Rem_S, .I64 = .I64_Rem_S},
+		.U_Rem = #partial{.I8 ..= .I32 = .I32_Rem_U, .I64 = .I64_Rem_U},
+		.F_Add = #partial{.F32 = .F32_Add, .F64 = .F64_Add},
+		.F_Sub = #partial{.F32 = .F32_Sub, .F64 = .F64_Sub},
+		.F_Mul = #partial{.F32 = .F32_Mul, .F64 = .F64_Mul},
+		.F_Div = #partial{.F32 = .F32_Div, .F64 = .F64_Div},
+		.F_Eq = #partial{.F32 = .F32_Eq, .F64 = .F64_Eq},
+		.F_Ne = #partial{.F32 = .F32_Ne, .F64 = .F64_Ne},
+		.F_Lt = #partial{.F32 = .F32_Lt, .F64 = .F64_Lt},
+		.F_Le = #partial{.F32 = .F32_Le, .F64 = .F64_Le},
+		.F_Gt = #partial{.F32 = .F32_Gt, .F64 = .F64_Gt},
+		.F_Ge = #partial{.F32 = .F32_Ge, .F64 = .F64_Ge},
+		.Neg = #partial{.F32 = .F32_Neg, .F64 = .F64_Neg},
+		.Ctz = #partial{.I8 ..= .I32 = .I32_Ctz, .I64 = .I64_Ctz},
+		.Uext = #partial{.I64 = .I64_Extend_I32_U},
+		.Set_Local = {.Void ..= .V512 = .Local_Set},
+		.Tee_Local = {.Void ..= .V512 = .Local_Tee},
+		.Drop = {.Void ..= .V512 = .Drop},
+		.Load = #partial{.I8 ..= .I32 = .I32_Load, .I64 = .I64_Load},
+		.Store = #partial{.I8 ..= .I32 = .I32_Store, .I64 = .I64_Store},
+	}
+
 	node := graph_expand(ctx, instr)
 	kind := wtype(node)
+	op := NODE_TO_OP[kind][node.dt]
 
 	block := &ctx.blocks[ctx.bb_metas[block].break_block]
 	label := len(ctx.block_stack) - block.stack_pos - 1
-
-	@(static, rodata)
-	NODE_TO_OP := #partial [WASM_Node_Type]Wasm_Opcode {
-		.Mul       = .I64_Mul,
-		.Add       = .I64_Add,
-		.Eq        = .I64_Eq,
-		.Set_Local = .Local_Set,
-		.Tee_Local = .Local_Tee,
-		.Load      = .I64_Load,
-		.Store     = .I64_Store,
-	}
 
 	#partial switch kind {
 	case .Root_Mem, .Sym, .Phi, .Local, .Ret, .Mem, .Param:
@@ -681,16 +745,76 @@ wasm_emit_instr :: proc(ctx: ^Ctx, instr: backend.Node_ID, block: int, _: $T) {
 		case .Void, .V256, .V512:
 			panic("no")
 		}
-	case .Mul, .Add, .Eq:
-		emit_op(ctx.code, NODE_TO_OP[kind])
+	case .Add ..= .U_Rem, .Drop:
+		emit_op(ctx.code, op)
+	case .Uext:
+		inp := graph_get(ctx, node.inps[0])
+		switch node.dt {
+		case .I16 ..= .I32:
+			switch inp.dt {
+			case .I8:
+				emit_op(ctx.code, .I32_Const)
+				emit_leb(ctx.code, 0xff)
+				emit_op(ctx.code, .I32_And)
+			case .I16:
+				emit_op(ctx.code, .I32_Const)
+				emit_leb(ctx.code, 0xffff)
+				emit_op(ctx.code, .I32_And)
+			case .Void, .I32 ..= .V512:
+				panic("NO")
+			}
+		case .I64:
+			switch inp.dt {
+			case .I8:
+				emit_op(ctx.code, .I32_Const)
+				emit_leb(ctx.code, 0xff)
+				emit_op(ctx.code, .I32_And)
+			case .I16:
+				emit_op(ctx.code, .I32_Const)
+				emit_leb(ctx.code, 0xffff)
+				emit_op(ctx.code, .I32_And)
+			case .I32:
+			case .Void, .I64 ..= .V512:
+				panic("NO")
+			}
+			emit_op(ctx.code, .I64_Extend_I32_U)
+		case .Void, .I8, .F32 ..= .V512:
+			panic("no")
+		}
+	case .Sext:
+		inp := graph_get(ctx, node.inps[0])
+		switch node.dt {
+		case .I16 ..= .I32:
+			switch inp.dt {
+			case .I8:
+				emit_op(ctx.code, .I32_Extend8_S)
+			case .I16:
+				emit_op(ctx.code, .I32_Extend16_S)
+			case .Void, .I32 ..= .V512:
+				panic("NO")
+			}
+		case .I64:
+			switch inp.dt {
+			case .I8:
+				emit_op(ctx.code, .I64_Extend_I32_U)
+				emit_op(ctx.code, .I64_Extend8_S)
+			case .I16:
+				emit_op(ctx.code, .I64_Extend_I32_U)
+				emit_op(ctx.code, .I64_Extend16_S)
+			case .I32:
+				emit_op(ctx.code, .I64_Extend32_S)
+			case .Void, .I64 ..= .V512:
+				panic("NO")
+			}
+		case .Void, .I8, .F32 ..= .V512:
+			panic("no")
+		}
 	case .Get_Local:
 		emit_op(ctx.code, .Local_Get)
 		emit_leb(ctx.code, loc_of(ctx, node.inps[0]))
 	case .Tee_Local, .Set_Local:
-		emit_op(ctx.code, NODE_TO_OP[kind])
+		emit_op(ctx.code, op)
 		emit_leb(ctx.code, loc_of(ctx, instr))
-	case .Drop:
-		emit_op(ctx.code, .Drop)
 	case .Local_Addr:
 		offset := i32(
 			backend.graph_extra(ctx, node.inps[0], backend.Local).offset,
@@ -707,9 +831,12 @@ wasm_emit_instr :: proc(ctx: ^Ctx, instr: backend.Node_ID, block: int, _: $T) {
 		} else {
 			assert(node.dt == .I64)
 		}
-		emit_op(ctx.code, NODE_TO_OP[kind])
+		emit_op(ctx.code, op)
 		emit_leb(ctx.code, 0)
 		emit_leb(ctx.code, 0)
+	case .Set:
+		emit_op_fc(ctx.code, .Memory_Fill)
+		emit_leb(ctx.code, u64(0))
 	case .Call:
 		call := backend.graph_extra(ctx, node, backend.Call)
 
@@ -750,6 +877,11 @@ wasm_emit_instr :: proc(ctx: ^Ctx, instr: backend.Node_ID, block: int, _: $T) {
 
 loc_of :: proc(ctx: ^Ctx, node: backend.Node_ID) -> u16 {
 	return ctx.allocs[graph_get(ctx, node).gvn].index
+}
+
+emit_op_fc :: proc(buf: ^arna.Allocator, op: Wasm_Opcode_FC) {
+	emit(buf, {0xfc})
+	emit_leb(buf, u64(op))
 }
 
 emit_op :: proc(buf: ^arna.Allocator, op: Wasm_Opcode) {

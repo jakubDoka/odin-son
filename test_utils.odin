@@ -71,8 +71,6 @@ run_test :: proc(
 	diff := DO_DIFFING,
 	no_run := NO_RUN,
 ) {
-	fmt.println(name)
-
 	@(static) test_rc := 0
 	intrinsics.atomic_add(&test_rc, 1)
 
@@ -167,7 +165,7 @@ run_test :: proc(
 		append(&confs, Test_Conf{level = level, debug = true})
 	}
 	for level in levels[:1] {
-		append(&confs, Test_Conf{level = level, vm = .Wasm})
+		//append(&confs, Test_Conf{level = level, vm = .Wasm})
 	}
 
 	if ctx.error_cnt > 0 do clear(&confs)

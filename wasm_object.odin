@@ -112,7 +112,7 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 
 	for prc, i in ctx.procs[1:] {
 		func_idxes[1 + i] = func_count
-		func_count += int(prc.lit.body != nil)
+		func_count += int(prc.lit.body != nil && prc.sig != nil)
 		if prc.name == "main" do export_count += 1
 	}
 
@@ -136,7 +136,7 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 
 	idx := 0
 	for prc in ctx.procs[1:] {
-		if prc.lit.body != nil {
+		if prc.lit.body != nil && prc.sig != nil {
 			if prc.name == "main" {
 				export(&sections[.export], prc.name, .func, idx)
 			}

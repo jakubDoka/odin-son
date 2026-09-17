@@ -216,3 +216,74 @@ main:
 main:
     mov rax, 0x1c8
     ret
+=========== OPT LEVEL: none-quick ===========
+(module
+  (type (;0;) (func (param i64 i64 i64) (result i64)))
+  (type (;1;) (func (param i64 i64 i64) (result i64)))
+  (type (;2;) (func (result i64)))
+  (func $produce (type 0) (param i64 i64 i64) (result i64)
+    local.get 1
+    local.get 0
+    i64.store align=1
+    local.get 2
+    local.get 0
+    i64.const 1
+    i64.add
+    i64.store align=1
+    local.get 0
+    i64.const 2
+    i64.add
+    return
+    end
+  )
+  (func $consume (type 1) (param i64 i64 i64) (result i64)
+    local.get 0
+    i64.const 100
+    i64.mul
+    local.get 1
+    i64.const 10
+    i64.mul
+    i64.add
+    local.get 2
+    i64.add
+    return
+    end
+  )
+  (func $main (type 2) (result i64)
+    (local i64 i64 i64)
+    global.get 0
+    i64.const 16
+    i64.sub
+    global.set 0
+    i64.const 4
+    global.get 0
+    i64.const 0
+    i64.add
+    local.tee 0
+    global.get 0
+    i64.const 8
+    i64.add
+    local.tee 1
+    call $produce
+    local.set 2
+    local.get 0
+    i64.load align=1
+    local.get 1
+    i64.load align=1
+    local.get 2
+    call $consume
+    local.set 0
+    local.get 0
+    global.get 0
+    i64.const 16
+    i64.add
+    global.set 0
+    return
+    end
+  )
+  (memory (;0;) 16)
+  (global (;0;) (mut i64) i64.const 1048576)
+  (export "main" (func 2))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+)

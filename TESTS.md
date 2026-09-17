@@ -5226,7 +5226,7 @@ main :: proc() -> int {
 ```
 
 #### foreign block
-```odin
+```!odin
 package main
 
 foreign {

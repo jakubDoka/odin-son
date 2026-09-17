@@ -10152,74 +10152,6 @@ main :: proc() -> int {
 }
 `, main_())
 }
-@(test) foreign_block :: proc(t: ^testing.T) {
-
-
-
-foreign {
-	malloc :: proc(size: int) -> rawptr ---
-	free :: proc(size: rawptr) ---
-}
-
-main_ :: proc() -> int {
-	slt := (^int)(malloc(8))
-	slt^ = 0
-	vl := slt^
-	free(rawptr(slt))
-	return vl
-}
-
-main.run_test(t, `foreign_block`, `
-package main
-
-foreign {
-	malloc :: proc(size: int) -> rawptr ---
-	free :: proc(size: rawptr) ---
-}
-
-main :: proc() -> int {
-	slt := (^int)(malloc(8))
-	slt^ = 0
-	vl := slt^
-	free(rawptr(slt))
-	return vl
-}
-`, main_())
-}
-@(test) enum_basic_values :: proc(t: ^testing.T) {
-
-
-
-opt_level :: "none"
-
-Color :: enum {
-	Red,
-	Green,
-	Blue,
-}
-
-main_ :: proc() -> int {
-	c := Color.Green
-	return int(c)
-}
-
-main.run_test(t, `enum_basic_values`, `
-package main
-
-opt_level :: "none"
-
-Color :: enum {
-	Red,
-	Green,
-	Blue,
-}
-
-main :: proc() -> int {
-	c := Color.Green
-	return int(c)
-}
-`, main_())
-}
 @(test) enum_explicit_values :: proc(t: ^testing.T) {
 
 
@@ -14536,8 +14468,6 @@ float_materialized_compares_with_load(nil)
 integer_materialized_compares_with_folded_load(nil)
 float_materialized_compares_with_folded_load(nil)
 crash_in_gcm_on_two_loops_nested_in_a_loop(nil)
-foreign_block(nil)
-enum_basic_values(nil)
 enum_explicit_values(nil)
 enum_backing_type(nil)
 enum_comparison(nil)

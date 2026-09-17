@@ -71,6 +71,8 @@ run_test :: proc(
 	diff := DO_DIFFING,
 	no_run := NO_RUN,
 ) {
+	fmt.println(name)
+
 	@(static) test_rc := 0
 	intrinsics.atomic_add(&test_rc, 1)
 

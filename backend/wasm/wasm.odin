@@ -140,8 +140,10 @@ wasm_meta_of :: #force_inline proc(
 		     .Local_Addr,
 		     .Call,
 		     .Store,
+		     .Load,
 		     .Ret,
-		     .Mem:
+		     .Mem,
+		     .Drop:
 			return {out = out}
 		case .Phi:
 			if node.dt == .Void do return {out = out}
@@ -162,14 +164,16 @@ wasm_meta_of :: #force_inline proc(
 		}
 	} else {
 		#partial switch wtype(node) {
-		case .Root_Mem, .Sym, .Jump, .Local, .Mem:
+		case .Root_Mem, .Sym, .Jump, .Local, .Mem, .Drop:
 			return {out = out}
-		case .Store:
+		case .Load:
 			return {
 				out = I64_MASK_IDX,
 				input_start = 2,
-				masks = I64_MASK_SLOTS[:2],
+				masks = I64_MASK_SLOTS[:1],
 			}
+		case .Store:
+			return {out = out, input_start = 2, masks = I64_MASK_SLOTS[:2]}
 		case .Return:
 			return {out = out, input_start = 2, masks = I64_MASK_SLOTS[:]}
 		case .If:
@@ -229,55 +233,7 @@ wasm_pre_regalloc_hook :: proc(
 	// annoying, maybe we can do better, but not right now
 	for &bb in sched.bbs {
 		hnode := graph_expand(ctx, bb.head)
-		if hnode.itype != .Region && hnode.itype != .Loop do continue
 
-		for inp, i in hnode.inps[:len(hnode.inps) - int(hnode.itype == .Region)] {
-			pred_head := backend.graph_inps(ctx, inp)[0]
-			pnode := graph_expand(ctx, pred_head)
-			pred := &sched.bbs[pnode.gvn]
-
-			for phy in bb.instrs {
-				pnode := graph_expand(ctx, phy)
-				if pnode.itype != .Phi do break
-				if pnode.dt == .Void do continue
-
-				split := backend.graph_add_split(
-					ctx,
-					"wspl",
-					pnode.dt,
-					pnode.inps[1 + i],
-				)
-				backend.graph_set_input(ctx, phy, 1 + i, split)
-				inject_at(&pred.instrs, len(pred.instrs) - 1, split)
-				append(&splits, split)
-			}
-		}
-	}
-
-	defs: int
-	{
-		context.user_index = 1
-		ctx.metas, defs = wasm_collect_meta(graph, ra, sched)
-	}
-	ctx.sets = make([]backend.Node_ID, defs)
-	ctx.rcs = make([]int, defs)
-
-	old_gvn := ctx.gvn
-
-	for &bb in sched.bbs {
-		ctx.cursor = len(bb.instrs)
-		ctx.instrs = &bb.instrs
-
-		for instr, i in bb.instrs {
-			inode := graph_expand(ctx, instr)
-			for dep in backend.data_deps(ctx.metas[inode.gvn], inode) {
-				ctx.rcs[graph_get(ctx, dep).gvn] += int(
-					slice.contains(bb.instrs[:i], dep),
-				)
-			}
-		}
-
-		hnode := graph_expand(ctx, bb.head)
 		if hnode.itype == .Call_End {
 			ret_count := 0
 			for instr in bb.instrs {
@@ -325,6 +281,54 @@ wasm_pre_regalloc_hook :: proc(
 					i += 1
 				}
 				laxt_idx = idx
+			}
+		}
+
+		if hnode.itype == .Region || hnode.itype == .Loop {
+			for inp, i in hnode.inps[:len(hnode.inps) - int(hnode.itype == .Region)] {
+				pred_head := backend.graph_inps(ctx, inp)[0]
+				pnode := graph_expand(ctx, pred_head)
+				pred := &sched.bbs[pnode.gvn]
+
+				for phy in bb.instrs {
+					pnode := graph_expand(ctx, phy)
+					if pnode.itype != .Phi do break
+					if pnode.dt == .Void do continue
+
+					split := backend.graph_add_split(
+						ctx,
+						"wspl",
+						pnode.dt,
+						pnode.inps[1 + i],
+					)
+					backend.graph_set_input(ctx, phy, 1 + i, split)
+					inject_at(&pred.instrs, len(pred.instrs) - 1, split)
+					append(&splits, split)
+				}
+			}
+		}
+	}
+
+	defs: int
+	{
+		context.user_index = 1
+		ctx.metas, defs = wasm_collect_meta(graph, ra, sched)
+	}
+	ctx.sets = make([]backend.Node_ID, defs)
+	ctx.rcs = make([]int, defs)
+
+	old_gvn := ctx.gvn
+
+	for &bb in sched.bbs {
+		ctx.cursor = len(bb.instrs)
+		ctx.instrs = &bb.instrs
+
+		for instr, i in bb.instrs {
+			inode := graph_expand(ctx, instr)
+			for dep in backend.data_deps(ctx.metas[inode.gvn], inode) {
+				ctx.rcs[graph_get(ctx, dep).gvn] += int(
+					slice.contains(bb.instrs[:i], dep),
+				)
 			}
 		}
 
@@ -650,6 +654,8 @@ wasm_emit_instr :: proc(ctx: ^Ctx, instr: backend.Node_ID, block: int, _: $T) {
 		.Eq        = .I64_Eq,
 		.Set_Local = .Local_Set,
 		.Tee_Local = .Local_Tee,
+		.Load      = .I64_Load,
+		.Store     = .I64_Store,
 	}
 
 	#partial switch kind {
@@ -683,6 +689,27 @@ wasm_emit_instr :: proc(ctx: ^Ctx, instr: backend.Node_ID, block: int, _: $T) {
 	case .Tee_Local, .Set_Local:
 		emit_op(ctx.code, NODE_TO_OP[kind])
 		emit_leb(ctx.code, loc_of(ctx, instr))
+	case .Drop:
+		emit_op(ctx.code, .Drop)
+	case .Local_Addr:
+		offset := i32(
+			backend.graph_extra(ctx, node.inps[0], backend.Local).offset,
+		)
+
+		emit_op(ctx.code, .Global_Get)
+		emit_leb(ctx.code, u64(0))
+		emit_op(ctx.code, .I64_Const)
+		emit_leb(ctx.code, offset)
+		emit_op(ctx.code, .I64_Add)
+	case .Store, .Load:
+		if kind == .Store {
+			assert(graph_get(ctx, node.inps[3]).dt == .I64)
+		} else {
+			assert(node.dt == .I64)
+		}
+		emit_op(ctx.code, NODE_TO_OP[kind])
+		emit_leb(ctx.code, 0)
+		emit_leb(ctx.code, 0)
 	case .Call:
 		call := backend.graph_extra(ctx, node, backend.Call)
 

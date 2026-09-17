@@ -10,8 +10,8 @@ SPEC := backend.Node_Spec{
 	},
 	call_clobbers = {
 	},
-	datatype_to_reg_kind = {.Void = Reg_Kind.General, .I8 = Reg_Kind.General, .I16 = Reg_Kind.General, .I32 = Reg_Kind.General, .I64 = Reg_Kind.General, .F32 = Reg_Kind.General, .F64 = Reg_Kind.General, .V128 = Reg_Kind.General, .V256 = Reg_Kind.General, .V512 = Reg_Kind.General},
-	spill_boundary = {.General = 0, .Vector = 0},
+	datatype_to_reg_kind = {.Void = 0, .I8 = 0, .I16 = 0, .I32 = 0, .I64 = 0, .F32 = 0, .F64 = 0, .V128 = 0, .V256 = 0, .V512 = 0},
+	spill_boundary = {},
 	emit_function = builder_emit_function,
 	peep = builder_peep_inst,
 	post_schedule_peep = builder_post_schedule_peep_inst,

@@ -10,10 +10,10 @@ SPEC := backend.Node_Spec{
 		WASM_SYSTEMV_CC,
 	},
 	call_clobbers = {
-		{.General = 0, .Vector = 0},
+		{},
 	},
-	datatype_to_reg_kind = {.Void = Reg_Kind.General, .I8 = Reg_Kind.General, .I16 = Reg_Kind.General, .I32 = Reg_Kind.General, .I64 = Reg_Kind.General, .F32 = Reg_Kind.Vector, .F64 = Reg_Kind.Vector, .V128 = Reg_Kind.Vector, .V256 = Reg_Kind.Vector, .V512 = Reg_Kind.Vector},
-	spill_boundary = {.General = 64, .Vector = 64},
+	datatype_to_reg_kind = {.Void = 0, .I8 = 0, .I16 = 0, .I32 = 0, .I64 = 1, .F32 = 2, .F64 = 3, .V128 = 4, .V256 = 0, .V512 = 0},
+	spill_boundary = {64, 64, 64, 64, 64, 64},
 	collect_meta = wasm_collect_meta,
 	pre_regalloc_hook = wasm_pre_regalloc_hook,
 	emit_function = wasm_emit_function,

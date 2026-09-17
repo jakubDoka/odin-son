@@ -324,3 +324,133 @@ main:
     add.q rax, [rsp + 0x18]
     add rsp, 0x38
     ret
+=========== OPT LEVEL: none-quick ===========
+(module
+  (type (;0;) (func (param i64) (result i64)))
+  (type (;1;) (func (result i64)))
+  (func $opaque (type 0) (param i64) (result i64)
+    local.get 0
+    return
+    end
+  )
+  (func $main (type 1) (result i64)
+    (local i64 i64 i64 i64 i64 i64 i64 i64)
+    global.get 0
+    i64.const 48
+    i64.sub
+    global.set 0
+    global.get 0
+    i64.const 0
+    i64.add
+    local.tee 0
+    i32.const 0
+    local.tee 1
+    i64.const 24
+    local.tee 2
+    memory.fill
+    i64.const 2
+    call $opaque
+    local.set 3
+    local.get 0
+    local.get 3
+    unreachable
+    unreachable
+    unreachable
+    i64.const 3
+    call $opaque
+    local.set 3
+    local.get 0
+    i64.const 8
+    local.tee 4
+    i64.add
+    local.tee 5
+    local.get 3
+    unreachable
+    unreachable
+    unreachable
+    i64.const 4
+    call $opaque
+    local.set 3
+    local.get 0
+    i64.const 16
+    local.tee 6
+    i64.add
+    local.tee 7
+    local.get 3
+    unreachable
+    unreachable
+    unreachable
+    global.get 0
+    i64.const 24
+    i64.add
+    local.tee 3
+    local.get 1
+    local.get 2
+    memory.fill
+    local.get 3
+    local.get 0
+    i64.load align=1
+    local.get 5
+    i64.load align=1
+    i64.add
+    unreachable
+    unreachable
+    unreachable
+    local.get 3
+    local.get 4
+    i64.add
+    local.tee 1
+    local.get 5
+    i64.load align=1
+    local.get 7
+    i64.load align=1
+    i64.add
+    unreachable
+    unreachable
+    unreachable
+    local.get 3
+    local.get 6
+    i64.add
+    local.tee 2
+    local.get 7
+    i64.load align=1
+    local.get 0
+    i64.load align=1
+    i64.add
+    unreachable
+    unreachable
+    unreachable
+    local.get 0
+    local.get 3
+    i64.load align=1
+    local.get 2
+    i64.load align=1
+    i64.add
+    unreachable
+    unreachable
+    unreachable
+    local.get 0
+    i64.load align=1
+    i64.const 100
+    i64.mul
+    local.get 1
+    i64.load align=1
+    i64.const 10
+    i64.mul
+    i64.add
+    local.get 3
+    i64.load align=1
+    i64.add
+    global.get 0
+    i64.const 48
+    i64.add
+    global.set 0
+    return
+    end
+  )
+  (memory (;0;) 16)
+  (global (;0;) (mut i64) i64.const 1048576)
+  (export "main" (func 1))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+)

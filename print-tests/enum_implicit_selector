@@ -55,3 +55,32 @@ main:
     mov rax, 5
     ret
 =========== OPT LEVEL: aggresive ===========
+=========== OPT LEVEL: none-quick ===========
+(module
+  (type (;0;) (func (result i64)))
+  (func $main (type 0) (result i64)
+    (local i64)
+    block
+      block
+        i64.const 1
+        local.tee 0
+        local.get 0
+        i32.eq
+        br_if 0
+        i64.const 0
+        local.set 0
+        br 1
+      end
+      i64.const 5
+      local.set 0
+    end
+    local.get 0
+    return
+    end
+  )
+  (memory (;0;) 16)
+  (global (;0;) (mut i64) i64.const 1048576)
+  (export "main" (func 0))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+)

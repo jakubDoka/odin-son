@@ -102,3 +102,32 @@ main:
 main:
     mov rax, 0x3f
     ret
+=========== OPT LEVEL: none-quick ===========
+(module
+  (type (;0;) (func (param i32 i32) (result i32)))
+  (type (;1;) (func (result i64)))
+  (func $mul8 (type 0) (param i32 i32) (result i32)
+    local.get 0
+    local.get 1
+    i32.mul
+    return
+    end
+  )
+  (func $main (type 1) (result i64)
+    (local i64)
+    i32.const 7
+    i32.const 9
+    call $mul8
+    local.set 0
+    local.get 0
+    i64.extend_i32_u
+    i64.extend8_s
+    return
+    end
+  )
+  (memory (;0;) 16)
+  (global (;0;) (mut i64) i64.const 1048576)
+  (export "main" (func 1))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+)

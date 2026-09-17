@@ -60,7 +60,7 @@ Abi_Type :: enum int {
 
 Abi_Sm :: struct {
 	type:      Abi_Type,
-	used_regs: [backend.Reg_Kind]int,
+	used_regs: []int,
 }
 
 X86_Reg_Class :: enum u8 {
@@ -208,6 +208,10 @@ abi_sm_add :: proc(
 	par: Abi_Param,
 	ok: bool,
 ) {
+	if len(sm.used_regs) == 0 {
+		sm.used_regs = make([]int, len(ctx.target.spec.spill_boundary))
+	}
+
 	cata, oka := x86_reg_class_classify(ty)
 
 	par.dt = cata

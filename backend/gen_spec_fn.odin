@@ -16,7 +16,7 @@ Spec_Gen_Input :: struct {
 	name:                         string,
 	classes:                      []Class_Array,
 	datatype_to_reg_kind:         [Node_Datatype]Reg_Kind,
-	spill_boundary:               [Reg_Kind]int,
+	spill_boundary:               []int,
 	cc_table:                     []Call_Conv,
 	intern:                       bool,
 	no_spec_tables:               bool,
@@ -128,10 +128,10 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 
 		os.write_string(file, "\tcall_clobbers = {\n")
 		for cc in spec.cc_table {
-			clobbers: [Reg_Kind]int
+			clobbers := make([]int, len(cc.caller_saved))
 
-			for &slot, kind in clobbers {
-				for reg in cc.caller_saved[kind] {
+			for &slot, i in clobbers {
+				for reg in cc.caller_saved[i] {
 					slot |= 1 << reg.index
 				}
 			}

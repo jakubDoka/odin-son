@@ -38,7 +38,11 @@ NOOP_REX :: 0b0100_0000
 
 NO_INDEX :: RSP
 
-VEC_BANK :: u16(Reg_Kind.Vector) << 12
+RK_GENERAL :: Reg_Kind(0)
+RK_VECTOR :: Reg_Kind(1)
+RK_COUNT :: 2
+
+VEC_BANK :: u16(RK_VECTOR) << 12
 XMM0 :: Reg(VEC_BANK | 0)
 XMM1 :: Reg(VEC_BANK | 1)
 XMM2 :: Reg(VEC_BANK | 2)
@@ -120,11 +124,11 @@ X64_CFI_SPEC :: backend.Cfi_Spec {
 
 @(rodata)
 X64_SYSTEMV_CC := backend.Call_Conv {
-	name = "X64_SYSTEMV_CC",
-	callee_saved = #partial{.General = {RBX, RBP, R12, R13, R14, R15}},
-	caller_saved = #partial{
-		.General = {RAX, RCX, RDX, RSI, RDI, R8, R9, R10, R11},
-		.Vector = {
+	name          = "X64_SYSTEMV_CC",
+	callee_saved  = {{RBX, RBP, R12, R13, R14, R15}, {}},
+	caller_saved  = {
+		{RAX, RCX, RDX, RSI, RDI, R8, R9, R10, R11},
+		{
 			XMM0,
 			XMM1,
 			XMM2,
@@ -143,26 +147,27 @@ X64_SYSTEMV_CC := backend.Call_Conv {
 			XMM15,
 		},
 	},
-	args = #partial{
-		.General = {RDI, RSI, RDX, RCX, R8, R9},
-		.Vector = {XMM0, XMM1, XMM2, XMM3, XMM4, XMM5, XMM6, XMM7},
+	args          = {
+		{RDI, RSI, RDX, RCX, R8, R9},
+		{XMM0, XMM1, XMM2, XMM3, XMM4, XMM5, XMM6, XMM7},
 	},
-	rets = #partial{.General = {RAX, RDX}, .Vector = {XMM0, XMM1}},
+	rets          = {{RAX, RDX}, {XMM0, XMM1}},
 	red_zone_size = 128,
-	cfi_spec = X64_CFI_SPEC,
+	cfi_spec      = X64_CFI_SPEC,
 }
 
 @(rodata)
 X64_LINUX_SYSCALL_CC := backend.Call_Conv {
-	name = "X64_LINUX_SYSCALL_CC",
-	callee_saved = #partial{
-		.General = {RBX, RDX, RDI, RSI, RBP, R8, R9, R10, R12, R13, R14, R15},
+	name         = "X64_LINUX_SYSCALL_CC",
+	callee_saved = {
+		{RBX, RDX, RDI, RSI, RBP, R8, R9, R10, R12, R13, R14, R15},
+		{},
 	},
-	caller_saved = #partial{.General = {RAX, RCX, R11}},
-	args = #partial{.General = {RAX, RDI, RSI, RDX, R10, R8, R9}},
-	rets = #partial{.General = {RAX}},
-	is_syscall = true,
-	cfi_spec = X64_CFI_SPEC,
+	caller_saved = {{RAX, RCX, R11}, {}},
+	args         = {{RAX, RDI, RSI, RDX, R10, R8, R9}, {}},
+	rets         = {{RAX}, {}},
+	is_syscall   = true,
+	cfi_spec     = X64_CFI_SPEC,
 }
 
 Instr_Info :: struct {
@@ -271,9 +276,9 @@ when SPEC_NOT_PRESENT {
 }
 
 @(rodata)
-SPILL_SLOT_SIZE := [Reg_Kind]i32 {
-	.General = 8,
-	.Vector  = 16,
+SPILL_SLOT_SIZE := [RK_COUNT]i32 {
+	RK_GENERAL = 8,
+	RK_VECTOR  = 16,
 }
 
 Mem_Mode :: enum u8 {
@@ -1047,13 +1052,13 @@ x64_addr_add_offset :: proc(
 
 GPA_MASK_IDX :: backend.RM_Intern_Idx{}
 XMM_MASK_IDX :: backend.RM_Intern_Idx {
-	kind = .Vector,
+	kind = RK_VECTOR,
 }
 GPA_SPILL_MASK_IDX :: backend.RM_Intern_Idx {
 	index = 1,
 }
 XMM_SPILL_MASK_IDX :: backend.RM_Intern_Idx {
-	kind  = .Vector,
+	kind  = RK_VECTOR,
 	index = 1,
 }
 
@@ -1117,10 +1122,10 @@ x64_meta_of :: proc(
 
 	if node.gvn == 0 {
 		ra.mask_len = MASK_SIZE
-		rslice(ra, .General, GPA_MASK[:])
-		rslice(ra, .Vector, XMM_MASK[:])
-		rslice(ra, .General, GPA_SPILL_MASK[:])
-		rslice(ra, .Vector, XMM_SPILL_MASK[:])
+		rslice(ra, RK_GENERAL, GPA_MASK[:])
+		rslice(ra, RK_VECTOR, XMM_MASK[:])
+		rslice(ra, RK_GENERAL, GPA_SPILL_MASK[:])
+		rslice(ra, RK_VECTOR, XMM_SPILL_MASK[:])
 	}
 
 	single :: backend.rm_intern_single
@@ -1134,16 +1139,16 @@ x64_meta_of :: proc(
 
 	nkind := ra.datatype_to_reg_kind[node.dt]
 
-	masks := [backend.Reg_Kind][]backend.RM_Intern_Idx {
-		.General = GPA_MASKS[:],
-		.Vector  = XMM_MASKS[:],
+	masks := [RK_COUNT][]backend.RM_Intern_Idx {
+		RK_GENERAL = GPA_MASKS[:],
+		RK_VECTOR  = XMM_MASKS[:],
 	}
 	nmasks := masks[nkind]
 	out := nmasks[0]
 
-	smasks := [backend.Reg_Kind][]backend.RM_Intern_Idx {
-		.General = GPA_SPILL_MASKS[:],
-		.Vector  = XMM_SPILL_MASKS[:],
+	smasks := [RK_COUNT][]backend.RM_Intern_Idx {
+		RK_GENERAL = GPA_SPILL_MASKS[:],
+		RK_VECTOR  = XMM_SPILL_MASKS[:],
 	}
 	snmasks := smasks[nkind]
 	sout := snmasks[0]
@@ -1214,20 +1219,31 @@ x64_meta_of :: proc(
 			in_place_slot = 1,
 		}
 	case .Div, .U_Div:
+		@(static, rodata)
+		CLOBBERS := [?]i64 {
+			RK_GENERAL = 1 << uint(RDX),
+			RK_VECTOR  = 0,
+		}
+
 		rax := single(ra, RAX)
 		return {
 			out = rax,
-			masks = dup({rax, rslice(ra, .General, GPA_DIV_MASK[:])}),
-			clobbers = #partial{.General = 1 << uint(RDX)},
+			masks = dup({rax, rslice(ra, RK_GENERAL, GPA_DIV_MASK[:])}),
+			clobbers = CLOBBERS[:],
 			in_place_slot = 1,
 		}
 	case .Rem, .U_Rem:
+		@(static, rodata)
+		CLOBBERS := [?]i64 {
+			RK_GENERAL = 1 << uint(RAX),
+			RK_VECTOR  = 0,
+		}
 		return {
 			out = single(ra, RDX),
 			masks = dup(
-				{single(ra, RAX), rslice(ra, .General, GPA_DIV_MASK[:])},
+				{single(ra, RAX), rslice(ra, RK_GENERAL, GPA_DIV_MASK[:])},
 			),
-			clobbers = #partial{.General = 1 << uint(RAX)},
+			clobbers = CLOBBERS[:],
 		}
 	case .And_Not:
 		return {out = out, masks = nmasks[:2], in_place_slot = 2}
@@ -1273,7 +1289,7 @@ x64_meta_of :: proc(
 		banks := cc.args
 		if node.itype == .Return do banks = ra.rets
 
-		counts: [Reg_Kind]int
+		counts: [RK_COUNT]int
 		for n, i in node.inps[inited:real_len] {
 			rk := graph.datatype_to_reg_kind[graph_get(graph, n).dt]
 			nmasks[i] = single(ra, banks[rk][counts[rk]])
@@ -1306,7 +1322,7 @@ x64_meta_of :: proc(
 		rets := ra.cc_table[call.ccid].rets[kind]
 		return {out = single(ra, rets[ret_ext.idx])}
 	case .Ctz, .Not, .Neg:
-		assert(nkind == .General)
+		assert(nkind == RK_GENERAL)
 		return {out = out, masks = nmasks[:1], in_place_slot = 1}
 	case .Sext, .Uext:
 		return {out = out, masks = nmasks[:1]}
@@ -1447,13 +1463,13 @@ x64_meta_of :: proc(
 
 Ctx :: struct {
 	using inner:        backend.Codegen_Emit_Ctx,
-	spill_slot_base:    [Reg_Kind]i32,
+	spill_slot_base:    [RK_COUNT]i32,
 	big_constants:      [dynamic]u8,
 	local_relocs:       [dynamic]Local_Reloc,
 	stack_size:         i32,
 	used:               bit_arr.Bit_Set,
 	code_start:         uint,
-	stack_param_offset: [Reg_Kind][dynamic]i32,
+	stack_param_offset: [RK_COUNT][dynamic]i32,
 	last_off:           uint,
 	sloc:               backend.Sloc,
 	pushed:             i32,
@@ -1513,13 +1529,13 @@ x64_emit_function :: proc(
 
 	params, _ := backend.assemble_args(ctx, len(ctx.param_specs))
 
-	spill_slot_count: [Reg_Kind]i32
+	spill_slot_count: [RK_COUNT]i32
 	for reg in ctx.allocs {
 		spill_slot_count[reg.kind] = max(
 			spill_slot_count[reg.kind],
 			i32(reg.index) - 16 + 1,
 		)
-		if reg.kind == .General {
+		if reg.kind == RK_GENERAL {
 			bit_arr.set_unbounded(ctx.used, int(reg.index))
 		}
 	}
@@ -1527,7 +1543,7 @@ x64_emit_function :: proc(
 	mount_sloc(&ctx, ctx.entry)
 
 	pushed: i32
-	for reg in ctx.callee_saved[.General] {
+	for reg in ctx.callee_saved[RK_GENERAL] {
 		if bit_arr.contains(ctx.used, int(reg)) {
 			// push $reg
 			emit_single_op(ctx.code, 0x50, reg)
@@ -2200,17 +2216,17 @@ x64_emit_instr :: proc(
 		if src == dst do break
 
 		if src.kind == dst.kind {
-			assert(dst.kind == .General)
+			assert(dst.kind == RK_GENERAL)
 			rx := rex(src, dst, RAX, true)
 			emit(ctx.code, {rx, 0x89, mod_rm(.Direct, src, dst)})
 		} else {
-			table := [Reg_Kind]u8 {
-				.Vector  = 0x6E,
-				.General = 0x7E,
+			table := [RK_COUNT]u8 {
+				RK_VECTOR  = 0x6E,
+				RK_GENERAL = 0x7E,
 			}
 			op := table[dst.kind]
 			a, b := dst, src
-			if dst.kind == .General do a, b = b, a
+			if dst.kind == RK_GENERAL do a, b = b, a
 			rx := rex(a, b, NO_INDEX, backend.DT_SIZE[node.dt] == 8)
 			emit(ctx.code, {0x66, rx, 0x0f, op, mod_rm(.Direct, a, b)})
 		}
@@ -2347,7 +2363,7 @@ x64_emit_instr :: proc(
 		dst := reg_of(ctx, instr)
 		imm := backend.graph_extra(ctx, node, backend.CInt).value
 
-		if imm == 0 && dst.kind == .Vector {
+		if imm == 0 && dst.kind == RK_VECTOR {
 			// pxor $dst, $dst
 			rx := rex(dst, dst, NO_INDEX, false)
 			emit(ctx.code, {0x66, rx, 0x0f, 0xEF, mod_rm(.Direct, dst, dst)})
@@ -2790,7 +2806,7 @@ x64_emit_instr :: proc(
 		d_spill := dst.index >= GPA_REG_COUNT
 		s_spill := src.index >= GPA_REG_COUNT
 
-		if dst.kind == .Vector && node.dt == .V128 {
+		if dst.kind == RK_VECTOR && node.dt == .V128 {
 			if d_spill && s_spill {
 				panic("no")
 			} else if d_spill {
@@ -2809,7 +2825,7 @@ x64_emit_instr :: proc(
 			break
 		}
 
-		if dst.kind == .Vector {
+		if dst.kind == RK_VECTOR {
 			// movss/movsd based moves for xmm live ranges
 			pfx: u8 = node.dt == .F64 ? 0xF2 : 0xF3
 
@@ -2903,7 +2919,7 @@ x64_emit_instr :: proc(
 			emit_cfi(ctx, .Def_Cfa_Offset, arg = cfa)
 		}
 
-		#reverse for reg in ctx.callee_saved[.General] {
+		#reverse for reg in ctx.callee_saved[RK_GENERAL] {
 			if bit_arr.contains(ctx.used, int(reg)) {
 				// pop $reg
 				emit_single_op(ctx.code, 0x58, reg)

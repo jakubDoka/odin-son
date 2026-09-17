@@ -80,7 +80,6 @@ run_test :: proc(
 	context.random_generator = {}
 
 	if types.mems.graph.reserved == 0 {
-
 		arna.scratch[0].reserved = 1024 * 1024
 		arna.scratch[1].reserved = 1024 * 1024
 
@@ -165,7 +164,7 @@ run_test :: proc(
 		append(&confs, Test_Conf{level = level, debug = true})
 	}
 	for level in levels[:1] {
-		//append(&confs, Test_Conf{level = level, vm = .Wasm})
+		append(&confs, Test_Conf{level = level, vm = .Wasm})
 	}
 
 	if ctx.error_cnt > 0 do clear(&confs)

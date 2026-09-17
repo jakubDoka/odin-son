@@ -27,10 +27,10 @@ when GEN_SPEC {
 				},
 				does_regalloc = true,
 				datatype_to_reg_kind = #partial{
-					.I8 ..= .I64 = .General,
-					.F32 ..= .V512 = .Vector,
+					.I8 ..= .I64 = RK_GENERAL,
+					.F32 ..= .V512 = RK_VECTOR,
 				},
-				spill_boundary = {.General = 16, .Vector = 16},
+				spill_boundary = {16, 16},
 				cc_table = {X64_SYSTEMV_CC, X64_LINUX_SYSCALL_CC},
 			},
 			"backend/x64/node_specs.odin",

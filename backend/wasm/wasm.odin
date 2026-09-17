@@ -16,6 +16,13 @@ graph_get :: backend.graph_get
 
 MASK_SIZE :: 64
 
+RK_I64 :: Reg_Kind(0)
+RK_I32 :: Reg_Kind(1)
+RK_F64 :: Reg_Kind(2)
+RK_F32 :: Reg_Kind(3)
+RK_V128 :: Reg_Kind(4)
+RK_COUNT :: 5
+
 wtype :: #force_inline proc(node: backend.Expanded_Node) -> WASM_Node_Type {
 	return WASM_Node_Type(node.rtype)
 }
@@ -39,10 +46,7 @@ SPEC_NOT_PRESENT :: (#load("node_specs.odin", string) or_else "") == ""
 
 WASM_SYSTEMV_CC := backend.Call_Conv {
 	name = "WASM_SYSTEMV_CC",
-	args = {
-		.Vector = transmute([]Reg)runtime.Raw_Slice{len = 64},
-		.General = transmute([]Reg)runtime.Raw_Slice{len = 64},
-	},
+	args = {0 ..= RK_COUNT = transmute([]Reg)runtime.Raw_Slice{len = 64}},
 }
 
 when SPEC_NOT_PRESENT {
@@ -142,7 +146,7 @@ wasm_meta_of :: #force_inline proc(
 
 	if node.gvn == 0 {
 		ra.mask_len = MASK_SIZE
-		rslice(ra, .General, I64_MASK[:])
+		rslice(ra, RK_I64, I64_MASK[:])
 	}
 
 	if context.user_index == 0 {
@@ -178,7 +182,12 @@ wasm_meta_of :: #force_inline proc(
 			}
 		case .Param:
 			idx := backend.graph_extra(graph, node, backend.Tup).idx
-			return {out = single(ra, {kind = .General, index = u16(idx)})}
+			return {
+				out = single(
+					ra,
+					{kind = Reg_Kind(Local_Type.i64), index = u16(idx)},
+				),
+			}
 		case .Tee_Local:
 			return {out = I64_MASK_IDX}
 		case .Set_Local:
@@ -482,6 +491,23 @@ Block :: struct {
 	stack_pos: int,
 }
 
+Local_Type :: enum {
+	i64,
+	i32,
+	f64,
+	f32,
+	v128,
+}
+
+@(rodata)
+LOCAL_TO_WASM := [Local_Type]Type {
+	.i32  = .i32,
+	.i64  = .i64,
+	.f32  = .f32,
+	.f64  = .f64,
+	.v128 = .vec,
+}
+
 wasm_emit_function :: proc(
 	ectx: backend.Codegen_Emit_Ctx,
 ) -> backend.Codegen_Output {
@@ -490,34 +516,13 @@ wasm_emit_function :: proc(
 	ctx: Ctx
 	ctx.inner = ectx
 
-	Local_Type :: enum {
-		i64,
-	}
-
-	@(static, rodata)
-	LOCAL_TO_WASM := [Local_Type]Type {
-		.i64 = .i64,
-	}
-
 	@(static, rodata)
 	DT_TO_LOCAL_TYPE := #partial [backend.Node_Datatype]Local_Type {
 		.I64 = .i64,
 	}
 
 	alloc_ty :: proc(reg: backend.Reg) -> (Local_Type, i16) {
-		switch reg.kind {
-		case .General:
-			switch reg.index {
-			case 0 ..< 32:
-				return .i64, i16(reg.index)
-			case:
-				panic("TODO")
-			}
-		case .Vector:
-			panic("TODO")
-		}
-
-		panic("no")
+		return Local_Type(reg.kind), i16(reg.index)
 	}
 
 	ctx.code_start = u32(ctx.code.pos)

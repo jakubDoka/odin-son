@@ -246,3 +246,89 @@ main:
 main:
     mov rax, 0x18
     ret
+=========== OPT LEVEL: none-quick ===========
+(module
+  (type (;0;) (func (param i64) (result i64)))
+  (type (;1;) (func (result i64)))
+  (func $opaque (type 0) (param i64) (result i64)
+    local.get 0
+    return
+    end
+  )
+  (func $main (type 1) (result i64)
+    (local i64 i64 i64 i64)
+    global.get 0
+    i64.const 16
+    i64.sub
+    global.set 0
+    global.get 0
+    i64.const 0
+    i64.add
+    local.tee 0
+    i32.const 0
+    i64.const 16
+    memory.fill
+    i64.const 3
+    call $opaque
+    local.set 1
+    local.get 0
+    local.get 1
+    unreachable
+    unreachable
+    unreachable
+    i64.const 4
+    call $opaque
+    local.set 1
+    local.get 0
+    i64.const 8
+    i64.add
+    local.tee 2
+    local.get 1
+    unreachable
+    unreachable
+    unreachable
+    i64.const 1
+    local.tee 1
+    call $opaque
+    block
+      block
+        local.set 3
+        local.get 3
+        local.get 1
+        i32.eq
+        br_if 0
+        br 1
+      end
+      i64.const 10
+      call $opaque
+      local.set 1
+      local.get 0
+      local.get 1
+      unreachable
+      unreachable
+      unreachable
+    end
+    local.get 0
+    i64.load align=1
+    call $opaque
+    local.set 1
+    local.get 0
+    i64.load align=1
+    local.get 2
+    i64.load align=1
+    i64.add
+    local.get 1
+    i64.add
+    global.get 0
+    i64.const 16
+    i64.add
+    global.set 0
+    return
+    end
+  )
+  (memory (;0;) 16)
+  (global (;0;) (mut i64) i64.const 1048576)
+  (export "main" (func 1))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+)

@@ -134,3 +134,40 @@ get16:
 main:
     mov rax, -0x3f2
     ret
+=========== OPT LEVEL: none-quick ===========
+(module
+  (type (;0;) (func (result i64)))
+  (type (;1;) (func (result i32)))
+  (type (;2;) (func (result i32)))
+  (func $main (type 0) (result i64)
+    (local i64 i64)
+    call $get8
+    local.set 0
+    call $get16
+    local.set 1
+    local.get 0
+    i64.extend_i32_u
+    i64.extend8_s
+    local.get 1
+    i64.extend_i32_u
+    i64.extend16_s
+    i64.add
+    return
+    end
+  )
+  (func $get8 (type 1) (result i32)
+    i32.const -10
+    return
+    end
+  )
+  (func $get16 (type 2) (result i32)
+    i32.const -1000
+    return
+    end
+  )
+  (memory (;0;) 16)
+  (global (;0;) (mut i64) i64.const 1048576)
+  (export "main" (func 0))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+)

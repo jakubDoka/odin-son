@@ -8,10 +8,10 @@ import "core:sort"
 
 Call_Conv :: struct {
 	name:          string,
-	callee_saved:  [Reg_Kind][]Reg,
-	caller_saved:  [Reg_Kind][]Reg,
-	args:          [Reg_Kind][]Reg,
-	rets:          [Reg_Kind][]Reg,
+	callee_saved:  [][]Reg,
+	caller_saved:  [][]Reg,
+	args:          [][]Reg,
+	rets:          [][]Reg,
 	red_zone_size: i32,
 	is_syscall:    bool,
 	cfi_spec:      Cfi_Spec,

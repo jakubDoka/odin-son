@@ -93,3 +93,50 @@ set:
 main:
     mov rax, 1
     ret
+=========== OPT LEVEL: none-quick ===========
+(module
+  (type (;0;) (func (result i64)))
+  (type (;1;) (func (param i64) (result i64)))
+  (func $main (type 0) (result i64)
+    (local i64)
+    global.get 0
+    i64.const 8
+    i64.sub
+    global.set 0
+    global.get 0
+    i64.const 0
+    i64.add
+    local.tee 0
+    i64.const 0
+    unreachable
+    unreachable
+    unreachable
+    local.get 0
+    call $set
+    drop
+    local.get 0
+    i64.load align=1
+    global.get 0
+    i64.const 8
+    i64.add
+    global.set 0
+    return
+    end
+  )
+  (func $set (type 1) (param i64) (result i64)
+    local.get 0
+    i64.const 1
+    unreachable
+    unreachable
+    unreachable
+    local.get 0
+    i64.load align=1
+    return
+    end
+  )
+  (memory (;0;) 16)
+  (global (;0;) (mut i64) i64.const 1048576)
+  (export "main" (func 0))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+)

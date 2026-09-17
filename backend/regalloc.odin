@@ -7,10 +7,7 @@ import "core:slice"
 
 REGLOGS :: #config(REGLOGS, false)
 
-Reg_Kind :: enum u16 {
-	General,
-	Vector,
-}
+Reg_Kind :: distinct u16
 
 Reg :: bit_field u16 {
 	index: u16      | 12,
@@ -133,9 +130,9 @@ reg_mask_contains :: proc(bset: Reg_Mask, #any_int index: u32) -> bool {
 
 Regalloc_Spec :: struct {
 	datatype_to_reg_kind: [Node_Datatype]Reg_Kind,
-	spill_boundary:       [Reg_Kind]int,
+	spill_boundary:       []int,
 	cc_table:             []Call_Conv,
-	call_clobbers:        [][Reg_Kind]i64,
+	call_clobbers:        [][]i64,
 	collect_meta:         proc(
 		graph: ^Graph,
 		ra: ^Regalloc,
@@ -159,8 +156,8 @@ Regalloc :: struct {
 }
 
 RM_Interner :: struct {
-	slots:    [Reg_Kind]#soa[]SS_Entry([^]i64),
-	lens:     [Reg_Kind]int,
+	slots:    []#soa[]SS_Entry([^]i64),
+	lens:     []int,
 	mask_len: u32,
 }
 
@@ -187,7 +184,7 @@ rm_get :: proc(interner: ^RM_Interner, idx: RM_Intern_Idx) -> Reg_Mask {
 
 rm_intern_slice :: proc(
 	interner: ^RM_Interner,
-	kind: Reg_Kind,
+	#any_int kind: Reg_Kind,
 	masks: []i64,
 ) -> RM_Intern_Idx {
 	return rm_intern(
@@ -270,10 +267,10 @@ RM_Intern_Idx :: bit_field u16 {
 // TODO: compress this
 Regalloc_Node_Meta :: struct {
 	masks:         []RM_Intern_Idx,
+	clobbers:      []i64,
 	out:           RM_Intern_Idx,
 	in_place_slot: i8,
 	input_start:   u8,
-	clobbers:      [Reg_Kind]u16,
 }
 
 regalloc_collect_meta :: #force_inline proc(
@@ -289,6 +286,9 @@ regalloc_collect_meta :: #force_inline proc(
 	slots: []Regalloc_Node_Meta,
 	def_count: int,
 ) {
+	ra.rms.slots = make(type_of(ra.rms.slots), len(ra.spill_boundary))
+	ra.rms.lens = make(type_of(ra.rms.lens), len(ra.spill_boundary))
+
 	slots = make([]Regalloc_Node_Meta, int(graph.gvn) - len(sched.bbs) - 1)
 	rev_count := int(graph.gvn) - len(sched.bbs)
 

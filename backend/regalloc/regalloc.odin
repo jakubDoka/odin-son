@@ -422,11 +422,7 @@ regalloc_round :: proc(
 				}
 			}
 
-			clobbers_tmp := ctx.gmetas[inode.gvn].clobbers
-			clobbers := [backend.Reg_Kind]i64 {
-				.Vector  = i64(clobbers_tmp[.Vector]),
-				.General = i64(clobbers_tmp[.General]),
-			}
+			clobbers := ctx.gmetas[inode.gvn].clobbers
 			if inode.itype == .Call {
 				call := backend.graph_extra(graph, inode, Call)
 				clobbers = ra.call_clobbers[call.ccid]
@@ -434,7 +430,7 @@ regalloc_round :: proc(
 				clobbers = ra.call_clobbers[0]
 			}
 
-			if clobbers != {} {
+			if len(clobbers) != 0 {
 				for l in curr_live.data.id[:curr_live.len] {
 					l := &lrgs[l.lrg]
 					assert(l.mask.bit_length != 0)
@@ -678,14 +674,14 @@ regalloc_round :: proc(
 		for i in 0 ..< 3 {
 			if !ok do break
 
-			free_regs_slots: [backend.Reg_Kind][8]i64
-			free_regs: [backend.Reg_Kind]backend.Reg_Mask
+			free_regs_slots := make([][8]i64, len(ctx.ra.spill_boundary))
+			free_regs := make([]backend.Reg_Mask, len(ctx.ra.spill_boundary))
 			for &s, kind in free_regs_slots {
 				slice.fill(s[:], -1)
 				free_regs[kind] = {
 					masks      = raw_data(&s),
 					bit_length = ctx.ra.mask_len,
-					kind       = kind,
+					kind       = backend.Reg_Kind(kind),
 				}
 			}
 
@@ -714,7 +710,7 @@ regalloc_round :: proc(
 				active.len += 1
 			}
 
-			active_slrgs: [backend.Reg_Kind]Active
+			active_slrgs := make([]Active, len(ctx.ra.spill_boundary))
 			crossed_slrgs := 1
 			recoverable_failure := false
 
@@ -1676,11 +1672,7 @@ regalloc_round :: proc(
 		if node.scan_split {
 			@(static, rodata)
 			slts: [8]i64
-			return {
-				bit_length = ctx.ra.mask_len,
-				kind = .General,
-				masks = raw_data(&slts),
-			}
+			return {bit_length = ctx.ra.mask_len, masks = raw_data(&slts)}
 		}
 
 		meta := &ctx.gmetas[node.gvn]

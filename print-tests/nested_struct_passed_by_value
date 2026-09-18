@@ -142,23 +142,17 @@ main:
     memory.fill
     local.get 0
     i64.const 1
-    unreachable
-    unreachable
-    unreachable
+    i64.store align=1
     local.get 0
     i64.const 8
     i64.add
     i64.const 2
-    unreachable
-    unreachable
-    unreachable
+    i64.store align=1
     local.get 0
     i64.const 16
     i64.add
     i64.const 3
-    unreachable
-    unreachable
-    unreachable
+    i64.store align=1
     local.get 0
     call $sum
     local.set 0
@@ -171,24 +165,32 @@ main:
     end
   )
   (func $sum (type 1) (param i64) (result i64)
+    (local i64 i64)
     local.get 0
     i64.load align=1
+    local.set 1
     local.get 0
     i64.const 8
     i64.add
     i64.load align=1
-    i64.add
+    local.set 2
     local.get 0
     i64.const 16
     i64.add
     i64.load align=1
+    local.set 0
+    local.get 1
+    local.get 2
+    i64.add
+    local.get 0
     i64.add
     return
     end
   )
-  (memory (;0;) 16)
+  (memory (;0;) i64 16)
   (global (;0;) (mut i64) i64.const 1048576)
   (export "main" (func 0))
   (export "__stack_pointer" (global 0))
   (export "memory" (memory 0))
+  (data (;0;) (i64.const 1048576) "")
 )

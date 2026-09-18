@@ -114,20 +114,21 @@ main:
     end
   )
   (func $main (type 1) (result i64)
-    (local i64)
+    (local i32)
     i32.const 7
     i32.const 9
     call $mul8
     local.set 0
     local.get 0
-    i64.extend_i32_u
-    i64.extend8_s
+    i32.extend8_s
+    i64.extend_i32_s
     return
     end
   )
-  (memory (;0;) 16)
+  (memory (;0;) i64 16)
   (global (;0;) (mut i64) i64.const 1048576)
   (export "main" (func 1))
   (export "__stack_pointer" (global 0))
   (export "memory" (memory 0))
+  (data (;0;) (i64.const 1048576) "")
 )

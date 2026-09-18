@@ -8,13 +8,13 @@ main:
     mov.q [rsp], 4
     mov.q [rsp + 0x8], 5
     mov.q [rsp + 0x10], 2
-    mov rdx, 0x10
     xor esi, esi
     lea rdi, [rsp + 0x18]
-    call.q [rip - 0x4f]
     mov rdx, 0x10
+    call.q [rip - 0x4f]
     lea rsi, [rsp]
     lea rdi, [rsp + 0x18]
+    mov rdx, 0x10
     call.q [rip - 0x6d]
     mov.q rax, [rsp + 0x18]
     add.q rax, [rsp + 0x20]
@@ -30,13 +30,13 @@ main:
     mov.q [rsp], 4
     mov.q [rsp + 0x8], 5
     mov.q [rsp + 0x10], 2
-    mov rdx, 0x10
     xor esi, esi
     lea rdi, [rsp + 0x18]
-    call.q [rip - 0x4f]
     mov rdx, 0x10
+    call.q [rip - 0x4f]
     lea rsi, [rsp]
     lea rdi, [rsp + 0x18]
+    mov rdx, 0x10
     call.q [rip - 0x6d]
     mov.q rax, [rsp + 0x18]
     add.q rax, [rsp + 0x20]
@@ -52,13 +52,13 @@ main:
     mov.q [rsp], 4
     mov.q [rsp + 0x8], 5
     mov.q [rsp + 0x10], 2
-    mov rdx, 0x10
     xor esi, esi
     lea rdi, [rsp + 0x18]
-    call.q [rip - 0x4f]
     mov rdx, 0x10
+    call.q [rip - 0x4f]
     lea rsi, [rsp]
     lea rdi, [rsp + 0x18]
+    mov rdx, 0x10
     call.q [rip - 0x6d]
     mov.q rax, [rsp + 0x18]
     add.q rax, [rsp + 0x20]
@@ -74,13 +74,13 @@ main:
     mov.q [rsp], 4
     mov.q [rsp + 0x8], 5
     mov.q [rsp + 0x10], 2
-    mov rdx, 0x10
     xor esi, esi
     lea rdi, [rsp + 0x18]
-    call.q [rip - 0x4f]
     mov rdx, 0x10
+    call.q [rip - 0x4f]
     lea rsi, [rsp]
     lea rdi, [rsp + 0x18]
+    mov rdx, 0x10
     call.q [rip - 0x6d]
     mov.q rax, [rsp + 0x18]
     add.q rax, [rsp + 0x20]
@@ -99,3 +99,71 @@ main:
     mov rax, 9
     ret
 =========== OPT LEVEL: aggresive ===========
+=========== OPT LEVEL: none-quick ===========
+(module
+  (type (;0;) (func (result i64)))
+  (func $main (type 0) (result i64)
+    (local i64 i64 i64 i64 i32)
+    global.get 0
+    i64.const 40
+    i64.sub
+    global.set 0
+    global.get 0
+    i64.const 0
+    i64.add
+    local.tee 0
+    i32.const 0
+    local.tee 4
+    i64.const 24
+    memory.fill
+    local.get 0
+    i64.const 4
+    i64.store align=1
+    local.get 0
+    i64.const 8
+    local.tee 1
+    i64.add
+    i64.const 5
+    i64.store align=1
+    local.get 0
+    i64.const 16
+    local.tee 2
+    i64.add
+    i64.const 2
+    i64.store align=1
+    global.get 0
+    i64.const 24
+    i64.add
+    local.tee 3
+    local.get 4
+    local.get 2
+    memory.fill
+    local.get 3
+    local.get 0
+    local.get 2
+    memory.copy
+    local.get 3
+    i64.load align=1
+    local.set 0
+    local.get 3
+    local.get 1
+    i64.add
+    i64.load align=1
+    local.set 1
+    local.get 0
+    local.get 1
+    i64.add
+    global.get 0
+    i64.const 40
+    i64.add
+    global.set 0
+    return
+    end
+  )
+  (memory (;0;) i64 16)
+  (global (;0;) (mut i64) i64.const 1048576)
+  (export "main" (func 0))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (data (;0;) (i64.const 1048576) "")
+)

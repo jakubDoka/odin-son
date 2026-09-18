@@ -140,17 +140,17 @@ main:
   (type (;1;) (func (result i32)))
   (type (;2;) (func (result i32)))
   (func $main (type 0) (result i64)
-    (local i64 i64)
+    (local i32 i32)
     call $get8
     local.set 0
     call $get16
     local.set 1
     local.get 0
-    i64.extend_i32_u
-    i64.extend8_s
+    i32.extend8_s
+    i64.extend_i32_s
     local.get 1
-    i64.extend_i32_u
-    i64.extend16_s
+    i32.extend16_s
+    i64.extend_i32_s
     i64.add
     return
     end
@@ -165,9 +165,10 @@ main:
     return
     end
   )
-  (memory (;0;) 16)
+  (memory (;0;) i64 16)
   (global (;0;) (mut i64) i64.const 1048576)
   (export "main" (func 0))
   (export "__stack_pointer" (global 0))
   (export "memory" (memory 0))
+  (data (;0;) (i64.const 1048576) "")
 )

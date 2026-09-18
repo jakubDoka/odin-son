@@ -210,14 +210,14 @@ main:
   )
   (func $main (type 2) (result i64)
     (local i64 i64)
-    i64.const 3
-    call $pick
     block
       block
+        i64.const 3
+        call $pick
         local.set 0
         local.get 0
         i64.const 100
-        i32.gt_s
+        i64.gt_s
         br_if 0
         i64.const 7
         local.set 0
@@ -234,9 +234,10 @@ main:
     return
     end
   )
-  (memory (;0;) 16)
+  (memory (;0;) i64 16)
   (global (;0;) (mut i64) i64.const 1048576)
   (export "main" (func 2))
   (export "__stack_pointer" (global 0))
   (export "memory" (memory 0))
+  (data (;0;) (i64.const 1048576) "")
 )

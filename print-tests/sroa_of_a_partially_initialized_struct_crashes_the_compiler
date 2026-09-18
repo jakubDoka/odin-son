@@ -115,3 +115,65 @@ main:
 main:
     mov rax, 1
     ret
+=========== OPT LEVEL: none-quick ===========
+(module
+  (type (;0;) (func (param i64) (result i64)))
+  (type (;1;) (func (result i64)))
+  (func $sink (type 0) (param i64) (result i64)
+    (local i32 i32)
+    local.get 0
+    i32.load8_u align=1
+    local.set 1
+    local.get 0
+    i64.const 2
+    i64.add
+    i32.load16_u align=1
+    local.set 2
+    local.get 1
+    i32.const 255
+    i32.and
+    i64.extend_i32_u
+    local.get 2
+    i32.const 65535
+    i32.and
+    i64.extend_i32_u
+    i64.const 4
+    i64.mul
+    i64.add
+    return
+    end
+  )
+  (func $main (type 1) (result i64)
+    (local i64)
+    global.get 0
+    i64.const 4
+    i64.sub
+    global.set 0
+    global.get 0
+    i64.const 0
+    i64.add
+    local.tee 0
+    i32.const 0
+    i64.const 4
+    memory.fill
+    local.get 0
+    i32.const 1
+    i32.store8 align=1
+    local.get 0
+    call $sink
+    local.set 0
+    local.get 0
+    global.get 0
+    i64.const 4
+    i64.add
+    global.set 0
+    return
+    end
+  )
+  (memory (;0;) i64 16)
+  (global (;0;) (mut i64) i64.const 1048576)
+  (export "main" (func 1))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (data (;0;) (i64.const 1048576) "")
+)

@@ -805,14 +805,14 @@ main:
     i64.const 0
     local.get 0
     local.get 1
-    unreachable
+    f32.eq
     i32.const 255
     i32.and
     i64.extend_i32_u
     i64.add
     local.get 0
     local.get 1
-    unreachable
+    f32.ne
     i32.const 255
     i32.and
     i64.extend_i32_u
@@ -821,7 +821,7 @@ main:
     i64.add
     local.get 0
     local.get 1
-    unreachable
+    f32.lt
     i32.const 255
     i32.and
     i64.extend_i32_u
@@ -830,7 +830,7 @@ main:
     i64.add
     local.get 0
     local.get 1
-    unreachable
+    f32.le
     i32.const 255
     i32.and
     i64.extend_i32_u
@@ -839,7 +839,7 @@ main:
     i64.add
     local.get 0
     local.get 1
-    unreachable
+    f32.gt
     i32.const 255
     i32.and
     i64.extend_i32_u
@@ -848,7 +848,7 @@ main:
     i64.add
     local.get 0
     local.get 1
-    unreachable
+    f32.ge
     i32.const 255
     i32.and
     i64.extend_i32_u
@@ -862,14 +862,14 @@ main:
     i64.const 0
     local.get 0
     local.get 1
-    unreachable
+    f64.eq
     i32.const 255
     i32.and
     i64.extend_i32_u
     i64.add
     local.get 0
     local.get 1
-    unreachable
+    f64.ne
     i32.const 255
     i32.and
     i64.extend_i32_u
@@ -878,7 +878,7 @@ main:
     i64.add
     local.get 0
     local.get 1
-    unreachable
+    f64.lt
     i32.const 255
     i32.and
     i64.extend_i32_u
@@ -887,7 +887,7 @@ main:
     i64.add
     local.get 0
     local.get 1
-    unreachable
+    f64.le
     i32.const 255
     i32.and
     i64.extend_i32_u
@@ -896,7 +896,7 @@ main:
     i64.add
     local.get 0
     local.get 1
-    unreachable
+    f64.gt
     i32.const 255
     i32.and
     i64.extend_i32_u
@@ -905,7 +905,7 @@ main:
     i64.add
     local.get 0
     local.get 1
-    unreachable
+    f64.ge
     i32.const 255
     i32.and
     i64.extend_i32_u
@@ -916,52 +916,53 @@ main:
     end
   )
   (func $main (type 2) (result i64)
-    (local i64 i64 i64 i64 i64 i64)
+    (local i64 i64 i64 i64 i64 i64 f64 f32)
     f32.const +1
     f32.const +2
-    local.tee 0
-    call $f32c
-    local.set 1
-    local.get 0
-    local.get 0
-    call $f32c
-    local.set 2
-    f32.const +3
-    local.get 0
+    local.tee 7
     call $f32c
     local.set 0
+    local.get 7
+    local.get 7
+    call $f32c
+    local.set 1
+    f32.const +3
+    local.get 7
+    call $f32c
+    local.set 2
     f64.const +1
     f64.const +2
-    local.tee 3
-    call $f64c
-    local.set 4
-    local.get 3
-    local.get 3
-    call $f64c
-    local.set 5
-    f64.const +3
-    local.get 3
+    local.tee 6
     call $f64c
     local.set 3
+    local.get 6
+    local.get 6
+    call $f64c
+    local.set 4
+    f64.const +3
+    local.get 6
+    call $f64c
+    local.set 5
     i64.const 0
+    local.get 0
     local.get 1
+    i64.add
     local.get 2
     i64.add
-    local.get 0
-    i64.add
-    i64.add
-    local.get 4
-    local.get 5
     i64.add
     local.get 3
+    local.get 4
+    i64.add
+    local.get 5
     i64.add
     i64.add
     return
     end
   )
-  (memory (;0;) 16)
+  (memory (;0;) i64 16)
   (global (;0;) (mut i64) i64.const 1048576)
   (export "main" (func 2))
   (export "__stack_pointer" (global 0))
   (export "memory" (memory 0))
+  (data (;0;) (i64.const 1048576) "")
 )

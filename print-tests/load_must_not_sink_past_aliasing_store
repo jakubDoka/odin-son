@@ -230,37 +230,33 @@ main:
     i64.const 8
     i64.sub
     global.set 0
-    i64.const 10
-    call $opaque
-    local.set 0
-    global.get 0
-    i64.const 0
-    i64.add
-    local.tee 1
-    local.get 0
-    unreachable
-    unreachable
-    unreachable
-    local.get 1
-    call $opaque_ptr
-    local.set 0
-    local.get 0
-    i64.load align=1
-    local.set 0
-    local.get 1
-    i64.const 99
-    unreachable
-    unreachable
-    unreachable
-    i64.const 1
-    local.tee 1
-    call $opaque
     block
       block
+        i64.const 10
+        call $opaque
+        local.set 0
+        global.get 0
+        i64.const 0
+        i64.add
+        local.tee 1
+        local.get 0
+        i64.store align=1
+        local.get 1
+        call $opaque_ptr
+        local.set 0
+        local.get 0
+        i64.load align=1
+        local.set 0
+        local.get 1
+        i64.const 99
+        i64.store align=1
+        i64.const 1
+        local.tee 1
+        call $opaque
         local.set 2
         local.get 2
         local.get 1
-        i32.eq
+        i64.eq
         br_if 0
         i64.const 0
         local.set 1
@@ -287,9 +283,10 @@ main:
     return
     end
   )
-  (memory (;0;) 16)
+  (memory (;0;) i64 16)
   (global (;0;) (mut i64) i64.const 1048576)
   (export "main" (func 0))
   (export "__stack_pointer" (global 0))
   (export "memory" (memory 0))
+  (data (;0;) (i64.const 1048576) "")
 )

@@ -440,7 +440,7 @@ store_value_ty :: proc(
 				backend.graph_add_c_int(
 					ctx,
 					"msize",
-					.I32,
+					.I64,
 					i64(type_size(ty)),
 				),
 			),

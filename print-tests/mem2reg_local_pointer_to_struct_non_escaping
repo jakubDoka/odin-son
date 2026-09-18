@@ -222,7 +222,7 @@ main:
     end
   )
   (func $main (type 1) (result i64)
-    (local i64 i64 i64 i64)
+    (local i64 i64 i64 i64 i64)
     global.get 0
     i64.const 24
     i64.sub
@@ -239,9 +239,7 @@ main:
     local.set 1
     local.get 0
     local.get 1
-    unreachable
-    unreachable
-    unreachable
+    i64.store align=1
     i64.const 2
     call $opaque
     local.set 1
@@ -250,9 +248,7 @@ main:
     i64.add
     local.tee 2
     local.get 1
-    unreachable
-    unreachable
-    unreachable
+    i64.store align=1
     i64.const 3
     call $opaque
     local.set 1
@@ -261,34 +257,42 @@ main:
     i64.add
     local.tee 3
     local.get 1
-    unreachable
-    unreachable
-    unreachable
-    local.get 0
+    i64.store align=1
     local.get 0
     i64.load align=1
+    local.set 1
     local.get 2
     i64.load align=1
+    local.set 4
+    local.get 0
+    local.get 1
+    local.get 4
     i64.add
-    unreachable
-    unreachable
-    unreachable
-    local.get 3
+    i64.store align=1
     local.get 3
     i64.load align=1
+    local.set 1
     local.get 0
     i64.load align=1
+    local.set 4
+    local.get 3
+    local.get 1
+    local.get 4
     i64.add
-    unreachable
-    unreachable
-    unreachable
+    i64.store align=1
     local.get 0
     i64.load align=1
+    local.set 0
     local.get 2
     i64.load align=1
-    i64.add
+    local.set 1
     local.get 3
     i64.load align=1
+    local.set 2
+    local.get 0
+    local.get 1
+    i64.add
+    local.get 2
     i64.add
     global.get 0
     i64.const 24
@@ -297,9 +301,10 @@ main:
     return
     end
   )
-  (memory (;0;) 16)
+  (memory (;0;) i64 16)
   (global (;0;) (mut i64) i64.const 1048576)
   (export "main" (func 1))
   (export "__stack_pointer" (global 0))
   (export "memory" (memory 0))
+  (data (;0;) (i64.const 1048576) "")
 )

@@ -972,6 +972,10 @@ graph_add_arbitrary_load :: proc(
 			offset + extra_offset,
 		)
 
+		if load_unit != unit {
+			load = backend.graph_add_un_op(ctx, "asxt", .Uext, unit, load)
+		}
+
 		if value == 0 {
 			value = load
 			assert(offset == 0)

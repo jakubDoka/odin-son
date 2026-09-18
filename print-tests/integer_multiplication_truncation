@@ -39,22 +39,23 @@ main:
 (module
   (type (;0;) (func (result i64)))
   (func $main (type 0) (result i64)
-    (local i64)
+    (local i32)
     i32.const 100000
     local.tee 0
     local.get 0
     i32.mul
     local.tee 0
-    i64.extend32_s
+    i64.extend_i32_s
     local.get 0
     i64.extend_i32_u
     i64.add
     return
     end
   )
-  (memory (;0;) 16)
+  (memory (;0;) i64 16)
   (global (;0;) (mut i64) i64.const 1048576)
   (export "main" (func 0))
   (export "__stack_pointer" (global 0))
   (export "memory" (memory 0))
+  (data (;0;) (i64.const 1048576) "")
 )

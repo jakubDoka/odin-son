@@ -452,22 +452,22 @@ fib int:
   (type (;1;) (func (param i32) (result i32)))
   (type (;2;) (func (param i64) (result i64)))
   (func $main (type 0) (result i64)
-    (local i64 i64)
+    (local i64 i32)
     i32.const 10
     call 1
-    local.set 0
+    local.set 1
     i64.const 10
     call 2
-    local.set 1
-    local.get 0
-    i64.extend32_s
+    local.set 0
     local.get 1
+    i64.extend_i32_s
+    local.get 0
     i64.add
     return
     end
   )
   (func (;1;) (type 1) (param i32) (result i32)
-    (local i64 i64 i64)
+    (local i32 i32 i32)
     block
       block
         i32.const 1
@@ -509,7 +509,7 @@ fib int:
         local.get 0
         i64.const 2
         local.tee 2
-        i32.le_s
+        i64.le_s
         br_if 0
         local.get 0
         local.get 1
@@ -534,9 +534,10 @@ fib int:
     return
     end
   )
-  (memory (;0;) 16)
+  (memory (;0;) i64 16)
   (global (;0;) (mut i64) i64.const 1048576)
   (export "main" (func 0))
   (export "__stack_pointer" (global 0))
   (export "memory" (memory 0))
+  (data (;0;) (i64.const 1048576) "")
 )

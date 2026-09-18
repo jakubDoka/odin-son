@@ -272,14 +272,14 @@ main:
 =========== OPT LEVEL: none-quick ===========
 (module
   (type (;0;) (func (param i64) (result i64)))
-  (type (;1;) (func (param i64 i64) (result ?)))
+  (type (;1;) (func (param i64 i64) (result i64 i64)))
   (type (;2;) (func (result i64)))
   (func $opaque (type 0) (param i64) (result i64)
     local.get 0
     return
     end
   )
-  (func $mk (type 1) (param i64 i64) (result ?)
+  (func $mk (type 1) (param i64 i64) (result i64 i64)
     (local i64)
     global.get 0
     i64.const 16
@@ -294,21 +294,21 @@ main:
     memory.fill
     local.get 2
     local.get 0
-    unreachable
-    unreachable
-    unreachable
+    i64.store align=1
     local.get 2
     i64.const 8
     i64.add
     local.tee 0
     local.get 1
-    unreachable
-    unreachable
-    unreachable
+    i64.store align=1
     local.get 2
     i64.load align=1
+    local.set 1
     local.get 0
     i64.load align=1
+    local.set 0
+    local.get 1
+    local.get 0
     global.get 0
     i64.const 16
     i64.add
@@ -317,7 +317,7 @@ main:
     end
   )
   (func $main (type 2) (result i64)
-    (local i64 i64 i64)
+    (local i64 i64 i64 i64)
     global.get 0
     i64.const 16
     i64.sub
@@ -342,32 +342,34 @@ main:
     local.set 2
     local.get 0
     local.get 2
-    unreachable
-    unreachable
-    unreachable
+    i64.store align=1
     local.get 0
     i64.const 8
     i64.add
     local.tee 2
     local.get 1
-    unreachable
-    unreachable
-    unreachable
-    local.get 0
+    i64.store align=1
     local.get 0
     i64.load align=1
+    local.set 1
     local.get 2
     i64.load align=1
+    local.set 3
+    local.get 0
+    local.get 1
+    local.get 3
     i64.add
-    unreachable
-    unreachable
-    unreachable
+    i64.store align=1
     local.get 0
     i64.load align=1
+    local.set 0
+    local.get 2
+    i64.load align=1
+    local.set 1
+    local.get 0
     i64.const 100
     i64.mul
-    local.get 2
-    i64.load align=1
+    local.get 1
     i64.add
     global.get 0
     i64.const 16
@@ -376,9 +378,10 @@ main:
     return
     end
   )
-  (memory (;0;) 16)
+  (memory (;0;) i64 16)
   (global (;0;) (mut i64) i64.const 1048576)
   (export "main" (func 2))
   (export "__stack_pointer" (global 0))
   (export "memory" (memory 0))
+  (data (;0;) (i64.const 1048576) "")
 )

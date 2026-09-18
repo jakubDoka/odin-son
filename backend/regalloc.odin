@@ -260,8 +260,8 @@ rm_intern :: proc(interner: ^RM_Interner, mask: Reg_Mask) -> RM_Intern_Idx {
 INVALID_RM_INDEX :: RM_Intern_Idx(max(u16))
 
 RM_Intern_Idx :: bit_field u16 {
-	index: int      | 15,
-	kind:  Reg_Kind | 1,
+	index: int      | 12,
+	kind:  Reg_Kind | 4,
 }
 
 // TODO: compress this

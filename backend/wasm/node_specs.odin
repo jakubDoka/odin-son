@@ -12,7 +12,7 @@ SPEC := backend.Node_Spec{
 	call_clobbers = {
 		{},
 	},
-	datatype_to_reg_kind = {.Void = 0, .I8 = 0, .I16 = 0, .I32 = 0, .I64 = 1, .F32 = 2, .F64 = 3, .V128 = 4, .V256 = 0, .V512 = 0},
+	datatype_to_reg_kind = {.Void = 0, .I8 = 1, .I16 = 1, .I32 = 1, .I64 = 0, .F32 = 3, .F64 = 2, .V128 = 4, .V256 = 0, .V512 = 0},
 	spill_boundary = {64, 64, 64, 64, 64, 64},
 	collect_meta = wasm_collect_meta,
 	pre_regalloc_hook = wasm_pre_regalloc_hook,
@@ -106,6 +106,7 @@ SPEC := backend.Node_Spec{
 		0b10, // Set_Local
 		0b10, // Tee_Local
 		0b10, // Drop
+		0b10, // Stub
 	},
 	node_extra_sizes = {
 		1, // Start -> Cfg
@@ -193,6 +194,7 @@ SPEC := backend.Node_Spec{
 		0, // Set_Local -> No_Extra
 		0, // Tee_Local -> No_Extra
 		0, // Drop -> No_Extra
+		0, // Stub -> No_Extra
 	},
 	node_flags = {
 		{}, // Start
@@ -280,6 +282,7 @@ SPEC := backend.Node_Spec{
 		{}, // Set_Local
 		{}, // Tee_Local
 		{}, // Drop
+		{}, // Stub
 	},
 	node_extra_types = {
 		backend.Cfg,
@@ -363,6 +366,7 @@ SPEC := backend.Node_Spec{
 		backend.No_Extra,
 		backend.No_Extra,
 		backend.CV128,
+		backend.No_Extra,
 		backend.No_Extra,
 		backend.No_Extra,
 		backend.No_Extra,
@@ -454,6 +458,7 @@ SPEC := backend.Node_Spec{
 		`Set_Local`,
 		`Tee_Local`,
 		`Drop`,
+		`Stub`,
 	},
 }
 
@@ -543,6 +548,7 @@ WASM_Node_Type :: enum u16 {
 	Set_Local,
 	Tee_Local,
 	Drop,
+	Stub,
 }
 
 wasm_peep_inst :: proc(ctx: backend.Peep_Ctx, node: backend.Expanded_Node) -> backend.Node_ID {
@@ -645,6 +651,7 @@ wasm_collect_meta :: proc(ctx: ^backend.Graph,
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.CV128) % backend.PRECISION == 0)
+#assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)

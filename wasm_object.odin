@@ -3,6 +3,7 @@ package main
 import "backend"
 import "backend/wasm"
 import "core:fmt"
+import "core:mem"
 import "core:slice"
 import "typecheck"
 import "vendored/gam/util/arna"
@@ -81,6 +82,56 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 	mem_init_size := STACK_SIZE
 	mem_count := 0
 
+	global_count := 0
+
+	global_count += 1 // __stack_pointer
+	export_count += 1
+
+	global_count += len(ctx.globals)
+
+	uleb(&sections[.global], u64(global_count))
+
+	emit_global :: proc(
+		buf: ^[dynamic]u8,
+		ty: wasm.Type,
+		mutability: Mutability,
+		#any_int offset: i64,
+	) {
+		putb(buf, ty)
+		putb(buf, mutability)
+		putb(buf, wasm.Wasm_Opcode.I64_Const)
+		sleb(buf, offset)
+		putb(buf, wasm.Wasm_Opcode.End)
+	}
+
+	stack_pointer: {
+		emit_global(&sections[.global], .i64, .mut, STACK_SIZE)
+	}
+
+	init_mem_start := 0
+	global_idxes := make([]int, len(ctx.globals))
+	global_idx := 1
+	for i in 0 ..< 2 {
+		do_zeroed := i == 0
+
+		if !do_zeroed {
+			init_mem_start = mem_init_size
+		}
+
+		for global, i in ctx.globals {
+			if do_zeroed == slice.all_of(global.bytes, 0) {
+				mem_init_size = mem.align_forward_int(
+					mem_init_size,
+					global.align,
+				)
+				emit_global(&sections[.global], .i64, .const, mem_init_size)
+				mem_init_size += len(global.bytes)
+				global_idxes[i] = global_idx
+				global_idx += 1
+			}
+		}
+	}
+
 	mem_count += 1 // memory
 	export_count += 1
 
@@ -88,22 +139,34 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 
 	memory: {
 		putb(&sections[.memory], Limit_Type.I64_Open)
-		uleb(&sections[.memory], u64(mem_init_size / PAGE_SIZE))
+		uleb(
+			&sections[.memory],
+			u64((mem_init_size + PAGE_SIZE - 1) / PAGE_SIZE),
+		)
 	}
 
-	global_count := 0
+	data_count := 0
+	data_count += 1 // static init memory
 
-	global_count += 1 // __stack_pointer
-	export_count += 1
+	uleb(&sections[.data], u64(data_count))
 
-	uleb(&sections[.global], u64(global_count))
+	static_init: {
+		putb(&sections[.data], u8(0))
 
-	stack_pointer: {
-		putb(&sections[.global], wasm.Type.i64)
-		putb(&sections[.global], Mutability.mut)
-		putb(&sections[.global], wasm.Wasm_Opcode.I64_Const)
-		sleb(&sections[.global], STACK_SIZE)
-		putb(&sections[.global], wasm.Wasm_Opcode.End)
+		putb(&sections[.data], wasm.Wasm_Opcode.I64_Const)
+		sleb(&sections[.data], i64(init_mem_start))
+		putb(&sections[.data], wasm.Wasm_Opcode.End)
+
+		uleb(&sections[.data], u64(mem_init_size - init_mem_start))
+		for global, i in ctx.globals {
+			offset := init_mem_start
+			if !slice.all_of(global.bytes, 0) {
+				padding := mem.align_forward_int(offset, global.align) - offset
+				resize(&sections[.data], len(sections[.data]) + padding)
+				append(&sections[.data], ..global.bytes)
+				offset += len(global.bytes)
+			}
+		}
 	}
 
 	func_count := 0
@@ -154,6 +217,9 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 				#partial switch opcode {
 				case .Call:
 					id := func_idxes[reloc.id]
+					fixed_uleb(prc.out.code[reloc.offset:][:4], u64(id))
+				case .Global_Get:
+					id := global_idxes[reloc.id]
 					fixed_uleb(prc.out.code[reloc.offset:][:4], u64(id))
 				case:
 					fmt.panicf("TODO: reloc opcode %v", opcode)
@@ -222,9 +288,21 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 			}
 		}
 
-		uleb(buf, u64(len(rets)))
+		ret_dts: [dynamic; 2]backend.Node_Datatype
+		assert(len(rets) <= 1)
 		for ret in rets {
-			putb(buf, DT_TO_VALTYPE[typecheck.type_to_dt(ret)])
+			rets, ok := x86_reg_class_classify(ret)
+
+			if len(rets) == 1 && type_to_dt(ret) != .Void {
+				rets[0] = type_to_dt(ret)
+			}
+
+			ret_dts = rets
+		}
+
+		uleb(buf, u64(len(ret_dts)))
+		for ret in ret_dts {
+			putb(buf, DT_TO_VALTYPE[ret])
 		}
 	}
 

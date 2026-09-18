@@ -162,3 +162,45 @@ opaque:
 main:
     mov rax, 0x34
     ret
+=========== OPT LEVEL: none-quick ===========
+(module
+  (type (;0;) (func (result i64)))
+  (type (;1;) (func (param f32) (result f32)))
+  (func $main (type 0) (result i64)
+    (local f32)
+    f32.const +12
+    call $opaque
+    local.set 0
+    f32.const +0
+    local.get 0
+    f32.const +2
+    f32.mul
+    f32.add
+    local.get 0
+    f32.const +3
+    f32.add
+    f32.add
+    local.get 0
+    f32.const +1.5
+    f32.sub
+    f32.add
+    local.get 0
+    f32.const +4
+    f32.div
+    f32.add
+    i64.trunc_f32_s
+    return
+    end
+  )
+  (func $opaque (type 1) (param f32) (result f32)
+    local.get 0
+    return
+    end
+  )
+  (memory (;0;) i64 16)
+  (global (;0;) (mut i64) i64.const 1048576)
+  (export "main" (func 0))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (data (;0;) (i64.const 1048576) "")
+)

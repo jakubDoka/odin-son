@@ -152,3 +152,57 @@ copy:
 main:
     xor eax, eax
     ret
+=========== OPT LEVEL: none-quick ===========
+(module
+  (type (;0;) (func (result i64)))
+  (type (;1;) (func (param i64 i64) (result i64)))
+  (func $main (type 0) (result i64)
+    (local i64 i64 i64 i32)
+    global.get 0
+    i64.const 2
+    i64.sub
+    global.set 0
+    global.get 0
+    i64.const 0
+    i64.add
+    local.tee 0
+    i32.const 0
+    local.tee 3
+    i64.const 1
+    local.tee 1
+    memory.fill
+    global.get 0
+    i64.const 1
+    i64.add
+    local.tee 2
+    local.get 3
+    local.get 1
+    memory.fill
+    local.get 0
+    local.get 2
+    call $copy
+    drop
+    i64.const 0
+    global.get 0
+    i64.const 2
+    i64.add
+    global.set 0
+    return
+    end
+  )
+  (func $copy (type 1) (param i64 i64) (result i64)
+    local.get 0
+    local.get 1
+    i64.const 1
+    memory.copy
+    i64.const 0
+    return
+    end
+  )
+  (memory (;0;) i64 16)
+  (global (;0;) (mut i64) i64.const 1048576)
+  (export "main" (func 0))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (data (;0;) (i64.const 1048576) "")
+)

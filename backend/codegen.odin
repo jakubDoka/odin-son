@@ -125,6 +125,41 @@ Reloc_Slot :: struct #raw_union #align (1) {
 	addend_4: u32,
 }
 
+param_mask :: proc(
+	graph: ^Graph,
+	ra: ^Regalloc,
+	node: ^Node,
+	spill_base: Maybe(u16) = nil,
+	mask: Maybe(Reg) = nil,
+) -> RM_Intern_Idx {
+	kind := ra.datatype_to_reg_kind[node.dt]
+	args := ra.args[kind]
+	arg_ext := graph_extra(graph, node, Tup)
+	idx := 0
+	for a in ra.param_specs[:arg_ext.idx] {
+		if a.dt == .Void do continue
+		idx += int(ra.datatype_to_reg_kind[a.dt] == kind)
+	}
+
+	reg: Reg
+	if int(idx) < len(args) {
+		if raw_data(args) == nil {
+			reg = {
+				kind  = kind,
+				index = u16(idx),
+			}
+		} else {
+			reg = args[idx]
+		}
+	} else {
+		reg = {
+			kind  = kind,
+			index = spill_base.? + u16(idx) - u16(len(args)),
+		}
+	}
+	return rm_intern_single(ra, reg)
+}
+
 emit :: #force_no_inline proc(buf: ^arna.Allocator, bytes: []u8) {
 	b := arna.smake(buf, []u8, len(bytes), zeroed = false)
 	copy(b, bytes)

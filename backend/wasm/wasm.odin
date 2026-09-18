@@ -70,6 +70,7 @@ when SPEC_NOT_PRESENT {
 		Set_Local,
 		Tee_Local,
 		Drop,
+		Stub,
 	}
 
 	@(rodata)
@@ -78,6 +79,7 @@ when SPEC_NOT_PRESENT {
 		.Set_Local = {no_ctor = true},
 		.Tee_Local = {no_ctor = true},
 		.Drop = {no_ctor = true},
+		.Stub = {no_ctor = true},
 	}
 
 	when !GEN_SPEC {
@@ -96,6 +98,37 @@ wasm_peep :: proc(
 	id := backend.graph_id(ctx, node)
 	kind := wtype(node)
 	#partial switch kind {
+	case .Shr:
+		if graph_get(ctx, node.inps[0]).dt < .I32 {
+			backend.graph_set_input(
+				ctx,
+				id,
+				0,
+				backend.graph_add_un_op(
+					ctx,
+					"shext",
+					.Sext,
+					.I32,
+					node.inps[0],
+				),
+			)
+			return id
+		}
+	case .Div:
+		changed := false
+		for inp, i in node.inps {
+			if graph_get(ctx, inp).dt < .I32 {
+				backend.graph_set_input(
+					ctx,
+					id,
+					i,
+					backend.graph_add_un_op(ctx, "shext", .Sext, .I32, inp),
+				)
+				changed = true
+			}
+		}
+
+		if changed do return id
 	case .And_Not:
 		return backend.graph_add_bin_op(
 			ctx,
@@ -111,6 +144,26 @@ wasm_peep :: proc(
 				node.inps[1],
 				backend.graph_add_c_int(ctx, "acn", node.dt, -1),
 			),
+		)
+	case .Neg:
+		if node.dt <= .I64 {
+			return backend.graph_add_bin_op(
+				ctx,
+				"sneg",
+				.Sub,
+				node.dt,
+				backend.graph_add_c_int(ctx, "zr", node.dt, 0),
+				node.inps[0],
+			)
+		}
+	case .Not:
+		return backend.graph_add_bin_op(
+			ctx,
+			"sneg",
+			.Xor,
+			node.dt,
+			backend.graph_add_c_int(ctx, "zr", node.dt, -1),
+			node.inps[0],
 		)
 	}
 
@@ -137,104 +190,90 @@ wasm_meta_of :: #force_inline proc(
 	rslice :: backend.rm_intern_slice
 
 	@(rodata, static)
-	I64_MASK := [?]i64{i64(max(u32))}
+	FULL_MASK := [?]i64{i64(max(u32))}
 
-	I64_MASK_IDX :: backend.RM_Intern_Idx{}
+	mask_of :: #force_inline proc(kind: Reg_Kind) -> backend.RM_Intern_Idx {
+		return {kind = kind}
+	}
 
 	@(rodata, static)
-	I64_MASK_SLOTS := [8]backend.RM_Intern_Idx{}
+	SLOT_TABLE := [RK_COUNT][8]backend.RM_Intern_Idx {
+		{0 ..< 8 = {kind = RK_I64}},
+		{0 ..< 8 = {kind = RK_I32}},
+		{0 ..< 8 = {kind = RK_F64}},
+		{0 ..< 8 = {kind = RK_F32}},
+		{0 ..< 8 = {kind = RK_V128}},
+	}
+
+	rk := ra.datatype_to_reg_kind[node.dt]
+	mask := mask_of(rk)
+	masks := SLOT_TABLE[rk][:]
+
+	imasks := masks
+	if 0 < len(node.inps) {
+		rk := ra.datatype_to_reg_kind[graph_get(graph, node.inps[0]).dt]
+		imasks = SLOT_TABLE[rk][:]
+	}
 
 	if node.gvn == 0 {
 		ra.mask_len = MASK_SIZE
-		rslice(ra, RK_I64, I64_MASK[:])
+		for kind in 0 ..< RK_COUNT {
+			rslice(ra, kind, FULL_MASK[:])
+		}
 	}
 
-	if context.user_index == 0 {
-		#partial switch wtype(node) {
-		case .Root_Mem,
-		     .Sym,
-		     .Return,
-		     .CInt,
-		     .Add ..=
-		     .U_Rem,
-		     .If,
-		     .Jump,
-		     .Split,
-		     .Local,
-		     .Local_Addr,
-		     .Call,
-		     .Store,
-		     .Load,
-		     .Ret,
-		     .Mem,
-		     .Drop,
-		     .Set,
-		     .And_Not,
-		     .Uext,
-		     .Sext:
-			return {out = out}
-		case .Phi:
-			if node.dt == .Void do return {out = out}
-			return {
-				out = I64_MASK_IDX,
-				input_start = 1,
-				masks = I64_MASK_SLOTS[:len(node.inps) - 1],
-			}
-		case .Param:
-			idx := backend.graph_extra(graph, node, backend.Tup).idx
-			return {
-				out = single(
-					ra,
-					{kind = Reg_Kind(Local_Type.i64), index = u16(idx)},
-				),
-			}
-		case .Tee_Local:
-			return {out = I64_MASK_IDX}
-		case .Set_Local:
-			return {out = I64_MASK_IDX}
-		case .Get_Local:
-			return {out = out, masks = I64_MASK_SLOTS[:1]}
+	dup :: #force_inline proc(
+		msks: []backend.RM_Intern_Idx,
+	) -> []backend.RM_Intern_Idx {
+		return slice.clone(msks)
+	}
+
+	#partial switch wtype(node) {
+	case .Root_Mem,
+	     .Sym,
+	     .Return,
+	     .CInt,
+	     .Add ..=
+	     .U_Rem,
+	     .If,
+	     .Jump,
+	     .Split,
+	     .Local,
+	     .Local_Addr,
+	     .Call,
+	     .Store,
+	     .Load,
+	     .Ret,
+	     .Mem,
+	     .Drop,
+	     .Set,
+	     .Copy,
+	     .And_Not,
+	     .Uext,
+	     .Sext,
+	     .F_To_I,
+	     .Stub,
+	     .Not,
+	     .Neg,
+	     .Cast,
+	     .Global,
+	     .Global_Addr:
+		return {out = out}
+	case .Phi:
+		if node.dt == .Void do return {out = out}
+		return {
+			out = mask,
+			input_start = 1,
+			masks = masks[:len(node.inps) - 1],
 		}
-	} else {
-		#partial switch wtype(node) {
-		case .Root_Mem, .Sym, .Jump, .Local, .Mem, .Drop, .And_Not:
-			return {out = out}
-		case .Load:
-			return {
-				out = I64_MASK_IDX,
-				input_start = 2,
-				masks = I64_MASK_SLOTS[:1],
-			}
-		case .Store:
-			return {out = out, input_start = 2, masks = I64_MASK_SLOTS[:2]}
-		case .Return:
-			return {out = out, input_start = 2, masks = I64_MASK_SLOTS[:]}
-		case .If:
-			return {out = out, input_start = 1, masks = I64_MASK_SLOTS[:1]}
-		case .Split:
-			return {out = I64_MASK_IDX, masks = I64_MASK_SLOTS[:1]}
-		case .Call:
-			return {
-				out = out,
-				input_start = 3,
-				masks = I64_MASK_SLOTS[:len(node.inps) - 3],
-			}
-		case .Set:
-			return {out = out, input_start = 2, masks = I64_MASK_SLOTS[:3]}
-		case .Phi:
-			if node.dt == .Void do return {out = out}
-			return {
-				out = I64_MASK_IDX,
-				input_start = 1,
-				masks = I64_MASK_SLOTS[:len(node.inps) - 1],
-			}
-		case .Add ..= .U_Rem:
-			return {out = I64_MASK_IDX, masks = I64_MASK_SLOTS[:2]}
-		case .Uext, .Sext:
-			return {out = I64_MASK_IDX, masks = I64_MASK_SLOTS[:1]}
-		case .CInt, .Local_Addr, .Ret, .Param:
-			return {out = I64_MASK_IDX}
-		}
+	case .Param:
+		return {out = backend.param_mask(graph, ra, node)}
+	case .Tee_Local:
+		return {out = mask}
+	case .Set_Local:
+		return {out = mask}
+	case .Get_Local:
+		return {out = out, masks = imasks[:1]}
 	}
 
 	fmt.panicf("TODO %v", node)
@@ -250,7 +289,7 @@ wasm_pre_regalloc_hook :: proc(
 
 	Ctx :: struct {
 		using graph: ^backend.Graph,
-		metas:       []backend.Regalloc_Node_Meta,
+		metas:       []Meta,
 		instrs:      ^[dynamic]backend.Node_ID,
 		sets:        []backend.Node_ID,
 		rcs:         []int,
@@ -346,11 +385,121 @@ wasm_pre_regalloc_hook :: proc(
 		}
 	}
 
-	defs: int
-	{
-		context.user_index = 1
-		ctx.metas, defs = wasm_collect_meta(graph, ra, sched)
+	Meta :: struct {
+		def:         bool,
+		is_mem:      bool,
+		input_start: u8,
+		input_count: u8,
 	}
+
+	meta_of :: proc(ctx: ^Ctx, node: backend.Expanded_Node, _: $T) -> Meta {
+		// TODO: this is uselss to be strongly typed, we anyway just use the
+		// length, and wether the out is invalid
+		#partial switch wtype(node) {
+		case .Root_Mem, .Sym, .Jump, .Local, .Mem, .Drop, .Global:
+			return {}
+		case .Load:
+			return {
+				def = true,
+				is_mem = true,
+				input_start = 2,
+				input_count = 1,
+			}
+		case .Store:
+			return {
+				def = true,
+				is_mem = true,
+				input_start = 2,
+				input_count = 2,
+			}
+		case .Split:
+			return {def = true, input_count = 1}
+		case .If:
+			return {input_start = 1, input_count = 1}
+		case .Call, .Return:
+			prefix: u8 = backend.CALL_PREFIX
+			if node.itype == .Return do prefix = backend.RET_PREFIX
+
+			real_len := len(node.inps)
+			for ; graph_get(ctx, node.inps[real_len - 1]).itype == .Local;
+			    real_len -= 1 {}
+
+			return {input_start = prefix, input_count = u8(real_len) - prefix}
+		case .Set, .Copy:
+			return {is_mem = true, input_start = 2, input_count = 3}
+		case .Phi:
+			if node.dt == .Void do return {}
+			return {
+				def = true,
+				input_start = 1,
+				input_count = u8(len(node.inps) - 1),
+			}
+		case .Add ..= .And_Not:
+			return {def = true, input_count = 2}
+		case .Uext, .Sext, .F_To_I, .Not, .Neg, .Cast:
+			return {def = true, input_count = 1}
+		case .CInt, .Local_Addr, .Ret, .Param, .Global_Addr:
+			return {def = true}
+		}
+
+		fmt.panicf("TODO %v", node)
+	}
+
+	collect_meta :: #force_inline proc(
+		ctx: ^Ctx,
+		sched: ^backend.Graph_Schedule,
+	) -> (
+		slots: []Meta,
+		def_count: int,
+	) {
+		graph := ctx.graph
+
+		slots = make([]Meta, int(graph.gvn) - len(sched.bbs) - 1)
+		rev_count := int(graph.gvn) - len(sched.bbs)
+
+		rev_count -= 1
+		graph_get(graph, graph.start).gvn = u32(rev_count)
+
+		idx := 0
+		for bb, j in sched.bbs {
+			graph_get(graph, bb.head).gvn = u32(len(slots) + 1 + j)
+			for instr in bb.instrs {
+				inode := graph_expand(graph, instr)
+
+				inode.gvn = u32(idx)
+				idx += 1
+
+				when GEN_SPEC {
+					meta: Meta
+				} else {
+					meta := meta_of(ctx, inode, struct{}{})
+				}
+				meta.input_count += meta.input_start
+
+				if !meta.def {
+					rev_count -= 1
+					inode.gvn = u32(rev_count)
+				} else {
+					inode.gvn = u32(def_count)
+					def_count += 1
+				}
+
+				slots[inode.gvn] = meta
+			}
+		}
+
+		return
+	}
+
+	data_deps :: proc(
+		meta: Meta,
+		node: backend.Expanded_Node,
+	) -> []backend.Node_ID {
+		return node.inps[meta.input_start:meta.input_count]
+	}
+
+	defs: int
+	ctx.metas, defs = collect_meta(&ctx, sched)
 	ctx.sets = make([]backend.Node_ID, defs)
 	ctx.rcs = make([]int, defs)
 
@@ -362,7 +511,7 @@ wasm_pre_regalloc_hook :: proc(
 
 		for instr, i in bb.instrs {
 			inode := graph_expand(ctx, instr)
-			for dep in backend.data_deps(ctx.metas[inode.gvn], inode) {
+			for dep in data_deps(ctx.metas[inode.gvn], inode) {
 				ctx.rcs[graph_get(ctx, dep).gvn] += int(
 					slice.contains(bb.instrs[:i], dep),
 				)
@@ -380,7 +529,7 @@ wasm_pre_regalloc_hook :: proc(
 
 			if inode.itype == .Phi do return
 
-			deps := backend.data_deps(ctx.metas[inode.gvn], inode)
+			deps := data_deps(ctx.metas[inode.gvn], inode)
 			#reverse for dep, i in deps {
 				dnode := graph_expand(ctx, dep)
 
@@ -398,9 +547,18 @@ wasm_pre_regalloc_hook :: proc(
 
 					if ctx.rcs[graph_get(ctx, dep).gvn] > 0 do break shift
 
+					if ctx.metas[dnode.gvn].is_mem {
+						has_mem := false
+						for n in ctx.instrs[pos:ctx.cursor] {
+							has_mem |= ctx.metas[graph_get(ctx, n).gvn].is_mem
+						}
+						if has_mem do break shift
+					}
+
 					if len(dnode.outs) > 1 {
-						graph_get(ctx, get_or_add_set(ctx, dnode.gvn)).rtype =
-							u16(WASM_Node_Type.Tee_Local)
+						graph_get(ctx, get_or_add_set(ctx, dnode)).rtype = u16(
+							WASM_Node_Type.Tee_Local,
+						)
 					}
 
 					slice.rotate_left(ctx.instrs[pos:ctx.cursor], 1)
@@ -410,7 +568,7 @@ wasm_pre_regalloc_hook :: proc(
 
 				dep := dep
 				if dnode.itype != .Phi && dnode.itype != .Param {
-					dep = get_or_add_set(ctx, dnode.gvn)
+					dep = get_or_add_set(ctx, dnode)
 				}
 
 				get := backend.graph_add_raw(
@@ -422,11 +580,22 @@ wasm_pre_regalloc_hook :: proc(
 				)
 
 				if dnode.itype == .Phi {
+					// TODO: reuse these
+					stub := backend.graph_add_raw(
+						ctx,
+						"stub",
+						u16(WASM_Node_Type.Stub),
+						dnode.dt,
+						{},
+					)
+
+					inject_at(ctx.instrs, ctx.cursor, stub)
+
 					backend.graph_set_input(
 						ctx,
 						instr,
 						int(ctx.metas[inode.gvn].input_start) + i,
-						ctx.start,
+						stub,
 					)
 				}
 
@@ -434,18 +603,21 @@ wasm_pre_regalloc_hook :: proc(
 			}
 		}
 
-		get_or_add_set :: proc(ctx: ^Ctx, gvn: u32) -> backend.Node_ID {
-			if ctx.sets[gvn] == 0 {
-				ctx.sets[gvn] = backend.graph_add_raw(
+		get_or_add_set :: proc(
+			ctx: ^Ctx,
+			node: ^backend.Node,
+		) -> backend.Node_ID {
+			if ctx.sets[node.gvn] == 0 {
+				ctx.sets[node.gvn] = backend.graph_add_raw(
 					ctx,
 					"uset",
 					u16(WASM_Node_Type.Set_Local),
-					.Void,
+					node.dt,
 					{},
 				)
 			}
 
-			return ctx.sets[gvn]
+			return ctx.sets[node.gvn]
 		}
 	}
 
@@ -453,8 +625,7 @@ wasm_pre_regalloc_hook :: proc(
 		for i := 0; i < len(bb.instrs); i += 1 {
 			instr := bb.instrs[i]
 			inode := graph_expand(ctx, instr)
-			if inode.gvn >= old_gvn ||
-			   !backend.is_def(ctx.metas[inode.gvn]) {continue}
+			if inode.gvn >= old_gvn || !ctx.metas[inode.gvn].def {continue}
 			if ctx.sets[inode.gvn] != 0 {
 				insert_pos := i + 1
 				for ; graph_get(ctx, bb.instrs[insert_pos]).itype == .Phi;
@@ -469,10 +640,16 @@ wasm_pre_regalloc_hook :: proc(
 	}
 }
 
+Local_Type_Projection :: struct {
+	param_projs: []u16,
+	local_start: int,
+}
+
 Ctx :: struct {
 	using inner: backend.Codegen_Emit_Ctx,
 	stack_size:  i32,
 	code_start:  u32,
+	local_projs: [RK_COUNT]Local_Type_Projection,
 	bb_metas:    []BB_Meta,
 	block_stack: [dynamic]int,
 	final_order: [dynamic]int,
@@ -491,12 +668,12 @@ Block :: struct {
 	stack_pos: int,
 }
 
-Local_Type :: enum {
-	i64,
-	i32,
-	f64,
-	f32,
-	v128,
+Local_Type :: enum Reg_Kind {
+	i64  = RK_I64,
+	i32  = RK_I32,
+	f64  = RK_F64,
+	f32  = RK_F32,
+	v128 = RK_V128,
 }
 
 @(rodata)
@@ -515,11 +692,6 @@ wasm_emit_function :: proc(
 
 	ctx: Ctx
 	ctx.inner = ectx
-
-	@(static, rodata)
-	DT_TO_LOCAL_TYPE := #partial [backend.Node_Datatype]Local_Type {
-		.I64 = .i64,
-	}
 
 	alloc_ty :: proc(reg: backend.Reg) -> (Local_Type, i16) {
 		return Local_Type(reg.kind), i16(reg.index)
@@ -542,15 +714,24 @@ wasm_emit_function :: proc(
 		for bb, i in ctx.schedule.bbs {
 			tail := bb.instrs[len(bb.instrs) - 1]
 			tnode := graph_expand(ctx, tail)
+
+			assert(graph_get(ctx, bb.head).itype != .Loop)
 			for next in tnode.outs {
 				nnode := graph_expand(ctx, next.id)
 				assert(
 					next.idx != len(nnode.inps) - 1 || nnode.itype != .Region,
 				)
 				if int(nnode.gvn) != i + 1 {
+					start := i
+
+					for ; graph_get(ctx, ctx.schedule.bbs[start].head).itype ==
+					    .Call_End;
+					    start -= 1 {
+					}
+
 					append(
 						blocks,
-						Block{start = i, origin = i, end = int(nnode.gvn)},
+						Block{start = start, origin = i, end = int(nnode.gvn)},
 					)
 				}
 			}
@@ -602,10 +783,28 @@ wasm_emit_function :: proc(
 		assert(len(ctx.block_stack) == 0)
 	}
 
-	param_counts: [Local_Type]i16
+	param_counts: [RK_COUNT]i16
+	total_param_count := 0
 	for param in ctx.param_specs {
 		if param.dt == .Void do continue
-		param_counts[DT_TO_LOCAL_TYPE[param.dt]] += 1
+		param_counts[ctx.regalloc.datatype_to_reg_kind[param.dt]] += 1
+		total_param_count += 1
+	}
+
+	for &proj, i in ctx.local_projs {
+		proj.param_projs = make([]u16, param_counts[i])
+		cursor := 0
+		idx := 0
+		for param in ctx.param_specs {
+			if param.dt == .Void do continue
+
+			if ctx.regalloc.datatype_to_reg_kind[param.dt] == Reg_Kind(i) {
+				proj.param_projs[cursor] = u16(idx)
+				cursor += 1
+			}
+
+			idx += 1
+		}
 	}
 
 	local_counts: [Local_Type]i16
@@ -618,8 +817,10 @@ wasm_emit_function :: proc(
 	}
 
 	local_count := 0
-	for cnt in local_counts {
+	for cursor := total_param_count; cnt, i in local_counts {
 		local_count += int(cnt != 0)
+		ctx.local_projs[i].local_start = cursor
+		cursor += int(cnt)
 	}
 
 	emit_leb(ctx.code, local_count)
@@ -711,24 +912,49 @@ wasm_emit_instr :: proc(ctx: ^Ctx, instr: backend.Node_ID, block: int, _: $T) {
 		.F_Gt = #partial{.F32 = .F32_Gt, .F64 = .F64_Gt},
 		.F_Ge = #partial{.F32 = .F32_Ge, .F64 = .F64_Ge},
 		.Neg = #partial{.F32 = .F32_Neg, .F64 = .F64_Neg},
+		.Not = #partial{.I8 ..= .I32 = .I32_Eqz, .I64 = .I64_Eqz},
 		.Ctz = #partial{.I8 ..= .I32 = .I32_Ctz, .I64 = .I64_Ctz},
 		.Uext = #partial{.I64 = .I64_Extend_I32_U},
 		.Set_Local = {.Void ..= .V512 = .Local_Set},
 		.Tee_Local = {.Void ..= .V512 = .Local_Tee},
 		.Drop = {.Void ..= .V512 = .Drop},
-		.Load = #partial{.I8 ..= .I32 = .I32_Load, .I64 = .I64_Load},
-		.Store = #partial{.I8 ..= .I32 = .I32_Store, .I64 = .I64_Store},
+		.Load = #partial{
+			.I8 = .I32_Load8_U,
+			.I16 = .I32_Load16_U,
+			.I32 = .I32_Load,
+			.I64 = .I64_Load,
+			.F32 = .F32_Load,
+			.F64 = .F64_Load,
+		},
+		.Store = #partial{
+			.I8 = .I32_Store8,
+			.I16 = .I32_Store16,
+			.I32 = .I32_Store,
+			.I64 = .I64_Store,
+			.F32 = .F32_Store,
+			.F64 = .F64_Store,
+		},
 	}
 
 	node := graph_expand(ctx, instr)
 	kind := wtype(node)
 	op := NODE_TO_OP[kind][node.dt]
 
+	#partial switch kind {
+	case .Eq ..= .U_Ge, .F_Eq ..= .F_Ge:
+		op = NODE_TO_OP[kind][graph_get(ctx, node.inps[0]).dt]
+	}
+
 	block := &ctx.blocks[ctx.bb_metas[block].break_block]
 	label := len(ctx.block_stack) - block.stack_pos - 1
 
+	inp: ^backend.Node
+	if 0 < len(node.inps) {
+		inp = graph_get(ctx, node.inps[0])
+	}
+
 	#partial switch kind {
-	case .Root_Mem, .Sym, .Phi, .Local, .Ret, .Mem, .Param:
+	case .Root_Mem, .Sym, .Phi, .Local, .Ret, .Mem, .Param, .Stub, .Global:
 	case .CInt:
 		cint := backend.graph_extra(ctx, node, backend.CInt)
 
@@ -750,10 +976,18 @@ wasm_emit_instr :: proc(ctx: ^Ctx, instr: backend.Node_ID, block: int, _: $T) {
 		case .Void, .V256, .V512:
 			panic("no")
 		}
-	case .Add ..= .U_Rem, .Drop:
+	case .Add ..= .U_Rem, .Drop, .Not:
+		#partial switch kind {
+		case .Shl, .U_Shr, .Shr:
+			if node.dt != .I64 && graph_get(ctx, node.inps[1]).dt == .I64 {
+				emit_op(ctx.code, .I32_Wrap_I64)
+			}
+		}
 		emit_op(ctx.code, op)
+		if kind == .Not && node.dt == .I64 {
+			emit_op(ctx.code, .I64_Extend_I32_U)
+		}
 	case .Uext:
-		inp := graph_get(ctx, node.inps[0])
 		switch node.dt {
 		case .I16 ..= .I32:
 			switch inp.dt {
@@ -787,32 +1021,80 @@ wasm_emit_instr :: proc(ctx: ^Ctx, instr: backend.Node_ID, block: int, _: $T) {
 			panic("no")
 		}
 	case .Sext:
-		inp := graph_get(ctx, node.inps[0])
+		switch inp.dt {
+		case .I8:
+			emit_op(ctx.code, .I32_Extend8_S)
+		case .I16:
+			emit_op(ctx.code, .I32_Extend16_S)
+		case .I32:
+		case .Void, .I64 ..= .V512:
+			panic("NO")
+		}
+
 		switch node.dt {
 		case .I16 ..= .I32:
+		case .I64:
+			emit_op(ctx.code, .I64_Extend_I32_S)
+		case .Void, .I8, .F32 ..= .V512:
+			panic("no")
+		}
+	case .F_To_I:
+		switch node.dt {
+		case .I8 ..= .I32:
 			switch inp.dt {
-			case .I8:
-				emit_op(ctx.code, .I32_Extend8_S)
-			case .I16:
-				emit_op(ctx.code, .I32_Extend16_S)
-			case .Void, .I32 ..= .V512:
-				panic("NO")
+			case .F32:
+				emit_op(ctx.code, .I32_Trunc_F32_S)
+			case .F64:
+				emit_op(ctx.code, .I32_Trunc_F32_S)
+			case .Void ..= .I64, .V128 ..= .V512:
+				panic("no")
 			}
 		case .I64:
 			switch inp.dt {
-			case .I8:
-				emit_op(ctx.code, .I64_Extend_I32_U)
-				emit_op(ctx.code, .I64_Extend8_S)
-			case .I16:
-				emit_op(ctx.code, .I64_Extend_I32_U)
-				emit_op(ctx.code, .I64_Extend16_S)
-			case .I32:
-				emit_op(ctx.code, .I64_Extend32_S)
-			case .Void, .I64 ..= .V512:
-				panic("NO")
+			case .F32:
+				emit_op(ctx.code, .I64_Trunc_F32_S)
+			case .F64:
+				emit_op(ctx.code, .I64_Trunc_F64_S)
+			case .Void ..= .I64, .V128 ..= .V512:
+				panic("no")
 			}
-		case .Void, .I8, .F32 ..= .V512:
+		case .Void, .F32 ..= .V512:
 			panic("no")
+		}
+	case .Cast:
+		switch node.dt {
+		case .I8:
+			if inp.dt == .I64 {
+				emit_op(ctx.code, .I32_Wrap_I64)
+			}
+			emit_op(ctx.code, .I32_Const)
+			emit_leb(ctx.code, 0xff)
+			emit_op(ctx.code, .I32_And)
+		case .I16:
+			if inp.dt == .I64 {
+				emit_op(ctx.code, .I32_Wrap_I64)
+			}
+			emit_op(ctx.code, .I32_Const)
+			emit_leb(ctx.code, 0xffff)
+			emit_op(ctx.code, .I32_And)
+		case .I32:
+			if inp.dt == .F32 {
+				emit_op(ctx.code, .I32_Reinterpret_F32)
+			} else {
+				assert(inp.dt == .I64)
+				emit_op(ctx.code, .I32_Wrap_I64)
+			}
+		case .F32:
+			assert(inp.dt == .I32)
+			emit_op(ctx.code, .F32_Reinterpret_I32)
+		case .I64:
+			assert(inp.dt == .F64)
+			emit_op(ctx.code, .I64_Reinterpret_F64)
+		case .F64:
+			assert(inp.dt == .I64)
+			emit_op(ctx.code, .F64_Reinterpret_I64)
+		case .Void, .V128 ..= .V512:
+			fmt.panicf("no %v %v", node, inp)
 		}
 	case .Get_Local:
 		emit_op(ctx.code, .Local_Get)
@@ -830,17 +1112,32 @@ wasm_emit_instr :: proc(ctx: ^Ctx, instr: backend.Node_ID, block: int, _: $T) {
 		emit_op(ctx.code, .I64_Const)
 		emit_leb(ctx.code, offset)
 		emit_op(ctx.code, .I64_Add)
-	case .Store, .Load:
-		if kind == .Store {
-			assert(graph_get(ctx, node.inps[3]).dt == .I64)
-		} else {
-			assert(node.dt == .I64)
+	case .Global_Addr:
+		id := backend.graph_extra(ctx, node.inps[0], backend.Tup).idx
+
+		emit_op(ctx.code, .Global_Get)
+		backend.add_reloc(ctx.relocs)^ = {
+			offset = u32(ctx.code.pos) - ctx.code_start,
+			kind   = .Global,
+			size   = .r4,
+			id     = id,
 		}
+		emit(ctx.code, {0, 0, 0, 0})
+	case .Store:
+		vl := graph_get(ctx, node.inps[3])
+		emit_op(ctx.code, NODE_TO_OP[.Store][vl.dt])
+		emit_leb(ctx.code, 0)
+		emit_leb(ctx.code, 0)
+	case .Load:
 		emit_op(ctx.code, op)
 		emit_leb(ctx.code, 0)
 		emit_leb(ctx.code, 0)
 	case .Set:
 		emit_op_fc(ctx.code, .Memory_Fill)
+		emit_leb(ctx.code, u64(0))
+	case .Copy:
+		emit_op_fc(ctx.code, .Memory_Copy)
+		emit_leb(ctx.code, u64(0))
 		emit_leb(ctx.code, u64(0))
 	case .Call:
 		call := backend.graph_extra(ctx, node, backend.Call)
@@ -881,7 +1178,13 @@ wasm_emit_instr :: proc(ctx: ^Ctx, instr: backend.Node_ID, block: int, _: $T) {
 }
 
 loc_of :: proc(ctx: ^Ctx, node: backend.Node_ID) -> u16 {
-	return ctx.allocs[graph_get(ctx, node).gvn].index
+	reg := ctx.allocs[graph_get(ctx, node).gvn]
+	proj := ctx.local_projs[reg.kind]
+	if int(reg.index) < len(proj.param_projs) {
+		return proj.param_projs[reg.index]
+	} else {
+		return u16(proj.local_start) + reg.index - u16(len(proj.param_projs))
+	}
 }
 
 emit_op_fc :: proc(buf: ^arna.Allocator, op: Wasm_Opcode_FC) {

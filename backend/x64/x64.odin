@@ -1175,28 +1175,14 @@ x64_meta_of :: proc(
 	case .Poison:
 		return {out = out}
 	case .Param:
-		kind := ra.datatype_to_reg_kind[node.dt]
-		args := ra.args[kind]
-		arg_ext := backend.graph_extra(graph, node, backend.Tup)
-		idx := 0
-		for a in ra.param_specs[:arg_ext.idx] {
-			if a.dt == .Void do continue
-			idx += int(ra.datatype_to_reg_kind[a.dt] == kind)
-		}
-
-		mask: backend.RM_Intern_Idx
-		if int(idx) < len(args) {
-			mask = single(ra, args[idx])
-		} else {
-			mask = single(
+		return {
+			out = backend.param_mask(
+				graph,
 				ra,
-				{
-					kind = kind,
-					index = GPA_REG_COUNT + u16(idx) - u16(len(args)),
-				},
-			)
+				node,
+				spill_base = GPA_REG_COUNT,
+			),
 		}
-		return {out = mask}
 	case .CInt:
 		return {out = out}
 	case .X64_Pcmpeq,

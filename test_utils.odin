@@ -9,6 +9,7 @@ import "base:runtime"
 import "core:dynlib"
 import "core:flags"
 import "core:fmt"
+import "core:hash"
 import "core:log"
 import "core:mem"
 import "core:mem/virtual"
@@ -576,6 +577,17 @@ disasm_wasm :: proc(sb: ^strings.Builder, module: []u8) {
 	}
 	if ok {
 		rex_wasm.sbprint_wat(sb, m)
+	} else {
+		hash := hash.fnv64(module)
+		name := fmt.tprintf("/tmp/%x.wasm", hash)
+		err := os.write_entire_file(name, module)
+		assert(err == nil)
+
+		p: os.Process_Desc
+		p.command = {"wasm2wat", name}
+
+		_, _, stderr, _ := os.process_exec(p, context.temp_allocator)
+		os.write(os.stderr, stderr)
 	}
 }
 

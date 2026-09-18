@@ -693,3 +693,218 @@ main:
     add rax, rdi
     add rsp, 0x88
     ret
+=========== OPT LEVEL: none-quick ===========
+(module
+  (type (;0;) (func (param i64 i64 i64 i64) (result i64)))
+  (type (;1;) (func (result i64)))
+  (func $f (type 0) (param i64 i64 i64 i64) (result i64)
+    (local i64 i64 i64 i64 i64 i64 i32)
+    global.get 0
+    i64.const 97
+    i64.sub
+    global.set 0
+    global.get 0
+    i64.const 65
+    i64.add
+    local.tee 4
+    local.get 0
+    i64.store align=1
+    local.get 4
+    i64.const 8
+    local.tee 0
+    i64.add
+    local.get 1
+    i64.store align=1
+    global.get 0
+    i64.const 81
+    i64.add
+    local.tee 1
+    i32.const 0
+    local.tee 10
+    i64.const 16
+    memory.fill
+    local.get 1
+    global.get 1
+    i64.store align=1
+    i64.const 0
+    local.set 5
+    local.get 1
+    local.get 0
+    i64.add
+    i64.const 35
+    i64.store align=1
+    global.get 0
+    i64.const 0
+    i64.add
+    local.tee 0
+    local.get 10
+    i64.const 65
+    memory.fill
+    local.get 5
+    local.set 6
+    block
+      loop
+        local.get 6
+        local.set 7
+        i64.const 1
+        local.set 8
+        local.get 2
+        local.get 5
+        i64.eq
+        br_if 1
+        local.get 1
+        i64.load align=1
+        local.set 9
+        local.get 9
+        local.get 2
+        local.get 3
+        i64.rem_u
+        i64.add
+        i32.load8_u align=1
+        local.set 10
+        local.get 7
+        local.get 8
+        i64.add
+        local.set 9
+        local.get 2
+        local.get 3
+        i64.div_u
+        local.set 2
+        local.get 0
+        local.get 7
+        i64.add
+        local.get 10
+        i32.store8 align=1
+        local.get 9
+        local.set 6
+        br 0
+      end
+    end
+    local.get 5
+    local.set 1
+    block
+      loop
+        local.get 1
+        local.get 7
+        i64.ge_s
+        br_if 1
+        local.get 4
+        i64.load align=1
+        local.set 2
+        local.get 0
+        local.get 7
+        local.get 8
+        i64.sub
+        local.get 1
+        i64.sub
+        i64.add
+        i32.load8_u align=1
+        local.set 10
+        local.get 2
+        local.get 1
+        i64.add
+        local.get 10
+        i32.store8 align=1
+        local.get 1
+        local.get 8
+        i64.add
+        local.set 2
+        local.get 2
+        local.set 1
+        br 0
+      end
+    end
+    local.get 7
+    global.get 0
+    i64.const 97
+    i64.add
+    global.set 0
+    return
+    end
+  )
+  (func $main (type 1) (result i64)
+    (local i64 i64 i64 i64 i64 i64 i64 i32 i32)
+    global.get 0
+    i64.const 81
+    i64.sub
+    global.set 0
+    global.get 0
+    i64.const 0
+    i64.add
+    local.tee 0
+    i32.const 0
+    local.tee 7
+    i64.const 65
+    local.tee 1
+    memory.fill
+    global.get 0
+    i64.const 65
+    i64.add
+    local.tee 2
+    local.get 7
+    i64.const 16
+    local.tee 3
+    memory.fill
+    local.get 2
+    local.get 0
+    i64.const 0
+    local.tee 4
+    i64.add
+    local.tee 5
+    i64.store align=1
+    local.get 2
+    i64.const 8
+    i64.add
+    local.tee 6
+    local.get 1
+    local.get 4
+    i64.sub
+    i64.store align=1
+    local.get 2
+    i64.load align=1
+    local.set 1
+    local.get 6
+    i64.load align=1
+    local.set 2
+    local.get 1
+    local.get 2
+    i64.const 255
+    local.get 3
+    call $f
+    local.set 1
+    local.get 5
+    i32.load8_u align=1
+    local.set 7
+    local.get 0
+    i64.const 1
+    i64.add
+    i32.load8_u align=1
+    local.set 8
+    local.get 7
+    i32.const 255
+    i32.and
+    i64.extend_i32_u
+    local.get 8
+    i32.const 255
+    i32.and
+    i64.extend_i32_u
+    i64.add
+    local.get 1
+    i64.add
+    global.get 0
+    i64.const 81
+    i64.add
+    global.set 0
+    return
+    end
+  )
+  (table (;0;) 0 0 funcref)
+  (memory (;0;) i64 17)
+  (global (;0;) (mut i64) i64.const 1048576)
+  (global (;1;) i64 i64.const 1048576)
+  (export "main" (func 1))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (elem (;0;) (i32.const 0) func)
+  (data (;0;) (i64.const 1048576) "0123456789abcdefghijklmnopqrstuvxyz")
+)

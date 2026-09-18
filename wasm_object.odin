@@ -42,15 +42,6 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 		tag,
 	}
 
-	@(static, rodata)
-	DT_TO_VALTYPE := #partial [backend.Node_Datatype]wasm.Type {
-		.I8 ..= .I32      = .i32,
-		.I64  = .i64,
-		.F64  = .f64,
-		.F32  = .f32,
-		.V128 = .vec,
-	}
-
 	Export_Type :: enum u8 {
 		func,
 		table,
@@ -179,7 +170,22 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 		if prc.name == "main" do export_count += 1
 	}
 
-	uleb(&sections[.type], u64(func_count))
+	type_count := 0
+
+	type_count += func_count
+
+	for prc in ctx.procs[1:] {
+		for reloc in prc.out.relocs {
+			opcode := wasm.Wasm_Opcode(prc.out.code[reloc.offset - 1])
+			#partial switch opcode {
+			case .Call_Indirect:
+				type_count += 1
+			case:
+			}
+		}
+	}
+
+	uleb(&sections[.type], u64(type_count))
 	uleb(&sections[.function], u64(func_count))
 	uleb(&sections[.export], u64(export_count))
 	uleb(&sections[.code], u64(func_count))
@@ -197,7 +203,10 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 		uleb(sec, idx)
 	}
 
+	indirect_ids: [dynamic]int
+
 	idx := 0
+	type_idx := 0
 	for prc in ctx.procs[1:] {
 		if prc.lit.body != nil && prc.sig != nil {
 			if prc.name == "main" {
@@ -208,29 +217,41 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 			uleb(&name_sections[.function], u64(len(prc.name)))
 			append(&name_sections[.function], prc.name)
 
-			params := prc.param_types
-			rets := typecheck.ret_abi(prc.rets)
-			encode_func_type(&sections[.type], params, rets.reg_rets)
-
 			for reloc in prc.out.relocs {
+				id: u64
 				opcode := wasm.Wasm_Opcode(prc.out.code[reloc.offset - 1])
 				#partial switch opcode {
+				case .I64_Const:
+					// TODO: dedup
+					id = u64(len(indirect_ids))
+					append(&indirect_ids, func_idxes[reloc.id])
 				case .Call:
-					id := func_idxes[reloc.id]
-					fixed_uleb(prc.out.code[reloc.offset:][:4], u64(id))
+					id = u64(func_idxes[reloc.id])
 				case .Global_Get:
-					id := global_idxes[reloc.id]
-					fixed_uleb(prc.out.code[reloc.offset:][:4], u64(id))
+					id = u64(global_idxes[reloc.id])
+				case .Call_Indirect:
+					len := prc.out.constants[reloc.id]
+					bytes := prc.out.constants[reloc.id + 1:][:len]
+					append(&sections[.type], ..bytes)
+					id = u64(type_idx)
+					type_idx += 1
 				case:
 					fmt.panicf("TODO: reloc opcode %v", opcode)
 				}
+				fixed_uleb(prc.out.code[reloc.offset:][:4], id)
 			}
 
 			uleb(&sections[.code], u64(len(prc.out.code)))
 			append(&sections[.code], ..prc.out.code)
 
-			uleb(&sections[.function], u64(idx))
+			params := prc.param_types
+			rets := typecheck.ret_abi(prc.rets)
+			encode_func_type(&sections[.type], params, rets.reg_rets)
+
+			uleb(&sections[.function], u64(type_idx))
 			idx += 1
+
+			type_idx += 1
 		}
 	}
 
@@ -239,6 +260,37 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 
 	uleb(&sections[.custom], 4)
 	append(&sections[.custom], "name")
+
+	table_count := 0
+
+	table_count += 1 // dyn_call_table
+
+	uleb(&sections[.table], u64(table_count))
+
+	dyn_call_table: {
+		putb(&sections[.table], u8(0x70))
+		putb(&sections[.table], Limit_Type.I32_Closed)
+		uleb(&sections[.table], u64(len(indirect_ids)))
+		uleb(&sections[.table], u64(len(indirect_ids)))
+	}
+
+	elem_count := 0
+
+	elem_count += 1 // init_dyn_call_table
+
+	uleb(&sections[.element], u64(table_count))
+	init_dyn_call_table: {
+		putb(&sections[.element], u8(0))
+
+		putb(&sections[.element], wasm.Wasm_Opcode.I32_Const)
+		sleb(&sections[.element], 0)
+		putb(&sections[.element], wasm.Wasm_Opcode.End)
+
+		uleb(&sections[.element], u64(len(indirect_ids)))
+		for id in indirect_ids {
+			uleb(&sections[.element], u64(id))
+		}
+	}
 
 	for name_section, kind in name_sections {
 		if len(name_section) == 0 do continue
@@ -274,20 +326,6 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 		params: []backend.Param_Spec,
 		rets: []typecheck.Type,
 	) {
-		putb(buf, Type.fnc)
-
-		param_count := 0
-		for param in params {
-			param_count += int(param.dt != .Void)
-		}
-		uleb(buf, u64(param_count))
-
-		for param in params {
-			if param.dt != .Void {
-				putb(buf, DT_TO_VALTYPE[param.dt])
-			}
-		}
-
 		ret_dts: [dynamic; 2]backend.Node_Datatype
 		assert(len(rets) <= 1)
 		for ret in rets {
@@ -300,10 +338,6 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 			ret_dts = rets
 		}
 
-		uleb(buf, u64(len(ret_dts)))
-		for ret in ret_dts {
-			putb(buf, DT_TO_VALTYPE[ret])
-		}
+		wasm.encode_func_type(buf, params, ret_dts[:])
 	}
-
 }

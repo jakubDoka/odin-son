@@ -6247,3 +6247,1813 @@ main:
     mov rax, rbx
     pop rbx
     ret
+=========== OPT LEVEL: none-quick ===========
+(module
+  (type (;0;) (func (param i64) (result i32)))
+  (type (;1;) (func (param i64) (result i32)))
+  (type (;2;) (func (param i32) (result i32)))
+  (type (;3;) (func (param i32) (result i32)))
+  (type (;4;) (func (param i64) (result i32)))
+  (type (;5;) (func (param i64 i64 i64) (result i32)))
+  (type (;6;) (func (param i64) (result i32)))
+  (type (;7;) (func (param i64) (result i32)))
+  (type (;8;) (func (param i64) (result i32)))
+  (type (;9;) (func (param i64) (result i32)))
+  (type (;10;) (func (param i64) (result i32)))
+  (type (;11;) (func (param i64 i64) (result i32)))
+  (type (;12;) (func (result i64)))
+  (func $peek (type 0) (param i64) (result i32)
+    (local i64 i64 i64 i32)
+    block
+      block
+        local.get 0
+        i64.const 16
+        i64.add
+        local.tee 1
+        i64.load align=1
+        local.set 2
+        local.get 0
+        i64.const 8
+        i64.add
+        i64.load align=1
+        local.set 3
+        local.get 2
+        local.get 3
+        i64.ge_s
+        br_if 0
+        local.get 0
+        i64.load align=1
+        local.set 0
+        local.get 1
+        i64.load align=1
+        local.set 1
+        local.get 0
+        local.get 1
+        i64.add
+        i32.load8_u align=1
+        local.set 4
+        br 1
+      end
+      i32.const 0
+      local.set 4
+    end
+    local.get 4
+    return
+    end
+  )
+  (func $advance (type 1) (param i64) (result i32)
+    (local i64 i32)
+    local.get 0
+    call $peek
+    local.set 2
+    local.get 0
+    i64.const 16
+    i64.add
+    local.tee 0
+    i64.load align=1
+    local.set 1
+    local.get 0
+    local.get 1
+    i64.const 1
+    i64.add
+    i64.store align=1
+    local.get 2
+    return
+    end
+  )
+  (func $is_digit (type 2) (param i32) (result i32)
+    block
+      block
+        local.get 0
+        i32.const 48
+        i32.ge_u
+        local.get 0
+        i32.const 57
+        i32.le_u
+        i32.and
+        br_if 0
+        i32.const 0
+        local.set 0
+        br 1
+      end
+      i32.const 1
+      local.set 0
+    end
+    local.get 0
+    return
+    end
+  )
+  (func $is_hex (type 3) (param i32) (result i32)
+    (local i32)
+    block
+      block
+        i32.const 1
+        local.set 1
+        local.get 0
+        i32.const 48
+        i32.ge_u
+        local.get 0
+        i32.const 57
+        i32.le_u
+        i32.and
+        br_if 0
+        block
+          local.get 0
+          i32.const 97
+          i32.ge_u
+          local.get 0
+          i32.const 102
+          i32.le_u
+          i32.and
+          br_if 0
+          block
+            local.get 0
+            i32.const 65
+            i32.ge_u
+            local.get 0
+            i32.const 70
+            i32.le_u
+            i32.and
+            br_if 0
+            i32.const 0
+            local.set 1
+            br 3
+          end
+          br 2
+        end
+        br 1
+      end
+    end
+    local.get 1
+    return
+    end
+  )
+  (func $skip_ws (type 4) (param i64) (result i32)
+    (local i64 i64 i32)
+    loop
+      block
+        local.get 0
+        call $peek
+        local.set 3
+        local.get 3
+        i32.const 32
+        i32.eq
+        local.get 3
+        i32.const 9
+        i32.eq
+        i32.or
+        local.get 3
+        i32.const 10
+        i32.eq
+        i32.or
+        local.get 3
+        i32.const 13
+        i32.eq
+        i32.or
+        br_if 0
+        i32.const 1
+        return
+      end
+      local.get 0
+      i64.const 16
+      i64.add
+      local.tee 1
+      i64.load align=1
+      local.set 2
+      local.get 1
+      local.get 2
+      i64.const 1
+      i64.add
+      i64.store align=1
+      br 0
+    end
+    unreachable
+    end
+  )
+  (func $parse_lit (type 5) (param i64 i64 i64) (result i32)
+    (local i64 i64 i64 i32 i32)
+    global.get 0
+    i64.const 16
+    i64.sub
+    global.set 0
+    i64.const 0
+    local.set 3
+    global.get 0
+    i64.const 0
+    i64.add
+    local.tee 4
+    local.get 1
+    i64.store align=1
+    local.get 4
+    i64.const 8
+    i64.add
+    local.tee 1
+    local.get 2
+    i64.store align=1
+    block
+      block
+        block
+          loop
+            local.get 1
+            i64.load align=1
+            local.set 2
+            local.get 3
+            local.get 2
+            i64.ge_s
+            br_if 2
+            local.get 0
+            call $peek
+            local.set 6
+            local.get 4
+            i64.load align=1
+            local.set 2
+            local.get 2
+            local.get 3
+            i64.add
+            i32.load8_u align=1
+            local.set 7
+            local.get 6
+            local.get 7
+            i32.ne
+            br_if 1
+            local.get 0
+            i64.const 16
+            i64.add
+            local.tee 2
+            i64.load align=1
+            local.set 5
+            local.get 2
+            local.get 5
+            i64.const 1
+            local.tee 2
+            i64.add
+            i64.store align=1
+            local.get 3
+            local.get 2
+            i64.add
+            local.set 3
+            br 0
+          end
+        end
+        i32.const 0
+        local.set 6
+        br 1
+      end
+      i32.const 1
+      local.set 6
+    end
+    local.get 6
+    global.get 0
+    i64.const 16
+    i64.add
+    global.set 0
+    return
+    end
+  )
+  (func $parse_string (type 6) (param i64) (result i32)
+    (local i64 i32 i32 i32 i32)
+    block
+      block
+        local.get 0
+        call $advance
+        local.set 2
+        i32.const 0
+        local.set 3
+        local.get 2
+        i32.const 34
+        local.tee 2
+        i32.ne
+        br_if 0
+        block
+          block
+            loop
+              local.get 0
+              call $advance
+              local.set 4
+              local.get 4
+              local.get 2
+              i32.eq
+              br_if 2
+              local.get 4
+              local.get 3
+              i32.eq
+              br_if 1
+              block
+                block
+                  local.get 4
+                  i32.const 92
+                  local.tee 5
+                  i32.eq
+                  br_if 0
+                  block
+                    local.get 4
+                    i32.const 32
+                    i32.lt_u
+                    br_if 0
+                    br 2
+                  end
+                  br 6
+                end
+                block
+                  block
+                    block
+                      block
+                        block
+                          block
+                            block
+                              block
+                                block
+                                  local.get 0
+                                  call $advance
+                                  local.set 4
+                                  local.get 4
+                                  local.get 2
+                                  i32.eq
+                                  br_if 0
+                                  block
+                                    local.get 4
+                                    local.get 5
+                                    i32.eq
+                                    br_if 0
+                                    block
+                                      local.get 4
+                                      i32.const 47
+                                      i32.eq
+                                      br_if 0
+                                      block
+                                        local.get 4
+                                        i32.const 98
+                                        i32.eq
+                                        br_if 0
+                                        block
+                                          local.get 4
+                                          i32.const 102
+                                          i32.eq
+                                          br_if 0
+                                          block
+                                            local.get 4
+                                            i32.const 110
+                                            i32.eq
+                                            br_if 0
+                                            block
+                                              local.get 4
+                                              i32.const 114
+                                              i32.eq
+                                              br_if 0
+                                              block
+                                                local.get 4
+                                                i32.const 116
+                                                i32.eq
+                                                br_if 0
+                                                block
+                                                  local.get 4
+                                                  i32.const 117
+                                                  i32.eq
+                                                  br_if 0
+                                                  br 22
+                                                end
+                                                i64.const 0
+                                                local.set 1
+                                                block
+                                                  block
+                                                    loop
+                                                      local.get 1
+                                                      i64.const 4
+                                                      i64.ge_s
+                                                      br_if 2
+                                                      local.get 0
+                                                      call $advance
+                                                      local.set 4
+                                                      local.get 4
+                                                      call $is_hex
+                                                      local.set 4
+                                                      local.get 4
+                                                      local.get 3
+                                                      i32.eq
+                                                      br_if 1
+                                                      local.get 1
+                                                      i64.const 1
+                                                      i64.add
+                                                      local.set 1
+                                                      br 0
+                                                    end
+                                                  end
+                                                  br 22
+                                                end
+                                                br 15
+                                              end
+                                              br 13
+                                            end
+                                            br 11
+                                          end
+                                          br 9
+                                        end
+                                        br 7
+                                      end
+                                      br 5
+                                    end
+                                    br 3
+                                  end
+                                  br 1
+                                end
+                              end
+                            end
+                          end
+                        end
+                      end
+                    end
+                  end
+                end
+              end
+              br 0
+            end
+          end
+          br 2
+        end
+        i32.const 1
+        local.set 3
+        br 1
+      end
+    end
+    local.get 3
+    return
+    end
+  )
+  (func $parse_number (type 7) (param i64) (result i32)
+    (local i64 i64 i64 i32 i32 i32)
+    block
+      block
+        local.get 0
+        call $peek
+        local.set 4
+        local.get 0
+        i64.const 16
+        i64.add
+        local.set 1
+        i64.const 1
+        local.set 2
+        local.get 4
+        i32.const 45
+        local.tee 4
+        i32.eq
+        br_if 0
+        br 1
+      end
+      local.get 1
+      i64.load align=1
+      local.set 3
+      local.get 1
+      local.get 3
+      local.get 2
+      i64.add
+      i64.store align=1
+    end
+    block
+      block
+        local.get 0
+        call $peek
+        local.set 5
+        i32.const 0
+        local.set 6
+        local.get 5
+        i32.const 48
+        i32.eq
+        br_if 0
+        block
+          local.get 5
+          i32.const 49
+          i32.ge_u
+          local.get 5
+          i32.const 57
+          i32.le_u
+          i32.and
+          br_if 0
+          br 2
+        end
+        local.get 1
+        i64.load align=1
+        local.set 3
+        local.get 1
+        local.get 3
+        local.get 2
+        i64.add
+        i64.store align=1
+        block
+          loop
+            local.get 0
+            call $peek
+            local.set 5
+            local.get 5
+            call $is_digit
+            local.set 5
+            local.get 5
+            local.get 6
+            i32.eq
+            br_if 1
+            local.get 1
+            i64.load align=1
+            local.set 3
+            local.get 1
+            local.get 3
+            local.get 2
+            i64.add
+            i64.store align=1
+            br 0
+          end
+        end
+        br 1
+      end
+      local.get 1
+      i64.load align=1
+      local.set 3
+      local.get 1
+      local.get 3
+      local.get 2
+      i64.add
+      i64.store align=1
+    end
+    block
+      block
+        block
+          block
+            local.get 0
+            call $peek
+            local.set 5
+            local.get 5
+            i32.const 46
+            i32.eq
+            br_if 0
+            br 1
+          end
+          local.get 1
+          i64.load align=1
+          local.set 3
+          local.get 1
+          local.get 3
+          local.get 2
+          i64.add
+          i64.store align=1
+          local.get 0
+          call $peek
+          local.set 5
+          local.get 5
+          call $is_digit
+          local.set 5
+          local.get 5
+          local.get 6
+          i32.eq
+          br_if 1
+          block
+            loop
+              local.get 0
+              call $peek
+              local.set 5
+              local.get 5
+              call $is_digit
+              local.set 5
+              local.get 5
+              local.get 6
+              i32.eq
+              br_if 1
+              local.get 1
+              i64.load align=1
+              local.set 3
+              local.get 1
+              local.get 3
+              local.get 2
+              i64.add
+              i64.store align=1
+              br 0
+            end
+          end
+        end
+        block
+          block
+            block
+              local.get 0
+              call $peek
+              local.set 5
+              local.get 5
+              i32.const 101
+              i32.eq
+              local.get 5
+              i32.const 69
+              i32.eq
+              i32.or
+              br_if 0
+              br 1
+            end
+            block
+              block
+                local.get 1
+                i64.load align=1
+                local.set 3
+                local.get 1
+                local.get 3
+                local.get 2
+                i64.add
+                i64.store align=1
+                local.get 0
+                call $peek
+                local.set 5
+                local.get 5
+                i32.const 43
+                i32.eq
+                local.get 5
+                local.get 4
+                i32.eq
+                i32.or
+                br_if 0
+                br 1
+              end
+              local.get 1
+              i64.load align=1
+              local.set 3
+              local.get 1
+              local.get 3
+              local.get 2
+              i64.add
+              i64.store align=1
+            end
+            local.get 0
+            call $peek
+            local.set 4
+            local.get 4
+            call $is_digit
+            local.set 4
+            local.get 4
+            local.get 6
+            i32.eq
+            br_if 1
+            block
+              loop
+                local.get 0
+                call $peek
+                local.set 4
+                local.get 4
+                call $is_digit
+                local.set 4
+                local.get 4
+                local.get 6
+                i32.eq
+                br_if 1
+                local.get 1
+                i64.load align=1
+                local.set 3
+                local.get 1
+                local.get 3
+                local.get 2
+                i64.add
+                i64.store align=1
+                br 0
+              end
+            end
+          end
+          i32.const 1
+          local.set 6
+          br 2
+        end
+        br 1
+      end
+    end
+    local.get 6
+    return
+    end
+  )
+  (func $parse_array (type 8) (param i64) (result i32)
+    (local i64 i32 i32 i32 i32)
+    block
+      block
+        local.get 0
+        call $advance
+        local.set 2
+        i32.const 0
+        local.set 3
+        local.get 2
+        i32.const 91
+        i32.ne
+        br_if 0
+        block
+          local.get 0
+          call $skip_ws
+          drop
+          local.get 0
+          call $peek
+          local.set 2
+          i32.const 1
+          local.set 4
+          local.get 2
+          i32.const 93
+          local.tee 2
+          i32.eq
+          br_if 0
+          block
+            block
+              block
+                loop
+                  local.get 0
+                  call $parse_value
+                  local.set 5
+                  local.get 5
+                  local.get 3
+                  i32.eq
+                  br_if 3
+                  local.get 0
+                  call $skip_ws
+                  drop
+                  local.get 0
+                  call $advance
+                  local.set 5
+                  local.get 5
+                  local.get 2
+                  i32.eq
+                  br_if 2
+                  local.get 5
+                  i32.const 44
+                  i32.ne
+                  br_if 1
+                  br 0
+                end
+              end
+              local.get 3
+              local.set 2
+              br 4
+            end
+            local.get 4
+            local.set 2
+            br 3
+          end
+          local.get 3
+          local.set 2
+          br 2
+        end
+        local.get 0
+        i64.const 16
+        i64.add
+        local.tee 0
+        i64.load align=1
+        local.set 1
+        local.get 0
+        local.get 1
+        i64.const 1
+        i64.add
+        i64.store align=1
+        local.get 4
+        local.set 2
+        br 1
+      end
+      local.get 3
+      local.set 2
+    end
+    local.get 2
+    return
+    end
+  )
+  (func $parse_object (type 9) (param i64) (result i32)
+    (local i64 i32 i32 i32 i32)
+    block
+      block
+        local.get 0
+        call $advance
+        local.set 2
+        i32.const 0
+        local.set 3
+        local.get 2
+        i32.const 123
+        i32.ne
+        br_if 0
+        block
+          local.get 0
+          call $skip_ws
+          drop
+          local.get 0
+          call $peek
+          local.set 2
+          i32.const 1
+          local.set 4
+          local.get 2
+          i32.const 125
+          local.tee 2
+          i32.eq
+          br_if 0
+          block
+            block
+              block
+                block
+                  block
+                    block
+                      loop
+                        local.get 0
+                        call $skip_ws
+                        drop
+                        local.get 0
+                        call $peek
+                        local.set 5
+                        local.get 5
+                        i32.const 34
+                        i32.ne
+                        br_if 6
+                        local.get 0
+                        call $parse_string
+                        local.set 5
+                        local.get 5
+                        local.get 3
+                        i32.eq
+                        br_if 5
+                        local.get 0
+                        call $skip_ws
+                        drop
+                        local.get 0
+                        call $advance
+                        local.set 5
+                        local.get 5
+                        i32.const 58
+                        i32.ne
+                        br_if 4
+                        local.get 0
+                        call $parse_value
+                        local.set 5
+                        local.get 5
+                        local.get 3
+                        i32.eq
+                        br_if 3
+                        local.get 0
+                        call $skip_ws
+                        drop
+                        local.get 0
+                        call $advance
+                        local.set 5
+                        local.get 5
+                        local.get 2
+                        i32.eq
+                        br_if 2
+                        local.get 5
+                        i32.const 44
+                        i32.ne
+                        br_if 1
+                        br 0
+                      end
+                    end
+                    local.get 3
+                    local.set 2
+                    br 7
+                  end
+                  local.get 4
+                  local.set 2
+                  br 6
+                end
+                local.get 3
+                local.set 2
+                br 5
+              end
+              local.get 3
+              local.set 2
+              br 4
+            end
+            local.get 3
+            local.set 2
+            br 3
+          end
+          local.get 3
+          local.set 2
+          br 2
+        end
+        local.get 0
+        i64.const 16
+        i64.add
+        local.tee 0
+        i64.load align=1
+        local.set 1
+        local.get 0
+        local.get 1
+        i64.const 1
+        i64.add
+        i64.store align=1
+        local.get 4
+        local.set 2
+        br 1
+      end
+      local.get 3
+      local.set 2
+    end
+    local.get 2
+    return
+    end
+  )
+  (func $parse_value (type 10) (param i64) (result i32)
+    (local i64 i64 i64 i64 i32 i32)
+    global.get 0
+    i64.const 48
+    i64.sub
+    global.set 0
+    block
+      block
+        local.get 0
+        call $skip_ws
+        drop
+        local.get 0
+        call $peek
+        local.set 5
+        local.get 5
+        i32.const 123
+        i32.eq
+        br_if 0
+        block
+          local.get 5
+          i32.const 91
+          i32.eq
+          br_if 0
+          block
+            local.get 5
+            i32.const 34
+            i32.eq
+            br_if 0
+            block
+              i64.const 4
+              local.set 1
+              i64.const 8
+              local.set 2
+              local.get 5
+              i32.const 116
+              i32.eq
+              br_if 0
+              block
+                local.get 5
+                i32.const 102
+                i32.eq
+                br_if 0
+                block
+                  local.get 5
+                  i32.const 110
+                  i32.eq
+                  br_if 0
+                  block
+                    local.get 5
+                    call $is_digit
+                    local.set 6
+                    local.get 5
+                    i32.const 45
+                    i32.eq
+                    local.get 6
+                    i32.or
+                    br_if 0
+                    i32.const 0
+                    local.set 5
+                    br 7
+                  end
+                  local.get 0
+                  call $parse_number
+                  local.set 5
+                  br 6
+                end
+                global.get 0
+                i64.const 32
+                i64.add
+                local.tee 3
+                global.get 3
+                i64.store align=1
+                local.get 3
+                local.get 2
+                i64.add
+                local.tee 4
+                local.get 1
+                i64.store align=1
+                local.get 3
+                i64.load align=1
+                local.set 3
+                local.get 4
+                i64.load align=1
+                local.set 4
+                local.get 0
+                local.get 3
+                local.get 4
+                call $parse_lit
+                local.set 5
+                br 5
+              end
+              global.get 0
+              i64.const 16
+              i64.add
+              local.tee 3
+              global.get 2
+              i64.store align=1
+              local.get 3
+              local.get 2
+              i64.add
+              local.tee 4
+              i64.const 5
+              i64.store align=1
+              local.get 3
+              i64.load align=1
+              local.set 3
+              local.get 4
+              i64.load align=1
+              local.set 4
+              local.get 0
+              local.get 3
+              local.get 4
+              call $parse_lit
+              local.set 5
+              br 4
+            end
+            global.get 0
+            i64.const 0
+            i64.add
+            local.tee 3
+            global.get 1
+            i64.store align=1
+            local.get 3
+            local.get 2
+            i64.add
+            local.tee 2
+            local.get 1
+            i64.store align=1
+            local.get 3
+            i64.load align=1
+            local.set 1
+            local.get 2
+            i64.load align=1
+            local.set 2
+            local.get 0
+            local.get 1
+            local.get 2
+            call $parse_lit
+            local.set 5
+            br 3
+          end
+          local.get 0
+          call $parse_string
+          local.set 5
+          br 2
+        end
+        local.get 0
+        call $parse_array
+        local.set 5
+        br 1
+      end
+      local.get 0
+      call $parse_object
+      local.set 5
+    end
+    local.get 5
+    global.get 0
+    i64.const 48
+    i64.add
+    global.set 0
+    return
+    end
+  )
+  (func $validate (type 11) (param i64 i64) (result i32)
+    (local i64 i32 i32)
+    global.get 0
+    i64.const 40
+    i64.sub
+    global.set 0
+    block
+      block
+        global.get 0
+        i64.const 24
+        i64.add
+        local.tee 2
+        local.get 0
+        i64.store align=1
+        local.get 2
+        i64.const 8
+        local.tee 0
+        i64.add
+        local.get 1
+        i64.store align=1
+        global.get 0
+        i64.const 0
+        i64.add
+        local.tee 1
+        i32.const 0
+        local.tee 3
+        i64.const 24
+        memory.fill
+        local.get 1
+        local.get 2
+        i64.const 16
+        local.tee 2
+        memory.copy
+        local.get 1
+        local.get 2
+        i64.add
+        local.tee 2
+        i64.const 0
+        i64.store align=1
+        local.get 1
+        call $skip_ws
+        drop
+        local.get 1
+        call $parse_value
+        local.set 4
+        local.get 4
+        local.get 3
+        i32.eq
+        br_if 0
+        block
+          local.get 1
+          call $skip_ws
+          drop
+          local.get 2
+          i64.load align=1
+          local.set 2
+          local.get 1
+          local.get 0
+          i64.add
+          i64.load align=1
+          local.set 0
+          local.get 2
+          local.get 0
+          i64.ne
+          br_if 0
+          i32.const 1
+          local.set 3
+          br 2
+        end
+        br 1
+      end
+    end
+    local.get 3
+    global.get 0
+    i64.const 40
+    i64.add
+    global.set 0
+    return
+    end
+  )
+  (func $main (type 12) (result i64)
+    (local i64 i64 i64 i64 i64 i64 i64 i64 i64 i64 i64 i32 i32)
+    global.get 0
+    i64.const 288
+    i64.sub
+    global.set 0
+    block
+      block
+        global.get 0
+        i64.const 0
+        i64.add
+        local.tee 0
+        global.get 4
+        i64.store align=1
+        local.get 0
+        i64.const 8
+        local.tee 1
+        i64.add
+        local.tee 2
+        i64.const 4
+        local.tee 3
+        i64.store align=1
+        local.get 0
+        i64.load align=1
+        local.set 0
+        local.get 2
+        i64.load align=1
+        local.set 2
+        local.get 0
+        local.get 2
+        call $validate
+        local.set 11
+        i64.const 0
+        local.set 0
+        i64.const 1
+        local.set 2
+        local.get 11
+        br_if 0
+        local.get 0
+        local.set 4
+        br 1
+      end
+      local.get 0
+      local.get 2
+      i64.add
+      local.set 4
+    end
+    block
+      block
+        global.get 0
+        i64.const 16
+        i64.add
+        local.tee 5
+        global.get 5
+        i64.store align=1
+        local.get 5
+        local.get 1
+        i64.add
+        local.tee 6
+        i64.const 5
+        local.tee 7
+        i64.store align=1
+        local.get 5
+        i64.load align=1
+        local.set 5
+        local.get 6
+        i64.load align=1
+        local.set 6
+        local.get 5
+        local.get 6
+        call $validate
+        local.set 11
+        i64.const 2
+        local.set 5
+        local.get 11
+        br_if 0
+        br 1
+      end
+      local.get 4
+      local.get 5
+      i64.add
+      local.set 4
+    end
+    block
+      block
+        global.get 0
+        i64.const 32
+        i64.add
+        local.tee 6
+        global.get 6
+        i64.store align=1
+        local.get 6
+        local.get 1
+        i64.add
+        local.tee 8
+        local.get 3
+        i64.store align=1
+        local.get 6
+        i64.load align=1
+        local.set 6
+        local.get 8
+        i64.load align=1
+        local.set 8
+        local.get 6
+        local.get 8
+        call $validate
+        local.set 11
+        local.get 11
+        br_if 0
+        br 1
+      end
+      local.get 4
+      local.get 3
+      i64.add
+      local.set 4
+    end
+    block
+      block
+        global.get 0
+        i64.const 48
+        i64.add
+        local.tee 6
+        global.get 7
+        i64.store align=1
+        local.get 6
+        local.get 1
+        i64.add
+        local.tee 8
+        i64.const 3
+        local.tee 9
+        i64.store align=1
+        local.get 6
+        i64.load align=1
+        local.set 6
+        local.get 8
+        i64.load align=1
+        local.set 8
+        local.get 6
+        local.get 8
+        call $validate
+        local.set 11
+        local.get 11
+        br_if 0
+        br 1
+      end
+      local.get 4
+      local.get 1
+      i64.add
+      local.set 4
+    end
+    block
+      block
+        global.get 0
+        i64.const 64
+        i64.add
+        local.tee 6
+        global.get 8
+        i64.store align=1
+        local.get 6
+        local.get 1
+        i64.add
+        local.tee 8
+        i64.const 7
+        local.tee 10
+        i64.store align=1
+        local.get 6
+        i64.load align=1
+        local.set 6
+        local.get 8
+        i64.load align=1
+        local.set 8
+        local.get 6
+        local.get 8
+        call $validate
+        local.set 11
+        local.get 11
+        br_if 0
+        br 1
+      end
+      local.get 4
+      i64.const 16
+      i64.add
+      local.set 4
+    end
+    block
+      block
+        global.get 0
+        i64.const 80
+        i64.add
+        local.tee 6
+        global.get 9
+        i64.store align=1
+        local.get 6
+        local.get 1
+        i64.add
+        local.tee 8
+        local.get 10
+        i64.store align=1
+        local.get 6
+        i64.load align=1
+        local.set 6
+        local.get 8
+        i64.load align=1
+        local.set 8
+        local.get 6
+        local.get 8
+        call $validate
+        local.set 11
+        local.get 11
+        br_if 0
+        br 1
+      end
+      local.get 4
+      i64.const 32
+      i64.add
+      local.set 4
+    end
+    block
+      block
+        global.get 0
+        i64.const 96
+        i64.add
+        local.tee 6
+        global.get 10
+        i64.store align=1
+        local.get 6
+        local.get 1
+        i64.add
+        local.tee 8
+        i64.const 9
+        i64.store align=1
+        local.get 6
+        i64.load align=1
+        local.set 6
+        local.get 8
+        i64.load align=1
+        local.set 8
+        local.get 6
+        local.get 8
+        call $validate
+        local.set 11
+        local.get 11
+        br_if 0
+        br 1
+      end
+      local.get 4
+      i64.const 64
+      i64.add
+      local.set 4
+    end
+    block
+      block
+        global.get 0
+        i64.const 112
+        i64.add
+        local.tee 6
+        global.get 11
+        i64.store align=1
+        local.get 6
+        local.get 1
+        i64.add
+        local.tee 8
+        i64.const 27
+        i64.store align=1
+        local.get 6
+        i64.load align=1
+        local.set 6
+        local.get 8
+        i64.load align=1
+        local.set 8
+        local.get 6
+        local.get 8
+        call $validate
+        local.set 11
+        local.get 11
+        br_if 0
+        br 1
+      end
+      local.get 4
+      i64.const 128
+      i64.add
+      local.set 4
+    end
+    block
+      block
+        global.get 0
+        i64.const 128
+        i64.add
+        local.tee 6
+        global.get 12
+        i64.store align=1
+        local.get 6
+        local.get 1
+        i64.add
+        local.tee 8
+        local.get 1
+        i64.store align=1
+        local.get 6
+        i64.load align=1
+        local.set 6
+        local.get 8
+        i64.load align=1
+        local.set 8
+        local.get 6
+        local.get 8
+        call $validate
+        local.set 11
+        local.get 11
+        br_if 0
+        br 1
+      end
+      local.get 4
+      i64.const 256
+      i64.add
+      local.set 4
+    end
+    block
+      block
+        global.get 0
+        i64.const 144
+        i64.add
+        local.tee 6
+        global.get 13
+        i64.store align=1
+        local.get 6
+        local.get 1
+        i64.add
+        local.tee 8
+        local.get 5
+        i64.store align=1
+        local.get 6
+        i64.load align=1
+        local.set 6
+        local.get 8
+        i64.load align=1
+        local.set 8
+        local.get 6
+        local.get 8
+        call $validate
+        local.set 11
+        local.get 11
+        br_if 0
+        local.get 4
+        local.set 6
+        br 1
+      end
+      local.get 4
+      i64.const 512
+      i64.add
+      local.set 4
+      local.get 4
+      local.set 6
+    end
+    block
+      block
+        global.get 0
+        i64.const 160
+        i64.add
+        local.tee 4
+        global.get 14
+        i64.store align=1
+        local.get 4
+        local.get 1
+        i64.add
+        local.tee 8
+        local.get 0
+        i64.store align=1
+        local.get 4
+        i64.load align=1
+        local.set 0
+        local.get 8
+        i64.load align=1
+        local.set 4
+        local.get 0
+        local.get 4
+        call $validate
+        local.set 11
+        local.get 11
+        i32.const 0
+        local.tee 11
+        i32.eq
+        br_if 0
+        local.get 6
+        local.set 0
+        br 1
+      end
+      local.get 6
+      i64.const 1024
+      i64.add
+      local.set 0
+    end
+    block
+      block
+        global.get 0
+        i64.const 176
+        i64.add
+        local.tee 4
+        global.get 15
+        i64.store align=1
+        local.get 4
+        local.get 1
+        i64.add
+        local.tee 6
+        local.get 2
+        i64.store align=1
+        local.get 4
+        i64.load align=1
+        local.set 2
+        local.get 6
+        i64.load align=1
+        local.set 4
+        local.get 2
+        local.get 4
+        call $validate
+        local.set 12
+        local.get 12
+        local.get 11
+        i32.eq
+        br_if 0
+        br 1
+      end
+      local.get 0
+      i64.const 2048
+      i64.add
+      local.set 0
+    end
+    block
+      block
+        global.get 0
+        i64.const 192
+        i64.add
+        local.tee 2
+        global.get 16
+        i64.store align=1
+        local.get 2
+        local.get 1
+        i64.add
+        local.tee 4
+        local.get 3
+        i64.store align=1
+        local.get 2
+        i64.load align=1
+        local.set 2
+        local.get 4
+        i64.load align=1
+        local.set 3
+        local.get 2
+        local.get 3
+        call $validate
+        local.set 12
+        local.get 12
+        local.get 11
+        i32.eq
+        br_if 0
+        br 1
+      end
+      local.get 0
+      i64.const 4096
+      i64.add
+      local.set 0
+    end
+    block
+      block
+        global.get 0
+        i64.const 208
+        i64.add
+        local.tee 2
+        global.get 17
+        i64.store align=1
+        local.get 2
+        local.get 1
+        i64.add
+        local.tee 3
+        local.get 7
+        i64.store align=1
+        local.get 2
+        i64.load align=1
+        local.set 2
+        local.get 3
+        i64.load align=1
+        local.set 3
+        local.get 2
+        local.get 3
+        call $validate
+        local.set 12
+        local.get 12
+        local.get 11
+        i32.eq
+        br_if 0
+        br 1
+      end
+      local.get 0
+      i64.const 8192
+      i64.add
+      local.set 0
+    end
+    block
+      block
+        global.get 0
+        i64.const 224
+        i64.add
+        local.tee 2
+        global.get 18
+        i64.store align=1
+        local.get 2
+        local.get 1
+        i64.add
+        local.tee 3
+        local.get 5
+        i64.store align=1
+        local.get 2
+        i64.load align=1
+        local.set 2
+        local.get 3
+        i64.load align=1
+        local.set 3
+        local.get 2
+        local.get 3
+        call $validate
+        local.set 12
+        local.get 12
+        local.get 11
+        i32.eq
+        br_if 0
+        br 1
+      end
+      local.get 0
+      i64.const 16384
+      i64.add
+      local.set 0
+    end
+    block
+      block
+        global.get 0
+        i64.const 240
+        i64.add
+        local.tee 2
+        global.get 19
+        i64.store align=1
+        local.get 2
+        local.get 1
+        i64.add
+        local.tee 3
+        i64.const 6
+        i64.store align=1
+        local.get 2
+        i64.load align=1
+        local.set 2
+        local.get 3
+        i64.load align=1
+        local.set 3
+        local.get 2
+        local.get 3
+        call $validate
+        local.set 12
+        local.get 12
+        local.get 11
+        i32.eq
+        br_if 0
+        br 1
+      end
+      local.get 0
+      i64.const 32768
+      i64.add
+      local.set 0
+    end
+    block
+      block
+        global.get 0
+        i64.const 256
+        i64.add
+        local.tee 2
+        global.get 20
+        i64.store align=1
+        local.get 2
+        local.get 1
+        i64.add
+        local.tee 3
+        local.get 10
+        i64.store align=1
+        local.get 2
+        i64.load align=1
+        local.set 2
+        local.get 3
+        i64.load align=1
+        local.set 3
+        local.get 2
+        local.get 3
+        call $validate
+        local.set 12
+        local.get 12
+        local.get 11
+        i32.eq
+        br_if 0
+        br 1
+      end
+      local.get 0
+      i64.const 65536
+      i64.add
+      local.set 0
+    end
+    block
+      block
+        global.get 0
+        i64.const 272
+        i64.add
+        local.tee 2
+        global.get 21
+        i64.store align=1
+        local.get 2
+        local.get 1
+        i64.add
+        local.tee 1
+        local.get 9
+        i64.store align=1
+        local.get 2
+        i64.load align=1
+        local.set 2
+        local.get 1
+        i64.load align=1
+        local.set 1
+        local.get 2
+        local.get 1
+        call $validate
+        local.set 12
+        local.get 12
+        local.get 11
+        i32.eq
+        br_if 0
+        br 1
+      end
+      local.get 0
+      i64.const 131072
+      i64.add
+      local.set 0
+    end
+    local.get 0
+    global.get 0
+    i64.const 288
+    i64.add
+    global.set 0
+    return
+    end
+  )
+  (table (;0;) 0 0 funcref)
+  (memory (;0;) i64 17)
+  (global (;0;) (mut i64) i64.const 1048576)
+  (global (;1;) i64 i64.const 1048576)
+  (global (;2;) i64 i64.const 1048580)
+  (global (;3;) i64 i64.const 1048585)
+  (global (;4;) i64 i64.const 1048589)
+  (global (;5;) i64 i64.const 1048593)
+  (global (;6;) i64 i64.const 1048598)
+  (global (;7;) i64 i64.const 1048602)
+  (global (;8;) i64 i64.const 1048605)
+  (global (;9;) i64 i64.const 1048612)
+  (global (;10;) i64 i64.const 1048619)
+  (global (;11;) i64 i64.const 1048628)
+  (global (;12;) i64 i64.const 1048655)
+  (global (;13;) i64 i64.const 1048663)
+  (global (;14;) i64 i64.const 1048665)
+  (global (;15;) i64 i64.const 1048665)
+  (global (;16;) i64 i64.const 1048666)
+  (global (;17;) i64 i64.const 1048670)
+  (global (;18;) i64 i64.const 1048675)
+  (global (;19;) i64 i64.const 1048677)
+  (global (;20;) i64 i64.const 1048683)
+  (global (;21;) i64 i64.const 1048690)
+  (export "main" (func 12))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (elem (;0;) (i32.const 0) func)
+  (data (;0;) (i64.const 1048576) "truefalsenulltruefalsenull123-0.5e10\"hello\"[1, 2, 3]{\"a\": 1, \"b\": [true, null]}  {  }  []{[1,]truex01\"un\\x\"{\"a\" 1}nul")
+)

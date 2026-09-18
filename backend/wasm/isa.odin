@@ -1,5 +1,44 @@
 package wasm
 
+import ".."
+
+encode_func_type :: proc(
+	buf: ^[dynamic]u8,
+	params: []backend.Param_Spec,
+	ret_dts: []backend.Node_Datatype,
+) {
+	putb :: backend.putb
+	uleb :: backend.uleb
+
+	putb(buf, Type.fnc)
+
+	param_count := 0
+	for param in params {
+		param_count += int(param.dt != .Void)
+	}
+	uleb(buf, u64(param_count))
+
+	for param in params {
+		if param.dt != .Void {
+			putb(buf, DT_TO_VALTYPE[param.dt])
+		}
+	}
+
+	uleb(buf, u64(len(ret_dts)))
+	for ret in ret_dts {
+		putb(buf, DT_TO_VALTYPE[ret])
+	}
+}
+
+@(rodata)
+DT_TO_VALTYPE := #partial [backend.Node_Datatype]Type {
+	.I8 ..= .I32      = .i32,
+	.I64  = .i64,
+	.F64  = .f64,
+	.F32  = .f32,
+	.V128 = .vec,
+}
+
 Type :: enum u8 {
 	fnc = 0x60,
 	vec = 0x7b,

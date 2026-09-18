@@ -521,7 +521,6 @@ regalloc_round :: proc(
 			v, ok := liveouts_slot(louts, lrg.index)
 			if ok {
 				if !add_conflict(ctx, lrg, n.node, v.node) {
-					//fmt.println(n.node, v.node, louts.data.id[:louts.len])
 					return
 				}
 			}

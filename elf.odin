@@ -991,33 +991,9 @@ fixed_uleb :: proc(buf: []u8, value: u64) {
 	}
 }
 
-uleb :: proc(b: ^[dynamic]u8, value: u64) {
-	v := value
-	for {
-		byte := u8(v & 0x7f)
-		v >>= 7
-		if v != 0 do byte |= 0x80
-		append(b, byte)
-		if v == 0 do break
-	}
-}
-
-sleb :: proc(b: ^[dynamic]u8, value: i64) {
-	v := value
-	for {
-		byte := u8(v & 0x7f)
-		v >>= 7
-		sign := (byte & 0x40) != 0
-		done := (v == 0 && !sign) || (v == -1 && sign)
-		if !done do byte |= 0x80
-		append(b, byte)
-		if done do break
-	}
-}
-
-putb :: #force_inline proc(b: ^[dynamic]u8, vl: $T) {
-	append(b, transmute(u8)vl)
-}
+uleb :: backend.uleb
+sleb :: backend.sleb
+putb :: backend.putb
 
 put_u16 :: proc(b: ^[dynamic]u8, v: u16) {
 	x := v

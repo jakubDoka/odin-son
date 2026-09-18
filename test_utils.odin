@@ -584,11 +584,12 @@ disasm_wasm :: proc(sb: ^strings.Builder, module: []u8) {
 		assert(err == nil)
 
 		p: os.Process_Desc
-		p.command = {"wasm2wat", name}
+		p.command = {"wasm2wat", name, "--enable-all"}
 
 		_, _, stderr, _ := os.process_exec(p, context.temp_allocator)
 		os.write(os.stderr, stderr)
 	}
+
 }
 
 disasm_x64 :: proc(sb: ^strings.Builder, ctx: Gen_Ctx) {

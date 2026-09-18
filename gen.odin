@@ -2374,9 +2374,11 @@ emit_call :: proc(
 	ln := lctx.i + len(args) - lctx.ri
 
 	call := backend.graph_add_call(ctx, "call", args[:ln], u32(prc_id))
-	backend.graph_extra(ctx, call, backend.Call).imported = imported
-	backend.graph_extra(ctx, call, backend.Call).ret_count = len(rabi.reg_rets)
-	backend.graph_extra(ctx, call, backend.Call).indirect = prc_id == 0
+	call_ext := backend.graph_extra(ctx, call, backend.Call)
+	call_ext.imported = imported
+	call_ext.ret_count = len(rabi.reg_rets)
+	call_ext.indirect = prc_id == 0
+
 	cnode := graph_get(ctx, call)
 	for arg in args[CALL_PREFIX:ln] {
 		backend.graph_unpin(ctx, arg)
@@ -2414,6 +2416,12 @@ emit_call :: proc(
 		} else {
 			vl := backend.graph_add_ret(ctx, "cret", dt, call_end, 0)
 			results[res_idx] = Value(vl)
+		}
+	}
+
+	if prc_id == 0 {
+		for v, i in results[len(rabi.extras):] {
+			call_ext.rets[i] = backend.graph_get(ctx, v.id).dt
 		}
 	}
 

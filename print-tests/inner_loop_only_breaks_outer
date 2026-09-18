@@ -235,3 +235,94 @@ main:
 5:
     ret
 =========== OPT LEVEL: aggresive ===========
+=========== OPT LEVEL: none-quick ===========
+(module
+  (type (;0;) (func (result i64)))
+  (func $main (type 0) (result i64)
+    (local i64 i64 i64 i64 i64 i64 i64 i64)
+    i64.const 0
+    local.set 0
+    local.get 0
+    local.set 1
+    block
+      block
+        loop
+          local.get 1
+          i64.const 1
+          local.tee 2
+          i64.add
+          local.tee 3
+          i64.const 4
+          local.tee 4
+          i64.eq
+          br_if 1
+          local.get 0
+          local.set 5
+          block
+            block
+              loop
+                local.get 5
+                local.get 2
+                i64.add
+                local.tee 6
+                local.get 4
+                i64.eq
+                br_if 2
+                local.get 6
+                i64.const 2
+                i64.eq
+                br_if 1
+                local.get 6
+                local.set 5
+                br 0
+              end
+            end
+            local.get 0
+            local.set 4
+            local.get 0
+            local.set 5
+            block
+              loop
+                local.get 5
+                local.get 2
+                i64.add
+                local.set 6
+                local.get 4
+                local.get 2
+                i64.add
+                local.tee 7
+                i64.const 5
+                i64.eq
+                br_if 1
+                local.get 6
+                local.set 5
+                local.get 7
+                local.set 4
+                br 0
+              end
+            end
+            local.get 6
+            local.set 2
+            br 3
+          end
+          local.get 3
+          local.set 1
+          br 0
+        end
+      end
+      local.get 0
+      local.set 2
+    end
+    local.get 2
+    return
+    end
+  )
+  (table (;0;) 0 0 funcref)
+  (memory (;0;) i64 16)
+  (global (;0;) (mut i64) i64.const 1048576)
+  (export "main" (func 0))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (elem (;0;) (i32.const 0) func)
+  (data (;0;) (i64.const 1048576) "")
+)

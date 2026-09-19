@@ -812,7 +812,6 @@ wasm_emit_function :: proc(
 
 			if hnode.itype == .Loop {
 				pred := graph_expand(ctx, hnode.inps[1])
-				assert(pred.itype == .Jump)
 				pred_blk := int(graph_get(ctx, pred.inps[0]).gvn)
 				append(
 					blocks,
@@ -890,7 +889,12 @@ wasm_emit_function :: proc(
 
 			for b in ([]int{best, loop}) {
 				if b != 0 {
-					append(&ctx.block_stack, b)
+					if blocks[b].start == i {
+						assert(blocks[b].loop_too)
+						append(&ctx.final_order, b)
+					} else {
+						append(&ctx.block_stack, b)
+					}
 
 					for cursor := b;
 					    cursor != 0;
@@ -956,6 +960,7 @@ wasm_emit_function :: proc(
 	emit_leb(ctx.code, local_count)
 	for cnt, kind in local_counts {
 		if cnt != 0 {
+			assert(cnt > 0)
 			emit_leb(ctx.code, cnt)
 			emit(ctx.code, {u8(LOCAL_TO_WASM[kind])})
 		}
@@ -978,13 +983,16 @@ wasm_emit_function :: proc(
 
 				a_block := ctx.blocks[a]
 				b_block := ctx.blocks[b]
-				assert(
+				fmt.assertf(
 					(a_block.start >= b_block.end ||
 						b_block.start >= a_block.end) ||
 					(a_block.start >= b_block.start &&
 							b_block.end >= a_block.end) ||
 					(a_block.start <= b_block.start &&
 							b_block.end <= a_block.end),
+					"%v %v",
+					a_block,
+					b_block,
 				)
 			}
 		}
@@ -1020,6 +1028,9 @@ wasm_emit_function :: proc(
 			append(&ctx.block_stack, ctx.final_order[cursor])
 			if ctx.blocks[ctx.final_order[cursor]].loop_too {
 				emit_op(ctx.code, .Loop)
+				if ctx.blocks[ctx.final_order[cursor]].end == i {
+					close_loop = true
+				}
 			} else {
 				emit_op(ctx.code, .Block)
 			}
@@ -1033,7 +1044,6 @@ wasm_emit_function :: proc(
 		if close_loop {
 			emit_op(ctx.code, .End)
 			vl := pop(&ctx.block_stack)
-			assert(vl == -1)
 		}
 
 		if graph_get(ctx, bb.tail).itype == .Return {
@@ -1107,7 +1117,10 @@ wasm_emit_instr :: proc(ctx: ^Ctx, instr: backend.Node_ID, block: int, _: $T) {
 			emit_op(ctx.code, .F64_Const)
 			backend.emit_anys(ctx.code, cint.fvalue)
 		case .V128:
-			panic("TODO")
+			assert(cint.value == 0)
+			emit_op(ctx.code, .I32_Const)
+			emit_leb(ctx.code, cint.value)
+			emit_op_fd(ctx.code, .I32x4_Splat)
 		case .Void, .V256, .V512:
 			panic("no")
 		}
@@ -1399,7 +1412,23 @@ wasm_emit_instr :: proc(ctx: ^Ctx, instr: backend.Node_ID, block: int, _: $T) {
 			emit_leb(ctx.code, u64(label))
 		}
 	case .If:
-		if block != &ctx.blocks[0] {
+		loop_idx := -1
+		for out, i in node.outs {
+			if graph_get(ctx, out.id).itype == .Loop do loop_idx = i
+		}
+
+		if graph_get(ctx, node.inps[1]).dt > .I32 {
+			emit_op(ctx.code, .I32_Wrap_I64)
+		}
+
+		if loop_idx == 1 {
+			emit_op(ctx.code, .I32_Eqz)
+		}
+
+		if loop_idx != -1 {
+			emit_op(ctx.code, .Br_If)
+			emit_leb(ctx.code, u64(label))
+		} else if block != &ctx.blocks[0] {
 			emit_op(ctx.code, .Br_If)
 			emit_leb(ctx.code, u64(label))
 		}

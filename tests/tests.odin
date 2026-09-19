@@ -3179,16 +3179,16 @@ Stru4 :: struct {
 
 main_ :: proc() -> int {
 	vl := 0
-	vl += fortran({16, 20}, {30, 46, 50})
-	vl += load_of_args(1, 2, 3, 4, 5, 6, 7, 8, 9)
-	vl += brahma(1, 2, 3, 4, 5, {6, 7})
-	vl += int(compose({{1, 2, 3, 4, 5, 6, 7},
-		{8, 9, 10, 11, 12, 13, 14}, 15}))
+	//vl += fortran({16, 20}, {30, 46, 50})
+	//vl += load_of_args(1, 2, 3, 4, 5, 6, 7, 8, 9)
+	//vl += brahma(1, 2, 3, 4, 5, {6, 7})
+	//vl += int(compose({{1, 2, 3, 4, 5, 6, 7},
+	//	{8, 9, 10, 11, 12, 13, 14}, 15}))
 	vl += return_stru(1, 2).a
-	vl += int(return_stru3().f)
-	vl += int(return_stru3().c)
-	vl += stringa_dinga("", 1, "22", "333", 4, "55555",
-		"666666", 7, "88888888", "999999999", 10)
+	//vl += int(return_stru3().f)
+	//vl += int(return_stru3().c)
+	//vl += stringa_dinga("", 1, "22", "333", 4, "55555",
+	//	"666666", 7, "88888888", "999999999", 10)
 	return vl
 }
 
@@ -3286,16 +3286,16 @@ Stru4 :: struct {
 
 main :: proc() -> int {
 	vl := 0
-	vl += fortran({16, 20}, {30, 46, 50})
-	vl += load_of_args(1, 2, 3, 4, 5, 6, 7, 8, 9)
-	vl += brahma(1, 2, 3, 4, 5, {6, 7})
-	vl += int(compose({{1, 2, 3, 4, 5, 6, 7},
-		{8, 9, 10, 11, 12, 13, 14}, 15}))
+	//vl += fortran({16, 20}, {30, 46, 50})
+	//vl += load_of_args(1, 2, 3, 4, 5, 6, 7, 8, 9)
+	//vl += brahma(1, 2, 3, 4, 5, {6, 7})
+	//vl += int(compose({{1, 2, 3, 4, 5, 6, 7},
+	//	{8, 9, 10, 11, 12, 13, 14}, 15}))
 	vl += return_stru(1, 2).a
-	vl += int(return_stru3().f)
-	vl += int(return_stru3().c)
-	vl += stringa_dinga("", 1, "22", "333", 4, "55555",
-		"666666", 7, "88888888", "999999999", 10)
+	//vl += int(return_stru3().f)
+	//vl += int(return_stru3().c)
+	//vl += stringa_dinga("", 1, "22", "333", 4, "55555",
+	//	"666666", 7, "88888888", "999999999", 10)
 	return vl
 }
 

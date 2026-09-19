@@ -1115,9 +1115,11 @@ regalloc_round :: proc(
 				}
 			}
 
-			clobbs := ctx.ra.call_clobbers[0][lrg.mask.kind]
-			if lrg.mask.masks[0] & clobbs != 0 {
-				lrg.mask.masks[0] &= clobbs
+			if len(ctx.ra.call_clobbers[0]) != 0 {
+				clobbs := ctx.ra.call_clobbers[0][lrg.mask.kind]
+				if lrg.mask.masks[0] & clobbs != 0 {
+					lrg.mask.masks[0] &= clobbs
+				}
 			}
 
 			first_set, fok := backend.reg_mask_first_set(lrg.mask)

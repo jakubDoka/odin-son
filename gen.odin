@@ -2382,7 +2382,6 @@ emit_call :: proc(
 	call := backend.graph_add_call(ctx, "call", args[:ln], u32(prc_id))
 	call_ext := backend.graph_extra(ctx, call, backend.Call)
 	call_ext.imported = imported
-	call_ext.ret_count = len(rabi.reg_rets)
 	call_ext.indirect = prc_id == 0
 
 	cnode := graph_get(ctx, call)
@@ -2413,6 +2412,7 @@ emit_call :: proc(
 				rid := u32(i)
 				vl := backend.graph_add_ret(ctx, "cret", .I64, call_end, rid)
 				emit_arbitrary_store(ctx, d, vl, size, i * 8)
+				call_ext.ret_count += 1
 			}
 
 			results[res_idx] = {
@@ -2421,6 +2421,7 @@ emit_call :: proc(
 			}
 		} else {
 			vl := backend.graph_add_ret(ctx, "cret", dt, call_end, 0)
+			call_ext.ret_count += 1
 			results[res_idx] = Value(vl)
 		}
 	}

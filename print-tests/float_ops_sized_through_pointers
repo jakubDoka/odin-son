@@ -852,3 +852,1316 @@ main:
   (elem (;0;) (i32.const 0) func)
   (data (;0;) (i64.const 1048576) "")
 )
+=========== OPT LEVEL: none ===========
+(module
+  (type (;0;) (func (param i64 f32) (result f32)))
+  (type (;1;) (func (param i64 f32) (result f32)))
+  (type (;2;) (func (param i64 f32) (result f32)))
+  (type (;3;) (func (param i64 f32) (result f32)))
+  (type (;4;) (func (param i64 f64) (result f64)))
+  (type (;5;) (func (param i64 f64) (result f64)))
+  (type (;6;) (func (param i64 f64) (result f64)))
+  (type (;7;) (func (param i64 f64) (result f64)))
+  (type (;8;) (func (result i64)))
+  (func $add32 (type 0) (param i64 f32) (result f32)
+    (local f32)
+    local.get 0
+    f32.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f32.add
+    f32.store align=1
+    local.get 0
+    f32.load align=1
+    local.set 1
+    local.get 1
+    return
+    end
+  )
+  (func $sub32 (type 1) (param i64 f32) (result f32)
+    (local f32)
+    local.get 0
+    f32.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f32.sub
+    f32.store align=1
+    local.get 0
+    f32.load align=1
+    local.set 1
+    local.get 1
+    return
+    end
+  )
+  (func $mul32 (type 2) (param i64 f32) (result f32)
+    (local f32)
+    local.get 0
+    f32.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f32.mul
+    f32.store align=1
+    local.get 0
+    f32.load align=1
+    local.set 1
+    local.get 1
+    return
+    end
+  )
+  (func $div32 (type 3) (param i64 f32) (result f32)
+    (local f32)
+    local.get 0
+    f32.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f32.div
+    f32.store align=1
+    local.get 0
+    f32.load align=1
+    local.set 1
+    local.get 1
+    return
+    end
+  )
+  (func $add64 (type 4) (param i64 f64) (result f64)
+    (local f64)
+    local.get 0
+    f64.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f64.add
+    f64.store align=1
+    local.get 0
+    f64.load align=1
+    local.set 1
+    local.get 1
+    return
+    end
+  )
+  (func $sub64 (type 5) (param i64 f64) (result f64)
+    (local f64)
+    local.get 0
+    f64.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f64.sub
+    f64.store align=1
+    local.get 0
+    f64.load align=1
+    local.set 1
+    local.get 1
+    return
+    end
+  )
+  (func $mul64 (type 6) (param i64 f64) (result f64)
+    (local f64)
+    local.get 0
+    f64.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f64.mul
+    f64.store align=1
+    local.get 0
+    f64.load align=1
+    local.set 1
+    local.get 1
+    return
+    end
+  )
+  (func $div64 (type 7) (param i64 f64) (result f64)
+    (local f64)
+    local.get 0
+    f64.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f64.div
+    f64.store align=1
+    local.get 0
+    f64.load align=1
+    local.set 1
+    local.get 1
+    return
+    end
+  )
+  (func $main (type 8) (result i64)
+    (local i64 i64 f64 f32)
+    global.get 0
+    i64.const 12
+    i64.sub
+    global.set 0
+    global.get 0
+    i64.const 0
+    i64.add
+    local.tee 1
+    f32.const +8
+    f32.store align=1
+    local.get 1
+    f32.const +4
+    call $add32
+    drop
+    local.get 1
+    f32.const +2
+    call $sub32
+    drop
+    local.get 1
+    f32.const +3
+    call $mul32
+    drop
+    local.get 1
+    f32.const +5
+    call $div32
+    drop
+    global.get 0
+    i64.const 4
+    i64.add
+    local.tee 0
+    f64.const +100
+    f64.store align=1
+    local.get 0
+    f64.const +20
+    call $add64
+    drop
+    local.get 0
+    f64.const +40
+    call $sub64
+    drop
+    local.get 0
+    f64.const +2
+    call $mul64
+    drop
+    local.get 0
+    f64.const +4
+    call $div64
+    drop
+    local.get 1
+    f32.load align=1
+    local.set 3
+    local.get 0
+    f64.load align=1
+    local.set 2
+    local.get 3
+    local.get 2
+    f32.demote_f64
+    f32.add
+    i64.trunc_f32_s
+    global.get 0
+    i64.const 12
+    i64.add
+    global.set 0
+    return
+    end
+  )
+  (table (;0;) 0 0 funcref)
+  (memory (;0;) i64 16)
+  (global (;0;) (mut i64) i64.const 1048576)
+  (export "main" (func 8))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (elem (;0;) (i32.const 0) func)
+  (data (;0;) (i64.const 1048576) "")
+)
+=========== OPT LEVEL: mininal-quick ===========
+(module
+  (type (;0;) (func (param i64 f32) (result f32)))
+  (type (;1;) (func (param i64 f32) (result f32)))
+  (type (;2;) (func (param i64 f32) (result f32)))
+  (type (;3;) (func (param i64 f32) (result f32)))
+  (type (;4;) (func (param i64 f64) (result f64)))
+  (type (;5;) (func (param i64 f64) (result f64)))
+  (type (;6;) (func (param i64 f64) (result f64)))
+  (type (;7;) (func (param i64 f64) (result f64)))
+  (type (;8;) (func (result i64)))
+  (func $add32 (type 0) (param i64 f32) (result f32)
+    (local f32)
+    local.get 0
+    f32.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f32.add
+    f32.store align=1
+    local.get 0
+    f32.load align=1
+    local.set 1
+    local.get 1
+    return
+    end
+  )
+  (func $sub32 (type 1) (param i64 f32) (result f32)
+    (local f32)
+    local.get 0
+    f32.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f32.sub
+    f32.store align=1
+    local.get 0
+    f32.load align=1
+    local.set 1
+    local.get 1
+    return
+    end
+  )
+  (func $mul32 (type 2) (param i64 f32) (result f32)
+    (local f32)
+    local.get 0
+    f32.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f32.mul
+    f32.store align=1
+    local.get 0
+    f32.load align=1
+    local.set 1
+    local.get 1
+    return
+    end
+  )
+  (func $div32 (type 3) (param i64 f32) (result f32)
+    (local f32)
+    local.get 0
+    f32.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f32.div
+    f32.store align=1
+    local.get 0
+    f32.load align=1
+    local.set 1
+    local.get 1
+    return
+    end
+  )
+  (func $add64 (type 4) (param i64 f64) (result f64)
+    (local f64)
+    local.get 0
+    f64.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f64.add
+    f64.store align=1
+    local.get 0
+    f64.load align=1
+    local.set 1
+    local.get 1
+    return
+    end
+  )
+  (func $sub64 (type 5) (param i64 f64) (result f64)
+    (local f64)
+    local.get 0
+    f64.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f64.sub
+    f64.store align=1
+    local.get 0
+    f64.load align=1
+    local.set 1
+    local.get 1
+    return
+    end
+  )
+  (func $mul64 (type 6) (param i64 f64) (result f64)
+    (local f64)
+    local.get 0
+    f64.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f64.mul
+    f64.store align=1
+    local.get 0
+    f64.load align=1
+    local.set 1
+    local.get 1
+    return
+    end
+  )
+  (func $div64 (type 7) (param i64 f64) (result f64)
+    (local f64)
+    local.get 0
+    f64.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f64.div
+    f64.store align=1
+    local.get 0
+    f64.load align=1
+    local.set 1
+    local.get 1
+    return
+    end
+  )
+  (func $main (type 8) (result i64)
+    (local i64 i64 f64 f32)
+    global.get 0
+    i64.const 12
+    i64.sub
+    global.set 0
+    global.get 0
+    i64.const 0
+    i64.add
+    local.tee 0
+    f32.const +8
+    f32.store align=1
+    local.get 0
+    f32.const +4
+    call $add32
+    drop
+    local.get 0
+    f32.const +2
+    call $sub32
+    drop
+    local.get 0
+    f32.const +3
+    call $mul32
+    drop
+    local.get 0
+    f32.const +5
+    call $div32
+    drop
+    global.get 0
+    i64.const 4
+    i64.add
+    local.tee 1
+    f64.const +100
+    f64.store align=1
+    local.get 1
+    f64.const +20
+    call $add64
+    drop
+    local.get 1
+    f64.const +40
+    call $sub64
+    drop
+    local.get 1
+    f64.const +2
+    call $mul64
+    drop
+    local.get 1
+    f64.const +4
+    call $div64
+    drop
+    local.get 0
+    f32.load align=1
+    local.set 3
+    local.get 1
+    f64.load align=1
+    local.set 2
+    local.get 3
+    local.get 2
+    f32.demote_f64
+    f32.add
+    i64.trunc_f32_s
+    global.get 0
+    i64.const 12
+    i64.add
+    global.set 0
+    return
+    end
+  )
+  (table (;0;) 0 0 funcref)
+  (memory (;0;) i64 16)
+  (global (;0;) (mut i64) i64.const 1048576)
+  (export "main" (func 8))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (elem (;0;) (i32.const 0) func)
+  (data (;0;) (i64.const 1048576) "")
+)
+=========== OPT LEVEL: mininal ===========
+(module
+  (type (;0;) (func (param i64 f32) (result f32)))
+  (type (;1;) (func (param i64 f32) (result f32)))
+  (type (;2;) (func (param i64 f32) (result f32)))
+  (type (;3;) (func (param i64 f32) (result f32)))
+  (type (;4;) (func (param i64 f64) (result f64)))
+  (type (;5;) (func (param i64 f64) (result f64)))
+  (type (;6;) (func (param i64 f64) (result f64)))
+  (type (;7;) (func (param i64 f64) (result f64)))
+  (type (;8;) (func (result i64)))
+  (func $add32 (type 0) (param i64 f32) (result f32)
+    (local f32)
+    local.get 0
+    f32.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f32.add
+    f32.store align=1
+    local.get 0
+    f32.load align=1
+    local.set 1
+    local.get 1
+    return
+    end
+  )
+  (func $sub32 (type 1) (param i64 f32) (result f32)
+    (local f32)
+    local.get 0
+    f32.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f32.sub
+    f32.store align=1
+    local.get 0
+    f32.load align=1
+    local.set 1
+    local.get 1
+    return
+    end
+  )
+  (func $mul32 (type 2) (param i64 f32) (result f32)
+    (local f32)
+    local.get 0
+    f32.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f32.mul
+    f32.store align=1
+    local.get 0
+    f32.load align=1
+    local.set 1
+    local.get 1
+    return
+    end
+  )
+  (func $div32 (type 3) (param i64 f32) (result f32)
+    (local f32)
+    local.get 0
+    f32.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f32.div
+    f32.store align=1
+    local.get 0
+    f32.load align=1
+    local.set 1
+    local.get 1
+    return
+    end
+  )
+  (func $add64 (type 4) (param i64 f64) (result f64)
+    (local f64)
+    local.get 0
+    f64.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f64.add
+    f64.store align=1
+    local.get 0
+    f64.load align=1
+    local.set 1
+    local.get 1
+    return
+    end
+  )
+  (func $sub64 (type 5) (param i64 f64) (result f64)
+    (local f64)
+    local.get 0
+    f64.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f64.sub
+    f64.store align=1
+    local.get 0
+    f64.load align=1
+    local.set 1
+    local.get 1
+    return
+    end
+  )
+  (func $mul64 (type 6) (param i64 f64) (result f64)
+    (local f64)
+    local.get 0
+    f64.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f64.mul
+    f64.store align=1
+    local.get 0
+    f64.load align=1
+    local.set 1
+    local.get 1
+    return
+    end
+  )
+  (func $div64 (type 7) (param i64 f64) (result f64)
+    (local f64)
+    local.get 0
+    f64.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f64.div
+    f64.store align=1
+    local.get 0
+    f64.load align=1
+    local.set 1
+    local.get 1
+    return
+    end
+  )
+  (func $main (type 8) (result i64)
+    (local i64 i64 f64 f32)
+    global.get 0
+    i64.const 12
+    i64.sub
+    global.set 0
+    global.get 0
+    i64.const 0
+    i64.add
+    local.tee 1
+    f32.const +8
+    f32.store align=1
+    local.get 1
+    f32.const +4
+    call $add32
+    drop
+    local.get 1
+    f32.const +2
+    call $sub32
+    drop
+    local.get 1
+    f32.const +3
+    call $mul32
+    drop
+    local.get 1
+    f32.const +5
+    call $div32
+    drop
+    global.get 0
+    i64.const 4
+    i64.add
+    local.tee 0
+    f64.const +100
+    f64.store align=1
+    local.get 0
+    f64.const +20
+    call $add64
+    drop
+    local.get 0
+    f64.const +40
+    call $sub64
+    drop
+    local.get 0
+    f64.const +2
+    call $mul64
+    drop
+    local.get 0
+    f64.const +4
+    call $div64
+    drop
+    local.get 1
+    f32.load align=1
+    local.set 3
+    local.get 0
+    f64.load align=1
+    local.set 2
+    local.get 3
+    local.get 2
+    f32.demote_f64
+    f32.add
+    i64.trunc_f32_s
+    global.get 0
+    i64.const 12
+    i64.add
+    global.set 0
+    return
+    end
+  )
+  (table (;0;) 0 0 funcref)
+  (memory (;0;) i64 16)
+  (global (;0;) (mut i64) i64.const 1048576)
+  (export "main" (func 8))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (elem (;0;) (i32.const 0) func)
+  (data (;0;) (i64.const 1048576) "")
+)
+=========== OPT LEVEL: moderate-quick ===========
+(module
+  (type (;0;) (func (param i64 f32) (result f32)))
+  (type (;1;) (func (param i64 f32) (result f32)))
+  (type (;2;) (func (param i64 f32) (result f32)))
+  (type (;3;) (func (param i64 f32) (result f32)))
+  (type (;4;) (func (param i64 f64) (result f64)))
+  (type (;5;) (func (param i64 f64) (result f64)))
+  (type (;6;) (func (param i64 f64) (result f64)))
+  (type (;7;) (func (param i64 f64) (result f64)))
+  (type (;8;) (func (result i64)))
+  (func $add32 (type 0) (param i64 f32) (result f32)
+    (local f32)
+    local.get 0
+    f32.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f32.add
+    local.tee 1
+    f32.store align=1
+    local.get 1
+    return
+    end
+  )
+  (func $sub32 (type 1) (param i64 f32) (result f32)
+    (local f32)
+    local.get 0
+    f32.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f32.sub
+    local.tee 1
+    f32.store align=1
+    local.get 1
+    return
+    end
+  )
+  (func $mul32 (type 2) (param i64 f32) (result f32)
+    (local f32)
+    local.get 0
+    f32.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f32.mul
+    local.tee 1
+    f32.store align=1
+    local.get 1
+    return
+    end
+  )
+  (func $div32 (type 3) (param i64 f32) (result f32)
+    (local f32)
+    local.get 0
+    f32.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f32.div
+    local.tee 1
+    f32.store align=1
+    local.get 1
+    return
+    end
+  )
+  (func $add64 (type 4) (param i64 f64) (result f64)
+    (local f64)
+    local.get 0
+    f64.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f64.add
+    local.tee 1
+    f64.store align=1
+    local.get 1
+    return
+    end
+  )
+  (func $sub64 (type 5) (param i64 f64) (result f64)
+    (local f64)
+    local.get 0
+    f64.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f64.sub
+    local.tee 1
+    f64.store align=1
+    local.get 1
+    return
+    end
+  )
+  (func $mul64 (type 6) (param i64 f64) (result f64)
+    (local f64)
+    local.get 0
+    f64.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f64.mul
+    local.tee 1
+    f64.store align=1
+    local.get 1
+    return
+    end
+  )
+  (func $div64 (type 7) (param i64 f64) (result f64)
+    (local f64)
+    local.get 0
+    f64.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f64.div
+    local.tee 1
+    f64.store align=1
+    local.get 1
+    return
+    end
+  )
+  (func $main (type 8) (result i64)
+    (local i64 i64 f64 f32)
+    global.get 0
+    i64.const 12
+    i64.sub
+    global.set 0
+    global.get 0
+    i64.const 0
+    i64.add
+    local.tee 0
+    f32.const +8
+    f32.store align=1
+    local.get 0
+    f32.const +4
+    call $add32
+    drop
+    local.get 0
+    f32.const +2
+    call $sub32
+    drop
+    local.get 0
+    f32.const +3
+    call $mul32
+    drop
+    local.get 0
+    f32.const +5
+    call $div32
+    drop
+    global.get 0
+    i64.const 4
+    i64.add
+    local.tee 1
+    f64.const +100
+    f64.store align=1
+    local.get 1
+    f64.const +20
+    call $add64
+    drop
+    local.get 1
+    f64.const +40
+    call $sub64
+    drop
+    local.get 1
+    f64.const +2
+    call $mul64
+    drop
+    local.get 1
+    f64.const +4
+    call $div64
+    drop
+    local.get 0
+    f32.load align=1
+    local.set 3
+    local.get 1
+    f64.load align=1
+    local.set 2
+    local.get 3
+    local.get 2
+    f32.demote_f64
+    f32.add
+    i64.trunc_f32_s
+    global.get 0
+    i64.const 12
+    i64.add
+    global.set 0
+    return
+    end
+  )
+  (table (;0;) 0 0 funcref)
+  (memory (;0;) i64 16)
+  (global (;0;) (mut i64) i64.const 1048576)
+  (export "main" (func 8))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (elem (;0;) (i32.const 0) func)
+  (data (;0;) (i64.const 1048576) "")
+)
+=========== OPT LEVEL: moderate ===========
+(module
+  (type (;0;) (func (param i64 f32) (result f32)))
+  (type (;1;) (func (param i64 f32) (result f32)))
+  (type (;2;) (func (param i64 f32) (result f32)))
+  (type (;3;) (func (param i64 f32) (result f32)))
+  (type (;4;) (func (param i64 f64) (result f64)))
+  (type (;5;) (func (param i64 f64) (result f64)))
+  (type (;6;) (func (param i64 f64) (result f64)))
+  (type (;7;) (func (param i64 f64) (result f64)))
+  (type (;8;) (func (result i64)))
+  (func $add32 (type 0) (param i64 f32) (result f32)
+    (local f32)
+    local.get 0
+    f32.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f32.add
+    local.tee 1
+    f32.store align=1
+    local.get 1
+    return
+    end
+  )
+  (func $sub32 (type 1) (param i64 f32) (result f32)
+    (local f32)
+    local.get 0
+    f32.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f32.sub
+    local.tee 1
+    f32.store align=1
+    local.get 1
+    return
+    end
+  )
+  (func $mul32 (type 2) (param i64 f32) (result f32)
+    (local f32)
+    local.get 0
+    f32.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f32.mul
+    local.tee 1
+    f32.store align=1
+    local.get 1
+    return
+    end
+  )
+  (func $div32 (type 3) (param i64 f32) (result f32)
+    (local f32)
+    local.get 0
+    f32.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f32.div
+    local.tee 1
+    f32.store align=1
+    local.get 1
+    return
+    end
+  )
+  (func $add64 (type 4) (param i64 f64) (result f64)
+    (local f64)
+    local.get 0
+    f64.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f64.add
+    local.tee 1
+    f64.store align=1
+    local.get 1
+    return
+    end
+  )
+  (func $sub64 (type 5) (param i64 f64) (result f64)
+    (local f64)
+    local.get 0
+    f64.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f64.sub
+    local.tee 1
+    f64.store align=1
+    local.get 1
+    return
+    end
+  )
+  (func $mul64 (type 6) (param i64 f64) (result f64)
+    (local f64)
+    local.get 0
+    f64.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f64.mul
+    local.tee 1
+    f64.store align=1
+    local.get 1
+    return
+    end
+  )
+  (func $div64 (type 7) (param i64 f64) (result f64)
+    (local f64)
+    local.get 0
+    f64.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f64.div
+    local.tee 1
+    f64.store align=1
+    local.get 1
+    return
+    end
+  )
+  (func $main (type 8) (result i64)
+    (local i64 i64 f64 f32)
+    global.get 0
+    i64.const 12
+    i64.sub
+    global.set 0
+    global.get 0
+    i64.const 0
+    i64.add
+    local.tee 1
+    f32.const +8
+    f32.store align=1
+    local.get 1
+    f32.const +4
+    call $add32
+    drop
+    local.get 1
+    f32.const +2
+    call $sub32
+    drop
+    local.get 1
+    f32.const +3
+    call $mul32
+    drop
+    local.get 1
+    f32.const +5
+    call $div32
+    drop
+    global.get 0
+    i64.const 4
+    i64.add
+    local.tee 0
+    f64.const +100
+    f64.store align=1
+    local.get 0
+    f64.const +20
+    call $add64
+    drop
+    local.get 0
+    f64.const +40
+    call $sub64
+    drop
+    local.get 0
+    f64.const +2
+    call $mul64
+    drop
+    local.get 0
+    f64.const +4
+    call $div64
+    drop
+    local.get 1
+    f32.load align=1
+    local.set 3
+    local.get 0
+    f64.load align=1
+    local.set 2
+    local.get 3
+    local.get 2
+    f32.demote_f64
+    f32.add
+    i64.trunc_f32_s
+    global.get 0
+    i64.const 12
+    i64.add
+    global.set 0
+    return
+    end
+  )
+  (table (;0;) 0 0 funcref)
+  (memory (;0;) i64 16)
+  (global (;0;) (mut i64) i64.const 1048576)
+  (export "main" (func 8))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (elem (;0;) (i32.const 0) func)
+  (data (;0;) (i64.const 1048576) "")
+)
+=========== OPT LEVEL: all ===========
+(module
+  (type (;0;) (func (param i64 f32) (result f32)))
+  (type (;1;) (func (param i64 f32) (result f32)))
+  (type (;2;) (func (param i64 f32) (result f32)))
+  (type (;3;) (func (param i64 f32) (result f32)))
+  (type (;4;) (func (param i64 f64) (result f64)))
+  (type (;5;) (func (param i64 f64) (result f64)))
+  (type (;6;) (func (param i64 f64) (result f64)))
+  (type (;7;) (func (param i64 f64) (result f64)))
+  (type (;8;) (func (result i64)))
+  (func $add32 (type 0) (param i64 f32) (result f32)
+    (local f32)
+    local.get 0
+    f32.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f32.add
+    local.tee 1
+    f32.store align=1
+    local.get 1
+    return
+    end
+  )
+  (func $sub32 (type 1) (param i64 f32) (result f32)
+    (local f32)
+    local.get 0
+    f32.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f32.sub
+    local.tee 1
+    f32.store align=1
+    local.get 1
+    return
+    end
+  )
+  (func $mul32 (type 2) (param i64 f32) (result f32)
+    (local f32)
+    local.get 0
+    f32.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f32.mul
+    local.tee 1
+    f32.store align=1
+    local.get 1
+    return
+    end
+  )
+  (func $div32 (type 3) (param i64 f32) (result f32)
+    (local f32)
+    local.get 0
+    f32.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f32.div
+    local.tee 1
+    f32.store align=1
+    local.get 1
+    return
+    end
+  )
+  (func $add64 (type 4) (param i64 f64) (result f64)
+    (local f64)
+    local.get 0
+    f64.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f64.add
+    local.tee 1
+    f64.store align=1
+    local.get 1
+    return
+    end
+  )
+  (func $sub64 (type 5) (param i64 f64) (result f64)
+    (local f64)
+    local.get 0
+    f64.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f64.sub
+    local.tee 1
+    f64.store align=1
+    local.get 1
+    return
+    end
+  )
+  (func $mul64 (type 6) (param i64 f64) (result f64)
+    (local f64)
+    local.get 0
+    f64.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f64.mul
+    local.tee 1
+    f64.store align=1
+    local.get 1
+    return
+    end
+  )
+  (func $div64 (type 7) (param i64 f64) (result f64)
+    (local f64)
+    local.get 0
+    f64.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    local.get 1
+    f64.div
+    local.tee 1
+    f64.store align=1
+    local.get 1
+    return
+    end
+  )
+  (func $main (type 8) (result i64)
+    (local i64 i64 f64 f32)
+    global.get 0
+    i64.const 12
+    i64.sub
+    global.set 0
+    global.get 0
+    i64.const 0
+    i64.add
+    local.tee 1
+    f32.const +8
+    f32.store align=1
+    local.get 1
+    f32.const +4
+    call $add32
+    drop
+    local.get 1
+    f32.const +2
+    call $sub32
+    drop
+    local.get 1
+    f32.const +3
+    call $mul32
+    drop
+    local.get 1
+    f32.const +5
+    call $div32
+    drop
+    global.get 0
+    i64.const 4
+    i64.add
+    local.tee 0
+    f64.const +100
+    f64.store align=1
+    local.get 0
+    f64.const +20
+    call $add64
+    drop
+    local.get 0
+    f64.const +40
+    call $sub64
+    drop
+    local.get 0
+    f64.const +2
+    call $mul64
+    drop
+    local.get 0
+    f64.const +4
+    call $div64
+    drop
+    local.get 1
+    f32.load align=1
+    local.set 3
+    local.get 0
+    f64.load align=1
+    local.set 2
+    local.get 3
+    local.get 2
+    f32.demote_f64
+    f32.add
+    i64.trunc_f32_s
+    global.get 0
+    i64.const 12
+    i64.add
+    global.set 0
+    return
+    end
+  )
+  (table (;0;) 0 0 funcref)
+  (memory (;0;) i64 16)
+  (global (;0;) (mut i64) i64.const 1048576)
+  (export "main" (func 8))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (elem (;0;) (i32.const 0) func)
+  (data (;0;) (i64.const 1048576) "")
+)
+=========== OPT LEVEL: aggresive ===========
+(module
+  (type (;0;) (func (result i64)))
+  (func $main (type 0) (result i64)
+    i64.const 46
+    return
+    end
+  )
+  (table (;0;) 0 0 funcref)
+  (memory (;0;) i64 16)
+  (global (;0;) (mut i64) i64.const 1048576)
+  (export "main" (func 0))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (elem (;0;) (i32.const 0) func)
+  (data (;0;) (i64.const 1048576) "")
+)

@@ -151,3 +151,54 @@ main:
     ud2
 2:
     ret
+=========== OPT LEVEL: none-quick ===========
+(module
+  (type (;0;) (func (result i64)))
+  (type (;1;) (func))
+  (func $main (type 0) (result i64)
+    (local i64 i64)
+    block
+      block
+        global.get 1
+        i64.load align=1
+        local.set 0
+        local.get 0
+        i64.const 0
+        local.tee 0
+        i64.ne
+        br_if 0
+        br 1
+      end
+      block
+        call $foo
+        global.get 2
+        i64.load align=1
+        local.set 1
+        local.get 1
+        local.get 0
+        i64.eq
+        br_if 0
+        br 1
+      end
+      i64.const 1
+      local.set 0
+    end
+    local.get 0
+    return
+    end
+  )
+  (func $foo (type 1)
+    unreachable
+    end
+  )
+  (table (;0;) 0 0 funcref)
+  (memory (;0;) i64 17)
+  (global (;0;) (mut i64) i64.const 1048576)
+  (global (;1;) i64 i64.const 1048576)
+  (global (;2;) i64 i64.const 1048584)
+  (export "main" (func 0))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (elem (;0;) (i32.const 0) func)
+  (data (;0;) (i64.const 1048592) "")
+)

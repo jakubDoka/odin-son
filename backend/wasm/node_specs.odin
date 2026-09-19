@@ -107,6 +107,7 @@ SPEC := backend.Node_Spec{
 		0b10, // Tee_Local
 		0b10, // Drop
 		0b10, // Stub
+		0b10000000, // Extract_Lane_U
 	},
 	node_extra_sizes = {
 		1, // Start -> Cfg
@@ -195,6 +196,7 @@ SPEC := backend.Node_Spec{
 		0, // Tee_Local -> No_Extra
 		0, // Drop -> No_Extra
 		0, // Stub -> No_Extra
+		1, // Extract_Lane_U -> WASM_Lane_Op
 	},
 	node_flags = {
 		{}, // Start
@@ -283,6 +285,7 @@ SPEC := backend.Node_Spec{
 		{}, // Tee_Local
 		{}, // Drop
 		{}, // Stub
+		{}, // Extract_Lane_U
 	},
 	node_extra_types = {
 		backend.Cfg,
@@ -371,6 +374,7 @@ SPEC := backend.Node_Spec{
 		backend.No_Extra,
 		backend.No_Extra,
 		backend.No_Extra,
+		WASM_Lane_Op,
 	},
 	node_kind_name = {
 		`Start`,
@@ -459,6 +463,7 @@ SPEC := backend.Node_Spec{
 		`Tee_Local`,
 		`Drop`,
 		`Stub`,
+		`Extract_Lane_U`,
 	},
 }
 
@@ -549,6 +554,7 @@ WASM_Node_Type :: enum u16 {
 	Tee_Local,
 	Drop,
 	Stub,
+	Extract_Lane_U,
 }
 
 wasm_peep_inst :: proc(ctx: backend.Peep_Ctx, node: backend.Expanded_Node) -> backend.Node_ID {
@@ -656,6 +662,13 @@ wasm_collect_meta :: proc(ctx: ^backend.Graph,
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
+#assert(size_of(WASM_Lane_Op) % backend.PRECISION == 0)
+graph_add_extract_lane_u :: #force_inline proc(graph: ^backend.Graph, name: string, dt: backend.Node_Datatype, vec: backend.Node_ID, laneidx: u32, lane: backend.Lane_Type = {}) -> (_id: backend.Node_ID) {
+	(^WASM_Lane_Op)(backend.graph_get_next_extra_slot(graph, u16(WASM_Node_Type.Extract_Lane_U)))^ = {
+		laneidx = laneidx,
+	}
+	return backend.graph_add_raw(graph, name, u16(WASM_Node_Type.Extract_Lane_U), dt, {vec}, lane = lane)
+}
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	when false {}
@@ -664,6 +677,7 @@ inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	else when T == backend.Call {return 5}
 	else when T == backend.Tup {return 2}
 	else when T == backend.CV128 {return 6}
+	else when T == WASM_Lane_Op {return 7}
 	else when T == backend.Cfg {return 0}
 	else when T == backend.Local {return 4}
 	else {#panic(`the passed type is not subclass of anything`)}

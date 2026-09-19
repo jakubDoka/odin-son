@@ -349,7 +349,7 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 			k, _ := delete_key(&groups, class.group)
 			if k != class.group do continue
 
-			pass_lane := k == "Bin_Op" || k == "Un_Op"
+			pass_lane := k == "Bin_Op" || k == "Un_Op" || class.pass_lane
 
 			fname := name
 			if k != "" do fname = k
@@ -462,6 +462,10 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 					", extra_capacity = %v",
 					class.extra_capacity,
 				)
+			}
+
+			if pass_lane {
+				os.write_string(file, ", lane = lane")
 			}
 
 			os.write_string(file, ")\n")

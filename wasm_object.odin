@@ -329,6 +329,11 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 		ret_dts: [dynamic; 2]backend.Node_Datatype
 		assert(len(rets) <= 1)
 		for ret in rets {
+			if typecheck.is_of(ret, ^typecheck.Simd) {
+				append(&ret_dts, backend.Node_Datatype.V128)
+				continue
+			}
+
 			rets, ok := x86_reg_class_classify(ret)
 
 			if len(rets) == 1 && type_to_dt(ret) != .Void {

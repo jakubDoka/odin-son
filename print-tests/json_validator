@@ -6473,7 +6473,9 @@ main:
             i32.load8_u align=1
             local.set 7
             local.get 6
+            i32.extend8_s
             local.get 7
+            i32.extend8_s
             i32.ne
             br_if 1
             local.get 0
@@ -6520,8 +6522,10 @@ main:
         i32.const 0
         local.set 3
         local.get 2
+        i32.extend8_s
         i32.const 34
         local.tee 2
+        i32.extend8_s
         i32.ne
         br_if 0
         block
@@ -6710,25 +6714,59 @@ main:
     end
     block
       block
-        local.get 0
-        call $peek
-        local.set 5
-        i32.const 0
-        local.set 6
-        local.get 5
-        i32.const 48
-        i32.eq
-        br_if 0
         block
+          local.get 0
+          call $peek
+          local.set 5
+          i32.const 0
+          local.set 6
           local.get 5
-          i32.const 49
-          i32.ge_u
-          local.get 5
-          i32.const 57
-          i32.le_u
-          i32.and
+          i32.const 48
+          i32.eq
           br_if 0
-          br 2
+          block
+            local.get 5
+            i32.const 49
+            i32.ge_u
+            local.get 5
+            i32.const 57
+            i32.le_u
+            i32.and
+            br_if 0
+            br 3
+          end
+          local.get 1
+          i64.load align=1
+          local.set 3
+          local.get 1
+          local.get 3
+          local.get 2
+          i64.add
+          i64.store align=1
+          block
+            loop
+              local.get 0
+              call $peek
+              local.set 5
+              local.get 5
+              call $is_digit
+              local.set 5
+              local.get 5
+              local.get 6
+              i32.eq
+              br_if 1
+              local.get 1
+              i64.load align=1
+              local.set 3
+              local.get 1
+              local.get 3
+              local.get 2
+              i64.add
+              i64.store align=1
+              br 0
+            end
+          end
+          br 1
         end
         local.get 1
         i64.load align=1
@@ -6738,41 +6776,7 @@ main:
         local.get 2
         i64.add
         i64.store align=1
-        block
-          loop
-            local.get 0
-            call $peek
-            local.set 5
-            local.get 5
-            call $is_digit
-            local.set 5
-            local.get 5
-            local.get 6
-            i32.eq
-            br_if 1
-            local.get 1
-            i64.load align=1
-            local.set 3
-            local.get 1
-            local.get 3
-            local.get 2
-            i64.add
-            i64.store align=1
-            br 0
-          end
-        end
-        br 1
       end
-      local.get 1
-      i64.load align=1
-      local.set 3
-      local.get 1
-      local.get 3
-      local.get 2
-      i64.add
-      i64.store align=1
-    end
-    block
       block
         block
           block
@@ -6930,7 +6934,9 @@ main:
         i32.const 0
         local.set 3
         local.get 2
+        i32.extend8_s
         i32.const 91
+        i32.extend8_s
         i32.ne
         br_if 0
         block
@@ -6969,7 +6975,9 @@ main:
                   i32.eq
                   br_if 2
                   local.get 5
+                  i32.extend8_s
                   i32.const 44
+                  i32.extend8_s
                   i32.ne
                   br_if 1
                   br 0
@@ -7019,7 +7027,9 @@ main:
         i32.const 0
         local.set 3
         local.get 2
+        i32.extend8_s
         i32.const 123
+        i32.extend8_s
         i32.ne
         br_if 0
         block
@@ -7050,7 +7060,9 @@ main:
                         call $peek
                         local.set 5
                         local.get 5
+                        i32.extend8_s
                         i32.const 34
+                        i32.extend8_s
                         i32.ne
                         br_if 6
                         local.get 0
@@ -7067,7 +7079,9 @@ main:
                         call $advance
                         local.set 5
                         local.get 5
+                        i32.extend8_s
                         i32.const 58
+                        i32.extend8_s
                         i32.ne
                         br_if 4
                         local.get 0
@@ -7088,7 +7102,9 @@ main:
                         i32.eq
                         br_if 2
                         local.get 5
+                        i32.extend8_s
                         i32.const 44
+                        i32.extend8_s
                         i32.ne
                         br_if 1
                         br 0

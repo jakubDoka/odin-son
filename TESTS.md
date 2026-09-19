@@ -5783,10 +5783,13 @@ sum :: proc(slc: []u8) -> u8 {
 
 main :: proc() -> int {
 	haystack := "0123456789abcdefghijklmnopqrstuvxyz"
-	res, _ := simd_search(transmute([]u8)haystack, 'z')
+	//res, _ := simd_search(transmute([]u8)haystack, 'z')
 	res2, _ := simd_search(transmute([]u8)haystack, 'a')
-	res3 := sum(transmute([]u8)haystack)
-	return res + res2 * 10 + int(res3) * 100
+	//res = 0
+	//res3 := sum(transmute([]u8)haystack)
+	//res3 = 0
+	//return res + res2 * 10 + int(res3) * 100
+	return res2
 }
 ```
 

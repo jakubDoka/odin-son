@@ -307,6 +307,15 @@ Node_Datatype :: enum u8 {
 	V512,
 }
 
+LANE_SIZE := [Lane_Type]int {
+	.I8  = 1,
+	.I16 = 2,
+	.I32 = 4,
+	.I64 = 8,
+	.F32 = 4,
+	.F64 = 8,
+}
+
 DT_SIZE := [Node_Datatype]int {
 	.Void = 0,
 	.I8   = 1,
@@ -1938,6 +1947,7 @@ graph_add_raw :: proc(
 		rtype       = type,
 		dt          = dt,
 		gvn         = graph.gvn,
+		lane        = lane,
 		is_store    = .Store in graph.node_flags[type],
 		is_load     = .Load in graph.node_flags[type],
 		input_idx   = u32(graph.mem.pos / PRECISION),

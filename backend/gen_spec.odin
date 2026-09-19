@@ -217,6 +217,7 @@ Class_Spec :: struct {
 	flags:          Class_Flags,
 	extra_capacity: int,
 	no_ctor:        bool,
+	pass_lane:      bool,
 }
 
 SPEC_NOT_PRESENT :: (#load("node_specs.odin", string) or_else "") == ""

@@ -5,6 +5,7 @@ import "../../vendored/gam/util/arna"
 import "base:runtime"
 import "core:fmt"
 import "core:mem"
+import "core:os"
 import "core:slice"
 import "core:sort"
 
@@ -49,6 +50,10 @@ WASM_SYSTEMV_CC := backend.Call_Conv {
 	args = {0 ..= RK_COUNT = transmute([]Reg)runtime.Raw_Slice{len = 64}},
 }
 
+WASM_Lane_Op :: struct {
+	laneidx: u32,
+}
+
 when SPEC_NOT_PRESENT {
 	Reg_Kind :: backend.Reg_Kind
 
@@ -65,12 +70,23 @@ when SPEC_NOT_PRESENT {
 		return {}, 0
 	}
 
+	graph_add_extract_lane_u :: proc(
+		graph: ^backend.Graph,
+		name: string,
+		dt: backend.Node_Datatype,
+		vec: backend.Node_ID,
+		laneidx: u32,
+	) -> backend.Node_ID {
+		return 0
+	}
+
 	WASM_Node_Type :: enum u16 {
 		Get_Local,
 		Set_Local,
 		Tee_Local,
 		Drop,
 		Stub,
+		Extract_Lane_U,
 	}
 
 	@(rodata)
@@ -80,6 +96,12 @@ when SPEC_NOT_PRESENT {
 		.Tee_Local = {no_ctor = true},
 		.Drop = {no_ctor = true},
 		.Stub = {no_ctor = true},
+		.Extract_Lane_U = {
+			id = WASM_Lane_Op,
+			args = {"vec"},
+			extra_args = {"laneidx"},
+			pass_lane = true,
+		},
 	}
 
 	when !GEN_SPEC {
@@ -114,7 +136,7 @@ wasm_peep :: proc(
 			)
 			return id
 		}
-	case .Div:
+	case .Div, .Ne ..= .Ge:
 		changed := false
 		for inp, i in node.inps {
 			if graph_get(ctx, inp).dt < .I32 {
@@ -165,6 +187,41 @@ wasm_peep :: proc(
 			backend.graph_add_c_int(ctx, "zr", node.dt, -1),
 			node.inps[0],
 		)
+	case .Simd_Reduce_Add_Bisect:
+		inp := graph_get(ctx, node.inps[0])
+
+		// TODO: maybe dont divide here
+		lane_count := backend.DT_SIZE[inp.dt] / backend.LANE_SIZE[node.lane]
+
+		sum := graph_add_extract_lane_u(
+			ctx,
+			"rabe",
+			node.dt,
+			node.inps[0],
+			0,
+			lane = node.lane,
+		)
+		for lane in 1 ..< lane_count {
+			next := graph_add_extract_lane_u(
+				ctx,
+				"rabe",
+				node.dt,
+				node.inps[0],
+				u32(lane),
+				lane = node.lane,
+			)
+
+			sum = backend.graph_add_bin_op(
+				ctx,
+				"rabs",
+				.Add,
+				node.dt,
+				sum,
+				next,
+			)
+		}
+
+		return sum
 	}
 
 	return 0
@@ -260,15 +317,20 @@ wasm_meta_of :: #force_inline proc(
 	     .F_Demote,
 	     .F_Ext,
 	     .F_From_I,
-	     .Proc_Addr:
+	     .Proc_Addr,
+	     .Always,
+	     .Poison,
+	     .Trap,
+	     .Extract_Lane_U,
+	     .Splat,
+	     .Simd_Extract_Lsbs,
+	     .Ctz:
 		return {out = out}
 	case .Phi:
 		if node.dt == .Void do return {out = out}
-		return {
-			out = mask,
-			input_start = 1,
-			masks = masks[:len(node.inps) - 1],
-		}
+		masks := make([]backend.RM_Intern_Idx, len(node.inps) - 1)
+		slice.fill(masks, mask)
+		return {out = mask, input_start = 1, masks = masks}
 	case .Param:
 		return {out = backend.param_mask(graph, ra, node)}
 	case .Tee_Local:
@@ -380,7 +442,16 @@ wasm_pre_regalloc_hook :: proc(
 		// TODO: this is uselss to be strongly typed, we anyway just use the
 		// length, and wether the out is invalid
 		#partial switch wtype(node) {
-		case .Root_Mem, .Sym, .Jump, .Local, .Mem, .Drop, .Global:
+		case .Root_Mem,
+		     .Sym,
+		     .Jump,
+		     .Local,
+		     .Mem,
+		     .Drop,
+		     .Global,
+		     .Always,
+		     .Poison,
+		     .Trap:
 			return {}
 		case .Load:
 			return {
@@ -403,6 +474,8 @@ wasm_pre_regalloc_hook :: proc(
 		case .Call, .Return:
 			prefix: u8 = backend.CALL_PREFIX
 			if node.itype == .Return do prefix = backend.RET_PREFIX
+
+			prefix = min(prefix, u8(len(node.inps)))
 
 			real_len := len(node.inps)
 			for ; graph_get(ctx, node.inps[real_len - 1]).itype == .Local;
@@ -428,7 +501,11 @@ wasm_pre_regalloc_hook :: proc(
 		     .Cast,
 		     .F_Demote,
 		     .F_Ext,
-		     .F_From_I:
+		     .F_From_I,
+		     .Extract_Lane_U,
+		     .Splat,
+		     .Simd_Extract_Lsbs,
+		     .Ctz:
 			return {def = true, input_count = 1}
 		case .CInt, .Local_Addr, .Ret, .Param, .Global_Addr, .Proc_Addr:
 			return {def = true}
@@ -504,6 +581,7 @@ wasm_pre_regalloc_hook :: proc(
 		for instr, i in bb.instrs {
 			inode := graph_expand(ctx, instr)
 			for dep in data_deps(ctx.metas[inode.gvn], inode) {
+				if graph_get(ctx, dep).itype == .Poison do continue
 				ctx.rcs[graph_get(ctx, dep).gvn] += int(
 					slice.contains(bb.instrs[:i], dep),
 				)
@@ -514,6 +592,8 @@ wasm_pre_regalloc_hook :: proc(
 			stackify(&ctx)
 		}
 
+		NO_SET_KINDS :: bit_set[backend.Ideal_Node_Type]{.Param, .Phi}
+
 		stackify :: proc(ctx: ^Ctx) {
 			ctx.cursor -= 1
 			instr := ctx.instrs[ctx.cursor]
@@ -521,6 +601,7 @@ wasm_pre_regalloc_hook :: proc(
 
 			if inode.itype == .Phi && inode.dt != .Void {
 				for inp, i in inode.inps[1:] {
+					if graph_get(ctx, inp).itype == .Poison do continue
 					set := get_or_add_set(ctx, graph_get(ctx, inp))
 					backend.graph_set_input(ctx, instr, 1 + i, set)
 				}
@@ -577,6 +658,26 @@ wasm_pre_regalloc_hook :: proc(
 					{dep},
 				)
 
+				if dnode.itype in NO_SET_KINDS {
+					// TODO: reuse these
+					stub := backend.graph_add_raw(
+						ctx,
+						"stub",
+						u16(WASM_Node_Type.Stub),
+						dnode.dt,
+						{},
+					)
+
+					inject_at(ctx.instrs, ctx.cursor, stub)
+
+					backend.graph_set_input(
+						ctx,
+						instr,
+						int(ctx.metas[inode.gvn].input_start) + i,
+						stub,
+					)
+				}
+
 				inject_at(ctx.instrs, ctx.cursor, get)
 			}
 		}
@@ -585,7 +686,7 @@ wasm_pre_regalloc_hook :: proc(
 			ctx: ^Ctx,
 			node: ^backend.Node,
 		) -> backend.Node_ID {
-			if node.itype == .Phi || node.itype == .Param {
+			if node.itype in NO_SET_KINDS {
 				return backend.graph_id(ctx, node)
 			}
 
@@ -682,6 +783,10 @@ wasm_emit_function :: proc(
 	ctx: Ctx
 	ctx.inner = ectx
 
+	if 1 == 0 {
+		backend.graph_display(os.to_writer(os.stderr), ctx.graph, ctx.schedule)
+	}
+
 	alloc_ty :: proc(reg: backend.Reg) -> (Local_Type, i16) {
 		return Local_Type(reg.kind), i16(reg.index)
 	}
@@ -754,7 +859,6 @@ wasm_emit_function :: proc(
 			for len(ctx.block_stack) > 0 &&
 			    blocks[ctx.block_stack[len(ctx.block_stack) - 1]].start >= i {
 				idx := pop(&ctx.block_stack)
-				assert(!blocks[idx].loop_too || blocks[idx].start == i)
 				blocks[idx].start = i
 				append(&ctx.final_order, idx)
 			}
@@ -773,6 +877,7 @@ wasm_emit_function :: proc(
 				if blocks[cursor].start <= best_start {
 					blocks[cursor].worse = best
 					best = cursor
+					best_start = blocks[cursor].start
 				} else {
 					blocks[cursor].worse = blocks[best].worse
 					blocks[best].worse = cursor
@@ -790,6 +895,14 @@ wasm_emit_function :: proc(
 					for cursor := b;
 					    cursor != 0;
 					    cursor = blocks[cursor].worse {
+
+						fmt.assertf(
+							blocks[cursor].start >= blocks[b].start,
+							"%v %v",
+							blocks[cursor],
+							blocks[b],
+						)
+
 						ctx.bb_metas[blocks[cursor].origin].break_block =
 							cursor
 					}
@@ -858,6 +971,30 @@ wasm_emit_function :: proc(
 		emit_leb(ctx.code, u64(0))
 	}
 
+	if !ODIN_DISABLE_ASSERT {
+		for a in ctx.final_order {
+			for b in ctx.final_order {
+				if a == b do continue
+
+				a_block := ctx.blocks[a]
+				b_block := ctx.blocks[b]
+				assert(
+					(a_block.start >= b_block.end ||
+						b_block.start >= a_block.end) ||
+					(a_block.start >= b_block.start &&
+							b_block.end >= a_block.end) ||
+					(a_block.start <= b_block.start &&
+							b_block.end <= a_block.end),
+				)
+			}
+		}
+	}
+
+	//fmt.println()
+	//for i in ctx.final_order {
+	//	fmt.printfln("%#v", ctx.blocks[i])
+	//}
+
 	// if we dont have a return then 0 will still trigger unreachable insertion
 	ret_idx := 0
 	cursor := len(ctx.final_order) - 1
@@ -872,7 +1009,7 @@ wasm_emit_function :: proc(
 		}
 
 		if close_loop {
-			append(&ctx.block_stack, 0)
+			append(&ctx.block_stack, -1)
 		}
 
 		for ; cursor >= 0 && ctx.blocks[ctx.final_order[cursor]].start == i;
@@ -895,7 +1032,8 @@ wasm_emit_function :: proc(
 
 		if close_loop {
 			emit_op(ctx.code, .End)
-			pop(&ctx.block_stack)
+			vl := pop(&ctx.block_stack)
+			assert(vl == -1)
 		}
 
 		if graph_get(ctx, bb.tail).itype == .Return {
@@ -923,72 +1061,10 @@ wasm_emit_function :: proc(
 
 @(disabled = GEN_SPEC)
 wasm_emit_instr :: proc(ctx: ^Ctx, instr: backend.Node_ID, block: int, _: $T) {
-
-	@(static, rodata)
-	NODE_TO_OP := #partial [WASM_Node_Type][backend.Node_Datatype]Wasm_Opcode {
-		.Add = #partial{.I8 ..= .I32 = .I32_Add, .I64 = .I64_Add},
-		.Sub = #partial{.I8 ..= .I32 = .I32_Sub, .I64 = .I64_Sub},
-		.Mul = #partial{.I8 ..= .I32 = .I32_Mul, .I64 = .I64_Mul},
-		.And = #partial{.I8 ..= .I32 = .I32_And, .I64 = .I64_And},
-		.Or = #partial{.I8 ..= .I32 = .I32_Or, .I64 = .I64_Or},
-		.Xor = #partial{.I8 ..= .I32 = .I32_Xor, .I64 = .I64_Xor},
-		.Eq = #partial{.I8 ..= .I32 = .I32_Eq, .I64 = .I64_Eq},
-		.Ne = #partial{.I8 ..= .I32 = .I32_Ne, .I64 = .I64_Ne},
-		.Lt = #partial{.I8 ..= .I32 = .I32_Lt_S, .I64 = .I64_Lt_S},
-		.Le = #partial{.I8 ..= .I32 = .I32_Le_S, .I64 = .I64_Le_S},
-		.Gt = #partial{.I8 ..= .I32 = .I32_Gt_S, .I64 = .I64_Gt_S},
-		.Ge = #partial{.I8 ..= .I32 = .I32_Ge_S, .I64 = .I64_Ge_S},
-		.U_Lt = #partial{.I8 ..= .I32 = .I32_Lt_U, .I64 = .I64_Lt_U},
-		.U_Gt = #partial{.I8 ..= .I32 = .I32_Gt_U, .I64 = .I64_Gt_U},
-		.U_Le = #partial{.I8 ..= .I32 = .I32_Le_U, .I64 = .I64_Le_U},
-		.U_Ge = #partial{.I8 ..= .I32 = .I32_Ge_U, .I64 = .I64_Ge_U},
-		.Shl = #partial{.I8 ..= .I32 = .I32_Shl, .I64 = .I64_Shl},
-		.Shr = #partial{.I8 ..= .I32 = .I32_Shr_S, .I64 = .I64_Shr_S},
-		.U_Shr = #partial{.I8 ..= .I32 = .I32_Shr_U, .I64 = .I64_Shr_U},
-		.Div = #partial{.I8 ..= .I32 = .I32_Div_S, .I64 = .I64_Div_S},
-		.U_Div = #partial{.I8 ..= .I32 = .I32_Div_U, .I64 = .I64_Div_U},
-		.Rem = #partial{.I8 ..= .I32 = .I32_Rem_S, .I64 = .I64_Rem_S},
-		.U_Rem = #partial{.I8 ..= .I32 = .I32_Rem_U, .I64 = .I64_Rem_U},
-		.F_Add = #partial{.F32 = .F32_Add, .F64 = .F64_Add},
-		.F_Sub = #partial{.F32 = .F32_Sub, .F64 = .F64_Sub},
-		.F_Mul = #partial{.F32 = .F32_Mul, .F64 = .F64_Mul},
-		.F_Div = #partial{.F32 = .F32_Div, .F64 = .F64_Div},
-		.F_Eq = #partial{.F32 = .F32_Eq, .F64 = .F64_Eq},
-		.F_Ne = #partial{.F32 = .F32_Ne, .F64 = .F64_Ne},
-		.F_Lt = #partial{.F32 = .F32_Lt, .F64 = .F64_Lt},
-		.F_Le = #partial{.F32 = .F32_Le, .F64 = .F64_Le},
-		.F_Gt = #partial{.F32 = .F32_Gt, .F64 = .F64_Gt},
-		.F_Ge = #partial{.F32 = .F32_Ge, .F64 = .F64_Ge},
-		.Neg = #partial{.F32 = .F32_Neg, .F64 = .F64_Neg},
-		.Not = #partial{.I8 ..= .I32 = .I32_Eqz, .I64 = .I64_Eqz},
-		.Ctz = #partial{.I8 ..= .I32 = .I32_Ctz, .I64 = .I64_Ctz},
-		.Uext = #partial{.I64 = .I64_Extend_I32_U},
-		.Set_Local = {.Void ..= .V512 = .Local_Set},
-		.Tee_Local = {.Void ..= .V512 = .Local_Tee},
-		.F_Demote = #partial{.F32 = .F32_Demote_F64},
-		.F_Ext = #partial{.F64 = .F64_Promote_F32},
-		.Drop = {.Void ..= .V512 = .Drop},
-		.Load = #partial{
-			.I8 = .I32_Load8_U,
-			.I16 = .I32_Load16_U,
-			.I32 = .I32_Load,
-			.I64 = .I64_Load,
-			.F32 = .F32_Load,
-			.F64 = .F64_Load,
-		},
-		.Store = #partial{
-			.I8 = .I32_Store8,
-			.I16 = .I32_Store16,
-			.I32 = .I32_Store,
-			.I64 = .I64_Store,
-			.F32 = .F32_Store,
-			.F64 = .F64_Store,
-		},
-	}
-
 	node := graph_expand(ctx, instr)
 	kind := wtype(node)
 	op := NODE_TO_OP[kind][node.dt]
+	lane_op := NODE_TO_LANE_OP[kind][node.lane]
 
 	#partial switch kind {
 	case .Eq ..= .U_Ge, .F_Eq ..= .F_Ge:
@@ -1004,7 +1080,16 @@ wasm_emit_instr :: proc(ctx: ^Ctx, instr: backend.Node_ID, block: int, _: $T) {
 	}
 
 	#partial switch kind {
-	case .Root_Mem, .Sym, .Phi, .Local, .Ret, .Mem, .Param, .Stub, .Global:
+	case .Root_Mem,
+	     .Sym,
+	     .Phi,
+	     .Local,
+	     .Ret,
+	     .Mem,
+	     .Param,
+	     .Stub,
+	     .Global,
+	     .Poison:
 	case .CInt:
 		cint := backend.graph_extra(ctx, node, backend.CInt)
 
@@ -1026,16 +1111,22 @@ wasm_emit_instr :: proc(ctx: ^Ctx, instr: backend.Node_ID, block: int, _: $T) {
 		case .Void, .V256, .V512:
 			panic("no")
 		}
-	case .Add ..= .U_Rem, .Drop, .Not, .F_Demote, .F_Ext:
-		#partial switch kind {
-		case .Shl, .U_Shr, .Shr:
-			if node.dt != .I64 && graph_get(ctx, node.inps[1]).dt == .I64 {
-				emit_op(ctx.code, .I32_Wrap_I64)
+	case .Add ..= .U_Rem, .Drop, .Not, .F_Demote, .F_Ext, .Ctz:
+		if node.dt == .V128 {
+			fmt.assertf(lane_op != .V128_Load, "%v", node)
+			emit_op_fd(ctx.code, lane_op)
+		} else {
+			#partial switch kind {
+			case .Shl, .U_Shr, .Shr:
+				if node.dt != .I64 && graph_get(ctx, node.inps[1]).dt == .I64 {
+					emit_op(ctx.code, .I32_Wrap_I64)
+				}
 			}
-		}
-		emit_op(ctx.code, op)
-		if kind == .Not && node.dt == .I64 {
-			emit_op(ctx.code, .I64_Extend_I32_U)
+			assert(op != .Unreachable)
+			emit_op(ctx.code, op)
+			if kind == .Not && node.dt == .I64 {
+				emit_op(ctx.code, .I64_Extend_I32_U)
+			}
 		}
 	case .Split:
 		emit_op(ctx.code, .Local_Get)
@@ -1203,11 +1294,19 @@ wasm_emit_instr :: proc(ctx: ^Ctx, instr: backend.Node_ID, block: int, _: $T) {
 		emit(ctx.code, {0, 0, 0, 0})
 	case .Store:
 		vl := graph_get(ctx, node.inps[3])
-		emit_op(ctx.code, NODE_TO_OP[.Store][vl.dt])
+		if vl.dt == .V128 {
+			emit_op_fd(ctx.code, .V128_Store)
+		} else {
+			emit_op(ctx.code, NODE_TO_OP[.Store][vl.dt])
+		}
 		emit_leb(ctx.code, 0)
 		emit_leb(ctx.code, 0)
 	case .Load:
-		emit_op(ctx.code, op)
+		if node.dt == .V128 {
+			emit_op_fd(ctx.code, .V128_Load)
+		} else {
+			emit_op(ctx.code, op)
+		}
 		emit_leb(ctx.code, 0)
 		emit_leb(ctx.code, 0)
 	case .Set:
@@ -1265,6 +1364,12 @@ wasm_emit_instr :: proc(ctx: ^Ctx, instr: backend.Node_ID, block: int, _: $T) {
 			}
 			emit(ctx.code, {0, 0, 0, 0})
 		}
+	case .Extract_Lane_U:
+		lane := wasm_extra(ctx, node, WASM_Lane_Op).laneidx
+		emit_op_fd(ctx.code, lane_op)
+		emit_leb(ctx.code, lane)
+	case .Splat, .Simd_Extract_Lsbs:
+		emit_op_fd(ctx.code, lane_op)
 	case .Proc_Addr:
 		id := backend.graph_extra(ctx, instr, backend.Tup).idx
 
@@ -1288,7 +1393,7 @@ wasm_emit_instr :: proc(ctx: ^Ctx, instr: backend.Node_ID, block: int, _: $T) {
 		}
 
 		emit_op(ctx.code, .Return)
-	case .Jump:
+	case .Jump, .Always:
 		if block != &ctx.blocks[0] {
 			emit_op(ctx.code, .Br)
 			emit_leb(ctx.code, u64(label))
@@ -1298,6 +1403,8 @@ wasm_emit_instr :: proc(ctx: ^Ctx, instr: backend.Node_ID, block: int, _: $T) {
 			emit_op(ctx.code, .Br_If)
 			emit_leb(ctx.code, u64(label))
 		}
+	case .Trap:
+		emit_op(ctx.code, .Unreachable)
 	case:
 		fmt.panicf("TODO: %v", node)
 	}
@@ -1311,6 +1418,11 @@ loc_of :: proc(ctx: ^Ctx, node: backend.Node_ID) -> u16 {
 	} else {
 		return u16(proj.local_start) + reg.index - u16(len(proj.param_projs))
 	}
+}
+
+emit_op_fd :: proc(buf: ^arna.Allocator, op: Wasm_Opcode_FD) {
+	emit(buf, {0xfd})
+	emit_leb(buf, u64(op))
 }
 
 emit_op_fc :: proc(buf: ^arna.Allocator, op: Wasm_Opcode_FC) {

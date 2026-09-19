@@ -140,6 +140,18 @@ x86_reg_class_classify :: proc(
 			typecheck.type_align(ty),
 		) or_return
 
+		@(static, rodata)
+		TYPE_TO_REGLCASS := #partial [Type]X86_Reg_Class {
+			.Void   = .No_Class,
+			.Typeid = .Integer,
+			.Bool ..= .Rawptr        = .Integer,
+			.String = .Integer,
+			.F32    = .Sse_32,
+			.F64    = .Sse,
+		}
+
+		class: X86_Reg_Class
+
 		#partial switch t in unpack_type(ty) {
 
 		case typecheck.Pointer, ^typecheck.Proc_Type, typecheck.Multi_Pointer:
@@ -180,20 +192,14 @@ x86_reg_class_classify :: proc(
 			}
 			classify(t.tag_ty, slots, t.tag_offset)
 			return true
-		}
-
-		@(static, rodata)
-		TYPE_TO_REGLCASS := #partial [Type]X86_Reg_Class {
-			.Void   = .No_Class,
-			.Typeid = .Integer,
-			.Bool ..= .Rawptr        = .Integer,
-			.String = .Integer,
-			.F32    = .Sse_32,
-			.F64    = .Sse,
+		case ^typecheck.Simd:
+			class = .Sse
+		case:
+			class = TYPE_TO_REGLCASS[ty]
 		}
 
 		if slots[offset / 8] == .Sse_32 do slots[offset / 8] = .Sse
-		slots[offset / 8] = max(slots[offset / 8], TYPE_TO_REGLCASS[ty])
+		slots[offset / 8] = max(slots[offset / 8], class)
 		if ty == .String do slots[offset / 8 + 1] = .Integer
 
 		return true
@@ -2137,7 +2143,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				ty := get_node_type(d.args[0])
 				res = backend.graph_add_un_op(
 					ctx,
-					"ctz",
+					"srab",
 					.Simd_Reduce_Add_Bisect,
 					type_to_dt(get_node_type(node)),
 					a,

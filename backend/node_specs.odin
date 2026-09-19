@@ -167,7 +167,7 @@ graph_add_c_int :: #force_inline proc(graph: ^Graph, name: string, dt: Node_Data
 }
 #assert(size_of(No_Extra) % PRECISION == 0)
 graph_add_bin_op :: #force_inline proc(graph: ^Graph, name: string, type: Bin_Op, dt: Node_Datatype, lhs: Node_ID, rhs: Node_ID, lane: Lane_Type = {}) -> (_id: Node_ID) {
-	return graph_add_raw(graph, name, u16(type), dt, {lhs, rhs})
+	return graph_add_raw(graph, name, u16(type), dt, {lhs, rhs}, lane = lane)
 }
 #assert(size_of(No_Extra) % PRECISION == 0)
 #assert(size_of(No_Extra) % PRECISION == 0)
@@ -334,7 +334,7 @@ graph_add_return :: #force_inline proc(graph: ^Graph, name: string, inputs: []No
 }
 #assert(size_of(No_Extra) % PRECISION == 0)
 graph_add_un_op :: #force_inline proc(graph: ^Graph, name: string, type: Un_Op, dt: Node_Datatype, oprnd: Node_ID, lane: Lane_Type = {}) -> (_id: Node_ID) {
-	return graph_add_raw(graph, name, u16(type), dt, {oprnd})
+	return graph_add_raw(graph, name, u16(type), dt, {oprnd}, lane = lane)
 }
 #assert(size_of(No_Extra) % PRECISION == 0)
 #assert(size_of(No_Extra) % PRECISION == 0)

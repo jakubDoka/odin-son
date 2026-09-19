@@ -907,8 +907,7 @@ wasm_emit_function :: proc(
 							blocks[b],
 						)
 
-						ctx.bb_metas[blocks[cursor].origin].break_block =
-							cursor
+						ctx.bb_metas[blocks[cursor].origin].break_block = b
 					}
 				}
 			}

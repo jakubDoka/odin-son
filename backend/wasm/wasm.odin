@@ -188,7 +188,7 @@ wasm_peep :: proc(
 				}
 			inps := slice.clone(node.inps)
 			inps[2] = base
-			return backend.graph_add_raw(ctx, "offld", u16(op), node.dt, inps)
+			return backend.graph_add_raw(ctx, "offm", u16(op), node.dt, inps)
 		}
 	case .Shr:
 		if graph_get(ctx, node.inps[0]).dt < .I32 {

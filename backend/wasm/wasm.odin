@@ -3,6 +3,7 @@ package wasm
 import backend ".."
 import "../../vendored/gam/util/arna"
 import "base:runtime"
+import "core:encoding/varint"
 import "core:fmt"
 import "core:mem"
 import "core:slice"
@@ -170,7 +171,16 @@ wasm_peep :: proc(
 		if node.itype == .Store do op = WASM_Node_Type.WASM_Store
 
 		base, off := backend.base_and_offset(ctx, node.inps[2])
-		if off != 0 {
+
+		changed := false
+
+		bnode := graph_expand(ctx, base)
+		if bnode.itype == .Local_Addr && kind != .Store {
+			base = bnode.inps[0]
+			changed = true
+		}
+
+		if off != 0 || changed {
 			(^WASM_Mem_Op)(backend.graph_get_next_extra_slot(ctx, u16(op)))^ =
 				{
 					source = node.dt,
@@ -420,8 +430,8 @@ wasm_pre_regalloc_hook :: proc(
 	ctx: Ctx
 	ctx.graph = graph
 
-	graph.dont_delete = true
-	defer graph.dont_delete = false
+	graph.dont_delete, graph.dont_intern = true, true
+	defer graph.dont_delete, graph.dont_intern = false, false
 
 	for bb, i in sched.bbs {
 		graph_get(ctx, bb.head).gvn = u32(i)
@@ -433,6 +443,40 @@ wasm_pre_regalloc_hook :: proc(
 	// annoying, maybe we can do better, but not right now
 	for &bb, i in sched.bbs {
 		hnode := graph_expand(ctx, bb.head)
+
+		for i := 0; i < len(bb.instrs); i += 1 {
+			instr := bb.instrs[i]
+			inode := graph_expand(ctx, instr)
+			for inp, j in inode.inps {
+				innode := graph_expand(ctx, inp)
+
+				is_clonable := false
+				cint := backend.graph_extra(ctx, innode, backend.CInt)
+				if cint != nil && innode.dt <= .I64 {
+					bufa: [1]u8
+					_, error := varint.encode_ileb128(
+						bufa[:],
+						i128(cint.value),
+					)
+					is_clonable = error == nil
+				}
+
+				if is_clonable && len(innode.outs) > 1 {
+					clone := backend.graph_clone(ctx, inp)
+					backend.graph_set_input(ctx, instr, j, clone)
+
+					if inode.itype == .Phi {
+						block_head :=
+							backend.graph_inps(ctx, hnode.inps[j - 1])[0]
+						block := &sched.bbs[backend.graph_get(ctx, block_head).gvn]
+						inject_at(&block.instrs, len(block.instrs) - 1, clone)
+					} else {
+						inject_at(&bb.instrs, i, clone)
+						i += 1
+					}
+				}
+			}
+		}
 
 		if hnode.itype == .Call_End {
 			ret_count := 0
@@ -485,6 +529,8 @@ wasm_pre_regalloc_hook :: proc(
 		}
 	}
 
+	backend.verify_schedule_integrity(ctx, sched)
+
 	Meta :: struct {
 		def:         bool,
 		is_mem:      bool,
@@ -508,18 +554,20 @@ wasm_pre_regalloc_hook :: proc(
 		     .Trap:
 			return {}
 		case .Load, .WASM_Load:
+			is_local := graph_get(ctx, node.inps[2]).itype == .Local
 			return {
 				def = true,
 				is_mem = true,
-				input_start = 2,
-				input_count = 1,
+				input_start = 2 + u8(is_local),
+				input_count = 1 - u8(is_local),
 			}
 		case .Store, .WASM_Store:
+			is_local := graph_get(ctx, node.inps[2]).itype == .Local
 			return {
 				def = true,
 				is_mem = true,
-				input_start = 2,
-				input_count = 2,
+				input_start = 2 + u8(is_local),
+				input_count = 2 - u8(is_local),
 			}
 		case .Split:
 			return {def = true, input_count = 1}
@@ -703,6 +751,8 @@ wasm_pre_regalloc_hook :: proc(
 				}
 
 				dep := get_or_add_set(ctx, dnode)
+
+				depn := graph_expand(ctx, dep)
 
 				get := backend.graph_add_raw(
 					ctx,
@@ -1047,11 +1097,6 @@ wasm_emit_function :: proc(
 		}
 	}
 
-	//fmt.println()
-	//for i in ctx.final_order {
-	//	fmt.printfln("%#v", ctx.blocks[i])
-	//}
-
 	// if we dont have a return then 0 will still trigger unreachable insertion
 	ret_idx := 0
 	cursor := len(ctx.final_order) - 1
@@ -1372,6 +1417,14 @@ wasm_emit_instr :: proc(ctx: ^Ctx, instr: backend.Node_ID, block: int, _: $T) {
 		emit_leb(ctx.code, 0)
 		emit_leb(ctx.code, u64(mem_op.offset))
 	case .Load, .WASM_Load:
+		base := backend.graph_extra(ctx, node.inps[2], backend.Local)
+		extra_offset: i32
+		if base != nil {
+			extra_offset = base.offset
+			emit_op(ctx.code, .Global_Get)
+			emit_leb(ctx.code, u64(0))
+		}
+
 		if node.dt == .V128 {
 			emit_op_fd(ctx.code, .V128_Load)
 		} else {
@@ -1414,7 +1467,7 @@ wasm_emit_instr :: proc(ctx: ^Ctx, instr: backend.Node_ID, block: int, _: $T) {
 			emit_op(ctx.code, op)
 		}
 		emit_leb(ctx.code, 0)
-		emit_leb(ctx.code, u64(mem_op.offset))
+		emit_leb(ctx.code, u64(mem_op.offset + i64(extra_offset)))
 	case .Set:
 		emit_op_fc(ctx.code, .Memory_Fill)
 		emit_leb(ctx.code, u64(0))

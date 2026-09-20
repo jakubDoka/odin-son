@@ -185,7 +185,7 @@ main:
   (type (;0;) (func (result i64)))
   (type (;1;) (func (param i64 i64) (result i64)))
   (func $main (type 0) (result i64)
-    (local i64 i64 i64)
+    (local i64 i64)
     global.get 0
     i64.const 16
     i64.sub
@@ -203,20 +203,126 @@ main:
     local.get 0
     i64.const 2
     i64.store offset=8 align=1
-    local.get 0
+    global.get 0
     i64.load align=1
+    local.set 0
+    global.get 0
+    i64.load offset=8 align=1
     local.set 1
     local.get 0
-    i64.load offset=8 align=1
-    local.set 2
     local.get 1
-    local.get 2
     call $mutate
     drop
-    local.get 0
+    global.get 0
     i64.load align=1
+    local.set 0
+    global.get 0
+    i64.load offset=8 align=1
     local.set 1
     local.get 0
+    local.get 1
+    i64.add
+    global.get 0
+    i64.const 16
+    i64.add
+    global.set 0
+    return
+    end
+  )
+  (func $mutate (type 1) (param i64 i64) (result i64)
+    (local i64)
+    global.get 0
+    i64.const 32
+    i64.sub
+    global.set 0
+    global.get 0
+    i64.const 0
+    i64.add
+    local.tee 2
+    local.get 0
+    i64.store align=1
+    local.get 2
+    local.get 1
+    i64.store offset=8 align=1
+    global.get 0
+    i64.const 16
+    i64.add
+    local.tee 0
+    i32.const 0
+    i64.const 16
+    memory.fill
+    local.get 0
+    local.get 2
+    i64.const 16
+    memory.copy
+    local.get 0
+    i64.const 100
+    i64.store align=1
+    local.get 0
+    i64.const 200
+    i64.store offset=8 align=1
+    global.get 0
+    i64.load offset=16 align=1
+    local.set 0
+    global.get 0
+    i64.load offset=24 align=1
+    local.set 1
+    local.get 0
+    local.get 1
+    i64.add
+    global.get 0
+    i64.const 32
+    i64.add
+    global.set 0
+    return
+    end
+  )
+  (table (;0;) 0 0 funcref)
+  (memory (;0;) i64 16)
+  (global (;0;) (mut i64) i64.const 1048576)
+  (export "main" (func 0))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (elem (;0;) (i32.const 0) func)
+  (data (;0;) (i64.const 1048576) "")
+)
+=========== OPT LEVEL: none ===========
+(module
+  (type (;0;) (func (result i64)))
+  (type (;1;) (func (param i64 i64) (result i64)))
+  (func $main (type 0) (result i64)
+    (local i64 i64)
+    global.get 0
+    i64.const 16
+    i64.sub
+    global.set 0
+    global.get 0
+    i64.const 0
+    i64.add
+    local.tee 0
+    i32.const 0
+    i64.const 16
+    memory.fill
+    local.get 0
+    i64.const 1
+    i64.store align=1
+    local.get 0
+    i64.const 2
+    i64.store offset=8 align=1
+    global.get 0
+    i64.load align=1
+    local.set 1
+    global.get 0
+    i64.load offset=8 align=1
+    local.set 0
+    local.get 1
+    local.get 0
+    call $mutate
+    drop
+    global.get 0
+    i64.load align=1
+    local.set 1
+    global.get 0
     i64.load offset=8 align=1
     local.set 0
     local.get 1
@@ -250,11 +356,10 @@ main:
     local.tee 0
     i32.const 0
     i64.const 16
-    local.tee 1
     memory.fill
     local.get 0
     local.get 2
-    local.get 1
+    i64.const 16
     memory.copy
     local.get 0
     i64.const 100
@@ -262,118 +367,11 @@ main:
     local.get 0
     i64.const 200
     i64.store offset=8 align=1
-    local.get 0
-    i64.load align=1
+    global.get 0
+    i64.load offset=16 align=1
     local.set 1
-    local.get 0
-    i64.load offset=8 align=1
-    local.set 0
-    local.get 1
-    local.get 0
-    i64.add
     global.get 0
-    i64.const 32
-    i64.add
-    global.set 0
-    return
-    end
-  )
-  (table (;0;) 0 0 funcref)
-  (memory (;0;) i64 16)
-  (global (;0;) (mut i64) i64.const 1048576)
-  (export "main" (func 0))
-  (export "__stack_pointer" (global 0))
-  (export "memory" (memory 0))
-  (elem (;0;) (i32.const 0) func)
-  (data (;0;) (i64.const 1048576) "")
-)
-=========== OPT LEVEL: none ===========
-(module
-  (type (;0;) (func (result i64)))
-  (type (;1;) (func (param i64 i64) (result i64)))
-  (func $main (type 0) (result i64)
-    (local i64 i64 i64)
-    global.get 0
-    i64.const 16
-    i64.sub
-    global.set 0
-    global.get 0
-    i64.const 0
-    i64.add
-    local.tee 2
-    i32.const 0
-    i64.const 16
-    memory.fill
-    local.get 2
-    i64.const 1
-    i64.store align=1
-    local.get 2
-    i64.const 2
-    i64.store offset=8 align=1
-    local.get 2
-    i64.load align=1
-    local.set 1
-    local.get 2
-    i64.load offset=8 align=1
-    local.set 0
-    local.get 1
-    local.get 0
-    call $mutate
-    drop
-    local.get 2
-    i64.load align=1
-    local.set 1
-    local.get 2
-    i64.load offset=8 align=1
-    local.set 0
-    local.get 1
-    local.get 0
-    i64.add
-    global.get 0
-    i64.const 16
-    i64.add
-    global.set 0
-    return
-    end
-  )
-  (func $mutate (type 1) (param i64 i64) (result i64)
-    (local i64 i64)
-    global.get 0
-    i64.const 32
-    i64.sub
-    global.set 0
-    global.get 0
-    i64.const 0
-    i64.add
-    local.tee 3
-    local.get 0
-    i64.store align=1
-    local.get 3
-    local.get 1
-    i64.store offset=8 align=1
-    global.get 0
-    i64.const 16
-    i64.add
-    local.tee 2
-    i32.const 0
-    i64.const 16
-    local.tee 0
-    memory.fill
-    local.get 2
-    local.get 3
-    local.get 0
-    memory.copy
-    local.get 2
-    i64.const 100
-    i64.store align=1
-    local.get 2
-    i64.const 200
-    i64.store offset=8 align=1
-    local.get 2
-    i64.load align=1
-    local.set 1
-    local.get 2
-    i64.load offset=8 align=1
+    i64.load offset=24 align=1
     local.set 0
     local.get 1
     local.get 0
@@ -399,7 +397,7 @@ main:
   (type (;0;) (func (result i64)))
   (type (;1;) (func (param i64 i64) (result i64)))
   (func $main (type 0) (result i64)
-    (local i64 i64 i64)
+    (local i64 i64)
     global.get 0
     i64.const 16
     i64.sub
@@ -417,20 +415,126 @@ main:
     local.get 0
     i64.const 2
     i64.store offset=8 align=1
-    local.get 0
+    global.get 0
     i64.load align=1
+    local.set 0
+    global.get 0
+    i64.load offset=8 align=1
     local.set 1
     local.get 0
-    i64.load offset=8 align=1
-    local.set 2
     local.get 1
-    local.get 2
     call $mutate
     drop
-    local.get 0
+    global.get 0
     i64.load align=1
+    local.set 0
+    global.get 0
+    i64.load offset=8 align=1
     local.set 1
     local.get 0
+    local.get 1
+    i64.add
+    global.get 0
+    i64.const 16
+    i64.add
+    global.set 0
+    return
+    end
+  )
+  (func $mutate (type 1) (param i64 i64) (result i64)
+    (local i64)
+    global.get 0
+    i64.const 32
+    i64.sub
+    global.set 0
+    global.get 0
+    i64.const 0
+    i64.add
+    local.tee 2
+    local.get 0
+    i64.store align=1
+    local.get 2
+    local.get 1
+    i64.store offset=8 align=1
+    global.get 0
+    i64.const 16
+    i64.add
+    local.tee 0
+    i32.const 0
+    i64.const 16
+    memory.fill
+    local.get 0
+    local.get 2
+    i64.const 16
+    memory.copy
+    local.get 0
+    i64.const 100
+    i64.store align=1
+    local.get 0
+    i64.const 200
+    i64.store offset=8 align=1
+    global.get 0
+    i64.load offset=16 align=1
+    local.set 0
+    global.get 0
+    i64.load offset=24 align=1
+    local.set 1
+    local.get 0
+    local.get 1
+    i64.add
+    global.get 0
+    i64.const 32
+    i64.add
+    global.set 0
+    return
+    end
+  )
+  (table (;0;) 0 0 funcref)
+  (memory (;0;) i64 16)
+  (global (;0;) (mut i64) i64.const 1048576)
+  (export "main" (func 0))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (elem (;0;) (i32.const 0) func)
+  (data (;0;) (i64.const 1048576) "")
+)
+=========== OPT LEVEL: mininal ===========
+(module
+  (type (;0;) (func (result i64)))
+  (type (;1;) (func (param i64 i64) (result i64)))
+  (func $main (type 0) (result i64)
+    (local i64 i64)
+    global.get 0
+    i64.const 16
+    i64.sub
+    global.set 0
+    global.get 0
+    i64.const 0
+    i64.add
+    local.tee 0
+    i32.const 0
+    i64.const 16
+    memory.fill
+    local.get 0
+    i64.const 1
+    i64.store align=1
+    local.get 0
+    i64.const 2
+    i64.store offset=8 align=1
+    global.get 0
+    i64.load align=1
+    local.set 1
+    global.get 0
+    i64.load offset=8 align=1
+    local.set 0
+    local.get 1
+    local.get 0
+    call $mutate
+    drop
+    global.get 0
+    i64.load align=1
+    local.set 1
+    global.get 0
     i64.load offset=8 align=1
     local.set 0
     local.get 1
@@ -464,11 +568,10 @@ main:
     local.tee 0
     i32.const 0
     i64.const 16
-    local.tee 1
     memory.fill
     local.get 0
     local.get 2
-    local.get 1
+    i64.const 16
     memory.copy
     local.get 0
     i64.const 100
@@ -476,118 +579,11 @@ main:
     local.get 0
     i64.const 200
     i64.store offset=8 align=1
-    local.get 0
-    i64.load align=1
+    global.get 0
+    i64.load offset=16 align=1
     local.set 1
-    local.get 0
-    i64.load offset=8 align=1
-    local.set 0
-    local.get 1
-    local.get 0
-    i64.add
     global.get 0
-    i64.const 32
-    i64.add
-    global.set 0
-    return
-    end
-  )
-  (table (;0;) 0 0 funcref)
-  (memory (;0;) i64 16)
-  (global (;0;) (mut i64) i64.const 1048576)
-  (export "main" (func 0))
-  (export "__stack_pointer" (global 0))
-  (export "memory" (memory 0))
-  (elem (;0;) (i32.const 0) func)
-  (data (;0;) (i64.const 1048576) "")
-)
-=========== OPT LEVEL: mininal ===========
-(module
-  (type (;0;) (func (result i64)))
-  (type (;1;) (func (param i64 i64) (result i64)))
-  (func $main (type 0) (result i64)
-    (local i64 i64 i64)
-    global.get 0
-    i64.const 16
-    i64.sub
-    global.set 0
-    global.get 0
-    i64.const 0
-    i64.add
-    local.tee 2
-    i32.const 0
-    i64.const 16
-    memory.fill
-    local.get 2
-    i64.const 1
-    i64.store align=1
-    local.get 2
-    i64.const 2
-    i64.store offset=8 align=1
-    local.get 2
-    i64.load align=1
-    local.set 1
-    local.get 2
-    i64.load offset=8 align=1
-    local.set 0
-    local.get 1
-    local.get 0
-    call $mutate
-    drop
-    local.get 2
-    i64.load align=1
-    local.set 1
-    local.get 2
-    i64.load offset=8 align=1
-    local.set 0
-    local.get 1
-    local.get 0
-    i64.add
-    global.get 0
-    i64.const 16
-    i64.add
-    global.set 0
-    return
-    end
-  )
-  (func $mutate (type 1) (param i64 i64) (result i64)
-    (local i64 i64)
-    global.get 0
-    i64.const 32
-    i64.sub
-    global.set 0
-    global.get 0
-    i64.const 0
-    i64.add
-    local.tee 3
-    local.get 0
-    i64.store align=1
-    local.get 3
-    local.get 1
-    i64.store offset=8 align=1
-    global.get 0
-    i64.const 16
-    i64.add
-    local.tee 2
-    i32.const 0
-    i64.const 16
-    local.tee 0
-    memory.fill
-    local.get 2
-    local.get 3
-    local.get 0
-    memory.copy
-    local.get 2
-    i64.const 100
-    i64.store align=1
-    local.get 2
-    i64.const 200
-    i64.store offset=8 align=1
-    local.get 2
-    i64.load align=1
-    local.set 1
-    local.get 2
-    i64.load offset=8 align=1
+    i64.load offset=24 align=1
     local.set 0
     local.get 1
     local.get 0
@@ -613,7 +609,7 @@ main:
   (type (;0;) (func (result i64)))
   (type (;1;) (func (param i64 i64) (result i64)))
   (func $main (type 0) (result i64)
-    (local i64 i64 i64)
+    (local i64 i64)
     global.get 0
     i64.const 16
     i64.sub
@@ -623,24 +619,22 @@ main:
     i64.add
     local.tee 0
     i64.const 1
-    local.tee 1
     i64.store align=1
     local.get 0
     i64.const 2
-    local.tee 2
     i64.store offset=8 align=1
-    local.get 1
-    local.get 2
+    i64.const 1
+    i64.const 2
     call $mutate
     drop
-    local.get 0
+    global.get 0
     i64.load align=1
+    local.set 0
+    global.get 0
+    i64.load offset=8 align=1
     local.set 1
     local.get 0
-    i64.load offset=8 align=1
-    local.set 0
     local.get 1
-    local.get 0
     i64.add
     global.get 0
     i64.const 16
@@ -668,7 +662,7 @@ main:
   (type (;0;) (func (result i64)))
   (type (;1;) (func (param i64 i64) (result i64)))
   (func $main (type 0) (result i64)
-    (local i64 i64 i64)
+    (local i64 i64)
     global.get 0
     i64.const 16
     i64.sub
@@ -676,22 +670,20 @@ main:
     global.get 0
     i64.const 0
     i64.add
-    local.tee 2
-    i64.const 1
-    local.tee 1
-    i64.store align=1
-    local.get 2
-    i64.const 2
     local.tee 0
-    i64.store offset=8 align=1
-    local.get 1
+    i64.const 1
+    i64.store align=1
     local.get 0
+    i64.const 2
+    i64.store offset=8 align=1
+    i64.const 1
+    i64.const 2
     call $mutate
     drop
-    local.get 2
+    global.get 0
     i64.load align=1
     local.set 1
-    local.get 2
+    global.get 0
     i64.load offset=8 align=1
     local.set 0
     local.get 1

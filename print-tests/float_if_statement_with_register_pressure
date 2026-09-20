@@ -1515,7 +1515,8 @@ main:
     block
       block
         i32.const 1
-        local.tee 0
+        local.set 0
+        i32.const 1
         br_if 0
         f64.const +42
         local.set 1
@@ -1535,12 +1536,12 @@ main:
       local.set 7
       f64.const +36
       local.set 8
-      local.get 7
-      local.set 2
-      local.get 5
-      local.set 4
       local.get 6
       local.set 3
+      local.get 5
+      local.set 4
+      local.get 7
+      local.set 2
       local.get 8
       local.set 1
     end
@@ -1590,13 +1591,13 @@ main:
         local.set 6
         local.get 0
         br_if 0
-        local.get 9
-        local.set 10
         local.get 8
-        local.set 11
+        local.set 10
         local.get 7
-        local.set 12
+        local.set 11
         local.get 6
+        local.set 12
+        local.get 9
         local.set 13
         br 1
       end
@@ -1632,17 +1633,19 @@ main:
       f64.const +9
       f64.add
       local.set 5
-      local.get 5
-      local.set 10
       local.get 16
-      local.set 11
+      local.set 10
       local.get 15
-      local.set 12
+      local.set 11
       local.get 14
+      local.set 12
+      local.get 5
       local.set 13
     end
-    local.get 11
+    local.get 10
     local.set 5
+    local.get 13
+    local.set 10
     local.get 2
     f64.const +472
     f64.add
@@ -1660,9 +1663,9 @@ main:
     f64.add
     local.get 9
     f64.add
-    local.get 13
-    f64.add
     local.get 12
+    f64.add
+    local.get 11
     f64.add
     local.get 5
     f64.add
@@ -1685,38 +1688,39 @@ main:
 (module
   (type (;0;) (func (result i64)))
   (func $main (type 0) (result i64)
-    (local i32 f64 f64 f64 f64 f64 f64 f64 f64 f64 f64 f64 f64)
+    (local i32 f64 f64 f64 f64 f64 f64 f64 f64 f64 f64 f64 f64 f64)
     block
       block
         i32.const 1
-        local.tee 0
+        local.set 0
+        i32.const 1
         br_if 0
         f64.const +42
-        local.set 9
-        local.get 9
-        local.set 12
-        local.get 9
         local.set 10
-        local.get 9
+        local.get 10
         local.set 11
+        local.get 10
+        local.set 13
+        local.get 10
+        local.set 12
         br 1
       end
       f64.const +36.5
-      local.set 11
-      f64.const +37
-      local.set 10
-      f64.const +37.5
       local.set 12
+      f64.const +37
+      local.set 13
+      f64.const +37.5
+      local.set 11
       f64.const +36
-      local.set 9
+      local.set 10
     end
     block
       block
-        local.get 11
-        local.get 9
+        local.get 12
+        local.get 10
         f64.add
         f64.const +0.5
-        local.tee 4
+        local.tee 9
         f64.mul
         f64.const +21
         local.tee 1
@@ -1724,30 +1728,30 @@ main:
         local.get 1
         f64.add
         local.set 8
-        local.get 12
         local.get 11
+        local.get 12
         f64.add
-        local.get 4
+        local.get 9
         f64.mul
         local.get 1
         f64.add
         local.get 1
         f64.add
         local.set 7
+        local.get 13
         local.get 10
-        local.get 9
         f64.add
-        local.get 4
+        local.get 9
         f64.mul
         local.get 1
         f64.add
         local.get 1
         f64.add
         local.set 6
-        local.get 12
-        local.get 10
+        local.get 11
+        local.get 13
         f64.add
-        local.get 4
+        local.get 9
         f64.mul
         local.get 1
         f64.add
@@ -1756,57 +1760,57 @@ main:
         local.set 5
         local.get 0
         br_if 0
-        local.get 6
-        local.set 4
         local.get 7
-        local.set 3
+        local.set 4
         local.get 8
-        local.set 2
+        local.set 3
         local.get 5
+        local.set 2
+        local.get 6
         local.set 1
         br 1
       end
       local.get 5
       f64.const +5
       f64.add
-      local.get 4
+      local.get 9
       f64.mul
       f64.const +12
       f64.add
-      local.set 1
+      local.set 2
       local.get 8
       f64.const +6
       f64.add
-      local.get 4
+      local.get 9
       f64.mul
       f64.const +11
       f64.add
-      local.set 2
+      local.set 3
       local.get 7
       f64.const +7
       f64.add
-      local.get 4
+      local.get 9
       f64.mul
       f64.const +10
       f64.add
-      local.set 3
+      local.set 4
       local.get 6
       f64.const +8
       f64.add
-      local.get 4
+      local.get 9
       f64.mul
       f64.const +9
       f64.add
-      local.set 4
+      local.set 1
     end
-    local.get 12
+    local.get 11
     f64.const +472
     f64.add
+    local.get 13
+    f64.add
+    local.get 12
+    f64.add
     local.get 10
-    f64.add
-    local.get 11
-    f64.add
-    local.get 9
     f64.add
     local.get 5
     f64.add
@@ -1816,13 +1820,13 @@ main:
     f64.add
     local.get 6
     f64.add
-    local.get 1
-    f64.add
     local.get 2
     f64.add
     local.get 3
     f64.add
     local.get 4
+    f64.add
+    local.get 1
     f64.add
     i64.trunc_f64_s
     return

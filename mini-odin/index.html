@@ -20,7 +20,8 @@
 
 		<p>
 			This site provides a compiler for a subset of odin code. The
-			compiler is compiled to wasm, and runs locally.
+			compiler is compiled to wasm, and runs locally. The compiler
+			can emit wasm code so you can run it as well.
 			<a href="https://github.com/jakubDoka/odin-son.git" target="_blank">
 				Source Code</a>
 		</p>
@@ -89,6 +90,14 @@
 			display: flex;
 			gap: 10px;
 		">
+			<select id="target" name="target" style="
+				outline: none;
+				border: none;
+			">
+				<option value="0">x64</option>
+				<option value="1" selected>Wasm</option>
+			</select>
+
 			<button id="code_download" style="
 				padding-top: 5px;
 				border: none;
@@ -99,16 +108,23 @@
 </body>
 
 <script type="module">
-
 	const init_source =
 		"package main\n" +
 		"\n" +
+		"foreign {\n" +
+		"    write :: proc(slc: string) ---    \n" +
+		"}\n" +
+		"\n" +
 		"main :: proc() -> int {\n" +
+		`    write("hello")\n` +
 		"    return 69\n" +
 		"}\n";
 
 	source.textContent = init_source
 	setupCodeEditor(source, line_numbers)
+
+	preserveState(target)
+	preserveState(source)
 
 	const result = await WebAssembly.instantiateStreaming(
 		fetch("/wasm.wasm")
@@ -125,6 +141,7 @@
 			__stack_pointer
 		}
 	}} = result;
+
 
 	const STATUS_TO_STR = [
 		"Success",
@@ -146,19 +163,25 @@
 
 		const a = document.createElement("a");
 		a.href = url;
-		a.download = "suspicious.o";
+		a.download = "suspicious." + ["o", "wasm"][parseInt(target.value)];
 
 		a.click();
 
 		URL.revokeObjectURL(url);
 	}
 
-	source.oninput = () => {
+	target.onchange = () => {
+		source.oninput()
+	}
+
+	source.oninput = async () => {
 		writeString(source_buffer, memory, source.value)
 		let res = compiler_init(source.value.length)
 		console.log("Init Status:", STATUS_TO_STR[res])
 
-		res = compiler_compile()
+		const targ = parseInt(target.value)
+
+		res = compiler_compile(targ)
 		console.log("Compile Status:", STATUS_TO_STR[res])
 
 		let length = compiler_output_size()
@@ -167,19 +190,69 @@
 		if (STATUS_TO_STR[res] == "Type_Error") {
 			output.textContent = readString(output_buffer, memory, length)
 			code = new Uint8Array()
-		} else {
+		} else if (targ == 0) {
 			output.textContent =
 				"Compiled, can't run the instructions for the target." +
 				" You can download the obj file tho."
 
 			const offset = output_buffer.value;
 			code = new Uint8Array(memory.buffer, offset, length);
+		} else {
+			const offset = output_buffer.value
+
+			// Copy it because compiler memory may later grow/change.
+			code = new Uint8Array(
+				new Uint8Array(memory.buffer, offset, length)
+			)
+
+			try {
+				const module = await WebAssembly.compile(code)
+
+				output.textContent = ``
+
+				const instance = await WebAssembly.instantiate(module, {
+					env: {
+						write: function (ptr, len) {
+							const bytes = new Uint8Array(
+								instance.exports.memory.buffer, Number(ptr), Number(len))
+							output.textContent += new TextDecoder().decode(bytes)
+						}
+					}
+					// Add imports here if your generated module needs them.
+				})
+
+				const exitCode = instance.exports.main()
+
+				output.textContent += `\nProgram exited with code ${exitCode}`
+			} catch (err) {
+				console.error(err)
+				output.textContent = `Failed to run Wasm:\n${err}`
+			}
 		}
 
 		code_download.disabled = code.length === 0
 	}
 
 	source.oninput()
+
+	function preserveState(elem) {
+		const saved = localStorage.getItem(elem.id)
+
+		if (saved !== null) {
+			if (elem instanceof HTMLTextAreaElement) {
+				elem.textContent = saved
+			} else {
+				elem.value = saved
+			}
+			if (elem.onchange) elem.onchange()
+		}
+
+		for (const ev of ["change", "input"]) {
+			elem.addEventListener(ev, () => {
+				localStorage.setItem(elem.id, elem.value)
+			})
+		}
+	}
 
 	function writeString(global, memory, str) {
 		const offset = global.value;

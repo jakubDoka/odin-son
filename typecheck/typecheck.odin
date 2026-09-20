@@ -129,7 +129,7 @@ Ident_Meta :: struct {
 
 Proc_ID :: distinct int
 
-Type :: enum uintptr {
+Type :: enum u64 {
 	Void,
 	Invalid_Type,
 	Typeid,
@@ -374,7 +374,7 @@ type_to_dt :: proc(ty: Type) -> backend.Node_Datatype {
 		return simd_dt(type_size(t.elem) * t.len)
 	}
 
-	fmt.assertf(ty <= .F64, "%v", rawptr(ty))
+	fmt.assertf(ty <= .F64, "%v", u64(ty))
 	return TYPE_TO_DT[ty]
 }
 
@@ -543,7 +543,7 @@ type_display :: proc(w: io.Writer, ty: Type) {
 		}
 	case:
 		norm := Type(u16(ty))
-		fmt.assertf(norm <= .F64, "%v", rawptr(ty))
+		fmt.assertf(norm <= .F64, "%v", u64(ty))
 		fmt.wprint(w, TYPE_NAMES[norm])
 	}
 }
@@ -1036,6 +1036,7 @@ emit_type :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> (ret: Type) {
 	ctx.type_depth += 1
 	defer ctx.type_depth -= 1
 	res := typecheck(ctx, {inferred_ty = .Typeid}, expr)
+
 	if res.type == .Void do return .Void
 	if res.type != .Typeid {
 		error(ctx, expr, "expected a type, found a value of type %v", res.type)

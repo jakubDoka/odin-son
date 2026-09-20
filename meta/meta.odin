@@ -111,7 +111,8 @@ main :: proc() {
 	}
 
 	{
-		test_names: [dynamic]string
+
+		tests: [dynamic]Test
 
 		file, err := os.open("tests/tests.odin", {.Create, .Trunc, .Write})
 		fmt.assertf(err == nil, "%v", err)
@@ -174,7 +175,7 @@ main :: proc() {
 				)
 				fmt.assertf(cerr == nil, "%v: %v", corpus_path, cerr)
 
-				append(&test_names, rall_name)
+				append(&tests, Test{rall_name, code, .Normal})
 
 				fmt.fprintfln(
 					file,
@@ -213,22 +214,52 @@ main :: proc() {
 			}
 		}
 
-		gen_fuzz_crash_tests(file, &test_names)
+		gen_fuzz_crash_tests(file, &tests)
 
 		os.write_string(file, "when #config(BENCH_TESTS, false) {\n")
 		os.write_string(file, "main :: proc() {\n")
-		for name in test_names {
-			fmt.fprintfln(file, "%v(nil)", name)
+
+		os.write_string(file, "NAMES := []string{\n")
+		for test in tests {
+			fmt.fprintfln(file, "`%v`,", test.name)
 		}
+		os.write_string(file, "}\n")
+
+		os.write_string(file, "CODE := []string{\n")
+		for test in tests {
+			fmt.fprintfln(file, "`%v`,", test.code)
+		}
+		os.write_string(file, "}\n")
+
+		os.write_string(file, "IS_FUZZ := []bool{\n")
+		for test in tests {
+			fmt.fprintfln(file, "%v,", test.kind == .Fuzz)
+		}
+		os.write_string(file, "}\n")
+
+		os.write_string(file, "for i in 0 ..< len(CODE) {")
+		os.write_string(file, "main.run_test(nil, NAMES[i], CODE[i], 0, ")
+		os.write_string(file, "diff = false, no_run = IS_FUZZ[i])\n")
+		os.write_string(file, "}\n")
+
 		os.write_string(file, "}\n")
 		os.write_string(file, "}\n")
 	}
 }
 
+Test :: struct {
+	name: string,
+	code: string,
+	kind: enum {
+		Normal,
+		Fuzz,
+	},
+}
+
 // afl-fuzz writes one file per unique crash under `<out>/<worker>/crashes/`;
 // those get copied into FUZZ_CRASH_DIR (named after their content hash so
 // re-importing the same crash is a no-op) and each becomes a test
-gen_fuzz_crash_tests :: proc(file: ^os.File, test_names: ^[dynamic]string) {
+gen_fuzz_crash_tests :: proc(file: ^os.File, test_names: ^[dynamic]Test) {
 	os.make_directory_all(FUZZ_CRASH_DIR)
 
 	workers, werr := os.read_all_directory_by_path(
@@ -270,7 +301,14 @@ gen_fuzz_crash_tests :: proc(file: ^os.File, test_names: ^[dynamic]string) {
 			crash.name[:len(crash.name) - len(".odin")],
 		)
 
-		append(test_names, name)
+		append(
+			test_names,
+			Test {
+				name,
+				fmt.tprintf(`#load("../%v/%v")`, FUZZ_CRASH_DIR, crash.name),
+				.Fuzz,
+			},
+		)
 
 		fmt.fprintfln(file, "@(test) %v :: proc(t: ^testing.T) {{", name)
 		// the input is raw fuzzer output, so it can't be inlined as a literal

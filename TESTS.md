@@ -6806,6 +6806,19 @@ main :: proc() -> int {
 }
 ```
 
+#### size of check
+```odin
+package main
+
+Stru :: struct {
+    v: int    
+}
+
+main :: proc() -> int {
+    return 69 + size_of(Stru)
+}
+```
+
 #### fail bad returns and builtins
 ```odin
 package main

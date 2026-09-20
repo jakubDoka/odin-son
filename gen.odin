@@ -788,7 +788,6 @@ emit_proc :: proc(
 	context.allocator, _ = arna.scrath()
 
 	prc := &ctx.procs[i]
-	if prc.lit.body == nil do return
 	if prc.sig == nil do return
 
 	ctx.prc = auto_cast i
@@ -877,6 +876,8 @@ emit_proc :: proc(
 
 	{context.allocator = ctx.types.allocator
 		prc.param_types = builder.arg_gen_finalize(ctx, &gen)}
+
+	if prc.lit.body == nil do return
 
 	emit_nodes(ctx, {}, prc.lit.body)
 	prc = &ctx.procs[i]

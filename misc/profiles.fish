@@ -69,6 +69,14 @@ function build-wamr
 		-o wamr/aot_reloc.o
 end
 
+
+function build-wasm-debug
+	odin build wasm -target:freestanding_wasm32 -no-entry-point \
+		-disable-assert -no-bounds-check -no-type-assert \
+		-extra-linker-flags:"-z stack-size=8388608 --export=source_buffer --export=output_buffer --export=__stack_pointer" $argv
+	mv wasm.wasm mini-odin
+end
+
 function build-wasm
 	odin build wasm -target:freestanding_wasm32 -no-entry-point -o:size \
 		-disable-assert -no-bounds-check -no-type-assert \

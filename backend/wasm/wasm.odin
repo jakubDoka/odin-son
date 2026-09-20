@@ -5,7 +5,6 @@ import "../../vendored/gam/util/arna"
 import "base:runtime"
 import "core:fmt"
 import "core:mem"
-import "core:os"
 import "core:slice"
 import "core:sort"
 
@@ -782,10 +781,6 @@ wasm_emit_function :: proc(
 
 	ctx: Ctx
 	ctx.inner = ectx
-
-	if 1 == 0 {
-		backend.graph_display(os.to_writer(os.stderr), ctx.graph, ctx.schedule)
-	}
 
 	alloc_ty :: proc(reg: backend.Reg) -> (Local_Type, i16) {
 		return Local_Type(reg.kind), i16(reg.index)

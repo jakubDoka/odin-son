@@ -1,7 +1,8 @@
-package wasm
+package wasm_main
 
 import jit ".."
 import "../backend"
+import "../backend/wasm"
 import "../backend/x64"
 import "../typecheck"
 import "../vendored/gam/util/arna"
@@ -116,8 +117,13 @@ set_output :: proc(bytes: []u8) {
 	copy(output_buffer[:state.output_size], bytes[:state.output_size])
 }
 
+Target :: enum int {
+	X64,
+	Wasm,
+}
+
 @(export)
-compiler_compile :: proc "c" () -> Status {
+compiler_compile :: proc "c" (target: Target) -> Status {
 	context = runtime.default_context()
 	context.temp_allocator = context.allocator
 	if !state.initialized {
@@ -140,10 +146,20 @@ compiler_compile :: proc "c" () -> Status {
 	diagnostics: strings.Builder
 	diagnostics.buf.allocator = state.types.allocator
 
+	target_to_spec := [Target]^backend.Node_Spec {
+		.X64  = &x64.SPEC,
+		.Wasm = &wasm.SPEC,
+	}
+
+	target_to_cc := [Target]^backend.Call_Conv {
+		.X64  = &x64.X64_SYSTEMV_CC,
+		.Wasm = &wasm.WASM_SYSTEMV_CC,
+	}
+
 	state.ctx.types = &state.types
 	state.ctx.global = &state.global
-	state.ctx.target.cc = &x64.X64_SYSTEMV_CC
-	state.ctx.target.spec = &x64.SPEC
+	state.ctx.target.cc = target_to_cc[target]
+	state.ctx.target.spec = target_to_spec[target]
 	state.ctx.errors = strings.to_writer(&diagnostics)
 
 	init_single_file_program(&state.ctx, &file)
@@ -164,8 +180,19 @@ compiler_compile :: proc "c" () -> Status {
 		jit.inline_and_optimize(&state.ctx, &emit_ctx)
 	}
 
+	target_to_emitter := [Target](proc(
+			_: ^jit.Gen_Ctx,
+			_: runtime.Allocator,
+		) -> []u8) {
+		.X64  = jit.emit_elf,
+		.Wasm = jit.emit_wasm_module,
+	}
+
 	output_arena := arna.init_from_buffer(output_buffer[:])
-	output := jit.emit_elf(&state.ctx, arna.allocator(&output_arena))
+	output := target_to_emitter[target](
+		&state.ctx,
+		arna.allocator(&output_arena),
+	)
 	state.output_size = len(output)
 	return .Success
 }

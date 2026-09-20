@@ -63,24 +63,23 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 	}
 
 	sections: [Section_Type][dynamic]u8
+	section_counts: [Section_Type]int
 	name_sections: #sparse[Name_Section_Type][dynamic]u8
+	name_section_counts: #sparse[Name_Section_Type]int
 
 	PAGE_SIZE :: 1 << 16
 	STACK_SIZE :: 1 << 20
+	RESERVED_LEN :: 3
 
-	export_count := 0
+	for &sec in sections {
+		resize(&sec, RESERVED_LEN)
+	}
+
+	for &name_sec in name_sections {
+		resize(&name_sec, RESERVED_LEN)
+	}
 
 	mem_init_size := STACK_SIZE
-	mem_count := 0
-
-	global_count := 0
-
-	global_count += 1 // __stack_pointer
-	export_count += 1
-
-	global_count += len(ctx.globals)
-
-	uleb(&sections[.global], u64(global_count))
 
 	emit_global :: proc(
 		buf: ^[dynamic]u8,
@@ -97,11 +96,11 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 
 	stack_pointer: {
 		emit_global(&sections[.global], .i64, .mut, STACK_SIZE)
+		section_counts[.global] += 1
 	}
 
 	init_mem_start := 0
 	global_idxes := make([]int, len(ctx.globals))
-	global_idx := 1
 	for i in 0 ..< 2 {
 		do_zeroed := i == 0
 
@@ -117,16 +116,11 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 				)
 				emit_global(&sections[.global], .i64, .const, mem_init_size)
 				mem_init_size += len(global.bytes)
-				global_idxes[i] = global_idx
-				global_idx += 1
+				global_idxes[i] = section_counts[.global]
+				section_counts[.global] += 1
 			}
 		}
 	}
-
-	mem_count += 1 // memory
-	export_count += 1
-
-	uleb(&sections[.memory], u64(mem_count))
 
 	memory: {
 		putb(&sections[.memory], Limit_Type.I64_Open)
@@ -134,12 +128,8 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 			&sections[.memory],
 			u64((mem_init_size + PAGE_SIZE - 1) / PAGE_SIZE),
 		)
+		section_counts[.memory] += 1
 	}
-
-	data_count := 0
-	data_count += 1 // static init memory
-
-	uleb(&sections[.data], u64(data_count))
 
 	static_init: {
 		putb(&sections[.data], u8(0))
@@ -158,38 +148,30 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 				offset += len(global.bytes)
 			}
 		}
+		section_counts[.data] += 1
 	}
-
-	func_count := 0
 
 	func_idxes := make([]int, len(ctx.procs))
 
 	for prc, i in ctx.procs[1:] {
-		func_idxes[1 + i] = func_count
-		func_count += int(len(prc.out.code) != 0)
-		if prc.name == "main" do export_count += 1
-	}
-
-	type_count := 0
-
-	type_count += func_count
-
-	for prc in ctx.procs[1:] {
-		for reloc in prc.out.relocs {
-			opcode := wasm.Wasm_Opcode(prc.out.code[reloc.offset - 1])
-			#partial switch opcode {
-			case .Call_Indirect:
-				type_count += 1
-			case:
-			}
+		if prc.lit.body == nil {
+			func_idxes[1 + i] = section_counts[.import_]
+			section_counts[.import_] += 1
 		}
 	}
 
-	uleb(&sections[.type], u64(type_count))
-	uleb(&sections[.function], u64(func_count))
-	uleb(&sections[.export], u64(export_count))
-	uleb(&sections[.code], u64(func_count))
-	uleb(&name_sections[.function], u64(func_count))
+	for prc, i in ctx.procs[1:] {
+		if len(prc.out.code) != 0 {
+			func_idxes[1 + i] =
+				section_counts[.import_] + section_counts[.function]
+			section_counts[.function] += 1
+		}
+	}
+
+	emit_name :: proc(sec: ^[dynamic]u8, name: string) {
+		uleb(sec, u64(len(name)))
+		append(sec, name)
+	}
 
 	export :: proc(
 		sec: ^[dynamic]u8,
@@ -197,25 +179,39 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 		type: Export_Type,
 		#any_int idx: u64,
 	) {
-		uleb(sec, u64(len(name)))
-		append(sec, name)
+		emit_name(sec, name)
 		putb(sec, type)
 		uleb(sec, idx)
 	}
 
 	indirect_ids: [dynamic]int
 
-	idx := 0
-	type_idx := 0
-	for prc in ctx.procs[1:] {
+	for prc, i in ctx.procs[1:] {
+		if prc.lit.body == nil {
+			scope := "env"
+			emit_name(&sections[.import_], scope)
+			emit_name(&sections[.import_], prc.name)
+
+			params := prc.param_types
+			rets := typecheck.ret_abi(prc.rets)
+			encode_func_type(&sections[.type], params, rets.reg_rets)
+			section_counts[.type] += 1
+
+			putb(&sections[.import_], u8(0))
+			uleb(&sections[.import_], u64(func_idxes[1 + i]))
+		}
+	}
+
+	for prc, i in ctx.procs[1:] {
 		if len(prc.out.code) != 0 {
 			if prc.name == "main" {
-				export(&sections[.export], prc.name, .func, idx)
+				export(&sections[.export], prc.name, .func, func_idxes[1 + i])
+				section_counts[.export] += 1
 			}
 
-			uleb(&name_sections[.function], u64(idx))
-			uleb(&name_sections[.function], u64(len(prc.name)))
-			append(&name_sections[.function], prc.name)
+			uleb(&name_sections[.function], u64(func_idxes[1 + i]))
+			emit_name(&name_sections[.function], prc.name)
+			name_section_counts[.function] += 1
 
 			for reloc in prc.out.relocs {
 				id: u64
@@ -233,8 +229,8 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 					len := prc.out.constants[reloc.id]
 					bytes := prc.out.constants[reloc.id + 1:][:len]
 					append(&sections[.type], ..bytes)
-					id = u64(type_idx)
-					type_idx += 1
+					id = u64(section_counts[.type])
+					section_counts[.type] += 1
 				case:
 					fmt.panicf("TODO: reloc opcode %v", opcode)
 				}
@@ -243,42 +239,30 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 
 			uleb(&sections[.code], u64(len(prc.out.code)))
 			append(&sections[.code], ..prc.out.code)
+			section_counts[.code] += 1
 
 			params := prc.param_types
 			rets := typecheck.ret_abi(prc.rets)
 			encode_func_type(&sections[.type], params, rets.reg_rets)
 
-			uleb(&sections[.function], u64(type_idx))
-			idx += 1
-
-			type_idx += 1
+			uleb(&sections[.function], u64(section_counts[.type]))
+			section_counts[.type] += 1
 		}
 	}
 
 	export(&sections[.export], "__stack_pointer", .global, 0)
+	section_counts[.export] += 1
 	export(&sections[.export], "memory", .mem, 0)
-
-	uleb(&sections[.custom], 4)
-	append(&sections[.custom], "name")
-
-	table_count := 0
-
-	table_count += 1 // dyn_call_table
-
-	uleb(&sections[.table], u64(table_count))
+	section_counts[.export] += 1
 
 	dyn_call_table: {
 		putb(&sections[.table], u8(0x70))
 		putb(&sections[.table], Limit_Type.I32_Closed)
 		uleb(&sections[.table], u64(len(indirect_ids)))
 		uleb(&sections[.table], u64(len(indirect_ids)))
+		section_counts[.table] += 1
 	}
 
-	elem_count := 0
-
-	elem_count += 1 // init_dyn_call_table
-
-	uleb(&sections[.element], u64(table_count))
 	init_dyn_call_table: {
 		putb(&sections[.element], u8(0))
 
@@ -290,13 +274,18 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 		for id in indirect_ids {
 			uleb(&sections[.element], u64(id))
 		}
+		section_counts[.element] += 1
 	}
 
+	clear(&sections[.custom])
+	emit_name(&sections[.custom], "name")
+
 	for name_section, kind in name_sections {
-		if len(name_section) == 0 do continue
+		if len(name_section) == RESERVED_LEN do continue
 
 		putb(&sections[.custom], kind)
 		uleb(&sections[.custom], u64(len(name_section)))
+		fixed_uleb(name_section[:RESERVED_LEN], u64(name_section_counts[kind]))
 		append(&sections[.custom], ..name_section[:])
 	}
 
@@ -306,10 +295,11 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 	put_u32(&bytes, VERSION)
 
 	for section, kind in sections {
-		if kind == .custom || len(section) == 0 do continue
+		if kind == .custom || len(section) == RESERVED_LEN do continue
 
 		putb(&bytes, kind)
 		uleb(&bytes, u64(len(section)))
+		fixed_uleb(section[:RESERVED_LEN], u64(section_counts[kind]))
 		append(&bytes, ..section[:])
 	}
 

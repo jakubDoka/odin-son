@@ -131,6 +131,8 @@ D_Binding :: struct #align (4) {
 
 D_Type :: enum u64 {}
 
+SPEC_NOT_PRESENT :: (#load("node_specs.odin", string) or_else "") == ""
+
 when SPEC_NOT_PRESENT {
 	Node_Type :: enum u16 {
 		Start,
@@ -215,6 +217,30 @@ when SPEC_NOT_PRESENT {
 		Simd_Reduce_Add_Bisect,
 		CV128,
 	}
+
+	inherit_idx_of :: proc($T: typeid) -> u8 {return 0}
+
+	graph_add_return :: proc(
+		graph: ^Graph,
+		name: string,
+		inputs: []Node_ID,
+	) -> Node_ID {return 0}
+
+	graph_add_region :: proc(
+		graph: ^Graph,
+		name: string,
+		ctrls: []Node_ID,
+	) -> Node_ID {return 0}
+
+	graph_add_jump :: proc(
+		graph: ^Graph,
+		name: string,
+		ctrl: Node_ID,
+	) -> Node_ID {return 0}
+	graph_add_always :: graph_add_jump
+	graph_add_then :: graph_add_jump
+	graph_add_else :: graph_add_jump
+	graph_add_poison :: proc(graph: ^Graph, name: string) -> Node_ID {return 0}
 }
 
 Class_Flags :: bit_set[Class_Flag;u8]
@@ -2211,4 +2237,15 @@ graph_has_flag_node :: #force_inline proc(
 ) -> bool {
 	fmt.assertf(int(node.rtype) < len(graph.node_flags), "%v", node.rtype)
 	return flag in graph.node_flags[node.rtype]
+}
+
+root_addr_add_offset :: proc(
+	graph: ^Graph,
+	node: Expanded_Node,
+) -> (
+	base: Node_ID,
+	off: int,
+	ok: bool,
+) {
+	return
 }

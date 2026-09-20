@@ -295,26 +295,24 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 		cond := graph_expand(ctx, bedge.inps[1])
 
 		@(rodata, static)
-		CMP_OP_REVERSE :=
-			#partial [backend.Node_Type]backend.Node_Type {
-				.Eq = .Ne,
-				.Ne = .Eq,
-				.Lt = .Ge,
-				.Le = .Gt,
-				.Gt = .Le,
-				.Ge = .Lt,
-			}
+		CMP_OP_REVERSE := #partial [backend.Node_Type]backend.Node_Type {
+			.Eq = .Ne,
+			.Ne = .Eq,
+			.Lt = .Ge,
+			.Le = .Gt,
+			.Gt = .Le,
+			.Ge = .Lt,
+		}
 
 		@(rodata, static)
-		CMP_OP_FLIP :=
-			#partial [backend.Node_Type]backend.Node_Type {
-				.Eq = .Eq,
-				.Ne = .Ne,
-				.Lt = .Gt,
-				.Le = .Ge,
-				.Gt = .Lt,
-				.Ge = .Le,
-			}
+		CMP_OP_FLIP := #partial [backend.Node_Type]backend.Node_Type {
+			.Eq = .Eq,
+			.Ne = .Ne,
+			.Lt = .Gt,
+			.Le = .Ge,
+			.Gt = .Lt,
+			.Ge = .Le,
+		}
 
 		effective_op := cond.itype
 		if CMP_OP_REVERSE[effective_op] == {} do continue

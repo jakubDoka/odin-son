@@ -88,6 +88,8 @@ add_efficiency_stat :: proc(
 	stats.efficiency[kind].ideal += ideal
 }
 
+Inherit_Table_Elem :: u16
+
 Node_Spec :: struct {
 	node_extra_sizes:  []u8,
 	inheritance_table: []Inherit_Table_Elem,

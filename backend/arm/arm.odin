@@ -137,8 +137,6 @@ ARM_SYSTEMV_CC := backend.Call_Conv {
 	rets         = {{X0, X1}, {V0, V1}},
 }
 
-GEN_SPEC :: #config(ARM_GEN_SPEC, false)
-
 COMMAND :: "odin run backend/arm -define:ARM_GEN_SPEC=true"
 
 SPEC_NOT_PRESENT :: (#load("node_specs.odin", string) or_else "") == ""
@@ -149,10 +147,6 @@ when SPEC_NOT_PRESENT {
 	inherit_idx_of :: proc($T: typeid) -> u8 {return 0}
 
 	Node_Type :: enum u16 {}
-
-	when !GEN_SPEC {
-		#panic("Missing generated files, run `" + COMMAND + "`")
-	}
 }
 
 peep :: proc(

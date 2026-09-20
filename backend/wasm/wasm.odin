@@ -39,8 +39,6 @@ wextra :: #force_inline proc(
 	return (^T)(&node.extra)
 }
 
-GEN_SPEC :: #config(WASM_GEN_SPEC, false)
-
 COMMAND :: "odin run backend/wasm -define:WASM_GEN_SPEC=true"
 
 SPEC_NOT_PRESENT :: (#load("node_specs.odin", string) or_else "") == ""
@@ -98,30 +96,6 @@ when SPEC_NOT_PRESENT {
 		Stub,
 		Extract_Lane_U,
 	}
-
-	@(rodata)
-	WASM_CLASSES := [Node_Type]backend.Class_Spec {
-		.WASM_Store = {id = Mem_Op, no_ctor = true, flags = {.Store}},
-		.WASM_Load = {id = Mem_Op, no_ctor = true, flags = {.Load}},
-		.Get_Local = {no_ctor = true},
-		.Set_Local = {no_ctor = true},
-		.Tee_Local = {no_ctor = true},
-		.Drop = {no_ctor = true},
-		.Stub = {no_ctor = true},
-		.Extract_Lane_U = {
-			id = Lane_Op,
-			args = {"vec"},
-			extra_args = {"laneidx"},
-			pass_lane = true,
-		},
-	}
-
-	when !GEN_SPEC {
-		#panic("Missing generated files, run `" + COMMAND + "`")
-	}
-} else {
-	@(rodata)
-	WASM_CLASSES := [Node_Type]backend.Class_Spec{}
 }
 
 peep :: proc(
@@ -667,7 +641,7 @@ pre_regalloc_hook :: proc(
 				inode.gvn = u32(idx)
 				idx += 1
 
-				when GEN_SPEC {
+				when SPEC_NOT_PRESENT {
 					meta: Meta
 				} else {
 					meta := meta_of(ctx, inode, struct{}{})
@@ -1188,7 +1162,7 @@ emit_function :: proc(
 	return {code = code, constants = constants, relocs = relocs}
 }
 
-@(disabled = GEN_SPEC)
+@(disabled = SPEC_NOT_PRESENT)
 emit_instr :: proc(ctx: ^Ctx, instr: backend.Node_ID, block: int, _: $T) {
 	node := graph_expand(ctx, instr)
 	kind := wtype(node)

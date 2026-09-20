@@ -5,10 +5,6 @@ import "../../vendored/gam/util/arna"
 import "core:fmt"
 Node_ID :: backend.Node_ID
 
-GEN_SPEC :: #config(ANAL_GEN_SPEC, false)
-
-COMMAND :: "odin run backend/anal -define:ANAL_GEN_SPEC=true"
-
 SPEC_NOT_PRESENT :: (#load("node_specs.odin", string) or_else "") == ""
 
 peep :: proc(
@@ -31,10 +27,6 @@ when SPEC_NOT_PRESENT {
 	inherit_idx_of :: proc($T: typeid) -> u8 {return 0}
 
 	Node_Type :: enum u16 {}
-
-	when !GEN_SPEC {
-		#panic("Missing generated files, run `" + COMMAND + "`")
-	}
 }
 
 emit_function :: proc(

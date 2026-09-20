@@ -2,9 +2,8 @@ package arm
 import backend ".."
 Reg_Kind :: backend.Reg_Kind
 Class_Flag :: backend.Class_Flag
-// NOTE: this file is generated: odin run backend/arm -define:ARM_GEN_SPEC=true
+// NOTE: this file is generated: 
 
-when !GEN_SPEC {
 SPEC := backend.Node_Spec{
 	cc_table = {
 		ARM_SYSTEMV_CC,
@@ -619,5 +618,4 @@ inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	else when T == backend.Cfg {return 0}
 	else when T == backend.Local {return 4}
 	else {#panic(`the passed type is not subclass of anything`)}
-}
 }

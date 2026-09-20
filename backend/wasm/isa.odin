@@ -30,7 +30,7 @@ encode_func_type :: proc(
 	}
 }
 
-when !GEN_SPEC {
+when !SPEC_NOT_PRESENT {
 	@(rodata)
 	NODE_TO_LANE_OP := #partial [Node_Type][backend.Lane_Type]Opcode_FD {
 		.Add = #partial{

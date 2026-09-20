@@ -2,8 +2,6 @@ package builder
 
 import backend ".."
 
-GEN_SPEC :: #config(BUILDER_GEN_SPEC, false)
-
 COMMAND :: "odin run backend/builder -define:BUILDER_GEN_SPEC=true"
 
 SPEC_NOT_PRESENT :: (#load("node_specs.odin", string) or_else "") == ""
@@ -23,12 +21,6 @@ when SPEC_NOT_PRESENT {
 		Lazy_Phi,
 	}
 
-	@(rodata)
-	BUILDER_CLASSES := [Node_Type]backend.Class_Spec {
-		.Scope = {id = Scope, args = {"cfg"}, default_type = .Void},
-		.Lazy_Phi = {args = {"reg", "lhs"}, extra_capacity = 1},
-	}
-
 	graph_add_lazy_phi :: proc(
 		graph: ^backend.Graph,
 		name: string,
@@ -43,10 +35,8 @@ when SPEC_NOT_PRESENT {
 		cfg: Node_ID,
 	) -> Node_ID {return 0}
 
-	when !GEN_SPEC {
-		#panic("Missing generated files, run `" + COMMAND + "`")
-	}
-} else {
-	@(rodata)
-	BUILDER_CLASSES := [Node_Type]backend.Class_Spec{}
+	graph_add_dead :: proc(
+		graph: ^backend.Graph,
+		name: string,
+	) -> Node_ID {return 0}
 }

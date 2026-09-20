@@ -149,10 +149,6 @@ Instr_Info :: struct {
 	ext:    u8,
 }
 
-GEN_SPEC :: #config(X64_GEN_SPEC, false)
-
-COMMAND :: "odin run backend/x64 -define:X64_GEN_SPEC=true"
-
 SPEC_NOT_PRESENT :: (#load("node_specs.odin", string) or_else "") == ""
 
 when SPEC_NOT_PRESENT {
@@ -204,49 +200,6 @@ when SPEC_NOT_PRESENT {
 		X64_Pshufb,
 		X64_Pextr,
 	}
-
-	X64_SIMPLE_BIN_OP_SPEC :: backend.Class_Spec {
-		id      = Mem_Op,
-		no_ctor = true,
-	}
-
-	X64_SIMPLE_SHIFT_OP_SPEC :: backend.Class_Spec {
-		id      = Mem_Op,
-		no_ctor = true,
-	}
-
-	X64_SIMPLE_UN_OP_SPEC :: backend.Class_Spec {
-		id      = Mem_Op,
-		no_ctor = true,
-	}
-
-	@(rodata)
-	X64_CLASSES := [Node_Type]backend.Class_Spec {
-		.X64_Add ..= .X64_U_Ge = X64_SIMPLE_BIN_OP_SPEC,
-		.X64_Shl ..= .X64_U_Shr = X64_SIMPLE_SHIFT_OP_SPEC,
-		.X64_Neg ..= .X64_Not = X64_SIMPLE_UN_OP_SPEC,
-		.X64_F_Eq ..= .X64_F_Ge = X64_SIMPLE_BIN_OP_SPEC,
-		.X64_Pcmpeq = {no_ctor = true},
-		.X64_Psadbw = {args = {"lhs", "rhs"}},
-		.X64_Pshufd = {id = Mem_Op, no_ctor = true},
-		.X64_Pshufb = {id = Mem_Op, no_ctor = true},
-		.X64_Pextr = {id = Mem_Op, no_ctor = true},
-		.X64_Mul = X64_SIMPLE_BIN_OP_SPEC,
-		.X64_Lea = {id = Mem_Op, no_ctor = true},
-		.X64_Load = {id = Mem_Op, flags = {.Load}, no_ctor = true},
-		.X64_CLoad = {flags = {.Clonable}, no_ctor = true},
-		.X64_Store = {id = Mem_Op, flags = {.Store}, no_ctor = true},
-		.X64_Mul8 = {no_ctor = true},
-		.X64_F_Add ..= .X64_F_Div = {id = Mem_Op, no_ctor = true},
-		.X64_Fma_213 = {id = Mem_Op, no_ctor = true},
-	}
-
-	when !GEN_SPEC {
-		#panic("Missing generated files, run `" + COMMAND + "`")
-	}
-} else {
-	@(rodata)
-	X64_CLASSES := [Node_Type]backend.Class_Spec{}
 }
 
 @(rodata)
@@ -841,7 +794,6 @@ peep :: proc(
 					node.rtype = val.rtype
 
 					if val.itype in IDEAL_TRIGGER_UN_OPS {
-						assert(node.rtype < len(backend.IDEAL_CLASSES))
 						node.rtype += UN_OP_OFFSET
 					} else if xtype(val) in X64_TRIGGER_OPS {
 						mem_op.imm = val_mem.imm
@@ -856,7 +808,6 @@ peep :: proc(
 						node.input_count -= 1
 						node.inps = node.inps[:len(node.inps) - 1]
 					} else {
-						assert(node.rtype < len(backend.IDEAL_CLASSES))
 						node.rtype += BIN_OP_OFFSET
 						backend.graph_set_input(ctx, id, 3, val.inps[1])
 					}
@@ -1693,7 +1644,7 @@ mount_sloc :: proc(ctx: ^Ctx, node: backend.Node_ID) {
 	ctx.last_off = ctx.code.pos
 }
 
-@(disabled = GEN_SPEC)
+@(disabled = SPEC_NOT_PRESENT)
 x64_emit_instr :: proc(
 	ctx: ^Ctx,
 	instr: backend.Node_ID,

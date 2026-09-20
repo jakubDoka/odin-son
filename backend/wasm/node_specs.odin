@@ -2,9 +2,8 @@ package wasm
 import backend ".."
 Reg_Kind :: backend.Reg_Kind
 Class_Flag :: backend.Class_Flag
-// NOTE: this file is generated: odin run backend/wasm -define:WASM_GEN_SPEC=true
+// NOTE: this file is generated: 
 
-when !GEN_SPEC {
 SPEC := backend.Node_Spec{
 	cc_table = {
 		WASM_SYSTEMV_CC,
@@ -696,5 +695,4 @@ inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	else when T == backend.Local {return 4}
 	else when T == Lane_Op {return 8}
 	else {#panic(`the passed type is not subclass of anything`)}
-}
 }

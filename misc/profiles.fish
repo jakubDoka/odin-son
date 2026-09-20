@@ -3,23 +3,10 @@
 # new architecture directory is enough on its own, no edit needed here
 function gen-spec
 	rm -f backend/node_specs.odin
-	odin run backend -define:GEN_SPEC=true
-	or return 1
-	odin check backend -define:GEN_SPEC=false -no-entry-point
-	or return 1
+	rm -f backend/*/node_specs.odin
 
-	for dir in backend/*/
-		set -l name (basename $dir)
-		set -l gen_file "$dir"gen_$name.odin
-		if test -e $gen_file
-			set -l define (string upper $name)_GEN_SPEC
-			rm -f "$dir"node_specs.odin
-			odin run $dir -define:$define=true
-			or return 1
-			odin check $dir -define:$define=false -no-entry-point
-			or return 1
-		end
-	end
+	odin run backend/meta
+	odin run backend/meta2
 end
 
 # regenerate the tests and overloads

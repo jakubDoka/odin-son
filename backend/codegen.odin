@@ -17,6 +17,8 @@ Call_Conv :: struct {
 	cfi_spec:      Cfi_Spec,
 }
 
+Peep_Fn :: proc(_: Peep_Ctx, _: Expanded_Node) -> Node_ID
+
 Codegen_Spec :: struct {
 	emit_function:      proc(_: Codegen_Emit_Ctx) -> Codegen_Output,
 	peep:               Peep_Fn,

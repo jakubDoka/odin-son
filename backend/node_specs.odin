@@ -1,7 +1,6 @@
 package backend
-// NOTE: this file is generated: odin run backend -define:GEN_SPEC=true
+// NOTE: this file is generated: 
 
-when !GEN_SPEC {
 Un_Op :: enum u16 {
 	Uext = u16(Node_Type.Uext),
 	Sext = u16(Node_Type.Sext),
@@ -368,5 +367,4 @@ inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	else when T == Cfg {return 0}
 	else when T == Local {return 4}
 	else {#panic(`the passed type is not subclass of anything`)}
-}
 }

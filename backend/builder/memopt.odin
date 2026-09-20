@@ -215,11 +215,6 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 		for n in wl.data[:wl.len] {
 			node := graph_expand(graph, n)
 			node.in_worklist = false
-			fmt.assertf(
-				u16(node.itype) < len(backend.IDEAL_CLASSES),
-				"%v",
-				node.node,
-			)
 		}
 	}
 

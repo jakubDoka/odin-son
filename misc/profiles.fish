@@ -69,6 +69,11 @@ function build-wamr
 		-o wamr/aot_reloc.o
 end
 
+function build-wabt
+	g++ -std=c++17 -O2 -fPIC -shared wabt/run.cc /usr/lib/libwabt.a \
+		-lcrypto -Wl,--no-undefined -o wabt/libwabt_runner.so
+end
+
 
 function build-wasm-debug
 	odin build wasm -target:freestanding_wasm32 -no-entry-point \

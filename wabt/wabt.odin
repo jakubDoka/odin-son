@@ -1,17 +1,17 @@
-package wamr
+package wabt
 
 import "core:c"
 import "core:testing"
 
-foreign import wamr {"run.o", "aot_reloc.o", "libaotclib.a", "libvmlib.a", "system:LLVM-22", "system:stdc++", "system:m", "system:pthread", "system:dl"}
+foreign import wabt "libwabt_runner.so"
 
-foreign wamr {
-	wamr_run_module :: proc(bytes: [^]u8, size: uintptr, entry_data: [^]u8, entry_size: uintptr, result: ^i64) -> c.int ---
+foreign wabt {
+	wabt_run_module :: proc(bytes: [^]u8, size: uintptr, entry_data: [^]u8, entry_size: uintptr, result: ^i64) -> c.int ---
 }
 
 run_module :: proc(module_bytes: []u8, entry_name: string) -> (i64, i32) {
 	result: i64
-	status := wamr_run_module(
+	status := wabt_run_module(
 		raw_data(module_bytes),
 		uintptr(len(module_bytes)),
 		raw_data(entry_name),

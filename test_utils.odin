@@ -26,7 +26,7 @@ import "core:testing"
 import "typecheck"
 import "vendored/gam/util/arna"
 import "vendored/gam/util/hot"
-import "wamr"
+import "wabt"
 
 TEST_OUT_DIR :: "print-tests"
 
@@ -369,9 +369,9 @@ run_test :: proc(
 
 			if no_run {
 			} else {
-				vl, status := wamr.run_module(module, "main")
+				vl, status := wabt.run_module(module, "main")
 				if status != 0 {
-					log.error("wamr failed with", status)
+					log.error("wasm interpretter failed with", status)
 				} else if int(vl) != exit_code {
 					log.error(level)
 					testing.expect_value(t, int(vl), exit_code)

@@ -4,6 +4,8 @@ import "backend"
 import "backend/anal"
 import "backend/builder"
 import "backend/regalloc"
+import "backend/wasm"
+import "backend/x64"
 import "base:runtime"
 import "core:fmt"
 import "core:mem"
@@ -46,6 +48,11 @@ OPT_LEVELS :: [?]Opt_Level {
 		{.Iter_Peeps, .Local_Peeps, .Mem_Opt, .Inline, .Loop_Opt},
 		.with_coloring,
 	},
+}
+
+TARGETS := [?]typecheck.Target {
+	{"amd64", &x64.X64_SYSTEMV_CC, &x64.SPEC, emit_elf},
+	{"wasm64", &wasm.WASM_SYSTEMV_CC, &wasm.SPEC, emit_wasm_module},
 }
 
 Abi_Param :: struct {

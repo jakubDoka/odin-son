@@ -106,7 +106,7 @@ for dir in "$PROGRAMS_DIR"/*/; do
 	# --- our compiler, once per optimization level ---------------------
 	for level in "${LEVELS[@]}"; do
 		jit_obj="$WORK/$name-$level.o"
-		if ! "$JIT" "$entry" -O:"$level" -o "$jit_obj" 2>"$WORK/jit-build.log"; then
+		if ! "$JIT" "$entry" -o:"$level" -o "$jit_obj" 2>"$WORK/jit-build.log"; then
 			echo "  [$level] jit compile FAILED"
 			cat "$WORK/jit-build.log" | sed 's/^/    /'
 			fail=$((fail + 1))

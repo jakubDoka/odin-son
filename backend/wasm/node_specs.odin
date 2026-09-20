@@ -102,12 +102,14 @@ SPEC := backend.Node_Spec{
 		0b10, // Simd_Extract_Lsbs
 		0b10, // Simd_Reduce_Add_Bisect
 		0b1000000, // CV128
+		0b10000000, // WASM_Store
+		0b10000000, // WASM_Load
 		0b10, // Get_Local
 		0b10, // Set_Local
 		0b10, // Tee_Local
 		0b10, // Drop
 		0b10, // Stub
-		0b10000000, // Extract_Lane_U
+		0b100000000, // Extract_Lane_U
 	},
 	node_extra_sizes = {
 		1, // Start -> Cfg
@@ -191,6 +193,8 @@ SPEC := backend.Node_Spec{
 		0, // Simd_Extract_Lsbs -> No_Extra
 		0, // Simd_Reduce_Add_Bisect -> No_Extra
 		4, // CV128 -> CV128
+		2, // WASM_Store -> WASM_Mem_Op
+		2, // WASM_Load -> WASM_Mem_Op
 		0, // Get_Local -> No_Extra
 		0, // Set_Local -> No_Extra
 		0, // Tee_Local -> No_Extra
@@ -280,6 +284,8 @@ SPEC := backend.Node_Spec{
 		{Class_Flag.Interned}, // Simd_Extract_Lsbs
 		{Class_Flag.Interned}, // Simd_Reduce_Add_Bisect
 		{Class_Flag.Interned, Class_Flag.Clonable}, // CV128
+		{Class_Flag.Store}, // WASM_Store
+		{Class_Flag.Load}, // WASM_Load
 		{}, // Get_Local
 		{}, // Set_Local
 		{}, // Tee_Local
@@ -369,6 +375,8 @@ SPEC := backend.Node_Spec{
 		backend.No_Extra,
 		backend.No_Extra,
 		backend.CV128,
+		WASM_Mem_Op,
+		WASM_Mem_Op,
 		backend.No_Extra,
 		backend.No_Extra,
 		backend.No_Extra,
@@ -458,6 +466,8 @@ SPEC := backend.Node_Spec{
 		`Simd_Extract_Lsbs`,
 		`Simd_Reduce_Add_Bisect`,
 		`CV128`,
+		`WASM_Store`,
+		`WASM_Load`,
 		`Get_Local`,
 		`Set_Local`,
 		`Tee_Local`,
@@ -549,6 +559,8 @@ WASM_Node_Type :: enum u16 {
 	Simd_Extract_Lsbs,
 	Simd_Reduce_Add_Bisect,
 	CV128,
+	WASM_Store,
+	WASM_Load,
 	Get_Local,
 	Set_Local,
 	Tee_Local,
@@ -657,6 +669,8 @@ wasm_collect_meta :: proc(ctx: ^backend.Graph,
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.CV128) % backend.PRECISION == 0)
+#assert(size_of(WASM_Mem_Op) % backend.PRECISION == 0)
+#assert(size_of(WASM_Mem_Op) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
@@ -672,12 +686,13 @@ graph_add_extract_lane_u :: #force_inline proc(graph: ^backend.Graph, name: stri
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	when false {}
+	else when T == WASM_Mem_Op {return 7}
 	else when T == backend.No_Extra {return 1}
 	else when T == backend.CInt {return 3}
 	else when T == backend.Call {return 5}
 	else when T == backend.Tup {return 2}
 	else when T == backend.CV128 {return 6}
-	else when T == WASM_Lane_Op {return 7}
+	else when T == WASM_Lane_Op {return 8}
 	else when T == backend.Cfg {return 0}
 	else when T == backend.Local {return 4}
 	else {#panic(`the passed type is not subclass of anything`)}

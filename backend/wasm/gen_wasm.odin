@@ -16,7 +16,7 @@ when GEN_SPEC {
 				// generator about every %w call site
 				header_import = "import backend \"..\"\n" + "Reg_Kind :: backend.Reg_Kind\n" + "Class_Flag :: backend.Class_Flag\n",
 				qual = "backend.",
-				local_extra_types = {WASM_Lane_Op},
+				local_extra_types = {WASM_Lane_Op, WASM_Mem_Op},
 				name = "WASM",
 				classes = {
 					backend.class_array(

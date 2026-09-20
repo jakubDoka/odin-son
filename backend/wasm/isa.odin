@@ -215,7 +215,23 @@ when !GEN_SPEC {
 				.F32 = .F32_Load,
 				.F64 = .F64_Load,
 			},
+			.WASM_Load = #partial{
+				.I8 = .I32_Load8_U,
+				.I16 = .I32_Load16_U,
+				.I32 = .I32_Load,
+				.I64 = .I64_Load,
+				.F32 = .F32_Load,
+				.F64 = .F64_Load,
+			},
 			.Store = #partial{
+				.I8 = .I32_Store8,
+				.I16 = .I32_Store16,
+				.I32 = .I32_Store,
+				.I64 = .I64_Store,
+				.F32 = .F32_Store,
+				.F64 = .F64_Store,
+			},
+			.WASM_Store = #partial{
 				.I8 = .I32_Store8,
 				.I16 = .I32_Store16,
 				.I32 = .I32_Store,

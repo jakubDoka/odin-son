@@ -1038,48 +1038,35 @@ main:
   (type (;1;) (func (param f64 i64) (result i64)))
   (type (;2;) (func (result i64)))
   (func $fsrc32 (type 0) (param f32 i64) (result i64)
-    (local i64 i64 f32 f32 f32 f32 f32 f32)
+    (local f32 f32 f32 f32 f32 f32)
     local.get 1
-    i64.const 20
-    i64.add
-    f32.load align=1
+    f32.load offset=20 align=1
+    local.set 2
+    local.get 1
+    f32.load offset=4 align=1
+    local.set 3
+    local.get 1
+    f32.load offset=8 align=1
     local.set 4
     local.get 1
-    i64.const 4
-    local.tee 2
-    i64.add
-    f32.load align=1
+    f32.load offset=12 align=1
     local.set 5
     local.get 1
-    f32.load align=1
+    f32.load offset=16 align=1
     local.set 6
     local.get 1
-    i64.const 8
-    local.tee 3
-    i64.add
     f32.load align=1
     local.set 7
-    local.get 1
-    i64.const 12
-    i64.add
-    f32.load align=1
-    local.set 8
-    local.get 1
-    i64.const 16
-    local.tee 1
-    i64.add
-    f32.load align=1
-    local.set 9
     i64.const 0
     local.get 0
-    local.get 6
+    local.get 7
     f32.eq
     i32.const 255
     i32.and
     i64.extend_i32_u
     i64.add
     local.get 0
-    local.get 5
+    local.get 3
     f32.ne
     i32.const 255
     i32.and
@@ -1088,34 +1075,34 @@ main:
     i64.mul
     i64.add
     local.get 0
-    local.get 7
+    local.get 4
     f32.lt
     i32.const 255
     i32.and
     i64.extend_i32_u
-    local.get 2
+    i64.const 4
     i64.mul
     i64.add
     local.get 0
-    local.get 8
+    local.get 5
     f32.le
     i32.const 255
     i32.and
     i64.extend_i32_u
-    local.get 3
+    i64.const 8
     i64.mul
     i64.add
     local.get 0
-    local.get 9
+    local.get 6
     f32.gt
     i32.const 255
     i32.and
     i64.extend_i32_u
-    local.get 1
+    i64.const 16
     i64.mul
     i64.add
     local.get 0
-    local.get 4
+    local.get 2
     f32.ge
     i32.const 255
     i32.and
@@ -1127,38 +1114,25 @@ main:
     end
   )
   (func $fsrc64 (type 1) (param f64 i64) (result i64)
-    (local i64 i64 i64 f64 f64 f64 f64 f64 f64)
+    (local f64 f64 f64 f64 f64 f64)
     local.get 1
-    i64.const 8
-    local.tee 2
-    i64.add
-    f64.load align=1
+    f64.load offset=40 align=1
+    local.set 2
+    local.get 1
+    f64.load offset=8 align=1
+    local.set 3
+    local.get 1
+    f64.load offset=16 align=1
+    local.set 4
+    local.get 1
+    f64.load offset=24 align=1
     local.set 5
     local.get 1
-    i64.const 16
-    local.tee 3
-    i64.add
-    f64.load align=1
+    f64.load offset=32 align=1
     local.set 6
     local.get 1
     f64.load align=1
     local.set 7
-    local.get 1
-    i64.const 24
-    i64.add
-    f64.load align=1
-    local.set 8
-    local.get 1
-    i64.const 32
-    local.tee 4
-    i64.add
-    f64.load align=1
-    local.set 9
-    local.get 1
-    i64.const 40
-    i64.add
-    f64.load align=1
-    local.set 10
     i64.const 0
     local.get 0
     local.get 7
@@ -1168,7 +1142,7 @@ main:
     i64.extend_i32_u
     i64.add
     local.get 0
-    local.get 5
+    local.get 3
     f64.ne
     i32.const 255
     i32.and
@@ -1177,7 +1151,7 @@ main:
     i64.mul
     i64.add
     local.get 0
-    local.get 6
+    local.get 4
     f64.lt
     i32.const 255
     i32.and
@@ -1186,37 +1160,37 @@ main:
     i64.mul
     i64.add
     local.get 0
-    local.get 8
+    local.get 5
     f64.le
     i32.const 255
     i32.and
     i64.extend_i32_u
-    local.get 2
+    i64.const 8
     i64.mul
     i64.add
     local.get 0
-    local.get 9
+    local.get 6
     f64.gt
     i32.const 255
     i32.and
     i64.extend_i32_u
-    local.get 3
+    i64.const 16
     i64.mul
     i64.add
     local.get 0
-    local.get 10
+    local.get 2
     f64.ge
     i32.const 255
     i32.and
     i64.extend_i32_u
-    local.get 4
+    i64.const 32
     i64.mul
     i64.add
     return
     end
   )
   (func $main (type 2) (result i64)
-    (local i64 i64 i64 i64 i64 i64 i64 i32 f64 f32)
+    (local i64 i64 i64 i64 i64 i64 i32 f64 f32)
     global.get 0
     i64.const 72
     i64.sub
@@ -1226,49 +1200,36 @@ main:
     i64.add
     local.tee 0
     i32.const 0
-    local.tee 7
+    local.tee 6
     i64.const 24
-    local.tee 1
     memory.fill
     local.get 0
     f32.const +2
-    local.tee 9
+    local.tee 8
     f32.store align=1
     local.get 0
-    i64.const 4
-    i64.add
-    local.get 9
-    f32.store align=1
+    local.get 8
+    f32.store offset=4 align=1
     local.get 0
-    i64.const 8
-    local.tee 2
-    i64.add
-    local.get 9
-    f32.store align=1
+    local.get 8
+    f32.store offset=8 align=1
     local.get 0
-    i64.const 12
-    i64.add
-    local.get 9
-    f32.store align=1
+    local.get 8
+    f32.store offset=12 align=1
     local.get 0
-    i64.const 16
-    local.tee 3
-    i64.add
-    local.get 9
-    f32.store align=1
+    local.get 8
+    f32.store offset=16 align=1
     local.get 0
-    i64.const 20
-    i64.add
-    local.get 9
-    f32.store align=1
+    local.get 8
+    f32.store offset=20 align=1
     f32.const +1
     local.get 0
     call $fsrc32
-    local.set 4
-    local.get 9
+    local.set 1
+    local.get 8
     local.get 0
     call $fsrc32
-    local.set 5
+    local.set 2
     f32.const +3
     local.get 0
     call $fsrc32
@@ -1276,60 +1237,50 @@ main:
     global.get 0
     i64.const 24
     i64.add
-    local.tee 6
-    local.get 7
+    local.tee 3
+    local.get 6
     i64.const 48
     memory.fill
-    local.get 6
-    f64.const +2
-    local.tee 8
-    f64.store align=1
-    local.get 6
-    local.get 2
-    i64.add
-    local.get 8
-    f64.store align=1
-    local.get 6
     local.get 3
-    i64.add
-    local.get 8
+    f64.const +2
+    local.tee 7
     f64.store align=1
-    local.get 6
-    local.get 1
-    i64.add
-    local.get 8
-    f64.store align=1
-    local.get 6
-    i64.const 32
-    i64.add
-    local.get 8
-    f64.store align=1
-    local.get 6
-    i64.const 40
-    i64.add
-    local.get 8
-    f64.store align=1
+    local.get 3
+    local.get 7
+    f64.store offset=8 align=1
+    local.get 3
+    local.get 7
+    f64.store offset=16 align=1
+    local.get 3
+    local.get 7
+    f64.store offset=24 align=1
+    local.get 3
+    local.get 7
+    f64.store offset=32 align=1
+    local.get 3
+    local.get 7
+    f64.store offset=40 align=1
     f64.const +1
-    local.get 6
+    local.get 3
     call $fsrc64
-    local.set 1
-    local.get 8
-    local.get 6
+    local.set 4
+    local.get 7
+    local.get 3
     call $fsrc64
-    local.set 2
+    local.set 5
     f64.const +3
-    local.get 6
+    local.get 3
     call $fsrc64
     local.set 3
     i64.const 0
-    local.get 4
-    local.get 5
+    local.get 1
+    local.get 2
     i64.add
     local.get 0
     i64.add
     i64.add
-    local.get 1
-    local.get 2
+    local.get 4
+    local.get 5
     i64.add
     local.get 3
     i64.add
@@ -1356,48 +1307,35 @@ main:
   (type (;1;) (func (param f64 i64) (result i64)))
   (type (;2;) (func (result i64)))
   (func $fsrc32 (type 0) (param f32 i64) (result i64)
-    (local i64 i64 f32 f32 f32 f32 f32 f32)
+    (local f32 f32 f32 f32 f32 f32)
     local.get 1
-    i64.const 20
-    i64.add
-    f32.load align=1
-    local.set 9
-    local.get 1
-    i64.const 4
-    local.tee 3
-    i64.add
-    f32.load align=1
-    local.set 8
-    local.get 1
-    f32.load align=1
+    f32.load offset=20 align=1
     local.set 7
     local.get 1
-    i64.const 8
-    local.tee 2
-    i64.add
-    f32.load align=1
+    f32.load offset=4 align=1
     local.set 6
     local.get 1
-    i64.const 12
-    i64.add
-    f32.load align=1
+    f32.load offset=8 align=1
     local.set 5
     local.get 1
-    i64.const 16
-    local.tee 1
-    i64.add
-    f32.load align=1
+    f32.load offset=12 align=1
     local.set 4
+    local.get 1
+    f32.load offset=16 align=1
+    local.set 3
+    local.get 1
+    f32.load align=1
+    local.set 2
     i64.const 0
     local.get 0
-    local.get 7
+    local.get 2
     f32.eq
     i32.const 255
     i32.and
     i64.extend_i32_u
     i64.add
     local.get 0
-    local.get 8
+    local.get 6
     f32.ne
     i32.const 255
     i32.and
@@ -1406,34 +1344,34 @@ main:
     i64.mul
     i64.add
     local.get 0
-    local.get 6
+    local.get 5
     f32.lt
     i32.const 255
     i32.and
     i64.extend_i32_u
-    local.get 3
-    i64.mul
-    i64.add
-    local.get 0
-    local.get 5
-    f32.le
-    i32.const 255
-    i32.and
-    i64.extend_i32_u
-    local.get 2
+    i64.const 4
     i64.mul
     i64.add
     local.get 0
     local.get 4
+    f32.le
+    i32.const 255
+    i32.and
+    i64.extend_i32_u
+    i64.const 8
+    i64.mul
+    i64.add
+    local.get 0
+    local.get 3
     f32.gt
     i32.const 255
     i32.and
     i64.extend_i32_u
-    local.get 1
+    i64.const 16
     i64.mul
     i64.add
     local.get 0
-    local.get 9
+    local.get 7
     f32.ge
     i32.const 255
     i32.and
@@ -1445,48 +1383,35 @@ main:
     end
   )
   (func $fsrc64 (type 1) (param f64 i64) (result i64)
-    (local i64 i64 i64 f64 f64 f64 f64 f64 f64)
+    (local f64 f64 f64 f64 f64 f64)
     local.get 1
-    i64.const 8
-    local.tee 4
-    i64.add
-    f64.load align=1
-    local.set 10
-    local.get 1
-    i64.const 16
-    local.tee 3
-    i64.add
-    f64.load align=1
-    local.set 9
-    local.get 1
-    f64.load align=1
-    local.set 8
-    local.get 1
-    i64.const 24
-    i64.add
-    f64.load align=1
+    f64.load offset=40 align=1
     local.set 7
     local.get 1
-    i64.const 32
-    local.tee 2
-    i64.add
-    f64.load align=1
+    f64.load offset=8 align=1
     local.set 6
     local.get 1
-    i64.const 40
-    i64.add
-    f64.load align=1
+    f64.load offset=16 align=1
     local.set 5
+    local.get 1
+    f64.load offset=24 align=1
+    local.set 4
+    local.get 1
+    f64.load offset=32 align=1
+    local.set 3
+    local.get 1
+    f64.load align=1
+    local.set 2
     i64.const 0
     local.get 0
-    local.get 8
+    local.get 2
     f64.eq
     i32.const 255
     i32.and
     i64.extend_i32_u
     i64.add
     local.get 0
-    local.get 10
+    local.get 6
     f64.ne
     i32.const 255
     i32.and
@@ -1495,7 +1420,7 @@ main:
     i64.mul
     i64.add
     local.get 0
-    local.get 9
+    local.get 5
     f64.lt
     i32.const 255
     i32.and
@@ -1504,37 +1429,37 @@ main:
     i64.mul
     i64.add
     local.get 0
-    local.get 7
+    local.get 4
     f64.le
     i32.const 255
     i32.and
     i64.extend_i32_u
-    local.get 4
+    i64.const 8
     i64.mul
     i64.add
     local.get 0
-    local.get 6
+    local.get 3
     f64.gt
     i32.const 255
     i32.and
     i64.extend_i32_u
-    local.get 3
+    i64.const 16
     i64.mul
     i64.add
     local.get 0
-    local.get 5
+    local.get 7
     f64.ge
     i32.const 255
     i32.and
     i64.extend_i32_u
-    local.get 2
+    i64.const 32
     i64.mul
     i64.add
     return
     end
   )
   (func $main (type 2) (result i64)
-    (local i64 i64 i64 i64 i64 i64 i64 i32 f64 f32)
+    (local i64 i64 i64 i64 i64 i64 i32 f64 f32)
     global.get 0
     i64.const 72
     i64.sub
@@ -1544,46 +1469,33 @@ main:
     i64.add
     local.tee 0
     i32.const 0
-    local.tee 7
-    i64.const 24
     local.tee 6
+    i64.const 24
     memory.fill
     local.get 0
     f32.const +2
-    local.tee 9
+    local.tee 8
     f32.store align=1
     local.get 0
-    i64.const 4
-    i64.add
-    local.get 9
-    f32.store align=1
+    local.get 8
+    f32.store offset=4 align=1
     local.get 0
-    i64.const 8
-    local.tee 2
-    i64.add
-    local.get 9
-    f32.store align=1
+    local.get 8
+    f32.store offset=8 align=1
     local.get 0
-    i64.const 12
-    i64.add
-    local.get 9
-    f32.store align=1
+    local.get 8
+    f32.store offset=12 align=1
     local.get 0
-    i64.const 16
-    local.tee 1
-    i64.add
-    local.get 9
-    f32.store align=1
+    local.get 8
+    f32.store offset=16 align=1
     local.get 0
-    i64.const 20
-    i64.add
-    local.get 9
-    f32.store align=1
+    local.get 8
+    f32.store offset=20 align=1
     f32.const +1
     local.get 0
     call $fsrc32
     local.set 5
-    local.get 9
+    local.get 8
     local.get 0
     call $fsrc32
     local.set 4
@@ -1595,43 +1507,33 @@ main:
     i64.const 24
     i64.add
     local.tee 0
-    local.get 7
+    local.get 6
     i64.const 48
     memory.fill
     local.get 0
     f64.const +2
-    local.tee 8
+    local.tee 7
     f64.store align=1
     local.get 0
-    local.get 2
-    i64.add
-    local.get 8
-    f64.store align=1
+    local.get 7
+    f64.store offset=8 align=1
     local.get 0
-    local.get 1
-    i64.add
-    local.get 8
-    f64.store align=1
+    local.get 7
+    f64.store offset=16 align=1
     local.get 0
-    local.get 6
-    i64.add
-    local.get 8
-    f64.store align=1
+    local.get 7
+    f64.store offset=24 align=1
     local.get 0
-    i64.const 32
-    i64.add
-    local.get 8
-    f64.store align=1
+    local.get 7
+    f64.store offset=32 align=1
     local.get 0
-    i64.const 40
-    i64.add
-    local.get 8
-    f64.store align=1
+    local.get 7
+    f64.store offset=40 align=1
     f64.const +1
     local.get 0
     call $fsrc64
     local.set 2
-    local.get 8
+    local.get 7
     local.get 0
     call $fsrc64
     local.set 1
@@ -1674,48 +1576,35 @@ main:
   (type (;1;) (func (param f64 i64) (result i64)))
   (type (;2;) (func (result i64)))
   (func $fsrc32 (type 0) (param f32 i64) (result i64)
-    (local i64 i64 f32 f32 f32 f32 f32 f32)
+    (local f32 f32 f32 f32 f32 f32)
     local.get 1
-    i64.const 20
-    i64.add
-    f32.load align=1
+    f32.load offset=20 align=1
+    local.set 2
+    local.get 1
+    f32.load offset=4 align=1
+    local.set 3
+    local.get 1
+    f32.load offset=8 align=1
     local.set 4
     local.get 1
-    i64.const 4
-    local.tee 2
-    i64.add
-    f32.load align=1
+    f32.load offset=12 align=1
     local.set 5
     local.get 1
-    f32.load align=1
+    f32.load offset=16 align=1
     local.set 6
     local.get 1
-    i64.const 8
-    local.tee 3
-    i64.add
     f32.load align=1
     local.set 7
-    local.get 1
-    i64.const 12
-    i64.add
-    f32.load align=1
-    local.set 8
-    local.get 1
-    i64.const 16
-    local.tee 1
-    i64.add
-    f32.load align=1
-    local.set 9
     i64.const 0
     local.get 0
-    local.get 6
+    local.get 7
     f32.eq
     i32.const 255
     i32.and
     i64.extend_i32_u
     i64.add
     local.get 0
-    local.get 5
+    local.get 3
     f32.ne
     i32.const 255
     i32.and
@@ -1724,34 +1613,34 @@ main:
     i64.mul
     i64.add
     local.get 0
-    local.get 7
+    local.get 4
     f32.lt
     i32.const 255
     i32.and
     i64.extend_i32_u
-    local.get 2
+    i64.const 4
     i64.mul
     i64.add
     local.get 0
-    local.get 8
+    local.get 5
     f32.le
     i32.const 255
     i32.and
     i64.extend_i32_u
-    local.get 3
+    i64.const 8
     i64.mul
     i64.add
     local.get 0
-    local.get 9
+    local.get 6
     f32.gt
     i32.const 255
     i32.and
     i64.extend_i32_u
-    local.get 1
+    i64.const 16
     i64.mul
     i64.add
     local.get 0
-    local.get 4
+    local.get 2
     f32.ge
     i32.const 255
     i32.and
@@ -1763,38 +1652,25 @@ main:
     end
   )
   (func $fsrc64 (type 1) (param f64 i64) (result i64)
-    (local i64 i64 i64 f64 f64 f64 f64 f64 f64)
+    (local f64 f64 f64 f64 f64 f64)
     local.get 1
-    i64.const 8
-    local.tee 2
-    i64.add
-    f64.load align=1
+    f64.load offset=40 align=1
+    local.set 2
+    local.get 1
+    f64.load offset=8 align=1
+    local.set 3
+    local.get 1
+    f64.load offset=16 align=1
+    local.set 4
+    local.get 1
+    f64.load offset=24 align=1
     local.set 5
     local.get 1
-    i64.const 16
-    local.tee 3
-    i64.add
-    f64.load align=1
+    f64.load offset=32 align=1
     local.set 6
     local.get 1
     f64.load align=1
     local.set 7
-    local.get 1
-    i64.const 24
-    i64.add
-    f64.load align=1
-    local.set 8
-    local.get 1
-    i64.const 32
-    local.tee 4
-    i64.add
-    f64.load align=1
-    local.set 9
-    local.get 1
-    i64.const 40
-    i64.add
-    f64.load align=1
-    local.set 10
     i64.const 0
     local.get 0
     local.get 7
@@ -1804,7 +1680,7 @@ main:
     i64.extend_i32_u
     i64.add
     local.get 0
-    local.get 5
+    local.get 3
     f64.ne
     i32.const 255
     i32.and
@@ -1813,7 +1689,7 @@ main:
     i64.mul
     i64.add
     local.get 0
-    local.get 6
+    local.get 4
     f64.lt
     i32.const 255
     i32.and
@@ -1822,37 +1698,37 @@ main:
     i64.mul
     i64.add
     local.get 0
-    local.get 8
+    local.get 5
     f64.le
     i32.const 255
     i32.and
     i64.extend_i32_u
-    local.get 2
+    i64.const 8
     i64.mul
     i64.add
     local.get 0
-    local.get 9
+    local.get 6
     f64.gt
     i32.const 255
     i32.and
     i64.extend_i32_u
-    local.get 3
+    i64.const 16
     i64.mul
     i64.add
     local.get 0
-    local.get 10
+    local.get 2
     f64.ge
     i32.const 255
     i32.and
     i64.extend_i32_u
-    local.get 4
+    i64.const 32
     i64.mul
     i64.add
     return
     end
   )
   (func $main (type 2) (result i64)
-    (local i64 i64 i64 i64 i64 i64 i64 i32 f64 f32)
+    (local i64 i64 i64 i64 i64 i64 i32 f64 f32)
     global.get 0
     i64.const 72
     i64.sub
@@ -1862,49 +1738,36 @@ main:
     i64.add
     local.tee 0
     i32.const 0
-    local.tee 7
+    local.tee 6
     i64.const 24
-    local.tee 1
     memory.fill
     local.get 0
     f32.const +2
-    local.tee 9
+    local.tee 8
     f32.store align=1
     local.get 0
-    i64.const 4
-    i64.add
-    local.get 9
-    f32.store align=1
+    local.get 8
+    f32.store offset=4 align=1
     local.get 0
-    i64.const 8
-    local.tee 2
-    i64.add
-    local.get 9
-    f32.store align=1
+    local.get 8
+    f32.store offset=8 align=1
     local.get 0
-    i64.const 12
-    i64.add
-    local.get 9
-    f32.store align=1
+    local.get 8
+    f32.store offset=12 align=1
     local.get 0
-    i64.const 16
-    local.tee 3
-    i64.add
-    local.get 9
-    f32.store align=1
+    local.get 8
+    f32.store offset=16 align=1
     local.get 0
-    i64.const 20
-    i64.add
-    local.get 9
-    f32.store align=1
+    local.get 8
+    f32.store offset=20 align=1
     f32.const +1
     local.get 0
     call $fsrc32
-    local.set 4
-    local.get 9
+    local.set 1
+    local.get 8
     local.get 0
     call $fsrc32
-    local.set 5
+    local.set 2
     f32.const +3
     local.get 0
     call $fsrc32
@@ -1912,60 +1775,50 @@ main:
     global.get 0
     i64.const 24
     i64.add
-    local.tee 6
-    local.get 7
+    local.tee 3
+    local.get 6
     i64.const 48
     memory.fill
-    local.get 6
-    f64.const +2
-    local.tee 8
-    f64.store align=1
-    local.get 6
-    local.get 2
-    i64.add
-    local.get 8
-    f64.store align=1
-    local.get 6
     local.get 3
-    i64.add
-    local.get 8
+    f64.const +2
+    local.tee 7
     f64.store align=1
-    local.get 6
-    local.get 1
-    i64.add
-    local.get 8
-    f64.store align=1
-    local.get 6
-    i64.const 32
-    i64.add
-    local.get 8
-    f64.store align=1
-    local.get 6
-    i64.const 40
-    i64.add
-    local.get 8
-    f64.store align=1
+    local.get 3
+    local.get 7
+    f64.store offset=8 align=1
+    local.get 3
+    local.get 7
+    f64.store offset=16 align=1
+    local.get 3
+    local.get 7
+    f64.store offset=24 align=1
+    local.get 3
+    local.get 7
+    f64.store offset=32 align=1
+    local.get 3
+    local.get 7
+    f64.store offset=40 align=1
     f64.const +1
-    local.get 6
+    local.get 3
     call $fsrc64
-    local.set 1
-    local.get 8
-    local.get 6
+    local.set 4
+    local.get 7
+    local.get 3
     call $fsrc64
-    local.set 2
+    local.set 5
     f64.const +3
-    local.get 6
+    local.get 3
     call $fsrc64
     local.set 3
     i64.const 0
-    local.get 4
-    local.get 5
+    local.get 1
+    local.get 2
     i64.add
     local.get 0
     i64.add
     i64.add
-    local.get 1
-    local.get 2
+    local.get 4
+    local.get 5
     i64.add
     local.get 3
     i64.add
@@ -1992,48 +1845,35 @@ main:
   (type (;1;) (func (param f64 i64) (result i64)))
   (type (;2;) (func (result i64)))
   (func $fsrc32 (type 0) (param f32 i64) (result i64)
-    (local i64 i64 f32 f32 f32 f32 f32 f32)
+    (local f32 f32 f32 f32 f32 f32)
     local.get 1
-    i64.const 20
-    i64.add
-    f32.load align=1
-    local.set 9
-    local.get 1
-    i64.const 4
-    local.tee 3
-    i64.add
-    f32.load align=1
-    local.set 8
-    local.get 1
-    f32.load align=1
+    f32.load offset=20 align=1
     local.set 7
     local.get 1
-    i64.const 8
-    local.tee 2
-    i64.add
-    f32.load align=1
+    f32.load offset=4 align=1
     local.set 6
     local.get 1
-    i64.const 12
-    i64.add
-    f32.load align=1
+    f32.load offset=8 align=1
     local.set 5
     local.get 1
-    i64.const 16
-    local.tee 1
-    i64.add
-    f32.load align=1
+    f32.load offset=12 align=1
     local.set 4
+    local.get 1
+    f32.load offset=16 align=1
+    local.set 3
+    local.get 1
+    f32.load align=1
+    local.set 2
     i64.const 0
     local.get 0
-    local.get 7
+    local.get 2
     f32.eq
     i32.const 255
     i32.and
     i64.extend_i32_u
     i64.add
     local.get 0
-    local.get 8
+    local.get 6
     f32.ne
     i32.const 255
     i32.and
@@ -2042,34 +1882,34 @@ main:
     i64.mul
     i64.add
     local.get 0
-    local.get 6
+    local.get 5
     f32.lt
     i32.const 255
     i32.and
     i64.extend_i32_u
-    local.get 3
-    i64.mul
-    i64.add
-    local.get 0
-    local.get 5
-    f32.le
-    i32.const 255
-    i32.and
-    i64.extend_i32_u
-    local.get 2
+    i64.const 4
     i64.mul
     i64.add
     local.get 0
     local.get 4
+    f32.le
+    i32.const 255
+    i32.and
+    i64.extend_i32_u
+    i64.const 8
+    i64.mul
+    i64.add
+    local.get 0
+    local.get 3
     f32.gt
     i32.const 255
     i32.and
     i64.extend_i32_u
-    local.get 1
+    i64.const 16
     i64.mul
     i64.add
     local.get 0
-    local.get 9
+    local.get 7
     f32.ge
     i32.const 255
     i32.and
@@ -2081,48 +1921,35 @@ main:
     end
   )
   (func $fsrc64 (type 1) (param f64 i64) (result i64)
-    (local i64 i64 i64 f64 f64 f64 f64 f64 f64)
+    (local f64 f64 f64 f64 f64 f64)
     local.get 1
-    i64.const 8
-    local.tee 4
-    i64.add
-    f64.load align=1
-    local.set 10
-    local.get 1
-    i64.const 16
-    local.tee 3
-    i64.add
-    f64.load align=1
-    local.set 9
-    local.get 1
-    f64.load align=1
-    local.set 8
-    local.get 1
-    i64.const 24
-    i64.add
-    f64.load align=1
+    f64.load offset=40 align=1
     local.set 7
     local.get 1
-    i64.const 32
-    local.tee 2
-    i64.add
-    f64.load align=1
+    f64.load offset=8 align=1
     local.set 6
     local.get 1
-    i64.const 40
-    i64.add
-    f64.load align=1
+    f64.load offset=16 align=1
     local.set 5
+    local.get 1
+    f64.load offset=24 align=1
+    local.set 4
+    local.get 1
+    f64.load offset=32 align=1
+    local.set 3
+    local.get 1
+    f64.load align=1
+    local.set 2
     i64.const 0
     local.get 0
-    local.get 8
+    local.get 2
     f64.eq
     i32.const 255
     i32.and
     i64.extend_i32_u
     i64.add
     local.get 0
-    local.get 10
+    local.get 6
     f64.ne
     i32.const 255
     i32.and
@@ -2131,7 +1958,7 @@ main:
     i64.mul
     i64.add
     local.get 0
-    local.get 9
+    local.get 5
     f64.lt
     i32.const 255
     i32.and
@@ -2140,37 +1967,37 @@ main:
     i64.mul
     i64.add
     local.get 0
-    local.get 7
+    local.get 4
     f64.le
     i32.const 255
     i32.and
     i64.extend_i32_u
-    local.get 4
+    i64.const 8
     i64.mul
     i64.add
     local.get 0
-    local.get 6
+    local.get 3
     f64.gt
     i32.const 255
     i32.and
     i64.extend_i32_u
-    local.get 3
+    i64.const 16
     i64.mul
     i64.add
     local.get 0
-    local.get 5
+    local.get 7
     f64.ge
     i32.const 255
     i32.and
     i64.extend_i32_u
-    local.get 2
+    i64.const 32
     i64.mul
     i64.add
     return
     end
   )
   (func $main (type 2) (result i64)
-    (local i64 i64 i64 i64 i64 i64 i64 i32 f64 f32)
+    (local i64 i64 i64 i64 i64 i64 i32 f64 f32)
     global.get 0
     i64.const 72
     i64.sub
@@ -2180,46 +2007,33 @@ main:
     i64.add
     local.tee 0
     i32.const 0
-    local.tee 7
-    i64.const 24
     local.tee 6
+    i64.const 24
     memory.fill
     local.get 0
     f32.const +2
-    local.tee 9
+    local.tee 8
     f32.store align=1
     local.get 0
-    i64.const 4
-    i64.add
-    local.get 9
-    f32.store align=1
+    local.get 8
+    f32.store offset=4 align=1
     local.get 0
-    i64.const 8
-    local.tee 2
-    i64.add
-    local.get 9
-    f32.store align=1
+    local.get 8
+    f32.store offset=8 align=1
     local.get 0
-    i64.const 12
-    i64.add
-    local.get 9
-    f32.store align=1
+    local.get 8
+    f32.store offset=12 align=1
     local.get 0
-    i64.const 16
-    local.tee 1
-    i64.add
-    local.get 9
-    f32.store align=1
+    local.get 8
+    f32.store offset=16 align=1
     local.get 0
-    i64.const 20
-    i64.add
-    local.get 9
-    f32.store align=1
+    local.get 8
+    f32.store offset=20 align=1
     f32.const +1
     local.get 0
     call $fsrc32
     local.set 5
-    local.get 9
+    local.get 8
     local.get 0
     call $fsrc32
     local.set 4
@@ -2231,43 +2045,33 @@ main:
     i64.const 24
     i64.add
     local.tee 0
-    local.get 7
+    local.get 6
     i64.const 48
     memory.fill
     local.get 0
     f64.const +2
-    local.tee 8
+    local.tee 7
     f64.store align=1
     local.get 0
-    local.get 2
-    i64.add
-    local.get 8
-    f64.store align=1
+    local.get 7
+    f64.store offset=8 align=1
     local.get 0
-    local.get 1
-    i64.add
-    local.get 8
-    f64.store align=1
+    local.get 7
+    f64.store offset=16 align=1
     local.get 0
-    local.get 6
-    i64.add
-    local.get 8
-    f64.store align=1
+    local.get 7
+    f64.store offset=24 align=1
     local.get 0
-    i64.const 32
-    i64.add
-    local.get 8
-    f64.store align=1
+    local.get 7
+    f64.store offset=32 align=1
     local.get 0
-    i64.const 40
-    i64.add
-    local.get 8
-    f64.store align=1
+    local.get 7
+    f64.store offset=40 align=1
     f64.const +1
     local.get 0
     call $fsrc64
     local.set 2
-    local.get 8
+    local.get 7
     local.get 0
     call $fsrc64
     local.set 1
@@ -2310,46 +2114,33 @@ main:
   (type (;1;) (func (param f64 i64) (result i64)))
   (type (;2;) (func (result i64)))
   (func $fsrc32 (type 0) (param f32 i64) (result i64)
-    (local i64 i64 f32 f32 f32 f32 f32 f32)
+    (local f32 f32 f32 f32 f32 f32)
     local.get 1
     f32.load align=1
+    local.set 2
+    local.get 1
+    f32.load offset=20 align=1
+    local.set 3
+    local.get 1
+    f32.load offset=4 align=1
     local.set 4
     local.get 1
-    i64.const 4
-    local.tee 2
-    i64.add
-    f32.load align=1
+    f32.load offset=8 align=1
     local.set 5
     local.get 1
-    i64.const 20
-    i64.add
-    f32.load align=1
+    f32.load offset=12 align=1
     local.set 6
     local.get 1
-    i64.const 8
-    local.tee 3
-    i64.add
-    f32.load align=1
+    f32.load offset=16 align=1
     local.set 7
-    local.get 1
-    i64.const 12
-    i64.add
-    f32.load align=1
-    local.set 8
-    local.get 1
-    i64.const 16
-    local.tee 1
-    i64.add
-    f32.load align=1
-    local.set 9
     local.get 0
-    local.get 4
+    local.get 2
     f32.eq
     i32.const 255
     i32.and
     i64.extend_i32_u
     local.get 0
-    local.get 5
+    local.get 4
     f32.ne
     i32.const 255
     i32.and
@@ -2358,34 +2149,34 @@ main:
     i64.mul
     i64.add
     local.get 0
-    local.get 7
+    local.get 5
     f32.lt
     i32.const 255
     i32.and
     i64.extend_i32_u
-    local.get 2
-    i64.mul
-    i64.add
-    local.get 0
-    local.get 8
-    f32.le
-    i32.const 255
-    i32.and
-    i64.extend_i32_u
-    local.get 3
-    i64.mul
-    i64.add
-    local.get 0
-    local.get 9
-    f32.gt
-    i32.const 255
-    i32.and
-    i64.extend_i32_u
-    local.get 1
+    i64.const 4
     i64.mul
     i64.add
     local.get 0
     local.get 6
+    f32.le
+    i32.const 255
+    i32.and
+    i64.extend_i32_u
+    i64.const 8
+    i64.mul
+    i64.add
+    local.get 0
+    local.get 7
+    f32.gt
+    i32.const 255
+    i32.and
+    i64.extend_i32_u
+    i64.const 16
+    i64.mul
+    i64.add
+    local.get 0
+    local.get 3
     f32.ge
     i32.const 255
     i32.and
@@ -2397,46 +2188,33 @@ main:
     end
   )
   (func $fsrc64 (type 1) (param f64 i64) (result i64)
-    (local i64 i64 i64 f64 f64 f64 f64 f64 f64)
+    (local f64 f64 f64 f64 f64 f64)
     local.get 1
     f64.load align=1
+    local.set 2
+    local.get 1
+    f64.load offset=40 align=1
+    local.set 3
+    local.get 1
+    f64.load offset=8 align=1
+    local.set 4
+    local.get 1
+    f64.load offset=16 align=1
     local.set 5
     local.get 1
-    i64.const 8
-    local.tee 2
-    i64.add
-    f64.load align=1
+    f64.load offset=24 align=1
     local.set 6
     local.get 1
-    i64.const 16
-    local.tee 3
-    i64.add
-    f64.load align=1
+    f64.load offset=32 align=1
     local.set 7
-    local.get 1
-    i64.const 24
-    i64.add
-    f64.load align=1
-    local.set 8
-    local.get 1
-    i64.const 32
-    local.tee 4
-    i64.add
-    f64.load align=1
-    local.set 9
-    local.get 1
-    i64.const 40
-    i64.add
-    f64.load align=1
-    local.set 10
     local.get 0
-    local.get 5
+    local.get 2
     f64.eq
     i32.const 255
     i32.and
     i64.extend_i32_u
     local.get 0
-    local.get 6
+    local.get 4
     f64.ne
     i32.const 255
     i32.and
@@ -2445,7 +2223,7 @@ main:
     i64.mul
     i64.add
     local.get 0
-    local.get 7
+    local.get 5
     f64.lt
     i32.const 255
     i32.and
@@ -2454,30 +2232,30 @@ main:
     i64.mul
     i64.add
     local.get 0
-    local.get 8
+    local.get 6
     f64.le
     i32.const 255
     i32.and
     i64.extend_i32_u
-    local.get 2
+    i64.const 8
     i64.mul
     i64.add
     local.get 0
-    local.get 9
+    local.get 7
     f64.gt
     i32.const 255
     i32.and
     i64.extend_i32_u
-    local.get 3
+    i64.const 16
     i64.mul
     i64.add
     local.get 0
-    local.get 10
+    local.get 3
     f64.ge
     i32.const 255
     i32.and
     i64.extend_i32_u
-    local.get 4
+    i64.const 32
     i64.mul
     i64.add
     return
@@ -2497,40 +2275,28 @@ main:
     local.tee 7
     f32.store align=1
     local.get 0
-    i64.const 4
-    i64.add
     local.get 7
-    f32.store align=1
+    f32.store offset=4 align=1
     local.get 0
-    i64.const 8
-    local.tee 1
-    i64.add
     local.get 7
-    f32.store align=1
+    f32.store offset=8 align=1
     local.get 0
-    i64.const 12
-    i64.add
     local.get 7
-    f32.store align=1
+    f32.store offset=12 align=1
     local.get 0
-    i64.const 16
-    local.tee 2
-    i64.add
     local.get 7
-    f32.store align=1
+    f32.store offset=16 align=1
     local.get 0
-    i64.const 20
-    i64.add
     local.get 7
-    f32.store align=1
+    f32.store offset=20 align=1
     f32.const +1
     local.get 0
     call $fsrc32
-    local.set 3
+    local.set 1
     local.get 7
     local.get 0
     call $fsrc32
-    local.set 4
+    local.set 2
     f32.const +3
     local.get 0
     call $fsrc32
@@ -2538,56 +2304,46 @@ main:
     global.get 0
     i64.const 24
     i64.add
-    local.tee 5
+    local.tee 3
     f64.const +2
     local.tee 6
     f64.store align=1
-    local.get 5
-    local.get 1
-    i64.add
+    local.get 3
     local.get 6
-    f64.store align=1
-    local.get 5
-    local.get 2
-    i64.add
+    f64.store offset=8 align=1
+    local.get 3
     local.get 6
-    f64.store align=1
-    local.get 5
-    i64.const 24
-    i64.add
+    f64.store offset=16 align=1
+    local.get 3
     local.get 6
-    f64.store align=1
-    local.get 5
-    i64.const 32
-    i64.add
+    f64.store offset=24 align=1
+    local.get 3
     local.get 6
-    f64.store align=1
-    local.get 5
-    i64.const 40
-    i64.add
+    f64.store offset=32 align=1
+    local.get 3
     local.get 6
-    f64.store align=1
+    f64.store offset=40 align=1
     f64.const +1
-    local.get 5
+    local.get 3
     call $fsrc64
-    local.set 1
+    local.set 4
     local.get 6
-    local.get 5
-    call $fsrc64
-    local.set 2
-    f64.const +3
-    local.get 5
+    local.get 3
     call $fsrc64
     local.set 5
+    f64.const +3
     local.get 3
-    local.get 4
+    call $fsrc64
+    local.set 3
+    local.get 1
+    local.get 2
     i64.add
     local.get 0
     i64.add
-    local.get 1
-    local.get 2
-    i64.add
+    local.get 4
     local.get 5
+    i64.add
+    local.get 3
     i64.add
     i64.add
     global.get 0
@@ -2612,46 +2368,33 @@ main:
   (type (;1;) (func (param f64 i64) (result i64)))
   (type (;2;) (func (result i64)))
   (func $fsrc32 (type 0) (param f32 i64) (result i64)
-    (local i64 i64 f32 f32 f32 f32 f32 f32)
+    (local f32 f32 f32 f32 f32 f32)
     local.get 1
-    f32.load align=1
-    local.set 9
-    local.get 1
-    i64.const 4
-    local.tee 3
-    i64.add
-    f32.load align=1
-    local.set 8
-    local.get 1
-    i64.const 20
-    i64.add
     f32.load align=1
     local.set 7
     local.get 1
-    i64.const 8
-    local.tee 2
-    i64.add
-    f32.load align=1
+    f32.load offset=20 align=1
     local.set 6
     local.get 1
-    i64.const 12
-    i64.add
-    f32.load align=1
+    f32.load offset=4 align=1
     local.set 5
     local.get 1
-    i64.const 16
-    local.tee 1
-    i64.add
-    f32.load align=1
+    f32.load offset=8 align=1
     local.set 4
+    local.get 1
+    f32.load offset=12 align=1
+    local.set 3
+    local.get 1
+    f32.load offset=16 align=1
+    local.set 2
     local.get 0
-    local.get 9
+    local.get 7
     f32.eq
     i32.const 255
     i32.and
     i64.extend_i32_u
     local.get 0
-    local.get 8
+    local.get 5
     f32.ne
     i32.const 255
     i32.and
@@ -2660,34 +2403,34 @@ main:
     i64.mul
     i64.add
     local.get 0
-    local.get 6
+    local.get 4
     f32.lt
     i32.const 255
     i32.and
     i64.extend_i32_u
-    local.get 3
+    i64.const 4
     i64.mul
     i64.add
     local.get 0
-    local.get 5
+    local.get 3
     f32.le
     i32.const 255
     i32.and
     i64.extend_i32_u
-    local.get 2
+    i64.const 8
     i64.mul
     i64.add
     local.get 0
-    local.get 4
+    local.get 2
     f32.gt
     i32.const 255
     i32.and
     i64.extend_i32_u
-    local.get 1
+    i64.const 16
     i64.mul
     i64.add
     local.get 0
-    local.get 7
+    local.get 6
     f32.ge
     i32.const 255
     i32.and
@@ -2699,46 +2442,33 @@ main:
     end
   )
   (func $fsrc64 (type 1) (param f64 i64) (result i64)
-    (local i64 i64 i64 f64 f64 f64 f64 f64 f64)
+    (local f64 f64 f64 f64 f64 f64)
     local.get 1
-    f64.load align=1
-    local.set 10
-    local.get 1
-    i64.const 8
-    local.tee 4
-    i64.add
-    f64.load align=1
-    local.set 9
-    local.get 1
-    i64.const 16
-    local.tee 3
-    i64.add
-    f64.load align=1
-    local.set 8
-    local.get 1
-    i64.const 24
-    i64.add
     f64.load align=1
     local.set 7
     local.get 1
-    i64.const 32
-    local.tee 2
-    i64.add
-    f64.load align=1
+    f64.load offset=40 align=1
     local.set 6
     local.get 1
-    i64.const 40
-    i64.add
-    f64.load align=1
+    f64.load offset=8 align=1
     local.set 5
+    local.get 1
+    f64.load offset=16 align=1
+    local.set 4
+    local.get 1
+    f64.load offset=24 align=1
+    local.set 3
+    local.get 1
+    f64.load offset=32 align=1
+    local.set 2
     local.get 0
-    local.get 10
+    local.get 7
     f64.eq
     i32.const 255
     i32.and
     i64.extend_i32_u
     local.get 0
-    local.get 9
+    local.get 5
     f64.ne
     i32.const 255
     i32.and
@@ -2747,7 +2477,7 @@ main:
     i64.mul
     i64.add
     local.get 0
-    local.get 8
+    local.get 4
     f64.lt
     i32.const 255
     i32.and
@@ -2756,30 +2486,30 @@ main:
     i64.mul
     i64.add
     local.get 0
-    local.get 7
+    local.get 3
     f64.le
     i32.const 255
     i32.and
     i64.extend_i32_u
-    local.get 4
+    i64.const 8
     i64.mul
     i64.add
     local.get 0
-    local.get 6
+    local.get 2
     f64.gt
     i32.const 255
     i32.and
     i64.extend_i32_u
-    local.get 3
+    i64.const 16
     i64.mul
     i64.add
     local.get 0
-    local.get 5
+    local.get 6
     f64.ge
     i32.const 255
     i32.and
     i64.extend_i32_u
-    local.get 2
+    i64.const 32
     i64.mul
     i64.add
     return
@@ -2799,32 +2529,20 @@ main:
     local.tee 7
     f32.store align=1
     local.get 0
-    i64.const 4
-    i64.add
     local.get 7
-    f32.store align=1
+    f32.store offset=4 align=1
     local.get 0
-    i64.const 8
-    local.tee 2
-    i64.add
     local.get 7
-    f32.store align=1
+    f32.store offset=8 align=1
     local.get 0
-    i64.const 12
-    i64.add
     local.get 7
-    f32.store align=1
+    f32.store offset=12 align=1
     local.get 0
-    i64.const 16
-    local.tee 1
-    i64.add
     local.get 7
-    f32.store align=1
+    f32.store offset=16 align=1
     local.get 0
-    i64.const 20
-    i64.add
     local.get 7
-    f32.store align=1
+    f32.store offset=20 align=1
     f32.const +1
     local.get 0
     call $fsrc32
@@ -2845,30 +2563,20 @@ main:
     local.tee 6
     f64.store align=1
     local.get 0
-    local.get 2
-    i64.add
     local.get 6
-    f64.store align=1
+    f64.store offset=8 align=1
     local.get 0
-    local.get 1
-    i64.add
     local.get 6
-    f64.store align=1
+    f64.store offset=16 align=1
     local.get 0
-    i64.const 24
-    i64.add
     local.get 6
-    f64.store align=1
+    f64.store offset=24 align=1
     local.get 0
-    i64.const 32
-    i64.add
     local.get 6
-    f64.store align=1
+    f64.store offset=32 align=1
     local.get 0
-    i64.const 40
-    i64.add
     local.get 6
-    f64.store align=1
+    f64.store offset=40 align=1
     f64.const +1
     local.get 0
     call $fsrc64
@@ -2914,46 +2622,33 @@ main:
   (type (;1;) (func (param f64 i64) (result i64)))
   (type (;2;) (func (result i64)))
   (func $fsrc32 (type 0) (param f32 i64) (result i64)
-    (local i64 i64 f32 f32 f32 f32 f32 f32)
+    (local f32 f32 f32 f32 f32 f32)
     local.get 1
-    f32.load align=1
-    local.set 9
-    local.get 1
-    i64.const 4
-    local.tee 3
-    i64.add
-    f32.load align=1
-    local.set 8
-    local.get 1
-    i64.const 20
-    i64.add
     f32.load align=1
     local.set 7
     local.get 1
-    i64.const 8
-    local.tee 2
-    i64.add
-    f32.load align=1
+    f32.load offset=20 align=1
     local.set 6
     local.get 1
-    i64.const 12
-    i64.add
-    f32.load align=1
+    f32.load offset=4 align=1
     local.set 5
     local.get 1
-    i64.const 16
-    local.tee 1
-    i64.add
-    f32.load align=1
+    f32.load offset=8 align=1
     local.set 4
+    local.get 1
+    f32.load offset=12 align=1
+    local.set 3
+    local.get 1
+    f32.load offset=16 align=1
+    local.set 2
     local.get 0
-    local.get 9
+    local.get 7
     f32.eq
     i32.const 255
     i32.and
     i64.extend_i32_u
     local.get 0
-    local.get 8
+    local.get 5
     f32.ne
     i32.const 255
     i32.and
@@ -2962,34 +2657,34 @@ main:
     i64.mul
     i64.add
     local.get 0
-    local.get 6
+    local.get 4
     f32.lt
     i32.const 255
     i32.and
     i64.extend_i32_u
-    local.get 3
+    i64.const 4
     i64.mul
     i64.add
     local.get 0
-    local.get 5
+    local.get 3
     f32.le
     i32.const 255
     i32.and
     i64.extend_i32_u
-    local.get 2
+    i64.const 8
     i64.mul
     i64.add
     local.get 0
-    local.get 4
+    local.get 2
     f32.gt
     i32.const 255
     i32.and
     i64.extend_i32_u
-    local.get 1
+    i64.const 16
     i64.mul
     i64.add
     local.get 0
-    local.get 7
+    local.get 6
     f32.ge
     i32.const 255
     i32.and
@@ -3001,46 +2696,33 @@ main:
     end
   )
   (func $fsrc64 (type 1) (param f64 i64) (result i64)
-    (local i64 i64 i64 f64 f64 f64 f64 f64 f64)
+    (local f64 f64 f64 f64 f64 f64)
     local.get 1
-    f64.load align=1
-    local.set 10
-    local.get 1
-    i64.const 8
-    local.tee 4
-    i64.add
-    f64.load align=1
-    local.set 9
-    local.get 1
-    i64.const 16
-    local.tee 3
-    i64.add
-    f64.load align=1
-    local.set 8
-    local.get 1
-    i64.const 24
-    i64.add
     f64.load align=1
     local.set 7
     local.get 1
-    i64.const 32
-    local.tee 2
-    i64.add
-    f64.load align=1
+    f64.load offset=40 align=1
     local.set 6
     local.get 1
-    i64.const 40
-    i64.add
-    f64.load align=1
+    f64.load offset=8 align=1
     local.set 5
+    local.get 1
+    f64.load offset=16 align=1
+    local.set 4
+    local.get 1
+    f64.load offset=24 align=1
+    local.set 3
+    local.get 1
+    f64.load offset=32 align=1
+    local.set 2
     local.get 0
-    local.get 10
+    local.get 7
     f64.eq
     i32.const 255
     i32.and
     i64.extend_i32_u
     local.get 0
-    local.get 9
+    local.get 5
     f64.ne
     i32.const 255
     i32.and
@@ -3049,7 +2731,7 @@ main:
     i64.mul
     i64.add
     local.get 0
-    local.get 8
+    local.get 4
     f64.lt
     i32.const 255
     i32.and
@@ -3058,30 +2740,30 @@ main:
     i64.mul
     i64.add
     local.get 0
-    local.get 7
+    local.get 3
     f64.le
     i32.const 255
     i32.and
     i64.extend_i32_u
-    local.get 4
+    i64.const 8
     i64.mul
     i64.add
     local.get 0
-    local.get 6
+    local.get 2
     f64.gt
     i32.const 255
     i32.and
     i64.extend_i32_u
-    local.get 3
+    i64.const 16
     i64.mul
     i64.add
     local.get 0
-    local.get 5
+    local.get 6
     f64.ge
     i32.const 255
     i32.and
     i64.extend_i32_u
-    local.get 2
+    i64.const 32
     i64.mul
     i64.add
     return
@@ -3101,32 +2783,20 @@ main:
     local.tee 7
     f32.store align=1
     local.get 0
-    i64.const 4
-    i64.add
     local.get 7
-    f32.store align=1
+    f32.store offset=4 align=1
     local.get 0
-    i64.const 8
-    local.tee 2
-    i64.add
     local.get 7
-    f32.store align=1
+    f32.store offset=8 align=1
     local.get 0
-    i64.const 12
-    i64.add
     local.get 7
-    f32.store align=1
+    f32.store offset=12 align=1
     local.get 0
-    i64.const 16
-    local.tee 1
-    i64.add
     local.get 7
-    f32.store align=1
+    f32.store offset=16 align=1
     local.get 0
-    i64.const 20
-    i64.add
     local.get 7
-    f32.store align=1
+    f32.store offset=20 align=1
     f32.const +1
     local.get 0
     call $fsrc32
@@ -3147,30 +2817,20 @@ main:
     local.tee 6
     f64.store align=1
     local.get 0
-    local.get 2
-    i64.add
     local.get 6
-    f64.store align=1
+    f64.store offset=8 align=1
     local.get 0
-    local.get 1
-    i64.add
     local.get 6
-    f64.store align=1
+    f64.store offset=16 align=1
     local.get 0
-    i64.const 24
-    i64.add
     local.get 6
-    f64.store align=1
+    f64.store offset=24 align=1
     local.get 0
-    i64.const 32
-    i64.add
     local.get 6
-    f64.store align=1
+    f64.store offset=32 align=1
     local.get 0
-    i64.const 40
-    i64.add
     local.get 6
-    f64.store align=1
+    f64.store offset=40 align=1
     f64.const +1
     local.get 0
     call $fsrc64

@@ -579,7 +579,7 @@ current frame and the previous frame, but after that the stacttrace gets
 corrupted.
 
 Could you please fix this? The way to test this is be running this command
-`odin build . -debug && ./jit test-programs/boids/ -debug -O:none && zig cc\
+`odin build . -debug && ./jit test-programs/boids/ -debug -o:none && zig cc\
 a.o && gdb -batch -ex run -ex bt -ex quit ./a.out`.
 
 First you should check how we emmit elf in `./elf.odin`, we emit dwarf there.

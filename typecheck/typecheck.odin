@@ -45,6 +45,7 @@ Target :: struct {
 	name: string,
 	cc:   ^Call_Conv,
 	spec: ^backend.Node_Spec,
+	emit: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8,
 }
 
 Gen_Ctx :: struct {

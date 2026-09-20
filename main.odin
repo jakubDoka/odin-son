@@ -2,7 +2,6 @@
 package main
 
 import "backend"
-import "backend/x64"
 import "core:fmt"
 import "core:log"
 import "core:os"
@@ -28,6 +27,7 @@ main :: proc() {
 
 	levels := OPT_LEVELS
 	level := levels[len(levels) - 1]
+	target := TARGETS[0]
 	show_timings := false
 	show_stats := false
 	check := false
@@ -55,8 +55,27 @@ main :: proc() {
 			check = true
 		case arg == "-debug" || arg == "-g":
 			debug = true
-		case strings.has_prefix(arg, "-O:"):
-			name := arg[len("-O:"):]
+		case strings.has_prefix(arg, "-target:"):
+			name := arg[len("-target:"):]
+			found := false
+			for tar in TARGETS {
+				if tar.name == name {
+					target = tar
+					found = true
+					break
+				}
+			}
+			if !found {
+				fmt.eprintfln("unknown target: %v", name)
+				fmt.eprint("available targets:")
+				for tar in TARGETS {
+					fmt.eprintf(" %v", tar.name)
+				}
+				fmt.eprintln()
+				os.exit(1)
+			}
+		case strings.has_prefix(arg, "-o:"):
+			name := arg[len("-o:"):]
 			found := false
 			for lvl in levels {
 				if lvl.name == name {
@@ -128,8 +147,7 @@ main :: proc() {
 	ctx: Gen_Ctx
 	ctx.types = &types
 	ctx.global = &global_ctx
-	ctx.target.cc = &x64.X64_SYSTEMV_CC
-	ctx.target.spec = &x64.SPEC
+	ctx.target = target
 	ctx.check = check
 	ctx.graph.has_dbg = debug
 	ctx.ralloc_mode = level.ralloc_mode
@@ -177,7 +195,7 @@ main :: proc() {
 				}
 			}
 		} else {
-			elf := emit_elf(&ctx)
+			elf := target.emit(&ctx)
 
 			if werr := os.write_entire_file(output, elf); werr != nil {
 				fmt.eprintfln("failed to write %v: %v", output, werr)

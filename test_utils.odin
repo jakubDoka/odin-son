@@ -2,6 +2,7 @@
 package main
 
 import "backend"
+import "backend/arm"
 import "backend/wasm"
 import "backend/x64"
 import "base:intrinsics"
@@ -147,6 +148,7 @@ run_test :: proc(
 
 	Test_Vm :: enum {
 		Native,
+		Arm,
 		Wasm,
 		Check,
 	}
@@ -166,6 +168,9 @@ run_test :: proc(
 	}
 	for level in levels {
 		append(&confs, Test_Conf{level = level, vm = .Wasm})
+	}
+	for level in levels {
+		//append(&confs, Test_Conf{level = level, vm = .Arm})
 	}
 
 	if ctx.error_cnt > 0 do clear(&confs)
@@ -376,6 +381,15 @@ run_test :: proc(
 					log.error(level)
 					testing.expect_value(t, int(vl), exit_code)
 				}
+			}
+		case .Arm:
+			ctx.target.cc = &arm.ARM_SYSTEMV_CC
+			ctx.target.spec = &arm.SPEC
+
+			emit_ctx := backend.Codegen_Emit_Ctx{}
+
+			for &prc, i in ctx.procs {
+				emit_proc(&ctx, i, level, &emit_ctx)
 			}
 		case .Check:
 			for prc in ctx.procs {

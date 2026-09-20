@@ -1,24 +1,22 @@
-package wasm
+package arm
 import backend ".."
 Reg_Kind :: backend.Reg_Kind
 Class_Flag :: backend.Class_Flag
-// NOTE: this file is generated: odin run backend/wasm -define:WASM_GEN_SPEC=true
+// NOTE: this file is generated: odin run backend/arm -define:ARM_GEN_SPEC=true
 
 when !GEN_SPEC {
 SPEC := backend.Node_Spec{
 	cc_table = {
-		WASM_SYSTEMV_CC,
+		ARM_SYSTEMV_CC,
 	},
 	call_clobbers = {
-		{},
+		{524287, 4294902015},
 	},
-	datatype_to_reg_kind = {.Void = 0, .I8 = 1, .I16 = 1, .I32 = 1, .I64 = 0, .F32 = 3, .F64 = 2, .V128 = 4, .V256 = 0, .V512 = 0},
-	spill_boundary = {64, 64, 64, 64, 64, 64},
-	collect_meta = wasm_collect_meta,
-	pre_regalloc_hook = wasm_pre_regalloc_hook,
-	emit_function = wasm_emit_function,
-	peep = wasm_peep_inst,
-	post_schedule_peep = wasm_post_schedule_peep_inst,
+	datatype_to_reg_kind = {.Void = 0, .I8 = 0, .I16 = 0, .I32 = 0, .I64 = 0, .F32 = 0, .F64 = 0, .V128 = 0, .V256 = 0, .V512 = 0},
+	spill_boundary = {32, 32},
+	emit_function = arm_emit_function,
+	peep = arm_peep_inst,
+	post_schedule_peep = arm_post_schedule_peep_inst,
 	intern = false,
 	inheritance_table = {
 		0b1, // Start
@@ -102,14 +100,6 @@ SPEC := backend.Node_Spec{
 		0b10, // Simd_Extract_Lsbs
 		0b10, // Simd_Reduce_Add_Bisect
 		0b1000000, // CV128
-		0b10000000, // WASM_Store
-		0b10000000, // WASM_Load
-		0b10, // Get_Local
-		0b10, // Set_Local
-		0b10, // Tee_Local
-		0b10, // Drop
-		0b10, // Stub
-		0b100000000, // Extract_Lane_U
 	},
 	node_extra_sizes = {
 		1, // Start -> Cfg
@@ -193,14 +183,6 @@ SPEC := backend.Node_Spec{
 		0, // Simd_Extract_Lsbs -> No_Extra
 		0, // Simd_Reduce_Add_Bisect -> No_Extra
 		4, // CV128 -> CV128
-		2, // WASM_Store -> Mem_Op
-		2, // WASM_Load -> Mem_Op
-		0, // Get_Local -> No_Extra
-		0, // Set_Local -> No_Extra
-		0, // Tee_Local -> No_Extra
-		0, // Drop -> No_Extra
-		0, // Stub -> No_Extra
-		1, // Extract_Lane_U -> Lane_Op
 	},
 	node_flags = {
 		{}, // Start
@@ -284,14 +266,6 @@ SPEC := backend.Node_Spec{
 		{Class_Flag.Interned}, // Simd_Extract_Lsbs
 		{Class_Flag.Interned}, // Simd_Reduce_Add_Bisect
 		{Class_Flag.Interned, Class_Flag.Clonable}, // CV128
-		{Class_Flag.Store}, // WASM_Store
-		{Class_Flag.Load}, // WASM_Load
-		{}, // Get_Local
-		{}, // Set_Local
-		{}, // Tee_Local
-		{}, // Drop
-		{}, // Stub
-		{}, // Extract_Lane_U
 	},
 	node_extra_types = {
 		backend.Cfg,
@@ -375,14 +349,6 @@ SPEC := backend.Node_Spec{
 		backend.No_Extra,
 		backend.No_Extra,
 		backend.CV128,
-		Mem_Op,
-		Mem_Op,
-		backend.No_Extra,
-		backend.No_Extra,
-		backend.No_Extra,
-		backend.No_Extra,
-		backend.No_Extra,
-		Lane_Op,
 	},
 	node_kind_name = {
 		`Start`,
@@ -466,18 +432,10 @@ SPEC := backend.Node_Spec{
 		`Simd_Extract_Lsbs`,
 		`Simd_Reduce_Add_Bisect`,
 		`CV128`,
-		`WASM_Store`,
-		`WASM_Load`,
-		`Get_Local`,
-		`Set_Local`,
-		`Tee_Local`,
-		`Drop`,
-		`Stub`,
-		`Extract_Lane_U`,
 	},
 }
 
-WASM_Node_Type :: enum u16 {
+ARM_Node_Type :: enum u16 {
 	Start,
 	Entry,
 	Poison,
@@ -559,33 +517,14 @@ WASM_Node_Type :: enum u16 {
 	Simd_Extract_Lsbs,
 	Simd_Reduce_Add_Bisect,
 	CV128,
-	WASM_Store,
-	WASM_Load,
-	Get_Local,
-	Set_Local,
-	Tee_Local,
-	Drop,
-	Stub,
-	Extract_Lane_U,
 }
 
-wasm_peep_inst :: proc(ctx: backend.Peep_Ctx, node: backend.Expanded_Node) -> backend.Node_ID {
-	return wasm_peep(ctx, node, struct{}{})
+arm_peep_inst :: proc(ctx: backend.Peep_Ctx, node: backend.Expanded_Node) -> backend.Node_ID {
+	return arm_peep(ctx, node, struct{}{})
 }
-wasm_post_schedule_peep_inst :: proc(
+arm_post_schedule_peep_inst :: proc(
 	ctx: backend.PS_Peep_Ctx, node: backend.Expanded_Node) -> backend.Node_ID {
-	return wasm_post_schedule_peep(ctx, node, struct{}{})
-}
-
-
-wasm_collect_meta :: proc(ctx: ^backend.Graph,
-	ra: ^backend.Regalloc, sched: ^backend.Graph_Schedule) -> ([]backend.Regalloc_Node_Meta, int) {
-
-	meta_of :: proc(ctx: ^backend.Graph, ra: ^backend.Regalloc,
-		node: backend.Expanded_Node) -> backend.Regalloc_Node_Meta {
-		return wasm_meta_of(ctx, ra, node, struct{}{})
-	}
-	return backend.regalloc_collect_meta(ctx, ra, sched, meta_of)
+	return arm_post_schedule_peep(ctx, node, struct{}{})
 }
 
 #assert(size_of(backend.Cfg) % backend.PRECISION == 0)
@@ -669,32 +608,16 @@ wasm_collect_meta :: proc(ctx: ^backend.Graph,
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(backend.CV128) % backend.PRECISION == 0)
-#assert(size_of(Mem_Op) % backend.PRECISION == 0)
-#assert(size_of(Mem_Op) % backend.PRECISION == 0)
-#assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
-#assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
-#assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
-#assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
-#assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
-#assert(size_of(Lane_Op) % backend.PRECISION == 0)
-graph_add_extract_lane_u :: #force_inline proc(graph: ^backend.Graph, name: string, dt: backend.Node_Datatype, vec: backend.Node_ID, laneidx: u32, lane: backend.Lane_Type = {}) -> (_id: backend.Node_ID) {
-	(^Lane_Op)(backend.graph_get_next_extra_slot(graph, u16(WASM_Node_Type.Extract_Lane_U)))^ = {
-		laneidx = laneidx,
-	}
-	return backend.graph_add_raw(graph, name, u16(WASM_Node_Type.Extract_Lane_U), dt, {vec}, lane = lane)
-}
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	when false {}
 	else when T == backend.No_Extra {return 1}
 	else when T == backend.CInt {return 3}
 	else when T == backend.Call {return 5}
-	else when T == Mem_Op {return 7}
 	else when T == backend.Tup {return 2}
 	else when T == backend.CV128 {return 6}
 	else when T == backend.Cfg {return 0}
 	else when T == backend.Local {return 4}
-	else when T == Lane_Op {return 8}
 	else {#panic(`the passed type is not subclass of anything`)}
 }
 }

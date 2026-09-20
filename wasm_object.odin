@@ -89,9 +89,9 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 	) {
 		putb(buf, ty)
 		putb(buf, mutability)
-		putb(buf, wasm.Wasm_Opcode.I64_Const)
+		putb(buf, wasm.Opcode.I64_Const)
 		sleb(buf, offset)
-		putb(buf, wasm.Wasm_Opcode.End)
+		putb(buf, wasm.Opcode.End)
 	}
 
 	stack_pointer: {
@@ -134,9 +134,9 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 	static_init: {
 		putb(&sections[.data], u8(0))
 
-		putb(&sections[.data], wasm.Wasm_Opcode.I64_Const)
+		putb(&sections[.data], wasm.Opcode.I64_Const)
 		sleb(&sections[.data], i64(init_mem_start))
-		putb(&sections[.data], wasm.Wasm_Opcode.End)
+		putb(&sections[.data], wasm.Opcode.End)
 
 		uleb(&sections[.data], u64(mem_init_size - init_mem_start))
 		for global, i in ctx.globals {
@@ -215,7 +215,7 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 
 			for reloc in prc.out.relocs {
 				id: u64
-				opcode := wasm.Wasm_Opcode(prc.out.code[reloc.offset - 1])
+				opcode := wasm.Opcode(prc.out.code[reloc.offset - 1])
 				#partial switch opcode {
 				case .I64_Const:
 					// TODO: dedup
@@ -266,9 +266,9 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 	init_dyn_call_table: {
 		putb(&sections[.element], u8(0))
 
-		putb(&sections[.element], wasm.Wasm_Opcode.I32_Const)
+		putb(&sections[.element], wasm.Opcode.I32_Const)
 		sleb(&sections[.element], 0)
-		putb(&sections[.element], wasm.Wasm_Opcode.End)
+		putb(&sections[.element], wasm.Opcode.End)
 
 		uleb(&sections[.element], u64(len(indirect_ids)))
 		for id in indirect_ids {

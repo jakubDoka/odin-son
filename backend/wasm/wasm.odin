@@ -50,11 +50,11 @@ WASM_SYSTEMV_CC := backend.Call_Conv {
 	args = {0 ..= RK_COUNT = transmute([]Reg)runtime.Raw_Slice{len = 64}},
 }
 
-WASM_Lane_Op :: struct {
+Lane_Op :: struct {
 	laneidx: u32,
 }
 
-WASM_Mem_Op :: struct #align (4) {
+Mem_Op :: struct #align (4) {
 	using meta: bit_field u64 {
 		offset: i64                   | 59,
 		source: backend.Node_Datatype | 4,
@@ -101,15 +101,15 @@ when SPEC_NOT_PRESENT {
 
 	@(rodata)
 	WASM_CLASSES := [WASM_Node_Type]backend.Class_Spec {
-		.WASM_Store = {id = WASM_Mem_Op, no_ctor = true, flags = {.Store}},
-		.WASM_Load = {id = WASM_Mem_Op, no_ctor = true, flags = {.Load}},
+		.WASM_Store = {id = Mem_Op, no_ctor = true, flags = {.Store}},
+		.WASM_Load = {id = Mem_Op, no_ctor = true, flags = {.Load}},
 		.Get_Local = {no_ctor = true},
 		.Set_Local = {no_ctor = true},
 		.Tee_Local = {no_ctor = true},
 		.Drop = {no_ctor = true},
 		.Stub = {no_ctor = true},
 		.Extract_Lane_U = {
-			id = WASM_Lane_Op,
+			id = Lane_Op,
 			args = {"vec"},
 			extra_args = {"laneidx"},
 			pass_lane = true,
@@ -140,7 +140,7 @@ wasm_peep :: proc(
 		signed := kind == .Sext
 
 		if wtype(inp) == .WASM_Load && len(inp.outs) == 1 {
-			ext := wasm_extra(ctx, inp, WASM_Mem_Op)
+			ext := wasm_extra(ctx, inp, Mem_Op)
 			if inp.dt == ext.source || (ext.signed == signed) {
 				ext.signed = signed
 				inp.dt = node.dt
@@ -149,7 +149,7 @@ wasm_peep :: proc(
 		}
 
 		if wtype(inp) == .Load && len(inp.outs) == 1 {
-			(^WASM_Mem_Op)(
+			(^Mem_Op)(
 				backend.graph_get_next_extra_slot(
 					ctx,
 					u16(WASM_Node_Type.WASM_Load),
@@ -181,11 +181,10 @@ wasm_peep :: proc(
 		}
 
 		if off != 0 || changed {
-			(^WASM_Mem_Op)(backend.graph_get_next_extra_slot(ctx, u16(op)))^ =
-				{
-					source = node.dt,
-					offset = i64(off),
-				}
+			(^Mem_Op)(backend.graph_get_next_extra_slot(ctx, u16(op)))^ = {
+				source = node.dt,
+				offset = i64(off),
+			}
 			inps := slice.clone(node.inps)
 			inps[2] = base
 			return backend.graph_add_raw(ctx, "offm", u16(op), node.dt, inps)
@@ -347,7 +346,19 @@ wasm_meta_of :: #force_inline proc(
 		return slice.clone(msks)
 	}
 
-	#partial switch wtype(node) {
+	switch wtype(node) {
+	case .Start,
+	     .Entry,
+	     .Then,
+	     .Dead,
+	     .Else,
+	     .Region,
+	     .Loop,
+	     .Call_End,
+	     .Simd_Reduce_Add_Bisect:
+		fmt.panicf("Should not reach this: %v", node)
+	case .U_F_From_I, .CV128:
+		fmt.panicf("TODO: %v", node)
 	case .Root_Mem,
 	     .Sym,
 	     .Return,
@@ -541,7 +552,23 @@ wasm_pre_regalloc_hook :: proc(
 	meta_of :: proc(ctx: ^Ctx, node: backend.Expanded_Node, _: $T) -> Meta {
 		// TODO: this is uselss to be strongly typed, we anyway just use the
 		// length, and wether the out is invalid
-		#partial switch wtype(node) {
+		switch wtype(node) {
+		case .Start,
+		     .Entry,
+		     .Then,
+		     .Dead,
+		     .Else,
+		     .Region,
+		     .Loop,
+		     .Call_End,
+		     .Simd_Reduce_Add_Bisect,
+		     .Get_Local,
+		     .Set_Local,
+		     .Tee_Local,
+		     .Stub:
+			fmt.panicf("Should not reach this: %v", node)
+		case .U_F_From_I, .CV128:
+			fmt.panicf("TODO: %v", node)
 		case .Root_Mem,
 		     .Sym,
 		     .Jump,
@@ -1183,15 +1210,29 @@ wasm_emit_instr :: proc(ctx: ^Ctx, instr: backend.Node_ID, block: int, _: $T) {
 		inp = graph_get(ctx, node.inps[0])
 	}
 
-	mem_op: WASM_Mem_Op
-	mem_op_ext := wasm_extra(ctx, node, WASM_Mem_Op)
+	mem_op: Mem_Op
+	mem_op_ext := wasm_extra(ctx, node, Mem_Op)
 	if mem_op_ext != nil {
 		mem_op = mem_op_ext^
 	} else {
 		mem_op.source = node.dt
 	}
 
-	#partial switch kind {
+	switch kind {
+	case .Start,
+	     .Entry,
+	     .Then,
+	     .Dead,
+	     .Else,
+	     .Region,
+	     .Loop,
+	     .Call_End,
+	     .Simd_Reduce_Add_Bisect,
+	     .And_Not,
+	     .Neg:
+		fmt.panicf("Should not reach this: %v", node)
+	case .U_F_From_I, .CV128:
+		fmt.panicf("TODO: %v", node)
 	case .Root_Mem,
 	     .Sym,
 	     .Phi,
@@ -1431,7 +1472,7 @@ wasm_emit_instr :: proc(ctx: ^Ctx, instr: backend.Node_ID, block: int, _: $T) {
 			if mem_op.signed {
 				@(static, rodata)
 				OP_TABLE :=
-					#partial [backend.Node_Datatype][backend.Node_Datatype]Wasm_Opcode {
+					#partial [backend.Node_Datatype][backend.Node_Datatype]Opcode {
 						.I64 = #partial{
 							.I8 = .I64_Load8_S,
 							.I16 = .I64_Load16_S,
@@ -1448,7 +1489,7 @@ wasm_emit_instr :: proc(ctx: ^Ctx, instr: backend.Node_ID, block: int, _: $T) {
 			} else if mem_op.source != node.dt {
 				@(static, rodata)
 				OP_TABLE :=
-					#partial [backend.Node_Datatype][backend.Node_Datatype]Wasm_Opcode {
+					#partial [backend.Node_Datatype][backend.Node_Datatype]Opcode {
 						.I64 = #partial{
 							.I8 = .I64_Load8_U,
 							.I16 = .I64_Load16_U,
@@ -1524,7 +1565,7 @@ wasm_emit_instr :: proc(ctx: ^Ctx, instr: backend.Node_ID, block: int, _: $T) {
 			emit(ctx.code, {0, 0, 0, 0})
 		}
 	case .Extract_Lane_U:
-		lane := wasm_extra(ctx, node, WASM_Lane_Op).laneidx
+		lane := wasm_extra(ctx, node, Lane_Op).laneidx
 		emit_op_fd(ctx.code, lane_op)
 		emit_leb(ctx.code, lane)
 	case .Splat, .Simd_Extract_Lsbs:
@@ -1595,16 +1636,16 @@ loc_of :: proc(ctx: ^Ctx, node: backend.Node_ID) -> u16 {
 	}
 }
 
-emit_op_fd :: proc(buf: ^arna.Allocator, op: Wasm_Opcode_FD) {
+emit_op_fd :: proc(buf: ^arna.Allocator, op: Opcode_FD) {
 	emit(buf, {0xfd})
 	emit_leb(buf, u64(op))
 }
 
-emit_op_fc :: proc(buf: ^arna.Allocator, op: Wasm_Opcode_FC) {
+emit_op_fc :: proc(buf: ^arna.Allocator, op: Opcode_FC) {
 	emit(buf, {0xfc})
 	emit_leb(buf, u64(op))
 }
 
-emit_op :: proc(buf: ^arna.Allocator, op: Wasm_Opcode) {
+emit_op :: proc(buf: ^arna.Allocator, op: Opcode) {
 	emit(buf, {u8(op)})
 }

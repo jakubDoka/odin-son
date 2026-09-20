@@ -19,11 +19,7 @@ xtype :: #force_inline proc(node: backend.Expanded_Node) -> X64_Node_Type {
 	return X64_Node_Type(node.rtype)
 }
 
-// mirrors backend.graph_extra, but resolved against this package's own
-// (generated) inherit_idx_of, since that generic proc's body is bound to
-// whichever package declares it and backend's copy knows nothing about
-// X64-only extra-data types such as X64_Mem_Op
-x64_extra :: #force_inline proc(
+xextra :: #force_inline proc(
 	graph: ^backend.Graph,
 	node: ^backend.Node,
 	$T: typeid,
@@ -80,28 +76,6 @@ RIP :: RBP
 
 GPA_REG_COUNT :: 16
 MASK_SIZE :: backend.MASK_SIZE
-
-// DWARF numbers the x86-64 general purpose registers in a different order than
-// the instruction encoding does, so the two have to be mapped explicitly.
-@(rodata)
-DWARF_GPR := [GPA_REG_COUNT]u8 {
-	0,
-	2,
-	1,
-	3,
-	7,
-	6,
-	4,
-	5,
-	8,
-	9,
-	10,
-	11,
-	12,
-	13,
-	14,
-	15,
-}
 
 X64_CFI_SPEC :: backend.Cfi_Spec {
 	cfa_reg            = 7, // rsp
@@ -232,17 +206,17 @@ when SPEC_NOT_PRESENT {
 	}
 
 	X64_SIMPLE_BIN_OP_SPEC :: backend.Class_Spec {
-		id      = X64_Mem_Op,
+		id      = Mem_Op,
 		no_ctor = true,
 	}
 
 	X64_SIMPLE_SHIFT_OP_SPEC :: backend.Class_Spec {
-		id      = X64_Mem_Op,
+		id      = Mem_Op,
 		no_ctor = true,
 	}
 
 	X64_SIMPLE_UN_OP_SPEC :: backend.Class_Spec {
-		id      = X64_Mem_Op,
+		id      = Mem_Op,
 		no_ctor = true,
 	}
 
@@ -254,17 +228,17 @@ when SPEC_NOT_PRESENT {
 		.X64_F_Eq ..= .X64_F_Ge = X64_SIMPLE_BIN_OP_SPEC,
 		.X64_Pcmpeq = {no_ctor = true},
 		.X64_Psadbw = {args = {"lhs", "rhs"}},
-		.X64_Pshufd = {id = X64_Mem_Op, no_ctor = true},
-		.X64_Pshufb = {id = X64_Mem_Op, no_ctor = true},
-		.X64_Pextr = {id = X64_Mem_Op, no_ctor = true},
+		.X64_Pshufd = {id = Mem_Op, no_ctor = true},
+		.X64_Pshufb = {id = Mem_Op, no_ctor = true},
+		.X64_Pextr = {id = Mem_Op, no_ctor = true},
 		.X64_Mul = X64_SIMPLE_BIN_OP_SPEC,
-		.X64_Lea = {id = X64_Mem_Op, no_ctor = true},
-		.X64_Load = {id = X64_Mem_Op, flags = {.Load}, no_ctor = true},
+		.X64_Lea = {id = Mem_Op, no_ctor = true},
+		.X64_Load = {id = Mem_Op, flags = {.Load}, no_ctor = true},
 		.X64_CLoad = {flags = {.Clonable}, no_ctor = true},
-		.X64_Store = {id = X64_Mem_Op, flags = {.Store}, no_ctor = true},
+		.X64_Store = {id = Mem_Op, flags = {.Store}, no_ctor = true},
 		.X64_Mul8 = {no_ctor = true},
-		.X64_F_Add ..= .X64_F_Div = {id = X64_Mem_Op, no_ctor = true},
-		.X64_Fma_213 = {id = X64_Mem_Op, no_ctor = true},
+		.X64_F_Add ..= .X64_F_Div = {id = Mem_Op, no_ctor = true},
+		.X64_Fma_213 = {id = Mem_Op, no_ctor = true},
 	}
 
 	when !GEN_SPEC {
@@ -287,7 +261,7 @@ Mem_Mode :: enum u8 {
 	Src,
 }
 
-X64_Mem_Op :: struct {
+Mem_Op :: struct {
 	imm:      i32,
 	dis:      i32,
 	scale:    u8,
@@ -342,13 +316,13 @@ x64_peep :: proc(
 
 	has_own_index :=
 		(xtype(node) == .X64_Store || xtype(node) == .X64_Load) &&
-		x64_extra(ctx, node, X64_Mem_Op).scale != 0
+		xextra(ctx, node, Mem_Op).scale != 0
 
 	if 2 < len(node.inps) {
 		nbase, ndisplacement := backend.base_and_offset(
 			ctx,
 			node.inps[2],
-			x64_addr_add_offset,
+			addr_add_offset,
 		)
 		if int(i32(ndisplacement)) == ndisplacement {
 			base, displacement = nbase, i32(ndisplacement)
@@ -356,7 +330,7 @@ x64_peep :: proc(
 
 		bnode := graph_expand(ctx, nbase)
 		if xtype(bnode) == .X64_Lea {
-			mem_op := x64_extra(ctx, bnode, X64_Mem_Op)
+			mem_op := xextra(ctx, bnode, Mem_Op)
 			scale = i32(mem_op.scale)
 			overflowed: bool
 			displacement, overflowed = intrinsics.overflow_add(
@@ -383,7 +357,7 @@ x64_peep :: proc(
 		}
 	}
 
-	mem_op := x64_extra(ctx, node, X64_Mem_Op)
+	mem_op := xextra(ctx, node, Mem_Op)
 
 	#partial matchx: switch xtype(node) {
 	case .CInt:
@@ -421,7 +395,7 @@ x64_peep :: proc(
 		vec := backend.graph_add_un_op(ctx, "elem", .Cast, .V128, node.inps[0])
 		zero := backend.graph_add_c_int(ctx, "zro", node.dt, 0)
 
-		pnode, pshufb := x64_add_node(
+		pnode, pshufb := add_node(
 			ctx,
 			"pshufb",
 			.X64_Pshufb,
@@ -437,7 +411,7 @@ x64_peep :: proc(
 
 		#partial switch node.lane {
 		case .I8:
-			_, pshufd := x64_add_node(
+			_, pshufd := add_node(
 				ctx,
 				"pshufd",
 				.X64_Pshufd,
@@ -462,7 +436,7 @@ x64_peep :: proc(
 
 			return backend.graph_add_un_op(ctx, "sum", .Cast, .I16, psadbw)
 		case .I16:
-			_, pshufd := x64_add_node(
+			_, pshufd := add_node(
 				ctx,
 				"pshufd",
 				.X64_Pshufd,
@@ -481,7 +455,7 @@ x64_peep :: proc(
 			)
 			graph_get(ctx, add).lane = node.lane
 
-			_, pshufd2 := x64_add_node(
+			_, pshufd2 := add_node(
 				ctx,
 				"pshufd",
 				.X64_Pshufd,
@@ -500,7 +474,7 @@ x64_peep :: proc(
 			)
 			graph_get(ctx, add).lane = node.lane
 
-			_, lhs := x64_add_node(
+			_, lhs := add_node(
 				ctx,
 				"pextrw",
 				.X64_Pextr,
@@ -518,7 +492,7 @@ x64_peep :: proc(
 				rhs,
 			)
 		case .I32:
-			_, pshufd := x64_add_node(
+			_, pshufd := add_node(
 				ctx,
 				"pshufd",
 				.X64_Pshufd,
@@ -537,7 +511,7 @@ x64_peep :: proc(
 			)
 			graph_get(ctx, add).lane = node.lane
 
-			_, lhs := x64_add_node(
+			_, lhs := add_node(
 				ctx,
 				"pextrd",
 				.X64_Pextr,
@@ -555,7 +529,7 @@ x64_peep :: proc(
 				rhs,
 			)
 		case .I64:
-			_, lhs := x64_add_node(
+			_, lhs := add_node(
 				ctx,
 				"pextrq",
 				.X64_Pextr,
@@ -595,7 +569,7 @@ x64_peep :: proc(
 		rhs_id := backend.graph_id(ctx, rhs)
 
 		if lhs.itype == .F_Mul {
-			return x64_make_node(
+			return make_node(
 				ctx,
 				id,
 				u16(X64_Node_Type.X64_Fma_213),
@@ -627,7 +601,7 @@ x64_peep :: proc(
 		}
 
 		if rhs_const != nil {
-			return x64_make_node(
+			return make_node(
 				ctx,
 				id,
 				op,
@@ -645,7 +619,7 @@ x64_peep :: proc(
 			aindex := node.inps[1]
 
 			if xtype(rhs) == .X64_Mul {
-				ascale = x64_extra(ctx, rhs, X64_Mem_Op).imm
+				ascale = xextra(ctx, rhs, Mem_Op).imm
 				aindex = rhs.inps[0]
 			} else if rhs.itype == .Mul {
 				arhs_const := backend.graph_extra(
@@ -669,7 +643,7 @@ x64_peep :: proc(
 			abase, offset := backend.base_and_offset(
 				ctx,
 				node.inps[0],
-				x64_addr_add_offset,
+				addr_add_offset,
 			)
 			if int(i32(offset)) == offset {
 				displacement = i32(offset)
@@ -685,7 +659,7 @@ x64_peep :: proc(
 				break indexify
 			}
 
-			return x64_make_node(
+			return make_node(
 				ctx,
 				id,
 				u16(X64_Node_Type.X64_Lea),
@@ -707,7 +681,7 @@ x64_peep :: proc(
 			base,
 			index,
 		}
-		res := x64_make_node(
+		res := make_node(
 			ctx,
 			id,
 			u16(X64_Node_Type.X64_Load),
@@ -735,7 +709,7 @@ x64_peep :: proc(
 		}
 		count += int(scale != 0)
 
-		res := x64_make_node(
+		res := make_node(
 			ctx,
 			id,
 			u16(X64_Node_Type.X64_Store),
@@ -809,7 +783,7 @@ x64_peep :: proc(
 		if xtype(node) == .X64_Store &&
 		   3 + int(mem_op.scale != 0) < len(node.inps) {
 			val := graph_expand(ctx, node.inps[3])
-			val_mem := x64_extra(ctx, val, X64_Mem_Op)
+			val_mem := xextra(ctx, val, Mem_Op)
 
 			X64_TRIGGER_OPS :: bit_set[X64_Node_Type] {
 				.X64_Add,
@@ -848,7 +822,7 @@ x64_peep :: proc(
 
 			if is_interesting && len(val.outs) == 1 {
 				lhs := graph_expand(ctx, val.inps[0])
-				lhs_mem := x64_extra(ctx, lhs, X64_Mem_Op)
+				lhs_mem := xextra(ctx, lhs, Mem_Op)
 				dest_op: if xtype(lhs) == .X64_Load &&
 				   lhs.inps[1] == node.inps[1] &&
 				   lhs.inps[2] == node.inps[2] &&
@@ -908,29 +882,29 @@ x64_peep :: proc(
 	return 0
 }
 
-x64_add_node :: proc(
+add_node :: proc(
 	ctx: ^backend.Graph,
 	name: string,
 	type: X64_Node_Type,
 	dt: backend.Node_Datatype,
 	inps: []backend.Node_ID,
-	extra: X64_Mem_Op = {},
+	extra: Mem_Op = {},
 ) -> (
 	^backend.Node,
 	backend.Node_ID,
 ) {
-	slot := (^X64_Mem_Op)(backend.graph_get_next_extra_slot(ctx, u16(type)))
+	slot := (^Mem_Op)(backend.graph_get_next_extra_slot(ctx, u16(type)))
 	slot^ = extra
 	id := backend.graph_add_raw(ctx, name, u16(type), dt, inps)
 	return graph_get(ctx, id), id
 }
 
-x64_make_node :: proc(
+make_node :: proc(
 	graph: ^backend.Graph,
 	from: backend.Node_ID,
 	type: u16,
 	inps: []backend.Node_ID,
-	extra: X64_Mem_Op,
+	extra: Mem_Op,
 ) -> backend.Node_ID {
 	fnode := graph_get(graph, from)
 	id := backend.graph_add_raw(graph, fnode.name, type, fnode.dt, inps)
@@ -941,7 +915,7 @@ x64_make_node :: proc(
 	node.is_store = fnode.is_store
 	node.is_load = fnode.is_load || type == u16(X64_Node_Type.X64_Load)
 	node.lane = fnode.lane
-	x64_extra(graph, node, X64_Mem_Op)^ = extra
+	xextra(graph, node, Mem_Op)^ = extra
 	return id
 }
 
@@ -958,7 +932,7 @@ x64_post_schedule_peep :: proc(
 		op := node.rtype + BIN_OP_OFFSET
 		rhs := graph_expand(ctx, node.inps[1])
 		if xtype(rhs) == .X64_Load && len(rhs.outs) == 1 {
-			mem_op := x64_extra(ctx, rhs, X64_Mem_Op)
+			mem_op := xextra(ctx, rhs, Mem_Op)
 			if mem_op.dt != rhs.dt do break matchx
 			if !has_no_clobbers(ctx, node.inps[1]) do break matchx
 			mem_op.mem_mode = .Src
@@ -969,7 +943,7 @@ x64_post_schedule_peep :: proc(
 			slots[4] = slots[3]
 			slots[3] = node.inps[0]
 
-			return x64_make_node(
+			return make_node(
 				ctx,
 				id,
 				op,
@@ -977,31 +951,31 @@ x64_post_schedule_peep :: proc(
 				mem_op^,
 			)
 		} else if xtype(rhs) == .X64_CLoad {
-			mem_op := X64_Mem_Op {
+			mem_op := Mem_Op {
 				mem_mode = .Src,
 				dt       = rhs.dt,
 			}
 
 			slots := [?]backend.Node_ID{rhs.inps[0], node.inps[0]}
 
-			return x64_make_node(ctx, id, op, slots[:], mem_op)
+			return make_node(ctx, id, op, slots[:], mem_op)
 		}
 	case .X64_Eq ..= .X64_U_Ge:
-		mem_op := x64_extra(ctx, node, X64_Mem_Op)
+		mem_op := xextra(ctx, node, Mem_Op)
 		if mem_op.mem_mode != .None do break matchx
 		lhs := graph_expand(ctx, node.inps[0])
 		if xtype(lhs) == .X64_Load && len(lhs.outs) == 1 {
-			om_mem_op := x64_extra(ctx, lhs, X64_Mem_Op)
+			om_mem_op := xextra(ctx, lhs, Mem_Op)
 			if om_mem_op.dt != lhs.dt do break matchx
 			if !has_no_clobbers(ctx, node.inps[0]) do break matchx
 			om_mem_op.imm = mem_op.imm
 			om_mem_op.mem_mode = .Dest
 			om_mem_op.dt = lhs.dt
 
-			return x64_make_node(ctx, id, node.rtype, lhs.inps, om_mem_op^)
+			return make_node(ctx, id, node.rtype, lhs.inps, om_mem_op^)
 		}
 	case .X64_Fma_213:
-		mem_op := x64_extra(ctx, node, X64_Mem_Op)
+		mem_op := xextra(ctx, node, Mem_Op)
 		rhs := graph_expand(ctx, node.inps[2])
 
 		if xtype(rhs) == .X64_Load {
@@ -1017,7 +991,7 @@ x64_post_schedule_peep :: proc(
 				node.inps[1],
 			}
 
-			return x64_make_node(ctx, id, node.rtype, slots[:], mem_op^)
+			return make_node(ctx, id, node.rtype, slots[:], mem_op^)
 		}
 	}
 
@@ -1038,7 +1012,7 @@ x64_post_schedule_peep :: proc(
 	return 0
 }
 
-x64_addr_add_offset :: proc(
+addr_add_offset :: proc(
 	graph: ^backend.Graph,
 	node: backend.Expanded_Node,
 ) -> (
@@ -1047,7 +1021,7 @@ x64_addr_add_offset :: proc(
 	ok: bool,
 ) {
 	if xtype(node) != .X64_Add do return
-	return node.inps[0], int(x64_extra(graph, node, X64_Mem_Op).imm), true
+	return node.inps[0], int(xextra(graph, node, Mem_Op).imm), true
 }
 
 GPA_MASK_IDX :: backend.RM_Intern_Idx{}
@@ -1158,7 +1132,7 @@ x64_meta_of :: proc(
 		sout = IOUT
 	}
 
-	mem_op: ^X64_Mem_Op = x64_extra(graph, node, X64_Mem_Op)
+	mem_op: ^Mem_Op = xextra(graph, node, Mem_Op)
 
 	switch xtype(node) {
 	case .Simd_Reduce_Add_Bisect,
@@ -1544,7 +1518,7 @@ x64_emit_function :: proc(
 			emit_cfi(
 				&ctx,
 				.Save_Reg,
-				reg = DWARF_GPR[reg.index],
+				reg = u8(reg.index),
 				arg = u32(pushed) + X64_CFI_SPEC.initial_cfa_offset,
 			)
 		}
@@ -1902,8 +1876,8 @@ x64_emit_instr :: proc(
 
 	block_base := ctx.gvn - u32(len(ctx.bbs))
 	node := graph_expand(ctx, instr)
-	mem_op_placeholder: X64_Mem_Op
-	mem_op := x64_extra(ctx, node, X64_Mem_Op)
+	mem_op_placeholder: Mem_Op
+	mem_op := xextra(ctx, node, Mem_Op)
 	if mem_op == nil {
 		mem_op = &mem_op_placeholder
 	}
@@ -2912,7 +2886,7 @@ x64_emit_instr :: proc(
 				next_sloc(ctx)
 
 				cfa -= 8
-				emit_cfi(ctx, .Restore_Reg, reg = DWARF_GPR[reg.index])
+				emit_cfi(ctx, .Restore_Reg, reg = u8(reg.index))
 				emit_cfi(ctx, .Def_Cfa_Offset, arg = cfa)
 			}
 		}

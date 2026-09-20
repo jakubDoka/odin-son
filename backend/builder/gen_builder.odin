@@ -20,7 +20,6 @@ when GEN_SPEC {
 				header_import     = "import backend \"..\"\n" + "Reg_Kind :: backend.Reg_Kind\n" + "Class_Flag :: backend.Class_Flag\n",
 				qual              = "backend.",
 				local_extra_types = {Scope},
-				name              = "Builder",
 				classes           = {
 					backend.class_array(
 						&backend.IDEAL_CLASSES,

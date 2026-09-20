@@ -12,9 +12,9 @@ SPEC := backend.Node_Spec{
 	},
 	datatype_to_reg_kind = {.Void = 0, .I8 = 0, .I16 = 0, .I32 = 0, .I64 = 0, .F32 = 0, .F64 = 0, .V128 = 0, .V256 = 0, .V512 = 0},
 	spill_boundary = {},
-	emit_function = anal_emit_function,
-	peep = anal_peep_inst,
-	post_schedule_peep = anal_post_schedule_peep_inst,
+	emit_function = emit_function,
+	peep = peep_inst,
+	post_schedule_peep = post_schedule_peep_inst,
 	intern = false,
 	inheritance_table = {
 		0b1, // Start
@@ -433,7 +433,7 @@ SPEC := backend.Node_Spec{
 	},
 }
 
-ANAL_Node_Type :: enum u16 {
+Node_Type :: enum u16 {
 	Start,
 	Entry,
 	Poison,
@@ -517,12 +517,12 @@ ANAL_Node_Type :: enum u16 {
 	CV128,
 }
 
-anal_peep_inst :: proc(ctx: backend.Peep_Ctx, node: backend.Expanded_Node) -> backend.Node_ID {
-	return anal_peep(ctx, node, struct{}{})
+peep_inst :: proc(ctx: backend.Peep_Ctx, node: backend.Expanded_Node) -> backend.Node_ID {
+	return peep(ctx, node, struct{}{})
 }
-anal_post_schedule_peep_inst :: proc(
+post_schedule_peep_inst :: proc(
 	ctx: backend.PS_Peep_Ctx, node: backend.Expanded_Node) -> backend.Node_ID {
-	return anal_post_schedule_peep(ctx, node, struct{}{})
+	return post_schedule_peep(ctx, node, struct{}{})
 }
 
 #assert(size_of(backend.Cfg) % backend.PRECISION == 0)

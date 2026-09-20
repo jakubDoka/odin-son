@@ -32,7 +32,7 @@ encode_func_type :: proc(
 
 when !GEN_SPEC {
 	@(rodata)
-	NODE_TO_LANE_OP := #partial [WASM_Node_Type][backend.Lane_Type]Opcode_FD {
+	NODE_TO_LANE_OP := #partial [Node_Type][backend.Lane_Type]Opcode_FD {
 		.Add = #partial{
 			.I8 = .I8x16_Add,
 			.I16 = .I16x8_Add,
@@ -163,7 +163,7 @@ when !GEN_SPEC {
 	}
 
 	@(rodata)
-	NODE_TO_OP := #partial [WASM_Node_Type][backend.Node_Datatype]Opcode {
+	NODE_TO_OP := #partial [Node_Type][backend.Node_Datatype]Opcode {
 		.Add = #partial{.I8 ..= .I32 = .I32_Add, .I64 = .I64_Add},
 		.Sub = #partial{.I8 ..= .I32 = .I32_Sub, .I64 = .I64_Sub},
 		.Mul = #partial{.I8 ..= .I32 = .I32_Mul, .I64 = .I64_Mul},

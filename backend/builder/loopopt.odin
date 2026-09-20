@@ -296,7 +296,7 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 
 		@(rodata, static)
 		CMP_OP_REVERSE :=
-			#partial [backend.Ideal_Node_Type]backend.Ideal_Node_Type {
+			#partial [backend.Node_Type]backend.Node_Type {
 				.Eq = .Ne,
 				.Ne = .Eq,
 				.Lt = .Ge,
@@ -307,7 +307,7 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 
 		@(rodata, static)
 		CMP_OP_FLIP :=
-			#partial [backend.Ideal_Node_Type]backend.Ideal_Node_Type {
+			#partial [backend.Node_Type]backend.Node_Type {
 				.Eq = .Eq,
 				.Ne = .Ne,
 				.Lt = .Gt,
@@ -770,7 +770,7 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 				ref = backend.graph_add_raw(
 					ctx,
 					"urlj",
-					u16(backend.Ideal_Node_Type.Phi),
+					u16(backend.Node_Type.Phi),
 					graph_get(ctx, ref).dt,
 					edges[:],
 				)
@@ -799,7 +799,7 @@ loopopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 	check_valid_ops :: proc(ctx: Ctx, root: Node_ID) -> bool {
 		if !slice.contains(ctx.instrs, root) do return true
 
-		PROHIBITED_OPS :: bit_set[backend.Ideal_Node_Type]{.Copy, .Set, .Store}
+		PROHIBITED_OPS :: bit_set[backend.Node_Type]{.Copy, .Set, .Store}
 		rnode := graph_expand(ctx, root)
 		// TODO: we could clone the stores too, but that requires more
 		// complex fixups of memory threads

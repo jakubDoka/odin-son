@@ -13,7 +13,6 @@ when GEN_SPEC {
 				"Reg_Kind :: backend.Reg_Kind\n" +
 				"Class_Flag :: backend.Class_Flag\n",
 				qual = "backend.",
-				name = "ANAL",
 				classes = {
 					backend.class_array(
 						&backend.IDEAL_CLASSES,

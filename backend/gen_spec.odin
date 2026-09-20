@@ -12,7 +12,7 @@ SIMPLE_BINOP_CLASS :: Class_Spec {
 }
 
 @(rodata)
-IDEAL_CLASSES := [Ideal_Node_Type]Class_Spec {
+IDEAL_CLASSES := [Node_Type]Class_Spec {
 	.Start = {id = Cfg, default_type = .Void},
 	.Entry = {
 		id = Cfg,
@@ -268,7 +268,6 @@ when GEN_SPEC {
 			Spec_Gen_Input {
 				package_name = "backend",
 				gen_command = COMMAND,
-				name = "Root",
 				classes = {class_array(&IDEAL_CLASSES)},
 				no_spec_tables = true,
 			},

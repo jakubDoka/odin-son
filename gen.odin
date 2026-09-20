@@ -1713,7 +1713,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		case int:
 			res = builder.graph_get_scope_value(ctx, ctx.node_scope, sym)
 			assert(
-				builder.Builder_Node_Type(graph_get(ctx, res).rtype) != .Scope,
+				builder.Node_Type(graph_get(ctx, res).rtype) != .Scope,
 			)
 		case Value:
 			res, lvalue = unpack(sym)

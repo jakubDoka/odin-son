@@ -21,7 +21,7 @@ Reg_Mask :: struct {
 	bit_length: u32,
 }
 
-CALLS :: bit_set[Ideal_Node_Type]{.Call, .Set, .Copy}
+CALLS :: bit_set[Node_Type]{.Call, .Set, .Copy}
 
 reg_mask_clone :: proc(rm: Reg_Mask) -> (res: Reg_Mask) {
 	res = rm

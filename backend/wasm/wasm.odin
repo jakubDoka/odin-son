@@ -24,11 +24,11 @@ RK_F32 :: Reg_Kind(3)
 RK_V128 :: Reg_Kind(4)
 RK_COUNT :: 5
 
-wtype :: #force_inline proc(node: backend.Expanded_Node) -> WASM_Node_Type {
-	return WASM_Node_Type(node.rtype)
+wtype :: #force_inline proc(node: backend.Expanded_Node) -> Node_Type {
+	return Node_Type(node.rtype)
 }
 
-wasm_extra :: #force_inline proc(
+wextra :: #force_inline proc(
 	graph: ^backend.Graph,
 	node: ^backend.Node,
 	$T: typeid,
@@ -67,7 +67,7 @@ when SPEC_NOT_PRESENT {
 
 	inherit_idx_of :: proc($T: typeid) -> u8 {return 0}
 
-	wasm_collect_meta :: proc(
+	collect_meta :: proc(
 		_: ^backend.Graph,
 		_: ^backend.Regalloc,
 		_: ^backend.Graph_Schedule,
@@ -88,7 +88,7 @@ when SPEC_NOT_PRESENT {
 		return 0
 	}
 
-	WASM_Node_Type :: enum u16 {
+	Node_Type :: enum u16 {
 		WASM_Store,
 		WASM_Load,
 		Get_Local,
@@ -100,7 +100,7 @@ when SPEC_NOT_PRESENT {
 	}
 
 	@(rodata)
-	WASM_CLASSES := [WASM_Node_Type]backend.Class_Spec {
+	WASM_CLASSES := [Node_Type]backend.Class_Spec {
 		.WASM_Store = {id = Mem_Op, no_ctor = true, flags = {.Store}},
 		.WASM_Load = {id = Mem_Op, no_ctor = true, flags = {.Load}},
 		.Get_Local = {no_ctor = true},
@@ -121,10 +121,10 @@ when SPEC_NOT_PRESENT {
 	}
 } else {
 	@(rodata)
-	WASM_CLASSES := [WASM_Node_Type]backend.Class_Spec{}
+	WASM_CLASSES := [Node_Type]backend.Class_Spec{}
 }
 
-wasm_peep :: proc(
+peep :: proc(
 	ctx: backend.Peep_Ctx,
 	node: backend.Expanded_Node,
 	_: $T,
@@ -140,7 +140,7 @@ wasm_peep :: proc(
 		signed := kind == .Sext
 
 		if wtype(inp) == .WASM_Load && len(inp.outs) == 1 {
-			ext := wasm_extra(ctx, inp, Mem_Op)
+			ext := wextra(ctx, inp, Mem_Op)
 			if inp.dt == ext.source || (ext.signed == signed) {
 				ext.signed = signed
 				inp.dt = node.dt
@@ -152,7 +152,7 @@ wasm_peep :: proc(
 			(^Mem_Op)(
 				backend.graph_get_next_extra_slot(
 					ctx,
-					u16(WASM_Node_Type.WASM_Load),
+					u16(Node_Type.WASM_Load),
 				),
 			)^ = {
 				source = inp.dt,
@@ -161,14 +161,14 @@ wasm_peep :: proc(
 			return backend.graph_add_raw(
 				ctx,
 				"sxld",
-				u16(WASM_Node_Type.WASM_Load),
+				u16(Node_Type.WASM_Load),
 				node.dt,
 				inp.inps,
 			)
 		}
 	case .Load, .Store:
-		op := WASM_Node_Type.WASM_Load
-		if node.itype == .Store do op = WASM_Node_Type.WASM_Store
+		op := Node_Type.WASM_Load
+		if node.itype == .Store do op = Node_Type.WASM_Store
 
 		base, off := backend.base_and_offset(ctx, node.inps[2])
 
@@ -288,7 +288,7 @@ wasm_peep :: proc(
 	return 0
 }
 
-wasm_post_schedule_peep :: proc(
+post_schedule_peep :: proc(
 	ctx: backend.PS_Peep_Ctx,
 	node: backend.Expanded_Node,
 	_: $T,
@@ -296,7 +296,7 @@ wasm_post_schedule_peep :: proc(
 	return 0
 }
 
-wasm_meta_of :: #force_inline proc(
+meta_of :: #force_inline proc(
 	graph: ^backend.Graph,
 	ra: ^backend.Regalloc,
 	node: backend.Expanded_Node,
@@ -421,7 +421,7 @@ wasm_meta_of :: #force_inline proc(
 	fmt.panicf("TODO %v", node)
 }
 
-wasm_pre_regalloc_hook :: proc(
+pre_regalloc_hook :: proc(
 	ra: ^backend.Regalloc,
 	graph: ^backend.Graph,
 	sched: ^backend.Graph_Schedule,
@@ -513,7 +513,7 @@ wasm_pre_regalloc_hook :: proc(
 				return backend.graph_add_raw(
 					ctx,
 					"rdrp",
-					u16(WASM_Node_Type.Drop),
+					u16(Node_Type.Drop),
 					.Void,
 					{},
 				)
@@ -721,7 +721,7 @@ wasm_pre_regalloc_hook :: proc(
 			stackify(&ctx)
 		}
 
-		NO_SET_KINDS :: bit_set[backend.Ideal_Node_Type]{.Param, .Phi}
+		NO_SET_KINDS :: bit_set[backend.Node_Type]{.Param, .Phi}
 
 		stackify :: proc(ctx: ^Ctx) {
 			ctx.cursor -= 1
@@ -766,9 +766,7 @@ wasm_pre_regalloc_hook :: proc(
 					if len(dnode.outs) > 1 {
 						dp := get_or_add_set(ctx, dnode)
 						if dp != dep {
-							graph_get(ctx, dp).rtype = u16(
-								WASM_Node_Type.Tee_Local,
-							)
+							graph_get(ctx, dp).rtype = u16(Node_Type.Tee_Local)
 						}
 					}
 
@@ -784,7 +782,7 @@ wasm_pre_regalloc_hook :: proc(
 				get := backend.graph_add_raw(
 					ctx,
 					"uget",
-					u16(WASM_Node_Type.Get_Local),
+					u16(Node_Type.Get_Local),
 					.Void,
 					{dep},
 				)
@@ -794,7 +792,7 @@ wasm_pre_regalloc_hook :: proc(
 					stub := backend.graph_add_raw(
 						ctx,
 						"stub",
-						u16(WASM_Node_Type.Stub),
+						u16(Node_Type.Stub),
 						dnode.dt,
 						{},
 					)
@@ -825,7 +823,7 @@ wasm_pre_regalloc_hook :: proc(
 				ctx.sets[node.gvn] = backend.graph_add_raw(
 					ctx,
 					"uset",
-					u16(WASM_Node_Type.Set_Local),
+					u16(Node_Type.Set_Local),
 					node.dt,
 					{backend.graph_id(ctx, node)},
 				)
@@ -850,7 +848,7 @@ wasm_pre_regalloc_hook :: proc(
 	}
 
 	for split in splits {
-		graph_get(ctx, split).rtype = u16(WASM_Node_Type.Set_Local)
+		graph_get(ctx, split).rtype = u16(Node_Type.Set_Local)
 	}
 }
 
@@ -906,7 +904,7 @@ LOCAL_TO_WASM := [Local_Type]Type {
 	.v128 = .vec,
 }
 
-wasm_emit_function :: proc(
+emit_function :: proc(
 	ectx: backend.Codegen_Emit_Ctx,
 ) -> backend.Codegen_Output {
 	context.allocator, _ = arna.scrath()
@@ -1159,7 +1157,7 @@ wasm_emit_function :: proc(
 		}
 
 		for instr in bb.instrs {
-			wasm_emit_instr(&ctx, instr, i, struct{}{})
+			emit_instr(&ctx, instr, i, struct{}{})
 		}
 
 		if close_loop {
@@ -1191,7 +1189,7 @@ wasm_emit_function :: proc(
 }
 
 @(disabled = GEN_SPEC)
-wasm_emit_instr :: proc(ctx: ^Ctx, instr: backend.Node_ID, block: int, _: $T) {
+emit_instr :: proc(ctx: ^Ctx, instr: backend.Node_ID, block: int, _: $T) {
 	node := graph_expand(ctx, instr)
 	kind := wtype(node)
 	op := NODE_TO_OP[kind][node.dt]
@@ -1211,7 +1209,7 @@ wasm_emit_instr :: proc(ctx: ^Ctx, instr: backend.Node_ID, block: int, _: $T) {
 	}
 
 	mem_op: Mem_Op
-	mem_op_ext := wasm_extra(ctx, node, Mem_Op)
+	mem_op_ext := wextra(ctx, node, Mem_Op)
 	if mem_op_ext != nil {
 		mem_op = mem_op_ext^
 	} else {
@@ -1565,7 +1563,7 @@ wasm_emit_instr :: proc(ctx: ^Ctx, instr: backend.Node_ID, block: int, _: $T) {
 			emit(ctx.code, {0, 0, 0, 0})
 		}
 	case .Extract_Lane_U:
-		lane := wasm_extra(ctx, node, Lane_Op).laneidx
+		lane := wextra(ctx, node, Lane_Op).laneidx
 		emit_op_fd(ctx.code, lane_op)
 		emit_leb(ctx.code, lane)
 	case .Splat, .Simd_Extract_Lsbs:

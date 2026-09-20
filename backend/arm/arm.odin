@@ -148,14 +148,14 @@ when SPEC_NOT_PRESENT {
 
 	inherit_idx_of :: proc($T: typeid) -> u8 {return 0}
 
-	ARM_Node_Type :: enum u16 {}
+	Node_Type :: enum u16 {}
 
 	when !GEN_SPEC {
 		#panic("Missing generated files, run `" + COMMAND + "`")
 	}
 }
 
-arm_peep :: proc(
+peep :: proc(
 	_: backend.Peep_Ctx,
 	_: backend.Expanded_Node,
 	_: $T,
@@ -163,7 +163,7 @@ arm_peep :: proc(
 	return 0
 }
 
-arm_post_schedule_peep :: proc(
+post_schedule_peep :: proc(
 	_: backend.PS_Peep_Ctx,
 	_: backend.Expanded_Node,
 	_: $T,
@@ -171,8 +171,6 @@ arm_post_schedule_peep :: proc(
 	return 0
 }
 
-arm_emit_function :: proc(
-	_: backend.Codegen_Emit_Ctx,
-) -> backend.Codegen_Output {
+emit_function :: proc(_: backend.Codegen_Emit_Ctx) -> backend.Codegen_Output {
 	panic("arm backend is unimplemented")
 }

@@ -13,7 +13,6 @@ Spec_Gen_Input :: struct {
 	header_import:                string,
 	qual:                         string,
 	local_extra_types:            []typeid,
-	name:                         string,
 	classes:                      []Class_Array,
 	datatype_to_reg_kind:         [Node_Datatype]Reg_Kind,
 	spill_boundary:               []int,
@@ -40,7 +39,7 @@ qualify_type :: proc(qual: string, locals: []typeid, id: typeid) -> string {
 }
 
 qualify_enm :: proc(qual: string, enm: typeid) -> string {
-	if enm == Ideal_Node_Type do return fmt.tprintf("%v%v", qual, enm)
+	if enm == Node_Type do return fmt.tprintf("%v%v", qual, enm)
 	return fmt.tprintf("%v", enm)
 }
 
@@ -79,8 +78,6 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 	groups: map[string]map[Group_Member]struct{}
 
 	inheritable: map[typeid]int
-
-	prefix := strings.to_snake_case(spec.name)
 
 	for classes, j in spec.classes {
 		for class, i in classes.ids {
@@ -149,22 +146,14 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 		fmt.fprintf(file, "\tspill_boundary = %w,\n", spec.spill_boundary)
 
 		if spec.does_regalloc {
-			fmt.fprintf(file, "\tcollect_meta = %v_collect_meta,\n", prefix)
+			fmt.fprintf(file, "\tcollect_meta = collect_meta,\n")
 		}
 		if spec.has_regalloc_preprocess_hook {
-			fmt.fprintf(
-				file,
-				"\tpre_regalloc_hook = %v_pre_regalloc_hook,\n",
-				prefix,
-			)
+			fmt.fprintf(file, "\tpre_regalloc_hook = pre_regalloc_hook,\n")
 		}
-		fmt.fprintf(file, "\temit_function = %v_emit_function,\n", prefix)
-		fmt.fprintf(file, "\tpeep = %v_peep_inst,\n", prefix)
-		fmt.fprintf(
-			file,
-			"\tpost_schedule_peep = %v_post_schedule_peep_inst,\n",
-			prefix,
-		)
+		fmt.fprintf(file, "\temit_function = emit_function,\n")
+		fmt.fprintf(file, "\tpeep = peep_inst,\n")
+		fmt.fprintf(file, "\tpost_schedule_peep = post_schedule_peep_inst,\n")
 		fmt.fprintf(file, "\tintern = %v,\n", spec.intern)
 
 		os.write_string(file, "\tinheritance_table = {\n")
@@ -271,7 +260,7 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 		}
 	}
 
-	fmt.fprintfln(file, "%v_Node_Type :: enum u16 {{", spec.name)
+	fmt.fprintfln(file, "Node_Type :: enum u16 {{")
 	for classes in spec.classes {
 		for field in reflect.enum_fields_zipped(classes.enm) {
 			fmt.fprintfln(file, "\t%v,", field.name)
@@ -283,24 +272,20 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 		fmt.fprintfln(
 			file,
 			`
-%v_peep_inst :: proc(ctx: %vPeep_Ctx, node: %vExpanded_Node) -> %vNode_ID {{
-	return %v_peep(ctx, node, struct{{}}{{}})
+peep_inst :: proc(ctx: %vPeep_Ctx, node: %vExpanded_Node) -> %vNode_ID {{
+	return peep(ctx, node, struct{{}}{{}})
 }}
-%v_post_schedule_peep_inst :: proc(
+post_schedule_peep_inst :: proc(
 	ctx: %vPS_Peep_Ctx, node: %vExpanded_Node) -> %vNode_ID {{
-	return %v_post_schedule_peep(ctx, node, struct{{}}{{}})
+	return post_schedule_peep(ctx, node, struct{{}}{{}})
 }}
 `,
-			prefix,
 			q,
 			q,
 			q,
-			prefix,
-			prefix,
 			q,
 			q,
 			q,
-			prefix,
 		)
 	}
 
@@ -308,17 +293,16 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 		fmt.fprintfln(
 			file,
 			`
-%v_collect_meta :: proc(ctx: ^%vGraph,
+collect_meta :: proc(ctx: ^%vGraph,
 	ra: ^%vRegalloc, sched: ^%vGraph_Schedule) -> ([]%vRegalloc_Node_Meta, int) {{
 
-	meta_of :: proc(ctx: ^%vGraph, ra: ^%vRegalloc,
+	meta_of_ :: proc(ctx: ^%vGraph, ra: ^%vRegalloc,
 		node: %vExpanded_Node) -> %vRegalloc_Node_Meta {{
-		return %v_meta_of(ctx, ra, node, struct{{}}{{}})
+		return meta_of(ctx, ra, node, struct{{}}{{}})
 	}}
-	return %vregalloc_collect_meta(ctx, ra, sched, meta_of)
+	return %vregalloc_collect_meta(ctx, ra, sched, meta_of_)
 }}
 `,
-			prefix,
 			q,
 			q,
 			q,
@@ -327,7 +311,6 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 			q,
 			q,
 			q,
-			prefix,
 			q,
 		)
 	}

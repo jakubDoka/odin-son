@@ -12,9 +12,9 @@ SPEC := backend.Node_Spec{
 	},
 	datatype_to_reg_kind = {.Void = 0, .I8 = 0, .I16 = 0, .I32 = 0, .I64 = 0, .F32 = 0, .F64 = 0, .V128 = 0, .V256 = 0, .V512 = 0},
 	spill_boundary = {},
-	emit_function = builder_emit_function,
-	peep = builder_peep_inst,
-	post_schedule_peep = builder_post_schedule_peep_inst,
+	emit_function = emit_function,
+	peep = peep_inst,
+	post_schedule_peep = post_schedule_peep_inst,
 	intern = true,
 	inheritance_table = {
 		0b1, // Start
@@ -443,7 +443,7 @@ SPEC := backend.Node_Spec{
 	},
 }
 
-Builder_Node_Type :: enum u16 {
+Node_Type :: enum u16 {
 	Start,
 	Entry,
 	Poison,
@@ -529,12 +529,12 @@ Builder_Node_Type :: enum u16 {
 	Lazy_Phi,
 }
 
-builder_peep_inst :: proc(ctx: backend.Peep_Ctx, node: backend.Expanded_Node) -> backend.Node_ID {
-	return builder_peep(ctx, node, struct{}{})
+peep_inst :: proc(ctx: backend.Peep_Ctx, node: backend.Expanded_Node) -> backend.Node_ID {
+	return peep(ctx, node, struct{}{})
 }
-builder_post_schedule_peep_inst :: proc(
+post_schedule_peep_inst :: proc(
 	ctx: backend.PS_Peep_Ctx, node: backend.Expanded_Node) -> backend.Node_ID {
-	return builder_post_schedule_peep(ctx, node, struct{}{})
+	return post_schedule_peep(ctx, node, struct{}{})
 }
 
 #assert(size_of(backend.Cfg) % backend.PRECISION == 0)
@@ -620,12 +620,12 @@ builder_post_schedule_peep_inst :: proc(
 #assert(size_of(backend.CV128) % backend.PRECISION == 0)
 #assert(size_of(Scope) % backend.PRECISION == 0)
 graph_add_scope :: #force_inline proc(graph: ^backend.Graph, name: string, cfg: backend.Node_ID) -> (_id: backend.Node_ID) {
-	(^Scope)(backend.graph_get_next_extra_slot(graph, u16(Builder_Node_Type.Scope)))^ = {}
-	return backend.graph_add_raw(graph, name, u16(Builder_Node_Type.Scope), .Void, {cfg})
+	(^Scope)(backend.graph_get_next_extra_slot(graph, u16(Node_Type.Scope)))^ = {}
+	return backend.graph_add_raw(graph, name, u16(Node_Type.Scope), .Void, {cfg})
 }
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 graph_add_lazy_phi :: #force_inline proc(graph: ^backend.Graph, name: string, dt: backend.Node_Datatype, reg: backend.Node_ID, lhs: backend.Node_ID) -> (_id: backend.Node_ID) {
-	return backend.graph_add_raw(graph, name, u16(Builder_Node_Type.Lazy_Phi), dt, {reg, lhs}, extra_capacity = 1)
+	return backend.graph_add_raw(graph, name, u16(Node_Type.Lazy_Phi), dt, {reg, lhs}, extra_capacity = 1)
 }
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {

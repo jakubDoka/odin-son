@@ -15,8 +15,8 @@ emit :: backend.emit
 graph_expand :: backend.graph_expand
 graph_get :: backend.graph_get
 
-xtype :: #force_inline proc(node: backend.Expanded_Node) -> X64_Node_Type {
-	return X64_Node_Type(node.rtype)
+xtype :: #force_inline proc(node: backend.Expanded_Node) -> Node_Type {
+	return Node_Type(node.rtype)
 }
 
 xextra :: #force_inline proc(
@@ -160,7 +160,7 @@ when SPEC_NOT_PRESENT {
 
 	inherit_idx_of :: proc($T: typeid) -> u8 {return 0}
 
-	X64_Node_Type :: enum u16 {
+	Node_Type :: enum u16 {
 		X64_Add,
 		X64_Sub,
 		X64_And,
@@ -221,7 +221,7 @@ when SPEC_NOT_PRESENT {
 	}
 
 	@(rodata)
-	X64_CLASSES := [X64_Node_Type]backend.Class_Spec {
+	X64_CLASSES := [Node_Type]backend.Class_Spec {
 		.X64_Add ..= .X64_U_Ge = X64_SIMPLE_BIN_OP_SPEC,
 		.X64_Shl ..= .X64_U_Shr = X64_SIMPLE_SHIFT_OP_SPEC,
 		.X64_Neg ..= .X64_Not = X64_SIMPLE_UN_OP_SPEC,
@@ -246,7 +246,7 @@ when SPEC_NOT_PRESENT {
 	}
 } else {
 	@(rodata)
-	X64_CLASSES := [X64_Node_Type]backend.Class_Spec{}
+	X64_CLASSES := [Node_Type]backend.Class_Spec{}
 }
 
 @(rodata)
@@ -273,16 +273,16 @@ Mem_Op :: struct {
 	aux:      u8,
 }
 
-BIN_OP_OFFSET :: transmute(u16)(i16(X64_Node_Type.X64_Add) -
-	i16(backend.Ideal_Node_Type.Add))
+BIN_OP_OFFSET :: transmute(u16)(i16(Node_Type.X64_Add) -
+	i16(backend.Node_Type.Add))
 
-UN_OP_OFFSET :: transmute(u16)(i16(X64_Node_Type.X64_Neg) -
-	i16(backend.Ideal_Node_Type.Neg))
+UN_OP_OFFSET :: transmute(u16)(i16(Node_Type.X64_Neg) -
+	i16(backend.Node_Type.Neg))
 
-FLOAT_BIN_OP_OFFSET :: transmute(u16)(i16(X64_Node_Type.X64_F_Add) -
-	i16(backend.Ideal_Node_Type.F_Add))
+FLOAT_BIN_OP_OFFSET :: transmute(u16)(i16(Node_Type.X64_F_Add) -
+	i16(backend.Node_Type.F_Add))
 
-x64_peep :: proc(
+peep :: proc(
 	ctx: backend.Peep_Ctx,
 	node: backend.Expanded_Node,
 	_: $T,
@@ -383,7 +383,7 @@ x64_peep :: proc(
 			return backend.graph_add_raw(
 				ctx,
 				node.name,
-				u16(X64_Node_Type.X64_CLoad),
+				u16(Node_Type.X64_CLoad),
 				node.dt,
 				{global},
 			)
@@ -572,7 +572,7 @@ x64_peep :: proc(
 			return make_node(
 				ctx,
 				id,
-				u16(X64_Node_Type.X64_Fma_213),
+				u16(Node_Type.X64_Fma_213),
 				{lhs.inps[0], lhs.inps[1], rhs_id},
 				{},
 			)
@@ -581,12 +581,12 @@ x64_peep :: proc(
 		op := u16(node.itype) + BIN_OP_OFFSET
 
 		if node.dt == .I8 && node.itype == .Mul {
-			node.rtype = u16(X64_Node_Type.X64_Mul8)
+			node.rtype = u16(Node_Type.X64_Mul8)
 			return id
 		}
 
 		if node.dt == .V128 && node.itype == .Eq {
-			node.rtype = u16(X64_Node_Type.X64_Pcmpeq)
+			node.rtype = u16(Node_Type.X64_Pcmpeq)
 			return id
 		}
 
@@ -662,7 +662,7 @@ x64_peep :: proc(
 			return make_node(
 				ctx,
 				id,
-				u16(X64_Node_Type.X64_Lea),
+				u16(Node_Type.X64_Lea),
 				{abase, aindex},
 				{scale = u8(ascale), dis = displacement},
 			)
@@ -684,7 +684,7 @@ x64_peep :: proc(
 		res := make_node(
 			ctx,
 			id,
-			u16(X64_Node_Type.X64_Load),
+			u16(Node_Type.X64_Load),
 			load_inps[:3 + int(scale != 0)],
 			{dis = displacement, scale = u8(scale), dt = node.dt},
 		)
@@ -712,7 +712,7 @@ x64_peep :: proc(
 		res := make_node(
 			ctx,
 			id,
-			u16(X64_Node_Type.X64_Store),
+			u16(Node_Type.X64_Store),
 			inps[:count],
 			{
 				dis = displacement,
@@ -764,7 +764,7 @@ x64_peep :: proc(
 		backend.graph_set_input(ctx, id, 2, base)
 
 		widen_load: if xtype(node) == .X64_Load && node.dt < .I64 {
-			dominant: backend.Ideal_Node_Type
+			dominant: backend.Node_Type
 			for out in node.outs {
 				onode := graph_get(ctx, out.id)
 				if dominant != {} {
@@ -785,7 +785,7 @@ x64_peep :: proc(
 			val := graph_expand(ctx, node.inps[3])
 			val_mem := xextra(ctx, val, Mem_Op)
 
-			X64_TRIGGER_OPS :: bit_set[X64_Node_Type] {
+			X64_TRIGGER_OPS :: bit_set[Node_Type] {
 				.X64_Add,
 				.X64_Sub,
 				.X64_And,
@@ -796,7 +796,7 @@ x64_peep :: proc(
 				.X64_U_Shr,
 			}
 
-			IDEAL_TRIGGER_OPS :: bit_set[backend.Ideal_Node_Type] {
+			IDEAL_TRIGGER_OPS :: bit_set[backend.Node_Type] {
 				.Add,
 				.Sub,
 				.And,
@@ -809,10 +809,7 @@ x64_peep :: proc(
 				.Neg,
 			}
 
-			IDEAL_TRIGGER_UN_OPS :: bit_set[backend.Ideal_Node_Type] {
-				.Not,
-				.Neg,
-			}
+			IDEAL_TRIGGER_UN_OPS :: bit_set[backend.Node_Type]{.Not, .Neg}
 
 			is_interesting :=
 				((xtype(val) in X64_TRIGGER_OPS && len(val.inps) == 1) ||
@@ -885,7 +882,7 @@ x64_peep :: proc(
 add_node :: proc(
 	ctx: ^backend.Graph,
 	name: string,
-	type: X64_Node_Type,
+	type: Node_Type,
 	dt: backend.Node_Datatype,
 	inps: []backend.Node_ID,
 	extra: Mem_Op = {},
@@ -913,13 +910,13 @@ make_node :: proc(
 	// NOTE: afaik this is sufficient since we don't insert load ops before
 	// scheduling
 	node.is_store = fnode.is_store
-	node.is_load = fnode.is_load || type == u16(X64_Node_Type.X64_Load)
+	node.is_load = fnode.is_load || type == u16(Node_Type.X64_Load)
 	node.lane = fnode.lane
 	xextra(graph, node, Mem_Op)^ = extra
 	return id
 }
 
-x64_post_schedule_peep :: proc(
+post_schedule_peep :: proc(
 	ctx: backend.PS_Peep_Ctx,
 	node: backend.Expanded_Node,
 	_: $T,
@@ -1069,7 +1066,7 @@ XMM_SPILL_MASKS := [6]backend.RM_Intern_Idx {
 	XMM_SPILL_MASK_IDX,
 }
 
-x64_meta_of :: proc(
+meta_of :: proc(
 	graph: ^backend.Graph,
 	ra: ^backend.Regalloc,
 	node: backend.Expanded_Node,
@@ -1462,7 +1459,7 @@ emit_big_constant :: proc(
 	return
 }
 
-x64_emit_function :: proc(
+emit_function :: proc(
 	ectx: backend.Codegen_Emit_Ctx,
 ) -> backend.Codegen_Output {
 	context.allocator, _ = arna.scrath()
@@ -1705,7 +1702,7 @@ x64_emit_instr :: proc(
 ) {
 
 	@(static, rodata)
-	OPCODE_TABLE := #partial [X64_Node_Type]Instr_Info {
+	OPCODE_TABLE := #partial [Node_Type]Instr_Info {
 		.Add       = {0x01, 0},
 		.Sub       = {0x29, 0},
 		.And       = {0x21, 0},
@@ -1770,7 +1767,7 @@ x64_emit_instr :: proc(
 	}
 
 	@(static, rodata)
-	DEST_MODE_OPCODE_TABLE := #partial [X64_Node_Type]Instr_Info {
+	DEST_MODE_OPCODE_TABLE := #partial [Node_Type]Instr_Info {
 		.X64_Add   = {0x01, 0b000},
 		.X64_Sub   = {0x29, 0b101},
 		.X64_And   = {0x21, 0b100},
@@ -1784,7 +1781,7 @@ x64_emit_instr :: proc(
 	}
 
 	@(static, rodata)
-	JCC_TABLE := #partial [X64_Node_Type]u8 {
+	JCC_TABLE := #partial [Node_Type]u8 {
 		.Eq   = 0x84, // JE / JZ
 		.Ne   = 0x85, // JNE / JNZ
 		.Lt   = 0x8C, // JL
@@ -1798,7 +1795,7 @@ x64_emit_instr :: proc(
 	}
 
 	@(static, rodata)
-	CMP_OP_REVERSE := #partial [X64_Node_Type]X64_Node_Type {
+	CMP_OP_REVERSE := #partial [Node_Type]Node_Type {
 		.Eq       = .Ne,
 		.Ne       = .Eq,
 		.Lt       = .Ge,
@@ -1834,7 +1831,7 @@ x64_emit_instr :: proc(
 	}
 
 	@(static, rodata)
-	SRC_MODE_OPCODE_TABLE := #partial [X64_Node_Type]Instr_Info {
+	SRC_MODE_OPCODE_TABLE := #partial [Node_Type]Instr_Info {
 		.X64_Add   = {0x03, 0},
 		.X64_Sub   = {0x2B, 0},
 		.X64_And   = {0x23, 0},
@@ -1861,7 +1858,7 @@ x64_emit_instr :: proc(
 	}
 
 	@(static, rodata)
-	SIMD_OPCODE_TABLE := #partial [X64_Node_Type][backend.Lane_Type]u8 {
+	SIMD_OPCODE_TABLE := #partial [Node_Type][backend.Lane_Type]u8 {
 		.X64_Add = ADD_LANE_TABLE,
 		.X64_Sub = SUB_LANE_TABLE,
 		.X64_And = #partial{.I8 ..= .I64 = 0xDB},
@@ -2212,7 +2209,7 @@ x64_emit_instr :: proc(
 			},
 		)
 
-		op: X64_Node_Type = is_consecutive ? .Eq : .Ne
+		op: Node_Type = is_consecutive ? .Eq : .Ne
 		if cnode.dt == .Void {
 			// we do this anyway to normalize
 			op = CMP_OP_REVERSE[xtype(cnode)]

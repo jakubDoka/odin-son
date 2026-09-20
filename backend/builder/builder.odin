@@ -159,7 +159,7 @@ fold_bin_op :: proc(
 	ti :: proc(i: f64) -> i64 {return transmute(i64)i}
 }
 
-builder_peep :: proc(
+peep :: proc(
 	ctx: backend.Peep_Ctx,
 	node: backend.Expanded_Node,
 	_: $T,
@@ -171,7 +171,7 @@ builder_peep :: proc(
 	id := backend.graph_id(ctx, node)
 	is_complete := backend.peep_ctx_graph_is_complete(ctx)
 
-	DEAD_EXCEPTIONS := bit_set[backend.Ideal_Node_Type] {
+	DEAD_EXCEPTIONS := bit_set[backend.Node_Type] {
 		.Region,
 		.Start,
 		.Loop,
@@ -185,7 +185,7 @@ builder_peep :: proc(
 		}
 	}
 
-	STORES := bit_set[backend.Ideal_Node_Type]{.Store, .Set, .Copy}
+	STORES := bit_set[backend.Node_Type]{.Store, .Set, .Copy}
 
 	emilinate_dead_local: if node.itype in STORES {
 		base, _ := backend.base_and_offset(ctx, node.inps[2])
@@ -297,7 +297,7 @@ builder_peep :: proc(
 				bse, _ := backend.base_and_offset(ctx, fnode.inps[2])
 				subs := graph_get(ctx, bse)
 
-				VALID :: bit_set[backend.Ideal_Node_Type] {
+				VALID :: bit_set[backend.Node_Type] {
 					.Local_Addr,
 					.Param,
 					.Global_Addr,
@@ -528,7 +528,7 @@ builder_peep :: proc(
 	case .Phi:
 		ctrl := graph_expand(ctx, node.inps[0])
 
-		if Builder_Node_Type(ctrl.rtype) == .Dead && 2 < len(node.inps) {
+		if Node_Type(ctrl.rtype) == .Dead && 2 < len(node.inps) {
 			ordered_remove(ctx, &node, 2)
 			if node.rtype == backend.DEAD_NODE_KIND do break match
 		}
@@ -737,7 +737,7 @@ builder_peep :: proc(
 		}
 
 		@(static, rodata)
-		COMUTE_PRIORITY_TABLE := #partial [backend.Ideal_Node_Type]u8 {
+		COMUTE_PRIORITY_TABLE := #partial [backend.Node_Type]u8 {
 			.CInt = 1,
 		}
 
@@ -983,7 +983,7 @@ builder_peep :: proc(
 				break match
 			}
 
-			AUX :: bit_set[backend.Ideal_Node_Type]{.Load}
+			AUX :: bit_set[backend.Node_Type]{.Load}
 
 			#reverse for &slot, i in slots {
 				send := slot.offset + slot.size
@@ -1046,7 +1046,7 @@ builder_peep :: proc(
 			for out in cnode.outs {
 				onode := graph_expand(ctx, out.id)
 
-				ALLOWED := bit_set[backend.Ideal_Node_Type] {
+				ALLOWED := bit_set[backend.Node_Type] {
 					.Store,
 					.Load,
 					.Set,
@@ -1251,7 +1251,7 @@ builder_peep :: proc(
 	return 0
 }
 
-builder_post_schedule_peep :: proc(
+post_schedule_peep :: proc(
 	ctx: backend.PS_Peep_Ctx,
 	node: backend.Expanded_Node,
 	_: $T,
@@ -1259,7 +1259,7 @@ builder_post_schedule_peep :: proc(
 	return 0
 }
 
-builder_emit_function :: proc(
+emit_function :: proc(
 	ectx: backend.Codegen_Emit_Ctx,
 ) -> backend.Codegen_Output {
 

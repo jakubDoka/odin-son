@@ -14,11 +14,11 @@ SPEC := backend.Node_Spec{
 	},
 	datatype_to_reg_kind = {.Void = 0, .I8 = 1, .I16 = 1, .I32 = 1, .I64 = 0, .F32 = 3, .F64 = 2, .V128 = 4, .V256 = 0, .V512 = 0},
 	spill_boundary = {64, 64, 64, 64, 64, 64},
-	collect_meta = wasm_collect_meta,
-	pre_regalloc_hook = wasm_pre_regalloc_hook,
-	emit_function = wasm_emit_function,
-	peep = wasm_peep_inst,
-	post_schedule_peep = wasm_post_schedule_peep_inst,
+	collect_meta = collect_meta,
+	pre_regalloc_hook = pre_regalloc_hook,
+	emit_function = emit_function,
+	peep = peep_inst,
+	post_schedule_peep = post_schedule_peep_inst,
 	intern = false,
 	inheritance_table = {
 		0b1, // Start
@@ -477,7 +477,7 @@ SPEC := backend.Node_Spec{
 	},
 }
 
-WASM_Node_Type :: enum u16 {
+Node_Type :: enum u16 {
 	Start,
 	Entry,
 	Poison,
@@ -569,23 +569,23 @@ WASM_Node_Type :: enum u16 {
 	Extract_Lane_U,
 }
 
-wasm_peep_inst :: proc(ctx: backend.Peep_Ctx, node: backend.Expanded_Node) -> backend.Node_ID {
-	return wasm_peep(ctx, node, struct{}{})
+peep_inst :: proc(ctx: backend.Peep_Ctx, node: backend.Expanded_Node) -> backend.Node_ID {
+	return peep(ctx, node, struct{}{})
 }
-wasm_post_schedule_peep_inst :: proc(
+post_schedule_peep_inst :: proc(
 	ctx: backend.PS_Peep_Ctx, node: backend.Expanded_Node) -> backend.Node_ID {
-	return wasm_post_schedule_peep(ctx, node, struct{}{})
+	return post_schedule_peep(ctx, node, struct{}{})
 }
 
 
-wasm_collect_meta :: proc(ctx: ^backend.Graph,
+collect_meta :: proc(ctx: ^backend.Graph,
 	ra: ^backend.Regalloc, sched: ^backend.Graph_Schedule) -> ([]backend.Regalloc_Node_Meta, int) {
 
-	meta_of :: proc(ctx: ^backend.Graph, ra: ^backend.Regalloc,
+	meta_of_ :: proc(ctx: ^backend.Graph, ra: ^backend.Regalloc,
 		node: backend.Expanded_Node) -> backend.Regalloc_Node_Meta {
-		return wasm_meta_of(ctx, ra, node, struct{}{})
+		return meta_of(ctx, ra, node, struct{}{})
 	}
-	return backend.regalloc_collect_meta(ctx, ra, sched, meta_of)
+	return backend.regalloc_collect_meta(ctx, ra, sched, meta_of_)
 }
 
 #assert(size_of(backend.Cfg) % backend.PRECISION == 0)
@@ -678,10 +678,10 @@ wasm_collect_meta :: proc(ctx: ^backend.Graph,
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(Lane_Op) % backend.PRECISION == 0)
 graph_add_extract_lane_u :: #force_inline proc(graph: ^backend.Graph, name: string, dt: backend.Node_Datatype, vec: backend.Node_ID, laneidx: u32, lane: backend.Lane_Type = {}) -> (_id: backend.Node_ID) {
-	(^Lane_Op)(backend.graph_get_next_extra_slot(graph, u16(WASM_Node_Type.Extract_Lane_U)))^ = {
+	(^Lane_Op)(backend.graph_get_next_extra_slot(graph, u16(Node_Type.Extract_Lane_U)))^ = {
 		laneidx = laneidx,
 	}
-	return backend.graph_add_raw(graph, name, u16(WASM_Node_Type.Extract_Lane_U), dt, {vec}, lane = lane)
+	return backend.graph_add_raw(graph, name, u16(Node_Type.Extract_Lane_U), dt, {vec}, lane = lane)
 }
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {

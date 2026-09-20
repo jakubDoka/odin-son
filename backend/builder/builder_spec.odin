@@ -18,13 +18,13 @@ when SPEC_NOT_PRESENT {
 
 	inherit_idx_of :: proc($T: typeid) -> u8 {return 0}
 
-	Builder_Node_Type :: enum u16 {
+	Node_Type :: enum u16 {
 		Scope,
 		Lazy_Phi,
 	}
 
 	@(rodata)
-	BUILDER_CLASSES := [Builder_Node_Type]backend.Class_Spec {
+	BUILDER_CLASSES := [Node_Type]backend.Class_Spec {
 		.Scope = {id = Scope, args = {"cfg"}, default_type = .Void},
 		.Lazy_Phi = {args = {"reg", "lhs"}, extra_capacity = 1},
 	}
@@ -48,5 +48,5 @@ when SPEC_NOT_PRESENT {
 	}
 } else {
 	@(rodata)
-	BUILDER_CLASSES := [Builder_Node_Type]backend.Class_Spec{}
+	BUILDER_CLASSES := [Node_Type]backend.Class_Spec{}
 }

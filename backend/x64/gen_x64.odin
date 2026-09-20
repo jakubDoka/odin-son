@@ -17,7 +17,6 @@ when GEN_SPEC {
 				header_import = "import backend \"..\"\n" + "Reg_Kind :: backend.Reg_Kind\n" + "Class_Flag :: backend.Class_Flag\n",
 				qual = "backend.",
 				local_extra_types = {Mem_Op},
-				name = "X64",
 				classes = {
 					backend.class_array(
 						&backend.IDEAL_CLASSES,

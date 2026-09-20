@@ -9,8 +9,8 @@ import "core:slice"
 Graph :: backend.Graph
 graph_get :: backend.graph_get
 
-btype :: #force_inline proc(node: backend.Expanded_Node) -> Builder_Node_Type {
-	return Builder_Node_Type(node.rtype)
+btype :: #force_inline proc(node: backend.Expanded_Node) -> Node_Type {
+	return Node_Type(node.rtype)
 }
 
 // mirrors backend.graph_extra, but resolved against this package's own
@@ -262,7 +262,7 @@ graph_get_scope_value :: proc(
 	#any_int idx: int,
 ) -> backend.Node_ID {
 	snode := graph_get(graph, scope)
-	assert(Builder_Node_Type(snode.rtype) == .Scope)
+	assert(Node_Type(snode.rtype) == .Scope)
 
 	val := backend.graph_inps(graph, snode)[idx]
 	vnode := graph_expand(graph, val)
@@ -295,7 +295,7 @@ graph_push_scope_value :: proc(
 	value: backend.Node_ID,
 ) -> int {
 	scope_node := graph_get(graph, scope)
-	assert(Builder_Node_Type(scope_node.rtype) == .Scope)
+	assert(Node_Type(scope_node.rtype) == .Scope)
 	return backend.graph_connect(graph, scope, value)
 }
 
@@ -652,7 +652,7 @@ graph_inline_graph :: proc(
 						lpnode := graph_get(ctx.graph, lproj)
 						backedge := graph_get(ctx.from, lonode.inps[2])
 						bproj := ctx.projection[backedge.gvn]
-						assert(Builder_Node_Type(lpnode.rtype) == .Lazy_Phi)
+						assert(Node_Type(lpnode.rtype) == .Lazy_Phi)
 						lpnode.itype = .Phi
 						backend.graph_connect(ctx.graph, lproj, bproj)
 						id := backend.graph_intern(ctx.graph, lproj)
@@ -687,7 +687,7 @@ graph_inline_graph :: proc(
 
 		if node.itype == .Phi &&
 		   graph_get(ctx.from, node.inps[0]).itype == .Loop {
-			rtype = u16(Builder_Node_Type.Lazy_Phi)
+			rtype = u16(Node_Type.Lazy_Phi)
 			input_cap = 2
 		}
 

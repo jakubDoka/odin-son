@@ -11,13 +11,13 @@ COMMAND :: "odin run backend/anal -define:ANAL_GEN_SPEC=true"
 
 SPEC_NOT_PRESENT :: (#load("node_specs.odin", string) or_else "") == ""
 
-anal_peep :: proc(
+peep :: proc(
 	ctx: backend.Peep_Ctx,
 	node: backend.Expanded_Node,
 	_: $T,
 ) -> Node_ID {return 0}
 
-anal_post_schedule_peep :: proc(
+post_schedule_peep :: proc(
 	ctx: backend.PS_Peep_Ctx,
 	node: backend.Expanded_Node,
 	_: $T,
@@ -30,14 +30,14 @@ when SPEC_NOT_PRESENT {
 
 	inherit_idx_of :: proc($T: typeid) -> u8 {return 0}
 
-	Anal_Node_Type :: enum u16 {}
+	Node_Type :: enum u16 {}
 
 	when !GEN_SPEC {
 		#panic("Missing generated files, run `" + COMMAND + "`")
 	}
 }
 
-anal_emit_function :: proc(
+emit_function :: proc(
 	ectx: backend.Codegen_Emit_Ctx,
 ) -> backend.Codegen_Output {
 	msg_start := ectx.buf.code.pos

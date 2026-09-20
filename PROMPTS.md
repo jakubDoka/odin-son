@@ -327,7 +327,7 @@ the compiler emits all of the possible instructions.
 
 #### Part 2
 
-Add the appropriate nodes to the `Ideal_Node_Type`, the floating point ops
+Add the appropriate nodes to the `Node_Type`, the floating point ops
 should not share kinds with integer ops. Do a F_Op naming scheme here. Do not
 add isa specific instructions (X64_*) yet. Make sure to specify all properties
 of the new nodes and regenerate the spec. Also add the `.F32` and `.F64` to the

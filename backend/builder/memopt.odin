@@ -341,7 +341,7 @@ memopt :: proc(graph: ^backend.Graph) -> (optimized: bool) {
 									backend.graph_add_raw(
 										ctx,
 										"srphi",
-										u16(backend.Ideal_Node_Type.Phi),
+										u16(backend.Node_Type.Phi),
 										graph_get(ctx, res.node).dt,
 										mem.slice_data_cast([]Node_ID, sloter),
 									),

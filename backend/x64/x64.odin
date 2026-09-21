@@ -1411,7 +1411,12 @@ emit_function :: proc(
 	slot: [2]int
 	ctx.used = bit_arr.init_from_masks(slot[:])
 
-	has_call := backend.layout_stack(ctx.graph, ctx.schedule, &ctx.stack_size)
+	has_call := backend.layout_call_args(
+		ctx.graph,
+		ctx.schedule,
+		&ctx.stack_size,
+	)
+	backend.layout_locals(ctx.graph, ctx.schedule, &ctx.stack_size)
 
 	used_red_zone: i32
 	if !has_call {

@@ -221,7 +221,7 @@ emit_leb :: proc(buf: ^arna.Allocator, value: $T) {
 	buf.pos -= len(bf) - uint(size)
 }
 
-layout_stack :: proc(
+layout_call_args :: proc(
 	ctx: ^Graph,
 	schedule: ^Graph_Schedule,
 	stack_size: ^i32,
@@ -248,6 +248,14 @@ layout_stack :: proc(
 		stack_size^ = max(stack_size^, call_stack_size)
 	}
 
+	return
+}
+
+layout_locals :: proc(
+	ctx: ^Graph,
+	schedule: ^Graph_Schedule,
+	stack_size: ^i32,
+) {
 	emem := ctx.root_mem
 	mem_outs := graph_outs(ctx, emem)
 
@@ -278,8 +286,6 @@ layout_stack :: proc(
 		stack_size^ += extra.size
 		extra.offset = stack_size^ - extra.size
 	}
-
-	return
 }
 
 uleb :: proc(b: ^[dynamic]u8, value: u64) {

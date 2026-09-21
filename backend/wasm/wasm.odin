@@ -891,7 +891,8 @@ emit_function :: proc(
 	ctx.code_start = u32(ctx.code.pos)
 	reloc_start := ctx.relocs.pos
 
-	backend.layout_stack(ctx.graph, ctx.schedule, &ctx.stack_size)
+	backend.layout_call_args(ctx.graph, ctx.schedule, &ctx.stack_size)
+	backend.layout_locals(ctx.graph, ctx.schedule, &ctx.stack_size)
 
 	compute_blocks: {
 		ctx.blocks = make([dynamic]Block, 1, len(ctx.schedule.bbs) + 1)

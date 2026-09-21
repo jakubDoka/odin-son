@@ -171,10 +171,23 @@ atype :: proc(node: ^Node) -> Node_Type {
 }
 
 peep :: proc(
-	_: backend.Peep_Ctx,
-	_: backend.Expanded_Node,
+	ctx: backend.Peep_Ctx,
+	node: backend.Expanded_Node,
 	_: $T,
 ) -> backend.Node_ID {
+	id := backend.graph_id(ctx, node)
+	kind := atype(node)
+
+	#partial switch kind {
+	case .Eq ..= .U_Ge:
+		if len(node.outs) == 1 &&
+		   graph_get(ctx, node.outs[0].id).itype == .If &&
+		   node.dt != .Void {
+			node.dt = .Void
+			return id
+		}
+	}
+
 	return 0
 }
 
@@ -274,8 +287,10 @@ meta_of :: #force_inline proc(
 	#partial switch atype(node) {
 	case .Root_Mem, .Sym, .Jump:
 		return {out = IOUT}
-	case .Mul, .Add, .Eq, .Sub:
+	case .Mul, .Add, .Sub:
 		return {out = out, masks = nmasks[:2]}
+	case .Eq:
+		return {out = out, masks = GPA_MASKS[:2]}
 	case .CInt:
 		return {out = out}
 	case .Phi:
@@ -468,11 +483,29 @@ emit_instr :: proc(
 		rm := reg_of(ctx, node.inps[1])
 
 		emit_op(ctx.code, sh_instr(.x, op, nil, XZR, rn, rm))
+
+		if node.dt != .Void {
+			op :: 0b10011010100
+			rm :: XZR
+			cond := CC_TABLE[kind]
+			pd :: 0b01
+			rn :: XZR
+			rd := reg_of(ctx, instr)
+			emit_op(
+				ctx.code,
+				op << 21 |
+				u32(rm.index) << 16 |
+				u32(cond) << 12 |
+				pd << 10 |
+				u32(rn.index) << 5 |
+				u32(rd.index),
+			)
+		}
 	case .CInt:
 		cint := backend.graph_extra(ctx, node, backend.CInt)
 
 		#partial switch node.dt {
-		case .I64:
+		case .I8 ..= .I64:
 			op :: 0b110100101
 			hw :: 0b00
 
@@ -486,7 +519,7 @@ emit_instr :: proc(
 				op << 23 | hw << 21 | u32(imm) << 5 | u32(reg.index),
 			)
 		case:
-			fmt.panicf("")
+			fmt.panicf("TODO: %v", node)
 		}
 	case .If:
 		append(
@@ -499,18 +532,24 @@ emit_instr :: proc(
 			},
 		)
 
-		assert(graph_get(ctx, node.inps[0]).dt == .Void)
+		if graph_get(ctx, node.inps[1]).dt == .Void {
+			op :: 0b01010100
+			imm19 :: 0
+			pd :: 0
 
-		op :: 0b01010100
-		imm19 :: 0
-		pd :: 0
-		cond := cc_neg(CC_TABLE[kind]) // ne
+			cond := cc_neg(CC_TABLE[kind])
+			if !is_consecutive do cond = cc_neg(cond)
 
-		if !is_consecutive {
-			cond = cc_neg(cond)
+			emit_op(ctx.code, op << 24 | imm19 << 5 | pd << 4 | u32(cond))
+		} else {
+			op: u32 = 0b10110100 // cbnz
+			if !is_consecutive do op = 0b10110101 // cbz
+
+			imm19 :: 0
+			rt := reg_of(ctx, node.inps[1])
+
+			emit_op(ctx.code, op << 24 | imm19 << 5 | u32(rt.index))
 		}
-
-		emit_op(ctx.code, op << 24 | imm19 << 5 | pd << 4 | u32(cond))
 
 		if !is_consecutive do break
 		fallthrough

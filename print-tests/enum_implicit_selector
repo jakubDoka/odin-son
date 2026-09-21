@@ -227,3 +227,58 @@ main:
   (data (;0;) (i64.const 1048576) "")
 )
 =========== OPT LEVEL: aggresive ===========
+=========== OPT LEVEL: none-quick ===========
+main:
+    movz x0, #1, #0
+    cmp x0, x0
+    b.eq 1
+    movz x0, #0, #0
+    b 2
+1:
+    movz x0, #5, #0
+2:
+    ret
+=========== OPT LEVEL: none ===========
+main:
+    movz x0, #1, #0
+    cmp x0, x0
+    b.eq 1
+    movz x0, #0, #0
+    b 2
+1:
+    movz x0, #5, #0
+2:
+    ret
+=========== OPT LEVEL: mininal-quick ===========
+main:
+    movz x1, #1, #0
+    cbnz x1, 1
+    movz x0, #0, #0
+    b 2
+1:
+    movz x0, #5, #0
+2:
+    ret
+=========== OPT LEVEL: mininal ===========
+main:
+    movz x0, #1, #0
+    cbnz x0, 1
+    movz x0, #0, #0
+    b 2
+1:
+    movz x0, #5, #0
+2:
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+main:
+    movz x0, #5, #0
+    ret
+=========== OPT LEVEL: moderate ===========
+main:
+    movz x0, #5, #0
+    ret
+=========== OPT LEVEL: all ===========
+main:
+    movz x0, #5, #0
+    ret
+=========== OPT LEVEL: aggresive ===========

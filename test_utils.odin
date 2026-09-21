@@ -288,7 +288,7 @@ run_test :: proc(
 			}
 
 			for p in ctx.procs {
-				for rel in p.out.relocs {
+				for &rel in p.out.relocs {
 					target_off: uintptr
 					switch rel.kind {
 					case .Text:
@@ -310,7 +310,12 @@ run_test :: proc(
 
 					source :=
 						uintptr(raw_data(p.out.code)) + uintptr(rel.offset)
-					jump := u32(target_off - source)
+					jump := i32(target_off - source)
+
+					if level.vm == .Arm {
+						jump = jump / 4
+						rel.offset += 4
+					}
 
 					size := backend.RELOC_SIZE[rel.size]
 					slot := (^backend.Reloc_Slot)(
@@ -368,6 +373,7 @@ run_test :: proc(
 							types.mems.code.ptr[:types.mems.code.pos],
 							int(code_until),
 							start,
+							trace_instrs = #config(TRACE_INSTRS, false),
 						)
 						if err != nil {
 							log.error(unicorn.error_string(err))

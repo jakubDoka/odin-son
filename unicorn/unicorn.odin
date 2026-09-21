@@ -1,7 +1,12 @@
 package unicorn
 
+import "../vendored/gam/util/arna"
 import "base:runtime"
 import "core:c"
+import "core:fmt"
+import "core:log"
+import arm64 "core:rexcode/isa/arm64"
+import "core:strings"
 
 @(private)
 UNICORN_LIBRARY :: "../vendored/unicorn-engine/build/libunicorn.a"
@@ -51,6 +56,14 @@ DEFAULT_INSTRUCTION_LIMIT :: 1_000_000
 Engine :: struct {}
 
 Context :: struct {}
+
+Hook :: distinct uintptr
+
+Trace_Data :: struct {
+	instrs:      []arm64.Instruction,
+	instr_infos: []arm64.Instruction_Info,
+	logger:      log.Logger,
+}
 
 VM_State :: struct {
 	engine:      ^Engine,
@@ -104,6 +117,8 @@ foreign uc {
 	uc_context_restore :: proc "c" (engine: ^Engine, state: ^Context) -> Error ---
 	uc_context_free :: proc "c" (state: ^Context) -> Error ---
 	uc_ctl :: proc "c" (engine: ^Engine, control: u32, #c_vararg args: ..any) -> Error ---
+	uc_hook_add :: proc "c" (engine: ^Engine, hook: ^Hook, hook_type: c.int, callback, user_data: rawptr, begin, end: u64) -> Error ---
+	uc_hook_del :: proc "c" (engine: ^Engine, hook: Hook) -> Error ---
 }
 
 PAGE_SIZE :: u64(4096)
@@ -116,6 +131,76 @@ ARM64_LR :: c.int(2)
 ARM64_X0 :: c.int(199)
 ARM64_PC :: c.int(260)
 REMOVE_CODE_CACHE :: u32(9 | (2 << 26) | (1 << 30))
+HOOK_CODE :: c.int(1 << 2)
+
+trace_instruction :: proc "c" (
+	engine: ^Engine,
+	address: u64,
+	_: u32,
+	user_data: rawptr,
+) {
+	context = runtime.default_context()
+	trace := cast(^Trace_Data)user_data
+	if address < CODE_ADDRESS {
+		return
+	}
+	index := int((address - CODE_ADDRESS) / 4)
+	if index < 0 || index >= len(trace.instrs) {
+		return
+	}
+	logger := trace.logger
+	if logger.procedure == nil ||
+	   logger.procedure == log.nil_logger_proc ||
+	   .Info < logger.lowest_level {
+		return
+	}
+
+	line: strings.Builder
+
+	options := arm64.DEFAULT_PRINT_OPTIONS
+	options.indent = ""
+	options.separator = ""
+	arm64.sbprint(
+		&line,
+		trace.instrs[index:index + 1],
+		trace.instr_infos[index:index + 1],
+		nil,
+		options = &options,
+	)
+
+	instr := trace.instrs[index]
+	for op in instr.ops[:instr.operand_count] {
+		if op.kind == .REGISTER &&
+		   op.reg >= arm64.REG_X &&
+		   op.reg < arm64.REG_X + 32 {
+			value: u64
+			err := uc_reg_read(
+				engine,
+				ARM64_X0 + c.int(op.reg - arm64.REG_X),
+				&value,
+			)
+			fmt.assertf(err == nil, "%v", error_string(err))
+
+			fmt.sbprint(&line, "", value)
+		}
+	}
+
+	logger.procedure(logger.data, .Info, string(line.buf[:]), logger.options)
+}
+
+make_trace_data :: proc(code: []u8) -> Trace_Data {
+	instructions: [dynamic]arm64.Instruction
+	inst_info: [dynamic]arm64.Instruction_Info
+	label_defs: [dynamic]arm64.Label_Definition
+	errors: [dynamic]arm64.Error
+	arm64.decode(code, nil, &instructions, &inst_info, &label_defs, &errors)
+
+	return Trace_Data {
+		instrs = instructions[:],
+		instr_infos = inst_info[:],
+		logger = context.logger,
+	}
+}
 
 acquire_thread_vm :: proc(
 	mapped_size, data_start: u64,
@@ -193,10 +278,13 @@ run_arm64 :: proc(
 	start: int,
 	arguments: []u64 = nil,
 	instruction_limit: uint = DEFAULT_INSTRUCTION_LIMIT,
+	trace_instrs := false,
 ) -> (
 	result: u64,
 	err: Error,
 ) {
+	context.allocator, _ = arna.scrath()
+
 	if len(code) == 0 ||
 	   data_start <= 0 ||
 	   data_start > len(code) ||
@@ -255,6 +343,25 @@ run_arm64 :: proc(
 			return
 		}
 	}
+
+	trace_hook: Hook
+	trace_data: Trace_Data
+	if trace_instrs {
+		trace_data = make_trace_data(code[:data_start])
+		if err = uc_hook_add(
+			engine,
+			&trace_hook,
+			HOOK_CODE,
+			cast(rawptr)trace_instruction,
+			&trace_data,
+			CODE_ADDRESS,
+			CODE_ADDRESS + u64(data_start) - 1,
+		); err != .OK {
+			return
+		}
+	}
+
+	defer if trace_instrs do uc_hook_del(engine, trace_hook)
 
 	if err = uc_emu_start(
 		engine,

@@ -2,6 +2,7 @@ package arm
 
 import backend ".."
 import "../../vendored/gam/util/arna"
+import "../../vendored/gam/util/bit_arr"
 import "core:fmt"
 import "core:mem"
 import "core:slice"
@@ -285,11 +286,11 @@ meta_of :: #force_inline proc(
 	}
 
 	#partial switch atype(node) {
-	case .Root_Mem, .Sym, .Jump:
+	case .Root_Mem, .Sym, .Jump, .Mem:
 		return {out = IOUT}
 	case .Mul, .Add, .Sub:
 		return {out = out, masks = nmasks[:2]}
-	case .Eq:
+	case .Eq ..= .U_Ge:
 		return {out = out, masks = GPA_MASKS[:2]}
 	case .CInt:
 		return {out = out}
@@ -308,14 +309,36 @@ meta_of :: #force_inline proc(
 			masks = nmasks[:1 -
 			int(graph_get(graph, node.inps[0]).dt == .Void)],
 		}
+	case .Call:
+		real_len := len(node.inps)
+		for ; graph_get(graph, node.inps[real_len - 1]).itype == .Local;
+		    real_len -= 1 {}
+
+		masks := make([]backend.RM_Intern_Idx, real_len - backend.CALL_PREFIX)
+		for inp, i in node.inps[backend.CALL_PREFIX:real_len] {
+			inode := graph_get(graph, inp)
+			nkind := ra.datatype_to_reg_kind[inode.dt]
+			assert(nkind == RK_GENERAL)
+			masks[i] = single(ra, ARM_SYSTEMV_CC.args[0][i])
+		}
+
+		return {out = IOUT, input_start = backend.CALL_PREFIX, masks = masks}
+	case .Ret:
+		idx := backend.graph_extra(graph, node, backend.Tup).idx
+		assert(nkind == RK_GENERAL)
+		return {out = single(ra, ARM_SYSTEMV_CC.rets[0][idx])}
+	case .Param:
+		idx := backend.graph_extra(graph, node, backend.Tup).idx
+		assert(nkind == RK_GENERAL)
+		return {out = single(ra, ARM_SYSTEMV_CC.args[0][idx])}
 	case .Return:
 		return {
 			out = IOUT,
 			input_start = backend.RET_PREFIX,
 			masks = dup(
 				{
-					single(ra, ARM_SYSTEMV_CC.args[0][0]),
-					single(ra, ARM_SYSTEMV_CC.args[0][1]),
+					single(ra, ARM_SYSTEMV_CC.rets[0][0]),
+					single(ra, ARM_SYSTEMV_CC.rets[0][1]),
 				},
 			),
 		}
@@ -328,6 +351,8 @@ Ctx :: struct {
 	using inner:  backend.Codegen_Emit_Ctx,
 	code_start:   uint,
 	local_relocs: [dynamic]Local_Reloc,
+	used:         bit_arr.Bit_Set,
+	stack_size:   i32,
 }
 
 Local_Reloc :: struct {
@@ -342,10 +367,85 @@ emit_function :: proc(
 
 	ctx: Ctx
 	ctx.inner = ectx
+	ctx.used = bit_arr.init(MASK_SIZE)
+
+	relocs_start := ctx.relocs.pos
 
 	arna.alloc(ctx.code, 0, 4)
 
 	ctx.code_start = ctx.code.pos
+
+	spill_slot_count: [RK_COUNT]i32
+	for reg in ctx.allocs {
+		spill_slot_count[reg.kind] = max(
+			spill_slot_count[reg.kind],
+			i32(reg.index) - 16 + 1,
+		)
+		if reg.kind == RK_GENERAL {
+			bit_arr.set_unbounded(ctx.used, int(reg.index))
+		}
+	}
+
+	idx := ctx.code.pos
+	emit_op(ctx.code, 0)
+
+	prelude: {
+		pushed: i32
+		for reg in ctx.callee_saved[RK_GENERAL] {
+			if bit_arr.contains(ctx.used, int(reg)) {
+				op :: 0b1111100100 // ldr rt, [rn, $imm12]
+				imm12 := pushed / 8
+
+				rn := SP
+				rt := reg
+
+				emit_op(
+					ctx.code,
+					op << 22 |
+					u32(imm12) << 10 |
+					u32(rn.index) << 5 |
+					u32(rt.index),
+				)
+
+				pushed += 8
+			}
+		}
+
+		{
+			op: u32 : 0b1010100100 // stp.post x29, x30, [SP, pushed / 8]
+			imm7 := pushed / 8
+			rt2 :: X30
+			rn :: SP
+			rt :: X29
+
+			emit_op(
+				ctx.code,
+				op << 22 |
+				u32(imm7 & 0x7f) << 15 |
+				u32(rt2.index) << 10 |
+				u32(rn.index) << 5 |
+				u32(rt.index),
+			)
+			pushed += 16
+		}
+
+		ctx.stack_size += pushed
+	}
+
+	{
+		op :: 0b110100010
+		sh :: 0b0
+		imm12 := ctx.stack_size
+		rn :: SP
+		rd :: SP
+
+		(^Op)(ctx.code.ptr[idx:])^ =
+			op << 23 |
+			sh << 22 |
+			u32(imm12) << 10 |
+			u32(rn.index) << 5 |
+			u32(rd.index)
+	}
 
 	for &bb, i in ctx.schedule.bbs {
 		bb.offset = u32(ctx.code.pos)
@@ -376,7 +476,7 @@ emit_function :: proc(
 		}
 
 		dst_offset := ctx.bbs[reloc.dest].offset
-		jump := (dst_offset - reloc.offset) / 4
+		jump := i32(dst_offset - reloc.offset) / 4
 
 		slot := (^backend.Reloc_Slot)(ctx.code.ptr[reloc.offset:])
 		if reloc.is_bcond {
@@ -387,8 +487,12 @@ emit_function :: proc(
 	}
 
 	code := ctx.code.ptr[ctx.code_start:ctx.code.pos]
+	relocs := mem.slice_data_cast(
+		[]backend.Reloc,
+		ctx.relocs.ptr[relocs_start:ctx.relocs.pos],
+	)
 
-	return {code = code}
+	return {code = code, relocs = relocs}
 }
 
 @(disabled = SPEC_NOT_PRESENT)
@@ -446,7 +550,7 @@ emit_instr :: proc(
 	op := NODE_TO_OP[kind]
 
 	#partial switch kind {
-	case .Root_Mem, .Sym, .Phi:
+	case .Root_Mem, .Sym, .Phi, .Ret, .Mem, .Param:
 	case .Split:
 		rm := reg_of(ctx, node.inps[0])
 		rd := reg_of(ctx, instr)
@@ -478,7 +582,7 @@ emit_instr :: proc(
 			u32(rn) << 5 |
 			u32(rd),
 		)
-	case .Eq:
+	case .Eq ..= .U_Ge:
 		rn := reg_of(ctx, node.inps[0])
 		rm := reg_of(ctx, node.inps[1])
 
@@ -532,12 +636,14 @@ emit_instr :: proc(
 			},
 		)
 
-		if graph_get(ctx, node.inps[1]).dt == .Void {
+		cond := graph_get(ctx, node.inps[1])
+
+		if cond.dt == .Void {
 			op :: 0b01010100
 			imm19 :: 0
 			pd :: 0
 
-			cond := cc_neg(CC_TABLE[kind])
+			cond := cc_neg(CC_TABLE[atype(cond)])
 			if !is_consecutive do cond = cc_neg(cond)
 
 			emit_op(ctx.code, op << 24 | imm19 << 5 | pd << 4 | u32(cond))
@@ -553,6 +659,19 @@ emit_instr :: proc(
 
 		if !is_consecutive do break
 		fallthrough
+	case .Call:
+		call := backend.graph_extra(ctx, node, backend.Call)
+
+		op :: 0b100101
+		imm26 :: 0
+
+		backend.add_reloc(ctx.relocs)^ = {
+			offset = u32(ctx.code.pos - ctx.code_start),
+			kind   = .Text,
+			size   = .r26,
+			id     = call.cid,
+		}
+		emit_op(ctx.code, op << 26 | imm26)
 	case .Jump:
 		if !is_consecutive {
 			append(
@@ -566,6 +685,66 @@ emit_instr :: proc(
 			emit_op(ctx.code, op << 26)
 		}
 	case .Return:
+		postlude: {
+			pushed: i32
+			for reg in ctx.callee_saved[RK_GENERAL] {
+				if bit_arr.contains(ctx.used, int(reg)) {
+
+					op :: 0b1111100101 // ldr rt, [rn, $imm12]
+					imm12 := pushed / 8
+
+					rn := SP
+					rt := reg
+
+					emit_op(
+						ctx.code,
+						op << 22 |
+						u32(imm12) << 10 |
+						u32(rn.index) << 5 |
+						u32(rt.index),
+					)
+
+					pushed += 8
+				}
+			}
+
+			{
+				op: u32 : 0b1010100101 // ldp x29, x30, [sp, pushed / 8]
+				imm7 := pushed / 8
+				rt2 :: X30
+				rn :: SP
+				rt :: X29
+
+				emit_op(
+					ctx.code,
+					op << 22 |
+					u32(imm7 & 0x7f) << 15 |
+					u32(rt2.index) << 10 |
+					u32(rn.index) << 5 |
+					u32(rt.index),
+				)
+
+				pushed += 16
+			}
+
+			{
+				op :: 0b100100010 // add sp, sp, ctx.stack_size
+				sh :: 0b0
+				imm12 := ctx.stack_size
+				rn :: SP
+				rd :: SP
+
+				emit_op(
+					ctx.code,
+					op << 23 |
+					sh << 22 |
+					u32(imm12) << 10 |
+					u32(rn.index) << 5 |
+					u32(rd.index),
+				)
+			}
+		}
+
 		emit_op(ctx.code, 0b1101011001011111000000_11110_00000)
 	case:
 		fmt.panicf("TODO %v", node)

@@ -126,14 +126,14 @@ Reloc :: struct {
 RELOC_BIG_CONSTANT_BASE :: (~u32(0) >> 4) - (1 << 22)
 
 Reloc_Slot :: struct #raw_union #align (1) {
-	addend_32: u32,
+	addend_32: i32,
 	r2:        bit_field u32 {
-		addend_26: u32 | 26,
+		addend_26: i32 | 26,
 		padd:      u32 | 6,
 	},
 	r3:        bit_field u32 {
 		padd2:     u32 | 5,
-		addend_19: u32 | 19,
+		addend_19: i32 | 19,
 		padd3:     u32 | 8,
 	},
 }

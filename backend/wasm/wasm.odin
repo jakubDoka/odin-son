@@ -39,8 +39,6 @@ wextra :: #force_inline proc(
 	return (^T)(&node.extra)
 }
 
-COMMAND :: "odin run backend/wasm -define:WASM_GEN_SPEC=true"
-
 SPEC_NOT_PRESENT :: (#load("node_specs.odin", string) or_else "") == ""
 
 WASM_SYSTEMV_CC := backend.Call_Conv {
@@ -1416,7 +1414,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: backend.Node_ID, block: int, _: $T) {
 		backend.add_reloc(ctx.relocs)^ = {
 			offset = u32(ctx.code.pos) - ctx.code_start,
 			kind   = .Global,
-			size   = .r4,
+			size   = .r32,
 			id     = id,
 		}
 		emit(ctx.code, {0, 0, 0, 0})
@@ -1497,7 +1495,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: backend.Node_ID, block: int, _: $T) {
 			backend.add_reloc(ctx.relocs)^ = {
 					offset = u32(ctx.code.pos) - ctx.code_start,
 					kind   = .Text,
-					size   = .r4,
+					size   = .r32,
 					id     = u32(len(ctx.indirect_sigs)),
 				}
 			emit(ctx.code, {0, 0, 0, 0})
@@ -1531,7 +1529,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: backend.Node_ID, block: int, _: $T) {
 			backend.add_reloc(ctx.relocs)^ = {
 				offset = u32(ctx.code.pos) - ctx.code_start,
 				kind   = .Text,
-				size   = .r4,
+				size   = .r32,
 				id     = call.cid,
 			}
 			emit(ctx.code, {0, 0, 0, 0})
@@ -1549,7 +1547,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: backend.Node_ID, block: int, _: $T) {
 		backend.add_reloc(ctx.relocs)^ = {
 			offset = u32(ctx.code.pos) - ctx.code_start,
 			kind   = .Text,
-			size   = .r4,
+			size   = .r32,
 			id     = id,
 		}
 		emit(ctx.code, {0, 0, 0, 0})

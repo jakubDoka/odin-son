@@ -11,8 +11,9 @@ SPEC := backend.Node_Spec{
 	call_clobbers = {
 		{524287, 4294902015},
 	},
-	datatype_to_reg_kind = {.Void = 0, .I8 = 0, .I16 = 0, .I32 = 0, .I64 = 0, .F32 = 0, .F64 = 0, .V128 = 0, .V256 = 0, .V512 = 0},
+	datatype_to_reg_kind = {.Void = 0, .I8 = 0, .I16 = 0, .I32 = 0, .I64 = 0, .F32 = 1, .F64 = 1, .V128 = 1, .V256 = 1, .V512 = 1},
 	spill_boundary = {32, 32},
+	collect_meta = collect_meta,
 	emit_function = emit_function,
 	peep = peep_inst,
 	post_schedule_peep = post_schedule_peep_inst,
@@ -524,6 +525,17 @@ peep_inst :: proc(ctx: backend.Peep_Ctx, node: backend.Expanded_Node) -> backend
 post_schedule_peep_inst :: proc(
 	ctx: backend.PS_Peep_Ctx, node: backend.Expanded_Node) -> backend.Node_ID {
 	return post_schedule_peep(ctx, node, struct{}{})
+}
+
+
+collect_meta :: proc(ctx: ^backend.Graph,
+	ra: ^backend.Regalloc, sched: ^backend.Graph_Schedule) -> ([]backend.Regalloc_Node_Meta, int) {
+
+	meta_of_ :: proc(ctx: ^backend.Graph, ra: ^backend.Regalloc,
+		node: backend.Expanded_Node) -> backend.Regalloc_Node_Meta {
+		return meta_of(ctx, ra, node, struct{}{})
+	}
+	return backend.regalloc_collect_meta(ctx, ra, sched, meta_of_)
 }
 
 #assert(size_of(backend.Cfg) % backend.PRECISION == 0)

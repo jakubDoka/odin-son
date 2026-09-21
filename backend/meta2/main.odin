@@ -9,6 +9,51 @@ import "../wasm"
 import "../x64"
 
 main :: proc() {
+	when builder.SPEC_NOT_PRESENT {
+		BUILDER_CLASSES := [builder.Node_Type]meta.Class_Spec {
+			.Scope = {
+				id = builder.Scope,
+				args = {"cfg"},
+				default_type = .Void,
+			},
+			.Lazy_Phi = {args = {"reg", "lhs"}, extra_capacity = 1},
+		}
+
+		meta.generate_spec(
+			meta.Spec_Gen_Input {
+				package_name      = "builder",
+				// %w-formatted table values bake in bare Reg_Kind/Class_Flag
+				// names, so alias them locally instead of teaching the
+				// generator about every %w call site
+				header_import     = "import backend \"..\"\n" + "Reg_Kind :: backend.Reg_Kind\n" + "Class_Flag :: backend.Class_Flag\n",
+				qual              = "backend.",
+				local_extra_types = {builder.Scope},
+				classes           = {
+					meta.class_array(&meta.IDEAL_CLASSES, gen_ctors = false),
+					meta.class_array(&BUILDER_CLASSES),
+				},
+				intern            = true,
+			},
+			"backend/builder/node_specs.odin",
+		)
+	}
+
+	when anal.SPEC_NOT_PRESENT {
+		meta.generate_spec(
+			meta.Spec_Gen_Input {
+				package_name = "anal",
+				header_import = "import backend \"..\"\n" +
+				"Reg_Kind :: backend.Reg_Kind\n" +
+				"Class_Flag :: backend.Class_Flag\n",
+				qual = "backend.",
+				classes = {
+					meta.class_array(&meta.IDEAL_CLASSES, gen_ctors = false),
+				},
+			},
+			"backend/anal/node_specs.odin",
+		)
+	}
+
 	when x64.SPEC_NOT_PRESENT {
 		X64_SIMPLE_BIN_OP_SPEC :: meta.Class_Spec {
 			id      = x64.Mem_Op,
@@ -70,35 +115,6 @@ main :: proc() {
 		)
 	}
 
-	when builder.SPEC_NOT_PRESENT {
-		BUILDER_CLASSES := [builder.Node_Type]meta.Class_Spec {
-			.Scope = {
-				id = builder.Scope,
-				args = {"cfg"},
-				default_type = .Void,
-			},
-			.Lazy_Phi = {args = {"reg", "lhs"}, extra_capacity = 1},
-		}
-
-		meta.generate_spec(
-			meta.Spec_Gen_Input {
-				package_name      = "builder",
-				// %w-formatted table values bake in bare Reg_Kind/Class_Flag
-				// names, so alias them locally instead of teaching the
-				// generator about every %w call site
-				header_import     = "import backend \"..\"\n" + "Reg_Kind :: backend.Reg_Kind\n" + "Class_Flag :: backend.Class_Flag\n",
-				qual              = "backend.",
-				local_extra_types = {builder.Scope},
-				classes           = {
-					meta.class_array(&meta.IDEAL_CLASSES, gen_ctors = false),
-					meta.class_array(&BUILDER_CLASSES),
-				},
-				intern            = true,
-			},
-			"backend/builder/node_specs.odin",
-		)
-	}
-
 	when wasm.SPEC_NOT_PRESENT {
 		WASM_CLASSES := [wasm.Node_Type]meta.Class_Spec {
 			.WASM_Store = {id = wasm.Mem_Op, no_ctor = true, flags = {.Store}},
@@ -156,8 +172,10 @@ main :: proc() {
 				classes = {
 					meta.class_array(&meta.IDEAL_CLASSES, gen_ctors = false),
 				},
+				does_regalloc = true,
 				datatype_to_reg_kind = #partial{
-					.I8 ..= .V512 = arm.RK_GENERAL,
+					.I8 ..= .I64 = arm.RK_GENERAL,
+					.F32 ..= .V512 = arm.RK_VECTOR,
 				},
 				spill_boundary = {32, 32},
 				cc_table = {arm.ARM_SYSTEMV_CC},
@@ -166,19 +184,4 @@ main :: proc() {
 		)
 	}
 
-	when anal.SPEC_NOT_PRESENT {
-		meta.generate_spec(
-			meta.Spec_Gen_Input {
-				package_name = "anal",
-				header_import = "import backend \"..\"\n" +
-				"Reg_Kind :: backend.Reg_Kind\n" +
-				"Class_Flag :: backend.Class_Flag\n",
-				qual = "backend.",
-				classes = {
-					meta.class_array(&meta.IDEAL_CLASSES, gen_ctors = false),
-				},
-			},
-			"backend/anal/node_specs.odin",
-		)
-	}
 }

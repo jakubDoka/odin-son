@@ -105,11 +105,13 @@ Reloc_Kind :: enum u32 {
 }
 
 Reloc_Size :: enum u32 {
-	r4,
+	r32,
+	r26,
 }
 
 RELOC_SIZE := [Reloc_Size]u32 {
-	.r4 = 4,
+	.r32 = 4,
+	.r26 = 4,
 }
 
 Reloc :: struct {
@@ -124,7 +126,16 @@ Reloc :: struct {
 RELOC_BIG_CONSTANT_BASE :: (~u32(0) >> 4) - (1 << 22)
 
 Reloc_Slot :: struct #raw_union #align (1) {
-	addend_4: u32,
+	addend_32: u32,
+	r2:        bit_field u32 {
+		addend_26: u32 | 26,
+		padd:      u32 | 6,
+	},
+	r3:        bit_field u32 {
+		padd2:     u32 | 5,
+		addend_19: u32 | 19,
+		padd3:     u32 | 8,
+	},
 }
 
 param_mask :: proc(

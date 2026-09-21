@@ -53,9 +53,10 @@ Engine :: struct {}
 Context :: struct {}
 
 VM_State :: struct {
-	engine:    ^Engine,
-	initial:   ^Context,
-	code_size: u64,
+	engine:      ^Engine,
+	initial:     ^Context,
+	mapped_size: u64,
+	data_start:  u64,
 }
 
 @(thread_local)
@@ -116,7 +117,12 @@ ARM64_X0 :: c.int(199)
 ARM64_PC :: c.int(260)
 REMOVE_CODE_CACHE :: u32(9 | (2 << 26) | (1 << 30))
 
-acquire_thread_vm :: proc(code_size: u64) -> (engine: ^Engine, err: Error) {
+acquire_thread_vm :: proc(
+	mapped_size, data_start: u64,
+) -> (
+	engine: ^Engine,
+	err: Error,
+) {
 	if thread_vm.engine == nil {
 		if err = uc_open(.ARM64, 0, &engine); err != .OK {
 			return
@@ -146,49 +152,73 @@ acquire_thread_vm :: proc(code_size: u64) -> (engine: ^Engine, err: Error) {
 	}
 
 	engine = thread_vm.engine
-	if code_size > thread_vm.code_size {
-		if thread_vm.code_size != 0 {
-			if err = uc_mem_unmap(engine, CODE_ADDRESS, thread_vm.code_size);
+	if mapped_size > thread_vm.mapped_size ||
+	   data_start != thread_vm.data_start {
+		if thread_vm.mapped_size != 0 {
+			if err = uc_mem_unmap(engine, CODE_ADDRESS, thread_vm.mapped_size);
 			   err != .OK {
 				return
 			}
-			thread_vm.code_size = 0
+			thread_vm.mapped_size = 0
+			thread_vm.data_start = 0
 		}
 		if err = uc_mem_map(
 			engine,
 			CODE_ADDRESS,
-			code_size,
+			data_start,
 			u32(Protection.Read) | u32(Protection.Execute),
 		); err != .OK {
 			return
 		}
-		thread_vm.code_size = code_size
+		if data_start < mapped_size {
+			if err = uc_mem_map(
+				engine,
+				CODE_ADDRESS + data_start,
+				mapped_size - data_start,
+				u32(Protection.Read) | u32(Protection.Write),
+			); err != .OK {
+				uc_mem_unmap(engine, CODE_ADDRESS, data_start)
+				return
+			}
+		}
+		thread_vm.mapped_size = mapped_size
+		thread_vm.data_start = data_start
 	}
 	return engine, .OK
 }
 
 run_arm64 :: proc(
 	code: []u8,
+	data_start: int,
+	start: int,
 	arguments: []u64 = nil,
 	instruction_limit: uint = DEFAULT_INSTRUCTION_LIMIT,
 ) -> (
 	result: u64,
 	err: Error,
 ) {
-	if len(code) == 0 || len(code) % 4 != 0 || instruction_limit == 0 {
+	if len(code) == 0 ||
+	   data_start <= 0 ||
+	   data_start > len(code) ||
+	   data_start % int(PAGE_SIZE) != 0 ||
+	   start < 0 ||
+	   start >= data_start ||
+	   start % 4 != 0 ||
+	   instruction_limit == 0 {
 		return 0, .Invalid_Code
 	}
 	if len(arguments) > 8 {
 		return 0, .Too_Many_Arguments
 	}
 
-	code_size := (u64(len(code)) + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1)
-	if code_size > STACK_ADDRESS - CODE_ADDRESS {
+	mapped_size := (u64(len(code)) + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1)
+	if mapped_size > STACK_ADDRESS - CODE_ADDRESS {
 		return 0, .Code_Too_Large
 	}
 
 	engine: ^Engine
-	if engine, err = acquire_thread_vm(code_size); err != .OK {
+	if engine, err = acquire_thread_vm(mapped_size, u64(data_start));
+	   err != .OK {
 		return
 	}
 	if err = uc_context_restore(engine, thread_vm.initial); err != .OK {
@@ -212,7 +242,7 @@ run_arm64 :: proc(
 	}
 
 	stack_pointer := STACK_ADDRESS + STACK_SIZE
-	return_address := CODE_ADDRESS + u64(len(code))
+	return_address := CODE_ADDRESS + u64(data_start)
 	if err = uc_reg_write(engine, ARM64_SP, &stack_pointer); err != .OK {
 		return
 	}
@@ -228,7 +258,7 @@ run_arm64 :: proc(
 
 	if err = uc_emu_start(
 		engine,
-		CODE_ADDRESS,
+		CODE_ADDRESS + u64(start),
 		return_address,
 		0,
 		uintptr(instruction_limit),
@@ -252,7 +282,7 @@ run_arm64 :: proc(
 error_string :: proc(err: Error) -> cstring {
 	#partial switch err {
 	case .Invalid_Code:
-		return "ARM64 code must be non-empty and instruction-aligned"
+		return "ARM64 code layout or entry offset is invalid"
 	case .Too_Many_Arguments:
 		return "ARM64 calls support at most eight register arguments"
 	case .Code_Too_Large:

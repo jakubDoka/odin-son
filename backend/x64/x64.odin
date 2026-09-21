@@ -972,51 +972,6 @@ addr_add_offset :: proc(
 	return node.inps[0], int(xextra(graph, node, Mem_Op).imm), true
 }
 
-GPA_MASK_IDX :: backend.RM_Intern_Idx{}
-XMM_MASK_IDX :: backend.RM_Intern_Idx {
-	kind = RK_VECTOR,
-}
-GPA_SPILL_MASK_IDX :: backend.RM_Intern_Idx {
-	index = 1,
-}
-XMM_SPILL_MASK_IDX :: backend.RM_Intern_Idx {
-	kind  = RK_VECTOR,
-	index = 1,
-}
-
-@(rodata)
-GPA_MASKS := [6]backend.RM_Intern_Idx{}
-
-@(rodata)
-XMM_MASKS := [6]backend.RM_Intern_Idx {
-	XMM_MASK_IDX,
-	XMM_MASK_IDX,
-	XMM_MASK_IDX,
-	XMM_MASK_IDX,
-	XMM_MASK_IDX,
-	XMM_MASK_IDX,
-}
-
-@(rodata)
-GPA_SPILL_MASKS := [6]backend.RM_Intern_Idx {
-	GPA_SPILL_MASK_IDX,
-	GPA_SPILL_MASK_IDX,
-	GPA_SPILL_MASK_IDX,
-	GPA_SPILL_MASK_IDX,
-	GPA_SPILL_MASK_IDX,
-	GPA_SPILL_MASK_IDX,
-}
-
-@(rodata)
-XMM_SPILL_MASKS := [6]backend.RM_Intern_Idx {
-	XMM_SPILL_MASK_IDX,
-	XMM_SPILL_MASK_IDX,
-	XMM_SPILL_MASK_IDX,
-	XMM_SPILL_MASK_IDX,
-	XMM_SPILL_MASK_IDX,
-	XMM_SPILL_MASK_IDX,
-}
-
 meta_of :: proc(
 	graph: ^backend.Graph,
 	ra: ^backend.Regalloc,
@@ -1038,6 +993,36 @@ meta_of :: proc(
 		~i64(1 << uint(RSP)) &
 		~i64(1 << uint(RAX)) &
 		~i64(1 << uint(RDX)),
+	}
+
+	GPA_MASK_IDX :: backend.RM_Intern_Idx{}
+	XMM_MASK_IDX :: backend.RM_Intern_Idx {
+		kind = RK_VECTOR,
+	}
+	GPA_SPILL_MASK_IDX :: backend.RM_Intern_Idx {
+		index = 1,
+	}
+	XMM_SPILL_MASK_IDX :: backend.RM_Intern_Idx {
+		kind  = RK_VECTOR,
+		index = 1,
+	}
+
+	@(static, rodata)
+	GPA_MASKS := [6]backend.RM_Intern_Idx{}
+
+	@(static, rodata)
+	XMM_MASKS := [6]backend.RM_Intern_Idx {
+		0 ..< 6 = XMM_MASK_IDX,
+	}
+
+	@(static, rodata)
+	GPA_SPILL_MASKS := [6]backend.RM_Intern_Idx {
+		0 ..< 6 = GPA_SPILL_MASK_IDX,
+	}
+
+	@(static, rodata)
+	XMM_SPILL_MASKS := [6]backend.RM_Intern_Idx {
+		0 ..< 6 = XMM_SPILL_MASK_IDX,
 	}
 
 	IOUT :: backend.INVALID_RM_INDEX
@@ -1565,7 +1550,7 @@ emit_function :: proc(
 		}
 
 		for instr in bb.instrs {
-			x64_emit_instr(&ctx, instr, is_consecutive, 0)
+			emit_instr(&ctx, instr, is_consecutive, 0)
 		}
 
 		prev_is_if = last.itype == .If
@@ -1645,7 +1630,7 @@ mount_sloc :: proc(ctx: ^Ctx, node: backend.Node_ID) {
 }
 
 @(disabled = SPEC_NOT_PRESENT)
-x64_emit_instr :: proc(
+emit_instr :: proc(
 	ctx: ^Ctx,
 	instr: backend.Node_ID,
 	is_consecutive: bool,
@@ -2223,7 +2208,7 @@ x64_emit_instr :: proc(
 			backend.add_reloc(ctx.relocs)^ = {
 				offset = u32(ctx.code.pos - ctx.code_start),
 				kind   = .Got,
-				size   = .r4,
+				size   = .r32,
 				id     = call.cid,
 			}
 		} else {
@@ -2232,7 +2217,7 @@ x64_emit_instr :: proc(
 			backend.add_reloc(ctx.relocs)^ = {
 				offset = u32(ctx.code.pos - ctx.code_start),
 				kind   = .Text,
-				size   = .r4,
+				size   = .r32,
 				id     = call.cid,
 			}
 		}
@@ -2253,7 +2238,7 @@ x64_emit_instr :: proc(
 			backend.add_reloc(ctx.relocs)^ = {
 				offset = u32(ctx.code.pos - ctx.code_start),
 				kind   = .Got,
-				size   = .r4,
+				size   = .r32,
 				id     = lib_call.id,
 			}
 		} else {
@@ -2262,7 +2247,7 @@ x64_emit_instr :: proc(
 			backend.add_reloc(ctx.relocs)^ = {
 				offset = u32(ctx.code.pos - ctx.code_start),
 				kind   = .Text,
-				size   = .r4,
+				size   = .r32,
 				id     = lib_call.id,
 			}
 		}
@@ -2962,7 +2947,7 @@ emit_indirect_addr_reg :: proc(
 		backend.add_reloc(ctx.relocs)^ = {
 			offset = u32(ctx.code.pos - ctx.code_start),
 			kind   = kind,
-			size   = .r4,
+			size   = .r32,
 			id     = reloc - 1,
 		}
 	}

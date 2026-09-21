@@ -20,11 +20,14 @@ import "core:os"
 import "core:reflect"
 import "core:rexcode/ir"
 import rex_wasm "core:rexcode/ir/wasm"
+import "core:rexcode/isa"
+import "core:rexcode/isa/arm64"
 import "core:rexcode/isa/x86"
 import "core:strings"
 import "core:sync"
 import "core:testing"
 import "typecheck"
+import "unicorn"
 import "vendored/gam/util/arna"
 import "vendored/gam/util/hot"
 import "wabt"
@@ -162,15 +165,15 @@ run_test :: proc(
 	confs: [dynamic]Test_Conf
 	confs.allocator = context.temp_allocator
 
-	for level in levels {
+	for level in levels[:] {
 		append(&confs, Test_Conf{level = level})
 		append(&confs, Test_Conf{level = level, debug = true})
 	}
-	for level in levels {
+	for level in levels[:] {
 		append(&confs, Test_Conf{level = level, vm = .Wasm})
 	}
 	for level in levels {
-		//append(&confs, Test_Conf{level = level, vm = .Arm})
+		append(&confs, Test_Conf{level = level, vm = .Arm})
 	}
 
 	if ctx.error_cnt > 0 do clear(&confs)
@@ -206,9 +209,14 @@ run_test :: proc(
 		}
 
 		switch level.vm {
-		case .Native:
-			ctx.target.cc = &x64.X64_SYSTEMV_CC
-			ctx.target.spec = &x64.SPEC
+		case .Native, .Arm:
+			if level.vm == .Native {
+				ctx.target.cc = &x64.X64_SYSTEMV_CC
+				ctx.target.spec = &x64.SPEC
+			} else {
+				ctx.target.cc = &arm.ARM_SYSTEMV_CC
+				ctx.target.spec = &arm.SPEC
+			}
 
 			_copy :: proc "contextless" (
 				dst, src: rawptr,
@@ -309,14 +317,22 @@ run_test :: proc(
 						raw_data(p.out.code[rel.offset - size:][:size]),
 					)
 					switch rel.size {
-					case .r4:
-						slot.addend_4 += jump
+					case .r26:
+						slot.r2.addend_26 += jump
+					case .r32:
+						slot.addend_32 += jump
 					}
 				}
 			}
 
-			if !level.debug {context.allocator = context.temp_allocator
-				disasm_x64(&dsb, ctx)}
+			if !level.debug {
+				context.allocator = context.temp_allocator
+				if level.vm == .Native {
+					disasm(&dsb, ctx, X64_DS)
+				} else {
+					disasm(&dsb, ctx, ARM_DS)
+				}
+			}
 
 			oka := virtual.protect(
 				types.mems.code.ptr,
@@ -336,8 +352,29 @@ run_test :: proc(
 				}
 
 				if main != nil {
-					ptr := transmute(proc() -> int)(raw_data(main.out.code))
-					vl := ptr()
+					vl: int
+
+					if level.vm == .Native {
+						ptr := transmute(proc() -> int)(raw_data(
+								main.out.code,
+							))
+						vl = ptr()
+					} else {
+						start := int(
+							uintptr(raw_data(main.out.code)) -
+							uintptr(types.mems.code.ptr),
+						)
+						avl, err := unicorn.run_arm64(
+							types.mems.code.ptr[:types.mems.code.pos],
+							int(code_until),
+							start,
+						)
+						if err != nil {
+							log.error(unicorn.error_string(err))
+						}
+						vl = int(avl)
+					}
+
 					if vl != exit_code {
 						log.error(level)
 						testing.expect_value(t, vl, exit_code)
@@ -381,15 +418,6 @@ run_test :: proc(
 					log.error(level)
 					testing.expect_value(t, int(vl), exit_code)
 				}
-			}
-		case .Arm:
-			ctx.target.cc = &arm.ARM_SYSTEMV_CC
-			ctx.target.spec = &arm.SPEC
-
-			emit_ctx := backend.Codegen_Emit_Ctx{}
-
-			for &prc, i in ctx.procs {
-				emit_proc(&ctx, i, level, &emit_ctx)
 			}
 		case .Check:
 			for prc in ctx.procs {
@@ -606,9 +634,52 @@ disasm_wasm :: proc(sb: ^strings.Builder, module: []u8) {
 
 }
 
-disasm_x64 :: proc(sb: ^strings.Builder, ctx: Gen_Ctx) {
-	decoded_instrs: [dynamic]x86.Instruction
-	decoded_instr_info: [dynamic]x86.Instruction_Info
+Disasm_Scope :: struct(
+	Instruction: typeid,
+	Instruction_Info: typeid,
+	Relocation: typeid,
+	Mode: typeid,
+) {
+	decode:  proc(
+		data: []u8,
+		relocs: []Relocation,
+		instructions: ^[dynamic]Instruction,
+		inst_info: ^[dynamic]Instruction_Info,
+		label_defs: ^[dynamic]isa.Label_Definition,
+		errors: ^[dynamic]isa.Error,
+		mode: Mode = {},
+	) -> (
+		u32,
+		bool,
+	),
+	sbprint: proc(
+		sb: ^strings.Builder,
+		instructions: []Instruction,
+		inst_info: []Instruction_Info,
+		label_defs: []isa.Label_Definition,
+		tokens: ^[dynamic]isa.Token = nil,
+		options: ^isa.Print_Options = nil,
+		label_names: ^isa.Label_Names = nil,
+	),
+}
+
+X64_DS :: Disasm_Scope(
+	x86.Instruction,
+	x86.Instruction_Info,
+	x86.Relocation,
+	x86.Mode,
+){x86.decode, x86.sbprint}
+
+ARM_DS :: Disasm_Scope(
+	arm64.Instruction,
+	arm64.Instruction_Info,
+	arm64.Relocation,
+	arm64.Endianness,
+){arm64.decode, arm64.sbprint}
+
+disasm :: proc(sb: ^strings.Builder, ctx: Gen_Ctx, ds: $DS) {
+	decoded_instrs: [dynamic]DS.Instruction
+	decoded_instr_info: [dynamic]DS.Instruction_Info
 	decoded_label_info: [dynamic]x86.Label_Definition
 	errors: [dynamic]x86.Error
 	labels: map[x86.Label_Offset]string
@@ -636,7 +707,7 @@ disasm_x64 :: proc(sb: ^strings.Builder, ctx: Gen_Ctx) {
 		labels[x86.Label_Offset(offset)] = prc.name
 		append(&decoded_label_info, 0)
 
-		x86.decode(
+		ds.decode(
 			instructions,
 			nil,
 			&decoded_instrs,
@@ -654,15 +725,16 @@ disasm_x64 :: proc(sb: ^strings.Builder, ctx: Gen_Ctx) {
 		}
 
 		for err in errors[error_base:] {
-			prev_instr := decoded_instr_info[err.inst_idx - 1]
-			prev_i := decoded_instrs[err.inst_idx - 1]
-			fmt.sbprintfln(
-				sb,
-				"%x",
-				instructions[prev_instr.offset -
-				offset +
-				u32(prev_i.length):][:10],
-			)
+			//prev_instr := decoded_instr_info[err.inst_idx - 1]
+			//prev_i := decoded_instrs[err.inst_idx - 1]
+			//fmt.sbprintfln(
+			//	sb,
+			//	"%x",
+			//	instructions[prev_instr.offset -
+			//	offset +
+			//	u32(prev_i.length):][:10],
+			//)
+			fmt.println(err)
 		}
 	}
 
@@ -673,7 +745,7 @@ disasm_x64 :: proc(sb: ^strings.Builder, ctx: Gen_Ctx) {
 	opts := x86.DEFAULT_PRINT_OPTIONS
 	opts.label_prefix = ""
 
-	x86.sbprint(
+	ds.sbprint(
 		sb,
 		decoded_instrs[:],
 		decoded_instr_info[:],

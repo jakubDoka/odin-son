@@ -2,8 +2,6 @@ package builder
 
 import backend ".."
 
-COMMAND :: "odin run backend/builder -define:BUILDER_GEN_SPEC=true"
-
 SPEC_NOT_PRESENT :: (#load("node_specs.odin", string) or_else "") == ""
 
 Scope :: struct #align (4) {

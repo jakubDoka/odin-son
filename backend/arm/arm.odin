@@ -14,6 +14,8 @@ emit :: backend.emit
 graph_expand :: backend.graph_expand
 graph_get :: backend.graph_get
 
+STACK_ALIGNMENT :: 16
+
 MASK_SIZE :: 64
 
 RK_GENERAL :: Reg_Kind(0)
@@ -307,7 +309,7 @@ meta_of :: #force_inline proc(
 			out = IOUT,
 			input_start = 1,
 			masks = nmasks[:1 -
-			int(graph_get(graph, node.inps[0]).dt == .Void)],
+			int(graph_get(graph, node.inps[1]).dt == .Void)],
 		}
 	case .Call:
 		real_len := len(node.inps)
@@ -447,6 +449,10 @@ emit_function :: proc(
 	}
 
 	backend.layout_locals(ctx, ctx.schedule, &ctx.stack_size)
+
+	ctx.stack_size = i32(
+		mem.align_forward_int(int(ctx.stack_size), STACK_ALIGNMENT),
+	)
 
 	if ctx.stack_size != 0 {
 		op :: 0b110100010
@@ -654,10 +660,10 @@ emit_instr :: proc(
 		emit_op(ctx.code, sh_instr(.x, op, nil, XZR, rn, rm))
 
 		if node.dt != .Void {
-			// cset rd
+			// csinc rd, xzr, xzr, cc
 			op :: 0b10011010100
 			rm :: XZR
-			cond := CC_TABLE[kind]
+			cond := cc_neg(CC_TABLE[kind])
 			pd :: 0b01
 			rn :: XZR
 			rd := reg_of(ctx, instr)
@@ -677,11 +683,17 @@ emit_instr :: proc(
 		#partial switch node.dt {
 		case .I8 ..= .I64:
 			// movz reg, imm, hw
-			op :: 0b110100101
-			hw :: 0b00
-
+			op: u32 = 0b110100101
 			imm := i16(cint.value)
 			assert(i64(imm) == cint.value, "TODO")
+
+			if cint.value < 0 {
+				// movn reg, ~imm, hw
+				op = 0b100100101
+				imm = ~imm
+			}
+
+			hw :: 0b00
 
 			reg := reg_of(ctx, instr)
 

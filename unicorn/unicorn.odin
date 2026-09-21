@@ -169,8 +169,9 @@ trace_instruction :: proc "c" (
 	)
 
 	instr := trace.instrs[index]
+	fmt.sbprint(&line, " ::")
 	for op in instr.ops[:instr.operand_count] {
-		if op.kind == .REGISTER &&
+		if (op.kind == .REGISTER || op.kind == .SHIFTED_REG) &&
 		   op.reg >= arm64.REG_X &&
 		   op.reg < arm64.REG_X + 32 {
 			value: u64

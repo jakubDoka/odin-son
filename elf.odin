@@ -1,11 +1,11 @@
 package main
 
-import "backend"
+import "bac"
 import "core:mem"
 import "core:slice"
 import "vendored/gam/util/arna"
 
-LIBCALL_BASE :: backend.RELOC_BIG_CONSTANT_BASE - 32
+LIBCALL_BASE :: bac.RELOC_BIG_CONSTANT_BASE - 32
 MEMCPY_ID :: LIBCALL_BASE
 MEMSET_ID :: LIBCALL_BASE + 1
 
@@ -145,7 +145,7 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 		for rel in prc.out.relocs {
 			is_libcall :=
 				LIBCALL_BASE <= rel.id &&
-				rel.id < backend.RELOC_BIG_CONSTANT_BASE
+				rel.id < bac.RELOC_BIG_CONSTANT_BASE
 			if !is_libcall do continue
 			id := rel.id - LIBCALL_BASE
 			if have_lib[id] do continue
@@ -171,16 +171,16 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 
 			is_libcall :=
 				LIBCALL_BASE <= rel.id &&
-				rel.id < backend.RELOC_BIG_CONSTANT_BASE
+				rel.id < bac.RELOC_BIG_CONSTANT_BASE
 
 			// TODO: this is horrible
 			// Big-constant relocs point into this proc's own constant pool in
 			// .text, so resolve them in place (RIP relative) with no ELF entry.
 			if rel.kind == .Global &&
-			   rel.id >= backend.RELOC_BIG_CONSTANT_BASE {
+			   rel.id >= bac.RELOC_BIG_CONSTANT_BASE {
 				target :=
 					const_off[i] +
-					int(rel.id - backend.RELOC_BIG_CONSTANT_BASE)
+					int(rel.id - bac.RELOC_BIG_CONSTANT_BASE)
 				source := proc_off[i] + int(rel.offset)
 				cur := u32(0)
 				mem.copy(&cur, &text[slot], 4)
@@ -389,7 +389,7 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	// --- .eh_frame --------------------------------------------------------
 	// The generated code keeps no frame pointer (rbp is an allocatable GPR),
 	// so an unwinder has nothing to walk without explicit CFI. One CIE plus
-	// one FDE per procedure, built from the frame deltas the backend recorded.
+	// one FDE per procedure, built from the frame deltas the bac recorded.
 	eh_frame: [dynamic]u8
 	eh_rels: [dynamic]Elf64_Rel
 
@@ -991,9 +991,9 @@ fixed_uleb :: proc(buf: []u8, value: u64) {
 	}
 }
 
-uleb :: backend.uleb
-sleb :: backend.sleb
-putb :: backend.putb
+uleb :: bac.uleb
+sleb :: bac.sleb
+putb :: bac.putb
 
 put_u16 :: proc(b: ^[dynamic]u8, v: u16) {
 	x := v

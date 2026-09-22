@@ -1,11 +1,11 @@
 #+build !wasm32
 package main
 
-import "backend"
-import "backend/arm"
-import "backend/builder"
-import "backend/wasm"
-import "backend/x64"
+import "bac"
+import "bac/arm"
+import "bac/builder"
+import "bac/wasm"
+import "bac/x64"
 import "base:intrinsics"
 import "base:runtime"
 import "core:dynlib"
@@ -38,10 +38,10 @@ TEST_OUT_DIR :: "print-tests"
 @(private)
 custom_fmt_once: sync.Once
 
-// Sets up all user formatters (backend + `main::Type`) exactly once.
+// Sets up all user formatters (bac + `main::Type`) exactly once.
 setup_custom_fmt :: proc() {
 	sync.once_do(&custom_fmt_once, proc() {
-		backend.init_custom_fmt()
+		bac.init_custom_fmt()
 		typecheck.init_type_fmt()
 	})
 }
@@ -137,7 +137,7 @@ run_test :: proc(
 	dsb: strings.Builder
 	dsb.buf.allocator = context.temp_allocator
 
-	stats: backend.Stats
+	stats: bac.Stats
 
 	ctx: Gen_Ctx
 	ctx.types = &types
@@ -209,7 +209,7 @@ run_test :: proc(
 			prc.stencil = {}
 		}
 
-		emit_ctx := backend.Codegen_Emit_Ctx{}
+		emit_ctx := bac.Codegen_Emit_Ctx{}
 
 		switch level.vm {
 		case .Native, .Arm:
@@ -232,7 +232,7 @@ run_test :: proc(
 					if !no_run {
 						fmt.assertf(addr != nil, "missing symbol: %v", p.name)
 					}
-					slot := backend.emit_aligned(&types.mems.code, addr)
+					slot := bac.emit_aligned(&types.mems.code, addr)
 					append(&imported_offsets, uintptr(slot))
 				}
 			}
@@ -251,7 +251,7 @@ run_test :: proc(
 				},
 			)
 
-			emit_ctx = backend.Codegen_Emit_Ctx {
+			emit_ctx = bac.Codegen_Emit_Ctx {
 				lib_calls = {
 					copy = {id = u32(len(ctx.procs)) - 2},
 					set = {id = u32(len(ctx.procs)) - 1},
@@ -265,7 +265,7 @@ run_test :: proc(
 				}
 				ctx.node_spec = &builder.SPEC
 				ctx.mem = &ctx.mems.graph
-				ctx.mem.pos = backend.PRECISION
+				ctx.mem.pos = bac.PRECISION
 				ctx.opt_flags = level.flags
 				ctx.stats = &ctx.tstats
 
@@ -314,10 +314,10 @@ run_test :: proc(
 					case .Got:
 						target_off = imported_offsets[rel.id]
 					case .Global:
-						if rel.id >= backend.RELOC_BIG_CONSTANT_BASE {
+						if rel.id >= bac.RELOC_BIG_CONSTANT_BASE {
 							target_off =
 								uintptr(
-									rel.id - backend.RELOC_BIG_CONSTANT_BASE,
+									rel.id - bac.RELOC_BIG_CONSTANT_BASE,
 								) +
 								uintptr(raw_data(p.out.constants))
 						} else {
@@ -334,8 +334,8 @@ run_test :: proc(
 						rel.offset += 4
 					}
 
-					size := backend.RELOC_SIZE[rel.size]
-					slot := (^backend.Reloc_Slot)(
+					size := bac.RELOC_SIZE[rel.size]
+					slot := (^bac.Reloc_Slot)(
 						raw_data(p.out.code[rel.offset - size:][:size]),
 					)
 					switch rel.size {
@@ -457,10 +457,10 @@ run_test :: proc(
 
 	if #config(LOG_STATS, false) {
 		@(static) log_lock: sync.Mutex
-		@(static) g_stats: backend.Stats
+		@(static) g_stats: bac.Stats
 
 		sync.guard(&log_lock)
-		backend.aggregate_effeciency_stats(&g_stats, ctx.stats)
+		bac.aggregate_effeciency_stats(&g_stats, ctx.stats)
 		if intrinsics.atomic_sub(&test_rc, 1) == 1 {
 			log_stats(&g_stats)
 		}
@@ -491,7 +491,7 @@ run_test :: proc(
 	}
 }
 
-log_stats :: proc(ctx: ^backend.Stats) {
+log_stats :: proc(ctx: ^bac.Stats) {
 	padded :: proc(vl: string, width: int) -> string {
 		return strings.concatenate(
 			{
@@ -507,7 +507,7 @@ log_stats :: proc(ctx: ^backend.Stats) {
 	}
 
 	max_name_len := 0
-	for enm in reflect.enum_fields_zipped(backend.Efficiency_Stat_Kind) {
+	for enm in reflect.enum_fields_zipped(bac.Efficiency_Stat_Kind) {
 		max_name_len = max(max_name_len, len(enm.name))
 	}
 
@@ -519,7 +519,7 @@ log_stats :: proc(ctx: ^backend.Stats) {
 		padded("t/i", 8),
 	)
 	for eff, kind in ctx.efficiency {
-		name := reflect.enum_field_names(backend.Efficiency_Stat_Kind)[kind]
+		name := reflect.enum_field_names(bac.Efficiency_Stat_Kind)[kind]
 		fmt.eprintfln(
 			"  %s % -8d % -8d % -8f",
 			padded(name, max_name_len),
@@ -812,10 +812,10 @@ highlight_disasm :: proc(disasm: string) -> string {
 		for name in group {
 			clear(&highlight.buf)
 
-			backend.ansi_start(strings.to_writer(&highlight), i)
+			bac.ansi_start(strings.to_writer(&highlight), i)
 			ln := len(highlight.buf)
 			append(&highlight.buf, name)
-			backend.ansi_end(strings.to_writer(&highlight))
+			bac.ansi_end(strings.to_writer(&highlight))
 
 			inject_at(&highlight.buf, ln + 1, 0)
 
@@ -830,9 +830,9 @@ highlight_disasm :: proc(disasm: string) -> string {
 
 		highlight: strings.Builder
 
-		backend.ansi_start(strings.to_writer(&highlight), i)
+		bac.ansi_start(strings.to_writer(&highlight), i)
 		append(&highlight.buf, name)
-		backend.ansi_end(strings.to_writer(&highlight))
+		bac.ansi_end(strings.to_writer(&highlight))
 
 		strings.builder_replace_all(&text, name, string(highlight.buf[:]))
 	}

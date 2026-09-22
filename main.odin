@@ -1,7 +1,7 @@
 #+build !wasm32
 package main
 
-import "backend"
+import "bac"
 import "core:fmt"
 import "core:log"
 import "core:os"
@@ -129,7 +129,7 @@ main :: proc() {
 	typecheck.types_init(&types)
 	defer typecheck.types_deinit(&types)
 
-	backend.init_custom_fmt()
+	bac.init_custom_fmt()
 	typecheck.init_type_fmt()
 
 	global_ctx: typecheck.Global_Ctx
@@ -169,7 +169,7 @@ main :: proc() {
 
 	if ctx.error_cnt > 0 do os.exit(1)
 
-	emit_ctx := backend.Codegen_Emit_Ctx {
+	emit_ctx := bac.Codegen_Emit_Ctx {
 		lib_calls = {copy = {id = MEMCPY_ID}, set = {id = MEMSET_ID}},
 	}
 

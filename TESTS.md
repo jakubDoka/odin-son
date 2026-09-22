@@ -5891,7 +5891,7 @@ foo :: proc() {
 }
 ```
 
-<!-- backend/builder/builder.odin:575-588 `.Ne` is listed in ZERO_IS_NEUTRAL, so `x != 0` is rewritten to `x` itself; correct only when the result is used as a branch condition, wrong when the boolean is materialized. expected 1, actual 5 -->
+<!-- bac/builder/builder.odin:575-588 `.Ne` is listed in ZERO_IS_NEUTRAL, so `x != 0` is rewritten to `x` itself; correct only when the result is used as a branch condition, wrong when the boolean is materialized. expected 1, actual 5 -->
 
 #### ne with zero is not identity
 ```odin
@@ -5909,7 +5909,7 @@ main :: proc() -> int {
 }
 ```
 
-<!-- backend/builder/builder.odin:811-846 store elimination only compares the *destination* of a `.Copy` user (is_noalias_ops always uses inps[2]), so a `.Copy` that READS the stored location is treated as a pure write; the store is then deleted because a later store covers it. expected 253 (5 + 6*10 + 7*100 mod 256), actual 248 (0 + 6*10 + 7*100 mod 256) -->
+<!-- bac/builder/builder.odin:811-846 store elimination only compares the *destination* of a `.Copy` user (is_noalias_ops always uses inps[2]), so a `.Copy` that READS the stored location is treated as a pure write; the store is then deleted because a later store covers it. expected 253 (5 + 6*10 + 7*100 mod 256), actual 248 (0 + 6*10 + 7*100 mod 256) -->
 
 #### store feeding a memcpy source is wrongly dead store eliminated
 ```odin
@@ -5942,7 +5942,7 @@ main :: proc() -> int {
 }
 ```
 
-<!-- backend/builder/builder.odin:430-522 the `memcpify:` loop-to-`Copy` idiom recognizer never checks that the induction phi starts at 0 (it only checks the step and the exit compare), so `for i := 2; i < n; i += 1 { dst[i] = src[i] }` becomes `copy(dst, src, n)` starting at element 0. expected 248, actual 204 -->
+<!-- bac/builder/builder.odin:430-522 the `memcpify:` loop-to-`Copy` idiom recognizer never checks that the induction phi starts at 0 (it only checks the step and the exit compare), so `for i := 2; i < n; i += 1 { dst[i] = src[i] }` becomes `copy(dst, src, n)` starting at element 0. expected 248, actual 204 -->
 
 #### memcpify ignores the loop start index
 ```odin
@@ -5981,7 +5981,7 @@ main :: proc() -> int {
 }
 ```
 
-<!-- backend/builder/builder.odin:467-490 `memcpify` takes the index scale (`factor`) from the address `Mul` and emits `Copy` of `count * factor` bytes without ever checking that `factor` equals the element size, so a strided loop `dst[i*2] = src[i*2]` is turned into a contiguous copy of 2*n bytes. expected 76, actual 204 -->
+<!-- bac/builder/builder.odin:467-490 `memcpify` takes the index scale (`factor`) from the address `Mul` and emits `Copy` of `count * factor` bytes without ever checking that `factor` equals the element size, so a strided loop `dst[i*2] = src[i*2]` is turned into a contiguous copy of 2*n bytes. expected 76, actual 204 -->
 
 #### memcpify turns a strided loop into a contiguous copy
 ```odin
@@ -6020,7 +6020,7 @@ main :: proc() -> int {
 }
 ```
 
-<!-- backend/builder/builder.odin:73-77 `fold_bin_op` evaluates `.Div`/`.Rem` (and `.U_Div`/`.U_Rem`) unconditionally, so constant folding a never-executed `1 / 0` (or `min(i64) / -1`) kills the compiler itself with SIGILL/SIGFPE. expected exit 7, actual: jit crashes while compiling -->
+<!-- bac/builder/builder.odin:73-77 `fold_bin_op` evaluates `.Div`/`.Rem` (and `.U_Div`/`.U_Rem`) unconditionally, so constant folding a never-executed `1 / 0` (or `min(i64) / -1`) kills the compiler itself with SIGILL/SIGFPE. expected exit 7, actual: jit crashes while compiling -->
 
 #### constant folding a division by zero crashes the compiler
 ```odin
@@ -6045,7 +6045,7 @@ main :: proc() -> int {
 }
 ```
 
-<!-- NOT my area (memopt/SROA) but confirmed: backend/builder/memopt.odin:255 calls backend.graph_subsume with a 0 node id -> assert `id != 0` at backend/graph.odin:1608. expected exit 1, actual: jit crashes while compiling at -O:aggresive -->
+<!-- NOT my area (memopt/SROA) but confirmed: bac/builder/memopt.odin:255 calls bac.graph_subsume with a 0 node id -> assert `id != 0` at bac/graph.odin:1608. expected exit 1, actual: jit crashes while compiling at -O:aggresive -->
 
 #### sroa of a partially initialized struct crashes the compiler
 ```odin
@@ -6396,7 +6396,7 @@ main :: proc() -> int {
 }
 ```
 
-<!-- regalloc split-coalescing (backend/regalloc/regalloc.odin:523-602) merges two live ranges that are actually simultaneously live: the interference graph is missing the edge, so `unify(ilrg, inlrg)` + `graph_subsume` gives both values the same register. Disabling only that loop (`for &bb in sched.bbs { ... itype != .Split ... }`) makes the program produce the right answer at every -O level; making the coalescing heuristic maximally conservative (only `total < leeway`) does NOT help, so the interference info itself is incomplete. expected exit 147, actual 100. -->
+<!-- regalloc split-coalescing (bac/regalloc/regalloc.odin:523-602) merges two live ranges that are actually simultaneously live: the interference graph is missing the edge, so `unify(ilrg, inlrg)` + `graph_subsume` gives both values the same register. Disabling only that loop (`for &bb in sched.bbs { ... itype != .Split ... }`) makes the program produce the right answer at every -O level; making the coalescing heuristic maximally conservative (only `total < leeway`) does NOT help, so the interference info itself is incomplete. expected exit 147, actual 100. -->
 #### regalloc coalescing merges interfering live ranges
 ```odin
 package main
@@ -6463,7 +6463,7 @@ main :: proc() -> int {
 }
 ```
 
-<!-- backend/builder/ssa.odin:206-216 graph_end_loop: a break scope entry that still points at the loop Scope node (no Lazy_Phi was ever forced because the variable is never *read* inside the loop) is rewritten to init.inps[i], the loop-*entry* value, instead of the loop phi; a variable that is only written after the break site loses the write. expected 105, got 102 -->
+<!-- bac/builder/ssa.odin:206-216 graph_end_loop: a break scope entry that still points at the loop Scope node (no Lazy_Phi was ever forced because the variable is never *read* inside the loop) is rewritten to init.inps[i], the loop-*entry* value, instead of the loop phi; a variable that is only written after the break site loses the write. expected 105, got 102 -->
 
 #### loop write only variable lost on early break
 ```odin
@@ -6510,7 +6510,7 @@ main :: proc() -> int {
 }
 ```
 
-<!-- backend/builder/builder.odin:48 fold_un_op .Cast masks the constant to the destination width (so i32(-8) becomes 0xFFFFFFF8), but fold_bin_op never sign-extends: .Rem (line 80), .Shr (line 91) and the signed compares .Le/.Lt/.Gt/.Ge (lines 96-103) operate on the raw i64. Only .Div sign-extends. expected 115, got 104 -->
+<!-- bac/builder/builder.odin:48 fold_un_op .Cast masks the constant to the destination width (so i32(-8) becomes 0xFFFFFFF8), but fold_bin_op never sign-extends: .Rem (line 80), .Shr (line 91) and the signed compares .Le/.Lt/.Gt/.Ge (lines 96-103) operate on the raw i64. Only .Div sign-extends. expected 115, got 104 -->
 
 #### signed constant folding on narrowed integers
 ```odin
@@ -6530,7 +6530,7 @@ main :: proc() -> int {
 }
 ```
 
-<!-- backend/builder/builder.odin:51-52 fold_un_op treats .F_Demote as identity, but float constants are stored as f64 bits (gen.odin:386 emit_float_const), so f32(x) of a folded constant keeps full f64 precision instead of rounding to f32. expected 146, got 0 -->
+<!-- bac/builder/builder.odin:51-52 fold_un_op treats .F_Demote as identity, but float constants are stored as f64 bits (gen.odin:386 emit_float_const), so f32(x) of a folded constant keeps full f64 precision instead of rounding to f32. expected 146, got 0 -->
 
 #### f32 demotion of a constant does not round
 ```!odin
@@ -6546,7 +6546,7 @@ main :: proc() -> int {
 }
 ```
 
-<!-- backend/builder/builder.odin:1110-1121 (.Set zero-init peep) only splits the *last* merged slot down to MAX_STORE_UNIT; an earlier merged run of 32 bytes reaches builder.odin:1130-1132 where table[count_trailing_zeros(32)] = table[5] indexes the 5-element datatype table -> compiler crash "Index 5 is out of range 0..<5" -->
+<!-- bac/builder/builder.odin:1110-1121 (.Set zero-init peep) only splits the *last* merged slot down to MAX_STORE_UNIT; an earlier merged run of 32 bytes reaches builder.odin:1130-1132 where table[count_trailing_zeros(32)] = table[5] indexes the 5-element datatype table -> compiler crash "Index 5 is out of range 0..<5" -->
 
 #### zero init slot splitting index out of range
 ```odin
@@ -6567,7 +6567,7 @@ main :: proc() -> int {
 }
 ```
 
-<!-- backend/builder/builder.odin:1096-1121 (.Set zero-init peep) merges adjacent uninitialised slots without re-splitting non-last runs, so a 24-byte run survives; builder.odin:1130-1133 then picks table[count_trailing_zeros(24)] = .I64 and emits a single 8-byte zero store for 24 bytes, leaving 16 bytes of the struct uninitialised. expected 90, got a garbage-dependent value (varies per run) -->
+<!-- bac/builder/builder.odin:1096-1121 (.Set zero-init peep) merges adjacent uninitialised slots without re-splitting non-last runs, so a 24-byte run survives; builder.odin:1130-1133 then picks table[count_trailing_zeros(24)] = .I64 and emits a single 8-byte zero store for 24 bytes, leaving 16 bytes of the struct uninitialised. expected 90, got a garbage-dependent value (varies per run) -->
 
 #### zero init only partially zeroes non power of two run
 ```odin
@@ -6617,7 +6617,7 @@ main :: proc() -> int {
 }
 ```
 
-<!-- backend/builder/builder.odin:720-727 passes the load size and the store size to `is_noalias` in the wrong order (address `cnode.inps[2]` is paired with `DT_SIZE[node.dt]`, the *load*'s size), so an overlapping store is judged non-aliasing and the load forwards past it; expected 123, got 0 at -O:moderate and above. -->
+<!-- bac/builder/builder.odin:720-727 passes the load size and the store size to `is_noalias` in the wrong order (address `cnode.inps[2]` is paired with `DT_SIZE[node.dt]`, the *load*'s size), so an overlapping store is judged non-aliasing and the load forwards past it; expected 123, got 0 at -O:moderate and above. -->
 #### load_forwarding_past_overlapping_store_of_different_size
 ```odin
 package main
@@ -6633,7 +6633,7 @@ main :: proc() -> int {
 }
 ```
 
-<!-- backend/builder/memopt.odin:167-190 (`collect_rename_slot`) only requires every op on a local to sit at offset 0; it never requires the ops to have the same access size, so a `u8` load at offset 0 is renamed to the `u64` value stored there; expected 52, got 142 at -O:all. -->
+<!-- bac/builder/memopt.odin:167-190 (`collect_rename_slot`) only requires every op on a local to sit at offset 0; it never requires the ops to have the same access size, so a `u8` load at offset 0 is renamed to the `u64` value stored there; expected 52, got 142 at -O:all. -->
 #### memopt renames local with mismatched access sizes
 ```odin
 package main
@@ -6647,7 +6647,7 @@ main :: proc() -> int {
 }
 ```
 
-<!-- Same root cause (backend/builder/memopt.odin:167-190): the narrow store is treated as writing the whole slot, so the following wide load reads 3 instead of 0x1203; expected 93, got 3 at -O:all. -->
+<!-- Same root cause (bac/builder/memopt.odin:167-190): the narrow store is treated as writing the whole slot, so the following wide load reads 3 instead of 0x1203; expected 93, got 3 at -O:all. -->
 #### memopt narrow store into wide slot
 ```odin
 package main
@@ -6662,7 +6662,7 @@ main :: proc() -> int {
 }
 ```
 
-<!-- Iter-peeps fixpoint verification fails (backend/graph.odin:952): the load-forwarding peep in backend/builder/builder.odin:713-743 (`florward_loads`) only registers triggers on the final `cursor` (and its address), not on the non-aliasing stores it walked over, so the load is never re-peeped after they change; expected exit 0, got a compiler assertion at -O:moderate and above. -->
+<!-- Iter-peeps fixpoint verification fails (bac/graph.odin:952): the load-forwarding peep in bac/builder/builder.odin:713-743 (`florward_loads`) only registers triggers on the final `cursor` (and its address), not on the non-aliasing stores it walked over, so the load is never re-peeped after they change; expected exit 0, got a compiler assertion at -O:moderate and above. -->
 #### load forwarding does not reach a peephole fixpoint
 ```odin
 package main

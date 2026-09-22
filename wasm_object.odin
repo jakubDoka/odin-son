@@ -1,7 +1,7 @@
 package main
 
-import "backend"
-import "backend/wasm"
+import "bac"
+import "bac/wasm"
 import "core:fmt"
 import "core:mem"
 import "core:slice"
@@ -313,14 +313,14 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 
 	encode_func_type :: proc(
 		buf: ^[dynamic]u8,
-		params: []backend.Param_Spec,
+		params: []bac.Param_Spec,
 		rets: []typecheck.Type,
 	) {
-		ret_dts: [dynamic; 2]backend.Node_Datatype
+		ret_dts: [dynamic; 2]bac.Node_Datatype
 		assert(len(rets) <= 1)
 		for ret in rets {
 			if typecheck.is_of(ret, ^typecheck.Simd) {
-				append(&ret_dts, backend.Node_Datatype.V128)
+				append(&ret_dts, bac.Node_Datatype.V128)
 				continue
 			}
 

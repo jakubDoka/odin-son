@@ -75,7 +75,7 @@ and let me know.
 The was just extended with better sib byte utilizations, but not all codepahts
 are implemented yet. I added asserts in places that if reached will signal
 unhandled index/scale code. All of the important code is located in the
-`backend/x64`.
+`bac/x64`.
 
 1. Spinn up the agent that will find all the important places that will need
    modifications.
@@ -90,7 +90,7 @@ implementing the actual thing.
 ### Implement slices in the frontend code (DONE)
 
 We recently implemented array types, lets proceed with implementing slices.
-There is a test to exscercise them (#### basic slices). The `backend` package
+There is a test to exscercise them (#### basic slices). The `bac` package
 should remain unchanged. Follow the patterns already established, only
 `main.odin` and `typecheck.odin` should require modifications.
 
@@ -160,7 +160,7 @@ process, fix them.
 The current tests for memopts are good, but I am not very confident about the
 implementation. There appear to be some edgecases I had to deal with and I feel
 like I did not structure the code correctly. Could you please review
-`backend/mem2reg.odin` and look for bugs? Try to create tests that reporduce
+`bac/mem2reg.odin` and look for bugs? Try to create tests that reporduce
 them. For each bug you are suspecting, spawn an agent to make thetest for it.
 Once you thing you can't find anymore. Once that is done, spawn an agent to fix
 the bugs, only one agent though because multiple would stop over each other.
@@ -392,7 +392,7 @@ Support enums and unions. This breaks down into multiple steps:
 ### Clean up the switch statement codegen (DONE)
 
 Currently a switch statement uses a stack of If States to get emitted. Add a
-new builder into the `backend/graph.odin` that gives you an ability to break
+new builder into the `bac/graph.odin` that gives you an ability to break
 out of it, which will accumulate the breaks into a region with phis, similar to
 what `Loop_State` does with the `break` control flow.
 
@@ -507,11 +507,11 @@ plan to split the backend module so that each Node_Spec is in its own module.
 
 The node spec array should be abolished and the big node spec should be placed
 into a file in each platform module. This also includes the Builder spec. The
-codegen function in backend/gen_spec_fn.odin should be parametrized by
+codegen function in bac/gen_spec_fn.odin should be parametrized by
 Codegen_Spec that is right now hardcoded. It should also intake a file path to
 generate. Each backend submodule than runts its spec gen separately. All reused
 spec is kept in the backend module. This is important change that will allow us
-to extend the backend with new architectures without editing the root backend
+to extend the backend with new architectures without editing the root `bac`
 module.
 
 ### implement dwarf line info emission (DONE)
@@ -558,7 +558,7 @@ type is set to `V128-512`. What you should do is:
    be set so don't set them.
 1. Make sure the example finishes the ir emission. Again if I forgot about
    something fix that as well.
-1. Make sure the example crashes in the `backend/x64/x64.odin`, it should
+1. Make sure the example crashes in the `bac/x64/x64.odin`, it should
    complain that V128 is not handled for comparison. And the unary ops you
    added are not handled yet.
 1. Verify that the emitted nodes make sense. Log the ir and glance it.
@@ -610,7 +610,7 @@ you can use for bitflags.
 ### Search for bugs (DONE)
 
 Search for bugs in the code. Spinn up at most 5 subagents that will go trought
-the `./backend/` code and review it. If an agent suspects a bug, It will try to
+the `./bac/` code and review it. If an agent suspects a bug, It will try to
 reporduce it with a small project odin module. Once its confirmed, it will add
 it to the `TESTS.md`. Try to not run in to asserts that just serve as TODOs.
 Once everithing is reviewed stop.

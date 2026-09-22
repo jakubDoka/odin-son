@@ -1,7 +1,7 @@
 package wasm_main
 
 import jit ".."
-import "../backend"
+import "../bac"
 import "../typecheck"
 import "../vendored/gam/util/arna"
 import "base:runtime"
@@ -78,7 +78,7 @@ compiler_init :: proc "c" (source_size: u32) -> Status {
 		}
 
 		allocator := context.allocator
-		backend.init_custom_fmt()
+		bac.init_custom_fmt()
 		typecheck.init_type_fmt()
 		context.allocator = allocator
 		state.initialized = true
@@ -158,7 +158,7 @@ compiler_compile :: proc "c" (target: Target) -> Status {
 		return .Type_Error
 	}
 
-	emit_ctx := backend.Codegen_Emit_Ctx {
+	emit_ctx := bac.Codegen_Emit_Ctx {
 		lib_calls = {copy = {id = jit.MEMCPY_ID}, set = {id = jit.MEMSET_ID}},
 	}
 	level := jit.OPT_LEVELS[len(jit.OPT_LEVELS) - 1]

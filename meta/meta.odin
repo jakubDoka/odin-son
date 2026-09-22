@@ -21,17 +21,17 @@ main :: proc() {
 
 	{
 		file, err := os.open(
-			"backend/meta_overloads.odin",
+			"bac/meta_overloads.odin",
 			{.Create, .Trunc, .Write},
 		)
 		fmt.assertf(err == nil, "%v", err)
 		defer os.close(file)
 
-		os.write_string(file, "package backend\n")
+		os.write_string(file, "package bac\n")
 		os.write_string(file, "// NOTE: this file is generated: " + COMMAND)
 		os.write_string(file, "\n\n")
 
-		file_paths := []string{"./backend/graph.odin", "./backend/gcm.odin"}
+		file_paths := []string{"./bac/graph.odin", "./bac/gcm.odin"}
 		for file_path in file_paths {
 			data, derr := os.read_entire_file(file_path, context.allocator)
 			fmt.assertf(derr == nil, "%v", derr)

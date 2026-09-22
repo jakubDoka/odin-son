@@ -34,7 +34,7 @@ array_reserve :: proc(a: ^Arena, arr: ^Array($T), need: int) {
 
 // array_push appends a copy of `v^` and returns its index. The element is taken
 // by pointer: passing a struct by value into a generic `$T` parameter crashes
-// the JIT backend (unbounded inline recursion), so by-pointer is the one uniform
+// the JIT bac (unbounded inline recursion), so by-pointer is the one uniform
 // convention for pushes.
 array_push :: proc(a: ^Arena, arr: ^Array($T), v: ^T) -> int {
 	array_reserve(a, arr, 1)

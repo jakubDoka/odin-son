@@ -1,12 +1,12 @@
-# regenerates backend's own node_specs.odin, then every backend/<arch>
+# regenerates bac's own node_specs.odin, then every bac/<arch>
 # submodule that has a gen_<arch>.odin (its own spec generator) — so adding a
 # new architecture directory is enough on its own, no edit needed here
 function gen-spec
-	rm -f backend/node_specs.odin
-	rm -f backend/*/node_specs.odin
+	rm -f bac/node_specs.odin
+	rm -f bac/*/node_specs.odin
 
-	odin run backend/meta
-	odin run backend/meta2
+	odin run bac/meta
+	odin run bac/meta2
 end
 
 # regenerate the tests and overloads
@@ -53,7 +53,7 @@ end
 
 alias rel-files 'rg --files --glob "!*.git/" --glob "!vendored" --glob \
 "!print-tests" --glob "!TESTS.md" --glob "!tests.odin" --glob \
-"!backend/**/node_specs.odin" --glob "!*meta_overloads.odin" \
+"!bac/**/node_specs.odin" --glob "!*meta_overloads.odin" \
 --glob "!test-programs" --glob "!examples" --glob "!fuzz/crashes/*" \
 --glob "!*.wasm"'
 

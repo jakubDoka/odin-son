@@ -1,8 +1,8 @@
 package typecheck
 
-import "../backend"
-import "../backend/builder"
-import ra "../backend/regalloc"
+import "../bac"
+import "../bac/builder"
+import ra "../bac/regalloc"
 import "../vendored/gam/util/arna"
 import "base:intrinsics"
 import "base:runtime"
@@ -18,9 +18,9 @@ import "core:slice"
 import "core:strconv"
 import "core:strings"
 
-Call :: backend.Call
-Node_ID :: backend.Node_ID
-Call_Conv :: backend.Call_Conv
+Call :: bac.Call
+Node_ID :: bac.Node_ID
+Call_Conv :: bac.Call_Conv
 
 MODULE_INTRINSICS :: 0
 
@@ -44,14 +44,14 @@ Mems :: struct {
 Target :: struct {
 	name: string,
 	cc:   ^Call_Conv,
-	spec: ^backend.Node_Spec,
+	spec: ^bac.Node_Spec,
 	emit: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8,
 }
 
 Gen_Ctx :: struct {
 	using global: ^Global_Ctx,
 	using types:  ^Types,
-	using graph:  backend.Graph,
+	using graph:  bac.Graph,
 	node_scope:   Node_ID,
 	mem_slot:     int,
 	loop:         ^Loop_State,
@@ -61,7 +61,7 @@ Gen_Ctx :: struct {
 	prc:          Proc_ID,
 	ret_ptrs:     []Node_ID,
 	poly_types:   #soa[dynamic]Poly_Entry,
-	slocs:        map[backend.Sloc]backend.D_Node_ID,
+	slocs:        map[bac.Sloc]bac.D_Node_ID,
 	eval_depth:   int,
 	type_depth:   int,
 	error_cnt:    int,
@@ -340,10 +340,10 @@ TYPE_NAMES := #partial [Type]string {
 	.F64          = "f64",
 }
 
-type_to_dt :: proc(ty: Type) -> backend.Node_Datatype {
+type_to_dt :: proc(ty: Type) -> bac.Node_Datatype {
 	@(static)
 	@(rodata)
-	TYPE_TO_DT := #partial [Type]backend.Node_Datatype {
+	TYPE_TO_DT := #partial [Type]bac.Node_Datatype {
 		.Void    = .Void,
 		.Typeid  = .I64,
 		.Bool    = .I8,
@@ -617,12 +617,12 @@ intern_simd :: proc(ctx: ^Gen_Ctx, elem: Type, length: int) -> Type {
 	return pack_type(existing)
 }
 
-simd_dt :: proc(size: int) -> backend.Node_Datatype {
+simd_dt :: proc(size: int) -> bac.Node_Datatype {
 	fmt.assertf(math.is_power_of_two(size), "%v", size)
 	fmt.assertf(16 <= size, "%v", size)
 	assert(size <= 64)
-	return backend.Node_Datatype(
-		int(backend.Node_Datatype.V128) +
+	return bac.Node_Datatype(
+		int(bac.Node_Datatype.V128) +
 		intrinsics.count_trailing_zeros(size) -
 		intrinsics.count_trailing_zeros(16),
 	)
@@ -746,10 +746,10 @@ find_module_decl :: proc(
 	needle := hash_name(name)
 
 	module := &ctx.modules[mod]
-	for iter := backend.simd_iter_from(
+	for iter := bac.simd_iter_from(
 		module.decl_idx.hash[:len(module.decl_idx)],
 		needle,
-	); idx in backend.simd_iter_next(&iter) {
+	); idx in bac.simd_iter_next(&iter) {
 		decl := &module.decl_idx.id[idx]
 		if decl.name != name do continue
 		typecheck_decl(ctx, mod, decl)
@@ -862,9 +862,9 @@ typecheck_decl :: proc(
 module_add_decls :: proc(ctx: ^Gen_Ctx, mid: Module_ID, decls: []Decl) {
 	mod := &ctx.modules[mid]
 
-	backend.grow_search_space(
+	bac.grow_search_space(
 		&mod.decl_idx,
-		mem.align_forward_int(len(decls), align_of(backend.Intern_Vec)),
+		mem.align_forward_int(len(decls), align_of(bac.Intern_Vec)),
 		ctx.types.allocator,
 	)
 
@@ -1049,15 +1049,15 @@ emit_type :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> (ret: Type) {
 Proc :: struct {
 	name:        string,
 	polys:       #soa[]Poly_Entry,
-	param_types: []backend.Param_Spec,
+	param_types: []bac.Param_Spec,
 	using sig:   ^Proc_Type,
 	lit:         ^ast.Proc_Lit,
 	module:      Module_ID,
 	file:        ^ast.File,
 	file_id:     File_ID,
 	hidden:      bool,
-	stencil:     backend.Stencil,
-	out:         backend.Codegen_Output,
+	stencil:     bac.Stencil,
+	out:         bac.Codegen_Output,
 }
 
 // A module level (global) mutable variable. The backing data lives in
@@ -1225,7 +1225,7 @@ Decl :: struct {
 Module :: struct {
 	name:       string,
 	dir:        string,
-	decl_idx:   #soa[]backend.SS_Entry(Decl),
+	decl_idx:   #soa[]bac.SS_Entry(Decl),
 	file_start: int,
 	file_count: int,
 	// range into ctx.procs occupied by this module's procedures
@@ -1259,7 +1259,7 @@ Proc_Inst_Key :: struct {
 Types :: struct {
 	target:         Target,
 	check:          bool,
-	tstats:         backend.Stats,
+	tstats:         bac.Stats,
 	mems:           Mems,
 	allocator:      runtime.Allocator,
 	procs:          [dynamic]Proc,
@@ -3419,9 +3419,9 @@ find_loop :: proc(ctx: ^Gen_Ctx, label: ^ast.Node) -> ^Loop_State {
 	return loop
 }
 
-simd_lane_of :: proc(simd_ty: Type) -> backend.Lane_Type {
+simd_lane_of :: proc(simd_ty: Type) -> bac.Lane_Type {
 	return(
-		backend.lane_from_dt(type_to_dt(simd_ty)) or_else panic(
+		bac.lane_from_dt(type_to_dt(simd_ty)) or_else panic(
 			"wrong simd lane type",
 		) \
 	)
@@ -3443,9 +3443,9 @@ tok_to_binop :: proc(
 	ty: Type,
 	tok: tokenizer.Token_Kind,
 ) -> (
-	kind: backend.Bin_Op,
+	kind: bac.Bin_Op,
 	name: string,
-	lane: backend.Lane_Type,
+	lane: bac.Lane_Type,
 	ok: bool,
 ) {
 	ty := ty
@@ -3462,7 +3462,7 @@ tok_to_binop :: proc(
 	}
 
 	Op_Info :: struct {
-		kind: backend.Bin_Op,
+		kind: bac.Bin_Op,
 		name: string,
 	}
 
@@ -3531,7 +3531,7 @@ tok_to_binop :: proc(
 	}
 
 	@(static, rodata)
-	ALLOWED_SIMD := #partial [backend.Lane_Type]bit_set[backend.Bin_Op] {
+	ALLOWED_SIMD := #partial [bac.Lane_Type]bit_set[bac.Bin_Op] {
 		.I8 ..= .I64 = {.Add, .Sub, .And, .Xor, .Or},
 	}
 

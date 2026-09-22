@@ -618,13 +618,13 @@ post_schedule_peep_inst :: proc(
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.CV128) % bac.PRECISION == 0)
 #assert(size_of(Scope) % bac.PRECISION == 0)
-graph_add_scope :: #force_inline proc(graph: ^bac.Graph, name: string, cfg: bac.Node_ID) -> (_id: bac.Node_ID) {
-	(^Scope)(bac.graph_get_next_extra_slot(graph, u16(Node_Type.Scope), 0))^ = {}
-	return bac.graph_add_raw(graph, name, u16(Node_Type.Scope), .Void, {cfg})
+add_scope :: #force_inline proc(graph: ^bac.Graph, name: string, cfg: bac.Node_ID) -> (_id: bac.Node_ID) {
+	(^Scope)(bac.get_next_extra_slot(graph, u16(Node_Type.Scope), 0))^ = {}
+	return bac.add_raw(graph, name, u16(Node_Type.Scope), .Void, {cfg})
 }
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-graph_add_lazy_phi :: #force_inline proc(graph: ^bac.Graph, name: string, dt: bac.Node_Datatype, reg: bac.Node_ID, lhs: bac.Node_ID) -> (_id: bac.Node_ID) {
-	return bac.graph_add_raw(graph, name, u16(Node_Type.Lazy_Phi), dt, {reg, lhs}, {extra_capacity = 1,})
+add_lazy_phi :: #force_inline proc(graph: ^bac.Graph, name: string, dt: bac.Node_Datatype, reg: bac.Node_ID, lhs: bac.Node_ID) -> (_id: bac.Node_ID) {
+	return bac.add_raw(graph, name, u16(Node_Type.Lazy_Phi), dt, {reg, lhs}, {extra_capacity = 1,})
 }
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {

@@ -1,86 +1,86 @@
 package bac
 // NOTE: this file is generated: odin run meta
 
-graph_remove_output :: proc{graph_remove_output_node, graph_remove_output_node_id}
-graph_remove_output_node_id :: #force_inline proc(
+remove_output :: proc{remove_output_node, remove_output_node_id}
+remove_output_node_id :: #force_inline proc(
 	graph: ^Graph,
 	id: Node_ID,
 	out: Node_Output,
 	no_delete := false,
 ) {
-	graph_remove_output_node(graph, graph_get(graph, id), out, no_delete)
+	remove_output_node(graph, get_node(graph, id), out, no_delete)
 }
-graph_node_hash :: proc{graph_node_hash_node, graph_node_hash_node_id}
-graph_node_hash_node_id :: #force_inline proc(graph: ^Graph, id: Node_ID) -> u8 {
-	return graph_node_hash_node(graph, graph_get(graph, id))
+node_hash :: proc{node_hash_node, node_hash_node_id}
+node_hash_node_id :: #force_inline proc(graph: ^Graph, id: Node_ID) -> u8 {
+	return node_hash_node(graph, get_node(graph, id))
 }
-graph_delete :: proc{graph_delete_node, graph_delete_node_id}
-graph_delete_node_id :: #force_inline proc(graph: ^Graph, id: Node_ID, indirect := false) {
-	graph_delete_node(graph, graph_get(graph, id), indirect)
+delete_node :: proc{delete_node_node, delete_node_node_id}
+delete_node_node_id :: #force_inline proc(graph: ^Graph, id: Node_ID, indirect := false) {
+	delete_node_node(graph, get_node(graph, id), indirect)
 }
-graph_extra_dwords :: proc{graph_extra_dwords_node, graph_extra_dwords_node_id}
-graph_extra_dwords_node_id :: #force_inline proc(
+get_extra_dwords :: proc{get_extra_dwords_node, get_extra_dwords_node_id}
+get_extra_dwords_node_id :: #force_inline proc(
 	graph: ^Graph,
 	id: Node_ID,
 	consider_dbg := false,
 ) -> []u32 {
-	return graph_extra_dwords_node(graph, graph_get(graph, id), consider_dbg)
+	return get_extra_dwords_node(graph, get_node(graph, id), consider_dbg)
 }
-graph_inps :: proc{graph_inps_node, graph_inps_node_id}
-graph_inps_node_id :: #force_inline proc(
+get_inputs :: proc{get_inputs_node, get_inputs_node_id}
+get_inputs_node_id :: #force_inline proc(
 	graph: ^Graph,
 	id: Node_ID,
 ) -> []Node_ID {
-	return graph_inps_node(graph, graph_get(graph, id))
+	return get_inputs_node(graph, get_node(graph, id))
 }
-graph_outs :: proc{graph_outs_node, graph_outs_node_id}
-graph_outs_node_id :: #force_inline proc(
+get_outputs :: proc{get_outputs_node, get_outputs_node_id}
+get_outputs_node_id :: #force_inline proc(
 	graph: ^Graph,
 	id: Node_ID,
 ) -> []Node_Output {
-	return graph_outs_node(graph, graph_get(graph, id))
+	return get_outputs_node(graph, get_node(graph, id))
 }
-graph_add_input :: proc{graph_add_input_node, graph_add_input_node_id}
-graph_add_input_node_id :: #force_inline proc(graph: ^Graph, id: Node_ID, inp: Node_ID) -> int {
-	return graph_add_input_node(graph, graph_get(graph, id), inp)
+add_input :: proc{add_input_node, add_input_node_id}
+add_input_node_id :: #force_inline proc(graph: ^Graph, id: Node_ID, inp: Node_ID) -> int {
+	return add_input_node(graph, get_node(graph, id), inp)
 }
-graph_add_output :: proc{graph_add_output_node, graph_add_output_node_id}
-graph_add_output_node_id :: #force_inline proc(
+add_output :: proc{add_output_node, add_output_node_id}
+add_output_node_id :: #force_inline proc(
 	graph: ^Graph,
 	id: Node_ID,
 	out: Node_ID,
 	#any_int i: int,
 ) {
-	graph_add_output_node(graph, graph_get(graph, id), out, i)
+	add_output_node(graph, get_node(graph, id), out, i)
 }
-graph_get_static_extra :: proc{graph_get_static_extra_node, graph_get_static_extra_node_id}
-graph_get_static_extra_node_id :: #force_inline proc(
+get_static_extra :: proc{get_static_extra_node, get_static_extra_node_id}
+get_static_extra_node_id :: #force_inline proc(
 	graph: ^Graph,
 	id: Node_ID,
 	$T: typeid,
 ) -> ^T {
-	return graph_get_static_extra_node(graph, graph_get(graph, id), T)
+	return get_static_extra_node(graph, get_node(graph, id), T)
 }
-graph_get_any_extra :: proc{graph_get_any_extra_node, graph_get_any_extra_node_id}
-graph_get_any_extra_node_id :: #force_inline proc(
+get_any_extra :: proc{get_any_extra_node, get_any_extra_node_id}
+get_any_extra_node_id :: #force_inline proc(
 	graph: ^Graph,
 	id: Node_ID,
 ) -> any {
-	return graph_get_any_extra_node(graph, graph_get(graph, id))
+	return get_any_extra_node(graph, get_node(graph, id))
 }
-graph_has_flag :: proc{graph_has_flag_node, graph_has_flag_node_id}
-graph_has_flag_node_id :: #force_inline proc(
+has_flag :: proc{has_flag_node, has_flag_node_id}
+has_flag_node_id :: #force_inline proc(
 	graph: ^Graph,
 	id: Node_ID,
 	flag: Class_Flag,
 ) -> bool {
-	return graph_has_flag_node(graph, graph_get(graph, id), flag)
+	return has_flag_node(graph, get_node(graph, id), flag)
 }
-graph_idom :: proc{graph_idom_node, graph_idom_node_id}
-graph_idom_node_id :: #force_inline proc(graph: ^Graph, id: Node_ID) -> Node_ID {
-	return graph_idom_node(graph, graph_get(graph, id))
+get_idom :: proc{get_idom_node, get_idom_node_id}
+get_idom_node_id :: #force_inline proc(graph: ^Graph, id: Node_ID) -> Node_ID {
+	return get_idom_node(graph, get_node(graph, id))
 }
-graph_idepth :: proc{graph_idepth_node, graph_idepth_node_id}
-graph_idepth_node_id :: #force_inline proc(graph: ^Graph, id: Node_ID) -> u32 {
-	return graph_idepth_node(graph, graph_get(graph, id))
+get_idepth :: proc{get_idepth_node, get_idepth_node_id}
+get_idepth_node_id :: #force_inline proc(graph: ^Graph, id: Node_ID) -> u32 {
+	return get_idepth_node(graph, get_node(graph, id))
 }

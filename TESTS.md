@@ -6045,7 +6045,7 @@ main :: proc() -> int {
 }
 ```
 
-<!-- NOT my area (memopt/SROA) but confirmed: bac/builder/memopt.odin:255 calls bac.graph_subsume with a 0 node id -> assert `id != 0` at bac/graph.odin:1608. expected exit 1, actual: jit crashes while compiling at -O:aggresive -->
+<!-- NOT my area (memopt/SROA) but confirmed: bac/builder/memopt.odin:255 calls bac.subsume with a 0 node id -> assert `id != 0` at bac/graph.odin:1608. expected exit 1, actual: jit crashes while compiling at -O:aggresive -->
 
 #### sroa of a partially initialized struct crashes the compiler
 ```odin
@@ -6377,7 +6377,7 @@ main :: proc() -> int {
 }
 ```
 
-<!-- loop phi whose only use is after the loop collapses to its entry value (builder/ssa.odin graph_get_scope_value / lazy-phi resolution): `v4` is written but never read inside the loop, and after the loop it still reads 42. expected exit 10, actual 42 (codegen emits `mov $0x2a,%rax`). -->
+<!-- loop phi whose only use is after the loop collapses to its entry value (builder/ssa.odin get_scope_value / lazy-phi resolution): `v4` is written but never read inside the loop, and after the loop it still reads 42. expected exit 10, actual 42 (codegen emits `mov $0x2a,%rax`). -->
 #### loop variable only written inside loop keeps pre loop value
 ```odin
 package main
@@ -6396,7 +6396,7 @@ main :: proc() -> int {
 }
 ```
 
-<!-- regalloc split-coalescing (bac/regalloc/regalloc.odin:523-602) merges two live ranges that are actually simultaneously live: the interference graph is missing the edge, so `unify(ilrg, inlrg)` + `graph_subsume` gives both values the same register. Disabling only that loop (`for &bb in sched.bbs { ... itype != .Split ... }`) makes the program produce the right answer at every -O level; making the coalescing heuristic maximally conservative (only `total < leeway`) does NOT help, so the interference info itself is incomplete. expected exit 147, actual 100. -->
+<!-- regalloc split-coalescing (bac/regalloc/regalloc.odin:523-602) merges two live ranges that are actually simultaneously live: the interference graph is missing the edge, so `unify(ilrg, inlrg)` + `subsume` gives both values the same register. Disabling only that loop (`for &bb in sched.bbs { ... itype != .Split ... }`) makes the program produce the right answer at every -O level; making the coalescing heuristic maximally conservative (only `total < leeway`) does NOT help, so the interference info itself is incomplete. expected exit 147, actual 100. -->
 #### regalloc coalescing merges interfering live ranges
 ```odin
 package main
@@ -6463,7 +6463,7 @@ main :: proc() -> int {
 }
 ```
 
-<!-- bac/builder/ssa.odin:206-216 graph_end_loop: a break scope entry that still points at the loop Scope node (no Lazy_Phi was ever forced because the variable is never *read* inside the loop) is rewritten to init.inps[i], the loop-*entry* value, instead of the loop phi; a variable that is only written after the break site loses the write. expected 105, got 102 -->
+<!-- bac/builder/ssa.odin:206-216 end_loop: a break scope entry that still points at the loop Scope node (no Lazy_Phi was ever forced because the variable is never *read* inside the loop) is rewritten to init.inps[i], the loop-*entry* value, instead of the loop phi; a variable that is only written after the break site loses the write. expected 105, got 102 -->
 
 #### loop write only variable lost on early break
 ```odin

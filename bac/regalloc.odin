@@ -297,13 +297,13 @@ regalloc_collect_meta :: #force_inline proc(
 	}
 
 	rev_count -= 1
-	graph_get(graph, graph.start).gvn = u32(rev_count)
+	get_node(graph, graph.start).gvn = u32(rev_count)
 
 	idx := 0
 	for bb, j in sched.bbs {
-		graph_get(graph, bb.head).gvn = u32(len(slots) + 1 + j)
+		get_node(graph, bb.head).gvn = u32(len(slots) + 1 + j)
 		for instr in bb.instrs {
-			inode := graph_expand(graph, instr)
+			inode := expand_node(graph, instr)
 			when !ODIN_DISABLE_ASSERT {
 				fmt.assertf(bit_arr.set(seen, inode.gvn), "%v", inode)
 			}

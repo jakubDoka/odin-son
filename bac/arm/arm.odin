@@ -11,8 +11,8 @@ Reg :: bac.Reg
 Node :: bac.Node
 Node_ID :: bac.Node_ID
 emit :: bac.emit
-graph_expand :: bac.graph_expand
-graph_get :: bac.graph_get
+expand_node :: bac.expand_node
+get_node :: bac.get_node
 
 STACK_ALIGNMENT :: 16
 
@@ -140,23 +140,23 @@ peep :: proc(
 	node: bac.Expanded_Node,
 	_: $T,
 ) -> bac.Node_ID {
-	id := bac.graph_id(ctx, node)
+	id := bac.get_node_id(ctx, node)
 	kind := atype(node)
 
 	#partial switch kind {
 	case .Eq ..= .U_Ge:
 		if len(node.outs) == 1 &&
-		   graph_get(ctx, node.outs[0].id).itype == .If &&
+		   get_node(ctx, node.outs[0].id).itype == .If &&
 		   node.dt != .Void {
 			node.dt = .Void
 			return id
 		}
 	case .Rem, .U_Rem:
-		return graph_add_msub(
+		return add_msub(
 			ctx,
 			"rmms",
 			node.dt,
-			bac.graph_add_bin_op(
+			bac.add_bin_op(
 				ctx,
 				"rmdv",
 				kind == .Rem ? .Div : .U_Div,
@@ -296,16 +296,16 @@ meta_of :: #force_inline proc(
 			out = IOUT,
 			input_start = 1,
 			masks = nmasks[:1 -
-			int(graph_get(graph, node.inps[1]).dt == .Void)],
+			int(get_node(graph, node.inps[1]).dt == .Void)],
 		}
 	case .Call:
 		real_len := len(node.inps)
-		for ; graph_get(graph, node.inps[real_len - 1]).itype == .Local;
+		for ; get_node(graph, node.inps[real_len - 1]).itype == .Local;
 		    real_len -= 1 {}
 
 		masks := make([]bac.RM_Intern_Idx, real_len - bac.CALL_PREFIX)
 		for inp, i in node.inps[bac.CALL_PREFIX:real_len] {
-			inode := graph_get(graph, inp)
+			inode := get_node(graph, inp)
 			nkind := ra.datatype_to_reg_kind[inode.dt]
 			assert(nkind == RK_GENERAL)
 			masks[i] = single(ra, ARM_SYSTEMV_CC.args[0][i])
@@ -325,7 +325,7 @@ meta_of :: #force_inline proc(
 			),
 		}
 	case .Store:
-		vl := graph_get(graph, node.inps[3])
+		vl := get_node(graph, node.inps[3])
 		nkind := ra.datatype_to_reg_kind[vl.dt]
 		return {
 			out = IOUT,
@@ -335,11 +335,11 @@ meta_of :: #force_inline proc(
 	case .Load:
 		return {out = out, input_start = 2, masks = GPA_MASKS[:1]}
 	case .Ret:
-		idx := bac.graph_extra(graph, node, bac.Tup).idx
+		idx := bac.get_extra(graph, node, bac.Tup).idx
 		assert(nkind == RK_GENERAL)
 		return {out = single(ra, ARM_SYSTEMV_CC.rets[0][idx])}
 	case .Param:
-		idx := bac.graph_extra(graph, node, bac.Tup).idx
+		idx := bac.get_extra(graph, node, bac.Tup).idx
 		assert(nkind == RK_GENERAL)
 		return {out = single(ra, ARM_SYSTEMV_CC.args[0][idx])}
 	case .Return:
@@ -464,7 +464,7 @@ emit_function :: proc(
 	for &bb, i in ctx.schedule.bbs {
 		bb.offset = u32(ctx.code.pos)
 
-		last := graph_expand(ctx, bb.instrs[len(bb.instrs) - 1])
+		last := expand_node(ctx, bb.instrs[len(bb.instrs) - 1])
 		is_consecutive :=
 			i + 1 < len(ctx.bbs) &&
 			0 < len(last.outs) &&
@@ -483,10 +483,10 @@ emit_function :: proc(
 			bb := &ctx.bbs[reloc.dest]
 
 			if len(bb.instrs) > 1 do break
-			jmp := graph_expand(ctx, bb.instrs[0])
+			jmp := expand_node(ctx, bb.instrs[0])
 			if jmp.itype != .Jump do break
 
-			reloc.dest = graph_get(ctx, jmp.outs[0].id).gvn - block_base
+			reloc.dest = get_node(ctx, jmp.outs[0].id).gvn - block_base
 		}
 
 		dst_offset := ctx.bbs[reloc.dest].offset
@@ -580,7 +580,7 @@ emit_instr :: proc(
 	}
 	cc_neg :: proc(c: Cond) -> Cond {return Cond(u8(c) ~ 1)}
 
-	node := graph_expand(ctx, instr)
+	node := expand_node(ctx, instr)
 	kind := atype(node)
 	block_base := ctx.gvn - u32(len(ctx.schedule.bbs))
 	op := NODE_TO_OP[kind]
@@ -589,14 +589,14 @@ emit_instr :: proc(
 	inp: bac.Expanded_Node
 	is_f64: bool
 	if 0 < len(node.inps) {
-		inp = graph_expand(ctx, node.inps[0])
+		inp = expand_node(ctx, node.inps[0])
 		is_f64 = inp.dt == .F64
 	}
 
 	#partial switch kind {
 	case .Root_Mem, .Sym, .Phi, .Ret, .Mem, .Param, .Local:
 	case .Local_Addr:
-		offset := bac.graph_extra(ctx, node.inps[0], bac.Local).offset
+		offset := bac.get_extra(ctx, node.inps[0], bac.Local).offset
 		assert(offset < 4096)
 
 		// add rinstr, sp, #offset
@@ -605,7 +605,7 @@ emit_instr :: proc(
 			imm12_instr(0b1001000100, reg_of(ctx, instr), SP, offset),
 		)
 	case .Store:
-		vl := graph_get(ctx, node.inps[3])
+		vl := get_node(ctx, node.inps[3])
 
 		// str rvl, [rinp2, $imm12]
 		op: u32
@@ -805,7 +805,7 @@ emit_instr :: proc(
 			)
 		}
 	case .CInt:
-		cint := bac.graph_extra(ctx, node, bac.CInt)
+		cint := bac.get_extra(ctx, node, bac.CInt)
 
 		#partial switch node.dt {
 		case .I8 ..= .I64:
@@ -836,13 +836,13 @@ emit_instr :: proc(
 			&ctx.local_relocs,
 			Local_Reloc {
 				offset = u32(ctx.code.pos),
-				dest = graph_get(ctx, node.outs[int(is_consecutive)].id).gvn -
+				dest = get_node(ctx, node.outs[int(is_consecutive)].id).gvn -
 				block_base,
 				is_bcond = true,
 			},
 		)
 
-		cond := graph_get(ctx, node.inps[1])
+		cond := get_node(ctx, node.inps[1])
 
 		if cond.dt == .Void {
 			// b.<cond> <imm19>
@@ -872,7 +872,7 @@ emit_instr :: proc(
 				&ctx.local_relocs,
 				Local_Reloc {
 					offset = u32(ctx.code.pos),
-					dest = graph_get(ctx, node.outs[0].id).gvn - block_base,
+					dest = get_node(ctx, node.outs[0].id).gvn - block_base,
 				},
 			)
 
@@ -884,7 +884,7 @@ emit_instr :: proc(
 		id: u32
 		#partial switch kind {
 		case .Call:
-			id = bac.graph_extra(ctx, node, bac.Call).cid
+			id = bac.get_extra(ctx, node, bac.Call).cid
 		case .Set:
 			id = ctx.lib_calls.set.id
 		case .Copy:
@@ -954,7 +954,7 @@ emit_instr :: proc(
 }
 
 reg_of :: proc(ctx: ^Ctx, node: Node_ID) -> Reg {
-	return ctx.allocs[graph_get(ctx, node).gvn]
+	return ctx.allocs[get_node(ctx, node).gvn]
 }
 
 Op_Width :: enum u32 {

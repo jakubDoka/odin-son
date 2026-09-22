@@ -9,7 +9,7 @@ import "core:slice"
 
 Local :: bac.Local
 Node_ID :: bac.Node_ID
-graph_expand :: bac.graph_expand
+expand_node :: bac.expand_node
 
 memopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 	assert(graph.node_spec == &SPEC)
@@ -26,16 +26,16 @@ memopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 	sroad := 0
 	total := 0
 	mismatches := 0
-	sroa: for mout in bac.graph_outs(graph, emem) {
-		mnode := graph_expand(graph, mout.id)
+	sroa: for mout in bac.get_outputs(graph, emem) {
+		mnode := expand_node(graph, mout.id)
 		if mnode.itype != .Local do continue
 
 		total += 1
 
-		slot_size := bac.graph_extra(graph, mnode, Local).size
+		slot_size := bac.get_extra(graph, mnode, Local).size
 
 		assert(len(mnode.outs) == 1)
-		local_addr := graph_expand(graph, mnode.outs[0].id)
+		local_addr := expand_node(graph, mnode.outs[0].id)
 
 		assert(local_addr.itype == .Local_Addr)
 
@@ -53,7 +53,7 @@ memopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 			size := bac.mem_op_size(graph, out.id) or_continue sroa
 			if i32(iter.offset + size) > slot_size do continue sroa
 			if out.idx != 2 do continue sroa
-			onode := graph_get(graph, out.id)
+			onode := get_node(graph, out.id)
 			if onode.itype == .Copy || onode.itype == .Set do continue sroa
 
 			new_slot := Slot {
@@ -83,10 +83,10 @@ memopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 		if len(slots) == 1 do continue
 
 		for &slot in slots {
-			local := bac.graph_add_local(graph, "sroal", emem)
-			bac.graph_extra(graph, local, Local).size =
+			local := bac.add_local(graph, "sroal", emem)
+			bac.get_extra(graph, local, Local).size =
 				slot.end - slot.start
-			slot.local = bac.graph_add_local_addr(graph, "sroadr", local)
+			slot.local = bac.add_local_addr(graph, "sroadr", local)
 		}
 
 		Op :: struct {
@@ -108,7 +108,7 @@ memopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 		}
 
 		for op in ops {
-			bac.graph_set_input(graph, op.id, 2, op.local)
+			bac.set_input(graph, op.id, 2, op.local)
 		}
 	}
 
@@ -147,7 +147,7 @@ memopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 	}
 
 	edit_node_id :: proc(ctx: ^Ctx, id: Node_ID, new: u32) {
-		node := graph_get(ctx, id)
+		node := get_node(ctx, id)
 		ctx.slot_idx[node.gvn] = new + 1
 	}
 
@@ -166,8 +166,8 @@ memopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 	ctx.slot_idx = make([]u32, graph.gvn)
 	ctx.graph.dont_delete = true
 
-	collect_rename_slot: for mout in bac.graph_outs(graph, emem) {
-		mnode := graph_expand(graph, mout.id)
+	collect_rename_slot: for mout in bac.get_outputs(graph, emem) {
+		mnode := expand_node(graph, mout.id)
 		if mnode.itype != .Local do continue
 
 		assert(len(mnode.outs) == 1)
@@ -178,7 +178,7 @@ memopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 		for op in bac.offset_iter_next(graph, &iter) {
 			if iter.offset != 0 do continue collect_rename_slot
 			if op.idx != 2 do continue collect_rename_slot
-			onode := graph_get(graph, op.id)
+			onode := get_node(graph, op.id)
 			if onode.itype == .Copy ||
 			   onode.itype == .Set {continue collect_rename_slot}
 			otype := bac.mem_op_dt(
@@ -203,8 +203,8 @@ memopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 	ctx.dont_delete = false
 
 	for phi in ctx.deleted_lazy_phys {
-		if graph_get(graph, phi).rtype == bac.DEAD_NODE_KIND do continue
-		bac.graph_subsume(graph, bac.graph_inps(graph, phi)[1], phi)
+		if get_node(graph, phi).rtype == bac.DEAD_NODE_KIND do continue
+		bac.subsume(graph, bac.get_inputs(graph, phi)[1], phi)
 	}
 
 	if !ODIN_DISABLE_ASSERT {
@@ -213,7 +213,7 @@ memopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 		bac.collect_nodes(graph, &wl)
 
 		for n in wl.data[:wl.len] {
-			node := graph_expand(graph, n)
+			node := expand_node(graph, n)
 			node.in_worklist = false
 		}
 	}
@@ -223,7 +223,7 @@ memopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 	walk_thread :: proc(ctx: ^Ctx, thread: Node_ID) {
 		cursor := thread
 		for {
-			cnode := graph_expand(ctx, cursor)
+			cnode := expand_node(ctx, cursor)
 			pcursor := cursor
 			cursor = 0
 
@@ -239,7 +239,7 @@ memopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 				assert(len(cnode.outs) == 1)
 				cursor = cnode.outs[0].id
 				cursor =
-					bac.graph_find_node(ctx, .Mem, cursor) or_else panic(
+					bac.find_node(ctx, .Mem, cursor) or_else panic(
 						"",
 					)
 				continue
@@ -250,18 +250,18 @@ memopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 
 			outs: [dynamic]bac.Node_Output
 			for cout in slice.clone(cnode.outs) {
-				conode := graph_expand(ctx, cout.id)
+				conode := expand_node(ctx, cout.id)
 				#partial switch conode.itype {
 				case .Load:
 					id := get_edited_node_idx(ctx, conode) or_break
 					value := get_scope_value(ctx, ctx.scope, id)
-					bac.graph_subsume(ctx, value, cout.id)
+					bac.subsume(ctx, value, cout.id)
 				case .Store, .Call, .Set, .Copy, .Return, .Phi:
 					append(&outs, cout)
 				}
 			}
 
-			cnode = graph_expand(ctx, pcursor)
+			cnode = expand_node(ctx, pcursor)
 
 			original_scope := ctx.scope
 
@@ -275,12 +275,12 @@ memopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 					ctx.scope = slice.clone(original_scope)
 				}
 
-				conode := graph_expand(ctx, cout.id)
+				conode := expand_node(ctx, cout.id)
 				#partial switch conode.itype {
 				case .Local:
 				case .Load:
 				case .Phi:
-					reg := graph_get(ctx, conode.inps[0])
+					reg := get_node(ctx, conode.inps[0])
 
 					if reg.itype == .Region {
 						id, ok := get_edited_node_idx(ctx, conode)
@@ -333,11 +333,11 @@ memopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 
 							if dirty {
 								res = Value_Entry(
-									bac.graph_add_raw(
+									bac.add_raw(
 										ctx,
 										"srphi",
 										u16(bac.Node_Type.Phi),
-										graph_get(ctx, res.node).dt,
+										get_node(ctx, res.node).dt,
 										mem.slice_data_cast([]Node_ID, sloter),
 									),
 								)
@@ -379,7 +379,7 @@ memopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 								if init.is_loop do continue
 								if init.node == 0 do continue
 
-								inode := graph_expand(ctx, init.node)
+								inode := expand_node(ctx, init.node)
 								if btype(inode) != .Lazy_Phi do continue
 
 								for bnode.is_loop {
@@ -392,19 +392,19 @@ memopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 
 								if bnode.is_loop || init == bnode^ {
 									append(&ctx.deleted_lazy_phys, init.node)
-									bac.graph_subsume(
+									bac.subsume(
 										ctx,
 										inode.inps[1],
 										init.node,
 									)
 								} else {
-									bac.graph_connect(
+									bac.connect(
 										ctx,
 										init.node,
 										bnode.node,
 									)
 									inode.itype = .Phi
-									vl := bac.graph_intern(ctx, init.node)
+									vl := bac.intern(ctx, init.node)
 									assert(vl == init.node)
 								}
 							}
@@ -438,7 +438,7 @@ memopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 				if scope[idx].is_loop {
 					loop := &ctx.loops[val]
 					val = get_scope_value(ctx, loop.scope, idx)
-					vnode := graph_expand(ctx, val)
+					vnode := expand_node(ctx, val)
 					if (btype(vnode) != .Lazy_Phi ||
 						   vnode.inps[0] != loop.loop_node) &&
 					   !loop.done {
@@ -446,7 +446,7 @@ memopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 							vnode.itype != .Phi ||
 							vnode.inps[0] != loop.loop_node,
 						)
-						val = graph_add_lazy_phi(
+						val = add_lazy_phi(
 							ctx,
 							"srlphi",
 							vnode.dt,

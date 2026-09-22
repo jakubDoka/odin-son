@@ -7,7 +7,7 @@ import "core:mem"
 import "core:slice"
 
 Graph :: bac.Graph
-graph_get :: bac.graph_get
+get_node :: bac.get_node
 
 btype :: #force_inline proc(node: bac.Expanded_Node) -> Node_Type {
 	return Node_Type(node.rtype)
@@ -34,7 +34,7 @@ builder_extra_node_id :: #force_inline proc(
 	id: bac.Node_ID,
 	$T: typeid,
 ) -> ^T {
-	return builder_extra_node(graph, graph_get(graph, id), T)
+	return builder_extra_node(graph, get_node(graph, id), T)
 }
 
 If_State :: struct {
@@ -45,70 +45,70 @@ If_State :: struct {
 	},
 }
 
-graph_start_if :: proc(
+start_if :: proc(
 	graph: ^bac.Graph,
 	scope: bac.Node_ID,
 	state: ^If_State,
 	cond: bac.Node_ID,
 ) {
-	snode := graph_expand(graph, scope)
-	state.if_ = bac.graph_add_if(graph, "if", snode.inps[0], cond)
-	state.else_scope = bac.graph_clone(graph, scope)
+	snode := expand_node(graph, scope)
+	state.if_ = bac.add_if(graph, "if", snode.inps[0], cond)
+	state.else_scope = bac.clone(graph, scope)
 
-	then := bac.graph_add_then(graph, "then", state.if_)
-	bac.graph_set_input(graph, scope, 0, then)
+	then := bac.add_then(graph, "then", state.if_)
+	bac.set_input(graph, scope, 0, then)
 }
 
-graph_end_if :: proc(
+end_if :: proc(
 	graph: ^bac.Graph,
 	then_scope: ^bac.Node_ID,
 	state: ^If_State,
 ) {
-	graph_start_else(graph, then_scope, state)
-	graph_end_else(graph, then_scope, state)
+	start_else(graph, then_scope, state)
+	end_else(graph, then_scope, state)
 }
 
-graph_start_else :: proc(
+start_else :: proc(
 	graph: ^bac.Graph,
 	then_scope: ^bac.Node_ID,
 	state: ^If_State,
 ) {
-	else_ := bac.graph_add_else(graph, "else", state.if_)
-	bac.graph_set_input(graph, state.else_scope, 0, else_)
+	else_ := bac.add_else(graph, "else", state.if_)
+	bac.set_input(graph, state.else_scope, 0, else_)
 	then_scope^, state.then_scope = state.else_scope, then_scope^
 }
 
-graph_end_else :: proc(
+end_else :: proc(
 	graph: ^bac.Graph,
 	else_scope: ^bac.Node_ID,
 	state: ^If_State,
 ) {
-	else_scope^ = graph_merge_scopes(graph, state.then_scope, else_scope^)
+	else_scope^ = merge_scopes(graph, state.then_scope, else_scope^)
 }
 
 Block_State :: struct {
 	end_scope: bac.Node_ID,
 }
 
-graph_start_block :: proc(state: ^Block_State) {
+start_block :: proc(state: ^Block_State) {
 	state^ = {}
 }
 
-graph_break_block :: proc(
+break_block :: proc(
 	graph: ^bac.Graph,
 	scope: ^bac.Node_ID,
 	state: ^Block_State,
 ) {
-	state.end_scope = graph_merge_scopes(graph, state.end_scope, scope^)
+	state.end_scope = merge_scopes(graph, state.end_scope, scope^)
 	scope^ = 0
 }
 
-graph_end_block :: proc(
+end_block :: proc(
 	graph: ^bac.Graph,
 	scope: ^bac.Node_ID,
 	state: ^Block_State,
 ) {
-	state.end_scope = graph_merge_scopes(graph, state.end_scope, scope^)
+	state.end_scope = merge_scopes(graph, state.end_scope, scope^)
 	scope^ = state.end_scope
 }
 
@@ -122,30 +122,30 @@ Loop_State :: struct {
 	scopes: [Loop_Control]bac.Node_ID,
 }
 
-graph_start_loop :: proc(
+start_loop :: proc(
 	graph: ^bac.Graph,
 	scope: bac.Node_ID,
 	state: ^Loop_State,
 ) {
-	snode := graph_expand(graph, scope)
-	loop := bac.graph_add_loop(graph, "loop", snode.inps[0])
-	bac.graph_set_input(graph, scope, 0, loop)
-	state.scope = bac.graph_clone(graph, scope)
+	snode := expand_node(graph, scope)
+	loop := bac.add_loop(graph, "loop", snode.inps[0])
+	bac.set_input(graph, scope, 0, loop)
+	state.scope = bac.clone(graph, scope)
 
-	bac.graph_add_output(graph, state.scope, 0, 0)
+	bac.add_output(graph, state.scope, 0, 0)
 
-	snode = graph_expand(graph, scope)
+	snode = expand_node(graph, scope)
 	for i in 1 ..< snode.input_count {
-		bac.graph_set_input(graph, scope, i, state.scope)
+		bac.set_input(graph, scope, i, state.scope)
 	}
 }
 
-graph_start_loop_increment :: proc(
+start_loop_increment :: proc(
 	graph: ^bac.Graph,
 	node_scope: ^bac.Node_ID,
 	state: ^Loop_State,
 ) {
-	node_scope^ = graph_merge_scopes(
+	node_scope^ = merge_scopes(
 		graph,
 		node_scope^,
 		state.scopes[.Continue],
@@ -153,168 +153,168 @@ graph_start_loop_increment :: proc(
 	state.scopes[.Continue] = 0
 }
 
-graph_end_loop :: proc(
+end_loop :: proc(
 	graph: ^bac.Graph,
 	node_scope: ^bac.Node_ID,
 	state: ^Loop_State,
 ) {
-	graph_start_loop_increment(graph, node_scope, state)
+	start_loop_increment(graph, node_scope, state)
 
-	init := graph_expand(graph, state.scope)
+	init := expand_node(graph, state.scope)
 	loop := init.inps[0]
-	assert(graph_get(graph, loop).itype == .Loop)
+	assert(get_node(graph, loop).itype == .Loop)
 
 	bscope := node_scope^
 	if bscope != 0 {
-		backedge := graph_expand(graph, bscope)
+		backedge := expand_node(graph, bscope)
 		assert(init.input_count == backedge.input_count)
 		for i in 1 ..< init.input_count {
 			init := init.inps[i]
-			inode := graph_expand(graph, init)
-			bnode := graph_expand(graph, backedge.inps[i])
+			inode := expand_node(graph, init)
+			bnode := expand_node(graph, backedge.inps[i])
 			if btype(inode) != .Lazy_Phi || inode.inps[0] != loop do continue
 
 			for {
 				scp := builder_extra(graph, bnode, Scope)
 				if scp == nil || !scp.done || bnode.inps[0] == loop do break
-				bnode = graph_expand(graph, bnode.inps[i])
+				bnode = expand_node(graph, bnode.inps[i])
 			}
 
 			if btype(bnode) == .Scope || inode.node == bnode.node {
-				bac.graph_subsume(graph, inode.inps[1], init)
+				bac.subsume(graph, inode.inps[1], init)
 			} else {
-				bac.graph_connect(
+				bac.connect(
 					graph,
 					init,
-					bac.graph_id(graph, bnode),
+					bac.get_node_id(graph, bnode),
 				)
 				inode.itype = .Phi
-				id := bac.graph_intern(graph, init)
+				id := bac.intern(graph, init)
 				if id != init {
-					bac.graph_subsume(graph, id, init)
+					bac.subsume(graph, id, init)
 				}
 			}
 		}
 
-		assert(graph_get(graph, init.inps[0]).itype == .Loop)
-		bac.graph_connect(graph, init.inps[0], backedge.inps[0])
+		assert(get_node(graph, init.inps[0]).itype == .Loop)
+		bac.connect(graph, init.inps[0], backedge.inps[0])
 	}
 
 	node_scope^ = state.scopes[.Break]
 
 	if node_scope^ != 0 {
-		exit := graph_expand(graph, node_scope^)
+		exit := expand_node(graph, node_scope^)
 		for i in 1 ..< exit.input_count {
-			enode := graph_expand(graph, exit.inps[i])
+			enode := expand_node(graph, exit.inps[i])
 			if btype(enode) == .Scope && enode.inps[0] == loop {
-				bac.graph_set_input(graph, node_scope^, i, init.inps[i])
+				bac.set_input(graph, node_scope^, i, init.inps[i])
 			}
 		}
 	}
 
 	builder_extra(graph, state.scope, Scope).done = true
-	bac.graph_remove_output(graph, state.scope, {id = 0, idx = 0})
+	bac.remove_output(graph, state.scope, {id = 0, idx = 0})
 
 	if bscope != 0 {
-		bac.graph_delete(graph, bscope)
+		bac.delete_node(graph, bscope)
 	} else {
-		for out in bac.graph_outs(graph, loop) {
-			onode := graph_expand(graph, out.id)
+		for out in bac.get_outputs(graph, loop) {
+			onode := expand_node(graph, out.id)
 			if btype(onode) == .Lazy_Phi {
-				bac.graph_subsume(graph, onode.inps[1], out.id)
+				bac.subsume(graph, onode.inps[1], out.id)
 			}
 		}
 
-		bac.graph_subsume(graph, bac.graph_inps(graph, loop)[0], loop)
+		bac.subsume(graph, bac.get_inputs(graph, loop)[0], loop)
 	}
 
 	return
 }
 
-graph_loop_control :: proc(
+loop_control :: proc(
 	variant: Loop_Control,
 	ctx: ^bac.Graph,
 	scope: bac.Node_ID,
 	loop: ^Loop_State,
 ) {
-	base_size := graph_get(ctx, loop.scope).input_count
-	graph_truncate_scope(ctx, scope, base_size)
-	loop.scopes[variant] = graph_merge_scopes(ctx, scope, loop.scopes[variant])
+	base_size := get_node(ctx, loop.scope).input_count
+	truncate_scope(ctx, scope, base_size)
+	loop.scopes[variant] = merge_scopes(ctx, scope, loop.scopes[variant])
 }
 
-graph_set_scope_value :: proc(
+set_scope_value :: proc(
 	graph: ^bac.Graph,
 	scope: bac.Node_ID,
 	#any_int idx: int,
 	value: bac.Node_ID,
 ) {
-	graph_get_scope_value(graph, scope, idx)
-	bac.graph_set_input(graph, scope, idx, value)
+	get_scope_value(graph, scope, idx)
+	bac.set_input(graph, scope, idx, value)
 }
 
-graph_get_scope_value :: proc(
+get_scope_value :: proc(
 	graph: ^bac.Graph,
 	scope: bac.Node_ID,
 	#any_int idx: int,
 ) -> bac.Node_ID {
-	snode := graph_get(graph, scope)
+	snode := get_node(graph, scope)
 	assert(Node_Type(snode.rtype) == .Scope)
 
-	val := bac.graph_inps(graph, snode)[idx]
-	vnode := graph_expand(graph, val)
+	val := bac.get_inputs(graph, snode)[idx]
+	vnode := expand_node(graph, val)
 	loop_scope := builder_extra(graph, vnode, Scope)
 	if loop_scope != nil {
 		pval := val
-		val = graph_get_scope_value(graph, val, idx)
-		cvnode := graph_expand(graph, val)
+		val = get_scope_value(graph, val, idx)
+		cvnode := expand_node(graph, val)
 		if (btype(cvnode) != .Lazy_Phi || vnode.inps[0] != cvnode.inps[0]) &&
 		   !loop_scope.done {
-			assert(graph_get(graph, vnode.inps[0]).itype == .Loop)
-			val = graph_add_lazy_phi(
+			assert(get_node(graph, vnode.inps[0]).itype == .Loop)
+			val = add_lazy_phi(
 				graph,
 				"lphi",
-				graph_get(graph, val).dt,
+				get_node(graph, val).dt,
 				vnode.inps[0],
 				val,
 			)
-			bac.graph_set_input(graph, pval, idx, val)
+			bac.set_input(graph, pval, idx, val)
 		}
-		bac.graph_set_input(graph, scope, idx, val)
+		bac.set_input(graph, scope, idx, val)
 	}
 
 	return val
 }
 
-graph_push_scope_value :: proc(
+push_scope_value :: proc(
 	graph: ^bac.Graph,
 	scope: bac.Node_ID,
 	value: bac.Node_ID,
 ) -> int {
-	scope_node := graph_get(graph, scope)
+	scope_node := get_node(graph, scope)
 	assert(Node_Type(scope_node.rtype) == .Scope)
-	return bac.graph_connect(graph, scope, value)
+	return bac.connect(graph, scope, value)
 }
 
-graph_truncate_scope :: proc(
+truncate_scope :: proc(
 	graph: ^bac.Graph,
 	scope: bac.Node_ID,
 	#any_int to_len: int,
 ) {
 	if scope == 0 do return
 
-	snode := graph_expand(graph, scope)
+	snode := expand_node(graph, scope)
 	assert(btype(snode) == .Scope)
 	assert(to_len <= int(snode.input_count))
 
 	for &inp, i in snode.inps[to_len:] {
-		bac.graph_remove_output(graph, inp, {idx = to_len + i, id = scope})
+		bac.remove_output(graph, inp, {idx = to_len + i, id = scope})
 		inp = 0
 	}
 
 	snode.input_count = u16(to_len)
 }
 
-graph_merge_scopes :: proc(
+merge_scopes :: proc(
 	graph: ^bac.Graph,
 	lctrl: bac.Node_ID,
 	rctrl: bac.Node_ID,
@@ -322,14 +322,14 @@ graph_merge_scopes :: proc(
 	if lctrl == 0 do return rctrl
 	if rctrl == 0 do return lctrl
 
-	lnode := graph_expand(graph, lctrl)
+	lnode := expand_node(graph, lctrl)
 	assert(btype(lnode) == .Scope)
-	rnode := graph_expand(graph, rctrl)
+	rnode := expand_node(graph, rctrl)
 	assert(btype(rnode) == .Scope)
 
 	assert(lnode.input_count == rnode.input_count)
 
-	region := bac.graph_add_region(
+	region := bac.add_region(
 		graph,
 		"reg",
 		{lnode.inps[0], rnode.inps[0], graph.start},
@@ -337,32 +337,32 @@ graph_merge_scopes :: proc(
 
 	for i in 1 ..< lnode.input_count {
 		if lnode.inps[i] == rnode.inps[i] do continue
-		lvalue := graph_get_scope_value(graph, lctrl, i)
-		rvalue := graph_get_scope_value(graph, rctrl, i)
+		lvalue := get_scope_value(graph, lctrl, i)
+		rvalue := get_scope_value(graph, rctrl, i)
 		if lvalue == rvalue do continue
-		phi := bac.graph_add_phi(
+		phi := bac.add_phi(
 			graph,
 			"phi",
-			graph_get(graph, lvalue).dt,
+			get_node(graph, lvalue).dt,
 			region,
 			lvalue,
 			rvalue,
 		)
-		bac.graph_set_input(graph, lctrl, i, phi)
+		bac.set_input(graph, lctrl, i, phi)
 	}
 
-	bac.graph_set_input(graph, lctrl, 0, region)
-	bac.graph_delete(graph, rnode)
+	bac.set_input(graph, lctrl, 0, region)
+	bac.delete_node(graph, rnode)
 
 	return lctrl
 }
 
-graph_inline :: proc {
-	graph_inline_graph,
-	graph_inline_stencil,
+inline_call :: proc {
+	inline_graph,
+	inline_stencil,
 }
 
-graph_inline_stencil :: proc(
+inline_stencil :: proc(
 	graph: ^bac.Graph,
 	call: bac.Node_ID,
 	from: bac.Stencil,
@@ -371,11 +371,11 @@ graph_inline_stencil :: proc(
 	fromg: bac.Graph
 	fromg.node_spec = &SPEC
 	fromg.mem = &slot
-	bac.graph_mount_stencil(&fromg, from)
-	graph_inline_graph(graph, call, &fromg)
+	bac.mount_stencil(&fromg, from)
+	inline_graph(graph, call, &fromg)
 }
 
-graph_inline_graph :: proc(
+inline_graph :: proc(
 	graph: ^bac.Graph,
 	call: bac.Node_ID,
 	from: ^bac.Graph,
@@ -391,7 +391,7 @@ graph_inline_graph :: proc(
 
 	graph.peeped = false
 	graph.max_idepth = max(graph.max_idepth, from.max_idepth)
-	bac.graph_invalidate_idepth(graph)
+	bac.invalidate_idepth(graph)
 
 	Ctx :: struct {
 		graph:          ^bac.Graph,
@@ -402,7 +402,7 @@ graph_inline_graph :: proc(
 	}
 
 	proj_of :: proc(ctx: ^Ctx, id: bac.Node_ID) -> ^bac.Node_ID {
-		return &ctx.projection[graph_get(ctx.from, id).gvn]
+		return &ctx.projection[get_node(ctx.from, id).gvn]
 	}
 
 	ctx: Ctx
@@ -414,7 +414,7 @@ graph_inline_graph :: proc(
 
 	assert(from.start != from.root_mem)
 
-	call := graph_expand(graph, call)
+	call := expand_node(graph, call)
 	assert(call.itype == .Call)
 	proj_of(&ctx, from.start)^ = graph.start
 	proj_of(&ctx, from.entry)^ = call.inps[0]
@@ -423,7 +423,7 @@ graph_inline_graph :: proc(
 
 	bac.assert_live_pins(from)
 
-	entry := graph_expand(from, from.entry)
+	entry := expand_node(from, from.entry)
 	params, starter := bac.assemble_args(
 		from,
 		int(call.input_cap) - bac.CALL_PREFIX,
@@ -432,117 +432,117 @@ graph_inline_graph :: proc(
 	assert(proj_of(&ctx, starter)^ == 0)
 
 	for param, arg_idx in params {
-		pnode := graph_expand(from, param)
+		pnode := expand_node(from, param)
 		arg_idx := arg_idx + bac.CALL_PREFIX
 		arg := raw_data(call.inps)[arg_idx]
-		arg_node := graph_expand(graph, arg)
+		arg_node := expand_node(graph, arg)
 		if pnode.itype == .Start do continue
 		if arg_node.itype != .Local {
 			assert(pnode.itype != .Local)
 		} else {
 			assert(arg_node.inps[0] == graph.entry)
-			bac.graph_set_input(graph, arg, 0, graph.root_mem)
+			bac.set_input(graph, arg, 0, graph.root_mem)
 			if pnode.itype == .Local {
 				// project the addr too or we get dups
 				assert(ctx.projection[pnode.gvn] == 0)
-				ctx.projection[graph_get(from, pnode.outs[0].id).gvn] =
+				ctx.projection[get_node(from, pnode.outs[0].id).gvn] =
 					arg_node.outs[0].id
 			} else {
 				// reach out for the store value
 				arg = arg_node.outs[0].id
-				arg = bac.graph_outs(graph, arg)[0].id
-				arg = bac.graph_inps(graph, arg)[3]
+				arg = bac.get_outputs(graph, arg)[0].id
+				arg = bac.get_inputs(graph, arg)[3]
 			}
 		}
 		assert(ctx.projection[pnode.gvn] == 0)
 		ctx.projection[pnode.gvn] = arg
 	}
 
-	assert(graph_get(graph, proj_of(&ctx, from.start)^).itype == .Start)
+	assert(get_node(graph, proj_of(&ctx, from.start)^).itype == .Start)
 	assert(proj_of(&ctx, starter)^ == 0)
 
 	clone_along_cfg(&ctx, starter)
 
-	call_end := graph_expand(graph, call.outs[0].id)
+	call_end := expand_node(graph, call.outs[0].id)
 
 	if ctx.reached_return {
-		from_ret := graph_expand(from, from.end)
+		from_ret := expand_node(from, from.end)
 
 		for co in call_end.outs {
-			coonode := graph_expand(ctx.graph, co.id)
+			coonode := expand_node(ctx.graph, co.id)
 			if coonode.itype == .Mem {
-				sub := graph_get(from, from_ret.inps[1])
-				bac.graph_subsume(graph, ctx.projection[sub.gvn], co.id)
+				sub := get_node(from, from_ret.inps[1])
+				bac.subsume(graph, ctx.projection[sub.gvn], co.id)
 			}
 			if coonode.itype == .Ret {
-				idx := bac.graph_extra(graph, coonode, bac.Tup).idx
+				idx := bac.get_extra(graph, coonode, bac.Tup).idx
 				ret_idx := bac.RET_PREFIX + idx
 				if int(ret_idx) < len(from_ret.inps) {
-					sub := graph_get(from, from_ret.inps[ret_idx])
-					bac.graph_subsume(
+					sub := get_node(from, from_ret.inps[ret_idx])
+					bac.subsume(
 						graph,
 						ctx.projection[sub.gvn],
 						co.id,
 					)
 				} else {
-					psn := bac.graph_add_poison(graph, "irps")
-					bac.graph_subsume(graph, psn, co.id)
+					psn := bac.add_poison(graph, "irps")
+					bac.subsume(graph, psn, co.id)
 				}
 			}
 		}
 
-		bac.graph_pin(graph, proj_of(&ctx, from_ret.inps[0])^)
+		bac.pin(graph, proj_of(&ctx, from_ret.inps[0])^)
 
 		for ri in from_ret.inps {
-			rinode := graph_get(from, ri)
+			rinode := get_node(from, ri)
 			nd := ctx.projection[rinode.gvn]
 			if nd != 0 {
-				bac.graph_delete(graph, nd)
+				bac.delete_node(graph, nd)
 			}
 		}
 
-		bac.graph_unpin(
+		bac.unpin(
 			graph,
 			proj_of(&ctx, from_ret.inps[0])^,
 			no_delete = true,
 		)
 
-		from_end_ctrl := graph_get(from, from_ret.inps[0])
+		from_end_ctrl := get_node(from, from_ret.inps[0])
 
 		if graph.end != 0 {
-			end_inps := bac.graph_inps(graph, graph.end)
+			end_inps := bac.get_inputs(graph, graph.end)
 			end_reg := end_inps[0]
 
-			from_ret_reg := graph_expand(
+			from_ret_reg := expand_node(
 				graph,
 				ctx.projection[from_end_ctrl.gvn],
 			)
 
-			prev_ent_reg_len := graph_get(graph, end_reg).input_count
+			prev_ent_reg_len := get_node(graph, end_reg).input_count
 
 			bac.assert_live_pins(graph)
 
 			#reverse for ri, i in from_ret_reg.inps[:len(from_ret_reg.inps) - 1] {
-				rinode := graph_expand(graph, ri)
+				rinode := expand_node(graph, ri)
 				if rinode.itype == .Trap {
-					bac.graph_connect(graph, end_reg, ri)
+					bac.connect(graph, end_reg, ri)
 
 					#reverse for ei, j in end_inps[1:] {
 						if 1 + j < len(from_ret.inps) {
-							frnode := graph_get(from, from_ret.inps[1 + j])
+							frnode := get_node(from, from_ret.inps[1 + j])
 							assert(frnode.itype == .Phi)
-							rnode := graph_expand(
+							rnode := expand_node(
 								graph,
 								ctx.projection[frnode.gvn],
 							)
 							assert(rnode.itype == .Phi)
 							rinp := rnode.inps[1 + i]
 							assert(!bac.is_cfg(graph, rinp))
-							bac.graph_connect(graph, ei, rinp)
+							bac.connect(graph, ei, rinp)
 							ordered_remove(graph, &rnode, 1 + i)
 						} else {
-							inp := bac.graph_add_poison(graph, "trps")
-							bac.graph_connect(graph, ei, inp)
+							inp := bac.add_poison(graph, "trps")
+							bac.connect(graph, ei, inp)
 						}
 					}
 
@@ -552,7 +552,7 @@ graph_inline_graph :: proc(
 
 			bac.assert_live_pins(graph)
 
-			ernode := graph_expand(graph, end_reg)
+			ernode := expand_node(graph, end_reg)
 			if int(prev_ent_reg_len) < len(ernode.inps) {
 				bac.swap_inputs(
 					graph,
@@ -565,32 +565,32 @@ graph_inline_graph :: proc(
 			for inp in ernode.inps {
 				fmt.assertf(
 					bac.is_cfg(graph, inp) ||
-					graph_expand(graph, inp).itype == .Dead,
+					expand_node(graph, inp).itype == .Dead,
 					"%v",
-					graph_get(graph, inp),
+					get_node(graph, inp),
 				)
 			}
 
 			if len(from_ret_reg.inps) == 1 {
-				ctx.projection[from_end_ctrl.gvn] = bac.graph_add_dead(
+				ctx.projection[from_end_ctrl.gvn] = bac.add_dead(
 					graph,
 					"rdead",
 				)
 			}
 		}
 
-		bac.graph_subsume(
+		bac.subsume(
 			graph,
 			ctx.projection[from_end_ctrl.gvn],
 			call.outs[0].id,
 		)
 	} else {
-		dead := bac.graph_add_dead(graph, "inlnd")
-		bac.graph_subsume(graph, dead, call.outs[0].id)
+		dead := bac.add_dead(graph, "inlnd")
+		bac.subsume(graph, dead, call.outs[0].id)
 	}
 
-	for out in bac.graph_outs(graph, graph.start) {
-		assert(graph_get(graph, out.id).itype != .Local)
+	for out in bac.get_outputs(graph, graph.start) {
+		assert(get_node(graph, out.id).itype != .Local)
 	}
 
 	bac.assert_live_pins(graph)
@@ -598,19 +598,19 @@ graph_inline_graph :: proc(
 	bac.verify(graph)
 
 	clone_along_cfg :: proc(ctx: ^Ctx, root: bac.Node_ID) {
-		rnode := graph_expand(ctx.from, root)
+		rnode := expand_node(ctx.from, root)
 		if ctx.projection[rnode.gvn] != 0 do return
 
 		if rnode.itype == .Region {
 			for i in rnode.inps[:len(rnode.inps) - 1] {
-				inode := graph_expand(ctx.from, i)
+				inode := expand_node(ctx.from, i)
 				if ctx.projection[inode.gvn] == 0 {
 					return
 				}
 			}
 
 			for out in rnode.outs {
-				onode := graph_expand(ctx.from, out.id)
+				onode := expand_node(ctx.from, out.id)
 				if onode.itype == .Phi {
 					for inp in onode.inps[1:] {
 						clone_node(ctx, inp)
@@ -621,7 +621,7 @@ graph_inline_graph :: proc(
 
 		if rnode.itype == .Loop {
 			for out in rnode.outs {
-				onode := graph_expand(ctx.from, out.id)
+				onode := expand_node(ctx.from, out.id)
 				if onode.itype == .Phi {
 					clone_node(ctx, onode.inps[1])
 				}
@@ -634,26 +634,26 @@ graph_inline_graph :: proc(
 		for out in rnode.outs {
 			if !bac.is_cfg(ctx.from, out.id) do continue
 
-			onode := graph_expand(ctx.from, out.id)
+			onode := expand_node(ctx.from, out.id)
 
 			if onode.itype == .Loop && out.idx == 1 {
 				proj := ctx.projection[onode.gvn]
-				bac.graph_connect(ctx.graph, proj, nid)
+				bac.connect(ctx.graph, proj, nid)
 
 				for lout in onode.outs {
-					lonode := graph_expand(ctx.from, lout.id)
+					lonode := expand_node(ctx.from, lout.id)
 					if lonode.itype == .Phi {
 						clone_node(ctx, lonode.inps[2])
 						lproj := ctx.projection[lonode.gvn]
-						lpnode := graph_get(ctx.graph, lproj)
-						backedge := graph_get(ctx.from, lonode.inps[2])
+						lpnode := get_node(ctx.graph, lproj)
+						backedge := get_node(ctx.from, lonode.inps[2])
 						bproj := ctx.projection[backedge.gvn]
 						assert(Node_Type(lpnode.rtype) == .Lazy_Phi)
 						lpnode.itype = .Phi
-						bac.graph_connect(ctx.graph, lproj, bproj)
-						id := bac.graph_intern(ctx.graph, lproj)
+						bac.connect(ctx.graph, lproj, bproj)
+						id := bac.intern(ctx.graph, lproj)
 						if id != lproj {
-							bac.graph_subsume(ctx.graph, id, lproj)
+							bac.subsume(ctx.graph, id, lproj)
 							assert(ctx.projection[lonode.gvn] == 0)
 							ctx.projection[lonode.gvn] = id
 						}
@@ -670,7 +670,7 @@ graph_inline_graph :: proc(
 	clone_node :: proc(ctx: ^Ctx, root: bac.Node_ID) {
 		graph := ctx.graph
 
-		node := graph_expand(ctx.from, root)
+		node := expand_node(ctx.from, root)
 		if ctx.projection[node.gvn] != 0 do return
 
 		input_cap := node.input_cap
@@ -682,7 +682,7 @@ graph_inline_graph :: proc(
 		}
 
 		if node.itype == .Phi &&
-		   graph_get(ctx.from, node.inps[0]).itype == .Loop {
+		   get_node(ctx.from, node.inps[0]).itype == .Loop {
 			rtype = u16(Node_Type.Lazy_Phi)
 			input_cap = 2
 		}
@@ -691,10 +691,10 @@ graph_inline_graph :: proc(
 		for inp, i in node.inps[:input_cap] {
 			clone_node(ctx, inp)
 
-			if graph_get(ctx.from, inp).itype == .Start {
+			if get_node(ctx.from, inp).itype == .Start {
 				bac.current_graph = ctx.from
 				fmt.assertf(
-					graph_get(graph, proj_of(ctx, inp)^).itype == .Start,
+					get_node(graph, proj_of(ctx, inp)^).itype == .Start,
 					"%v %v",
 					inp,
 					node,
@@ -721,9 +721,9 @@ graph_inline_graph :: proc(
 
 		prev := graph.mem.pos
 
-		new_node, id := bac.graph_shallow_clone(graph, node)
+		new_node, id := bac.shallow_clone(graph, node)
 		new_node.rtype = rtype
-		bac.graph_init_counts(graph, new_node)
+		bac.init_counts(graph, new_node)
 
 		new_node.input_idx = u32(graph.mem.pos / bac.PRECISION)
 		_ = arna.clone(graph.mem, inps)
@@ -739,26 +739,26 @@ graph_inline_graph :: proc(
 		new_node.output_count = 0
 		new_node.output_cap = node.output_cap
 
-		interned := bac.graph_intern(graph, id)
+		interned := bac.intern(graph, id)
 		if interned != id {
 			graph.mem.pos = prev
 			id = interned
 		} else {
 			for inp, i in inps {
-				bac.graph_add_output(graph, inp, id, i)
+				bac.add_output(graph, inp, id, i)
 			}
 
-			dn := bac.graph_dbg_slot(ctx.from, node)^
-			did := bac.graph_clone_dnode(
+			dn := bac.get_dbg_slot(ctx.from, node)^
+			did := bac.clone_dnode(
 				graph,
 				ctx.from,
 				dn,
 				ctx.dprojection,
 			)
-			bac.graph_dbg_slot(graph, new_node)^ = did
+			bac.get_dbg_slot(graph, new_node)^ = did
 			assert(ctx.projection[node.gvn] == 0)
 
-			bac.graph_on_node_creation(graph, new_node)
+			bac.on_node_creation(graph, new_node)
 		}
 
 		ctx.projection[node.gvn] = id
@@ -770,22 +770,22 @@ ordered_remove :: proc(
 	node: ^bac.Expanded_Node,
 	i: int,
 ) {
-	par := bac.graph_id(ctx, node)
+	par := bac.get_node_id(ctx, node)
 	for inp, j in node.inps[i + 1:] {
-		bac.graph_add_output(ctx, inp, par, j + i)
-		bac.graph_remove_output(ctx, inp, {idx = j + i + 1, id = par})
+		bac.add_output(ctx, inp, par, j + i)
+		bac.remove_output(ctx, inp, {idx = j + i + 1, id = par})
 	}
 	inp := node.inps[i]
-	bac.graph_unintern(ctx, par)
+	bac.unintern(ctx, par)
 	slice.rotate_left(node.inps[i:], 1)
 	node.inps = node.inps[:len(node.inps) - 1]
 	node.input_count -= 1
-	nid := bac.graph_intern(ctx, par)
+	nid := bac.intern(ctx, par)
 	assert(par == nid)
-	bac.graph_remove_output(ctx, inp, {idx = i, id = par})
+	bac.remove_output(ctx, inp, {idx = i, id = par})
 }
 
-graph_index_offset :: proc(
+compute_index_offset :: proc(
 	ctx: ^bac.Graph,
 	base: Node_ID,
 	index: Node_ID,
@@ -795,31 +795,31 @@ graph_index_offset :: proc(
 
 	index := index
 	if stride > 1 {
-		index = bac.graph_add_bin_op(
+		index = bac.add_bin_op(
 			ctx,
 			"snoff",
 			.Mul,
 			.I64,
 			index,
-			bac.graph_add_c_int(ctx, "sst", .I64, stride),
+			bac.add_c_int(ctx, "sst", .I64, stride),
 		)
-		index = bac.graph_peep(ctx, index)
+		index = bac.apply_peep(ctx, index)
 	}
 
-	return bac.graph_add_bin_op(ctx, "snd", .Add, .I64, base, index)
+	return bac.add_bin_op(ctx, "snd", .Add, .I64, base, index)
 }
 
-graph_add_field_offset :: proc(
+add_field_offset :: proc(
 	graph: ^Graph,
 	base: Node_ID,
 	offset: int,
 ) -> Node_ID {
 	if offset == 0 do return base
-	off := bac.graph_add_c_int(graph, "foff", .I64, i64(offset))
-	return bac.graph_add_bin_op(graph, "fld", .Add, .I64, base, off)
+	off := bac.add_c_int(graph, "foff", .I64, i64(offset))
+	return bac.add_bin_op(graph, "fld", .Add, .I64, base, off)
 }
 
-graph_add_field_store :: proc(
+add_field_store :: proc(
 	ctx: ^Graph,
 	name: string,
 	cfg: Node_ID,
@@ -828,17 +828,17 @@ graph_add_field_store :: proc(
 	offset: int,
 	value: Node_ID,
 ) -> Node_ID {
-	return bac.graph_add_store(
+	return bac.add_store(
 		ctx,
 		name,
 		cfg,
 		mem,
-		graph_add_field_offset(ctx, base, offset),
+		add_field_offset(ctx, base, offset),
 		value,
 	)
 }
 
-graph_add_arbitrary_store :: proc(
+add_arbitrary_store :: proc(
 	ctx: ^Graph,
 	cfg: Node_ID,
 	mem: Node_ID,
@@ -857,7 +857,7 @@ graph_add_arbitrary_store :: proc(
 	offset: int
 
 	if bac.DT_SIZE[store_unit] == size {
-		omem = graph_add_field_store(
+		omem = add_field_store(
 			ctx,
 			"asst",
 			cfg,
@@ -875,22 +875,22 @@ graph_add_arbitrary_store :: proc(
 			assert(store_unit != .Void)
 		}
 
-		value := bac.graph_add_un_op(
+		value := bac.add_un_op(
 			ctx,
 			"rvl",
 			.Cast,
 			store_unit,
-			bac.graph_add_bin_op(
+			bac.add_bin_op(
 				ctx,
 				"stsh",
 				.U_Shr,
 				.I64,
 				value,
-				bac.graph_add_c_int(ctx, "stshoff", .I64, i64(offset * 8)),
+				bac.add_c_int(ctx, "stshoff", .I64, i64(offset * 8)),
 			),
 		)
 
-		omem = graph_add_field_store(
+		omem = add_field_store(
 			ctx,
 			"asst",
 			cfg,
@@ -906,7 +906,7 @@ graph_add_arbitrary_store :: proc(
 	return
 }
 
-graph_add_field_load :: proc(
+add_field_load :: proc(
 	ctx: ^Graph,
 	name: string,
 	dt: bac.Node_Datatype,
@@ -915,17 +915,17 @@ graph_add_field_load :: proc(
 	base: Node_ID,
 	offset: int = 0,
 ) -> Node_ID {
-	return bac.graph_add_load(
+	return bac.add_load(
 		ctx,
 		name,
 		dt,
 		cfg,
 		mem,
-		graph_add_field_offset(ctx, base, offset),
+		add_field_offset(ctx, base, offset),
 	)
 }
 
-graph_add_arbitrary_load :: proc(
+add_arbitrary_load :: proc(
 	ctx: ^Graph,
 	cfg: Node_ID,
 	mem: Node_ID,
@@ -940,7 +940,7 @@ graph_add_arbitrary_load :: proc(
 	value: Node_ID
 
 	if load_unit in bac.FLOAT_DTS {
-		return graph_add_field_load(
+		return add_field_load(
 			ctx,
 			"asld",
 			load_unit,
@@ -958,7 +958,7 @@ graph_add_arbitrary_load :: proc(
 			assert(load_unit != .Void)
 		}
 
-		load := graph_add_field_load(
+		load := add_field_load(
 			ctx,
 			"asld",
 			load_unit,
@@ -969,26 +969,26 @@ graph_add_arbitrary_load :: proc(
 		)
 
 		if load_unit != unit {
-			load = bac.graph_add_un_op(ctx, "asxt", .Uext, unit, load)
+			load = bac.add_un_op(ctx, "asxt", .Uext, unit, load)
 		}
 
 		if value == 0 {
 			value = load
 			assert(offset == 0)
 		} else {
-			value = bac.graph_add_bin_op(
+			value = bac.add_bin_op(
 				ctx,
 				"aor",
 				.Or,
 				.I64,
 				value,
-				bac.graph_add_bin_op(
+				bac.add_bin_op(
 					ctx,
 					"ash",
 					.Shl,
 					.I64,
 					load,
-					bac.graph_add_c_int(
+					bac.add_c_int(
 						ctx,
 						"ssham",
 						.I64,
@@ -1033,7 +1033,7 @@ arg_gen_next :: proc(
 
 	if apa.scalar {
 		dt := apa.dt[0]
-		value = bac.graph_add_param(
+		value = bac.add_param(
 			ctx,
 			name,
 			dt,
@@ -1043,12 +1043,12 @@ arg_gen_next :: proc(
 		append(&gen.vls, value)
 	} else {
 		nd := apa.copied ? ctx.root_mem : ctx.entry
-		alloca := bac.graph_add_local(ctx, name, nd)
-		bac.graph_extra(ctx, alloca, bac.Local).size = i32(
+		alloca := bac.add_local(ctx, name, nd)
+		bac.get_extra(ctx, alloca, bac.Local).size = i32(
 			apa.real_size,
 		)
-		bac.graph_extra(ctx, alloca, bac.Local).is_param = !apa.copied
-		value = bac.graph_add_local_addr(ctx, name, alloca)
+		bac.get_extra(ctx, alloca, bac.Local).is_param = !apa.copied
+		value = bac.add_local_addr(ctx, name, alloca)
 
 		if !apa.copied {
 			append(&gen.vls, alloca)
@@ -1056,10 +1056,10 @@ arg_gen_next :: proc(
 	}
 
 	for dt, j in apa.dt[:(apa.size + 7) / 8] {
-		vl := bac.graph_add_param(ctx, name, dt, ctx.entry, 0)
+		vl := bac.add_param(ctx, name, dt, ctx.entry, 0)
 		gen.spill_start += int(j == 1)
 		append(&gen.vls, vl)
-		omem = graph_add_arbitrary_store(
+		omem = add_arbitrary_store(
 			ctx,
 			ctx.entry,
 			omem,
@@ -1082,8 +1082,8 @@ arg_gen_finalize :: proc(
 
 	j, ri: u32
 	for arg in gen.vls {
-		anode := graph_get(ctx, arg)
-		if arga := bac.graph_extra(ctx, arg, bac.Tup); arga != nil {
+		anode := get_node(ctx, arg)
+		if arga := bac.get_extra(ctx, arg, bac.Tup); arga != nil {
 			size: i32
 			if arga.idx == 0 {
 				arga.idx = j
@@ -1096,7 +1096,7 @@ arg_gen_finalize :: proc(
 			arg_tys[arga.idx] = bac.Param_Spec{anode.dt, size}
 		}
 
-		if loca := bac.graph_extra(ctx, arg, bac.Local); loca != nil {
+		if loca := bac.get_extra(ctx, arg, bac.Local); loca != nil {
 			loca.size = i32(mem.align_forward_int(int(loca.size), 8))
 			loca.idx = u32(gen.spill_start) + ri
 			arg_tys[loca.idx] = bac.Param_Spec{.Void, loca.size}
@@ -1113,76 +1113,76 @@ Builtin_Proc :: enum {
 	memset,
 }
 
-graph_start :: proc(graph: ^Graph) {
-	graph.start = bac.graph_add_start(graph, "start")
-	graph.entry = bac.graph_add_entry(graph, "entry", graph.start)
-	graph.root_mem = bac.graph_add_root_mem(graph, "emem", graph.entry)
-	graph.sym = bac.graph_add_sym(graph, "sym", graph.entry)
+init_graph :: proc(graph: ^Graph) {
+	graph.start = bac.add_start(graph, "start")
+	graph.entry = bac.add_entry(graph, "entry", graph.start)
+	graph.root_mem = bac.add_root_mem(graph, "emem", graph.entry)
+	graph.sym = bac.add_sym(graph, "sym", graph.entry)
 }
 
 make_builtin_proc :: proc(graph: ^Graph, name: Builtin_Proc) {
-	graph_start(graph)
+	init_graph(graph)
 
-	scope := graph_add_scope(graph, "scp", graph.entry)
+	scope := add_scope(graph, "scp", graph.entry)
 
-	memv := graph_push_scope_value(graph, scope, graph.root_mem)
+	memv := push_scope_value(graph, scope, graph.root_mem)
 
-	dst := bac.graph_add_param(graph, "dst", .I64, graph.entry, 0)
-	dstv := graph_push_scope_value(graph, scope, dst)
+	dst := bac.add_param(graph, "dst", .I64, graph.entry, 0)
+	dstv := push_scope_value(graph, scope, dst)
 
 	val, src: Node_ID
 	srcv: int
 	switch name {
 	case .memcpy:
-		src = bac.graph_add_param(graph, "src", .I64, graph.entry, 1)
-		srcv = graph_push_scope_value(graph, scope, src)
+		src = bac.add_param(graph, "src", .I64, graph.entry, 1)
+		srcv = push_scope_value(graph, scope, src)
 	case .memset:
-		val = bac.graph_add_param(graph, "val", .I8, graph.entry, 1)
+		val = bac.add_param(graph, "val", .I8, graph.entry, 1)
 	}
 
-	len := bac.graph_add_param(graph, "len", .I64, graph.entry, 2)
-	lenv := graph_push_scope_value(graph, scope, len)
+	len := bac.add_param(graph, "len", .I64, graph.entry, 2)
+	lenv := push_scope_value(graph, scope, len)
 
 	loop: Loop_State
-	graph_start_loop(graph, scope, &loop)
+	start_loop(graph, scope, &loop)
 
 	if_: If_State
-	cond := graph_get_scope_value(graph, scope, lenv)
-	graph_start_if(graph, scope, &if_, cond)
+	cond := get_scope_value(graph, scope, lenv)
+	start_if(graph, scope, &if_, cond)
 
-	ctrl := bac.graph_inps(graph, scope)[0]
-	one := bac.graph_add_c_int(graph, "one", .I64, 1)
+	ctrl := bac.get_inputs(graph, scope)[0]
+	one := bac.add_c_int(graph, "one", .I64, 1)
 
-	mem := graph_get_scope_value(graph, scope, memv)
-	dst = graph_get_scope_value(graph, scope, dstv)
+	mem := get_scope_value(graph, scope, memv)
+	dst = get_scope_value(graph, scope, dstv)
 	if src != 0 {
-		src = graph_get_scope_value(graph, scope, srcv)
-		val = bac.graph_add_load(graph, "ld", .I8, ctrl, mem, src)
+		src = get_scope_value(graph, scope, srcv)
+		val = bac.add_load(graph, "ld", .I8, ctrl, mem, src)
 	}
 
-	mem = bac.graph_add_store(graph, "st", ctrl, mem, dst, val)
-	graph_set_scope_value(graph, scope, memv, mem)
+	mem = bac.add_store(graph, "st", ctrl, mem, dst, val)
+	set_scope_value(graph, scope, memv, mem)
 
-	add := bac.graph_add_bin_op(graph, "add_dst", .Add, .I64, dst, one)
-	graph_set_scope_value(graph, scope, dstv, add)
+	add := bac.add_bin_op(graph, "add_dst", .Add, .I64, dst, one)
+	set_scope_value(graph, scope, dstv, add)
 
 	if src != 0 {
-		ads := bac.graph_add_bin_op(graph, "add_src", .Add, .I64, src, one)
-		graph_set_scope_value(graph, scope, srcv, ads)
+		ads := bac.add_bin_op(graph, "add_src", .Add, .I64, src, one)
+		set_scope_value(graph, scope, srcv, ads)
 	}
 
-	sub := bac.graph_add_bin_op(graph, "sub_len", .Sub, .I64, cond, one)
-	graph_set_scope_value(graph, scope, lenv, sub)
+	sub := bac.add_bin_op(graph, "sub_len", .Sub, .I64, cond, one)
+	set_scope_value(graph, scope, lenv, sub)
 
-	graph_start_else(graph, &scope, &if_)
-	graph_loop_control(.Break, graph, scope, &loop)
+	start_else(graph, &scope, &if_)
+	loop_control(.Break, graph, scope, &loop)
 	scope = 0
-	graph_end_else(graph, &scope, &if_)
+	end_else(graph, &scope, &if_)
 
-	graph_end_loop(graph, &scope, &loop)
+	end_loop(graph, &scope, &loop)
 
-	ctrl = bac.graph_inps(graph, scope)[0]
-	bac.graph_merge_returns(graph, {ctrl})
+	ctrl = bac.get_inputs(graph, scope)[0]
+	bac.merge_returns(graph, {ctrl})
 
-	bac.graph_delete(graph, scope)
+	bac.delete_node(graph, scope)
 }

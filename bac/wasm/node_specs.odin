@@ -676,11 +676,11 @@ collect_meta :: proc(ctx: ^bac.Graph,
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(Lane_Op) % bac.PRECISION == 0)
-graph_add_extract_lane_u :: #force_inline proc(graph: ^bac.Graph, name: string, dt: bac.Node_Datatype, vec: bac.Node_ID, laneidx: u32, lane: bac.Lane_Type = {}) -> (_id: bac.Node_ID) {
-	(^Lane_Op)(bac.graph_get_next_extra_slot(graph, u16(Node_Type.Extract_Lane_U), 0))^ = {
+add_extract_lane_u :: #force_inline proc(graph: ^bac.Graph, name: string, dt: bac.Node_Datatype, vec: bac.Node_ID, laneidx: u32, lane: bac.Lane_Type = {}) -> (_id: bac.Node_ID) {
+	(^Lane_Op)(bac.get_next_extra_slot(graph, u16(Node_Type.Extract_Lane_U), 0))^ = {
 		laneidx = laneidx,
 	}
-	return bac.graph_add_raw(graph, name, u16(Node_Type.Extract_Lane_U), dt, {vec}, {lane = lane,})
+	return bac.add_raw(graph, name, u16(Node_Type.Extract_Lane_U), dt, {vec}, {lane = lane,})
 }
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {

@@ -632,8 +632,8 @@ collect_meta :: proc(ctx: ^bac.Graph,
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.CV128) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-graph_add_msub :: #force_inline proc(graph: ^bac.Graph, name: string, dt: bac.Node_Datatype, multiplicant: bac.Node_ID, multiplier: bac.Node_ID, subtractant: bac.Node_ID) -> (_id: bac.Node_ID) {
-	return bac.graph_add_raw(graph, name, u16(Node_Type.Msub), dt, {multiplicant, multiplier, subtractant})
+add_msub :: #force_inline proc(graph: ^bac.Graph, name: string, dt: bac.Node_Datatype, multiplicant: bac.Node_ID, multiplier: bac.Node_ID, subtractant: bac.Node_ID) -> (_id: bac.Node_ID) {
+	return bac.add_raw(graph, name, u16(Node_Type.Msub), dt, {multiplicant, multiplier, subtractant})
 }
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 

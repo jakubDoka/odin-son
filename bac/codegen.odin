@@ -148,7 +148,7 @@ param_mask :: proc(
 ) -> RM_Intern_Idx {
 	kind := ra.datatype_to_reg_kind[node.dt]
 	args := ra.args[kind]
-	arg_ext := graph_extra(graph, node, Tup)
+	arg_ext := get_extra(graph, node, Tup)
 	idx := 0
 	for a in ra.param_specs[:arg_ext.idx] {
 		if a.dt == .Void do continue
@@ -274,7 +274,7 @@ compute_param_offsets :: proc(
 	for param, i in ctx.param_specs {
 		param_id := params[i]
 
-		extra := graph_extra(ctx.graph, param_id, Local)
+		extra := get_extra(ctx.graph, param_id, Local)
 		if extra != nil {
 			fmt.assertf(
 				extra.size == param.size,
@@ -304,19 +304,19 @@ layout_call_args :: proc(
 	has_call: bool,
 ) {
 	for bb in schedule.bbs {
-		bnode := graph_expand(ctx, bb.head)
+		bnode := expand_node(ctx, bb.head)
 
 		for ins in bb.instrs {
-			has_call |= graph_get(ctx, ins).itype in CALLS
+			has_call |= get_node(ctx, ins).itype in CALLS
 		}
 
 		if bnode.itype != .Call_End do continue
-		cnode := graph_expand(ctx, bnode.inps[0])
+		cnode := expand_node(ctx, bnode.inps[0])
 		call_stack_size: i32
 		for inp in cnode.inps {
-			inode := graph_expand(ctx, inp)
+			inode := expand_node(ctx, inp)
 			if inode.itype != .Local do continue
-			iext := graph_extra(ctx, inode, Local)
+			iext := get_extra(ctx, inode, Local)
 			call_stack_size += iext.size
 			iext.offset = call_stack_size - iext.size
 		}
@@ -332,7 +332,7 @@ layout_locals :: proc(
 	stack_size: ^i32,
 ) {
 	emem := ctx.root_mem
-	mem_outs := graph_outs(ctx, emem)
+	mem_outs := get_outputs(ctx, emem)
 
 	Local_Slot :: bit_field u64 {
 		node:     Node_ID | 32,
@@ -341,9 +341,9 @@ layout_locals :: proc(
 	locals: [dynamic]Local_Slot
 
 	for mout in mem_outs {
-		mnode := graph_expand(ctx, mout.id)
+		mnode := expand_node(ctx, mout.id)
 		if mnode.itype == .Local {
-			extra := graph_extra(ctx, mnode, Local)
+			extra := get_extra(ctx, mnode, Local)
 			append(
 				&locals,
 				Local_Slot {
@@ -357,7 +357,7 @@ layout_locals :: proc(
 	sort.quick_sort(locals[:])
 
 	for loc in locals {
-		extra := graph_extra(ctx, loc.node, Local)
+		extra := get_extra(ctx, loc.node, Local)
 		stack_size^ += extra.size
 		extra.offset = stack_size^ - extra.size
 	}

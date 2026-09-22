@@ -168,7 +168,7 @@ peep :: proc(
 ) {
 	node := node
 
-	id := bac.graph_id(ctx, node)
+	id := bac.get_node_id(ctx, node)
 	is_complete := bac.peep_ctx_graph_is_complete(ctx)
 
 	DEAD_EXCEPTIONS := bit_set[bac.Node_Type] {
@@ -179,7 +179,7 @@ peep :: proc(
 	}
 
 	if bac.is_cfg(ctx, id) && node.itype not_in DEAD_EXCEPTIONS {
-		idom := graph_expand(ctx, node.inps[0])
+		idom := expand_node(ctx, node.inps[0])
 		if idom.itype == .Dead {
 			return node.inps[0]
 		}
@@ -189,9 +189,9 @@ peep :: proc(
 
 	emilinate_dead_local: if node.itype in STORES {
 		base, _ := bac.base_and_offset(ctx, node.inps[2])
-		bnode := graph_expand(ctx, base)
+		bnode := expand_node(ctx, base)
 		if bnode.itype != .Local_Addr do break emilinate_dead_local
-		if bac.graph_extra(ctx, bnode.inps[0], Local).size ==
+		if bac.get_extra(ctx, bnode.inps[0], Local).size ==
 		   bac.DEAD_LOCAL {
 			return node.inps[1]
 		}
@@ -201,27 +201,27 @@ peep :: proc(
 	case .Local_Addr:
 		if !is_complete do break match
 
-		slot := graph_expand(ctx, node.inps[0])
-		root := graph_expand(ctx, slot.inps[0])
+		slot := expand_node(ctx, node.inps[0])
+		root := expand_node(ctx, slot.inps[0])
 		mark_dead: {
 			if root.itype != .Root_Mem do break mark_dead
 
-			slot_local := bac.graph_extra(ctx, slot, Local)
+			slot_local := bac.get_extra(ctx, slot, Local)
 			if slot_local.size == bac.DEAD_LOCAL do break match
 
 			iter: bac.Offset_Iter
 			iter.curr = id
 			failed := false
 			for user in bac.offset_iter_next(ctx, &iter) {
-				unode := graph_expand(ctx, user.id)
+				unode := expand_node(ctx, user.id)
 				if unode.itype in STORES && user.idx == 2 {
 					continue
 				}
 
-				if graph_get(ctx, user.id).itype == .Add {
+				if get_node(ctx, user.id).itype == .Add {
 					bac.peep_ctx_add_trigger(
 						ctx,
-						bac.graph_inps(ctx, user.id)[1],
+						bac.get_inputs(ctx, user.id)[1],
 						id,
 					)
 				}
@@ -254,7 +254,7 @@ peep :: proc(
 			iter: bac.Offset_Iter
 			iter.curr = id
 			for user in bac.offset_iter_next(ctx, &iter) {
-				unode := graph_expand(ctx, user.id)
+				unode := expand_node(ctx, user.id)
 				op_count += 1
 
 				if unode.itype == .Copy &&
@@ -292,10 +292,10 @@ peep :: proc(
 			}
 
 			if forward_candidate != 0 {
-				fnode := graph_expand(ctx, forward_candidate)
+				fnode := expand_node(ctx, forward_candidate)
 
 				bse, _ := bac.base_and_offset(ctx, fnode.inps[2])
-				subs := graph_get(ctx, bse)
+				subs := get_node(ctx, bse)
 
 				VALID :: bit_set[bac.Node_Type] {
 					.Local_Addr,
@@ -307,7 +307,7 @@ peep :: proc(
 				cursor := fnode.inps[1]
 				op_count -= 1
 				for op_count > 0 {
-					cnode := graph_expand(ctx, cursor)
+					cnode := expand_node(ctx, cursor)
 					if cnode.itype not_in STORES do break forward
 					base, _ := bac.base_and_offset(ctx, cnode.inps[2])
 					if base != id &&
@@ -322,21 +322,21 @@ peep :: proc(
 				return fnode.inps[2]
 			}
 
-			fnode := graph_expand(ctx, rev_forward_candidate)
+			fnode := expand_node(ctx, rev_forward_candidate)
 			if op_count == 2 {
 				return fnode.inps[3]
 			}
 		}
 	case .Loop:
-		bedge := graph_expand(ctx, node.inps[1])
-		init := graph_expand(ctx, node.inps[0])
+		bedge := expand_node(ctx, node.inps[1])
+		init := expand_node(ctx, node.inps[0])
 
 		dead_by_latch := false
 		if bedge.itype == .If {
-			cond_const := bac.graph_extra(ctx, bedge.inps[1], CInt)
+			cond_const := bac.get_extra(ctx, bedge.inps[1], CInt)
 			if cond_const != nil {
 				out_ctrl_cnt := 0
-				for out in bac.graph_outs(ctx, bedge.inps[0]) {
+				for out in bac.get_outputs(ctx, bedge.inps[0]) {
 					out_ctrl_cnt += int(bac.is_cfg(ctx, out.id))
 				}
 
@@ -344,7 +344,7 @@ peep :: proc(
 				for out in bedge.outs {
 					if out.id != id {
 						we_are_alive =
-							(graph_get(ctx, out.id).itype == .Else) ~
+							(get_node(ctx, out.id).itype == .Else) ~
 							(cond_const.value == 0)
 					}
 				}
@@ -352,7 +352,7 @@ peep :: proc(
 				if !we_are_alive {
 					dead_by_latch = true
 				} else {
-					bac.graph_set_input(ctx, id, 1, bedge.inps[0])
+					bac.set_input(ctx, id, 1, bedge.inps[0])
 					return 0
 				}
 			} else {
@@ -363,13 +363,13 @@ peep :: proc(
 		if bedge.itype == .Dead || init.itype == .Dead || dead_by_latch {
 			retry: for {
 				#reverse for out in node.outs {
-					onode := graph_expand(ctx, out.id)
+					onode := expand_node(ctx, out.id)
 					if onode.itype == .Phi {
 						prev := node.output_count
 						bac.peep_subsume(ctx, onode.inps[1], out.id)
 						// NOTE: this might happen if the phys are entangled
 						if node.output_count != prev - 1 {
-							node = graph_expand(ctx, id)
+							node = expand_node(ctx, id)
 							continue retry
 						}
 					}
@@ -381,7 +381,7 @@ peep :: proc(
 		}
 	case .Region:
 		for o in node.outs {
-			n := graph_get(ctx, o.id)
+			n := get_node(ctx, o.id)
 			if n.itype == .Phi {
 				fmt.assertf(
 					n.input_count == node.input_count,
@@ -393,12 +393,12 @@ peep :: proc(
 		}
 
 		#reverse for inp, i in node.inps[:len(node.inps) - 1] {
-			inode := graph_expand(ctx, inp)
+			inode := expand_node(ctx, inp)
 			if inode.itype != .Dead do continue
 			ordered_remove(ctx, &node, i)
 
 			for out in node.outs {
-				onode := graph_expand(ctx, out.id)
+				onode := expand_node(ctx, out.id)
 				if onode.itype == .Phi {
 					ordered_remove(ctx, &onode, i + 1)
 				}
@@ -411,13 +411,13 @@ peep :: proc(
 
 		elim: if len(node.inps) == 2 {
 			for out in node.outs {
-				if graph_get(ctx, out.id).itype == .Return {
+				if get_node(ctx, out.id).itype == .Return {
 					break elim
 				}
 			}
 
 			#reverse for out in node.outs {
-				onode := graph_expand(ctx, out.id)
+				onode := expand_node(ctx, out.id)
 				if onode.itype == .Phi {
 					bac.peep_subsume(ctx, onode.inps[1], out.id)
 				}
@@ -428,7 +428,7 @@ peep :: proc(
 
 		phi_count := 0
 		for out in node.outs {
-			onode := graph_expand(ctx, out.id)
+			onode := expand_node(ctx, out.id)
 			phi_count += int(onode.itype == .Phi)
 		}
 
@@ -437,16 +437,16 @@ peep :: proc(
 		for changed {
 			changed = false
 
-			node = graph_expand(ctx, id)
+			node = expand_node(ctx, id)
 
 			// TODO: remove this redundant clone
 			merge: #reverse for inp, i in slice.clone(node.inps) {
-				inode := graph_expand(ctx, inp)
+				inode := expand_node(ctx, inp)
 				if inode.itype != .Region do continue
 
 				not_covered_count := phi_count
 				for out in inode.outs {
-					onode := graph_expand(ctx, out.id)
+					onode := expand_node(ctx, out.id)
 					if onode.itype == .Region do continue
 
 					if onode.itype != .Phi {
@@ -461,7 +461,7 @@ peep :: proc(
 						}
 						continue merge
 					}
-					if bac.graph_inps(ctx, onode.outs[0].id)[0] != id {
+					if bac.get_inputs(ctx, onode.outs[0].id)[0] != id {
 						continue merge
 					}
 
@@ -474,7 +474,7 @@ peep :: proc(
 
 				prev_cached := node.inps[len(node.inps) - 1]
 				node.input_count -= 1
-				bac.graph_remove_output(
+				bac.remove_output(
 					ctx,
 					prev_cached,
 					{idx = len(node.inps) - 1, id = id},
@@ -482,21 +482,21 @@ peep :: proc(
 				)
 
 				for iinp in inode.inps[1:len(inode.inps) - 1] {
-					bac.graph_connect(ctx, id, iinp)
+					bac.connect(ctx, id, iinp)
 				}
 
 				for out in node.outs {
-					onode := graph_expand(ctx, out.id)
+					onode := expand_node(ctx, out.id)
 					if onode.itype != .Phi do continue
 
-					to_merge := graph_expand(ctx, onode.inps[1 + i])
+					to_merge := expand_node(ctx, onode.inps[1 + i])
 					assert(to_merge.itype == .Phi)
 
 					for iinp in to_merge.inps[2:] {
-						bac.graph_connect(ctx, out.id, iinp)
+						bac.connect(ctx, out.id, iinp)
 					}
 
-					bac.graph_set_input(
+					bac.set_input(
 						ctx,
 						out.id,
 						1 + i,
@@ -504,16 +504,16 @@ peep :: proc(
 					)
 				}
 
-				bac.graph_connect(ctx, id, prev_cached)
-				bac.graph_set_input(ctx, id, i, inode.inps[0])
+				bac.connect(ctx, id, prev_cached)
+				bac.set_input(ctx, id, i, inode.inps[0])
 
-				node = graph_expand(ctx, id)
+				node = expand_node(ctx, id)
 				changed = true
 			}
 		}
 
 		for o in node.outs {
-			n := graph_get(ctx, o.id)
+			n := get_node(ctx, o.id)
 			if n.itype == .Phi {
 				fmt.assertf(
 					n.input_count == node.input_count,
@@ -526,7 +526,7 @@ peep :: proc(
 
 		return 0
 	case .Phi:
-		ctrl := graph_expand(ctx, node.inps[0])
+		ctrl := expand_node(ctx, node.inps[0])
 
 		if Node_Type(ctrl.rtype) == .Dead && 2 < len(node.inps) {
 			ordered_remove(ctx, &node, 2)
@@ -534,8 +534,8 @@ peep :: proc(
 		}
 
 		elimn: if len(node.inps) == 2 {
-			for out in bac.graph_outs(ctx, node.inps[0]) {
-				if graph_get(ctx, out.id).itype == .Return {
+			for out in bac.get_outputs(ctx, node.inps[0]) {
+				if get_node(ctx, out.id).itype == .Return {
 					break elimn
 				}
 			}
@@ -550,24 +550,24 @@ peep :: proc(
 			break
 		}
 
-		if bac.graph_extra(ctx, node.inps[1], CInt) != nil {
+		if bac.get_extra(ctx, node.inps[1], CInt) != nil {
 			break
 		}
 
 		for cursor, prev_cursor, fuel := node.inps[0], id, 5;
 		    cursor != ctx.start && fuel > 0;
-		    cursor, prev_cursor = bac.graph_idom(ctx, cursor), cursor {
+		    cursor, prev_cursor = bac.get_idom(ctx, cursor), cursor {
 			fuel -= 1
 
-			pcnode := graph_expand(ctx, prev_cursor)
-			cnode := graph_expand(ctx, cursor)
+			pcnode := expand_node(ctx, prev_cursor)
+			cnode := expand_node(ctx, cursor)
 			if cnode.itype == .If && pcnode.itype != .Region {
 				if cnode.inps[1] == node.inps[1] {
-					bac.graph_set_input(
+					bac.set_input(
 						ctx,
 						id,
 						1,
-						bac.graph_add_c_int(
+						bac.add_c_int(
 							ctx,
 							"shfld",
 							.I8,
@@ -581,12 +581,12 @@ peep :: proc(
 			}
 		}
 	case .Then, .Else:
-		if_ := graph_expand(ctx, node.inps[0])
+		if_ := expand_node(ctx, node.inps[0])
 		if if_.itype != .If do break
-		cond_const := bac.graph_extra(ctx, if_.inps[1], CInt)
+		cond_const := bac.get_extra(ctx, if_.inps[1], CInt)
 		if cond_const != nil {
 			if (cond_const.value == 0) ~ (node.itype == .Else) {
-				return bac.graph_add_dead(ctx, "dead")
+				return bac.add_dead(ctx, "dead")
 			} else {
 				return if_.inps[0]
 			}
@@ -595,12 +595,12 @@ peep :: proc(
 		}
 	case .Neg ..= .F_Demote:
 		op := Un_Op(node.itype)
-		oper := graph_expand(ctx.graph, node.inps[0])
-		coper := bac.graph_extra(ctx.graph, oper, CInt)
+		oper := expand_node(ctx.graph, node.inps[0])
+		coper := bac.get_extra(ctx.graph, oper, CInt)
 
 		if coper != nil {
 			value := fold_un_op(op, coper.value, node.dt, oper.dt)
-			return bac.graph_add_c_int(ctx.graph, "fld", node.dt, value)
+			return bac.add_c_int(ctx.graph, "fld", node.dt, value)
 		}
 
 		if (op == .Sext || op == .Uext) &&
@@ -612,16 +612,16 @@ peep :: proc(
 			return node.inps[0]
 		}
 	case .Add ..= .And_Not:
-		lhs := graph_expand(ctx.graph, node.inps[0])
-		rhs := graph_expand(ctx.graph, node.inps[1])
+		lhs := expand_node(ctx.graph, node.inps[0])
+		rhs := expand_node(ctx.graph, node.inps[1])
 
-		clhs := bac.graph_extra(ctx.graph, lhs, CInt)
-		crhs := bac.graph_extra(ctx.graph, rhs, CInt)
+		clhs := bac.get_extra(ctx.graph, lhs, CInt)
+		crhs := bac.get_extra(ctx.graph, rhs, CInt)
 		op := Bin_Op(node.itype)
 
 		if clhs != nil && crhs != nil {
 			value := fold_bin_op(clhs.value, op, crhs.value, node.dt)
-			return bac.graph_add_c_int(ctx.graph, "fld", node.dt, value)
+			return bac.add_c_int(ctx.graph, "fld", node.dt, value)
 		}
 
 		if crhs != nil {
@@ -657,28 +657,28 @@ peep :: proc(
 				.U_Gt,
 			}
 			if op in SYMETRI_IS_ZERO {
-				return bac.graph_add_c_int(ctx.graph, "sim0", .I64, 0)
+				return bac.add_c_int(ctx.graph, "sim0", .I64, 0)
 			}
 
 			SYMETRI_IS_ONE := bit_set[Bin_Op]{.Eq, .Le, .Ge, .U_Le, .U_Ge}
 			if op in SYMETRI_IS_ONE {
-				return bac.graph_add_c_int(ctx.graph, "sim1", .I64, 1)
+				return bac.add_c_int(ctx.graph, "sim1", .I64, 1)
 			}
 		}
 
 		ASOCIATIVE := bit_set[Bin_Op]{.Add, .Mul, .And, .Or, .Xor, .And}
 
 		if Bin_Op(lhs.itype) == op && op in ASOCIATIVE && crhs != nil {
-			clhs_lhs := bac.graph_extra(ctx, lhs.inps[0], CInt)
-			clhs_rhs := bac.graph_extra(ctx, lhs.inps[1], CInt)
+			clhs_lhs := bac.get_extra(ctx, lhs.inps[0], CInt)
+			clhs_rhs := bac.get_extra(ctx, lhs.inps[1], CInt)
 			for clhs_rhs != nil && clhs_lhs == nil {
-				res := bac.graph_add_bin_op(
+				res := bac.add_bin_op(
 					ctx.graph,
 					"rsoc",
 					bac.Bin_Op(op),
 					node.dt,
 					lhs.inps[0],
-					bac.graph_add_c_int(
+					bac.add_c_int(
 						ctx.graph,
 						"rfld",
 						node.dt,
@@ -755,8 +755,8 @@ peep :: proc(
 			}
 
 			for inp, i in node.inps {
-				bac.graph_add_output(ctx, inp, id, 1 - i)
-				bac.graph_remove_output(ctx, inp, {idx = i, id = id})
+				bac.add_output(ctx, inp, id, 1 - i)
+				bac.remove_output(ctx, inp, {idx = i, id = id})
 			}
 			node.inps[0], node.inps[1] = node.inps[1], node.inps[0]
 			bac.worklist_add(ctx, ctx.worklist, id)
@@ -766,14 +766,14 @@ peep :: proc(
 		florward_loads: {
 			cursor := node.inps[1]
 			for {
-				cnode := graph_expand(ctx, cursor)
+				cnode := expand_node(ctx, cursor)
 				if cnode.itype != .Store do break
 				if cnode.inps[0] != node.inps[0] do break
 				if !bac.is_noalias(
 					ctx,
 					cnode.inps[2],
 					node.inps[2],
-					bac.DT_SIZE[graph_get(ctx, cnode.inps[3]).dt],
+					bac.DT_SIZE[get_node(ctx, cnode.inps[3]).dt],
 					bac.DT_SIZE[node.dt],
 				) {
 					break
@@ -781,11 +781,11 @@ peep :: proc(
 				cursor = cnode.inps[1]
 			}
 
-			fnode := graph_expand(ctx, cursor)
+			fnode := expand_node(ctx, cursor)
 			if fnode.itype == .Store &&
 			   fnode.inps[0] == node.inps[0] &&
 			   fnode.inps[2] == node.inps[2] &&
-			   graph_get(ctx, fnode.inps[3]).dt == node.dt {
+			   get_node(ctx, fnode.inps[3]).dt == node.dt {
 
 				return fnode.inps[3]
 			} else {
@@ -793,7 +793,7 @@ peep :: proc(
 				if fnode.itype == .Store {
 					bac.peep_ctx_add_trigger(ctx, fnode.inps[2], id)
 					base, _ := bac.base_and_offset(ctx, fnode.inps[2])
-					bnode := graph_expand(ctx, base)
+					bnode := expand_node(ctx, base)
 					if bnode.itype == .Add {
 						bac.peep_ctx_add_trigger(ctx, bnode.inps[1], id)
 					}
@@ -811,19 +811,19 @@ peep :: proc(
 				ctx,
 				node.inps[2],
 			)
-			prev_offset += bac.DT_SIZE[graph_get(ctx, node.inps[3]).dt]
+			prev_offset += bac.DT_SIZE[get_node(ctx, node.inps[3]).dt]
 			cursor := id
 			last_valid: Node_ID
 			last_valid_imm: i64
 			last_valid_size: int
 			for fuel > 0 {
-				cnode := graph_expand(ctx, cursor)
+				cnode := expand_node(ctx, cursor)
 				if cnode.itype != .Store do break
 				if size != 0 && len(cnode.outs) != 1 do break
 				if cnode.inps[0] != common_ctrl do break
-				val := graph_get(ctx, cnode.inps[3])
+				val := get_node(ctx, cnode.inps[3])
 				if val.dt in bac.FLOAT_DTS do break
-				val_const := bac.graph_extra(ctx, val, CInt)
+				val_const := bac.get_extra(ctx, val, CInt)
 				if val_const == nil do break
 				base, offset := bac.base_and_offset(ctx, cnode.inps[2])
 				if base != common_base do break
@@ -848,14 +848,14 @@ peep :: proc(
 			}
 
 			if last_valid != id && last_valid != 0 {
-				final := graph_expand(ctx, last_valid)
-				return bac.graph_add_store(
+				final := expand_node(ctx, last_valid)
+				return bac.add_store(
 					ctx,
 					"cost",
 					final.inps[0],
 					final.inps[1],
 					final.inps[2],
-					bac.graph_add_c_int(
+					bac.add_c_int(
 						ctx,
 						"cocnst",
 						bac.int_for_size(last_valid_size),
@@ -872,10 +872,10 @@ peep :: proc(
 			size := bac.mem_op_size(ctx, id) or_else panic("")
 			base, off := bac.base_and_offset(ctx, node.inps[2])
 			for {
-				cnode := graph_expand(ctx, cursor)
+				cnode := expand_node(ctx, cursor)
 				cursor = 0
 				for out in cnode.outs {
-					onode := graph_expand(ctx, out.id)
+					onode := expand_node(ctx, out.id)
 					if !onode.is_store ||
 					   (onode.itype == .Copy &&
 							   onode.inps[2] == onode.inps[3]) {
@@ -889,7 +889,7 @@ peep :: proc(
 						bac.peep_ctx_add_trigger(ctx, out.id, id)
 					}
 
-					onode := graph_expand(ctx, out.id)
+					onode := expand_node(ctx, out.id)
 					if bac.is_noalias(ctx, id, out.id) {
 						if cursor != 0 do break eliminate
 						cursor = out.id
@@ -922,17 +922,17 @@ peep :: proc(
 
 		ctrl := node.inps[0]
 		mm := node.inps[1]
-		dst := graph_expand(ctx, node.inps[2])
-		val := graph_expand(ctx, node.inps[3])
-		val_const := bac.graph_extra(ctx, val, CInt)
-		sze := graph_expand(ctx, node.inps[4])
-		sze_const := bac.graph_extra(ctx, sze, CInt)
+		dst := expand_node(ctx, node.inps[2])
+		val := expand_node(ctx, node.inps[3])
+		val_const := bac.get_extra(ctx, val, CInt)
+		sze := expand_node(ctx, node.inps[4])
+		sze_const := bac.get_extra(ctx, sze, CInt)
 
 		if dst.itype != .Local_Addr do break
 		if sze_const == nil do break
 
 		if len(node.outs) == 1 {
-			out := graph_expand(ctx, node.outs[0].id)
+			out := expand_node(ctx, node.outs[0].id)
 			if out.itype == .Copy &&
 			   out.inps[0] == ctrl &&
 			   out.inps[2] == node.inps[2] &&
@@ -944,7 +944,7 @@ peep :: proc(
 		if val_const == nil do break
 		if val_const.value != 0 do break
 
-		dst_slot := graph_expand(ctx, dst.inps[0])
+		dst_slot := expand_node(ctx, dst.inps[0])
 
 		Slot :: bit_field u64 {
 			size:   int | 30,
@@ -959,7 +959,7 @@ peep :: proc(
 		Slots :: [dynamic; 16]Slot
 
 		slots: Slots
-		dst_size := int(bac.graph_extra(ctx, dst_slot, Local).size)
+		dst_size := int(bac.get_extra(ctx, dst_slot, Local).size)
 
 		members: [dynamic; 32]Node_ID
 
@@ -967,7 +967,7 @@ peep :: proc(
 		iter.curr = node.inps[2]
 		corrupt := false
 		scan: for out in bac.offset_iter_next(ctx, &iter) {
-			onode := graph_expand(ctx, out.id)
+			onode := expand_node(ctx, out.id)
 
 			if out.id == id do continue
 			if out.idx != 2 do continue
@@ -1038,13 +1038,13 @@ peep :: proc(
 		blocker: Node_ID
 		cursor := id
 		traverse: for {
-			cnode := graph_expand(ctx, cursor)
+			cnode := expand_node(ctx, cursor)
 
 			cursor = 0
 			offset: int
 
 			for out in cnode.outs {
-				onode := graph_expand(ctx, out.id)
+				onode := expand_node(ctx, out.id)
 
 				ALLOWED := bit_set[bac.Node_Type] {
 					.Store,
@@ -1214,14 +1214,14 @@ peep :: proc(
 			idx := intrinsics.count_trailing_zeros(slot.size)
 			table := [?]bac.Node_Datatype{.I8, .I16, .I32, .I64, .V128}
 			dt := table[idx]
-			vl := bac.graph_add_c_int(ctx, "zrsp", dt, 0)
-			off := bac.graph_add_c_int(
+			vl := bac.add_c_int(ctx, "zrsp", dt, 0)
+			off := bac.add_c_int(
 				ctx,
 				"zroffv",
 				.I64,
 				i64(slot.offset),
 			)
-			dst := bac.graph_add_bin_op(
+			dst := bac.add_bin_op(
 				ctx,
 				"zroff",
 				.Add,
@@ -1230,7 +1230,7 @@ peep :: proc(
 				off,
 			)
 			bac.worklist_add(ctx, ctx.worklist, dst)
-			mem_thread = bac.graph_add_store(
+			mem_thread = bac.add_store(
 				ctx,
 				"zrst",
 				ctrl,

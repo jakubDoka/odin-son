@@ -913,8 +913,8 @@ collect_meta :: proc(ctx: ^bac.Graph,
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(Mem_Op) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-graph_add_x64_psadbw :: #force_inline proc(graph: ^bac.Graph, name: string, dt: bac.Node_Datatype, lhs: bac.Node_ID, rhs: bac.Node_ID) -> (_id: bac.Node_ID) {
-	return bac.graph_add_raw(graph, name, u16(Node_Type.X64_Psadbw), dt, {lhs, rhs})
+add_x64_psadbw :: #force_inline proc(graph: ^bac.Graph, name: string, dt: bac.Node_Datatype, lhs: bac.Node_ID, rhs: bac.Node_ID) -> (_id: bac.Node_ID) {
+	return bac.add_raw(graph, name, u16(Node_Type.X64_Psadbw), dt, {lhs, rhs})
 }
 #assert(size_of(Mem_Op) % bac.PRECISION == 0)
 #assert(size_of(Mem_Op) % bac.PRECISION == 0)

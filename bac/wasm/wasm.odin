@@ -12,8 +12,8 @@ import "core:sort"
 Reg :: bac.Reg
 emit :: bac.emit
 emit_leb :: bac.emit_leb
-graph_expand :: bac.graph_expand
-graph_get :: bac.graph_get
+expand_node :: bac.expand_node
+get_node :: bac.get_node
 
 MASK_SIZE :: 64
 
@@ -74,7 +74,7 @@ when SPEC_NOT_PRESENT {
 		return {}, 0
 	}
 
-	graph_add_extract_lane_u :: proc(
+	add_extract_lane_u :: proc(
 		graph: ^bac.Graph,
 		name: string,
 		dt: bac.Node_Datatype,
@@ -101,10 +101,10 @@ peep :: proc(
 	node: bac.Expanded_Node,
 	_: $T,
 ) -> bac.Node_ID {
-	id := bac.graph_id(ctx, node)
+	id := bac.get_node_id(ctx, node)
 	inp: bac.Expanded_Node
 	if 0 < len(node.inps) {
-		inp = graph_expand(ctx, node.inps[0])
+		inp = expand_node(ctx, node.inps[0])
 	}
 	kind := wtype(node)
 	#partial switch kind {
@@ -122,7 +122,7 @@ peep :: proc(
 
 		if wtype(inp) == .Load && len(inp.outs) == 1 {
 			(^Mem_Op)(
-				bac.graph_get_next_extra_slot(
+				bac.get_next_extra_slot(
 					ctx,
 					u16(Node_Type.WASM_Load),
 					0,
@@ -131,7 +131,7 @@ peep :: proc(
 				source = inp.dt,
 				signed = signed,
 			}
-			return bac.graph_add_raw(
+			return bac.add_raw(
 				ctx,
 				"sxld",
 				u16(Node_Type.WASM_Load),
@@ -147,40 +147,40 @@ peep :: proc(
 
 		changed := false
 
-		bnode := graph_expand(ctx, base)
+		bnode := expand_node(ctx, base)
 		if bnode.itype == .Local_Addr && kind != .Store {
 			base = bnode.inps[0]
 			changed = true
 		}
 
 		if off != 0 || changed {
-			(^Mem_Op)(bac.graph_get_next_extra_slot(ctx, u16(op), 0))^ = {
+			(^Mem_Op)(bac.get_next_extra_slot(ctx, u16(op), 0))^ = {
 				source = node.dt,
 				offset = i64(off),
 			}
 			inps := slice.clone(node.inps)
 			inps[2] = base
-			return bac.graph_add_raw(ctx, "offm", u16(op), node.dt, inps)
+			return bac.add_raw(ctx, "offm", u16(op), node.dt, inps)
 		}
 	case .Shr:
-		if graph_get(ctx, node.inps[0]).dt < .I32 {
-			new := bac.graph_add_un_op(
+		if get_node(ctx, node.inps[0]).dt < .I32 {
+			new := bac.add_un_op(
 				ctx,
 				"shext",
 				.Sext,
 				.I32,
 				node.inps[0],
 			)
-			bac.graph_set_input(ctx, id, 0, new)
+			bac.set_input(ctx, id, 0, new)
 			bac.worklist_add(ctx, ctx.worklist, new)
 			return id
 		}
 	case .Div, .Ne ..= .Ge:
 		changed := false
 		for inp, i in node.inps {
-			if graph_get(ctx, inp).dt < .I32 {
-				new := bac.graph_add_un_op(ctx, "shext", .Sext, .I32, inp)
-				bac.graph_set_input(ctx, id, i, new)
+			if get_node(ctx, inp).dt < .I32 {
+				new := bac.add_un_op(ctx, "shext", .Sext, .I32, inp)
+				bac.set_input(ctx, id, i, new)
 				bac.worklist_add(ctx, ctx.worklist, new)
 				changed = true
 			}
@@ -188,46 +188,46 @@ peep :: proc(
 
 		if changed do return id
 	case .And_Not:
-		return bac.graph_add_bin_op(
+		return bac.add_bin_op(
 			ctx,
 			"ana",
 			.And,
 			node.dt,
 			node.inps[0],
-			bac.graph_add_bin_op(
+			bac.add_bin_op(
 				ctx,
 				"ann",
 				.Xor,
 				node.dt,
 				node.inps[1],
-				bac.graph_add_c_int(ctx, "acn", node.dt, -1),
+				bac.add_c_int(ctx, "acn", node.dt, -1),
 			),
 		)
 	case .Neg:
 		if node.dt <= .I64 {
-			return bac.graph_add_bin_op(
+			return bac.add_bin_op(
 				ctx,
 				"sneg",
 				.Sub,
 				node.dt,
-				bac.graph_add_c_int(ctx, "zr", node.dt, 0),
+				bac.add_c_int(ctx, "zr", node.dt, 0),
 				node.inps[0],
 			)
 		}
 	case .Not:
-		return bac.graph_add_bin_op(
+		return bac.add_bin_op(
 			ctx,
 			"sneg",
 			.Xor,
 			node.dt,
-			bac.graph_add_c_int(ctx, "m1", node.dt, -1),
+			bac.add_c_int(ctx, "m1", node.dt, -1),
 			node.inps[0],
 		)
 	case .Simd_Reduce_Add_Bisect:
 		// TODO: maybe dont divide here
 		lane_count := bac.DT_SIZE[inp.dt] / bac.LANE_SIZE[node.lane]
 
-		sum := graph_add_extract_lane_u(
+		sum := add_extract_lane_u(
 			ctx,
 			"rabe",
 			node.dt,
@@ -236,7 +236,7 @@ peep :: proc(
 			lane = node.lane,
 		)
 		for lane in 1 ..< lane_count {
-			next := graph_add_extract_lane_u(
+			next := add_extract_lane_u(
 				ctx,
 				"rabe",
 				node.dt,
@@ -245,7 +245,7 @@ peep :: proc(
 				lane = node.lane,
 			)
 
-			sum = bac.graph_add_bin_op(
+			sum = bac.add_bin_op(
 				ctx,
 				"rabs",
 				.Add,
@@ -302,7 +302,7 @@ meta_of :: #force_inline proc(
 
 	imasks := masks
 	if 0 < len(node.inps) {
-		rk := ra.datatype_to_reg_kind[graph_get(graph, node.inps[0]).dt]
+		rk := ra.datatype_to_reg_kind[get_node(graph, node.inps[0]).dt]
 		imasks = SLOT_TABLE[rk][:]
 	}
 
@@ -418,7 +418,7 @@ pre_regalloc_hook :: proc(
 	defer graph.dont_delete, graph.dont_intern = false, false
 
 	for bb, i in sched.bbs {
-		graph_get(ctx, bb.head).gvn = u32(i)
+		get_node(ctx, bb.head).gvn = u32(i)
 	}
 
 	splits: [dynamic]bac.Node_ID
@@ -426,16 +426,16 @@ pre_regalloc_hook :: proc(
 	// NOTE: we do splits here becuase dealing with phy self conflicts is just
 	// annoying, maybe we can do better, but not right now
 	for &bb, i in sched.bbs {
-		hnode := graph_expand(ctx, bb.head)
+		hnode := expand_node(ctx, bb.head)
 
 		for i := 0; i < len(bb.instrs); i += 1 {
 			instr := bb.instrs[i]
-			inode := graph_expand(ctx, instr)
+			inode := expand_node(ctx, instr)
 			for inp, j in inode.inps {
-				innode := graph_expand(ctx, inp)
+				innode := expand_node(ctx, inp)
 
 				is_clonable := false
-				cint := bac.graph_extra(ctx, innode, bac.CInt)
+				cint := bac.get_extra(ctx, innode, bac.CInt)
 				if cint != nil && innode.dt <= .I64 {
 					bufa: [1]u8
 					_, error := varint.encode_ileb128(
@@ -446,13 +446,13 @@ pre_regalloc_hook :: proc(
 				}
 
 				if is_clonable && len(innode.outs) > 1 {
-					clone := bac.graph_clone(ctx, inp)
-					bac.graph_set_input(ctx, instr, j, clone)
+					clone := bac.clone(ctx, inp)
+					bac.set_input(ctx, instr, j, clone)
 
 					if inode.itype == .Phi {
 						block_head :=
-							bac.graph_inps(ctx, hnode.inps[j - 1])[0]
-						block := &sched.bbs[bac.graph_get(ctx, block_head).gvn]
+							bac.get_inputs(ctx, hnode.inps[j - 1])[0]
+						block := &sched.bbs[bac.get_node(ctx, block_head).gvn]
 						inject_at(&block.instrs, len(block.instrs) - 1, clone)
 					} else {
 						inject_at(&bb.instrs, i, clone)
@@ -465,7 +465,7 @@ pre_regalloc_hook :: proc(
 		if hnode.itype == .Call_End {
 			ret_count := 0
 			for instr in bb.instrs {
-				inode := graph_expand(ctx, instr)
+				inode := expand_node(ctx, instr)
 				if inode.itype != .Ret do break
 				ret_count += 1
 			}
@@ -476,14 +476,14 @@ pre_regalloc_hook :: proc(
 				proc(a, b: bac.Node_ID) -> int {
 					ctx := (^Ctx)(context.user_ptr)
 					return (sort.compare_u32s(
-								bac.graph_extra(ctx, b, bac.Tup).idx,
-								bac.graph_extra(ctx, a, bac.Tup).idx,
+								bac.get_extra(ctx, b, bac.Tup).idx,
+								bac.get_extra(ctx, a, bac.Tup).idx,
 							))
 				},
 			)
 
 			add_drop :: proc(ctx: Ctx) -> bac.Node_ID {
-				return bac.graph_add_raw(
+				return bac.add_raw(
 					ctx,
 					"rdrp",
 					u16(Node_Type.Drop),
@@ -493,7 +493,7 @@ pre_regalloc_hook :: proc(
 			}
 
 			real_ret_count :=
-				bac.graph_extra(ctx, hnode.inps[0], bac.Call).ret_count
+				bac.get_extra(ctx, hnode.inps[0], bac.Call).ret_count
 
 			// NOTE: we need to insert drops ofr the rets that are dead
 			laxt_idx := real_ret_count
@@ -501,8 +501,8 @@ pre_regalloc_hook :: proc(
 				// NOTE: we rely on the fact there is at least one non ret node
 				ret := bb.instrs[i]
 				idx := -1
-				if graph_get(ctx, ret).itype == .Ret {
-					idx = int(bac.graph_extra(ctx, ret, bac.Tup).idx)
+				if get_node(ctx, ret).itype == .Ret {
+					idx = int(bac.get_extra(ctx, ret, bac.Tup).idx)
 				}
 				for _ in idx ..< laxt_idx - 1 {
 					inject_at(&bb.instrs, i, add_drop(ctx))
@@ -554,7 +554,7 @@ pre_regalloc_hook :: proc(
 		     .Trap:
 			return {}
 		case .Load, .WASM_Load:
-			is_local := graph_get(ctx, node.inps[2]).itype == .Local
+			is_local := get_node(ctx, node.inps[2]).itype == .Local
 			return {
 				def = true,
 				is_mem = true,
@@ -562,7 +562,7 @@ pre_regalloc_hook :: proc(
 				input_count = 1 - u8(is_local),
 			}
 		case .Store, .WASM_Store:
-			is_local := graph_get(ctx, node.inps[2]).itype == .Local
+			is_local := get_node(ctx, node.inps[2]).itype == .Local
 			return {
 				def = true,
 				is_mem = true,
@@ -580,7 +580,7 @@ pre_regalloc_hook :: proc(
 			prefix = min(prefix, u8(len(node.inps)))
 
 			real_len := len(node.inps)
-			for ; graph_get(ctx, node.inps[real_len - 1]).itype == .Local;
+			for ; get_node(ctx, node.inps[real_len - 1]).itype == .Local;
 			    real_len -= 1 {}
 
 			return {input_start = prefix, input_count = u8(real_len) - prefix}
@@ -629,13 +629,13 @@ pre_regalloc_hook :: proc(
 		rev_count := int(graph.gvn) - len(sched.bbs)
 
 		rev_count -= 1
-		graph_get(graph, graph.start).gvn = u32(rev_count)
+		get_node(graph, graph.start).gvn = u32(rev_count)
 
 		idx := 0
 		for bb, j in sched.bbs {
-			graph_get(graph, bb.head).gvn = u32(len(slots) + 1 + j)
+			get_node(graph, bb.head).gvn = u32(len(slots) + 1 + j)
 			for instr in bb.instrs {
-				inode := graph_expand(graph, instr)
+				inode := expand_node(graph, instr)
 
 				inode.gvn = u32(idx)
 				idx += 1
@@ -681,10 +681,10 @@ pre_regalloc_hook :: proc(
 		ctx.instrs = &bb.instrs
 
 		for instr, i in bb.instrs {
-			inode := graph_expand(ctx, instr)
+			inode := expand_node(ctx, instr)
 			for dep in data_deps(ctx.metas[inode.gvn], inode) {
-				if graph_get(ctx, dep).itype == .Poison do continue
-				ctx.rcs[graph_get(ctx, dep).gvn] += int(
+				if get_node(ctx, dep).itype == .Poison do continue
+				ctx.rcs[get_node(ctx, dep).gvn] += int(
 					slice.contains(bb.instrs[:i], dep),
 				)
 			}
@@ -699,20 +699,20 @@ pre_regalloc_hook :: proc(
 		stackify :: proc(ctx: ^Ctx) {
 			ctx.cursor -= 1
 			instr := ctx.instrs[ctx.cursor]
-			inode := graph_expand(ctx, instr)
+			inode := expand_node(ctx, instr)
 
 			if inode.itype == .Phi && inode.dt != .Void {
 				for inp, i in inode.inps[1:] {
-					if graph_get(ctx, inp).itype == .Poison do continue
-					set := get_or_add_set(ctx, graph_get(ctx, inp))
-					bac.graph_set_input(ctx, instr, 1 + i, set)
+					if get_node(ctx, inp).itype == .Poison do continue
+					set := get_or_add_set(ctx, get_node(ctx, inp))
+					bac.set_input(ctx, instr, 1 + i, set)
 				}
 				return
 			}
 
 			deps := data_deps(ctx.metas[inode.gvn], inode)
 			#reverse for dep, i in deps {
-				dnode := graph_expand(ctx, dep)
+				dnode := expand_node(ctx, dep)
 
 				shift: {
 					if dnode.itype == .Ret do break shift
@@ -724,14 +724,14 @@ pre_regalloc_hook :: proc(
 						dep,
 					) or_break shift
 
-					ctx.rcs[graph_get(ctx, dep).gvn] -= 1
+					ctx.rcs[get_node(ctx, dep).gvn] -= 1
 
-					if ctx.rcs[graph_get(ctx, dep).gvn] > 0 do break shift
+					if ctx.rcs[get_node(ctx, dep).gvn] > 0 do break shift
 
 					if ctx.metas[dnode.gvn].is_mem {
 						has_mem := false
 						for n in ctx.instrs[pos:ctx.cursor] {
-							has_mem |= ctx.metas[graph_get(ctx, n).gvn].is_mem
+							has_mem |= ctx.metas[get_node(ctx, n).gvn].is_mem
 						}
 						if has_mem do break shift
 					}
@@ -739,7 +739,7 @@ pre_regalloc_hook :: proc(
 					if len(dnode.outs) > 1 {
 						dp := get_or_add_set(ctx, dnode)
 						if dp != dep {
-							graph_get(ctx, dp).rtype = u16(Node_Type.Tee_Local)
+							get_node(ctx, dp).rtype = u16(Node_Type.Tee_Local)
 						}
 					}
 
@@ -750,9 +750,9 @@ pre_regalloc_hook :: proc(
 
 				dep := get_or_add_set(ctx, dnode)
 
-				depn := graph_expand(ctx, dep)
+				depn := expand_node(ctx, dep)
 
-				get := bac.graph_add_raw(
+				get := bac.add_raw(
 					ctx,
 					"uget",
 					u16(Node_Type.Get_Local),
@@ -762,7 +762,7 @@ pre_regalloc_hook :: proc(
 
 				if dnode.itype in NO_SET_KINDS {
 					// TODO: reuse these
-					stub := bac.graph_add_raw(
+					stub := bac.add_raw(
 						ctx,
 						"stub",
 						u16(Node_Type.Stub),
@@ -772,7 +772,7 @@ pre_regalloc_hook :: proc(
 
 					inject_at(ctx.instrs, ctx.cursor, stub)
 
-					bac.graph_set_input(
+					bac.set_input(
 						ctx,
 						instr,
 						int(ctx.metas[inode.gvn].input_start) + i,
@@ -789,16 +789,16 @@ pre_regalloc_hook :: proc(
 			node: ^bac.Node,
 		) -> bac.Node_ID {
 			if node.itype in NO_SET_KINDS {
-				return bac.graph_id(ctx, node)
+				return bac.get_node_id(ctx, node)
 			}
 
 			if ctx.sets[node.gvn] == 0 {
-				ctx.sets[node.gvn] = bac.graph_add_raw(
+				ctx.sets[node.gvn] = bac.add_raw(
 					ctx,
 					"uset",
 					u16(Node_Type.Set_Local),
 					node.dt,
-					{bac.graph_id(ctx, node)},
+					{bac.get_node_id(ctx, node)},
 				)
 			}
 
@@ -809,11 +809,11 @@ pre_regalloc_hook :: proc(
 	for &bb in sched.bbs {
 		for i := 0; i < len(bb.instrs); i += 1 {
 			instr := bb.instrs[i]
-			inode := graph_expand(ctx, instr)
+			inode := expand_node(ctx, instr)
 			if inode.gvn >= old_gvn || !ctx.metas[inode.gvn].def {continue}
 			if ctx.sets[inode.gvn] != 0 {
 				insert_pos := i + 1
-				for ; graph_get(ctx, bb.instrs[insert_pos]).itype == .Phi;
+				for ; get_node(ctx, bb.instrs[insert_pos]).itype == .Phi;
 				    insert_pos += 1 {}
 				inject_at(&bb.instrs, insert_pos, ctx.sets[inode.gvn])
 			}
@@ -821,7 +821,7 @@ pre_regalloc_hook :: proc(
 	}
 
 	for split in splits {
-		graph_get(ctx, split).rtype = u16(Node_Type.Set_Local)
+		get_node(ctx, split).rtype = u16(Node_Type.Set_Local)
 	}
 }
 
@@ -899,19 +899,19 @@ emit_function :: proc(
 		ctx.blocks = make([dynamic]Block, 1, len(ctx.schedule.bbs) + 1)
 
 		for bb, i in ctx.schedule.bbs {
-			graph_get(ctx, bb.head).gvn = u32(i)
+			get_node(ctx, bb.head).gvn = u32(i)
 		}
 
 		blocks := &ctx.blocks
 
 		for bb, i in ctx.schedule.bbs {
-			hnode := graph_expand(ctx, bb.head)
+			hnode := expand_node(ctx, bb.head)
 			tail := bb.instrs[len(bb.instrs) - 1]
-			tnode := graph_expand(ctx, tail)
+			tnode := expand_node(ctx, tail)
 
 			if hnode.itype == .Loop {
-				pred := graph_expand(ctx, hnode.inps[1])
-				pred_blk := int(graph_get(ctx, pred.inps[0]).gvn)
+				pred := expand_node(ctx, hnode.inps[1])
+				pred_blk := int(get_node(ctx, pred.inps[0]).gvn)
 				append(
 					blocks,
 					Block {
@@ -924,14 +924,14 @@ emit_function :: proc(
 			}
 
 			for next in tnode.outs {
-				nnode := graph_expand(ctx, next.id)
+				nnode := expand_node(ctx, next.id)
 				assert(
 					next.idx != len(nnode.inps) - 1 || nnode.itype != .Region,
 				)
 				if int(nnode.gvn) != i + 1 && nnode.itype != .Loop {
 					start := i
 
-					for ; graph_get(ctx, ctx.schedule.bbs[start].head).itype ==
+					for ; get_node(ctx, ctx.schedule.bbs[start].head).itype ==
 					    .Call_End;
 					    start -= 1 {
 					}
@@ -1139,7 +1139,7 @@ emit_function :: proc(
 			vl := pop(&ctx.block_stack)
 		}
 
-		if graph_get(ctx, bb.tail).itype == .Return {
+		if get_node(ctx, bb.tail).itype == .Return {
 			ret_idx = i
 		}
 	}
@@ -1164,14 +1164,14 @@ emit_function :: proc(
 
 @(disabled = SPEC_NOT_PRESENT)
 emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
-	node := graph_expand(ctx, instr)
+	node := expand_node(ctx, instr)
 	kind := wtype(node)
 	op := NODE_TO_OP[kind][node.dt]
 	lane_op := NODE_TO_LANE_OP[kind][node.lane]
 
 	#partial switch kind {
 	case .Eq ..= .U_Ge, .F_Eq ..= .F_Ge:
-		op = NODE_TO_OP[kind][graph_get(ctx, node.inps[0]).dt]
+		op = NODE_TO_OP[kind][get_node(ctx, node.inps[0]).dt]
 	}
 
 	block := &ctx.blocks[ctx.bb_metas[block].break_block]
@@ -1179,7 +1179,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 
 	inp: ^bac.Node
 	if 0 < len(node.inps) {
-		inp = graph_get(ctx, node.inps[0])
+		inp = get_node(ctx, node.inps[0])
 	}
 
 	mem_op: Mem_Op
@@ -1216,7 +1216,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 	     .Global,
 	     .Poison:
 	case .CInt:
-		cint := bac.graph_extra(ctx, node, bac.CInt)
+		cint := bac.get_extra(ctx, node, bac.CInt)
 
 		switch node.dt {
 		case .I8, .I16, .I32:
@@ -1246,7 +1246,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 		} else {
 			#partial switch kind {
 			case .Shl, .U_Shr, .Shr:
-				if node.dt != .I64 && graph_get(ctx, node.inps[1]).dt == .I64 {
+				if node.dt != .I64 && get_node(ctx, node.inps[1]).dt == .I64 {
 					emit_op(ctx.code, .I32_Wrap_I64)
 				}
 			}
@@ -1401,7 +1401,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 		emit_leb(ctx.code, loc_of(ctx, instr))
 	case .Local_Addr:
 		offset := i32(
-			bac.graph_extra(ctx, node.inps[0], bac.Local).offset,
+			bac.get_extra(ctx, node.inps[0], bac.Local).offset,
 		)
 
 		emit_op(ctx.code, .Global_Get)
@@ -1410,7 +1410,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 		emit_leb(ctx.code, offset)
 		emit_op(ctx.code, .I64_Add)
 	case .Global_Addr:
-		id := bac.graph_extra(ctx, node.inps[0], bac.Tup).idx
+		id := bac.get_extra(ctx, node.inps[0], bac.Tup).idx
 
 		emit_op(ctx.code, .Global_Get)
 		bac.add_reloc(ctx.relocs)^ = {
@@ -1421,7 +1421,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 		}
 		emit(ctx.code, {0, 0, 0, 0})
 	case .Store, .WASM_Store:
-		vl := graph_get(ctx, node.inps[3])
+		vl := get_node(ctx, node.inps[3])
 		if vl.dt == .V128 {
 			emit_op_fd(ctx.code, .V128_Store)
 		} else {
@@ -1430,7 +1430,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 		emit_leb(ctx.code, 0)
 		emit_leb(ctx.code, u64(mem_op.offset))
 	case .Load, .WASM_Load:
-		base := bac.graph_extra(ctx, node.inps[2], bac.Local)
+		base := bac.get_extra(ctx, node.inps[2], bac.Local)
 		extra_offset: i32
 		if base != nil {
 			extra_offset = base.offset
@@ -1489,7 +1489,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 		emit_leb(ctx.code, u64(0))
 		emit_leb(ctx.code, u64(0))
 	case .Call:
-		call := bac.graph_extra(ctx, node, bac.Call)
+		call := bac.get_extra(ctx, node, bac.Call)
 
 		if call.indirect {
 			emit_op(ctx.code, .I32_Wrap_I64)
@@ -1504,7 +1504,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 			emit_leb(ctx.code, u64(0)) // table idx
 
 			real_len := len(node.inps)
-			for ; graph_get(ctx, node.inps[real_len - 1]).itype == .Local;
+			for ; get_node(ctx, node.inps[real_len - 1]).itype == .Local;
 			    real_len -= 1 {}
 
 			params := make(
@@ -1514,7 +1514,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 
 			for inp, i in node.inps[bac.CALL_PREFIX + 1:real_len] {
 				params[i] = {
-					dt = graph_get(ctx, inp).dt,
+					dt = get_node(ctx, inp).dt,
 				}
 			}
 
@@ -1543,7 +1543,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 	case .Splat, .Simd_Extract_Lsbs:
 		emit_op_fd(ctx.code, lane_op)
 	case .Proc_Addr:
-		id := bac.graph_extra(ctx, instr, bac.Tup).idx
+		id := bac.get_extra(ctx, instr, bac.Tup).idx
 
 		emit_op(ctx.code, .I64_Const)
 		bac.add_reloc(ctx.relocs)^ = {
@@ -1573,10 +1573,10 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 	case .If:
 		loop_idx := -1
 		for out, i in node.outs {
-			if graph_get(ctx, out.id).itype == .Loop do loop_idx = i
+			if get_node(ctx, out.id).itype == .Loop do loop_idx = i
 		}
 
-		if graph_get(ctx, node.inps[1]).dt > .I32 {
+		if get_node(ctx, node.inps[1]).dt > .I32 {
 			emit_op(ctx.code, .I32_Wrap_I64)
 		}
 
@@ -1599,7 +1599,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 }
 
 loc_of :: proc(ctx: ^Ctx, node: bac.Node_ID) -> u16 {
-	reg := ctx.allocs[graph_get(ctx, node).gvn]
+	reg := ctx.allocs[get_node(ctx, node).gvn]
 	proj := ctx.local_projs[reg.kind]
 	if int(reg.index) < len(proj.param_projs) {
 		return proj.param_projs[reg.index]

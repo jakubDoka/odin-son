@@ -65,7 +65,7 @@ init_custom_fmt :: proc() {
 		proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
 			value := value.(Node_ID)
 			if value != 0 {
-				graph_display_node_gvn(fi.writer, current_graph, value)
+				display_node_gvn(fi.writer, current_graph, value)
 			} else {
 				fmt.wprint(fi.writer, "nl")
 			}
@@ -77,8 +77,8 @@ init_custom_fmt :: proc() {
 		Node,
 		proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
 			value := &value.(Node)
-			id := graph_id(current_graph, value)
-			graph_display_node(fi.writer, current_graph, id)
+			id := get_node_id(current_graph, value)
+			display_node(fi.writer, current_graph, id)
 			return true
 		},
 	)
@@ -87,8 +87,8 @@ init_custom_fmt :: proc() {
 		Expanded_Node,
 		proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
 			value := &value.(Expanded_Node)
-			id := graph_id(current_graph, value)
-			graph_display_node(fi.writer, current_graph, id)
+			id := get_node_id(current_graph, value)
+			display_node(fi.writer, current_graph, id)
 			return true
 		},
 	)
@@ -97,13 +97,13 @@ init_custom_fmt :: proc() {
 		Graph,
 		proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
 			value := &value.(Graph)
-			graph_display(fi.writer, value)
+			display_graph(fi.writer, value)
 			return true
 		},
 	)
 }
 
-graph_display :: proc(
+display_graph :: proc(
 	w: io.Writer,
 	graph: ^Graph,
 	ctx: ^Graph_Schedule = nil,
@@ -116,7 +116,7 @@ graph_display :: proc(
 	our_ctx: Graph_Schedule
 
 	if ctx == nil {
-		graph_schedule(graph, &our_ctx, .for_regalloc)
+		schedule_graph(graph, &our_ctx, .for_regalloc)
 		ctx = &our_ctx
 	}
 
@@ -141,12 +141,12 @@ graph_display :: proc(
 			)
 		}
 
-		graph_display_node(w, graph, bb.head, scheduled = true)
+		display_node(w, graph, bb.head, scheduled = true)
 
 		fmt.wprint(w, " {\n")
 
 		for instr in bb.instrs {
-			inode := graph_get(graph, instr)
+			inode := get_node(graph, instr)
 			if inode.itype == .Phi {
 				//continue
 			}
@@ -168,7 +168,7 @@ graph_display :: proc(
 			} else if prefix != nil {
 				prefix(w, inode, bb)
 			}
-			graph_display_node(w, graph, instr, scheduled = true)
+			display_node(w, graph, instr, scheduled = true)
 			fmt.wprint(w, "\n")
 		}
 
@@ -176,17 +176,17 @@ graph_display :: proc(
 	}
 }
 
-graph_display_node :: proc(
+display_node :: proc(
 	w: io.Writer,
 	graph: ^Graph,
 	id: Node_ID,
 	scheduled := false,
 ) {
-	node := graph_expand(graph, id)
+	node := expand_node(graph, id)
 
-	extra := graph_extra_dyn(graph, node)
+	extra := get_extra_dyn(graph, node)
 
-	graph_display_node_gvn(w, graph, id)
+	display_node_gvn(w, graph, id)
 	if node.dt != .Void {
 		fmt.wprintf(w, ":%v", node.dt)
 	}
@@ -209,7 +209,7 @@ graph_display_node :: proc(
 		}
 		written_one = true
 	} else {
-		graph_display_extra(w, extra, "", &written_one)
+		display_extra(w, extra, "", &written_one)
 	}
 
 	for inp, i in node.inps {
@@ -221,29 +221,29 @@ graph_display_node :: proc(
 			}
 		}
 		written_one = true
-		graph_display_node_gvn(w, graph, inp)
+		display_node_gvn(w, graph, inp)
 	}
 
 	if node.itype == .Jump && scheduled {
 		reg := node.outs[0]
-		rnode := graph_expand(graph, reg.id)
+		rnode := expand_node(graph, reg.id)
 		for out in rnode.outs {
-			onode := graph_expand(graph, out.id)
+			onode := expand_node(graph, out.id)
 			if onode.itype == .Phi {
 				if written_one do fmt.wprintf(w, ", ")
 				written_one = true
-				graph_display_node_gvn(w, graph, onode.inps[1 + reg.idx])
+				display_node_gvn(w, graph, onode.inps[1 + reg.idx])
 			}
 		}
 	}
 
 	if (node.itype == .Region || node.itype == .Loop) && scheduled {
 		for out in node.outs {
-			onode := graph_get(graph, out.id)
+			onode := get_node(graph, out.id)
 			if onode.itype == .Phi {
 				if written_one do fmt.wprintf(w, ", ")
 				written_one = true
-				graph_display_node_gvn(w, graph, out.id)
+				display_node_gvn(w, graph, out.id)
 			}
 		}
 	}
@@ -252,19 +252,19 @@ graph_display_node :: proc(
 	written_one = false
 	for out in node.outs {
 		if out.id != 0 {
-			onode := graph_expand(graph, out.id)
+			onode := expand_node(graph, out.id)
 			if onode.itype == .Phi && scheduled {
 				if out.idx != 0 {
 					reg := onode.inps[0]
-					rnode := graph_expand(graph, reg)
+					rnode := expand_node(graph, reg)
 					idx := 0
 					for ro in rnode.outs {
 						if ro.id == out.id do break
-						idx += int(graph_get(graph, ro.id).itype == .Phi)
+						idx += int(get_node(graph, ro.id).itype == .Phi)
 					}
 					if written_one do fmt.wprintf(w, ", ")
 					written_one = true
-					graph_display_node_gvn(w, graph, rnode.inps[out.idx - 1])
+					display_node_gvn(w, graph, rnode.inps[out.idx - 1])
 					fmt.wprintf(w, ":%v", 1 + idx)
 				}
 				continue
@@ -272,13 +272,13 @@ graph_display_node :: proc(
 		}
 		if written_one do fmt.wprintf(w, ", ")
 		written_one = true
-		graph_display_node_gvn(w, graph, out.id)
+		display_node_gvn(w, graph, out.id)
 		fmt.wprintf(w, ":%v", out.idx)
 	}
 	fmt.wprint(w, "]")
 }
 
-graph_display_extra :: proc(
+display_extra :: proc(
 	w: io.Writer,
 	extra: any,
 	name: string,
@@ -289,7 +289,7 @@ graph_display_extra :: proc(
 	case runtime.Type_Info_Struct:
 		for field in reflect.struct_fields_zipped(extra.id) {
 			extra_field := reflect.struct_field_value(extra, field)
-			graph_display_extra(w, extra_field, field.name, written_one)
+			display_extra(w, extra_field, field.name, written_one)
 			if .raw_union in info.flags do break
 		}
 		return
@@ -299,7 +299,7 @@ graph_display_extra :: proc(
 			copy(mem.ptr_to_bytes(&slt), reflect.as_bytes(extra))
 			slt >>= fld.offset
 			slt &~= (i64(-1) << fld.size)
-			graph_display_extra(
+			display_extra(
 				w,
 				any{&slt, fld.type.id},
 				fld.name,
@@ -369,12 +369,12 @@ ansi_end :: proc(w: io.Writer) {
 	}
 }
 
-graph_display_node_gvn :: proc(w: io.Writer, graph: ^Graph, id: Node_ID) {
+display_node_gvn :: proc(w: io.Writer, graph: ^Graph, id: Node_ID) {
 	if id == 0 {
 		fmt.wprint(w, "nl")
 		return
 	}
-	n := graph_get(graph, id)
+	n := get_node(graph, id)
 
 	stable_id := n.gvn
 	name := ""

@@ -93,7 +93,7 @@ main :: proc() {
 					if i != 0 do os.write_string(file, ", ")
 
 					if source == the_arg {
-						os.write_string(file, "graph_get(graph, id)")
+						os.write_string(file, "get_node(graph, id)")
 					} else {
 						repl, _ := strings.replace_all(
 							src_of(f, arg.names[0]),

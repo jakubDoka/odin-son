@@ -30,21 +30,21 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 	ctx.cloned_up = make([]Node_ID, graph.gvn * 2)
 	ctx.cloned_down = make([]Node_ID, graph.gvn * 2)
 	ctx.node_blocks = make(type_of(ctx.node_blocks), graph.gvn * 2)
-	bac.graph_schedule(graph, &ctx.sched, .for_loopopt)
+	bac.schedule_graph(graph, &ctx.sched, .for_loopopt)
 
 	reserve(&ctx.sched.bbs, len(ctx.sched.bbs) * 2)
 	ctx.sched.bbs.allocator = {}
 
 	for &bb in ctx.sched.bbs {
-		hnode := graph_get(ctx.graph, bb.head)
+		hnode := get_node(ctx.graph, bb.head)
 		ctx.node_blocks[hnode.gvn] = &bb
 		for instr in bb.instrs {
-			if bac.graph_has_flag(
+			if bac.has_flag(
 				ctx.graph,
 				instr,
 				.Is_Basic_Block_Start,
 			) {continue}
-			inode := graph_get(ctx.graph, instr)
+			inode := get_node(ctx.graph, instr)
 			ctx.node_blocks[inode.gvn] = &bb
 		}
 	}
@@ -52,38 +52,38 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 	rotated := false
 
 	rotate: for &bb, i in ctx.sched.bbs {
-		if graph_get(ctx, bb.head).rtype == bac.DEAD_NODE_KIND {
+		if get_node(ctx, bb.head).rtype == bac.DEAD_NODE_KIND {
 			continue
 		}
 
-		hnode := bac.graph_expand(ctx, bb.head)
+		hnode := bac.expand_node(ctx, bb.head)
 		if hnode.itype != .Loop do continue
 
-		bnd := graph_expand(ctx, hnode.inps[1])
+		bnd := expand_node(ctx, hnode.inps[1])
 
 		// NOTE: this should mean rotation does noting/already rotated
 		if bnd.itype == .If do continue
 		if len(block_of(ctx, hnode.inps[1]).instrs) == 1 &&
 		   (bnd.itype == .Else || bnd.itype == .Then) &&
-		   graph_get(ctx, bnd.inps[0]).itype == .If &&
+		   get_node(ctx, bnd.inps[0]).itype == .If &&
 		   block_of(ctx, bnd.inps[0]).loop_tree == bb.loop_tree {
 
 			already_latch := false
-			for out in bac.graph_outs(ctx, bnd.inps[0]) {
-				if graph_get(ctx, out.id).itype == .Loop {
+			for out in bac.get_outputs(ctx, bnd.inps[0]) {
+				if get_node(ctx, out.id).itype == .Loop {
 					already_latch = true
 				}
 			}
 
 			if !already_latch {
-				bac.graph_subsume(ctx, bnd.inps[0], hnode.inps[1])
+				bac.subsume(ctx, bnd.inps[0], hnode.inps[1])
 				continue
 			}
 		}
 
 		next_ctrl := bb.instrs[len(bb.instrs) - 1]
 
-		nnode := bac.graph_expand(ctx, next_ctrl)
+		nnode := bac.expand_node(ctx, next_ctrl)
 		// TODO: we could do better then this and actually clone calls as well
 		if nnode.itype != .If do continue
 
@@ -114,7 +114,7 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 		)
 
 		assert(
-			graph_get(ctx, break_branch.head).rtype != bac.DEAD_NODE_KIND,
+			get_node(ctx, break_branch.head).rtype != bac.DEAD_NODE_KIND,
 		)
 
 		cond_is_inverted := then_else_bb[0] == break_branch
@@ -126,7 +126,7 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 		append(&to_clone, nnode.inps[1])
 
 		#reverse for instr in bb.instrs[:len(bb.instrs) - 1] {
-			nd := graph_expand(ctx, instr)
+			nd := expand_node(ctx, instr)
 			for out in nd.outs {
 				blk := block_of(ctx, out.id)
 				if !in_loop(bb.loop_tree, blk.loop_tree) {
@@ -147,24 +147,24 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 
 		guard_cond := clone_by(ctx, nnode.inps[1], 1, entry_blk)
 
-		guard := bac.graph_add_if(ctx, "urlg", hnode.inps[0], guard_cond)
-		ctx.node_blocks[graph_get(ctx, guard).gvn] = entry_blk
+		guard := bac.add_if(ctx, "urlg", hnode.inps[0], guard_cond)
+		ctx.node_blocks[get_node(ctx, guard).gvn] = entry_blk
 
-		guard_loop := bac.graph_add_then(ctx, "urltn", guard)
+		guard_loop := bac.add_then(ctx, "urltn", guard)
 		wire_up_new_block(&ctx, guard_loop, bb.loop_tree.parent)
-		guard_skip := bac.graph_add_else(ctx, "urles", guard)
+		guard_skip := bac.add_else(ctx, "urles", guard)
 		wire_up_new_block(&ctx, guard_skip, bb.loop_tree.parent)
 
 		back_cond := clone_by(ctx, nnode.inps[1], 2, exit_blk)
 
-		bac.graph_set_input(ctx, next_ctrl, 1, back_cond)
-		ctx.node_blocks[graph_get(ctx, next_ctrl).gvn] = exit_blk
+		bac.set_input(ctx, next_ctrl, 1, back_cond)
+		ctx.node_blocks[get_node(ctx, next_ctrl).gvn] = exit_blk
 
 		if cond_is_inverted do guard_loop, guard_skip = guard_skip, guard_loop
 
-		bac.graph_set_input(ctx, bb.head, 0, guard_loop)
+		bac.set_input(ctx, bb.head, 0, guard_loop)
 
-		join := bac.graph_add_region(
+		join := bac.add_region(
 			ctx,
 			"urljn",
 			{guard_skip, break_branch.head, graph.start},
@@ -181,36 +181,36 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 				bac.Graph_Basic_Block{head = node, loop_tree = ltree},
 			)
 			join_bb := &ctx.sched.bbs[len(ctx.sched.bbs) - 1]
-			ctx.node_blocks[graph_get(ctx, node).gvn] = join_bb
+			ctx.node_blocks[get_node(ctx, node).gvn] = join_bb
 			return join_bb
 		}
 
-		bouts := bac.graph_outs(ctx, break_branch.head)
+		bouts := bac.get_outputs(ctx, break_branch.head)
 		#reverse for out in bouts[:len(bouts) - 1] {
-			bac.graph_set_input(ctx, out.id, out.idx, join)
+			bac.set_input(ctx, out.id, out.idx, join)
 		}
 
 		for instr in break_branch.instrs {
-			if !bac.graph_has_flag(ctx, instr, .Is_Basic_Block_Start) {
-				ctx.node_blocks[graph_get(ctx, instr).gvn] = join_bb
+			if !bac.has_flag(ctx, instr, .Is_Basic_Block_Start) {
+				ctx.node_blocks[get_node(ctx, instr).gvn] = join_bb
 			}
 		}
 
 		if !ODIN_DISABLE_ASSERT {
 			for &bb in ctx.sched.bbs {
-				if graph_get(ctx, bb.head).rtype == bac.DEAD_NODE_KIND do continue
+				if get_node(ctx, bb.head).rtype == bac.DEAD_NODE_KIND do continue
 				assert(block_of(ctx, bb.head) == &bb)
 			}
 		}
 
-		hnode = graph_expand(ctx, bb.head)
+		hnode = expand_node(ctx, bb.head)
 
 		#reverse for to_clone in to_clone[1:] {
 			init := clone_by(ctx, to_clone, 1, entry_blk)
 			back := clone_by(ctx, to_clone, 2, exit_blk)
 
-			tcnode := graph_expand(ctx, to_clone)
-			join_phi := bac.graph_add_phi(
+			tcnode := expand_node(ctx, to_clone)
+			join_phi := bac.add_phi(
 				ctx,
 				"urlph",
 				tcnode.dt,
@@ -218,13 +218,13 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 				init,
 				back,
 			)
-			ctx.node_blocks[graph_get(ctx, join_phi).gvn] = join_bb
+			ctx.node_blocks[get_node(ctx, join_phi).gvn] = join_bb
 
-			oouts: []bac.Node_Output = bac.graph_outs(ctx, to_clone)
+			oouts: []bac.Node_Output = bac.get_outputs(ctx, to_clone)
 
 			#reverse for tcout in oouts {
 				tco_blk := block_of(ctx, tcout.id)
-				ponode := graph_get(ctx, tcout.id)
+				ponode := get_node(ctx, tcout.id)
 
 				if in_loop(bb.loop_tree, tco_blk.loop_tree) {
 					continue
@@ -232,18 +232,18 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 
 				dblk := tco_blk.head
 				if ponode.itype == .Phi {
-					dblk = bac.graph_inps(ctx, dblk)[tcout.idx - 1]
-					if graph_get(ctx, dblk).itype == .If {
-						dblk = bac.graph_inps(ctx, dblk)[0]
+					dblk = bac.get_inputs(ctx, dblk)[tcout.idx - 1]
+					if get_node(ctx, dblk).itype == .If {
+						dblk = bac.get_inputs(ctx, dblk)[0]
 					}
 					fmt.assertf(
-						bac.graph_has_flag(
+						bac.has_flag(
 							ctx,
 							dblk,
 							.Is_Basic_Block_Start,
 						),
 						"%v",
-						graph_get(ctx, dblk),
+						get_node(ctx, dblk),
 					)
 				}
 
@@ -256,43 +256,43 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 					bb.loop_tree,
 				)
 
-				bac.graph_set_input(ctx, tcout.id, tcout.idx, res)
+				bac.set_input(ctx, tcout.id, tcout.idx, res)
 			}
 		}
 
-		bac.graph_pin(ctx, continue_branch.head)
-		couts := bac.graph_outs(ctx, continue_branch.head)
+		bac.pin(ctx, continue_branch.head)
+		couts := bac.get_outputs(ctx, continue_branch.head)
 		for out in couts[:len(couts) - 1] {
-			bac.graph_set_input(ctx, out.id, out.idx, bb.head)
+			bac.set_input(ctx, out.id, out.idx, bb.head)
 		}
 
-		bac.graph_set_input(ctx, next_ctrl, 0, hnode.inps[1])
-		bac.graph_set_input(ctx, bb.head, 1, next_ctrl)
+		bac.set_input(ctx, next_ctrl, 0, hnode.inps[1])
+		bac.set_input(ctx, bb.head, 1, next_ctrl)
 
-		bac.graph_unpin(ctx, continue_branch.head)
+		bac.unpin(ctx, continue_branch.head)
 	}
 
 	optimized |= rotated
 
 	if rotated {
-		bac.graph_invalidate_idepth(graph)
-		bac.graph_schedule(ctx, &ctx.sched, .for_loopopt)
+		bac.invalidate_idepth(graph)
+		bac.schedule_graph(ctx, &ctx.sched, .for_loopopt)
 	}
 
 	if !ODIN_DISABLE_ASSERT {
-		bac.graph_schedule(ctx, &ctx.sched, .for_loopopt)
+		bac.schedule_graph(ctx, &ctx.sched, .for_loopopt)
 	}
 
 	for &bb in ctx.sched.bbs {
-		head := graph_expand(ctx, bb.head)
+		head := expand_node(ctx, bb.head)
 		if head.itype != .Loop do continue
 
-		bedge := graph_expand(ctx, head.inps[1])
+		bedge := expand_node(ctx, head.inps[1])
 		if bedge.itype != .If do continue
 		if bedge.inps[0] != bb.head do continue
 
 		inverted := bedge.outs[0].id != bb.head
-		cond := graph_expand(ctx, bedge.inps[1])
+		cond := expand_node(ctx, bedge.inps[1])
 
 		@(rodata, static)
 		CMP_OP_REVERSE := #partial [bac.Node_Type]bac.Node_Type {
@@ -329,17 +329,17 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 		terminates := false
 
 		for out in head.outs {
-			onode := graph_expand(ctx, out.id)
+			onode := expand_node(ctx, out.id)
 			if onode.itype != .Phi do continue
 
-			init := graph_expand(ctx, onode.inps[1])
-			bvl := graph_expand(ctx, onode.inps[2])
+			init := expand_node(ctx, onode.inps[1])
+			bvl := expand_node(ctx, onode.inps[2])
 
 			if bvl.itype != .Add do continue
 			if bvl.inps[0] != out.id do continue
 			if slice.contains(bb.instrs[:], bvl.inps[1]) do continue
 
-			stride := bac.graph_extra(ctx, bvl.inps[1], bac.CInt)
+			stride := bac.get_extra(ctx, bvl.inps[1], bac.CInt)
 			stride_vl: i64
 			if stride != nil {
 				stride_vl = stride.value
@@ -349,7 +349,7 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 			slcs := [][]bac.Node_Output{bvl.outs, onode.outs}
 			find_bound: for slc in slcs {
 				for bout in slc {
-					bonode := graph_expand(ctx, bout.id)
+					bonode := expand_node(ctx, bout.id)
 					if bout.id == bedge.inps[1] {
 						bound = cond.inps[1 - bout.idx]
 						break find_bound
@@ -364,7 +364,7 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 		}
 
 		for ind in inductors {
-			phy := graph_expand(ctx, ind.phy)
+			phy := expand_node(ctx, ind.phy)
 
 			Op :: struct {
 				node:   Node_ID,
@@ -384,19 +384,19 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 			indexings: [dynamic]Indexing
 			for out in phy.outs {
 				out := out
-				onode := graph_expand(ctx, out.id)
+				onode := expand_node(ctx, out.id)
 				if out.id == phy.inps[2] do continue
 
 				stride_node: Node_ID
 				if onode.itype == .Mul {
 					stride_node = onode.inps[1 - out.idx]
-					otnode := graph_expand(ctx, stride_node)
+					otnode := expand_node(ctx, stride_node)
 					if slice.contains(bb.instrs[:], stride_node) {
 						continue
 					}
 
 					for oout in onode.outs {
-						oonode := graph_expand(ctx, oout.id)
+						oonode := expand_node(ctx, oout.id)
 						if oonode.itype == .Add {
 							out = oout
 							onode = oonode
@@ -407,7 +407,7 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 
 				if onode.itype == .Add {
 					base := onode.inps[1 - out.idx]
-					otnode := graph_expand(ctx, base)
+					otnode := expand_node(ctx, base)
 
 					if slice.contains(bb.instrs[:], base) do continue
 
@@ -415,7 +415,7 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 					stride_vl: ^bac.CInt
 
 					if stride_node != 0 {
-						stride_vl = bac.graph_extra(
+						stride_vl = bac.get_extra(
 							ctx,
 							stride_node,
 							bac.CInt,
@@ -427,7 +427,7 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 
 					if stride_vl != nil {
 						for otout in onode.outs {
-							otonode := graph_expand(ctx, otout.id)
+							otonode := expand_node(ctx, otout.id)
 
 							if otonode.itype == .Store {
 								append(&stores, Op{otout.id, base, stride})
@@ -445,7 +445,7 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 							Indexing {
 								base,
 								stride_node,
-								bac.graph_id(ctx, onode),
+								bac.get_node_id(ctx, onode),
 							},
 						)
 					}
@@ -457,21 +457,21 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 				fmt.assertf(
 					!slice.contains(bb.instrs[:], idx.base),
 					"%v",
-					graph_get(ctx, idx.base),
+					get_node(ctx, idx.base),
 				)
 				fmt.assertf(
 					!slice.contains(bb.instrs[:], idx.stride),
 					"%v",
-					graph_get(ctx, idx.stride),
+					get_node(ctx, idx.stride),
 				)
 
-				graph_dyn_index_offset :: proc(
+				compute_dynamic_index_offset :: proc(
 					ctx: ^Graph,
 					base, idx, stride: Node_ID,
 				) -> Node_ID {
 					index := idx
 
-					index = bac.graph_add_bin_op(
+					index = bac.add_bin_op(
 						ctx,
 						"snoff",
 						.Mul,
@@ -479,9 +479,9 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 						index,
 						stride,
 					)
-					index = bac.graph_peep(ctx, index)
+					index = bac.apply_peep(ctx, index)
 
-					return bac.graph_add_bin_op(
+					return bac.add_bin_op(
 						ctx,
 						"snd",
 						.Add,
@@ -491,15 +491,15 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 					)
 				}
 
-				init := graph_dyn_index_offset(
+				init := compute_dynamic_index_offset(
 					ctx,
 					idx.base,
 					phy.inps[1],
 					idx.stride,
 				)
 
-				nphy := graph_add_lazy_phi(ctx, "srdph", phy.dt, bb.head, init)
-				next := bac.graph_add_bin_op(
+				nphy := add_lazy_phi(ctx, "srdph", phy.dt, bb.head, init)
+				next := bac.add_bin_op(
 					ctx,
 					"srdnt",
 					.Add,
@@ -507,20 +507,20 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 					nphy,
 					idx.stride,
 				)
-				bac.graph_connect(ctx, nphy, next)
-				graph_get(ctx, nphy).itype = .Phi
-				nphy = bac.graph_intern(ctx, nphy)
+				bac.connect(ctx, nphy, next)
+				get_node(ctx, nphy).itype = .Phi
+				nphy = bac.intern(ctx, nphy)
 
-				bac.graph_subsume(ctx, nphy, idx.to_subsume)
+				bac.subsume(ctx, nphy, idx.to_subsume)
 
 				if ind.bound != 0 && effective_op == .Lt {
-					new_bound := graph_dyn_index_offset(
+					new_bound := compute_dynamic_index_offset(
 						ctx,
 						idx.base,
 						ind.bound,
 						idx.stride,
 					)
-					ncmp := bac.graph_add_bin_op(
+					ncmp := bac.add_bin_op(
 						ctx,
 						"srdcp",
 						Bin_Op(cond.itype),
@@ -528,19 +528,19 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 						next,
 						new_bound,
 					)
-					bac.graph_subsume(ctx, ncmp, bedge.inps[1])
+					bac.subsume(ctx, ncmp, bedge.inps[1])
 				}
 			}
 
 			for store, i in stores {
-				snode := graph_expand(ctx, store.node)
-				vl := graph_expand(ctx, snode.inps[3])
+				snode := expand_node(ctx, store.node)
+				vl := expand_node(ctx, snode.inps[3])
 
-				mem := graph_expand(ctx, snode.inps[1])
+				mem := expand_node(ctx, snode.inps[1])
 				if mem.itype != .Phi || mem.inps[0] != bb.head do continue
 
 				for out in snode.outs {
-					if graph_get(ctx, out.id).itype != .Phi &&
+					if get_node(ctx, out.id).itype != .Phi &&
 					   slice.contains(bb.instrs[:], out.id) {
 						// NOTE: the loop has other garbage, we cant decide no yet
 						continue
@@ -570,12 +570,12 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 					size, dst, cpy: Node_ID
 
 					if can_memset || can_memcpy {
-						size = bac.graph_add_bin_op(
+						size = bac.add_bin_op(
 							ctx,
 							"lnscl",
 							.Mul,
 							.I64,
-							bac.graph_add_bin_op(
+							bac.add_bin_op(
 								ctx,
 								"ln",
 								.Sub,
@@ -583,14 +583,14 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 								ind.bound,
 								phy.inps[1],
 							),
-							bac.graph_add_c_int(
+							bac.add_c_int(
 								ctx,
 								"scl",
 								.I64,
 								store.stride,
 							),
 						)
-						dst = graph_index_offset(
+						dst = compute_index_offset(
 							ctx,
 							store.base,
 							phy.inps[1],
@@ -599,7 +599,7 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 					}
 
 					if can_memset {
-						cpy = bac.graph_add_set(
+						cpy = bac.add_set(
 							graph,
 							"mstf",
 							head.inps[0],
@@ -611,13 +611,13 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 					}
 
 					if can_memcpy {
-						cpy = bac.graph_add_copy(
+						cpy = bac.add_copy(
 							graph,
 							"mcpf",
 							head.inps[0],
 							mem.inps[1],
 							dst,
-							graph_index_offset(
+							compute_index_offset(
 								ctx,
 								loads[lidx].base,
 								phy.inps[1],
@@ -628,8 +628,8 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 					}
 
 					if cpy != 0 {
-						bac.graph_set_input(graph, snode.inps[1], 1, cpy)
-						bac.graph_subsume(graph, snode.inps[1], store.node)
+						bac.set_input(graph, snode.inps[1], 1, cpy)
+						bac.subsume(graph, snode.inps[1], store.node)
 						continue
 					}
 				}
@@ -637,18 +637,18 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 		}
 
 		for ind in inductors {
-			phy := graph_expand(ctx, ind.phy)
-			next := graph_expand(ctx, phy.inps[2])
+			phy := expand_node(ctx, ind.phy)
+			next := expand_node(ctx, phy.inps[2])
 			if len(phy.outs) > 1 do continue
 			if len(next.outs) > 1 do continue
 
-			bac.graph_subsume(ctx, phy.inps[1], ind.phy)
+			bac.subsume(ctx, phy.inps[1], ind.phy)
 		}
 
-		head = graph_expand(ctx, bb.head)
+		head = expand_node(ctx, bb.head)
 		keep := 0
 		for instr in bb.instrs {
-			if graph_get(ctx, instr).rtype != bac.DEAD_NODE_KIND {
+			if get_node(ctx, instr).rtype != bac.DEAD_NODE_KIND {
 				bb.instrs[keep] = instr
 				keep += 1
 			}
@@ -661,14 +661,14 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 				changed := false
 
 				#reverse for instr, i in bb.instrs {
-					inode := graph_expand(ctx, instr)
+					inode := expand_node(ctx, instr)
 					if inode.inps[0] == bb.head {
 						changed |= bit_arr.set(req_sched, i)
 						continue
 					}
 					if bit_arr.contains(req_sched, i) do continue
 					for out in inode.outs {
-						onode := graph_expand(ctx, out.id)
+						onode := expand_node(ctx, out.id)
 						if onode.itype == .Phi && onode.inps[0] == bb.head {
 							changed |= bit_arr.set(req_sched, i)
 							break
@@ -693,7 +693,7 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 
 			for it := bit_arr.iter(req_sched); i in bit_arr.iter_next(&it) {
 				instr := bb.instrs[i]
-				inode := graph_expand(ctx, instr)
+				inode := expand_node(ctx, instr)
 
 				if bac.is_cfg(ctx, instr) {
 					continue
@@ -712,13 +712,13 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 				}
 			}
 
-			assert(graph_get(ctx, head.inps[1]).itype == .If)
+			assert(get_node(ctx, head.inps[1]).itype == .If)
 
-			bac.graph_set_input(
+			bac.set_input(
 				ctx,
 				head.inps[1],
 				1,
-				bac.graph_add_c_int(ctx, "ulfld", .I8, i64(inverted)),
+				bac.add_c_int(ctx, "ulfld", .I8, i64(inverted)),
 			)
 
 			optimized = true
@@ -733,8 +733,8 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 	) -> (
 		v: ^bac.Graph_Basic_Block,
 	) {
-		defer fmt.assertf(v != nil, "%v %v", graph_get(ctx, node), int(node))
-		return ctx.node_blocks[graph_get(ctx, node).gvn]
+		defer fmt.assertf(v != nil, "%v %v", get_node(ctx, node), int(node))
+		return ctx.node_blocks[get_node(ctx, node).gvn]
 	}
 
 	walk_use_blocks :: proc(
@@ -745,7 +745,7 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 		nphy: Node_ID,
 		to_loop: ^bac.Loop_Tree,
 	) -> Node_ID {
-		node := graph_expand(ctx, root)
+		node := expand_node(ctx, root)
 		if root == guard do return nphy
 
 		if in_loop(to_loop, block_of(ctx, root).loop_tree) {
@@ -765,11 +765,11 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 		for oth in edges[1:] {
 			if oth != ref {
 				inject_at(&edges, 0, root)
-				ref = bac.graph_add_raw(
+				ref = bac.add_raw(
 					ctx,
 					"urlj",
 					u16(bac.Node_Type.Phi),
-					graph_get(ctx, ref).dt,
+					get_node(ctx, ref).dt,
 					edges[:],
 				)
 				break
@@ -798,7 +798,7 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 		if !slice.contains(ctx.instrs, root) do return true
 
 		PROHIBITED_OPS :: bit_set[bac.Node_Type]{.Copy, .Set, .Store}
-		rnode := graph_expand(ctx, root)
+		rnode := expand_node(ctx, root)
 		// TODO: we could clone the stores too, but that requires more
 		// complex fixups of memory threads
 		if rnode.itype in PROHIBITED_OPS do return false
@@ -831,7 +831,7 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 			assert(phy_idx == 2)
 		}
 
-		node := graph_expand(ctx, root)
+		node := expand_node(ctx, root)
 		if cloned[node.gvn] == 0 {
 			if node.itype == .Phi && node.inps[0] == ctx.current_loop {
 				cloned[node.gvn] = node.inps[phy_idx]
@@ -847,8 +847,8 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 					inp = clone_by(ctx, node.inps[i], phy_idx, ctrl)
 				}
 
-				new_node, id := bac.graph_shallow_clone(graph, node)
-				bac.graph_init_counts(graph, new_node)
+				new_node, id := bac.shallow_clone(graph, node)
+				bac.init_counts(graph, new_node)
 
 				new_node.input_idx = u32(graph.mem.pos / bac.PRECISION)
 				_ = arna.clone(graph.mem, inps)
@@ -865,7 +865,7 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 				new_node.output_count = 0
 				new_node.output_cap = node.output_cap
 
-				interned := bac.graph_intern(graph, id)
+				interned := bac.intern(graph, id)
 				if interned != id {
 					graph.mem.pos = prev
 					id = interned
@@ -876,10 +876,10 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 					append(&ctrl.instrs, id)
 					cloned[node.gvn] = id
 					for inp, i in inps {
-						bac.graph_add_output(ctx, inp, cloned[node.gvn], i)
+						bac.add_output(ctx, inp, cloned[node.gvn], i)
 					}
 
-					bac.graph_on_node_creation(graph, new_node)
+					bac.on_node_creation(graph, new_node)
 					// NOTE: no need to clone the debug info
 				}
 			}

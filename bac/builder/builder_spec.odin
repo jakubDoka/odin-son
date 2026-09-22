@@ -19,7 +19,7 @@ when SPEC_NOT_PRESENT {
 		Lazy_Phi,
 	}
 
-	graph_add_lazy_phi :: proc(
+	add_lazy_phi :: proc(
 		graph: ^bac.Graph,
 		name: string,
 		dt: bac.Node_Datatype,
@@ -27,13 +27,13 @@ when SPEC_NOT_PRESENT {
 		lhs: Node_ID,
 	) -> Node_ID {return 0}
 
-	graph_add_scope :: proc(
+	add_scope :: proc(
 		graph: ^bac.Graph,
 		name: string,
 		cfg: Node_ID,
 	) -> Node_ID {return 0}
 
-	graph_add_dead :: proc(
+	add_dead :: proc(
 		graph: ^bac.Graph,
 		name: string,
 	) -> Node_ID {return 0}

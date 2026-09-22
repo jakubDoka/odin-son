@@ -15,8 +15,8 @@ import "core:strings"
 
 Call :: bac.Call
 Node_ID :: bac.Node_ID
-graph_expand :: bac.graph_expand
-graph_get :: bac.graph_get
+expand_node :: bac.expand_node
+get_node :: bac.get_node
 
 Mode :: enum {
 	with_scan,
@@ -107,7 +107,7 @@ regalloc_round :: proc(
 
 	for bb, j in sched.bbs {
 		for instr in bb.instrs {
-			instr_node := graph_get(graph, instr)
+			instr_node := get_node(graph, instr)
 			ctx.instr_placement[instr_node.gvn] = {
 				block = u32(j),
 			}
@@ -121,14 +121,14 @@ regalloc_round :: proc(
 
 	for bb in sched.bbs {
 		for instr in bb.instrs {
-			inode := graph_expand(graph, instr)
+			inode := expand_node(graph, instr)
 
 			if is_def(ctx, inode) {
 				lrg: ^bac.Lrg
 
-				if bac.graph_has_flag(graph, inode, .Comutes) {
-					lhs := graph_expand(graph, inode.inps[0])
-					rhs := graph_expand(graph, inode.inps[1])
+				if bac.has_flag(graph, inode, .Comutes) {
+					lhs := expand_node(graph, inode.inps[0])
+					rhs := expand_node(graph, inode.inps[1])
 
 					swap_becuase_use := true
 					swap_becuase_use &= rhs.output_count == 1
@@ -144,7 +144,7 @@ regalloc_round :: proc(
 
 				inplace_slot := ctx.gmetas[inode.gvn].in_place_slot
 				if inplace_slot >= 0 {
-					inplace_node := graph_get(graph, inode.inps[inplace_slot])
+					inplace_node := get_node(graph, inode.inps[inplace_slot])
 					lrg = ctx.lrg_table[inplace_node.gvn]
 				} else if inode.itype == .Phi {
 					for inp in inode.inps[1:] {
@@ -153,7 +153,7 @@ regalloc_round :: proc(
 				}
 
 				for o in inode.outs {
-					onode := graph_expand(graph, o.id)
+					onode := expand_node(graph, o.id)
 					if ctx.gmetas[onode.gvn].in_place_slot == i8(o.idx) {
 						lrg = unify(lrg, ctx.lrg_table[onode.gvn])
 					}
@@ -173,7 +173,7 @@ regalloc_round :: proc(
 				}
 
 				for o in inode.outs {
-					onode := graph_expand(graph, o.id)
+					onode := expand_node(graph, o.id)
 					if !is_data_dep(ctx, onode, o.idx) do continue
 
 					if onode.itype == .Phi {
@@ -372,7 +372,7 @@ regalloc_round :: proc(
 		lbb.liveouts.old = lbb.liveouts.len
 
 		#reverse for instr, j in bb.instrs {
-			inode := graph_expand(graph, instr)
+			inode := expand_node(graph, instr)
 
 			if is_def(ctx, inode) {
 				lrg := ctx.lrg_table[inode.gvn]
@@ -424,7 +424,7 @@ regalloc_round :: proc(
 
 			clobbers := ctx.gmetas[inode.gvn].clobbers
 			if inode.itype == .Call {
-				call := bac.graph_extra(graph, inode, Call)
+				call := bac.get_extra(graph, inode, Call)
 				clobbers = ra.call_clobbers[call.ccid]
 			} else if inode.itype in bac.CALLS {
 				clobbers = ra.call_clobbers[0]
@@ -444,7 +444,7 @@ regalloc_round :: proc(
 			if !visited {
 				if inode.itype != .Phi {
 					for inp in data_deps(ctx, inode) {
-						inp_node := graph_get(graph, inp)
+						inp_node := get_node(graph, inp)
 						lrg := ctx.lrg_table[inp_node.gvn]
 
 						add_liveout(&ctx, &curr_live, lrg, {node = inp})
@@ -453,13 +453,13 @@ regalloc_round :: proc(
 			}
 		}
 
-		head := graph_expand(graph, bb.head)
+		head := expand_node(graph, bb.head)
 		for pred, j in head.inps[:len(head.inps) - int(head.itype == .Region)] {
 			if pred == graph.start do break
 
-			pred_block := graph_get(graph, bac.graph_idom(graph, pred))
+			pred_block := get_node(graph, bac.get_idom(graph, pred))
 			fmt.assertf(
-				bac.graph_has_flag(
+				bac.has_flag(
 					graph,
 					pred_block,
 					.Is_Basic_Block_Start,
@@ -484,12 +484,12 @@ regalloc_round :: proc(
 
 			if !visited {
 				for out in head.outs {
-					onode := graph_expand(graph, out.id)
+					onode := expand_node(graph, out.id)
 					if onode.itype == .Phi && onode.dt != .Void {
 						lrg := ctx.lrg_table[onode.gvn]
 						n := onode.inps[1 + j]
 
-						if graph_get(graph, n).itype == .Poison do continue
+						if get_node(graph, n).itype == .Poison do continue
 
 						changed |= add_liveout(
 							&ctx,
@@ -589,11 +589,11 @@ regalloc_round :: proc(
 
 			for instr, i in bb.instrs {
 				instr_idx := ctx.block_offset + i
-				inode := graph_expand(ctx.graph, instr)
+				inode := expand_node(ctx.graph, instr)
 
 				if is_def(ctx, inode) || inode.itype != .Phi {
 					for dd in data_deps(ctx, inode) {
-						ddnode := graph_expand(ctx.graph, dd)
+						ddnode := expand_node(ctx.graph, dd)
 						if ddnode.itype == .Poison do continue
 						add_slrg_use(&ctx, ctx.lrg_table[ddnode.gvn], bi, i)
 					}
@@ -885,7 +885,7 @@ regalloc_round :: proc(
 			if !ok do break
 
 			#reverse for instr, j in bb.instrs {
-				inode := graph_expand(graph, instr)
+				inode := expand_node(graph, instr)
 				if inode.itype != .Split do continue
 
 				ilrg := find(get_lrg(ctx, instr))
@@ -917,7 +917,7 @@ regalloc_round :: proc(
 				if total >= leeway &&
 				   (leeway == 0 ||
 						   max(len(inadj), len(iadj)) != total ||
-						   graph_get(graph, inode.inps[0]).itype != .Split ||
+						   get_node(graph, inode.inps[0]).itype != .Split ||
 						   j == 0 ||
 						   bb.instrs[j - 1] != inode.inps[0]) {
 					continue
@@ -952,7 +952,7 @@ regalloc_round :: proc(
 				ifg[other.index] = {}
 
 				ordered_remove(&bb.instrs, j)
-				bac.graph_subsume(graph, inode.inps[0], instr)
+				bac.subsume(graph, inode.inps[0], instr)
 			}
 		}
 
@@ -1241,9 +1241,9 @@ regalloc_round :: proc(
 			inserted_splits := 0
 			for m in members {
 				is_internal := true
-				for out in bac.graph_outs(graph, m) {
+				for out in bac.get_outputs(graph, m) {
 					if get_lrg(ctx, out.id) == &lrg do continue
-					if graph_get(graph, out.id).itype == .Split {
+					if get_node(graph, out.id).itype == .Split {
 						block, placement := get_node_block_and_idx(ctx, m)
 						if block.instrs[placement + 1] == out.id {
 							continue
@@ -1253,20 +1253,20 @@ regalloc_round :: proc(
 				}
 
 				id = m
-				fnode := graph_get(graph, m)
+				fnode := get_node(graph, m)
 
 				fmt.assertf(fnode.output_count > 0, "%v", members)
 
-				outs := slice.clone(bac.graph_outs(graph, m))
+				outs := slice.clone(bac.get_outputs(graph, m))
 
 				if fnode.itype != .Split {
 					id = split_after(ctx, "sdef", m, must = is_internal)
-					fnode = graph_get(graph, id)
+					fnode = get_node(graph, id)
 					inserted_splits += 1
 				}
 
 				for out in outs {
-					out_node := graph_get(graph, out.id)
+					out_node := get_node(graph, out.id)
 
 					split := id
 					if out_node.itype != .Split {
@@ -1281,7 +1281,7 @@ regalloc_round :: proc(
 						inserted_splits += 1
 					}
 
-					bac.graph_set_input(graph, out.id, out.idx, split)
+					bac.set_input(graph, out.id, out.idx, split)
 				}
 
 				if fnode.output_count == 0 {
@@ -1291,7 +1291,7 @@ regalloc_round :: proc(
 							"",
 						)
 					ordered_remove(&block.instrs, idx)
-					bac.graph_delete(ctx.graph, fnode)
+					bac.delete_node(ctx.graph, fnode)
 				}
 			}
 
@@ -1308,14 +1308,14 @@ regalloc_round :: proc(
 		if lrg.killed {
 			inserted_splits := 0
 			for m in members {
-				mnode := graph_expand(graph, m)
+				mnode := expand_node(graph, m)
 				redirect := m
 				for out in slice.clone(mnode.outs) {
-					onode := graph_expand(graph, out.id)
+					onode := expand_node(graph, out.id)
 					oblock := get_node_block(ctx, out.id)
 					if onode.itype == .Phi {
 						last :=
-							bac.graph_inps(ctx.graph, onode.inps[0])[out.idx - 1]
+							bac.get_inputs(ctx.graph, onode.inps[0])[out.idx - 1]
 						oblock = get_node_block(ctx, last)
 					}
 
@@ -1335,7 +1335,7 @@ regalloc_round :: proc(
 						)
 						inserted_splits += int(split != redirect)
 					}
-					bac.graph_set_input(graph, out.id, out.idx, split)
+					bac.set_input(graph, out.id, out.idx, split)
 				}
 			}
 
@@ -1355,21 +1355,21 @@ regalloc_round :: proc(
 				split := m
 
 				has_call_use := false
-				for out in bac.graph_outs(graph, m) {
-					if graph_get(graph, out.id).itype in bac.CALLS {
+				for out in bac.get_outputs(graph, m) {
+					if get_node(graph, out.id).itype in bac.CALLS {
 						has_call_use = true
 						break
 					}
 				}
 
-				for out in bac.graph_outs(graph, m) {
+				for out in bac.get_outputs(graph, m) {
 					if split == m {
 						split = split_after(ctx, "rcd", m)
 						inserted_splits += int(split != m)
 					}
 
 					splita := split
-					if graph_get(graph, out.id).itype != .Split {
+					if get_node(graph, out.id).itype != .Split {
 						splita = split_before(
 							ctx,
 							out.id,
@@ -1380,7 +1380,7 @@ regalloc_round :: proc(
 						inserted_splits += int(splita != split)
 					}
 
-					bac.graph_set_input(graph, out.id, out.idx, splita)
+					bac.set_input(graph, out.id, out.idx, splita)
 				}
 			}
 
@@ -1398,14 +1398,14 @@ regalloc_round :: proc(
 			inserted_splits := 0
 
 			for m in members {
-				mnode := graph_expand(graph, m)
+				mnode := expand_node(graph, m)
 				redirect := m
 				for out in slice.clone(mnode.outs) {
-					onode := graph_expand(graph, out.id)
+					onode := expand_node(graph, out.id)
 					oblock := get_node_block(ctx, out.id)
 					if onode.itype == .Phi {
 						last :=
-							bac.graph_inps(ctx.graph, onode.inps[0])[out.idx - 1]
+							bac.get_inputs(ctx.graph, onode.inps[0])[out.idx - 1]
 						oblock = get_node_block(ctx, last)
 					}
 
@@ -1430,7 +1430,7 @@ regalloc_round :: proc(
 						)
 						inserted_splits += 1
 					}
-					bac.graph_set_input(graph, out.id, out.idx, split)
+					bac.set_input(graph, out.id, out.idx, split)
 				}
 			}
 
@@ -1458,7 +1458,7 @@ regalloc_round :: proc(
 		lrg := &lrgs[sc.lrg]
 		id := sc.node
 
-		node := graph_expand(graph, id)
+		node := expand_node(graph, id)
 		node.outs = slice.clone(node.outs)
 
 		// NOTE: we could be using the same value multiple times, so since we
@@ -1466,14 +1466,14 @@ regalloc_round :: proc(
 		last_split: Node_ID
 
 		for out in node.outs {
-			onode := graph_expand(graph, out.id)
+			onode := expand_node(graph, out.id)
 
 			if oth == out.id && onode.itype == .Phi {
 				nd := split_after(ctx, "scp", oth, must = true)
-				onode = graph_expand(graph, out.id)
+				onode = expand_node(graph, out.id)
 
 				#reverse for out in onode.outs[:len(onode.outs) - 1] {
-					bac.graph_set_input(ctx.graph, out.id, out.idx, nd)
+					bac.set_input(ctx.graph, out.id, out.idx, nd)
 				}
 
 				continue resolve
@@ -1483,7 +1483,7 @@ regalloc_round :: proc(
 		for inp, j in node.inps {
 			if get_lrg(ctx, inp) == nil do continue
 
-			inode := graph_get(graph, inp)
+			inode := get_node(graph, inp)
 
 			if j != int(ctx.gmetas[node.gvn].in_place_slot) &&
 			   node.itype != .Phi {
@@ -1492,7 +1492,7 @@ regalloc_round :: proc(
 
 			if !is_def(ctx, inode) do continue
 			if inode.gvn >= ctx.pre_split_gvn {
-				if graph_get(graph, inp).itype == .Split {
+				if get_node(graph, inp).itype == .Split {
 					last_split = inp
 				}
 				continue
@@ -1507,25 +1507,25 @@ regalloc_round :: proc(
 					   inode.output_count > 1) {
 				split: Node_ID
 				if last_split != 0 &&
-				   bac.graph_inps(graph, last_split)[0] == inp &&
+				   bac.get_inputs(graph, last_split)[0] == inp &&
 				   node.itype != .Phi {
 					split = last_split
 				} else {
 					split = split_before(ctx, id, j, "sci")
 				}
 
-				if graph_get(graph, split).itype == .Split {
+				if get_node(graph, split).itype == .Split {
 					last_split = split
 				}
 
-				bac.graph_set_input(graph, id, j, split)
+				bac.set_input(graph, id, j, split)
 			}
 		}
 
 		last_split = 0
 		last_split_out: Node_ID
 		for out in slice.clone(node.outs) {
-			onode := graph_expand(graph, out.id)
+			onode := expand_node(graph, out.id)
 
 			if !is_def_while_splitting(ctx, onode) do continue
 			if onode.gvn >= ctx.pre_split_gvn do continue
@@ -1541,12 +1541,12 @@ regalloc_round :: proc(
 					split = split_before(ctx, out.id, out.idx, "sco")
 				}
 
-				if graph_get(graph, split).itype == .Split {
+				if get_node(graph, split).itype == .Split {
 					last_split_out = out.id
 					last_split = split
 				}
 
-				bac.graph_set_input(graph, out.id, out.idx, split)
+				bac.set_input(graph, out.id, out.idx, split)
 			}
 		}
 	}
@@ -1559,12 +1559,12 @@ regalloc_round :: proc(
 		for &bb in sched.bbs {
 			keep := len(bb.instrs) - 1
 			#reverse for instr, i in bb.instrs[:keep] {
-				inode := graph_expand(graph, instr)
+				inode := expand_node(graph, instr)
 
 				if inode.itype == .Split {
 					total_splits += 1
 					redundant_splits += 1
-					inp := graph_expand(graph, inode.inps[0])
+					inp := expand_node(graph, inode.inps[0])
 
 					if res[inode.gvn] == res[inp.gvn] {
 						continue
@@ -1578,7 +1578,7 @@ regalloc_round :: proc(
 
 						in_slot_id :=
 							inp.inps[ctx.gmetas[inp.gvn].in_place_slot]
-						in_slot_node := graph_expand(graph, in_slot_id)
+						in_slot_node := expand_node(graph, in_slot_id)
 
 						umask := rm_get_use(
 							ctx,
@@ -1597,7 +1597,7 @@ regalloc_round :: proc(
 						   in_slot_node.output_count == 1 &&
 						   in_slot_node.itype == .Split {
 
-							if res[graph_get(graph, in_slot_node.inps[0]).gvn] ==
+							if res[get_node(graph, in_slot_node.inps[0]).gvn] ==
 							   res[inode.gvn] {
 
 								res[inp.gvn] = res[inode.gvn]
@@ -1612,7 +1612,7 @@ regalloc_round :: proc(
 					   len(inode.outs) == 1 &&
 					   inode.outs[0].id == bb.instrs[keep] {
 						o := inode.outs[0]
-						onode := graph_expand(graph, o.id)
+						onode := expand_node(graph, o.id)
 
 						umask := rm_get_use(ctx, onode, o.idx)
 						overlaps := bac.reg_mask_contains(
@@ -1622,7 +1622,7 @@ regalloc_round :: proc(
 
 						if overlaps &&
 						   get_lrg(ctx, instr) != get_lrg(ctx, o.id) {
-							bac.graph_subsume(graph, inode.inps[0], instr)
+							bac.subsume(graph, inode.inps[0], instr)
 							continue
 						}
 					}
@@ -1697,7 +1697,7 @@ regalloc_round :: proc(
 			if !ODIN_DISABLE_ASSERT {
 				seen_phi := false
 				#reverse for instr in bb.instrs {
-					inode := graph_get(ctx.graph, instr)
+					inode := get_node(ctx.graph, instr)
 					is_phi_or_mem := inode.itype == .Phi || inode.itype == .Mem
 					fmt.assertf(!seen_phi || is_phi_or_mem, "%v", inode)
 					seen_phi |= inode.itype == .Phi
@@ -1705,7 +1705,7 @@ regalloc_round :: proc(
 			}
 
 			for instr, i in bb.instrs {
-				inode := graph_expand(ctx.graph, instr)
+				inode := expand_node(ctx.graph, instr)
 				if inode.dt == .Void && inode.itype == .Phi do continue
 
 				deps := inode.inps
@@ -1720,7 +1720,7 @@ regalloc_round :: proc(
 					i := i
 					if inode.itype == .Phi {
 						last :=
-							bac.graph_inps(ctx.graph, inode.inps[0])[idx]
+							bac.get_inputs(ctx.graph, inode.inps[0])[idx]
 						block = get_node_block(ctx, last)
 						i = len(block.instrs)
 					}
@@ -1728,14 +1728,14 @@ regalloc_round :: proc(
 					for {
 						iblck := get_node_block(ctx, inp)
 						if slice.contains(iblck.instrs[:], inp) do break
-						inode := graph_expand(ctx.graph, inp)
+						inode := expand_node(ctx.graph, inp)
 						assert(inode.itype == .Split)
 						inp = inode.inps[0]
 					}
 
 					bit_arr.set_all(seen, value = false)
 
-					nd := graph_get(ctx.graph, inp)
+					nd := get_node(ctx.graph, inp)
 					if nd.itype == .Poison do continue
 
 					fmt.assertf(is_def(ctx, nd), "%v", nd)
@@ -1753,7 +1753,7 @@ regalloc_round :: proc(
 			sindex: int,
 			seen: bit_arr.Bit_Set,
 		) {
-			cbnode := graph_expand(ctx.graph, cb)
+			cbnode := expand_node(ctx.graph, cb)
 
 			bb: ^bac.Graph_Basic_Block
 			for &b in ctx.sched.bbs {
@@ -1761,14 +1761,14 @@ regalloc_round :: proc(
 					bb = &b
 				}
 			}
-			inpnode := graph_expand(ctx.graph, inp)
+			inpnode := expand_node(ctx.graph, inp)
 			block, idx := get_node_block_and_idx(ctx, inp)
 			if block != bb do idx = -1
 			for j in idx + 1 ..< sindex {
-				clobber := graph_expand(ctx.graph, bb.instrs[j])
+				clobber := expand_node(ctx.graph, bb.instrs[j])
 				if !is_def(ctx, clobber) do continue
 				if res[inpnode.gvn] == res[clobber.gvn] {
-					//bac.graph_display(
+					//bac.display_graph(
 					//	os.to_writer(os.stderr),
 					//	ctx.graph,
 					//	ctx.sched,
@@ -1793,7 +1793,7 @@ regalloc_round :: proc(
 
 			for cbinp in cbnode.inps[:len(cbnode.inps) - is_reg] {
 				if bac.is_cfg(ctx.graph, cbinp) {
-					cbinode := graph_expand(ctx.graph, cbinp)
+					cbinode := expand_node(ctx.graph, cbinp)
 					if !bit_arr.set(seen, cbinode.gvn) {
 						return
 					}
@@ -1810,13 +1810,13 @@ regalloc_round :: proc(
 		append(&members, lrg.node)
 		for i := 0; i < len(members); i += 1 {
 			member := members[i]
-			for out in bac.graph_outs(graph, member) {
+			for out in bac.get_outputs(graph, member) {
 				if get_lrg(ctx, out.id) == lrg &&
 				   !slice.contains(members[:], out.id) {
 					append(&members, out.id)
 				}
 			}
-			for inp in bac.graph_inps(graph, member) {
+			for inp in bac.get_inputs(graph, member) {
 				if get_lrg(ctx, inp) == lrg &&
 				   !slice.contains(members[:], inp) {
 					append(&members, inp)
@@ -1827,7 +1827,7 @@ regalloc_round :: proc(
 	}
 
 	get_lrg :: proc(ctx: Ctx, node: Node_ID, logg := false) -> ^bac.Lrg {
-		node := graph_get(ctx.graph, node)
+		node := get_node(ctx.graph, node)
 		if int(node.gvn) >= len(ctx.lrg_table) {
 			if logg {
 				log.error("lrg table out of bounds")
@@ -1844,9 +1844,9 @@ regalloc_round :: proc(
 		must := false,
 	) -> Node_ID {
 		graph := ctx.graph
-		fnode := graph_get(graph, use)
+		fnode := get_node(graph, use)
 
-		if bac.graph_has_flag(graph, fnode, .Clonable) && !must {
+		if bac.has_flag(graph, fnode, .Clonable) && !must {
 			return use
 		}
 
@@ -1855,11 +1855,11 @@ regalloc_round :: proc(
 			return use
 		}
 
-		split := bac.graph_add_split(graph, name, fnode.dt, use)
+		split := bac.add_split(graph, name, fnode.dt, use)
 
 		block, idx := get_node_block_and_idx(ctx, use)
 		for {
-			nd := graph_get(ctx.graph, block.instrs[idx + 1])
+			nd := get_node(ctx.graph, block.instrs[idx + 1])
 			if nd.itype != .Phi && nd.itype != .Mem do break
 			idx += 1
 		}
@@ -1877,14 +1877,14 @@ regalloc_round :: proc(
 		redirect: Node_ID = 0,
 		must := false,
 	) -> Node_ID {
-		node := graph_expand(ctx.graph, id)
+		node := expand_node(ctx.graph, id)
 		inp := redirect if redirect != 0 else node.inps[idx]
-		inp_node := graph_get(ctx.graph, inp)
+		inp_node := get_node(ctx.graph, inp)
 
 		if !is_def_while_splitting(ctx, inp_node) do return inp
 
 		split: Node_ID
-		if bac.graph_has_flag(ctx.graph, inp_node, .Clonable) && !must {
+		if bac.has_flag(ctx.graph, inp_node, .Clonable) && !must {
 			if int(inp_node.gvn) > len(ctx.instr_placement) {
 				// NOTE: means we already split this to the largest extent
 				return inp
@@ -1898,16 +1898,16 @@ regalloc_round :: proc(
 				split = inp
 			} else {
 				bac.add_efficiency_stat(ctx.graph, .clones, 1)
-				split = bac.graph_clone(ctx.graph, inp)
+				split = bac.clone(ctx.graph, inp)
 			}
 		} else {
-			split = bac.graph_add_split(ctx.graph, name, inp_node.dt, inp)
+			split = bac.add_split(ctx.graph, name, inp_node.dt, inp)
 		}
 
 		block: ^bac.Graph_Basic_Block
 		bidx: int
 		if node.itype == .Phi {
-			last := bac.graph_inps(ctx.graph, node.inps[0])[idx - 1]
+			last := bac.get_inputs(ctx.graph, node.inps[0])[idx - 1]
 			block = get_node_block(ctx, last)
 			bidx = len(block.instrs) - 1
 		} else {
@@ -1922,7 +1922,7 @@ regalloc_round :: proc(
 		ctx: Ctx,
 		node: Node_ID,
 	) -> ^bac.Graph_Basic_Block {
-		node := graph_get(ctx.graph, node)
+		node := get_node(ctx.graph, node)
 		fmt.assertf(
 			int(node.gvn) < len(ctx.instr_placement),
 			"%v %v",
@@ -1951,12 +1951,12 @@ regalloc_round :: proc(
 		lrg_table: []^bac.Lrg,
 	) -> Node_ID {
 		id := lrg.node
-		fnode := graph_get(graph, id)
-		fouts := bac.graph_outs(graph, fnode)
+		fnode := get_node(graph, id)
+		fouts := bac.get_outputs(graph, fnode)
 
 		if fnode.itype == .Split && fnode.output_count == 1 {
 			sid := fouts[0].id
-			snode := graph_get(graph, sid)
+			snode := get_node(graph, sid)
 			if int(snode.gvn) >= len(lrg_table) do return id
 			if lrg_table[snode.gvn] != lrg do return id
 			id = sid
@@ -1972,7 +1972,7 @@ regalloc_round :: proc(
 		append(&sb.buf, "\n")
 
 		context.user_ptr = ctx
-		bac.graph_display(
+		bac.display_graph(
 			strings.to_writer(&sb),
 			ctx.graph,
 			ctx.sched,
@@ -1986,7 +1986,7 @@ regalloc_round :: proc(
 		) {
 			ctx := (^Ctx)(context.user_ptr)
 			if is_def_while_splitting(ctx^, instr) && len(ctx.lrg_table) != 0 {
-				lrg := get_lrg(ctx^, bac.graph_id(ctx.graph, instr))
+				lrg := get_lrg(ctx^, bac.get_node_id(ctx.graph, instr))
 				if lrg == nil {
 					return
 				}

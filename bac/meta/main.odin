@@ -349,7 +349,7 @@ collect_meta :: proc(ctx: ^%vGraph,
 
 			fmt.fprintf(
 				file,
-				"graph_add_%v :: #force_inline proc(graph: ^%vGraph, name: string",
+				"add_%v :: #force_inline proc(graph: ^%vGraph, name: string",
 				strings.to_snake_case(fname),
 				q,
 			)
@@ -387,7 +387,7 @@ collect_meta :: proc(ctx: ^%vGraph,
 			if len(class.extra_args) != 0 {
 				fmt.fprintf(
 					file,
-					"\t(^%v)(%vgraph_get_next_extra_slot(graph," +
+					"\t(^%v)(%vget_next_extra_slot(graph," +
 					" u16(%v.%v), 0))^ = {{\n",
 					extra_type,
 					q,
@@ -401,7 +401,7 @@ collect_meta :: proc(ctx: ^%vGraph,
 			} else if reflect.size_of_typeid(class.id) > 0 {
 				fmt.fprintf(
 					file,
-					"\t(^%v)(%vgraph_get_next_extra_slot(graph," +
+					"\t(^%v)(%vget_next_extra_slot(graph," +
 					" u16(%v.%v), 0))^ = {{}}\n",
 					extra_type,
 					q,
@@ -413,7 +413,7 @@ collect_meta :: proc(ctx: ^%vGraph,
 			if k == "" {
 				fmt.fprintf(
 					file,
-					"\treturn %vgraph_add_raw(graph, name, u16(%v.%v), ",
+					"\treturn %vadd_raw(graph, name, u16(%v.%v), ",
 					q,
 					qualify_enm(q, classes.enm),
 					name,
@@ -421,7 +421,7 @@ collect_meta :: proc(ctx: ^%vGraph,
 			} else {
 				fmt.fprintf(
 					file,
-					"\treturn %vgraph_add_raw(graph, name, u16(type), ",
+					"\treturn %vadd_raw(graph, name, u16(type), ",
 					q,
 				)
 			}

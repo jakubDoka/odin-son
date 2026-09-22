@@ -101,6 +101,7 @@ SPEC := backend.Node_Spec{
 		0b10, // Simd_Reduce_Add_Bisect
 		0b1000000, // CV128
 		0b10, // Msub
+		0b10, // CLoad
 	},
 	node_extra_sizes = {
 		1, // Start -> Cfg
@@ -185,6 +186,7 @@ SPEC := backend.Node_Spec{
 		0, // Simd_Reduce_Add_Bisect -> No_Extra
 		4, // CV128 -> CV128
 		0, // Msub -> No_Extra
+		0, // CLoad -> No_Extra
 	},
 	node_flags = {
 		{}, // Start
@@ -269,6 +271,7 @@ SPEC := backend.Node_Spec{
 		{Class_Flag.Interned}, // Simd_Reduce_Add_Bisect
 		{Class_Flag.Interned, Class_Flag.Clonable}, // CV128
 		{}, // Msub
+		{}, // CLoad
 	},
 	node_extra_types = {
 		backend.Cfg,
@@ -352,6 +355,7 @@ SPEC := backend.Node_Spec{
 		backend.No_Extra,
 		backend.No_Extra,
 		backend.CV128,
+		backend.No_Extra,
 		backend.No_Extra,
 	},
 	node_kind_name = {
@@ -437,6 +441,7 @@ SPEC := backend.Node_Spec{
 		`Simd_Reduce_Add_Bisect`,
 		`CV128`,
 		`Msub`,
+		`CLoad`,
 	},
 }
 
@@ -523,6 +528,7 @@ Node_Type :: enum u16 {
 	Simd_Reduce_Add_Bisect,
 	CV128,
 	Msub,
+	CLoad,
 }
 
 peep_inst :: proc(ctx: backend.Peep_Ctx, node: backend.Expanded_Node) -> backend.Node_ID {
@@ -629,6 +635,7 @@ collect_meta :: proc(ctx: ^backend.Graph,
 graph_add_msub :: #force_inline proc(graph: ^backend.Graph, name: string, dt: backend.Node_Datatype, multiplicant: backend.Node_ID, multiplier: backend.Node_ID, subtractant: backend.Node_ID) -> (_id: backend.Node_ID) {
 	return backend.graph_add_raw(graph, name, u16(Node_Type.Msub), dt, {multiplicant, multiplier, subtractant})
 }
+#assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	when false {}

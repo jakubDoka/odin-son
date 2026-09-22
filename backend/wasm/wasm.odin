@@ -125,6 +125,7 @@ peep :: proc(
 				backend.graph_get_next_extra_slot(
 					ctx,
 					u16(Node_Type.WASM_Load),
+					0,
 				),
 			)^ = {
 				source = inp.dt,
@@ -153,7 +154,7 @@ peep :: proc(
 		}
 
 		if off != 0 || changed {
-			(^Mem_Op)(backend.graph_get_next_extra_slot(ctx, u16(op)))^ = {
+			(^Mem_Op)(backend.graph_get_next_extra_slot(ctx, u16(op), 0))^ = {
 				source = node.dt,
 				offset = i64(off),
 			}

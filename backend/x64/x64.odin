@@ -316,21 +316,26 @@ peep :: proc(
 	case .CInt:
 		cnst: ^backend.CInt = backend.graph_extra(ctx, node, backend.CInt)
 		if node.dt in backend.FLOAT_DTS && cnst.value != 0 {
-			global := backend.graph_add_global(ctx, "iglb")
-			tup: ^backend.Tup = backend.graph_extra(ctx, global, backend.Tup)
-			tup.is_inline = true
-			tup.align = backend.DT_SIZE[node.dt]
-			tup.size = backend.DT_SIZE[node.dt]
+			size := backend.DT_SIZE[node.dt] / 4 - 1
+			slot := backend.graph_get_next_extra_slot(
+				ctx,
+				u16(backend.Node_Type.Global),
+				size,
+			)
 
 			if node.dt == .F32 {
-				arna.clone(ctx.mem, reflect.as_bytes(f32(cnst.fvalue)))
+				(^f32)(slot)^ = f32(cnst.fvalue)
 			} else {
 				assert(node.dt == .F64)
-				arna.clone(ctx.mem, reflect.as_bytes(cnst.fvalue))
+				(^f64)(slot)^ = cnst.fvalue
 			}
 
-			graph_get(ctx, global).extra_dwords = u32(
-				backend.DT_SIZE[node.dt] / backend.PRECISION,
+			global := backend.graph_add_raw(
+				ctx,
+				"iglb",
+				u16(backend.Node_Type.Global),
+				node.dt,
+				meta = {extra_dwords = size},
 			)
 
 			return backend.graph_add_raw(
@@ -841,7 +846,7 @@ add_node :: proc(
 	^backend.Node,
 	backend.Node_ID,
 ) {
-	slot := (^Mem_Op)(backend.graph_get_next_extra_slot(ctx, u16(type)))
+	slot := (^Mem_Op)(backend.graph_get_next_extra_slot(ctx, u16(type), 0))
 	slot^ = extra
 	id := backend.graph_add_raw(ctx, name, u16(type), dt, inps)
 	return graph_get(ctx, id), id
@@ -1153,11 +1158,11 @@ meta_of :: proc(
 			masks = snmasks[:len(node.inps) - 1],
 			input_start = 1,
 		}
-	case .Global, .Proc_Addr:
-		return {out = out}
+	case .Global:
+		return {out = IOUT}
 	case .Mem, .Root_Mem, .Sym, .Local, .Jump, .Always, .Trap:
-		return {out = out}
-	case .Local_Addr, .Global_Addr:
+		return {out = IOUT}
+	case .Local_Addr, .Global_Addr, .Proc_Addr:
 		return {out = out}
 	case .Copy, .Set, .Call, .Return:
 		cc := &X64_SYSTEMV_CC
@@ -2822,12 +2827,16 @@ reg_and_disp_of :: proc(ctx: ^Ctx, id: backend.Node_ID) -> (Reg, i32, u32) {
 	if node.itype == .Global {
 		tup: ^backend.Tup = backend.graph_extra(ctx, node, backend.Tup)
 
-		if tup.is_inline {
+		if node.dt != .Void {
 			tup.idx = emit_big_constant(
 				ctx,
-				tup.align,
-				([^]u8)(node)[backend.graph_size(ctx, node.rtype):][:tup.size],
+				backend.DT_SIZE[node.dt],
+				mem.slice_data_cast(
+					[]u8,
+					backend.graph_extra_dwords(ctx, node),
+				),
 			)
+			node.dt = .Void
 		}
 
 		// bias by one so that global 0 is distinguishable from the "no

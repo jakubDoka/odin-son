@@ -388,7 +388,7 @@ collect_meta :: proc(ctx: ^%vGraph,
 				fmt.fprintf(
 					file,
 					"\t(^%v)(%vgraph_get_next_extra_slot(graph," +
-					" u16(%v.%v)))^ = {{\n",
+					" u16(%v.%v), 0))^ = {{\n",
 					extra_type,
 					q,
 					qualify_enm(q, classes.enm),
@@ -402,7 +402,7 @@ collect_meta :: proc(ctx: ^%vGraph,
 				fmt.fprintf(
 					file,
 					"\t(^%v)(%vgraph_get_next_extra_slot(graph," +
-					" u16(%v.%v)))^ = {{}}\n",
+					" u16(%v.%v), 0))^ = {{}}\n",
 					extra_type,
 					q,
 					qualify_enm(q, classes.enm),
@@ -449,16 +449,23 @@ collect_meta :: proc(ctx: ^%vGraph,
 				os.write_string(file, ", {}")
 			}
 
-			if class.extra_capacity != 0 {
-				fmt.fprintf(
-					file,
-					", extra_capacity = %v",
-					class.extra_capacity,
-				)
-			}
+			pass_meta := class.extra_capacity != 0 || pass_lane
 
-			if pass_lane {
-				os.write_string(file, ", lane = lane")
+			if pass_meta {
+				os.write_string(file, ", {")
+
+				if class.extra_capacity != 0 {
+					fmt.fprintf(
+						file,
+						"extra_capacity = %v,",
+						class.extra_capacity,
+					)
+				}
+
+				if pass_lane {
+					os.write_string(file, "lane = lane,")
+				}
+				os.write_string(file, "}")
 			}
 
 			os.write_string(file, ")\n")

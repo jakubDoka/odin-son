@@ -677,10 +677,10 @@ collect_meta :: proc(ctx: ^backend.Graph,
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 #assert(size_of(Lane_Op) % backend.PRECISION == 0)
 graph_add_extract_lane_u :: #force_inline proc(graph: ^backend.Graph, name: string, dt: backend.Node_Datatype, vec: backend.Node_ID, laneidx: u32, lane: backend.Lane_Type = {}) -> (_id: backend.Node_ID) {
-	(^Lane_Op)(backend.graph_get_next_extra_slot(graph, u16(Node_Type.Extract_Lane_U)))^ = {
+	(^Lane_Op)(backend.graph_get_next_extra_slot(graph, u16(Node_Type.Extract_Lane_U), 0))^ = {
 		laneidx = laneidx,
 	}
-	return backend.graph_add_raw(graph, name, u16(Node_Type.Extract_Lane_U), dt, {vec}, lane = lane)
+	return backend.graph_add_raw(graph, name, u16(Node_Type.Extract_Lane_U), dt, {vec}, {lane = lane,})
 }
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {

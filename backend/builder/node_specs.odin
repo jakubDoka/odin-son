@@ -619,12 +619,12 @@ post_schedule_peep_inst :: proc(
 #assert(size_of(backend.CV128) % backend.PRECISION == 0)
 #assert(size_of(Scope) % backend.PRECISION == 0)
 graph_add_scope :: #force_inline proc(graph: ^backend.Graph, name: string, cfg: backend.Node_ID) -> (_id: backend.Node_ID) {
-	(^Scope)(backend.graph_get_next_extra_slot(graph, u16(Node_Type.Scope)))^ = {}
+	(^Scope)(backend.graph_get_next_extra_slot(graph, u16(Node_Type.Scope), 0))^ = {}
 	return backend.graph_add_raw(graph, name, u16(Node_Type.Scope), .Void, {cfg})
 }
 #assert(size_of(backend.No_Extra) % backend.PRECISION == 0)
 graph_add_lazy_phi :: #force_inline proc(graph: ^backend.Graph, name: string, dt: backend.Node_Datatype, reg: backend.Node_ID, lhs: backend.Node_ID) -> (_id: backend.Node_ID) {
-	return backend.graph_add_raw(graph, name, u16(Node_Type.Lazy_Phi), dt, {reg, lhs}, extra_capacity = 1)
+	return backend.graph_add_raw(graph, name, u16(Node_Type.Lazy_Phi), dt, {reg, lhs}, {extra_capacity = 1,})
 }
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {

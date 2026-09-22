@@ -287,12 +287,7 @@ Call :: struct {
 
 Tup :: struct {
 	using fields: struct #raw_union {
-		idx:     u32,
-		using _: bit_field u32 {
-			size:      int  | 16,
-			align:     int  | 15,
-			is_inline: bool | 1,
-		},
+		idx: u32,
 	},
 }
 
@@ -392,10 +387,10 @@ Node :: struct {
 		},
 	},
 	using gvn_group: bit_field u32 {
-		gvn:          u32  | 23,
+		gvn:          u32  | 26,
 		in_worklist:  bool | 1,
 		scan_split:   bool | 1,
-		extra_dwords: u32  | 4,
+		extra_dwords: int  | 4,
 	},
 	input_idx:       u32,
 	input_count:     u16,
@@ -812,7 +807,7 @@ graph_compact :: proc(graph: ^Graph) {
 }
 
 graph_shallow_clone :: proc(graph: ^Graph, node: ^Node) -> (^Node, Node_ID) {
-	size := graph_size(graph, node.rtype) + int(node.extra_dwords) * PRECISION
+	size := graph_size(graph, node.rtype, node.extra_dwords)
 	slot := arna.alloc(graph.mem, uint(size), PRECISION)
 	mem.copy_non_overlapping(raw_data(slot), node, len(slot))
 	return (^Node)(raw_data(slot)), graph_id(graph, (^Node)(raw_data(slot)))
@@ -1612,7 +1607,7 @@ graph_unintern :: proc(graph: ^Graph, id: Node_ID, precomputed_hash: u8 = 0) {
 
 node_approx_size :: proc(graph: ^Graph, node: ^Node) -> uint {
 	return(
-		uint(graph_size(graph, node.rtype)) +
+		uint(graph_size(graph, node.rtype, node.extra_dwords)) +
 		uint(node.input_cap * size_of(Node_ID)) \
 	)
 }
@@ -1747,7 +1742,7 @@ graph_clone :: proc(graph: ^Graph, id: Node_ID) -> Node_ID {
 		node,
 	)
 	assert(node.itype != .Call)
-	idx := graph_get_next_extra_slot(graph, node.rtype)
+	idx := graph_get_next_extra_slot(graph, node.rtype, node.extra_dwords)
 	extra := graph_extra_dwords(graph, node, consider_dbg = true)
 	copy(idx[:len(extra)], extra)
 	new := graph_add_raw(graph, node.name, node.rtype, node.dt, node.inps)
@@ -1848,7 +1843,7 @@ graph_delete_node :: proc(graph: ^Graph, node: ^Node, indirect := false) {
 
 	graph.waste += int(node.input_cap * size_of(Node_ID))
 	graph.waste += int(node.output_cap * size_of(Node_Output))
-	graph.waste += graph_size(graph, node.rtype)
+	graph.waste += graph_size(graph, node.rtype, node.extra_dwords)
 
 	node^ = {
 		rtype = DEAD_NODE_KIND,
@@ -1864,7 +1859,9 @@ graph_extra_dwords_node :: proc(
 	consider_dbg := false,
 ) -> []u32 {
 	total :=
-		graph.node_extra_sizes[node.rtype] + u8(graph.has_dbg & consider_dbg)
+		graph.node_extra_sizes[node.rtype] +
+		u8(node.extra_dwords) +
+		u8(graph.has_dbg & consider_dbg)
 	return raw_data(&node.extra)[:total]
 }
 
@@ -1910,13 +1907,18 @@ graph_outs_node :: #force_inline proc(
 	)
 }
 
-graph_size :: proc(graph: ^Graph, type: u16) -> int {
-	total := int(graph.node_extra_sizes[type]) + int(graph.has_dbg)
+graph_size :: proc(graph: ^Graph, type: u16, extra_dwords: int) -> int {
+	total :=
+		int(graph.node_extra_sizes[type]) + extra_dwords + int(graph.has_dbg)
 	return size_of(Node) + total * PRECISION
 }
 
-graph_get_next_extra_slot :: proc(graph: ^Graph, type: u16) -> [^]u32 {
-	size := graph_size(graph, type)
+graph_get_next_extra_slot :: proc(
+	graph: ^Graph,
+	type: u16,
+	extra_dwords: int,
+) -> [^]u32 {
+	size := graph_size(graph, type, extra_dwords)
 	slot := arna.alloc(graph.mem, uint(size), PRECISION)
 	graph.mem.pos -= uint(len(slot))
 
@@ -1933,7 +1935,8 @@ get_tag :: proc(graph: ^Graph, node: Node_ID) -> ^Tag {
 
 graph_dbg_slot :: proc(graph: ^Graph, node: ^Node) -> ^D_Node_ID {
 	assert(int(node.rtype) < len(graph.node_extra_sizes))
-	ptr := &([^]D_Node_ID)(&node.extra)[graph.node_extra_sizes[node.rtype]]
+	pos := graph.node_extra_sizes[node.rtype] + u8(node.extra_dwords)
+	ptr := &([^]D_Node_ID)(&node.extra)[pos]
 	nl := (^D_Node_ID)(graph.mem.ptr)
 	if graph.has_dbg do return ptr
 	return nl
@@ -1954,40 +1957,46 @@ graph_add_sloc :: proc(graph: ^Graph, sloc: Sloc) -> D_Node_ID {
 	return id
 }
 
+Add_Raw_Meta :: bit_field u64 {
+	lane:           Lane_Type | 3,
+	extra_capacity: int       | 2,
+	extra_dwords:   int       | 3,
+}
+
 graph_add_raw :: proc(
 	graph: ^Graph,
 	name: Tag_Name,
 	type: u16,
 	dt: Node_Datatype,
-	inps: []Node_ID,
-	extra_capacity: int = 0,
-	lane: Lane_Type = .I8,
+	inps: []Node_ID = {},
+	meta: Add_Raw_Meta = {},
 ) -> (
 	id: Node_ID,
 ) {
 	id = Node_ID(graph.mem.pos / PRECISION)
 
-	size := graph_size(graph, type)
+	size := graph_size(graph, type, meta.extra_dwords)
 	slot := arna.alloc(graph.mem, uint(size), PRECISION)
 
 	node := (^Node)(raw_data(slot))
 	node^ = {
-		name        = name,
-		stable_id   = graph.stable_id,
-		rtype       = type,
-		dt          = dt,
-		gvn         = graph.gvn,
-		lane        = lane,
-		is_store    = .Store in graph.node_flags[type],
-		is_load     = .Load in graph.node_flags[type],
-		input_idx   = u32(graph.mem.pos / PRECISION),
-		input_count = u16(len(inps)),
-		input_cap   = u16(len(inps) + extra_capacity),
+		name         = name,
+		stable_id    = graph.stable_id,
+		rtype        = type,
+		dt           = dt,
+		gvn          = graph.gvn,
+		lane         = meta.lane,
+		extra_dwords = meta.extra_dwords,
+		is_store     = .Store in graph.node_flags[type],
+		is_load      = .Load in graph.node_flags[type],
+		input_idx    = u32(graph.mem.pos / PRECISION),
+		input_count  = u16(len(inps)),
+		input_cap    = u16(len(inps) + meta.extra_capacity),
 	}
 
 	new_inps := arna.alloc(
 		graph.mem,
-		uint(int(len(inps) + extra_capacity) * PRECISION),
+		uint(int(len(inps) + meta.extra_capacity) * PRECISION),
 		PRECISION,
 	)
 	copy(mem.slice_data_cast([]Node_ID, new_inps), inps)

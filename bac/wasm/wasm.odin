@@ -52,9 +52,9 @@ Lane_Op :: struct {
 
 Mem_Op :: struct #align (4) {
 	using meta: bit_field u64 {
-		offset: i64                   | 59,
+		offset: i64               | 59,
 		source: bac.Node_Datatype | 4,
-		signed: bool                  | 1,
+		signed: bool              | 1,
 	},
 }
 
@@ -122,11 +122,7 @@ peep :: proc(
 
 		if wtype(inp) == .Load && len(inp.outs) == 1 {
 			(^Mem_Op)(
-				bac.get_next_extra_slot(
-					ctx,
-					u16(Node_Type.WASM_Load),
-					0,
-				),
+				bac.get_next_extra_slot(ctx, u16(Node_Type.WASM_Load), 0),
 			)^ = {
 				source = inp.dt,
 				signed = signed,
@@ -164,13 +160,7 @@ peep :: proc(
 		}
 	case .Shr:
 		if get_node(ctx, node.inps[0]).dt < .I32 {
-			new := bac.add_un_op(
-				ctx,
-				"shext",
-				.Sext,
-				.I32,
-				node.inps[0],
-			)
+			new := bac.add_un_op(ctx, "shext", .Sext, .I32, node.inps[0])
 			bac.set_input(ctx, id, 0, new)
 			bac.worklist_add(ctx, ctx.worklist, new)
 			return id
@@ -245,14 +235,7 @@ peep :: proc(
 				lane = node.lane,
 			)
 
-			sum = bac.add_bin_op(
-				ctx,
-				"rabs",
-				.Add,
-				node.dt,
-				sum,
-				next,
-			)
+			sum = bac.add_bin_op(ctx, "rabs", .Add, node.dt, sum, next)
 		}
 
 		return sum
@@ -450,8 +433,7 @@ pre_regalloc_hook :: proc(
 					bac.set_input(ctx, instr, j, clone)
 
 					if inode.itype == .Phi {
-						block_head :=
-							bac.get_inputs(ctx, hnode.inps[j - 1])[0]
+						block_head := bac.get_inputs(ctx, hnode.inps[j - 1])[0]
 						block := &sched.bbs[bac.get_node(ctx, block_head).gvn]
 						inject_at(&block.instrs, len(block.instrs) - 1, clone)
 					} else {
@@ -483,13 +465,7 @@ pre_regalloc_hook :: proc(
 			)
 
 			add_drop :: proc(ctx: Ctx) -> bac.Node_ID {
-				return bac.add_raw(
-					ctx,
-					"rdrp",
-					u16(Node_Type.Drop),
-					.Void,
-					{},
-				)
+				return bac.add_raw(ctx, "rdrp", u16(Node_Type.Drop), .Void, {})
 			}
 
 			real_ret_count :=
@@ -662,10 +638,7 @@ pre_regalloc_hook :: proc(
 		return
 	}
 
-	data_deps :: proc(
-		meta: Meta,
-		node: bac.Expanded_Node,
-	) -> []bac.Node_ID {
+	data_deps :: proc(meta: Meta, node: bac.Expanded_Node) -> []bac.Node_ID {
 		return node.inps[meta.input_start:meta.input_count]
 	}
 
@@ -784,10 +757,7 @@ pre_regalloc_hook :: proc(
 			}
 		}
 
-		get_or_add_set :: proc(
-			ctx: ^Ctx,
-			node: ^bac.Node,
-		) -> bac.Node_ID {
+		get_or_add_set :: proc(ctx: ^Ctx, node: ^bac.Node) -> bac.Node_ID {
 			if node.itype in NO_SET_KINDS {
 				return bac.get_node_id(ctx, node)
 			}
@@ -877,9 +847,7 @@ LOCAL_TO_WASM := [Local_Type]Type {
 	.v128 = .vec,
 }
 
-emit_function :: proc(
-	ectx: bac.Codegen_Emit_Ctx,
-) -> bac.Codegen_Output {
+emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 	context.allocator, _ = arna.scrath()
 
 	ctx: Ctx
@@ -1400,9 +1368,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 		emit_op(ctx.code, op)
 		emit_leb(ctx.code, loc_of(ctx, instr))
 	case .Local_Addr:
-		offset := i32(
-			bac.get_extra(ctx, node.inps[0], bac.Local).offset,
-		)
+		offset := i32(bac.get_extra(ctx, node.inps[0], bac.Local).offset)
 
 		emit_op(ctx.code, .Global_Get)
 		emit_leb(ctx.code, u64(0))
@@ -1507,15 +1473,12 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 			for ; get_node(ctx, node.inps[real_len - 1]).itype == .Local;
 			    real_len -= 1 {}
 
-			params := make(
-				[]bac.Param_Spec,
-				real_len - bac.CALL_PREFIX - 1,
-			)
+			params := make([]bac.Param_Spec, real_len - bac.CALL_PREFIX - 1)
 
 			for inp, i in node.inps[bac.CALL_PREFIX + 1:real_len] {
 				params[i] = {
-					dt = get_node(ctx, inp).dt,
-				}
+						dt = get_node(ctx, inp).dt,
+					}
 			}
 
 			rets := call.rets[:call.ret_count]

@@ -59,11 +59,7 @@ start_if :: proc(
 	bac.set_input(graph, scope, 0, then)
 }
 
-end_if :: proc(
-	graph: ^bac.Graph,
-	then_scope: ^bac.Node_ID,
-	state: ^If_State,
-) {
+end_if :: proc(graph: ^bac.Graph, then_scope: ^bac.Node_ID, state: ^If_State) {
 	start_else(graph, then_scope, state)
 	end_else(graph, then_scope, state)
 }
@@ -122,11 +118,7 @@ Loop_State :: struct {
 	scopes: [Loop_Control]bac.Node_ID,
 }
 
-start_loop :: proc(
-	graph: ^bac.Graph,
-	scope: bac.Node_ID,
-	state: ^Loop_State,
-) {
+start_loop :: proc(graph: ^bac.Graph, scope: bac.Node_ID, state: ^Loop_State) {
 	snode := expand_node(graph, scope)
 	loop := bac.add_loop(graph, "loop", snode.inps[0])
 	bac.set_input(graph, scope, 0, loop)
@@ -145,11 +137,7 @@ start_loop_increment :: proc(
 	node_scope: ^bac.Node_ID,
 	state: ^Loop_State,
 ) {
-	node_scope^ = merge_scopes(
-		graph,
-		node_scope^,
-		state.scopes[.Continue],
-	)
+	node_scope^ = merge_scopes(graph, node_scope^, state.scopes[.Continue])
 	state.scopes[.Continue] = 0
 }
 
@@ -183,11 +171,7 @@ end_loop :: proc(
 			if btype(bnode) == .Scope || inode.node == bnode.node {
 				bac.subsume(graph, inode.inps[1], init)
 			} else {
-				bac.connect(
-					graph,
-					init,
-					bac.get_node_id(graph, bnode),
-				)
+				bac.connect(graph, init, bac.get_node_id(graph, bnode))
 				inode.itype = .Phi
 				id := bac.intern(graph, init)
 				if id != init {
@@ -375,11 +359,7 @@ inline_stencil :: proc(
 	inline_graph(graph, call, &fromg)
 }
 
-inline_graph :: proc(
-	graph: ^bac.Graph,
-	call: bac.Node_ID,
-	from: ^bac.Graph,
-) {
+inline_graph :: proc(graph: ^bac.Graph, call: bac.Node_ID, from: ^bac.Graph) {
 	assert(graph.node_spec == &SPEC)
 
 	bac.add_efficiency_stat(graph, .inlines, 1)
@@ -479,11 +459,7 @@ inline_graph :: proc(
 				ret_idx := bac.RET_PREFIX + idx
 				if int(ret_idx) < len(from_ret.inps) {
 					sub := get_node(from, from_ret.inps[ret_idx])
-					bac.subsume(
-						graph,
-						ctx.projection[sub.gvn],
-						co.id,
-					)
+					bac.subsume(graph, ctx.projection[sub.gvn], co.id)
 				} else {
 					psn := bac.add_poison(graph, "irps")
 					bac.subsume(graph, psn, co.id)
@@ -501,11 +477,7 @@ inline_graph :: proc(
 			}
 		}
 
-		bac.unpin(
-			graph,
-			proj_of(&ctx, from_ret.inps[0])^,
-			no_delete = true,
-		)
+		bac.unpin(graph, proj_of(&ctx, from_ret.inps[0])^, no_delete = true)
 
 		from_end_ctrl := get_node(from, from_ret.inps[0])
 
@@ -579,11 +551,7 @@ inline_graph :: proc(
 			}
 		}
 
-		bac.subsume(
-			graph,
-			ctx.projection[from_end_ctrl.gvn],
-			call.outs[0].id,
-		)
+		bac.subsume(graph, ctx.projection[from_end_ctrl.gvn], call.outs[0].id)
 	} else {
 		dead := bac.add_dead(graph, "inlnd")
 		bac.subsume(graph, dead, call.outs[0].id)
@@ -749,12 +717,7 @@ inline_graph :: proc(
 			}
 
 			dn := bac.get_dbg_slot(ctx.from, node)^
-			did := bac.clone_dnode(
-				graph,
-				ctx.from,
-				dn,
-				ctx.dprojection,
-			)
+			did := bac.clone_dnode(graph, ctx.from, dn, ctx.dprojection)
 			bac.get_dbg_slot(graph, new_node)^ = did
 			assert(ctx.projection[node.gvn] == 0)
 
@@ -765,11 +728,7 @@ inline_graph :: proc(
 	}
 }
 
-ordered_remove :: proc(
-	ctx: ^bac.Graph,
-	node: ^bac.Expanded_Node,
-	i: int,
-) {
+ordered_remove :: proc(ctx: ^bac.Graph, node: ^bac.Expanded_Node, i: int) {
 	par := bac.get_node_id(ctx, node)
 	for inp, j in node.inps[i + 1:] {
 		bac.add_output(ctx, inp, par, j + i)
@@ -988,12 +947,7 @@ add_arbitrary_load :: proc(
 					.Shl,
 					.I64,
 					load,
-					bac.add_c_int(
-						ctx,
-						"ssham",
-						.I64,
-						i64(offset * 8),
-					),
+					bac.add_c_int(ctx, "ssham", .I64, i64(offset * 8)),
 				),
 			)
 		}
@@ -1033,20 +987,12 @@ arg_gen_next :: proc(
 
 	if apa.scalar {
 		dt := apa.dt[0]
-		value = bac.add_param(
-			ctx,
-			name,
-			dt,
-			ctx.entry,
-			u32(apa.spilled),
-		)
+		value = bac.add_param(ctx, name, dt, ctx.entry, u32(apa.spilled))
 		append(&gen.vls, value)
 	} else {
 		nd := apa.copied ? ctx.root_mem : ctx.entry
 		alloca := bac.add_local(ctx, name, nd)
-		bac.get_extra(ctx, alloca, bac.Local).size = i32(
-			apa.real_size,
-		)
+		bac.get_extra(ctx, alloca, bac.Local).size = i32(apa.real_size)
 		bac.get_extra(ctx, alloca, bac.Local).is_param = !apa.copied
 		value = bac.add_local_addr(ctx, name, alloca)
 
@@ -1074,10 +1020,7 @@ arg_gen_next :: proc(
 	return
 }
 
-arg_gen_finalize :: proc(
-	ctx: ^Graph,
-	gen: ^Param_Gen,
-) -> []bac.Param_Spec {
+arg_gen_finalize :: proc(ctx: ^Graph, gen: ^Param_Gen) -> []bac.Param_Spec {
 	arg_tys := make([]bac.Param_Spec, len(gen.vls))
 
 	j, ri: u32

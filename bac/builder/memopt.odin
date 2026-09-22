@@ -84,8 +84,7 @@ memopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 
 		for &slot in slots {
 			local := bac.add_local(graph, "sroal", emem)
-			bac.get_extra(graph, local, Local).size =
-				slot.end - slot.start
+			bac.get_extra(graph, local, Local).size = slot.end - slot.start
 			slot.local = bac.add_local_addr(graph, "sroadr", local)
 		}
 
@@ -151,13 +150,7 @@ memopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 		ctx.slot_idx[node.gvn] = new + 1
 	}
 
-	get_edited_node_idx :: proc(
-		ctx: ^Ctx,
-		node: ^bac.Node,
-	) -> (
-		u32,
-		bool,
-	) {
+	get_edited_node_idx :: proc(ctx: ^Ctx, node: ^bac.Node) -> (u32, bool) {
 		return ctx.slot_idx[node.gvn] - 1, ctx.slot_idx[node.gvn] != 0
 	}
 
@@ -238,10 +231,7 @@ memopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 			case .Call:
 				assert(len(cnode.outs) == 1)
 				cursor = cnode.outs[0].id
-				cursor =
-					bac.find_node(ctx, .Mem, cursor) or_else panic(
-						"",
-					)
+				cursor = bac.find_node(ctx, .Mem, cursor) or_else panic("")
 				continue
 			case .Mem, .Root_Mem, .Set, .Copy, .Phi, .Return:
 			case:
@@ -392,17 +382,9 @@ memopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 
 								if bnode.is_loop || init == bnode^ {
 									append(&ctx.deleted_lazy_phys, init.node)
-									bac.subsume(
-										ctx,
-										inode.inps[1],
-										init.node,
-									)
+									bac.subsume(ctx, inode.inps[1], init.node)
 								} else {
-									bac.connect(
-										ctx,
-										init.node,
-										bnode.node,
-									)
+									bac.connect(ctx, init.node, bnode.node)
 									inode.itype = .Phi
 									vl := bac.intern(ctx, init.node)
 									assert(vl == init.node)

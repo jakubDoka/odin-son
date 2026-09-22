@@ -299,12 +299,7 @@ display_extra :: proc(
 			copy(mem.ptr_to_bytes(&slt), reflect.as_bytes(extra))
 			slt >>= fld.offset
 			slt &~= (i64(-1) << fld.size)
-			display_extra(
-				w,
-				any{&slt, fld.type.id},
-				fld.name,
-				written_one,
-			)
+			display_extra(w, any{&slt, fld.type.id}, fld.name, written_one)
 		}
 		return
 	}

@@ -171,12 +171,7 @@ peep :: proc(
 	id := bac.get_node_id(ctx, node)
 	is_complete := bac.peep_ctx_graph_is_complete(ctx)
 
-	DEAD_EXCEPTIONS := bit_set[bac.Node_Type] {
-		.Region,
-		.Start,
-		.Loop,
-		.Dead,
-	}
+	DEAD_EXCEPTIONS := bit_set[bac.Node_Type]{.Region, .Start, .Loop, .Dead}
 
 	if bac.is_cfg(ctx, id) && node.itype not_in DEAD_EXCEPTIONS {
 		idom := expand_node(ctx, node.inps[0])
@@ -191,8 +186,7 @@ peep :: proc(
 		base, _ := bac.base_and_offset(ctx, node.inps[2])
 		bnode := expand_node(ctx, base)
 		if bnode.itype != .Local_Addr do break emilinate_dead_local
-		if bac.get_extra(ctx, bnode.inps[0], Local).size ==
-		   bac.DEAD_LOCAL {
+		if bac.get_extra(ctx, bnode.inps[0], Local).size == bac.DEAD_LOCAL {
 			return node.inps[1]
 		}
 	}
@@ -496,12 +490,7 @@ peep :: proc(
 						bac.connect(ctx, out.id, iinp)
 					}
 
-					bac.set_input(
-						ctx,
-						out.id,
-						1 + i,
-						to_merge.inps[1],
-					)
+					bac.set_input(ctx, out.id, 1 + i, to_merge.inps[1])
 				}
 
 				bac.connect(ctx, id, prev_cached)
@@ -807,10 +796,7 @@ peep :: proc(
 			imm: i64
 			size: int
 			common_ctrl := node.inps[0]
-			common_base, prev_offset := bac.base_and_offset(
-				ctx,
-				node.inps[2],
-			)
+			common_base, prev_offset := bac.base_and_offset(ctx, node.inps[2])
 			prev_offset += bac.DT_SIZE[get_node(ctx, node.inps[3]).dt]
 			cursor := id
 			last_valid: Node_ID
@@ -897,10 +883,7 @@ peep :: proc(
 					}
 					if onode.itype == .Copy &&
 					   bac.is_noalias(ctx, node.inps[2], onode.inps[3]) {}
-					osize := bac.mem_op_size(
-						ctx,
-						out.id,
-					) or_break eliminate
+					osize := bac.mem_op_size(ctx, out.id) or_break eliminate
 					obase, ooff := bac.base_and_offset(ctx, onode.inps[2])
 					if base != obase {
 						break eliminate
@@ -1046,12 +1029,7 @@ peep :: proc(
 			for out in cnode.outs {
 				onode := expand_node(ctx, out.id)
 
-				ALLOWED := bit_set[bac.Node_Type] {
-					.Store,
-					.Load,
-					.Set,
-					.Copy,
-				}
+				ALLOWED := bit_set[bac.Node_Type]{.Store, .Load, .Set, .Copy}
 
 				blocker = out.id
 
@@ -1215,29 +1193,10 @@ peep :: proc(
 			table := [?]bac.Node_Datatype{.I8, .I16, .I32, .I64, .V128}
 			dt := table[idx]
 			vl := bac.add_c_int(ctx, "zrsp", dt, 0)
-			off := bac.add_c_int(
-				ctx,
-				"zroffv",
-				.I64,
-				i64(slot.offset),
-			)
-			dst := bac.add_bin_op(
-				ctx,
-				"zroff",
-				.Add,
-				.I64,
-				node.inps[2],
-				off,
-			)
+			off := bac.add_c_int(ctx, "zroffv", .I64, i64(slot.offset))
+			dst := bac.add_bin_op(ctx, "zroff", .Add, .I64, node.inps[2], off)
 			bac.worklist_add(ctx, ctx.worklist, dst)
-			mem_thread = bac.add_store(
-				ctx,
-				"zrst",
-				ctrl,
-				mem_thread,
-				dst,
-				vl,
-			)
+			mem_thread = bac.add_store(ctx, "zrst", ctrl, mem_thread, dst, vl)
 			bac.worklist_add(ctx, ctx.worklist, mem_thread)
 		}
 
@@ -1259,9 +1218,7 @@ post_schedule_peep :: proc(
 	return 0
 }
 
-emit_function :: proc(
-	ectx: bac.Codegen_Emit_Ctx,
-) -> bac.Codegen_Output {
+emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 
 	return {}
 }

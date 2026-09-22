@@ -339,12 +339,7 @@ emit_lvalue :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Sym {
 		vl := ctx.poly_types[idmt.index]
 		assert(vl.meta.type == .Int)
 		return Value(
-			bac.add_c_int(
-				ctx,
-				"cnst",
-				type_to_dt(meta.type),
-				vl.meta.int,
-			),
+			bac.add_c_int(ctx, "cnst", type_to_dt(meta.type), vl.meta.int),
 		)
 	case .Local:
 		fmt.assertf(idmt.index < len(ctx.scope), "%#v", id)
@@ -376,12 +371,7 @@ emit_lvalue :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Sym {
 		}
 
 		return Value(
-			bac.add_c_int(
-				ctx,
-				"cnst",
-				type_to_dt(meta.type),
-				idmt.value,
-			),
+			bac.add_c_int(ctx, "cnst", type_to_dt(meta.type), idmt.value),
 		)
 	case .Nil:
 		#partial switch t in unpack_type(meta.type) {
@@ -396,12 +386,7 @@ emit_lvalue :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Sym {
 	case .Module:
 	case .Builtin:
 		return Value(
-			bac.add_c_int(
-				ctx,
-				"cnst",
-				type_to_dt(meta.type),
-				idmt.value,
-			),
+			bac.add_c_int(ctx, "cnst", type_to_dt(meta.type), idmt.value),
 		)
 	}
 
@@ -450,12 +435,7 @@ store_value_ty :: proc(
 				ctx_mem(ctx),
 				ptr,
 				value.id,
-				bac.add_c_int(
-					ctx,
-					"msize",
-					.I64,
-					i64(type_size(ty)),
-				),
+				bac.add_c_int(ctx, "msize", .I64, i64(type_size(ty))),
 			),
 		)
 	} else {
@@ -473,12 +453,7 @@ store_union :: proc(
 	idx, ok := typecheck.union_variant_index(u, member_ty)
 	assert(ok)
 	store_value(ctx, "unionv", dest, member_val, member_ty)
-	tag := bac.add_c_int(
-		ctx,
-		"utag",
-		type_to_dt(u.tag_ty),
-		i64(idx + 1),
-	)
+	tag := bac.add_c_int(ctx, "utag", type_to_dt(u.tag_ty), i64(idx + 1))
 	field_store(ctx, "utagst", dest, u.tag_offset, tag)
 }
 
@@ -827,11 +802,7 @@ emit_proc :: proc(
 	builder.init_graph(ctx)
 
 	ctx.node_scope = builder.add_scope(ctx, "scope", ctx.entry)
-	ctx.mem_slot = builder.push_scope_value(
-		ctx,
-		ctx.node_scope,
-		ctx.root_mem,
-	)
+	ctx.mem_slot = builder.push_scope_value(ctx, ctx.node_scope, ctx.root_mem)
 
 	rabi := typecheck.ret_abi(prc.rets[:])
 	ctx.ret_ptrs = nil
@@ -857,11 +828,7 @@ emit_proc :: proc(
 
 		value_idx: typecheck.Varuable_Idx
 		if apa.scalar && !apa.by_ptr {
-			value_idx = builder.push_scope_value(
-				ctx,
-				ctx.node_scope,
-				value,
-			)
+			value_idx = builder.push_scope_value(ctx, ctx.node_scope, value)
 		} else {
 			value_idx = value
 		}
@@ -1189,11 +1156,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 						name,
 						op,
 						type_to_dt(get_node_type(lhs)),
-						builder.get_scope_value(
-							ctx,
-							ctx.node_scope,
-							sym,
-						),
+						builder.get_scope_value(ctx, ctx.node_scope, sym),
 						value,
 						lane,
 					)
@@ -1306,14 +1269,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 
 			if d.op.kind == .Sub && dt in bac.FLOAT_DTS {
 				zero := emit_float_const(ctx, dt, 0)
-				res = bac.add_bin_op(
-					ctx,
-					"fneg",
-					.F_Sub,
-					dt,
-					zero,
-					operand,
-				)
+				res = bac.add_bin_op(ctx, "fneg", .F_Sub, dt, zero, operand)
 				break
 			}
 
@@ -1403,11 +1359,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 					)
 				} else {
 					get_node(ctx, r.id).name = name
-					idx := builder.push_scope_value(
-						ctx,
-						ctx.node_scope,
-						r.id,
-					)
+					idx := builder.push_scope_value(ctx, ctx.node_scope, r.id)
 					append(
 						&ctx.scope,
 						typecheck.Variable{name, idx, vty, d.names[i], flags},
@@ -1520,11 +1472,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				)
 
 				get_node(ctx, value).name = name
-				idx := builder.push_scope_value(
-					ctx,
-					ctx.node_scope,
-					value,
-				)
+				idx := builder.push_scope_value(ctx, ctx.node_scope, value)
 				append(
 					&ctx.scope,
 					typecheck.Variable{name, idx, vty, d.names[i], flags},
@@ -1642,12 +1590,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			#partial switch nt in unpack_type(t^) {
 			case ^typecheck.Array:
 				base_ptr = to_rvalue(ctx, base, get_node_type(d.expr))
-				src_len = bac.add_c_int(
-					ctx,
-					"alen",
-					.I64,
-					i64(nt.len),
-				)
+				src_len = bac.add_c_int(ctx, "alen", .I64, i64(nt.len))
 			case:
 				fmt.panicf("TODO: index ptr to type of %#v", t)
 			}
@@ -1689,14 +1632,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		if high != 0 {
 			dest = prop.dest != 0 ? prop.dest : alloca(ctx, "slice", ty)
 			field_store(ctx, "sptr", dest, 0, new_data)
-			new_len := bac.add_bin_op(
-				ctx,
-				"snl",
-				.Sub,
-				.I64,
-				high,
-				low,
-			)
+			new_len := bac.add_bin_op(ctx, "snl", .Sub, .I64, high, low)
 			field_store(ctx, "sptr", dest, 8, new_len)
 		}
 
@@ -1900,12 +1836,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 
 		if_state: builder.If_State
 		builder.start_if(ctx, ctx.node_scope, &if_state, cond)
-		builder.loop_control(
-			.Break,
-			ctx,
-			ctx.node_scope,
-			&loop_state.bstate,
-		)
+		builder.loop_control(.Break, ctx, ctx.node_scope, &loop_state.bstate)
 		ctx.node_scope = 0
 		builder.end_if(ctx, &ctx.node_scope, &if_state)
 
@@ -1936,27 +1867,12 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 
 		emit_nodes(ctx, {}, d.body)
 
-		builder.start_loop_increment(
-			ctx,
-			&ctx.node_scope,
-			&loop_state.bstate,
-		)
+		builder.start_loop_increment(ctx, &ctx.node_scope, &loop_state.bstate)
 
 		if ctx.node_scope != 0 {
-			idxv3 := builder.get_scope_value(
-				ctx,
-				ctx.node_scope,
-				idx_slot,
-			)
+			idxv3 := builder.get_scope_value(ctx, ctx.node_scope, idx_slot)
 			one := bac.add_c_int(ctx, "r1", .I64, 1)
-			nidx := bac.add_bin_op(
-				ctx,
-				"rinc",
-				.Add,
-				.I64,
-				idxv3,
-				one,
-			)
+			nidx := bac.add_bin_op(ctx, "rinc", .Add, .I64, idxv3, one)
 			builder.set_scope_value(ctx, ctx.node_scope, idx_slot, nidx)
 		}
 
@@ -2186,21 +2102,9 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				if dest_dt == src_dt {
 					res = arg
 				} else if dest_dt == .F64 {
-					res = bac.add_un_op(
-						ctx,
-						"fext",
-						.F_Ext,
-						dest_dt,
-						arg,
-					)
+					res = bac.add_un_op(ctx, "fext", .F_Ext, dest_dt, arg)
 				} else {
-					res = bac.add_un_op(
-						ctx,
-						"fdem",
-						.F_Demote,
-						dest_dt,
-						arg,
-					)
+					res = bac.add_un_op(ctx, "fdem", .F_Demote, dest_dt, arg)
 				}
 			case dst_float && !src_float:
 				wide := arg
@@ -2209,21 +2113,9 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 						src_ty in typecheck.SIGNED_TYPES ? .Sext : .Uext
 					wide = bac.add_un_op(ctx, "iwd", wop, .I64, arg)
 				}
-				res = bac.add_un_op(
-					ctx,
-					"i2f",
-					.F_From_I,
-					dest_dt,
-					wide,
-				)
+				res = bac.add_un_op(ctx, "i2f", .F_From_I, dest_dt, wide)
 			case !dst_float && src_float:
-				res = bac.add_un_op(
-					ctx,
-					"f2i",
-					.F_To_I,
-					dest_dt,
-					arg,
-				)
+				res = bac.add_un_op(ctx, "f2i", .F_To_I, dest_dt, arg)
 			case dest_dt != src_dt:
 				op: bac.Un_Op = .Uext
 				if src_ty in typecheck.SIGNED_TYPES {

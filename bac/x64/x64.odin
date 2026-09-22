@@ -219,8 +219,8 @@ Mem_Op :: struct {
 	dis:      i32,
 	scale:    u8,
 	using mt: bit_field u8 {
-		signed:   bool                  | 1,
-		mem_mode: Mem_Mode              | 2,
+		signed:   bool              | 1,
+		mem_mode: Mem_Mode          | 2,
 		dt:       bac.Node_Datatype | 4,
 	},
 	aux:      u8,
@@ -229,8 +229,7 @@ Mem_Op :: struct {
 BIN_OP_OFFSET :: transmute(u16)(i16(Node_Type.X64_Add) -
 	i16(bac.Node_Type.Add))
 
-UN_OP_OFFSET :: transmute(u16)(i16(Node_Type.X64_Neg) -
-	i16(bac.Node_Type.Neg))
+UN_OP_OFFSET :: transmute(u16)(i16(Node_Type.X64_Neg) - i16(bac.Node_Type.Neg))
 
 FLOAT_BIN_OP_OFFSET :: transmute(u16)(i16(Node_Type.X64_F_Add) -
 	i16(bac.Node_Type.F_Add))
@@ -422,14 +421,7 @@ peep :: proc(
 				{aux = 0b01010101},
 			)
 
-			add2 := bac.add_bin_op(
-				ctx,
-				"radd",
-				.Add,
-				inp.dt,
-				pshufd2,
-				add,
-			)
+			add2 := bac.add_bin_op(ctx, "radd", .Add, inp.dt, pshufd2, add)
 			get_node(ctx, add).lane = node.lane
 
 			_, lhs := add_node(
@@ -441,14 +433,7 @@ peep :: proc(
 				{aux = 1},
 			)
 			rhs := bac.add_un_op(ctx, "rhs", .Cast, node.dt, add2)
-			return bac.add_bin_op(
-				ctx,
-				"sum",
-				.Add,
-				node.dt,
-				lhs,
-				rhs,
-			)
+			return bac.add_bin_op(ctx, "sum", .Add, node.dt, lhs, rhs)
 		case .I32:
 			_, pshufd := add_node(
 				ctx,
@@ -478,14 +463,7 @@ peep :: proc(
 				{aux = 1},
 			)
 			rhs := bac.add_un_op(ctx, "rhs", .Cast, node.dt, add)
-			return bac.add_bin_op(
-				ctx,
-				"sum",
-				.Add,
-				node.dt,
-				lhs,
-				rhs,
-			)
+			return bac.add_bin_op(ctx, "sum", .Add, node.dt, lhs, rhs)
 		case .I64:
 			_, lhs := add_node(
 				ctx,
@@ -495,21 +473,8 @@ peep :: proc(
 				{node.inps[0]},
 				{aux = 1},
 			)
-			rhs := bac.add_un_op(
-				ctx,
-				"rhs",
-				.Cast,
-				.I64,
-				node.inps[0],
-			)
-			return bac.add_bin_op(
-				ctx,
-				"sum",
-				.Add,
-				node.dt,
-				lhs,
-				rhs,
-			)
+			rhs := bac.add_un_op(ctx, "rhs", .Cast, .I64, node.inps[0])
+			return bac.add_bin_op(ctx, "sum", .Add, node.dt, lhs, rhs)
 		case:
 			fmt.panicf("TODO: %v", node.lane)
 		}
@@ -580,11 +545,7 @@ peep :: proc(
 				ascale = xextra(ctx, rhs, Mem_Op).imm
 				aindex = rhs.inps[0]
 			} else if rhs.itype == .Mul {
-				arhs_const := bac.get_extra(
-					ctx,
-					rhs.inps[1],
-					bac.CInt,
-				)
+				arhs_const := bac.get_extra(ctx, rhs.inps[1], bac.CInt)
 				if arhs_const != nil &&
 				   i64(i32(arhs_const.value)) == arhs_const.value {
 					ascale = i32(arhs_const.value)
@@ -633,12 +594,7 @@ peep :: proc(
 			return id
 		}
 	case .Load:
-		load_inps := [4]bac.Node_ID {
-			node.inps[0],
-			node.inps[1],
-			base,
-			index,
-		}
+		load_inps := [4]bac.Node_ID{node.inps[0], node.inps[1], base, index}
 		res := make_node(
 			ctx,
 			id,
@@ -701,10 +657,7 @@ peep :: proc(
 			changed = true
 		}
 
-		swap_out_imm :: proc(
-			ctx: bac.Peep_Ctx,
-			node: bac.Expanded_Node,
-		) {
+		swap_out_imm :: proc(ctx: bac.Peep_Ctx, node: bac.Expanded_Node) {
 			id := bac.get_node_id(ctx, node)
 			outs := bac.get_outputs(ctx, node.inps[4])
 			oi :=
@@ -938,20 +891,13 @@ post_schedule_peep :: proc(
 			mem_op.mem_mode = .Src
 			mem_op.dt = rhs.dt
 
-			slots := [?]bac.Node_ID {
-				rhs.inps[0],
-				node.inps[0],
-				node.inps[1],
-			}
+			slots := [?]bac.Node_ID{rhs.inps[0], node.inps[0], node.inps[1]}
 
 			return make_node(ctx, id, node.rtype, slots[:], mem_op^)
 		}
 	}
 
-	has_no_clobbers :: proc(
-		ctx: bac.PS_Peep_Ctx,
-		inp: bac.Node_ID,
-	) -> bool {
+	has_no_clobbers :: proc(ctx: bac.PS_Peep_Ctx, inp: bac.Node_ID) -> bool {
 		#reverse for pred in ctx.preds {
 			if pred == inp do return true
 			if get_node(ctx, pred).rtype == bac.DEAD_NODE_KIND do continue
@@ -1088,12 +1034,7 @@ meta_of :: proc(
 		return {out = out}
 	case .Param:
 		return {
-			out = bac.param_mask(
-				graph,
-				ra,
-				node,
-				spill_base = GPA_REG_COUNT,
-			),
+			out = bac.param_mask(graph, ra, node, spill_base = GPA_REG_COUNT),
 		}
 	case .CInt:
 		return {out = out}
@@ -1400,9 +1341,7 @@ emit_big_constant :: proc(
 	return
 }
 
-emit_function :: proc(
-	ectx: bac.Codegen_Emit_Ctx,
-) -> bac.Codegen_Output {
+emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 	context.allocator, _ = arna.scrath()
 
 	reloc_start := ectx.relocs.pos
@@ -1416,11 +1355,7 @@ emit_function :: proc(
 	slot: [2]int
 	ctx.used = bit_arr.init_from_masks(slot[:])
 
-	has_call := bac.layout_call_args(
-		ctx.graph,
-		ctx.schedule,
-		&ctx.stack_size,
-	)
+	has_call := bac.layout_call_args(ctx.graph, ctx.schedule, &ctx.stack_size)
 	bac.layout_locals(ctx.graph, ctx.schedule, &ctx.stack_size)
 
 	used_red_zone: i32
@@ -1591,12 +1526,7 @@ emit_function :: proc(
 	}
 }
 
-emit_cfi :: proc(
-	ctx: ^Ctx,
-	kind: bac.Cfi_Kind,
-	reg: u8 = 0,
-	arg: u32 = 0,
-) {
+emit_cfi :: proc(ctx: ^Ctx, kind: bac.Cfi_Kind, reg: u8 = 0, arg: u32 = 0) {
 	if !ctx.has_dbg do return
 	bac.add_cfi(ctx.cfi)^ = {
 		offset = u32(ctx.code.pos - ctx.code_start),
@@ -2831,10 +2761,7 @@ reg_and_disp_of :: proc(ctx: ^Ctx, id: bac.Node_ID) -> (Reg, i32, u32) {
 			tup.idx = emit_big_constant(
 				ctx,
 				bac.DT_SIZE[node.dt],
-				mem.slice_data_cast(
-					[]u8,
-					bac.get_extra_dwords(ctx, node),
-				),
+				mem.slice_data_cast([]u8, bac.get_extra_dwords(ctx, node)),
 			)
 			node.dt = .Void
 		}
@@ -2844,9 +2771,7 @@ reg_and_disp_of :: proc(ctx: ^Ctx, id: bac.Node_ID) -> (Reg, i32, u32) {
 		return RIP, 0, tup.idx + 1
 	}
 	if node.itype == .Local {
-		return RSP,
-			i32(bac.get_extra(ctx, node, bac.Local).offset),
-			0
+		return RSP, i32(bac.get_extra(ctx, node, bac.Local).offset), 0
 	}
 	return ctx.allocs[node.gvn], 0, 0
 }

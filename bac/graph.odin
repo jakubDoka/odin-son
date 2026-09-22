@@ -563,13 +563,7 @@ get_sym_count :: proc(graph: ^Graph) -> int {
 	return len(get_outputs(graph, graph.sym))
 }
 
-sym_iter_next :: proc(
-	graph: ^Graph,
-	iter: ^int,
-) -> (
-	res: Sym_Ref,
-	ok: bool,
-) {
+sym_iter_next :: proc(graph: ^Graph, iter: ^int) -> (res: Sym_Ref, ok: bool) {
 	arr := get_outputs(graph, graph.sym)
 	if iter^ <= 0 do return
 	iter^ -= 1
@@ -875,8 +869,7 @@ verify :: proc(graph: ^Graph) {
 	queue.init(&wl)
 	collect_nodes(graph, &wl)
 	for n in worklist_next(graph, &wl) {
-		if len(get_outputs(graph, n)) == 0 &&
-		   !has_flag(graph, n, .Immortal) {
+		if len(get_outputs(graph, n)) == 0 && !has_flag(graph, n, .Immortal) {
 			fmt.panicf("%v", get_node(graph, n))
 		}
 		if has_flag(graph, n, .Interned) &&
@@ -2078,8 +2071,7 @@ merge_returns :: proc(graph: ^Graph, args: []Node_ID) -> Node_ID {
 
 		for i in 1 ..< len(end.inps) {
 			fmt.assertf(
-				int(get_node(graph, end.inps[i]).input_count) ==
-				len(reg.inps),
+				int(get_node(graph, end.inps[i]).input_count) == len(reg.inps),
 				"%v %v",
 				reg,
 				get_node(graph, end.inps[i]),
@@ -2167,7 +2159,10 @@ ensure_available_output_cap :: proc(
 		base := u32(graph.mem.pos / PRECISION)
 		new_cap := max(node.output_cap * 2 + 2, node.output_cap + available)
 		slot := arna.alloc(graph.mem, uint(new_cap * PRECISION), PRECISION)
-		copy(mem.slice_data_cast([]Node_Output, slot), get_outputs(graph, node))
+		copy(
+			mem.slice_data_cast([]Node_Output, slot),
+			get_outputs(graph, node),
+		)
 		node.output_cap = new_cap
 		node.output_idx = base
 	}
@@ -2230,10 +2225,7 @@ get_static_extra_node :: #force_inline proc(
 }
 
 @(tag = "node_proc")
-get_any_extra_node :: #force_inline proc(
-	graph: ^Graph,
-	node: ^Node,
-) -> any {
+get_any_extra_node :: #force_inline proc(graph: ^Graph, node: ^Node) -> any {
 	assert(int(node.rtype) < len(graph.node_extra_types))
 	return {&node.extra, graph.node_extra_types[node.rtype]}
 }

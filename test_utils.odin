@@ -316,9 +316,7 @@ run_test :: proc(
 					case .Global:
 						if rel.id >= bac.RELOC_BIG_CONSTANT_BASE {
 							target_off =
-								uintptr(
-									rel.id - bac.RELOC_BIG_CONSTANT_BASE,
-								) +
+								uintptr(rel.id - bac.RELOC_BIG_CONSTANT_BASE) +
 								uintptr(raw_data(p.out.constants))
 						} else {
 							target_off = global_addrs[rel.id]

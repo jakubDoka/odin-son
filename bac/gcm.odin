@@ -270,10 +270,7 @@ schedule_graph :: proc(graph: ^Graph, gs: ^Graph_Schedule, purpose: enum {
 
 			if tree.infinite {
 				if emit_always {
-					prev_sloc := push_sloc(
-						ctx,
-						get_dbg_slot(ctx, node.node)^,
-					)
+					prev_sloc := push_sloc(ctx, get_dbg_slot(ctx, node.node)^)
 					defer pop_sloc(ctx, prev_sloc)
 
 					fmt.assertf(
@@ -366,10 +363,7 @@ schedule_graph :: proc(graph: ^Graph, gs: ^Graph_Schedule, purpose: enum {
 				   node.itype != .Trap &&
 				   node.itype != .If &&
 				   insert_jumps {
-					prev := push_sloc(
-						graph,
-						get_dbg_slot(graph, node.node)^,
-					)
+					prev := push_sloc(graph, get_dbg_slot(graph, node.node)^)
 					jmp := add_jump(graph, "jump", root)
 					pop_sloc(graph, prev)
 					set_input(graph, o.id, o.idx, jmp)

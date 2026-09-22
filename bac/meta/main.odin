@@ -96,8 +96,7 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 			) {
 				if id not_in inheritable {
 					assert(
-						len(inheritable) <
-						size_of(bac.Inherit_Table_Elem) * 8,
+						len(inheritable) < size_of(bac.Inherit_Table_Elem) * 8,
 					)
 					inheritable[id] = len(inheritable)
 				}

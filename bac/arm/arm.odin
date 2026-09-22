@@ -376,9 +376,7 @@ Local_Reloc :: struct {
 	is_bcond: bool,
 }
 
-emit_function :: proc(
-	ectx: bac.Codegen_Emit_Ctx,
-) -> bac.Codegen_Output {
+emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 
 	ctx: Ctx
 	ctx.inner = ectx

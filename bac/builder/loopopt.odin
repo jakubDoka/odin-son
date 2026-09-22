@@ -39,11 +39,7 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 		hnode := get_node(ctx.graph, bb.head)
 		ctx.node_blocks[hnode.gvn] = &bb
 		for instr in bb.instrs {
-			if bac.has_flag(
-				ctx.graph,
-				instr,
-				.Is_Basic_Block_Start,
-			) {continue}
+			if bac.has_flag(ctx.graph, instr, .Is_Basic_Block_Start) {continue}
 			inode := get_node(ctx.graph, instr)
 			ctx.node_blocks[inode.gvn] = &bb
 		}
@@ -113,9 +109,7 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 			nnode,
 		)
 
-		assert(
-			get_node(ctx, break_branch.head).rtype != bac.DEAD_NODE_KIND,
-		)
+		assert(get_node(ctx, break_branch.head).rtype != bac.DEAD_NODE_KIND)
 
 		cond_is_inverted := then_else_bb[0] == break_branch
 
@@ -210,14 +204,7 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 			back := clone_by(ctx, to_clone, 2, exit_blk)
 
 			tcnode := expand_node(ctx, to_clone)
-			join_phi := bac.add_phi(
-				ctx,
-				"urlph",
-				tcnode.dt,
-				join,
-				init,
-				back,
-			)
+			join_phi := bac.add_phi(ctx, "urlph", tcnode.dt, join, init, back)
 			ctx.node_blocks[get_node(ctx, join_phi).gvn] = join_bb
 
 			oouts: []bac.Node_Output = bac.get_outputs(ctx, to_clone)
@@ -237,11 +224,7 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 						dblk = bac.get_inputs(ctx, dblk)[0]
 					}
 					fmt.assertf(
-						bac.has_flag(
-							ctx,
-							dblk,
-							.Is_Basic_Block_Start,
-						),
+						bac.has_flag(ctx, dblk, .Is_Basic_Block_Start),
 						"%v",
 						get_node(ctx, dblk),
 					)
@@ -415,11 +398,7 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 					stride_vl: ^bac.CInt
 
 					if stride_node != 0 {
-						stride_vl = bac.get_extra(
-							ctx,
-							stride_node,
-							bac.CInt,
-						)
+						stride_vl = bac.get_extra(ctx, stride_node, bac.CInt)
 					} else {
 						stride_vl = &CInt{value = 1}
 					}
@@ -481,14 +460,7 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 					)
 					index = bac.apply_peep(ctx, index)
 
-					return bac.add_bin_op(
-						ctx,
-						"snd",
-						.Add,
-						.I64,
-						base,
-						index,
-					)
+					return bac.add_bin_op(ctx, "snd", .Add, .I64, base, index)
 				}
 
 				init := compute_dynamic_index_offset(
@@ -583,12 +555,7 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 								ind.bound,
 								phy.inps[1],
 							),
-							bac.add_c_int(
-								ctx,
-								"scl",
-								.I64,
-								store.stride,
-							),
+							bac.add_c_int(ctx, "scl", .I64, store.stride),
 						)
 						dst = compute_index_offset(
 							ctx,
@@ -727,12 +694,7 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 
 	return
 
-	block_of :: proc(
-		ctx: Ctx,
-		node: Node_ID,
-	) -> (
-		v: ^bac.Graph_Basic_Block,
-	) {
+	block_of :: proc(ctx: Ctx, node: Node_ID) -> (v: ^bac.Graph_Basic_Block) {
 		defer fmt.assertf(v != nil, "%v %v", get_node(ctx, node), int(node))
 		return ctx.node_blocks[get_node(ctx, node).gvn]
 	}
@@ -779,10 +741,7 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 		return ref
 	}
 
-	in_loop :: proc(
-		this: ^bac.Loop_Tree,
-		tested: ^bac.Loop_Tree,
-	) -> bool {
+	in_loop :: proc(this: ^bac.Loop_Tree, tested: ^bac.Loop_Tree) -> bool {
 		assert(tested != nil)
 		assert(this != nil)
 		for cursor := tested; cursor != nil; cursor = cursor.parent {

@@ -459,11 +459,7 @@ regalloc_round :: proc(
 
 			pred_block := get_node(graph, bac.get_idom(graph, pred))
 			fmt.assertf(
-				bac.has_flag(
-					graph,
-					pred_block,
-					.Is_Basic_Block_Start,
-				),
+				bac.has_flag(graph, pred_block, .Is_Basic_Block_Start),
 				"%v",
 				pred_block,
 			)
@@ -530,11 +526,7 @@ regalloc_round :: proc(
 			return
 		}
 
-		add_conflict :: proc(
-			ctx: ^Ctx,
-			lrg: ^bac.Lrg,
-			a, b: Node_ID,
-		) -> bool {
+		add_conflict :: proc(ctx: ^Ctx, lrg: ^bac.Lrg, a, b: Node_ID) -> bool {
 			assert(a != 0)
 			assert(b != 0)
 
@@ -776,8 +768,7 @@ regalloc_round :: proc(
 
 					// NOTE: we do this even if we already failed as we
 					// also mark the killed lrgs
-					if bac.reg_mask_pop_count(slrg.lrg.mask) == 1 &&
-					   i == 0 {
+					if bac.reg_mask_pop_count(slrg.lrg.mask) == 1 && i == 0 {
 						reg =
 							bac.reg_mask_first_set(
 								slrg.lrg.mask,
@@ -788,8 +779,7 @@ regalloc_round :: proc(
 								reg,
 								value = false,
 							)
-							if bac.reg_mask_pop_count(oslrg.lrg.mask) ==
-							   0 {
+							if bac.reg_mask_pop_count(oslrg.lrg.mask) == 0 {
 								ok = false
 								oslrg.lrg.killed = true
 							}
@@ -1093,8 +1083,7 @@ regalloc_round :: proc(
 			yes: bool,
 		) {
 			return(
-				bac.reg_mask_pop_count(lrg.mask) >
-					len(ctx.adj[lrg.index]) &&
+				bac.reg_mask_pop_count(lrg.mask) > len(ctx.adj[lrg.index]) &&
 				lrg.color_ord_idx >= u32(ready) \
 			)
 		}
@@ -1651,10 +1640,7 @@ regalloc_round :: proc(
 
 	return
 
-	assert_matching_masks :: proc(
-		a, b: bac.Reg_Mask,
-		node: ^bac.Node,
-	) {
+	assert_matching_masks :: proc(a, b: bac.Reg_Mask, node: ^bac.Node) {
 		fmt.assertf(
 			bac.reg_mask_intersection_pop_count(a, b) ==
 			max(bac.reg_mask_pop_count(a), bac.reg_mask_pop_count(b)),
@@ -1719,8 +1705,7 @@ regalloc_round :: proc(
 					block := &bb
 					i := i
 					if inode.itype == .Phi {
-						last :=
-							bac.get_inputs(ctx.graph, inode.inps[0])[idx]
+						last := bac.get_inputs(ctx.graph, inode.inps[0])[idx]
 						block = get_node_block(ctx, last)
 						i = len(block.instrs)
 					}

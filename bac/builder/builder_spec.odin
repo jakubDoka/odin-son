@@ -33,8 +33,5 @@ when SPEC_NOT_PRESENT {
 		cfg: Node_ID,
 	) -> Node_ID {return 0}
 
-	add_dead :: proc(
-		graph: ^bac.Graph,
-		name: string,
-	) -> Node_ID {return 0}
+	add_dead :: proc(graph: ^bac.Graph, name: string) -> Node_ID {return 0}
 }

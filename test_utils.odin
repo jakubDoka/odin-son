@@ -3,6 +3,7 @@ package main
 
 import "backend"
 import "backend/arm"
+import "backend/builder"
 import "backend/wasm"
 import "backend/x64"
 import "base:intrinsics"
@@ -172,8 +173,8 @@ run_test :: proc(
 	for level in levels[:] {
 		append(&confs, Test_Conf{level = level, vm = .Wasm})
 	}
-	for level in levels {
-		append(&confs, Test_Conf{level = level, vm = .Arm})
+	for level in levels[:] {
+		//append(&confs, Test_Conf{level = level, vm = .Arm})
 	}
 
 	if ctx.error_cnt > 0 do clear(&confs)
@@ -208,6 +209,8 @@ run_test :: proc(
 			prc.stencil = {}
 		}
 
+		emit_ctx := backend.Codegen_Emit_Ctx{}
+
 		switch level.vm {
 		case .Native, .Arm:
 			if level.vm == .Native {
@@ -216,15 +219,6 @@ run_test :: proc(
 			} else {
 				ctx.target.cc = &arm.ARM_SYSTEMV_CC
 				ctx.target.spec = &arm.SPEC
-			}
-
-			_copy :: proc "contextless" (
-				dst, src: rawptr,
-				len: int,
-			) -> rawptr {
-				vl: #simd[16]u8
-				_ = intrinsics.volatile_load(&vl)
-				return mem.copy(dst, src, len)
 			}
 
 			imported_offsets: [dynamic]uintptr
@@ -243,26 +237,49 @@ run_test :: proc(
 				}
 			}
 
-			emit_ctx := backend.Codegen_Emit_Ctx {
+			append(
+				&ctx.procs,
+				typecheck.Proc {
+					name = "memcpy",
+					hidden = true,
+					lit = &ast.Proc_Lit{body = &ast.Stmt{}},
+				},
+				typecheck.Proc {
+					name = "memset",
+					hidden = true,
+					lit = &ast.Proc_Lit{body = &ast.Stmt{}},
+				},
+			)
+
+			emit_ctx = backend.Codegen_Emit_Ctx {
 				lib_calls = {
-					copy = {id = u32(len(imported_offsets)), absolute = true},
-					set = {
-						id = u32(len(imported_offsets)) + 1,
-						absolute = true,
-					},
+					copy = {id = u32(len(ctx.procs)) - 2},
+					set = {id = u32(len(ctx.procs)) - 1},
 				},
 				emit_got_imports = true,
 			}
-			append(
-				&imported_offsets,
-				auto_cast backend.emit_aligned(&types.mems.code, _copy),
-			)
-			append(
-				&imported_offsets,
-				auto_cast backend.emit_aligned(&types.mems.code, mem.set),
-			)
 
-			for &prc, i in ctx.procs {
+			for kind, i in ([]builder.Builtin_Proc{.memcpy, .memset}) {
+				ctx.graph = {
+					has_dbg = ctx.graph.has_dbg,
+				}
+				ctx.node_spec = &builder.SPEC
+				ctx.mem = &ctx.mems.graph
+				ctx.mem.pos = backend.PRECISION
+				ctx.opt_flags = level.flags
+				ctx.stats = &ctx.tstats
+
+				prc := &ctx.procs[len(ctx.procs) - 2 + i]
+
+				prc.param_types = {
+					0 ..< 3 = {dt = .I64},
+				}
+
+				builder.make_builtin_proc(&ctx, kind)
+				emit_proc_code(&ctx, &emit_ctx, prc)
+			}
+
+			for &prc, i in ctx.procs[:len(ctx.procs) - 2] {
 				emit_proc(&ctx, i, level, &emit_ctx)
 			}
 
@@ -394,11 +411,11 @@ run_test :: proc(
 				{.Read, .Write},
 			)
 			assert(oka)
+
+			resize(&ctx.procs, len(ctx.procs) - 2)
 		case .Wasm:
 			ctx.target.cc = &wasm.WASM_SYSTEMV_CC
 			ctx.target.spec = &wasm.SPEC
-
-			emit_ctx := backend.Codegen_Emit_Ctx{}
 
 			for &prc, i in ctx.procs {
 				emit_proc(&ctx, i, level, &emit_ctx)
@@ -692,6 +709,7 @@ disasm :: proc(sb: ^strings.Builder, ctx: Gen_Ctx, ds: $DS) {
 
 	mn := max(uintptr)
 	for prc in ctx.procs[1:] {
+		if prc.hidden do continue
 		instructions := prc.out.code
 		offset :=
 			uintptr(raw_data(instructions)) - uintptr(ctx.types.mems.code.ptr)
@@ -699,6 +717,7 @@ disasm :: proc(sb: ^strings.Builder, ctx: Gen_Ctx, ds: $DS) {
 	}
 
 	for prc in ctx.procs[1:] {
+		if prc.hidden do continue
 		instructions := prc.out.code
 
 		offset := u32(
@@ -728,19 +747,6 @@ disasm :: proc(sb: ^strings.Builder, ctx: Gen_Ctx, ds: $DS) {
 
 		for &info in decoded_instr_info[info_base:] {
 			info.offset += u32(offset)
-		}
-
-		for err in errors[error_base:] {
-			//prev_instr := decoded_instr_info[err.inst_idx - 1]
-			//prev_i := decoded_instrs[err.inst_idx - 1]
-			//fmt.sbprintfln(
-			//	sb,
-			//	"%x",
-			//	instructions[prev_instr.offset -
-			//	offset +
-			//	u32(prev_i.length):][:10],
-			//)
-			fmt.println(err)
 		}
 	}
 

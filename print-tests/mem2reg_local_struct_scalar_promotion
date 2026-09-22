@@ -10,7 +10,7 @@ main:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0x18
-    call.q [rip - 0x38]
+    call -0x4f
     mov rdi, 0xa
     call opaque
     mov.q [rsp], rax
@@ -38,7 +38,7 @@ main:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0x18
-    call.q [rip - 0x28]
+    call -0x3f
     mov rdi, 0xa
     call opaque
     mov.q [rsp], rax
@@ -69,7 +69,7 @@ main:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0x18
-    call.q [rip - 0x38]
+    call -0x4f
     mov rdi, 0xa
     call opaque
     mov.q [rsp], rax
@@ -97,7 +97,7 @@ main:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0x18
-    call.q [rip - 0x28]
+    call -0x3f
     mov rdi, 0xa
     call opaque
     mov.q [rsp], rax
@@ -852,3 +852,51 @@ main:
   (elem (;0;) (i32.const 0) func)
   (data (;0;) (i64.const 1048576) "")
 )
+=========== OPT LEVEL: none-quick ===========
+opaque:
+    ret
+main:
+    sub sp, sp, #48
+    str x19, [xzr]
+    stp x29, x30, [xzr, #15]
+    movz x1, #0, #0
+    movz x2, #24, #0
+    add x0, sp, #24
+    bl 0xffffffe0
+    movz x0, #10, #0
+    bl 0xfffffffc
+    add x1, sp, #24
+    str x0, [x1]
+    movz x0, #20, #0
+    bl 0xfffffffc
+    movz x1, #8, #0
+    add x2, sp, #24
+    add x19, x1, x2
+    str x0, [x19]
+    movz x0, #30, #0
+    bl 0xfffffffc
+    movz x1, #16, #0
+    add x2, sp, #24
+    add x1, x1, x2
+    str x0, [x1]
+    add x0, sp, #24
+    ldr x0, [x0]
+    ldr x2, [x19]
+    add x0, x0, x2
+    add x2, sp, #24
+    str x0, [x2]
+    ldr x0, [x1]
+    add x2, sp, #24
+    ldr x2, [x2]
+    add x0, x0, x2
+    str x0, [x1]
+    add x0, sp, #24
+    ldr x0, [x0]
+    ldr x2, [x19]
+    add x0, x0, x2
+    ldr x1, [x1]
+    add x0, x0, x1
+    ldr x19, [xzr]
+    ldp x29, x30, [xzr, #15]
+    add sp, sp, #48
+    ret

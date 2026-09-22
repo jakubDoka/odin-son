@@ -22,73 +22,32 @@ RK_GENERAL :: Reg_Kind(0)
 RK_VECTOR :: Reg_Kind(1)
 RK_COUNT :: 2
 
-X0 :: Reg(0)
-X1 :: Reg(1)
-X2 :: Reg(2)
-X3 :: Reg(3)
-X4 :: Reg(4)
-X5 :: Reg(5)
-X6 :: Reg(6)
-X7 :: Reg(7)
-X8 :: Reg(8)
-X9 :: Reg(9)
-X10 :: Reg(10)
-X11 :: Reg(11)
-X12 :: Reg(12)
-X13 :: Reg(13)
-X14 :: Reg(14)
-X15 :: Reg(15)
-X16 :: Reg(16)
-X17 :: Reg(17)
-X18 :: Reg(18)
-X19 :: Reg(19)
-X20 :: Reg(20)
-X21 :: Reg(21)
-X22 :: Reg(22)
-X23 :: Reg(23)
-X24 :: Reg(24)
-X25 :: Reg(25)
-X26 :: Reg(26)
-X27 :: Reg(27)
-X28 :: Reg(28)
-X29 :: Reg(29)
-X30 :: Reg(30)
-XZR :: Reg(31)
-SP :: Reg(31)
+@(rodata)
+SPILL_SLOT_SIZE := [RK_COUNT]i32 {
+	RK_GENERAL = 8,
+	RK_VECTOR  = 16,
+}
+
+X0, X1, X2, X3, X4, X5 :: Reg(0), Reg(1), Reg(2), Reg(3), Reg(4), Reg(5)
+X6, X7, X8, X9, X10, X11 :: Reg(6), Reg(7), Reg(8), Reg(9), Reg(10), Reg(11)
+X12, X13, X14, X15, X16 :: Reg(12), Reg(13), Reg(14), Reg(15), Reg(16)
+X17, X18, X19, X20, X21 :: Reg(17), Reg(18), Reg(19), Reg(20), Reg(21)
+X22, X23, X24, X25, X26 :: Reg(22), Reg(23), Reg(24), Reg(25), Reg(26)
+X27, X28, X29, X30 :: Reg(27), Reg(28), Reg(29), Reg(30)
+XZR, SP :: Reg(31), Reg(31)
 
 V_BANK :: u16(RK_VECTOR) << 12
-V0 :: Reg(V_BANK | 0)
-V1 :: Reg(V_BANK | 1)
-V2 :: Reg(V_BANK | 2)
-V3 :: Reg(V_BANK | 3)
-V4 :: Reg(V_BANK | 4)
-V5 :: Reg(V_BANK | 5)
-V6 :: Reg(V_BANK | 6)
-V7 :: Reg(V_BANK | 7)
-V8 :: Reg(V_BANK | 8)
-V9 :: Reg(V_BANK | 9)
-V10 :: Reg(V_BANK | 10)
-V11 :: Reg(V_BANK | 11)
-V12 :: Reg(V_BANK | 12)
-V13 :: Reg(V_BANK | 13)
-V14 :: Reg(V_BANK | 14)
-V15 :: Reg(V_BANK | 15)
-V16 :: Reg(V_BANK | 16)
-V17 :: Reg(V_BANK | 17)
-V18 :: Reg(V_BANK | 18)
-V19 :: Reg(V_BANK | 19)
-V20 :: Reg(V_BANK | 20)
-V21 :: Reg(V_BANK | 21)
-V22 :: Reg(V_BANK | 22)
-V23 :: Reg(V_BANK | 23)
-V24 :: Reg(V_BANK | 24)
-V25 :: Reg(V_BANK | 25)
-V26 :: Reg(V_BANK | 26)
-V27 :: Reg(V_BANK | 27)
-V28 :: Reg(V_BANK | 28)
-V29 :: Reg(V_BANK | 29)
-V30 :: Reg(V_BANK | 30)
-V31 :: Reg(V_BANK | 31)
+V0, V1, V2 :: Reg(V_BANK | 0), Reg(V_BANK | 1), Reg(V_BANK | 2)
+V3, V4, V5 :: Reg(V_BANK | 3), Reg(V_BANK | 4), Reg(V_BANK | 5)
+V6, V7, V8 :: Reg(V_BANK | 6), Reg(V_BANK | 7), Reg(V_BANK | 8)
+V9, V10, V11 :: Reg(V_BANK | 9), Reg(V_BANK | 10), Reg(V_BANK | 11)
+V12, V13, V14 :: Reg(V_BANK | 12), Reg(V_BANK | 13), Reg(V_BANK | 14)
+V15, V16, V17 :: Reg(V_BANK | 15), Reg(V_BANK | 16), Reg(V_BANK | 17)
+V18, V19, V20 :: Reg(V_BANK | 18), Reg(V_BANK | 19), Reg(V_BANK | 20)
+V21, V22, V23 :: Reg(V_BANK | 21), Reg(V_BANK | 22), Reg(V_BANK | 23)
+V24, V25, V26 :: Reg(V_BANK | 24), Reg(V_BANK | 25), Reg(V_BANK | 26)
+V27, V28, V29 :: Reg(V_BANK | 27), Reg(V_BANK | 28), Reg(V_BANK | 29)
+V30, V31 :: Reg(V_BANK | 30), Reg(V_BANK | 31)
 
 ARM_SYSTEMV_CC := backend.Call_Conv {
 	name         = "ARM_SYSTEMV_CC",
@@ -159,7 +118,10 @@ when SPEC_NOT_PRESENT {
 
 	inherit_idx_of :: proc($T: typeid) -> u8 {return 0}
 
-	Node_Type :: enum u16 {}
+	Node_Type :: enum u16 {
+		Msub,
+		CLoad,
+	}
 }
 
 Op :: u32
@@ -189,6 +151,22 @@ peep :: proc(
 			node.dt = .Void
 			return id
 		}
+	case .Rem, .U_Rem:
+		return graph_add_msub(
+			ctx,
+			"rmms",
+			node.dt,
+			backend.graph_add_bin_op(
+				ctx,
+				"rmdv",
+				kind == .Rem ? .Div : .U_Div,
+				node.dt,
+				node.inps[0],
+				node.inps[1],
+			),
+			node.inps[1],
+			node.inps[0],
+		)
 	}
 
 	return 0
@@ -211,9 +189,9 @@ meta_of :: #force_inline proc(
 	IOUT :: backend.INVALID_RM_INDEX
 
 	@(static, rodata)
-	GPA_MASK := [?]i64{0x7FFFFFF}
+	GPA_MASK := [?]i64{0x3FFFFFFF}
 	@(static, rodata)
-	GPA_SPILL_MASK := [?]i64{~i64(1 << uint(SP))}
+	GPA_SPILL_MASK := [?]i64{~i64(1 << uint(SP) | 1 << 30)}
 	@(static, rodata)
 	VEC_MASK := [?]i64{0xFFFFFFFF}
 	@(static, rodata)
@@ -290,10 +268,19 @@ meta_of :: #force_inline proc(
 	#partial switch atype(node) {
 	case .Root_Mem, .Sym, .Jump, .Mem, .Local:
 		return {out = IOUT}
-	case .Mul, .Add, .Sub:
+	case .Add ..= .Xor, .Shl ..= .And_Not, .F_Add ..= .F_Div:
 		return {out = out, masks = nmasks[:2]}
+	case .Msub:
+		return {out = out, masks = nmasks[:3]}
 	case .Eq ..= .U_Ge:
 		return {out = out, masks = GPA_MASKS[:2]}
+	case .F_Eq ..= .F_Ge:
+		if out != IOUT {
+			out = GPA_MASK_IDX
+		}
+		return {out = out, masks = VEC_MASKS[:2]}
+	case .F_To_I:
+		return {out = out, masks = VEC_MASKS[:1]}
 	case .CInt, .Local_Addr:
 		return {out = out}
 	case .Phi:
@@ -302,8 +289,8 @@ meta_of :: #force_inline proc(
 			input_start = 1,
 			masks = nmasks[:len(node.inps) - 1],
 		}
-	case .Split:
-		return {out = out, masks = nmasks[:1]}
+	case .Split, .Uext, .Sext:
+		return {out = sout, masks = snmasks[:1]}
 	case .If:
 		return {
 			out = IOUT,
@@ -325,6 +312,18 @@ meta_of :: #force_inline proc(
 		}
 
 		return {out = IOUT, input_start = backend.CALL_PREFIX, masks = masks}
+	case .Set, .Copy:
+		return {
+			out = IOUT,
+			input_start = 2,
+			masks = dup(
+				{
+					single(ra, ARM_SYSTEMV_CC.args[0][0]),
+					single(ra, ARM_SYSTEMV_CC.args[0][1]),
+					single(ra, ARM_SYSTEMV_CC.args[0][2]),
+				},
+			),
+		}
 	case .Store:
 		vl := graph_get(graph, node.inps[3])
 		nkind := ra.datatype_to_reg_kind[vl.dt]
@@ -346,7 +345,7 @@ meta_of :: #force_inline proc(
 	case .Return:
 		return {
 			out = IOUT,
-			input_start = backend.RET_PREFIX,
+			input_start = min(backend.RET_PREFIX, u8(len(node.inps))),
 			masks = dup(
 				{
 					single(ra, ARM_SYSTEMV_CC.rets[0][0]),
@@ -360,13 +359,15 @@ meta_of :: #force_inline proc(
 }
 
 Ctx :: struct {
-	using inner:  backend.Codegen_Emit_Ctx,
-	code_start:   uint,
-	local_relocs: [dynamic]Local_Reloc,
-	used:         bit_arr.Bit_Set,
-	stack_size:   i32,
-	push_base:    i32,
-	has_call:     bool,
+	using inner:        backend.Codegen_Emit_Ctx,
+	code_start:         uint,
+	spill_slot_base:    [RK_COUNT]i32,
+	stack_param_offset: [RK_COUNT][dynamic]i32,
+	local_relocs:       [dynamic]Local_Reloc,
+	used:               bit_arr.Bit_Set,
+	stack_size:         i32,
+	push_base:          i32,
+	has_call:           bool,
 }
 
 Local_Reloc :: struct {
@@ -389,12 +390,7 @@ emit_function :: proc(
 
 	ctx.code_start = ctx.code.pos
 
-	spill_slot_count: [RK_COUNT]i32
 	for reg in ctx.allocs {
-		spill_slot_count[reg.kind] = max(
-			spill_slot_count[reg.kind],
-			i32(reg.index) - 16 + 1,
-		)
 		if reg.kind == RK_GENERAL {
 			bit_arr.set_unbounded(ctx.used, int(reg.index))
 		}
@@ -410,18 +406,9 @@ emit_function :: proc(
 		for reg in ctx.callee_saved[RK_GENERAL] {
 			if bit_arr.contains(ctx.used, int(reg)) {
 				// str rt, [rn, $imm12]
-				op :: 0b1111100100
-				imm12 := ctx.stack_size / 8
-
-				rn := SP
-				rt := reg
-
 				emit_op(
 					ctx.code,
-					op << 22 |
-					u32(imm12) << 10 |
-					u32(rn.index) << 5 |
-					u32(rt.index),
+					imm12_instr(0b1111100100, reg, SP, ctx.stack_size / 8),
 				)
 
 				ctx.stack_size += 8
@@ -432,6 +419,7 @@ emit_function :: proc(
 			// stp.post x29, x30, [SP, pushed / 8]
 			op: u32 : 0b1010100100
 			imm7 := ctx.stack_size / 8
+			assert(imm7 << 25 >> 25 == imm7)
 			rt2 :: X30
 			rn :: SP
 			rt :: X29
@@ -448,6 +436,13 @@ emit_function :: proc(
 		}
 	}
 
+	backend.layout_spill_slots(
+		ctx,
+		ctx.spill_slot_base[:],
+		SPILL_SLOT_SIZE[:],
+		&ctx.stack_size,
+	)
+
 	backend.layout_locals(ctx, ctx.schedule, &ctx.stack_size)
 
 	ctx.stack_size = i32(
@@ -455,18 +450,13 @@ emit_function :: proc(
 	)
 
 	if ctx.stack_size != 0 {
-		op :: 0b110100010
-		sh :: 0b0
-		imm12 := ctx.stack_size
-		rn :: SP
-		rd :: SP
-
-		(^Op)(ctx.code.ptr[idx:])^ =
-			op << 23 |
-			sh << 22 |
-			u32(imm12) << 10 |
-			u32(rn.index) << 5 |
-			u32(rd.index)
+		// sub sp, sp, ctx.stack_size
+		(^Op)(ctx.code.ptr[idx:])^ = imm12_instr(
+			0b1101000100,
+			SP,
+			SP,
+			ctx.stack_size,
+		)
 	} else {
 		ctx.code.pos = idx
 	}
@@ -557,83 +547,215 @@ emit_instr :: proc(
 		.Lt   = .LT,
 		.Gt   = .GT,
 		.Le   = .LE,
+		.F_Eq = .EQ,
+		.F_Ne = .NE,
+		.F_Lt = .MI,
+		.F_Le = .LS,
+		.F_Gt = .GT,
+		.F_Ge = .GE,
 	}
 
 	@(static, rodata)
-	NODE_TO_OP := #partial [Node_Type]u8 {
-		.Add = 0b0001011,
-		.Sub = 0b1001011,
-		.Eq ..= .U_Ge     = 0b1101011,
+	NODE_TO_OP := #partial [Node_Type]u32 {
+		.Add     = 0x0B000000,
+		.Sub     = 0x4B000000,
+		.And     = 0x0A000000,
+		.Or      = 0x2A000000,
+		.Xor     = 0x4A000000,
+		.And_Not = 0x0A200000,
+		.Eq ..= .U_Ge         = 0x6B00001F,
+		.Shl     = 0x1AC02000,
+		.U_Shr   = 0x1AC02400,
+		.Shr     = 0x1AC02800,
+		.Mul     = 0x1B007C00,
+		.U_Div   = 0x1AC00800,
+		.Div     = 0x1AC00C00,
+		.U_Rem   = 0x1AC00800,
+		.Rem     = 0x1AC00C00,
+		.F_Add   = 0x1E202800,
+		.F_Sub   = 0x1E203800,
+		.F_Mul   = 0x1E200800,
+		.F_Div   = 0x1E201800,
+		.F_Eq ..= .F_Ge         = 0x1E202000,
 	}
-
 	cc_neg :: proc(c: Cond) -> Cond {return Cond(u8(c) ~ 1)}
 
 	node := graph_expand(ctx, instr)
 	kind := atype(node)
 	block_base := ctx.gvn - u32(len(ctx.schedule.bbs))
 	op := NODE_TO_OP[kind]
+	is_64 := node.dt == .I64
+
+	inp: backend.Expanded_Node
+	is_f64: bool
+	if 0 < len(node.inps) {
+		inp = graph_expand(ctx, node.inps[0])
+		is_f64 = inp.dt == .F64
+	}
 
 	#partial switch kind {
 	case .Root_Mem, .Sym, .Phi, .Ret, .Mem, .Param, .Local:
 	case .Local_Addr:
-		// add rd, sp, #offset
-		op :: 0b100100010
-		sh :: 0b0
-		imm12 := backend.graph_extra(ctx, node.inps[0], backend.Local).offset
-		assert(imm12 < 4096)
-		rn :: SP
-		rd := reg_of(ctx, instr)
+		offset := backend.graph_extra(ctx, node.inps[0], backend.Local).offset
+		assert(offset < 4096)
 
+		// add rinstr, sp, #offset
 		emit_op(
 			ctx.code,
-			op << 23 |
-			sh << 22 |
-			u32(imm12) << 10 |
-			u32(rn.index) << 5 |
-			u32(rd.index),
+			imm12_instr(0b1001000100, reg_of(ctx, instr), SP, offset),
 		)
 	case .Store:
-		// str rt, [rn, $imm12]
 		vl := graph_get(ctx, node.inps[3])
-		assert(vl.dt == .I64)
 
-		op :: 0b1111100100
-		imm12 :: 0
-		rn := reg_of(ctx, node.inps[2])
-		rt := reg_of(ctx, node.inps[3])
+		// str rvl, [rinp2, $imm12]
+		op: u32
+		#partial switch vl.dt {
+		case .I64:
+			op = 0b1111100100
+		case .I8:
+			op = 0b0011100100
+		case:
+			fmt.panicf("TODO: %v", vl)
+		}
 
 		emit_op(
 			ctx.code,
-			op << 22 | u32(imm12) << 10 | u32(rn.index) << 5 | u32(rt.index),
+			imm12_instr(
+				op,
+				reg_of(ctx, node.inps[3]),
+				reg_of(ctx, node.inps[2]),
+				0,
+			),
 		)
-
 	case .Load:
-		// ldr rt, [rn, $imm12]
-		op :: 0b1111100101
-		imm12 := 0 / 8
-		rn := reg_of(ctx, node.inps[2])
-		rt := reg_of(ctx, instr)
-
+		// ldr rinstr, [rinp2, $imm12]
 		emit_op(
 			ctx.code,
-			op << 22 | u32(imm12) << 10 | u32(rn.index) << 5 | u32(rt.index),
+			imm12_instr(
+				0b1111100101,
+				reg_of(ctx, instr),
+				reg_of(ctx, node.inps[2]),
+				0,
+			),
 		)
 	case .Split:
 		rd := reg_of(ctx, instr)
 		rm := reg_of(ctx, node.inps[0])
 
-		assert(rm.index < 32, "TODO")
-		assert(rd.index < 32, "TODO")
+		rd_off := spill_slot_offset(ctx, rd) / 8
+		rm_off := spill_slot_offset(ctx, rm) / 8
 
-		// mov rd, rm
-		emit_op(ctx.code, sh_instr(.x, 0b0101010, nil, rd, XZR, rm))
-	case .Add, .Sub:
+		assert(rd_off < 4096)
+		assert(rm_off < 4096)
+		assert(rm.kind == RK_GENERAL)
+		assert(rd.kind == RK_GENERAL)
+
+		if rm.index >= 32 && rd.index >= 32 {
+			panic("TODO")
+		} else if rm.index >= 32 {
+			// ldr rd, [SP, rm_off]
+			emit_op(ctx.code, imm12_instr(0b1111100101, rd, SP, rm_off))
+		} else if rd.index >= 32 {
+			// str rm, [SP, rd_off]
+			emit_op(ctx.code, imm12_instr(0b1111100100, rm, SP, rd_off))
+		} else {
+			// mov rd, rm
+			emit_op(ctx.code, sh_instr(.x, 0b0101010, nil, rd, XZR, rm))
+		}
+
+		spill_slot_offset :: proc(ctx: ^Ctx, reg: Reg) -> i32 {
+			return backend.spill_slot_offset(
+				ctx,
+				ctx.stack_param_offset[:],
+				ctx.spill_slot_base[:],
+				SPILL_SLOT_SIZE[:],
+				reg,
+			)
+		}
+	case .Uext:
+		rd := reg_of(ctx, instr)
+		rm := reg_of(ctx, node.inps[0])
+
+		UXTB :: u32(0x53001C00)
+		UXTH :: u32(0x53003C00)
+		MOV_W :: u32(0x2A0003E0)
+
+		op: u32
+		#partial switch inp.dt {
+		case .I8:
+			op = UXTB | u32(rm.index) << 5 | u32(rd.index)
+		case .I16:
+			op = UXTH | u32(rm.index) << 5 | u32(rd.index)
+		case .I32:
+			op = MOV_W | u32(rm.index) << 16 | u32(rd.index)
+		case:
+			panic("no")
+		}
+
+		emit_op(ctx.code, op)
+	case .Sext:
+		rd := reg_of(ctx, instr)
+		rm := reg_of(ctx, node.inps[0])
+
+		SXTB_W :: u32(0x13001C00)
+		SXTH_W :: u32(0x13003C00)
+
+		SXTB_X :: u32(0x93401C00)
+		SXTH_X :: u32(0x93403C00)
+		SXTW_X :: u32(0x93407C00)
+
+		op: u32
+		#partial switch inp.dt {
+		case .I8:
+			op = is_64 ? SXTB_X : SXTB_W
+		case .I16:
+			op = is_64 ? SXTH_X : SXTH_W
+		case .I32:
+			assert(is_64)
+			op = SXTW_X
+		case:
+			panic("no")
+		}
+
+		op |= u32(rm.index) << 5 | u32(rd.index)
+
+		emit_op(ctx.code, op)
+	case .F_Add ..= .F_Div:
 		rd := reg_of(ctx, instr)
 		rn := reg_of(ctx, node.inps[0])
 		rm := reg_of(ctx, node.inps[1])
 
 		// add/sub rd, rn, rm
-		emit_op(ctx.code, sh_instr(.x, op, nil, rd, rn, rm))
+		emit_op(ctx.code, fff(is_f64, op, rd, rn, rm))
+	case .Add ..= .Xor, .Div, .U_Div, .And_Not, .Shl ..= .U_Shr:
+		rd := reg_of(ctx, instr)
+		rn := reg_of(ctx, node.inps[0])
+		rm := reg_of(ctx, node.inps[1])
+
+		// add/sub rd, rn, rm
+		emit_op(ctx.code, rrr(is_64, op, rd, rn, rm))
+	case .Rem, .U_Rem:
+		panic("no")
+	case .Msub:
+		rd := reg_of(ctx, instr)
+		rn := reg_of(ctx, node.inps[0])
+		rm := reg_of(ctx, node.inps[1])
+		ra := reg_of(ctx, node.inps[2])
+
+		// msub rd, rd, rm, rn
+		op :: 0b0011011000
+		pd :: 0b1
+
+		emit_op(
+			ctx.code,
+			u32(is_64) << 31 |
+			op << 21 |
+			u32(rm) << 16 |
+			pd << 15 |
+			u32(ra) << 10 |
+			u32(rn) << 5 |
+			u32(rd),
+		)
 	case .Mul:
 		// mul rd, rn, rm
 		op :: 0b10011011000
@@ -652,12 +774,17 @@ emit_instr :: proc(
 			u32(rn) << 5 |
 			u32(rd),
 		)
-	case .Eq ..= .U_Ge:
+	case .Eq ..= .U_Ge, .F_Eq ..= .F_Ge:
 		rn := reg_of(ctx, node.inps[0])
 		rm := reg_of(ctx, node.inps[1])
 
-		// cmp rn, rm
-		emit_op(ctx.code, sh_instr(.x, op, nil, XZR, rn, rm))
+		if inp.dt >= .F32 {
+			// fcmp rn, rm
+			emit_op(ctx.code, fff(is_f64, op, XZR, rn, rm))
+		} else {
+			// cmp rn, rm
+			emit_op(ctx.code, rrr(is_64, op, XZR, rn, rm))
+		}
 
 		if node.dt != .Void {
 			// csinc rd, xzr, xzr, cc
@@ -685,7 +812,7 @@ emit_instr :: proc(
 			// movz reg, imm, hw
 			op: u32 = 0b110100101
 			imm := i16(cint.value)
-			assert(i64(imm) == cint.value, "TODO")
+			fmt.assertf(i64(imm) == cint.value, "TODO: %v", cint.value)
 
 			if cint.value < 0 {
 				// movn reg, ~imm, hw
@@ -753,8 +880,16 @@ emit_instr :: proc(
 			op :: 0b000101
 			emit_op(ctx.code, op << 26)
 		}
-	case .Call:
-		call := backend.graph_extra(ctx, node, backend.Call)
+	case .Call, .Set, .Copy:
+		id: u32
+		#partial switch kind {
+		case .Call:
+			id = backend.graph_extra(ctx, node, backend.Call).cid
+		case .Set:
+			id = ctx.lib_calls.set.id
+		case .Copy:
+			id = ctx.lib_calls.copy.id
+		}
 
 		// bl <imm26>
 		op :: 0b100101
@@ -764,7 +899,7 @@ emit_instr :: proc(
 			offset = u32(ctx.code.pos - ctx.code_start),
 			kind   = .Text,
 			size   = .r26,
-			id     = call.cid,
+			id     = id,
 		}
 		emit_op(ctx.code, op << 26 | imm26)
 	case .Return:
@@ -772,21 +907,11 @@ emit_instr :: proc(
 			pushed := ctx.push_base
 			for reg in ctx.callee_saved[RK_GENERAL] {
 				if bit_arr.contains(ctx.used, int(reg)) {
-					// ldr rt, [rn, $imm12]
-					op :: 0b1111100101
-					imm12 := pushed / 8
-
-					rn := SP
-					rt := reg
-
+					// ldr rt, [sp, $imm12]
 					emit_op(
 						ctx.code,
-						op << 22 |
-						u32(imm12) << 10 |
-						u32(rn.index) << 5 |
-						u32(rt.index),
+						imm12_instr(0b1111100101, reg, SP, pushed / 8),
 					)
-
 					pushed += 8
 				}
 			}
@@ -813,25 +938,15 @@ emit_instr :: proc(
 
 			if ctx.stack_size != 0 {
 				// add sp, sp, ctx.stack_size
-				op :: 0b100100010
-				sh :: 0b0
-				imm12 := ctx.stack_size
-				rn :: SP
-				rd :: SP
-
 				emit_op(
 					ctx.code,
-					op << 23 |
-					sh << 22 |
-					u32(imm12) << 10 |
-					u32(rn.index) << 5 |
-					u32(rd.index),
+					imm12_instr(0b1001000100, SP, SP, ctx.stack_size),
 				)
 			}
 		}
 
 		// ret
-		emit_op(ctx.code, 0b1101011001011111000000_11110_00000)
+		emit_op(ctx.code, 0xd65f03c0)
 	case:
 		fmt.panicf("TODO %v", node)
 	}
@@ -883,4 +998,43 @@ sh_instr :: proc(
 			rm = rm.index,
 		},
 	)
+}
+
+imm12_instr :: proc(#any_int opc: u32, rt, rn: Reg, #any_int imm: i32) -> Op {
+	Layout :: bit_field u32 {
+		rt:  u16 | 5,
+		rn:  u16 | 5,
+		imm: u32 | 12,
+		opc: u32 | 10,
+	}
+
+	return u32(Layout{opc = opc, imm = u32(imm), rt = rt.index, rn = rn.index})
+}
+
+rrr :: proc(is_64: bool, op: u32, rd, rn, rm: Reg) -> u32 {
+	inst := op
+
+	if is_64 {
+		inst |= 1 << 31
+	}
+
+	inst |= u32(rm.index) << 16
+	inst |= u32(rn.index) << 5
+	inst |= u32(rd.index)
+
+	return inst
+}
+
+fff :: proc(is_64: bool, op: u32, rd, rn, rm: Reg) -> u32 {
+	instr := op
+
+	if is_64 {
+		instr |= 1 << 22
+	}
+
+	instr |= u32(rm.index) << 16
+	instr |= u32(rn.index) << 5
+	instr |= u32(rd.index)
+
+	return instr
 }

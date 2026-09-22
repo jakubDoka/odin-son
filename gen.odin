@@ -824,10 +824,7 @@ emit_proc :: proc(
 		append(&ctx.poly_types, e)
 	}
 
-	ctx.start = backend.graph_add_start(ctx, "start")
-	ctx.entry = backend.graph_add_entry(ctx, "entry", ctx.start)
-	ctx.root_mem = backend.graph_add_root_mem(ctx, "emem", ctx.entry)
-	ctx.sym = backend.graph_add_sym(ctx, "sym", ctx.entry)
+	builder.graph_start(ctx)
 
 	ctx.node_scope = builder.graph_add_scope(ctx, "scope", ctx.entry)
 	ctx.mem_slot = builder.graph_push_scope_value(
@@ -932,6 +929,8 @@ emit_proc_code :: proc(
 	prc: ^typecheck.Proc,
 ) {
 	context.allocator, _ = arna.scrath()
+
+	backend.current_graph = ctx
 
 	ctx.node_spec = ctx.target.spec
 	if ctx.check {
@@ -1712,9 +1711,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		switch sym in sym {
 		case int:
 			res = builder.graph_get_scope_value(ctx, ctx.node_scope, sym)
-			assert(
-				builder.Node_Type(graph_get(ctx, res).rtype) != .Scope,
-			)
+			assert(builder.Node_Type(graph_get(ctx, res).rtype) != .Scope)
 		case Value:
 			res, lvalue = unpack(sym)
 		}

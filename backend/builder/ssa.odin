@@ -13,10 +13,6 @@ btype :: #force_inline proc(node: backend.Expanded_Node) -> Node_Type {
 	return Node_Type(node.rtype)
 }
 
-// mirrors backend.graph_extra, but resolved against this package's own
-// (generated) inherit_idx_of, since that generic proc's body is bound to
-// whichever package declares it and backend's copy knows nothing about
-// Builder-only extra-data types such as Scope
 builder_extra :: proc {
 	builder_extra_node,
 	builder_extra_node_id,
@@ -1110,4 +1106,83 @@ arg_gen_finalize :: proc(
 	}
 	fmt.assertf(int(j) == gen.spill_start, "%v %v", j, gen.spill_start)
 	return arg_tys
+}
+
+Builtin_Proc :: enum {
+	memcpy,
+	memset,
+}
+
+graph_start :: proc(graph: ^Graph) {
+	graph.start = backend.graph_add_start(graph, "start")
+	graph.entry = backend.graph_add_entry(graph, "entry", graph.start)
+	graph.root_mem = backend.graph_add_root_mem(graph, "emem", graph.entry)
+	graph.sym = backend.graph_add_sym(graph, "sym", graph.entry)
+}
+
+make_builtin_proc :: proc(graph: ^Graph, name: Builtin_Proc) {
+	graph_start(graph)
+
+	scope := graph_add_scope(graph, "scp", graph.entry)
+
+	memv := graph_push_scope_value(graph, scope, graph.root_mem)
+
+	dst := backend.graph_add_param(graph, "dst", .I64, graph.entry, 0)
+	dstv := graph_push_scope_value(graph, scope, dst)
+
+	val, src: Node_ID
+	srcv: int
+	switch name {
+	case .memcpy:
+		src = backend.graph_add_param(graph, "src", .I64, graph.entry, 1)
+		srcv = graph_push_scope_value(graph, scope, src)
+	case .memset:
+		val = backend.graph_add_param(graph, "val", .I8, graph.entry, 1)
+	}
+
+	len := backend.graph_add_param(graph, "len", .I64, graph.entry, 2)
+	lenv := graph_push_scope_value(graph, scope, len)
+
+	loop: Loop_State
+	graph_start_loop(graph, scope, &loop)
+
+	if_: If_State
+	cond := graph_get_scope_value(graph, scope, lenv)
+	graph_start_if(graph, scope, &if_, cond)
+
+	ctrl := backend.graph_inps(graph, scope)[0]
+	one := backend.graph_add_c_int(graph, "one", .I64, 1)
+
+	mem := graph_get_scope_value(graph, scope, memv)
+	dst = graph_get_scope_value(graph, scope, dstv)
+	if src != 0 {
+		src = graph_get_scope_value(graph, scope, srcv)
+		val = backend.graph_add_load(graph, "ld", .I8, ctrl, mem, src)
+	}
+
+	mem = backend.graph_add_store(graph, "st", ctrl, mem, dst, val)
+	graph_set_scope_value(graph, scope, memv, mem)
+
+	add := backend.graph_add_bin_op(graph, "add_dst", .Add, .I64, dst, one)
+	graph_set_scope_value(graph, scope, dstv, add)
+
+	if src != 0 {
+		ads := backend.graph_add_bin_op(graph, "add_src", .Add, .I64, src, one)
+		graph_set_scope_value(graph, scope, srcv, ads)
+	}
+
+	sub := backend.graph_add_bin_op(graph, "sub_len", .Sub, .I64, cond, one)
+	graph_set_scope_value(graph, scope, lenv, sub)
+
+	graph_start_else(graph, &scope, &if_)
+	graph_loop_control(.Break, graph, scope, &loop)
+	scope = 0
+	graph_end_else(graph, &scope, &if_)
+
+	graph_end_loop(graph, &scope, &loop)
+
+	ctrl = backend.graph_inps(graph, scope)[0]
+	backend.graph_merge_returns(graph, {ctrl})
+
+	backend.graph_delete(graph, scope)
 }

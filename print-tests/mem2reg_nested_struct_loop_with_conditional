@@ -10,7 +10,7 @@ main:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0x20
-    call.q [rip - 0x38]
+    call -0x4f
     xor edi, edi
     call opaque
     mov.q [rsp], rax
@@ -58,7 +58,7 @@ main:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0x20
-    call.q [rip - 0x28]
+    call -0x3f
     xor edi, edi
     call opaque
     mov.q [rsp], rax
@@ -105,7 +105,7 @@ main:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0x20
-    call.q [rip - 0x38]
+    call -0x4f
     xor edi, edi
     call opaque
     mov.q [rsp], rax
@@ -153,7 +153,7 @@ main:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0x20
-    call.q [rip - 0x28]
+    call -0x3f
     xor edi, edi
     call opaque
     mov.q [rsp], rax
@@ -1396,3 +1396,83 @@ main:
   (elem (;0;) (i32.const 0) func)
   (data (;0;) (i64.const 1048576) "")
 )
+=========== OPT LEVEL: none-quick ===========
+opaque:
+    ret
+main:
+    sub sp, sp, #80
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    stp x29, x30, [xzr, #31]
+    movz x1, #0, #0
+    movz x2, #32, #0
+    add x0, sp, #48
+    bl 0xffffffe0
+    movz x0, #0, #0
+    bl 0xfffffffc
+    add x1, sp, #48
+    str x0, [x1]
+    movz x0, #0, #0
+    bl 0xfffffffc
+    movz x19, #8, #0
+    add x1, sp, #48
+    add x20, x1, x19
+    str x0, [x20]
+    movz x0, #1, #0
+    bl 0xfffffffc
+    movz x1, #16, #0
+    add x2, sp, #48
+    add x21, x1, x2
+    str x0, [x21]
+    movz x0, #2, #0
+    bl 0xfffffffc
+    add x1, x21, x19
+    str x0, [x1]
+    movz x0, #0, #0
+2:
+    str x0, [xzr, #40]
+    movz x2, #10, #0
+    ldr x3, [xzr, #40]
+    cmp w3, w2
+    b.ge 0xf0
+    add x2, sp, #48
+    ldr x2, [x2]
+    ldr x3, [x21]
+    add x2, x2, x3
+    add x3, sp, #48
+    str x2, [x3]
+    ldr x2, [x20]
+    ldr x3, [x1]
+    add x2, x2, x3
+    str x2, [x20]
+    add x2, sp, #48
+    ldr x2, [x2]
+    movz x3, #5, #0
+    cmp w2, w3
+    b.gt 0xcc
+    b 0xdc
+3:
+    ldr x2, [x21]
+    movz x3, #1, #0
+    add x2, x2, x3
+    str x2, [x21]
+4:
+    movz x2, #1, #0
+    ldr x3, [xzr, #40]
+    add x2, x3, x2
+    mov x0, x2
+    b 0x78
+5:
+    add x0, sp, #48
+    ldr x0, [x0]
+    movz x1, #1000, #0
+    madd x0, x0, x1, xzr
+    ldr x1, [x20]
+    add x0, x0, x1
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldp x29, x30, [xzr, #31]
+    add sp, sp, #80
+    ret

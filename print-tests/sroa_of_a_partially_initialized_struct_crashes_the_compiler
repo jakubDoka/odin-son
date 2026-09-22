@@ -9,7 +9,7 @@ main:
     xor esi, esi
     mov rdx, 4
     lea rdi, [rsp]
-    call.q [rip - 0x30]
+    call -0x47
     mov.b [rsp], 1
     lea rdi, [rsp]
     call sink
@@ -26,7 +26,7 @@ main:
     xor esi, esi
     mov rdx, 4
     lea rdi, [rsp]
-    call.q [rip - 0x30]
+    call -0x47
     mov.b [rsp], 1
     lea rdi, [rsp]
     call sink
@@ -43,7 +43,7 @@ main:
     xor esi, esi
     mov rdx, 4
     lea rdi, [rsp]
-    call.q [rip - 0x30]
+    call -0x47
     mov.b [rsp], 1
     lea rdi, [rsp]
     call sink
@@ -60,7 +60,7 @@ main:
     xor esi, esi
     mov rdx, 4
     lea rdi, [rsp]
-    call.q [rip - 0x30]
+    call -0x47
     mov.b [rsp], 1
     lea rdi, [rsp]
     call sink
@@ -530,3 +530,30 @@ main:
   (elem (;0;) (i32.const 0) func)
   (data (;0;) (i64.const 1048576) "")
 )
+=========== OPT LEVEL: none-quick ===========
+sink:
+    ldr x1, [x0]
+    uxtb w1, w1
+    movz x2, #2, #0
+    add x0, x2, x0
+    ldr x0, [x0]
+    uxth w0, w0
+    movz x2, #4, #0
+    madd x0, x0, x2, xzr
+    add x0, x1, x0
+    ret
+main:
+    sub sp, sp, #32
+    stp x29, x30, [xzr, #7]
+    movz x1, #0, #0
+    movz x2, #4, #0
+    add x0, sp, #16
+    bl 0xffffffbc
+    movz x0, #1, #0
+    add x1, sp, #16
+    strb w0, [x1]
+    add x0, sp, #16
+    bl 0xffffffd8
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #32
+    ret

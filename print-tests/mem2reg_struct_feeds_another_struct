@@ -10,7 +10,7 @@ main:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0x18
-    call.q [rip - 0x38]
+    call -0x4f
     mov rdi, 2
     call opaque
     mov.q [rsp], rax
@@ -23,7 +23,7 @@ main:
     lea rdi, [rsp + 0x18]
     xor esi, esi
     mov rdx, 0x18
-    call.q [rip - 0x7f]
+    call -0x95
     mov.q rax, [rsp]
     add.q rax, [rsp + 0x8]
     mov.q [rsp + 0x18], rax
@@ -53,7 +53,7 @@ main:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0x18
-    call.q [rip - 0x28]
+    call -0x3f
     mov rdi, 2
     call opaque
     mov.q [rsp], rax
@@ -66,7 +66,7 @@ main:
     lea rdi, [rsp + 0x18]
     xor esi, esi
     mov rdx, 0x18
-    call.q [rip - 0x6f]
+    call -0x85
     mov.q rax, [rsp]
     add.q rax, [rsp + 0x8]
     mov.q [rsp + 0x18], rax
@@ -99,7 +99,7 @@ main:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0x18
-    call.q [rip - 0x38]
+    call -0x4f
     mov rdi, 2
     call opaque
     mov.q [rsp], rax
@@ -112,7 +112,7 @@ main:
     lea rdi, [rsp + 0x18]
     xor esi, esi
     mov rdx, 0x18
-    call.q [rip - 0x7f]
+    call -0x95
     mov.q rax, [rsp]
     add.q rax, [rsp + 0x8]
     mov.q [rsp + 0x18], rax
@@ -142,7 +142,7 @@ main:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0x18
-    call.q [rip - 0x28]
+    call -0x3f
     mov rdi, 2
     call opaque
     mov.q [rsp], rax
@@ -155,7 +155,7 @@ main:
     lea rdi, [rsp + 0x18]
     xor esi, esi
     mov rdx, 0x18
-    call.q [rip - 0x6f]
+    call -0x85
     mov.q rax, [rsp]
     add.q rax, [rsp + 0x8]
     mov.q [rsp + 0x18], rax
@@ -1328,3 +1328,80 @@ main:
   (elem (;0;) (i32.const 0) func)
   (data (;0;) (i64.const 1048576) "")
 )
+=========== OPT LEVEL: none-quick ===========
+opaque:
+    ret
+main:
+    sub sp, sp, #96
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    stp x29, x30, [xzr, #39]
+    add x0, sp, #48
+    movz x1, #0, #0
+    movz x2, #24, #0
+    bl 0xffffffe0
+    movz x0, #2, #0
+    bl 0xfffffffc
+    add x1, sp, #48
+    str x0, [x1]
+    movz x0, #3, #0
+    bl 0xfffffffc
+    movz x19, #8, #0
+    add x1, sp, #48
+    add x20, x1, x19
+    str x0, [x20]
+    movz x0, #4, #0
+    bl 0xfffffffc
+    movz x21, #16, #0
+    add x1, sp, #48
+    add x22, x1, x21
+    str x0, [x22]
+    movz x1, #0, #0
+    movz x2, #24, #0
+    add x0, sp, #72
+    bl 0xffffffe0
+    add x0, sp, #48
+    ldr x0, [x0]
+    ldr x1, [x20]
+    add x2, sp, #72
+    add x2, x2, x19
+    add x0, x0, x1
+    add x1, sp, #72
+    str x0, [x1]
+    add x0, sp, #72
+    add x0, x0, x21
+    ldr x1, [x20]
+    ldr x3, [x22]
+    add x1, x1, x3
+    str x1, [x2]
+    ldr x1, [x22]
+    add x3, sp, #48
+    ldr x3, [x3]
+    add x1, x1, x3
+    str x1, [x0]
+    ldr x0, [x0]
+    add x1, sp, #72
+    ldr x1, [x1]
+    add x0, x1, x0
+    add x1, sp, #48
+    str x0, [x1]
+    add x0, sp, #48
+    ldr x0, [x0]
+    ldr x1, [x2]
+    movz x2, #100, #0
+    madd x0, x0, x2, xzr
+    movz x2, #10, #0
+    madd x1, x1, x2, xzr
+    add x0, x0, x1
+    add x1, sp, #72
+    ldr x1, [x1]
+    add x0, x0, x1
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldp x29, x30, [xzr, #39]
+    add sp, sp, #96
+    ret

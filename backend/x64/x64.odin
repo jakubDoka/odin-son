@@ -1357,12 +1357,12 @@ meta_of :: proc(
 Ctx :: struct {
 	using inner:        backend.Codegen_Emit_Ctx,
 	spill_slot_base:    [RK_COUNT]i32,
+	stack_param_offset: [RK_COUNT][dynamic]i32,
 	big_constants:      [dynamic]u8,
 	local_relocs:       [dynamic]Local_Reloc,
 	stack_size:         i32,
 	used:               bit_arr.Bit_Set,
 	code_start:         uint,
-	stack_param_offset: [RK_COUNT][dynamic]i32,
 	last_off:           uint,
 	sloc:               backend.Sloc,
 	pushed:             i32,
@@ -1427,18 +1427,13 @@ emit_function :: proc(
 
 	params, _ := backend.assemble_args(ctx, len(ctx.param_specs))
 
-	spill_slot_count: [RK_COUNT]i32
+	mount_sloc(&ctx, ctx.entry)
+
 	for reg in ctx.allocs {
-		spill_slot_count[reg.kind] = max(
-			spill_slot_count[reg.kind],
-			i32(reg.index) - 16 + 1,
-		)
 		if reg.kind == RK_GENERAL {
 			bit_arr.set_unbounded(ctx.used, int(reg.index))
 		}
 	}
-
-	mount_sloc(&ctx, ctx.entry)
 
 	pushed: i32
 	for reg in ctx.callee_saved[RK_GENERAL] {
@@ -1462,35 +1457,20 @@ emit_function :: proc(
 		}
 	}
 
-	for size, kind in spill_slot_count {
-		ctx.spill_slot_base[kind] = i32(ctx.stack_size)
-		ctx.stack_size += size * SPILL_SLOT_SIZE[kind]
-	}
+	backend.layout_spill_slots(
+		ctx,
+		ctx.spill_slot_base[:],
+		SPILL_SLOT_SIZE[:],
+		&ctx.stack_size,
+	)
 
-	param_offset := pushed + 8
-	for param, i in ctx.param_specs {
-		param_id := params[i]
-
-		extra := backend.graph_extra(ctx.graph, param_id, backend.Local)
-		if extra != nil {
-			fmt.assertf(
-				extra.size == param.size,
-				"%v == %v",
-				extra.size,
-				param.size,
-			)
-			extra.offset = param_offset
-		}
-
-		if param.size > 0 && param.dt != .Void {
-			assert(param.size == 8, "TODO")
-			ctx.stack_size -= param.size
-			kind := ctx.datatype_to_reg_kind[param.dt]
-			append(&ctx.stack_param_offset[kind], i32(param_offset))
-		}
-
-		param_offset += param.size
-	}
+	backend.compute_param_offsets(
+		ctx,
+		params,
+		&ctx.stack_size,
+		ctx.stack_param_offset[:],
+		pushed + 8,
+	)
 
 	if has_call || ctx.stack_size != 0 {
 		to_align := pushed + 8 + ctx.stack_size
@@ -2789,18 +2769,12 @@ emit_instr :: proc(
 		}
 
 		spill_slot_offset :: proc(ctx: ^Ctx, reg: Reg) -> i32 {
-			if reg.index < GPA_REG_COUNT do return 0
-
-			param_count := len(ctx.stack_param_offset[reg.kind])
-			if int(reg.index - GPA_REG_COUNT) < param_count {
-				return(
-					ctx.stack_param_offset[reg.kind][reg.index - GPA_REG_COUNT] \
-				)
-			}
-			return(
-				ctx.spill_slot_base[reg.kind] +
-				(i32(reg.index) - i32(param_count) - GPA_REG_COUNT) *
-					SPILL_SLOT_SIZE[reg.kind] \
+			return backend.spill_slot_offset(
+				ctx,
+				ctx.stack_param_offset[:],
+				ctx.spill_slot_base[:],
+				SPILL_SLOT_SIZE[:],
+				reg,
 			)
 		}
 	case .Return:

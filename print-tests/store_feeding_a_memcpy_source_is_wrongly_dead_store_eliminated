@@ -10,7 +10,7 @@ main:
     xor esi, esi
     mov rdx, 0x20
     lea rdi, [rsp]
-    call.q [rip - 0x38]
+    call -0x4f
     lea rdi, [rsp]
     call ident
     mov.q [rsp + 0x20], rax
@@ -24,7 +24,7 @@ main:
     mov rdx, 0x10
     mov.q rsi, [rsp + 0x20]
     mov.q rdi, [rsp + 0x28]
-    call.q [rip - 0x8f]
+    call -0xcd
     mov.q rax, [rsp + 0x20]
     mov.q [rax], 7
     mov.q rax, [rsp + 0x20]
@@ -49,7 +49,7 @@ main:
     xor esi, esi
     mov rdx, 0x20
     lea rdi, [rsp]
-    call.q [rip - 0x2a]
+    call -0x41
     lea rdi, [rsp]
     call ident
     mov rbx, rax
@@ -60,7 +60,7 @@ main:
     mov rdx, 0x10
     mov rsi, rbx
     mov rdi, rax
-    call.q [rip - 0x6a]
+    call -0xa8
     mov.q [rbx], 7
     mov.q rax, [rbx + 0x10]
     mov.q rcx, [rbx + 0x18]
@@ -84,7 +84,7 @@ main:
     xor esi, esi
     mov rdx, 0x20
     lea rdi, [rsp]
-    call.q [rip - 0x38]
+    call -0x4f
     lea rdi, [rsp]
     call ident
     mov.q [rsp + 0x20], rax
@@ -98,7 +98,7 @@ main:
     mov rdx, 0x10
     mov.q rsi, [rsp + 0x20]
     mov.q rdi, [rsp + 0x28]
-    call.q [rip - 0x8f]
+    call -0xcd
     mov.q rax, [rsp + 0x20]
     mov.q [rax], 7
     mov.q rax, [rsp + 0x20]
@@ -120,7 +120,7 @@ main:
     xor esi, esi
     mov rdx, 0x20
     lea rdi, [rsp]
-    call.q [rip - 0x2a]
+    call -0x41
     lea rdi, [rsp]
     call ident
     mov rbx, rax
@@ -131,7 +131,7 @@ main:
     mov rdx, 0x10
     mov rsi, rbx
     mov rdi, rax
-    call.q [rip - 0x6a]
+    call -0xa8
     mov.q [rbx], 7
     mov.q rax, [rbx + 0x10]
     mov.q rcx, [rbx + 0x18]
@@ -166,7 +166,7 @@ main:
     mov rdx, 0x10
     mov.q rsi, [rsp + 0x20]
     mov.q rdi, [rsp + 0x28]
-    call.q [rip - 0x8b]
+    call -0xca
     mov.q rax, [rsp + 0x20]
     mov.q [rax], 7
     mov.q rax, [rsp + 0x20]
@@ -198,7 +198,7 @@ main:
     mov rdx, 0x10
     mov rsi, rbx
     mov rdi, rax
-    call.q [rip - 0x66]
+    call -0xa5
     mov.q [rbx], 7
     mov.q rax, [rbx + 0x10]
     mov.q rcx, [rbx + 0x18]
@@ -228,7 +228,7 @@ main:
     mov rdx, 0x10
     mov rsi, rbx
     mov rdi, rax
-    call.q [rip - 0x66]
+    call -0xa5
     mov.q [rbx], 7
     mov.q rax, [rbx + 0x10]
     mov.q rcx, [rbx + 0x18]
@@ -250,7 +250,7 @@ main:
     mov rdx, 0x10
     lea rsi, [rsp]
     mov rdi, rax
-    call.q [rip - 0x4e]
+    call -0x8d
     mov.q [rsp], 7
     mov.q rax, [rsp + 0x10]
     mov.q rcx, [rsp + 0x18]
@@ -824,3 +824,52 @@ main:
   (elem (;0;) (i32.const 0) func)
   (data (;0;) (i64.const 1048576) "")
 )
+=========== OPT LEVEL: none-quick ===========
+ident:
+    ret
+main:
+    sub sp, sp, #80
+    str x19, [xzr]
+    stp x29, x30, [xzr, #15]
+    movz x1, #0, #0
+    movz x2, #32, #0
+    add x0, sp, #40
+    bl 0xffffffe0
+    add x0, sp, #40
+    bl 0xfffffffc
+    str x0, [xzr, #24]
+    movz x0, #5, #0
+    ldr x1, [xzr, #24]
+    str x0, [x1]
+    movz x19, #8, #0
+    ldr x0, [xzr, #24]
+    add x0, x0, x19
+    movz x2, #16, #0
+    ldr x1, [xzr, #24]
+    add x1, x1, x2
+    str x1, [xzr, #32]
+    movz x1, #6, #0
+    str x1, [x0]
+    ldr x1, [xzr, #24]
+    ldr x0, [xzr, #32]
+    bl 0xffffffbc
+    movz x0, #7, #0
+    ldr x1, [xzr, #24]
+    str x0, [x1]
+    ldr x0, [xzr, #32]
+    add x0, x0, x19
+    ldr x0, [x0]
+    ldr x1, [xzr, #32]
+    ldr x1, [x1]
+    ldr x2, [xzr, #24]
+    ldr x2, [x2]
+    movz x3, #10, #0
+    madd x0, x0, x3, xzr
+    add x0, x1, x0
+    movz x1, #100, #0
+    madd x1, x2, x1, xzr
+    add x0, x0, x1
+    ldr x19, [xzr]
+    ldp x29, x30, [xzr, #15]
+    add sp, sp, #80
+    ret

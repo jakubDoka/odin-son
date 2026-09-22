@@ -162,6 +162,10 @@ main :: proc() {
 	}
 
 	when arm.SPEC_NOT_PRESENT {
+		ARM_CLASSES := [arm.Node_Type]meta.Class_Spec {
+			.Msub = {args = {"multiplicant", "multiplier", "subtractant"}},
+			.CLoad = {no_ctor = true},
+		}
 		meta.generate_spec(
 			meta.Spec_Gen_Input {
 				package_name = "arm",
@@ -171,6 +175,7 @@ main :: proc() {
 				qual = "backend.",
 				classes = {
 					meta.class_array(&meta.IDEAL_CLASSES, gen_ctors = false),
+					meta.class_array(&ARM_CLASSES),
 				},
 				does_regalloc = true,
 				datatype_to_reg_kind = #partial{

@@ -3,6 +3,7 @@ package backend
 import "../vendored/gam/util/arna"
 import "base:intrinsics"
 import "core:encoding/varint"
+import "core:fmt"
 import "core:reflect"
 import "core:sort"
 
@@ -219,6 +220,80 @@ emit_leb :: proc(buf: ^arna.Allocator, value: $T) {
 	bf := arna.alloc(buf, LEB_MAX_BYTES, 1)
 	size := encode(bf, up(value)) or_else panic("")
 	buf.pos -= len(bf) - uint(size)
+}
+
+spill_slot_offset :: proc(
+	ctx: Codegen_Emit_Ctx,
+	stack_param_offset: [][dynamic]i32,
+	spill_slot_base: []i32,
+	spill_slot_size: []i32,
+	reg: Reg,
+) -> i32 {
+	rcount := u16(ctx.spill_boundary[reg.kind])
+	if reg.index < rcount do return 0
+
+	param_count := len(stack_param_offset[reg.kind])
+	if int(reg.index - rcount) < param_count {
+		return stack_param_offset[reg.kind][reg.index - rcount]
+	}
+	return(
+		spill_slot_base[reg.kind] +
+		(i32(reg.index) - i32(param_count) - i32(rcount)) *
+			spill_slot_size[reg.kind] \
+	)
+}
+
+layout_spill_slots :: proc(
+	ctx: Codegen_Emit_Ctx,
+	spill_slot_base: []i32,
+	spill_slot_size: []i32,
+	stack_size: ^i32,
+) {
+	spill_slot_count: [8]i32
+	for reg in ctx.allocs {
+		spill_slot_count[reg.kind] = max(
+			spill_slot_count[reg.kind],
+			i32(reg.index) - i32(ctx.spill_boundary[reg.kind]) + 1,
+		)
+	}
+
+	for size, kind in spill_slot_count[:len(spill_slot_base)] {
+		spill_slot_base[kind] = i32(stack_size^)
+		stack_size^ += size * spill_slot_size[kind]
+	}
+}
+
+compute_param_offsets :: proc(
+	ctx: Codegen_Emit_Ctx,
+	params: []Node_ID,
+	stack_size: ^i32,
+	stack_param_offset: [][dynamic]i32,
+	param_offset: i32 = 0,
+) {
+	param_offset := param_offset
+	for param, i in ctx.param_specs {
+		param_id := params[i]
+
+		extra := graph_extra(ctx.graph, param_id, Local)
+		if extra != nil {
+			fmt.assertf(
+				extra.size == param.size,
+				"%v == %v",
+				extra.size,
+				param.size,
+			)
+			extra.offset = param_offset
+		}
+
+		if param.size > 0 && param.dt != .Void {
+			assert(param.size == 8, "TODO")
+			stack_size^ -= param.size
+			kind := ctx.datatype_to_reg_kind[param.dt]
+			append(&stack_param_offset[kind], i32(param_offset))
+		}
+
+		param_offset += param.size
+	}
 }
 
 layout_call_args :: proc(

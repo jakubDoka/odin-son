@@ -4,11 +4,11 @@ main:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 1
-    call.q [rip - 0x20]
+    call -0x37
     lea rdi, [rsp + 0x1]
     xor esi, esi
     mov rdx, 1
-    call.q [rip - 0x35]
+    call -0x4b
     lea rsi, [rsp + 0x1]
     lea rdi, [rsp]
     call copy
@@ -18,7 +18,7 @@ main:
 copy:
     sub rsp, 8
     mov rdx, 1
-    call.q [rip - 0x69]
+    call -0xa8
     xor eax, eax
     add rsp, 8
     ret
@@ -28,11 +28,11 @@ main:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 1
-    call.q [rip - 0x20]
+    call -0x37
     lea rdi, [rsp + 0x1]
     xor esi, esi
     mov rdx, 1
-    call.q [rip - 0x35]
+    call -0x4b
     lea rsi, [rsp + 0x1]
     lea rdi, [rsp]
     call copy
@@ -42,7 +42,7 @@ main:
 copy:
     sub rsp, 8
     mov rdx, 1
-    call.q [rip - 0x69]
+    call -0xa8
     xor eax, eax
     add rsp, 8
     ret
@@ -52,11 +52,11 @@ main:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 1
-    call.q [rip - 0x20]
+    call -0x37
     lea rdi, [rsp + 0x1]
     xor esi, esi
     mov rdx, 1
-    call.q [rip - 0x35]
+    call -0x4b
     lea rsi, [rsp + 0x1]
     lea rdi, [rsp]
     call copy
@@ -66,7 +66,7 @@ main:
 copy:
     sub rsp, 8
     mov rdx, 1
-    call.q [rip - 0x69]
+    call -0xa8
     xor eax, eax
     add rsp, 8
     ret
@@ -76,11 +76,11 @@ main:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 1
-    call.q [rip - 0x20]
+    call -0x37
     lea rdi, [rsp + 0x1]
     xor esi, esi
     mov rdx, 1
-    call.q [rip - 0x35]
+    call -0x4b
     lea rsi, [rsp + 0x1]
     lea rdi, [rsp]
     call copy
@@ -90,7 +90,7 @@ main:
 copy:
     sub rsp, 8
     mov rdx, 1
-    call.q [rip - 0x69]
+    call -0xa8
     xor eax, eax
     add rsp, 8
     ret
@@ -108,7 +108,7 @@ main:
 copy:
     sub rsp, 8
     mov rdx, 1
-    call.q [rip - 0x49]
+    call -0x88
     xor eax, eax
     add rsp, 8
     ret
@@ -126,7 +126,7 @@ main:
 copy:
     sub rsp, 8
     mov rdx, 1
-    call.q [rip - 0x49]
+    call -0x88
     xor eax, eax
     add rsp, 8
     ret
@@ -144,7 +144,7 @@ main:
 copy:
     sub rsp, 8
     mov rdx, 1
-    call.q [rip - 0x49]
+    call -0x88
     xor eax, eax
     add rsp, 8
     ret
@@ -541,3 +541,188 @@ main:
   (elem (;0;) (i32.const 0) func)
   (data (;0;) (i64.const 1048576) "")
 )
+=========== OPT LEVEL: none-quick ===========
+main:
+    sub sp, sp, #32
+    stp x29, x30, [xzr, #7]
+    add x0, sp, #16
+    movz x1, #0, #0
+    movz x2, #1, #0
+    bl 0xffffffe4
+    add x0, sp, #17
+    movz x1, #0, #0
+    movz x2, #1, #0
+    bl 0xffffffe4
+    add x1, sp, #17
+    add x0, sp, #16
+    bl copy
+    movz x0, #0, #0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #32
+    ret
+copy:
+    sub sp, sp, #16
+    stp x29, x30, [xzr, #7]
+    movz x2, #1, #0
+    bl 0xffffff7c
+    movz x0, #0, #0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #16
+    ret
+=========== OPT LEVEL: none ===========
+main:
+    sub sp, sp, #32
+    stp x29, x30, [xzr, #7]
+    add x0, sp, #16
+    movz x1, #0, #0
+    movz x2, #1, #0
+    bl 0xffffffe4
+    add x0, sp, #17
+    movz x1, #0, #0
+    movz x2, #1, #0
+    bl 0xffffffe4
+    add x1, sp, #17
+    add x0, sp, #16
+    bl copy
+    movz x0, #0, #0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #32
+    ret
+copy:
+    sub sp, sp, #16
+    stp x29, x30, [xzr, #7]
+    movz x2, #1, #0
+    bl 0xffffff7c
+    movz x0, #0, #0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #16
+    ret
+=========== OPT LEVEL: mininal-quick ===========
+main:
+    sub sp, sp, #32
+    stp x29, x30, [xzr, #7]
+    add x0, sp, #16
+    movz x1, #0, #0
+    movz x2, #1, #0
+    bl 0xffffffe4
+    add x0, sp, #17
+    movz x1, #0, #0
+    movz x2, #1, #0
+    bl 0xffffffe4
+    add x1, sp, #17
+    add x0, sp, #16
+    bl copy
+    movz x0, #0, #0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #32
+    ret
+copy:
+    sub sp, sp, #16
+    stp x29, x30, [xzr, #7]
+    movz x2, #1, #0
+    bl 0xffffff7c
+    movz x0, #0, #0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #16
+    ret
+=========== OPT LEVEL: mininal ===========
+main:
+    sub sp, sp, #32
+    stp x29, x30, [xzr, #7]
+    add x0, sp, #16
+    movz x1, #0, #0
+    movz x2, #1, #0
+    bl 0xffffffe4
+    add x0, sp, #17
+    movz x1, #0, #0
+    movz x2, #1, #0
+    bl 0xffffffe4
+    add x1, sp, #17
+    add x0, sp, #16
+    bl copy
+    movz x0, #0, #0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #32
+    ret
+copy:
+    sub sp, sp, #16
+    stp x29, x30, [xzr, #7]
+    movz x2, #1, #0
+    bl 0xffffff7c
+    movz x0, #0, #0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #16
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+main:
+    sub sp, sp, #32
+    stp x29, x30, [xzr, #7]
+    add x0, sp, #16
+    movz x2, #0, #0
+    add x1, sp, #17
+    strb w2, [x0]
+    strb w2, [x1]
+    bl copy
+    movz x0, #0, #0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #32
+    ret
+copy:
+    sub sp, sp, #16
+    stp x29, x30, [xzr, #7]
+    movz x2, #1, #0
+    bl 0xffffff90
+    movz x0, #0, #0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #16
+    ret
+=========== OPT LEVEL: moderate ===========
+main:
+    sub sp, sp, #32
+    stp x29, x30, [xzr, #7]
+    add x0, sp, #16
+    movz x2, #0, #0
+    add x1, sp, #17
+    strb w2, [x0]
+    strb w2, [x1]
+    bl copy
+    movz x0, #0, #0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #32
+    ret
+copy:
+    sub sp, sp, #16
+    stp x29, x30, [xzr, #7]
+    movz x2, #1, #0
+    bl 0xffffff90
+    movz x0, #0, #0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #16
+    ret
+=========== OPT LEVEL: all ===========
+main:
+    sub sp, sp, #32
+    stp x29, x30, [xzr, #7]
+    add x0, sp, #16
+    movz x2, #0, #0
+    add x1, sp, #17
+    strb w2, [x0]
+    strb w2, [x1]
+    bl copy
+    movz x0, #0, #0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #32
+    ret
+copy:
+    sub sp, sp, #16
+    stp x29, x30, [xzr, #7]
+    movz x2, #1, #0
+    bl 0xffffff90
+    movz x0, #0, #0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #16
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    movz x0, #0, #0
+    ret

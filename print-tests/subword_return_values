@@ -431,3 +431,162 @@ main:
   (elem (;0;) (i32.const 0) func)
   (data (;0;) (i64.const 1048576) "")
 )
+=========== OPT LEVEL: none-quick ===========
+Error{inst_idx = 20, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 24, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+main:
+    sub sp, sp, #32
+    stp x29, x30, [xzr, #7]
+    bl get8
+    str x0, [xzr, #16]
+    bl get16
+    invalid
+    invalid
+    add x0, x1, x0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #32
+    ret
+get8:
+    movn x0, #9, #0
+    ret
+get16:
+    movn x0, #999, #0
+    ret
+=========== OPT LEVEL: none ===========
+Error{inst_idx = 24, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+main:
+    sub sp, sp, #32
+    str x19, [xzr]
+    stp x29, x30, [xzr, #15]
+    bl get8
+    mov x19, x0
+    bl get16
+    invalid
+    invalid
+    add x0, x1, x0
+    ldr x19, [xzr]
+    ldp x29, x30, [xzr, #15]
+    add sp, sp, #32
+    ret
+get8:
+    movn x0, #9, #0
+    ret
+get16:
+    movn x0, #999, #0
+    ret
+=========== OPT LEVEL: mininal-quick ===========
+Error{inst_idx = 20, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 24, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+main:
+    sub sp, sp, #32
+    stp x29, x30, [xzr, #7]
+    bl get8
+    str x0, [xzr, #16]
+    bl get16
+    invalid
+    invalid
+    add x0, x1, x0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #32
+    ret
+get8:
+    movn x0, #9, #0
+    ret
+get16:
+    movn x0, #999, #0
+    ret
+=========== OPT LEVEL: mininal ===========
+Error{inst_idx = 24, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+main:
+    sub sp, sp, #32
+    str x19, [xzr]
+    stp x29, x30, [xzr, #15]
+    bl get8
+    mov x19, x0
+    bl get16
+    invalid
+    invalid
+    add x0, x1, x0
+    ldr x19, [xzr]
+    ldp x29, x30, [xzr, #15]
+    add sp, sp, #32
+    ret
+get8:
+    movn x0, #9, #0
+    ret
+get16:
+    movn x0, #999, #0
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+Error{inst_idx = 20, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 24, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+main:
+    sub sp, sp, #32
+    stp x29, x30, [xzr, #7]
+    bl get8
+    str x0, [xzr, #16]
+    bl get16
+    invalid
+    invalid
+    add x0, x1, x0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #32
+    ret
+get8:
+    movn x0, #9, #0
+    ret
+get16:
+    movn x0, #999, #0
+    ret
+=========== OPT LEVEL: moderate ===========
+Error{inst_idx = 24, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+main:
+    sub sp, sp, #32
+    str x19, [xzr]
+    stp x29, x30, [xzr, #15]
+    bl get8
+    mov x19, x0
+    bl get16
+    invalid
+    invalid
+    add x0, x1, x0
+    ldr x19, [xzr]
+    ldp x29, x30, [xzr, #15]
+    add sp, sp, #32
+    ret
+get8:
+    movn x0, #9, #0
+    ret
+get16:
+    movn x0, #999, #0
+    ret
+=========== OPT LEVEL: all ===========
+Error{inst_idx = 24, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+main:
+    sub sp, sp, #32
+    str x19, [xzr]
+    stp x29, x30, [xzr, #15]
+    bl get8
+    mov x19, x0
+    bl get16
+    invalid
+    invalid
+    add x0, x1, x0
+    ldr x19, [xzr]
+    ldp x29, x30, [xzr, #15]
+    add sp, sp, #32
+    ret
+get8:
+    movn x0, #9, #0
+    ret
+get16:
+    movn x0, #999, #0
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    movn x0, #1009, #0
+    ret

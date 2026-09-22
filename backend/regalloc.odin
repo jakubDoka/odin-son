@@ -354,6 +354,7 @@ data_deps :: proc(
 	meta: Regalloc_Node_Meta,
 	inode: Expanded_Node,
 ) -> []Node_ID {
+	assert(int(meta.input_start) <= len(inode.inps))
 	len := min(len(meta.masks), len(inode.inps) - int(meta.input_start))
 	return inode.inps[meta.input_start:][:len]
 }

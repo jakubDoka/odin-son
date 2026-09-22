@@ -3021,14 +3021,7 @@ cmps:
 =========== OPT LEVEL: none-quick ===========
 main:
     sub sp, sp, #96
-    str x19, [xzr]
-    str x20, [xzr, #8]
-    str x21, [xzr, #16]
-    str x22, [xzr, #24]
-    str x23, [xzr, #32]
-    str x24, [xzr, #40]
-    str x25, [xzr, #48]
-    stp x29, x30, [xzr, #63]
+    stp x29, x30, [xzr, #7]
     add x0, sp, #72
     movz x1, #1, #0
     str x1, [x0]
@@ -3038,51 +3031,51 @@ main:
     add x1, sp, #72
     movn x0, #0, #0
     bl cmps
-    mov x19, x0
+    str x0, [xzr, #16]
     add x1, sp, #72
     movz x0, #1, #0
     bl cmps
-    mov x20, x0
+    str x0, [xzr, #24]
     add x1, sp, #80
     movn x0, #0, #0
     bl cmps
-    mov x21, x0
+    str x0, [xzr, #32]
     add x1, sp, #80
     movz x0, #1, #0
     bl cmps
-    mov x22, x0
+    str x0, [xzr, #40]
     add x0, sp, #72
     bl imm_cmps
-    mov x23, x0
+    str x0, [xzr, #48]
     add x0, sp, #72
     bl imm_cmps
-    mov x24, x0
+    str x0, [xzr, #56]
     add x0, sp, #80
     bl imm_cmps
-    mov x25, x0
+    str x0, [xzr, #64]
     add x0, sp, #80
     bl imm_cmps
-    add x1, x19, x20
-    add x1, x1, x21
-    add x1, x1, x22
-    add x1, x1, x23
-    add x1, x1, x24
-    add x1, x1, x25
+    ldr x1, [xzr, #16]
+    ldr x2, [xzr, #24]
+    add x1, x1, x2
+    ldr x2, [xzr, #32]
+    add x1, x1, x2
+    ldr x2, [xzr, #40]
+    add x1, x1, x2
+    ldr x2, [xzr, #48]
+    add x1, x1, x2
+    ldr x2, [xzr, #56]
+    add x1, x1, x2
+    ldr x2, [xzr, #64]
+    add x1, x1, x2
     add x0, x1, x0
-    ldr x19, [xzr]
-    ldr x20, [xzr, #8]
-    ldr x21, [xzr, #16]
-    ldr x22, [xzr, #24]
-    ldr x23, [xzr, #32]
-    ldr x24, [xzr, #40]
-    ldr x25, [xzr, #48]
-    ldp x29, x30, [xzr, #63]
+    ldp x29, x30, [xzr, #7]
     add sp, sp, #96
     ret
 imm_cmps:
     movz x1, #0, #0
     ldr x2, [x0]
-    cmp x1, x2
+    cmp w1, w2
     b.eq 0x18
     movz x2, #0, #0
     b 0x24
@@ -3092,7 +3085,7 @@ imm_cmps:
     mov x2, x3
 3:
     ldr x3, [x0]
-    cmp x1, x3
+    cmp w1, w3
     b.ne 0x34
     b 0x40
 4:
@@ -3101,7 +3094,7 @@ imm_cmps:
     mov x2, x3
 5:
     ldr x3, [x0]
-    cmp x1, x3
+    cmp w1, w3
     b.ge 0x54
     mov x3, x2
     b 0x60
@@ -3111,7 +3104,7 @@ imm_cmps:
     mov x3, x2
 7:
     ldr x2, [x0]
-    cmp x1, x2
+    cmp w1, w2
     b.le 0x74
     mov x2, x3
     b 0x80
@@ -3121,7 +3114,7 @@ imm_cmps:
     mov x2, x3
 9:
     ldr x3, [x0]
-    cmp x1, x3
+    cmp w1, w3
     b.gt 0x94
     mov x3, x2
     b 0xa0
@@ -3131,7 +3124,7 @@ imm_cmps:
     mov x3, x2
 11:
     ldr x0, [x0]
-    cmp x1, x0
+    cmp w1, w0
     b.lt 0xb4
     mov x0, x3
     b 0xbc
@@ -3141,56 +3134,64 @@ imm_cmps:
 13:
     ret
 cmps:
-    mov x2, x0
+    sub sp, sp, #16
+    str x0, [xzr]
     movz x0, #0, #0
-    ldr x3, [x1]
-    cmp x2, x3
-    b.eq 0x18
-    b 0x20
+    ldr x2, [x1]
+    ldr x3, [xzr]
+    cmp w3, w2
+    b.eq 0x20
+    b 0x28
 15:
-    movz x3, #1, #0
-    add x0, x3, x0
+    movz x2, #1, #0
+    add x0, x2, x0
 16:
-    ldr x3, [x1]
-    cmp x2, x3
-    b.ne 0x30
-    b 0x38
+    ldr x2, [x1]
+    ldr x3, [xzr]
+    cmp w3, w2
+    b.ne 0x3c
+    b 0x44
 17:
-    movz x3, #2, #0
-    add x0, x3, x0
+    movz x2, #2, #0
+    add x0, x2, x0
 18:
-    ldr x3, [x1]
-    cmp x2, x3
-    b.ge 0x48
-    b 0x50
+    ldr x2, [x1]
+    ldr x3, [xzr]
+    cmp w3, w2
+    b.ge 0x58
+    b 0x60
 19:
-    movz x3, #4, #0
-    add x0, x3, x0
+    movz x2, #4, #0
+    add x0, x2, x0
 20:
-    ldr x3, [x1]
-    cmp x2, x3
-    b.le 0x60
-    b 0x68
+    ldr x2, [x1]
+    ldr x3, [xzr]
+    cmp w3, w2
+    b.le 0x74
+    b 0x7c
 21:
-    movz x3, #8, #0
-    add x0, x3, x0
+    movz x2, #8, #0
+    add x0, x2, x0
 22:
-    ldr x3, [x1]
-    cmp x2, x3
-    b.gt 0x78
-    b 0x80
+    ldr x2, [x1]
+    ldr x3, [xzr]
+    cmp w3, w2
+    b.gt 0x90
+    b 0x98
 23:
-    movz x3, #16, #0
-    add x0, x3, x0
+    movz x2, #16, #0
+    add x0, x2, x0
 24:
     ldr x1, [x1]
-    cmp x2, x1
-    b.lt 0x90
-    b 0x98
+    ldr x2, [xzr]
+    cmp w2, w1
+    b.lt 0xac
+    b 0xb4
 25:
     movz x1, #32, #0
     add x0, x1, x0
 26:
+    add sp, sp, #16
     ret
 =========== OPT LEVEL: none ===========
 main:
@@ -3212,36 +3213,36 @@ main:
     add x1, sp, #72
     movn x0, #0, #0
     bl cmps
-    mov x25, x0
+    mov x21, x0
     add x1, sp, #72
     movz x0, #1, #0
     bl cmps
-    mov x24, x0
+    mov x20, x0
     add x1, sp, #80
     movn x0, #0, #0
     bl cmps
-    mov x23, x0
+    mov x19, x0
     add x1, sp, #80
     movz x0, #1, #0
     bl cmps
+    mov x25, x0
+    add x0, sp, #72
+    bl imm_cmps
+    mov x24, x0
+    add x0, sp, #72
+    bl imm_cmps
+    mov x23, x0
+    add x0, sp, #80
+    bl imm_cmps
     mov x22, x0
-    add x0, sp, #72
-    bl imm_cmps
-    mov x21, x0
-    add x0, sp, #72
-    bl imm_cmps
-    mov x20, x0
     add x0, sp, #80
     bl imm_cmps
-    mov x19, x0
-    add x0, sp, #80
-    bl imm_cmps
-    add x2, x25, x24
+    add x1, x21, x20
+    add x2, x1, x19
+    add x2, x2, x25
+    add x2, x2, x24
     add x2, x2, x23
-    add x2, x2, x22
-    add x2, x2, x21
-    add x2, x2, x20
-    add x1, x2, x19
+    add x1, x2, x22
     add x0, x1, x0
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
@@ -3256,7 +3257,7 @@ main:
 imm_cmps:
     movz x3, #0, #0
     ldr x1, [x0]
-    cmp x3, x1
+    cmp w3, w1
     b.eq 0x18
     movz x2, #0, #0
     b 0x20
@@ -3265,7 +3266,7 @@ imm_cmps:
     add x2, x1, x3
 3:
     ldr x1, [x0]
-    cmp x3, x1
+    cmp w3, w1
     b.ne 0x30
     b 0x38
 4:
@@ -3273,7 +3274,7 @@ imm_cmps:
     add x2, x1, x2
 5:
     ldr x1, [x0]
-    cmp x3, x1
+    cmp w3, w1
     b.ge 0x48
     b 0x50
 6:
@@ -3281,7 +3282,7 @@ imm_cmps:
     add x2, x1, x2
 7:
     ldr x1, [x0]
-    cmp x3, x1
+    cmp w3, w1
     b.le 0x60
     b 0x68
 8:
@@ -3289,7 +3290,7 @@ imm_cmps:
     add x2, x1, x2
 9:
     ldr x1, [x0]
-    cmp x3, x1
+    cmp w3, w1
     b.gt 0x78
     b 0x80
 10:
@@ -3297,7 +3298,7 @@ imm_cmps:
     add x2, x1, x2
 11:
     ldr x0, [x0]
-    cmp x3, x0
+    cmp w3, w0
     b.lt 0x94
     mov x0, x2
     b 0x9c
@@ -3310,7 +3311,7 @@ cmps:
     mov x2, x0
     movz x0, #0, #0
     ldr x4, [x1]
-    cmp x2, x4
+    cmp w2, w4
     b.eq 0x18
     b 0x20
 15:
@@ -3318,7 +3319,7 @@ cmps:
     add x0, x3, x0
 16:
     ldr x4, [x1]
-    cmp x2, x4
+    cmp w2, w4
     b.ne 0x30
     b 0x38
 17:
@@ -3326,7 +3327,7 @@ cmps:
     add x0, x3, x0
 18:
     ldr x4, [x1]
-    cmp x2, x4
+    cmp w2, w4
     b.ge 0x48
     b 0x50
 19:
@@ -3334,7 +3335,7 @@ cmps:
     add x0, x3, x0
 20:
     ldr x4, [x1]
-    cmp x2, x4
+    cmp w2, w4
     b.le 0x60
     b 0x68
 21:
@@ -3342,7 +3343,7 @@ cmps:
     add x0, x3, x0
 22:
     ldr x4, [x1]
-    cmp x2, x4
+    cmp w2, w4
     b.gt 0x78
     b 0x80
 23:
@@ -3350,7 +3351,7 @@ cmps:
     add x0, x3, x0
 24:
     ldr x1, [x1]
-    cmp x2, x1
+    cmp w2, w1
     b.lt 0x90
     b 0x98
 25:
@@ -3361,14 +3362,7 @@ cmps:
 =========== OPT LEVEL: mininal-quick ===========
 main:
     sub sp, sp, #96
-    str x19, [xzr]
-    str x20, [xzr, #8]
-    str x21, [xzr, #16]
-    str x22, [xzr, #24]
-    str x23, [xzr, #32]
-    str x24, [xzr, #40]
-    str x25, [xzr, #48]
-    stp x29, x30, [xzr, #63]
+    stp x29, x30, [xzr, #7]
     add x0, sp, #72
     movz x1, #1, #0
     str x1, [x0]
@@ -3378,51 +3372,51 @@ main:
     add x1, sp, #72
     movn x0, #0, #0
     bl cmps
-    mov x19, x0
+    str x0, [xzr, #16]
     add x1, sp, #72
     movz x0, #1, #0
     bl cmps
-    mov x20, x0
+    str x0, [xzr, #24]
     add x1, sp, #80
     movn x0, #0, #0
     bl cmps
-    mov x21, x0
+    str x0, [xzr, #32]
     add x1, sp, #80
     movz x0, #1, #0
     bl cmps
-    mov x22, x0
+    str x0, [xzr, #40]
     add x0, sp, #72
     bl imm_cmps
-    mov x23, x0
+    str x0, [xzr, #48]
     add x0, sp, #72
     bl imm_cmps
-    mov x24, x0
+    str x0, [xzr, #56]
     add x0, sp, #80
     bl imm_cmps
-    mov x25, x0
+    str x0, [xzr, #64]
     add x0, sp, #80
     bl imm_cmps
-    add x1, x19, x20
-    add x1, x1, x21
-    add x1, x1, x22
-    add x1, x1, x23
-    add x1, x1, x24
-    add x1, x1, x25
+    ldr x1, [xzr, #16]
+    ldr x2, [xzr, #24]
+    add x1, x1, x2
+    ldr x2, [xzr, #32]
+    add x1, x1, x2
+    ldr x2, [xzr, #40]
+    add x1, x1, x2
+    ldr x2, [xzr, #48]
+    add x1, x1, x2
+    ldr x2, [xzr, #56]
+    add x1, x1, x2
+    ldr x2, [xzr, #64]
+    add x1, x1, x2
     add x0, x1, x0
-    ldr x19, [xzr]
-    ldr x20, [xzr, #8]
-    ldr x21, [xzr, #16]
-    ldr x22, [xzr, #24]
-    ldr x23, [xzr, #32]
-    ldr x24, [xzr, #40]
-    ldr x25, [xzr, #48]
-    ldp x29, x30, [xzr, #63]
+    ldp x29, x30, [xzr, #7]
     add sp, sp, #96
     ret
 imm_cmps:
     movz x1, #0, #0
     ldr x2, [x0]
-    cmp x2, x1
+    cmp w2, w1
     b.eq 0x18
     movz x2, #0, #0
     b 0x24
@@ -3432,7 +3426,7 @@ imm_cmps:
     mov x2, x3
 3:
     ldr x3, [x0]
-    cmp x3, x1
+    cmp w3, w1
     b.ne 0x34
     b 0x40
 4:
@@ -3441,7 +3435,7 @@ imm_cmps:
     mov x2, x3
 5:
     ldr x3, [x0]
-    cmp x3, x1
+    cmp w3, w1
     b.le 0x54
     mov x3, x2
     b 0x60
@@ -3451,7 +3445,7 @@ imm_cmps:
     mov x3, x2
 7:
     ldr x2, [x0]
-    cmp x2, x1
+    cmp w2, w1
     b.ge 0x74
     mov x2, x3
     b 0x80
@@ -3461,7 +3455,7 @@ imm_cmps:
     mov x2, x3
 9:
     ldr x3, [x0]
-    cmp x3, x1
+    cmp w3, w1
     b.lt 0x94
     mov x3, x2
     b 0xa0
@@ -3471,7 +3465,7 @@ imm_cmps:
     mov x3, x2
 11:
     ldr x0, [x0]
-    cmp x0, x1
+    cmp w0, w1
     b.gt 0xb4
     mov x0, x3
     b 0xbc
@@ -3481,56 +3475,64 @@ imm_cmps:
 13:
     ret
 cmps:
-    mov x2, x0
+    sub sp, sp, #16
+    str x0, [xzr]
     movz x0, #0, #0
-    ldr x3, [x1]
-    cmp x2, x3
-    b.eq 0x18
-    b 0x20
+    ldr x2, [x1]
+    ldr x3, [xzr]
+    cmp w3, w2
+    b.eq 0x20
+    b 0x28
 15:
-    movz x3, #1, #0
-    add x0, x3, x0
+    movz x2, #1, #0
+    add x0, x2, x0
 16:
-    ldr x3, [x1]
-    cmp x2, x3
-    b.ne 0x30
-    b 0x38
+    ldr x2, [x1]
+    ldr x3, [xzr]
+    cmp w3, w2
+    b.ne 0x3c
+    b 0x44
 17:
-    movz x3, #2, #0
-    add x0, x3, x0
+    movz x2, #2, #0
+    add x0, x2, x0
 18:
-    ldr x3, [x1]
-    cmp x2, x3
-    b.ge 0x48
-    b 0x50
+    ldr x2, [x1]
+    ldr x3, [xzr]
+    cmp w3, w2
+    b.ge 0x58
+    b 0x60
 19:
-    movz x3, #4, #0
-    add x0, x3, x0
+    movz x2, #4, #0
+    add x0, x2, x0
 20:
-    ldr x3, [x1]
-    cmp x2, x3
-    b.le 0x60
-    b 0x68
+    ldr x2, [x1]
+    ldr x3, [xzr]
+    cmp w3, w2
+    b.le 0x74
+    b 0x7c
 21:
-    movz x3, #8, #0
-    add x0, x3, x0
+    movz x2, #8, #0
+    add x0, x2, x0
 22:
-    ldr x3, [x1]
-    cmp x2, x3
-    b.gt 0x78
-    b 0x80
+    ldr x2, [x1]
+    ldr x3, [xzr]
+    cmp w3, w2
+    b.gt 0x90
+    b 0x98
 23:
-    movz x3, #16, #0
-    add x0, x3, x0
+    movz x2, #16, #0
+    add x0, x2, x0
 24:
     ldr x1, [x1]
-    cmp x2, x1
-    b.lt 0x90
-    b 0x98
+    ldr x2, [xzr]
+    cmp w2, w1
+    b.lt 0xac
+    b 0xb4
 25:
     movz x1, #32, #0
     add x0, x1, x0
 26:
+    add sp, sp, #16
     ret
 =========== OPT LEVEL: mininal ===========
 main:
@@ -3552,36 +3554,36 @@ main:
     add x1, sp, #72
     movn x0, #0, #0
     bl cmps
-    mov x25, x0
+    mov x21, x0
     add x1, sp, #72
     movz x0, #1, #0
     bl cmps
-    mov x24, x0
+    mov x20, x0
     add x1, sp, #80
     movn x0, #0, #0
     bl cmps
-    mov x23, x0
+    mov x19, x0
     add x1, sp, #80
     movz x0, #1, #0
     bl cmps
+    mov x25, x0
+    add x0, sp, #72
+    bl imm_cmps
+    mov x24, x0
+    add x0, sp, #72
+    bl imm_cmps
+    mov x23, x0
+    add x0, sp, #80
+    bl imm_cmps
     mov x22, x0
-    add x0, sp, #72
-    bl imm_cmps
-    mov x21, x0
-    add x0, sp, #72
-    bl imm_cmps
-    mov x20, x0
     add x0, sp, #80
     bl imm_cmps
-    mov x19, x0
-    add x0, sp, #80
-    bl imm_cmps
-    add x2, x25, x24
+    add x1, x21, x20
+    add x2, x1, x19
+    add x2, x2, x25
+    add x2, x2, x24
     add x2, x2, x23
-    add x2, x2, x22
-    add x2, x2, x21
-    add x2, x2, x20
-    add x1, x2, x19
+    add x1, x2, x22
     add x0, x1, x0
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
@@ -3596,7 +3598,7 @@ main:
 imm_cmps:
     movz x3, #0, #0
     ldr x1, [x0]
-    cmp x1, x3
+    cmp w1, w3
     b.eq 0x18
     movz x2, #0, #0
     b 0x20
@@ -3605,7 +3607,7 @@ imm_cmps:
     add x2, x1, x3
 3:
     ldr x1, [x0]
-    cmp x1, x3
+    cmp w1, w3
     b.ne 0x30
     b 0x38
 4:
@@ -3613,7 +3615,7 @@ imm_cmps:
     add x2, x1, x2
 5:
     ldr x1, [x0]
-    cmp x1, x3
+    cmp w1, w3
     b.le 0x48
     b 0x50
 6:
@@ -3621,7 +3623,7 @@ imm_cmps:
     add x2, x1, x2
 7:
     ldr x1, [x0]
-    cmp x1, x3
+    cmp w1, w3
     b.ge 0x60
     b 0x68
 8:
@@ -3629,7 +3631,7 @@ imm_cmps:
     add x2, x1, x2
 9:
     ldr x1, [x0]
-    cmp x1, x3
+    cmp w1, w3
     b.lt 0x78
     b 0x80
 10:
@@ -3637,7 +3639,7 @@ imm_cmps:
     add x2, x1, x2
 11:
     ldr x0, [x0]
-    cmp x0, x3
+    cmp w0, w3
     b.gt 0x94
     mov x0, x2
     b 0x9c
@@ -3650,7 +3652,7 @@ cmps:
     mov x2, x0
     movz x0, #0, #0
     ldr x4, [x1]
-    cmp x2, x4
+    cmp w2, w4
     b.eq 0x18
     b 0x20
 15:
@@ -3658,7 +3660,7 @@ cmps:
     add x0, x3, x0
 16:
     ldr x4, [x1]
-    cmp x2, x4
+    cmp w2, w4
     b.ne 0x30
     b 0x38
 17:
@@ -3666,7 +3668,7 @@ cmps:
     add x0, x3, x0
 18:
     ldr x4, [x1]
-    cmp x2, x4
+    cmp w2, w4
     b.ge 0x48
     b 0x50
 19:
@@ -3674,7 +3676,7 @@ cmps:
     add x0, x3, x0
 20:
     ldr x4, [x1]
-    cmp x2, x4
+    cmp w2, w4
     b.le 0x60
     b 0x68
 21:
@@ -3682,7 +3684,7 @@ cmps:
     add x0, x3, x0
 22:
     ldr x4, [x1]
-    cmp x2, x4
+    cmp w2, w4
     b.gt 0x78
     b 0x80
 23:
@@ -3690,7 +3692,7 @@ cmps:
     add x0, x3, x0
 24:
     ldr x1, [x1]
-    cmp x2, x1
+    cmp w2, w1
     b.lt 0x90
     b 0x98
 25:
@@ -3701,14 +3703,7 @@ cmps:
 =========== OPT LEVEL: moderate-quick ===========
 main:
     sub sp, sp, #96
-    str x19, [xzr]
-    str x20, [xzr, #8]
-    str x21, [xzr, #16]
-    str x22, [xzr, #24]
-    str x23, [xzr, #32]
-    str x24, [xzr, #40]
-    str x25, [xzr, #48]
-    stp x29, x30, [xzr, #63]
+    stp x29, x30, [xzr, #7]
     add x0, sp, #72
     movz x1, #1, #0
     str x1, [x0]
@@ -3718,51 +3713,51 @@ main:
     add x1, sp, #72
     movn x0, #0, #0
     bl cmps
-    mov x19, x0
+    str x0, [xzr, #16]
     add x1, sp, #72
     movz x0, #1, #0
     bl cmps
-    mov x20, x0
+    str x0, [xzr, #24]
     add x1, sp, #80
     movn x0, #0, #0
     bl cmps
-    mov x21, x0
+    str x0, [xzr, #32]
     add x1, sp, #80
     movz x0, #1, #0
     bl cmps
-    mov x22, x0
+    str x0, [xzr, #40]
     add x0, sp, #72
     bl imm_cmps
-    mov x23, x0
+    str x0, [xzr, #48]
     add x0, sp, #72
     bl imm_cmps
-    mov x24, x0
+    str x0, [xzr, #56]
     add x0, sp, #80
     bl imm_cmps
-    mov x25, x0
+    str x0, [xzr, #64]
     add x0, sp, #80
     bl imm_cmps
-    add x1, x19, x20
-    add x1, x1, x21
-    add x1, x1, x22
-    add x1, x1, x23
-    add x1, x1, x24
-    add x1, x1, x25
+    ldr x1, [xzr, #16]
+    ldr x2, [xzr, #24]
+    add x1, x1, x2
+    ldr x2, [xzr, #32]
+    add x1, x1, x2
+    ldr x2, [xzr, #40]
+    add x1, x1, x2
+    ldr x2, [xzr, #48]
+    add x1, x1, x2
+    ldr x2, [xzr, #56]
+    add x1, x1, x2
+    ldr x2, [xzr, #64]
+    add x1, x1, x2
     add x0, x1, x0
-    ldr x19, [xzr]
-    ldr x20, [xzr, #8]
-    ldr x21, [xzr, #16]
-    ldr x22, [xzr, #24]
-    ldr x23, [xzr, #32]
-    ldr x24, [xzr, #40]
-    ldr x25, [xzr, #48]
-    ldp x29, x30, [xzr, #63]
+    ldp x29, x30, [xzr, #7]
     add sp, sp, #96
     ret
 imm_cmps:
     movz x1, #0, #0
     ldr x2, [x0]
-    cmp x2, x1
+    cmp w2, w1
     b.eq 0x18
     movz x2, #0, #0
     b 0x1c
@@ -3770,7 +3765,7 @@ imm_cmps:
     movz x2, #1, #0
 3:
     ldr x3, [x0]
-    cmp x3, x1
+    cmp w3, w1
     b.ne 0x2c
     b 0x38
 4:
@@ -3779,7 +3774,7 @@ imm_cmps:
     mov x2, x3
 5:
     ldr x3, [x0]
-    cmp x3, x1
+    cmp w3, w1
     b.le 0x4c
     mov x3, x2
     b 0x58
@@ -3789,7 +3784,7 @@ imm_cmps:
     mov x3, x2
 7:
     ldr x2, [x0]
-    cmp x2, x1
+    cmp w2, w1
     b.ge 0x6c
     mov x2, x3
     b 0x78
@@ -3799,7 +3794,7 @@ imm_cmps:
     mov x2, x3
 9:
     ldr x3, [x0]
-    cmp x3, x1
+    cmp w3, w1
     b.lt 0x8c
     mov x3, x2
     b 0x98
@@ -3809,7 +3804,7 @@ imm_cmps:
     mov x3, x2
 11:
     ldr x0, [x0]
-    cmp x0, x1
+    cmp w0, w1
     b.gt 0xac
     mov x0, x3
     b 0xb4
@@ -3819,55 +3814,63 @@ imm_cmps:
 13:
     ret
 cmps:
-    mov x2, x0
+    sub sp, sp, #16
+    str x0, [xzr]
     ldr x0, [x1]
-    cmp x2, x0
-    b.eq 0x18
+    ldr x2, [xzr]
+    cmp w2, w0
+    b.eq 0x20
     movz x0, #0, #0
-    b 0x1c
+    b 0x24
 15:
     movz x0, #1, #0
 16:
-    ldr x3, [x1]
-    cmp x2, x3
-    b.ne 0x2c
-    b 0x34
+    ldr x2, [x1]
+    ldr x3, [xzr]
+    cmp w3, w2
+    b.ne 0x38
+    b 0x40
 17:
-    movz x3, #2, #0
-    add x0, x3, x0
+    movz x2, #2, #0
+    add x0, x2, x0
 18:
-    ldr x3, [x1]
-    cmp x2, x3
-    b.ge 0x44
-    b 0x4c
+    ldr x2, [x1]
+    ldr x3, [xzr]
+    cmp w3, w2
+    b.ge 0x54
+    b 0x5c
 19:
-    movz x3, #4, #0
-    add x0, x3, x0
+    movz x2, #4, #0
+    add x0, x2, x0
 20:
-    ldr x3, [x1]
-    cmp x2, x3
-    b.le 0x5c
-    b 0x64
+    ldr x2, [x1]
+    ldr x3, [xzr]
+    cmp w3, w2
+    b.le 0x70
+    b 0x78
 21:
-    movz x3, #8, #0
-    add x0, x3, x0
+    movz x2, #8, #0
+    add x0, x2, x0
 22:
-    ldr x3, [x1]
-    cmp x2, x3
-    b.gt 0x74
-    b 0x7c
+    ldr x2, [x1]
+    ldr x3, [xzr]
+    cmp w3, w2
+    b.gt 0x8c
+    b 0x94
 23:
-    movz x3, #16, #0
-    add x0, x3, x0
+    movz x2, #16, #0
+    add x0, x2, x0
 24:
     ldr x1, [x1]
-    cmp x2, x1
-    b.lt 0x8c
-    b 0x94
+    ldr x2, [xzr]
+    cmp w2, w1
+    b.lt 0xa8
+    b 0xb0
 25:
     movz x1, #32, #0
     add x0, x1, x0
 26:
+    add sp, sp, #16
     ret
 =========== OPT LEVEL: moderate ===========
 main:
@@ -3889,36 +3892,36 @@ main:
     add x1, sp, #72
     movn x0, #0, #0
     bl cmps
-    mov x25, x0
+    mov x21, x0
     add x1, sp, #72
     movz x0, #1, #0
     bl cmps
-    mov x24, x0
+    mov x20, x0
     add x1, sp, #80
     movn x0, #0, #0
     bl cmps
-    mov x23, x0
+    mov x19, x0
     add x1, sp, #80
     movz x0, #1, #0
     bl cmps
+    mov x25, x0
+    add x0, sp, #72
+    bl imm_cmps
+    mov x24, x0
+    add x0, sp, #72
+    bl imm_cmps
+    mov x23, x0
+    add x0, sp, #80
+    bl imm_cmps
     mov x22, x0
-    add x0, sp, #72
-    bl imm_cmps
-    mov x21, x0
-    add x0, sp, #72
-    bl imm_cmps
-    mov x20, x0
     add x0, sp, #80
     bl imm_cmps
-    mov x19, x0
-    add x0, sp, #80
-    bl imm_cmps
-    add x2, x25, x24
+    add x1, x21, x20
+    add x2, x1, x19
+    add x2, x2, x25
+    add x2, x2, x24
     add x2, x2, x23
-    add x2, x2, x22
-    add x2, x2, x21
-    add x2, x2, x20
-    add x1, x2, x19
+    add x1, x2, x22
     add x0, x1, x0
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
@@ -3933,7 +3936,7 @@ main:
 imm_cmps:
     movz x3, #0, #0
     ldr x1, [x0]
-    cmp x1, x3
+    cmp w1, w3
     b.eq 0x18
     movz x2, #0, #0
     b 0x1c
@@ -3941,7 +3944,7 @@ imm_cmps:
     movz x2, #1, #0
 3:
     ldr x1, [x0]
-    cmp x1, x3
+    cmp w1, w3
     b.ne 0x2c
     b 0x34
 4:
@@ -3949,7 +3952,7 @@ imm_cmps:
     add x2, x1, x2
 5:
     ldr x1, [x0]
-    cmp x1, x3
+    cmp w1, w3
     b.le 0x44
     b 0x4c
 6:
@@ -3957,7 +3960,7 @@ imm_cmps:
     add x2, x1, x2
 7:
     ldr x1, [x0]
-    cmp x1, x3
+    cmp w1, w3
     b.ge 0x5c
     b 0x64
 8:
@@ -3965,7 +3968,7 @@ imm_cmps:
     add x2, x1, x2
 9:
     ldr x1, [x0]
-    cmp x1, x3
+    cmp w1, w3
     b.lt 0x74
     b 0x7c
 10:
@@ -3973,7 +3976,7 @@ imm_cmps:
     add x2, x1, x2
 11:
     ldr x0, [x0]
-    cmp x0, x3
+    cmp w0, w3
     b.gt 0x90
     mov x0, x2
     b 0x98
@@ -3985,7 +3988,7 @@ imm_cmps:
 cmps:
     mov x2, x0
     ldr x3, [x1]
-    cmp x2, x3
+    cmp w2, w3
     b.eq 0x18
     movz x0, #0, #0
     b 0x1c
@@ -3993,7 +3996,7 @@ cmps:
     movz x0, #1, #0
 16:
     ldr x4, [x1]
-    cmp x2, x4
+    cmp w2, w4
     b.ne 0x2c
     b 0x34
 17:
@@ -4001,7 +4004,7 @@ cmps:
     add x0, x3, x0
 18:
     ldr x4, [x1]
-    cmp x2, x4
+    cmp w2, w4
     b.ge 0x44
     b 0x4c
 19:
@@ -4009,7 +4012,7 @@ cmps:
     add x0, x3, x0
 20:
     ldr x4, [x1]
-    cmp x2, x4
+    cmp w2, w4
     b.le 0x5c
     b 0x64
 21:
@@ -4017,7 +4020,7 @@ cmps:
     add x0, x3, x0
 22:
     ldr x4, [x1]
-    cmp x2, x4
+    cmp w2, w4
     b.gt 0x74
     b 0x7c
 23:
@@ -4025,7 +4028,7 @@ cmps:
     add x0, x3, x0
 24:
     ldr x1, [x1]
-    cmp x2, x1
+    cmp w2, w1
     b.lt 0x8c
     b 0x94
 25:
@@ -4053,36 +4056,36 @@ main:
     add x1, sp, #72
     movn x0, #0, #0
     bl cmps
-    mov x25, x0
+    mov x21, x0
     add x1, sp, #72
     movz x0, #1, #0
     bl cmps
-    mov x24, x0
+    mov x20, x0
     add x1, sp, #80
     movn x0, #0, #0
     bl cmps
-    mov x23, x0
+    mov x19, x0
     add x1, sp, #80
     movz x0, #1, #0
     bl cmps
+    mov x25, x0
+    add x0, sp, #72
+    bl imm_cmps
+    mov x24, x0
+    add x0, sp, #72
+    bl imm_cmps
+    mov x23, x0
+    add x0, sp, #80
+    bl imm_cmps
     mov x22, x0
-    add x0, sp, #72
-    bl imm_cmps
-    mov x21, x0
-    add x0, sp, #72
-    bl imm_cmps
-    mov x20, x0
     add x0, sp, #80
     bl imm_cmps
-    mov x19, x0
-    add x0, sp, #80
-    bl imm_cmps
-    add x2, x25, x24
+    add x1, x21, x20
+    add x2, x1, x19
+    add x2, x2, x25
+    add x2, x2, x24
     add x2, x2, x23
-    add x2, x2, x22
-    add x2, x2, x21
-    add x2, x2, x20
-    add x1, x2, x19
+    add x1, x2, x22
     add x0, x1, x0
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
@@ -4097,7 +4100,7 @@ main:
 imm_cmps:
     movz x3, #0, #0
     ldr x1, [x0]
-    cmp x1, x3
+    cmp w1, w3
     b.eq 0x18
     movz x2, #0, #0
     b 0x1c
@@ -4105,7 +4108,7 @@ imm_cmps:
     movz x2, #1, #0
 3:
     ldr x1, [x0]
-    cmp x1, x3
+    cmp w1, w3
     b.ne 0x2c
     b 0x34
 4:
@@ -4113,7 +4116,7 @@ imm_cmps:
     add x2, x1, x2
 5:
     ldr x1, [x0]
-    cmp x1, x3
+    cmp w1, w3
     b.le 0x44
     b 0x4c
 6:
@@ -4121,7 +4124,7 @@ imm_cmps:
     add x2, x1, x2
 7:
     ldr x1, [x0]
-    cmp x1, x3
+    cmp w1, w3
     b.ge 0x5c
     b 0x64
 8:
@@ -4129,7 +4132,7 @@ imm_cmps:
     add x2, x1, x2
 9:
     ldr x1, [x0]
-    cmp x1, x3
+    cmp w1, w3
     b.lt 0x74
     b 0x7c
 10:
@@ -4137,7 +4140,7 @@ imm_cmps:
     add x2, x1, x2
 11:
     ldr x0, [x0]
-    cmp x0, x3
+    cmp w0, w3
     b.gt 0x90
     mov x0, x2
     b 0x98
@@ -4149,7 +4152,7 @@ imm_cmps:
 cmps:
     mov x2, x0
     ldr x3, [x1]
-    cmp x2, x3
+    cmp w2, w3
     b.eq 0x18
     movz x0, #0, #0
     b 0x1c
@@ -4157,7 +4160,7 @@ cmps:
     movz x0, #1, #0
 16:
     ldr x4, [x1]
-    cmp x2, x4
+    cmp w2, w4
     b.ne 0x2c
     b 0x34
 17:
@@ -4165,7 +4168,7 @@ cmps:
     add x0, x3, x0
 18:
     ldr x4, [x1]
-    cmp x2, x4
+    cmp w2, w4
     b.ge 0x44
     b 0x4c
 19:
@@ -4173,7 +4176,7 @@ cmps:
     add x0, x3, x0
 20:
     ldr x4, [x1]
-    cmp x2, x4
+    cmp w2, w4
     b.le 0x5c
     b 0x64
 21:
@@ -4181,7 +4184,7 @@ cmps:
     add x0, x3, x0
 22:
     ldr x4, [x1]
-    cmp x2, x4
+    cmp w2, w4
     b.gt 0x74
     b 0x7c
 23:
@@ -4189,7 +4192,7 @@ cmps:
     add x0, x3, x0
 24:
     ldr x1, [x1]
-    cmp x2, x1
+    cmp w2, w1
     b.lt 0x8c
     b 0x94
 25:

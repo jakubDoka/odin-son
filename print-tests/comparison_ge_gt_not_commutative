@@ -352,3 +352,112 @@ main:
   (elem (;0;) (i32.const 0) func)
   (data (;0;) (i64.const 1048576) "")
 )
+=========== OPT LEVEL: none-quick ===========
+main:
+    sub sp, sp, #16
+    stp x29, x30, [xzr, #7]
+    movz x0, #3, #0
+    bl opaque
+    movz x1, #5, #0
+    cmp w1, w0
+    csinc x0, xzr, xzr, lt
+    uxtb w0, w0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #16
+    ret
+opaque:
+    ret
+=========== OPT LEVEL: none ===========
+main:
+    sub sp, sp, #16
+    stp x29, x30, [xzr, #7]
+    movz x0, #3, #0
+    bl opaque
+    movz x1, #5, #0
+    cmp w1, w0
+    csinc x0, xzr, xzr, lt
+    uxtb w0, w0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #16
+    ret
+opaque:
+    ret
+=========== OPT LEVEL: mininal-quick ===========
+main:
+    sub sp, sp, #16
+    stp x29, x30, [xzr, #7]
+    movz x0, #3, #0
+    bl opaque
+    movz x1, #5, #0
+    cmp w0, w1
+    csinc x0, xzr, xzr, gt
+    uxtb w0, w0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #16
+    ret
+opaque:
+    ret
+=========== OPT LEVEL: mininal ===========
+main:
+    sub sp, sp, #16
+    stp x29, x30, [xzr, #7]
+    movz x0, #3, #0
+    bl opaque
+    movz x1, #5, #0
+    cmp w0, w1
+    csinc x0, xzr, xzr, gt
+    uxtb w0, w0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #16
+    ret
+opaque:
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+main:
+    sub sp, sp, #16
+    stp x29, x30, [xzr, #7]
+    movz x0, #3, #0
+    bl opaque
+    movz x1, #5, #0
+    cmp w0, w1
+    csinc x0, xzr, xzr, gt
+    uxtb w0, w0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #16
+    ret
+opaque:
+    ret
+=========== OPT LEVEL: moderate ===========
+main:
+    sub sp, sp, #16
+    stp x29, x30, [xzr, #7]
+    movz x0, #3, #0
+    bl opaque
+    movz x1, #5, #0
+    cmp w0, w1
+    csinc x0, xzr, xzr, gt
+    uxtb w0, w0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #16
+    ret
+opaque:
+    ret
+=========== OPT LEVEL: all ===========
+main:
+    sub sp, sp, #16
+    stp x29, x30, [xzr, #7]
+    movz x0, #3, #0
+    bl opaque
+    movz x1, #5, #0
+    cmp w0, w1
+    csinc x0, xzr, xzr, gt
+    uxtb w0, w0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #16
+    ret
+opaque:
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    movz x0, #1, #0
+    ret

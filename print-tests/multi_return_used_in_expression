@@ -862,45 +862,52 @@ main:
 opaque:
     ret
 minmax:
-    cmp x0, x1
-    b.lt 0x14
-    str x1, [x2]
-    mov x3, x0
-    b 0x1c
-2:
+    sub sp, sp, #16
+    str x0, [xzr]
+    str x1, [xzr, #8]
+    ldr x0, [xzr, #8]
+    ldr x1, [xzr]
+    cmp w1, w0
+    b.lt 0x2c
+    ldr x0, [xzr, #8]
     str x0, [x2]
-    mov x3, x1
+    ldr x0, [xzr]
+    b 0x38
+2:
+    ldr x1, [xzr]
+    str x1, [x2]
+    ldr x0, [xzr, #8]
 3:
-    mov x0, x3
+    mov x0, x0
+    add sp, sp, #16
     ret
 main:
-    sub sp, sp, #32
-    str x19, [xzr]
-    stp x29, x30, [xzr, #15]
+    sub sp, sp, #48
+    stp x29, x30, [xzr, #7]
     movz x0, #9, #0
-    bl 0xffffffd8
-    mov x19, x0
+    bl 0xffffffb8
+    str x0, [xzr, #16]
     movz x0, #4, #0
-    bl 0xffffffd8
-    mov x1, x0
-    mov x0, x19
-    add x2, sp, #24
-    bl 0xffffffdc
-    add x1, sp, #24
+    bl 0xffffffb8
+    str x0, [xzr, #24]
+    ldr x1, [xzr, #24]
+    ldr x0, [xzr, #16]
+    add x2, sp, #32
+    bl 0xffffffbc
+    add x1, sp, #32
     ldr x1, [x1]
     sub x0, x0, x1
     movz x2, #2, #0
     madd x0, x0, x2, xzr
     add x0, x0, x1
-    ldr x19, [xzr]
-    ldp x29, x30, [xzr, #15]
-    add sp, sp, #32
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #48
     ret
 =========== OPT LEVEL: none ===========
 opaque:
     ret
 minmax:
-    cmp x0, x1
+    cmp w0, w1
     b.lt 0x10
     str x1, [x2]
     b 0x18
@@ -936,45 +943,52 @@ main:
 opaque:
     ret
 minmax:
-    cmp x0, x1
-    b.lt 0x14
-    str x1, [x2]
-    mov x3, x0
-    b 0x1c
-2:
+    sub sp, sp, #16
+    str x0, [xzr]
+    str x1, [xzr, #8]
+    ldr x0, [xzr, #8]
+    ldr x1, [xzr]
+    cmp w1, w0
+    b.lt 0x2c
+    ldr x0, [xzr, #8]
     str x0, [x2]
-    mov x3, x1
+    ldr x0, [xzr]
+    b 0x38
+2:
+    ldr x1, [xzr]
+    str x1, [x2]
+    ldr x0, [xzr, #8]
 3:
-    mov x0, x3
+    mov x0, x0
+    add sp, sp, #16
     ret
 main:
-    sub sp, sp, #32
-    str x19, [xzr]
-    stp x29, x30, [xzr, #15]
+    sub sp, sp, #48
+    stp x29, x30, [xzr, #7]
     movz x0, #9, #0
-    bl 0xffffffd8
-    mov x19, x0
+    bl 0xffffffb8
+    str x0, [xzr, #16]
     movz x0, #4, #0
-    bl 0xffffffd8
-    mov x1, x0
-    mov x0, x19
-    add x2, sp, #24
-    bl 0xffffffdc
-    add x1, sp, #24
+    bl 0xffffffb8
+    str x0, [xzr, #24]
+    ldr x1, [xzr, #24]
+    ldr x0, [xzr, #16]
+    add x2, sp, #32
+    bl 0xffffffbc
+    add x1, sp, #32
     ldr x1, [x1]
     sub x0, x0, x1
     movz x2, #2, #0
     madd x0, x0, x2, xzr
     add x0, x0, x1
-    ldr x19, [xzr]
-    ldp x29, x30, [xzr, #15]
-    add sp, sp, #32
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #48
     ret
 =========== OPT LEVEL: mininal ===========
 opaque:
     ret
 minmax:
-    cmp x0, x1
+    cmp w0, w1
     b.lt 0x10
     str x1, [x2]
     b 0x18
@@ -1010,45 +1024,52 @@ main:
 opaque:
     ret
 minmax:
-    cmp x0, x1
-    b.lt 0x14
-    str x1, [x2]
-    mov x3, x0
-    b 0x1c
-2:
+    sub sp, sp, #16
+    str x0, [xzr]
+    str x1, [xzr, #8]
+    ldr x0, [xzr, #8]
+    ldr x1, [xzr]
+    cmp w1, w0
+    b.lt 0x2c
+    ldr x0, [xzr, #8]
     str x0, [x2]
-    mov x3, x1
+    ldr x0, [xzr]
+    b 0x38
+2:
+    ldr x1, [xzr]
+    str x1, [x2]
+    ldr x0, [xzr, #8]
 3:
-    mov x0, x3
+    mov x0, x0
+    add sp, sp, #16
     ret
 main:
-    sub sp, sp, #32
-    str x19, [xzr]
-    stp x29, x30, [xzr, #15]
+    sub sp, sp, #48
+    stp x29, x30, [xzr, #7]
     movz x0, #9, #0
-    bl 0xffffffd8
-    mov x19, x0
+    bl 0xffffffb8
+    str x0, [xzr, #16]
     movz x0, #4, #0
-    bl 0xffffffd8
-    mov x1, x0
-    mov x0, x19
-    add x2, sp, #24
-    bl 0xffffffdc
-    add x1, sp, #24
+    bl 0xffffffb8
+    str x0, [xzr, #24]
+    ldr x1, [xzr, #24]
+    ldr x0, [xzr, #16]
+    add x2, sp, #32
+    bl 0xffffffbc
+    add x1, sp, #32
     ldr x1, [x1]
     sub x0, x0, x1
     movz x2, #2, #0
     madd x0, x0, x2, xzr
     add x0, x0, x1
-    ldr x19, [xzr]
-    ldp x29, x30, [xzr, #15]
-    add sp, sp, #32
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #48
     ret
 =========== OPT LEVEL: moderate ===========
 opaque:
     ret
 minmax:
-    cmp x0, x1
+    cmp w0, w1
     b.lt 0x10
     str x1, [x2]
     b 0x18
@@ -1084,7 +1105,7 @@ main:
 opaque:
     ret
 minmax:
-    cmp x0, x1
+    cmp w0, w1
     b.lt 0x10
     str x1, [x2]
     b 0x18

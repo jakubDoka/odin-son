@@ -1088,51 +1088,53 @@ main:
 a:
     sub sp, sp, #48
     str x19, [xzr]
-    str x20, [xzr, #8]
-    str x21, [xzr, #16]
-    stp x29, x30, [xzr, #31]
-    mov x2, x0
-    mov x19, x1
-    mov x0, x2
+    stp x29, x30, [xzr, #15]
+    str x0, [xzr, #24]
+    str x1, [xzr, #32]
+    ldr x0, [xzr, #24]
     movz x1, #0, #0
-    cmp x0, x1
-    b.eq 0x94
-    movz x20, #2, #0
-    cmp x19, x20
-    b.eq 2
+    cmp w0, w1
+    b.eq 0xa4
+    movz x19, #2, #0
+    ldr x0, [xzr, #32]
+    cmp w0, w19
+    b.eq 0x90
     movz x0, #1, #0
-    cmp x2, x0
-    b.eq 0x64
-    mov x0, x2
-    bl 4
-    mov x21, x0
-    mov x0, x19
-    bl 0xc0
-    add x0, x21, x0
+    ldr x1, [xzr, #24]
+    cmp w1, w0
+    b.eq 0x68
+    ldr x0, [xzr, #24]
+    bl 0xbc
+    str x0, [xzr, #40]
+    ldr x0, [xzr, #32]
+    bl 5
+    ldr x1, [xzr, #40]
+    add x0, x1, x0
     mov x1, x0
-    b 0x98
+    b 0xa8
 2:
-    mov x0, x2
-    bl 4
-    mov x21, x0
-    madd x0, x19, x20, xzr
-    bl 0xc0
-    add x0, x21, x0
+    ldr x0, [xzr, #24]
+    bl 0xbc
+    str x0, [xzr, #24]
+    ldr x0, [xzr, #32]
+    madd x0, x0, x19, xzr
+    bl 5
+    ldr x2, [xzr, #24]
+    add x0, x2, x0
     mov x1, x0
-    b 0x98
+    b 0xa8
 3:
     movz x0, #6, #0
-    madd x0, x0, x19, xzr
+    ldr x2, [xzr, #32]
+    madd x0, x0, x2, xzr
     mov x1, x0
-    b 0x98
+    b 0xa8
 4:
     movz x1, #0, #0
 5:
     mov x0, x1
     ldr x19, [xzr]
-    ldr x20, [xzr, #8]
-    ldr x21, [xzr, #16]
-    ldp x29, x30, [xzr, #31]
+    ldp x29, x30, [xzr, #15]
     add sp, sp, #48
     ret
 b:
@@ -1160,34 +1162,34 @@ a:
     str x21, [xzr, #16]
     stp x29, x30, [xzr, #31]
     mov x2, x0
-    mov x19, x1
+    mov x20, x1
     movz x0, #0, #0
-    cmp x2, x0
+    cmp w2, w0
     b.eq 0x84
-    movz x20, #2, #0
-    cmp x19, x20
+    movz x21, #2, #0
+    cmp w20, w21
     b.eq 0x78
     movz x1, #1, #0
-    cmp x2, x1
+    cmp w2, w1
     b.eq 0x5c
     mov x0, x2
     bl 0x9c
-    mov x20, x0
-    mov x0, x19
+    mov x19, x0
+    mov x0, x20
     bl 0xa8
-    add x0, x20, x0
+    add x0, x19, x0
     b 0x84
 2:
     mov x0, x2
     bl 0x9c
-    mov x21, x0
-    madd x0, x19, x20, xzr
+    mov x19, x0
+    madd x0, x20, x21, xzr
     bl 0xa8
-    add x0, x21, x0
+    add x0, x19, x0
     b 0x84
 3:
-    movz x1, #6, #0
-    madd x0, x1, x19, xzr
+    movz x0, #6, #0
+    madd x0, x0, x20, xzr
     b 0x84
 4:
     ldr x19, [xzr]
@@ -1217,51 +1219,53 @@ main:
 a:
     sub sp, sp, #48
     str x19, [xzr]
-    str x20, [xzr, #8]
-    str x21, [xzr, #16]
-    stp x29, x30, [xzr, #31]
-    mov x2, x0
-    mov x19, x1
-    mov x0, x2
+    stp x29, x30, [xzr, #15]
+    str x0, [xzr, #24]
+    str x1, [xzr, #32]
+    ldr x0, [xzr, #24]
     movz x1, #0, #0
-    cmp x0, x1
-    b.eq 0x94
-    movz x20, #2, #0
-    cmp x19, x20
-    b.eq 2
+    cmp w0, w1
+    b.eq 0xa4
+    movz x19, #2, #0
+    ldr x0, [xzr, #32]
+    cmp w0, w19
+    b.eq 0x90
     movz x0, #1, #0
-    cmp x2, x0
-    b.eq 0x64
-    mov x0, x2
-    bl 4
-    mov x21, x0
-    mov x0, x19
-    bl 0xc0
-    add x0, x21, x0
+    ldr x1, [xzr, #24]
+    cmp w1, w0
+    b.eq 0x68
+    ldr x0, [xzr, #24]
+    bl 0xbc
+    str x0, [xzr, #40]
+    ldr x0, [xzr, #32]
+    bl 5
+    ldr x1, [xzr, #40]
+    add x0, x1, x0
     mov x1, x0
-    b 0x98
+    b 0xa8
 2:
-    mov x0, x2
-    bl 4
-    mov x21, x0
-    madd x0, x19, x20, xzr
-    bl 0xc0
-    add x0, x21, x0
+    ldr x0, [xzr, #24]
+    bl 0xbc
+    str x0, [xzr, #24]
+    ldr x0, [xzr, #32]
+    madd x0, x0, x19, xzr
+    bl 5
+    ldr x2, [xzr, #24]
+    add x0, x2, x0
     mov x1, x0
-    b 0x98
+    b 0xa8
 3:
     movz x0, #6, #0
-    madd x0, x0, x19, xzr
+    ldr x2, [xzr, #32]
+    madd x0, x0, x2, xzr
     mov x1, x0
-    b 0x98
+    b 0xa8
 4:
     movz x1, #0, #0
 5:
     mov x0, x1
     ldr x19, [xzr]
-    ldr x20, [xzr, #8]
-    ldr x21, [xzr, #16]
-    ldp x29, x30, [xzr, #31]
+    ldp x29, x30, [xzr, #15]
     add sp, sp, #48
     ret
 b:
@@ -1289,34 +1293,34 @@ a:
     str x21, [xzr, #16]
     stp x29, x30, [xzr, #31]
     mov x2, x0
-    mov x19, x1
+    mov x20, x1
     movz x0, #0, #0
-    cmp x2, x0
+    cmp w2, w0
     b.eq 0x84
-    movz x20, #2, #0
-    cmp x19, x20
+    movz x21, #2, #0
+    cmp w20, w21
     b.eq 0x78
     movz x1, #1, #0
-    cmp x2, x1
+    cmp w2, w1
     b.eq 0x5c
     mov x0, x2
     bl 0x9c
-    mov x20, x0
-    mov x0, x19
+    mov x19, x0
+    mov x0, x20
     bl 0xa8
-    add x0, x20, x0
+    add x0, x19, x0
     b 0x84
 2:
     mov x0, x2
     bl 0x9c
-    mov x21, x0
-    madd x0, x19, x20, xzr
+    mov x19, x0
+    madd x0, x20, x21, xzr
     bl 0xa8
-    add x0, x21, x0
+    add x0, x19, x0
     b 0x84
 3:
-    movz x1, #6, #0
-    madd x0, x1, x19, xzr
+    movz x0, #6, #0
+    madd x0, x0, x20, xzr
     b 0x84
 4:
     ldr x19, [xzr]
@@ -1346,51 +1350,53 @@ main:
 a:
     sub sp, sp, #48
     str x19, [xzr]
-    str x20, [xzr, #8]
-    str x21, [xzr, #16]
-    stp x29, x30, [xzr, #31]
-    mov x2, x0
-    mov x19, x1
-    mov x0, x2
+    stp x29, x30, [xzr, #15]
+    str x0, [xzr, #24]
+    str x1, [xzr, #32]
+    ldr x0, [xzr, #24]
     movz x1, #0, #0
-    cmp x0, x1
-    b.eq 0x94
-    movz x20, #2, #0
-    cmp x19, x20
-    b.eq 2
+    cmp w0, w1
+    b.eq 0xa4
+    movz x19, #2, #0
+    ldr x0, [xzr, #32]
+    cmp w0, w19
+    b.eq 0x90
     movz x0, #1, #0
-    cmp x2, x0
-    b.eq 0x64
-    mov x0, x2
-    bl 4
-    mov x21, x0
-    mov x0, x19
-    bl 0xc0
-    add x0, x21, x0
+    ldr x1, [xzr, #24]
+    cmp w1, w0
+    b.eq 0x68
+    ldr x0, [xzr, #24]
+    bl 0xbc
+    str x0, [xzr, #40]
+    ldr x0, [xzr, #32]
+    bl 5
+    ldr x1, [xzr, #40]
+    add x0, x1, x0
     mov x1, x0
-    b 0x98
+    b 0xa8
 2:
-    mov x0, x2
-    bl 4
-    mov x21, x0
-    madd x0, x19, x20, xzr
-    bl 0xc0
-    add x0, x21, x0
+    ldr x0, [xzr, #24]
+    bl 0xbc
+    str x0, [xzr, #24]
+    ldr x0, [xzr, #32]
+    madd x0, x0, x19, xzr
+    bl 5
+    ldr x2, [xzr, #24]
+    add x0, x2, x0
     mov x1, x0
-    b 0x98
+    b 0xa8
 3:
     movz x0, #6, #0
-    madd x0, x0, x19, xzr
+    ldr x2, [xzr, #32]
+    madd x0, x0, x2, xzr
     mov x1, x0
-    b 0x98
+    b 0xa8
 4:
     movz x1, #0, #0
 5:
     mov x0, x1
     ldr x19, [xzr]
-    ldr x20, [xzr, #8]
-    ldr x21, [xzr, #16]
-    ldp x29, x30, [xzr, #31]
+    ldp x29, x30, [xzr, #15]
     add sp, sp, #48
     ret
 b:
@@ -1418,34 +1424,34 @@ a:
     str x21, [xzr, #16]
     stp x29, x30, [xzr, #31]
     mov x2, x0
-    mov x19, x1
+    mov x20, x1
     movz x0, #0, #0
-    cmp x2, x0
+    cmp w2, w0
     b.eq 0x84
-    movz x20, #2, #0
-    cmp x19, x20
+    movz x21, #2, #0
+    cmp w20, w21
     b.eq 0x78
     movz x1, #1, #0
-    cmp x2, x1
+    cmp w2, w1
     b.eq 0x5c
     mov x0, x2
     bl 0x9c
-    mov x20, x0
-    mov x0, x19
+    mov x19, x0
+    mov x0, x20
     bl 0xa8
-    add x0, x20, x0
+    add x0, x19, x0
     b 0x84
 2:
     mov x0, x2
     bl 0x9c
-    mov x21, x0
-    madd x0, x19, x20, xzr
+    mov x19, x0
+    madd x0, x20, x21, xzr
     bl 0xa8
-    add x0, x21, x0
+    add x0, x19, x0
     b 0x84
 3:
-    movz x1, #6, #0
-    madd x0, x1, x19, xzr
+    movz x0, #6, #0
+    madd x0, x0, x20, xzr
     b 0x84
 4:
     ldr x19, [xzr]
@@ -1479,34 +1485,34 @@ a:
     str x21, [xzr, #16]
     stp x29, x30, [xzr, #31]
     mov x2, x0
-    mov x19, x1
+    mov x20, x1
     movz x0, #0, #0
-    cmp x2, x0
+    cmp w2, w0
     b.eq 0x84
-    movz x20, #2, #0
-    cmp x19, x20
+    movz x21, #2, #0
+    cmp w20, w21
     b.eq 0x78
     movz x1, #1, #0
-    cmp x2, x1
+    cmp w2, w1
     b.eq 0x5c
     mov x0, x2
     bl 0x9c
-    mov x20, x0
-    mov x0, x19
+    mov x19, x0
+    mov x0, x20
     bl 0xa8
-    add x0, x20, x0
+    add x0, x19, x0
     b 0x84
 2:
     mov x0, x2
     bl 0x9c
-    mov x21, x0
-    madd x0, x19, x20, xzr
+    mov x19, x0
+    madd x0, x20, x21, xzr
     bl 0xa8
-    add x0, x21, x0
+    add x0, x19, x0
     b 0x84
 3:
-    movz x1, #6, #0
-    madd x0, x1, x19, xzr
+    movz x0, #6, #0
+    madd x0, x0, x20, xzr
     b 0x84
 4:
     ldr x19, [xzr]

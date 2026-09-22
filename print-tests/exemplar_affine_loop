@@ -4,7 +4,7 @@ main:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0x40
-    call.q [rip - 0x20]
+    call -0x37
     xor eax, eax
     xor ecx, ecx
 1:
@@ -24,7 +24,7 @@ main:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0x40
-    call.q [rip - 0x20]
+    call -0x37
     xor eax, eax
     xor ecx, ecx
 1:
@@ -42,7 +42,7 @@ main:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0x40
-    call.q [rip - 0x20]
+    call -0x37
     xor eax, eax
     xor ecx, ecx
 1:
@@ -62,7 +62,7 @@ main:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0x40
-    call.q [rip - 0x20]
+    call -0x37
     xor eax, eax
     xor ecx, ecx
 1:
@@ -576,3 +576,30 @@ main:
   (data (;0;) (i64.const 1048576) "")
 )
 =========== OPT LEVEL: aggresive ===========
+=========== OPT LEVEL: none-quick ===========
+main:
+    sub sp, sp, #80
+    stp x29, x30, [xzr, #7]
+    movz x1, #0, #0
+    movz x2, #64, #0
+    add x0, sp, #16
+    bl 0xffffffe4
+    movz x0, #0, #0
+    movz x1, #0, #0
+1:
+    mov x2, x1
+    movz x3, #8, #0
+    cmp w2, w3
+    b.lt 2
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #80
+    ret
+2:
+    madd x3, x2, x3, xzr
+    add x4, sp, #16
+    add x3, x3, x4
+    str x2, [x3]
+    movz x3, #1, #0
+    add x2, x3, x2
+    mov x1, x2
+    b 1

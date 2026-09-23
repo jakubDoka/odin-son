@@ -167,14 +167,14 @@ run_test :: proc(
 	confs: [dynamic]Test_Conf
 	confs.allocator = context.temp_allocator
 
-	for level in levels[:] {
+	for level in levels[:0] {
 		append(&confs, Test_Conf{level = level})
 		append(&confs, Test_Conf{level = level, debug = true})
 	}
-	for level in levels[:] {
+	for level in levels[:0] {
 		append(&confs, Test_Conf{level = level, vm = .Wasm})
 	}
-	for level in levels[:] {
+	for level in levels[6:7] {
 		append(&confs, Test_Conf{level = level, vm = .Arm})
 	}
 

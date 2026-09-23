@@ -3,6 +3,7 @@ package arm
 import bac ".."
 import "../../vendored/gam/util/arna"
 import "../../vendored/gam/util/bit_arr"
+import "base:intrinsics"
 import "core:fmt"
 import "core:mem"
 import "core:slice"
@@ -145,7 +146,7 @@ peep :: proc(
 
 	signed := false
 	#partial switch kind {
-	case .Le ..= .Ge:
+	case .Le ..= .Ge, .Div:
 		signed = true
 	}
 
@@ -154,7 +155,7 @@ peep :: proc(
 	changed := false
 
 	#partial switch kind {
-	case .Eq ..= .U_Ge:
+	case .Eq ..= .U_Ge, .Div:
 		for inp, i in node.inps {
 			if get_node(ctx, inp).dt < .I32 {
 				new := bac.add_un_op(ctx, "shext", ext, .I32, inp)
@@ -163,7 +164,6 @@ peep :: proc(
 				changed = true
 			}
 		}
-
 	}
 
 	#partial switch kind {
@@ -175,21 +175,16 @@ peep :: proc(
 			return id
 		}
 	case .Rem, .U_Rem:
-		return add_msub(
+		dv := bac.add_bin_op(
 			ctx,
-			"rmms",
+			"rmdv",
+			kind == .Rem ? .Div : .U_Div,
 			node.dt,
-			bac.add_bin_op(
-				ctx,
-				"rmdv",
-				kind == .Rem ? .Div : .U_Div,
-				node.dt,
-				node.inps[0],
-				node.inps[1],
-			),
-			node.inps[1],
 			node.inps[0],
+			node.inps[1],
 		)
+		bac.worklist_add(ctx, ctx.worklist, dv)
+		return add_msub(ctx, "rmms", node.dt, dv, node.inps[1], node.inps[0])
 	}
 
 	if changed do return id
@@ -303,6 +298,10 @@ meta_of :: #force_inline proc(
 		return {out = out, masks = VEC_MASKS[:2]}
 	case .F_To_I:
 		return {out = out, masks = VEC_MASKS[:1]}
+	case .Cast:
+		vl := get_node(graph, node.inps[0])
+		nkind := ra.datatype_to_reg_kind[vl.dt]
+		return {out = out, masks = masks[nkind][:1]}
 	case .CInt, .Local_Addr, .Global_Addr:
 		return {out = out}
 	case .Phi:
@@ -440,6 +439,14 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 		mem.align_forward_int(int(ctx.stack_size), STACK_ALIGNMENT),
 	)
 
+	for param in params {
+		enode := expand_node(ctx, param)
+		if enode.itype == .Local {
+			extra := bac.get_extra(ctx.graph, enode, bac.Local)
+			extra.offset += ctx.stack_size
+		}
+	}
+
 	for spo in ctx.stack_param_offset {
 		for &off in spo do off += ctx.stack_size
 	}
@@ -575,6 +582,7 @@ emit_instr :: proc(
 		.Global_Addr = 0x10000000,
 		.Neg         = 0x4B000000,
 		.Not         = 0x2a200000,
+		.Cast        = 0x1e260000,
 	}
 	cc_neg :: proc(c: Cond) -> Cond {return Cond(u8(c) ~ 1)}
 
@@ -708,7 +716,7 @@ emit_instr :: proc(
 		}
 	case .Uext:
 		rd := reg_of(ctx, instr)
-		rm := reg_of(ctx, node.inps[0])
+		rn := reg_of(ctx, node.inps[0])
 
 		UXTB :: u32(0x53001C00)
 		UXTH :: u32(0x53003C00)
@@ -717,11 +725,11 @@ emit_instr :: proc(
 		op: u32
 		#partial switch inp.dt {
 		case .I8:
-			op = UXTB | u32(rm.index) << 5 | u32(rd.index)
+			op = UXTB | u32(rn.index) << 5 | u32(rd.index)
 		case .I16:
-			op = UXTH | u32(rm.index) << 5 | u32(rd.index)
+			op = UXTH | u32(rn.index) << 5 | u32(rd.index)
 		case .I32:
-			op = MOV_W | u32(rm.index) << 16 | u32(rd.index)
+			op = MOV_W | u32(rn.index) << 16 | u32(rd.index)
 		case:
 			panic("no")
 		}
@@ -843,15 +851,61 @@ emit_instr :: proc(
 			ctx.code,
 			rrr(is_64, op, reg_of(ctx, instr), XZR, reg_of(ctx, node.inps[0])),
 		)
+	case .Cast:
+		rn := reg_of(ctx, node.inps[0])
+		rd := reg_of(ctx, instr)
+
+		if rn.kind == rd.kind {
+			rd := reg_of(ctx, instr)
+			rn := reg_of(ctx, node.inps[0])
+
+			UXTB :: u32(0x53001C00)
+			UXTH :: u32(0x53003C00)
+			MOV_W :: u32(0x2A0003E0)
+
+			op: u32
+			#partial switch node.dt {
+			case .I8:
+				op = UXTB | u32(rn.index) << 5 | u32(rd.index)
+			case .I16:
+				op = UXTH | u32(rn.index) << 5 | u32(rd.index)
+			case .I32:
+				op = MOV_W | u32(rn.index) << 16 | u32(rd.index)
+			case:
+				panic("no")
+			}
+
+			emit_op(ctx.code, op)
+		} else {
+			sf: u32 = 0b1
+			ftype: u32 = 0b01
+			rmode: u32 = 0b01
+			opcode: u32 = 0b110
+
+			if rd.kind == RK_VECTOR do opcode = 0b111
+
+			emit_op(
+				ctx.code,
+				op |
+				sf << 31 |
+				ftype << 22 |
+				rmode << 19 |
+				opcode << 16 |
+				u32(rn.index) |
+				u32(rd.index),
+			)
+		}
 	case .CInt:
 		cint := bac.get_extra(ctx, node, bac.CInt)
 
 		#partial switch node.dt {
 		case .I8 ..= .I64:
+			// TODO: this is primitive but good enough for now
+
 			// movz reg, imm, hw
 			op: u32 = 0b110100101
-			imm := i16(cint.value)
-			fmt.assertf(i64(imm) == cint.value, "TODO: %v", cint.value)
+
+			imm := u16(cint.value)
 
 			if cint.value < 0 {
 				// movn reg, ~imm, hw
@@ -859,7 +913,7 @@ emit_instr :: proc(
 				imm = ~imm
 			}
 
-			hw :: 0b00
+			hw: u32 = 0b00
 
 			reg := reg_of(ctx, instr)
 
@@ -867,6 +921,29 @@ emit_instr :: proc(
 				ctx.code,
 				op << 23 | hw << 21 | u32(imm) << 5 | u32(reg.index),
 			)
+
+			remining_subs :=
+				(64 - intrinsics.count_leading_ones(cint.value) + 16 - 1) / 16
+			if cint.value >= 0 {
+				remining_subs =
+					(64 -
+						intrinsics.count_leading_zeros(cint.value) +
+						16 -
+						1) /
+					16
+			}
+
+			op = 0b111100101
+			for i in 1 ..< remining_subs {
+				hw = u32(i)
+				vl := u16(cint.value >> (hw * 16))
+				if vl != 0 {
+					emit_op(
+						ctx.code,
+						op << 23 | hw << 21 | u32(vl) << 5 | u32(reg.index),
+					)
+				}
+			}
 		case:
 			fmt.panicf("TODO: %v", node)
 		}

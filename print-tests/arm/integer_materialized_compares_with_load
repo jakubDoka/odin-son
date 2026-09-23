@@ -1,0 +1,126 @@
+=========== OPT LEVEL: all ===========
+sld:
+    ldr w2, [x1]
+    cmp w0, w2
+    csinc x1, xzr, xzr, ne
+    uxtb w7, w1
+    cmp w0, w2
+    csinc x1, xzr, xzr, lt
+    uxtb w6, w1
+    cmp w0, w2
+    csinc x1, xzr, xzr, eq
+    uxtb w5, w1
+    cmp w0, w2
+    csinc x1, xzr, xzr, ge
+    uxtb w4, w1
+    cmp w0, w2
+    csinc x1, xzr, xzr, gt
+    uxtb w3, w1
+    cmp w0, w2
+    csinc x0, xzr, xzr, le
+    uxtb w2, w0
+    movz x0, #2, #0
+    madd x0, x5, x0, xzr
+    add x1, x7, x0
+    movz x0, #4, #0
+    madd x0, x4, x0, xzr
+    add x1, x1, x0
+    movz x0, #8, #0
+    madd x0, x3, x0, xzr
+    add x1, x1, x0
+    movz x0, #16, #0
+    madd x0, x2, x0, xzr
+    add x1, x1, x0
+    movz x0, #32, #0
+    madd x0, x6, x0, xzr
+    add x0, x1, x0
+    ret
+uld:
+    ldr w2, [x1]
+    cmp w0, w2
+    csinc x1, xzr, xzr, ne
+    uxtb w7, w1
+    cmp w0, w2
+    csinc x1, xzr, xzr, cc
+    uxtb w6, w1
+    cmp w0, w2
+    csinc x1, xzr, xzr, eq
+    uxtb w5, w1
+    cmp w0, w2
+    csinc x1, xzr, xzr, cs
+    uxtb w4, w1
+    cmp w0, w2
+    csinc x1, xzr, xzr, hi
+    uxtb w3, w1
+    cmp w0, w2
+    csinc x0, xzr, xzr, ls
+    uxtb w2, w0
+    movz x0, #2, #0
+    madd x0, x5, x0, xzr
+    add x1, x7, x0
+    movz x0, #4, #0
+    madd x0, x4, x0, xzr
+    add x1, x1, x0
+    movz x0, #8, #0
+    madd x0, x3, x0, xzr
+    add x1, x1, x0
+    movz x0, #16, #0
+    madd x0, x2, x0, xzr
+    add x1, x1, x0
+    movz x0, #32, #0
+    madd x0, x6, x0, xzr
+    add x0, x1, x0
+    ret
+main:
+    sub sp, sp, #64
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    stp x29, x30, [xzr, #47]
+    add x1, sp, #56
+    movz x0, #5, #0
+    str w0, [x1]
+    movz x0, #3, #0
+    add x1, sp, #56
+    bl 0xfffffee8
+    mov x21, x0
+    add x1, sp, #56
+    movz x0, #5, #0
+    bl 0xfffffee8
+    mov x20, x0
+    movz x0, #9, #0
+    add x1, sp, #56
+    bl 0xfffffee8
+    mov x19, x0
+    add x1, sp, #60
+    movz x0, #2304, #0
+    movk x0, #61, #1
+    str w0, [x1]
+    movz x0, #5, #0
+    add x1, sp, #60
+    bl 0xffffff74
+    mov x23, x0
+    add x1, sp, #60
+    movz x0, #2304, #0
+    movk x0, #61, #1
+    bl 0xffffff74
+    mov x22, x0
+    add x1, sp, #60
+    movz x0, #2304, #0
+    movk x0, #61, #1
+    bl 0xffffff74
+    add x1, x21, x20
+    add x3, x1, x19
+    add x1, x23, x22
+    add x0, x1, x0
+    add x0, x3, x0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldp x29, x30, [xzr, #47]
+    add sp, sp, #64
+    ret

@@ -1,0 +1,37 @@
+=========== OPT LEVEL: all ===========
+main:
+    sub sp, sp, #912
+    stp x29, x30, [xzr, #7]
+    movz x1, #0, #0
+    movz x2, #896, #0
+    add x0, sp, #16
+    bl 0xffffffe4
+    movz x0, #0, #0
+1:
+    movz x6, #28, #0
+    movz x5, #1, #0
+    movz x4, #32, #0
+    madd x2, x0, x6, xzr
+    add x1, sp, #16
+    add x2, x2, x1
+    mov w1, w0
+    add x0, x0, x5
+    str w1, [x2]
+    cmp w0, w4
+    b.lt 1
+    movz x2, #0, #0
+    movz x1, #0, #0
+2:
+    madd x3, x2, x6, xzr
+    add x0, sp, #16
+    add x0, x3, x0
+    ldr w0, [x0]
+    mov w0, w0
+    add x0, x1, x0
+    add x2, x2, x5
+    cmp w2, w4
+    mov x1, x0
+    b.lt 2
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #912
+    ret

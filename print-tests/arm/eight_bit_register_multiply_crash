@@ -1,0 +1,17 @@
+=========== OPT LEVEL: all ===========
+main:
+    sub sp, sp, #16
+    stp x29, x30, [xzr, #7]
+    movz x0, #20, #0
+    bl opaque
+    uxtb w1, w0
+    movz x0, #3, #0
+    madd x0, x1, x0, xzr
+    uxtb w1, w0
+    movn x0, #9, #0
+    add x0, x1, x0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #16
+    ret
+opaque:
+    ret

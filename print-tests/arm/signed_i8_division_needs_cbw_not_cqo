@@ -1,0 +1,23 @@
+=========== OPT LEVEL: all ===========
+Error{inst_idx = 52, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+main:
+    sub sp, sp, #32
+    str x19, [xzr]
+    stp x29, x30, [xzr, #15]
+    movz x0, #200, #0
+    bl opaque
+    mov x19, x0
+    movz x0, #3, #0
+    bl opaque
+    uxtb w1, w19
+    sxtb w1, w1
+    uxtb w0, w0
+    sxtb w0, w0
+    sdiv w0, w1, w0
+    invalid
+    ldr x19, [xzr]
+    ldp x29, x30, [xzr, #15]
+    add sp, sp, #32
+    ret
+opaque:
+    ret

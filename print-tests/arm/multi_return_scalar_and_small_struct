@@ -1,0 +1,43 @@
+=========== OPT LEVEL: all ===========
+mix:
+    sub sp, sp, #16
+    movz x2, #2, #0
+    madd x2, x2, x0, xzr
+    str x2, [x1]
+    add x3, sp, #0
+    mov w1, w0
+    str w1, [x3]
+    movz x1, #4, #0
+    add x2, x1, x3
+    movz x1, #1, #0
+    add x0, x1, x0
+    mov w0, w0
+    str w0, [x2]
+    ldr x0, [x3]
+    add sp, sp, #16
+    ret
+main:
+    sub sp, sp, #32
+    stp x29, x30, [xzr, #7]
+    movz x0, #7, #0
+    add x1, sp, #16
+    bl 0xffffffc0
+    add x3, sp, #24
+    str x0, [x3]
+    add x0, sp, #16
+    ldr x1, [x0]
+    movz x0, #100, #0
+    madd x2, x1, x0, xzr
+    ldr w0, [x3]
+    sxtw x1, w0
+    movz x0, #10, #0
+    madd x0, x1, x0, xzr
+    add x1, x2, x0
+    movz x0, #4, #0
+    add x0, x0, x3
+    ldr w0, [x0]
+    sxtw x0, w0
+    add x0, x1, x0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #32
+    ret

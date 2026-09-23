@@ -46,3 +46,277 @@ main:
     ldp x29, x30, [xzr, #15]
     add sp, sp, #48
     ret
+=========== OPT LEVEL: none ===========
+opaque:
+    ret
+main:
+    sub sp, sp, #48
+    str x19, [xzr]
+    stp x29, x30, [xzr, #15]
+    movz x1, #0, #0
+    movz x2, #24, #0
+    add x0, sp, #24
+    bl 0xffffffe0
+    movz x0, #10, #0
+    bl 0xfffffffc
+    add x1, sp, #24
+    str x0, [x1]
+    movz x0, #20, #0
+    bl 0xfffffffc
+    movz x2, #8, #0
+    add x1, sp, #24
+    add x19, x2, x1
+    str x0, [x19]
+    movz x0, #30, #0
+    bl 0xfffffffc
+    movz x2, #16, #0
+    add x1, sp, #24
+    add x2, x2, x1
+    str x0, [x2]
+    add x0, sp, #24
+    ldr x1, [x0]
+    ldr x0, [x19]
+    add x1, x1, x0
+    add x0, sp, #24
+    str x1, [x0]
+    ldr x1, [x2]
+    add x0, sp, #24
+    ldr x0, [x0]
+    add x0, x1, x0
+    str x0, [x2]
+    add x0, sp, #24
+    ldr x1, [x0]
+    ldr x0, [x19]
+    add x1, x1, x0
+    ldr x0, [x2]
+    add x0, x1, x0
+    ldr x19, [xzr]
+    ldp x29, x30, [xzr, #15]
+    add sp, sp, #48
+    ret
+=========== OPT LEVEL: mininal-quick ===========
+opaque:
+    ret
+main:
+    sub sp, sp, #48
+    str x19, [xzr]
+    stp x29, x30, [xzr, #15]
+    movz x1, #0, #0
+    movz x2, #24, #0
+    add x0, sp, #24
+    bl 0xffffffe0
+    movz x0, #10, #0
+    bl 0xfffffffc
+    add x1, sp, #24
+    str x0, [x1]
+    movz x0, #20, #0
+    bl 0xfffffffc
+    movz x1, #8, #0
+    add x2, sp, #24
+    add x19, x1, x2
+    str x0, [x19]
+    movz x0, #30, #0
+    bl 0xfffffffc
+    movz x1, #16, #0
+    add x2, sp, #24
+    add x1, x1, x2
+    str x0, [x1]
+    add x0, sp, #24
+    ldr x0, [x0]
+    ldr x2, [x19]
+    add x0, x0, x2
+    add x2, sp, #24
+    str x0, [x2]
+    ldr x0, [x1]
+    add x2, sp, #24
+    ldr x2, [x2]
+    add x0, x0, x2
+    str x0, [x1]
+    add x0, sp, #24
+    ldr x0, [x0]
+    ldr x2, [x19]
+    add x0, x0, x2
+    ldr x1, [x1]
+    add x0, x0, x1
+    ldr x19, [xzr]
+    ldp x29, x30, [xzr, #15]
+    add sp, sp, #48
+    ret
+=========== OPT LEVEL: mininal ===========
+opaque:
+    ret
+main:
+    sub sp, sp, #48
+    str x19, [xzr]
+    stp x29, x30, [xzr, #15]
+    movz x1, #0, #0
+    movz x2, #24, #0
+    add x0, sp, #24
+    bl 0xffffffe0
+    movz x0, #10, #0
+    bl 0xfffffffc
+    add x1, sp, #24
+    str x0, [x1]
+    movz x0, #20, #0
+    bl 0xfffffffc
+    movz x2, #8, #0
+    add x1, sp, #24
+    add x19, x2, x1
+    str x0, [x19]
+    movz x0, #30, #0
+    bl 0xfffffffc
+    movz x2, #16, #0
+    add x1, sp, #24
+    add x2, x2, x1
+    str x0, [x2]
+    add x0, sp, #24
+    ldr x1, [x0]
+    ldr x0, [x19]
+    add x1, x1, x0
+    add x0, sp, #24
+    str x1, [x0]
+    ldr x1, [x2]
+    add x0, sp, #24
+    ldr x0, [x0]
+    add x0, x1, x0
+    str x0, [x2]
+    add x0, sp, #24
+    ldr x1, [x0]
+    ldr x0, [x19]
+    add x1, x1, x0
+    ldr x0, [x2]
+    add x0, x1, x0
+    ldr x19, [xzr]
+    ldp x29, x30, [xzr, #15]
+    add sp, sp, #48
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+opaque:
+    ret
+main:
+    sub sp, sp, #64
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    stp x29, x30, [xzr, #31]
+    add x19, sp, #40
+    movz x0, #16, #0
+    add x20, x0, x19
+    eor.v v0, v0, v0
+    str.v q0, [x19]
+    movz x0, #0, #0
+    str x0, [x20]
+    movz x0, #10, #0
+    bl 0xfffffffc
+    str x0, [x19]
+    movz x0, #20, #0
+    bl 0xfffffffc
+    movz x1, #8, #0
+    add x21, x1, x19
+    str x0, [x21]
+    movz x0, #30, #0
+    bl 0xfffffffc
+    str x0, [x20]
+    ldr x1, [x19]
+    ldr x2, [x21]
+    add x1, x1, x2
+    add x0, x0, x1
+    str x1, [x19]
+    str x0, [x20]
+    ldr x2, [x21]
+    add x1, x2, x1
+    add x0, x1, x0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldp x29, x30, [xzr, #31]
+    add sp, sp, #64
+    ret
+=========== OPT LEVEL: moderate ===========
+opaque:
+    ret
+main:
+    sub sp, sp, #64
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    stp x29, x30, [xzr, #31]
+    add x21, sp, #40
+    movz x0, #16, #0
+    add x20, x0, x21
+    eor.v v0, v0, v0
+    str.v q0, [x21]
+    movz x0, #0, #0
+    str x0, [x20]
+    movz x0, #10, #0
+    bl 0xfffffffc
+    str x0, [x21]
+    movz x0, #20, #0
+    bl 0xfffffffc
+    movz x1, #8, #0
+    add x19, x1, x21
+    str x0, [x19]
+    movz x0, #30, #0
+    bl 0xfffffffc
+    str x0, [x20]
+    ldr x2, [x21]
+    ldr x1, [x19]
+    add x2, x2, x1
+    add x1, x0, x2
+    str x2, [x21]
+    str x1, [x20]
+    ldr x0, [x19]
+    add x0, x0, x2
+    add x0, x0, x1
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldp x29, x30, [xzr, #31]
+    add sp, sp, #64
+    ret
+=========== OPT LEVEL: all ===========
+opaque:
+    ret
+main:
+    sub sp, sp, #64
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    stp x29, x30, [xzr, #31]
+    add x21, sp, #40
+    movz x0, #16, #0
+    add x20, x0, x21
+    eor.v v0, v0, v0
+    str.v q0, [x21]
+    movz x0, #0, #0
+    str x0, [x20]
+    movz x0, #10, #0
+    bl 0xfffffffc
+    str x0, [x21]
+    movz x0, #20, #0
+    bl 0xfffffffc
+    movz x1, #8, #0
+    add x19, x1, x21
+    str x0, [x19]
+    movz x0, #30, #0
+    bl 0xfffffffc
+    str x0, [x20]
+    ldr x2, [x21]
+    ldr x1, [x19]
+    add x2, x2, x1
+    add x1, x0, x2
+    str x2, [x21]
+    str x1, [x20]
+    ldr x0, [x19]
+    add x0, x0, x2
+    add x0, x0, x1
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldp x29, x30, [xzr, #31]
+    add sp, sp, #64
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    movz x0, #110, #0
+    ret

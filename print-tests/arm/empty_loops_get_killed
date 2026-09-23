@@ -1,4 +1,228 @@
+=========== OPT LEVEL: none-quick ===========
+main:
+    sub sp, sp, #48
+    str x19, [xzr]
+    stp x29, x30, [xzr, #15]
+    movz x0, #0, #0
+1:
+    str x0, [xzr, #24]
+    movz x19, #1, #0
+    movz x1, #10, #0
+    ldr x2, [xzr, #24]
+    cmp w2, w1
+    b.ge 2
+    ldr x1, [xzr, #24]
+    add x1, x1, x19
+    mov x0, x1
+    b 1
+2:
+    movz x1, #0, #0
+    add x0, sp, #32
+    movz x2, #16, #0
+    bl 0xffffffe4
+    movz x0, #0, #0
+3:
+    str x0, [xzr, #24]
+    ldr x1, [xzr, #24]
+    movz x2, #16, #0
+    cmp w1, w2
+    b.ge 4
+    ldr x1, [xzr, #24]
+    add x2, sp, #32
+    add x1, x2, x1
+    movz x2, #1, #0
+    strb w2, [x1]
+    ldr x1, [xzr, #24]
+    add x1, x1, x19
+    mov x0, x1
+    b 3
+4:
+    movz x0, #0, #0
+    ldr x19, [xzr]
+    ldp x29, x30, [xzr, #15]
+    add sp, sp, #48
+    ret
+=========== OPT LEVEL: none ===========
+main:
+    sub sp, sp, #48
+    str x19, [xzr]
+    stp x29, x30, [xzr, #15]
+    movz x0, #0, #0
+1:
+    movz x19, #1, #0
+    movz x2, #10, #0
+    cmp w0, w2
+    b.ge 2
+    add x0, x0, x19
+    b 1
+2:
+    movz x1, #0, #0
+    add x0, sp, #24
+    movz x2, #16, #0
+    bl 0xffffffe4
+    movz x0, #0, #0
+3:
+    mov x2, x0
+    movz x1, #16, #0
+    cmp w2, w1
+    b.ge 4
+    mov x2, x0
+    add x1, sp, #24
+    add x2, x1, x2
+    movz x1, #1, #0
+    strb w1, [x2]
+    add x0, x0, x19
+    b 3
+4:
+    movz x0, #0, #0
+    ldr x19, [xzr]
+    ldp x29, x30, [xzr, #15]
+    add sp, sp, #48
+    ret
+=========== OPT LEVEL: mininal-quick ===========
+main:
+    sub sp, sp, #48
+    str x19, [xzr]
+    stp x29, x30, [xzr, #15]
+    movz x0, #0, #0
+1:
+    str x0, [xzr, #24]
+    movz x19, #1, #0
+    movz x1, #10, #0
+    ldr x2, [xzr, #24]
+    cmp w2, w1
+    b.ge 2
+    ldr x1, [xzr, #24]
+    add x1, x1, x19
+    mov x0, x1
+    b 1
+2:
+    movz x1, #0, #0
+    add x0, sp, #32
+    movz x2, #16, #0
+    bl 0xffffffe4
+    movz x0, #0, #0
+3:
+    str x0, [xzr, #24]
+    ldr x1, [xzr, #24]
+    movz x2, #16, #0
+    cmp w1, w2
+    b.ge 4
+    ldr x1, [xzr, #24]
+    add x2, sp, #32
+    add x1, x2, x1
+    movz x2, #1, #0
+    strb w2, [x1]
+    ldr x1, [xzr, #24]
+    add x1, x1, x19
+    mov x0, x1
+    b 3
+4:
+    movz x0, #0, #0
+    ldr x19, [xzr]
+    ldp x29, x30, [xzr, #15]
+    add sp, sp, #48
+    ret
+=========== OPT LEVEL: mininal ===========
+main:
+    sub sp, sp, #48
+    str x19, [xzr]
+    stp x29, x30, [xzr, #15]
+    movz x0, #0, #0
+1:
+    movz x19, #1, #0
+    movz x2, #10, #0
+    cmp w0, w2
+    b.ge 2
+    add x0, x0, x19
+    b 1
+2:
+    movz x1, #0, #0
+    add x0, sp, #24
+    movz x2, #16, #0
+    bl 0xffffffe4
+    movz x0, #0, #0
+3:
+    mov x2, x0
+    movz x1, #16, #0
+    cmp w2, w1
+    b.ge 4
+    mov x2, x0
+    add x1, sp, #24
+    add x2, x1, x2
+    movz x1, #1, #0
+    strb w1, [x2]
+    add x0, x0, x19
+    b 3
+4:
+    movz x0, #0, #0
+    ldr x19, [xzr]
+    ldp x29, x30, [xzr, #15]
+    add sp, sp, #48
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+main:
+    sub sp, sp, #16
+    movz x0, #0, #0
+    movz x1, #0, #0
+1:
+    mov x2, x1
+    movz x3, #1, #0
+    movz x4, #10, #0
+    cmp w2, w4
+    b.ge 2
+    add x2, x2, x3
+    mov x1, x2
+    b 1
+2:
+    add x1, sp, #0
+    eor.v v0, v0, v0
+    str.v q0, [x1]
+    movz x2, #0, #0
+3:
+    movz x4, #16, #0
+    cmp w2, w4
+    b.ge 4
+    add x4, x1, x2
+    movz x5, #1, #0
+    strb w5, [x4]
+    add x4, x2, x3
+    mov x2, x4
+    b 3
+4:
+    add sp, sp, #16
+    ret
+=========== OPT LEVEL: moderate ===========
+main:
+    sub sp, sp, #16
+    movz x0, #0, #0
+    movz x1, #0, #0
+1:
+    movz x5, #1, #0
+    movz x2, #10, #0
+    cmp w1, w2
+    b.ge 2
+    add x1, x1, x5
+    b 1
+2:
+    add x4, sp, #0
+    eor.v v0, v0, v0
+    str.v q0, [x4]
+    movz x1, #0, #0
+3:
+    movz x2, #16, #0
+    cmp w1, w2
+    b.ge 4
+    add x3, x4, x1
+    movz x2, #1, #0
+    strb w2, [x3]
+    add x1, x1, x5
+    b 3
+4:
+    add sp, sp, #16
+    ret
 =========== OPT LEVEL: all ===========
 main:
     movz x0, #0, #0
     ret
+=========== OPT LEVEL: aggresive ===========

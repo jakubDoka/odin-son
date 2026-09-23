@@ -648,6 +648,8 @@ emit_instr :: proc(
 			op = 0b0111100100
 		case .I8:
 			op = 0b0011100100
+		case .V128:
+			op = 0b0011110110
 		case:
 			fmt.panicf("TODO: %v", vl)
 		}
@@ -911,6 +913,7 @@ emit_instr :: proc(
 		}
 	case .CInt:
 		cint := bac.get_extra(ctx, node, bac.CInt)
+		reg := reg_of(ctx, instr)
 
 		#partial switch node.dt {
 		case .I8 ..= .I64:
@@ -928,8 +931,6 @@ emit_instr :: proc(
 			}
 
 			hw: u32 = 0b00
-
-			reg := reg_of(ctx, instr)
 
 			emit_op(
 				ctx.code,
@@ -958,6 +959,17 @@ emit_instr :: proc(
 					)
 				}
 			}
+		case .V128:
+			assert(cint.value == 0)
+			op: u32 = 0x6e201c00
+
+			emit_op(
+				ctx.code,
+				op |
+				u32(reg.index) << 16 |
+				u32(reg.index) << 5 |
+				u32(reg.index),
+			)
 		case:
 			fmt.panicf("TODO: %v", node)
 		}

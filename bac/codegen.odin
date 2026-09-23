@@ -120,9 +120,10 @@ RELOC_SIZE := [Reloc_Size]u32 {
 Reloc :: struct {
 	offset:  u32,
 	using _: bit_field u32 {
-		kind: Reloc_Kind | 2,
-		size: Reloc_Size | 2,
-		id:   u32        | 28,
+		kind:      Reloc_Kind | 2,
+		size:      Reloc_Size | 2,
+		scale_pow: u32        | 2,
+		id:        u32        | 26,
 	},
 }
 

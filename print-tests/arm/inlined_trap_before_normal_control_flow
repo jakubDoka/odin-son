@@ -1,0 +1,211 @@
+=========== OPT LEVEL: none-quick ===========
+main:
+    sub sp, sp, #32
+    stp x29, x30, [xzr, #7]
+    adr x0, 0xfc0
+    ldr x0, [x0]
+    movz x1, #0, #0
+    cmp w0, w1
+    b.ne 1
+    movz x0, #0, #0
+    b 3
+1:
+    bl foo
+    adr x1, 0xfc8
+    ldr x1, [x1]
+    movz x2, #0, #0
+    cmp w1, w2
+    b.eq 2
+    movz x0, #0, #0
+    b 3
+2:
+    movz x0, #1, #0
+3:
+    mov x0, x0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #32
+    ret
+foo:
+    brk #0
+=========== OPT LEVEL: none ===========
+main:
+    sub sp, sp, #16
+    stp x29, x30, [xzr, #7]
+    adr x0, 0xfc0
+    ldr x1, [x0]
+    movz x0, #0, #0
+    cmp w1, w0
+    b.ne 1
+    movz x0, #0, #0
+    b 3
+1:
+    bl foo
+    adr x0, 0xfc8
+    ldr x1, [x0]
+    movz x0, #0, #0
+    cmp w1, w0
+    b.eq 2
+    movz x0, #0, #0
+    b 3
+2:
+    movz x0, #1, #0
+3:
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #16
+    ret
+foo:
+    brk #0
+=========== OPT LEVEL: mininal-quick ===========
+main:
+    sub sp, sp, #32
+    stp x29, x30, [xzr, #7]
+    adr x0, 0xfc0
+    ldr x0, [x0]
+    movz x1, #0, #0
+    cmp w0, w1
+    b.ne 1
+    movz x0, #0, #0
+    b 3
+1:
+    bl foo
+    adr x1, 0xfc8
+    ldr x1, [x1]
+    movz x2, #0, #0
+    cmp w1, w2
+    b.eq 2
+    movz x0, #0, #0
+    b 3
+2:
+    movz x0, #1, #0
+3:
+    mov x0, x0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #32
+    ret
+foo:
+    brk #0
+=========== OPT LEVEL: mininal ===========
+main:
+    sub sp, sp, #16
+    stp x29, x30, [xzr, #7]
+    adr x0, 0xfc0
+    ldr x1, [x0]
+    movz x0, #0, #0
+    cmp w1, w0
+    b.ne 1
+    movz x0, #0, #0
+    b 3
+1:
+    bl foo
+    adr x0, 0xfc8
+    ldr x1, [x0]
+    movz x0, #0, #0
+    cmp w1, w0
+    b.eq 2
+    movz x0, #0, #0
+    b 3
+2:
+    movz x0, #1, #0
+3:
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #16
+    ret
+foo:
+    brk #0
+=========== OPT LEVEL: moderate-quick ===========
+main:
+    sub sp, sp, #32
+    stp x29, x30, [xzr, #7]
+    adr x0, 0xfc0
+    ldr x0, [x0]
+    movz x1, #0, #0
+    cmp w0, w1
+    b.ne 1
+    movz x0, #0, #0
+    b 3
+1:
+    bl foo
+    adr x1, 0xfc8
+    ldr x1, [x1]
+    movz x2, #0, #0
+    cmp w1, w2
+    b.eq 2
+    movz x0, #0, #0
+    b 3
+2:
+    movz x0, #1, #0
+3:
+    mov x0, x0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #32
+    ret
+foo:
+    brk #0
+=========== OPT LEVEL: moderate ===========
+main:
+    sub sp, sp, #16
+    stp x29, x30, [xzr, #7]
+    adr x0, 0xfc0
+    ldr x1, [x0]
+    movz x0, #0, #0
+    cmp w1, w0
+    b.ne 1
+    movz x0, #0, #0
+    b 3
+1:
+    bl foo
+    adr x0, 0xfc8
+    ldr x1, [x0]
+    movz x0, #0, #0
+    cmp w1, w0
+    b.eq 2
+    movz x0, #0, #0
+    b 3
+2:
+    movz x0, #1, #0
+3:
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #16
+    ret
+foo:
+    brk #0
+=========== OPT LEVEL: all ===========
+main:
+    sub sp, sp, #16
+    stp x29, x30, [xzr, #7]
+    adr x0, 0xfc0
+    ldr x1, [x0]
+    movz x0, #0, #0
+    cmp w1, w0
+    b.ne 1
+    movz x0, #0, #0
+    b 3
+1:
+    bl foo
+    adr x0, 0xfc8
+    ldr x1, [x0]
+    movz x0, #0, #0
+    cmp w1, w0
+    b.eq 2
+    movz x0, #0, #0
+    b 3
+2:
+    movz x0, #1, #0
+3:
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #16
+    ret
+foo:
+    brk #0
+=========== OPT LEVEL: aggresive ===========
+main:
+    movz x0, #0, #0
+    adr x1, 0xfc0
+    ldr x1, [x1]
+    cmp w1, w0
+    b.ne 1
+    b 2
+1:
+    brk #0
+2:
+    ret

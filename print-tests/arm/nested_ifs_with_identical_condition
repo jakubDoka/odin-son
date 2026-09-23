@@ -1,3 +1,151 @@
+=========== OPT LEVEL: none-quick ===========
+main:
+    adr x0, 0xfc0
+    movz x1, #1, #0
+    movz x2, #0, #0
+    ldr x3, [x0]
+    cmp w3, w1
+    csinc x1, xzr, xzr, ne
+    cbnz x1, 4
+    cbnz x1, 3
+    ldr x0, [x0]
+1:
+    cmp w0, w2
+    csinc x1, xzr, xzr, ne
+    cbnz x1, 2
+    cbnz x1, 2
+    b 1
+    b 2
+2:
+    movz x0, #10, #0
+    b 5
+3:
+    movz x0, #1, #0
+    b 5
+4:
+    movz x0, #0, #0
+5:
+    ret
+=========== OPT LEVEL: none ===========
+main:
+    adr x3, 0xfc0
+    movz x1, #1, #0
+    movz x2, #0, #0
+    ldr x0, [x3]
+    cmp w0, w1
+    csinc x0, xzr, xzr, ne
+    cbnz x0, 4
+    cbnz x0, 3
+    ldr x1, [x3]
+1:
+    cmp w1, w2
+    csinc x0, xzr, xzr, ne
+    cbnz x0, 2
+    cbnz x0, 2
+    b 1
+    b 2
+2:
+    movz x0, #10, #0
+    b 5
+3:
+    movz x0, #1, #0
+    b 5
+4:
+    movz x0, #0, #0
+5:
+    ret
+=========== OPT LEVEL: mininal-quick ===========
+main:
+    adr x0, 0xfc0
+    movz x1, #1, #0
+    movz x2, #0, #0
+    ldr x3, [x0]
+    cmp w3, w1
+    csinc x1, xzr, xzr, ne
+    cbnz x1, 4
+    cbnz x1, 3
+    ldr x0, [x0]
+1:
+    cmp w0, w2
+    csinc x1, xzr, xzr, ne
+    cbnz x1, 2
+    cbnz x1, 2
+    b 1
+    b 2
+2:
+    movz x0, #10, #0
+    b 5
+3:
+    movz x0, #1, #0
+    b 5
+4:
+    movz x0, #0, #0
+5:
+    ret
+=========== OPT LEVEL: mininal ===========
+main:
+    adr x3, 0xfc0
+    movz x1, #1, #0
+    movz x2, #0, #0
+    ldr x0, [x3]
+    cmp w0, w1
+    csinc x0, xzr, xzr, ne
+    cbnz x0, 4
+    cbnz x0, 3
+    ldr x1, [x3]
+1:
+    cmp w1, w2
+    csinc x0, xzr, xzr, ne
+    cbnz x0, 2
+    cbnz x0, 2
+    b 1
+    b 2
+2:
+    movz x0, #10, #0
+    b 5
+3:
+    movz x0, #1, #0
+    b 5
+4:
+    movz x0, #0, #0
+5:
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+main:
+    adr x1, 0xfc0
+    movz x0, #0, #0
+    ldr x2, [x1]
+    movz x3, #1, #0
+    cmp w2, w3
+    b.eq 3
+    ldr x1, [x1]
+1:
+    cmp w1, w0
+    b.eq 2
+    b 1
+2:
+    movz x0, #10, #0
+    b 3
+3:
+    ret
+=========== OPT LEVEL: moderate ===========
+main:
+    adr x3, 0xfc0
+    movz x0, #0, #0
+    ldr x2, [x3]
+    movz x1, #1, #0
+    cmp w2, w1
+    b.eq 3
+    ldr x1, [x3]
+1:
+    cmp w1, w0
+    b.eq 2
+    b 1
+2:
+    movz x0, #10, #0
+    b 3
+3:
+    ret
 =========== OPT LEVEL: all ===========
 main:
     adr x3, 0xfc0
@@ -14,3 +162,4 @@ main:
     b 2
 2:
     ret
+=========== OPT LEVEL: aggresive ===========

@@ -1,4 +1,57 @@
+=========== OPT LEVEL: none-quick ===========
+Error{inst_idx = 8, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+main:
+    movz x0, #0, #0
+    movz x1, #200, #0
+    invalid
+    movz x2, #1, #0
+    sub x0, x0, x2
+    mov w0, w0
+    sxtw x0, w0
+    add x0, x1, x0
+    ret
+=========== OPT LEVEL: none ===========
+Error{inst_idx = 8, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+main:
+    movz x2, #0, #0
+    movz x0, #200, #0
+    invalid
+    movz x0, #1, #0
+    sub x0, x2, x0
+    mov w0, w0
+    sxtw x0, w0
+    add x0, x1, x0
+    ret
+=========== OPT LEVEL: mininal-quick ===========
+main:
+    movz x0, #0, #0
+    movz x1, #1, #0
+    sub x0, x0, x1
+    mov w0, w0
+    sxtw x0, w0
+    movn x1, #55, #0
+    add x0, x0, x1
+    ret
+=========== OPT LEVEL: mininal ===========
+main:
+    movz x1, #0, #0
+    movz x0, #1, #0
+    sub x0, x1, x0
+    mov w0, w0
+    sxtw x1, w0
+    movn x0, #55, #0
+    add x0, x1, x0
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+main:
+    movn x0, #56, #0
+    ret
+=========== OPT LEVEL: moderate ===========
+main:
+    movn x0, #56, #0
+    ret
 =========== OPT LEVEL: all ===========
 main:
     movn x0, #56, #0
     ret
+=========== OPT LEVEL: aggresive ===========

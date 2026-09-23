@@ -1,4 +1,87 @@
+=========== OPT LEVEL: none-quick ===========
+main:
+    movz x1, #2, #0
+    movz x0, #0, #0
+    cmp w1, w1
+    b.eq 1
+    movz x2, #0, #0
+    b 2
+1:
+    movz x3, #1, #0
+    add x3, x3, x0
+    mov x2, x3
+2:
+    cmp w1, w0
+    b.ne 3
+    mov x0, x2
+    b 4
+3:
+    add x0, x2, x1
+4:
+    ret
+=========== OPT LEVEL: none ===========
+main:
+    movz x2, #2, #0
+    movz x1, #0, #0
+    cmp w2, w2
+    b.eq 1
+    movz x0, #0, #0
+    b 2
+1:
+    movz x0, #1, #0
+    add x0, x0, x1
+2:
+    cmp w2, w1
+    b.ne 3
+    b 4
+3:
+    add x0, x0, x2
+4:
+    ret
+=========== OPT LEVEL: mininal-quick ===========
+main:
+    movz x1, #1, #0
+    movz x0, #0, #0
+    cbnz x1, 1
+    b 2
+1:
+    movz x2, #1, #0
+    add x0, x2, x0
+2:
+    cbnz x1, 3
+    b 4
+3:
+    movz x1, #2, #0
+    add x0, x1, x0
+4:
+    ret
+=========== OPT LEVEL: mininal ===========
+main:
+    movz x2, #1, #0
+    movz x0, #0, #0
+    cbnz x2, 1
+    b 2
+1:
+    movz x1, #1, #0
+    add x0, x1, x0
+2:
+    cbnz x2, 3
+    b 4
+3:
+    movz x1, #2, #0
+    add x0, x1, x0
+4:
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+main:
+    movz x0, #3, #0
+    ret
+=========== OPT LEVEL: moderate ===========
+main:
+    movz x0, #3, #0
+    ret
 =========== OPT LEVEL: all ===========
 main:
     movz x0, #3, #0
     ret
+=========== OPT LEVEL: aggresive ===========

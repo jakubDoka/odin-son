@@ -1,3 +1,1718 @@
+=========== OPT LEVEL: none-quick ===========
+Error{inst_idx = 16, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 16, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 16, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 16, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+test_not_reg:
+    uxtb w0, w0
+    movz x1, #0, #0
+    uxtb w1, w1
+    cmp w0, w1
+    csinc x0, xzr, xzr, ne
+    ret
+test_not_i8:
+    ldrb w1, [x0]
+    uxtb w1, w1
+    movz x2, #0, #0
+    uxtb w2, w2
+    cmp w1, w2
+    csinc x1, xzr, xzr, ne
+    strb w1, [x0]
+    ldrb w0, [x0]
+    ret
+test_bitnot_reg:
+    mvn x0, x0
+    ret
+test_neg_reg:
+    neg x0, x0
+    ret
+test_bitnot_reg_u8:
+    mvn w0, w0
+    uxtb w0, w0
+    ret
+main:
+    sub sp, sp, #208
+    stp x29, x30, [xzr, #7]
+    movn x0, #4, #0
+    add x1, sp, #176
+    strb w0, [x1]
+    movz x0, #200, #0
+    add x1, sp, #177
+    strb w0, [x1]
+    movn x0, #999, #0
+    add x1, sp, #178
+    strh w0, [x1]
+    movz x0, #40000, #0
+    add x1, sp, #180
+    strh w0, [x1]
+    movn x0, #34463, #0
+    movk x0, #65534, #1
+    add x1, sp, #182
+    str w0, [x1]
+    movz x0, #34464, #0
+    movk x0, #1, #1
+    add x1, sp, #186
+    str w0, [x1]
+    movn x0, #57599, #0
+    movk x0, #64010, #1
+    add x1, sp, #190
+    str x0, [x1]
+    movz x0, #57600, #0
+    movk x0, #1525, #1
+    add x1, sp, #198
+    str x0, [x1]
+    movz x0, #0, #0
+    bl 0xffffffa8
+    str x0, [xzr, #16]
+    movz x0, #1, #0
+    bl 0xffffffa8
+    str x0, [xzr, #24]
+    movz x0, #123, #0
+    bl 0xffffffe4
+    str x0, [xzr, #32]
+    movz x0, #123, #0
+    bl 0xfffffff4
+    str x0, [xzr, #40]
+    add x0, sp, #176
+    bl 0x22c
+    str x0, [xzr, #48]
+    add x0, sp, #177
+    bl 0x244
+    str x0, [xzr, #56]
+    add x0, sp, #178
+    bl 0x25c
+    str x0, [xzr, #64]
+    add x0, sp, #180
+    bl 0x274
+    str x0, [xzr, #72]
+    add x0, sp, #182
+    bl 0x28c
+    str x0, [xzr, #80]
+    add x0, sp, #186
+    bl 0x2a4
+    str x0, [xzr, #88]
+    add x0, sp, #190
+    bl 0x2bc
+    str x0, [xzr, #96]
+    add x0, sp, #198
+    bl 0x2d0
+    str x0, [xzr, #104]
+    movz x0, #7, #0
+    bl 0xffffffec
+    str x0, [xzr, #112]
+    add x0, sp, #176
+    bl test_bitnot i32
+    str x0, [xzr, #120]
+    add x0, sp, #177
+    bl test_bitnot u32
+    str x0, [xzr, #128]
+    add x0, sp, #178
+    bl test_bitnot i64
+    str x0, [xzr, #136]
+    add x0, sp, #180
+    bl 0x32c
+    str x0, [xzr, #144]
+    add x0, sp, #182
+    bl 0x344
+    str x0, [xzr, #152]
+    add x0, sp, #186
+    bl 0x35c
+    str x0, [xzr, #160]
+    add x0, sp, #190
+    bl 0x374
+    str x0, [xzr, #168]
+    add x0, sp, #198
+    bl 0x388
+    movz x1, #0, #0
+    ldr x2, [xzr, #16]
+    uxtb w2, w2
+    add x1, x1, x2
+    ldr x2, [xzr, #24]
+    uxtb w2, w2
+    add x1, x1, x2
+    ldr x2, [xzr, #32]
+    add x1, x1, x2
+    ldr x2, [xzr, #40]
+    add x1, x1, x2
+    ldr x2, [xzr, #48]
+    add x1, x1, x2
+    ldr x2, [xzr, #56]
+    add x1, x1, x2
+    ldr x2, [xzr, #64]
+    add x1, x1, x2
+    ldr x2, [xzr, #72]
+    add x1, x1, x2
+    ldr x2, [xzr, #80]
+    add x1, x1, x2
+    ldr x2, [xzr, #88]
+    add x1, x1, x2
+    ldr x2, [xzr, #96]
+    add x1, x1, x2
+    ldr x2, [xzr, #104]
+    add x1, x1, x2
+    ldr x2, [xzr, #112]
+    add x1, x1, x2
+    ldr x2, [xzr, #120]
+    add x1, x1, x2
+    ldr x2, [xzr, #128]
+    add x1, x1, x2
+    ldr x2, [xzr, #136]
+    add x1, x1, x2
+    ldr x2, [xzr, #144]
+    add x1, x1, x2
+    ldr x2, [xzr, #152]
+    add x1, x1, x2
+    ldr x2, [xzr, #160]
+    add x1, x1, x2
+    ldr x2, [xzr, #168]
+    add x1, x1, x2
+    add x0, x1, x0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #208
+    ret
+test_bitnot i8:
+    ldrb w1, [x0]
+    mvn w1, w1
+    strb w1, [x0]
+    ldrb w0, [x0]
+    invalid
+    ret
+test_bitnot u8:
+    ldrb w1, [x0]
+    mvn w1, w1
+    strb w1, [x0]
+    ldrb w0, [x0]
+    uxtb w0, w0
+    ret
+test_bitnot i16:
+    ldrh w1, [x0]
+    mvn w1, w1
+    strh w1, [x0]
+    ldrh w0, [x0]
+    invalid
+    ret
+test_bitnot u16:
+    ldrh w1, [x0]
+    mvn w1, w1
+    strh w1, [x0]
+    ldrh w0, [x0]
+    uxth w0, w0
+    ret
+test_bitnot i32:
+    ldr w1, [x0]
+    mvn w1, w1
+    str w1, [x0]
+    ldr w0, [x0]
+    sxtw x0, w0
+    ret
+test_bitnot u32:
+    ldr w1, [x0]
+    mvn w1, w1
+    str w1, [x0]
+    ldr w0, [x0]
+    mov w0, w0
+    ret
+test_bitnot i64:
+    ldr x1, [x0]
+    mvn x1, x1
+    str x1, [x0]
+    ldr x0, [x0]
+    ret
+test_bitnot u64:
+    ldr x1, [x0]
+    mvn x1, x1
+    str x1, [x0]
+    ldr x0, [x0]
+    ret
+test_neg i8:
+    ldrb w1, [x0]
+    neg w1, w1
+    strb w1, [x0]
+    ldrb w0, [x0]
+    invalid
+    ret
+test_neg u8:
+    ldrb w1, [x0]
+    neg w1, w1
+    strb w1, [x0]
+    ldrb w0, [x0]
+    uxtb w0, w0
+    ret
+test_neg i16:
+    ldrh w1, [x0]
+    neg w1, w1
+    strh w1, [x0]
+    ldrh w0, [x0]
+    invalid
+    ret
+test_neg u16:
+    ldrh w1, [x0]
+    neg w1, w1
+    strh w1, [x0]
+    ldrh w0, [x0]
+    uxth w0, w0
+    ret
+test_neg i32:
+    ldr w1, [x0]
+    neg w1, w1
+    str w1, [x0]
+    ldr w0, [x0]
+    sxtw x0, w0
+    ret
+test_neg u32:
+    ldr w1, [x0]
+    neg w1, w1
+    str w1, [x0]
+    ldr w0, [x0]
+    mov w0, w0
+    ret
+test_neg i64:
+    ldr x1, [x0]
+    neg x1, x1
+    str x1, [x0]
+    ldr x0, [x0]
+    ret
+test_neg u64:
+    ldr x1, [x0]
+    neg x1, x1
+    str x1, [x0]
+    ldr x0, [x0]
+    ret
+=========== OPT LEVEL: none ===========
+Error{inst_idx = 16, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 16, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 16, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 16, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+test_not_reg:
+    uxtb w1, w0
+    movz x0, #0, #0
+    uxtb w0, w0
+    cmp w1, w0
+    csinc x0, xzr, xzr, ne
+    ret
+test_not_i8:
+    ldrb w1, [x0]
+    uxtb w2, w1
+    movz x1, #0, #0
+    uxtb w1, w1
+    cmp w2, w1
+    csinc x1, xzr, xzr, ne
+    strb w1, [x0]
+    ldrb w0, [x0]
+    ret
+test_bitnot_reg:
+    mvn x0, x0
+    ret
+test_neg_reg:
+    neg x0, x0
+    ret
+test_bitnot_reg_u8:
+    mvn w0, w0
+    uxtb w0, w0
+    ret
+main:
+    sub sp, sp, #208
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    str x24, [xzr, #40]
+    str x25, [xzr, #48]
+    str x26, [xzr, #56]
+    str x27, [xzr, #64]
+    str x28, [xzr, #72]
+    stp x29, x30, [xzr, #87]
+    movn x1, #4, #0
+    add x0, sp, #168
+    strb w1, [x0]
+    movz x1, #200, #0
+    add x0, sp, #169
+    strb w1, [x0]
+    movn x1, #999, #0
+    add x0, sp, #170
+    strh w1, [x0]
+    movz x1, #40000, #0
+    add x0, sp, #172
+    strh w1, [x0]
+    movn x1, #34463, #0
+    movk x1, #65534, #1
+    add x0, sp, #174
+    str w1, [x0]
+    movz x1, #34464, #0
+    movk x1, #1, #1
+    add x0, sp, #178
+    str w1, [x0]
+    movn x1, #57599, #0
+    movk x1, #64010, #1
+    add x0, sp, #182
+    str x1, [x0]
+    movz x1, #57600, #0
+    movk x1, #1525, #1
+    add x0, sp, #190
+    str x1, [x0]
+    movz x0, #0, #0
+    bl 0xffffffa8
+    str x0, [xzr, #160]
+    movz x0, #1, #0
+    bl 0xffffffa8
+    str x0, [xzr, #152]
+    movz x0, #123, #0
+    bl 0xffffffe4
+    str x0, [xzr, #144]
+    movz x0, #123, #0
+    bl 0xfffffff4
+    str x0, [xzr, #136]
+    add x0, sp, #168
+    bl 0x250
+    str x0, [xzr, #128]
+    add x0, sp, #169
+    bl 0x268
+    str x0, [xzr, #120]
+    add x0, sp, #170
+    bl 0x280
+    str x0, [xzr, #112]
+    add x0, sp, #172
+    bl 0x298
+    str x0, [xzr, #104]
+    add x0, sp, #174
+    bl 0x2b0
+    str x0, [xzr, #96]
+    add x0, sp, #178
+    bl 0x2c8
+    mov x29, x0
+    add x0, sp, #182
+    bl 0x2e0
+    mov x28, x0
+    add x0, sp, #190
+    bl 0x2f4
+    mov x27, x0
+    movz x0, #7, #0
+    bl 0xffffffec
+    mov x26, x0
+    add x0, sp, #168
+    bl test_bitnot i32
+    mov x25, x0
+    add x0, sp, #169
+    bl test_bitnot u32
+    mov x24, x0
+    add x0, sp, #170
+    bl test_bitnot i64
+    mov x23, x0
+    add x0, sp, #172
+    bl 0x350
+    mov x22, x0
+    add x0, sp, #174
+    bl 0x368
+    mov x21, x0
+    add x0, sp, #178
+    bl 0x380
+    mov x20, x0
+    add x0, sp, #182
+    bl 0x398
+    mov x19, x0
+    add x0, sp, #190
+    bl 0x3ac
+    movz x2, #0, #0
+    ldr x1, [xzr, #160]
+    uxtb w1, w1
+    add x2, x2, x1
+    ldr x1, [xzr, #152]
+    uxtb w1, w1
+    add x2, x2, x1
+    ldr x1, [xzr, #144]
+    add x2, x2, x1
+    ldr x1, [xzr, #136]
+    add x2, x2, x1
+    ldr x1, [xzr, #128]
+    add x2, x2, x1
+    ldr x1, [xzr, #120]
+    add x2, x2, x1
+    ldr x1, [xzr, #112]
+    add x2, x2, x1
+    ldr x1, [xzr, #104]
+    add x2, x2, x1
+    ldr x1, [xzr, #96]
+    add x2, x2, x1
+    add x2, x2, x29
+    add x2, x2, x28
+    add x2, x2, x27
+    add x2, x2, x26
+    add x2, x2, x25
+    add x2, x2, x24
+    add x2, x2, x23
+    add x2, x2, x22
+    add x2, x2, x21
+    add x2, x2, x20
+    add x1, x2, x19
+    add x0, x1, x0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldr x24, [xzr, #40]
+    ldr x25, [xzr, #48]
+    ldr x26, [xzr, #56]
+    ldr x27, [xzr, #64]
+    ldr x28, [xzr, #72]
+    ldp x29, x30, [xzr, #87]
+    add sp, sp, #208
+    ret
+test_bitnot i8:
+    ldrb w1, [x0]
+    mvn w1, w1
+    strb w1, [x0]
+    ldrb w0, [x0]
+    invalid
+    ret
+test_bitnot u8:
+    ldrb w1, [x0]
+    mvn w1, w1
+    strb w1, [x0]
+    ldrb w0, [x0]
+    uxtb w0, w0
+    ret
+test_bitnot i16:
+    ldrh w1, [x0]
+    mvn w1, w1
+    strh w1, [x0]
+    ldrh w0, [x0]
+    invalid
+    ret
+test_bitnot u16:
+    ldrh w1, [x0]
+    mvn w1, w1
+    strh w1, [x0]
+    ldrh w0, [x0]
+    uxth w0, w0
+    ret
+test_bitnot i32:
+    ldr w1, [x0]
+    mvn w1, w1
+    str w1, [x0]
+    ldr w0, [x0]
+    sxtw x0, w0
+    ret
+test_bitnot u32:
+    ldr w1, [x0]
+    mvn w1, w1
+    str w1, [x0]
+    ldr w0, [x0]
+    mov w0, w0
+    ret
+test_bitnot i64:
+    ldr x1, [x0]
+    mvn x1, x1
+    str x1, [x0]
+    ldr x0, [x0]
+    ret
+test_bitnot u64:
+    ldr x1, [x0]
+    mvn x1, x1
+    str x1, [x0]
+    ldr x0, [x0]
+    ret
+test_neg i8:
+    ldrb w1, [x0]
+    neg w1, w1
+    strb w1, [x0]
+    ldrb w0, [x0]
+    invalid
+    ret
+test_neg u8:
+    ldrb w1, [x0]
+    neg w1, w1
+    strb w1, [x0]
+    ldrb w0, [x0]
+    uxtb w0, w0
+    ret
+test_neg i16:
+    ldrh w1, [x0]
+    neg w1, w1
+    strh w1, [x0]
+    ldrh w0, [x0]
+    invalid
+    ret
+test_neg u16:
+    ldrh w1, [x0]
+    neg w1, w1
+    strh w1, [x0]
+    ldrh w0, [x0]
+    uxth w0, w0
+    ret
+test_neg i32:
+    ldr w1, [x0]
+    neg w1, w1
+    str w1, [x0]
+    ldr w0, [x0]
+    sxtw x0, w0
+    ret
+test_neg u32:
+    ldr w1, [x0]
+    neg w1, w1
+    str w1, [x0]
+    ldr w0, [x0]
+    mov w0, w0
+    ret
+test_neg i64:
+    ldr x1, [x0]
+    neg x1, x1
+    str x1, [x0]
+    ldr x0, [x0]
+    ret
+test_neg u64:
+    ldr x1, [x0]
+    neg x1, x1
+    str x1, [x0]
+    ldr x0, [x0]
+    ret
+=========== OPT LEVEL: mininal-quick ===========
+Error{inst_idx = 16, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 16, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 16, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 16, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+test_not_reg:
+    uxtb w0, w0
+    movz x1, #0, #0
+    uxtb w1, w1
+    cmp w0, w1
+    csinc x0, xzr, xzr, ne
+    ret
+test_not_i8:
+    ldrb w1, [x0]
+    uxtb w1, w1
+    movz x2, #0, #0
+    uxtb w2, w2
+    cmp w1, w2
+    csinc x1, xzr, xzr, ne
+    strb w1, [x0]
+    ldrb w0, [x0]
+    ret
+test_bitnot_reg:
+    mvn x0, x0
+    ret
+test_neg_reg:
+    neg x0, x0
+    ret
+test_bitnot_reg_u8:
+    mvn w0, w0
+    uxtb w0, w0
+    ret
+main:
+    sub sp, sp, #208
+    stp x29, x30, [xzr, #7]
+    movn x0, #4, #0
+    add x1, sp, #176
+    strb w0, [x1]
+    movz x0, #200, #0
+    add x1, sp, #177
+    strb w0, [x1]
+    movn x0, #999, #0
+    add x1, sp, #178
+    strh w0, [x1]
+    movz x0, #40000, #0
+    add x1, sp, #180
+    strh w0, [x1]
+    movn x0, #34463, #0
+    movk x0, #65534, #1
+    add x1, sp, #182
+    str w0, [x1]
+    movz x0, #34464, #0
+    movk x0, #1, #1
+    add x1, sp, #186
+    str w0, [x1]
+    movn x0, #57599, #0
+    movk x0, #64010, #1
+    add x1, sp, #190
+    str x0, [x1]
+    movz x0, #57600, #0
+    movk x0, #1525, #1
+    add x1, sp, #198
+    str x0, [x1]
+    movz x0, #0, #0
+    bl 0xffffffa8
+    str x0, [xzr, #16]
+    movz x0, #1, #0
+    bl 0xffffffa8
+    str x0, [xzr, #24]
+    movz x0, #123, #0
+    bl 0xffffffe4
+    str x0, [xzr, #32]
+    movz x0, #123, #0
+    bl 0xfffffff4
+    str x0, [xzr, #40]
+    add x0, sp, #176
+    bl 0x22c
+    str x0, [xzr, #48]
+    add x0, sp, #177
+    bl 0x244
+    str x0, [xzr, #56]
+    add x0, sp, #178
+    bl 0x25c
+    str x0, [xzr, #64]
+    add x0, sp, #180
+    bl 0x274
+    str x0, [xzr, #72]
+    add x0, sp, #182
+    bl 0x28c
+    str x0, [xzr, #80]
+    add x0, sp, #186
+    bl 0x2a4
+    str x0, [xzr, #88]
+    add x0, sp, #190
+    bl 0x2bc
+    str x0, [xzr, #96]
+    add x0, sp, #198
+    bl 0x2e0
+    str x0, [xzr, #104]
+    movz x0, #7, #0
+    bl 0xffffffec
+    str x0, [xzr, #112]
+    add x0, sp, #176
+    bl 0x304
+    str x0, [xzr, #120]
+    add x0, sp, #177
+    bl 0x31c
+    str x0, [xzr, #128]
+    add x0, sp, #178
+    bl 0x334
+    str x0, [xzr, #136]
+    add x0, sp, #180
+    bl 0x34c
+    str x0, [xzr, #144]
+    add x0, sp, #182
+    bl 0x364
+    str x0, [xzr, #152]
+    add x0, sp, #186
+    bl 0x37c
+    str x0, [xzr, #160]
+    add x0, sp, #190
+    bl 0x394
+    str x0, [xzr, #168]
+    add x0, sp, #198
+    bl 0x3b8
+    movz x1, #0, #0
+    ldr x2, [xzr, #16]
+    uxtb w2, w2
+    add x1, x1, x2
+    ldr x2, [xzr, #24]
+    uxtb w2, w2
+    add x1, x1, x2
+    ldr x2, [xzr, #32]
+    add x1, x1, x2
+    ldr x2, [xzr, #40]
+    add x1, x1, x2
+    ldr x2, [xzr, #48]
+    add x1, x1, x2
+    ldr x2, [xzr, #56]
+    add x1, x1, x2
+    ldr x2, [xzr, #64]
+    add x1, x1, x2
+    ldr x2, [xzr, #72]
+    add x1, x1, x2
+    ldr x2, [xzr, #80]
+    add x1, x1, x2
+    ldr x2, [xzr, #88]
+    add x1, x1, x2
+    ldr x2, [xzr, #96]
+    add x1, x1, x2
+    ldr x2, [xzr, #104]
+    add x1, x1, x2
+    ldr x2, [xzr, #112]
+    add x1, x1, x2
+    ldr x2, [xzr, #120]
+    add x1, x1, x2
+    ldr x2, [xzr, #128]
+    add x1, x1, x2
+    ldr x2, [xzr, #136]
+    add x1, x1, x2
+    ldr x2, [xzr, #144]
+    add x1, x1, x2
+    ldr x2, [xzr, #152]
+    add x1, x1, x2
+    ldr x2, [xzr, #160]
+    add x1, x1, x2
+    ldr x2, [xzr, #168]
+    add x1, x1, x2
+    add x0, x1, x0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #208
+    ret
+test_bitnot i8:
+    ldrb w1, [x0]
+    mvn w1, w1
+    strb w1, [x0]
+    ldrb w0, [x0]
+    invalid
+    ret
+test_bitnot u8:
+    ldrb w1, [x0]
+    mvn w1, w1
+    strb w1, [x0]
+    ldrb w0, [x0]
+    uxtb w0, w0
+    ret
+test_bitnot i16:
+    ldrh w1, [x0]
+    mvn w1, w1
+    strh w1, [x0]
+    ldrh w0, [x0]
+    invalid
+    ret
+test_bitnot u16:
+    ldrh w1, [x0]
+    mvn w1, w1
+    strh w1, [x0]
+    ldrh w0, [x0]
+    uxth w0, w0
+    ret
+test_bitnot i32:
+    ldr w1, [x0]
+    mvn w1, w1
+    str w1, [x0]
+    ldr w0, [x0]
+    sxtw x0, w0
+    ret
+test_bitnot u32:
+    ldr w1, [x0]
+    mvn w1, w1
+    str w1, [x0]
+    ldr w0, [x0]
+    mov w0, w0
+    ret
+test_bitnot i64:
+    sub sp, sp, #16
+    str x0, [xzr]
+    ldr x0, [xzr]
+    ldr x0, [x0]
+    mvn x0, x0
+    ldr x1, [xzr]
+    str x0, [x1]
+    add sp, sp, #16
+    ret
+test_bitnot u64:
+    sub sp, sp, #16
+    str x0, [xzr]
+    ldr x0, [xzr]
+    ldr x0, [x0]
+    mvn x0, x0
+    ldr x1, [xzr]
+    str x0, [x1]
+    add sp, sp, #16
+    ret
+test_neg i8:
+    ldrb w1, [x0]
+    neg w1, w1
+    strb w1, [x0]
+    ldrb w0, [x0]
+    invalid
+    ret
+test_neg u8:
+    ldrb w1, [x0]
+    neg w1, w1
+    strb w1, [x0]
+    ldrb w0, [x0]
+    uxtb w0, w0
+    ret
+test_neg i16:
+    ldrh w1, [x0]
+    neg w1, w1
+    strh w1, [x0]
+    ldrh w0, [x0]
+    invalid
+    ret
+test_neg u16:
+    ldrh w1, [x0]
+    neg w1, w1
+    strh w1, [x0]
+    ldrh w0, [x0]
+    uxth w0, w0
+    ret
+test_neg i32:
+    ldr w1, [x0]
+    neg w1, w1
+    str w1, [x0]
+    ldr w0, [x0]
+    sxtw x0, w0
+    ret
+test_neg u32:
+    ldr w1, [x0]
+    neg w1, w1
+    str w1, [x0]
+    ldr w0, [x0]
+    mov w0, w0
+    ret
+test_neg i64:
+    sub sp, sp, #16
+    str x0, [xzr]
+    ldr x0, [xzr]
+    ldr x0, [x0]
+    neg x0, x0
+    ldr x1, [xzr]
+    str x0, [x1]
+    add sp, sp, #16
+    ret
+test_neg u64:
+    sub sp, sp, #16
+    str x0, [xzr]
+    ldr x0, [xzr]
+    ldr x0, [x0]
+    neg x0, x0
+    ldr x1, [xzr]
+    str x0, [x1]
+    add sp, sp, #16
+    ret
+=========== OPT LEVEL: mininal ===========
+Error{inst_idx = 16, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 16, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 16, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 16, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+test_not_reg:
+    uxtb w1, w0
+    movz x0, #0, #0
+    uxtb w0, w0
+    cmp w1, w0
+    csinc x0, xzr, xzr, ne
+    ret
+test_not_i8:
+    ldrb w1, [x0]
+    uxtb w2, w1
+    movz x1, #0, #0
+    uxtb w1, w1
+    cmp w2, w1
+    csinc x1, xzr, xzr, ne
+    strb w1, [x0]
+    ldrb w0, [x0]
+    ret
+test_bitnot_reg:
+    mvn x0, x0
+    ret
+test_neg_reg:
+    neg x0, x0
+    ret
+test_bitnot_reg_u8:
+    mvn w0, w0
+    uxtb w0, w0
+    ret
+main:
+    sub sp, sp, #208
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    str x24, [xzr, #40]
+    str x25, [xzr, #48]
+    str x26, [xzr, #56]
+    str x27, [xzr, #64]
+    str x28, [xzr, #72]
+    stp x29, x30, [xzr, #87]
+    movn x1, #4, #0
+    add x0, sp, #168
+    strb w1, [x0]
+    movz x1, #200, #0
+    add x0, sp, #169
+    strb w1, [x0]
+    movn x1, #999, #0
+    add x0, sp, #170
+    strh w1, [x0]
+    movz x1, #40000, #0
+    add x0, sp, #172
+    strh w1, [x0]
+    movn x1, #34463, #0
+    movk x1, #65534, #1
+    add x0, sp, #174
+    str w1, [x0]
+    movz x1, #34464, #0
+    movk x1, #1, #1
+    add x0, sp, #178
+    str w1, [x0]
+    movn x1, #57599, #0
+    movk x1, #64010, #1
+    add x0, sp, #182
+    str x1, [x0]
+    movz x1, #57600, #0
+    movk x1, #1525, #1
+    add x0, sp, #190
+    str x1, [x0]
+    movz x0, #0, #0
+    bl 0xffffffa8
+    str x0, [xzr, #160]
+    movz x0, #1, #0
+    bl 0xffffffa8
+    str x0, [xzr, #152]
+    movz x0, #123, #0
+    bl 0xffffffe4
+    str x0, [xzr, #144]
+    movz x0, #123, #0
+    bl 0xfffffff4
+    str x0, [xzr, #136]
+    add x0, sp, #168
+    bl 0x250
+    str x0, [xzr, #128]
+    add x0, sp, #169
+    bl 0x268
+    str x0, [xzr, #120]
+    add x0, sp, #170
+    bl 0x280
+    str x0, [xzr, #112]
+    add x0, sp, #172
+    bl 0x298
+    str x0, [xzr, #104]
+    add x0, sp, #174
+    bl 0x2b0
+    str x0, [xzr, #96]
+    add x0, sp, #178
+    bl 0x2c8
+    mov x29, x0
+    add x0, sp, #182
+    bl 0x2e0
+    mov x28, x0
+    add x0, sp, #190
+    bl 0x2f4
+    mov x27, x0
+    movz x0, #7, #0
+    bl 0xffffffec
+    mov x26, x0
+    add x0, sp, #168
+    bl test_bitnot i32
+    mov x25, x0
+    add x0, sp, #169
+    bl test_bitnot u32
+    mov x24, x0
+    add x0, sp, #170
+    bl test_bitnot i64
+    mov x23, x0
+    add x0, sp, #172
+    bl 0x350
+    mov x22, x0
+    add x0, sp, #174
+    bl 0x368
+    mov x21, x0
+    add x0, sp, #178
+    bl 0x380
+    mov x20, x0
+    add x0, sp, #182
+    bl 0x398
+    mov x19, x0
+    add x0, sp, #190
+    bl 0x3ac
+    movz x2, #0, #0
+    ldr x1, [xzr, #160]
+    uxtb w1, w1
+    add x2, x2, x1
+    ldr x1, [xzr, #152]
+    uxtb w1, w1
+    add x2, x2, x1
+    ldr x1, [xzr, #144]
+    add x2, x2, x1
+    ldr x1, [xzr, #136]
+    add x2, x2, x1
+    ldr x1, [xzr, #128]
+    add x2, x2, x1
+    ldr x1, [xzr, #120]
+    add x2, x2, x1
+    ldr x1, [xzr, #112]
+    add x2, x2, x1
+    ldr x1, [xzr, #104]
+    add x2, x2, x1
+    ldr x1, [xzr, #96]
+    add x2, x2, x1
+    add x2, x2, x29
+    add x2, x2, x28
+    add x2, x2, x27
+    add x2, x2, x26
+    add x2, x2, x25
+    add x2, x2, x24
+    add x2, x2, x23
+    add x2, x2, x22
+    add x2, x2, x21
+    add x2, x2, x20
+    add x1, x2, x19
+    add x0, x1, x0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldr x24, [xzr, #40]
+    ldr x25, [xzr, #48]
+    ldr x26, [xzr, #56]
+    ldr x27, [xzr, #64]
+    ldr x28, [xzr, #72]
+    ldp x29, x30, [xzr, #87]
+    add sp, sp, #208
+    ret
+test_bitnot i8:
+    ldrb w1, [x0]
+    mvn w1, w1
+    strb w1, [x0]
+    ldrb w0, [x0]
+    invalid
+    ret
+test_bitnot u8:
+    ldrb w1, [x0]
+    mvn w1, w1
+    strb w1, [x0]
+    ldrb w0, [x0]
+    uxtb w0, w0
+    ret
+test_bitnot i16:
+    ldrh w1, [x0]
+    mvn w1, w1
+    strh w1, [x0]
+    ldrh w0, [x0]
+    invalid
+    ret
+test_bitnot u16:
+    ldrh w1, [x0]
+    mvn w1, w1
+    strh w1, [x0]
+    ldrh w0, [x0]
+    uxth w0, w0
+    ret
+test_bitnot i32:
+    ldr w1, [x0]
+    mvn w1, w1
+    str w1, [x0]
+    ldr w0, [x0]
+    sxtw x0, w0
+    ret
+test_bitnot u32:
+    ldr w1, [x0]
+    mvn w1, w1
+    str w1, [x0]
+    ldr w0, [x0]
+    mov w0, w0
+    ret
+test_bitnot i64:
+    mov x1, x0
+    ldr x0, [x1]
+    mvn x0, x0
+    str x0, [x1]
+    ret
+test_bitnot u64:
+    mov x1, x0
+    ldr x0, [x1]
+    mvn x0, x0
+    str x0, [x1]
+    ret
+test_neg i8:
+    ldrb w1, [x0]
+    neg w1, w1
+    strb w1, [x0]
+    ldrb w0, [x0]
+    invalid
+    ret
+test_neg u8:
+    ldrb w1, [x0]
+    neg w1, w1
+    strb w1, [x0]
+    ldrb w0, [x0]
+    uxtb w0, w0
+    ret
+test_neg i16:
+    ldrh w1, [x0]
+    neg w1, w1
+    strh w1, [x0]
+    ldrh w0, [x0]
+    invalid
+    ret
+test_neg u16:
+    ldrh w1, [x0]
+    neg w1, w1
+    strh w1, [x0]
+    ldrh w0, [x0]
+    uxth w0, w0
+    ret
+test_neg i32:
+    ldr w1, [x0]
+    neg w1, w1
+    str w1, [x0]
+    ldr w0, [x0]
+    sxtw x0, w0
+    ret
+test_neg u32:
+    ldr w1, [x0]
+    neg w1, w1
+    str w1, [x0]
+    ldr w0, [x0]
+    mov w0, w0
+    ret
+test_neg i64:
+    mov x1, x0
+    ldr x0, [x1]
+    neg x0, x0
+    str x0, [x1]
+    ret
+test_neg u64:
+    mov x1, x0
+    ldr x0, [x1]
+    neg x0, x0
+    str x0, [x1]
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+Error{inst_idx = 12, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 12, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 12, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 12, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+test_not_reg:
+    uxtb w0, w0
+    movz x1, #0, #0
+    uxtb w1, w1
+    cmp w0, w1
+    csinc x0, xzr, xzr, ne
+    ret
+test_not_i8:
+    sub sp, sp, #16
+    str x0, [xzr]
+    ldr x0, [xzr]
+    ldrb w0, [x0]
+    uxtb w0, w0
+    movz x1, #0, #0
+    uxtb w1, w1
+    cmp w0, w1
+    csinc x0, xzr, xzr, ne
+    ldr x1, [xzr]
+    strb w0, [x1]
+    add sp, sp, #16
+    ret
+test_bitnot_reg:
+    mvn x0, x0
+    ret
+test_neg_reg:
+    neg x0, x0
+    ret
+test_bitnot_reg_u8:
+    mvn w0, w0
+    uxtb w0, w0
+    ret
+main:
+    sub sp, sp, #208
+    stp x29, x30, [xzr, #7]
+    movn x0, #4, #0
+    add x1, sp, #176
+    strb w0, [x1]
+    movz x0, #200, #0
+    add x1, sp, #177
+    strb w0, [x1]
+    movn x0, #999, #0
+    add x1, sp, #178
+    strh w0, [x1]
+    movz x0, #40000, #0
+    add x1, sp, #180
+    strh w0, [x1]
+    movn x0, #34463, #0
+    movk x0, #65534, #1
+    add x1, sp, #182
+    str w0, [x1]
+    movz x0, #34464, #0
+    movk x0, #1, #1
+    add x1, sp, #186
+    str w0, [x1]
+    movn x0, #57599, #0
+    movk x0, #64010, #1
+    add x1, sp, #190
+    str x0, [x1]
+    movz x0, #57600, #0
+    movk x0, #1525, #1
+    add x1, sp, #198
+    str x0, [x1]
+    movz x0, #0, #0
+    bl 0xffffff98
+    str x0, [xzr, #16]
+    movz x0, #1, #0
+    bl 0xffffff98
+    str x0, [xzr, #24]
+    movz x0, #123, #0
+    bl 0xffffffe4
+    str x0, [xzr, #32]
+    movz x0, #123, #0
+    bl 0xfffffff4
+    str x0, [xzr, #40]
+    add x0, sp, #176
+    bl 0x224
+    str x0, [xzr, #48]
+    add x0, sp, #177
+    bl 0x238
+    str x0, [xzr, #56]
+    add x0, sp, #178
+    bl 0x24c
+    str x0, [xzr, #64]
+    add x0, sp, #180
+    bl 0x260
+    str x0, [xzr, #72]
+    add x0, sp, #182
+    bl 0x274
+    str x0, [xzr, #80]
+    add x0, sp, #186
+    bl 0x288
+    str x0, [xzr, #88]
+    add x0, sp, #190
+    bl 0x29c
+    str x0, [xzr, #96]
+    add x0, sp, #198
+    bl 0x2c0
+    str x0, [xzr, #104]
+    movz x0, #7, #0
+    bl 0xffffffec
+    str x0, [xzr, #112]
+    add x0, sp, #176
+    bl 0x2e4
+    str x0, [xzr, #120]
+    add x0, sp, #177
+    bl 0x2f8
+    str x0, [xzr, #128]
+    add x0, sp, #178
+    bl 0x30c
+    str x0, [xzr, #136]
+    add x0, sp, #180
+    bl 0x320
+    str x0, [xzr, #144]
+    add x0, sp, #182
+    bl 0x334
+    str x0, [xzr, #152]
+    add x0, sp, #186
+    bl 0x348
+    str x0, [xzr, #160]
+    add x0, sp, #190
+    bl 0x35c
+    str x0, [xzr, #168]
+    add x0, sp, #198
+    bl 0x380
+    ldr x1, [xzr, #16]
+    uxtb w1, w1
+    ldr x2, [xzr, #24]
+    uxtb w2, w2
+    add x1, x1, x2
+    ldr x2, [xzr, #32]
+    add x1, x1, x2
+    ldr x2, [xzr, #40]
+    add x1, x1, x2
+    ldr x2, [xzr, #48]
+    add x1, x1, x2
+    ldr x2, [xzr, #56]
+    add x1, x1, x2
+    ldr x2, [xzr, #64]
+    add x1, x1, x2
+    ldr x2, [xzr, #72]
+    add x1, x1, x2
+    ldr x2, [xzr, #80]
+    add x1, x1, x2
+    ldr x2, [xzr, #88]
+    add x1, x1, x2
+    ldr x2, [xzr, #96]
+    add x1, x1, x2
+    ldr x2, [xzr, #104]
+    add x1, x1, x2
+    ldr x2, [xzr, #112]
+    add x1, x1, x2
+    ldr x2, [xzr, #120]
+    add x1, x1, x2
+    ldr x2, [xzr, #128]
+    add x1, x1, x2
+    ldr x2, [xzr, #136]
+    add x1, x1, x2
+    ldr x2, [xzr, #144]
+    add x1, x1, x2
+    ldr x2, [xzr, #152]
+    add x1, x1, x2
+    ldr x2, [xzr, #160]
+    add x1, x1, x2
+    ldr x2, [xzr, #168]
+    add x1, x1, x2
+    add x0, x1, x0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #208
+    ret
+test_bitnot i8:
+    ldrb w1, [x0]
+    mvn w1, w1
+    strb w1, [x0]
+    invalid
+    ret
+test_bitnot u8:
+    ldrb w1, [x0]
+    mvn w1, w1
+    strb w1, [x0]
+    uxtb w0, w1
+    ret
+test_bitnot i16:
+    ldrh w1, [x0]
+    mvn w1, w1
+    strh w1, [x0]
+    invalid
+    ret
+test_bitnot u16:
+    ldrh w1, [x0]
+    mvn w1, w1
+    strh w1, [x0]
+    uxth w0, w1
+    ret
+test_bitnot i32:
+    ldr w1, [x0]
+    mvn w1, w1
+    str w1, [x0]
+    sxtw x0, w1
+    ret
+test_bitnot u32:
+    ldr w1, [x0]
+    mvn w1, w1
+    str w1, [x0]
+    mov w0, w1
+    ret
+test_bitnot i64:
+    sub sp, sp, #16
+    str x0, [xzr]
+    ldr x0, [xzr]
+    ldr x0, [x0]
+    mvn x0, x0
+    ldr x1, [xzr]
+    str x0, [x1]
+    add sp, sp, #16
+    ret
+test_bitnot u64:
+    sub sp, sp, #16
+    str x0, [xzr]
+    ldr x0, [xzr]
+    ldr x0, [x0]
+    mvn x0, x0
+    ldr x1, [xzr]
+    str x0, [x1]
+    add sp, sp, #16
+    ret
+test_neg i8:
+    ldrb w1, [x0]
+    neg w1, w1
+    strb w1, [x0]
+    invalid
+    ret
+test_neg u8:
+    ldrb w1, [x0]
+    neg w1, w1
+    strb w1, [x0]
+    uxtb w0, w1
+    ret
+test_neg i16:
+    ldrh w1, [x0]
+    neg w1, w1
+    strh w1, [x0]
+    invalid
+    ret
+test_neg u16:
+    ldrh w1, [x0]
+    neg w1, w1
+    strh w1, [x0]
+    uxth w0, w1
+    ret
+test_neg i32:
+    ldr w1, [x0]
+    neg w1, w1
+    str w1, [x0]
+    sxtw x0, w1
+    ret
+test_neg u32:
+    ldr w1, [x0]
+    neg w1, w1
+    str w1, [x0]
+    mov w0, w1
+    ret
+test_neg i64:
+    sub sp, sp, #16
+    str x0, [xzr]
+    ldr x0, [xzr]
+    ldr x0, [x0]
+    neg x0, x0
+    ldr x1, [xzr]
+    str x0, [x1]
+    add sp, sp, #16
+    ret
+test_neg u64:
+    sub sp, sp, #16
+    str x0, [xzr]
+    ldr x0, [xzr]
+    ldr x0, [x0]
+    neg x0, x0
+    ldr x1, [xzr]
+    str x0, [x1]
+    add sp, sp, #16
+    ret
+=========== OPT LEVEL: moderate ===========
+Error{inst_idx = 12, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 12, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 12, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 12, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+test_not_reg:
+    uxtb w1, w0
+    movz x0, #0, #0
+    uxtb w0, w0
+    cmp w1, w0
+    csinc x0, xzr, xzr, ne
+    ret
+test_not_i8:
+    mov x1, x0
+    ldrb w0, [x1]
+    uxtb w2, w0
+    movz x0, #0, #0
+    uxtb w0, w0
+    cmp w2, w0
+    csinc x0, xzr, xzr, ne
+    strb w0, [x1]
+    ret
+test_bitnot_reg:
+    mvn x0, x0
+    ret
+test_neg_reg:
+    neg x0, x0
+    ret
+test_bitnot_reg_u8:
+    mvn w0, w0
+    uxtb w0, w0
+    ret
+main:
+    sub sp, sp, #208
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    str x24, [xzr, #40]
+    str x25, [xzr, #48]
+    str x26, [xzr, #56]
+    str x27, [xzr, #64]
+    str x28, [xzr, #72]
+    stp x29, x30, [xzr, #87]
+    movn x1, #4, #0
+    add x0, sp, #168
+    strb w1, [x0]
+    movz x1, #200, #0
+    add x0, sp, #169
+    strb w1, [x0]
+    movn x1, #999, #0
+    add x0, sp, #170
+    strh w1, [x0]
+    movz x1, #40000, #0
+    add x0, sp, #172
+    strh w1, [x0]
+    movn x1, #34463, #0
+    movk x1, #65534, #1
+    add x0, sp, #174
+    str w1, [x0]
+    movz x1, #34464, #0
+    movk x1, #1, #1
+    add x0, sp, #178
+    str w1, [x0]
+    movn x1, #57599, #0
+    movk x1, #64010, #1
+    add x0, sp, #182
+    str x1, [x0]
+    movz x1, #57600, #0
+    movk x1, #1525, #1
+    add x0, sp, #190
+    str x1, [x0]
+    movz x0, #0, #0
+    bl 0xffffffa8
+    str x0, [xzr, #160]
+    movz x0, #1, #0
+    bl 0xffffffa8
+    str x0, [xzr, #152]
+    movz x0, #123, #0
+    bl 0xffffffe4
+    str x0, [xzr, #144]
+    movz x0, #123, #0
+    bl 0xfffffff4
+    str x0, [xzr, #136]
+    add x0, sp, #168
+    bl 0x248
+    str x0, [xzr, #128]
+    add x0, sp, #169
+    bl 0x25c
+    str x0, [xzr, #120]
+    add x0, sp, #170
+    bl 0x270
+    str x0, [xzr, #112]
+    add x0, sp, #172
+    bl 0x284
+    str x0, [xzr, #104]
+    add x0, sp, #174
+    bl 0x298
+    str x0, [xzr, #96]
+    add x0, sp, #178
+    bl 0x2ac
+    mov x29, x0
+    add x0, sp, #182
+    bl 0x2c0
+    mov x28, x0
+    add x0, sp, #190
+    bl 0x2d4
+    mov x27, x0
+    movz x0, #7, #0
+    bl 0xffffffec
+    mov x26, x0
+    add x0, sp, #168
+    bl 0x2e8
+    mov x25, x0
+    add x0, sp, #169
+    bl 0x2fc
+    mov x24, x0
+    add x0, sp, #170
+    bl 0x310
+    mov x23, x0
+    add x0, sp, #172
+    bl 0x324
+    mov x22, x0
+    add x0, sp, #174
+    bl 0x338
+    mov x21, x0
+    add x0, sp, #178
+    bl 0x34c
+    mov x20, x0
+    add x0, sp, #182
+    bl 0x360
+    mov x19, x0
+    add x0, sp, #190
+    bl 0x374
+    ldr x1, [xzr, #160]
+    uxtb w2, w1
+    ldr x1, [xzr, #152]
+    uxtb w1, w1
+    add x2, x2, x1
+    ldr x1, [xzr, #144]
+    add x2, x2, x1
+    ldr x1, [xzr, #136]
+    add x2, x2, x1
+    ldr x1, [xzr, #128]
+    add x2, x2, x1
+    ldr x1, [xzr, #120]
+    add x2, x2, x1
+    ldr x1, [xzr, #112]
+    add x2, x2, x1
+    ldr x1, [xzr, #104]
+    add x2, x2, x1
+    ldr x1, [xzr, #96]
+    add x2, x2, x1
+    add x2, x2, x29
+    add x2, x2, x28
+    add x2, x2, x27
+    add x2, x2, x26
+    add x2, x2, x25
+    add x2, x2, x24
+    add x2, x2, x23
+    add x2, x2, x22
+    add x2, x2, x21
+    add x2, x2, x20
+    add x1, x2, x19
+    add x0, x1, x0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldr x24, [xzr, #40]
+    ldr x25, [xzr, #48]
+    ldr x26, [xzr, #56]
+    ldr x27, [xzr, #64]
+    ldr x28, [xzr, #72]
+    ldp x29, x30, [xzr, #87]
+    add sp, sp, #208
+    ret
+test_bitnot i8:
+    ldrb w1, [x0]
+    mvn w1, w1
+    strb w1, [x0]
+    invalid
+    ret
+test_bitnot u8:
+    ldrb w1, [x0]
+    mvn w1, w1
+    strb w1, [x0]
+    uxtb w0, w1
+    ret
+test_bitnot i16:
+    ldrh w1, [x0]
+    mvn w1, w1
+    strh w1, [x0]
+    invalid
+    ret
+test_bitnot u16:
+    ldrh w1, [x0]
+    mvn w1, w1
+    strh w1, [x0]
+    uxth w0, w1
+    ret
+test_bitnot i32:
+    ldr w1, [x0]
+    mvn w1, w1
+    str w1, [x0]
+    sxtw x0, w1
+    ret
+test_bitnot u32:
+    ldr w1, [x0]
+    mvn w1, w1
+    str w1, [x0]
+    mov w0, w1
+    ret
+test_bitnot i64:
+    mov x1, x0
+    ldr x0, [x1]
+    mvn x0, x0
+    str x0, [x1]
+    ret
+test_bitnot u64:
+    mov x1, x0
+    ldr x0, [x1]
+    mvn x0, x0
+    str x0, [x1]
+    ret
+test_neg i8:
+    ldrb w1, [x0]
+    neg w1, w1
+    strb w1, [x0]
+    invalid
+    ret
+test_neg u8:
+    ldrb w1, [x0]
+    neg w1, w1
+    strb w1, [x0]
+    uxtb w0, w1
+    ret
+test_neg i16:
+    ldrh w1, [x0]
+    neg w1, w1
+    strh w1, [x0]
+    invalid
+    ret
+test_neg u16:
+    ldrh w1, [x0]
+    neg w1, w1
+    strh w1, [x0]
+    uxth w0, w1
+    ret
+test_neg i32:
+    ldr w1, [x0]
+    neg w1, w1
+    str w1, [x0]
+    sxtw x0, w1
+    ret
+test_neg u32:
+    ldr w1, [x0]
+    neg w1, w1
+    str w1, [x0]
+    mov w0, w1
+    ret
+test_neg i64:
+    mov x1, x0
+    ldr x0, [x1]
+    neg x0, x0
+    str x0, [x1]
+    ret
+test_neg u64:
+    mov x1, x0
+    ldr x0, [x1]
+    neg x0, x0
+    str x0, [x1]
+    ret
 =========== OPT LEVEL: all ===========
 Error{inst_idx = 12, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 Error{inst_idx = 12, code = "INVALID_OPCODE", _ = [0, 0, 0]}
@@ -272,4 +1987,20 @@ test_neg u64:
     ldr x0, [x1]
     neg x0, x0
     str x0, [x1]
+    ret
+=========== OPT LEVEL: aggresive ===========
+test_not_i8:
+    mov x1, x0
+    ldrb w0, [x1]
+    uxtb w2, w0
+    movz x0, #0, #0
+    uxtb w0, w0
+    cmp w2, w0
+    csinc x0, xzr, xzr, ne
+    strb w0, [x1]
+    ret
+main:
+    movz x0, #258, #0
+    movk x0, #1, #1
+    movk x0, #1, #2
     ret

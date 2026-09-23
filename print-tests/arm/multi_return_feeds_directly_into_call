@@ -1,3 +1,204 @@
+=========== OPT LEVEL: none-quick ===========
+produce:
+    str x0, [x1]
+    movz x1, #1, #0
+    add x1, x1, x0
+    str x1, [x2]
+    movz x1, #2, #0
+    add x0, x1, x0
+    ret
+consume:
+    movz x3, #100, #0
+    madd x0, x0, x3, xzr
+    movz x3, #10, #0
+    madd x1, x1, x3, xzr
+    add x0, x0, x1
+    add x0, x0, x2
+    ret
+main:
+    sub sp, sp, #48
+    stp x29, x30, [xzr, #7]
+    movz x0, #4, #0
+    add x1, sp, #24
+    add x2, sp, #32
+    bl 0xffffffc8
+    str x0, [xzr, #16]
+    add x0, sp, #24
+    ldr x0, [x0]
+    add x1, sp, #32
+    ldr x1, [x1]
+    ldr x2, [xzr, #16]
+    bl 0xffffffe4
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #48
+    ret
+=========== OPT LEVEL: none ===========
+produce:
+    str x0, [x1]
+    movz x1, #1, #0
+    add x1, x1, x0
+    str x1, [x2]
+    movz x1, #2, #0
+    add x0, x1, x0
+    ret
+consume:
+    movz x3, #100, #0
+    madd x3, x0, x3, xzr
+    movz x0, #10, #0
+    madd x0, x1, x0, xzr
+    add x0, x3, x0
+    add x0, x0, x2
+    ret
+main:
+    sub sp, sp, #32
+    stp x29, x30, [xzr, #7]
+    movz x0, #4, #0
+    add x1, sp, #16
+    add x2, sp, #24
+    bl 0xffffffc8
+    mov x2, x0
+    add x0, sp, #16
+    ldr x0, [x0]
+    add x1, sp, #24
+    ldr x1, [x1]
+    bl 0xffffffe4
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #32
+    ret
+=========== OPT LEVEL: mininal-quick ===========
+produce:
+    str x0, [x1]
+    movz x1, #1, #0
+    add x1, x1, x0
+    str x1, [x2]
+    movz x1, #2, #0
+    add x0, x1, x0
+    ret
+consume:
+    movz x3, #100, #0
+    madd x0, x0, x3, xzr
+    movz x3, #10, #0
+    madd x1, x1, x3, xzr
+    add x0, x0, x1
+    add x0, x0, x2
+    ret
+main:
+    sub sp, sp, #48
+    stp x29, x30, [xzr, #7]
+    movz x0, #4, #0
+    add x1, sp, #24
+    add x2, sp, #32
+    bl 0xffffffc8
+    str x0, [xzr, #16]
+    add x0, sp, #24
+    ldr x0, [x0]
+    add x1, sp, #32
+    ldr x1, [x1]
+    ldr x2, [xzr, #16]
+    bl 0xffffffe4
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #48
+    ret
+=========== OPT LEVEL: mininal ===========
+produce:
+    str x0, [x1]
+    movz x1, #1, #0
+    add x1, x1, x0
+    str x1, [x2]
+    movz x1, #2, #0
+    add x0, x1, x0
+    ret
+consume:
+    movz x3, #100, #0
+    madd x3, x0, x3, xzr
+    movz x0, #10, #0
+    madd x0, x1, x0, xzr
+    add x0, x3, x0
+    add x0, x0, x2
+    ret
+main:
+    sub sp, sp, #32
+    stp x29, x30, [xzr, #7]
+    movz x0, #4, #0
+    add x1, sp, #16
+    add x2, sp, #24
+    bl 0xffffffc8
+    mov x2, x0
+    add x0, sp, #16
+    ldr x0, [x0]
+    add x1, sp, #24
+    ldr x1, [x1]
+    bl 0xffffffe4
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #32
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+produce:
+    str x0, [x1]
+    movz x1, #1, #0
+    add x1, x1, x0
+    str x1, [x2]
+    movz x1, #2, #0
+    add x0, x1, x0
+    ret
+consume:
+    movz x3, #100, #0
+    madd x0, x0, x3, xzr
+    movz x3, #10, #0
+    madd x1, x1, x3, xzr
+    add x0, x0, x1
+    add x0, x0, x2
+    ret
+main:
+    sub sp, sp, #48
+    stp x29, x30, [xzr, #7]
+    movz x0, #4, #0
+    add x1, sp, #24
+    add x2, sp, #32
+    bl 0xffffffc8
+    str x0, [xzr, #16]
+    add x0, sp, #24
+    ldr x0, [x0]
+    add x1, sp, #32
+    ldr x1, [x1]
+    ldr x2, [xzr, #16]
+    bl 0xffffffe4
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #48
+    ret
+=========== OPT LEVEL: moderate ===========
+produce:
+    str x0, [x1]
+    movz x1, #1, #0
+    add x1, x1, x0
+    str x1, [x2]
+    movz x1, #2, #0
+    add x0, x1, x0
+    ret
+consume:
+    movz x3, #100, #0
+    madd x3, x0, x3, xzr
+    movz x0, #10, #0
+    madd x0, x1, x0, xzr
+    add x0, x3, x0
+    add x0, x0, x2
+    ret
+main:
+    sub sp, sp, #32
+    stp x29, x30, [xzr, #7]
+    movz x0, #4, #0
+    add x1, sp, #16
+    add x2, sp, #24
+    bl 0xffffffc8
+    mov x2, x0
+    add x0, sp, #16
+    ldr x0, [x0]
+    add x1, sp, #24
+    ldr x1, [x1]
+    bl 0xffffffe4
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #32
+    ret
 =========== OPT LEVEL: all ===========
 produce:
     str x0, [x1]
@@ -30,4 +231,8 @@ main:
     bl 0xffffffe4
     ldp x29, x30, [xzr, #7]
     add sp, sp, #32
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    movz x0, #456, #0
     ret

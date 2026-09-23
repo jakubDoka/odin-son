@@ -1,4 +1,399 @@
+=========== OPT LEVEL: none-quick ===========
+main:
+    movz x1, #20, #0
+    movz x0, #0, #0
+    movz x2, #3, #0
+    movz x3, #6, #0
+    udiv x4, x1, x3
+    cmp w4, w2
+    b.eq 1
+    movz x4, #0, #0
+    b 2
+1:
+    movz x5, #1, #0
+    add x4, x5, x0
+2:
+    movz x5, #2, #0
+    udiv x6, x1, x3
+    msub x6, x6, x3, x1
+    cmp w6, w5
+    b.eq 3
+    mov x6, x4
+    b 4
+3:
+    add x4, x4, x5
+    mov x6, x4
+4:
+    movz x4, #7, #0
+    sub x4, x0, x4
+    udiv x0, x4, x3
+    cmp w0, w1
+    b.hi 5
+    mov x0, x6
+    b 6
+5:
+    movz x7, #4, #0
+    add x0, x7, x6
+6:
+    udiv x6, x4, x3
+    msub x6, x6, x3, x4
+    cmp w6, w2
+    b.eq 7
+    b 8
+7:
+    movz x2, #8, #0
+    add x0, x2, x0
+8:
+    movz x2, #60, #0
+    lsrv x2, x4, x2
+    movz x6, #15, #0
+    cmp w2, w6
+    b.eq 9
+    b 10
+9:
+    movz x2, #16, #0
+    add x0, x2, x0
+10:
+    lsrv x2, x1, x5
+    movz x5, #5, #0
+    cmp w2, w5
+    b.eq 11
+    b 12
+11:
+    movz x2, #32, #0
+    add x0, x2, x0
+12:
+    cmp w4, w3
+    b.hi 13
+    b 14
+13:
+    movz x2, #64, #0
+    add x0, x2, x0
+14:
+    cmp w4, w1
+    b.cs 15
+    b 16
+15:
+    movz x2, #128, #0
+    add x0, x2, x0
+16:
+    cmp w3, w4
+    b.cc 17
+    b 18
+17:
+    movz x2, #256, #0
+    add x0, x2, x0
+18:
+    cmp w3, w4
+    b.ls 19
+    b 20
+19:
+    movz x2, #512, #0
+    add x0, x2, x0
+20:
+    cmp w1, w4
+    b.cc 21
+    b 22
+21:
+    movz x1, #1024, #0
+    add x0, x1, x0
+22:
+    ret
+=========== OPT LEVEL: none ===========
+main:
+    movz x6, #20, #0
+    movz x3, #0, #0
+    movz x2, #3, #0
+    movz x5, #6, #0
+    udiv x0, x6, x5
+    cmp w0, w2
+    b.eq 1
+    movz x1, #0, #0
+    b 2
+1:
+    movz x0, #1, #0
+    add x1, x0, x3
+2:
+    movz x4, #2, #0
+    udiv x0, x6, x5
+    msub x0, x0, x5, x6
+    cmp w0, w4
+    b.eq 3
+    b 4
+3:
+    add x1, x1, x4
+4:
+    movz x0, #7, #0
+    sub x3, x3, x0
+    udiv x0, x3, x5
+    cmp w0, w6
+    b.hi 5
+    mov x0, x1
+    b 6
+5:
+    movz x0, #4, #0
+    add x0, x0, x1
+6:
+    udiv x1, x3, x5
+    msub x1, x1, x5, x3
+    cmp w1, w2
+    b.eq 7
+    b 8
+7:
+    movz x1, #8, #0
+    add x0, x1, x0
+8:
+    movz x1, #60, #0
+    lsrv x2, x3, x1
+    movz x1, #15, #0
+    cmp w2, w1
+    b.eq 9
+    b 10
+9:
+    movz x1, #16, #0
+    add x0, x1, x0
+10:
+    lsrv x2, x6, x4
+    movz x1, #5, #0
+    cmp w2, w1
+    b.eq 11
+    b 12
+11:
+    movz x1, #32, #0
+    add x0, x1, x0
+12:
+    cmp w3, w5
+    b.hi 13
+    b 14
+13:
+    movz x1, #64, #0
+    add x0, x1, x0
+14:
+    cmp w3, w6
+    b.cs 15
+    b 16
+15:
+    movz x1, #128, #0
+    add x0, x1, x0
+16:
+    cmp w5, w3
+    b.cc 17
+    b 18
+17:
+    movz x1, #256, #0
+    add x0, x1, x0
+18:
+    cmp w5, w3
+    b.ls 19
+    b 20
+19:
+    movz x1, #512, #0
+    add x0, x1, x0
+20:
+    cmp w6, w3
+    b.cc 21
+    b 22
+21:
+    movz x1, #1024, #0
+    add x0, x1, x0
+22:
+    ret
+=========== OPT LEVEL: mininal-quick ===========
+main:
+    movz x1, #1, #0
+    movz x0, #0, #0
+    cbnz x1, 1
+    movz x2, #0, #0
+    b 2
+1:
+    movz x3, #1, #0
+    add x2, x3, x0
+2:
+    cbnz x1, 3
+    mov x3, x2
+    b 4
+3:
+    movz x4, #2, #0
+    add x2, x4, x2
+    mov x3, x2
+4:
+    movz x2, #7, #0
+    sub x2, x0, x2
+    movz x4, #20, #0
+    movz x5, #6, #0
+    udiv x0, x2, x5
+    cmp w0, w4
+    b.hi 5
+    mov x0, x3
+    b 6
+5:
+    movz x6, #4, #0
+    add x0, x6, x3
+6:
+    udiv x3, x2, x5
+    msub x3, x3, x5, x2
+    movz x6, #3, #0
+    cmp w3, w6
+    b.eq 7
+    b 8
+7:
+    movz x3, #8, #0
+    add x0, x3, x0
+8:
+    movz x3, #60, #0
+    lsrv x3, x2, x3
+    movz x6, #15, #0
+    cmp w3, w6
+    b.eq 9
+    b 10
+9:
+    movz x3, #16, #0
+    add x0, x3, x0
+10:
+    cbnz x1, 11
+    b 12
+11:
+    movz x1, #32, #0
+    add x0, x1, x0
+12:
+    cmp w2, w5
+    csinc x1, xzr, xzr, ls
+    cbnz x1, 13
+    b 14
+13:
+    movz x3, #64, #0
+    add x0, x3, x0
+14:
+    cmp w2, w4
+    b.cs 15
+    b 16
+15:
+    movz x3, #128, #0
+    add x0, x3, x0
+16:
+    cbnz x1, 17
+    b 18
+17:
+    movz x1, #256, #0
+    add x0, x1, x0
+18:
+    cmp w2, w5
+    b.cs 19
+    b 20
+19:
+    movz x1, #512, #0
+    add x0, x1, x0
+20:
+    cmp w2, w4
+    b.hi 21
+    b 22
+21:
+    movz x1, #1024, #0
+    add x0, x1, x0
+22:
+    ret
+=========== OPT LEVEL: mininal ===========
+main:
+    movz x6, #1, #0
+    movz x2, #0, #0
+    cbnz x6, 1
+    movz x1, #0, #0
+    b 2
+1:
+    movz x0, #1, #0
+    add x1, x0, x2
+2:
+    cbnz x6, 3
+    b 4
+3:
+    movz x0, #2, #0
+    add x1, x0, x1
+4:
+    movz x0, #7, #0
+    sub x5, x2, x0
+    movz x4, #20, #0
+    movz x3, #6, #0
+    udiv x0, x5, x3
+    cmp w0, w4
+    b.hi 5
+    mov x0, x1
+    b 6
+5:
+    movz x0, #4, #0
+    add x0, x0, x1
+6:
+    udiv x1, x5, x3
+    msub x2, x1, x3, x5
+    movz x1, #3, #0
+    cmp w2, w1
+    b.eq 7
+    b 8
+7:
+    movz x1, #8, #0
+    add x0, x1, x0
+8:
+    movz x1, #60, #0
+    lsrv x2, x5, x1
+    movz x1, #15, #0
+    cmp w2, w1
+    b.eq 9
+    b 10
+9:
+    movz x1, #16, #0
+    add x0, x1, x0
+10:
+    cbnz x6, 11
+    b 12
+11:
+    movz x1, #32, #0
+    add x0, x1, x0
+12:
+    cmp w5, w3
+    csinc x2, xzr, xzr, ls
+    cbnz x2, 13
+    b 14
+13:
+    movz x1, #64, #0
+    add x0, x1, x0
+14:
+    cmp w5, w4
+    b.cs 15
+    b 16
+15:
+    movz x1, #128, #0
+    add x0, x1, x0
+16:
+    cbnz x2, 17
+    b 18
+17:
+    movz x1, #256, #0
+    add x0, x1, x0
+18:
+    cmp w5, w3
+    b.cs 19
+    b 20
+19:
+    movz x1, #512, #0
+    add x0, x1, x0
+20:
+    cmp w5, w4
+    b.hi 21
+    b 22
+21:
+    movz x1, #1024, #0
+    add x0, x1, x0
+22:
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+main:
+    movz x0, #2047, #0
+    ret
+=========== OPT LEVEL: moderate ===========
+main:
+    movz x0, #2047, #0
+    ret
 =========== OPT LEVEL: all ===========
 main:
     movz x0, #2047, #0
     ret
+=========== OPT LEVEL: aggresive ===========

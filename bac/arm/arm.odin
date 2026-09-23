@@ -146,7 +146,7 @@ peep :: proc(
 
 	signed := false
 	#partial switch kind {
-	case .Le ..= .Ge, .Div:
+	case .Le ..= .Ge, .Div, .Shr:
 		signed = true
 	}
 
@@ -155,7 +155,7 @@ peep :: proc(
 	changed := false
 
 	#partial switch kind {
-	case .Eq ..= .U_Ge, .Div:
+	case .Eq ..= .U_Ge, .Div, .Shl ..= .U_Shr:
 		for inp, i in node.inps {
 			if get_node(ctx, inp).dt < .I32 {
 				new := bac.add_un_op(ctx, "shext", ext, .I32, inp)
@@ -286,7 +286,15 @@ meta_of :: #force_inline proc(
 	}
 
 	#partial switch atype(node) {
-	case .Root_Mem, .Sym, .Jump, .Mem, .Local, .Global, .Always, .Poison:
+	case .Root_Mem,
+	     .Sym,
+	     .Jump,
+	     .Mem,
+	     .Local,
+	     .Global,
+	     .Always,
+	     .Trap,
+	     .Poison:
 		return {out = IOUT}
 	case .Add ..= .Xor, .Shl ..= .And_Not, .F_Add ..= .F_Div:
 		return {out = out, masks = nmasks[:2]}
@@ -302,7 +310,7 @@ meta_of :: #force_inline proc(
 		vl := get_node(graph, node.inps[0])
 		nkind := ra.datatype_to_reg_kind[vl.dt]
 		return {out = out, masks = masks[nkind][:1]}
-	case .CInt, .Local_Addr, .Global_Addr:
+	case .CInt, .Local_Addr, .Global_Addr, .Proc_Addr:
 		return {out = out}
 	case .Phi:
 		masks := make([]bac.RM_Intern_Idx, len(node.inps) - 1)
@@ -580,6 +588,7 @@ emit_instr :: proc(
 		.F_Div       = 0x1E201800,
 		.F_Eq ..= .F_Ge             = 0x1E202000,
 		.Global_Addr = 0x10000000,
+		.Proc_Addr   = 0x10000000,
 		.Neg         = 0x4B000000,
 		.Not         = 0x2a200000,
 		.Cast        = 0x1e260000,
@@ -599,13 +608,18 @@ emit_instr :: proc(
 		is_f64 = inp.dt == .F64
 	}
 
-	#partial switch kind {
+	#partial emit: switch kind {
 	case .Root_Mem, .Sym, .Phi, .Ret, .Mem, .Param, .Local, .Global, .Poison:
-	case .Global_Addr:
-		id := bac.get_extra(ctx, inp, bac.Tup).idx
+	case .Global_Addr, .Proc_Addr:
+		id: u32
+		if kind == .Proc_Addr {
+			id = bac.get_extra(ctx, node, bac.Tup).idx
+		} else {
+			id = bac.get_extra(ctx, inp, bac.Tup).idx
+		}
 		bac.add_reloc(ctx.relocs)^ = {
 			offset = u32(ctx.code.pos - ctx.code_start),
-			kind   = .Global,
+			kind   = kind == .Proc_Addr ? .Text : .Global,
 			size   = .r2_19,
 			id     = id,
 		}
@@ -998,11 +1012,28 @@ emit_instr :: proc(
 			op :: 0b000101
 			emit_op(ctx.code, op << 26)
 		}
+	case .Trap:
+		emit_op(ctx.code, 0xD4200000)
 	case .Call, .Set, .Copy:
+		call := bac.get_extra(ctx, node, bac.Call)
+
 		id: u32
 		#partial switch kind {
 		case .Call:
-			id = bac.get_extra(ctx, node, bac.Call).cid
+			id = call.cid
+
+			if call.indirect {
+				op: u32 = 0xd63f0000
+
+				idx := len(node.inps) - 1
+				for ; get_node(ctx, node.inps[idx]).itype == .Local;
+				    idx -= 1 {}
+				ptr := reg_of(ctx, node.inps[idx])
+
+				emit_op(ctx.code, op | u32(ptr.index) << 5)
+
+				break emit
+			}
 		case .Set:
 			id = ctx.lib_calls.set.id
 		case .Copy:
@@ -1010,14 +1041,15 @@ emit_instr :: proc(
 		}
 
 		// bl <imm26>
-		op :: 0b100101
+		op: u32 = 0b100101
 		imm26 :: 0
 
 		bac.add_reloc(ctx.relocs)^ = {
-			offset = u32(ctx.code.pos - ctx.code_start),
-			kind   = .Text,
-			size   = .r26,
-			id     = id,
+			offset    = u32(ctx.code.pos - ctx.code_start),
+			kind      = .Text,
+			size      = .r26,
+			scale_pow = 2,
+			id        = id,
 		}
 		emit_op(ctx.code, op << 26 | imm26)
 	case .Return:
@@ -1068,7 +1100,6 @@ emit_instr :: proc(
 	case:
 		fmt.panicf("TODO %v", node)
 	}
-
 }
 
 reg_of :: proc(ctx: ^Ctx, node: Node_ID) -> Reg {

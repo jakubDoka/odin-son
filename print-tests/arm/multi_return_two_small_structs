@@ -1,3 +1,377 @@
+=========== OPT LEVEL: none-quick ===========
+two_small:
+    sub sp, sp, #48
+    str x19, [xzr]
+    stp x29, x30, [xzr, #15]
+    str x0, [xzr, #24]
+    ldr x0, [xzr, #24]
+    str w0, [x1]
+    movz x19, #4, #0
+    add x0, x1, x19
+    movz x1, #1, #0
+    ldr x2, [xzr, #24]
+    add w1, w1, w2
+    str w1, [x0]
+    movz x1, #0, #0
+    movz x2, #8, #0
+    add x0, sp, #32
+    bl 0xffffffe4
+    movz x0, #2, #0
+    ldr x1, [xzr, #24]
+    add w0, w0, w1
+    add x1, sp, #32
+    str w0, [x1]
+    add x0, sp, #32
+    add x0, x0, x19
+    movz x1, #3, #0
+    ldr x2, [xzr, #24]
+    add w1, w1, w2
+    str w1, [x0]
+    add x0, sp, #32
+    ldr x0, [x0]
+    ldr x19, [xzr]
+    ldp x29, x30, [xzr, #15]
+    add sp, sp, #48
+    ret
+main:
+    sub sp, sp, #32
+    stp x29, x30, [xzr, #7]
+    movz x0, #10, #0
+    add x1, sp, #16
+    bl 0xffffff7c
+    add x1, sp, #24
+    str x0, [x1]
+    movz x0, #4, #0
+    add x2, sp, #16
+    ldr w2, [x2]
+    sxtw x2, w2
+    ldr w3, [x1]
+    sxtw x3, w3
+    movz x4, #1000, #0
+    madd x2, x2, x4, xzr
+    add x4, sp, #16
+    add x4, x4, x0
+    ldr w4, [x4]
+    sxtw x4, w4
+    movz x5, #100, #0
+    madd x4, x4, x5, xzr
+    add x2, x2, x4
+    movz x4, #10, #0
+    madd x3, x3, x4, xzr
+    add x2, x2, x3
+    add x0, x1, x0
+    ldr w0, [x0]
+    sxtw x0, w0
+    add x0, x2, x0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #32
+    ret
+=========== OPT LEVEL: none ===========
+two_small:
+    sub sp, sp, #48
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    stp x29, x30, [xzr, #23]
+    mov x20, x0
+    str w20, [x1]
+    movz x19, #4, #0
+    add x2, x1, x19
+    movz x1, #1, #0
+    add w0, w1, w20
+    str w0, [x2]
+    movz x1, #0, #0
+    movz x2, #8, #0
+    add x0, sp, #32
+    bl 0xffffffe4
+    movz x1, #2, #0
+    add w1, w1, w20
+    add x0, sp, #32
+    str w1, [x0]
+    add x0, sp, #32
+    add x2, x0, x19
+    movz x1, #3, #0
+    add w0, w1, w20
+    str w0, [x2]
+    add x0, sp, #32
+    ldr x0, [x0]
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldp x29, x30, [xzr, #23]
+    add sp, sp, #48
+    ret
+main:
+    sub sp, sp, #32
+    stp x29, x30, [xzr, #7]
+    movz x0, #10, #0
+    add x1, sp, #16
+    bl 0xffffff84
+    add x5, sp, #24
+    str x0, [x5]
+    movz x4, #4, #0
+    add x0, sp, #16
+    ldr w0, [x0]
+    sxtw x1, w0
+    ldr w0, [x5]
+    sxtw x3, w0
+    movz x0, #1000, #0
+    madd x2, x1, x0, xzr
+    add x0, sp, #16
+    add x0, x0, x4
+    ldr w0, [x0]
+    sxtw x1, w0
+    movz x0, #100, #0
+    madd x0, x1, x0, xzr
+    add x1, x2, x0
+    movz x0, #10, #0
+    madd x0, x3, x0, xzr
+    add x1, x1, x0
+    add x0, x5, x4
+    ldr w0, [x0]
+    sxtw x0, w0
+    add x0, x1, x0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #32
+    ret
+=========== OPT LEVEL: mininal-quick ===========
+two_small:
+    sub sp, sp, #48
+    str x19, [xzr]
+    stp x29, x30, [xzr, #15]
+    str x0, [xzr, #24]
+    ldr x0, [xzr, #24]
+    str w0, [x1]
+    movz x19, #4, #0
+    add x0, x1, x19
+    movz x1, #1, #0
+    ldr x2, [xzr, #24]
+    add w1, w1, w2
+    str w1, [x0]
+    movz x1, #0, #0
+    movz x2, #8, #0
+    add x0, sp, #32
+    bl 0xffffffe4
+    movz x0, #2, #0
+    ldr x1, [xzr, #24]
+    add w0, w0, w1
+    add x1, sp, #32
+    str w0, [x1]
+    add x0, sp, #32
+    add x0, x0, x19
+    movz x1, #3, #0
+    ldr x2, [xzr, #24]
+    add w1, w1, w2
+    str w1, [x0]
+    add x0, sp, #32
+    ldr x0, [x0]
+    ldr x19, [xzr]
+    ldp x29, x30, [xzr, #15]
+    add sp, sp, #48
+    ret
+main:
+    sub sp, sp, #32
+    stp x29, x30, [xzr, #7]
+    movz x0, #10, #0
+    add x1, sp, #16
+    bl 0xffffff7c
+    add x1, sp, #24
+    str x0, [x1]
+    movz x0, #4, #0
+    add x2, sp, #16
+    ldr w2, [x2]
+    sxtw x2, w2
+    ldr w3, [x1]
+    sxtw x3, w3
+    movz x4, #1000, #0
+    madd x2, x2, x4, xzr
+    add x4, sp, #16
+    add x4, x4, x0
+    ldr w4, [x4]
+    sxtw x4, w4
+    movz x5, #100, #0
+    madd x4, x4, x5, xzr
+    add x2, x2, x4
+    movz x4, #10, #0
+    madd x3, x3, x4, xzr
+    add x2, x2, x3
+    add x0, x1, x0
+    ldr w0, [x0]
+    sxtw x0, w0
+    add x0, x2, x0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #32
+    ret
+=========== OPT LEVEL: mininal ===========
+two_small:
+    sub sp, sp, #48
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    stp x29, x30, [xzr, #23]
+    mov x20, x0
+    str w20, [x1]
+    movz x19, #4, #0
+    add x2, x1, x19
+    movz x1, #1, #0
+    add w0, w1, w20
+    str w0, [x2]
+    movz x1, #0, #0
+    movz x2, #8, #0
+    add x0, sp, #32
+    bl 0xffffffe4
+    movz x1, #2, #0
+    add w1, w1, w20
+    add x0, sp, #32
+    str w1, [x0]
+    add x0, sp, #32
+    add x2, x0, x19
+    movz x1, #3, #0
+    add w0, w1, w20
+    str w0, [x2]
+    add x0, sp, #32
+    ldr x0, [x0]
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldp x29, x30, [xzr, #23]
+    add sp, sp, #48
+    ret
+main:
+    sub sp, sp, #32
+    stp x29, x30, [xzr, #7]
+    movz x0, #10, #0
+    add x1, sp, #16
+    bl 0xffffff84
+    add x5, sp, #24
+    str x0, [x5]
+    movz x4, #4, #0
+    add x0, sp, #16
+    ldr w0, [x0]
+    sxtw x1, w0
+    ldr w0, [x5]
+    sxtw x3, w0
+    movz x0, #1000, #0
+    madd x2, x1, x0, xzr
+    add x0, sp, #16
+    add x0, x0, x4
+    ldr w0, [x0]
+    sxtw x1, w0
+    movz x0, #100, #0
+    madd x0, x1, x0, xzr
+    add x1, x2, x0
+    movz x0, #10, #0
+    madd x0, x3, x0, xzr
+    add x1, x1, x0
+    add x0, x5, x4
+    ldr w0, [x0]
+    sxtw x0, w0
+    add x0, x1, x0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #32
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+two_small:
+    sub sp, sp, #16
+    str w0, [x1]
+    movz x2, #4, #0
+    add x1, x1, x2
+    add x3, sp, #0
+    movz x4, #1, #0
+    add w4, w4, w0
+    str w4, [x1]
+    movz x1, #2, #0
+    add w1, w1, w0
+    str w1, [x3]
+    add x1, x3, x2
+    movz x2, #3, #0
+    add w0, w2, w0
+    str w0, [x1]
+    ldr x0, [x3]
+    add sp, sp, #16
+    ret
+main:
+    sub sp, sp, #32
+    stp x29, x30, [xzr, #7]
+    movz x0, #10, #0
+    add x1, sp, #16
+    bl 0xffffffb8
+    add x1, sp, #24
+    str x0, [x1]
+    movz x0, #4, #0
+    add x2, sp, #16
+    ldr w2, [x2]
+    sxtw x2, w2
+    ldr w3, [x1]
+    sxtw x3, w3
+    movz x4, #1000, #0
+    madd x2, x2, x4, xzr
+    add x4, sp, #16
+    add x4, x4, x0
+    ldr w4, [x4]
+    sxtw x4, w4
+    movz x5, #100, #0
+    madd x4, x4, x5, xzr
+    add x2, x2, x4
+    movz x4, #10, #0
+    madd x3, x3, x4, xzr
+    add x2, x2, x3
+    add x0, x1, x0
+    ldr w0, [x0]
+    sxtw x0, w0
+    add x0, x2, x0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #32
+    ret
+=========== OPT LEVEL: moderate ===========
+two_small:
+    sub sp, sp, #16
+    str w0, [x1]
+    movz x4, #4, #0
+    add x2, x1, x4
+    add x3, sp, #0
+    movz x1, #1, #0
+    add w1, w1, w0
+    str w1, [x2]
+    movz x1, #2, #0
+    add w1, w1, w0
+    str w1, [x3]
+    add x2, x3, x4
+    movz x1, #3, #0
+    add w0, w1, w0
+    str w0, [x2]
+    ldr x0, [x3]
+    add sp, sp, #16
+    ret
+main:
+    sub sp, sp, #32
+    stp x29, x30, [xzr, #7]
+    movz x0, #10, #0
+    add x1, sp, #16
+    bl 0xffffffb8
+    add x5, sp, #24
+    str x0, [x5]
+    movz x4, #4, #0
+    add x0, sp, #16
+    ldr w0, [x0]
+    sxtw x1, w0
+    ldr w0, [x5]
+    sxtw x3, w0
+    movz x0, #1000, #0
+    madd x2, x1, x0, xzr
+    add x0, sp, #16
+    add x0, x0, x4
+    ldr w0, [x0]
+    sxtw x1, w0
+    movz x0, #100, #0
+    madd x0, x1, x0, xzr
+    add x1, x2, x0
+    movz x0, #10, #0
+    madd x0, x3, x0, xzr
+    add x1, x1, x0
+    add x0, x5, x4
+    ldr w0, [x0]
+    sxtw x0, w0
+    add x0, x1, x0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #32
+    ret
 =========== OPT LEVEL: all ===========
 two_small:
     sub sp, sp, #16
@@ -50,4 +424,37 @@ main:
     add x0, x1, x0
     ldp x29, x30, [xzr, #7]
     add sp, sp, #32
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    sub sp, sp, #16
+    add x2, sp, #0
+    add x5, sp, #8
+    movz x4, #4, #0
+    movz x0, #10, #0
+    movk x0, #11, #2
+    str x0, [x2]
+    movz x0, #12, #0
+    movk x0, #13, #2
+    str x0, [x5]
+    ldr w0, [x5]
+    sxtw x3, w0
+    ldr w0, [x2]
+    sxtw x1, w0
+    add x0, x2, x4
+    ldr w0, [x0]
+    sxtw x2, w0
+    movz x0, #1000, #0
+    madd x1, x1, x0, xzr
+    movz x0, #100, #0
+    madd x0, x2, x0, xzr
+    add x1, x1, x0
+    movz x0, #10, #0
+    madd x0, x3, x0, xzr
+    add x1, x1, x0
+    add x0, x5, x4
+    ldr w0, [x0]
+    sxtw x0, w0
+    add x0, x1, x0
+    add sp, sp, #16
     ret

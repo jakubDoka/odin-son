@@ -1,3 +1,113 @@
+=========== OPT LEVEL: none-quick ===========
+Error{inst_idx = 32, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+main:
+    sub sp, sp, #16
+    stp x29, x30, [xzr, #7]
+    movz x0, #20, #0
+    bl opaque
+    movn x1, #4, #0
+    uxtb w0, w0
+    movz x2, #2, #0
+    madd x1, x1, x2, xzr
+    invalid
+    movz x2, #3, #0
+    madd x0, x0, x2, xzr
+    uxtb w0, w0
+    add x0, x1, x0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #16
+    ret
+opaque:
+    ret
+=========== OPT LEVEL: none ===========
+Error{inst_idx = 32, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+main:
+    sub sp, sp, #16
+    stp x29, x30, [xzr, #7]
+    movz x0, #20, #0
+    bl opaque
+    movn x1, #4, #0
+    uxtb w2, w0
+    movz x0, #2, #0
+    madd x0, x1, x0, xzr
+    invalid
+    movz x0, #3, #0
+    madd x0, x2, x0, xzr
+    uxtb w0, w0
+    add x0, x1, x0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #16
+    ret
+opaque:
+    ret
+=========== OPT LEVEL: mininal-quick ===========
+main:
+    sub sp, sp, #16
+    stp x29, x30, [xzr, #7]
+    movz x0, #20, #0
+    bl opaque
+    uxtb w0, w0
+    movz x1, #3, #0
+    madd x0, x0, x1, xzr
+    uxtb w0, w0
+    movn x1, #9, #0
+    add x0, x0, x1
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #16
+    ret
+opaque:
+    ret
+=========== OPT LEVEL: mininal ===========
+main:
+    sub sp, sp, #16
+    stp x29, x30, [xzr, #7]
+    movz x0, #20, #0
+    bl opaque
+    uxtb w1, w0
+    movz x0, #3, #0
+    madd x0, x1, x0, xzr
+    uxtb w1, w0
+    movn x0, #9, #0
+    add x0, x1, x0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #16
+    ret
+opaque:
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+main:
+    sub sp, sp, #16
+    stp x29, x30, [xzr, #7]
+    movz x0, #20, #0
+    bl opaque
+    uxtb w0, w0
+    movz x1, #3, #0
+    madd x0, x0, x1, xzr
+    uxtb w0, w0
+    movn x1, #9, #0
+    add x0, x0, x1
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #16
+    ret
+opaque:
+    ret
+=========== OPT LEVEL: moderate ===========
+main:
+    sub sp, sp, #16
+    stp x29, x30, [xzr, #7]
+    movz x0, #20, #0
+    bl opaque
+    uxtb w1, w0
+    movz x0, #3, #0
+    madd x0, x1, x0, xzr
+    uxtb w1, w0
+    movn x0, #9, #0
+    add x0, x1, x0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #16
+    ret
+opaque:
+    ret
 =========== OPT LEVEL: all ===========
 main:
     sub sp, sp, #16
@@ -14,4 +124,8 @@ main:
     add sp, sp, #16
     ret
 opaque:
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    movz x0, #50, #0
     ret

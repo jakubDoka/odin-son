@@ -1,4 +1,89 @@
+=========== OPT LEVEL: none-quick ===========
+Error{inst_idx = 64, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 84, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+main:
+    movz x0, #0, #0
+    movn x1, #99, #0
+    movn x2, #99, #0
+    movz x3, #7, #0
+    sxth w4, w1
+    movz x5, #7, #0
+    sxth w6, w1
+    sdiv w7, w2, w3
+    sxtw x7, w7
+    add x0, x0, x7
+    sdiv w7, w2, w3
+    msub w2, w7, w3, w2
+    sxtw x2, w2
+    add x0, x0, x2
+    sxth w2, w5
+    sdiv w2, w6, w2
+    invalid
+    add x0, x0, x2
+    sxth w2, w5
+    sdiv w2, w4, w2
+    msub w1, w2, w5, w1
+    invalid
+    add x0, x0, x1
+    ret
+=========== OPT LEVEL: none ===========
+Error{inst_idx = 64, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 84, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+main:
+    movz x1, #0, #0
+    movn x7, #99, #0
+    movn x6, #99, #0
+    movz x5, #7, #0
+    sxth w4, w7
+    movz x3, #7, #0
+    sxth w2, w7
+    sdiv w0, w6, w5
+    sxtw x0, w0
+    add x1, x1, x0
+    sdiv w0, w6, w5
+    msub w0, w0, w5, w6
+    sxtw x0, w0
+    add x1, x1, x0
+    sxth w0, w3
+    sdiv w0, w2, w0
+    invalid
+    add x1, x1, x0
+    sxth w0, w3
+    sdiv w0, w4, w0
+    msub w0, w0, w3, w7
+    invalid
+    add x0, x1, x0
+    ret
+=========== OPT LEVEL: mininal-quick ===========
+main:
+    movn x0, #1, #0
+    movn x1, #13, #0
+    movz x2, #0, #0
+    add x2, x2, x1
+    add x2, x2, x0
+    add x1, x2, x1
+    add x0, x1, x0
+    ret
+=========== OPT LEVEL: mininal ===========
+main:
+    movn x2, #1, #0
+    movn x1, #13, #0
+    movz x0, #0, #0
+    add x0, x0, x1
+    add x0, x0, x2
+    add x0, x0, x1
+    add x0, x0, x2
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+main:
+    movn x0, #31, #0
+    ret
+=========== OPT LEVEL: moderate ===========
+main:
+    movn x0, #31, #0
+    ret
 =========== OPT LEVEL: all ===========
 main:
     movn x0, #31, #0
     ret
+=========== OPT LEVEL: aggresive ===========

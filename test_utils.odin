@@ -174,7 +174,7 @@ run_test :: proc(
 	for level in levels[:0] {
 		append(&confs, Test_Conf{level = level, vm = .Wasm})
 	}
-	for level in levels[6:7] {
+	for level in levels[:] {
 		append(&confs, Test_Conf{level = level, vm = .Arm})
 	}
 
@@ -331,9 +331,7 @@ run_test :: proc(
 					jump := i32(target_off - source)
 
 					if level.vm == .Arm {
-						if rel.kind != .Global {
-							jump = jump / 4
-						}
+						jump = jump / (1 << rel.scale_pow)
 						rel.offset += 4
 					}
 

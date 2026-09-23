@@ -1,3 +1,159 @@
+=========== OPT LEVEL: none-quick ===========
+main:
+    sub sp, sp, #32
+    stp x29, x30, [xzr, #7]
+    movz x0, #10, #0
+    bl opaque
+    str x0, [xzr, #16]
+    movz x0, #30, #0
+    bl opaque
+    str x0, [xzr, #24]
+    movz x0, #3, #0
+    bl opaque
+    ldr x1, [xzr, #16]
+    mov w1, w1
+    ldr x2, [xzr, #24]
+    mov w2, w2
+    sub w1, w1, w2
+    mov w0, w0
+    sdiv w0, w1, w0
+    sxtw x0, w0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #32
+    ret
+opaque:
+    ret
+=========== OPT LEVEL: none ===========
+main:
+    sub sp, sp, #32
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    stp x29, x30, [xzr, #23]
+    movz x0, #10, #0
+    bl opaque
+    mov x20, x0
+    movz x0, #30, #0
+    bl opaque
+    mov x19, x0
+    movz x0, #3, #0
+    bl opaque
+    mov w2, w20
+    mov w1, w19
+    sub w1, w2, w1
+    mov w0, w0
+    sdiv w0, w1, w0
+    sxtw x0, w0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldp x29, x30, [xzr, #23]
+    add sp, sp, #32
+    ret
+opaque:
+    ret
+=========== OPT LEVEL: mininal-quick ===========
+main:
+    sub sp, sp, #32
+    stp x29, x30, [xzr, #7]
+    movz x0, #10, #0
+    bl opaque
+    str x0, [xzr, #16]
+    movz x0, #30, #0
+    bl opaque
+    str x0, [xzr, #24]
+    movz x0, #3, #0
+    bl opaque
+    ldr x1, [xzr, #16]
+    mov w1, w1
+    ldr x2, [xzr, #24]
+    mov w2, w2
+    sub w1, w1, w2
+    mov w0, w0
+    sdiv w0, w1, w0
+    sxtw x0, w0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #32
+    ret
+opaque:
+    ret
+=========== OPT LEVEL: mininal ===========
+main:
+    sub sp, sp, #32
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    stp x29, x30, [xzr, #23]
+    movz x0, #10, #0
+    bl opaque
+    mov x20, x0
+    movz x0, #30, #0
+    bl opaque
+    mov x19, x0
+    movz x0, #3, #0
+    bl opaque
+    mov w2, w20
+    mov w1, w19
+    sub w1, w2, w1
+    mov w0, w0
+    sdiv w0, w1, w0
+    sxtw x0, w0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldp x29, x30, [xzr, #23]
+    add sp, sp, #32
+    ret
+opaque:
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+main:
+    sub sp, sp, #32
+    stp x29, x30, [xzr, #7]
+    movz x0, #10, #0
+    bl opaque
+    str x0, [xzr, #16]
+    movz x0, #30, #0
+    bl opaque
+    str x0, [xzr, #24]
+    movz x0, #3, #0
+    bl opaque
+    ldr x1, [xzr, #16]
+    mov w1, w1
+    ldr x2, [xzr, #24]
+    mov w2, w2
+    sub w1, w1, w2
+    mov w0, w0
+    sdiv w0, w1, w0
+    sxtw x0, w0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #32
+    ret
+opaque:
+    ret
+=========== OPT LEVEL: moderate ===========
+main:
+    sub sp, sp, #32
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    stp x29, x30, [xzr, #23]
+    movz x0, #10, #0
+    bl opaque
+    mov x20, x0
+    movz x0, #30, #0
+    bl opaque
+    mov x19, x0
+    movz x0, #3, #0
+    bl opaque
+    mov w2, w20
+    mov w1, w19
+    sub w1, w2, w1
+    mov w0, w0
+    sdiv w0, w1, w0
+    sxtw x0, w0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldp x29, x30, [xzr, #23]
+    add sp, sp, #32
+    ret
+opaque:
+    ret
 =========== OPT LEVEL: all ===========
 main:
     sub sp, sp, #32
@@ -24,4 +180,8 @@ main:
     add sp, sp, #32
     ret
 opaque:
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    movn x0, #5, #0
     ret

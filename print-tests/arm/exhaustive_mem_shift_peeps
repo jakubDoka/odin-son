@@ -1,8 +1,284 @@
-=========== OPT LEVEL: all ===========
-Error{inst_idx = 32, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 32, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+=========== OPT LEVEL: none-quick ===========
+Error{inst_idx = 72, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 72, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 80, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 80, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+main:
+    sub sp, sp, #112
+    stp x29, x30, [xzr, #7]
+    movn x0, #32, #0
+    add x1, sp, #72
+    strb w0, [x1]
+    movz x0, #201, #0
+    add x1, sp, #73
+    strb w0, [x1]
+    movn x0, #1233, #0
+    add x1, sp, #74
+    strh w0, [x1]
+    movz x0, #54321, #0
+    add x1, sp, #76
+    strh w0, [x1]
+    movn x0, #57919, #0
+    movk x0, #65534, #1
+    add x1, sp, #78
+    str w0, [x1]
+    movz x0, #57920, #0
+    movk x0, #1, #1
+    add x1, sp, #82
+    str w0, [x1]
+    movn x0, #52500, #0
+    movk x0, #63652, #1
+    add x1, sp, #86
+    str x0, [x1]
+    movz x0, #52501, #0
+    movk x0, #1883, #1
+    add x1, sp, #94
+    str x0, [x1]
+    add x0, sp, #72
+    add x1, sp, #73
+    movz x2, #3, #0
+    bl test_mem_shifts i8 u8
+    str x0, [xzr, #16]
+    add x1, sp, #76
+    movz x2, #3, #0
+    add x0, sp, #74
+    bl test_mem_shifts i16 u16
+    str x0, [xzr, #24]
+    add x0, sp, #78
+    movz x2, #3, #0
+    add x1, sp, #82
+    bl test_mem_shifts i32 u32
+    str x0, [xzr, #32]
+    add x0, sp, #86
+    add x1, sp, #94
+    movz x2, #3, #0
+    bl test_mem_shifts i64 u64
+    str x0, [xzr, #40]
+    add x0, sp, #72
+    add x1, sp, #73
+    bl test_mem_imm_shifts i8 u8
+    str x0, [xzr, #48]
+    add x1, sp, #76
+    add x0, sp, #74
+    bl test_mem_imm_shifts i16 u16
+    str x0, [xzr, #56]
+    add x0, sp, #78
+    add x1, sp, #82
+    bl test_mem_imm_shifts i32 u32
+    str x0, [xzr, #64]
+    add x0, sp, #86
+    add x1, sp, #94
+    bl test_mem_imm_shifts i64 u64
+    ldr x1, [xzr, #16]
+    ldr x2, [xzr, #24]
+    add x1, x1, x2
+    ldr x2, [xzr, #32]
+    add x1, x1, x2
+    ldr x2, [xzr, #40]
+    add x1, x1, x2
+    ldr x2, [xzr, #48]
+    add x1, x1, x2
+    ldr x2, [xzr, #56]
+    add x1, x1, x2
+    ldr x2, [xzr, #64]
+    add x1, x1, x2
+    add x0, x1, x0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #112
+    ret
+test_mem_shifts i8 u8:
+    ldrb w3, [x0]
+    uxtb w3, w3
+    lslv w3, w3, w2
+    strb w3, [x0]
+    ldrb w3, [x0]
+    sxtb w3, w3
+    asrv w3, w3, w2
+    strb w3, [x0]
+    ldrb w3, [x1]
+    ldrb w0, [x0]
+    uxtb w3, w3
+    lsrv w3, w3, w2
+    strb w3, [x1]
+    ldrb w3, [x1]
+    uxtb w3, w3
+    lslv w2, w3, w2
+    strb w2, [x1]
+    movz x2, #0, #0
+    invalid
+    add x0, x2, x0
+    ldrb w1, [x1]
+    uxtb w1, w1
+    add x0, x0, x1
+    ret
+test_mem_shifts i16 u16:
+    ldrh w3, [x0]
+    uxth w3, w3
+    lslv w3, w3, w2
+    strh w3, [x0]
+    ldrh w3, [x0]
+    sxth w3, w3
+    asrv w3, w3, w2
+    strh w3, [x0]
+    ldrh w3, [x1]
+    ldrh w0, [x0]
+    uxth w3, w3
+    lsrv w3, w3, w2
+    strh w3, [x1]
+    ldrh w3, [x1]
+    uxth w3, w3
+    lslv w2, w3, w2
+    strh w2, [x1]
+    movz x2, #0, #0
+    invalid
+    add x0, x2, x0
+    ldrh w1, [x1]
+    uxth w1, w1
+    add x0, x0, x1
+    ret
+test_mem_shifts i32 u32:
+    ldr w3, [x0]
+    lslv w3, w3, w2
+    str w3, [x0]
+    ldr w3, [x0]
+    asrv w3, w3, w2
+    str w3, [x0]
+    ldr w3, [x1]
+    ldr w0, [x0]
+    lsrv w3, w3, w2
+    str w3, [x1]
+    ldr w3, [x1]
+    lslv w2, w3, w2
+    str w2, [x1]
+    movz x2, #0, #0
+    sxtw x0, w0
+    add x0, x2, x0
+    ldr w1, [x1]
+    mov w1, w1
+    add x0, x0, x1
+    ret
+test_mem_shifts i64 u64:
+    ldr x3, [x0]
+    lslv x3, x3, x2
+    str x3, [x0]
+    ldr x3, [x0]
+    asrv x3, x3, x2
+    str x3, [x0]
+    ldr x3, [x1]
+    ldr x0, [x0]
+    lsrv x3, x3, x2
+    str x3, [x1]
+    ldr x3, [x1]
+    lslv x2, x3, x2
+    str x2, [x1]
+    movz x2, #0, #0
+    add x0, x2, x0
+    ldr x1, [x1]
+    add x0, x0, x1
+    ret
+test_mem_imm_shifts i8 u8:
+    ldrb w2, [x0]
+    movz x3, #3, #0
+    uxtb w2, w2
+    lslv w2, w2, w3
+    strb w2, [x0]
+    ldrb w2, [x0]
+    sxtb w2, w2
+    asrv w2, w2, w3
+    strb w2, [x0]
+    ldrb w2, [x1]
+    movz x3, #2, #0
+    ldrb w0, [x0]
+    uxtb w2, w2
+    lsrv w2, w2, w3
+    strb w2, [x1]
+    ldrb w2, [x1]
+    uxtb w2, w2
+    lslv w2, w2, w3
+    strb w2, [x1]
+    movz x2, #0, #0
+    invalid
+    add x0, x2, x0
+    ldrb w1, [x1]
+    uxtb w1, w1
+    add x0, x0, x1
+    ret
+test_mem_imm_shifts i16 u16:
+    ldrh w2, [x0]
+    movz x3, #3, #0
+    uxth w2, w2
+    lslv w2, w2, w3
+    strh w2, [x0]
+    ldrh w2, [x0]
+    sxth w2, w2
+    asrv w2, w2, w3
+    strh w2, [x0]
+    ldrh w2, [x1]
+    movz x3, #2, #0
+    ldrh w0, [x0]
+    uxth w2, w2
+    lsrv w2, w2, w3
+    strh w2, [x1]
+    ldrh w2, [x1]
+    uxth w2, w2
+    lslv w2, w2, w3
+    strh w2, [x1]
+    movz x2, #0, #0
+    invalid
+    add x0, x2, x0
+    ldrh w1, [x1]
+    uxth w1, w1
+    add x0, x0, x1
+    ret
+test_mem_imm_shifts i32 u32:
+    ldr w2, [x0]
+    movz x3, #3, #0
+    lslv w2, w2, w3
+    str w2, [x0]
+    ldr w2, [x0]
+    asrv w2, w2, w3
+    str w2, [x0]
+    ldr w2, [x1]
+    movz x3, #2, #0
+    ldr w0, [x0]
+    lsrv w2, w2, w3
+    str w2, [x1]
+    ldr w2, [x1]
+    lslv w2, w2, w3
+    str w2, [x1]
+    movz x2, #0, #0
+    sxtw x0, w0
+    add x0, x2, x0
+    ldr w1, [x1]
+    mov w1, w1
+    add x0, x0, x1
+    ret
+test_mem_imm_shifts i64 u64:
+    ldr x2, [x0]
+    movz x3, #3, #0
+    lslv x2, x2, x3
+    str x2, [x0]
+    ldr x2, [x0]
+    asrv x2, x2, x3
+    str x2, [x0]
+    ldr x2, [x1]
+    movz x3, #2, #0
+    ldr x0, [x0]
+    lsrv x2, x2, x3
+    str x2, [x1]
+    ldr x2, [x1]
+    movz x4, #0, #0
+    add x0, x4, x0
+    lslv x2, x2, x3
+    str x2, [x1]
+    ldr x1, [x1]
+    add x0, x0, x1
+    ret
+=========== OPT LEVEL: none ===========
+Error{inst_idx = 72, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 72, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 80, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 80, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 main:
     sub sp, sp, #112
     str x19, [xzr]
@@ -95,29 +371,864 @@ main:
     ret
 test_mem_shifts i8 u8:
     ldrb w3, [x0]
+    uxtb w3, w3
     lslv w3, w3, w2
+    strb w3, [x0]
+    ldrb w3, [x0]
+    sxtb w3, w3
     asrv w3, w3, w2
     strb w3, [x0]
-    ldrb w0, [x1]
+    ldrb w4, [x1]
+    ldrb w3, [x0]
+    uxtb w0, w4
     lsrv w0, w0, w2
+    strb w0, [x1]
+    ldrb w0, [x1]
+    uxtb w0, w0
     lslv w0, w0, w2
     strb w0, [x1]
+    movz x2, #0, #0
     invalid
+    add x2, x2, x0
+    ldrb w0, [x1]
     uxtb w0, w0
-    add x0, x1, x0
+    add x0, x2, x0
     ret
 test_mem_shifts i16 u16:
     ldrh w3, [x0]
+    uxth w3, w3
     lslv w3, w3, w2
+    strh w3, [x0]
+    ldrh w3, [x0]
+    sxth w3, w3
+    asrv w3, w3, w2
+    strh w3, [x0]
+    ldrh w4, [x1]
+    ldrh w3, [x0]
+    uxth w0, w4
+    lsrv w0, w0, w2
+    strh w0, [x1]
+    ldrh w0, [x1]
+    uxth w0, w0
+    lslv w0, w0, w2
+    strh w0, [x1]
+    movz x2, #0, #0
+    invalid
+    add x2, x2, x0
+    ldrh w0, [x1]
+    uxth w0, w0
+    add x0, x2, x0
+    ret
+test_mem_shifts i32 u32:
+    ldr w3, [x0]
+    lslv w3, w3, w2
+    str w3, [x0]
+    ldr w3, [x0]
+    asrv w3, w3, w2
+    str w3, [x0]
+    ldr w4, [x1]
+    ldr w3, [x0]
+    lsrv w0, w4, w2
+    str w0, [x1]
+    ldr w0, [x1]
+    lslv w0, w0, w2
+    str w0, [x1]
+    movz x2, #0, #0
+    sxtw x0, w3
+    add x2, x2, x0
+    ldr w0, [x1]
+    mov w0, w0
+    add x0, x2, x0
+    ret
+test_mem_shifts i64 u64:
+    ldr x3, [x0]
+    lslv x3, x3, x2
+    str x3, [x0]
+    ldr x3, [x0]
+    asrv x3, x3, x2
+    str x3, [x0]
+    ldr x4, [x1]
+    ldr x3, [x0]
+    lsrv x0, x4, x2
+    str x0, [x1]
+    ldr x0, [x1]
+    lslv x0, x0, x2
+    str x0, [x1]
+    movz x0, #0, #0
+    add x2, x0, x3
+    ldr x0, [x1]
+    add x0, x2, x0
+    ret
+test_mem_imm_shifts i8 u8:
+    ldrb w2, [x0]
+    movz x3, #3, #0
+    uxtb w2, w2
+    lslv w2, w2, w3
+    strb w2, [x0]
+    ldrb w2, [x0]
+    sxtb w2, w2
+    asrv w2, w2, w3
+    strb w2, [x0]
+    ldrb w4, [x1]
+    movz x2, #2, #0
+    ldrb w3, [x0]
+    uxtb w0, w4
+    lsrv w0, w0, w2
+    strb w0, [x1]
+    ldrb w0, [x1]
+    uxtb w0, w0
+    lslv w0, w0, w2
+    strb w0, [x1]
+    movz x2, #0, #0
+    invalid
+    add x2, x2, x0
+    ldrb w0, [x1]
+    uxtb w0, w0
+    add x0, x2, x0
+    ret
+test_mem_imm_shifts i16 u16:
+    ldrh w2, [x0]
+    movz x3, #3, #0
+    uxth w2, w2
+    lslv w2, w2, w3
+    strh w2, [x0]
+    ldrh w2, [x0]
+    sxth w2, w2
+    asrv w2, w2, w3
+    strh w2, [x0]
+    ldrh w4, [x1]
+    movz x2, #2, #0
+    ldrh w3, [x0]
+    uxth w0, w4
+    lsrv w0, w0, w2
+    strh w0, [x1]
+    ldrh w0, [x1]
+    uxth w0, w0
+    lslv w0, w0, w2
+    strh w0, [x1]
+    movz x2, #0, #0
+    invalid
+    add x2, x2, x0
+    ldrh w0, [x1]
+    uxth w0, w0
+    add x0, x2, x0
+    ret
+test_mem_imm_shifts i32 u32:
+    ldr w2, [x0]
+    movz x3, #3, #0
+    lslv w2, w2, w3
+    str w2, [x0]
+    ldr w2, [x0]
+    asrv w2, w2, w3
+    str w2, [x0]
+    ldr w4, [x1]
+    movz x2, #2, #0
+    ldr w3, [x0]
+    lsrv w0, w4, w2
+    str w0, [x1]
+    ldr w0, [x1]
+    lslv w0, w0, w2
+    str w0, [x1]
+    movz x2, #0, #0
+    sxtw x0, w3
+    add x2, x2, x0
+    ldr w0, [x1]
+    mov w0, w0
+    add x0, x2, x0
+    ret
+test_mem_imm_shifts i64 u64:
+    ldr x2, [x0]
+    movz x3, #3, #0
+    lslv x2, x2, x3
+    str x2, [x0]
+    ldr x2, [x0]
+    asrv x2, x2, x3
+    str x2, [x0]
+    ldr x3, [x1]
+    movz x4, #2, #0
+    ldr x2, [x0]
+    lsrv x0, x3, x4
+    str x0, [x1]
+    ldr x3, [x1]
+    movz x0, #0, #0
+    add x2, x0, x2
+    lslv x0, x3, x4
+    str x0, [x1]
+    ldr x0, [x1]
+    add x0, x2, x0
+    ret
+=========== OPT LEVEL: mininal-quick ===========
+Error{inst_idx = 72, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 72, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 80, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 80, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+main:
+    sub sp, sp, #112
+    stp x29, x30, [xzr, #7]
+    movn x0, #32, #0
+    add x1, sp, #72
+    strb w0, [x1]
+    movz x0, #201, #0
+    add x1, sp, #73
+    strb w0, [x1]
+    movn x0, #1233, #0
+    add x1, sp, #74
+    strh w0, [x1]
+    movz x0, #54321, #0
+    add x1, sp, #76
+    strh w0, [x1]
+    movn x0, #57919, #0
+    movk x0, #65534, #1
+    add x1, sp, #78
+    str w0, [x1]
+    movz x0, #57920, #0
+    movk x0, #1, #1
+    add x1, sp, #82
+    str w0, [x1]
+    movn x0, #52500, #0
+    movk x0, #63652, #1
+    add x1, sp, #86
+    str x0, [x1]
+    movz x0, #52501, #0
+    movk x0, #1883, #1
+    add x1, sp, #94
+    str x0, [x1]
+    add x0, sp, #72
+    add x1, sp, #73
+    movz x2, #3, #0
+    bl test_mem_shifts i8 u8
+    str x0, [xzr, #16]
+    add x1, sp, #76
+    movz x2, #3, #0
+    add x0, sp, #74
+    bl test_mem_shifts i16 u16
+    str x0, [xzr, #24]
+    add x0, sp, #78
+    movz x2, #3, #0
+    add x1, sp, #82
+    bl test_mem_shifts i32 u32
+    str x0, [xzr, #32]
+    add x0, sp, #86
+    add x1, sp, #94
+    movz x2, #3, #0
+    bl test_mem_shifts i64 u64
+    str x0, [xzr, #40]
+    add x0, sp, #72
+    add x1, sp, #73
+    bl test_mem_imm_shifts i8 u8
+    str x0, [xzr, #48]
+    add x1, sp, #76
+    add x0, sp, #74
+    bl test_mem_imm_shifts i16 u16
+    str x0, [xzr, #56]
+    add x0, sp, #78
+    add x1, sp, #82
+    bl test_mem_imm_shifts i32 u32
+    str x0, [xzr, #64]
+    add x0, sp, #86
+    add x1, sp, #94
+    bl test_mem_imm_shifts i64 u64
+    ldr x1, [xzr, #16]
+    ldr x2, [xzr, #24]
+    add x1, x1, x2
+    ldr x2, [xzr, #32]
+    add x1, x1, x2
+    ldr x2, [xzr, #40]
+    add x1, x1, x2
+    ldr x2, [xzr, #48]
+    add x1, x1, x2
+    ldr x2, [xzr, #56]
+    add x1, x1, x2
+    ldr x2, [xzr, #64]
+    add x1, x1, x2
+    add x0, x1, x0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #112
+    ret
+test_mem_shifts i8 u8:
+    ldrb w3, [x0]
+    uxtb w3, w3
+    lslv w3, w3, w2
+    strb w3, [x0]
+    ldrb w3, [x0]
+    sxtb w3, w3
+    asrv w3, w3, w2
+    strb w3, [x0]
+    ldrb w3, [x1]
+    ldrb w0, [x0]
+    uxtb w3, w3
+    lsrv w3, w3, w2
+    strb w3, [x1]
+    ldrb w3, [x1]
+    uxtb w3, w3
+    lslv w2, w3, w2
+    strb w2, [x1]
+    movz x2, #0, #0
+    invalid
+    add x0, x2, x0
+    ldrb w1, [x1]
+    uxtb w1, w1
+    add x0, x0, x1
+    ret
+test_mem_shifts i16 u16:
+    ldrh w3, [x0]
+    uxth w3, w3
+    lslv w3, w3, w2
+    strh w3, [x0]
+    ldrh w3, [x0]
+    sxth w3, w3
+    asrv w3, w3, w2
+    strh w3, [x0]
+    ldrh w3, [x1]
+    ldrh w0, [x0]
+    uxth w3, w3
+    lsrv w3, w3, w2
+    strh w3, [x1]
+    ldrh w3, [x1]
+    uxth w3, w3
+    lslv w2, w3, w2
+    strh w2, [x1]
+    movz x2, #0, #0
+    invalid
+    add x0, x2, x0
+    ldrh w1, [x1]
+    uxth w1, w1
+    add x0, x0, x1
+    ret
+test_mem_shifts i32 u32:
+    ldr w3, [x0]
+    lslv w3, w3, w2
+    str w3, [x0]
+    ldr w3, [x0]
+    asrv w3, w3, w2
+    str w3, [x0]
+    ldr w3, [x1]
+    ldr w0, [x0]
+    lsrv w3, w3, w2
+    str w3, [x1]
+    ldr w3, [x1]
+    lslv w2, w3, w2
+    str w2, [x1]
+    movz x2, #0, #0
+    sxtw x0, w0
+    add x0, x2, x0
+    ldr w1, [x1]
+    mov w1, w1
+    add x0, x0, x1
+    ret
+test_mem_shifts i64 u64:
+    ldr x3, [x0]
+    lslv x3, x3, x2
+    str x3, [x0]
+    ldr x3, [x0]
+    asrv x3, x3, x2
+    str x3, [x0]
+    ldr x0, [x1]
+    lsrv x0, x0, x2
+    str x0, [x1]
+    ldr x0, [x1]
+    lslv x0, x0, x2
+    str x0, [x1]
+    movz x1, #0, #0
+    add x1, x1, x3
+    add x0, x1, x0
+    ret
+test_mem_imm_shifts i8 u8:
+    ldrb w2, [x0]
+    movz x3, #3, #0
+    uxtb w2, w2
+    lslv w2, w2, w3
+    strb w2, [x0]
+    ldrb w2, [x0]
+    sxtb w2, w2
+    asrv w2, w2, w3
+    strb w2, [x0]
+    ldrb w2, [x1]
+    movz x3, #2, #0
+    ldrb w0, [x0]
+    uxtb w2, w2
+    lsrv w2, w2, w3
+    strb w2, [x1]
+    ldrb w2, [x1]
+    uxtb w2, w2
+    lslv w2, w2, w3
+    strb w2, [x1]
+    movz x2, #0, #0
+    invalid
+    add x0, x2, x0
+    ldrb w1, [x1]
+    uxtb w1, w1
+    add x0, x0, x1
+    ret
+test_mem_imm_shifts i16 u16:
+    ldrh w2, [x0]
+    movz x3, #3, #0
+    uxth w2, w2
+    lslv w2, w2, w3
+    strh w2, [x0]
+    ldrh w2, [x0]
+    sxth w2, w2
+    asrv w2, w2, w3
+    strh w2, [x0]
+    ldrh w2, [x1]
+    movz x3, #2, #0
+    ldrh w0, [x0]
+    uxth w2, w2
+    lsrv w2, w2, w3
+    strh w2, [x1]
+    ldrh w2, [x1]
+    uxth w2, w2
+    lslv w2, w2, w3
+    strh w2, [x1]
+    movz x2, #0, #0
+    invalid
+    add x0, x2, x0
+    ldrh w1, [x1]
+    uxth w1, w1
+    add x0, x0, x1
+    ret
+test_mem_imm_shifts i32 u32:
+    ldr w2, [x0]
+    movz x3, #3, #0
+    lslv w2, w2, w3
+    str w2, [x0]
+    ldr w2, [x0]
+    asrv w2, w2, w3
+    str w2, [x0]
+    ldr w2, [x1]
+    movz x3, #2, #0
+    ldr w0, [x0]
+    lsrv w2, w2, w3
+    str w2, [x1]
+    ldr w2, [x1]
+    lslv w2, w2, w3
+    str w2, [x1]
+    movz x2, #0, #0
+    sxtw x0, w0
+    add x0, x2, x0
+    ldr w1, [x1]
+    mov w1, w1
+    add x0, x0, x1
+    ret
+test_mem_imm_shifts i64 u64:
+    ldr x2, [x0]
+    movz x3, #3, #0
+    lslv x2, x2, x3
+    str x2, [x0]
+    ldr x2, [x0]
+    asrv x2, x2, x3
+    str x2, [x0]
+    ldr x0, [x1]
+    movz x3, #2, #0
+    lsrv x0, x0, x3
+    str x0, [x1]
+    ldr x0, [x1]
+    lslv x0, x0, x3
+    str x0, [x1]
+    movz x1, #0, #0
+    add x1, x1, x2
+    add x0, x1, x0
+    ret
+=========== OPT LEVEL: mininal ===========
+Error{inst_idx = 72, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 72, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 80, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 80, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+main:
+    sub sp, sp, #112
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    str x24, [xzr, #40]
+    str x25, [xzr, #48]
+    stp x29, x30, [xzr, #63]
+    movn x1, #32, #0
+    add x0, sp, #72
+    strb w1, [x0]
+    movz x1, #201, #0
+    add x0, sp, #73
+    strb w1, [x0]
+    movn x1, #1233, #0
+    add x0, sp, #74
+    strh w1, [x0]
+    movz x1, #54321, #0
+    add x0, sp, #76
+    strh w1, [x0]
+    movn x1, #57919, #0
+    movk x1, #65534, #1
+    add x0, sp, #78
+    str w1, [x0]
+    movz x1, #57920, #0
+    movk x1, #1, #1
+    add x0, sp, #82
+    str w1, [x0]
+    movn x1, #52500, #0
+    movk x1, #63652, #1
+    add x0, sp, #86
+    str x1, [x0]
+    movz x1, #52501, #0
+    movk x1, #1883, #1
+    add x0, sp, #94
+    str x1, [x0]
+    add x0, sp, #72
+    add x1, sp, #73
+    movz x2, #3, #0
+    bl test_mem_shifts i8 u8
+    mov x21, x0
+    add x1, sp, #76
+    movz x2, #3, #0
+    add x0, sp, #74
+    bl test_mem_shifts i16 u16
+    mov x20, x0
+    add x0, sp, #78
+    movz x2, #3, #0
+    add x1, sp, #82
+    bl test_mem_shifts i32 u32
+    mov x19, x0
+    add x0, sp, #86
+    add x1, sp, #94
+    movz x2, #3, #0
+    bl test_mem_shifts i64 u64
+    mov x25, x0
+    add x0, sp, #72
+    add x1, sp, #73
+    bl test_mem_imm_shifts i8 u8
+    mov x24, x0
+    add x1, sp, #76
+    add x0, sp, #74
+    bl test_mem_imm_shifts i16 u16
+    mov x23, x0
+    add x0, sp, #78
+    add x1, sp, #82
+    bl test_mem_imm_shifts i32 u32
+    mov x22, x0
+    add x0, sp, #86
+    add x1, sp, #94
+    bl test_mem_imm_shifts i64 u64
+    add x1, x21, x20
+    add x2, x1, x19
+    add x2, x2, x25
+    add x2, x2, x24
+    add x2, x2, x23
+    add x1, x2, x22
+    add x0, x1, x0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldr x24, [xzr, #40]
+    ldr x25, [xzr, #48]
+    ldp x29, x30, [xzr, #63]
+    add sp, sp, #112
+    ret
+test_mem_shifts i8 u8:
+    ldrb w3, [x0]
+    uxtb w3, w3
+    lslv w3, w3, w2
+    strb w3, [x0]
+    ldrb w3, [x0]
+    sxtb w3, w3
+    asrv w3, w3, w2
+    strb w3, [x0]
+    ldrb w4, [x1]
+    ldrb w3, [x0]
+    uxtb w0, w4
+    lsrv w0, w0, w2
+    strb w0, [x1]
+    ldrb w0, [x1]
+    uxtb w0, w0
+    lslv w0, w0, w2
+    strb w0, [x1]
+    movz x2, #0, #0
+    invalid
+    add x2, x2, x0
+    ldrb w0, [x1]
+    uxtb w0, w0
+    add x0, x2, x0
+    ret
+test_mem_shifts i16 u16:
+    ldrh w3, [x0]
+    uxth w3, w3
+    lslv w3, w3, w2
+    strh w3, [x0]
+    ldrh w3, [x0]
+    sxth w3, w3
+    asrv w3, w3, w2
+    strh w3, [x0]
+    ldrh w4, [x1]
+    ldrh w3, [x0]
+    uxth w0, w4
+    lsrv w0, w0, w2
+    strh w0, [x1]
+    ldrh w0, [x1]
+    uxth w0, w0
+    lslv w0, w0, w2
+    strh w0, [x1]
+    movz x2, #0, #0
+    invalid
+    add x2, x2, x0
+    ldrh w0, [x1]
+    uxth w0, w0
+    add x0, x2, x0
+    ret
+test_mem_shifts i32 u32:
+    ldr w3, [x0]
+    lslv w3, w3, w2
+    str w3, [x0]
+    ldr w3, [x0]
+    asrv w3, w3, w2
+    str w3, [x0]
+    ldr w4, [x1]
+    ldr w3, [x0]
+    lsrv w0, w4, w2
+    str w0, [x1]
+    ldr w0, [x1]
+    lslv w0, w0, w2
+    str w0, [x1]
+    movz x2, #0, #0
+    sxtw x0, w3
+    add x2, x2, x0
+    ldr w0, [x1]
+    mov w0, w0
+    add x0, x2, x0
+    ret
+test_mem_shifts i64 u64:
+    ldr x3, [x0]
+    lslv x3, x3, x2
+    str x3, [x0]
+    ldr x3, [x0]
+    asrv x3, x3, x2
+    str x3, [x0]
+    ldr x0, [x1]
+    lsrv x0, x0, x2
+    str x0, [x1]
+    ldr x0, [x1]
+    lslv x2, x0, x2
+    str x2, [x1]
+    movz x0, #0, #0
+    add x0, x0, x3
+    add x0, x0, x2
+    ret
+test_mem_imm_shifts i8 u8:
+    ldrb w2, [x0]
+    movz x3, #3, #0
+    uxtb w2, w2
+    lslv w2, w2, w3
+    strb w2, [x0]
+    ldrb w2, [x0]
+    sxtb w2, w2
+    asrv w2, w2, w3
+    strb w2, [x0]
+    ldrb w4, [x1]
+    movz x2, #2, #0
+    ldrb w3, [x0]
+    uxtb w0, w4
+    lsrv w0, w0, w2
+    strb w0, [x1]
+    ldrb w0, [x1]
+    uxtb w0, w0
+    lslv w0, w0, w2
+    strb w0, [x1]
+    movz x2, #0, #0
+    invalid
+    add x2, x2, x0
+    ldrb w0, [x1]
+    uxtb w0, w0
+    add x0, x2, x0
+    ret
+test_mem_imm_shifts i16 u16:
+    ldrh w2, [x0]
+    movz x3, #3, #0
+    uxth w2, w2
+    lslv w2, w2, w3
+    strh w2, [x0]
+    ldrh w2, [x0]
+    sxth w2, w2
+    asrv w2, w2, w3
+    strh w2, [x0]
+    ldrh w4, [x1]
+    movz x2, #2, #0
+    ldrh w3, [x0]
+    uxth w0, w4
+    lsrv w0, w0, w2
+    strh w0, [x1]
+    ldrh w0, [x1]
+    uxth w0, w0
+    lslv w0, w0, w2
+    strh w0, [x1]
+    movz x2, #0, #0
+    invalid
+    add x2, x2, x0
+    ldrh w0, [x1]
+    uxth w0, w0
+    add x0, x2, x0
+    ret
+test_mem_imm_shifts i32 u32:
+    ldr w2, [x0]
+    movz x3, #3, #0
+    lslv w2, w2, w3
+    str w2, [x0]
+    ldr w2, [x0]
+    asrv w2, w2, w3
+    str w2, [x0]
+    ldr w4, [x1]
+    movz x2, #2, #0
+    ldr w3, [x0]
+    lsrv w0, w4, w2
+    str w0, [x1]
+    ldr w0, [x1]
+    lslv w0, w0, w2
+    str w0, [x1]
+    movz x2, #0, #0
+    sxtw x0, w3
+    add x2, x2, x0
+    ldr w0, [x1]
+    mov w0, w0
+    add x0, x2, x0
+    ret
+test_mem_imm_shifts i64 u64:
+    ldr x2, [x0]
+    movz x3, #3, #0
+    lslv x2, x2, x3
+    str x2, [x0]
+    ldr x2, [x0]
+    asrv x3, x2, x3
+    str x3, [x0]
+    ldr x0, [x1]
+    movz x2, #2, #0
+    lsrv x0, x0, x2
+    str x0, [x1]
+    ldr x0, [x1]
+    lslv x2, x0, x2
+    str x2, [x1]
+    movz x0, #0, #0
+    add x0, x0, x3
+    add x0, x0, x2
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 32, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 32, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+main:
+    sub sp, sp, #112
+    stp x29, x30, [xzr, #7]
+    movn x0, #32, #0
+    add x1, sp, #72
+    strb w0, [x1]
+    movz x0, #201, #0
+    add x1, sp, #73
+    strb w0, [x1]
+    movn x0, #1233, #0
+    add x1, sp, #74
+    strh w0, [x1]
+    movz x0, #54321, #0
+    add x1, sp, #76
+    strh w0, [x1]
+    movn x0, #57919, #0
+    movk x0, #65534, #1
+    add x1, sp, #78
+    str w0, [x1]
+    movz x0, #57920, #0
+    movk x0, #1, #1
+    add x1, sp, #82
+    str w0, [x1]
+    movn x0, #52500, #0
+    movk x0, #63652, #1
+    add x1, sp, #86
+    str x0, [x1]
+    movz x0, #52501, #0
+    movk x0, #1883, #1
+    add x1, sp, #94
+    str x0, [x1]
+    add x0, sp, #72
+    add x1, sp, #73
+    movz x2, #3, #0
+    bl test_mem_shifts i8 u8
+    str x0, [xzr, #16]
+    add x1, sp, #76
+    movz x2, #3, #0
+    add x0, sp, #74
+    bl test_mem_shifts i16 u16
+    str x0, [xzr, #24]
+    add x0, sp, #78
+    movz x2, #3, #0
+    add x1, sp, #82
+    bl test_mem_shifts i32 u32
+    str x0, [xzr, #32]
+    add x0, sp, #86
+    add x1, sp, #94
+    movz x2, #3, #0
+    bl test_mem_shifts i64 u64
+    str x0, [xzr, #40]
+    add x0, sp, #72
+    add x1, sp, #73
+    bl test_mem_imm_shifts i8 u8
+    str x0, [xzr, #48]
+    add x1, sp, #76
+    add x0, sp, #74
+    bl test_mem_imm_shifts i16 u16
+    str x0, [xzr, #56]
+    add x0, sp, #78
+    add x1, sp, #82
+    bl test_mem_imm_shifts i32 u32
+    str x0, [xzr, #64]
+    add x0, sp, #86
+    add x1, sp, #94
+    bl test_mem_imm_shifts i64 u64
+    ldr x1, [xzr, #16]
+    ldr x2, [xzr, #24]
+    add x1, x1, x2
+    ldr x2, [xzr, #32]
+    add x1, x1, x2
+    ldr x2, [xzr, #40]
+    add x1, x1, x2
+    ldr x2, [xzr, #48]
+    add x1, x1, x2
+    ldr x2, [xzr, #56]
+    add x1, x1, x2
+    ldr x2, [xzr, #64]
+    add x1, x1, x2
+    add x0, x1, x0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #112
+    ret
+test_mem_shifts i8 u8:
+    ldrb w3, [x0]
+    uxtb w3, w3
+    lslv w3, w3, w2
+    sxtb w3, w3
+    asrv w3, w3, w2
+    strb w3, [x0]
+    ldrb w0, [x1]
+    invalid
+    uxtb w0, w0
+    lsrv w0, w0, w2
+    uxtb w0, w0
+    lslv w0, w0, w2
+    strb w0, [x1]
+    uxtb w0, w0
+    add x0, x3, x0
+    ret
+test_mem_shifts i16 u16:
+    ldrh w3, [x0]
+    uxth w3, w3
+    lslv w3, w3, w2
+    sxth w3, w3
     asrv w3, w3, w2
     strh w3, [x0]
     ldrh w0, [x1]
-    lsrv w0, w0, w2
-    lslv w0, w0, w2
-    strh w0, [x1]
     invalid
     uxth w0, w0
-    add x0, x1, x0
+    lsrv w0, w0, w2
+    uxth w0, w0
+    lslv w0, w0, w2
+    strh w0, [x1]
+    uxth w0, w0
+    add x0, x3, x0
     ret
 test_mem_shifts i32 u32:
     ldr w3, [x0]
@@ -146,13 +1257,17 @@ test_mem_shifts i64 u64:
 test_mem_imm_shifts i8 u8:
     ldrb w2, [x0]
     movz x3, #3, #0
+    uxtb w2, w2
     lslv w2, w2, w3
+    sxtb w2, w2
     asrv w2, w2, w3
     strb w2, [x0]
-    movz x3, #2, #0
     ldrb w0, [x1]
     invalid
+    movz x3, #2, #0
+    uxtb w0, w0
     lsrv w0, w0, w3
+    uxtb w0, w0
     lslv w0, w0, w3
     strb w0, [x1]
     uxtb w0, w0
@@ -161,17 +1276,240 @@ test_mem_imm_shifts i8 u8:
 test_mem_imm_shifts i16 u16:
     ldrh w2, [x0]
     movz x3, #3, #0
+    uxth w2, w2
     lslv w2, w2, w3
+    sxth w2, w2
     asrv w2, w2, w3
     strh w2, [x0]
-    movz x3, #2, #0
     ldrh w0, [x1]
     invalid
+    movz x3, #2, #0
+    uxth w0, w0
     lsrv w0, w0, w3
+    uxth w0, w0
     lslv w0, w0, w3
     strh w0, [x1]
     uxth w0, w0
     add x0, x2, x0
+    ret
+test_mem_imm_shifts i32 u32:
+    ldr w2, [x0]
+    movz x3, #3, #0
+    lslv w2, w2, w3
+    asrv w2, w2, w3
+    str w2, [x0]
+    movz x0, #2, #0
+    ldr w3, [x1]
+    sxtw x2, w2
+    lsrv w3, w3, w0
+    lslv w0, w3, w0
+    str w0, [x1]
+    mov w0, w0
+    add x0, x2, x0
+    ret
+test_mem_imm_shifts i64 u64:
+    ldr x2, [x0]
+    movz x3, #3, #0
+    lslv x2, x2, x3
+    asrv x2, x2, x3
+    str x2, [x0]
+    movz x0, #2, #0
+    ldr x3, [x1]
+    lsrv x3, x3, x0
+    lslv x0, x3, x0
+    str x0, [x1]
+    add x0, x2, x0
+    ret
+=========== OPT LEVEL: moderate ===========
+Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 32, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 32, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+main:
+    sub sp, sp, #112
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    str x24, [xzr, #40]
+    str x25, [xzr, #48]
+    stp x29, x30, [xzr, #63]
+    movn x1, #32, #0
+    add x0, sp, #72
+    strb w1, [x0]
+    movz x1, #201, #0
+    add x0, sp, #73
+    strb w1, [x0]
+    movn x1, #1233, #0
+    add x0, sp, #74
+    strh w1, [x0]
+    movz x1, #54321, #0
+    add x0, sp, #76
+    strh w1, [x0]
+    movn x1, #57919, #0
+    movk x1, #65534, #1
+    add x0, sp, #78
+    str w1, [x0]
+    movz x1, #57920, #0
+    movk x1, #1, #1
+    add x0, sp, #82
+    str w1, [x0]
+    movn x1, #52500, #0
+    movk x1, #63652, #1
+    add x0, sp, #86
+    str x1, [x0]
+    movz x1, #52501, #0
+    movk x1, #1883, #1
+    add x0, sp, #94
+    str x1, [x0]
+    add x0, sp, #72
+    add x1, sp, #73
+    movz x2, #3, #0
+    bl test_mem_shifts i8 u8
+    mov x21, x0
+    add x1, sp, #76
+    movz x2, #3, #0
+    add x0, sp, #74
+    bl test_mem_shifts i16 u16
+    mov x20, x0
+    add x0, sp, #78
+    movz x2, #3, #0
+    add x1, sp, #82
+    bl test_mem_shifts i32 u32
+    mov x19, x0
+    add x0, sp, #86
+    add x1, sp, #94
+    movz x2, #3, #0
+    bl test_mem_shifts i64 u64
+    mov x25, x0
+    add x0, sp, #72
+    add x1, sp, #73
+    bl test_mem_imm_shifts i8 u8
+    mov x24, x0
+    add x1, sp, #76
+    add x0, sp, #74
+    bl test_mem_imm_shifts i16 u16
+    mov x23, x0
+    add x0, sp, #78
+    add x1, sp, #82
+    bl test_mem_imm_shifts i32 u32
+    mov x22, x0
+    add x0, sp, #86
+    add x1, sp, #94
+    bl test_mem_imm_shifts i64 u64
+    add x1, x21, x20
+    add x2, x1, x19
+    add x2, x2, x25
+    add x2, x2, x24
+    add x2, x2, x23
+    add x1, x2, x22
+    add x0, x1, x0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldr x24, [xzr, #40]
+    ldr x25, [xzr, #48]
+    ldp x29, x30, [xzr, #63]
+    add sp, sp, #112
+    ret
+test_mem_shifts i8 u8:
+    ldrb w3, [x0]
+    uxtb w3, w3
+    lslv w3, w3, w2
+    sxtb w3, w3
+    asrv w3, w3, w2
+    strb w3, [x0]
+    ldrb w0, [x1]
+    invalid
+    uxtb w0, w0
+    lsrv w0, w0, w2
+    uxtb w0, w0
+    lslv w0, w0, w2
+    strb w0, [x1]
+    uxtb w0, w0
+    add x0, x3, x0
+    ret
+test_mem_shifts i16 u16:
+    ldrh w3, [x0]
+    uxth w3, w3
+    lslv w3, w3, w2
+    sxth w3, w3
+    asrv w3, w3, w2
+    strh w3, [x0]
+    ldrh w0, [x1]
+    invalid
+    uxth w0, w0
+    lsrv w0, w0, w2
+    uxth w0, w0
+    lslv w0, w0, w2
+    strh w0, [x1]
+    uxth w0, w0
+    add x0, x3, x0
+    ret
+test_mem_shifts i32 u32:
+    ldr w3, [x0]
+    lslv w3, w3, w2
+    asrv w3, w3, w2
+    str w3, [x0]
+    ldr w0, [x1]
+    lsrv w0, w0, w2
+    lslv w0, w0, w2
+    str w0, [x1]
+    sxtw x1, w3
+    mov w0, w0
+    add x0, x1, x0
+    ret
+test_mem_shifts i64 u64:
+    ldr x3, [x0]
+    lslv x3, x3, x2
+    asrv x3, x3, x2
+    str x3, [x0]
+    ldr x0, [x1]
+    lsrv x0, x0, x2
+    lslv x0, x0, x2
+    str x0, [x1]
+    add x0, x3, x0
+    ret
+test_mem_imm_shifts i8 u8:
+    ldrb w2, [x0]
+    movz x3, #3, #0
+    uxtb w2, w2
+    lslv w2, w2, w3
+    sxtb w2, w2
+    asrv w2, w2, w3
+    strb w2, [x0]
+    ldrb w0, [x1]
+    invalid
+    movz x2, #2, #0
+    uxtb w0, w0
+    lsrv w0, w0, w2
+    uxtb w0, w0
+    lslv w0, w0, w2
+    strb w0, [x1]
+    uxtb w0, w0
+    add x0, x3, x0
+    ret
+test_mem_imm_shifts i16 u16:
+    ldrh w2, [x0]
+    movz x3, #3, #0
+    uxth w2, w2
+    lslv w2, w2, w3
+    sxth w2, w2
+    asrv w2, w2, w3
+    strh w2, [x0]
+    ldrh w0, [x1]
+    invalid
+    movz x2, #2, #0
+    uxth w0, w0
+    lsrv w0, w0, w2
+    uxth w0, w0
+    lslv w0, w0, w2
+    strh w0, [x1]
+    uxth w0, w0
+    add x0, x3, x0
     ret
 test_mem_imm_shifts i32 u32:
     ldr w2, [x0]
@@ -200,4 +1538,228 @@ test_mem_imm_shifts i64 u64:
     lslv x0, x0, x2
     str x0, [x1]
     add x0, x3, x0
+    ret
+=========== OPT LEVEL: all ===========
+Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 32, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 32, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+main:
+    sub sp, sp, #112
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    str x24, [xzr, #40]
+    str x25, [xzr, #48]
+    stp x29, x30, [xzr, #63]
+    movn x1, #32, #0
+    add x0, sp, #72
+    strb w1, [x0]
+    movz x1, #201, #0
+    add x0, sp, #73
+    strb w1, [x0]
+    movn x1, #1233, #0
+    add x0, sp, #74
+    strh w1, [x0]
+    movz x1, #54321, #0
+    add x0, sp, #76
+    strh w1, [x0]
+    movn x1, #57919, #0
+    movk x1, #65534, #1
+    add x0, sp, #78
+    str w1, [x0]
+    movz x1, #57920, #0
+    movk x1, #1, #1
+    add x0, sp, #82
+    str w1, [x0]
+    movn x1, #52500, #0
+    movk x1, #63652, #1
+    add x0, sp, #86
+    str x1, [x0]
+    movz x1, #52501, #0
+    movk x1, #1883, #1
+    add x0, sp, #94
+    str x1, [x0]
+    add x0, sp, #72
+    add x1, sp, #73
+    movz x2, #3, #0
+    bl test_mem_shifts i8 u8
+    mov x21, x0
+    add x1, sp, #76
+    movz x2, #3, #0
+    add x0, sp, #74
+    bl test_mem_shifts i16 u16
+    mov x20, x0
+    add x0, sp, #78
+    movz x2, #3, #0
+    add x1, sp, #82
+    bl test_mem_shifts i32 u32
+    mov x19, x0
+    add x0, sp, #86
+    add x1, sp, #94
+    movz x2, #3, #0
+    bl test_mem_shifts i64 u64
+    mov x25, x0
+    add x0, sp, #72
+    add x1, sp, #73
+    bl test_mem_imm_shifts i8 u8
+    mov x24, x0
+    add x1, sp, #76
+    add x0, sp, #74
+    bl test_mem_imm_shifts i16 u16
+    mov x23, x0
+    add x0, sp, #78
+    add x1, sp, #82
+    bl test_mem_imm_shifts i32 u32
+    mov x22, x0
+    add x0, sp, #86
+    add x1, sp, #94
+    bl test_mem_imm_shifts i64 u64
+    add x1, x21, x20
+    add x2, x1, x19
+    add x2, x2, x25
+    add x2, x2, x24
+    add x2, x2, x23
+    add x1, x2, x22
+    add x0, x1, x0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldr x24, [xzr, #40]
+    ldr x25, [xzr, #48]
+    ldp x29, x30, [xzr, #63]
+    add sp, sp, #112
+    ret
+test_mem_shifts i8 u8:
+    ldrb w3, [x0]
+    uxtb w3, w3
+    lslv w3, w3, w2
+    sxtb w3, w3
+    asrv w3, w3, w2
+    strb w3, [x0]
+    ldrb w0, [x1]
+    invalid
+    uxtb w0, w0
+    lsrv w0, w0, w2
+    uxtb w0, w0
+    lslv w0, w0, w2
+    strb w0, [x1]
+    uxtb w0, w0
+    add x0, x3, x0
+    ret
+test_mem_shifts i16 u16:
+    ldrh w3, [x0]
+    uxth w3, w3
+    lslv w3, w3, w2
+    sxth w3, w3
+    asrv w3, w3, w2
+    strh w3, [x0]
+    ldrh w0, [x1]
+    invalid
+    uxth w0, w0
+    lsrv w0, w0, w2
+    uxth w0, w0
+    lslv w0, w0, w2
+    strh w0, [x1]
+    uxth w0, w0
+    add x0, x3, x0
+    ret
+test_mem_shifts i32 u32:
+    ldr w3, [x0]
+    lslv w3, w3, w2
+    asrv w3, w3, w2
+    str w3, [x0]
+    ldr w0, [x1]
+    lsrv w0, w0, w2
+    lslv w0, w0, w2
+    str w0, [x1]
+    sxtw x1, w3
+    mov w0, w0
+    add x0, x1, x0
+    ret
+test_mem_shifts i64 u64:
+    ldr x3, [x0]
+    lslv x3, x3, x2
+    asrv x3, x3, x2
+    str x3, [x0]
+    ldr x0, [x1]
+    lsrv x0, x0, x2
+    lslv x0, x0, x2
+    str x0, [x1]
+    add x0, x3, x0
+    ret
+test_mem_imm_shifts i8 u8:
+    ldrb w2, [x0]
+    movz x3, #3, #0
+    uxtb w2, w2
+    lslv w2, w2, w3
+    sxtb w2, w2
+    asrv w2, w2, w3
+    strb w2, [x0]
+    ldrb w0, [x1]
+    invalid
+    movz x2, #2, #0
+    uxtb w0, w0
+    lsrv w0, w0, w2
+    uxtb w0, w0
+    lslv w0, w0, w2
+    strb w0, [x1]
+    uxtb w0, w0
+    add x0, x3, x0
+    ret
+test_mem_imm_shifts i16 u16:
+    ldrh w2, [x0]
+    movz x3, #3, #0
+    uxth w2, w2
+    lslv w2, w2, w3
+    sxth w2, w2
+    asrv w2, w2, w3
+    strh w2, [x0]
+    ldrh w0, [x1]
+    invalid
+    movz x2, #2, #0
+    uxth w0, w0
+    lsrv w0, w0, w2
+    uxth w0, w0
+    lslv w0, w0, w2
+    strh w0, [x1]
+    uxth w0, w0
+    add x0, x3, x0
+    ret
+test_mem_imm_shifts i32 u32:
+    ldr w2, [x0]
+    movz x3, #3, #0
+    lslv w2, w2, w3
+    asrv w2, w2, w3
+    str w2, [x0]
+    movz x3, #2, #0
+    ldr w0, [x1]
+    sxtw x2, w2
+    lsrv w0, w0, w3
+    lslv w0, w0, w3
+    str w0, [x1]
+    mov w0, w0
+    add x0, x2, x0
+    ret
+test_mem_imm_shifts i64 u64:
+    ldr x2, [x0]
+    movz x3, #3, #0
+    lslv x2, x2, x3
+    asrv x3, x2, x3
+    str x3, [x0]
+    movz x2, #2, #0
+    ldr x0, [x1]
+    lsrv x0, x0, x2
+    lslv x0, x0, x2
+    str x0, [x1]
+    add x0, x3, x0
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    movz x0, #41024, #0
+    movk x0, #1, #1
     ret

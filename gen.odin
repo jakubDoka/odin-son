@@ -31,7 +31,7 @@ index_offset :: builder.compute_index_offset
 
 Opt_Level :: struct {
 	name:        string,
-	flags:       bac.Graph_Opt_Flags,
+	flags:       bac.Opt_Flags,
 	ralloc_mode: regalloc.Mode,
 }
 
@@ -558,7 +558,7 @@ inline_and_optimize :: proc(
 		if len(prc.stencil.mem) == 0 do continue
 
 		slot: arna.Allocator
-		graph: bac.Graph
+		graph: bac.Proc
 		graph.node_spec = &builder.SPEC
 		graph.mem = &slot
 		bac.mount_stencil(&graph, prc.stencil)
@@ -876,7 +876,7 @@ emit_proc :: proc(
 	}
 }
 
-opt :: proc(ctx: ^bac.Graph) {
+opt :: proc(ctx: ^bac.Proc) {
 	peep_ctx: bac.Peep_Ctx
 	peep_ctx.graph = ctx
 
@@ -912,7 +912,7 @@ emit_proc_code :: proc(
 
 	bac.compact(ctx)
 
-	schedule: bac.Graph_Schedule
+	schedule: bac.Schedule
 	bac.schedule_graph(ctx, &schedule, .for_regalloc)
 
 	bac.schedule_peeps(ctx, &schedule)

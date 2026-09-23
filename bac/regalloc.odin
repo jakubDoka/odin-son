@@ -134,9 +134,9 @@ Regalloc_Spec :: struct {
 	cc_table:             []Call_Conv,
 	call_clobbers:        [][]i64,
 	collect_meta:         proc(
-		graph: ^Graph,
+		graph: ^Proc,
 		ra: ^Regalloc,
-		sched: ^Graph_Schedule,
+		sched: ^Schedule,
 	) -> (
 		slots: []Regalloc_Node_Meta,
 		def_count: int,
@@ -274,11 +274,11 @@ Regalloc_Node_Meta :: struct {
 }
 
 regalloc_collect_meta :: #force_inline proc(
-	graph: ^Graph,
+	graph: ^Proc,
 	ra: ^Regalloc,
-	sched: ^Graph_Schedule,
+	sched: ^Schedule,
 	meta_of: proc(
-		_: ^Graph,
+		_: ^Proc,
 		_: ^Regalloc,
 		_: Expanded_Node,
 	) -> Regalloc_Node_Meta,

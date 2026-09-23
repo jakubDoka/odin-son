@@ -8,7 +8,7 @@ import "core:fmt"
 import "core:log"
 import "core:slice"
 
-Graph_Basic_Block :: struct {
+Basic_Block :: struct {
 	head:      Node_ID,
 	tail:      Node_ID,
 	instrs:    [dynamic]Node_ID,
@@ -16,8 +16,8 @@ Graph_Basic_Block :: struct {
 	loop_tree: ^Loop_Tree,
 }
 
-Graph_Schedule :: struct {
-	bbs: [dynamic]Graph_Basic_Block,
+Schedule :: struct {
+	bbs: [dynamic]Basic_Block,
 }
 
 Loop_Tree :: struct {
@@ -26,7 +26,7 @@ Loop_Tree :: struct {
 	infinite: bool,
 }
 
-compute_lca :: proc(graph: ^Graph, a, b: Node_ID) -> Node_ID {
+compute_lca :: proc(graph: ^Proc, a, b: Node_ID) -> Node_ID {
 	if a == 0 do return b
 	if b == 0 do return a
 
@@ -43,7 +43,7 @@ compute_lca :: proc(graph: ^Graph, a, b: Node_ID) -> Node_ID {
 }
 
 @(tag = "node_proc")
-get_idom_node :: proc(graph: ^Graph, node: ^Node) -> Node_ID {
+get_idom_node :: proc(graph: ^Proc, node: ^Node) -> Node_ID {
 	inps := get_inputs(graph, node)
 
 	#partial switch node.itype {
@@ -88,7 +88,7 @@ get_idom_node :: proc(graph: ^Graph, node: ^Node) -> Node_ID {
 }
 
 @(tag = "node_proc")
-get_idepth_node :: proc(graph: ^Graph, node: ^Node) -> u32 {
+get_idepth_node :: proc(graph: ^Proc, node: ^Node) -> u32 {
 	extra := get_extra(graph, node, Cfg)
 	inps := get_inputs(graph, node)
 
@@ -129,7 +129,7 @@ get_idepth_node :: proc(graph: ^Graph, node: ^Node) -> u32 {
 	return extra.idepth
 }
 
-schedule_graph :: proc(graph: ^Graph, gs: ^Graph_Schedule, purpose: enum {
+schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 		for_regalloc,
 		for_loopopt,
 	}, scratch := context.allocator) {
@@ -140,7 +140,7 @@ schedule_graph :: proc(graph: ^Graph, gs: ^Graph_Schedule, purpose: enum {
 	context.allocator, _ = arna.scrath(scratch)
 
 	Loop_Ctx :: struct {
-		using graph: ^Graph,
+		using graph: ^Proc,
 		loop_trees:  []^Loop_Tree,
 		root:        ^Loop_Tree,
 	}
@@ -326,7 +326,7 @@ schedule_graph :: proc(graph: ^Graph, gs: ^Graph_Schedule, purpose: enum {
 		}
 	}
 
-	bbs: [dynamic]Graph_Basic_Block
+	bbs: [dynamic]Basic_Block
 	bbs.allocator = scratch
 	cfg_rpos: [dynamic]Node_ID
 	visited := bit_arr.init(graph.gvn * 2)
@@ -340,7 +340,7 @@ schedule_graph :: proc(graph: ^Graph, gs: ^Graph_Schedule, purpose: enum {
 	)
 
 	cfg_reverse_postorder :: proc(
-		graph: ^Graph,
+		graph: ^Proc,
 		root: Node_ID,
 		cfg_rpos: ^[dynamic]Node_ID,
 		visited: bit_arr.Bit_Set,
@@ -392,7 +392,7 @@ schedule_graph :: proc(graph: ^Graph, gs: ^Graph_Schedule, purpose: enum {
 	slice.reverse(cfg_rpos[:])
 
 	Ctx :: struct {
-		graph:          ^Graph,
+		graph:          ^Proc,
 		using _:        struct #raw_union {
 			early_schedules: []Node_ID,
 			block_idxs:      []u32,
@@ -663,7 +663,7 @@ schedule_graph :: proc(graph: ^Graph, gs: ^Graph_Schedule, purpose: enum {
 			}
 			append(
 				&bbs,
-				Graph_Basic_Block {
+				Basic_Block {
 					head = id,
 					tail = tail,
 					loop_tree = loop_tree,
@@ -717,7 +717,7 @@ schedule_graph :: proc(graph: ^Graph, gs: ^Graph_Schedule, purpose: enum {
 		// 	if has_unscheduled do panic("")
 	}
 
-	schedule_block2 :: proc(ctx: Ctx, bb: ^Graph_Basic_Block) {
+	schedule_block2 :: proc(ctx: Ctx, bb: ^Basic_Block) {
 		PUSHED_UP :: bit_set[Node_Type]{.Phi, .Ret, .Param}
 
 		graph := ctx.graph
@@ -812,8 +812,8 @@ schedule_graph :: proc(graph: ^Graph, gs: ^Graph_Schedule, purpose: enum {
 
 @(disabled = ODIN_DISABLE_ASSERT)
 verify_schedule_integrity :: proc(
-	graph: ^Graph,
-	sched: ^Graph_Schedule,
+	graph: ^Proc,
+	sched: ^Schedule,
 	antys: [][dynamic]Node_ID = {},
 	no_late_pass := false,
 ) {
@@ -909,6 +909,6 @@ verify_schedule_integrity :: proc(
 	}
 }
 
-is_cfg :: proc(graph: ^Graph, id: Node_ID) -> bool {
+is_cfg :: proc(graph: ^Proc, id: Node_ID) -> bool {
 	return get_extra(graph, id, Cfg) != nil
 }

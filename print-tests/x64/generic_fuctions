@@ -1,0 +1,448 @@
+=========== OPT LEVEL: none-quick ===========
+main:
+    sub rsp, 0x18
+    mov rdi, 0xa
+    call fib i32
+    mov.q [rsp], rax
+    mov rdi, 0xa
+    call fib int
+    mov.q [rsp + 0x8], rax
+    mov.q rax, [rsp]
+    movsxd rax, eax
+    mov.q rcx, [rsp + 0x8]
+    add rax, rcx
+    add rsp, 0x18
+    ret
+fib i32:
+    sub rsp, 0x18
+    mov.q [rsp], rdi
+    mov.q rax, [rsp]
+    cmp eax, 2
+    jng 2
+    mov.q rax, [rsp]
+    sub eax, 1
+    mov rdi, rax
+    call fib i32
+    mov.q [rsp + 0x8], rax
+    mov.q rax, [rsp]
+    sub eax, 2
+    mov rdi, rax
+    call fib i32
+    mov.q rcx, [rsp + 0x8]
+    add ecx, eax
+    mov rax, rcx
+    jmp 3
+2:
+    mov rax, 1
+3:
+    mov rax, rax
+    add rsp, 0x18
+    ret
+fib int:
+    sub rsp, 0x18
+    mov.q [rsp], rdi
+    mov.q rax, [rsp]
+    cmp rax, 2
+    jng 5
+    mov.q rax, [rsp]
+    sub rax, 1
+    mov rdi, rax
+    call fib int
+    mov.q [rsp + 0x8], rax
+    mov.q rax, [rsp]
+    sub rax, 2
+    mov rdi, rax
+    call fib int
+    mov.q rcx, [rsp + 0x8]
+    add rcx, rax
+    mov rax, rcx
+    jmp 6
+5:
+    mov rax, 1
+6:
+    mov rax, rax
+    add rsp, 0x18
+    ret
+=========== OPT LEVEL: none ===========
+main:
+    push rbx
+    mov rdi, 0xa
+    call fib i32
+    mov rbx, rax
+    mov rdi, 0xa
+    call fib int
+    mov rcx, rax
+    movsxd rax, ebx
+    add rax, rcx
+    pop rbx
+    ret
+fib i32:
+    push rbx
+    push rbp
+    sub rsp, 8
+    mov rbp, rdi
+    cmp ebp, 2
+    jng 2
+    mov rax, rbp
+    sub eax, 1
+    mov rdi, rax
+    call fib i32
+    mov rbx, rax
+    sub ebp, 2
+    mov rdi, rbp
+    call fib i32
+    add ebx, eax
+    jmp 3
+2:
+    mov rbx, 1
+3:
+    mov rax, rbx
+    add rsp, 8
+    pop rbp
+    pop rbx
+    ret
+fib int:
+    push rbx
+    push rbp
+    sub rsp, 8
+    mov rbp, rdi
+    cmp rbp, 2
+    jng 5
+    mov rax, rbp
+    sub rax, 1
+    mov rdi, rax
+    call fib int
+    mov rbx, rax
+    sub rbp, 2
+    mov rdi, rbp
+    call fib int
+    add rbx, rax
+    jmp 6
+5:
+    mov rbx, 1
+6:
+    mov rax, rbx
+    add rsp, 8
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: mininal-quick ===========
+main:
+    sub rsp, 0x18
+    mov rdi, 0xa
+    call fib i32
+    mov.q [rsp], rax
+    mov rdi, 0xa
+    call fib int
+    mov.q [rsp + 0x8], rax
+    mov.q rax, [rsp]
+    movsxd rax, eax
+    mov.q rcx, [rsp + 0x8]
+    add rax, rcx
+    add rsp, 0x18
+    ret
+fib i32:
+    sub rsp, 0x18
+    mov.q [rsp], rdi
+    mov.q rax, [rsp]
+    cmp eax, 2
+    jng 2
+    mov.q rax, [rsp]
+    sub eax, 1
+    mov rdi, rax
+    call fib i32
+    mov.q [rsp + 0x8], rax
+    mov.q rax, [rsp]
+    sub eax, 2
+    mov rdi, rax
+    call fib i32
+    mov.q rcx, [rsp + 0x8]
+    add ecx, eax
+    mov rax, rcx
+    jmp 3
+2:
+    mov rax, 1
+3:
+    mov rax, rax
+    add rsp, 0x18
+    ret
+fib int:
+    sub rsp, 0x18
+    mov.q [rsp], rdi
+    mov.q rax, [rsp]
+    cmp rax, 2
+    jng 5
+    mov.q rax, [rsp]
+    sub rax, 1
+    mov rdi, rax
+    call fib int
+    mov.q [rsp + 0x8], rax
+    mov.q rax, [rsp]
+    sub rax, 2
+    mov rdi, rax
+    call fib int
+    mov.q rcx, [rsp + 0x8]
+    add rcx, rax
+    mov rax, rcx
+    jmp 6
+5:
+    mov rax, 1
+6:
+    mov rax, rax
+    add rsp, 0x18
+    ret
+=========== OPT LEVEL: mininal ===========
+main:
+    push rbx
+    mov rdi, 0xa
+    call fib i32
+    mov rbx, rax
+    mov rdi, 0xa
+    call fib int
+    mov rcx, rax
+    movsxd rax, ebx
+    add rax, rcx
+    pop rbx
+    ret
+fib i32:
+    push rbx
+    push rbp
+    sub rsp, 8
+    mov rbp, rdi
+    cmp ebp, 2
+    jng 2
+    mov rax, rbp
+    sub eax, 1
+    mov rdi, rax
+    call fib i32
+    mov rbx, rax
+    sub ebp, 2
+    mov rdi, rbp
+    call fib i32
+    add ebx, eax
+    jmp 3
+2:
+    mov rbx, 1
+3:
+    mov rax, rbx
+    add rsp, 8
+    pop rbp
+    pop rbx
+    ret
+fib int:
+    push rbx
+    push rbp
+    sub rsp, 8
+    mov rbp, rdi
+    cmp rbp, 2
+    jng 5
+    mov rax, rbp
+    sub rax, 1
+    mov rdi, rax
+    call fib int
+    mov rbx, rax
+    sub rbp, 2
+    mov rdi, rbp
+    call fib int
+    add rbx, rax
+    jmp 6
+5:
+    mov rbx, 1
+6:
+    mov rax, rbx
+    add rsp, 8
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+main:
+    sub rsp, 0x18
+    mov rdi, 0xa
+    call fib i32
+    mov.q [rsp], rax
+    mov rdi, 0xa
+    call fib int
+    mov.q [rsp + 0x8], rax
+    mov.q rax, [rsp]
+    movsxd rax, eax
+    mov.q rcx, [rsp + 0x8]
+    add rax, rcx
+    add rsp, 0x18
+    ret
+fib i32:
+    sub rsp, 0x18
+    mov.q [rsp], rdi
+    mov.q rax, [rsp]
+    cmp eax, 2
+    jng 2
+    mov.q rax, [rsp]
+    sub eax, 1
+    mov rdi, rax
+    call fib i32
+    mov.q [rsp + 0x8], rax
+    mov.q rax, [rsp]
+    sub eax, 2
+    mov rdi, rax
+    call fib i32
+    mov.q rcx, [rsp + 0x8]
+    add ecx, eax
+    mov rax, rcx
+    jmp 3
+2:
+    mov rax, 1
+3:
+    mov rax, rax
+    add rsp, 0x18
+    ret
+fib int:
+    sub rsp, 0x18
+    mov.q [rsp], rdi
+    mov.q rax, [rsp]
+    cmp rax, 2
+    jng 5
+    mov.q rax, [rsp]
+    sub rax, 1
+    mov rdi, rax
+    call fib int
+    mov.q [rsp + 0x8], rax
+    mov.q rax, [rsp]
+    sub rax, 2
+    mov rdi, rax
+    call fib int
+    mov.q rcx, [rsp + 0x8]
+    add rcx, rax
+    mov rax, rcx
+    jmp 6
+5:
+    mov rax, 1
+6:
+    mov rax, rax
+    add rsp, 0x18
+    ret
+=========== OPT LEVEL: moderate ===========
+main:
+    push rbx
+    mov rdi, 0xa
+    call fib i32
+    mov rbx, rax
+    mov rdi, 0xa
+    call fib int
+    mov rcx, rax
+    movsxd rax, ebx
+    add rax, rcx
+    pop rbx
+    ret
+fib i32:
+    push rbx
+    push rbp
+    sub rsp, 8
+    mov rbp, rdi
+    cmp ebp, 2
+    jng 2
+    mov rax, rbp
+    sub eax, 1
+    mov rdi, rax
+    call fib i32
+    mov rbx, rax
+    sub ebp, 2
+    mov rdi, rbp
+    call fib i32
+    add ebx, eax
+    jmp 3
+2:
+    mov rbx, 1
+3:
+    mov rax, rbx
+    add rsp, 8
+    pop rbp
+    pop rbx
+    ret
+fib int:
+    push rbx
+    push rbp
+    sub rsp, 8
+    mov rbp, rdi
+    cmp rbp, 2
+    jng 5
+    mov rax, rbp
+    sub rax, 1
+    mov rdi, rax
+    call fib int
+    mov rbx, rax
+    sub rbp, 2
+    mov rdi, rbp
+    call fib int
+    add rbx, rax
+    jmp 6
+5:
+    mov rbx, 1
+6:
+    mov rax, rbx
+    add rsp, 8
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: all ===========
+main:
+    push rbx
+    mov rdi, 0xa
+    call fib i32
+    mov rbx, rax
+    mov rdi, 0xa
+    call fib int
+    mov rcx, rax
+    movsxd rax, ebx
+    add rax, rcx
+    pop rbx
+    ret
+fib i32:
+    push rbx
+    push rbp
+    sub rsp, 8
+    mov rbp, rdi
+    cmp ebp, 2
+    jng 2
+    mov rax, rbp
+    sub eax, 1
+    mov rdi, rax
+    call fib i32
+    mov rbx, rax
+    sub ebp, 2
+    mov rdi, rbp
+    call fib i32
+    add ebx, eax
+    jmp 3
+2:
+    mov rbx, 1
+3:
+    mov rax, rbx
+    add rsp, 8
+    pop rbp
+    pop rbx
+    ret
+fib int:
+    push rbx
+    push rbp
+    sub rsp, 8
+    mov rbp, rdi
+    cmp rbp, 2
+    jng 5
+    mov rax, rbp
+    sub rax, 1
+    mov rdi, rax
+    call fib int
+    mov rbx, rax
+    sub rbp, 2
+    mov rdi, rbp
+    call fib int
+    add rbx, rax
+    jmp 6
+5:
+    mov rbx, 1
+6:
+    mov rax, rbx
+    add rsp, 8
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: aggresive ===========

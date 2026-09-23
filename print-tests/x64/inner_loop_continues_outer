@@ -1,0 +1,188 @@
+=========== OPT LEVEL: none-quick ===========
+main:
+    push rbx
+    push rbp
+    xor ecx, ecx
+    xor edx, edx
+1:
+    mov rax, rdx
+    add rcx, 1
+    cmp rcx, 5
+    jz 5
+    xor ebx, ebx
+    add rbx, 1
+    cmp rbx, 5
+    jz 4
+    xor ebx, ebx
+2:
+    mov rbp, rax
+    add rbp, 1
+    mov rsi, rbx
+    add rsi, 1
+    cmp rsi, 2
+    jz 3
+    mov rbx, rsi
+    mov rax, rbp
+    jmp 2
+3:
+    mov rax, rbp
+    jmp 4
+4:
+    mov rdx, rax
+    jmp 1
+5:
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: none ===========
+main:
+    xor ecx, ecx
+    xor eax, eax
+1:
+    add rcx, 1
+    cmp rcx, 5
+    jz 4
+    xor edx, edx
+    add rdx, 1
+    cmp rdx, 5
+    jz 3
+    xor edx, edx
+2:
+    add rax, 1
+    add rdx, 1
+    cmp rdx, 2
+    jz 3
+    jmp 2
+3:
+    jmp 1
+4:
+    ret
+=========== OPT LEVEL: mininal-quick ===========
+main:
+    push rbx
+    push rbp
+    xor ecx, ecx
+    xor edx, edx
+1:
+    mov rax, rdx
+    add rcx, 1
+    cmp rcx, 5
+    jz 5
+    xor ebx, ebx
+    add rbx, 1
+    cmp rbx, 5
+    jz 4
+    xor ebx, ebx
+2:
+    mov rbp, rax
+    add rbp, 1
+    mov rsi, rbx
+    add rsi, 1
+    cmp rsi, 2
+    jz 3
+    mov rbx, rsi
+    mov rax, rbp
+    jmp 2
+3:
+    mov rax, rbp
+    jmp 4
+4:
+    mov rdx, rax
+    jmp 1
+5:
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: mininal ===========
+main:
+    xor ecx, ecx
+    xor eax, eax
+1:
+    add rcx, 1
+    cmp rcx, 5
+    jz 4
+    xor edx, edx
+    add rdx, 1
+    cmp rdx, 5
+    jz 3
+    xor edx, edx
+2:
+    add rax, 1
+    add rdx, 1
+    cmp rdx, 2
+    jz 3
+    jmp 2
+3:
+    jmp 1
+4:
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+main:
+    push rbx
+    push rbp
+    sub rsp, 8
+    xor eax, eax
+    xor ecx, ecx
+1:
+    add rcx, 1
+    cmp rcx, 5
+    jz 4
+    xor edx, edx
+    mov.q [rsp], rax
+2:
+    mov.q rbx, [rsp]
+    add rbx, 1
+    mov rbp, rdx
+    add rbp, 1
+    cmp rbp, 2
+    jz 3
+    mov rdx, rbp
+    mov.q [rsp], rbx
+    jmp 2
+3:
+    mov rax, rbx
+    jmp 1
+4:
+    add rsp, 8
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: moderate ===========
+main:
+    xor eax, eax
+    xor ecx, ecx
+1:
+    add rcx, 1
+    cmp rcx, 5
+    jz 3
+    xor edx, edx
+2:
+    add rax, 1
+    add rdx, 1
+    cmp rdx, 2
+    jz 1
+    jmp 2
+3:
+    ret
+=========== OPT LEVEL: all ===========
+main:
+    xor edx, edx
+    xor ecx, ecx
+1:
+    xor esi, esi
+2:
+    mov rax, rdx
+    add rax, 1
+    add rsi, 1
+    cmp rsi, 2
+    mov rdx, rax
+    jnz 2
+    mov rdx, rcx
+    add rdx, 1
+    add rcx, 2
+    cmp rcx, 5
+    mov rcx, rdx
+    mov rdx, rax
+    jnz 1
+    ret
+=========== OPT LEVEL: aggresive ===========

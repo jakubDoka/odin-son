@@ -782,10 +782,10 @@ post_schedule_peep_inst :: proc(
 }
 
 
-collect_meta :: proc(ctx: ^bac.Graph,
-	ra: ^bac.Regalloc, sched: ^bac.Graph_Schedule) -> ([]bac.Regalloc_Node_Meta, int) {
+collect_meta :: proc(ctx: ^bac.Proc,
+	ra: ^bac.Regalloc, sched: ^bac.Schedule) -> ([]bac.Regalloc_Node_Meta, int) {
 
-	meta_of_ :: proc(ctx: ^bac.Graph, ra: ^bac.Regalloc,
+	meta_of_ :: proc(ctx: ^bac.Proc, ra: ^bac.Regalloc,
 		node: bac.Expanded_Node) -> bac.Regalloc_Node_Meta {
 		return meta_of(ctx, ra, node, struct{}{})
 	}
@@ -913,7 +913,7 @@ collect_meta :: proc(ctx: ^bac.Graph,
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(Mem_Op) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-add_x64_psadbw :: #force_inline proc(graph: ^bac.Graph, name: string, dt: bac.Node_Datatype, lhs: bac.Node_ID, rhs: bac.Node_ID) -> (_id: bac.Node_ID) {
+add_x64_psadbw :: #force_inline proc(graph: ^bac.Proc, name: string, dt: bac.Node_Datatype, lhs: bac.Node_ID, rhs: bac.Node_ID) -> (_id: bac.Node_ID) {
 	return bac.add_raw(graph, name, u16(Node_Type.X64_Psadbw), dt, {lhs, rhs})
 }
 #assert(size_of(Mem_Op) % bac.PRECISION == 0)

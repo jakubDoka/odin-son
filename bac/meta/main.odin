@@ -302,10 +302,10 @@ post_schedule_peep_inst :: proc(
 		fmt.fprintfln(
 			file,
 			`
-collect_meta :: proc(ctx: ^%vGraph,
-	ra: ^%vRegalloc, sched: ^%vGraph_Schedule) -> ([]%vRegalloc_Node_Meta, int) {{
+collect_meta :: proc(ctx: ^%vProc,
+	ra: ^%vRegalloc, sched: ^%vSchedule) -> ([]%vRegalloc_Node_Meta, int) {{
 
-	meta_of_ :: proc(ctx: ^%vGraph, ra: ^%vRegalloc,
+	meta_of_ :: proc(ctx: ^%vProc, ra: ^%vRegalloc,
 		node: %vExpanded_Node) -> %vRegalloc_Node_Meta {{
 		return meta_of(ctx, ra, node, struct{{}}{{}})
 	}}
@@ -348,7 +348,7 @@ collect_meta :: proc(ctx: ^%vGraph,
 
 			fmt.fprintf(
 				file,
-				"add_%v :: #force_inline proc(graph: ^%vGraph, name: string",
+				"add_%v :: #force_inline proc(graph: ^%vProc, name: string",
 				strings.to_snake_case(fname),
 				q,
 			)

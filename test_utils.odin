@@ -24,6 +24,7 @@ import rex_wasm "core:rexcode/ir/wasm"
 import "core:rexcode/isa"
 import "core:rexcode/isa/arm64"
 import "core:rexcode/isa/x86"
+import "core:simd"
 import "core:strings"
 import "core:sync"
 import "core:testing"
@@ -134,8 +135,8 @@ run_test :: proc(
 		ok := parser.parse_file(&p, &f); assert(ok)
 	}
 
-	dsb: strings.Builder
-	dsb.buf.allocator = context.temp_allocator
+	dsbs: [Test_Vm]strings.Builder
+	for &dsb in dsbs do dsb.buf.allocator = context.temp_allocator
 
 	stats: bac.Stats
 
@@ -143,7 +144,7 @@ run_test :: proc(
 	ctx.types = &types
 	ctx.stats = &stats
 	ctx.global = &global_ctx
-	ctx.errors = strings.to_writer(&dsb)
+	ctx.errors = strings.to_writer(&dsbs[.Check])
 
 	init_single_file_program(&ctx, &f)
 	typecheck.typecheck_program(&ctx)
@@ -185,12 +186,14 @@ run_test :: proc(
 	prev_glob_count := len(ctx.globals)
 
 	for level in confs {
+		dsb := &dsbs[level.vm]
+
 		if !level.debug {
 			if level.vm == .Check {
-				fmt.sbprintfln(&dsb, "============= check run =============")
+				fmt.sbprintfln(dsb, "============= check run =============")
 			} else {
 				fmt.sbprintfln(
-					&dsb,
+					dsb,
 					"=========== OPT LEVEL: %v ===========",
 					level.name,
 				)
@@ -348,9 +351,9 @@ run_test :: proc(
 			if !level.debug {
 				context.allocator = context.temp_allocator
 				if level.vm == .Native {
-					disasm(&dsb, ctx, X64_DS)
+					disasm(dsb, ctx, X64_DS)
 				} else {
-					disasm(&dsb, ctx, ARM_DS)
+					disasm(dsb, ctx, ARM_DS)
 				}
 			}
 
@@ -428,7 +431,7 @@ run_test :: proc(
 			module := emit_wasm_module(&ctx, context.temp_allocator)
 
 			{context.allocator = context.temp_allocator
-				disasm_wasm(&dsb, module)}
+				disasm_wasm(dsb, module)}
 
 			if no_run {
 			} else {
@@ -444,10 +447,10 @@ run_test :: proc(
 			for prc in ctx.procs {
 				if len(prc.out.code) == 0 do continue
 
-				fmt.sbprintfln(&dsb, "%v: anal errors:", prc.name)
+				fmt.sbprintfln(dsb, "%v: anal errors:", prc.name)
 				cursor := string(prc.out.code)
 				for line in strings.split_lines_iterator(&cursor) {
-					fmt.sbprintfln(&dsb, "  %v", line)
+					fmt.sbprintfln(dsb, "  %v", line)
 				}
 			}
 		}
@@ -464,26 +467,41 @@ run_test :: proc(
 		}
 	}
 
-	context.allocator = context.temp_allocator
-	diff_path, _ := os.join_path({TEST_OUT_DIR, name}, context.allocator)
-	file, err := os.read_entire_file(diff_path, context.allocator)
+	vm_names := [Test_Vm]string {
+		.Check  = "check",
+		.Native = "x64",
+		.Arm    = "arm",
+		.Wasm   = "wasm",
+	}
 
-	if diff {
-		if #config(ACCEPT, false) {
-			werr := os.write_entire_file(diff_path, dsb.buf[:])
-			assert(werr == nil)
-		} else if err == .Not_Exist {
-			log.error("\n", highlight_disasm(string(dsb.buf[:])), sep = "")
-		} else {
-			assert(err == nil)
-			new, old := string(dsb.buf[:]), string(file)
-			if new != old {
-				new, old =
-					highlight_disasm(strings.clone(new)), highlight_disasm(old)
-				clear(&dsb.buf)
-				append(&dsb.buf, "\n")
-				print_diff(&dsb, old, new)
-				log.error(string(dsb.buf[:]))
+	for &dsb, kind in dsbs {
+		if len(dsb.buf) == 0 do continue
+
+		context.allocator = context.temp_allocator
+		diff_path, _ := os.join_path(
+			{TEST_OUT_DIR, vm_names[kind], name},
+			context.allocator,
+		)
+		file, err := os.read_entire_file(diff_path, context.allocator)
+
+		if diff {
+			if #config(ACCEPT, false) {
+				werr := os.write_entire_file(diff_path, dsb.buf[:])
+				assert(werr == nil)
+			} else if err == .Not_Exist {
+				log.error("\n", highlight_disasm(string(dsb.buf[:])), sep = "")
+			} else {
+				assert(err == nil)
+				new, old := string(dsb.buf[:]), string(file)
+				if new != old {
+					new, old =
+						highlight_disasm(strings.clone(new)),
+						highlight_disasm(old)
+					clear(&dsb.buf)
+					append(&dsb.buf, "\n")
+					print_diff(&dsb, old, new)
+					log.error(string(dsb.buf[:]))
+				}
 			}
 		}
 	}
@@ -528,53 +546,88 @@ log_stats :: proc(ctx: ^bac.Stats) {
 	}
 }
 
-split_lines :: proc(input: string) -> []string {
-	lines: [dynamic]string
+Line :: struct {
+	hash:    u32,
+	content: string,
+	_:       [0][]u8,
+}
+
+split_lines :: proc(input: string) -> #soa[]Line {
+	lines: #soa[dynamic]Line
 
 	start := 0
 	for i in 0 ..< len(input) {
 		if input[i] == '\n' {
-			append(&lines, input[start:i])
+			append(&lines, Line{content = input[start:i]})
 			start = i + 1
 		}
 	}
 
-	append(&lines, input[start:])
+	append(&lines, Line{content = input[start:]})
+
+	for &l in lines {
+		l.hash = hash.fnv32(transmute([]u8)l.content)
+	}
 
 	return lines[:]
 }
 
-lcs_lines :: proc(a, b: string) -> []string {
+lcs_lines :: proc(a, b: string) -> []Line #no_bounds_check {
 	lines_a := split_lines(a)
 	lines_b := split_lines(b)
 
 	len_a := len(lines_a)
 	len_b := len(lines_b)
 
-	dp := make([][]int, len_a + 1)
+	UNIT :: u32
+
+	dp := make([][]UNIT, len_a + 1)
 
 	for i in 0 ..= len_a {
-		dp[i] = make([]int, len_b + 1)
+		dp[i] = make([]UNIT, len_b + 1)
 	}
 
 	for i in 0 ..< len_a {
-		for j in 0 ..< len_b {
-			if lines_a[i] == lines_b[j] {
+		j := 0
+
+		VEC :: #simd[64 / size_of(UNIT)]UNIT
+
+		search: VEC = lines_a[i].hash
+		inc: VEC = 1
+		next := dp[i + 1]
+		curr := dp[i]
+
+		for j + len(inc) * 2 <= len_b {
+			hay := intrinsics.unaligned_load((^VEC)(lines_b.hash[j:]))
+			cmp := simd.lanes_ne(hay, search)
+			mask := transmute(u16)simd.extract_lsbs(cmp)
+
+			if mask != 0 do break
+			intrinsics.unaligned_store(
+				(^#simd[16]u32)(&next[j + len(inc)]),
+				intrinsics.unaligned_load((^VEC)(&curr[j])) + inc,
+			)
+			j += len(inc)
+		}
+
+		for j < len_b {
+			if lines_a[i].hash == lines_b[j].hash {
 				dp[i + 1][j + 1] = dp[i][j] + 1
 			} else {
 				dp[i + 1][j + 1] = max(dp[i + 1][j], dp[i][j + 1])
 			}
+			j += 1
 		}
 	}
 
-	result := make([]string, dp[len_a][len_b])
+	result := make([]Line, dp[len_a][len_b])
 
 	i := len_a
 	j := len_b
 	k := dp[len_a][len_b]
 
 	for i > 0 && j > 0 {
-		if lines_a[i - 1] == lines_b[j - 1] {
+		if lines_a[i - 1].hash == lines_b[j - 1].hash {
 			k -= 1
 			result[k] = lines_a[i - 1]
 
@@ -604,24 +657,26 @@ print_diff :: proc(out: ^strings.Builder, a, b: string) {
 		if k < len(lcs) &&
 		   i < len(lines_a) &&
 		   j < len(lines_b) &&
-		   lines_a[i] == lcs[k] &&
-		   lines_b[j] == lcs[k] {
-			fmt.sbprintfln(out, " %s", lines_a[i])
+		   lines_a[i].hash == lcs[k].hash &&
+		   lines_b[j].hash == lcs[k].hash {
+			fmt.sbprintfln(out, " %s", lines_a[i].content)
 			i += 1
 			j += 1
 			k += 1
-		} else if j < len(lines_b) && (k >= len(lcs) || lines_b[j] != lcs[k]) {
+		} else if j < len(lines_b) &&
+		   (k >= len(lcs) || lines_b[j].hash != lcs[k].hash) {
 			if .Terminal_Color in context.logger.options {
-				fmt.sbprintfln(out, "\x1b[32m+%s\x1b[0m", lines_b[j])
+				fmt.sbprintfln(out, "\x1b[32m+%s\x1b[0m", lines_b[j].content)
 			} else {
-				fmt.sbprintfln(out, "+%s", lines_b[j])
+				fmt.sbprintfln(out, "+%s", lines_b[j].content)
 			}
 			j += 1
-		} else if i < len(lines_a) && (k >= len(lcs) || lines_a[i] != lcs[k]) {
+		} else if i < len(lines_a) &&
+		   (k >= len(lcs) || lines_a[i].hash != lcs[k].hash) {
 			if .Terminal_Color in context.logger.options {
-				fmt.sbprintfln(out, "\x1b[31m-%s\x1b[0m", lines_a[i])
+				fmt.sbprintfln(out, "\x1b[31m-%s\x1b[0m", lines_a[i].content)
 			} else {
-				fmt.sbprintfln(out, "-%s", lines_b[j])
+				fmt.sbprintfln(out, "-%s", lines_b[j].content)
 			}
 			i += 1
 		} else {

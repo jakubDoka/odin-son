@@ -56,16 +56,16 @@ Cfi_Op :: struct {
 
 PS_Peep_Fn :: proc(_: PS_Peep_Ctx, node: Expanded_Node) -> Node_ID
 
-Pre_Regalloc_Hook :: proc(_: ^Regalloc, _: ^Graph, _: ^Graph_Schedule)
+Pre_Regalloc_Hook :: proc(_: ^Regalloc, _: ^Proc, _: ^Schedule)
 
 PS_Peep_Ctx :: struct {
-	using graph: ^Graph,
+	using graph: ^Proc,
 	preds:       []Node_ID,
 }
 
 Codegen_Emit_Ctx :: struct {
-	using graph:      ^Graph,
-	using schedule:   ^Graph_Schedule,
+	using graph:      ^Proc,
+	using schedule:   ^Schedule,
 	using abi:        ^Call_Conv,
 	using buf:        Codegen_Emit_Buf,
 	emit_got_imports: bool,
@@ -140,7 +140,7 @@ Reloc_Slot :: struct #raw_union #align (1) {
 }
 
 param_mask :: proc(
-	graph: ^Graph,
+	graph: ^Proc,
 	ra: ^Regalloc,
 	node: ^Node,
 	spill_base: Maybe(u16) = nil,
@@ -297,8 +297,8 @@ compute_param_offsets :: proc(
 }
 
 layout_call_args :: proc(
-	ctx: ^Graph,
-	schedule: ^Graph_Schedule,
+	ctx: ^Proc,
+	schedule: ^Schedule,
 	stack_size: ^i32,
 ) -> (
 	has_call: bool,
@@ -326,11 +326,7 @@ layout_call_args :: proc(
 	return
 }
 
-layout_locals :: proc(
-	ctx: ^Graph,
-	schedule: ^Graph_Schedule,
-	stack_size: ^i32,
-) {
+layout_locals :: proc(ctx: ^Proc, schedule: ^Schedule, stack_size: ^i32) {
 	emem := ctx.root_mem
 	mem_outs := get_outputs(ctx, emem)
 

@@ -9,7 +9,7 @@ import "core:reflect"
 import "core:terminal/ansi"
 
 @(thread_local)
-current_graph: ^Graph
+current_graph: ^Proc
 
 init_custom_fmt :: proc() {
 	Scratch :: struct #align (4096) {
@@ -94,9 +94,9 @@ init_custom_fmt :: proc() {
 	)
 
 	fmt.register_user_formatter(
-		Graph,
+		Proc,
 		proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
-			value := &value.(Graph)
+			value := &value.(Proc)
 			display_graph(fi.writer, value)
 			return true
 		},
@@ -105,15 +105,15 @@ init_custom_fmt :: proc() {
 
 display_graph :: proc(
 	w: io.Writer,
-	graph: ^Graph,
-	ctx: ^Graph_Schedule = nil,
-	prefix: proc(_: io.Writer, _: ^Node, _: Graph_Basic_Block) = nil,
+	graph: ^Proc,
+	ctx: ^Schedule = nil,
+	prefix: proc(_: io.Writer, _: ^Node, _: Basic_Block) = nil,
 	regs: []Reg = {},
 ) {
 	context.allocator, _ = arna.scrath()
 
 	ctx := ctx
-	our_ctx: Graph_Schedule
+	our_ctx: Schedule
 
 	if ctx == nil {
 		schedule_graph(graph, &our_ctx, .for_regalloc)
@@ -178,7 +178,7 @@ display_graph :: proc(
 
 display_node :: proc(
 	w: io.Writer,
-	graph: ^Graph,
+	graph: ^Proc,
 	id: Node_ID,
 	scheduled := false,
 ) {
@@ -364,7 +364,7 @@ ansi_end :: proc(w: io.Writer) {
 	}
 }
 
-display_node_gvn :: proc(w: io.Writer, graph: ^Graph, id: Node_ID) {
+display_node_gvn :: proc(w: io.Writer, graph: ^Proc, id: Node_ID) {
 	if id == 0 {
 		fmt.wprint(w, "nl")
 		return

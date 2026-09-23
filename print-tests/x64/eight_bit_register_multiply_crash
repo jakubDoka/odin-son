@@ -1,0 +1,130 @@
+=========== OPT LEVEL: none-quick ===========
+main:
+    sub rsp, 8
+    mov rdi, 0x14
+    call opaque
+    mov cl, -5
+    mov rdx, rax
+    mov al, 2
+    imul cl
+    movsx rax, al
+    mov.q [rsp], rax
+    mov al, 3
+    imul dl
+    movzx eax, al
+    mov.q rcx, [rsp]
+    add rcx, rax
+    mov rax, rcx
+    add rsp, 8
+    ret
+opaque:
+    sub rsp, 8
+    mov.q [rsp], rdi
+    mov.q rax, [rsp]
+    add rsp, 8
+    ret
+=========== OPT LEVEL: none ===========
+main:
+    sub rsp, 8
+    mov rdi, 0x14
+    call opaque
+    mov cl, -5
+    mov rdx, rax
+    mov al, 2
+    imul cl
+    movsx rcx, al
+    mov al, 3
+    imul dl
+    movzx eax, al
+    add rcx, rax
+    mov rax, rcx
+    add rsp, 8
+    ret
+opaque:
+    mov rax, rdi
+    ret
+=========== OPT LEVEL: mininal-quick ===========
+main:
+    sub rsp, 8
+    mov rdi, 0x14
+    call opaque
+    mov rcx, rax
+    mov al, 3
+    imul cl
+    movzx eax, al
+    add rax, -0xa
+    add rsp, 8
+    ret
+opaque:
+    sub rsp, 8
+    mov.q [rsp], rdi
+    mov.q rax, [rsp]
+    add rsp, 8
+    ret
+=========== OPT LEVEL: mininal ===========
+main:
+    sub rsp, 8
+    mov rdi, 0x14
+    call opaque
+    mov rcx, rax
+    mov al, 3
+    imul cl
+    movzx eax, al
+    add rax, -0xa
+    add rsp, 8
+    ret
+opaque:
+    mov rax, rdi
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+main:
+    sub rsp, 8
+    mov rdi, 0x14
+    call opaque
+    mov rcx, rax
+    mov al, 3
+    imul cl
+    movzx eax, al
+    add rax, -0xa
+    add rsp, 8
+    ret
+opaque:
+    sub rsp, 8
+    mov.q [rsp], rdi
+    mov.q rax, [rsp]
+    add rsp, 8
+    ret
+=========== OPT LEVEL: moderate ===========
+main:
+    sub rsp, 8
+    mov rdi, 0x14
+    call opaque
+    mov rcx, rax
+    mov al, 3
+    imul cl
+    movzx eax, al
+    add rax, -0xa
+    add rsp, 8
+    ret
+opaque:
+    mov rax, rdi
+    ret
+=========== OPT LEVEL: all ===========
+main:
+    sub rsp, 8
+    mov rdi, 0x14
+    call opaque
+    mov rcx, rax
+    mov al, 3
+    imul cl
+    movzx eax, al
+    add rax, -0xa
+    add rsp, 8
+    ret
+opaque:
+    mov rax, rdi
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    mov rax, 0x32
+    ret

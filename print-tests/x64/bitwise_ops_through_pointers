@@ -1,0 +1,188 @@
+=========== OPT LEVEL: none-quick ===========
+main:
+    sub rsp, 0x18
+    mov.q [rsp], 0xc
+    and.q [rsp], 0xa
+    mov.q [rsp + 0x8], 0xa
+    mov.q [rsp + 0x10], 6
+    lea rdi, [rsp + 0x8]
+    mov rsi, 5
+    call or_into
+    lea rdi, [rsp + 0x10]
+    mov rsi, 3
+    call xor_into
+    mov.q rax, [rsp]
+    add.q rax, [rsp + 0x8]
+    add.q rax, [rsp + 0x10]
+    add rsp, 0x18
+    ret
+or_into:
+    or.q [rdi], rsi
+    mov.q rax, [rdi]
+    ret
+xor_into:
+    xor.q [rdi], rsi
+    mov.q rax, [rdi]
+    ret
+=========== OPT LEVEL: none ===========
+main:
+    sub rsp, 0x18
+    mov.q [rsp], 0xc
+    and.q [rsp], 0xa
+    mov.q [rsp + 0x8], 0xa
+    mov.q [rsp + 0x10], 6
+    lea rdi, [rsp + 0x8]
+    mov rsi, 5
+    call or_into
+    lea rdi, [rsp + 0x10]
+    mov rsi, 3
+    call xor_into
+    mov.q rax, [rsp]
+    add.q rax, [rsp + 0x8]
+    add.q rax, [rsp + 0x10]
+    add rsp, 0x18
+    ret
+or_into:
+    or.q [rdi], rsi
+    mov.q rax, [rdi]
+    ret
+xor_into:
+    xor.q [rdi], rsi
+    mov.q rax, [rdi]
+    ret
+=========== OPT LEVEL: mininal-quick ===========
+main:
+    sub rsp, 0x18
+    mov.q [rsp], 0xc
+    and.q [rsp], 0xa
+    mov.q [rsp + 0x8], 0xa
+    mov.q [rsp + 0x10], 6
+    lea rdi, [rsp + 0x8]
+    mov rsi, 5
+    call or_into
+    lea rdi, [rsp + 0x10]
+    mov rsi, 3
+    call xor_into
+    mov.q rax, [rsp]
+    add.q rax, [rsp + 0x8]
+    add.q rax, [rsp + 0x10]
+    add rsp, 0x18
+    ret
+or_into:
+    or.q [rdi], rsi
+    mov.q rax, [rdi]
+    ret
+xor_into:
+    xor.q [rdi], rsi
+    mov.q rax, [rdi]
+    ret
+=========== OPT LEVEL: mininal ===========
+main:
+    sub rsp, 0x18
+    mov.q [rsp], 0xc
+    and.q [rsp], 0xa
+    mov.q [rsp + 0x8], 0xa
+    mov.q [rsp + 0x10], 6
+    lea rdi, [rsp + 0x8]
+    mov rsi, 5
+    call or_into
+    lea rdi, [rsp + 0x10]
+    mov rsi, 3
+    call xor_into
+    mov.q rax, [rsp]
+    add.q rax, [rsp + 0x8]
+    add.q rax, [rsp + 0x10]
+    add rsp, 0x18
+    ret
+or_into:
+    or.q [rdi], rsi
+    mov.q rax, [rdi]
+    ret
+xor_into:
+    xor.q [rdi], rsi
+    mov.q rax, [rdi]
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+main:
+    sub rsp, 0x18
+    mov.q [rsp], 8
+    mov.q [rsp + 0x8], 0xa
+    mov.q [rsp + 0x10], 6
+    lea rdi, [rsp + 0x8]
+    mov rsi, 5
+    call or_into
+    lea rdi, [rsp + 0x10]
+    mov rsi, 3
+    call xor_into
+    mov.q rax, [rsp]
+    add.q rax, [rsp + 0x8]
+    add.q rax, [rsp + 0x10]
+    add rsp, 0x18
+    ret
+or_into:
+    mov.q rax, [rdi]
+    or rax, rsi
+    mov.q [rdi], rax
+    ret
+xor_into:
+    mov.q rax, [rdi]
+    xor rax, rsi
+    mov.q [rdi], rax
+    ret
+=========== OPT LEVEL: moderate ===========
+main:
+    sub rsp, 0x18
+    mov.q [rsp], 8
+    mov.q [rsp + 0x8], 0xa
+    mov.q [rsp + 0x10], 6
+    lea rdi, [rsp + 0x8]
+    mov rsi, 5
+    call or_into
+    lea rdi, [rsp + 0x10]
+    mov rsi, 3
+    call xor_into
+    mov.q rax, [rsp]
+    add.q rax, [rsp + 0x8]
+    add.q rax, [rsp + 0x10]
+    add rsp, 0x18
+    ret
+or_into:
+    mov.q rax, [rdi]
+    or rax, rsi
+    mov.q [rdi], rax
+    ret
+xor_into:
+    mov.q rax, [rdi]
+    xor rax, rsi
+    mov.q [rdi], rax
+    ret
+=========== OPT LEVEL: all ===========
+main:
+    sub rsp, 0x18
+    mov.q [rsp + 0x8], 0xa
+    mov.q [rsp], 6
+    lea rdi, [rsp + 0x8]
+    mov rsi, 5
+    call or_into
+    lea rdi, [rsp]
+    mov rsi, 3
+    call xor_into
+    mov.q rcx, [rsp + 0x8]
+    mov.q rax, [rsp]
+    lea rax, [rcx + rax + 0x8]
+    add rsp, 0x18
+    ret
+or_into:
+    mov.q rax, [rdi]
+    or rax, rsi
+    mov.q [rdi], rax
+    ret
+xor_into:
+    mov.q rax, [rdi]
+    xor rax, rsi
+    mov.q [rdi], rax
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    mov rax, 0x1c
+    ret

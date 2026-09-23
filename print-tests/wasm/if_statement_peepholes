@@ -1,0 +1,2074 @@
+=========== OPT LEVEL: none-quick ===========
+(module
+  (type (;0;) (func (param i64) (result i64)))
+  (type (;1;) (func (param i64 i64) (result i64)))
+  (type (;2;) (func (param i64 i64) (result i64)))
+  (type (;3;) (func (param i64) (result i64)))
+  (type (;4;) (func (result i64)))
+  (func $opaques (type 0) (param i64) (result i64)
+    local.get 0
+    return
+    end
+  )
+  (func $test_signed (type 1) (param i64 i64) (result i64)
+    block
+      block
+        local.get 0
+        local.get 1
+        i64.eq
+        br_if 0
+        block
+          local.get 0
+          local.get 1
+          i64.ne
+          br_if 0
+          block
+            local.get 0
+            local.get 1
+            i64.lt_s
+            br_if 0
+            block
+              local.get 0
+              local.get 1
+              i64.ge_s
+              br_if 0
+              block
+                local.get 0
+                local.get 1
+                i64.gt_s
+                br_if 0
+                block
+                  local.get 0
+                  local.get 1
+                  i64.le_s
+                  br_if 0
+                  i64.const 0
+                  local.set 0
+                  br 6
+                end
+                i64.const 6
+                local.set 0
+                br 5
+              end
+              i64.const 5
+              local.set 0
+              br 4
+            end
+            i64.const 4
+            local.set 0
+            br 3
+          end
+          i64.const 3
+          local.set 0
+          br 2
+        end
+        i64.const 2
+        local.set 0
+        br 1
+      end
+      i64.const 1
+      local.set 0
+    end
+    local.get 0
+    return
+    end
+  )
+  (func $test_unsigned (type 2) (param i64 i64) (result i64)
+    block
+      block
+        local.get 0
+        local.get 1
+        i64.eq
+        br_if 0
+        block
+          local.get 0
+          local.get 1
+          i64.ne
+          br_if 0
+          block
+            local.get 0
+            local.get 1
+            i64.lt_u
+            br_if 0
+            block
+              local.get 0
+              local.get 1
+              i64.ge_u
+              br_if 0
+              block
+                local.get 0
+                local.get 1
+                i64.gt_u
+                br_if 0
+                block
+                  local.get 0
+                  local.get 1
+                  i64.le_u
+                  br_if 0
+                  i64.const 0
+                  local.set 0
+                  br 6
+                end
+                i64.const 60
+                local.set 0
+                br 5
+              end
+              i64.const 50
+              local.set 0
+              br 4
+            end
+            i64.const 40
+            local.set 0
+            br 3
+          end
+          i64.const 30
+          local.set 0
+          br 2
+        end
+        i64.const 20
+        local.set 0
+        br 1
+      end
+      i64.const 10
+      local.set 0
+    end
+    local.get 0
+    return
+    end
+  )
+  (func $test_mixed_patterns (type 3) (param i64) (result i64)
+    (local i64)
+    block
+      block
+        block
+          block
+            local.get 0
+            call $opaques
+            local.set 1
+            local.get 0
+            i64.const 1
+            i64.add
+            call $opaques
+            local.set 0
+            local.get 1
+            local.get 0
+            i64.lt_s
+            br_if 0
+            br 1
+          end
+          block
+            block
+              local.get 1
+              local.get 0
+              i64.le_s
+              br_if 0
+              br 1
+            end
+            local.get 1
+            local.get 0
+            i64.ne
+            br_if 2
+          end
+        end
+        block
+          block
+            block
+              local.get 1
+              local.get 0
+              i64.gt_s
+              br_if 0
+              br 1
+            end
+            block
+              block
+                local.get 1
+                local.get 0
+                i64.ge_s
+                br_if 0
+                br 1
+              end
+              local.get 1
+              local.get 0
+              i64.eq
+              br_if 2
+            end
+          end
+          i64.const 0
+          local.set 0
+          br 2
+        end
+        i64.const 200
+        local.set 0
+        br 1
+      end
+      i64.const 100
+      local.set 0
+    end
+    local.get 0
+    return
+    end
+  )
+  (func $main (type 4) (result i64)
+    (local i64 i64 i64 i64 i64 i64 i64)
+    i64.const 10
+    local.set 0
+    i64.const 20
+    local.set 1
+    i64.const 10
+    i64.const 20
+    call $test_signed
+    local.set 2
+    i64.const 20
+    i64.const 20
+    call $test_signed
+    local.set 3
+    i64.const 30
+    local.set 4
+    i64.const 30
+    i64.const 10
+    call $test_signed
+    local.set 5
+    i64.const 10
+    i64.const 20
+    call $test_unsigned
+    local.set 6
+    i64.const 20
+    local.get 1
+    call $test_unsigned
+    local.set 1
+    local.get 4
+    local.get 0
+    call $test_unsigned
+    local.set 0
+    i64.const 42
+    call $test_mixed_patterns
+    local.set 4
+    i64.const 0
+    local.get 2
+    i64.add
+    local.get 3
+    i64.add
+    local.get 5
+    i64.add
+    local.get 6
+    i64.add
+    local.get 1
+    i64.add
+    local.get 0
+    i64.add
+    local.get 4
+    i64.add
+    return
+    end
+  )
+  (table (;0;) 0 0 funcref)
+  (memory (;0;) i64 16)
+  (global (;0;) (mut i64) i64.const 1048576)
+  (export "main" (func 4))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (elem (;0;) (i32.const 0) func)
+  (data (;0;) (i64.const 1048576) "")
+)
+=========== OPT LEVEL: none ===========
+(module
+  (type (;0;) (func (param i64) (result i64)))
+  (type (;1;) (func (param i64 i64) (result i64)))
+  (type (;2;) (func (param i64 i64) (result i64)))
+  (type (;3;) (func (param i64) (result i64)))
+  (type (;4;) (func (result i64)))
+  (func $opaques (type 0) (param i64) (result i64)
+    local.get 0
+    return
+    end
+  )
+  (func $test_signed (type 1) (param i64 i64) (result i64)
+    block
+      block
+        local.get 0
+        local.get 1
+        i64.eq
+        br_if 0
+        block
+          local.get 0
+          local.get 1
+          i64.ne
+          br_if 0
+          block
+            local.get 0
+            local.get 1
+            i64.lt_s
+            br_if 0
+            block
+              local.get 0
+              local.get 1
+              i64.ge_s
+              br_if 0
+              block
+                local.get 0
+                local.get 1
+                i64.gt_s
+                br_if 0
+                block
+                  local.get 0
+                  local.get 1
+                  i64.le_s
+                  br_if 0
+                  i64.const 0
+                  local.set 0
+                  br 6
+                end
+                i64.const 6
+                local.set 0
+                br 5
+              end
+              i64.const 5
+              local.set 0
+              br 4
+            end
+            i64.const 4
+            local.set 0
+            br 3
+          end
+          i64.const 3
+          local.set 0
+          br 2
+        end
+        i64.const 2
+        local.set 0
+        br 1
+      end
+      i64.const 1
+      local.set 0
+    end
+    local.get 0
+    return
+    end
+  )
+  (func $test_unsigned (type 2) (param i64 i64) (result i64)
+    block
+      block
+        local.get 0
+        local.get 1
+        i64.eq
+        br_if 0
+        block
+          local.get 0
+          local.get 1
+          i64.ne
+          br_if 0
+          block
+            local.get 0
+            local.get 1
+            i64.lt_u
+            br_if 0
+            block
+              local.get 0
+              local.get 1
+              i64.ge_u
+              br_if 0
+              block
+                local.get 0
+                local.get 1
+                i64.gt_u
+                br_if 0
+                block
+                  local.get 0
+                  local.get 1
+                  i64.le_u
+                  br_if 0
+                  i64.const 0
+                  local.set 0
+                  br 6
+                end
+                i64.const 60
+                local.set 0
+                br 5
+              end
+              i64.const 50
+              local.set 0
+              br 4
+            end
+            i64.const 40
+            local.set 0
+            br 3
+          end
+          i64.const 30
+          local.set 0
+          br 2
+        end
+        i64.const 20
+        local.set 0
+        br 1
+      end
+      i64.const 10
+      local.set 0
+    end
+    local.get 0
+    return
+    end
+  )
+  (func $test_mixed_patterns (type 3) (param i64) (result i64)
+    (local i64)
+    block
+      block
+        block
+          block
+            local.get 0
+            call $opaques
+            local.set 1
+            local.get 0
+            i64.const 1
+            i64.add
+            call $opaques
+            local.set 0
+            local.get 1
+            local.get 0
+            i64.lt_s
+            br_if 0
+            br 1
+          end
+          block
+            block
+              local.get 1
+              local.get 0
+              i64.le_s
+              br_if 0
+              br 1
+            end
+            local.get 1
+            local.get 0
+            i64.ne
+            br_if 2
+          end
+        end
+        block
+          block
+            block
+              local.get 1
+              local.get 0
+              i64.gt_s
+              br_if 0
+              br 1
+            end
+            block
+              block
+                local.get 1
+                local.get 0
+                i64.ge_s
+                br_if 0
+                br 1
+              end
+              local.get 1
+              local.get 0
+              i64.eq
+              br_if 2
+            end
+          end
+          i64.const 0
+          local.set 0
+          br 2
+        end
+        i64.const 200
+        local.set 0
+        br 1
+      end
+      i64.const 100
+      local.set 0
+    end
+    local.get 0
+    return
+    end
+  )
+  (func $main (type 4) (result i64)
+    (local i64 i64 i64 i64 i64 i64 i64 i64)
+    i64.const 10
+    local.set 7
+    i64.const 20
+    local.set 1
+    i64.const 10
+    i64.const 20
+    call $test_signed
+    local.set 6
+    i64.const 20
+    i64.const 20
+    call $test_signed
+    local.set 5
+    i64.const 30
+    local.set 0
+    i64.const 30
+    i64.const 10
+    call $test_signed
+    local.set 4
+    i64.const 10
+    i64.const 20
+    call $test_unsigned
+    local.set 3
+    i64.const 20
+    local.get 1
+    call $test_unsigned
+    local.set 2
+    local.get 0
+    local.get 7
+    call $test_unsigned
+    local.set 1
+    i64.const 42
+    call $test_mixed_patterns
+    local.set 0
+    i64.const 0
+    local.get 6
+    i64.add
+    local.get 5
+    i64.add
+    local.get 4
+    i64.add
+    local.get 3
+    i64.add
+    local.get 2
+    i64.add
+    local.get 1
+    i64.add
+    local.get 0
+    i64.add
+    return
+    end
+  )
+  (table (;0;) 0 0 funcref)
+  (memory (;0;) i64 16)
+  (global (;0;) (mut i64) i64.const 1048576)
+  (export "main" (func 4))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (elem (;0;) (i32.const 0) func)
+  (data (;0;) (i64.const 1048576) "")
+)
+=========== OPT LEVEL: mininal-quick ===========
+(module
+  (type (;0;) (func (param i64) (result i64)))
+  (type (;1;) (func (param i64 i64) (result i64)))
+  (type (;2;) (func (param i64 i64) (result i64)))
+  (type (;3;) (func (param i64) (result i64)))
+  (type (;4;) (func (result i64)))
+  (func $opaques (type 0) (param i64) (result i64)
+    local.get 0
+    return
+    end
+  )
+  (func $test_signed (type 1) (param i64 i64) (result i64)
+    block
+      block
+        local.get 0
+        local.get 1
+        i64.eq
+        br_if 0
+        block
+          local.get 0
+          local.get 1
+          i64.ne
+          br_if 0
+          block
+            local.get 0
+            local.get 1
+            i64.lt_s
+            br_if 0
+            block
+              local.get 0
+              local.get 1
+              i64.ge_s
+              br_if 0
+              block
+                local.get 0
+                local.get 1
+                i64.gt_s
+                br_if 0
+                block
+                  local.get 0
+                  local.get 1
+                  i64.le_s
+                  br_if 0
+                  i64.const 0
+                  local.set 0
+                  br 6
+                end
+                i64.const 6
+                local.set 0
+                br 5
+              end
+              i64.const 5
+              local.set 0
+              br 4
+            end
+            i64.const 4
+            local.set 0
+            br 3
+          end
+          i64.const 3
+          local.set 0
+          br 2
+        end
+        i64.const 2
+        local.set 0
+        br 1
+      end
+      i64.const 1
+      local.set 0
+    end
+    local.get 0
+    return
+    end
+  )
+  (func $test_unsigned (type 2) (param i64 i64) (result i64)
+    block
+      block
+        local.get 0
+        local.get 1
+        i64.eq
+        br_if 0
+        block
+          local.get 0
+          local.get 1
+          i64.ne
+          br_if 0
+          block
+            local.get 0
+            local.get 1
+            i64.lt_u
+            br_if 0
+            block
+              local.get 0
+              local.get 1
+              i64.ge_u
+              br_if 0
+              block
+                local.get 0
+                local.get 1
+                i64.gt_u
+                br_if 0
+                block
+                  local.get 0
+                  local.get 1
+                  i64.le_u
+                  br_if 0
+                  i64.const 0
+                  local.set 0
+                  br 6
+                end
+                i64.const 60
+                local.set 0
+                br 5
+              end
+              i64.const 50
+              local.set 0
+              br 4
+            end
+            i64.const 40
+            local.set 0
+            br 3
+          end
+          i64.const 30
+          local.set 0
+          br 2
+        end
+        i64.const 20
+        local.set 0
+        br 1
+      end
+      i64.const 10
+      local.set 0
+    end
+    local.get 0
+    return
+    end
+  )
+  (func $test_mixed_patterns (type 3) (param i64) (result i64)
+    (local i64)
+    block
+      block
+        block
+          block
+            local.get 0
+            call $opaques
+            local.set 1
+            local.get 0
+            i64.const 1
+            i64.add
+            call $opaques
+            local.set 0
+            local.get 1
+            local.get 0
+            i64.lt_s
+            br_if 0
+            br 1
+          end
+          block
+            block
+              local.get 1
+              local.get 0
+              i64.le_s
+              br_if 0
+              br 1
+            end
+            local.get 1
+            local.get 0
+            i64.ne
+            br_if 2
+          end
+        end
+        block
+          block
+            block
+              local.get 1
+              local.get 0
+              i64.gt_s
+              br_if 0
+              br 1
+            end
+            block
+              block
+                local.get 1
+                local.get 0
+                i64.ge_s
+                br_if 0
+                br 1
+              end
+              local.get 1
+              local.get 0
+              i64.eq
+              br_if 2
+            end
+          end
+          i64.const 0
+          local.set 0
+          br 2
+        end
+        i64.const 200
+        local.set 0
+        br 1
+      end
+      i64.const 100
+      local.set 0
+    end
+    local.get 0
+    return
+    end
+  )
+  (func $main (type 4) (result i64)
+    (local i64 i64 i64 i64 i64 i64 i64)
+    i64.const 10
+    local.set 0
+    i64.const 20
+    local.set 1
+    i64.const 10
+    i64.const 20
+    call $test_signed
+    local.set 2
+    i64.const 20
+    i64.const 20
+    call $test_signed
+    local.set 3
+    i64.const 30
+    local.set 4
+    i64.const 30
+    i64.const 10
+    call $test_signed
+    local.set 5
+    i64.const 10
+    i64.const 20
+    call $test_unsigned
+    local.set 6
+    i64.const 20
+    local.get 1
+    call $test_unsigned
+    local.set 1
+    local.get 4
+    local.get 0
+    call $test_unsigned
+    local.set 0
+    i64.const 42
+    call $test_mixed_patterns
+    local.set 4
+    i64.const 0
+    local.get 2
+    i64.add
+    local.get 3
+    i64.add
+    local.get 5
+    i64.add
+    local.get 6
+    i64.add
+    local.get 1
+    i64.add
+    local.get 0
+    i64.add
+    local.get 4
+    i64.add
+    return
+    end
+  )
+  (table (;0;) 0 0 funcref)
+  (memory (;0;) i64 16)
+  (global (;0;) (mut i64) i64.const 1048576)
+  (export "main" (func 4))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (elem (;0;) (i32.const 0) func)
+  (data (;0;) (i64.const 1048576) "")
+)
+=========== OPT LEVEL: mininal ===========
+(module
+  (type (;0;) (func (param i64) (result i64)))
+  (type (;1;) (func (param i64 i64) (result i64)))
+  (type (;2;) (func (param i64 i64) (result i64)))
+  (type (;3;) (func (param i64) (result i64)))
+  (type (;4;) (func (result i64)))
+  (func $opaques (type 0) (param i64) (result i64)
+    local.get 0
+    return
+    end
+  )
+  (func $test_signed (type 1) (param i64 i64) (result i64)
+    block
+      block
+        local.get 0
+        local.get 1
+        i64.eq
+        br_if 0
+        block
+          local.get 0
+          local.get 1
+          i64.ne
+          br_if 0
+          block
+            local.get 0
+            local.get 1
+            i64.lt_s
+            br_if 0
+            block
+              local.get 0
+              local.get 1
+              i64.ge_s
+              br_if 0
+              block
+                local.get 0
+                local.get 1
+                i64.gt_s
+                br_if 0
+                block
+                  local.get 0
+                  local.get 1
+                  i64.le_s
+                  br_if 0
+                  i64.const 0
+                  local.set 0
+                  br 6
+                end
+                i64.const 6
+                local.set 0
+                br 5
+              end
+              i64.const 5
+              local.set 0
+              br 4
+            end
+            i64.const 4
+            local.set 0
+            br 3
+          end
+          i64.const 3
+          local.set 0
+          br 2
+        end
+        i64.const 2
+        local.set 0
+        br 1
+      end
+      i64.const 1
+      local.set 0
+    end
+    local.get 0
+    return
+    end
+  )
+  (func $test_unsigned (type 2) (param i64 i64) (result i64)
+    block
+      block
+        local.get 0
+        local.get 1
+        i64.eq
+        br_if 0
+        block
+          local.get 0
+          local.get 1
+          i64.ne
+          br_if 0
+          block
+            local.get 0
+            local.get 1
+            i64.lt_u
+            br_if 0
+            block
+              local.get 0
+              local.get 1
+              i64.ge_u
+              br_if 0
+              block
+                local.get 0
+                local.get 1
+                i64.gt_u
+                br_if 0
+                block
+                  local.get 0
+                  local.get 1
+                  i64.le_u
+                  br_if 0
+                  i64.const 0
+                  local.set 0
+                  br 6
+                end
+                i64.const 60
+                local.set 0
+                br 5
+              end
+              i64.const 50
+              local.set 0
+              br 4
+            end
+            i64.const 40
+            local.set 0
+            br 3
+          end
+          i64.const 30
+          local.set 0
+          br 2
+        end
+        i64.const 20
+        local.set 0
+        br 1
+      end
+      i64.const 10
+      local.set 0
+    end
+    local.get 0
+    return
+    end
+  )
+  (func $test_mixed_patterns (type 3) (param i64) (result i64)
+    (local i64)
+    block
+      block
+        block
+          block
+            local.get 0
+            call $opaques
+            local.set 1
+            local.get 0
+            i64.const 1
+            i64.add
+            call $opaques
+            local.set 0
+            local.get 1
+            local.get 0
+            i64.lt_s
+            br_if 0
+            br 1
+          end
+          block
+            block
+              local.get 1
+              local.get 0
+              i64.le_s
+              br_if 0
+              br 1
+            end
+            local.get 1
+            local.get 0
+            i64.ne
+            br_if 2
+          end
+        end
+        block
+          block
+            block
+              local.get 1
+              local.get 0
+              i64.gt_s
+              br_if 0
+              br 1
+            end
+            block
+              block
+                local.get 1
+                local.get 0
+                i64.ge_s
+                br_if 0
+                br 1
+              end
+              local.get 1
+              local.get 0
+              i64.eq
+              br_if 2
+            end
+          end
+          i64.const 0
+          local.set 0
+          br 2
+        end
+        i64.const 200
+        local.set 0
+        br 1
+      end
+      i64.const 100
+      local.set 0
+    end
+    local.get 0
+    return
+    end
+  )
+  (func $main (type 4) (result i64)
+    (local i64 i64 i64 i64 i64 i64 i64 i64)
+    i64.const 10
+    local.set 7
+    i64.const 20
+    local.set 1
+    i64.const 10
+    i64.const 20
+    call $test_signed
+    local.set 6
+    i64.const 20
+    i64.const 20
+    call $test_signed
+    local.set 5
+    i64.const 30
+    local.set 0
+    i64.const 30
+    i64.const 10
+    call $test_signed
+    local.set 4
+    i64.const 10
+    i64.const 20
+    call $test_unsigned
+    local.set 3
+    i64.const 20
+    local.get 1
+    call $test_unsigned
+    local.set 2
+    local.get 0
+    local.get 7
+    call $test_unsigned
+    local.set 1
+    i64.const 42
+    call $test_mixed_patterns
+    local.set 0
+    i64.const 0
+    local.get 6
+    i64.add
+    local.get 5
+    i64.add
+    local.get 4
+    i64.add
+    local.get 3
+    i64.add
+    local.get 2
+    i64.add
+    local.get 1
+    i64.add
+    local.get 0
+    i64.add
+    return
+    end
+  )
+  (table (;0;) 0 0 funcref)
+  (memory (;0;) i64 16)
+  (global (;0;) (mut i64) i64.const 1048576)
+  (export "main" (func 4))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (elem (;0;) (i32.const 0) func)
+  (data (;0;) (i64.const 1048576) "")
+)
+=========== OPT LEVEL: moderate-quick ===========
+(module
+  (type (;0;) (func (param i64) (result i64)))
+  (type (;1;) (func (param i64 i64) (result i64)))
+  (type (;2;) (func (param i64 i64) (result i64)))
+  (type (;3;) (func (param i64) (result i64)))
+  (type (;4;) (func (result i64)))
+  (func $opaques (type 0) (param i64) (result i64)
+    local.get 0
+    return
+    end
+  )
+  (func $test_signed (type 1) (param i64 i64) (result i64)
+    block
+      block
+        local.get 0
+        local.get 1
+        i64.eq
+        br_if 0
+        block
+          local.get 0
+          local.get 1
+          i64.ne
+          br_if 0
+          block
+            local.get 0
+            local.get 1
+            i64.lt_s
+            br_if 0
+            block
+              local.get 0
+              local.get 1
+              i64.ge_s
+              br_if 0
+              block
+                local.get 0
+                local.get 1
+                i64.gt_s
+                br_if 0
+                block
+                  local.get 0
+                  local.get 1
+                  i64.le_s
+                  br_if 0
+                  i64.const 0
+                  local.set 0
+                  br 6
+                end
+                i64.const 6
+                local.set 0
+                br 5
+              end
+              i64.const 5
+              local.set 0
+              br 4
+            end
+            i64.const 4
+            local.set 0
+            br 3
+          end
+          i64.const 3
+          local.set 0
+          br 2
+        end
+        i64.const 2
+        local.set 0
+        br 1
+      end
+      i64.const 1
+      local.set 0
+    end
+    local.get 0
+    return
+    end
+  )
+  (func $test_unsigned (type 2) (param i64 i64) (result i64)
+    block
+      block
+        local.get 0
+        local.get 1
+        i64.eq
+        br_if 0
+        block
+          local.get 0
+          local.get 1
+          i64.ne
+          br_if 0
+          block
+            local.get 0
+            local.get 1
+            i64.lt_u
+            br_if 0
+            block
+              local.get 0
+              local.get 1
+              i64.ge_u
+              br_if 0
+              block
+                local.get 0
+                local.get 1
+                i64.gt_u
+                br_if 0
+                block
+                  local.get 0
+                  local.get 1
+                  i64.le_u
+                  br_if 0
+                  i64.const 0
+                  local.set 0
+                  br 6
+                end
+                i64.const 60
+                local.set 0
+                br 5
+              end
+              i64.const 50
+              local.set 0
+              br 4
+            end
+            i64.const 40
+            local.set 0
+            br 3
+          end
+          i64.const 30
+          local.set 0
+          br 2
+        end
+        i64.const 20
+        local.set 0
+        br 1
+      end
+      i64.const 10
+      local.set 0
+    end
+    local.get 0
+    return
+    end
+  )
+  (func $test_mixed_patterns (type 3) (param i64) (result i64)
+    (local i64)
+    block
+      block
+        block
+          block
+            local.get 0
+            call $opaques
+            local.set 1
+            local.get 0
+            i64.const 1
+            i64.add
+            call $opaques
+            local.set 0
+            local.get 1
+            local.get 0
+            i64.lt_s
+            br_if 0
+            br 1
+          end
+          block
+            local.get 1
+            local.get 0
+            i64.le_s
+            br_if 0
+            br 1
+          end
+          local.get 1
+          local.get 0
+          i64.ne
+          br_if 1
+        end
+        block
+          block
+            block
+              local.get 1
+              local.get 0
+              i64.gt_s
+              br_if 0
+              br 1
+            end
+            block
+              local.get 1
+              local.get 0
+              i64.ge_s
+              br_if 0
+              br 1
+            end
+            local.get 1
+            local.get 0
+            i64.eq
+            br_if 1
+          end
+          i64.const 0
+          local.set 0
+          br 2
+        end
+        i64.const 200
+        local.set 0
+        br 1
+      end
+      i64.const 100
+      local.set 0
+    end
+    local.get 0
+    return
+    end
+  )
+  (func $main (type 4) (result i64)
+    (local i64 i64 i64 i64 i64 i64 i64)
+    i64.const 10
+    local.set 0
+    i64.const 20
+    local.set 1
+    i64.const 10
+    i64.const 20
+    call $test_signed
+    local.set 2
+    i64.const 20
+    i64.const 20
+    call $test_signed
+    local.set 3
+    i64.const 30
+    local.set 4
+    i64.const 30
+    i64.const 10
+    call $test_signed
+    local.set 5
+    i64.const 10
+    i64.const 20
+    call $test_unsigned
+    local.set 6
+    i64.const 20
+    local.get 1
+    call $test_unsigned
+    local.set 1
+    local.get 4
+    local.get 0
+    call $test_unsigned
+    local.set 0
+    i64.const 42
+    call $test_mixed_patterns
+    local.set 4
+    local.get 2
+    local.get 3
+    i64.add
+    local.get 5
+    i64.add
+    local.get 6
+    i64.add
+    local.get 1
+    i64.add
+    local.get 0
+    i64.add
+    local.get 4
+    i64.add
+    return
+    end
+  )
+  (table (;0;) 0 0 funcref)
+  (memory (;0;) i64 16)
+  (global (;0;) (mut i64) i64.const 1048576)
+  (export "main" (func 4))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (elem (;0;) (i32.const 0) func)
+  (data (;0;) (i64.const 1048576) "")
+)
+=========== OPT LEVEL: moderate ===========
+(module
+  (type (;0;) (func (param i64) (result i64)))
+  (type (;1;) (func (param i64 i64) (result i64)))
+  (type (;2;) (func (param i64 i64) (result i64)))
+  (type (;3;) (func (param i64) (result i64)))
+  (type (;4;) (func (result i64)))
+  (func $opaques (type 0) (param i64) (result i64)
+    local.get 0
+    return
+    end
+  )
+  (func $test_signed (type 1) (param i64 i64) (result i64)
+    block
+      block
+        local.get 0
+        local.get 1
+        i64.eq
+        br_if 0
+        block
+          local.get 0
+          local.get 1
+          i64.ne
+          br_if 0
+          block
+            local.get 0
+            local.get 1
+            i64.lt_s
+            br_if 0
+            block
+              local.get 0
+              local.get 1
+              i64.ge_s
+              br_if 0
+              block
+                local.get 0
+                local.get 1
+                i64.gt_s
+                br_if 0
+                block
+                  local.get 0
+                  local.get 1
+                  i64.le_s
+                  br_if 0
+                  i64.const 0
+                  local.set 0
+                  br 6
+                end
+                i64.const 6
+                local.set 0
+                br 5
+              end
+              i64.const 5
+              local.set 0
+              br 4
+            end
+            i64.const 4
+            local.set 0
+            br 3
+          end
+          i64.const 3
+          local.set 0
+          br 2
+        end
+        i64.const 2
+        local.set 0
+        br 1
+      end
+      i64.const 1
+      local.set 0
+    end
+    local.get 0
+    return
+    end
+  )
+  (func $test_unsigned (type 2) (param i64 i64) (result i64)
+    block
+      block
+        local.get 0
+        local.get 1
+        i64.eq
+        br_if 0
+        block
+          local.get 0
+          local.get 1
+          i64.ne
+          br_if 0
+          block
+            local.get 0
+            local.get 1
+            i64.lt_u
+            br_if 0
+            block
+              local.get 0
+              local.get 1
+              i64.ge_u
+              br_if 0
+              block
+                local.get 0
+                local.get 1
+                i64.gt_u
+                br_if 0
+                block
+                  local.get 0
+                  local.get 1
+                  i64.le_u
+                  br_if 0
+                  i64.const 0
+                  local.set 0
+                  br 6
+                end
+                i64.const 60
+                local.set 0
+                br 5
+              end
+              i64.const 50
+              local.set 0
+              br 4
+            end
+            i64.const 40
+            local.set 0
+            br 3
+          end
+          i64.const 30
+          local.set 0
+          br 2
+        end
+        i64.const 20
+        local.set 0
+        br 1
+      end
+      i64.const 10
+      local.set 0
+    end
+    local.get 0
+    return
+    end
+  )
+  (func $test_mixed_patterns (type 3) (param i64) (result i64)
+    (local i64)
+    block
+      block
+        block
+          block
+            local.get 0
+            call $opaques
+            local.set 1
+            local.get 0
+            i64.const 1
+            i64.add
+            call $opaques
+            local.set 0
+            local.get 1
+            local.get 0
+            i64.lt_s
+            br_if 0
+            br 1
+          end
+          block
+            local.get 1
+            local.get 0
+            i64.le_s
+            br_if 0
+            br 1
+          end
+          local.get 1
+          local.get 0
+          i64.ne
+          br_if 1
+        end
+        block
+          block
+            block
+              local.get 1
+              local.get 0
+              i64.gt_s
+              br_if 0
+              br 1
+            end
+            block
+              local.get 1
+              local.get 0
+              i64.ge_s
+              br_if 0
+              br 1
+            end
+            local.get 1
+            local.get 0
+            i64.eq
+            br_if 1
+          end
+          i64.const 0
+          local.set 0
+          br 2
+        end
+        i64.const 200
+        local.set 0
+        br 1
+      end
+      i64.const 100
+      local.set 0
+    end
+    local.get 0
+    return
+    end
+  )
+  (func $main (type 4) (result i64)
+    (local i64 i64 i64 i64 i64 i64 i64 i64)
+    i64.const 10
+    local.set 7
+    i64.const 20
+    local.set 1
+    i64.const 10
+    i64.const 20
+    call $test_signed
+    local.set 6
+    i64.const 20
+    i64.const 20
+    call $test_signed
+    local.set 5
+    i64.const 30
+    local.set 0
+    i64.const 30
+    i64.const 10
+    call $test_signed
+    local.set 4
+    i64.const 10
+    i64.const 20
+    call $test_unsigned
+    local.set 3
+    i64.const 20
+    local.get 1
+    call $test_unsigned
+    local.set 2
+    local.get 0
+    local.get 7
+    call $test_unsigned
+    local.set 1
+    i64.const 42
+    call $test_mixed_patterns
+    local.set 0
+    local.get 6
+    local.get 5
+    i64.add
+    local.get 4
+    i64.add
+    local.get 3
+    i64.add
+    local.get 2
+    i64.add
+    local.get 1
+    i64.add
+    local.get 0
+    i64.add
+    return
+    end
+  )
+  (table (;0;) 0 0 funcref)
+  (memory (;0;) i64 16)
+  (global (;0;) (mut i64) i64.const 1048576)
+  (export "main" (func 4))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (elem (;0;) (i32.const 0) func)
+  (data (;0;) (i64.const 1048576) "")
+)
+=========== OPT LEVEL: all ===========
+(module
+  (type (;0;) (func (param i64) (result i64)))
+  (type (;1;) (func (param i64 i64) (result i64)))
+  (type (;2;) (func (param i64 i64) (result i64)))
+  (type (;3;) (func (param i64) (result i64)))
+  (type (;4;) (func (result i64)))
+  (func $opaques (type 0) (param i64) (result i64)
+    local.get 0
+    return
+    end
+  )
+  (func $test_signed (type 1) (param i64 i64) (result i64)
+    block
+      block
+        local.get 0
+        local.get 1
+        i64.eq
+        br_if 0
+        block
+          local.get 0
+          local.get 1
+          i64.ne
+          br_if 0
+          block
+            local.get 0
+            local.get 1
+            i64.lt_s
+            br_if 0
+            block
+              local.get 0
+              local.get 1
+              i64.ge_s
+              br_if 0
+              block
+                local.get 0
+                local.get 1
+                i64.gt_s
+                br_if 0
+                block
+                  local.get 0
+                  local.get 1
+                  i64.le_s
+                  br_if 0
+                  i64.const 0
+                  local.set 0
+                  br 6
+                end
+                i64.const 6
+                local.set 0
+                br 5
+              end
+              i64.const 5
+              local.set 0
+              br 4
+            end
+            i64.const 4
+            local.set 0
+            br 3
+          end
+          i64.const 3
+          local.set 0
+          br 2
+        end
+        i64.const 2
+        local.set 0
+        br 1
+      end
+      i64.const 1
+      local.set 0
+    end
+    local.get 0
+    return
+    end
+  )
+  (func $test_unsigned (type 2) (param i64 i64) (result i64)
+    block
+      block
+        local.get 0
+        local.get 1
+        i64.eq
+        br_if 0
+        block
+          local.get 0
+          local.get 1
+          i64.ne
+          br_if 0
+          block
+            local.get 0
+            local.get 1
+            i64.lt_u
+            br_if 0
+            block
+              local.get 0
+              local.get 1
+              i64.ge_u
+              br_if 0
+              block
+                local.get 0
+                local.get 1
+                i64.gt_u
+                br_if 0
+                block
+                  local.get 0
+                  local.get 1
+                  i64.le_u
+                  br_if 0
+                  i64.const 0
+                  local.set 0
+                  br 6
+                end
+                i64.const 60
+                local.set 0
+                br 5
+              end
+              i64.const 50
+              local.set 0
+              br 4
+            end
+            i64.const 40
+            local.set 0
+            br 3
+          end
+          i64.const 30
+          local.set 0
+          br 2
+        end
+        i64.const 20
+        local.set 0
+        br 1
+      end
+      i64.const 10
+      local.set 0
+    end
+    local.get 0
+    return
+    end
+  )
+  (func $test_mixed_patterns (type 3) (param i64) (result i64)
+    (local i64)
+    block
+      block
+        block
+          block
+            local.get 0
+            call $opaques
+            local.set 1
+            local.get 0
+            i64.const 1
+            i64.add
+            call $opaques
+            local.set 0
+            local.get 1
+            local.get 0
+            i64.lt_s
+            br_if 0
+            br 1
+          end
+          block
+            local.get 1
+            local.get 0
+            i64.le_s
+            br_if 0
+            br 1
+          end
+          local.get 1
+          local.get 0
+          i64.ne
+          br_if 1
+        end
+        block
+          block
+            block
+              local.get 1
+              local.get 0
+              i64.gt_s
+              br_if 0
+              br 1
+            end
+            block
+              local.get 1
+              local.get 0
+              i64.ge_s
+              br_if 0
+              br 1
+            end
+            local.get 1
+            local.get 0
+            i64.eq
+            br_if 1
+          end
+          i64.const 0
+          local.set 0
+          br 2
+        end
+        i64.const 200
+        local.set 0
+        br 1
+      end
+      i64.const 100
+      local.set 0
+    end
+    local.get 0
+    return
+    end
+  )
+  (func $main (type 4) (result i64)
+    (local i64 i64 i64 i64 i64 i64 i64 i64)
+    i64.const 10
+    local.set 7
+    i64.const 20
+    local.set 1
+    i64.const 10
+    i64.const 20
+    call $test_signed
+    local.set 6
+    i64.const 20
+    i64.const 20
+    call $test_signed
+    local.set 5
+    i64.const 30
+    local.set 0
+    i64.const 30
+    i64.const 10
+    call $test_signed
+    local.set 4
+    i64.const 10
+    i64.const 20
+    call $test_unsigned
+    local.set 3
+    i64.const 20
+    local.get 1
+    call $test_unsigned
+    local.set 2
+    local.get 0
+    local.get 7
+    call $test_unsigned
+    local.set 1
+    i64.const 42
+    call $test_mixed_patterns
+    local.set 0
+    local.get 6
+    local.get 5
+    i64.add
+    local.get 4
+    i64.add
+    local.get 3
+    i64.add
+    local.get 2
+    i64.add
+    local.get 1
+    i64.add
+    local.get 0
+    i64.add
+    return
+    end
+  )
+  (table (;0;) 0 0 funcref)
+  (memory (;0;) i64 16)
+  (global (;0;) (mut i64) i64.const 1048576)
+  (export "main" (func 4))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (elem (;0;) (i32.const 0) func)
+  (data (;0;) (i64.const 1048576) "")
+)
+=========== OPT LEVEL: aggresive ===========
+(module
+  (type (;0;) (func (param i64 i64) (result i64)))
+  (type (;1;) (func (param i64 i64) (result i64)))
+  (type (;2;) (func (result i64)))
+  (func $test_signed (type 0) (param i64 i64) (result i64)
+    block
+      block
+        local.get 0
+        local.get 1
+        i64.eq
+        br_if 0
+        block
+          local.get 0
+          local.get 1
+          i64.ne
+          br_if 0
+          block
+            local.get 0
+            local.get 1
+            i64.lt_s
+            br_if 0
+            block
+              local.get 0
+              local.get 1
+              i64.ge_s
+              br_if 0
+              block
+                local.get 0
+                local.get 1
+                i64.gt_s
+                br_if 0
+                block
+                  local.get 0
+                  local.get 1
+                  i64.le_s
+                  br_if 0
+                  i64.const 0
+                  local.set 0
+                  br 6
+                end
+                i64.const 6
+                local.set 0
+                br 5
+              end
+              i64.const 5
+              local.set 0
+              br 4
+            end
+            i64.const 4
+            local.set 0
+            br 3
+          end
+          i64.const 3
+          local.set 0
+          br 2
+        end
+        i64.const 2
+        local.set 0
+        br 1
+      end
+      i64.const 1
+      local.set 0
+    end
+    local.get 0
+    return
+    end
+  )
+  (func $test_unsigned (type 1) (param i64 i64) (result i64)
+    block
+      block
+        local.get 0
+        local.get 1
+        i64.eq
+        br_if 0
+        block
+          local.get 0
+          local.get 1
+          i64.ne
+          br_if 0
+          block
+            local.get 0
+            local.get 1
+            i64.lt_u
+            br_if 0
+            block
+              local.get 0
+              local.get 1
+              i64.ge_u
+              br_if 0
+              block
+                local.get 0
+                local.get 1
+                i64.gt_u
+                br_if 0
+                block
+                  local.get 0
+                  local.get 1
+                  i64.le_u
+                  br_if 0
+                  i64.const 0
+                  local.set 0
+                  br 6
+                end
+                i64.const 60
+                local.set 0
+                br 5
+              end
+              i64.const 50
+              local.set 0
+              br 4
+            end
+            i64.const 40
+            local.set 0
+            br 3
+          end
+          i64.const 30
+          local.set 0
+          br 2
+        end
+        i64.const 20
+        local.set 0
+        br 1
+      end
+      i64.const 10
+      local.set 0
+    end
+    local.get 0
+    return
+    end
+  )
+  (func $main (type 2) (result i64)
+    (local i64 i64 i64 i64 i64 i64 i64)
+    i64.const 10
+    local.set 6
+    i64.const 20
+    local.set 1
+    i64.const 10
+    i64.const 20
+    call $test_signed
+    local.set 5
+    i64.const 20
+    i64.const 20
+    call $test_signed
+    local.set 4
+    i64.const 30
+    local.set 0
+    i64.const 30
+    i64.const 10
+    call $test_signed
+    local.set 3
+    i64.const 10
+    i64.const 20
+    call $test_unsigned
+    local.set 2
+    i64.const 20
+    local.get 1
+    call $test_unsigned
+    local.set 1
+    local.get 0
+    local.get 6
+    call $test_unsigned
+    local.set 0
+    local.get 5
+    local.get 4
+    i64.add
+    local.get 3
+    i64.add
+    local.get 2
+    i64.add
+    local.get 1
+    i64.add
+    local.get 0
+    i64.add
+    i64.const 100
+    i64.add
+    return
+    end
+  )
+  (table (;0;) 0 0 funcref)
+  (memory (;0;) i64 16)
+  (global (;0;) (mut i64) i64.const 1048576)
+  (export "main" (func 2))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (elem (;0;) (i32.const 0) func)
+  (data (;0;) (i64.const 1048576) "")
+)

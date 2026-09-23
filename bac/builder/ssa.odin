@@ -6,7 +6,7 @@ import "core:fmt"
 import "core:mem"
 import "core:slice"
 
-Graph :: bac.Graph
+Proc :: bac.Proc
 get_node :: bac.get_node
 
 btype :: #force_inline proc(node: bac.Expanded_Node) -> Node_Type {
@@ -19,7 +19,7 @@ builder_extra :: proc {
 }
 
 builder_extra_node :: #force_inline proc(
-	graph: ^bac.Graph,
+	graph: ^bac.Proc,
 	node: ^bac.Node,
 	$T: typeid,
 ) -> ^T {
@@ -30,7 +30,7 @@ builder_extra_node :: #force_inline proc(
 }
 
 builder_extra_node_id :: #force_inline proc(
-	graph: ^bac.Graph,
+	graph: ^bac.Proc,
 	id: bac.Node_ID,
 	$T: typeid,
 ) -> ^T {
@@ -46,7 +46,7 @@ If_State :: struct {
 }
 
 start_if :: proc(
-	graph: ^bac.Graph,
+	graph: ^bac.Proc,
 	scope: bac.Node_ID,
 	state: ^If_State,
 	cond: bac.Node_ID,
@@ -59,13 +59,13 @@ start_if :: proc(
 	bac.set_input(graph, scope, 0, then)
 }
 
-end_if :: proc(graph: ^bac.Graph, then_scope: ^bac.Node_ID, state: ^If_State) {
+end_if :: proc(graph: ^bac.Proc, then_scope: ^bac.Node_ID, state: ^If_State) {
 	start_else(graph, then_scope, state)
 	end_else(graph, then_scope, state)
 }
 
 start_else :: proc(
-	graph: ^bac.Graph,
+	graph: ^bac.Proc,
 	then_scope: ^bac.Node_ID,
 	state: ^If_State,
 ) {
@@ -75,7 +75,7 @@ start_else :: proc(
 }
 
 end_else :: proc(
-	graph: ^bac.Graph,
+	graph: ^bac.Proc,
 	else_scope: ^bac.Node_ID,
 	state: ^If_State,
 ) {
@@ -91,7 +91,7 @@ start_block :: proc(state: ^Block_State) {
 }
 
 break_block :: proc(
-	graph: ^bac.Graph,
+	graph: ^bac.Proc,
 	scope: ^bac.Node_ID,
 	state: ^Block_State,
 ) {
@@ -99,11 +99,7 @@ break_block :: proc(
 	scope^ = 0
 }
 
-end_block :: proc(
-	graph: ^bac.Graph,
-	scope: ^bac.Node_ID,
-	state: ^Block_State,
-) {
+end_block :: proc(graph: ^bac.Proc, scope: ^bac.Node_ID, state: ^Block_State) {
 	state.end_scope = merge_scopes(graph, state.end_scope, scope^)
 	scope^ = state.end_scope
 }
@@ -118,7 +114,7 @@ Loop_State :: struct {
 	scopes: [Loop_Control]bac.Node_ID,
 }
 
-start_loop :: proc(graph: ^bac.Graph, scope: bac.Node_ID, state: ^Loop_State) {
+start_loop :: proc(graph: ^bac.Proc, scope: bac.Node_ID, state: ^Loop_State) {
 	snode := expand_node(graph, scope)
 	loop := bac.add_loop(graph, "loop", snode.inps[0])
 	bac.set_input(graph, scope, 0, loop)
@@ -133,7 +129,7 @@ start_loop :: proc(graph: ^bac.Graph, scope: bac.Node_ID, state: ^Loop_State) {
 }
 
 start_loop_increment :: proc(
-	graph: ^bac.Graph,
+	graph: ^bac.Proc,
 	node_scope: ^bac.Node_ID,
 	state: ^Loop_State,
 ) {
@@ -142,7 +138,7 @@ start_loop_increment :: proc(
 }
 
 end_loop :: proc(
-	graph: ^bac.Graph,
+	graph: ^bac.Proc,
 	node_scope: ^bac.Node_ID,
 	state: ^Loop_State,
 ) {
@@ -217,7 +213,7 @@ end_loop :: proc(
 
 loop_control :: proc(
 	variant: Loop_Control,
-	ctx: ^bac.Graph,
+	ctx: ^bac.Proc,
 	scope: bac.Node_ID,
 	loop: ^Loop_State,
 ) {
@@ -227,7 +223,7 @@ loop_control :: proc(
 }
 
 set_scope_value :: proc(
-	graph: ^bac.Graph,
+	graph: ^bac.Proc,
 	scope: bac.Node_ID,
 	#any_int idx: int,
 	value: bac.Node_ID,
@@ -237,7 +233,7 @@ set_scope_value :: proc(
 }
 
 get_scope_value :: proc(
-	graph: ^bac.Graph,
+	graph: ^bac.Proc,
 	scope: bac.Node_ID,
 	#any_int idx: int,
 ) -> bac.Node_ID {
@@ -270,7 +266,7 @@ get_scope_value :: proc(
 }
 
 push_scope_value :: proc(
-	graph: ^bac.Graph,
+	graph: ^bac.Proc,
 	scope: bac.Node_ID,
 	value: bac.Node_ID,
 ) -> int {
@@ -280,7 +276,7 @@ push_scope_value :: proc(
 }
 
 truncate_scope :: proc(
-	graph: ^bac.Graph,
+	graph: ^bac.Proc,
 	scope: bac.Node_ID,
 	#any_int to_len: int,
 ) {
@@ -299,7 +295,7 @@ truncate_scope :: proc(
 }
 
 merge_scopes :: proc(
-	graph: ^bac.Graph,
+	graph: ^bac.Proc,
 	lctrl: bac.Node_ID,
 	rctrl: bac.Node_ID,
 ) -> bac.Node_ID {
@@ -347,19 +343,19 @@ inline_call :: proc {
 }
 
 inline_stencil :: proc(
-	graph: ^bac.Graph,
+	graph: ^bac.Proc,
 	call: bac.Node_ID,
 	from: bac.Stencil,
 ) {
 	slot: arna.Allocator
-	fromg: bac.Graph
+	fromg: bac.Proc
 	fromg.node_spec = &SPEC
 	fromg.mem = &slot
 	bac.mount_stencil(&fromg, from)
 	inline_graph(graph, call, &fromg)
 }
 
-inline_graph :: proc(graph: ^bac.Graph, call: bac.Node_ID, from: ^bac.Graph) {
+inline_graph :: proc(graph: ^bac.Proc, call: bac.Node_ID, from: ^bac.Proc) {
 	assert(graph.node_spec == &SPEC)
 
 	bac.add_efficiency_stat(graph, .inlines, 1)
@@ -374,8 +370,8 @@ inline_graph :: proc(graph: ^bac.Graph, call: bac.Node_ID, from: ^bac.Graph) {
 	bac.invalidate_idepth(graph)
 
 	Ctx :: struct {
-		graph:          ^bac.Graph,
-		from:           ^bac.Graph,
+		graph:          ^bac.Proc,
+		from:           ^bac.Proc,
 		projection:     []bac.Node_ID,
 		dprojection:    []bac.D_Node_ID,
 		reached_return: bool,
@@ -728,7 +724,7 @@ inline_graph :: proc(graph: ^bac.Graph, call: bac.Node_ID, from: ^bac.Graph) {
 	}
 }
 
-ordered_remove :: proc(ctx: ^bac.Graph, node: ^bac.Expanded_Node, i: int) {
+ordered_remove :: proc(ctx: ^bac.Proc, node: ^bac.Expanded_Node, i: int) {
 	par := bac.get_node_id(ctx, node)
 	for inp, j in node.inps[i + 1:] {
 		bac.add_output(ctx, inp, par, j + i)
@@ -745,7 +741,7 @@ ordered_remove :: proc(ctx: ^bac.Graph, node: ^bac.Expanded_Node, i: int) {
 }
 
 compute_index_offset :: proc(
-	ctx: ^bac.Graph,
+	ctx: ^bac.Proc,
 	base: Node_ID,
 	index: Node_ID,
 	#any_int stride: i64,
@@ -768,18 +764,14 @@ compute_index_offset :: proc(
 	return bac.add_bin_op(ctx, "snd", .Add, .I64, base, index)
 }
 
-add_field_offset :: proc(
-	graph: ^Graph,
-	base: Node_ID,
-	offset: int,
-) -> Node_ID {
+add_field_offset :: proc(graph: ^Proc, base: Node_ID, offset: int) -> Node_ID {
 	if offset == 0 do return base
 	off := bac.add_c_int(graph, "foff", .I64, i64(offset))
 	return bac.add_bin_op(graph, "fld", .Add, .I64, base, off)
 }
 
 add_field_store :: proc(
-	ctx: ^Graph,
+	ctx: ^Proc,
 	name: string,
 	cfg: Node_ID,
 	mem: Node_ID,
@@ -798,7 +790,7 @@ add_field_store :: proc(
 }
 
 add_arbitrary_store :: proc(
-	ctx: ^Graph,
+	ctx: ^Proc,
 	cfg: Node_ID,
 	mem: Node_ID,
 	addr: Node_ID,
@@ -866,7 +858,7 @@ add_arbitrary_store :: proc(
 }
 
 add_field_load :: proc(
-	ctx: ^Graph,
+	ctx: ^Proc,
 	name: string,
 	dt: bac.Node_Datatype,
 	cfg: Node_ID,
@@ -885,7 +877,7 @@ add_field_load :: proc(
 }
 
 add_arbitrary_load :: proc(
-	ctx: ^Graph,
+	ctx: ^Proc,
 	cfg: Node_ID,
 	mem: Node_ID,
 	addr: Node_ID,
@@ -973,7 +965,7 @@ Abi_Param :: struct {
 }
 
 arg_gen_next :: proc(
-	ctx: ^Graph,
+	ctx: ^Proc,
 	mem: Node_ID,
 	gen: ^Param_Gen,
 	name: string,
@@ -1020,7 +1012,7 @@ arg_gen_next :: proc(
 	return
 }
 
-arg_gen_finalize :: proc(ctx: ^Graph, gen: ^Param_Gen) -> []bac.Param_Spec {
+arg_gen_finalize :: proc(ctx: ^Proc, gen: ^Param_Gen) -> []bac.Param_Spec {
 	arg_tys := make([]bac.Param_Spec, len(gen.vls))
 
 	j, ri: u32
@@ -1056,14 +1048,14 @@ Builtin_Proc :: enum {
 	memset,
 }
 
-init_graph :: proc(graph: ^Graph) {
+init_graph :: proc(graph: ^Proc) {
 	graph.start = bac.add_start(graph, "start")
 	graph.entry = bac.add_entry(graph, "entry", graph.start)
 	graph.root_mem = bac.add_root_mem(graph, "emem", graph.entry)
 	graph.sym = bac.add_sym(graph, "sym", graph.entry)
 }
 
-make_builtin_proc :: proc(graph: ^Graph, name: Builtin_Proc) {
+make_builtin_proc :: proc(graph: ^Proc, name: Builtin_Proc) {
 	init_graph(graph)
 
 	scope := add_scope(graph, "scp", graph.entry)

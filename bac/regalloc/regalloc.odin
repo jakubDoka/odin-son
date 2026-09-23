@@ -25,8 +25,8 @@ Mode :: enum {
 
 regalloc :: proc(
 	ra: ^bac.Regalloc,
-	graph: ^bac.Graph,
-	sched: ^bac.Graph_Schedule,
+	graph: ^bac.Proc,
+	sched: ^bac.Schedule,
 	mode: Mode,
 	scratch := context.allocator,
 ) -> []bac.Reg {
@@ -53,8 +53,8 @@ regalloc :: proc(
 
 regalloc_round :: proc(
 	ra: ^bac.Regalloc,
-	graph: ^bac.Graph,
-	sched: ^bac.Graph_Schedule,
+	graph: ^bac.Proc,
+	sched: ^bac.Schedule,
 	scratch: runtime.Allocator,
 	mode: Mode,
 	round: int,
@@ -72,9 +72,9 @@ regalloc_round :: proc(
 	}
 
 	Ctx :: struct {
-		graph:           ^bac.Graph,
+		graph:           ^bac.Proc,
 		ra:              ^bac.Regalloc,
-		sched:           ^bac.Graph_Schedule,
+		sched:           ^bac.Schedule,
 		mode:            Mode,
 		instr_placement: [dynamic]Instr_Placement,
 		lrg_table:       []^bac.Lrg,
@@ -1740,7 +1740,7 @@ regalloc_round :: proc(
 		) {
 			cbnode := expand_node(ctx.graph, cb)
 
-			bb: ^bac.Graph_Basic_Block
+			bb: ^bac.Basic_Block
 			for &b in ctx.sched.bbs {
 				if b.head == cb {
 					bb = &b
@@ -1889,7 +1889,7 @@ regalloc_round :: proc(
 			split = bac.add_split(ctx.graph, name, inp_node.dt, inp)
 		}
 
-		block: ^bac.Graph_Basic_Block
+		block: ^bac.Basic_Block
 		bidx: int
 		if node.itype == .Phi {
 			last := bac.get_inputs(ctx.graph, node.inps[0])[idx - 1]
@@ -1906,7 +1906,7 @@ regalloc_round :: proc(
 	get_node_block :: #force_inline proc(
 		ctx: Ctx,
 		node: Node_ID,
-	) -> ^bac.Graph_Basic_Block {
+	) -> ^bac.Basic_Block {
 		node := get_node(ctx.graph, node)
 		fmt.assertf(
 			int(node.gvn) < len(ctx.instr_placement),
@@ -1921,7 +1921,7 @@ regalloc_round :: proc(
 		ctx: Ctx,
 		id: Node_ID,
 	) -> (
-		block: ^bac.Graph_Basic_Block,
+		block: ^bac.Basic_Block,
 		idx: int,
 	) {
 		block = get_node_block(ctx, id)
@@ -1931,7 +1931,7 @@ regalloc_round :: proc(
 	}
 
 	forward_lrg :: proc(
-		graph: ^bac.Graph,
+		graph: ^bac.Proc,
 		lrg: ^bac.Lrg,
 		lrg_table: []^bac.Lrg,
 	) -> Node_ID {
@@ -1964,11 +1964,7 @@ regalloc_round :: proc(
 			prefix = prefix,
 		)
 
-		prefix :: proc(
-			w: io.Writer,
-			instr: ^bac.Node,
-			bb: bac.Graph_Basic_Block,
-		) {
+		prefix :: proc(w: io.Writer, instr: ^bac.Node, bb: bac.Basic_Block) {
 			ctx := (^Ctx)(context.user_ptr)
 			if is_def_while_splitting(ctx^, instr) && len(ctx.lrg_table) != 0 {
 				lrg := get_lrg(ctx^, bac.get_node_id(ctx.graph, instr))

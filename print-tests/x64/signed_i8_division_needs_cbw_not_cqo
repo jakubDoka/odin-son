@@ -1,0 +1,142 @@
+=========== OPT LEVEL: none-quick ===========
+main:
+    sub rsp, 0x18
+    mov rdi, 0xc8
+    call opaque
+    mov.q [rsp], rax
+    mov rdi, 3
+    call opaque
+    mov.q [rsp + 0x8], rax
+    mov.q rax, [rsp]
+    mov.q rcx, [rsp + 0x8]
+    cbw
+    idiv cl
+    movsx rax, al
+    add rsp, 0x18
+    ret
+opaque:
+    sub rsp, 8
+    mov.q [rsp], rdi
+    mov.q rax, [rsp]
+    add rsp, 8
+    ret
+=========== OPT LEVEL: none ===========
+main:
+    push rbx
+    mov rdi, 0xc8
+    call opaque
+    mov rbx, rax
+    mov rdi, 3
+    call opaque
+    mov rcx, rax
+    mov rax, rbx
+    cbw
+    idiv cl
+    movsx rax, al
+    pop rbx
+    ret
+opaque:
+    mov rax, rdi
+    ret
+=========== OPT LEVEL: mininal-quick ===========
+main:
+    sub rsp, 0x18
+    mov rdi, 0xc8
+    call opaque
+    mov.q [rsp], rax
+    mov rdi, 3
+    call opaque
+    mov.q [rsp + 0x8], rax
+    mov.q rax, [rsp]
+    mov.q rcx, [rsp + 0x8]
+    cbw
+    idiv cl
+    movsx rax, al
+    add rsp, 0x18
+    ret
+opaque:
+    sub rsp, 8
+    mov.q [rsp], rdi
+    mov.q rax, [rsp]
+    add rsp, 8
+    ret
+=========== OPT LEVEL: mininal ===========
+main:
+    push rbx
+    mov rdi, 0xc8
+    call opaque
+    mov rbx, rax
+    mov rdi, 3
+    call opaque
+    mov rcx, rax
+    mov rax, rbx
+    cbw
+    idiv cl
+    movsx rax, al
+    pop rbx
+    ret
+opaque:
+    mov rax, rdi
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+main:
+    sub rsp, 0x18
+    mov rdi, 0xc8
+    call opaque
+    mov.q [rsp], rax
+    mov rdi, 3
+    call opaque
+    mov.q [rsp + 0x8], rax
+    mov.q rax, [rsp]
+    mov.q rcx, [rsp + 0x8]
+    cbw
+    idiv cl
+    movsx rax, al
+    add rsp, 0x18
+    ret
+opaque:
+    sub rsp, 8
+    mov.q [rsp], rdi
+    mov.q rax, [rsp]
+    add rsp, 8
+    ret
+=========== OPT LEVEL: moderate ===========
+main:
+    push rbx
+    mov rdi, 0xc8
+    call opaque
+    mov rbx, rax
+    mov rdi, 3
+    call opaque
+    mov rcx, rax
+    mov rax, rbx
+    cbw
+    idiv cl
+    movsx rax, al
+    pop rbx
+    ret
+opaque:
+    mov rax, rdi
+    ret
+=========== OPT LEVEL: all ===========
+main:
+    push rbx
+    mov rdi, 0xc8
+    call opaque
+    mov rbx, rax
+    mov rdi, 3
+    call opaque
+    mov rcx, rax
+    mov rax, rbx
+    cbw
+    idiv cl
+    movsx rax, al
+    pop rbx
+    ret
+opaque:
+    mov rax, rdi
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    mov rax, -0x12
+    ret

@@ -1,0 +1,218 @@
+=========== OPT LEVEL: none-quick ===========
+produce:
+    sub rsp, 0x18
+    mov.q [rsp], rdi
+    mov.q rax, [rsp]
+    mov.q [rsi], rax
+    mov.q rax, [rsp]
+    add rax, 1
+    mov rax, rax
+    mov.q [rdx], rax
+    mov.q rax, [rsp]
+    add rax, 2
+    mov rax, rax
+    add rsp, 0x18
+    ret
+consume:
+    imul rax, rdi, 0x64
+    imul rcx, rsi, 0xa
+    add rax, rcx
+    add rax, rdx
+    ret
+main:
+    sub rsp, 0x18
+    mov rdi, 4
+    lea rsi, [rsp]
+    lea rdx, [rsp + 0x8]
+    call produce
+    mov.q [rsp + 0x10], rax
+    mov.q rdi, [rsp]
+    mov.q rsi, [rsp + 0x8]
+    mov.q rdx, [rsp + 0x10]
+    call consume
+    add rsp, 0x18
+    ret
+=========== OPT LEVEL: none ===========
+produce:
+    mov rcx, rdi
+    mov.q [rsi], rcx
+    mov rax, rcx
+    add rax, 1
+    mov.q [rdx], rax
+    mov rax, rcx
+    add rax, 2
+    ret
+consume:
+    imul rax, rdi, 0x64
+    imul rcx, rsi, 0xa
+    add rax, rcx
+    add rax, rdx
+    ret
+main:
+    sub rsp, 0x18
+    mov rdi, 4
+    lea rsi, [rsp]
+    lea rdx, [rsp + 0x8]
+    call produce
+    mov.q rdi, [rsp]
+    mov.q rsi, [rsp + 0x8]
+    mov rdx, rax
+    call consume
+    add rsp, 0x18
+    ret
+=========== OPT LEVEL: mininal-quick ===========
+produce:
+    sub rsp, 0x18
+    mov.q [rsp], rdi
+    mov.q rax, [rsp]
+    mov.q [rsi], rax
+    mov.q rax, [rsp]
+    add rax, 1
+    mov rax, rax
+    mov.q [rdx], rax
+    mov.q rax, [rsp]
+    add rax, 2
+    mov rax, rax
+    add rsp, 0x18
+    ret
+consume:
+    imul rax, rdi, 0x64
+    imul rcx, rsi, 0xa
+    add rax, rcx
+    add rax, rdx
+    ret
+main:
+    sub rsp, 0x18
+    mov rdi, 4
+    lea rsi, [rsp]
+    lea rdx, [rsp + 0x8]
+    call produce
+    mov.q [rsp + 0x10], rax
+    mov.q rdi, [rsp]
+    mov.q rsi, [rsp + 0x8]
+    mov.q rdx, [rsp + 0x10]
+    call consume
+    add rsp, 0x18
+    ret
+=========== OPT LEVEL: mininal ===========
+produce:
+    mov rcx, rdi
+    mov.q [rsi], rcx
+    mov rax, rcx
+    add rax, 1
+    mov.q [rdx], rax
+    mov rax, rcx
+    add rax, 2
+    ret
+consume:
+    imul rax, rdi, 0x64
+    imul rcx, rsi, 0xa
+    add rax, rcx
+    add rax, rdx
+    ret
+main:
+    sub rsp, 0x18
+    mov rdi, 4
+    lea rsi, [rsp]
+    lea rdx, [rsp + 0x8]
+    call produce
+    mov.q rdi, [rsp]
+    mov.q rsi, [rsp + 0x8]
+    mov rdx, rax
+    call consume
+    add rsp, 0x18
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+produce:
+    sub rsp, 0x18
+    mov.q [rsp], rdi
+    mov.q rax, [rsp]
+    mov.q [rsi], rax
+    mov.q rax, [rsp]
+    add rax, 1
+    mov rax, rax
+    mov.q [rdx], rax
+    mov.q rax, [rsp]
+    add rax, 2
+    mov rax, rax
+    add rsp, 0x18
+    ret
+consume:
+    imul rax, rdi, 0x64
+    imul rcx, rsi, 0xa
+    add rax, rcx
+    add rax, rdx
+    ret
+main:
+    sub rsp, 0x18
+    mov rdi, 4
+    lea rsi, [rsp]
+    lea rdx, [rsp + 0x8]
+    call produce
+    mov.q [rsp + 0x10], rax
+    mov.q rdi, [rsp]
+    mov.q rsi, [rsp + 0x8]
+    mov.q rdx, [rsp + 0x10]
+    call consume
+    add rsp, 0x18
+    ret
+=========== OPT LEVEL: moderate ===========
+produce:
+    mov rcx, rdi
+    mov.q [rsi], rcx
+    mov rax, rcx
+    add rax, 1
+    mov.q [rdx], rax
+    mov rax, rcx
+    add rax, 2
+    ret
+consume:
+    imul rax, rdi, 0x64
+    imul rcx, rsi, 0xa
+    add rax, rcx
+    add rax, rdx
+    ret
+main:
+    sub rsp, 0x18
+    mov rdi, 4
+    lea rsi, [rsp]
+    lea rdx, [rsp + 0x8]
+    call produce
+    mov.q rdi, [rsp]
+    mov.q rsi, [rsp + 0x8]
+    mov rdx, rax
+    call consume
+    add rsp, 0x18
+    ret
+=========== OPT LEVEL: all ===========
+produce:
+    mov rcx, rdi
+    mov.q [rsi], rcx
+    mov rax, rcx
+    add rax, 1
+    mov.q [rdx], rax
+    mov rax, rcx
+    add rax, 2
+    ret
+consume:
+    imul rax, rdi, 0x64
+    imul rcx, rsi, 0xa
+    add rax, rcx
+    add rax, rdx
+    ret
+main:
+    sub rsp, 0x18
+    mov rdi, 4
+    lea rsi, [rsp]
+    lea rdx, [rsp + 0x8]
+    call produce
+    mov.q rdi, [rsp]
+    mov.q rsi, [rsp + 0x8]
+    mov rdx, rax
+    call consume
+    add rsp, 0x18
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    mov rax, 0x1c8
+    ret

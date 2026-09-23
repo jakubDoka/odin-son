@@ -221,26 +221,26 @@ when SPEC_NOT_PRESENT {
 	inherit_idx_of :: proc($T: typeid) -> u8 {return 0}
 
 	add_return :: proc(
-		graph: ^Graph,
+		graph: ^Proc,
 		name: string,
 		inputs: []Node_ID,
 	) -> Node_ID {return 0}
 
 	add_region :: proc(
-		graph: ^Graph,
+		graph: ^Proc,
 		name: string,
 		ctrls: []Node_ID,
 	) -> Node_ID {return 0}
 
 	add_jump :: proc(
-		graph: ^Graph,
+		graph: ^Proc,
 		name: string,
 		ctrl: Node_ID,
 	) -> Node_ID {return 0}
 	add_always :: add_jump
 	add_then :: add_jump
 	add_else :: add_jump
-	add_poison :: proc(graph: ^Graph, name: string) -> Node_ID {return 0}
+	add_poison :: proc(graph: ^Proc, name: string) -> Node_ID {return 0}
 }
 
 Class_Flags :: bit_set[Class_Flag;u8]
@@ -417,21 +417,21 @@ Interner :: struct {
 
 Dbg_Ctx :: struct {}
 
-Graph :: struct {
+Proc :: struct {
 	using node_spec: ^Node_Spec,
 	using stats:     ^Stats,
 	worklist:        ^queue.Queue(Node_ID),
 	triggers:        ^[dynamic][dynamic]Node_ID,
 	mem:             ^arna.Allocator,
 	current_dnode:   D_Node_ID,
-	using meta:      Graph_Meta,
+	using meta:      Proc_Meta,
 	dont_intern:     bool,
 	dont_delete:     bool,
 	peeped:          bool,
-	opt_flags:       Graph_Opt_Flags,
+	opt_flags:       Opt_Flags,
 }
 
-Graph_Meta :: struct {
+Proc_Meta :: struct {
 	interner:     Interner,
 	weight:       int,
 	waste:        int,
@@ -453,12 +453,12 @@ Graph_Meta :: struct {
 
 Stencil :: struct {
 	mem:        []u8,
-	using meta: Graph_Meta,
+	using meta: Proc_Meta,
 }
 
-Graph_Opt_Flags :: bit_set[Graph_Opt_Flag]
+Opt_Flags :: bit_set[Opt_Flag]
 
-Graph_Opt_Flag :: enum int {
+Opt_Flag :: enum int {
 	Iter_Peeps,
 	Local_Peeps,
 	Mem_Opt,
@@ -467,10 +467,10 @@ Graph_Opt_Flag :: enum int {
 }
 
 Peep_Ctx :: struct {
-	using graph: ^Graph,
+	using graph: ^Proc,
 }
 
-invalidate_idepth :: proc(graph: ^Graph) {
+invalidate_idepth :: proc(graph: ^Proc) {
 	graph.min_idepth = graph.max_idepth
 }
 
@@ -493,7 +493,7 @@ peep_ctx_add_trigger :: proc(ctx: Peep_Ctx, triggerer: Node_ID, tar: Node_ID) {
 }
 
 worklist_add :: proc(
-	graph: ^Graph,
+	graph: ^Proc,
 	worklist: ^queue.Queue(Node_ID),
 	id: Node_ID,
 ) {
@@ -517,7 +517,7 @@ worklist_add :: proc(
 }
 
 worklist_next :: proc(
-	graph: ^Graph,
+	graph: ^Proc,
 	worklist: ^queue.Queue(Node_ID),
 ) -> (
 	n: Node_ID,
@@ -532,18 +532,18 @@ worklist_next :: proc(
 	}
 }
 
-pin :: proc(graph: ^Graph, id: Node_ID) {
+pin :: proc(graph: ^Proc, id: Node_ID) {
 	if id == 0 do return
 	add_output(graph, id, 0, 0)
 }
 
-unpin :: proc(graph: ^Graph, id: Node_ID, no_delete := false) {
+unpin :: proc(graph: ^Proc, id: Node_ID, no_delete := false) {
 	if id == 0 do return
 	remove_output(graph, id, {}, no_delete)
 }
 
 find_node :: proc(
-	graph: ^Graph,
+	graph: ^Proc,
 	kind: Node_Type,
 	on: Node_ID = 0,
 ) -> (
@@ -559,11 +559,11 @@ find_node :: proc(
 	return 0, false
 }
 
-get_sym_count :: proc(graph: ^Graph) -> int {
+get_sym_count :: proc(graph: ^Proc) -> int {
 	return len(get_outputs(graph, graph.sym))
 }
 
-sym_iter_next :: proc(graph: ^Graph, iter: ^int) -> (res: Sym_Ref, ok: bool) {
+sym_iter_next :: proc(graph: ^Proc, iter: ^int) -> (res: Sym_Ref, ok: bool) {
 	arr := get_outputs(graph, graph.sym)
 	if iter^ <= 0 do return
 	iter^ -= 1
@@ -581,7 +581,7 @@ sym_iter_next :: proc(graph: ^Graph, iter: ^int) -> (res: Sym_Ref, ok: bool) {
 }
 
 assemble_args :: proc(
-	ctx: ^Graph,
+	ctx: ^Proc,
 	param_count: int,
 ) -> (
 	res: []Node_ID,
@@ -616,7 +616,7 @@ assemble_args :: proc(
 	return params, starter
 }
 
-compute_weight :: proc(graph: ^Graph, all: []Node_ID) {
+compute_weight :: proc(graph: ^Proc, all: []Node_ID) {
 	if !graph.node_spec.intern do return
 
 	@(static, rodata)
@@ -636,13 +636,13 @@ compute_weight :: proc(graph: ^Graph, all: []Node_ID) {
 }
 
 // mem is borrowed
-get_stencil :: proc(graph: ^Graph) -> (s: Stencil) {
+get_stencil :: proc(graph: ^Proc) -> (s: Stencil) {
 	s.mem = graph.mem.ptr[:graph.mem.pos]
 	s.meta = graph.meta
 	return
 }
 
-mount_stencil :: proc(graph: ^Graph, stencil: Stencil) {
+mount_stencil :: proc(graph: ^Proc, stencil: Stencil) {
 	if graph.mem.ptr == nil {
 		if false {
 			arna.init(
@@ -664,8 +664,8 @@ mount_stencil :: proc(graph: ^Graph, stencil: Stencil) {
 }
 
 clone_dnode :: proc(
-	graph: ^Graph,
-	prev: ^Graph,
+	graph: ^Proc,
+	prev: ^Proc,
 	dn: D_Node_ID,
 	dnodes: []D_Node_ID,
 ) -> D_Node_ID {
@@ -687,7 +687,7 @@ clone_dnode :: proc(
 	return mapped
 }
 
-compact :: proc(graph: ^Graph) {
+compact :: proc(graph: ^Proc) {
 	context.allocator, _ = arna.scrath()
 
 	assert_live_pins(graph)
@@ -780,7 +780,7 @@ compact :: proc(graph: ^Graph) {
 	}
 
 	project :: proc(
-		prev: ^Graph,
+		prev: ^Proc,
 		wl: queue.Queue(Node_ID),
 		node: Node_ID,
 	) -> Node_ID {
@@ -800,14 +800,14 @@ compact :: proc(graph: ^Graph) {
 	assert_live_pins(graph)
 }
 
-shallow_clone :: proc(graph: ^Graph, node: ^Node) -> (^Node, Node_ID) {
+shallow_clone :: proc(graph: ^Proc, node: ^Node) -> (^Node, Node_ID) {
 	size := compute_node_size(graph, node.rtype, node.extra_dwords)
 	slot := arna.alloc(graph.mem, uint(size), PRECISION)
 	mem.copy_non_overlapping(raw_data(slot), node, len(slot))
 	return (^Node)(raw_data(slot)), get_node_id(graph, (^Node)(raw_data(slot)))
 }
 
-init_counts :: proc(graph: ^Graph, new_node: ^Node) {
+init_counts :: proc(graph: ^Proc, new_node: ^Node) {
 	new_node.gvn = graph.gvn
 	graph.gvn += 1
 	if NODE_NAMES {
@@ -816,7 +816,7 @@ init_counts :: proc(graph: ^Graph, new_node: ^Node) {
 	}
 }
 
-apply_peep :: proc(graph: ^Graph, id: Node_ID) -> (r: Node_ID) {
+apply_peep :: proc(graph: ^Proc, id: Node_ID) -> (r: Node_ID) {
 	defer add_efficiency_stat(graph, .redundant_peep, 1, int(id != r))
 
 	if .Local_Peeps not_in graph.opt_flags do return id
@@ -844,7 +844,7 @@ apply_peep :: proc(graph: ^Graph, id: Node_ID) -> (r: Node_ID) {
 }
 
 @(disabled = ODIN_DISABLE_ASSERT)
-verify :: proc(graph: ^Graph) {
+verify :: proc(graph: ^Proc) {
 	CHECK_INTERN_INTEGRITY :: true
 
 	if !graph.dont_intern && CHECK_INTERN_INTEGRITY {
@@ -922,15 +922,15 @@ verify :: proc(graph: ^Graph) {
 
 // NOTE: for debugging purposes to trace where a node was created
 @(disabled = ODIN_DISABLE_ASSERT)
-on_node_creation :: proc(graph: ^Graph, node: ^Node) {
+on_node_creation :: proc(graph: ^Proc, node: ^Node) {
 	id := get_node_id(graph, node)
 }
 
-mount_peep_node :: proc(graph: ^Graph, node: ^Node) {
+mount_peep_node :: proc(graph: ^Proc, node: ^Node) {
 	graph.current_dnode = get_dbg_slot(graph, node)^
 }
 
-schedule_peeps :: proc(graph: ^Graph, schedule: ^Graph_Schedule) {
+schedule_peeps :: proc(graph: ^Proc, schedule: ^Schedule) {
 	for &bb in schedule.bbs {
 		for &instr, i in bb.instrs[:len(bb.instrs) - 1] {
 			node := expand_node(graph, instr)
@@ -993,7 +993,7 @@ schedule_peeps :: proc(graph: ^Graph, schedule: ^Graph_Schedule) {
 	)
 }
 
-has_unreachable_return :: proc(graph: ^Graph) -> bool {
+has_unreachable_return :: proc(graph: ^Proc) -> bool {
 	inp := get_inputs(graph, graph.end)[0]
 	cfg := expand_node(graph, inp)
 
@@ -1152,7 +1152,7 @@ apply_peeps :: proc(ctx: Peep_Ctx) -> (optimized: bool) {
 	return
 }
 
-collect_nodes :: proc(graph: ^Graph, worklist: ^queue.Queue(Node_ID)) {
+collect_nodes :: proc(graph: ^Proc, worklist: ^queue.Queue(Node_ID)) {
 	gvn := 0
 	gdn := 0
 	assert(worklist.len == 0)
@@ -1203,7 +1203,7 @@ collect_nodes :: proc(graph: ^Graph, worklist: ^queue.Queue(Node_ID)) {
 }
 
 @(disabled = ODIN_DISABLE_ASSERT)
-assert_live_pins :: proc(graph: ^Graph) {
+assert_live_pins :: proc(graph: ^Proc) {
 	prev := current_graph
 	current_graph = graph
 	defer current_graph = prev
@@ -1232,7 +1232,7 @@ is_noalias :: proc {
 	is_noalias_ops,
 }
 
-is_noalias_ops :: proc(graph: ^Graph, a, b: Node_ID) -> bool {
+is_noalias_ops :: proc(graph: ^Proc, a, b: Node_ID) -> bool {
 	a, b := a, b
 	if get_node(graph, a).itype == .Copy do a, b = b, a
 
@@ -1256,7 +1256,7 @@ is_noalias_ops :: proc(graph: ^Graph, a, b: Node_ID) -> bool {
 }
 
 mem_op_dt :: proc(
-	graph: ^Graph,
+	graph: ^Proc,
 	n: Node_ID,
 ) -> (
 	dt: Node_Datatype,
@@ -1272,13 +1272,7 @@ mem_op_dt :: proc(
 	return
 }
 
-mem_op_size :: proc(
-	graph: ^Graph,
-	n: Node_ID,
-) -> (
-	size: int,
-	ok: bool = true,
-) {
+mem_op_size :: proc(graph: ^Proc, n: Node_ID) -> (size: int, ok: bool = true) {
 	node := expand_node(graph, n)
 	#partial switch node.itype {
 	case .Store:
@@ -1298,7 +1292,7 @@ mem_op_size :: proc(
 	return
 }
 
-is_noalias_ptrs :: proc(graph: ^Graph, a, b: Node_ID, as, bs: int) -> bool {
+is_noalias_ptrs :: proc(graph: ^Proc, a, b: Node_ID, as, bs: int) -> bool {
 	abase, aoffset := base_and_offset(graph, a)
 	bbase, boffset := base_and_offset(graph, b)
 
@@ -1319,7 +1313,7 @@ base_and_offset :: proc {
 }
 
 base_and_offset_default :: proc(
-	graph: ^Graph,
+	graph: ^Proc,
 	node: Node_ID,
 ) -> (
 	base: Node_ID,
@@ -1329,10 +1323,10 @@ base_and_offset_default :: proc(
 }
 
 base_and_offset_proc :: proc(
-	graph: ^Graph,
+	graph: ^Proc,
 	node: Node_ID,
 	$offn: proc(
-		graph: ^Graph,
+		graph: ^Proc,
 		node: Expanded_Node,
 	) -> (
 		base: Node_ID,
@@ -1371,7 +1365,7 @@ Offset_Iter :: struct {
 }
 
 offset_iter_next :: proc(
-	ctx: ^Graph,
+	ctx: ^Proc,
 	iter: ^Offset_Iter,
 ) -> (
 	Node_Output,
@@ -1413,7 +1407,7 @@ offset_iter_next :: proc(
 	}
 }
 
-interner_zip :: proc(graph: ^Graph) -> (r: #soa[]SS_Entry(Node_ID)) {
+interner_zip :: proc(graph: ^Proc) -> (r: #soa[]SS_Entry(Node_ID)) {
 	r.hash = graph.mem.ptr[graph.interner.hash_idx * PRECISION:]
 	r.id = ([^]Node_ID)(graph.mem.ptr)[graph.interner.node_idx:]
 	runtime.raw_soa_footer(&r).len = graph.interner.cap
@@ -1493,7 +1487,7 @@ simd_iter_next :: proc(siter: ^Simd_Iter) -> (int, bool) {
 }
 
 interner_find :: proc(
-	graph: ^Graph,
+	graph: ^Proc,
 	id: Node_ID,
 	precomputed_hash: u8,
 ) -> (
@@ -1521,7 +1515,7 @@ interner_find :: proc(
 }
 
 @(require_results)
-intern :: proc(graph: ^Graph, id: Node_ID) -> Node_ID {
+intern :: proc(graph: ^Proc, id: Node_ID) -> Node_ID {
 	if !has_flag(graph, id, .Interned) || graph.dont_intern {
 		return id
 	}
@@ -1568,7 +1562,7 @@ grow_search_space :: proc(
 	runtime.raw_soa_footer(ss).len = new_cap
 }
 
-interner_grow :: proc(graph: ^Graph, new_cap: int) {
+interner_grow :: proc(graph: ^Proc, new_cap: int) {
 	iview := interner_zip(graph)
 	grow_search_space(&iview, new_cap, arna.allocator(graph.mem))
 
@@ -1579,7 +1573,7 @@ interner_grow :: proc(graph: ^Graph, new_cap: int) {
 	graph.interner.cap = new_cap
 }
 
-unintern :: proc(graph: ^Graph, id: Node_ID, precomputed_hash: u8 = 0) {
+unintern :: proc(graph: ^Proc, id: Node_ID, precomputed_hash: u8 = 0) {
 	if !has_flag(graph, id, .Interned) || graph.dont_intern do return
 
 	idx, hash, _ := interner_find(graph, id, precomputed_hash)
@@ -1598,7 +1592,7 @@ unintern :: proc(graph: ^Graph, id: Node_ID, precomputed_hash: u8 = 0) {
 	iview[graph.interner.len] = tmp
 }
 
-node_approx_size :: proc(graph: ^Graph, node: ^Node) -> uint {
+node_approx_size :: proc(graph: ^Proc, node: ^Node) -> uint {
 	return(
 		uint(compute_node_size(graph, node.rtype, node.extra_dwords)) +
 		uint(node.input_cap * size_of(Node_ID)) \
@@ -1606,7 +1600,7 @@ node_approx_size :: proc(graph: ^Graph, node: ^Node) -> uint {
 }
 
 subsume :: proc(
-	graph: ^Graph,
+	graph: ^Proc,
 	with: Node_ID,
 	target: Node_ID,
 	dont_delete: bool = false,
@@ -1685,7 +1679,7 @@ subsume :: proc(
 	unpin(graph, with)
 }
 
-node_eq :: proc(graph: ^Graph, a, b: Node_ID) -> bool {
+node_eq :: proc(graph: ^Proc, a, b: Node_ID) -> bool {
 	if a == b do return true
 
 	an, bn := get_node(graph, a), get_node(graph, b)
@@ -1703,7 +1697,7 @@ node_eq :: proc(graph: ^Graph, a, b: Node_ID) -> bool {
 }
 
 set_input :: proc(
-	graph: ^Graph,
+	graph: ^Proc,
 	id: Node_ID,
 	#any_int idx: int,
 	value: Node_ID,
@@ -1727,7 +1721,7 @@ set_input :: proc(
 	return nid
 }
 
-clone :: proc(graph: ^Graph, id: Node_ID) -> Node_ID {
+clone :: proc(graph: ^Proc, id: Node_ID) -> Node_ID {
 	node := expand_node(graph, id)
 	fmt.assertf(
 		!has_flag(graph, node, .Interned) || graph.dont_intern,
@@ -1744,7 +1738,7 @@ clone :: proc(graph: ^Graph, id: Node_ID) -> Node_ID {
 
 @(tag = "node_proc")
 remove_output_node :: proc(
-	graph: ^Graph,
+	graph: ^Proc,
 	node: ^Node,
 	out: Node_Output,
 	no_delete := false,
@@ -1761,7 +1755,7 @@ remove_output_node :: proc(
 }
 
 @(tag = "node_proc")
-node_hash_node :: proc(graph: ^Graph, node: ^Node) -> u8 {
+node_hash_node :: proc(graph: ^Proc, node: ^Node) -> u8 {
 	if !has_flag(graph, node, .Interned) do return 0
 
 	hash: u32
@@ -1793,12 +1787,12 @@ node_hash_node :: proc(graph: ^Graph, node: ^Node) -> u8 {
 	return res
 }
 
-get_node_id :: #force_inline proc(graph: ^Graph, node: ^Node) -> Node_ID {
+get_node_id :: #force_inline proc(graph: ^Proc, node: ^Node) -> Node_ID {
 	return Node_ID((uintptr(node) - uintptr(graph.mem.ptr)) / PRECISION)
 }
 
 @(tag = "node_proc")
-delete_node_node :: proc(graph: ^Graph, node: ^Node, indirect := false) {
+delete_node_node :: proc(graph: ^Proc, node: ^Node, indirect := false) {
 	id := get_node_id(graph, node)
 
 	if node.output_count != 0 do return
@@ -1847,7 +1841,7 @@ delete_node_node :: proc(graph: ^Graph, node: ^Node, indirect := false) {
 
 @(tag = "node_proc")
 get_extra_dwords_node :: proc(
-	graph: ^Graph,
+	graph: ^Proc,
 	node: ^Node,
 	consider_dbg := false,
 ) -> []u32 {
@@ -1858,12 +1852,12 @@ get_extra_dwords_node :: proc(
 	return raw_data(&node.extra)[:total]
 }
 
-get_dnode :: #force_inline proc(graph: ^Graph, id: D_Node_ID) -> ^D_Node {
+get_dnode :: #force_inline proc(graph: ^Proc, id: D_Node_ID) -> ^D_Node {
 	assert(id != 0)
 	return (^D_Node)(&([^]u32)(graph.mem.ptr)[id])
 }
 
-get_node :: #force_inline proc(graph: ^Graph, id: Node_ID) -> ^Node {
+get_node :: #force_inline proc(graph: ^Proc, id: Node_ID) -> ^Node {
 	assert(id != 0)
 	return (^Node)(&([^]u32)(graph.mem.ptr)[id])
 }
@@ -1874,7 +1868,7 @@ Expanded_Node :: struct {
 	outs:       []Node_Output,
 }
 
-expand_node :: proc(graph: ^Graph, id: Node_ID) -> Expanded_Node {
+expand_node :: proc(graph: ^Proc, id: Node_ID) -> Expanded_Node {
 	node := get_node(graph, id)
 
 	assert(node.rtype != DEAD_NODE_KIND)
@@ -1882,17 +1876,14 @@ expand_node :: proc(graph: ^Graph, id: Node_ID) -> Expanded_Node {
 }
 
 @(tag = "node_proc")
-get_inputs_node :: #force_inline proc(
-	graph: ^Graph,
-	node: ^Node,
-) -> []Node_ID {
+get_inputs_node :: #force_inline proc(graph: ^Proc, node: ^Node) -> []Node_ID {
 
 	return ([^]Node_ID)(graph.mem.ptr)[node.input_idx:][:node.input_count]
 }
 
 @(tag = "node_proc")
 get_outputs_node :: #force_inline proc(
-	graph: ^Graph,
+	graph: ^Proc,
 	node: ^Node,
 ) -> []Node_Output {
 	return(
@@ -1900,14 +1891,14 @@ get_outputs_node :: #force_inline proc(
 	)
 }
 
-compute_node_size :: proc(graph: ^Graph, type: u16, extra_dwords: int) -> int {
+compute_node_size :: proc(graph: ^Proc, type: u16, extra_dwords: int) -> int {
 	total :=
 		int(graph.node_extra_sizes[type]) + extra_dwords + int(graph.has_dbg)
 	return size_of(Node) + total * PRECISION
 }
 
 get_next_extra_slot :: proc(
-	graph: ^Graph,
+	graph: ^Proc,
 	type: u16,
 	extra_dwords: int,
 ) -> [^]u32 {
@@ -1918,7 +1909,7 @@ get_next_extra_slot :: proc(
 	return ([^]u32)(raw_data(slot)[size_of(Node):])
 }
 
-get_tag :: proc(graph: ^Graph, node: Node_ID) -> ^Tag {
+get_tag :: proc(graph: ^Proc, node: Node_ID) -> ^Tag {
 	when NODE_NAMES {
 		return &get_node(graph, node).tag
 	} else {
@@ -1926,7 +1917,7 @@ get_tag :: proc(graph: ^Graph, node: Node_ID) -> ^Tag {
 	}
 }
 
-get_dbg_slot :: proc(graph: ^Graph, node: ^Node) -> ^D_Node_ID {
+get_dbg_slot :: proc(graph: ^Proc, node: ^Node) -> ^D_Node_ID {
 	assert(int(node.rtype) < len(graph.node_extra_sizes))
 	pos := graph.node_extra_sizes[node.rtype] + u8(node.extra_dwords)
 	ptr := &([^]D_Node_ID)(&node.extra)[pos]
@@ -1935,7 +1926,7 @@ get_dbg_slot :: proc(graph: ^Graph, node: ^Node) -> ^D_Node_ID {
 	return nl
 }
 
-add_debug_node :: proc(graph: ^Graph, sloc: Sloc) -> D_Node_ID {
+add_debug_node :: proc(graph: ^Proc, sloc: Sloc) -> D_Node_ID {
 	id := D_Node_ID(graph.mem.pos / PRECISION)
 
 	size := size_of(D_Node)
@@ -1957,7 +1948,7 @@ Add_Raw_Meta :: bit_field u64 {
 }
 
 add_raw :: proc(
-	graph: ^Graph,
+	graph: ^Proc,
 	name: Tag_Name,
 	type: u16,
 	dt: Node_Datatype,
@@ -2017,10 +2008,10 @@ add_raw :: proc(
 
 @(deferred_out = pop_sloc)
 get_sloc_scope :: proc(
-	graph: ^Graph,
+	graph: ^Proc,
 	sloc: D_Node_ID,
 ) -> (
-	agraph: ^Graph,
+	agraph: ^Proc,
 	prev: D_Node_ID,
 ) {
 	agraph = graph
@@ -2028,18 +2019,18 @@ get_sloc_scope :: proc(
 	return
 }
 
-push_sloc :: proc(graph: ^Graph, dnd: D_Node_ID) -> (prev: D_Node_ID) {
+push_sloc :: proc(graph: ^Proc, dnd: D_Node_ID) -> (prev: D_Node_ID) {
 	if !graph.has_dbg do return
 	prev = graph.current_dnode
 	graph.current_dnode = dnd
 	return
 }
 
-pop_sloc :: proc(graph: ^Graph, prev: D_Node_ID) {
+pop_sloc :: proc(graph: ^Proc, prev: D_Node_ID) {
 	graph.current_dnode = prev
 }
 
-merge_returns :: proc(graph: ^Graph, args: []Node_ID) -> Node_ID {
+merge_returns :: proc(graph: ^Proc, args: []Node_ID) -> Node_ID {
 	if graph.end == 0 {
 		args[0] = add_region(graph, "rret", {args[0], graph.start})
 		for &a in args[1:] {
@@ -2089,7 +2080,7 @@ merge_returns :: proc(graph: ^Graph, args: []Node_ID) -> Node_ID {
 	return graph.end
 }
 
-swap_inputs :: proc(graph: ^Graph, node: Expanded_Node, i, j: int) {
+swap_inputs :: proc(graph: ^Proc, node: Expanded_Node, i, j: int) {
 	id := get_node_id(graph, node)
 	ind := expand_node(graph, node.inps[i])
 	jnd := expand_node(graph, node.inps[j])
@@ -2114,14 +2105,14 @@ swap_inputs :: proc(graph: ^Graph, node: Expanded_Node, i, j: int) {
 	assert(nid == id)
 }
 
-connect :: proc(graph: ^Graph, use: Node_ID, def: Node_ID) -> int {
+connect :: proc(graph: ^Proc, use: Node_ID, def: Node_ID) -> int {
 	idx := add_input(graph, use, def)
 	add_output(graph, def, use, idx)
 	return idx
 }
 
 @(tag = "node_proc")
-add_input_node :: proc(graph: ^Graph, node: ^Node, inp: Node_ID) -> int {
+add_input_node :: proc(graph: ^Proc, node: ^Node, inp: Node_ID) -> int {
 	free_idx := int(node.input_count)
 	grow: if node.input_count == node.input_cap {
 		graph.waste += int(node.input_cap * size_of(Node_ID))
@@ -2150,7 +2141,7 @@ add_input_node :: proc(graph: ^Graph, node: ^Node, inp: Node_ID) -> int {
 }
 
 ensure_available_output_cap :: proc(
-	graph: ^Graph,
+	graph: ^Proc,
 	node: ^Node,
 	available: u16,
 ) {
@@ -2170,7 +2161,7 @@ ensure_available_output_cap :: proc(
 
 @(tag = "node_proc")
 add_output_node :: proc(
-	graph: ^Graph,
+	graph: ^Proc,
 	node: ^Node,
 	out: Node_ID,
 	#any_int i: int,
@@ -2209,7 +2200,7 @@ get_extra_dyn :: proc {
 
 @(tag = "node_proc")
 get_static_extra_node :: #force_inline proc(
-	graph: ^Graph,
+	graph: ^Proc,
 	node: ^Node,
 	$T: typeid,
 ) -> ^T {
@@ -2225,14 +2216,14 @@ get_static_extra_node :: #force_inline proc(
 }
 
 @(tag = "node_proc")
-get_any_extra_node :: #force_inline proc(graph: ^Graph, node: ^Node) -> any {
+get_any_extra_node :: #force_inline proc(graph: ^Proc, node: ^Node) -> any {
 	assert(int(node.rtype) < len(graph.node_extra_types))
 	return {&node.extra, graph.node_extra_types[node.rtype]}
 }
 
 @(tag = "node_proc")
 has_flag_node :: #force_inline proc(
-	graph: ^Graph,
+	graph: ^Proc,
 	node: ^Node,
 	flag: Class_Flag,
 ) -> bool {
@@ -2241,7 +2232,7 @@ has_flag_node :: #force_inline proc(
 }
 
 root_addr_add_offset :: proc(
-	graph: ^Graph,
+	graph: ^Proc,
 	node: Expanded_Node,
 ) -> (
 	base: Node_ID,

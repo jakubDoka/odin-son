@@ -1,0 +1,155 @@
+=========== OPT LEVEL: none-quick ===========
+apply:
+    sub rsp, 0x18
+    mov.q [rsp], rsi
+    cmp rdi, 1
+    jz 1
+    push.q [rsp]
+    pop.q [rsp + 0x8]
+    jmp 2
+1:
+    mov rax, 0x64
+    mov.q rcx, [rsp]
+    sub rax, rcx
+    mov.q [rsp + 0x8], rax
+2:
+    mov.q rax, [rsp + 0x8]
+    add rsp, 0x18
+    ret
+main:
+    sub rsp, 8
+    mov rdi, 1
+    mov rsi, 9
+    call apply
+    add rsp, 8
+    ret
+=========== OPT LEVEL: none ===========
+apply:
+    mov rax, rsi
+    cmp rdi, 1
+    jz 1
+    jmp 2
+1:
+    mov rcx, 0x64
+    sub rcx, rax
+    mov rax, rcx
+2:
+    ret
+main:
+    sub rsp, 8
+    mov rdi, 1
+    mov rsi, 9
+    call apply
+    add rsp, 8
+    ret
+=========== OPT LEVEL: mininal-quick ===========
+apply:
+    sub rsp, 0x18
+    mov.q [rsp], rsi
+    cmp rdi, 1
+    jz 1
+    push.q [rsp]
+    pop.q [rsp + 0x8]
+    jmp 2
+1:
+    mov rax, 0x64
+    mov.q rcx, [rsp]
+    sub rax, rcx
+    mov.q [rsp + 0x8], rax
+2:
+    mov.q rax, [rsp + 0x8]
+    add rsp, 0x18
+    ret
+main:
+    sub rsp, 8
+    mov rdi, 1
+    mov rsi, 9
+    call apply
+    add rsp, 8
+    ret
+=========== OPT LEVEL: mininal ===========
+apply:
+    mov rax, rsi
+    cmp rdi, 1
+    jz 1
+    jmp 2
+1:
+    mov rcx, 0x64
+    sub rcx, rax
+    mov rax, rcx
+2:
+    ret
+main:
+    sub rsp, 8
+    mov rdi, 1
+    mov rsi, 9
+    call apply
+    add rsp, 8
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+apply:
+    sub rsp, 0x18
+    mov.q [rsp], rsi
+    cmp rdi, 1
+    jz 1
+    push.q [rsp]
+    pop.q [rsp + 0x8]
+    jmp 2
+1:
+    mov rax, 0x64
+    mov.q rcx, [rsp]
+    sub rax, rcx
+    mov.q [rsp + 0x8], rax
+2:
+    mov.q rax, [rsp + 0x8]
+    add rsp, 0x18
+    ret
+main:
+    sub rsp, 8
+    mov rdi, 1
+    mov rsi, 9
+    call apply
+    add rsp, 8
+    ret
+=========== OPT LEVEL: moderate ===========
+apply:
+    mov rax, rsi
+    cmp rdi, 1
+    jz 1
+    jmp 2
+1:
+    mov rcx, 0x64
+    sub rcx, rax
+    mov rax, rcx
+2:
+    ret
+main:
+    sub rsp, 8
+    mov rdi, 1
+    mov rsi, 9
+    call apply
+    add rsp, 8
+    ret
+=========== OPT LEVEL: all ===========
+apply:
+    mov rax, rsi
+    cmp rdi, 1
+    jz 1
+    jmp 2
+1:
+    mov rcx, 0x64
+    sub rcx, rax
+    mov rax, rcx
+2:
+    ret
+main:
+    sub rsp, 8
+    mov rdi, 1
+    mov rsi, 9
+    call apply
+    add rsp, 8
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    mov rax, 0x5b
+    ret

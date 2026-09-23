@@ -29,7 +29,7 @@ wtype :: #force_inline proc(node: bac.Expanded_Node) -> Node_Type {
 }
 
 wextra :: #force_inline proc(
-	graph: ^bac.Graph,
+	graph: ^bac.Proc,
 	node: ^bac.Node,
 	$T: typeid,
 ) -> ^T {
@@ -64,9 +64,9 @@ when SPEC_NOT_PRESENT {
 	inherit_idx_of :: proc($T: typeid) -> u8 {return 0}
 
 	collect_meta :: proc(
-		_: ^bac.Graph,
+		_: ^bac.Proc,
 		_: ^bac.Regalloc,
-		_: ^bac.Graph_Schedule,
+		_: ^bac.Schedule,
 	) -> (
 		[]bac.Regalloc_Node_Meta,
 		int,
@@ -75,7 +75,7 @@ when SPEC_NOT_PRESENT {
 	}
 
 	add_extract_lane_u :: proc(
-		graph: ^bac.Graph,
+		graph: ^bac.Proc,
 		name: string,
 		dt: bac.Node_Datatype,
 		vec: bac.Node_ID,
@@ -253,7 +253,7 @@ post_schedule_peep :: proc(
 }
 
 meta_of :: #force_inline proc(
-	graph: ^bac.Graph,
+	graph: ^bac.Proc,
 	ra: ^bac.Regalloc,
 	node: bac.Expanded_Node,
 	_: $T,
@@ -379,14 +379,14 @@ meta_of :: #force_inline proc(
 
 pre_regalloc_hook :: proc(
 	ra: ^bac.Regalloc,
-	graph: ^bac.Graph,
-	sched: ^bac.Graph_Schedule,
+	graph: ^bac.Proc,
+	sched: ^bac.Schedule,
 ) {
 	// NOTE: try to find a efficient ordering of instructions to use the wasm
 	// stack as much as possible, its greedy
 
 	Ctx :: struct {
-		using graph: ^bac.Graph,
+		using graph: ^bac.Proc,
 		metas:       []Meta,
 		instrs:      ^[dynamic]bac.Node_ID,
 		sets:        []bac.Node_ID,
@@ -594,7 +594,7 @@ pre_regalloc_hook :: proc(
 
 	collect_meta :: #force_inline proc(
 		ctx: ^Ctx,
-		sched: ^bac.Graph_Schedule,
+		sched: ^bac.Schedule,
 	) -> (
 		slots: []Meta,
 		def_count: int,

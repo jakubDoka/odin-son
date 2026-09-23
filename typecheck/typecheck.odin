@@ -51,7 +51,7 @@ Target :: struct {
 Gen_Ctx :: struct {
 	using global: ^Global_Ctx,
 	using types:  ^Types,
-	using graph:  bac.Graph,
+	using graph:  bac.Proc,
 	node_scope:   Node_ID,
 	mem_slot:     int,
 	loop:         ^Loop_State,

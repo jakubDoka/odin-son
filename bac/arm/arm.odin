@@ -181,7 +181,7 @@ post_schedule_peep :: proc(
 }
 
 meta_of :: #force_inline proc(
-	graph: ^bac.Graph,
+	graph: ^bac.Proc,
 	ra: ^bac.Regalloc,
 	node: bac.Expanded_Node,
 	_: $T,

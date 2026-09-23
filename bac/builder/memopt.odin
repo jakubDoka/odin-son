@@ -11,7 +11,7 @@ Local :: bac.Local
 Node_ID :: bac.Node_ID
 expand_node :: bac.expand_node
 
-memopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
+memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 	assert(graph.node_spec == &SPEC)
 
 	if .Mem_Opt not_in graph.opt_flags do return
@@ -125,7 +125,7 @@ memopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 	}
 
 	Ctx :: struct {
-		using graph:       ^bac.Graph,
+		using graph:       ^bac.Proc,
 		slot_count:        u32,
 		deleted_lazy_phys: [dynamic]Node_ID,
 		joins:             [dynamic]Join,

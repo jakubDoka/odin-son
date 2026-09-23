@@ -20,7 +20,7 @@ xtype :: #force_inline proc(node: bac.Expanded_Node) -> Node_Type {
 }
 
 xextra :: #force_inline proc(
-	graph: ^bac.Graph,
+	graph: ^bac.Proc,
 	node: ^bac.Node,
 	$T: typeid,
 ) -> ^T {
@@ -789,7 +789,7 @@ peep :: proc(
 }
 
 add_node :: proc(
-	ctx: ^bac.Graph,
+	ctx: ^bac.Proc,
 	name: string,
 	type: Node_Type,
 	dt: bac.Node_Datatype,
@@ -806,7 +806,7 @@ add_node :: proc(
 }
 
 make_node :: proc(
-	graph: ^bac.Graph,
+	graph: ^bac.Proc,
 	from: bac.Node_ID,
 	type: u16,
 	inps: []bac.Node_ID,
@@ -912,7 +912,7 @@ post_schedule_peep :: proc(
 }
 
 addr_add_offset :: proc(
-	graph: ^bac.Graph,
+	graph: ^bac.Proc,
 	node: bac.Expanded_Node,
 ) -> (
 	base: bac.Node_ID,
@@ -924,7 +924,7 @@ addr_add_offset :: proc(
 }
 
 meta_of :: proc(
-	graph: ^bac.Graph,
+	graph: ^bac.Proc,
 	ra: ^bac.Regalloc,
 	node: bac.Expanded_Node,
 	_: $T,

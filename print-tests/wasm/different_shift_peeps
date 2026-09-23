@@ -1,0 +1,997 @@
+=========== OPT LEVEL: none-quick ===========
+(module
+  (type (;0;) (func (param i64) (result i64)))
+  (type (;1;) (func (param i64 i64) (result i64)))
+  (type (;2;) (func (param i64 i64 i64) (result i64)))
+  (type (;3;) (func (result i64)))
+  (func $test_imm_shifts (type 0) (param i64) (result i64)
+    local.get 0
+    i64.const 3
+    i64.shl
+    local.get 0
+    i64.const 3
+    i64.shr_s
+    i64.add
+    local.get 0
+    i64.const 5
+    i64.shr_u
+    i64.add
+    return
+    end
+  )
+  (func $test_imm_inplace_shifts (type 1) (param i64 i64) (result i64)
+    (local i64)
+    local.get 0
+    i64.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    i64.const 2
+    i64.shl
+    i64.store align=1
+    local.get 0
+    i64.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    i64.const 5
+    i64.shr_s
+    i64.store align=1
+    local.get 1
+    i64.load align=1
+    local.set 2
+    local.get 1
+    local.get 2
+    i64.const 4
+    i64.shr_u
+    i64.store align=1
+    local.get 0
+    i64.load align=1
+    local.set 0
+    local.get 1
+    i64.load align=1
+    local.set 1
+    local.get 0
+    local.get 1
+    i64.add
+    return
+    end
+  )
+  (func $test_inplace_shifts (type 2) (param i64 i64 i64) (result i64)
+    (local i64)
+    local.get 0
+    i64.load align=1
+    local.set 3
+    local.get 0
+    local.get 3
+    local.get 2
+    i64.shl
+    i64.store align=1
+    local.get 0
+    i64.load align=1
+    local.set 3
+    local.get 0
+    local.get 3
+    local.get 2
+    i64.shr_s
+    i64.store align=1
+    local.get 1
+    i64.load align=1
+    local.set 3
+    local.get 1
+    local.get 3
+    local.get 2
+    i64.shr_u
+    i64.store align=1
+    local.get 0
+    i64.load align=1
+    local.set 0
+    local.get 1
+    i64.load align=1
+    local.set 1
+    local.get 0
+    local.get 1
+    i64.add
+    return
+    end
+  )
+  (func $main (type 3) (result i64)
+    (local i64 i64 i64 i64)
+    global.get 0
+    i64.const 16
+    i64.sub
+    global.set 0
+    global.get 0
+    i64.const 0
+    i64.add
+    local.tee 0
+    i64.const -5
+    i64.store align=1
+    global.get 0
+    i64.const 8
+    i64.add
+    local.tee 1
+    i64.const 20
+    i64.store align=1
+    i64.const -1
+    call $test_imm_shifts
+    local.set 2
+    local.get 0
+    local.get 1
+    call $test_imm_inplace_shifts
+    local.set 3
+    local.get 0
+    local.get 1
+    i64.const 4
+    call $test_inplace_shifts
+    local.set 0
+    local.get 2
+    local.get 3
+    i64.add
+    local.get 0
+    i64.add
+    global.get 0
+    i64.const 16
+    i64.add
+    global.set 0
+    return
+    end
+  )
+  (table (;0;) 0 0 funcref)
+  (memory (;0;) i64 16)
+  (global (;0;) (mut i64) i64.const 1048576)
+  (export "main" (func 3))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (elem (;0;) (i32.const 0) func)
+  (data (;0;) (i64.const 1048576) "")
+)
+=========== OPT LEVEL: none ===========
+(module
+  (type (;0;) (func (param i64) (result i64)))
+  (type (;1;) (func (param i64 i64) (result i64)))
+  (type (;2;) (func (param i64 i64 i64) (result i64)))
+  (type (;3;) (func (result i64)))
+  (func $test_imm_shifts (type 0) (param i64) (result i64)
+    local.get 0
+    i64.const 3
+    i64.shl
+    local.get 0
+    i64.const 3
+    i64.shr_s
+    i64.add
+    local.get 0
+    i64.const 5
+    i64.shr_u
+    i64.add
+    return
+    end
+  )
+  (func $test_imm_inplace_shifts (type 1) (param i64 i64) (result i64)
+    (local i64)
+    local.get 0
+    i64.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    i64.const 2
+    i64.shl
+    i64.store align=1
+    local.get 0
+    i64.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    i64.const 5
+    i64.shr_s
+    i64.store align=1
+    local.get 1
+    i64.load align=1
+    local.set 2
+    local.get 1
+    local.get 2
+    i64.const 4
+    i64.shr_u
+    i64.store align=1
+    local.get 0
+    i64.load align=1
+    local.set 2
+    local.get 1
+    i64.load align=1
+    local.set 0
+    local.get 2
+    local.get 0
+    i64.add
+    return
+    end
+  )
+  (func $test_inplace_shifts (type 2) (param i64 i64 i64) (result i64)
+    (local i64)
+    local.get 0
+    i64.load align=1
+    local.set 3
+    local.get 0
+    local.get 3
+    local.get 2
+    i64.shl
+    i64.store align=1
+    local.get 0
+    i64.load align=1
+    local.set 3
+    local.get 0
+    local.get 3
+    local.get 2
+    i64.shr_s
+    i64.store align=1
+    local.get 1
+    i64.load align=1
+    local.set 3
+    local.get 1
+    local.get 3
+    local.get 2
+    i64.shr_u
+    i64.store align=1
+    local.get 0
+    i64.load align=1
+    local.set 2
+    local.get 1
+    i64.load align=1
+    local.set 0
+    local.get 2
+    local.get 0
+    i64.add
+    return
+    end
+  )
+  (func $main (type 3) (result i64)
+    (local i64 i64 i64 i64)
+    global.get 0
+    i64.const 16
+    i64.sub
+    global.set 0
+    global.get 0
+    i64.const 0
+    i64.add
+    local.tee 3
+    i64.const -5
+    i64.store align=1
+    global.get 0
+    i64.const 8
+    i64.add
+    local.tee 0
+    i64.const 20
+    i64.store align=1
+    i64.const -1
+    call $test_imm_shifts
+    local.set 2
+    local.get 3
+    local.get 0
+    call $test_imm_inplace_shifts
+    local.set 1
+    local.get 3
+    local.get 0
+    i64.const 4
+    call $test_inplace_shifts
+    local.set 0
+    local.get 2
+    local.get 1
+    i64.add
+    local.get 0
+    i64.add
+    global.get 0
+    i64.const 16
+    i64.add
+    global.set 0
+    return
+    end
+  )
+  (table (;0;) 0 0 funcref)
+  (memory (;0;) i64 16)
+  (global (;0;) (mut i64) i64.const 1048576)
+  (export "main" (func 3))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (elem (;0;) (i32.const 0) func)
+  (data (;0;) (i64.const 1048576) "")
+)
+=========== OPT LEVEL: mininal-quick ===========
+(module
+  (type (;0;) (func (param i64) (result i64)))
+  (type (;1;) (func (param i64 i64) (result i64)))
+  (type (;2;) (func (param i64 i64 i64) (result i64)))
+  (type (;3;) (func (result i64)))
+  (func $test_imm_shifts (type 0) (param i64) (result i64)
+    local.get 0
+    i64.const 3
+    i64.shl
+    local.get 0
+    i64.const 3
+    i64.shr_s
+    i64.add
+    local.get 0
+    i64.const 5
+    i64.shr_u
+    i64.add
+    return
+    end
+  )
+  (func $test_imm_inplace_shifts (type 1) (param i64 i64) (result i64)
+    (local i64)
+    local.get 0
+    i64.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    i64.const 2
+    i64.shl
+    i64.store align=1
+    local.get 0
+    i64.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    i64.const 5
+    i64.shr_s
+    i64.store align=1
+    local.get 1
+    i64.load align=1
+    local.set 2
+    local.get 1
+    local.get 2
+    i64.const 4
+    i64.shr_u
+    local.tee 1
+    i64.store align=1
+    local.get 0
+    i64.load align=1
+    local.set 0
+    local.get 0
+    local.get 1
+    i64.add
+    return
+    end
+  )
+  (func $test_inplace_shifts (type 2) (param i64 i64 i64) (result i64)
+    (local i64)
+    local.get 0
+    i64.load align=1
+    local.set 3
+    local.get 0
+    local.get 3
+    local.get 2
+    i64.shl
+    i64.store align=1
+    local.get 0
+    i64.load align=1
+    local.set 3
+    local.get 0
+    local.get 3
+    local.get 2
+    i64.shr_s
+    i64.store align=1
+    local.get 1
+    i64.load align=1
+    local.set 3
+    local.get 1
+    local.get 3
+    local.get 2
+    i64.shr_u
+    local.tee 1
+    i64.store align=1
+    local.get 0
+    i64.load align=1
+    local.set 0
+    local.get 0
+    local.get 1
+    i64.add
+    return
+    end
+  )
+  (func $main (type 3) (result i64)
+    (local i64 i64 i64 i64)
+    global.get 0
+    i64.const 16
+    i64.sub
+    global.set 0
+    global.get 0
+    i64.const 0
+    i64.add
+    local.tee 0
+    i64.const -5
+    i64.store align=1
+    global.get 0
+    i64.const 8
+    i64.add
+    local.tee 1
+    i64.const 20
+    i64.store align=1
+    i64.const -1
+    call $test_imm_shifts
+    local.set 2
+    local.get 0
+    local.get 1
+    call $test_imm_inplace_shifts
+    local.set 3
+    local.get 0
+    local.get 1
+    i64.const 4
+    call $test_inplace_shifts
+    local.set 0
+    local.get 2
+    local.get 3
+    i64.add
+    local.get 0
+    i64.add
+    global.get 0
+    i64.const 16
+    i64.add
+    global.set 0
+    return
+    end
+  )
+  (table (;0;) 0 0 funcref)
+  (memory (;0;) i64 16)
+  (global (;0;) (mut i64) i64.const 1048576)
+  (export "main" (func 3))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (elem (;0;) (i32.const 0) func)
+  (data (;0;) (i64.const 1048576) "")
+)
+=========== OPT LEVEL: mininal ===========
+(module
+  (type (;0;) (func (param i64) (result i64)))
+  (type (;1;) (func (param i64 i64) (result i64)))
+  (type (;2;) (func (param i64 i64 i64) (result i64)))
+  (type (;3;) (func (result i64)))
+  (func $test_imm_shifts (type 0) (param i64) (result i64)
+    local.get 0
+    i64.const 3
+    i64.shl
+    local.get 0
+    i64.const 3
+    i64.shr_s
+    i64.add
+    local.get 0
+    i64.const 5
+    i64.shr_u
+    i64.add
+    return
+    end
+  )
+  (func $test_imm_inplace_shifts (type 1) (param i64 i64) (result i64)
+    (local i64)
+    local.get 0
+    i64.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    i64.const 2
+    i64.shl
+    i64.store align=1
+    local.get 0
+    i64.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    i64.const 5
+    i64.shr_s
+    i64.store align=1
+    local.get 1
+    i64.load align=1
+    local.set 2
+    local.get 1
+    local.get 2
+    i64.const 4
+    i64.shr_u
+    local.tee 1
+    i64.store align=1
+    local.get 0
+    i64.load align=1
+    local.set 0
+    local.get 0
+    local.get 1
+    i64.add
+    return
+    end
+  )
+  (func $test_inplace_shifts (type 2) (param i64 i64 i64) (result i64)
+    (local i64)
+    local.get 0
+    i64.load align=1
+    local.set 3
+    local.get 0
+    local.get 3
+    local.get 2
+    i64.shl
+    i64.store align=1
+    local.get 0
+    i64.load align=1
+    local.set 3
+    local.get 0
+    local.get 3
+    local.get 2
+    i64.shr_s
+    i64.store align=1
+    local.get 1
+    i64.load align=1
+    local.set 3
+    local.get 1
+    local.get 3
+    local.get 2
+    i64.shr_u
+    local.tee 1
+    i64.store align=1
+    local.get 0
+    i64.load align=1
+    local.set 0
+    local.get 0
+    local.get 1
+    i64.add
+    return
+    end
+  )
+  (func $main (type 3) (result i64)
+    (local i64 i64 i64 i64)
+    global.get 0
+    i64.const 16
+    i64.sub
+    global.set 0
+    global.get 0
+    i64.const 0
+    i64.add
+    local.tee 3
+    i64.const -5
+    i64.store align=1
+    global.get 0
+    i64.const 8
+    i64.add
+    local.tee 0
+    i64.const 20
+    i64.store align=1
+    i64.const -1
+    call $test_imm_shifts
+    local.set 2
+    local.get 3
+    local.get 0
+    call $test_imm_inplace_shifts
+    local.set 1
+    local.get 3
+    local.get 0
+    i64.const 4
+    call $test_inplace_shifts
+    local.set 0
+    local.get 2
+    local.get 1
+    i64.add
+    local.get 0
+    i64.add
+    global.get 0
+    i64.const 16
+    i64.add
+    global.set 0
+    return
+    end
+  )
+  (table (;0;) 0 0 funcref)
+  (memory (;0;) i64 16)
+  (global (;0;) (mut i64) i64.const 1048576)
+  (export "main" (func 3))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (elem (;0;) (i32.const 0) func)
+  (data (;0;) (i64.const 1048576) "")
+)
+=========== OPT LEVEL: moderate-quick ===========
+(module
+  (type (;0;) (func (param i64) (result i64)))
+  (type (;1;) (func (param i64 i64) (result i64)))
+  (type (;2;) (func (param i64 i64 i64) (result i64)))
+  (type (;3;) (func (result i64)))
+  (func $test_imm_shifts (type 0) (param i64) (result i64)
+    local.get 0
+    i64.const 3
+    i64.shl
+    local.get 0
+    i64.const 3
+    i64.shr_s
+    i64.add
+    local.get 0
+    i64.const 5
+    i64.shr_u
+    i64.add
+    return
+    end
+  )
+  (func $test_imm_inplace_shifts (type 1) (param i64 i64) (result i64)
+    (local i64)
+    local.get 0
+    i64.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    i64.const 2
+    i64.shl
+    i64.const 5
+    i64.shr_s
+    i64.store align=1
+    local.get 1
+    i64.load align=1
+    local.set 2
+    local.get 1
+    local.get 2
+    i64.const 4
+    i64.shr_u
+    local.tee 1
+    i64.store align=1
+    local.get 0
+    i64.load align=1
+    local.set 0
+    local.get 0
+    local.get 1
+    i64.add
+    return
+    end
+  )
+  (func $test_inplace_shifts (type 2) (param i64 i64 i64) (result i64)
+    (local i64)
+    local.get 0
+    i64.load align=1
+    local.set 3
+    local.get 0
+    local.get 3
+    local.get 2
+    i64.shl
+    local.get 2
+    i64.shr_s
+    i64.store align=1
+    local.get 1
+    i64.load align=1
+    local.set 3
+    local.get 1
+    local.get 3
+    local.get 2
+    i64.shr_u
+    local.tee 1
+    i64.store align=1
+    local.get 0
+    i64.load align=1
+    local.set 0
+    local.get 0
+    local.get 1
+    i64.add
+    return
+    end
+  )
+  (func $main (type 3) (result i64)
+    (local i64 i64 i64 i64)
+    global.get 0
+    i64.const 16
+    i64.sub
+    global.set 0
+    global.get 0
+    i64.const 0
+    i64.add
+    local.tee 0
+    i64.const -5
+    i64.store align=1
+    global.get 0
+    i64.const 8
+    i64.add
+    local.tee 1
+    i64.const 20
+    i64.store align=1
+    i64.const -1
+    call $test_imm_shifts
+    local.set 2
+    local.get 0
+    local.get 1
+    call $test_imm_inplace_shifts
+    local.set 3
+    local.get 0
+    local.get 1
+    i64.const 4
+    call $test_inplace_shifts
+    local.set 0
+    local.get 2
+    local.get 3
+    i64.add
+    local.get 0
+    i64.add
+    global.get 0
+    i64.const 16
+    i64.add
+    global.set 0
+    return
+    end
+  )
+  (table (;0;) 0 0 funcref)
+  (memory (;0;) i64 16)
+  (global (;0;) (mut i64) i64.const 1048576)
+  (export "main" (func 3))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (elem (;0;) (i32.const 0) func)
+  (data (;0;) (i64.const 1048576) "")
+)
+=========== OPT LEVEL: moderate ===========
+(module
+  (type (;0;) (func (param i64) (result i64)))
+  (type (;1;) (func (param i64 i64) (result i64)))
+  (type (;2;) (func (param i64 i64 i64) (result i64)))
+  (type (;3;) (func (result i64)))
+  (func $test_imm_shifts (type 0) (param i64) (result i64)
+    local.get 0
+    i64.const 3
+    i64.shl
+    local.get 0
+    i64.const 3
+    i64.shr_s
+    i64.add
+    local.get 0
+    i64.const 5
+    i64.shr_u
+    i64.add
+    return
+    end
+  )
+  (func $test_imm_inplace_shifts (type 1) (param i64 i64) (result i64)
+    (local i64)
+    local.get 0
+    i64.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    i64.const 2
+    i64.shl
+    i64.const 5
+    i64.shr_s
+    i64.store align=1
+    local.get 1
+    i64.load align=1
+    local.set 2
+    local.get 1
+    local.get 2
+    i64.const 4
+    i64.shr_u
+    local.tee 1
+    i64.store align=1
+    local.get 0
+    i64.load align=1
+    local.set 0
+    local.get 0
+    local.get 1
+    i64.add
+    return
+    end
+  )
+  (func $test_inplace_shifts (type 2) (param i64 i64 i64) (result i64)
+    (local i64)
+    local.get 0
+    i64.load align=1
+    local.set 3
+    local.get 0
+    local.get 3
+    local.get 2
+    i64.shl
+    local.get 2
+    i64.shr_s
+    i64.store align=1
+    local.get 1
+    i64.load align=1
+    local.set 3
+    local.get 1
+    local.get 3
+    local.get 2
+    i64.shr_u
+    local.tee 1
+    i64.store align=1
+    local.get 0
+    i64.load align=1
+    local.set 0
+    local.get 0
+    local.get 1
+    i64.add
+    return
+    end
+  )
+  (func $main (type 3) (result i64)
+    (local i64 i64 i64 i64)
+    global.get 0
+    i64.const 16
+    i64.sub
+    global.set 0
+    global.get 0
+    i64.const 0
+    i64.add
+    local.tee 3
+    i64.const -5
+    i64.store align=1
+    global.get 0
+    i64.const 8
+    i64.add
+    local.tee 0
+    i64.const 20
+    i64.store align=1
+    i64.const -1
+    call $test_imm_shifts
+    local.set 2
+    local.get 3
+    local.get 0
+    call $test_imm_inplace_shifts
+    local.set 1
+    local.get 3
+    local.get 0
+    i64.const 4
+    call $test_inplace_shifts
+    local.set 0
+    local.get 2
+    local.get 1
+    i64.add
+    local.get 0
+    i64.add
+    global.get 0
+    i64.const 16
+    i64.add
+    global.set 0
+    return
+    end
+  )
+  (table (;0;) 0 0 funcref)
+  (memory (;0;) i64 16)
+  (global (;0;) (mut i64) i64.const 1048576)
+  (export "main" (func 3))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (elem (;0;) (i32.const 0) func)
+  (data (;0;) (i64.const 1048576) "")
+)
+=========== OPT LEVEL: all ===========
+(module
+  (type (;0;) (func (param i64) (result i64)))
+  (type (;1;) (func (param i64 i64) (result i64)))
+  (type (;2;) (func (param i64 i64 i64) (result i64)))
+  (type (;3;) (func (result i64)))
+  (func $test_imm_shifts (type 0) (param i64) (result i64)
+    local.get 0
+    i64.const 3
+    i64.shl
+    local.get 0
+    i64.const 3
+    i64.shr_s
+    i64.add
+    local.get 0
+    i64.const 5
+    i64.shr_u
+    i64.add
+    return
+    end
+  )
+  (func $test_imm_inplace_shifts (type 1) (param i64 i64) (result i64)
+    (local i64)
+    local.get 0
+    i64.load align=1
+    local.set 2
+    local.get 0
+    local.get 2
+    i64.const 2
+    i64.shl
+    i64.const 5
+    i64.shr_s
+    i64.store align=1
+    local.get 1
+    i64.load align=1
+    local.set 2
+    local.get 1
+    local.get 2
+    i64.const 4
+    i64.shr_u
+    local.tee 1
+    i64.store align=1
+    local.get 0
+    i64.load align=1
+    local.set 0
+    local.get 0
+    local.get 1
+    i64.add
+    return
+    end
+  )
+  (func $test_inplace_shifts (type 2) (param i64 i64 i64) (result i64)
+    (local i64)
+    local.get 0
+    i64.load align=1
+    local.set 3
+    local.get 0
+    local.get 3
+    local.get 2
+    i64.shl
+    local.get 2
+    i64.shr_s
+    i64.store align=1
+    local.get 1
+    i64.load align=1
+    local.set 3
+    local.get 1
+    local.get 3
+    local.get 2
+    i64.shr_u
+    local.tee 1
+    i64.store align=1
+    local.get 0
+    i64.load align=1
+    local.set 0
+    local.get 0
+    local.get 1
+    i64.add
+    return
+    end
+  )
+  (func $main (type 3) (result i64)
+    (local i64 i64 i64 i64)
+    global.get 0
+    i64.const 16
+    i64.sub
+    global.set 0
+    global.get 0
+    i64.const 0
+    i64.add
+    local.tee 3
+    i64.const -5
+    i64.store align=1
+    global.get 0
+    i64.const 8
+    i64.add
+    local.tee 0
+    i64.const 20
+    i64.store align=1
+    i64.const -1
+    call $test_imm_shifts
+    local.set 2
+    local.get 3
+    local.get 0
+    call $test_imm_inplace_shifts
+    local.set 1
+    local.get 3
+    local.get 0
+    i64.const 4
+    call $test_inplace_shifts
+    local.set 0
+    local.get 2
+    local.get 1
+    i64.add
+    local.get 0
+    i64.add
+    global.get 0
+    i64.const 16
+    i64.add
+    global.set 0
+    return
+    end
+  )
+  (table (;0;) 0 0 funcref)
+  (memory (;0;) i64 16)
+  (global (;0;) (mut i64) i64.const 1048576)
+  (export "main" (func 3))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (elem (;0;) (i32.const 0) func)
+  (data (;0;) (i64.const 1048576) "")
+)
+=========== OPT LEVEL: aggresive ===========
+(module
+  (type (;0;) (func (result i64)))
+  (func $main (type 0) (result i64)
+    i64.const 576460752303423477
+    return
+    end
+  )
+  (table (;0;) 0 0 funcref)
+  (memory (;0;) i64 16)
+  (global (;0;) (mut i64) i64.const 1048576)
+  (export "main" (func 0))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (elem (;0;) (i32.const 0) func)
+  (data (;0;) (i64.const 1048576) "")
+)

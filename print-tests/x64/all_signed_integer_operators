@@ -1,0 +1,266 @@
+=========== OPT LEVEL: none-quick ===========
+main:
+    sub rsp, 0x18
+    mov rcx, -6
+    mov rax, 0x14
+    cqo
+    idiv rcx
+    mov.q [rsp], rax
+    xor eax, eax
+    mov.q rdx, [rsp]
+    add rax, rdx
+    mov.q [rsp], rax
+    mov rax, 0x14
+    cqo
+    idiv rcx
+    mov.q rax, [rsp]
+    add rax, rdx
+    mov.q [rsp], rax
+    mov rax, -7
+    cqo
+    idiv rcx
+    mov.q [rsp + 0x8], rax
+    mov.q rax, [rsp]
+    mov.q rdx, [rsp + 0x8]
+    add rax, rdx
+    mov.q [rsp], rax
+    mov rax, -7
+    cqo
+    idiv rcx
+    mov.q rax, [rsp]
+    add rax, rdx
+    mov.q [rsp], rax
+    mov rax, -7
+    sar rax, 1
+    mov.q [rsp + 0x8], rax
+    mov.q rax, [rsp]
+    mov.q rdx, [rsp + 0x8]
+    add rax, rdx
+    mov.q [rsp], rax
+    mov rax, -6
+    sar rax, 1
+    mov.q rdx, [rsp]
+    add rdx, rax
+    mov.q [rsp], rdx
+    cmp rcx, 0x14
+    jnge 1
+    push.q [rsp]
+    pop.q [rsp + 0x8]
+    jmp 2
+1:
+    mov.q rax, [rsp]
+    add rax, 1
+    mov.q [rsp + 0x8], rax
+2:
+    push.q [rsp + 0x8]
+    pop.q [rsp]
+    mov rax, -7
+    cmp rax, -6
+    jnge 3
+    push.q [rsp]
+    pop.q [rsp + 0x8]
+    jmp 4
+3:
+    mov.q rax, [rsp]
+    add rax, 2
+    mov.q [rsp + 0x8], rax
+4:
+    push.q [rsp + 0x8]
+    pop.q [rsp]
+    mov rax, 0x14
+    cmp rax, -6
+    jnle 5
+    push.q [rsp]
+    pop.q [rsp + 0x8]
+    jmp 6
+5:
+    mov.q rax, [rsp]
+    add rax, 4
+    mov.q [rsp + 0x8], rax
+6:
+    push.q [rsp + 0x8]
+    pop.q [rsp]
+    cmp rcx, -7
+    jng 7
+    push.q [rsp]
+    pop.q [rsp + 0x8]
+    jmp 8
+7:
+    mov.q rax, [rsp]
+    add rax, 8
+    mov.q [rsp + 0x8], rax
+8:
+    push.q [rsp + 0x8]
+    pop.q [rsp]
+    mov rax, 0x14
+    cmp rax, -6
+    jnl 9
+    push.q [rsp]
+    pop.q [rsp + 0x8]
+    jmp 10
+9:
+    mov.q rax, [rsp]
+    add rax, 0x10
+    mov.q [rsp + 0x8], rax
+10:
+    mov.q rax, [rsp + 0x8]
+    add rsp, 0x18
+    ret
+=========== OPT LEVEL: none ===========
+main:
+    mov rsi, -6
+    mov rax, 0x14
+    cqo
+    idiv rsi
+    xor ecx, ecx
+    add rcx, rax
+    mov rax, 0x14
+    cqo
+    idiv rsi
+    add rcx, rdx
+    mov rax, -7
+    cqo
+    idiv rsi
+    add rcx, rax
+    mov rax, -7
+    cqo
+    idiv rsi
+    add rcx, rdx
+    mov rax, -7
+    sar rax, 1
+    add rcx, rax
+    mov rax, -6
+    sar rax, 1
+    add rcx, rax
+    cmp rsi, 0x14
+    jnge 1
+    jmp 2
+1:
+    add rcx, 1
+2:
+    mov rax, -7
+    cmp rax, -6
+    jnge 3
+    jmp 4
+3:
+    add rcx, 2
+4:
+    mov rax, 0x14
+    cmp rax, -6
+    jnle 5
+    jmp 6
+5:
+    add rcx, 4
+6:
+    cmp rsi, -7
+    jng 7
+    jmp 8
+7:
+    add rcx, 8
+8:
+    mov rax, 0x14
+    cmp rax, -6
+    jnl 9
+    jmp 10
+9:
+    add rcx, 0x10
+10:
+    mov rax, rcx
+    ret
+=========== OPT LEVEL: mininal-quick ===========
+main:
+    mov cl, 1
+    xor eax, eax
+    add rax, -3
+    add rax, 2
+    add rax, 1
+    add rax, -1
+    add rax, -4
+    add rax, -3
+    test cl, cl
+    jnz 1
+    jmp 2
+1:
+    add rax, 1
+2:
+    test cl, cl
+    jnz 3
+    jmp 4
+3:
+    add rax, 2
+4:
+    test cl, cl
+    jnz 5
+    jmp 6
+5:
+    add rax, 4
+6:
+    xor edx, edx
+    test dl, dl
+    jnz 7
+    jmp 8
+7:
+    add rax, 8
+8:
+    test cl, cl
+    jnz 9
+    jmp 10
+9:
+    add rax, 0x10
+10:
+    ret
+=========== OPT LEVEL: mininal ===========
+main:
+    mov dl, 1
+    xor eax, eax
+    add rax, -3
+    add rax, 2
+    add rax, 1
+    add rax, -1
+    add rax, -4
+    add rax, -3
+    test dl, dl
+    jnz 1
+    jmp 2
+1:
+    add rax, 1
+2:
+    test dl, dl
+    jnz 3
+    jmp 4
+3:
+    add rax, 2
+4:
+    test dl, dl
+    jnz 5
+    jmp 6
+5:
+    add rax, 4
+6:
+    xor ecx, ecx
+    test cl, cl
+    jnz 7
+    jmp 8
+7:
+    add rax, 8
+8:
+    test dl, dl
+    jnz 9
+    jmp 10
+9:
+    add rax, 0x10
+10:
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+main:
+    mov rax, 0xf
+    ret
+=========== OPT LEVEL: moderate ===========
+main:
+    mov rax, 0xf
+    ret
+=========== OPT LEVEL: all ===========
+main:
+    mov rax, 0xf
+    ret
+=========== OPT LEVEL: aggresive ===========

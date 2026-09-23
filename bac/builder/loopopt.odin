@@ -8,7 +8,7 @@ import "core:math"
 import "core:mem"
 import "core:slice"
 
-loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
+loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 	context.allocator, _ = arna.scrath()
 
 	if .Loop_Opt not_in graph.opt_flags do return
@@ -16,11 +16,11 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 	defer graph.peeped &= !optimized
 
 	Ctx :: struct {
-		using graph:  ^bac.Graph,
-		sched:        bac.Graph_Schedule,
+		using graph:  ^bac.Proc,
+		sched:        bac.Schedule,
 		cloned_up:    []Node_ID,
 		cloned_down:  []Node_ID,
-		node_blocks:  []^bac.Graph_Basic_Block,
+		node_blocks:  []^bac.Basic_Block,
 		instrs:       []Node_ID,
 		current_loop: Node_ID,
 	}
@@ -83,10 +83,10 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 		// TODO: we could do better then this and actually clone calls as well
 		if nnode.itype != .If do continue
 
-		then_else_bb: [2]^bac.Graph_Basic_Block
+		then_else_bb: [2]^bac.Basic_Block
 		then_else := [?]Node_ID{nnode.outs[0].id, nnode.outs[1].id}
-		break_branch: ^bac.Graph_Basic_Block
-		continue_branch: ^bac.Graph_Basic_Block
+		break_branch: ^bac.Basic_Block
+		continue_branch: ^bac.Basic_Block
 
 		for &n, i in then_else_bb {
 			n = block_of(ctx, then_else[i])
@@ -169,10 +169,10 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 			ctx: ^Ctx,
 			node: Node_ID,
 			ltree: ^bac.Loop_Tree,
-		) -> ^bac.Graph_Basic_Block {
+		) -> ^bac.Basic_Block {
 			append(
 				&ctx.sched.bbs,
-				bac.Graph_Basic_Block{head = node, loop_tree = ltree},
+				bac.Basic_Block{head = node, loop_tree = ltree},
 			)
 			join_bb := &ctx.sched.bbs[len(ctx.sched.bbs) - 1]
 			ctx.node_blocks[get_node(ctx, node).gvn] = join_bb
@@ -445,7 +445,7 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 				)
 
 				compute_dynamic_index_offset :: proc(
-					ctx: ^Graph,
+					ctx: ^Proc,
 					base, idx, stride: Node_ID,
 				) -> Node_ID {
 					index := idx
@@ -694,7 +694,7 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 
 	return
 
-	block_of :: proc(ctx: Ctx, node: Node_ID) -> (v: ^bac.Graph_Basic_Block) {
+	block_of :: proc(ctx: Ctx, node: Node_ID) -> (v: ^bac.Basic_Block) {
 		defer fmt.assertf(v != nil, "%v %v", get_node(ctx, node), int(node))
 		return ctx.node_blocks[get_node(ctx, node).gvn]
 	}
@@ -775,7 +775,7 @@ loopopt :: proc(graph: ^bac.Graph) -> (optimized: bool) {
 		ctx: Ctx,
 		root: Node_ID,
 		phy_idx: int,
-		ctrl: ^bac.Graph_Basic_Block,
+		ctrl: ^bac.Basic_Block,
 	) -> Node_ID {
 		if root == ctx.current_loop {
 			return ctrl.head

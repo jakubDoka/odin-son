@@ -1,0 +1,35 @@
+=========== OPT LEVEL: none-quick ===========
+opaque:
+    ret
+main:
+    sub sp, sp, #32
+    stp x29, x30, [xzr, #7]
+    movz x1, #0, #0
+    movz x2, #16, #0
+    add x0, sp, #16
+    bl 0xffffffe0
+    movz x0, #3, #0
+    bl 0xfffffffc
+    add x1, sp, #16
+    str x0, [x1]
+    movz x0, #5, #0
+    bl 0xfffffffc
+    movz x1, #8, #0
+    add x2, sp, #16
+    add x1, x1, x2
+    str x0, [x1]
+    movz x0, #1, #0
+    bl 0xfffffffc
+    movz x1, #0, #0
+    cmp w0, w1
+    b.gt 0x64
+    movz x0, #100, #0
+    add x1, sp, #16
+    str x0, [x1]
+    b 0x64
+2:
+    add x0, sp, #16
+    ldr x0, [x0]
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #32
+    ret

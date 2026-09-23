@@ -166,7 +166,7 @@ SPEC := bac.Node_Spec{
 		1, // Loop -> Cfg
 		1, // Always -> Cfg
 		1, // Trap -> Cfg
-		3, // Call -> Call
+		4, // Call -> Call
 		1, // Call_End -> Cfg
 		1, // Ret -> Tup
 		1, // Return -> Cfg

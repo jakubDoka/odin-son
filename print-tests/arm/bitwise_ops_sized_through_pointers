@@ -1,0 +1,632 @@
+=========== OPT LEVEL: none-quick ===========
+Error{inst_idx = 176, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 184, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 212, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 228, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+main:
+    sub sp, sp, #64
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    stp x29, x30, [xzr, #31]
+    add x19, sp, #40
+    movz x0, #12, #0
+    strb w0, [x19]
+    add x20, sp, #42
+    movz x0, #12, #0
+    strh w0, [x20]
+    add x21, sp, #46
+    movz x0, #13, #0
+    str w0, [x21]
+    ldrb w0, [x19]
+    movz x1, #10, #0
+    and w0, w0, w1
+    strb w0, [x19]
+    ldrh w0, [x20]
+    movz x2, #3, #0
+    orr w0, w0, w2
+    strh w0, [x20]
+    ldr w0, [x21]
+    movz x2, #6, #0
+    eor w0, w0, w2
+    str w0, [x21]
+    add x0, sp, #41
+    strb w1, [x0]
+    movz x0, #15, #0
+    add x1, sp, #44
+    strh w0, [x1]
+    movz x0, #11, #0
+    add x1, sp, #50
+    str w0, [x1]
+    movz x1, #5, #0
+    add x0, sp, #41
+    bl or8
+    movz x1, #6, #0
+    add x0, sp, #44
+    bl xor16
+    add x0, sp, #50
+    movz x1, #6, #0
+    bl and32
+    ldrb w0, [x19]
+    invalid
+    ldrh w1, [x20]
+    invalid
+    add x0, x0, x1
+    ldr w1, [x21]
+    sxtw x1, w1
+    add x0, x0, x1
+    add x1, sp, #41
+    ldrb w1, [x1]
+    invalid
+    add x0, x0, x1
+    add x1, sp, #44
+    ldrh w1, [x1]
+    invalid
+    add x0, x0, x1
+    add x1, sp, #50
+    ldr w1, [x1]
+    sxtw x1, w1
+    add x0, x0, x1
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldp x29, x30, [xzr, #31]
+    add sp, sp, #64
+    ret
+or8:
+    ldrb w2, [x0]
+    orr w1, w2, w1
+    strb w1, [x0]
+    ldrb w0, [x0]
+    ret
+xor16:
+    ldrh w2, [x0]
+    eor w1, w2, w1
+    strh w1, [x0]
+    ldrh w0, [x0]
+    ret
+and32:
+    ldr w2, [x0]
+    and w1, w2, w1
+    str w1, [x0]
+    ldr w0, [x0]
+    ret
+=========== OPT LEVEL: none ===========
+Error{inst_idx = 176, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 184, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 212, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 228, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+main:
+    sub sp, sp, #64
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    stp x29, x30, [xzr, #31]
+    add x21, sp, #40
+    movz x0, #12, #0
+    strb w0, [x21]
+    add x20, sp, #42
+    movz x0, #12, #0
+    strh w0, [x20]
+    add x19, sp, #46
+    movz x0, #13, #0
+    str w0, [x19]
+    ldrb w0, [x21]
+    movz x2, #10, #0
+    and w0, w0, w2
+    strb w0, [x21]
+    ldrh w1, [x20]
+    movz x0, #3, #0
+    orr w0, w1, w0
+    strh w0, [x20]
+    ldr w1, [x19]
+    movz x0, #6, #0
+    eor w0, w1, w0
+    str w0, [x19]
+    add x0, sp, #41
+    strb w2, [x0]
+    movz x1, #15, #0
+    add x0, sp, #44
+    strh w1, [x0]
+    movz x1, #11, #0
+    add x0, sp, #50
+    str w1, [x0]
+    movz x1, #5, #0
+    add x0, sp, #41
+    bl or8
+    movz x1, #6, #0
+    add x0, sp, #44
+    bl xor16
+    add x0, sp, #50
+    movz x1, #6, #0
+    bl and32
+    ldrb w0, [x21]
+    invalid
+    ldrh w0, [x20]
+    invalid
+    add x1, x1, x0
+    ldr w0, [x19]
+    sxtw x0, w0
+    add x1, x1, x0
+    add x0, sp, #41
+    ldrb w0, [x0]
+    invalid
+    add x1, x1, x0
+    add x0, sp, #44
+    ldrh w0, [x0]
+    invalid
+    add x1, x1, x0
+    add x0, sp, #50
+    ldr w0, [x0]
+    sxtw x0, w0
+    add x0, x1, x0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldp x29, x30, [xzr, #31]
+    add sp, sp, #64
+    ret
+or8:
+    ldrb w2, [x0]
+    orr w1, w2, w1
+    strb w1, [x0]
+    ldrb w0, [x0]
+    ret
+xor16:
+    ldrh w2, [x0]
+    eor w1, w2, w1
+    strh w1, [x0]
+    ldrh w0, [x0]
+    ret
+and32:
+    ldr w2, [x0]
+    and w1, w2, w1
+    str w1, [x0]
+    ldr w0, [x0]
+    ret
+=========== OPT LEVEL: mininal-quick ===========
+Error{inst_idx = 176, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 184, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 212, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 228, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+main:
+    sub sp, sp, #64
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    stp x29, x30, [xzr, #31]
+    add x19, sp, #40
+    movz x0, #12, #0
+    strb w0, [x19]
+    add x20, sp, #42
+    movz x0, #12, #0
+    strh w0, [x20]
+    add x21, sp, #46
+    movz x0, #13, #0
+    str w0, [x21]
+    ldrb w0, [x19]
+    movz x1, #10, #0
+    and w0, w0, w1
+    strb w0, [x19]
+    ldrh w0, [x20]
+    movz x2, #3, #0
+    orr w0, w0, w2
+    strh w0, [x20]
+    ldr w0, [x21]
+    movz x2, #6, #0
+    eor w0, w0, w2
+    str w0, [x21]
+    add x0, sp, #41
+    strb w1, [x0]
+    movz x0, #15, #0
+    add x1, sp, #44
+    strh w0, [x1]
+    movz x0, #11, #0
+    add x1, sp, #50
+    str w0, [x1]
+    movz x1, #5, #0
+    add x0, sp, #41
+    bl or8
+    movz x1, #6, #0
+    add x0, sp, #44
+    bl xor16
+    add x0, sp, #50
+    movz x1, #6, #0
+    bl and32
+    ldrb w0, [x19]
+    invalid
+    ldrh w1, [x20]
+    invalid
+    add x0, x0, x1
+    ldr w1, [x21]
+    sxtw x1, w1
+    add x0, x0, x1
+    add x1, sp, #41
+    ldrb w1, [x1]
+    invalid
+    add x0, x0, x1
+    add x1, sp, #44
+    ldrh w1, [x1]
+    invalid
+    add x0, x0, x1
+    add x1, sp, #50
+    ldr w1, [x1]
+    sxtw x1, w1
+    add x0, x0, x1
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldp x29, x30, [xzr, #31]
+    add sp, sp, #64
+    ret
+or8:
+    ldrb w2, [x0]
+    orr w1, w2, w1
+    strb w1, [x0]
+    ldrb w0, [x0]
+    ret
+xor16:
+    ldrh w2, [x0]
+    eor w1, w2, w1
+    strh w1, [x0]
+    ldrh w0, [x0]
+    ret
+and32:
+    ldr w2, [x0]
+    and w1, w2, w1
+    str w1, [x0]
+    ldr w0, [x0]
+    ret
+=========== OPT LEVEL: mininal ===========
+Error{inst_idx = 176, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 184, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 212, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 228, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+main:
+    sub sp, sp, #64
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    stp x29, x30, [xzr, #31]
+    add x21, sp, #40
+    movz x0, #12, #0
+    strb w0, [x21]
+    add x20, sp, #42
+    movz x0, #12, #0
+    strh w0, [x20]
+    add x19, sp, #46
+    movz x0, #13, #0
+    str w0, [x19]
+    ldrb w0, [x21]
+    movz x2, #10, #0
+    and w0, w0, w2
+    strb w0, [x21]
+    ldrh w1, [x20]
+    movz x0, #3, #0
+    orr w0, w1, w0
+    strh w0, [x20]
+    ldr w1, [x19]
+    movz x0, #6, #0
+    eor w0, w1, w0
+    str w0, [x19]
+    add x0, sp, #41
+    strb w2, [x0]
+    movz x1, #15, #0
+    add x0, sp, #44
+    strh w1, [x0]
+    movz x1, #11, #0
+    add x0, sp, #50
+    str w1, [x0]
+    movz x1, #5, #0
+    add x0, sp, #41
+    bl or8
+    movz x1, #6, #0
+    add x0, sp, #44
+    bl xor16
+    add x0, sp, #50
+    movz x1, #6, #0
+    bl and32
+    ldrb w0, [x21]
+    invalid
+    ldrh w0, [x20]
+    invalid
+    add x1, x1, x0
+    ldr w0, [x19]
+    sxtw x0, w0
+    add x1, x1, x0
+    add x0, sp, #41
+    ldrb w0, [x0]
+    invalid
+    add x1, x1, x0
+    add x0, sp, #44
+    ldrh w0, [x0]
+    invalid
+    add x1, x1, x0
+    add x0, sp, #50
+    ldr w0, [x0]
+    sxtw x0, w0
+    add x0, x1, x0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldp x29, x30, [xzr, #31]
+    add sp, sp, #64
+    ret
+or8:
+    ldrb w2, [x0]
+    orr w1, w2, w1
+    strb w1, [x0]
+    ldrb w0, [x0]
+    ret
+xor16:
+    ldrh w2, [x0]
+    eor w1, w2, w1
+    strh w1, [x0]
+    ldrh w0, [x0]
+    ret
+and32:
+    ldr w2, [x0]
+    and w1, w2, w1
+    str w1, [x0]
+    ldr w0, [x0]
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+Error{inst_idx = 176, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 184, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 212, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 228, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+main:
+    sub sp, sp, #64
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    stp x29, x30, [xzr, #31]
+    add x19, sp, #40
+    movz x0, #12, #0
+    strb w0, [x19]
+    add x20, sp, #42
+    movz x0, #12, #0
+    strh w0, [x20]
+    add x21, sp, #46
+    movz x0, #13, #0
+    str w0, [x21]
+    ldrb w0, [x19]
+    movz x1, #10, #0
+    and w0, w0, w1
+    strb w0, [x19]
+    ldrh w0, [x20]
+    movz x2, #3, #0
+    orr w0, w0, w2
+    strh w0, [x20]
+    ldr w0, [x21]
+    movz x2, #6, #0
+    eor w0, w0, w2
+    str w0, [x21]
+    add x0, sp, #41
+    strb w1, [x0]
+    movz x0, #15, #0
+    add x1, sp, #44
+    strh w0, [x1]
+    movz x0, #11, #0
+    add x1, sp, #50
+    str w0, [x1]
+    movz x1, #5, #0
+    add x0, sp, #41
+    bl or8
+    movz x1, #6, #0
+    add x0, sp, #44
+    bl xor16
+    add x0, sp, #50
+    movz x1, #6, #0
+    bl and32
+    ldrb w0, [x19]
+    invalid
+    ldrh w1, [x20]
+    invalid
+    add x0, x0, x1
+    ldr w1, [x21]
+    sxtw x1, w1
+    add x0, x0, x1
+    add x1, sp, #41
+    ldrb w1, [x1]
+    invalid
+    add x0, x0, x1
+    add x1, sp, #44
+    ldrh w1, [x1]
+    invalid
+    add x0, x0, x1
+    add x1, sp, #50
+    ldr w1, [x1]
+    sxtw x1, w1
+    add x0, x0, x1
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldp x29, x30, [xzr, #31]
+    add sp, sp, #64
+    ret
+or8:
+    sub sp, sp, #16
+    str x0, [xzr]
+    ldr x0, [xzr]
+    ldrb w0, [x0]
+    orr w0, w0, w1
+    ldr x1, [xzr]
+    strb w0, [x1]
+    add sp, sp, #16
+    ret
+xor16:
+    sub sp, sp, #16
+    str x0, [xzr]
+    ldr x0, [xzr]
+    ldrh w0, [x0]
+    eor w0, w0, w1
+    ldr x1, [xzr]
+    strh w0, [x1]
+    add sp, sp, #16
+    ret
+and32:
+    sub sp, sp, #16
+    str x0, [xzr]
+    ldr x0, [xzr]
+    ldr w0, [x0]
+    and w0, w0, w1
+    ldr x1, [xzr]
+    str w0, [x1]
+    add sp, sp, #16
+    ret
+=========== OPT LEVEL: moderate ===========
+Error{inst_idx = 176, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 184, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 212, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 228, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+main:
+    sub sp, sp, #64
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    stp x29, x30, [xzr, #31]
+    add x21, sp, #40
+    movz x0, #12, #0
+    strb w0, [x21]
+    add x20, sp, #42
+    movz x0, #12, #0
+    strh w0, [x20]
+    add x19, sp, #46
+    movz x0, #13, #0
+    str w0, [x19]
+    ldrb w0, [x21]
+    movz x2, #10, #0
+    and w0, w0, w2
+    strb w0, [x21]
+    ldrh w1, [x20]
+    movz x0, #3, #0
+    orr w0, w1, w0
+    strh w0, [x20]
+    ldr w1, [x19]
+    movz x0, #6, #0
+    eor w0, w1, w0
+    str w0, [x19]
+    add x0, sp, #41
+    strb w2, [x0]
+    movz x1, #15, #0
+    add x0, sp, #44
+    strh w1, [x0]
+    movz x1, #11, #0
+    add x0, sp, #50
+    str w1, [x0]
+    movz x1, #5, #0
+    add x0, sp, #41
+    bl or8
+    movz x1, #6, #0
+    add x0, sp, #44
+    bl xor16
+    add x0, sp, #50
+    movz x1, #6, #0
+    bl and32
+    ldrb w0, [x21]
+    invalid
+    ldrh w0, [x20]
+    invalid
+    add x1, x1, x0
+    ldr w0, [x19]
+    sxtw x0, w0
+    add x1, x1, x0
+    add x0, sp, #41
+    ldrb w0, [x0]
+    invalid
+    add x1, x1, x0
+    add x0, sp, #44
+    ldrh w0, [x0]
+    invalid
+    add x1, x1, x0
+    add x0, sp, #50
+    ldr w0, [x0]
+    sxtw x0, w0
+    add x0, x1, x0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldp x29, x30, [xzr, #31]
+    add sp, sp, #64
+    ret
+or8:
+    mov x2, x0
+    ldrb w0, [x2]
+    orr w0, w0, w1
+    strb w0, [x2]
+    ret
+xor16:
+    mov x2, x0
+    ldrh w0, [x2]
+    eor w0, w0, w1
+    strh w0, [x2]
+    ret
+and32:
+    mov x2, x0
+    ldr w0, [x2]
+    and w0, w0, w1
+    str w0, [x2]
+    ret
+=========== OPT LEVEL: all ===========
+Error{inst_idx = 88, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 108, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+main:
+    sub sp, sp, #32
+    stp x29, x30, [xzr, #7]
+    movz x1, #10, #0
+    add x0, sp, #16
+    strb w1, [x0]
+    movz x1, #15, #0
+    add x0, sp, #17
+    strh w1, [x0]
+    movz x1, #11, #0
+    add x0, sp, #19
+    str w1, [x0]
+    movz x1, #5, #0
+    add x0, sp, #16
+    bl or8
+    movz x1, #6, #0
+    add x0, sp, #17
+    bl xor16
+    movz x1, #6, #0
+    add x0, sp, #19
+    bl and32
+    add x0, sp, #16
+    ldrb w0, [x0]
+    invalid
+    movz x0, #34, #0
+    add x1, x1, x0
+    add x0, sp, #17
+    ldrh w0, [x0]
+    invalid
+    add x1, x1, x0
+    add x0, sp, #19
+    ldr w0, [x0]
+    sxtw x0, w0
+    add x0, x1, x0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #32
+    ret
+or8:
+    mov x2, x0
+    ldrb w0, [x2]
+    orr w0, w0, w1
+    strb w0, [x2]
+    ret
+xor16:
+    mov x2, x0
+    ldrh w0, [x2]
+    eor w0, w0, w1
+    strh w0, [x2]
+    ret
+and32:
+    mov x2, x0
+    ldr w0, [x2]
+    and w0, w0, w1
+    str w0, [x2]
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    movz x0, #60, #0
+    ret

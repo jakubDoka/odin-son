@@ -143,6 +143,29 @@ peep :: proc(
 	id := bac.get_node_id(ctx, node)
 	kind := atype(node)
 
+	signed := false
+	#partial switch kind {
+	case .Le ..= .Ge:
+		signed = true
+	}
+
+	ext: bac.Un_Op = signed ? .Sext : .Uext
+
+	changed := false
+
+	#partial switch kind {
+	case .Eq ..= .U_Ge:
+		for inp, i in node.inps {
+			if get_node(ctx, inp).dt < .I32 {
+				new := bac.add_un_op(ctx, "shext", ext, .I32, inp)
+				bac.set_input(ctx, id, i, new)
+				bac.worklist_add(ctx, ctx.worklist, new)
+				changed = true
+			}
+		}
+
+	}
+
 	#partial switch kind {
 	case .Eq ..= .U_Ge:
 		if len(node.outs) == 1 &&
@@ -168,6 +191,8 @@ peep :: proc(
 			node.inps[0],
 		)
 	}
+
+	if changed do return id
 
 	return 0
 }
@@ -266,7 +291,7 @@ meta_of :: #force_inline proc(
 	}
 
 	#partial switch atype(node) {
-	case .Root_Mem, .Sym, .Jump, .Mem, .Local:
+	case .Root_Mem, .Sym, .Jump, .Mem, .Local, .Global, .Always, .Poison:
 		return {out = IOUT}
 	case .Add ..= .Xor, .Shl ..= .And_Not, .F_Add ..= .F_Div:
 		return {out = out, masks = nmasks[:2]}
@@ -275,21 +300,18 @@ meta_of :: #force_inline proc(
 	case .Eq ..= .U_Ge:
 		return {out = out, masks = GPA_MASKS[:2]}
 	case .F_Eq ..= .F_Ge:
-		if out != IOUT {
-			out = GPA_MASK_IDX
-		}
 		return {out = out, masks = VEC_MASKS[:2]}
 	case .F_To_I:
 		return {out = out, masks = VEC_MASKS[:1]}
-	case .CInt, .Local_Addr:
+	case .CInt, .Local_Addr, .Global_Addr:
 		return {out = out}
 	case .Phi:
-		return {
-			out = out,
-			input_start = 1,
-			masks = nmasks[:len(node.inps) - 1],
-		}
-	case .Split, .Uext, .Sext:
+		masks := make([]bac.RM_Intern_Idx, len(node.inps) - 1)
+		slice.fill(masks, sout)
+		return {out = sout, input_start = 1, masks = masks}
+	case .Uext, .Sext, .Neg, .Not:
+		return {out = out, masks = nmasks[:1]}
+	case .Split:
 		return {out = sout, masks = snmasks[:1]}
 	case .If:
 		return {
@@ -298,32 +320,12 @@ meta_of :: #force_inline proc(
 			masks = nmasks[:1 -
 			int(get_node(graph, node.inps[1]).dt == .Void)],
 		}
-	case .Call:
-		real_len := len(node.inps)
-		for ; get_node(graph, node.inps[real_len - 1]).itype == .Local;
-		    real_len -= 1 {}
-
-		masks := make([]bac.RM_Intern_Idx, real_len - bac.CALL_PREFIX)
-		for inp, i in node.inps[bac.CALL_PREFIX:real_len] {
-			inode := get_node(graph, inp)
-			nkind := ra.datatype_to_reg_kind[inode.dt]
-			assert(nkind == RK_GENERAL)
-			masks[i] = single(ra, ARM_SYSTEMV_CC.args[0][i])
-		}
-
-		return {out = IOUT, input_start = bac.CALL_PREFIX, masks = masks}
-	case .Set, .Copy:
-		return {
-			out = IOUT,
-			input_start = 2,
-			masks = dup(
-				{
-					single(ra, ARM_SYSTEMV_CC.args[0][0]),
-					single(ra, ARM_SYSTEMV_CC.args[0][1]),
-					single(ra, ARM_SYSTEMV_CC.args[0][2]),
-				},
-			),
-		}
+	case .Call, .Return, .Set, .Copy:
+		return bac.cc_node_meta(graph, ra, node)
+	case .Ret:
+		return {out = bac.ret_mask(graph, ra, node)}
+	case .Param:
+		return {out = bac.param_mask(graph, ra, node)}
 	case .Store:
 		vl := get_node(graph, node.inps[3])
 		nkind := ra.datatype_to_reg_kind[vl.dt]
@@ -334,25 +336,6 @@ meta_of :: #force_inline proc(
 		}
 	case .Load:
 		return {out = out, input_start = 2, masks = GPA_MASKS[:1]}
-	case .Ret:
-		idx := bac.get_extra(graph, node, bac.Tup).idx
-		assert(nkind == RK_GENERAL)
-		return {out = single(ra, ARM_SYSTEMV_CC.rets[0][idx])}
-	case .Param:
-		idx := bac.get_extra(graph, node, bac.Tup).idx
-		assert(nkind == RK_GENERAL)
-		return {out = single(ra, ARM_SYSTEMV_CC.args[0][idx])}
-	case .Return:
-		return {
-			out = IOUT,
-			input_start = min(bac.RET_PREFIX, u8(len(node.inps))),
-			masks = dup(
-				{
-					single(ra, ARM_SYSTEMV_CC.rets[0][0]),
-					single(ra, ARM_SYSTEMV_CC.rets[0][1]),
-				},
-			),
-		}
 	}
 
 	fmt.panicf("TODO %v", node)
@@ -387,6 +370,8 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 	arna.alloc(ctx.code, 0, 4)
 
 	ctx.code_start = ctx.code.pos
+
+	params, _ := bac.assemble_args(ctx, len(ctx.param_specs))
 
 	for reg in ctx.allocs {
 		if reg.kind == RK_GENERAL {
@@ -441,11 +426,23 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 		&ctx.stack_size,
 	)
 
+	bac.compute_param_offsets(
+		ctx,
+		params,
+		&ctx.stack_size,
+		ctx.stack_param_offset[:],
+		0,
+	)
+
 	bac.layout_locals(ctx, ctx.schedule, &ctx.stack_size)
 
 	ctx.stack_size = i32(
 		mem.align_forward_int(int(ctx.stack_size), STACK_ALIGNMENT),
 	)
+
+	for spo in ctx.stack_param_offset {
+		for &off in spo do off += ctx.stack_size
+	}
 
 	if ctx.stack_size != 0 {
 		// sub sp, sp, ctx.stack_size
@@ -555,26 +552,29 @@ emit_instr :: proc(
 
 	@(static, rodata)
 	NODE_TO_OP := #partial [Node_Type]u32 {
-		.Add     = 0x0B000000,
-		.Sub     = 0x4B000000,
-		.And     = 0x0A000000,
-		.Or      = 0x2A000000,
-		.Xor     = 0x4A000000,
-		.And_Not = 0x0A200000,
-		.Eq ..= .U_Ge         = 0x6B00001F,
-		.Shl     = 0x1AC02000,
-		.U_Shr   = 0x1AC02400,
-		.Shr     = 0x1AC02800,
-		.Mul     = 0x1B007C00,
-		.U_Div   = 0x1AC00800,
-		.Div     = 0x1AC00C00,
-		.U_Rem   = 0x1AC00800,
-		.Rem     = 0x1AC00C00,
-		.F_Add   = 0x1E202800,
-		.F_Sub   = 0x1E203800,
-		.F_Mul   = 0x1E200800,
-		.F_Div   = 0x1E201800,
-		.F_Eq ..= .F_Ge         = 0x1E202000,
+		.Add         = 0x0B000000,
+		.Sub         = 0x4B000000,
+		.And         = 0x0A000000,
+		.Or          = 0x2A000000,
+		.Xor         = 0x4A000000,
+		.And_Not     = 0x0A200000,
+		.Eq ..= .U_Ge             = 0x6B00001F,
+		.Shl         = 0x1AC02000,
+		.U_Shr       = 0x1AC02400,
+		.Shr         = 0x1AC02800,
+		.Mul         = 0x1B007C00,
+		.U_Div       = 0x1AC00800,
+		.Div         = 0x1AC00C00,
+		.U_Rem       = 0x1AC00800,
+		.Rem         = 0x1AC00C00,
+		.F_Add       = 0x1E202800,
+		.F_Sub       = 0x1E203800,
+		.F_Mul       = 0x1E200800,
+		.F_Div       = 0x1E201800,
+		.F_Eq ..= .F_Ge             = 0x1E202000,
+		.Global_Addr = 0x10000000,
+		.Neg         = 0x4B000000,
+		.Not         = 0x2a200000,
 	}
 	cc_neg :: proc(c: Cond) -> Cond {return Cond(u8(c) ~ 1)}
 
@@ -592,7 +592,16 @@ emit_instr :: proc(
 	}
 
 	#partial switch kind {
-	case .Root_Mem, .Sym, .Phi, .Ret, .Mem, .Param, .Local:
+	case .Root_Mem, .Sym, .Phi, .Ret, .Mem, .Param, .Local, .Global, .Poison:
+	case .Global_Addr:
+		id := bac.get_extra(ctx, inp, bac.Tup).idx
+		bac.add_reloc(ctx.relocs)^ = {
+			offset = u32(ctx.code.pos - ctx.code_start),
+			kind   = .Global,
+			size   = .r2_19,
+			id     = id,
+		}
+		emit_op(ctx.code, op | u32(reg_of(ctx, instr).index))
 	case .Local_Addr:
 		offset := bac.get_extra(ctx, node.inps[0], bac.Local).offset
 		assert(offset < 4096)
@@ -606,10 +615,15 @@ emit_instr :: proc(
 		vl := get_node(ctx, node.inps[3])
 
 		// str rvl, [rinp2, $imm12]
+		// TODO: this can be simplified
 		op: u32
 		#partial switch vl.dt {
 		case .I64:
 			op = 0b1111100100
+		case .I32:
+			op = 0b1011100100
+		case .I16:
+			op = 0b0111100100
 		case .I8:
 			op = 0b0011100100
 		case:
@@ -627,14 +641,25 @@ emit_instr :: proc(
 		)
 	case .Load:
 		// ldr rinstr, [rinp2, $imm12]
+
+		// TODO: this can be simplified
+		op: u32
+		#partial switch node.dt {
+		case .I64:
+			op = 0b1111100101
+		case .I32:
+			op = 0b1011100101
+		case .I16:
+			op = 0b0111100101
+		case .I8:
+			op = 0b0011100101
+		case:
+			fmt.panicf("TODO: %v", node)
+		}
+
 		emit_op(
 			ctx.code,
-			imm12_instr(
-				0b1111100101,
-				reg_of(ctx, instr),
-				reg_of(ctx, node.inps[2]),
-				0,
-			),
+			imm12_instr(op, reg_of(ctx, instr), reg_of(ctx, node.inps[2]), 0),
 		)
 	case .Split:
 		rd := reg_of(ctx, instr)
@@ -649,7 +674,18 @@ emit_instr :: proc(
 		assert(rd.kind == RK_GENERAL)
 
 		if rm.index >= 32 && rd.index >= 32 {
-			panic("TODO")
+			// str x17, [sp, #-16]!
+			emit_op(ctx.code, 0xF81F0FF1)
+
+			// ldr x17, [sp, rm_off + 16]
+			// +16 because we just moved SP down by 16 bytes.
+			emit_op(ctx.code, imm12_instr(0b1111100101, X17, SP, rm_off + 2))
+
+			// str x17, [sp, rd_off + 16]
+			emit_op(ctx.code, imm12_instr(0b1111100100, X17, SP, rd_off + 2))
+
+			// ldr x17, [sp], #16
+			emit_op(ctx.code, 0xF84107F1)
 		} else if rm.index >= 32 {
 			// ldr rd, [SP, rm_off]
 			emit_op(ctx.code, imm12_instr(0b1111100101, rd, SP, rm_off))
@@ -658,7 +694,7 @@ emit_instr :: proc(
 			emit_op(ctx.code, imm12_instr(0b1111100100, rm, SP, rd_off))
 		} else {
 			// mov rd, rm
-			emit_op(ctx.code, sh_instr(.x, 0b0101010, nil, rd, XZR, rm))
+			emit_op(ctx.code, sh_instr(true, 0b0101010, nil, rd, XZR, rm))
 		}
 
 		spill_slot_offset :: proc(ctx: ^Ctx, reg: Reg) -> i32 {
@@ -802,6 +838,11 @@ emit_instr :: proc(
 				u32(rd.index),
 			)
 		}
+	case .Neg, .Not:
+		emit_op(
+			ctx.code,
+			rrr(is_64, op, reg_of(ctx, instr), XZR, reg_of(ctx, node.inps[0])),
+		)
 	case .CInt:
 		cint := bac.get_extra(ctx, node, bac.CInt)
 
@@ -863,6 +904,8 @@ emit_instr :: proc(
 		}
 
 		if !is_consecutive do break
+		fallthrough
+	case .Always:
 		fallthrough
 	case .Jump:
 		if !is_consecutive {
@@ -955,11 +998,6 @@ reg_of :: proc(ctx: ^Ctx, node: Node_ID) -> Reg {
 	return ctx.allocs[get_node(ctx, node).gvn]
 }
 
-Op_Width :: enum u32 {
-	w,
-	x,
-}
-
 Shift :: enum u32 {
 	LSL,
 	LSR,
@@ -968,26 +1006,26 @@ Shift :: enum u32 {
 }
 
 sh_instr :: proc(
-	width: Op_Width,
+	is_64: bool,
 	#any_int opc: u32,
 	shift: Shift,
 	rd, rn, rm: Reg,
 	imm: u32 = 0,
 ) -> Op {
 	Layout :: bit_field u32 {
-		rd:    u16      | 5,
-		rn:    u16      | 5,
-		imm:   u32      | 6,
-		rm:    u16      | 5,
-		n:     u32      | 1,
-		shift: Shift    | 2,
-		opc:   u32      | 7,
-		width: Op_Width | 1,
+		rd:    u16   | 5,
+		rn:    u16   | 5,
+		imm:   u32   | 6,
+		rm:    u16   | 5,
+		n:     u32   | 1,
+		shift: Shift | 2,
+		opc:   u32   | 7,
+		is_64: bool  | 1,
 	}
 
 	return u32(
 		Layout {
-			width = width,
+			is_64 = is_64,
 			opc = opc,
 			shift = shift,
 			imm = imm,

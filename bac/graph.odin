@@ -279,10 +279,8 @@ Call :: struct {
 		imported:  bool | 1,
 		indirect:  bool | 1,
 	},
-	using _: struct #raw_union {
-		cid:  u32,
-		rets: [4]Node_Datatype,
-	},
+	cid:     u32,
+	rets:    [4]Node_Datatype,
 }
 
 Tup :: struct {

@@ -1,0 +1,58 @@
+=========== OPT LEVEL: none-quick ===========
+opaque:
+    ret
+main:
+    sub sp, sp, #80
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    stp x29, x30, [xzr, #31]
+    movz x1, #0, #0
+    movz x2, #32, #0
+    add x0, sp, #40
+    bl 0xffffffe0
+    movz x0, #1, #0
+    bl 0xfffffffc
+    add x1, sp, #40
+    str x0, [x1]
+    movz x0, #2, #0
+    bl 0xfffffffc
+    movz x19, #8, #0
+    add x1, sp, #40
+    add x20, x1, x19
+    str x0, [x20]
+    movz x0, #3, #0
+    bl 0xfffffffc
+    movz x1, #16, #0
+    add x2, sp, #40
+    add x21, x1, x2
+    str x0, [x21]
+    movz x0, #4, #0
+    bl 0xfffffffc
+    add x1, x21, x19
+    str x0, [x1]
+    ldr x0, [x1]
+    add x2, sp, #40
+    str x0, [x2]
+    ldr x0, [x20]
+    str x0, [x21]
+    ldr x0, [x20]
+    ldr x2, [x21]
+    add x3, sp, #40
+    ldr x3, [x3]
+    movz x4, #1000, #0
+    madd x3, x3, x4, xzr
+    movz x4, #100, #0
+    madd x0, x0, x4, xzr
+    add x0, x3, x0
+    movz x3, #10, #0
+    madd x2, x2, x3, xzr
+    add x0, x0, x2
+    ldr x1, [x1]
+    add x0, x0, x1
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldp x29, x30, [xzr, #31]
+    add sp, sp, #80
+    ret

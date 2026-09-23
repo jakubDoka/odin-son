@@ -921,7 +921,6 @@ emit_proc_code :: proc(
 	ra.spec = ctx.node_spec
 	ra.cc = ctx.target.cc
 	ra.param_specs = prc.param_types
-	ra.mask_len = 64
 
 	regs := regalloc.regalloc(&ra, ctx, &schedule, ctx.ralloc_mode)
 
@@ -2323,10 +2322,8 @@ emit_call :: proc(
 		}
 	}
 
-	if prc_id == 0 {
-		for v, i in results[len(rabi.extras):] {
-			call_ext.rets[i] = bac.get_node(ctx, v.id).dt
-		}
+	for v, i in results[len(rabi.extras):] {
+		call_ext.rets[i] = bac.get_node(ctx, v.id).dt
 	}
 
 	return results

@@ -1,0 +1,193 @@
+=========== OPT LEVEL: none-quick ===========
+sum_ints:
+    sub sp, sp, #48
+    stp x29, x30, [xzr, #7]
+    str x0, [xzr, #16]
+    movz x2, #0, #0
+    movz x3, #0, #0
+1:
+    str x2, [xzr, #24]
+    str x3, [xzr, #32]
+    movz x0, #8, #0
+    ldr x1, [xzr, #16]
+    add x0, x0, x1
+    ldr x0, [x0]
+    ldr x1, [xzr, #24]
+    cmp w1, w0
+    b.ge 2
+    ldr x1, [xzr, #24]
+    ldr x0, [xzr, #16]
+    bl vec_at int
+    ldr x0, [x0]
+    movz x1, #1, #0
+    ldr x4, [xzr, #32]
+    add x0, x4, x0
+    str x0, [xzr, #40]
+    ldr x0, [xzr, #24]
+    add x0, x0, x1
+    str x0, [xzr, #24]
+    ldr x3, [xzr, #40]
+    ldr x2, [xzr, #24]
+    b 1
+2:
+    ldr x0, [xzr, #32]
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #48
+    ret
+main:
+    sub sp, sp, #336
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    stp x29, x30, [xzr, #23]
+    movz x2, #64, #0
+    add x0, sp, #136
+    movz x1, #0, #0
+    bl 0xffffff64
+    movz x2, #128, #0
+    movz x1, #0, #0
+    add x0, sp, #200
+    bl 0xffffff64
+    movz x1, #0, #0
+    add x0, sp, #56
+    movz x2, #16, #0
+    bl 0xffffff64
+    movz x1, #0, #0
+    add x0, sp, #72
+    movz x2, #16, #0
+    bl 0xffffff64
+    movz x19, #8, #0
+    movz x0, #0, #0
+    madd x0, x0, x19, xzr
+    add x1, sp, #136
+    add x0, x0, x1
+    add x1, sp, #72
+    str x0, [x1]
+    movz x0, #0, #0
+    sub x20, x19, x0
+    add x0, sp, #72
+    add x0, x0, x19
+    str x20, [x0]
+    add x0, sp, #72
+    ldr x0, [x0]
+    add x1, sp, #56
+    str x0, [x1]
+    movz x0, #11, #0
+    add x1, sp, #40
+    str x0, [x1]
+    movz x0, #31, #0
+    add x1, sp, #48
+    str x0, [x1]
+    add x0, sp, #56
+    add x1, sp, #40
+    bl 0x1cc
+    add x0, sp, #56
+    add x1, sp, #48
+    bl 0x1cc
+    movz x1, #0, #0
+    movz x2, #16, #0
+    add x0, sp, #88
+    bl 0xffffff64
+    movz x1, #0, #0
+    movz x2, #16, #0
+    add x0, sp, #104
+    bl 0xffffff64
+    movz x0, #16, #0
+    movz x1, #0, #0
+    madd x0, x1, x0, xzr
+    add x1, sp, #200
+    add x0, x0, x1
+    add x1, sp, #104
+    str x0, [x1]
+    add x0, sp, #104
+    add x0, x0, x19
+    str x20, [x0]
+    add x0, sp, #104
+    ldr x0, [x0]
+    add x1, sp, #120
+    add x20, x1, x19
+    add x1, sp, #88
+    str x0, [x1]
+    add x0, sp, #120
+    movz x1, #0, #0
+    movz x2, #16, #0
+    bl 0xffffff64
+    movz x0, #3, #0
+    add x1, sp, #120
+    str x0, [x1]
+    movz x0, #4, #0
+    str x0, [x20]
+    add x1, sp, #120
+    add x0, sp, #88
+    bl 0x200
+    movz x1, #0, #0
+    add x0, sp, #88
+    bl vec_push int
+    str x0, [xzr, #32]
+    add x0, sp, #56
+    bl 0xffffff80
+    ldr x1, [xzr, #32]
+    ldr x1, [x1]
+    add x0, x0, x1
+    ldr x1, [xzr, #32]
+    add x1, x1, x19
+    ldr x1, [x1]
+    add x0, x0, x1
+    add x1, sp, #56
+    add x1, x1, x19
+    ldr x1, [x1]
+    add x0, x0, x1
+    add x1, sp, #88
+    add x1, x1, x19
+    ldr x1, [x1]
+    add x0, x0, x1
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldp x29, x30, [xzr, #23]
+    add sp, sp, #336
+    ret
+vec_at int:
+    ldr x0, [x0]
+    movz x2, #8, #0
+    madd x1, x1, x2, xzr
+    add x0, x0, x1
+    ret
+vec_push int:
+    ldr x2, [x0]
+    movz x3, #8, #0
+    ldr x1, [x1]
+    add x0, x0, x3
+    ldr x4, [x0]
+    madd x3, x4, x3, xzr
+    add x2, x2, x3
+    str x1, [x2]
+    ldr x1, [x0]
+    movz x2, #1, #0
+    add x1, x1, x2
+    str x1, [x0]
+    ret
+vec_push struct {a: int, b: int}:
+    sub sp, sp, #32
+    str x19, [xzr]
+    stp x29, x30, [xzr, #15]
+    ldr x3, [x0]
+    movz x2, #8, #0
+    add x19, x2, x0
+    ldr x0, [x19]
+    movz x2, #16, #0
+    madd x0, x0, x2, xzr
+    add x0, x3, x0
+    bl 0xfffffd40
+    ldr x0, [x19]
+    movz x1, #1, #0
+    add x0, x0, x1
+    str x0, [x19]
+    ldr x19, [xzr]
+    ldp x29, x30, [xzr, #15]
+    add sp, sp, #32
+    ret
+vec_at struct {a: int, b: int}:
+    ldr x0, [x0]
+    movz x2, #16, #0
+    madd x1, x1, x2, xzr
+    add x0, x0, x1
+    ret

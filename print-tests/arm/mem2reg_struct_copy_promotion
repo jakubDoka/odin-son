@@ -1,0 +1,61 @@
+=========== OPT LEVEL: none-quick ===========
+opaque:
+    ret
+main:
+    sub sp, sp, #64
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    stp x29, x30, [xzr, #23]
+    add x0, sp, #32
+    movz x1, #0, #0
+    movz x2, #16, #0
+    bl 0xffffffe0
+    movz x0, #3, #0
+    bl 0xfffffffc
+    add x1, sp, #32
+    str x0, [x1]
+    movz x0, #4, #0
+    bl 0xfffffffc
+    movz x19, #8, #0
+    add x1, sp, #32
+    add x20, x1, x19
+    str x0, [x20]
+    movz x1, #0, #0
+    movz x2, #16, #0
+    add x0, sp, #48
+    bl 0xffffffe0
+    add x1, sp, #32
+    movz x2, #16, #0
+    add x0, sp, #48
+    bl 0xffffffbc
+    add x0, sp, #48
+    add x0, x0, x19
+    add x1, sp, #48
+    ldr x1, [x1]
+    movz x2, #1, #0
+    add x1, x1, x2
+    add x3, sp, #48
+    str x1, [x3]
+    ldr x1, [x0]
+    add x1, x1, x2
+    str x1, [x0]
+    add x1, sp, #32
+    ldr x1, [x1]
+    movz x2, #1000, #0
+    madd x1, x1, x2, xzr
+    ldr x2, [x20]
+    add x3, sp, #48
+    ldr x3, [x3]
+    movz x4, #100, #0
+    madd x2, x2, x4, xzr
+    add x1, x1, x2
+    movz x2, #10, #0
+    madd x2, x3, x2, xzr
+    add x1, x1, x2
+    ldr x0, [x0]
+    add x0, x1, x0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldp x29, x30, [xzr, #23]
+    add sp, sp, #64
+    ret

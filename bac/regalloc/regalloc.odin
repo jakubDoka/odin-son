@@ -352,8 +352,6 @@ regalloc_round :: proc(
 		}
 	}
 
-	log_lrgs(&ctx)
-
 	rounds: int
 	curr_live: Liveouts
 	for b in queue.pop_front_safe(&worklist) {
@@ -1540,6 +1538,7 @@ regalloc_round :: proc(
 		}
 	}
 
+	//log_lrgs(&ctx)
 	bac.verify_schedule_integrity(ctx.graph, ctx.sched)
 	if ok {
 		total_splits := 0

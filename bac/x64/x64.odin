@@ -1032,10 +1032,6 @@ meta_of :: proc(
 		fmt.panicf("should not reach these: %v", node)
 	case .Poison:
 		return {out = out}
-	case .Param:
-		return {
-			out = bac.param_mask(graph, ra, node, spill_base = GPA_REG_COUNT),
-		}
 	case .CInt:
 		return {out = out}
 	case .X64_Pcmpeq,
@@ -1106,40 +1102,11 @@ meta_of :: proc(
 	case .Local_Addr, .Global_Addr, .Proc_Addr:
 		return {out = out}
 	case .Copy, .Set, .Call, .Return:
-		cc := &X64_SYSTEMV_CC
-		// NOTE: this handles the edge case where there is no memory returned,
-		// this happens when we only have infinite loops that terminate the
-		// function
-		prefix := min(2, len(node.inps))
-		call: ^bac.Call = bac.get_extra(graph, node, bac.Call)
-		if call != nil {
-			prefix = bac.CALL_PREFIX
-			cc = &graph.cc_table[call.ccid]
-		}
-
-		real_len := len(node.inps)
-		for ; get_node(graph, node.inps[real_len - 1]).itype == .Local;
-		    real_len -= 1 {}
-
-		inited := prefix
-
-		nmasks = make(type_of(nmasks), real_len - inited)
-
-		banks := cc.args
-		if node.itype == .Return do banks = ra.rets
-
-		counts: [RK_COUNT]int
-		for n, i in node.inps[inited:real_len] {
-			rk := graph.datatype_to_reg_kind[get_node(graph, n).dt]
-			nmasks[i] = single(ra, banks[rk][counts[rk]])
-			counts[rk] += 1
-		}
-
-		if call != nil && call.indirect {
-			nmasks[len(nmasks) - 1] = GPA_MASK_IDX
-		}
-
-		return {masks = nmasks, out = out, input_start = u8(prefix)}
+		return bac.cc_node_meta(graph, ra, node)
+	case .Param:
+		return {out = bac.param_mask(graph, ra, node)}
+	case .Ret:
+		return {out = bac.ret_mask(graph, ra, node)}
 	case .Store:
 		return {masks = dup({GPA_MASK_IDX, out}), out = out, input_start = 2}
 	case .Load:
@@ -1151,15 +1118,6 @@ meta_of :: proc(
 			masks = nmasks[:int(cond.dt != .Void)],
 			input_start = 1 + u8(cond.dt == .Void),
 		}
-	case .Ret:
-		// TODO: this is actually incorrect, we need to iterate the previous
-		// rets to figure this out safely
-		cend := expand_node(graph, node.inps[0])
-		call := bac.get_extra(graph, cend.inps[0], bac.Call)
-		ret_ext := bac.get_extra(graph, node, bac.Tup)
-		kind := ra.datatype_to_reg_kind[node.dt]
-		rets := ra.cc_table[call.ccid].rets[kind]
-		return {out = single(ra, rets[ret_ext.idx])}
 	case .Ctz, .Not, .Neg:
 		assert(nkind == RK_GENERAL)
 		return {out = out, masks = nmasks[:1], in_place_slot = 1}

@@ -175,7 +175,7 @@ run_test :: proc(
 		append(&confs, Test_Conf{level = level, vm = .Wasm})
 	}
 	for level in levels[:] {
-		//append(&confs, Test_Conf{level = level, vm = .Arm})
+		append(&confs, Test_Conf{level = level, vm = .Arm})
 	}
 
 	if ctx.error_cnt > 0 do clear(&confs)
@@ -331,7 +331,9 @@ run_test :: proc(
 					jump := i32(target_off - source)
 
 					if level.vm == .Arm {
-						jump = jump / 4
+						if rel.kind != .Global {
+							jump = jump / 4
+						}
 						rel.offset += 4
 					}
 
@@ -344,6 +346,9 @@ run_test :: proc(
 						slot.r2.addend_26 += jump
 					case .r32:
 						slot.addend_32 += jump
+					case .r2_19:
+						slot.r4.addend_hi_19 += jump >> 2
+						slot.r4.addend_lo_2 += jump
 					}
 				}
 			}

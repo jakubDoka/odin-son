@@ -108,11 +108,13 @@ Reloc_Kind :: enum u32 {
 Reloc_Size :: enum u32 {
 	r32,
 	r26,
+	r2_19,
 }
 
 RELOC_SIZE := [Reloc_Size]u32 {
-	.r32 = 4,
-	.r26 = 4,
+	.r32   = 4,
+	.r26   = 4,
+	.r2_19 = 4,
 }
 
 Reloc :: struct {
@@ -137,13 +139,60 @@ Reloc_Slot :: struct #raw_union #align (1) {
 		addend_19: i32 | 19,
 		padd3:     u32 | 8,
 	},
+	r4:        bit_field u32 {
+		padd4:        u32 | 5,
+		addend_hi_19: i32 | 19,
+		padd5:        u32 | 5,
+		addend_lo_2:  i32 | 2,
+		padd6:        u32 | 1,
+	},
+}
+
+cc_node_meta :: proc(
+	graph: ^Proc,
+	ra: ^Regalloc,
+	node: Expanded_Node,
+) -> Regalloc_Node_Meta {
+	cc := ra.cc
+	// NOTE: this handles the edge case where there is no memory returned,
+	// this happens when we only have infinite loops that terminate the
+	// function
+	prefix := min(2, len(node.inps))
+	call: ^Call = get_extra(graph, node, Call)
+	if call != nil {
+		prefix = CALL_PREFIX
+		cc = &graph.cc_table[call.ccid]
+	}
+
+	real_len := len(node.inps)
+	for ; get_node(graph, node.inps[real_len - 1]).itype == .Local;
+	    real_len -= 1 {}
+
+	inited := prefix
+
+	nmasks := make([]RM_Intern_Idx, real_len - inited)
+
+	banks := cc.args
+	if node.itype == .Return do banks = ra.rets
+
+	counts := make([]int, len(ra.spill_boundary))
+	for n, i in node.inps[inited:real_len] {
+		rk := graph.datatype_to_reg_kind[get_node(graph, n).dt]
+		nmasks[i] = rm_intern_single(ra, banks[rk][counts[rk]])
+		counts[rk] += 1
+	}
+
+	if call != nil && call.indirect {
+		nmasks[len(nmasks) - 1] = {}
+	}
+
+	return {out = INVALID_RM_INDEX, input_start = u8(prefix), masks = nmasks}
 }
 
 param_mask :: proc(
 	graph: ^Proc,
 	ra: ^Regalloc,
 	node: ^Node,
-	spill_base: Maybe(u16) = nil,
 	mask: Maybe(Reg) = nil,
 ) -> RM_Intern_Idx {
 	kind := ra.datatype_to_reg_kind[node.dt]
@@ -168,10 +217,30 @@ param_mask :: proc(
 	} else {
 		reg = {
 			kind  = kind,
-			index = spill_base.? + u16(idx) - u16(len(args)),
+			index = u16(ra.spill_boundary[kind]) + u16(idx) - u16(len(args)),
 		}
 	}
 	return rm_intern_single(ra, reg)
+}
+
+ret_mask :: proc(
+	graph: ^Proc,
+	ra: ^Regalloc,
+	node: Expanded_Node,
+) -> RM_Intern_Idx {
+	// TODO: this is actually incorrect, we need to iterate the previous
+	// rets to figure this out safely
+	cend := expand_node(graph, node.inps[0])
+	call := get_extra(graph, cend.inps[0], Call)
+	ret_ext := get_extra(graph, node, Tup)
+	kind := ra.datatype_to_reg_kind[node.dt]
+
+	idx := 0
+	for a in call.rets[:ret_ext.idx] {
+		idx += int(ra.datatype_to_reg_kind[a] == kind)
+	}
+
+	return rm_intern_single(ra, ra.rets[kind][idx])
 }
 
 emit :: #force_no_inline proc(buf: ^arna.Allocator, bytes: []u8) {

@@ -1277,28 +1277,6 @@ Local_Reloc :: struct {
 	offset: u32,
 }
 
-emit_big_constant :: proc(
-	ctx: ^Ctx,
-	#any_int align: int,
-	bytes: []u8,
-) -> (
-	id: u32,
-) {
-	align_up := mem.align_backward_int(len(ctx.big_constants) + 2, align)
-
-	for _ in len(ctx.big_constants) + 2 ..< align_up {
-		append(&ctx.big_constants, 0)
-	}
-
-	append(&ctx.big_constants, u8(len(bytes)), u8(align))
-
-	id = bac.RELOC_BIG_CONSTANT_BASE + u32(len(ctx.big_constants))
-
-	append(&ctx.big_constants, ..bytes)
-
-	return
-}
-
 emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 	context.allocator, _ = arna.scrath()
 
@@ -2716,8 +2694,8 @@ reg_and_disp_of :: proc(ctx: ^Ctx, id: bac.Node_ID) -> (Reg, i32, u32) {
 		tup: ^bac.Tup = bac.get_extra(ctx, node, bac.Tup)
 
 		if node.dt != .Void {
-			tup.idx = emit_big_constant(
-				ctx,
+			tup.idx = bac.emit_big_constant(
+				&ctx.big_constants,
 				bac.DT_SIZE[node.dt],
 				mem.slice_data_cast([]u8, bac.get_extra_dwords(ctx, node)),
 			)

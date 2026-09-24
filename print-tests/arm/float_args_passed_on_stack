@@ -1,0 +1,626 @@
+=========== OPT LEVEL: none-quick ===========
+Error{inst_idx = 12, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 20, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 24, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 32, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 36, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 44, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 48, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 56, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 64, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 84, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+main:
+    sub sp, sp, #128
+    stp x29, x30, [xzr, #23]
+    add x0, sp, #0
+    invalid
+    str.v d0, [x0]
+    invalid
+    invalid
+    str.v d1, [xzr, #32]
+    invalid
+    invalid
+    str.v d1, [xzr, #48]
+    invalid
+    invalid
+    str.v d1, [xzr, #64]
+    invalid
+    str.v d1, [xzr, #80]
+    invalid
+    str.v d1, [xzr, #96]
+    add x0, sp, #8
+    ldr.v d1, [xzr, #96]
+    str.v d1, [x0]
+    invalid
+    ldr.v d1, [xzr, #32]
+    ldr.v d3, [xzr, #48]
+    ldr.v d5, [xzr, #64]
+    ldr.v d7, [xzr, #80]
+    bl load_of_args
+    str.v d0, [xzr, #112]
+    movz x0, #1, #0
+    movz x1, #3, #0
+    movz x2, #5, #0
+    movz x3, #7, #0
+    movz x4, #9, #0
+    ldr.v d0, [xzr, #32]
+    ldr.v d1, [xzr, #48]
+    ldr.v d2, [xzr, #64]
+    ldr.v d3, [xzr, #80]
+    ldr.v d4, [xzr, #96]
+    bl mixed
+    eor.v v1, v1, v1
+    ldr.v d2, [xzr, #112]
+    fadd d1, d1, d2
+    fadd d0, d1, d0
+    fcvtzs x0, d0
+    ldp x29, x30, [xzr, #23]
+    add sp, sp, #128
+    ret
+load_of_args:
+    sub sp, sp, #16
+    fadd d0, d0, d1
+    fadd d0, d0, d2
+    fadd d0, d0, d3
+    fadd d0, d0, d4
+    fadd d0, d0, d5
+    fadd d0, d0, d6
+    fadd d0, d0, d7
+    ldr.v d1, [xzr, #16]
+    fadd d0, d0, d1
+    ldr.v d1, [xzr, #24]
+    fadd d0, d0, d1
+    add sp, sp, #16
+    ret
+mixed:
+    scvtf d5, x0
+    fadd d0, d5, d0
+    scvtf d5, x1
+    fadd d0, d0, d5
+    fadd d0, d0, d1
+    scvtf d1, x2
+    fadd d0, d0, d1
+    fadd d0, d0, d2
+    scvtf d1, x3
+    fadd d0, d0, d1
+    fadd d0, d0, d3
+    scvtf d1, x4
+    fadd d0, d0, d1
+    fadd d0, d0, d4
+    ret
+=========== OPT LEVEL: none ===========
+Error{inst_idx = 12, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 20, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 24, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 32, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 36, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 44, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 48, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 56, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 64, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 80, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+main:
+    sub sp, sp, #32
+    stp x29, x30, [xzr, #23]
+    add x0, sp, #0
+    invalid
+    str.v d0, [x0]
+    invalid
+    invalid
+    fmov d13, d1
+    invalid
+    invalid
+    fmov d12, d1
+    invalid
+    invalid
+    fmov d11, d1
+    invalid
+    fmov d10, d1
+    invalid
+    fmov d9, d1
+    add x0, sp, #8
+    str.v d9, [x0]
+    invalid
+    fmov d1, d13
+    fmov d3, d12
+    fmov d5, d11
+    fmov d7, d10
+    bl load_of_args
+    fmov d8, d0
+    movz x0, #1, #0
+    movz x1, #3, #0
+    movz x2, #5, #0
+    movz x3, #7, #0
+    movz x4, #9, #0
+    fmov d0, d13
+    fmov d1, d12
+    fmov d2, d11
+    fmov d3, d10
+    fmov d4, d9
+    bl mixed
+    eor.v v1, v1, v1
+    fadd d1, d1, d8
+    fadd d0, d1, d0
+    fcvtzs x0, d0
+    ldp x29, x30, [xzr, #23]
+    add sp, sp, #32
+    ret
+load_of_args:
+    sub sp, sp, #16
+    fadd d0, d0, d1
+    fadd d0, d0, d2
+    fadd d0, d0, d3
+    fadd d0, d0, d4
+    fadd d0, d0, d5
+    fadd d0, d0, d6
+    fadd d1, d0, d7
+    ldr.v d0, [xzr, #16]
+    fadd d1, d1, d0
+    ldr.v d0, [xzr, #24]
+    fadd d0, d1, d0
+    add sp, sp, #16
+    ret
+mixed:
+    scvtf d5, x0
+    fadd d5, d5, d0
+    scvtf d0, x1
+    fadd d0, d5, d0
+    fadd d1, d0, d1
+    scvtf d0, x2
+    fadd d0, d1, d0
+    fadd d1, d0, d2
+    scvtf d0, x3
+    fadd d0, d1, d0
+    fadd d1, d0, d3
+    scvtf d0, x4
+    fadd d0, d1, d0
+    fadd d0, d0, d4
+    ret
+=========== OPT LEVEL: mininal-quick ===========
+Error{inst_idx = 12, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 20, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 24, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 32, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 36, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 44, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 48, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 56, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 64, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 84, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+main:
+    sub sp, sp, #128
+    stp x29, x30, [xzr, #23]
+    add x0, sp, #0
+    invalid
+    str.v d0, [x0]
+    invalid
+    invalid
+    str.v d1, [xzr, #32]
+    invalid
+    invalid
+    str.v d1, [xzr, #48]
+    invalid
+    invalid
+    str.v d1, [xzr, #64]
+    invalid
+    str.v d1, [xzr, #80]
+    invalid
+    str.v d1, [xzr, #96]
+    add x0, sp, #8
+    ldr.v d1, [xzr, #96]
+    str.v d1, [x0]
+    invalid
+    ldr.v d1, [xzr, #32]
+    ldr.v d3, [xzr, #48]
+    ldr.v d5, [xzr, #64]
+    ldr.v d7, [xzr, #80]
+    bl load_of_args
+    str.v d0, [xzr, #112]
+    movz x0, #1, #0
+    movz x1, #3, #0
+    movz x2, #5, #0
+    movz x3, #7, #0
+    movz x4, #9, #0
+    ldr.v d0, [xzr, #32]
+    ldr.v d1, [xzr, #48]
+    ldr.v d2, [xzr, #64]
+    ldr.v d3, [xzr, #80]
+    ldr.v d4, [xzr, #96]
+    bl mixed
+    eor.v v1, v1, v1
+    ldr.v d2, [xzr, #112]
+    fadd d1, d1, d2
+    fadd d0, d1, d0
+    fcvtzs x0, d0
+    ldp x29, x30, [xzr, #23]
+    add sp, sp, #128
+    ret
+load_of_args:
+    sub sp, sp, #16
+    fadd d0, d0, d1
+    fadd d0, d0, d2
+    fadd d0, d0, d3
+    fadd d0, d0, d4
+    fadd d0, d0, d5
+    fadd d0, d0, d6
+    fadd d0, d0, d7
+    ldr.v d1, [xzr, #16]
+    fadd d0, d0, d1
+    ldr.v d1, [xzr, #24]
+    fadd d0, d0, d1
+    add sp, sp, #16
+    ret
+mixed:
+    scvtf d5, x0
+    fadd d0, d5, d0
+    scvtf d5, x1
+    fadd d0, d0, d5
+    fadd d0, d0, d1
+    scvtf d1, x2
+    fadd d0, d0, d1
+    fadd d0, d0, d2
+    scvtf d1, x3
+    fadd d0, d0, d1
+    fadd d0, d0, d3
+    scvtf d1, x4
+    fadd d0, d0, d1
+    fadd d0, d0, d4
+    ret
+=========== OPT LEVEL: mininal ===========
+Error{inst_idx = 12, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 20, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 24, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 32, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 36, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 44, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 48, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 56, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 64, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 80, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+main:
+    sub sp, sp, #32
+    stp x29, x30, [xzr, #23]
+    add x0, sp, #0
+    invalid
+    str.v d0, [x0]
+    invalid
+    invalid
+    fmov d13, d1
+    invalid
+    invalid
+    fmov d12, d1
+    invalid
+    invalid
+    fmov d11, d1
+    invalid
+    fmov d10, d1
+    invalid
+    fmov d9, d1
+    add x0, sp, #8
+    str.v d9, [x0]
+    invalid
+    fmov d1, d13
+    fmov d3, d12
+    fmov d5, d11
+    fmov d7, d10
+    bl load_of_args
+    fmov d8, d0
+    movz x0, #1, #0
+    movz x1, #3, #0
+    movz x2, #5, #0
+    movz x3, #7, #0
+    movz x4, #9, #0
+    fmov d0, d13
+    fmov d1, d12
+    fmov d2, d11
+    fmov d3, d10
+    fmov d4, d9
+    bl mixed
+    eor.v v1, v1, v1
+    fadd d1, d1, d8
+    fadd d0, d1, d0
+    fcvtzs x0, d0
+    ldp x29, x30, [xzr, #23]
+    add sp, sp, #32
+    ret
+load_of_args:
+    sub sp, sp, #16
+    fadd d0, d0, d1
+    fadd d0, d0, d2
+    fadd d0, d0, d3
+    fadd d0, d0, d4
+    fadd d0, d0, d5
+    fadd d0, d0, d6
+    fadd d1, d0, d7
+    ldr.v d0, [xzr, #16]
+    fadd d1, d1, d0
+    ldr.v d0, [xzr, #24]
+    fadd d0, d1, d0
+    add sp, sp, #16
+    ret
+mixed:
+    scvtf d5, x0
+    fadd d5, d5, d0
+    scvtf d0, x1
+    fadd d0, d5, d0
+    fadd d1, d0, d1
+    scvtf d0, x2
+    fadd d0, d1, d0
+    fadd d1, d0, d2
+    scvtf d0, x3
+    fadd d0, d1, d0
+    fadd d1, d0, d3
+    scvtf d0, x4
+    fadd d0, d1, d0
+    fadd d0, d0, d4
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+Error{inst_idx = 12, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 20, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 24, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 32, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 36, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 44, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 48, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 56, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 64, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 84, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+main:
+    sub sp, sp, #128
+    stp x29, x30, [xzr, #23]
+    add x0, sp, #0
+    invalid
+    str.v d0, [x0]
+    invalid
+    invalid
+    str.v d1, [xzr, #32]
+    invalid
+    invalid
+    str.v d1, [xzr, #48]
+    invalid
+    invalid
+    str.v d1, [xzr, #64]
+    invalid
+    str.v d1, [xzr, #80]
+    invalid
+    str.v d1, [xzr, #96]
+    add x0, sp, #8
+    ldr.v d1, [xzr, #96]
+    str.v d1, [x0]
+    invalid
+    ldr.v d1, [xzr, #32]
+    ldr.v d3, [xzr, #48]
+    ldr.v d5, [xzr, #64]
+    ldr.v d7, [xzr, #80]
+    bl load_of_args
+    str.v d0, [xzr, #112]
+    movz x0, #1, #0
+    movz x1, #3, #0
+    movz x2, #5, #0
+    movz x3, #7, #0
+    movz x4, #9, #0
+    ldr.v d0, [xzr, #32]
+    ldr.v d1, [xzr, #48]
+    ldr.v d2, [xzr, #64]
+    ldr.v d3, [xzr, #80]
+    ldr.v d4, [xzr, #96]
+    bl mixed
+    eor.v v1, v1, v1
+    ldr.v d2, [xzr, #112]
+    fadd d1, d2, d1
+    fadd d0, d1, d0
+    fcvtzs x0, d0
+    ldp x29, x30, [xzr, #23]
+    add sp, sp, #128
+    ret
+load_of_args:
+    sub sp, sp, #16
+    fadd d0, d0, d1
+    fadd d0, d0, d2
+    fadd d0, d0, d3
+    fadd d0, d0, d4
+    fadd d0, d0, d5
+    fadd d0, d0, d6
+    fadd d0, d0, d7
+    ldr.v d1, [xzr, #16]
+    fadd d0, d0, d1
+    ldr.v d1, [xzr, #24]
+    fadd d0, d0, d1
+    add sp, sp, #16
+    ret
+mixed:
+    scvtf d5, x0
+    fadd d0, d5, d0
+    scvtf d5, x1
+    fadd d0, d0, d5
+    fadd d0, d0, d1
+    scvtf d1, x2
+    fadd d0, d0, d1
+    fadd d0, d0, d2
+    scvtf d1, x3
+    fadd d0, d0, d1
+    fadd d0, d0, d3
+    scvtf d1, x4
+    fadd d0, d0, d1
+    fadd d0, d0, d4
+    ret
+=========== OPT LEVEL: moderate ===========
+Error{inst_idx = 12, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 20, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 24, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 32, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 36, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 44, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 48, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 56, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 64, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 80, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+main:
+    sub sp, sp, #32
+    stp x29, x30, [xzr, #23]
+    add x0, sp, #0
+    invalid
+    str.v d0, [x0]
+    invalid
+    invalid
+    fmov d13, d1
+    invalid
+    invalid
+    fmov d12, d1
+    invalid
+    invalid
+    fmov d11, d1
+    invalid
+    fmov d10, d1
+    invalid
+    fmov d9, d1
+    add x0, sp, #8
+    str.v d9, [x0]
+    invalid
+    fmov d1, d13
+    fmov d3, d12
+    fmov d5, d11
+    fmov d7, d10
+    bl load_of_args
+    fmov d8, d0
+    movz x0, #1, #0
+    movz x1, #3, #0
+    movz x2, #5, #0
+    movz x3, #7, #0
+    movz x4, #9, #0
+    fmov d0, d13
+    fmov d1, d12
+    fmov d2, d11
+    fmov d3, d10
+    fmov d4, d9
+    bl mixed
+    eor.v v1, v1, v1
+    fadd d1, d8, d1
+    fadd d0, d1, d0
+    fcvtzs x0, d0
+    ldp x29, x30, [xzr, #23]
+    add sp, sp, #32
+    ret
+load_of_args:
+    sub sp, sp, #16
+    fadd d0, d0, d1
+    fadd d0, d0, d2
+    fadd d0, d0, d3
+    fadd d0, d0, d4
+    fadd d0, d0, d5
+    fadd d0, d0, d6
+    fadd d1, d0, d7
+    ldr.v d0, [xzr, #16]
+    fadd d1, d1, d0
+    ldr.v d0, [xzr, #24]
+    fadd d0, d1, d0
+    add sp, sp, #16
+    ret
+mixed:
+    scvtf d5, x0
+    fadd d5, d5, d0
+    scvtf d0, x1
+    fadd d0, d5, d0
+    fadd d1, d0, d1
+    scvtf d0, x2
+    fadd d0, d1, d0
+    fadd d1, d0, d2
+    scvtf d0, x3
+    fadd d0, d1, d0
+    fadd d1, d0, d3
+    scvtf d0, x4
+    fadd d0, d1, d0
+    fadd d0, d0, d4
+    ret
+=========== OPT LEVEL: all ===========
+Error{inst_idx = 12, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 20, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 24, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 32, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 36, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 44, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 48, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 56, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 64, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 80, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+main:
+    sub sp, sp, #32
+    stp x29, x30, [xzr, #23]
+    add x0, sp, #0
+    invalid
+    str.v d0, [x0]
+    invalid
+    invalid
+    fmov d13, d1
+    invalid
+    invalid
+    fmov d12, d1
+    invalid
+    invalid
+    fmov d11, d1
+    invalid
+    fmov d10, d1
+    invalid
+    fmov d9, d1
+    add x0, sp, #8
+    str.v d9, [x0]
+    invalid
+    fmov d1, d13
+    fmov d3, d12
+    fmov d5, d11
+    fmov d7, d10
+    bl load_of_args
+    fmov d8, d0
+    movz x0, #1, #0
+    movz x1, #3, #0
+    movz x2, #5, #0
+    movz x3, #7, #0
+    movz x4, #9, #0
+    fmov d0, d13
+    fmov d1, d12
+    fmov d2, d11
+    fmov d3, d10
+    fmov d4, d9
+    bl mixed
+    eor.v v1, v1, v1
+    fadd d1, d8, d1
+    fadd d0, d1, d0
+    fcvtzs x0, d0
+    ldp x29, x30, [xzr, #23]
+    add sp, sp, #32
+    ret
+load_of_args:
+    sub sp, sp, #16
+    fadd d0, d0, d1
+    fadd d0, d0, d2
+    fadd d0, d0, d3
+    fadd d0, d0, d4
+    fadd d0, d0, d5
+    fadd d0, d0, d6
+    fadd d1, d0, d7
+    ldr.v d0, [xzr, #16]
+    fadd d1, d1, d0
+    ldr.v d0, [xzr, #24]
+    fadd d0, d1, d0
+    add sp, sp, #16
+    ret
+mixed:
+    scvtf d5, x0
+    fadd d5, d5, d0
+    scvtf d0, x1
+    fadd d0, d5, d0
+    fadd d1, d0, d1
+    scvtf d0, x2
+    fadd d0, d1, d0
+    fadd d1, d0, d2
+    scvtf d0, x3
+    fadd d0, d1, d0
+    fadd d1, d0, d3
+    scvtf d0, x4
+    fadd d0, d1, d0
+    fadd d0, d0, d4
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    movz x0, #110, #0
+    ret

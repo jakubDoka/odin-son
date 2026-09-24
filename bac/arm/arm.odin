@@ -167,6 +167,39 @@ peep :: proc(
 	}
 
 	#partial switch kind {
+	case .CInt:
+		cnst: ^bac.CInt = bac.get_extra(ctx, node, bac.CInt)
+		if node.dt in bac.FLOAT_DTS && cnst.value != 0 {
+			size := bac.DT_SIZE[node.dt] / 4 - 1
+			slot := bac.get_next_extra_slot(
+				ctx,
+				u16(bac.Node_Type.Global),
+				size,
+			)
+
+			if node.dt == .F32 {
+				(^f32)(slot)^ = f32(cnst.fvalue)
+			} else {
+				assert(node.dt == .F64)
+				(^f64)(slot)^ = cnst.fvalue
+			}
+
+			global := bac.add_raw(
+				ctx,
+				"iglb",
+				u16(bac.Node_Type.Global),
+				node.dt,
+				meta = {extra_dwords = size},
+			)
+
+			return bac.add_raw(
+				ctx,
+				node.name,
+				u16(Node_Type.CLoad),
+				node.dt,
+				{global},
+			)
+		}
 	case .Eq ..= .U_Ge:
 		if len(node.outs) == 1 &&
 		   get_node(ctx, node.outs[0].id).itype == .If &&
@@ -306,17 +339,19 @@ meta_of :: #force_inline proc(
 		return {out = out, masks = VEC_MASKS[:2]}
 	case .F_To_I:
 		return {out = out, masks = VEC_MASKS[:1]}
+	case .F_From_I, .U_F_From_I:
+		return {out = out, masks = GPA_MASKS[:1]}
 	case .Cast:
 		vl := get_node(graph, node.inps[0])
 		nkind := ra.datatype_to_reg_kind[vl.dt]
 		return {out = out, masks = masks[nkind][:1]}
-	case .CInt, .Local_Addr, .Global_Addr, .Proc_Addr:
+	case .CInt, .Local_Addr, .Global_Addr, .Proc_Addr, .CLoad:
 		return {out = out}
 	case .Phi:
 		masks := make([]bac.RM_Intern_Idx, len(node.inps) - 1)
 		slice.fill(masks, sout)
 		return {out = sout, input_start = 1, masks = masks}
-	case .Uext, .Sext, .Neg, .Not:
+	case .Uext, .Sext, .Neg, .Not, .F_Demote, .F_Ext:
 		return {out = out, masks = nmasks[:1]}
 	case .Split:
 		return {out = sout, masks = snmasks[:1]}
@@ -358,6 +393,7 @@ Ctx :: struct {
 	stack_size:         i32,
 	push_base:          i32,
 	has_call:           bool,
+	big_constants:      [dynamic]u8,
 }
 
 Local_Reloc :: struct {
@@ -511,12 +547,15 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 	}
 
 	code := ctx.code.ptr[ctx.code_start:ctx.code.pos]
+	emit(ctx.code, ctx.big_constants[:])
+	constants := ctx.code.ptr[ctx.code.pos -
+	len(ctx.big_constants):ctx.code.pos]
 	relocs := mem.slice_data_cast(
 		[]bac.Reloc,
 		ctx.relocs.ptr[relocs_start:ctx.relocs.pos],
 	)
 
-	return {code = code, relocs = relocs}
+	return {code = code, relocs = relocs, constants = constants}
 }
 
 @(disabled = SPEC_NOT_PRESENT)
@@ -592,6 +631,10 @@ emit_instr :: proc(
 		.Neg         = 0x4B000000,
 		.Not         = 0x2a200000,
 		.Cast        = 0x1e260000,
+		.F_To_I      = 0x1e380000,
+		.F_Ext       = 0b00011110001000101100000000000000,
+		.F_Demote    = 0b00011110011000100100000000000000,
+		.F_From_I    = 0b00011110001000100000000000000000,
 	}
 	cc_neg :: proc(c: Cond) -> Cond {return Cond(u8(c) ~ 1)}
 
@@ -633,6 +676,55 @@ emit_instr :: proc(
 			ctx.code,
 			imm12_instr(0b1001000100, reg_of(ctx, instr), SP, offset),
 		)
+	case .F_To_I:
+		rd := reg_of(ctx, instr)
+		rn := reg_of(ctx, node.inps[0])
+
+		ftype: u32
+		#partial switch inp.dt {
+		case .F64:
+			ftype = 0b01
+		case .F32:
+			ftype = 0b00
+		case:
+			panic("TODO")
+		}
+
+		emit_op(
+			ctx.code,
+			op |
+			u32(is_64) << 31 |
+			ftype << 22 |
+			u32(rn.index) << 5 |
+			u32(rd.index),
+		)
+	case .F_From_I:
+		rd := reg_of(ctx, instr)
+		rn := reg_of(ctx, node.inps[0])
+
+		ftype: u32
+		#partial switch node.dt {
+		case .F32:
+			ftype = 0b00
+		case .F64:
+			ftype = 0b01
+		case:
+			panic("no")
+		}
+
+		emit_op(
+			ctx.code,
+			op |
+			u32(node.dt == .F64) << 31 |
+			ftype << 22 |
+			u32(rn.index) << 5 |
+			u32(rd.index),
+		)
+	case .F_Ext, .F_Demote:
+		rd := reg_of(ctx, instr)
+		rn := reg_of(ctx, node.inps[0])
+
+		emit_op(ctx.code, op | u32(rn.index) << 5 | u32(rd.index))
 	case .Store:
 		vl := get_node(ctx, node.inps[3])
 
@@ -648,6 +740,10 @@ emit_instr :: proc(
 			op = 0b0111100100
 		case .I8:
 			op = 0b0011100100
+		case .F32:
+			op = 0b1011110100
+		case .F64:
+			op = 0b1111110100
 		case .V128:
 			op = 0b0011110110
 		case:
@@ -677,6 +773,12 @@ emit_instr :: proc(
 			op = 0b0111100101
 		case .I8:
 			op = 0b0011100101
+		case .F32:
+			op = 0b1011110101
+		case .F64:
+			op = 0b1111110101
+		case .V128:
+			op = 0b0011110111
 		case:
 			fmt.panicf("TODO: %v", node)
 		}
@@ -685,6 +787,41 @@ emit_instr :: proc(
 			ctx.code,
 			imm12_instr(op, reg_of(ctx, instr), reg_of(ctx, node.inps[2]), 0),
 		)
+	case .CLoad:
+		rt := reg_of(ctx, instr)
+
+		tup: ^bac.Tup = bac.get_extra(ctx, inp, bac.Tup)
+
+		if inp.dt != .Void {
+			tup.idx = bac.emit_big_constant(
+				&ctx.big_constants,
+				bac.DT_SIZE[inp.dt],
+				mem.slice_data_cast([]u8, bac.get_extra_dwords(ctx, inp)),
+			)
+			inp.dt = .Void
+		}
+
+		bac.add_reloc(ctx.relocs)^ = {
+			offset    = u32(ctx.code.pos - ctx.code_start),
+			kind      = .Global,
+			size      = .r19,
+			scale_pow = 2,
+			id        = tup.idx,
+		}
+
+		op: u32
+		#partial switch node.dt {
+		case .F32:
+			op = 0b00011100
+		case .F64:
+			op = 0b01011100
+		case .V128:
+			op = 0b10011100
+		case:
+			fmt.panicf("TODO %v", node)
+		}
+
+		emit_op(ctx.code, op << 24 | u32(rt.index))
 	case .Split:
 		rd := reg_of(ctx, instr)
 		rm := reg_of(ctx, node.inps[0])
@@ -694,8 +831,47 @@ emit_instr :: proc(
 
 		assert(rd_off < 4096)
 		assert(rm_off < 4096)
-		assert(rm.kind == RK_GENERAL)
-		assert(rd.kind == RK_GENERAL)
+
+		if rm.kind == RK_VECTOR {
+			op: u32 = 0x1e604000
+
+			if rm.index >= 32 && rd.index >= 32 {
+				// this is atroucious
+
+				// sub sp, sp, #16
+				emit_op(ctx.code, 0xD10043FF)
+
+				// str q31, [sp]
+				emit_op(ctx.code, 0x3D8003FF)
+
+				// ldr d31, [sp, rm_off + 16]
+				emit_op(
+					ctx.code,
+					imm12_instr(0b1111110101, V31, SP, rm_off + 2),
+				)
+
+				// str d31, [sp, rd_off + 16]
+				emit_op(
+					ctx.code,
+					imm12_instr(0b1111110100, V31, SP, rd_off + 2),
+				)
+
+				// ldr q31, [sp]
+				emit_op(ctx.code, 0x3DC003FF)
+
+				// add sp, sp, #16
+				emit_op(ctx.code, 0x910043FF)
+			} else if rm.index >= 32 {
+				// ldr rd, [SP, rm_off]
+				emit_op(ctx.code, imm12_instr(0b1111110101, rd, SP, rm_off))
+			} else if rd.index >= 32 {
+				// str rm, [SP, rd_off]
+				emit_op(ctx.code, imm12_instr(0b1111110100, rm, SP, rd_off))
+			} else {
+				emit_op(ctx.code, op | u32(rm.index) << 5 | u32(rd.index))
+			}
+			break
+		}
 
 		if rm.index >= 32 && rd.index >= 32 {
 			// str x17, [sp, #-16]!
@@ -838,7 +1014,7 @@ emit_instr :: proc(
 
 		if inp.dt >= .F32 {
 			// fcmp rn, rm
-			emit_op(ctx.code, fff(is_f64, op, XZR, rn, rm))
+			emit_op(ctx.code, fff(is_f64, op, Reg(0), rn, rm))
 		} else {
 			// cmp rn, rm
 			emit_op(ctx.code, rrr(is_64, op, XZR, rn, rm))
@@ -959,7 +1135,7 @@ emit_instr :: proc(
 					)
 				}
 			}
-		case .V128:
+		case .V128, .F32, .F64:
 			assert(cint.value == 0)
 			op: u32 = 0x6e201c00
 

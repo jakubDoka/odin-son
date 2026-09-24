@@ -1,0 +1,1433 @@
+=========== OPT LEVEL: none-quick ===========
+Error{inst_idx = 16, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 152, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 184, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 200, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 328, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 360, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+fsrc32:
+    movz x1, #4, #0
+    movz x2, #8, #0
+    movz x3, #16, #0
+    movz x4, #0, #0
+    movz x5, #20, #0
+    add x5, x5, x0
+    ldr.v s1, [x5]
+    fcmp s0, s1
+    csinc x5, xzr, xzr, lt
+    uxtb w5, w5
+    add x6, x0, x1
+    ldr.v s1, [x6]
+    fcmp s1, s0
+    csinc x6, xzr, xzr, eq
+    uxtb w6, w6
+    ldr.v s1, [x0]
+    fcmp s1, s0
+    csinc x7, xzr, xzr, ne
+    uxtb w7, w7
+    add x4, x4, x7
+    movz x7, #2, #0
+    madd x6, x6, x7, xzr
+    add x4, x4, x6
+    add x6, x0, x2
+    ldr.v s1, [x6]
+    fcmp s0, s1
+    csinc x6, xzr, xzr, pl
+    uxtb w6, w6
+    madd x1, x6, x1, xzr
+    add x1, x4, x1
+    movz x4, #12, #0
+    add x4, x4, x0
+    ldr.v s1, [x4]
+    fcmp s0, s1
+    csinc x4, xzr, xzr, hi
+    uxtb w4, w4
+    madd x2, x4, x2, xzr
+    add x1, x1, x2
+    add x0, x0, x3
+    ldr.v s1, [x0]
+    fcmp s0, s1
+    csinc x0, xzr, xzr, le
+    uxtb w0, w0
+    madd x0, x0, x3, xzr
+    add x0, x1, x0
+    movz x1, #32, #0
+    madd x1, x5, x1, xzr
+    add x0, x0, x1
+    ret
+fsrc64:
+    movz x1, #8, #0
+    movz x2, #16, #0
+    movz x3, #32, #0
+    movz x4, #0, #0
+    add x5, x0, x1
+    ldr.v d1, [x5]
+    fcmp d1, d0
+    csinc x5, xzr, xzr, eq
+    uxtb w5, w5
+    add x6, x0, x2
+    ldr.v d1, [x6]
+    fcmp d0, d1
+    csinc x6, xzr, xzr, pl
+    uxtb w6, w6
+    ldr.v d1, [x0]
+    fcmp d1, d0
+    csinc x7, xzr, xzr, ne
+    uxtb w7, w7
+    add x4, x4, x7
+    movz x7, #2, #0
+    madd x5, x5, x7, xzr
+    add x4, x4, x5
+    movz x5, #4, #0
+    madd x5, x6, x5, xzr
+    add x4, x4, x5
+    movz x5, #24, #0
+    add x5, x5, x0
+    ldr.v d1, [x5]
+    fcmp d0, d1
+    csinc x5, xzr, xzr, hi
+    uxtb w5, w5
+    madd x1, x5, x1, xzr
+    add x1, x4, x1
+    add x4, x0, x3
+    ldr.v d1, [x4]
+    fcmp d0, d1
+    csinc x4, xzr, xzr, le
+    uxtb w4, w4
+    madd x2, x4, x2, xzr
+    add x1, x1, x2
+    movz x2, #40, #0
+    add x0, x2, x0
+    ldr.v d1, [x0]
+    fcmp d0, d1
+    csinc x0, xzr, xzr, lt
+    uxtb w0, w0
+    madd x0, x0, x3, xzr
+    add x0, x1, x0
+    ret
+main:
+    sub sp, sp, #160
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    stp x29, x30, [xzr, #23]
+    invalid
+    str.v d0, [xzr, #72]
+    movz x19, #16, #0
+    movz x20, #8, #0
+    add x0, sp, #88
+    movz x1, #0, #0
+    movz x2, #24, #0
+    bl 0xfffffe5c
+    add x0, sp, #88
+    ldr.v d0, [xzr, #72]
+    str.v s0, [x0]
+    movz x0, #4, #0
+    add x1, sp, #88
+    add x0, x0, x1
+    ldr.v d0, [xzr, #72]
+    str.v s0, [x0]
+    add x0, sp, #88
+    add x0, x0, x20
+    ldr.v d0, [xzr, #72]
+    str.v s0, [x0]
+    movz x0, #12, #0
+    add x1, sp, #88
+    add x0, x0, x1
+    ldr.v d0, [xzr, #72]
+    str.v s0, [x0]
+    add x0, sp, #88
+    add x0, x0, x19
+    ldr.v d0, [xzr, #72]
+    str.v s0, [x0]
+    movz x0, #20, #0
+    add x1, sp, #88
+    add x0, x0, x1
+    ldr.v d0, [xzr, #72]
+    str.v s0, [x0]
+    invalid
+    add x0, sp, #88
+    bl 0xfffffe78
+    str x0, [xzr, #32]
+    add x0, sp, #88
+    ldr.v d0, [xzr, #72]
+    bl 0xfffffe78
+    str x0, [xzr, #40]
+    invalid
+    add x0, sp, #88
+    bl 0xfffffe78
+    str x0, [xzr, #48]
+    invalid
+    str.v d0, [xzr, #72]
+    movz x2, #48, #0
+    movz x1, #0, #0
+    add x0, sp, #112
+    bl 0xfffffe5c
+    add x0, sp, #112
+    ldr.v d0, [xzr, #72]
+    str.v d0, [x0]
+    add x0, sp, #112
+    add x0, x0, x20
+    ldr.v d0, [xzr, #72]
+    str.v d0, [x0]
+    add x0, sp, #112
+    add x0, x0, x19
+    ldr.v d0, [xzr, #72]
+    str.v d0, [x0]
+    movz x0, #24, #0
+    add x1, sp, #112
+    add x0, x1, x0
+    ldr.v d0, [xzr, #72]
+    str.v d0, [x0]
+    movz x0, #32, #0
+    add x1, sp, #112
+    add x0, x0, x1
+    ldr.v d0, [xzr, #72]
+    str.v d0, [x0]
+    movz x0, #40, #0
+    add x1, sp, #112
+    add x0, x0, x1
+    ldr.v d0, [xzr, #72]
+    str.v d0, [x0]
+    invalid
+    add x0, sp, #112
+    bl 0xffffff3c
+    str x0, [xzr, #56]
+    add x0, sp, #112
+    ldr.v d0, [xzr, #72]
+    bl 0xffffff3c
+    str x0, [xzr, #64]
+    invalid
+    add x0, sp, #112
+    bl 0xffffff3c
+    movz x1, #0, #0
+    ldr x2, [xzr, #32]
+    ldr x3, [xzr, #40]
+    add x2, x2, x3
+    ldr x3, [xzr, #48]
+    add x2, x2, x3
+    add x1, x1, x2
+    ldr x2, [xzr, #56]
+    ldr x3, [xzr, #64]
+    add x2, x2, x3
+    add x0, x2, x0
+    add x0, x1, x0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldp x29, x30, [xzr, #23]
+    add sp, sp, #160
+    ret
+=========== OPT LEVEL: none ===========
+Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 136, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 168, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 184, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 284, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 316, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+fsrc32:
+    movz x7, #4, #0
+    movz x6, #8, #0
+    movz x2, #16, #0
+    movz x4, #0, #0
+    movz x1, #20, #0
+    add x1, x1, x0
+    ldr.v s1, [x1]
+    fcmp s0, s1
+    csinc x1, xzr, xzr, lt
+    uxtb w1, w1
+    add x3, x0, x7
+    ldr.v s1, [x3]
+    fcmp s1, s0
+    csinc x3, xzr, xzr, eq
+    uxtb w5, w3
+    ldr.v s1, [x0]
+    fcmp s1, s0
+    csinc x3, xzr, xzr, ne
+    uxtb w3, w3
+    add x4, x4, x3
+    movz x3, #2, #0
+    madd x3, x5, x3, xzr
+    add x4, x4, x3
+    add x3, x0, x6
+    ldr.v s1, [x3]
+    fcmp s0, s1
+    csinc x3, xzr, xzr, pl
+    uxtb w3, w3
+    madd x3, x3, x7, xzr
+    add x4, x4, x3
+    movz x3, #12, #0
+    add x3, x3, x0
+    ldr.v s1, [x3]
+    fcmp s0, s1
+    csinc x3, xzr, xzr, hi
+    uxtb w3, w3
+    madd x3, x3, x6, xzr
+    add x3, x4, x3
+    add x0, x0, x2
+    ldr.v s1, [x0]
+    fcmp s0, s1
+    csinc x0, xzr, xzr, le
+    uxtb w0, w0
+    madd x0, x0, x2, xzr
+    add x2, x3, x0
+    movz x0, #32, #0
+    madd x0, x1, x0, xzr
+    add x0, x2, x0
+    ret
+fsrc64:
+    movz x7, #8, #0
+    movz x6, #16, #0
+    movz x1, #32, #0
+    movz x3, #0, #0
+    add x2, x0, x7
+    ldr.v d1, [x2]
+    fcmp d1, d0
+    csinc x2, xzr, xzr, eq
+    uxtb w5, w2
+    add x2, x0, x6
+    ldr.v d1, [x2]
+    fcmp d0, d1
+    csinc x2, xzr, xzr, pl
+    uxtb w4, w2
+    ldr.v d1, [x0]
+    fcmp d1, d0
+    csinc x2, xzr, xzr, ne
+    uxtb w2, w2
+    add x3, x3, x2
+    movz x2, #2, #0
+    madd x2, x5, x2, xzr
+    add x3, x3, x2
+    movz x2, #4, #0
+    madd x2, x4, x2, xzr
+    add x3, x3, x2
+    movz x2, #24, #0
+    add x2, x2, x0
+    ldr.v d1, [x2]
+    fcmp d0, d1
+    csinc x2, xzr, xzr, hi
+    uxtb w2, w2
+    madd x2, x2, x7, xzr
+    add x3, x3, x2
+    add x2, x0, x1
+    ldr.v d1, [x2]
+    fcmp d0, d1
+    csinc x2, xzr, xzr, le
+    uxtb w2, w2
+    madd x2, x2, x6, xzr
+    add x3, x3, x2
+    movz x2, #40, #0
+    add x0, x2, x0
+    ldr.v d1, [x0]
+    fcmp d0, d1
+    csinc x0, xzr, xzr, lt
+    uxtb w0, w0
+    madd x0, x0, x1, xzr
+    add x0, x3, x0
+    ret
+main:
+    sub sp, sp, #128
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    stp x29, x30, [xzr, #47]
+    invalid
+    movz x19, #16, #0
+    movz x20, #8, #0
+    add x0, sp, #56
+    movz x1, #0, #0
+    movz x2, #24, #0
+    bl 0xfffffe5c
+    add x0, sp, #56
+    str.v s8, [x0]
+    movz x1, #4, #0
+    add x0, sp, #56
+    add x0, x1, x0
+    str.v s8, [x0]
+    add x0, sp, #56
+    add x0, x0, x20
+    str.v s8, [x0]
+    movz x1, #12, #0
+    add x0, sp, #56
+    add x0, x1, x0
+    str.v s8, [x0]
+    add x0, sp, #56
+    add x0, x0, x19
+    str.v s8, [x0]
+    movz x1, #20, #0
+    add x0, sp, #56
+    add x0, x1, x0
+    str.v s8, [x0]
+    invalid
+    add x0, sp, #56
+    bl 0xfffffe78
+    mov x23, x0
+    add x0, sp, #56
+    fmov d0, d8
+    bl 0xfffffe78
+    mov x22, x0
+    invalid
+    add x0, sp, #56
+    bl 0xfffffe78
+    mov x21, x0
+    invalid
+    movz x2, #48, #0
+    movz x1, #0, #0
+    add x0, sp, #80
+    bl 0xfffffe5c
+    add x0, sp, #80
+    str.v d8, [x0]
+    add x0, sp, #80
+    add x0, x0, x20
+    str.v d8, [x0]
+    add x0, sp, #80
+    add x0, x0, x19
+    str.v d8, [x0]
+    movz x1, #24, #0
+    add x0, sp, #80
+    add x0, x0, x1
+    str.v d8, [x0]
+    movz x1, #32, #0
+    add x0, sp, #80
+    add x0, x1, x0
+    str.v d8, [x0]
+    movz x1, #40, #0
+    add x0, sp, #80
+    add x0, x1, x0
+    str.v d8, [x0]
+    invalid
+    add x0, sp, #80
+    bl 0xffffff3c
+    mov x20, x0
+    add x0, sp, #80
+    fmov d0, d8
+    bl 0xffffff3c
+    mov x19, x0
+    invalid
+    add x0, sp, #80
+    bl 0xffffff3c
+    movz x3, #0, #0
+    add x2, x23, x22
+    add x1, x2, x21
+    add x3, x3, x1
+    add x1, x20, x19
+    add x0, x1, x0
+    add x0, x3, x0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldp x29, x30, [xzr, #47]
+    add sp, sp, #128
+    ret
+=========== OPT LEVEL: mininal-quick ===========
+Error{inst_idx = 16, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 152, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 184, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 200, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 328, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 360, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+fsrc32:
+    movz x1, #4, #0
+    movz x2, #8, #0
+    movz x3, #16, #0
+    movz x4, #0, #0
+    movz x5, #20, #0
+    add x5, x5, x0
+    ldr.v s1, [x5]
+    fcmp s0, s1
+    csinc x5, xzr, xzr, lt
+    uxtb w5, w5
+    add x6, x0, x1
+    ldr.v s1, [x6]
+    fcmp s1, s0
+    csinc x6, xzr, xzr, eq
+    uxtb w6, w6
+    ldr.v s1, [x0]
+    fcmp s1, s0
+    csinc x7, xzr, xzr, ne
+    uxtb w7, w7
+    add x4, x4, x7
+    movz x7, #2, #0
+    madd x6, x6, x7, xzr
+    add x4, x4, x6
+    add x6, x0, x2
+    ldr.v s1, [x6]
+    fcmp s0, s1
+    csinc x6, xzr, xzr, pl
+    uxtb w6, w6
+    madd x1, x6, x1, xzr
+    add x1, x4, x1
+    movz x4, #12, #0
+    add x4, x4, x0
+    ldr.v s1, [x4]
+    fcmp s0, s1
+    csinc x4, xzr, xzr, hi
+    uxtb w4, w4
+    madd x2, x4, x2, xzr
+    add x1, x1, x2
+    add x0, x0, x3
+    ldr.v s1, [x0]
+    fcmp s0, s1
+    csinc x0, xzr, xzr, le
+    uxtb w0, w0
+    madd x0, x0, x3, xzr
+    add x0, x1, x0
+    movz x1, #32, #0
+    madd x1, x5, x1, xzr
+    add x0, x0, x1
+    ret
+fsrc64:
+    movz x1, #8, #0
+    movz x2, #16, #0
+    movz x3, #32, #0
+    movz x4, #0, #0
+    add x5, x0, x1
+    ldr.v d1, [x5]
+    fcmp d1, d0
+    csinc x5, xzr, xzr, eq
+    uxtb w5, w5
+    add x6, x0, x2
+    ldr.v d1, [x6]
+    fcmp d0, d1
+    csinc x6, xzr, xzr, pl
+    uxtb w6, w6
+    ldr.v d1, [x0]
+    fcmp d1, d0
+    csinc x7, xzr, xzr, ne
+    uxtb w7, w7
+    add x4, x4, x7
+    movz x7, #2, #0
+    madd x5, x5, x7, xzr
+    add x4, x4, x5
+    movz x5, #4, #0
+    madd x5, x6, x5, xzr
+    add x4, x4, x5
+    movz x5, #24, #0
+    add x5, x5, x0
+    ldr.v d1, [x5]
+    fcmp d0, d1
+    csinc x5, xzr, xzr, hi
+    uxtb w5, w5
+    madd x1, x5, x1, xzr
+    add x1, x4, x1
+    add x4, x0, x3
+    ldr.v d1, [x4]
+    fcmp d0, d1
+    csinc x4, xzr, xzr, le
+    uxtb w4, w4
+    madd x2, x4, x2, xzr
+    add x1, x1, x2
+    movz x2, #40, #0
+    add x0, x2, x0
+    ldr.v d1, [x0]
+    fcmp d0, d1
+    csinc x0, xzr, xzr, lt
+    uxtb w0, w0
+    madd x0, x0, x3, xzr
+    add x0, x1, x0
+    ret
+main:
+    sub sp, sp, #160
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    stp x29, x30, [xzr, #23]
+    invalid
+    str.v d0, [xzr, #72]
+    movz x19, #16, #0
+    movz x20, #8, #0
+    add x0, sp, #88
+    movz x1, #0, #0
+    movz x2, #24, #0
+    bl 0xfffffe5c
+    add x0, sp, #88
+    ldr.v d0, [xzr, #72]
+    str.v s0, [x0]
+    movz x0, #4, #0
+    add x1, sp, #88
+    add x0, x0, x1
+    ldr.v d0, [xzr, #72]
+    str.v s0, [x0]
+    add x0, sp, #88
+    add x0, x0, x20
+    ldr.v d0, [xzr, #72]
+    str.v s0, [x0]
+    movz x0, #12, #0
+    add x1, sp, #88
+    add x0, x0, x1
+    ldr.v d0, [xzr, #72]
+    str.v s0, [x0]
+    add x0, sp, #88
+    add x0, x0, x19
+    ldr.v d0, [xzr, #72]
+    str.v s0, [x0]
+    movz x0, #20, #0
+    add x1, sp, #88
+    add x0, x0, x1
+    ldr.v d0, [xzr, #72]
+    str.v s0, [x0]
+    invalid
+    add x0, sp, #88
+    bl 0xfffffe78
+    str x0, [xzr, #32]
+    add x0, sp, #88
+    ldr.v d0, [xzr, #72]
+    bl 0xfffffe78
+    str x0, [xzr, #40]
+    invalid
+    add x0, sp, #88
+    bl 0xfffffe78
+    str x0, [xzr, #48]
+    invalid
+    str.v d0, [xzr, #72]
+    movz x2, #48, #0
+    movz x1, #0, #0
+    add x0, sp, #112
+    bl 0xfffffe5c
+    add x0, sp, #112
+    ldr.v d0, [xzr, #72]
+    str.v d0, [x0]
+    add x0, sp, #112
+    add x0, x0, x20
+    ldr.v d0, [xzr, #72]
+    str.v d0, [x0]
+    add x0, sp, #112
+    add x0, x0, x19
+    ldr.v d0, [xzr, #72]
+    str.v d0, [x0]
+    movz x0, #24, #0
+    add x1, sp, #112
+    add x0, x1, x0
+    ldr.v d0, [xzr, #72]
+    str.v d0, [x0]
+    movz x0, #32, #0
+    add x1, sp, #112
+    add x0, x0, x1
+    ldr.v d0, [xzr, #72]
+    str.v d0, [x0]
+    movz x0, #40, #0
+    add x1, sp, #112
+    add x0, x0, x1
+    ldr.v d0, [xzr, #72]
+    str.v d0, [x0]
+    invalid
+    add x0, sp, #112
+    bl 0xffffff3c
+    str x0, [xzr, #56]
+    add x0, sp, #112
+    ldr.v d0, [xzr, #72]
+    bl 0xffffff3c
+    str x0, [xzr, #64]
+    invalid
+    add x0, sp, #112
+    bl 0xffffff3c
+    movz x1, #0, #0
+    ldr x2, [xzr, #32]
+    ldr x3, [xzr, #40]
+    add x2, x2, x3
+    ldr x3, [xzr, #48]
+    add x2, x2, x3
+    add x1, x1, x2
+    ldr x2, [xzr, #56]
+    ldr x3, [xzr, #64]
+    add x2, x2, x3
+    add x0, x2, x0
+    add x0, x1, x0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldp x29, x30, [xzr, #23]
+    add sp, sp, #160
+    ret
+=========== OPT LEVEL: mininal ===========
+Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 136, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 168, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 184, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 284, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 316, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+fsrc32:
+    movz x7, #4, #0
+    movz x6, #8, #0
+    movz x2, #16, #0
+    movz x4, #0, #0
+    movz x1, #20, #0
+    add x1, x1, x0
+    ldr.v s1, [x1]
+    fcmp s0, s1
+    csinc x1, xzr, xzr, lt
+    uxtb w1, w1
+    add x3, x0, x7
+    ldr.v s1, [x3]
+    fcmp s1, s0
+    csinc x3, xzr, xzr, eq
+    uxtb w5, w3
+    ldr.v s1, [x0]
+    fcmp s1, s0
+    csinc x3, xzr, xzr, ne
+    uxtb w3, w3
+    add x4, x4, x3
+    movz x3, #2, #0
+    madd x3, x5, x3, xzr
+    add x4, x4, x3
+    add x3, x0, x6
+    ldr.v s1, [x3]
+    fcmp s0, s1
+    csinc x3, xzr, xzr, pl
+    uxtb w3, w3
+    madd x3, x3, x7, xzr
+    add x4, x4, x3
+    movz x3, #12, #0
+    add x3, x3, x0
+    ldr.v s1, [x3]
+    fcmp s0, s1
+    csinc x3, xzr, xzr, hi
+    uxtb w3, w3
+    madd x3, x3, x6, xzr
+    add x3, x4, x3
+    add x0, x0, x2
+    ldr.v s1, [x0]
+    fcmp s0, s1
+    csinc x0, xzr, xzr, le
+    uxtb w0, w0
+    madd x0, x0, x2, xzr
+    add x2, x3, x0
+    movz x0, #32, #0
+    madd x0, x1, x0, xzr
+    add x0, x2, x0
+    ret
+fsrc64:
+    movz x7, #8, #0
+    movz x6, #16, #0
+    movz x1, #32, #0
+    movz x3, #0, #0
+    add x2, x0, x7
+    ldr.v d1, [x2]
+    fcmp d1, d0
+    csinc x2, xzr, xzr, eq
+    uxtb w5, w2
+    add x2, x0, x6
+    ldr.v d1, [x2]
+    fcmp d0, d1
+    csinc x2, xzr, xzr, pl
+    uxtb w4, w2
+    ldr.v d1, [x0]
+    fcmp d1, d0
+    csinc x2, xzr, xzr, ne
+    uxtb w2, w2
+    add x3, x3, x2
+    movz x2, #2, #0
+    madd x2, x5, x2, xzr
+    add x3, x3, x2
+    movz x2, #4, #0
+    madd x2, x4, x2, xzr
+    add x3, x3, x2
+    movz x2, #24, #0
+    add x2, x2, x0
+    ldr.v d1, [x2]
+    fcmp d0, d1
+    csinc x2, xzr, xzr, hi
+    uxtb w2, w2
+    madd x2, x2, x7, xzr
+    add x3, x3, x2
+    add x2, x0, x1
+    ldr.v d1, [x2]
+    fcmp d0, d1
+    csinc x2, xzr, xzr, le
+    uxtb w2, w2
+    madd x2, x2, x6, xzr
+    add x3, x3, x2
+    movz x2, #40, #0
+    add x0, x2, x0
+    ldr.v d1, [x0]
+    fcmp d0, d1
+    csinc x0, xzr, xzr, lt
+    uxtb w0, w0
+    madd x0, x0, x1, xzr
+    add x0, x3, x0
+    ret
+main:
+    sub sp, sp, #128
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    stp x29, x30, [xzr, #47]
+    invalid
+    movz x19, #16, #0
+    movz x20, #8, #0
+    add x0, sp, #56
+    movz x1, #0, #0
+    movz x2, #24, #0
+    bl 0xfffffe5c
+    add x0, sp, #56
+    str.v s8, [x0]
+    movz x1, #4, #0
+    add x0, sp, #56
+    add x0, x1, x0
+    str.v s8, [x0]
+    add x0, sp, #56
+    add x0, x0, x20
+    str.v s8, [x0]
+    movz x1, #12, #0
+    add x0, sp, #56
+    add x0, x1, x0
+    str.v s8, [x0]
+    add x0, sp, #56
+    add x0, x0, x19
+    str.v s8, [x0]
+    movz x1, #20, #0
+    add x0, sp, #56
+    add x0, x1, x0
+    str.v s8, [x0]
+    invalid
+    add x0, sp, #56
+    bl 0xfffffe78
+    mov x23, x0
+    add x0, sp, #56
+    fmov d0, d8
+    bl 0xfffffe78
+    mov x22, x0
+    invalid
+    add x0, sp, #56
+    bl 0xfffffe78
+    mov x21, x0
+    invalid
+    movz x2, #48, #0
+    movz x1, #0, #0
+    add x0, sp, #80
+    bl 0xfffffe5c
+    add x0, sp, #80
+    str.v d8, [x0]
+    add x0, sp, #80
+    add x0, x0, x20
+    str.v d8, [x0]
+    add x0, sp, #80
+    add x0, x0, x19
+    str.v d8, [x0]
+    movz x1, #24, #0
+    add x0, sp, #80
+    add x0, x0, x1
+    str.v d8, [x0]
+    movz x1, #32, #0
+    add x0, sp, #80
+    add x0, x1, x0
+    str.v d8, [x0]
+    movz x1, #40, #0
+    add x0, sp, #80
+    add x0, x1, x0
+    str.v d8, [x0]
+    invalid
+    add x0, sp, #80
+    bl 0xffffff3c
+    mov x20, x0
+    add x0, sp, #80
+    fmov d0, d8
+    bl 0xffffff3c
+    mov x19, x0
+    invalid
+    add x0, sp, #80
+    bl 0xffffff3c
+    movz x3, #0, #0
+    add x2, x23, x22
+    add x1, x2, x21
+    add x3, x3, x1
+    add x1, x20, x19
+    add x0, x1, x0
+    add x0, x3, x0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldp x29, x30, [xzr, #47]
+    add sp, sp, #128
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+Error{inst_idx = 16, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 136, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 168, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 184, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 296, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 328, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+fsrc32:
+    movz x1, #4, #0
+    movz x2, #8, #0
+    movz x3, #16, #0
+    ldr.v s1, [x0]
+    fcmp s1, s0
+    csinc x4, xzr, xzr, ne
+    uxtb w4, w4
+    add x5, x0, x1
+    ldr.v s1, [x5]
+    fcmp s1, s0
+    csinc x5, xzr, xzr, eq
+    uxtb w5, w5
+    movz x6, #20, #0
+    add x6, x6, x0
+    ldr.v s1, [x6]
+    fcmp s0, s1
+    csinc x6, xzr, xzr, lt
+    uxtb w6, w6
+    movz x7, #2, #0
+    madd x5, x5, x7, xzr
+    add x4, x4, x5
+    add x5, x0, x2
+    ldr.v s1, [x5]
+    fcmp s0, s1
+    csinc x5, xzr, xzr, pl
+    uxtb w5, w5
+    madd x1, x5, x1, xzr
+    add x1, x4, x1
+    movz x4, #12, #0
+    add x4, x4, x0
+    ldr.v s1, [x4]
+    fcmp s0, s1
+    csinc x4, xzr, xzr, hi
+    uxtb w4, w4
+    madd x2, x4, x2, xzr
+    add x1, x1, x2
+    add x0, x0, x3
+    ldr.v s1, [x0]
+    fcmp s0, s1
+    csinc x0, xzr, xzr, le
+    uxtb w0, w0
+    madd x0, x0, x3, xzr
+    add x0, x1, x0
+    movz x1, #32, #0
+    madd x1, x6, x1, xzr
+    add x0, x0, x1
+    ret
+fsrc64:
+    movz x1, #8, #0
+    movz x2, #16, #0
+    movz x3, #32, #0
+    ldr.v d1, [x0]
+    fcmp d1, d0
+    csinc x4, xzr, xzr, ne
+    uxtb w4, w4
+    add x5, x0, x1
+    ldr.v d1, [x5]
+    fcmp d1, d0
+    csinc x5, xzr, xzr, eq
+    uxtb w5, w5
+    add x6, x0, x2
+    ldr.v d1, [x6]
+    fcmp d0, d1
+    csinc x6, xzr, xzr, pl
+    uxtb w6, w6
+    movz x7, #2, #0
+    madd x5, x5, x7, xzr
+    add x4, x4, x5
+    movz x5, #4, #0
+    madd x5, x6, x5, xzr
+    add x4, x4, x5
+    movz x5, #24, #0
+    add x5, x5, x0
+    ldr.v d1, [x5]
+    fcmp d0, d1
+    csinc x5, xzr, xzr, hi
+    uxtb w5, w5
+    madd x1, x5, x1, xzr
+    add x1, x4, x1
+    add x4, x0, x3
+    ldr.v d1, [x4]
+    fcmp d0, d1
+    csinc x4, xzr, xzr, le
+    uxtb w4, w4
+    madd x2, x4, x2, xzr
+    add x1, x1, x2
+    movz x2, #40, #0
+    add x0, x2, x0
+    ldr.v d1, [x0]
+    fcmp d0, d1
+    csinc x0, xzr, xzr, lt
+    uxtb w0, w0
+    madd x0, x0, x3, xzr
+    add x0, x1, x0
+    ret
+main:
+    sub sp, sp, #160
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    stp x29, x30, [xzr, #23]
+    invalid
+    str.v d0, [xzr, #72]
+    add x0, sp, #88
+    ldr.v d0, [xzr, #72]
+    str.v s0, [x0]
+    movz x19, #8, #0
+    movz x0, #4, #0
+    add x1, sp, #88
+    add x0, x0, x1
+    ldr.v d0, [xzr, #72]
+    str.v s0, [x0]
+    movz x20, #16, #0
+    add x0, sp, #88
+    add x0, x0, x19
+    ldr.v d0, [xzr, #72]
+    str.v s0, [x0]
+    movz x0, #12, #0
+    add x1, sp, #88
+    add x0, x0, x1
+    ldr.v d0, [xzr, #72]
+    str.v s0, [x0]
+    add x0, sp, #88
+    add x0, x0, x20
+    ldr.v d0, [xzr, #72]
+    str.v s0, [x0]
+    movz x0, #20, #0
+    add x1, sp, #88
+    add x0, x0, x1
+    ldr.v d0, [xzr, #72]
+    str.v s0, [x0]
+    invalid
+    add x0, sp, #88
+    bl 0xfffffe88
+    str x0, [xzr, #32]
+    add x0, sp, #88
+    ldr.v d0, [xzr, #72]
+    bl 0xfffffe88
+    str x0, [xzr, #40]
+    invalid
+    add x0, sp, #88
+    bl 0xfffffe88
+    str x0, [xzr, #48]
+    invalid
+    str.v d0, [xzr, #72]
+    add x0, sp, #112
+    ldr.v d0, [xzr, #72]
+    str.v d0, [x0]
+    add x0, sp, #112
+    add x0, x0, x19
+    ldr.v d0, [xzr, #72]
+    str.v d0, [x0]
+    add x0, sp, #112
+    add x0, x0, x20
+    ldr.v d0, [xzr, #72]
+    str.v d0, [x0]
+    movz x0, #24, #0
+    add x1, sp, #112
+    add x0, x0, x1
+    ldr.v d0, [xzr, #72]
+    str.v d0, [x0]
+    movz x0, #32, #0
+    add x1, sp, #112
+    add x0, x0, x1
+    ldr.v d0, [xzr, #72]
+    str.v d0, [x0]
+    movz x0, #40, #0
+    add x1, sp, #112
+    add x0, x0, x1
+    ldr.v d0, [xzr, #72]
+    str.v d0, [x0]
+    invalid
+    add x0, sp, #112
+    bl 0xffffff44
+    str x0, [xzr, #56]
+    add x0, sp, #112
+    ldr.v d0, [xzr, #72]
+    bl 0xffffff44
+    str x0, [xzr, #64]
+    invalid
+    add x0, sp, #112
+    bl 0xffffff44
+    ldr x1, [xzr, #32]
+    ldr x2, [xzr, #40]
+    add x1, x1, x2
+    ldr x2, [xzr, #48]
+    add x1, x1, x2
+    ldr x2, [xzr, #56]
+    ldr x3, [xzr, #64]
+    add x2, x2, x3
+    add x0, x2, x0
+    add x0, x1, x0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldp x29, x30, [xzr, #23]
+    add sp, sp, #160
+    ret
+=========== OPT LEVEL: moderate ===========
+Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 120, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 152, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 168, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 252, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 284, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+fsrc32:
+    movz x7, #4, #0
+    movz x6, #8, #0
+    movz x1, #16, #0
+    ldr.v s1, [x0]
+    fcmp s1, s0
+    csinc x2, xzr, xzr, ne
+    uxtb w5, w2
+    add x2, x0, x7
+    ldr.v s1, [x2]
+    fcmp s1, s0
+    csinc x2, xzr, xzr, eq
+    uxtb w3, w2
+    movz x2, #20, #0
+    add x2, x2, x0
+    ldr.v s1, [x2]
+    fcmp s0, s1
+    csinc x2, xzr, xzr, lt
+    uxtb w4, w2
+    movz x2, #2, #0
+    madd x2, x3, x2, xzr
+    add x3, x5, x2
+    add x2, x0, x6
+    ldr.v s1, [x2]
+    fcmp s0, s1
+    csinc x2, xzr, xzr, pl
+    uxtb w2, w2
+    madd x2, x2, x7, xzr
+    add x3, x3, x2
+    movz x2, #12, #0
+    add x2, x2, x0
+    ldr.v s1, [x2]
+    fcmp s0, s1
+    csinc x2, xzr, xzr, hi
+    uxtb w2, w2
+    madd x2, x2, x6, xzr
+    add x2, x3, x2
+    add x0, x0, x1
+    ldr.v s1, [x0]
+    fcmp s0, s1
+    csinc x0, xzr, xzr, le
+    uxtb w0, w0
+    madd x0, x0, x1, xzr
+    add x1, x2, x0
+    movz x0, #32, #0
+    madd x0, x4, x0, xzr
+    add x0, x1, x0
+    ret
+fsrc64:
+    movz x7, #8, #0
+    movz x6, #16, #0
+    movz x1, #32, #0
+    ldr.v d1, [x0]
+    fcmp d1, d0
+    csinc x2, xzr, xzr, ne
+    uxtb w5, w2
+    add x2, x0, x7
+    ldr.v d1, [x2]
+    fcmp d1, d0
+    csinc x2, xzr, xzr, eq
+    uxtb w3, w2
+    add x2, x0, x6
+    ldr.v d1, [x2]
+    fcmp d0, d1
+    csinc x2, xzr, xzr, pl
+    uxtb w4, w2
+    movz x2, #2, #0
+    madd x2, x3, x2, xzr
+    add x3, x5, x2
+    movz x2, #4, #0
+    madd x2, x4, x2, xzr
+    add x3, x3, x2
+    movz x2, #24, #0
+    add x2, x2, x0
+    ldr.v d1, [x2]
+    fcmp d0, d1
+    csinc x2, xzr, xzr, hi
+    uxtb w2, w2
+    madd x2, x2, x7, xzr
+    add x3, x3, x2
+    add x2, x0, x1
+    ldr.v d1, [x2]
+    fcmp d0, d1
+    csinc x2, xzr, xzr, le
+    uxtb w2, w2
+    madd x2, x2, x6, xzr
+    add x3, x3, x2
+    movz x2, #40, #0
+    add x0, x2, x0
+    ldr.v d1, [x0]
+    fcmp d0, d1
+    csinc x0, xzr, xzr, lt
+    uxtb w0, w0
+    madd x0, x0, x1, xzr
+    add x0, x3, x0
+    ret
+main:
+    sub sp, sp, #128
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    stp x29, x30, [xzr, #47]
+    invalid
+    add x0, sp, #56
+    str.v s8, [x0]
+    movz x20, #8, #0
+    movz x1, #4, #0
+    add x0, sp, #56
+    add x0, x1, x0
+    str.v s8, [x0]
+    movz x19, #16, #0
+    add x0, sp, #56
+    add x0, x0, x20
+    str.v s8, [x0]
+    movz x1, #12, #0
+    add x0, sp, #56
+    add x0, x1, x0
+    str.v s8, [x0]
+    add x0, sp, #56
+    add x0, x0, x19
+    str.v s8, [x0]
+    movz x1, #20, #0
+    add x0, sp, #56
+    add x0, x1, x0
+    str.v s8, [x0]
+    invalid
+    add x0, sp, #56
+    bl 0xfffffe88
+    mov x23, x0
+    add x0, sp, #56
+    fmov d0, d8
+    bl 0xfffffe88
+    mov x22, x0
+    invalid
+    add x0, sp, #56
+    bl 0xfffffe88
+    mov x21, x0
+    invalid
+    add x0, sp, #80
+    str.v d8, [x0]
+    add x0, sp, #80
+    add x0, x0, x20
+    str.v d8, [x0]
+    add x0, sp, #80
+    add x0, x0, x19
+    str.v d8, [x0]
+    movz x1, #24, #0
+    add x0, sp, #80
+    add x0, x1, x0
+    str.v d8, [x0]
+    movz x1, #32, #0
+    add x0, sp, #80
+    add x0, x1, x0
+    str.v d8, [x0]
+    movz x1, #40, #0
+    add x0, sp, #80
+    add x0, x1, x0
+    str.v d8, [x0]
+    invalid
+    add x0, sp, #80
+    bl 0xffffff44
+    mov x20, x0
+    add x0, sp, #80
+    fmov d0, d8
+    bl 0xffffff44
+    mov x19, x0
+    invalid
+    add x0, sp, #80
+    bl 0xffffff44
+    add x2, x23, x22
+    add x3, x2, x21
+    add x1, x20, x19
+    add x0, x1, x0
+    add x0, x3, x0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldp x29, x30, [xzr, #47]
+    add sp, sp, #128
+    ret
+=========== OPT LEVEL: all ===========
+Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 120, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 152, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 168, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 252, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 284, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+fsrc32:
+    movz x7, #4, #0
+    movz x6, #8, #0
+    movz x1, #16, #0
+    ldr.v s1, [x0]
+    fcmp s1, s0
+    csinc x2, xzr, xzr, ne
+    uxtb w5, w2
+    add x2, x0, x7
+    ldr.v s1, [x2]
+    fcmp s1, s0
+    csinc x2, xzr, xzr, eq
+    uxtb w3, w2
+    movz x2, #20, #0
+    add x2, x2, x0
+    ldr.v s1, [x2]
+    fcmp s0, s1
+    csinc x2, xzr, xzr, lt
+    uxtb w4, w2
+    movz x2, #2, #0
+    madd x2, x3, x2, xzr
+    add x3, x5, x2
+    add x2, x0, x6
+    ldr.v s1, [x2]
+    fcmp s0, s1
+    csinc x2, xzr, xzr, pl
+    uxtb w2, w2
+    madd x2, x2, x7, xzr
+    add x3, x3, x2
+    movz x2, #12, #0
+    add x2, x2, x0
+    ldr.v s1, [x2]
+    fcmp s0, s1
+    csinc x2, xzr, xzr, hi
+    uxtb w2, w2
+    madd x2, x2, x6, xzr
+    add x2, x3, x2
+    add x0, x0, x1
+    ldr.v s1, [x0]
+    fcmp s0, s1
+    csinc x0, xzr, xzr, le
+    uxtb w0, w0
+    madd x0, x0, x1, xzr
+    add x1, x2, x0
+    movz x0, #32, #0
+    madd x0, x4, x0, xzr
+    add x0, x1, x0
+    ret
+fsrc64:
+    movz x7, #8, #0
+    movz x6, #16, #0
+    movz x1, #32, #0
+    ldr.v d1, [x0]
+    fcmp d1, d0
+    csinc x2, xzr, xzr, ne
+    uxtb w5, w2
+    add x2, x0, x7
+    ldr.v d1, [x2]
+    fcmp d1, d0
+    csinc x2, xzr, xzr, eq
+    uxtb w3, w2
+    add x2, x0, x6
+    ldr.v d1, [x2]
+    fcmp d0, d1
+    csinc x2, xzr, xzr, pl
+    uxtb w4, w2
+    movz x2, #2, #0
+    madd x2, x3, x2, xzr
+    add x3, x5, x2
+    movz x2, #4, #0
+    madd x2, x4, x2, xzr
+    add x3, x3, x2
+    movz x2, #24, #0
+    add x2, x2, x0
+    ldr.v d1, [x2]
+    fcmp d0, d1
+    csinc x2, xzr, xzr, hi
+    uxtb w2, w2
+    madd x2, x2, x7, xzr
+    add x3, x3, x2
+    add x2, x0, x1
+    ldr.v d1, [x2]
+    fcmp d0, d1
+    csinc x2, xzr, xzr, le
+    uxtb w2, w2
+    madd x2, x2, x6, xzr
+    add x3, x3, x2
+    movz x2, #40, #0
+    add x0, x2, x0
+    ldr.v d1, [x0]
+    fcmp d0, d1
+    csinc x0, xzr, xzr, lt
+    uxtb w0, w0
+    madd x0, x0, x1, xzr
+    add x0, x3, x0
+    ret
+main:
+    sub sp, sp, #128
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    stp x29, x30, [xzr, #47]
+    invalid
+    add x0, sp, #56
+    str.v s8, [x0]
+    movz x20, #8, #0
+    movz x1, #4, #0
+    add x0, sp, #56
+    add x0, x1, x0
+    str.v s8, [x0]
+    movz x19, #16, #0
+    add x0, sp, #56
+    add x0, x0, x20
+    str.v s8, [x0]
+    movz x1, #12, #0
+    add x0, sp, #56
+    add x0, x1, x0
+    str.v s8, [x0]
+    add x0, sp, #56
+    add x0, x0, x19
+    str.v s8, [x0]
+    movz x1, #20, #0
+    add x0, sp, #56
+    add x0, x1, x0
+    str.v s8, [x0]
+    invalid
+    add x0, sp, #56
+    bl 0xfffffe88
+    mov x23, x0
+    add x0, sp, #56
+    fmov d0, d8
+    bl 0xfffffe88
+    mov x22, x0
+    invalid
+    add x0, sp, #56
+    bl 0xfffffe88
+    mov x21, x0
+    invalid
+    add x0, sp, #80
+    str.v d8, [x0]
+    add x0, sp, #80
+    add x0, x0, x20
+    str.v d8, [x0]
+    add x0, sp, #80
+    add x0, x0, x19
+    str.v d8, [x0]
+    movz x1, #24, #0
+    add x0, sp, #80
+    add x0, x1, x0
+    str.v d8, [x0]
+    movz x1, #32, #0
+    add x0, sp, #80
+    add x0, x1, x0
+    str.v d8, [x0]
+    movz x1, #40, #0
+    add x0, sp, #80
+    add x0, x1, x0
+    str.v d8, [x0]
+    invalid
+    add x0, sp, #80
+    bl 0xffffff44
+    mov x20, x0
+    add x0, sp, #80
+    fmov d0, d8
+    bl 0xffffff44
+    mov x19, x0
+    invalid
+    add x0, sp, #80
+    bl 0xffffff44
+    add x2, x23, x22
+    add x3, x2, x21
+    add x1, x20, x19
+    add x0, x1, x0
+    add x0, x3, x0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldp x29, x30, [xzr, #47]
+    add sp, sp, #128
+    ret
+=========== OPT LEVEL: aggresive ===========

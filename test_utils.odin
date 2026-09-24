@@ -318,9 +318,23 @@ run_test :: proc(
 						target_off = imported_offsets[rel.id]
 					case .Global:
 						if rel.id >= bac.RELOC_BIG_CONSTANT_BASE {
-							target_off =
-								uintptr(rel.id - bac.RELOC_BIG_CONSTANT_BASE) +
-								uintptr(raw_data(p.out.constants))
+
+							slc := p.out.constants[rel.id -
+							bac.RELOC_BIG_CONSTANT_BASE -
+							2:]
+
+							size := slc[0]
+							align := slc[1]
+
+							off := arna.alloc(
+								&types.mems.code,
+								uint(size),
+								uint(align),
+							)
+
+							copy(off, slc[2:])
+
+							target_off = uintptr(raw_data(off))
 						} else {
 							target_off = global_addrs[rel.id]
 						}
@@ -330,8 +344,8 @@ run_test :: proc(
 						uintptr(raw_data(p.out.code)) + uintptr(rel.offset)
 					jump := i32(target_off - source)
 
+					jump = jump / (1 << rel.scale_pow)
 					if level.vm == .Arm {
-						jump = jump / (1 << rel.scale_pow)
 						rel.offset += 4
 					}
 
@@ -340,6 +354,8 @@ run_test :: proc(
 						raw_data(p.out.code[rel.offset - size:][:size]),
 					)
 					switch rel.size {
+					case .r19:
+						slot.r3.addend_19 += jump
 					case .r26:
 						slot.r2.addend_26 += jump
 					case .r32:

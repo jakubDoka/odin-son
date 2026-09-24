@@ -60,6 +60,7 @@ Context :: struct {}
 Hook :: distinct uintptr
 
 Trace_Data :: struct {
+	code:        []u8,
 	instrs:      []arm64.Instruction,
 	instr_infos: []arm64.Instruction_Info,
 	logger:      log.Logger,
@@ -160,6 +161,7 @@ trace_instruction :: proc "c" (
 	options := arm64.DEFAULT_PRINT_OPTIONS
 	options.indent = ""
 	options.separator = ""
+	fmt.sbprintf(&line, "%08x ", (^u32)(&trace.code[index * 4])^)
 	arm64.sbprint(
 		&line,
 		trace.instrs[index:index + 1],
@@ -197,6 +199,7 @@ make_trace_data :: proc(code: []u8) -> Trace_Data {
 	arm64.decode(code, nil, &instructions, &inst_info, &label_defs, &errors)
 
 	return Trace_Data {
+		code = code,
 		instrs = instructions[:],
 		instr_infos = inst_info[:],
 		logger = context.logger,

@@ -4,6 +4,7 @@ import "../vendored/gam/util/arna"
 import "base:intrinsics"
 import "core:encoding/varint"
 import "core:fmt"
+import "core:mem"
 import "core:reflect"
 import "core:sort"
 
@@ -108,12 +109,14 @@ Reloc_Kind :: enum u32 {
 Reloc_Size :: enum u32 {
 	r32,
 	r26,
+	r19,
 	r2_19,
 }
 
 RELOC_SIZE := [Reloc_Size]u32 {
 	.r32   = 4,
 	.r26   = 4,
+	.r19   = 4,
 	.r2_19 = 4,
 }
 
@@ -127,7 +130,7 @@ Reloc :: struct {
 	},
 }
 
-RELOC_BIG_CONSTANT_BASE :: (~u32(0) >> 4) - (1 << 22)
+RELOC_BIG_CONSTANT_BASE :: (~u32(0) >> 6) - (1 << 22)
 
 Reloc_Slot :: struct #raw_union #align (1) {
 	addend_32: i32,
@@ -364,6 +367,28 @@ compute_param_offsets :: proc(
 
 		param_offset += param.size
 	}
+}
+
+emit_big_constant :: proc(
+	buf: ^[dynamic]u8,
+	#any_int align: int,
+	bytes: []u8,
+) -> (
+	id: u32,
+) {
+	align_up := mem.align_backward_int(len(buf) + 2, align)
+
+	for _ in len(buf) + 2 ..< align_up {
+		append(buf, 0)
+	}
+
+	append(buf, u8(len(bytes)), u8(align))
+
+	id = RELOC_BIG_CONSTANT_BASE + u32(len(buf))
+
+	append(buf, ..bytes)
+
+	return
 }
 
 layout_call_args :: proc(

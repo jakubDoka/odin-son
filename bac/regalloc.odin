@@ -289,19 +289,16 @@ regalloc_collect_meta :: #force_inline proc(
 	ra.rms.slots = make(type_of(ra.rms.slots), len(ra.spill_boundary))
 	ra.rms.lens = make(type_of(ra.rms.lens), len(ra.spill_boundary))
 
-	slots = make([]Regalloc_Node_Meta, int(graph.gvn) - len(sched.bbs) - 1)
+	slots = make([]Regalloc_Node_Meta, int(graph.gvn) - len(sched.bbs))
 	rev_count := int(graph.gvn) - len(sched.bbs)
 
 	when !ODIN_DISABLE_ASSERT {
 		seen := bit_arr.init(graph.gvn)
 	}
 
-	rev_count -= 1
-	get_node(graph, graph.start).gvn = u32(rev_count)
-
 	idx := 0
 	for bb, j in sched.bbs {
-		get_node(graph, bb.head).gvn = u32(len(slots) + 1 + j)
+		get_node(graph, bb.head).gvn = u32(len(slots) + j)
 		for instr in bb.instrs {
 			inode := expand_node(graph, instr)
 			when !ODIN_DISABLE_ASSERT {

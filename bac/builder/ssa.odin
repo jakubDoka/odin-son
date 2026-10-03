@@ -30,7 +30,7 @@ add_store :: #force_inline proc(
 ) {
 	ctrl := ctrl
 	if bac.is_always_valid_ptr(graph, addr) {
-		ctrl = graph.start
+		ctrl = 0
 	}
 
 	return bac.add_store(graph, name, ctrl, mem, addr, value)
@@ -327,11 +327,7 @@ merge_scopes :: proc(
 
 	assert(lnode.input_count == rnode.input_count)
 
-	region := bac.add_region(
-		graph,
-		"reg",
-		{lnode.inps[0], rnode.inps[0], graph.start},
-	)
+	region := bac.add_region(graph, "reg", {lnode.inps[0], rnode.inps[0], 0})
 
 	for i in 1 ..< lnode.input_count {
 		if lnode.inps[i] == rnode.inps[i] do continue
@@ -406,11 +402,8 @@ inline_graph :: proc(graph: ^bac.Proc, call: bac.Node_ID, from: ^bac.Proc) {
 	ctx.projection = make([]bac.Node_ID, from.gvn)
 	ctx.dprojection = make([]bac.D_Node_ID, from.gdn)
 
-	assert(from.start != from.root_mem)
-
 	call := expand_node(graph, call)
 	assert(call.itype == .Call)
-	proj_of(&ctx, from.start)^ = graph.start
 	proj_of(&ctx, from.entry)^ = call.inps[0]
 	proj_of(&ctx, from.root_mem)^ = call.inps[1]
 	proj_of(&ctx, from.sym)^ = call.inps[2]
@@ -430,7 +423,7 @@ inline_graph :: proc(graph: ^bac.Proc, call: bac.Node_ID, from: ^bac.Proc) {
 		arg_idx := arg_idx + bac.CALL_PREFIX
 		arg := raw_data(call.inps)[arg_idx]
 		arg_node := expand_node(graph, arg)
-		if pnode.itype == .Start do continue
+		if param == 0 do continue
 		if arg_node.itype != .Local {
 			assert(pnode.itype != .Local)
 		} else {
@@ -452,7 +445,6 @@ inline_graph :: proc(graph: ^bac.Proc, call: bac.Node_ID, from: ^bac.Proc) {
 		ctx.projection[pnode.gvn] = arg
 	}
 
-	assert(get_node(graph, proj_of(&ctx, from.start)^).itype == .Start)
 	assert(proj_of(&ctx, starter)^ == 0)
 
 	clone_along_cfg(&ctx, starter)
@@ -571,10 +563,6 @@ inline_graph :: proc(graph: ^bac.Proc, call: bac.Node_ID, from: ^bac.Proc) {
 		bac.subsume(graph, dead, call.outs[0].id)
 	}
 
-	for out in bac.get_outputs(graph, graph.start) {
-		assert(get_node(graph, out.id).itype != .Local)
-	}
-
 	bac.assert_live_pins(graph)
 
 	bac.verify(graph)
@@ -650,6 +638,8 @@ inline_graph :: proc(graph: ^bac.Proc, call: bac.Node_ID, from: ^bac.Proc) {
 	}
 
 	clone_node :: proc(ctx: ^Ctx, root: bac.Node_ID) {
+		if root == 0 do return
+
 		graph := ctx.graph
 
 		node := expand_node(ctx.from, root)
@@ -672,17 +662,6 @@ inline_graph :: proc(graph: ^bac.Proc, call: bac.Node_ID, from: ^bac.Proc) {
 		inps := make([]bac.Node_ID, input_cap)
 		for inp, i in node.inps[:input_cap] {
 			clone_node(ctx, inp)
-
-			if get_node(ctx.from, inp).itype == .Start {
-				bac.current_graph = ctx.from
-				fmt.assertf(
-					get_node(graph, proj_of(ctx, inp)^).itype == .Start,
-					"%v %v",
-					inp,
-					node,
-				)
-				bac.current_graph = graph
-			}
 			inps[i] = proj_of(ctx, inp)^
 		}
 
@@ -1067,8 +1046,8 @@ Builtin_Proc :: enum {
 }
 
 init_graph :: proc(graph: ^Proc) {
-	graph.start = bac.add_start(graph, "start")
-	graph.entry = bac.add_entry(graph, "entry", graph.start)
+	graph.gvn = 1
+	graph.entry = bac.add_entry(graph, "entry")
 	graph.root_mem = bac.add_root_mem(graph, "emem", graph.entry)
 	graph.sym = bac.add_sym(graph, "sym", graph.entry)
 }

@@ -16,7 +16,7 @@ SPEC := bac.Node_Spec{
 	post_schedule_peep = post_schedule_peep_inst,
 	intern = false,
 	inheritance_table = {
-		0b1, // Start
+		0b1, // Nil
 		0b1, // Entry
 		0b10, // Poison
 		0b100, // Param
@@ -99,7 +99,7 @@ SPEC := bac.Node_Spec{
 		0b1000000, // CV128
 	},
 	node_extra_sizes = {
-		1, // Start -> Cfg
+		1, // Nil -> Cfg
 		1, // Entry -> Cfg
 		0, // Poison -> No_Extra
 		1, // Param -> Tup
@@ -182,7 +182,7 @@ SPEC := bac.Node_Spec{
 		4, // CV128 -> CV128
 	},
 	node_flags = {
-		{}, // Start
+		{Class_Flag.Immortal}, // Nil
 		{Class_Flag.Is_Basic_Block_Start}, // Entry
 		{Class_Flag.Interned}, // Poison
 		{}, // Param
@@ -348,7 +348,7 @@ SPEC := bac.Node_Spec{
 		bac.CV128,
 	},
 	node_kind_name = {
-		`Start`,
+		`Nil`,
 		`Entry`,
 		`Poison`,
 		`Param`,
@@ -433,7 +433,7 @@ SPEC := bac.Node_Spec{
 }
 
 Node_Type :: enum u16 {
-	Start,
+	Nil,
 	Entry,
 	Poison,
 	Param,

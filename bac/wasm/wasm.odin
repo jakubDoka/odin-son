@@ -303,7 +303,7 @@ meta_of :: #force_inline proc(
 	}
 
 	switch wtype(node) {
-	case .Start,
+	case .Nil,
 	     .Entry,
 	     .Then,
 	     .Dead,
@@ -502,7 +502,7 @@ pre_regalloc_hook :: proc(
 		// TODO: this is uselss to be strongly typed, we anyway just use the
 		// length, and wether the out is invalid
 		switch wtype(node) {
-		case .Start,
+		case .Nil,
 		     .Entry,
 		     .Then,
 		     .Dead,
@@ -601,11 +601,8 @@ pre_regalloc_hook :: proc(
 	) {
 		graph := ctx.graph
 
-		slots = make([]Meta, int(graph.gvn) - len(sched.bbs) - 1)
+		slots = make([]Meta, int(graph.gvn) - len(sched.bbs))
 		rev_count := int(graph.gvn) - len(sched.bbs)
-
-		rev_count -= 1
-		get_node(graph, graph.start).gvn = u32(rev_count)
 
 		idx := 0
 		for bb, j in sched.bbs {
@@ -1159,7 +1156,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 	}
 
 	switch kind {
-	case .Start,
+	case .Nil,
 	     .Entry,
 	     .Then,
 	     .Dead,

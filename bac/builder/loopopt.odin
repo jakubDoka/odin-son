@@ -161,7 +161,7 @@ loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 		join := bac.add_region(
 			ctx,
 			"urljn",
-			{guard_skip, break_branch.head, graph.start},
+			{guard_skip, break_branch.head, 0},
 		)
 		join_bb := wire_up_new_block(&ctx, join, bb.loop_tree.parent)
 

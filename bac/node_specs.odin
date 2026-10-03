@@ -54,7 +54,7 @@ Bin_Op :: enum u16 {
 	F_Lt = u16(Node_Type.F_Lt),
 }
 Node_Type :: enum u16 {
-	Start,
+	Nil,
 	Entry,
 	Poison,
 	Param,
@@ -137,14 +137,10 @@ Node_Type :: enum u16 {
 	CV128,
 }
 #assert(size_of(Cfg) % PRECISION == 0)
-add_start :: #force_inline proc(graph: ^Proc, name: string) -> (_id: Node_ID) {
-	(^Cfg)(get_next_extra_slot(graph, u16(Node_Type.Start), 0))^ = {}
-	return add_raw(graph, name, u16(Node_Type.Start), .Void, {})
-}
 #assert(size_of(Cfg) % PRECISION == 0)
-add_entry :: #force_inline proc(graph: ^Proc, name: string, start: Node_ID) -> (_id: Node_ID) {
+add_entry :: #force_inline proc(graph: ^Proc, name: string) -> (_id: Node_ID) {
 	(^Cfg)(get_next_extra_slot(graph, u16(Node_Type.Entry), 0))^ = {}
-	return add_raw(graph, name, u16(Node_Type.Entry), .Void, {start})
+	return add_raw(graph, name, u16(Node_Type.Entry), .Void, {})
 }
 #assert(size_of(No_Extra) % PRECISION == 0)
 add_poison :: #force_inline proc(graph: ^Proc, name: string) -> (_id: Node_ID) {

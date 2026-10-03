@@ -1995,7 +1995,6 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 
 				args[0] = ctx_ctrl(ctx)
 				args[1] = ctx_mem(ctx)
-				args[2] = ctx.start
 
 				call := bac.add_call(ctx, "call", args, ~u32(0))
 				bac.get_extra(ctx, call, bac.Call).ccid = 1
@@ -2269,7 +2268,7 @@ emit_call :: proc(
 	args[0] = ctx_ctrl(ctx)
 	args[1] = ctx_mem(ctx)
 	args[2] = ctx.sym
-	if ptr != 0 do args[2] = ctx.start
+	if ptr != 0 do args[2] = 0
 
 	slice.reverse(args[lctx.ri:])
 	copy(args[lctx.i:], args[lctx.ri:])

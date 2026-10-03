@@ -3,7 +3,6 @@ package builder
 import bac ".."
 import "base:intrinsics"
 import "base:runtime"
-import "core:container/queue"
 import "core:fmt"
 import "core:math"
 import "core:slice"
@@ -171,7 +170,13 @@ peep :: proc(
 	id := bac.get_node_id(ctx, node)
 	is_complete := bac.peep_ctx_graph_is_complete(ctx)
 
-	DEAD_EXCEPTIONS := bit_set[bac.Node_Type]{.Region, .Start, .Loop, .Dead}
+	DEAD_EXCEPTIONS := bit_set[bac.Node_Type] {
+		.Nil,
+		.Entry,
+		.Region,
+		.Loop,
+		.Dead,
+	}
 
 	if bac.is_cfg(ctx, id) && node.itype not_in DEAD_EXCEPTIONS {
 		idom := expand_node(ctx, node.inps[0])
@@ -403,11 +408,16 @@ peep :: proc(
 			}
 		}
 
-		elim: if len(node.inps) == 2 {
+		elim: if len(node.inps) <= 2 {
 			for out in node.outs {
 				if get_node(ctx, out.id).itype == .Return {
 					break elim
 				}
+			}
+
+			if len(node.inps) == 1 {
+				assert(node.inps[0] == 0)
+				return bac.add_dead(ctx, "rdead")
 			}
 
 			#reverse for out in node.outs {
@@ -544,7 +554,7 @@ peep :: proc(
 		}
 
 		for cursor, prev_cursor, fuel := node.inps[0], id, 5;
-		    cursor != ctx.start && fuel > 0;
+		    cursor != 0 && fuel > 0;
 		    cursor, prev_cursor = bac.get_idom(ctx, cursor), cursor {
 			fuel -= 1
 

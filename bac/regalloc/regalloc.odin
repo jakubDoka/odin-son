@@ -453,7 +453,6 @@ regalloc_round :: proc(
 
 		head := expand_node(graph, bb.head)
 		for pred, j in head.inps[:len(head.inps) - int(head.itype == .Region)] {
-			if pred == graph.start do break
 
 			pred_block := get_node(graph, bac.get_idom(graph, pred))
 			fmt.assertf(

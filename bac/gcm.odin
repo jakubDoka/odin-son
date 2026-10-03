@@ -3,7 +3,6 @@ package bac
 import "../vendored/gam/util/arna"
 import "../vendored/gam/util/bit_arr"
 import "base:runtime"
-import "core:container/queue"
 import "core:fmt"
 import "core:log"
 import "core:slice"
@@ -47,12 +46,9 @@ get_idom_node :: proc(graph: ^Proc, node: ^Node) -> Node_ID {
 	inps := get_inputs(graph, node)
 
 	#partial switch node.itype {
-	case .Dead:
-		return graph.start
-	case .Start:
-		panic("")
-	case .Entry,
-	     .Return,
+	case .Entry, .Dead, .Nil:
+		return 0
+	case .Return,
 	     .If,
 	     .Else,
 	     .Then,
@@ -99,12 +95,13 @@ get_idepth_node :: proc(graph: ^Proc, node: ^Node) -> u32 {
 	}
 
 	#partial switch node.itype {
+	case .Nil:
+		return graph.min_idepth + 1
 	case .Dead:
 		extra.idepth = graph.min_idepth + 2
-	case .Start:
+	case .Entry:
 		extra.idepth = graph.min_idepth + 1
-	case .Entry,
-	     .Return,
+	case .Return,
 	     .If,
 	     .Else,
 	     .Then,
@@ -333,7 +330,7 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 
 	cfg_reverse_postorder(
 		graph,
-		graph.start,
+		graph.entry,
 		&cfg_rpos,
 		visited,
 		!no_late_pass,
@@ -465,8 +462,9 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 		}
 	}
 
-	worklist: queue.Queue(Node_ID)
-	queue.init(&worklist, int(graph.gvn))
+	worklist: Worklist
+	worklist_init(&worklist, int(graph.gvn))
+	bit_arr.set(worklist.in_queue, 0)
 	if graph.end != 0 && !no_late_pass {
 		worklist_add(graph, &worklist, graph.end)
 	}
@@ -497,10 +495,10 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 		if !ready do continue
 
 		if has_flag(graph, n, .Is_Basic_Block_Start) {
-			assert(n != graph.start)
+			assert(n != 0)
 			ctx.late_schedules[node.gvn] = n
 		} else if 0 < len(node.inps) && is_cfg(graph, node.inps[0]) {
-			fmt.assertf(node.inps[0] != graph.start, "%v", node.node)
+			fmt.assertf(node.inps[0] != 0, "%v", node.node)
 			ctx.late_schedules[node.gvn] = node.inps[0]
 		} else {
 			fmt.assertf(!node.is_store, "%v", node)
@@ -536,13 +534,6 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 
 				if onode.itype == .Phi {
 					jmp := get_inputs(graph, olca)[out.idx - 1]
-					fmt.assertf(
-						jmp != graph.start,
-						"%v %v %v",
-						onode,
-						node,
-						get_node(graph, olca),
-					)
 					olca = get_inputs(graph, jmp)[0]
 				}
 				lca = compute_lca(graph, lca, olca)
@@ -553,7 +544,7 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 				assert(lca != 0)
 			}
 
-			assert(lca != graph.start)
+			assert(lca != 0)
 			ctx.late_schedules[node.gvn] = lca
 		}
 
@@ -901,7 +892,7 @@ verify_schedule_integrity :: proc(
 				}
 
 				for insched != latest {
-					fmt.assertf(latest != graph.start, "%v %v", inode, innode)
+					fmt.assertf(latest != 0, "%v %v", inode, innode)
 					latest = get_idom(graph, latest)
 				}
 			}

@@ -505,13 +505,8 @@ Tup :: bac.Tup
 
 @(rodata)
 IDEAL_CLASSES := [bac.Node_Type]Class_Spec {
-	.Start = {id = Cfg, default_type = .Void},
-	.Entry = {
-		id = Cfg,
-		args = {"start"},
-		flags = {.Is_Basic_Block_Start},
-		default_type = .Void,
-	},
+	.Nil = {id = Cfg, no_ctor = true, flags = {.Immortal}},
+	.Entry = {id = Cfg, flags = {.Is_Basic_Block_Start}, default_type = .Void},
 	.Poison = {default_type = .Void, flags = {.Interned}},
 	// TODO: maybe its better to introduce a flag: Schedule_Early
 	.Param = {id = Tup, args = {"entry"}, extra_args = {"idx"}},

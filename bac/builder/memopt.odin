@@ -2,7 +2,6 @@ package builder
 
 import bac ".."
 import "../../vendored/gam/util/arna"
-import "core:container/queue"
 import "core:fmt"
 import "core:mem"
 import "core:slice"
@@ -201,13 +200,12 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 	}
 
 	if !ODIN_DISABLE_ASSERT {
-		wl: queue.Queue(Node_ID)
-		queue.init(&wl, int(graph.gvn))
+		wl: bac.Worklist
+		bac.worklist_init(&wl, int(graph.gvn))
 		bac.collect_nodes(graph, &wl)
 
 		for n in wl.data[:wl.len] {
-			node := expand_node(graph, n)
-			node.in_worklist = false
+			expand_node(graph, n)
 		}
 	}
 

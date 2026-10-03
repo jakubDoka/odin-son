@@ -478,9 +478,7 @@ inline_graph :: proc(graph: ^bac.Proc, call: bac.Node_ID, from: ^bac.Proc) {
 		for ri in from_ret.inps {
 			rinode := get_node(from, ri)
 			nd := ctx.projection[rinode.gvn]
-			if nd != 0 {
-				bac.delete_node(graph, nd)
-			}
+			bac.delete_node(graph, nd)
 		}
 
 		bac.unpin(graph, proj_of(&ctx, from_ret.inps[0])^, no_delete = true)

@@ -1061,9 +1061,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		emit_stmts(ctx, d.stmts, base)
 	case ^ast.Expr_Stmt:
 		node := emit_nodes(ctx, {}, d.expr)
-		if node.id != 0 {
-			bac.delete_node(ctx, node.id)
-		}
+		bac.delete_node(ctx, node.id)
 	case ^ast.Assign_Stmt:
 		if len(d.rhs) == 1 && len(d.lhs) > 1 {
 			assert(d.op.kind == .Eq)
@@ -1131,9 +1129,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			rhs := d.rhs[i]
 			if id, iok := lhs.derived.(^ast.Ident); iok && id.name == "_" {
 				node := emit_nodes(ctx, {}, rhs)
-				if node.id != 0 {
-					bac.delete_node(ctx, node.id)
-				}
+				bac.delete_node(ctx, node.id)
 				continue
 			}
 			sym := emit_lvalue(ctx, lhs)
@@ -2196,7 +2192,7 @@ emit_call :: proc(
 		if typecheck.ret_is_by_pointer(rabi, j) && slots[j] == 0 {
 			slots[j] = alloca(ctx, "rtmp", rets[j], zeroed = false)
 		}
-		if slots[j] != 0 do bac.pin(ctx, slots[j])
+		bac.pin(ctx, slots[j])
 	}
 
 	arg_count := len(d.args)
@@ -2289,7 +2285,7 @@ emit_call :: proc(
 	ctx_set_mem(ctx, bac.add_mem(ctx, "cmem", call_end))
 
 	for s in slots {
-		if s != 0 do bac.unpin(ctx, s)
+		bac.unpin(ctx, s)
 	}
 
 	for j in 0 ..< len(rabi.reg_rets) {

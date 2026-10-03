@@ -365,7 +365,6 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 								init := loop.scope[i]
 								bnode := &backedge[i]
 								if init.is_loop do continue
-								if init.node == 0 do continue
 
 								inode := expand_node(ctx, init.node)
 								if btype(inode) != .Lazy_Phi do continue

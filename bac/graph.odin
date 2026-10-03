@@ -558,7 +558,7 @@ find_node :: proc(
 	Node_ID,
 	bool,
 ) {
-	for eout in get_outputs(graph, on if on != 0 else graph.entry) {
+	for eout in get_outputs(graph, on != 0 ? on : graph.entry) {
 		enode := expand_node(graph, eout.id)
 		if enode.itype == kind {
 			return eout.id, true
@@ -1163,14 +1163,12 @@ apply_peeps :: proc(ctx: Peep_Ctx) -> (optimized: bool) {
 				node,
 			)
 			new_node := graph.peep(ctx, node)
-			if new_node != 0 {
-				fmt.assertf(
-					new_node == 0,
-					"\nnew: %v\nold: %v",
-					get_node(graph, new_node),
-					node.node,
-				)
-			}
+			fmt.assertf(
+				new_node == 0,
+				"\nnew: %v\nold: %v",
+				get_node(graph, new_node),
+				node.node,
+			)
 		}
 	}
 
@@ -1781,12 +1779,8 @@ set_input :: proc(
 ) -> Node_ID {
 	node := expand_node(graph, id)
 
-	assert(value != 0)
-
 	assert(idx < len(node.inps))
 	if node.inps[idx] == value do return id
-
-	assert(node.inps[idx] != 0)
 
 	add_output(graph, value, id, idx)
 	remove_output(graph, node.inps[idx], {idx = idx, id = id})
@@ -1877,9 +1871,10 @@ get_node_id :: #force_inline proc(graph: ^Proc, node: ^Node) -> Node_ID {
 delete_node_node :: proc(graph: ^Proc, node: ^Node, indirect := false) {
 	id := get_node_id(graph, node)
 
-	if node.output_count != 0 do return
-	if has_flag(graph, node, .Immortal) && indirect do return
-	if graph.dont_delete do return
+	if (node.output_count != 0) |
+	   (has_flag(graph, node, .Immortal) && indirect) |
+	   (id == 0) |
+	   graph.dont_delete {return}
 
 	assert(node.itype != .Sym)
 
@@ -2260,16 +2255,14 @@ add_output_node :: proc(
 	assert(node.rtype != DEAD_NODE_KIND)
 	ensure_available_output_cap(graph, node, 1)
 
-	if out != 0 {
-		fmt.assertf(
-			get_extra(graph, node, Cfg) == nil ||
-			get_node(graph, out).itype != .Phi ||
-			i == 0,
-			"%v %v",
-			node,
-			out,
-		)
-	}
+	fmt.assertf(
+		get_extra(graph, node, Cfg) == nil ||
+		get_node(graph, out).itype != .Phi ||
+		i == 0,
+		"%v %v",
+		node,
+		out,
+	)
 
 	node.output_count += 1
 	assert(i < 256)

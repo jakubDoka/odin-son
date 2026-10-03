@@ -61,7 +61,7 @@ get_idom_node :: proc(graph: ^Proc, node: ^Node) -> Node_ID {
 		return inps[0]
 	case .Region:
 		cached := inps[len(inps) - 1]
-		if cached != 0 && get_node(graph, cached).itype == .If {
+		if get_node(graph, cached).itype == .If {
 			return cached
 		}
 

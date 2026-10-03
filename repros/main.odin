@@ -1,117 +1,124 @@
 package main
 
-import "core:os"
-import "core:rexcode/ir"
-import "core:rexcode/ir/wasm"
-import "core:strings"
+import "base:intrinsics"
+import "base:runtime"
+//import "core:log"
+//import "core:math/rand"
+//import "core:mem"
+//import "core:slice"
+//import "core:testing"
 
-module :: []u8 {
-	0x00,
-	0x61,
-	0x73,
-	0x6d,
-	0x01,
-	0x00,
-	0x00,
-	0x00,
-	0x01,
-	0x05,
-	0x01,
-	0x60,
-	0x00,
-	0x01,
-	0x7e,
-	0x03,
-	0x02,
-	0x01,
-	0x00,
-	0x05,
-	0x03,
-	0x01,
-	0x04,
-	0x10,
-	0x06,
-	0x09,
-	0x01,
-	0x7e,
-	0x01,
-	0x42,
-	0x80,
-	0x80,
-	0xc0,
-	0x00,
-	0x0b,
-	0x07,
-	0x23,
-	0x03,
-	0x04,
-	0x6d,
-	0x61,
-	0x69,
-	0x6e,
-	0x00,
-	0x00,
-	0x0f,
-	0x5f,
-	0x5f,
-	0x73,
-	0x74,
-	0x61,
-	0x63,
-	0x6b,
-	0x5f,
-	0x70,
-	0x6f,
-	0x69,
-	0x6e,
-	0x74,
-	0x65,
-	0x72,
-	0x03,
-	0x00,
-	0x06,
-	0x6d,
-	0x65,
-	0x6d,
-	0x6f,
-	0x72,
-	0x79,
-	0x02,
-	0x00,
-	0x0a,
-	0x08,
-	0x01,
-	0x06,
-	0x00,
-	0x42,
-	0xc5,
-	0x00,
-	0x0f,
-	0x0b,
+Intern_Vec :: #simd[16]u8
+
+Arm_Simd_Iter :: struct {
+	haystack: []Intern_Vec,
+	i:        int,
+	mask:     u64,
+	needle:   u8,
 }
 
-main :: proc() {
-	m: wasm.Module
-	errors: [dynamic]ir.Error
+arm_simd_iter_next :: proc(siter: ^Arm_Simd_Iter) -> (int, bool) {
+	for {
+		if siter.mask != 0 {
+			idx :=
+				(siter.i - 1) * size_of(Intern_Vec) +
+				int(intrinsics.count_trailing_zeros(siter.mask))
+			siter.mask &= siter.mask - 1
 
-	tmp, _ := os.open("example.wat", {.Write, .Create, .Trunc})
+			return idx, true
+		}
 
-	ln, _ := wasm.decode(module, &m, &errors)
-	wasm.print_wat(m, tmp)
+		if siter.i < len(siter.haystack) {
+			mask := intrinsics.simd_lanes_eq(
+				siter.haystack[siter.i],
+				Intern_Vec(siter.needle),
+			)
+			siter.mask = u64(transmute(u16)intrinsics.simd_extract_lsbs(mask))
+			siter.i += 1
+		} else {
+			return -1, false
+		}
+	}
+}
 
-	p: os.Process_Desc
-	p.command = {"wat2wasm", "example.wat"}
-	_, _, stderr, _ := os.process_exec(p, context.temp_allocator)
+arm_simd_iter_next_ :: proc(siter: ^Arm_Simd_Iter) -> (int, bool) {
+	MSB_MASK :: 0x1010101010101010
 
-	os.write(os.stderr, stderr)
+	for {
+		for i in 0 ..< 2 {
+			m := u64(MSB_MASK >> (u64(1 - i) * 4))
+			if siter.mask & m != 0 {
+				trail := intrinsics.count_trailing_zeros(siter.mask & m)
+				mask_offset := trail / 8 + 8 * u64(i)
+				siter.mask &= ~(1 << trail)
+				return (siter.i - 1) * size_of(Intern_Vec) + int(mask_offset),
+					true
+			}
+		}
 
-	res, _ := os.read_entire_file("example.wat", context.temp_allocator)
+		if siter.i < len(siter.haystack) {
+			mask := intrinsics.simd_lanes_eq(
+				siter.haystack[siter.i],
+				Intern_Vec(siter.needle),
+			)
 
-	if !strings.contains(string(res), "(memory (;0;) i64 16)") {
-		os.write_string(
-			os.stderr,
-			"ERROR: the memory should have been 64 bit but that was lost\n",
-		)
-		os.write_string(os.stderr, string(res))
+			siter.i += 1
+
+			masks := transmute([2]u64)mask
+
+			siter.mask = (masks[0] & MSB_MASK) >> 4
+			siter.mask |= masks[1] & MSB_MASK
+		} else {
+			return -1, false
+		}
+	}
+}
+
+slice_data_cast :: proc "contextless" ($T: typeid/[]$A, slice: $S/[]$B) -> T {
+	when size_of(A) == 0 || size_of(B) == 0 {
+		return nil
+	} else {
+		s := transmute(runtime.Raw_Slice)slice
+		s.len = (len(slice) * size_of(B)) / size_of(A)
+		return transmute(T)s
+	}
+}
+
+@(export)
+find :: proc(a, b: #simd[16]u8) -> u16 {
+	return(
+		transmute(u16)intrinsics.simd_extract_msbs(
+			intrinsics.simd_lanes_eq(a, b),
+		) \
+	)
+}
+
+when false {
+	@(test)
+	sanity :: proc(t: ^testing.T) {
+
+		haystack, _ := mem.alloc_bytes(64, 16)
+		for _ in 0 ..< 1000 {
+			_ = runtime.random_generator_read_bytes(
+				context.random_generator,
+				haystack,
+			)
+			vl := rand.choice(haystack)
+
+			res, _ := find(haystack, vl)
+			res2, _ := slice.linear_search(haystack, vl)
+			testing.expect_value(t, res, res2)
+		}
+
+		haystack_vl := "0123456789abcdefghijklmnopqrstuv"
+
+		assert(len(haystack_vl) == 32)
+
+		copy(haystack, haystack_vl)
+
+		res, _ := find(transmute([]u8)haystack, 'v')
+		testing.expect_value(t, res, 31)
+		res2, _ := find(transmute([]u8)haystack, 'a')
+		testing.expect_value(t, res2, 10)
 	}
 }

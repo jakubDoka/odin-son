@@ -2451,7 +2451,6 @@ main :: proc() -> int {
 	sum := 0
 	i := 0
 
-if false {
 	slc: []int = arr[:]
 	for {
 		if i >= len(slc) do break
@@ -2491,9 +2490,8 @@ if false {
 		sum += slc[i]
 		i += 1
 	}
-}
 
-	//quick_sort(arr[:])
+	quick_sort(arr[:])
 
 	i = 0
 	for {
@@ -2505,7 +2503,6 @@ if false {
 
 	bubble_sort(arr[:])
 
-if false {
 	i = 0
 	for {
 		if i >= len(arr) do break
@@ -2513,7 +2510,6 @@ if false {
 		sum += arr[i] << uint(i)
 		i += 1
 	}
-}
 
 	return sum
 }
@@ -5783,13 +5779,10 @@ sum :: proc(slc: []u8) -> u8 {
 
 main :: proc() -> int {
 	haystack := "0123456789abcdefghijklmnopqrstuvxyz"
-	//res, _ := simd_search(transmute([]u8)haystack, 'z')
+	res, _ := simd_search(transmute([]u8)haystack, 'z')
 	res2, _ := simd_search(transmute([]u8)haystack, 'a')
-	//res = 0
-	//res3 := sum(transmute([]u8)haystack)
-	//res3 = 0
-	//return res + res2 * 10 + int(res3) * 100
-	return res2
+	res3 := sum(transmute([]u8)haystack)
+	return res + res2 * 10 + int(res3) * 100
 }
 ```
 

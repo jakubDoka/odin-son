@@ -18,6 +18,24 @@ builder_extra :: proc {
 	builder_extra_node_id,
 }
 
+add_store :: #force_inline proc(
+	graph: ^Proc,
+	name: string,
+	ctrl: Node_ID,
+	mem: Node_ID,
+	addr: Node_ID,
+	value: Node_ID,
+) -> (
+	_id: Node_ID,
+) {
+	ctrl := ctrl
+	if bac.is_always_valid_ptr(graph, addr) {
+		ctrl = graph.start
+	}
+
+	return bac.add_store(graph, name, ctrl, mem, addr, value)
+}
+
 builder_extra_node :: #force_inline proc(
 	graph: ^bac.Proc,
 	node: ^bac.Node,

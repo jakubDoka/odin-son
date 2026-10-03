@@ -1305,6 +1305,20 @@ is_noalias_ptrs :: proc(graph: ^Proc, a, b: Node_ID, as, bs: int) -> bool {
 	return false
 }
 
+is_always_valid_ptr :: proc(graph: ^Proc, ptr: Node_ID) -> bool {
+	node := expand_node(graph, ptr)
+	for {
+		#partial switch node.itype {
+		case .Add:
+			node = expand_node(graph, node.inps[0])
+		case .Global_Addr, .Local_Addr:
+			return true
+		case:
+			return false
+		}
+	}
+}
+
 base_and_offset :: proc {
 	base_and_offset_proc,
 	base_and_offset_default,
@@ -1317,6 +1331,17 @@ base_and_offset_default :: proc(
 	base: Node_ID,
 	off: int,
 ) {
+	root_addr_add_offset :: proc(
+		graph: ^Proc,
+		node: Expanded_Node,
+	) -> (
+		base: Node_ID,
+		off: int,
+		ok: bool,
+	) {
+		return
+	}
+
 	return base_and_offset_proc(graph, node, root_addr_add_offset)
 }
 
@@ -1855,9 +1880,12 @@ get_dnode :: #force_inline proc(graph: ^Proc, id: D_Node_ID) -> ^D_Node {
 	return (^D_Node)(&([^]u32)(graph.mem.ptr)[id])
 }
 
+@(rodata)
+NIL_NODE: Node
+
 get_node :: #force_inline proc(graph: ^Proc, id: Node_ID) -> ^Node {
-	assert(id != 0)
-	return (^Node)(&([^]u32)(graph.mem.ptr)[id])
+	node := (^Node)(&([^]u32)(graph.mem.ptr)[id])
+	return id == 0 ? &NIL_NODE : node
 }
 
 Expanded_Node :: struct {
@@ -2227,15 +2255,4 @@ has_flag_node :: #force_inline proc(
 ) -> bool {
 	fmt.assertf(int(node.rtype) < len(graph.node_flags), "%v", node.rtype)
 	return flag in graph.node_flags[node.rtype]
-}
-
-root_addr_add_offset :: proc(
-	graph: ^Proc,
-	node: Expanded_Node,
-) -> (
-	base: Node_ID,
-	off: int,
-	ok: bool,
-) {
-	return
 }

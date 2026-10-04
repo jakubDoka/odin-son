@@ -3,9 +3,11 @@
   (type (;0;) (func (param i64 i64 i64)))
   (type (;1;) (func (result i64)))
   (func $cpy (type 0) (param i64 i64 i64)
-    (local i64 i32)
+    (local i64 i64 i32)
     i64.const 2
     local.set 3
+    i64.const 1
+    local.set 4
     block
       loop
         local.get 3
@@ -16,14 +18,14 @@
         local.get 3
         i64.add
         i32.load8_u align=1
-        local.set 4
+        local.set 5
         local.get 0
         local.get 3
         i64.add
-        local.get 4
+        local.get 5
         i32.store8 align=1
         local.get 3
-        i64.const 1
+        local.get 4
         i64.add
         local.set 3
         br 0
@@ -33,7 +35,7 @@
     end
   )
   (func $main (type 1) (result i64)
-    (local i64 i64 i64 i64 i64 i64 i64 i64)
+    (local i64 i64 i64 i64 i64 i64 i64 i64 i32)
     global.get 0
     i64.const 16
     i64.sub
@@ -56,22 +58,24 @@
     memory.fill
     i64.const 0
     local.set 3
-    i64.const 0
+    i32.const 100
+    local.set 8
+    i64.const 1
     local.set 4
+    i64.const 0
+    local.set 5
     block
       loop
-        local.get 4
-        local.set 5
-        i64.const 1
-        local.set 6
         local.get 5
+        local.set 6
+        local.get 6
         i64.const 8
         i64.ge_s
         br_if 1
         local.get 1
-        local.get 5
+        local.get 6
         i64.add
-        local.get 5
+        local.get 6
         i64.const 1
         i64.add
         local.tee 7
@@ -80,12 +84,12 @@
         i32.and
         i32.store8 align=1
         local.get 2
-        local.get 5
+        local.get 6
         i64.add
-        i32.const 100
+        local.get 8
         i32.store8 align=1
         local.get 7
-        local.set 4
+        local.set 5
         br 0
       end
     end
@@ -109,11 +113,11 @@
         local.get 3
         i64.add
         i64.load8_u align=1
-        local.set 4
+        local.set 5
         local.get 1
-        local.get 4
+        local.get 5
         local.get 3
-        local.get 6
+        local.get 4
         i64.add
         local.tee 3
         i64.mul
@@ -146,9 +150,11 @@
   (type (;0;) (func (param i64 i64 i64)))
   (type (;1;) (func (result i64)))
   (func $cpy (type 0) (param i64 i64 i64)
-    (local i64 i32)
+    (local i64 i64 i32)
     i64.const 2
     local.set 3
+    i64.const 1
+    local.set 4
     block
       loop
         local.get 3
@@ -159,14 +165,14 @@
         local.get 3
         i64.add
         i32.load8_u align=1
-        local.set 4
+        local.set 5
         local.get 0
         local.get 3
         i64.add
-        local.get 4
+        local.get 5
         i32.store8 align=1
         local.get 3
-        i64.const 1
+        local.get 4
         i64.add
         local.set 3
         br 0
@@ -176,7 +182,7 @@
     end
   )
   (func $main (type 1) (result i64)
-    (local i64 i64 i64 i64 i64 i64 i64)
+    (local i64 i64 i64 i64 i64 i64 i64 i32)
     global.get 0
     i64.const 16
     i64.sub
@@ -199,12 +205,14 @@
     memory.fill
     i64.const 0
     local.set 1
+    i32.const 100
+    local.set 7
+    i64.const 1
+    local.set 3
     i64.const 0
     local.set 0
     block
       loop
-        i64.const 1
-        local.set 3
         local.get 0
         i64.const 8
         i64.ge_s
@@ -223,7 +231,7 @@
         local.get 4
         local.get 0
         i64.add
-        i32.const 100
+        local.get 7
         i32.store8 align=1
         local.get 2
         local.set 0
@@ -287,9 +295,11 @@
   (type (;0;) (func (param i64 i64 i64)))
   (type (;1;) (func (result i64)))
   (func $cpy (type 0) (param i64 i64 i64)
-    (local i64 i32)
+    (local i64 i64 i32)
     i64.const 2
     local.set 3
+    i64.const 1
+    local.set 4
     block
       loop
         local.get 3
@@ -300,14 +310,14 @@
         local.get 3
         i64.add
         i32.load8_u align=1
-        local.set 4
+        local.set 5
         local.get 0
         local.get 3
         i64.add
-        local.get 4
+        local.get 5
         i32.store8 align=1
         local.get 3
-        i64.const 1
+        local.get 4
         i64.add
         local.set 3
         br 0
@@ -317,7 +327,7 @@
     end
   )
   (func $main (type 1) (result i64)
-    (local i64 i64 i64 i64 i64 i64 i64)
+    (local i64 i64 i64 i64 i64 i64 i64 i64 i32)
     global.get 0
     i64.const 16
     i64.sub
@@ -340,34 +350,38 @@
     memory.fill
     i64.const 0
     local.set 3
-    i64.const 0
+    i32.const 100
+    local.set 8
+    i64.const 1
     local.set 4
+    i64.const 0
+    local.set 5
     block
       loop
-        i64.const 1
-        local.set 5
-        local.get 4
+        local.get 5
+        local.set 6
+        local.get 6
         i64.const 8
         i64.ge_s
         br_if 1
         local.get 1
-        local.get 4
+        local.get 6
         i64.add
-        local.get 4
+        local.get 6
         i64.const 1
         i64.add
-        local.tee 6
+        local.tee 7
         i32.wrap_i64
         i32.const 255
         i32.and
         i32.store8 align=1
         local.get 2
-        local.get 4
-        i64.add
-        i32.const 100
-        i32.store8 align=1
         local.get 6
-        local.set 4
+        i64.add
+        local.get 8
+        i32.store8 align=1
+        local.get 7
+        local.set 5
         br 0
       end
     end
@@ -387,11 +401,11 @@
         local.get 3
         i64.add
         i64.load8_u align=1
-        local.set 4
+        local.set 5
         local.get 1
-        local.get 4
-        local.get 3
         local.get 5
+        local.get 3
+        local.get 4
         i64.add
         local.tee 3
         i64.mul
@@ -424,9 +438,11 @@
   (type (;0;) (func (param i64 i64 i64)))
   (type (;1;) (func (result i64)))
   (func $cpy (type 0) (param i64 i64 i64)
-    (local i64 i32)
+    (local i64 i64 i32)
     i64.const 2
     local.set 3
+    i64.const 1
+    local.set 4
     block
       loop
         local.get 3
@@ -437,14 +453,14 @@
         local.get 3
         i64.add
         i32.load8_u align=1
-        local.set 4
+        local.set 5
         local.get 0
         local.get 3
         i64.add
-        local.get 4
+        local.get 5
         i32.store8 align=1
         local.get 3
-        i64.const 1
+        local.get 4
         i64.add
         local.set 3
         br 0
@@ -454,7 +470,7 @@
     end
   )
   (func $main (type 1) (result i64)
-    (local i64 i64 i64 i64 i64 i64 i64)
+    (local i64 i64 i64 i64 i64 i64 i64 i32)
     global.get 0
     i64.const 16
     i64.sub
@@ -477,12 +493,14 @@
     memory.fill
     i64.const 0
     local.set 1
+    i32.const 100
+    local.set 7
+    i64.const 1
+    local.set 3
     i64.const 0
     local.set 0
     block
       loop
-        i64.const 1
-        local.set 3
         local.get 0
         i64.const 8
         i64.ge_s
@@ -501,7 +519,7 @@
         local.get 4
         local.get 0
         i64.add
-        i32.const 100
+        local.get 7
         i32.store8 align=1
         local.get 2
         local.set 0
@@ -561,9 +579,11 @@
   (type (;0;) (func (param i64 i64 i64)))
   (type (;1;) (func (result i64)))
   (func $cpy (type 0) (param i64 i64 i64)
-    (local i64 i32)
+    (local i64 i64 i32)
     i64.const 2
     local.set 3
+    i64.const 1
+    local.set 4
     block
       loop
         local.get 3
@@ -574,14 +594,14 @@
         local.get 3
         i64.add
         i32.load8_u align=1
-        local.set 4
+        local.set 5
         local.get 0
         local.get 3
         i64.add
-        local.get 4
+        local.get 5
         i32.store8 align=1
         local.get 3
-        i64.const 1
+        local.get 4
         i64.add
         local.set 3
         br 0
@@ -591,7 +611,7 @@
     end
   )
   (func $main (type 1) (result i64)
-    (local i64 i64 i64 i64 i64 i64 i64)
+    (local i64 i64 i64 i64 i64 i64 i64 i64 i32)
     global.get 0
     i64.const 16
     i64.sub
@@ -610,36 +630,40 @@
     local.tee 2
     i64.const 0
     i64.store align=1
-    i64.const 0
+    i64.const 8
     local.set 3
+    i32.const 100
+    local.set 8
+    i64.const 1
+    local.set 4
+    i64.const 0
+    local.set 5
     block
       loop
-        i64.const 8
-        local.set 4
-        i64.const 1
-        local.set 5
-        local.get 3
+        local.get 5
+        local.set 6
+        local.get 6
         i64.const 8
         i64.ge_s
         br_if 1
         local.get 1
-        local.get 3
+        local.get 6
         i64.add
-        local.get 3
+        local.get 6
         i64.const 1
         i64.add
-        local.tee 6
+        local.tee 7
         i32.wrap_i64
         i32.const 255
         i32.and
         i32.store8 align=1
         local.get 2
-        local.get 3
-        i64.add
-        i32.const 100
-        i32.store8 align=1
         local.get 6
-        local.set 3
+        i64.add
+        local.get 8
+        i32.store8 align=1
+        local.get 7
+        local.set 5
         br 0
       end
     end
@@ -652,18 +676,18 @@
     block
       loop
         local.get 1
-        local.get 4
+        local.get 3
         i64.ge_s
         br_if 1
         local.get 2
         local.get 1
         i64.add
         i64.load8_u align=1
-        local.set 3
+        local.set 5
         local.get 0
-        local.get 3
-        local.get 1
         local.get 5
+        local.get 1
+        local.get 4
         i64.add
         local.tee 1
         i64.mul
@@ -696,9 +720,11 @@
   (type (;0;) (func (param i64 i64 i64)))
   (type (;1;) (func (result i64)))
   (func $cpy (type 0) (param i64 i64 i64)
-    (local i64 i32)
+    (local i64 i64 i32)
     i64.const 2
     local.set 3
+    i64.const 1
+    local.set 4
     block
       loop
         local.get 3
@@ -709,14 +735,14 @@
         local.get 3
         i64.add
         i32.load8_u align=1
-        local.set 4
+        local.set 5
         local.get 0
         local.get 3
         i64.add
-        local.get 4
+        local.get 5
         i32.store8 align=1
         local.get 3
-        i64.const 1
+        local.get 4
         i64.add
         local.set 3
         br 0
@@ -726,7 +752,7 @@
     end
   )
   (func $main (type 1) (result i64)
-    (local i64 i64 i64 i64 i64 i64 i64)
+    (local i64 i64 i64 i64 i64 i64 i64 i32)
     global.get 0
     i64.const 16
     i64.sub
@@ -745,14 +771,16 @@
     local.tee 5
     i64.const 0
     i64.store align=1
+    i64.const 8
+    local.set 4
+    i32.const 100
+    local.set 7
+    i64.const 1
+    local.set 3
     i64.const 0
     local.set 1
     block
       loop
-        i64.const 8
-        local.set 4
-        i64.const 1
-        local.set 3
         local.get 1
         i64.const 8
         i64.ge_s
@@ -771,7 +799,7 @@
         local.get 5
         local.get 1
         i64.add
-        i32.const 100
+        local.get 7
         i32.store8 align=1
         local.get 2
         local.set 1
@@ -857,7 +885,7 @@
     end
   )
   (func $main (type 1) (result i64)
-    (local i64 i64 i64 i64 i64 i64 i64)
+    (local i64 i64 i64 i64 i64 i64 i64 i32)
     global.get 0
     i64.const 16
     i64.sub
@@ -876,34 +904,36 @@
     local.tee 5
     i64.const 0
     i64.store align=1
+    i64.const 8
+    local.set 4
+    i32.const 100
+    local.set 7
+    i64.const 1
+    local.set 3
     i64.const 0
     local.set 1
     loop
-      local.get 1
-      local.set 2
-      i64.const 8
-      local.set 4
-      i64.const 1
-      local.set 3
       local.get 6
-      local.get 2
+      local.get 1
       i64.add
-      local.get 2
+      local.get 1
       i64.const 1
       i64.add
-      local.tee 1
+      local.tee 2
       i32.wrap_i64
       i32.const 255
       i32.and
       i32.store8 align=1
       local.get 5
-      local.get 2
-      i64.add
-      i32.const 100
-      i32.store8 align=1
       local.get 1
+      i64.add
+      local.get 7
+      i32.store8 align=1
+      local.get 2
       i64.const 8
       i64.ge_s
+      local.get 2
+      local.set 1
       i32.eqz
       br_if 0
     end
@@ -957,7 +987,7 @@
 (module
   (type (;0;) (func (result i64)))
   (func $main (type 0) (result i64)
-    (local i64 i64 i64 i64 i64 i64 i64)
+    (local i64 i64 i64 i64 i64 i64 i64 i32)
     global.get 0
     i64.const 16
     i64.sub
@@ -976,15 +1006,17 @@
     local.tee 5
     i64.const 0
     i64.store align=1
+    i32.const 100
+    local.set 7
+    i64.const 8
+    local.set 4
+    i64.const 1
+    local.set 3
     i64.const 0
     local.set 1
     loop
       local.get 1
       local.set 2
-      i64.const 1
-      local.set 4
-      i64.const 8
-      local.set 3
       local.get 6
       local.get 2
       i64.add
@@ -999,7 +1031,7 @@
       local.get 5
       local.get 2
       i64.add
-      i32.const 100
+      local.get 7
       i32.store8 align=1
       local.get 1
       i64.const 8
@@ -1026,14 +1058,14 @@
       local.get 0
       local.get 2
       local.get 1
-      local.get 4
+      local.get 3
       i64.add
       local.tee 1
       i64.mul
       i64.add
       local.set 0
       local.get 1
-      local.get 3
+      local.get 4
       i64.ge_s
       i32.eqz
       br_if 0

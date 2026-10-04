@@ -3,8 +3,8 @@ main:
     push rbx
     push rbp
     sub rsp, 8
-    xor eax, eax
     xor ecx, ecx
+    xor eax, eax
 1:
     cmp rcx, 4
     jnl 6
@@ -23,16 +23,16 @@ main:
     xor ebx, ebx
     xor ebp, ebp
 4:
-    cmp rbx, 4
+    cmp rbp, 4
     jnl 5
-    mov rsi, rbx
+    mov rsi, rbp
     add rsi, 1
-    lea rdi, [rbp + rbx*2]
-    mov rbx, rsi
-    mov rbp, rdi
+    lea rdi, [rbx + rbp*2]
+    mov rbx, rdi
+    mov rbp, rsi
     jmp 4
 5:
-    add rdx, rbp
+    add rdx, rbx
     mov rbx, rcx
     add rbx, 1
     mov rbp, rax
@@ -51,8 +51,8 @@ main:
     ret
 =========== OPT LEVEL: none ===========
 main:
-    xor eax, eax
     xor ecx, ecx
+    xor eax, eax
 1:
     cmp rcx, 4
     jnl 6
@@ -70,15 +70,15 @@ main:
     xor esi, esi
     xor edx, edx
 4:
-    cmp rsi, 4
+    cmp rdx, 4
     jnl 5
-    mov rdi, rsi
+    mov rdi, rdx
     add rdi, 1
-    lea rdx, [rdx + rsi*2]
-    mov rsi, rdi
+    lea rsi, [rsi + rdx*2]
+    mov rdx, rdi
     jmp 4
 5:
-    add r8, rdx
+    add r8, rsi
     add rcx, 1
     add rax, r8
     jmp 1
@@ -93,8 +93,8 @@ main:
     push rbx
     push rbp
     sub rsp, 8
-    xor eax, eax
     xor ecx, ecx
+    xor eax, eax
 1:
     cmp rcx, 4
     jnl 6
@@ -113,16 +113,16 @@ main:
     xor ebx, ebx
     xor ebp, ebp
 4:
-    cmp rbx, 4
+    cmp rbp, 4
     jnl 5
-    mov rsi, rbx
+    mov rsi, rbp
     add rsi, 1
-    lea rdi, [rbp + rbx*2]
-    mov rbx, rsi
-    mov rbp, rdi
+    lea rdi, [rbx + rbp*2]
+    mov rbx, rdi
+    mov rbp, rsi
     jmp 4
 5:
-    add rdx, rbp
+    add rdx, rbx
     mov rbx, rcx
     add rbx, 1
     mov rbp, rax
@@ -141,8 +141,8 @@ main:
     ret
 =========== OPT LEVEL: mininal ===========
 main:
-    xor eax, eax
     xor ecx, ecx
+    xor eax, eax
 1:
     cmp rcx, 4
     jnl 6
@@ -160,15 +160,15 @@ main:
     xor esi, esi
     xor edx, edx
 4:
-    cmp rsi, 4
+    cmp rdx, 4
     jnl 5
-    mov rdi, rsi
+    mov rdi, rdx
     add rdi, 1
-    lea rdx, [rdx + rsi*2]
-    mov rsi, rdi
+    lea rsi, [rsi + rdx*2]
+    mov rdx, rdi
     jmp 4
 5:
-    add r8, rdx
+    add r8, rsi
     add rcx, 1
     add rax, r8
     jmp 1
@@ -183,8 +183,8 @@ main:
     push rbx
     push rbp
     sub rsp, 8
-    xor eax, eax
     xor ecx, ecx
+    xor eax, eax
 1:
     cmp rcx, 4
     jnl 6
@@ -203,16 +203,16 @@ main:
     xor ebx, ebx
     xor ebp, ebp
 4:
-    cmp rbx, 4
+    cmp rbp, 4
     jnl 5
-    mov rsi, rbx
+    mov rsi, rbp
     add rsi, 1
-    lea rdi, [rbp + rbx*2]
-    mov rbx, rsi
-    mov rbp, rdi
+    lea rdi, [rbx + rbp*2]
+    mov rbx, rdi
+    mov rbp, rsi
     jmp 4
 5:
-    add rdx, rbp
+    add rdx, rbx
     mov rbx, rcx
     add rbx, 1
     mov rbp, rax
@@ -231,8 +231,8 @@ main:
     ret
 =========== OPT LEVEL: moderate ===========
 main:
-    xor eax, eax
     xor ecx, ecx
+    xor eax, eax
 1:
     cmp rcx, 4
     jnl 6
@@ -250,15 +250,15 @@ main:
     xor esi, esi
     xor edx, edx
 4:
-    cmp rsi, 4
+    cmp rdx, 4
     jnl 5
-    mov rdi, rsi
+    mov rdi, rdx
     add rdi, 1
-    lea rdx, [rdx + rsi*2]
-    mov rsi, rdi
+    lea rsi, [rsi + rdx*2]
+    mov rdx, rdi
     jmp 4
 5:
-    add r8, rdx
+    add r8, rsi
     add rcx, 1
     add rax, r8
     jmp 1
@@ -270,19 +270,19 @@ main:
     ret
 =========== OPT LEVEL: all ===========
 main:
-    xor ecx, ecx
     xor edx, edx
+    xor ecx, ecx
 1:
-    xor eax, eax
     xor edi, edi
+    xor eax, eax
 2:
-    mov rsi, rdi
-    mov rdi, rsi
-    add rdi, rax
-    mov r8, rax
+    mov rsi, rax
+    mov rax, rsi
+    add rax, rdi
+    mov r8, rdi
     add r8, 1
-    cmp rax, 4
-    mov rax, r8
+    cmp rdi, 4
+    mov rdi, r8
     jnge 2
     xor eax, eax
     xor edi, edi
@@ -294,12 +294,12 @@ main:
     cmp rax, 4
     mov rax, r8
     jnge 3
-    add rdx, 1
+    add rcx, 1
     add rsi, r9
-    mov rax, rcx
+    mov rax, rdx
     add rax, rsi
-    cmp rdx, 4
-    mov rcx, rax
+    cmp rcx, 4
+    mov rdx, rax
     jnge 1
     mov rcx, 0xfb
     cqo

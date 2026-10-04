@@ -18,7 +18,25 @@ builder_extra :: proc {
 	builder_extra_node_id,
 }
 
-add_store :: #force_inline proc(
+add_load :: #force_inline proc(
+	graph: ^Proc,
+	name: string,
+	dt: bac.Node_Datatype,
+	ctrl: Node_ID,
+	mem: Node_ID,
+	addr: Node_ID,
+) -> (
+	_id: Node_ID,
+) {
+	ctrl := ctrl
+	if bac.is_always_valid_ptr(graph, addr) {
+		ctrl = 0
+	}
+
+	return bac.add_load(graph, name, dt, ctrl, mem, addr)
+}
+
+add_store :: proc(
 	graph: ^Proc,
 	name: string,
 	ctrl: Node_ID,
@@ -774,7 +792,7 @@ add_field_store :: proc(
 	offset: int,
 	value: Node_ID,
 ) -> Node_ID {
-	return bac.add_store(
+	return add_store(
 		ctx,
 		name,
 		cfg,
@@ -861,7 +879,7 @@ add_field_load :: proc(
 	base: Node_ID,
 	offset: int = 0,
 ) -> Node_ID {
-	return bac.add_load(
+	return add_load(
 		ctx,
 		name,
 		dt,

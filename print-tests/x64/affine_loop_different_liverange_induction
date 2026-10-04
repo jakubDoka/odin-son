@@ -1,35 +1,37 @@
 =========== OPT LEVEL: none-quick ===========
 main:
     push rbx
-    sub rsp, 0x40
+    sub rsp, 0x50
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0x40
     call -0x39
-    xor ecx, ecx
+    mov rcx, 2
+    xor edx, edx
 1:
-    cmp rcx, 8
+    mov rbx, rdx
+    cmp rbx, 8
     jnge 2
     xor eax, eax
-    add rsp, 0x40
+    add rsp, 0x50
     pop rbx
     ret
 2:
-    mov rax, rcx
+    mov rax, rbx
     add rax, 1
-    mov.q [rsp + rcx*8], rcx
     cmp rax, 4
     jnle 3
-    mov rdx, rax
+    mov.q [rsp + 0x40], rax
     jmp 4
 3:
-    mov rbx, 2
     cqo
-    idiv rbx
-    imul rdx, rax, 2
-    add rdx, 1
+    idiv rcx
+    imul rax, rax, 2
+    add rax, 1
+    mov.q [rsp + 0x40], rax
 4:
-    mov rcx, rdx
+    mov.q [rsp + rbx*8], rbx
+    mov.q rdx, [rsp + 0x40]
     jmp 1
 =========== OPT LEVEL: none ===========
 main:
@@ -38,62 +40,63 @@ main:
     xor esi, esi
     mov rdx, 0x40
     call -0x37
-    xor eax, eax
-1:
-    cmp rax, 8
-    jnge 2
-    xor eax, eax
-    add rsp, 0x48
-    ret
-2:
-    mov rcx, rax
-    add rcx, 1
-    mov.q [rsp + rax*8], rax
-    cmp rcx, 4
-    jnle 3
-    jmp 4
-3:
     mov rsi, 2
-    mov rax, rcx
-    cqo
-    idiv rsi
-    imul rcx, rax, 2
-    add rcx, 1
-4:
-    mov rax, rcx
-    jmp 1
-=========== OPT LEVEL: mininal-quick ===========
-main:
-    push rbx
-    sub rsp, 0x40
-    lea rdi, [rsp]
-    xor esi, esi
-    mov rdx, 0x40
-    call -0x39
     xor ecx, ecx
 1:
     cmp rcx, 8
     jnge 2
     xor eax, eax
-    add rsp, 0x40
-    pop rbx
+    add rsp, 0x48
     ret
 2:
     mov rax, rcx
     add rax, 1
-    mov.q [rsp + rcx*8], rcx
     cmp rax, 4
     jnle 3
-    mov rdx, rax
     jmp 4
 3:
-    mov rbx, 2
     cqo
-    idiv rbx
-    imul rdx, rax, 2
-    add rdx, 1
+    idiv rsi
+    imul rax, rax, 2
+    add rax, 1
 4:
-    mov rcx, rdx
+    mov.q [rsp + rcx*8], rcx
+    mov rcx, rax
+    jmp 1
+=========== OPT LEVEL: mininal-quick ===========
+main:
+    push rbx
+    sub rsp, 0x50
+    lea rdi, [rsp]
+    xor esi, esi
+    mov rdx, 0x40
+    call -0x39
+    mov rcx, 2
+    xor edx, edx
+1:
+    mov rbx, rdx
+    cmp rbx, 8
+    jnge 2
+    xor eax, eax
+    add rsp, 0x50
+    pop rbx
+    ret
+2:
+    mov rax, rbx
+    add rax, 1
+    cmp rax, 4
+    jnle 3
+    mov.q [rsp + 0x40], rax
+    jmp 4
+3:
+    cqo
+    idiv rcx
+    imul rax, rax, 2
+    add rax, 1
+    mov.q [rsp + 0x40], rax
+4:
+    mov.q [rsp + rbx*8], rbx
+    mov.q rdx, [rsp + 0x40]
     jmp 1
 =========== OPT LEVEL: mininal ===========
 main:
@@ -102,63 +105,64 @@ main:
     xor esi, esi
     mov rdx, 0x40
     call -0x37
-    xor eax, eax
-1:
-    cmp rax, 8
-    jnge 2
-    xor eax, eax
-    add rsp, 0x48
-    ret
-2:
-    mov rcx, rax
-    add rcx, 1
-    mov.q [rsp + rax*8], rax
-    cmp rcx, 4
-    jnle 3
-    jmp 4
-3:
     mov rsi, 2
-    mov rax, rcx
-    cqo
-    idiv rsi
-    imul rcx, rax, 2
-    add rcx, 1
-4:
-    mov rax, rcx
-    jmp 1
-=========== OPT LEVEL: moderate-quick ===========
-main:
-    push rbx
-    sub rsp, 0x40
-    pxor xmm0, xmm0
-    movups.x [rsp + 0x10], xmm0
-    movups.x [rsp], xmm0
-    movups.x [rsp + 0x30], xmm0
-    movups.x [rsp + 0x20], xmm0
     xor ecx, ecx
 1:
     cmp rcx, 8
     jnge 2
     xor eax, eax
-    add rsp, 0x40
-    pop rbx
+    add rsp, 0x48
     ret
 2:
     mov rax, rcx
     add rax, 1
-    mov.q [rsp + rcx*8], rcx
     cmp rax, 4
     jnle 3
-    mov rdx, rax
     jmp 4
 3:
-    mov rbx, 2
     cqo
-    idiv rbx
-    imul rdx, rax, 2
-    add rdx, 1
+    idiv rsi
+    imul rax, rax, 2
+    add rax, 1
 4:
-    mov rcx, rdx
+    mov.q [rsp + rcx*8], rcx
+    mov rcx, rax
+    jmp 1
+=========== OPT LEVEL: moderate-quick ===========
+main:
+    push rbx
+    sub rsp, 0x50
+    pxor xmm0, xmm0
+    movups.x [rsp + 0x10], xmm0
+    movups.x [rsp], xmm0
+    movups.x [rsp + 0x30], xmm0
+    movups.x [rsp + 0x20], xmm0
+    mov rcx, 2
+    xor edx, edx
+1:
+    mov rbx, rdx
+    cmp rbx, 8
+    jnge 2
+    xor eax, eax
+    add rsp, 0x50
+    pop rbx
+    ret
+2:
+    mov rax, rbx
+    add rax, 1
+    cmp rax, 4
+    jnle 3
+    mov.q [rsp + 0x40], rax
+    jmp 4
+3:
+    cqo
+    idiv rcx
+    imul rax, rax, 2
+    add rax, 1
+    mov.q [rsp + 0x40], rax
+4:
+    mov.q [rsp + rbx*8], rbx
+    mov.q rdx, [rsp + 0x40]
     jmp 1
 =========== OPT LEVEL: moderate ===========
 main:
@@ -168,29 +172,28 @@ main:
     movups.x [rsp], xmm0
     movups.x [rsp + 0x30], xmm0
     movups.x [rsp + 0x20], xmm0
-    xor eax, eax
+    mov rsi, 2
+    xor ecx, ecx
 1:
-    cmp rax, 8
+    cmp rcx, 8
     jnge 2
     xor eax, eax
     add rsp, 0x48
     ret
 2:
-    mov rcx, rax
-    add rcx, 1
-    mov.q [rsp + rax*8], rax
-    cmp rcx, 4
+    mov rax, rcx
+    add rax, 1
+    cmp rax, 4
     jnle 3
     jmp 4
 3:
-    mov rsi, 2
-    mov rax, rcx
     cqo
     idiv rsi
-    imul rcx, rax, 2
-    add rcx, 1
+    imul rax, rax, 2
+    add rax, 1
 4:
-    mov rax, rcx
+    mov.q [rsp + rcx*8], rcx
+    mov rcx, rax
     jmp 1
 =========== OPT LEVEL: all ===========
 main:
@@ -200,21 +203,23 @@ main:
     movups.x [rsp], xmm0
     movups.x [rsp + 0x30], xmm0
     movups.x [rsp + 0x20], xmm0
-    xor eax, eax
+    mov rsi, 2
+    xor ecx, ecx
 1:
-    mov.q [rsp + rax*8], rax
+    mov rax, rcx
     add rax, 1
     cmp rax, 4
     jnle 2
     jmp 3
 2:
-    mov rcx, 2
     cqo
-    idiv rcx
+    idiv rsi
     imul rax, rax, 2
     add rax, 1
 3:
+    mov.q [rsp + rcx*8], rcx
     cmp rax, 8
+    mov rcx, rax
     jnge 1
     xor eax, eax
     add rsp, 0x48

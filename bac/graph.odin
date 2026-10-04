@@ -256,9 +256,7 @@ Class_Flag :: enum {
 }
 
 Cfg :: struct {
-	using props: struct #raw_union {
-		idepth: u32,
-	},
+	idepth: u32,
 }
 
 CInt :: struct #raw_union #align (4) {
@@ -1358,16 +1356,14 @@ is_noalias_ptrs :: proc(graph: ^Proc, a, b: Node_ID, as, bs: int) -> bool {
 }
 
 is_always_valid_ptr :: proc(graph: ^Proc, ptr: Node_ID) -> bool {
+	// NOTE: it appears that this is only valid with constant offsets
+	ptr, _ := base_and_offset(graph, ptr)
 	node := expand_node(graph, ptr)
-	for {
-		#partial switch node.itype {
-		case .Add:
-			node = expand_node(graph, node.inps[0])
-		case .Global_Addr, .Local_Addr:
-			return true
-		case:
-			return false
-		}
+	#partial switch node.itype {
+	case .Global_Addr, .Local_Addr:
+		return true
+	case:
+		return false
 	}
 }
 
@@ -1899,10 +1895,6 @@ delete_node_node :: proc(graph: ^Proc, node: ^Node, indirect := false) {
 	if size == graph.mem.pos - uint(id * PRECISION) {
 		add_efficiency_stat(graph, .immediate_deletes, 1)
 	}
-
-	//if get_tag(graph, id).stable_id == 174 && node.itype == .Then {
-	//	panic("")
-	//}
 
 	graph.waste += int(node.input_cap * size_of(Node_ID))
 	graph.waste += int(node.output_cap * size_of(Node_Output))

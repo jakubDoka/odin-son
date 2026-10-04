@@ -11,12 +11,12 @@ f:
     mov rdx, 0x10
     xor esi, esi
     call -0x53
-    lea rax, [rip + 0xf76]
+    lea rdi, [rsp]
+    lea rax, [rip + 0xf72]
     mov.q [rsp + 0x51], rax
     mov.q [rsp + 0x59], 0x23
     mov rdx, 0x41
     xor esi, esi
-    lea rdi, [rsp]
     call -0x7b
     xor ecx, ecx
 1:
@@ -48,26 +48,26 @@ f:
     mov.q rcx, [rsp + 0x81]
     jmp 1
 2:
+    mov.q rax, [rsp + 0x71]
+    sub rax, 1
+    mov.q [rsp + 0x61], rax
     xor eax, eax
 3:
-    mov.q [rsp + 0x61], rax
+    mov.q [rsp + 0x69], rax
     mov.q rcx, [rsp + 0x71]
-    mov.q rdx, [rsp + 0x61]
+    mov.q rdx, [rsp + 0x69]
     cmp rdx, rcx
     jnl 4
     mov.q rcx, [rsp + 0x41]
-    mov.q rdx, [rsp + 0x71]
-    sub rdx, 1
-    mov.q [rsp + 0x69], rdx
-    mov.q rdx, [rsp + 0x61]
-    mov.q rbx, [rsp + 0x69]
+    mov.q rdx, [rsp + 0x69]
+    mov.q rbx, [rsp + 0x61]
     sub rbx, rdx
     mov rdx, rbx
     movzx.b edx, [rsp + rdx]
-    mov.q rbx, [rsp + 0x61]
+    mov.q rbx, [rsp + 0x69]
     add rcx, rbx
     mov.b [rcx], dl
-    mov.q rcx, [rsp + 0x61]
+    mov.q rcx, [rsp + 0x69]
     add rcx, 1
     mov rax, rcx
     jmp 3
@@ -95,8 +95,8 @@ main:
     sub rax, 0
     mov rax, rax
     mov.q [rsp + 0x49], rax
-    mov.q rdi, [rsp + 0x41]
     mov.q rsi, [rsp + 0x49]
+    mov.q rdi, [rsp + 0x41]
     mov rdx, 0xff
     mov rcx, 0x10
     call f
@@ -121,16 +121,16 @@ f:
     mov rdx, 0x10
     xor esi, esi
     call -0x4c
-    lea rax, [rip + 0xf7d]
+    lea rdi, [rsp]
+    lea rax, [rip + 0xf79]
     mov.q [rsp + 0x51], rax
     mov.q [rsp + 0x59], 0x23
     mov rdx, 0x41
     xor esi, esi
-    lea rdi, [rsp]
     call -0x74
     xor eax, eax
 1:
-    mov rdi, rax
+    mov r8, rax
     cmp rbx, 0
     jz 2
     mov.q rsi, [rsp + 0x51]
@@ -143,26 +143,28 @@ f:
     xor rdx, rdx
     div rbp
     mov rbx, rax
-    mov rax, rdi
+    mov rax, r8
     add rax, 1
-    mov.b [rsp + rdi], sil
+    mov.b [rsp + r8], sil
     jmp 1
 2:
+    mov rdi, r8
+    sub rdi, 1
     xor eax, eax
 3:
-    cmp rax, rdi
+    cmp rax, r8
     jnl 4
     mov.q rsi, [rsp + 0x41]
+    mov rdx, rax
     mov rcx, rdi
-    sub rcx, 1
-    sub rcx, rax
+    sub rcx, rdx
     movzx.b edx, [rsp + rcx]
     add rsi, rax
     mov.b [rsi], dl
     add rax, 1
     jmp 3
 4:
-    mov rax, rdi
+    mov rax, r8
     add rsp, 0x68
     pop rbp
     pop rbx
@@ -172,19 +174,19 @@ main:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0x41
-    call -0x117
+    call -0x11f
     lea rdi, [rsp + 0x41]
     mov rdx, 0x10
     xor esi, esi
-    call -0x12b
+    call -0x133
     lea rax, [rsp]
     add rax, 0
     mov.q [rsp + 0x41], rax
     mov rax, 0x41
     sub rax, 0
     mov.q [rsp + 0x49], rax
-    mov.q rdi, [rsp + 0x41]
     mov.q rsi, [rsp + 0x49]
+    mov.q rdi, [rsp + 0x41]
     mov rdx, 0xff
     mov rcx, 0x10
     call f
@@ -208,12 +210,12 @@ f:
     mov rdx, 0x10
     xor esi, esi
     call -0x53
-    lea rax, [rip + 0xf76]
+    lea rdi, [rsp]
+    lea rax, [rip + 0xf72]
     mov.q [rsp + 0x51], rax
     mov.q [rsp + 0x59], 0x23
     mov rdx, 0x41
     xor esi, esi
-    lea rdi, [rsp]
     call -0x7b
     xor ecx, ecx
 1:
@@ -245,26 +247,26 @@ f:
     mov.q rcx, [rsp + 0x81]
     jmp 1
 2:
+    mov.q rax, [rsp + 0x71]
+    sub rax, 1
+    mov.q [rsp + 0x61], rax
     xor eax, eax
 3:
-    mov.q [rsp + 0x61], rax
+    mov.q [rsp + 0x69], rax
     mov.q rcx, [rsp + 0x71]
-    mov.q rdx, [rsp + 0x61]
+    mov.q rdx, [rsp + 0x69]
     cmp rdx, rcx
     jnl 4
     mov.q rcx, [rsp + 0x41]
-    mov.q rdx, [rsp + 0x71]
-    sub rdx, 1
-    mov.q [rsp + 0x69], rdx
-    mov.q rdx, [rsp + 0x61]
-    mov.q rbx, [rsp + 0x69]
+    mov.q rdx, [rsp + 0x69]
+    mov.q rbx, [rsp + 0x61]
     sub rbx, rdx
     mov rdx, rbx
     movzx.b edx, [rsp + rdx]
-    mov.q rbx, [rsp + 0x61]
+    mov.q rbx, [rsp + 0x69]
     add rcx, rbx
     mov.b [rcx], dl
-    mov.q rcx, [rsp + 0x61]
+    mov.q rcx, [rsp + 0x69]
     add rcx, 1
     mov rax, rcx
     jmp 3
@@ -292,8 +294,8 @@ main:
     sub rax, 0
     mov rax, rax
     mov.q [rsp + 0x49], rax
-    mov.q rdi, [rsp + 0x41]
     mov.q rsi, [rsp + 0x49]
+    mov.q rdi, [rsp + 0x41]
     mov rdx, 0xff
     mov rcx, 0x10
     call f
@@ -318,16 +320,16 @@ f:
     mov rdx, 0x10
     xor esi, esi
     call -0x4c
-    lea rax, [rip + 0xf7d]
+    lea rdi, [rsp]
+    lea rax, [rip + 0xf79]
     mov.q [rsp + 0x51], rax
     mov.q [rsp + 0x59], 0x23
     mov rdx, 0x41
     xor esi, esi
-    lea rdi, [rsp]
     call -0x74
     xor eax, eax
 1:
-    mov rdi, rax
+    mov r8, rax
     cmp rbx, 0
     jz 2
     mov.q rsi, [rsp + 0x51]
@@ -340,26 +342,28 @@ f:
     xor rdx, rdx
     div rbp
     mov rbx, rax
-    mov rax, rdi
+    mov rax, r8
     add rax, 1
-    mov.b [rsp + rdi], sil
+    mov.b [rsp + r8], sil
     jmp 1
 2:
+    mov rdi, r8
+    sub rdi, 1
     xor eax, eax
 3:
-    cmp rax, rdi
+    cmp rax, r8
     jnl 4
     mov.q rsi, [rsp + 0x41]
+    mov rdx, rax
     mov rcx, rdi
-    sub rcx, 1
-    sub rcx, rax
+    sub rcx, rdx
     movzx.b edx, [rsp + rcx]
     add rsi, rax
     mov.b [rsi], dl
     add rax, 1
     jmp 3
 4:
-    mov rax, rdi
+    mov rax, r8
     add rsp, 0x68
     pop rbp
     pop rbx
@@ -369,19 +373,19 @@ main:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0x41
-    call -0x117
+    call -0x11f
     lea rdi, [rsp + 0x41]
     mov rdx, 0x10
     xor esi, esi
-    call -0x12b
+    call -0x133
     lea rax, [rsp]
     add rax, 0
     mov.q [rsp + 0x41], rax
     mov rax, 0x41
     sub rax, 0
     mov.q [rsp + 0x49], rax
-    mov.q rdi, [rsp + 0x41]
     mov.q rsi, [rsp + 0x49]
+    mov.q rdi, [rsp + 0x41]
     mov rdx, 0xff
     mov rcx, 0x10
     call f
@@ -438,26 +442,26 @@ f:
     mov.q rcx, [rsp + 0x81]
     jmp 1
 2:
+    mov.q rax, [rsp + 0x71]
+    sub rax, 1
+    mov.q [rsp + 0x61], rax
     xor eax, eax
 3:
-    mov.q [rsp + 0x61], rax
+    mov.q [rsp + 0x69], rax
     mov.q rcx, [rsp + 0x71]
-    mov.q rdx, [rsp + 0x61]
+    mov.q rdx, [rsp + 0x69]
     cmp rdx, rcx
     jnl 4
     mov.q rcx, [rsp + 0x41]
-    mov.q rdx, [rsp + 0x71]
-    sub rdx, 1
-    mov.q [rsp + 0x69], rdx
-    mov.q rdx, [rsp + 0x61]
-    mov.q rbx, [rsp + 0x69]
+    mov.q rdx, [rsp + 0x69]
+    mov.q rbx, [rsp + 0x61]
     sub rbx, rdx
     mov rdx, rbx
     movzx.b edx, [rsp + rdx]
-    mov.q rbx, [rsp + 0x61]
+    mov.q rbx, [rsp + 0x69]
     add rcx, rbx
     mov.b [rcx], dl
-    mov.q rcx, [rsp + 0x61]
+    mov.q rcx, [rsp + 0x69]
     add rcx, 1
     mov rax, rcx
     jmp 3
@@ -504,7 +508,7 @@ f:
     call -0x60
     xor eax, eax
 1:
-    mov rdi, rax
+    mov r8, rax
     cmp rbx, 0
     jz 2
     mov.q rsi, [rsp + 0x51]
@@ -517,26 +521,28 @@ f:
     xor rdx, rdx
     div rbp
     mov rbx, rax
-    mov rax, rdi
+    mov rax, r8
     add rax, 1
-    mov.b [rsp + rdi], sil
+    mov.b [rsp + r8], sil
     jmp 1
 2:
+    mov rdi, r8
+    sub rdi, 1
     xor eax, eax
 3:
-    cmp rax, rdi
+    cmp rax, r8
     jnl 4
     mov.q rsi, [rsp + 0x41]
+    mov rdx, rax
     mov rcx, rdi
-    sub rcx, 1
-    sub rcx, rax
+    sub rcx, rdx
     movzx.b edx, [rsp + rcx]
     add rsi, rax
     mov.b [rsi], dl
     add rax, 1
     jmp 3
 4:
-    mov rax, rdi
+    mov rax, r8
     add rsp, 0x68
     pop rbp
     pop rbx
@@ -546,7 +552,7 @@ main:
     xor esi, esi
     mov rdx, 0x41
     lea rdi, [rsp]
-    call -0xff
+    call -0x107
     mov rcx, 0x10
     mov rsi, 0x41
     lea rdi, [rsp]
@@ -576,19 +582,19 @@ f:
     jz 2
     xor ecx, ecx
 1:
-    lea rdi, [rip + 0xf73]
     mov rax, rbx
     xor rdx, rdx
     div rbp
-    add rdi, rdx
-    movzx.b edi, [rdi]
+    lea rax, [rip + 0xf6a]
+    add rax, rdx
+    movzx.b edx, [rax]
+    mov.b [rsp + rcx], dl
     mov rax, rbx
     xor rdx, rdx
     div rbp
     mov rbx, rax
     mov rax, rcx
     add rax, 1
-    mov.b [rsp + rcx], dil
     cmp rbx, 0
     mov rcx, rax
     jnz 1
@@ -651,19 +657,19 @@ main:
     xor esi, esi
     mov rdx, 0x41
     call -0x4e
+    mov r9, 0x10
     mov rsi, 0xff
     xor ecx, ecx
 1:
-    lea r8, [rip + 0xf71]
-    mov rdi, 0x10
     mov rax, rsi
     xor rdx, rdx
-    div rdi
-    add r8, rdx
-    movzx.b r8d, [r8]
+    div r9
+    lea rax, [rip + 0xf61]
+    add rax, rdx
+    movzx.b r8d, [rax]
     mov rax, rsi
     xor rdx, rdx
-    div rdi
+    div r9
     mov rsi, rax
     mov rdi, rcx
     add rdi, 1
@@ -673,17 +679,16 @@ main:
     jnz 1
     cmp rdi, 0
     jng 3
+    mov rdx, rdi
+    sub rdx, 1
     xor eax, eax
 2:
-    mov rcx, rdi
-    sub rcx, 1
+    mov rcx, rdx
     sub rcx, rax
-    movzx.b edx, [rsp + rcx + 0x41]
-    mov rcx, rax
-    add rcx, 1
-    mov.b [rsp + rax], dl
-    cmp rcx, rdi
-    mov rax, rcx
+    movzx.b ecx, [rsp + rcx + 0x41]
+    mov.b [rsp + rax], cl
+    add rax, 1
+    cmp rax, rdi
     jnge 2
     jmp 3
 3:

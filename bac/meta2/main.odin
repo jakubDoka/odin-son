@@ -83,7 +83,6 @@ main :: proc() {
 			.X64_Mul = X64_SIMPLE_BIN_OP_SPEC,
 			.X64_Lea = {id = x64.Mem_Op, no_ctor = true},
 			.X64_Load = {id = x64.Mem_Op, flags = {.Load}, no_ctor = true},
-			.X64_CLoad = {flags = {.Clonable}, no_ctor = true},
 			.X64_Store = {id = x64.Mem_Op, flags = {.Store}, no_ctor = true},
 			.X64_Mul8 = {no_ctor = true},
 			.X64_F_Add ..= .X64_F_Div = {id = x64.Mem_Op, no_ctor = true},
@@ -164,7 +163,6 @@ main :: proc() {
 	when arm.SPEC_NOT_PRESENT {
 		ARM_CLASSES := [arm.Node_Type]meta.Class_Spec {
 			.Msub = {args = {"multiplicant", "multiplier", "subtractant"}},
-			.CLoad = {no_ctor = true},
 		}
 		meta.generate_spec(
 			meta.Spec_Gen_Input {

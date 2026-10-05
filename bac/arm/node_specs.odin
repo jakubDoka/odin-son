@@ -102,7 +102,6 @@ SPEC := bac.Node_Spec{
 		0b10, // Simd_Extract_Lsbs
 		0b10, // Simd_Reduce_Add_Bisect
 		0b10, // Msub
-		0b10, // CLoad
 	},
 	node_extra_sizes = {
 		1, // Nil -> Cfg
@@ -188,7 +187,6 @@ SPEC := bac.Node_Spec{
 		0, // Simd_Extract_Lsbs -> No_Extra
 		0, // Simd_Reduce_Add_Bisect -> No_Extra
 		0, // Msub -> No_Extra
-		0, // CLoad -> No_Extra
 	},
 	node_flags = {
 		{Class_Flag.Immortal}, // Nil
@@ -274,7 +272,6 @@ SPEC := bac.Node_Spec{
 		{Class_Flag.Interned}, // Simd_Extract_Lsbs
 		{Class_Flag.Interned}, // Simd_Reduce_Add_Bisect
 		{}, // Msub
-		{}, // CLoad
 	},
 	node_extra_types = {
 		bac.Cfg,
@@ -345,7 +342,6 @@ SPEC := bac.Node_Spec{
 		bac.Cfg,
 		bac.Tup,
 		bac.Cfg,
-		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
@@ -446,7 +442,6 @@ SPEC := bac.Node_Spec{
 		`Simd_Extract_Lsbs`,
 		`Simd_Reduce_Add_Bisect`,
 		`Msub`,
-		`CLoad`,
 	},
 }
 
@@ -534,7 +529,6 @@ Node_Type :: enum u16 {
 	Simd_Extract_Lsbs,
 	Simd_Reduce_Add_Bisect,
 	Msub,
-	CLoad,
 }
 
 peep_inst :: proc(ctx: bac.Peep_Ctx, node: bac.Expanded_Node) -> bac.Node_ID {
@@ -642,7 +636,6 @@ collect_meta :: proc(ctx: ^bac.Proc,
 add_msub :: #force_inline proc(graph: ^bac.Proc, name: string, dt: bac.Node_Datatype, multiplicant: bac.Node_ID, multiplier: bac.Node_ID, subtractant: bac.Node_ID) -> (_id: bac.Node_ID) {
 	return bac.add_raw(graph, name, u16(Node_Type.Msub), dt, {multiplicant, multiplier, subtractant})
 }
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	when false {}

@@ -5,6 +5,7 @@ import "../../vendored/gam/util/arna"
 import "../../vendored/gam/util/bit_arr"
 import "base:intrinsics"
 import "core:fmt"
+import "core:log"
 import "core:math"
 import "core:mem"
 import "core:reflect"
@@ -189,7 +190,6 @@ when SPEC_NOT_PRESENT {
 		X64_Lea,
 		X64_Load,
 		X64_Store,
-		X64_CLoad,
 		X64_Neg,
 		X64_Not,
 		X64_Mul8,
@@ -315,35 +315,39 @@ peep :: proc(
 	case .CInt:
 		cnst: ^bac.CInt = bac.get_extra(ctx, node, bac.CInt)
 		if node.dt in bac.FLOAT_DTS && cnst.value != 0 {
-			size := bac.DT_SIZE[node.dt] / 4 - 1
+			size := bac.DT_SIZE[node.dt] / 4
 			slot := bac.get_next_extra_slot(
 				ctx,
 				u16(bac.Node_Type.Global),
 				size,
 			)
 
+			(^bac.Node_Datatype)(slot)^ = node.dt
 			if node.dt == .F32 {
-				(^f32)(slot)^ = f32(cnst.fvalue)
+				(^f32)(slot[1:])^ = f32(cnst.fvalue)
 			} else {
 				assert(node.dt == .F64)
-				(^f64)(slot)^ = cnst.fvalue
+				// TODO: unaligned
+				(^f64)(slot[1:])^ = cnst.fvalue
 			}
 
 			global := bac.add_raw(
 				ctx,
 				"iglb",
 				u16(bac.Node_Type.Global),
-				node.dt,
+				.Void,
 				meta = {extra_dwords = size},
 			)
 
-			return bac.add_raw(
+			_, id := add_node(
 				ctx,
 				node.name,
-				u16(Node_Type.X64_CLoad),
+				.X64_Load,
 				node.dt,
-				{global},
+				{0, ctx.const_mem, global},
+				{dt = node.dt},
 			)
+			return id
 		}
 	case .Splat:
 		inp := expand_node(ctx, node.inps[0])
@@ -790,7 +794,7 @@ peep :: proc(
 
 add_node :: proc(
 	ctx: ^bac.Proc,
-	name: string,
+	name: bac.Tag_Name,
 	type: Node_Type,
 	dt: bac.Node_Datatype,
 	inps: []bac.Node_ID,
@@ -856,15 +860,6 @@ post_schedule_peep :: proc(
 				slots[:len(slots) - int(slots[4] == 0)],
 				mem_op^,
 			)
-		} else if xtype(rhs) == .X64_CLoad {
-			mem_op := Mem_Op {
-				mem_mode = .Src,
-				dt       = rhs.dt,
-			}
-
-			slots := [?]bac.Node_ID{rhs.inps[0], node.inps[0]}
-
-			return make_node(ctx, id, op, slots[:], mem_op)
 		}
 	case .X64_Eq ..= .X64_U_Ge:
 		mem_op := xextra(ctx, node, Mem_Op)
@@ -884,14 +879,14 @@ post_schedule_peep :: proc(
 		mem_op := xextra(ctx, node, Mem_Op)
 		rhs := expand_node(ctx, node.inps[2])
 
-		if xtype(rhs) == .X64_Load {
-			if !has_no_clobbers(ctx, node.inps[2]) do break matchx
-			//panic("")
-		} else if xtype(rhs) == .X64_CLoad {
+		if xtype(rhs) == .X64_Load && false {
+			if get_node(ctx, node.inps[1]).itype != .Root_Mem do break matchx
+			if get_node(ctx, node.inps[2]).itype != .Global do break matchx
+
 			mem_op.mem_mode = .Src
 			mem_op.dt = rhs.dt
 
-			slots := [?]bac.Node_ID{rhs.inps[0], node.inps[0], node.inps[1]}
+			slots := [?]bac.Node_ID{rhs.inps[2], node.inps[0], node.inps[1]}
 
 			return make_node(ctx, id, node.rtype, slots[:], mem_op^)
 		}
@@ -978,7 +973,7 @@ meta_of :: proc(
 
 	IOUT :: bac.INVALID_RM_INDEX
 
-	if node.gvn == 0 {
+	if node.gvn == 1 {
 		ra.mask_len = MASK_SIZE
 		rslice(ra, RK_GENERAL, GPA_MASK[:])
 		rslice(ra, RK_VECTOR, XMM_MASK[:])
@@ -1250,8 +1245,6 @@ meta_of :: proc(
 			masks = GPA_MASKS[:1 + int(mem_op.scale != 0)],
 			input_start = 2 + u8(get_node(graph, node.inps[2]).dt == .Void),
 		}
-	case .X64_CLoad:
-		return {out = out, input_start = 1}
 	case .X64_Mul8:
 		rax := single(ra, RAX)
 		return {out = rax, masks = dup({GPA_MASK_IDX, rax})}
@@ -1679,7 +1672,9 @@ emit_instr :: proc(
 
 	scl := mem_op.scale
 	idx := NO_INDEX
-	if scl != 0 do idx = reg_of(ctx, node.inps[len(node.inps) - 1])
+	if scl != 0 {
+		idx = reg_of(ctx, node.inps[len(node.inps) - 1])
+	}
 	imm_boundary := int(scl != 0)
 	pfx: u8 = node.dt == .F64 ? 0xF2 : 0xF3
 	wide := node.dt == .F64
@@ -1810,13 +1805,6 @@ emit_instr :: proc(
 		rx := rex(dst, bse, idx, true)
 		emit(ctx.code, {rx, 0x8D})
 		emit_indirect_addr(ctx, dst, bse, idx, scl, sdis + dis, id)
-	case .X64_CLoad:
-		dst := reg_of(ctx, instr)
-		bse, sdis, id := reg_and_disp_of(ctx, node.inps[0])
-
-		// movss/movsd $dst, [rsp + $src_off]
-		emit(ctx.code, {pfx, rex(dst, bse, RAX, false), 0x0f, 0x10})
-		emit_indirect_addr(ctx, dst, bse, NO_INDEX, 1, sdis, id)
 	case .Store, .X64_Store:
 		bse, sdis, id := reg_and_disp_of(ctx, node.inps[2])
 		dis := mem_op.dis
@@ -2705,13 +2693,14 @@ reg_and_disp_of :: proc(ctx: ^Ctx, id: bac.Node_ID) -> (Reg, i32, u32) {
 	if node.itype == .Global {
 		tup: ^bac.Tup = bac.get_extra(ctx, node, bac.Tup)
 
-		if node.dt != .Void {
+		if node.extra_dwords != 0 {
+			dwords := bac.get_extra_dwords(ctx, node)
 			tup.idx = bac.emit_big_constant(
 				&ctx.big_constants,
-				bac.DT_SIZE[node.dt],
-				mem.slice_data_cast([]u8, bac.get_extra_dwords(ctx, node)),
+				bac.DT_SIZE[bac.Node_Datatype(dwords[0])],
+				mem.slice_data_cast([]u8, dwords[1:]),
 			)
-			node.dt = .Void
+			node.extra_dwords = 0
 		}
 
 		// bias by one so that global 0 is distinguishable from the "no

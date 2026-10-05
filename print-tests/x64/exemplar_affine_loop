@@ -1,78 +1,86 @@
 =========== OPT LEVEL: none-quick ===========
 main:
     sub rsp, 0x48
-    lea rdi, [rsp]
     xor esi, esi
+    lea rdi, [rsp]
     mov rdx, 0x40
     call -0x37
-    xor eax, eax
     xor ecx, ecx
 1:
-    mov rdx, rcx
-    cmp rdx, 8
+    mov.q [rsp + 0x40], rcx
+    mov.q rax, [rsp + 0x40]
+    cmp rax, 8
     jnge 2
+    xor eax, eax
     add rsp, 0x48
     ret
 2:
-    mov.q [rsp + rdx*8], rdx
-    add rdx, 1
-    mov rcx, rdx
+    mov.q rax, [rsp + 0x40]
+    mov.q rdx, [rsp + 0x40]
+    mov.q [rsp + rdx*8], rax
+    mov.q rax, [rsp + 0x40]
+    add rax, 1
+    mov rcx, rax
     jmp 1
 =========== OPT LEVEL: none ===========
 main:
     sub rsp, 0x48
-    lea rdi, [rsp]
     xor esi, esi
+    lea rdi, [rsp]
     mov rdx, 0x40
     call -0x37
     xor eax, eax
-    xor ecx, ecx
 1:
-    cmp rcx, 8
+    cmp rax, 8
     jnge 2
+    xor eax, eax
     add rsp, 0x48
     ret
 2:
-    mov.q [rsp + rcx*8], rcx
-    add rcx, 1
+    mov.q [rsp + rax*8], rax
+    add rax, 1
     jmp 1
 =========== OPT LEVEL: mininal-quick ===========
 main:
     sub rsp, 0x48
-    lea rdi, [rsp]
     xor esi, esi
+    lea rdi, [rsp]
     mov rdx, 0x40
     call -0x37
-    xor eax, eax
     xor ecx, ecx
 1:
-    mov rdx, rcx
-    cmp rdx, 8
+    mov.q [rsp + 0x40], rcx
+    mov.q rax, [rsp + 0x40]
+    cmp rax, 8
     jnge 2
+    xor eax, eax
     add rsp, 0x48
     ret
 2:
-    mov.q [rsp + rdx*8], rdx
-    add rdx, 1
-    mov rcx, rdx
+    mov.q rax, [rsp + 0x40]
+    mov.q rdx, [rsp + 0x40]
+    mov.q [rsp + rdx*8], rax
+    mov.q rax, [rsp + 0x40]
+    add rax, 1
+    mov rcx, rax
     jmp 1
 =========== OPT LEVEL: mininal ===========
 main:
     sub rsp, 0x48
-    lea rdi, [rsp]
     xor esi, esi
+    lea rdi, [rsp]
     mov rdx, 0x40
     call -0x37
     xor eax, eax
-    xor ecx, ecx
 1:
-    cmp rcx, 8
+    cmp rax, 8
     jnge 2
+    xor eax, eax
     add rsp, 0x48
     ret
 2:
-    mov.q [rsp + rcx*8], rcx
-    add rcx, 1
+    mov.q [rsp + rax*8], rax
+    add rax, 1
     jmp 1
 =========== OPT LEVEL: moderate-quick ===========
 main:

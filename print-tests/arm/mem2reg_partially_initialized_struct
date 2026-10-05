@@ -119,10 +119,10 @@ main:
     str x20, [xzr, #8]
     stp x29, x30, [xzr, #23]
     add x19, sp, #32
-    movz x0, #16, #0
-    add x20, x0, x19
     eor.v v0, v0, v0
     str.v q0, [x19]
+    movz x0, #16, #0
+    add x20, x0, x19
     movz x0, #0, #0
     str x0, [x20]
     movz x0, #42, #0
@@ -148,10 +148,10 @@ main:
     str x20, [xzr, #8]
     stp x29, x30, [xzr, #23]
     add x20, sp, #32
-    movz x0, #16, #0
-    add x19, x0, x20
     eor.v v0, v0, v0
     str.v q0, [x20]
+    movz x0, #16, #0
+    add x19, x0, x20
     movz x0, #0, #0
     str x0, [x19]
     movz x0, #42, #0
@@ -177,10 +177,10 @@ main:
     str x20, [xzr, #8]
     stp x29, x30, [xzr, #23]
     add x20, sp, #32
-    movz x0, #16, #0
-    add x19, x0, x20
     eor.v v0, v0, v0
     str.v q0, [x20]
+    movz x0, #16, #0
+    add x19, x0, x20
     movz x0, #0, #0
     str x0, [x19]
     movz x0, #42, #0
@@ -205,13 +205,15 @@ main:
     str.v q0, [x3]
     movz x0, #16, #0
     add x2, x0, x3
-    movz x1, #42, #0
     movz x0, #0, #0
     str x0, [x2]
+    movz x1, #42, #0
     movz x0, #8, #0
     add x0, x0, x3
     str x1, [x0]
     ldr x0, [x3]
-    add x0, x0, x1
+    add x1, x0, x1
+    ldr x0, [x2]
+    add x0, x1, x0
     add sp, sp, #32
     ret

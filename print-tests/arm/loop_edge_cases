@@ -2,74 +2,74 @@
 main:
     sub sp, sp, #16
     movz x0, #0, #0
-    movz x1, #0, #0
-    movz x2, #0, #0
+    movz x1, #1, #0
+    movz x2, #2, #0
+    movz x3, #0, #0
+    movz x4, #0, #0
 1:
-    movz x3, #1, #0
-    add x4, x2, x3
-    movz x5, #2, #0
-    cmp w4, w5
+    add x5, x3, x1
+    cmp w5, w2
     b.eq 4
-    cmp w4, w3
+    cmp w5, w1
     b.eq 2
-    add x6, x4, x3
+    add x6, x5, x1
     movz x7, #1, #0
     str x6, [xzr]
     b 3
 2:
-    mov x7, x1
-    str x4, [xzr]
+    mov x7, x4
+    str x5, [xzr]
 3:
-    mov x1, x7
-    ldr x2, [xzr]
+    ldr x3, [xzr]
+    mov x4, x7
     b 1
 4:
-    movz x2, #3, #0
-    cmp w1, w0
+    movz x3, #3, #0
+    cmp w4, w0
     b.eq 5
-    mov x4, x1
+    mov x5, x4
     b 10
 5:
-    str x1, [xzr]
-    movz x1, #0, #0
+    str x4, [xzr]
+    movz x4, #0, #0
 6:
-    add x6, x1, x3
-    cmp w6, w2
-    b.eq 9
-    cmp w6, w5
-    b.eq 7
+    add x6, x4, x1
     cmp w6, w3
+    b.eq 9
+    cmp w6, w2
     b.eq 7
-    add x7, x6, x3
-    movz x8, #2, #0
+    cmp w6, w1
+    b.eq 7
+    add x7, x6, x1
     str x7, [xzr, #8]
+    movz x7, #2, #0
     b 8
     b 7
 7:
+    ldr x7, [xzr]
     str x6, [xzr, #8]
-    ldr x8, [xzr]
 8:
-    str x8, [xzr]
-    ldr x1, [xzr, #8]
+    str x7, [xzr]
+    ldr x4, [xzr, #8]
     b 6
 9:
-    ldr x4, [xzr]
+    ldr x5, [xzr]
 10:
-    cmp w4, w0
+    cmp w5, w0
     b.ne 11
-    mov x0, x4
+    mov x0, x5
     b 15
 11:
-    movz x1, #0, #0
+    movz x2, #4, #0
+    movz x4, #0, #0
 12:
-    add x4, x1, x3
-    cmp w4, w2
+    add x5, x4, x1
+    cmp w5, w3
     b.eq 14
-    add x4, x4, x3
-    movz x5, #4, #0
-    cmp w4, w5
+    add x5, x5, x1
+    cmp w5, w2
     b.eq 13
-    mov x1, x4
+    mov x4, x5
     b 12
 13:
     movz x0, #3, #0
@@ -82,12 +82,12 @@ main:
 =========== OPT LEVEL: none ===========
 main:
     movz x5, #0, #0
-    movz x1, #0, #0
-    movz x0, #0, #0
-1:
     movz x4, #1, #0
-    add x0, x0, x4
     movz x3, #2, #0
+    movz x0, #0, #0
+    movz x1, #0, #0
+1:
+    add x0, x0, x4
     cmp w0, w3
     b.eq 3
     cmp w0, w4
@@ -124,13 +124,13 @@ main:
     mov x0, x1
     b 12
 8:
+    movz x1, #4, #0
     movz x0, #0, #0
 9:
     add x0, x0, x4
     cmp w0, w2
     b.eq 11
     add x0, x0, x4
-    movz x1, #4, #0
     cmp w0, w1
     b.eq 10
     b 9
@@ -145,74 +145,74 @@ main:
 main:
     sub sp, sp, #16
     movz x0, #0, #0
-    movz x1, #0, #0
-    movz x2, #0, #0
+    movz x1, #1, #0
+    movz x2, #2, #0
+    movz x3, #0, #0
+    movz x4, #0, #0
 1:
-    movz x3, #1, #0
-    add x4, x2, x3
-    movz x5, #2, #0
-    cmp w4, w5
+    add x5, x3, x1
+    cmp w5, w2
     b.eq 4
-    cmp w4, w3
+    cmp w5, w1
     b.eq 2
-    add x6, x4, x3
+    add x6, x5, x1
     movz x7, #1, #0
     str x6, [xzr]
     b 3
 2:
-    mov x7, x1
-    str x4, [xzr]
+    mov x7, x4
+    str x5, [xzr]
 3:
-    mov x1, x7
-    ldr x2, [xzr]
+    ldr x3, [xzr]
+    mov x4, x7
     b 1
 4:
-    movz x2, #3, #0
-    cmp w1, w0
+    movz x3, #3, #0
+    cmp w4, w0
     b.eq 5
-    mov x4, x1
+    mov x5, x4
     b 10
 5:
-    str x1, [xzr]
-    movz x1, #0, #0
+    str x4, [xzr]
+    movz x4, #0, #0
 6:
-    add x6, x1, x3
-    cmp w6, w2
-    b.eq 9
-    cmp w6, w5
-    b.eq 7
+    add x6, x4, x1
     cmp w6, w3
+    b.eq 9
+    cmp w6, w2
     b.eq 7
-    add x7, x6, x3
-    movz x8, #2, #0
+    cmp w6, w1
+    b.eq 7
+    add x7, x6, x1
     str x7, [xzr, #8]
+    movz x7, #2, #0
     b 8
     b 7
 7:
+    ldr x7, [xzr]
     str x6, [xzr, #8]
-    ldr x8, [xzr]
 8:
-    str x8, [xzr]
-    ldr x1, [xzr, #8]
+    str x7, [xzr]
+    ldr x4, [xzr, #8]
     b 6
 9:
-    ldr x4, [xzr]
+    ldr x5, [xzr]
 10:
-    cmp w4, w0
+    cmp w5, w0
     b.ne 11
-    mov x0, x4
+    mov x0, x5
     b 15
 11:
-    movz x1, #0, #0
+    movz x2, #4, #0
+    movz x4, #0, #0
 12:
-    add x4, x1, x3
-    cmp w4, w2
+    add x5, x4, x1
+    cmp w5, w3
     b.eq 14
-    add x4, x4, x3
-    movz x5, #4, #0
-    cmp w4, w5
+    add x5, x5, x1
+    cmp w5, w2
     b.eq 13
-    mov x1, x4
+    mov x4, x5
     b 12
 13:
     movz x0, #3, #0
@@ -225,12 +225,12 @@ main:
 =========== OPT LEVEL: mininal ===========
 main:
     movz x5, #0, #0
-    movz x1, #0, #0
-    movz x0, #0, #0
-1:
     movz x4, #1, #0
-    add x0, x0, x4
     movz x3, #2, #0
+    movz x0, #0, #0
+    movz x1, #0, #0
+1:
+    add x0, x0, x4
     cmp w0, w3
     b.eq 3
     cmp w0, w4
@@ -267,13 +267,13 @@ main:
     mov x0, x1
     b 12
 8:
+    movz x1, #4, #0
     movz x0, #0, #0
 9:
     add x0, x0, x4
     cmp w0, w2
     b.eq 11
     add x0, x0, x4
-    movz x1, #4, #0
     cmp w0, w1
     b.eq 10
     b 9
@@ -288,134 +288,138 @@ main:
 main:
     sub sp, sp, #16
     movz x0, #0, #0
-    movz x1, #0, #0
-    movz x2, #0, #0
+    movz x1, #1, #0
+    movz x2, #2, #0
+    movz x3, #0, #0
+    movz x4, #0, #0
 1:
-    mov x3, x2
-    movz x4, #1, #0
-    add x5, x1, x4
-    movz x6, #2, #0
-    cmp w5, w6
+    add x5, x3, x1
+    cmp w5, w2
     b.eq 4
-    cmp w5, w4
+    cmp w5, w1
     b.eq 2
-    add x7, x1, x6
-    str x7, [xzr]
-    movz x3, #1, #0
+    add x6, x3, x2
+    str x6, [xzr]
+    movz x6, #1, #0
     b 3
 2:
+    mov x6, x4
     str x5, [xzr]
 3:
-    ldr x1, [xzr]
-    mov x2, x3
+    ldr x3, [xzr]
+    mov x4, x6
     b 1
 4:
-    movz x1, #3, #0
-    cmp w3, w0
+    movz x3, #3, #0
+    cmp w4, w0
     b.eq 5
-    b 9
+    mov x5, x4
+    b 10
 5:
-    movz x2, #0, #0
+    str x4, [xzr]
+    movz x4, #0, #0
 6:
-    add x5, x2, x4
-    cmp w5, w1
+    add x6, x4, x1
+    cmp w6, w3
     b.eq 9
-    cmp w5, w6
+    cmp w6, w2
     b.eq 7
-    cmp w5, w4
+    cmp w6, w1
     b.eq 7
-    add x7, x2, x6
-    str x7, [xzr]
-    movz x7, #2, #0
+    add x7, x4, x2
+    movz x8, #2, #0
+    str x7, [xzr, #8]
     b 8
     b 7
 7:
-    str x5, [xzr]
-    mov x7, x3
+    ldr x8, [xzr]
+    str x6, [xzr, #8]
 8:
-    ldr x2, [xzr]
-    mov x3, x7
+    str x8, [xzr]
+    ldr x4, [xzr, #8]
     b 6
 9:
-    cmp w3, w0
-    b.ne 10
-    mov x0, x3
-    b 14
+    ldr x5, [xzr]
 10:
-    movz x2, #0, #0
+    cmp w5, w0
+    b.ne 11
+    mov x0, x5
+    b 15
 11:
-    add x3, x2, x4
-    cmp w3, w1
-    b.eq 13
-    add x3, x2, x6
-    movz x5, #4, #0
-    cmp w3, w5
-    b.eq 12
-    mov x2, x3
-    b 11
+    movz x4, #4, #0
+    movz x5, #0, #0
 12:
-    movz x0, #3, #0
-    b 14
+    add x6, x5, x1
+    cmp w6, w3
+    b.eq 14
+    add x6, x5, x2
+    cmp w6, w4
+    b.eq 13
+    mov x5, x6
+    b 12
 13:
-    movz x0, #1, #0
+    movz x0, #3, #0
+    b 15
 14:
+    movz x0, #1, #0
+15:
     add sp, sp, #16
     ret
 =========== OPT LEVEL: moderate ===========
 main:
     movz x6, #0, #0
-    movz x0, #0, #0
-    movz x3, #0, #0
-1:
     movz x5, #1, #0
-    add x1, x0, x5
     movz x4, #2, #0
+    movz x0, #0, #0
+    movz x2, #0, #0
+1:
+    add x1, x0, x5
     cmp w1, w4
     b.eq 3
     cmp w1, w5
     b.eq 2
     add x1, x0, x4
-    movz x3, #1, #0
+    movz x2, #1, #0
     b 2
 2:
     mov x0, x1
     b 1
 3:
-    movz x2, #3, #0
-    cmp w3, w6
+    movz x3, #3, #0
+    cmp w2, w6
     b.eq 4
     b 7
 4:
     movz x0, #0, #0
 5:
     add x1, x0, x5
-    cmp w1, w2
+    cmp w1, w3
     b.eq 7
     cmp w1, w4
     b.eq 6
     cmp w1, w5
     b.eq 6
     add x1, x0, x4
-    movz x3, #2, #0
+    movz x2, #2, #0
     b 6
     b 6
 6:
     mov x0, x1
     b 5
 7:
-    cmp w3, w6
+    cmp w2, w6
     b.ne 8
-    mov x0, x3
+    mov x0, x2
     b 12
 8:
+    movz x2, #4, #0
     movz x0, #0, #0
 9:
     add x1, x0, x5
-    cmp w1, w2
+    cmp w1, w3
     b.eq 11
     add x0, x0, x4
-    movz x1, #4, #0
-    cmp w0, w1
+    cmp w0, w2
     b.eq 10
     b 9
 10:
@@ -428,12 +432,12 @@ main:
 =========== OPT LEVEL: all ===========
 main:
     movz x7, #0, #0
+    movz x6, #1, #0
+    movz x5, #2, #0
     movz x1, #0, #0
     movz x0, #0, #0
 1:
-    movz x6, #1, #0
     add x2, x1, x6
-    movz x5, #2, #0
     cmp w2, w6
     b.eq 2
     add x2, x1, x5
@@ -454,38 +458,38 @@ main:
 4:
     movz x0, #0, #0
 5:
-    add x1, x0, x6
-    cmp w1, w5
+    add x2, x0, x6
+    cmp w2, w5
     b.eq 6
-    cmp w1, w6
+    cmp w2, w6
     b.eq 6
-    add x1, x0, x5
-    movz x2, #2, #0
+    add x2, x0, x5
+    movz x1, #2, #0
     b 7
     b 6
 6:
-    mov x2, x3
+    mov x1, x3
 7:
-    add x0, x1, x6
+    add x0, x2, x6
     cmp w0, w4
-    mov x3, x2
-    mov x0, x1
+    mov x0, x2
+    mov x3, x1
     b.ne 5
-    mov x3, x2
+    mov x3, x1
 8:
     cmp w3, w7
     b.ne 9
     mov x0, x3
     b 12
 9:
+    movz x2, #4, #0
     movz x0, #0, #0
 10:
     add x1, x0, x6
     cmp w1, w4
     b.eq 11
     add x0, x0, x5
-    movz x1, #4, #0
-    cmp w0, w1
+    cmp w0, w2
     b.ne 10
     movz x0, #3, #0
     b 12

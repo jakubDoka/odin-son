@@ -203,7 +203,8 @@ parse_string:
 27:
     xor ecx, ecx
 28:
-    mov rax, rcx
+    mov.q [rsp], rcx
+    mov.q rax, [rsp]
     add rsp, 0x10
     pop rbx
     ret
@@ -331,7 +332,8 @@ parse_number:
     jmp 45
     xor ecx, ecx
 45:
-    mov rax, rcx
+    mov.q [rsp], rcx
+    mov.q rax, [rsp]
     add rsp, 0x18
     ret
 parse_array:
@@ -378,7 +380,8 @@ parse_array:
 52:
     xor eax, eax
 53:
-    mov rax, rax
+    mov.q [rsp], rax
+    mov.q rax, [rsp]
     add rsp, 8
     ret
 parse_object:
@@ -450,7 +453,8 @@ parse_object:
 63:
     xor eax, eax
 64:
-    mov rax, rax
+    mov.q [rsp], rax
+    mov.q rax, [rsp]
     add rsp, 8
     ret
 parse_value:
@@ -495,7 +499,7 @@ parse_value:
     call parse_number
     jmp 73
 67:
-    lea rcx, [rip + 0x1840]
+    lea rcx, [rip + 0x1820]
     mov.q [rsp + 0x20], rcx
     mov.q [rsp + 0x28], 4
     mov.q rsi, [rsp + 0x20]
@@ -504,7 +508,7 @@ parse_value:
     call parse_lit
     jmp 73
 68:
-    lea rcx, [rip + 0x180d]
+    lea rcx, [rip + 0x17ed]
     mov.q [rsp + 0x10], rcx
     mov.q [rsp + 0x18], 5
     mov.q rsi, [rsp + 0x10]
@@ -513,7 +517,7 @@ parse_value:
     call parse_lit
     jmp 73
 69:
-    lea rcx, [rip + 0x17db]
+    lea rcx, [rip + 0x17bb]
     mov.q [rsp], rcx
     mov.q [rsp + 0x8], 4
     mov.q rsi, [rsp]
@@ -542,11 +546,11 @@ validate:
     mov rdx, 0x18
     xor esi, esi
     lea rdi, [rsp]
-    call -0x869
+    call -0x889
+    lea rsi, [rsp + 0x18]
     mov rdx, 0x10
     lea rdi, [rsp]
-    lea rsi, [rsp + 0x18]
-    call -0x8ae
+    call -0x8ce
     mov.q [rsp + 0x10], 0
     lea rdi, [rsp]
     call skip_ws
@@ -566,12 +570,13 @@ validate:
 75:
     xor eax, eax
 76:
-    mov rax, rax
+    mov.q [rsp + 0x28], rax
+    mov.q rax, [rsp + 0x28]
     add rsp, 0x38
     ret
 main:
     sub rsp, 0x138
-    lea rax, [rip + 0x16f7]
+    lea rax, [rip + 0x16cf]
     mov.q [rsp], rax
     mov.q [rsp + 0x8], 4
     mov.q rdi, [rsp]
@@ -587,7 +592,7 @@ main:
     mov rax, rcx
 79:
     mov.q [rsp + 0x120], rax
-    lea rax, [rip + 0x16b3]
+    lea rax, [rip + 0x168b]
     mov.q [rsp + 0x10], rax
     mov.q [rsp + 0x18], 5
     mov.q rdi, [rsp + 0x10]
@@ -605,7 +610,7 @@ main:
 81:
     push.q [rsp + 0x128]
     pop.q [rsp + 0x120]
-    lea rax, [rip + 0x1651]
+    lea rax, [rip + 0x1629]
     mov.q [rsp + 0x20], rax
     mov.q [rsp + 0x28], 4
     mov.q rdi, [rsp + 0x20]
@@ -622,7 +627,7 @@ main:
 82:
     push.q [rsp + 0x128]
     pop.q [rsp + 0x120]
-    lea rax, [rip + 0x15ee]
+    lea rax, [rip + 0x15c6]
     mov.q [rsp + 0x30], rax
     mov.q [rsp + 0x38], 3
     mov.q rdi, [rsp + 0x30]
@@ -640,7 +645,7 @@ main:
 84:
     push.q [rsp + 0x128]
     pop.q [rsp + 0x120]
-    lea rax, [rip + 0x158a]
+    lea rax, [rip + 0x1562]
     mov.q [rsp + 0x40], rax
     mov.q [rsp + 0x48], 7
     mov.q rdi, [rsp + 0x40]
@@ -657,7 +662,7 @@ main:
 85:
     push.q [rsp + 0x128]
     pop.q [rsp + 0x120]
-    lea rax, [rip + 0x152a]
+    lea rax, [rip + 0x1502]
     mov.q [rsp + 0x50], rax
     mov.q [rsp + 0x58], 7
     mov.q rdi, [rsp + 0x50]
@@ -675,7 +680,7 @@ main:
 87:
     push.q [rsp + 0x128]
     pop.q [rsp + 0x120]
-    lea rax, [rip + 0x14ca]
+    lea rax, [rip + 0x14a2]
     mov.q [rsp + 0x60], rax
     mov.q [rsp + 0x68], 9
     mov.q rdi, [rsp + 0x60]
@@ -693,7 +698,7 @@ main:
 89:
     push.q [rsp + 0x128]
     pop.q [rsp + 0x120]
-    lea rax, [rip + 0x146c]
+    lea rax, [rip + 0x1444]
     mov.q [rsp + 0x70], rax
     mov.q [rsp + 0x78], 0x1b
     mov.q rdi, [rsp + 0x70]
@@ -711,7 +716,7 @@ main:
 91:
     push.q [rsp + 0x128]
     pop.q [rsp + 0x120]
-    lea rax, [rip + 0x1420]
+    lea rax, [rip + 0x13f8]
     mov.q [rsp + 0x80], rax
     mov.q [rsp + 0x88], 8
     mov.q rdi, [rsp + 0x80]
@@ -729,7 +734,7 @@ main:
 93:
     push.q [rsp + 0x128]
     pop.q [rsp + 0x120]
-    lea rax, [rip + 0x13b5]
+    lea rax, [rip + 0x138d]
     mov.q [rsp + 0x90], rax
     mov.q [rsp + 0x98], 2
     mov.q rdi, [rsp + 0x90]
@@ -747,97 +752,96 @@ main:
 95:
     push.q [rsp + 0x128]
     pop.q [rsp + 0x120]
-    lea rax, [rip + 0x1344]
+    lea rax, [rip + 0x131c]
     mov.q [rsp + 0xa0], rax
     mov.q [rsp + 0xa8], 0
     mov.q rdi, [rsp + 0xa0]
     mov.q rsi, [rsp + 0xa8]
     call validate
     cmp al, 0
-    jz 96
+    jz +0x14
     push.q [rsp + 0x120]
     pop.q [rsp + 0x128]
-    jmp 97
-96:
+    jmp 96
     mov.q rax, [rsp + 0x120]
     add rax, 0x400
     mov.q [rsp + 0x128], rax
-97:
+96:
     push.q [rsp + 0x128]
     pop.q [rsp + 0x120]
-    lea rax, [rip + 0x12d0]
+    lea rax, [rip + 0x12a8]
     mov.q [rsp + 0xb0], rax
     mov.q [rsp + 0xb8], 1
     mov.q rdi, [rsp + 0xb0]
     mov.q rsi, [rsp + 0xb8]
     call validate
     cmp al, 0
-    jz 98
+    jz 97
     push.q [rsp + 0x120]
     pop.q [rsp + 0x128]
-    jmp 99
-98:
+    jmp 98
+97:
     mov.q rax, [rsp + 0x120]
     add rax, 0x800
     mov.q [rsp + 0x128], rax
-99:
+98:
     push.q [rsp + 0x128]
     pop.q [rsp + 0x120]
-    lea rax, [rip + 0x125d]
+    lea rax, [rip + 0x1235]
     mov.q [rsp + 0xc0], rax
     mov.q [rsp + 0xc8], 4
     mov.q rdi, [rsp + 0xc0]
     mov.q rsi, [rsp + 0xc8]
     call validate
     cmp al, 0
-    jz 100
+    jz 99
     push.q [rsp + 0x120]
     pop.q [rsp + 0x128]
-    jmp 101
-100:
+    jmp 100
+99:
     mov.q rax, [rsp + 0x120]
     add rax, 0x1000
     mov.q [rsp + 0x128], rax
-101:
+100:
     push.q [rsp + 0x128]
     pop.q [rsp + 0x120]
-    lea rax, [rip + 0x11ed]
+    lea rax, [rip + 0x11c5]
     mov.q [rsp + 0xd0], rax
     mov.q [rsp + 0xd8], 5
     mov.q rdi, [rsp + 0xd0]
     mov.q rsi, [rsp + 0xd8]
     call validate
     cmp al, 0
-    jz 102
+    jz 101
     push.q [rsp + 0x120]
     pop.q [rsp + 0x128]
-    jmp 103
-102:
+    jmp 102
+101:
     mov.q rax, [rsp + 0x120]
     add rax, 0x2000
     mov.q [rsp + 0x128], rax
-103:
+102:
     push.q [rsp + 0x128]
     pop.q [rsp + 0x120]
-    lea rax, [rip + 0x117e]
+    lea rax, [rip + 0x1156]
     mov.q [rsp + 0xe0], rax
     mov.q [rsp + 0xe8], 2
     mov.q rdi, [rsp + 0xe0]
     mov.q rsi, [rsp + 0xe8]
     call validate
     cmp al, 0
-    jz 104
+    jz 103
     push.q [rsp + 0x120]
     pop.q [rsp + 0x128]
-    jmp 105
-104:
+    jmp 104
+103:
     mov.q rax, [rsp + 0x120]
     add rax, 0x4000
     mov.q [rsp + 0x128], rax
-105:
+104:
     push.q [rsp + 0x128]
     pop.q [rsp + 0x120]
-    lea rax, [rip + 0x110c]
+    lea rax, [rip + 0x10e4]
     mov.q [rsp + 0xf0], rax
     mov.q [rsp + 0xf8], 6
     mov.q rdi, [rsp + 0xf0]
@@ -847,13 +851,14 @@ main:
     jz +0x14
     push.q [rsp + 0x120]
     pop.q [rsp + 0x128]
-    jmp +0x17
+    jmp 105
     mov.q rax, [rsp + 0x120]
     add rax, 0x8000
     mov.q [rsp + 0x128], rax
+105:
     push.q [rsp + 0x128]
     pop.q [rsp + 0x120]
-    lea rax, [rip + 0x109e]
+    lea rax, [rip + 0x1076]
     mov.q [rsp + 0x100], rax
     mov.q [rsp + 0x108], 7
     mov.q rdi, [rsp + 0x100]
@@ -871,7 +876,7 @@ main:
 107:
     push.q [rsp + 0x128]
     pop.q [rsp + 0x120]
-    lea rax, [rip + 0x1031]
+    lea rax, [rip + 0x1009]
     mov.q [rsp + 0x110], rax
     mov.q [rsp + 0x118], 3
     mov.q rdi, [rsp + 0x110]
@@ -887,7 +892,9 @@ main:
     add rax, 0x20000
     mov.q [rsp + 0x128], rax
 109:
-    mov.q rax, [rsp + 0x128]
+    push.q [rsp + 0x128]
+    pop.q [rsp + 0x120]
+    mov.q rax, [rsp + 0x120]
     add rsp, 0x138
     ret
 =========== OPT LEVEL: none ===========
@@ -1415,9 +1422,9 @@ validate:
     xor esi, esi
     lea rdi, [rsp]
     call -0x7c1
+    lea rsi, [rsp + 0x18]
     mov rdx, 0x10
     lea rdi, [rsp]
-    lea rsi, [rsp + 0x18]
     call -0x806
     mov.q [rsp + 0x10], 0
     lea rdi, [rsp]
@@ -1870,7 +1877,8 @@ parse_string:
 27:
     xor ecx, ecx
 28:
-    mov rax, rcx
+    mov.q [rsp], rcx
+    mov.q rax, [rsp]
     add rsp, 0x10
     pop rbx
     ret
@@ -1998,7 +2006,8 @@ parse_number:
     jmp 45
     xor ecx, ecx
 45:
-    mov rax, rcx
+    mov.q [rsp], rcx
+    mov.q rax, [rsp]
     add rsp, 0x18
     ret
 parse_array:
@@ -2045,7 +2054,8 @@ parse_array:
 52:
     xor eax, eax
 53:
-    mov rax, rax
+    mov.q [rsp], rax
+    mov.q rax, [rsp]
     add rsp, 8
     ret
 parse_object:
@@ -2117,7 +2127,8 @@ parse_object:
 63:
     xor eax, eax
 64:
-    mov rax, rax
+    mov.q [rsp], rax
+    mov.q rax, [rsp]
     add rsp, 8
     ret
 parse_value:
@@ -2162,7 +2173,7 @@ parse_value:
     call parse_number
     jmp 73
 67:
-    lea rcx, [rip + 0x1840]
+    lea rcx, [rip + 0x1820]
     mov.q [rsp + 0x20], rcx
     mov.q [rsp + 0x28], 4
     mov.q rsi, [rsp + 0x20]
@@ -2171,7 +2182,7 @@ parse_value:
     call parse_lit
     jmp 73
 68:
-    lea rcx, [rip + 0x180d]
+    lea rcx, [rip + 0x17ed]
     mov.q [rsp + 0x10], rcx
     mov.q [rsp + 0x18], 5
     mov.q rsi, [rsp + 0x10]
@@ -2180,7 +2191,7 @@ parse_value:
     call parse_lit
     jmp 73
 69:
-    lea rcx, [rip + 0x17db]
+    lea rcx, [rip + 0x17bb]
     mov.q [rsp], rcx
     mov.q [rsp + 0x8], 4
     mov.q rsi, [rsp]
@@ -2209,11 +2220,11 @@ validate:
     mov rdx, 0x18
     xor esi, esi
     lea rdi, [rsp]
-    call -0x869
+    call -0x889
+    lea rsi, [rsp + 0x18]
     mov rdx, 0x10
     lea rdi, [rsp]
-    lea rsi, [rsp + 0x18]
-    call -0x8ae
+    call -0x8ce
     mov.q [rsp + 0x10], 0
     lea rdi, [rsp]
     call skip_ws
@@ -2233,12 +2244,13 @@ validate:
 75:
     xor eax, eax
 76:
-    mov rax, rax
+    mov.q [rsp + 0x28], rax
+    mov.q rax, [rsp + 0x28]
     add rsp, 0x38
     ret
 main:
     sub rsp, 0x138
-    lea rax, [rip + 0x16f7]
+    lea rax, [rip + 0x16cf]
     mov.q [rsp], rax
     mov.q [rsp + 0x8], 4
     mov.q rdi, [rsp]
@@ -2254,7 +2266,7 @@ main:
     mov rax, rcx
 79:
     mov.q [rsp + 0x120], rax
-    lea rax, [rip + 0x16b3]
+    lea rax, [rip + 0x168b]
     mov.q [rsp + 0x10], rax
     mov.q [rsp + 0x18], 5
     mov.q rdi, [rsp + 0x10]
@@ -2272,7 +2284,7 @@ main:
 81:
     push.q [rsp + 0x128]
     pop.q [rsp + 0x120]
-    lea rax, [rip + 0x1651]
+    lea rax, [rip + 0x1629]
     mov.q [rsp + 0x20], rax
     mov.q [rsp + 0x28], 4
     mov.q rdi, [rsp + 0x20]
@@ -2289,7 +2301,7 @@ main:
 82:
     push.q [rsp + 0x128]
     pop.q [rsp + 0x120]
-    lea rax, [rip + 0x15ee]
+    lea rax, [rip + 0x15c6]
     mov.q [rsp + 0x30], rax
     mov.q [rsp + 0x38], 3
     mov.q rdi, [rsp + 0x30]
@@ -2307,7 +2319,7 @@ main:
 84:
     push.q [rsp + 0x128]
     pop.q [rsp + 0x120]
-    lea rax, [rip + 0x158a]
+    lea rax, [rip + 0x1562]
     mov.q [rsp + 0x40], rax
     mov.q [rsp + 0x48], 7
     mov.q rdi, [rsp + 0x40]
@@ -2324,7 +2336,7 @@ main:
 85:
     push.q [rsp + 0x128]
     pop.q [rsp + 0x120]
-    lea rax, [rip + 0x152a]
+    lea rax, [rip + 0x1502]
     mov.q [rsp + 0x50], rax
     mov.q [rsp + 0x58], 7
     mov.q rdi, [rsp + 0x50]
@@ -2342,7 +2354,7 @@ main:
 87:
     push.q [rsp + 0x128]
     pop.q [rsp + 0x120]
-    lea rax, [rip + 0x14ca]
+    lea rax, [rip + 0x14a2]
     mov.q [rsp + 0x60], rax
     mov.q [rsp + 0x68], 9
     mov.q rdi, [rsp + 0x60]
@@ -2360,7 +2372,7 @@ main:
 89:
     push.q [rsp + 0x128]
     pop.q [rsp + 0x120]
-    lea rax, [rip + 0x146c]
+    lea rax, [rip + 0x1444]
     mov.q [rsp + 0x70], rax
     mov.q [rsp + 0x78], 0x1b
     mov.q rdi, [rsp + 0x70]
@@ -2378,7 +2390,7 @@ main:
 91:
     push.q [rsp + 0x128]
     pop.q [rsp + 0x120]
-    lea rax, [rip + 0x1420]
+    lea rax, [rip + 0x13f8]
     mov.q [rsp + 0x80], rax
     mov.q [rsp + 0x88], 8
     mov.q rdi, [rsp + 0x80]
@@ -2396,7 +2408,7 @@ main:
 93:
     push.q [rsp + 0x128]
     pop.q [rsp + 0x120]
-    lea rax, [rip + 0x13b5]
+    lea rax, [rip + 0x138d]
     mov.q [rsp + 0x90], rax
     mov.q [rsp + 0x98], 2
     mov.q rdi, [rsp + 0x90]
@@ -2414,97 +2426,96 @@ main:
 95:
     push.q [rsp + 0x128]
     pop.q [rsp + 0x120]
-    lea rax, [rip + 0x1344]
+    lea rax, [rip + 0x131c]
     mov.q [rsp + 0xa0], rax
     mov.q [rsp + 0xa8], 0
     mov.q rdi, [rsp + 0xa0]
     mov.q rsi, [rsp + 0xa8]
     call validate
     cmp al, 0
-    jz 96
+    jz +0x14
     push.q [rsp + 0x120]
     pop.q [rsp + 0x128]
-    jmp 97
-96:
+    jmp 96
     mov.q rax, [rsp + 0x120]
     add rax, 0x400
     mov.q [rsp + 0x128], rax
-97:
+96:
     push.q [rsp + 0x128]
     pop.q [rsp + 0x120]
-    lea rax, [rip + 0x12d0]
+    lea rax, [rip + 0x12a8]
     mov.q [rsp + 0xb0], rax
     mov.q [rsp + 0xb8], 1
     mov.q rdi, [rsp + 0xb0]
     mov.q rsi, [rsp + 0xb8]
     call validate
     cmp al, 0
-    jz 98
+    jz 97
     push.q [rsp + 0x120]
     pop.q [rsp + 0x128]
-    jmp 99
-98:
+    jmp 98
+97:
     mov.q rax, [rsp + 0x120]
     add rax, 0x800
     mov.q [rsp + 0x128], rax
-99:
+98:
     push.q [rsp + 0x128]
     pop.q [rsp + 0x120]
-    lea rax, [rip + 0x125d]
+    lea rax, [rip + 0x1235]
     mov.q [rsp + 0xc0], rax
     mov.q [rsp + 0xc8], 4
     mov.q rdi, [rsp + 0xc0]
     mov.q rsi, [rsp + 0xc8]
     call validate
     cmp al, 0
-    jz 100
+    jz 99
     push.q [rsp + 0x120]
     pop.q [rsp + 0x128]
-    jmp 101
-100:
+    jmp 100
+99:
     mov.q rax, [rsp + 0x120]
     add rax, 0x1000
     mov.q [rsp + 0x128], rax
-101:
+100:
     push.q [rsp + 0x128]
     pop.q [rsp + 0x120]
-    lea rax, [rip + 0x11ed]
+    lea rax, [rip + 0x11c5]
     mov.q [rsp + 0xd0], rax
     mov.q [rsp + 0xd8], 5
     mov.q rdi, [rsp + 0xd0]
     mov.q rsi, [rsp + 0xd8]
     call validate
     cmp al, 0
-    jz 102
+    jz 101
     push.q [rsp + 0x120]
     pop.q [rsp + 0x128]
-    jmp 103
-102:
+    jmp 102
+101:
     mov.q rax, [rsp + 0x120]
     add rax, 0x2000
     mov.q [rsp + 0x128], rax
-103:
+102:
     push.q [rsp + 0x128]
     pop.q [rsp + 0x120]
-    lea rax, [rip + 0x117e]
+    lea rax, [rip + 0x1156]
     mov.q [rsp + 0xe0], rax
     mov.q [rsp + 0xe8], 2
     mov.q rdi, [rsp + 0xe0]
     mov.q rsi, [rsp + 0xe8]
     call validate
     cmp al, 0
-    jz 104
+    jz 103
     push.q [rsp + 0x120]
     pop.q [rsp + 0x128]
-    jmp 105
-104:
+    jmp 104
+103:
     mov.q rax, [rsp + 0x120]
     add rax, 0x4000
     mov.q [rsp + 0x128], rax
-105:
+104:
     push.q [rsp + 0x128]
     pop.q [rsp + 0x120]
-    lea rax, [rip + 0x110c]
+    lea rax, [rip + 0x10e4]
     mov.q [rsp + 0xf0], rax
     mov.q [rsp + 0xf8], 6
     mov.q rdi, [rsp + 0xf0]
@@ -2514,13 +2525,14 @@ main:
     jz +0x14
     push.q [rsp + 0x120]
     pop.q [rsp + 0x128]
-    jmp +0x17
+    jmp 105
     mov.q rax, [rsp + 0x120]
     add rax, 0x8000
     mov.q [rsp + 0x128], rax
+105:
     push.q [rsp + 0x128]
     pop.q [rsp + 0x120]
-    lea rax, [rip + 0x109e]
+    lea rax, [rip + 0x1076]
     mov.q [rsp + 0x100], rax
     mov.q [rsp + 0x108], 7
     mov.q rdi, [rsp + 0x100]
@@ -2538,7 +2550,7 @@ main:
 107:
     push.q [rsp + 0x128]
     pop.q [rsp + 0x120]
-    lea rax, [rip + 0x1031]
+    lea rax, [rip + 0x1009]
     mov.q [rsp + 0x110], rax
     mov.q [rsp + 0x118], 3
     mov.q rdi, [rsp + 0x110]
@@ -2554,7 +2566,9 @@ main:
     add rax, 0x20000
     mov.q [rsp + 0x128], rax
 109:
-    mov.q rax, [rsp + 0x128]
+    push.q [rsp + 0x128]
+    pop.q [rsp + 0x120]
+    mov.q rax, [rsp + 0x120]
     add rsp, 0x138
     ret
 =========== OPT LEVEL: mininal ===========
@@ -3082,9 +3096,9 @@ validate:
     xor esi, esi
     lea rdi, [rsp]
     call -0x7c1
+    lea rsi, [rsp + 0x18]
     mov rdx, 0x10
     lea rdi, [rsp]
-    lea rsi, [rsp + 0x18]
     call -0x806
     mov.q [rsp + 0x10], 0
     lea rdi, [rsp]
@@ -3520,8 +3534,9 @@ parse_string:
     call is_hex
     cmp al, 0
     jz 23
-    add rbx, 1
-    mov rdx, rbx
+    mov rax, rbx
+    add rax, 1
+    mov rdx, rax
     jmp 22
 23:
     xor ecx, ecx
@@ -3537,7 +3552,8 @@ parse_string:
 27:
     xor ecx, ecx
 28:
-    mov rax, rcx
+    mov.q [rsp], rcx
+    mov.q rax, [rsp]
     add rsp, 0x10
     pop rbx
     ret
@@ -3665,7 +3681,8 @@ parse_number:
     jmp 45
     xor ecx, ecx
 45:
-    mov rax, rcx
+    mov.q [rsp], rcx
+    mov.q rax, [rsp]
     add rsp, 0x18
     ret
 parse_array:
@@ -3712,7 +3729,8 @@ parse_array:
 52:
     xor eax, eax
 53:
-    mov rax, rax
+    mov.q [rsp], rax
+    mov.q rax, [rsp]
     add rsp, 8
     ret
 parse_object:
@@ -3784,7 +3802,8 @@ parse_object:
 63:
     xor eax, eax
 64:
-    mov rax, rax
+    mov.q [rsp], rax
+    mov.q rax, [rsp]
     add rsp, 8
     ret
 parse_value:
@@ -3829,19 +3848,19 @@ parse_value:
     call parse_number
     jmp 73
 67:
-    lea rsi, [rip + 0x844]
+    lea rsi, [rip + 0x824]
     mov.q rdi, [rsp]
     mov rdx, 4
     call parse_lit
     jmp 73
 68:
-    lea rsi, [rip + 0x823]
+    lea rsi, [rip + 0x803]
     mov rdx, 5
     mov.q rdi, [rsp]
     call parse_lit
     jmp 73
 69:
-    lea rsi, [rip + 0x803]
+    lea rsi, [rip + 0x7e3]
     mov.q rdi, [rsp]
     mov rdx, 4
     call parse_lit
@@ -3884,12 +3903,13 @@ validate:
 76:
     xor eax, eax
 77:
-    mov rax, rax
+    mov.q [rsp + 0x18], rax
+    mov.q rax, [rsp + 0x18]
     add rsp, 0x28
     ret
 main:
     sub rsp, 0x18
-    lea rdi, [rip + 0x75a]
+    lea rdi, [rip + 0x732]
     mov rsi, 4
     call validate
     test al, al
@@ -3899,7 +3919,7 @@ main:
     mov rax, 1
 79:
     mov.q [rsp], rax
-    lea rdi, [rip + 0x72f]
+    lea rdi, [rip + 0x707]
     mov rsi, 5
     call validate
     test al, al
@@ -3914,7 +3934,7 @@ main:
 81:
     push.q [rsp + 0x8]
     pop.q [rsp]
-    lea rdi, [rip + 0x6f3]
+    lea rdi, [rip + 0x6cb]
     mov rsi, 4
     call validate
     test al, al
@@ -3929,7 +3949,7 @@ main:
 83:
     push.q [rsp + 0x8]
     pop.q [rsp]
-    lea rdi, [rip + 0x6b6]
+    lea rdi, [rip + 0x68e]
     mov rsi, 3
     call validate
     test al, al
@@ -3944,7 +3964,7 @@ main:
 85:
     push.q [rsp + 0x8]
     pop.q [rsp]
-    lea rdi, [rip + 0x678]
+    lea rdi, [rip + 0x650]
     mov rsi, 7
     call validate
     test al, al
@@ -3959,7 +3979,7 @@ main:
 87:
     push.q [rsp + 0x8]
     pop.q [rsp]
-    lea rdi, [rip + 0x63e]
+    lea rdi, [rip + 0x616]
     mov rsi, 7
     call validate
     test al, al
@@ -3974,7 +3994,7 @@ main:
 89:
     push.q [rsp + 0x8]
     pop.q [rsp]
-    lea rdi, [rip + 0x604]
+    lea rdi, [rip + 0x5dc]
     mov rsi, 9
     call validate
     test al, al
@@ -3989,7 +4009,7 @@ main:
 91:
     push.q [rsp + 0x8]
     pop.q [rsp]
-    lea rdi, [rip + 0x5cc]
+    lea rdi, [rip + 0x5a4]
     mov rsi, 0x1b
     call validate
     test al, al
@@ -4004,7 +4024,7 @@ main:
 93:
     push.q [rsp + 0x8]
     pop.q [rsp]
-    lea rdi, [rip + 0x5a6]
+    lea rdi, [rip + 0x57e]
     mov rsi, 8
     call validate
     test al, al
@@ -4018,7 +4038,7 @@ main:
 94:
     push.q [rsp + 0x8]
     pop.q [rsp]
-    lea rdi, [rip + 0x56d]
+    lea rdi, [rip + 0x545]
     mov rsi, 2
     call validate
     test al, al
@@ -4033,7 +4053,7 @@ main:
 96:
     push.q [rsp + 0x8]
     pop.q [rsp]
-    lea rdi, [rip + 0x52e]
+    lea rdi, [rip + 0x506]
     xor esi, esi
     call validate
     cmp al, 0
@@ -4048,7 +4068,7 @@ main:
 98:
     push.q [rsp + 0x8]
     pop.q [rsp]
-    lea rdi, [rip + 0x4f0]
+    lea rdi, [rip + 0x4c8]
     mov rsi, 1
     call validate
     cmp al, 0
@@ -4063,7 +4083,7 @@ main:
 100:
     push.q [rsp + 0x8]
     pop.q [rsp]
-    lea rdi, [rip + 0x4af]
+    lea rdi, [rip + 0x487]
     mov rsi, 4
     call validate
     cmp al, 0
@@ -4078,7 +4098,7 @@ main:
 102:
     push.q [rsp + 0x8]
     pop.q [rsp]
-    lea rdi, [rip + 0x471]
+    lea rdi, [rip + 0x449]
     mov rsi, 5
     call validate
     cmp al, 0
@@ -4093,7 +4113,7 @@ main:
 104:
     push.q [rsp + 0x8]
     pop.q [rsp]
-    lea rdi, [rip + 0x434]
+    lea rdi, [rip + 0x40c]
     mov rsi, 2
     call validate
     cmp al, 0
@@ -4108,7 +4128,7 @@ main:
 106:
     push.q [rsp + 0x8]
     pop.q [rsp]
-    lea rdi, [rip + 0x3f4]
+    lea rdi, [rip + 0x3cc]
     mov rsi, 6
     call validate
     cmp al, 0
@@ -4123,7 +4143,7 @@ main:
 108:
     push.q [rsp + 0x8]
     pop.q [rsp]
-    lea rdi, [rip + 0x3b8]
+    lea rdi, [rip + 0x390]
     mov rsi, 7
     call validate
     cmp al, 0
@@ -4138,7 +4158,7 @@ main:
 110:
     push.q [rsp + 0x8]
     pop.q [rsp]
-    lea rdi, [rip + 0x37d]
+    lea rdi, [rip + 0x355]
     mov rsi, 3
     call validate
     cmp al, 0
@@ -4151,7 +4171,9 @@ main:
     add rax, 0x20000
     mov.q [rsp + 0x8], rax
 112:
-    mov.q rax, [rsp + 0x8]
+    push.q [rsp + 0x8]
+    pop.q [rsp]
+    mov.q rax, [rsp]
     add rsp, 0x18
     ret
 =========== OPT LEVEL: moderate ===========
@@ -5738,20 +5760,20 @@ parse_string:
     and cl, al
     test cl, cl
     jnz 21
-    xor ecx, ecx
+    xor eax, eax
     jmp 24
 21:
-    mov cl, 1
+    mov al, 1
     jmp 24
 22:
-    mov cl, 1
+    mov al, 1
     jmp 24
 23:
-    mov cl, 1
+    mov al, 1
 24:
+    add rbx, 1
+    cmp al, 0
     mov rax, rbx
-    add rax, 1
-    cmp cl, 0
     jnz 20
     xor eax, eax
     jmp 29

@@ -7,8 +7,8 @@ opaque:
     ret
 main:
     sub rsp, 0x18
-    lea rdi, [rsp]
     xor esi, esi
+    lea rdi, [rsp]
     mov rdx, 0x10
     call -0x4f
     mov rdi, 0x64
@@ -41,8 +41,8 @@ opaque:
     ret
 main:
     sub rsp, 0x18
-    lea rdi, [rsp]
     xor esi, esi
+    lea rdi, [rsp]
     mov rdx, 0x10
     call -0x3f
     mov rdi, 0x64
@@ -78,8 +78,8 @@ opaque:
     ret
 main:
     sub rsp, 0x18
-    lea rdi, [rsp]
     xor esi, esi
+    lea rdi, [rsp]
     mov rdx, 0x10
     call -0x4f
     mov rdi, 0x64
@@ -114,8 +114,8 @@ opaque:
     ret
 main:
     sub rsp, 0x18
-    lea rdi, [rsp]
     xor esi, esi
+    lea rdi, [rsp]
     mov rdx, 0x10
     call -0x3f
     mov rdi, 0x64
@@ -152,8 +152,7 @@ opaque:
     add rsp, 8
     ret
 main:
-    push rbx
-    sub rsp, 0x20
+    sub rsp, 0x18
     pxor xmm0, xmm0
     movups.x [rsp], xmm0
     mov rdi, 0x64
@@ -182,17 +181,16 @@ main:
     mov.w [rsp + 0x2], cx
     mov.d edx, [rsp + 0x4]
     add edx, 3
-    mov.d [rsp + 0x4], edx
-    mov.q rbx, [rsp + 0x10]
-    mov.q [rsp + 0x8], rbx
     movzx ecx, cx
     add rax, rcx
+    mov.d [rsp + 0x4], edx
+    mov.q rcx, [rsp + 0x10]
+    mov.q [rsp + 0x8], rcx
     mov ecx, edx
     add rax, rcx
     mov.q rcx, [rsp + 0x10]
     add rax, rcx
-    add rsp, 0x20
-    pop rbx
+    add rsp, 0x18
     ret
 =========== OPT LEVEL: moderate ===========
 opaque:
@@ -219,16 +217,16 @@ main:
     add al, 1
     mov.b [rsp], al
     add rcx, 4
-    movzx.w edi, [rsp + 0x2]
+    movzx.w edx, [rsp + 0x2]
     movzx eax, al
-    add di, 2
-    mov.w [rsp + 0x2], di
+    add dx, 2
+    mov.w [rsp + 0x2], dx
     mov.d esi, [rsp + 0x4]
     add esi, 3
+    movzx edx, dx
+    add rax, rdx
     mov.d [rsp + 0x4], esi
     mov.q [rsp + 0x8], rcx
-    movzx edx, di
-    add rax, rdx
     mov edx, esi
     add rax, rdx
     add rax, rcx
@@ -259,16 +257,16 @@ main:
     add al, 1
     mov.b [rsp], al
     add rcx, 4
-    movzx.w edi, [rsp + 0x2]
+    movzx.w edx, [rsp + 0x2]
     movzx eax, al
-    add di, 2
-    mov.w [rsp + 0x2], di
+    add dx, 2
+    mov.w [rsp + 0x2], dx
     mov.d esi, [rsp + 0x4]
     add esi, 3
+    movzx edx, dx
+    add rax, rdx
     mov.d [rsp + 0x4], esi
     mov.q [rsp + 0x8], rcx
-    movzx edx, di
-    add rax, rdx
     mov edx, esi
     add rax, rdx
     add rax, rcx

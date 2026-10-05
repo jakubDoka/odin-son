@@ -41,7 +41,11 @@ main:
     add x0, x0, x1
     str x0, [xzr, #24]
 4:
-    ldr x0, [xzr, #24]
+    str.pre x17, [xzr, #-16]!
+    ldr x17, [xzr, #40]
+    str x17, [xzr, #32]
+    ldr.post x17, [xzr], #16
+    ldr x0, [xzr, #16]
     ldp x29, x30, [xzr, #7]
     add sp, sp, #48
     ret
@@ -126,7 +130,11 @@ main:
     add x0, x0, x1
     str x0, [xzr, #24]
 4:
-    ldr x0, [xzr, #24]
+    str.pre x17, [xzr, #-16]!
+    ldr x17, [xzr, #40]
+    str x17, [xzr, #32]
+    ldr.post x17, [xzr], #16
+    ldr x0, [xzr, #16]
     ldp x29, x30, [xzr, #7]
     add sp, sp, #48
     ret
@@ -170,11 +178,51 @@ main:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 main:
-    movz x0, #3, #0
+    sub sp, sp, #16
+    add x0, sp, #0
+    movz x1, #0, #0
+    movz x2, #8, #0
+    add x2, x2, x0
+    str x1, [x2]
+    movz x3, #1, #0
+    ldr x4, [x2]
+    cmp w4, w1
+    b.eq 1
+    movz x1, #0, #0
+    b 2
+1:
+    movz x1, #1, #0
+2:
+    movz x4, #5, #0
+    str x4, [x0]
+    str x3, [x2]
+    movz x0, #2, #0
+    add x0, x1, x0
+    add sp, sp, #16
     ret
 =========== OPT LEVEL: moderate ===========
 main:
-    movz x0, #3, #0
+    sub sp, sp, #16
+    add x4, sp, #0
+    movz x1, #0, #0
+    movz x0, #8, #0
+    add x3, x0, x4
+    str x1, [x3]
+    movz x2, #1, #0
+    ldr x0, [x3]
+    cmp w0, w1
+    b.eq 1
+    movz x1, #0, #0
+    b 2
+1:
+    movz x1, #1, #0
+2:
+    movz x0, #5, #0
+    str x0, [x4]
+    str x2, [x3]
+    movz x0, #2, #0
+    add x0, x1, x0
+    add sp, sp, #16
     ret
 =========== OPT LEVEL: all ===========
 main:

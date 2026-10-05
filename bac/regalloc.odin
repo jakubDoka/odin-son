@@ -296,7 +296,7 @@ regalloc_collect_meta :: #force_inline proc(
 		seen := bit_arr.init(graph.gvn)
 	}
 
-	idx := 0
+	idx := 1
 	for bb, j in sched.bbs {
 		get_node(graph, bb.head).gvn = u32(len(slots) + j)
 		for instr in bb.instrs {

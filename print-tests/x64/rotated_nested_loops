@@ -2,34 +2,35 @@
 main:
     push rbx
     push rbp
-    sub rsp, 8
+    sub rsp, 0x18
     xor ecx, ecx
     xor edx, edx
 1:
-    mov.q [rsp], rcx
+    mov.q [rsp], rdx
+    mov.q [rsp + 0x8], rcx
     xor ebx, ebx
 2:
-    mov rbp, rdx
+    mov.q rbp, [rsp]
     imul rbp, rbx
     mov rsi, rbx
     add rsi, 1
-    mov.q rax, [rsp]
+    mov.q rax, [rsp + 0x8]
     add rax, rbp
     cmp rsi, 3
     jnle 3
-    mov.q [rsp], rax
+    mov.q [rsp + 0x8], rax
     mov rbx, rsi
     jmp 2
 3:
-    mov rbx, rdx
+    mov.q rbx, [rsp]
     add rbx, 1
     cmp rbx, 3
     jnle 4
-    mov rcx, rax
     mov rdx, rbx
+    mov rcx, rax
     jmp 1
 4:
-    add rsp, 8
+    add rsp, 0x18
     pop rbp
     pop rbx
     ret
@@ -58,34 +59,35 @@ main:
 main:
     push rbx
     push rbp
-    sub rsp, 8
+    sub rsp, 0x18
     xor ecx, ecx
     xor edx, edx
 1:
-    mov.q [rsp], rcx
+    mov.q [rsp], rdx
+    mov.q [rsp + 0x8], rcx
     xor ebx, ebx
 2:
-    mov rbp, rdx
+    mov.q rbp, [rsp]
     imul rbp, rbx
     mov rsi, rbx
     add rsi, 1
-    mov.q rax, [rsp]
+    mov.q rax, [rsp + 0x8]
     add rax, rbp
     cmp rsi, 3
     jnle 3
-    mov.q [rsp], rax
+    mov.q [rsp + 0x8], rax
     mov rbx, rsi
     jmp 2
 3:
-    mov rbx, rdx
+    mov.q rbx, [rsp]
     add rbx, 1
     cmp rbx, 3
     jnle 4
-    mov rcx, rax
     mov rdx, rbx
+    mov rcx, rax
     jmp 1
 4:
-    add rsp, 8
+    add rsp, 0x18
     pop rbp
     pop rbx
     ret
@@ -114,34 +116,35 @@ main:
 main:
     push rbx
     push rbp
-    sub rsp, 8
+    sub rsp, 0x18
     xor ecx, ecx
     xor edx, edx
 1:
-    mov.q [rsp], rcx
+    mov.q [rsp], rdx
+    mov.q [rsp + 0x8], rcx
     xor ebx, ebx
 2:
-    mov rbp, rdx
+    mov.q rbp, [rsp]
     imul rbp, rbx
     mov rsi, rbx
     add rsi, 1
-    mov.q rax, [rsp]
+    mov.q rax, [rsp + 0x8]
     add rax, rbp
     cmp rsi, 3
     jnle 3
-    mov.q [rsp], rax
+    mov.q [rsp + 0x8], rax
     mov rbx, rsi
     jmp 2
 3:
-    mov rbx, rdx
+    mov.q rbx, [rsp]
     add rbx, 1
     cmp rbx, 3
     jnle 4
-    mov rcx, rax
     mov rdx, rbx
+    mov rcx, rax
     jmp 1
 4:
-    add rsp, 8
+    add rsp, 0x18
     pop rbp
     pop rbx
     ret
@@ -168,22 +171,22 @@ main:
     ret
 =========== OPT LEVEL: all ===========
 main:
-    xor esi, esi
+    xor edx, edx
     xor ecx, ecx
 1:
-    xor edx, edx
+    xor esi, esi
 2:
     mov rdi, rcx
-    imul rdi, rdx
-    add rdx, 1
-    mov rax, rsi
+    imul rdi, rsi
+    add rsi, 1
+    mov rax, rdx
     add rax, rdi
-    cmp rdx, 3
-    mov rsi, rax
+    cmp rsi, 3
+    mov rdx, rax
     jng 2
     add rcx, 1
     cmp rcx, 3
-    mov rsi, rax
+    mov rdx, rax
     jng 1
     ret
 =========== OPT LEVEL: aggresive ===========

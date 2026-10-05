@@ -40,14 +40,14 @@ main:
     jz 7
     mov rdx, rcx
     add rdx, 1
-    mov rbx, 2
     mov.q [rsp + 0x8], rdx
+    mov rdx, 2
     jmp 8
 7:
-    mov.q rbx, [rsp]
     mov.q [rsp + 0x8], rcx
+    mov.q rdx, [rsp]
 8:
-    mov.q [rsp], rbx
+    mov.q [rsp], rdx
     mov.q rcx, [rsp + 0x8]
     jmp 6
 9:
@@ -173,14 +173,14 @@ main:
     jz 7
     mov rdx, rcx
     add rdx, 1
-    mov rbx, 2
     mov.q [rsp + 0x8], rdx
+    mov rdx, 2
     jmp 8
 7:
-    mov.q rbx, [rsp]
     mov.q [rsp + 0x8], rcx
+    mov.q rdx, [rsp]
 8:
-    mov.q [rsp], rbx
+    mov.q [rsp], rdx
     mov.q rcx, [rsp + 0x8]
     jmp 6
 9:
@@ -280,15 +280,15 @@ main:
     jz 2
     mov rbx, rax
     add rbx, 2
-    mov rbp, 1
     mov.q [rsp], rbx
+    mov rbx, 1
     jmp 3
 2:
-    mov rbp, rcx
+    mov rbx, rcx
     mov.q [rsp], rdx
 3:
-    mov rcx, rbp
     mov.q rax, [rsp]
+    mov rcx, rbx
     jmp 1
 4:
     cmp rcx, 0
@@ -296,28 +296,28 @@ main:
     mov rax, rcx
     jmp 10
 5:
-    xor edx, edx
     mov.q [rsp], rcx
+    xor ecx, ecx
 6:
-    mov rcx, rdx
-    add rcx, 1
-    cmp rcx, 3
+    mov rdx, rcx
+    add rdx, 1
+    cmp rdx, 3
     jz 9
-    cmp rcx, 2
+    cmp rdx, 2
     jz 7
-    cmp rcx, 1
+    cmp rdx, 1
     jz 7
-    mov rbx, rdx
+    mov rbx, rcx
     add rbx, 2
     mov rbp, 2
     mov.q [rsp + 0x8], rbx
     jmp 8
 7:
     mov.q rbp, [rsp]
-    mov.q [rsp + 0x8], rcx
+    mov.q [rsp + 0x8], rdx
 8:
     mov.q [rsp], rbp
-    mov.q rdx, [rsp + 0x8]
+    mov.q rcx, [rsp + 0x8]
     jmp 6
 9:
     mov.q rax, [rsp]
@@ -436,27 +436,27 @@ main:
     jz 4
     jmp 8
 4:
-    xor edx, edx
+    xor ecx, ecx
 5:
-    mov rax, rdx
+    mov rax, rcx
     add rax, 1
     cmp rax, 2
     jz 6
     cmp rax, 1
     jz 6
-    add rdx, 2
-    mov rcx, 2
+    add rcx, 2
+    mov rdx, 2
     jmp 7
 6:
-    mov rdx, rax
-    mov rcx, rsi
+    mov rdx, rsi
+    mov rcx, rax
 7:
-    mov rax, rdx
+    mov rax, rcx
     add rax, 1
     cmp rax, 3
-    mov rsi, rcx
+    mov rsi, rdx
     jnz 5
-    mov rsi, rcx
+    mov rsi, rdx
 8:
     cmp rsi, 0
     jnz 9

@@ -175,7 +175,7 @@ run_test :: proc(
 		append(&confs, Test_Conf{level = level, vm = .Wasm})
 	}
 	for level in levels[:] {
-		//append(&confs, Test_Conf{level = level, vm = .Arm})
+		append(&confs, Test_Conf{level = level, vm = .Arm})
 	}
 
 	if ctx.error_cnt > 0 do clear(&confs)

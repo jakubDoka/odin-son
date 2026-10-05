@@ -1800,6 +1800,7 @@ regalloc_round :: proc(
 				}
 			}
 			for inp in bac.get_inputs(graph, member) {
+				if inp == 0 do continue
 				if get_lrg(ctx, inp) == lrg &&
 				   !slice.contains(members[:], inp) {
 					append(&members, inp)

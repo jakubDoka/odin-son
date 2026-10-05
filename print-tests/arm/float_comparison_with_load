@@ -1,12 +1,12 @@
 =========== OPT LEVEL: none-quick ===========
-Error{inst_idx = 8, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 16, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 main:
     sub sp, sp, #96
     stp x29, x30, [xzr, #7]
-    invalid
+    adr x0, 0xfc0
+    ldr.v s0, [x0]
     str.v d0, [xzr, #56]
-    invalid
+    adr x0, 0xfc4
+    ldr.v s0, [x0]
     str.v d0, [xzr, #72]
     add x0, sp, #88
     ldr.v d0, [xzr, #56]
@@ -173,16 +173,14 @@ cmps:
     ldr.v s1, [x1]
     fcmp s0, s1
     csinc x1, xzr, xzr, pl
-    cbnz x1, imm_cmps
-    b 0xcc
+    cbnz x1, 0xc4
+    b imm_cmps
+25:
     movz x1, #32, #0
     add x0, x1, x0
-25:
     add sp, sp, #16
     ret
 =========== OPT LEVEL: none ===========
-Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 32, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 main:
     sub sp, sp, #64
     str x19, [xzr]
@@ -191,8 +189,10 @@ main:
     str x22, [xzr, #24]
     str x23, [xzr, #32]
     stp x29, x30, [xzr, #47]
-    invalid
-    invalid
+    adr x0, 0xfc0
+    ldr.v s9, [x0]
+    adr x0, 0xfc4
+    ldr.v s8, [x0]
     add x0, sp, #56
     str.v s9, [x0]
     add x0, sp, #60
@@ -349,14 +349,14 @@ cmps:
 26:
     ret
 =========== OPT LEVEL: mininal-quick ===========
-Error{inst_idx = 8, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 16, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 main:
     sub sp, sp, #96
     stp x29, x30, [xzr, #7]
-    invalid
+    adr x0, 0xfc0
+    ldr.v s0, [x0]
     str.v d0, [xzr, #56]
-    invalid
+    adr x0, 0xfc4
+    ldr.v s0, [x0]
     str.v d0, [xzr, #72]
     add x0, sp, #88
     ldr.v d0, [xzr, #56]
@@ -523,16 +523,14 @@ cmps:
     ldr.v s1, [x1]
     fcmp s0, s1
     csinc x1, xzr, xzr, pl
-    cbnz x1, imm_cmps
-    b 0xcc
+    cbnz x1, 0xc4
+    b imm_cmps
+25:
     movz x1, #32, #0
     add x0, x1, x0
-25:
     add sp, sp, #16
     ret
 =========== OPT LEVEL: mininal ===========
-Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 32, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 main:
     sub sp, sp, #64
     str x19, [xzr]
@@ -541,8 +539,10 @@ main:
     str x22, [xzr, #24]
     str x23, [xzr, #32]
     stp x29, x30, [xzr, #47]
-    invalid
-    invalid
+    adr x0, 0xfc0
+    ldr.v s9, [x0]
+    adr x0, 0xfc4
+    ldr.v s8, [x0]
     add x0, sp, #56
     str.v s9, [x0]
     add x0, sp, #60
@@ -699,14 +699,14 @@ cmps:
 26:
     ret
 =========== OPT LEVEL: moderate-quick ===========
-Error{inst_idx = 8, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 16, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 main:
     sub sp, sp, #96
     stp x29, x30, [xzr, #7]
-    invalid
+    adr x0, 0xfc0
+    ldr.v s0, [x0]
     str.v d0, [xzr, #56]
-    invalid
+    adr x0, 0xfc4
+    ldr.v s0, [x0]
     str.v d0, [xzr, #72]
     add x0, sp, #88
     ldr.v d0, [xzr, #56]
@@ -806,8 +806,8 @@ imm_cmps:
     ldr.v s1, [x1]
     fcmp s1, s0
     csinc x1, xzr, xzr, le
-    cbnz x1, imm_cmps
-    b 0xcc
+    cbnz x1, 0xc4
+    b imm_cmps
 12:
     movz x1, #32, #0
     add x0, x1, x0
@@ -880,8 +880,6 @@ cmps:
     add sp, sp, #16
     ret
 =========== OPT LEVEL: moderate ===========
-Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 32, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 main:
     sub sp, sp, #64
     str x19, [xzr]
@@ -890,8 +888,10 @@ main:
     str x22, [xzr, #24]
     str x23, [xzr, #32]
     stp x29, x30, [xzr, #47]
-    invalid
-    invalid
+    adr x0, 0xfc0
+    ldr.v s9, [x0]
+    adr x0, 0xfc4
+    ldr.v s8, [x0]
     add x0, sp, #56
     str.v s9, [x0]
     add x0, sp, #60
@@ -1046,8 +1046,6 @@ cmps:
 26:
     ret
 =========== OPT LEVEL: all ===========
-Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 32, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 main:
     sub sp, sp, #64
     str x19, [xzr]
@@ -1056,8 +1054,10 @@ main:
     str x22, [xzr, #24]
     str x23, [xzr, #32]
     stp x29, x30, [xzr, #47]
-    invalid
-    invalid
+    adr x0, 0xfc0
+    ldr.v s9, [x0]
+    adr x0, 0xfc4
+    ldr.v s8, [x0]
     add x0, sp, #56
     str.v s9, [x0]
     add x0, sp, #60

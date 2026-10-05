@@ -289,7 +289,7 @@ meta_of :: #force_inline proc(
 		imasks = SLOT_TABLE[rk][:]
 	}
 
-	if node.gvn == 0 {
+	if node.gvn == 1 {
 		ra.mask_len = MASK_SIZE
 		for kind in 0 ..< RK_COUNT {
 			rslice(ra, kind, FULL_MASK[:])

@@ -70,29 +70,33 @@ f64c:
     add rax, rcx
     ret
 main:
-    sub rsp, 0x38
+    sub rsp, 0x48
     movss.d xmm0, [rip + 0xe8b]
-    movss.d xmm1, [rip + 0xe86]
+    movss.d [rsp + 0x30], xmm0
+    movss.d xmm0, [rip + 0xe7f]
+    movss.d xmm1, [rsp + 0x30]
     call f32c
     mov.q [rsp], rax
-    movss.d xmm1, [rip + 0xe78]
-    movss.d xmm0, [rip + 0xe73]
+    movss.d xmm1, [rsp + 0x30]
+    movss.d xmm0, [rsp + 0x30]
     call f32c
     mov.q [rsp + 0x8], rax
-    movss.d xmm0, [rip + 0xe64]
-    movss.d xmm1, [rip + 0xe5f]
+    movss.d xmm0, [rip + 0xe52]
+    movss.d xmm1, [rsp + 0x30]
     call f32c
     mov.q [rsp + 0x10], rax
-    movsd.q xmm0, [rip + 0xe50]
-    movsd.q xmm1, [rip + 0xe4f]
+    movsd.q xmm0, [rip + 0xe40]
+    movsd.q [rsp + 0x30], xmm0
+    movsd.q xmm0, [rip + 0xe38]
+    movsd.q xmm1, [rsp + 0x30]
     call f64c
     mov.q [rsp + 0x18], rax
-    movsd.q xmm1, [rip + 0xe44]
-    movsd.q xmm0, [rip + 0xe43]
+    movsd.q xmm1, [rsp + 0x30]
+    movsd.q xmm0, [rsp + 0x30]
     call f64c
     mov.q [rsp + 0x20], rax
-    movsd.q xmm0, [rip + 0xe38]
-    movsd.q xmm1, [rip + 0xe37]
+    movsd.q xmm0, [rip + 0xe0e]
+    movsd.q xmm1, [rsp + 0x30]
     call f64c
     mov.q [rsp + 0x28], rax
     xor eax, eax
@@ -112,7 +116,7 @@ main:
     add rcx, rdx
     mov rcx, rcx
     add rax, rcx
-    add rsp, 0x38
+    add rsp, 0x48
     ret
 =========== OPT LEVEL: none ===========
 f32c:
@@ -191,28 +195,33 @@ main:
     push r12
     push r13
     push r14
-    movss.d xmm0, [rip + 0xe85]
-    movss.d xmm1, [rip + 0xe80]
+    sub rsp, 0x10
+    movss.d xmm0, [rip + 0xe81]
+    movss.d [rsp], xmm0
+    movss.d xmm0, [rip + 0xe76]
+    movss.d xmm1, [rsp]
     call f32c
     mov r14, rax
-    movss.d xmm1, [rip + 0xe73]
-    movss.d xmm0, [rip + 0xe6e]
+    movss.d xmm1, [rsp]
+    movss.d xmm0, [rsp]
     call f32c
     mov r13, rax
-    movss.d xmm0, [rip + 0xe61]
-    movss.d xmm1, [rip + 0xe5c]
+    movss.d xmm0, [rip + 0xe4f]
+    movss.d xmm1, [rsp]
     call f32c
     mov r12, rax
-    movsd.q xmm0, [rip + 0xe4f]
-    movsd.q xmm1, [rip + 0xe4e]
+    movsd.q xmm0, [rip + 0xe40]
+    movsd.q [rsp], xmm0
+    movsd.q xmm0, [rip + 0xe39]
+    movsd.q xmm1, [rsp]
     call f64c
     mov rbp, rax
-    movsd.q xmm1, [rip + 0xe45]
-    movsd.q xmm0, [rip + 0xe44]
+    movsd.q xmm1, [rsp]
+    movsd.q xmm0, [rsp]
     call f64c
     mov rbx, rax
-    movsd.q xmm0, [rip + 0xe3b]
-    movsd.q xmm1, [rip + 0xe3a]
+    movsd.q xmm0, [rip + 0xe16]
+    movsd.q xmm1, [rsp]
     call f64c
     mov rsi, rax
     mov rcx, r14
@@ -224,6 +233,7 @@ main:
     add rcx, rbx
     add rcx, rsi
     add rax, rcx
+    add rsp, 0x10
     pop r14
     pop r13
     pop r12
@@ -302,29 +312,33 @@ f64c:
     add rax, rcx
     ret
 main:
-    sub rsp, 0x38
+    sub rsp, 0x48
     movss.d xmm0, [rip + 0xe8b]
-    movss.d xmm1, [rip + 0xe86]
+    movss.d [rsp + 0x30], xmm0
+    movss.d xmm0, [rip + 0xe7f]
+    movss.d xmm1, [rsp + 0x30]
     call f32c
     mov.q [rsp], rax
-    movss.d xmm1, [rip + 0xe78]
-    movss.d xmm0, [rip + 0xe73]
+    movss.d xmm1, [rsp + 0x30]
+    movss.d xmm0, [rsp + 0x30]
     call f32c
     mov.q [rsp + 0x8], rax
-    movss.d xmm0, [rip + 0xe64]
-    movss.d xmm1, [rip + 0xe5f]
+    movss.d xmm0, [rip + 0xe52]
+    movss.d xmm1, [rsp + 0x30]
     call f32c
     mov.q [rsp + 0x10], rax
-    movsd.q xmm0, [rip + 0xe50]
-    movsd.q xmm1, [rip + 0xe4f]
+    movsd.q xmm0, [rip + 0xe40]
+    movsd.q [rsp + 0x30], xmm0
+    movsd.q xmm0, [rip + 0xe38]
+    movsd.q xmm1, [rsp + 0x30]
     call f64c
     mov.q [rsp + 0x18], rax
-    movsd.q xmm1, [rip + 0xe44]
-    movsd.q xmm0, [rip + 0xe43]
+    movsd.q xmm1, [rsp + 0x30]
+    movsd.q xmm0, [rsp + 0x30]
     call f64c
     mov.q [rsp + 0x20], rax
-    movsd.q xmm0, [rip + 0xe38]
-    movsd.q xmm1, [rip + 0xe37]
+    movsd.q xmm0, [rip + 0xe0e]
+    movsd.q xmm1, [rsp + 0x30]
     call f64c
     mov.q [rsp + 0x28], rax
     xor eax, eax
@@ -344,7 +358,7 @@ main:
     add rcx, rdx
     mov rcx, rcx
     add rax, rcx
-    add rsp, 0x38
+    add rsp, 0x48
     ret
 =========== OPT LEVEL: mininal ===========
 f32c:
@@ -423,28 +437,33 @@ main:
     push r12
     push r13
     push r14
-    movss.d xmm0, [rip + 0xe85]
-    movss.d xmm1, [rip + 0xe80]
+    sub rsp, 0x10
+    movss.d xmm0, [rip + 0xe81]
+    movss.d [rsp], xmm0
+    movss.d xmm0, [rip + 0xe76]
+    movss.d xmm1, [rsp]
     call f32c
     mov r14, rax
-    movss.d xmm1, [rip + 0xe73]
-    movss.d xmm0, [rip + 0xe6e]
+    movss.d xmm1, [rsp]
+    movss.d xmm0, [rsp]
     call f32c
     mov r13, rax
-    movss.d xmm0, [rip + 0xe61]
-    movss.d xmm1, [rip + 0xe5c]
+    movss.d xmm0, [rip + 0xe4f]
+    movss.d xmm1, [rsp]
     call f32c
     mov r12, rax
-    movsd.q xmm0, [rip + 0xe4f]
-    movsd.q xmm1, [rip + 0xe4e]
+    movsd.q xmm0, [rip + 0xe40]
+    movsd.q [rsp], xmm0
+    movsd.q xmm0, [rip + 0xe39]
+    movsd.q xmm1, [rsp]
     call f64c
     mov rbp, rax
-    movsd.q xmm1, [rip + 0xe45]
-    movsd.q xmm0, [rip + 0xe44]
+    movsd.q xmm1, [rsp]
+    movsd.q xmm0, [rsp]
     call f64c
     mov rbx, rax
-    movsd.q xmm0, [rip + 0xe3b]
-    movsd.q xmm1, [rip + 0xe3a]
+    movsd.q xmm0, [rip + 0xe16]
+    movsd.q xmm1, [rsp]
     call f64c
     mov rsi, rax
     mov rcx, r14
@@ -456,6 +475,7 @@ main:
     add rcx, rbx
     add rcx, rsi
     add rax, rcx
+    add rsp, 0x10
     pop r14
     pop r13
     pop r12
@@ -530,29 +550,33 @@ f64c:
     add rax, rcx
     ret
 main:
-    sub rsp, 0x28
+    sub rsp, 0x38
     movss.d xmm0, [rip + 0xe93]
-    movss.d xmm1, [rip + 0xe8e]
+    movss.d [rsp + 0x28], xmm0
+    movss.d xmm0, [rip + 0xe87]
+    movss.d xmm1, [rsp + 0x28]
     call f32c
     mov.q [rsp], rax
-    movss.d xmm1, [rip + 0xe80]
-    movss.d xmm0, [rip + 0xe7b]
+    movss.d xmm1, [rsp + 0x28]
+    movss.d xmm0, [rsp + 0x28]
     call f32c
     mov.q [rsp + 0x8], rax
-    movss.d xmm0, [rip + 0xe6c]
-    movss.d xmm1, [rip + 0xe67]
+    movss.d xmm0, [rip + 0xe5a]
+    movss.d xmm1, [rsp + 0x28]
     call f32c
     mov.q [rsp + 0x10], rax
-    movsd.q xmm0, [rip + 0xe58]
-    movsd.q xmm1, [rip + 0xe57]
+    movsd.q xmm0, [rip + 0xe48]
+    movsd.q [rsp + 0x28], xmm0
+    movsd.q xmm0, [rip + 0xe40]
+    movsd.q xmm1, [rsp + 0x28]
     call f64c
     mov.q [rsp + 0x18], rax
-    movsd.q xmm1, [rip + 0xe4c]
-    movsd.q xmm0, [rip + 0xe4b]
+    movsd.q xmm1, [rsp + 0x28]
+    movsd.q xmm0, [rsp + 0x28]
     call f64c
     mov.q [rsp + 0x20], rax
-    movsd.q xmm0, [rip + 0xe40]
-    movsd.q xmm1, [rip + 0xe3f]
+    movsd.q xmm0, [rip + 0xe16]
+    movsd.q xmm1, [rsp + 0x28]
     call f64c
     mov.q rcx, [rsp]
     mov.q rdx, [rsp + 0x8]
@@ -571,7 +595,7 @@ main:
     mov.q rcx, [rsp + 0x8]
     add rax, rcx
     mov rax, rax
-    add rsp, 0x28
+    add rsp, 0x38
     ret
 =========== OPT LEVEL: moderate ===========
 f32c:
@@ -646,28 +670,33 @@ main:
     push r12
     push r13
     push r14
-    movss.d xmm0, [rip + 0xe8d]
-    movss.d xmm1, [rip + 0xe88]
+    sub rsp, 0x10
+    movss.d xmm0, [rip + 0xe89]
+    movss.d [rsp], xmm0
+    movss.d xmm0, [rip + 0xe7e]
+    movss.d xmm1, [rsp]
     call f32c
     mov r14, rax
-    movss.d xmm1, [rip + 0xe7b]
-    movss.d xmm0, [rip + 0xe76]
+    movss.d xmm1, [rsp]
+    movss.d xmm0, [rsp]
     call f32c
     mov r13, rax
-    movss.d xmm0, [rip + 0xe69]
-    movss.d xmm1, [rip + 0xe64]
+    movss.d xmm0, [rip + 0xe57]
+    movss.d xmm1, [rsp]
     call f32c
     mov r12, rax
-    movsd.q xmm0, [rip + 0xe57]
-    movsd.q xmm1, [rip + 0xe56]
+    movsd.q xmm0, [rip + 0xe48]
+    movsd.q [rsp], xmm0
+    movsd.q xmm0, [rip + 0xe41]
+    movsd.q xmm1, [rsp]
     call f64c
     mov rbp, rax
-    movsd.q xmm1, [rip + 0xe4d]
-    movsd.q xmm0, [rip + 0xe4c]
+    movsd.q xmm1, [rsp]
+    movsd.q xmm0, [rsp]
     call f64c
     mov rbx, rax
-    movsd.q xmm0, [rip + 0xe43]
-    movsd.q xmm1, [rip + 0xe42]
+    movsd.q xmm0, [rip + 0xe1e]
+    movsd.q xmm1, [rsp]
     call f64c
     mov rsi, rax
     mov rcx, r14
@@ -678,6 +707,7 @@ main:
     add rax, rsi
     add rcx, rax
     mov rax, rcx
+    add rsp, 0x10
     pop r14
     pop r13
     pop r12
@@ -757,28 +787,33 @@ main:
     push r12
     push r13
     push r14
-    movss.d xmm0, [rip + 0xe8d]
-    movss.d xmm1, [rip + 0xe88]
+    sub rsp, 0x10
+    movss.d xmm0, [rip + 0xe89]
+    movss.d [rsp], xmm0
+    movss.d xmm0, [rip + 0xe7e]
+    movss.d xmm1, [rsp]
     call f32c
     mov r14, rax
-    movss.d xmm1, [rip + 0xe7b]
-    movss.d xmm0, [rip + 0xe76]
+    movss.d xmm1, [rsp]
+    movss.d xmm0, [rsp]
     call f32c
     mov r13, rax
-    movss.d xmm0, [rip + 0xe69]
-    movss.d xmm1, [rip + 0xe64]
+    movss.d xmm0, [rip + 0xe57]
+    movss.d xmm1, [rsp]
     call f32c
     mov r12, rax
-    movsd.q xmm0, [rip + 0xe57]
-    movsd.q xmm1, [rip + 0xe56]
+    movsd.q xmm0, [rip + 0xe48]
+    movsd.q [rsp], xmm0
+    movsd.q xmm0, [rip + 0xe41]
+    movsd.q xmm1, [rsp]
     call f64c
     mov rbp, rax
-    movsd.q xmm1, [rip + 0xe4d]
-    movsd.q xmm0, [rip + 0xe4c]
+    movsd.q xmm1, [rsp]
+    movsd.q xmm0, [rsp]
     call f64c
     mov rbx, rax
-    movsd.q xmm0, [rip + 0xe43]
-    movsd.q xmm1, [rip + 0xe42]
+    movsd.q xmm0, [rip + 0xe1e]
+    movsd.q xmm1, [rsp]
     call f64c
     mov rsi, rax
     mov rcx, r14
@@ -789,6 +824,7 @@ main:
     add rax, rsi
     add rcx, rax
     mov rax, rcx
+    add rsp, 0x10
     pop r14
     pop r13
     pop r12

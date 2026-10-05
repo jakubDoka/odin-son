@@ -36,6 +36,17 @@ add_load :: #force_inline proc(
 	return bac.add_load(graph, name, dt, ctrl, mem, addr)
 }
 
+add_c_load :: #force_inline proc(
+	graph: ^Proc,
+	name: string,
+	dt: bac.Node_Datatype,
+	addr: Node_ID,
+) -> (
+	_id: Node_ID,
+) {
+	return bac.add_load(graph, name, dt, 0, graph.const_mem, addr)
+}
+
 add_store :: proc(
 	graph: ^Proc,
 	name: string,

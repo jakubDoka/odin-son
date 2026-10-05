@@ -121,7 +121,6 @@ when SPEC_NOT_PRESENT {
 
 	Node_Type :: enum u16 {
 		Msub,
-		CLoad,
 	}
 }
 
@@ -170,35 +169,31 @@ peep :: proc(
 	case .CInt:
 		cnst: ^bac.CInt = bac.get_extra(ctx, node, bac.CInt)
 		if node.dt in bac.FLOAT_DTS && cnst.value != 0 {
-			size := bac.DT_SIZE[node.dt] / 4 - 1
+			size := bac.DT_SIZE[node.dt] / 4
 			slot := bac.get_next_extra_slot(
 				ctx,
 				u16(bac.Node_Type.Global),
 				size,
 			)
 
+			(^bac.Node_Datatype)(slot)^ = node.dt
 			if node.dt == .F32 {
-				(^f32)(slot)^ = f32(cnst.fvalue)
+				(^f32)(slot[1:])^ = f32(cnst.fvalue)
 			} else {
 				assert(node.dt == .F64)
-				(^f64)(slot)^ = cnst.fvalue
+				(^f64)(slot[1:])^ = cnst.fvalue
 			}
 
 			global := bac.add_raw(
 				ctx,
 				"iglb",
 				u16(bac.Node_Type.Global),
-				node.dt,
+				.Void,
 				meta = {extra_dwords = size},
 			)
+			addr := bac.add_global_addr(ctx, "caddr", global)
 
-			return bac.add_raw(
-				ctx,
-				node.name,
-				u16(Node_Type.CLoad),
-				node.dt,
-				{global},
-			)
+			return bac.add_load(ctx, "cild", node.dt, 0, ctx.const_mem, addr)
 		}
 	case .Eq ..= .U_Ge:
 		if len(node.outs) == 1 &&
@@ -280,7 +275,7 @@ meta_of :: #force_inline proc(
 		0 ..< 6 = VEC_SPILL_MASK_IDX,
 	}
 
-	if node.gvn == 0 {
+	if node.gvn == 1 {
 		ra.mask_len = MASK_SIZE
 		rslice(ra, RK_GENERAL, GPA_MASK[:])
 		rslice(ra, RK_VECTOR, VEC_MASK[:])
@@ -320,6 +315,8 @@ meta_of :: #force_inline proc(
 
 	#partial switch atype(node) {
 	case .Root_Mem,
+	     .Split_Mem,
+	     .Merge_Mem,
 	     .Sym,
 	     .Jump,
 	     .Mem,
@@ -345,7 +342,7 @@ meta_of :: #force_inline proc(
 		vl := get_node(graph, node.inps[0])
 		nkind := ra.datatype_to_reg_kind[vl.dt]
 		return {out = out, masks = masks[nkind][:1]}
-	case .CInt, .Local_Addr, .Global_Addr, .Proc_Addr, .CLoad:
+	case .CInt, .Local_Addr, .Global_Addr, .Proc_Addr:
 		return {out = out}
 	case .Phi:
 		masks := make([]bac.RM_Intern_Idx, len(node.inps) - 1)
@@ -652,19 +649,45 @@ emit_instr :: proc(
 	}
 
 	#partial emit: switch kind {
-	case .Root_Mem, .Sym, .Phi, .Ret, .Mem, .Param, .Local, .Global, .Poison:
+	case .Root_Mem,
+	     .Split_Mem,
+	     .Merge_Mem,
+	     .Sym,
+	     .Phi,
+	     .Ret,
+	     .Mem,
+	     .Param,
+	     .Local,
+	     .Global,
+	     .Poison:
 	case .Global_Addr, .Proc_Addr:
+		scale_pow: u32 = 0
+
+		if kind != .Proc_Addr && inp.extra_dwords != 0 {
+			tup: ^bac.Tup = bac.get_extra(ctx, inp, bac.Tup)
+			dwords := bac.get_extra_dwords(ctx, inp)
+			tup.idx = bac.emit_big_constant(
+				&ctx.big_constants,
+				bac.DT_SIZE[bac.Node_Datatype(dwords[0])],
+				mem.slice_data_cast([]u8, dwords[1:]),
+			)
+			scale_pow = 2
+			inp.extra_dwords = 0
+		}
+
 		id: u32
 		if kind == .Proc_Addr {
 			id = bac.get_extra(ctx, node, bac.Tup).idx
 		} else {
 			id = bac.get_extra(ctx, inp, bac.Tup).idx
 		}
+
 		bac.add_reloc(ctx.relocs)^ = {
-			offset = u32(ctx.code.pos - ctx.code_start),
-			kind   = kind == .Proc_Addr ? .Text : .Global,
-			size   = .r2_19,
-			id     = id,
+			offset    = u32(ctx.code.pos - ctx.code_start),
+			kind      = kind == .Proc_Addr ? .Text : .Global,
+			size      = scale_pow == 0 ? .r2_19 : .r19,
+			scale_pow = scale_pow,
+			id        = id,
 		}
 		emit_op(ctx.code, op | u32(reg_of(ctx, instr).index))
 	case .Local_Addr:
@@ -787,41 +810,6 @@ emit_instr :: proc(
 			ctx.code,
 			imm12_instr(op, reg_of(ctx, instr), reg_of(ctx, node.inps[2]), 0),
 		)
-	case .CLoad:
-		rt := reg_of(ctx, instr)
-
-		tup: ^bac.Tup = bac.get_extra(ctx, inp, bac.Tup)
-
-		if inp.dt != .Void {
-			tup.idx = bac.emit_big_constant(
-				&ctx.big_constants,
-				bac.DT_SIZE[inp.dt],
-				mem.slice_data_cast([]u8, bac.get_extra_dwords(ctx, inp)),
-			)
-			inp.dt = .Void
-		}
-
-		bac.add_reloc(ctx.relocs)^ = {
-			offset    = u32(ctx.code.pos - ctx.code_start),
-			kind      = .Global,
-			size      = .r19,
-			scale_pow = 2,
-			id        = tup.idx,
-		}
-
-		op: u32
-		#partial switch node.dt {
-		case .F32:
-			op = 0b00011100
-		case .F64:
-			op = 0b01011100
-		case .V128:
-			op = 0b10011100
-		case:
-			fmt.panicf("TODO %v", node)
-		}
-
-		emit_op(ctx.code, op << 24 | u32(rt.index))
 	case .Split:
 		rd := reg_of(ctx, instr)
 		rm := reg_of(ctx, node.inps[0])

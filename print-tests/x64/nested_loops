@@ -3,26 +3,29 @@ main:
     push rbx
     push rbp
     sub rsp, 8
-    xor eax, eax
     xor ecx, ecx
-1:
-    cmp rcx, 3
-    jz 4
     xor edx, edx
+1:
+    mov rax, rcx
+    cmp rdx, 3
+    jz 4
+    xor ebx, ebx
     mov.q [rsp], rax
 2:
-    cmp rdx, 3
+    cmp rbx, 3
     jz 3
-    mov rbx, rcx
-    imul rbx, rdx
-    mov.q rbp, [rsp]
-    add rbp, rbx
-    add rdx, 1
-    mov.q [rsp], rbp
+    mov rbp, rdx
+    imul rbp, rbx
+    mov.q rsi, [rsp]
+    add rsi, rbp
+    add rbx, 1
+    mov.q [rsp], rsi
     jmp 2
 3:
-    add rcx, 1
-    mov.q rax, [rsp]
+    mov rbx, rdx
+    add rbx, 1
+    mov.q rcx, [rsp]
+    mov rdx, rbx
     jmp 1
 4:
     add rsp, 8
@@ -55,26 +58,29 @@ main:
     push rbx
     push rbp
     sub rsp, 8
-    xor eax, eax
     xor ecx, ecx
-1:
-    cmp rcx, 3
-    jz 4
     xor edx, edx
+1:
+    mov rax, rcx
+    cmp rdx, 3
+    jz 4
+    xor ebx, ebx
     mov.q [rsp], rax
 2:
-    cmp rdx, 3
+    cmp rbx, 3
     jz 3
-    mov rbx, rcx
-    imul rbx, rdx
-    mov.q rbp, [rsp]
-    add rbp, rbx
-    add rdx, 1
-    mov.q [rsp], rbp
+    mov rbp, rdx
+    imul rbp, rbx
+    mov.q rsi, [rsp]
+    add rsi, rbp
+    add rbx, 1
+    mov.q [rsp], rsi
     jmp 2
 3:
-    add rcx, 1
-    mov.q rax, [rsp]
+    mov rbx, rdx
+    add rbx, 1
+    mov.q rcx, [rsp]
+    mov rdx, rbx
     jmp 1
 4:
     add rsp, 8
@@ -107,26 +113,29 @@ main:
     push rbx
     push rbp
     sub rsp, 8
-    xor eax, eax
     xor ecx, ecx
-1:
-    cmp rcx, 3
-    jz 4
     xor edx, edx
+1:
+    mov rax, rcx
+    cmp rdx, 3
+    jz 4
+    xor ebx, ebx
     mov.q [rsp], rax
 2:
-    cmp rdx, 3
+    cmp rbx, 3
     jz 3
-    mov rbx, rcx
-    imul rbx, rdx
-    mov.q rbp, [rsp]
-    add rbp, rbx
-    add rdx, 1
-    mov.q [rsp], rbp
+    mov rbp, rdx
+    imul rbp, rbx
+    mov.q rsi, [rsp]
+    add rsi, rbp
+    add rbx, 1
+    mov.q [rsp], rsi
     jmp 2
 3:
-    add rcx, 1
-    mov.q rax, [rsp]
+    mov rbx, rdx
+    add rbx, 1
+    mov.q rcx, [rsp]
+    mov rdx, rbx
     jmp 1
 4:
     add rsp, 8
@@ -156,24 +165,24 @@ main:
     ret
 =========== OPT LEVEL: all ===========
 main:
-    xor esi, esi
+    xor edx, edx
     xor ecx, ecx
 1:
-    xor edx, edx
+    xor esi, esi
 2:
-    mov rax, rsi
+    mov rax, rdx
     mov rdi, rcx
-    imul rdi, rdx
-    mov rsi, rax
-    add rsi, rdi
-    mov rdi, rdx
+    imul rdi, rsi
+    mov rdx, rax
+    add rdx, rdi
+    mov rdi, rsi
     add rdi, 1
-    cmp rdx, 3
-    mov rdx, rdi
+    cmp rsi, 3
+    mov rsi, rdi
     jnz 2
     add rcx, 1
     cmp rcx, 3
-    mov rsi, rax
+    mov rdx, rax
     jnz 1
     ret
 =========== OPT LEVEL: aggresive ===========

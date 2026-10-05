@@ -4,68 +4,68 @@ main:
     movss.d xmm0, [rip + 0xfa3]
     movss.d xmm1, [rip + 0xf9e]
     pxor xmm2, xmm2
-    movss.d xmm3, [rip + 0xf94]
-    addss.d xmm3, [rip + 0xf8f]
+    movss xmm3, xmm0
+    addss xmm3, xmm1
     addss xmm3, xmm2
     movss.d xmm2, [rip + 0xf85]
-    subss.d xmm2, [rip + 0xf80]
-    addss xmm3, xmm2
-    movss.d xmm2, [rip + 0xf76]
-    vfmadd213ss xmm2, xmm1, xmm3
-    movss.d xmm3, [rip + 0xf6c]
-    divss.d xmm3, [rip + 0xf67]
-    addss xmm2, xmm3
-    movss.d xmm3, [rip + 0xf5d]
-    movss.d xmm4, [rip + 0xf58]
-    divss.d xmm4, [rip + 0xf53]
-    addss xmm2, xmm4
-    movss.d xmm4, [rip + 0xf49]
-    vfmadd213ss xmm4, xmm1, xmm2
-    pxor xmm2, xmm2
-    subss.d xmm2, [rip + 0xf3a]
-    addss xmm4, xmm2
-    pxor xmm2, xmm2
-    subss.d xmm2, [rip + 0xf2b]
-    addss xmm4, xmm2
-    ucomiss.d xmm0, [rip + 0xf22]
+    movss xmm4, xmm0
+    subss xmm4, xmm1
+    addss xmm3, xmm4
+    movss xmm4, xmm0
+    vfmadd213ss xmm4, xmm1, xmm3
+    movss xmm3, xmm0
+    divss xmm3, xmm1
+    addss xmm4, xmm3
+    movss xmm3, xmm2
+    divss xmm3, xmm1
+    addss xmm4, xmm3
+    movss xmm3, xmm2
+    vfmadd213ss xmm3, xmm1, xmm4
+    pxor xmm4, xmm4
+    subss xmm4, xmm0
+    addss xmm3, xmm4
+    pxor xmm4, xmm4
+    subss xmm4, xmm2
+    addss xmm3, xmm4
+    ucomiss xmm0, xmm1
     jnbe 1
     jmp 2
 1:
-    addss.d xmm4, [rip + 0xf12]
+    addss.d xmm3, [rip + 0xf12]
 2:
     ucomiss xmm0, xmm1
     jnbe 3
     jmp 4
 3:
-    addss.d xmm4, [rip + 0xefe]
+    addss.d xmm3, [rip + 0xefe]
 4:
-    ucomiss.d xmm0, [rip + 0xefa]
+    ucomiss xmm0, xmm1
     jnc 5
     jmp 6
 5:
-    addss.d xmm4, [rip + 0xeea]
+    addss.d xmm3, [rip + 0xeea]
 6:
     ucomiss xmm1, xmm0
     jnc 7
     jmp 8
 7:
-    addss.d xmm4, [rip + 0xed6]
+    addss.d xmm3, [rip + 0xed6]
 8:
-    ucomiss.d xmm0, [rip + 0xed2]
+    ucomiss xmm0, xmm0
     jz 9
     jmp 10
 9:
-    addss.d xmm4, [rip + 0xec2]
+    addss.d xmm3, [rip + 0xec2]
 10:
-    ucomiss.d xmm0, [rip + 0xebe]
+    ucomiss xmm0, xmm1
     jnz 11
-    movss.d [rsp], xmm4
+    movss.d [rsp], xmm3
     jmp 12
 11:
-    addss.d xmm4, [rip + 0xea8]
-    movss.d [rsp], xmm4
+    addss.d xmm3, [rip + 0xea8]
+    movss.d [rsp], xmm3
 12:
-    ucomiss xmm1, xmm3
+    ucomiss xmm1, xmm2
     jnbe 13
     push.q [rsp]
     pop.q [rsp + 0x10]
@@ -75,7 +75,7 @@ main:
     addss.d xmm0, [rip + 0xe80]
     movss.d [rsp + 0x10], xmm0
 14:
-    ucomiss xmm3, xmm3
+    ucomiss xmm2, xmm2
     jnc 15
     movss.d xmm0, [rsp + 0x10]
     jmp 16
@@ -91,30 +91,30 @@ main:
     movss.d xmm4, [rip + 0xfa7]
     movss.d xmm3, [rip + 0xfa2]
     pxor xmm1, xmm1
-    movss.d xmm0, [rip + 0xf98]
-    addss.d xmm0, [rip + 0xf93]
+    movss xmm0, xmm4
+    addss xmm0, xmm3
     addss xmm0, xmm1
-    movss.d xmm1, [rip + 0xf89]
-    subss.d xmm1, [rip + 0xf84]
+    movss.d xmm2, [rip + 0xf89]
+    movss xmm1, xmm4
+    subss xmm1, xmm3
     addss xmm0, xmm1
-    movss.d xmm1, [rip + 0xf7a]
+    movss xmm1, xmm4
     vfmadd213ss xmm1, xmm3, xmm0
-    movss.d xmm0, [rip + 0xf70]
-    divss.d xmm0, [rip + 0xf6b]
+    movss xmm0, xmm4
+    divss xmm0, xmm3
     addss xmm1, xmm0
-    movss.d xmm2, [rip + 0xf61]
-    movss.d xmm0, [rip + 0xf5c]
-    divss.d xmm0, [rip + 0xf57]
+    movss xmm0, xmm2
+    divss xmm0, xmm3
     addss xmm1, xmm0
-    movss.d xmm0, [rip + 0xf4d]
+    movss xmm0, xmm2
     vfmadd213ss xmm0, xmm3, xmm1
     pxor xmm1, xmm1
-    subss.d xmm1, [rip + 0xf3e]
+    subss xmm1, xmm4
     addss xmm0, xmm1
     pxor xmm1, xmm1
-    subss.d xmm1, [rip + 0xf2f]
+    subss xmm1, xmm2
     addss xmm0, xmm1
-    ucomiss.d xmm4, [rip + 0xf26]
+    ucomiss xmm4, xmm3
     jnbe 1
     jmp 2
 1:
@@ -126,7 +126,7 @@ main:
 3:
     addss.d xmm0, [rip + 0xf02]
 4:
-    ucomiss.d xmm4, [rip + 0xefe]
+    ucomiss xmm4, xmm3
     jnc 5
     jmp 6
 5:
@@ -138,13 +138,13 @@ main:
 7:
     addss.d xmm0, [rip + 0xeda]
 8:
-    ucomiss.d xmm4, [rip + 0xed6]
+    ucomiss xmm4, xmm4
     jz 9
     jmp 10
 9:
     addss.d xmm0, [rip + 0xec6]
 10:
-    ucomiss.d xmm4, [rip + 0xec2]
+    ucomiss xmm4, xmm3
     jnz 11
     jmp 12
 11:

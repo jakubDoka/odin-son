@@ -135,7 +135,6 @@ SPEC := bac.Node_Spec{
 		0b1000000, // X64_Lea
 		0b1000000, // X64_Load
 		0b1000000, // X64_Store
-		0b10, // X64_CLoad
 		0b1000000, // X64_Neg
 		0b1000000, // X64_Not
 		0b10, // X64_Mul8
@@ -261,7 +260,6 @@ SPEC := bac.Node_Spec{
 		3, // X64_Lea -> Mem_Op
 		3, // X64_Load -> Mem_Op
 		3, // X64_Store -> Mem_Op
-		0, // X64_CLoad -> No_Extra
 		3, // X64_Neg -> Mem_Op
 		3, // X64_Not -> Mem_Op
 		0, // X64_Mul8 -> No_Extra
@@ -387,7 +385,6 @@ SPEC := bac.Node_Spec{
 		{}, // X64_Lea
 		{Class_Flag.Load}, // X64_Load
 		{Class_Flag.Store}, // X64_Store
-		{Class_Flag.Clonable}, // X64_CLoad
 		{}, // X64_Neg
 		{}, // X64_Not
 		{}, // X64_Mul8
@@ -513,7 +510,6 @@ SPEC := bac.Node_Spec{
 		Mem_Op,
 		Mem_Op,
 		Mem_Op,
-		bac.No_Extra,
 		Mem_Op,
 		Mem_Op,
 		bac.No_Extra,
@@ -639,7 +635,6 @@ SPEC := bac.Node_Spec{
 		`X64_Lea`,
 		`X64_Load`,
 		`X64_Store`,
-		`X64_CLoad`,
 		`X64_Neg`,
 		`X64_Not`,
 		`X64_Mul8`,
@@ -767,7 +762,6 @@ Node_Type :: enum u16 {
 	X64_Lea,
 	X64_Load,
 	X64_Store,
-	X64_CLoad,
 	X64_Neg,
 	X64_Not,
 	X64_Mul8,
@@ -912,7 +906,6 @@ collect_meta :: proc(ctx: ^bac.Proc,
 #assert(size_of(Mem_Op) % bac.PRECISION == 0)
 #assert(size_of(Mem_Op) % bac.PRECISION == 0)
 #assert(size_of(Mem_Op) % bac.PRECISION == 0)
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(Mem_Op) % bac.PRECISION == 0)
 #assert(size_of(Mem_Op) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)

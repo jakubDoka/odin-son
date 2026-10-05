@@ -1,13 +1,10 @@
 =========== OPT LEVEL: none-quick ===========
-Error{inst_idx = 12, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 48, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 80, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 112, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 main:
     sub sp, sp, #32
     add x0, sp, #0
     eor.v v0, v0, v0
-    invalid
+    adr x1, 0xfc0
+    ldr.v s1, [x1]
     str.v s0, [x0]
     str.v s1, [x0]
     ldr.v s2, [x0]
@@ -16,7 +13,8 @@ main:
     cbnz x0, 4
     add x0, sp, #8
     eor.v v1, v1, v1
-    invalid
+    adr x1, 0xfc8
+    ldr.v d2, [x1]
     str.v d1, [x0]
     str.v d2, [x0]
     ldr.v d3, [x0]
@@ -24,7 +22,8 @@ main:
     csinc x0, xzr, xzr, eq
     cbnz x0, 3
     add x0, sp, #4
-    invalid
+    adr x1, 0xfd0
+    ldr.v s2, [x1]
     str.v s0, [x0]
     str.v s2, [x0]
     ldr.v s0, [x0]
@@ -32,7 +31,8 @@ main:
     csinc x0, xzr, xzr, eq
     cbnz x0, 2
     add x0, sp, #16
-    invalid
+    adr x1, 0xfd8
+    ldr.v d0, [x1]
     str.v d1, [x0]
     str.v d0, [x0]
     ldr.v d1, [x0]
@@ -56,43 +56,43 @@ main:
     add sp, sp, #32
     ret
 =========== OPT LEVEL: none ===========
-Error{inst_idx = 12, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 48, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 80, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 112, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 main:
     sub sp, sp, #32
-    add x0, sp, #0
+    add x1, sp, #0
     eor.v v3, v3, v3
-    invalid
-    str.v s3, [x0]
-    str.v s1, [x0]
-    ldr.v s0, [x0]
+    adr x0, 0xfc0
+    ldr.v s1, [x0]
+    str.v s3, [x1]
+    str.v s1, [x1]
+    ldr.v s0, [x1]
     fcmp s0, s1
     csinc x0, xzr, xzr, eq
     cbnz x0, 4
-    add x0, sp, #8
+    add x1, sp, #8
     eor.v v2, v2, v2
-    invalid
-    str.v d2, [x0]
-    str.v d1, [x0]
-    ldr.v d0, [x0]
+    adr x0, 0xfc8
+    ldr.v d1, [x0]
+    str.v d2, [x1]
+    str.v d1, [x1]
+    ldr.v d0, [x1]
     fcmp d0, d1
     csinc x0, xzr, xzr, eq
     cbnz x0, 3
-    add x0, sp, #4
-    invalid
-    str.v s3, [x0]
-    str.v s1, [x0]
-    ldr.v s0, [x0]
+    add x1, sp, #4
+    adr x0, 0xfd0
+    ldr.v s1, [x0]
+    str.v s3, [x1]
+    str.v s1, [x1]
+    ldr.v s0, [x1]
     fcmp s0, s1
     csinc x0, xzr, xzr, eq
     cbnz x0, 2
-    add x0, sp, #16
-    invalid
-    str.v d2, [x0]
-    str.v d1, [x0]
-    ldr.v d0, [x0]
+    add x1, sp, #16
+    adr x0, 0xfd8
+    ldr.v d1, [x0]
+    str.v d2, [x1]
+    str.v d1, [x1]
+    ldr.v d0, [x1]
     fcmp d0, d1
     csinc x0, xzr, xzr, eq
     cbnz x0, 1
@@ -113,15 +113,12 @@ main:
     add sp, sp, #32
     ret
 =========== OPT LEVEL: mininal-quick ===========
-Error{inst_idx = 12, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 48, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 80, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 112, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 main:
     sub sp, sp, #32
     add x0, sp, #0
     eor.v v0, v0, v0
-    invalid
+    adr x1, 0xfc0
+    ldr.v s1, [x1]
     str.v s0, [x0]
     str.v s1, [x0]
     ldr.v s2, [x0]
@@ -130,7 +127,8 @@ main:
     cbnz x0, 4
     add x0, sp, #8
     eor.v v1, v1, v1
-    invalid
+    adr x1, 0xfc8
+    ldr.v d2, [x1]
     str.v d1, [x0]
     str.v d2, [x0]
     ldr.v d3, [x0]
@@ -138,7 +136,8 @@ main:
     csinc x0, xzr, xzr, eq
     cbnz x0, 3
     add x0, sp, #4
-    invalid
+    adr x1, 0xfd0
+    ldr.v s2, [x1]
     str.v s0, [x0]
     str.v s2, [x0]
     ldr.v s0, [x0]
@@ -146,7 +145,8 @@ main:
     csinc x0, xzr, xzr, eq
     cbnz x0, 2
     add x0, sp, #16
-    invalid
+    adr x1, 0xfd8
+    ldr.v d0, [x1]
     str.v d1, [x0]
     str.v d0, [x0]
     ldr.v d1, [x0]
@@ -170,43 +170,43 @@ main:
     add sp, sp, #32
     ret
 =========== OPT LEVEL: mininal ===========
-Error{inst_idx = 12, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 48, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 80, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 112, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 main:
     sub sp, sp, #32
-    add x0, sp, #0
+    add x1, sp, #0
     eor.v v3, v3, v3
-    invalid
-    str.v s3, [x0]
-    str.v s1, [x0]
-    ldr.v s0, [x0]
+    adr x0, 0xfc0
+    ldr.v s1, [x0]
+    str.v s3, [x1]
+    str.v s1, [x1]
+    ldr.v s0, [x1]
     fcmp s0, s1
     csinc x0, xzr, xzr, eq
     cbnz x0, 4
-    add x0, sp, #8
+    add x1, sp, #8
     eor.v v2, v2, v2
-    invalid
-    str.v d2, [x0]
-    str.v d1, [x0]
-    ldr.v d0, [x0]
+    adr x0, 0xfc8
+    ldr.v d1, [x0]
+    str.v d2, [x1]
+    str.v d1, [x1]
+    ldr.v d0, [x1]
     fcmp d0, d1
     csinc x0, xzr, xzr, eq
     cbnz x0, 3
-    add x0, sp, #4
-    invalid
-    str.v s3, [x0]
-    str.v s1, [x0]
-    ldr.v s0, [x0]
+    add x1, sp, #4
+    adr x0, 0xfd0
+    ldr.v s1, [x0]
+    str.v s3, [x1]
+    str.v s1, [x1]
+    ldr.v s0, [x1]
     fcmp s0, s1
     csinc x0, xzr, xzr, eq
     cbnz x0, 2
-    add x0, sp, #16
-    invalid
-    str.v d2, [x0]
-    str.v d1, [x0]
-    ldr.v d0, [x0]
+    add x1, sp, #16
+    adr x0, 0xfd8
+    ldr.v d1, [x0]
+    str.v d2, [x1]
+    str.v d1, [x1]
+    ldr.v d0, [x1]
     fcmp d0, d1
     csinc x0, xzr, xzr, eq
     cbnz x0, 1

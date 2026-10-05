@@ -11,13 +11,13 @@ main:
     movz x19, #8, #0
     add x0, sp, #32
     add x0, x0, x19
-    add x1, x0, x19
-    add x2, sp, #56
-    add x20, x2, x19
-    movz x2, #2, #0
-    str x2, [x0]
-    movz x0, #3, #0
-    str x0, [x1]
+    movz x1, #2, #0
+    str x1, [x0]
+    add x1, sp, #56
+    add x20, x1, x19
+    add x0, x0, x19
+    movz x1, #3, #0
+    str x1, [x0]
     movz x1, #0, #0
     movz x2, #24, #0
     add x0, sp, #56
@@ -50,12 +50,12 @@ main:
     bl 0xffffffe4
     movz x19, #8, #0
     add x0, sp, #32
-    add x2, x0, x19
-    add x1, x2, x19
+    add x1, x0, x19
+    movz x0, #2, #0
+    str x0, [x1]
     add x0, sp, #56
     add x20, x0, x19
-    movz x0, #2, #0
-    str x0, [x2]
+    add x1, x1, x19
     movz x0, #3, #0
     str x0, [x1]
     movz x1, #0, #0
@@ -90,11 +90,11 @@ main:
     movz x19, #8, #0
     add x0, sp, #24
     add x0, x0, x19
-    add x1, x0, x19
-    movz x2, #2, #0
-    str x2, [x0]
-    movz x0, #3, #0
-    str x0, [x1]
+    movz x1, #2, #0
+    str x1, [x0]
+    add x0, x0, x19
+    movz x1, #3, #0
+    str x1, [x0]
     movz x1, #0, #0
     movz x2, #24, #0
     add x0, sp, #48
@@ -129,10 +129,10 @@ main:
     bl 0xffffffe4
     movz x19, #8, #0
     add x0, sp, #24
-    add x2, x0, x19
-    add x1, x2, x19
+    add x1, x0, x19
     movz x0, #2, #0
-    str x0, [x2]
+    str x0, [x1]
+    add x1, x1, x19
     movz x0, #3, #0
     str x0, [x1]
     movz x1, #0, #0
@@ -160,11 +160,41 @@ main:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 main:
-    movz x0, #5, #0
+    sub sp, sp, #32
+    add x0, sp, #0
+    movz x1, #0, #0
+    str x1, [x0]
+    movz x1, #8, #0
+    add x1, x1, x0
+    movz x2, #2, #0
+    str x2, [x1]
+    movz x1, #16, #0
+    add x1, x1, x0
+    movz x2, #3, #0
+    str x2, [x1]
+    ldr x0, [x0]
+    movz x1, #5, #0
+    add x0, x0, x1
+    add sp, sp, #32
     ret
 =========== OPT LEVEL: moderate ===========
 main:
+    sub sp, sp, #32
+    add x2, sp, #0
+    movz x0, #0, #0
+    str x0, [x2]
+    movz x0, #8, #0
+    add x1, x0, x2
+    movz x0, #2, #0
+    str x0, [x1]
+    movz x0, #16, #0
+    add x1, x0, x2
+    movz x0, #3, #0
+    str x0, [x1]
+    ldr x1, [x2]
     movz x0, #5, #0
+    add x0, x1, x0
+    add sp, sp, #32
     ret
 =========== OPT LEVEL: all ===========
 main:

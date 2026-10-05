@@ -1064,7 +1064,9 @@ Builtin_Proc :: enum {
 init_graph :: proc(graph: ^Proc) {
 	graph.gvn = 1
 	graph.entry = bac.add_entry(graph, "entry")
-	graph.root_mem = bac.add_root_mem(graph, "emem", graph.entry)
+	split := bac.add_split_mem(graph, "root_split", graph.entry)
+	graph.root_mem = bac.add_root_mem(graph, "rmem", split)
+	graph.const_mem = bac.add_root_mem(graph, "cmem", split)
 	graph.sym = bac.add_sym(graph, "sym", graph.entry)
 }
 

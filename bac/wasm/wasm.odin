@@ -313,9 +313,11 @@ meta_of :: #force_inline proc(
 	     .Call_End,
 	     .Simd_Reduce_Add_Bisect:
 		fmt.panicf("Should not reach this: %v", node)
-	case .U_F_From_I, .CV128:
+	case .U_F_From_I:
 		fmt.panicf("TODO: %v", node)
 	case .Root_Mem,
+	     .Split_Mem,
+	     .Merge_Mem,
 	     .Sym,
 	     .Return,
 	     .CInt,
@@ -516,9 +518,11 @@ pre_regalloc_hook :: proc(
 		     .Tee_Local,
 		     .Stub:
 			fmt.panicf("Should not reach this: %v", node)
-		case .U_F_From_I, .CV128:
+		case .U_F_From_I:
 			fmt.panicf("TODO: %v", node)
 		case .Root_Mem,
+		     .Merge_Mem,
+		     .Split_Mem,
 		     .Sym,
 		     .Jump,
 		     .Local,
@@ -1168,9 +1172,11 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 	     .And_Not,
 	     .Neg:
 		fmt.panicf("Should not reach this: %v", node)
-	case .U_F_From_I, .CV128:
+	case .U_F_From_I:
 		fmt.panicf("TODO: %v", node)
 	case .Root_Mem,
+	     .Split_Mem,
+	     .Merge_Mem,
 	     .Sym,
 	     .Phi,
 	     .Local,

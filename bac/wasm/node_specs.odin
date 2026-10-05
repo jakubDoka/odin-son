@@ -63,6 +63,8 @@ SPEC := bac.Node_Spec{
 		0b10, // Phi
 		0b10, // Mem
 		0b10, // Root_Mem
+		0b10, // Split_Mem
+		0b10, // Merge_Mem
 		0b10, // Sym
 		0b10000, // Local
 		0b10, // Local_Addr
@@ -100,15 +102,14 @@ SPEC := bac.Node_Spec{
 		0b10, // Ctz
 		0b10, // Simd_Extract_Lsbs
 		0b10, // Simd_Reduce_Add_Bisect
-		0b1000000, // CV128
-		0b10000000, // WASM_Store
-		0b10000000, // WASM_Load
+		0b1000000, // WASM_Store
+		0b1000000, // WASM_Load
 		0b10, // Get_Local
 		0b10, // Set_Local
 		0b10, // Tee_Local
 		0b10, // Drop
 		0b10, // Stub
-		0b100000000, // Extract_Lane_U
+		0b10000000, // Extract_Lane_U
 	},
 	node_extra_sizes = {
 		1, // Nil -> Cfg
@@ -154,6 +155,8 @@ SPEC := bac.Node_Spec{
 		0, // Phi -> No_Extra
 		0, // Mem -> No_Extra
 		0, // Root_Mem -> No_Extra
+		0, // Split_Mem -> No_Extra
+		0, // Merge_Mem -> No_Extra
 		0, // Sym -> No_Extra
 		2, // Local -> Local
 		0, // Local_Addr -> No_Extra
@@ -191,7 +194,6 @@ SPEC := bac.Node_Spec{
 		0, // Ctz -> No_Extra
 		0, // Simd_Extract_Lsbs -> No_Extra
 		0, // Simd_Reduce_Add_Bisect -> No_Extra
-		4, // CV128 -> CV128
 		2, // WASM_Store -> Mem_Op
 		2, // WASM_Load -> Mem_Op
 		0, // Get_Local -> No_Extra
@@ -245,6 +247,8 @@ SPEC := bac.Node_Spec{
 		{Class_Flag.Interned}, // Phi
 		{Class_Flag.Store}, // Mem
 		{Class_Flag.Immortal, Class_Flag.Store}, // Root_Mem
+		{}, // Split_Mem
+		{}, // Merge_Mem
 		{Class_Flag.Immortal}, // Sym
 		{}, // Local
 		{Class_Flag.Clonable}, // Local_Addr
@@ -282,7 +286,6 @@ SPEC := bac.Node_Spec{
 		{Class_Flag.Interned}, // Ctz
 		{Class_Flag.Interned}, // Simd_Extract_Lsbs
 		{Class_Flag.Interned}, // Simd_Reduce_Add_Bisect
-		{Class_Flag.Interned, Class_Flag.Clonable}, // CV128
 		{Class_Flag.Store}, // WASM_Store
 		{Class_Flag.Load}, // WASM_Load
 		{}, // Get_Local
@@ -298,6 +301,8 @@ SPEC := bac.Node_Spec{
 		bac.No_Extra,
 		bac.Tup,
 		bac.CInt,
+		bac.No_Extra,
+		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
@@ -373,7 +378,6 @@ SPEC := bac.Node_Spec{
 		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
-		bac.CV128,
 		Mem_Op,
 		Mem_Op,
 		bac.No_Extra,
@@ -427,6 +431,8 @@ SPEC := bac.Node_Spec{
 		`Phi`,
 		`Mem`,
 		`Root_Mem`,
+		`Split_Mem`,
+		`Merge_Mem`,
 		`Sym`,
 		`Local`,
 		`Local_Addr`,
@@ -464,7 +470,6 @@ SPEC := bac.Node_Spec{
 		`Ctz`,
 		`Simd_Extract_Lsbs`,
 		`Simd_Reduce_Add_Bisect`,
-		`CV128`,
 		`WASM_Store`,
 		`WASM_Load`,
 		`Get_Local`,
@@ -520,6 +525,8 @@ Node_Type :: enum u16 {
 	Phi,
 	Mem,
 	Root_Mem,
+	Split_Mem,
+	Merge_Mem,
 	Sym,
 	Local,
 	Local_Addr,
@@ -557,7 +564,6 @@ Node_Type :: enum u16 {
 	Ctz,
 	Simd_Extract_Lsbs,
 	Simd_Reduce_Add_Bisect,
-	CV128,
 	WASM_Store,
 	WASM_Load,
 	Get_Local,
@@ -592,6 +598,8 @@ collect_meta :: proc(ctx: ^bac.Proc,
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.Tup) % bac.PRECISION == 0)
 #assert(size_of(bac.CInt) % bac.PRECISION == 0)
+#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
+#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
@@ -667,7 +675,6 @@ collect_meta :: proc(ctx: ^bac.Proc,
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.CV128) % bac.PRECISION == 0)
 #assert(size_of(Mem_Op) % bac.PRECISION == 0)
 #assert(size_of(Mem_Op) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
@@ -686,13 +693,12 @@ add_extract_lane_u :: #force_inline proc(graph: ^bac.Proc, name: string, dt: bac
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	when false {}
 	else when T == bac.Local {return 4}
-	else when T == Mem_Op {return 7}
+	else when T == Mem_Op {return 6}
 	else when T == bac.Tup {return 2}
 	else when T == bac.No_Extra {return 1}
 	else when T == bac.Call {return 5}
 	else when T == bac.Cfg {return 0}
 	else when T == bac.CInt {return 3}
-	else when T == bac.CV128 {return 6}
-	else when T == Lane_Op {return 8}
+	else when T == Lane_Op {return 7}
 	else {#panic(`the passed type is not subclass of anything`)}
 }

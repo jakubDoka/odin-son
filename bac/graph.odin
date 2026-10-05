@@ -178,6 +178,8 @@ when SPEC_NOT_PRESENT {
 		Phi,
 		Mem,
 		Root_Mem,
+		Split_Mem,
+		Merge_Mem,
 		Sym,
 		Local,
 		Local_Addr,
@@ -215,7 +217,6 @@ when SPEC_NOT_PRESENT {
 		Ctz,
 		Simd_Extract_Lsbs,
 		Simd_Reduce_Add_Bisect,
-		CV128,
 	}
 
 	inherit_idx_of :: proc($T: typeid) -> u8 {return 0}
@@ -225,6 +226,7 @@ when SPEC_NOT_PRESENT {
 		name: string,
 		inputs: []Node_ID,
 	) -> Node_ID {return 0}
+	add_merge_mem :: add_return
 
 	add_region :: proc(
 		graph: ^Proc,
@@ -262,11 +264,6 @@ Cfg :: struct {
 CInt :: struct #raw_union #align (4) {
 	value:  i64,
 	fvalue: f64,
-}
-
-CV128 :: struct #align (4) {
-	lo: u64,
-	hi: u64,
 }
 
 Call :: struct {
@@ -452,10 +449,11 @@ Proc_Meta :: struct {
 	has_dbg:      bool,
 	dbgn_flip:    bool,
 	using pinned: struct {
-		entry:    Node_ID,
-		root_mem: Node_ID,
-		sym:      Node_ID,
-		end:      Node_ID,
+		entry:     Node_ID,
+		root_mem:  Node_ID,
+		const_mem: Node_ID,
+		sym:       Node_ID,
+		end:       Node_ID,
 	},
 }
 
@@ -1255,7 +1253,7 @@ assert_live_pins :: proc(graph: ^Proc) {
 	prev := current_graph
 	current_graph = graph
 	defer current_graph = prev
-	expected := [?]Node_Type{.Entry, .Root_Mem, .Sym, .Return}
+	expected := [?]Node_Type{.Entry, .Root_Mem, .Root_Mem, .Sym, .Return}
 	for &n, i in mem.slice_data_cast(
 		[]Node_ID,
 		mem.ptr_to_bytes(&graph.pinned),
@@ -2143,7 +2141,8 @@ merge_returns :: proc(graph: ^Proc, args: []Node_ID) -> Node_ID {
 
 		for i in 1 ..< len(end.inps) {
 			new := i < len(args) ? args[i] : add_poison(graph, "rpsn")
-			connect(graph, end.inps[i], new)
+			dest := end.inps[i]
+			connect(graph, dest, new)
 		}
 
 		connect(graph, end.inps[0], prev_cached)

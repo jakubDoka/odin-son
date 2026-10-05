@@ -59,6 +59,8 @@ SPEC := bac.Node_Spec{
 		0b10, // Phi
 		0b10, // Mem
 		0b10, // Root_Mem
+		0b10, // Split_Mem
+		0b10, // Merge_Mem
 		0b10, // Sym
 		0b10000, // Local
 		0b10, // Local_Addr
@@ -96,7 +98,6 @@ SPEC := bac.Node_Spec{
 		0b10, // Ctz
 		0b10, // Simd_Extract_Lsbs
 		0b10, // Simd_Reduce_Add_Bisect
-		0b1000000, // CV128
 	},
 	node_extra_sizes = {
 		1, // Nil -> Cfg
@@ -142,6 +143,8 @@ SPEC := bac.Node_Spec{
 		0, // Phi -> No_Extra
 		0, // Mem -> No_Extra
 		0, // Root_Mem -> No_Extra
+		0, // Split_Mem -> No_Extra
+		0, // Merge_Mem -> No_Extra
 		0, // Sym -> No_Extra
 		2, // Local -> Local
 		0, // Local_Addr -> No_Extra
@@ -179,7 +182,6 @@ SPEC := bac.Node_Spec{
 		0, // Ctz -> No_Extra
 		0, // Simd_Extract_Lsbs -> No_Extra
 		0, // Simd_Reduce_Add_Bisect -> No_Extra
-		4, // CV128 -> CV128
 	},
 	node_flags = {
 		{Class_Flag.Immortal}, // Nil
@@ -225,6 +227,8 @@ SPEC := bac.Node_Spec{
 		{Class_Flag.Interned}, // Phi
 		{Class_Flag.Store}, // Mem
 		{Class_Flag.Immortal, Class_Flag.Store}, // Root_Mem
+		{}, // Split_Mem
+		{}, // Merge_Mem
 		{Class_Flag.Immortal}, // Sym
 		{}, // Local
 		{Class_Flag.Clonable}, // Local_Addr
@@ -262,7 +266,6 @@ SPEC := bac.Node_Spec{
 		{Class_Flag.Interned}, // Ctz
 		{Class_Flag.Interned}, // Simd_Extract_Lsbs
 		{Class_Flag.Interned}, // Simd_Reduce_Add_Bisect
-		{Class_Flag.Interned, Class_Flag.Clonable}, // CV128
 	},
 	node_extra_types = {
 		bac.Cfg,
@@ -270,6 +273,8 @@ SPEC := bac.Node_Spec{
 		bac.No_Extra,
 		bac.Tup,
 		bac.CInt,
+		bac.No_Extra,
+		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
@@ -345,7 +350,6 @@ SPEC := bac.Node_Spec{
 		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
-		bac.CV128,
 	},
 	node_kind_name = {
 		`Nil`,
@@ -391,6 +395,8 @@ SPEC := bac.Node_Spec{
 		`Phi`,
 		`Mem`,
 		`Root_Mem`,
+		`Split_Mem`,
+		`Merge_Mem`,
 		`Sym`,
 		`Local`,
 		`Local_Addr`,
@@ -428,7 +434,6 @@ SPEC := bac.Node_Spec{
 		`Ctz`,
 		`Simd_Extract_Lsbs`,
 		`Simd_Reduce_Add_Bisect`,
-		`CV128`,
 	},
 }
 
@@ -476,6 +481,8 @@ Node_Type :: enum u16 {
 	Phi,
 	Mem,
 	Root_Mem,
+	Split_Mem,
+	Merge_Mem,
 	Sym,
 	Local,
 	Local_Addr,
@@ -513,7 +520,6 @@ Node_Type :: enum u16 {
 	Ctz,
 	Simd_Extract_Lsbs,
 	Simd_Reduce_Add_Bisect,
-	CV128,
 }
 
 peep_inst :: proc(ctx: bac.Peep_Ctx, node: bac.Expanded_Node) -> bac.Node_ID {
@@ -529,6 +535,8 @@ post_schedule_peep_inst :: proc(
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.Tup) % bac.PRECISION == 0)
 #assert(size_of(bac.CInt) % bac.PRECISION == 0)
+#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
+#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
@@ -604,16 +612,14 @@ post_schedule_peep_inst :: proc(
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.CV128) % bac.PRECISION == 0)
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	when false {}
-	else when T == bac.Local {return 4}
-	else when T == bac.Tup {return 2}
 	else when T == bac.No_Extra {return 1}
+	else when T == bac.Local {return 4}
 	else when T == bac.Call {return 5}
 	else when T == bac.Cfg {return 0}
 	else when T == bac.CInt {return 3}
-	else when T == bac.CV128 {return 6}
+	else when T == bac.Tup {return 2}
 	else {#panic(`the passed type is not subclass of anything`)}
 }

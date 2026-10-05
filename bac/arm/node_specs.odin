@@ -62,6 +62,8 @@ SPEC := bac.Node_Spec{
 		0b10, // Phi
 		0b10, // Mem
 		0b10, // Root_Mem
+		0b10, // Split_Mem
+		0b10, // Merge_Mem
 		0b10, // Sym
 		0b10000, // Local
 		0b10, // Local_Addr
@@ -99,7 +101,6 @@ SPEC := bac.Node_Spec{
 		0b10, // Ctz
 		0b10, // Simd_Extract_Lsbs
 		0b10, // Simd_Reduce_Add_Bisect
-		0b1000000, // CV128
 		0b10, // Msub
 		0b10, // CLoad
 	},
@@ -147,6 +148,8 @@ SPEC := bac.Node_Spec{
 		0, // Phi -> No_Extra
 		0, // Mem -> No_Extra
 		0, // Root_Mem -> No_Extra
+		0, // Split_Mem -> No_Extra
+		0, // Merge_Mem -> No_Extra
 		0, // Sym -> No_Extra
 		2, // Local -> Local
 		0, // Local_Addr -> No_Extra
@@ -184,7 +187,6 @@ SPEC := bac.Node_Spec{
 		0, // Ctz -> No_Extra
 		0, // Simd_Extract_Lsbs -> No_Extra
 		0, // Simd_Reduce_Add_Bisect -> No_Extra
-		4, // CV128 -> CV128
 		0, // Msub -> No_Extra
 		0, // CLoad -> No_Extra
 	},
@@ -232,6 +234,8 @@ SPEC := bac.Node_Spec{
 		{Class_Flag.Interned}, // Phi
 		{Class_Flag.Store}, // Mem
 		{Class_Flag.Immortal, Class_Flag.Store}, // Root_Mem
+		{}, // Split_Mem
+		{}, // Merge_Mem
 		{Class_Flag.Immortal}, // Sym
 		{}, // Local
 		{Class_Flag.Clonable}, // Local_Addr
@@ -269,7 +273,6 @@ SPEC := bac.Node_Spec{
 		{Class_Flag.Interned}, // Ctz
 		{Class_Flag.Interned}, // Simd_Extract_Lsbs
 		{Class_Flag.Interned}, // Simd_Reduce_Add_Bisect
-		{Class_Flag.Interned, Class_Flag.Clonable}, // CV128
 		{}, // Msub
 		{}, // CLoad
 	},
@@ -279,6 +282,8 @@ SPEC := bac.Node_Spec{
 		bac.No_Extra,
 		bac.Tup,
 		bac.CInt,
+		bac.No_Extra,
+		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
@@ -354,7 +359,6 @@ SPEC := bac.Node_Spec{
 		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
-		bac.CV128,
 		bac.No_Extra,
 		bac.No_Extra,
 	},
@@ -402,6 +406,8 @@ SPEC := bac.Node_Spec{
 		`Phi`,
 		`Mem`,
 		`Root_Mem`,
+		`Split_Mem`,
+		`Merge_Mem`,
 		`Sym`,
 		`Local`,
 		`Local_Addr`,
@@ -439,7 +445,6 @@ SPEC := bac.Node_Spec{
 		`Ctz`,
 		`Simd_Extract_Lsbs`,
 		`Simd_Reduce_Add_Bisect`,
-		`CV128`,
 		`Msub`,
 		`CLoad`,
 	},
@@ -489,6 +494,8 @@ Node_Type :: enum u16 {
 	Phi,
 	Mem,
 	Root_Mem,
+	Split_Mem,
+	Merge_Mem,
 	Sym,
 	Local,
 	Local_Addr,
@@ -526,7 +533,6 @@ Node_Type :: enum u16 {
 	Ctz,
 	Simd_Extract_Lsbs,
 	Simd_Reduce_Add_Bisect,
-	CV128,
 	Msub,
 	CLoad,
 }
@@ -555,6 +561,8 @@ collect_meta :: proc(ctx: ^bac.Proc,
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.Tup) % bac.PRECISION == 0)
 #assert(size_of(bac.CInt) % bac.PRECISION == 0)
+#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
+#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
@@ -630,7 +638,6 @@ collect_meta :: proc(ctx: ^bac.Proc,
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.CV128) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 add_msub :: #force_inline proc(graph: ^bac.Proc, name: string, dt: bac.Node_Datatype, multiplicant: bac.Node_ID, multiplier: bac.Node_ID, subtractant: bac.Node_ID) -> (_id: bac.Node_ID) {
 	return bac.add_raw(graph, name, u16(Node_Type.Msub), dt, {multiplicant, multiplier, subtractant})
@@ -639,12 +646,11 @@ add_msub :: #force_inline proc(graph: ^bac.Proc, name: string, dt: bac.Node_Data
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	when false {}
-	else when T == bac.Local {return 4}
-	else when T == bac.Tup {return 2}
 	else when T == bac.No_Extra {return 1}
+	else when T == bac.Local {return 4}
 	else when T == bac.Call {return 5}
 	else when T == bac.Cfg {return 0}
 	else when T == bac.CInt {return 3}
-	else when T == bac.CV128 {return 6}
+	else when T == bac.Tup {return 2}
 	else {#panic(`the passed type is not subclass of anything`)}
 }

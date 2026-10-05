@@ -1097,7 +1097,15 @@ meta_of :: proc(
 		}
 	case .Global:
 		return {out = IOUT}
-	case .Mem, .Root_Mem, .Sym, .Local, .Jump, .Always, .Trap:
+	case .Mem,
+	     .Root_Mem,
+	     .Sym,
+	     .Local,
+	     .Jump,
+	     .Always,
+	     .Trap,
+	     .Split_Mem,
+	     .Merge_Mem:
 		return {out = IOUT}
 	case .Local_Addr, .Global_Addr, .Proc_Addr:
 		return {out = out}
@@ -1130,8 +1138,6 @@ meta_of :: proc(
 		return {out = out, masks = masks[ra.datatype_to_reg_kind[inp.dt]][:1]}
 	case .Simd_Extract_Lsbs:
 		return {out = out, masks = XMM_MASKS[:1]}
-	case .CV128:
-		panic("TODO")
 	case .X64_Shl ..=
 	     .X64_U_Shr,
 	     .X64_F_Eq ..=
@@ -1683,8 +1689,6 @@ emit_instr :: proc(
 	type := xtype(node)
 
 	switch type {
-	case .CV128:
-		panic("TODO: CV128 load-from-static emit not implemented")
 	case .Splat:
 		panic("no")
 	case .Simd_Extract_Lsbs:
@@ -2107,7 +2111,15 @@ emit_instr :: proc(
 				id     = lib_call.id,
 			}
 		}
-	case .Poison, .Param, .Phi, .Ret, .Mem, .Root_Mem, .Sym:
+	case .Poison,
+	     .Param,
+	     .Phi,
+	     .Ret,
+	     .Mem,
+	     .Root_Mem,
+	     .Split_Mem,
+	     .Merge_Mem,
+	     .Sym:
 	case .CInt:
 		dst := reg_of(ctx, instr)
 		imm := bac.get_extra(ctx, node, bac.CInt).value

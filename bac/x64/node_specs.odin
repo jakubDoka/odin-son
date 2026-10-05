@@ -64,6 +64,8 @@ SPEC := bac.Node_Spec{
 		0b10, // Phi
 		0b10, // Mem
 		0b10, // Root_Mem
+		0b10, // Split_Mem
+		0b10, // Merge_Mem
 		0b10, // Sym
 		0b10000, // Local
 		0b10, // Local_Addr
@@ -101,49 +103,48 @@ SPEC := bac.Node_Spec{
 		0b10, // Ctz
 		0b10, // Simd_Extract_Lsbs
 		0b10, // Simd_Reduce_Add_Bisect
-		0b1000000, // CV128
-		0b10000000, // X64_Add
-		0b10000000, // X64_Sub
-		0b10000000, // X64_And
-		0b10000000, // X64_Or
-		0b10000000, // X64_Xor
-		0b10000000, // X64_Eq
-		0b10000000, // X64_Ne
-		0b10000000, // X64_Le
-		0b10000000, // X64_Lt
-		0b10000000, // X64_Gt
-		0b10000000, // X64_Ge
-		0b10000000, // X64_U_Lt
-		0b10000000, // X64_U_Gt
-		0b10000000, // X64_U_Le
-		0b10000000, // X64_U_Ge
-		0b10000000, // X64_F_Add
-		0b10000000, // X64_F_Sub
-		0b10000000, // X64_F_Mul
-		0b10000000, // X64_F_Div
-		0b10000000, // X64_F_Eq
-		0b10000000, // X64_F_Ne
-		0b10000000, // X64_F_Le
-		0b10000000, // X64_F_Lt
-		0b10000000, // X64_F_Gt
-		0b10000000, // X64_F_Ge
-		0b10000000, // X64_Shl
-		0b10000000, // X64_Shr
-		0b10000000, // X64_U_Shr
-		0b10000000, // X64_Mul
-		0b10000000, // X64_Lea
-		0b10000000, // X64_Load
-		0b10000000, // X64_Store
+		0b1000000, // X64_Add
+		0b1000000, // X64_Sub
+		0b1000000, // X64_And
+		0b1000000, // X64_Or
+		0b1000000, // X64_Xor
+		0b1000000, // X64_Eq
+		0b1000000, // X64_Ne
+		0b1000000, // X64_Le
+		0b1000000, // X64_Lt
+		0b1000000, // X64_Gt
+		0b1000000, // X64_Ge
+		0b1000000, // X64_U_Lt
+		0b1000000, // X64_U_Gt
+		0b1000000, // X64_U_Le
+		0b1000000, // X64_U_Ge
+		0b1000000, // X64_F_Add
+		0b1000000, // X64_F_Sub
+		0b1000000, // X64_F_Mul
+		0b1000000, // X64_F_Div
+		0b1000000, // X64_F_Eq
+		0b1000000, // X64_F_Ne
+		0b1000000, // X64_F_Le
+		0b1000000, // X64_F_Lt
+		0b1000000, // X64_F_Gt
+		0b1000000, // X64_F_Ge
+		0b1000000, // X64_Shl
+		0b1000000, // X64_Shr
+		0b1000000, // X64_U_Shr
+		0b1000000, // X64_Mul
+		0b1000000, // X64_Lea
+		0b1000000, // X64_Load
+		0b1000000, // X64_Store
 		0b10, // X64_CLoad
-		0b10000000, // X64_Neg
-		0b10000000, // X64_Not
+		0b1000000, // X64_Neg
+		0b1000000, // X64_Not
 		0b10, // X64_Mul8
-		0b10000000, // X64_Fma_213
+		0b1000000, // X64_Fma_213
 		0b10, // X64_Pcmpeq
-		0b10000000, // X64_Pshufd
+		0b1000000, // X64_Pshufd
 		0b10, // X64_Psadbw
-		0b10000000, // X64_Pshufb
-		0b10000000, // X64_Pextr
+		0b1000000, // X64_Pshufb
+		0b1000000, // X64_Pextr
 	},
 	node_extra_sizes = {
 		1, // Nil -> Cfg
@@ -189,6 +190,8 @@ SPEC := bac.Node_Spec{
 		0, // Phi -> No_Extra
 		0, // Mem -> No_Extra
 		0, // Root_Mem -> No_Extra
+		0, // Split_Mem -> No_Extra
+		0, // Merge_Mem -> No_Extra
 		0, // Sym -> No_Extra
 		2, // Local -> Local
 		0, // Local_Addr -> No_Extra
@@ -226,7 +229,6 @@ SPEC := bac.Node_Spec{
 		0, // Ctz -> No_Extra
 		0, // Simd_Extract_Lsbs -> No_Extra
 		0, // Simd_Reduce_Add_Bisect -> No_Extra
-		4, // CV128 -> CV128
 		3, // X64_Add -> Mem_Op
 		3, // X64_Sub -> Mem_Op
 		3, // X64_And -> Mem_Op
@@ -314,6 +316,8 @@ SPEC := bac.Node_Spec{
 		{Class_Flag.Interned}, // Phi
 		{Class_Flag.Store}, // Mem
 		{Class_Flag.Immortal, Class_Flag.Store}, // Root_Mem
+		{}, // Split_Mem
+		{}, // Merge_Mem
 		{Class_Flag.Immortal}, // Sym
 		{}, // Local
 		{Class_Flag.Clonable}, // Local_Addr
@@ -351,7 +355,6 @@ SPEC := bac.Node_Spec{
 		{Class_Flag.Interned}, // Ctz
 		{Class_Flag.Interned}, // Simd_Extract_Lsbs
 		{Class_Flag.Interned}, // Simd_Reduce_Add_Bisect
-		{Class_Flag.Interned, Class_Flag.Clonable}, // CV128
 		{}, // X64_Add
 		{}, // X64_Sub
 		{}, // X64_And
@@ -440,6 +443,8 @@ SPEC := bac.Node_Spec{
 		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
+		bac.No_Extra,
+		bac.No_Extra,
 		bac.Local,
 		bac.No_Extra,
 		bac.Tup,
@@ -476,7 +481,6 @@ SPEC := bac.Node_Spec{
 		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
-		bac.CV128,
 		Mem_Op,
 		Mem_Op,
 		Mem_Op,
@@ -564,6 +568,8 @@ SPEC := bac.Node_Spec{
 		`Phi`,
 		`Mem`,
 		`Root_Mem`,
+		`Split_Mem`,
+		`Merge_Mem`,
 		`Sym`,
 		`Local`,
 		`Local_Addr`,
@@ -601,7 +607,6 @@ SPEC := bac.Node_Spec{
 		`Ctz`,
 		`Simd_Extract_Lsbs`,
 		`Simd_Reduce_Add_Bisect`,
-		`CV128`,
 		`X64_Add`,
 		`X64_Sub`,
 		`X64_And`,
@@ -691,6 +696,8 @@ Node_Type :: enum u16 {
 	Phi,
 	Mem,
 	Root_Mem,
+	Split_Mem,
+	Merge_Mem,
 	Sym,
 	Local,
 	Local_Addr,
@@ -728,7 +735,6 @@ Node_Type :: enum u16 {
 	Ctz,
 	Simd_Extract_Lsbs,
 	Simd_Reduce_Add_Bisect,
-	CV128,
 	X64_Add,
 	X64_Sub,
 	X64_And,
@@ -836,6 +842,8 @@ collect_meta :: proc(ctx: ^bac.Proc,
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
+#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
+#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.Local) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.Tup) % bac.PRECISION == 0)
@@ -872,7 +880,6 @@ collect_meta :: proc(ctx: ^bac.Proc,
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.CV128) % bac.PRECISION == 0)
 #assert(size_of(Mem_Op) % bac.PRECISION == 0)
 #assert(size_of(Mem_Op) % bac.PRECISION == 0)
 #assert(size_of(Mem_Op) % bac.PRECISION == 0)
@@ -922,12 +929,11 @@ add_x64_psadbw :: #force_inline proc(graph: ^bac.Proc, name: string, dt: bac.Nod
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	when false {}
 	else when T == bac.Local {return 4}
-	else when T == Mem_Op {return 7}
+	else when T == Mem_Op {return 6}
 	else when T == bac.Tup {return 2}
 	else when T == bac.No_Extra {return 1}
 	else when T == bac.Call {return 5}
 	else when T == bac.Cfg {return 0}
 	else when T == bac.CInt {return 3}
-	else when T == bac.CV128 {return 6}
 	else {#panic(`the passed type is not subclass of anything`)}
 }

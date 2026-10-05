@@ -178,6 +178,15 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 				remove_count,
 				len(end.inps),
 			)
+
+			if 1 < len(end.inps) {
+				mmerge := add_merge_mem(
+					graph,
+					"mmerge",
+					{end.inps[1], graph.const_mem},
+				)
+				set_input(graph, graph.end, 1, mmerge)
+			}
 		}
 
 		if has_unreachable_return(graph) {
@@ -201,6 +210,7 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 				remove_output(graph, vl, {id = graph.end, idx = 1 + i})
 			}
 		}
+
 	}
 
 	tree_depth :: proc(tree: ^Loop_Tree, depht := 0) -> u32 {
@@ -473,6 +483,12 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 
 	rounds := 0
 
+	ctx.late_schedules[get_node(graph, graph.sym).gvn] = graph.entry
+	ctx.late_schedules[get_node(graph, graph.root_mem).gvn] = graph.entry
+	ctx.late_schedules[get_node(graph, graph.const_mem).gvn] = graph.entry
+	ctx.late_schedules[get_node(graph, expand_node(graph, graph.const_mem).inps[0]).gvn] =
+		graph.entry
+
 	for n in worklist_next(graph, &worklist) {
 		rounds += 1
 
@@ -572,6 +588,7 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 
 		if free {
 			for cursor := lca; cursor != ctx.early_schedules[node.gvn]; {
+				fmt.assertf(cursor != 0, "%v", node)
 				cursor = get_idom(ctx.graph, cursor)
 				lca = better(ctx, lctx, lca, cursor)
 			}
@@ -755,9 +772,6 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 
 	has_unscheduled := false
 
-	ctx.late_schedules[get_node(graph, graph.sym).gvn] = graph.entry
-	ctx.late_schedules[get_node(graph, graph.root_mem).gvn] = graph.entry
-
 	for n, i in ctx.nodes {
 		if n == 0 do continue
 		node := get_node(graph, n)
@@ -922,7 +936,11 @@ verify_schedule_integrity :: proc(
 			fmt.assertf(schedules[inode.gvn] == 0, "%v", inode.node)
 			schedules[inode.gvn] = bb.head
 		}
-		assert(is_cfg(graph, bb.instrs[len(bb.instrs) - 1]))
+		fmt.assertf(
+			is_cfg(graph, bb.instrs[len(bb.instrs) - 1]),
+			"%v",
+			get_node(graph, bb.instrs[len(bb.instrs) - 1]),
+		)
 	}
 
 	for bb in sched.bbs {

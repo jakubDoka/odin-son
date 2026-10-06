@@ -216,6 +216,18 @@ acquire_thread_vm :: proc(
 		if err = uc_open(.ARM64, 0, &engine); err != .OK {
 			return
 		}
+
+		// CPACR_EL1.FPEN = 0b11
+		// Bits [21:20] enable FP/SIMD at EL0 and EL1.
+		cpacr_el1 := u64(3 << 20)
+		ARM64_CPACR_EL1 :: 261
+
+		if err = uc_reg_write(engine, ARM64_CPACR_EL1, &cpacr_el1);
+		   err != .OK {
+			uc_close(engine)
+			return nil, err
+		}
+
 		if err = uc_mem_map(
 			engine,
 			STACK_ADDRESS,

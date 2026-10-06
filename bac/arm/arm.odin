@@ -169,30 +169,8 @@ peep :: proc(
 	case .CInt:
 		cnst: ^bac.CInt = bac.get_extra(ctx, node, bac.CInt)
 		if node.dt in bac.FLOAT_DTS && cnst.value != 0 {
-			size := bac.DT_SIZE[node.dt] / 4
-			slot := bac.get_next_extra_slot(
-				ctx,
-				u16(bac.Node_Type.Global),
-				size,
-			)
-
-			(^bac.Node_Datatype)(slot)^ = node.dt
-			if node.dt == .F32 {
-				(^f32)(slot[1:])^ = f32(cnst.fvalue)
-			} else {
-				assert(node.dt == .F64)
-				(^f64)(slot[1:])^ = cnst.fvalue
-			}
-
-			global := bac.add_raw(
-				ctx,
-				"iglb",
-				u16(bac.Node_Type.Global),
-				.Void,
-				meta = {extra_dwords = size},
-			)
+			global := bac.c_int_as_global(ctx, node)
 			addr := bac.add_global_addr(ctx, "caddr", global)
-
 			return bac.add_load(ctx, "cild", node.dt, 0, ctx.const_mem, addr)
 		}
 	case .Eq ..= .U_Ge:
@@ -200,6 +178,15 @@ peep :: proc(
 		   get_node(ctx, node.outs[0].id).itype == .If &&
 		   node.dt != .Void {
 			node.dt = .Void
+			return id
+		}
+	case .Simd_Reduce_Add_Bisect:
+		if node.dt != .F32 {
+			sub := bac.add_un_op(ctx, "srabc", .Cast, node.dt, id)
+			#reverse for out in node.outs {
+				bac.set_input(ctx, out.id, out.idx, sub)
+			}
+			node.dt = .F32
 			return id
 		}
 	case .Rem, .U_Rem:
@@ -326,6 +313,8 @@ meta_of :: #force_inline proc(
 	     .Trap,
 	     .Poison:
 		return {out = IOUT}
+	case .Simd_Reduce_Add_Bisect:
+		return {out = out, masks = VEC_MASKS[:1]}
 	case .Add ..= .Xor, .Shl ..= .And_Not, .F_Add ..= .F_Div:
 		return {out = out, masks = nmasks[:2]}
 	case .Msub:
@@ -603,35 +592,36 @@ emit_instr :: proc(
 
 	@(static, rodata)
 	NODE_TO_OP := #partial [Node_Type]u32 {
-		.Add         = 0x0B000000,
-		.Sub         = 0x4B000000,
-		.And         = 0x0A000000,
-		.Or          = 0x2A000000,
-		.Xor         = 0x4A000000,
-		.And_Not     = 0x0A200000,
-		.Eq ..= .U_Ge             = 0x6B00001F,
-		.Shl         = 0x1AC02000,
-		.U_Shr       = 0x1AC02400,
-		.Shr         = 0x1AC02800,
-		.Mul         = 0x1B007C00,
-		.U_Div       = 0x1AC00800,
-		.Div         = 0x1AC00C00,
-		.U_Rem       = 0x1AC00800,
-		.Rem         = 0x1AC00C00,
-		.F_Add       = 0x1E202800,
-		.F_Sub       = 0x1E203800,
-		.F_Mul       = 0x1E200800,
-		.F_Div       = 0x1E201800,
-		.F_Eq ..= .F_Ge             = 0x1E202000,
-		.Global_Addr = 0x10000000,
-		.Proc_Addr   = 0x10000000,
-		.Neg         = 0x4B000000,
-		.Not         = 0x2a200000,
-		.Cast        = 0x1e260000,
-		.F_To_I      = 0x1e380000,
-		.F_Ext       = 0b00011110001000101100000000000000,
-		.F_Demote    = 0b00011110011000100100000000000000,
-		.F_From_I    = 0b00011110001000100000000000000000,
+		.Add                    = 0x0B000000,
+		.Sub                    = 0x4B000000,
+		.And                    = 0x0A000000,
+		.Or                     = 0x2A000000,
+		.Xor                    = 0x4A000000,
+		.And_Not                = 0x0A200000,
+		.Eq ..= .U_Ge                        = 0x6B00001F,
+		.Shl                    = 0x1AC02000,
+		.U_Shr                  = 0x1AC02400,
+		.Shr                    = 0x1AC02800,
+		.Mul                    = 0x1B007C00,
+		.U_Div                  = 0x1AC00800,
+		.Div                    = 0x1AC00C00,
+		.U_Rem                  = 0x1AC00800,
+		.Rem                    = 0x1AC00C00,
+		.F_Add                  = 0x1E202800,
+		.F_Sub                  = 0x1E203800,
+		.F_Mul                  = 0x1E200800,
+		.F_Div                  = 0x1E201800,
+		.F_Eq ..= .F_Ge                        = 0x1E202000,
+		.Global_Addr            = 0x10000000,
+		.Proc_Addr              = 0x10000000,
+		.Neg                    = 0x4B000000,
+		.Not                    = 0x2a200000,
+		.Cast                   = 0x1e260000,
+		.F_To_I                 = 0x1e380000,
+		.F_Ext                  = 0b00011110001000101100000000000000,
+		.F_Demote               = 0b00011110011000100100000000000000,
+		.F_From_I               = 0b00011110001000100000000000000000,
+		.Simd_Reduce_Add_Bisect = 0b00001110001100011011100000000000,
 	}
 	cc_neg :: proc(c: Cond) -> Cond {return Cond(u8(c) ~ 1)}
 
@@ -660,19 +650,22 @@ emit_instr :: proc(
 	     .Local,
 	     .Global,
 	     .Poison:
+	case .Simd_Reduce_Add_Bisect:
+		dst := reg_of(ctx, instr)
+		src := reg_of(ctx, node.inps[0])
+
+		assert(node.lane == .I8)
+
+		emit_op(
+			ctx.code,
+			op | 0b1 << 30 | 0b00 << 22 | u32(src.index) << 5 | u32(dst.index),
+		)
 	case .Global_Addr, .Proc_Addr:
 		scale_pow: u32 = 0
 
-		if kind != .Proc_Addr && inp.extra_dwords != 0 {
-			tup: ^bac.Tup = bac.get_extra(ctx, inp, bac.Tup)
-			dwords := bac.get_extra_dwords(ctx, inp)
-			tup.idx = bac.emit_big_constant(
-				&ctx.big_constants,
-				bac.DT_SIZE[bac.Node_Datatype(dwords[0])],
-				mem.slice_data_cast([]u8, dwords[1:]),
-			)
+		if kind != .Proc_Addr &&
+		   bac.emit_big_constant_from_global(ctx, &ctx.big_constants, inp) {
 			scale_pow = 2
-			inp.extra_dwords = 0
 		}
 
 		id: u32
@@ -1059,10 +1052,13 @@ emit_instr :: proc(
 		} else {
 			sf: u32 = 0b1
 			ftype: u32 = 0b01
-			rmode: u32 = 0b01
+			rmode: u32 = 0b00
 			opcode: u32 = 0b110
 
-			if rd.kind == RK_VECTOR do opcode = 0b111
+			if rd.kind == RK_VECTOR {
+				opcode = 0b111
+				rmode = 0b00
+			}
 
 			emit_op(
 				ctx.code,
@@ -1071,7 +1067,7 @@ emit_instr :: proc(
 				ftype << 22 |
 				rmode << 19 |
 				opcode << 16 |
-				u32(rn.index) |
+				u32(rn.index) << 5 |
 				u32(rd.index),
 			)
 		}

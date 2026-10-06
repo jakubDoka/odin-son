@@ -5,7 +5,6 @@ import "../../vendored/gam/util/arna"
 import "../../vendored/gam/util/bit_arr"
 import "base:intrinsics"
 import "core:fmt"
-import "core:log"
 import "core:math"
 import "core:mem"
 import "core:reflect"
@@ -315,29 +314,7 @@ peep :: proc(
 	case .CInt:
 		cnst: ^bac.CInt = bac.get_extra(ctx, node, bac.CInt)
 		if node.dt in bac.FLOAT_DTS && cnst.value != 0 {
-			size := bac.DT_SIZE[node.dt] / 4
-			slot := bac.get_next_extra_slot(
-				ctx,
-				u16(bac.Node_Type.Global),
-				size,
-			)
-
-			(^bac.Node_Datatype)(slot)^ = node.dt
-			if node.dt == .F32 {
-				(^f32)(slot[1:])^ = f32(cnst.fvalue)
-			} else {
-				assert(node.dt == .F64)
-				// TODO: unaligned
-				(^f64)(slot[1:])^ = cnst.fvalue
-			}
-
-			global := bac.add_raw(
-				ctx,
-				"iglb",
-				u16(bac.Node_Type.Global),
-				.Void,
-				meta = {extra_dwords = size},
-			)
+			global := bac.c_int_as_global(ctx, node)
 
 			_, id := add_node(
 				ctx,
@@ -2691,21 +2668,11 @@ reg_of :: proc(ctx: bac.Codegen_Emit_Ctx, id: bac.Node_ID) -> Reg {
 reg_and_disp_of :: proc(ctx: ^Ctx, id: bac.Node_ID) -> (Reg, i32, u32) {
 	node := get_node(ctx, id)
 	if node.itype == .Global {
-		tup: ^bac.Tup = bac.get_extra(ctx, node, bac.Tup)
-
-		if node.extra_dwords != 0 {
-			dwords := bac.get_extra_dwords(ctx, node)
-			tup.idx = bac.emit_big_constant(
-				&ctx.big_constants,
-				bac.DT_SIZE[bac.Node_Datatype(dwords[0])],
-				mem.slice_data_cast([]u8, dwords[1:]),
-			)
-			node.extra_dwords = 0
-		}
+		bac.emit_big_constant_from_global(ctx, &ctx.big_constants, node)
 
 		// bias by one so that global 0 is distinguishable from the "no
 		// relocation" sentinel used by emit_indirect_addr
-		return RIP, 0, tup.idx + 1
+		return RIP, 0, bac.get_extra(ctx, node, bac.Tup).idx + 1
 	}
 	if node.itype == .Local {
 		return RSP, i32(bac.get_extra(ctx, node, bac.Local).offset), 0

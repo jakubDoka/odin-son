@@ -369,6 +369,49 @@ compute_param_offsets :: proc(
 	}
 }
 
+c_int_as_global :: proc(ctx: ^Proc, node: ^Node) -> Node_ID {
+	cnst := get_extra(ctx, node, CInt)
+
+	size := DT_SIZE[node.dt] / 4
+	slot := get_next_extra_slot(ctx, u16(Node_Type.Global), size)
+
+	(^Node_Datatype)(slot)^ = node.dt
+	if node.dt == .F32 {
+		(^f32)(slot[1:])^ = f32(cnst.fvalue)
+	} else {
+		assert(node.dt == .F64)
+		// TODO: unaligned
+		(^f64)(slot[1:])^ = cnst.fvalue
+	}
+
+	return add_raw(
+		ctx,
+		"iglb",
+		u16(Node_Type.Global),
+		.Void,
+		meta = {extra_dwords = size},
+	)
+}
+
+emit_big_constant_from_global :: proc(
+	ctx: ^Proc,
+	buf: ^[dynamic]u8,
+	inp: ^Node,
+) -> bool {
+	if inp.extra_dwords != 0 {
+		tup: ^Tup = get_extra(ctx, inp, Tup)
+		dwords := get_extra_dwords(ctx, inp)
+		tup.idx = emit_big_constant(
+			buf,
+			DT_SIZE[Node_Datatype(dwords[0])],
+			mem.slice_data_cast([]u8, dwords[1:]),
+		)
+		inp.extra_dwords = 0
+		return true
+	}
+	return false
+}
+
 emit_big_constant :: proc(
 	buf: ^[dynamic]u8,
 	#any_int align: int,

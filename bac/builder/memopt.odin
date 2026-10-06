@@ -11,6 +11,7 @@ Node_ID :: bac.Node_ID
 expand_node :: bac.expand_node
 
 memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
+
 	assert(graph.node_spec == &SPEC)
 
 	if .Mem_Opt not_in graph.opt_flags do return
@@ -22,12 +23,64 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 
 	emem := graph.root_mem
 
+	Edit_Slot :: struct {
+		prev: u32,
+		node: Node_ID,
+	}
+
+	Value_Entry :: bit_field u32 {
+		node:    Node_ID | 31,
+		is_loop: bool    | 1,
+	}
+
+	Merge :: struct {
+		seen_cnt: int,
+	}
+
+	Ctx :: struct {
+		using graph:       ^bac.Proc,
+		deleted_lazy_phys: [dynamic]Node_ID,
+		joins:             [dynamic]Join,
+		loops:             [dynamic]Loop,
+		merges:            [dynamic]Merge,
+		threads_start:     u32,
+		scope:             []Value_Entry,
+		slot_idx:          []u32,
+		split_slot:        ^Split_Slot,
+	}
+
+	Split_Slot :: struct {
+		prev:  ^Split_Slot,
+		scope: []Value_Entry,
+	}
+
+	Loop :: struct {
+		scope:     []Value_Entry,
+		loop_node: Node_ID,
+		done:      bool,
+	}
+
+	Join :: struct {
+		entries: [][]Value_Entry,
+		filled:  int,
+	}
+
+	ctx: Ctx
+	ctx.graph = graph
+	ctx.slot_idx = make([]u32, graph.gvn)
+	ctx.graph.dont_delete = true
+
+	threads: [dynamic]Node_ID
+
 	sroad := 0
 	total := 0
 	mismatches := 0
+	rename_slot_count: u32
 	sroa: for mout in bac.get_outputs(graph, emem) {
 		mnode := expand_node(graph, mout.id)
 		if mnode.itype != .Local do continue
+
+		can_split := true
 
 		total += 1
 
@@ -46,14 +99,31 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 
 		slots: [dynamic; 8]Slot
 
+		failed_sroa := false
+		failed_split := false
+
 		iter: bac.Offset_Iter
 		iter.curr = mnode.outs[0].id
 		collect_slot: for out in bac.offset_iter_next(graph, &iter) {
-			size := bac.mem_op_size(graph, out.id) or_continue sroa
-			if i32(iter.offset + size) > slot_size do continue sroa
-			if out.idx != 2 do continue sroa
+			size, ok := bac.mem_op_size(graph, out.id)
+			if !ok {
+				failed_sroa = true
+				failed_split = true
+				break
+			}
 			onode := get_node(graph, out.id)
-			if onode.itype == .Copy || onode.itype == .Set do continue sroa
+			if onode.itype == .Copy {
+				failed_split = true
+			}
+			if i32(iter.offset + size) > slot_size {
+				failed_sroa = true
+				continue
+			}
+			if out.idx != 2 do continue sroa
+			if onode.itype == .Copy || onode.itype == .Set {
+				failed_sroa = true
+				continue
+			}
 
 			new_slot := Slot {
 				start = i32(iter.offset),
@@ -67,82 +137,86 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 
 				if slot != new_slot {
 					mismatches += 1
-					continue sroa
+					failed_sroa = true
 				}
 
 				continue collect_slot
 			}
 
 			if append(&slots, new_slot) == 0 {
-				continue sroa
+				failed_sroa = true
 			}
 		}
+
+		loc := bac.get_extra(ctx, mout.id, Local)
+		if !failed_split &&
+		   failed_sroa &&
+		   ctx.end != 0 &&
+		   !loc.is_split &&
+		   false {
+			append(&threads, mnode.outs[0].id)
+			loc.is_split = true
+		}
+
+		if failed_sroa do continue
 
 		sroad += 1
-		if len(slots) == 1 do continue
+		if len(slots) != 1 {
+			for &slot in slots {
+				local := bac.add_local(graph, "sroal", emem)
+				bac.get_extra(graph, local, Local).size = slot.end - slot.start
+				slot.local = bac.add_local_addr(graph, "sroadr", local)
+			}
 
-		for &slot in slots {
-			local := bac.add_local(graph, "sroal", emem)
-			bac.get_extra(graph, local, Local).size = slot.end - slot.start
-			slot.local = bac.add_local_addr(graph, "sroadr", local)
-		}
+			Op :: struct {
+				local: Node_ID,
+				id:    Node_ID,
+			}
 
-		Op :: struct {
-			local: Node_ID,
-			id:    Node_ID,
-		}
+			ops: [dynamic]Op
 
-		ops: [dynamic]Op
-
-		iter = {}
-		iter.curr = mnode.outs[0].id
-		for out in bac.offset_iter_next(graph, &iter) {
-			for &slt, i in slots {
-				if int(slt.start) == iter.offset {
-					append(&ops, Op{slt.local, out.id})
-					break
+			iter = {}
+			iter.curr = mnode.outs[0].id
+			for out in bac.offset_iter_next(graph, &iter) {
+				for &slt, i in slots {
+					if int(slt.start) == iter.offset {
+						append(&ops, Op{slt.local, out.id})
+						break
+					}
 				}
 			}
+
+			for op in ops {
+				bac.set_input(graph, op.id, 2, op.local)
+			}
+		} else {
+			slots[0].local = mnode.outs[0].id
 		}
 
-		for op in ops {
-			bac.set_input(graph, op.id, 2, op.local)
+		for slot in slots {
+			iter = {}
+			iter.curr = slot.local
+			for op in bac.offset_iter_next(graph, &iter) {
+				edit_node_id(&ctx, op.id, rename_slot_count)
+			}
+			rename_slot_count += 1
 		}
+	}
+
+	ctx.threads_start = rename_slot_count
+
+	iter: bac.Offset_Iter
+	for thread in threads {
+		iter = {}
+		iter.curr = thread
+		for op in bac.offset_iter_next(graph, &iter) {
+			edit_node_id(&ctx, op.id, rename_slot_count)
+		}
+		rename_slot_count += 1
 	}
 
 	bac.add_efficiency_stat(graph, .sroa_slot_mismatch, mismatches, 0)
 	bac.add_efficiency_stat(graph, .sroad_locals, total, sroad)
-
-	Edit_Slot :: struct {
-		prev: u32,
-		node: Node_ID,
-	}
-
-	Value_Entry :: bit_field u32 {
-		node:    Node_ID | 31,
-		is_loop: bool    | 1,
-	}
-
-	Ctx :: struct {
-		using graph:       ^bac.Proc,
-		slot_count:        u32,
-		deleted_lazy_phys: [dynamic]Node_ID,
-		joins:             [dynamic]Join,
-		loops:             [dynamic]Loop,
-		scope:             []Value_Entry,
-		slot_idx:          []u32,
-	}
-
-	Loop :: struct {
-		scope:     []Value_Entry,
-		loop_node: Node_ID,
-		done:      bool,
-	}
-
-	Join :: struct {
-		entries: [][]Value_Entry,
-		filled:  int,
-	}
 
 	edit_node_id :: proc(ctx: ^Ctx, id: Node_ID, new: u32) {
 		node := get_node(ctx, id)
@@ -153,50 +227,44 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 		return ctx.slot_idx[node.gvn] - 1, ctx.slot_idx[node.gvn] != 0
 	}
 
-	ctx: Ctx
-	ctx.graph = graph
-	ctx.slot_idx = make([]u32, graph.gvn)
-	ctx.graph.dont_delete = true
+	ctx.scope = make([]Value_Entry, rename_slot_count)
 
-	collect_rename_slot: for mout in bac.get_outputs(graph, emem) {
-		mnode := expand_node(graph, mout.id)
-		if mnode.itype != .Local do continue
-
-		assert(len(mnode.outs) == 1)
-
-		iter: bac.Offset_Iter
-		iter.curr = mnode.outs[0].id
-		type: bac.Node_Datatype
-		for op in bac.offset_iter_next(graph, &iter) {
-			if iter.offset != 0 do continue collect_rename_slot
-			if op.idx != 2 do continue collect_rename_slot
-			onode := get_node(graph, op.id)
-			if onode.itype == .Copy ||
-			   onode.itype == .Set {continue collect_rename_slot}
-			otype := bac.mem_op_dt(
-				graph,
-				op.id,
-			) or_continue collect_rename_slot
-			if type != .Void && otype != type do continue collect_rename_slot
-			type = otype
+	root_split := bac.get_inputs(ctx, ctx.const_mem)[0]
+	if ctx.end != 0 {
+		for &slot in ctx.scope[ctx.threads_start:] {
+			slot.node = bac.add_mem(ctx, "slcm", root_split)
 		}
-
-		iter = {}
-		iter.curr = mnode.outs[0].id
-		for op in bac.offset_iter_next(graph, &iter) {
-			edit_node_id(&ctx, op.id, ctx.slot_count)
-		}
-		ctx.slot_count += 1
 	}
 
-	ctx.scope = make([]Value_Entry, ctx.slot_count)
-	if ctx.slot_count != 0 do walk_thread(&ctx, emem)
+	if rename_slot_count != 0 do walk_thread(&ctx, root_split)
 
 	ctx.dont_delete = false
 
 	for phi in ctx.deleted_lazy_phys {
 		if get_node(graph, phi).rtype == bac.DEAD_NODE_KIND do continue
 		bac.subsume(graph, bac.get_inputs(graph, phi)[1], phi)
+	}
+
+	if ctx.end != 0 && int(ctx.threads_start) < len(ctx.scope) {
+		return_mem := bac.get_inputs(ctx, ctx.end)[1]
+		if get_node(ctx, return_mem).itype == .Merge_Mem {
+			for i in int(ctx.threads_start) ..< len(ctx.scope) {
+				value := get_scope_value(&ctx, ctx.scope, i)
+				bac.connect(ctx, return_mem, value)
+			}
+		} else {
+			inps := make(
+				[]Node_ID,
+				len(ctx.scope) - int(ctx.threads_start) + 1,
+			)
+			inps[0] = return_mem
+			for i in int(ctx.threads_start) ..< len(ctx.scope) {
+				value := get_scope_value(&ctx, ctx.scope, i)
+				inps[i - int(ctx.threads_start) + 1] = value
+			}
+			merge := bac.add_merge_mem(ctx, "mmm", inps)
+			bac.set_input(ctx, ctx.end, 1, merge)
+		}
 	}
 
 	if !ODIN_DISABLE_ASSERT {
@@ -209,64 +277,125 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 		}
 	}
 
-	return ctx.slot_count != 0
+	return rename_slot_count != 0
 
 	walk_thread :: proc(ctx: ^Ctx, thread: Node_ID) {
+
+		slot: Split_Slot
+		slot.prev = ctx.split_slot
+
 		cursor := thread
+		limita := 1000
 		for {
+			assert(limita > 0)
+			limita -= 1
 			cnode := expand_node(ctx, cursor)
 			pcursor := cursor
 			cursor = 0
 
-			assert(len(ctx.scope) == int(ctx.slot_count))
+			outs := slice.clone(cnode.outs)
+			if cnode.inps[0] == ctx.base_mem {
+				outs = outs[:len(outs) -
+				(len(ctx.scope) - int(ctx.threads_start))]
+			}
+			prev: Node_ID
 
 			#partial switch cnode.itype {
-			case .Store:
+			case .Store, .Set, .Copy:
 				id := get_edited_node_idx(ctx, cnode) or_break
 				slot := &ctx.scope[id]
-				slot^ = Value_Entry(cnode.inps[3])
+				if id < ctx.threads_start {
+					slot^ = Value_Entry(cnode.inps[3])
+				} else {
+					prev = cnode.inps[1]
+					value := get_scope_value(ctx, ctx.scope, id)
+					bac.set_input(ctx, pcursor, 1, value)
+					slot^ = {
+						node = pcursor,
+					}
+				}
 				assert(slot^ != {})
 			case .Call:
 				assert(len(cnode.outs) == 1)
 				cursor = cnode.outs[0].id
 				cursor = bac.find_node(ctx, .Mem, cursor) or_else panic("")
 				continue
-			case .Mem, .Root_Mem, .Set, .Copy, .Phi, .Return:
+			case .Mem, .Root_Mem, .Phi, .Return, .Split_Mem, .Merge_Mem:
 			case:
 				fmt.panicf("%v", cnode.node)
 			}
 
-			outs: [dynamic]bac.Node_Output
-			for cout in slice.clone(cnode.outs) {
+			fin_outs: [dynamic]bac.Node_Output
+			for cout in outs {
 				conode := expand_node(ctx, cout.id)
+
 				#partial switch conode.itype {
 				case .Load:
 					id := get_edited_node_idx(ctx, conode) or_break
-					value := get_scope_value(ctx, ctx.scope, id)
-					bac.subsume(ctx, value, cout.id)
-				case .Store, .Call, .Set, .Copy, .Return, .Phi:
-					append(&outs, cout)
+					if id < ctx.threads_start {
+						value := get_scope_value(ctx, ctx.scope, id)
+						bac.subsume(ctx, value, cout.id)
+					} else {
+						value := get_scope_value(ctx, ctx.scope, id)
+						bac.set_input(
+							ctx,
+							cout.id,
+							1,
+							value,
+							subsume_on_intern = true,
+						)
+					}
+				case .Store,
+				     .Call,
+				     .Set,
+				     .Copy,
+				     .Return,
+				     .Phi,
+				     .Split_Mem,
+				     .Root_Mem,
+				     .Merge_Mem,
+				     .Mem:
+					if prev != 0 {
+						bac.set_input(ctx, cout.id, cout.idx, prev)
+					}
+					append(&fin_outs, cout)
 				}
 			}
 
-			cnode = expand_node(ctx, pcursor)
+			slot.scope = ctx.scope
 
-			original_scope := ctx.scope
+			if cnode.itype == .Split_Mem {
+				ctx.split_slot = &slot
+			}
 
-			for cout, i in outs {
-				last := i == len(outs) - 1
+			for cout, i in fin_outs {
+				last := i == len(fin_outs) - 1
 
-				if last {
+				if last || cnode.itype == .Split_Mem {
 					cursor = cout.id
-					ctx.scope = original_scope
+					ctx.scope = slot.scope
 				} else {
-					ctx.scope = slice.clone(original_scope)
+					ctx.scope = slice.clone(slot.scope)
 				}
 
 				conode := expand_node(ctx, cout.id)
 				#partial switch conode.itype {
 				case .Local:
 				case .Load:
+				case .Merge_Mem:
+					id, ok := get_edited_node_idx(ctx, conode)
+					if !ok {
+						id = u32(len(ctx.merges))
+						edit_node_id(ctx, cout.id, id)
+						append(&ctx.merges, Merge{})
+					}
+
+					ctx.merges[id].seen_cnt += 1
+					fmt.assertf(ctx.split_slot != nil, "%v")
+					ctx.split_slot.scope = ctx.scope
+					if ctx.merges[id].seen_cnt < len(conode.inps) {
+						cursor = 0
+					}
 				case .Phi:
 					reg := get_node(ctx, conode.inps[0])
 
@@ -295,7 +424,7 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 						sloter := make([]Value_Entry, len(join.entries) + 1)
 						sloter[0] = Value_Entry(conode.inps[0])
 						next_scope := join.entries[0]
-						for i in 0 ..< ctx.slot_count {
+						for i in 0 ..< len(ctx.scope) {
 							res, dirty := Value_Entry{}, false
 							for &v, j in sloter[1:] {
 								vl := join.entries[j][i]
@@ -341,7 +470,7 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 							edit_node_id(ctx, cout.id, id)
 
 							loop_scope := slice.clone(ctx.scope)
-							scope := make([]Value_Entry, ctx.slot_count)
+							scope := make([]Value_Entry, len(ctx.scope))
 							for &s, i in scope {
 								if loop_scope[i] != {} {
 									s = Value_Entry {
@@ -361,7 +490,7 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 							loop := &ctx.loops[id]
 							backedge := ctx.scope
 
-							for i in 0 ..< ctx.slot_count {
+							for i in 0 ..< len(ctx.scope) {
 								init := loop.scope[i]
 								bnode := &backedge[i]
 								if init.is_loop do continue
@@ -398,51 +527,54 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 					} else do panic("")
 
 					fallthrough
-				case .Store, .Call, .Set, .Copy, .Return:
+				case .Store,
+				     .Call,
+				     .Set,
+				     .Copy,
+				     .Return,
+				     .Mem,
+				     .Root_Mem,
+				     .Split_Mem:
 					if !last {
 						walk_thread(ctx, cout.id)
 					}
 				case:
 					fmt.panicf("%v", conode.node)
 				}
-
-			}
-
-			get_scope_value :: proc(
-				ctx: ^Ctx,
-				scope: []Value_Entry,
-				#any_int idx: int,
-			) -> Node_ID {
-				val := scope[idx].node
-				if scope[idx].is_loop {
-					loop := &ctx.loops[val]
-					val = get_scope_value(ctx, loop.scope, idx)
-					vnode := expand_node(ctx, val)
-					if (btype(vnode) != .Lazy_Phi ||
-						   vnode.inps[0] != loop.loop_node) &&
-					   !loop.done {
-						assert(
-							vnode.itype != .Phi ||
-							vnode.inps[0] != loop.loop_node,
-						)
-						val = add_lazy_phi(
-							ctx,
-							"srlphi",
-							vnode.dt,
-							loop.loop_node,
-							val,
-						)
-						loop.scope[idx] = Value_Entry(val)
-					}
-
-					scope[idx] = Value_Entry(val)
-				}
-				return val
 			}
 
 			if cursor == 0 do break
-
-			assert(len(ctx.scope) == int(ctx.slot_count))
 		}
+
+		ctx.split_slot = slot.prev
+	}
+
+	get_scope_value :: proc(
+		ctx: ^Ctx,
+		scope: []Value_Entry,
+		#any_int idx: int,
+	) -> Node_ID {
+		val := scope[idx].node
+		if scope[idx].is_loop {
+			loop := &ctx.loops[val]
+			val = get_scope_value(ctx, loop.scope, idx)
+			vnode := expand_node(ctx, val)
+			if (btype(vnode) != .Lazy_Phi ||
+				   vnode.inps[0] != loop.loop_node) &&
+			   !loop.done {
+				assert(vnode.itype != .Phi || vnode.inps[0] != loop.loop_node)
+				val = add_lazy_phi(
+					ctx,
+					"srlphi",
+					vnode.dt,
+					loop.loop_node,
+					val,
+				)
+				loop.scope[idx] = Value_Entry(val)
+			}
+
+			scope[idx] = Value_Entry(val)
+		}
+		return val
 	}
 }

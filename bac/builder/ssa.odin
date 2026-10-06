@@ -265,7 +265,7 @@ loop_control :: proc(
 	loop: ^Loop_State,
 ) {
 	base_size := get_node(ctx, loop.scope).input_count
-	truncate_scope(ctx, scope, base_size)
+	truncate_inputs(ctx, scope, base_size)
 	loop.scopes[variant] = merge_scopes(ctx, scope, loop.scopes[variant])
 }
 
@@ -322,7 +322,7 @@ push_scope_value :: proc(
 	return bac.connect(graph, scope, value)
 }
 
-truncate_scope :: proc(
+truncate_inputs :: proc(
 	graph: ^bac.Proc,
 	scope: bac.Node_ID,
 	#any_int to_len: int,
@@ -330,7 +330,6 @@ truncate_scope :: proc(
 	if scope == 0 do return
 
 	snode := expand_node(graph, scope)
-	assert(btype(snode) == .Scope)
 	assert(to_len <= int(snode.input_count))
 
 	for &inp, i in snode.inps[to_len:] {
@@ -434,7 +433,7 @@ inline_graph :: proc(graph: ^bac.Proc, call: bac.Node_ID, from: ^bac.Proc) {
 	call := expand_node(graph, call)
 	assert(call.itype == .Call)
 	proj_of(&ctx, from.entry)^ = call.inps[0]
-	proj_of(&ctx, from.root_mem)^ = call.inps[1]
+	proj_of(&ctx, from.base_mem)^ = call.inps[1]
 	proj_of(&ctx, from.sym)^ = call.inps[2]
 
 	bac.assert_live_pins(from)
@@ -676,6 +675,11 @@ inline_graph :: proc(graph: ^bac.Proc, call: bac.Node_ID, from: ^bac.Proc) {
 		rtype := node.rtype
 		input_cap = node.input_count
 
+		if node.itype == .Root_Mem {
+			rtype = u16(Node_Type.Mem)
+			if node.output_count == 0 do return
+		}
+
 		if node.itype == .Loop {
 			input_cap = 1
 		}
@@ -704,6 +708,7 @@ inline_graph :: proc(graph: ^bac.Proc, call: bac.Node_ID, from: ^bac.Proc) {
 
 		if node.itype == .Return {
 			ctx.reached_return = true
+			assert(get_node(graph, node.inps[0]).itype != .Dead)
 			return
 		}
 
@@ -1075,7 +1080,9 @@ Builtin_Proc :: enum {
 init_graph :: proc(graph: ^Proc) {
 	graph.gvn = 1
 	graph.entry = bac.add_entry(graph, "entry")
-	split := bac.add_split_mem(graph, "root_split", graph.entry)
+	// TODO: do we even need a mem_split node?
+	graph.base_mem = bac.add_mem(graph, "base_mem", graph.entry)
+	split := bac.add_split_mem(graph, "root_split", graph.base_mem)
 	graph.root_mem = bac.add_root_mem(graph, "rmem", split)
 	graph.const_mem = bac.add_root_mem(graph, "cmem", split)
 	graph.sym = bac.add_sym(graph, "sym", graph.entry)

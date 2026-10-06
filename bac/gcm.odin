@@ -178,15 +178,6 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 				remove_count,
 				len(end.inps),
 			)
-
-			if 1 < len(end.inps) {
-				mmerge := add_merge_mem(
-					graph,
-					"mmerge",
-					{end.inps[1], graph.const_mem},
-				)
-				set_input(graph, graph.end, 1, mmerge)
-			}
 		}
 
 		if has_unreachable_return(graph) {
@@ -484,6 +475,7 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 	rounds := 0
 
 	ctx.late_schedules[get_node(graph, graph.sym).gvn] = graph.entry
+	ctx.late_schedules[get_node(graph, graph.base_mem).gvn] = graph.entry
 	ctx.late_schedules[get_node(graph, graph.root_mem).gvn] = graph.entry
 	ctx.late_schedules[get_node(graph, graph.const_mem).gvn] = graph.entry
 	ctx.late_schedules[get_node(graph, expand_node(graph, graph.const_mem).inps[0]).gvn] =
@@ -503,7 +495,8 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 			assert(n != 0)
 			ctx.late_schedules[node.gvn] = n
 		} else if (node.itype == .Phi ||
-			   node.itype == .Mem ||
+			   (node.itype == .Mem &&
+					   get_node(graph, node.inps[0]).itype == .Call_End) ||
 			   node.itype == .Param ||
 			   node.itype == .Ret ||
 			   is_cfg(graph, n)) {
@@ -588,7 +581,7 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 
 		if free {
 			for cursor := lca; cursor != ctx.early_schedules[node.gvn]; {
-				fmt.assertf(cursor != 0, "%v", node)
+				fmt.assertf(cursor != 0, "%v %v", node, lca)
 				cursor = get_idom(ctx.graph, cursor)
 				lca = better(ctx, lctx, lca, cursor)
 			}

@@ -883,10 +883,15 @@ opt :: proc(ctx: ^bac.Proc) {
 	for dirty, limit := true, 100; dirty; limit -= 1 {
 		assert(limit > 0)
 		dirty = false
+		DEBUG_OPT :: false
 		dirty |= bac.apply_peeps(peep_ctx)
+		if DEBUG_OPT do fmt.println("peeps:", dirty)
 		dirty |= builder.memopt(ctx)
+		if DEBUG_OPT do fmt.println("memopt:", dirty)
 		dirty |= bac.apply_peeps(peep_ctx)
+		if DEBUG_OPT do fmt.println("peeps:", dirty)
 		dirty |= builder.loopopt(ctx)
+		if DEBUG_OPT do fmt.println("loopopt:", dirty)
 	}
 }
 
@@ -965,7 +970,7 @@ emit_stmts :: proc(
 	}
 	assert(base.gen <= len(ctx.scope))
 	resize(&ctx.scope, base.gen)
-	builder.truncate_scope(ctx, ctx.node_scope, base.node)
+	builder.truncate_inputs(ctx, ctx.node_scope, base.node)
 }
 
 ctx_sloc_of :: proc(ctx: ^Gen_Ctx, node: ^ast.Node) -> bac.D_Node_ID {

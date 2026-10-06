@@ -291,8 +291,9 @@ Local :: struct {
 		rename_idx: i32,
 	},
 	using __:    bit_field u32 {
-		idx:      u32  | 31,
+		idx:      u32  | 30,
 		is_param: bool | 1,
+		is_split: bool | 1,
 	},
 }
 
@@ -450,6 +451,7 @@ Proc_Meta :: struct {
 	dbgn_flip:    bool,
 	using pinned: struct {
 		entry:     Node_ID,
+		base_mem:  Node_ID,
 		root_mem:  Node_ID,
 		const_mem: Node_ID,
 		sym:       Node_ID,
@@ -1253,7 +1255,7 @@ assert_live_pins :: proc(graph: ^Proc) {
 	prev := current_graph
 	current_graph = graph
 	defer current_graph = prev
-	expected := [?]Node_Type{.Entry, .Root_Mem, .Root_Mem, .Sym, .Return}
+	expected := [?]Node_Type{.Entry, .Mem, .Root_Mem, .Root_Mem, .Sym, .Return}
 	for &n, i in mem.slice_data_cast(
 		[]Node_ID,
 		mem.ptr_to_bytes(&graph.pinned),
@@ -1677,6 +1679,9 @@ subsume :: proc(
 	//assert(with != graph.start)
 	//assert(target != graph.entry)
 
+	assert(with != 0)
+	assert(target != 0)
+
 	wnode := expand_node(graph, with)
 	tnode := expand_node(graph, target)
 
@@ -1770,6 +1775,7 @@ set_input :: proc(
 	id: Node_ID,
 	#any_int idx: int,
 	value: Node_ID,
+	subsume_on_intern := false,
 ) -> Node_ID {
 	node := expand_node(graph, id)
 
@@ -1782,7 +1788,11 @@ set_input :: proc(
 	unintern(graph, id)
 	node.inps[idx] = value
 	nid := intern(graph, id)
-	assert(nid == id)
+	if subsume_on_intern {
+		if nid != id do subsume(graph, nid, id)
+	} else {
+		assert(nid == id)
+	}
 	return nid
 }
 

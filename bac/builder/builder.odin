@@ -197,6 +197,47 @@ peep :: proc(
 	}
 
 	#partial match: switch node.itype {
+	case .Mem:
+		inp := expand_node(ctx, node.inps[0])
+		if inp.itype == .Split_Mem {
+			if len(inp.outs) == 1 {
+				return inp.inps[0]
+			}
+
+			#reverse for out in node.outs {
+				onode := expand_node(ctx, out.id)
+				if onode.itype == .Merge_Mem {
+					ordered_remove(ctx, &onode, out.idx)
+					bac.worklist_add(ctx, ctx.worklist, out.id)
+
+				}
+			}
+
+			if len(inp.outs) == 2 && node.output_count == 0 {
+				for out in inp.outs {
+					if out.id != id {
+						bac.worklist_add(ctx, ctx.worklist, out.id)
+					}
+				}
+			}
+		}
+	case .Split_Mem:
+	case .Merge_Mem:
+		for inp in node.inps {
+			inode := get_node(ctx, inp)
+			if inode.itype == .Merge_Mem {
+				for oinp in node.inps {
+					if inp == oinp do continue
+					bac.connect(ctx, inp, oinp)
+				}
+				bac.worklist_add(ctx, ctx.worklist, inp)
+				return inp
+			}
+		}
+
+		if len(node.inps) == 1 {
+			return node.inps[0]
+		}
 	case .Local_Addr:
 		if !is_complete do break match
 

@@ -67,48 +67,44 @@ imm_cmps:
 3:
     cmp.q rax, [rdi]
     jnz 4
-    mov.q [rsp], rcx
     jmp 5
 4:
     add rcx, 2
-    mov.q [rsp], rcx
 5:
     cmp.q rax, [rdi]
     jnl 6
-    push.q [rsp]
-    pop.q [rsp + 0x8]
+    mov.q [rsp], rcx
     jmp 7
 6:
-    mov.q rcx, [rsp]
     add rcx, 4
-    mov.q [rsp + 0x8], rcx
+    mov.q [rsp], rcx
 7:
     cmp.q rax, [rdi]
     jng 8
-    push.q [rsp + 0x8]
-    pop.q [rsp]
+    push.q [rsp]
+    pop.q [rsp + 0x8]
     jmp 9
 8:
-    mov.q rcx, [rsp + 0x8]
+    mov.q rcx, [rsp]
     add rcx, 8
-    mov.q [rsp], rcx
+    mov.q [rsp + 0x8], rcx
 9:
     cmp.q rax, [rdi]
     jnle 10
-    push.q [rsp]
-    pop.q [rsp + 0x8]
+    push.q [rsp + 0x8]
+    pop.q [rsp]
     jmp 11
 10:
-    mov.q rcx, [rsp]
+    mov.q rcx, [rsp + 0x8]
     add rcx, 0x10
-    mov.q [rsp + 0x8], rcx
+    mov.q [rsp], rcx
 11:
     cmp.q rax, [rdi]
     jnge 12
-    mov.q rax, [rsp + 0x8]
+    mov.q rax, [rsp]
     jmp 13
 12:
-    mov.q rax, [rsp + 0x8]
+    mov.q rax, [rsp]
     add rax, 0x20
 13:
     add rsp, 0x18

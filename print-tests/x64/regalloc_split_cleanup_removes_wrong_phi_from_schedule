@@ -554,19 +554,18 @@ main:
     push r14
     push r15
     sub rsp, 0x18
-    mov r9, 6
+    mov r8, 6
     mov r15, 4
     mov r13, 3
     mov r12, 2
     xor ebp, ebp
-    mov r8, 7
+    mov rdi, 7
     mov rax, 1
-    mov rdi, 8
+    mov r14, 8
     mov rbx, 5
 2:
-    mov.q [rsp + 0x10], r8
-    mov.q [rsp + 0x8], r9
-    mov r14, rdi
+    mov.q [rsp + 0x10], rdi
+    mov.q [rsp + 0x8], r8
     mov.q [rsp], rax
     add rbp, 1
     mov.q rax, [rsp]
@@ -576,8 +575,9 @@ main:
     mov.q rsi, [rsp]
     add rsi, r12
     add rsi, rax
-    mov rcx, rsi
-    add rcx, r14
+    mov rdx, rsi
+    mov rcx, r14
+    add rcx, rdx
     add rcx, rax
     add r12, r13
     add r12, rax
@@ -592,16 +592,16 @@ main:
     mov.q r8, [rsp + 0x10]
     add rdi, r8
     add rdi, rax
-    mov r11, rdi
+    mov r10, rdi
     mov.q rdi, [rsp + 0x10]
     add rdi, r14
     add rdi, rax
-    mov r10, rdi
+    mov r9, rdi
     cmp rbp, 5
     mov rax, rsi
-    mov rdi, rcx
-    mov r9, r11
+    mov r14, rcx
     mov r8, r10
+    mov rdi, r9
     mov rbx, rdx
     jnz 2
     lea rsi, [rsi]
@@ -610,9 +610,9 @@ main:
     lea rsi, [rsi + r15*4]
     imul rax, rdx, 5
     add rsi, rax
-    imul rax, r11, 6
+    imul rax, r10, 6
     add rsi, rax
-    imul rax, r10, 7
+    imul rax, r9, 7
     add rsi, rax
     lea rax, [rsi + rcx*8]
     mov rcx, 0xfb
@@ -639,15 +639,15 @@ main:
     mov rax, 7
     xor ebx, ebx
     mov rdx, 6
-    mov r9, 8
-    mov r8, 1
+    mov r9, 1
+    mov r8, 8
 1:
     add rbx, 1
-    mov rcx, r8
+    mov rcx, r9
     add rcx, rbx
     imul r11, rcx, 3
     add r11, 1
-    mov r10, r8
+    mov r10, r9
     add r10, rbp
     add rbp, r12
     add r12, rdi
@@ -655,9 +655,9 @@ main:
     add rsi, rdx
     add rdx, rax
     add r10, r11
-    mov rcx, r9
+    mov rcx, r8
     add rcx, r10
-    add rax, r9
+    add rax, r8
     add rcx, r11
     add rax, r11
     add rbp, r11
@@ -666,8 +666,8 @@ main:
     add rsi, r11
     add rdx, r11
     cmp rbx, 5
-    mov r9, rcx
-    mov r8, r10
+    mov r9, r10
+    mov r8, rcx
     jnz 1
     lea r9, [r10 + rbp*2]
     imul r8, r12, 3

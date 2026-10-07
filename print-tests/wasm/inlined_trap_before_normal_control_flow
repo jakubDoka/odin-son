@@ -18,20 +18,22 @@
         br 1
       end
       block
-        call $foo
-        global.get 2
-        i64.load align=1
-        local.set 1
-        local.get 1
-        i64.const 0
-        i64.eq
-        br_if 0
-        i64.const 0
+        block
+          call $foo
+          global.get 2
+          i64.load align=1
+          local.set 1
+          local.get 1
+          i64.const 0
+          i64.eq
+          br_if 0
+          i64.const 0
+          local.set 0
+          br 1
+        end
+        i64.const 1
         local.set 0
-        br 1
       end
-      i64.const 1
-      local.set 0
     end
     local.get 0
     return
@@ -72,20 +74,22 @@
         br 1
       end
       block
-        call $foo
-        global.get 2
-        i64.load align=1
+        block
+          call $foo
+          global.get 2
+          i64.load align=1
+          local.set 0
+          local.get 0
+          i64.const 0
+          i64.eq
+          br_if 0
+          i64.const 0
+          local.set 0
+          br 1
+        end
+        i64.const 1
         local.set 0
-        local.get 0
-        i64.const 0
-        i64.eq
-        br_if 0
-        i64.const 0
-        local.set 0
-        br 1
       end
-      i64.const 1
-      local.set 0
     end
     local.get 0
     return
@@ -126,20 +130,22 @@
         br 1
       end
       block
-        call $foo
-        global.get 2
-        i64.load align=1
-        local.set 1
-        local.get 1
-        i64.const 0
-        i64.eq
-        br_if 0
-        i64.const 0
+        block
+          call $foo
+          global.get 2
+          i64.load align=1
+          local.set 1
+          local.get 1
+          i64.const 0
+          i64.eq
+          br_if 0
+          i64.const 0
+          local.set 0
+          br 1
+        end
+        i64.const 1
         local.set 0
-        br 1
       end
-      i64.const 1
-      local.set 0
     end
     local.get 0
     return
@@ -180,20 +186,22 @@
         br 1
       end
       block
-        call $foo
-        global.get 2
-        i64.load align=1
+        block
+          call $foo
+          global.get 2
+          i64.load align=1
+          local.set 0
+          local.get 0
+          i64.const 0
+          i64.eq
+          br_if 0
+          i64.const 0
+          local.set 0
+          br 1
+        end
+        i64.const 1
         local.set 0
-        local.get 0
-        i64.const 0
-        i64.eq
-        br_if 0
-        i64.const 0
-        local.set 0
-        br 1
       end
-      i64.const 1
-      local.set 0
     end
     local.get 0
     return
@@ -231,6 +239,8 @@
         i64.const 0
         i64.ne
         br_if 0
+        i64.const 0
+        local.set 0
         br 1
       end
       block
@@ -242,8 +252,6 @@
         i64.const 0
         i64.eq
         br_if 0
-        i64.const 0
-        local.set 0
         br 1
       end
       i64.const 1
@@ -285,19 +293,19 @@
         i64.const 0
         i64.ne
         br_if 0
+        i64.const 0
+        local.set 0
         br 1
       end
       block
         call $foo
         global.get 2
         i64.load align=1
-        local.set 0
-        local.get 0
+        local.set 1
+        local.get 1
         i64.const 0
         i64.eq
         br_if 0
-        i64.const 0
-        local.set 0
         br 1
       end
       i64.const 1
@@ -339,19 +347,19 @@
         i64.const 0
         i64.ne
         br_if 0
+        i64.const 0
+        local.set 0
         br 1
       end
       block
         call $foo
         global.get 2
         i64.load align=1
-        local.set 0
-        local.get 0
+        local.set 1
+        local.get 1
         i64.const 0
         i64.eq
         br_if 0
-        i64.const 0
-        local.set 0
         br 1
       end
       i64.const 1
@@ -382,22 +390,20 @@
   (func $main (type 0) (result i64)
     (local i64 i64)
     block
-      block
-        i64.const 0
-        local.set 1
-        global.get 1
-        i64.load align=1
-        local.set 0
-        local.get 0
-        i64.const 0
-        i64.ne
-        br_if 0
-        br 1
-      end
-      unreachable
+      i64.const 0
+      local.set 1
+      global.get 1
+      i64.load align=1
+      local.set 0
+      local.get 0
+      i64.const 0
+      i64.ne
+      br_if 0
+      local.get 1
+      return
     end
-    local.get 1
-    return
+    unreachable
+    unreachable
     end
   )
   (table (;0;) 0 0 funcref)

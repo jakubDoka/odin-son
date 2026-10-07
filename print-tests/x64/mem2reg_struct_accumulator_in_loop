@@ -1,8 +1,7 @@
 =========== OPT LEVEL: none-quick ===========
 opaque:
     sub rsp, 8
-    mov.q [rsp], rdi
-    mov.q rax, [rsp]
+    mov rax, rdi
     add rsp, 8
     ret
 main:
@@ -10,7 +9,7 @@ main:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0x10
-    call -0x4f
+    call -0x47
     mov.q [rsp], 0
     mov.q [rsp + 0x8], 0
     mov rdi, 5
@@ -60,8 +59,7 @@ main:
 =========== OPT LEVEL: mininal-quick ===========
 opaque:
     sub rsp, 8
-    mov.q [rsp], rdi
-    mov.q rax, [rsp]
+    mov rax, rdi
     add rsp, 8
     ret
 main:
@@ -69,7 +67,7 @@ main:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0x10
-    call -0x4f
+    call -0x47
     mov.q [rsp], 0
     mov.q [rsp + 0x8], 0
     mov rdi, 5
@@ -119,8 +117,7 @@ main:
 =========== OPT LEVEL: moderate-quick ===========
 opaque:
     sub rsp, 8
-    mov.q [rsp], rdi
-    mov.q rax, [rsp]
+    mov rax, rdi
     add rsp, 8
     ret
 main:
@@ -175,20 +172,20 @@ main:
     sub rsp, 8
     mov rdi, 5
     call opaque
-    xor esi, esi
     xor ecx, ecx
     xor edx, edx
+    xor esi, esi
 2:
-    mov r9, rdx
+    mov r9, rsi
     mov r8, rcx
-    mov rdi, rsi
+    mov rdi, rdx
     add rdi, 1
     mov rcx, r8
     add rcx, 1
-    mov rdx, r9
-    add rdx, rsi
-    cmp rsi, rax
-    mov rsi, rdi
+    mov rsi, r9
+    add rsi, rdx
+    cmp rdx, rax
+    mov rdx, rdi
     jnge 2
     imul rax, r9, 0x64
     add rax, r8
@@ -196,18 +193,18 @@ main:
     ret
 =========== OPT LEVEL: aggresive ===========
 main:
-    xor eax, eax
     xor ecx, ecx
+    xor eax, eax
     xor edx, edx
 1:
-    mov r8, rdx
-    mov rdi, rax
+    mov r8, rax
+    mov rdi, rdx
     mov rsi, rcx
     add rsi, 1
-    mov rax, rdi
-    add rax, 1
-    mov rdx, r8
-    add rdx, rcx
+    mov rdx, rdi
+    add rdx, 1
+    mov rax, r8
+    add rax, rcx
     cmp rcx, 5
     mov rcx, rsi
     jnge 1

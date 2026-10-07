@@ -41,8 +41,8 @@ main:
     lea rdi, [rsp + 0xa0]
     call -0xcc
     xor esi, esi
-    mov rdx, 0x10
     lea rdi, [rsp + 0x10]
+    mov rdx, 0x10
     call -0xe0
     lea rdi, [rsp + 0x20]
     xor esi, esi
@@ -111,19 +111,19 @@ vec_at int:
     lea rax, [rax + rsi*8]
     ret
 vec_push int:
-    mov.q rax, [rdi + 0x8]
-    mov.q rcx, [rsi]
-    mov.q rdx, [rdi]
-    mov.q [rdx + rax*8], rcx
+    mov.q rax, [rdi]
+    mov.q rcx, [rdi + 0x8]
+    mov.q rdx, [rsi]
+    mov.q [rax + rcx*8], rdx
     add.q [rdi + 0x8], 1
     ret
 vec_push struct {a: int, b: int}:
     sub rsp, 8
     mov.q [rsp], rdi
     mov.q rax, [rsp]
+    mov.q rdi, [rax]
+    mov.q rax, [rsp]
     mov.q rax, [rax + 0x8]
-    mov.q rcx, [rsp]
-    mov.q rdi, [rcx]
     imul rax, rax, 0x10
     add rdi, rax
     mov rdx, 0x10
@@ -176,8 +176,8 @@ main:
     lea rdi, [rsp + 0xa0]
     call -0xa4
     xor esi, esi
-    mov rdx, 0x10
     lea rdi, [rsp + 0x10]
+    mov rdx, 0x10
     call -0xb8
     lea rdi, [rsp + 0x20]
     xor esi, esi
@@ -244,18 +244,18 @@ vec_at int:
     lea rax, [rax + rsi*8]
     ret
 vec_push int:
-    mov.q rdx, [rdi + 0x8]
-    mov.q rcx, [rsi]
-    mov.q rax, [rdi]
-    mov.q [rax + rdx*8], rcx
+    mov.q rdx, [rdi]
+    mov.q rcx, [rdi + 0x8]
+    mov.q rax, [rsi]
+    mov.q [rdx + rcx*8], rax
     add.q [rdi + 0x8], 1
     ret
 vec_push struct {a: int, b: int}:
     push rbx
     mov rbx, rdi
-    mov.q rcx, [rbx + 0x8]
     mov.q rdi, [rbx]
-    imul rax, rcx, 0x10
+    mov.q rax, [rbx + 0x8]
+    imul rax, rax, 0x10
     add rdi, rax
     mov rdx, 0x10
     call -0x262
@@ -310,8 +310,8 @@ main:
     lea rdi, [rsp + 0xa0]
     call -0xcc
     xor esi, esi
-    mov rdx, 0x10
     lea rdi, [rsp + 0x10]
+    mov rdx, 0x10
     call -0xe0
     lea rax, [rsp + 0x60]
     add rax, 0
@@ -380,19 +380,19 @@ vec_at int:
     lea rax, [rax + rsi*8]
     ret
 vec_push int:
-    mov.q rax, [rdi + 0x8]
-    mov.q rcx, [rsi]
-    mov.q rdx, [rdi]
-    mov.q [rdx + rax*8], rcx
+    mov.q rax, [rdi]
+    mov.q rcx, [rdi + 0x8]
+    mov.q rdx, [rsi]
+    mov.q [rax + rcx*8], rdx
     add.q [rdi + 0x8], 1
     ret
 vec_push struct {a: int, b: int}:
     sub rsp, 8
     mov.q [rsp], rdi
     mov.q rax, [rsp]
+    mov.q rdi, [rax]
+    mov.q rax, [rsp]
     mov.q rax, [rax + 0x8]
-    mov.q rcx, [rsp]
-    mov.q rdi, [rcx]
     imul rax, rax, 0x10
     add rdi, rax
     mov rdx, 0x10
@@ -446,8 +446,8 @@ main:
     lea rdi, [rsp + 0xa0]
     call -0xa6
     xor esi, esi
-    mov rdx, 0x10
     lea rdi, [rsp + 0x10]
+    mov rdx, 0x10
     call -0xba
     lea rbx, [rsp + 0x60]
     add rbx, 0
@@ -509,18 +509,18 @@ vec_at int:
     lea rax, [rax + rsi*8]
     ret
 vec_push int:
-    mov.q rdx, [rdi + 0x8]
-    mov.q rcx, [rsi]
-    mov.q rax, [rdi]
-    mov.q [rax + rdx*8], rcx
+    mov.q rdx, [rdi]
+    mov.q rcx, [rdi + 0x8]
+    mov.q rax, [rsi]
+    mov.q [rdx + rcx*8], rax
     add.q [rdi + 0x8], 1
     ret
 vec_push struct {a: int, b: int}:
     push rbx
     mov rbx, rdi
-    mov.q rcx, [rbx + 0x8]
     mov.q rdi, [rbx]
-    imul rax, rcx, 0x10
+    mov.q rax, [rbx + 0x8]
+    imul rax, rax, 0x10
     add rdi, rax
     mov rdx, 0x10
     call -0x24a
@@ -617,19 +617,19 @@ vec_at int:
     lea rax, [rax + rsi*8]
     ret
 vec_push int:
-    mov.q rax, [rdi + 0x8]
-    mov.q rcx, [rsi]
-    mov.q rdx, [rdi]
-    mov.q [rdx + rax*8], rcx
+    mov.q rax, [rdi]
+    mov.q rcx, [rdi + 0x8]
+    mov.q rdx, [rsi]
+    mov.q [rax + rcx*8], rdx
     add.q [rdi + 0x8], 1
     ret
 vec_push struct {a: int, b: int}:
     sub rsp, 8
     mov.q [rsp], rdi
     mov.q rax, [rsp]
+    mov.q rdi, [rax]
+    mov.q rax, [rsp]
     mov.q rax, [rax + 0x8]
-    mov.q rcx, [rsp]
-    mov.q rdi, [rcx]
     imul rax, rax, 0x10
     add rdi, rax
     mov rdx, 0x10
@@ -724,18 +724,18 @@ vec_at int:
     lea rax, [rax + rsi*8]
     ret
 vec_push int:
-    mov.q rdx, [rdi + 0x8]
-    mov.q rcx, [rsi]
-    mov.q rax, [rdi]
-    mov.q [rax + rdx*8], rcx
+    mov.q rdx, [rdi]
+    mov.q rcx, [rdi + 0x8]
+    mov.q rax, [rsi]
+    mov.q [rdx + rcx*8], rax
     add.q [rdi + 0x8], 1
     ret
 vec_push struct {a: int, b: int}:
     push rbx
     mov rbx, rdi
-    mov.q rcx, [rbx + 0x8]
     mov.q rdi, [rbx]
-    imul rax, rcx, 0x10
+    mov.q rax, [rbx + 0x8]
+    imul rax, rax, 0x10
     add rdi, rax
     mov rdx, 0x10
     call -0x1e2
@@ -833,18 +833,18 @@ vec_at int:
     lea rax, [rax + rsi*8]
     ret
 vec_push int:
-    mov.q rdx, [rdi + 0x8]
-    mov.q rcx, [rsi]
-    mov.q rax, [rdi]
-    mov.q [rax + rdx*8], rcx
+    mov.q rdx, [rdi]
+    mov.q rcx, [rdi + 0x8]
+    mov.q rax, [rsi]
+    mov.q [rdx + rcx*8], rax
     add.q [rdi + 0x8], 1
     ret
 vec_push struct {a: int, b: int}:
     push rbx
     mov rbx, rdi
-    mov.q rcx, [rbx + 0x8]
     mov.q rdi, [rbx]
-    imul rax, rcx, 0x10
+    mov.q rax, [rbx + 0x8]
+    imul rax, rax, 0x10
     add rdi, rax
     mov rdx, 0x10
     call -0x1f2
@@ -885,20 +885,20 @@ main:
     mov.q [rax + rcx*8], 0x1f
     add.q [rsp + 0x8], 1
     pxor xmm0, xmm0
-    movups.x [rsp + 0x10], xmm0
+    movups.x [rsp + 0x20], xmm0
     lea rax, [rsp + 0x70]
-    mov.q [rsp + 0x10], rax
-    mov.q [rsp + 0x20], 3
-    mov.q [rsp + 0x28], 4
-    mov.q rax, [rsp + 0x18]
-    lea rsi, [rsp + 0x20]
-    mov.q rdi, [rsp + 0x10]
+    mov.q [rsp + 0x20], rax
+    mov.q [rsp + 0x10], 3
+    mov.q [rsp + 0x18], 4
+    mov.q rax, [rsp + 0x28]
+    mov.q rdi, [rsp + 0x20]
+    lea rsi, [rsp + 0x10]
     imul rax, rax, 0x10
     add rdi, rax
     mov rdx, 0x10
     call -0x12d
-    add.q [rsp + 0x18], 1
-    mov.q r8, [rsp + 0x10]
+    add.q [rsp + 0x28], 1
+    mov.q r8, [rsp + 0x20]
     xor eax, eax
     cmp.q [rsp + 0x8], 0
     jng 2
@@ -906,13 +906,13 @@ main:
     xor ecx, ecx
 1:
     mov.q rdi, [rsp]
-    mov rsi, rcx
+    mov rsi, rax
     add rsi, 1
-    mov rdx, rax
-    add.q rdx, [rdi + rcx*8]
+    mov rdx, rcx
+    add.q rdx, [rdi + rax*8]
     cmp.q rsi, [rsp + 0x8]
-    mov rcx, rsi
-    mov rax, rdx
+    mov rcx, rdx
+    mov rax, rsi
     jnge 1
     mov rax, rdx
     jmp 2
@@ -920,6 +920,6 @@ main:
     add.q rax, [r8]
     add.q rax, [r8 + 0x8]
     add.q rax, [rsp + 0x8]
-    add.q rax, [rsp + 0x18]
+    add.q rax, [rsp + 0x28]
     add rsp, 0xf8
     ret

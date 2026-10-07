@@ -1,8 +1,7 @@
 =========== OPT LEVEL: none-quick ===========
 opaque:
     sub rsp, 8
-    mov.q [rsp], rdi
-    mov.q rax, [rsp]
+    mov rax, rdi
     add rsp, 8
     ret
 main:
@@ -34,18 +33,15 @@ main:
     call opaque
     mov.q [rsp + 0x38], rax
     xor eax, eax
-    movsd.q xmm0, [rip + 0xefd]
+    movsd.q xmm0, [rip + 0xf05]
+    mov.q rcx, [rsp]
+    movsx rcx, cl
     movsd.q xmm1, [rip + 0xefc]
     movss.d xmm2, [rip + 0xefb]
     movss.d xmm3, [rip + 0xef6]
     cvtss2sd xmm3, xmm3
-    mov.q rcx, [rsp]
-    movsx rcx, cl
-    addsd.q xmm3, [rip + 0xee4]
+    addsd.q xmm3, [rip + 0xeec]
     cvtsd2ss xmm3, xmm3
-    cvttss2si rdx, xmm3
-    add rax, rdx
-    cvtsi2ss xmm3, rcx
     cvttss2si rdx, xmm3
     add rax, rdx
     mov.q rdx, [rsp + 0x8]
@@ -58,6 +54,9 @@ main:
     movzx esi, si
     mov.q rdi, [rsp + 0x30]
     mov edi, edi
+    cvtsi2ss xmm3, rcx
+    cvttss2si r8, xmm3
+    add rax, r8
     cvtsi2sd xmm3, rcx
     cvttsd2si rcx, xmm3
     add rax, rcx
@@ -120,7 +119,7 @@ main:
     cvttsd2si ecx, xmm0
     movzx ecx, cl
     add rax, rcx
-    movss.d xmm1, [rip + 0xd95]
+    movss.d xmm1, [rip + 0xd9d]
     cvttss2si ecx, xmm1
     movzx ecx, cx
     add rax, rcx
@@ -168,20 +167,17 @@ main:
     mov rbx, rax
     mov rdi, 0x6acfc0
     call opaque
-    mov r10, rax
+    mov r11, rax
     xor eax, eax
     movsd.q xmm0, [rip + 0xf13]
-    movsd.q xmm2, [rip + 0xf12]
-    movss.d xmm1, [rip + 0xf11]
-    movss.d xmm3, [rip + 0xf0c]
-    cvtss2sd xmm3, xmm3
     mov.q rcx, [rsp]
     movsx r9, cl
+    movsd.q xmm2, [rip + 0xf0a]
+    movss.d xmm1, [rip + 0xf09]
+    movss.d xmm3, [rip + 0xf04]
+    cvtss2sd xmm3, xmm3
     addsd.q xmm3, [rip + 0xefa]
     cvtsd2ss xmm3, xmm3
-    cvttss2si rcx, xmm3
-    add rax, rcx
-    cvtsi2ss xmm3, r9
     cvttss2si rcx, xmm3
     add rax, rcx
     mov rcx, r15
@@ -194,6 +190,9 @@ main:
     movzx edx, cx
     mov rcx, rbx
     mov ecx, ecx
+    cvtsi2ss xmm3, r9
+    cvttss2si r10, xmm3
+    add rax, r10
     cvtsi2sd xmm3, r9
     cvttsd2si r9, xmm3
     add rax, r9
@@ -233,10 +232,10 @@ main:
     cvtsi2sd xmm3, rcx
     cvttsd2si rcx, xmm3
     add rax, rcx
-    cvtsi2ss xmm3, r10
+    cvtsi2ss xmm3, r11
     cvttss2si rcx, xmm3
     add rax, rcx
-    cvtsi2sd xmm3, r10
+    cvtsi2sd xmm3, r11
     cvttsd2si rcx, xmm3
     add rax, rcx
     cvttss2si ecx, xmm1
@@ -272,8 +271,7 @@ main:
 =========== OPT LEVEL: mininal-quick ===========
 opaque:
     sub rsp, 8
-    mov.q [rsp], rdi
-    mov.q rax, [rsp]
+    mov rax, rdi
     add rsp, 8
     ret
 main:
@@ -497,8 +495,7 @@ main:
 =========== OPT LEVEL: moderate-quick ===========
 opaque:
     sub rsp, 8
-    mov.q [rsp], rdi
-    mov.q rax, [rsp]
+    mov rax, rdi
     add rsp, 8
     ret
 main:

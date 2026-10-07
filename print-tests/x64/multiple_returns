@@ -26,8 +26,8 @@ a:
     call c
     mov.q rcx, [rsp + 0x10]
     add rcx, rax
-    mov rcx, rcx
-    jmp 5
+    mov.q [rsp + 0x10], rcx
+    jmp 7
 2:
     mov.q rdi, [rsp]
     call b
@@ -35,20 +35,24 @@ a:
     mov.q rax, [rsp + 0x8]
     imul rdi, rax, 2
     call c
-    mov.q rdx, [rsp]
-    add rdx, rax
-    mov rcx, rdx
-    jmp 5
+    mov.q rcx, [rsp]
+    add rcx, rax
+    mov.q [rsp], rcx
+    jmp 6
 3:
     mov.q rax, [rsp + 0x8]
     imul rax, rax, 6
-    mov rcx, rax
+    mov rax, rax
     jmp 5
 4:
-    xor ecx, ecx
+    xor eax, eax
 5:
-    mov.q [rsp], rcx
-    mov.q rax, [rsp]
+    mov.q [rsp], rax
+6:
+    push.q [rsp]
+    pop.q [rsp + 0x10]
+7:
+    mov.q rax, [rsp + 0x10]
     add rsp, 0x18
     ret
 b:
@@ -134,8 +138,8 @@ a:
     call c
     mov.q rcx, [rsp + 0x10]
     add rcx, rax
-    mov rcx, rcx
-    jmp 5
+    mov.q [rsp + 0x10], rcx
+    jmp 7
 2:
     mov.q rdi, [rsp]
     call b
@@ -143,20 +147,24 @@ a:
     mov.q rax, [rsp + 0x8]
     imul rdi, rax, 2
     call c
-    mov.q rdx, [rsp]
-    add rdx, rax
-    mov rcx, rdx
-    jmp 5
+    mov.q rcx, [rsp]
+    add rcx, rax
+    mov.q [rsp], rcx
+    jmp 6
 3:
     mov.q rax, [rsp + 0x8]
     imul rax, rax, 6
-    mov rcx, rax
+    mov rax, rax
     jmp 5
 4:
-    xor ecx, ecx
+    xor eax, eax
 5:
-    mov.q [rsp], rcx
-    mov.q rax, [rsp]
+    mov.q [rsp], rax
+6:
+    push.q [rsp]
+    pop.q [rsp + 0x10]
+7:
+    mov.q rax, [rsp + 0x10]
     add rsp, 0x18
     ret
 b:
@@ -263,8 +271,7 @@ a:
 4:
     xor ecx, ecx
 5:
-    mov.q [rsp], rcx
-    mov.q rax, [rsp]
+    mov rax, rcx
     add rsp, 0x18
     ret
 b:

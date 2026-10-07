@@ -897,7 +897,9 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 				assert(
 					next.idx != len(nnode.inps) - 1 || nnode.itype != .Region,
 				)
-				if int(nnode.gvn) != i + 1 && nnode.itype != .Loop {
+				if int(nnode.gvn) != i + 1 &&
+				   nnode.itype != .Loop &&
+				   nnode.itype != .End {
 					start := i
 
 					for ; get_node(ctx, ctx.schedule.bbs[start].head).itype ==

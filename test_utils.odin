@@ -172,7 +172,7 @@ run_test :: proc(
 		append(&confs, Test_Conf{level = level, debug = true})
 	}
 	for level in levels[:] {
-		//append(&confs, Test_Conf{level = level, vm = .Wasm})
+		append(&confs, Test_Conf{level = level, vm = .Wasm})
 	}
 	for level in levels[:] {
 		//append(&confs, Test_Conf{level = level, vm = .Arm})

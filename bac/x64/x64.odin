@@ -238,7 +238,7 @@ peep :: proc(
 	ctx: bac.Peep_Ctx,
 	node: bac.Expanded_Node,
 	_: $T,
-) -> bac.Node_ID {
+) -> Maybe(bac.Node_ID) {
 	node := node
 
 	id := bac.get_node_id(ctx, node)
@@ -765,10 +765,9 @@ peep :: proc(
 		}
 
 		if changed do return id
-		return 0
 	}
 
-	return 0
+	return nil
 }
 
 add_node :: proc(
@@ -1001,7 +1000,6 @@ meta_of :: proc(
 	     .Entry,
 	     .Region,
 	     .Loop,
-	     .Dead,
 	     .Call_End:
 		fmt.panicf("should not reach these: %v", node)
 	case .Poison:
@@ -1942,7 +1940,7 @@ emit_instr :: proc(
 			rx := rex(a, b, NO_INDEX, bac.DT_SIZE[node.dt] == 8)
 			emit(ctx.code, {0x66, rx, 0x0f, op, mod_rm(.Direct, a, b)})
 		}
-	case .Nil, .Entry, .Then, .Else, .Region, .Loop, .Call_End, .Dead, .End:
+	case .Nil, .Entry, .Then, .Else, .Region, .Loop, .Call_End, .End:
 		fmt.panicf("Not reachable form here %v", node.node)
 	case .If:
 		cnode := expand_node(ctx, node.inps[1])

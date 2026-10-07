@@ -545,8 +545,7 @@ inline_graph :: proc(graph: ^bac.Proc, call: bac.Node_ID, from: ^bac.Proc) {
 			bac.delete_node(graph, nd)
 		}
 	} else {
-		dead := bac.add_dead(graph, "inlnd")
-		bac.subsume(graph, dead, call.outs[0].id)
+		bac.subsume(graph, 0, call.outs[0].id)
 	}
 
 	bac.assert_live_pins(graph)
@@ -664,7 +663,7 @@ inline_graph :: proc(graph: ^bac.Proc, call: bac.Node_ID, from: ^bac.Proc) {
 
 		if node.itype == .Return {
 			ctx.reached_return = true
-			assert(get_node(ctx.from, node.inps[0]).itype != .Dead)
+			assert(node.inps[0] != 0)
 			return
 		}
 

@@ -432,7 +432,9 @@ loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 			}
 
 			for idx in indexings {
+				// TODO: why?
 				if true do break
+
 				fmt.assertf(
 					!slice.contains(bb.instrs[:], idx.base),
 					"%v",

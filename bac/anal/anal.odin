@@ -11,7 +11,7 @@ peep :: proc(
 	ctx: bac.Peep_Ctx,
 	node: bac.Expanded_Node,
 	_: $T,
-) -> Node_ID {return 0}
+) -> Maybe(Node_ID) {return nil}
 
 post_schedule_peep :: proc(
 	ctx: bac.PS_Peep_Ctx,

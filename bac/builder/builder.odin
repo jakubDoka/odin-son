@@ -163,29 +163,18 @@ peep :: proc(
 	node: bac.Expanded_Node,
 	_: $T,
 ) -> (
-	res: Node_ID,
+	res: Maybe(Node_ID),
 ) {
 	node := node
 
 	id := bac.get_node_id(ctx, node)
 	is_complete := bac.peep_ctx_graph_is_complete(ctx)
 
-	DEAD_EXCEPTIONS := bit_set[bac.Node_Type] {
-		.Nil,
-		.Entry,
-		.Region,
-		.Loop,
-		.Dead,
-	}
+	DEAD_EXCEPTIONS := bit_set[bac.Node_Type]{.Nil, .Entry, .Region, .Loop}
 
 	if bac.is_cfg(ctx, id) && node.itype not_in DEAD_EXCEPTIONS {
-		idom := expand_node(ctx, node.inps[0])
-		if idom.itype == .Dead {
-			if node.itype == .Return {
-				bac.set_input(ctx, ctx.end, 0, 0)
-				return 0
-			}
-			return node.inps[0]
+		if node.inps[0] == 0 {
+			return 0
 		}
 	}
 
@@ -397,14 +386,14 @@ peep :: proc(
 					dead_by_latch = true
 				} else {
 					bac.set_input(ctx, id, 1, bedge.inps[0])
-					return 0
+					break
 				}
 			} else {
 				bac.peep_ctx_add_trigger(ctx, bedge.inps[1], id)
 			}
 		}
 
-		if bedge.itype == .Dead || init.itype == .Dead || dead_by_latch {
+		if node.inps[0] == 0 || node.inps[1] == 0 || dead_by_latch {
 			retry: for {
 				#reverse for out in node.outs {
 					onode := expand_node(ctx, out.id)
@@ -437,8 +426,8 @@ peep :: proc(
 		}
 
 		#reverse for inp, i in node.inps[:len(node.inps) - 1] {
+			if inp != 0 do continue
 			inode := expand_node(ctx, inp)
-			if inode.itype != .Dead do continue
 			ordered_remove(ctx, &node, i)
 
 			for out in node.outs {
@@ -456,7 +445,7 @@ peep :: proc(
 		elim: if len(node.inps) <= 2 {
 			if len(node.inps) == 1 {
 				assert(node.inps[0] == 0)
-				return bac.add_dead(ctx, "rdead")
+				return 0
 			}
 
 			#reverse for out in node.outs {
@@ -561,12 +550,10 @@ peep :: proc(
 				)
 			}
 		}
-
-		return 0
 	case .Phi:
 		ctrl := expand_node(ctx, node.inps[0])
 
-		if Node_Type(ctrl.rtype) == .Dead && 2 < len(node.inps) {
+		if node.inps[0] == 0 && 2 < len(node.inps) {
 			ordered_remove(ctx, &node, 2)
 			if node.rtype == bac.DEAD_NODE_KIND do break match
 		}
@@ -619,7 +606,7 @@ peep :: proc(
 		cond_const := bac.get_extra(ctx, if_.inps[1], CInt)
 		if cond_const != nil {
 			if (cond_const.value == 0) ~ (node.itype == .Else) {
-				return bac.add_dead(ctx, "dead")
+				return 0
 			} else {
 				return if_.inps[0]
 			}
@@ -1251,7 +1238,7 @@ peep :: proc(
 		}
 	}
 
-	return 0
+	return nil
 }
 
 post_schedule_peep :: proc(

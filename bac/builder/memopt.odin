@@ -243,11 +243,11 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 					already_loose = false
 				}
 
-				inp_poisoned: {
+				inp_restricted: {
 					opinode := expand_node(graph, opnode.inps[1])
 					if id, ok := get_edited_node_idx(&ctx, opinode);
 					   ok && id == rename_slot_count {
-						break inp_poisoned
+						break inp_restricted
 					}
 
 					if opinode.itype == .Mem {
@@ -261,12 +261,12 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 						}
 
 						if opinode.itype == .Entry {
-							break inp_poisoned
+							break inp_restricted
 						}
 					}
 
 					if opinode.itype == .Phi {
-						break inp_poisoned
+						break inp_restricted
 					}
 
 					already_loose = false

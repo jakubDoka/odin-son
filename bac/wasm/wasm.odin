@@ -100,7 +100,7 @@ peep :: proc(
 	ctx: bac.Peep_Ctx,
 	node: bac.Expanded_Node,
 	_: $T,
-) -> bac.Node_ID {
+) -> Maybe(bac.Node_ID) {
 	id := bac.get_node_id(ctx, node)
 	inp: bac.Expanded_Node
 	if 0 < len(node.inps) {
@@ -241,7 +241,7 @@ peep :: proc(
 		return sum
 	}
 
-	return 0
+	return nil
 }
 
 post_schedule_peep :: proc(
@@ -306,7 +306,6 @@ meta_of :: #force_inline proc(
 	case .Nil,
 	     .Entry,
 	     .Then,
-	     .Dead,
 	     .Else,
 	     .Region,
 	     .Loop,
@@ -507,7 +506,6 @@ pre_regalloc_hook :: proc(
 		case .Nil,
 		     .Entry,
 		     .Then,
-		     .Dead,
 		     .Else,
 		     .Region,
 		     .Loop,
@@ -1165,7 +1163,6 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 	case .Nil,
 	     .Entry,
 	     .Then,
-	     .Dead,
 	     .Else,
 	     .Region,
 	     .Loop,

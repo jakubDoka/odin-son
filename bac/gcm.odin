@@ -27,14 +27,10 @@ Loop_Tree :: struct {
 }
 
 compute_lca :: proc(graph: ^Proc, a, b: Node_ID) -> Node_ID {
-	if a == 0 do return b
-	if b == 0 do return a
-
-	if get_node(graph, a).itype == .Dead do return b
-	if get_node(graph, b).itype == .Dead do return a
-
 	a, b := a, b
 	for a != b {
+		if a == 0 do return b
+		if b == 0 do return a
 		adepth, bdepth := get_idepth(graph, a), get_idepth(graph, b)
 		if adepth >= bdepth do a = get_idom(graph, a)
 		if bdepth >= adepth do b = get_idom(graph, b)
@@ -47,7 +43,7 @@ get_idom_node :: proc(graph: ^Proc, node: ^Node) -> Node_ID {
 	inps := get_inputs(graph, node)
 
 	#partial switch node.itype {
-	case .Entry, .Dead, .Nil:
+	case .Entry, .Nil:
 		return 0
 	case .Return,
 	     .If,
@@ -97,9 +93,7 @@ get_idepth_node :: proc(graph: ^Proc, node: ^Node) -> u32 {
 
 	#partial switch node.itype {
 	case .Nil:
-		return graph.min_idepth + 1
-	case .Dead:
-		extra.idepth = graph.min_idepth + 2
+		return graph.min_idepth + 2
 	case .Entry:
 		extra.idepth = graph.min_idepth + 1
 	case .Return,

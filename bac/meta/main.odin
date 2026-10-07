@@ -281,14 +281,17 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 		fmt.fprintfln(
 			file,
 			`
-peep_inst :: proc(ctx: %vPeep_Ctx, node: %vExpanded_Node) -> %vNode_ID {{
-	return peep(ctx, node, struct{{}}{{}})
+peep_inst :: proc(ctx: %vPeep_Ctx, node: %vExpanded_Node) -> Maybe(%vNode_ID) {{
+	res := peep(ctx, node, struct{{}}{{}})
+	#assert(type_of(res) == Maybe(%vNode_ID))
+	return res
 }}
 post_schedule_peep_inst :: proc(
 	ctx: %vPS_Peep_Ctx, node: %vExpanded_Node) -> %vNode_ID {{
 	return post_schedule_peep(ctx, node, struct{{}}{{}})
 }}
 `,
+			q,
 			q,
 			q,
 			q,
@@ -645,7 +648,6 @@ IDEAL_CLASSES := [bac.Node_Type]Class_Spec {
 		default_type = .Void,
 		flags = {.Is_Basic_Block_Start},
 	},
-	.Dead = {id = Cfg, default_type = .Void},
 	.Loop = {
 		id = Cfg,
 		args = {"ctrl"},

@@ -229,7 +229,7 @@ display_node :: proc(
 		rnode := expand_node(graph, reg.id)
 		for out in rnode.outs {
 			onode := expand_node(graph, out.id)
-			if onode.itype == .Phi {
+			if false && onode.itype == .Phi {
 				if written_one do fmt.wprintf(w, ", ")
 				written_one = true
 				display_node_gvn(w, graph, onode.inps[1 + reg.idx])
@@ -240,7 +240,7 @@ display_node :: proc(
 	if (node.itype == .Region || node.itype == .Loop) && scheduled {
 		for out in node.outs {
 			onode := get_node(graph, out.id)
-			if onode.itype == .Phi {
+			if false && onode.itype == .Phi {
 				if written_one do fmt.wprintf(w, ", ")
 				written_one = true
 				display_node_gvn(w, graph, out.id)
@@ -253,7 +253,7 @@ display_node :: proc(
 	for out in node.outs {
 		if out.id != 0 {
 			onode := expand_node(graph, out.id)
-			if onode.itype == .Phi && scheduled {
+			if false && onode.itype == .Phi && scheduled {
 				if out.idx != 0 {
 					reg := onode.inps[0]
 					rnode := expand_node(graph, reg)

@@ -193,7 +193,6 @@ when SPEC_NOT_PRESENT {
 		Then,
 		Else,
 		Jump,
-		Dead,
 		Region,
 		Loop,
 		Always,
@@ -858,9 +857,9 @@ apply_peep :: proc(graph: ^Proc, id: Node_ID) -> (r: Node_ID) {
 
 	prev_hash := node_hash(graph, node)
 	mount_peep_node(graph, node)
-	res := graph.peep({graph = graph}, node)
+	res, ok := graph.peep({graph = graph}, node).?
 	unmount_peep_node(graph)
-	if res == 0 do return id
+	if !ok do return id
 
 	if res == id {
 		unintern(graph, id, prev_hash)
@@ -1094,10 +1093,10 @@ apply_peeps :: proc(ctx: Peep_Ctx) -> (optimized: bool) {
 
 		mount_peep_node(graph, node)
 		prev_hash := node_hash(graph, node)
-		new_node := graph.peep(ctx, node)
+		new_node, ok := graph.peep(ctx, node).?
 		unmount_peep_node(graph)
 		if node.rtype == DEAD_NODE_KIND do continue
-		if new_node == 0 && node.output_count != 0 {
+		if !ok && node.output_count != 0 {
 			assert(prev_hash == node_hash(graph, node))
 			continue
 		}
@@ -1127,7 +1126,7 @@ apply_peeps :: proc(ctx: Peep_Ctx) -> (optimized: bool) {
 			worklist_add(graph, &worklist, inp)
 		}
 
-		if new_node != 0 {
+		if ok {
 			subsume(graph, new_node, n)
 		} else {
 			delete_node(graph, n)
@@ -1161,7 +1160,7 @@ apply_peeps :: proc(ctx: Peep_Ctx) -> (optimized: bool) {
 				"%v",
 				node,
 			)
-			new_node := graph.peep(ctx, node)
+			new_node := graph.peep(ctx, node).? or_continue
 			fmt.assertf(
 				new_node == 0,
 				"\nnew: %v\nold: %v",
@@ -1677,20 +1676,25 @@ node_approx_size :: proc(graph: ^Proc, node: ^Node) -> uint {
 	)
 }
 
-subsume :: proc(
-	graph: ^Proc,
-	with: Node_ID,
-	target: Node_ID,
-	dont_delete: bool = false,
-) {
+subsume :: proc(graph: ^Proc, with: Node_ID, target: Node_ID) {
 	//assert(with != graph.start)
 	//assert(target != graph.entry)
 
-	assert(with != 0)
 	assert(target != 0)
 
 	wnode := expand_node(graph, with)
 	tnode := expand_node(graph, target)
+
+	if with == 0 {
+		for out in tnode.outs {
+			get_inputs(graph, out.id)[out.idx] = 0
+		}
+
+		tnode.output_count = 0
+		delete_node(graph, target)
+
+		return
+	}
 
 	assert(with != target)
 
@@ -1700,8 +1704,7 @@ subsume :: proc(
 		for out in tnode.outs {
 			fmt.assertf(
 				get_node(graph, out.id).itype != .Region ||
-				is_cfg(graph, with) ||
-				get_node(graph, with).itype == .Dead,
+				is_cfg(graph, with),
 				"%v %v %v",
 				wnode,
 				tnode,
@@ -1734,7 +1737,7 @@ subsume :: proc(
 
 	pin(graph, with)
 
-	if !dont_delete do delete_node(graph, tnode)
+	delete_node(graph, target)
 
 	wnode = expand_node(graph, with)
 

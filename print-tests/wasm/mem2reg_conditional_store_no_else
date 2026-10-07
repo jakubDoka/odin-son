@@ -422,40 +422,40 @@
     end
   )
   (func $main (type 1) (result i64)
-    (local i64 i64)
+    (local i64 i64 i64 i64)
     global.get 0
     i64.const 16
     i64.sub
     global.set 0
     block
       block
+        i64.const 3
+        call $opaque
+        local.set 3
+        i64.const 5
+        call $opaque
+        local.set 2
+        i64.const 1
+        call $opaque
+        local.set 1
         global.get 0
         i64.const 0
         i64.add
-        local.tee 1
+        local.tee 0
         i32.const 0
         i32x4.splat
         v128.store align=1
-        i64.const 3
-        call $opaque
-        local.set 0
-        local.get 1
         local.get 0
+        local.get 3
         i64.store align=1
-        i64.const 5
-        call $opaque
-        local.set 0
-        local.get 1
         local.get 0
+        local.get 2
         i64.store offset=8 align=1
-        i64.const 1
-        call $opaque
-        local.set 0
-        local.get 0
+        local.get 1
         i64.const 0
         i64.gt_s
         br_if 0
-        local.get 1
+        local.get 0
         i64.const 100
         i64.store align=1
         br 1

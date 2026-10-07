@@ -77,7 +77,6 @@ SPEC := bac.Node_Spec{
 		0b1, // Then
 		0b1, // Else
 		0b1, // Jump
-		0b1, // Dead
 		0b1, // Region
 		0b1, // Loop
 		0b1, // Always
@@ -162,7 +161,6 @@ SPEC := bac.Node_Spec{
 		1, // Then -> Cfg
 		1, // Else -> Cfg
 		1, // Jump -> Cfg
-		1, // Dead -> Cfg
 		1, // Region -> Cfg
 		1, // Loop -> Cfg
 		1, // Always -> Cfg
@@ -247,7 +245,6 @@ SPEC := bac.Node_Spec{
 		{Class_Flag.Is_Basic_Block_Start}, // Then
 		{Class_Flag.Is_Basic_Block_Start}, // Else
 		{}, // Jump
-		{}, // Dead
 		{Class_Flag.Is_Basic_Block_Start}, // Region
 		{Class_Flag.Is_Basic_Block_Start}, // Loop
 		{}, // Always
@@ -336,7 +333,6 @@ SPEC := bac.Node_Spec{
 		bac.Cfg,
 		bac.Cfg,
 		bac.Cfg,
-		bac.Cfg,
 		bac.Call,
 		bac.Cfg,
 		bac.Tup,
@@ -417,7 +413,6 @@ SPEC := bac.Node_Spec{
 		`Then`,
 		`Else`,
 		`Jump`,
-		`Dead`,
 		`Region`,
 		`Loop`,
 		`Always`,
@@ -504,7 +499,6 @@ Node_Type :: enum u16 {
 	Then,
 	Else,
 	Jump,
-	Dead,
 	Region,
 	Loop,
 	Always,
@@ -531,8 +525,10 @@ Node_Type :: enum u16 {
 	Msub,
 }
 
-peep_inst :: proc(ctx: bac.Peep_Ctx, node: bac.Expanded_Node) -> bac.Node_ID {
-	return peep(ctx, node, struct{}{})
+peep_inst :: proc(ctx: bac.Peep_Ctx, node: bac.Expanded_Node) -> Maybe(bac.Node_ID) {
+	res := peep(ctx, node, struct{}{})
+	#assert(type_of(res) == Maybe(bac.Node_ID))
+	return res
 }
 post_schedule_peep_inst :: proc(
 	ctx: bac.PS_Peep_Ctx, node: bac.Expanded_Node) -> bac.Node_ID {
@@ -604,7 +600,6 @@ collect_meta :: proc(ctx: ^bac.Proc,
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
 #assert(size_of(bac.Cfg) % bac.PRECISION == 0)
 #assert(size_of(bac.Cfg) % bac.PRECISION == 0)
 #assert(size_of(bac.Cfg) % bac.PRECISION == 0)

@@ -140,7 +140,7 @@ peep :: proc(
 	ctx: bac.Peep_Ctx,
 	node: bac.Expanded_Node,
 	_: $T,
-) -> bac.Node_ID {
+) -> Maybe(bac.Node_ID) {
 	id := bac.get_node_id(ctx, node)
 	kind := atype(node)
 
@@ -206,7 +206,7 @@ peep :: proc(
 
 	if changed do return id
 
-	return 0
+	return nil
 }
 
 post_schedule_peep :: proc(

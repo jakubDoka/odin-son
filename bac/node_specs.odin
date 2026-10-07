@@ -2,20 +2,20 @@ package bac
 // NOTE: this file is generated: 
 
 Un_Op :: enum u16 {
-	Not = u16(Node_Type.Not),
-	Neg = u16(Node_Type.Neg),
-	Uext = u16(Node_Type.Uext),
 	Sext = u16(Node_Type.Sext),
-	F_Demote = u16(Node_Type.F_Demote),
-	F_Ext = u16(Node_Type.F_Ext),
-	Ctz = u16(Node_Type.Ctz),
-	Splat = u16(Node_Type.Splat),
-	F_To_I = u16(Node_Type.F_To_I),
+	Not = u16(Node_Type.Not),
 	Cast = u16(Node_Type.Cast),
-	U_F_From_I = u16(Node_Type.U_F_From_I),
-	F_From_I = u16(Node_Type.F_From_I),
-	Simd_Reduce_Add_Bisect = u16(Node_Type.Simd_Reduce_Add_Bisect),
+	Uext = u16(Node_Type.Uext),
+	Neg = u16(Node_Type.Neg),
+	Splat = u16(Node_Type.Splat),
+	F_Demote = u16(Node_Type.F_Demote),
 	Simd_Extract_Lsbs = u16(Node_Type.Simd_Extract_Lsbs),
+	Ctz = u16(Node_Type.Ctz),
+	F_From_I = u16(Node_Type.F_From_I),
+	F_To_I = u16(Node_Type.F_To_I),
+	F_Ext = u16(Node_Type.F_Ext),
+	U_F_From_I = u16(Node_Type.U_F_From_I),
+	Simd_Reduce_Add_Bisect = u16(Node_Type.Simd_Reduce_Add_Bisect),
 }
 Bin_Op :: enum u16 {
 	Add = u16(Node_Type.Add),
@@ -112,7 +112,6 @@ Node_Type :: enum u16 {
 	Then,
 	Else,
 	Jump,
-	Dead,
 	Region,
 	Loop,
 	Always,
@@ -282,11 +281,6 @@ add_else :: #force_inline proc(graph: ^Proc, name: string, ctrl: Node_ID) -> (_i
 add_jump :: #force_inline proc(graph: ^Proc, name: string, ctrl: Node_ID) -> (_id: Node_ID) {
 	(^Cfg)(get_next_extra_slot(graph, u16(Node_Type.Jump), 0))^ = {}
 	return add_raw(graph, name, u16(Node_Type.Jump), .Void, {ctrl})
-}
-#assert(size_of(Cfg) % PRECISION == 0)
-add_dead :: #force_inline proc(graph: ^Proc, name: string) -> (_id: Node_ID) {
-	(^Cfg)(get_next_extra_slot(graph, u16(Node_Type.Dead), 0))^ = {}
-	return add_raw(graph, name, u16(Node_Type.Dead), .Void, {})
 }
 #assert(size_of(Cfg) % PRECISION == 0)
 add_region :: #force_inline proc(graph: ^Proc, name: string, inputs: []Node_ID) -> (_id: Node_ID) {

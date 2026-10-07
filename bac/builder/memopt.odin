@@ -150,9 +150,8 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 		}
 
 		loc := bac.get_extra(ctx, mout.id, Local)
-		if !failed_split && failed_sroa && !loc.is_split {
+		if !failed_split && failed_sroa {
 			append(&threads, mnode.outs[0].id)
-			loc.is_split = true
 		}
 
 		if failed_sroa do continue
@@ -209,7 +208,83 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 		for op in bac.offset_iter_next(graph, &iter) {
 			edit_node_id(&ctx, op.id, rename_slot_count)
 		}
-		rename_slot_count += 1
+
+		already_loose := true
+
+		// NOTE: walk the related nodes and check if we have the highest
+		// freedom already, in which case we revert
+		iter = {}
+		iter.curr = thread
+		for op in bac.offset_iter_next(graph, &iter) {
+			opnode := expand_node(graph, op.id)
+			#partial switch opnode.itype {
+			case .Load, .Store, .Set:
+				outs := opnode.outs
+				if opnode.itype == .Load do outs = {}
+
+				for opout in outs {
+					oponode := expand_node(graph, opout.id)
+					if id, ok := get_edited_node_idx(&ctx, oponode);
+					   ok && id == rename_slot_count {
+						continue
+					}
+
+					if oponode.itype == .Merge_Mem && len(oponode.outs) == 1 {
+						oponode = expand_node(ctx, oponode.outs[0].id)
+					}
+
+					if oponode.itype == .Always ||
+					   oponode.itype == .Trap ||
+					   oponode.itype == .Return ||
+					   oponode.itype == .Phi {
+						continue
+					}
+
+					already_loose = false
+				}
+
+				inp_poisoned: {
+					opinode := expand_node(graph, opnode.inps[1])
+					if id, ok := get_edited_node_idx(&ctx, opinode);
+					   ok && id == rename_slot_count {
+						break inp_poisoned
+					}
+
+					if opinode.itype == .Mem {
+						opinode = expand_node(graph, opinode.inps[0])
+						if opinode.itype == .Split_Mem {
+							opinode = expand_node(graph, opinode.inps[0])
+						}
+
+						if opinode.itype == .Mem {
+							opinode = expand_node(graph, opinode.inps[0])
+						}
+
+						if opinode.itype == .Entry {
+							break inp_poisoned
+						}
+					}
+
+					if opinode.itype == .Phi {
+						break inp_poisoned
+					}
+
+					already_loose = false
+				}
+			case:
+				fmt.panicf("%v", opnode)
+			}
+		}
+
+		if already_loose {
+			iter = {}
+			iter.curr = thread
+			for op in bac.offset_iter_next(graph, &iter) {
+				edit_node_id(&ctx, op.id, max(u32))
+			}
+		} else {
+			rename_slot_count += 1
+		}
 	}
 
 	bac.add_efficiency_stat(graph, .sroa_slot_mismatch, mismatches, 0)
@@ -230,21 +305,27 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 		emem = bac.find_or_create_node(ctx, .Mem)
 	}
 
-	split_mem := emem
+	split: Node_ID
 	if len(ctx.scope) > int(ctx.threads_start) {
-		split := bac.add_split_mem(ctx, "ptspl", emem)
+		split = bac.find_node(ctx, .Split_Mem, emem)
+		if split == 0 {
+			split = bac.add_split_mem(ctx, "ptspl", emem)
+			split_mem := bac.add_mem(ctx, "mscm", split)
+			for out in bac.get_outputs(ctx, emem) {
+				if out.id != split && get_node(graph, out.id).itype != .Local {
+					bac.set_input(ctx, out.id, out.idx, split_mem)
+				}
+			}
+		}
+
 		for &slot in ctx.scope[ctx.threads_start:] {
 			slot.node = bac.add_mem(ctx, "slcm", split)
 		}
-		split_mem = bac.add_mem(ctx, "mscm", split)
-		for out in bac.get_outputs(ctx, emem) {
-			if out.id != split && get_node(graph, out.id).itype != .Local {
-				bac.set_input(ctx, out.id, out.idx, split_mem)
-			}
-		}
 	}
 
-	if rename_slot_count != 0 do walk_thread(&ctx, split_mem)
+	if rename_slot_count != 0 {
+		walk_thread(&ctx, emem, emem)
+	}
 
 	ctx.dont_delete = false
 
@@ -253,13 +334,16 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 		bac.subsume(graph, bac.get_inputs(graph, phi)[1], phi)
 	}
 
-	if int(ctx.threads_start) < len(ctx.scope) {
+	if len(ctx.scope) > int(ctx.threads_start) {
 		for einp in bac.get_inputs(ctx, ctx.end) {
 			connect_to := einp
 			node := expand_node(ctx, einp)
 			if node.itype == .Return {
-				connect_to = bac.add_merge_mem(ctx, "mmrg", {node.inps[1]})
-				bac.set_input(ctx, einp, 1, connect_to)
+				connect_to = node.inps[1]
+				if get_node(ctx, connect_to).itype != .Merge_Mem {
+					connect_to = bac.add_merge_mem(ctx, "mmrg", {connect_to})
+					bac.set_input(ctx, einp, 1, connect_to)
+				}
 			}
 			for i in int(ctx.threads_start) ..< len(ctx.scope) {
 				value := get_scope_value(&ctx, ctx.scope, i)
@@ -280,7 +364,7 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 
 	return rename_slot_count != 0
 
-	walk_thread :: proc(ctx: ^Ctx, thread: Node_ID) {
+	walk_thread :: proc(ctx: ^Ctx, thread: Node_ID, root: Node_ID) {
 
 		slot: Split_Slot
 		slot.prev = ctx.split_slot
@@ -295,6 +379,10 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 			cursor = 0
 
 			outs := slice.clone(cnode.outs)
+			if cnode.itype == .Split_Mem && cnode.inps[0] == root {
+				outs = outs[:len(outs) -
+				(len(ctx.scope) - int(ctx.threads_start))]
+			}
 			prev: Node_ID
 
 			#partial switch cnode.itype {
@@ -537,7 +625,7 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 					fallthrough
 				case .Store, .Call, .Set, .Copy, .Return, .Mem, .Split_Mem:
 					if !last {
-						walk_thread(ctx, cout.id)
+						walk_thread(ctx, cout.id, root)
 					}
 				case:
 					fmt.panicf("%v", conode.node)

@@ -290,9 +290,8 @@ Local :: struct {
 		rename_idx: i32,
 	},
 	using __:    bit_field u32 {
-		idx:      u32  | 30,
+		idx:      u32  | 31,
 		is_param: bool | 1,
-		is_split: bool | 1,
 	},
 }
 

@@ -507,7 +507,7 @@ Tup :: bac.Tup
 IDEAL_CLASSES := [bac.Node_Type]Class_Spec {
 	.Nil = {id = Cfg, no_ctor = true},
 	.Entry = {id = Cfg, flags = {.Is_Basic_Block_Start}, default_type = .Void},
-	.End = {id = Cfg},
+	.End = {default_type = .Void, varargs = true},
 	.Poison = {default_type = .Void, flags = {.Interned}},
 	// TODO: maybe its better to introduce a flag: Schedule_Early
 	.Param = {id = Tup, args = {"entry"}, extra_args = {"idx"}},
@@ -653,8 +653,8 @@ IDEAL_CLASSES := [bac.Node_Type]Class_Spec {
 		flags = {.Is_Basic_Block_Start},
 		extra_capacity = 1,
 	},
-	.Always = {id = Cfg, args = {"ctrl"}, default_type = .Void},
-	.Trap = {id = Cfg, args = {"ctrl"}, default_type = .Void},
+	.Always = {id = Cfg, default_type = .Void, varargs = true},
+	.Trap = {id = Cfg, default_type = .Void, varargs = true},
 	.Call = {
 		id = bac.Call,
 		varargs = true,

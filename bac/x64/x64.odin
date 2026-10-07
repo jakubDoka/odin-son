@@ -2612,8 +2612,6 @@ emit_instr :: proc(
 			)
 		}
 	case .Return:
-		if bac.has_unreachable_return(ctx) do break
-
 		emit_cfi(ctx, .Remember_State)
 
 		cfa := u32(ctx.pushed) + X64_CFI_SPEC.initial_cfa_offset

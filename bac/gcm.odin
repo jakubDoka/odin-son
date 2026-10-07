@@ -66,7 +66,7 @@ get_idom_node :: proc(graph: ^Proc, node: ^Node) -> Node_ID {
 			return cached
 		}
 
-		assert(len(inps) > 1)
+		fmt.assertf(len(inps) > 1, "wut %v", node)
 
 		lca: Node_ID
 		for inp in inps[:len(inps) - 1] {
@@ -127,6 +127,27 @@ get_idepth_node :: proc(graph: ^Proc, node: ^Node) -> u32 {
 	return extra.idepth
 }
 
+insert_alwasy :: proc(ctx: ^Proc, root: Node_ID) -> Node_ID {
+	node := expand_node(ctx, root)
+
+	inps: [dynamic]Node_ID
+	append(&inps, node.inps[1])
+	for out in node.outs {
+		onode := get_node(ctx, out.id)
+		if onode.itype == .Phi && onode.dt == .Void {
+			append(&inps, out.id)
+		}
+	}
+
+	always := add_always(ctx, "alw", inps[:])
+	then := add_then(ctx, "athn", always)
+	set_input(ctx, root, 1, then)
+
+	connect(ctx, ctx.end, always)
+
+	return then
+}
+
 schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 		for_regalloc,
 		for_loopopt,
@@ -150,59 +171,17 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 	lctx.root = new(Loop_Tree, scratch)
 	lctx.root.depth = 1
 
-	if graph.end != 0 {
-		end := expand_node(graph, graph.end)
-		lctx.loop_trees[end.gvn] = lctx.root
+	for inp in get_inputs(graph, graph.end) {
+		if inp == 0 do continue
+		inode := expand_node(graph, inp)
+		lctx.loop_trees[inode.gvn] = lctx.root
 
-		end_ctrl := expand_node(graph, end.inps[0])
+		end_ctrl := expand_node(graph, inode.inps[0])
 		lctx.loop_trees[end_ctrl.gvn] = lctx.root
 	}
+
 	build_loop_tree(&lctx, graph.entry, lctx.root, !no_late_pass, scratch)
 	lctx.root.depth = 0
-
-	if graph.end != 0 {
-		end := expand_node(graph, graph.end)
-		if !no_late_pass {
-			remove_count := 0
-			#reverse for inp, i in end.inps {
-				inode := expand_node(graph, inp)
-				idx := int(inode.itype == .Phi)
-				if len(inode.inps) == 2 {
-					set_input(graph, graph.end, i, inode.inps[idx])
-					remove_count += 1
-				}
-			}
-			fmt.assertf(
-				remove_count == 0 || remove_count == len(end.inps),
-				"%v %v",
-				remove_count,
-				len(end.inps),
-			)
-		}
-
-		if has_unreachable_return(graph) {
-			for rv, i in end.inps[RET_PREFIX:] {
-				remove_output(
-					graph,
-					rv,
-					{id = graph.end, idx = i + RET_PREFIX},
-				)
-			}
-			end.input_count = RET_PREFIX
-		}
-
-		// NOTE: this might happen when we eliminate the old return and at the
-		// same time bind with a loop trap
-		ret := expand_node(graph, graph.end)
-		#reverse for vl, i in ret.inps[1:] {
-			val := get_node(graph, vl)
-			if val.itype == .Poison {
-				ret.input_count -= 1
-				remove_output(graph, vl, {id = graph.end, idx = 1 + i})
-			}
-		}
-
-	}
 
 	tree_depth :: proc(tree: ^Loop_Tree, depht := 0) -> u32 {
 		assert(tree != nil)
@@ -279,22 +258,8 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 						rawptr(tree),
 					)
 
-					always := add_always(ctx, "alw", node.inps[1])
-					then := add_then(ctx, "athn", always)
+					then := insert_alwasy(ctx, root)
 					ctx.loop_trees[get_node(ctx, then).gvn] = tree
-					set_input(ctx, root, 1, then)
-
-					else_ := add_else(ctx, "aels", always)
-					ctx.loop_trees[get_node(ctx, else_).gvn] = ctx.root
-					reg := merge_returns(ctx, {else_})
-					ctx.loop_trees[get_node(ctx, reg).gvn] = ctx.root
-
-					reg_gvn := get_node(ctx, get_inputs(ctx, reg)[0]).gvn
-					// NOTE: we might have created a region here if there was no
-					// returnt node
-					if ctx.loop_trees[reg_gvn] == nil {
-						ctx.loop_trees[reg_gvn] = ctx.root
-					}
 				}
 
 				deepest = ctx.root
@@ -468,8 +433,10 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 	worklist: Worklist
 	worklist_init(&worklist, int(graph.gvn))
 	bit_arr.set(worklist.in_queue, 0)
-	if graph.end != 0 && !no_late_pass {
-		worklist_add(graph, &worklist, graph.end)
+	if !no_late_pass {
+		for inp in get_inputs(graph, graph.end) {
+			worklist_add(graph, &worklist, inp)
+		}
 	}
 
 	rounds := 0
@@ -723,13 +690,11 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 			ctx.late_schedules[block.gvn] = Node_ID(bb_idx)
 			loop_tree := lctx.loop_trees[block.gvn]
 
-			if graph.end != 0 {
-				if loop_tree == nil {
-					log.error("missing loop tree at", block)
-					loop_tree = new(Loop_Tree)
-				}
-				tree_depth(loop_tree)
+			if loop_tree == nil {
+				log.error("missing loop tree at", block)
+				loop_tree = new(Loop_Tree)
 			}
+			tree_depth(loop_tree)
 
 			bb_idx += 1
 
@@ -758,12 +723,14 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 
 	has_unscheduled := false
 
+	ctx.nodes[get_node(graph, graph.end).gvn] = 0
+
 	for n, i in ctx.nodes {
 		if n == 0 do continue
 		node := get_node(graph, n)
 		late := ctx.late_schedules[i]
 		early := ctx.early_schedules[i]
-		sched := graph.end == 0 || no_late_pass ? early : late
+		sched := no_late_pass ? early : late
 		ctx.late_schedules[i] = sched
 		if sched == 0 {
 			log.error("not scheduled:", node)
@@ -791,10 +758,8 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 		// 	if has_unscheduled do panic("")
 	}
 
-	if graph.end != 0 {
-		if !no_late_pass {
-			verify_schedule_integrity(graph, gs, ctx.antideps, no_late_pass)
-		}
+	if !no_late_pass {
+		verify_schedule_integrity(graph, gs, ctx.antideps, no_late_pass)
 	}
 
 	schedule_block2 :: proc(ctx: Ctx, bb: ^Basic_Block) {
@@ -956,7 +921,7 @@ verify_schedule_integrity :: proc(
 			if has_flag(graph, instr, .Is_Basic_Block_Start) do continue
 			inode := expand_node(graph, instr)
 			if len(inode.outs) == 0 && !no_late_pass {
-				log.error("dead node in the schedule:", inode.node)
+				//log.error("dead node in the schedule:", inode.node)
 			}
 
 			for inp, i in inode.inps {

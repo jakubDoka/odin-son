@@ -88,7 +88,7 @@ SPEC := bac.Node_Spec{
 		0b1, // Call_End
 		0b100, // Ret
 		0b1, // Return
-		0b1, // End
+		0b10, // End
 		0b10, // Neg
 		0b10, // Not
 		0b10, // Sext
@@ -213,7 +213,7 @@ SPEC := bac.Node_Spec{
 		1, // Call_End -> Cfg
 		1, // Ret -> Tup
 		1, // Return -> Cfg
-		1, // End -> Cfg
+		0, // End -> No_Extra
 		0, // Neg -> No_Extra
 		0, // Not -> No_Extra
 		0, // Sext -> No_Extra
@@ -463,7 +463,7 @@ SPEC := bac.Node_Spec{
 		bac.Cfg,
 		bac.Tup,
 		bac.Cfg,
-		bac.Cfg,
+		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
@@ -859,7 +859,7 @@ collect_meta :: proc(ctx: ^bac.Proc,
 #assert(size_of(bac.Cfg) % bac.PRECISION == 0)
 #assert(size_of(bac.Tup) % bac.PRECISION == 0)
 #assert(size_of(bac.Cfg) % bac.PRECISION == 0)
-#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
+#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)

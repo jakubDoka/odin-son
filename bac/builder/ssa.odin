@@ -18,6 +18,39 @@ builder_extra :: proc {
 	builder_extra_node_id,
 }
 
+merge_returns :: proc(graph: ^Proc, args: []Node_ID) -> Node_ID {
+	ret := bac.get_inputs(graph, graph.end)[0]
+
+	if ret == 0 {
+		ret = bac.add_return(graph, "ret", args)
+		bac.set_input(graph, graph.end, 0, ret)
+	} else {
+		reg := bac.add_region(
+			graph,
+			"rreg",
+			{bac.get_inputs(graph, ret)[0], args[0], 0},
+		)
+		bac.set_input(graph, ret, 0, reg)
+		for inp, i in bac.get_inputs(graph, ret)[1:] {
+			bac.set_input(
+				graph,
+				ret,
+				i + 1,
+				bac.add_phi(
+					graph,
+					"rphy",
+					get_node(graph, inp).dt,
+					reg,
+					inp,
+					args[i + 1],
+				),
+			)
+		}
+	}
+
+	return ret
+}
+
 add_load :: #force_inline proc(
 	graph: ^Proc,
 	name: string,
@@ -424,6 +457,7 @@ inline_graph :: proc(graph: ^bac.Proc, call: bac.Node_ID, from: ^bac.Proc) {
 	proj_of(&ctx, from.entry)^ = call.inps[0]
 	proj_of(&ctx, bac.find_node(from, .Mem))^ = call.inps[1]
 	proj_of(&ctx, bac.find_node(from, .Sym))^ = call.inps[2]
+	proj_of(&ctx, 0)^ = 0
 
 	bac.assert_live_pins(from)
 
@@ -435,8 +469,7 @@ inline_graph :: proc(graph: ^bac.Proc, call: bac.Node_ID, from: ^bac.Proc) {
 
 	assert(proj_of(&ctx, starter)^ == 0)
 
-	root_mem := bac.find_node(graph, .Mem)
-
+	rmem := bac.find_node(graph, .Mem)
 	for param, arg_idx in params {
 		pnode := expand_node(from, param)
 		arg_idx := arg_idx + bac.CALL_PREFIX
@@ -447,7 +480,7 @@ inline_graph :: proc(graph: ^bac.Proc, call: bac.Node_ID, from: ^bac.Proc) {
 			assert(pnode.itype != .Local)
 		} else {
 			assert(arg_node.inps[0] == graph.entry)
-			bac.set_input(graph, arg, 0, root_mem)
+			bac.set_input(graph, arg, 0, rmem)
 			if pnode.itype == .Local {
 				// project the addr too or we get dups
 				assert(ctx.projection[pnode.gvn] == 0)
@@ -470,8 +503,16 @@ inline_graph :: proc(graph: ^bac.Proc, call: bac.Node_ID, from: ^bac.Proc) {
 
 	call_end := expand_node(graph, call.outs[0].id)
 
+	from_end := expand_node(from, from.end)
+	for inp in from_end.inps[1:] {
+		inode := expand_node(from, inp)
+		end := ctx.projection[inode.gvn]
+		bac.connect(graph, graph.end, end)
+	}
+
 	if ctx.reached_return {
-		from_ret := expand_node(from, from.end)
+		assert(from_end.inps[0] != 0)
+		from_ret := expand_node(from, from_end.inps[0])
 
 		for co in call_end.outs {
 			coonode := expand_node(ctx.graph, co.id)
@@ -492,89 +533,17 @@ inline_graph :: proc(graph: ^bac.Proc, call: bac.Node_ID, from: ^bac.Proc) {
 			}
 		}
 
-		bac.pin(graph, proj_of(&ctx, from_ret.inps[0])^)
+		bac.subsume(
+			graph,
+			ctx.projection[get_node(from, from_ret.inps[0]).gvn],
+			call.outs[0].id,
+		)
 
-		for ri in from_ret.inps {
+		for ri in from_ret.inps[1:] {
 			rinode := get_node(from, ri)
 			nd := ctx.projection[rinode.gvn]
 			bac.delete_node(graph, nd)
 		}
-
-		bac.unpin(graph, proj_of(&ctx, from_ret.inps[0])^, no_delete = true)
-
-		from_end_ctrl := get_node(from, from_ret.inps[0])
-
-		if graph.end != 0 {
-			end_inps := bac.get_inputs(graph, graph.end)
-			end_reg := end_inps[0]
-
-			from_ret_reg := expand_node(
-				graph,
-				ctx.projection[from_end_ctrl.gvn],
-			)
-
-			prev_ent_reg_len := get_node(graph, end_reg).input_count
-
-			bac.assert_live_pins(graph)
-
-			#reverse for ri, i in from_ret_reg.inps[:len(from_ret_reg.inps) - 1] {
-				rinode := expand_node(graph, ri)
-				if rinode.itype == .Trap {
-					bac.connect(graph, end_reg, ri)
-
-					#reverse for ei, j in end_inps[1:] {
-						if 1 + j < len(from_ret.inps) {
-							frnode := get_node(from, from_ret.inps[1 + j])
-							assert(frnode.itype == .Phi)
-							rnode := expand_node(
-								graph,
-								ctx.projection[frnode.gvn],
-							)
-							assert(rnode.itype == .Phi)
-							rinp := rnode.inps[1 + i]
-							assert(!bac.is_cfg(graph, rinp))
-							bac.connect(graph, ei, rinp)
-							ordered_remove(graph, &rnode, 1 + i)
-						} else {
-							inp := bac.add_poison(graph, "trps")
-							bac.connect(graph, ei, inp)
-						}
-					}
-
-					ordered_remove(graph, &from_ret_reg, i)
-				}
-			}
-
-			bac.assert_live_pins(graph)
-
-			ernode := expand_node(graph, end_reg)
-			if int(prev_ent_reg_len) < len(ernode.inps) {
-				bac.swap_inputs(
-					graph,
-					ernode,
-					int(prev_ent_reg_len) - 1,
-					len(ernode.inps) - 1,
-				)
-			}
-
-			for inp in ernode.inps {
-				fmt.assertf(
-					bac.is_cfg(graph, inp) ||
-					expand_node(graph, inp).itype == .Dead,
-					"%v",
-					get_node(graph, inp),
-				)
-			}
-
-			if len(from_ret_reg.inps) == 1 {
-				ctx.projection[from_end_ctrl.gvn] = bac.add_dead(
-					graph,
-					"rdead",
-				)
-			}
-		}
-
-		bac.subsume(graph, ctx.projection[from_end_ctrl.gvn], call.outs[0].id)
 	} else {
 		dead := bac.add_dead(graph, "inlnd")
 		bac.subsume(graph, dead, call.outs[0].id)
@@ -685,7 +654,7 @@ inline_graph :: proc(graph: ^bac.Proc, call: bac.Node_ID, from: ^bac.Proc) {
 		if node.itype == .Local {
 			root_mem := bac.find_node(ctx.from, .Mem)
 			if node.inps[0] == root_mem {
-				inps[0] = root_mem
+				inps[0] = bac.find_node(ctx.graph, .Mem)
 			}
 
 			if node.inps[0] == ctx.from.entry {
@@ -695,7 +664,7 @@ inline_graph :: proc(graph: ^bac.Proc, call: bac.Node_ID, from: ^bac.Proc) {
 
 		if node.itype == .Return {
 			ctx.reached_return = true
-			assert(get_node(graph, node.inps[0]).itype != .Dead)
+			assert(get_node(ctx.from, node.inps[0]).itype != .Dead)
 			return
 		}
 
@@ -1067,6 +1036,8 @@ Builtin_Proc :: enum {
 init_graph :: proc(graph: ^Proc) -> Node_ID {
 	graph.gvn = 1
 	graph.entry = bac.add_entry(graph, "entry")
+	graph.end = bac.add_end(graph, "end", {0})
+	bac.pin(graph, graph.end)
 	return bac.add_mem(graph, "rmem", graph.entry)
 }
 
@@ -1079,7 +1050,7 @@ get_or_add_const_mem :: proc(graph: ^Proc) -> (cmem: Node_ID) {
 		graph.cmem = bac.add_mem(graph, "slcm", split)
 		split_mem := bac.add_mem(graph, "mscm", split)
 		for out in bac.get_outputs(graph, rmem) {
-			if out.id != split {
+			if out.id != split && get_node(graph, out.id).itype != .Local {
 				bac.set_input(graph, out.id, out.idx, split_mem)
 			}
 		}
@@ -1096,18 +1067,6 @@ get_or_add_const_mem :: proc(graph: ^Proc) -> (cmem: Node_ID) {
 	}
 
 	return graph.cmem
-}
-
-get_or_add_sym :: proc(graph: ^Proc) -> (sym: Node_ID) {
-	sym = bac.find_node(graph, .Sym)
-	if sym == 0 {
-		sym = bac.add_sym(graph, "sym", graph.entry)
-		outs := bac.get_outputs(graph, graph.entry)
-		// NOTE: to bring it closer so the search for this is fast
-		// (mem is as 0)
-		outs[1], outs[len(outs) - 1] = outs[len(outs) - 1], outs[1]
-	}
-	return
 }
 
 make_builtin_proc :: proc(graph: ^Proc, name: Builtin_Proc) {
@@ -1172,7 +1131,8 @@ make_builtin_proc :: proc(graph: ^Proc, name: Builtin_Proc) {
 	end_loop(graph, &scope, &loop)
 
 	ctrl = bac.get_inputs(graph, scope)[0]
-	bac.merge_returns(graph, {ctrl})
+	mem = get_scope_value(graph, scope, memv)
+	merge_returns(graph, {ctrl, mem})
 
 	bac.delete_node(graph, scope)
 }

@@ -860,7 +860,7 @@ emit_proc :: proc(
 	if ctx.node_scope != 0 {
 		assert(len(prc.rets) == 0)
 		values := [2]Node_ID{ctx_ctrl(ctx), ctx_mem(ctx)}
-		bac.merge_returns(ctx, values[:])
+		builder.merge_returns(ctx, values[:])
 		bac.delete_node(ctx, ctx.node_scope)
 		ctx.node_scope = 0
 	}
@@ -1324,7 +1324,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 
 		values[0] = ctx_ctrl(ctx)
 		values[1] = ctx_mem(ctx)
-		bac.merge_returns(ctx, values[:i])
+		builder.merge_returns(ctx, values[:i])
 		bac.delete_node(ctx, ctx.node_scope)
 		ctx.node_scope = 0
 	case ^ast.Value_Decl:
@@ -2012,8 +2012,12 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 
 				break match
 			case .trap:
-				trap := bac.add_trap(ctx, "trap", ctx_ctrl(ctx))
-				bac.merge_returns(ctx, {trap, ctx_mem(ctx)})
+				trap := bac.add_trap(
+					ctx,
+					"trap",
+					{ctx_ctrl(ctx), ctx_mem(ctx)},
+				)
+				bac.connect(ctx, ctx.end, trap)
 				bac.delete_node(ctx, ctx.node_scope)
 				ctx.node_scope = 0
 				break match
@@ -2268,7 +2272,7 @@ emit_call :: proc(
 
 	args[0] = ctx_ctrl(ctx)
 	args[1] = ctx_mem(ctx)
-	args[2] = builder.get_or_add_sym(ctx)
+	args[2] = bac.find_or_create_node(ctx, .Sym)
 	if ptr != 0 do args[2] = 0
 
 	slice.reverse(args[lctx.ri:])

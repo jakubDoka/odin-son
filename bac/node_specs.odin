@@ -299,14 +299,14 @@ add_loop :: #force_inline proc(graph: ^Proc, name: string, ctrl: Node_ID) -> (_i
 	return add_raw(graph, name, u16(Node_Type.Loop), .Void, {ctrl}, {extra_capacity = 1,})
 }
 #assert(size_of(Cfg) % PRECISION == 0)
-add_always :: #force_inline proc(graph: ^Proc, name: string, ctrl: Node_ID) -> (_id: Node_ID) {
+add_always :: #force_inline proc(graph: ^Proc, name: string, inputs: []Node_ID) -> (_id: Node_ID) {
 	(^Cfg)(get_next_extra_slot(graph, u16(Node_Type.Always), 0))^ = {}
-	return add_raw(graph, name, u16(Node_Type.Always), .Void, {ctrl})
+	return add_raw(graph, name, u16(Node_Type.Always), .Void, inputs)
 }
 #assert(size_of(Cfg) % PRECISION == 0)
-add_trap :: #force_inline proc(graph: ^Proc, name: string, ctrl: Node_ID) -> (_id: Node_ID) {
+add_trap :: #force_inline proc(graph: ^Proc, name: string, inputs: []Node_ID) -> (_id: Node_ID) {
 	(^Cfg)(get_next_extra_slot(graph, u16(Node_Type.Trap), 0))^ = {}
-	return add_raw(graph, name, u16(Node_Type.Trap), .Void, {ctrl})
+	return add_raw(graph, name, u16(Node_Type.Trap), .Void, inputs)
 }
 #assert(size_of(Call) % PRECISION == 0)
 add_call :: #force_inline proc(graph: ^Proc, name: string, inputs: []Node_ID, cid: u32) -> (_id: Node_ID) {
@@ -332,10 +332,9 @@ add_return :: #force_inline proc(graph: ^Proc, name: string, inputs: []Node_ID) 
 	(^Cfg)(get_next_extra_slot(graph, u16(Node_Type.Return), 0))^ = {}
 	return add_raw(graph, name, u16(Node_Type.Return), .Void, inputs)
 }
-#assert(size_of(Cfg) % PRECISION == 0)
-add_end :: #force_inline proc(graph: ^Proc, name: string, dt: Node_Datatype) -> (_id: Node_ID) {
-	(^Cfg)(get_next_extra_slot(graph, u16(Node_Type.End), 0))^ = {}
-	return add_raw(graph, name, u16(Node_Type.End), dt, {})
+#assert(size_of(No_Extra) % PRECISION == 0)
+add_end :: #force_inline proc(graph: ^Proc, name: string, inputs: []Node_ID) -> (_id: Node_ID) {
+	return add_raw(graph, name, u16(Node_Type.End), .Void, inputs)
 }
 #assert(size_of(No_Extra) % PRECISION == 0)
 add_un_op :: #force_inline proc(graph: ^Proc, name: string, type: Un_Op, dt: Node_Datatype, oprnd: Node_ID, lane: Lane_Type = {}) -> (_id: Node_ID) {

@@ -20,8 +20,6 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 
 	bac.verify(graph)
 
-	emem := bac.find_node(graph, .Mem)
-
 	Edit_Slot :: struct {
 		prev: u32,
 		node: Node_ID,
@@ -70,6 +68,8 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 	ctx.graph.dont_delete = true
 
 	threads: [dynamic]Node_ID
+
+	emem := bac.find_node(graph, .Mem)
 
 	sroad := 0
 	total := 0
@@ -148,11 +148,7 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 		}
 
 		loc := bac.get_extra(ctx, mout.id, Local)
-		if !failed_split &&
-		   failed_sroa &&
-		   ctx.end != 0 &&
-		   !loc.is_split &&
-		   false {
+		if !failed_split && failed_sroa && !loc.is_split && false {
 			append(&threads, mnode.outs[0].id)
 			loc.is_split = true
 		}
@@ -228,17 +224,19 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 
 	ctx.scope = make([]Value_Entry, rename_slot_count)
 
-	rmem := bac.find_node(ctx, .Mem) or_else panic("")
+	if len(ctx.scope) > int(ctx.threads_start) {
+		emem = bac.find_or_create_node(ctx, .Mem)
+	}
 
-	split_mem := rmem
-	if ctx.end != 0 && len(ctx.scope) > int(ctx.threads_start) {
-		split := bac.add_split_mem(ctx, "ptspl", rmem)
+	split_mem := emem
+	if len(ctx.scope) > int(ctx.threads_start) {
+		split := bac.add_split_mem(ctx, "ptspl", emem)
 		for &slot in ctx.scope[ctx.threads_start:] {
 			slot.node = bac.add_mem(ctx, "slcm", split)
 		}
 		split_mem = bac.add_mem(ctx, "mscm", split)
-		for out in bac.get_outputs(ctx, rmem) {
-			if out.id != split {
+		for out in bac.get_outputs(ctx, emem) {
+			if out.id != split && get_node(graph, out.id).itype != .Local {
 				bac.set_input(ctx, out.id, out.idx, split_mem)
 			}
 		}
@@ -253,7 +251,7 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 		bac.subsume(graph, bac.get_inputs(graph, phi)[1], phi)
 	}
 
-	if ctx.end != 0 && int(ctx.threads_start) < len(ctx.scope) {
+	if int(ctx.threads_start) < len(ctx.scope) {
 		for einp in bac.get_inputs(ctx, ctx.end) {
 			connect_to := einp
 			node := expand_node(ctx, einp)

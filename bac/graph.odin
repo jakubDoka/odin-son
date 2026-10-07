@@ -233,13 +233,13 @@ when SPEC_NOT_PRESENT {
 		name: string,
 		ctrls: []Node_ID,
 	) -> Node_ID {return 0}
+	add_always :: add_region
 
 	add_jump :: proc(
 		graph: ^Proc,
 		name: string,
 		ctrl: Node_ID,
 	) -> Node_ID {return 0}
-	add_always :: add_jump
 	add_then :: add_jump
 	add_else :: add_jump
 	add_poison :: proc(graph: ^Proc, name: string) -> Node_ID {return 0}
@@ -561,6 +561,18 @@ find_node :: proc(
 		}
 	}
 	return 0, false
+}
+
+find_or_create_node :: proc(graph: ^Proc, kind: Node_Type) -> (sym: Node_ID) {
+	sym = find_node(graph, kind)
+	if sym == 0 {
+		sym = add_raw(graph, "goc", u16(kind), .Void, {graph.entry})
+		outs := get_outputs(graph, graph.entry)
+		// NOTE: to bring it closer so the search for this is fast
+		// (mem is as 0)
+		outs[1], outs[len(outs) - 1] = outs[len(outs) - 1], outs[1]
+	}
+	return
 }
 
 get_sym_count :: proc(graph: ^Proc) -> (sym: Node_ID, count: int) {
@@ -891,7 +903,7 @@ verify :: proc(graph: ^Proc) {
 	collect_nodes(graph, &wl)
 	for n in worklist_next(graph, &wl) {
 		node := expand_node(graph, n)
-		if len(node.outs) == 0 && node.itype != .End {
+		if len(node.outs) == 0 && node.itype != .Nil {
 			fmt.panicf("%v", node)
 		}
 		if node.itype == .Phi {
@@ -1028,23 +1040,6 @@ schedule_peeps :: proc(graph: ^Proc, schedule: ^Schedule) {
 	)
 }
 
-has_unreachable_return :: proc(graph: ^Proc) -> bool {
-	inp := get_inputs(graph, graph.end)[0]
-	cfg := expand_node(graph, inp)
-
-	if cfg.itype == .Trap do return true
-	if cfg.itype != .Region do return false
-
-	for inp in cfg.inps {
-		if get_node(graph, inp).itype != .Trap {
-			peep_ctx_add_trigger({graph}, inp, graph.end)
-			return false
-		}
-	}
-
-	return true
-}
-
 peep_subsume :: proc(graph: Peep_Ctx, with: Node_ID, target: Node_ID) {
 	node := expand_node(graph, target)
 
@@ -1154,7 +1149,7 @@ apply_peeps :: proc(ctx: Peep_Ctx) -> (optimized: bool) {
 				onode := get_node(graph, out.id)
 				if onode.itype != .Call {
 					fmt.assertf(
-						out.idx < int(onode.input_count),
+						out.idx < int(onode.input_count) || node.itype == .End,
 						"%v %v",
 						node.itype,
 						onode.itype,
@@ -1505,7 +1500,11 @@ simd_iter_from :: #force_no_inline proc(
 	haystack: []u8,
 	needle: u8,
 ) -> Simd_Iter {
-	assert(mem.is_aligned(raw_data(haystack), align_of(Intern_Vec)))
+	fmt.assertf(
+		mem.is_aligned(raw_data(haystack), align_of(Intern_Vec)),
+		"%v",
+		raw_data(haystack),
+	)
 	assert(len(haystack) % size_of(Intern_Vec) == 0)
 	return Simd_Iter {
 		haystack = mem.slice_data_cast([]Intern_Vec, haystack),
@@ -1641,6 +1640,8 @@ grow_search_space :: proc(
 }
 
 interner_grow :: proc(graph: ^Proc, new_cap: int) {
+	if new_cap == 0 do return
+
 	iview := interner_zip(graph)
 	grow_search_space(&iview, new_cap, arna.allocator(graph.mem))
 
@@ -1882,7 +1883,10 @@ get_node_id :: #force_inline proc(graph: ^Proc, node: ^Node) -> Node_ID {
 delete_node_node :: proc(graph: ^Proc, node: ^Node) {
 	id := get_node_id(graph, node)
 
-	if (node.output_count != 0) | (id == 0) | graph.dont_delete {return}
+	if (node.output_count != 0) |
+	   (id == 0) |
+	   graph.dont_delete |
+	   (node.rtype == DEAD_NODE_KIND) {return}
 
 	assert(node.itype != .End)
 
@@ -2112,57 +2116,6 @@ push_sloc :: proc(graph: ^Proc, dnd: D_Node_ID) -> (prev: D_Node_ID) {
 
 pop_sloc :: proc(graph: ^Proc, prev: D_Node_ID) {
 	graph.current_dnode = prev
-}
-
-merge_returns :: proc(graph: ^Proc, args: []Node_ID) -> Node_ID {
-	if graph.end == 0 {
-		args[0] = add_region(graph, "rret", {args[0], 0})
-		for &a in args[1:] {
-			a = add_raw(
-				graph,
-				"rphi",
-				u16(Node_Type.Phi),
-				get_node(graph, a).dt,
-				{args[0], a},
-			)
-		}
-
-		graph.end = add_return(graph, "ret", args)
-	} else {
-		end := expand_node(graph, graph.end)
-
-		reg := expand_node(graph, end.inps[0])
-
-		prev_cached := reg.inps[len(reg.inps) - 1]
-		reg.input_count -= 1
-		remove_output(
-			graph,
-			prev_cached,
-			{idx = len(reg.inps) - 1, id = end.inps[0]},
-			no_delete = true,
-		)
-
-		connect(graph, end.inps[0], args[0])
-
-		for i in 1 ..< len(end.inps) {
-			fmt.assertf(
-				int(get_node(graph, end.inps[i]).input_count) == len(reg.inps),
-				"%v %v",
-				reg,
-				get_node(graph, end.inps[i]),
-			)
-		}
-
-		for i in 1 ..< len(end.inps) {
-			new := i < len(args) ? args[i] : add_poison(graph, "rpsn")
-			dest := end.inps[i]
-			connect(graph, dest, new)
-		}
-
-		connect(graph, end.inps[0], prev_cached)
-	}
-
-	return graph.end
 }
 
 swap_inputs :: proc(graph: ^Proc, node: Expanded_Node, i, j: int) {

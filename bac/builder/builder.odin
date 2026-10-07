@@ -181,6 +181,10 @@ peep :: proc(
 	if bac.is_cfg(ctx, id) && node.itype not_in DEAD_EXCEPTIONS {
 		idom := expand_node(ctx, node.inps[0])
 		if idom.itype == .Dead {
+			if node.itype == .Return {
+				bac.set_input(ctx, ctx.end, 0, 0)
+				return 0
+			}
 			return node.inps[0]
 		}
 	}
@@ -450,12 +454,6 @@ peep :: proc(
 		}
 
 		elim: if len(node.inps) <= 2 {
-			for out in node.outs {
-				if get_node(ctx, out.id).itype == .Return {
-					break elim
-				}
-			}
-
 			if len(node.inps) == 1 {
 				assert(node.inps[0] == 0)
 				return bac.add_dead(ctx, "rdead")
@@ -574,11 +572,6 @@ peep :: proc(
 		}
 
 		elimn: if len(node.inps) == 2 {
-			for out in bac.get_outputs(ctx, node.inps[0]) {
-				if get_node(ctx, out.id).itype == .Return {
-					break elimn
-				}
-			}
 			return node.inps[1]
 		}
 

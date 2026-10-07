@@ -438,17 +438,12 @@ main:
     push r13
     push r14
     push r15
-    sub rsp, 0x28
-    pxor xmm0, xmm0
-    movups.x [rsp + 0x10], xmm0
+    sub rsp, 0x18
     mov rdi, 0xa
     call opaque
-    mov.q [rsp + 0x10], rax
+    mov r15, rax
     mov rdi, 0x14
     call opaque
-    mov r15, rax
-    mov.q [rsp + 0x18], r15
-    mov.q rax, [rsp + 0x10]
     mov r14, rax
     mov rdi, 1
     call opaque
@@ -468,14 +463,14 @@ main:
     mov rdi, 6
     call opaque
     mov.q [rsp + 0x8], rax
-    mov rsi, r15
+    mov rdi, r15
+    mov rsi, r14
     mov rdx, r13
     mov rcx, r12
     mov r8, rbp
     mov r9, rbx
-    mov rdi, r14
     call consume
-    add rsp, 0x28
+    add rsp, 0x18
     pop r15
     pop r14
     pop r13

@@ -45,19 +45,20 @@ main:
     lea rdi, [rsp + 0x4]
     call neg64
     pxor xmm1, xmm1
-    movss.d xmm2, [rsp + 0xc]
-    cvtss2sd xmm2, xmm2
-    addsd xmm1, xmm2
-    movsd.q xmm2, [rsp + 0x1c]
-    addsd xmm1, xmm2
-    movss.d xmm2, [rsp + 0x2c]
-    cvtss2sd xmm2, xmm2
-    addsd xmm1, xmm2
+    movss.d xmm2, [rsp]
+    movsd.q xmm3, [rsp + 0x4]
+    movss.d xmm4, [rsp + 0xc]
+    cvtss2sd xmm4, xmm4
+    addsd xmm1, xmm4
+    movsd.q xmm4, [rsp + 0x1c]
+    addsd xmm1, xmm4
+    movss.d xmm4, [rsp + 0x2c]
+    cvtss2sd xmm4, xmm4
+    addsd xmm1, xmm4
     addsd xmm1, xmm0
-    movss.d xmm0, [rsp]
-    cvtss2sd xmm0, xmm0
+    cvtss2sd xmm0, xmm2
     addsd xmm1, xmm0
-    addsd.q xmm1, [rsp + 0x4]
+    addsd xmm1, xmm3
     cvttsd2si rax, xmm1
     add rsp, 0x48
     ret
@@ -101,21 +102,22 @@ main:
     movss.d [rsp + 0xc], xmm0
     lea rdi, [rsp + 0x4]
     call neg64
-    pxor xmm2, xmm2
+    pxor xmm4, xmm4
+    movss.d xmm3, [rsp]
+    movsd.q xmm2, [rsp + 0x4]
     movss.d xmm1, [rsp + 0x2c]
     cvtss2sd xmm1, xmm1
-    addsd xmm2, xmm1
+    addsd xmm4, xmm1
     movsd.q xmm1, [rsp + 0x1c]
-    addsd xmm2, xmm1
+    addsd xmm4, xmm1
     movss.d xmm1, [rsp + 0xc]
     cvtss2sd xmm1, xmm1
-    addsd xmm2, xmm1
-    addsd xmm2, xmm0
-    movss.d xmm0, [rsp]
-    cvtss2sd xmm0, xmm0
-    addsd xmm2, xmm0
-    addsd.q xmm2, [rsp + 0x4]
-    cvttsd2si rax, xmm2
+    addsd xmm4, xmm1
+    addsd xmm4, xmm0
+    cvtss2sd xmm0, xmm3
+    addsd xmm4, xmm0
+    addsd xmm4, xmm2
+    cvttsd2si rax, xmm4
     add rsp, 0x48
     ret
 =========== OPT LEVEL: mininal-quick ===========
@@ -165,19 +167,20 @@ main:
     lea rdi, [rsp + 0x4]
     call neg64
     pxor xmm1, xmm1
-    movss.d xmm2, [rsp + 0xc]
-    cvtss2sd xmm2, xmm2
-    addsd xmm1, xmm2
-    movsd.q xmm2, [rsp + 0x1c]
-    addsd xmm1, xmm2
-    movss.d xmm2, [rsp + 0x2c]
-    cvtss2sd xmm2, xmm2
-    addsd xmm1, xmm2
+    movss.d xmm2, [rsp]
+    movsd.q xmm3, [rsp + 0x4]
+    movss.d xmm4, [rsp + 0xc]
+    cvtss2sd xmm4, xmm4
+    addsd xmm1, xmm4
+    movsd.q xmm4, [rsp + 0x1c]
+    addsd xmm1, xmm4
+    movss.d xmm4, [rsp + 0x2c]
+    cvtss2sd xmm4, xmm4
+    addsd xmm1, xmm4
     addsd xmm1, xmm0
-    movss.d xmm0, [rsp]
-    cvtss2sd xmm0, xmm0
+    cvtss2sd xmm0, xmm2
     addsd xmm1, xmm0
-    addsd.q xmm1, [rsp + 0x4]
+    addsd xmm1, xmm3
     cvttsd2si rax, xmm1
     add rsp, 0x48
     ret
@@ -221,21 +224,22 @@ main:
     movss.d [rsp + 0xc], xmm0
     lea rdi, [rsp + 0x4]
     call neg64
-    pxor xmm2, xmm2
+    pxor xmm4, xmm4
+    movss.d xmm3, [rsp]
+    movsd.q xmm2, [rsp + 0x4]
     movss.d xmm1, [rsp + 0x2c]
     cvtss2sd xmm1, xmm1
-    addsd xmm2, xmm1
+    addsd xmm4, xmm1
     movsd.q xmm1, [rsp + 0x1c]
-    addsd xmm2, xmm1
+    addsd xmm4, xmm1
     movss.d xmm1, [rsp + 0xc]
     cvtss2sd xmm1, xmm1
-    addsd xmm2, xmm1
-    addsd xmm2, xmm0
-    movss.d xmm0, [rsp]
-    cvtss2sd xmm0, xmm0
-    addsd xmm2, xmm0
-    addsd.q xmm2, [rsp + 0x4]
-    cvttsd2si rax, xmm2
+    addsd xmm4, xmm1
+    addsd xmm4, xmm0
+    cvtss2sd xmm0, xmm3
+    addsd xmm4, xmm0
+    addsd xmm4, xmm2
+    cvttsd2si rax, xmm4
     add rsp, 0x48
     ret
 =========== OPT LEVEL: moderate-quick ===========
@@ -284,18 +288,19 @@ main:
     call neg64
     movss.d xmm1, [rsp + 0xc]
     cvtss2sd xmm1, xmm1
-    pxor xmm2, xmm2
-    addsd xmm1, xmm2
-    movsd.q xmm2, [rsp + 0x1c]
-    addsd xmm1, xmm2
-    movss.d xmm2, [rsp + 0x2c]
-    cvtss2sd xmm2, xmm2
-    addsd xmm1, xmm2
+    movss.d xmm2, [rsp]
+    movsd.q xmm3, [rsp + 0x4]
+    pxor xmm4, xmm4
+    addsd xmm1, xmm4
+    movsd.q xmm4, [rsp + 0x1c]
+    addsd xmm1, xmm4
+    movss.d xmm4, [rsp + 0x2c]
+    cvtss2sd xmm4, xmm4
+    addsd xmm1, xmm4
     addsd xmm1, xmm0
-    movss.d xmm0, [rsp]
-    cvtss2sd xmm0, xmm0
+    cvtss2sd xmm0, xmm2
     addsd xmm1, xmm0
-    addsd.q xmm1, [rsp + 0x4]
+    addsd xmm1, xmm3
     cvttsd2si rax, xmm1
     add rsp, 0x48
     ret
@@ -338,20 +343,21 @@ main:
     lea rdi, [rsp + 0x4]
     call neg64
     movss.d xmm1, [rsp + 0x2c]
-    cvtss2sd xmm2, xmm1
+    cvtss2sd xmm4, xmm1
+    movss.d xmm3, [rsp]
+    movsd.q xmm2, [rsp + 0x4]
     pxor xmm1, xmm1
-    addsd xmm2, xmm1
+    addsd xmm4, xmm1
     movsd.q xmm1, [rsp + 0x1c]
-    addsd xmm2, xmm1
+    addsd xmm4, xmm1
     movss.d xmm1, [rsp + 0xc]
     cvtss2sd xmm1, xmm1
-    addsd xmm2, xmm1
-    addsd xmm2, xmm0
-    movss.d xmm0, [rsp]
-    cvtss2sd xmm0, xmm0
-    addsd xmm2, xmm0
-    addsd.q xmm2, [rsp + 0x4]
-    cvttsd2si rax, xmm2
+    addsd xmm4, xmm1
+    addsd xmm4, xmm0
+    cvtss2sd xmm0, xmm3
+    addsd xmm4, xmm0
+    addsd xmm4, xmm2
+    cvttsd2si rax, xmm4
     add rsp, 0x48
     ret
 =========== OPT LEVEL: all ===========
@@ -393,20 +399,21 @@ main:
     lea rdi, [rsp + 0x4]
     call neg64
     movss.d xmm1, [rsp + 0x2c]
-    cvtss2sd xmm2, xmm1
+    cvtss2sd xmm4, xmm1
+    movss.d xmm3, [rsp]
+    movsd.q xmm2, [rsp + 0x4]
     pxor xmm1, xmm1
-    addsd xmm2, xmm1
+    addsd xmm4, xmm1
     movsd.q xmm1, [rsp + 0x1c]
-    addsd xmm2, xmm1
+    addsd xmm4, xmm1
     movss.d xmm1, [rsp + 0xc]
     cvtss2sd xmm1, xmm1
-    addsd xmm2, xmm1
-    addsd xmm2, xmm0
-    movss.d xmm0, [rsp]
-    cvtss2sd xmm0, xmm0
-    addsd xmm2, xmm0
-    addsd.q xmm2, [rsp + 0x4]
-    cvttsd2si rax, xmm2
+    addsd xmm4, xmm1
+    addsd xmm4, xmm0
+    cvtss2sd xmm0, xmm3
+    addsd xmm4, xmm0
+    addsd xmm4, xmm2
+    cvttsd2si rax, xmm4
     add rsp, 0x48
     ret
 =========== OPT LEVEL: aggresive ===========

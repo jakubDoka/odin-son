@@ -182,28 +182,26 @@ opaque:
     mov rax, rdi
     ret
 main:
-    sub rsp, 0x18
-    pxor xmm0, xmm0
-    movups.x [rsp], xmm0
-    mov.q [rsp + 0x10], 0
+    push rbx
+    push rbp
+    sub rsp, 8
     mov rdi, 1
     call opaque
-    mov.q [rsp], rax
+    mov rbx, rax
     mov rdi, 2
     call opaque
-    mov.q [rsp + 0x8], rax
+    mov rbp, rax
     mov rdi, 3
     call opaque
-    mov rcx, rax
-    mov.q [rsp + 0x10], rcx
-    mov.q rax, [rsp]
-    add.q rax, [rsp + 0x8]
+    add rbx, rbp
+    mov rcx, rbx
+    add rcx, rbp
+    add rax, rbx
     add rcx, rax
-    mov.q [rsp], rax
-    mov.q [rsp + 0x10], rcx
-    add.q rax, [rsp + 0x8]
-    add rax, rcx
-    add rsp, 0x18
+    mov rax, rcx
+    add rsp, 8
+    pop rbp
+    pop rbx
     ret
 =========== OPT LEVEL: aggresive ===========
 main:

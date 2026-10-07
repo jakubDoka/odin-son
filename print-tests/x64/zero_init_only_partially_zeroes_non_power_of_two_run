@@ -323,12 +323,15 @@ main:
     mov.q [rsp + 0x10], 0
     movups.x [rsp + 0x20], xmm0
     mov.q [rsp + 0x18], 5
-    mov.q rdx, [rsp]
-    add.q rdx, [rsp + 0x8]
-    add.q rdx, [rsp + 0x10]
-    mov.q rax, [rsp + 0x20]
-    lea rax, [rdx + rax + 0x5]
-    add.q rax, [rsp + 0x28]
+    mov.q r8, [rsp]
+    mov.q rdi, [rsp + 0x8]
+    mov.q rsi, [rsp + 0x20]
+    mov.q rax, [rsp + 0x10]
+    mov.q rdx, [rsp + 0x28]
+    add r8, rdi
+    add r8, rax
+    lea rax, [r8 + rsi + 0x5]
+    add rax, rdx
     add rax, rcx
     mov rcx, 0xfb
     cqo
@@ -346,7 +349,7 @@ main:
     xor eax, eax
 1:
     mov.q [rsp + rax*8 + 0x30], 0x55
-    mov.q rdx, [rsp + 0x48]
+    mov.q r8, [rsp + 0x48]
     add rax, 1
     cmp rax, 0x40
     jnge 1
@@ -355,13 +358,16 @@ main:
     mov.q [rsp + 0x10], 0
     movups.x [rsp + 0x20], xmm0
     mov.q [rsp + 0x18], 5
-    mov.q rcx, [rsp]
-    add.q rcx, [rsp + 0x8]
-    add.q rcx, [rsp + 0x10]
-    mov.q rax, [rsp + 0x20]
-    lea rax, [rcx + rax + 0x5]
-    add.q rax, [rsp + 0x28]
-    add rax, rdx
+    mov.q rdi, [rsp]
+    mov.q rsi, [rsp + 0x20]
+    mov.q rdx, [rsp + 0x8]
+    mov.q rax, [rsp + 0x10]
+    mov.q rcx, [rsp + 0x28]
+    add rdi, rdx
+    add rdi, rax
+    lea rax, [rdi + rsi + 0x5]
+    add rax, rcx
+    add rax, r8
     mov rcx, 0xfb
     cqo
     idiv rcx

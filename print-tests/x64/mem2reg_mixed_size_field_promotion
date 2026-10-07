@@ -236,40 +236,37 @@ opaque:
     mov rax, rdi
     ret
 main:
-    sub rsp, 0x18
-    pxor xmm0, xmm0
-    movups.x [rsp], xmm0
+    push rbx
+    push rbp
+    push r12
     mov rdi, 0x64
     call opaque
-    mov.b [rsp], al
+    mov rbx, rax
     mov rdi, 0x12c
     call opaque
-    mov.w [rsp + 0x2], ax
+    mov r12, rax
     mov rdi, 0x11170
     call opaque
-    mov.d [rsp + 0x4], eax
+    mov rbp, rax
     mov rdi, 0x1f4
     call opaque
-    mov rcx, rax
-    mov.q [rsp + 0x8], rcx
-    movzx.b eax, [rsp]
-    add al, 1
-    mov.b [rsp], al
-    add rcx, 4
-    movzx.w edi, [rsp + 0x2]
-    movzx eax, al
-    add di, 2
-    mov.w [rsp + 0x2], di
-    mov.d esi, [rsp + 0x4]
-    add esi, 3
-    mov.d [rsp + 0x4], esi
-    mov.q [rsp + 0x8], rcx
-    movzx edx, di
-    add rax, rdx
-    mov edx, esi
-    add rax, rdx
-    add rax, rcx
-    add rsp, 0x18
+    mov rcx, rbx
+    add cl, 1
+    movzx ecx, cl
+    mov rdx, r12
+    add dx, 2
+    movzx edx, dx
+    add rcx, rdx
+    mov rdx, rbp
+    add edx, 3
+    mov edx, edx
+    add rcx, rdx
+    add rax, 4
+    add rcx, rax
+    mov rax, rcx
+    pop r12
+    pop rbp
+    pop rbx
     ret
 =========== OPT LEVEL: aggresive ===========
 main:

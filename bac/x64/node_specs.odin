@@ -313,8 +313,8 @@ SPEC := bac.Node_Spec{
 		{}, // Split
 		{Class_Flag.Interned}, // Phi
 		{Class_Flag.Store}, // Mem
-		{}, // Split_Mem
-		{}, // Merge_Mem
+		{Class_Flag.Store}, // Split_Mem
+		{Class_Flag.Store}, // Merge_Mem
 		{}, // Sym
 		{}, // Local
 		{Class_Flag.Clonable}, // Local_Addr

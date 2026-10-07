@@ -229,34 +229,24 @@ opaque:
     mov rax, rdi
     ret
 main:
-    sub rsp, 0x28
-    pxor xmm0, xmm0
-    movups.x [rsp], xmm0
-    movups.x [rsp + 0x10], xmm0
+    push rbx
     mov rdi, 1
     call opaque
-    mov.q [rsp], rax
     mov rdi, 2
     call opaque
-    mov.q [rsp + 0x8], rax
+    mov rbx, rax
     mov rdi, 3
     call opaque
-    mov.q [rsp + 0x10], rax
     mov rdi, 4
     call opaque
     mov rcx, rax
     imul rax, rcx, 0x3e8
-    mov.q [rsp + 0x18], rcx
-    mov.q [rsp], rcx
-    mov.q rsi, [rsp + 0x8]
-    mov.q [rsp + 0x10], rsi
-    mov.q rdx, [rsp + 0x8]
-    imul rdx, rdx, 0x64
+    imul rdx, rbx, 0x64
     add rax, rdx
-    imul rdx, rsi, 0xa
+    imul rdx, rbx, 0xa
     add rax, rdx
     add rax, rcx
-    add rsp, 0x28
+    pop rbx
     ret
 =========== OPT LEVEL: aggresive ===========
 main:

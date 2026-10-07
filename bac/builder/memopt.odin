@@ -118,7 +118,9 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 				failed_sroa = true
 				continue
 			}
-			if out.idx != 2 do continue sroa
+			if out.idx != 2 {
+				continue sroa
+			}
 			if onode.itype == .Copy || onode.itype == .Set {
 				failed_sroa = true
 				continue
@@ -148,7 +150,7 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 		}
 
 		loc := bac.get_extra(ctx, mout.id, Local)
-		if !failed_split && failed_sroa && !loc.is_split && false {
+		if !failed_split && failed_sroa && !loc.is_split {
 			append(&threads, mnode.outs[0].id)
 			loc.is_split = true
 		}
@@ -326,19 +328,31 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 
 				#partial switch conode.itype {
 				case .Load:
-					id := get_edited_node_idx(ctx, conode) or_break
-					if id < ctx.threads_start {
-						value := get_scope_value(ctx, ctx.scope, id)
-						bac.subsume(ctx, value, cout.id)
+					if id, ok := get_edited_node_idx(ctx, conode); ok {
+						if id < ctx.threads_start {
+							value := get_scope_value(ctx, ctx.scope, id)
+							bac.subsume(ctx, value, cout.id)
+						} else {
+							value := get_scope_value(ctx, ctx.scope, id)
+
+							bac.set_input(
+								ctx,
+								cout.id,
+								1,
+								value,
+								subsume_on_intern = true,
+							)
+						}
 					} else {
-						value := get_scope_value(ctx, ctx.scope, id)
-						bac.set_input(
-							ctx,
-							cout.id,
-							1,
-							value,
-							subsume_on_intern = true,
-						)
+						if prev != 0 {
+							bac.set_input(
+								ctx,
+								cout.id,
+								1,
+								prev,
+								subsume_on_intern = true,
+							)
+						}
 					}
 				case .Store,
 				     .Call,

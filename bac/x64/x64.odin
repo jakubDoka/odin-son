@@ -3,6 +3,7 @@ package x64
 import bac ".."
 import "../../vendored/gam/util/arna"
 import "../../vendored/gam/util/bit_arr"
+import "../builder"
 import "base:intrinsics"
 import "core:fmt"
 import "core:math"
@@ -316,12 +317,13 @@ peep :: proc(
 		if node.dt in bac.FLOAT_DTS && cnst.value != 0 {
 			global := bac.c_int_as_global(ctx, node)
 
+			cmem := builder.get_or_add_const_mem(ctx)
 			_, id := add_node(
 				ctx,
 				node.name,
 				.X64_Load,
 				node.dt,
-				{0, ctx.const_mem, global},
+				{0, cmem, global},
 				{dt = node.dt},
 			)
 			return id
@@ -857,7 +859,6 @@ post_schedule_peep :: proc(
 		rhs := expand_node(ctx, node.inps[2])
 
 		if xtype(rhs) == .X64_Load && false {
-			if get_node(ctx, node.inps[1]).itype != .Root_Mem do break matchx
 			if get_node(ctx, node.inps[2]).itype != .Global do break matchx
 
 			mem_op.mem_mode = .Src
@@ -991,7 +992,8 @@ meta_of :: proc(
 	mem_op: ^Mem_Op = xextra(graph, node, Mem_Op)
 
 	switch xtype(node) {
-	case .Simd_Reduce_Add_Bisect,
+	case .End,
+	     .Simd_Reduce_Add_Bisect,
 	     .Splat,
 	     .Then,
 	     .Else,
@@ -1069,15 +1071,7 @@ meta_of :: proc(
 		}
 	case .Global:
 		return {out = IOUT}
-	case .Mem,
-	     .Root_Mem,
-	     .Sym,
-	     .Local,
-	     .Jump,
-	     .Always,
-	     .Trap,
-	     .Split_Mem,
-	     .Merge_Mem:
+	case .Mem, .Sym, .Local, .Jump, .Always, .Trap, .Split_Mem, .Merge_Mem:
 		return {out = IOUT}
 	case .Local_Addr, .Global_Addr, .Proc_Addr:
 		return {out = out}
@@ -1948,7 +1942,7 @@ emit_instr :: proc(
 			rx := rex(a, b, NO_INDEX, bac.DT_SIZE[node.dt] == 8)
 			emit(ctx.code, {0x66, rx, 0x0f, op, mod_rm(.Direct, a, b)})
 		}
-	case .Nil, .Entry, .Then, .Else, .Region, .Loop, .Call_End, .Dead:
+	case .Nil, .Entry, .Then, .Else, .Region, .Loop, .Call_End, .Dead, .End:
 		fmt.panicf("Not reachable form here %v", node.node)
 	case .If:
 		cnode := expand_node(ctx, node.inps[1])
@@ -2076,15 +2070,7 @@ emit_instr :: proc(
 				id     = lib_call.id,
 			}
 		}
-	case .Poison,
-	     .Param,
-	     .Phi,
-	     .Ret,
-	     .Mem,
-	     .Root_Mem,
-	     .Split_Mem,
-	     .Merge_Mem,
-	     .Sym:
+	case .Poison, .Param, .Phi, .Ret, .Mem, .Split_Mem, .Merge_Mem, .Sym:
 	case .CInt:
 		dst := reg_of(ctx, instr)
 		imm := bac.get_extra(ctx, node, bac.CInt).value

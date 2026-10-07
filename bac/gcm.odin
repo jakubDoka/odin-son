@@ -474,13 +474,6 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 
 	rounds := 0
 
-	ctx.late_schedules[get_node(graph, graph.sym).gvn] = graph.entry
-	ctx.late_schedules[get_node(graph, graph.base_mem).gvn] = graph.entry
-	ctx.late_schedules[get_node(graph, graph.root_mem).gvn] = graph.entry
-	ctx.late_schedules[get_node(graph, graph.const_mem).gvn] = graph.entry
-	ctx.late_schedules[get_node(graph, expand_node(graph, graph.const_mem).inps[0]).gvn] =
-		graph.entry
-
 	for n in worklist_next(graph, &worklist) {
 		rounds += 1
 
@@ -962,10 +955,8 @@ verify_schedule_integrity :: proc(
 		for instr in bb.instrs {
 			if has_flag(graph, instr, .Is_Basic_Block_Start) do continue
 			inode := expand_node(graph, instr)
-			if len(inode.outs) == 0 &&
-			   !has_flag(graph, instr, .Immortal) &&
-			   !no_late_pass {
-				//log.error("dead node in the schedule:", inode.node)
+			if len(inode.outs) == 0 && !no_late_pass {
+				log.error("dead node in the schedule:", inode.node)
 			}
 
 			for inp, i in inode.inps {

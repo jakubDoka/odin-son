@@ -15,8 +15,8 @@ node_hash_node_id :: #force_inline proc(graph: ^Proc, id: Node_ID) -> u8 {
 	return node_hash_node(graph, get_node(graph, id))
 }
 delete_node :: proc{delete_node_node, delete_node_node_id}
-delete_node_node_id :: #force_inline proc(graph: ^Proc, id: Node_ID, indirect := false) {
-	delete_node_node(graph, get_node(graph, id), indirect)
+delete_node_node_id :: #force_inline proc(graph: ^Proc, id: Node_ID) {
+	delete_node_node(graph, get_node(graph, id))
 }
 get_extra_dwords :: proc{get_extra_dwords_node, get_extra_dwords_node_id}
 get_extra_dwords_node_id :: #force_inline proc(

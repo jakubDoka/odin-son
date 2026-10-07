@@ -464,7 +464,7 @@ alloca :: proc(
 	zeroed := true,
 	is_arg := false,
 ) -> Node_ID {
-	root := is_arg ? ctx.entry : ctx.root_mem
+	root := is_arg ? ctx.entry : bac.find_node(ctx, .Mem)
 	alloca := bac.add_local(ctx, name, root)
 
 	size := i32(min(type_size(ty), int(max(i32))))
@@ -563,9 +563,9 @@ inline_and_optimize :: proc(
 		graph.mem = &slot
 		bac.mount_stencil(&graph, prc.stencil)
 
-		sc := bac.get_sym_count(&graph)
+		sym, sc := bac.get_sym_count(&graph)
 		sctx.caller_to_callee[i] = make([]u32, sc)
-		for j := sc; sr in bac.sym_iter_next(&graph, &j) {
+		for j := sc; sr in bac.sym_iter_next(&graph, sym, &j) {
 			assert(sr.type == .Func)
 			sctx.caller_to_callee[i][j] = sr.id
 		}
@@ -713,8 +713,8 @@ inline_and_optimize :: proc(
 
 		caller_wct := weight_cata(ctx.weight)
 
-		sc := bac.get_sym_count(ctx)
-		for j := sc; sim in bac.sym_iter_next(ctx, &j) {
+		sym, sc := bac.get_sym_count(ctx)
+		for j := sc; sim in bac.sym_iter_next(ctx, sym, &j) {
 			assert(sim.type == .Func)
 			callee := &ctx.procs[sim.id]
 			if len(callee.stencil.mem) == 0 do continue
@@ -799,10 +799,10 @@ emit_proc :: proc(
 		append(&ctx.poly_types, e)
 	}
 
-	builder.init_graph(ctx)
+	rmem := builder.init_graph(ctx)
 
 	ctx.node_scope = builder.add_scope(ctx, "scope", ctx.entry)
-	ctx.mem_slot = builder.push_scope_value(ctx, ctx.node_scope, ctx.root_mem)
+	ctx.mem_slot = builder.push_scope_value(ctx, ctx.node_scope, rmem)
 
 	rabi := typecheck.ret_abi(prc.rets[:])
 	ctx.ret_ptrs = nil
@@ -2268,7 +2268,7 @@ emit_call :: proc(
 
 	args[0] = ctx_ctrl(ctx)
 	args[1] = ctx_mem(ctx)
-	args[2] = ctx.sym
+	args[2] = builder.get_or_add_sym(ctx)
 	if ptr != 0 do args[2] = 0
 
 	slice.reverse(args[lctx.ri:])

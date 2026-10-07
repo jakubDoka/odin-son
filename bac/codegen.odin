@@ -465,7 +465,7 @@ layout_call_args :: proc(
 }
 
 layout_locals :: proc(ctx: ^Proc, schedule: ^Schedule, stack_size: ^i32) {
-	emem := ctx.root_mem
+	emem := find_node(ctx, .Mem)
 	mem_outs := get_outputs(ctx, emem)
 
 	Local_Slot :: bit_field u64 {

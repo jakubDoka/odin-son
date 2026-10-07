@@ -505,8 +505,9 @@ Tup :: bac.Tup
 
 @(rodata)
 IDEAL_CLASSES := [bac.Node_Type]Class_Spec {
-	.Nil = {id = Cfg, no_ctor = true, flags = {.Immortal}},
+	.Nil = {id = Cfg, no_ctor = true},
 	.Entry = {id = Cfg, flags = {.Is_Basic_Block_Start}, default_type = .Void},
+	.End = {id = Cfg},
 	.Poison = {default_type = .Void, flags = {.Interned}},
 	// TODO: maybe its better to introduce a flag: Schedule_Early
 	.Param = {id = Tup, args = {"entry"}, extra_args = {"idx"}},
@@ -588,13 +589,8 @@ IDEAL_CLASSES := [bac.Node_Type]Class_Spec {
 	.U_Div = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
 	.U_Rem = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
 	.U_Shr = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
-	.Sym = {args = {"entry"}, default_type = .Void, flags = {.Immortal}},
+	.Sym = {args = {"entry"}, default_type = .Void},
 	.Mem = {args = {"ctrl"}, default_type = .Void, flags = {.Store}},
-	.Root_Mem = {
-		args = {"ctrl"},
-		default_type = .Void,
-		flags = {.Store, .Immortal},
-	},
 	.Split_Mem = {args = {"mem"}, default_type = .Void},
 	.Merge_Mem = {default_type = .Void, varargs = true},
 	.Local = {id = bac.Local, args = {"mem"}, default_type = .Void},
@@ -672,12 +668,7 @@ IDEAL_CLASSES := [bac.Node_Type]Class_Spec {
 		default_type = .Void,
 	},
 	.Ret = {id = Tup, args = {"call_end"}, extra_args = {"idx"}},
-	.Return = {
-		id = Cfg,
-		varargs = true,
-		default_type = .Void,
-		flags = {.Immortal},
-	},
+	.Return = {id = Cfg, varargs = true, default_type = .Void},
 }
 
 main :: proc() {

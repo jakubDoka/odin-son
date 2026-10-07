@@ -244,7 +244,7 @@ peep :: proc(
 		slot := expand_node(ctx, node.inps[0])
 		root := expand_node(ctx, slot.inps[0])
 		mark_dead: {
-			if root.itype != .Root_Mem do break mark_dead
+			if root.itype != .Mem do break mark_dead
 
 			slot_local := bac.get_extra(ctx, slot, Local)
 			if slot_local.size == bac.DEAD_LOCAL do break match
@@ -284,7 +284,7 @@ peep :: proc(
 		}
 
 		forward: {
-			if root.itype != .Root_Mem do break forward
+			if root.itype != .Mem do break forward
 
 			forward_candidate: Node_ID
 			rev_forward_candidate: Node_ID

@@ -58,7 +58,6 @@ SPEC := bac.Node_Spec{
 		0b10, // Split
 		0b10, // Phi
 		0b10, // Mem
-		0b10, // Root_Mem
 		0b10, // Split_Mem
 		0b10, // Merge_Mem
 		0b10, // Sym
@@ -84,6 +83,7 @@ SPEC := bac.Node_Spec{
 		0b1, // Call_End
 		0b100, // Ret
 		0b1, // Return
+		0b1, // End
 		0b10, // Neg
 		0b10, // Not
 		0b10, // Sext
@@ -142,7 +142,6 @@ SPEC := bac.Node_Spec{
 		0, // Split -> No_Extra
 		0, // Phi -> No_Extra
 		0, // Mem -> No_Extra
-		0, // Root_Mem -> No_Extra
 		0, // Split_Mem -> No_Extra
 		0, // Merge_Mem -> No_Extra
 		0, // Sym -> No_Extra
@@ -168,6 +167,7 @@ SPEC := bac.Node_Spec{
 		1, // Call_End -> Cfg
 		1, // Ret -> Tup
 		1, // Return -> Cfg
+		1, // End -> Cfg
 		0, // Neg -> No_Extra
 		0, // Not -> No_Extra
 		0, // Sext -> No_Extra
@@ -184,7 +184,7 @@ SPEC := bac.Node_Spec{
 		0, // Simd_Reduce_Add_Bisect -> No_Extra
 	},
 	node_flags = {
-		{Class_Flag.Immortal}, // Nil
+		{}, // Nil
 		{Class_Flag.Is_Basic_Block_Start}, // Entry
 		{Class_Flag.Interned}, // Poison
 		{}, // Param
@@ -226,10 +226,9 @@ SPEC := bac.Node_Spec{
 		{}, // Split
 		{Class_Flag.Interned}, // Phi
 		{Class_Flag.Store}, // Mem
-		{Class_Flag.Immortal, Class_Flag.Store}, // Root_Mem
 		{}, // Split_Mem
 		{}, // Merge_Mem
-		{Class_Flag.Immortal}, // Sym
+		{}, // Sym
 		{}, // Local
 		{Class_Flag.Clonable}, // Local_Addr
 		{}, // Global
@@ -251,7 +250,8 @@ SPEC := bac.Node_Spec{
 		{}, // Call
 		{Class_Flag.Is_Basic_Block_Start}, // Call_End
 		{}, // Ret
-		{Class_Flag.Immortal}, // Return
+		{}, // Return
+		{}, // End
 		{Class_Flag.Interned}, // Neg
 		{Class_Flag.Interned}, // Not
 		{Class_Flag.Interned}, // Sext
@@ -273,7 +273,6 @@ SPEC := bac.Node_Spec{
 		bac.No_Extra,
 		bac.Tup,
 		bac.CInt,
-		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
@@ -336,6 +335,7 @@ SPEC := bac.Node_Spec{
 		bac.Cfg,
 		bac.Tup,
 		bac.Cfg,
+		bac.Cfg,
 		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
@@ -394,7 +394,6 @@ SPEC := bac.Node_Spec{
 		`Split`,
 		`Phi`,
 		`Mem`,
-		`Root_Mem`,
 		`Split_Mem`,
 		`Merge_Mem`,
 		`Sym`,
@@ -420,6 +419,7 @@ SPEC := bac.Node_Spec{
 		`Call_End`,
 		`Ret`,
 		`Return`,
+		`End`,
 		`Neg`,
 		`Not`,
 		`Sext`,
@@ -480,7 +480,6 @@ Node_Type :: enum u16 {
 	Split,
 	Phi,
 	Mem,
-	Root_Mem,
 	Split_Mem,
 	Merge_Mem,
 	Sym,
@@ -506,6 +505,7 @@ Node_Type :: enum u16 {
 	Call_End,
 	Ret,
 	Return,
+	End,
 	Neg,
 	Not,
 	Sext,
@@ -575,7 +575,6 @@ post_schedule_peep_inst :: proc(
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.Local) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.Tup) % bac.PRECISION == 0)
@@ -597,6 +596,7 @@ post_schedule_peep_inst :: proc(
 #assert(size_of(bac.Call) % bac.PRECISION == 0)
 #assert(size_of(bac.Cfg) % bac.PRECISION == 0)
 #assert(size_of(bac.Tup) % bac.PRECISION == 0)
+#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
 #assert(size_of(bac.Cfg) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)

@@ -36,17 +36,6 @@ add_load :: #force_inline proc(
 	return bac.add_load(graph, name, dt, ctrl, mem, addr)
 }
 
-add_c_load :: #force_inline proc(
-	graph: ^Proc,
-	name: string,
-	dt: bac.Node_Datatype,
-	addr: Node_ID,
-) -> (
-	_id: Node_ID,
-) {
-	return bac.add_load(graph, name, dt, 0, graph.const_mem, addr)
-}
-
 add_store :: proc(
 	graph: ^Proc,
 	name: string,
@@ -433,8 +422,8 @@ inline_graph :: proc(graph: ^bac.Proc, call: bac.Node_ID, from: ^bac.Proc) {
 	call := expand_node(graph, call)
 	assert(call.itype == .Call)
 	proj_of(&ctx, from.entry)^ = call.inps[0]
-	proj_of(&ctx, from.base_mem)^ = call.inps[1]
-	proj_of(&ctx, from.sym)^ = call.inps[2]
+	proj_of(&ctx, bac.find_node(from, .Mem))^ = call.inps[1]
+	proj_of(&ctx, bac.find_node(from, .Sym))^ = call.inps[2]
 
 	bac.assert_live_pins(from)
 
@@ -446,6 +435,8 @@ inline_graph :: proc(graph: ^bac.Proc, call: bac.Node_ID, from: ^bac.Proc) {
 
 	assert(proj_of(&ctx, starter)^ == 0)
 
+	root_mem := bac.find_node(graph, .Mem)
+
 	for param, arg_idx in params {
 		pnode := expand_node(from, param)
 		arg_idx := arg_idx + bac.CALL_PREFIX
@@ -456,7 +447,7 @@ inline_graph :: proc(graph: ^bac.Proc, call: bac.Node_ID, from: ^bac.Proc) {
 			assert(pnode.itype != .Local)
 		} else {
 			assert(arg_node.inps[0] == graph.entry)
-			bac.set_input(graph, arg, 0, graph.root_mem)
+			bac.set_input(graph, arg, 0, root_mem)
 			if pnode.itype == .Local {
 				// project the addr too or we get dups
 				assert(ctx.projection[pnode.gvn] == 0)
@@ -675,11 +666,6 @@ inline_graph :: proc(graph: ^bac.Proc, call: bac.Node_ID, from: ^bac.Proc) {
 		rtype := node.rtype
 		input_cap = node.input_count
 
-		if node.itype == .Root_Mem {
-			rtype = u16(Node_Type.Mem)
-			if node.output_count == 0 do return
-		}
-
 		if node.itype == .Loop {
 			input_cap = 1
 		}
@@ -697,8 +683,9 @@ inline_graph :: proc(graph: ^bac.Proc, call: bac.Node_ID, from: ^bac.Proc) {
 		}
 
 		if node.itype == .Local {
-			if node.inps[0] == ctx.from.root_mem {
-				inps[0] = graph.root_mem
+			root_mem := bac.find_node(ctx.from, .Mem)
+			if node.inps[0] == root_mem {
+				inps[0] = root_mem
 			}
 
 			if node.inps[0] == ctx.from.entry {
@@ -1011,7 +998,7 @@ arg_gen_next :: proc(
 		value = bac.add_param(ctx, name, dt, ctx.entry, u32(apa.spilled))
 		append(&gen.vls, value)
 	} else {
-		nd := apa.copied ? ctx.root_mem : ctx.entry
+		nd := apa.copied ? bac.find_node(ctx, .Mem) : ctx.entry
 		alloca := bac.add_local(ctx, name, nd)
 		bac.get_extra(ctx, alloca, bac.Local).size = i32(apa.real_size)
 		bac.get_extra(ctx, alloca, bac.Local).is_param = !apa.copied
@@ -1077,23 +1064,58 @@ Builtin_Proc :: enum {
 	memset,
 }
 
-init_graph :: proc(graph: ^Proc) {
+init_graph :: proc(graph: ^Proc) -> Node_ID {
 	graph.gvn = 1
 	graph.entry = bac.add_entry(graph, "entry")
-	// TODO: do we even need a mem_split node?
-	graph.base_mem = bac.add_mem(graph, "base_mem", graph.entry)
-	split := bac.add_split_mem(graph, "root_split", graph.base_mem)
-	graph.root_mem = bac.add_root_mem(graph, "rmem", split)
-	graph.const_mem = bac.add_root_mem(graph, "cmem", split)
-	graph.sym = bac.add_sym(graph, "sym", graph.entry)
+	return bac.add_mem(graph, "rmem", graph.entry)
+}
+
+get_or_add_const_mem :: proc(graph: ^Proc) -> (cmem: Node_ID) {
+	if graph.cmem == 0 ||
+	   get_node(graph, graph.cmem).rtype == bac.DEAD_NODE_KIND {
+		rmem := bac.find_node(graph, .Mem)
+
+		split := bac.add_split_mem(graph, "ptspl", rmem)
+		graph.cmem = bac.add_mem(graph, "slcm", split)
+		split_mem := bac.add_mem(graph, "mscm", split)
+		for out in bac.get_outputs(graph, rmem) {
+			if out.id != split {
+				bac.set_input(graph, out.id, out.idx, split_mem)
+			}
+		}
+
+		for einp in bac.get_inputs(graph, graph.end) {
+			connect_to := einp
+			node := expand_node(graph, einp)
+			if node.itype == .Return {
+				connect_to = bac.add_merge_mem(graph, "mmrg", {node.inps[1]})
+				bac.set_input(graph, einp, 1, connect_to)
+			}
+			bac.connect(graph, connect_to, split_mem)
+		}
+	}
+
+	return graph.cmem
+}
+
+get_or_add_sym :: proc(graph: ^Proc) -> (sym: Node_ID) {
+	sym = bac.find_node(graph, .Sym)
+	if sym == 0 {
+		sym = bac.add_sym(graph, "sym", graph.entry)
+		outs := bac.get_outputs(graph, graph.entry)
+		// NOTE: to bring it closer so the search for this is fast
+		// (mem is as 0)
+		outs[1], outs[len(outs) - 1] = outs[len(outs) - 1], outs[1]
+	}
+	return
 }
 
 make_builtin_proc :: proc(graph: ^Proc, name: Builtin_Proc) {
-	init_graph(graph)
+	mem := init_graph(graph)
 
 	scope := add_scope(graph, "scp", graph.entry)
 
-	memv := push_scope_value(graph, scope, graph.root_mem)
+	memv := push_scope_value(graph, scope, mem)
 
 	dst := bac.add_param(graph, "dst", .I64, graph.entry, 0)
 	dstv := push_scope_value(graph, scope, dst)
@@ -1121,7 +1143,7 @@ make_builtin_proc :: proc(graph: ^Proc, name: Builtin_Proc) {
 	ctrl := bac.get_inputs(graph, scope)[0]
 	one := bac.add_c_int(graph, "one", .I64, 1)
 
-	mem := get_scope_value(graph, scope, memv)
+	mem = get_scope_value(graph, scope, memv)
 	dst = get_scope_value(graph, scope, dstv)
 	if src != 0 {
 		src = get_scope_value(graph, scope, srcv)

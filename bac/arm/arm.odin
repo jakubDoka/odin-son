@@ -3,6 +3,7 @@ package arm
 import bac ".."
 import "../../vendored/gam/util/arna"
 import "../../vendored/gam/util/bit_arr"
+import "../builder"
 import "base:intrinsics"
 import "core:fmt"
 import "core:mem"
@@ -171,7 +172,8 @@ peep :: proc(
 		if node.dt in bac.FLOAT_DTS && cnst.value != 0 {
 			global := bac.c_int_as_global(ctx, node)
 			addr := bac.add_global_addr(ctx, "caddr", global)
-			return bac.add_load(ctx, "cild", node.dt, 0, ctx.const_mem, addr)
+			cmem := builder.get_or_add_const_mem(ctx)
+			return bac.add_load(ctx, "cild", node.dt, 0, cmem, addr)
 		}
 	case .Eq ..= .U_Ge:
 		if len(node.outs) == 1 &&
@@ -301,8 +303,7 @@ meta_of :: #force_inline proc(
 	}
 
 	#partial switch atype(node) {
-	case .Root_Mem,
-	     .Split_Mem,
+	case .Split_Mem,
 	     .Merge_Mem,
 	     .Sym,
 	     .Jump,
@@ -639,8 +640,7 @@ emit_instr :: proc(
 	}
 
 	#partial emit: switch kind {
-	case .Root_Mem,
-	     .Split_Mem,
+	case .Split_Mem,
 	     .Merge_Mem,
 	     .Sym,
 	     .Phi,

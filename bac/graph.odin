@@ -177,7 +177,6 @@ when SPEC_NOT_PRESENT {
 		Split,
 		Phi,
 		Mem,
-		Root_Mem,
 		Split_Mem,
 		Merge_Mem,
 		Sym,
@@ -203,6 +202,7 @@ when SPEC_NOT_PRESENT {
 		Call_End,
 		Ret,
 		Return,
+		End,
 		Neg,
 		Not,
 		Sext,
@@ -251,7 +251,6 @@ Class_Flag :: enum {
 	Is_Basic_Block_Start,
 	Interned,
 	Comutes,
-	Immortal,
 	Store,
 	Load,
 	Clonable,
@@ -450,12 +449,11 @@ Proc_Meta :: struct {
 	has_dbg:      bool,
 	dbgn_flip:    bool,
 	using pinned: struct {
-		entry:     Node_ID,
-		base_mem:  Node_ID,
-		root_mem:  Node_ID,
-		const_mem: Node_ID,
-		sym:       Node_ID,
-		end:       Node_ID,
+		entry: Node_ID,
+		end:   Node_ID,
+	},
+	using cached: struct {
+		cmem: Node_ID,
 	},
 }
 
@@ -555,7 +553,7 @@ find_node :: proc(
 ) -> (
 	Node_ID,
 	bool,
-) {
+) #optional_ok {
 	for eout in get_outputs(graph, on != 0 ? on : graph.entry) {
 		enode := expand_node(graph, eout.id)
 		if enode.itype == kind {
@@ -565,12 +563,21 @@ find_node :: proc(
 	return 0, false
 }
 
-get_sym_count :: proc(graph: ^Proc) -> int {
-	return len(get_outputs(graph, graph.sym))
+get_sym_count :: proc(graph: ^Proc) -> (sym: Node_ID, count: int) {
+	sym = find_node(graph, .Sym)
+	count = len(get_outputs(graph, sym))
+	return
 }
 
-sym_iter_next :: proc(graph: ^Proc, iter: ^int) -> (res: Sym_Ref, ok: bool) {
-	arr := get_outputs(graph, graph.sym)
+sym_iter_next :: proc(
+	graph: ^Proc,
+	sym: Node_ID,
+	iter: ^int,
+) -> (
+	res: Sym_Ref,
+	ok: bool,
+) {
+	arr := get_outputs(graph, sym)
 	if iter^ <= 0 do return
 	iter^ -= 1
 	ok = true
@@ -718,6 +725,7 @@ compact :: proc(graph: ^Proc) {
 	graph.mem.pos = PRECISION
 	(^D_Node_ID)(graph.mem.ptr)^ = 0
 	graph.gvn = 1
+	graph.cached = {}
 
 	interned_count := 0
 
@@ -883,7 +891,7 @@ verify :: proc(graph: ^Proc) {
 	collect_nodes(graph, &wl)
 	for n in worklist_next(graph, &wl) {
 		node := expand_node(graph, n)
-		if len(node.outs) == 0 && !has_flag(graph, n, .Immortal) {
+		if len(node.outs) == 0 && node.itype != .End {
 			fmt.panicf("%v", node)
 		}
 		if node.itype == .Phi {
@@ -1095,8 +1103,7 @@ apply_peeps :: proc(ctx: Peep_Ctx) -> (optimized: bool) {
 		new_node := graph.peep(ctx, node)
 		unmount_peep_node(graph)
 		if node.rtype == DEAD_NODE_KIND do continue
-		if new_node == 0 &&
-		   (node.output_count != 0 || has_flag(graph, node, .Immortal)) {
+		if new_node == 0 && node.output_count != 0 {
 			assert(prev_hash == node_hash(graph, node))
 			continue
 		}
@@ -1129,7 +1136,7 @@ apply_peeps :: proc(ctx: Peep_Ctx) -> (optimized: bool) {
 		if new_node != 0 {
 			subsume(graph, new_node, n)
 		} else {
-			delete_node(graph, n, indirect = true)
+			delete_node(graph, n)
 		}
 
 		triggered += 1
@@ -1255,7 +1262,7 @@ assert_live_pins :: proc(graph: ^Proc) {
 	prev := current_graph
 	current_graph = graph
 	defer current_graph = prev
-	expected := [?]Node_Type{.Entry, .Mem, .Root_Mem, .Root_Mem, .Sym, .Return}
+	expected := [?]Node_Type{.Entry, .End}
 	for &n, i in mem.slice_data_cast(
 		[]Node_ID,
 		mem.ptr_to_bytes(&graph.pinned),
@@ -1829,7 +1836,7 @@ remove_output_node :: proc(
 	node.output_count -= 1
 
 	if !no_delete {
-		delete_node(graph, node, indirect = true)
+		delete_node(graph, node)
 	}
 }
 
@@ -1872,15 +1879,12 @@ get_node_id :: #force_inline proc(graph: ^Proc, node: ^Node) -> Node_ID {
 }
 
 @(tag = "node_proc")
-delete_node_node :: proc(graph: ^Proc, node: ^Node, indirect := false) {
+delete_node_node :: proc(graph: ^Proc, node: ^Node) {
 	id := get_node_id(graph, node)
 
-	if (node.output_count != 0) |
-	   (has_flag(graph, node, .Immortal) && indirect) |
-	   (id == 0) |
-	   graph.dont_delete {return}
+	if (node.output_count != 0) | (id == 0) | graph.dont_delete {return}
 
-	assert(node.itype != .Sym)
+	assert(node.itype != .End)
 
 	if graph.triggers != nil && int(node.gvn) < len(graph.triggers) {
 		for trig in graph.triggers[node.gvn] {

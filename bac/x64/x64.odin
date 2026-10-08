@@ -75,6 +75,10 @@ R14 :: Reg(14)
 R15 :: Reg(15)
 RIP :: RBP
 
+X64_DWARF_REG := [GPA_REG_COUNT]u8 {
+	0, 2, 1, 3, 7, 6, 4, 5, 8, 9, 10, 11, 12, 13, 14, 15,
+}
+
 GPA_REG_COUNT :: 16
 MASK_SIZE :: bac.MASK_SIZE
 
@@ -1237,7 +1241,11 @@ Ctx :: struct {
 	code_start:         uint,
 	last_off:           uint,
 	sloc:               bac.Sloc,
+	dnode:              ^bac.D_Node,
+	debug_ready:        []bool,
 	pushed:             i32,
+	body_ready:         bool,
+	emit_vars:          bool,
 }
 
 Local_Reloc :: struct {
@@ -1251,10 +1259,12 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 	reloc_start := ectx.relocs.pos
 	sloc_start := ectx.slocs.pos
 	cfi_start := ectx.cfi.pos
+	var_loc_start := ectx.var_locs.pos
 
 	ctx: Ctx
 	ctx.code_start = ectx.code.pos
 	ctx.inner = ectx
+	ctx.debug_ready = make([]bool, ctx.gvn)
 
 	slot: [2]int
 	ctx.used = bit_arr.init_from_masks(slot[:])
@@ -1295,7 +1305,7 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 			emit_cfi(
 				&ctx,
 				.Save_Reg,
-				reg = u8(reg.index),
+				reg = X64_DWARF_REG[reg.index],
 				arg = u32(pushed) + X64_CFI_SPEC.initial_cfa_offset,
 			)
 		}
@@ -1361,6 +1371,7 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 			X64_CFI_SPEC.initial_cfa_offset,
 		)
 	}
+	ctx.body_ready = true
 
 	ctx.local_relocs = make([dynamic]Local_Reloc, 0, len(ctx.bbs))
 
@@ -1418,6 +1429,10 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 		[]bac.Cfi_Op,
 		ctx.cfi.ptr[cfi_start:ctx.cfi.pos],
 	)
+	var_locs := mem.slice_data_cast(
+		[]bac.Var_Loc,
+		ctx.var_locs.ptr[var_loc_start:ctx.var_locs.pos],
+	)
 	arna.alloc(ctx.code, 0, 8)
 	constants := arna.clone(ctx.code, ctx.big_constants[:])
 
@@ -1427,6 +1442,7 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 		constants = constants,
 		slocs = slocs,
 		cfi = cfi,
+		var_locs = var_locs,
 	}
 }
 
@@ -1444,13 +1460,46 @@ next_sloc :: proc(ctx: ^Ctx) {
 	cx := ctx.sloc
 	cx.range = u32(ctx.code.pos - ctx.last_off)
 	bac.add_sloc(ctx.slocs)^ = cx
+	if ctx.emit_vars && cx.range != 0 {
+		start := u32(ctx.last_off - ctx.code_start)
+		cfa_offset := ctx.pushed + ctx.stack_size +
+			i32(X64_CFI_SPEC.initial_cfa_offset)
+		for binding in bac.get_dbindings(ctx.graph, ctx.dnode) {
+			storage := expand_node(ctx, binding.storage)
+			loc := bac.Var_Loc {
+				name = binding.name,
+				type = binding.type,
+				decl = binding.decl,
+				id = binding.id,
+				start = start,
+				range = cx.range,
+				offset = binding.offset,
+				is_param = binding.is_param,
+			}
+			#partial switch storage.itype {
+			case .Local:
+				local := bac.get_extra(ctx, storage, bac.Local)
+				if !local.is_param && !ctx.debug_ready[storage.gvn] do continue
+				loc.kind = .Frame
+				loc.offset += local.offset - cfa_offset
+			case .Global:
+				loc.kind = .Global
+				loc.index = bac.get_extra(ctx, storage, bac.Tup).idx
+			case:
+				continue
+			}
+			bac.add_var_loc(ctx.var_locs)^ = loc
+		}
+	}
 	ctx.last_off = ctx.code.pos
 }
 
 mount_sloc :: proc(ctx: ^Ctx, node: bac.Node_ID) {
 	dn := bac.get_dbg_slot(ctx, get_node(ctx, node))^
-	ctx.sloc = bac.get_dnode(ctx, dn).sloc
+	ctx.dnode = bac.get_dnode(ctx, dn)
+	ctx.sloc = ctx.dnode.sloc
 	ctx.last_off = ctx.code.pos
+	ctx.emit_vars = ctx.body_ready
 }
 
 @(disabled = SPEC_NOT_PRESENT)
@@ -1651,6 +1700,7 @@ emit_instr :: proc(
 	mount_sloc(ctx, instr)
 
 	type := xtype(node)
+	if type == .Return do ctx.emit_vars = false
 
 	switch type {
 	case .Splat:
@@ -2540,6 +2590,7 @@ emit_instr :: proc(
 			pfx: u8 = node.dt == .F64 ? 0xF2 : 0xF3
 
 			if d_spill && s_spill {
+				ctx.emit_vars = false
 				// pure memory-to-memory move: copy the 8-byte spill slot via
 				// the stack with push/pop, which never touches an xmm register.
 				// (slots are 8-byte sized, so this is correct for f32 too.)
@@ -2571,6 +2622,7 @@ emit_instr :: proc(
 		}
 
 		if d_spill && s_spill {
+			ctx.emit_vars = false
 			// push [rsp + $src_offset]
 			emit(ctx.code, {0xff})
 			spill_indirect_addr(ctx, Reg(0b110), src_off)
@@ -2628,7 +2680,7 @@ emit_instr :: proc(
 				next_sloc(ctx)
 
 				cfa -= 8
-				emit_cfi(ctx, .Restore_Reg, reg = u8(reg.index))
+				emit_cfi(ctx, .Restore_Reg, reg = X64_DWARF_REG[reg.index])
 				emit_cfi(ctx, .Def_Cfa_Offset, arg = cfa)
 			}
 		}
@@ -2639,6 +2691,21 @@ emit_instr :: proc(
 	}
 
 	next_sloc(ctx)
+	mark_debug_storage_ready(ctx, node)
+}
+
+mark_debug_storage_ready :: proc(ctx: ^Ctx, node: bac.Expanded_Node) {
+	type := xtype(node)
+	if type != .Store && type != .X64_Store && type != .Set && type != .Copy {
+		return
+	}
+	storage := expand_node(ctx, node.inps[2])
+	if storage.itype == .Local_Addr {
+		storage = expand_node(ctx, storage.inps[0])
+	}
+	if storage.itype == .Local {
+		ctx.debug_ready[storage.gvn] = true
+	}
 }
 
 reg_of :: proc(ctx: bac.Codegen_Emit_Ctx, id: bac.Node_ID) -> Reg {

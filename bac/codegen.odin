@@ -55,6 +55,24 @@ Cfi_Op :: struct {
 	reg:    u8,
 }
 
+Var_Loc_Kind :: enum u8 {
+	Frame,
+	Global,
+}
+
+Var_Loc :: struct {
+	name:     string,
+	type:     D_Type,
+	decl:     Sloc,
+	id:       u32,
+	start:    u32,
+	range:    u32,
+	offset:   i32,
+	index:    u32,
+	kind:     Var_Loc_Kind,
+	is_param: bool,
+}
+
 PS_Peep_Fn :: proc(_: PS_Peep_Ctx, node: Expanded_Node) -> Node_ID
 
 Pre_Regalloc_Hook :: proc(_: ^Regalloc, _: ^Proc, _: ^Schedule)
@@ -86,16 +104,18 @@ Lib_Call :: bit_field u32 {
 }
 
 Codegen_Emit_Buf :: struct {
-	code:   ^arna.Allocator,
-	relocs: ^arna.Allocator,
-	slocs:  ^arna.Allocator,
-	cfi:    ^arna.Allocator,
+	code:     ^arna.Allocator,
+	relocs:   ^arna.Allocator,
+	slocs:    ^arna.Allocator,
+	cfi:      ^arna.Allocator,
+	var_locs: ^arna.Allocator,
 }
 
 Codegen_Output :: struct {
 	relocs:    []Reloc,
 	slocs:     []Sloc,
 	cfi:       []Cfi_Op,
+	var_locs:  []Var_Loc,
 	code:      []u8,
 	constants: []u8,
 }
@@ -277,6 +297,12 @@ add_sloc :: #force_no_inline proc(buf: ^arna.Allocator) -> ^Sloc {
 add_cfi :: #force_no_inline proc(buf: ^arna.Allocator) -> ^Cfi_Op {
 	return (^Cfi_Op)(
 		raw_data(arna.alloc(buf, size_of(Cfi_Op), align_of(Cfi_Op))),
+	)
+}
+
+add_var_loc :: #force_no_inline proc(buf: ^arna.Allocator) -> ^Var_Loc {
+	return (^Var_Loc)(
+		raw_data(arna.alloc(buf, size_of(Var_Loc), align_of(Var_Loc))),
 	)
 }
 

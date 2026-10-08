@@ -97,6 +97,7 @@ run_test :: proc(
 		types.mems.reloc.reserved = 4096 * 16
 		types.mems.sloc.reserved = 4096 * 128
 		types.mems.cfi.reserved = 4096 * 128
+		types.mems.var_loc.reserved = 4096 * 128
 		types.mems.type.reserved = 4096 * 256
 
 		typecheck.types_init(&types)
@@ -202,6 +203,7 @@ run_test :: proc(
 		types.mems.code.pos = 0
 		types.mems.reloc.pos = 0
 		types.mems.cfi.pos = 0
+		types.mems.var_loc.pos = 0
 		types.check = level.vm == .Check
 		ctx.has_dbg = level.debug
 		ctx.ralloc_mode = level.ralloc_mode

@@ -78,6 +78,7 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 	sroa: for mout in bac.get_outputs(graph, emem) {
 		mnode := expand_node(graph, mout.id)
 		if mnode.itype != .Local do continue
+		if bac.get_extra(graph, mnode, Local).is_debug do continue
 
 		can_split := true
 

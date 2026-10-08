@@ -3,6 +3,7 @@ package main
 import "bac"
 import "core:mem"
 import "core:slice"
+import "typecheck"
 import "vendored/gam/util/arna"
 
 LIBCALL_BASE :: bac.RELOC_BIG_CONSTANT_BASE - 32
@@ -96,7 +97,8 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	sec_text_sym := next_local
 	sec_abbrev_sym := next_local + 1
 	sec_line_sym := next_local + 2
-	for shndx in ([]Section{.Text, .Debug_Abbrev, .Debug_Line}) {
+	sec_loc_sym := next_local + 3
+	for shndx in ([]Section{.Text, .Debug_Abbrev, .Debug_Line, .Debug_Loc}) {
 		append(
 			&locals,
 			Elf64_Sym {
@@ -105,7 +107,7 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 			},
 		)
 	}
-	next_local += 3
+	next_local += 4
 
 	// globals come after every local symbol
 	next_global := next_local
@@ -230,23 +232,182 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	info_rels: [dynamic]Elf64_Rel
 	line_rels: [dynamic]Elf64_Rel
 
-	// -- .debug_abbrev : a single compile-unit abbreviation ---------------
-	uleb(&dbg_abbrev, 1) // abbrev code 1
-	uleb(&dbg_abbrev, u64(Dw_Tag.Compile_Unit))
-	append(&dbg_abbrev, u8(Dw_Children.No))
+	// -- .debug_abbrev -----------------------------------------------------
 	dw_attr :: proc(b: ^[dynamic]u8, at: Dw_At, form: Dw_Form) {
 		uleb(b, u64(at))
 		uleb(b, u64(form))
 	}
-	dw_attr(&dbg_abbrev, .Producer, .String)
-	dw_attr(&dbg_abbrev, .Language, .Data2)
-	dw_attr(&dbg_abbrev, .Name, .String)
-	dw_attr(&dbg_abbrev, .Comp_Dir, .String)
-	dw_attr(&dbg_abbrev, .Low_Pc, .Addr)
-	dw_attr(&dbg_abbrev, .High_Pc, .Data8)
-	dw_attr(&dbg_abbrev, .Stmt_List, .Sec_Offset)
-	uleb(&dbg_abbrev, 0) // end of attribute list
-	uleb(&dbg_abbrev, 0) // end of abbrev list
+	dw_abbrev :: proc(
+		b: ^[dynamic]u8,
+		code: Dw_Abbrev,
+		tag: Dw_Tag,
+		children: Dw_Children,
+		attrs: [][2]u64,
+	) {
+		uleb(b, u64(code))
+		uleb(b, u64(tag))
+		append(b, u8(children))
+		for attr in attrs {
+			dw_attr(b, Dw_At(attr[0]), Dw_Form(attr[1]))
+		}
+		uleb(b, 0)
+		uleb(b, 0)
+	}
+	dw_abbrev(
+		&dbg_abbrev,
+		.Compile_Unit,
+		.Compile_Unit,
+		.Yes,
+		{
+			{u64(Dw_At.Producer), u64(Dw_Form.String)},
+			{u64(Dw_At.Language), u64(Dw_Form.Data2)},
+			{u64(Dw_At.Name), u64(Dw_Form.String)},
+			{u64(Dw_At.Comp_Dir), u64(Dw_Form.String)},
+			{u64(Dw_At.Low_Pc), u64(Dw_Form.Addr)},
+			{u64(Dw_At.High_Pc), u64(Dw_Form.Data8)},
+			{u64(Dw_At.Stmt_List), u64(Dw_Form.Sec_Offset)},
+		},
+	)
+	dw_abbrev(
+		&dbg_abbrev,
+		.Subprogram,
+		.Subprogram,
+		.Yes,
+		{
+			{u64(Dw_At.Name), u64(Dw_Form.String)},
+			{u64(Dw_At.Low_Pc), u64(Dw_Form.Addr)},
+			{u64(Dw_At.High_Pc), u64(Dw_Form.Data8)},
+			{u64(Dw_At.Decl_File), u64(Dw_Form.Data4)},
+			{u64(Dw_At.Decl_Line), u64(Dw_Form.Data4)},
+			{u64(Dw_At.Frame_Base), u64(Dw_Form.Exprloc)},
+		},
+	)
+	for pair in ([][2]u64{
+		{u64(Dw_Abbrev.Variable), u64(Dw_Tag.Variable)},
+		{u64(Dw_Abbrev.Formal_Parameter), u64(Dw_Tag.Formal_Parameter)},
+	}) {
+		dw_abbrev(
+			&dbg_abbrev,
+			Dw_Abbrev(pair[0]),
+			Dw_Tag(pair[1]),
+			.No,
+			{
+				{u64(Dw_At.Name), u64(Dw_Form.String)},
+				{u64(Dw_At.Type), u64(Dw_Form.Ref4)},
+				{u64(Dw_At.Location), u64(Dw_Form.Sec_Offset)},
+				{u64(Dw_At.Decl_File), u64(Dw_Form.Data4)},
+				{u64(Dw_At.Decl_Line), u64(Dw_Form.Data4)},
+			},
+		)
+	}
+	dw_abbrev(
+		&dbg_abbrev,
+		.Global_Variable,
+		.Variable,
+		.No,
+		{
+			{u64(Dw_At.Name), u64(Dw_Form.String)},
+			{u64(Dw_At.Type), u64(Dw_Form.Ref4)},
+			{u64(Dw_At.Location), u64(Dw_Form.Exprloc)},
+			{u64(Dw_At.Decl_File), u64(Dw_Form.Data4)},
+			{u64(Dw_At.Decl_Line), u64(Dw_Form.Data4)},
+		},
+	)
+	dw_abbrev(
+		&dbg_abbrev,
+		.Base_Type,
+		.Base_Type,
+		.No,
+		{
+			{u64(Dw_At.Name), u64(Dw_Form.String)},
+			{u64(Dw_At.Encoding), u64(Dw_Form.Data1)},
+			{u64(Dw_At.Byte_Size), u64(Dw_Form.Data4)},
+		},
+	)
+	dw_abbrev(
+		&dbg_abbrev,
+		.Pointer_Type,
+		.Pointer_Type,
+		.No,
+		{
+			{u64(Dw_At.Type), u64(Dw_Form.Ref4)},
+			{u64(Dw_At.Byte_Size), u64(Dw_Form.Data1)},
+		},
+	)
+	for pair in ([][2]u64{
+		{u64(Dw_Abbrev.Structure_Type), u64(Dw_Tag.Structure_Type)},
+		{u64(Dw_Abbrev.Union_Type), u64(Dw_Tag.Union_Type)},
+	}) {
+		dw_abbrev(
+			&dbg_abbrev,
+			Dw_Abbrev(pair[0]),
+			Dw_Tag(pair[1]),
+			.Yes,
+			{
+				{u64(Dw_At.Name), u64(Dw_Form.String)},
+				{u64(Dw_At.Byte_Size), u64(Dw_Form.Data4)},
+			},
+		)
+	}
+	dw_abbrev(
+		&dbg_abbrev,
+		.Member,
+		.Member,
+		.No,
+		{
+			{u64(Dw_At.Name), u64(Dw_Form.String)},
+			{u64(Dw_At.Type), u64(Dw_Form.Ref4)},
+			{u64(Dw_At.Data_Member_Location), u64(Dw_Form.Udata)},
+		},
+	)
+	dw_abbrev(
+		&dbg_abbrev,
+		.Array_Type,
+		.Array_Type,
+		.Yes,
+		{{u64(Dw_At.Type), u64(Dw_Form.Ref4)}},
+	)
+	dw_abbrev(
+		&dbg_abbrev,
+		.Subrange_Type,
+		.Subrange_Type,
+		.No,
+		{{u64(Dw_At.Count), u64(Dw_Form.Udata)}},
+	)
+	dw_abbrev(
+		&dbg_abbrev,
+		.Enumeration_Type,
+		.Enumeration_Type,
+		.Yes,
+		{
+			{u64(Dw_At.Name), u64(Dw_Form.String)},
+			{u64(Dw_At.Byte_Size), u64(Dw_Form.Data4)},
+		},
+	)
+	dw_abbrev(
+		&dbg_abbrev,
+		.Enumerator,
+		.Enumerator,
+		.No,
+		{
+			{u64(Dw_At.Name), u64(Dw_Form.String)},
+			{u64(Dw_At.Const_Value), u64(Dw_Form.Sdata)},
+		},
+	)
+	dw_abbrev(
+		&dbg_abbrev,
+		.Unspecified_Type,
+		.Unspecified_Type,
+		.No,
+		{{u64(Dw_At.Name), u64(Dw_Form.String)}},
+	)
+	dw_abbrev(
+		&dbg_abbrev,
+		.Subroutine_Type,
+		.Subroutine_Type,
+		.No,
+		nil,
+	)
 	append(&dbg_abbrev, 0)
 
 	// -- .debug_line : header (DWARF v4) ----------------------------------
@@ -334,7 +495,79 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 		u32(len(dbg_line) - line_prog_base),
 	)
 
-	// -- .debug_info : one compile unit -----------------------------------
+	// -- .debug_loc --------------------------------------------------------
+	Dwarf_Variable :: struct {
+		using loc: bac.Var_Loc,
+		ranges: [dynamic]bac.Var_Loc,
+		loc_offset: u32,
+	}
+	Proc_Debug :: struct {
+		vars: [dynamic]Dwarf_Variable,
+	}
+	dbg_loc: [dynamic]u8
+	loc_rels: [dynamic]Elf64_Rel
+	proc_debug := make([]Proc_Debug, len(ctx.procs))
+
+	for &prc, i in ctx.procs {
+		indices := make(map[u32]int)
+		for loc in prc.out.var_locs {
+			if loc.range == 0 do continue
+			idx := indices[loc.id] - 1
+			if idx < 0 {
+				idx = len(proc_debug[i].vars)
+				append(&proc_debug[i].vars, Dwarf_Variable{loc = loc})
+				indices[loc.id] = idx + 1
+			}
+
+			variable := &proc_debug[i].vars[idx]
+			if len(variable.ranges) != 0 {
+				prev := &variable.ranges[len(variable.ranges) - 1]
+				if prev.start + prev.range == loc.start &&
+				   prev.kind == loc.kind &&
+				   prev.offset == loc.offset &&
+				   prev.index == loc.index {
+					prev.range += loc.range
+					continue
+				}
+			}
+			append(&variable.ranges, loc)
+		}
+
+		for &variable in proc_debug[i].vars {
+			variable.loc_offset = u32(len(dbg_loc))
+			for loc in variable.ranges {
+				put_u64(&dbg_loc, u64(proc_off[i]) + u64(loc.start))
+				put_u64(
+					&dbg_loc,
+					u64(proc_off[i]) + u64(loc.start + loc.range),
+				)
+
+				#partial switch loc.kind {
+				case .Frame:
+					expr: [dynamic]u8
+					putb(&expr, Dw_Op.Fbreg)
+					sleb(&expr, i64(loc.offset))
+					put_u16(&dbg_loc, u16(len(expr)))
+					append(&dbg_loc, ..expr[:])
+				case .Global:
+					put_u16(&dbg_loc, 9)
+					putb(&dbg_loc, Dw_Op.Addr)
+					append(
+						&loc_rels,
+						Elf64_Rel {
+							r_offset = u64(len(dbg_loc)),
+							r_info = {sym = data_sym[loc.index], type = .Abs64},
+						},
+					)
+					put_u64(&dbg_loc, u64(i64(loc.offset)))
+				}
+			}
+			put_u64(&dbg_loc, 0)
+			put_u64(&dbg_loc, 0)
+		}
+	}
+
+	// -- .debug_info -------------------------------------------------------
 	cu_name := ctx.files[0].fullpath if len(ctx.files) > 0 else ""
 	if main_index >= 0 do cu_name = ctx.procs[main_index].file.fullpath
 
@@ -380,6 +613,226 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 		},
 	)
 	put_u32(&dbg_info, 0)
+
+	Dwarf_Type_Fixup :: struct {
+		at: int,
+		type: Type,
+	}
+	Dwarf_Type_State :: struct {
+		offsets: map[Type]u32,
+		fixups: [dynamic]Dwarf_Type_Fixup,
+	}
+	dw_type_ref :: proc(
+		b: ^[dynamic]u8,
+		state: ^Dwarf_Type_State,
+		type: Type,
+	) {
+		if offset, ok := state.offsets[type]; ok {
+			put_u32(b, offset)
+			return
+		}
+		append(&state.fixups, Dwarf_Type_Fixup{len(b), type})
+		put_u32(b, 0)
+	}
+	dw_member :: proc(
+		b: ^[dynamic]u8,
+		state: ^Dwarf_Type_State,
+		name: string,
+		type: Type,
+		offset: int,
+	) {
+		uleb(b, u64(Dw_Abbrev.Member))
+		append(b, name)
+		append(b, 0)
+		dw_type_ref(b, state, type)
+		uleb(b, u64(offset))
+	}
+	emit_dwarf_type :: proc(
+		b: ^[dynamic]u8,
+		state: ^Dwarf_Type_State,
+		type: Type,
+	) {
+		if _, ok := state.offsets[type]; ok do return
+		state.offsets[type] = u32(len(b))
+
+		#partial switch t in unpack_type(type) {
+		case typecheck.Void_Type, typecheck.Invalid_Type:
+			uleb(b, u64(Dw_Abbrev.Unspecified_Type))
+			append(b, "void")
+			append(b, 0)
+		case typecheck.Pointer:
+			uleb(b, u64(Dw_Abbrev.Pointer_Type))
+			dw_type_ref(b, state, (^Type)(t)^)
+			append(b, 8)
+		case typecheck.Multi_Pointer:
+			uleb(b, u64(Dw_Abbrev.Pointer_Type))
+			dw_type_ref(b, state, (^Type)(t)^)
+			append(b, 8)
+		case ^typecheck.Proc_Type:
+			uleb(b, u64(Dw_Abbrev.Pointer_Type))
+			dw_type_ref(b, state, .Void)
+			append(b, 8)
+		case ^typecheck.Struct:
+			uleb(b, u64(Dw_Abbrev.Structure_Type))
+			append(b, "struct")
+			append(b, 0)
+			put_u32(b, u32(t.size))
+			for field in t.fields {
+				dw_member(b, state, field.name, field.ty, field.offset)
+			}
+			append(b, 0)
+		case ^typecheck.Array:
+			uleb(b, u64(Dw_Abbrev.Array_Type))
+			dw_type_ref(b, state, t.elem)
+			uleb(b, u64(Dw_Abbrev.Subrange_Type))
+			uleb(b, u64(t.len))
+			append(b, 0)
+		case ^typecheck.Slice:
+			uleb(b, u64(Dw_Abbrev.Structure_Type))
+			append(b, "slice")
+			append(b, 0)
+			put_u32(b, 16)
+			dw_member(b, state, "data", .Rawptr, 0)
+			dw_member(b, state, "len", .Int, 8)
+			append(b, 0)
+		case ^typecheck.Enum:
+			uleb(b, u64(Dw_Abbrev.Enumeration_Type))
+			append(b, "enum")
+			append(b, 0)
+			put_u32(b, u32(type_size(type)))
+			for variant in t.variants {
+				uleb(b, u64(Dw_Abbrev.Enumerator))
+				append(b, variant.name)
+				append(b, 0)
+				sleb(b, variant.value)
+			}
+			append(b, 0)
+		case ^typecheck.Union:
+			uleb(b, u64(Dw_Abbrev.Union_Type))
+			append(b, "union")
+			append(b, 0)
+			put_u32(b, u32(t.size))
+			for variant in t.variants {
+				dw_member(b, state, "value", variant, 0)
+			}
+			dw_member(b, state, "tag", t.tag_ty, t.tag_offset)
+			append(b, 0)
+		case ^typecheck.Simd:
+			uleb(b, u64(Dw_Abbrev.Array_Type))
+			dw_type_ref(b, state, t.elem)
+			uleb(b, u64(Dw_Abbrev.Subrange_Type))
+			uleb(b, u64(t.len))
+			append(b, 0)
+		case typecheck.String_Type:
+			uleb(b, u64(Dw_Abbrev.Structure_Type))
+			append(b, "string")
+			append(b, 0)
+			put_u32(b, 16)
+			dw_member(b, state, "data", .Rawptr, 0)
+			dw_member(b, state, "len", .Int, 8)
+			append(b, 0)
+		case:
+			norm := Type(u16(type))
+			encoding := Dw_Ate.Unsigned
+			if norm == .Bool {
+				encoding = .Boolean
+			} else if norm in typecheck.SIGNED_TYPES {
+				encoding = .Signed
+			} else if norm in typecheck.FLOAT_TYPES {
+				encoding = .Float
+			} else if norm == .Rawptr {
+				encoding = .Address
+			}
+			uleb(b, u64(Dw_Abbrev.Base_Type))
+			append(b, typecheck.TYPE_NAMES[norm])
+			append(b, 0)
+			append(b, u8(encoding))
+			put_u32(b, u32(type_size(type)))
+		}
+	}
+
+	type_state: Dwarf_Type_State
+	type_state.offsets = make(map[Type]u32)
+	for variable in ctx.global_vars {
+		emit_dwarf_type(&dbg_info, &type_state, variable.type)
+	}
+	for proc_dbg in proc_debug {
+		for variable in proc_dbg.vars {
+			emit_dwarf_type(
+				&dbg_info,
+				&type_state,
+				transmute(Type)variable.type,
+			)
+		}
+	}
+	for cursor := 0; cursor < len(type_state.fixups); cursor += 1 {
+		fixup := type_state.fixups[cursor]
+		emit_dwarf_type(&dbg_info, &type_state, fixup.type)
+		patch_u32(&dbg_info, fixup.at, type_state.offsets[fixup.type])
+	}
+
+	for variable in ctx.global_vars {
+		uleb(&dbg_info, u64(Dw_Abbrev.Global_Variable))
+		append(&dbg_info, variable.name)
+		append(&dbg_info, 0)
+		put_u32(&dbg_info, type_state.offsets[variable.type])
+		uleb(&dbg_info, 9)
+		putb(&dbg_info, Dw_Op.Addr)
+		append(
+			&info_rels,
+			Elf64_Rel {
+				r_offset = u64(len(dbg_info)),
+				r_info = {sym = data_sym[variable.idx], type = .Abs64},
+			},
+		)
+		put_u64(&dbg_info, 0)
+		put_u32(&dbg_info, u32(variable.file) + 1)
+		put_u32(&dbg_info, u32(variable.init.pos.line))
+	}
+
+	for &prc, i in ctx.procs {
+		if prc.lit.body == nil do continue
+		uleb(&dbg_info, u64(Dw_Abbrev.Subprogram))
+		append(&dbg_info, prc.name)
+		append(&dbg_info, 0)
+		append(
+			&info_rels,
+			Elf64_Rel {
+				r_offset = u64(len(dbg_info)),
+				r_info = {sym = proc_sym[i], type = .Abs64},
+			},
+		)
+		put_u64(&dbg_info, 0)
+		put_u64(&dbg_info, u64(len(prc.out.code)))
+		put_u32(&dbg_info, u32(prc.file_id) + 1)
+		put_u32(&dbg_info, u32(prc.lit.pos.line))
+		uleb(&dbg_info, 1)
+		putb(&dbg_info, Dw_Op.Call_Frame_Cfa)
+
+		for variable in proc_debug[i].vars {
+			abbrev := variable.is_param ? Dw_Abbrev.Formal_Parameter :
+				Dw_Abbrev.Variable
+			uleb(&dbg_info, u64(abbrev))
+			append(&dbg_info, variable.name)
+			append(&dbg_info, 0)
+			put_u32(
+				&dbg_info,
+				type_state.offsets[transmute(Type)variable.type],
+			)
+			append(
+				&info_rels,
+				Elf64_Rel {
+					r_offset = u64(len(dbg_info)),
+					r_info = {sym = sec_loc_sym, type = .Abs32},
+				},
+			)
+			put_u32(&dbg_info, variable.loc_offset)
+			put_u32(&dbg_info, u32(variable.decl.file) + 1)
+			put_u32(&dbg_info, variable.decl.line)
+		}
+		append(&dbg_info, 0)
+	}
+	append(&dbg_info, 0)
 	patch_u32(&dbg_info, info_unit_len_pos, u32(len(dbg_info) - info_base))
 
 	// --- .eh_frame --------------------------------------------------------
@@ -414,7 +867,6 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 
 		for &prc, i in ctx.procs {
 			if prc.lit.body == nil do continue
-			if len(prc.out.cfi) == 0 do continue
 
 			fde_len_pos := len(eh_frame)
 			put_u32(&eh_frame, 0)
@@ -501,6 +953,8 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	name_rel_dbg_info := strtab_add(&shstr, ".rel.debug_info")
 	name_dbg_line := strtab_add(&shstr, ".debug_line")
 	name_rel_dbg_line := strtab_add(&shstr, ".rel.debug_line")
+	name_dbg_loc := strtab_add(&shstr, ".debug_loc")
+	name_rel_dbg_loc := strtab_add(&shstr, ".rel.debug_loc")
 	name_eh_frame := strtab_add(&shstr, ".eh_frame")
 	name_rel_eh_frame := strtab_add(&shstr, ".rel.eh_frame")
 	name_symtab := strtab_add(&shstr, ".symtab")
@@ -535,6 +989,12 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	eb_align(&b, 8)
 	rel_dbg_line_off := len(b.buf)
 	for r in line_rels do eb_struct(&b, r)
+
+	dbg_loc_off := eb_bytes(&b, dbg_loc[:])
+
+	eb_align(&b, 8)
+	rel_dbg_loc_off := len(b.buf)
+	for r in loc_rels do eb_struct(&b, r)
 
 	eb_align(&b, 8)
 	eh_frame_off := eb_bytes(&b, eh_frame[:])
@@ -619,6 +1079,23 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 			sh_size = u64(len(line_rels) * size_of(Elf64_Rel)),
 			sh_link = .Symtab,
 			sh_info_section = .Debug_Line,
+			sh_addralign = 8,
+			sh_entsize = size_of(Elf64_Rel),
+		},
+		.Debug_Loc = {
+			sh_name = name_dbg_loc,
+			sh_type = .Progbits,
+			sh_offset = u64(dbg_loc_off),
+			sh_size = u64(len(dbg_loc)),
+			sh_addralign = 1,
+		},
+		.Rel_Debug_Loc = {
+			sh_name = name_rel_dbg_loc,
+			sh_type = .Rel,
+			sh_offset = u64(rel_dbg_loc_off),
+			sh_size = u64(len(loc_rels) * size_of(Elf64_Rel)),
+			sh_link = .Symtab,
+			sh_info_section = .Debug_Loc,
 			sh_addralign = 8,
 			sh_entsize = size_of(Elf64_Rel),
 		},
@@ -844,6 +1321,8 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 		Rel_Debug_Info,
 		Debug_Line,
 		Rel_Debug_Line,
+		Debug_Loc,
+		Rel_Debug_Loc,
 		Eh_Frame,
 		Rel_Eh_Frame,
 		Symtab,
@@ -853,7 +1332,21 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 
 	// DWARF v4 constants used by the debug sections
 	Dw_Tag :: enum u64 {
-		Compile_Unit = 0x11,
+		Array_Type       = 0x01,
+		Enumeration_Type = 0x04,
+		Formal_Parameter = 0x05,
+		Member           = 0x0d,
+		Pointer_Type     = 0x0f,
+		Compile_Unit     = 0x11,
+		Structure_Type   = 0x13,
+		Subroutine_Type  = 0x15,
+		Union_Type       = 0x17,
+		Unspecified_Type = 0x3b,
+		Subprogram       = 0x2e,
+		Variable         = 0x34,
+		Subrange_Type    = 0x21,
+		Base_Type        = 0x24,
+		Enumerator       = 0x28,
 	}
 
 	Dw_Children :: enum u8 {
@@ -862,21 +1355,71 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	}
 
 	Dw_At :: enum u64 {
-		Name      = 0x03,
-		Stmt_List = 0x10,
-		Low_Pc    = 0x11,
-		High_Pc   = 0x12,
-		Language  = 0x13,
-		Comp_Dir  = 0x1b,
-		Producer  = 0x25,
+		Location             = 0x02,
+		Name                 = 0x03,
+		Byte_Size            = 0x0b,
+		Stmt_List            = 0x10,
+		Low_Pc               = 0x11,
+		High_Pc              = 0x12,
+		Language             = 0x13,
+		Comp_Dir             = 0x1b,
+		Const_Value          = 0x1c,
+		Upper_Bound          = 0x2f,
+		Producer             = 0x25,
+		Data_Member_Location = 0x38,
+		Decl_File            = 0x3a,
+		Decl_Line            = 0x3b,
+		Encoding             = 0x3e,
+		Frame_Base           = 0x40,
+		Type                 = 0x49,
+		Count                = 0x37,
 	}
 
 	Dw_Form :: enum u64 {
 		Addr       = 0x01,
+		Data1      = 0x0b,
 		Data2      = 0x05,
+		Data4      = 0x06,
 		Data8      = 0x07,
 		String     = 0x08,
+		Sdata      = 0x0d,
+		Udata      = 0x0f,
+		Ref4       = 0x13,
 		Sec_Offset = 0x17,
+		Exprloc    = 0x18,
+	}
+
+	Dw_Ate :: enum u8 {
+		Address  = 0x01,
+		Boolean  = 0x02,
+		Float    = 0x04,
+		Signed   = 0x05,
+		Unsigned = 0x07,
+	}
+
+	Dw_Op :: enum u8 {
+		Addr           = 0x03,
+		Fbreg          = 0x91,
+		Call_Frame_Cfa = 0x9c,
+	}
+
+	Dw_Abbrev :: enum u64 {
+		Compile_Unit = 1,
+		Subprogram,
+		Variable,
+		Formal_Parameter,
+		Base_Type,
+		Pointer_Type,
+		Structure_Type,
+		Member,
+		Array_Type,
+		Subrange_Type,
+		Enumeration_Type,
+		Enumerator,
+		Union_Type,
+		Unspecified_Type,
+		Subroutine_Type,
+		Global_Variable,
 	}
 
 	Dw_Lang :: enum u16 {

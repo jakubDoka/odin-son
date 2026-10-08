@@ -124,6 +124,7 @@ main :: proc() {
 	types.mems.reloc.reserved = 4096 * 2048
 	types.mems.sloc.reserved = 4096 * 4096
 	types.mems.cfi.reserved = 4096 * 2048
+	types.mems.var_loc.reserved = 4096 * 4096
 	types.mems.type.reserved = 1024 * 1024 * 128
 
 	typecheck.types_init(&types)
@@ -178,7 +179,7 @@ main :: proc() {
 			emit_proc(&ctx, i, level, &emit_ctx)
 		}}
 
-	if .Inline in level.flags {
+	if .Inline in level.flags && !debug_variables_enabled(&ctx) {
 		{time.SCOPED_TICK_DURATION(&times.inlinet)
 			inline_and_optimize(&ctx, &emit_ctx)}
 	}

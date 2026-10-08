@@ -256,11 +256,12 @@ peep :: proc(
 		if !is_complete do break match
 
 		slot := expand_node(ctx, node.inps[0])
+		slot_local := bac.get_extra(ctx, slot, Local)
+		if slot_local.is_debug do break match
 		root := expand_node(ctx, slot.inps[0])
 		mark_dead: {
 			if root.itype != .Mem do break mark_dead
 
-			slot_local := bac.get_extra(ctx, slot, Local)
 			if slot_local.size == bac.DEAD_LOCAL do break match
 
 			iter: bac.Offset_Iter
@@ -899,6 +900,14 @@ peep :: proc(
 			cursor := id
 			size := bac.mem_op_size(ctx, id) or_else panic("")
 			base, off := bac.base_and_offset(ctx, node.inps[2])
+			base_node := expand_node(ctx, base)
+			if base_node.itype == .Local_Addr {
+				base_node = expand_node(ctx, base_node.inps[0])
+			}
+			if base_node.itype == .Local &&
+			   bac.get_extra(ctx, base_node, Local).is_debug {
+				break eliminate
+			}
 			for {
 				cnode := expand_node(ctx, cursor)
 				cursor = 0

@@ -482,6 +482,10 @@ inline_graph :: proc(graph: ^bac.Proc, call: bac.Node_ID, from: ^bac.Proc) {
 			assert(pnode.itype != .Local)
 		} else {
 			assert(arg_node.inps[0] == graph.entry)
+			if pnode.itype == .Local &&
+			   bac.get_extra(from, pnode, bac.Local).is_debug {
+				bac.get_extra(graph, arg_node, bac.Local).is_debug = true
+			}
 			bac.set_input(graph, arg, 0, rmem)
 			if pnode.itype == .Local {
 				// project the addr too or we get dups
@@ -652,6 +656,11 @@ inline_graph :: proc(graph: ^bac.Proc, call: bac.Node_ID, from: ^bac.Proc) {
 			inps[i] = proj_of(ctx, inp)^
 		}
 
+		dn := bac.get_dbg_slot(ctx.from, node)^
+		for binding in bac.get_dbindings(ctx.from, bac.get_dnode(ctx.from, dn)) {
+			clone_node(ctx, binding.storage)
+		}
+
 		if node.itype == .Local {
 			root_mem := bac.find_node(ctx.from, .Mem)
 			if node.inps[0] == root_mem {
@@ -698,8 +707,13 @@ inline_graph :: proc(graph: ^bac.Proc, call: bac.Node_ID, from: ^bac.Proc) {
 				bac.add_output(graph, inp, id, i)
 			}
 
-			dn := bac.get_dbg_slot(ctx.from, node)^
-			did := bac.clone_dnode(graph, ctx.from, dn, ctx.dprojection)
+			did := bac.clone_dnode(
+				graph,
+				ctx.from,
+				dn,
+				ctx.dprojection,
+				ctx.projection,
+			)
 			bac.get_dbg_slot(graph, new_node)^ = did
 			assert(ctx.projection[node.gvn] == 0)
 

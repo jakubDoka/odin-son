@@ -463,13 +463,16 @@ alloca :: proc(
 	ty: Type,
 	zeroed := true,
 	is_arg := false,
+	is_debug := false,
 ) -> Node_ID {
 	root := is_arg ? ctx.entry : bac.find_node(ctx, .Mem)
 	alloca := bac.add_local(ctx, name, root)
 
 	size := i32(min(type_size(ty), int(max(i32))))
 
-	bac.get_extra(ctx, alloca, bac.Local).size = size
+	local := bac.get_extra(ctx, alloca, bac.Local)
+	local.size = size
+	local.is_debug = is_debug
 	ptr := bac.add_local_addr(ctx, name, alloca)
 
 	if zeroed {
@@ -490,6 +493,80 @@ alloca :: proc(
 	}
 
 	return ptr
+}
+
+debug_variables_enabled :: proc(ctx: ^Gen_Ctx) -> bool {
+	return ctx.has_dbg && ctx.target.spec == &x64.SPEC
+}
+
+debug_storage_root :: proc(
+	ctx: ^Gen_Ctx,
+	storage: Node_ID,
+) -> (Node_ID, i32, bool) {
+	base, offset := bac.base_and_offset(ctx, storage)
+	bnode := expand_node(ctx, base)
+	if bnode.itype == .Local_Addr || bnode.itype == .Global_Addr {
+		return bnode.inps[0], i32(offset), true
+	}
+	if bnode.itype == .Local || bnode.itype == .Global {
+		return base, i32(offset), true
+	}
+	return 0, 0, false
+}
+
+init_debug_variable :: proc(ctx: ^Gen_Ctx, variable: ^typecheck.Variable) {
+	if variable.debug_id != 0 || !debug_variables_enabled(ctx) do return
+
+	storage: Node_ID
+	switch idx in variable.idx {
+	case int:
+		value := builder.get_scope_value(ctx, ctx.node_scope, idx)
+		storage = alloca(
+			ctx,
+			variable.name,
+			variable.type,
+			zeroed = false,
+			is_debug = true,
+		)
+		store_value(ctx, "dbginit", storage, Value(value), variable.type)
+	case Node_ID:
+		storage = idx
+	case typecheck.Lit:
+		return
+	}
+
+	root, _, ok := debug_storage_root(ctx, storage)
+	if !ok do return
+	if local := bac.get_extra(ctx, root, bac.Local); local != nil {
+		local.is_debug = true
+	}
+
+	ctx.debug_var_id += 1
+	variable.debug_id = ctx.debug_var_id
+	variable.debug_storage = storage
+}
+
+sync_debug_scope_value :: proc(
+	ctx: ^Gen_Ctx,
+	scope_slot: int,
+	value: Node_ID,
+) {
+	if !debug_variables_enabled(ctx) do return
+	for &variable in ctx.scope {
+		idx, ok := variable.idx.(int)
+		if !ok || idx != scope_slot do continue
+		init_debug_variable(ctx, &variable)
+		if variable.debug_storage != 0 {
+			store_value(
+				ctx,
+				"dbgvalue",
+				variable.debug_storage,
+				Value(value),
+				variable.type,
+			)
+		}
+		return
+	}
 }
 
 field_offset :: builder.add_field_offset
@@ -782,7 +859,11 @@ emit_proc :: proc(
 	ctx.node_spec = &builder.SPEC
 	ctx.mem = &ctx.mems.graph
 	ctx.mem.pos = bac.PRECISION
+	ctx.debug_binding_node = 0
 	ctx.opt_flags = level.flags
+	if debug_variables_enabled(ctx) {
+		ctx.opt_flags &= ~bac.Opt_Flags{.Inline}
+	}
 	ctx.stats = &ctx.tstats
 
 	bac.current_graph = ctx
@@ -792,7 +873,6 @@ emit_proc :: proc(
 		[dynamic]typecheck.Variable,
 		arna.allocator(&ctx.mems.scratch),
 	)
-	ctx.slocs = make(type_of(ctx.slocs), ctx.scope.allocator)
 
 	clear(&ctx.poly_types)
 	for e in prc.polys {
@@ -835,7 +915,13 @@ emit_proc :: proc(
 
 		append(
 			&ctx.scope,
-			typecheck.Variable{name.name, value_idx, par, nil, {}},
+			typecheck.Variable {
+				name = name.name,
+				idx = value_idx,
+				type = par,
+				ident = ast_par.names[0],
+				debug_is_param = true,
+			},
 		)
 	}
 
@@ -867,7 +953,7 @@ emit_proc :: proc(
 
 	opt(ctx)
 
-	if .Inline in level.flags {
+	if .Inline in ctx.opt_flags {
 		bac.compact(ctx)
 		prc.stencil = bac.get_stencil(ctx)
 		prc.stencil.mem = slice.clone(prc.stencil.mem, glob)
@@ -933,10 +1019,11 @@ emit_proc_code :: proc(
 	emit_ctx.schedule = &schedule
 	emit_ctx.abi = ra.cc
 	emit_ctx.buf = {
-		code   = &ctx.mems.code,
-		relocs = &ctx.mems.reloc,
-		slocs  = &ctx.mems.sloc,
-		cfi    = &ctx.mems.cfi,
+		code     = &ctx.mems.code,
+		relocs   = &ctx.mems.reloc,
+		slocs    = &ctx.mems.sloc,
+		cfi      = &ctx.mems.cfi,
+		var_locs = &ctx.mems.var_loc,
 	}
 	emit_ctx.allocs = regs
 	emit_ctx.param_specs = prc.param_types
@@ -980,14 +1067,66 @@ ctx_sloc_of :: proc(ctx: ^Gen_Ctx, node: ^ast.Node) -> bac.D_Node_ID {
 		col  = u32(node.pos.column),
 	}
 
-	if e, ok := ctx.slocs[sloc]; ok {
-		return e
+	bindings: [dynamic]bac.D_Binding
+	if debug_variables_enabled(ctx) {
+		for &variable in ctx.scope {
+			init_debug_variable(ctx, &variable)
+			if variable.debug_storage == 0 do continue
+			storage, offset, ok := debug_storage_root(ctx, variable.debug_storage)
+			if !ok do continue
+
+			decl := sloc
+			if variable.ident != nil {
+				decl = {
+					file = u32(ctx.file_id),
+					line = u32(variable.ident.pos.line),
+					col  = u32(variable.ident.pos.column),
+				}
+			}
+			append(
+				&bindings,
+				bac.D_Binding {
+					name = variable.name,
+					type = transmute(bac.D_Type)variable.type,
+					storage = storage,
+					id = variable.debug_id,
+					offset = offset,
+					decl = decl,
+					is_param = variable.debug_is_param,
+				},
+			)
+		}
 	}
 
-	e := bac.add_debug_node(ctx, sloc)
-	ctx.slocs[sloc] = e
+	binding_source: bac.D_Node_ID
+	stored_bindings := bindings[:]
+	if ctx.debug_binding_node != 0 {
+		previous := bac.get_dbindings(
+			ctx,
+			bac.get_dnode(ctx, ctx.debug_binding_node),
+		)
+		equal := len(previous) == len(stored_bindings)
+		if equal {
+			for binding, i in stored_bindings {
+				if binding != previous[i] {
+					equal = false
+					break
+				}
+			}
+		}
+		if equal {
+			binding_source = ctx.debug_binding_node
+			stored_bindings = nil
+		}
+	}
 
-	return e
+	dnode := bac.add_debug_node(ctx, sloc, stored_bindings, binding_source)
+	if len(stored_bindings) != 0 {
+		ctx.debug_binding_node = dnode
+	} else if len(bindings) == 0 {
+		ctx.debug_binding_node = 0
+	}
+	return dnode
 }
 
 emit_rvalue :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Node_ID {
@@ -1024,6 +1163,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 	ty := meta.type
 	dt := type_to_dt(ty)
 	sloc := ctx_sloc_of(ctx, node)
+	bac.get_sloc_scope(ctx, sloc)
 
 	if meta.known {
 		return emit_known(ctx, prop, meta)
@@ -1036,7 +1176,6 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		return vl.id, vl.is_lvalue
 	}
 
-	bac.get_sloc_scope(ctx, sloc)
 	context.allocator, _ = arna.scrath()
 
 	#partial match: switch d in node.derived {
@@ -1109,6 +1248,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				case int:
 					rv := to_rvalue_ty(ctx, r, vty)
 					builder.set_scope_value(ctx, ctx.node_scope, sym, rv)
+					sync_debug_scope_value(ctx, sym, rv)
 				case Value:
 					store_value(ctx, "masss", sym.id, r, vty)
 				}
@@ -1222,6 +1362,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 
 		for s in values {
 			builder.set_scope_value(ctx, ctx.node_scope, s.idx, s.vl)
+			sync_debug_scope_value(ctx, s.idx, s.vl)
 			bac.unpin(ctx, s.vl)
 		}
 
@@ -1355,14 +1496,26 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 					bac.pin(ctx, r.id)
 					append(
 						&ctx.scope,
-						typecheck.Variable{name, r.id, vty, d.names[i], flags},
+						typecheck.Variable {
+							name = name,
+							idx = r.id,
+							type = vty,
+							ident = d.names[i],
+							flags = flags,
+						},
 					)
 				} else {
 					get_node(ctx, r.id).name = name
 					idx := builder.push_scope_value(ctx, ctx.node_scope, r.id)
 					append(
 						&ctx.scope,
-						typecheck.Variable{name, idx, vty, d.names[i], flags},
+						typecheck.Variable {
+							name = name,
+							idx = idx,
+							type = vty,
+							ident = d.names[i],
+							flags = flags,
+						},
 					)
 				}
 			}
@@ -1391,14 +1544,26 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 
 					append(
 						&ctx.scope,
-						typecheck.Variable{name, ptr, vty, d.names[i], flags},
+						typecheck.Variable {
+							name = name,
+							idx = ptr,
+							type = vty,
+							ident = d.names[i],
+							flags = flags,
+						},
 					)
 				} else {
 					ptr := alloca(ctx, name, vty, zeroed = true)
 					bac.pin(ctx, ptr)
 					append(
 						&ctx.scope,
-						typecheck.Variable{name, ptr, vty, d.names[i], flags},
+						typecheck.Variable {
+							name = name,
+							idx = ptr,
+							type = vty,
+							ident = d.names[i],
+							flags = flags,
+						},
 					)
 				}
 			}
@@ -1441,7 +1606,13 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 
 				append(
 					&ctx.scope,
-					typecheck.Variable{name, ptr, vty, d.names[i], flags},
+					typecheck.Variable {
+						name = name,
+						idx = ptr,
+						type = vty,
+						ident = d.names[i],
+						flags = flags,
+					},
 				)
 			} else if .Referenced in flags || type_to_dt(vty) == .Void {
 				ptr := alloca(
@@ -1462,7 +1633,13 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 
 				append(
 					&ctx.scope,
-					typecheck.Variable{name, ptr, vty, d.names[i], flags},
+					typecheck.Variable {
+						name = name,
+						idx = ptr,
+						type = vty,
+						ident = d.names[i],
+						flags = flags,
+					},
 				)
 			} else {
 				value := to_rvalue(
@@ -1475,7 +1652,13 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				idx := builder.push_scope_value(ctx, ctx.node_scope, value)
 				append(
 					&ctx.scope,
-					typecheck.Variable{name, idx, vty, d.names[i], flags},
+					typecheck.Variable {
+						name = name,
+						idx = idx,
+						type = vty,
+						ident = d.names[i],
+						flags = flags,
+					},
 				)
 			}
 		}
@@ -1745,11 +1928,11 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				append(
 					&ctx.scope,
 					typecheck.Variable {
-						binding,
-						ptr,
-						case_ty,
-						tag.lhs[0],
-						{.Referenced},
+						name = binding,
+						idx = ptr,
+						type = case_ty,
+						ident = tag.lhs[0],
+						flags = {.Referenced},
 					},
 				)
 				emit_stmts(ctx, clause.body, base)
@@ -1764,11 +1947,11 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			append(
 				&ctx.scope,
 				typecheck.Variable {
-					binding,
-					ptr,
-					get_node_type(tag.rhs[0]),
-					tag.lhs[0],
-					{.Referenced},
+					name = binding,
+					idx = ptr,
+					type = get_node_type(tag.rhs[0]),
+					ident = tag.lhs[0],
+					flags = {.Referenced},
 				},
 			)
 			emit_stmts(ctx, default_clause.body, base)
@@ -1847,11 +2030,10 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		append(
 			&ctx.scope,
 			typecheck.Variable {
-				typecheck.src_of(ctx.file^, v),
-				elem_addr,
-				elem_ty,
-				v,
-				{},
+				name = typecheck.src_of(ctx.file^, v),
+				idx = elem_addr,
+				type = elem_ty,
+				ident = v,
 			},
 		)
 
@@ -1861,7 +2043,13 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			flags := typecheck.get_node_vflags(v)
 			append(
 				&ctx.scope,
-				typecheck.Variable{name, idx_slot, .Int, v, flags},
+				typecheck.Variable {
+					name = name,
+					idx = idx_slot,
+					type = .Int,
+					ident = v,
+					flags = flags,
+				},
 			)
 		}
 
@@ -1874,6 +2062,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			one := bac.add_c_int(ctx, "r1", .I64, 1)
 			nidx := bac.add_bin_op(ctx, "rinc", .Add, .I64, idxv3, one)
 			builder.set_scope_value(ctx, ctx.node_scope, idx_slot, nidx)
+			sync_debug_scope_value(ctx, idx_slot, nidx)
 		}
 
 		builder.end_loop(ctx, &ctx.node_scope, &loop_state.bstate)

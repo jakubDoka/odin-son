@@ -50,6 +50,7 @@ init_arenas :: proc() {
 	state.types.mems.reloc.reserved = 2 * 1024 * 1024
 	state.types.mems.sloc.reserved = 4 * 1024 * 1024
 	state.types.mems.cfi.reserved = 2 * 1024 * 1024
+	state.types.mems.var_loc.reserved = 4 * 1024 * 1024
 	state.types.mems.type.reserved = 32 * 1024 * 1024
 
 	typecheck.types_init(&state.types)

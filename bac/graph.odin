@@ -116,15 +116,20 @@ Sloc :: bit_field u64 {
 
 D_Node :: struct #align (4) {
 	using sloc: Sloc,
-	using meta: bit_field u32 {
-		gdn: u32 | 32,
-	},
-	binding:    [0]D_Binding,
+	gdn:           u32,
+	binding_count: u32,
+	binding_source: D_Node_ID,
+	binding:       [0]D_Binding,
 }
 
 D_Binding :: struct #align (4) {
-	name: string,
-	type: D_Type,
+	name:     string,
+	type:     D_Type,
+	storage:  Node_ID,
+	id:       u32,
+	offset:   i32,
+	decl:     Sloc,
+	is_param: bool,
 }
 
 D_Type :: enum u64 {}
@@ -287,8 +292,9 @@ Local :: struct {
 		rename_idx: i32,
 	},
 	using __:    bit_field u32 {
-		idx:      u32  | 31,
+		idx:      u32  | 30,
 		is_param: bool | 1,
+		is_debug: bool | 1,
 	},
 }
 
@@ -687,20 +693,68 @@ clone_dnode :: proc(
 	prev: ^Proc,
 	dn: D_Node_ID,
 	dnodes: []D_Node_ID,
+	projection: []Node_ID = nil,
 ) -> D_Node_ID {
 	node := get_dnode(prev, dn)
 	mapped := dnodes[node.gdn]
 	if mapped == 0 && dn != 0 {
+		binding_source := clone_dnode(
+			graph,
+			prev,
+			node.binding_source,
+			dnodes,
+			projection,
+		)
 		mapped = D_Node_ID(graph.mem.pos / PRECISION)
-		size := size_of(D_Node)
+		size := dnode_size(node)
 		bytes := arna.alloc(graph.mem, uint(size), PRECISION)
 		mem.copy_non_overlapping(raw_data(bytes), node, len(bytes))
 		dnode := (^D_Node)(raw_data(bytes))
 		dnode.gdn = graph.gdn
+		dnode.binding_source = binding_source
 		graph.gdn += 1
 		dnodes[node.gdn] = mapped
+		if len(projection) != 0 {
+			remap_dnode_bindings(graph, prev, mapped, projection)
+		}
 	}
 	return mapped
+}
+
+dnode_size :: proc(node: ^D_Node) -> int {
+	return size_of(D_Node) + int(node.binding_count) * size_of(D_Binding)
+}
+
+get_local_dbindings :: proc(node: ^D_Node) -> []D_Binding {
+	return raw_data(&node.binding)[:node.binding_count]
+}
+
+get_dbindings :: proc(graph: ^Proc, node: ^D_Node) -> []D_Binding {
+	node := node
+	if node.binding_source != 0 {
+		node = get_dnode(graph, node.binding_source)
+	}
+	return get_local_dbindings(node)
+}
+
+remap_dnode_bindings :: proc(
+	graph: ^Proc,
+	prev: ^Proc,
+	dn: D_Node_ID,
+	projection: []Node_ID,
+) {
+	for &binding in get_local_dbindings(get_dnode(graph, dn)) {
+		if binding.storage == 0 do continue
+		old_storage := binding.storage
+		old_node := get_node(prev, old_storage)
+		if old_node.rtype == DEAD_NODE_KIND || old_node.gvn == 0 {
+			binding.storage = 0
+			continue
+		}
+		gvn := old_node.gvn
+		fmt.assertf(int(gvn) < len(projection), "%v < %v", gvn, len(projection))
+		binding.storage = projection[gvn]
+	}
 }
 
 worklist_init :: proc(w: ^Worklist, cap: int = 0) {
@@ -759,6 +813,16 @@ compact :: proc(graph: ^Proc) {
 		get_dbg_slot(graph, new_node)^ = did
 
 		n = id
+	}
+
+	for mapped in dnodes[1:] {
+		if mapped == 0 do continue
+		remap_dnode_bindings(
+			graph,
+			&prev,
+			mapped,
+			worklist.data[:worklist.len],
+		)
 	}
 
 	graph.interner.len = 0
@@ -1190,10 +1254,15 @@ collect_nodes :: proc(graph: ^Proc, worklist: ^Worklist, renumber := true) {
 		node := expand_node(graph, worklist.data[gvn])
 
 		dbg := get_dbg_slot(graph, node)^
-		dbgn := get_dnode(graph, dbg)
-		if bit_arr.set(visited_gdn, dbgn.gdn) {
-			append(&gdns, dbg)
+		for cursor := dbg; cursor != 0; {
+			dbgn := get_dnode(graph, cursor)
+			if !bit_arr.set(visited_gdn, dbgn.gdn) do break
+			append(&gdns, cursor)
 			gdn += 1
+			cursor = dbgn.binding_source
+		}
+		for binding in get_dbindings(graph, get_dnode(graph, dbg)) {
+			worklist_add(graph, worklist, binding.storage)
 		}
 
 		for inp in node.inps {
@@ -2026,15 +2095,23 @@ get_dbg_slot :: proc(graph: ^Proc, node: ^Node) -> ^D_Node_ID {
 	return nl
 }
 
-add_debug_node :: proc(graph: ^Proc, sloc: Sloc) -> D_Node_ID {
+add_debug_node :: proc(
+	graph: ^Proc,
+	sloc: Sloc,
+	bindings: []D_Binding = nil,
+	binding_source: D_Node_ID = 0,
+) -> D_Node_ID {
 	id := D_Node_ID(graph.mem.pos / PRECISION)
 
-	size := size_of(D_Node)
+	size := size_of(D_Node) + len(bindings) * size_of(D_Binding)
 	slot := arna.alloc(graph.mem, uint(size), PRECISION)
 
 	dnode := (^D_Node)(raw_data(slot))
 	dnode.sloc = sloc
 	dnode.gdn = graph.gdn
+	dnode.binding_count = u32(len(bindings))
+	dnode.binding_source = binding_source
+	copy(get_local_dbindings(dnode), bindings)
 
 	graph.gdn += 1
 

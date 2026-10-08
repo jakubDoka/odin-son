@@ -38,6 +38,7 @@ Mems :: struct {
 	reloc:    arna.Allocator,
 	sloc:     arna.Allocator,
 	cfi:      arna.Allocator,
+	var_loc:  arna.Allocator,
 	type:     arna.Allocator,
 }
 
@@ -61,7 +62,6 @@ Gen_Ctx :: struct {
 	prc:          Proc_ID,
 	ret_ptrs:     []Node_ID,
 	poly_types:   #soa[dynamic]Poly_Entry,
-	slocs:        map[bac.Sloc]bac.D_Node_ID,
 	eval_depth:   int,
 	type_depth:   int,
 	error_cnt:    int,
@@ -69,7 +69,9 @@ Gen_Ctx :: struct {
 	errors:       io.Writer,
 	stack_top:    uintptr,
 	depht:        int,
-	ralloc_mode:  ra.Mode,
+	ralloc_mode:       ra.Mode,
+	debug_var_id:      u32,
+	debug_binding_node: bac.D_Node_ID,
 }
 
 Poly_Entry :: struct {
@@ -1066,6 +1068,7 @@ Proc :: struct {
 Global_Var :: struct {
 	name:   string,
 	module: Module_ID,
+	file:   File_ID,
 	type:   Type,
 	idx:    u32,
 	init:   ^ast.Expr,
@@ -1179,11 +1182,14 @@ Varuable_Idx :: union #no_nil {
 }
 
 Variable :: struct {
-	name:  string,
-	idx:   Varuable_Idx,
-	type:  Type,
-	ident: ^ast.Expr,
-	flags: Var_Flags,
+	name:          string,
+	idx:           Varuable_Idx,
+	type:          Type,
+	ident:         ^ast.Expr,
+	flags:         Var_Flags,
+	debug_id:      u32,
+	debug_storage: Node_ID,
+	debug_is_param: bool,
 }
 
 Module_ID :: distinct int
@@ -1291,6 +1297,7 @@ types_init :: proc(types: ^Types) {
 		&types.mems.reloc,
 		&types.mems.sloc,
 		&types.mems.cfi,
+		&types.mems.var_loc,
 		&types.mems.type,
 	)
 
@@ -1306,6 +1313,7 @@ types_reset :: proc(types: ^Types) {
 	arna.reset(&mems.reloc, false)
 	arna.reset(&mems.sloc, false)
 	arna.reset(&mems.cfi, false)
+	arna.reset(&mems.var_loc, false)
 	arna.reset(&mems.type, false)
 	types^ = {}
 	types.mems = mems
@@ -1344,6 +1352,7 @@ types_deinit :: proc(types: ^Types) {
 		&types.mems.reloc,
 		&types.mems.sloc,
 		&types.mems.cfi,
+		&types.mems.var_loc,
 		&types.mems.type,
 	)
 }
@@ -3309,6 +3318,17 @@ typecheck_program :: proc(ctx: ^Gen_Ctx) {
 			}
 
 			decl.id.global_idx = add_global(ctx, bytes, type_align(vl.type))
+			append(
+				&ctx.global_vars,
+				Global_Var {
+					name = decl.id.name,
+					module = ctx.module,
+					file = decl.id.file,
+					type = vl.type,
+					idx = decl.id.global_idx,
+					init = decl.id.value,
+				},
+			)
 		}
 	}
 

@@ -27,7 +27,7 @@ merge_returns :: proc(graph: ^Proc, args: []Node_ID) -> Node_ID {
 		bac.set_input(graph, graph.end, 0, ret)
 	} else {
 		// TODO: extend existing region if possible
-		reg := bac.add_region_(
+		reg := bac.add_region(
 			graph,
 			"rreg",
 			{bac.get_inputs(graph, ret)[0], args[0]},
@@ -379,7 +379,7 @@ merge_scopes :: proc(
 
 	assert(lnode.input_count == rnode.input_count)
 
-	region := bac.add_region_(graph, "reg", {lnode.inps[0], rnode.inps[0]})
+	region := bac.add_region(graph, "reg", {lnode.inps[0], rnode.inps[0]})
 
 	for i in 1 ..< lnode.input_count {
 		if lnode.inps[i] == rnode.inps[i] do continue
@@ -558,7 +558,7 @@ inline_graph :: proc(graph: ^bac.Proc, call: bac.Node_ID, from: ^bac.Proc) {
 		rnode := expand_node(ctx.from, root)
 		if ctx.projection[rnode.gvn] != 0 do return
 
-		if rnode.itype == .Region_ {
+		if rnode.itype == .Region {
 			for i in rnode.inps {
 				inode := expand_node(ctx.from, i)
 				if ctx.projection[inode.gvn] == 0 {
@@ -1036,6 +1036,7 @@ Builtin_Proc :: enum {
 
 init_graph :: proc(graph: ^Proc) -> Node_ID {
 	graph.gvn = 1
+	graph.gdn = 1
 	graph.entry = bac.add_entry(graph, "entry")
 	graph.end = bac.add_end(graph, "end", {0})
 	bac.pin(graph, graph.end)

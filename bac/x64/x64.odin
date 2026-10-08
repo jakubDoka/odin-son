@@ -998,7 +998,7 @@ meta_of :: proc(
 	     .Else,
 	     .Nil,
 	     .Entry,
-	     .Region_,
+	     .Region,
 	     .Loop,
 	     .Call_End:
 		fmt.panicf("should not reach these: %v", node)
@@ -1449,7 +1449,7 @@ next_sloc :: proc(ctx: ^Ctx) {
 
 mount_sloc :: proc(ctx: ^Ctx, node: bac.Node_ID) {
 	dn := bac.get_dbg_slot(ctx, get_node(ctx, node))^
-	if dn != 0 do ctx.sloc = bac.get_dnode(ctx, dn).sloc
+	ctx.sloc = bac.get_dnode(ctx, dn).sloc
 	ctx.last_off = ctx.code.pos
 }
 
@@ -1940,7 +1940,7 @@ emit_instr :: proc(
 			rx := rex(a, b, NO_INDEX, bac.DT_SIZE[node.dt] == 8)
 			emit(ctx.code, {0x66, rx, 0x0f, op, mod_rm(.Direct, a, b)})
 		}
-	case .Nil, .Entry, .Then, .Else, .Region_, .Loop, .Call_End, .End:
+	case .Nil, .Entry, .Then, .Else, .Region, .Loop, .Call_End, .End:
 		fmt.panicf("Not reachable form here %v", node.node)
 	case .If:
 		cnode := expand_node(ctx, node.inps[1])

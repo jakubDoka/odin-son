@@ -237,7 +237,7 @@ display_node :: proc(
 		}
 	}
 
-	if (node.itype == .Region_ || node.itype == .Loop) && scheduled {
+	if (node.itype == .Region || node.itype == .Loop) && scheduled {
 		for out in node.outs {
 			onode := get_node(graph, out.id)
 			if false && onode.itype == .Phi {

@@ -170,7 +170,7 @@ peep :: proc(
 	id := bac.get_node_id(ctx, node)
 	is_complete := bac.peep_ctx_graph_is_complete(ctx)
 
-	DEAD_EXCEPTIONS := bit_set[bac.Node_Type]{.Nil, .Entry, .Region_, .Loop}
+	DEAD_EXCEPTIONS := bit_set[bac.Node_Type]{.Nil, .Entry, .Region, .Loop}
 
 	if bac.is_cfg(ctx, id) && node.itype not_in DEAD_EXCEPTIONS {
 		if node.inps[0] == 0 {
@@ -433,7 +433,7 @@ peep :: proc(
 			}
 			return node.inps[0]
 		}
-	case .Region_:
+	case .Region:
 		if !ODIN_DISABLE_ASSERT {
 			for o in node.outs {
 				n := get_node(ctx, o.id)
@@ -493,12 +493,12 @@ peep :: proc(
 			// TODO: remove this redundant clone
 			merge: #reverse for inp, i in slice.clone(node.inps) {
 				inode := expand_node(ctx, inp)
-				if inode.itype != .Region_ do continue
+				if inode.itype != .Region do continue
 
 				not_covered_count := phi_count
 				for out in inode.outs {
 					onode := expand_node(ctx, out.id)
-					if onode.itype == .Region_ do continue
+					if onode.itype == .Region do continue
 
 					if onode.itype != .Phi {
 						bac.peep_ctx_add_trigger(ctx, out.id, id)
@@ -592,7 +592,7 @@ peep :: proc(
 
 			pcnode := expand_node(ctx, prev_cursor)
 			cnode := expand_node(ctx, cursor)
-			if cnode.itype == .If && pcnode.itype != .Region_ {
+			if cnode.itype == .If && pcnode.itype != .Region {
 				if cnode.inps[1] == node.inps[1] {
 					bac.set_input(
 						ctx,

@@ -112,7 +112,7 @@ Node_Type :: enum u16 {
 	Then,
 	Else,
 	Jump,
-	Region_,
+	Region,
 	Loop,
 	Always,
 	Trap,
@@ -283,9 +283,9 @@ add_jump :: #force_inline proc(graph: ^Proc, name: string, ctrl: Node_ID) -> (_i
 	return add_raw(graph, name, u16(Node_Type.Jump), .Void, {ctrl})
 }
 #assert(size_of(Cfg) % PRECISION == 0)
-add_region_ :: #force_inline proc(graph: ^Proc, name: string, inputs: []Node_ID) -> (_id: Node_ID) {
-	(^Cfg)(get_next_extra_slot(graph, u16(Node_Type.Region_), 0))^ = {}
-	return add_raw(graph, name, u16(Node_Type.Region_), .Void, inputs)
+add_region :: #force_inline proc(graph: ^Proc, name: string, inputs: []Node_ID) -> (_id: Node_ID) {
+	(^Cfg)(get_next_extra_slot(graph, u16(Node_Type.Region), 0))^ = {}
+	return add_raw(graph, name, u16(Node_Type.Region), .Void, inputs)
 }
 #assert(size_of(Cfg) % PRECISION == 0)
 add_loop :: #force_inline proc(graph: ^Proc, name: string, ctrl: Node_ID) -> (_id: Node_ID) {

@@ -117,9 +117,7 @@ Sloc :: bit_field u64 {
 D_Node :: struct #align (4) {
 	using sloc: Sloc,
 	using meta: bit_field u32 {
-		gdn:        u32  | 31,
-		// if this is equal to graph.dbgn_flip it means the info is unvisited
-		visit_mark: bool | 1,
+		gdn: u32 | 32,
 	},
 	binding:    [0]D_Binding,
 }
@@ -193,7 +191,7 @@ when SPEC_NOT_PRESENT {
 		Then,
 		Else,
 		Jump,
-		Region_,
+		Region,
 		Loop,
 		Always,
 		Trap,
@@ -227,12 +225,12 @@ when SPEC_NOT_PRESENT {
 	) -> Node_ID {return 0}
 	add_merge_mem :: add_return
 
-	add_region_ :: proc(
+	add_region :: proc(
 		graph: ^Proc,
 		name: string,
 		ctrls: []Node_ID,
 	) -> Node_ID {return 0}
-	add_always :: add_region_
+	add_always :: add_region
 
 	add_jump :: proc(
 		graph: ^Proc,
@@ -445,7 +443,6 @@ Proc_Meta :: struct {
 	min_idepth:   u32,
 	max_idepth:   u32,
 	has_dbg:      bool,
-	dbgn_flip:    bool,
 	using pinned: struct {
 		entry: Node_ID,
 		end:   Node_ID,
@@ -691,20 +688,17 @@ clone_dnode :: proc(
 	dn: D_Node_ID,
 	dnodes: []D_Node_ID,
 ) -> D_Node_ID {
-	if dn == 0 do return 0
-
-	mapped := dnodes[get_dnode(prev, dn).gdn]
-	if mapped == 0 {
+	node := get_dnode(prev, dn)
+	mapped := dnodes[node.gdn]
+	if mapped == 0 && dn != 0 {
 		mapped = D_Node_ID(graph.mem.pos / PRECISION)
 		size := size_of(D_Node)
 		bytes := arna.alloc(graph.mem, uint(size), PRECISION)
-		mem.copy_non_overlapping(
-			raw_data(bytes),
-			get_dnode(prev, dn),
-			len(bytes),
-		)
-		(^D_Node)(raw_data(bytes)).visit_mark = graph.dbgn_flip
-		dnodes[get_dnode(prev, dn).gdn] = mapped
+		mem.copy_non_overlapping(raw_data(bytes), node, len(bytes))
+		dnode := (^D_Node)(raw_data(bytes))
+		dnode.gdn = graph.gdn
+		graph.gdn += 1
+		dnodes[node.gdn] = mapped
 	}
 	return mapped
 }
@@ -735,6 +729,7 @@ compact :: proc(graph: ^Proc) {
 	graph.mem.pos = PRECISION
 	(^D_Node_ID)(graph.mem.ptr)^ = 0
 	graph.gvn = 1
+	graph.gdn = 1
 	graph.cached = {}
 
 	interned_count := 0
@@ -906,7 +901,7 @@ verify :: proc(graph: ^Proc) {
 		}
 		if node.itype == .Phi {
 			fmt.assertf(
-				get_node(graph, node.inps[0]).itype == .Region_ ||
+				get_node(graph, node.inps[0]).itype == .Region ||
 				get_node(graph, node.inps[0]).itype == .Loop,
 				"%v",
 				node,
@@ -1179,8 +1174,12 @@ apply_peeps :: proc(ctx: Peep_Ctx) -> (optimized: bool) {
 }
 
 collect_nodes :: proc(graph: ^Proc, worklist: ^Worklist, renumber := true) {
+	gdn := 1
+	visited_gdn := bit_arr.init(graph.gdn)
+	bit_arr.set(visited_gdn, 0)
+	gdns: [dynamic]D_Node_ID
+
 	gvn := 1
-	gdn := 0
 	assert(worklist.len == 0)
 	worklist.offset = 0
 	worklist_add(graph, worklist, 0)
@@ -1191,13 +1190,10 @@ collect_nodes :: proc(graph: ^Proc, worklist: ^Worklist, renumber := true) {
 		node := expand_node(graph, worklist.data[gvn])
 
 		dbg := get_dbg_slot(graph, node)^
-		if dbg != 0 {
-			dbgn := get_dnode(graph, dbg)
-			if dbgn.visit_mark == graph.dbgn_flip {
-				dbgn.gdn = u32(gdn)
-				dbgn.visit_mark ~= true
-				gdn += 1
-			}
+		dbgn := get_dnode(graph, dbg)
+		if bit_arr.set(visited_gdn, dbgn.gdn) {
+			append(&gdns, dbg)
+			gdn += 1
 		}
 
 		for inp in node.inps {
@@ -1210,8 +1206,6 @@ collect_nodes :: proc(graph: ^Proc, worklist: ^Worklist, renumber := true) {
 
 		gvn += 1
 	}
-	graph.gdn = u32(gdn)
-	graph.dbgn_flip ~= true
 
 	if renumber {
 		graph.gvn = u32(worklist.len)
@@ -1222,6 +1216,12 @@ collect_nodes :: proc(graph: ^Proc, worklist: ^Worklist, renumber := true) {
 
 		for n, i in worklist.data[1:worklist.len] {
 			get_node(graph, n).gvn = u32(1 + i)
+		}
+
+		graph.gdn = u32(gdn)
+		assert(int(graph.gdn) == len(gdns) + 1)
+		for gdn, i in gdns {
+			get_dnode(graph, gdn).gdn = u32(1 + i)
 		}
 
 		when !ODIN_DISABLE_ASSERT {
@@ -1706,7 +1706,7 @@ subsume :: proc(graph: ^Proc, with: Node_ID, target: Node_ID) {
 	when !ODIN_DISABLE_ASSERT {
 		for out in tnode.outs {
 			fmt.assertf(
-				get_node(graph, out.id).itype != .Region_ ||
+				get_node(graph, out.id).itype != .Region ||
 				is_cfg(graph, with),
 				"%v %v %v",
 				wnode,
@@ -1941,9 +1941,12 @@ get_extra_dwords_node :: proc(
 	return raw_data(&node.extra)[:total]
 }
 
+@(rodata)
+NIL_DNODE: D_Node
+
 get_dnode :: #force_inline proc(graph: ^Proc, id: D_Node_ID) -> ^D_Node {
-	assert(id != 0)
-	return (^D_Node)(&([^]u32)(graph.mem.ptr)[id])
+	vl := (^D_Node)(&([^]u32)(graph.mem.ptr)[id])
+	return id == 0 ? &NIL_DNODE : vl
 }
 
 @(rodata)

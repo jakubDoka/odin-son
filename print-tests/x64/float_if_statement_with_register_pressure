@@ -151,12 +151,12 @@ main:
     pxor xmm1, xmm1
     ucomisd xmm0, xmm1
     jz 1
-    push.q [rsp + 0x1b0]
+    push.q [rsp + 0x190]
     pop.q [rsp + 0x1d0]
-    push.q [rsp + 0x1c0]
+    push.q [rsp + 0x1a0]
     pop.q [rsp + 0x1e0]
-    movsd.q xmm0, [rsp + 0x1a0]
-    movsd.q xmm1, [rsp + 0x190]
+    movsd.q xmm0, [rsp + 0x1c0]
+    movsd.q xmm1, [rsp + 0x1b0]
     jmp 2
 1:
     movsd.q xmm2, [rsp + 0x190]
@@ -183,37 +183,35 @@ main:
     movsd.q xmm6, [rsp + 0xc0]
     movsd.q xmm7, [rsp + 0x100]
     vfmadd213sd xmm5, xmm7, xmm6
-    movsd.q [rsp + 0x1d0], xmm4
-    movsd.q [rsp + 0x1e0], xmm5
-    movsd xmm0, xmm3
-    movsd xmm1, xmm2
+    movsd.q [rsp + 0x1d0], xmm2
+    movsd xmm0, xmm5
+    movsd xmm1, xmm4
+    movsd.q [rsp + 0x1e0], xmm3
 2:
-    movsd xmm2, xmm1
-    addsd xmm2, xmm0
+    movsd.q xmm2, [rsp + 0x1d0]
+    movsd.q xmm3, [rsp + 0x1e0]
+    addsd xmm2, xmm3
     movsd.q xmm3, [rsp + 0x100]
     movsd.q xmm4, [rsp + 0x110]
     vfmadd213sd xmm2, xmm3, xmm4
     movsd.q xmm3, [rsp + 0x120]
     addsd xmm2, xmm3
-    movsd xmm3, xmm1
-    movsd.q xmm4, [rsp + 0x1d0]
-    addsd xmm3, xmm4
+    movsd.q xmm3, [rsp + 0x1d0]
+    addsd xmm3, xmm1
     movsd.q xmm4, [rsp + 0x100]
     movsd.q xmm5, [rsp + 0x150]
     vfmadd213sd xmm3, xmm4, xmm5
     movsd.q xmm4, [rsp + 0x160]
     addsd xmm3, xmm4
-    movsd xmm4, xmm0
-    movsd.q xmm5, [rsp + 0x1e0]
-    addsd xmm4, xmm5
+    movsd.q xmm4, [rsp + 0x1e0]
+    addsd xmm4, xmm0
     movsd.q xmm5, [rsp + 0x100]
     movsd.q xmm6, [rsp + 0x170]
     vfmadd213sd xmm4, xmm5, xmm6
     movsd.q xmm5, [rsp + 0x180]
     addsd xmm4, xmm5
-    movsd.q xmm5, [rsp + 0x1d0]
-    movsd.q xmm6, [rsp + 0x1e0]
-    addsd xmm5, xmm6
+    movsd xmm5, xmm1
+    addsd xmm5, xmm0
     movsd.q xmm6, [rsp + 0x100]
     movsd.q xmm7, [rsp + 0x130]
     vfmadd213sd xmm5, xmm6, xmm7
@@ -224,9 +222,9 @@ main:
     ucomisd xmm7, xmm6
     jz 3
     movsd xmm6, xmm5
-    movsd xmm7, xmm4
-    movsd xmm8, xmm3
-    movsd xmm9, xmm2
+    movsd xmm7, xmm2
+    movsd xmm8, xmm4
+    movsd xmm9, xmm3
     jmp 4
 3:
     movsd xmm10, xmm2
@@ -253,10 +251,10 @@ main:
     movsd.q xmm14, [rsp + 0x80]
     movsd.q xmm15, [rsp + 0x100]
     vfmadd213sd xmm13, xmm15, xmm14
+    movsd xmm9, xmm12
+    movsd xmm8, xmm13
     movsd xmm6, xmm11
-    movsd xmm9, xmm10
-    movsd xmm8, xmm12
-    movsd xmm7, xmm13
+    movsd xmm7, xmm10
 4:
     movsd.q xmm10, [rsp]
     movsd.q xmm11, [rsp + 0x10]
@@ -313,22 +311,22 @@ main:
     addsd xmm10, xmm11
     movsd.q xmm11, [rsp + 0x1c0]
     addsd xmm10, xmm11
+    movsd.q xmm11, [rsp + 0x1d0]
+    addsd xmm10, xmm11
+    movsd.q xmm11, [rsp + 0x1e0]
+    addsd xmm10, xmm11
     addsd xmm10, xmm1
     movsd xmm1, xmm10
     addsd xmm1, xmm0
     movsd xmm0, xmm1
-    movsd.q xmm1, [rsp + 0x1d0]
-    addsd xmm0, xmm1
-    movsd.q xmm1, [rsp + 0x1e0]
-    addsd xmm0, xmm1
     addsd xmm0, xmm2
     addsd xmm0, xmm5
     addsd xmm0, xmm3
     addsd xmm0, xmm4
-    addsd xmm0, xmm9
-    addsd xmm0, xmm6
-    addsd xmm0, xmm8
     addsd xmm0, xmm7
+    addsd xmm0, xmm6
+    addsd xmm0, xmm9
+    addsd xmm0, xmm8
     cvttsd2si rax, xmm0
     add rsp, 0x208
     ret
@@ -413,7 +411,7 @@ main:
     movsd xmm7, xmm8
     movsd.q xmm8, [rsp + 0x130]
     vfmadd213sd xmm7, xmm9, xmm8
-    movsd.q [rsp], xmm7
+    movsd.q [rsp + 0x10], xmm7
     movsd xmm8, xmm2
     movsd.q xmm7, [rsp + 0xf0]
     addsd xmm8, xmm7
@@ -434,12 +432,12 @@ main:
     vfmadd213sd xmm8, xmm9, xmm7
     movsd.q [rsp + 0x100], xmm8
     movsd.q xmm7, [rsp + 0xa0]
-    movsd.q xmm8, [rsp]
+    movsd.q xmm8, [rsp + 0x10]
     addsd xmm7, xmm8
-    movsd xmm13, xmm7
+    movsd.q [rsp], xmm7
     movsd.q xmm7, [rsp + 0x190]
     addsd xmm7, xmm14
-    movsd.q [rsp + 0x10], xmm7
+    movsd xmm13, xmm7
     movsd.q xmm7, [rsp + 0x180]
     movsd.q xmm8, [rsp + 0x110]
     addsd xmm7, xmm8
@@ -450,18 +448,18 @@ main:
     movsd.q [rsp + 0xc0], xmm7
     ucomisd xmm1, xmm1
     jz 1
-    movsd.q xmm12, [rsp + 0xd0]
-    movsd.q xmm8, [rsp + 0xc0]
-    movsd.q xmm7, [rsp + 0x10]
+    movsd.q xmm12, [rsp]
     movsd xmm1, xmm13
+    movsd.q xmm11, [rsp + 0xc0]
+    movsd.q xmm7, [rsp + 0xd0]
     jmp 2
 1:
-    movsd xmm1, xmm13
+    movsd.q xmm1, [rsp]
     addsd xmm1, xmm0
     movsd xmm11, xmm1
     movsd.q xmm1, [rsp + 0xb0]
     vfmadd213sd xmm11, xmm9, xmm1
-    movsd.q xmm1, [rsp + 0x10]
+    movsd xmm1, xmm13
     addsd xmm1, xmm6
     movsd xmm10, xmm1
     movsd.q xmm1, [rsp + 0xe0]
@@ -476,17 +474,17 @@ main:
     movsd xmm7, xmm1
     movsd.q xmm1, [rsp + 0x120]
     vfmadd213sd xmm7, xmm9, xmm1
-    movsd xmm12, xmm8
-    movsd xmm8, xmm7
-    movsd xmm7, xmm10
-    movsd xmm1, xmm11
+    movsd xmm12, xmm11
+    movsd xmm11, xmm7
+    movsd xmm7, xmm8
+    movsd xmm1, xmm10
 2:
     movsd.q [rsp + 0x40], xmm1
     movsd.q [rsp + 0x30], xmm7
-    movsd.q [rsp + 0x20], xmm8
+    movsd.q [rsp + 0x20], xmm11
     movsd.q [rsp + 0x90], xmm12
-    movsd.q xmm7, [rsp + 0x40]
-    movsd.q xmm1, [rsp + 0x30]
+    movsd.q xmm7, [rsp + 0x90]
+    movsd.q xmm1, [rsp + 0x40]
     addsd xmm7, xmm1
     movsd.q xmm1, [rsp + 0xa0]
     vfmadd213sd xmm7, xmm9, xmm1
@@ -494,15 +492,15 @@ main:
     movsd.q xmm7, [rsp + 0x190]
     addsd xmm1, xmm7
     movsd.q [rsp + 0x70], xmm1
-    movsd.q xmm7, [rsp + 0x40]
-    movsd.q xmm1, [rsp + 0x90]
+    movsd.q xmm7, [rsp + 0x90]
+    movsd.q xmm1, [rsp + 0x30]
     addsd xmm7, xmm1
-    movsd.q xmm1, [rsp]
+    movsd.q xmm1, [rsp + 0x10]
     vfmadd213sd xmm7, xmm9, xmm1
     movsd xmm1, xmm7
     addsd xmm1, xmm14
     movsd.q [rsp + 0x50], xmm1
-    movsd.q xmm7, [rsp + 0x30]
+    movsd.q xmm7, [rsp + 0x40]
     movsd.q xmm1, [rsp + 0x20]
     addsd xmm7, xmm1
     movsd.q xmm1, [rsp + 0x110]
@@ -511,7 +509,7 @@ main:
     movsd.q xmm7, [rsp + 0x100]
     addsd xmm1, xmm7
     movsd.q [rsp + 0x60], xmm1
-    movsd.q xmm7, [rsp + 0x90]
+    movsd.q xmm7, [rsp + 0x30]
     movsd.q xmm1, [rsp + 0x20]
     addsd xmm7, xmm1
     movsd.q xmm1, [rsp + 0x180]
@@ -521,31 +519,28 @@ main:
     addsd xmm1, xmm7
     ucomisd xmm0, xmm0
     jz 3
-    movsd xmm9, xmm1
+    movsd xmm8, xmm1
+    movsd.q xmm7, [rsp + 0x70]
     movsd.q xmm10, [rsp + 0x60]
-    movsd.q xmm7, [rsp + 0x50]
-    movsd.q xmm8, [rsp + 0x70]
+    movsd.q xmm9, [rsp + 0x50]
     jmp 4
 3:
     movsd.q xmm7, [rsp + 0x70]
     addsd xmm7, xmm3
-    movsd xmm8, xmm7
-    movsd.q xmm7, [rsp + 0x130]
-    vfmadd213sd xmm8, xmm9, xmm7
-    movsd xmm7, xmm1
-    addsd xmm7, xmm2
-    movsd xmm10, xmm7
-    movsd.q xmm7, [rsp + 0x140]
-    vfmadd213sd xmm10, xmm9, xmm7
+    movsd.q xmm8, [rsp + 0x130]
+    vfmadd213sd xmm7, xmm9, xmm8
+    movsd xmm8, xmm1
+    addsd xmm8, xmm2
+    movsd.q xmm10, [rsp + 0x140]
+    vfmadd213sd xmm8, xmm9, xmm10
     movsd.q xmm11, [rsp + 0x50]
-    movsd.q xmm7, [rsp + 0x80]
-    addsd xmm11, xmm7
-    movsd xmm7, xmm11
+    movsd.q xmm10, [rsp + 0x80]
+    addsd xmm11, xmm10
+    movsd xmm10, xmm11
     movsd.q xmm11, [rsp + 0x160]
-    vfmadd213sd xmm7, xmm9, xmm11
-    movsd.q xmm12, [rsp + 0x60]
-    addsd xmm12, xmm15
-    movsd xmm11, xmm12
+    vfmadd213sd xmm10, xmm9, xmm11
+    movsd.q xmm11, [rsp + 0x60]
+    addsd xmm11, xmm15
     movsd.q xmm12, [rsp + 0x170]
     vfmadd213sd xmm11, xmm9, xmm12
     movsd xmm9, xmm10
@@ -587,7 +582,7 @@ main:
     movsd.q xmm0, [rsp + 0x150]
     addsd xmm2, xmm0
     movsd xmm0, xmm2
-    movsd.q xmm2, [rsp]
+    movsd.q xmm2, [rsp + 0x10]
     addsd xmm0, xmm2
     addsd xmm0, xmm14
     movsd xmm2, xmm0
@@ -596,18 +591,18 @@ main:
     movsd.q xmm0, [rsp + 0x100]
     addsd xmm2, xmm0
     movsd xmm0, xmm2
-    addsd xmm0, xmm13
-    movsd.q xmm2, [rsp + 0x10]
+    movsd.q xmm2, [rsp]
     addsd xmm0, xmm2
+    addsd xmm0, xmm13
     movsd.q xmm2, [rsp + 0xd0]
     addsd xmm0, xmm2
     movsd.q xmm2, [rsp + 0xc0]
     addsd xmm0, xmm2
+    movsd.q xmm2, [rsp + 0x90]
+    addsd xmm0, xmm2
     movsd.q xmm2, [rsp + 0x40]
     addsd xmm0, xmm2
     movsd.q xmm2, [rsp + 0x30]
-    addsd xmm0, xmm2
-    movsd.q xmm2, [rsp + 0x90]
     addsd xmm0, xmm2
     movsd.q xmm2, [rsp + 0x20]
     addsd xmm0, xmm2
@@ -618,9 +613,9 @@ main:
     addsd xmm0, xmm1
     movsd.q xmm1, [rsp + 0x60]
     addsd xmm0, xmm1
+    addsd xmm0, xmm7
     addsd xmm0, xmm8
     addsd xmm0, xmm9
-    addsd xmm0, xmm7
     addsd xmm0, xmm10
     cvttsd2si rax, xmm0
     add rsp, 0x1a8
@@ -633,85 +628,82 @@ main:
     jnz 1
     movsd.q xmm0, [rip + 0xf97]
     movsd.q [rsp], xmm0
-    movsd xmm1, xmm0
-    movsd xmm2, xmm0
     movsd.q [rsp + 0x10], xmm0
+    movsd xmm1, xmm0
     jmp 2
 1:
-    movsd.q xmm0, [rip + 0xf7a]
-    movsd.q xmm3, [rip + 0xf79]
-    movsd.q xmm4, [rip + 0xf78]
-    movsd.q xmm5, [rip + 0xf77]
-    movsd xmm2, xmm4
-    movsd.q [rsp], xmm3
-    movsd.q [rsp + 0x10], xmm0
+    movsd.q xmm2, [rip + 0xf7f]
+    movsd.q xmm3, [rip + 0xf7e]
+    movsd.q xmm4, [rip + 0xf7d]
+    movsd.q xmm5, [rip + 0xf7c]
+    movsd.q [rsp], xmm2
     movsd xmm1, xmm5
+    movsd.q [rsp + 0x10], xmm4
+    movsd xmm0, xmm3
 2:
-    movsd.q xmm0, [rip + 0xf5f]
-    movsd.q xmm3, [rip + 0xf5e]
-    movsd.q xmm4, [rsp + 0x10]
-    movsd.q xmm5, [rsp]
-    addsd xmm4, xmm5
-    vfmadd213sd xmm4, xmm3, xmm0
+    movsd.q xmm2, [rip + 0xf64]
+    movsd.q xmm3, [rip + 0xf63]
+    movsd.q xmm4, [rsp]
     addsd xmm4, xmm0
-    movsd.q xmm5, [rsp + 0x10]
+    vfmadd213sd xmm4, xmm3, xmm2
+    addsd xmm4, xmm2
+    movsd.q xmm5, [rsp]
+    movsd.q xmm6, [rsp + 0x10]
+    addsd xmm5, xmm6
+    vfmadd213sd xmm5, xmm3, xmm2
     addsd xmm5, xmm2
-    vfmadd213sd xmm5, xmm3, xmm0
-    addsd xmm5, xmm0
-    movsd.q xmm6, [rsp]
+    movsd xmm6, xmm0
     addsd xmm6, xmm1
-    vfmadd213sd xmm6, xmm3, xmm0
-    addsd xmm6, xmm0
-    movsd xmm7, xmm2
+    vfmadd213sd xmm6, xmm3, xmm2
+    addsd xmm6, xmm2
+    movsd.q xmm7, [rsp + 0x10]
     addsd xmm7, xmm1
-    vfmadd213sd xmm7, xmm3, xmm0
-    addsd xmm7, xmm0
+    vfmadd213sd xmm7, xmm3, xmm2
+    addsd xmm7, xmm2
     test al, al
     jnz 3
-    movsd xmm0, xmm5
+    movsd xmm2, xmm6
     movsd xmm8, xmm4
-    movsd xmm9, xmm6
+    movsd xmm9, xmm5
     movsd xmm10, xmm7
     jmp 4
 3:
     movsd xmm11, xmm4
-    addsd.q xmm11, [rip + 0xedb]
-    movsd.q xmm12, [rip + 0xeda]
+    addsd.q xmm11, [rip + 0xee0]
+    movsd.q xmm12, [rip + 0xedf]
     vfmadd213sd xmm11, xmm3, xmm12
     movsd xmm12, xmm7
-    addsd.q xmm12, [rip + 0xecf]
-    movsd.q xmm13, [rip + 0xece]
+    addsd.q xmm12, [rip + 0xed4]
+    movsd.q xmm13, [rip + 0xed3]
     vfmadd213sd xmm12, xmm3, xmm13
     movsd xmm13, xmm5
-    addsd.q xmm13, [rip + 0xec3]
-    movsd.q xmm14, [rip + 0xec2]
+    addsd.q xmm13, [rip + 0xec8]
+    movsd.q xmm14, [rip + 0xec7]
     vfmadd213sd xmm13, xmm3, xmm14
     movsd xmm14, xmm6
-    addsd.q xmm14, [rip + 0xeb7]
-    movsd.q xmm15, [rip + 0xeb6]
+    addsd.q xmm14, [rip + 0xebc]
+    movsd.q xmm15, [rip + 0xebb]
     vfmadd213sd xmm14, xmm3, xmm15
-    movsd xmm0, xmm13
-    movsd xmm9, xmm14
+    movsd xmm2, xmm14
     movsd xmm8, xmm11
+    movsd xmm9, xmm13
     movsd xmm10, xmm12
 4:
+    movsd.q xmm3, [rsp]
+    addsd.q xmm3, [rip + 0xe9b]
+    addsd xmm3, xmm0
+    movsd xmm0, xmm3
     movsd.q xmm3, [rsp + 0x10]
-    addsd.q xmm3, [rip + 0xe95]
-    movsd.q xmm11, [rsp]
-    addsd xmm3, xmm11
-    addsd xmm3, xmm2
-    movsd xmm2, xmm3
-    addsd xmm2, xmm1
-    movsd xmm1, xmm2
-    addsd xmm1, xmm4
-    addsd xmm1, xmm7
-    addsd xmm1, xmm5
-    addsd xmm1, xmm6
-    addsd xmm1, xmm8
-    addsd xmm1, xmm10
-    addsd xmm1, xmm0
-    movsd xmm0, xmm1
+    addsd xmm0, xmm3
+    addsd xmm0, xmm1
+    addsd xmm0, xmm4
+    addsd xmm0, xmm7
+    addsd xmm0, xmm5
+    addsd xmm0, xmm6
+    addsd xmm0, xmm8
+    addsd xmm0, xmm10
     addsd xmm0, xmm9
+    addsd xmm0, xmm2
     cvttsd2si rax, xmm0
     add rsp, 0x38
     ret
@@ -721,48 +713,48 @@ main:
     test al, al
     jnz 1
     movsd.q xmm0, [rip + 0xf9b]
-    movsd xmm5, xmm0
-    movsd xmm4, xmm0
-    movsd xmm6, xmm0
     movsd xmm13, xmm0
+    movsd xmm4, xmm0
+    movsd xmm5, xmm0
+    movsd xmm3, xmm0
     jmp 2
 1:
     movsd.q xmm3, [rip + 0xf81]
     movsd.q xmm2, [rip + 0xf80]
     movsd.q xmm1, [rip + 0xf7f]
     movsd.q xmm0, [rip + 0xf7e]
-    movsd xmm6, xmm1
-    movsd xmm5, xmm2
     movsd xmm13, xmm3
-    movsd xmm4, xmm0
+    movsd xmm5, xmm0
+    movsd xmm4, xmm1
+    movsd xmm3, xmm2
 2:
     movsd.q xmm7, [rip + 0xf69]
     movsd.q xmm9, [rip + 0xf68]
-    movsd xmm3, xmm13
-    addsd xmm3, xmm5
-    vfmadd213sd xmm3, xmm9, xmm7
-    addsd xmm3, xmm7
     movsd xmm2, xmm13
-    addsd xmm2, xmm6
+    addsd xmm2, xmm3
     vfmadd213sd xmm2, xmm9, xmm7
     addsd xmm2, xmm7
-    movsd xmm1, xmm5
+    movsd xmm1, xmm13
     addsd xmm1, xmm4
     vfmadd213sd xmm1, xmm9, xmm7
     addsd xmm1, xmm7
-    movsd xmm0, xmm6
-    addsd xmm0, xmm4
+    movsd xmm6, xmm3
+    addsd xmm6, xmm5
+    vfmadd213sd xmm6, xmm9, xmm7
+    addsd xmm6, xmm7
+    movsd xmm0, xmm4
+    addsd xmm0, xmm5
     vfmadd213sd xmm0, xmm9, xmm7
     addsd xmm0, xmm7
     test al, al
     jnz 3
+    movsd xmm12, xmm6
     movsd xmm11, xmm2
-    movsd xmm9, xmm3
-    movsd xmm10, xmm1
+    movsd xmm9, xmm1
     movsd xmm8, xmm0
     jmp 4
 3:
-    movsd xmm8, xmm3
+    movsd xmm8, xmm2
     addsd.q xmm8, [rip + 0xef0]
     movsd.q xmm7, [rip + 0xeef]
     vfmadd213sd xmm8, xmm9, xmm7
@@ -770,31 +762,32 @@ main:
     addsd.q xmm7, [rip + 0xee4]
     movsd.q xmm10, [rip + 0xee3]
     vfmadd213sd xmm7, xmm9, xmm10
-    movsd xmm12, xmm2
-    addsd.q xmm12, [rip + 0xed8]
-    movsd.q xmm10, [rip + 0xed7]
-    vfmadd213sd xmm12, xmm9, xmm10
     movsd xmm10, xmm1
-    addsd.q xmm10, [rip + 0xecc]
-    movsd.q xmm11, [rip + 0xecb]
+    addsd.q xmm10, [rip + 0xed8]
+    movsd.q xmm11, [rip + 0xed7]
     vfmadd213sd xmm10, xmm9, xmm11
-    movsd xmm11, xmm12
-    movsd xmm9, xmm8
+    movsd xmm11, xmm6
+    addsd.q xmm11, [rip + 0xecc]
+    movsd.q xmm12, [rip + 0xecb]
+    vfmadd213sd xmm11, xmm9, xmm12
+    movsd xmm12, xmm11
+    movsd xmm11, xmm8
+    movsd xmm9, xmm10
     movsd xmm8, xmm7
 4:
     movsd xmm7, xmm13
-    addsd.q xmm7, [rip + 0xeb1]
-    addsd xmm7, xmm5
-    addsd xmm7, xmm6
-    addsd xmm7, xmm4
+    addsd.q xmm7, [rip + 0xeac]
     addsd xmm7, xmm3
-    addsd xmm7, xmm0
+    addsd xmm7, xmm4
+    addsd xmm7, xmm5
     addsd xmm7, xmm2
+    addsd xmm7, xmm0
     addsd xmm7, xmm1
-    addsd xmm7, xmm9
-    addsd xmm7, xmm8
+    addsd xmm7, xmm6
     addsd xmm7, xmm11
-    addsd xmm7, xmm10
+    addsd xmm7, xmm8
+    addsd xmm7, xmm9
+    addsd xmm7, xmm12
     cvttsd2si rax, xmm7
     ret
 =========== OPT LEVEL: moderate-quick ===========

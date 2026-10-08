@@ -495,7 +495,7 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 				case .Phi:
 					reg := get_node(ctx, conode.inps[0])
 
-					if reg.itype == .Region {
+					if reg.itype == .Region_ {
 						id, ok := get_edited_node_idx(ctx, conode)
 						if !ok {
 							id = u32(len(ctx.joins))

@@ -642,7 +642,7 @@ IDEAL_CLASSES := [bac.Node_Type]Class_Spec {
 		flags = {.Is_Basic_Block_Start},
 	},
 	.Jump = {id = Cfg, args = {"ctrl"}, default_type = .Void},
-	.Region = {
+	.Region_ = {
 		id = Cfg,
 		varargs = true,
 		default_type = .Void,

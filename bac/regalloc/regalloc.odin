@@ -452,7 +452,7 @@ regalloc_round :: proc(
 		}
 
 		head := expand_node(graph, bb.head)
-		for pred, j in head.inps[:len(head.inps) - int(head.itype == .Region)] {
+		for pred, j in head.inps {
 
 			pred_block := get_node(graph, bac.get_idom(graph, pred))
 			fmt.assertf(
@@ -710,6 +710,11 @@ regalloc_round :: proc(
 			// bitset
 			for j in 0 ..< ctx.block_offset {
 				for &active, kind in active_slrgs {
+					//assert(
+					//	len(active.items) <=
+					//	int(ra.mask_len) - ra.spill_boundary[kind],
+					//	"the regalloc ran out of spill slots, use optimizations",
+					//)
 					siter := bac.simd_iter_from(
 						active.items.hash[:mem.align_forward_int(
 							active.len,
@@ -1215,6 +1220,10 @@ regalloc_round :: proc(
 		if lrg.fails == {} {
 			assert(!bac.reg_mask_is_empty(lrg.mask))
 			continue
+		}
+
+		if bac.REGLOGS {
+			log.info("fail:", lrg, lrg.fails)
 		}
 
 		fail_count += 1
@@ -1772,9 +1781,7 @@ regalloc_round :: proc(
 				return
 			}
 
-			is_reg := int(cbnode.itype == .Region)
-
-			for cbinp in cbnode.inps[:len(cbnode.inps) - is_reg] {
+			for cbinp in cbnode.inps {
 				if bac.is_cfg(ctx.graph, cbinp) {
 					cbinode := expand_node(ctx.graph, cbinp)
 					if !bit_arr.set(seen, cbinode.gvn) {

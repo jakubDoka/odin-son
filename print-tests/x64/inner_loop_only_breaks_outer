@@ -25,8 +25,8 @@ main:
     add rbp, 1
     cmp rbp, 5
     jz 5
-    mov rdx, rbp
     mov rax, rbx
+    mov rdx, rbp
     jmp 4
 5:
     mov rax, rbx
@@ -43,7 +43,7 @@ main:
 1:
     add rax, 1
     cmp rax, 4
-    jz 5
+    jz 6
     xor ecx, ecx
 2:
     add rcx, 1
@@ -53,17 +53,20 @@ main:
     jz 3
     jmp 2
 3:
-    xor eax, eax
     xor ecx, ecx
+    xor eax, eax
 4:
-    add rax, 1
     add rcx, 1
-    cmp rcx, 5
-    jz 6
+    add rax, 1
+    cmp rax, 5
+    jz 5
     jmp 4
 5:
-    xor eax, eax
+    mov rax, rcx
+    jmp 7
 6:
+    xor eax, eax
+7:
     ret
 =========== OPT LEVEL: mininal-quick ===========
 main:
@@ -92,8 +95,8 @@ main:
     add rbp, 1
     cmp rbp, 5
     jz 5
-    mov rdx, rbp
     mov rax, rbx
+    mov rdx, rbp
     jmp 4
 5:
     mov rax, rbx
@@ -110,7 +113,7 @@ main:
 1:
     add rax, 1
     cmp rax, 4
-    jz 5
+    jz 6
     xor ecx, ecx
 2:
     add rcx, 1
@@ -120,17 +123,20 @@ main:
     jz 3
     jmp 2
 3:
-    xor eax, eax
     xor ecx, ecx
+    xor eax, eax
 4:
-    add rax, 1
     add rcx, 1
-    cmp rcx, 5
-    jz 6
+    add rax, 1
+    cmp rax, 5
+    jz 5
     jmp 4
 5:
-    xor eax, eax
+    mov rax, rcx
+    jmp 7
 6:
+    xor eax, eax
+7:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 main:
@@ -159,8 +165,8 @@ main:
     add rbp, 1
     cmp rbp, 5
     jz 5
-    mov rdx, rbp
     mov rax, rbx
+    mov rdx, rbp
     jmp 4
 5:
     mov rax, rbx
@@ -177,7 +183,7 @@ main:
 1:
     add rax, 1
     cmp rax, 4
-    jz 5
+    jz 6
     xor ecx, ecx
 2:
     add rcx, 1
@@ -187,17 +193,20 @@ main:
     jz 3
     jmp 2
 3:
-    xor eax, eax
     xor ecx, ecx
+    xor eax, eax
 4:
-    add rax, 1
     add rcx, 1
-    cmp rcx, 5
-    jz 6
+    add rax, 1
+    cmp rax, 5
+    jz 5
     jmp 4
 5:
-    xor eax, eax
+    mov rax, rcx
+    jmp 7
 6:
+    xor eax, eax
+7:
     ret
 =========== OPT LEVEL: all ===========
 main:
@@ -213,11 +222,11 @@ main:
     xor ecx, ecx
     xor eax, eax
 3:
-    mov rdx, rax
+    mov rdx, rcx
     add rdx, 1
-    add rcx, 1
-    cmp rcx, 5
-    mov rax, rdx
+    add rax, 1
+    cmp rax, 5
+    mov rcx, rdx
     jnz 3
     mov rax, rdx
     jmp 5

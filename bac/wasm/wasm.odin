@@ -307,7 +307,7 @@ meta_of :: #force_inline proc(
 	     .Entry,
 	     .Then,
 	     .Else,
-	     .Region,
+	     .Region_,
 	     .Loop,
 	     .Call_End,
 	     .End,
@@ -507,7 +507,7 @@ pre_regalloc_hook :: proc(
 		     .Entry,
 		     .Then,
 		     .Else,
-		     .Region,
+		     .Region_,
 		     .Loop,
 		     .Call_End,
 		     .Simd_Reduce_Add_Bisect,
@@ -892,9 +892,6 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 
 			for next in tnode.outs {
 				nnode := expand_node(ctx, next.id)
-				assert(
-					next.idx != len(nnode.inps) - 1 || nnode.itype != .Region,
-				)
 				if int(nnode.gvn) != i + 1 &&
 				   nnode.itype != .Loop &&
 				   nnode.itype != .End {
@@ -1164,7 +1161,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 	     .Entry,
 	     .Then,
 	     .Else,
-	     .Region,
+	     .Region_,
 	     .Loop,
 	     .Call_End,
 	     .Simd_Reduce_Add_Bisect,

@@ -193,7 +193,7 @@ when SPEC_NOT_PRESENT {
 		Then,
 		Else,
 		Jump,
-		Region,
+		Region_,
 		Loop,
 		Always,
 		Trap,
@@ -227,12 +227,12 @@ when SPEC_NOT_PRESENT {
 	) -> Node_ID {return 0}
 	add_merge_mem :: add_return
 
-	add_region :: proc(
+	add_region_ :: proc(
 		graph: ^Proc,
 		name: string,
 		ctrls: []Node_ID,
 	) -> Node_ID {return 0}
-	add_always :: add_region
+	add_always :: add_region_
 
 	add_jump :: proc(
 		graph: ^Proc,
@@ -876,7 +876,7 @@ apply_peep :: proc(graph: ^Proc, id: Node_ID) -> (r: Node_ID) {
 
 @(disabled = ODIN_DISABLE_ASSERT)
 verify :: proc(graph: ^Proc) {
-	CHECK_INTERN_INTEGRITY :: false
+	CHECK_INTERN_INTEGRITY :: true
 
 	if !graph.dont_intern && CHECK_INTERN_INTEGRITY {
 		for entry in interner_zip(graph) {
@@ -906,7 +906,7 @@ verify :: proc(graph: ^Proc) {
 		}
 		if node.itype == .Phi {
 			fmt.assertf(
-				get_node(graph, node.inps[0]).itype == .Region ||
+				get_node(graph, node.inps[0]).itype == .Region_ ||
 				get_node(graph, node.inps[0]).itype == .Loop,
 				"%v",
 				node,
@@ -925,9 +925,10 @@ verify :: proc(graph: ^Proc) {
 				)
 			fmt.assertf(
 				bit_arr.set(seen_intern_slots, idx),
-				"%v %v",
+				"%v %v %v",
 				node,
 				int(n),
+				get_node(graph, interner_zip(graph)[idx].id),
 			)
 		}
 	}
@@ -1070,7 +1071,6 @@ apply_peeps :: proc(ctx: Peep_Ctx) -> (optimized: bool) {
 	if .Iter_Peeps not_in graph.opt_flags && is_builder do return
 
 	graph.dont_intern = !is_builder
-	defer graph.dont_intern = false
 
 	context.allocator, _ = arna.scrath()
 
@@ -1687,7 +1687,10 @@ subsume :: proc(graph: ^Proc, with: Node_ID, target: Node_ID) {
 
 	if with == 0 {
 		for out in tnode.outs {
+			unintern(graph, out.id)
 			get_inputs(graph, out.id)[out.idx] = 0
+			id := intern(graph, out.id)
+			assert(id == out.id)
 		}
 
 		tnode.output_count = 0
@@ -1703,7 +1706,7 @@ subsume :: proc(graph: ^Proc, with: Node_ID, target: Node_ID) {
 	when !ODIN_DISABLE_ASSERT {
 		for out in tnode.outs {
 			fmt.assertf(
-				get_node(graph, out.id).itype != .Region ||
+				get_node(graph, out.id).itype != .Region_ ||
 				is_cfg(graph, with),
 				"%v %v %v",
 				wnode,

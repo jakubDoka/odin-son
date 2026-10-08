@@ -170,7 +170,7 @@ peep :: proc(
 	id := bac.get_node_id(ctx, node)
 	is_complete := bac.peep_ctx_graph_is_complete(ctx)
 
-	DEAD_EXCEPTIONS := bit_set[bac.Node_Type]{.Nil, .Entry, .Region, .Loop}
+	DEAD_EXCEPTIONS := bit_set[bac.Node_Type]{.Nil, .Entry, .Region_, .Loop}
 
 	if bac.is_cfg(ctx, id) && node.itype not_in DEAD_EXCEPTIONS {
 		if node.inps[0] == 0 {
@@ -190,8 +190,31 @@ peep :: proc(
 	}
 
 	#partial match: switch node.itype {
+	case .End:
+		zcnt := 0
+		for inp in node.inps[1:] {
+			zcnt += int(inp == 0)
+		}
+
+		if zcnt > len(node.inps) {
+			// TODO: untested teritory
+			#reverse for inp, i in node.inps[1:] {
+				if inp == 0 {
+					ordered_remove(ctx, &node, i + 1)
+				}
+			}
+		}
+	case .Split_Mem:
+		if len(node.outs) == 1 {
+			return node.inps[0]
+		}
 	case .Mem:
 		inp := expand_node(ctx, node.inps[0])
+
+		if inp.itype == .Mem {
+			return node.inps[0]
+		}
+
 		if inp.itype == .Split_Mem {
 			if len(inp.outs) == 1 {
 				return inp.inps[0]
@@ -202,11 +225,10 @@ peep :: proc(
 				if onode.itype == .Merge_Mem {
 					ordered_remove(ctx, &onode, out.idx)
 					bac.worklist_add(ctx, ctx.worklist, out.id)
-
 				}
 			}
 
-			if len(inp.outs) == 2 && node.output_count == 0 {
+			if len(inp.outs) == 1 && node.output_count == 0 {
 				for out in inp.outs {
 					if out.id != id {
 						bac.worklist_add(ctx, ctx.worklist, out.id)
@@ -214,7 +236,6 @@ peep :: proc(
 				}
 			}
 		}
-	case .Split_Mem:
 	case .Merge_Mem:
 		for inp in node.inps {
 			inode := get_node(ctx, inp)
@@ -412,20 +433,22 @@ peep :: proc(
 			}
 			return node.inps[0]
 		}
-	case .Region:
-		for o in node.outs {
-			n := get_node(ctx, o.id)
-			if n.itype == .Phi {
-				fmt.assertf(
-					n.input_count == node.input_count,
-					"%v %v",
-					n,
-					node,
-				)
+	case .Region_:
+		if !ODIN_DISABLE_ASSERT {
+			for o in node.outs {
+				n := get_node(ctx, o.id)
+				if n.itype == .Phi {
+					fmt.assertf(
+						n.input_count == node.input_count + 1,
+						"%v %v",
+						n,
+						node,
+					)
+				}
 			}
 		}
 
-		#reverse for inp, i in node.inps[:len(node.inps) - 1] {
+		#reverse for inp, i in node.inps {
 			if inp != 0 do continue
 			inode := expand_node(ctx, inp)
 			ordered_remove(ctx, &node, i)
@@ -436,17 +459,13 @@ peep :: proc(
 					ordered_remove(ctx, &onode, i + 1)
 				}
 			}
-
-			if node.input_count == 2 {
-				break
-			}
 		}
 
-		elim: if len(node.inps) <= 2 {
-			if len(node.inps) == 1 {
-				assert(node.inps[0] == 0)
-				return 0
-			}
+		if len(node.inps) == 0 {
+			return 0
+		}
+
+		elim: if len(node.inps) == 1 {
 
 			#reverse for out in node.outs {
 				onode := expand_node(ctx, out.id)
@@ -474,12 +493,12 @@ peep :: proc(
 			// TODO: remove this redundant clone
 			merge: #reverse for inp, i in slice.clone(node.inps) {
 				inode := expand_node(ctx, inp)
-				if inode.itype != .Region do continue
+				if inode.itype != .Region_ do continue
 
 				not_covered_count := phi_count
 				for out in inode.outs {
 					onode := expand_node(ctx, out.id)
-					if onode.itype == .Region do continue
+					if onode.itype == .Region_ do continue
 
 					if onode.itype != .Phi {
 						bac.peep_ctx_add_trigger(ctx, out.id, id)
@@ -504,16 +523,7 @@ peep :: proc(
 					continue
 				}
 
-				prev_cached := node.inps[len(node.inps) - 1]
-				node.input_count -= 1
-				bac.remove_output(
-					ctx,
-					prev_cached,
-					{idx = len(node.inps) - 1, id = id},
-					no_delete = true,
-				)
-
-				for iinp in inode.inps[1:len(inode.inps) - 1] {
+				for iinp in inode.inps[1:] {
 					bac.connect(ctx, id, iinp)
 				}
 
@@ -531,7 +541,6 @@ peep :: proc(
 					bac.set_input(ctx, out.id, 1 + i, to_merge.inps[1])
 				}
 
-				bac.connect(ctx, id, prev_cached)
 				bac.set_input(ctx, id, i, inode.inps[0])
 
 				node = expand_node(ctx, id)
@@ -539,15 +548,17 @@ peep :: proc(
 			}
 		}
 
-		for o in node.outs {
-			n := get_node(ctx, o.id)
-			if n.itype == .Phi {
-				fmt.assertf(
-					n.input_count == node.input_count,
-					"%v %v",
-					n,
-					node,
-				)
+		if !ODIN_DISABLE_ASSERT {
+			for o in node.outs {
+				n := get_node(ctx, o.id)
+				if n.itype == .Phi {
+					fmt.assertf(
+						n.input_count == node.input_count + 1,
+						"%v %v",
+						n,
+						node,
+					)
+				}
 			}
 		}
 	case .Phi:
@@ -581,7 +592,7 @@ peep :: proc(
 
 			pcnode := expand_node(ctx, prev_cursor)
 			cnode := expand_node(ctx, cursor)
-			if cnode.itype == .If && pcnode.itype != .Region {
+			if cnode.itype == .If && pcnode.itype != .Region_ {
 				if cnode.inps[1] == node.inps[1] {
 					bac.set_input(
 						ctx,

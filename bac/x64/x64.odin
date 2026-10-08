@@ -998,7 +998,7 @@ meta_of :: proc(
 	     .Else,
 	     .Nil,
 	     .Entry,
-	     .Region,
+	     .Region_,
 	     .Loop,
 	     .Call_End:
 		fmt.panicf("should not reach these: %v", node)
@@ -1940,7 +1940,7 @@ emit_instr :: proc(
 			rx := rex(a, b, NO_INDEX, bac.DT_SIZE[node.dt] == 8)
 			emit(ctx.code, {0x66, rx, 0x0f, op, mod_rm(.Direct, a, b)})
 		}
-	case .Nil, .Entry, .Then, .Else, .Region, .Loop, .Call_End, .End:
+	case .Nil, .Entry, .Then, .Else, .Region_, .Loop, .Call_End, .End:
 		fmt.panicf("Not reachable form here %v", node.node)
 	case .If:
 		cnode := expand_node(ctx, node.inps[1])

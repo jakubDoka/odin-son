@@ -158,11 +158,7 @@ loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 
 		bac.set_input(ctx, bb.head, 0, guard_loop)
 
-		join := bac.add_region(
-			ctx,
-			"urljn",
-			{guard_skip, break_branch.head, 0},
-		)
+		join := bac.add_region_(ctx, "urljn", {guard_skip, break_branch.head})
 		join_bb := wire_up_new_block(&ctx, join, bb.loop_tree.parent)
 
 		wire_up_new_block :: proc(
@@ -716,9 +712,9 @@ loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 			return out
 		}
 
-		loop_or_region := node.itype == .Loop || node.itype == .Region
+		loop := node.itype == .Loop
 		edges: [dynamic]Node_ID
-		for inp in node.inps[:len(node.inps) - int(loop_or_region)] {
+		for inp in node.inps[:len(node.inps) - int(loop)] {
 			if bac.is_cfg(ctx, inp) {
 				vl := walk_use_blocks(ctx, inp, guard, out, nphy, to_loop)
 				append(&edges, vl)

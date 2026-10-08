@@ -239,7 +239,10 @@ main :: proc() {
 
 		os.write_string(file, "for i in 0 ..< len(CODE) {")
 		os.write_string(file, "main.run_test(nil, NAMES[i], CODE[i], 0, ")
-		os.write_string(file, "diff = false, no_run = IS_FUZZ[i])\n")
+		os.write_string(
+			file,
+			"diff = false, no_run = IS_FUZZ[i] || main.NO_RUN)\n",
+		)
 		os.write_string(file, "}\n")
 
 		os.write_string(file, "}\n")

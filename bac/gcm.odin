@@ -56,16 +56,11 @@ get_idom_node :: proc(graph: ^Proc, node: ^Node) -> Node_ID {
 	     .Trap,
 	     .Always:
 		return inps[0]
-	case .Region:
-		cached := inps[len(inps) - 1]
-		if get_node(graph, cached).itype == .If {
-			return cached
-		}
-
+	case .Region_:
 		fmt.assertf(len(inps) > 1, "wut %v", node)
 
 		lca: Node_ID
-		for inp in inps[:len(inps) - 1] {
+		for inp in inps {
 			lca = compute_lca(graph, lca, inp)
 		}
 
@@ -107,7 +102,7 @@ get_idepth_node :: proc(graph: ^Proc, node: ^Node) -> u32 {
 	     .Trap,
 	     .Always:
 		extra.idepth = 1 + get_idepth(graph, inps[0])
-	case .Region:
+	case .Region_:
 		mx: u32
 		for inp in inps {
 			mx = max(mx, get_idepth(graph, inp))
@@ -314,9 +309,7 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 		for o in node.outs {
 			onode := get_node(graph, o.id)
 			if is_cfg(graph, o.id) {
-				if ((onode.itype == .Region &&
-						   o.idx != int(onode.input_count - 1)) ||
-					   onode.itype == .Loop) &&
+				if (onode.itype == .Region_ || onode.itype == .Loop) &&
 				   node.itype != .Jump &&
 				   node.itype != .Trap &&
 				   node.itype != .If &&

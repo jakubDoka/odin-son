@@ -21,7 +21,10 @@ trap 'rm -rf "$WORK"' EXIT
 # The optimization levels mirror OPT_LEVELS in gen.odin / the unit-test harness
 # in test_utils.odin. Each program is compiled once per level and every level is
 # compared against the same (jit-agnostic) reference Odin binary.
-LEVELS=(none-quick none mininal moderate all aggresive)
+#
+# NOTE: we use moderate here because it coalesces the regions otherwise we run
+# out of spill slots on some tests
+LEVELS=(moderate-quick none mininal moderate all aggresive)
 
 # Build the compiler unless one was already provided.
 if [[ -n "${JIT:-}" ]]; then

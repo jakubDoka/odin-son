@@ -22200,7 +22200,7 @@ true,
 true,
 true,
 }
-for i in 0 ..< len(CODE) {main.run_test(nil, NAMES[i], CODE[i], 0, diff = false, no_run = IS_FUZZ[i])
+for i in 0 ..< len(CODE) {main.run_test(nil, NAMES[i], CODE[i], 0, diff = false, no_run = IS_FUZZ[i] || main.NO_RUN)
 }
 }
 }

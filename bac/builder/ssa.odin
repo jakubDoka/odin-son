@@ -19,16 +19,18 @@ builder_extra :: proc {
 }
 
 merge_returns :: proc(graph: ^Proc, args: []Node_ID) -> Node_ID {
+
 	ret := bac.get_inputs(graph, graph.end)[0]
 
 	if ret == 0 {
 		ret = bac.add_return(graph, "ret", args)
 		bac.set_input(graph, graph.end, 0, ret)
 	} else {
-		reg := bac.add_region(
+		// TODO: extend existing region if possible
+		reg := bac.add_region_(
 			graph,
 			"rreg",
-			{bac.get_inputs(graph, ret)[0], args[0], 0},
+			{bac.get_inputs(graph, ret)[0], args[0]},
 		)
 		bac.set_input(graph, ret, 0, reg)
 		for inp, i in bac.get_inputs(graph, ret)[1:] {
@@ -377,7 +379,7 @@ merge_scopes :: proc(
 
 	assert(lnode.input_count == rnode.input_count)
 
-	region := bac.add_region(graph, "reg", {lnode.inps[0], rnode.inps[0], 0})
+	region := bac.add_region_(graph, "reg", {lnode.inps[0], rnode.inps[0]})
 
 	for i in 1 ..< lnode.input_count {
 		if lnode.inps[i] == rnode.inps[i] do continue
@@ -556,8 +558,8 @@ inline_graph :: proc(graph: ^bac.Proc, call: bac.Node_ID, from: ^bac.Proc) {
 		rnode := expand_node(ctx.from, root)
 		if ctx.projection[rnode.gvn] != 0 do return
 
-		if rnode.itype == .Region {
-			for i in rnode.inps[:len(rnode.inps) - 1] {
+		if rnode.itype == .Region_ {
+			for i in rnode.inps {
 				inode := expand_node(ctx.from, i)
 				if ctx.projection[inode.gvn] == 0 {
 					return
@@ -1045,9 +1047,9 @@ get_or_add_const_mem :: proc(graph: ^Proc) -> (cmem: Node_ID) {
 	   get_node(graph, graph.cmem).rtype == bac.DEAD_NODE_KIND {
 		rmem := bac.find_node(graph, .Mem)
 
-		split := bac.add_split_mem(graph, "ptspl", rmem)
-		graph.cmem = bac.add_mem(graph, "slcm", split)
-		split_mem := bac.add_mem(graph, "mscm", split)
+		split := bac.add_split_mem(graph, "cptspl", rmem)
+		graph.cmem = bac.add_mem(graph, "cslcm", split)
+		split_mem := bac.add_mem(graph, "cmscm", split)
 		for out in bac.get_outputs(graph, rmem) {
 			if out.id != split && get_node(graph, out.id).itype != .Local {
 				bac.set_input(graph, out.id, out.idx, split_mem)
@@ -1058,7 +1060,7 @@ get_or_add_const_mem :: proc(graph: ^Proc) -> (cmem: Node_ID) {
 			connect_to := einp
 			node := expand_node(graph, einp)
 			if node.itype == .Return {
-				connect_to = bac.add_merge_mem(graph, "mmrg", {node.inps[1]})
+				connect_to = bac.add_merge_mem(graph, "cmmrg", {node.inps[1]})
 				bac.set_input(graph, einp, 1, connect_to)
 			}
 			bac.connect(graph, connect_to, split_mem)

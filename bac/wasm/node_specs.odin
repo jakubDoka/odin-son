@@ -78,7 +78,7 @@ SPEC := bac.Node_Spec{
 		0b1, // Then
 		0b1, // Else
 		0b1, // Jump
-		0b1, // Region
+		0b1, // Region_
 		0b1, // Loop
 		0b1, // Always
 		0b1, // Trap
@@ -169,7 +169,7 @@ SPEC := bac.Node_Spec{
 		1, // Then -> Cfg
 		1, // Else -> Cfg
 		1, // Jump -> Cfg
-		1, // Region -> Cfg
+		1, // Region_ -> Cfg
 		1, // Loop -> Cfg
 		1, // Always -> Cfg
 		1, // Trap -> Cfg
@@ -260,7 +260,7 @@ SPEC := bac.Node_Spec{
 		{Class_Flag.Is_Basic_Block_Start}, // Then
 		{Class_Flag.Is_Basic_Block_Start}, // Else
 		{}, // Jump
-		{Class_Flag.Is_Basic_Block_Start}, // Region
+		{Class_Flag.Is_Basic_Block_Start}, // Region_
 		{Class_Flag.Is_Basic_Block_Start}, // Loop
 		{}, // Always
 		{}, // Trap
@@ -442,7 +442,7 @@ SPEC := bac.Node_Spec{
 		`Then`,
 		`Else`,
 		`Jump`,
-		`Region`,
+		`Region_`,
 		`Loop`,
 		`Always`,
 		`Trap`,
@@ -535,7 +535,7 @@ Node_Type :: enum u16 {
 	Then,
 	Else,
 	Jump,
-	Region,
+	Region_,
 	Loop,
 	Always,
 	Trap,

@@ -20,7 +20,10 @@ w_call:
     jnge 5
     mov.q rax, [rsp + 0x60]
     cmp rax, 1
-    jnl 1
+    setnl al
+    movzx rax, al
+    test al, al
+    jnz 1
     jmp 2
 1:
     mov.q rdi, [rsp + 0x50]
@@ -28,7 +31,10 @@ w_call:
 2:
     mov.q rax, [rsp + 0x60]
     cmp rax, 2
-    jnl 3
+    setnl al
+    movzx rax, al
+    test al, al
+    jnz 3
     jmp 4
 3:
     mov.q rdi, [rsp + 0x58]
@@ -40,7 +46,7 @@ w_call:
     call w_finish
     jmp 6
 5:
-    lea rcx, [rip + 0xefc]
+    lea rcx, [rip + 0xee6]
     mov.q [rsp + 0x20], rcx
     mov.q [rsp + 0x28], 0xc
     mov.q rdi, [rsp + 0x20]
@@ -66,8 +72,8 @@ w_find_func:
     add rsp, 0x28
     ret
 wpush:
-    add.q [rip + 0xe81], rdi
-    sal.q [rip + 0xe79], 0xa
+    add.q [rip + 0xe71], rdi
+    sal.q [rip + 0xe69], 0xa
     ret
 w_finish:
     sub rsp, 8
@@ -80,14 +86,14 @@ w_finish:
     ret
 main:
     sub rsp, 0x38
-    mov.q [rip + 0xe49], 0
+    mov.q [rip + 0xe39], 0
     xor edi, edi
-    lea rax, [rip + 0xe53]
+    lea rax, [rip + 0xe43]
     mov.q [rsp + 0x18], rax
     mov.q [rsp + 0x20], 0
     mov.q rdx, [rsp + 0x18]
     mov.q rcx, [rsp + 0x20]
-    lea rax, [rip + 0xe34]
+    lea rax, [rip + 0xe24]
     mov.q [rsp + 0x28], rax
     mov.q [rsp + 0x30], 0
     mov.q r9, [rsp + 0x30]
@@ -97,7 +103,7 @@ main:
     mov.q [rsp + 0x10], 4
     mov rsi, 1
     call w_call
-    add.q rax, [rip + 0xddb]
+    add.q rax, [rip + 0xdcb]
     add rsp, 0x38
     ret
 =========== OPT LEVEL: none ===========
@@ -124,7 +130,10 @@ w_call:
     jnge 5
     mov.q rax, [rsp + 0x60]
     cmp rax, 1
-    jnl 1
+    setnl al
+    movzx rax, al
+    test al, al
+    jnz 1
     jmp 2
 1:
     mov.q rdi, [rsp + 0x50]
@@ -132,7 +141,10 @@ w_call:
 2:
     mov.q rax, [rsp + 0x60]
     cmp rax, 2
-    jnl 3
+    setnl al
+    movzx rax, al
+    test al, al
+    jnz 3
     jmp 4
 3:
     mov.q rdi, [rsp + 0x58]
@@ -144,7 +156,7 @@ w_call:
     call w_finish
     jmp 6
 5:
-    lea rax, [rip + 0xf0b]
+    lea rax, [rip + 0xef5]
     mov.q [rsp + 0x20], rax
     mov.q [rsp + 0x28], 0xc
     mov.q rdi, [rsp + 0x20]
@@ -173,8 +185,8 @@ w_find_func:
     add rsp, 0x28
     ret
 wpush:
-    add.q [rip + 0xe91], rdi
-    sal.q [rip + 0xe89], 0xa
+    add.q [rip + 0xe79], rdi
+    sal.q [rip + 0xe71], 0xa
     ret
 w_finish:
     mov rax, rdi
@@ -183,14 +195,14 @@ w_finish:
     ret
 main:
     sub rsp, 0x38
-    mov.q [rip + 0xe69], 0
+    mov.q [rip + 0xe51], 0
     xor edi, edi
-    lea rax, [rip + 0xe73]
+    lea rax, [rip + 0xe5b]
     mov.q [rsp + 0x18], rax
     mov.q [rsp + 0x20], 0
     mov.q rdx, [rsp + 0x18]
     mov.q rcx, [rsp + 0x20]
-    lea rax, [rip + 0xe54]
+    lea rax, [rip + 0xe3c]
     mov.q [rsp + 0x28], rax
     mov.q [rsp + 0x30], 0
     mov.q r9, [rsp + 0x30]
@@ -200,7 +212,7 @@ main:
     mov.q [rsp + 0x10], 4
     mov rsi, 1
     call w_call
-    add.q rax, [rip + 0xdfb]
+    add.q rax, [rip + 0xde3]
     add rsp, 0x38
     ret
 =========== OPT LEVEL: mininal-quick ===========
@@ -225,7 +237,10 @@ w_call:
     jnge 5
     mov.q rax, [rsp + 0x60]
     cmp rax, 1
-    jnl 1
+    setnl al
+    movzx rax, al
+    test al, al
+    jnz 1
     jmp 2
 1:
     mov.q rdi, [rsp + 0x50]
@@ -233,7 +248,10 @@ w_call:
 2:
     mov.q rax, [rsp + 0x60]
     cmp rax, 2
-    jnl 3
+    setnl al
+    movzx rax, al
+    test al, al
+    jnz 3
     jmp 4
 3:
     mov.q rdi, [rsp + 0x58]
@@ -245,7 +263,7 @@ w_call:
     call w_finish
     jmp 6
 5:
-    lea rcx, [rip + 0xefc]
+    lea rcx, [rip + 0xee6]
     mov.q [rsp + 0x20], rcx
     mov.q [rsp + 0x28], 0xc
     mov.q rdi, [rsp + 0x20]
@@ -271,8 +289,8 @@ w_find_func:
     add rsp, 0x28
     ret
 wpush:
-    add.q [rip + 0xe81], rdi
-    sal.q [rip + 0xe79], 0xa
+    add.q [rip + 0xe71], rdi
+    sal.q [rip + 0xe69], 0xa
     ret
 w_finish:
     sub rsp, 8
@@ -285,14 +303,14 @@ w_finish:
     ret
 main:
     sub rsp, 0x38
-    mov.q [rip + 0xe49], 0
+    mov.q [rip + 0xe39], 0
     xor edi, edi
-    lea rax, [rip + 0xe53]
+    lea rax, [rip + 0xe43]
     mov.q [rsp + 0x18], rax
     mov.q [rsp + 0x20], 0
     mov.q rdx, [rsp + 0x18]
     mov.q rcx, [rsp + 0x20]
-    lea rax, [rip + 0xe34]
+    lea rax, [rip + 0xe24]
     mov.q [rsp + 0x28], rax
     mov.q [rsp + 0x30], 0
     mov.q r9, [rsp + 0x30]
@@ -302,7 +320,7 @@ main:
     mov.q [rsp + 0x10], 4
     mov rsi, 1
     call w_call
-    add.q rax, [rip + 0xddb]
+    add.q rax, [rip + 0xdcb]
     add rsp, 0x38
     ret
 =========== OPT LEVEL: mininal ===========
@@ -329,7 +347,10 @@ w_call:
     jnge 5
     mov.q rax, [rsp + 0x60]
     cmp rax, 1
-    jnl 1
+    setnl al
+    movzx rax, al
+    test al, al
+    jnz 1
     jmp 2
 1:
     mov.q rdi, [rsp + 0x50]
@@ -337,7 +358,10 @@ w_call:
 2:
     mov.q rax, [rsp + 0x60]
     cmp rax, 2
-    jnl 3
+    setnl al
+    movzx rax, al
+    test al, al
+    jnz 3
     jmp 4
 3:
     mov.q rdi, [rsp + 0x58]
@@ -349,7 +373,7 @@ w_call:
     call w_finish
     jmp 6
 5:
-    lea rax, [rip + 0xf0b]
+    lea rax, [rip + 0xef5]
     mov.q [rsp + 0x20], rax
     mov.q [rsp + 0x28], 0xc
     mov.q rdi, [rsp + 0x20]
@@ -378,8 +402,8 @@ w_find_func:
     add rsp, 0x28
     ret
 wpush:
-    add.q [rip + 0xe91], rdi
-    sal.q [rip + 0xe89], 0xa
+    add.q [rip + 0xe79], rdi
+    sal.q [rip + 0xe71], 0xa
     ret
 w_finish:
     mov rax, rdi
@@ -388,14 +412,14 @@ w_finish:
     ret
 main:
     sub rsp, 0x38
-    mov.q [rip + 0xe69], 0
+    mov.q [rip + 0xe51], 0
     xor edi, edi
-    lea rax, [rip + 0xe73]
+    lea rax, [rip + 0xe5b]
     mov.q [rsp + 0x18], rax
     mov.q [rsp + 0x20], 0
     mov.q rdx, [rsp + 0x18]
     mov.q rcx, [rsp + 0x20]
-    lea rax, [rip + 0xe54]
+    lea rax, [rip + 0xe3c]
     mov.q [rsp + 0x28], rax
     mov.q [rsp + 0x30], 0
     mov.q r9, [rsp + 0x30]
@@ -405,7 +429,7 @@ main:
     mov.q [rsp + 0x10], 4
     mov rsi, 1
     call w_call
-    add.q rax, [rip + 0xdfb]
+    add.q rax, [rip + 0xde3]
     add rsp, 0x38
     ret
 =========== OPT LEVEL: moderate-quick ===========
@@ -422,7 +446,10 @@ w_call:
     jnge 5
     mov.q rax, [rsp + 0x30]
     cmp rax, 1
-    jnl 1
+    setnl al
+    movzx rax, al
+    test al, al
+    jnz 1
     jmp 2
 1:
     mov.q rdi, [rsp + 0x20]
@@ -430,7 +457,10 @@ w_call:
 2:
     mov.q rax, [rsp + 0x30]
     cmp rax, 2
-    jnl 3
+    setnl al
+    movzx rax, al
+    test al, al
+    jnz 3
     jmp 4
 3:
     mov.q rdi, [rsp + 0x28]
@@ -442,7 +472,7 @@ w_call:
     call w_finish
     jmp 6
 5:
-    lea rdi, [rip + 0xf25]
+    lea rdi, [rip + 0xf0f]
     mov rsi, 0xc
     call print
     xor eax, eax
@@ -455,8 +485,8 @@ w_find_func:
     mov rax, 0xa
     ret
 wpush:
-    add.q [rip + 0xef1], rdi
-    sal.q [rip + 0xee9], 0xa
+    add.q [rip + 0xed9], rdi
+    sal.q [rip + 0xed1], 0xa
     ret
 w_finish:
     sub rsp, 8
@@ -470,17 +500,17 @@ w_finish:
 main:
     sub rsp, 0x18
     mov rsi, 1
-    mov.q [rip + 0xeb2], 0
+    mov.q [rip + 0xe9a], 0
     mov.q [rsp], 2
     mov.q [rsp + 0x8], 3
     mov.q [rsp + 0x10], 4
-    lea rdx, [rip + 0xea5]
-    lea r8, [rip + 0xe9e]
+    lea rdx, [rip + 0xe8d]
+    lea r8, [rip + 0xe86]
     xor ecx, ecx
     xor edi, edi
     xor r9d, r9d
     call w_call
-    add.q rax, [rip + 0xe75]
+    add.q rax, [rip + 0xe5d]
     add rsp, 0x18
     ret
 =========== OPT LEVEL: moderate ===========
@@ -498,7 +528,10 @@ w_call:
     jnge 5
     mov.q rax, [rsp + 0x30]
     cmp rax, 1
-    jnl 1
+    setnl al
+    movzx rax, al
+    test al, al
+    jnz 1
     jmp 2
 1:
     mov.q rdi, [rsp + 0x20]
@@ -506,7 +539,10 @@ w_call:
 2:
     mov.q rax, [rsp + 0x30]
     cmp rax, 2
-    jnl 3
+    setnl al
+    movzx rax, al
+    test al, al
+    jnz 3
     jmp 4
 3:
     mov.q rdi, [rsp + 0x28]
@@ -518,7 +554,7 @@ w_call:
     call w_finish
     jmp 6
 5:
-    lea rdi, [rip + 0xf35]
+    lea rdi, [rip + 0xf1f]
     mov rsi, 0xc
     call print
     xor eax, eax
@@ -533,8 +569,8 @@ w_find_func:
     mov rax, 0xa
     ret
 wpush:
-    add.q [rip + 0xef9], rdi
-    sal.q [rip + 0xef1], 0xa
+    add.q [rip + 0xee9], rdi
+    sal.q [rip + 0xee1], 0xa
     ret
 w_finish:
     mov rax, rdi
@@ -544,17 +580,17 @@ w_finish:
 main:
     sub rsp, 0x18
     mov rsi, 1
-    mov.q [rip + 0xeca], 0
+    mov.q [rip + 0xeba], 0
     mov.q [rsp], 2
     mov.q [rsp + 0x8], 3
     mov.q [rsp + 0x10], 4
-    lea rdx, [rip + 0xebd]
-    lea r8, [rip + 0xeb6]
+    lea rdx, [rip + 0xead]
+    lea r8, [rip + 0xea6]
     xor ecx, ecx
     xor edi, edi
     xor r9d, r9d
     call w_call
-    add.q rax, [rip + 0xe8d]
+    add.q rax, [rip + 0xe7d]
     add rsp, 0x18
     ret
 =========== OPT LEVEL: all ===========
@@ -572,7 +608,10 @@ w_call:
     jnge 5
     mov.q rax, [rsp + 0x30]
     cmp rax, 1
-    jnl 1
+    setnl al
+    movzx rax, al
+    test al, al
+    jnz 1
     jmp 2
 1:
     mov.q rdi, [rsp + 0x20]
@@ -580,7 +619,10 @@ w_call:
 2:
     mov.q rax, [rsp + 0x30]
     cmp rax, 2
-    jnl 3
+    setnl al
+    movzx rax, al
+    test al, al
+    jnz 3
     jmp 4
 3:
     mov.q rdi, [rsp + 0x28]
@@ -592,7 +634,7 @@ w_call:
     call w_finish
     jmp 6
 5:
-    lea rdi, [rip + 0xf35]
+    lea rdi, [rip + 0xf1f]
     mov rsi, 0xc
     call print
     xor eax, eax
@@ -607,8 +649,8 @@ w_find_func:
     mov rax, 0xa
     ret
 wpush:
-    add.q [rip + 0xef9], rdi
-    sal.q [rip + 0xef1], 0xa
+    add.q [rip + 0xee9], rdi
+    sal.q [rip + 0xee1], 0xa
     ret
 w_finish:
     mov rax, rdi
@@ -618,17 +660,17 @@ w_finish:
 main:
     sub rsp, 0x18
     mov rsi, 1
-    mov.q [rip + 0xeca], 0
+    mov.q [rip + 0xeba], 0
     mov.q [rsp], 2
     mov.q [rsp + 0x8], 3
     mov.q [rsp + 0x10], 4
-    lea rdx, [rip + 0xebd]
-    lea r8, [rip + 0xeb6]
+    lea rdx, [rip + 0xead]
+    lea r8, [rip + 0xea6]
     xor ecx, ecx
     xor edi, edi
     xor r9d, r9d
     call w_call
-    add.q rax, [rip + 0xe8d]
+    add.q rax, [rip + 0xe7d]
     add rsp, 0x18
     ret
 =========== OPT LEVEL: aggresive ===========

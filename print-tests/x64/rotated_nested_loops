@@ -14,10 +14,13 @@ main:
     imul rbp, rbx
     mov rsi, rbx
     add rsi, 1
+    cmp rsi, 3
+    setnle dil
+    movzx rdi, dil
     mov.q rax, [rsp + 0x8]
     add rax, rbp
-    cmp rsi, 3
-    jnle 3
+    test dil, dil
+    jnz 3
     mov.q [rsp + 0x8], rax
     mov rbx, rsi
     jmp 2
@@ -41,12 +44,15 @@ main:
 1:
     xor edx, edx
 2:
-    mov rsi, rcx
-    imul rsi, rdx
+    mov rdi, rcx
+    imul rdi, rdx
     add rdx, 1
-    add rax, rsi
     cmp rdx, 3
-    jnle 3
+    setnle sil
+    movzx rsi, sil
+    add rax, rdi
+    test sil, sil
+    jnz 3
     jmp 2
 3:
     add rcx, 1
@@ -71,10 +77,13 @@ main:
     imul rbp, rbx
     mov rsi, rbx
     add rsi, 1
+    cmp rsi, 3
+    setnle dil
+    movzx rdi, dil
     mov.q rax, [rsp + 0x8]
     add rax, rbp
-    cmp rsi, 3
-    jnle 3
+    test dil, dil
+    jnz 3
     mov.q [rsp + 0x8], rax
     mov rbx, rsi
     jmp 2
@@ -98,12 +107,15 @@ main:
 1:
     xor edx, edx
 2:
-    mov rsi, rcx
-    imul rsi, rdx
+    mov rdi, rcx
+    imul rdi, rdx
     add rdx, 1
-    add rax, rsi
     cmp rdx, 3
-    jnle 3
+    setnle sil
+    movzx rsi, sil
+    add rax, rdi
+    test sil, sil
+    jnz 3
     jmp 2
 3:
     add rcx, 1
@@ -128,10 +140,13 @@ main:
     imul rbp, rbx
     mov rsi, rbx
     add rsi, 1
+    cmp rsi, 3
+    setnle dil
+    movzx rdi, dil
     mov.q rax, [rsp + 0x8]
     add rax, rbp
-    cmp rsi, 3
-    jnle 3
+    test dil, dil
+    jnz 3
     mov.q [rsp + 0x8], rax
     mov rbx, rsi
     jmp 2
@@ -155,12 +170,15 @@ main:
 1:
     xor edx, edx
 2:
-    mov rsi, rcx
-    imul rsi, rdx
+    mov rdi, rcx
+    imul rdi, rdx
     add rdx, 1
-    add rax, rsi
     cmp rdx, 3
-    jnle 3
+    setnle sil
+    movzx rsi, sil
+    add rax, rdi
+    test sil, sil
+    jnz 3
     jmp 2
 3:
     add rcx, 1
@@ -176,14 +194,17 @@ main:
 1:
     xor edx, edx
 2:
-    mov rdi, rcx
-    imul rdi, rdx
+    mov r8, rcx
+    imul r8, rdx
     add rdx, 1
-    mov rax, rsi
-    add rax, rdi
     cmp rdx, 3
+    setnle dil
+    movzx rdi, dil
+    mov rax, rsi
+    add rax, r8
     mov rsi, rax
-    jng 2
+    test dil, dil
+    jz 2
     add rcx, 1
     cmp rcx, 3
     mov rsi, rax

@@ -26,7 +26,10 @@ main:
     mov.q [rsp + 0x10], rax
     mov.q rcx, [rsp + 0x10]
     cmp rcx, 8
-    jnl 5
+    setnl cl
+    movzx rcx, cl
+    test cl, cl
+    jnz 5
     mov.q rcx, [rsp + 0x10]
     add rcx, 1
     mov.q [rsp + 0x18], rcx
@@ -55,7 +58,10 @@ main:
     mov.q [rsp + 0x18], rax
     mov.q rdx, [rsp + 0x10]
     cmp rdx, 8
-    jnl 7
+    setnl dl
+    movzx rdx, dl
+    test dl, dl
+    jnz 7
     mov.q rdx, [rsp + 0x10]
     add rdx, 1
     mov.q [rsp + 0x20], rdx
@@ -102,7 +108,10 @@ main:
     xor eax, eax
 4:
     cmp rax, 8
-    jnl 5
+    setnl cl
+    movzx rcx, cl
+    test cl, cl
+    jnz 5
     mov rsi, rax
     add rsi, 1
     mov rdx, rsi
@@ -123,7 +132,10 @@ main:
     xor eax, eax
 6:
     cmp rax, 8
-    jnl 7
+    setnl cl
+    movzx rcx, cl
+    test cl, cl
+    jnz 7
     mov rsi, rax
     add rsi, 1
     movzx.b ecx, [rsp + rax + 0x8]
@@ -167,7 +179,10 @@ main:
     mov.q [rsp + 0x10], rax
     mov.q rcx, [rsp + 0x10]
     cmp rcx, 8
-    jnl 5
+    setnl cl
+    movzx rcx, cl
+    test cl, cl
+    jnz 5
     mov.q rcx, [rsp + 0x10]
     add rcx, 1
     mov.q [rsp + 0x18], rcx
@@ -190,7 +205,10 @@ main:
     mov.q [rsp + 0x18], rax
     mov.q rdx, [rsp + 0x18]
     cmp rdx, 8
-    jnl 7
+    setnl dl
+    movzx rdx, dl
+    test dl, dl
+    jnz 7
     mov.q rdx, [rsp + 0x18]
     add rdx, 1
     mov.q [rsp + 0x20], rdx
@@ -238,7 +256,10 @@ main:
     xor eax, eax
 4:
     cmp rax, 8
-    jnl 5
+    setnl cl
+    movzx rcx, cl
+    test cl, cl
+    jnz 5
     mov rsi, rax
     add rsi, 1
     mov rdx, rsi
@@ -255,7 +276,10 @@ main:
     xor eax, eax
 6:
     cmp rcx, 8
-    jnl 7
+    setnl dl
+    movzx rdx, dl
+    test dl, dl
+    jnz 7
     mov rsi, rcx
     add rsi, 1
     movzx.b edx, [rsp + rcx + 0x8]
@@ -292,7 +316,10 @@ main:
     mov.q [rsp + 0x10], rax
     mov.q rcx, [rsp + 0x10]
     cmp rcx, 8
-    jnl 5
+    setnl cl
+    movzx rcx, cl
+    test cl, cl
+    jnz 5
     mov.q rcx, [rsp + 0x10]
     add rcx, 1
     mov.q [rsp + 0x18], rcx
@@ -315,7 +342,10 @@ main:
     mov.q [rsp + 0x18], rax
     mov.q rdx, [rsp + 0x18]
     cmp rdx, 8
-    jnl 7
+    setnl dl
+    movzx rdx, dl
+    test dl, dl
+    jnz 7
     mov.q rdx, [rsp + 0x18]
     add rdx, 1
     mov.q [rsp + 0x20], rdx
@@ -357,7 +387,10 @@ main:
     xor eax, eax
 4:
     cmp rax, 8
-    jnl 5
+    setnl cl
+    movzx rcx, cl
+    test cl, cl
+    jnz 5
     mov rsi, rax
     add rsi, 1
     mov rdx, rsi
@@ -374,7 +407,10 @@ main:
     xor eax, eax
 6:
     cmp rcx, 8
-    jnl 7
+    setnl dl
+    movzx rdx, dl
+    test dl, dl
+    jnz 7
     mov rsi, rcx
     add rsi, 1
     movzx.b edx, [rsp + rcx + 0x8]
@@ -416,7 +452,10 @@ main:
     mov.b [rsp + rcx], sil
     mov.b [rsp + rcx + 0x8], 0x64
     cmp rax, 8
-    jnge 4
+    setnl cl
+    movzx rcx, cl
+    test cl, cl
+    jz 4
     lea rsi, [rsp]
     lea rdi, [rsp + 0x8]
     mov rdx, 4
@@ -425,13 +464,16 @@ main:
     xor eax, eax
 5:
     mov rdx, rax
-    movzx.b esi, [rsp + rcx + 0x8]
+    movzx.b edi, [rsp + rcx + 0x8]
     add rcx, 1
-    imul rsi, rcx
-    add rdx, rsi
+    imul rdi, rcx
     cmp rcx, 8
+    setnl sil
+    movzx rsi, sil
+    add rdx, rdi
     mov rax, rdx
-    jnge 5
+    test sil, sil
+    jz 5
     mov rcx, 0xfb
     mov rax, rdx
     cqo
@@ -452,26 +494,35 @@ main:
     mov.b [rsp + rax], cl
     mov.b [rsp + rax + 0x8], 0x64
     cmp rdx, 8
+    setnl cl
+    movzx rcx, cl
     mov rax, rdx
-    jnge 1
+    test cl, cl
+    jz 1
     xor eax, eax
 2:
     movzx.b ecx, [rsp + rax*2]
     mov.b [rsp + rax*2 + 0x8], cl
     add rax, 1
     cmp rax, 4
-    jnge 2
-    xor edx, edx
+    setnl cl
+    movzx rcx, cl
+    test cl, cl
+    jz 2
     xor ecx, ecx
+    xor edx, edx
 3:
-    movzx.b esi, [rsp + rdx + 0x8]
-    add rdx, 1
-    imul rsi, rdx
-    mov rax, rcx
-    add rax, rsi
-    cmp rdx, 8
-    mov rcx, rax
-    jnge 3
+    movzx.b edi, [rsp + rcx + 0x8]
+    add rcx, 1
+    imul rdi, rcx
+    cmp rcx, 8
+    setnl sil
+    movzx rsi, sil
+    mov rax, rdx
+    add rax, rdi
+    mov rdx, rax
+    test sil, sil
+    jz 3
     mov rcx, 0xfb
     cqo
     idiv rcx

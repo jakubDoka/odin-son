@@ -5,7 +5,6 @@ import "../vendored/gam/util/bit_arr"
 import "base:runtime"
 import "core:fmt"
 import "core:log"
-import "core:os"
 import "core:slice"
 
 Basic_Block :: struct {
@@ -54,7 +53,9 @@ get_idom_node :: proc(graph: ^Proc, node: ^Node) -> Node_ID {
 	     .Call,
 	     .Call_End,
 	     .Trap,
-	     .Always:
+	     .Always,
+	     .Dbg_Scope,
+	     .Dbg_Scope_End:
 		return inps[0]
 	case .Region:
 		fmt.assertf(len(inps) > 1, "wut %v", node)
@@ -95,7 +96,9 @@ get_idepth_node :: proc(graph: ^Proc, node: ^Node) -> u32 {
 	     .Call_End,
 	     .Call,
 	     .Trap,
-	     .Always:
+	     .Always,
+	     .Dbg_Scope,
+	     .Dbg_Scope_End:
 		extra.idepth = 1 + get_idepth(graph, inps[0])
 	case .Region:
 		mx: u32
@@ -523,7 +526,13 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 
 		if free {
 			for cursor := lca; cursor != ctx.early_schedules[node.gvn]; {
-				fmt.assertf(cursor != 0, "%v %v", node, lca)
+				fmt.assertf(
+					cursor != 0,
+					"%v %v %v",
+					node,
+					lca,
+					ctx.early_schedules[node.gvn],
+				)
 				cursor = get_idom(ctx.graph, cursor)
 				lca = better(ctx, lctx, lca, cursor)
 			}
@@ -736,7 +745,7 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 	gs.bbs = bbs
 
 	if 0 == 1 {
-		display_graph(os.to_writer(os.stderr), graph, gs)
+		//display_graph(os.to_writer(os.stderr), graph, gs)
 		// 	if has_unscheduled do panic("")
 	}
 

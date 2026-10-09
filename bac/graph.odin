@@ -114,17 +114,12 @@ Sloc :: bit_field u64 {
 	range: u32 | 8,
 }
 
+D_Node_User_ID :: distinct u32
+
 D_Node :: struct #align (4) {
 	using sloc: Sloc,
-	using meta: bit_field u32 {
-		gdn: u32 | 32,
-	},
-	binding:    [0]D_Binding,
-}
-
-D_Binding :: struct #align (4) {
-	name: string,
-	type: D_Type,
+	gdn:        u32,
+	user_id:    D_Node_User_ID,
 }
 
 D_Type :: enum u64 {}
@@ -214,6 +209,9 @@ when SPEC_NOT_PRESENT {
 		Ctz,
 		Simd_Extract_Lsbs,
 		Simd_Reduce_Add_Bisect,
+		Dbg_Assign,
+		Dbg_Scope,
+		Dbg_Scope_End,
 	}
 
 	inherit_idx_of :: proc($T: typeid) -> u8 {return 0}
@@ -746,7 +744,8 @@ compact :: proc(graph: ^Proc) {
 		node.output_cap = node.output_count
 
 		new_node, id := shallow_clone(graph, node)
-		init_counts(graph, new_node)
+		new_node.gvn = graph.gvn
+		graph.gvn += 1
 
 		assert(node.gvn == new_node.gvn)
 
@@ -972,7 +971,7 @@ mount_peep_node :: proc(graph: ^Proc, node: ^Node) {
 
 schedule_peeps :: proc(graph: ^Proc, schedule: ^Schedule) {
 	for &bb in schedule.bbs {
-		for &instr, i in bb.instrs[:len(bb.instrs) - 1] {
+		for &instr, i in bb.instrs {
 			node := expand_node(graph, instr)
 			mount_peep_node(graph, node)
 			new_node := graph.post_schedule_peep({graph, bb.instrs[:i]}, node)
@@ -1699,6 +1698,8 @@ subsume :: proc(graph: ^Proc, with: Node_ID, target: Node_ID) {
 		return
 	}
 
+	wnode.stable_id = tnode.stable_id
+
 	assert(with != target)
 
 	ensure_available_output_cap(graph, wnode, tnode.output_count)
@@ -1949,6 +1950,11 @@ get_dnode :: #force_inline proc(graph: ^Proc, id: D_Node_ID) -> ^D_Node {
 	return id == 0 ? &NIL_DNODE : vl
 }
 
+get_dnode_of :: #force_inline proc(graph: ^Proc, node: Node_ID) -> ^D_Node {
+	id := get_dbg_slot(graph, get_node(graph, node))^
+	return get_dnode(graph, id)
+}
+
 @(rodata)
 NIL_NODE: struct {
 	using base: Node,
@@ -2017,7 +2023,8 @@ get_tag :: proc(graph: ^Proc, node: Node_ID) -> ^Tag {
 	}
 }
 
-get_dbg_slot :: proc(graph: ^Proc, node: ^Node) -> ^D_Node_ID {
+@(tag = "node_proc")
+get_dbg_slot_node :: proc(graph: ^Proc, node: ^Node) -> ^D_Node_ID {
 	assert(int(node.rtype) < len(graph.node_extra_sizes))
 	pos := graph.node_extra_sizes[node.rtype] + u8(node.extra_dwords)
 	ptr := &([^]D_Node_ID)(&node.extra)[pos]
@@ -2026,15 +2033,22 @@ get_dbg_slot :: proc(graph: ^Proc, node: ^Node) -> ^D_Node_ID {
 	return nl
 }
 
-add_debug_node :: proc(graph: ^Proc, sloc: Sloc) -> D_Node_ID {
+add_dnode :: proc(
+	graph: ^Proc,
+	sloc: Sloc,
+	user_id: D_Node_User_ID,
+) -> D_Node_ID {
 	id := D_Node_ID(graph.mem.pos / PRECISION)
 
 	size := size_of(D_Node)
 	slot := arna.alloc(graph.mem, uint(size), PRECISION)
 
 	dnode := (^D_Node)(raw_data(slot))
-	dnode.sloc = sloc
-	dnode.gdn = graph.gdn
+	dnode^ = {
+		sloc    = sloc,
+		gdn     = graph.gdn,
+		user_id = user_id,
+	}
 
 	graph.gdn += 1
 
@@ -2103,7 +2117,7 @@ add_raw :: proc(
 }
 
 @(deferred_out = pop_sloc)
-get_sloc_scope :: proc(
+sloc_scope :: proc(
 	graph: ^Proc,
 	sloc: D_Node_ID,
 ) -> (

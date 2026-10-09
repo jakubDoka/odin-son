@@ -760,6 +760,20 @@ inline_and_optimize :: proc(
 	return inline_count != 0
 }
 
+add_var :: proc(ctx: ^Gen_Ctx, var: typecheck.Variable) {
+	append(&ctx.scope, var)
+	append(&ctx.decls, typecheck.Local_Decl{var.name, var.type})
+}
+
+push_scope_value :: proc(
+	ctx: ^Gen_Ctx,
+	name: ^ast.Node,
+	value: Node_ID,
+) -> int {
+	sloc := ctx_sloc_of(ctx, name, auto_cast len(ctx.decls))
+	return builder.push_scope_value(ctx, ctx.node_scope, value, sloc)
+}
+
 emit_proc :: proc(
 	ctx: ^Gen_Ctx,
 	i: int,
@@ -802,7 +816,7 @@ emit_proc :: proc(
 	rmem := builder.init_graph(ctx)
 
 	ctx.node_scope = builder.add_scope(ctx, "scope", ctx.entry)
-	ctx.mem_slot = builder.push_scope_value(ctx, ctx.node_scope, rmem)
+	ctx.mem_slot = push_scope_value(ctx, nil, rmem)
 
 	rabi := typecheck.ret_abi(prc.rets[:])
 	ctx.ret_ptrs = nil
@@ -828,15 +842,12 @@ emit_proc :: proc(
 
 		value_idx: typecheck.Varuable_Idx
 		if apa.scalar && !apa.by_ptr {
-			value_idx = builder.push_scope_value(ctx, ctx.node_scope, value)
+			value_idx = push_scope_value(ctx, name, value)
 		} else {
 			value_idx = value
 		}
 
-		append(
-			&ctx.scope,
-			typecheck.Variable{name.name, value_idx, par, nil, {}},
-		)
+		add_var(ctx, {name.name, value_idx, par, nil, {}})
 	}
 
 	for j in 0 ..< rabi.srets_start {
@@ -885,13 +896,13 @@ opt :: proc(ctx: ^bac.Proc) {
 		dirty = false
 		DEBUG_OPT :: false
 		dirty |= bac.apply_peeps(peep_ctx)
-		if DEBUG_OPT do fmt.println("peeps:", dirty)
+		when DEBUG_OPT do fmt.println("peeps:", dirty)
 		dirty |= builder.memopt(ctx)
-		if DEBUG_OPT do fmt.println("memopt:", dirty)
+		when DEBUG_OPT do fmt.println("memopt:", dirty)
 		dirty |= bac.apply_peeps(peep_ctx)
-		if DEBUG_OPT do fmt.println("peeps:", dirty)
+		when DEBUG_OPT do fmt.println("peeps:", dirty)
 		dirty |= builder.loopopt(ctx)
-		if DEBUG_OPT do fmt.println("loopopt:", dirty)
+		when DEBUG_OPT do fmt.println("loopopt:", dirty)
 	}
 }
 
@@ -970,22 +981,29 @@ emit_stmts :: proc(
 	}
 	assert(base.gen <= len(ctx.scope))
 	resize(&ctx.scope, base.gen)
-	builder.truncate_inputs(ctx, ctx.node_scope, base.node)
+	builder.truncate_scope(ctx, ctx.node_scope, base.node)
 }
 
-ctx_sloc_of :: proc(ctx: ^Gen_Ctx, node: ^ast.Node) -> bac.D_Node_ID {
-	sloc := bac.Sloc {
-		file = u32(ctx.file_id),
-		line = u32(node.pos.line),
-		col  = u32(node.pos.column),
+ctx_sloc_of :: proc(
+	ctx: ^Gen_Ctx,
+	node: ^ast.Node,
+	user_id: typecheck.Local_Decl_ID,
+) -> bac.D_Node_ID {
+	if node == nil do return 0
+
+	slck := typecheck.Sloc_Key {
+		file    = u32(ctx.file_id),
+		line    = u32(node.pos.line),
+		col     = u32(node.pos.column),
+		user_id = user_id,
 	}
 
-	if e, ok := ctx.slocs[sloc]; ok {
+	if e, ok := ctx.slocs[slck]; ok {
 		return e
 	}
 
-	e := bac.add_debug_node(ctx, sloc)
-	ctx.slocs[sloc] = e
+	e := bac.add_dnode(ctx, slck.sloc, slck.user_id)
+	ctx.slocs[slck] = e
 
 	return e
 }
@@ -1023,7 +1041,8 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 	meta := typecheck.get_node_meta(node)
 	ty := meta.type
 	dt := type_to_dt(ty)
-	sloc := ctx_sloc_of(ctx, node)
+
+	sloc := ctx_sloc_of(ctx, node, 0)
 
 	if meta.known {
 		return emit_known(ctx, prop, meta)
@@ -1036,7 +1055,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		return vl.id, vl.is_lvalue
 	}
 
-	bac.get_sloc_scope(ctx, sloc)
+	bac.sloc_scope(ctx, sloc)
 	context.allocator, _ = arna.scrath()
 
 	#partial match: switch d in node.derived {
@@ -1359,11 +1378,8 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 					)
 				} else {
 					get_node(ctx, r.id).name = name
-					idx := builder.push_scope_value(ctx, ctx.node_scope, r.id)
-					append(
-						&ctx.scope,
-						typecheck.Variable{name, idx, vty, d.names[i], flags},
-					)
+					idx := push_scope_value(ctx, d.names[i], r.id)
+					add_var(ctx, {name, idx, vty, d.names[i], flags})
 				}
 			}
 			break
@@ -1472,11 +1488,8 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				)
 
 				get_node(ctx, value).name = name
-				idx := builder.push_scope_value(ctx, ctx.node_scope, value)
-				append(
-					&ctx.scope,
-					typecheck.Variable{name, idx, vty, d.names[i], flags},
-				)
+				idx := push_scope_value(ctx, d.names[i], value)
+				add_var(ctx, {name, idx, vty, d.names[i], flags})
 			}
 		}
 	case ^ast.Comp_Lit:
@@ -1822,7 +1835,11 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		sbase := ctx_scope_base(ctx)
 
 		iinit := bac.add_c_int(ctx, "rz", .I64, 0)
-		idx_slot := builder.push_scope_value(ctx, ctx.node_scope, iinit)
+		idx_slot := push_scope_value(
+			ctx,
+			slice.get(d.vals, 1) or_else {},
+			iinit,
+		)
 
 		loop_state: typecheck.Loop_State
 		loop_state.label = typecheck.src_of(ctx.file^, d.label)
@@ -2180,7 +2197,7 @@ emit_call :: proc(
 	ptr: Node_ID,
 	out_slots: []Node_ID,
 	res_scratch: runtime.Allocator,
-	prop_dest: Node_ID = 0,
+	dest: Node_ID = 0,
 ) -> []Value {
 	context.allocator, _ = arna.scrath(res_scratch)
 	sig := sig
@@ -2301,7 +2318,7 @@ emit_call :: proc(
 		res_idx := len(rabi.extras) + j
 
 		ty := rets[res_idx]
-		dest := out_slots != nil ? out_slots[res_idx] : prop_dest
+		dest := out_slots != nil ? out_slots[res_idx] : dest
 		dt := type_to_dt(ty)
 
 		if dt == .Void {

@@ -100,6 +100,9 @@ SPEC := bac.Node_Spec{
 		0b10, // Ctz
 		0b10, // Simd_Extract_Lsbs
 		0b10, // Simd_Reduce_Add_Bisect
+		0b10, // Dbg_Assign
+		0b1, // Dbg_Scope
+		0b1, // Dbg_Scope_End
 		0b10, // Msub
 	},
 	node_extra_sizes = {
@@ -184,6 +187,9 @@ SPEC := bac.Node_Spec{
 		0, // Ctz -> No_Extra
 		0, // Simd_Extract_Lsbs -> No_Extra
 		0, // Simd_Reduce_Add_Bisect -> No_Extra
+		0, // Dbg_Assign -> No_Extra
+		1, // Dbg_Scope -> Cfg
+		1, // Dbg_Scope_End -> Cfg
 		0, // Msub -> No_Extra
 	},
 	node_flags = {
@@ -268,6 +274,9 @@ SPEC := bac.Node_Spec{
 		{Class_Flag.Interned}, // Ctz
 		{Class_Flag.Interned}, // Simd_Extract_Lsbs
 		{Class_Flag.Interned}, // Simd_Reduce_Add_Bisect
+		{}, // Dbg_Assign
+		{}, // Dbg_Scope
+		{Class_Flag.Is_Basic_Block_Start}, // Dbg_Scope_End
 		{}, // Msub
 	},
 	node_extra_types = {
@@ -353,6 +362,9 @@ SPEC := bac.Node_Spec{
 		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
+		bac.Cfg,
+		bac.Cfg,
+		bac.No_Extra,
 	},
 	node_kind_name = {
 		`Nil`,
@@ -436,6 +448,9 @@ SPEC := bac.Node_Spec{
 		`Ctz`,
 		`Simd_Extract_Lsbs`,
 		`Simd_Reduce_Add_Bisect`,
+		`Dbg_Assign`,
+		`Dbg_Scope`,
+		`Dbg_Scope_End`,
 		`Msub`,
 	},
 }
@@ -522,6 +537,9 @@ Node_Type :: enum u16 {
 	Ctz,
 	Simd_Extract_Lsbs,
 	Simd_Reduce_Add_Bisect,
+	Dbg_Assign,
+	Dbg_Scope,
+	Dbg_Scope_End,
 	Msub,
 }
 
@@ -627,6 +645,9 @@ collect_meta :: proc(ctx: ^bac.Proc,
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
+#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
+#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
+#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 add_msub :: #force_inline proc(graph: ^bac.Proc, name: string, dt: bac.Node_Datatype, multiplicant: bac.Node_ID, multiplier: bac.Node_ID, subtractant: bac.Node_ID) -> (_id: bac.Node_ID) {
 	return bac.add_raw(graph, name, u16(Node_Type.Msub), dt, {multiplicant, multiplier, subtractant})

@@ -46,7 +46,10 @@ test_unsigned:
     cmp rdi, rsi
     jc 13
     cmp rdi, rsi
-    jnc 12
+    setnc al
+    movzx rax, al
+    test al, al
+    jnz 12
     cmp rdi, rsi
     jnbe 11
     cmp rdi, rsi
@@ -211,7 +214,10 @@ test_unsigned:
     cmp rdi, rsi
     jc 13
     cmp rdi, rsi
-    jnc 12
+    setnc al
+    movzx rax, al
+    test al, al
+    jnz 12
     cmp rdi, rsi
     jnbe 11
     cmp rdi, rsi
@@ -381,7 +387,10 @@ test_unsigned:
     cmp rdi, rsi
     jc 13
     cmp rdi, rsi
-    jnc 12
+    setnc al
+    movzx rax, al
+    test al, al
+    jnz 12
     cmp rdi, rsi
     jnbe 11
     cmp rdi, rsi
@@ -546,7 +555,10 @@ test_unsigned:
     cmp rdi, rsi
     jc 13
     cmp rdi, rsi
-    jnc 12
+    setnc al
+    movzx rax, al
+    test al, al
+    jnz 12
     cmp rdi, rsi
     jnbe 11
     cmp rdi, rsi
@@ -716,7 +728,10 @@ test_unsigned:
     cmp rdi, rsi
     jc 13
     cmp rdi, rsi
-    jnc 12
+    setnc al
+    movzx rax, al
+    test al, al
+    jnz 12
     cmp rdi, rsi
     jnbe 11
     cmp rdi, rsi
@@ -883,7 +898,10 @@ test_unsigned:
     cmp rdi, rsi
     jc 13
     cmp rdi, rsi
-    jnc 12
+    setnc al
+    movzx rax, al
+    test al, al
+    jnz 12
     cmp rdi, rsi
     jnbe 11
     cmp rdi, rsi
@@ -1051,7 +1069,10 @@ test_unsigned:
     cmp rdi, rsi
     jc 13
     cmp rdi, rsi
-    jnc 12
+    setnc al
+    movzx rax, al
+    test al, al
+    jnz 12
     cmp rdi, rsi
     jnbe 11
     cmp rdi, rsi
@@ -1210,30 +1231,40 @@ test_signed:
     ret
 test_unsigned:
     cmp rdi, rsi
-    jz +0x71
+    jz 14
     cmp rdi, rsi
-    jnz +0x5c
+    jnz 13
     cmp rdi, rsi
-    jc +0x47
+    jc 12
     cmp rdi, rsi
-    jnc +0x32
+    setnc al
+    movzx rax, al
+    test al, al
+    jnz 11
     cmp rdi, rsi
-    jnbe +0x1d
+    jnbe 10
     cmp rdi, rsi
-    jbe +0x8
+    jbe 9
     xor eax, eax
-    jmp +0x43
+    jmp 15
+9:
     mov rax, 0x3c
-    jmp +0x37
+    jmp 15
+10:
     mov rax, 0x32
-    jmp +0x2b
+    jmp 15
+11:
     mov rax, 0x28
-    jmp +0x1f
+    jmp 15
+12:
     mov rax, 0x1e
-    jmp +0x13
+    jmp 15
+13:
     mov rax, 0x14
-    jmp +0x7
+    jmp 15
+14:
     mov rax, 0xa
+15:
     ret
 main:
     push rbx

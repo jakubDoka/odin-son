@@ -101,6 +101,9 @@ SPEC := bac.Node_Spec{
 		0b10, // Ctz
 		0b10, // Simd_Extract_Lsbs
 		0b10, // Simd_Reduce_Add_Bisect
+		0b10, // Dbg_Assign
+		0b1, // Dbg_Scope
+		0b1, // Dbg_Scope_End
 		0b1000000, // WASM_Store
 		0b1000000, // WASM_Load
 		0b10, // Get_Local
@@ -192,6 +195,9 @@ SPEC := bac.Node_Spec{
 		0, // Ctz -> No_Extra
 		0, // Simd_Extract_Lsbs -> No_Extra
 		0, // Simd_Reduce_Add_Bisect -> No_Extra
+		0, // Dbg_Assign -> No_Extra
+		1, // Dbg_Scope -> Cfg
+		1, // Dbg_Scope_End -> Cfg
 		2, // WASM_Store -> Mem_Op
 		2, // WASM_Load -> Mem_Op
 		0, // Get_Local -> No_Extra
@@ -283,6 +289,9 @@ SPEC := bac.Node_Spec{
 		{Class_Flag.Interned}, // Ctz
 		{Class_Flag.Interned}, // Simd_Extract_Lsbs
 		{Class_Flag.Interned}, // Simd_Reduce_Add_Bisect
+		{}, // Dbg_Assign
+		{}, // Dbg_Scope
+		{Class_Flag.Is_Basic_Block_Start}, // Dbg_Scope_End
 		{Class_Flag.Store}, // WASM_Store
 		{Class_Flag.Load}, // WASM_Load
 		{}, // Get_Local
@@ -374,6 +383,9 @@ SPEC := bac.Node_Spec{
 		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
+		bac.No_Extra,
+		bac.Cfg,
+		bac.Cfg,
 		Mem_Op,
 		Mem_Op,
 		bac.No_Extra,
@@ -465,6 +477,9 @@ SPEC := bac.Node_Spec{
 		`Ctz`,
 		`Simd_Extract_Lsbs`,
 		`Simd_Reduce_Add_Bisect`,
+		`Dbg_Assign`,
+		`Dbg_Scope`,
+		`Dbg_Scope_End`,
 		`WASM_Store`,
 		`WASM_Load`,
 		`Get_Local`,
@@ -558,6 +573,9 @@ Node_Type :: enum u16 {
 	Ctz,
 	Simd_Extract_Lsbs,
 	Simd_Reduce_Add_Bisect,
+	Dbg_Assign,
+	Dbg_Scope,
+	Dbg_Scope_End,
 	WASM_Store,
 	WASM_Load,
 	Get_Local,
@@ -670,6 +688,9 @@ collect_meta :: proc(ctx: ^bac.Proc,
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
+#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
+#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
+#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
 #assert(size_of(Mem_Op) % bac.PRECISION == 0)
 #assert(size_of(Mem_Op) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)

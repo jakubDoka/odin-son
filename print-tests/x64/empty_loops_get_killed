@@ -6,7 +6,10 @@ main:
     mov.q [rsp + 0x10], rax
     mov.q rcx, [rsp + 0x10]
     cmp rcx, 0xa
-    jnl 2
+    setnl cl
+    movzx rcx, cl
+    test cl, cl
+    jnz 2
     mov.q rcx, [rsp + 0x10]
     add rcx, 1
     mov rax, rcx
@@ -15,13 +18,16 @@ main:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0x10
-    call -0x65
+    call -0x70
     xor eax, eax
 3:
     mov.q [rsp + 0x10], rax
     mov.q rcx, [rsp + 0x10]
     cmp rcx, 0x10
-    jnl 4
+    setnl cl
+    movzx rcx, cl
+    test cl, cl
+    jnz 4
     mov.q rcx, [rsp + 0x10]
     mov.b [rsp + rcx], 1
     mov.q rcx, [rsp + 0x10]
@@ -38,18 +44,24 @@ main:
     xor eax, eax
 1:
     cmp rax, 0xa
-    jnl 2
+    setnl cl
+    movzx rcx, cl
+    test cl, cl
+    jnz 2
     add rax, 1
     jmp 1
 2:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0x10
-    call -0x53
+    call -0x5e
     xor eax, eax
 3:
     cmp rax, 0x10
-    jnl 4
+    setnl cl
+    movzx rcx, cl
+    test cl, cl
+    jnz 4
     mov.b [rsp + rax], 1
     add rax, 1
     jmp 3
@@ -65,7 +77,10 @@ main:
     mov.q [rsp + 0x10], rax
     mov.q rcx, [rsp + 0x10]
     cmp rcx, 0xa
-    jnl 2
+    setnl cl
+    movzx rcx, cl
+    test cl, cl
+    jnz 2
     mov.q rcx, [rsp + 0x10]
     add rcx, 1
     mov rax, rcx
@@ -74,13 +89,16 @@ main:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0x10
-    call -0x65
+    call -0x70
     xor eax, eax
 3:
     mov.q [rsp + 0x10], rax
     mov.q rcx, [rsp + 0x10]
     cmp rcx, 0x10
-    jnl 4
+    setnl cl
+    movzx rcx, cl
+    test cl, cl
+    jnz 4
     mov.q rcx, [rsp + 0x10]
     mov.b [rsp + rcx], 1
     mov.q rcx, [rsp + 0x10]
@@ -97,18 +115,24 @@ main:
     xor eax, eax
 1:
     cmp rax, 0xa
-    jnl 2
+    setnl cl
+    movzx rcx, cl
+    test cl, cl
+    jnz 2
     add rax, 1
     jmp 1
 2:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0x10
-    call -0x53
+    call -0x5e
     xor eax, eax
 3:
     cmp rax, 0x10
-    jnl 4
+    setnl cl
+    movzx rcx, cl
+    test cl, cl
+    jnz 4
     mov.b [rsp + rax], 1
     add rax, 1
     jmp 3
@@ -118,13 +142,17 @@ main:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 main:
-    sub rsp, 0x18
+    push rbx
+    sub rsp, 0x10
     xor eax, eax
     xor ecx, ecx
 1:
     mov rdx, rcx
     cmp rdx, 0xa
-    jnl 2
+    setnl bl
+    movzx rbx, bl
+    test bl, bl
+    jnz 2
     add rdx, 1
     mov rcx, rdx
     jmp 1
@@ -134,12 +162,16 @@ main:
     xor ecx, ecx
 3:
     cmp rcx, 0x10
-    jnl 4
+    setnl dl
+    movzx rdx, dl
+    test dl, dl
+    jnz 4
     mov.b [rsp + rcx], 1
     add rcx, 1
     jmp 3
 4:
-    add rsp, 0x18
+    add rsp, 0x10
+    pop rbx
     ret
 =========== OPT LEVEL: moderate ===========
 main:
@@ -148,7 +180,10 @@ main:
     xor ecx, ecx
 1:
     cmp rcx, 0xa
-    jnl 2
+    setnl dl
+    movzx rdx, dl
+    test dl, dl
+    jnz 2
     add rcx, 1
     jmp 1
 2:
@@ -157,7 +192,10 @@ main:
     xor ecx, ecx
 3:
     cmp rcx, 0x10
-    jnl 4
+    setnl dl
+    movzx rdx, dl
+    test dl, dl
+    jnz 4
     mov.b [rsp + rcx], 1
     add rcx, 1
     jmp 3

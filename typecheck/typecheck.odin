@@ -48,6 +48,11 @@ Target :: struct {
 	emit: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8,
 }
 
+Sloc_Key :: struct {
+	using sloc: bac.Sloc,
+	user_id:    Local_Decl_ID,
+}
+
 Gen_Ctx :: struct {
 	using global: ^Global_Ctx,
 	using types:  ^Types,
@@ -61,7 +66,7 @@ Gen_Ctx :: struct {
 	prc:          Proc_ID,
 	ret_ptrs:     []Node_ID,
 	poly_types:   #soa[dynamic]Poly_Entry,
-	slocs:        map[bac.Sloc]bac.D_Node_ID,
+	slocs:        map[Sloc_Key]bac.D_Node_ID,
 	eval_depth:   int,
 	type_depth:   int,
 	error_cnt:    int,
@@ -70,6 +75,14 @@ Gen_Ctx :: struct {
 	stack_top:    uintptr,
 	depht:        int,
 	ralloc_mode:  ra.Mode,
+	decls:        [dynamic]Local_Decl,
+}
+
+Local_Decl_ID :: bac.D_Node_User_ID
+
+Local_Decl :: struct {
+	name: string,
+	type: Type,
 }
 
 Poly_Entry :: struct {

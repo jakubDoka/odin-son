@@ -39,7 +39,10 @@ main:
     div rcx
     mov rax, rax
     cmp rax, 0x14
-    jnbe 5
+    setnbe al
+    movzx rax, al
+    test al, al
+    jnz 5
     push.q [rsp]
     pop.q [rsp + 0x10]
     jmp 6
@@ -97,7 +100,10 @@ main:
     pop.q [rsp]
     mov.q rax, [rsp + 0x8]
     cmp rax, 6
-    jnbe 13
+    setnbe al
+    movzx rax, al
+    test al, al
+    jnz 13
     push.q [rsp]
     pop.q [rsp + 0x10]
     jmp 14
@@ -110,7 +116,10 @@ main:
     pop.q [rsp]
     mov.q rax, [rsp + 0x8]
     cmp rax, 0x14
-    jnc 15
+    setnc al
+    movzx rax, al
+    test al, al
+    jnz 15
     push.q [rsp]
     pop.q [rsp + 0x10]
     jmp 16
@@ -164,47 +173,50 @@ main:
     ret
 =========== OPT LEVEL: none ===========
 main:
-    mov rdi, 6
+    mov rcx, 6
     mov rax, 0x14
     xor rdx, rdx
-    div rdi
+    div rcx
     cmp rax, 3
     jz 1
-    xor ecx, ecx
+    xor edi, edi
     jmp 2
 1:
-    xor ecx, ecx
-    add rcx, 1
+    xor edi, edi
+    add rdi, 1
 2:
     mov rax, 0x14
     xor rdx, rdx
-    div rdi
+    div rcx
     cmp rdx, 2
     jz 3
     jmp 4
 3:
-    add rcx, 2
+    add rdi, 2
 4:
     xor eax, eax
     sub rax, 7
     mov rsi, rax
     mov rax, rsi
     xor rdx, rdx
-    div rdi
+    div rcx
     cmp rax, 0x14
-    jnbe 5
+    setnbe al
+    movzx rax, al
+    test al, al
+    jnz 5
     jmp 6
 5:
-    add rcx, 4
+    add rdi, 4
 6:
     mov rax, rsi
     xor rdx, rdx
-    div rdi
+    div rcx
     cmp rdx, 3
     jz 7
     jmp 8
 7:
-    add rcx, 8
+    add rdi, 8
 8:
     mov rax, rsi
     shr rax, 0x3c
@@ -212,7 +224,7 @@ main:
     jz 9
     jmp 10
 9:
-    add rcx, 0x10
+    add rdi, 0x10
 10:
     mov rax, 0x14
     shr rax, 2
@@ -220,40 +232,47 @@ main:
     jz 11
     jmp 12
 11:
-    add rcx, 0x20
+    add rdi, 0x20
 12:
     cmp rsi, 6
-    jnbe 13
+    setnbe al
+    movzx rax, al
+    test al, al
+    jnz 13
     jmp 14
 13:
-    add rcx, 0x40
+    add rdi, 0x40
 14:
+    mov rdx, rdi
     cmp rsi, 0x14
-    jnc 15
+    setnc al
+    movzx rax, al
+    test al, al
+    jnz 15
     jmp 16
 15:
-    add rcx, 0x80
+    add rdx, 0x80
 16:
-    cmp rdi, rsi
+    cmp rcx, rsi
     jc 17
     jmp 18
 17:
-    add rcx, 0x100
+    add rdx, 0x100
 18:
-    mov rax, rcx
-    cmp rdi, rsi
+    cmp rcx, rsi
     jbe 19
     jmp 20
 19:
-    add rax, 0x200
+    add rdx, 0x200
 20:
-    mov rdx, 0x14
-    cmp rdx, rsi
+    mov rcx, 0x14
+    cmp rcx, rsi
     jc 21
     jmp 22
 21:
-    add rax, 0x400
+    add rdx, 0x400
 22:
+    mov rax, rdx
     ret
 =========== OPT LEVEL: mininal-quick ===========
 main:
@@ -291,7 +310,10 @@ main:
     div rbx
     mov rax, rax
     cmp rax, 0x14
-    jnbe 5
+    setnbe al
+    movzx rax, al
+    test al, al
+    jnz 5
     push.q [rsp]
     pop.q [rsp + 0x10]
     jmp 6
@@ -362,7 +384,10 @@ main:
     pop.q [rsp]
     mov.q rcx, [rsp + 0x8]
     cmp rcx, 0x14
-    jnc 15
+    setnc cl
+    movzx rcx, cl
+    test cl, cl
+    jnz 15
     push.q [rsp]
     pop.q [rsp + 0x10]
     jmp 16
@@ -387,7 +412,10 @@ main:
     pop.q [rsp]
     mov.q rax, [rsp + 0x8]
     cmp rax, 6
-    jnc 19
+    setnc al
+    movzx rax, al
+    test al, al
+    jnz 19
     push.q [rsp]
     pop.q [rsp + 0x10]
     jmp 20
@@ -400,7 +428,10 @@ main:
     pop.q [rsp]
     mov.q rax, [rsp + 0x8]
     cmp rax, 0x14
-    jnbe 21
+    setnbe al
+    movzx rax, al
+    test al, al
+    jnz 21
     push.q [rsp]
     pop.q [rsp + 0x8]
     jmp 22
@@ -432,27 +463,30 @@ main:
 4:
     xor eax, eax
     sub rax, 7
-    mov rcx, rax
-    mov rsi, 6
-    mov rax, rcx
+    mov rsi, rax
+    mov rcx, 6
+    mov rax, rsi
     xor rdx, rdx
-    div rsi
+    div rcx
     cmp rax, 0x14
-    jnbe 5
+    setnbe al
+    movzx rax, al
+    test al, al
+    jnz 5
     jmp 6
 5:
     add rdi, 4
 6:
-    mov rax, rcx
+    mov rax, rsi
     xor rdx, rdx
-    div rsi
+    div rcx
     cmp rdx, 3
     jz 7
     jmp 8
 7:
     add rdi, 8
 8:
-    mov rax, rcx
+    mov rax, rsi
     shr rax, 0x3c
     cmp rax, 0xf
     jz 9
@@ -466,7 +500,7 @@ main:
 11:
     add rdi, 0x20
 12:
-    cmp rcx, 6
+    cmp rsi, 6
     setnbe dl
     movzx rdx, dl
     test dl, dl
@@ -475,31 +509,41 @@ main:
 13:
     add rdi, 0x40
 14:
-    cmp rcx, 0x14
-    jnc 15
+    mov rcx, rdi
+    cmp rsi, 0x14
+    setnc al
+    movzx rax, al
+    test al, al
+    jnz 15
     jmp 16
 15:
-    add rdi, 0x80
+    add rcx, 0x80
 16:
     test dl, dl
     jnz 17
     jmp 18
 17:
-    add rdi, 0x100
+    add rcx, 0x100
 18:
-    cmp rcx, 6
-    jnc 19
+    cmp rsi, 6
+    setnc al
+    movzx rax, al
+    test al, al
+    jnz 19
     jmp 20
 19:
-    add rdi, 0x200
+    add rcx, 0x200
 20:
-    cmp rcx, 0x14
-    jnbe 21
+    cmp rsi, 0x14
+    setnbe al
+    movzx rax, al
+    test al, al
+    jnz 21
     jmp 22
 21:
-    add rdi, 0x400
+    add rcx, 0x400
 22:
-    mov rax, rdi
+    mov rax, rcx
     ret
 =========== OPT LEVEL: moderate-quick ===========
 main:

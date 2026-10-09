@@ -6,27 +6,31 @@ main:
     xor eax, eax
     add rax, 1
     cmp rax, 5
-    xor ecx, ecx
+    setz cl
+    movzx rcx, cl
+    xor edx, edx
     xor eax, eax
 1:
-    add rcx, 1
-    cmp rcx, 5
+    add rdx, 1
+    cmp rdx, 5
     jz 6
-    jz 4
-    xor edx, edx
+    test cl, cl
+    jnz 4
+    xor ebx, ebx
     mov.q [rsp], rax
 2:
-    mov.q rbx, [rsp]
     add rbx, 1
-    mov rbp, rdx
-    add rbp, 1
-    cmp rbp, 2
-    jz 3
-    mov rdx, rbp
-    mov.q [rsp], rbx
+    cmp rbx, 2
+    setz bpl
+    movzx rbp, bpl
+    mov.q rsi, [rsp]
+    add rsi, 1
+    test bpl, bpl
+    jnz 3
+    mov.q [rsp], rsi
     jmp 2
 3:
-    mov.q [rsp], rbx
+    mov.q [rsp], rsi
     jmp 5
 4:
     mov.q [rsp], rax
@@ -43,19 +47,25 @@ main:
     xor eax, eax
     add rax, 1
     cmp rax, 5
+    setz dil
+    movzx rdi, dil
     xor ecx, ecx
     xor eax, eax
 1:
     add rcx, 1
     cmp rcx, 5
     jz 4
-    jz 3
+    test dil, dil
+    jnz 3
     xor edx, edx
 2:
-    add rax, 1
     add rdx, 1
     cmp rdx, 2
-    jz 3
+    setz sil
+    movzx rsi, sil
+    add rax, 1
+    test sil, sil
+    jnz 3
     jmp 2
 3:
     jmp 1
@@ -69,27 +79,31 @@ main:
     xor eax, eax
     add rax, 1
     cmp rax, 5
-    xor ecx, ecx
+    setz cl
+    movzx rcx, cl
+    xor edx, edx
     xor eax, eax
 1:
-    add rcx, 1
-    cmp rcx, 5
+    add rdx, 1
+    cmp rdx, 5
     jz 6
-    jz 4
-    xor edx, edx
+    test cl, cl
+    jnz 4
+    xor ebx, ebx
     mov.q [rsp], rax
 2:
-    mov.q rbx, [rsp]
     add rbx, 1
-    mov rbp, rdx
-    add rbp, 1
-    cmp rbp, 2
-    jz 3
-    mov rdx, rbp
-    mov.q [rsp], rbx
+    cmp rbx, 2
+    setz bpl
+    movzx rbp, bpl
+    mov.q rsi, [rsp]
+    add rsi, 1
+    test bpl, bpl
+    jnz 3
+    mov.q [rsp], rsi
     jmp 2
 3:
-    mov.q [rsp], rbx
+    mov.q [rsp], rsi
     jmp 5
 4:
     mov.q [rsp], rax
@@ -106,19 +120,25 @@ main:
     xor eax, eax
     add rax, 1
     cmp rax, 5
+    setz dil
+    movzx rdi, dil
     xor ecx, ecx
     xor eax, eax
 1:
     add rcx, 1
     cmp rcx, 5
     jz 4
-    jz 3
+    test dil, dil
+    jnz 3
     xor edx, edx
 2:
-    add rax, 1
     add rdx, 1
     cmp rdx, 2
-    jz 3
+    setz sil
+    movzx rsi, sil
+    add rax, 1
+    test sil, sil
+    jnz 3
     jmp 2
 3:
     jmp 1
@@ -129,27 +149,27 @@ main:
     push rbx
     push rbp
     sub rsp, 8
+    xor eax, eax
     xor ecx, ecx
-    xor edx, edx
 1:
-    mov rax, rdx
     add rcx, 1
     cmp rcx, 5
     jz 4
-    xor ebx, ebx
     mov.q [rsp], rax
+    xor edx, edx
 2:
+    add rdx, 1
+    cmp rdx, 2
+    setz bl
+    movzx rbx, bl
     mov.q rbp, [rsp]
     add rbp, 1
-    mov rsi, rbx
-    add rsi, 1
-    cmp rsi, 2
-    jz 3
-    mov rbx, rsi
+    test bl, bl
+    jnz 3
     mov.q [rsp], rbp
     jmp 2
 3:
-    mov rdx, rbp
+    mov rax, rbp
     jmp 1
 4:
     add rsp, 8
@@ -158,40 +178,50 @@ main:
     ret
 =========== OPT LEVEL: moderate ===========
 main:
-    xor ecx, ecx
     xor eax, eax
+    xor ecx, ecx
 1:
     add rcx, 1
     cmp rcx, 5
-    jz 3
-    xor edx, edx
+    jz 4
+    mov rdx, rax
+    xor eax, eax
 2:
     add rax, 1
+    cmp rax, 2
+    setz sil
+    movzx rsi, sil
     add rdx, 1
-    cmp rdx, 2
-    jz 1
+    test sil, sil
+    jnz 3
     jmp 2
 3:
+    mov rax, rdx
+    jmp 1
+4:
     ret
 =========== OPT LEVEL: all ===========
 main:
     xor ecx, ecx
-    xor edx, edx
-1:
     xor esi, esi
+1:
+    xor edx, edx
 2:
-    mov rax, rdx
+    add rdx, 1
+    cmp rdx, 2
+    setz dil
+    movzx rdi, dil
+    mov rax, rsi
     add rax, 1
-    add rsi, 1
-    cmp rsi, 2
-    mov rdx, rax
-    jnz 2
+    mov rsi, rax
+    test dil, dil
+    jz 2
     mov rdx, rcx
     add rdx, 1
     add rcx, 2
     cmp rcx, 5
     mov rcx, rdx
-    mov rdx, rax
+    mov rsi, rax
     jnz 1
     ret
 =========== OPT LEVEL: aggresive ===========

@@ -671,6 +671,14 @@ IDEAL_CLASSES := [bac.Node_Type]Class_Spec {
 	},
 	.Ret = {id = Tup, args = {"call_end"}, extra_args = {"idx"}},
 	.Return = {id = Cfg, varargs = true, default_type = .Void},
+	.Dbg_Assign = {args = {"new_value", "old_value"}},
+	.Dbg_Scope = {id = Cfg, default_type = .Void, varargs = true},
+	.Dbg_Scope_End = {
+		id = Cfg,
+		default_type = .Void,
+		args = {"ctrl"},
+		flags = {.Is_Basic_Block_Start},
+	},
 }
 
 main :: proc() {

@@ -711,3 +711,20 @@ If you encounter bugs in the compiler that are unrelated to this test, add a
 reproduction to the TESTS.md, make sure they reproduce and then proceed to work
 around the bug in the script, but also document in the codegen all the
 workarounds so we can remove them in the future.
+
+### implement variable locations in debug info
+
+The current debug info only includes line information, you can't view the
+variable values, types and so on. I d like you to implement this, extend the
+D_Node, so that it can contain optional tail data containing the variable name
+and type, any anything else that needs to be there. The backands role is only
+make sure the debug info is kept properly and then it should emit some records
+describing the variable locations similar to what we already emit for lines and
+call frames. The frontend then emits the dwarf information for variable source
+locations. You should make sure gdb shows the variable values properly. For
+that you can write an example program and use the gdb command. Type values
+should be opaque to the backend, they should be 64bit so that frontend can
+easily embed its type representation in there. This might involve some
+integration with the ssa builder, regarding scope values, that also applyes to
+the memopt. Make sure the emited data from emit_function is debug info agnostic.
+Only do this for x64 backend.

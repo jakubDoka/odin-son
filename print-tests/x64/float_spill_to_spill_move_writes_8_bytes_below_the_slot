@@ -1244,6 +1244,7 @@ main:
     movsd.q [rsp], xmm0
     movsd.q xmm0, [rsp]
     call src
+    xor ecx, ecx
     movsd.q xmm14, [rsp + 0x140]
     push.q [rsp + 0x120]
     pop.q [rsp + 0x140]
@@ -1254,7 +1255,6 @@ main:
     movsd.q xmm9, [rsp + 0x150]
     movsd.q xmm10, [rsp + 0x1d0]
     movsd.q [rsp + 0x150], xmm0
-    xor eax, eax
     movsd.q xmm11, [rsp + 0x1a0]
     movsd.q xmm15, [rsp + 0x180]
     movsd.q xmm13, [rsp + 0xf0]
@@ -1263,76 +1263,77 @@ main:
     push.q [rsp + 0x1c0]
     pop.q [rsp + 0xf0]
 2:
-    movsd.q [rsp + 0x1e0], xmm15
-    push.q [rsp + 0x140]
-    pop.q [rsp + 0x1d0]
-    movsd.q xmm3, [rsp + 0x150]
+    movsd.q [rsp + 0x1e0], xmm14
     movsd.q xmm1, [rsp + 0x160]
+    push.q [rsp + 0x130]
+    pop.q [rsp + 0x1d0]
+    movsd xmm5, xmm9
     push.q [rsp + 0x100]
     pop.q [rsp + 0x1c0]
-    movsd xmm5, xmm9
-    movsd xmm6, xmm2
-    movsd.q [rsp + 0x1b0], xmm12
-    movsd.q [rsp + 0x1a0], xmm11
-    push.q [rsp + 0xf0]
-    pop.q [rsp + 0x190]
-    movsd xmm4, xmm13
-    movsd.q [rsp + 0x180], xmm14
-    movsd.q xmm8, [rsp + 0x110]
-    push.q [rsp + 0x130]
-    pop.q [rsp + 0x170]
+    push.q [rsp + 0x140]
+    pop.q [rsp + 0x1b0]
     movsd.q xmm7, [rsp + 0x120]
+    movsd.q xmm8, [rsp + 0x110]
+    movsd.q [rsp + 0x1a0], xmm15
+    movsd.q [rsp + 0x190], xmm12
+    push.q [rsp + 0xf0]
+    pop.q [rsp + 0x180]
+    movsd.q [rsp + 0x170], xmm11
+    movsd xmm4, xmm13
+    movsd xmm6, xmm2
+    movsd.q xmm3, [rsp + 0x150]
     movsd xmm0, xmm10
-    mov rcx, rax
+    cmp rcx, 2
+    setz al
+    movzx rax, al
     add rcx, 1
-    cmp rax, 2
     movsd.q [rsp + 0x160], xmm0
     movsd.q [rsp + 0x150], xmm1
-    push.q [rsp + 0x1b0]
+    push.q [rsp + 0x190]
     pop.q [rsp + 0x140]
-    push.q [rsp + 0x1d0]
+    push.q [rsp + 0x1b0]
     pop.q [rsp + 0x130]
     movsd.q [rsp + 0x120], xmm6
     movsd.q [rsp + 0x110], xmm7
-    push.q [rsp + 0x1a0]
+    push.q [rsp + 0x170]
     pop.q [rsp + 0x100]
     push.q [rsp + 0x1c0]
     pop.q [rsp + 0xf0]
     movsd xmm15, xmm8
-    movsd.q xmm14, [rsp + 0x170]
+    movsd.q xmm14, [rsp + 0x1d0]
     movsd xmm13, xmm3
-    mov rax, rcx
-    movsd.q xmm12, [rsp + 0x1e0]
-    movsd.q xmm11, [rsp + 0x180]
-    movsd.q xmm10, [rsp + 0x190]
+    movsd.q xmm12, [rsp + 0x1a0]
+    movsd.q xmm11, [rsp + 0x1e0]
+    movsd.q xmm10, [rsp + 0x180]
     movsd xmm9, xmm4
     movsd xmm2, xmm5
-    jnz 2
+    test al, al
+    jz 2
     movsd.q xmm2, [rsp + 0xe0]
     vfmadd213sd xmm0, xmm2, xmm1
     movsd.q xmm2, [rsp + 0xd0]
-    movsd.q xmm1, [rsp + 0x190]
+    movsd.q xmm1, [rsp + 0x180]
     vfmadd213sd xmm1, xmm2, xmm0
     movsd.q xmm2, [rsp + 0xc0]
     movsd.q xmm0, [rsp + 0x1c0]
     vfmadd213sd xmm0, xmm2, xmm1
     movsd.q xmm2, [rsp + 0xb0]
-    movsd.q xmm1, [rsp + 0x1a0]
-    vfmadd213sd xmm1, xmm2, xmm0
-    movsd.q xmm2, [rsp + 0xa0]
-    movsd.q xmm0, [rsp + 0x180]
-    vfmadd213sd xmm0, xmm2, xmm1
-    movsd.q xmm2, [rsp + 0x90]
     movsd.q xmm1, [rsp + 0x170]
     vfmadd213sd xmm1, xmm2, xmm0
+    movsd.q xmm2, [rsp + 0xa0]
+    movsd.q xmm0, [rsp + 0x1e0]
+    vfmadd213sd xmm0, xmm2, xmm1
+    movsd.q xmm2, [rsp + 0x90]
+    movsd.q xmm1, [rsp + 0x1d0]
+    vfmadd213sd xmm1, xmm2, xmm0
     movsd.q xmm2, [rsp + 0x80]
-    movsd.q xmm0, [rsp + 0x1d0]
+    movsd.q xmm0, [rsp + 0x1b0]
     vfmadd213sd xmm0, xmm2, xmm1
     movsd.q xmm2, [rsp + 0x70]
-    movsd.q xmm1, [rsp + 0x1b0]
+    movsd.q xmm1, [rsp + 0x190]
     vfmadd213sd xmm1, xmm2, xmm0
     movsd.q xmm2, [rsp + 0x60]
-    movsd.q xmm0, [rsp + 0x1e0]
+    movsd.q xmm0, [rsp + 0x1a0]
     vfmadd213sd xmm0, xmm2, xmm1
     movsd.q xmm1, [rsp + 0x50]
     movsd xmm2, xmm8

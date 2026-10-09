@@ -23,6 +23,7 @@ loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 		node_blocks:  []^bac.Basic_Block,
 		instrs:       []Node_ID,
 		current_loop: Node_ID,
+		cloned:       [dynamic]Node_ID,
 	}
 
 	ctx: Ctx
@@ -47,7 +48,9 @@ loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 
 	rotated := false
 
-	rotate: for &bb, i in ctx.sched.bbs {
+	// We go in reverse because otherwise, the interning can mess up the
+	// instantiation
+	for &bb, i in ctx.sched.bbs {
 		if get_node(ctx, bb.head).rtype == bac.DEAD_NODE_KIND {
 			continue
 		}
@@ -130,9 +133,11 @@ loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 			}
 		}
 
+		failed := false
 		for node in to_clone {
-			if !check_valid_ops(ctx, node) do continue rotate
+			failed ||= !check_valid_ops(ctx, node)
 		}
+		if failed do continue
 
 		rotated = true
 
@@ -178,6 +183,10 @@ loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 		bouts := bac.get_outputs(ctx, break_branch.head)
 		#reverse for out in bouts[:len(bouts) - 1] {
 			bac.set_input(ctx, out.id, out.idx, join)
+			if !bac.has_flag(ctx, out.id, .Is_Basic_Block_Start) {
+				ctx.node_blocks[get_node(ctx, out.id).gvn] = join_bb
+				append(&join_bb.instrs, out.id)
+			}
 		}
 
 		for instr in break_branch.instrs {
@@ -775,6 +784,8 @@ loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 		phy_idx: int,
 		ctrl: ^bac.Basic_Block,
 	) -> Node_ID {
+		node := expand_node(ctx, root)
+
 		if root == ctx.current_loop {
 			return ctrl.head
 		}
@@ -788,7 +799,6 @@ loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 			assert(phy_idx == 2)
 		}
 
-		node := expand_node(ctx, root)
 		if cloned[node.gvn] == 0 {
 			if node.itype == .Phi && node.inps[0] == ctx.current_loop {
 				cloned[node.gvn] = node.inps[phy_idx]

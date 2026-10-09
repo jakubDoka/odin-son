@@ -496,16 +496,6 @@ peep :: proc(
 			return id
 		}
 
-		chanded := false
-		if .Eq <= node.itype && node.itype <= .U_Ge {
-			if node.dt != .Void &&
-			   len(node.outs) == 1 &&
-			   get_node(ctx, node.outs[0].id).itype == .If {
-				node.dt = .Void
-				chanded = true
-			}
-		}
-
 		if rhs_const != nil {
 			return make_node(
 				ctx,
@@ -515,8 +505,6 @@ peep :: proc(
 				{imm = i32(rhs_const.value)},
 			)
 		}
-
-		if chanded do return id
 
 		indexify: if node.itype == .Add {
 			rhs := expand_node(ctx, node.inps[1])
@@ -814,6 +802,15 @@ post_schedule_peep :: proc(
 ) -> bac.Node_ID {
 	id := bac.get_node_id(ctx, node)
 	#partial matchx: switch xtype(node) {
+	case .If:
+		if 0 < len(ctx.preds) &&
+		   ctx.preds[len(ctx.preds) - 1] == node.inps[1] {
+			node := expand_node(ctx, node.inps[1])
+			#partial switch xtype(node) {
+			case .Eq ..< .U_Ge, .X64_Eq ..< .X64_Ge, .X64_F_Eq ..< .X64_F_Ge:
+				node.dt = .Void
+			}
+		}
 	case .Add ..= .Xor, .Eq ..= .U_Ge, .F_Add ..= .F_Div, .F_Eq ..= .F_Ge:
 		if node.itype == .F_Lt || node.itype == .F_Le do break
 
@@ -1000,8 +997,22 @@ meta_of :: proc(
 	     .Entry,
 	     .Region,
 	     .Loop,
+	     .Dbg_Scope_End,
 	     .Call_End:
 		fmt.panicf("should not reach these: %v", node)
+	case .Dbg_Scope:
+		masks := make([]bac.RM_Intern_Idx, len(node.inps) - 1)
+		for inp, i in node.inps[1:] {
+			node := get_node(graph, inp)
+			masks[i] = smasks[ra.datatype_to_reg_kind[node.dt]][0]
+		}
+		return {out = IOUT, masks = masks, input_start = 1}
+	case .Dbg_Assign:
+		return {
+			out = sout,
+			masks = snmasks[:1 + int(node.inps[1] != 0)],
+			in_place_slot = 1,
+		}
 	case .Poison:
 		return {out = out}
 	case .CInt:
@@ -1653,6 +1664,16 @@ emit_instr :: proc(
 	type := xtype(node)
 
 	switch type {
+	case .Nil,
+	     .Entry,
+	     .Then,
+	     .Else,
+	     .Region,
+	     .Loop,
+	     .Call_End,
+	     .End,
+	     .Dbg_Scope_End:
+		fmt.panicf("Not reachable form here %v", node.node)
 	case .Splat:
 		panic("no")
 	case .Simd_Extract_Lsbs:
@@ -1940,8 +1961,6 @@ emit_instr :: proc(
 			rx := rex(a, b, NO_INDEX, bac.DT_SIZE[node.dt] == 8)
 			emit(ctx.code, {0x66, rx, 0x0f, op, mod_rm(.Direct, a, b)})
 		}
-	case .Nil, .Entry, .Then, .Else, .Region, .Loop, .Call_End, .End:
-		fmt.panicf("Not reachable form here %v", node.node)
 	case .If:
 		cnode := expand_node(ctx, node.inps[1])
 		if cnode.dt != .Void {
@@ -2068,7 +2087,18 @@ emit_instr :: proc(
 				id     = lib_call.id,
 			}
 		}
-	case .Poison, .Param, .Phi, .Ret, .Mem, .Split_Mem, .Merge_Mem, .Sym:
+	case .Poison,
+	     .Param,
+	     .Phi,
+	     .Ret,
+	     .Mem,
+	     .Split_Mem,
+	     .Merge_Mem,
+	     .Sym,
+	     .Dbg_Scope:
+	case .Dbg_Assign:
+		assert(node.dt == get_node(ctx, node.inps[0]).dt)
+		assert(reg_of(ctx, instr) == reg_of(ctx, node.inps[0]))
 	case .CInt:
 		dst := reg_of(ctx, instr)
 		imm := bac.get_extra(ctx, node, bac.CInt).value

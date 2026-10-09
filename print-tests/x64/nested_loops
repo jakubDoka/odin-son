@@ -177,15 +177,16 @@ main:
     xor esi, esi
 2:
     mov rax, rdx
-    mov rdi, rcx
-    imul rdi, rsi
-    mov rdx, rax
-    add rdx, rdi
-    mov rdi, rsi
-    add rdi, 1
+    mov r8, rcx
+    imul r8, rsi
     cmp rsi, 3
-    mov rsi, rdi
-    jnz 2
+    setz dil
+    movzx rdi, dil
+    mov rdx, rax
+    add rdx, r8
+    add rsi, 1
+    test dil, dil
+    jz 2
     add rcx, 1
     cmp rcx, 3
     mov rdx, rax

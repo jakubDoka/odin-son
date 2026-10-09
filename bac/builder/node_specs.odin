@@ -97,6 +97,9 @@ SPEC := bac.Node_Spec{
 		0b10, // Ctz
 		0b10, // Simd_Extract_Lsbs
 		0b10, // Simd_Reduce_Add_Bisect
+		0b10, // Dbg_Assign
+		0b1, // Dbg_Scope
+		0b1, // Dbg_Scope_End
 		0b1000000, // Scope
 		0b10, // Lazy_Phi
 	},
@@ -182,6 +185,9 @@ SPEC := bac.Node_Spec{
 		0, // Ctz -> No_Extra
 		0, // Simd_Extract_Lsbs -> No_Extra
 		0, // Simd_Reduce_Add_Bisect -> No_Extra
+		0, // Dbg_Assign -> No_Extra
+		1, // Dbg_Scope -> Cfg
+		1, // Dbg_Scope_End -> Cfg
 		1, // Scope -> Scope
 		0, // Lazy_Phi -> No_Extra
 	},
@@ -267,6 +273,9 @@ SPEC := bac.Node_Spec{
 		{Class_Flag.Interned}, // Ctz
 		{Class_Flag.Interned}, // Simd_Extract_Lsbs
 		{Class_Flag.Interned}, // Simd_Reduce_Add_Bisect
+		{}, // Dbg_Assign
+		{}, // Dbg_Scope
+		{Class_Flag.Is_Basic_Block_Start}, // Dbg_Scope_End
 		{}, // Scope
 		{}, // Lazy_Phi
 	},
@@ -352,6 +361,9 @@ SPEC := bac.Node_Spec{
 		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
+		bac.No_Extra,
+		bac.Cfg,
+		bac.Cfg,
 		Scope,
 		bac.No_Extra,
 	},
@@ -437,6 +449,9 @@ SPEC := bac.Node_Spec{
 		`Ctz`,
 		`Simd_Extract_Lsbs`,
 		`Simd_Reduce_Add_Bisect`,
+		`Dbg_Assign`,
+		`Dbg_Scope`,
+		`Dbg_Scope_End`,
 		`Scope`,
 		`Lazy_Phi`,
 	},
@@ -524,6 +539,9 @@ Node_Type :: enum u16 {
 	Ctz,
 	Simd_Extract_Lsbs,
 	Simd_Reduce_Add_Bisect,
+	Dbg_Assign,
+	Dbg_Scope,
+	Dbg_Scope_End,
 	Scope,
 	Lazy_Phi,
 }
@@ -619,6 +637,9 @@ post_schedule_peep_inst :: proc(
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
+#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
+#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
+#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
 #assert(size_of(Scope) % bac.PRECISION == 0)
 add_scope :: #force_inline proc(graph: ^bac.Proc, name: string, cfg: bac.Node_ID) -> (_id: bac.Node_ID) {
 	(^Scope)(bac.get_next_extra_slot(graph, u16(Node_Type.Scope), 0))^ = {}

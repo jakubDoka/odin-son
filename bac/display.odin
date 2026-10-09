@@ -182,6 +182,11 @@ display_node :: proc(
 	id: Node_ID,
 	scheduled := false,
 ) {
+	if get_node(graph, id).rtype == DEAD_NODE_KIND {
+		fmt.wprintln(w, "<dead>")
+		return
+	}
+
 	node := expand_node(graph, id)
 
 	extra := get_extra_dyn(graph, node)

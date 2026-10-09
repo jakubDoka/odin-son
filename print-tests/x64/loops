@@ -102,18 +102,19 @@ main:
     ret
 =========== OPT LEVEL: all ===========
 main:
-    xor esi, esi
+    mov rdi, 0xa
     mov rdx, 1
-    mov rcx, 0xa
+    xor ecx, ecx
 1:
-    mov rdi, rcx
     mov rax, rdx
-    mov rcx, rdi
-    sub rcx, 1
-    mov rdx, rsi
-    add rdx, rax
     cmp rdi, 0
-    mov rsi, rax
-    jnz 1
+    setz sil
+    movzx rsi, sil
+    sub rdi, 1
+    mov rdx, rcx
+    add rdx, rax
+    mov rcx, rax
+    test sil, sil
+    jz 1
     ret
 =========== OPT LEVEL: aggresive ===========

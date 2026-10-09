@@ -10,7 +10,10 @@ main:
 1:
     mov rcx, rax
     cmp rcx, 0x20
-    jnl 2
+    setnl dl
+    movzx rdx, dl
+    test dl, dl
+    jnz 2
     imul rdx, rcx, 0x1c
     lea rbx, [rsp]
     add rdx, rbx
@@ -24,7 +27,10 @@ main:
     xor ecx, ecx
 3:
     cmp rcx, 0x20
-    jnl 4
+    setnl dl
+    movzx rdx, dl
+    test dl, dl
+    jnz 4
     imul rdx, rcx, 0x1c
     lea rbx, [rsp]
     add rdx, rbx
@@ -50,7 +56,10 @@ main:
     xor esi, esi
 1:
     cmp rsi, 0x20
-    jnl 2
+    setnl al
+    movzx rax, al
+    test al, al
+    jnz 2
     imul rdx, rsi, 0x1c
     lea rax, [rsp]
     add rdx, rax
@@ -65,7 +74,10 @@ main:
     xor ecx, ecx
 3:
     cmp rcx, 0x20
-    jnl 4
+    setnl dl
+    movzx rdx, dl
+    test dl, dl
+    jnz 4
     imul rsi, rcx, 0x1c
     lea rdx, [rsp]
     add rsi, rdx
@@ -88,7 +100,10 @@ main:
 1:
     mov rcx, rax
     cmp rcx, 0x20
-    jnl 2
+    setnl dl
+    movzx rdx, dl
+    test dl, dl
+    jnz 2
     imul rdx, rcx, 0x1c
     lea rbx, [rsp]
     add rdx, rbx
@@ -102,7 +117,10 @@ main:
     xor ecx, ecx
 3:
     cmp rcx, 0x20
-    jnl 4
+    setnl dl
+    movzx rdx, dl
+    test dl, dl
+    jnz 4
     imul rdx, rcx, 0x1c
     lea rbx, [rsp]
     add rdx, rbx
@@ -128,7 +146,10 @@ main:
     xor esi, esi
 1:
     cmp rsi, 0x20
-    jnl 2
+    setnl al
+    movzx rax, al
+    test al, al
+    jnz 2
     imul rdx, rsi, 0x1c
     lea rax, [rsp]
     add rdx, rax
@@ -143,7 +164,10 @@ main:
     xor ecx, ecx
 3:
     cmp rcx, 0x20
-    jnl 4
+    setnl dl
+    movzx rdx, dl
+    test dl, dl
+    jnz 4
     imul rsi, rcx, 0x1c
     lea rdx, [rsp]
     add rsi, rdx
@@ -166,7 +190,10 @@ main:
 1:
     mov rcx, rax
     cmp rcx, 0x20
-    jnl 2
+    setnl dl
+    movzx rdx, dl
+    test dl, dl
+    jnz 2
     imul rdx, rcx, 0x1c
     lea rbx, [rsp]
     add rdx, rbx
@@ -180,7 +207,10 @@ main:
     xor ecx, ecx
 3:
     cmp rcx, 0x20
-    jnl 4
+    setnl dl
+    movzx rdx, dl
+    test dl, dl
+    jnz 4
     imul rdx, rcx, 0x1c
     lea rbx, [rsp]
     add rdx, rbx
@@ -206,7 +236,10 @@ main:
     xor esi, esi
 1:
     cmp rsi, 0x20
-    jnl 2
+    setnl al
+    movzx rax, al
+    test al, al
+    jnz 2
     imul rdx, rsi, 0x1c
     lea rax, [rsp]
     add rdx, rax
@@ -221,7 +254,10 @@ main:
     xor ecx, ecx
 3:
     cmp rcx, 0x20
-    jnl 4
+    setnl dl
+    movzx rdx, dl
+    test dl, dl
+    jnz 4
     imul rsi, rcx, 0x1c
     lea rdx, [rsp]
     add rsi, rdx
@@ -245,23 +281,29 @@ main:
     lea rcx, [rsp]
     add rdx, rcx
     mov rcx, rax
-    add rax, 1
     mov.d [rdx], ecx
+    add rax, 1
     cmp rax, 0x20
-    jnge 1
+    setnl cl
+    movzx rcx, cl
+    test cl, cl
+    jz 1
     xor edx, edx
     xor ecx, ecx
 2:
     imul rsi, rdx, 0x1c
     lea rax, [rsp]
     add rsi, rax
-    mov.d esi, [rsi]
-    mov rax, rcx
-    add rax, rsi
+    mov.d edi, [rsi]
     add rdx, 1
     cmp rdx, 0x20
+    setnl sil
+    movzx rsi, sil
+    mov rax, rcx
+    add rax, rdi
     mov rcx, rax
-    jnge 2
+    test sil, sil
+    jz 2
     add rsp, 0x388
     ret
 =========== OPT LEVEL: aggresive ===========

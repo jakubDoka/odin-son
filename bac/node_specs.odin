@@ -135,6 +135,9 @@ Node_Type :: enum u16 {
 	Ctz,
 	Simd_Extract_Lsbs,
 	Simd_Reduce_Add_Bisect,
+	Dbg_Assign,
+	Dbg_Scope,
+	Dbg_Scope_End,
 }
 #assert(size_of(Cfg) % PRECISION == 0)
 #assert(size_of(Cfg) % PRECISION == 0)
@@ -347,6 +350,20 @@ add_un_op :: #force_inline proc(graph: ^Proc, name: string, type: Un_Op, dt: Nod
 #assert(size_of(No_Extra) % PRECISION == 0)
 #assert(size_of(No_Extra) % PRECISION == 0)
 #assert(size_of(No_Extra) % PRECISION == 0)
+#assert(size_of(No_Extra) % PRECISION == 0)
+add_dbg_assign :: #force_inline proc(graph: ^Proc, name: string, dt: Node_Datatype, new_value: Node_ID, old_value: Node_ID) -> (_id: Node_ID) {
+	return add_raw(graph, name, u16(Node_Type.Dbg_Assign), dt, {new_value, old_value})
+}
+#assert(size_of(Cfg) % PRECISION == 0)
+add_dbg_scope :: #force_inline proc(graph: ^Proc, name: string, inputs: []Node_ID) -> (_id: Node_ID) {
+	(^Cfg)(get_next_extra_slot(graph, u16(Node_Type.Dbg_Scope), 0))^ = {}
+	return add_raw(graph, name, u16(Node_Type.Dbg_Scope), .Void, inputs)
+}
+#assert(size_of(Cfg) % PRECISION == 0)
+add_dbg_scope_end :: #force_inline proc(graph: ^Proc, name: string, ctrl: Node_ID) -> (_id: Node_ID) {
+	(^Cfg)(get_next_extra_slot(graph, u16(Node_Type.Dbg_Scope_End), 0))^ = {}
+	return add_raw(graph, name, u16(Node_Type.Dbg_Scope_End), .Void, {ctrl})
+}
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	when false {}

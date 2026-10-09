@@ -311,9 +311,10 @@ meta_of :: #force_inline proc(
 	     .Loop,
 	     .Call_End,
 	     .End,
-	     .Simd_Reduce_Add_Bisect:
+	     .Simd_Reduce_Add_Bisect,
+	     .Dbg_Scope_End:
 		fmt.panicf("Should not reach this: %v", node)
-	case .U_F_From_I:
+	case .U_F_From_I, .Dbg_Assign, .Dbg_Scope:
 		fmt.panicf("TODO: %v", node)
 	case .Split_Mem,
 	     .Merge_Mem,
@@ -515,9 +516,10 @@ pre_regalloc_hook :: proc(
 		     .Set_Local,
 		     .Tee_Local,
 		     .End,
-		     .Stub:
+		     .Stub,
+		     .Dbg_Scope_End:
 			fmt.panicf("Should not reach this: %v", node)
-		case .U_F_From_I:
+		case .U_F_From_I, .Dbg_Assign:
 			fmt.panicf("TODO: %v", node)
 		case .Merge_Mem,
 		     .Split_Mem,
@@ -531,6 +533,8 @@ pre_regalloc_hook :: proc(
 		     .Poison,
 		     .Trap:
 			return {}
+		case .Dbg_Scope:
+			return {input_start = 1, input_count = u8(len(node.inps) - 1)}
 		case .Load, .WASM_Load:
 			is_local := get_node(ctx, node.inps[2]).itype == .Local
 			return {
@@ -1167,9 +1171,10 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 	     .Simd_Reduce_Add_Bisect,
 	     .And_Not,
 	     .End,
-	     .Neg:
+	     .Neg,
+	     .Dbg_Scope_End:
 		fmt.panicf("Should not reach this: %v", node)
-	case .U_F_From_I:
+	case .U_F_From_I, .Dbg_Assign:
 		fmt.panicf("TODO: %v", node)
 	case .Split_Mem,
 	     .Merge_Mem,
@@ -1181,7 +1186,8 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 	     .Param,
 	     .Stub,
 	     .Global,
-	     .Poison:
+	     .Poison,
+	     .Dbg_Scope:
 	case .CInt:
 		cint := bac.get_extra(ctx, node, bac.CInt)
 

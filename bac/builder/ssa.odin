@@ -19,7 +19,6 @@ builder_extra :: proc {
 }
 
 merge_returns :: proc(graph: ^Proc, args: []Node_ID) -> Node_ID {
-
 	ret := bac.get_inputs(graph, graph.end)[0]
 
 	if ret == 0 {
@@ -289,18 +288,8 @@ loop_control :: proc(
 	loop: ^Loop_State,
 ) {
 	base_size := get_node(ctx, loop.scope).input_count
-	truncate_inputs(ctx, scope, base_size)
+	truncate_scope(ctx, scope, base_size)
 	loop.scopes[variant] = merge_scopes(ctx, scope, loop.scopes[variant])
-}
-
-set_scope_value :: proc(
-	graph: ^bac.Proc,
-	scope: bac.Node_ID,
-	#any_int idx: int,
-	value: bac.Node_ID,
-) {
-	get_scope_value(graph, scope, idx)
-	bac.set_input(graph, scope, idx, value)
 }
 
 get_scope_value :: proc(
@@ -340,10 +329,72 @@ push_scope_value :: proc(
 	graph: ^bac.Proc,
 	scope: bac.Node_ID,
 	value: bac.Node_ID,
+	dbg: bac.D_Node_ID,
 ) -> int {
 	scope_node := get_node(graph, scope)
 	assert(Node_Type(scope_node.rtype) == .Scope)
+	value := value
+	if graph.has_dbg && get_node(graph, value).dt != .Void && dbg != 0 {
+		value = bac.add_dbg_assign(
+			graph,
+			"dcl",
+			get_node(graph, value).dt,
+			value,
+			0,
+		)
+		bac.get_dbg_slot(graph, value)^ = dbg
+	}
 	return bac.connect(graph, scope, value)
+}
+
+set_scope_value :: proc(
+	graph: ^bac.Proc,
+	scope: bac.Node_ID,
+	#any_int idx: int,
+	value: bac.Node_ID,
+) {
+	prev_value := get_scope_value(graph, scope, idx)
+	value := value
+	prev := bac.get_dbg_slot(graph, value)^
+	if graph.has_dbg && get_node(graph, value).dt != .Void && prev != 0 {
+		value = bac.add_dbg_assign(
+			graph,
+			"dass",
+			get_node(graph, value).dt,
+			value,
+			prev_value,
+		)
+		bac.get_dbg_slot(graph, value)^ = prev
+	}
+	bac.set_input(graph, scope, idx, value)
+}
+
+truncate_scope :: proc(
+	graph: ^bac.Proc,
+	scope: bac.Node_ID,
+	#any_int to_len: int,
+) {
+	snode := expand_node(graph, scope)
+	if graph.has_dbg && to_len != len(snode.inps) && scope != 0 && false {
+		end_inps := make([]Node_ID, 1 + len(snode.inps) - to_len)
+
+		end_inps[0] = snode.inps[0]
+		used := 1
+		for i in to_len ..< len(snode.inps) {
+			if get_node(graph, snode.inps[i]).dt != .Void {
+				end_inps[used] = snode.inps[i]
+				used += 1
+			}
+		}
+		end_inps = end_inps[:used]
+
+		dbg_scope := bac.add_dbg_scope(graph, "trds", end_inps)
+		dbg_scope_end := bac.add_dbg_scope_end(graph, "trdse", dbg_scope)
+
+		bac.set_input(graph, scope, 0, dbg_scope_end)
+	}
+
+	truncate_inputs(graph, scope, to_len)
 }
 
 truncate_inputs :: proc(
@@ -1076,23 +1127,23 @@ make_builtin_proc :: proc(graph: ^Proc, name: Builtin_Proc) {
 
 	scope := add_scope(graph, "scp", graph.entry)
 
-	memv := push_scope_value(graph, scope, mem)
+	memv := push_scope_value(graph, scope, mem, 0)
 
 	dst := bac.add_param(graph, "dst", .I64, graph.entry, 0)
-	dstv := push_scope_value(graph, scope, dst)
+	dstv := push_scope_value(graph, scope, dst, 0)
 
 	val, src: Node_ID
 	srcv: int
 	switch name {
 	case .memcpy:
 		src = bac.add_param(graph, "src", .I64, graph.entry, 1)
-		srcv = push_scope_value(graph, scope, src)
+		srcv = push_scope_value(graph, scope, src, 0)
 	case .memset:
 		val = bac.add_param(graph, "val", .I8, graph.entry, 1)
 	}
 
 	len := bac.add_param(graph, "len", .I64, graph.entry, 2)
-	lenv := push_scope_value(graph, scope, len)
+	lenv := push_scope_value(graph, scope, len, 0)
 
 	loop: Loop_State
 	start_loop(graph, scope, &loop)

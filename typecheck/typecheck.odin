@@ -50,7 +50,6 @@ Target :: struct {
 
 Sloc_Key :: struct {
 	using sloc: bac.Sloc,
-	user_id:    Local_Decl_ID,
 }
 
 Gen_Ctx :: struct {
@@ -66,7 +65,6 @@ Gen_Ctx :: struct {
 	prc:          Proc_ID,
 	ret_ptrs:     []Node_ID,
 	poly_types:   #soa[dynamic]Poly_Entry,
-	slocs:        map[Sloc_Key]bac.D_Node_ID,
 	eval_depth:   int,
 	type_depth:   int,
 	error_cnt:    int,
@@ -77,8 +75,6 @@ Gen_Ctx :: struct {
 	ralloc_mode:  ra.Mode,
 	decls:        [dynamic]Local_Decl,
 }
-
-Local_Decl_ID :: bac.D_Node_User_ID
 
 Local_Decl :: struct {
 	name: string,

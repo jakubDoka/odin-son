@@ -772,8 +772,8 @@ push_scope_value :: proc(
 	name: ^ast.Node,
 	value: Node_ID,
 ) -> int {
-	sloc := ctx_sloc_of(ctx, name, auto_cast len(ctx.decls))
-	return builder.push_scope_value(ctx, ctx.node_scope, value, sloc)
+	sloc := ctx_sloc_of(ctx, name)
+	return builder.push_scope_value(ctx, ctx.node_scope, value)
 }
 
 emit_proc :: proc(
@@ -808,7 +808,6 @@ emit_proc :: proc(
 		[dynamic]typecheck.Variable,
 		arna.allocator(&ctx.mems.scratch),
 	)
-	ctx.slocs = make(type_of(ctx.slocs), ctx.scope.allocator)
 
 	clear(&ctx.poly_types)
 	for e in prc.polys {
@@ -986,28 +985,14 @@ emit_stmts :: proc(
 	builder.truncate_scope(ctx, ctx.node_scope, base.node)
 }
 
-ctx_sloc_of :: proc(
-	ctx: ^Gen_Ctx,
-	node: ^ast.Node,
-	user_id: typecheck.Local_Decl_ID,
-) -> bac.D_Node_ID {
-	if node == nil do return 0
+ctx_sloc_of :: proc(ctx: ^Gen_Ctx, node: ^ast.Node) -> bac.Sloc {
+	if node == nil do return {}
 
-	slck := typecheck.Sloc_Key {
-		file    = u32(ctx.file_id),
-		line    = u32(node.pos.line),
-		col     = u32(node.pos.column),
-		user_id = user_id,
+	return {
+		file = u32(ctx.file_id),
+		line = u32(node.pos.line),
+		col = u32(node.pos.column),
 	}
-
-	if e, ok := ctx.slocs[slck]; ok {
-		return e
-	}
-
-	e := bac.add_dnode(ctx, slck.sloc, slck.user_id)
-	ctx.slocs[slck] = e
-
-	return e
 }
 
 emit_rvalue :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Node_ID {
@@ -1044,7 +1029,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 	ty := meta.type
 	dt := type_to_dt(ty)
 
-	sloc := ctx_sloc_of(ctx, node, 0)
+	sloc := ctx_sloc_of(ctx, node)
 
 	if meta.known {
 		return emit_known(ctx, prop, meta)

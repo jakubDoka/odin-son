@@ -37,9 +37,9 @@ get_outputs_node_id :: #force_inline proc(
 ) -> []Node_Output {
 	return get_outputs_node(graph, get_node(graph, id))
 }
-get_dbg_slot :: proc{get_dbg_slot_node, get_dbg_slot_node_id}
-get_dbg_slot_node_id :: #force_inline proc(graph: ^Proc, id: Node_ID) -> ^D_Node_ID {
-	return get_dbg_slot_node(graph, get_node(graph, id))
+get_sloc :: proc{get_sloc_node, get_sloc_node_id}
+get_sloc_node_id :: #force_inline proc(graph: ^Proc, id: Node_ID) -> ^Sloc {
+	return get_sloc_node(graph, get_node(graph, id))
 }
 add_input :: proc{add_input_node, add_input_node_id}
 add_input_node_id :: #force_inline proc(graph: ^Proc, id: Node_ID, inp: Node_ID) -> int {

@@ -329,21 +329,10 @@ push_scope_value :: proc(
 	graph: ^bac.Proc,
 	scope: bac.Node_ID,
 	value: bac.Node_ID,
-	dbg: bac.D_Node_ID,
 ) -> int {
 	scope_node := get_node(graph, scope)
 	assert(Node_Type(scope_node.rtype) == .Scope)
 	value := value
-	if get_node(graph, value).dt != .Void && dbg != 0 {
-		value = bac.add_dbg_assign(
-			graph,
-			"dcl",
-			get_node(graph, value).dt,
-			value,
-			0,
-		)
-		bac.get_dbg_slot(graph, value)^ = dbg
-	}
 	return bac.connect(graph, scope, value)
 }
 
@@ -355,17 +344,6 @@ set_scope_value :: proc(
 ) {
 	prev_value := get_scope_value(graph, scope, idx)
 	value := value
-	prev := bac.get_dbg_slot(graph, value)^
-	if get_node(graph, value).dt != .Void && prev != 0 {
-		value = bac.add_dbg_assign(
-			graph,
-			"dass",
-			get_node(graph, value).dt,
-			value,
-			prev_value,
-		)
-		bac.get_dbg_slot(graph, value)^ = prev
-	}
 	bac.set_input(graph, scope, idx, value)
 }
 
@@ -490,7 +468,6 @@ inline_graph :: proc(graph: ^bac.Proc, call: bac.Node_ID, from: ^bac.Proc) {
 		graph:          ^bac.Proc,
 		from:           ^bac.Proc,
 		projection:     []bac.Node_ID,
-		dprojection:    []bac.D_Node_ID,
 		reached_return: bool,
 	}
 
@@ -500,10 +477,9 @@ inline_graph :: proc(graph: ^bac.Proc, call: bac.Node_ID, from: ^bac.Proc) {
 
 	ctx: Ctx
 	ctx.graph = graph
-	ctx.graph.current_dnode = 0
+	ctx.graph.curret_sloc = {}
 	ctx.from = from
 	ctx.projection = make([]bac.Node_ID, from.gvn)
-	ctx.dprojection = make([]bac.D_Node_ID, from.gdn)
 
 	call := expand_node(graph, call)
 	assert(call.itype == .Call)
@@ -749,9 +725,6 @@ inline_graph :: proc(graph: ^bac.Proc, call: bac.Node_ID, from: ^bac.Proc) {
 				bac.add_output(graph, inp, id, i)
 			}
 
-			dn := bac.get_dbg_slot(ctx.from, node)^
-			did := bac.clone_dnode(graph, ctx.from, dn, ctx.dprojection)
-			bac.get_dbg_slot(graph, new_node)^ = did
 			assert(ctx.projection[node.gvn] == 0)
 
 			bac.on_node_creation(graph, new_node)
@@ -1127,23 +1100,23 @@ make_builtin_proc :: proc(graph: ^Proc, name: Builtin_Proc) {
 
 	scope := add_scope(graph, "scp", graph.entry)
 
-	memv := push_scope_value(graph, scope, mem, 0)
+	memv := push_scope_value(graph, scope, mem)
 
 	dst := bac.add_param(graph, "dst", .I64, graph.entry, 0)
-	dstv := push_scope_value(graph, scope, dst, 0)
+	dstv := push_scope_value(graph, scope, dst)
 
 	val, src: Node_ID
 	srcv: int
 	switch name {
 	case .memcpy:
 		src = bac.add_param(graph, "src", .I64, graph.entry, 1)
-		srcv = push_scope_value(graph, scope, src, 0)
+		srcv = push_scope_value(graph, scope, src)
 	case .memset:
 		val = bac.add_param(graph, "val", .I8, graph.entry, 1)
 	}
 
 	len := bac.add_param(graph, "len", .I64, graph.entry, 2)
-	lenv := push_scope_value(graph, scope, len, 0)
+	lenv := push_scope_value(graph, scope, len)
 
 	loop: Loop_State
 	start_loop(graph, scope, &loop)

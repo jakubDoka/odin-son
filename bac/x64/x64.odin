@@ -1446,8 +1446,7 @@ next_sloc :: proc(ctx: ^Ctx) {
 }
 
 mount_sloc :: proc(ctx: ^Ctx, node: bac.Node_ID) {
-	dn := bac.get_dbg_slot(ctx, get_node(ctx, node))^
-	ctx.sloc = bac.get_dnode(ctx, dn).sloc
+	ctx.sloc = bac.get_sloc(ctx, get_node(ctx, node))^
 	ctx.last_off = ctx.code.pos
 }
 

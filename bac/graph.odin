@@ -2041,8 +2041,7 @@ get_dbg_slot_node :: proc(graph: ^Proc, node: ^Node) -> ^D_Node_ID {
 	pos := graph.node_extra_sizes[node.rtype] + u8(node.extra_dwords)
 	ptr := &([^]D_Node_ID)(&node.extra)[pos]
 	nl := (^D_Node_ID)(graph.mem.ptr)
-	if graph.has_dbg do return ptr
-	return nl
+	return graph.has_dbg ? ptr : nl
 }
 
 add_dnode :: proc(
@@ -2050,6 +2049,8 @@ add_dnode :: proc(
 	sloc: Sloc,
 	user_id: D_Node_User_ID,
 ) -> D_Node_ID {
+	if !graph.has_dbg do return 0
+
 	id := D_Node_ID(graph.mem.pos / PRECISION)
 
 	size := size_of(D_Node)
@@ -2142,7 +2143,6 @@ sloc_scope :: proc(
 }
 
 push_sloc :: proc(graph: ^Proc, dnd: D_Node_ID) -> (prev: D_Node_ID) {
-	if !graph.has_dbg do return
 	prev = graph.current_dnode
 	graph.current_dnode = dnd
 	return

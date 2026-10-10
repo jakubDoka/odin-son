@@ -804,7 +804,8 @@ post_schedule_peep :: proc(
 	#partial matchx: switch xtype(node) {
 	case .If:
 		if 0 < len(ctx.preds) &&
-		   ctx.preds[len(ctx.preds) - 1] == node.inps[1] {
+		   ctx.preds[len(ctx.preds) - 1] == node.inps[1] &&
+		   len(expand_node(ctx, node.inps[1]).outs) == 1 {
 			node := expand_node(ctx, node.inps[1])
 			#partial switch xtype(node) {
 			case .Eq ..< .U_Ge, .X64_Eq ..< .X64_Ge, .X64_F_Eq ..< .X64_F_Ge:
@@ -1658,7 +1659,8 @@ emit_instr :: proc(
 	     .Loop,
 	     .Call_End,
 	     .End,
-	     .Dbg_Scope_End:
+	     .Dbg_Scope_End,
+	     .Simd_Reduce_Add_Bisect:
 		fmt.panicf("Not reachable form here %v", node.node)
 	case .Splat:
 		panic("no")
@@ -1723,35 +1725,6 @@ emit_instr :: proc(
 			// pextrd $dst, $src, $auc
 			emit(ctx.code, {0x66, rx, 0x0f, 0x3A, 0x16, rm, aux})
 		}
-	case .Simd_Reduce_Add_Bisect:
-		when false {
-			// TODO: maybe exploding this into more primitive nodes can help
-			dst := reg_of(ctx, instr)
-			src := reg_of(ctx, node.inps[1])
-			prj :: 0b11101110
-
-			assert(node.dt == .V128)
-			assert(node.lane == .I8)
-
-			// pshufd $dst, $src, prj
-			rx := rex(dst, src, NO_INDEX, false)
-			emit(
-				ctx.code,
-				{0x66, rx, 0xf, 0x70, mod_rm(.Direct, dst, src), prj},
-			)
-
-			// paddb $dst, $src
-			rx = rex(dst, src, NO_INDEX, false)
-			emit(ctx.code, {rx, 0xf, 0xfc, mod_rm(.Direct, dst, src)})
-
-			// pxor $tmp, $tmp
-			rx = rex(tmp, tmp, NO_INDEX, false)
-			emit(ctx.code, {0x66, rx, 0x0f, 0xEF, mod_rm(.Direct, tmp, tmp)})
-
-			// movd $dst
-		}
-
-		panic("we should not reach this")
 	case .Ctz:
 		// tzcnt $dst, $src (dst == src in place)
 		dst := reg_of(ctx, instr)

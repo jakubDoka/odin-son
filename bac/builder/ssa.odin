@@ -334,7 +334,7 @@ push_scope_value :: proc(
 	scope_node := get_node(graph, scope)
 	assert(Node_Type(scope_node.rtype) == .Scope)
 	value := value
-	if graph.has_dbg && get_node(graph, value).dt != .Void && dbg != 0 {
+	if get_node(graph, value).dt != .Void && dbg != 0 {
 		value = bac.add_dbg_assign(
 			graph,
 			"dcl",
@@ -356,7 +356,7 @@ set_scope_value :: proc(
 	prev_value := get_scope_value(graph, scope, idx)
 	value := value
 	prev := bac.get_dbg_slot(graph, value)^
-	if graph.has_dbg && get_node(graph, value).dt != .Void && prev != 0 {
+	if get_node(graph, value).dt != .Void && prev != 0 {
 		value = bac.add_dbg_assign(
 			graph,
 			"dass",

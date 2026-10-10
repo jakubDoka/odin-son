@@ -96,6 +96,7 @@
 			">
 				<option value="0">x64</option>
 				<option value="1" selected>Wasm</option>
+				<option value="2">arm64</option>
 			</select>
 
 			<button id="code_download" style="
@@ -163,7 +164,7 @@
 
 		const a = document.createElement("a");
 		a.href = url;
-		a.download = "suspicious." + ["o", "wasm"][parseInt(target.value)];
+		a.download = "suspicious." + ["o", "wasm", "o"][parseInt(target.value)];
 
 		a.click();
 
@@ -190,7 +191,7 @@
 		if (STATUS_TO_STR[res] == "Type_Error") {
 			output.textContent = readString(output_buffer, memory, length)
 			code = new Uint8Array()
-		} else if (targ == 0) {
+		} else if (targ == 0 || targ == 2) {
 			output.textContent =
 				"Compiled, can't run the instructions for the target." +
 				" You can download the obj file tho."

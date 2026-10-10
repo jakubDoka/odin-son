@@ -2,6 +2,7 @@ package main
 
 import "bac"
 import "bac/anal"
+import "bac/arm"
 import "bac/builder"
 import "bac/regalloc"
 import "bac/wasm"
@@ -53,6 +54,7 @@ OPT_LEVELS :: [?]Opt_Level {
 TARGETS := [?]typecheck.Target {
 	{"amd64", &x64.X64_SYSTEMV_CC, &x64.SPEC, emit_elf},
 	{"wasm64", &wasm.WASM_SYSTEMV_CC, &wasm.SPEC, emit_wasm_module},
+	{"arm64", &arm.ARM_SYSTEMV_CC, &arm.SPEC, emit_elf},
 }
 
 Abi_Param :: struct {

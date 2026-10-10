@@ -1,6 +1,8 @@
 package main
 
 import "bac"
+import "bac/arm"
+import "bac/x64"
 import "core:mem"
 import "core:slice"
 import "vendored/gam/util/arna"
@@ -12,19 +14,24 @@ MEMSET_ID :: LIBCALL_BASE + 1
 emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	context.allocator, _ = arna.scrath(allocator)
 
+	is_arm := ctx.target.spec == &arm.SPEC
+	assert(is_arm || ctx.target.spec == &x64.SPEC)
+
 	// --- .text : concatenate procedure code, 16 byte aligned ------------
 	text: [dynamic]u8
 	proc_off := make([]int, len(ctx.procs))
-	// Each procedure's constant pool (e.g. materialised float immediates) is
-	// laid out right after its code; big-constant relocs are resolved against it.
+	rodata: [dynamic]u8
 	const_off := make([]int, len(ctx.procs))
 	for &prc, i in ctx.procs {
 		for len(text) % 16 != 0 do append(&text, 0)
 		proc_off[i] = len(text)
 		append(&text, ..prc.out.code)
-		for len(text) % 8 != 0 do append(&text, 0)
-		const_off[i] = len(text)
-		append(&text, ..prc.out.constants)
+
+		if len(prc.out.constants) > 0 {
+			for len(rodata) % 16 != 0 do append(&rodata, 0)
+			const_off[i] = len(rodata)
+			append(&rodata, ..prc.out.constants)
+		}
 	}
 
 	// --- .data : concatenate globals honouring their alignment ----------
@@ -94,9 +101,10 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	// section symbols used as relocation targets by the DWARF debug sections
 	// (.debug_info references .text/.debug_abbrev/.debug_line by section).
 	sec_text_sym := next_local
-	sec_abbrev_sym := next_local + 1
-	sec_line_sym := next_local + 2
-	for shndx in ([]Section{.Text, .Debug_Abbrev, .Debug_Line}) {
+	sec_rodata_sym := next_local + 1
+	sec_abbrev_sym := next_local + 2
+	sec_line_sym := next_local + 3
+	for shndx in ([]Section{.Text, .Rodata, .Debug_Abbrev, .Debug_Line}) {
 		append(
 			&locals,
 			Elf64_Sym {
@@ -105,7 +113,7 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 			},
 		)
 	}
-	next_local += 3
+	next_local += 4
 
 	// globals come after every local symbol
 	next_global := next_local
@@ -163,57 +171,75 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	}
 
 	// --- relocations + slot fixups --------------------------------------
-	rels: [dynamic]Elf64_Rel
+	rels: [dynamic]Elf64_Rela
 	for &prc, i in ctx.procs {
 		for rel in prc.out.relocs {
-			slot := proc_off[i] + int(rel.offset) - 4
+			slot := proc_off[i] + int(rel.offset)
+			if !is_arm do slot -= int(bac.RELOC_SIZE[rel.size])
 
 			is_libcall :=
 				LIBCALL_BASE <= rel.id && rel.id < bac.RELOC_BIG_CONSTANT_BASE
 
-			// TODO: this is horrible
-			// Big-constant relocs point into this proc's own constant pool in
-			// .text, so resolve them in place (RIP relative) with no ELF entry.
-			if rel.kind == .Global && rel.id >= bac.RELOC_BIG_CONSTANT_BASE {
-				target :=
-					const_off[i] + int(rel.id - bac.RELOC_BIG_CONSTANT_BASE)
-				source := proc_off[i] + int(rel.offset)
-				cur := u32(0)
-				mem.copy(&cur, &text[slot], 4)
-				cur += u32(target - source)
-				mem.copy(&text[slot], &cur, 4)
-				continue
-			}
-
 			sym: u32
 			type: Reloc_Type
-			switch rel.kind {
-			case .Text:
-				if is_libcall {
-					sym = lib_sym[rel.id - LIBCALL_BASE]
-				} else {
-					sym = proc_sym[rel.id]
+			addend: i64
+			if rel.kind == .Global && rel.id >= bac.RELOC_BIG_CONSTANT_BASE {
+				sym = sec_rodata_sym
+				addend = i64(
+					const_off[i] + int(rel.id - bac.RELOC_BIG_CONSTANT_BASE),
+				)
+			} else {
+				switch rel.kind {
+				case .Text:
+					if is_libcall {
+						sym = lib_sym[rel.id - LIBCALL_BASE]
+					} else {
+						sym = proc_sym[rel.id]
+					}
+				case .Global:
+					sym = data_sym[rel.id]
+				case .Got:
+					sym = lib_sym[rel.id]
 				}
-				type = .Pc32
-			case .Global:
-				sym = data_sym[rel.id]
-				type = .Pc32
-			case .Got:
-				sym = lib_sym[rel.id]
-				type = .Gotpcrel
 			}
 
-			// bias the in-place addend by the slot->instruction-end delta
-			cur := u32(0)
-			mem.copy(&cur, &text[slot], 4)
-			cur -= 4
-			mem.copy(&text[slot], &cur, 4)
+			if is_arm {
+				switch rel.kind {
+				case .Text:
+					if rel.size == .r26 {
+						type = .AArch64_Call26
+					} else {
+						assert(rel.size == .r2_19)
+						type = .AArch64_Adr_Prel_Lo21
+					}
+				case .Global:
+					assert(rel.size == .r19 || rel.size == .r2_19)
+					type = .AArch64_Adr_Prel_Lo21
+				case .Got:
+					panic("AArch64 GOT relocations are not implemented")
+				}
+			} else {
+				assert(rel.size == .r32)
+				switch rel.kind {
+				case .Text, .Global:
+					type = .X86_64_Pc32
+				case .Got:
+					type = .X86_64_Gotpcrel
+				}
+
+				cur := i32(0)
+				mem.copy(&cur, &text[slot], 4)
+				addend += i64(cur) - 4
+				cur = 0
+				mem.copy(&text[slot], &cur, 4)
+			}
 
 			append(
 				&rels,
-				Elf64_Rel {
+				Elf64_Rela {
 					r_offset = u64(slot),
 					r_info = {sym = sym, type = type},
+					r_addend = addend,
 				},
 			)
 		}
@@ -227,8 +253,8 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	dbg_abbrev: [dynamic]u8
 	dbg_info: [dynamic]u8
 	dbg_line: [dynamic]u8
-	info_rels: [dynamic]Elf64_Rel
-	line_rels: [dynamic]Elf64_Rel
+	info_rels: [dynamic]Elf64_Rela
+	line_rels: [dynamic]Elf64_Rela
 
 	// -- .debug_abbrev : a single compile-unit abbreviation ---------------
 	uleb(&dbg_abbrev, 1) // abbrev code 1
@@ -287,9 +313,12 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 		append(&dbg_line, 0, 9, u8(Dw_Lne.Set_Address))
 		append(
 			&line_rels,
-			Elf64_Rel {
+			Elf64_Rela {
 				r_offset = u64(len(dbg_line)),
-				r_info = {sym = proc_sym[i], type = .Abs64},
+				r_info = {
+					sym = proc_sym[i],
+					type = is_arm ? .AArch64_Abs64 : .X86_64_Abs64,
+				},
 			},
 		)
 		put_u64(&dbg_line, 0)
@@ -345,9 +374,12 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	// debug_abbrev_offset, relocated against .debug_abbrev
 	append(
 		&info_rels,
-		Elf64_Rel {
+		Elf64_Rela {
 			r_offset = u64(len(dbg_info)),
-			r_info = {sym = sec_abbrev_sym, type = .Abs32},
+			r_info = {
+				sym = sec_abbrev_sym,
+				type = is_arm ? .AArch64_Abs32 : .X86_64_Abs32,
+			},
 		},
 	)
 	put_u32(&dbg_info, 0)
@@ -364,9 +396,12 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	// low_pc, relocated against .text (base of the code)
 	append(
 		&info_rels,
-		Elf64_Rel {
+		Elf64_Rela {
 			r_offset = u64(len(dbg_info)),
-			r_info = {sym = sec_text_sym, type = .Abs64},
+			r_info = {
+				sym = sec_text_sym,
+				type = is_arm ? .AArch64_Abs64 : .X86_64_Abs64,
+			},
 		},
 	)
 	put_u64(&dbg_info, 0)
@@ -374,9 +409,12 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	// stmt_list, relocated against .debug_line
 	append(
 		&info_rels,
-		Elf64_Rel {
+		Elf64_Rela {
 			r_offset = u64(len(dbg_info)),
-			r_info = {sym = sec_line_sym, type = .Abs32},
+			r_info = {
+				sym = sec_line_sym,
+				type = is_arm ? .AArch64_Abs32 : .X86_64_Abs32,
+			},
 		},
 	)
 	put_u32(&dbg_info, 0)
@@ -387,9 +425,9 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	// so an unwinder has nothing to walk without explicit CFI. One CIE plus
 	// one FDE per procedure, built from the frame deltas the bac recorded.
 	eh_frame: [dynamic]u8
-	eh_rels: [dynamic]Elf64_Rel
+	eh_rels: [dynamic]Elf64_Rela
 
-	if ctx.has_dbg {
+	if ctx.has_dbg && ctx.target.cc.cfi_spec.code_align != 0 {
 		spec := ctx.target.cc.cfi_spec
 
 		cie_len_pos := len(eh_frame)
@@ -425,9 +463,12 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 			// the displacement we want the slot to hold.
 			append(
 				&eh_rels,
-				Elf64_Rel {
+				Elf64_Rela {
 					r_offset = u64(len(eh_frame)),
-					r_info = {sym = proc_sym[i], type = .Pc32},
+					r_info = {
+						sym = proc_sym[i],
+						type = is_arm ? .AArch64_Prel32 : .X86_64_Pc32,
+					},
 				},
 			)
 			put_u32(&eh_frame, 0)
@@ -494,15 +535,16 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	shstr: Str_Tab
 	append(&shstr.buf, 0)
 	name_text := strtab_add(&shstr, ".text")
-	name_reltext := strtab_add(&shstr, ".rel.text")
+	name_relatext := strtab_add(&shstr, ".rela.text")
+	name_rodata := strtab_add(&shstr, ".rodata")
 	name_data := strtab_add(&shstr, ".data")
 	name_dbg_abbrev := strtab_add(&shstr, ".debug_abbrev")
 	name_dbg_info := strtab_add(&shstr, ".debug_info")
-	name_rel_dbg_info := strtab_add(&shstr, ".rel.debug_info")
+	name_rela_dbg_info := strtab_add(&shstr, ".rela.debug_info")
 	name_dbg_line := strtab_add(&shstr, ".debug_line")
-	name_rel_dbg_line := strtab_add(&shstr, ".rel.debug_line")
+	name_rela_dbg_line := strtab_add(&shstr, ".rela.debug_line")
 	name_eh_frame := strtab_add(&shstr, ".eh_frame")
-	name_rel_eh_frame := strtab_add(&shstr, ".rel.eh_frame")
+	name_rela_eh_frame := strtab_add(&shstr, ".rela.eh_frame")
 	name_symtab := strtab_add(&shstr, ".symtab")
 	name_strtab := strtab_add(&shstr, ".strtab")
 	name_shstrtab := strtab_add(&shstr, ".shstrtab")
@@ -516,31 +558,34 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	eb_align(&b, 16)
 	text_off := eb_bytes(&b, text[:])
 
+	eb_align(&b, 16)
+	rodata_off := eb_bytes(&b, rodata[:])
+
 	eb_align(&b, 8)
 	data_off := eb_bytes(&b, data[:])
 
 	eb_align(&b, 8)
-	rel_off := len(b.buf)
+	rela_off := len(b.buf)
 	for r in rels do eb_struct(&b, r)
 
 	dbg_abbrev_off := eb_bytes(&b, dbg_abbrev[:])
 	dbg_info_off := eb_bytes(&b, dbg_info[:])
 
 	eb_align(&b, 8)
-	rel_dbg_info_off := len(b.buf)
+	rela_dbg_info_off := len(b.buf)
 	for r in info_rels do eb_struct(&b, r)
 
 	dbg_line_off := eb_bytes(&b, dbg_line[:])
 
 	eb_align(&b, 8)
-	rel_dbg_line_off := len(b.buf)
+	rela_dbg_line_off := len(b.buf)
 	for r in line_rels do eb_struct(&b, r)
 
 	eb_align(&b, 8)
 	eh_frame_off := eb_bytes(&b, eh_frame[:])
 
 	eb_align(&b, 8)
-	rel_eh_frame_off := len(b.buf)
+	rela_eh_frame_off := len(b.buf)
 	for r in eh_rels do eb_struct(&b, r)
 
 	eb_align(&b, 8)
@@ -563,15 +608,23 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 			sh_size = u64(len(text)),
 			sh_addralign = 16,
 		},
-		.Rel_Text = {
-			sh_name = name_reltext,
-			sh_type = .Rel,
-			sh_offset = u64(rel_off),
-			sh_size = u64(len(rels) * size_of(Elf64_Rel)),
+		.Rela_Text = {
+			sh_name = name_relatext,
+			sh_type = .Rela,
+			sh_offset = u64(rela_off),
+			sh_size = u64(len(rels) * size_of(Elf64_Rela)),
 			sh_link = .Symtab,
 			sh_info_section = .Text,
 			sh_addralign = 8,
-			sh_entsize = size_of(Elf64_Rel),
+			sh_entsize = size_of(Elf64_Rela),
+		},
+		.Rodata = {
+			sh_name = name_rodata,
+			sh_type = .Progbits,
+			sh_flags = {.Alloc},
+			sh_offset = u64(rodata_off),
+			sh_size = u64(len(rodata)),
+			sh_addralign = 16,
 		},
 		.Data = {
 			sh_name = name_data,
@@ -595,15 +648,15 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 			sh_size = u64(len(dbg_info)),
 			sh_addralign = 1,
 		},
-		.Rel_Debug_Info = {
-			sh_name = name_rel_dbg_info,
-			sh_type = .Rel,
-			sh_offset = u64(rel_dbg_info_off),
-			sh_size = u64(len(info_rels) * size_of(Elf64_Rel)),
+		.Rela_Debug_Info = {
+			sh_name = name_rela_dbg_info,
+			sh_type = .Rela,
+			sh_offset = u64(rela_dbg_info_off),
+			sh_size = u64(len(info_rels) * size_of(Elf64_Rela)),
 			sh_link = .Symtab,
 			sh_info_section = .Debug_Info,
 			sh_addralign = 8,
-			sh_entsize = size_of(Elf64_Rel),
+			sh_entsize = size_of(Elf64_Rela),
 		},
 		.Debug_Line = {
 			sh_name = name_dbg_line,
@@ -612,15 +665,15 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 			sh_size = u64(len(dbg_line)),
 			sh_addralign = 1,
 		},
-		.Rel_Debug_Line = {
-			sh_name = name_rel_dbg_line,
-			sh_type = .Rel,
-			sh_offset = u64(rel_dbg_line_off),
-			sh_size = u64(len(line_rels) * size_of(Elf64_Rel)),
+		.Rela_Debug_Line = {
+			sh_name = name_rela_dbg_line,
+			sh_type = .Rela,
+			sh_offset = u64(rela_dbg_line_off),
+			sh_size = u64(len(line_rels) * size_of(Elf64_Rela)),
 			sh_link = .Symtab,
 			sh_info_section = .Debug_Line,
 			sh_addralign = 8,
-			sh_entsize = size_of(Elf64_Rel),
+			sh_entsize = size_of(Elf64_Rela),
 		},
 		.Eh_Frame = {
 			sh_name = name_eh_frame,
@@ -630,15 +683,15 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 			sh_size = u64(len(eh_frame)),
 			sh_addralign = 8,
 		},
-		.Rel_Eh_Frame = {
-			sh_name = name_rel_eh_frame,
-			sh_type = .Rel,
-			sh_offset = u64(rel_eh_frame_off),
-			sh_size = u64(len(eh_rels) * size_of(Elf64_Rel)),
+		.Rela_Eh_Frame = {
+			sh_name = name_rela_eh_frame,
+			sh_type = .Rela,
+			sh_offset = u64(rela_eh_frame_off),
+			sh_size = u64(len(eh_rels) * size_of(Elf64_Rela)),
 			sh_link = .Symtab,
 			sh_info_section = .Eh_Frame,
 			sh_addralign = 8,
-			sh_entsize = size_of(Elf64_Rel),
+			sh_entsize = size_of(Elf64_Rela),
 		},
 		.Symtab = {
 			sh_name = name_symtab,
@@ -676,7 +729,7 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 			version = u8(Elf_Version.Current),
 		},
 		e_type = .Rel,
-		e_machine = .X86_64,
+		e_machine = is_arm ? .AArch64 : .X86_64,
 		e_version = .Current,
 		e_shoff = u64(sh_off),
 		e_ehsize = size_of(Elf64_Ehdr),
@@ -731,9 +784,10 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 		st_size:  u64,
 	}
 
-	Elf64_Rel :: struct {
+	Elf64_Rela :: struct {
 		r_offset: u64,
 		r_info:   Rel_Info,
+		r_addend: i64,
 	}
 
 	// every field is byte sized, so this lays out exactly like the 16 raw
@@ -776,8 +830,9 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	}
 
 	Elf_Machine :: enum u16 {
-		None   = 0,
-		X86_64 = 62,
+		None    = 0,
+		X86_64  = 62,
+		AArch64 = 183,
 	}
 
 	Sh_Type :: enum u32 {
@@ -819,11 +874,16 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	}
 
 	Reloc_Type :: enum u32 {
-		None     = 0,
-		Abs64    = 1, // R_X86_64_64
-		Pc32     = 2, // R_X86_64_PC32
-		Gotpcrel = 9, // R_X86_64_GOTPCREL
-		Abs32    = 10, // R_X86_64_32
+		None                  = 0,
+		X86_64_Abs64          = 1,
+		X86_64_Pc32           = 2,
+		X86_64_Gotpcrel       = 9,
+		X86_64_Abs32          = 10,
+		AArch64_Abs64         = 257,
+		AArch64_Abs32         = 258,
+		AArch64_Prel32        = 261,
+		AArch64_Adr_Prel_Lo21 = 274,
+		AArch64_Call26        = 283,
 	}
 
 	Rel_Info :: bit_field u64 {
@@ -837,15 +897,16 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	Section :: enum u16 {
 		Null,
 		Text,
-		Rel_Text,
+		Rela_Text,
+		Rodata,
 		Data,
 		Debug_Abbrev,
 		Debug_Info,
-		Rel_Debug_Info,
+		Rela_Debug_Info,
 		Debug_Line,
-		Rel_Debug_Line,
+		Rela_Debug_Line,
 		Eh_Frame,
-		Rel_Eh_Frame,
+		Rela_Eh_Frame,
 		Symtab,
 		Strtab,
 		Shstrtab,

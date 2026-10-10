@@ -6,7 +6,6 @@ import "../../vendored/gam/util/bit_arr"
 import "core:fmt"
 import "core:math"
 import "core:mem"
-import "core:os"
 import "core:slice"
 
 loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
@@ -35,7 +34,7 @@ loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 	bac.schedule_graph(graph, &ctx.sched, .for_loopopt)
 
 	if 2 == 3 {
-		bac.display_graph(os.to_writer(os.stderr), graph, &ctx.sched)
+		//	bac.display_graph(os.to_writer(os.stderr), graph, &ctx.sched)
 	}
 
 	reserve(&ctx.sched.bbs, len(ctx.sched.bbs) * 2)

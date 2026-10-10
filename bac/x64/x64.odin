@@ -850,20 +850,6 @@ post_schedule_peep :: proc(
 
 			return make_node(ctx, id, node.rtype, lhs.inps, om_mem_op^)
 		}
-	case .X64_Fma_213:
-		mem_op := xextra(ctx, node, Mem_Op)
-		rhs := expand_node(ctx, node.inps[2])
-
-		if xtype(rhs) == .X64_Load && false {
-			if get_node(ctx, node.inps[2]).itype != .Global do break matchx
-
-			mem_op.mem_mode = .Src
-			mem_op.dt = rhs.dt
-
-			slots := [?]bac.Node_ID{rhs.inps[2], node.inps[0], node.inps[1]}
-
-			return make_node(ctx, id, node.rtype, slots[:], mem_op^)
-		}
 	}
 
 	has_no_clobbers :: proc(ctx: bac.PS_Peep_Ctx, inp: bac.Node_ID) -> bool {

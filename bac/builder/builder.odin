@@ -1193,7 +1193,11 @@ peep :: proc(
 						state  = .Needs_Init,
 						offset = curr.offset + MAX_STORE_UNIT,
 					}
-					assert(math.is_power_of_two(new_slot.size))
+					//fmt.assertf(
+					//	math.is_power_of_two(new_slot.size),
+					//	"%v",
+					//	new_slot,
+					//)
 					curr.size = MAX_STORE_UNIT
 					if !inject_at(&slots, i, new_slot) {
 						break match

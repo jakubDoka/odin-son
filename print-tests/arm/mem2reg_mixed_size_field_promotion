@@ -336,12 +336,12 @@ main:
     ldr w4, [x22]
     movz x5, #3, #0
     add w4, w4, w5
-    uxth w2, w2
-    add x2, x3, x2
     str w4, [x22]
     str x0, [x1]
-    mov w1, w4
-    add x1, x2, x1
+    uxth w1, w2
+    add x1, x3, x1
+    mov w2, w4
+    add x1, x1, x2
     add x0, x1, x0
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
@@ -398,10 +398,10 @@ main:
     ldr w1, [x19]
     movz x0, #3, #0
     add w2, w1, w0
-    uxth w0, w3
-    add x1, x4, x0
     str w2, [x19]
     str x5, [x6]
+    uxth w0, w3
+    add x1, x4, x0
     mov w0, w2
     add x0, x1, x0
     add x0, x0, x5
@@ -416,63 +416,45 @@ main:
 opaque:
     ret
 main:
-    sub sp, sp, #64
+    sub sp, sp, #48
     str x19, [xzr]
     str x20, [xzr, #8]
     str x21, [xzr, #16]
-    str x22, [xzr, #24]
-    stp x29, x30, [xzr, #39]
-    add x21, sp, #48
-    eor.v v0, v0, v0
-    str.v q0, [x21]
+    stp x29, x30, [xzr, #31]
     movz x0, #100, #0
     bl 0xfffffffc
-    uxtb w0, w0
-    strb w0, [x21]
+    mov x21, x0
     movz x0, #300, #0
     bl 0xfffffffc
-    movz x1, #2, #0
-    add x20, x1, x21
-    uxth w0, w0
-    strh w0, [x20]
+    mov x19, x0
     movz x0, #4464, #0
     movk x0, #1, #1
     bl 0xfffffffc
-    movz x22, #4, #0
-    add x19, x21, x22
-    mov w0, w0
-    str w0, [x19]
+    mov x20, x0
     movz x0, #500, #0
     bl 0xfffffffc
-    movz x1, #8, #0
-    add x6, x1, x21
-    str x0, [x6]
-    ldrb w2, [x21]
+    uxtb w2, w21
     movz x1, #1, #0
     add w1, w2, w1
-    add x5, x0, x22
     uxtb w4, w1
-    strb w1, [x21]
-    ldrh w1, [x20]
-    movz x0, #2, #0
-    add w3, w1, w0
-    strh w3, [x20]
-    ldr w1, [x19]
-    movz x0, #3, #0
-    add w2, w1, w0
-    uxth w0, w3
-    add x1, x4, x0
-    str w2, [x19]
-    str x5, [x6]
-    mov w0, w2
-    add x0, x1, x0
-    add x0, x0, x5
+    mov w3, w20
+    uxth w2, w19
+    movz x1, #2, #0
+    add w1, w2, w1
+    uxth w1, w1
+    add x2, x4, x1
+    movz x1, #3, #0
+    add w1, w3, w1
+    mov w1, w1
+    add x2, x2, x1
+    movz x1, #4, #0
+    add x0, x0, x1
+    add x0, x2, x0
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
-    ldr x22, [xzr, #24]
-    ldp x29, x30, [xzr, #39]
-    add sp, sp, #64
+    ldp x29, x30, [xzr, #31]
+    add sp, sp, #48
     ret
 =========== OPT LEVEL: aggresive ===========
 main:

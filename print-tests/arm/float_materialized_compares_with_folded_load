@@ -4,6 +4,11 @@ fsrc32:
     movz x2, #8, #0
     movz x3, #16, #0
     movz x4, #0, #0
+    ldr.v s1, [x0]
+    fcmp s1, s0
+    csinc x5, xzr, xzr, ne
+    uxtb w5, w5
+    add x4, x4, x5
     movz x5, #20, #0
     add x5, x5, x0
     ldr.v s1, [x5]
@@ -15,11 +20,6 @@ fsrc32:
     fcmp s1, s0
     csinc x6, xzr, xzr, eq
     uxtb w6, w6
-    ldr.v s1, [x0]
-    fcmp s1, s0
-    csinc x7, xzr, xzr, ne
-    uxtb w7, w7
-    add x4, x4, x7
     movz x7, #2, #0
     madd x6, x6, x7, xzr
     add x4, x4, x6
@@ -54,6 +54,11 @@ fsrc64:
     movz x2, #16, #0
     movz x3, #32, #0
     movz x4, #0, #0
+    ldr.v d1, [x0]
+    fcmp d1, d0
+    csinc x5, xzr, xzr, ne
+    uxtb w5, w5
+    add x4, x4, x5
     add x5, x0, x1
     ldr.v d1, [x5]
     fcmp d1, d0
@@ -64,11 +69,6 @@ fsrc64:
     fcmp d0, d1
     csinc x6, xzr, xzr, pl
     uxtb w6, w6
-    ldr.v d1, [x0]
-    fcmp d1, d0
-    csinc x7, xzr, xzr, ne
-    uxtb w7, w7
-    add x4, x4, x7
     movz x7, #2, #0
     madd x5, x5, x7, xzr
     add x4, x4, x5
@@ -107,6 +107,8 @@ main:
     adr x0, 0xe38
     ldr.v s0, [x0]
     str.v d0, [xzr, #72]
+    movz x19, #8, #0
+    movz x20, #16, #0
     add x0, sp, #88
     movz x1, #0, #0
     movz x2, #24, #0
@@ -114,8 +116,6 @@ main:
     add x0, sp, #88
     ldr.v d0, [xzr, #72]
     str.v s0, [x0]
-    movz x19, #8, #0
-    movz x20, #16, #0
     movz x0, #4, #0
     add x1, sp, #88
     add x0, x0, x1
@@ -220,76 +220,76 @@ main:
 fsrc32:
     movz x7, #4, #0
     movz x6, #8, #0
-    movz x2, #16, #0
-    movz x4, #0, #0
-    movz x1, #20, #0
-    add x1, x1, x0
-    ldr.v s1, [x1]
-    fcmp s0, s1
-    csinc x1, xzr, xzr, lt
-    uxtb w1, w1
-    add x3, x0, x7
-    ldr.v s1, [x3]
-    fcmp s1, s0
-    csinc x3, xzr, xzr, eq
-    uxtb w5, w3
+    movz x1, #16, #0
+    movz x3, #0, #0
     ldr.v s1, [x0]
     fcmp s1, s0
-    csinc x3, xzr, xzr, ne
-    uxtb w3, w3
-    add x4, x4, x3
-    movz x3, #2, #0
-    madd x3, x5, x3, xzr
-    add x4, x4, x3
-    add x3, x0, x6
-    ldr.v s1, [x3]
+    csinc x2, xzr, xzr, ne
+    uxtb w2, w2
+    add x5, x3, x2
+    movz x2, #20, #0
+    add x2, x2, x0
+    ldr.v s1, [x2]
     fcmp s0, s1
-    csinc x3, xzr, xzr, pl
-    uxtb w3, w3
-    madd x3, x3, x7, xzr
-    add x4, x4, x3
-    movz x3, #12, #0
-    add x3, x3, x0
-    ldr.v s1, [x3]
+    csinc x2, xzr, xzr, lt
+    uxtb w4, w2
+    add x2, x0, x7
+    ldr.v s1, [x2]
+    fcmp s1, s0
+    csinc x2, xzr, xzr, eq
+    uxtb w3, w2
+    movz x2, #2, #0
+    madd x2, x3, x2, xzr
+    add x3, x5, x2
+    add x2, x0, x6
+    ldr.v s1, [x2]
     fcmp s0, s1
-    csinc x3, xzr, xzr, hi
-    uxtb w3, w3
-    madd x3, x3, x6, xzr
-    add x3, x4, x3
-    add x0, x0, x2
+    csinc x2, xzr, xzr, pl
+    uxtb w2, w2
+    madd x2, x2, x7, xzr
+    add x3, x3, x2
+    movz x2, #12, #0
+    add x2, x2, x0
+    ldr.v s1, [x2]
+    fcmp s0, s1
+    csinc x2, xzr, xzr, hi
+    uxtb w2, w2
+    madd x2, x2, x6, xzr
+    add x2, x3, x2
+    add x0, x0, x1
     ldr.v s1, [x0]
     fcmp s0, s1
     csinc x0, xzr, xzr, le
     uxtb w0, w0
-    madd x0, x0, x2, xzr
-    add x2, x3, x0
+    madd x0, x0, x1, xzr
+    add x1, x2, x0
     movz x0, #32, #0
-    madd x0, x1, x0, xzr
-    add x0, x2, x0
+    madd x0, x4, x0, xzr
+    add x0, x1, x0
     ret
 fsrc64:
     movz x7, #8, #0
     movz x6, #16, #0
     movz x1, #32, #0
     movz x3, #0, #0
+    ldr.v d1, [x0]
+    fcmp d1, d0
+    csinc x2, xzr, xzr, ne
+    uxtb w2, w2
+    add x5, x3, x2
     add x2, x0, x7
     ldr.v d1, [x2]
     fcmp d1, d0
     csinc x2, xzr, xzr, eq
-    uxtb w5, w2
+    uxtb w3, w2
     add x2, x0, x6
     ldr.v d1, [x2]
     fcmp d0, d1
     csinc x2, xzr, xzr, pl
     uxtb w4, w2
-    ldr.v d1, [x0]
-    fcmp d1, d0
-    csinc x2, xzr, xzr, ne
-    uxtb w2, w2
-    add x3, x3, x2
     movz x2, #2, #0
-    madd x2, x5, x2, xzr
-    add x3, x3, x2
+    madd x2, x3, x2, xzr
+    add x3, x5, x2
     movz x2, #4, #0
     madd x2, x4, x2, xzr
     add x3, x3, x2
@@ -327,14 +327,14 @@ main:
     stp x29, x30, [xzr, #47]
     adr x0, 0xe38
     ldr.v s8, [x0]
+    movz x20, #8, #0
+    movz x19, #16, #0
     add x0, sp, #56
     movz x1, #0, #0
     movz x2, #24, #0
     bl 0xfffffe5c
     add x0, sp, #56
     str.v s8, [x0]
-    movz x20, #8, #0
-    movz x19, #16, #0
     movz x1, #4, #0
     add x0, sp, #56
     add x0, x1, x0
@@ -359,7 +359,7 @@ main:
     bl 0xfffffe78
     mov x23, x0
     add x0, sp, #56
-    fmov d0, d8
+    orr.v v0, v8, v8
     bl 0xfffffe78
     mov x22, x0
     adr x0, 0xe40
@@ -399,7 +399,7 @@ main:
     bl 0xffffff3c
     mov x20, x0
     add x0, sp, #80
-    fmov d0, d8
+    orr.v v0, v8, v8
     bl 0xffffff3c
     mov x19, x0
     adr x0, 0xe58
@@ -427,6 +427,11 @@ fsrc32:
     movz x2, #8, #0
     movz x3, #16, #0
     movz x4, #0, #0
+    ldr.v s1, [x0]
+    fcmp s1, s0
+    csinc x5, xzr, xzr, ne
+    uxtb w5, w5
+    add x4, x4, x5
     movz x5, #20, #0
     add x5, x5, x0
     ldr.v s1, [x5]
@@ -438,11 +443,6 @@ fsrc32:
     fcmp s1, s0
     csinc x6, xzr, xzr, eq
     uxtb w6, w6
-    ldr.v s1, [x0]
-    fcmp s1, s0
-    csinc x7, xzr, xzr, ne
-    uxtb w7, w7
-    add x4, x4, x7
     movz x7, #2, #0
     madd x6, x6, x7, xzr
     add x4, x4, x6
@@ -477,6 +477,11 @@ fsrc64:
     movz x2, #16, #0
     movz x3, #32, #0
     movz x4, #0, #0
+    ldr.v d1, [x0]
+    fcmp d1, d0
+    csinc x5, xzr, xzr, ne
+    uxtb w5, w5
+    add x4, x4, x5
     add x5, x0, x1
     ldr.v d1, [x5]
     fcmp d1, d0
@@ -487,11 +492,6 @@ fsrc64:
     fcmp d0, d1
     csinc x6, xzr, xzr, pl
     uxtb w6, w6
-    ldr.v d1, [x0]
-    fcmp d1, d0
-    csinc x7, xzr, xzr, ne
-    uxtb w7, w7
-    add x4, x4, x7
     movz x7, #2, #0
     madd x5, x5, x7, xzr
     add x4, x4, x5
@@ -530,6 +530,8 @@ main:
     adr x0, 0xe38
     ldr.v s0, [x0]
     str.v d0, [xzr, #72]
+    movz x19, #8, #0
+    movz x20, #16, #0
     add x0, sp, #88
     movz x1, #0, #0
     movz x2, #24, #0
@@ -537,8 +539,6 @@ main:
     add x0, sp, #88
     ldr.v d0, [xzr, #72]
     str.v s0, [x0]
-    movz x19, #8, #0
-    movz x20, #16, #0
     movz x0, #4, #0
     add x1, sp, #88
     add x0, x0, x1
@@ -643,76 +643,76 @@ main:
 fsrc32:
     movz x7, #4, #0
     movz x6, #8, #0
-    movz x2, #16, #0
-    movz x4, #0, #0
-    movz x1, #20, #0
-    add x1, x1, x0
-    ldr.v s1, [x1]
-    fcmp s0, s1
-    csinc x1, xzr, xzr, lt
-    uxtb w1, w1
-    add x3, x0, x7
-    ldr.v s1, [x3]
-    fcmp s1, s0
-    csinc x3, xzr, xzr, eq
-    uxtb w5, w3
+    movz x1, #16, #0
+    movz x3, #0, #0
     ldr.v s1, [x0]
     fcmp s1, s0
-    csinc x3, xzr, xzr, ne
-    uxtb w3, w3
-    add x4, x4, x3
-    movz x3, #2, #0
-    madd x3, x5, x3, xzr
-    add x4, x4, x3
-    add x3, x0, x6
-    ldr.v s1, [x3]
+    csinc x2, xzr, xzr, ne
+    uxtb w2, w2
+    add x5, x3, x2
+    movz x2, #20, #0
+    add x2, x2, x0
+    ldr.v s1, [x2]
     fcmp s0, s1
-    csinc x3, xzr, xzr, pl
-    uxtb w3, w3
-    madd x3, x3, x7, xzr
-    add x4, x4, x3
-    movz x3, #12, #0
-    add x3, x3, x0
-    ldr.v s1, [x3]
+    csinc x2, xzr, xzr, lt
+    uxtb w4, w2
+    add x2, x0, x7
+    ldr.v s1, [x2]
+    fcmp s1, s0
+    csinc x2, xzr, xzr, eq
+    uxtb w3, w2
+    movz x2, #2, #0
+    madd x2, x3, x2, xzr
+    add x3, x5, x2
+    add x2, x0, x6
+    ldr.v s1, [x2]
     fcmp s0, s1
-    csinc x3, xzr, xzr, hi
-    uxtb w3, w3
-    madd x3, x3, x6, xzr
-    add x3, x4, x3
-    add x0, x0, x2
+    csinc x2, xzr, xzr, pl
+    uxtb w2, w2
+    madd x2, x2, x7, xzr
+    add x3, x3, x2
+    movz x2, #12, #0
+    add x2, x2, x0
+    ldr.v s1, [x2]
+    fcmp s0, s1
+    csinc x2, xzr, xzr, hi
+    uxtb w2, w2
+    madd x2, x2, x6, xzr
+    add x2, x3, x2
+    add x0, x0, x1
     ldr.v s1, [x0]
     fcmp s0, s1
     csinc x0, xzr, xzr, le
     uxtb w0, w0
-    madd x0, x0, x2, xzr
-    add x2, x3, x0
+    madd x0, x0, x1, xzr
+    add x1, x2, x0
     movz x0, #32, #0
-    madd x0, x1, x0, xzr
-    add x0, x2, x0
+    madd x0, x4, x0, xzr
+    add x0, x1, x0
     ret
 fsrc64:
     movz x7, #8, #0
     movz x6, #16, #0
     movz x1, #32, #0
     movz x3, #0, #0
+    ldr.v d1, [x0]
+    fcmp d1, d0
+    csinc x2, xzr, xzr, ne
+    uxtb w2, w2
+    add x5, x3, x2
     add x2, x0, x7
     ldr.v d1, [x2]
     fcmp d1, d0
     csinc x2, xzr, xzr, eq
-    uxtb w5, w2
+    uxtb w3, w2
     add x2, x0, x6
     ldr.v d1, [x2]
     fcmp d0, d1
     csinc x2, xzr, xzr, pl
     uxtb w4, w2
-    ldr.v d1, [x0]
-    fcmp d1, d0
-    csinc x2, xzr, xzr, ne
-    uxtb w2, w2
-    add x3, x3, x2
     movz x2, #2, #0
-    madd x2, x5, x2, xzr
-    add x3, x3, x2
+    madd x2, x3, x2, xzr
+    add x3, x5, x2
     movz x2, #4, #0
     madd x2, x4, x2, xzr
     add x3, x3, x2
@@ -750,14 +750,14 @@ main:
     stp x29, x30, [xzr, #47]
     adr x0, 0xe38
     ldr.v s8, [x0]
+    movz x20, #8, #0
+    movz x19, #16, #0
     add x0, sp, #56
     movz x1, #0, #0
     movz x2, #24, #0
     bl 0xfffffe5c
     add x0, sp, #56
     str.v s8, [x0]
-    movz x20, #8, #0
-    movz x19, #16, #0
     movz x1, #4, #0
     add x0, sp, #56
     add x0, x1, x0
@@ -782,7 +782,7 @@ main:
     bl 0xfffffe78
     mov x23, x0
     add x0, sp, #56
-    fmov d0, d8
+    orr.v v0, v8, v8
     bl 0xfffffe78
     mov x22, x0
     adr x0, 0xe40
@@ -822,7 +822,7 @@ main:
     bl 0xffffff3c
     mov x20, x0
     add x0, sp, #80
-    fmov d0, d8
+    orr.v v0, v8, v8
     bl 0xffffff3c
     mov x19, x0
     adr x0, 0xe58
@@ -1183,7 +1183,7 @@ main:
     bl 0xfffffe88
     mov x23, x0
     add x0, sp, #56
-    fmov d0, d8
+    orr.v v0, v8, v8
     bl 0xfffffe88
     mov x22, x0
     adr x0, 0xe50
@@ -1219,7 +1219,7 @@ main:
     bl 0xffffff44
     mov x20, x0
     add x0, sp, #80
-    fmov d0, d8
+    orr.v v0, v8, v8
     bl 0xffffff44
     mov x19, x0
     adr x0, 0xe68
@@ -1374,7 +1374,7 @@ main:
     bl 0xfffffe88
     mov x23, x0
     add x0, sp, #56
-    fmov d0, d8
+    orr.v v0, v8, v8
     bl 0xfffffe88
     mov x22, x0
     adr x0, 0xe50
@@ -1410,7 +1410,7 @@ main:
     bl 0xffffff44
     mov x20, x0
     add x0, sp, #80
-    fmov d0, d8
+    orr.v v0, v8, v8
     bl 0xffffff44
     mov x19, x0
     adr x0, 0xe68

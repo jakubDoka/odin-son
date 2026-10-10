@@ -264,42 +264,48 @@ main:
 opaque:
     ret
 main:
-    sub sp, sp, #48
+    sub sp, sp, #64
     str x19, [xzr]
     str x20, [xzr, #8]
-    stp x29, x30, [xzr, #23]
-    add x20, sp, #32
-    eor.v v0, v0, v0
-    str.v q0, [x20]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    stp x29, x30, [xzr, #39]
     movz x0, #3, #0
     bl 0xfffffffc
-    str x0, [x20]
+    mov x20, x0
     movz x0, #4, #0
     bl 0xfffffffc
-    movz x1, #8, #0
-    add x19, x1, x20
-    str x0, [x19]
+    mov x19, x0
     movz x0, #1, #0
     bl 0xfffffffc
+    add x22, sp, #48
+    movz x1, #8, #0
+    add x21, x1, x22
+    eor.v v0, v0, v0
+    str.v q0, [x22]
+    str x20, [x22]
+    str x19, [x21]
     movz x1, #1, #0
     cmp w0, w1
-    b.eq 0x54
-    b 0x60
+    b.eq 0x64
+    b 0x70
 2:
     movz x0, #10, #0
     bl 0xfffffffc
-    str x0, [x20]
+    str x0, [x22]
 3:
-    ldr x0, [x20]
+    ldr x19, [x22]
+    mov x0, x19
     bl 0xfffffffc
-    ldr x2, [x20]
-    ldr x1, [x19]
-    add x1, x2, x1
+    ldr x1, [x21]
+    add x1, x1, x19
     add x0, x1, x0
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
-    ldp x29, x30, [xzr, #23]
-    add sp, sp, #48
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldp x29, x30, [xzr, #39]
+    add sp, sp, #64
     ret
 =========== OPT LEVEL: aggresive ===========
 main:

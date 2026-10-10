@@ -130,6 +130,7 @@ STACK_SIZE :: u64(1024 * 1024)
 ARM64_SP :: c.int(4)
 ARM64_LR :: c.int(2)
 ARM64_X0 :: c.int(199)
+ARM64_V0 :: c.int(199 + 29)
 ARM64_PC :: c.int(260)
 REMOVE_CODE_CACHE :: u32(9 | (2 << 26) | (1 << 30))
 HOOK_CODE :: c.int(1 << 2)
@@ -173,18 +174,30 @@ trace_instruction :: proc "c" (
 	instr := trace.instrs[index]
 	fmt.sbprint(&line, " ::")
 	for op in instr.ops[:instr.operand_count] {
-		if (op.kind == .REGISTER || op.kind == .SHIFTED_REG) &&
-		   op.reg >= arm64.REG_X &&
-		   op.reg < arm64.REG_X + 32 {
-			value: u64
-			err := uc_reg_read(
-				engine,
-				ARM64_X0 + c.int(op.reg - arm64.REG_X),
-				&value,
-			)
-			fmt.assertf(err == nil, "%v", error_string(err))
+		if (op.kind == .REGISTER || op.kind == .SHIFTED_REG) {
+			if op.reg >= arm64.REG_X && op.reg < arm64.REG_X + 32 {
+				value: u64
+				err := uc_reg_read(
+					engine,
+					ARM64_X0 + c.int(op.reg - arm64.REG_X),
+					&value,
+				)
+				fmt.assertf(err == nil, "%v", error_string(err))
 
-			fmt.sbprint(&line, "", value)
+				fmt.sbprint(&line, "", value)
+			}
+
+			if op.reg >= arm64.REG_V && op.reg < arm64.REG_V + 32 {
+				value: [16]u8
+				err := uc_reg_read(
+					engine,
+					ARM64_V0 + c.int(op.reg - arm64.REG_V),
+					&value,
+				)
+				fmt.assertf(err == nil, "%v", error_string(err))
+
+				fmt.sbprintf(&line, " %02x", value)
+			}
 		}
 	}
 

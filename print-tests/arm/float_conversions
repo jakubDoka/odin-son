@@ -1,6 +1,6 @@
 =========== OPT LEVEL: none-quick ===========
-Error{inst_idx = 164, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 212, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 128, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 200, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 opaque:
     ret
 main:
@@ -34,25 +34,22 @@ main:
     movk x0, #106, #1
     bl 0xfffffffc
     movz x1, #0, #0
-    adr x2, 0xfbc
-    ldr.v d0, [x2]
-    adr x2, 0xfc4
-    ldr.v d1, [x2]
-    adr x2, 0xfcc
-    ldr.v s2, [x2]
-    adr x2, 0xfd0
-    ldr.v s3, [x2]
-    fcvt d3, s3
     ldr x2, [xzr, #16]
     uxtb w2, w2
     invalid
+    adr x3, 0xfbc
+    ldr.v d0, [x3]
+    adr x3, 0xfc4
+    ldr.v d1, [x3]
+    adr x3, 0xfcc
+    ldr.v s2, [x3]
+    adr x3, 0xfd0
+    ldr.v s3, [x3]
+    fcvt d3, s3
     adr x3, 0xfd4
     ldr.v d4, [x3]
     fadd d3, d3, d4
     fcvt s3, d3
-    fcvtzs x3, s3
-    add x1, x1, x3
-    scvtf s3, w2
     fcvtzs x3, s3
     add x1, x1, x3
     ldr x3, [xzr, #24]
@@ -70,6 +67,9 @@ main:
     ldr x7, [xzr, #64]
     mov w7, w7
     mov w7, w7
+    scvtf s3, w2
+    fcvtzs x8, s3
+    add x1, x1, x8
     scvtf d3, x2
     fcvtzs x2, d3
     add x1, x1, x2
@@ -144,8 +144,8 @@ main:
     add sp, sp, #80
     ret
 =========== OPT LEVEL: none ===========
-Error{inst_idx = 188, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 232, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 152, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 220, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 opaque:
     ret
 main:
@@ -160,32 +160,34 @@ main:
     stp x29, x30, [xzr, #63]
     movn x0, #99, #0
     bl 0xfffffffc
-    mov x25, x0
+    mov x20, x0
     movn x0, #2999, #0
     bl 0xfffffffc
-    mov x24, x0
+    mov x25, x0
     movn x0, #4463, #0
     movk x0, #65534, #1
     bl 0xfffffffc
-    mov x23, x0
+    mov x24, x0
     movn x0, #19263, #0
     movk x0, #65459, #1
     bl 0xfffffffc
     mov x19, x0
     movz x0, #200, #0
     bl 0xfffffffc
-    mov x22, x0
+    mov x23, x0
     movz x0, #60000, #0
     bl 0xfffffffc
-    mov x21, x0
+    mov x22, x0
     movz x0, #2304, #0
     movk x0, #61, #1
     bl 0xfffffffc
-    mov x20, x0
+    mov x21, x0
     movz x0, #53184, #0
     movk x0, #106, #1
     bl 0xfffffffc
     movz x2, #0, #0
+    uxtb w1, w20
+    invalid
     adr x1, 0xfbc
     ldr.v d4, [x1]
     adr x1, 0xfc4
@@ -195,27 +197,25 @@ main:
     adr x1, 0xfd0
     ldr.v s0, [x1]
     fcvt d1, s0
-    uxtb w1, w25
-    invalid
     adr x1, 0xfd4
     ldr.v d0, [x1]
     fadd d0, d1, d0
     fcvt s0, d0
     fcvtzs x1, s0
-    add x2, x2, x1
-    scvtf s0, w4
-    fcvtzs x1, s0
-    add x5, x2, x1
-    uxth w1, w24
+    add x8, x2, x1
+    uxth w1, w25
     invalid
-    mov w1, w23
+    mov w1, w24
     sxtw x6, w1
-    uxtb w1, w22
+    uxtb w1, w23
     uxtb w3, w1
-    uxth w1, w21
+    uxth w1, w22
     uxth w2, w1
-    mov w1, w20
+    mov w1, w21
     mov w1, w1
+    scvtf s0, w4
+    fcvtzs x5, s0
+    add x5, x8, x5
     scvtf d0, x4
     fcvtzs x4, d0
     add x5, x5, x4

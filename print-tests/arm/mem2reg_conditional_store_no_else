@@ -208,30 +208,34 @@ opaque:
 main:
     sub sp, sp, #48
     str x19, [xzr]
-    stp x29, x30, [xzr, #15]
-    add x19, sp, #24
-    eor.v v0, v0, v0
-    str.v q0, [x19]
+    str x20, [xzr, #8]
+    stp x29, x30, [xzr, #23]
     movz x0, #3, #0
     bl 0xfffffffc
-    str x0, [x19]
+    mov x20, x0
     movz x0, #5, #0
     bl 0xfffffffc
-    movz x1, #8, #0
-    add x1, x1, x19
-    str x0, [x1]
+    mov x19, x0
     movz x0, #1, #0
     bl 0xfffffffc
+    add x2, sp, #32
+    eor.v v0, v0, v0
+    str.v q0, [x2]
+    str x20, [x2]
+    movz x1, #8, #0
+    add x1, x1, x2
+    str x19, [x1]
     movz x1, #0, #0
     cmp w0, w1
-    b.gt 0x58
+    b.gt 0x64
     movz x0, #100, #0
-    str x0, [x19]
-    b 0x58
+    str x0, [x2]
+    b 0x64
 2:
-    ldr x0, [x19]
+    ldr x0, [x2]
     ldr x19, [xzr]
-    ldp x29, x30, [xzr, #15]
+    ldr x20, [xzr, #8]
+    ldp x29, x30, [xzr, #23]
     add sp, sp, #48
     ret
 =========== OPT LEVEL: aggresive ===========

@@ -31,15 +31,15 @@ main:
     bl 0xfffffffc
     add x1, x21, x19
     str x0, [x1]
-    movz x0, #10, #0
-    movz x2, #5, #0
+    movz x0, #5, #0
+    movz x2, #10, #0
     movz x3, #0, #0
 2:
     str x3, [xzr, #40]
     add x4, sp, #48
     ldr x4, [x4]
     ldr x5, [xzr, #40]
-    cmp w5, w0
+    cmp w5, w2
     b.ge 0xf0
     ldr x5, [x21]
     add x5, x5, x4
@@ -51,7 +51,7 @@ main:
     str x5, [x20]
     add x5, sp, #48
     ldr x5, [x5]
-    cmp w5, w2
+    cmp w5, w0
     b.gt 0xcc
     b 0xdc
 3:
@@ -109,13 +109,13 @@ main:
     bl 0xfffffffc
     add x5, x20, x21
     str x0, [x5]
-    movz x4, #10, #0
-    movz x3, #5, #0
+    movz x4, #5, #0
+    movz x3, #10, #0
     movz x0, #0, #0
 2:
     add x1, sp, #40
     ldr x2, [x1]
-    cmp w0, w4
+    cmp w0, w3
     b.ge 0xe0
     ldr x1, [x20]
     add x2, x1, x2
@@ -127,7 +127,7 @@ main:
     str x1, [x19]
     add x1, sp, #40
     ldr x1, [x1]
-    cmp w1, w3
+    cmp w1, w4
     b.gt 0xc4
     b 0xd4
 3:
@@ -183,15 +183,15 @@ main:
     bl 0xfffffffc
     add x1, x21, x19
     str x0, [x1]
-    movz x0, #10, #0
-    movz x2, #5, #0
+    movz x0, #5, #0
+    movz x2, #10, #0
     movz x3, #0, #0
 2:
     str x3, [xzr, #40]
     add x4, sp, #48
     ldr x4, [x4]
     ldr x5, [xzr, #40]
-    cmp w5, w0
+    cmp w5, w2
     b.ge 0xf0
     ldr x5, [x21]
     add x5, x5, x4
@@ -203,7 +203,7 @@ main:
     str x5, [x20]
     add x5, sp, #48
     ldr x5, [x5]
-    cmp w5, w2
+    cmp w5, w0
     b.gt 0xcc
     b 0xdc
 3:
@@ -261,13 +261,13 @@ main:
     bl 0xfffffffc
     add x5, x20, x21
     str x0, [x5]
-    movz x4, #10, #0
-    movz x3, #5, #0
+    movz x4, #5, #0
+    movz x3, #10, #0
     movz x0, #0, #0
 2:
     add x1, sp, #40
     ldr x2, [x1]
-    cmp w0, w4
+    cmp w0, w3
     b.ge 0xe0
     ldr x1, [x20]
     add x2, x1, x2
@@ -279,7 +279,7 @@ main:
     str x1, [x19]
     add x1, sp, #40
     ldr x1, [x1]
-    cmp w1, w3
+    cmp w1, w4
     b.gt 0xc4
     b 0xd4
 3:
@@ -311,8 +311,8 @@ main:
     str x20, [xzr, #8]
     str x21, [xzr, #16]
     stp x29, x30, [xzr, #31]
-    eor.v v0, v0, v0
     add x19, sp, #48
+    eor.v v0, v0, v0
     movz x0, #16, #0
     add x20, x0, x19
     str.v q0, [x19]
@@ -383,8 +383,8 @@ main:
     str x20, [xzr, #8]
     str x21, [xzr, #16]
     stp x29, x30, [xzr, #31]
-    eor.v v0, v0, v0
     add x21, sp, #40
+    eor.v v0, v0, v0
     movz x0, #16, #0
     add x20, x0, x21
     str.v q0, [x21]
@@ -451,55 +451,58 @@ main:
     str x20, [xzr, #8]
     str x21, [xzr, #16]
     stp x29, x30, [xzr, #31]
-    eor.v v0, v0, v0
-    add x21, sp, #40
-    movz x0, #16, #0
-    add x20, x0, x21
-    str.v q0, [x21]
-    str.v q0, [x20]
     movz x0, #0, #0
     bl 0xfffffffc
-    str x0, [x21]
+    mov x19, x0
     movz x0, #0, #0
     bl 0xfffffffc
-    movz x1, #8, #0
-    add x19, x1, x21
-    str x0, [x19]
+    mov x21, x0
     movz x0, #1, #0
     bl 0xfffffffc
-    str x0, [x20]
+    mov x20, x0
     movz x0, #2, #0
     bl 0xfffffffc
+    add x9, sp, #40
+    eor.v v0, v0, v0
+    movz x1, #16, #0
+    add x8, x1, x9
+    movz x1, #8, #0
+    add x7, x1, x9
     movz x1, #24, #0
-    add x6, x1, x21
+    add x6, x1, x9
+    str.v q0, [x9]
+    str.v q0, [x8]
+    str x19, [x9]
+    str x21, [x7]
+    str x20, [x8]
     str x0, [x6]
     movz x5, #10, #0
     movz x4, #5, #0
     movz x0, #0, #0
 2:
-    ldr x2, [x20]
-    ldr x1, [x21]
+    ldr x2, [x8]
+    ldr x1, [x9]
     add x3, x1, x2
-    str x3, [x21]
-    ldr x2, [x19]
+    str x3, [x9]
+    ldr x2, [x7]
     ldr x1, [x6]
     add x1, x2, x1
-    str x1, [x19]
+    str x1, [x7]
     cmp w3, w4
-    b.gt 0xa4
-    b 0xb4
+    b.gt 0xb0
+    b 0xc0
 3:
-    ldr x2, [x20]
+    ldr x2, [x8]
     movz x1, #1, #0
     add x1, x2, x1
-    str x1, [x20]
+    str x1, [x8]
 4:
-    ldr x3, [x21]
-    ldr x2, [x19]
+    ldr x3, [x9]
+    ldr x2, [x7]
     movz x1, #1, #0
     add x0, x0, x1
     cmp w0, w5
-    b.lt 0x78
+    b.lt 0x84
     movz x0, #1000, #0
     madd x0, x3, x0, xzr
     add x0, x0, x2
@@ -512,11 +515,11 @@ main:
 =========== OPT LEVEL: aggresive ===========
 main:
     sub sp, sp, #32
-    eor.v v0, v0, v0
     add x10, sp, #0
+    eor.v v0, v0, v0
+    movz x0, #16, #0
+    add x9, x0, x10
     movz x0, #0, #0
-    movz x1, #16, #0
-    add x9, x1, x10
     movz x1, #8, #0
     add x8, x1, x10
     movz x7, #1, #0

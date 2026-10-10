@@ -17,13 +17,13 @@ main:
     sub sp, sp, #48
     str x19, [xzr]
     stp x29, x30, [xzr, #15]
-    add x0, sp, #32
+    add x0, sp, #24
     movz x1, #0, #0
     movz x2, #8, #0
     bl 0xffffffb8
     movz x1, #0, #0
+    add x0, sp, #32
     movz x2, #8, #0
-    add x0, sp, #40
     bl 0xffffffb8
     movz x1, #0, #0
     movz x0, #100, #0
@@ -34,20 +34,20 @@ main:
     movz x4, #8, #0
     cmp w3, w4
     b.ge 0x74
-    add x4, sp, #32
+    add x4, sp, #24
     add x4, x4, x3
     add x5, x3, x19
     uxtb w6, w5
     strb w6, [x4]
-    add x4, sp, #40
+    add x4, sp, #32
     add x3, x4, x3
     strb w0, [x3]
     mov x2, x5
     b 0x3c
 5:
-    add x0, sp, #40
+    add x0, sp, #32
     add x0, x0, x1
-    add x2, sp, #32
+    add x2, sp, #24
     add x1, x2, x1
     movz x2, #8, #0
     bl 0xffffffd4
@@ -58,7 +58,7 @@ main:
     cmp w1, w2
     b.ge 0xc8
     add x2, x1, x19
-    add x3, sp, #40
+    add x3, sp, #32
     add x3, x3, x1
     ldrb w3, [x3]
     uxtb w3, w3
@@ -99,26 +99,26 @@ main:
     movz x2, #8, #0
     bl 0xffffffb8
     movz x1, #0, #0
-    movz x2, #8, #0
     add x0, sp, #32
+    movz x2, #8, #0
     bl 0xffffffb8
     movz x5, #0, #0
     movz x4, #100, #0
     movz x19, #1, #0
-    movz x3, #0, #0
+    movz x0, #0, #0
 4:
-    movz x0, #8, #0
-    cmp w3, w0
+    movz x1, #8, #0
+    cmp w0, w1
     b.ge 0x70
-    add x0, sp, #24
-    add x2, x0, x3
-    add x1, x3, x19
-    uxtb w0, w1
-    strb w0, [x2]
-    add x0, sp, #32
-    add x0, x0, x3
+    add x1, sp, #24
+    add x3, x1, x0
+    add x2, x0, x19
+    uxtb w1, w2
+    strb w1, [x3]
+    add x1, sp, #32
+    add x0, x1, x0
     strb w4, [x0]
-    mov x3, x1
+    mov x0, x2
     b 0x3c
 5:
     add x0, sp, #32
@@ -174,37 +174,38 @@ main:
     movz x2, #8, #0
     bl 0xffffffb8
     movz x1, #0, #0
-    movz x2, #8, #0
     add x0, sp, #32
+    movz x2, #8, #0
     bl 0xffffffb8
     movz x0, #100, #0
     movz x19, #1, #0
     movz x1, #0, #0
 4:
-    movz x2, #8, #0
-    cmp w1, w2
-    b.ge 0x6c
-    add x2, sp, #24
-    add x2, x2, x1
-    add x3, x1, x19
-    uxtb w4, w3
-    strb w4, [x2]
-    add x2, sp, #32
-    add x2, x2, x1
+    mov x2, x1
+    movz x3, #8, #0
+    cmp w2, w3
+    b.ge 0x70
+    add x3, sp, #24
+    add x3, x3, x2
+    add x4, x2, x19
+    uxtb w5, w4
+    strb w5, [x3]
+    add x3, sp, #32
+    add x2, x3, x2
     strb w0, [x2]
-    mov x1, x3
+    mov x1, x4
     b 0x38
 5:
     add x1, sp, #24
-    movz x2, #8, #0
     add x0, sp, #32
+    movz x2, #8, #0
     bl 0xffffffd4
     movz x0, #0, #0
     movz x1, #0, #0
 6:
     movz x2, #8, #0
     cmp w1, w2
-    b.ge 0xb8
+    b.ge 0xbc
     add x2, x1, x19
     add x3, sp, #32
     add x3, x3, x1
@@ -214,7 +215,7 @@ main:
     add x3, x3, x0
     mov x0, x3
     mov x1, x2
-    b 0x84
+    b 0x88
 7:
     movz x1, #251, #0
     sdiv x2, x0, x1
@@ -247,8 +248,8 @@ main:
     movz x2, #8, #0
     bl 0xffffffb8
     movz x1, #0, #0
-    movz x2, #8, #0
     add x0, sp, #32
+    movz x2, #8, #0
     bl 0xffffffb8
     movz x4, #100, #0
     movz x19, #1, #0
@@ -269,8 +270,8 @@ main:
     b 0x38
 5:
     add x1, sp, #24
-    movz x2, #8, #0
     add x0, sp, #32
+    movz x2, #8, #0
     bl 0xffffffd4
     movz x2, #0, #0
     movz x0, #0, #0
@@ -344,22 +345,22 @@ main:
     movz x1, #0, #0
 6:
     movz x2, #8, #0
-    cmp w1, w2
+    cmp w0, w2
     b.ge 0xa8
-    add x2, x1, x19
+    add x2, x0, x19
     add x3, sp, #40
-    add x3, x3, x1
+    add x3, x3, x0
     ldrb w3, [x3]
     uxtb w3, w3
     madd x3, x3, x2, xzr
-    add x3, x3, x0
-    mov x0, x3
-    mov x1, x2
+    add x3, x3, x1
+    mov x0, x2
+    mov x1, x3
     b 0x74
 7:
-    movz x1, #251, #0
-    sdiv x2, x0, x1
-    msub x0, x2, x1, x0
+    movz x0, #251, #0
+    sdiv x2, x1, x0
+    msub x0, x2, x0, x1
     ldr x19, [xzr]
     ldp x29, x30, [xzr, #15]
     add sp, sp, #48
@@ -408,8 +409,8 @@ main:
     add x0, sp, #32
     movz x2, #8, #0
     bl 0xffffffd4
-    movz x2, #0, #0
     movz x0, #0, #0
+    movz x2, #0, #0
 6:
     movz x1, #8, #0
     cmp w0, w1
@@ -478,15 +479,15 @@ main:
     movz x0, #0, #0
 4:
     add x2, sp, #32
-    add x2, x2, x0
+    add x2, x2, x1
     ldrb w2, [x2]
     uxtb w2, w2
-    add x0, x0, x19
-    madd x2, x2, x0, xzr
-    add x2, x1, x2
-    movz x1, #8, #0
-    cmp w0, w1
-    mov x1, x2
+    add x1, x1, x19
+    madd x2, x2, x1, xzr
+    add x2, x0, x2
+    movz x0, #8, #0
+    cmp w1, w0
+    mov x0, x2
     b.lt 0x6c
     movz x1, #251, #0
     sdiv x0, x2, x1

@@ -319,6 +319,7 @@ Node_Datatype :: enum u8 {
 	V512,
 }
 
+@(rodata)
 LANE_SIZE := [Lane_Type]int {
 	.I8  = 1,
 	.I16 = 2,
@@ -328,6 +329,17 @@ LANE_SIZE := [Lane_Type]int {
 	.F64 = 8,
 }
 
+@(rodata)
+LANE_TO_DT := [Lane_Type]Node_Datatype {
+	.I8  = .I8,
+	.I16 = .I16,
+	.I32 = .I32,
+	.I64 = .I64,
+	.F32 = .F32,
+	.F64 = .F64,
+}
+
+@(rodata)
 DT_SIZE := [Node_Datatype]int {
 	.Void = 0,
 	.I8   = 1,
@@ -2058,7 +2070,7 @@ add_dnode :: proc(
 Add_Raw_Meta :: bit_field u64 {
 	lane:           Lane_Type | 3,
 	extra_capacity: int       | 2,
-	extra_dwords:   int       | 3,
+	extra_dwords:   int       | 4,
 }
 
 add_raw :: proc(

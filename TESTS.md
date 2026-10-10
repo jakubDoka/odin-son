@@ -5840,8 +5840,9 @@ main :: proc() -> int {
 	vu16: [17]u16
 	init_inc(vu16[:])
 	vu32: [9]u32
-	init_inc(vu16[:])
+	init_inc(vu32[:])
 	vu64: [5]u64
+	init_inc(vu64[:])
 
 	res := 0
 	res += int(simd_fold(vu8[:]))

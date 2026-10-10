@@ -62,32 +62,32 @@ main:
     fadd d6, d6, d0
     adr x0, 0x1040
     ldr.v d7, [x0]
-    ldr.v d8, [xzr, #64]
-    fadd d8, d8, d3
+    ldr.v d8, [xzr, #16]
+    ldr.v d9, [xzr, #144]
+    fadd d8, d8, d9
     fmul d8, d8, d7
-    fadd d8, d8, d2
-    ldr.v d9, [xzr, #48]
-    fadd d9, d9, d2
+    fadd d8, d8, d5
+    ldr.v d9, [xzr, #32]
+    fadd d9, d9, d1
     fmul d9, d9, d7
-    fadd d9, d9, d3
-    ldr.v d10, [xzr, #80]
-    fadd d10, d10, d4
+    fadd d9, d9, d4
+    ldr.v d10, [xzr, #48]
+    fadd d10, d10, d2
     fmul d10, d10, d7
-    fadd d10, d10, d1
-    ldr.v d11, [xzr, #32]
-    fadd d11, d11, d1
+    fadd d10, d10, d3
+    ldr.v d11, [xzr, #64]
+    fadd d11, d11, d3
     fmul d11, d11, d7
-    fadd d11, d11, d4
-    ldr.v d12, [xzr, #96]
-    fadd d12, d12, d5
+    fadd d11, d11, d2
+    ldr.v d12, [xzr, #80]
+    fadd d12, d12, d4
     fmul d12, d12, d7
-    ldr.v d13, [xzr, #144]
-    fadd d12, d12, d13
-    ldr.v d13, [xzr, #16]
+    fadd d12, d12, d1
+    ldr.v d13, [xzr, #96]
+    fadd d13, d13, d5
+    fmul d13, d13, d7
     ldr.v d14, [xzr, #144]
     fadd d13, d13, d14
-    fmul d13, d13, d7
-    fadd d13, d13, d5
     ldr.v d14, [xzr, #112]
     fadd d14, d14, d6
     fmul d14, d14, d7
@@ -98,66 +98,67 @@ main:
     fadd d15, d15, d16
     fmul d15, d15, d7
     fadd d15, d15, d6
-    fadd d16, d15, d8
-    fadd d17, d13, d10
-    fadd d18, d11, d12
-    fadd d19, d9, d14
+    fadd d16, d8, d12
+    fadd d17, d9, d13
+    fadd d18, d10, d14
+    fadd d19, d15, d11
     fcmp d0, d0
     csinc x0, xzr, xzr, ne
     cbnz x0, 1
-    fmov d0, d17
-    fmov d20, d16
-    fmov d21, d19
+    orr.v v0, v17, v17
     str.v d18, [xzr, #160]
+    orr.v v20, v16, v16
+    str.v d19, [xzr, #176]
     b 2
 1:
-    ldr.v d22, [xzr, #48]
-    fadd d22, d22, d19
+    ldr.v d21, [xzr, #48]
+    fadd d21, d21, d18
+    fmul d21, d21, d7
+    fadd d21, d21, d3
+    ldr.v d22, [xzr, #32]
+    fadd d22, d22, d17
     fmul d22, d22, d7
-    fadd d22, d22, d3
-    ldr.v d23, [xzr, #32]
-    fadd d23, d23, d18
+    fadd d22, d22, d4
+    ldr.v d23, [xzr, #16]
+    fadd d23, d23, d16
     fmul d23, d23, d7
-    fadd d23, d23, d4
-    ldr.v d24, [xzr, #16]
-    fadd d24, d24, d17
+    fadd d23, d23, d5
+    ldr.v d24, [xzr]
+    fadd d24, d24, d19
     fmul d24, d24, d7
-    fadd d24, d24, d5
-    ldr.v d25, [xzr]
-    fadd d25, d25, d16
-    fmul d25, d25, d7
-    fadd d25, d25, d6
-    fmov d0, d24
-    fmov d20, d25
-    fmov d21, d22
-    str.v d23, [xzr, #160]
+    fadd d24, d24, d6
+    orr.v v0, v22, v22
+    str.v d21, [xzr, #160]
+    orr.v v20, v23, v23
+    str.v d24, [xzr, #176]
 2:
+    ldr.v d21, [xzr, #176]
     ldr.v d22, [xzr, #160]
-    fadd d23, d20, d0
+    fadd d23, d21, d20
     fmul d23, d23, d7
     fadd d23, d23, d15
-    fadd d23, d23, d13
-    fadd d24, d22, d21
+    fadd d23, d23, d8
+    fadd d24, d0, d22
     fmul d24, d24, d7
-    fadd d24, d24, d11
     fadd d24, d24, d9
-    fadd d25, d20, d22
+    fadd d24, d24, d10
+    fadd d25, d21, d0
     fmul d25, d25, d7
-    fadd d25, d25, d8
-    fadd d25, d25, d10
-    fadd d26, d0, d21
+    fadd d25, d25, d11
+    fadd d25, d25, d12
+    fadd d26, d20, d22
     fmul d26, d26, d7
-    fadd d26, d26, d12
+    fadd d26, d26, d13
     fadd d26, d26, d14
     ldr.v d27, [xzr]
     ldr.v d28, [xzr]
     fcmp d28, d27
     csinc x0, xzr, xzr, ne
     cbnz x0, 3
-    str.v d25, [xzr, #160]
-    fmov d27, d26
-    str.v d23, [xzr, #176]
-    str.v d24, [xzr, #192]
+    orr.v v27, v24, v24
+    str.v d23, [xzr, #160]
+    str.v d25, [xzr, #176]
+    str.v d26, [xzr, #192]
     b 4
 3:
     ldr.v d28, [xzr, #64]
@@ -178,13 +179,13 @@ main:
     fmul d7, d31, d7
     ldr.v d31, [xzr, #128]
     fadd d7, d7, d31
-    str.v d30, [xzr, #160]
-    fmov d27, d7
-    str.v d28, [xzr, #176]
-    str.v d29, [xzr, #192]
+    orr.v v27, v29, v29
+    str.v d28, [xzr, #160]
+    str.v d30, [xzr, #176]
+    str.v d7, [xzr, #192]
 4:
-    ldr.v d7, [xzr, #176]
-    ldr.v d28, [xzr, #192]
+    ldr.v d7, [xzr, #192]
+    ldr.v d28, [xzr, #176]
     ldr.v d29, [xzr, #160]
     ldr.v d30, [xzr]
     ldr.v d31, [xzr, #16]
@@ -212,276 +213,283 @@ main:
     fadd d1, d1, d5
     fadd d1, d1, d6
     fadd d1, d1, d15
-    fadd d1, d1, d13
-    fadd d1, d1, d11
-    fadd d1, d1, d9
     fadd d1, d1, d8
+    fadd d1, d1, d9
     fadd d1, d1, d10
+    fadd d1, d1, d11
     fadd d1, d1, d12
+    fadd d1, d1, d13
     fadd d1, d1, d14
+    fadd d1, d1, d19
     fadd d1, d1, d16
     fadd d1, d1, d17
     fadd d1, d1, d18
-    fadd d1, d1, d19
+    fadd d1, d1, d21
     fadd d1, d1, d20
     fadd d0, d1, d0
     fadd d0, d0, d22
-    fadd d0, d0, d21
     fadd d0, d0, d23
     fadd d0, d0, d24
     fadd d0, d0, d25
     fadd d0, d0, d26
-    fadd d0, d0, d7
-    fadd d0, d0, d28
     fadd d0, d0, d29
     fadd d0, d0, d27
+    fadd d0, d0, d28
+    fadd d0, d0, d7
     fcvtzs x0, d0
     add sp, sp, #208
     ret
 =========== OPT LEVEL: none ===========
 main:
-    sub sp, sp, #144
-    eor.v v17, v17, v17
+    sub sp, sp, #160
+    eor.v v18, v18, v18
     adr x0, 0xfc0
     ldr.v d0, [x0]
-    fadd d0, d0, d17
-    fmov d15, d0
+    fadd d0, d0, d18
+    str.v d0, [xzr, #64]
     adr x0, 0xfc8
     ldr.v d0, [x0]
-    fadd d0, d0, d17
-    str.v d0, [xzr, #80]
+    fadd d0, d0, d18
+    orr.v v9, v0, v0
     adr x0, 0xfd0
     ldr.v d0, [x0]
-    fadd d0, d0, d17
-    str.v d0, [xzr, #64]
+    fadd d0, d0, d18
+    str.v d0, [xzr, #48]
     adr x0, 0xfd8
     ldr.v d0, [x0]
-    fadd d0, d0, d17
-    str.v d0, [xzr, #96]
+    fadd d0, d0, d18
+    str.v d0, [xzr, #32]
     adr x0, 0xfe0
     ldr.v d0, [x0]
-    fadd d0, d0, d17
-    str.v d0, [xzr, #48]
+    fadd d0, d0, d18
+    str.v d0, [xzr, #16]
     adr x0, 0xfe8
     ldr.v d0, [x0]
-    fadd d30, d0, d17
+    fadd d0, d0, d18
+    str.v d0, [xzr, #80]
     adr x0, 0xff0
     ldr.v d0, [x0]
-    fadd d29, d0, d17
+    fadd d0, d0, d18
+    str.v d0, [xzr]
     adr x0, 0xff8
     ldr.v d0, [x0]
-    fadd d0, d0, d17
-    str.v d0, [xzr, #128]
+    fadd d0, d0, d18
+    str.v d0, [xzr, #96]
     adr x0, 0x1000
     ldr.v d0, [x0]
-    fadd d27, d0, d17
+    fadd d0, d0, d18
+    orr.v v15, v0, v0
     adr x0, 0x1008
     ldr.v d0, [x0]
-    fadd d26, d0, d17
+    fadd d24, d0, d18
     adr x0, 0x1010
     ldr.v d0, [x0]
-    fadd d25, d0, d17
+    fadd d0, d0, d18
+    str.v d0, [xzr, #128]
     adr x0, 0x1018
     ldr.v d0, [x0]
-    fadd d0, d0, d17
-    str.v d0, [xzr, #112]
+    fadd d0, d0, d18
+    orr.v v14, v0, v0
     adr x0, 0x1020
     ldr.v d0, [x0]
-    fadd d0, d0, d17
-    str.v d0, [xzr, #32]
+    fadd d0, d0, d18
+    orr.v v13, v0, v0
     adr x0, 0x1028
     ldr.v d0, [x0]
-    fadd d22, d0, d17
+    fadd d0, d0, d18
+    orr.v v12, v0, v0
     adr x0, 0x1030
     ldr.v d0, [x0]
-    fadd d21, d0, d17
+    fadd d0, d0, d18
+    str.v d0, [xzr, #112]
     adr x0, 0x1038
     ldr.v d0, [x0]
-    fadd d20, d0, d17
+    fadd d0, d0, d18
+    orr.v v11, v0, v0
     adr x0, 0x1040
-    ldr.v d13, [x0]
-    ldr.v d1, [xzr, #48]
-    ldr.v d0, [xzr, #32]
-    fadd d0, d1, d0
-    fmul d1, d0, d13
+    ldr.v d30, [x0]
+    fadd d0, d9, d24
+    fmul d1, d0, d30
     ldr.v d0, [xzr, #112]
     fadd d0, d1, d0
-    str.v d0, [xzr, #16]
-    ldr.v d1, [xzr, #112]
-    ldr.v d0, [xzr, #96]
+    orr.v v10, v0, v0
+    ldr.v d1, [xzr, #48]
+    ldr.v d0, [xzr, #128]
     fadd d0, d1, d0
-    fmul d1, d0, d13
+    fmul d1, d0, d30
+    fadd d17, d1, d12
+    orr.v v1, v14, v14
     ldr.v d0, [xzr, #32]
     fadd d0, d1, d0
-    str.v d0, [xzr]
-    fadd d0, d30, d22
-    fmul d0, d0, d13
-    fadd d16, d0, d25
-    ldr.v d0, [xzr, #64]
-    fadd d0, d0, d25
-    fmul d0, d0, d13
-    fadd d7, d0, d22
-    fadd d0, d29, d21
-    fmul d0, d0, d13
-    fadd d6, d0, d26
-    ldr.v d0, [xzr, #80]
-    fadd d0, d0, d26
-    fmul d0, d0, d13
-    fadd d5, d0, d21
+    fmul d1, d0, d30
+    fadd d16, d1, d13
+    ldr.v d1, [xzr, #16]
+    fadd d0, d1, d13
+    fmul d1, d0, d30
+    fadd d7, d1, d14
+    ldr.v d1, [xzr, #80]
+    fadd d0, d1, d12
+    fmul d1, d0, d30
     ldr.v d0, [xzr, #128]
-    fadd d0, d0, d20
-    fmul d0, d0, d13
-    fadd d4, d0, d27
-    fadd d0, d15, d27
-    fmul d0, d0, d13
-    fadd d3, d0, d20
-    ldr.v d0, [xzr, #16]
-    fadd d2, d0, d3
-    fadd d1, d5, d16
-    fadd d0, d7, d6
-    ldr.v d18, [xzr]
-    fadd d19, d18, d4
-    fcmp d17, d17
+    fadd d6, d1, d0
+    ldr.v d1, [xzr]
+    ldr.v d0, [xzr, #112]
+    fadd d0, d1, d0
+    fmul d0, d0, d30
+    fadd d5, d0, d24
+    ldr.v d1, [xzr, #96]
+    fadd d0, d1, d11
+    fmul d1, d0, d30
+    fadd d4, d1, d15
+    ldr.v d1, [xzr, #64]
+    fadd d0, d1, d15
+    fmul d1, d0, d30
+    fadd d3, d1, d11
+    fadd d2, d10, d6
+    fadd d1, d17, d5
+    fadd d0, d16, d4
+    fadd d23, d3, d7
+    fcmp d18, d18
     csinc x0, xzr, xzr, ne
     cbnz x0, 1
-    fmov d9, d1
-    fmov d8, d2
-    fmov d24, d19
-    fmov d17, d0
+    orr.v v18, v1, v1
+    orr.v v22, v0, v0
+    orr.v v19, v2, v2
+    orr.v v20, v23, v23
     b 2
 1:
-    ldr.v d17, [xzr, #96]
-    fadd d17, d17, d19
-    fmul d18, d17, d13
-    ldr.v d17, [xzr, #32]
-    fadd d18, d18, d17
-    ldr.v d17, [xzr, #64]
-    fadd d17, d17, d0
-    fmul d17, d17, d13
-    fadd d17, d17, d22
-    ldr.v d23, [xzr, #80]
-    fadd d23, d23, d1
-    fmul d23, d23, d13
-    fadd d24, d23, d21
-    fadd d23, d15, d2
-    fmul d23, d23, d13
-    fadd d23, d23, d20
-    fmov d9, d24
-    fmov d8, d23
-    fmov d24, d18
+    ldr.v d18, [xzr, #32]
+    fadd d18, d18, d0
+    fmul d19, d18, d30
+    fadd d19, d19, d13
+    ldr.v d18, [xzr, #48]
+    fadd d18, d18, d1
+    fmul d20, d18, d30
+    fadd d18, d20, d12
+    fadd d20, d9, d2
+    fmul d21, d20, d30
+    ldr.v d20, [xzr, #112]
+    fadd d21, d21, d20
+    ldr.v d20, [xzr, #64]
+    fadd d20, d20, d23
+    fmul d22, d20, d30
+    fadd d20, d22, d11
+    orr.v v22, v19, v19
+    orr.v v19, v21, v21
 2:
-    fmov d28, d17
-    fadd d17, d8, d9
-    fmul d17, d17, d13
-    fadd d17, d17, d3
-    fadd d17, d17, d5
-    fadd d18, d28, d24
-    fmul d18, d18, d13
-    fadd d18, d18, d7
-    ldr.v d23, [xzr]
-    fadd d18, d18, d23
-    fadd d23, d8, d28
-    fmul d23, d23, d13
-    ldr.v d31, [xzr, #16]
-    fadd d23, d23, d31
-    fadd d23, d23, d16
-    fadd d31, d9, d24
-    fmul d31, d31, d13
-    fadd d31, d31, d6
-    fadd d31, d31, d4
-    fcmp d15, d15
+    orr.v v21, v22, v22
+    fadd d22, d20, d19
+    fmul d22, d22, d30
+    fadd d25, d22, d3
+    fadd d22, d25, d10
+    fadd d25, d18, d21
+    fmul d25, d25, d30
+    fadd d25, d25, d17
+    fadd d25, d25, d16
+    fadd d26, d20, d18
+    fmul d26, d26, d30
+    fadd d26, d26, d7
+    fadd d26, d26, d6
+    fadd d27, d19, d21
+    fmul d27, d27, d30
+    fadd d27, d27, d5
+    fadd d27, d27, d4
+    ldr.v d28, [xzr, #64]
+    ldr.v d29, [xzr, #64]
+    fcmp d29, d28
     csinc x0, xzr, xzr, ne
     cbnz x0, 3
-    fmov d14, d23
-    fmov d10, d31
-    fmov d13, d17
-    fmov d12, d18
+    orr.v v28, v25, v25
+    str.v d22, [xzr, #144]
+    orr.v v8, v26, v26
+    orr.v v29, v27, v27
     b 4
 3:
-    ldr.v d10, [xzr, #48]
-    fadd d10, d10, d17
-    fmul d10, d10, d13
-    ldr.v d11, [xzr, #112]
-    fadd d12, d10, d11
-    fadd d10, d18, d30
-    fmul d10, d10, d13
-    fadd d11, d10, d25
-    fadd d10, d23, d29
-    fmul d10, d10, d13
-    fadd d10, d10, d26
-    ldr.v d14, [xzr, #128]
-    fadd d14, d14, d31
-    fmul d13, d14, d13
-    fadd d13, d13, d27
-    fmov d14, d10
-    fmov d10, d13
-    fmov d13, d12
-    fmov d12, d11
+    ldr.v d28, [xzr, #16]
+    fadd d28, d28, d22
+    fmul d28, d28, d30
+    fadd d29, d28, d14
+    ldr.v d28, [xzr, #80]
+    fadd d28, d28, d25
+    fmul d28, d28, d30
+    ldr.v d31, [xzr, #128]
+    fadd d28, d28, d31
+    ldr.v d31, [xzr]
+    fadd d31, d31, d26
+    fmul d31, d31, d30
+    fadd d31, d31, d24
+    ldr.v d8, [xzr, #96]
+    fadd d8, d8, d27
+    fmul d30, d8, d30
+    fadd d30, d30, d15
+    str.v d29, [xzr, #144]
+    orr.v v8, v31, v31
+    orr.v v29, v30, v30
 4:
-    fmov d11, d13
-    fmov d13, d12
-    fmov d12, d14
-    ldr.v d14, [xzr, #80]
-    fadd d15, d15, d14
-    ldr.v d14, [xzr, #64]
-    fadd d15, d15, d14
-    ldr.v d14, [xzr, #96]
-    fadd d15, d15, d14
-    ldr.v d14, [xzr, #48]
-    fadd d14, d15, d14
-    fadd d30, d14, d30
-    fadd d29, d30, d29
-    ldr.v d30, [xzr, #128]
-    fadd d29, d29, d30
-    fadd d27, d29, d27
-    fadd d26, d27, d26
-    fadd d26, d26, d25
-    ldr.v d25, [xzr, #112]
-    fadd d26, d26, d25
-    ldr.v d25, [xzr, #32]
-    fadd d25, d26, d25
-    fadd d22, d25, d22
-    fadd d21, d22, d21
-    fadd d20, d21, d20
-    fadd d3, d20, d3
-    fadd d3, d3, d5
-    fadd d5, d3, d7
-    ldr.v d3, [xzr]
-    fadd d5, d5, d3
-    ldr.v d3, [xzr, #16]
-    fadd d3, d5, d3
+    orr.v v31, v29, v29
+    orr.v v30, v8, v8
+    ldr.v d29, [xzr, #144]
+    ldr.v d8, [xzr, #64]
+    fadd d8, d8, d9
+    ldr.v d9, [xzr, #48]
+    fadd d8, d8, d9
+    ldr.v d9, [xzr, #32]
+    fadd d8, d8, d9
+    ldr.v d9, [xzr, #16]
+    fadd d8, d8, d9
+    ldr.v d9, [xzr, #80]
+    fadd d8, d8, d9
+    ldr.v d9, [xzr]
+    fadd d8, d8, d9
+    ldr.v d9, [xzr, #96]
+    fadd d8, d8, d9
+    fadd d8, d8, d15
+    fadd d8, d8, d24
+    ldr.v d24, [xzr, #128]
+    fadd d8, d8, d24
+    fadd d8, d8, d14
+    fadd d8, d8, d13
+    fadd d8, d8, d12
+    ldr.v d24, [xzr, #112]
+    fadd d8, d8, d24
+    fadd d24, d8, d11
+    fadd d24, d24, d3
+    fadd d3, d24, d10
+    fadd d3, d3, d17
     fadd d3, d3, d16
+    fadd d3, d3, d7
     fadd d3, d3, d6
+    fadd d3, d3, d5
     fadd d3, d3, d4
+    fadd d3, d3, d23
     fadd d2, d3, d2
     fadd d1, d2, d1
     fadd d0, d1, d0
+    fadd d0, d0, d20
     fadd d0, d0, d19
-    fadd d0, d0, d8
-    fadd d0, d0, d9
-    fadd d0, d0, d28
-    fadd d0, d0, d24
-    fadd d0, d0, d17
     fadd d0, d0, d18
-    fadd d0, d0, d23
+    fadd d0, d0, d21
+    fadd d0, d0, d22
+    fadd d0, d0, d25
+    fadd d0, d0, d26
+    fadd d0, d0, d27
+    fadd d0, d0, d29
+    fadd d0, d0, d28
+    fadd d0, d0, d30
     fadd d0, d0, d31
-    fadd d0, d0, d11
-    fadd d0, d0, d13
-    fadd d0, d0, d12
-    fadd d0, d0, d10
     fcvtzs x0, d0
-    add sp, sp, #144
+    add sp, sp, #160
     ret
 =========== OPT LEVEL: mininal-quick ===========
 main:
-    sub sp, sp, #48
+    sub sp, sp, #32
     movz x0, #1, #0
     cbnz x0, 1
     adr x1, 0xfc0
     ldr.v d0, [x1]
-    fmov d1, d0
-    fmov d2, d0
-    fmov d3, d0
+    orr.v v1, v0, v0
+    orr.v v2, v0, v0
+    orr.v v3, v0, v0
     b 2
 1:
     adr x1, 0xfc8
@@ -492,90 +500,89 @@ main:
     ldr.v d6, [x1]
     adr x1, 0xfe0
     ldr.v d7, [x1]
-    fmov d1, d7
-    fmov d2, d6
-    fmov d3, d5
-    fmov d0, d4
+    orr.v v2, v4, v4
+    orr.v v1, v7, v7
+    orr.v v0, v5, v5
+    orr.v v3, v6, v6
 2:
     adr x1, 0xfe8
     ldr.v d4, [x1]
     adr x1, 0xff0
     ldr.v d5, [x1]
-    fadd d6, d0, d2
+    fadd d6, d2, d3
     fmul d6, d6, d4
     fadd d6, d6, d5
     fadd d6, d6, d5
-    fadd d7, d2, d1
+    fadd d7, d3, d1
     fmul d7, d7, d4
     fadd d7, d7, d5
     fadd d7, d7, d5
-    fadd d8, d0, d3
+    fadd d8, d2, d0
     fmul d8, d8, d4
     fadd d8, d8, d5
     fadd d8, d8, d5
-    fadd d9, d3, d1
+    fadd d9, d0, d1
     fmul d9, d9, d4
     fadd d9, d9, d5
     fadd d5, d9, d5
     cbnz x0, 3
-    str.v d5, [xzr]
-    fmov d9, d7
-    str.v d6, [xzr, #16]
-    str.v d8, [xzr, #32]
+    orr.v v9, v6, v6
+    orr.v v10, v5, v5
+    str.v d7, [xzr]
+    str.v d8, [xzr, #16]
     b 4
 3:
     adr x0, 0xff8
-    ldr.v d10, [x0]
-    fadd d10, d10, d8
-    fmul d10, d10, d4
-    adr x0, 0x1000
     ldr.v d11, [x0]
-    fadd d11, d11, d7
+    fadd d11, d11, d8
     fmul d11, d11, d4
-    adr x0, 0x1008
+    adr x0, 0x1000
     ldr.v d12, [x0]
-    fadd d12, d12, d6
+    fadd d12, d12, d7
     fmul d12, d12, d4
+    adr x0, 0x1008
+    ldr.v d13, [x0]
+    fadd d13, d13, d6
+    fmul d13, d13, d4
     adr x0, 0x1010
-    ldr.v d13, [x0]
-    fadd d13, d13, d5
-    fmul d4, d13, d4
+    ldr.v d14, [x0]
+    fadd d14, d14, d5
+    fmul d4, d14, d4
     adr x0, 0x1018
-    ldr.v d13, [x0]
-    fadd d10, d10, d13
+    ldr.v d14, [x0]
+    fadd d11, d11, d14
     adr x0, 0x1020
-    ldr.v d13, [x0]
-    fadd d11, d11, d13
+    ldr.v d14, [x0]
+    fadd d12, d12, d14
     adr x0, 0x1028
-    ldr.v d13, [x0]
-    fadd d12, d12, d13
+    ldr.v d14, [x0]
+    fadd d13, d13, d14
     adr x0, 0x1030
-    ldr.v d13, [x0]
-    fadd d4, d4, d13
-    str.v d4, [xzr]
-    fmov d9, d11
-    str.v d12, [xzr, #16]
-    str.v d10, [xzr, #32]
+    ldr.v d14, [x0]
+    fadd d4, d4, d14
+    orr.v v9, v13, v13
+    orr.v v10, v4, v4
+    str.v d12, [xzr]
+    str.v d11, [xzr, #16]
 4:
     ldr.v d4, [xzr, #16]
-    ldr.v d10, [xzr]
-    ldr.v d11, [xzr, #32]
+    ldr.v d11, [xzr]
     adr x0, 0x1038
     ldr.v d12, [x0]
-    fadd d0, d12, d0
+    fadd d2, d12, d2
+    fadd d0, d2, d0
     fadd d0, d0, d3
-    fadd d0, d0, d2
     fadd d0, d0, d1
     fadd d0, d0, d8
     fadd d0, d0, d7
     fadd d0, d0, d6
     fadd d0, d0, d5
+    fadd d0, d0, d4
     fadd d0, d0, d11
     fadd d0, d0, d9
-    fadd d0, d0, d4
     fadd d0, d0, d10
     fcvtzs x0, d0
-    add sp, sp, #48
+    add sp, sp, #32
     ret
 =========== OPT LEVEL: mininal ===========
 main:
@@ -583,10 +590,10 @@ main:
     cbnz x1, 1
     adr x0, 0xfc0
     ldr.v d0, [x0]
-    fmov d4, d0
-    fmov d5, d0
-    fmov d6, d0
-    fmov d7, d0
+    orr.v v4, v0, v0
+    orr.v v7, v0, v0
+    orr.v v5, v0, v0
+    orr.v v6, v0, v0
     b 2
 1:
     adr x0, 0xfc8
@@ -597,10 +604,10 @@ main:
     ldr.v d1, [x0]
     adr x0, 0xfe0
     ldr.v d0, [x0]
-    fmov d4, d0
-    fmov d5, d1
-    fmov d6, d2
-    fmov d7, d3
+    orr.v v7, v3, v3
+    orr.v v4, v0, v0
+    orr.v v6, v2, v2
+    orr.v v5, v1, v1
 2:
     adr x0, 0xfe8
     ldr.v d16, [x0]
@@ -623,10 +630,10 @@ main:
     fadd d0, d0, d17
     fadd d0, d0, d17
     cbnz x1, 3
-    fmov d20, d0
-    fmov d19, d2
-    fmov d18, d1
-    fmov d17, d3
+    orr.v v20, v1, v1
+    orr.v v19, v0, v0
+    orr.v v18, v2, v2
+    orr.v v17, v3, v3
     b 4
 3:
     adr x0, 0xff8
@@ -636,27 +643,27 @@ main:
     adr x0, 0x1000
     ldr.v d17, [x0]
     fadd d17, d17, d2
-    fmul d19, d17, d16
+    fmul d18, d17, d16
     adr x0, 0x1008
     ldr.v d17, [x0]
     fadd d17, d17, d1
-    fmul d18, d17, d16
+    fmul d20, d17, d16
     adr x0, 0x1010
     ldr.v d17, [x0]
     fadd d17, d17, d0
-    fmul d20, d17, d16
+    fmul d19, d17, d16
     adr x0, 0x1018
     ldr.v d16, [x0]
     fadd d17, d21, d16
     adr x0, 0x1020
     ldr.v d16, [x0]
-    fadd d19, d19, d16
+    fadd d18, d18, d16
     adr x0, 0x1028
     ldr.v d16, [x0]
-    fadd d18, d18, d16
+    fadd d20, d20, d16
     adr x0, 0x1030
     ldr.v d16, [x0]
-    fadd d20, d20, d16
+    fadd d19, d19, d16
 4:
     adr x0, 0x1038
     ldr.v d16, [x0]
@@ -669,9 +676,9 @@ main:
     fadd d1, d2, d1
     fadd d0, d1, d0
     fadd d0, d0, d17
-    fadd d0, d0, d19
     fadd d0, d0, d18
     fadd d0, d0, d20
+    fadd d0, d0, d19
     fcvtzs x0, d0
     ret
 =========== OPT LEVEL: moderate-quick ===========

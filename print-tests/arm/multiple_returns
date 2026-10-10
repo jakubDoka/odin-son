@@ -27,36 +27,42 @@ a:
     cmp w1, w0
     b.eq 0x68
     ldr x0, [xzr, #24]
-    bl 0xc0
+    bl 0xd0
     str x0, [xzr, #40]
     ldr x0, [xzr, #32]
-    bl 0xcc
+    bl 7
     ldr x1, [xzr, #40]
     add x0, x1, x0
-    mov x1, x0
-    b 0xa8
+    str x0, [xzr, #40]
+    b 0xbc
 2:
     ldr x0, [xzr, #24]
-    bl 0xc0
+    bl 0xd0
     str x0, [xzr, #24]
     ldr x0, [xzr, #32]
     madd x0, x0, x19, xzr
-    bl 0xcc
-    ldr x2, [xzr, #24]
-    add x0, x2, x0
-    mov x1, x0
-    b 0xa8
+    bl 7
+    ldr x1, [xzr, #24]
+    add x0, x1, x0
+    str x0, [xzr, #24]
+    b 0xac
 3:
     movz x0, #6, #0
-    ldr x2, [xzr, #32]
-    madd x0, x0, x2, xzr
-    mov x1, x0
+    ldr x1, [xzr, #32]
+    madd x0, x0, x1, xzr
+    mov x0, x0
     b 0xa8
 4:
-    movz x1, #0, #0
+    movz x0, #0, #0
 5:
-    str x1, [xzr, #24]
-    ldr x0, [xzr, #24]
+    str x0, [xzr, #24]
+6:
+    str.pre x17, [xzr, #-16]!
+    ldr x17, [xzr, #40]
+    str x17, [xzr, #56]
+    ldr.post x17, [xzr], #16
+7:
+    ldr x0, [xzr, #40]
     ldr x19, [xzr]
     ldp x29, x30, [xzr, #15]
     add sp, sp, #48
@@ -159,36 +165,42 @@ a:
     cmp w1, w0
     b.eq 0x68
     ldr x0, [xzr, #24]
-    bl 0xc0
+    bl 0xd0
     str x0, [xzr, #40]
     ldr x0, [xzr, #32]
-    bl 0xcc
+    bl 7
     ldr x1, [xzr, #40]
     add x0, x1, x0
-    mov x1, x0
-    b 0xa8
+    str x0, [xzr, #40]
+    b 0xbc
 2:
     ldr x0, [xzr, #24]
-    bl 0xc0
+    bl 0xd0
     str x0, [xzr, #24]
     ldr x0, [xzr, #32]
     madd x0, x0, x19, xzr
-    bl 0xcc
-    ldr x2, [xzr, #24]
-    add x0, x2, x0
-    mov x1, x0
-    b 0xa8
+    bl 7
+    ldr x1, [xzr, #24]
+    add x0, x1, x0
+    str x0, [xzr, #24]
+    b 0xac
 3:
     movz x0, #6, #0
-    ldr x2, [xzr, #32]
-    madd x0, x0, x2, xzr
-    mov x1, x0
+    ldr x1, [xzr, #32]
+    madd x0, x0, x1, xzr
+    mov x0, x0
     b 0xa8
 4:
-    movz x1, #0, #0
+    movz x0, #0, #0
 5:
-    str x1, [xzr, #24]
-    ldr x0, [xzr, #24]
+    str x0, [xzr, #24]
+6:
+    str.pre x17, [xzr, #-16]!
+    ldr x17, [xzr, #40]
+    str x17, [xzr, #56]
+    ldr.post x17, [xzr], #16
+7:
+    ldr x0, [xzr, #40]
     ldr x19, [xzr]
     ldp x29, x30, [xzr, #15]
     add sp, sp, #48
@@ -291,21 +303,21 @@ a:
     cmp w1, w0
     b.eq 0x68
     ldr x0, [xzr, #24]
-    bl 0xc0
+    bl 0xbc
     str x0, [xzr, #40]
     ldr x0, [xzr, #32]
-    bl 0xcc
+    bl 5
     ldr x1, [xzr, #40]
     add x0, x1, x0
     mov x1, x0
     b 0xa8
 2:
     ldr x0, [xzr, #24]
-    bl 0xc0
+    bl 0xbc
     str x0, [xzr, #24]
     ldr x0, [xzr, #32]
     madd x0, x0, x19, xzr
-    bl 0xcc
+    bl 5
     ldr x2, [xzr, #24]
     add x0, x2, x0
     mov x1, x0
@@ -319,8 +331,7 @@ a:
 4:
     movz x1, #0, #0
 5:
-    str x1, [xzr, #24]
-    ldr x0, [xzr, #24]
+    mov x0, x1
     ldr x19, [xzr]
     ldp x29, x30, [xzr, #15]
     add sp, sp, #48

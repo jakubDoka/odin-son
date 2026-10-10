@@ -6,6 +6,7 @@ import "../../vendored/gam/util/bit_arr"
 import "core:fmt"
 import "core:math"
 import "core:mem"
+import "core:os"
 import "core:slice"
 
 loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
@@ -32,6 +33,10 @@ loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 	ctx.cloned_down = make([]Node_ID, graph.gvn * 2)
 	ctx.node_blocks = make(type_of(ctx.node_blocks), graph.gvn * 2)
 	bac.schedule_graph(graph, &ctx.sched, .for_loopopt)
+
+	if 2 == 3 {
+		bac.display_graph(os.to_writer(os.stderr), graph, &ctx.sched)
+	}
 
 	reserve(&ctx.sched.bbs, len(ctx.sched.bbs) * 2)
 	ctx.sched.bbs.allocator = {}
@@ -375,27 +380,32 @@ loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 				onode := expand_node(ctx, out.id)
 				if out.id == phy.inps[2] do continue
 
+				add_candidates := []bac.Node_Output{out}
+
 				stride_node: Node_ID
 				if onode.itype == .Mul {
 					stride_node = onode.inps[1 - out.idx]
 					otnode := expand_node(ctx, stride_node)
+
 					if slice.contains(bb.instrs[:], stride_node) {
 						continue
 					}
 
-					for oout in onode.outs {
-						oonode := expand_node(ctx, oout.id)
-						if oonode.itype == .Add {
-							out = oout
-							onode = oonode
-							break
-						}
-					}
+					add_candidates = onode.outs
 				}
 
-				if onode.itype == .Add {
+				for out in add_candidates {
+					onode := expand_node(graph, out.id)
+					if onode.itype != .Add do continue
+
 					base := onode.inps[1 - out.idx]
 					otnode := expand_node(ctx, base)
+
+					for otout in onode.outs {
+						otonode := expand_node(ctx, otout.id)
+						if otonode.stable_id == 33 {
+						}
+					}
 
 					if slice.contains(bb.instrs[:], base) do continue
 
@@ -407,6 +417,7 @@ loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 					} else {
 						stride_vl = &CInt{value = 1}
 					}
+
 					if stride_vl != nil do stride = stride_vl.value
 
 					if stride_vl != nil {

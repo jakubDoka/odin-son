@@ -5,19 +5,19 @@ main:
     add x0, sp, #0
     adr x1, 0xfc0
     ldr.v d0, [x1]
-    str.v d0, [xzr, #32]
     adr x1, 0xfc8
-    ldr.v d0, [x1]
+    ldr.v d1, [x1]
+    str.v d1, [xzr, #32]
     adr x1, 0xfd0
+    ldr.v d2, [x1]
+    adr x1, 0xfd8
     ldr.v d1, [x1]
     str.v d1, [xzr, #48]
-    adr x1, 0xfd8
-    ldr.v d2, [x1]
     adr x1, 0xfe0
+    ldr.v d4, [x1]
+    adr x1, 0xfe8
     ldr.v d1, [x1]
     str.v d1, [xzr, #64]
-    adr x1, 0xfe8
-    ldr.v d4, [x1]
     adr x1, 0xff0
     ldr.v d1, [x1]
     str.v d1, [xzr, #80]
@@ -28,14 +28,14 @@ main:
     ldr.v d1, [x1]
     str.v d1, [x0]
     add x0, sp, #8
-    ldr.v d1, [xzr, #32]
+    ldr.v d1, [xzr, #96]
     str.v d1, [x0]
     adr x0, 0x1008
     ldr.v d6, [x0]
-    ldr.v d1, [xzr, #48]
-    ldr.v d3, [xzr, #64]
-    ldr.v d5, [xzr, #80]
-    ldr.v d7, [xzr, #96]
+    ldr.v d1, [xzr, #32]
+    ldr.v d3, [xzr, #48]
+    ldr.v d5, [xzr, #64]
+    ldr.v d7, [xzr, #80]
     bl load_of_args
     str.v d0, [xzr, #112]
     movz x0, #1, #0
@@ -43,11 +43,11 @@ main:
     movz x2, #5, #0
     movz x3, #7, #0
     movz x4, #9, #0
-    ldr.v d0, [xzr, #48]
-    ldr.v d1, [xzr, #64]
-    ldr.v d2, [xzr, #80]
-    ldr.v d3, [xzr, #96]
-    ldr.v d4, [xzr, #32]
+    ldr.v d0, [xzr, #32]
+    ldr.v d1, [xzr, #48]
+    ldr.v d2, [xzr, #64]
+    ldr.v d3, [xzr, #80]
+    ldr.v d4, [xzr, #96]
     bl mixed
     eor.v v1, v1, v1
     ldr.v d2, [xzr, #112]
@@ -95,48 +95,48 @@ main:
     add x1, sp, #0
     adr x0, 0xfc0
     ldr.v d0, [x0]
-    fmov d13, d0
     adr x0, 0xfc8
-    ldr.v d0, [x0]
+    ldr.v d1, [x0]
+    orr.v v13, v1, v1
     adr x0, 0xfd0
-    ldr.v d1, [x0]
-    fmov d12, d1
-    adr x0, 0xfd8
     ldr.v d2, [x0]
-    adr x0, 0xfe0
+    adr x0, 0xfd8
     ldr.v d1, [x0]
-    fmov d11, d1
-    adr x0, 0xfe8
+    orr.v v12, v1, v1
+    adr x0, 0xfe0
     ldr.v d4, [x0]
+    adr x0, 0xfe8
+    ldr.v d1, [x0]
+    orr.v v11, v1, v1
     adr x0, 0xff0
     ldr.v d1, [x0]
-    fmov d10, d1
+    orr.v v10, v1, v1
     adr x0, 0xff8
     ldr.v d1, [x0]
-    fmov d9, d1
+    orr.v v9, v1, v1
     adr x0, 0x1000
     ldr.v d1, [x0]
     str.v d1, [x1]
     add x0, sp, #8
-    str.v d13, [x0]
+    str.v d9, [x0]
     adr x0, 0x1008
     ldr.v d6, [x0]
-    fmov d1, d12
-    fmov d3, d11
-    fmov d5, d10
-    fmov d7, d9
+    orr.v v1, v13, v13
+    orr.v v3, v12, v12
+    orr.v v5, v11, v11
+    orr.v v7, v10, v10
     bl load_of_args
-    fmov d8, d0
+    orr.v v8, v0, v0
     movz x0, #1, #0
     movz x1, #3, #0
     movz x2, #5, #0
     movz x3, #7, #0
     movz x4, #9, #0
-    fmov d0, d12
-    fmov d1, d11
-    fmov d2, d10
-    fmov d3, d9
-    fmov d4, d13
+    orr.v v0, v13, v13
+    orr.v v1, v12, v12
+    orr.v v2, v11, v11
+    orr.v v3, v10, v10
+    orr.v v4, v9, v9
     bl mixed
     eor.v v1, v1, v1
     fadd d1, d1, d8
@@ -183,19 +183,19 @@ main:
     add x0, sp, #0
     adr x1, 0xfc0
     ldr.v d0, [x1]
-    str.v d0, [xzr, #32]
     adr x1, 0xfc8
-    ldr.v d0, [x1]
+    ldr.v d1, [x1]
+    str.v d1, [xzr, #32]
     adr x1, 0xfd0
+    ldr.v d2, [x1]
+    adr x1, 0xfd8
     ldr.v d1, [x1]
     str.v d1, [xzr, #48]
-    adr x1, 0xfd8
-    ldr.v d2, [x1]
     adr x1, 0xfe0
+    ldr.v d4, [x1]
+    adr x1, 0xfe8
     ldr.v d1, [x1]
     str.v d1, [xzr, #64]
-    adr x1, 0xfe8
-    ldr.v d4, [x1]
     adr x1, 0xff0
     ldr.v d1, [x1]
     str.v d1, [xzr, #80]
@@ -206,14 +206,14 @@ main:
     ldr.v d1, [x1]
     str.v d1, [x0]
     add x0, sp, #8
-    ldr.v d1, [xzr, #32]
+    ldr.v d1, [xzr, #96]
     str.v d1, [x0]
     adr x0, 0x1008
     ldr.v d6, [x0]
-    ldr.v d1, [xzr, #48]
-    ldr.v d3, [xzr, #64]
-    ldr.v d5, [xzr, #80]
-    ldr.v d7, [xzr, #96]
+    ldr.v d1, [xzr, #32]
+    ldr.v d3, [xzr, #48]
+    ldr.v d5, [xzr, #64]
+    ldr.v d7, [xzr, #80]
     bl load_of_args
     str.v d0, [xzr, #112]
     movz x0, #1, #0
@@ -221,11 +221,11 @@ main:
     movz x2, #5, #0
     movz x3, #7, #0
     movz x4, #9, #0
-    ldr.v d0, [xzr, #48]
-    ldr.v d1, [xzr, #64]
-    ldr.v d2, [xzr, #80]
-    ldr.v d3, [xzr, #96]
-    ldr.v d4, [xzr, #32]
+    ldr.v d0, [xzr, #32]
+    ldr.v d1, [xzr, #48]
+    ldr.v d2, [xzr, #64]
+    ldr.v d3, [xzr, #80]
+    ldr.v d4, [xzr, #96]
     bl mixed
     eor.v v1, v1, v1
     ldr.v d2, [xzr, #112]
@@ -273,48 +273,48 @@ main:
     add x1, sp, #0
     adr x0, 0xfc0
     ldr.v d0, [x0]
-    fmov d13, d0
     adr x0, 0xfc8
-    ldr.v d0, [x0]
+    ldr.v d1, [x0]
+    orr.v v13, v1, v1
     adr x0, 0xfd0
-    ldr.v d1, [x0]
-    fmov d12, d1
-    adr x0, 0xfd8
     ldr.v d2, [x0]
-    adr x0, 0xfe0
+    adr x0, 0xfd8
     ldr.v d1, [x0]
-    fmov d11, d1
-    adr x0, 0xfe8
+    orr.v v12, v1, v1
+    adr x0, 0xfe0
     ldr.v d4, [x0]
+    adr x0, 0xfe8
+    ldr.v d1, [x0]
+    orr.v v11, v1, v1
     adr x0, 0xff0
     ldr.v d1, [x0]
-    fmov d10, d1
+    orr.v v10, v1, v1
     adr x0, 0xff8
     ldr.v d1, [x0]
-    fmov d9, d1
+    orr.v v9, v1, v1
     adr x0, 0x1000
     ldr.v d1, [x0]
     str.v d1, [x1]
     add x0, sp, #8
-    str.v d13, [x0]
+    str.v d9, [x0]
     adr x0, 0x1008
     ldr.v d6, [x0]
-    fmov d1, d12
-    fmov d3, d11
-    fmov d5, d10
-    fmov d7, d9
+    orr.v v1, v13, v13
+    orr.v v3, v12, v12
+    orr.v v5, v11, v11
+    orr.v v7, v10, v10
     bl load_of_args
-    fmov d8, d0
+    orr.v v8, v0, v0
     movz x0, #1, #0
     movz x1, #3, #0
     movz x2, #5, #0
     movz x3, #7, #0
     movz x4, #9, #0
-    fmov d0, d12
-    fmov d1, d11
-    fmov d2, d10
-    fmov d3, d9
-    fmov d4, d13
+    orr.v v0, v13, v13
+    orr.v v1, v12, v12
+    orr.v v2, v11, v11
+    orr.v v3, v10, v10
+    orr.v v4, v9, v9
     bl mixed
     eor.v v1, v1, v1
     fadd d1, d1, d8
@@ -361,19 +361,19 @@ main:
     add x0, sp, #0
     adr x1, 0xfc0
     ldr.v d0, [x1]
-    str.v d0, [xzr, #32]
     adr x1, 0xfc8
-    ldr.v d0, [x1]
+    ldr.v d1, [x1]
+    str.v d1, [xzr, #32]
     adr x1, 0xfd0
+    ldr.v d2, [x1]
+    adr x1, 0xfd8
     ldr.v d1, [x1]
     str.v d1, [xzr, #48]
-    adr x1, 0xfd8
-    ldr.v d2, [x1]
     adr x1, 0xfe0
+    ldr.v d4, [x1]
+    adr x1, 0xfe8
     ldr.v d1, [x1]
     str.v d1, [xzr, #64]
-    adr x1, 0xfe8
-    ldr.v d4, [x1]
     adr x1, 0xff0
     ldr.v d1, [x1]
     str.v d1, [xzr, #80]
@@ -384,14 +384,14 @@ main:
     ldr.v d1, [x1]
     str.v d1, [x0]
     add x0, sp, #8
-    ldr.v d1, [xzr, #32]
+    ldr.v d1, [xzr, #96]
     str.v d1, [x0]
     adr x0, 0x1008
     ldr.v d6, [x0]
-    ldr.v d1, [xzr, #48]
-    ldr.v d3, [xzr, #64]
-    ldr.v d5, [xzr, #80]
-    ldr.v d7, [xzr, #96]
+    ldr.v d1, [xzr, #32]
+    ldr.v d3, [xzr, #48]
+    ldr.v d5, [xzr, #64]
+    ldr.v d7, [xzr, #80]
     bl load_of_args
     str.v d0, [xzr, #112]
     movz x0, #1, #0
@@ -399,11 +399,11 @@ main:
     movz x2, #5, #0
     movz x3, #7, #0
     movz x4, #9, #0
-    ldr.v d0, [xzr, #48]
-    ldr.v d1, [xzr, #64]
-    ldr.v d2, [xzr, #80]
-    ldr.v d3, [xzr, #96]
-    ldr.v d4, [xzr, #32]
+    ldr.v d0, [xzr, #32]
+    ldr.v d1, [xzr, #48]
+    ldr.v d2, [xzr, #64]
+    ldr.v d3, [xzr, #80]
+    ldr.v d4, [xzr, #96]
     bl mixed
     eor.v v1, v1, v1
     ldr.v d2, [xzr, #112]
@@ -451,48 +451,48 @@ main:
     add x1, sp, #0
     adr x0, 0xfc0
     ldr.v d0, [x0]
-    fmov d13, d0
     adr x0, 0xfc8
-    ldr.v d0, [x0]
+    ldr.v d1, [x0]
+    orr.v v13, v1, v1
     adr x0, 0xfd0
-    ldr.v d1, [x0]
-    fmov d12, d1
-    adr x0, 0xfd8
     ldr.v d2, [x0]
-    adr x0, 0xfe0
+    adr x0, 0xfd8
     ldr.v d1, [x0]
-    fmov d11, d1
-    adr x0, 0xfe8
+    orr.v v12, v1, v1
+    adr x0, 0xfe0
     ldr.v d4, [x0]
+    adr x0, 0xfe8
+    ldr.v d1, [x0]
+    orr.v v11, v1, v1
     adr x0, 0xff0
     ldr.v d1, [x0]
-    fmov d10, d1
+    orr.v v10, v1, v1
     adr x0, 0xff8
     ldr.v d1, [x0]
-    fmov d9, d1
+    orr.v v9, v1, v1
     adr x0, 0x1000
     ldr.v d1, [x0]
     str.v d1, [x1]
     add x0, sp, #8
-    str.v d13, [x0]
+    str.v d9, [x0]
     adr x0, 0x1008
     ldr.v d6, [x0]
-    fmov d1, d12
-    fmov d3, d11
-    fmov d5, d10
-    fmov d7, d9
+    orr.v v1, v13, v13
+    orr.v v3, v12, v12
+    orr.v v5, v11, v11
+    orr.v v7, v10, v10
     bl load_of_args
-    fmov d8, d0
+    orr.v v8, v0, v0
     movz x0, #1, #0
     movz x1, #3, #0
     movz x2, #5, #0
     movz x3, #7, #0
     movz x4, #9, #0
-    fmov d0, d12
-    fmov d1, d11
-    fmov d2, d10
-    fmov d3, d9
-    fmov d4, d13
+    orr.v v0, v13, v13
+    orr.v v1, v12, v12
+    orr.v v2, v11, v11
+    orr.v v3, v10, v10
+    orr.v v4, v9, v9
     bl mixed
     eor.v v1, v1, v1
     fadd d1, d8, d1
@@ -539,48 +539,48 @@ main:
     add x1, sp, #0
     adr x0, 0xfc0
     ldr.v d0, [x0]
-    fmov d13, d0
     adr x0, 0xfc8
-    ldr.v d0, [x0]
+    ldr.v d1, [x0]
+    orr.v v13, v1, v1
     adr x0, 0xfd0
-    ldr.v d1, [x0]
-    fmov d12, d1
-    adr x0, 0xfd8
     ldr.v d2, [x0]
-    adr x0, 0xfe0
+    adr x0, 0xfd8
     ldr.v d1, [x0]
-    fmov d11, d1
-    adr x0, 0xfe8
+    orr.v v12, v1, v1
+    adr x0, 0xfe0
     ldr.v d4, [x0]
+    adr x0, 0xfe8
+    ldr.v d1, [x0]
+    orr.v v11, v1, v1
     adr x0, 0xff0
     ldr.v d1, [x0]
-    fmov d10, d1
+    orr.v v10, v1, v1
     adr x0, 0xff8
     ldr.v d1, [x0]
-    fmov d9, d1
+    orr.v v9, v1, v1
     adr x0, 0x1000
     ldr.v d1, [x0]
     str.v d1, [x1]
     add x0, sp, #8
-    str.v d13, [x0]
+    str.v d9, [x0]
     adr x0, 0x1008
     ldr.v d6, [x0]
-    fmov d1, d12
-    fmov d3, d11
-    fmov d5, d10
-    fmov d7, d9
+    orr.v v1, v13, v13
+    orr.v v3, v12, v12
+    orr.v v5, v11, v11
+    orr.v v7, v10, v10
     bl load_of_args
-    fmov d8, d0
+    orr.v v8, v0, v0
     movz x0, #1, #0
     movz x1, #3, #0
     movz x2, #5, #0
     movz x3, #7, #0
     movz x4, #9, #0
-    fmov d0, d12
-    fmov d1, d11
-    fmov d2, d10
-    fmov d3, d9
-    fmov d4, d13
+    orr.v v0, v13, v13
+    orr.v v1, v12, v12
+    orr.v v2, v11, v11
+    orr.v v3, v10, v10
+    orr.v v4, v9, v9
     bl mixed
     eor.v v1, v1, v1
     fadd d1, d8, d1

@@ -35,8 +35,8 @@ main:
     add x1, sp, #94
     str x0, [x1]
     add x0, sp, #72
-    movz x2, #3, #0
     add x1, sp, #73
+    movz x2, #3, #0
     bl test_mem_shifts i8 u8
     str x0, [xzr, #16]
     movz x2, #3, #0
@@ -96,6 +96,7 @@ test_mem_shifts i8 u8:
     asrv w3, w3, w2
     strb w3, [x0]
     ldrb w3, [x1]
+    movz x4, #0, #0
     ldrb w0, [x0]
     uxtb w3, w3
     lsrv w3, w3, w2
@@ -104,9 +105,8 @@ test_mem_shifts i8 u8:
     uxtb w3, w3
     lslv w2, w3, w2
     strb w2, [x1]
-    movz x2, #0, #0
     invalid
-    add x0, x2, x0
+    add x0, x4, x0
     ldrb w1, [x1]
     uxtb w1, w1
     add x0, x0, x1
@@ -121,6 +121,7 @@ test_mem_shifts i16 u16:
     asrv w3, w3, w2
     strh w3, [x0]
     ldrh w3, [x1]
+    movz x4, #0, #0
     ldrh w0, [x0]
     uxth w3, w3
     lsrv w3, w3, w2
@@ -129,9 +130,8 @@ test_mem_shifts i16 u16:
     uxth w3, w3
     lslv w2, w3, w2
     strh w2, [x1]
-    movz x2, #0, #0
     invalid
-    add x0, x2, x0
+    add x0, x4, x0
     ldrh w1, [x1]
     uxth w1, w1
     add x0, x0, x1
@@ -147,12 +147,12 @@ test_mem_shifts i32 u32:
     ldr w0, [x0]
     lsrv w3, w3, w2
     str w3, [x1]
-    ldr w3, [x1]
-    lslv w2, w3, w2
+    movz x3, #0, #0
+    ldr w4, [x1]
+    lslv w2, w4, w2
     str w2, [x1]
-    movz x2, #0, #0
     sxtw x0, w0
-    add x0, x2, x0
+    add x0, x3, x0
     ldr w1, [x1]
     mov w1, w1
     add x0, x0, x1
@@ -186,19 +186,19 @@ test_mem_imm_shifts i8 u8:
     sxtb w2, w2
     asrv w2, w2, w3
     strb w2, [x0]
-    movz x2, #2, #0
-    ldrb w3, [x1]
+    ldrb w2, [x1]
+    movz x3, #0, #0
+    movz x4, #2, #0
     ldrb w0, [x0]
-    uxtb w3, w3
-    lsrv w3, w3, w2
-    strb w3, [x1]
-    ldrb w3, [x1]
-    uxtb w3, w3
-    lslv w2, w3, w2
+    uxtb w2, w2
+    lsrv w2, w2, w4
     strb w2, [x1]
-    movz x2, #0, #0
+    ldrb w2, [x1]
+    uxtb w2, w2
+    lslv w2, w2, w4
+    strb w2, [x1]
     invalid
-    add x0, x2, x0
+    add x0, x3, x0
     ldrb w1, [x1]
     uxtb w1, w1
     add x0, x0, x1
@@ -213,19 +213,19 @@ test_mem_imm_shifts i16 u16:
     sxth w2, w2
     asrv w2, w2, w3
     strh w2, [x0]
-    movz x2, #2, #0
-    ldrh w3, [x1]
+    ldrh w2, [x1]
+    movz x3, #0, #0
+    movz x4, #2, #0
     ldrh w0, [x0]
-    uxth w3, w3
-    lsrv w3, w3, w2
-    strh w3, [x1]
-    ldrh w3, [x1]
-    uxth w3, w3
-    lslv w2, w3, w2
+    uxth w2, w2
+    lsrv w2, w2, w4
     strh w2, [x1]
-    movz x2, #0, #0
+    ldrh w2, [x1]
+    uxth w2, w2
+    lslv w2, w2, w4
+    strh w2, [x1]
     invalid
-    add x0, x2, x0
+    add x0, x3, x0
     ldrh w1, [x1]
     uxth w1, w1
     add x0, x0, x1
@@ -240,15 +240,15 @@ test_mem_imm_shifts i32 u32:
     str w2, [x0]
     ldr w2, [x1]
     movz x3, #2, #0
+    movz x4, #0, #0
     ldr w0, [x0]
     lsrv w2, w2, w3
     str w2, [x1]
     ldr w2, [x1]
     lslv w2, w2, w3
     str w2, [x1]
-    movz x2, #0, #0
     sxtw x0, w0
-    add x0, x2, x0
+    add x0, x4, x0
     ldr w1, [x1]
     mov w1, w1
     add x0, x0, x1
@@ -318,8 +318,8 @@ main:
     add x0, sp, #94
     str x1, [x0]
     add x0, sp, #72
-    movz x2, #3, #0
     add x1, sp, #73
+    movz x2, #3, #0
     bl test_mem_shifts i8 u8
     mov x21, x0
     movz x2, #3, #0
@@ -378,18 +378,18 @@ test_mem_shifts i8 u8:
     sxtb w3, w3
     asrv w3, w3, w2
     strb w3, [x0]
-    ldrb w4, [x1]
+    ldrb w5, [x1]
+    movz x4, #0, #0
     ldrb w3, [x0]
-    uxtb w0, w4
+    uxtb w0, w5
     lsrv w0, w0, w2
     strb w0, [x1]
     ldrb w0, [x1]
     uxtb w0, w0
     lslv w0, w0, w2
     strb w0, [x1]
-    movz x2, #0, #0
     invalid
-    add x2, x2, x0
+    add x2, x4, x0
     ldrb w0, [x1]
     uxtb w0, w0
     add x0, x2, x0
@@ -403,18 +403,18 @@ test_mem_shifts i16 u16:
     sxth w3, w3
     asrv w3, w3, w2
     strh w3, [x0]
-    ldrh w4, [x1]
+    ldrh w5, [x1]
+    movz x4, #0, #0
     ldrh w3, [x0]
-    uxth w0, w4
+    uxth w0, w5
     lsrv w0, w0, w2
     strh w0, [x1]
     ldrh w0, [x1]
     uxth w0, w0
     lslv w0, w0, w2
     strh w0, [x1]
-    movz x2, #0, #0
     invalid
-    add x2, x2, x0
+    add x2, x4, x0
     ldrh w0, [x1]
     uxth w0, w0
     add x0, x2, x0
@@ -426,16 +426,16 @@ test_mem_shifts i32 u32:
     ldr w3, [x0]
     asrv w3, w3, w2
     str w3, [x0]
-    ldr w4, [x1]
-    ldr w3, [x0]
-    lsrv w0, w4, w2
+    ldr w3, [x1]
+    ldr w4, [x0]
+    lsrv w0, w3, w2
     str w0, [x1]
+    movz x3, #0, #0
     ldr w0, [x1]
     lslv w0, w0, w2
     str w0, [x1]
-    movz x2, #0, #0
-    sxtw x0, w3
-    add x2, x2, x0
+    sxtw x0, w4
+    add x2, x3, x0
     ldr w0, [x1]
     mov w0, w0
     add x0, x2, x0
@@ -469,19 +469,19 @@ test_mem_imm_shifts i8 u8:
     sxtb w2, w2
     asrv w2, w2, w3
     strb w2, [x0]
-    movz x4, #2, #0
-    ldrb w2, [x1]
-    ldrb w3, [x0]
-    uxtb w0, w2
-    lsrv w0, w0, w4
+    ldrb w5, [x1]
+    movz x4, #0, #0
+    movz x3, #2, #0
+    ldrb w2, [x0]
+    uxtb w0, w5
+    lsrv w0, w0, w3
     strb w0, [x1]
     ldrb w0, [x1]
     uxtb w0, w0
-    lslv w0, w0, w4
+    lslv w0, w0, w3
     strb w0, [x1]
-    movz x2, #0, #0
     invalid
-    add x2, x2, x0
+    add x2, x4, x0
     ldrb w0, [x1]
     uxtb w0, w0
     add x0, x2, x0
@@ -496,19 +496,19 @@ test_mem_imm_shifts i16 u16:
     sxth w2, w2
     asrv w2, w2, w3
     strh w2, [x0]
-    movz x4, #2, #0
-    ldrh w2, [x1]
-    ldrh w3, [x0]
-    uxth w0, w2
-    lsrv w0, w0, w4
+    ldrh w5, [x1]
+    movz x4, #0, #0
+    movz x3, #2, #0
+    ldrh w2, [x0]
+    uxth w0, w5
+    lsrv w0, w0, w3
     strh w0, [x1]
     ldrh w0, [x1]
     uxth w0, w0
-    lslv w0, w0, w4
+    lslv w0, w0, w3
     strh w0, [x1]
-    movz x2, #0, #0
     invalid
-    add x2, x2, x0
+    add x2, x4, x0
     ldrh w0, [x1]
     uxth w0, w0
     add x0, x2, x0
@@ -521,17 +521,17 @@ test_mem_imm_shifts i32 u32:
     ldr w2, [x0]
     asrv w2, w2, w3
     str w2, [x0]
-    ldr w4, [x1]
-    movz x2, #2, #0
-    ldr w3, [x0]
-    lsrv w0, w4, w2
+    ldr w5, [x1]
+    movz x4, #2, #0
+    movz x3, #0, #0
+    ldr w2, [x0]
+    lsrv w0, w5, w4
     str w0, [x1]
     ldr w0, [x1]
-    lslv w0, w0, w2
+    lslv w0, w0, w4
     str w0, [x1]
-    movz x2, #0, #0
-    sxtw x0, w3
-    add x2, x2, x0
+    sxtw x0, w2
+    add x2, x3, x0
     ldr w0, [x1]
     mov w0, w0
     add x0, x2, x0
@@ -594,8 +594,8 @@ main:
     add x1, sp, #94
     str x0, [x1]
     add x0, sp, #72
-    movz x2, #3, #0
     add x1, sp, #73
+    movz x2, #3, #0
     bl test_mem_shifts i8 u8
     str x0, [xzr, #16]
     movz x2, #3, #0
@@ -655,6 +655,7 @@ test_mem_shifts i8 u8:
     asrv w3, w3, w2
     strb w3, [x0]
     ldrb w3, [x1]
+    movz x4, #0, #0
     ldrb w0, [x0]
     uxtb w3, w3
     lsrv w3, w3, w2
@@ -663,9 +664,8 @@ test_mem_shifts i8 u8:
     uxtb w3, w3
     lslv w2, w3, w2
     strb w2, [x1]
-    movz x2, #0, #0
     invalid
-    add x0, x2, x0
+    add x0, x4, x0
     ldrb w1, [x1]
     uxtb w1, w1
     add x0, x0, x1
@@ -680,6 +680,7 @@ test_mem_shifts i16 u16:
     asrv w3, w3, w2
     strh w3, [x0]
     ldrh w3, [x1]
+    movz x4, #0, #0
     ldrh w0, [x0]
     uxth w3, w3
     lsrv w3, w3, w2
@@ -688,9 +689,8 @@ test_mem_shifts i16 u16:
     uxth w3, w3
     lslv w2, w3, w2
     strh w2, [x1]
-    movz x2, #0, #0
     invalid
-    add x0, x2, x0
+    add x0, x4, x0
     ldrh w1, [x1]
     uxth w1, w1
     add x0, x0, x1
@@ -706,12 +706,12 @@ test_mem_shifts i32 u32:
     ldr w0, [x0]
     lsrv w3, w3, w2
     str w3, [x1]
-    ldr w3, [x1]
-    lslv w2, w3, w2
+    movz x3, #0, #0
+    ldr w4, [x1]
+    lslv w2, w4, w2
     str w2, [x1]
-    movz x2, #0, #0
     sxtw x0, w0
-    add x0, x2, x0
+    add x0, x3, x0
     ldr w1, [x1]
     mov w1, w1
     add x0, x0, x1
@@ -743,19 +743,19 @@ test_mem_imm_shifts i8 u8:
     sxtb w2, w2
     asrv w2, w2, w3
     strb w2, [x0]
-    movz x2, #2, #0
-    ldrb w3, [x1]
+    ldrb w2, [x1]
+    movz x3, #0, #0
+    movz x4, #2, #0
     ldrb w0, [x0]
-    uxtb w3, w3
-    lsrv w3, w3, w2
-    strb w3, [x1]
-    ldrb w3, [x1]
-    uxtb w3, w3
-    lslv w2, w3, w2
+    uxtb w2, w2
+    lsrv w2, w2, w4
     strb w2, [x1]
-    movz x2, #0, #0
+    ldrb w2, [x1]
+    uxtb w2, w2
+    lslv w2, w2, w4
+    strb w2, [x1]
     invalid
-    add x0, x2, x0
+    add x0, x3, x0
     ldrb w1, [x1]
     uxtb w1, w1
     add x0, x0, x1
@@ -770,19 +770,19 @@ test_mem_imm_shifts i16 u16:
     sxth w2, w2
     asrv w2, w2, w3
     strh w2, [x0]
-    movz x2, #2, #0
-    ldrh w3, [x1]
+    ldrh w2, [x1]
+    movz x3, #0, #0
+    movz x4, #2, #0
     ldrh w0, [x0]
-    uxth w3, w3
-    lsrv w3, w3, w2
-    strh w3, [x1]
-    ldrh w3, [x1]
-    uxth w3, w3
-    lslv w2, w3, w2
+    uxth w2, w2
+    lsrv w2, w2, w4
     strh w2, [x1]
-    movz x2, #0, #0
+    ldrh w2, [x1]
+    uxth w2, w2
+    lslv w2, w2, w4
+    strh w2, [x1]
     invalid
-    add x0, x2, x0
+    add x0, x3, x0
     ldrh w1, [x1]
     uxth w1, w1
     add x0, x0, x1
@@ -797,15 +797,15 @@ test_mem_imm_shifts i32 u32:
     str w2, [x0]
     ldr w2, [x1]
     movz x3, #2, #0
+    movz x4, #0, #0
     ldr w0, [x0]
     lsrv w2, w2, w3
     str w2, [x1]
     ldr w2, [x1]
     lslv w2, w2, w3
     str w2, [x1]
-    movz x2, #0, #0
     sxtw x0, w0
-    add x0, x2, x0
+    add x0, x4, x0
     ldr w1, [x1]
     mov w1, w1
     add x0, x0, x1
@@ -818,12 +818,12 @@ test_mem_imm_shifts i64 u64:
     ldr x2, [x0]
     asrv x2, x2, x3
     str x2, [x0]
-    movz x0, #2, #0
-    ldr x3, [x1]
-    lsrv x3, x3, x0
-    str x3, [x1]
-    ldr x3, [x1]
-    lslv x0, x3, x0
+    ldr x0, [x1]
+    movz x3, #2, #0
+    lsrv x0, x0, x3
+    str x0, [x1]
+    ldr x0, [x1]
+    lslv x0, x0, x3
     str x0, [x1]
     movz x1, #0, #0
     add x1, x1, x2
@@ -873,8 +873,8 @@ main:
     add x0, sp, #94
     str x1, [x0]
     add x0, sp, #72
-    movz x2, #3, #0
     add x1, sp, #73
+    movz x2, #3, #0
     bl test_mem_shifts i8 u8
     mov x21, x0
     movz x2, #3, #0
@@ -933,18 +933,18 @@ test_mem_shifts i8 u8:
     sxtb w3, w3
     asrv w3, w3, w2
     strb w3, [x0]
-    ldrb w4, [x1]
+    ldrb w5, [x1]
+    movz x4, #0, #0
     ldrb w3, [x0]
-    uxtb w0, w4
+    uxtb w0, w5
     lsrv w0, w0, w2
     strb w0, [x1]
     ldrb w0, [x1]
     uxtb w0, w0
     lslv w0, w0, w2
     strb w0, [x1]
-    movz x2, #0, #0
     invalid
-    add x2, x2, x0
+    add x2, x4, x0
     ldrb w0, [x1]
     uxtb w0, w0
     add x0, x2, x0
@@ -958,18 +958,18 @@ test_mem_shifts i16 u16:
     sxth w3, w3
     asrv w3, w3, w2
     strh w3, [x0]
-    ldrh w4, [x1]
+    ldrh w5, [x1]
+    movz x4, #0, #0
     ldrh w3, [x0]
-    uxth w0, w4
+    uxth w0, w5
     lsrv w0, w0, w2
     strh w0, [x1]
     ldrh w0, [x1]
     uxth w0, w0
     lslv w0, w0, w2
     strh w0, [x1]
-    movz x2, #0, #0
     invalid
-    add x2, x2, x0
+    add x2, x4, x0
     ldrh w0, [x1]
     uxth w0, w0
     add x0, x2, x0
@@ -981,16 +981,16 @@ test_mem_shifts i32 u32:
     ldr w3, [x0]
     asrv w3, w3, w2
     str w3, [x0]
-    ldr w4, [x1]
-    ldr w3, [x0]
-    lsrv w0, w4, w2
+    ldr w3, [x1]
+    ldr w4, [x0]
+    lsrv w0, w3, w2
     str w0, [x1]
+    movz x3, #0, #0
     ldr w0, [x1]
     lslv w0, w0, w2
     str w0, [x1]
-    movz x2, #0, #0
-    sxtw x0, w3
-    add x2, x2, x0
+    sxtw x0, w4
+    add x2, x3, x0
     ldr w0, [x1]
     mov w0, w0
     add x0, x2, x0
@@ -1022,19 +1022,19 @@ test_mem_imm_shifts i8 u8:
     sxtb w2, w2
     asrv w2, w2, w3
     strb w2, [x0]
-    movz x4, #2, #0
-    ldrb w2, [x1]
-    ldrb w3, [x0]
-    uxtb w0, w2
-    lsrv w0, w0, w4
+    ldrb w5, [x1]
+    movz x4, #0, #0
+    movz x3, #2, #0
+    ldrb w2, [x0]
+    uxtb w0, w5
+    lsrv w0, w0, w3
     strb w0, [x1]
     ldrb w0, [x1]
     uxtb w0, w0
-    lslv w0, w0, w4
+    lslv w0, w0, w3
     strb w0, [x1]
-    movz x2, #0, #0
     invalid
-    add x2, x2, x0
+    add x2, x4, x0
     ldrb w0, [x1]
     uxtb w0, w0
     add x0, x2, x0
@@ -1049,19 +1049,19 @@ test_mem_imm_shifts i16 u16:
     sxth w2, w2
     asrv w2, w2, w3
     strh w2, [x0]
-    movz x4, #2, #0
-    ldrh w2, [x1]
-    ldrh w3, [x0]
-    uxth w0, w2
-    lsrv w0, w0, w4
+    ldrh w5, [x1]
+    movz x4, #0, #0
+    movz x3, #2, #0
+    ldrh w2, [x0]
+    uxth w0, w5
+    lsrv w0, w0, w3
     strh w0, [x1]
     ldrh w0, [x1]
     uxth w0, w0
-    lslv w0, w0, w4
+    lslv w0, w0, w3
     strh w0, [x1]
-    movz x2, #0, #0
     invalid
-    add x2, x2, x0
+    add x2, x4, x0
     ldrh w0, [x1]
     uxth w0, w0
     add x0, x2, x0
@@ -1074,17 +1074,17 @@ test_mem_imm_shifts i32 u32:
     ldr w2, [x0]
     asrv w2, w2, w3
     str w2, [x0]
-    ldr w4, [x1]
-    movz x2, #2, #0
-    ldr w3, [x0]
-    lsrv w0, w4, w2
+    ldr w5, [x1]
+    movz x4, #2, #0
+    movz x3, #0, #0
+    ldr w2, [x0]
+    lsrv w0, w5, w4
     str w0, [x1]
     ldr w0, [x1]
-    lslv w0, w0, w2
+    lslv w0, w0, w4
     str w0, [x1]
-    movz x2, #0, #0
-    sxtw x0, w3
-    add x2, x2, x0
+    sxtw x0, w2
+    add x2, x3, x0
     ldr w0, [x1]
     mov w0, w0
     add x0, x2, x0
@@ -1097,8 +1097,8 @@ test_mem_imm_shifts i64 u64:
     ldr x2, [x0]
     asrv x3, x2, x3
     str x3, [x0]
-    movz x2, #2, #0
     ldr x0, [x1]
+    movz x2, #2, #0
     lsrv x0, x0, x2
     str x0, [x1]
     ldr x0, [x1]
@@ -1111,8 +1111,8 @@ test_mem_imm_shifts i64 u64:
 =========== OPT LEVEL: moderate-quick ===========
 Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 32, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 32, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 36, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 36, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 main:
     sub sp, sp, #112
     stp x29, x30, [xzr, #7]
@@ -1145,8 +1145,8 @@ main:
     add x1, sp, #94
     str x0, [x1]
     add x0, sp, #72
-    movz x2, #3, #0
     add x1, sp, #73
+    movz x2, #3, #0
     bl test_mem_shifts i8 u8
     str x0, [xzr, #16]
     movz x2, #3, #0
@@ -1235,13 +1235,13 @@ test_mem_shifts i32 u32:
     lslv w3, w3, w2
     asrv w3, w3, w2
     str w3, [x0]
-    ldr w0, [x1]
-    lsrv w0, w0, w2
-    lslv w0, w0, w2
-    str w0, [x1]
-    sxtw x1, w3
-    mov w0, w0
-    add x0, x1, x0
+    sxtw x0, w3
+    ldr w3, [x1]
+    lsrv w3, w3, w2
+    lslv w2, w3, w2
+    str w2, [x1]
+    mov w1, w2
+    add x0, x0, x1
     ret
 test_mem_shifts i64 u64:
     ldr x3, [x0]
@@ -1263,8 +1263,8 @@ test_mem_imm_shifts i8 u8:
     asrv w2, w2, w3
     strb w2, [x0]
     ldrb w0, [x1]
-    invalid
     movz x3, #2, #0
+    invalid
     uxtb w0, w0
     lsrv w0, w0, w3
     uxtb w0, w0
@@ -1282,8 +1282,8 @@ test_mem_imm_shifts i16 u16:
     asrv w2, w2, w3
     strh w2, [x0]
     ldrh w0, [x1]
-    invalid
     movz x3, #2, #0
+    invalid
     uxth w0, w0
     lsrv w0, w0, w3
     uxth w0, w0
@@ -1298,33 +1298,33 @@ test_mem_imm_shifts i32 u32:
     lslv w2, w2, w3
     asrv w2, w2, w3
     str w2, [x0]
-    movz x0, #2, #0
+    sxtw x0, w2
+    movz x2, #2, #0
     ldr w3, [x1]
-    sxtw x2, w2
-    lsrv w3, w3, w0
-    lslv w0, w3, w0
-    str w0, [x1]
-    mov w0, w0
-    add x0, x2, x0
+    lsrv w3, w3, w2
+    lslv w2, w3, w2
+    str w2, [x1]
+    mov w1, w2
+    add x0, x0, x1
     ret
 test_mem_imm_shifts i64 u64:
     ldr x2, [x0]
     movz x3, #3, #0
     lslv x2, x2, x3
     asrv x2, x2, x3
+    movz x3, #2, #0
     str x2, [x0]
-    movz x0, #2, #0
-    ldr x3, [x1]
-    lsrv x3, x3, x0
-    lslv x0, x3, x0
+    ldr x0, [x1]
+    lsrv x0, x0, x3
+    lslv x0, x0, x3
     str x0, [x1]
     add x0, x2, x0
     ret
 =========== OPT LEVEL: moderate ===========
 Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 32, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 32, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 36, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 36, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 main:
     sub sp, sp, #112
     str x19, [xzr]
@@ -1364,8 +1364,8 @@ main:
     add x0, sp, #94
     str x1, [x0]
     add x0, sp, #72
-    movz x2, #3, #0
     add x1, sp, #73
+    movz x2, #3, #0
     bl test_mem_shifts i8 u8
     mov x21, x0
     movz x2, #3, #0
@@ -1454,13 +1454,13 @@ test_mem_shifts i32 u32:
     lslv w3, w3, w2
     asrv w3, w3, w2
     str w3, [x0]
+    sxtw x3, w3
     ldr w0, [x1]
     lsrv w0, w0, w2
     lslv w0, w0, w2
     str w0, [x1]
-    sxtw x1, w3
     mov w0, w0
-    add x0, x1, x0
+    add x0, x3, x0
     ret
 test_mem_shifts i64 u64:
     ldr x3, [x0]
@@ -1482,15 +1482,15 @@ test_mem_imm_shifts i8 u8:
     asrv w2, w2, w3
     strb w2, [x0]
     ldrb w0, [x1]
+    movz x3, #2, #0
     invalid
-    movz x2, #2, #0
     uxtb w0, w0
-    lsrv w0, w0, w2
+    lsrv w0, w0, w3
     uxtb w0, w0
-    lslv w0, w0, w2
+    lslv w0, w0, w3
     strb w0, [x1]
     uxtb w0, w0
-    add x0, x3, x0
+    add x0, x2, x0
     ret
 test_mem_imm_shifts i16 u16:
     ldrh w2, [x0]
@@ -1501,15 +1501,15 @@ test_mem_imm_shifts i16 u16:
     asrv w2, w2, w3
     strh w2, [x0]
     ldrh w0, [x1]
+    movz x3, #2, #0
     invalid
-    movz x2, #2, #0
     uxth w0, w0
-    lsrv w0, w0, w2
+    lsrv w0, w0, w3
     uxth w0, w0
-    lslv w0, w0, w2
+    lslv w0, w0, w3
     strh w0, [x1]
     uxth w0, w0
-    add x0, x3, x0
+    add x0, x2, x0
     ret
 test_mem_imm_shifts i32 u32:
     ldr w2, [x0]
@@ -1517,22 +1517,22 @@ test_mem_imm_shifts i32 u32:
     lslv w2, w2, w3
     asrv w2, w2, w3
     str w2, [x0]
-    movz x3, #2, #0
+    sxtw x3, w2
+    movz x2, #2, #0
     ldr w0, [x1]
-    sxtw x2, w2
-    lsrv w0, w0, w3
-    lslv w0, w0, w3
+    lsrv w0, w0, w2
+    lslv w0, w0, w2
     str w0, [x1]
     mov w0, w0
-    add x0, x2, x0
+    add x0, x3, x0
     ret
 test_mem_imm_shifts i64 u64:
     ldr x2, [x0]
     movz x3, #3, #0
     lslv x2, x2, x3
     asrv x3, x2, x3
-    str x3, [x0]
     movz x2, #2, #0
+    str x3, [x0]
     ldr x0, [x1]
     lsrv x0, x0, x2
     lslv x0, x0, x2
@@ -1542,8 +1542,8 @@ test_mem_imm_shifts i64 u64:
 =========== OPT LEVEL: all ===========
 Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 32, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 32, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 36, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 36, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 main:
     sub sp, sp, #112
     str x19, [xzr]
@@ -1583,8 +1583,8 @@ main:
     add x0, sp, #94
     str x1, [x0]
     add x0, sp, #72
-    movz x2, #3, #0
     add x1, sp, #73
+    movz x2, #3, #0
     bl test_mem_shifts i8 u8
     mov x21, x0
     movz x2, #3, #0
@@ -1673,13 +1673,13 @@ test_mem_shifts i32 u32:
     lslv w3, w3, w2
     asrv w3, w3, w2
     str w3, [x0]
+    sxtw x3, w3
     ldr w0, [x1]
     lsrv w0, w0, w2
     lslv w0, w0, w2
     str w0, [x1]
-    sxtw x1, w3
     mov w0, w0
-    add x0, x1, x0
+    add x0, x3, x0
     ret
 test_mem_shifts i64 u64:
     ldr x3, [x0]
@@ -1701,15 +1701,15 @@ test_mem_imm_shifts i8 u8:
     asrv w2, w2, w3
     strb w2, [x0]
     ldrb w0, [x1]
+    movz x3, #2, #0
     invalid
-    movz x2, #2, #0
     uxtb w0, w0
-    lsrv w0, w0, w2
+    lsrv w0, w0, w3
     uxtb w0, w0
-    lslv w0, w0, w2
+    lslv w0, w0, w3
     strb w0, [x1]
     uxtb w0, w0
-    add x0, x3, x0
+    add x0, x2, x0
     ret
 test_mem_imm_shifts i16 u16:
     ldrh w2, [x0]
@@ -1720,15 +1720,15 @@ test_mem_imm_shifts i16 u16:
     asrv w2, w2, w3
     strh w2, [x0]
     ldrh w0, [x1]
+    movz x3, #2, #0
     invalid
-    movz x2, #2, #0
     uxth w0, w0
-    lsrv w0, w0, w2
+    lsrv w0, w0, w3
     uxth w0, w0
-    lslv w0, w0, w2
+    lslv w0, w0, w3
     strh w0, [x1]
     uxth w0, w0
-    add x0, x3, x0
+    add x0, x2, x0
     ret
 test_mem_imm_shifts i32 u32:
     ldr w2, [x0]
@@ -1736,22 +1736,22 @@ test_mem_imm_shifts i32 u32:
     lslv w2, w2, w3
     asrv w2, w2, w3
     str w2, [x0]
-    movz x3, #2, #0
+    sxtw x3, w2
+    movz x2, #2, #0
     ldr w0, [x1]
-    sxtw x2, w2
-    lsrv w0, w0, w3
-    lslv w0, w0, w3
+    lsrv w0, w0, w2
+    lslv w0, w0, w2
     str w0, [x1]
     mov w0, w0
-    add x0, x2, x0
+    add x0, x3, x0
     ret
 test_mem_imm_shifts i64 u64:
     ldr x2, [x0]
     movz x3, #3, #0
     lslv x2, x2, x3
     asrv x3, x2, x3
-    str x3, [x0]
     movz x2, #2, #0
+    str x3, [x0]
     ldr x0, [x1]
     lsrv x0, x0, x2
     lslv x0, x0, x2

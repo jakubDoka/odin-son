@@ -11020,14 +11020,14 @@ from_slice :: proc(slice: []$E) -> #simd[LANES]E {
 }
 
 
-//linear_search :: proc (array: []$T, key: T) -> (index: int, found: bool) {
-//	for x, i in array {
-//		if x == key {
-//			return i, true
-//		}
-//	}
-//	return -1, false
-//}
+linear_search :: proc (array: []$T, key: T) -> (index: int, found: bool) {
+	for x, i in array {
+		if x == key {
+			return i, true
+		}
+	}
+	return -1, false
+}
 
 simd_search :: proc(haistack: []$T, needle: T) -> (int, bool) {
 	//LANES :: 16 / size_of(T)
@@ -11045,39 +11045,38 @@ simd_search :: proc(haistack: []$T, needle: T) -> (int, bool) {
 		i += 1
 	}
 
-	//idx, _ := linear_search(
-	//	haistack[len(haistack) / LANES * LANES:],
-	//	needle,
-	//)
-	//if idx < 0 do return -1, false
-	//return len(haistack) / LANES * LANES + idx, true
-	return -1, false
+	idx, _ := linear_search(
+		haistack[len(haistack) / LANES * LANES:],
+		needle,
+	)
+	if idx < 0 do return -1, false
+	return len(haistack) / LANES * LANES + idx, true
 }
 
-//sum :: proc(slc: []u8) -> u8 {
-//	acc: #simd[LANES]u8
-//
-//	i := 0
-//	for {
-//		if i + LANES >= len(slc) do break
-//		acc += from_slice(slc[i:i + LANES])
-//		i += LANES
-//	}
-//
-//	sacc: u8
-//	for el in slc {
-//		sacc += el
-//	}
-//
-//	return intrinsics.simd_reduce_add_bisect(acc) + sacc
-//}
+sum :: proc(slc: []u8) -> u8 {
+	acc: #simd[LANES]u8
+
+	i := 0
+	for {
+		if i + LANES >= len(slc) do break
+		acc += from_slice(slc[i:i + LANES])
+		i += LANES
+	}
+
+	sacc: u8
+	for el in slc {
+		sacc += el
+	}
+
+	return intrinsics.simd_reduce_add_bisect(acc) + sacc
+}
 
 main_ :: proc() -> int {
 	haystack := "0123456789abcdefghijklmnopqrstuvxyz"
-	//res, _ := simd_search(transmute([]u8)haystack, 'z')
+	res, _ := simd_search(transmute([]u8)haystack, 'z')
 	res2, _ := simd_search(transmute([]u8)haystack, 'a')
-	//res3 := sum(transmute([]u8)haystack)
-	return  res2 * 10 //+ int(res3) * 100
+	res3 := sum(transmute([]u8)haystack)
+	return res + res2 * 10 + int(res3) * 100
 }
 
 main.run_test(t, `basic_simd`, `
@@ -11101,14 +11100,14 @@ from_slice :: proc(slice: []$E) -> #simd[LANES]E {
 }
 
 
-//linear_search :: proc (array: []$T, key: T) -> (index: int, found: bool) {
-//	for x, i in array {
-//		if x == key {
-//			return i, true
-//		}
-//	}
-//	return -1, false
-//}
+linear_search :: proc (array: []$T, key: T) -> (index: int, found: bool) {
+	for x, i in array {
+		if x == key {
+			return i, true
+		}
+	}
+	return -1, false
+}
 
 simd_search :: proc(haistack: []$T, needle: T) -> (int, bool) {
 	//LANES :: 16 / size_of(T)
@@ -11126,39 +11125,38 @@ simd_search :: proc(haistack: []$T, needle: T) -> (int, bool) {
 		i += 1
 	}
 
-	//idx, _ := linear_search(
-	//	haistack[len(haistack) / LANES * LANES:],
-	//	needle,
-	//)
-	//if idx < 0 do return -1, false
-	//return len(haistack) / LANES * LANES + idx, true
-	return -1, false
+	idx, _ := linear_search(
+		haistack[len(haistack) / LANES * LANES:],
+		needle,
+	)
+	if idx < 0 do return -1, false
+	return len(haistack) / LANES * LANES + idx, true
 }
 
-//sum :: proc(slc: []u8) -> u8 {
-//	acc: #simd[LANES]u8
-//
-//	i := 0
-//	for {
-//		if i + LANES >= len(slc) do break
-//		acc += from_slice(slc[i:i + LANES])
-//		i += LANES
-//	}
-//
-//	sacc: u8
-//	for el in slc {
-//		sacc += el
-//	}
-//
-//	return intrinsics.simd_reduce_add_bisect(acc) + sacc
-//}
+sum :: proc(slc: []u8) -> u8 {
+	acc: #simd[LANES]u8
+
+	i := 0
+	for {
+		if i + LANES >= len(slc) do break
+		acc += from_slice(slc[i:i + LANES])
+		i += LANES
+	}
+
+	sacc: u8
+	for el in slc {
+		sacc += el
+	}
+
+	return intrinsics.simd_reduce_add_bisect(acc) + sacc
+}
 
 main :: proc() -> int {
 	haystack := "0123456789abcdefghijklmnopqrstuvxyz"
-	//res, _ := simd_search(transmute([]u8)haystack, 'z')
+	res, _ := simd_search(transmute([]u8)haystack, 'z')
 	res2, _ := simd_search(transmute([]u8)haystack, 'a')
-	//res3 := sum(transmute([]u8)haystack)
-	return  res2 * 10 //+ int(res3) * 100
+	res3 := sum(transmute([]u8)haystack)
+	return res + res2 * 10 + int(res3) * 100
 }
 `, main_())
 }
@@ -11216,8 +11214,9 @@ main_ :: proc() -> int {
 	vu16: [17]u16
 	init_inc(vu16[:])
 	vu32: [9]u32
-	init_inc(vu16[:])
+	init_inc(vu32[:])
 	vu64: [5]u64
+	init_inc(vu64[:])
 
 	res := 0
 	res += int(simd_fold(vu8[:]))
@@ -11281,8 +11280,9 @@ main :: proc() -> int {
 	vu16: [17]u16
 	init_inc(vu16[:])
 	vu32: [9]u32
-	init_inc(vu16[:])
+	init_inc(vu32[:])
 	vu64: [5]u64
+	init_inc(vu64[:])
 
 	res := 0
 	res += int(simd_fold(vu8[:]))
@@ -20291,14 +20291,14 @@ from_slice :: proc(slice: []$E) -> #simd[LANES]E {
 }
 
 
-//linear_search :: proc (array: []$T, key: T) -> (index: int, found: bool) {
-//	for x, i in array {
-//		if x == key {
-//			return i, true
-//		}
-//	}
-//	return -1, false
-//}
+linear_search :: proc (array: []$T, key: T) -> (index: int, found: bool) {
+	for x, i in array {
+		if x == key {
+			return i, true
+		}
+	}
+	return -1, false
+}
 
 simd_search :: proc(haistack: []$T, needle: T) -> (int, bool) {
 	//LANES :: 16 / size_of(T)
@@ -20316,39 +20316,38 @@ simd_search :: proc(haistack: []$T, needle: T) -> (int, bool) {
 		i += 1
 	}
 
-	//idx, _ := linear_search(
-	//	haistack[len(haistack) / LANES * LANES:],
-	//	needle,
-	//)
-	//if idx < 0 do return -1, false
-	//return len(haistack) / LANES * LANES + idx, true
-	return -1, false
+	idx, _ := linear_search(
+		haistack[len(haistack) / LANES * LANES:],
+		needle,
+	)
+	if idx < 0 do return -1, false
+	return len(haistack) / LANES * LANES + idx, true
 }
 
-//sum :: proc(slc: []u8) -> u8 {
-//	acc: #simd[LANES]u8
-//
-//	i := 0
-//	for {
-//		if i + LANES >= len(slc) do break
-//		acc += from_slice(slc[i:i + LANES])
-//		i += LANES
-//	}
-//
-//	sacc: u8
-//	for el in slc {
-//		sacc += el
-//	}
-//
-//	return intrinsics.simd_reduce_add_bisect(acc) + sacc
-//}
+sum :: proc(slc: []u8) -> u8 {
+	acc: #simd[LANES]u8
+
+	i := 0
+	for {
+		if i + LANES >= len(slc) do break
+		acc += from_slice(slc[i:i + LANES])
+		i += LANES
+	}
+
+	sacc: u8
+	for el in slc {
+		sacc += el
+	}
+
+	return intrinsics.simd_reduce_add_bisect(acc) + sacc
+}
 
 main :: proc() -> int {
 	haystack := "0123456789abcdefghijklmnopqrstuvxyz"
-	//res, _ := simd_search(transmute([]u8)haystack, 'z')
+	res, _ := simd_search(transmute([]u8)haystack, 'z')
 	res2, _ := simd_search(transmute([]u8)haystack, 'a')
-	//res3 := sum(transmute([]u8)haystack)
-	return  res2 * 10 //+ int(res3) * 100
+	res3 := sum(transmute([]u8)haystack)
+	return res + res2 * 10 + int(res3) * 100
 }
 `,
 `
@@ -20404,8 +20403,9 @@ main :: proc() -> int {
 	vu16: [17]u16
 	init_inc(vu16[:])
 	vu32: [9]u32
-	init_inc(vu16[:])
+	init_inc(vu32[:])
 	vu64: [5]u64
+	init_inc(vu64[:])
 
 	res := 0
 	res += int(simd_fold(vu8[:]))

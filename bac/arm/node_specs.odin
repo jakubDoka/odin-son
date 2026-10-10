@@ -104,6 +104,11 @@ SPEC := bac.Node_Spec{
 		0b1, // Dbg_Scope
 		0b1, // Dbg_Scope_End
 		0b10, // Msub
+		0b10, // Cmlt
+		0b1000000, // Ext
+		0b10, // Zip1
+		0b10, // Addv128
+		0b1000000, // Umov
 	},
 	node_extra_sizes = {
 		1, // Nil -> Cfg
@@ -191,6 +196,11 @@ SPEC := bac.Node_Spec{
 		1, // Dbg_Scope -> Cfg
 		1, // Dbg_Scope_End -> Cfg
 		0, // Msub -> No_Extra
+		0, // Cmlt -> No_Extra
+		1, // Ext -> Arm_Op
+		0, // Zip1 -> No_Extra
+		0, // Addv128 -> No_Extra
+		1, // Umov -> Arm_Op
 	},
 	node_flags = {
 		{}, // Nil
@@ -278,6 +288,11 @@ SPEC := bac.Node_Spec{
 		{}, // Dbg_Scope
 		{Class_Flag.Is_Basic_Block_Start}, // Dbg_Scope_End
 		{}, // Msub
+		{}, // Cmlt
+		{}, // Ext
+		{}, // Zip1
+		{}, // Addv128
+		{}, // Umov
 	},
 	node_extra_types = {
 		bac.Cfg,
@@ -365,6 +380,11 @@ SPEC := bac.Node_Spec{
 		bac.Cfg,
 		bac.Cfg,
 		bac.No_Extra,
+		bac.No_Extra,
+		Arm_Op,
+		bac.No_Extra,
+		bac.No_Extra,
+		Arm_Op,
 	},
 	node_kind_name = {
 		`Nil`,
@@ -452,6 +472,11 @@ SPEC := bac.Node_Spec{
 		`Dbg_Scope`,
 		`Dbg_Scope_End`,
 		`Msub`,
+		`Cmlt`,
+		`Ext`,
+		`Zip1`,
+		`Addv128`,
+		`Umov`,
 	},
 }
 
@@ -541,6 +566,11 @@ Node_Type :: enum u16 {
 	Dbg_Scope,
 	Dbg_Scope_End,
 	Msub,
+	Cmlt,
+	Ext,
+	Zip1,
+	Addv128,
+	Umov,
 }
 
 peep_inst :: proc(ctx: bac.Peep_Ctx, node: bac.Expanded_Node) -> Maybe(bac.Node_ID) {
@@ -652,14 +682,41 @@ collect_meta :: proc(ctx: ^bac.Proc,
 add_msub :: #force_inline proc(graph: ^bac.Proc, name: string, dt: bac.Node_Datatype, multiplicant: bac.Node_ID, multiplier: bac.Node_ID, subtractant: bac.Node_ID) -> (_id: bac.Node_ID) {
 	return bac.add_raw(graph, name, u16(Node_Type.Msub), dt, {multiplicant, multiplier, subtractant})
 }
+#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
+add_cmlt :: #force_inline proc(graph: ^bac.Proc, name: string, lhs: bac.Node_ID, lane: bac.Lane_Type = {}) -> (_id: bac.Node_ID) {
+	return bac.add_raw(graph, name, u16(Node_Type.Cmlt), .V128, {lhs}, {lane = lane,})
+}
+#assert(size_of(Arm_Op) % bac.PRECISION == 0)
+add_ext :: #force_inline proc(graph: ^bac.Proc, name: string, lhs: bac.Node_ID, rhs: bac.Node_ID, aux: u32, lane: bac.Lane_Type = {}) -> (_id: bac.Node_ID) {
+	(^Arm_Op)(bac.get_next_extra_slot(graph, u16(Node_Type.Ext), 0))^ = {
+		aux = aux,
+	}
+	return bac.add_raw(graph, name, u16(Node_Type.Ext), .V128, {lhs, rhs}, {lane = lane,})
+}
+#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
+add_zip1 :: #force_inline proc(graph: ^bac.Proc, name: string, lsh: bac.Node_ID, rhs: bac.Node_ID, lane: bac.Lane_Type = {}) -> (_id: bac.Node_ID) {
+	return bac.add_raw(graph, name, u16(Node_Type.Zip1), .V128, {lsh, rhs}, {lane = lane,})
+}
+#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
+add_addv128 :: #force_inline proc(graph: ^bac.Proc, name: string, dt: bac.Node_Datatype, vec: bac.Node_ID, lane: bac.Lane_Type = {}) -> (_id: bac.Node_ID) {
+	return bac.add_raw(graph, name, u16(Node_Type.Addv128), dt, {vec}, {lane = lane,})
+}
+#assert(size_of(Arm_Op) % bac.PRECISION == 0)
+add_umov :: #force_inline proc(graph: ^bac.Proc, name: string, dt: bac.Node_Datatype, vec: bac.Node_ID, aux: u32) -> (_id: bac.Node_ID) {
+	(^Arm_Op)(bac.get_next_extra_slot(graph, u16(Node_Type.Umov), 0))^ = {
+		aux = aux,
+	}
+	return bac.add_raw(graph, name, u16(Node_Type.Umov), dt, {vec})
+}
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	when false {}
-	else when T == bac.No_Extra {return 1}
 	else when T == bac.Local {return 4}
+	else when T == bac.Tup {return 2}
+	else when T == bac.No_Extra {return 1}
 	else when T == bac.Call {return 5}
+	else when T == Arm_Op {return 6}
 	else when T == bac.Cfg {return 0}
 	else when T == bac.CInt {return 3}
-	else when T == bac.Tup {return 2}
 	else {#panic(`the passed type is not subclass of anything`)}
 }

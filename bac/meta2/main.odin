@@ -163,7 +163,23 @@ main :: proc() {
 	when arm.SPEC_NOT_PRESENT {
 		ARM_CLASSES := [arm.Node_Type]meta.Class_Spec {
 			.Msub = {args = {"multiplicant", "multiplier", "subtractant"}},
+			.Cmlt = {args = {"lhs"}, pass_lane = true, default_type = .V128},
+			.Ext = {
+				id = arm.Arm_Op,
+				default_type = .V128,
+				args = {"lhs", "rhs"},
+				extra_args = {"aux"},
+				pass_lane = true,
+			},
+			.Zip1 = {
+				default_type = .V128,
+				args = {"lsh", "rhs"},
+				pass_lane = true,
+			},
+			.Addv128 = {args = {"vec"}, pass_lane = true},
+			.Umov = {id = arm.Arm_Op, args = {"vec"}, extra_args = {"aux"}},
 		}
+
 		meta.generate_spec(
 			meta.Spec_Gen_Input {
 				package_name = "arm",
@@ -171,6 +187,7 @@ main :: proc() {
 				"Reg_Kind :: bac.Reg_Kind\n" +
 				"Class_Flag :: bac.Class_Flag\n",
 				qual = "bac.",
+				local_extra_types = {arm.Arm_Op},
 				classes = {
 					meta.class_array(&meta.IDEAL_CLASSES, gen_ctors = false),
 					meta.class_array(&ARM_CLASSES),

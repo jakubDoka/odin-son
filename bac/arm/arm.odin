@@ -122,7 +122,16 @@ when SPEC_NOT_PRESENT {
 
 	Node_Type :: enum u16 {
 		Msub,
+		Cmlt,
+		Ext,
+		Zip1,
+		Addv128,
+		Umov,
 	}
+}
+
+Arm_Op :: struct #align (4) {
+	aux: u32,
 }
 
 Op :: u32
@@ -134,6 +143,17 @@ emit_op :: proc(code: ^arna.Allocator, instr: Op) {
 
 atype :: proc(node: ^Node) -> Node_Type {
 	return Node_Type(node.rtype)
+}
+
+aextra :: #force_inline proc(
+	graph: ^bac.Proc,
+	node: ^bac.Node,
+	$T: typeid,
+) -> ^T {
+	if graph.inheritance_table[node.rtype] & (1 << inherit_idx_of(T)) == 0 {
+		return nil
+	}
+	return (^T)(&node.extra)
 }
 
 peep :: proc(
@@ -183,6 +203,12 @@ peep :: proc(
 			return id
 		}
 	case .Simd_Reduce_Add_Bisect:
+		if node.dt == .I64 {
+			a := add_umov(ctx, "sraa", .I64, node.inps[0], 0)
+			b := add_umov(ctx, "srab", .I64, node.inps[0], 1)
+			return bac.add_bin_op(ctx, "sras", .Add, .I64, a, b)
+		}
+
 		if node.dt != .F32 {
 			sub := bac.add_un_op(ctx, "srabc", .Cast, node.dt, id)
 			#reverse for out in node.outs {
@@ -191,6 +217,66 @@ peep :: proc(
 			node.dt = .F32
 			return id
 		}
+	case .Simd_Extract_Lsbs:
+		dat := []u8{1, 2, 4, 8, 16, 32, 64, 128, 1, 2, 4, 8, 16, 32, 64, 128}
+		size := len(dat) / size_of(u32)
+		slot := bac.get_next_extra_slot(ctx, u16(Node_Type.Global), size)
+		dst := mem.slice_data_cast([]u8, slot[1:][:size])
+		copy(dst, dat)
+		fmt.assertf(string(dst) == string(dat), "%v %v", dst, size)
+		(^bac.Node_Datatype)(slot)^ = .V128
+		msk := bac.add_raw(
+			ctx,
+			"selmk",
+			u16(Node_Type.Global),
+			.Void,
+			meta = {extra_dwords = size},
+		)
+		addr := bac.add_global_addr(ctx, "selmka", msk)
+		cmem := builder.get_or_add_const_mem(ctx)
+		mskld := bac.add_load(ctx, "seld", .V128, 0, cmem, addr)
+
+		shl := bac.add_bin_op(
+			ctx,
+			"selsh",
+			.Shl,
+			.V128,
+			node.inps[0],
+			bac.add_un_op(
+				ctx,
+				"selspl",
+				.Splat,
+				.V128,
+				bac.add_c_int(
+					ctx,
+					"selshc",
+					bac.LANE_TO_DT[node.lane],
+					i64(bac.LANE_SIZE[node.lane] * 8 - 1),
+				),
+			),
+			lane = node.lane,
+		)
+		cmlt := add_cmlt(ctx, "selct", shl, lane = node.lane)
+		and := bac.add_bin_op(
+			ctx,
+			"selnd",
+			.And,
+			.V128,
+			cmlt,
+			mskld,
+			lane = node.lane,
+		)
+		ext := add_ext(
+			ctx,
+			"selxt",
+			and,
+			and,
+			u32(8 / bac.LANE_SIZE[node.lane]),
+			lane = node.lane,
+		)
+		zip1 := add_zip1(ctx, "selzp1", and, ext, lane = node.lane)
+		addv := add_addv128(ctx, "seldv", .F32, zip1, lane = .I16)
+		return bac.add_un_op(ctx, "selct", .Cast, .I16, addv)
 	case .Rem, .U_Rem:
 		dv := bac.add_bin_op(
 			ctx,
@@ -314,14 +400,17 @@ meta_of :: #force_inline proc(
 	     .Trap,
 	     .Poison:
 		return {out = IOUT}
-	case .Simd_Reduce_Add_Bisect:
+	case .Simd_Reduce_Add_Bisect, .Addv128, .Umov:
 		return {out = out, masks = VEC_MASKS[:1]}
-	case .Add ..= .Xor, .Shl ..= .And_Not, .F_Add ..= .F_Div:
+	case .Splat:
+		return {out = out, masks = GPA_MASKS[:1]}
+	case .Add ..= .Xor, .Shl ..= .And_Not, .F_Add ..= .F_Div, .Zip1, .Ext:
 		return {out = out, masks = nmasks[:2]}
 	case .Msub:
 		return {out = out, masks = nmasks[:3]}
 	case .Eq ..= .U_Ge:
-		return {out = out, masks = GPA_MASKS[:2]}
+		ikind := ra.datatype_to_reg_kind[get_node(graph, node.inps[0]).dt]
+		return {out = out, masks = masks[ikind][:2]}
 	case .F_Eq ..= .F_Ge:
 		return {out = out, masks = VEC_MASKS[:2]}
 	case .F_To_I:
@@ -338,7 +427,7 @@ meta_of :: #force_inline proc(
 		masks := make([]bac.RM_Intern_Idx, len(node.inps) - 1)
 		slice.fill(masks, sout)
 		return {out = sout, input_start = 1, masks = masks}
-	case .Uext, .Sext, .Neg, .Not, .F_Demote, .F_Ext:
+	case .Uext, .Sext, .Neg, .Not, .F_Demote, .F_Ext, .Cmlt, .Ctz:
 		return {out = out, masks = nmasks[:1]}
 	case .Split:
 		return {out = sout, masks = snmasks[:1]}
@@ -623,7 +712,25 @@ emit_instr :: proc(
 		.F_Demote               = 0b00011110011000100100000000000000,
 		.F_From_I               = 0b00011110001000100000000000000000,
 		.Simd_Reduce_Add_Bisect = 0b00001110001100011011100000000000,
+		.Splat                  = 0b01001110000000000000110000000000,
+		.Cmlt                   = 0b01001110001000001010100000000000,
+		.Ext                    = 0b01101110000000000000000000000000,
+		.Zip1                   = 0b01001110000000000011100000000000,
+		.Addv128                = 0b01001110001100011011100000000000,
+		.Umov                   = 0b00001110000000000011110000000000,
 	}
+
+	@(static, rodata)
+	VEC_OPS := #partial [Node_Type]u32 {
+		.Add = 0b01001110001000001000010000000000,
+		.Sub = 0b01101110001000001000010000000000,
+		.Xor = 0b01101110001000000001110000000000,
+		.Or  = 0b01001110101000000001110000000000,
+		.Shl = 0b01001110111000000100010000000000,
+		.And = 0b01001110001000000001110000000000,
+		.Eq  = 0b01101110001000001000110000000000,
+	}
+
 	cc_neg :: proc(c: Cond) -> Cond {return Cond(u8(c) ~ 1)}
 
 	node := expand_node(ctx, instr)
@@ -631,6 +738,10 @@ emit_instr :: proc(
 	block_base := ctx.gvn - u32(len(ctx.schedule.bbs))
 	op := NODE_TO_OP[kind]
 	is_64 := node.dt == .I64
+
+	arm_op: Arm_Op
+	arm_op_ptr := aextra(ctx, node, Arm_Op)
+	if arm_op_ptr != nil do arm_op = arm_op_ptr^
 
 	inp: bac.Expanded_Node
 	is_f64: bool
@@ -650,15 +761,113 @@ emit_instr :: proc(
 	     .Local,
 	     .Global,
 	     .Poison:
-	case .Simd_Reduce_Add_Bisect:
+	case .Umov:
 		dst := reg_of(ctx, instr)
 		src := reg_of(ctx, node.inps[0])
+
+		imm :=
+			((arm_op.aux << 1) | 1) <<
+			intrinsics.count_trailing_zeros(u32(bac.DT_SIZE[node.dt]))
+
+		emit_op(
+			ctx.code,
+			op |
+			u32(is_64) << 30 |
+			imm << 16 |
+			u32(src.index) << 5 |
+			u32(dst.index),
+		)
+	case .Ext:
+		dst := reg_of(ctx, instr)
+		lhs := reg_of(ctx, node.inps[0])
+		rhs := reg_of(ctx, node.inps[1])
 
 		assert(node.lane == .I8)
 
 		emit_op(
 			ctx.code,
-			op | 0b1 << 30 | 0b00 << 22 | u32(src.index) << 5 | u32(dst.index),
+			op |
+			u32(rhs.index) << 16 |
+			arm_op.aux << 11 |
+			u32(lhs.index) << 5 |
+			u32(dst.index),
+		)
+	case .Zip1:
+		dst := reg_of(ctx, instr)
+		lsh := reg_of(ctx, node.inps[0])
+		rhs := reg_of(ctx, node.inps[1])
+
+		size := intrinsics.count_trailing_zeros(u32(bac.LANE_SIZE[node.lane]))
+		emit_op(
+			ctx.code,
+			op |
+			size << 22 |
+			u32(rhs.index) << 16 |
+			u32(lsh.index) << 5 |
+			u32(dst.index),
+		)
+	case .Addv128:
+		dst := reg_of(ctx, instr)
+		src := reg_of(ctx, node.inps[0])
+
+		size := intrinsics.count_trailing_zeros(u32(bac.LANE_SIZE[node.lane]))
+		emit_op(
+			ctx.code,
+			op | size << 22 | u32(src.index) << 5 | u32(dst.index),
+		)
+	case .Cmlt:
+		dst := reg_of(ctx, instr)
+		src := reg_of(ctx, node.inps[0])
+
+		size := intrinsics.count_trailing_zeros(u32(bac.LANE_SIZE[node.lane]))
+		emit_op(
+			ctx.code,
+			op | size << 22 | u32(src.index) << 5 | u32(dst.index),
+		)
+	case .Ctz:
+		CLZ: u32 = 0b01011010110000000001000000000000
+		RBIT: u32 = 0b01011010110000000000000000000000
+
+		dst := reg_of(ctx, instr)
+		src := reg_of(ctx, node.inps[0])
+
+		emit_op(
+			ctx.code,
+			RBIT | u32(is_64) << 31 | u32(src.index) << 5 | u32(dst.index),
+		)
+		emit_op(
+			ctx.code,
+			CLZ | u32(is_64) << 31 | u32(dst.index) << 5 | u32(dst.index),
+		)
+	case .Splat:
+		@(rodata, static)
+		LANE_IMMS := #partial [bac.Lane_Type]u32 {
+			.I8  = 00001,
+			.I16 = 00010,
+			.I32 = 00100,
+			.I64 = 01000,
+		}
+
+		imm := LANE_IMMS[node.lane]
+		assert(imm != 0)
+
+		dst := reg_of(ctx, instr)
+		src := reg_of(ctx, node.inps[0])
+
+		emit_op(
+			ctx.code,
+			op | imm << 16 | u32(src.index) << 5 | u32(dst.index),
+		)
+	case .Simd_Reduce_Add_Bisect:
+		dst := reg_of(ctx, instr)
+		src := reg_of(ctx, node.inps[0])
+
+		size := intrinsics.count_trailing_zeros(u32(bac.LANE_SIZE[node.lane]))
+		assert(size < 3)
+
+		emit_op(
+			ctx.code,
+			op | 0b1 << 30 | size << 22 | u32(src.index) << 5 | u32(dst.index),
 		)
 	case .Global_Addr, .Proc_Addr:
 		scale_pow: u32 = 0
@@ -814,7 +1023,6 @@ emit_instr :: proc(
 		assert(rm_off < 4096)
 
 		if rm.kind == RK_VECTOR {
-			op: u32 = 0x1e604000
 
 			if rm.index >= 32 && rd.index >= 32 {
 				// this is atroucious
@@ -849,7 +1057,14 @@ emit_instr :: proc(
 				// str rm, [SP, rd_off]
 				emit_op(ctx.code, imm12_instr(0b1111110100, rm, SP, rd_off))
 			} else {
-				emit_op(ctx.code, op | u32(rm.index) << 5 | u32(rd.index))
+				MOV :: 0b01001110101000000001110000000000
+				emit_op(
+					ctx.code,
+					MOV |
+					u32(rm.index) << 16 |
+					u32(rm.index) << 5 |
+					u32(rd.index),
+				)
 			}
 			break
 		}
@@ -947,6 +1162,27 @@ emit_instr :: proc(
 		rn := reg_of(ctx, node.inps[0])
 		rm := reg_of(ctx, node.inps[1])
 
+		if node.dt == .V128 {
+			UNSIZED :: bit_set[Node_Type]{.And, .Xor, .Or}
+			size := intrinsics.count_trailing_zeros(
+				u32(bac.LANE_SIZE[node.lane]),
+			)
+			if kind in UNSIZED do size = 0
+
+			op := VEC_OPS[kind]
+			fmt.assertf(op != 0, "%v", node)
+
+			emit_op(
+				ctx.code,
+				op |
+				(size << 22) |
+				u32(rm.index) << 16 |
+				u32(rn.index) << 5 |
+				u32(rd.index),
+			)
+			break
+		}
+
 		// add/sub rd, rn, rm
 		emit_op(ctx.code, rrr(is_64, op, rd, rn, rm))
 	case .Rem, .U_Rem:
@@ -992,6 +1228,27 @@ emit_instr :: proc(
 	case .Eq ..= .U_Ge, .F_Eq ..= .F_Ge:
 		rn := reg_of(ctx, node.inps[0])
 		rm := reg_of(ctx, node.inps[1])
+
+		if node.dt == .V128 {
+			rd := reg_of(ctx, instr)
+
+			size := intrinsics.count_trailing_zeros(
+				u32(bac.LANE_SIZE[node.lane]),
+			)
+
+			op := VEC_OPS[kind]
+			fmt.assertf(op != 0, "%v", node)
+
+			emit_op(
+				ctx.code,
+				op |
+				(size << 22) |
+				u32(rm.index) << 16 |
+				u32(rn.index) << 5 |
+				u32(rd.index),
+			)
+			break
+		}
 
 		if inp.dt >= .F32 {
 			// fcmp rn, rm

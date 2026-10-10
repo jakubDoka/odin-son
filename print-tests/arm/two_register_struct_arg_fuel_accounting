@@ -463,7 +463,7 @@ consume:
     add x0, x0, x7
     ret
 main:
-    sub sp, sp, #96
+    sub sp, sp, #80
     str x19, [xzr]
     str x20, [xzr, #8]
     str x21, [xzr, #16]
@@ -472,19 +472,11 @@ main:
     str x24, [xzr, #40]
     str x25, [xzr, #48]
     stp x29, x30, [xzr, #63]
-    add x19, sp, #72
-    eor.v v0, v0, v0
-    str.v q0, [x19]
     movz x0, #10, #0
     bl 0xffffffdc
-    str x0, [x19]
+    mov x25, x0
     movz x0, #20, #0
     bl 0xffffffdc
-    mov x25, x0
-    movz x0, #8, #0
-    add x1, x0, x19
-    str x25, [x1]
-    ldr x0, [x19]
     mov x24, x0
     movz x0, #1, #0
     bl 0xffffffdc
@@ -503,14 +495,14 @@ main:
     mov x19, x0
     movz x0, #6, #0
     bl 0xffffffdc
-    mov x1, x25
+    mov x1, x24
     mov x2, x23
     mov x3, x22
     mov x4, x21
     mov x5, x20
     mov x6, x19
     mov x7, x0
-    mov x0, x24
+    mov x0, x25
     bl 0xffffffe0
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
@@ -520,7 +512,7 @@ main:
     ldr x24, [xzr, #40]
     ldr x25, [xzr, #48]
     ldp x29, x30, [xzr, #63]
-    add sp, sp, #96
+    add sp, sp, #80
     ret
 =========== OPT LEVEL: aggresive ===========
 main:

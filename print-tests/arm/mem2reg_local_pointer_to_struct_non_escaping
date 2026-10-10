@@ -200,10 +200,10 @@ main:
     str x21, [xzr, #16]
     stp x29, x30, [xzr, #31]
     add x19, sp, #40
-    eor.v v0, v0, v0
-    str.v q0, [x19]
     movz x0, #16, #0
     add x20, x0, x19
+    eor.v v0, v0, v0
+    str.v q0, [x19]
     movz x0, #0, #0
     str x0, [x20]
     movz x0, #1, #0
@@ -242,10 +242,10 @@ main:
     str x21, [xzr, #16]
     stp x29, x30, [xzr, #31]
     add x21, sp, #40
-    eor.v v0, v0, v0
-    str.v q0, [x21]
     movz x0, #16, #0
     add x20, x0, x21
+    eor.v v0, v0, v0
+    str.v q0, [x21]
     movz x0, #0, #0
     str x0, [x20]
     movz x0, #1, #0
@@ -278,43 +278,26 @@ main:
 opaque:
     ret
 main:
-    sub sp, sp, #64
+    sub sp, sp, #32
     str x19, [xzr]
     str x20, [xzr, #8]
-    str x21, [xzr, #16]
-    stp x29, x30, [xzr, #31]
-    add x21, sp, #40
-    eor.v v0, v0, v0
-    str.v q0, [x21]
-    movz x0, #16, #0
-    add x20, x0, x21
-    movz x0, #0, #0
-    str x0, [x20]
+    stp x29, x30, [xzr, #23]
     movz x0, #1, #0
     bl 0xfffffffc
-    str x0, [x21]
+    mov x20, x0
     movz x0, #2, #0
     bl 0xfffffffc
-    movz x1, #8, #0
-    add x19, x1, x21
-    str x0, [x19]
+    mov x19, x0
     movz x0, #3, #0
     bl 0xfffffffc
-    str x0, [x20]
-    ldr x2, [x21]
-    ldr x1, [x19]
-    add x2, x2, x1
-    add x1, x0, x2
-    str x2, [x21]
-    str x1, [x20]
-    ldr x0, [x19]
+    add x2, x20, x19
+    add x1, x19, x2
     add x0, x0, x2
-    add x0, x0, x1
+    add x0, x1, x0
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
-    ldr x21, [xzr, #16]
-    ldp x29, x30, [xzr, #31]
-    add sp, sp, #64
+    ldp x29, x30, [xzr, #23]
+    add sp, sp, #32
     ret
 =========== OPT LEVEL: aggresive ===========
 main:

@@ -764,7 +764,7 @@ inline_and_optimize :: proc(
 
 add_var :: proc(ctx: ^Gen_Ctx, var: typecheck.Variable) {
 	append(&ctx.scope, var)
-	append(&ctx.decls, typecheck.Local_Decl{var.name, var.type})
+	//append(&ctx.decls, typecheck.Local_Decl{var.name, var.type})
 }
 
 push_scope_value :: proc(
@@ -873,6 +873,7 @@ emit_proc :: proc(
 		assert(len(prc.rets) == 0)
 		values := [2]Node_ID{ctx_ctrl(ctx), ctx_mem(ctx)}
 		builder.merge_returns(ctx, values[:])
+		builder.truncate_scope(ctx, ctx.node_scope, 1)
 		bac.delete_node(ctx, ctx.node_scope)
 		ctx.node_scope = 0
 	}

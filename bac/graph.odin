@@ -197,9 +197,8 @@ when SPEC_NOT_PRESENT {
 		Ctz,
 		Simd_Extract_Lsbs,
 		Simd_Reduce_Add_Bisect,
-		Dbg_Assign,
+		Dbg_Sym_Update,
 		Dbg_Scope,
-		Dbg_Scope_End,
 	}
 
 	inherit_idx_of :: proc($T: typeid) -> u8 {return 0}
@@ -226,6 +225,10 @@ when SPEC_NOT_PRESENT {
 	add_then :: add_jump
 	add_else :: add_jump
 	add_poison :: proc(graph: ^Proc, name: string) -> Node_ID {return 0}
+}
+
+Dbg_Scope_Sym :: struct {
+	name: string,
 }
 
 Class_Flags :: bit_set[Class_Flag;u8]
@@ -296,6 +299,7 @@ lane_from_dt :: proc(ty: Node_Datatype) -> (Lane_Type, bool) {
 
 Node_Datatype :: enum u8 {
 	Void,
+	Mem,
 	I8,
 	I16,
 	I32,
@@ -330,6 +334,7 @@ LANE_TO_DT := [Lane_Type]Node_Datatype {
 @(rodata)
 DT_SIZE := [Node_Datatype]int {
 	.Void = 0,
+	.Mem  = 0,
 	.I8   = 1,
 	.I16  = 2,
 	.I32  = 4,
@@ -974,7 +979,7 @@ schedule_peeps :: proc(graph: ^Proc, schedule: ^Schedule) {
 			inode := expand_node(graph, instr)
 			if inode.output_count == 1 &&
 			   get_node(graph, inode.outs[0].id).itype == .Phi &&
-			   get_node(graph, inode.outs[0].id).dt != .Void &&
+			   get_node(graph, inode.outs[0].id).dt > .Mem &&
 			   (0 == len(inode.inps) ||
 					   (get_node(graph, inode.inps[0]).itype == .Phi &&
 							   inode.inps[0] == inode.outs[0].id &&

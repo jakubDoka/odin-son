@@ -478,7 +478,7 @@ regalloc_round :: proc(
 			if !visited {
 				for out in head.outs {
 					onode := expand_node(graph, out.id)
-					if onode.itype == .Phi && onode.dt != .Void {
+					if onode.itype == .Phi && onode.dt > .Mem {
 						lrg := ctx.lrg_table[onode.gvn]
 						n := onode.inps[1 + j]
 
@@ -1699,7 +1699,7 @@ regalloc_round :: proc(
 
 			for instr, i in bb.instrs {
 				inode := expand_node(ctx.graph, instr)
-				if inode.dt == .Void && inode.itype == .Phi do continue
+				if inode.dt <= .Mem && inode.itype == .Phi do continue
 
 				deps := inode.inps
 				if inode.itype != .Split {

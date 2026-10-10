@@ -53,9 +53,7 @@ get_idom_node :: proc(graph: ^Proc, node: ^Node) -> Node_ID {
 	     .Call,
 	     .Call_End,
 	     .Trap,
-	     .Always,
-	     .Dbg_Scope,
-	     .Dbg_Scope_End:
+	     .Always:
 		return inps[0]
 	case .Region:
 		fmt.assertf(len(inps) > 1, "wut %v", node)
@@ -96,9 +94,7 @@ get_idepth_node :: proc(graph: ^Proc, node: ^Node) -> u32 {
 	     .Call_End,
 	     .Call,
 	     .Trap,
-	     .Always,
-	     .Dbg_Scope,
-	     .Dbg_Scope_End:
+	     .Always:
 		extra.idepth = 1 + get_idepth(graph, inps[0])
 	case .Region:
 		mx: u32
@@ -121,7 +117,7 @@ insert_alwasy :: proc(ctx: ^Proc, root: Node_ID) -> Node_ID {
 	append(&inps, node.inps[1])
 	for out in node.outs {
 		onode := get_node(ctx, out.id)
-		if onode.itype == .Phi && onode.dt == .Void {
+		if onode.itype == .Phi && onode.dt <= .Mem {
 			append(&inps, out.id)
 		}
 	}
@@ -641,7 +637,7 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 		}
 
 		if node.is_store ||
-		   (node.itype == .Phi && node.dt == .Void) ||
+		   (node.itype == .Phi && node.dt <= .Mem) ||
 		   node.itype == .Call ||
 		   node.itype == .Return {
 			for out in node.outs {
@@ -820,7 +816,7 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 
 			for instr in bb.instrs[:phi_count] {
 				inode := expand_node(graph, instr)
-				if inode.dt == .Void do continue
+				if inode.dt <= .Mem do continue
 				pos := slice.linear_search(
 					bb.instrs[phi_count:boundary],
 					inode.inps[2],

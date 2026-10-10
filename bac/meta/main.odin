@@ -593,9 +593,9 @@ IDEAL_CLASSES := [bac.Node_Type]Class_Spec {
 	.U_Rem = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
 	.U_Shr = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
 	.Sym = {args = {"entry"}, default_type = .Void},
-	.Mem = {args = {"ctrl"}, default_type = .Void, flags = {.Store}},
-	.Split_Mem = {args = {"mem"}, default_type = .Void, flags = {.Store}},
-	.Merge_Mem = {default_type = .Void, varargs = true, flags = {.Store}},
+	.Mem = {args = {"ctrl"}, default_type = .Mem, flags = {.Store}},
+	.Split_Mem = {args = {"mem"}, default_type = .Mem, flags = {.Store}},
+	.Merge_Mem = {default_type = .Mem, varargs = true, flags = {.Store}},
 	.Local = {id = bac.Local, args = {"mem"}, default_type = .Void},
 	.Local_Addr = {args = {"local"}, default_type = .I64, flags = {.Clonable}},
 	.Global = {id = Tup, default_type = .Void},
@@ -613,17 +613,17 @@ IDEAL_CLASSES := [bac.Node_Type]Class_Spec {
 	.Load = {args = {"ctrl", "mem", "addr"}, flags = {.Interned, .Load}},
 	.Store = {
 		args = {"ctrl", "mem", "addr", "value"},
-		default_type = .Void,
+		default_type = .Mem,
 		flags = {.Store},
 	},
 	.Copy = {
 		args = {"ctrl", "mem", "dst", "src", "size"},
-		default_type = .Void,
+		default_type = .Mem,
 		flags = {.Store},
 	},
 	.Set = {
 		args = {"ctrl", "mem", "dst", "value", "size"},
-		default_type = .Void,
+		default_type = .Mem,
 		flags = {.Store},
 	},
 	.Split = {args = {"dest"}},
@@ -671,14 +671,11 @@ IDEAL_CLASSES := [bac.Node_Type]Class_Spec {
 	},
 	.Ret = {id = Tup, args = {"call_end"}, extra_args = {"idx"}},
 	.Return = {id = Cfg, varargs = true, default_type = .Void},
-	.Dbg_Assign = {args = {"new_value", "old_value"}},
-	.Dbg_Scope = {id = Cfg, default_type = .Void, varargs = true},
-	.Dbg_Scope_End = {
-		id = Cfg,
+	.Dbg_Sym_Update = {
 		default_type = .Void,
-		args = {"ctrl"},
-		flags = {.Is_Basic_Block_Start},
+		args = {"new_value", "prev_update"},
 	},
+	.Dbg_Scope = {default_type = .Void, varargs = true},
 }
 
 main :: proc() {

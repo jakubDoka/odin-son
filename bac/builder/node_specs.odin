@@ -9,7 +9,7 @@ SPEC := bac.Node_Spec{
 	},
 	call_clobbers = {
 	},
-	datatype_to_reg_kind = {.Void = 0, .I8 = 0, .I16 = 0, .I32 = 0, .I64 = 0, .F32 = 0, .F64 = 0, .V128 = 0, .V256 = 0, .V512 = 0},
+	datatype_to_reg_kind = {.Void = 0, .Mem = 0, .I8 = 0, .I16 = 0, .I32 = 0, .I64 = 0, .F32 = 0, .F64 = 0, .V128 = 0, .V256 = 0, .V512 = 0},
 	spill_boundary = {},
 	emit_function = emit_function,
 	peep = peep_inst,
@@ -97,9 +97,8 @@ SPEC := bac.Node_Spec{
 		0b10, // Ctz
 		0b10, // Simd_Extract_Lsbs
 		0b10, // Simd_Reduce_Add_Bisect
-		0b10, // Dbg_Assign
-		0b1, // Dbg_Scope
-		0b1, // Dbg_Scope_End
+		0b10, // Dbg_Sym_Update
+		0b10, // Dbg_Scope
 		0b1000000, // Scope
 		0b10, // Lazy_Phi
 	},
@@ -185,9 +184,8 @@ SPEC := bac.Node_Spec{
 		0, // Ctz -> No_Extra
 		0, // Simd_Extract_Lsbs -> No_Extra
 		0, // Simd_Reduce_Add_Bisect -> No_Extra
-		0, // Dbg_Assign -> No_Extra
-		1, // Dbg_Scope -> Cfg
-		1, // Dbg_Scope_End -> Cfg
+		0, // Dbg_Sym_Update -> No_Extra
+		0, // Dbg_Scope -> No_Extra
 		1, // Scope -> Scope
 		0, // Lazy_Phi -> No_Extra
 	},
@@ -273,9 +271,8 @@ SPEC := bac.Node_Spec{
 		{Class_Flag.Interned}, // Ctz
 		{Class_Flag.Interned}, // Simd_Extract_Lsbs
 		{Class_Flag.Interned}, // Simd_Reduce_Add_Bisect
-		{}, // Dbg_Assign
+		{}, // Dbg_Sym_Update
 		{}, // Dbg_Scope
-		{Class_Flag.Is_Basic_Block_Start}, // Dbg_Scope_End
 		{}, // Scope
 		{}, // Lazy_Phi
 	},
@@ -362,8 +359,7 @@ SPEC := bac.Node_Spec{
 		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
-		bac.Cfg,
-		bac.Cfg,
+		bac.No_Extra,
 		Scope,
 		bac.No_Extra,
 	},
@@ -449,9 +445,8 @@ SPEC := bac.Node_Spec{
 		`Ctz`,
 		`Simd_Extract_Lsbs`,
 		`Simd_Reduce_Add_Bisect`,
-		`Dbg_Assign`,
+		`Dbg_Sym_Update`,
 		`Dbg_Scope`,
-		`Dbg_Scope_End`,
 		`Scope`,
 		`Lazy_Phi`,
 	},
@@ -539,9 +534,8 @@ Node_Type :: enum u16 {
 	Ctz,
 	Simd_Extract_Lsbs,
 	Simd_Reduce_Add_Bisect,
-	Dbg_Assign,
+	Dbg_Sym_Update,
 	Dbg_Scope,
-	Dbg_Scope_End,
 	Scope,
 	Lazy_Phi,
 }
@@ -638,8 +632,7 @@ post_schedule_peep_inst :: proc(
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
-#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
+#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(Scope) % bac.PRECISION == 0)
 add_scope :: #force_inline proc(graph: ^bac.Proc, name: string, cfg: bac.Node_ID) -> (_id: bac.Node_ID) {
 	(^Scope)(bac.get_next_extra_slot(graph, u16(Node_Type.Scope), 0))^ = {}

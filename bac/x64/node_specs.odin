@@ -13,7 +13,7 @@ SPEC := bac.Node_Spec{
 		{4039, 65535},
 		{2051, 0},
 	},
-	datatype_to_reg_kind = {.Void = 0, .I8 = 0, .I16 = 0, .I32 = 0, .I64 = 0, .F32 = 1, .F64 = 1, .V128 = 1, .V256 = 1, .V512 = 1},
+	datatype_to_reg_kind = {.Void = 0, .Mem = 0, .I8 = 0, .I16 = 0, .I32 = 0, .I64 = 0, .F32 = 1, .F64 = 1, .V128 = 1, .V256 = 1, .V512 = 1},
 	spill_boundary = {16, 16},
 	collect_meta = collect_meta,
 	emit_function = emit_function,
@@ -102,9 +102,8 @@ SPEC := bac.Node_Spec{
 		0b10, // Ctz
 		0b10, // Simd_Extract_Lsbs
 		0b10, // Simd_Reduce_Add_Bisect
-		0b10, // Dbg_Assign
-		0b1, // Dbg_Scope
-		0b1, // Dbg_Scope_End
+		0b10, // Dbg_Sym_Update
+		0b10, // Dbg_Scope
 		0b1000000, // X64_Add
 		0b1000000, // X64_Sub
 		0b1000000, // X64_And
@@ -229,9 +228,8 @@ SPEC := bac.Node_Spec{
 		0, // Ctz -> No_Extra
 		0, // Simd_Extract_Lsbs -> No_Extra
 		0, // Simd_Reduce_Add_Bisect -> No_Extra
-		0, // Dbg_Assign -> No_Extra
-		1, // Dbg_Scope -> Cfg
-		1, // Dbg_Scope_End -> Cfg
+		0, // Dbg_Sym_Update -> No_Extra
+		0, // Dbg_Scope -> No_Extra
 		3, // X64_Add -> Mem_Op
 		3, // X64_Sub -> Mem_Op
 		3, // X64_And -> Mem_Op
@@ -356,9 +354,8 @@ SPEC := bac.Node_Spec{
 		{Class_Flag.Interned}, // Ctz
 		{Class_Flag.Interned}, // Simd_Extract_Lsbs
 		{Class_Flag.Interned}, // Simd_Reduce_Add_Bisect
-		{}, // Dbg_Assign
+		{}, // Dbg_Sym_Update
 		{}, // Dbg_Scope
-		{Class_Flag.Is_Basic_Block_Start}, // Dbg_Scope_End
 		{}, // X64_Add
 		{}, // X64_Sub
 		{}, // X64_And
@@ -484,8 +481,7 @@ SPEC := bac.Node_Spec{
 		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
-		bac.Cfg,
-		bac.Cfg,
+		bac.No_Extra,
 		Mem_Op,
 		Mem_Op,
 		Mem_Op,
@@ -610,9 +606,8 @@ SPEC := bac.Node_Spec{
 		`Ctz`,
 		`Simd_Extract_Lsbs`,
 		`Simd_Reduce_Add_Bisect`,
-		`Dbg_Assign`,
+		`Dbg_Sym_Update`,
 		`Dbg_Scope`,
-		`Dbg_Scope_End`,
 		`X64_Add`,
 		`X64_Sub`,
 		`X64_And`,
@@ -739,9 +734,8 @@ Node_Type :: enum u16 {
 	Ctz,
 	Simd_Extract_Lsbs,
 	Simd_Reduce_Add_Bisect,
-	Dbg_Assign,
+	Dbg_Sym_Update,
 	Dbg_Scope,
-	Dbg_Scope_End,
 	X64_Add,
 	X64_Sub,
 	X64_And,
@@ -888,8 +882,7 @@ collect_meta :: proc(ctx: ^bac.Proc,
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
-#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
+#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(Mem_Op) % bac.PRECISION == 0)
 #assert(size_of(Mem_Op) % bac.PRECISION == 0)
 #assert(size_of(Mem_Op) % bac.PRECISION == 0)

@@ -967,7 +967,7 @@ meta_of :: proc(
 	snmasks := smasks[nkind]
 	sout := snmasks[0]
 
-	if node.dt == .Void {
+	if node.dt <= .Mem {
 		out = IOUT
 		sout = IOUT
 	}
@@ -984,22 +984,9 @@ meta_of :: proc(
 	     .Entry,
 	     .Region,
 	     .Loop,
-	     .Dbg_Scope_End,
 	     .Call_End:
 		fmt.panicf("should not reach these: %v", node)
-	case .Dbg_Scope:
-		masks := make([]bac.RM_Intern_Idx, len(node.inps) - 1)
-		for inp, i in node.inps[1:] {
-			node := get_node(graph, inp)
-			masks[i] = smasks[ra.datatype_to_reg_kind[node.dt]][0]
-		}
-		return {out = IOUT, masks = masks, input_start = 1}
-	case .Dbg_Assign:
-		return {
-			out = sout,
-			masks = snmasks[:1 + int(node.inps[1] != 0)],
-			in_place_slot = 1,
-		}
+	case .Dbg_Scope, .Dbg_Sym_Update:
 	case .Poison:
 		return {out = out}
 	case .CInt:
@@ -1658,9 +1645,10 @@ emit_instr :: proc(
 	     .Loop,
 	     .Call_End,
 	     .End,
-	     .Dbg_Scope_End,
 	     .Simd_Reduce_Add_Bisect:
 		fmt.panicf("Not reachable form here %v", node.node)
+	case .Dbg_Sym_Update, .Dbg_Scope:
+		panic("TODO")
 	case .Splat:
 		panic("no")
 	case .Simd_Extract_Lsbs:
@@ -2045,18 +2033,7 @@ emit_instr :: proc(
 				id     = lib_call.id,
 			}
 		}
-	case .Poison,
-	     .Param,
-	     .Phi,
-	     .Ret,
-	     .Mem,
-	     .Split_Mem,
-	     .Merge_Mem,
-	     .Sym,
-	     .Dbg_Scope:
-	case .Dbg_Assign:
-		assert(node.dt == get_node(ctx, node.inps[0]).dt)
-		assert(reg_of(ctx, instr) == reg_of(ctx, node.inps[0]))
+	case .Poison, .Param, .Phi, .Ret, .Mem, .Split_Mem, .Merge_Mem, .Sym:
 	case .CInt:
 		dst := reg_of(ctx, instr)
 		imm := bac.get_extra(ctx, node, bac.CInt).value
@@ -2076,7 +2053,7 @@ emit_instr :: proc(
 		}
 
 		switch node.dt {
-		case .Void:
+		case .Void, .Mem:
 			panic("")
 		case .I8:
 			emit_single_op(ctx.code, 0xb0, dst)
@@ -2860,7 +2837,7 @@ emit_imm_for_dt :: proc(
 	imm: i32,
 ) {
 	switch dt {
-	case .Void:
+	case .Void, .Mem:
 		panic("")
 	case .I8:
 		bac.emit_anys(code, i8(imm))
@@ -2880,7 +2857,7 @@ emit_extended_sized_opcode :: proc(
 	op: u8,
 ) {
 	switch dt {
-	case .Void:
+	case .Void, .Mem:
 		panic("")
 	case .I8:
 		emit(code, {rx, 0x0f, op - 1})
@@ -2900,7 +2877,7 @@ emit_sized_opcode :: proc(
 	op: u8,
 ) {
 	switch dt {
-	case .Void:
+	case .Void, .Mem:
 		panic("")
 	case .I8:
 		emit(code, {rx, op - 1})

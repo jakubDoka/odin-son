@@ -2,6 +2,7 @@ package builder
 
 import bac ".."
 import "../../vendored/gam/util/arna"
+import "base:intrinsics"
 import "core:fmt"
 import "core:mem"
 import "core:slice"
@@ -288,8 +289,12 @@ loop_control :: proc(
 	loop: ^Loop_State,
 ) {
 	base_size := get_node(ctx, loop.scope).input_count
-	truncate_scope(ctx, scope, base_size)
-	loop.scopes[variant] = merge_scopes(ctx, scope, loop.scopes[variant])
+	loop.scopes[variant] = merge_scopes(
+		ctx,
+		scope,
+		loop.scopes[variant],
+		base_size,
+	)
 }
 
 get_scope_value :: proc(
@@ -325,6 +330,10 @@ get_scope_value :: proc(
 	return val
 }
 
+should_debug_track :: proc(graph: ^bac.Proc, value: bac.Node_ID) -> bool {
+	return graph.has_dbg && get_node(graph, value).dt > .Mem
+}
+
 push_scope_value :: proc(
 	graph: ^bac.Proc,
 	scope: bac.Node_ID,
@@ -332,7 +341,9 @@ push_scope_value :: proc(
 ) -> int {
 	scope_node := get_node(graph, scope)
 	assert(Node_Type(scope_node.rtype) == .Scope)
-	value := value
+	if should_debug_track(graph, value) {
+		bac.connect(graph, scope, 0)
+	}
 	return bac.connect(graph, scope, value)
 }
 
@@ -343,7 +354,11 @@ set_scope_value :: proc(
 	value: bac.Node_ID,
 ) {
 	prev_value := get_scope_value(graph, scope, idx)
-	value := value
+	if should_debug_track(graph, prev_value) {
+		prev_dbg := get_scope_value(graph, scope, idx - 1)
+		update := bac.add_dbg_sym_update(graph, "dbgu", prev_value, prev_dbg)
+		bac.set_input(graph, scope, idx - 1, update)
+	}
 	bac.set_input(graph, scope, idx, value)
 }
 
@@ -351,25 +366,47 @@ truncate_scope :: proc(
 	graph: ^bac.Proc,
 	scope: bac.Node_ID,
 	#any_int to_len: int,
+	symbol_names: []string = {},
 ) {
-	snode := expand_node(graph, scope)
-	if graph.has_dbg && to_len != len(snode.inps) && scope != 0 && false {
-		end_inps := make([]Node_ID, 1 + len(snode.inps) - to_len)
+	assert(
+		!graph.has_dbg || scope != 0,
+		"the scope node should be properly truncated at the end of each" +
+		" scope to ensure that debug info is properly generated",
+	)
 
-		end_inps[0] = snode.inps[0]
-		used := 1
-		for i in to_len ..< len(snode.inps) {
-			if get_node(graph, snode.inps[i]).dt != .Void {
-				end_inps[used] = snode.inps[i]
-				used += 1
+	snode := expand_node(graph, scope)
+
+	if graph.has_dbg {
+		vars: [dynamic]Node_ID
+		append(&vars, snode.inps[0])
+
+		for i in to_len ..< int(snode.input_count) {
+			vl := get_node(graph, snode.inps[i])
+			if should_debug_track(graph, snode.inps[i]) {
+				EXTRA :: size_of(string) / bac.PRECISION
+				extra := bac.get_next_extra_slot(
+					graph,
+					u16(bac.Node_Type.Dbg_Sym_Update),
+					EXTRA,
+				)
+				intrinsics.unaligned_store(
+					(^string)(extra),
+					symbol_names[len(vars)],
+				)
+				final := bac.add_raw(
+					graph,
+					"dbgf",
+					u16(bac.Node_Type.Dbg_Sym_Update),
+					.Void,
+					{snode.inps[i], snode.inps[i - 1]},
+					meta = {extra_dwords = EXTRA},
+				)
+				append(&vars, final)
 			}
 		}
-		end_inps = end_inps[:used]
 
-		dbg_scope := bac.add_dbg_scope(graph, "trds", end_inps)
-		dbg_scope_end := bac.add_dbg_scope_end(graph, "trdse", dbg_scope)
-
-		bac.set_input(graph, scope, 0, dbg_scope_end)
+		dbg_scope := bac.add_dbg_scope(graph, "dbgsp", vars[:])
+		bac.connect(graph, graph.end, dbg_scope)
 	}
 
 	truncate_inputs(graph, scope, to_len)
@@ -397,6 +434,7 @@ merge_scopes :: proc(
 	graph: ^bac.Proc,
 	lctrl: bac.Node_ID,
 	rctrl: bac.Node_ID,
+	bound: u16 = 0,
 ) -> bac.Node_ID {
 	if lctrl == 0 do return rctrl
 	if rctrl == 0 do return lctrl
@@ -406,11 +444,19 @@ merge_scopes :: proc(
 	rnode := expand_node(graph, rctrl)
 	assert(btype(rnode) == .Scope)
 
-	assert(lnode.input_count == rnode.input_count)
+	lcount := lnode.input_count
+	rcount := rnode.input_count
+
+	if bound != 0 {
+		lcount = min(bound, lcount)
+		rcount = min(bound, rcount)
+	}
+
+	assert(lcount == rcount)
 
 	region := bac.add_region(graph, "reg", {lnode.inps[0], rnode.inps[0]})
 
-	for i in 1 ..< lnode.input_count {
+	for i in 1 ..< lcount {
 		if lnode.inps[i] == rnode.inps[i] do continue
 		lvalue := get_scope_value(graph, lctrl, i)
 		rvalue := get_scope_value(graph, rctrl, i)

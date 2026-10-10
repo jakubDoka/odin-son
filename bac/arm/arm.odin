@@ -383,7 +383,7 @@ meta_of :: #force_inline proc(
 	snmasks := smasks[nkind]
 	sout := snmasks[0]
 
-	if node.dt == .Void {
+	if node.dt <= .Mem {
 		out = IOUT
 		sout = IOUT
 	}
@@ -397,9 +397,10 @@ meta_of :: #force_inline proc(
 	     .Loop,
 	     .Call_End,
 	     .End,
-	     .Simd_Extract_Lsbs,
-	     .Dbg_Scope_End:
+	     .Simd_Extract_Lsbs:
 		fmt.panicf("should not reach this: %v", node)
+	case .Dbg_Sym_Update, .Dbg_Scope:
+		fmt.panicf("TODO: %v", node)
 	case .Split_Mem,
 	     .Merge_Mem,
 	     .Sym,
@@ -409,9 +410,7 @@ meta_of :: #force_inline proc(
 	     .Global,
 	     .Always,
 	     .Trap,
-	     .Poison,
-	     .Dbg_Assign,
-	     .Dbg_Scope:
+	     .Poison:
 		return {out = IOUT}
 	case .Simd_Reduce_Add_Bisect, .Addv128, .Umov:
 		return {out = out, masks = VEC_MASKS[:1]}
@@ -774,10 +773,9 @@ emit_instr :: proc(
 	     .Loop,
 	     .Call_End,
 	     .End,
-	     .Simd_Extract_Lsbs,
-	     .Dbg_Scope_End:
+	     .Simd_Extract_Lsbs:
 		fmt.panicf("should not reach this: %v", node)
-	case .U_F_From_I, .Rem, .U_Rem:
+	case .U_F_From_I, .Rem, .U_Rem, .Dbg_Sym_Update, .Dbg_Scope:
 		fmt.panicf("TODO: %v", node)
 	case .Split_Mem,
 	     .Merge_Mem,
@@ -788,9 +786,7 @@ emit_instr :: proc(
 	     .Param,
 	     .Local,
 	     .Global,
-	     .Poison,
-	     .Dbg_Assign,
-	     .Dbg_Scope:
+	     .Poison:
 	case .Umov:
 		dst := reg_of(ctx, instr)
 		src := reg_of(ctx, node.inps[0])

@@ -311,10 +311,9 @@ meta_of :: #force_inline proc(
 	     .Loop,
 	     .Call_End,
 	     .End,
-	     .Simd_Reduce_Add_Bisect,
-	     .Dbg_Scope_End:
+	     .Simd_Reduce_Add_Bisect:
 		fmt.panicf("Should not reach this: %v", node)
-	case .U_F_From_I, .Dbg_Assign, .Dbg_Scope:
+	case .U_F_From_I, .Dbg_Sym_Update, .Dbg_Scope:
 		fmt.panicf("TODO: %v", node)
 	case .Split_Mem,
 	     .Merge_Mem,
@@ -360,7 +359,7 @@ meta_of :: #force_inline proc(
 	     .WASM_Store:
 		return {out = out}
 	case .Phi:
-		if node.dt == .Void do return {out = out}
+		if node.dt <= .Mem do return {out = out}
 		masks := make([]bac.RM_Intern_Idx, len(node.inps) - 1)
 		slice.fill(masks, mask)
 		return {out = mask, input_start = 1, masks = masks}
@@ -516,10 +515,9 @@ pre_regalloc_hook :: proc(
 		     .Set_Local,
 		     .Tee_Local,
 		     .End,
-		     .Stub,
-		     .Dbg_Scope_End:
+		     .Stub:
 			fmt.panicf("Should not reach this: %v", node)
-		case .U_F_From_I, .Dbg_Assign:
+		case .U_F_From_I, .Dbg_Sym_Update, .Dbg_Scope:
 			fmt.panicf("TODO: %v", node)
 		case .Merge_Mem,
 		     .Split_Mem,
@@ -533,8 +531,6 @@ pre_regalloc_hook :: proc(
 		     .Poison,
 		     .Trap:
 			return {}
-		case .Dbg_Scope:
-			return {input_start = 1, input_count = u8(len(node.inps) - 1)}
 		case .Load, .WASM_Load:
 			is_local := get_node(ctx, node.inps[2]).itype == .Local
 			return {
@@ -569,7 +565,7 @@ pre_regalloc_hook :: proc(
 		case .Set, .Copy:
 			return {is_mem = true, input_start = 2, input_count = 3}
 		case .Phi:
-			if node.dt == .Void do return {}
+			if node.dt <= .Mem do return {}
 			return {
 				def = true,
 				input_start = 1,
@@ -677,7 +673,7 @@ pre_regalloc_hook :: proc(
 			instr := ctx.instrs[ctx.cursor]
 			inode := expand_node(ctx, instr)
 
-			if inode.itype == .Phi && inode.dt != .Void {
+			if inode.itype == .Phi && inode.dt > .Mem {
 				for inp, i in inode.inps[1:] {
 					if get_node(ctx, inp).itype == .Poison do continue
 					set := get_or_add_set(ctx, get_node(ctx, inp))
@@ -989,6 +985,7 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 	total_param_count := 0
 	for param in ctx.param_specs {
 		if param.dt == .Void do continue
+		assert(param.dt != .Mem)
 		param_counts[ctx.regalloc.datatype_to_reg_kind[param.dt]] += 1
 		total_param_count += 1
 	}
@@ -1171,10 +1168,9 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 	     .Simd_Reduce_Add_Bisect,
 	     .And_Not,
 	     .End,
-	     .Neg,
-	     .Dbg_Scope_End:
+	     .Neg:
 		fmt.panicf("Should not reach this: %v", node)
-	case .U_F_From_I, .Dbg_Assign:
+	case .U_F_From_I, .Dbg_Sym_Update, .Dbg_Scope:
 		fmt.panicf("TODO: %v", node)
 	case .Split_Mem,
 	     .Merge_Mem,
@@ -1186,8 +1182,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 	     .Param,
 	     .Stub,
 	     .Global,
-	     .Poison,
-	     .Dbg_Scope:
+	     .Poison:
 	case .CInt:
 		cint := bac.get_extra(ctx, node, bac.CInt)
 
@@ -1209,7 +1204,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 			emit_op(ctx.code, .I32_Const)
 			emit_leb(ctx.code, cint.value)
 			emit_op_fd(ctx.code, .I32x4_Splat)
-		case .Void, .V256, .V512:
+		case .Void, .Mem, .V256, .V512:
 			panic("no")
 		}
 	case .Add ..= .U_Rem, .Drop, .Not, .F_Demote, .F_Ext, .Ctz:
@@ -1246,7 +1241,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 				emit_op(ctx.code, .I32_Const)
 				emit_leb(ctx.code, 0xffff)
 				emit_op(ctx.code, .I32_And)
-			case .Void, .I32 ..= .V512:
+			case .Void, .Mem, .I32 ..= .V512:
 				panic("NO")
 			}
 		case .I64:
@@ -1260,11 +1255,11 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 				emit_leb(ctx.code, 0xffff)
 				emit_op(ctx.code, .I32_And)
 			case .I32:
-			case .Void, .I64 ..= .V512:
+			case .Void, .Mem, .I64 ..= .V512:
 				panic("NO")
 			}
 			emit_op(ctx.code, .I64_Extend_I32_U)
-		case .Void, .I8, .F32 ..= .V512:
+		case .Void, .Mem, .I8, .F32 ..= .V512:
 			panic("no")
 		}
 	case .Sext:
@@ -1274,7 +1269,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 		case .I16:
 			emit_op(ctx.code, .I32_Extend16_S)
 		case .I32:
-		case .Void, .I64 ..= .V512:
+		case .Void, .Mem, .I64 ..= .V512:
 			panic("NO")
 		}
 
@@ -1282,7 +1277,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 		case .I16 ..= .I32:
 		case .I64:
 			emit_op(ctx.code, .I64_Extend_I32_S)
-		case .Void, .I8, .F32 ..= .V512:
+		case .Void, .Mem, .I8, .F32 ..= .V512:
 			panic("no")
 		}
 	case .F_From_I:
@@ -1305,7 +1300,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 			case .Void ..= .I64, .V128 ..= .V512:
 				panic("no")
 			}
-		case .Void, .F32 ..= .V512:
+		case .Void, .Mem, .F32 ..= .V512:
 			panic("no")
 		}
 	case .F_To_I:
@@ -1328,7 +1323,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 			case .Void ..= .I64, .V128 ..= .V512:
 				panic("no")
 			}
-		case .Void, .F32 ..= .V512:
+		case .Void, .Mem, .F32 ..= .V512:
 			panic("no")
 		}
 	case .Cast:
@@ -1363,7 +1358,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 		case .F64:
 			assert(inp.dt == .I64)
 			emit_op(ctx.code, .F64_Reinterpret_I64)
-		case .Void, .V128 ..= .V512:
+		case .Void, .Mem, .V128 ..= .V512:
 			fmt.panicf("no %v %v", node, inp)
 		}
 	case .Get_Local:

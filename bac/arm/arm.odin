@@ -388,7 +388,18 @@ meta_of :: #force_inline proc(
 		sout = IOUT
 	}
 
-	#partial switch atype(node) {
+	switch atype(node) {
+	case .Nil,
+	     .Entry,
+	     .Then,
+	     .Else,
+	     .Region,
+	     .Loop,
+	     .Call_End,
+	     .End,
+	     .Simd_Extract_Lsbs,
+	     .Dbg_Scope_End:
+		fmt.panicf("should not reach this: %v", node)
 	case .Split_Mem,
 	     .Merge_Mem,
 	     .Sym,
@@ -398,7 +409,9 @@ meta_of :: #force_inline proc(
 	     .Global,
 	     .Always,
 	     .Trap,
-	     .Poison:
+	     .Poison,
+	     .Dbg_Assign,
+	     .Dbg_Scope:
 		return {out = IOUT}
 	case .Simd_Reduce_Add_Bisect, .Addv128, .Umov:
 		return {out = out, masks = VEC_MASKS[:1]}
@@ -708,27 +721,27 @@ emit_instr :: proc(
 		.Not                    = 0x2a200000,
 		.Cast                   = 0x1e260000,
 		.F_To_I                 = 0x1e380000,
-		.F_Ext                  = 0b00011110001000101100000000000000,
-		.F_Demote               = 0b00011110011000100100000000000000,
-		.F_From_I               = 0b00011110001000100000000000000000,
-		.Simd_Reduce_Add_Bisect = 0b00001110001100011011100000000000,
-		.Splat                  = 0b01001110000000000000110000000000,
-		.Cmlt                   = 0b01001110001000001010100000000000,
-		.Ext                    = 0b01101110000000000000000000000000,
-		.Zip1                   = 0b01001110000000000011100000000000,
-		.Addv128                = 0b01001110001100011011100000000000,
-		.Umov                   = 0b00001110000000000011110000000000,
+		.F_Ext                  = 0x1E22C000,
+		.F_Demote               = 0x1E624000,
+		.F_From_I               = 0x1E220000,
+		.Simd_Reduce_Add_Bisect = 0x4E31B800,
+		.Splat                  = 0x4E000C00,
+		.Cmlt                   = 0x4E20A800,
+		.Ext                    = 0x6E000000,
+		.Zip1                   = 0x4E003800,
+		.Addv128                = 0x4E31B800,
+		.Umov                   = 0x0E003C00,
 	}
 
 	@(static, rodata)
 	VEC_OPS := #partial [Node_Type]u32 {
-		.Add = 0b01001110001000001000010000000000,
-		.Sub = 0b01101110001000001000010000000000,
-		.Xor = 0b01101110001000000001110000000000,
-		.Or  = 0b01001110101000000001110000000000,
-		.Shl = 0b01001110111000000100010000000000,
-		.And = 0b01001110001000000001110000000000,
-		.Eq  = 0b01101110001000001000110000000000,
+		.Add = 0x4E208400,
+		.Sub = 0x6E208400,
+		.Xor = 0x6E201C00,
+		.Or  = 0x4EA01C00,
+		.Shl = 0x4EE04400,
+		.And = 0x4E201C00,
+		.Eq  = 0x6E208C00,
 	}
 
 	cc_neg :: proc(c: Cond) -> Cond {return Cond(u8(c) ~ 1)}
@@ -738,6 +751,8 @@ emit_instr :: proc(
 	block_base := ctx.gvn - u32(len(ctx.schedule.bbs))
 	op := NODE_TO_OP[kind]
 	is_64 := node.dt == .I64
+	sz_pow := intrinsics.count_trailing_zeros(u32(bac.DT_SIZE[node.dt]))
+	lsz_pow := intrinsics.count_trailing_zeros(u32(bac.LANE_SIZE[node.lane]))
 
 	arm_op: Arm_Op
 	arm_op_ptr := aextra(ctx, node, Arm_Op)
@@ -750,7 +765,20 @@ emit_instr :: proc(
 		is_f64 = inp.dt == .F64
 	}
 
-	#partial emit: switch kind {
+	emit: switch kind {
+	case .Nil,
+	     .Entry,
+	     .Then,
+	     .Else,
+	     .Region,
+	     .Loop,
+	     .Call_End,
+	     .End,
+	     .Simd_Extract_Lsbs,
+	     .Dbg_Scope_End:
+		fmt.panicf("should not reach this: %v", node)
+	case .U_F_From_I, .Rem, .U_Rem:
+		fmt.panicf("TODO: %v", node)
 	case .Split_Mem,
 	     .Merge_Mem,
 	     .Sym,
@@ -760,14 +788,14 @@ emit_instr :: proc(
 	     .Param,
 	     .Local,
 	     .Global,
-	     .Poison:
+	     .Poison,
+	     .Dbg_Assign,
+	     .Dbg_Scope:
 	case .Umov:
 		dst := reg_of(ctx, instr)
 		src := reg_of(ctx, node.inps[0])
 
-		imm :=
-			((arm_op.aux << 1) | 1) <<
-			intrinsics.count_trailing_zeros(u32(bac.DT_SIZE[node.dt]))
+		imm := ((arm_op.aux << 1) | 1) << sz_pow
 
 		emit_op(
 			ctx.code,
@@ -797,36 +825,25 @@ emit_instr :: proc(
 		lsh := reg_of(ctx, node.inps[0])
 		rhs := reg_of(ctx, node.inps[1])
 
-		size := intrinsics.count_trailing_zeros(u32(bac.LANE_SIZE[node.lane]))
 		emit_op(
 			ctx.code,
 			op |
-			size << 22 |
+			lsz_pow << 22 |
 			u32(rhs.index) << 16 |
 			u32(lsh.index) << 5 |
 			u32(dst.index),
 		)
-	case .Addv128:
+	case .Addv128, .Cmlt, .Simd_Reduce_Add_Bisect:
 		dst := reg_of(ctx, instr)
 		src := reg_of(ctx, node.inps[0])
 
-		size := intrinsics.count_trailing_zeros(u32(bac.LANE_SIZE[node.lane]))
 		emit_op(
 			ctx.code,
-			op | size << 22 | u32(src.index) << 5 | u32(dst.index),
-		)
-	case .Cmlt:
-		dst := reg_of(ctx, instr)
-		src := reg_of(ctx, node.inps[0])
-
-		size := intrinsics.count_trailing_zeros(u32(bac.LANE_SIZE[node.lane]))
-		emit_op(
-			ctx.code,
-			op | size << 22 | u32(src.index) << 5 | u32(dst.index),
+			op | lsz_pow << 22 | u32(src.index) << 5 | u32(dst.index),
 		)
 	case .Ctz:
-		CLZ: u32 = 0b01011010110000000001000000000000
-		RBIT: u32 = 0b01011010110000000000000000000000
+		CLZ: u32 = 0x5AC01000
+		RBIT: u32 = 0x5AC00000
 
 		dst := reg_of(ctx, instr)
 		src := reg_of(ctx, node.inps[0])
@@ -840,16 +857,7 @@ emit_instr :: proc(
 			CLZ | u32(is_64) << 31 | u32(dst.index) << 5 | u32(dst.index),
 		)
 	case .Splat:
-		@(rodata, static)
-		LANE_IMMS := #partial [bac.Lane_Type]u32 {
-			.I8  = 00001,
-			.I16 = 00010,
-			.I32 = 00100,
-			.I64 = 01000,
-		}
-
-		imm := LANE_IMMS[node.lane]
-		assert(imm != 0)
+		imm := u32(bac.LANE_SIZE[node.lane])
 
 		dst := reg_of(ctx, instr)
 		src := reg_of(ctx, node.inps[0])
@@ -857,17 +865,6 @@ emit_instr :: proc(
 		emit_op(
 			ctx.code,
 			op | imm << 16 | u32(src.index) << 5 | u32(dst.index),
-		)
-	case .Simd_Reduce_Add_Bisect:
-		dst := reg_of(ctx, instr)
-		src := reg_of(ctx, node.inps[0])
-
-		size := intrinsics.count_trailing_zeros(u32(bac.LANE_SIZE[node.lane]))
-		assert(size < 3)
-
-		emit_op(
-			ctx.code,
-			op | 0b1 << 30 | size << 22 | u32(src.index) << 5 | u32(dst.index),
 		)
 	case .Global_Addr, .Proc_Addr:
 		scale_pow: u32 = 0
@@ -927,15 +924,7 @@ emit_instr :: proc(
 		rd := reg_of(ctx, instr)
 		rn := reg_of(ctx, node.inps[0])
 
-		ftype: u32
-		#partial switch node.dt {
-		case .F32:
-			ftype = 0b00
-		case .F64:
-			ftype = 0b01
-		case:
-			panic("no")
-		}
+		ftype := u32(bac.DT_SIZE[node.dt]) >> 3
 
 		emit_op(
 			ctx.code,
@@ -956,19 +945,12 @@ emit_instr :: proc(
 		// str rvl, [rinp2, $imm12]
 		// TODO: this can be simplified
 		op: u32
+		sz_pow := intrinsics.count_trailing_zeros(u32(bac.DT_SIZE[vl.dt]))
 		#partial switch vl.dt {
-		case .I64:
-			op = 0b1111100100
-		case .I32:
-			op = 0b1011100100
-		case .I16:
-			op = 0b0111100100
-		case .I8:
-			op = 0b0011100100
-		case .F32:
-			op = 0b1011110100
-		case .F64:
-			op = 0b1111110100
+		case .I8 ..= .I64:
+			op = 0b0011100100 | sz_pow << 8
+		case .F32 ..= .F64:
+			op = 0b0011110100 | sz_pow << 8
 		case .V128:
 			op = 0b0011110110
 		case:
@@ -990,18 +972,10 @@ emit_instr :: proc(
 		// TODO: this can be simplified
 		op: u32
 		#partial switch node.dt {
-		case .I64:
-			op = 0b1111100101
-		case .I32:
-			op = 0b1011100101
-		case .I16:
-			op = 0b0111100101
-		case .I8:
-			op = 0b0011100101
-		case .F32:
-			op = 0b1011110101
-		case .F64:
-			op = 0b1111110101
+		case .I8 ..= .I64:
+			op = 0b0011100101 | sz_pow << 8
+		case .F32 ..= .F64:
+			op = 0b0011110101 | sz_pow << 8
 		case .V128:
 			op = 0b0011110111
 		case:
@@ -1023,7 +997,6 @@ emit_instr :: proc(
 		assert(rm_off < 4096)
 
 		if rm.kind == RK_VECTOR {
-
 			if rm.index >= 32 && rd.index >= 32 {
 				// this is atroucious
 
@@ -1057,7 +1030,7 @@ emit_instr :: proc(
 				// str rm, [SP, rd_off]
 				emit_op(ctx.code, imm12_instr(0b1111110100, rm, SP, rd_off))
 			} else {
-				MOV :: 0b01001110101000000001110000000000
+				MOV :: 0x4EA01C00
 				emit_op(
 					ctx.code,
 					MOV |
@@ -1106,9 +1079,9 @@ emit_instr :: proc(
 		rd := reg_of(ctx, instr)
 		rn := reg_of(ctx, node.inps[0])
 
-		UXTB :: u32(0x53001C00)
-		UXTH :: u32(0x53003C00)
-		MOV_W :: u32(0x2A0003E0)
+		UXTB :: 0x53001C00
+		UXTH :: 0x53003C00
+		MOV_W :: 0x2A0003E0
 
 		op: u32
 		#partial switch inp.dt {
@@ -1127,12 +1100,12 @@ emit_instr :: proc(
 		rd := reg_of(ctx, instr)
 		rm := reg_of(ctx, node.inps[0])
 
-		SXTB_W :: u32(0x13001C00)
-		SXTH_W :: u32(0x13003C00)
+		SXTB_W :: 0x13001C00
+		SXTH_W :: 0x13003C00
 
-		SXTB_X :: u32(0x93401C00)
-		SXTH_X :: u32(0x93403C00)
-		SXTW_X :: u32(0x93407C00)
+		SXTB_X :: 0x93401C00
+		SXTH_X :: 0x93403C00
+		SXTW_X :: 0x93407C00
 
 		op: u32
 		#partial switch inp.dt {
@@ -1164,10 +1137,7 @@ emit_instr :: proc(
 
 		if node.dt == .V128 {
 			UNSIZED :: bit_set[Node_Type]{.And, .Xor, .Or}
-			size := intrinsics.count_trailing_zeros(
-				u32(bac.LANE_SIZE[node.lane]),
-			)
-			if kind in UNSIZED do size = 0
+			if kind in UNSIZED do lsz_pow = 0
 
 			op := VEC_OPS[kind]
 			fmt.assertf(op != 0, "%v", node)
@@ -1175,7 +1145,7 @@ emit_instr :: proc(
 			emit_op(
 				ctx.code,
 				op |
-				(size << 22) |
+				(lsz_pow << 22) |
 				u32(rm.index) << 16 |
 				u32(rn.index) << 5 |
 				u32(rd.index),
@@ -1185,8 +1155,6 @@ emit_instr :: proc(
 
 		// add/sub rd, rn, rm
 		emit_op(ctx.code, rrr(is_64, op, rd, rn, rm))
-	case .Rem, .U_Rem:
-		panic("no")
 	case .Msub:
 		rd := reg_of(ctx, instr)
 		rn := reg_of(ctx, node.inps[0])
@@ -1232,17 +1200,13 @@ emit_instr :: proc(
 		if node.dt == .V128 {
 			rd := reg_of(ctx, instr)
 
-			size := intrinsics.count_trailing_zeros(
-				u32(bac.LANE_SIZE[node.lane]),
-			)
-
 			op := VEC_OPS[kind]
 			fmt.assertf(op != 0, "%v", node)
 
 			emit_op(
 				ctx.code,
 				op |
-				(size << 22) |
+				(lsz_pow << 22) |
 				u32(rm.index) << 16 |
 				u32(rn.index) << 5 |
 				u32(rd.index),
@@ -1314,7 +1278,6 @@ emit_instr :: proc(
 
 			if rd.kind == RK_VECTOR {
 				opcode = 0b111
-				rmode = 0b00
 			}
 
 			emit_op(
@@ -1380,13 +1343,7 @@ emit_instr :: proc(
 			assert(cint.value == 0)
 			op: u32 = 0x6e201c00
 
-			emit_op(
-				ctx.code,
-				op |
-				u32(reg.index) << 16 |
-				u32(reg.index) << 5 |
-				u32(reg.index),
-			)
+			emit_op(ctx.code, rrr(false, op, reg, reg, reg))
 		case:
 			fmt.panicf("TODO: %v", node)
 		}

@@ -728,3 +728,26 @@ easily embed its type representation in there. This might involve some
 integration with the ssa builder, regarding scope values, that also applyes to
 the memopt. Make sure the emited data from emit_function is debug info agnostic.
 Only do this for x64 backend.
+
+### implement the debug info emmission
+
+I have added nodes to track register values as they are assigned in the code.
+Each assignemt attaches a Dbg_Sym_Update and declaration adds the Dbg_Sym_Decl.
+Whenever the scope is truncated. We emit a Dbg_Scope, that keeps the final
+update of the value alive.
+
+The goal here is to make the x64 backend emit proper debug info so that the
+values of variables can be inspected in gdb. I hope we have enough information
+here. We know where assignments happen, wnere the value dies and what name it
+has. Add an extra buffer and slice to the codegen input with debug info
+agnostic liveness/location record. Then in the elf emission code emit dwarf
+accordingly.
+
+Make sure you can inspect the variables. A good test would be a loop in which
+you inspect the variables and verify they change.
+
+This only applyes to the register values, Local s dont deal with this, nor
+globals so ignore them. The register allocator can insert splits so make sure
+to traverse them until you find non split. And emit liveness for each subrange.
+
+Only finish after you verify with gdb that the variables are inspectable.

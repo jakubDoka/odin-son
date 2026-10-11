@@ -86,18 +86,36 @@ Lib_Call :: bit_field u32 {
 }
 
 Codegen_Emit_Buf :: struct {
-	code:   ^arna.Allocator,
-	relocs: ^arna.Allocator,
-	slocs:  ^arna.Allocator,
-	cfi:    ^arna.Allocator,
+	code:     ^arna.Allocator,
+	relocs:   ^arna.Allocator,
+	slocs:    ^arna.Allocator,
+	cfi:      ^arna.Allocator,
+	dbg_locs: ^arna.Allocator,
 }
 
 Codegen_Output :: struct {
 	relocs:    []Reloc,
 	slocs:     []Sloc,
 	cfi:       []Cfi_Op,
+	dbg_locs:  []Dbg_Location,
 	code:      []u8,
 	constants: []u8,
+}
+
+Dbg_Location_Kind :: enum u8 {
+	Register,
+	Register_Offset,
+}
+
+Dbg_Location :: struct {
+	name:   string,
+	start:  u32,
+	end:    u32,
+	symbol: u32,
+	offset: i32,
+	reg:    Reg,
+	dt:     Node_Datatype,
+	kind:   Dbg_Location_Kind,
 }
 
 Reloc_Kind :: enum u32 {
@@ -277,6 +295,16 @@ add_sloc :: #force_no_inline proc(buf: ^arna.Allocator) -> ^Sloc {
 add_cfi :: #force_no_inline proc(buf: ^arna.Allocator) -> ^Cfi_Op {
 	return (^Cfi_Op)(
 		raw_data(arna.alloc(buf, size_of(Cfi_Op), align_of(Cfi_Op))),
+	)
+}
+
+add_dbg_location :: #force_no_inline proc(
+	buf: ^arna.Allocator,
+) -> ^Dbg_Location {
+	return (^Dbg_Location)(
+		raw_data(
+			arna.alloc(buf, size_of(Dbg_Location), align_of(Dbg_Location)),
+		),
 	)
 }
 

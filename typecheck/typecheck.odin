@@ -38,6 +38,7 @@ Mems :: struct {
 	reloc:    arna.Allocator,
 	sloc:     arna.Allocator,
 	cfi:      arna.Allocator,
+	dbg_loc:  arna.Allocator,
 	type:     arna.Allocator,
 }
 
@@ -1290,71 +1291,61 @@ Types :: struct {
 }
 
 types_init :: proc(types: ^Types) {
-	_ = arna.bulk_init(
-		&arna.scratch[0],
-		&arna.scratch[1],
-		&types.mems.graph,
-		&types.mems.regalloc,
-		&types.mems.scratch,
-		&types.mems.code,
-		&types.mems.reloc,
-		&types.mems.sloc,
-		&types.mems.cfi,
-		&types.mems.type,
-	)
+	buf: [dynamic; 16]^arna.Allocator
+	append(&buf, &arna.scratch[0], &arna.scratch[1])
+	for &arena in mem.slice_data_cast(
+		[]arna.Allocator,
+		mem.ptr_to_bytes(&types.mems),
+	) {
+		append(&buf, &arena)
+	}
+
+	_ = arna.bulk_init(..buf[:])
 
 	types_bind_allocators(types)
 }
 
 types_reset :: proc(types: ^Types) {
-	mems := types.mems
-	arna.reset(&mems.graph, false)
-	arna.reset(&mems.regalloc, false)
-	arna.reset(&mems.scratch, false)
-	arna.reset(&mems.code, false)
-	arna.reset(&mems.reloc, false)
-	arna.reset(&mems.sloc, false)
-	arna.reset(&mems.cfi, false)
-	arna.reset(&mems.type, false)
-	types^ = {}
-	types.mems = mems
+	for &arena in mem.slice_data_cast(
+		[]arna.Allocator,
+		mem.ptr_to_bytes(&types.mems),
+	) {
+		arna.reset(&arena, false)
+	}
+
+	types^ = {
+		mems = types.mems,
+	}
 	types_bind_allocators(types)
 }
 
 @(private = "file")
 types_bind_allocators :: proc(types: ^Types) {
 	types.allocator = arna.allocator(&types.mems.type)
-	types.procs.allocator = types.allocator
-	types.proc_insts.allocator = types.allocator
-	types.pointers.allocator = types.allocator
-	types.multi_pointers.allocator = types.allocator
-	types.structs.allocator = types.allocator
-	types.struct_insts.allocator = types.allocator
-	types.enums.allocator = types.allocator
-	types.unions.allocator = types.allocator
-	types.arrays.allocator = types.allocator
-	types.slices.allocator = types.allocator
-	types.proc_types.allocator = types.allocator
-	types.type_slices.allocator = types.allocator
-	types.globals.allocator = types.allocator
-	types.global_vars.allocator = types.allocator
-	types.scope.allocator = types.allocator
-	types.simds.allocator = types.allocator
+
+	for field in reflect.struct_fields_zipped(Types) {
+		vl := reflect.struct_field_value(types^, field)
+
+		#partial switch t in type_info_of(vl.id).variant {
+		case runtime.Type_Info_Dynamic_Array:
+			(^runtime.Raw_Dynamic_Array)(vl.data).allocator = types.allocator
+		case runtime.Type_Info_Map:
+			(^runtime.Raw_Map)(vl.data).allocator = types.allocator
+		}
+	}
 }
 
 types_deinit :: proc(types: ^Types) {
-	arna.bulk_destroy(
-		&arna.scratch[0],
-		&arna.scratch[1],
-		&types.mems.graph,
-		&types.mems.regalloc,
-		&types.mems.scratch,
-		&types.mems.code,
-		&types.mems.reloc,
-		&types.mems.sloc,
-		&types.mems.cfi,
-		&types.mems.type,
-	)
+	buf: [dynamic; 16]^arna.Allocator
+	append(&buf, &arna.scratch[0], &arna.scratch[1])
+	for &arena in mem.slice_data_cast(
+		[]arna.Allocator,
+		mem.ptr_to_bytes(&types.mems),
+	) {
+		append(&buf, &arena)
+	}
+
+	arna.bulk_destroy(..buf[:])
 }
 
 Global_Data :: struct {

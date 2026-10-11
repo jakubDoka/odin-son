@@ -338,7 +338,7 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 	slice.reverse(cfg_rpos[:])
 
 	Ctx :: struct {
-		graph:          ^Proc,
+		using graph:    ^Proc,
 		using _:        struct #raw_union {
 			early_schedules: []Node_ID,
 			antidep_node:    []Node_ID,
@@ -435,14 +435,16 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 
 		PINNED_NODES :: bit_set[Node_Type]{.Phi, .Param, .Ret, .Dbg_Scope}
 
+		lca := ctx.late_schedules[node.gvn]
+
 		if has_flag(graph, n, .Is_Basic_Block_Start) {
 			assert(n != 0)
-			ctx.late_schedules[node.gvn] = n
+			lca = n
 		} else if (node.itype in PINNED_NODES ||
 			   (node.itype == .Mem &&
 					   get_node(graph, node.inps[0]).itype == .Call_End) ||
 			   is_cfg(graph, n)) {
-			ctx.late_schedules[node.gvn] = node.inps[0]
+			lca = node.inps[0]
 		} else {
 			free = true
 			if node.is_load && !node.is_store {
@@ -464,11 +466,21 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 					ready = false
 				}
 			}
+
+			next_ass_value := add_dbg_antydeps(ctx, node)
+			node := get_node(ctx, next_ass_value)
+			if next_ass_value != 0 {
+				olca := ctx.late_schedules[node.gvn]
+				lca = compute_lca(graph, lca, olca)
+				if olca == 0 {
+					worklist_add(graph, &worklist, next_ass_value)
+					ready = false
+				}
+			}
 		}
 
 		if !ready do continue
 
-		lca := ctx.late_schedules[node.gvn]
 		if lca == 0 {
 			if len(node.outs) == 0 {
 				lca = ctx.early_schedules[node.gvn]
@@ -493,28 +505,7 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 			}
 		}
 
-		better :: proc(
-			ctx: Ctx,
-			lctx: Loop_Ctx,
-			current, next: Node_ID,
-		) -> Node_ID {
-			if !has_flag(ctx.graph, next, .Is_Basic_Block_Start) {
-				return current
-			}
-
-			if tree_depth(lctx.loop_trees[get_node(ctx.graph, current).gvn]) >
-			   tree_depth(lctx.loop_trees[get_node(ctx.graph, next).gvn]) {
-				return next
-			}
-
-			if get_idepth(ctx.graph, current) < get_idepth(ctx.graph, next) {
-				return next
-			}
-
-			return current
-		}
-
-		lca = add_antydeps(ctx, node, lca)
+		lca = add_mem_antydeps(ctx, node, lca)
 
 		for !has_flag(graph, lca, .Is_Basic_Block_Start) {
 			lca = get_idom(graph, lca)
@@ -538,7 +529,147 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 		fmt.assertf(lca != 0, "%v", node)
 		ctx.late_schedules[node.gvn] = lca
 
-		add_antydeps :: proc(
+		if node.itype == .Loop {
+			for out in node.outs {
+				onode := expand_node(graph, out.id)
+				if ctx.late_schedules[onode.gvn] == 0 {
+					worklist_add(graph, &worklist, out.id)
+				}
+			}
+		}
+
+		if node.itype != .Entry {
+			for inp in node.inps {
+				inode := expand_node(graph, inp)
+				if ctx.late_schedules[inode.gvn] == 0 {
+					worklist_add(graph, &worklist, inp)
+				}
+			}
+			for inp in ctx.antideps[node.gvn] {
+				inode := get_node(graph, inp)
+				if ctx.late_schedules[inode.gvn] == 0 {
+					worklist_add(graph, &worklist, inp)
+				}
+			}
+		}
+
+		if node.is_store ||
+		   (node.itype == .Phi && node.dt <= .Mem) ||
+		   node.itype == .Call ||
+		   node.itype == .Return {
+			for out in node.outs {
+				onode := expand_node(graph, out.id)
+				if ctx.late_schedules[onode.gvn] == 0 && onode.is_load {
+					worklist_add(graph, &worklist, out.id)
+				}
+			}
+
+			if node.itype == .Phi {
+				for inp in node.inps[1:] {
+					for out in get_outputs(graph, inp) {
+						onode := expand_node(graph, out.id)
+						if ctx.late_schedules[onode.gvn] == 0 &&
+						   onode.is_load {
+							worklist_add(graph, &worklist, out.id)
+						}
+					}
+				}
+			} else if 1 < len(node.inps) {
+				for out in get_outputs(graph, node.inps[1]) {
+					onode := expand_node(graph, out.id)
+					if ctx.late_schedules[onode.gvn] == 0 && onode.is_load {
+						worklist_add(graph, &worklist, out.id)
+					}
+				}
+			}
+		}
+
+		better :: proc(
+			ctx: Ctx,
+			lctx: Loop_Ctx,
+			current, next: Node_ID,
+		) -> Node_ID {
+			if !has_flag(ctx.graph, next, .Is_Basic_Block_Start) {
+				return current
+			}
+
+			if tree_depth(lctx.loop_trees[get_node(ctx.graph, current).gvn]) >
+			   tree_depth(lctx.loop_trees[get_node(ctx.graph, next).gvn]) {
+				return next
+			}
+
+			if get_idepth(ctx.graph, current) < get_idepth(ctx.graph, next) {
+				return next
+			}
+
+			return current
+		}
+
+		// NOTE: we do this in the first place to express that the lifetime is
+		// extended up to but not interfering with the next value
+		add_dbg_antydeps :: proc(ctx: Ctx, node: Expanded_Node) -> Node_ID {
+			id := get_node_id(ctx.graph, node)
+			if node.itype != .Dbg_Sym_Update do return 0
+
+			value := infer_next_assign(ctx, node)
+			vnode := get_node(ctx, value)
+
+			if ctx.extra_outputs[node.gvn] == 0 {
+				append(&ctx.antideps[vnode.gvn], id)
+				ctx.extra_outputs[node.gvn] += 1
+			}
+
+			return value
+		}
+
+		infer_next_assign :: proc(ctx: Ctx, node: Expanded_Node) -> Node_ID {
+			for out in node.outs {
+				value := infer_next_assign_rec(ctx, out)
+
+				if value != 0 {
+					// NOTE: first value is fine since there is in a way a
+					// redundancy where multiple branches store the same value
+					// they extend
+					return value
+				}
+			}
+
+			return 0
+
+			infer_next_assign_rec :: proc(
+				ctx: Ctx,
+				out: Node_Output,
+			) -> Node_ID {
+				node := expand_node(ctx, out.id)
+				#partial switch node.itype {
+				case .Dbg_Scope:
+				case .Dbg_Sym_Update:
+					return node.inps[0]
+				case .Phi:
+					// NOTE: we dive deeper to find something that pairs us
+					// with a phy, then we unwind with appropriate parallel
+					// input since the debug and value phys have the same
+					// layout
+					//
+					// Also, since the phy is here its immediate dep is the
+					// assigned value
+					for pout in node.outs {
+						value := infer_next_assign_rec(ctx, pout)
+						vnode := expand_node(ctx, value)
+						if value != 0 {
+							assert(vnode.itype == .Phi)
+							return vnode.inps[out.idx]
+						}
+					}
+				case:
+					fmt.panicf("TODO: %v", node)
+				}
+
+				return 0
+			}
+		}
+
+		add_mem_antydeps :: proc(
 			ctx: Ctx,
 			node: Expanded_Node,
 			lca: Node_ID,
@@ -617,55 +748,6 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 			}
 
 			return lca
-		}
-
-		if node.itype == .Loop {
-			for out in node.outs {
-				onode := expand_node(graph, out.id)
-				if ctx.late_schedules[onode.gvn] == 0 {
-					worklist_add(graph, &worklist, out.id)
-				}
-			}
-		}
-
-		if node.itype != .Entry {
-			for inp in node.inps {
-				inode := expand_node(graph, inp)
-				if ctx.late_schedules[inode.gvn] == 0 {
-					worklist_add(graph, &worklist, inp)
-				}
-			}
-		}
-
-		if node.is_store ||
-		   (node.itype == .Phi && node.dt <= .Mem) ||
-		   node.itype == .Call ||
-		   node.itype == .Return {
-			for out in node.outs {
-				onode := expand_node(graph, out.id)
-				if ctx.late_schedules[onode.gvn] == 0 && onode.is_load {
-					worklist_add(graph, &worklist, out.id)
-				}
-			}
-
-			if node.itype == .Phi {
-				for inp in node.inps[1:] {
-					for out in get_outputs(graph, inp) {
-						onode := expand_node(graph, out.id)
-						if ctx.late_schedules[onode.gvn] == 0 &&
-						   onode.is_load {
-							worklist_add(graph, &worklist, out.id)
-						}
-					}
-				}
-			} else if 1 < len(node.inps) {
-				for out in get_outputs(graph, node.inps[1]) {
-					onode := expand_node(graph, out.id)
-					if ctx.late_schedules[onode.gvn] == 0 && onode.is_load {
-						worklist_add(graph, &worklist, out.id)
-					}
-				}
-			}
 		}
 	}
 
@@ -765,7 +847,7 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 		}
 
 		changed := true
-		for i in 0 ..< 1000 {
+		for _ in 0 ..< 1000 {
 			changed = false
 
 			for &instr, i in bb.instrs {
@@ -787,12 +869,13 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 					}
 				}
 			}
-
 			if !changed do break
 		}
 
 		#reverse for instr, i in bb.instrs {
 			inode := expand_node(graph, instr)
+
+			// NOTE: push single use as late as possible
 			#reverse for inp in inode.inps {
 				innode := expand_node(graph, inp)
 
@@ -803,9 +886,19 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 					break
 				}
 			}
+
+			#reverse for inp in ctx.antideps[inode.gvn] {
+				innode := expand_node(graph, inp)
+
+				if innode.itype == .Dbg_Sym_Update {
+					pos := slice.linear_search(bb.instrs[:i], inp) or_continue
+					slice.rotate_left(bb.instrs[pos:i], 1)
+					break
+				}
+			}
 		}
 
-		// NOTE: we shift the phy backedge s as late as possible, regalloc
+		// NOTE: we shift the phy backedges as late as possible, regalloc
 		// likes that more
 		push_down: if get_node(graph, bb.head).itype == .Loop {
 			boundary := len(bb.instrs) - 1

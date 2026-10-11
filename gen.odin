@@ -949,10 +949,11 @@ emit_proc_code :: proc(
 	emit_ctx.schedule = &schedule
 	emit_ctx.abi = ra.cc
 	emit_ctx.buf = {
-		code   = &ctx.mems.code,
-		relocs = &ctx.mems.reloc,
-		slocs  = &ctx.mems.sloc,
-		cfi    = &ctx.mems.cfi,
+		code     = &ctx.mems.code,
+		relocs   = &ctx.mems.reloc,
+		slocs    = &ctx.mems.sloc,
+		cfi      = &ctx.mems.cfi,
+		dbg_locs = &ctx.mems.dbg_loc,
 	}
 	emit_ctx.allocs = regs
 	emit_ctx.param_specs = prc.param_types

@@ -174,6 +174,10 @@ regalloc_round :: proc(
 
 				for o in inode.outs {
 					onode := expand_node(graph, o.id)
+					if onode.itype == .Dbg_Sym_Update &&
+					   inode.itype != .Split {
+						lrg.has_dbg_update = true
+					}
 					if !is_data_dep(ctx, onode, o.idx) do continue
 
 					if onode.itype == .Phi {
@@ -802,9 +806,10 @@ regalloc_round :: proc(
 						best := slrg
 						best_idx := -1
 						for oslrg, i in active.items.id[:active.len] {
-							if (oslrg.start < best.start &&
-								   oslrg.lrg.fails == {} &&
-								   !can_spill(ctx, oslrg.lrg)) ||
+							if (oslrg.lrg.fails == {} &&
+								   !can_spill(ctx, oslrg.lrg) &&
+								   oslrg.end - oslrg.start >
+									   best.end - best.start) ||
 							   can_spill(ctx, best.lrg) ||
 							   best.lrg.fails != {} {
 								best = oslrg
@@ -1169,6 +1174,8 @@ regalloc_round :: proc(
 		b.parent = a
 
 		intersect(a, b.mask)
+
+		a.has_dbg_update |= b.has_dbg_update
 
 		if a.rank == b.rank {
 			a.rank += 1
@@ -1873,6 +1880,8 @@ regalloc_round :: proc(
 		inp_node := get_node(ctx.graph, inp)
 
 		if !is_def_while_splitting(ctx, inp_node) do return inp
+		if node.itype == .Dbg_Sym_Update &&
+		   !bac.has_flag(ctx.graph, inp_node, .Clonable) {return inp}
 
 		split: Node_ID
 		if bac.has_flag(ctx.graph, inp_node, .Clonable) && !must {

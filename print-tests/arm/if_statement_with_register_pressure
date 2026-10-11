@@ -44,19 +44,19 @@ main:
     str x1, [xzr, #152]
     movz x1, #6, #0
     add x1, x1, x0
-    str x1, [xzr, #160]
-    movz x1, #14, #0
-    add x1, x1, x0
-    str x1, [xzr, #168]
-    movz x1, #7, #0
-    add x1, x1, x0
-    str x1, [xzr, #176]
-    movz x1, #15, #0
-    add x1, x1, x0
-    movz x2, #8, #0
+    movz x2, #14, #0
     add x2, x2, x0
-    movz x3, #16, #0
+    str x2, [xzr, #160]
+    movz x2, #7, #0
+    add x2, x2, x0
+    movz x3, #15, #0
     add x3, x3, x0
+    str x3, [xzr, #168]
+    movz x3, #8, #0
+    add x3, x3, x0
+    movz x4, #16, #0
+    add x4, x4, x0
+    str x4, [xzr, #176]
     ldr x4, [xzr, #144]
     ldr x5, [xzr, #152]
     madd x4, x4, x5, xzr
@@ -68,30 +68,32 @@ main:
     ldr x6, [xzr, #152]
     add x5, x5, x6
     ldr x6, [xzr, #160]
-    ldr x7, [xzr, #168]
-    madd x6, x6, x7, xzr
+    madd x6, x6, x1, xzr
     ldr x7, [xzr, #120]
     add x6, x6, x7
     ldr x7, [xzr, #112]
     ldr x8, [xzr, #120]
     madd x7, x7, x8, xzr
-    ldr x8, [xzr, #168]
+    ldr x8, [xzr, #160]
     add x7, x7, x8
-    ldr x8, [xzr, #176]
-    madd x8, x8, x1, xzr
+    ldr x8, [xzr, #168]
+    madd x8, x8, x2, xzr
     ldr x9, [xzr, #104]
     add x8, x8, x9
     ldr x9, [xzr, #96]
     ldr x10, [xzr, #104]
     madd x9, x9, x10, xzr
-    add x9, x9, x1
-    madd x10, x2, x3, xzr
+    ldr x10, [xzr, #168]
+    add x9, x9, x10
+    ldr x10, [xzr, #176]
+    madd x10, x10, x3, xzr
     ldr x11, [xzr, #88]
     add x10, x10, x11
     ldr x11, [xzr, #80]
     ldr x12, [xzr, #88]
     madd x11, x11, x12, xzr
-    add x11, x11, x3
+    ldr x12, [xzr, #176]
+    add x11, x11, x12
     add x12, x11, x4
     add x13, x9, x6
     add x14, x7, x8
@@ -110,14 +112,16 @@ main:
     add x17, x17, x18
     ldr x18, [xzr, #112]
     madd x18, x18, x14, xzr
-    ldr x19, [xzr, #168]
+    ldr x19, [xzr, #160]
     add x18, x18, x19
     ldr x19, [xzr, #96]
     madd x19, x19, x13, xzr
-    add x19, x19, x1
+    ldr x20, [xzr, #168]
+    add x19, x19, x20
     ldr x20, [xzr, #80]
     madd x20, x20, x12, xzr
-    add x20, x20, x3
+    ldr x21, [xzr, #176]
+    add x20, x20, x21
     mov x0, x20
     str x18, [xzr, #184]
     mov x16, x17
@@ -151,15 +155,13 @@ main:
     madd x25, x25, x19, xzr
     ldr x26, [xzr, #136]
     add x25, x25, x26
-    ldr x26, [xzr, #160]
-    madd x26, x26, x20, xzr
+    madd x26, x20, x1, xzr
     ldr x27, [xzr, #120]
     add x26, x26, x27
-    ldr x27, [xzr, #176]
-    madd x27, x27, x21, xzr
+    madd x27, x21, x2, xzr
     ldr x28, [xzr, #104]
     add x27, x27, x28
-    madd x28, x22, x2, xzr
+    madd x28, x22, x3, xzr
     ldr x29, [xzr, #88]
     add x28, x28, x29
     mov x23, x26
@@ -178,25 +180,25 @@ main:
     add x27, x27, x28
     ldr x28, [xzr, #144]
     add x27, x27, x28
-    ldr x28, [xzr, #160]
-    add x27, x27, x28
-    ldr x28, [xzr, #176]
-    add x27, x27, x28
-    add x2, x27, x2
-    ldr x27, [xzr, #88]
-    add x2, x2, x27
-    ldr x27, [xzr, #104]
-    add x2, x2, x27
-    ldr x27, [xzr, #120]
-    add x2, x2, x27
-    ldr x27, [xzr, #136]
-    add x2, x2, x27
-    ldr x27, [xzr, #152]
-    add x2, x2, x27
-    ldr x27, [xzr, #168]
-    add x2, x2, x27
-    add x1, x2, x1
+    add x1, x27, x1
+    add x1, x1, x2
     add x1, x1, x3
+    ldr x2, [xzr, #88]
+    add x1, x1, x2
+    ldr x2, [xzr, #104]
+    add x1, x1, x2
+    ldr x2, [xzr, #120]
+    add x1, x1, x2
+    ldr x2, [xzr, #136]
+    add x1, x1, x2
+    ldr x2, [xzr, #152]
+    add x1, x1, x2
+    ldr x2, [xzr, #160]
+    add x1, x1, x2
+    ldr x2, [xzr, #168]
+    add x1, x1, x2
+    ldr x2, [xzr, #176]
+    add x1, x1, x2
     add x1, x1, x11
     add x1, x1, x9
     add x1, x1, x7

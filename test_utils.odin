@@ -169,6 +169,8 @@ run_test :: proc(
 
 	for level in levels[:] {
 		append(&confs, Test_Conf{level = level})
+	}
+	for level in levels[:] {
 		append(&confs, Test_Conf{level = level, debug = true})
 	}
 	for level in levels[:] {

@@ -157,15 +157,13 @@ init_inc u8:
     mov.q rcx, [rsp]
     xor edx, edx
 2:
-    mov rbx, rdx
-    cmp rbx, rax
+    cmp rdx, rax
     jnl 3
-    mov rbp, rcx
-    add rbp, rbx
-    mov rsi, rbx
-    add rsi, 1
-    mov.b [rbp], bl
-    mov rdx, rsi
+    mov rbx, rcx
+    add rbx, rdx
+    mov rbp, rdx
+    add rdx, 1
+    mov.b [rbx], bpl
     jmp 2
 3:
     add rsp, 0x18
@@ -185,10 +183,10 @@ init_inc u16:
     cmp rdx, rax
     jnl 6
     mov rbx, rdx
-    add rbx, 1
     mov rbp, rdx
-    mov.w [rcx + rdx*2], bp
-    mov rdx, rbx
+    add rbp, 1
+    mov.w [rcx + rdx*2], bx
+    mov rdx, rbp
     jmp 5
 6:
     add rsp, 0x18
@@ -208,10 +206,10 @@ init_inc u32:
     cmp rdx, rax
     jnl 9
     mov rbx, rdx
-    add rbx, 1
     mov rbp, rdx
-    mov.d [rcx + rdx*4], ebp
-    mov rdx, rbx
+    add rbp, 1
+    mov.d [rcx + rdx*4], ebx
+    mov rdx, rbp
     jmp 8
 9:
     add rsp, 0x18
@@ -245,7 +243,7 @@ simd_fold u8:
     lea rdi, [rsp + 0x11]
     xor esi, esi
     mov rdx, 0x10
-    call -0x4cd
+    call -0x4c5
     xor ebx, ebx
 14:
     mov rbp, rbx
@@ -261,7 +259,7 @@ simd_fold u8:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x21]
-    call -0x518
+    call -0x510
     mov r13, rbp
     sub r13, rbx
     add r12, rbx
@@ -280,7 +278,7 @@ simd_fold u8:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x31]
-    call -0x57a
+    call -0x572
     add r12, rbx
     mov.q [rsp + 0x31], r12
     mov.q [rsp + 0x39], r13
@@ -297,7 +295,7 @@ simd_fold u8:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x41]
-    call -0x5d6
+    call -0x5ce
     add r12, rbx
     mov.q [rsp + 0x41], r12
     mov.q [rsp + 0x49], r13
@@ -314,7 +312,7 @@ simd_fold u8:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x51]
-    call -0x632
+    call -0x62a
     add r12, rbx
     mov.q [rsp + 0x51], r12
     mov.q [rsp + 0x59], r13
@@ -331,7 +329,7 @@ simd_fold u8:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x61]
-    call -0x68e
+    call -0x686
     add r12, rbx
     mov.q [rsp + 0x61], r12
     mov.q [rsp + 0x69], r13
@@ -348,13 +346,13 @@ simd_fold u8:
     lea rdi, [rsp]
     mov rdx, 1
     xor esi, esi
-    call -0x6dd
+    call -0x6d5
     mov.q rbp, [rsp + 0x1]
     mov.q r12, [rsp + 0x9]
     lea rdi, [rsp + 0x71]
     xor esi, esi
     mov rdx, 0x10
-    call -0x6fb
+    call -0x6f3
     add rbp, rbx
     mov.q [rsp + 0x71], rbp
     sub r12, rbx
@@ -404,7 +402,7 @@ simd_fold u16:
     lea rdi, [rsp + 0x12]
     xor esi, esi
     mov rdx, 0x10
-    call -0x7bd
+    call -0x7b5
     xor ebx, ebx
 19:
     mov rbp, rbx
@@ -420,7 +418,7 @@ simd_fold u16:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x22]
-    call -0x808
+    call -0x800
     mov r13, rbp
     sub r13, rbx
     lea rax, [r12 + rbx*2]
@@ -439,7 +437,7 @@ simd_fold u16:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x32]
-    call -0x86b
+    call -0x863
     lea rax, [r12 + rbx*2]
     mov.q [rsp + 0x32], rax
     mov.q [rsp + 0x3a], r13
@@ -456,7 +454,7 @@ simd_fold u16:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x42]
-    call -0x8c8
+    call -0x8c0
     lea rax, [r12 + rbx*2]
     mov.q [rsp + 0x42], rax
     mov.q [rsp + 0x4a], r13
@@ -473,7 +471,7 @@ simd_fold u16:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x52]
-    call -0x925
+    call -0x91d
     lea rax, [r12 + rbx*2]
     mov.q [rsp + 0x52], rax
     mov.q [rsp + 0x5a], r13
@@ -490,7 +488,7 @@ simd_fold u16:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x62]
-    call -0x982
+    call -0x97a
     lea rax, [r12 + rbx*2]
     mov.q [rsp + 0x62], rax
     mov.q [rsp + 0x6a], r13
@@ -507,13 +505,13 @@ simd_fold u16:
     lea rdi, [rsp]
     mov rdx, 2
     xor esi, esi
-    call -0x9d2
+    call -0x9ca
     mov.q rbp, [rsp + 0x2]
     mov.q r12, [rsp + 0xa]
     lea rdi, [rsp + 0x72]
     xor esi, esi
     mov rdx, 0x10
-    call -0x9f0
+    call -0x9e8
     lea rax, [rbp + rbx*2]
     mov.q [rsp + 0x72], rax
     sub r12, rbx
@@ -563,7 +561,7 @@ simd_fold u32:
     lea rdi, [rsp + 0x14]
     xor esi, esi
     mov rdx, 0x10
-    call -0xac5
+    call -0xabd
     xor ebx, ebx
 24:
     mov rbp, rbx
@@ -579,7 +577,7 @@ simd_fold u32:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x24]
-    call -0xb10
+    call -0xb08
     mov r13, rbp
     sub r13, rbx
     lea rax, [r12 + rbx*4]
@@ -598,7 +596,7 @@ simd_fold u32:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x34]
-    call -0xb73
+    call -0xb6b
     lea rax, [r12 + rbx*4]
     mov.q [rsp + 0x34], rax
     mov.q [rsp + 0x3c], r13
@@ -615,7 +613,7 @@ simd_fold u32:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x44]
-    call -0xbd0
+    call -0xbc8
     lea rax, [r12 + rbx*4]
     mov.q [rsp + 0x44], rax
     mov.q [rsp + 0x4c], r13
@@ -632,7 +630,7 @@ simd_fold u32:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x54]
-    call -0xc2d
+    call -0xc25
     lea rax, [r12 + rbx*4]
     mov.q [rsp + 0x54], rax
     mov.q [rsp + 0x5c], r13
@@ -649,7 +647,7 @@ simd_fold u32:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x64]
-    call -0xc8a
+    call -0xc82
     lea rax, [r12 + rbx*4]
     mov.q [rsp + 0x64], rax
     mov.q [rsp + 0x6c], r13
@@ -666,13 +664,13 @@ simd_fold u32:
     lea rdi, [rsp]
     mov rdx, 4
     xor esi, esi
-    call -0xcda
+    call -0xcd2
     mov.q rbp, [rsp + 0x4]
     mov.q r12, [rsp + 0xc]
     lea rdi, [rsp + 0x74]
     xor esi, esi
     mov rdx, 0x10
-    call -0xcf8
+    call -0xcf0
     lea rax, [rbp + rbx*4]
     mov.q [rsp + 0x74], rax
     sub r12, rbx
@@ -720,7 +718,7 @@ simd_fold u64:
     lea rdi, [rsp + 0x18]
     xor esi, esi
     mov rdx, 0x10
-    call -0xdb5
+    call -0xdad
     xor ebx, ebx
 29:
     mov rbp, rbx
@@ -736,7 +734,7 @@ simd_fold u64:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x28]
-    call -0xe00
+    call -0xdf8
     mov r13, rbp
     sub r13, rbx
     lea rax, [r12 + rbx*8]
@@ -755,7 +753,7 @@ simd_fold u64:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x38]
-    call -0xe63
+    call -0xe5b
     lea rax, [r12 + rbx*8]
     mov.q [rsp + 0x38], rax
     mov.q [rsp + 0x40], r13
@@ -772,7 +770,7 @@ simd_fold u64:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x48]
-    call -0xec0
+    call -0xeb8
     lea rax, [r12 + rbx*8]
     mov.q [rsp + 0x48], rax
     mov.q [rsp + 0x50], r13
@@ -789,7 +787,7 @@ simd_fold u64:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x58]
-    call -0xf1d
+    call -0xf15
     lea rax, [r12 + rbx*8]
     mov.q [rsp + 0x58], rax
     mov.q [rsp + 0x60], r13
@@ -806,7 +804,7 @@ simd_fold u64:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x68]
-    call -0xf7a
+    call -0xf72
     lea rax, [r12 + rbx*8]
     mov.q [rsp + 0x68], rax
     mov.q [rsp + 0x70], r13
@@ -823,13 +821,13 @@ simd_fold u64:
     lea rdi, [rsp]
     mov rdx, 8
     xor esi, esi
-    call -0xfca
+    call -0xfc2
     mov.q rbp, [rsp + 0x8]
     mov.q r12, [rsp + 0x10]
     lea rdi, [rsp + 0x78]
     xor esi, esi
     mov rdx, 0x10
-    call -0xfe8
+    call -0xfe0
     lea rax, [rbp + rbx*8]
     mov.q [rsp + 0x78], rax
     sub r12, rbx
@@ -872,7 +870,7 @@ from_slice =16 u8:
     lea rdi, [rsp + 0x10]
     xor esi, esi
     mov rdx, 0x10
-    call -0x109b
+    call -0x1093
     xor eax, eax
 34:
     mov rcx, rax
@@ -901,7 +899,7 @@ from_slice =8 u16:
     lea rdi, [rsp + 0x10]
     xor esi, esi
     mov rdx, 0x10
-    call -0x1109
+    call -0x1101
     xor eax, eax
 37:
     cmp rax, 8
@@ -925,7 +923,7 @@ from_slice =4 u32:
     lea rdi, [rsp + 0x10]
     xor esi, esi
     mov rdx, 0x10
-    call -0x1171
+    call -0x1169
     xor eax, eax
 40:
     cmp rax, 4
@@ -949,7 +947,7 @@ from_slice =2 u64:
     lea rdi, [rsp + 0x10]
     xor esi, esi
     mov rdx, 0x10
-    call -0x11d1
+    call -0x11c9
     xor eax, eax
 43:
     cmp rax, 2
@@ -1118,16 +1116,15 @@ init_inc u8:
     mov.q [rsp + 0x8], rsi
     mov.q rdi, [rsp + 0x8]
     mov.q rsi, [rsp]
-    xor eax, eax
+    xor edx, edx
 2:
-    cmp rax, rdi
+    cmp rdx, rdi
     jnl 3
-    mov rdx, rsi
-    add rdx, rax
-    mov rcx, rax
-    add rcx, 1
-    mov.b [rdx], al
-    mov rax, rcx
+    mov rcx, rsi
+    add rcx, rdx
+    mov rax, rdx
+    add rdx, 1
+    mov.b [rcx], al
     jmp 2
 3:
     add rsp, 0x18
@@ -1143,10 +1140,10 @@ init_inc u16:
     cmp rax, rdi
     jnl 6
     mov rdx, rax
-    add rdx, 1
     mov rcx, rax
-    mov.w [rsi + rax*2], cx
-    mov rax, rdx
+    add rcx, 1
+    mov.w [rsi + rax*2], dx
+    mov rax, rcx
     jmp 5
 6:
     add rsp, 0x18
@@ -1162,10 +1159,10 @@ init_inc u32:
     cmp rax, rdi
     jnl 9
     mov rdx, rax
-    add rdx, 1
     mov rcx, rax
-    mov.d [rsi + rax*4], ecx
-    mov rax, rdx
+    add rcx, 1
+    mov.d [rsi + rax*4], edx
+    mov rax, rcx
     jmp 8
 9:
     add rsp, 0x18
@@ -1197,7 +1194,7 @@ simd_fold u8:
     lea rdi, [rsp + 0x11]
     xor esi, esi
     mov rdx, 0x10
-    call -0x48d
+    call -0x485
     xor ebx, ebx
 14:
     mov r12, rbx
@@ -1213,7 +1210,7 @@ simd_fold u8:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x21]
-    call -0x4d8
+    call -0x4d0
     mov rbp, r12
     sub rbp, rbx
     add r13, rbx
@@ -1231,7 +1228,7 @@ simd_fold u8:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x31]
-    call -0x536
+    call -0x52e
     add r13, rbx
     mov.q [rsp + 0x31], r13
     mov.q [rsp + 0x39], rbp
@@ -1247,7 +1244,7 @@ simd_fold u8:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x41]
-    call -0x58e
+    call -0x586
     add r13, rbx
     mov.q [rsp + 0x41], r13
     mov.q [rsp + 0x49], rbp
@@ -1263,7 +1260,7 @@ simd_fold u8:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x51]
-    call -0x5e6
+    call -0x5de
     add r13, rbx
     mov.q [rsp + 0x51], r13
     mov.q [rsp + 0x59], rbp
@@ -1279,7 +1276,7 @@ simd_fold u8:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x61]
-    call -0x63e
+    call -0x636
     add r13, rbx
     mov.q [rsp + 0x61], r13
     mov.q [rsp + 0x69], rbp
@@ -1295,13 +1292,13 @@ simd_fold u8:
     lea rdi, [rsp]
     mov rdx, 1
     xor esi, esi
-    call -0x689
+    call -0x681
     mov.q r12, [rsp + 0x1]
     mov.q rbp, [rsp + 0x9]
     lea rdi, [rsp + 0x71]
     xor esi, esi
     mov rdx, 0x10
-    call -0x6a7
+    call -0x69f
     add r12, rbx
     mov.q [rsp + 0x71], r12
     sub rbp, rbx
@@ -1351,7 +1348,7 @@ simd_fold u16:
     lea rdi, [rsp + 0x12]
     xor esi, esi
     mov rdx, 0x10
-    call -0x76d
+    call -0x765
     xor ebx, ebx
 19:
     mov r12, rbx
@@ -1367,7 +1364,7 @@ simd_fold u16:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x22]
-    call -0x7b8
+    call -0x7b0
     mov rbp, r12
     sub rbp, rbx
     lea rax, [r13 + rbx*2]
@@ -1385,7 +1382,7 @@ simd_fold u16:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x32]
-    call -0x818
+    call -0x810
     lea rax, [r13 + rbx*2]
     mov.q [rsp + 0x32], rax
     mov.q [rsp + 0x3a], rbp
@@ -1401,7 +1398,7 @@ simd_fold u16:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x42]
-    call -0x872
+    call -0x86a
     lea rax, [r13 + rbx*2]
     mov.q [rsp + 0x42], rax
     mov.q [rsp + 0x4a], rbp
@@ -1417,7 +1414,7 @@ simd_fold u16:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x52]
-    call -0x8cc
+    call -0x8c4
     lea rax, [r13 + rbx*2]
     mov.q [rsp + 0x52], rax
     mov.q [rsp + 0x5a], rbp
@@ -1433,7 +1430,7 @@ simd_fold u16:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x62]
-    call -0x926
+    call -0x91e
     lea rax, [r13 + rbx*2]
     mov.q [rsp + 0x62], rax
     mov.q [rsp + 0x6a], rbp
@@ -1449,13 +1446,13 @@ simd_fold u16:
     lea rdi, [rsp]
     mov rdx, 2
     xor esi, esi
-    call -0x973
+    call -0x96b
     mov.q r12, [rsp + 0x2]
     mov.q rbp, [rsp + 0xa]
     lea rdi, [rsp + 0x72]
     xor esi, esi
     mov rdx, 0x10
-    call -0x991
+    call -0x989
     lea rax, [r12 + rbx*2]
     mov.q [rsp + 0x72], rax
     sub rbp, rbx
@@ -1505,7 +1502,7 @@ simd_fold u32:
     lea rdi, [rsp + 0x14]
     xor esi, esi
     mov rdx, 0x10
-    call -0xa65
+    call -0xa5d
     xor ebx, ebx
 24:
     mov r12, rbx
@@ -1521,7 +1518,7 @@ simd_fold u32:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x24]
-    call -0xab0
+    call -0xaa8
     mov rbp, r12
     sub rbp, rbx
     lea rax, [r13 + rbx*4]
@@ -1539,7 +1536,7 @@ simd_fold u32:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x34]
-    call -0xb10
+    call -0xb08
     lea rax, [r13 + rbx*4]
     mov.q [rsp + 0x34], rax
     mov.q [rsp + 0x3c], rbp
@@ -1555,7 +1552,7 @@ simd_fold u32:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x44]
-    call -0xb6a
+    call -0xb62
     lea rax, [r13 + rbx*4]
     mov.q [rsp + 0x44], rax
     mov.q [rsp + 0x4c], rbp
@@ -1571,7 +1568,7 @@ simd_fold u32:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x54]
-    call -0xbc4
+    call -0xbbc
     lea rax, [r13 + rbx*4]
     mov.q [rsp + 0x54], rax
     mov.q [rsp + 0x5c], rbp
@@ -1587,7 +1584,7 @@ simd_fold u32:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x64]
-    call -0xc1e
+    call -0xc16
     lea rax, [r13 + rbx*4]
     mov.q [rsp + 0x64], rax
     mov.q [rsp + 0x6c], rbp
@@ -1603,13 +1600,13 @@ simd_fold u32:
     lea rdi, [rsp]
     mov rdx, 4
     xor esi, esi
-    call -0xc6b
+    call -0xc63
     mov.q r12, [rsp + 0x4]
     mov.q rbp, [rsp + 0xc]
     lea rdi, [rsp + 0x74]
     xor esi, esi
     mov rdx, 0x10
-    call -0xc89
+    call -0xc81
     lea rax, [r12 + rbx*4]
     mov.q [rsp + 0x74], rax
     sub rbp, rbx
@@ -1657,7 +1654,7 @@ simd_fold u64:
     lea rdi, [rsp + 0x18]
     xor esi, esi
     mov rdx, 0x10
-    call -0xd45
+    call -0xd3d
     xor ebx, ebx
 29:
     mov r12, rbx
@@ -1673,7 +1670,7 @@ simd_fold u64:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x28]
-    call -0xd90
+    call -0xd88
     mov rbp, r12
     sub rbp, rbx
     lea rax, [r13 + rbx*8]
@@ -1691,7 +1688,7 @@ simd_fold u64:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x38]
-    call -0xdf0
+    call -0xde8
     lea rax, [r13 + rbx*8]
     mov.q [rsp + 0x38], rax
     mov.q [rsp + 0x40], rbp
@@ -1707,7 +1704,7 @@ simd_fold u64:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x48]
-    call -0xe4a
+    call -0xe42
     lea rax, [r13 + rbx*8]
     mov.q [rsp + 0x48], rax
     mov.q [rsp + 0x50], rbp
@@ -1723,7 +1720,7 @@ simd_fold u64:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x58]
-    call -0xea4
+    call -0xe9c
     lea rax, [r13 + rbx*8]
     mov.q [rsp + 0x58], rax
     mov.q [rsp + 0x60], rbp
@@ -1739,7 +1736,7 @@ simd_fold u64:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x68]
-    call -0xefe
+    call -0xef6
     lea rax, [r13 + rbx*8]
     mov.q [rsp + 0x68], rax
     mov.q [rsp + 0x70], rbp
@@ -1755,13 +1752,13 @@ simd_fold u64:
     lea rdi, [rsp]
     mov rdx, 8
     xor esi, esi
-    call -0xf4b
+    call -0xf43
     mov.q r12, [rsp + 0x8]
     mov.q rbp, [rsp + 0x10]
     lea rdi, [rsp + 0x78]
     xor esi, esi
     mov rdx, 0x10
-    call -0xf69
+    call -0xf61
     lea rax, [r12 + rbx*8]
     mov.q [rsp + 0x78], rax
     sub rbp, rbx
@@ -1803,7 +1800,7 @@ from_slice =16 u8:
     lea rdi, [rsp + 0x10]
     xor esi, esi
     mov rdx, 0x10
-    call -0x1019
+    call -0x1011
     xor eax, eax
 34:
     cmp rax, 0x10
@@ -1830,7 +1827,7 @@ from_slice =8 u16:
     lea rdi, [rsp + 0x10]
     xor esi, esi
     mov rdx, 0x10
-    call -0x1089
+    call -0x1081
     xor ecx, ecx
 37:
     cmp rcx, 8
@@ -1854,7 +1851,7 @@ from_slice =4 u32:
     lea rdi, [rsp + 0x10]
     xor esi, esi
     mov rdx, 0x10
-    call -0x10f1
+    call -0x10e9
     xor ecx, ecx
 40:
     cmp rcx, 4
@@ -1878,7 +1875,7 @@ from_slice =2 u64:
     lea rdi, [rsp + 0x10]
     xor esi, esi
     mov rdx, 0x10
-    call -0x1151
+    call -0x1149
     xor ecx, ecx
 43:
     cmp rcx, 2
@@ -2051,15 +2048,13 @@ init_inc u8:
     mov.q rcx, [rsp]
     xor edx, edx
 2:
-    mov rbx, rdx
-    cmp rbx, rax
+    cmp rdx, rax
     jnl 3
-    mov rbp, rcx
-    add rbp, rbx
-    mov rsi, rbx
-    add rsi, 1
-    mov.b [rbp], bl
-    mov rdx, rsi
+    mov rbx, rcx
+    add rbx, rdx
+    mov rbp, rdx
+    add rdx, 1
+    mov.b [rbx], bpl
     jmp 2
 3:
     add rsp, 0x18
@@ -2079,10 +2074,10 @@ init_inc u16:
     cmp rdx, rax
     jnl 6
     mov rbx, rdx
-    add rbx, 1
     mov rbp, rdx
-    mov.w [rcx + rdx*2], bp
-    mov rdx, rbx
+    add rbp, 1
+    mov.w [rcx + rdx*2], bx
+    mov rdx, rbp
     jmp 5
 6:
     add rsp, 0x18
@@ -2102,10 +2097,10 @@ init_inc u32:
     cmp rdx, rax
     jnl 9
     mov rbx, rdx
-    add rbx, 1
     mov rbp, rdx
-    mov.d [rcx + rdx*4], ebp
-    mov rdx, rbx
+    add rbp, 1
+    mov.d [rcx + rdx*4], ebx
+    mov rdx, rbp
     jmp 8
 9:
     add rsp, 0x18
@@ -2139,7 +2134,7 @@ simd_fold u8:
     lea rdi, [rsp + 0x11]
     xor esi, esi
     mov rdx, 0x10
-    call -0x4f5
+    call -0x4ed
     xor ebx, ebx
 14:
     mov rbp, rbx
@@ -2155,7 +2150,7 @@ simd_fold u8:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x21]
-    call -0x540
+    call -0x538
     mov r13, rbp
     sub r13, rbx
     add r12, rbx
@@ -2174,7 +2169,7 @@ simd_fold u8:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x31]
-    call -0x5a2
+    call -0x59a
     add r12, rbx
     mov.q [rsp + 0x31], r12
     mov.q [rsp + 0x39], r13
@@ -2191,7 +2186,7 @@ simd_fold u8:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x41]
-    call -0x5fe
+    call -0x5f6
     add r12, rbx
     mov.q [rsp + 0x41], r12
     mov.q [rsp + 0x49], r13
@@ -2208,7 +2203,7 @@ simd_fold u8:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x51]
-    call -0x65a
+    call -0x652
     add r12, rbx
     mov.q [rsp + 0x51], r12
     mov.q [rsp + 0x59], r13
@@ -2225,7 +2220,7 @@ simd_fold u8:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x61]
-    call -0x6b6
+    call -0x6ae
     add r12, rbx
     mov.q [rsp + 0x61], r12
     mov.q [rsp + 0x69], r13
@@ -2242,13 +2237,13 @@ simd_fold u8:
     lea rdi, [rsp]
     mov rdx, 1
     xor esi, esi
-    call -0x705
+    call -0x6fd
     mov.q rbp, [rsp + 0x1]
     mov.q r12, [rsp + 0x9]
     lea rdi, [rsp + 0x71]
     xor esi, esi
     mov rdx, 0x10
-    call -0x723
+    call -0x71b
     add rbp, rbx
     mov.q [rsp + 0x71], rbp
     sub r12, rbx
@@ -2298,7 +2293,7 @@ simd_fold u16:
     lea rdi, [rsp + 0x12]
     xor esi, esi
     mov rdx, 0x10
-    call -0x7e5
+    call -0x7dd
     xor ebx, ebx
 19:
     mov rbp, rbx
@@ -2314,7 +2309,7 @@ simd_fold u16:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x22]
-    call -0x830
+    call -0x828
     mov r13, rbp
     sub r13, rbx
     lea rax, [r12 + rbx*2]
@@ -2333,7 +2328,7 @@ simd_fold u16:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x32]
-    call -0x893
+    call -0x88b
     lea rax, [r12 + rbx*2]
     mov.q [rsp + 0x32], rax
     mov.q [rsp + 0x3a], r13
@@ -2350,7 +2345,7 @@ simd_fold u16:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x42]
-    call -0x8f0
+    call -0x8e8
     lea rax, [r12 + rbx*2]
     mov.q [rsp + 0x42], rax
     mov.q [rsp + 0x4a], r13
@@ -2367,7 +2362,7 @@ simd_fold u16:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x52]
-    call -0x94d
+    call -0x945
     lea rax, [r12 + rbx*2]
     mov.q [rsp + 0x52], rax
     mov.q [rsp + 0x5a], r13
@@ -2384,7 +2379,7 @@ simd_fold u16:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x62]
-    call -0x9aa
+    call -0x9a2
     lea rax, [r12 + rbx*2]
     mov.q [rsp + 0x62], rax
     mov.q [rsp + 0x6a], r13
@@ -2401,13 +2396,13 @@ simd_fold u16:
     lea rdi, [rsp]
     mov rdx, 2
     xor esi, esi
-    call -0x9fa
+    call -0x9f2
     mov.q rbp, [rsp + 0x2]
     mov.q r12, [rsp + 0xa]
     lea rdi, [rsp + 0x72]
     xor esi, esi
     mov rdx, 0x10
-    call -0xa18
+    call -0xa10
     lea rax, [rbp + rbx*2]
     mov.q [rsp + 0x72], rax
     sub r12, rbx
@@ -2457,7 +2452,7 @@ simd_fold u32:
     lea rdi, [rsp + 0x14]
     xor esi, esi
     mov rdx, 0x10
-    call -0xaed
+    call -0xae5
     xor ebx, ebx
 24:
     mov rbp, rbx
@@ -2473,7 +2468,7 @@ simd_fold u32:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x24]
-    call -0xb38
+    call -0xb30
     mov r13, rbp
     sub r13, rbx
     lea rax, [r12 + rbx*4]
@@ -2492,7 +2487,7 @@ simd_fold u32:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x34]
-    call -0xb9b
+    call -0xb93
     lea rax, [r12 + rbx*4]
     mov.q [rsp + 0x34], rax
     mov.q [rsp + 0x3c], r13
@@ -2509,7 +2504,7 @@ simd_fold u32:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x44]
-    call -0xbf8
+    call -0xbf0
     lea rax, [r12 + rbx*4]
     mov.q [rsp + 0x44], rax
     mov.q [rsp + 0x4c], r13
@@ -2526,7 +2521,7 @@ simd_fold u32:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x54]
-    call -0xc55
+    call -0xc4d
     lea rax, [r12 + rbx*4]
     mov.q [rsp + 0x54], rax
     mov.q [rsp + 0x5c], r13
@@ -2543,7 +2538,7 @@ simd_fold u32:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x64]
-    call -0xcb2
+    call -0xcaa
     lea rax, [r12 + rbx*4]
     mov.q [rsp + 0x64], rax
     mov.q [rsp + 0x6c], r13
@@ -2560,13 +2555,13 @@ simd_fold u32:
     lea rdi, [rsp]
     mov rdx, 4
     xor esi, esi
-    call -0xd02
+    call -0xcfa
     mov.q rbp, [rsp + 0x4]
     mov.q r12, [rsp + 0xc]
     lea rdi, [rsp + 0x74]
     xor esi, esi
     mov rdx, 0x10
-    call -0xd20
+    call -0xd18
     lea rax, [rbp + rbx*4]
     mov.q [rsp + 0x74], rax
     sub r12, rbx
@@ -2614,7 +2609,7 @@ simd_fold u64:
     lea rdi, [rsp + 0x18]
     xor esi, esi
     mov rdx, 0x10
-    call -0xddd
+    call -0xdd5
     xor ebx, ebx
 29:
     mov rbp, rbx
@@ -2630,7 +2625,7 @@ simd_fold u64:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x28]
-    call -0xe28
+    call -0xe20
     mov r13, rbp
     sub r13, rbx
     lea rax, [r12 + rbx*8]
@@ -2649,7 +2644,7 @@ simd_fold u64:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x38]
-    call -0xe8b
+    call -0xe83
     lea rax, [r12 + rbx*8]
     mov.q [rsp + 0x38], rax
     mov.q [rsp + 0x40], r13
@@ -2666,7 +2661,7 @@ simd_fold u64:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x48]
-    call -0xee8
+    call -0xee0
     lea rax, [r12 + rbx*8]
     mov.q [rsp + 0x48], rax
     mov.q [rsp + 0x50], r13
@@ -2683,7 +2678,7 @@ simd_fold u64:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x58]
-    call -0xf45
+    call -0xf3d
     lea rax, [r12 + rbx*8]
     mov.q [rsp + 0x58], rax
     mov.q [rsp + 0x60], r13
@@ -2700,7 +2695,7 @@ simd_fold u64:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x68]
-    call -0xfa2
+    call -0xf9a
     lea rax, [r12 + rbx*8]
     mov.q [rsp + 0x68], rax
     mov.q [rsp + 0x70], r13
@@ -2717,13 +2712,13 @@ simd_fold u64:
     lea rdi, [rsp]
     mov rdx, 8
     xor esi, esi
-    call -0xff2
+    call -0xfea
     mov.q rbp, [rsp + 0x8]
     mov.q r12, [rsp + 0x10]
     lea rdi, [rsp + 0x78]
     xor esi, esi
     mov rdx, 0x10
-    call -0x1010
+    call -0x1008
     lea rax, [rbp + rbx*8]
     mov.q [rsp + 0x78], rax
     sub r12, rbx
@@ -2766,7 +2761,7 @@ from_slice =16 u8:
     lea rdi, [rsp + 0x10]
     xor esi, esi
     mov rdx, 0x10
-    call -0x10c3
+    call -0x10bb
     xor eax, eax
 34:
     mov rcx, rax
@@ -2795,7 +2790,7 @@ from_slice =8 u16:
     lea rdi, [rsp + 0x10]
     xor esi, esi
     mov rdx, 0x10
-    call -0x1131
+    call -0x1129
     xor eax, eax
 37:
     cmp rax, 8
@@ -2819,7 +2814,7 @@ from_slice =4 u32:
     lea rdi, [rsp + 0x10]
     xor esi, esi
     mov rdx, 0x10
-    call -0x1199
+    call -0x1191
     xor eax, eax
 40:
     cmp rax, 4
@@ -2843,7 +2838,7 @@ from_slice =2 u64:
     lea rdi, [rsp + 0x10]
     xor esi, esi
     mov rdx, 0x10
-    call -0x11f9
+    call -0x11f1
     xor eax, eax
 43:
     cmp rax, 2
@@ -3008,16 +3003,15 @@ init_inc u8:
     mov.q [rsp + 0x8], rsi
     mov.q rdi, [rsp + 0x8]
     mov.q rsi, [rsp]
-    xor eax, eax
+    xor edx, edx
 2:
-    cmp rax, rdi
+    cmp rdx, rdi
     jnl 3
-    mov rdx, rsi
-    add rdx, rax
-    mov rcx, rax
-    add rcx, 1
-    mov.b [rdx], al
-    mov rax, rcx
+    mov rcx, rsi
+    add rcx, rdx
+    mov rax, rdx
+    add rdx, 1
+    mov.b [rcx], al
     jmp 2
 3:
     add rsp, 0x18
@@ -3033,10 +3027,10 @@ init_inc u16:
     cmp rax, rdi
     jnl 6
     mov rdx, rax
-    add rdx, 1
     mov rcx, rax
-    mov.w [rsi + rax*2], cx
-    mov rax, rdx
+    add rcx, 1
+    mov.w [rsi + rax*2], dx
+    mov rax, rcx
     jmp 5
 6:
     add rsp, 0x18
@@ -3052,10 +3046,10 @@ init_inc u32:
     cmp rax, rdi
     jnl 9
     mov rdx, rax
-    add rdx, 1
     mov rcx, rax
-    mov.d [rsi + rax*4], ecx
-    mov rax, rdx
+    add rcx, 1
+    mov.d [rsi + rax*4], edx
+    mov rax, rcx
     jmp 8
 9:
     add rsp, 0x18
@@ -3087,7 +3081,7 @@ simd_fold u8:
     lea rdi, [rsp + 0x11]
     xor esi, esi
     mov rdx, 0x10
-    call -0x475
+    call -0x46d
     xor ebx, ebx
 14:
     mov r12, rbx
@@ -3103,7 +3097,7 @@ simd_fold u8:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x21]
-    call -0x4c0
+    call -0x4b8
     mov rbp, r12
     sub rbp, rbx
     add r13, rbx
@@ -3121,7 +3115,7 @@ simd_fold u8:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x31]
-    call -0x51e
+    call -0x516
     add r13, rbx
     mov.q [rsp + 0x31], r13
     mov.q [rsp + 0x39], rbp
@@ -3137,7 +3131,7 @@ simd_fold u8:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x41]
-    call -0x576
+    call -0x56e
     add r13, rbx
     mov.q [rsp + 0x41], r13
     mov.q [rsp + 0x49], rbp
@@ -3153,7 +3147,7 @@ simd_fold u8:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x51]
-    call -0x5ce
+    call -0x5c6
     add r13, rbx
     mov.q [rsp + 0x51], r13
     mov.q [rsp + 0x59], rbp
@@ -3169,7 +3163,7 @@ simd_fold u8:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x61]
-    call -0x626
+    call -0x61e
     add r13, rbx
     mov.q [rsp + 0x61], r13
     mov.q [rsp + 0x69], rbp
@@ -3185,13 +3179,13 @@ simd_fold u8:
     lea rdi, [rsp]
     mov rdx, 1
     xor esi, esi
-    call -0x671
+    call -0x669
     mov.q r12, [rsp + 0x1]
     mov.q rbp, [rsp + 0x9]
     lea rdi, [rsp + 0x71]
     xor esi, esi
     mov rdx, 0x10
-    call -0x68f
+    call -0x687
     add r12, rbx
     mov.q [rsp + 0x71], r12
     sub rbp, rbx
@@ -3241,7 +3235,7 @@ simd_fold u16:
     lea rdi, [rsp + 0x12]
     xor esi, esi
     mov rdx, 0x10
-    call -0x755
+    call -0x74d
     xor ebx, ebx
 19:
     mov r12, rbx
@@ -3257,7 +3251,7 @@ simd_fold u16:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x22]
-    call -0x7a0
+    call -0x798
     mov rbp, r12
     sub rbp, rbx
     lea rax, [r13 + rbx*2]
@@ -3275,7 +3269,7 @@ simd_fold u16:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x32]
-    call -0x800
+    call -0x7f8
     lea rax, [r13 + rbx*2]
     mov.q [rsp + 0x32], rax
     mov.q [rsp + 0x3a], rbp
@@ -3291,7 +3285,7 @@ simd_fold u16:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x42]
-    call -0x85a
+    call -0x852
     lea rax, [r13 + rbx*2]
     mov.q [rsp + 0x42], rax
     mov.q [rsp + 0x4a], rbp
@@ -3307,7 +3301,7 @@ simd_fold u16:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x52]
-    call -0x8b4
+    call -0x8ac
     lea rax, [r13 + rbx*2]
     mov.q [rsp + 0x52], rax
     mov.q [rsp + 0x5a], rbp
@@ -3323,7 +3317,7 @@ simd_fold u16:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x62]
-    call -0x90e
+    call -0x906
     lea rax, [r13 + rbx*2]
     mov.q [rsp + 0x62], rax
     mov.q [rsp + 0x6a], rbp
@@ -3339,13 +3333,13 @@ simd_fold u16:
     lea rdi, [rsp]
     mov rdx, 2
     xor esi, esi
-    call -0x95b
+    call -0x953
     mov.q r12, [rsp + 0x2]
     mov.q rbp, [rsp + 0xa]
     lea rdi, [rsp + 0x72]
     xor esi, esi
     mov rdx, 0x10
-    call -0x979
+    call -0x971
     lea rax, [r12 + rbx*2]
     mov.q [rsp + 0x72], rax
     sub rbp, rbx
@@ -3395,7 +3389,7 @@ simd_fold u32:
     lea rdi, [rsp + 0x14]
     xor esi, esi
     mov rdx, 0x10
-    call -0xa4d
+    call -0xa45
     xor ebx, ebx
 24:
     mov r12, rbx
@@ -3411,7 +3405,7 @@ simd_fold u32:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x24]
-    call -0xa98
+    call -0xa90
     mov rbp, r12
     sub rbp, rbx
     lea rax, [r13 + rbx*4]
@@ -3429,7 +3423,7 @@ simd_fold u32:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x34]
-    call -0xaf8
+    call -0xaf0
     lea rax, [r13 + rbx*4]
     mov.q [rsp + 0x34], rax
     mov.q [rsp + 0x3c], rbp
@@ -3445,7 +3439,7 @@ simd_fold u32:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x44]
-    call -0xb52
+    call -0xb4a
     lea rax, [r13 + rbx*4]
     mov.q [rsp + 0x44], rax
     mov.q [rsp + 0x4c], rbp
@@ -3461,7 +3455,7 @@ simd_fold u32:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x54]
-    call -0xbac
+    call -0xba4
     lea rax, [r13 + rbx*4]
     mov.q [rsp + 0x54], rax
     mov.q [rsp + 0x5c], rbp
@@ -3477,7 +3471,7 @@ simd_fold u32:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x64]
-    call -0xc06
+    call -0xbfe
     lea rax, [r13 + rbx*4]
     mov.q [rsp + 0x64], rax
     mov.q [rsp + 0x6c], rbp
@@ -3493,13 +3487,13 @@ simd_fold u32:
     lea rdi, [rsp]
     mov rdx, 4
     xor esi, esi
-    call -0xc53
+    call -0xc4b
     mov.q r12, [rsp + 0x4]
     mov.q rbp, [rsp + 0xc]
     lea rdi, [rsp + 0x74]
     xor esi, esi
     mov rdx, 0x10
-    call -0xc71
+    call -0xc69
     lea rax, [r12 + rbx*4]
     mov.q [rsp + 0x74], rax
     sub rbp, rbx
@@ -3547,7 +3541,7 @@ simd_fold u64:
     lea rdi, [rsp + 0x18]
     xor esi, esi
     mov rdx, 0x10
-    call -0xd2d
+    call -0xd25
     xor ebx, ebx
 29:
     mov r12, rbx
@@ -3563,7 +3557,7 @@ simd_fold u64:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x28]
-    call -0xd78
+    call -0xd70
     mov rbp, r12
     sub rbp, rbx
     lea rax, [r13 + rbx*8]
@@ -3581,7 +3575,7 @@ simd_fold u64:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x38]
-    call -0xdd8
+    call -0xdd0
     lea rax, [r13 + rbx*8]
     mov.q [rsp + 0x38], rax
     mov.q [rsp + 0x40], rbp
@@ -3597,7 +3591,7 @@ simd_fold u64:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x48]
-    call -0xe32
+    call -0xe2a
     lea rax, [r13 + rbx*8]
     mov.q [rsp + 0x48], rax
     mov.q [rsp + 0x50], rbp
@@ -3613,7 +3607,7 @@ simd_fold u64:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x58]
-    call -0xe8c
+    call -0xe84
     lea rax, [r13 + rbx*8]
     mov.q [rsp + 0x58], rax
     mov.q [rsp + 0x60], rbp
@@ -3629,7 +3623,7 @@ simd_fold u64:
     xor esi, esi
     mov rdx, 0x10
     lea rdi, [rsp + 0x68]
-    call -0xee6
+    call -0xede
     lea rax, [r13 + rbx*8]
     mov.q [rsp + 0x68], rax
     mov.q [rsp + 0x70], rbp
@@ -3645,13 +3639,13 @@ simd_fold u64:
     lea rdi, [rsp]
     mov rdx, 8
     xor esi, esi
-    call -0xf33
+    call -0xf2b
     mov.q r12, [rsp + 0x8]
     mov.q rbp, [rsp + 0x10]
     lea rdi, [rsp + 0x78]
     xor esi, esi
     mov rdx, 0x10
-    call -0xf51
+    call -0xf49
     lea rax, [r12 + rbx*8]
     mov.q [rsp + 0x78], rax
     sub rbp, rbx
@@ -3693,7 +3687,7 @@ from_slice =16 u8:
     lea rdi, [rsp + 0x10]
     xor esi, esi
     mov rdx, 0x10
-    call -0x1001
+    call -0xff9
     xor eax, eax
 34:
     cmp rax, 0x10
@@ -3720,7 +3714,7 @@ from_slice =8 u16:
     lea rdi, [rsp + 0x10]
     xor esi, esi
     mov rdx, 0x10
-    call -0x1071
+    call -0x1069
     xor ecx, ecx
 37:
     cmp rcx, 8
@@ -3744,7 +3738,7 @@ from_slice =4 u32:
     lea rdi, [rsp + 0x10]
     xor esi, esi
     mov rdx, 0x10
-    call -0x10d9
+    call -0x10d1
     xor ecx, ecx
 40:
     cmp rcx, 4
@@ -3768,7 +3762,7 @@ from_slice =2 u64:
     lea rdi, [rsp + 0x10]
     xor esi, esi
     mov rdx, 0x10
-    call -0x1139
+    call -0x1131
     xor ecx, ecx
 43:
     cmp rcx, 2
@@ -3845,7 +3839,6 @@ main:
     add rsp, 0xb8
     ret
 init_inc u8:
-    push rbx
     xor eax, eax
 2:
     cmp rax, rsi
@@ -3853,13 +3846,10 @@ init_inc u8:
     mov rcx, rdi
     add rcx, rax
     mov rdx, rax
-    add rdx, 1
-    mov rbx, rax
-    mov.b [rcx], bl
-    mov rax, rdx
+    add rax, 1
+    mov.b [rcx], dl
     jmp 2
 3:
-    pop rbx
     ret
 init_inc u16:
     xor eax, eax
@@ -3867,10 +3857,10 @@ init_inc u16:
     cmp rax, rsi
     jnl 6
     mov rcx, rax
-    add rcx, 1
     mov rdx, rax
-    mov.w [rdi + rax*2], dx
-    mov rax, rcx
+    add rdx, 1
+    mov.w [rdi + rax*2], cx
+    mov rax, rdx
     jmp 5
 6:
     ret
@@ -3880,10 +3870,10 @@ init_inc u32:
     cmp rax, rsi
     jnl 9
     mov rcx, rax
-    add rcx, 1
     mov rdx, rax
-    mov.d [rdi + rax*4], edx
-    mov rax, rcx
+    add rdx, 1
+    mov.d [rdi + rax*4], ecx
+    mov rax, rdx
     jmp 8
 9:
     ret
@@ -4043,7 +4033,7 @@ simd_fold u16:
     setnl cl
     movzx rcx, cl
     test cl, cl
-    jnz +0x14d
+    jnz 20
     movups.x xmm0, [rsp + 0x12]
     movups.x [rsp + 0x3a], xmm0
     mov.q rcx, [rsp + 0x22]
@@ -4107,6 +4097,7 @@ simd_fold u16:
     movups.x [rsp + 0x12], xmm0
     mov.q rax, [rsp + 0x2a]
     jmp 19
+20:
     mov.w [rsp], 0
     mov.q rax, [rsp + 0xa]
     mov.q rcx, [rsp + 0x22]
@@ -4115,7 +4106,6 @@ simd_fold u16:
     mov.q rdx, [rsp + 0x22]
     lea rcx, [rcx + rdx*2]
     xor edx, edx
-20:
     mov.q [rsp + 0x22], rdx
     movzx.w ebx, [rsp]
     mov.q rbp, [rsp + 0x22]
@@ -4139,7 +4129,7 @@ simd_fold u16:
     mov.q rbp, [rsp + 0x22]
     add rbp, 1
     mov rdx, rbp
-    jmp 20
+    jmp -0x77
 21:
     movups.x xmm0, [rsp + 0x12]
     pshufd xmm1, xmm0, 0x55
@@ -4173,7 +4163,7 @@ simd_fold u32:
     setnl cl
     movzx rcx, cl
     test cl, cl
-    jnz +0x14d
+    jnz 24
     movups.x xmm0, [rsp + 0x14]
     movups.x [rsp + 0x3c], xmm0
     mov.q rcx, [rsp + 0x24]
@@ -4237,6 +4227,7 @@ simd_fold u32:
     movups.x [rsp + 0x14], xmm0
     mov.q rax, [rsp + 0x2c]
     jmp 23
+24:
     mov.d [rsp], 0
     mov.q rax, [rsp + 0xc]
     mov.q rcx, [rsp + 0x24]
@@ -4245,12 +4236,12 @@ simd_fold u32:
     mov.q rdx, [rsp + 0x24]
     lea rcx, [rcx + rdx*4]
     xor edx, edx
-24:
+25:
     mov.q [rsp + 0x24], rdx
     mov.d ebx, [rsp]
     mov.q rbp, [rsp + 0x24]
     cmp rbp, rax
-    jnl 25
+    jnl 26
     mov.q rbp, [rsp + 0x24]
     add.d ebx, [rcx + rbp*4]
     mov.d [rsp], ebx
@@ -4269,8 +4260,8 @@ simd_fold u32:
     mov.q rbp, [rsp + 0x24]
     add rbp, 1
     mov rdx, rbp
-    jmp 24
-25:
+    jmp 25
+26:
     movups.x xmm0, [rsp + 0x14]
     pshufd xmm1, xmm0, -0x12
     paddd xmm1, xmm0
@@ -4291,7 +4282,7 @@ simd_fold u64:
     pxor xmm0, xmm0
     movups.x [rsp + 0x18], xmm0
     xor eax, eax
-27:
+28:
     mov.q [rsp + 0x28], rax
     mov.q rcx, [rsp + 0x28]
     add rcx, 2
@@ -4301,7 +4292,7 @@ simd_fold u64:
     setnl cl
     movzx rcx, cl
     test cl, cl
-    jnz +0x14d
+    jnz 29
     movups.x xmm0, [rsp + 0x18]
     movups.x [rsp + 0x40], xmm0
     mov.q rcx, [rsp + 0x28]
@@ -4364,7 +4355,8 @@ simd_fold u64:
     movups xmm0, xmm1
     movups.x [rsp + 0x18], xmm0
     mov.q rax, [rsp + 0x30]
-    jmp 27
+    jmp 28
+29:
     mov.q [rsp], 0
     mov.q rax, [rsp + 0x10]
     mov.q rcx, [rsp + 0x28]
@@ -4373,12 +4365,12 @@ simd_fold u64:
     mov.q rdx, [rsp + 0x28]
     lea rcx, [rcx + rdx*8]
     xor edx, edx
-28:
+30:
     mov.q [rsp + 0x28], rdx
     mov.q rbx, [rsp]
     mov.q rbp, [rsp + 0x28]
     cmp rbp, rax
-    jnl 29
+    jnl 31
     mov.q rbp, [rsp + 0x28]
     add.q rbx, [rcx + rbp*8]
     mov.q [rsp], rbx
@@ -4397,8 +4389,8 @@ simd_fold u64:
     mov.q rbp, [rsp + 0x28]
     add rbp, 1
     mov rdx, rbp
-    jmp 28
-29:
+    jmp 30
+31:
     movups.x xmm0, [rsp + 0x18]
     pextrq rax, xmm0, 1
     movq rcx, xmm0
@@ -4415,12 +4407,12 @@ from_slice =16 u8:
     pxor xmm0, xmm0
     movups.x [rsp + 0x10], xmm0
     xor eax, eax
-31:
+33:
     cmp rax, 0x10
     setnl cl
     movzx rcx, cl
     test cl, cl
-    jnz 32
+    jnz 34
     mov.q rcx, [rsp]
     add rcx, rax
     movzx.b ecx, [rcx]
@@ -4428,8 +4420,8 @@ from_slice =16 u8:
     add rdx, 1
     mov.b [rsp + rax + 0x10], cl
     mov rax, rdx
-    jmp 31
-32:
+    jmp 33
+34:
     movups.x xmm0, [rsp + 0x10]
     add rsp, 0x28
     ret
@@ -4440,18 +4432,18 @@ from_slice =8 u16:
     pxor xmm0, xmm0
     movups.x [rsp + 0x10], xmm0
     xor eax, eax
-34:
+36:
     cmp rax, 8
     setnl cl
     movzx rcx, cl
     test cl, cl
-    jnz 35
+    jnz 37
     mov.q rcx, [rsp]
     movzx.w ecx, [rcx + rax*2]
     mov.w [rsp + rax*2 + 0x10], cx
     add rax, 1
-    jmp 34
-35:
+    jmp 36
+37:
     movups.x xmm0, [rsp + 0x10]
     add rsp, 0x28
     ret
@@ -4462,18 +4454,18 @@ from_slice =4 u32:
     pxor xmm0, xmm0
     movups.x [rsp + 0x10], xmm0
     xor eax, eax
-37:
+39:
     cmp rax, 4
     setnl cl
     movzx rcx, cl
     test cl, cl
-    jnz 38
+    jnz 40
     mov.q rcx, [rsp]
     mov.d ecx, [rcx + rax*4]
     mov.d [rsp + rax*4 + 0x10], ecx
     add rax, 1
-    jmp 37
-38:
+    jmp 39
+40:
     movups.x xmm0, [rsp + 0x10]
     add rsp, 0x28
     ret
@@ -4484,18 +4476,18 @@ from_slice =2 u64:
     pxor xmm0, xmm0
     movups.x [rsp + 0x10], xmm0
     xor eax, eax
-40:
+42:
     cmp rax, 2
     setnl cl
     movzx rcx, cl
     test cl, cl
-    jnz 41
+    jnz 43
     mov.q rcx, [rsp]
     mov.q rcx, [rcx + rax*8]
     mov.q [rsp + rax*8 + 0x10], rcx
     add rax, 1
-    jmp 40
-41:
+    jmp 42
+43:
     movups.x xmm0, [rsp + 0x10]
     add rsp, 0x28
     ret
@@ -4561,16 +4553,15 @@ main:
     pop rbx
     ret
 init_inc u8:
-    xor eax, eax
+    xor edx, edx
 2:
-    cmp rax, rsi
+    cmp rdx, rsi
     jnl 3
-    mov rdx, rdi
-    add rdx, rax
-    mov rcx, rax
-    add rcx, 1
-    mov.b [rdx], al
-    mov rax, rcx
+    mov rcx, rdi
+    add rcx, rdx
+    mov rax, rdx
+    add rdx, 1
+    mov.b [rcx], al
     jmp 2
 3:
     ret
@@ -4580,10 +4571,10 @@ init_inc u16:
     cmp rax, rsi
     jnl 6
     mov rdx, rax
-    add rdx, 1
     mov rcx, rax
-    mov.w [rdi + rax*2], cx
-    mov rax, rdx
+    add rcx, 1
+    mov.w [rdi + rax*2], dx
+    mov rax, rcx
     jmp 5
 6:
     ret
@@ -4593,10 +4584,10 @@ init_inc u32:
     cmp rax, rsi
     jnl 9
     mov rdx, rax
-    add rdx, 1
     mov rcx, rax
-    mov.d [rdi + rax*4], ecx
-    mov rax, rdx
+    add rcx, 1
+    mov.d [rdi + rax*4], edx
+    mov rax, rcx
     jmp 8
 9:
     ret

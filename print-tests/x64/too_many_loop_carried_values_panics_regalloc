@@ -6,117 +6,124 @@ main:
     push r13
     push r14
     push r15
-    sub rsp, 0x58
-    mov rax, 0xd
-    mov.q [rsp], rax
-    mov rax, 0xc
-    mov.q [rsp + 0x8], rax
-    mov rax, 0xb
-    mov.q [rsp + 0x10], rax
-    mov rax, 0xa
-    mov.q [rsp + 0x18], rax
-    mov rax, 9
-    mov.q [rsp + 0x20], rax
-    mov rax, 8
-    mov rcx, 7
-    mov rdx, 6
-    mov rbx, 5
-    mov rbp, 4
-    mov rsi, 3
-    mov rdi, 2
-    mov r8, 1
-    mov r9, 0xf
+    sub rsp, 0x68
+    xor eax, eax
+    mov rcx, 0xd
+    mov.q [rsp], rcx
+    mov rcx, 0xc
+    mov.q [rsp + 0x8], rcx
+    mov rcx, 0xb
+    mov.q [rsp + 0x10], rcx
+    mov rcx, 0xa
+    mov.q [rsp + 0x18], rcx
+    mov rcx, 9
+    mov.q [rsp + 0x20], rcx
+    mov rcx, 8
+    mov rdx, 7
+    mov rbx, 6
+    mov rbp, 5
+    mov rsi, 4
+    mov rdi, 3
+    mov r8, 2
+    mov r9, 1
+    mov r10, 0xf
+    mov.q [rsp + 0x28], r10
     xor r10d, r10d
     mov r11, 0xe
 1:
     push.q [rsp + 0x20]
-    pop.q [rsp + 0x28]
-    push.q [rsp + 0x18]
     pop.q [rsp + 0x30]
-    push.q [rsp + 0x10]
+    push.q [rsp + 0x28]
     pop.q [rsp + 0x38]
-    push.q [rsp + 0x8]
+    push.q [rsp + 0x18]
     pop.q [rsp + 0x40]
-    push.q [rsp]
+    push.q [rsp + 0x10]
     pop.q [rsp + 0x48]
+    push.q [rsp + 0x8]
+    pop.q [rsp + 0x50]
+    push.q [rsp]
+    pop.q [rsp + 0x58]
     mov r12, r11
     cmp r10, 7
     jz 2
-    add r8, rdi
+    add r9, r8
     mov r13, r12
-    xor r13, r9
-    xor rdi, rsi
-    add rsi, rbp
-    xor rbp, rbx
-    add rbx, rdx
-    xor rdx, rcx
-    add rcx, rax
-    mov.q r14, [rsp + 0x28]
-    xor rax, r14
+    mov.q r14, [rsp + 0x38]
+    xor r13, r14
+    xor r8, rdi
+    add rdi, rsi
+    xor rsi, rbp
+    add rbp, rbx
+    xor rbx, rdx
+    add rdx, rcx
     mov.q r14, [rsp + 0x30]
-    mov.q r15, [rsp + 0x28]
+    xor rcx, r14
+    mov.q r14, [rsp + 0x40]
+    mov.q r15, [rsp + 0x30]
     add r15, r14
     mov.q [rsp + 0x20], r15
-    mov.q r14, [rsp + 0x38]
-    mov.q r15, [rsp + 0x30]
-    xor r15, r14
-    mov.q [rsp + 0x18], r15
-    mov.q r14, [rsp + 0x40]
-    mov.q r15, [rsp + 0x38]
-    add r15, r14
-    mov.q [rsp + 0x10], r15
     mov.q r14, [rsp + 0x48]
     mov.q r15, [rsp + 0x40]
     xor r15, r14
+    mov.q [rsp + 0x18], r15
+    mov.q r14, [rsp + 0x50]
+    mov.q r15, [rsp + 0x48]
+    add r15, r14
+    mov.q [rsp + 0x10], r15
+    mov.q r14, [rsp + 0x58]
+    mov.q r15, [rsp + 0x50]
+    xor r15, r14
     mov.q [rsp + 0x8], r15
-    xor r9, r8
+    mov.q r14, [rsp + 0x38]
+    xor r14, r9
+    mov.q [rsp + 0x28], r14
     mov r14, r10
     add r14, 1
-    mov.q r15, [rsp + 0x48]
+    mov.q r15, [rsp + 0x58]
     add r15, r12
     mov.q [rsp], r15
     mov r10, r14
     mov r11, r13
     jmp 1
 2:
-    imul r8, r8, 1
-    xor r10d, r10d
-    add r8, r10
-    lea rdi, [r8 + rdi*2]
-    imul rsi, rsi, 3
-    add rdi, rsi
-    lea rbp, [rdi + rbp*4]
-    imul rbx, rbx, 5
-    add rbp, rbx
-    imul rdx, rdx, 6
-    add rbp, rdx
-    imul rcx, rcx, 7
-    add rbp, rcx
-    lea rax, [rbp + rax*8]
-    mov.q rcx, [rsp + 0x28]
+    imul r9, r9, 1
+    add r9, rax
+    lea rax, [r9 + r8*2]
+    imul rdi, rdi, 3
+    add rax, rdi
+    lea rax, [rax + rsi*4]
+    imul rbp, rbp, 5
+    add rax, rbp
+    imul rbx, rbx, 6
+    add rax, rbx
+    imul rdx, rdx, 7
+    add rax, rdx
+    lea rax, [rax + rcx*8]
+    mov.q rcx, [rsp + 0x30]
     imul rcx, rcx, 9
     add rax, rcx
-    mov.q rcx, [rsp + 0x30]
+    mov.q rcx, [rsp + 0x40]
     imul rcx, rcx, 0xa
     add rax, rcx
-    mov.q rcx, [rsp + 0x38]
+    mov.q rcx, [rsp + 0x48]
     imul rcx, rcx, 0xb
     add rax, rcx
-    mov.q rcx, [rsp + 0x40]
+    mov.q rcx, [rsp + 0x50]
     imul rcx, rcx, 0xc
     add rax, rcx
-    mov.q rcx, [rsp + 0x48]
+    mov.q rcx, [rsp + 0x58]
     imul rcx, rcx, 0xd
     add rax, rcx
     imul rcx, r12, 0xe
     add rax, rcx
-    imul rcx, r9, 0xf
+    mov.q rcx, [rsp + 0x38]
+    imul rcx, rcx, 0xf
     add rax, rcx
     mov rcx, 0xfb
     cqo
     idiv rcx
     mov rax, rdx
-    add rsp, 0x58
+    add rsp, 0x68
     pop r15
     pop r14
     pop r13
@@ -253,17 +260,17 @@ main:
     mov.q [rsp + 0x10], rax
     mov rax, 0xa
     mov.q [rsp + 0x18], rax
-    mov rax, 9
-    mov.q [rsp + 0x20], rax
+    mov rcx, 9
     mov rax, 8
-    mov rcx, 7
-    mov rdx, 6
-    mov rbx, 5
-    mov rbp, 4
-    mov rsi, 3
-    mov rdi, 2
-    mov r8, 1
-    mov r9, 0xf
+    mov rdx, 7
+    mov rbx, 6
+    mov rbp, 5
+    mov rsi, 4
+    mov rdi, 3
+    mov r8, 2
+    mov r9, 1
+    mov r10, 0xf
+    mov.q [rsp + 0x20], r10
     xor r10d, r10d
     mov r11, 0xe
 1:
@@ -280,21 +287,19 @@ main:
     mov r12, r11
     cmp r10, 7
     jz 2
-    add r8, rdi
+    add r9, r8
     mov r13, r12
-    xor r13, r9
-    xor rdi, rsi
-    add rsi, rbp
-    xor rbp, rbx
-    add rbx, rdx
-    xor rdx, rcx
-    add rcx, rax
     mov.q r14, [rsp + 0x28]
-    xor rax, r14
+    xor r13, r14
+    xor r8, rdi
+    add rdi, rsi
+    xor rsi, rbp
+    add rbp, rbx
+    xor rbx, rdx
+    add rdx, rax
+    xor rax, rcx
     mov.q r14, [rsp + 0x30]
-    mov.q r15, [rsp + 0x28]
-    add r15, r14
-    mov.q [rsp + 0x20], r15
+    add rcx, r14
     mov.q r14, [rsp + 0x38]
     mov.q r15, [rsp + 0x30]
     xor r15, r14
@@ -307,7 +312,9 @@ main:
     mov.q r15, [rsp + 0x40]
     xor r15, r14
     mov.q [rsp + 0x8], r15
-    xor r9, r8
+    mov.q r14, [rsp + 0x28]
+    xor r14, r9
+    mov.q [rsp + 0x20], r14
     mov r14, r10
     add r14, 1
     mov.q r15, [rsp + 0x48]
@@ -318,19 +325,18 @@ main:
     jmp 1
 2:
     xor r10d, r10d
-    add r10, r8
-    lea rdi, [r10 + rdi*2]
-    imul rsi, rsi, 3
-    add rdi, rsi
-    lea rbp, [rdi + rbp*4]
-    imul rbx, rbx, 5
-    add rbp, rbx
-    imul rdx, rdx, 6
-    add rbp, rdx
-    imul rcx, rcx, 7
-    add rbp, rcx
-    lea rax, [rbp + rax*8]
-    mov.q rcx, [rsp + 0x28]
+    add r10, r9
+    lea r8, [r10 + r8*2]
+    imul rdi, rdi, 3
+    add r8, rdi
+    lea rsi, [r8 + rsi*4]
+    imul rbp, rbp, 5
+    add rsi, rbp
+    imul rbx, rbx, 6
+    add rsi, rbx
+    imul rdx, rdx, 7
+    add rsi, rdx
+    lea rax, [rsi + rax*8]
     imul rcx, rcx, 9
     add rax, rcx
     mov.q rcx, [rsp + 0x30]
@@ -347,7 +353,8 @@ main:
     add rax, rcx
     imul rcx, r12, 0xe
     add rax, rcx
-    imul rcx, r9, 0xf
+    mov.q rcx, [rsp + 0x28]
+    imul rcx, rcx, 0xf
     add rax, rcx
     mov rcx, 0xfb
     cqo
@@ -484,18 +491,18 @@ main:
     mov.q [rsp + 0x10], rax
     mov rax, 0xa
     mov.q [rsp + 0x18], rax
-    mov rax, 9
-    mov.q [rsp + 0x20], rax
+    mov rcx, 9
     mov rax, 8
-    mov rcx, 7
-    mov rdx, 6
-    mov rbx, 5
-    mov rbp, 4
-    mov rsi, 3
-    mov rdi, 2
-    mov r8, 1
-    xor r9d, r9d
-    mov r10, 0xf
+    mov rdx, 7
+    mov rbx, 6
+    mov rbp, 5
+    mov rsi, 4
+    mov rdi, 3
+    mov r8, 2
+    mov r9, 1
+    xor r10d, r10d
+    mov r11, 0xf
+    mov.q [rsp + 0x20], r11
     mov r11, 0xe
 1:
     push.q [rsp + 0x20]
@@ -509,23 +516,21 @@ main:
     push.q [rsp]
     pop.q [rsp + 0x48]
     mov r12, r11
-    cmp r9, 7
+    cmp r10, 7
     jz 2
-    add r8, rdi
+    add r9, r8
     mov r13, r12
-    xor r13, r10
-    xor rdi, rsi
-    add rsi, rbp
-    xor rbp, rbx
-    add rbx, rdx
-    xor rdx, rcx
-    add rcx, rax
     mov.q r14, [rsp + 0x28]
-    xor rax, r14
+    xor r13, r14
+    xor r8, rdi
+    add rdi, rsi
+    xor rsi, rbp
+    add rbp, rbx
+    xor rbx, rdx
+    add rdx, rax
+    xor rax, rcx
     mov.q r14, [rsp + 0x30]
-    mov.q r15, [rsp + 0x28]
-    add r15, r14
-    mov.q [rsp + 0x20], r15
+    add rcx, r14
     mov.q r14, [rsp + 0x38]
     mov.q r15, [rsp + 0x30]
     xor r15, r14
@@ -538,26 +543,27 @@ main:
     mov.q r15, [rsp + 0x40]
     xor r15, r14
     mov.q [rsp + 0x8], r15
-    xor r10, r8
-    add r9, 1
+    mov.q r14, [rsp + 0x28]
+    xor r14, r9
+    mov.q [rsp + 0x20], r14
+    add r10, 1
     mov.q r14, [rsp + 0x48]
     add r14, r12
     mov.q [rsp], r14
     mov r11, r13
     jmp 1
 2:
-    lea rdi, [r8 + rdi*2]
-    imul rsi, rsi, 3
-    add rdi, rsi
-    lea rbp, [rdi + rbp*4]
-    imul rbx, rbx, 5
-    add rbp, rbx
-    imul rdx, rdx, 6
-    add rbp, rdx
-    imul rcx, rcx, 7
-    add rbp, rcx
-    lea rax, [rbp + rax*8]
-    mov.q rcx, [rsp + 0x28]
+    lea r8, [r9 + r8*2]
+    imul rdi, rdi, 3
+    add r8, rdi
+    lea rsi, [r8 + rsi*4]
+    imul rbp, rbp, 5
+    add rsi, rbp
+    imul rbx, rbx, 6
+    add rsi, rbx
+    imul rdx, rdx, 7
+    add rsi, rdx
+    lea rax, [rsi + rax*8]
     imul rcx, rcx, 9
     add rax, rcx
     mov.q rcx, [rsp + 0x30]
@@ -574,7 +580,8 @@ main:
     add rax, rcx
     imul rcx, r12, 0xe
     add rax, rcx
-    imul rcx, r10, 0xf
+    mov.q rcx, [rsp + 0x28]
+    imul rcx, rcx, 0xf
     add rax, rcx
     mov rcx, 0xfb
     cqo

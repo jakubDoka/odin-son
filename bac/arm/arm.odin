@@ -399,7 +399,7 @@ meta_of :: #force_inline proc(
 	     .End,
 	     .Simd_Extract_Lsbs:
 		fmt.panicf("should not reach this: %v", node)
-	case .Dbg_Sym_Update, .Dbg_Scope:
+	case .Dbg_Sym_Update, .Dbg_Scope, .Dbg_Sym_Decl:
 		fmt.panicf("TODO: %v", node)
 	case .Split_Mem,
 	     .Merge_Mem,
@@ -775,7 +775,7 @@ emit_instr :: proc(
 	     .End,
 	     .Simd_Extract_Lsbs:
 		fmt.panicf("should not reach this: %v", node)
-	case .U_F_From_I, .Rem, .U_Rem, .Dbg_Sym_Update, .Dbg_Scope:
+	case .U_F_From_I, .Rem, .U_Rem, .Dbg_Sym_Update, .Dbg_Scope, .Dbg_Sym_Decl:
 		fmt.panicf("TODO: %v", node)
 	case .Split_Mem,
 	     .Merge_Mem,

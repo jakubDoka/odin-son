@@ -131,42 +131,42 @@ main:
     add sp, sp, #64
     ret
 from_slice u8:
-    sub sp, sp, #64
+    sub sp, sp, #80
     str x19, [xzr]
     str x20, [xzr, #8]
-    stp x29, x30, [xzr, #23]
-    add x19, sp, #32
+    str x21, [xzr, #16]
+    stp x29, x30, [xzr, #31]
+    add x19, sp, #40
     str x0, [x19]
     movz x0, #8, #0
     add x0, x0, x19
     str x1, [x0]
     movz x20, #1, #0
     movz x1, #0, #0
-    add x0, sp, #48
+    movz x21, #0, #0
+    add x0, sp, #56
     movz x2, #16, #0
     bl 0xfffffdf0
-    movz x0, #0, #0
 7:
-    mov x1, x0
-    movz x2, #16, #0
-    cmp w1, w2
-    b.ge 0x70
-    ldr x2, [x19]
-    add x2, x2, x1
-    ldrb w2, [x2]
-    add x3, x20, x1
-    add x4, sp, #48
-    add x1, x4, x1
-    strb w2, [x1]
-    mov x0, x3
-    b 0x3c
+    movz x0, #16, #0
+    cmp w21, w0
+    b.ge 0x6c
+    ldr x0, [x19]
+    add x0, x0, x21
+    ldrb w0, [x0]
+    add x1, sp, #56
+    add x1, x1, x21
+    add x21, x21, x20
+    strb w0, [x1]
+    b 0x40
 8:
-    add x0, sp, #48
+    add x0, sp, #56
     ldr.v q0, [x0]
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
-    ldp x29, x30, [xzr, #23]
-    add sp, sp, #64
+    ldr x21, [xzr, #16]
+    ldp x29, x30, [xzr, #31]
+    add sp, sp, #80
     ret
 simd_search u8:
     sub sp, sp, #192
@@ -467,13 +467,13 @@ main:
     ldr x1, [x19]
     movz x2, #122, #0
     add x3, sp, #24
-    bl 0x140
+    bl 0x144
     add x0, sp, #40
     ldr x0, [x0]
     ldr x1, [x19]
     movz x2, #97, #0
     add x3, sp, #32
-    bl 0x140
+    bl 0x144
     add x0, sp, #40
     ldr x0, [x0]
     ldr x1, [x19]
@@ -494,41 +494,42 @@ main:
     add sp, sp, #64
     ret
 from_slice u8:
-    sub sp, sp, #64
+    sub sp, sp, #80
     str x19, [xzr]
     str x20, [xzr, #8]
-    stp x29, x30, [xzr, #23]
-    add x19, sp, #32
-    str x0, [x19]
+    str x21, [xzr, #16]
+    stp x29, x30, [xzr, #31]
+    add x21, sp, #40
+    str x0, [x21]
     movz x0, #8, #0
-    add x0, x0, x19
+    add x0, x0, x21
     str x1, [x0]
     movz x20, #1, #0
     movz x1, #0, #0
-    add x0, sp, #48
+    movz x19, #0, #0
+    add x0, sp, #56
     movz x2, #16, #0
     bl 0xfffffdf0
-    movz x0, #0, #0
 7:
-    movz x1, #16, #0
-    cmp w0, w1
+    movz x0, #16, #0
+    cmp w19, w0
     b.ge 0x6c
-    ldr x1, [x19]
-    add x1, x1, x0
-    ldrb w3, [x1]
-    add x2, x20, x0
-    add x1, sp, #48
-    add x0, x1, x0
-    strb w3, [x0]
-    mov x0, x2
-    b 0x3c
+    ldr x0, [x21]
+    add x0, x0, x19
+    ldrb w1, [x0]
+    add x0, sp, #56
+    add x0, x0, x19
+    add x19, x19, x20
+    strb w1, [x0]
+    b 0x40
 8:
-    add x0, sp, #48
+    add x0, sp, #56
     ldr.v q0, [x0]
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
-    ldp x29, x30, [xzr, #23]
-    add sp, sp, #64
+    ldr x21, [xzr, #16]
+    ldp x29, x30, [xzr, #31]
+    add sp, sp, #80
     ret
 simd_search u8:
     sub sp, sp, #192
@@ -562,7 +563,7 @@ simd_search u8:
     movz x0, #0, #0
     sub x23, x1, x0
     movz x22, #1, #0
-    adr x0, 0xd74
+    adr x0, 0xd70
     ldr.v q9, [x0]
     movz x0, #7, #0
     dup.v v8, w0
@@ -581,7 +582,7 @@ simd_search u8:
     movz x1, #0, #0
     add x0, sp, #144
     movz x2, #16, #0
-    bl 0xfffffd68
+    bl 0xfffffd64
     movz x0, #16, #0
     madd x29, x0, x27, xzr
     add x1, x28, x29
@@ -594,7 +595,7 @@ simd_search u8:
     movz x1, #0, #0
     add x0, sp, #160
     movz x2, #16, #0
-    bl 0xfffffd68
+    bl 0xfffffd64
     movz x0, #0, #0
     add x1, x25, x0
     add x0, sp, #160
@@ -603,7 +604,7 @@ simd_search u8:
     add x0, sp, #160
     ldr x0, [x0]
     ldr x1, [x20]
-    bl 0xffffff78
+    bl 0xffffff74
     cmeq v0, v0, v10
     sshl v0, v0, v8
     cmlt v0, v0
@@ -630,7 +631,7 @@ simd_search u8:
     movz x1, #0, #0
     movz x2, #16, #0
     add x0, sp, #176
-    bl 0xfffffd68
+    bl 0xfffffd64
     movz x0, #16, #0
     madd x3, x0, x29, xzr
     add x0, sp, #176
@@ -846,42 +847,42 @@ main:
     add sp, sp, #64
     ret
 from_slice u8:
-    sub sp, sp, #64
+    sub sp, sp, #80
     str x19, [xzr]
     str x20, [xzr, #8]
-    stp x29, x30, [xzr, #23]
-    add x19, sp, #32
+    str x21, [xzr, #16]
+    stp x29, x30, [xzr, #31]
+    add x19, sp, #40
     str x0, [x19]
     movz x0, #8, #0
     add x0, x0, x19
     str x1, [x0]
     movz x20, #1, #0
     movz x1, #0, #0
-    add x0, sp, #48
+    movz x21, #0, #0
+    add x0, sp, #56
     movz x2, #16, #0
     bl 0xfffffdf0
-    movz x0, #0, #0
 7:
-    mov x1, x0
-    movz x2, #16, #0
-    cmp w1, w2
-    b.ge 0x70
-    ldr x2, [x19]
-    add x2, x2, x1
-    ldrb w2, [x2]
-    add x3, x20, x1
-    add x4, sp, #48
-    add x1, x4, x1
-    strb w2, [x1]
-    mov x0, x3
-    b 0x3c
+    movz x0, #16, #0
+    cmp w21, w0
+    b.ge 0x6c
+    ldr x0, [x19]
+    add x0, x0, x21
+    ldrb w0, [x0]
+    add x1, sp, #56
+    add x1, x1, x21
+    add x21, x21, x20
+    strb w0, [x1]
+    b 0x40
 8:
-    add x0, sp, #48
+    add x0, sp, #56
     ldr.v q0, [x0]
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
-    ldp x29, x30, [xzr, #23]
-    add sp, sp, #64
+    ldr x21, [xzr, #16]
+    ldp x29, x30, [xzr, #31]
+    add sp, sp, #80
     ret
 simd_search u8:
     sub sp, sp, #192
@@ -1182,13 +1183,13 @@ main:
     ldr x1, [x19]
     movz x2, #122, #0
     add x3, sp, #24
-    bl 0x140
+    bl 0x144
     add x0, sp, #40
     ldr x0, [x0]
     ldr x1, [x19]
     movz x2, #97, #0
     add x3, sp, #32
-    bl 0x140
+    bl 0x144
     add x0, sp, #40
     ldr x0, [x0]
     ldr x1, [x19]
@@ -1209,41 +1210,42 @@ main:
     add sp, sp, #64
     ret
 from_slice u8:
-    sub sp, sp, #64
+    sub sp, sp, #80
     str x19, [xzr]
     str x20, [xzr, #8]
-    stp x29, x30, [xzr, #23]
-    add x19, sp, #32
-    str x0, [x19]
+    str x21, [xzr, #16]
+    stp x29, x30, [xzr, #31]
+    add x21, sp, #40
+    str x0, [x21]
     movz x0, #8, #0
-    add x0, x0, x19
+    add x0, x0, x21
     str x1, [x0]
     movz x20, #1, #0
     movz x1, #0, #0
-    add x0, sp, #48
+    movz x19, #0, #0
+    add x0, sp, #56
     movz x2, #16, #0
     bl 0xfffffdf0
-    movz x0, #0, #0
 7:
-    movz x1, #16, #0
-    cmp w0, w1
+    movz x0, #16, #0
+    cmp w19, w0
     b.ge 0x6c
-    ldr x1, [x19]
-    add x1, x1, x0
-    ldrb w3, [x1]
-    add x2, x20, x0
-    add x1, sp, #48
-    add x0, x1, x0
-    strb w3, [x0]
-    mov x0, x2
-    b 0x3c
+    ldr x0, [x21]
+    add x0, x0, x19
+    ldrb w1, [x0]
+    add x0, sp, #56
+    add x0, x0, x19
+    add x19, x19, x20
+    strb w1, [x0]
+    b 0x40
 8:
-    add x0, sp, #48
+    add x0, sp, #56
     ldr.v q0, [x0]
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
-    ldp x29, x30, [xzr, #23]
-    add sp, sp, #64
+    ldr x21, [xzr, #16]
+    ldp x29, x30, [xzr, #31]
+    add sp, sp, #80
     ret
 simd_search u8:
     sub sp, sp, #192
@@ -1277,7 +1279,7 @@ simd_search u8:
     movz x0, #0, #0
     sub x23, x1, x0
     movz x22, #1, #0
-    adr x0, 0xd74
+    adr x0, 0xd70
     ldr.v q9, [x0]
     movz x0, #7, #0
     dup.v v8, w0
@@ -1296,7 +1298,7 @@ simd_search u8:
     movz x1, #0, #0
     add x0, sp, #144
     movz x2, #16, #0
-    bl 0xfffffd68
+    bl 0xfffffd64
     movz x0, #16, #0
     madd x29, x0, x27, xzr
     add x1, x28, x29
@@ -1309,7 +1311,7 @@ simd_search u8:
     movz x1, #0, #0
     add x0, sp, #160
     movz x2, #16, #0
-    bl 0xfffffd68
+    bl 0xfffffd64
     movz x0, #0, #0
     add x1, x25, x0
     add x0, sp, #160
@@ -1318,7 +1320,7 @@ simd_search u8:
     add x0, sp, #160
     ldr x0, [x0]
     ldr x1, [x20]
-    bl 0xffffff78
+    bl 0xffffff74
     cmeq v0, v0, v10
     sshl v0, v0, v8
     cmlt v0, v0
@@ -1345,7 +1347,7 @@ simd_search u8:
     movz x1, #0, #0
     movz x2, #16, #0
     add x0, sp, #176
-    bl 0xfffffd68
+    bl 0xfffffd64
     movz x0, #16, #0
     madd x3, x0, x29, xzr
     add x0, sp, #176
@@ -1506,12 +1508,12 @@ main:
     str x1, [x20]
     movz x2, #122, #0
     add x3, sp, #32
-    bl 0x100
+    bl 0xf8
     ldr x0, [x19]
     ldr x1, [x20]
     movz x2, #97, #0
     add x3, sp, #40
-    bl 0x100
+    bl 0xf8
     ldr x0, [x19]
     ldr x1, [x20]
     bl 0xffffff18
@@ -1542,19 +1544,17 @@ from_slice u8:
     movz x1, #16, #0
     movz x3, #1, #0
     eor.v v0, v0, v0
-    str.v q0, [x0]
     movz x4, #0, #0
+    str.v q0, [x0]
 7:
-    mov x5, x4
-    cmp w5, w1
-    b.ge 0x5c
-    ldr x6, [x2]
-    add x6, x6, x5
-    ldrb w6, [x6]
-    add x7, x3, x5
-    add x5, x0, x5
-    strb w6, [x5]
-    mov x4, x7
+    cmp w4, w1
+    b.ge 0x54
+    ldr x5, [x2]
+    add x5, x5, x4
+    ldrb w5, [x5]
+    add x6, x0, x4
+    add x4, x4, x3
+    strb w5, [x6]
     b 0x30
 8:
     ldr.v q0, [x0]
@@ -1581,7 +1581,7 @@ simd_search u8:
     str x0, [x19]
     str x1, [x20]
     movz x22, #1, #0
-    adr x0, 0xe08
+    adr x0, 0xe10
     ldr.v q9, [x0]
     movz x0, #7, #0
     dup.v v10, w0
@@ -1599,7 +1599,7 @@ simd_search u8:
     madd x25, x0, x24, xzr
     add x0, x3, x25
     movz x1, #16, #0
-    bl 0xffffff98
+    bl 0xffffffa0
     cmeq v0, v0, v8
     sshl v0, v0, v10
     cmlt v0, v0
@@ -1765,12 +1765,12 @@ main:
     str x1, [x19]
     movz x2, #122, #0
     add x3, sp, #32
-    bl 0xfc
+    bl 0xf8
     ldr x0, [x20]
     ldr x1, [x19]
     movz x2, #97, #0
     add x3, sp, #40
-    bl 0xfc
+    bl 0xf8
     ldr x0, [x20]
     ldr x1, [x19]
     bl 0xffffff18
@@ -1801,18 +1801,17 @@ from_slice u8:
     movz x4, #16, #0
     movz x3, #1, #0
     eor.v v0, v0, v0
-    str.v q0, [x5]
     movz x0, #0, #0
+    str.v q0, [x5]
 7:
     cmp w0, w4
-    b.ge 0x58
+    b.ge 0x54
     ldr x1, [x6]
     add x1, x1, x0
     ldrb w2, [x1]
-    add x1, x3, x0
-    add x0, x5, x0
-    strb w2, [x0]
-    mov x0, x1
+    add x1, x5, x0
+    add x0, x0, x3
+    strb w2, [x1]
     b 0x30
 8:
     ldr.v q0, [x5]
@@ -1840,7 +1839,7 @@ simd_search u8:
     str x0, [x21]
     str x1, [x20]
     movz x23, #1, #0
-    adr x0, 0xe0c
+    adr x0, 0xe10
     ldr.v q9, [x0]
     movz x0, #7, #0
     dup.v v8, w0
@@ -1858,7 +1857,7 @@ simd_search u8:
     madd x25, x0, x24, xzr
     add x0, x2, x25
     movz x1, #16, #0
-    bl 0xffffff9c
+    bl 0xffffffa0
     cmeq v0, v0, v10
     sshl v0, v0, v8
     cmlt v0, v0

@@ -6,7 +6,7 @@ opaque:
     add x0, x0, x1
     ret
 main:
-    sub sp, sp, #96
+    sub sp, sp, #128
     str x19, [xzr]
     str x20, [xzr, #8]
     str x21, [xzr, #16]
@@ -18,10 +18,12 @@ main:
     str x27, [xzr, #64]
     str x28, [xzr, #72]
     stp x29, x30, [xzr, #87]
-    movz x19, #6, #0
-    movz x20, #0, #0
-    movz x21, #7, #0
-    movz x22, #6, #0
+    movz x19, #1, #0
+    movz x20, #2, #0
+    movz x21, #3, #0
+    movz x22, #0, #0
+    movz x0, #6, #0
+    str x0, [xzr, #96]
     movz x1, #8, #0
     movz x2, #4, #0
     movz x3, #1, #0
@@ -30,6 +32,10 @@ main:
     movz x5, #2, #0
     movz x6, #5, #0
 2:
+    str.pre x17, [xzr, #-16]!
+    ldr x17, [xzr, #112]
+    str x17, [xzr, #120]
+    ldr.post x17, [xzr], #16
     mov x24, x6
     mov x25, x3
     mov x26, x4
@@ -37,11 +43,10 @@ main:
     mov x28, x2
     mov x29, x1
     movz x0, #5, #0
-    cmp w20, w0
-    b.eq 0xf4
-    movz x0, #1, #0
-    add x20, x0, x20
-    add x0, x25, x20
+    cmp w22, w0
+    b.eq 0x110
+    add x22, x19, x22
+    add x0, x25, x22
     bl 0xffffffec
     add x7, x25, x27
     add x7, x7, x0
@@ -53,13 +58,15 @@ main:
     add x10, x10, x0
     add x11, x28, x24
     add x11, x11, x0
-    add x12, x24, x22
+    ldr x12, [xzr, #104]
+    add x12, x12, x24
     add x12, x12, x0
-    add x13, x22, x23
+    ldr x13, [xzr, #104]
+    add x13, x13, x23
     add x13, x13, x0
     add x14, x23, x29
     add x0, x14, x0
-    mov x22, x13
+    str x13, [xzr, #96]
     mov x1, x8
     mov x2, x11
     mov x3, x7
@@ -67,13 +74,11 @@ main:
     mov x4, x10
     mov x5, x9
     mov x6, x12
-    b 0x5c
+    b 0x64
 3:
-    movz x0, #2, #0
-    madd x0, x0, x27, xzr
+    madd x0, x20, x27, xzr
     add x0, x0, x25
-    movz x1, #3, #0
-    madd x1, x1, x26, xzr
+    madd x1, x21, x26, xzr
     add x0, x0, x1
     movz x1, #251, #0
     movz x2, #4, #0
@@ -82,9 +87,12 @@ main:
     movz x2, #5, #0
     madd x2, x2, x24, xzr
     add x0, x0, x2
-    madd x2, x19, x22, xzr
+    movz x2, #6, #0
+    ldr x3, [xzr, #104]
+    madd x2, x2, x3, xzr
     add x0, x0, x2
-    madd x2, x21, x23, xzr
+    movz x2, #7, #0
+    madd x2, x2, x23, xzr
     add x0, x0, x2
     movz x2, #8, #0
     madd x2, x2, x29, xzr
@@ -102,7 +110,7 @@ main:
     ldr x27, [xzr, #64]
     ldr x28, [xzr, #72]
     ldp x29, x30, [xzr, #87]
-    add sp, sp, #96
+    add sp, sp, #128
     ret
 =========== OPT LEVEL: none ===========
 opaque:
@@ -222,7 +230,7 @@ opaque:
     add x0, x0, x1
     ret
 main:
-    sub sp, sp, #96
+    sub sp, sp, #128
     str x19, [xzr]
     str x20, [xzr, #8]
     str x21, [xzr, #16]
@@ -234,10 +242,12 @@ main:
     str x27, [xzr, #64]
     str x28, [xzr, #72]
     stp x29, x30, [xzr, #87]
-    movz x19, #6, #0
-    movz x20, #0, #0
-    movz x21, #7, #0
-    movz x22, #6, #0
+    movz x19, #1, #0
+    movz x20, #2, #0
+    movz x21, #3, #0
+    movz x22, #0, #0
+    movz x0, #6, #0
+    str x0, [xzr, #96]
     movz x1, #8, #0
     movz x2, #4, #0
     movz x3, #1, #0
@@ -246,6 +256,10 @@ main:
     movz x5, #2, #0
     movz x6, #5, #0
 2:
+    str.pre x17, [xzr, #-16]!
+    ldr x17, [xzr, #112]
+    str x17, [xzr, #120]
+    ldr.post x17, [xzr], #16
     mov x24, x6
     mov x25, x3
     mov x26, x4
@@ -253,11 +267,10 @@ main:
     mov x28, x2
     mov x29, x1
     movz x0, #5, #0
-    cmp w20, w0
-    b.eq 0xf4
-    movz x0, #1, #0
-    add x20, x0, x20
-    add x0, x25, x20
+    cmp w22, w0
+    b.eq 0x110
+    add x22, x19, x22
+    add x0, x25, x22
     bl 0xffffffec
     add x7, x25, x27
     add x7, x7, x0
@@ -269,13 +282,15 @@ main:
     add x10, x10, x0
     add x11, x28, x24
     add x11, x11, x0
-    add x12, x24, x22
+    ldr x12, [xzr, #104]
+    add x12, x12, x24
     add x12, x12, x0
-    add x13, x22, x23
+    ldr x13, [xzr, #104]
+    add x13, x13, x23
     add x13, x13, x0
     add x14, x23, x29
     add x0, x14, x0
-    mov x22, x13
+    str x13, [xzr, #96]
     mov x1, x8
     mov x2, x11
     mov x3, x7
@@ -283,13 +298,11 @@ main:
     mov x4, x10
     mov x5, x9
     mov x6, x12
-    b 0x5c
+    b 0x64
 3:
-    movz x0, #2, #0
-    madd x0, x0, x27, xzr
+    madd x0, x20, x27, xzr
     add x0, x0, x25
-    movz x1, #3, #0
-    madd x1, x1, x26, xzr
+    madd x1, x21, x26, xzr
     add x0, x0, x1
     movz x1, #251, #0
     movz x2, #4, #0
@@ -298,9 +311,12 @@ main:
     movz x2, #5, #0
     madd x2, x2, x24, xzr
     add x0, x0, x2
-    madd x2, x19, x22, xzr
+    movz x2, #6, #0
+    ldr x3, [xzr, #104]
+    madd x2, x2, x3, xzr
     add x0, x0, x2
-    madd x2, x21, x23, xzr
+    movz x2, #7, #0
+    madd x2, x2, x23, xzr
     add x0, x0, x2
     movz x2, #8, #0
     madd x2, x2, x29, xzr
@@ -318,7 +334,7 @@ main:
     ldr x27, [xzr, #64]
     ldr x28, [xzr, #72]
     ldp x29, x30, [xzr, #87]
-    add sp, sp, #96
+    add sp, sp, #128
     ret
 =========== OPT LEVEL: mininal ===========
 opaque:
@@ -438,7 +454,7 @@ opaque:
     add x0, x0, x1
     ret
 main:
-    sub sp, sp, #96
+    sub sp, sp, #128
     str x19, [xzr]
     str x20, [xzr, #8]
     str x21, [xzr, #16]
@@ -450,10 +466,12 @@ main:
     str x27, [xzr, #64]
     str x28, [xzr, #72]
     stp x29, x30, [xzr, #87]
-    movz x19, #6, #0
-    movz x20, #0, #0
-    movz x21, #7, #0
-    movz x22, #6, #0
+    movz x19, #1, #0
+    movz x20, #2, #0
+    movz x21, #3, #0
+    movz x22, #0, #0
+    movz x0, #6, #0
+    str x0, [xzr, #96]
     movz x1, #8, #0
     movz x2, #4, #0
     movz x3, #1, #0
@@ -462,6 +480,10 @@ main:
     movz x5, #2, #0
     movz x6, #5, #0
 2:
+    str.pre x17, [xzr, #-16]!
+    ldr x17, [xzr, #112]
+    str x17, [xzr, #120]
+    ldr.post x17, [xzr], #16
     mov x24, x6
     mov x25, x3
     mov x26, x4
@@ -469,11 +491,10 @@ main:
     mov x28, x2
     mov x29, x1
     movz x0, #5, #0
-    cmp w20, w0
-    b.eq 0xf4
-    movz x0, #1, #0
-    add x20, x0, x20
-    add x0, x25, x20
+    cmp w22, w0
+    b.eq 0x110
+    add x22, x19, x22
+    add x0, x25, x22
     bl 0xffffffec
     add x7, x25, x27
     add x7, x7, x0
@@ -485,13 +506,15 @@ main:
     add x10, x10, x0
     add x11, x28, x24
     add x11, x11, x0
-    add x12, x24, x22
+    ldr x12, [xzr, #104]
+    add x12, x12, x24
     add x12, x12, x0
-    add x13, x22, x23
+    ldr x13, [xzr, #104]
+    add x13, x13, x23
     add x13, x13, x0
     add x14, x23, x29
     add x0, x14, x0
-    mov x22, x13
+    str x13, [xzr, #96]
     mov x1, x8
     mov x2, x11
     mov x3, x7
@@ -499,13 +522,11 @@ main:
     mov x4, x10
     mov x5, x9
     mov x6, x12
-    b 0x5c
+    b 0x64
 3:
-    movz x0, #2, #0
-    madd x0, x0, x27, xzr
+    madd x0, x20, x27, xzr
     add x0, x0, x25
-    movz x1, #3, #0
-    madd x1, x1, x26, xzr
+    madd x1, x21, x26, xzr
     add x0, x0, x1
     movz x1, #251, #0
     movz x2, #4, #0
@@ -514,9 +535,12 @@ main:
     movz x2, #5, #0
     madd x2, x2, x24, xzr
     add x0, x0, x2
-    madd x2, x19, x22, xzr
+    movz x2, #6, #0
+    ldr x3, [xzr, #104]
+    madd x2, x2, x3, xzr
     add x0, x0, x2
-    madd x2, x21, x23, xzr
+    movz x2, #7, #0
+    madd x2, x2, x23, xzr
     add x0, x0, x2
     movz x2, #8, #0
     madd x2, x2, x29, xzr
@@ -534,7 +558,7 @@ main:
     ldr x27, [xzr, #64]
     ldr x28, [xzr, #72]
     ldp x29, x30, [xzr, #87]
-    add sp, sp, #96
+    add sp, sp, #128
     ret
 =========== OPT LEVEL: moderate ===========
 opaque:

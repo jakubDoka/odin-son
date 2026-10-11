@@ -157,6 +157,7 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 	for inp in get_inputs(graph, graph.end) {
 		if inp == 0 do continue
 		inode := expand_node(graph, inp)
+		if inode.itype == .Dbg_Scope do continue
 		lctx.loop_trees[inode.gvn] = lctx.root
 
 		end_ctrl := expand_node(graph, inode.inps[0])
@@ -440,7 +441,8 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 					   get_node(graph, node.inps[0]).itype == .Call_End) ||
 			   node.itype == .Param ||
 			   node.itype == .Ret ||
-			   is_cfg(graph, n)) {
+			   is_cfg(graph, n) ||
+			   node.itype == .Dbg_Scope) {
 			ctx.late_schedules[node.gvn] = node.inps[0]
 		} else {
 			free = true

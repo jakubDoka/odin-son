@@ -104,13 +104,14 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 		iter: bac.Offset_Iter
 		iter.curr = mnode.outs[0].id
 		collect_slot: for out in bac.offset_iter_next(graph, &iter) {
+			onode := get_node(graph, out.id)
+			//fmt.println(onode)
 			size, ok := bac.mem_op_size(graph, out.id)
 			if !ok {
 				failed_sroa = true
 				failed_split = true
 				break
 			}
-			onode := get_node(graph, out.id)
 			if onode.itype == .Copy {
 				failed_split = true
 			}
@@ -338,6 +339,8 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 		for einp in bac.get_inputs(ctx, ctx.end) {
 			connect_to := einp
 			node := expand_node(ctx, einp)
+			if einp == 0 do continue
+			if node.itype == .Dbg_Scope do continue
 			if node.itype == .Return {
 				connect_to = node.inps[1]
 				if get_node(ctx, connect_to).itype != .Merge_Mem {

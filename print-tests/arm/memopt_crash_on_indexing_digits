@@ -49,16 +49,16 @@ f:
     msub x2, x2, x3, x4
     add x1, x1, x2
     ldrb w1, [x1]
-    ldr x2, [xzr, #64]
-    add x2, x2, x21
-    str x2, [xzr, #72]
-    ldr x2, [xzr, #48]
-    ldr x3, [xzr, #56]
-    udiv x2, x3, x2
-    str x2, [xzr, #56]
     add x2, sp, #80
     ldr x3, [xzr, #64]
     add x2, x2, x3
+    ldr x3, [xzr, #64]
+    add x3, x3, x21
+    str x3, [xzr, #72]
+    ldr x3, [xzr, #48]
+    ldr x4, [xzr, #56]
+    udiv x3, x4, x3
+    str x3, [xzr, #56]
     strb w1, [x2]
     ldr x0, [xzr, #72]
     str.pre x17, [xzr, #-16]!
@@ -184,13 +184,13 @@ f:
     udiv x2, x21, x23
     msub x0, x2, x23, x21
     add x0, x3, x0
-    ldrb w3, [x0]
+    ldrb w4, [x0]
+    add x1, sp, #56
+    add x3, x1, x5
     add x0, x5, x20
     udiv x1, x21, x23
     mov x21, x1
-    add x2, sp, #56
-    add x1, x2, x5
-    strb w3, [x1]
+    strb w4, [x3]
     b 1
 2:
     sub x4, x5, x20
@@ -312,16 +312,16 @@ f:
     msub x2, x2, x3, x4
     add x1, x1, x2
     ldrb w1, [x1]
-    ldr x2, [xzr, #64]
-    add x2, x2, x21
-    str x2, [xzr, #72]
-    ldr x2, [xzr, #48]
-    ldr x3, [xzr, #56]
-    udiv x2, x3, x2
-    str x2, [xzr, #56]
     add x2, sp, #80
     ldr x3, [xzr, #64]
     add x2, x2, x3
+    ldr x3, [xzr, #64]
+    add x3, x3, x21
+    str x3, [xzr, #72]
+    ldr x3, [xzr, #48]
+    ldr x4, [xzr, #56]
+    udiv x3, x4, x3
+    str x3, [xzr, #56]
     strb w1, [x2]
     ldr x0, [xzr, #72]
     str.pre x17, [xzr, #-16]!
@@ -447,13 +447,13 @@ f:
     udiv x2, x21, x23
     msub x0, x2, x23, x21
     add x0, x3, x0
-    ldrb w3, [x0]
+    ldrb w4, [x0]
+    add x1, sp, #56
+    add x3, x1, x5
     add x0, x5, x20
     udiv x1, x21, x23
     mov x21, x1
-    add x2, sp, #56
-    add x1, x2, x5
-    strb w3, [x1]
+    strb w4, [x3]
     b 1
 2:
     sub x4, x5, x20
@@ -575,16 +575,16 @@ f:
     msub x2, x2, x3, x4
     add x1, x1, x2
     ldrb w1, [x1]
-    ldr x2, [xzr, #64]
-    add x2, x2, x21
-    str x2, [xzr, #72]
-    ldr x2, [xzr, #56]
-    ldr x3, [xzr, #48]
-    udiv x2, x3, x2
-    str x2, [xzr, #48]
     add x2, sp, #80
     ldr x3, [xzr, #64]
     add x2, x2, x3
+    ldr x3, [xzr, #64]
+    add x3, x3, x21
+    str x3, [xzr, #72]
+    ldr x3, [xzr, #56]
+    ldr x4, [xzr, #48]
+    udiv x3, x4, x3
+    str x3, [xzr, #48]
     strb w1, [x2]
     ldr x0, [xzr, #72]
     str.pre x17, [xzr, #-16]!
@@ -686,13 +686,13 @@ f:
     udiv x2, x22, x23
     msub x0, x2, x23, x22
     add x0, x3, x0
-    ldrb w3, [x0]
+    ldrb w4, [x0]
+    add x1, sp, #56
+    add x3, x1, x5
     add x0, x5, x19
     udiv x1, x22, x23
     mov x22, x1
-    add x2, sp, #56
-    add x1, x2, x5
-    strb w3, [x1]
+    strb w4, [x3]
     b 1
 2:
     sub x4, x5, x19
@@ -799,8 +799,8 @@ f:
     add x1, x2, x1
     ldrb w4, [x1]
     add x1, x21, x3
-    add x3, x3, x0
     strb w4, [x1]
+    add x3, x3, x0
     cmp w3, w5
     b.lt 4
     b 5
@@ -862,9 +862,9 @@ main:
     ldrb w3, [x2]
     add x2, sp, #81
     add x2, x2, x0
+    strb w3, [x2]
     udiv x1, x1, x7
     add x4, x0, x6
-    strb w3, [x2]
     cmp w1, w8
     mov x0, x4
     b.ne 1
@@ -879,8 +879,8 @@ main:
     ldrb w2, [x1]
     add x1, sp, #16
     add x1, x1, x0
-    add x0, x0, x6
     strb w2, [x1]
+    add x0, x0, x6
     cmp w0, w4
     b.lt 2
     b 3

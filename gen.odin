@@ -772,8 +772,12 @@ push_scope_value :: proc(
 	name: ^ast.Node,
 	value: Node_ID,
 ) -> int {
-	sloc := ctx_sloc_of(ctx, name)
-	return builder.push_scope_value(ctx, ctx.node_scope, value)
+	return builder.push_scope_value(
+		ctx,
+		ctx.node_scope,
+		value,
+		typecheck.src_of(ctx.file^, name),
+	)
 }
 
 emit_proc :: proc(
@@ -862,7 +866,7 @@ emit_proc :: proc(
 
 	if prc.lit.body == nil do return
 
-	emit_nodes(ctx, {}, prc.lit.body)
+	emit_stmts(ctx, {prc.lit.body})
 	prc = &ctx.procs[i]
 
 	for ptr in ctx.ret_ptrs {
@@ -873,8 +877,7 @@ emit_proc :: proc(
 		assert(len(prc.rets) == 0)
 		values := [2]Node_ID{ctx_ctrl(ctx), ctx_mem(ctx)}
 		builder.merge_returns(ctx, values[:])
-		builder.truncate_scope(ctx, ctx.node_scope, 1)
-		bac.delete_node(ctx, ctx.node_scope)
+		builder.delete_scope(ctx, ctx.node_scope)
 		ctx.node_scope = 0
 	}
 
@@ -976,12 +979,16 @@ emit_stmts :: proc(
 		emit_nodes(ctx, {}, stmt)
 		if ctx.node_scope == 0 do break
 	}
+
+	// TODO: preallocate this
 	for v in ctx.scope[base.gen:] {
 		if n, ok := v.idx.(Node_ID); ok {
 			bac.unpin(ctx, n)
 		}
+
 	}
 	assert(base.gen <= len(ctx.scope))
+
 	resize(&ctx.scope, base.gen)
 	builder.truncate_scope(ctx, ctx.node_scope, base.node)
 }
@@ -1147,11 +1154,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			sym := emit_lvalue(ctx, lhs)
 			switch sym in sym {
 			case int:
-				value := to_rvalue(
-					ctx,
-					emit_nodes(ctx, {}, rhs),
-					get_node_type(rhs),
-				)
+				value := emit_rvalue(ctx, {}, rhs)
 				if d.op.kind != .Eq {
 					op, name, lane :=
 						typecheck.tok_to_binop(
@@ -1192,11 +1195,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 						value := emit_nodes(ctx, {dest = sym.id}, rhs)
 						store_value(ctx, "asss", sym.id, value, lhs)
 					} else {
-						value := to_rvalue(
-							ctx,
-							emit_nodes(ctx, {}, rhs),
-							get_node_type(rhs),
-						)
+						value := emit_rvalue(ctx, {}, rhs)
 						bac.pin(ctx, value)
 						append(&mem_stores, Mem_Store{sym.id, value, lhs})
 					}
@@ -1214,11 +1213,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 						op,
 						type_to_dt(get_node_type(lhs)),
 						vl,
-						to_rvalue(
-							ctx,
-							emit_nodes(ctx, {}, rhs),
-							get_node_type(rhs),
-						),
+						emit_rvalue(ctx, {}, rhs),
 						lane,
 					)
 					bac.unpin(ctx, vl)
@@ -1332,7 +1327,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		values[0] = ctx_ctrl(ctx)
 		values[1] = ctx_mem(ctx)
 		builder.merge_returns(ctx, values[:i])
-		bac.delete_node(ctx, ctx.node_scope)
+		builder.delete_scope(ctx, ctx.node_scope)
 		ctx.node_scope = 0
 	case ^ast.Value_Decl:
 		if !d.is_mutable do break
@@ -1469,11 +1464,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 					typecheck.Variable{name, ptr, vty, d.names[i], flags},
 				)
 			} else {
-				value := to_rvalue(
-					ctx,
-					emit_nodes(ctx, {}, d.values[i]),
-					d.values[i],
-				)
+				value := emit_rvalue(ctx, {}, d.values[i])
 
 				get_node(ctx, value).name = name
 				idx := push_scope_value(ctx, d.names[i], value)
@@ -1667,9 +1658,9 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 
 		if_state: builder.If_State
 		builder.start_if(ctx, ctx.node_scope, &if_state, cond)
-		emit_nodes(ctx, {}, d.body)
+		emit_stmts(ctx, {d.body})
 		builder.start_else(ctx, &ctx.node_scope, &if_state)
-		emit_nodes(ctx, {}, d.else_stmt)
+		emit_stmts(ctx, {d.else_stmt})
 		builder.end_else(ctx, &ctx.node_scope, &if_state)
 	case ^ast.Switch_Stmt:
 		condv := emit_rvalue(ctx, {}, d.cond)
@@ -1790,7 +1781,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		ctx.loop = &loop_state
 
 		builder.start_loop(ctx, ctx.node_scope, &loop_state.bstate)
-		emit_nodes(ctx, {}, d.body)
+		emit_stmts(ctx, {d.body})
 
 		builder.end_loop(ctx, &ctx.node_scope, &loop_state.bstate)
 
@@ -1842,7 +1833,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		if_state: builder.If_State
 		builder.start_if(ctx, ctx.node_scope, &if_state, cond)
 		builder.loop_control(.Break, ctx, ctx.node_scope, &loop_state.bstate)
-		ctx.node_scope = 0
+		ctx.node_scope = 0 // NOTE: no dbg scope
 		builder.end_if(ctx, &ctx.node_scope, &if_state)
 
 		elem_addr := index_offset(ctx, data_ptr, idxv, stride)
@@ -1870,7 +1861,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			)
 		}
 
-		emit_nodes(ctx, {}, d.body)
+		emit_stmts(ctx, {d.body})
 
 		builder.start_loop_increment(ctx, &ctx.node_scope, &loop_state.bstate)
 
@@ -2023,9 +2014,8 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 					{ctx_ctrl(ctx), ctx_mem(ctx)},
 				)
 				bac.connect(ctx, ctx.end, trap)
-				bac.delete_node(ctx, ctx.node_scope)
+				builder.delete_scope(ctx, ctx.node_scope)
 				ctx.node_scope = 0
-				break match
 			case .simd_lanes_eq:
 				a := emit_rvalue(ctx, {}, d.args[0])
 				b := emit_rvalue(ctx, {}, d.args[1])

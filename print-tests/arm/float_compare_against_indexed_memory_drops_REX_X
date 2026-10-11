@@ -11,8 +11,8 @@ main:
     b.eq 2
     madd x5, x4, x1, xzr
     add x5, x5, x3
-    add x6, x4, x2
     scvtf d0, x4
+    add x6, x4, x2
     str.v d0, [x5]
     mov x4, x6
     b 1
@@ -37,8 +37,8 @@ main:
     str x6, [xzr]
 5:
     add x6, x4, x2
-    mov x4, x6
     ldr x5, [xzr]
+    mov x4, x6
     b 3
 6:
     adr x3, 0x1000
@@ -95,18 +95,17 @@ main:
 main:
     movz x4, #0, #0
     movz x7, #8, #0
-    movz x8, #1, #0
-    adr x3, 0xfc0
+    movz x3, #1, #0
+    adr x2, 0xfc0
     movz x0, #0, #0
 1:
     cmp w0, w7
     b.eq 2
     madd x1, x0, x7, xzr
-    add x2, x1, x3
-    add x1, x0, x8
+    add x1, x1, x2
     scvtf d0, x0
-    str.v d0, [x2]
-    mov x0, x1
+    add x0, x0, x3
+    str.v d0, [x1]
     b 1
 2:
     adr x0, 0x1060
@@ -117,7 +116,7 @@ main:
     cmp w0, w7
     b.eq 6
     madd x1, x0, x7, xzr
-    add x1, x1, x3
+    add x1, x1, x2
     ldr.v d0, [x1]
     fcmp d1, d0
     csinc x1, xzr, xzr, le
@@ -125,9 +124,9 @@ main:
     mov x1, x5
     b 5
 4:
-    add x1, x5, x8
+    add x1, x5, x3
 5:
-    add x0, x0, x8
+    add x0, x0, x3
     mov x5, x1
     b 3
 6:
@@ -135,7 +134,7 @@ main:
     madd x0, x4, x7, xzr
     add x0, x0, x6
     ldr x4, [x0]
-    madd x0, x8, x7, xzr
+    madd x0, x3, x7, xzr
     add x0, x0, x6
     ldr x3, [x0]
     movz x0, #2, #0
@@ -188,15 +187,14 @@ main:
     adr x2, 0xfc0
     movz x3, #0, #0
 1:
-    mov x4, x3
-    cmp w4, w0
+    cmp w3, w0
     b.eq 2
-    madd x5, x4, x0, xzr
-    add x5, x5, x2
-    add x6, x4, x1
-    scvtf d0, x4
-    str.v d0, [x5]
-    mov x3, x6
+    madd x4, x3, x0, xzr
+    add x4, x4, x2
+    scvtf d0, x3
+    add x5, x3, x1
+    str.v d0, [x4]
+    mov x3, x5
     b 1
 2:
     adr x3, 0x1060
@@ -273,11 +271,10 @@ main:
     cmp w0, w5
     b.eq 2
     madd x1, x0, x5, xzr
-    add x2, x1, x3
-    add x1, x0, x4
+    add x1, x1, x3
     scvtf d0, x0
-    str.v d0, [x2]
-    mov x0, x1
+    add x0, x0, x4
+    str.v d0, [x1]
     b 1
 2:
     adr x0, 0x1060
@@ -347,15 +344,14 @@ main:
     adr x2, 0xfc0
     movz x3, #0, #0
 1:
-    mov x4, x3
-    cmp w4, w0
+    cmp w3, w0
     b.eq 2
-    madd x5, x4, x0, xzr
-    add x5, x5, x2
-    add x6, x4, x1
-    scvtf d0, x4
-    str.v d0, [x5]
-    mov x3, x6
+    madd x4, x3, x0, xzr
+    add x4, x4, x2
+    scvtf d0, x3
+    add x5, x3, x1
+    str.v d0, [x4]
+    mov x3, x5
     b 1
 2:
     adr x3, 0x1060
@@ -432,11 +428,10 @@ main:
     cmp w0, w5
     b.eq 2
     madd x1, x0, x5, xzr
-    add x2, x1, x3
-    add x1, x0, x4
+    add x1, x1, x3
     scvtf d0, x0
-    str.v d0, [x2]
-    mov x0, x1
+    add x0, x0, x4
+    str.v d0, [x1]
     b 1
 2:
     adr x0, 0x1060

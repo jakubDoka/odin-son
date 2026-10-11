@@ -101,16 +101,17 @@ SPEC := bac.Node_Spec{
 		0b10, // Ctz
 		0b10, // Simd_Extract_Lsbs
 		0b10, // Simd_Reduce_Add_Bisect
+		0b1000000, // Dbg_Sym_Decl
 		0b10, // Dbg_Sym_Update
 		0b10, // Dbg_Scope
-		0b1000000, // WASM_Store
-		0b1000000, // WASM_Load
+		0b10000000, // WASM_Store
+		0b10000000, // WASM_Load
 		0b10, // Get_Local
 		0b10, // Set_Local
 		0b10, // Tee_Local
 		0b10, // Drop
 		0b10, // Stub
-		0b10000000, // Extract_Lane_U
+		0b100000000, // Extract_Lane_U
 	},
 	node_extra_sizes = {
 		1, // Nil -> Cfg
@@ -194,6 +195,7 @@ SPEC := bac.Node_Spec{
 		0, // Ctz -> No_Extra
 		0, // Simd_Extract_Lsbs -> No_Extra
 		0, // Simd_Reduce_Add_Bisect -> No_Extra
+		4, // Dbg_Sym_Decl -> Dbg_Sym_Decl
 		0, // Dbg_Sym_Update -> No_Extra
 		0, // Dbg_Scope -> No_Extra
 		2, // WASM_Store -> Mem_Op
@@ -287,6 +289,7 @@ SPEC := bac.Node_Spec{
 		{Class_Flag.Interned}, // Ctz
 		{Class_Flag.Interned}, // Simd_Extract_Lsbs
 		{Class_Flag.Interned}, // Simd_Reduce_Add_Bisect
+		{}, // Dbg_Sym_Decl
 		{}, // Dbg_Sym_Update
 		{}, // Dbg_Scope
 		{Class_Flag.Store}, // WASM_Store
@@ -380,6 +383,7 @@ SPEC := bac.Node_Spec{
 		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
+		bac.Dbg_Sym_Decl,
 		bac.No_Extra,
 		bac.No_Extra,
 		Mem_Op,
@@ -473,6 +477,7 @@ SPEC := bac.Node_Spec{
 		`Ctz`,
 		`Simd_Extract_Lsbs`,
 		`Simd_Reduce_Add_Bisect`,
+		`Dbg_Sym_Decl`,
 		`Dbg_Sym_Update`,
 		`Dbg_Scope`,
 		`WASM_Store`,
@@ -568,6 +573,7 @@ Node_Type :: enum u16 {
 	Ctz,
 	Simd_Extract_Lsbs,
 	Simd_Reduce_Add_Bisect,
+	Dbg_Sym_Decl,
 	Dbg_Sym_Update,
 	Dbg_Scope,
 	WASM_Store,
@@ -682,6 +688,7 @@ collect_meta :: proc(ctx: ^bac.Proc,
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
+#assert(size_of(bac.Dbg_Sym_Decl) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(Mem_Op) % bac.PRECISION == 0)
@@ -702,12 +709,13 @@ add_extract_lane_u :: #force_inline proc(graph: ^bac.Proc, name: string, dt: bac
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	when false {}
 	else when T == bac.Local {return 4}
-	else when T == Mem_Op {return 6}
+	else when T == Mem_Op {return 7}
 	else when T == bac.Tup {return 2}
-	else when T == bac.No_Extra {return 1}
+	else when T == bac.Dbg_Sym_Decl {return 6}
 	else when T == bac.Call {return 5}
+	else when T == bac.No_Extra {return 1}
 	else when T == bac.Cfg {return 0}
 	else when T == bac.CInt {return 3}
-	else when T == Lane_Op {return 7}
+	else when T == Lane_Op {return 8}
 	else {#panic(`the passed type is not subclass of anything`)}
 }

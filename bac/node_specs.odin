@@ -135,6 +135,7 @@ Node_Type :: enum u16 {
 	Ctz,
 	Simd_Extract_Lsbs,
 	Simd_Reduce_Add_Bisect,
+	Dbg_Sym_Decl,
 	Dbg_Sym_Update,
 	Dbg_Scope,
 }
@@ -349,6 +350,11 @@ add_un_op :: #force_inline proc(graph: ^Proc, name: string, type: Un_Op, dt: Nod
 #assert(size_of(No_Extra) % PRECISION == 0)
 #assert(size_of(No_Extra) % PRECISION == 0)
 #assert(size_of(No_Extra) % PRECISION == 0)
+#assert(size_of(Dbg_Sym_Decl) % PRECISION == 0)
+add_dbg_sym_decl :: #force_inline proc(graph: ^Proc, name: string) -> (_id: Node_ID) {
+	(^Dbg_Sym_Decl)(get_next_extra_slot(graph, u16(Node_Type.Dbg_Sym_Decl), 0))^ = {}
+	return add_raw(graph, name, u16(Node_Type.Dbg_Sym_Decl), .Void, {})
+}
 #assert(size_of(No_Extra) % PRECISION == 0)
 add_dbg_sym_update :: #force_inline proc(graph: ^Proc, name: string, new_value: Node_ID, prev_update: Node_ID) -> (_id: Node_ID) {
 	return add_raw(graph, name, u16(Node_Type.Dbg_Sym_Update), .Void, {new_value, prev_update})
@@ -360,11 +366,12 @@ add_dbg_scope :: #force_inline proc(graph: ^Proc, name: string, inputs: []Node_I
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	when false {}
-	else when T == No_Extra {return 1}
 	else when T == Local {return 4}
+	else when T == Tup {return 2}
+	else when T == Dbg_Sym_Decl {return 6}
 	else when T == Call {return 5}
+	else when T == No_Extra {return 1}
 	else when T == Cfg {return 0}
 	else when T == CInt {return 3}
-	else when T == Tup {return 2}
 	else {#panic(`the passed type is not subclass of anything`)}
 }

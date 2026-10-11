@@ -986,7 +986,10 @@ meta_of :: proc(
 	     .Loop,
 	     .Call_End:
 		fmt.panicf("should not reach these: %v", node)
-	case .Dbg_Scope, .Dbg_Sym_Update:
+	case .Dbg_Sym_Update:
+		node := get_node(graph, node.inps[0])
+		kind := ra.datatype_to_reg_kind[node.dt]
+		return {out = out, masks = smasks[kind][:1]}
 	case .Poison:
 		return {out = out}
 	case .CInt:
@@ -1054,7 +1057,16 @@ meta_of :: proc(
 		}
 	case .Global:
 		return {out = IOUT}
-	case .Mem, .Sym, .Local, .Jump, .Always, .Trap, .Split_Mem, .Merge_Mem:
+	case .Mem,
+	     .Sym,
+	     .Local,
+	     .Jump,
+	     .Always,
+	     .Trap,
+	     .Split_Mem,
+	     .Merge_Mem,
+	     .Dbg_Scope,
+	     .Dbg_Sym_Decl:
 		return {out = IOUT}
 	case .Local_Addr, .Global_Addr, .Proc_Addr:
 		return {out = out}
@@ -1647,8 +1659,7 @@ emit_instr :: proc(
 	     .End,
 	     .Simd_Reduce_Add_Bisect:
 		fmt.panicf("Not reachable form here %v", node.node)
-	case .Dbg_Sym_Update, .Dbg_Scope:
-		panic("TODO")
+	case .Dbg_Sym_Update, .Dbg_Scope, .Dbg_Sym_Decl:
 	case .Splat:
 		panic("no")
 	case .Simd_Extract_Lsbs:
@@ -2624,6 +2635,7 @@ reg_and_disp_of :: proc(ctx: ^Ctx, id: bac.Node_ID) -> (Reg, i32, u32) {
 	if node.itype == .Local {
 		return RSP, i32(bac.get_extra(ctx, node, bac.Local).offset), 0
 	}
+	fmt.assertf(int(node.gvn) < len(ctx.allocs), "%v", node)
 	return ctx.allocs[node.gvn], 0, 0
 }
 

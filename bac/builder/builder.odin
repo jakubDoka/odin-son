@@ -190,6 +190,11 @@ peep :: proc(
 	}
 
 	#partial match: switch node.itype {
+	case .Dbg_Scope:
+		// NOTE: this also covers nil node
+		if get_node(ctx, node.inps[0]).output_count <= 1 {
+			return 0
+		}
 	case .End:
 		zcnt := 0
 		for inp in node.inps[1:] {

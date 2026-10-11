@@ -197,6 +197,7 @@ when SPEC_NOT_PRESENT {
 		Ctz,
 		Simd_Extract_Lsbs,
 		Simd_Reduce_Add_Bisect,
+		Dbg_Sym_Decl,
 		Dbg_Sym_Update,
 		Dbg_Scope,
 	}
@@ -227,7 +228,7 @@ when SPEC_NOT_PRESENT {
 	add_poison :: proc(graph: ^Proc, name: string) -> Node_ID {return 0}
 }
 
-Dbg_Scope_Sym :: struct {
+Dbg_Sym_Decl :: struct {
 	name: string,
 }
 
@@ -1981,6 +1982,28 @@ Add_Raw_Meta :: bit_field u64 {
 	lane:           Lane_Type | 3,
 	extra_capacity: int       | 2,
 	extra_dwords:   int       | 4,
+}
+
+add_raw_with_extra :: proc(
+	graph: ^Proc,
+	name: Tag_Name,
+	type: u16,
+	dt: Node_Datatype,
+	inps: []Node_ID = {},
+	extra: []u8,
+) {
+	assert(len(extra) % PRECISION == 0)
+	extra_size := len(extra) / PRECISION
+	extra_ptr := get_next_extra_slot(graph, type, extra_size)
+	copy(mem.slice_data_cast([]u8, extra_ptr[:extra_size]), extra)
+	final := add_raw(
+		graph,
+		"dbgf",
+		type,
+		.Void,
+		inps,
+		meta = {extra_dwords = extra_size},
+	)
 }
 
 add_raw :: proc(

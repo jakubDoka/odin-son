@@ -104,7 +104,14 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	sec_rodata_sym := next_local + 1
 	sec_abbrev_sym := next_local + 2
 	sec_line_sym := next_local + 3
-	for shndx in ([]Section{.Text, .Rodata, .Debug_Abbrev, .Debug_Line}) {
+	sec_loc_sym := next_local + 4
+	for shndx in ([]Section {
+			.Text,
+			.Rodata,
+			.Debug_Abbrev,
+			.Debug_Line,
+			.Debug_Loc,
+		}) {
 		append(
 			&locals,
 			Elf64_Sym {
@@ -113,7 +120,7 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 			},
 		)
 	}
-	next_local += 4
+	next_local += 5
 
 	// globals come after every local symbol
 	next_global := next_local
@@ -253,13 +260,15 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	dbg_abbrev: [dynamic]u8
 	dbg_info: [dynamic]u8
 	dbg_line: [dynamic]u8
+	dbg_loc: [dynamic]u8
 	info_rels: [dynamic]Elf64_Rela
 	line_rels: [dynamic]Elf64_Rela
+	loc_rels: [dynamic]Elf64_Rela
 
-	// -- .debug_abbrev : a single compile-unit abbreviation ---------------
+	// -- .debug_abbrev -----------------------------------------------------
 	uleb(&dbg_abbrev, 1) // abbrev code 1
 	uleb(&dbg_abbrev, u64(Dw_Tag.Compile_Unit))
-	append(&dbg_abbrev, u8(Dw_Children.No))
+	append(&dbg_abbrev, u8(Dw_Children.Yes))
 	dw_attr :: proc(b: ^[dynamic]u8, at: Dw_At, form: Dw_Form) {
 		uleb(b, u64(at))
 		uleb(b, u64(form))
@@ -272,7 +281,35 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	dw_attr(&dbg_abbrev, .High_Pc, .Data8)
 	dw_attr(&dbg_abbrev, .Stmt_List, .Sec_Offset)
 	uleb(&dbg_abbrev, 0) // end of attribute list
-	uleb(&dbg_abbrev, 0) // end of abbrev list
+	uleb(&dbg_abbrev, 0)
+
+	uleb(&dbg_abbrev, 2)
+	uleb(&dbg_abbrev, u64(Dw_Tag.Base_Type))
+	append(&dbg_abbrev, u8(Dw_Children.No))
+	dw_attr(&dbg_abbrev, .Name, .String)
+	dw_attr(&dbg_abbrev, .Encoding, .Data1)
+	dw_attr(&dbg_abbrev, .Byte_Size, .Data1)
+	uleb(&dbg_abbrev, 0)
+	uleb(&dbg_abbrev, 0)
+
+	uleb(&dbg_abbrev, 3)
+	uleb(&dbg_abbrev, u64(Dw_Tag.Subprogram))
+	append(&dbg_abbrev, u8(Dw_Children.Yes))
+	dw_attr(&dbg_abbrev, .Name, .String)
+	dw_attr(&dbg_abbrev, .Low_Pc, .Addr)
+	dw_attr(&dbg_abbrev, .High_Pc, .Data8)
+	uleb(&dbg_abbrev, 0)
+	uleb(&dbg_abbrev, 0)
+
+	uleb(&dbg_abbrev, 4)
+	uleb(&dbg_abbrev, u64(Dw_Tag.Variable))
+	append(&dbg_abbrev, u8(Dw_Children.No))
+	dw_attr(&dbg_abbrev, .Name, .String)
+	dw_attr(&dbg_abbrev, .Type, .Ref4)
+	dw_attr(&dbg_abbrev, .Location, .Sec_Offset)
+	uleb(&dbg_abbrev, 0)
+	uleb(&dbg_abbrev, 0)
+
 	append(&dbg_abbrev, 0)
 
 	// -- .debug_line : header (DWARF v4) ----------------------------------
@@ -418,6 +455,169 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 		},
 	)
 	put_u32(&dbg_info, 0)
+
+	dbg_types := []bac.Node_Datatype {
+		.I8,
+		.I16,
+		.I32,
+		.I64,
+		.F32,
+		.F64,
+		.V128,
+		.V256,
+		.V512,
+	}
+	dbg_type_names := #partial [bac.Node_Datatype]string {
+		.I8   = "i8",
+		.I16  = "i16",
+		.I32  = "i32",
+		.I64  = "i64",
+		.F32  = "f32",
+		.F64  = "f64",
+		.V128 = "v128",
+		.V256 = "v256",
+		.V512 = "v512",
+	}
+	dbg_type_offsets: [bac.Node_Datatype]u32
+	for dt in dbg_types {
+		dbg_type_offsets[dt] = u32(len(dbg_info) - info_unit_len_pos)
+		uleb(&dbg_info, 2)
+		append(&dbg_info, dbg_type_names[dt])
+		append(&dbg_info, 0)
+		encoding := Dw_Ate.Signed
+		if dt in bac.FLOAT_DTS {
+			encoding = .Float
+		} else if dt >= .V128 {
+			encoding = .Unsigned
+		}
+		append(&dbg_info, u8(encoding), u8(bac.DT_SIZE[dt]))
+	}
+
+	for &prc, i in ctx.procs {
+		if prc.lit.body == nil do continue
+
+		uleb(&dbg_info, 3)
+		append(&dbg_info, prc.name)
+		append(&dbg_info, 0)
+		append(
+			&info_rels,
+			Elf64_Rela {
+				r_offset = u64(len(dbg_info)),
+				r_info = {
+					sym = proc_sym[i],
+					type = is_arm ? .AArch64_Abs64 : .X86_64_Abs64,
+				},
+			},
+		)
+		put_u64(&dbg_info, 0)
+		put_u64(&dbg_info, u64(len(prc.out.code)))
+
+		seen: [dynamic]u32
+		for loc in prc.out.dbg_locs {
+			if slice.contains(seen[:], loc.symbol) do continue
+			append(&seen, loc.symbol)
+
+			ranges: [dynamic]bac.Dbg_Location
+			for candidate in prc.out.dbg_locs {
+				if candidate.symbol == loc.symbol &&
+				   candidate.start < candidate.end {
+					append(&ranges, candidate)
+				}
+			}
+			if len(ranges) == 0 do continue
+
+			for j := 1; j < len(ranges); j += 1 {
+				key := ranges[j]
+				k := j - 1
+				for k >= 0 && ranges[k].start > key.start {
+					ranges[k + 1] = ranges[k]
+					k -= 1
+				}
+				ranges[k + 1] = key
+			}
+			keep := 0
+			for item in ranges {
+				candidate := item
+				if keep > 0 && candidate.start <= ranges[keep - 1].end {
+					prev := &ranges[keep - 1]
+					if candidate.kind == prev.kind &&
+					   candidate.reg == prev.reg &&
+					   candidate.offset == prev.offset {
+						prev.end = max(prev.end, candidate.end)
+						continue
+					}
+					candidate.start = prev.end
+				}
+				if candidate.start >= candidate.end do continue
+				ranges[keep] = candidate
+				keep += 1
+			}
+			resize(&ranges, keep)
+
+			loc_off := u32(len(dbg_loc))
+			put_u64(&dbg_loc, ~u64(0))
+			append(
+				&loc_rels,
+				Elf64_Rela {
+					r_offset = u64(len(dbg_loc)),
+					r_info = {
+						sym = proc_sym[i],
+						type = is_arm ? .AArch64_Abs64 : .X86_64_Abs64,
+					},
+				},
+			)
+			put_u64(&dbg_loc, 0)
+
+			for location in ranges {
+				put_u64(&dbg_loc, u64(location.start))
+				put_u64(&dbg_loc, u64(location.end))
+
+				expr: [dynamic]u8
+				reg := dwarf_reg(location.reg)
+				switch location.kind {
+				case .Register:
+					if reg < 32 {
+						append(&expr, u8(DW_OP_REG0 + reg))
+					} else {
+						append(&expr, DW_OP_REGX)
+						uleb(&expr, reg)
+					}
+				case .Register_Offset:
+					if reg < 32 {
+						append(&expr, u8(DW_OP_BREG0 + reg))
+					} else {
+						append(&expr, DW_OP_BREGX)
+						uleb(&expr, reg)
+					}
+					sleb(&expr, i64(location.offset))
+				}
+				put_u16(&dbg_loc, u16(len(expr)))
+				append(&dbg_loc, ..expr[:])
+			}
+			put_u64(&dbg_loc, 0)
+			put_u64(&dbg_loc, 0)
+
+			uleb(&dbg_info, 4)
+			append(&dbg_info, loc.name)
+			append(&dbg_info, 0)
+			put_u32(&dbg_info, dbg_type_offsets[loc.dt])
+			append(
+				&info_rels,
+				Elf64_Rela {
+					r_offset = u64(len(dbg_info)),
+					r_info = {
+						sym = sec_loc_sym,
+						type = is_arm ? .AArch64_Abs32 : .X86_64_Abs32,
+					},
+					r_addend = i64(loc_off),
+				},
+			)
+			put_u32(&dbg_info, 0)
+		}
+
+		append(&dbg_info, 0)
+	}
+	append(&dbg_info, 0)
 	patch_u32(&dbg_info, info_unit_len_pos, u32(len(dbg_info) - info_base))
 
 	// --- .eh_frame --------------------------------------------------------
@@ -543,6 +743,8 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	name_rela_dbg_info := strtab_add(&shstr, ".rela.debug_info")
 	name_dbg_line := strtab_add(&shstr, ".debug_line")
 	name_rela_dbg_line := strtab_add(&shstr, ".rela.debug_line")
+	name_dbg_loc := strtab_add(&shstr, ".debug_loc")
+	name_rela_dbg_loc := strtab_add(&shstr, ".rela.debug_loc")
 	name_eh_frame := strtab_add(&shstr, ".eh_frame")
 	name_rela_eh_frame := strtab_add(&shstr, ".rela.eh_frame")
 	name_symtab := strtab_add(&shstr, ".symtab")
@@ -580,6 +782,12 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	eb_align(&b, 8)
 	rela_dbg_line_off := len(b.buf)
 	for r in line_rels do eb_struct(&b, r)
+
+	dbg_loc_off := eb_bytes(&b, dbg_loc[:])
+
+	eb_align(&b, 8)
+	rela_dbg_loc_off := len(b.buf)
+	for r in loc_rels do eb_struct(&b, r)
 
 	eb_align(&b, 8)
 	eh_frame_off := eb_bytes(&b, eh_frame[:])
@@ -672,6 +880,23 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 			sh_size = u64(len(line_rels) * size_of(Elf64_Rela)),
 			sh_link = .Symtab,
 			sh_info_section = .Debug_Line,
+			sh_addralign = 8,
+			sh_entsize = size_of(Elf64_Rela),
+		},
+		.Debug_Loc = {
+			sh_name = name_dbg_loc,
+			sh_type = .Progbits,
+			sh_offset = u64(dbg_loc_off),
+			sh_size = u64(len(dbg_loc)),
+			sh_addralign = 1,
+		},
+		.Rela_Debug_Loc = {
+			sh_name = name_rela_dbg_loc,
+			sh_type = .Rela,
+			sh_offset = u64(rela_dbg_loc_off),
+			sh_size = u64(len(loc_rels) * size_of(Elf64_Rela)),
+			sh_link = .Symtab,
+			sh_info_section = .Debug_Loc,
 			sh_addralign = 8,
 			sh_entsize = size_of(Elf64_Rela),
 		},
@@ -905,6 +1130,8 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 		Rela_Debug_Info,
 		Debug_Line,
 		Rela_Debug_Line,
+		Debug_Loc,
+		Rela_Debug_Loc,
 		Eh_Frame,
 		Rela_Eh_Frame,
 		Symtab,
@@ -915,6 +1142,9 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	// DWARF v4 constants used by the debug sections
 	Dw_Tag :: enum u64 {
 		Compile_Unit = 0x11,
+		Base_Type    = 0x24,
+		Subprogram   = 0x2e,
+		Variable     = 0x34,
 	}
 
 	Dw_Children :: enum u8 {
@@ -923,21 +1153,33 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	}
 
 	Dw_At :: enum u64 {
+		Location  = 0x02,
 		Name      = 0x03,
+		Byte_Size = 0x0b,
 		Stmt_List = 0x10,
 		Low_Pc    = 0x11,
 		High_Pc   = 0x12,
 		Language  = 0x13,
 		Comp_Dir  = 0x1b,
 		Producer  = 0x25,
+		Type      = 0x49,
+		Encoding  = 0x3e,
 	}
 
 	Dw_Form :: enum u64 {
 		Addr       = 0x01,
+		Data1      = 0x0b,
 		Data2      = 0x05,
 		Data8      = 0x07,
+		Ref4       = 0x13,
 		String     = 0x08,
 		Sec_Offset = 0x17,
+	}
+
+	Dw_Ate :: enum u8 {
+		Float    = 0x04,
+		Signed   = 0x05,
+		Unsigned = 0x07,
 	}
 
 	Dw_Lang :: enum u16 {
@@ -1000,6 +1242,18 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	DW_LINE_BASE :: 0xfb // -5 as u8
 	DW_LINE_RANGE :: 14
 	DW_OPCODE_BASE :: 13
+	DW_OP_REG0 :: 0x50
+	DW_OP_BREG0 :: 0x70
+	DW_OP_REGX :: 0x90
+	DW_OP_BREGX :: 0x92
+
+	dwarf_reg :: proc(reg: bac.Reg) -> u64 {
+		if reg.kind == x64.RK_VECTOR do return 17 + u64(reg.index)
+		assert(reg.kind == x64.RK_GENERAL)
+		mapping := [16]u8{0, 2, 1, 3, 7, 6, 4, 5, 8, 9, 10, 11, 12, 13, 14, 15}
+		assert(reg.index < len(mapping))
+		return u64(mapping[reg.index])
+	}
 
 	Elf_Builder :: struct {
 		buf: [dynamic]u8,

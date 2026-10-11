@@ -5,6 +5,7 @@ import "../vendored/gam/util/bit_arr"
 import "base:runtime"
 import "core:fmt"
 import "core:log"
+import "core:os"
 import "core:slice"
 
 Basic_Block :: struct {
@@ -82,7 +83,7 @@ get_idepth_node :: proc(graph: ^Proc, node: ^Node) -> u32 {
 
 	#partial switch node.itype {
 	case .Nil:
-		return graph.min_idepth + 2
+		return graph.min_idepth + 1
 	case .Entry:
 		extra.idepth = graph.min_idepth + 1
 	case .Return,
@@ -461,6 +462,7 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 
 			for out in node.outs {
 				onode := expand_node(graph, out.id)
+				if onode.itype == .Dbg_Sym_Update do continue
 				if ctx.late_schedules[onode.gvn] == 0 {
 					worklist_add(graph, &worklist, out.id)
 					ready = false
@@ -468,14 +470,17 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 			}
 
 			next_ass_value := add_dbg_antydeps(ctx, node)
-			node := get_node(ctx, next_ass_value)
+			anode := get_node(ctx, next_ass_value)
 			if next_ass_value != 0 {
-				olca := ctx.late_schedules[node.gvn]
+				olca := ctx.late_schedules[anode.gvn]
 				lca = compute_lca(graph, lca, olca)
-				if olca == 0 {
-					worklist_add(graph, &worklist, next_ass_value)
-					ready = false
+				// NOTE: we cant be in the same block since we strictly need to
+				// be before the node, so go to the call block
+				if anode.itype == .Ret {
+					assert(lca != 0)
+					lca = get_idom(graph, lca)
 				}
+				ready &= olca != 0
 			}
 		}
 
@@ -614,6 +619,8 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 			value := infer_next_assign(ctx, node)
 			vnode := get_node(ctx, value)
 
+			if value == 0 do return 0
+
 			if ctx.extra_outputs[node.gvn] == 0 {
 				append(&ctx.antideps[vnode.gvn], id)
 				ctx.extra_outputs[node.gvn] += 1
@@ -646,6 +653,11 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 				case .Dbg_Sym_Update:
 					return node.inps[0]
 				case .Phi:
+					if out.idx == 2 &&
+					   get_node(ctx, node.inps[0]).itype == .Loop {
+						return 0
+					}
+
 					// NOTE: we dive deeper to find something that pairs us
 					// with a phy, then we unwind with appropriate parallel
 					// input since the debug and value phys have the same
@@ -823,8 +835,8 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 
 	gs.bbs = bbs
 
-	if 0 == 1 {
-		//display_graph(os.to_writer(os.stderr), graph, gs)
+	if 1 == 1 {
+		display_graph(os.to_writer(os.stderr), graph, gs)
 		// 	if has_unscheduled do panic("")
 	}
 
@@ -887,15 +899,15 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 				}
 			}
 
-			#reverse for inp in ctx.antideps[inode.gvn] {
-				innode := expand_node(graph, inp)
+			//#reverse for inp in ctx.antideps[inode.gvn] {
+			//	innode := expand_node(graph, inp)
 
-				if innode.itype == .Dbg_Sym_Update {
-					pos := slice.linear_search(bb.instrs[:i], inp) or_continue
-					slice.rotate_left(bb.instrs[pos:i], 1)
-					break
-				}
-			}
+			//	if innode.itype == .Dbg_Sym_Update {
+			//		pos := slice.linear_search(bb.instrs[:i], inp) or_continue
+			//		slice.rotate_left(bb.instrs[pos:i], 1)
+			//		break
+			//	}
+			//}
 		}
 
 		// NOTE: we shift the phy backedges as late as possible, regalloc
@@ -958,7 +970,13 @@ verify_schedule_integrity :: proc(
 						get_node(graph, oinstr),
 					)
 					if len(antys) != 0 {
-						assert(!slice.contains(antys[inode.gvn][:], oinstr))
+						fmt.assertf(
+							!slice.contains(antys[inode.gvn][:], oinstr),
+							"%v %v",
+							antys[inode.gvn][:],
+							oinstr,
+							inode,
+						)
 					}
 				}
 			}

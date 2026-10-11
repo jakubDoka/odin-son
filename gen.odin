@@ -39,14 +39,12 @@ Opt_Level :: struct {
 OPT_LEVELS :: [?]Opt_Level {
 	{"none-quick", {}, .with_scan},
 	{"none", {}, .with_coloring},
-	{"mininal-quick", {.Local_Peeps}, .with_scan},
-	{"mininal", {.Local_Peeps}, .with_coloring},
-	{"moderate-quick", {.Iter_Peeps, .Local_Peeps}, .with_scan},
-	{"moderate", {.Iter_Peeps, .Local_Peeps}, .with_coloring},
-	{"all", {.Iter_Peeps, .Local_Peeps, .Mem_Opt, .Loop_Opt}, .with_coloring},
+	{"moderate-quick", {.Local_Peeps}, .with_scan},
+	{"moderate", {.Local_Peeps}, .with_coloring},
+	{"all", {.Local_Peeps, .Mem_Opt, .Loop_Opt}, .with_coloring},
 	{
 		"aggresive",
-		{.Iter_Peeps, .Local_Peeps, .Mem_Opt, .Inline, .Loop_Opt},
+		{.Local_Peeps, .Mem_Opt, .Inline, .Loop_Opt},
 		.with_coloring,
 	},
 }

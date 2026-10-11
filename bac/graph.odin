@@ -464,7 +464,6 @@ Stencil :: struct {
 Opt_Flags :: bit_set[Opt_Flag]
 
 Opt_Flag :: enum int {
-	Iter_Peeps,
 	Local_Peeps,
 	Mem_Opt,
 	Loop_Opt,
@@ -513,7 +512,7 @@ worklist_add :: proc(graph: ^Proc, worklist: ^Worklist, id: Node_ID) {
 			for elem in worklist.data {
 				if elem == id do return
 			}
-			fmt.panicf("wuta")
+			fmt.panicf("no")
 		} else {
 			return
 		}
@@ -1037,8 +1036,6 @@ apply_peeps :: proc(ctx: Peep_Ctx) -> (optimized: bool) {
 
 	if graph.peeped && is_builder do return
 	graph.peeped = true
-
-	if .Iter_Peeps not_in graph.opt_flags && is_builder do return
 
 	graph.dont_intern = !is_builder
 

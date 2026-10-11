@@ -195,6 +195,11 @@ peep :: proc(
 		if get_node(ctx, node.inps[0]).output_count <= 1 {
 			return 0
 		}
+	case .Dbg_Sym_Update:
+		prev := expand_node(ctx, node.inps[1])
+		if prev.itype == .Dbg_Sym_Update && prev.inps[0] == node.inps[0] {
+			return node.inps[0]
+		}
 	case .End:
 		zcnt := 0
 		for inp in node.inps[1:] {

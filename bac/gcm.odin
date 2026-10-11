@@ -155,13 +155,13 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 	lctx.root.depth = 1
 
 	for inp in get_inputs(graph, graph.end) {
-		if inp == 0 do continue
-		inode := expand_node(graph, inp)
-		if inode.itype == .Dbg_Scope do continue
-		lctx.loop_trees[inode.gvn] = lctx.root
+		if is_end_ctrl(graph, inp) {
+			inode := expand_node(graph, inp)
+			lctx.loop_trees[inode.gvn] = lctx.root
 
-		end_ctrl := expand_node(graph, inode.inps[0])
-		lctx.loop_trees[end_ctrl.gvn] = lctx.root
+			end_ctrl := expand_node(graph, inode.inps[0])
+			lctx.loop_trees[end_ctrl.gvn] = lctx.root
+		}
 	}
 
 	build_loop_tree(&lctx, graph.entry, lctx.root, !no_late_pass, scratch)
@@ -433,16 +433,15 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 		ready := true
 		free := false
 
+		PINNED_NODES :: bit_set[Node_Type]{.Phi, .Param, .Ret, .Dbg_Scope}
+
 		if has_flag(graph, n, .Is_Basic_Block_Start) {
 			assert(n != 0)
 			ctx.late_schedules[node.gvn] = n
-		} else if (node.itype == .Phi ||
+		} else if (node.itype in PINNED_NODES ||
 			   (node.itype == .Mem &&
 					   get_node(graph, node.inps[0]).itype == .Call_End) ||
-			   node.itype == .Param ||
-			   node.itype == .Ret ||
-			   is_cfg(graph, n) ||
-			   node.itype == .Dbg_Scope) {
+			   is_cfg(graph, n)) {
 			ctx.late_schedules[node.gvn] = node.inps[0]
 		} else {
 			free = true

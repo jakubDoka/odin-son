@@ -337,20 +337,24 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 
 	if len(ctx.scope) > int(ctx.threads_start) {
 		for einp in bac.get_inputs(ctx, ctx.end) {
-			connect_to := einp
-			node := expand_node(ctx, einp)
-			if einp == 0 do continue
-			if node.itype == .Dbg_Scope do continue
-			if node.itype == .Return {
-				connect_to = node.inps[1]
-				if get_node(ctx, connect_to).itype != .Merge_Mem {
-					connect_to = bac.add_merge_mem(ctx, "mmrg", {connect_to})
-					bac.set_input(ctx, einp, 1, connect_to)
+			if bac.is_end_ctrl(graph, einp) {
+				node := expand_node(ctx, einp)
+				connect_to := einp
+				if node.itype == .Return {
+					connect_to = node.inps[1]
+					if get_node(ctx, connect_to).itype != .Merge_Mem {
+						connect_to = bac.add_merge_mem(
+							ctx,
+							"mmrg",
+							{connect_to},
+						)
+						bac.set_input(ctx, einp, 1, connect_to)
+					}
 				}
-			}
-			for i in int(ctx.threads_start) ..< len(ctx.scope) {
-				value := get_scope_value(&ctx, ctx.scope, i)
-				bac.connect(ctx, connect_to, value)
+				for i in int(ctx.threads_start) ..< len(ctx.scope) {
+					value := get_scope_value(&ctx, ctx.scope, i)
+					bac.connect(ctx, connect_to, value)
+				}
 			}
 		}
 	}

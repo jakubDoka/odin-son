@@ -2232,3 +2232,10 @@ has_flag_node :: #force_inline proc(
 	fmt.assertf(int(node.rtype) < len(graph.node_flags), "%v", node.rtype)
 	return flag in graph.node_flags[node.rtype]
 }
+
+is_end_ctrl :: proc(graph: ^Proc, node: Node_ID) -> bool {
+	return(
+		get_node(graph, node).itype not_in
+		bit_set[Node_Type]{.Dbg_Scope, .Nil} \
+	)
+}

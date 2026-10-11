@@ -1095,16 +1095,19 @@ get_or_add_const_mem :: proc(graph: ^Proc) -> (cmem: Node_ID) {
 		}
 
 		for einp in bac.get_inputs(graph, graph.end) {
-			connect_to := einp
-			node := expand_node(graph, einp)
-			if einp == 0 do continue
-			// TODO: factor this filtering out
-			if node.itype == .Dbg_Scope do continue
-			if node.itype == .Return {
-				connect_to = bac.add_merge_mem(graph, "cmmrg", {node.inps[1]})
-				bac.set_input(graph, einp, 1, connect_to)
+			if bac.is_end_ctrl(graph, einp) {
+				node := expand_node(graph, einp)
+				connect_to := einp
+				if node.itype == .Return {
+					connect_to = bac.add_merge_mem(
+						graph,
+						"cmmrg",
+						{node.inps[1]},
+					)
+					bac.set_input(graph, einp, 1, connect_to)
+				}
+				bac.connect(graph, connect_to, split_mem)
 			}
-			bac.connect(graph, connect_to, split_mem)
 		}
 	}
 

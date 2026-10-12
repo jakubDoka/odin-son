@@ -38,9 +38,11 @@ main:
     call mixed
     pxor xmm1, xmm1
     movsd.q xmm2, [rsp + 0x60]
-    addsd xmm1, xmm2
+    addsd xmm2, xmm1
+    movsd xmm1, xmm2
     addsd xmm1, xmm0
-    cvttsd2si rax, xmm1
+    movsd xmm0, xmm1
+    cvttsd2si rax, xmm0
     add rsp, 0x78
     ret
 load_of_args:
@@ -116,168 +118,12 @@ main:
     movsd.q xmm3, [rsp + 0x30]
     movsd.q xmm4, [rsp + 0x20]
     call mixed
+    movsd xmm1, xmm0
     pxor xmm2, xmm2
-    movsd.q xmm1, [rsp + 0x10]
-    addsd xmm2, xmm1
-    addsd xmm2, xmm0
-    cvttsd2si rax, xmm2
-    add rsp, 0x78
-    ret
-load_of_args:
-    sub rsp, 0x18
-    addsd xmm0, xmm1
-    addsd xmm0, xmm2
-    addsd xmm0, xmm3
-    addsd xmm0, xmm4
-    addsd xmm0, xmm5
-    addsd xmm0, xmm6
-    addsd xmm0, xmm7
-    movsd.q xmm1, [rsp + 0x20]
-    addsd xmm0, xmm1
-    movsd.q xmm1, [rsp + 0x28]
-    addsd xmm0, xmm1
-    add rsp, 0x18
-    ret
-mixed:
-    movsd xmm5, xmm0
-    cvtsi2sd xmm0, rdi
-    addsd xmm0, xmm5
-    cvtsi2sd xmm5, rsi
-    addsd xmm0, xmm5
-    addsd xmm0, xmm1
-    cvtsi2sd xmm1, rdx
-    addsd xmm0, xmm1
-    addsd xmm0, xmm2
-    cvtsi2sd xmm1, rcx
-    addsd xmm0, xmm1
-    addsd xmm0, xmm3
-    cvtsi2sd xmm1, r8
-    addsd xmm0, xmm1
-    addsd xmm0, xmm4
-    ret
-=========== OPT LEVEL: mininal-quick ===========
-main:
-    sub rsp, 0x78
-    movsd.q xmm0, [rip + 0xfa3]
-    movsd.q xmm1, [rip + 0xfa2]
-    movsd.q [rsp + 0x10], xmm1
-    movsd.q xmm2, [rip + 0xf9a]
-    movsd.q xmm1, [rip + 0xf99]
-    movsd.q [rsp + 0x20], xmm1
-    movsd.q xmm4, [rip + 0xf91]
-    movsd.q xmm1, [rip + 0xf90]
-    movsd.q [rsp + 0x30], xmm1
-    movsd.q xmm1, [rip + 0xf88]
-    movsd.q [rsp + 0x40], xmm1
-    movsd.q xmm1, [rip + 0xf80]
-    movsd.q [rsp + 0x50], xmm1
-    movsd.q xmm1, [rip + 0xf78]
-    movsd.q [rsp], xmm1
-    movsd.q xmm1, [rsp + 0x50]
-    movsd.q [rsp + 0x8], xmm1
-    movsd.q xmm6, [rip + 0xf63]
-    movsd.q xmm1, [rsp + 0x10]
-    movsd.q xmm3, [rsp + 0x20]
-    movsd.q xmm5, [rsp + 0x30]
-    movsd.q xmm7, [rsp + 0x40]
-    call load_of_args
-    movsd.q [rsp + 0x60], xmm0
-    mov rdi, 1
-    mov rsi, 3
-    mov rdx, 5
-    mov rcx, 7
-    mov r8, 9
     movsd.q xmm0, [rsp + 0x10]
-    movsd.q xmm1, [rsp + 0x20]
-    movsd.q xmm2, [rsp + 0x30]
-    movsd.q xmm3, [rsp + 0x40]
-    movsd.q xmm4, [rsp + 0x50]
-    call mixed
-    pxor xmm1, xmm1
-    movsd.q xmm2, [rsp + 0x60]
-    addsd xmm1, xmm2
-    addsd xmm1, xmm0
-    cvttsd2si rax, xmm1
-    add rsp, 0x78
-    ret
-load_of_args:
-    sub rsp, 0x18
-    addsd xmm0, xmm1
     addsd xmm0, xmm2
-    addsd xmm0, xmm3
-    addsd xmm0, xmm4
-    addsd xmm0, xmm5
-    addsd xmm0, xmm6
-    addsd xmm0, xmm7
-    movsd.q xmm1, [rsp + 0x20]
     addsd xmm0, xmm1
-    movsd.q xmm1, [rsp + 0x28]
-    addsd xmm0, xmm1
-    add rsp, 0x18
-    ret
-mixed:
-    sub rsp, 0x18
-    movsd.q [rsp], xmm0
-    cvtsi2sd xmm0, rdi
-    movsd.q xmm5, [rsp]
-    addsd xmm0, xmm5
-    cvtsi2sd xmm5, rsi
-    addsd xmm0, xmm5
-    addsd xmm0, xmm1
-    cvtsi2sd xmm1, rdx
-    addsd xmm0, xmm1
-    addsd xmm0, xmm2
-    cvtsi2sd xmm1, rcx
-    addsd xmm0, xmm1
-    addsd xmm0, xmm3
-    cvtsi2sd xmm1, r8
-    addsd xmm0, xmm1
-    addsd xmm0, xmm4
-    add rsp, 0x18
-    ret
-=========== OPT LEVEL: mininal ===========
-main:
-    sub rsp, 0x78
-    movsd.q xmm0, [rip + 0xfa3]
-    movsd.q xmm1, [rip + 0xfa2]
-    movsd.q [rsp + 0x60], xmm1
-    movsd.q xmm2, [rip + 0xf9a]
-    movsd.q xmm1, [rip + 0xf99]
-    movsd.q [rsp + 0x50], xmm1
-    movsd.q xmm4, [rip + 0xf91]
-    movsd.q xmm1, [rip + 0xf90]
-    movsd.q [rsp + 0x40], xmm1
-    movsd.q xmm1, [rip + 0xf88]
-    movsd.q [rsp + 0x30], xmm1
-    movsd.q xmm1, [rip + 0xf80]
-    movsd.q [rsp + 0x20], xmm1
-    movsd.q xmm1, [rip + 0xf78]
-    movsd.q [rsp], xmm1
-    movsd.q xmm1, [rsp + 0x20]
-    movsd.q [rsp + 0x8], xmm1
-    movsd.q xmm6, [rip + 0xf63]
-    movsd.q xmm1, [rsp + 0x60]
-    movsd.q xmm3, [rsp + 0x50]
-    movsd.q xmm5, [rsp + 0x40]
-    movsd.q xmm7, [rsp + 0x30]
-    call load_of_args
-    movsd.q [rsp + 0x10], xmm0
-    mov rdi, 1
-    mov rsi, 3
-    mov rdx, 5
-    mov rcx, 7
-    mov r8, 9
-    movsd.q xmm0, [rsp + 0x60]
-    movsd.q xmm1, [rsp + 0x50]
-    movsd.q xmm2, [rsp + 0x40]
-    movsd.q xmm3, [rsp + 0x30]
-    movsd.q xmm4, [rsp + 0x20]
-    call mixed
-    pxor xmm2, xmm2
-    movsd.q xmm1, [rsp + 0x10]
-    addsd xmm2, xmm1
-    addsd xmm2, xmm0
-    cvttsd2si rax, xmm2
+    cvttsd2si rax, xmm0
     add rsp, 0x78
     ret
 load_of_args:

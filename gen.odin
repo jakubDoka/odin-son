@@ -1354,10 +1354,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 
 				if r.is_lvalue {
 					bac.pin(ctx, r.id)
-					append(
-						&ctx.scope,
-						typecheck.Variable{name, r.id, vty, d.names[i], flags},
-					)
+					add_var(ctx, {name, r.id, vty, d.names[i], flags})
 				} else {
 					get_node(ctx, r.id).name = name
 					idx := push_scope_value(ctx, d.names[i], r.id)
@@ -1387,17 +1384,11 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 					ptr := bac.add_global_addr(ctx, name, g)
 					bac.pin(ctx, ptr)
 
-					append(
-						&ctx.scope,
-						typecheck.Variable{name, ptr, vty, d.names[i], flags},
-					)
+					add_var(ctx, {name, ptr, vty, d.names[i], flags})
 				} else {
 					ptr := alloca(ctx, name, vty, zeroed = true)
 					bac.pin(ctx, ptr)
-					append(
-						&ctx.scope,
-						typecheck.Variable{name, ptr, vty, d.names[i], flags},
-					)
+					add_var(ctx, {name, ptr, vty, d.names[i], flags})
 				}
 			}
 			break
@@ -1437,10 +1428,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				ptr := bac.add_global_addr(ctx, name, g)
 				bac.pin(ctx, ptr)
 
-				append(
-					&ctx.scope,
-					typecheck.Variable{name, ptr, vty, d.names[i], flags},
-				)
+				add_var(ctx, {name, ptr, vty, d.names[i], flags})
 			} else if .Referenced in flags || type_to_dt(vty) == .Void {
 				ptr := alloca(
 					ctx,
@@ -1458,10 +1446,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 					store_value(ctx, "init", ptr, value, vty)
 				}
 
-				append(
-					&ctx.scope,
-					typecheck.Variable{name, ptr, vty, d.names[i], flags},
-				)
+				add_var(ctx, {name, ptr, vty, d.names[i], flags})
 			} else {
 				value := emit_rvalue(ctx, {}, d.values[i])
 
@@ -1733,15 +1718,9 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			{
 				base := ctx_scope_base(ctx)
 				bac.pin(ctx, ptr)
-				append(
-					&ctx.scope,
-					typecheck.Variable {
-						binding,
-						ptr,
-						case_ty,
-						tag.lhs[0],
-						{.Referenced},
-					},
+				add_var(
+					ctx,
+					{binding, ptr, case_ty, tag.lhs[0], {.Referenced}},
 				)
 				emit_stmts(ctx, clause.body, base)
 				builder.break_block(ctx, &ctx.node_scope, &sw)
@@ -1752,9 +1731,9 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		if default_clause != nil {
 			base := ctx_scope_base(ctx)
 			bac.pin(ctx, ptr)
-			append(
-				&ctx.scope,
-				typecheck.Variable {
+			add_var(
+				ctx,
+				{
 					binding,
 					ptr,
 					get_node_type(tag.rhs[0]),
@@ -1839,25 +1818,16 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 
 		v := d.vals[0]
 		bac.pin(ctx, elem_addr)
-		append(
-			&ctx.scope,
-			typecheck.Variable {
-				typecheck.src_of(ctx.file^, v),
-				elem_addr,
-				elem_ty,
-				v,
-				{},
-			},
+		add_var(
+			ctx,
+			{typecheck.src_of(ctx.file^, v), elem_addr, elem_ty, v, {}},
 		)
 
 		if 1 < len(d.vals) {
 			v := d.vals[1]
 			name := typecheck.src_of(ctx.file^, v)
 			flags := typecheck.get_node_vflags(v)
-			append(
-				&ctx.scope,
-				typecheck.Variable{name, idx_slot, .Int, v, flags},
-			)
+			add_var(ctx, {name, idx_slot, .Int, v, flags})
 		}
 
 		emit_stmts(ctx, {d.body})

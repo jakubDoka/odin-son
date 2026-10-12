@@ -974,7 +974,9 @@ meta_of :: proc(
 
 	mem_op: ^Mem_Op = xextra(graph, node, Mem_Op)
 
-	switch xtype(node) {
+	#partial switch xtype(node) {
+	case:
+		fmt.panicf("TODO: %v", node.node)
 	case .End,
 	     .Simd_Reduce_Add_Bisect,
 	     .Splat,
@@ -1065,8 +1067,8 @@ meta_of :: proc(
 	     .Trap,
 	     .Split_Mem,
 	     .Merge_Mem,
-	     .Dbg_Scope,
-	     .Dbg_Sym_Decl:
+	     .Dbg_Sym_Decl,
+	     .Dbg_Scope:
 		return {out = IOUT}
 	case .Local_Addr, .Global_Addr, .Proc_Addr:
 		return {out = out}
@@ -1235,10 +1237,6 @@ Ctx :: struct {
 	last_off:           uint,
 	sloc:               bac.Sloc,
 	pushed:             i32,
-	node_offsets:       []u32,
-	node_emitted:       []bool,
-	block_ends:         []u32,
-	rsp_adjusts:        [dynamic]Rsp_Adjust,
 }
 
 Local_Reloc :: struct {
@@ -1357,11 +1355,6 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 	}
 
 	ctx.pushed = pushed
-	if ctx.has_dbg {
-		ctx.node_offsets = make([]u32, ctx.gvn)
-		ctx.node_emitted = make([]bool, ctx.gvn)
-		ctx.block_ends = make([]u32, len(ctx.bbs))
-	}
 
 	if ctx.stack_size != 0 {
 		// sub rsp, $ctx.stack_size
@@ -1388,22 +1381,11 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 			ctx.bbs[i + 1].head == last.outs[0].id
 
 		if len(bb.instrs) == 1 && last.itype == .Jump && !prev_is_if {
-			if ctx.has_dbg {
-				ctx.block_ends[i] = u32(ctx.code.pos - ctx.code_start)
-			}
 			continue
 		}
 
 		for instr in bb.instrs {
 			emit_instr(&ctx, instr, is_consecutive, 0)
-			if ctx.has_dbg {
-				node := get_node(ctx.graph, instr)
-				ctx.node_offsets[node.gvn] = u32(ctx.code.pos - ctx.code_start)
-				ctx.node_emitted[node.gvn] = true
-			}
-		}
-		if ctx.has_dbg {
-			ctx.block_ends[i] = u32(ctx.code.pos - ctx.code_start)
 		}
 
 		prev_is_if = last.itype == .If
@@ -1427,17 +1409,6 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 		jump := dst_offset - reloc.offset - size
 
 		copy(ctx.code.ptr[reloc.offset:][:size], reflect.as_bytes(jump))
-	}
-
-	if ctx.has_dbg {
-		for bb in ctx.bbs {
-			for instr in bb.instrs {
-				node := expand_node(ctx.graph, instr)
-				if node.itype == .Dbg_Sym_Update {
-					emit_dbg_location(&ctx, node)
-				}
-			}
-		}
 	}
 
 	code := ctx.code.ptr[ctx.code_start:ctx.code.pos]
@@ -1468,325 +1439,6 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 		cfi = cfi,
 		dbg_locs = dbg_locs,
 	}
-}
-
-emit_dbg_location :: proc(ctx: ^Ctx, update: bac.Expanded_Node) {
-	update_id := bac.get_node_id(ctx.graph, update.node)
-	decl := update.inps[1]
-	find_decl: for {
-		node := expand_node(ctx.graph, decl)
-		#partial switch node.itype {
-		case .Dbg_Sym_Update:
-			decl = node.inps[1]
-		case .Phi:
-			decl = node.inps[1]
-		case .Split:
-			decl = node.inps[0]
-		case:
-			break find_decl
-		}
-	}
-	decl_node := get_node(ctx.graph, decl)
-	if decl_node.itype != .Dbg_Sym_Decl do return
-
-	name := bac.get_extra(ctx.graph, decl_node, bac.Dbg_Sym_Decl).name
-	if name == "" do return
-
-	locations: [dynamic]bac.Dbg_Location
-	prev := expand_node(ctx.graph, update.inps[1])
-	value_phi := update.inps[0]
-	for get_node(ctx.graph, value_phi).itype == .Split {
-		value_phi = bac.get_inputs(ctx.graph, value_phi)[0]
-	}
-	value := expand_node(ctx.graph, value_phi)
-	phi_idx := -1
-	loop_carried :=
-		prev.itype == .Phi &&
-		get_node(ctx.graph, prev.inps[0]).itype == .Loop &&
-		value.itype == .Phi
-	if loop_carried {
-		if idx, ok := slice.linear_search(prev.inps[1:], update_id); ok {
-			phi_idx = idx + 1
-		}
-	}
-	update_block_idx, update_ok := dbg_block_idx(ctx, update_id)
-	if !update_ok do return
-
-	if phi_idx >= 0 && phi_idx < len(value.inps) {
-		append_dbg_value_locations(
-			ctx,
-			decl,
-			name,
-			update.inps[0],
-			ctx.node_offsets[update.gvn],
-			update_block_idx,
-			&locations,
-		)
-		next_value := value.inps[phi_idx]
-		pred := bac.get_inputs(ctx.graph, value.inps[0])[phi_idx - 1]
-		pred_idx, ok := dbg_block_idx(ctx, pred)
-		if ok {
-			append_dbg_value_locations(
-				ctx,
-				decl,
-				name,
-				next_value,
-				ctx.block_ends[pred_idx],
-				pred_idx,
-				&locations,
-			)
-		}
-	} else if loop_carried {
-		block_start, _, ok := dbg_block_range(ctx, update_id)
-		if ok {
-			append_dbg_location(
-				ctx,
-				decl,
-				name,
-				update.inps[0],
-				block_start,
-				ctx.node_offsets[update.gvn],
-				&locations,
-			)
-		}
-	} else {
-		append_dbg_value_locations(
-			ctx,
-			decl,
-			name,
-			update.inps[0],
-			ctx.node_offsets[update.gvn],
-			update_block_idx,
-			&locations,
-		)
-	}
-
-	for location in locations {
-		bac.add_dbg_location(ctx.dbg_locs)^ = location
-	}
-}
-
-append_dbg_value_locations :: proc(
-	ctx: ^Ctx,
-	decl: bac.Node_ID,
-	name: string,
-	value: bac.Node_ID,
-	end: u32,
-	end_block_idx: int,
-	locations: ^[dynamic]bac.Dbg_Location,
-) {
-	value := value
-	end := end
-	end_block_idx := end_block_idx
-	ranges: [dynamic]bac.Dbg_Location
-	for value != 0 {
-		node := expand_node(ctx.graph, value)
-		if int(node.gvn) < len(ctx.node_emitted) &&
-		   ctx.node_emitted[node.gvn] {
-			start := ctx.node_offsets[node.gvn]
-			block_idx, ok := dbg_block_idx(ctx, value)
-			if !ok || block_idx == end_block_idx {
-				append_dbg_location(
-					ctx,
-					decl,
-					name,
-					value,
-					start,
-					end,
-					&ranges,
-				)
-			} else if !append_dbg_path_locations(
-				ctx,
-				decl,
-				name,
-				value,
-				start,
-				end,
-				block_idx,
-				end_block_idx,
-				&ranges,
-			) {
-				append_dbg_location(
-					ctx,
-					decl,
-					name,
-					value,
-					start,
-					ctx.block_ends[block_idx],
-					&ranges,
-				)
-				end_block_start := u32(
-					uint(ctx.bbs[end_block_idx].offset) - ctx.code_start,
-				)
-				append_dbg_location(
-					ctx,
-					decl,
-					name,
-					value,
-					end_block_start,
-					end,
-					&ranges,
-				)
-			}
-			end = start
-			end_block_idx = block_idx
-		}
-
-		if node.itype != .Split do break
-		value = node.inps[0]
-	}
-	#reverse for location in ranges {
-		append(locations, location)
-	}
-}
-
-append_dbg_path_locations :: proc(
-	ctx: ^Ctx,
-	decl: bac.Node_ID,
-	name: string,
-	value: bac.Node_ID,
-	start, end: u32,
-	source_idx, end_idx: int,
-	locations: ^[dynamic]bac.Dbg_Location,
-) -> bool {
-	from_source := make([]bool, len(ctx.bbs))
-	to_end := make([]bool, len(ctx.bbs))
-	work: [dynamic]int
-	append(&work, source_idx)
-	from_source[source_idx] = true
-	for cursor := 0; cursor < len(work); cursor += 1 {
-		idx := work[cursor]
-		tail := ctx.bbs[idx].tail
-		if tail == 0 do continue
-		for out in bac.get_outputs(ctx.graph, tail) {
-			if !bac.is_cfg(ctx.graph, out.id) do continue
-			next_idx := dbg_block_idx(ctx, out.id) or_continue
-			if from_source[next_idx] do continue
-			from_source[next_idx] = true
-			append(&work, next_idx)
-		}
-	}
-
-	clear(&work)
-	append(&work, end_idx)
-	to_end[end_idx] = true
-	for cursor := 0; cursor < len(work); cursor += 1 {
-		idx := work[cursor]
-		if idx == source_idx do continue
-		head := expand_node(ctx.graph, ctx.bbs[idx].head)
-		for inp in head.inps {
-			if !bac.is_cfg(ctx.graph, inp) do continue
-			pred_idx := dbg_block_idx(ctx, inp) or_continue
-			if to_end[pred_idx] do continue
-			to_end[pred_idx] = true
-			append(&work, pred_idx)
-		}
-	}
-	if !from_source[end_idx] do return false
-
-	for bb, idx in ctx.bbs {
-		if !from_source[idx] || !to_end[idx] do continue
-		block_start := u32(uint(bb.offset) - ctx.code_start)
-		block_end := ctx.block_ends[idx]
-		if idx == source_idx do block_start = start
-		if idx == end_idx do block_end = end
-		append_dbg_location(
-			ctx,
-			decl,
-			name,
-			value,
-			block_start,
-			block_end,
-			locations,
-		)
-	}
-	return true
-}
-
-append_dbg_location :: proc(
-	ctx: ^Ctx,
-	decl: bac.Node_ID,
-	name: string,
-	value: bac.Node_ID,
-	start, end: u32,
-	locations: ^[dynamic]bac.Dbg_Location,
-) {
-	if start >= end do return
-	node := get_node(ctx.graph, value)
-	reg := ctx.allocs[node.gvn]
-	location := bac.Dbg_Location {
-		name   = name,
-		start  = start,
-		end    = end,
-		symbol = u32(decl),
-		reg    = reg,
-		dt     = node.dt,
-	}
-	if int(reg.index) >= ctx.spill_boundary[reg.kind] {
-		location.kind = .Register_Offset
-		location.reg = RSP
-		location.offset = bac.spill_slot_offset(
-			ctx,
-			ctx.stack_param_offset[:],
-			ctx.spill_slot_base[:],
-			SPILL_SLOT_SIZE[:],
-			reg,
-		)
-	}
-	if location.kind != .Register_Offset {
-		append(locations, location)
-		return
-	}
-
-	cursor := start
-	for adjust in ctx.rsp_adjusts {
-		if adjust.end <= cursor do continue
-		if adjust.start >= end do break
-		if cursor < adjust.start {
-			part := location
-			part.start = cursor
-			part.end = min(end, adjust.start)
-			append(locations, part)
-		}
-		part := location
-		part.start = max(cursor, adjust.start)
-		part.end = min(end, adjust.end)
-		part.offset += adjust.delta
-		if part.start < part.end {
-			append(locations, part)
-		}
-		cursor = part.end
-	}
-	if cursor < end {
-		location.start = cursor
-		append(locations, location)
-	}
-}
-
-dbg_block_range :: proc(
-	ctx: ^Ctx,
-	value: bac.Node_ID,
-) -> (
-	start, end: u32,
-	ok: bool,
-) {
-	idx := dbg_block_idx(ctx, value) or_return
-	return u32(uint(ctx.bbs[idx].offset) - ctx.code_start),
-		ctx.block_ends[idx],
-		true
-}
-
-dbg_block_idx :: proc(ctx: ^Ctx, value: bac.Node_ID) -> (int, bool) {
-	value := value
-	for get_node(ctx.graph, value).itype == .Split &&
-	    !ctx.node_emitted[get_node(ctx.graph, value).gvn] {
-		value = bac.get_inputs(ctx.graph, value)[0]
-	}
-	for bb, i in ctx.bbs {
-		if bb.head != value && !slice.contains(bb.instrs[:], value) do continue
-		return i, true
-	}
-	return 0, false
 }
 
 emit_cfi :: proc(ctx: ^Ctx, kind: bac.Cfi_Kind, reg: u8 = 0, arg: u32 = 0) {
@@ -2010,7 +1662,9 @@ emit_instr :: proc(
 
 	type := xtype(node)
 
-	switch type {
+	#partial switch type {
+	case:
+		fmt.panicf("TODO: %v", node.node)
 	case .Nil,
 	     .Entry,
 	     .Then,
@@ -2021,7 +1675,17 @@ emit_instr :: proc(
 	     .End,
 	     .Simd_Reduce_Add_Bisect:
 		fmt.panicf("Not reachable form here %v", node.node)
-	case .Dbg_Sym_Update, .Dbg_Scope, .Dbg_Sym_Decl:
+	case .Poison,
+	     .Param,
+	     .Phi,
+	     .Ret,
+	     .Mem,
+	     .Split_Mem,
+	     .Merge_Mem,
+	     .Sym,
+	     .Dbg_Sym_Update,
+	     .Dbg_Sym_Decl,
+	     .Dbg_Scope:
 	case .Splat:
 		panic("no")
 	case .Simd_Extract_Lsbs:
@@ -2406,7 +2070,6 @@ emit_instr :: proc(
 				id     = lib_call.id,
 			}
 		}
-	case .Poison, .Param, .Phi, .Ret, .Mem, .Split_Mem, .Merge_Mem, .Sym:
 	case .CInt:
 		dst := reg_of(ctx, instr)
 		imm := bac.get_extra(ctx, node, bac.CInt).value
@@ -2894,14 +2557,6 @@ emit_instr :: proc(
 				// pop [rsp + $dst_off]
 				emit(ctx.code, {rex(RAX, RAX, NO_INDEX, true), 0x8F})
 				spill_indirect_addr(ctx, Reg(0b000), dst_off)
-				append(
-					&ctx.rsp_adjusts,
-					Rsp_Adjust {
-						start = adjust_start,
-						end = u32(ctx.code.pos - ctx.code_start),
-						delta = 8,
-					},
-				)
 				emit_cfi(ctx, .Def_Cfa_Offset, arg = cfa)
 			} else if d_spill {
 				// movss/movsd [rsp + $dst_off], $src
@@ -2936,14 +2591,6 @@ emit_instr :: proc(
 			// pop [rsp + $dst_off]
 			emit(ctx.code, {rex(RAX, RAX, NO_INDEX, true), 0x8F})
 			spill_indirect_addr(ctx, Reg(0b000), dst_off)
-			append(
-				&ctx.rsp_adjusts,
-				Rsp_Adjust {
-					start = adjust_start,
-					end = u32(ctx.code.pos - ctx.code_start),
-					delta = 8,
-				},
-			)
 			emit_cfi(ctx, .Def_Cfa_Offset, arg = cfa)
 		} else if d_spill {
 			// mov [rsp + $dst_offset], $src

@@ -1,11 +1,9 @@
 =========== OPT LEVEL: none-quick ===========
 f32c:
-    xor eax, eax
     ucomiss xmm0, xmm1
-    setz cl
-    movzx rcx, cl
-    movzx ecx, cl
-    add rax, rcx
+    setz al
+    movzx rax, al
+    movzx eax, al
     ucomiss xmm0, xmm1
     setnz cl
     movzx rcx, cl
@@ -35,12 +33,10 @@ f32c:
     add rax, rcx
     ret
 f64c:
-    xor eax, eax
     ucomisd xmm0, xmm1
-    setz cl
-    movzx rcx, cl
-    movzx ecx, cl
-    add rax, rcx
+    setz al
+    movzx rax, al
+    movzx eax, al
     ucomisd xmm0, xmm1
     setnz cl
     movzx rcx, cl
@@ -70,62 +66,59 @@ f64c:
     add rax, rcx
     ret
 main:
-    sub rsp, 0x48
-    movss.d xmm0, [rip + 0xe8b]
-    movss.d [rsp + 0x30], xmm0
-    movss.d xmm0, [rip + 0xe7f]
-    movss.d xmm1, [rsp + 0x30]
+    sub rsp, 0x38
+    movss.d xmm0, [rip + 0xe93]
+    movss.d [rsp + 0x28], xmm0
+    movss.d xmm0, [rip + 0xe87]
+    movss.d xmm1, [rsp + 0x28]
     call f32c
     mov.q [rsp], rax
-    movss.d xmm1, [rsp + 0x30]
-    movss.d xmm0, [rsp + 0x30]
+    movss.d xmm1, [rsp + 0x28]
+    movss.d xmm0, [rsp + 0x28]
     call f32c
     mov.q [rsp + 0x8], rax
-    movss.d xmm0, [rip + 0xe52]
-    movss.d xmm1, [rsp + 0x30]
+    movss.d xmm0, [rip + 0xe5a]
+    movss.d xmm1, [rsp + 0x28]
     call f32c
     mov.q [rsp + 0x10], rax
+    movsd.q xmm0, [rip + 0xe48]
+    movsd.q [rsp + 0x28], xmm0
     movsd.q xmm0, [rip + 0xe40]
-    movsd.q [rsp + 0x30], xmm0
-    movsd.q xmm0, [rip + 0xe38]
-    movsd.q xmm1, [rsp + 0x30]
+    movsd.q xmm1, [rsp + 0x28]
     call f64c
     mov.q [rsp + 0x18], rax
-    movsd.q xmm1, [rsp + 0x30]
-    movsd.q xmm0, [rsp + 0x30]
+    movsd.q xmm1, [rsp + 0x28]
+    movsd.q xmm0, [rsp + 0x28]
     call f64c
     mov.q [rsp + 0x20], rax
-    movsd.q xmm0, [rip + 0xe0e]
-    movsd.q xmm1, [rsp + 0x30]
+    movsd.q xmm0, [rip + 0xe16]
+    movsd.q xmm1, [rsp + 0x28]
     call f64c
-    mov.q [rsp + 0x28], rax
-    xor eax, eax
     mov.q rcx, [rsp]
     mov.q rdx, [rsp + 0x8]
     add rcx, rdx
     mov rcx, rcx
     mov.q rdx, [rsp + 0x10]
     add rcx, rdx
-    mov rcx, rcx
-    add rax, rcx
+    mov.q [rsp], rcx
     mov.q rcx, [rsp + 0x18]
     mov.q rdx, [rsp + 0x20]
     add rcx, rdx
     mov rcx, rcx
-    mov.q rdx, [rsp + 0x28]
-    add rcx, rdx
-    mov rcx, rcx
+    add rcx, rax
+    mov.q [rsp + 0x8], rcx
+    mov.q rax, [rsp]
+    mov.q rcx, [rsp + 0x8]
     add rax, rcx
-    add rsp, 0x48
+    mov rax, rax
+    add rsp, 0x38
     ret
 =========== OPT LEVEL: none ===========
 f32c:
-    xor ecx, ecx
     ucomiss xmm0, xmm1
     setz al
     movzx rax, al
-    movzx eax, al
-    add rcx, rax
+    movzx ecx, al
     ucomiss xmm0, xmm1
     setnz al
     movzx rax, al
@@ -155,12 +148,10 @@ f32c:
     add rax, rcx
     ret
 f64c:
-    xor ecx, ecx
     ucomisd xmm0, xmm1
     setz al
     movzx rax, al
-    movzx eax, al
-    add rcx, rax
+    movzx ecx, al
     ucomisd xmm0, xmm1
     setnz al
     movzx rax, al
@@ -196,9 +187,9 @@ main:
     push r13
     push r14
     sub rsp, 0x10
-    movss.d xmm0, [rip + 0xe81]
+    movss.d xmm0, [rip + 0xe89]
     movss.d [rsp], xmm0
-    movss.d xmm0, [rip + 0xe76]
+    movss.d xmm0, [rip + 0xe7e]
     movss.d xmm1, [rsp]
     call f32c
     mov r14, rax
@@ -206,13 +197,13 @@ main:
     movss.d xmm0, [rsp]
     call f32c
     mov r13, rax
-    movss.d xmm0, [rip + 0xe4f]
+    movss.d xmm0, [rip + 0xe57]
     movss.d xmm1, [rsp]
     call f32c
     mov r12, rax
-    movsd.q xmm0, [rip + 0xe40]
+    movsd.q xmm0, [rip + 0xe48]
     movsd.q [rsp], xmm0
-    movsd.q xmm0, [rip + 0xe39]
+    movsd.q xmm0, [rip + 0xe41]
     movsd.q xmm1, [rsp]
     call f64c
     mov rbp, rax
@@ -220,261 +211,18 @@ main:
     movsd.q xmm0, [rsp]
     call f64c
     mov rbx, rax
-    movsd.q xmm0, [rip + 0xe16]
+    movsd.q xmm0, [rip + 0xe1e]
     movsd.q xmm1, [rsp]
     call f64c
     mov rsi, rax
     mov rcx, r14
     add rcx, r13
     add rcx, r12
-    xor eax, eax
-    add rax, rcx
-    mov rcx, rbp
-    add rcx, rbx
-    add rcx, rsi
-    add rax, rcx
-    add rsp, 0x10
-    pop r14
-    pop r13
-    pop r12
-    pop rbp
-    pop rbx
-    ret
-=========== OPT LEVEL: mininal-quick ===========
-f32c:
-    xor eax, eax
-    ucomiss xmm0, xmm1
-    setz cl
-    movzx rcx, cl
-    movzx ecx, cl
-    add rax, rcx
-    ucomiss xmm0, xmm1
-    setnz cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*2]
-    ucomiss xmm1, xmm0
-    setnbe cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*4]
-    ucomiss xmm1, xmm0
-    setnc cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*8]
-    ucomiss xmm0, xmm1
-    setnbe cl
-    movzx rcx, cl
-    movzx ecx, cl
-    imul rcx, rcx, 0x10
-    add rax, rcx
-    ucomiss xmm0, xmm1
-    setnc cl
-    movzx rcx, cl
-    movzx ecx, cl
-    imul rcx, rcx, 0x20
-    add rax, rcx
-    ret
-f64c:
-    xor eax, eax
-    ucomisd xmm0, xmm1
-    setz cl
-    movzx rcx, cl
-    movzx ecx, cl
-    add rax, rcx
-    ucomisd xmm0, xmm1
-    setnz cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*2]
-    ucomisd xmm1, xmm0
-    setnbe cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*4]
-    ucomisd xmm1, xmm0
-    setnc cl
-    movzx rcx, cl
-    movzx ecx, cl
-    lea rax, [rax + rcx*8]
-    ucomisd xmm0, xmm1
-    setnbe cl
-    movzx rcx, cl
-    movzx ecx, cl
-    imul rcx, rcx, 0x10
-    add rax, rcx
-    ucomisd xmm0, xmm1
-    setnc cl
-    movzx rcx, cl
-    movzx ecx, cl
-    imul rcx, rcx, 0x20
-    add rax, rcx
-    ret
-main:
-    sub rsp, 0x48
-    movss.d xmm0, [rip + 0xe8b]
-    movss.d [rsp + 0x30], xmm0
-    movss.d xmm0, [rip + 0xe7f]
-    movss.d xmm1, [rsp + 0x30]
-    call f32c
-    mov.q [rsp], rax
-    movss.d xmm1, [rsp + 0x30]
-    movss.d xmm0, [rsp + 0x30]
-    call f32c
-    mov.q [rsp + 0x8], rax
-    movss.d xmm0, [rip + 0xe52]
-    movss.d xmm1, [rsp + 0x30]
-    call f32c
-    mov.q [rsp + 0x10], rax
-    movsd.q xmm0, [rip + 0xe40]
-    movsd.q [rsp + 0x30], xmm0
-    movsd.q xmm0, [rip + 0xe38]
-    movsd.q xmm1, [rsp + 0x30]
-    call f64c
-    mov.q [rsp + 0x18], rax
-    movsd.q xmm1, [rsp + 0x30]
-    movsd.q xmm0, [rsp + 0x30]
-    call f64c
-    mov.q [rsp + 0x20], rax
-    movsd.q xmm0, [rip + 0xe0e]
-    movsd.q xmm1, [rsp + 0x30]
-    call f64c
-    mov.q [rsp + 0x28], rax
-    xor eax, eax
-    mov.q rcx, [rsp]
-    mov.q rdx, [rsp + 0x8]
-    add rcx, rdx
-    mov rcx, rcx
-    mov.q rdx, [rsp + 0x10]
-    add rcx, rdx
-    mov rcx, rcx
-    add rax, rcx
-    mov.q rcx, [rsp + 0x18]
-    mov.q rdx, [rsp + 0x20]
-    add rcx, rdx
-    mov rcx, rcx
-    mov.q rdx, [rsp + 0x28]
-    add rcx, rdx
-    mov rcx, rcx
-    add rax, rcx
-    add rsp, 0x48
-    ret
-=========== OPT LEVEL: mininal ===========
-f32c:
-    xor ecx, ecx
-    ucomiss xmm0, xmm1
-    setz al
-    movzx rax, al
-    movzx eax, al
+    mov rax, rbp
+    add rax, rbx
+    add rax, rsi
     add rcx, rax
-    ucomiss xmm0, xmm1
-    setnz al
-    movzx rax, al
-    movzx eax, al
-    lea rcx, [rcx + rax*2]
-    ucomiss xmm1, xmm0
-    setnbe al
-    movzx rax, al
-    movzx eax, al
-    lea rcx, [rcx + rax*4]
-    ucomiss xmm1, xmm0
-    setnc al
-    movzx rax, al
-    movzx eax, al
-    lea rax, [rcx + rax*8]
-    ucomiss xmm0, xmm1
-    setnbe cl
-    movzx rcx, cl
-    movzx ecx, cl
-    imul rcx, rcx, 0x10
-    add rax, rcx
-    ucomiss xmm0, xmm1
-    setnc cl
-    movzx rcx, cl
-    movzx ecx, cl
-    imul rcx, rcx, 0x20
-    add rax, rcx
-    ret
-f64c:
-    xor ecx, ecx
-    ucomisd xmm0, xmm1
-    setz al
-    movzx rax, al
-    movzx eax, al
-    add rcx, rax
-    ucomisd xmm0, xmm1
-    setnz al
-    movzx rax, al
-    movzx eax, al
-    lea rcx, [rcx + rax*2]
-    ucomisd xmm1, xmm0
-    setnbe al
-    movzx rax, al
-    movzx eax, al
-    lea rcx, [rcx + rax*4]
-    ucomisd xmm1, xmm0
-    setnc al
-    movzx rax, al
-    movzx eax, al
-    lea rax, [rcx + rax*8]
-    ucomisd xmm0, xmm1
-    setnbe cl
-    movzx rcx, cl
-    movzx ecx, cl
-    imul rcx, rcx, 0x10
-    add rax, rcx
-    ucomisd xmm0, xmm1
-    setnc cl
-    movzx rcx, cl
-    movzx ecx, cl
-    imul rcx, rcx, 0x20
-    add rax, rcx
-    ret
-main:
-    push rbx
-    push rbp
-    push r12
-    push r13
-    push r14
-    sub rsp, 0x10
-    movss.d xmm0, [rip + 0xe81]
-    movss.d [rsp], xmm0
-    movss.d xmm0, [rip + 0xe76]
-    movss.d xmm1, [rsp]
-    call f32c
-    mov r14, rax
-    movss.d xmm1, [rsp]
-    movss.d xmm0, [rsp]
-    call f32c
-    mov r13, rax
-    movss.d xmm0, [rip + 0xe4f]
-    movss.d xmm1, [rsp]
-    call f32c
-    mov r12, rax
-    movsd.q xmm0, [rip + 0xe40]
-    movsd.q [rsp], xmm0
-    movsd.q xmm0, [rip + 0xe39]
-    movsd.q xmm1, [rsp]
-    call f64c
-    mov rbp, rax
-    movsd.q xmm1, [rsp]
-    movsd.q xmm0, [rsp]
-    call f64c
-    mov rbx, rax
-    movsd.q xmm0, [rip + 0xe16]
-    movsd.q xmm1, [rsp]
-    call f64c
-    mov rsi, rax
-    mov rcx, r14
-    add rcx, r13
-    add rcx, r12
-    xor eax, eax
-    add rax, rcx
-    mov rcx, rbp
-    add rcx, rbx
-    add rcx, rsi
-    add rax, rcx
+    mov rax, rcx
     add rsp, 0x10
     pop r14
     pop r13

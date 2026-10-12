@@ -6,10 +6,9 @@ opaque:
     ret
 main:
     sub rsp, 0x28
-    lea rdi, [rsp]
-    xor esi, esi
-    mov rdx, 0x20
-    call -0x47
+    pxor xmm0, xmm0
+    movups.x [rsp], xmm0
+    movups.x [rsp + 0x10], xmm0
     xor edi, edi
     call opaque
     mov.q [rsp], rax
@@ -25,29 +24,29 @@ main:
     xor eax, eax
 2:
     mov.q [rsp + 0x20], rax
-    mov.q rcx, [rsp + 0x20]
-    cmp rcx, 0xa
-    setnl cl
-    movzx rcx, cl
-    test cl, cl
+    mov.q rcx, [rsp]
+    mov.q rdx, [rsp + 0x20]
+    cmp rdx, 0xa
+    setnl dl
+    movzx rdx, dl
+    test dl, dl
     jnz 5
-    mov.q rcx, [rsp + 0x10]
-    add.q [rsp], rcx
-    mov.q rcx, [rsp + 0x18]
-    add.q [rsp + 0x8], rcx
-    cmp.q [rsp], 5
+    add.q rcx, [rsp + 0x10]
+    mov.q [rsp], rcx
+    mov.q rdx, [rsp + 0x18]
+    add.q [rsp + 0x8], rdx
+    cmp rcx, 5
     jnle 3
     jmp 4
 3:
     add.q [rsp + 0x10], 1
 4:
-    mov.q rcx, [rsp + 0x20]
-    add rcx, 1
-    mov rax, rcx
+    mov.q rdx, [rsp + 0x20]
+    add rdx, 1
+    mov rax, rdx
     jmp 2
 5:
-    mov.q rax, [rsp]
-    imul rax, rax, 0x3e8
+    imul rax, rcx, 0x3e8
     add.q rax, [rsp + 0x8]
     add rsp, 0x28
     ret
@@ -57,10 +56,9 @@ opaque:
     ret
 main:
     sub rsp, 0x28
-    lea rdi, [rsp]
-    xor esi, esi
-    mov rdx, 0x20
-    call -0x3f
+    pxor xmm0, xmm0
+    movups.x [rsp], xmm0
+    movups.x [rsp + 0x10], xmm0
     xor edi, edi
     call opaque
     mov.q [rsp], rax
@@ -75,16 +73,17 @@ main:
     mov.q [rsp + 0x18], rax
     xor eax, eax
 2:
+    mov.q rdx, [rsp]
     cmp rax, 0xa
     setnl cl
     movzx rcx, cl
     test cl, cl
     jnz 5
-    mov.q rcx, [rsp + 0x10]
-    add.q [rsp], rcx
+    add.q rdx, [rsp + 0x10]
+    mov.q [rsp], rdx
     mov.q rcx, [rsp + 0x18]
     add.q [rsp + 0x8], rcx
-    cmp.q [rsp], 5
+    cmp rdx, 5
     jnle 3
     jmp 4
 3:
@@ -93,108 +92,7 @@ main:
     add rax, 1
     jmp 2
 5:
-    mov.q rax, [rsp]
-    imul rax, rax, 0x3e8
-    add.q rax, [rsp + 0x8]
-    add rsp, 0x28
-    ret
-=========== OPT LEVEL: mininal-quick ===========
-opaque:
-    sub rsp, 8
-    mov rax, rdi
-    add rsp, 8
-    ret
-main:
-    sub rsp, 0x28
-    lea rdi, [rsp]
-    xor esi, esi
-    mov rdx, 0x20
-    call -0x47
-    xor edi, edi
-    call opaque
-    mov.q [rsp], rax
-    xor edi, edi
-    call opaque
-    mov.q [rsp + 0x8], rax
-    mov rdi, 1
-    call opaque
-    mov.q [rsp + 0x10], rax
-    mov rdi, 2
-    call opaque
-    mov.q [rsp + 0x18], rax
-    xor eax, eax
-2:
-    mov.q [rsp + 0x20], rax
-    mov.q rcx, [rsp + 0x20]
-    cmp rcx, 0xa
-    setnl cl
-    movzx rcx, cl
-    test cl, cl
-    jnz 5
-    mov.q rcx, [rsp + 0x10]
-    add.q [rsp], rcx
-    mov.q rcx, [rsp + 0x18]
-    add.q [rsp + 0x8], rcx
-    cmp.q [rsp], 5
-    jnle 3
-    jmp 4
-3:
-    add.q [rsp + 0x10], 1
-4:
-    mov.q rcx, [rsp + 0x20]
-    add rcx, 1
-    mov rax, rcx
-    jmp 2
-5:
-    mov.q rax, [rsp]
-    imul rax, rax, 0x3e8
-    add.q rax, [rsp + 0x8]
-    add rsp, 0x28
-    ret
-=========== OPT LEVEL: mininal ===========
-opaque:
-    mov rax, rdi
-    ret
-main:
-    sub rsp, 0x28
-    lea rdi, [rsp]
-    xor esi, esi
-    mov rdx, 0x20
-    call -0x3f
-    xor edi, edi
-    call opaque
-    mov.q [rsp], rax
-    xor edi, edi
-    call opaque
-    mov.q [rsp + 0x8], rax
-    mov rdi, 1
-    call opaque
-    mov.q [rsp + 0x10], rax
-    mov rdi, 2
-    call opaque
-    mov.q [rsp + 0x18], rax
-    xor eax, eax
-2:
-    cmp rax, 0xa
-    setnl cl
-    movzx rcx, cl
-    test cl, cl
-    jnz 5
-    mov.q rcx, [rsp + 0x10]
-    add.q [rsp], rcx
-    mov.q rcx, [rsp + 0x18]
-    add.q [rsp + 0x8], rcx
-    cmp.q [rsp], 5
-    jnle 3
-    jmp 4
-3:
-    add.q [rsp + 0x10], 1
-4:
-    add rax, 1
-    jmp 2
-5:
-    mov.q rax, [rsp]
-    imul rax, rax, 0x3e8
+    imul rax, rdx, 0x3e8
     add.q rax, [rsp + 0x8]
     add rsp, 0x28
     ret

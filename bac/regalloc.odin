@@ -359,9 +359,8 @@ data_deps :: proc(
 MASK_SIZE :: size_of(int) * 8
 
 Lrg_Meta :: bit_field u32 {
-	index:          u32  | 23,
-	rank:           u8   | 8,
-	has_dbg_update: bool | 1,
+	index: u32 | 23,
+	rank:  u8  | 8,
 }
 
 Lrg_Fails :: bit_field u8 {

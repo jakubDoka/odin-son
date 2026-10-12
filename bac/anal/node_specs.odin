@@ -183,7 +183,7 @@ SPEC := bac.Node_Spec{
 		0, // Ctz -> No_Extra
 		0, // Simd_Extract_Lsbs -> No_Extra
 		0, // Simd_Reduce_Add_Bisect -> No_Extra
-		4, // Dbg_Sym_Decl -> Dbg_Sym_Decl
+		6, // Dbg_Sym_Decl -> Dbg_Sym
 		0, // Dbg_Sym_Update -> No_Extra
 		0, // Dbg_Scope -> No_Extra
 	},
@@ -355,7 +355,7 @@ SPEC := bac.Node_Spec{
 		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
-		bac.Dbg_Sym_Decl,
+		bac.Dbg_Sym,
 		bac.No_Extra,
 		bac.No_Extra,
 	},
@@ -625,17 +625,17 @@ post_schedule_peep_inst :: proc(
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.Dbg_Sym_Decl) % bac.PRECISION == 0)
+#assert(size_of(bac.Dbg_Sym) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	when false {}
 	else when T == bac.Local {return 4}
+	else when T == bac.Dbg_Sym {return 6}
 	else when T == bac.Tup {return 2}
-	else when T == bac.Dbg_Sym_Decl {return 6}
-	else when T == bac.Call {return 5}
 	else when T == bac.No_Extra {return 1}
+	else when T == bac.Call {return 5}
 	else when T == bac.Cfg {return 0}
 	else when T == bac.CInt {return 3}
 	else {#panic(`the passed type is not subclass of anything`)}

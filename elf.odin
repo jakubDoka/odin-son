@@ -5,6 +5,7 @@ import "bac/arm"
 import "bac/x64"
 import "core:mem"
 import "core:slice"
+import "typecheck"
 import "vendored/gam/util/arna"
 
 LIBCALL_BASE :: bac.RELOC_BIG_CONSTANT_BASE - 32
@@ -600,7 +601,10 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 			uleb(&dbg_info, 4)
 			append(&dbg_info, loc.name)
 			append(&dbg_info, 0)
-			put_u32(&dbg_info, dbg_type_offsets[loc.dt])
+			put_u32(
+				&dbg_info,
+				dbg_type_offsets[typecheck.type_to_dt(typecheck.Type(uintptr(loc.dt)))],
+			)
 			append(
 				&info_rels,
 				Elf64_Rela {

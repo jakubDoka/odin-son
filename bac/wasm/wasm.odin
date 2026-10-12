@@ -302,7 +302,9 @@ meta_of :: #force_inline proc(
 		return slice.clone(msks)
 	}
 
-	switch wtype(node) {
+	#partial switch wtype(node) {
+	case:
+		fmt.panicf("TODO: %v", node)
 	case .Nil,
 	     .Entry,
 	     .Then,
@@ -313,8 +315,6 @@ meta_of :: #force_inline proc(
 	     .End,
 	     .Simd_Reduce_Add_Bisect:
 		fmt.panicf("Should not reach this: %v", node)
-	case .U_F_From_I, .Dbg_Sym_Update, .Dbg_Scope, .Dbg_Sym_Decl:
-		fmt.panicf("TODO: %v", node)
 	case .Split_Mem,
 	     .Merge_Mem,
 	     .Sym,
@@ -502,7 +502,9 @@ pre_regalloc_hook :: proc(
 	meta_of :: proc(ctx: ^Ctx, node: bac.Expanded_Node, _: $T) -> Meta {
 		// TODO: this is uselss to be strongly typed, we anyway just use the
 		// length, and wether the out is invalid
-		switch wtype(node) {
+		#partial switch wtype(node) {
+		case:
+			fmt.panicf("TODO: %v", node)
 		case .Nil,
 		     .Entry,
 		     .Then,
@@ -517,8 +519,6 @@ pre_regalloc_hook :: proc(
 		     .End,
 		     .Stub:
 			fmt.panicf("Should not reach this: %v", node)
-		case .U_F_From_I, .Dbg_Sym_Update, .Dbg_Scope, .Dbg_Sym_Decl:
-			fmt.panicf("TODO: %v", node)
 		case .Merge_Mem,
 		     .Split_Mem,
 		     .Sym,
@@ -1157,7 +1157,9 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 		mem_op.source = node.dt
 	}
 
-	switch kind {
+	#partial switch kind {
+	case:
+		fmt.panicf("TODO: %v", node)
 	case .Nil,
 	     .Entry,
 	     .Then,
@@ -1170,8 +1172,6 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 	     .End,
 	     .Neg:
 		fmt.panicf("Should not reach this: %v", node)
-	case .U_F_From_I, .Dbg_Sym_Update, .Dbg_Scope, .Dbg_Sym_Decl:
-		fmt.panicf("TODO: %v", node)
 	case .Split_Mem,
 	     .Merge_Mem,
 	     .Sym,
@@ -1556,8 +1556,6 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 		}
 	case .Trap:
 		emit_op(ctx.code, .Unreachable)
-	case:
-		fmt.panicf("TODO: %v", node)
 	}
 }
 

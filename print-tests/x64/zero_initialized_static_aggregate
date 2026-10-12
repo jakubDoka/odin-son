@@ -30,18 +30,16 @@ main:
     movzx.b edx, [rdx]
     mov rbx, rcx
     add rbx, rdx
-    mov rdx, rax
-    add rdx, 1
+    add rax, 1
     mov rcx, rbx
-    mov rax, rdx
     jmp 3
 4:
-    mov.q [rip + 0xf2f], 7
-    mov.q [rip + 0xf2c], 2
-    mov.q rax, [rip + 0xf2d]
+    mov.q [rip + 0xf35], 7
+    mov.q [rip + 0xf32], 2
+    mov.q rax, [rip + 0xf33]
     imul rax, rcx
-    add.q rax, [rip + 0xf12]
-    sub.q rax, [rip + 0xf13]
+    add rax, 7
+    sub rax, 2
     pop rbx
     ret
 =========== OPT LEVEL: none ===========
@@ -79,92 +77,8 @@ main:
     mov.q [rip + 0xf40], 2
     mov.q rax, [rip + 0xf41]
     imul rax, rcx
-    add.q rax, [rip + 0xf26]
-    sub.q rax, [rip + 0xf27]
-    ret
-=========== OPT LEVEL: mininal-quick ===========
-main:
-    push rbx
-    xor eax, eax
-1:
-    mov rcx, rax
-    cmp rcx, 0x10
-    setnl dl
-    movzx rdx, dl
-    test dl, dl
-    jnz 2
-    lea rdx, [rip + 0xf89]
-    add rdx, rcx
-    mov rbx, rcx
-    add rcx, 1
-    mov.b [rdx], bl
-    mov rax, rcx
-    jmp 1
-2:
-    xor ecx, ecx
-    xor eax, eax
-3:
-    cmp rax, 0x10
-    setnl dl
-    movzx rdx, dl
-    test dl, dl
-    jnz 4
-    lea rdx, [rip + 0xf4c]
-    add rdx, rax
-    movzx.b edx, [rdx]
-    mov rbx, rcx
-    add rbx, rdx
-    mov rdx, rax
-    add rdx, 1
-    mov rcx, rbx
-    mov rax, rdx
-    jmp 3
-4:
-    mov.q [rip + 0xf2f], 7
-    mov.q [rip + 0xf2c], 2
-    mov.q rax, [rip + 0xf2d]
-    imul rax, rcx
-    add.q rax, [rip + 0xf12]
-    sub.q rax, [rip + 0xf13]
-    pop rbx
-    ret
-=========== OPT LEVEL: mininal ===========
-main:
-    xor eax, eax
-1:
-    cmp rax, 0x10
-    setnl cl
-    movzx rcx, cl
-    test cl, cl
-    jnz 2
-    lea rdx, [rip + 0xf8e]
-    add rdx, rax
-    mov rcx, rax
-    add rax, 1
-    mov.b [rdx], cl
-    jmp 1
-2:
-    xor ecx, ecx
-    xor eax, eax
-3:
-    cmp rax, 0x10
-    setnl dl
-    movzx rdx, dl
-    test dl, dl
-    jnz 4
-    lea rdx, [rip + 0xf54]
-    add rdx, rax
-    movzx.b edx, [rdx]
-    add rcx, rdx
-    add rax, 1
-    jmp 3
-4:
-    mov.q [rip + 0xf43], 7
-    mov.q [rip + 0xf40], 2
-    mov.q rax, [rip + 0xf41]
-    imul rax, rcx
-    add.q rax, [rip + 0xf26]
-    sub.q rax, [rip + 0xf27]
+    add rax, 7
+    sub rax, 2
     ret
 =========== OPT LEVEL: moderate-quick ===========
 main:

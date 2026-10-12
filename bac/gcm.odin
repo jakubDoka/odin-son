@@ -339,16 +339,17 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 	slice.reverse(cfg_rpos[:])
 
 	Ctx :: struct {
-		using graph:    ^Proc,
-		using _:        struct #raw_union {
+		using graph:           ^Proc,
+		using _:               struct #raw_union {
 			early_schedules: []Node_ID,
 			antidep_node:    []Node_ID,
 			block_idxs:      []u32,
 		},
-		late_schedules: []Node_ID,
-		nodes:          []Node_ID,
-		antideps:       [][dynamic]Node_ID,
-		extra_outputs:  []u16,
+		late_schedules:        []Node_ID,
+		nodes:                 []Node_ID,
+		antideps:              [][dynamic]Node_ID,
+		extra_outputs:         []u16,
+		seen_during_inference: bit_arr.Bit_Set,
 	}
 
 	ctx: Ctx
@@ -358,6 +359,7 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 	ctx.nodes = make([]Node_ID, graph.gvn)
 	ctx.antideps = make([][dynamic]Node_ID, graph.gvn)
 	ctx.extra_outputs = make([]u16, graph.gvn)
+	ctx.seen_during_inference = bit_arr.init(graph.gvn)
 
 	for id in cfg_rpos {
 		ctrl := expand_node(graph, id)
@@ -462,25 +464,10 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 
 			for out in node.outs {
 				onode := expand_node(graph, out.id)
-				if onode.itype == .Dbg_Sym_Update do continue
 				if ctx.late_schedules[onode.gvn] == 0 {
 					worklist_add(graph, &worklist, out.id)
 					ready = false
 				}
-			}
-
-			next_ass_value := add_dbg_antydeps(ctx, node)
-			anode := get_node(ctx, next_ass_value)
-			if next_ass_value != 0 {
-				olca := ctx.late_schedules[anode.gvn]
-				lca = compute_lca(graph, lca, olca)
-				// NOTE: we cant be in the same block since we strictly need to
-				// be before the node, so go to the call block
-				if anode.itype == .Ret {
-					assert(lca != 0)
-					lca = get_idom(graph, lca)
-				}
-				ready &= olca != 0
 			}
 		}
 
@@ -519,6 +506,7 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 
 		if free {
 			for cursor := lca; cursor != ctx.early_schedules[node.gvn]; {
+				if cursor == 0 do break
 				fmt.assertf(
 					cursor != 0,
 					"%v %v %v",
@@ -608,77 +596,6 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 			}
 
 			return current
-		}
-
-		// NOTE: we do this in the first place to express that the lifetime is
-		// extended up to but not interfering with the next value
-		add_dbg_antydeps :: proc(ctx: Ctx, node: Expanded_Node) -> Node_ID {
-			id := get_node_id(ctx.graph, node)
-			if node.itype != .Dbg_Sym_Update do return 0
-
-			value := infer_next_assign(ctx, node)
-			vnode := get_node(ctx, value)
-
-			if value == 0 do return 0
-
-			if ctx.extra_outputs[node.gvn] == 0 {
-				append(&ctx.antideps[vnode.gvn], id)
-				ctx.extra_outputs[node.gvn] += 1
-			}
-
-			return value
-		}
-
-		infer_next_assign :: proc(ctx: Ctx, node: Expanded_Node) -> Node_ID {
-			for out in node.outs {
-				value := infer_next_assign_rec(ctx, out)
-
-				if value != 0 {
-					// NOTE: first value is fine since there is in a way a
-					// redundancy where multiple branches store the same value
-					// they extend
-					return value
-				}
-			}
-
-			return 0
-
-			infer_next_assign_rec :: proc(
-				ctx: Ctx,
-				out: Node_Output,
-			) -> Node_ID {
-				node := expand_node(ctx, out.id)
-				#partial switch node.itype {
-				case .Dbg_Scope:
-				case .Dbg_Sym_Update:
-					return node.inps[0]
-				case .Phi:
-					if out.idx == 2 &&
-					   get_node(ctx, node.inps[0]).itype == .Loop {
-						return 0
-					}
-
-					// NOTE: we dive deeper to find something that pairs us
-					// with a phy, then we unwind with appropriate parallel
-					// input since the debug and value phys have the same
-					// layout
-					//
-					// Also, since the phy is here its immediate dep is the
-					// assigned value
-					for pout in node.outs {
-						value := infer_next_assign_rec(ctx, pout)
-						vnode := expand_node(ctx, value)
-						if value != 0 {
-							assert(vnode.itype == .Phi)
-							return vnode.inps[out.idx]
-						}
-					}
-				case:
-					fmt.panicf("TODO: %v", node)
-				}
-
-				return 0
-			}
 		}
 
 		add_mem_antydeps :: proc(
@@ -835,7 +752,7 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 
 	gs.bbs = bbs
 
-	if 1 == 1 {
+	if 0 == 1 {
 		display_graph(os.to_writer(os.stderr), graph, gs)
 		// 	if has_unscheduled do panic("")
 	}
@@ -859,7 +776,8 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 		}
 
 		changed := true
-		for _ in 0 ..< 1000 {
+		for i in 0 ..< 1000 {
+			assert(i < 1000 - 1)
 			changed = false
 
 			for &instr, i in bb.instrs {
@@ -898,16 +816,6 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 					break
 				}
 			}
-
-			//#reverse for inp in ctx.antideps[inode.gvn] {
-			//	innode := expand_node(graph, inp)
-
-			//	if innode.itype == .Dbg_Sym_Update {
-			//		pos := slice.linear_search(bb.instrs[:i], inp) or_continue
-			//		slice.rotate_left(bb.instrs[pos:i], 1)
-			//		break
-			//	}
-			//}
 		}
 
 		// NOTE: we shift the phy backedges as late as possible, regalloc

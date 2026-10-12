@@ -12,7 +12,7 @@ export ODIN_ROOT="${ODIN_ROOT:-$HOME/odin}"
 if [ "$#" -gt 0 ]; then
 	LEVELS=("$@")
 else
-	LEVELS=(none-quick none mininal-quick mininal moderate-quick moderate all aggresive)
+	LEVELS=(none-quick none moderate-quick moderate all aggresive)
 fi
 
 for tool in odin zig gdb readelf objdump; do

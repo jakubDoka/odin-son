@@ -114,7 +114,7 @@ Dbg_Location :: struct {
 	symbol: u32,
 	offset: i32,
 	reg:    Reg,
-	dt:     Node_Datatype,
+	dt:     rawptr,
 	kind:   Dbg_Location_Kind,
 }
 

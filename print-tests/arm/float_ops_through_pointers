@@ -7,11 +7,6 @@ main:
     adr x0, 0xfc0
     ldr.v s0, [x0]
     str.v s0, [x19]
-    ldr.v s0, [x19]
-    adr x0, 0xfc4
-    ldr.v s1, [x0]
-    fmul s0, s0, s1
-    str.v s0, [x19]
     adr x0, 0xfc8
     ldr.v d0, [x0]
     add x0, sp, #28
@@ -46,13 +41,11 @@ add_into:
     ldr.v d1, [x0]
     fadd d0, d1, d0
     str.v d0, [x0]
-    ldr.v d0, [x0]
     ret
 mul_into:
     ldr.v d1, [x0]
     fmul d0, d1, d0
     str.v d0, [x0]
-    ldr.v d0, [x0]
     ret
 =========== OPT LEVEL: none ===========
 main:
@@ -63,11 +56,6 @@ main:
     adr x0, 0xfc0
     ldr.v s0, [x0]
     str.v s0, [x19]
-    ldr.v s1, [x19]
-    adr x0, 0xfc4
-    ldr.v s0, [x0]
-    fmul s0, s1, s0
-    str.v s0, [x19]
     adr x0, 0xfc8
     ldr.v d0, [x0]
     add x0, sp, #28
@@ -102,125 +90,11 @@ add_into:
     ldr.v d1, [x0]
     fadd d0, d1, d0
     str.v d0, [x0]
-    ldr.v d0, [x0]
     ret
 mul_into:
     ldr.v d1, [x0]
     fmul d0, d1, d0
     str.v d0, [x0]
-    ldr.v d0, [x0]
-    ret
-=========== OPT LEVEL: mininal-quick ===========
-main:
-    sub sp, sp, #48
-    str x19, [xzr]
-    stp x29, x30, [xzr, #15]
-    add x19, sp, #24
-    adr x0, 0xfc0
-    ldr.v s0, [x0]
-    str.v s0, [x19]
-    ldr.v s0, [x19]
-    adr x0, 0xfc4
-    ldr.v s1, [x0]
-    fmul s0, s0, s1
-    str.v s0, [x19]
-    adr x0, 0xfc8
-    ldr.v d0, [x0]
-    add x0, sp, #28
-    str.v d0, [x0]
-    adr x0, 0xfd0
-    ldr.v d0, [x0]
-    add x0, sp, #36
-    str.v d0, [x0]
-    adr x0, 0xfd8
-    ldr.v d0, [x0]
-    add x0, sp, #28
-    bl add_into
-    adr x0, 0xfe0
-    ldr.v d0, [x0]
-    add x0, sp, #36
-    bl mul_into
-    ldr.v s0, [x19]
-    add x0, sp, #28
-    ldr.v d1, [x0]
-    fcvt s1, d1
-    fadd s0, s0, s1
-    add x0, sp, #36
-    ldr.v d1, [x0]
-    fcvt s1, d1
-    fadd s0, s0, s1
-    fcvtzs x0, s0
-    ldr x19, [xzr]
-    ldp x29, x30, [xzr, #15]
-    add sp, sp, #48
-    ret
-add_into:
-    ldr.v d1, [x0]
-    fadd d0, d1, d0
-    str.v d0, [x0]
-    ldr.v d0, [x0]
-    ret
-mul_into:
-    ldr.v d1, [x0]
-    fmul d0, d1, d0
-    str.v d0, [x0]
-    ldr.v d0, [x0]
-    ret
-=========== OPT LEVEL: mininal ===========
-main:
-    sub sp, sp, #48
-    str x19, [xzr]
-    stp x29, x30, [xzr, #15]
-    add x19, sp, #24
-    adr x0, 0xfc0
-    ldr.v s0, [x0]
-    str.v s0, [x19]
-    ldr.v s1, [x19]
-    adr x0, 0xfc4
-    ldr.v s0, [x0]
-    fmul s0, s1, s0
-    str.v s0, [x19]
-    adr x0, 0xfc8
-    ldr.v d0, [x0]
-    add x0, sp, #28
-    str.v d0, [x0]
-    adr x0, 0xfd0
-    ldr.v d0, [x0]
-    add x0, sp, #36
-    str.v d0, [x0]
-    adr x0, 0xfd8
-    ldr.v d0, [x0]
-    add x0, sp, #28
-    bl add_into
-    adr x0, 0xfe0
-    ldr.v d0, [x0]
-    add x0, sp, #36
-    bl mul_into
-    ldr.v s1, [x19]
-    add x0, sp, #28
-    ldr.v d0, [x0]
-    fcvt s0, d0
-    fadd s1, s1, s0
-    add x0, sp, #36
-    ldr.v d0, [x0]
-    fcvt s0, d0
-    fadd s0, s1, s0
-    fcvtzs x0, s0
-    ldr x19, [xzr]
-    ldp x29, x30, [xzr, #15]
-    add sp, sp, #48
-    ret
-add_into:
-    ldr.v d1, [x0]
-    fadd d0, d1, d0
-    str.v d0, [x0]
-    ldr.v d0, [x0]
-    ret
-mul_into:
-    ldr.v d1, [x0]
-    fmul d0, d1, d0
-    str.v d0, [x0]
-    ldr.v d0, [x0]
     ret
 =========== OPT LEVEL: moderate-quick ===========
 main:

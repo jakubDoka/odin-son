@@ -35,43 +35,6 @@ main:
 opaque:
     mov rax, rdi
     ret
-=========== OPT LEVEL: mininal-quick ===========
-main:
-    sub rsp, 8
-    mov rdi, -5
-    call opaque
-    mov.q [rsp], rax
-    mov.q rax, [rsp]
-    imul ax, ax, 3
-    movsx rax, ax
-    mov.q rcx, [rsp]
-    imul ecx, ecx, 3
-    movsxd rcx, ecx
-    add rax, rcx
-    add rsp, 8
-    ret
-opaque:
-    sub rsp, 8
-    mov rax, rdi
-    add rsp, 8
-    ret
-=========== OPT LEVEL: mininal ===========
-main:
-    sub rsp, 8
-    mov rdi, -5
-    call opaque
-    mov rcx, rax
-    mov rax, rcx
-    imul ax, ax, 3
-    movsx rax, ax
-    imul ecx, ecx, 3
-    movsxd rcx, ecx
-    add rax, rcx
-    add rsp, 8
-    ret
-opaque:
-    mov rax, rdi
-    ret
 =========== OPT LEVEL: moderate-quick ===========
 main:
     sub rsp, 8

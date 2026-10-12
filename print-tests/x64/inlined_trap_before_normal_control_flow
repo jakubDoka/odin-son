@@ -4,29 +4,6 @@ main:
     cmp.q [rip + 0xfa1], 0
     jnz 1
     xor eax, eax
-    jmp 4
-1:
-    call foo
-    cmp.q [rip + 0xf8b], 0
-    jz 2
-    xor ecx, ecx
-    jmp 3
-2:
-    mov rcx, 1
-3:
-    mov rax, rcx
-4:
-    mov rax, rax
-    add rsp, 8
-    ret
-foo:
-    ud2
-=========== OPT LEVEL: none ===========
-main:
-    sub rsp, 8
-    cmp.q [rip + 0xfa1], 0
-    jnz 1
-    xor eax, eax
     jmp 3
 1:
     call foo
@@ -37,34 +14,12 @@ main:
 2:
     mov rax, 1
 3:
-    add rsp, 8
-    ret
-foo:
-    ud2
-=========== OPT LEVEL: mininal-quick ===========
-main:
-    sub rsp, 8
-    cmp.q [rip + 0xfa1], 0
-    jnz 1
-    xor eax, eax
-    jmp 4
-1:
-    call foo
-    cmp.q [rip + 0xf8b], 0
-    jz 2
-    xor ecx, ecx
-    jmp 3
-2:
-    mov rcx, 1
-3:
-    mov rax, rcx
-4:
     mov rax, rax
     add rsp, 8
     ret
 foo:
     ud2
-=========== OPT LEVEL: mininal ===========
+=========== OPT LEVEL: none ===========
 main:
     sub rsp, 8
     cmp.q [rip + 0xfa1], 0

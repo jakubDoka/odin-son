@@ -388,7 +388,7 @@ meta_of :: #force_inline proc(
 		sout = IOUT
 	}
 
-	switch atype(node) {
+	#partial switch atype(node) {
 	case .Nil,
 	     .Entry,
 	     .Then,
@@ -399,8 +399,6 @@ meta_of :: #force_inline proc(
 	     .End,
 	     .Simd_Extract_Lsbs:
 		fmt.panicf("should not reach this: %v", node)
-	case .Dbg_Sym_Update, .Dbg_Scope, .Dbg_Sym_Decl:
-		fmt.panicf("TODO: %v", node)
 	case .Split_Mem,
 	     .Merge_Mem,
 	     .Sym,
@@ -764,7 +762,9 @@ emit_instr :: proc(
 		is_f64 = inp.dt == .F64
 	}
 
-	emit: switch kind {
+	#partial emit: switch kind {
+	case:
+		fmt.panicf("TODO: %v", node)
 	case .Nil,
 	     .Entry,
 	     .Then,
@@ -775,8 +775,6 @@ emit_instr :: proc(
 	     .End,
 	     .Simd_Extract_Lsbs:
 		fmt.panicf("should not reach this: %v", node)
-	case .U_F_From_I, .Rem, .U_Rem, .Dbg_Sym_Update, .Dbg_Scope, .Dbg_Sym_Decl:
-		fmt.panicf("TODO: %v", node)
 	case .Split_Mem,
 	     .Merge_Mem,
 	     .Sym,
@@ -1479,8 +1477,6 @@ emit_instr :: proc(
 
 		// ret
 		emit_op(ctx.code, 0xd65f03c0)
-	case:
-		fmt.panicf("TODO %v", node)
 	}
 }
 

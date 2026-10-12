@@ -671,7 +671,7 @@ IDEAL_CLASSES := [bac.Node_Type]Class_Spec {
 	},
 	.Ret = {id = Tup, args = {"call_end"}, extra_args = {"idx"}},
 	.Return = {id = Cfg, varargs = true, default_type = .Void},
-	.Dbg_Sym_Decl = {id = bac.Dbg_Sym_Decl, default_type = .Void},
+	.Dbg_Sym_Decl = {id = bac.Dbg_Sym, default_type = .Void},
 	.Dbg_Sym_Update = {
 		default_type = .Void,
 		args = {"new_value", "prev_update"},

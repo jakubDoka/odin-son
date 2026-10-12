@@ -205,6 +205,8 @@ end_loop :: proc(graph: ^bac.Proc, node_scope: ^Node_ID, state: ^Loop_State) {
 
 	bscope := node_scope^
 	if bscope != 0 {
+		context.allocator, _ = arna.scrath()
+
 		backedge := expand_node(graph, bscope)
 		fmt.assertf(
 			init.input_count == backedge.input_count,
@@ -328,7 +330,7 @@ push_scope_value :: proc(
 	assert(Node_Type(scope_node.rtype) == .Scope)
 	if should_debug_track(graph, value) {
 		decl := bac.add_dbg_sym_decl(graph, name)
-		bac.get_extra(graph, decl, bac.Dbg_Sym_Decl).name = name
+		bac.get_extra(graph, decl, bac.Dbg_Sym).name = name
 		bac.connect(graph, scope, decl)
 	}
 	return bac.connect(graph, scope, value)
@@ -433,6 +435,7 @@ merge_scopes :: proc(
 		lvalue := get_scope_value(graph, lctrl, i)
 		rvalue := get_scope_value(graph, rctrl, i)
 		if lvalue == rvalue do continue
+
 		phi := bac.add_phi(
 			graph,
 			"phi",

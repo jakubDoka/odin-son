@@ -228,8 +228,9 @@ when SPEC_NOT_PRESENT {
 	add_poison :: proc(graph: ^Proc, name: string) -> Node_ID {return 0}
 }
 
-Dbg_Sym_Decl :: struct {
+Dbg_Sym :: struct {
 	name: string,
+	type: rawptr,
 }
 
 Class_Flags :: bit_set[Class_Flag;u8]
@@ -2108,6 +2109,8 @@ connect :: proc(graph: ^Proc, use: Node_ID, def: Node_ID) -> int {
 
 @(tag = "node_proc")
 add_input_node :: proc(graph: ^Proc, node: ^Node, inp: Node_ID) -> int {
+	if node == &NIL_NODE do return 0
+
 	free_idx := int(node.input_count)
 	grow: if node.input_count == node.input_cap {
 		graph.waste += int(node.input_cap * size_of(Node_ID))

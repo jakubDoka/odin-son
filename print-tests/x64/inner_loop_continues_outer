@@ -4,40 +4,28 @@ main:
     push rbp
     sub rsp, 8
     xor eax, eax
-    add rax, 1
-    cmp rax, 5
-    setz cl
-    movzx rcx, cl
-    xor edx, edx
-    xor eax, eax
+    xor ecx, ecx
 1:
-    add rdx, 1
-    cmp rdx, 5
-    jz 6
-    test cl, cl
-    jnz 4
-    xor ebx, ebx
+    add rcx, 1
+    cmp rcx, 5
+    jz 4
     mov.q [rsp], rax
+    xor edx, edx
 2:
-    add rbx, 1
-    cmp rbx, 2
-    setz bpl
-    movzx rbp, bpl
-    mov.q rsi, [rsp]
-    add rsi, 1
-    test bpl, bpl
+    add rdx, 1
+    cmp rdx, 2
+    setz bl
+    movzx rbx, bl
+    mov.q rbp, [rsp]
+    add rbp, 1
+    test bl, bl
     jnz 3
-    mov.q [rsp], rsi
+    mov.q [rsp], rbp
     jmp 2
 3:
-    mov.q [rsp], rsi
-    jmp 5
-4:
-    mov.q [rsp], rax
-5:
-    mov.q rax, [rsp]
+    mov rax, rbp
     jmp 1
-6:
+4:
     add rsp, 8
     pop rbp
     pop rbx
@@ -45,102 +33,24 @@ main:
 =========== OPT LEVEL: none ===========
 main:
     xor eax, eax
-    add rax, 1
-    cmp rax, 5
-    setz dil
-    movzx rdi, dil
     xor ecx, ecx
-    xor eax, eax
 1:
     add rcx, 1
     cmp rcx, 5
     jz 4
-    test dil, dil
-    jnz 3
-    xor edx, edx
+    mov rdx, rax
+    xor eax, eax
 2:
-    add rdx, 1
-    cmp rdx, 2
+    add rax, 1
+    cmp rax, 2
     setz sil
     movzx rsi, sil
-    add rax, 1
+    add rdx, 1
     test sil, sil
     jnz 3
     jmp 2
 3:
-    jmp 1
-4:
-    ret
-=========== OPT LEVEL: mininal-quick ===========
-main:
-    push rbx
-    push rbp
-    sub rsp, 8
-    xor eax, eax
-    add rax, 1
-    cmp rax, 5
-    setz cl
-    movzx rcx, cl
-    xor edx, edx
-    xor eax, eax
-1:
-    add rdx, 1
-    cmp rdx, 5
-    jz 6
-    test cl, cl
-    jnz 4
-    xor ebx, ebx
-    mov.q [rsp], rax
-2:
-    add rbx, 1
-    cmp rbx, 2
-    setz bpl
-    movzx rbp, bpl
-    mov.q rsi, [rsp]
-    add rsi, 1
-    test bpl, bpl
-    jnz 3
-    mov.q [rsp], rsi
-    jmp 2
-3:
-    mov.q [rsp], rsi
-    jmp 5
-4:
-    mov.q [rsp], rax
-5:
-    mov.q rax, [rsp]
-    jmp 1
-6:
-    add rsp, 8
-    pop rbp
-    pop rbx
-    ret
-=========== OPT LEVEL: mininal ===========
-main:
-    xor eax, eax
-    add rax, 1
-    cmp rax, 5
-    setz dil
-    movzx rdi, dil
-    xor ecx, ecx
-    xor eax, eax
-1:
-    add rcx, 1
-    cmp rcx, 5
-    jz 4
-    test dil, dil
-    jnz 3
-    xor edx, edx
-2:
-    add rdx, 1
-    cmp rdx, 2
-    setz sil
-    movzx rsi, sil
-    add rax, 1
-    test sil, sil
-    jnz 3
-    jmp 2
-3:
+    mov rax, rdx
     jmp 1
 4:
     ret

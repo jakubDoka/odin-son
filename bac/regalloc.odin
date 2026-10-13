@@ -155,6 +155,11 @@ Regalloc :: struct {
 	param_specs: []Param_Spec,
 }
 
+Regalloc_Output :: struct {
+	allocs:          []Reg,
+	temp_stack_slot: Reg_Kind,
+}
+
 RM_Interner :: struct {
 	slots:    []#soa[]SS_Entry([^]i64),
 	lens:     []int,

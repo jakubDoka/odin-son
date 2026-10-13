@@ -1,13 +1,10 @@
 =========== OPT LEVEL: none-quick ===========
 opaque:
-    sub rsp, 8
     mov rax, rdi
-    add rsp, 8
     ret
 consume:
-    sub rsp, 8
-    mov.q [rsp], rdi
-    mov.q rax, [rsp]
+    mov.q [rsp - 0x8], rdi
+    mov.q rax, [rsp - 0x8]
     add rax, rsi
     mov rax, rax
     add rax, rdx
@@ -18,13 +15,12 @@ consume:
     mov rax, rax
     add rax, r9
     mov rax, rax
+    mov.q rcx, [rsp + 0x8]
+    add rax, rcx
+    mov rax, rax
     mov.q rcx, [rsp + 0x10]
     add rax, rcx
     mov rax, rax
-    mov.q rcx, [rsp + 0x18]
-    add rax, rcx
-    mov rax, rax
-    add rsp, 8
     ret
 main:
     sub rsp, 0x58
@@ -137,14 +133,11 @@ main:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 opaque:
-    sub rsp, 8
     mov rax, rdi
-    add rsp, 8
     ret
 consume:
-    sub rsp, 8
-    mov.q [rsp], rdi
-    mov.q rax, [rsp]
+    mov.q [rsp - 0x8], rdi
+    mov.q rax, [rsp - 0x8]
     add rax, rsi
     mov rax, rax
     add rax, rdx
@@ -155,13 +148,12 @@ consume:
     mov rax, rax
     add rax, r9
     mov rax, rax
+    mov.q rcx, [rsp + 0x8]
+    add rax, rcx
+    mov rax, rax
     mov.q rcx, [rsp + 0x10]
     add rax, rcx
     mov rax, rax
-    mov.q rcx, [rsp + 0x18]
-    add rax, rcx
-    mov rax, rax
-    add rsp, 8
     ret
 main:
     sub rsp, 0x58

@@ -2,30 +2,29 @@
 main:
     push rbx
     push rbp
-    sub rsp, 0x18
     xor ecx, ecx
     xor edx, edx
 1:
-    mov.q [rsp], rdx
-    mov.q [rsp + 0x8], rcx
+    mov.q [rsp - 0x18], rdx
+    mov.q [rsp - 0x10], rcx
     xor ebx, ebx
 2:
-    mov.q rbp, [rsp]
+    mov.q rbp, [rsp - 0x18]
     imul rbp, rbx
     mov rsi, rbx
     add rsi, 1
     cmp rsi, 3
     setnle dil
     movzx rdi, dil
-    mov.q rax, [rsp + 0x8]
+    mov.q rax, [rsp - 0x10]
     add rax, rbp
     test dil, dil
     jnz 3
-    mov.q [rsp + 0x8], rax
+    mov.q [rsp - 0x10], rax
     mov rbx, rsi
     jmp 2
 3:
-    mov.q rbx, [rsp]
+    mov.q rbx, [rsp - 0x18]
     add rbx, 1
     cmp rbx, 3
     jnle 4
@@ -33,7 +32,6 @@ main:
     mov rcx, rax
     jmp 1
 4:
-    add rsp, 0x18
     pop rbp
     pop rbx
     ret
@@ -65,30 +63,29 @@ main:
 main:
     push rbx
     push rbp
-    sub rsp, 0x18
     xor ecx, ecx
     xor edx, edx
 1:
-    mov.q [rsp], rdx
-    mov.q [rsp + 0x8], rcx
+    mov.q [rsp - 0x18], rdx
+    mov.q [rsp - 0x10], rcx
     xor ebx, ebx
 2:
-    mov.q rbp, [rsp]
+    mov.q rbp, [rsp - 0x18]
     imul rbp, rbx
     mov rsi, rbx
     add rsi, 1
     cmp rsi, 3
     setnle dil
     movzx rdi, dil
-    mov.q rax, [rsp + 0x8]
+    mov.q rax, [rsp - 0x10]
     add rax, rbp
     test dil, dil
     jnz 3
-    mov.q [rsp + 0x8], rax
+    mov.q [rsp - 0x10], rax
     mov rbx, rsi
     jmp 2
 3:
-    mov.q rbx, [rsp]
+    mov.q rbx, [rsp - 0x18]
     add rbx, 1
     cmp rbx, 3
     jnle 4
@@ -96,7 +93,6 @@ main:
     mov rcx, rax
     jmp 1
 4:
-    add rsp, 0x18
     pop rbp
     pop rbx
     ret

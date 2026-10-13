@@ -1,104 +1,88 @@
 =========== OPT LEVEL: none-quick ===========
 add32:
-    sub rsp, 0x18
-    movss.d [rsp], xmm0
+    movss.d [rsp - 0x18], xmm0
     movss.d xmm0, [rdi]
-    movss.d xmm1, [rsp]
+    movss.d xmm1, [rsp - 0x18]
     addss xmm0, xmm1
     movss.d [rdi], xmm0
-    add rsp, 0x18
     ret
 sub32:
-    sub rsp, 0x18
-    movss.d [rsp], xmm0
+    movss.d [rsp - 0x18], xmm0
     movss.d xmm0, [rdi]
-    movss.d xmm1, [rsp]
+    movss.d xmm1, [rsp - 0x18]
     subss xmm0, xmm1
     movss.d [rdi], xmm0
-    add rsp, 0x18
     ret
 mul32:
-    sub rsp, 0x18
-    movss.d [rsp], xmm0
+    movss.d [rsp - 0x18], xmm0
     movss.d xmm0, [rdi]
-    movss.d xmm1, [rsp]
+    movss.d xmm1, [rsp - 0x18]
     mulss xmm0, xmm1
     movss.d [rdi], xmm0
-    add rsp, 0x18
     ret
 div32:
-    sub rsp, 0x18
-    movss.d [rsp], xmm0
+    movss.d [rsp - 0x18], xmm0
     movss.d xmm0, [rdi]
-    movss.d xmm1, [rsp]
+    movss.d xmm1, [rsp - 0x18]
     divss xmm0, xmm1
     movss.d [rdi], xmm0
-    add rsp, 0x18
     ret
 add64:
-    sub rsp, 0x18
-    movsd.q [rsp], xmm0
+    movsd.q [rsp - 0x18], xmm0
     movsd.q xmm0, [rdi]
-    movsd.q xmm1, [rsp]
+    movsd.q xmm1, [rsp - 0x18]
     addsd xmm0, xmm1
     movsd.q [rdi], xmm0
-    add rsp, 0x18
     ret
 sub64:
-    sub rsp, 0x18
-    movsd.q [rsp], xmm0
+    movsd.q [rsp - 0x18], xmm0
     movsd.q xmm0, [rdi]
-    movsd.q xmm1, [rsp]
+    movsd.q xmm1, [rsp - 0x18]
     subsd xmm0, xmm1
     movsd.q [rdi], xmm0
-    add rsp, 0x18
     ret
 mul64:
-    sub rsp, 0x18
-    movsd.q [rsp], xmm0
+    movsd.q [rsp - 0x18], xmm0
     movsd.q xmm0, [rdi]
-    movsd.q xmm1, [rsp]
+    movsd.q xmm1, [rsp - 0x18]
     mulsd xmm0, xmm1
     movsd.q [rdi], xmm0
-    add rsp, 0x18
     ret
 div64:
-    sub rsp, 0x18
-    movsd.q [rsp], xmm0
+    movsd.q [rsp - 0x18], xmm0
     movsd.q xmm0, [rdi]
-    movsd.q xmm1, [rsp]
+    movsd.q xmm1, [rsp - 0x18]
     divsd xmm0, xmm1
     movsd.q [rdi], xmm0
-    add rsp, 0x18
     ret
 main:
     sub rsp, 0x18
-    movss.d xmm0, [rip + 0xe63]
+    movss.d xmm0, [rip + 0xea3]
     movss.d [rsp], xmm0
-    movss.d xmm0, [rip + 0xe58]
+    movss.d xmm0, [rip + 0xe98]
     lea rdi, [rsp]
     call add32
-    movss.d xmm0, [rip + 0xe4a]
+    movss.d xmm0, [rip + 0xe8a]
     lea rdi, [rsp]
     call sub32
-    movss.d xmm0, [rip + 0xe3c]
+    movss.d xmm0, [rip + 0xe7c]
     lea rdi, [rsp]
     call mul32
-    movss.d xmm0, [rip + 0xe2e]
+    movss.d xmm0, [rip + 0xe6e]
     lea rdi, [rsp]
     call div32
-    movsd.q xmm0, [rip + 0xe24]
+    movsd.q xmm0, [rip + 0xe64]
     movsd.q [rsp + 0x4], xmm0
-    movsd.q xmm0, [rip + 0xe1c]
+    movsd.q xmm0, [rip + 0xe5c]
     lea rdi, [rsp + 0x4]
     call add64
-    movsd.q xmm0, [rip + 0xe11]
+    movsd.q xmm0, [rip + 0xe51]
     lea rdi, [rsp + 0x4]
     call sub64
-    movsd.q xmm0, [rip + 0xe06]
+    movsd.q xmm0, [rip + 0xe46]
     lea rdi, [rsp + 0x4]
     call mul64
-    movsd.q xmm0, [rip + 0xdfb]
+    movsd.q xmm0, [rip + 0xe3b]
     lea rdi, [rsp + 0x4]
     call div64
     movss.d xmm0, [rsp]
@@ -196,105 +180,89 @@ main:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 add32:
-    sub rsp, 0x18
-    movss.d [rsp], xmm0
+    movss.d [rsp - 0x18], xmm0
     movss.d xmm0, [rdi]
-    movss.d xmm1, [rsp]
+    movss.d xmm1, [rsp - 0x18]
     addss xmm0, xmm1
     movss.d [rdi], xmm0
-    add rsp, 0x18
     ret
 sub32:
-    sub rsp, 0x18
-    movss.d [rsp], xmm0
+    movss.d [rsp - 0x18], xmm0
     movss.d xmm0, [rdi]
-    movss.d xmm1, [rsp]
+    movss.d xmm1, [rsp - 0x18]
     subss xmm0, xmm1
     movss.d [rdi], xmm0
-    add rsp, 0x18
     ret
 mul32:
-    sub rsp, 0x18
-    movss.d [rsp], xmm0
+    movss.d [rsp - 0x18], xmm0
     movss.d xmm0, [rdi]
-    movss.d xmm1, [rsp]
+    movss.d xmm1, [rsp - 0x18]
     mulss xmm0, xmm1
     movss.d [rdi], xmm0
-    add rsp, 0x18
     ret
 div32:
-    sub rsp, 0x18
-    movss.d [rsp], xmm0
+    movss.d [rsp - 0x18], xmm0
     movss.d xmm0, [rdi]
-    movss.d xmm1, [rsp]
+    movss.d xmm1, [rsp - 0x18]
     divss xmm0, xmm1
     movss.d [rdi], xmm0
-    add rsp, 0x18
     ret
 add64:
-    sub rsp, 0x18
-    movsd.q [rsp], xmm0
+    movsd.q [rsp - 0x18], xmm0
     movsd.q xmm0, [rdi]
-    movsd.q xmm1, [rsp]
+    movsd.q xmm1, [rsp - 0x18]
     addsd xmm0, xmm1
     movsd.q [rdi], xmm0
-    add rsp, 0x18
     ret
 sub64:
-    sub rsp, 0x18
-    movsd.q [rsp], xmm0
+    movsd.q [rsp - 0x18], xmm0
     movsd.q xmm0, [rdi]
-    movsd.q xmm1, [rsp]
+    movsd.q xmm1, [rsp - 0x18]
     subsd xmm0, xmm1
     movsd.q [rdi], xmm0
-    add rsp, 0x18
     ret
 mul64:
-    sub rsp, 0x18
-    movsd.q [rsp], xmm0
+    movsd.q [rsp - 0x18], xmm0
     movsd.q xmm0, [rdi]
-    movsd.q xmm1, [rsp]
+    movsd.q xmm1, [rsp - 0x18]
     mulsd xmm0, xmm1
     movsd.q [rdi], xmm0
-    add rsp, 0x18
     ret
 div64:
-    sub rsp, 0x18
-    movsd.q [rsp], xmm0
+    movsd.q [rsp - 0x18], xmm0
     movsd.q xmm0, [rdi]
-    movsd.q xmm1, [rsp]
+    movsd.q xmm1, [rsp - 0x18]
     divsd xmm0, xmm1
     movsd.q [rdi], xmm0
-    add rsp, 0x18
     ret
 main:
     sub rsp, 0x18
-    movss.d xmm0, [rip + 0xe63]
+    movss.d xmm0, [rip + 0xea3]
     movss.d [rsp], xmm0
-    movss.d xmm0, [rip + 0xe58]
+    movss.d xmm0, [rip + 0xe98]
     lea rdi, [rsp]
     call add32
-    movss.d xmm0, [rip + 0xe4a]
+    movss.d xmm0, [rip + 0xe8a]
     lea rdi, [rsp]
     call sub32
-    movss.d xmm0, [rip + 0xe3c]
+    movss.d xmm0, [rip + 0xe7c]
     lea rdi, [rsp]
     call mul32
-    movss.d xmm0, [rip + 0xe2e]
+    movss.d xmm0, [rip + 0xe6e]
     lea rdi, [rsp]
     call div32
-    movsd.q xmm0, [rip + 0xe24]
+    movsd.q xmm0, [rip + 0xe64]
     movsd.q [rsp + 0x4], xmm0
-    movsd.q xmm0, [rip + 0xe1c]
+    movsd.q xmm0, [rip + 0xe5c]
     lea rdi, [rsp + 0x4]
     call add64
-    movsd.q xmm0, [rip + 0xe11]
+    movsd.q xmm0, [rip + 0xe51]
     lea rdi, [rsp + 0x4]
     call sub64
-    movsd.q xmm0, [rip + 0xe06]
+    movsd.q xmm0, [rip + 0xe46]
     lea rdi, [rsp + 0x4]
     call mul64
-    movsd.q xmm0, [rip + 0xdfb]
+    movsd.q xmm0, [rip + 0xe3b]
     lea rdi, [rsp + 0x4]
     call div64
     movss.d xmm0, [rsp]

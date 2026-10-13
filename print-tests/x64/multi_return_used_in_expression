@@ -1,30 +1,30 @@
 =========== OPT LEVEL: none-quick ===========
 opaque:
-    sub rsp, 8
     mov rax, rdi
-    add rsp, 8
     ret
 minmax:
-    sub rsp, 0x18
-    mov.q [rsp], rdi
-    mov.q [rsp + 0x8], rsi
-    mov.q rax, [rsp + 0x8]
-    mov.q rcx, [rsp]
+    mov.q [rsp - 0x20], rdi
+    mov.q [rsp - 0x18], rsi
+    mov.q rax, [rsp - 0x18]
+    mov.q rcx, [rsp - 0x20]
     cmp rcx, rax
     jnge 2
-    mov.q rax, [rsp + 0x8]
+    mov.q rax, [rsp - 0x18]
     mov.q [rdx], rax
-    push.q [rsp]
-    pop.q [rsp + 0x10]
+    mov.q [rsp - 0x28], r15
+    mov.q r15, [rsp - 0x20]
+    mov.q [rsp - 0x10], r15
+    mov.q r15, [rsp - 0x28]
     jmp 3
 2:
-    mov.q rax, [rsp]
+    mov.q rax, [rsp - 0x20]
     mov.q [rdx], rax
-    push.q [rsp + 0x8]
-    pop.q [rsp + 0x10]
+    mov.q [rsp - 0x28], r15
+    mov.q r15, [rsp - 0x18]
+    mov.q [rsp - 0x10], r15
+    mov.q r15, [rsp - 0x28]
 3:
-    mov.q rax, [rsp + 0x10]
-    add rsp, 0x18
+    mov.q rax, [rsp - 0x10]
     ret
 main:
     sub rsp, 0x18
@@ -81,31 +81,31 @@ main:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 opaque:
-    sub rsp, 8
     mov rax, rdi
-    add rsp, 8
     ret
 minmax:
-    sub rsp, 0x18
-    mov.q [rsp], rdi
-    mov.q [rsp + 0x8], rsi
-    mov.q rax, [rsp + 0x8]
-    mov.q rcx, [rsp]
+    mov.q [rsp - 0x20], rdi
+    mov.q [rsp - 0x18], rsi
+    mov.q rax, [rsp - 0x18]
+    mov.q rcx, [rsp - 0x20]
     cmp rcx, rax
     jnge 2
-    mov.q rax, [rsp + 0x8]
+    mov.q rax, [rsp - 0x18]
     mov.q [rdx], rax
-    push.q [rsp]
-    pop.q [rsp + 0x10]
+    mov.q [rsp - 0x28], r15
+    mov.q r15, [rsp - 0x20]
+    mov.q [rsp - 0x10], r15
+    mov.q r15, [rsp - 0x28]
     jmp 3
 2:
-    mov.q rax, [rsp]
+    mov.q rax, [rsp - 0x20]
     mov.q [rdx], rax
-    push.q [rsp + 0x8]
-    pop.q [rsp + 0x10]
+    mov.q [rsp - 0x28], r15
+    mov.q r15, [rsp - 0x18]
+    mov.q [rsp - 0x10], r15
+    mov.q r15, [rsp - 0x28]
 3:
-    mov.q rax, [rsp + 0x10]
-    add rsp, 0x18
+    mov.q rax, [rsp - 0x10]
     ret
 main:
     sub rsp, 0x18

@@ -29,7 +29,7 @@ regalloc :: proc(
 	sched: ^bac.Schedule,
 	mode: Mode,
 	scratch := context.allocator,
-) -> []bac.Reg {
+) -> bac.Regalloc_Output {
 	if graph.node_spec.collect_meta == nil do return {}
 
 	if graph.node_spec.pre_regalloc_hook != nil {
@@ -59,7 +59,7 @@ regalloc_round :: proc(
 	mode: Mode,
 	round: int,
 ) -> (
-	res: []bac.Reg,
+	res: bac.Regalloc_Output,
 	ok: bool = true,
 ) {
 	context.allocator, _ = arna.scrath(scratch)
@@ -1135,15 +1135,15 @@ regalloc_round :: proc(
 
 	}
 
-	res = make([]bac.Reg, def_count)
+	res.allocs = make([]bac.Reg, def_count)
 	for lrg, j in ctx.lrg_table {
-		res[j] = {
+		res.allocs[j] = {
 			kind  = lrg.mask.kind,
 			index = u16(lrg.reg),
 		}
 	}
 
-	ctx.res = res
+	ctx.res = res.allocs
 
 	lrg_search :: proc(lrgs: []u32, vl: u32) -> (int, bool) {
 		return arna.simd_search(lrgs, vl)
@@ -1563,7 +1563,9 @@ regalloc_round :: proc(
 					redundant_splits += 1
 					inp := expand_node(graph, inode.inps[0])
 
-					if res[inode.gvn] == res[inp.gvn] {
+					src, dst := res.allocs[inode.gvn], res.allocs[inp.gvn]
+
+					if src == dst {
 						continue
 					}
 
@@ -1585,7 +1587,7 @@ regalloc_round :: proc(
 
 						overlaps := bac.reg_mask_contains(
 							umask,
-							res[inode.gvn].index,
+							res.allocs[inode.gvn].index,
 						)
 
 						if overlaps &&
@@ -1594,11 +1596,12 @@ regalloc_round :: proc(
 						   in_slot_node.output_count == 1 &&
 						   in_slot_node.itype == .Split {
 
-							if res[get_node(graph, in_slot_node.inps[0]).gvn] ==
-							   res[inode.gvn] {
+							if res.allocs[get_node(graph, in_slot_node.inps[0]).gvn] ==
+							   res.allocs[inode.gvn] {
 
-								res[inp.gvn] = res[inode.gvn]
-								res[in_slot_node.gvn] = res[inode.gvn]
+								res.allocs[inp.gvn] = res.allocs[inode.gvn]
+								res.allocs[in_slot_node.gvn] =
+									res.allocs[inode.gvn]
 								//if true do panic("")
 								continue
 							}
@@ -1614,7 +1617,7 @@ regalloc_round :: proc(
 						umask := rm_get_use(ctx, onode, o.idx)
 						overlaps := bac.reg_mask_contains(
 							umask,
-							res[inp.gvn].index,
+							res.allocs[inp.gvn].index,
 						)
 
 						if overlaps &&
@@ -1625,6 +1628,14 @@ regalloc_round :: proc(
 					}
 
 					redundant_splits -= 1
+
+					if int(src.index) >= ctx.ra.spill_boundary[src.kind] &&
+					   int(dst.index) >= ctx.ra.spill_boundary[dst.kind] {
+						res.temp_stack_slot = max(
+							res.temp_stack_slot,
+							src.kind + 1,
+						)
+					}
 				}
 
 				keep -= 1
@@ -1634,6 +1645,8 @@ regalloc_round :: proc(
 			remove_range(&bb.instrs, 0, keep)
 		}
 
+		res.temp_stack_slot -= 1
+
 		bac.add_efficiency_stat(
 			graph,
 			.splits_inserted,
@@ -1642,7 +1655,7 @@ regalloc_round :: proc(
 		)
 	}
 
-	if ok do verify_alloc_integrity(ctx, res)
+	if ok do verify_alloc_integrity(ctx, res.allocs)
 
 	log_lrgs(&ctx)
 

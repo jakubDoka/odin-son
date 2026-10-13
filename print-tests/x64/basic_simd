@@ -95,11 +95,10 @@ main:
     add rsp, 0x28
     ret
 from_slice u8:
-    sub rsp, 0x28
-    mov.q [rsp], rdi
-    mov.q [rsp + 0x8], rsi
+    mov.q [rsp - 0x28], rdi
+    mov.q [rsp - 0x20], rsi
     pxor xmm0, xmm0
-    movups.x [rsp + 0x10], xmm0
+    movups.x [rsp - 0x18], xmm0
     xor eax, eax
 7:
     cmp rax, 0x10
@@ -107,17 +106,16 @@ from_slice u8:
     movzx rcx, cl
     test cl, cl
     jnz 8
-    mov.q rcx, [rsp]
+    mov.q rcx, [rsp - 0x28]
     add rcx, rax
     movzx.b ecx, [rcx]
     mov rdx, rax
     add rdx, 1
-    mov.b [rsp + rax + 0x10], cl
+    mov.b [rsp + rax - 0x18], cl
     mov rax, rdx
     jmp 7
 8:
-    movups.x xmm0, [rsp + 0x10]
-    add rsp, 0x28
+    movups.x xmm0, [rsp - 0x18]
     ret
 simd_search u8:
     push rbx
@@ -308,11 +306,10 @@ main:
     add rsp, 0x28
     ret
 from_slice u8:
-    sub rsp, 0x28
-    mov.q [rsp], rdi
-    mov.q [rsp + 0x8], rsi
+    mov.q [rsp - 0x28], rdi
+    mov.q [rsp - 0x20], rsi
     pxor xmm0, xmm0
-    movups.x [rsp + 0x10], xmm0
+    movups.x [rsp - 0x18], xmm0
     xor eax, eax
 7:
     cmp rax, 0x10
@@ -320,17 +317,16 @@ from_slice u8:
     movzx rcx, cl
     test cl, cl
     jnz 8
-    mov.q rcx, [rsp]
+    mov.q rcx, [rsp - 0x28]
     add rcx, rax
     movzx.b edx, [rcx]
     mov rcx, rax
     add rcx, 1
-    mov.b [rsp + rax + 0x10], dl
+    mov.b [rsp + rax - 0x18], dl
     mov rax, rcx
     jmp 7
 8:
-    movups.x xmm0, [rsp + 0x10]
-    add rsp, 0x28
+    movups.x xmm0, [rsp - 0x18]
     ret
 simd_search u8:
     push rbx
@@ -523,11 +519,10 @@ main:
     add rsp, 0x28
     ret
 from_slice u8:
-    sub rsp, 0x28
-    mov.q [rsp], rdi
-    mov.q [rsp + 0x8], rsi
+    mov.q [rsp - 0x28], rdi
+    mov.q [rsp - 0x20], rsi
     pxor xmm0, xmm0
-    movups.x [rsp + 0x10], xmm0
+    movups.x [rsp - 0x18], xmm0
     xor eax, eax
 7:
     cmp rax, 0x10
@@ -535,17 +530,16 @@ from_slice u8:
     movzx rcx, cl
     test cl, cl
     jnz 8
-    mov.q rcx, [rsp]
+    mov.q rcx, [rsp - 0x28]
     add rcx, rax
     movzx.b ecx, [rcx]
     mov rdx, rax
     add rdx, 1
-    mov.b [rsp + rax + 0x10], cl
+    mov.b [rsp + rax - 0x18], cl
     mov rax, rdx
     jmp 7
 8:
-    movups.x xmm0, [rsp + 0x10]
-    add rsp, 0x28
+    movups.x xmm0, [rsp - 0x18]
     ret
 simd_search u8:
     push rbx
@@ -736,11 +730,10 @@ main:
     add rsp, 0x28
     ret
 from_slice u8:
-    sub rsp, 0x28
-    mov.q [rsp], rdi
-    mov.q [rsp + 0x8], rsi
+    mov.q [rsp - 0x28], rdi
+    mov.q [rsp - 0x20], rsi
     pxor xmm0, xmm0
-    movups.x [rsp + 0x10], xmm0
+    movups.x [rsp - 0x18], xmm0
     xor eax, eax
 7:
     cmp rax, 0x10
@@ -748,17 +741,16 @@ from_slice u8:
     movzx rcx, cl
     test cl, cl
     jnz 8
-    mov.q rcx, [rsp]
+    mov.q rcx, [rsp - 0x28]
     add rcx, rax
     movzx.b edx, [rcx]
     mov rcx, rax
     add rcx, 1
-    mov.b [rsp + rax + 0x10], dl
+    mov.b [rsp + rax - 0x18], dl
     mov rax, rcx
     jmp 7
 8:
-    movups.x xmm0, [rsp + 0x10]
-    add rsp, 0x28
+    movups.x xmm0, [rsp - 0x18]
     ret
 simd_search u8:
     push rbx

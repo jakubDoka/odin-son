@@ -153,29 +153,26 @@ compose:
     add rsp, 0x18
     ret
 kentus:
-    sub rsp, 8
     mov rax, rdi
-    mov.d [rsp], eax
+    mov.d [rsp - 0x8], eax
     mov rax, rdi
     shr rax, 0x30
     mov rcx, rax
     mov rax, rdi
     shr rax, 0x20
-    mov.w [rsp + 0x4], ax
-    mov.b [rsp + 0x6], cl
-    movzx.b eax, [rsp]
-    add.b al, [rsp + 0x1]
-    add.b al, [rsp + 0x2]
-    add.b al, [rsp + 0x3]
-    add.b al, [rsp + 0x4]
-    add.b al, [rsp + 0x5]
+    mov.w [rsp - 0x4], ax
+    mov.b [rsp - 0x2], cl
+    movzx.b eax, [rsp - 0x8]
+    add.b al, [rsp - 0x7]
+    add.b al, [rsp - 0x6]
+    add.b al, [rsp - 0x5]
+    add.b al, [rsp - 0x4]
+    add.b al, [rsp - 0x3]
     add al, cl
-    add rsp, 8
     ret
 fortran:
-    sub rsp, 8
-    mov.q [rsp], rdi
-    mov.q rax, [rsp]
+    mov.q [rsp - 0x8], rdi
+    mov.q rax, [rsp - 0x8]
     add rax, rsi
     mov rax, rax
     add.q rax, [rdx]
@@ -184,12 +181,10 @@ fortran:
     mov rax, rax
     add.q rax, [rdx + 0x10]
     mov rax, rax
-    add rsp, 8
     ret
 brahma:
-    sub rsp, 8
-    mov.q [rsp], rdi
-    mov.q rax, [rsp]
+    mov.q [rsp - 0x8], rdi
+    mov.q rax, [rsp - 0x8]
     add rax, rsi
     mov rax, rax
     add rax, rdx
@@ -198,11 +193,10 @@ brahma:
     mov rax, rax
     add rax, r8
     mov rax, rax
+    add.q rax, [rsp + 0x8]
+    mov rax, rax
     add.q rax, [rsp + 0x10]
     mov rax, rax
-    add.q rax, [rsp + 0x18]
-    mov rax, rax
-    add rsp, 8
     ret
 stringa_dinga:
     imul rax, rdx, 3
@@ -233,9 +227,8 @@ stringa_dinga:
     add rax, rcx
     ret
 load_of_args:
-    sub rsp, 8
-    mov.q [rsp], rdi
-    mov.q rax, [rsp]
+    mov.q [rsp - 0x8], rdi
+    mov.q rax, [rsp - 0x8]
     add rax, rsi
     mov rax, rax
     add rax, rdx
@@ -246,31 +239,28 @@ load_of_args:
     mov rax, rax
     add rax, r9
     mov rax, rax
+    mov.q rcx, [rsp + 0x8]
+    add rax, rcx
+    mov rax, rax
     mov.q rcx, [rsp + 0x10]
     add rax, rcx
     mov rax, rax
     mov.q rcx, [rsp + 0x18]
     add rax, rcx
     mov rax, rax
-    mov.q rcx, [rsp + 0x20]
-    add rax, rcx
-    mov rax, rax
-    add rsp, 8
     ret
 return_stru:
-    sub rsp, 0x18
-    mov.q [rsp], rdi
-    mov.q [rsp + 0x8], rsi
-    mov.q rax, [rsp]
-    mov.q rdx, [rsp + 0x8]
-    add rsp, 0x18
+    mov.q [rsp - 0x18], rdi
+    mov.q [rsp - 0x10], rsi
+    mov.q rax, [rsp - 0x18]
+    mov.q rdx, [rsp - 0x10]
     ret
 return_stru3:
     sub rsp, 8
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 7
-    call -0x537
+    call -0x517
     mov.w [rsp], 0x201
     mov.b [rsp + 0x2], 3
     mov.d [rsp + 0x3], 0x7060504
@@ -288,7 +278,7 @@ return_stru4:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0xf
-    call -0x587
+    call -0x567
     call return_stru3
     mov rcx, rax
     mov.d [rsp], ecx
@@ -468,24 +458,22 @@ compose:
     pop rbx
     ret
 kentus:
-    sub rsp, 8
     mov rax, rdi
-    mov.d [rsp], eax
+    mov.d [rsp - 0x8], eax
     mov rax, rdi
     shr rax, 0x30
     mov rcx, rax
     mov rax, rdi
     shr rax, 0x20
-    mov.w [rsp + 0x4], ax
-    mov.b [rsp + 0x6], cl
-    movzx.b eax, [rsp]
-    add.b al, [rsp + 0x1]
-    add.b al, [rsp + 0x2]
-    add.b al, [rsp + 0x3]
-    add.b al, [rsp + 0x4]
-    add.b al, [rsp + 0x5]
+    mov.w [rsp - 0x4], ax
+    mov.b [rsp - 0x2], cl
+    movzx.b eax, [rsp - 0x8]
+    add.b al, [rsp - 0x7]
+    add.b al, [rsp - 0x6]
+    add.b al, [rsp - 0x5]
+    add.b al, [rsp - 0x4]
+    add.b al, [rsp - 0x3]
     add al, cl
-    add rsp, 8
     ret
 fortran:
     mov rax, rdi
@@ -556,7 +544,7 @@ return_stru3:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 7
-    call -0x487
+    call -0x47f
     mov.w [rsp], 0x201
     mov.b [rsp + 0x2], 3
     mov.d [rsp + 0x3], 0x7060504
@@ -574,7 +562,7 @@ return_stru4:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0xf
-    call -0x4d7
+    call -0x4cf
     call return_stru3
     mov rcx, rax
     mov.d [rsp], ecx
@@ -756,29 +744,26 @@ compose:
     add rsp, 0x18
     ret
 kentus:
-    sub rsp, 8
     mov rax, rdi
-    mov.d [rsp], eax
+    mov.d [rsp - 0x8], eax
     mov rax, rdi
     shr rax, 0x30
     mov rcx, rax
     mov rax, rdi
     shr rax, 0x20
-    mov.w [rsp + 0x4], ax
-    mov.b [rsp + 0x6], cl
-    movzx.b eax, [rsp]
-    add.b al, [rsp + 0x1]
-    add.b al, [rsp + 0x2]
-    add.b al, [rsp + 0x3]
-    add.b al, [rsp + 0x4]
-    add.b al, [rsp + 0x5]
+    mov.w [rsp - 0x4], ax
+    mov.b [rsp - 0x2], cl
+    movzx.b eax, [rsp - 0x8]
+    add.b al, [rsp - 0x7]
+    add.b al, [rsp - 0x6]
+    add.b al, [rsp - 0x5]
+    add.b al, [rsp - 0x4]
+    add.b al, [rsp - 0x3]
     add al, cl
-    add rsp, 8
     ret
 fortran:
-    sub rsp, 8
-    mov.q [rsp], rdi
-    mov.q rax, [rsp]
+    mov.q [rsp - 0x8], rdi
+    mov.q rax, [rsp - 0x8]
     add rax, rsi
     mov rax, rax
     add.q rax, [rdx]
@@ -787,12 +772,10 @@ fortran:
     mov rax, rax
     add.q rax, [rdx + 0x10]
     mov rax, rax
-    add rsp, 8
     ret
 brahma:
-    sub rsp, 8
-    mov.q [rsp], rdi
-    mov.q rax, [rsp]
+    mov.q [rsp - 0x8], rdi
+    mov.q rax, [rsp - 0x8]
     add rax, rsi
     mov rax, rax
     add rax, rdx
@@ -801,11 +784,10 @@ brahma:
     mov rax, rax
     add rax, r8
     mov rax, rax
+    add.q rax, [rsp + 0x8]
+    mov rax, rax
     add.q rax, [rsp + 0x10]
     mov rax, rax
-    add.q rax, [rsp + 0x18]
-    mov rax, rax
-    add rsp, 8
     ret
 stringa_dinga:
     imul rax, rdx, 3
@@ -836,9 +818,8 @@ stringa_dinga:
     add rax, rcx
     ret
 load_of_args:
-    sub rsp, 8
-    mov.q [rsp], rdi
-    mov.q rax, [rsp]
+    mov.q [rsp - 0x8], rdi
+    mov.q rax, [rsp - 0x8]
     add rax, rsi
     mov rax, rax
     add rax, rdx
@@ -849,31 +830,28 @@ load_of_args:
     mov rax, rax
     add rax, r9
     mov rax, rax
+    mov.q rcx, [rsp + 0x8]
+    add rax, rcx
+    mov rax, rax
     mov.q rcx, [rsp + 0x10]
     add rax, rcx
     mov rax, rax
     mov.q rcx, [rsp + 0x18]
     add rax, rcx
     mov rax, rax
-    mov.q rcx, [rsp + 0x20]
-    add rax, rcx
-    mov rax, rax
-    add rsp, 8
     ret
 return_stru:
-    sub rsp, 0x18
-    mov.q [rsp], rdi
-    mov.q [rsp + 0x8], rsi
-    mov.q rax, [rsp]
-    mov.q rdx, [rsp + 0x8]
-    add rsp, 0x18
+    mov.q [rsp - 0x18], rdi
+    mov.q [rsp - 0x10], rsi
+    mov.q rax, [rsp - 0x18]
+    mov.q rdx, [rsp - 0x10]
     ret
 return_stru3:
     sub rsp, 8
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 7
-    call -0x537
+    call -0x517
     mov.w [rsp], 0x201
     mov.b [rsp + 0x2], 3
     mov.d [rsp + 0x3], 0x7060504
@@ -891,7 +869,7 @@ return_stru4:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0xf
-    call -0x587
+    call -0x567
     call return_stru3
     mov rcx, rax
     mov.d [rsp], ecx
@@ -1071,24 +1049,22 @@ compose:
     pop rbx
     ret
 kentus:
-    sub rsp, 8
     mov rax, rdi
-    mov.d [rsp], eax
+    mov.d [rsp - 0x8], eax
     mov rax, rdi
     shr rax, 0x30
     mov rcx, rax
     mov rax, rdi
     shr rax, 0x20
-    mov.w [rsp + 0x4], ax
-    mov.b [rsp + 0x6], cl
-    movzx.b eax, [rsp]
-    add.b al, [rsp + 0x1]
-    add.b al, [rsp + 0x2]
-    add.b al, [rsp + 0x3]
-    add.b al, [rsp + 0x4]
-    add.b al, [rsp + 0x5]
+    mov.w [rsp - 0x4], ax
+    mov.b [rsp - 0x2], cl
+    movzx.b eax, [rsp - 0x8]
+    add.b al, [rsp - 0x7]
+    add.b al, [rsp - 0x6]
+    add.b al, [rsp - 0x5]
+    add.b al, [rsp - 0x4]
+    add.b al, [rsp - 0x3]
     add al, cl
-    add rsp, 8
     ret
 fortran:
     mov rax, rdi
@@ -1159,7 +1135,7 @@ return_stru3:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 7
-    call -0x487
+    call -0x47f
     mov.w [rsp], 0x201
     mov.b [rsp + 0x2], 3
     mov.d [rsp + 0x3], 0x7060504
@@ -1177,7 +1153,7 @@ return_stru4:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0xf
-    call -0x4d7
+    call -0x4cf
     call return_stru3
     mov rcx, rax
     mov.d [rsp], ecx
@@ -1364,24 +1340,22 @@ compose:
     pop rbx
     ret
 kentus:
-    sub rsp, 8
     mov rax, rdi
-    mov.d [rsp], eax
+    mov.d [rsp - 0x8], eax
     mov rax, rdi
     shr rax, 0x30
     mov rcx, rax
     mov rax, rdi
     shr rax, 0x20
-    mov.w [rsp + 0x4], ax
-    mov.b [rsp + 0x6], cl
-    movzx.b eax, [rsp]
-    add.b al, [rsp + 0x1]
-    add.b al, [rsp + 0x2]
-    add.b al, [rsp + 0x3]
-    add.b al, [rsp + 0x4]
-    add.b al, [rsp + 0x5]
+    mov.w [rsp - 0x4], ax
+    mov.b [rsp - 0x2], cl
+    movzx.b eax, [rsp - 0x8]
+    add.b al, [rsp - 0x7]
+    add.b al, [rsp - 0x6]
+    add.b al, [rsp - 0x5]
+    add.b al, [rsp - 0x4]
+    add.b al, [rsp - 0x3]
     add al, cl
-    add rsp, 8
     ret
 fortran:
     mov rax, rdi
@@ -1452,7 +1426,7 @@ return_stru3:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 7
-    call -0x49f
+    call -0x497
     mov.w [rsp], 0x201
     mov.b [rsp + 0x2], 3
     mov.d [rsp + 0x3], 0x7060504
@@ -1476,7 +1450,7 @@ return_stru4:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0xf
-    call -0x503
+    call -0x4fb
     mov rax, rbp
     mov.d [rsp], eax
     mov rax, rbp
@@ -1588,31 +1562,29 @@ main:
     pop rbx
     ret
 kentus:
-    sub rsp, 8
     mov rax, rdi
-    mov.d [rsp], eax
+    mov.d [rsp - 0x8], eax
     mov rax, rdi
     shr rax, 0x30
     mov rcx, rax
     mov rax, rdi
     shr rax, 0x20
-    mov.w [rsp + 0x4], ax
-    mov.b [rsp + 0x6], cl
-    movzx.b eax, [rsp]
-    add.b al, [rsp + 0x1]
-    add.b al, [rsp + 0x2]
-    add.b al, [rsp + 0x3]
-    add.b al, [rsp + 0x4]
-    add.b al, [rsp + 0x5]
+    mov.w [rsp - 0x4], ax
+    mov.b [rsp - 0x2], cl
+    movzx.b eax, [rsp - 0x8]
+    add.b al, [rsp - 0x7]
+    add.b al, [rsp - 0x6]
+    add.b al, [rsp - 0x5]
+    add.b al, [rsp - 0x4]
+    add.b al, [rsp - 0x3]
     add al, cl
-    add rsp, 8
     ret
 return_stru3:
     sub rsp, 8
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 7
-    call -0x1df
+    call -0x1d7
     mov.w [rsp], 0x201
     mov.b [rsp + 0x2], 3
     mov.d [rsp + 0x3], 0x7060504
@@ -1636,7 +1608,7 @@ return_stru4:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0xf
-    call -0x243
+    call -0x23b
     mov rax, rbp
     mov.d [rsp], eax
     mov rax, rbp

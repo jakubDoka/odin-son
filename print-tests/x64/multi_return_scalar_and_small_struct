@@ -1,15 +1,13 @@
 =========== OPT LEVEL: none-quick ===========
 mix:
-    sub rsp, 8
     imul rax, rdi, 2
     mov.q [rsi], rax
     mov rax, rdi
-    mov.d [rsp], eax
+    mov.d [rsp - 0x8], eax
     add rdi, 1
     mov rax, rdi
-    mov.d [rsp + 0x4], eax
-    mov.q rax, [rsp]
-    add rsp, 8
+    mov.d [rsp - 0x4], eax
+    mov.q rax, [rsp - 0x8]
     ret
 main:
     sub rsp, 0x18
@@ -28,16 +26,14 @@ main:
     ret
 =========== OPT LEVEL: none ===========
 mix:
-    sub rsp, 8
     imul rax, rdi, 2
     mov.q [rsi], rax
     mov rax, rdi
-    mov.d [rsp], eax
+    mov.d [rsp - 0x8], eax
     add rdi, 1
     mov rax, rdi
-    mov.d [rsp + 0x4], eax
-    mov.q rax, [rsp]
-    add rsp, 8
+    mov.d [rsp - 0x4], eax
+    mov.q rax, [rsp - 0x8]
     ret
 main:
     sub rsp, 0x18
@@ -56,16 +52,14 @@ main:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 mix:
-    sub rsp, 8
     imul rax, rdi, 2
     mov.q [rsi], rax
     mov rax, rdi
-    mov.d [rsp], eax
+    mov.d [rsp - 0x8], eax
     add rdi, 1
     mov rax, rdi
-    mov.d [rsp + 0x4], eax
-    mov.q rax, [rsp]
-    add rsp, 8
+    mov.d [rsp - 0x4], eax
+    mov.q rax, [rsp - 0x8]
     ret
 main:
     sub rsp, 0x18
@@ -84,16 +78,14 @@ main:
     ret
 =========== OPT LEVEL: moderate ===========
 mix:
-    sub rsp, 8
     imul rax, rdi, 2
     mov.q [rsi], rax
     mov rax, rdi
-    mov.d [rsp], eax
+    mov.d [rsp - 0x8], eax
     add rdi, 1
     mov rax, rdi
-    mov.d [rsp + 0x4], eax
-    mov.q rax, [rsp]
-    add rsp, 8
+    mov.d [rsp - 0x4], eax
+    mov.q rax, [rsp - 0x8]
     ret
 main:
     sub rsp, 0x18
@@ -112,16 +104,14 @@ main:
     ret
 =========== OPT LEVEL: all ===========
 mix:
-    sub rsp, 8
     mov rax, rdi
-    mov.d [rsp], eax
+    mov.d [rsp - 0x8], eax
     mov rax, rdi
     add rax, 1
-    mov.d [rsp + 0x4], eax
-    mov.q rax, [rsp]
+    mov.d [rsp - 0x4], eax
+    mov.q rax, [rsp - 0x8]
     imul rcx, rdi, 2
     mov.q [rsi], rcx
-    add rsp, 8
     ret
 main:
     sub rsp, 0x18
@@ -141,12 +131,10 @@ main:
     ret
 =========== OPT LEVEL: aggresive ===========
 main:
-    sub rsp, 8
     movabs rax, 0x800000007
-    mov.q [rsp], rax
-    movsxd.d rax, [rsp]
+    mov.q [rsp - 0x8], rax
+    movsxd.d rax, [rsp - 0x8]
     imul rcx, rax, 0xa
-    movsxd.d rax, [rsp + 0x4]
+    movsxd.d rax, [rsp - 0x4]
     lea rax, [rcx + rax + 0x578]
-    add rsp, 8
     ret

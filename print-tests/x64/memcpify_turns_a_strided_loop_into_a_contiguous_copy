@@ -318,16 +318,15 @@ main:
     ret
 =========== OPT LEVEL: aggresive ===========
 main:
-    sub rsp, 0x18
-    mov.q [rsp], 0
-    mov.q [rsp + 0x8], 0
+    mov.q [rsp - 0x18], 0
+    mov.q [rsp - 0x10], 0
     xor eax, eax
 1:
     mov rdx, rax
     add rdx, 1
     mov rcx, rdx
-    mov.b [rsp + rax], cl
-    mov.b [rsp + rax + 0x8], 0x64
+    mov.b [rsp + rax - 0x18], cl
+    mov.b [rsp + rax - 0x10], 0x64
     cmp rdx, 8
     setnl cl
     movzx rcx, cl
@@ -336,8 +335,8 @@ main:
     jz 1
     xor eax, eax
 2:
-    movzx.b ecx, [rsp + rax*2]
-    mov.b [rsp + rax*2 + 0x8], cl
+    movzx.b ecx, [rsp + rax*2 - 0x18]
+    mov.b [rsp + rax*2 - 0x10], cl
     add rax, 1
     cmp rax, 4
     setnl cl
@@ -347,7 +346,7 @@ main:
     xor ecx, ecx
     xor edx, edx
 3:
-    movzx.b edi, [rsp + rcx + 0x8]
+    movzx.b edi, [rsp + rcx - 0x10]
     add rcx, 1
     imul rdi, rcx
     cmp rcx, 8
@@ -362,5 +361,4 @@ main:
     cqo
     idiv rcx
     mov rax, rdx
-    add rsp, 0x18
     ret

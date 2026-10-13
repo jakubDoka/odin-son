@@ -1,19 +1,17 @@
 =========== OPT LEVEL: none-quick ===========
 divmod:
-    sub rsp, 0x18
-    mov.q [rsp], rdi
-    mov.q [rsp + 0x8], rdx
-    mov.q rax, [rsp]
+    mov.q [rsp - 0x18], rdi
+    mov.q [rsp - 0x10], rdx
+    mov.q rax, [rsp - 0x18]
     cqo
     idiv rsi
     mov rax, rax
-    mov.q rcx, [rsp + 0x8]
+    mov.q rcx, [rsp - 0x10]
     mov.q [rcx], rax
-    mov.q rax, [rsp]
+    mov.q rax, [rsp - 0x18]
     cqo
     idiv rsi
     mov rax, rdx
-    add rsp, 0x18
     ret
 main:
     sub rsp, 0x18
@@ -54,20 +52,18 @@ main:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 divmod:
-    sub rsp, 0x18
-    mov.q [rsp], rdi
-    mov.q [rsp + 0x8], rdx
-    mov.q rax, [rsp]
+    mov.q [rsp - 0x18], rdi
+    mov.q [rsp - 0x10], rdx
+    mov.q rax, [rsp - 0x18]
     cqo
     idiv rsi
     mov rax, rax
-    mov.q rcx, [rsp + 0x8]
+    mov.q rcx, [rsp - 0x10]
     mov.q [rcx], rax
-    mov.q rax, [rsp]
+    mov.q rax, [rsp - 0x18]
     cqo
     idiv rsi
     mov rax, rdx
-    add rsp, 0x18
     ret
 main:
     sub rsp, 0x18

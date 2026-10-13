@@ -2,7 +2,6 @@
 main:
     push rbx
     push rbp
-    sub rsp, 0x18
     xor eax, eax
     xor ecx, ecx
 1:
@@ -15,13 +14,13 @@ main:
     mov rbx, rax
     add rbx, 2
     mov rbp, 1
-    mov.q [rsp], rbx
+    mov.q [rsp - 0x18], rbx
     jmp 3
 2:
-    mov.q [rsp], rdx
+    mov.q [rsp - 0x18], rdx
     mov rbp, rcx
 3:
-    mov.q rax, [rsp]
+    mov.q rax, [rsp - 0x18]
     mov rcx, rbp
     jmp 1
 4:
@@ -31,7 +30,7 @@ main:
     jmp 10
 5:
     xor edx, edx
-    mov.q [rsp], rcx
+    mov.q [rsp - 0x18], rcx
 6:
     mov rcx, rdx
     add rcx, 1
@@ -44,17 +43,17 @@ main:
     mov rbx, rdx
     add rbx, 2
     mov rbp, 2
-    mov.q [rsp + 0x8], rbx
+    mov.q [rsp - 0x10], rbx
     jmp 8
 7:
-    mov.q rbp, [rsp]
-    mov.q [rsp + 0x8], rcx
+    mov.q rbp, [rsp - 0x18]
+    mov.q [rsp - 0x10], rcx
 8:
-    mov.q rdx, [rsp + 0x8]
-    mov.q [rsp], rbp
+    mov.q rdx, [rsp - 0x10]
+    mov.q [rsp - 0x18], rbp
     jmp 6
 9:
-    mov.q rax, [rsp]
+    mov.q rax, [rsp - 0x18]
 10:
     cmp rax, 0
     jnz 11
@@ -78,7 +77,6 @@ main:
 14:
     mov rax, 1
 15:
-    add rsp, 0x18
     pop rbp
     pop rbx
     ret
@@ -149,7 +147,6 @@ main:
 main:
     push rbx
     push rbp
-    sub rsp, 0x18
     xor eax, eax
     xor ecx, ecx
 1:
@@ -162,13 +159,13 @@ main:
     mov rbx, rax
     add rbx, 2
     mov rbp, 1
-    mov.q [rsp], rbx
+    mov.q [rsp - 0x18], rbx
     jmp 3
 2:
-    mov.q [rsp], rdx
+    mov.q [rsp - 0x18], rdx
     mov rbp, rcx
 3:
-    mov.q rax, [rsp]
+    mov.q rax, [rsp - 0x18]
     mov rcx, rbp
     jmp 1
 4:
@@ -178,7 +175,7 @@ main:
     jmp 10
 5:
     xor edx, edx
-    mov.q [rsp], rcx
+    mov.q [rsp - 0x18], rcx
 6:
     mov rcx, rdx
     add rcx, 1
@@ -191,17 +188,17 @@ main:
     mov rbx, rdx
     add rbx, 2
     mov rbp, 2
-    mov.q [rsp + 0x8], rbx
+    mov.q [rsp - 0x10], rbx
     jmp 8
 7:
-    mov.q rbp, [rsp]
-    mov.q [rsp + 0x8], rcx
+    mov.q rbp, [rsp - 0x18]
+    mov.q [rsp - 0x10], rcx
 8:
-    mov.q rdx, [rsp + 0x8]
-    mov.q [rsp], rbp
+    mov.q rdx, [rsp - 0x10]
+    mov.q [rsp - 0x18], rbp
     jmp 6
 9:
-    mov.q rax, [rsp]
+    mov.q rax, [rsp - 0x18]
 10:
     cmp rax, 0
     jnz 11
@@ -225,7 +222,6 @@ main:
 14:
     mov rax, 1
 15:
-    add rsp, 0x18
     pop rbp
     pop rbx
     ret

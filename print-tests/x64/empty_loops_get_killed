@@ -1,7 +1,6 @@
 =========== OPT LEVEL: none-quick ===========
 main:
     push rbx
-    sub rsp, 0x10
     xor eax, eax
     xor ecx, ecx
 1:
@@ -16,7 +15,7 @@ main:
     jmp 1
 2:
     pxor xmm0, xmm0
-    movups.x [rsp], xmm0
+    movups.x [rsp - 0x10], xmm0
     xor ecx, ecx
 3:
     cmp rcx, 0x10
@@ -24,16 +23,14 @@ main:
     movzx rdx, dl
     test dl, dl
     jnz 4
-    mov.b [rsp + rcx], 1
+    mov.b [rsp + rcx - 0x10], 1
     add rcx, 1
     jmp 3
 4:
-    add rsp, 0x10
     pop rbx
     ret
 =========== OPT LEVEL: none ===========
 main:
-    sub rsp, 0x18
     xor eax, eax
     xor ecx, ecx
 1:
@@ -46,7 +43,7 @@ main:
     jmp 1
 2:
     pxor xmm0, xmm0
-    movups.x [rsp], xmm0
+    movups.x [rsp - 0x18], xmm0
     xor ecx, ecx
 3:
     cmp rcx, 0x10
@@ -54,16 +51,14 @@ main:
     movzx rdx, dl
     test dl, dl
     jnz 4
-    mov.b [rsp + rcx], 1
+    mov.b [rsp + rcx - 0x18], 1
     add rcx, 1
     jmp 3
 4:
-    add rsp, 0x18
     ret
 =========== OPT LEVEL: moderate-quick ===========
 main:
     push rbx
-    sub rsp, 0x10
     xor eax, eax
     xor ecx, ecx
 1:
@@ -78,7 +73,7 @@ main:
     jmp 1
 2:
     pxor xmm0, xmm0
-    movups.x [rsp], xmm0
+    movups.x [rsp - 0x10], xmm0
     xor ecx, ecx
 3:
     cmp rcx, 0x10
@@ -86,16 +81,14 @@ main:
     movzx rdx, dl
     test dl, dl
     jnz 4
-    mov.b [rsp + rcx], 1
+    mov.b [rsp + rcx - 0x10], 1
     add rcx, 1
     jmp 3
 4:
-    add rsp, 0x10
     pop rbx
     ret
 =========== OPT LEVEL: moderate ===========
 main:
-    sub rsp, 0x18
     xor eax, eax
     xor ecx, ecx
 1:
@@ -108,7 +101,7 @@ main:
     jmp 1
 2:
     pxor xmm0, xmm0
-    movups.x [rsp], xmm0
+    movups.x [rsp - 0x18], xmm0
     xor ecx, ecx
 3:
     cmp rcx, 0x10
@@ -116,11 +109,10 @@ main:
     movzx rdx, dl
     test dl, dl
     jnz 4
-    mov.b [rsp + rcx], 1
+    mov.b [rsp + rcx - 0x18], 1
     add rcx, 1
     jmp 3
 4:
-    add rsp, 0x18
     ret
 =========== OPT LEVEL: all ===========
 main:

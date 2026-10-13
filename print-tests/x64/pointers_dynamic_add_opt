@@ -266,18 +266,16 @@ add i8:
     ret
 =========== OPT LEVEL: aggresive ===========
 main:
-    sub rsp, 0x18
-    mov.q [rsp + 0x8], 0
-    mov.q [rsp], 1
-    add.d [rsp + 0x8], 1
-    add.w [rsp + 0xc], 1
-    add.b [rsp + 0xe], 1
-    mov.q rax, [rsp]
-    movsxd.d rcx, [rsp + 0x8]
+    mov.q [rsp - 0x10], 0
+    mov.q [rsp - 0x18], 1
+    add.d [rsp - 0x10], 1
+    add.w [rsp - 0xc], 1
+    add.b [rsp - 0xa], 1
+    mov.q rax, [rsp - 0x18]
+    movsxd.d rcx, [rsp - 0x10]
     add rax, rcx
-    movsx.w rcx, [rsp + 0xc]
+    movsx.w rcx, [rsp - 0xc]
     add rax, rcx
-    movsx.b rcx, [rsp + 0xe]
+    movsx.b rcx, [rsp - 0xa]
     add rax, rcx
-    add rsp, 0x18
     ret

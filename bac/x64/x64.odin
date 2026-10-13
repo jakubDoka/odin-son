@@ -1222,14 +1222,15 @@ meta_of :: proc(
 }
 
 Ctx :: struct {
-	using inner:   bac.Codegen_Emit_Ctx,
-	big_constants: [dynamic]u8,
-	local_relocs:  [dynamic]Local_Reloc,
-	stack_size:    i32,
-	used:          bit_arr.Bit_Set,
-	last_off:      uint,
-	sloc:          bac.Sloc,
-	pushed:        i32,
+	using inner:      bac.Codegen_Emit_Ctx,
+	big_constants:    [dynamic]u8,
+	local_relocs:     [dynamic]Local_Reloc,
+	stack_size:       i32,
+	used:             bit_arr.Bit_Set,
+	last_off:         uint,
+	sloc:             bac.Sloc,
+	pushed:           i32,
+	temp_slot_offset: i32,
 }
 
 Local_Reloc :: struct {
@@ -1269,11 +1270,9 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 	has_call := bac.layout_call_args(ctx.graph, ctx.schedule, &ctx.stack_size)
 	bac.layout_locals(ctx.graph, ctx.schedule, &ctx.stack_size)
 
-	used_red_zone: i32
-	if !has_call {
-		// TODO: the mem2mem moves mess up the stack if we use red zone, so
-		// disable it for now
-		//used_red_zone = min(ctx.red_zone_size, ctx.stack_size)
+	if ctx.temp_stack_slot != max(Reg_Kind) {
+		ctx.temp_slot_offset = ctx.stack_size
+		ctx.stack_size += SPILL_SLOT_SIZE[ctx.temp_stack_slot]
 	}
 
 	params, _ := bac.assemble_args(ctx, len(ctx.param_specs))
@@ -1318,19 +1317,21 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 		ctx.stack_size += padding
 	}
 
-	when false {
-		ctx.stack_size -= used_red_zone
-
-		for mout in mem_outs {
-			local := bac.get_extra(ctx, mout.id, bac.Local)
-			if local == nil do continue
-			local.offset -= used_red_zone
-		}
-
-		for &slot in ctx.spill_slot_base {
-			slot -= used_red_zone
-		}
+	used_red_zone: i32
+	if !has_call {
+		used_red_zone = min(ctx.red_zone_size, ctx.stack_size)
 	}
+
+	ctx.stack_size -= used_red_zone
+	for mout in bac.get_outputs(ctx, bac.find_node(ctx, .Mem)) {
+		local := bac.get_extra(ctx, mout.id, bac.Local)
+		if local == nil do continue
+		local.offset -= used_red_zone
+	}
+	for &slot in ctx.spill_slot_base {
+		slot -= used_red_zone
+	}
+	ctx.temp_slot_offset -= used_red_zone
 
 	for param in params {
 		enode := expand_node(ctx, param)
@@ -2524,23 +2525,24 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 			pfx: u8 = node.dt == .F64 ? 0xF2 : 0xF3
 
 			if d_spill && s_spill {
-				// pure memory-to-memory move: copy the 8-byte spill slot via
-				// the stack with push/pop, which never touches an xmm register.
-				// (slots are 8-byte sized, so this is correct for f32 too.)
-				// push [rsp + $src_off]
-				emit(ctx.code, {0xff})
-				spill_indirect_addr(ctx, Reg(0b110), src_off)
-				next_sloc(ctx)
-				adjust_start := u32(ctx.code.pos - ctx.code_start)
-				cfa :=
-					u32(ctx.pushed + ctx.stack_size) +
-					X64_CFI_SPEC.initial_cfa_offset
-				emit_cfi(ctx, .Def_Cfa_Offset, arg = cfa + 8)
 
-				// pop [rsp + $dst_off]
-				emit(ctx.code, {rex(RAX, RAX, NO_INDEX, true), 0x8F})
-				spill_indirect_addr(ctx, Reg(0b000), dst_off)
-				emit_cfi(ctx, .Def_Cfa_Offset, arg = cfa)
+				TMP :: XMM15
+
+				// movss/movsd [rsp + $temp_slot_offset], $TMP
+				emit(ctx.code, {pfx, rex(TMP, RSP, RAX, false), 0x0f, 0x11})
+				spill_indirect_addr(ctx, TMP, ctx.temp_slot_offset)
+
+				// movss/movsd $TMP, [rsp + $src_off]
+				emit(ctx.code, {pfx, rex(TMP, RSP, RAX, false), 0x0f, 0x10})
+				spill_indirect_addr(ctx, TMP, src_off)
+
+				// movss/movsd [rsp + $dst_off], $TMP
+				emit(ctx.code, {pfx, rex(TMP, RSP, RAX, false), 0x0f, 0x11})
+				spill_indirect_addr(ctx, TMP, dst_off)
+
+				// movss/movsd $TMP, [rsp + $temp_slot_offset]
+				emit(ctx.code, {pfx, rex(TMP, RSP, RAX, false), 0x0f, 0x10})
+				spill_indirect_addr(ctx, TMP, ctx.temp_slot_offset)
 			} else if d_spill {
 				// movss/movsd [rsp + $dst_off], $src
 				emit(ctx.code, {pfx, rex(src, RSP, RAX, false), 0x0f, 0x11})
@@ -2561,20 +2563,23 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 		}
 
 		if d_spill && s_spill {
-			// push [rsp + $src_offset]
-			emit(ctx.code, {0xff})
-			spill_indirect_addr(ctx, Reg(0b110), src_off)
-			next_sloc(ctx)
-			adjust_start := u32(ctx.code.pos - ctx.code_start)
-			cfa :=
-				u32(ctx.pushed + ctx.stack_size) +
-				X64_CFI_SPEC.initial_cfa_offset
-			emit_cfi(ctx, .Def_Cfa_Offset, arg = cfa + 8)
+			TMP :: R15
 
-			// pop [rsp + $dst_off]
-			emit(ctx.code, {rex(RAX, RAX, NO_INDEX, true), 0x8F})
-			spill_indirect_addr(ctx, Reg(0b000), dst_off)
-			emit_cfi(ctx, .Def_Cfa_Offset, arg = cfa)
+			// mov [rsp + $temp_slot_offset], $TMP
+			emit(ctx.code, {rex(TMP, RSP, RAX, true), 0x89})
+			spill_indirect_addr(ctx, TMP, ctx.temp_slot_offset)
+
+			// mov $TMP, [rsp + $src_offset]
+			emit(ctx.code, {rex(TMP, RSP, RAX, true), 0x8b})
+			spill_indirect_addr(ctx, TMP, src_off)
+
+			// mov [rsp + $dst_offset], $src
+			emit(ctx.code, {rex(TMP, RSP, RAX, true), 0x89})
+			spill_indirect_addr(ctx, TMP, dst_off)
+
+			// mov $TMP, [rsp + $src_offset]
+			emit(ctx.code, {rex(TMP, RSP, RAX, true), 0x8b})
+			spill_indirect_addr(ctx, TMP, ctx.temp_slot_offset)
 		} else if d_spill {
 			// mov [rsp + $dst_offset], $src
 			fmt.assertf(int(src) < 16, "%v", node.node)
@@ -2583,7 +2588,6 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 			spill_indirect_addr(ctx, src, dst_off)
 		} else if s_spill {
 			// mov $dst, [rsp + $src_offset]
-
 			emit(ctx.code, {rex(dst, RSP, RAX, true), 0x8b})
 			spill_indirect_addr(ctx, dst, src_off)
 		} else {

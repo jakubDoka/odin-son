@@ -620,11 +620,10 @@ simd_fold u64:
     pop rbx
     ret
 from_slice =16 u8:
-    sub rsp, 0x28
-    mov.q [rsp], rdi
-    mov.q [rsp + 0x8], rsi
+    mov.q [rsp - 0x28], rdi
+    mov.q [rsp - 0x20], rsi
     pxor xmm0, xmm0
-    movups.x [rsp + 0x10], xmm0
+    movups.x [rsp - 0x18], xmm0
     xor eax, eax
 33:
     cmp rax, 0x10
@@ -632,24 +631,22 @@ from_slice =16 u8:
     movzx rcx, cl
     test cl, cl
     jnz 34
-    mov.q rcx, [rsp]
+    mov.q rcx, [rsp - 0x28]
     add rcx, rax
     movzx.b ecx, [rcx]
     mov rdx, rax
     add rdx, 1
-    mov.b [rsp + rax + 0x10], cl
+    mov.b [rsp + rax - 0x18], cl
     mov rax, rdx
     jmp 33
 34:
-    movups.x xmm0, [rsp + 0x10]
-    add rsp, 0x28
+    movups.x xmm0, [rsp - 0x18]
     ret
 from_slice =8 u16:
-    sub rsp, 0x28
-    mov.q [rsp], rdi
-    mov.q [rsp + 0x8], rsi
+    mov.q [rsp - 0x28], rdi
+    mov.q [rsp - 0x20], rsi
     pxor xmm0, xmm0
-    movups.x [rsp + 0x10], xmm0
+    movups.x [rsp - 0x18], xmm0
     xor eax, eax
 36:
     cmp rax, 8
@@ -657,21 +654,19 @@ from_slice =8 u16:
     movzx rcx, cl
     test cl, cl
     jnz 37
-    mov.q rcx, [rsp]
+    mov.q rcx, [rsp - 0x28]
     movzx.w ecx, [rcx + rax*2]
-    mov.w [rsp + rax*2 + 0x10], cx
+    mov.w [rsp + rax*2 - 0x18], cx
     add rax, 1
     jmp 36
 37:
-    movups.x xmm0, [rsp + 0x10]
-    add rsp, 0x28
+    movups.x xmm0, [rsp - 0x18]
     ret
 from_slice =4 u32:
-    sub rsp, 0x28
-    mov.q [rsp], rdi
-    mov.q [rsp + 0x8], rsi
+    mov.q [rsp - 0x28], rdi
+    mov.q [rsp - 0x20], rsi
     pxor xmm0, xmm0
-    movups.x [rsp + 0x10], xmm0
+    movups.x [rsp - 0x18], xmm0
     xor eax, eax
 39:
     cmp rax, 4
@@ -679,21 +674,19 @@ from_slice =4 u32:
     movzx rcx, cl
     test cl, cl
     jnz 40
-    mov.q rcx, [rsp]
+    mov.q rcx, [rsp - 0x28]
     mov.d ecx, [rcx + rax*4]
-    mov.d [rsp + rax*4 + 0x10], ecx
+    mov.d [rsp + rax*4 - 0x18], ecx
     add rax, 1
     jmp 39
 40:
-    movups.x xmm0, [rsp + 0x10]
-    add rsp, 0x28
+    movups.x xmm0, [rsp - 0x18]
     ret
 from_slice =2 u64:
-    sub rsp, 0x28
-    mov.q [rsp], rdi
-    mov.q [rsp + 0x8], rsi
+    mov.q [rsp - 0x28], rdi
+    mov.q [rsp - 0x20], rsi
     pxor xmm0, xmm0
-    movups.x [rsp + 0x10], xmm0
+    movups.x [rsp - 0x18], xmm0
     xor eax, eax
 42:
     cmp rax, 2
@@ -701,14 +694,13 @@ from_slice =2 u64:
     movzx rcx, cl
     test cl, cl
     jnz 43
-    mov.q rcx, [rsp]
+    mov.q rcx, [rsp - 0x28]
     mov.q rcx, [rcx + rax*8]
-    mov.q [rsp + rax*8 + 0x10], rcx
+    mov.q [rsp + rax*8 - 0x18], rcx
     add rax, 1
     jmp 42
 43:
-    movups.x xmm0, [rsp + 0x10]
-    add rsp, 0x28
+    movups.x xmm0, [rsp - 0x18]
     ret
 =========== OPT LEVEL: none ===========
 main:
@@ -1251,11 +1243,10 @@ simd_fold u64:
     pop rbx
     ret
 from_slice =16 u8:
-    sub rsp, 0x28
-    mov.q [rsp], rdi
-    mov.q [rsp + 0x8], rsi
+    mov.q [rsp - 0x28], rdi
+    mov.q [rsp - 0x20], rsi
     pxor xmm0, xmm0
-    movups.x [rsp + 0x10], xmm0
+    movups.x [rsp - 0x18], xmm0
     xor eax, eax
 33:
     cmp rax, 0x10
@@ -1263,24 +1254,22 @@ from_slice =16 u8:
     movzx rcx, cl
     test cl, cl
     jnz 34
-    mov.q rcx, [rsp]
+    mov.q rcx, [rsp - 0x28]
     add rcx, rax
     movzx.b edx, [rcx]
     mov rcx, rax
     add rcx, 1
-    mov.b [rsp + rax + 0x10], dl
+    mov.b [rsp + rax - 0x18], dl
     mov rax, rcx
     jmp 33
 34:
-    movups.x xmm0, [rsp + 0x10]
-    add rsp, 0x28
+    movups.x xmm0, [rsp - 0x18]
     ret
 from_slice =8 u16:
-    sub rsp, 0x28
-    mov.q [rsp], rdi
-    mov.q [rsp + 0x8], rsi
+    mov.q [rsp - 0x28], rdi
+    mov.q [rsp - 0x20], rsi
     pxor xmm0, xmm0
-    movups.x [rsp + 0x10], xmm0
+    movups.x [rsp - 0x18], xmm0
     xor ecx, ecx
 36:
     cmp rcx, 8
@@ -1288,21 +1277,19 @@ from_slice =8 u16:
     movzx rax, al
     test al, al
     jnz 37
-    mov.q rax, [rsp]
+    mov.q rax, [rsp - 0x28]
     movzx.w eax, [rax + rcx*2]
-    mov.w [rsp + rcx*2 + 0x10], ax
+    mov.w [rsp + rcx*2 - 0x18], ax
     add rcx, 1
     jmp 36
 37:
-    movups.x xmm0, [rsp + 0x10]
-    add rsp, 0x28
+    movups.x xmm0, [rsp - 0x18]
     ret
 from_slice =4 u32:
-    sub rsp, 0x28
-    mov.q [rsp], rdi
-    mov.q [rsp + 0x8], rsi
+    mov.q [rsp - 0x28], rdi
+    mov.q [rsp - 0x20], rsi
     pxor xmm0, xmm0
-    movups.x [rsp + 0x10], xmm0
+    movups.x [rsp - 0x18], xmm0
     xor ecx, ecx
 39:
     cmp rcx, 4
@@ -1310,21 +1297,19 @@ from_slice =4 u32:
     movzx rax, al
     test al, al
     jnz 40
-    mov.q rax, [rsp]
+    mov.q rax, [rsp - 0x28]
     mov.d eax, [rax + rcx*4]
-    mov.d [rsp + rcx*4 + 0x10], eax
+    mov.d [rsp + rcx*4 - 0x18], eax
     add rcx, 1
     jmp 39
 40:
-    movups.x xmm0, [rsp + 0x10]
-    add rsp, 0x28
+    movups.x xmm0, [rsp - 0x18]
     ret
 from_slice =2 u64:
-    sub rsp, 0x28
-    mov.q [rsp], rdi
-    mov.q [rsp + 0x8], rsi
+    mov.q [rsp - 0x28], rdi
+    mov.q [rsp - 0x20], rsi
     pxor xmm0, xmm0
-    movups.x [rsp + 0x10], xmm0
+    movups.x [rsp - 0x18], xmm0
     xor ecx, ecx
 42:
     cmp rcx, 2
@@ -1332,14 +1317,13 @@ from_slice =2 u64:
     movzx rax, al
     test al, al
     jnz 43
-    mov.q rax, [rsp]
+    mov.q rax, [rsp - 0x28]
     mov.q rax, [rax + rcx*8]
-    mov.q [rsp + rcx*8 + 0x10], rax
+    mov.q [rsp + rcx*8 - 0x18], rax
     add rcx, 1
     jmp 42
 43:
-    movups.x xmm0, [rsp + 0x10]
-    add rsp, 0x28
+    movups.x xmm0, [rsp - 0x18]
     ret
 =========== OPT LEVEL: moderate-quick ===========
 main:
@@ -1963,11 +1947,10 @@ simd_fold u64:
     pop rbx
     ret
 from_slice =16 u8:
-    sub rsp, 0x28
-    mov.q [rsp], rdi
-    mov.q [rsp + 0x8], rsi
+    mov.q [rsp - 0x28], rdi
+    mov.q [rsp - 0x20], rsi
     pxor xmm0, xmm0
-    movups.x [rsp + 0x10], xmm0
+    movups.x [rsp - 0x18], xmm0
     xor eax, eax
 33:
     cmp rax, 0x10
@@ -1975,24 +1958,22 @@ from_slice =16 u8:
     movzx rcx, cl
     test cl, cl
     jnz 34
-    mov.q rcx, [rsp]
+    mov.q rcx, [rsp - 0x28]
     add rcx, rax
     movzx.b ecx, [rcx]
     mov rdx, rax
     add rdx, 1
-    mov.b [rsp + rax + 0x10], cl
+    mov.b [rsp + rax - 0x18], cl
     mov rax, rdx
     jmp 33
 34:
-    movups.x xmm0, [rsp + 0x10]
-    add rsp, 0x28
+    movups.x xmm0, [rsp - 0x18]
     ret
 from_slice =8 u16:
-    sub rsp, 0x28
-    mov.q [rsp], rdi
-    mov.q [rsp + 0x8], rsi
+    mov.q [rsp - 0x28], rdi
+    mov.q [rsp - 0x20], rsi
     pxor xmm0, xmm0
-    movups.x [rsp + 0x10], xmm0
+    movups.x [rsp - 0x18], xmm0
     xor eax, eax
 36:
     cmp rax, 8
@@ -2000,21 +1981,19 @@ from_slice =8 u16:
     movzx rcx, cl
     test cl, cl
     jnz 37
-    mov.q rcx, [rsp]
+    mov.q rcx, [rsp - 0x28]
     movzx.w ecx, [rcx + rax*2]
-    mov.w [rsp + rax*2 + 0x10], cx
+    mov.w [rsp + rax*2 - 0x18], cx
     add rax, 1
     jmp 36
 37:
-    movups.x xmm0, [rsp + 0x10]
-    add rsp, 0x28
+    movups.x xmm0, [rsp - 0x18]
     ret
 from_slice =4 u32:
-    sub rsp, 0x28
-    mov.q [rsp], rdi
-    mov.q [rsp + 0x8], rsi
+    mov.q [rsp - 0x28], rdi
+    mov.q [rsp - 0x20], rsi
     pxor xmm0, xmm0
-    movups.x [rsp + 0x10], xmm0
+    movups.x [rsp - 0x18], xmm0
     xor eax, eax
 39:
     cmp rax, 4
@@ -2022,21 +2001,19 @@ from_slice =4 u32:
     movzx rcx, cl
     test cl, cl
     jnz 40
-    mov.q rcx, [rsp]
+    mov.q rcx, [rsp - 0x28]
     mov.d ecx, [rcx + rax*4]
-    mov.d [rsp + rax*4 + 0x10], ecx
+    mov.d [rsp + rax*4 - 0x18], ecx
     add rax, 1
     jmp 39
 40:
-    movups.x xmm0, [rsp + 0x10]
-    add rsp, 0x28
+    movups.x xmm0, [rsp - 0x18]
     ret
 from_slice =2 u64:
-    sub rsp, 0x28
-    mov.q [rsp], rdi
-    mov.q [rsp + 0x8], rsi
+    mov.q [rsp - 0x28], rdi
+    mov.q [rsp - 0x20], rsi
     pxor xmm0, xmm0
-    movups.x [rsp + 0x10], xmm0
+    movups.x [rsp - 0x18], xmm0
     xor eax, eax
 42:
     cmp rax, 2
@@ -2044,14 +2021,13 @@ from_slice =2 u64:
     movzx rcx, cl
     test cl, cl
     jnz 43
-    mov.q rcx, [rsp]
+    mov.q rcx, [rsp - 0x28]
     mov.q rcx, [rcx + rax*8]
-    mov.q [rsp + rax*8 + 0x10], rcx
+    mov.q [rsp + rax*8 - 0x18], rcx
     add rax, 1
     jmp 42
 43:
-    movups.x xmm0, [rsp + 0x10]
-    add rsp, 0x28
+    movups.x xmm0, [rsp - 0x18]
     ret
 =========== OPT LEVEL: moderate ===========
 main:
@@ -2594,11 +2570,10 @@ simd_fold u64:
     pop rbx
     ret
 from_slice =16 u8:
-    sub rsp, 0x28
-    mov.q [rsp], rdi
-    mov.q [rsp + 0x8], rsi
+    mov.q [rsp - 0x28], rdi
+    mov.q [rsp - 0x20], rsi
     pxor xmm0, xmm0
-    movups.x [rsp + 0x10], xmm0
+    movups.x [rsp - 0x18], xmm0
     xor eax, eax
 33:
     cmp rax, 0x10
@@ -2606,24 +2581,22 @@ from_slice =16 u8:
     movzx rcx, cl
     test cl, cl
     jnz 34
-    mov.q rcx, [rsp]
+    mov.q rcx, [rsp - 0x28]
     add rcx, rax
     movzx.b edx, [rcx]
     mov rcx, rax
     add rcx, 1
-    mov.b [rsp + rax + 0x10], dl
+    mov.b [rsp + rax - 0x18], dl
     mov rax, rcx
     jmp 33
 34:
-    movups.x xmm0, [rsp + 0x10]
-    add rsp, 0x28
+    movups.x xmm0, [rsp - 0x18]
     ret
 from_slice =8 u16:
-    sub rsp, 0x28
-    mov.q [rsp], rdi
-    mov.q [rsp + 0x8], rsi
+    mov.q [rsp - 0x28], rdi
+    mov.q [rsp - 0x20], rsi
     pxor xmm0, xmm0
-    movups.x [rsp + 0x10], xmm0
+    movups.x [rsp - 0x18], xmm0
     xor ecx, ecx
 36:
     cmp rcx, 8
@@ -2631,21 +2604,19 @@ from_slice =8 u16:
     movzx rax, al
     test al, al
     jnz 37
-    mov.q rax, [rsp]
+    mov.q rax, [rsp - 0x28]
     movzx.w eax, [rax + rcx*2]
-    mov.w [rsp + rcx*2 + 0x10], ax
+    mov.w [rsp + rcx*2 - 0x18], ax
     add rcx, 1
     jmp 36
 37:
-    movups.x xmm0, [rsp + 0x10]
-    add rsp, 0x28
+    movups.x xmm0, [rsp - 0x18]
     ret
 from_slice =4 u32:
-    sub rsp, 0x28
-    mov.q [rsp], rdi
-    mov.q [rsp + 0x8], rsi
+    mov.q [rsp - 0x28], rdi
+    mov.q [rsp - 0x20], rsi
     pxor xmm0, xmm0
-    movups.x [rsp + 0x10], xmm0
+    movups.x [rsp - 0x18], xmm0
     xor ecx, ecx
 39:
     cmp rcx, 4
@@ -2653,21 +2624,19 @@ from_slice =4 u32:
     movzx rax, al
     test al, al
     jnz 40
-    mov.q rax, [rsp]
+    mov.q rax, [rsp - 0x28]
     mov.d eax, [rax + rcx*4]
-    mov.d [rsp + rcx*4 + 0x10], eax
+    mov.d [rsp + rcx*4 - 0x18], eax
     add rcx, 1
     jmp 39
 40:
-    movups.x xmm0, [rsp + 0x10]
-    add rsp, 0x28
+    movups.x xmm0, [rsp - 0x18]
     ret
 from_slice =2 u64:
-    sub rsp, 0x28
-    mov.q [rsp], rdi
-    mov.q [rsp + 0x8], rsi
+    mov.q [rsp - 0x28], rdi
+    mov.q [rsp - 0x20], rsi
     pxor xmm0, xmm0
-    movups.x [rsp + 0x10], xmm0
+    movups.x [rsp - 0x18], xmm0
     xor ecx, ecx
 42:
     cmp rcx, 2
@@ -2675,14 +2644,13 @@ from_slice =2 u64:
     movzx rax, al
     test al, al
     jnz 43
-    mov.q rax, [rsp]
+    mov.q rax, [rsp - 0x28]
     mov.q rax, [rax + rcx*8]
-    mov.q [rsp + rcx*8 + 0x10], rax
+    mov.q [rsp + rcx*8 - 0x18], rax
     add rcx, 1
     jmp 42
 43:
-    movups.x xmm0, [rsp + 0x10]
-    add rsp, 0x28
+    movups.x xmm0, [rsp - 0x18]
     ret
 =========== OPT LEVEL: all ===========
 main:

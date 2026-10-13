@@ -1,8 +1,6 @@
 =========== OPT LEVEL: none-quick ===========
 opaques:
-    sub rsp, 8
     mov rax, rdi
-    add rsp, 8
     ret
 test_signed:
     cmp rdi, rsi
@@ -97,29 +95,30 @@ test_mixed_patterns:
 19:
     mov.q rcx, [rsp + 0x8]
     cmp rcx, rax
-    jnz 24
+    jnz 25
 20:
     mov.q rcx, [rsp + 0x8]
     cmp rcx, rax
     jnle 21
-    jmp +0x21
+    jmp 23
 21:
     mov.q rcx, [rsp + 0x8]
     cmp rcx, rax
     jnl 22
-    jmp +0xe
+    jmp 23
 22:
     mov.q rcx, [rsp + 0x8]
     cmp rcx, rax
-    jz 23
-    xor eax, eax
-    jmp 25
+    jz 24
 23:
-    mov rax, 0xc8
-    jmp 25
+    xor eax, eax
+    jmp 26
 24:
-    mov rax, 0x64
+    mov rax, 0xc8
+    jmp 26
 25:
+    mov rax, 0x64
+26:
     add rsp, 0x18
     ret
 main:
@@ -343,9 +342,7 @@ main:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 opaques:
-    sub rsp, 8
     mov rax, rdi
-    add rsp, 8
     ret
 test_signed:
     cmp rdi, rsi
@@ -440,29 +437,30 @@ test_mixed_patterns:
 19:
     mov.q rcx, [rsp + 0x8]
     cmp rcx, rax
-    jnz 24
+    jnz 25
 20:
     mov.q rcx, [rsp + 0x8]
     cmp rcx, rax
     jnle 21
-    jmp +0x21
+    jmp 23
 21:
     mov.q rcx, [rsp + 0x8]
     cmp rcx, rax
     jnl 22
-    jmp +0xe
+    jmp 23
 22:
     mov.q rcx, [rsp + 0x8]
     cmp rcx, rax
-    jz 23
-    xor eax, eax
-    jmp 25
+    jz 24
 23:
-    mov rax, 0xc8
-    jmp 25
+    xor eax, eax
+    jmp 26
 24:
-    mov rax, 0x64
+    mov rax, 0xc8
+    jmp 26
 25:
+    mov rax, 0x64
+26:
     add rsp, 0x18
     ret
 main:

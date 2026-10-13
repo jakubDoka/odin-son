@@ -962,7 +962,7 @@ emit_proc_code :: proc(
 		cfi      = &ctx.mems.cfi,
 		dbg_locs = &ctx.mems.dbg_loc,
 	}
-	emit_ctx.allocs = regs
+	emit_ctx.ra_out = regs
 	emit_ctx.param_specs = prc.param_types
 
 	prc.out = ctx.node_spec.emit_function(emit_ctx^)

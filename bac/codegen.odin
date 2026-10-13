@@ -87,8 +87,9 @@ Codegen_Emit_Ctx :: struct {
 	using buf:          Codegen_Emit_Buf,
 	emit_got_imports:   bool,
 	lib_calls:          Lib_Calls,
-	allocs:             []Reg,
+	using ra_out:       Regalloc_Output,
 	param_specs:        []Param_Spec,
+	// NOTE: these are filled in by the backend
 	stack_param_offset: [][dynamic]i32,
 	spill_slot_base:    []i32,
 	spill_slot_size:    []i32,

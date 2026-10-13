@@ -24,7 +24,7 @@ trap 'rm -rf "$WORK"' EXIT
 #
 # NOTE: we use moderate here because it coalesces the regions otherwise we run
 # out of spill slots on some tests
-LEVELS=(moderate-quick none mininal moderate all aggresive)
+LEVELS=(moderate-quick none none-quick moderate all aggresive)
 
 # Build the compiler unless one was already provided.
 if [[ -n "${JIT:-}" ]]; then

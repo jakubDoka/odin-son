@@ -18,6 +18,22 @@ builder_extra :: proc {
 	builder_extra_node_id,
 }
 
+decl_local :: proc(graph: ^Proc, loc: Node_ID, name: string, type: rawptr) {
+	loc := loc
+	if node := expand_node(graph, loc); node.itype == .Local_Addr {
+		loc = node.inps[0]
+	}
+
+	if get_node(graph, loc).itype != .Local do return
+
+	if graph.has_dbg {
+		decl := bac.add_dbg_sym_decl(graph, name)
+		bac.get_extra(graph, decl, bac.Dbg_Sym).name = name
+		bac.get_extra(graph, decl, bac.Dbg_Sym).type = type
+		bac.connect(graph, loc, decl)
+	}
+}
+
 merge_returns :: proc(graph: ^Proc, args: []Node_ID) -> Node_ID {
 	ret := bac.get_inputs(graph, graph.end)[0]
 
@@ -384,25 +400,7 @@ truncate_scope :: proc(
 		}
 	}
 
-	truncate_inputs(graph, scope, to_len)
-}
-
-truncate_inputs :: proc(
-	graph: ^bac.Proc,
-	scope: Node_ID,
-	#any_int to_len: int,
-) {
-	if scope == 0 do return
-
-	snode := expand_node(graph, scope)
-	assert(to_len <= int(snode.input_count))
-
-	for &inp, i in snode.inps[to_len:] {
-		bac.remove_output(graph, inp, {idx = to_len + i, id = scope})
-		inp = 0
-	}
-
-	snode.input_count = u16(to_len)
+	bac.truncate_inputs(graph, scope, to_len)
 }
 
 merge_scopes :: proc(

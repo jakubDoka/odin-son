@@ -1411,24 +1411,6 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 		copy(ctx.code.ptr[reloc.offset:][:size], reflect.as_bytes(jump))
 	}
 
-	// NOTE: not suitable but may be usefull later
-	when false {
-		reg_hash :: proc(x: Reg) -> u8 {
-			h := u32(x)
-			h ~= h >> 7
-			h *= 0x9E3779B1
-			h ~= h >> 16
-			return max(u8(h), 1)
-		}
-
-		Live_Dbg_Value :: struct {
-			sym: Node_ID,
-			reg: Reg,
-		}
-
-		live_table: #soa[dynamic]bac.SS_Entry(Live_Dbg_Value)
-	}
-
 	Join_Block :: struct {
 		node:          Node_ID,
 		reached_count: u16,
@@ -1443,16 +1425,33 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 		sym.defs.allocator = context.allocator
 
 		for cursor := 0; cursor < len(sym.defs); cursor += 1 {
-			def := sym.defs[cursor]
 			// NOTE: there can be leftovers from clogged regions from the prefious
 			// round since we never pop incomplete joins
 			clear(&join_blocks)
 
-			node := def.node
-			block := node_to_block[get_node(ctx, node).gvn]
+			def := sym.defs[cursor].node
+			dnode := get_node(ctx, def)
+
+			if dnode.itype == .Local {
+				reg, offset, _ := reg_and_disp_of(&ctx, def)
+
+				bac.add_dbg_location(ctx.dbg_locs)^ = {
+					sym    = sym.inner,
+					start  = u32(ctx.code_start),
+					end    = u32(ctx.code.pos),
+					symbol = u32(sidx),
+					offset = i32(offset),
+					reg    = reg,
+					kind   = .Register_Offset,
+				}
+
+				continue
+			}
+
+			block := node_to_block[dnode.gvn]
 			append(&frontier, block)
 
-			reg := reg_of(ctx, node)
+			reg := reg_of(ctx, def)
 			loc_reg := reg
 			location_kind := bac.Dbg_Location_Kind.Register
 			offset := spill_slot_offset(&ctx, reg)
@@ -1461,7 +1460,7 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 				location_kind = .Register_Offset
 			}
 
-			skip, ok := slice.linear_search(ctx.bbs[block].instrs[:], node)
+			skip, ok := slice.linear_search(ctx.bbs[block].instrs[:], def)
 			assert(ok)
 			skip += 1
 
@@ -1476,14 +1475,14 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 					tcnode := expand_node(ctx, tc)
 
 					if tcnode.itype == .Phi &&
-					   slice.contains(tcnode.inps[1:], node) &&
+					   slice.contains(tcnode.inps[1:], def) &&
 					   !slice.contains(sym.defs[:], {tc}) {
 						append(&sym.defs, {tc})
 						continue
 					}
 
 					if tcnode.itype == .Split &&
-					   tcnode.inps[0] == node &&
+					   tcnode.inps[0] == def &&
 					   !slice.contains(sym.defs[:], {tc}) {
 						append(&sym.defs, {tc})
 						continue
@@ -1502,7 +1501,7 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 								kind   = location_kind,
 							}
 
-							assert(tc != node)
+							assert(tc != def)
 
 							continue search
 						}

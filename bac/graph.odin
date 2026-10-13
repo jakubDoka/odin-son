@@ -2247,3 +2247,17 @@ is_end_ctrl :: proc(graph: ^Proc, node: Node_ID) -> bool {
 		bit_set[Node_Type]{.Dbg_Scope, .Nil} \
 	)
 }
+
+truncate_inputs :: proc(graph: ^Proc, scope: Node_ID, #any_int to_len: int) {
+	if scope == 0 do return
+
+	snode := expand_node(graph, scope)
+	assert(to_len <= int(snode.input_count))
+
+	for &inp, i in snode.inps[to_len:] {
+		remove_output(graph, inp, {idx = to_len + i, id = scope})
+		inp = 0
+	}
+
+	snode.input_count = u16(to_len)
+}

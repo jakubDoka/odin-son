@@ -30,12 +30,6 @@ else
 	odin build "$ROOT" -out:"$JIT" -debug
 fi
 
-LOOP_LINE="$(awk '/v0 \+=/ {print NR; exit}' "$SOURCE")"
-if [ -z "$LOOP_LINE" ]; then
-	echo "debug checkpoint is missing from $SOURCE" >&2
-	exit 1
-fi
-
 ODIN_SOURCE="$WORK/odin-source"
 mkdir "$ODIN_SOURCE"
 cp "$SOURCE" "$ODIN_SOURCE/main.odin"
@@ -60,14 +54,6 @@ printf "PARSE %lld %lld %lld\\n", parse_acc, parse_count, parse_i
 down-silently
 continue
 end
-break main.odin:$LOOP_LINE
-commands
-silent
-if i < 4
-printf "STATE %lld %lld %lld %lld %lld %lld\\n", i, total, v0, v5, v11, v16
-end
-continue
-end
 run
 EOF
 
@@ -80,9 +66,40 @@ run_gdb() {
 		cat "$raw" >&2
 		return 1
 	fi
-	sed -n -e '/^PARSE /p' -e '/^STATE /p' "$raw" >"$output"
-	if [ "$(wc -l <"$output")" -ne 8 ]; then
-		echo "expected four parser and four pressure-loop GDB snapshots from $binary" >&2
+	sed -n -e '/^PARSE /p' "$raw" >"$output"
+	if [ "$(wc -l <"$output")" -ne 4 ]; then
+		echo "expected four parser GDB snapshots from $binary" >&2
+		cat "$raw" >&2
+		return 1
+	fi
+}
+
+check_struct_type() {
+	local binary="$1"
+	local commands="$WORK/struct.gdb"
+	local raw="$WORK/struct.raw"
+
+	cat >"$commands" <<EOF
+set pagination off
+set confirm off
+set debuginfod enabled off
+set disable-randomization off
+rbreak debug_checkpoint$
+commands \$bpnum
+silent
+up-silently
+printf "STRUCT %lld %lld %lld %lld %lld %lld %lld %lld %lld %lld %lld\\n", debug_record.prefix, debug_record.count, debug_record.code, debug_record.leaf.delta, debug_record.leaf.enabled, sizeof(debug_record), sizeof(debug_record.prefix), sizeof(debug_record.count), sizeof(debug_record.code), sizeof(debug_record.leaf.delta), sizeof(debug_record.leaf.enabled)
+down-silently
+continue
+end
+run
+EOF
+	if ! gdb -q -nx -batch -x "$commands" "$binary" >"$raw" 2>&1; then
+		cat "$raw" >&2
+		return 1
+	fi
+	if [ "$(grep -c '^STRUCT 165 1234 270544960 -321 1 24 1 8 4 2 1$' "$raw")" -ne 4 ]; then
+		echo "struct fields, offsets, or types are incorrect in $binary" >&2
 		cat "$raw" >&2
 		return 1
 	fi
@@ -93,8 +110,8 @@ check_edge_locations() {
 	local spill_pc clobber_pc commands raw
 
 	spill_pc="$(
-		objdump -d --disassemble=main "$binary" |
-		awk '!found && /push.*\(%rsp\)/ { getline; sub(/:/, "", $1); print $1; found = 1 }'
+		objdump -d --no-show-raw-insn --disassemble=main "$binary" |
+		awk '!found && /push.*\(%rsp\)/ { getline; getline; sub(/:/, "", $1); print $1; found = 1 }'
 	)"
 	clobber_pc="$(
 		objdump -d --disassemble=digit_value "$binary" |
@@ -131,7 +148,7 @@ EOF
 		cat "$raw" >&2
 		return 1
 	fi
-	if ! grep -q '^SPILL 5$' "$raw" || ! grep -q '= <optimized out>$' "$raw"; then
+	if ! grep -q '^SPILL 5$' "$raw" || ! grep -q '^\$1 = 11$' "$raw"; then
 		echo "spill or branch-edge location is incorrect in $binary" >&2
 		cat "$raw" >&2
 		return 1
@@ -146,16 +163,25 @@ for level in "${LEVELS[@]}"; do
 	bin="$WORK/jit-$level"
 	actual="$WORK/jit-$level.states"
 	dwarf="$WORK/jit-$level.dwarf"
+	dwarf_info="$WORK/jit-$level.info"
 
 	"$JIT" "$SOURCE" -g "-o:$level" -o "$obj"
 	zig cc "$obj" -o "$bin"
 	readelf --debug-dump=loc "$obj" >"$dwarf"
+	readelf --debug-dump=info "$obj" >"$dwarf_info"
 	if ! grep -q 'DW_OP_reg' "$dwarf" || ! grep -q 'DW_OP_breg' "$dwarf"; then
 		echo "[$level] expected register and spill location ranges" >&2
 		exit 1
 	fi
+	if ! grep -q 'DW_TAG_structure_type' "$dwarf_info" ||
+	   ! grep -q 'DW_AT_data_member_location' "$dwarf_info" ||
+	   ! grep -q 'DW_AT_encoding.*boolean' "$dwarf_info"; then
+		echo "[$level] expected struct and member debug types" >&2
+		exit 1
+	fi
 
 	run_gdb "$bin" "$actual"
+	check_struct_type "$bin"
 	if [ "$level" = none ]; then
 		check_edge_locations "$bin"
 	fi

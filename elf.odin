@@ -3,6 +3,7 @@ package main
 import "bac"
 import "bac/arm"
 import "bac/x64"
+import "core:fmt"
 import "core:mem"
 import "core:slice"
 import "typecheck"
@@ -311,6 +312,23 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	uleb(&dbg_abbrev, 0)
 	uleb(&dbg_abbrev, 0)
 
+	uleb(&dbg_abbrev, 5)
+	uleb(&dbg_abbrev, u64(Dw_Tag.Structure_Type))
+	append(&dbg_abbrev, u8(Dw_Children.Yes))
+	dw_attr(&dbg_abbrev, .Name, .String)
+	dw_attr(&dbg_abbrev, .Byte_Size, .Udata)
+	uleb(&dbg_abbrev, 0)
+	uleb(&dbg_abbrev, 0)
+
+	uleb(&dbg_abbrev, 6)
+	uleb(&dbg_abbrev, u64(Dw_Tag.Member))
+	append(&dbg_abbrev, u8(Dw_Children.No))
+	dw_attr(&dbg_abbrev, .Name, .String)
+	dw_attr(&dbg_abbrev, .Type, .Ref4)
+	dw_attr(&dbg_abbrev, .Data_Member_Location, .Udata)
+	uleb(&dbg_abbrev, 0)
+	uleb(&dbg_abbrev, 0)
+
 	append(&dbg_abbrev, 0)
 
 	// -- .debug_line : header (DWARF v4) ----------------------------------
@@ -457,41 +475,93 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	)
 	put_u32(&dbg_info, 0)
 
-	dbg_types := []bac.Node_Datatype {
-		.I8,
-		.I16,
-		.I32,
-		.I64,
-		.F32,
-		.F64,
-		.V128,
-		.V256,
-		.V512,
-	}
-	dbg_type_names := #partial [bac.Node_Datatype]string {
-		.I8   = "i8",
-		.I16  = "i16",
-		.I32  = "i32",
-		.I64  = "i64",
-		.F32  = "f32",
-		.F64  = "f64",
-		.V128 = "v128",
-		.V256 = "v256",
-		.V512 = "v512",
-	}
-	dbg_type_offsets: [bac.Node_Datatype]u32
-	for dt in dbg_types {
-		dbg_type_offsets[dt] = u32(len(dbg_info) - info_unit_len_pos)
-		uleb(&dbg_info, 2)
-		append(&dbg_info, dbg_type_names[dt])
-		append(&dbg_info, 0)
-		encoding := Dw_Ate.Signed
-		if dt in bac.FLOAT_DTS {
-			encoding = .Float
-		} else if dt >= .V128 {
-			encoding = .Unsigned
+	dbg_types: [dynamic]typecheck.Type
+	for &prc in ctx.procs {
+		for loc in prc.out.dbg_locs {
+			type := transmute(typecheck.Type)loc.type
+			if !slice.contains(dbg_types[:], type) do append(&dbg_types, type)
 		}
-		append(&dbg_info, u8(encoding), u8(bac.DT_SIZE[dt]))
+	}
+	for i := 0; i < len(dbg_types); i += 1 {
+		if t, ok := typecheck.unpack_type(dbg_types[i]).(^typecheck.Struct);
+		   ok {
+			for field in t.fields {
+				if !slice.contains(dbg_types[:], field.ty) {
+					append(&dbg_types, field.ty)
+				}
+			}
+		}
+	}
+
+	dbg_type_offsets := make([]u32, len(dbg_types))
+	Dbg_Type_Rel :: struct {
+		offset: int,
+		type:   typecheck.Type,
+	}
+	dbg_type_rels: [dynamic]Dbg_Type_Rel
+	for type, i in dbg_types {
+		dbg_type_offsets[i] = u32(len(dbg_info) - info_unit_len_pos)
+		#partial switch t in typecheck.unpack_type(type) {
+		case ^typecheck.Struct:
+			uleb(&dbg_info, 5)
+			append(&dbg_info, fmt.aprint(type))
+			append(&dbg_info, 0)
+			uleb(&dbg_info, u64(t.size))
+			for field in t.fields {
+				uleb(&dbg_info, 6)
+				append(&dbg_info, field.name)
+				append(&dbg_info, 0)
+				append(
+					&dbg_type_rels,
+					{offset = len(dbg_info), type = field.ty},
+				)
+				put_u32(&dbg_info, 0)
+				uleb(&dbg_info, u64(field.offset))
+			}
+			append(&dbg_info, 0)
+		case:
+			uleb(&dbg_info, 2)
+			append(&dbg_info, fmt.aprint(type))
+			append(&dbg_info, 0)
+			encoding := Dw_Ate.Signed
+			if type == .Bool {
+				encoding = .Boolean
+			} else if typecheck.in_set(type, typecheck.FLOAT_TYPES) {
+				encoding = .Float
+			} else if typecheck.in_set(type, typecheck.UNSIGNED_TYPES) {
+				encoding = .Unsigned
+			} else {
+				#partial switch inner in typecheck.unpack_type(type) {
+				case typecheck.Rawptr_Type,
+				     typecheck.Pointer,
+				     typecheck.Multi_Pointer,
+				     ^typecheck.Proc_Type:
+					encoding = .Address
+				case ^typecheck.Enum:
+					if typecheck.in_set(
+						inner.backing,
+						typecheck.UNSIGNED_TYPES,
+					) {
+						encoding = .Unsigned
+					}
+				case ^typecheck.Simd:
+					if typecheck.in_set(inner.elem, typecheck.FLOAT_TYPES) {
+						encoding = .Float
+					} else if typecheck.in_set(
+						inner.elem,
+						typecheck.UNSIGNED_TYPES,
+					) {
+						encoding = .Unsigned
+					}
+				}
+			}
+			append(&dbg_info, u8(encoding), u8(typecheck.type_size(type)))
+		}
+	}
+	for rel in dbg_type_rels {
+		type_idx, ok := slice.linear_search(dbg_types[:], rel.type)
+		assert(ok)
+		patch_u32(&dbg_info, rel.offset, dbg_type_offsets[type_idx])
 	}
 
 	for &prc, i in ctx.procs {
@@ -547,7 +617,8 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 						prev.end = max(prev.end, candidate.end)
 						continue
 					}
-					candidate.start = prev.end
+					prev.end = candidate.start
+					if prev.start >= prev.end do keep -= 1
 				}
 				if candidate.start >= candidate.end do continue
 				ranges[keep] = candidate
@@ -602,9 +673,9 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 			append(&dbg_info, loc.name)
 			append(&dbg_info, 0)
 			type := transmute(typecheck.Type)loc.type
-			// TODO: collect the used types and generate debug info for them
-			// could be an array of used types and we put the index of the type here
-			put_u32(&dbg_info, dbg_type_offsets[what])
+			type_idx, ok := slice.linear_search(dbg_types[:], type)
+			assert(ok)
+			put_u32(&dbg_info, dbg_type_offsets[type_idx])
 			append(
 				&info_rels,
 				Elf64_Rela {
@@ -1145,10 +1216,12 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 
 	// DWARF v4 constants used by the debug sections
 	Dw_Tag :: enum u64 {
-		Compile_Unit = 0x11,
-		Base_Type    = 0x24,
-		Subprogram   = 0x2e,
-		Variable     = 0x34,
+		Member         = 0x0d,
+		Compile_Unit   = 0x11,
+		Structure_Type = 0x13,
+		Base_Type      = 0x24,
+		Subprogram     = 0x2e,
+		Variable       = 0x34,
 	}
 
 	Dw_Children :: enum u8 {
@@ -1157,17 +1230,18 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	}
 
 	Dw_At :: enum u64 {
-		Location  = 0x02,
-		Name      = 0x03,
-		Byte_Size = 0x0b,
-		Stmt_List = 0x10,
-		Low_Pc    = 0x11,
-		High_Pc   = 0x12,
-		Language  = 0x13,
-		Comp_Dir  = 0x1b,
-		Producer  = 0x25,
-		Type      = 0x49,
-		Encoding  = 0x3e,
+		Location             = 0x02,
+		Name                 = 0x03,
+		Byte_Size            = 0x0b,
+		Stmt_List            = 0x10,
+		Low_Pc               = 0x11,
+		High_Pc              = 0x12,
+		Language             = 0x13,
+		Comp_Dir             = 0x1b,
+		Producer             = 0x25,
+		Data_Member_Location = 0x38,
+		Type                 = 0x49,
+		Encoding             = 0x3e,
 	}
 
 	Dw_Form :: enum u64 {
@@ -1177,10 +1251,13 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 		Data8      = 0x07,
 		Ref4       = 0x13,
 		String     = 0x08,
+		Udata      = 0x0f,
 		Sec_Offset = 0x17,
 	}
 
 	Dw_Ate :: enum u8 {
+		Address  = 0x01,
+		Boolean  = 0x02,
 		Float    = 0x04,
 		Signed   = 0x05,
 		Unsigned = 0x07,

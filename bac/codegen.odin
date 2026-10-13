@@ -49,6 +49,13 @@ take_dbg_data :: proc(
 			inode := expand_node(ctx, instr)
 
 			#partial switch inode.itype {
+			case .Local:
+				if 1 < len(inode.inps) {
+					sym := node_to_sym[inode.gvn]
+					append(&data.syms[sym].defs, {instr})
+					truncate_inputs(ctx, instr, 1)
+				}
+				continue
 			case .Dbg_Scope:
 				continue
 			case .Dbg_Sym_Decl:

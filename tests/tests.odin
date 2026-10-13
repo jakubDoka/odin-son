@@ -8382,7 +8382,7 @@ main :: proc() -> int {
 }
 `, main_())
 }
-@(test) frontend_emits_F_To_I :: proc(t: ^testing.T) {
+@(test) frontend_emits_F_I_Conv_float_to_int :: proc(t: ^testing.T) {
 
 
 
@@ -8396,7 +8396,7 @@ main_ :: proc() -> int {
 	return int(convert(0 - 42.75))
 }
 
-main.run_test(t, `frontend_emits_F_To_I`, `
+main.run_test(t, `frontend_emits_F_I_Conv_float_to_int`, `
 package main
 
 opt_level :: "none"
@@ -8410,7 +8410,7 @@ main :: proc() -> int {
 }
 `, main_())
 }
-@(test) frontend_emits_U_F_To_I :: proc(t: ^testing.T) {
+@(test) frontend_emits_U_F_I_Conv_float_to_int :: proc(t: ^testing.T) {
 
 
 
@@ -8435,7 +8435,7 @@ main_ :: proc() -> int {
 	return int(a) + int(b) * 10 + int(c) * 100
 }
 
-main.run_test(t, `frontend_emits_U_F_To_I`, `
+main.run_test(t, `frontend_emits_U_F_I_Conv_float_to_int`, `
 package main
 
 opt_level :: "none"
@@ -8460,7 +8460,7 @@ main :: proc() -> int {
 }
 `, main_())
 }
-@(test) frontend_emits_F_From_I :: proc(t: ^testing.T) {
+@(test) frontend_emits_F_I_Conv_int_to_float :: proc(t: ^testing.T) {
 
 
 
@@ -8475,7 +8475,7 @@ main_ :: proc() -> int {
 	return 0
 }
 
-main.run_test(t, `frontend_emits_F_From_I`, `
+main.run_test(t, `frontend_emits_F_I_Conv_int_to_float`, `
 package main
 
 opt_level :: "none"
@@ -8490,7 +8490,7 @@ main :: proc() -> int {
 }
 `, main_())
 }
-@(test) frontend_emits_U_F_From_I :: proc(t: ^testing.T) {
+@(test) frontend_emits_U_F_I_Conv_int_to_float :: proc(t: ^testing.T) {
 
 
 
@@ -8517,7 +8517,7 @@ main_ :: proc() -> int {
 	return int(convert(x) / 1.0e18) + int(convert_f32(x) / 1.0e18) * 10
 }
 
-main.run_test(t, `frontend_emits_U_F_From_I`, `
+main.run_test(t, `frontend_emits_U_F_I_Conv_int_to_float`, `
 package main
 
 opt_level :: "none"
@@ -8544,7 +8544,7 @@ main :: proc() -> int {
 }
 `, main_())
 }
-@(test) frontend_emits_F_Ext :: proc(t: ^testing.T) {
+@(test) frontend_emits_F_Conv_f32_to_f64 :: proc(t: ^testing.T) {
 
 
 
@@ -8559,7 +8559,7 @@ main_ :: proc() -> int {
 	return 0
 }
 
-main.run_test(t, `frontend_emits_F_Ext`, `
+main.run_test(t, `frontend_emits_F_Conv_f32_to_f64`, `
 package main
 
 opt_level :: "none"
@@ -8574,7 +8574,7 @@ main :: proc() -> int {
 }
 `, main_())
 }
-@(test) frontend_emits_F_Demote :: proc(t: ^testing.T) {
+@(test) frontend_emits_F_Conv_f64_to_f32 :: proc(t: ^testing.T) {
 
 
 
@@ -8589,7 +8589,7 @@ main_ :: proc() -> int {
 	return 0
 }
 
-main.run_test(t, `frontend_emits_F_Demote`, `
+main.run_test(t, `frontend_emits_F_Conv_f64_to_f32`, `
 package main
 
 opt_level :: "none"
@@ -14693,12 +14693,12 @@ NAMES := []string{
 `float_comparison_peepholes`,
 `float_comparison_with_load`,
 `float_conversions`,
-`frontend_emits_F_To_I`,
-`frontend_emits_U_F_To_I`,
-`frontend_emits_F_From_I`,
-`frontend_emits_U_F_From_I`,
-`frontend_emits_F_Ext`,
-`frontend_emits_F_Demote`,
+`frontend_emits_F_I_Conv_float_to_int`,
+`frontend_emits_U_F_I_Conv_float_to_int`,
+`frontend_emits_F_I_Conv_int_to_float`,
+`frontend_emits_U_F_I_Conv_int_to_float`,
+`frontend_emits_F_Conv_f32_to_f64`,
+`frontend_emits_F_Conv_f64_to_f32`,
 `float_loads_and_stores_of_different_sizes`,
 `float_variables_that_create_register_pressure`,
 `float_variables_that_create_even_more_register_pressure`,

@@ -424,11 +424,7 @@ meta_of :: #force_inline proc(
 	case .Eq ..= .U_Ge:
 		ikind := ra.datatype_to_reg_kind[get_node(graph, node.inps[0]).dt]
 		return {out = out, masks = masks[ikind][:2]}
-	case .F_To_I, .U_F_To_I:
-		return {out = out, masks = VEC_MASKS[:1]}
-	case .F_From_I, .U_F_From_I:
-		return {out = out, masks = GPA_MASKS[:1]}
-	case .Cast:
+	case .F_Conv, .F_I_Conv, .U_F_I_Conv, .Cast:
 		vl := get_node(graph, node.inps[0])
 		nkind := ra.datatype_to_reg_kind[vl.dt]
 		return {out = out, masks = masks[nkind][:1]}
@@ -438,7 +434,7 @@ meta_of :: #force_inline proc(
 		masks := make([]bac.RM_Intern_Idx, len(node.inps) - 1)
 		slice.fill(masks, sout)
 		return {out = sout, input_start = 1, masks = masks}
-	case .Uext, .Sext, .Neg, .Not, .F_Demote, .F_Ext, .Cmlt, .Ctz:
+	case .Uext, .Sext, .Neg, .Not, .Cmlt, .Ctz:
 		return {out = out, masks = nmasks[:1]}
 	case .Split:
 		return {out = sout, masks = snmasks[:1]}
@@ -710,12 +706,6 @@ emit_instr :: proc(
 			.Neg = 0x4B000000,
 			.Not = 0x2a200000,
 			.Cast = 0x1e260000,
-			.F_To_I = 0x1e380000,
-			.U_F_To_I = 0x1e390000,
-			.F_Ext = 0x1E22C000,
-			.F_Demote = 0x1E624000,
-			.F_From_I = 0x1E220000,
-			.U_F_From_I = 0x1E230000,
 			.Simd_Reduce_Add_Bisect = 0x4E31B800,
 			.Splat = 0x4E000C00,
 			.Cmlt = 0x4E20A800,
@@ -902,47 +892,37 @@ emit_instr :: proc(
 			ctx.code,
 			imm12_instr(0b1001000100, reg_of(ctx, instr), SP, offset),
 		)
-	case .F_To_I, .U_F_To_I:
+	case .F_I_Conv, .U_F_I_Conv:
 		rd := reg_of(ctx, instr)
 		rn := reg_of(ctx, node.inps[0])
-
-		ftype: u32
-		#partial switch inp.dt {
-		case .F64:
-			ftype = 0b01
-		case .F32:
-			ftype = 0b00
-		case:
-			panic("TODO")
+		unsigned := kind == .U_F_I_Conv
+		int_dt := node.dt
+		float_dt := inp.dt
+		conv_op: u32
+		if inp.dt in bac.INT_DTS {
+			assert(node.dt in bac.FLOAT_DTS)
+			int_dt = inp.dt
+			float_dt = node.dt
+			conv_op = unsigned ? 0x1E230000 : 0x1E220000
+		} else {
+			assert(inp.dt in bac.FLOAT_DTS && node.dt in bac.INT_DTS)
+			conv_op = unsigned ? 0x1e390000 : 0x1e380000
 		}
 
 		emit_op(
 			ctx.code,
-			op |
-			u32(is_64) << 31 |
-			ftype << 22 |
+			conv_op |
+			u32(int_dt == .I64) << 31 |
+			u32(float_dt == .F64) << 22 |
 			u32(rn.index) << 5 |
 			u32(rd.index),
 		)
-	case .F_From_I, .U_F_From_I:
+	case .F_Conv:
 		rd := reg_of(ctx, instr)
 		rn := reg_of(ctx, node.inps[0])
-
-		ftype := u32(bac.DT_SIZE[node.dt]) >> 3
-
-		emit_op(
-			ctx.code,
-			op |
-			u32(inp.dt == .I64) << 31 |
-			ftype << 22 |
-			u32(rn.index) << 5 |
-			u32(rd.index),
-		)
-	case .F_Ext, .F_Demote:
-		rd := reg_of(ctx, instr)
-		rn := reg_of(ctx, node.inps[0])
-
-		emit_op(ctx.code, op | u32(rn.index) << 5 | u32(rd.index))
+		assert(inp.dt in bac.FLOAT_DTS && node.dt in bac.FLOAT_DTS)
+		conv_op: u32 = node.dt == .F64 ? 0x1E22C000 : 0x1E624000
+		emit_op(ctx.code, conv_op | u32(rn.index) << 5 | u32(rd.index))
 	case .Store:
 		vl := get_node(ctx, node.inps[3])
 

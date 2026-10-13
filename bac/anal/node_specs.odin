@@ -78,12 +78,9 @@ SPEC := bac.Node_Spec{
 		0b10, // Sext
 		0b10, // Uext
 		0b10, // Cast
-		0b10, // F_To_I
-		0b10, // U_F_To_I
-		0b10, // F_From_I
-		0b10, // U_F_From_I
-		0b10, // F_Ext
-		0b10, // F_Demote
+		0b10, // F_Conv
+		0b10, // F_I_Conv
+		0b10, // U_F_I_Conv
 		0b10, // Splat
 		0b10, // Ctz
 		0b10, // Simd_Extract_Lsbs
@@ -155,12 +152,9 @@ SPEC := bac.Node_Spec{
 		0, // Sext -> No_Extra
 		0, // Uext -> No_Extra
 		0, // Cast -> No_Extra
-		0, // F_To_I -> No_Extra
-		0, // U_F_To_I -> No_Extra
-		0, // F_From_I -> No_Extra
-		0, // U_F_From_I -> No_Extra
-		0, // F_Ext -> No_Extra
-		0, // F_Demote -> No_Extra
+		0, // F_Conv -> No_Extra
+		0, // F_I_Conv -> No_Extra
+		0, // U_F_I_Conv -> No_Extra
 		0, // Splat -> No_Extra
 		0, // Ctz -> No_Extra
 		0, // Simd_Extract_Lsbs -> No_Extra
@@ -232,12 +226,9 @@ SPEC := bac.Node_Spec{
 		{Class_Flag.Interned}, // Sext
 		{Class_Flag.Interned}, // Uext
 		{Class_Flag.Interned}, // Cast
-		{Class_Flag.Interned}, // F_To_I
-		{Class_Flag.Interned}, // U_F_To_I
-		{Class_Flag.Interned}, // F_From_I
-		{Class_Flag.Interned}, // U_F_From_I
-		{Class_Flag.Interned}, // F_Ext
-		{Class_Flag.Interned}, // F_Demote
+		{Class_Flag.Interned}, // F_Conv
+		{Class_Flag.Interned}, // F_I_Conv
+		{Class_Flag.Interned}, // U_F_I_Conv
 		{Class_Flag.Interned}, // Splat
 		{Class_Flag.Interned}, // Ctz
 		{Class_Flag.Interned}, // Simd_Extract_Lsbs
@@ -303,9 +294,6 @@ SPEC := bac.Node_Spec{
 		bac.Cfg,
 		bac.Tup,
 		bac.Cfg,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
@@ -386,12 +374,9 @@ SPEC := bac.Node_Spec{
 		`Sext`,
 		`Uext`,
 		`Cast`,
-		`F_To_I`,
-		`U_F_To_I`,
-		`F_From_I`,
-		`U_F_From_I`,
-		`F_Ext`,
-		`F_Demote`,
+		`F_Conv`,
+		`F_I_Conv`,
+		`U_F_I_Conv`,
 		`Splat`,
 		`Ctz`,
 		`Simd_Extract_Lsbs`,
@@ -465,12 +450,9 @@ Node_Type :: enum u16 {
 	Sext,
 	Uext,
 	Cast,
-	F_To_I,
-	U_F_To_I,
-	F_From_I,
-	U_F_From_I,
-	F_Ext,
-	F_Demote,
+	F_Conv,
+	F_I_Conv,
+	U_F_I_Conv,
 	Splat,
 	Ctz,
 	Simd_Extract_Lsbs,
@@ -546,9 +528,6 @@ post_schedule_peep_inst :: proc(
 #assert(size_of(bac.Cfg) % bac.PRECISION == 0)
 #assert(size_of(bac.Tup) % bac.PRECISION == 0)
 #assert(size_of(bac.Cfg) % bac.PRECISION == 0)
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)

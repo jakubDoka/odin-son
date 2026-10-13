@@ -52,20 +52,30 @@ fold_un_op :: proc(
 		value = oper &~ (-1 << uint(bac.DT_SIZE[dst_ty] * 8))
 	case .Sext:
 		value = sext(oper, src_ty)
-	case .F_Ext, .F_Demote:
+	case .F_Conv:
+		assert(src_ty in bac.FLOAT_DTS && dst_ty in bac.FLOAT_DTS)
 		value = transmute(i64)(f64(f32(transmute(f64)oper)))
-	case .F_From_I:
-		value = transmute(i64)(float_value(transmute(i64)(f64(oper)), dst_ty))
-	case .U_F_From_I:
-		if dst_ty == .F32 {
-			value = transmute(i64)(f64(f32(u64(oper))))
+	case .F_I_Conv, .U_F_I_Conv:
+		unsigned := op == .U_F_I_Conv
+		src_float := src_ty in bac.FLOAT_DTS
+		assert(src_float != (dst_ty in bac.FLOAT_DTS))
+		if src_float {
+			if unsigned {
+				value = i64(u64(float_value(oper, src_ty)))
+			} else {
+				value = i64(float_value(oper, src_ty))
+			}
+		} else if unsigned {
+			if dst_ty == .F32 {
+				value = transmute(i64)(f64(f32(u64(oper))))
+			} else {
+				value = transmute(i64)(f64(u64(oper)))
+			}
+		} else if dst_ty == .F32 {
+			value = transmute(i64)(f64(f32(oper)))
 		} else {
-			value = transmute(i64)(f64(u64(oper)))
+			value = transmute(i64)(f64(oper))
 		}
-	case .F_To_I:
-		value = i64(float_value(oper, src_ty))
-	case .U_F_To_I:
-		value = i64(u64(float_value(oper, src_ty)))
 	}
 	return
 }
@@ -666,7 +676,7 @@ peep :: proc(
 		} else {
 			bac.peep_ctx_add_trigger(ctx, if_.inps[1], id)
 		}
-	case .Neg ..= .F_Demote:
+	case .Neg ..= .U_F_I_Conv:
 		op := Un_Op(node.itype)
 		oper := expand_node(ctx.graph, node.inps[0])
 		coper := bac.get_extra(ctx.graph, oper, CInt)

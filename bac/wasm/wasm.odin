@@ -338,18 +338,15 @@ meta_of :: #force_inline proc(
 	     .And_Not,
 	     .Uext,
 	     .Sext,
-	     .F_To_I,
-	     .U_F_To_I,
+	     .F_Conv,
+	     .F_I_Conv,
+	     .U_F_I_Conv,
 	     .Stub,
 	     .Not,
 	     .Neg,
 	     .Cast,
 	     .Global,
 	     .Global_Addr,
-	     .F_Demote,
-	     .F_Ext,
-	     .F_From_I,
-	     .U_F_From_I,
 	     .Proc_Addr,
 	     .Always,
 	     .Poison,
@@ -578,15 +575,12 @@ pre_regalloc_hook :: proc(
 			return {def = true, input_count = 2}
 		case .Uext,
 		     .Sext,
-		     .F_To_I,
-		     .U_F_To_I,
+		     .F_Conv,
+		     .F_I_Conv,
+		     .U_F_I_Conv,
 		     .Not,
 		     .Neg,
 		     .Cast,
-		     .F_Demote,
-		     .F_Ext,
-		     .F_From_I,
-		     .U_F_From_I,
 		     .Extract_Lane_U,
 		     .Splat,
 		     .Simd_Extract_Lsbs,
@@ -1211,7 +1205,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 		case .Void, .Mem, .V256, .V512:
 			panic("no")
 		}
-	case .Add ..= .U_Rem, .Drop, .Not, .F_Demote, .F_Ext, .Ctz:
+	case .Add ..= .U_Rem, .Drop, .Not, .F_Conv, .Ctz:
 		if node.dt == .V128 {
 			fmt.assertf(lane_op != .V128_Load, "%v", node)
 			emit_op_fd(ctx.code, lane_op)
@@ -1284,44 +1278,47 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 		case .Void, .Mem, .I8, .F32 ..= .V512:
 			panic("no")
 		}
-	case .F_From_I, .U_F_From_I:
-		unsigned := kind == .U_F_From_I
-		switch inp.dt {
-		case .I8 ..= .I32:
-			switch node.dt {
-			case .F32:
-				emit_op(
-					ctx.code,
-					unsigned ? .F32_Convert_I32_U : .F32_Convert_I32_S,
-				)
-			case .F64:
-				emit_op(
-					ctx.code,
-					unsigned ? .F64_Convert_I32_U : .F64_Convert_I32_S,
-				)
-			case .Void ..= .I64, .V128 ..= .V512:
+	case .F_I_Conv, .U_F_I_Conv:
+		unsigned := kind == .U_F_I_Conv
+		if node.dt in bac.FLOAT_DTS {
+			switch inp.dt {
+			case .I8 ..= .I32:
+				switch node.dt {
+				case .F32:
+					emit_op(
+						ctx.code,
+						unsigned ? .F32_Convert_I32_U : .F32_Convert_I32_S,
+					)
+				case .F64:
+					emit_op(
+						ctx.code,
+						unsigned ? .F64_Convert_I32_U : .F64_Convert_I32_S,
+					)
+				case .Void ..= .I64, .V128 ..= .V512:
+					panic("no")
+				}
+			case .I64:
+				switch node.dt {
+				case .F32:
+					emit_op(
+						ctx.code,
+						unsigned ? .F32_Convert_I64_U : .F32_Convert_I64_S,
+					)
+				case .F64:
+					emit_op(
+						ctx.code,
+						unsigned ? .F64_Convert_I64_U : .F64_Convert_I64_S,
+					)
+				case .Void ..= .I64, .V128 ..= .V512:
+					panic("no")
+				}
+			case .Void, .Mem, .F32 ..= .V512:
 				panic("no")
 			}
-		case .I64:
-			switch node.dt {
-			case .F32:
-				emit_op(
-					ctx.code,
-					unsigned ? .F32_Convert_I64_U : .F32_Convert_I64_S,
-				)
-			case .F64:
-				emit_op(
-					ctx.code,
-					unsigned ? .F64_Convert_I64_U : .F64_Convert_I64_S,
-				)
-			case .Void ..= .I64, .V128 ..= .V512:
-				panic("no")
-			}
-		case .Void, .Mem, .F32 ..= .V512:
-			panic("no")
+			break
 		}
-	case .F_To_I, .U_F_To_I:
-		unsigned := kind == .U_F_To_I
+
+		assert(inp.dt in bac.FLOAT_DTS && node.dt in bac.INT_DTS)
 		switch node.dt {
 		case .I8 ..= .I32:
 			switch inp.dt {

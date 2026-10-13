@@ -2078,10 +2078,8 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			case dst_float && src_float:
 				if dest_dt == src_dt {
 					res = arg
-				} else if dest_dt == .F64 {
-					res = bac.add_un_op(ctx, "fext", .F_Ext, dest_dt, arg)
 				} else {
-					res = bac.add_un_op(ctx, "fdem", .F_Demote, dest_dt, arg)
+					res = bac.add_un_op(ctx, "fcnv", .F_Conv, dest_dt, arg)
 				}
 			case dst_float && !src_float:
 				wide := arg
@@ -2090,18 +2088,18 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 						src_ty in typecheck.SIGNED_TYPES ? .Sext : .Uext
 					wide = bac.add_un_op(ctx, "iwd", wop, .I64, arg)
 				}
-				op: bac.Un_Op = .F_From_I
+				op: bac.Un_Op = .F_I_Conv
 				if typecheck.in_set(src_ty, typecheck.UNSIGNED_TYPES) {
-					op = .U_F_From_I
+					op = .U_F_I_Conv
 				}
 				res = bac.add_un_op(ctx, "i2f", op, dest_dt, wide)
 			case !dst_float && src_float:
-				op: bac.Un_Op = .F_To_I
+				op: bac.Un_Op = .F_I_Conv
 				if typecheck.in_set(
 					base_meta.typeida,
 					typecheck.UNSIGNED_TYPES,
 				) {
-					op = .U_F_To_I
+					op = .U_F_I_Conv
 				}
 				res = bac.add_un_op(ctx, "f2i", op, dest_dt, arg)
 			case dest_dt != src_dt:

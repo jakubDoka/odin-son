@@ -4324,7 +4324,7 @@ main :: proc() -> int {
 }
 ```
 
-#### frontend emits F_To_I
+#### frontend emits F_I_Conv float to int
 ```odin
 package main
 
@@ -4339,7 +4339,7 @@ main :: proc() -> int {
 }
 ```
 
-#### frontend emits U_F_To_I
+#### frontend emits U_F_I_Conv float to int
 ```odin
 package main
 
@@ -4365,7 +4365,7 @@ main :: proc() -> int {
 }
 ```
 
-#### frontend emits F_From_I
+#### frontend emits F_I_Conv int to float
 ```odin
 package main
 
@@ -4381,7 +4381,7 @@ main :: proc() -> int {
 }
 ```
 
-#### frontend emits U_F_From_I
+#### frontend emits U_F_I_Conv int to float
 ```odin
 package main
 
@@ -4409,7 +4409,7 @@ main :: proc() -> int {
 }
 ```
 
-#### frontend emits F_Ext
+#### frontend emits F_Conv f32 to f64
 ```odin
 package main
 
@@ -4425,7 +4425,7 @@ main :: proc() -> int {
 }
 ```
 
-#### frontend emits F_Demote
+#### frontend emits F_Conv f64 to f32
 ```odin
 package main
 
@@ -6272,7 +6272,7 @@ main :: proc() -> int {
 }
 ```
 
-<!-- x64.odin:2687-2693 `.F_From_I` always emits the signed `cvtsi2sd`, so a u64 with bit 63 set converts to a negative double. expected 18, got 0 -->
+<!-- `.U_F_I_Conv` integer-to-float used to emit the signed `cvtsi2sd`, so a u64 with bit 63 set converted to a negative double. expected 18, got 0 -->
 
 #### u64 to f64 conversion uses signed cvtsi2sd
 ```!odin
@@ -6288,7 +6288,7 @@ main :: proc() -> int {
 }
 ```
 
-<!-- x64.odin:2694-2701 `.F_To_I` always emits the signed `cvttsd2si`, so a float that does not fit the signed range of the destination yields the "integer indefinite" value instead of the unsigned result. expected 160, got 99 -->
+<!-- `.U_F_I_Conv` float-to-integer used to emit the signed `cvttsd2si`, so a float that does not fit the signed range of the destination yielded the "integer indefinite" value instead of the unsigned result. expected 160, got 99 -->
 
 #### f64 to u32 conversion uses signed cvttsd2si
 ```odin
@@ -6641,7 +6641,7 @@ main :: proc() -> int {
 }
 ```
 
-<!-- bac/builder/builder.odin:51-52 fold_un_op treats .F_Demote as identity, but float constants are stored as f64 bits (gen.odin:386 emit_float_const), so f32(x) of a folded constant keeps full f64 precision instead of rounding to f32. expected 146, got 0 -->
+<!-- fold_un_op used to treat demoting .F_Conv as identity, but float constants are stored as f64 bits, so f32(x) of a folded constant kept full f64 precision instead of rounding to f32. expected 146, got 0 -->
 
 #### f32 demotion of a constant does not round
 ```!odin

@@ -325,12 +325,53 @@ peep :: proc(
 	}
 
 	#partial matchx: switch xtype(node) {
-	case .U_F_From_I:
+	case .U_F_I_Conv:
 		inp := expand_node(ctx, node.inps[0])
+		if inp.dt in bac.FLOAT_DTS {
+			assert(node.dt in bac.INT_DTS)
+			wide := bac.add_un_op(ctx, "uftw", .F_I_Conv, .I64, node.inps[0])
+			if node.dt != .I64 {
+				return bac.add_un_op(ctx, "uftc", .Cast, node.dt, wide)
+			}
+
+			_, high := add_node(
+				ctx,
+				"ufti",
+				.X64_U_Shr,
+				.I64,
+				{wide},
+				{imm = 63},
+			)
+			bits_dt: bac.Node_Datatype = inp.dt == .F64 ? .I64 : .I32
+			delta := high
+			if bits_dt == .I32 {
+				delta = bac.add_un_op(ctx, "uftc", .Cast, .I32, delta)
+			}
+			_, delta = add_node(
+				ctx,
+				"ufte",
+				.X64_Shl,
+				bits_dt,
+				{delta},
+				{imm = inp.dt == .F64 ? 52 : 23},
+			)
+			delta = bac.add_un_op(ctx, "uftb", .Cast, inp.dt, delta)
+			_, adjusted := add_node(
+				ctx,
+				"ufta",
+				.X64_Psub,
+				inp.dt,
+				{node.inps[0], delta},
+			)
+			half := bac.add_un_op(ctx, "ufth", .F_I_Conv, .I64, adjusted)
+			return bac.add_bin_op(ctx, "uftr", .Shl, .I64, half, high)
+		}
+
+		assert(node.dt in bac.FLOAT_DTS)
 		assert(inp.dt == .I64)
 		if inp.itype == .Uext &&
 		   bac.DT_SIZE[get_node(ctx, inp.inps[0]).dt] < 8 {
-			return bac.add_un_op(ctx, "ufcv", .F_From_I, node.dt, node.inps[0])
+			return bac.add_un_op(ctx, "ufcv", .F_I_Conv, node.dt, node.inps[0])
 		}
 
 		_, high := add_node(
@@ -351,7 +392,7 @@ peep :: proc(
 		)
 		sticky := bac.add_bin_op(ctx, "ufst", .And, .I64, node.inps[0], high)
 		rounded := bac.add_bin_op(ctx, "ufrd", .Or, .I64, shifted, sticky)
-		converted := bac.add_un_op(ctx, "ufcv", .F_From_I, node.dt, rounded)
+		converted := bac.add_un_op(ctx, "ufcv", .F_I_Conv, node.dt, rounded)
 
 		bits_dt: bac.Node_Datatype = node.dt == .F64 ? .I64 : .I32
 		delta := high
@@ -369,37 +410,6 @@ peep :: proc(
 		delta = bac.add_un_op(ctx, "ufdb", .Cast, node.dt, delta)
 		_, res := add_node(ctx, "ufrs", .X64_Padd, node.dt, {converted, delta})
 		return res
-	case .U_F_To_I:
-		inp := expand_node(ctx, node.inps[0])
-		wide := bac.add_un_op(ctx, "uftw", .F_To_I, .I64, node.inps[0])
-		if node.dt != .I64 {
-			return bac.add_un_op(ctx, "uftc", .Cast, node.dt, wide)
-		}
-
-		_, high := add_node(ctx, "ufti", .X64_U_Shr, .I64, {wide}, {imm = 63})
-		bits_dt: bac.Node_Datatype = inp.dt == .F64 ? .I64 : .I32
-		delta := high
-		if bits_dt == .I32 {
-			delta = bac.add_un_op(ctx, "uftc", .Cast, .I32, delta)
-		}
-		_, delta = add_node(
-			ctx,
-			"ufte",
-			.X64_Shl,
-			bits_dt,
-			{delta},
-			{imm = inp.dt == .F64 ? 52 : 23},
-		)
-		delta = bac.add_un_op(ctx, "uftb", .Cast, inp.dt, delta)
-		_, adjusted := add_node(
-			ctx,
-			"ufta",
-			.X64_Psub,
-			inp.dt,
-			{node.inps[0], delta},
-		)
-		half := bac.add_un_op(ctx, "ufth", .F_To_I, .I64, adjusted)
-		return bac.add_bin_op(ctx, "uftr", .Shl, .I64, half, high)
 	case .CInt:
 		cnst: ^bac.CInt = bac.get_extra(ctx, node, bac.CInt)
 		if node.dt in bac.FLOAT_DTS && cnst.value != 0 {
@@ -1069,8 +1079,7 @@ meta_of :: proc(
 	case .End,
 	     .Simd_Reduce_Add_Bisect,
 	     .Splat,
-	     .U_F_To_I,
-	     .U_F_From_I,
+	     .U_F_I_Conv,
 	     .Then,
 	     .Else,
 	     .Nil,
@@ -1179,7 +1188,7 @@ meta_of :: proc(
 		return {out = out, masks = nmasks[:1], in_place_slot = 1}
 	case .Sext, .Uext:
 		return {out = out, masks = nmasks[:1]}
-	case .F_To_I, .F_From_I, .F_Ext, .F_Demote, .Cast:
+	case .F_Conv, .F_I_Conv, .Cast:
 		inp := get_node(graph, node.inps[0])
 		return {out = out, masks = masks[ra.datatype_to_reg_kind[inp.dt]][:1]}
 	case .Simd_Extract_Lsbs:
@@ -1758,7 +1767,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 	     .Dbg_Sym_Update,
 	     .Dbg_Sym_Decl,
 	     .Dbg_Scope:
-	case .Splat, .U_F_To_I, .U_F_From_I:
+	case .Splat, .U_F_I_Conv:
 		panic("no")
 	case .Simd_Extract_Lsbs:
 		// pmovmskb $dst(gpr), $src(xmm)
@@ -2519,25 +2528,25 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 		case .Dest:
 			panic("")
 		}
-	case .F_From_I:
-		// cvtsi2ss/cvtsi2sd $dst(xmm), $src(gpr)
+	case .F_I_Conv:
 		dst := reg_of(ctx, instr)
 		src := reg_of(ctx, node.inps[0])
 		sdt := get_node(ctx, node.inps[0]).dt
-		rx := rex(dst, src, RAX, bac.DT_SIZE[sdt] == 8)
-		emit(ctx.code, {pfx, rx, 0x0f, 0x2a, mod_rm(.Direct, dst, src)})
-	case .F_To_I:
-		// cvttss2si/cvttsd2si $dst(gpr), $src(xmm)
-		dst := reg_of(ctx, instr)
-		src := reg_of(ctx, node.inps[0])
-		sdt := get_node(ctx, node.inps[0]).dt
+		if sdt in bac.INT_DTS {
+			pfx: u8 = node.dt == .F64 ? 0xF2 : 0xF3
+			rx := rex(dst, src, RAX, bac.DT_SIZE[sdt] == 8)
+			emit(ctx.code, {pfx, rx, 0x0f, 0x2a, mod_rm(.Direct, dst, src)})
+			break
+		}
+
+		assert(sdt in bac.FLOAT_DTS)
 		pfx: u8 = sdt == .F64 ? 0xF2 : 0xF3
 		rx := rex(dst, src, RAX, bac.DT_SIZE[node.dt] == 8)
 		emit(ctx.code, {pfx, rx, 0x0f, 0x2c, mod_rm(.Direct, dst, src)})
-	case .F_Ext, .F_Demote:
-		// cvtss2sd $dst, $src (f32 -> f64)
+	case .F_Conv:
 		dst := reg_of(ctx, instr)
 		src := reg_of(ctx, node.inps[0])
+		assert(get_node(ctx, node.inps[0]).dt in bac.FLOAT_DTS)
 		rx := rex(dst, src, RAX, false)
 		pfx: u8 = node.dt == .F64 ? 0xF3 : 0xF2
 		emit(ctx.code, {pfx, rx, 0x0f, 0x5a, mod_rm(.Direct, dst, src)})

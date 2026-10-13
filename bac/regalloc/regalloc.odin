@@ -1874,8 +1874,6 @@ regalloc_round :: proc(
 		inp_node := get_node(ctx.graph, inp)
 
 		if !is_def_while_splitting(ctx, inp_node) do return inp
-		if node.itype == .Dbg_Sym_Update &&
-		   !bac.has_flag(ctx.graph, inp_node, .Clonable) {return inp}
 
 		split: Node_ID
 		if bac.has_flag(ctx.graph, inp_node, .Clonable) && !must {

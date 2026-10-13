@@ -8,6 +8,132 @@ import "core:mem"
 import "core:reflect"
 import "core:sort"
 
+Dbg_Data :: struct {
+	syms: [dynamic]Dbg_Data_Sym,
+}
+
+Dbg_Data_Sym :: struct {
+	using inner: Dbg_Sym,
+	defs:        [dynamic]Dbg_Data_Def,
+}
+
+Dbg_Data_Def :: struct {
+	node: Node_ID,
+}
+
+take_dbg_data :: proc(
+	graph: ^Proc,
+	sched: ^Schedule,
+	data: ^Dbg_Data,
+	scratch := context.allocator,
+) {
+	context.allocator, _ = arna.scrath(scratch)
+
+	if !graph.has_dbg do return
+
+	Ctx :: struct {
+		using graph: ^Proc,
+		using sched: ^Schedule,
+	}
+
+	ctx: Ctx
+	ctx.graph = graph
+	ctx.sched = sched
+
+	data.syms = make([dynamic]Dbg_Data_Sym, scratch)
+	phys_to_break: [dynamic]Node_ID
+
+	node_to_sym := make([]u32, ctx.gvn)
+	for &bb, bidx in ctx.bbs {
+		for instr, i in bb.instrs {
+			inode := expand_node(ctx, instr)
+
+			#partial switch inode.itype {
+			case .Dbg_Scope:
+				continue
+			case .Dbg_Sym_Decl:
+				node_to_sym[inode.gvn] = u32(len(data.syms))
+				append(
+					&data.syms,
+					{
+						get_extra(ctx, inode, Dbg_Sym)^,
+						make([dynamic]Dbg_Data_Def, scratch),
+					},
+				)
+			case .Dbg_Sym_Update:
+				sym := node_to_sym[inode.gvn]
+
+				if get_node(ctx, inode.inps[0]).output_count > 1 {
+					append(&data.syms[sym].defs, {inode.inps[0]})
+				}
+			case:
+				if inode.itype != .Phi || inode.dt != .Void {
+					continue
+				} else {
+					if get_node(ctx, inode.inps[0]).itype == .Loop {
+						append(&phys_to_break, instr)
+					}
+				}
+			}
+
+			for out in inode.outs {
+				node_to_sym[get_node(ctx, out.id).gvn] = node_to_sym[inode.gvn]
+			}
+		}
+	}
+
+	for phy in phys_to_break {
+		set_input(ctx, phy, 2, 0)
+	}
+
+	for einp, i in get_inputs(ctx, ctx.end) {
+		if get_node(ctx, einp).itype == .Dbg_Scope {
+			set_input(ctx, ctx.end, i, 0)
+		}
+	}
+
+	for &bb, bidx in ctx.bbs {
+		keep := 0
+		for instr, i in bb.instrs {
+			inode := get_node(ctx, instr)
+			fmt.assertf(
+				inode.itype not_in
+				bit_set[Node_Type]{.Dbg_Sym_Update, .Dbg_Scope, .Dbg_Sym_Decl},
+				"%v",
+				inode,
+			)
+
+			if inode.rtype != DEAD_NODE_KIND {
+				bb.instrs[keep] = instr
+				keep += 1
+			}
+		}
+		resize(&bb.instrs, keep)
+	}
+
+	keep := 0
+	for sym, i in data.syms {
+		if sym.inner != {} {
+			data.syms[keep] = sym
+			keep += 1
+		}
+	}
+	resize(&data.syms, keep)
+
+	for &sym in data.syms {
+		keep := 0
+		for def in sym.defs {
+			if get_node(ctx, def.node).rtype != DEAD_NODE_KIND {
+				sym.defs[keep] = def
+				keep += 1
+			}
+		}
+		resize(&sym.defs, keep)
+	}
+
+	schedule_graph(graph, sched, .for_regalloc, scratch)
+}
+
 Call_Conv :: struct {
 	name:          string,
 	callee_saved:  [][]Reg,
@@ -67,6 +193,7 @@ PS_Peep_Ctx :: struct {
 Codegen_Emit_Ctx :: struct {
 	using graph:      ^Proc,
 	using schedule:   ^Schedule,
+	using dbg_data:   ^Dbg_Data,
 	using abi:        ^Call_Conv,
 	using buf:        Codegen_Emit_Buf,
 	emit_got_imports: bool,
@@ -108,14 +235,13 @@ Dbg_Location_Kind :: enum u8 {
 }
 
 Dbg_Location :: struct {
-	name:   string,
-	start:  u32,
-	end:    u32,
-	symbol: u32,
-	offset: i32,
-	reg:    Reg,
-	dt:     rawptr,
-	kind:   Dbg_Location_Kind,
+	using sym: Dbg_Sym,
+	start:     u32,
+	end:       u32,
+	symbol:    u32,
+	offset:    i32,
+	reg:       Reg,
+	kind:      Dbg_Location_Kind,
 }
 
 Reloc_Kind :: enum u32 {

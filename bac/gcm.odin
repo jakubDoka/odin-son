@@ -21,9 +21,10 @@ Schedule :: struct {
 }
 
 Loop_Tree :: struct {
-	parent:   ^Loop_Tree,
-	depth:    u32,
-	infinite: bool,
+	parent:         ^Loop_Tree,
+	depth:          u32,
+	infinite:       bool,
+	already_always: bool,
 }
 
 compute_lca :: proc(graph: ^Proc, a, b: Node_ID) -> Node_ID {
@@ -118,7 +119,7 @@ insert_alwasy :: proc(ctx: ^Proc, root: Node_ID) -> Node_ID {
 	append(&inps, node.inps[1])
 	for out in node.outs {
 		onode := get_node(ctx, out.id)
-		if onode.itype == .Phi && onode.dt <= .Mem {
+		if onode.itype == .Phi && onode.dt == .Mem {
 			append(&inps, out.id)
 		}
 	}
@@ -158,10 +159,9 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 	for inp in get_inputs(graph, graph.end) {
 		if is_end_ctrl(graph, inp) {
 			inode := expand_node(graph, inp)
-			lctx.loop_trees[inode.gvn] = lctx.root
-
-			end_ctrl := expand_node(graph, inode.inps[0])
-			lctx.loop_trees[end_ctrl.gvn] = lctx.root
+			if inode.itype != .Always {
+				lctx.loop_trees[inode.gvn] = lctx.root
+			}
 		}
 	}
 
@@ -223,6 +223,10 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 			}
 		}
 
+		if node.itype == .Always {
+			deepest.already_always = true
+		}
+
 		if node.itype == .Loop {
 			tree.depth = 0
 			if tree.parent == nil {
@@ -232,12 +236,13 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 			deepest = tree.parent
 
 			if tree.infinite {
-				if emit_always {
+				if emit_always && !tree.already_always {
 					prev_sloc := push_sloc(ctx, get_sloc(ctx, node.node)^)
 					defer pop_sloc(ctx, prev_sloc)
 
 					fmt.assertf(
-						get_node(ctx, node.inps[1]).itype != .If,
+						get_node(ctx, node.inps[1]).itype != .If &&
+						get_node(ctx, node.inps[1]).itype != .Jump,
 						"%v %v",
 						get_node(ctx, node.inps[1]),
 						rawptr(tree),

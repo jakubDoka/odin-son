@@ -601,10 +601,10 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 			uleb(&dbg_info, 4)
 			append(&dbg_info, loc.name)
 			append(&dbg_info, 0)
-			put_u32(
-				&dbg_info,
-				dbg_type_offsets[typecheck.type_to_dt(typecheck.Type(uintptr(loc.dt)))],
-			)
+			type := transmute(typecheck.Type)loc.type
+			// TODO: collect the used types and generate debug info for them
+			// could be an array of used types and we put the index of the type here
+			put_u32(&dbg_info, dbg_type_offsets[what])
 			append(
 				&info_rels,
 				Elf64_Rela {

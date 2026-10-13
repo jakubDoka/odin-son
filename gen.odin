@@ -769,12 +769,14 @@ push_scope_value :: proc(
 	ctx: ^Gen_Ctx,
 	name: ^ast.Node,
 	value: Node_ID,
+	ty: Type,
 ) -> int {
 	return builder.push_scope_value(
 		ctx,
 		ctx.node_scope,
 		value,
 		typecheck.src_of(ctx.file^, name),
+		transmute(rawptr)ty,
 	)
 }
 
@@ -819,7 +821,7 @@ emit_proc :: proc(
 	rmem := builder.init_graph(ctx)
 
 	ctx.node_scope = builder.add_scope(ctx, "scope", ctx.entry)
-	ctx.mem_slot = push_scope_value(ctx, nil, rmem)
+	ctx.mem_slot = push_scope_value(ctx, nil, rmem, .Void)
 
 	rabi := typecheck.ret_abi(prc.rets[:])
 	ctx.ret_ptrs = nil
@@ -845,7 +847,7 @@ emit_proc :: proc(
 
 		value_idx: typecheck.Varuable_Idx
 		if apa.scalar && !apa.by_ptr {
-			value_idx = push_scope_value(ctx, name, value)
+			value_idx = push_scope_value(ctx, name, value, par)
 		} else {
 			value_idx = value
 		}
@@ -936,6 +938,9 @@ emit_proc_code :: proc(
 
 	bac.schedule_peeps(ctx, &schedule)
 
+	dbg_data: bac.Dbg_Data
+	bac.take_dbg_data(ctx, &schedule, &dbg_data)
+
 	ra: bac.Regalloc
 	ra.spec = ctx.node_spec
 	ra.cc = ctx.target.cc
@@ -945,6 +950,7 @@ emit_proc_code :: proc(
 
 	emit_ctx.graph = ctx
 	emit_ctx.schedule = &schedule
+	emit_ctx.dbg_data = &dbg_data
 	emit_ctx.abi = ra.cc
 	emit_ctx.buf = {
 		code     = &ctx.mems.code,
@@ -1357,7 +1363,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 					add_var(ctx, {name, r.id, vty, d.names[i], flags})
 				} else {
 					get_node(ctx, r.id).name = name
-					idx := push_scope_value(ctx, d.names[i], r.id)
+					idx := push_scope_value(ctx, d.names[i], r.id, vty)
 					add_var(ctx, {name, idx, vty, d.names[i], flags})
 				}
 			}
@@ -1451,7 +1457,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				value := emit_rvalue(ctx, {}, d.values[i])
 
 				get_node(ctx, value).name = name
-				idx := push_scope_value(ctx, d.names[i], value)
+				idx := push_scope_value(ctx, d.names[i], value, vty)
 				add_var(ctx, {name, idx, vty, d.names[i], flags})
 			}
 		}
@@ -1794,8 +1800,9 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		iinit := bac.add_c_int(ctx, "rz", .I64, 0)
 		idx_slot := push_scope_value(
 			ctx,
-			slice.get(d.vals, 1) or_else {},
+			slice.get(d.vals, 1) or_else nil,
 			iinit,
+			.I64,
 		)
 
 		loop_state: typecheck.Loop_State

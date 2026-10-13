@@ -1752,18 +1752,26 @@ set_input :: proc(
 	assert(idx < len(node.inps))
 	if node.inps[idx] == value do return id
 
-	add_output(graph, value, id, idx)
-	remove_output(graph, node.inps[idx], {idx = idx, id = id})
+	prev := node.inps[idx]
 
-	unintern(graph, id)
+	add_output(graph, value, id, idx)
 	node.inps[idx] = value
-	nid := intern(graph, id)
-	if subsume_on_intern {
-		if nid != id do subsume(graph, nid, id)
-	} else {
-		assert(nid == id)
+	remove_output(graph, prev, {idx = idx, id = id})
+	node.inps[idx] = prev
+
+	if node.rtype != DEAD_NODE_KIND {
+		unintern(graph, id)
+		node.inps[idx] = value
+		nid := intern(graph, id)
+		if subsume_on_intern {
+			if nid != id do subsume(graph, nid, id)
+		} else {
+			assert(nid == id)
+		}
+		return nid
 	}
-	return nid
+
+	return id
 }
 
 clone :: proc(graph: ^Proc, id: Node_ID) -> Node_ID {
@@ -1868,15 +1876,15 @@ delete_node_node :: proc(graph: ^Proc, node: ^Node) {
 
 	unintern(graph, id)
 
+	graph.waste += int(node.input_cap * size_of(Node_ID))
+	graph.waste += int(node.output_cap * size_of(Node_Output))
+	graph.waste += compute_node_size(graph, node.rtype, node.extra_dwords)
+
 	size := node_approx_size(graph, node)
 
 	if size == graph.mem.pos - uint(id * PRECISION) {
 		add_efficiency_stat(graph, .immediate_deletes, 1)
 	}
-
-	graph.waste += int(node.input_cap * size_of(Node_ID))
-	graph.waste += int(node.output_cap * size_of(Node_Output))
-	graph.waste += compute_node_size(graph, node.rtype, node.extra_dwords)
 
 	node^ = {
 		rtype = DEAD_NODE_KIND,

@@ -325,13 +325,16 @@ push_scope_value :: proc(
 	scope: Node_ID,
 	value: Node_ID,
 	name: string,
+	type: rawptr,
 ) -> int {
 	scope_node := get_node(graph, scope)
 	assert(Node_Type(scope_node.rtype) == .Scope)
 	if should_debug_track(graph, value) {
 		decl := bac.add_dbg_sym_decl(graph, name)
 		bac.get_extra(graph, decl, bac.Dbg_Sym).name = name
-		bac.connect(graph, scope, decl)
+		bac.get_extra(graph, decl, bac.Dbg_Sym).type = type
+		update := bac.add_dbg_sym_update(graph, "init", value, decl)
+		bac.connect(graph, scope, update)
 	}
 	return bac.connect(graph, scope, value)
 }
@@ -345,7 +348,7 @@ set_scope_value :: proc(
 	prev_value := get_scope_value(graph, scope, idx)
 	if should_debug_track(graph, prev_value) {
 		prev_dbg := get_scope_value(graph, scope, idx - 1)
-		update := bac.add_dbg_sym_update(graph, "dbgu", prev_value, prev_dbg)
+		update := bac.add_dbg_sym_update(graph, "dbgu", value, prev_dbg)
 		bac.set_input(graph, scope, idx - 1, update)
 	}
 	bac.set_input(graph, scope, idx, value)
@@ -371,15 +374,7 @@ truncate_scope :: proc(
 		for i in to_len ..< int(snode.input_count) {
 			vl := get_scope_value(graph, scope, i)
 			if should_debug_track(graph, vl) {
-				append(
-					&vars,
-					bac.add_dbg_sym_update(
-						graph,
-						"dbgfu",
-						vl,
-						get_scope_value(graph, scope, i - 1),
-					),
-				)
+				append(&vars, get_scope_value(graph, scope, i - 1))
 			}
 		}
 
@@ -1122,23 +1117,23 @@ make_builtin_proc :: proc(graph: ^Proc, name: Builtin_Proc) {
 
 	scope := add_scope(graph, "scp", graph.entry)
 
-	memv := push_scope_value(graph, scope, mem, "")
+	memv := push_scope_value(graph, scope, mem, "", nil)
 
 	dst := bac.add_param(graph, "dst", .I64, graph.entry, 0)
-	dstv := push_scope_value(graph, scope, dst, "")
+	dstv := push_scope_value(graph, scope, dst, "", nil)
 
 	val, src: Node_ID
 	srcv: int
 	switch name {
 	case .memcpy:
 		src = bac.add_param(graph, "src", .I64, graph.entry, 1)
-		srcv = push_scope_value(graph, scope, src, "")
+		srcv = push_scope_value(graph, scope, src, "", nil)
 	case .memset:
 		val = bac.add_param(graph, "val", .I8, graph.entry, 1)
 	}
 
 	len := bac.add_param(graph, "len", .I64, graph.entry, 2)
-	lenv := push_scope_value(graph, scope, len, "")
+	lenv := push_scope_value(graph, scope, len, "", nil)
 
 	loop: Loop_State
 	start_loop(graph, scope, &loop)

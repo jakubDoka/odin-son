@@ -197,8 +197,13 @@ peep :: proc(
 		}
 	case .Dbg_Sym_Update:
 		prev := expand_node(ctx, node.inps[1])
+		prevv := expand_node(ctx, node.inps[0])
 		if prev.itype == .Dbg_Sym_Update && prev.inps[0] == node.inps[0] {
-			return node.inps[0]
+			return node.inps[1]
+		}
+		if prevv.itype == .Phi &&
+		   (prev.itype != .Phi || prev.inps[0] != prevv.inps[0]) {
+			return node.inps[1]
 		}
 	case .End:
 		zcnt := 0
@@ -478,6 +483,7 @@ peep :: proc(
 		elim: if len(node.inps) == 1 {
 
 			#reverse for out in node.outs {
+				if get_node(ctx, out.id).rtype == bac.DEAD_NODE_KIND do continue
 				onode := expand_node(ctx, out.id)
 				if onode.itype == .Phi {
 					bac.peep_subsume(ctx, onode.inps[1], out.id)

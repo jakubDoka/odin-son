@@ -1279,80 +1279,48 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 			panic("no")
 		}
 	case .F_I_Conv, .U_F_I_Conv:
-		unsigned := kind == .U_F_I_Conv
-		if node.dt in bac.FLOAT_DTS {
-			switch inp.dt {
-			case .I8 ..= .I32:
-				switch node.dt {
-				case .F32:
-					emit_op(
-						ctx.code,
-						unsigned ? .F32_Convert_I32_U : .F32_Convert_I32_S,
-					)
-				case .F64:
-					emit_op(
-						ctx.code,
-						unsigned ? .F64_Convert_I32_U : .F64_Convert_I32_S,
-					)
-				case .Void ..= .I64, .V128 ..= .V512:
-					panic("no")
-				}
-			case .I64:
-				switch node.dt {
-				case .F32:
-					emit_op(
-						ctx.code,
-						unsigned ? .F32_Convert_I64_U : .F32_Convert_I64_S,
-					)
-				case .F64:
-					emit_op(
-						ctx.code,
-						unsigned ? .F64_Convert_I64_U : .F64_Convert_I64_S,
-					)
-				case .Void ..= .I64, .V128 ..= .V512:
-					panic("no")
-				}
-			case .Void, .Mem, .F32 ..= .V512:
-				panic("no")
-			}
-			break
+		Class :: enum {
+			i32,
+			i64,
+			f32,
+			f64,
 		}
 
-		assert(inp.dt in bac.FLOAT_DTS && node.dt in bac.INT_DTS)
-		switch node.dt {
-		case .I8 ..= .I32:
-			switch inp.dt {
-			case .F32:
-				emit_op(
-					ctx.code,
-					unsigned ? .I32_Trunc_F32_U : .I32_Trunc_F32_S,
-				)
-			case .F64:
-				emit_op(
-					ctx.code,
-					unsigned ? .I32_Trunc_F64_U : .I32_Trunc_F64_S,
-				)
-			case .Void ..= .I64, .V128 ..= .V512:
-				panic("no")
-			}
-		case .I64:
-			switch inp.dt {
-			case .F32:
-				emit_op(
-					ctx.code,
-					unsigned ? .I64_Trunc_F32_U : .I64_Trunc_F32_S,
-				)
-			case .F64:
-				emit_op(
-					ctx.code,
-					unsigned ? .I64_Trunc_F64_U : .I64_Trunc_F64_S,
-				)
-			case .Void ..= .I64, .V128 ..= .V512:
-				panic("no")
-			}
-		case .Void, .Mem, .F32 ..= .V512:
-			panic("no")
+		@(rodata, static)
+		DT_TO_CLASS := #partial [bac.Node_Datatype]Class {
+			.I8 ..= .I32     = .i32,
+			.I64 = .i64,
+			.F32 = .f32,
+			.F64 = .f64,
 		}
+
+		@(rodata, static)
+		CONV_TABLE := [Class][Class][2]Opcode {
+			.i32 = #partial{
+				.f32 = {.I32_Trunc_F32_S, .I32_Trunc_F32_U},
+				.f64 = {.I32_Trunc_F64_S, .I32_Trunc_F64_U},
+			},
+			.i64 = #partial{
+				.f32 = {.I64_Trunc_F32_S, .I64_Trunc_F32_U},
+				.f64 = {.I64_Trunc_F64_S, .I64_Trunc_F64_U},
+			},
+			.f32 = #partial{
+				.i32 = {.F32_Convert_I32_S, .F32_Convert_I32_U},
+				.i64 = {.F32_Convert_I64_S, .F32_Convert_I64_U},
+			},
+			.f64 = #partial{
+				.i32 = {.F64_Convert_I32_S, .F64_Convert_I32_U},
+				.i64 = {.F64_Convert_I64_S, .F64_Convert_I64_U},
+			},
+		}
+
+		dst := DT_TO_CLASS[node.dt]
+		src := DT_TO_CLASS[inp.dt]
+		unsigned := kind == .U_F_I_Conv
+
+		assert((dst == .f32 || dst == .f64) != (src == .f32 || src == .f64))
+
+		emit_op(ctx.code, CONV_TABLE[dst][src][int(unsigned)])
 	case .Cast:
 		switch node.dt {
 		case .I8:

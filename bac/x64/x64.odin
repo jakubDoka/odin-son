@@ -566,7 +566,8 @@ peep :: proc(
 		op_dt := bac.operation_datatype(ctx.graph, node)
 		if op_dt not_in bac.INT_DTS {
 			if op_dt in bac.FLOAT_DTS &&
-			   .Eq <= node.itype && node.itype <= .Ge &&
+			   .Eq <= node.itype &&
+			   node.itype <= .Ge &&
 			   node.dt != .Void &&
 			   len(node.outs) == 1 &&
 			   get_node(ctx, node.outs[0].id).itype == .If {
@@ -1599,26 +1600,26 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 
 	@(static, rodata)
 	FLOAT_OPCODE_TABLE := #partial [Node_Type]Instr_Info {
-		.Add = {0x58, 0},
-		.Sub = {0x5C, 0},
-		.Mul = {0x59, 0},
-		.Div = {0x5E, 0},
-		.Eq = {0x94, 0},
-		.Ne = {0x95, 0},
-		.Gt = {0x97, 0},
-		.Ge = {0x93, 0},
-		.Lt = {0x97, 0},
-		.Le = {0x93, 0},
+		.Add     = {0x58, 0},
+		.Sub     = {0x5C, 0},
+		.Mul     = {0x59, 0},
+		.Div     = {0x5E, 0},
+		.Eq      = {0x94, 0},
+		.Ne      = {0x95, 0},
+		.Gt      = {0x97, 0},
+		.Ge      = {0x93, 0},
+		.Lt      = {0x97, 0},
+		.Le      = {0x93, 0},
 		.X64_Add = {0x58, 0},
 		.X64_Sub = {0x5C, 0},
 		.X64_Mul = {0x59, 0},
 		.X64_Div = {0x5E, 0},
-		.X64_Eq = {0x94, 0},
-		.X64_Ne = {0x95, 0},
-		.X64_Lt = {0x92, 0},
-		.X64_Le = {0x96, 0},
-		.X64_Gt = {0x97, 0},
-		.X64_Ge = {0x93, 0},
+		.X64_Eq  = {0x94, 0},
+		.X64_Ne  = {0x95, 0},
+		.X64_Lt  = {0x92, 0},
+		.X64_Le  = {0x96, 0},
+		.X64_Gt  = {0x97, 0},
+		.X64_Ge  = {0x93, 0},
 	}
 
 	@(static, rodata)
@@ -1685,10 +1686,10 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 
 	@(static, rodata)
 	SRC_MODE_OPCODE_TABLE := #partial [Node_Type]Instr_Info {
-		.X64_Add   = {0x03, 0},
-		.X64_Sub   = {0x2B, 0},
-		.X64_And   = {0x23, 0},
-		.X64_Or    = {0x0B, 0},
+		.X64_Add = {0x03, 0},
+		.X64_Sub = {0x2B, 0},
+		.X64_And = {0x23, 0},
+		.X64_Or  = {0x0B, 0},
 		.X64_Xor = {0x33, 0},
 	}
 
@@ -2207,10 +2208,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 		case .F32, .F64, .V128, .V256, .V512:
 			panic("")
 		}
-	case .X64_Add ..= .X64_Xor,
-	     .X64_Shl ..= .X64_U_Shr,
-	     .X64_Mul,
-	     .X64_Div:
+	case .X64_Add ..= .X64_Xor, .X64_Shl ..= .X64_U_Shr, .X64_Mul, .X64_Div:
 		if mem_op.dt in bac.FLOAT_DTS {
 			assert(mem_op.mem_mode == .Src)
 			is_cload := get_node(ctx, node.inps[0]).itype == .Global
@@ -2391,7 +2389,16 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 				rx := rex(RAX, bse, idx, bac.DT_SIZE[op_dt] == 8)
 				emit_sized_opcode(ctx.code, op_dt, rx, 0x81)
 				tb := bac.DT_SIZE[op_dt]
-				emit_indirect_addr(ctx, 0b111, bse, idx, scl, dis + sdis, id, tb)
+				emit_indirect_addr(
+					ctx,
+					0b111,
+					bse,
+					idx,
+					scl,
+					dis + sdis,
+					id,
+					tb,
+				)
 				emit_imm_for_dt(ctx.code, op_dt, mem_op.imm)
 			case .Src:
 				lhs := reg_of(ctx, node.inps[3])
@@ -2429,7 +2436,8 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 
 			// setcc $lhs
 			rx := rex(RAX, dst, RAX, true)
-			op := is_float ? FLOAT_OPCODE_TABLE[type].opcode : OPCODE_TABLE[type].opcode
+			op :=
+				is_float ? FLOAT_OPCODE_TABLE[type].opcode : OPCODE_TABLE[type].opcode
 			emit(ctx.code, {rx, 0x0F, op, mod_sm(.Direct, 0b000, dst)})
 
 			next_sloc(ctx)

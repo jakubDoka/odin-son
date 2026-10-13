@@ -650,7 +650,7 @@ compute_weight :: proc(graph: ^Proc, all: []Node_ID) {
 		.Loop = 5,
 		.Call = 10,
 		.CInt = 1,
-		.Neg ..= .U_F_I_Conv    = 1,
+		.Neg ..= .U_F_I_Conv      = 1,
 		.Add ..= .And_Not      = 1,
 	}
 

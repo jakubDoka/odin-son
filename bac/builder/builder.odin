@@ -61,20 +61,29 @@ fold_bin_op :: proc(
 	lhs: i64,
 	op: Bin_Op,
 	rhs: i64,
-	ty: bac.Node_Datatype,
+	op_ty: bac.Node_Datatype,
 ) -> (
 	value: i64,
 ) {
+
+	if op_ty == .F32 {
+		return float_ops(lhs, op, rhs)
+	}
+
+	if op_ty == .F64 {
+		return float_ops(lhs, op, rhs)
+	}
+
 	lhs := lhs
 	rhs := rhs
 	#partial switch op {
 	case .Div, .Rem, .Shr, .Shl, .Le ..= .Ge:
-		lhs = sext(lhs, ty)
+		lhs = sext(lhs, op_ty)
 	}
 
 	#partial switch op {
 	case .Div, .Rem, .Le ..= .Ge:
-		rhs = sext(rhs, ty)
+		rhs = sext(rhs, op_ty)
 	}
 
 	switch op {
@@ -99,9 +108,9 @@ fold_bin_op :: proc(
 	case .And_Not:
 		value = lhs &~ rhs
 	case .Shl:
-		value = sext(lhs << u64(rhs), ty)
+		value = sext(lhs << u64(rhs), op_ty)
 	case .Shr:
-		value = sext(lhs, ty) >> u64(rhs)
+		value = sext(lhs, op_ty) >> u64(rhs)
 	case .Eq:
 		value = i64(lhs == rhs)
 	case .Ne:
@@ -131,31 +140,37 @@ fold_bin_op :: proc(
 		value = i64(u64(lhs) % u64(rhs))
 	case .U_Shr:
 		value = i64(u64(lhs) >> u64(rhs))
-	case .F_Ne:
-		value = i64(tf(lhs) != tf(rhs))
-	case .F_Eq:
-		value = i64(tf(lhs) == tf(rhs))
-	case .F_Le:
-		value = i64(tf(lhs) <= tf(rhs))
-	case .F_Lt:
-		value = i64(tf(lhs) < tf(rhs))
-	case .F_Gt:
-		value = i64(tf(lhs) > tf(rhs))
-	case .F_Ge:
-		value = i64(tf(lhs) >= tf(rhs))
-	case .F_Add:
-		value = ti(tf(lhs) + tf(rhs))
-	case .F_Sub:
-		value = ti(tf(lhs) - tf(rhs))
-	case .F_Mul:
-		value = ti(tf(lhs) * tf(rhs))
-	case .F_Div:
-		value = ti(tf(lhs) / tf(rhs))
 	}
 	return
 
-	tf :: proc(i: i64) -> f64 {return transmute(f64)i}
-	ti :: proc(i: f64) -> i64 {return transmute(i64)i}
+	float_ops :: proc(lhs: $T, op: Bin_Op, rhs: T) -> i64 {
+		lhs := T(transmute(f64)lhs)
+		rhs := T(transmute(f64)rhs)
+		#partial switch op {
+		case .Add:
+			return transmute(i64)(f64(lhs + rhs))
+		case .Sub:
+			return transmute(i64)(f64(lhs - rhs))
+		case .Mul:
+			return transmute(i64)(f64(lhs * rhs))
+		case .Div:
+			return transmute(i64)(f64(lhs / rhs))
+		case .Eq:
+			return i64(lhs == rhs)
+		case .Ne:
+			return i64(lhs != rhs)
+		case .Le:
+			return i64(lhs <= rhs)
+		case .Lt:
+			return i64(lhs < rhs)
+		case .Gt:
+			return i64(lhs > rhs)
+		case .Ge:
+			return i64(lhs >= rhs)
+		case:
+			panic("invalid f32/f64 binary operation")
+		}
+	}
 }
 
 peep :: proc(
@@ -665,13 +680,15 @@ peep :: proc(
 		clhs := bac.get_extra(ctx.graph, lhs, CInt)
 		crhs := bac.get_extra(ctx.graph, rhs, CInt)
 		op := Bin_Op(node.itype)
+		op_ty := bac.operation_datatype(ctx.graph, node)
+		is_integer := op_ty in bac.INT_DTS
 
 		if clhs != nil && crhs != nil {
-			value := fold_bin_op(clhs.value, op, crhs.value, node.dt)
+			value := fold_bin_op(clhs.value, op, crhs.value, op_ty)
 			return bac.add_c_int(ctx.graph, "fld", node.dt, value)
 		}
 
-		if crhs != nil {
+		if is_integer && crhs != nil {
 			ZERO_IS_NEUTRAL := bit_set[Bin_Op] {
 				.Add,
 				.Sub,
@@ -692,7 +709,7 @@ peep :: proc(
 			}
 		}
 
-		if lhs.node == rhs.node {
+		if is_integer && lhs.node == rhs.node {
 			SYMETRI_IS_ZERO := bit_set[Bin_Op] {
 				.Sub,
 				.Xor,
@@ -715,7 +732,10 @@ peep :: proc(
 
 		ASOCIATIVE := bit_set[Bin_Op]{.Add, .Mul, .And, .Or, .Xor, .And}
 
-		if Bin_Op(lhs.itype) == op && op in ASOCIATIVE && crhs != nil {
+		if is_integer &&
+		   Bin_Op(lhs.itype) == op &&
+		   op in ASOCIATIVE &&
+		   crhs != nil {
 			clhs_lhs := bac.get_extra(ctx, lhs.inps[0], CInt)
 			clhs_rhs := bac.get_extra(ctx, lhs.inps[1], CInt)
 			for clhs_rhs != nil && clhs_lhs == nil {
@@ -729,7 +749,7 @@ peep :: proc(
 						ctx.graph,
 						"rfld",
 						node.dt,
-						fold_bin_op(clhs_rhs.value, op, crhs.value, node.dt),
+						fold_bin_op(clhs_rhs.value, op, crhs.value, op_ty),
 					),
 				)
 				bac.worklist_add(ctx, ctx.worklist, res)
@@ -744,12 +764,8 @@ peep :: proc(
 		COMUTATIVE_OR_SWAPPABLE :: bit_set[Bin_Op] {
 			.Add,
 			.Mul,
-			.F_Add,
-			.F_Mul,
 			.Ne,
-			.F_Ne,
 			.Eq,
-			.F_Eq,
 			.Or,
 			.And,
 			.Xor,
@@ -761,10 +777,6 @@ peep :: proc(
 			.U_Lt,
 			.U_Gt,
 			.U_Le,
-			.F_Ge,
-			.F_Lt,
-			.F_Gt,
-			.F_Le,
 		}
 
 		@(static, rodata)
@@ -777,10 +789,6 @@ peep :: proc(
 			.U_Lt = .U_Gt,
 			.U_Gt = .U_Lt,
 			.U_Le = .U_Ge,
-			.F_Ge = .F_Le,
-			.F_Lt = .F_Gt,
-			.F_Gt = .F_Lt,
-			.F_Le = .F_Ge,
 		}
 
 		@(static, rodata)

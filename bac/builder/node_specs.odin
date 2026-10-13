@@ -36,16 +36,6 @@ SPEC := bac.Node_Spec{
 		0b10, // U_Gt
 		0b10, // U_Le
 		0b10, // U_Ge
-		0b10, // F_Add
-		0b10, // F_Sub
-		0b10, // F_Mul
-		0b10, // F_Div
-		0b10, // F_Eq
-		0b10, // F_Ne
-		0b10, // F_Lt
-		0b10, // F_Le
-		0b10, // F_Gt
-		0b10, // F_Ge
 		0b10, // Shl
 		0b10, // Shr
 		0b10, // U_Shr
@@ -124,16 +114,6 @@ SPEC := bac.Node_Spec{
 		0, // U_Gt -> No_Extra
 		0, // U_Le -> No_Extra
 		0, // U_Ge -> No_Extra
-		0, // F_Add -> No_Extra
-		0, // F_Sub -> No_Extra
-		0, // F_Mul -> No_Extra
-		0, // F_Div -> No_Extra
-		0, // F_Eq -> No_Extra
-		0, // F_Ne -> No_Extra
-		0, // F_Lt -> No_Extra
-		0, // F_Le -> No_Extra
-		0, // F_Gt -> No_Extra
-		0, // F_Ge -> No_Extra
 		0, // Shl -> No_Extra
 		0, // Shr -> No_Extra
 		0, // U_Shr -> No_Extra
@@ -212,16 +192,6 @@ SPEC := bac.Node_Spec{
 		{Class_Flag.Interned}, // U_Gt
 		{Class_Flag.Interned}, // U_Le
 		{Class_Flag.Interned}, // U_Ge
-		{Class_Flag.Interned, Class_Flag.Comutes}, // F_Add
-		{Class_Flag.Interned}, // F_Sub
-		{Class_Flag.Interned, Class_Flag.Comutes}, // F_Mul
-		{Class_Flag.Interned}, // F_Div
-		{Class_Flag.Interned, Class_Flag.Comutes}, // F_Eq
-		{Class_Flag.Interned, Class_Flag.Comutes}, // F_Ne
-		{Class_Flag.Interned}, // F_Lt
-		{Class_Flag.Interned}, // F_Le
-		{Class_Flag.Interned}, // F_Gt
-		{Class_Flag.Interned}, // F_Ge
 		{Class_Flag.Interned}, // Shl
 		{Class_Flag.Interned}, // Shr
 		{Class_Flag.Interned}, // U_Shr
@@ -315,16 +285,6 @@ SPEC := bac.Node_Spec{
 		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
 		bac.Local,
 		bac.No_Extra,
 		bac.Tup,
@@ -388,16 +348,6 @@ SPEC := bac.Node_Spec{
 		`U_Gt`,
 		`U_Le`,
 		`U_Ge`,
-		`F_Add`,
-		`F_Sub`,
-		`F_Mul`,
-		`F_Div`,
-		`F_Eq`,
-		`F_Ne`,
-		`F_Lt`,
-		`F_Le`,
-		`F_Gt`,
-		`F_Ge`,
 		`Shl`,
 		`Shr`,
 		`U_Shr`,
@@ -478,16 +428,6 @@ Node_Type :: enum u16 {
 	U_Gt,
 	U_Le,
 	U_Ge,
-	F_Add,
-	F_Sub,
-	F_Mul,
-	F_Div,
-	F_Eq,
-	F_Ne,
-	F_Lt,
-	F_Le,
-	F_Gt,
-	F_Ge,
 	Shl,
 	Shr,
 	U_Shr,
@@ -561,16 +501,6 @@ post_schedule_peep_inst :: proc(
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.Tup) % bac.PRECISION == 0)
 #assert(size_of(bac.CInt) % bac.PRECISION == 0)
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)

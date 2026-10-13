@@ -3514,20 +3514,20 @@ tok_to_binop :: proc(
 
 	@(static, rodata)
 	FLOAT_TABLE := #partial [tokenizer.Token_Kind]Op_Info {
-		.Add    = {.F_Add, "fadd"},
-		.Add_Eq = {.F_Add, "fadde"},
-		.Sub    = {.F_Sub, "fsub"},
-		.Sub_Eq = {.F_Sub, "fsube"},
-		.Mul    = {.F_Mul, "fmul"},
-		.Mul_Eq = {.F_Mul, "fmule"},
-		.Quo    = {.F_Div, "fdiv"},
-		.Quo_Eq = {.F_Div, "fdive"},
-		.Cmp_Eq = {.F_Eq, "feq"},
-		.Not_Eq = {.F_Ne, "fne"},
-		.Lt     = {.F_Lt, "flt"},
-		.Lt_Eq  = {.F_Le, "fle"},
-		.Gt     = {.F_Gt, "fgt"},
-		.Gt_Eq  = {.F_Ge, "fge"},
+		.Add    = {.Add, "fadd"},
+		.Add_Eq = {.Add, "fadde"},
+		.Sub    = {.Sub, "fsub"},
+		.Sub_Eq = {.Sub, "fsube"},
+		.Mul    = {.Mul, "fmul"},
+		.Mul_Eq = {.Mul, "fmule"},
+		.Quo    = {.Div, "fdiv"},
+		.Quo_Eq = {.Div, "fdive"},
+		.Cmp_Eq = {.Eq, "feq"},
+		.Not_Eq = {.Ne, "fne"},
+		.Lt     = {.Lt, "flt"},
+		.Lt_Eq  = {.Le, "fle"},
+		.Gt     = {.Gt, "fgt"},
+		.Gt_Eq  = {.Ge, "fge"},
 	}
 
 	@(static, rodata)

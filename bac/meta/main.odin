@@ -539,33 +539,6 @@ IDEAL_CLASSES := [bac.Node_Type]Class_Spec {
 	.Sext = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
 	.Uext = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
 	.Cast = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
-	// floating point ops
-	.F_Add = {
-		args = {"lhs", "rhs"},
-		group = "Bin_Op",
-		flags = {.Comutes, .Interned},
-	},
-	.F_Sub = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
-	.F_Mul = {
-		args = {"lhs", "rhs"},
-		group = "Bin_Op",
-		flags = {.Comutes, .Interned},
-	},
-	.F_Div = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
-	.F_Eq = {
-		args = {"lhs", "rhs"},
-		group = "Bin_Op",
-		flags = {.Comutes, .Interned},
-	},
-	.F_Ne = {
-		args = {"lhs", "rhs"},
-		group = "Bin_Op",
-		flags = {.Comutes, .Interned},
-	},
-	.F_Lt = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
-	.F_Le = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
-	.F_Gt = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
-	.F_Ge = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
 	.F_To_I = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
 	.F_From_I = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
 	.U_F_From_I = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},

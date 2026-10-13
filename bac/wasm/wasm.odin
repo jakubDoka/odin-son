@@ -168,7 +168,8 @@ peep :: proc(
 	case .Div, .Ne ..= .Ge:
 		changed := false
 		for inp, i in node.inps {
-			if get_node(ctx, inp).dt < .I32 {
+			inp_dt := get_node(ctx, inp).dt
+			if inp_dt in bac.INT_DTS && inp_dt < .I32 {
 				new := bac.add_un_op(ctx, "shext", .Sext, .I32, inp)
 				bac.set_input(ctx, id, i, new)
 				bac.worklist_add(ctx, ctx.worklist, new)
@@ -1136,7 +1137,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 	lane_op := NODE_TO_LANE_OP[kind][node.lane]
 
 	#partial switch kind {
-	case .Eq ..= .U_Ge, .F_Eq ..= .F_Ge:
+	case .Eq ..= .U_Ge:
 		op = NODE_TO_OP[kind][get_node(ctx, node.inps[0]).dt]
 	}
 

@@ -136,16 +136,6 @@ when SPEC_NOT_PRESENT {
 		U_Gt,
 		U_Le,
 		U_Ge,
-		F_Add,
-		F_Sub,
-		F_Mul,
-		F_Div,
-		F_Eq,
-		F_Ne,
-		F_Lt,
-		F_Le,
-		F_Gt,
-		F_Ge,
 		Shl,
 		Shr,
 		U_Shr,
@@ -349,6 +339,18 @@ DT_SIZE := [Node_Datatype]int {
 }
 
 FLOAT_DTS :: bit_set[Node_Datatype]{.F64, .F32}
+INT_DTS :: bit_set[Node_Datatype]{.I8, .I16, .I32, .I64}
+VECTOR_DTS :: bit_set[Node_Datatype]{.V128, .V256, .V512}
+
+operation_datatype :: proc(graph: ^Proc, node: Expanded_Node) -> Node_Datatype {
+	dt := node.dt
+	#partial switch node.itype {
+	case .Eq ..= .U_Ge:
+		dt = get_node(graph, node.inps[0]).dt
+	}
+	if dt in VECTOR_DTS do return LANE_TO_DT[node.lane]
+	return dt
+}
 
 int_for_size :: proc(size: int) -> Node_Datatype {
 	assert(math.is_power_of_two(size))
@@ -1366,7 +1368,7 @@ base_and_offset_proc :: proc(
 	base = node
 	for {
 		bnode := expand_node(graph, base)
-		if bnode.itype == .Add {
+		if bnode.itype == .Add && bnode.dt in INT_DTS {
 			lhs_const := get_extra(graph, bnode.inps[1], CInt)
 			if lhs_const == nil do return
 			base = bnode.inps[0]
@@ -1400,9 +1402,10 @@ offset_iter_next :: proc(
 	for {
 		curr := expand_node(ctx, iter.curr)
 		if iter.out_idx == len(curr.outs) {
-			if curr.itype == .Add {
+			if curr.itype == .Add && curr.dt in INT_DTS {
 				parent := expand_node(ctx, curr.inps[0])
 				off := get_extra(ctx, curr.inps[1], CInt)
+				if off == nil do return {}, false
 				iter.offset -= int(off.value)
 				iter.out_idx =
 					slice.linear_search(
@@ -1419,7 +1422,7 @@ offset_iter_next :: proc(
 
 		next := curr.outs[iter.out_idx]
 		next_node := expand_node(ctx, next.id)
-		recurse: if next_node.itype == .Add {
+		recurse: if next_node.itype == .Add && next_node.dt in INT_DTS {
 			off := get_extra(ctx, next_node.inps[1], CInt)
 			if off == nil do break recurse
 			iter.offset += int(off.value)

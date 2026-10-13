@@ -178,7 +178,8 @@ peep :: proc(
 	#partial switch kind {
 	case .Eq ..= .U_Ge, .Div, .Shl ..= .U_Shr:
 		for inp, i in node.inps {
-			if get_node(ctx, inp).dt < .I32 {
+			inp_dt := get_node(ctx, inp).dt
+			if inp_dt in bac.INT_DTS && inp_dt < .I32 {
 				new := bac.add_un_op(ctx, "shext", ext, .I32, inp)
 				bac.set_input(ctx, id, i, new)
 				bac.worklist_add(ctx, ctx.worklist, new)
@@ -197,6 +198,7 @@ peep :: proc(
 			return bac.add_load(ctx, "cild", node.dt, 0, cmem, addr)
 		}
 	case .Eq ..= .U_Ge:
+		if bac.operation_datatype(ctx.graph, node) in bac.FLOAT_DTS do break
 		if len(node.outs) == 1 &&
 		   get_node(ctx, node.outs[0].id).itype == .If &&
 		   node.dt != .Void {
@@ -415,15 +417,13 @@ meta_of :: #force_inline proc(
 		return {out = out, masks = VEC_MASKS[:1]}
 	case .Splat:
 		return {out = out, masks = GPA_MASKS[:1]}
-	case .Add ..= .Xor, .Shl ..= .And_Not, .F_Add ..= .F_Div, .Zip1, .Ext:
+	case .Add ..= .Xor, .Shl ..= .And_Not, .Zip1, .Ext:
 		return {out = out, masks = nmasks[:2]}
 	case .Msub:
 		return {out = out, masks = nmasks[:3]}
 	case .Eq ..= .U_Ge:
 		ikind := ra.datatype_to_reg_kind[get_node(graph, node.inps[0]).dt]
 		return {out = out, masks = masks[ikind][:2]}
-	case .F_Eq ..= .F_Ge:
-		return {out = out, masks = VEC_MASKS[:2]}
 	case .F_To_I:
 		return {out = out, masks = VEC_MASKS[:1]}
 	case .F_From_I, .U_F_From_I:
@@ -662,75 +662,82 @@ emit_instr :: proc(
 		NV,
 	}
 
+	// TODO: compact this
 	@(static, rodata)
-	CC_TABLE := #partial [Node_Type]Cond {
-		.Eq   = .EQ,
-		.Ne   = .NE,
-		.U_Ge = .CS,
-		.U_Lt = .CC,
-		.U_Gt = .HI,
-		.U_Le = .LS,
-		.Ge   = .GE,
-		.Lt   = .LT,
-		.Gt   = .GT,
-		.Le   = .LE,
-		.F_Eq = .EQ,
-		.F_Ne = .NE,
-		.F_Lt = .MI,
-		.F_Le = .LS,
-		.F_Gt = .GT,
-		.F_Ge = .GE,
+	CC_TABLE := #partial [Node_Type][2]Cond {
+		.Eq   = {.EQ, .EQ},
+		.Ne   = {.NE, .NE},
+		.U_Ge = {.CS, {}},
+		.U_Lt = {.CC, {}},
+		.U_Gt = {.HI, {}},
+		.U_Le = {.LS, {}},
+		.Ge   = {.GE, .GE},
+		.Lt   = {.LT, .MI},
+		.Gt   = {.GT, .GT},
+		.Le   = {.LE, .LS},
+	}
+
+	condition_for :: proc(kind: Node_Type, dt: bac.Node_Datatype) -> Cond {
+		return CC_TABLE[kind][int(dt in bac.FLOAT_DTS)]
+	}
+
+	Op_Type :: enum {
+		Scalar,
+		Float,
+		Vector,
 	}
 
 	@(static, rodata)
-	NODE_TO_OP := #partial [Node_Type]u32 {
-		.Add                    = 0x0B000000,
-		.Sub                    = 0x4B000000,
-		.And                    = 0x0A000000,
-		.Or                     = 0x2A000000,
-		.Xor                    = 0x4A000000,
-		.And_Not                = 0x0A200000,
-		.Eq ..= .U_Ge                        = 0x6B00001F,
-		.Shl                    = 0x1AC02000,
-		.U_Shr                  = 0x1AC02400,
-		.Shr                    = 0x1AC02800,
-		.Mul                    = 0x1B007C00,
-		.U_Div                  = 0x1AC00800,
-		.Div                    = 0x1AC00C00,
-		.U_Rem                  = 0x1AC00800,
-		.Rem                    = 0x1AC00C00,
-		.F_Add                  = 0x1E202800,
-		.F_Sub                  = 0x1E203800,
-		.F_Mul                  = 0x1E200800,
-		.F_Div                  = 0x1E201800,
-		.F_Eq ..= .F_Ge                        = 0x1E202000,
-		.Global_Addr            = 0x10000000,
-		.Proc_Addr              = 0x10000000,
-		.Neg                    = 0x4B000000,
-		.Not                    = 0x2a200000,
-		.Cast                   = 0x1e260000,
-		.F_To_I                 = 0x1e380000,
-		.F_Ext                  = 0x1E22C000,
-		.F_Demote               = 0x1E624000,
-		.F_From_I               = 0x1E220000,
-		.Simd_Reduce_Add_Bisect = 0x4E31B800,
-		.Splat                  = 0x4E000C00,
-		.Cmlt                   = 0x4E20A800,
-		.Ext                    = 0x6E000000,
-		.Zip1                   = 0x4E003800,
-		.Addv128                = 0x4E31B800,
-		.Umov                   = 0x0E003C00,
-	}
-
-	@(static, rodata)
-	VEC_OPS := #partial [Node_Type]u32 {
-		.Add = 0x4E208400,
-		.Sub = 0x6E208400,
-		.Xor = 0x6E201C00,
-		.Or  = 0x4EA01C00,
-		.Shl = 0x4EE04400,
-		.And = 0x4E201C00,
-		.Eq  = 0x6E208C00,
+	NODE_TO_OP := #partial [Op_Type][Node_Type]u32 {
+		.Scalar = #partial{
+			.Add = 0x0B000000,
+			.Sub = 0x4B000000,
+			.And = 0x0A000000,
+			.Or = 0x2A000000,
+			.Xor = 0x4A000000,
+			.And_Not = 0x0A200000,
+			.Eq ..= .U_Ge = 0x6B00001F,
+			.Shl = 0x1AC02000,
+			.U_Shr = 0x1AC02400,
+			.Shr = 0x1AC02800,
+			.Mul = 0x1B007C00,
+			.U_Div = 0x1AC00800,
+			.Div = 0x1AC00C00,
+			.U_Rem = 0x1AC00800,
+			.Rem = 0x1AC00C00,
+			.Global_Addr = 0x10000000,
+			.Proc_Addr = 0x10000000,
+			.Neg = 0x4B000000,
+			.Not = 0x2a200000,
+			.Cast = 0x1e260000,
+			.F_To_I = 0x1e380000,
+			.F_Ext = 0x1E22C000,
+			.F_Demote = 0x1E624000,
+			.F_From_I = 0x1E220000,
+			.Simd_Reduce_Add_Bisect = 0x4E31B800,
+			.Splat = 0x4E000C00,
+			.Cmlt = 0x4E20A800,
+			.Ext = 0x6E000000,
+			.Zip1 = 0x4E003800,
+			.Addv128 = 0x4E31B800,
+			.Umov = 0x0E003C00,
+		},
+		.Float = #partial{
+			.Add = 0x1E202800,
+			.Sub = 0x1E203800,
+			.Mul = 0x1E200800,
+			.Div = 0x1E201800,
+			.Eq ..= .Ge = 0x1E202000,
+		},
+		.Vector = #partial{
+			.Add = 0x4E208400,
+			.Sub = 0x6E208400,
+			.Xor = 0x6E201C00,
+			.Or = 0x4EA01C00,
+			.Shl = 0x4EE04400,
+			.And = 0x4E201C00,
+			.Eq = 0x6E208C00,
+		},
 	}
 
 	cc_neg :: proc(c: Cond) -> Cond {return Cond(u8(c) ~ 1)}
@@ -738,8 +745,6 @@ emit_instr :: proc(
 	node := expand_node(ctx, instr)
 	kind := atype(node)
 	block_base := ctx.gvn - u32(len(ctx.schedule.bbs))
-	op := NODE_TO_OP[kind]
-	is_64 := node.dt == .I64
 	sz_pow := intrinsics.count_trailing_zeros(u32(bac.DT_SIZE[node.dt]))
 	lsz_pow := intrinsics.count_trailing_zeros(u32(bac.LANE_SIZE[node.lane]))
 
@@ -751,8 +756,19 @@ emit_instr :: proc(
 	is_f64: bool
 	if 0 < len(node.inps) {
 		inp = expand_node(ctx, node.inps[0])
-		is_f64 = inp.dt == .F64
 	}
+
+	op_dt := node.dt
+	#partial switch kind {
+	case .Eq ..= .U_Ge:
+		op_dt = inp.dt
+	}
+	op := NODE_TO_OP[.Scalar][kind]
+	if op_dt in bac.FLOAT_DTS && NODE_TO_OP[.Float][kind] != 0 {
+		op = NODE_TO_OP[.Float][kind]
+	}
+	is_64 := node.dt == .I64
+	is_f64 = op_dt == .F64
 
 	#partial emit: switch kind {
 	case:
@@ -1100,23 +1116,19 @@ emit_instr :: proc(
 		op |= u32(rm.index) << 5 | u32(rd.index)
 
 		emit_op(ctx.code, op)
-	case .F_Add ..= .F_Div:
-		rd := reg_of(ctx, instr)
-		rn := reg_of(ctx, node.inps[0])
-		rm := reg_of(ctx, node.inps[1])
-
-		// add/sub rd, rn, rm
-		emit_op(ctx.code, fff(is_f64, op, rd, rn, rm))
 	case .Add ..= .Xor, .Div, .U_Div, .And_Not, .Shl ..= .U_Shr:
 		rd := reg_of(ctx, instr)
 		rn := reg_of(ctx, node.inps[0])
 		rm := reg_of(ctx, node.inps[1])
 
-		if node.dt == .V128 {
+		if node.dt in bac.FLOAT_DTS {
+			emit_op(ctx.code, fff(is_f64, op, rd, rn, rm))
+		} else if node.dt == .V128 {
+			assert(node.lane != .F32 && node.lane != .F64)
 			UNSIZED :: bit_set[Node_Type]{.And, .Xor, .Or}
 			if kind in UNSIZED do lsz_pow = 0
 
-			op := VEC_OPS[kind]
+			op := NODE_TO_OP[.Vector][kind]
 			fmt.assertf(op != 0, "%v", node)
 
 			emit_op(
@@ -1127,11 +1139,10 @@ emit_instr :: proc(
 				u32(rn.index) << 5 |
 				u32(rd.index),
 			)
-			break
+		} else {
+			// add/sub rd, rn, rm
+			emit_op(ctx.code, rrr(is_64, op, rd, rn, rm))
 		}
-
-		// add/sub rd, rn, rm
-		emit_op(ctx.code, rrr(is_64, op, rd, rn, rm))
 	case .Msub:
 		rd := reg_of(ctx, instr)
 		rn := reg_of(ctx, node.inps[0])
@@ -1153,31 +1164,37 @@ emit_instr :: proc(
 			u32(rd),
 		)
 	case .Mul:
-		// mul rd, rn, rm
-		op :: 0b10011011000
 		rm := reg_of(ctx, node.inps[1])
-		pd :: 0b0
-		ra := XZR
 		rn := reg_of(ctx, node.inps[0])
 		rd := reg_of(ctx, instr)
 
+		if node.dt in bac.FLOAT_DTS {
+			emit_op(ctx.code, fff(is_f64, op, rd, rn, rm))
+			break
+		}
+
+		// mul rd, rn, rm
+		mul_op :: 0b10011011000
+		pd :: 0b0
+		ra := XZR
 		emit_op(
 			ctx.code,
-			op << 21 |
+			mul_op << 21 |
 			u32(rm) << 16 |
 			pd << 15 |
 			u32(ra) << 10 |
 			u32(rn) << 5 |
 			u32(rd),
 		)
-	case .Eq ..= .U_Ge, .F_Eq ..= .F_Ge:
+	case .Eq ..= .U_Ge:
 		rn := reg_of(ctx, node.inps[0])
 		rm := reg_of(ctx, node.inps[1])
 
 		if node.dt == .V128 {
+			assert(node.lane != .F32 && node.lane != .F64)
 			rd := reg_of(ctx, instr)
 
-			op := VEC_OPS[kind]
+			op := NODE_TO_OP[.Vector][kind]
 			fmt.assertf(op != 0, "%v", node)
 
 			emit_op(
@@ -1191,7 +1208,7 @@ emit_instr :: proc(
 			break
 		}
 
-		if inp.dt >= .F32 {
+		if inp.dt in bac.FLOAT_DTS {
 			// fcmp rn, rm
 			emit_op(ctx.code, fff(is_f64, op, Reg(0), rn, rm))
 		} else {
@@ -1203,7 +1220,7 @@ emit_instr :: proc(
 			// csinc rd, xzr, xzr, cc
 			op :: 0b10011010100
 			rm :: XZR
-			cond := cc_neg(CC_TABLE[kind])
+			cond := cc_neg(condition_for(kind, inp.dt))
 			pd :: 0b01
 			rn :: XZR
 			rd := reg_of(ctx, instr)
@@ -1343,7 +1360,8 @@ emit_instr :: proc(
 			imm19 :: 0
 			pd :: 0
 
-			cond := cc_neg(CC_TABLE[atype(cond)])
+			operand_dt := get_node(ctx, bac.get_inputs(ctx, cond)[0]).dt
+			cond := cc_neg(condition_for(atype(cond), operand_dt))
 			if !is_consecutive do cond = cc_neg(cond)
 
 			emit_op(ctx.code, op << 24 | imm19 << 5 | pd << 4 | u32(cond))

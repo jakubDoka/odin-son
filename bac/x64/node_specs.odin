@@ -41,16 +41,6 @@ SPEC := bac.Node_Spec{
 		0b10, // U_Gt
 		0b10, // U_Le
 		0b10, // U_Ge
-		0b10, // F_Add
-		0b10, // F_Sub
-		0b10, // F_Mul
-		0b10, // F_Div
-		0b10, // F_Eq
-		0b10, // F_Ne
-		0b10, // F_Lt
-		0b10, // F_Le
-		0b10, // F_Gt
-		0b10, // F_Ge
 		0b10, // Shl
 		0b10, // Shr
 		0b10, // U_Shr
@@ -120,20 +110,11 @@ SPEC := bac.Node_Spec{
 		0b10000000, // X64_U_Gt
 		0b10000000, // X64_U_Le
 		0b10000000, // X64_U_Ge
-		0b10000000, // X64_F_Add
-		0b10000000, // X64_F_Sub
-		0b10000000, // X64_F_Mul
-		0b10000000, // X64_F_Div
-		0b10000000, // X64_F_Eq
-		0b10000000, // X64_F_Ne
-		0b10000000, // X64_F_Le
-		0b10000000, // X64_F_Lt
-		0b10000000, // X64_F_Gt
-		0b10000000, // X64_F_Ge
 		0b10000000, // X64_Shl
 		0b10000000, // X64_Shr
 		0b10000000, // X64_U_Shr
 		0b10000000, // X64_Mul
+		0b10000000, // X64_Div
 		0b10000000, // X64_Lea
 		0b10000000, // X64_Load
 		0b10000000, // X64_Store
@@ -168,16 +149,6 @@ SPEC := bac.Node_Spec{
 		0, // U_Gt -> No_Extra
 		0, // U_Le -> No_Extra
 		0, // U_Ge -> No_Extra
-		0, // F_Add -> No_Extra
-		0, // F_Sub -> No_Extra
-		0, // F_Mul -> No_Extra
-		0, // F_Div -> No_Extra
-		0, // F_Eq -> No_Extra
-		0, // F_Ne -> No_Extra
-		0, // F_Lt -> No_Extra
-		0, // F_Le -> No_Extra
-		0, // F_Gt -> No_Extra
-		0, // F_Ge -> No_Extra
 		0, // Shl -> No_Extra
 		0, // Shr -> No_Extra
 		0, // U_Shr -> No_Extra
@@ -247,20 +218,11 @@ SPEC := bac.Node_Spec{
 		3, // X64_U_Gt -> Mem_Op
 		3, // X64_U_Le -> Mem_Op
 		3, // X64_U_Ge -> Mem_Op
-		3, // X64_F_Add -> Mem_Op
-		3, // X64_F_Sub -> Mem_Op
-		3, // X64_F_Mul -> Mem_Op
-		3, // X64_F_Div -> Mem_Op
-		3, // X64_F_Eq -> Mem_Op
-		3, // X64_F_Ne -> Mem_Op
-		3, // X64_F_Le -> Mem_Op
-		3, // X64_F_Lt -> Mem_Op
-		3, // X64_F_Gt -> Mem_Op
-		3, // X64_F_Ge -> Mem_Op
 		3, // X64_Shl -> Mem_Op
 		3, // X64_Shr -> Mem_Op
 		3, // X64_U_Shr -> Mem_Op
 		3, // X64_Mul -> Mem_Op
+		3, // X64_Div -> Mem_Op
 		3, // X64_Lea -> Mem_Op
 		3, // X64_Load -> Mem_Op
 		3, // X64_Store -> Mem_Op
@@ -295,16 +257,6 @@ SPEC := bac.Node_Spec{
 		{Class_Flag.Interned}, // U_Gt
 		{Class_Flag.Interned}, // U_Le
 		{Class_Flag.Interned}, // U_Ge
-		{Class_Flag.Interned, Class_Flag.Comutes}, // F_Add
-		{Class_Flag.Interned}, // F_Sub
-		{Class_Flag.Interned, Class_Flag.Comutes}, // F_Mul
-		{Class_Flag.Interned}, // F_Div
-		{Class_Flag.Interned, Class_Flag.Comutes}, // F_Eq
-		{Class_Flag.Interned, Class_Flag.Comutes}, // F_Ne
-		{Class_Flag.Interned}, // F_Lt
-		{Class_Flag.Interned}, // F_Le
-		{Class_Flag.Interned}, // F_Gt
-		{Class_Flag.Interned}, // F_Ge
 		{Class_Flag.Interned}, // Shl
 		{Class_Flag.Interned}, // Shr
 		{Class_Flag.Interned}, // U_Shr
@@ -374,20 +326,11 @@ SPEC := bac.Node_Spec{
 		{}, // X64_U_Gt
 		{}, // X64_U_Le
 		{}, // X64_U_Ge
-		{}, // X64_F_Add
-		{}, // X64_F_Sub
-		{}, // X64_F_Mul
-		{}, // X64_F_Div
-		{}, // X64_F_Eq
-		{}, // X64_F_Ne
-		{}, // X64_F_Le
-		{}, // X64_F_Lt
-		{}, // X64_F_Gt
-		{}, // X64_F_Ge
 		{}, // X64_Shl
 		{}, // X64_Shr
 		{}, // X64_U_Shr
 		{}, // X64_Mul
+		{}, // X64_Div
 		{}, // X64_Lea
 		{Class_Flag.Load}, // X64_Load
 		{Class_Flag.Store}, // X64_Store
@@ -407,16 +350,6 @@ SPEC := bac.Node_Spec{
 		bac.No_Extra,
 		bac.Tup,
 		bac.CInt,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
@@ -511,15 +444,6 @@ SPEC := bac.Node_Spec{
 		Mem_Op,
 		Mem_Op,
 		Mem_Op,
-		Mem_Op,
-		Mem_Op,
-		Mem_Op,
-		Mem_Op,
-		Mem_Op,
-		Mem_Op,
-		Mem_Op,
-		Mem_Op,
-		Mem_Op,
 		bac.No_Extra,
 		Mem_Op,
 		bac.No_Extra,
@@ -549,16 +473,6 @@ SPEC := bac.Node_Spec{
 		`U_Gt`,
 		`U_Le`,
 		`U_Ge`,
-		`F_Add`,
-		`F_Sub`,
-		`F_Mul`,
-		`F_Div`,
-		`F_Eq`,
-		`F_Ne`,
-		`F_Lt`,
-		`F_Le`,
-		`F_Gt`,
-		`F_Ge`,
 		`Shl`,
 		`Shr`,
 		`U_Shr`,
@@ -628,20 +542,11 @@ SPEC := bac.Node_Spec{
 		`X64_U_Gt`,
 		`X64_U_Le`,
 		`X64_U_Ge`,
-		`X64_F_Add`,
-		`X64_F_Sub`,
-		`X64_F_Mul`,
-		`X64_F_Div`,
-		`X64_F_Eq`,
-		`X64_F_Ne`,
-		`X64_F_Le`,
-		`X64_F_Lt`,
-		`X64_F_Gt`,
-		`X64_F_Ge`,
 		`X64_Shl`,
 		`X64_Shr`,
 		`X64_U_Shr`,
 		`X64_Mul`,
+		`X64_Div`,
 		`X64_Lea`,
 		`X64_Load`,
 		`X64_Store`,
@@ -678,16 +583,6 @@ Node_Type :: enum u16 {
 	U_Gt,
 	U_Le,
 	U_Ge,
-	F_Add,
-	F_Sub,
-	F_Mul,
-	F_Div,
-	F_Eq,
-	F_Ne,
-	F_Lt,
-	F_Le,
-	F_Gt,
-	F_Ge,
 	Shl,
 	Shr,
 	U_Shr,
@@ -757,20 +652,11 @@ Node_Type :: enum u16 {
 	X64_U_Gt,
 	X64_U_Le,
 	X64_U_Ge,
-	X64_F_Add,
-	X64_F_Sub,
-	X64_F_Mul,
-	X64_F_Div,
-	X64_F_Eq,
-	X64_F_Ne,
-	X64_F_Le,
-	X64_F_Lt,
-	X64_F_Gt,
-	X64_F_Ge,
 	X64_Shl,
 	X64_Shr,
 	X64_U_Shr,
 	X64_Mul,
+	X64_Div,
 	X64_Lea,
 	X64_Load,
 	X64_Store,
@@ -841,16 +727,6 @@ collect_meta :: proc(ctx: ^bac.Proc,
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.Local) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.Tup) % bac.PRECISION == 0)
@@ -890,15 +766,6 @@ collect_meta :: proc(ctx: ^bac.Proc,
 #assert(size_of(bac.Dbg_Sym) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(Mem_Op) % bac.PRECISION == 0)
-#assert(size_of(Mem_Op) % bac.PRECISION == 0)
-#assert(size_of(Mem_Op) % bac.PRECISION == 0)
-#assert(size_of(Mem_Op) % bac.PRECISION == 0)
-#assert(size_of(Mem_Op) % bac.PRECISION == 0)
-#assert(size_of(Mem_Op) % bac.PRECISION == 0)
-#assert(size_of(Mem_Op) % bac.PRECISION == 0)
-#assert(size_of(Mem_Op) % bac.PRECISION == 0)
-#assert(size_of(Mem_Op) % bac.PRECISION == 0)
 #assert(size_of(Mem_Op) % bac.PRECISION == 0)
 #assert(size_of(Mem_Op) % bac.PRECISION == 0)
 #assert(size_of(Mem_Op) % bac.PRECISION == 0)

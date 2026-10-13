@@ -1279,7 +1279,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 
 			if d.op.kind == .Sub && dt in bac.FLOAT_DTS {
 				zero := emit_float_const(ctx, dt, 0)
-				res = bac.add_bin_op(ctx, "fneg", .F_Sub, dt, zero, operand)
+				res = bac.add_bin_op(ctx, "fneg", .Sub, dt, zero, operand)
 				break
 			}
 

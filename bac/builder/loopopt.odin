@@ -285,6 +285,7 @@ loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 
 		inverted := bedge.outs[0].id != bb.head
 		cond := expand_node(ctx, bedge.inps[1])
+		if bac.operation_datatype(ctx.graph, cond) not_in bac.INT_DTS do continue
 
 		@(rodata, static)
 		CMP_OP_REVERSE := #partial [bac.Node_Type]bac.Node_Type {
@@ -323,6 +324,7 @@ loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 		for out in head.outs {
 			onode := expand_node(ctx, out.id)
 			if onode.itype != .Phi do continue
+			if onode.dt not_in bac.INT_DTS do continue
 
 			init := expand_node(ctx, onode.inps[1])
 			bvl := expand_node(ctx, onode.inps[2])
@@ -382,7 +384,7 @@ loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 				add_candidates := []bac.Node_Output{out}
 
 				stride_node: Node_ID
-				if onode.itype == .Mul {
+				if onode.itype == .Mul && onode.dt in bac.INT_DTS {
 					stride_node = onode.inps[1 - out.idx]
 					otnode := expand_node(ctx, stride_node)
 
@@ -396,6 +398,7 @@ loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 				for out in add_candidates {
 					onode := expand_node(graph, out.id)
 					if onode.itype != .Add do continue
+					if onode.dt not_in bac.INT_DTS do continue
 
 					base := onode.inps[1 - out.idx]
 					otnode := expand_node(ctx, base)

@@ -2,56 +2,46 @@ package bac
 // NOTE: this file is generated: 
 
 Un_Op :: enum u16 {
-	Sext = u16(Node_Type.Sext),
-	Not = u16(Node_Type.Not),
-	Cast = u16(Node_Type.Cast),
-	Uext = u16(Node_Type.Uext),
-	Neg = u16(Node_Type.Neg),
-	Splat = u16(Node_Type.Splat),
-	F_Demote = u16(Node_Type.F_Demote),
 	Simd_Extract_Lsbs = u16(Node_Type.Simd_Extract_Lsbs),
 	Ctz = u16(Node_Type.Ctz),
-	F_From_I = u16(Node_Type.F_From_I),
-	F_To_I = u16(Node_Type.F_To_I),
+	Simd_Reduce_Add_Bisect = u16(Node_Type.Simd_Reduce_Add_Bisect),
 	F_Ext = u16(Node_Type.F_Ext),
 	U_F_From_I = u16(Node_Type.U_F_From_I),
-	Simd_Reduce_Add_Bisect = u16(Node_Type.Simd_Reduce_Add_Bisect),
+	Splat = u16(Node_Type.Splat),
+	F_Demote = u16(Node_Type.F_Demote),
+	Cast = u16(Node_Type.Cast),
+	Uext = u16(Node_Type.Uext),
+	F_From_I = u16(Node_Type.F_From_I),
+	F_To_I = u16(Node_Type.F_To_I),
+	Neg = u16(Node_Type.Neg),
+	Sext = u16(Node_Type.Sext),
+	Not = u16(Node_Type.Not),
 }
 Bin_Op :: enum u16 {
 	Add = u16(Node_Type.Add),
-	Rem = u16(Node_Type.Rem),
 	And = u16(Node_Type.And),
-	And_Not = u16(Node_Type.And_Not),
-	U_Shr = u16(Node_Type.U_Shr),
-	Div = u16(Node_Type.Div),
-	Lt = u16(Node_Type.Lt),
-	Ge = u16(Node_Type.Ge),
-	Xor = u16(Node_Type.Xor),
-	Ne = u16(Node_Type.Ne),
-	F_Sub = u16(Node_Type.F_Sub),
-	F_Div = u16(Node_Type.F_Div),
-	U_Gt = u16(Node_Type.U_Gt),
-	U_Ge = u16(Node_Type.U_Ge),
-	F_Ge = u16(Node_Type.F_Ge),
-	Shr = u16(Node_Type.Shr),
-	F_Ne = u16(Node_Type.F_Ne),
-	F_Le = u16(Node_Type.F_Le),
-	U_Rem = u16(Node_Type.U_Rem),
 	Sub = u16(Node_Type.Sub),
-	Mul = u16(Node_Type.Mul),
-	U_Div = u16(Node_Type.U_Div),
+	Lt = u16(Node_Type.Lt),
 	Le = u16(Node_Type.Le),
+	Ge = u16(Node_Type.Ge),
 	Gt = u16(Node_Type.Gt),
+	Xor = u16(Node_Type.Xor),
 	Or = u16(Node_Type.Or),
+	Ne = u16(Node_Type.Ne),
 	Eq = u16(Node_Type.Eq),
-	F_Add = u16(Node_Type.F_Add),
-	F_Mul = u16(Node_Type.F_Mul),
-	U_Lt = u16(Node_Type.U_Lt),
-	U_Le = u16(Node_Type.U_Le),
-	F_Gt = u16(Node_Type.F_Gt),
+	Shr = u16(Node_Type.Shr),
 	Shl = u16(Node_Type.Shl),
-	F_Eq = u16(Node_Type.F_Eq),
-	F_Lt = u16(Node_Type.F_Lt),
+	Mul = u16(Node_Type.Mul),
+	U_Shr = u16(Node_Type.U_Shr),
+	U_Gt = u16(Node_Type.U_Gt),
+	U_Lt = u16(Node_Type.U_Lt),
+	U_Ge = u16(Node_Type.U_Ge),
+	U_Le = u16(Node_Type.U_Le),
+	And_Not = u16(Node_Type.And_Not),
+	U_Div = u16(Node_Type.U_Div),
+	Div = u16(Node_Type.Div),
+	U_Rem = u16(Node_Type.U_Rem),
+	Rem = u16(Node_Type.Rem),
 }
 Node_Type :: enum u16 {
 	Nil,
@@ -74,16 +64,6 @@ Node_Type :: enum u16 {
 	U_Gt,
 	U_Le,
 	U_Ge,
-	F_Add,
-	F_Sub,
-	F_Mul,
-	F_Div,
-	F_Eq,
-	F_Ne,
-	F_Lt,
-	F_Le,
-	F_Gt,
-	F_Ge,
 	Shl,
 	Shr,
 	U_Shr,
@@ -167,16 +147,6 @@ add_c_int :: #force_inline proc(graph: ^Proc, name: string, dt: Node_Datatype, v
 add_bin_op :: #force_inline proc(graph: ^Proc, name: string, type: Bin_Op, dt: Node_Datatype, lhs: Node_ID, rhs: Node_ID, lane: Lane_Type = {}) -> (_id: Node_ID) {
 	return add_raw(graph, name, u16(type), dt, {lhs, rhs}, {lane = lane,})
 }
-#assert(size_of(No_Extra) % PRECISION == 0)
-#assert(size_of(No_Extra) % PRECISION == 0)
-#assert(size_of(No_Extra) % PRECISION == 0)
-#assert(size_of(No_Extra) % PRECISION == 0)
-#assert(size_of(No_Extra) % PRECISION == 0)
-#assert(size_of(No_Extra) % PRECISION == 0)
-#assert(size_of(No_Extra) % PRECISION == 0)
-#assert(size_of(No_Extra) % PRECISION == 0)
-#assert(size_of(No_Extra) % PRECISION == 0)
-#assert(size_of(No_Extra) % PRECISION == 0)
 #assert(size_of(No_Extra) % PRECISION == 0)
 #assert(size_of(No_Extra) % PRECISION == 0)
 #assert(size_of(No_Extra) % PRECISION == 0)

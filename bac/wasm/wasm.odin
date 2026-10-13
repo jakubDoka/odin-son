@@ -802,7 +802,6 @@ Local_Type_Projection :: struct {
 Ctx :: struct {
 	using inner:   bac.Codegen_Emit_Ctx,
 	stack_size:    i32,
-	code_start:    u32,
 	local_projs:   [RK_COUNT]Local_Type_Projection,
 	bb_metas:      []BB_Meta,
 	block_stack:   [dynamic]int,
@@ -856,7 +855,7 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 		return Local_Type(reg.kind), i16(reg.index)
 	}
 
-	ctx.code_start = u32(ctx.code.pos)
+	ctx.code_start = ctx.code.pos
 	reloc_start := ctx.relocs.pos
 
 	bac.layout_call_args(ctx.graph, ctx.schedule, &ctx.stack_size)
@@ -1380,7 +1379,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 
 		emit_op(ctx.code, .Global_Get)
 		bac.add_reloc(ctx.relocs)^ = {
-			offset = u32(ctx.code.pos) - ctx.code_start,
+			offset = u32(ctx.code.pos - ctx.code_start),
 			kind   = .Global,
 			size   = .r32,
 			id     = id,
@@ -1461,7 +1460,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 			emit_op(ctx.code, .I32_Wrap_I64)
 			emit_op(ctx.code, .Call_Indirect)
 			bac.add_reloc(ctx.relocs)^ = {
-					offset = u32(ctx.code.pos) - ctx.code_start,
+					offset = u32(ctx.code.pos - ctx.code_start),
 					kind   = .Text,
 					size   = .r32,
 					id     = u32(len(ctx.indirect_sigs)),
@@ -1492,7 +1491,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 		} else {
 			emit_op(ctx.code, .Call)
 			bac.add_reloc(ctx.relocs)^ = {
-				offset = u32(ctx.code.pos) - ctx.code_start,
+				offset = u32(ctx.code.pos - ctx.code_start),
 				kind   = .Text,
 				size   = .r32,
 				id     = call.cid,
@@ -1510,7 +1509,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 
 		emit_op(ctx.code, .I64_Const)
 		bac.add_reloc(ctx.relocs)^ = {
-			offset = u32(ctx.code.pos) - ctx.code_start,
+			offset = u32(ctx.code.pos - ctx.code_start),
 			kind   = .Text,
 			size   = .r32,
 			id     = id,

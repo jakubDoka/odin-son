@@ -751,7 +751,7 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 		append(&bb.instrs, bb.tail)
 		ctx.late_schedules[get_node(graph, bb.tail).gvn] = bb.head
 		if !no_late_pass {
-			schedule_block2(ctx, &bb)
+			schedule_block(ctx, &bb)
 		}
 	}
 
@@ -766,7 +766,7 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 		verify_schedule_integrity(graph, gs, ctx.antideps, no_late_pass)
 	}
 
-	schedule_block2 :: proc(ctx: Ctx, bb: ^Basic_Block) {
+	schedule_block :: proc(ctx: Ctx, bb: ^Basic_Block) {
 		PUSHED_UP :: bit_set[Node_Type]{.Phi, .Ret, .Param}
 
 		graph := ctx.graph

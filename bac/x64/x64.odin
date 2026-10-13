@@ -16,6 +16,7 @@ Node_ID :: bac.Node_ID
 emit :: bac.emit
 expand_node :: bac.expand_node
 get_node :: bac.get_node
+reg_of :: bac.reg_of
 
 xtype :: #force_inline proc(node: bac.Expanded_Node) -> Node_Type {
 	return Node_Type(node.rtype)
@@ -130,6 +131,7 @@ X64_SYSTEMV_CC := bac.Call_Conv {
 	rets          = {{RAX, RDX}, {XMM0, XMM1}},
 	red_zone_size = 128,
 	cfi_spec      = X64_CFI_SPEC,
+	stack_pointer = RSP,
 }
 
 @(rodata)
@@ -1220,18 +1222,14 @@ meta_of :: proc(
 }
 
 Ctx :: struct {
-	using inner:        bac.Codegen_Emit_Ctx,
-	spill_slot_base:    [RK_COUNT]i32,
-	stack_param_offset: [RK_COUNT][dynamic]i32,
-	big_constants:      [dynamic]u8,
-	local_relocs:       [dynamic]Local_Reloc,
-	stack_size:         i32,
-	used:               bit_arr.Bit_Set,
-	code_start:         uint,
-	last_off:           uint,
-	sloc:               bac.Sloc,
-	pushed:             i32,
-	instr_offsets:      []u32,
+	using inner:   bac.Codegen_Emit_Ctx,
+	big_constants: [dynamic]u8,
+	local_relocs:  [dynamic]Local_Reloc,
+	stack_size:    i32,
+	used:          bit_arr.Bit_Set,
+	last_off:      uint,
+	sloc:          bac.Sloc,
+	pushed:        i32,
 }
 
 Local_Reloc :: struct {
@@ -1253,10 +1251,17 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 	cfi_start := ectx.cfi.pos
 	dbg_loc_start := ectx.dbg_locs.pos
 
+	spill_slot_base: [RK_COUNT]i32
+	stack_param_offset: [RK_COUNT][dynamic]i32
+
 	ctx: Ctx
-	ctx.code_start = ectx.code.pos
 	ctx.inner = ectx
+	ctx.code_start = ectx.code.pos
 	ctx.instr_offsets = make([]u32, ctx.gvn)
+
+	ctx.stack_param_offset = stack_param_offset[:]
+	ctx.spill_slot_base = spill_slot_base[:]
+	ctx.spill_slot_size = SPILL_SLOT_SIZE[:]
 
 	slot: [2]int
 	ctx.used = bit_arr.init_from_masks(slot[:])
@@ -1303,20 +1308,9 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 		}
 	}
 
-	bac.layout_spill_slots(
-		ctx,
-		ctx.spill_slot_base[:],
-		SPILL_SLOT_SIZE[:],
-		&ctx.stack_size,
-	)
+	bac.layout_spill_slots(ctx, &ctx.stack_size)
 
-	bac.compute_param_offsets(
-		ctx,
-		params,
-		&ctx.stack_size,
-		ctx.stack_param_offset[:],
-		pushed + 8,
-	)
+	bac.compute_param_offsets(ctx, params, &ctx.stack_size, pushed + 8)
 
 	if has_call || ctx.stack_size != 0 {
 		to_align := pushed + 8 + ctx.stack_size
@@ -1366,8 +1360,6 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 
 	ctx.local_relocs = make([dynamic]Local_Reloc, 0, len(ctx.bbs))
 
-	node_to_block := make([]u32, ctx.gvn)
-
 	prev_is_if := false
 	for &bb, i in ctx.bbs {
 		bb.offset = u32(ctx.code.pos)
@@ -1379,12 +1371,10 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 			ctx.bbs[i + 1].head == last.outs[0].id
 
 		if len(bb.instrs) == 1 && last.itype == .Jump && !prev_is_if {
-			node_to_block[get_node(ctx, bb.instrs[0]).gvn] = u32(i)
 			continue
 		}
 
 		for instr in bb.instrs {
-			node_to_block[get_node(ctx, instr).gvn] = u32(i)
 			emit_instr(&ctx, instr, is_consecutive, 0)
 		}
 
@@ -1411,147 +1401,6 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 		copy(ctx.code.ptr[reloc.offset:][:size], reflect.as_bytes(jump))
 	}
 
-	Join_Block :: struct {
-		node:          Node_ID,
-		reached_count: u16,
-	}
-
-	append(&ctx.bbs, bac.Basic_Block{offset = u32(ctx.code.pos)})
-
-	join_blocks: [dynamic]Join_Block
-	frontier: [dynamic]u32
-
-	for &sym, sidx in ctx.syms {
-		sym.defs.allocator = context.allocator
-
-		for cursor := 0; cursor < len(sym.defs); cursor += 1 {
-			// NOTE: there can be leftovers from clogged regions from the prefious
-			// round since we never pop incomplete joins
-			clear(&join_blocks)
-
-			def := sym.defs[cursor].node
-			dnode := get_node(ctx, def)
-
-			if dnode.itype == .Local {
-				reg, offset, _ := reg_and_disp_of(&ctx, def)
-
-				bac.add_dbg_location(ctx.dbg_locs)^ = {
-					sym    = sym.inner,
-					start  = u32(ctx.code_start),
-					end    = u32(ctx.code.pos),
-					symbol = u32(sidx),
-					offset = i32(offset),
-					reg    = reg,
-					kind   = .Register_Offset,
-				}
-
-				continue
-			}
-
-			block := node_to_block[dnode.gvn]
-			append(&frontier, block)
-
-			reg := reg_of(ctx, def)
-			loc_reg := reg
-			location_kind := bac.Dbg_Location_Kind.Register
-			offset := spill_slot_offset(&ctx, reg)
-			if int(reg.index) >= ctx.spill_boundary[reg.kind] {
-				loc_reg = RSP
-				location_kind = .Register_Offset
-			}
-
-			skip, ok := slice.linear_search(ctx.bbs[block].instrs[:], def)
-			assert(ok)
-			skip += 1
-
-			search: for bidx in pop_safe(&frontier) {
-				block := &ctx.bbs[bidx]
-
-				start_offset :=
-					ctx.instr_offsets[get_node(ctx, block.instrs[skip]).gvn]
-				to_check := block.instrs[skip:]
-
-				for tc in to_check {
-					tcnode := expand_node(ctx, tc)
-
-					if tcnode.itype == .Phi &&
-					   slice.contains(tcnode.inps[1:], def) &&
-					   !slice.contains(sym.defs[:], {tc}) {
-						append(&sym.defs, {tc})
-						continue
-					}
-
-					if tcnode.itype == .Split &&
-					   tcnode.inps[0] == def &&
-					   !slice.contains(sym.defs[:], {tc}) {
-						append(&sym.defs, {tc})
-						continue
-					}
-
-					if int(tcnode.gvn) < len(ctx.allocs) &&
-					   reg_of(ctx, tc) == reg {
-						{
-							bac.add_dbg_location(ctx.dbg_locs)^ = {
-								sym    = sym.inner,
-								start  = start_offset,
-								end    = ctx.instr_offsets[tcnode.gvn],
-								symbol = u32(sidx),
-								offset = i32(offset),
-								reg    = loc_reg,
-								kind   = location_kind,
-							}
-
-							assert(tc != def)
-
-							continue search
-						}
-					}
-
-				}
-
-				bac.add_dbg_location(ctx.dbg_locs)^ = {
-					sym    = sym.inner,
-					start  = start_offset,
-					end    = ctx.bbs[bidx + 1].offset,
-					symbol = u32(sidx),
-					offset = i32(offset),
-					reg    = loc_reg,
-					kind   = location_kind,
-				}
-
-				for out in bac.get_outputs(ctx, block.tail) {
-					oblk := get_node(ctx, out.id)
-					if oblk.itype == .End do continue
-					if out.idx == 1 && oblk.itype == .Loop do continue
-
-					bb_idx := oblk.gvn - block_base
-
-					if oblk.itype == .Region {
-						ready := false
-						for &blk, i in join_blocks {
-							if out.id == blk.node {
-								blk.reached_count += 1
-								if blk.reached_count < oblk.input_count {
-									continue search
-								}
-								ready = true
-							}
-						}
-
-						if !ready {
-							append(&join_blocks, Join_Block{out.id, 1})
-							continue search
-						}
-					}
-
-					append(&frontier, bb_idx)
-				}
-
-				skip = 0
-			}
-		}
-	}
-
 	code := ctx.code.ptr[ctx.code_start:ctx.code.pos]
 	relocs := mem.slice_data_cast(
 		[]bac.Reloc,
@@ -1565,17 +1414,8 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 		[]bac.Cfi_Op,
 		ctx.cfi.ptr[cfi_start:ctx.cfi.pos],
 	)
-	dbg_locs := mem.slice_data_cast(
-		[]bac.Dbg_Location,
-		ctx.dbg_locs.ptr[dbg_loc_start:ctx.dbg_locs.pos],
-	)
 	arna.alloc(ctx.code, 0, 8)
 	constants := arna.clone(ctx.code, ctx.big_constants[:])
-
-	for &loc in dbg_locs {
-		loc.start -= u32(ctx.code_start)
-		loc.end -= u32(ctx.code_start)
-	}
 
 	return {
 		code = code,
@@ -1583,18 +1423,8 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 		constants = constants,
 		slocs = slocs,
 		cfi = cfi,
-		dbg_locs = dbg_locs,
+		dbg_locs = bac.emit_dbg_locations(ctx),
 	}
-}
-
-spill_slot_offset :: proc(ctx: ^Ctx, reg: Reg) -> i32 {
-	return bac.spill_slot_offset(
-		ctx,
-		ctx.stack_param_offset[:],
-		ctx.spill_slot_base[:],
-		SPILL_SLOT_SIZE[:],
-		reg,
-	)
 }
 
 emit_cfi :: proc(ctx: ^Ctx, kind: bac.Cfi_Kind, reg: u8 = 0, arg: u32 = 0) {
@@ -2663,8 +2493,8 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 	case .Split:
 		dst := reg_of(ctx, instr)
 		src := reg_of(ctx, node.inps[0])
-		dst_off := spill_slot_offset(ctx, dst)
-		src_off := spill_slot_offset(ctx, src)
+		dst_off := bac.spill_slot_offset(ctx, dst)
+		src_off := bac.spill_slot_offset(ctx, src)
 		assert(dst.kind == src.kind)
 
 		d_spill := dst.index >= GPA_REG_COUNT
@@ -2796,12 +2626,6 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 	}
 
 	next_sloc(ctx)
-}
-
-reg_of :: proc(ctx: bac.Codegen_Emit_Ctx, id: Node_ID) -> Reg {
-	node := get_node(ctx, id)
-	fmt.assertf(int(node.gvn) < len(ctx.allocs), "%v", node)
-	return ctx.allocs[node.gvn]
 }
 
 reg_and_disp_of :: proc(ctx: ^Ctx, id: Node_ID) -> (Reg, i32, u32) {

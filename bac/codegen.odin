@@ -6,6 +6,7 @@ import "core:encoding/varint"
 import "core:fmt"
 import "core:mem"
 import "core:reflect"
+import "core:slice"
 import "core:sort"
 
 Dbg_Data :: struct {
@@ -19,6 +20,175 @@ Dbg_Data_Sym :: struct {
 
 Dbg_Data_Def :: struct {
 	node: Node_ID,
+}
+
+Call_Conv :: struct {
+	name:          string,
+	callee_saved:  [][]Reg,
+	caller_saved:  [][]Reg,
+	args:          [][]Reg,
+	rets:          [][]Reg,
+	red_zone_size: i32,
+	is_syscall:    bool,
+	cfi_spec:      Cfi_Spec,
+	stack_pointer: Reg,
+}
+
+Peep_Fn :: proc(_: Peep_Ctx, _: Expanded_Node) -> Maybe(Node_ID)
+
+Codegen_Spec :: struct {
+	emit_function:      proc(_: Codegen_Emit_Ctx) -> Codegen_Output,
+	peep:               Peep_Fn,
+	post_schedule_peep: PS_Peep_Fn,
+	pre_regalloc_hook:  Pre_Regalloc_Hook,
+}
+
+// The fixed part of a DWARF CIE: everything the unwinder needs before the
+// first Cfi_Op of a procedure is applied.
+Cfi_Spec :: struct {
+	cfa_reg:            u8,
+	return_addr_reg:    u8,
+	initial_cfa_offset: u32,
+	code_align:         u32,
+	data_align:         i32,
+}
+
+Cfi_Kind :: enum u8 {
+	Def_Cfa_Offset,
+	Save_Reg,
+	Restore_Reg,
+	Remember_State,
+	Restore_State,
+}
+
+// A frame state change that becomes current at `offset` (procedure relative,
+// i.e. right after the instruction that performed it).
+Cfi_Op :: struct {
+	offset: u32,
+	arg:    u32,
+	kind:   Cfi_Kind,
+	reg:    u8,
+}
+
+PS_Peep_Fn :: proc(_: PS_Peep_Ctx, node: Expanded_Node) -> Node_ID
+
+Pre_Regalloc_Hook :: proc(_: ^Regalloc, _: ^Proc, _: ^Schedule)
+
+PS_Peep_Ctx :: struct {
+	using graph: ^Proc,
+	preds:       []Node_ID,
+}
+
+Codegen_Emit_Ctx :: struct {
+	using graph:        ^Proc,
+	using schedule:     ^Schedule,
+	using dbg_data:     ^Dbg_Data,
+	using abi:          ^Call_Conv,
+	using buf:          Codegen_Emit_Buf,
+	emit_got_imports:   bool,
+	lib_calls:          Lib_Calls,
+	allocs:             []Reg,
+	param_specs:        []Param_Spec,
+	stack_param_offset: [][dynamic]i32,
+	spill_slot_base:    []i32,
+	spill_slot_size:    []i32,
+	instr_offsets:      []u32,
+	code_start:         uint,
+}
+
+Lib_Calls :: struct {
+	copy: Lib_Call,
+	set:  Lib_Call,
+}
+
+Lib_Call :: bit_field u32 {
+	id:       u32  | 31,
+	absolute: bool | 1,
+}
+
+Codegen_Emit_Buf :: struct {
+	code:     ^arna.Allocator,
+	relocs:   ^arna.Allocator,
+	slocs:    ^arna.Allocator,
+	cfi:      ^arna.Allocator,
+	dbg_locs: ^arna.Allocator,
+}
+
+Codegen_Output :: struct {
+	relocs:    []Reloc,
+	slocs:     []Sloc,
+	cfi:       []Cfi_Op,
+	dbg_locs:  []Dbg_Location,
+	code:      []u8,
+	constants: []u8,
+}
+
+Dbg_Location_Kind :: enum u8 {
+	Register,
+	Register_Offset,
+}
+
+Dbg_Location :: struct {
+	using sym: Dbg_Sym,
+	start:     u32,
+	end:       u32,
+	symbol:    u32,
+	offset:    i32,
+	reg:       Reg,
+	kind:      Dbg_Location_Kind,
+}
+
+Reloc_Kind :: enum u32 {
+	Text,
+	Got,
+	Global,
+}
+
+Reloc_Size :: enum u32 {
+	r32,
+	r26,
+	r19,
+	r2_19,
+}
+
+@(rodata)
+RELOC_SIZE := [Reloc_Size]u32 {
+	.r32   = 4,
+	.r26   = 4,
+	.r19   = 4,
+	.r2_19 = 4,
+}
+
+Reloc :: struct {
+	offset:  u32,
+	using _: bit_field u32 {
+		kind:      Reloc_Kind | 2,
+		size:      Reloc_Size | 2,
+		scale_pow: u32        | 2,
+		id:        u32        | 26,
+	},
+}
+
+RELOC_BIG_CONSTANT_BASE :: (~u32(0) >> 6) - (1 << 22)
+
+Reloc_Slot :: struct #raw_union #align (1) {
+	addend_32: i32,
+	r2:        bit_field u32 {
+		addend_26: i32 | 26,
+		padd:      u32 | 6,
+	},
+	r3:        bit_field u32 {
+		padd2:     u32 | 5,
+		addend_19: i32 | 19,
+		padd3:     u32 | 8,
+	},
+	r4:        bit_field u32 {
+		padd4:        u32 | 5,
+		addend_hi_19: i32 | 19,
+		padd5:        u32 | 5,
+		addend_lo_2:  i32 | 2,
+		padd6:        u32 | 1,
+	},
 }
 
 take_dbg_data :: proc(
@@ -141,166 +311,180 @@ take_dbg_data :: proc(
 	schedule_graph(graph, sched, .for_regalloc, scratch)
 }
 
-Call_Conv :: struct {
-	name:          string,
-	callee_saved:  [][]Reg,
-	caller_saved:  [][]Reg,
-	args:          [][]Reg,
-	rets:          [][]Reg,
-	red_zone_size: i32,
-	is_syscall:    bool,
-	cfi_spec:      Cfi_Spec,
+reg_of :: proc(ctx: Codegen_Emit_Ctx, id: Node_ID) -> Reg {
+	node := get_node(ctx, id)
+	fmt.assertf(int(node.gvn) < len(ctx.allocs), "%v", node)
+	return ctx.allocs[node.gvn]
 }
 
-Peep_Fn :: proc(_: Peep_Ctx, _: Expanded_Node) -> Maybe(Node_ID)
+emit_dbg_locations :: proc(ctx: Codegen_Emit_Ctx) -> []Dbg_Location {
+	context.allocator, _ = arna.scrath()
 
-Codegen_Spec :: struct {
-	emit_function:      proc(_: Codegen_Emit_Ctx) -> Codegen_Output,
-	peep:               Peep_Fn,
-	post_schedule_peep: PS_Peep_Fn,
-	pre_regalloc_hook:  Pre_Regalloc_Hook,
-}
+	rsp := ctx.abi.stack_pointer
 
-// The fixed part of a DWARF CIE: everything the unwinder needs before the
-// first Cfi_Op of a procedure is applied.
-Cfi_Spec :: struct {
-	cfa_reg:            u8,
-	return_addr_reg:    u8,
-	initial_cfa_offset: u32,
-	code_align:         u32,
-	data_align:         i32,
-}
+	dbg_loc_start := ctx.dbg_locs.pos
 
-Cfi_Kind :: enum u8 {
-	Def_Cfa_Offset,
-	Save_Reg,
-	Restore_Reg,
-	Remember_State,
-	Restore_State,
-}
+	node_to_block := make([]u32, ctx.gvn)
 
-// A frame state change that becomes current at `offset` (procedure relative,
-// i.e. right after the instruction that performed it).
-Cfi_Op :: struct {
-	offset: u32,
-	arg:    u32,
-	kind:   Cfi_Kind,
-	reg:    u8,
-}
+	for bb, bidx in ctx.bbs {
+		for instr in bb.instrs {
+			node_to_block[get_node(ctx, instr).gvn] = u32(bidx)
+		}
+	}
 
-PS_Peep_Fn :: proc(_: PS_Peep_Ctx, node: Expanded_Node) -> Node_ID
+	Join_Block :: struct {
+		node:          Node_ID,
+		reached_count: u16,
+	}
 
-Pre_Regalloc_Hook :: proc(_: ^Regalloc, _: ^Proc, _: ^Schedule)
+	block_base := ctx.gvn - u32(len(ctx.bbs))
+	append(&ctx.bbs, Basic_Block{offset = u32(ctx.code.pos)})
 
-PS_Peep_Ctx :: struct {
-	using graph: ^Proc,
-	preds:       []Node_ID,
-}
+	join_blocks: [dynamic]Join_Block
+	frontier: [dynamic]u32
 
-Codegen_Emit_Ctx :: struct {
-	using graph:      ^Proc,
-	using schedule:   ^Schedule,
-	using dbg_data:   ^Dbg_Data,
-	using abi:        ^Call_Conv,
-	using buf:        Codegen_Emit_Buf,
-	emit_got_imports: bool,
-	lib_calls:        Lib_Calls,
-	allocs:           []Reg,
-	param_specs:      []Param_Spec,
-}
+	for &sym, sidx in ctx.syms {
+		sym.defs.allocator = context.allocator
 
-Lib_Calls :: struct {
-	copy: Lib_Call,
-	set:  Lib_Call,
-}
+		for cursor := 0; cursor < len(sym.defs); cursor += 1 {
+			// NOTE: there can be leftovers from clogged regions from the prefious
+			// round since we never pop incomplete joins
+			clear(&join_blocks)
 
-Lib_Call :: bit_field u32 {
-	id:       u32  | 31,
-	absolute: bool | 1,
-}
+			def := sym.defs[cursor].node
+			dnode := get_node(ctx, def)
 
-Codegen_Emit_Buf :: struct {
-	code:     ^arna.Allocator,
-	relocs:   ^arna.Allocator,
-	slocs:    ^arna.Allocator,
-	cfi:      ^arna.Allocator,
-	dbg_locs: ^arna.Allocator,
-}
+			if dnode.itype == .Local {
+				offset := get_extra(ctx, dnode, Local).offset
 
-Codegen_Output :: struct {
-	relocs:    []Reloc,
-	slocs:     []Sloc,
-	cfi:       []Cfi_Op,
-	dbg_locs:  []Dbg_Location,
-	code:      []u8,
-	constants: []u8,
-}
+				add_dbg_location(ctx.dbg_locs)^ = {
+					sym    = sym.inner,
+					start  = u32(ctx.code_start),
+					end    = u32(ctx.code.pos),
+					symbol = u32(sidx),
+					offset = i32(offset),
+					reg    = rsp,
+					kind   = .Register_Offset,
+				}
 
-Dbg_Location_Kind :: enum u8 {
-	Register,
-	Register_Offset,
-}
+				continue
+			}
 
-Dbg_Location :: struct {
-	using sym: Dbg_Sym,
-	start:     u32,
-	end:       u32,
-	symbol:    u32,
-	offset:    i32,
-	reg:       Reg,
-	kind:      Dbg_Location_Kind,
-}
+			block := node_to_block[dnode.gvn]
+			append(&frontier, block)
 
-Reloc_Kind :: enum u32 {
-	Text,
-	Got,
-	Global,
-}
+			reg := reg_of(ctx, def)
+			loc_reg := reg
+			location_kind := Dbg_Location_Kind.Register
+			offset := spill_slot_offset(ctx, reg)
+			if int(reg.index) >= ctx.spill_boundary[reg.kind] {
+				loc_reg = rsp
+				location_kind = .Register_Offset
+			}
 
-Reloc_Size :: enum u32 {
-	r32,
-	r26,
-	r19,
-	r2_19,
-}
+			skip, ok := slice.linear_search(ctx.bbs[block].instrs[:], def)
+			assert(ok)
+			skip += 1
 
-RELOC_SIZE := [Reloc_Size]u32 {
-	.r32   = 4,
-	.r26   = 4,
-	.r19   = 4,
-	.r2_19 = 4,
-}
+			search: for bidx in pop_safe(&frontier) {
+				block := &ctx.bbs[bidx]
 
-Reloc :: struct {
-	offset:  u32,
-	using _: bit_field u32 {
-		kind:      Reloc_Kind | 2,
-		size:      Reloc_Size | 2,
-		scale_pow: u32        | 2,
-		id:        u32        | 26,
-	},
-}
+				start_offset :=
+					ctx.instr_offsets[get_node(ctx, block.instrs[skip]).gvn]
+				to_check := block.instrs[skip:]
 
-RELOC_BIG_CONSTANT_BASE :: (~u32(0) >> 6) - (1 << 22)
+				for tc in to_check {
+					tcnode := expand_node(ctx, tc)
 
-Reloc_Slot :: struct #raw_union #align (1) {
-	addend_32: i32,
-	r2:        bit_field u32 {
-		addend_26: i32 | 26,
-		padd:      u32 | 6,
-	},
-	r3:        bit_field u32 {
-		padd2:     u32 | 5,
-		addend_19: i32 | 19,
-		padd3:     u32 | 8,
-	},
-	r4:        bit_field u32 {
-		padd4:        u32 | 5,
-		addend_hi_19: i32 | 19,
-		padd5:        u32 | 5,
-		addend_lo_2:  i32 | 2,
-		padd6:        u32 | 1,
-	},
+					if tcnode.itype == .Phi &&
+					   slice.contains(tcnode.inps[1:], def) &&
+					   !slice.contains(sym.defs[:], {tc}) {
+						append(&sym.defs, {tc})
+						continue
+					}
+
+					if tcnode.itype == .Split &&
+					   tcnode.inps[0] == def &&
+					   !slice.contains(sym.defs[:], {tc}) {
+						append(&sym.defs, {tc})
+						continue
+					}
+
+					if int(tcnode.gvn) < len(ctx.allocs) &&
+					   reg_of(ctx, tc) == reg {
+						{
+							add_dbg_location(ctx.dbg_locs)^ = {
+								sym    = sym.inner,
+								start  = start_offset,
+								end    = ctx.instr_offsets[tcnode.gvn],
+								symbol = u32(sidx),
+								offset = i32(offset),
+								reg    = loc_reg,
+								kind   = location_kind,
+							}
+
+							assert(tc != def)
+
+							continue search
+						}
+					}
+
+				}
+
+				add_dbg_location(ctx.dbg_locs)^ = {
+					sym    = sym.inner,
+					start  = start_offset,
+					end    = ctx.bbs[bidx + 1].offset,
+					symbol = u32(sidx),
+					offset = i32(offset),
+					reg    = loc_reg,
+					kind   = location_kind,
+				}
+
+				for out in get_outputs(ctx, block.tail) {
+					oblk := get_node(ctx, out.id)
+					if oblk.itype == .End do continue
+					if out.idx == 1 && oblk.itype == .Loop do continue
+
+					bb_idx := oblk.gvn - block_base
+
+					if oblk.itype == .Region {
+						ready := false
+						for &blk, i in join_blocks {
+							if out.id == blk.node {
+								blk.reached_count += 1
+								if blk.reached_count < oblk.input_count {
+									continue search
+								}
+								ready = true
+							}
+						}
+
+						if !ready {
+							append(&join_blocks, Join_Block{out.id, 1})
+							continue search
+						}
+					}
+
+					append(&frontier, bb_idx)
+				}
+
+				skip = 0
+			}
+		}
+	}
+
+	dbg_locs := mem.slice_data_cast(
+		[]Dbg_Location,
+		ctx.dbg_locs.ptr[dbg_loc_start:ctx.dbg_locs.pos],
+	)
+
+	for &loc in dbg_locs {
+		loc.start -= u32(ctx.code_start)
+		loc.end -= u32(ctx.code_start)
+	}
+
+	return dbg_locs
 }
 
 cc_node_meta :: proc(
@@ -456,33 +640,22 @@ emit_leb :: proc(buf: ^arna.Allocator, value: $T) {
 	buf.pos -= len(bf) - uint(size)
 }
 
-spill_slot_offset :: proc(
-	ctx: Codegen_Emit_Ctx,
-	stack_param_offset: [][dynamic]i32,
-	spill_slot_base: []i32,
-	spill_slot_size: []i32,
-	reg: Reg,
-) -> i32 {
+spill_slot_offset :: proc(ctx: Codegen_Emit_Ctx, reg: Reg) -> i32 {
 	rcount := u16(ctx.spill_boundary[reg.kind])
 	if reg.index < rcount do return 0
 
-	param_count := len(stack_param_offset[reg.kind])
+	param_count := len(ctx.stack_param_offset[reg.kind])
 	if int(reg.index - rcount) < param_count {
-		return stack_param_offset[reg.kind][reg.index - rcount]
+		return ctx.stack_param_offset[reg.kind][reg.index - rcount]
 	}
 	return(
-		spill_slot_base[reg.kind] +
+		ctx.spill_slot_base[reg.kind] +
 		(i32(reg.index) - i32(param_count) - i32(rcount)) *
-			spill_slot_size[reg.kind] \
+			ctx.spill_slot_size[reg.kind] \
 	)
 }
 
-layout_spill_slots :: proc(
-	ctx: Codegen_Emit_Ctx,
-	spill_slot_base: []i32,
-	spill_slot_size: []i32,
-	stack_size: ^i32,
-) {
+layout_spill_slots :: proc(ctx: Codegen_Emit_Ctx, stack_size: ^i32) {
 	spill_slot_count: [8]i32
 	for reg in ctx.allocs {
 		spill_slot_count[reg.kind] = max(
@@ -491,9 +664,9 @@ layout_spill_slots :: proc(
 		)
 	}
 
-	for size, kind in spill_slot_count[:len(spill_slot_base)] {
-		spill_slot_base[kind] = i32(stack_size^)
-		stack_size^ += size * spill_slot_size[kind]
+	for size, kind in spill_slot_count[:len(ctx.spill_slot_base)] {
+		ctx.spill_slot_base[kind] = i32(stack_size^)
+		stack_size^ += size * ctx.spill_slot_size[kind]
 	}
 }
 
@@ -501,7 +674,6 @@ compute_param_offsets :: proc(
 	ctx: Codegen_Emit_Ctx,
 	params: []Node_ID,
 	stack_size: ^i32,
-	stack_param_offset: [][dynamic]i32,
 	param_offset: i32 = 0,
 ) {
 	param_offset := param_offset
@@ -523,7 +695,7 @@ compute_param_offsets :: proc(
 			assert(param.size == 8, "TODO")
 			stack_size^ -= param.size
 			kind := ctx.datatype_to_reg_kind[param.dt]
-			append(&stack_param_offset[kind], i32(param_offset))
+			append(&ctx.stack_param_offset[kind], i32(param_offset))
 		}
 
 		param_offset += param.size

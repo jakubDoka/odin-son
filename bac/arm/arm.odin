@@ -52,8 +52,8 @@ V27, V28, V29 :: Reg(V_BANK | 27), Reg(V_BANK | 28), Reg(V_BANK | 29)
 V30, V31 :: Reg(V_BANK | 30), Reg(V_BANK | 31)
 
 ARM_SYSTEMV_CC := bac.Call_Conv {
-	name         = "ARM_SYSTEMV_CC",
-	caller_saved = {
+	name          = "ARM_SYSTEMV_CC",
+	caller_saved  = {
 		{
 			X0,
 			X1,
@@ -102,15 +102,16 @@ ARM_SYSTEMV_CC := bac.Call_Conv {
 			V31,
 		},
 	},
-	callee_saved = {
+	callee_saved  = {
 		{X19, X20, X21, X22, X23, X24, X25, X26, X27, X28},
 		{V8, V9, V10, V11, V12, V13, V14, V15},
 	},
-	args         = {
+	args          = {
 		{X0, X1, X2, X3, X4, X5, X6, X7},
 		{V0, V1, V2, V3, V4, V5, V6, V7},
 	},
-	rets         = {{X0, X1}, {V0, V1}},
+	rets          = {{X0, X1}, {V0, V1}},
+	stack_pointer = SP,
 }
 
 SPEC_NOT_PRESENT :: (#load("node_specs.odin", string) or_else "") == ""
@@ -470,16 +471,13 @@ meta_of :: #force_inline proc(
 }
 
 Ctx :: struct {
-	using inner:        bac.Codegen_Emit_Ctx,
-	code_start:         uint,
-	spill_slot_base:    [RK_COUNT]i32,
-	stack_param_offset: [RK_COUNT][dynamic]i32,
-	local_relocs:       [dynamic]Local_Reloc,
-	used:               bit_arr.Bit_Set,
-	stack_size:         i32,
-	push_base:          i32,
-	has_call:           bool,
-	big_constants:      [dynamic]u8,
+	using inner:   bac.Codegen_Emit_Ctx,
+	local_relocs:  [dynamic]Local_Reloc,
+	used:          bit_arr.Bit_Set,
+	stack_size:    i32,
+	push_base:     i32,
+	has_call:      bool,
+	big_constants: [dynamic]u8,
 }
 
 Local_Reloc :: struct {
@@ -489,10 +487,15 @@ Local_Reloc :: struct {
 }
 
 emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
+	spill_slot_base: [RK_COUNT]i32
+	stack_param_offset: [RK_COUNT][dynamic]i32
 
 	ctx: Ctx
 	ctx.inner = ectx
 	ctx.used = bit_arr.init(MASK_SIZE)
+	ctx.spill_slot_base = spill_slot_base[:]
+	ctx.stack_param_offset = stack_param_offset[:]
+	ctx.spill_slot_size = SPILL_SLOT_SIZE[:]
 
 	relocs_start := ctx.relocs.pos
 
@@ -548,20 +551,9 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 		}
 	}
 
-	bac.layout_spill_slots(
-		ctx,
-		ctx.spill_slot_base[:],
-		SPILL_SLOT_SIZE[:],
-		&ctx.stack_size,
-	)
+	bac.layout_spill_slots(ctx, &ctx.stack_size)
 
-	bac.compute_param_offsets(
-		ctx,
-		params,
-		&ctx.stack_size,
-		ctx.stack_param_offset[:],
-		0,
-	)
+	bac.compute_param_offsets(ctx, params, &ctx.stack_size, 0)
 
 	bac.layout_locals(ctx, ctx.schedule, &ctx.stack_size)
 
@@ -984,8 +976,8 @@ emit_instr :: proc(
 		rd := reg_of(ctx, instr)
 		rm := reg_of(ctx, node.inps[0])
 
-		rd_off := spill_slot_offset(ctx, rd) / 8
-		rm_off := spill_slot_offset(ctx, rm) / 8
+		rd_off := bac.spill_slot_offset(ctx, rd) / 8
+		rm_off := bac.spill_slot_offset(ctx, rm) / 8
 
 		assert(rd_off < 4096)
 		assert(rm_off < 4096)
@@ -1060,15 +1052,6 @@ emit_instr :: proc(
 			emit_op(ctx.code, sh_instr(true, 0b0101010, nil, rd, XZR, rm))
 		}
 
-		spill_slot_offset :: proc(ctx: ^Ctx, reg: Reg) -> i32 {
-			return bac.spill_slot_offset(
-				ctx,
-				ctx.stack_param_offset[:],
-				ctx.spill_slot_base[:],
-				SPILL_SLOT_SIZE[:],
-				reg,
-			)
-		}
 	case .Uext:
 		rd := reg_of(ctx, instr)
 		rn := reg_of(ctx, node.inps[0])

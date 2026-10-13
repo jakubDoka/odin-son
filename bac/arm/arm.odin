@@ -424,7 +424,7 @@ meta_of :: #force_inline proc(
 	case .Eq ..= .U_Ge:
 		ikind := ra.datatype_to_reg_kind[get_node(graph, node.inps[0]).dt]
 		return {out = out, masks = masks[ikind][:2]}
-	case .F_To_I:
+	case .F_To_I, .U_F_To_I:
 		return {out = out, masks = VEC_MASKS[:1]}
 	case .F_From_I, .U_F_From_I:
 		return {out = out, masks = GPA_MASKS[:1]}
@@ -711,9 +711,11 @@ emit_instr :: proc(
 			.Not = 0x2a200000,
 			.Cast = 0x1e260000,
 			.F_To_I = 0x1e380000,
+			.U_F_To_I = 0x1e390000,
 			.F_Ext = 0x1E22C000,
 			.F_Demote = 0x1E624000,
 			.F_From_I = 0x1E220000,
+			.U_F_From_I = 0x1E230000,
 			.Simd_Reduce_Add_Bisect = 0x4E31B800,
 			.Splat = 0x4E000C00,
 			.Cmlt = 0x4E20A800,
@@ -900,7 +902,7 @@ emit_instr :: proc(
 			ctx.code,
 			imm12_instr(0b1001000100, reg_of(ctx, instr), SP, offset),
 		)
-	case .F_To_I:
+	case .F_To_I, .U_F_To_I:
 		rd := reg_of(ctx, instr)
 		rn := reg_of(ctx, node.inps[0])
 
@@ -922,7 +924,7 @@ emit_instr :: proc(
 			u32(rn.index) << 5 |
 			u32(rd.index),
 		)
-	case .F_From_I:
+	case .F_From_I, .U_F_From_I:
 		rd := reg_of(ctx, instr)
 		rn := reg_of(ctx, node.inps[0])
 
@@ -931,7 +933,7 @@ emit_instr :: proc(
 		emit_op(
 			ctx.code,
 			op |
-			u32(node.dt == .F64) << 31 |
+			u32(inp.dt == .I64) << 31 |
 			ftype << 22 |
 			u32(rn.index) << 5 |
 			u32(rd.index),

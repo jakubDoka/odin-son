@@ -339,6 +339,7 @@ meta_of :: #force_inline proc(
 	     .Uext,
 	     .Sext,
 	     .F_To_I,
+	     .U_F_To_I,
 	     .Stub,
 	     .Not,
 	     .Neg,
@@ -348,6 +349,7 @@ meta_of :: #force_inline proc(
 	     .F_Demote,
 	     .F_Ext,
 	     .F_From_I,
+	     .U_F_From_I,
 	     .Proc_Addr,
 	     .Always,
 	     .Poison,
@@ -577,12 +579,14 @@ pre_regalloc_hook :: proc(
 		case .Uext,
 		     .Sext,
 		     .F_To_I,
+		     .U_F_To_I,
 		     .Not,
 		     .Neg,
 		     .Cast,
 		     .F_Demote,
 		     .F_Ext,
 		     .F_From_I,
+		     .U_F_From_I,
 		     .Extract_Lane_U,
 		     .Splat,
 		     .Simd_Extract_Lsbs,
@@ -1280,46 +1284,72 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 		case .Void, .Mem, .I8, .F32 ..= .V512:
 			panic("no")
 		}
-	case .F_From_I:
+	case .F_From_I, .U_F_From_I:
+		unsigned := kind == .U_F_From_I
 		switch inp.dt {
 		case .I8 ..= .I32:
 			switch node.dt {
 			case .F32:
-				emit_op(ctx.code, .F32_Convert_I32_S)
+				emit_op(
+					ctx.code,
+					unsigned ? .F32_Convert_I32_U : .F32_Convert_I32_S,
+				)
 			case .F64:
-				emit_op(ctx.code, .F64_Convert_I32_S)
+				emit_op(
+					ctx.code,
+					unsigned ? .F64_Convert_I32_U : .F64_Convert_I32_S,
+				)
 			case .Void ..= .I64, .V128 ..= .V512:
 				panic("no")
 			}
 		case .I64:
 			switch node.dt {
 			case .F32:
-				emit_op(ctx.code, .F32_Convert_I64_S)
+				emit_op(
+					ctx.code,
+					unsigned ? .F32_Convert_I64_U : .F32_Convert_I64_S,
+				)
 			case .F64:
-				emit_op(ctx.code, .F64_Convert_I64_S)
+				emit_op(
+					ctx.code,
+					unsigned ? .F64_Convert_I64_U : .F64_Convert_I64_S,
+				)
 			case .Void ..= .I64, .V128 ..= .V512:
 				panic("no")
 			}
 		case .Void, .Mem, .F32 ..= .V512:
 			panic("no")
 		}
-	case .F_To_I:
+	case .F_To_I, .U_F_To_I:
+		unsigned := kind == .U_F_To_I
 		switch node.dt {
 		case .I8 ..= .I32:
 			switch inp.dt {
 			case .F32:
-				emit_op(ctx.code, .I32_Trunc_F32_S)
+				emit_op(
+					ctx.code,
+					unsigned ? .I32_Trunc_F32_U : .I32_Trunc_F32_S,
+				)
 			case .F64:
-				emit_op(ctx.code, .I32_Trunc_F64_S)
+				emit_op(
+					ctx.code,
+					unsigned ? .I32_Trunc_F64_U : .I32_Trunc_F64_S,
+				)
 			case .Void ..= .I64, .V128 ..= .V512:
 				panic("no")
 			}
 		case .I64:
 			switch inp.dt {
 			case .F32:
-				emit_op(ctx.code, .I64_Trunc_F32_S)
+				emit_op(
+					ctx.code,
+					unsigned ? .I64_Trunc_F32_U : .I64_Trunc_F32_S,
+				)
 			case .F64:
-				emit_op(ctx.code, .I64_Trunc_F64_S)
+				emit_op(
+					ctx.code,
+					unsigned ? .I64_Trunc_F64_U : .I64_Trunc_F64_S,
+				)
 			case .Void ..= .I64, .V128 ..= .V512:
 				panic("no")
 			}

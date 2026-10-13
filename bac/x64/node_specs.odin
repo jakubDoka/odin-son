@@ -84,6 +84,7 @@ SPEC := bac.Node_Spec{
 		0b10, // Uext
 		0b10, // Cast
 		0b10, // F_To_I
+		0b10, // U_F_To_I
 		0b10, // F_From_I
 		0b10, // U_F_From_I
 		0b10, // F_Ext
@@ -123,6 +124,8 @@ SPEC := bac.Node_Spec{
 		0b10, // X64_Mul8
 		0b10000000, // X64_Fma_213
 		0b10, // X64_Pcmpeq
+		0b10000000, // X64_Padd
+		0b10000000, // X64_Psub
 		0b10000000, // X64_Pshufd
 		0b10, // X64_Psadbw
 		0b10000000, // X64_Pshufb
@@ -192,6 +195,7 @@ SPEC := bac.Node_Spec{
 		0, // Uext -> No_Extra
 		0, // Cast -> No_Extra
 		0, // F_To_I -> No_Extra
+		0, // U_F_To_I -> No_Extra
 		0, // F_From_I -> No_Extra
 		0, // U_F_From_I -> No_Extra
 		0, // F_Ext -> No_Extra
@@ -231,6 +235,8 @@ SPEC := bac.Node_Spec{
 		0, // X64_Mul8 -> No_Extra
 		3, // X64_Fma_213 -> Mem_Op
 		0, // X64_Pcmpeq -> No_Extra
+		3, // X64_Padd -> Mem_Op
+		3, // X64_Psub -> Mem_Op
 		3, // X64_Pshufd -> Mem_Op
 		0, // X64_Psadbw -> No_Extra
 		3, // X64_Pshufb -> Mem_Op
@@ -300,6 +306,7 @@ SPEC := bac.Node_Spec{
 		{Class_Flag.Interned}, // Uext
 		{Class_Flag.Interned}, // Cast
 		{Class_Flag.Interned}, // F_To_I
+		{Class_Flag.Interned}, // U_F_To_I
 		{Class_Flag.Interned}, // F_From_I
 		{Class_Flag.Interned}, // U_F_From_I
 		{Class_Flag.Interned}, // F_Ext
@@ -339,6 +346,8 @@ SPEC := bac.Node_Spec{
 		{}, // X64_Mul8
 		{}, // X64_Fma_213
 		{}, // X64_Pcmpeq
+		{}, // X64_Padd
+		{}, // X64_Psub
 		{}, // X64_Pshufd
 		{}, // X64_Psadbw
 		{}, // X64_Pshufb
@@ -416,6 +425,7 @@ SPEC := bac.Node_Spec{
 		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
+		bac.No_Extra,
 		bac.Dbg_Sym,
 		bac.No_Extra,
 		bac.No_Extra,
@@ -447,6 +457,8 @@ SPEC := bac.Node_Spec{
 		bac.No_Extra,
 		Mem_Op,
 		bac.No_Extra,
+		Mem_Op,
+		Mem_Op,
 		Mem_Op,
 		bac.No_Extra,
 		Mem_Op,
@@ -516,6 +528,7 @@ SPEC := bac.Node_Spec{
 		`Uext`,
 		`Cast`,
 		`F_To_I`,
+		`U_F_To_I`,
 		`F_From_I`,
 		`U_F_From_I`,
 		`F_Ext`,
@@ -555,6 +568,8 @@ SPEC := bac.Node_Spec{
 		`X64_Mul8`,
 		`X64_Fma_213`,
 		`X64_Pcmpeq`,
+		`X64_Padd`,
+		`X64_Psub`,
 		`X64_Pshufd`,
 		`X64_Psadbw`,
 		`X64_Pshufb`,
@@ -626,6 +641,7 @@ Node_Type :: enum u16 {
 	Uext,
 	Cast,
 	F_To_I,
+	U_F_To_I,
 	F_From_I,
 	U_F_From_I,
 	F_Ext,
@@ -665,6 +681,8 @@ Node_Type :: enum u16 {
 	X64_Mul8,
 	X64_Fma_213,
 	X64_Pcmpeq,
+	X64_Padd,
+	X64_Psub,
 	X64_Pshufd,
 	X64_Psadbw,
 	X64_Pshufb,
@@ -763,6 +781,7 @@ collect_meta :: proc(ctx: ^bac.Proc,
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
+#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.Dbg_Sym) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
@@ -794,6 +813,8 @@ collect_meta :: proc(ctx: ^bac.Proc,
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(Mem_Op) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
+#assert(size_of(Mem_Op) % bac.PRECISION == 0)
+#assert(size_of(Mem_Op) % bac.PRECISION == 0)
 #assert(size_of(Mem_Op) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 add_x64_psadbw :: #force_inline proc(graph: ^bac.Proc, name: string, dt: bac.Node_Datatype, lhs: bac.Node_ID, rhs: bac.Node_ID) -> (_id: bac.Node_ID) {

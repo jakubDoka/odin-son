@@ -2090,9 +2090,20 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 						src_ty in typecheck.SIGNED_TYPES ? .Sext : .Uext
 					wide = bac.add_un_op(ctx, "iwd", wop, .I64, arg)
 				}
-				res = bac.add_un_op(ctx, "i2f", .F_From_I, dest_dt, wide)
+				op: bac.Un_Op = .F_From_I
+				if typecheck.in_set(src_ty, typecheck.UNSIGNED_TYPES) {
+					op = .U_F_From_I
+				}
+				res = bac.add_un_op(ctx, "i2f", op, dest_dt, wide)
 			case !dst_float && src_float:
-				res = bac.add_un_op(ctx, "f2i", .F_To_I, dest_dt, arg)
+				op: bac.Un_Op = .F_To_I
+				if typecheck.in_set(
+					base_meta.typeida,
+					typecheck.UNSIGNED_TYPES,
+				) {
+					op = .U_F_To_I
+				}
+				res = bac.add_un_op(ctx, "f2i", op, dest_dt, arg)
 			case dest_dt != src_dt:
 				op: bac.Un_Op = .Uext
 				if src_ty in typecheck.SIGNED_TYPES {

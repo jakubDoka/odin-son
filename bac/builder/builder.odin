@@ -35,6 +35,11 @@ fold_un_op :: proc(
 ) {
 	bit_size := uint(bac.DT_SIZE[src_ty] * 8)
 	mask: i64 = -1 << bit_size
+	float_value := proc(value: i64, ty: bac.Node_Datatype) -> f64 {
+		value := transmute(f64)value
+		if ty == .F32 do return f64(f32(value))
+		return value
+	}
 
 	#partial switch op {
 	case .Not:
@@ -48,11 +53,19 @@ fold_un_op :: proc(
 	case .Sext:
 		value = sext(oper, src_ty)
 	case .F_Ext, .F_Demote:
-		value = oper
+		value = transmute(i64)(f64(f32(transmute(f64)oper)))
 	case .F_From_I:
-		value = transmute(i64)(f64(oper))
+		value = transmute(i64)(float_value(transmute(i64)(f64(oper)), dst_ty))
+	case .U_F_From_I:
+		if dst_ty == .F32 {
+			value = transmute(i64)(f64(f32(u64(oper))))
+		} else {
+			value = transmute(i64)(f64(u64(oper)))
+		}
 	case .F_To_I:
-		value = i64(transmute(f64)oper)
+		value = i64(float_value(oper, src_ty))
+	case .U_F_To_I:
+		value = i64(u64(float_value(oper, src_ty)))
 	}
 	return
 }
@@ -67,11 +80,11 @@ fold_bin_op :: proc(
 ) {
 
 	if op_ty == .F32 {
-		return float_ops(lhs, op, rhs)
+		return float_ops(f32(transmute(f64)lhs), op, f32(transmute(f64)rhs))
 	}
 
 	if op_ty == .F64 {
-		return float_ops(lhs, op, rhs)
+		return float_ops(transmute(f64)lhs, op, transmute(f64)rhs)
 	}
 
 	lhs := lhs
@@ -144,8 +157,6 @@ fold_bin_op :: proc(
 	return
 
 	float_ops :: proc(lhs: $T, op: Bin_Op, rhs: T) -> i64 {
-		lhs := T(transmute(f64)lhs)
-		rhs := T(transmute(f64)rhs)
 		#partial switch op {
 		case .Add:
 			return transmute(i64)(f64(lhs + rhs))

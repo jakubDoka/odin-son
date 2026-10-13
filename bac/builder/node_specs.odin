@@ -79,6 +79,7 @@ SPEC := bac.Node_Spec{
 		0b10, // Uext
 		0b10, // Cast
 		0b10, // F_To_I
+		0b10, // U_F_To_I
 		0b10, // F_From_I
 		0b10, // U_F_From_I
 		0b10, // F_Ext
@@ -157,6 +158,7 @@ SPEC := bac.Node_Spec{
 		0, // Uext -> No_Extra
 		0, // Cast -> No_Extra
 		0, // F_To_I -> No_Extra
+		0, // U_F_To_I -> No_Extra
 		0, // F_From_I -> No_Extra
 		0, // U_F_From_I -> No_Extra
 		0, // F_Ext -> No_Extra
@@ -235,6 +237,7 @@ SPEC := bac.Node_Spec{
 		{Class_Flag.Interned}, // Uext
 		{Class_Flag.Interned}, // Cast
 		{Class_Flag.Interned}, // F_To_I
+		{Class_Flag.Interned}, // U_F_To_I
 		{Class_Flag.Interned}, // F_From_I
 		{Class_Flag.Interned}, // U_F_From_I
 		{Class_Flag.Interned}, // F_Ext
@@ -321,6 +324,7 @@ SPEC := bac.Node_Spec{
 		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
+		bac.No_Extra,
 		bac.Dbg_Sym,
 		bac.No_Extra,
 		bac.No_Extra,
@@ -391,6 +395,7 @@ SPEC := bac.Node_Spec{
 		`Uext`,
 		`Cast`,
 		`F_To_I`,
+		`U_F_To_I`,
 		`F_From_I`,
 		`U_F_From_I`,
 		`F_Ext`,
@@ -471,6 +476,7 @@ Node_Type :: enum u16 {
 	Uext,
 	Cast,
 	F_To_I,
+	U_F_To_I,
 	F_From_I,
 	U_F_From_I,
 	F_Ext,
@@ -552,6 +558,7 @@ post_schedule_peep_inst :: proc(
 #assert(size_of(bac.Cfg) % bac.PRECISION == 0)
 #assert(size_of(bac.Tup) % bac.PRECISION == 0)
 #assert(size_of(bac.Cfg) % bac.PRECISION == 0)
+#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)

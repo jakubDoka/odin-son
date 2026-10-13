@@ -189,6 +189,8 @@ when SPEC_NOT_PRESENT {
 		X64_Mul8,
 		X64_Fma_213,
 		X64_Pcmpeq,
+		X64_Padd,
+		X64_Psub,
 		X64_Pshufd,
 		X64_Psadbw,
 		X64_Pshufb,
@@ -323,6 +325,81 @@ peep :: proc(
 	}
 
 	#partial matchx: switch xtype(node) {
+	case .U_F_From_I:
+		inp := expand_node(ctx, node.inps[0])
+		assert(inp.dt == .I64)
+		if inp.itype == .Uext &&
+		   bac.DT_SIZE[get_node(ctx, inp.inps[0]).dt] < 8 {
+			return bac.add_un_op(ctx, "ufcv", .F_From_I, node.dt, node.inps[0])
+		}
+
+		_, high := add_node(
+			ctx,
+			"ufhi",
+			.X64_U_Shr,
+			.I64,
+			{node.inps[0]},
+			{imm = 63},
+		)
+		shifted := bac.add_bin_op(
+			ctx,
+			"ufsh",
+			.U_Shr,
+			.I64,
+			node.inps[0],
+			high,
+		)
+		sticky := bac.add_bin_op(ctx, "ufst", .And, .I64, node.inps[0], high)
+		rounded := bac.add_bin_op(ctx, "ufrd", .Or, .I64, shifted, sticky)
+		converted := bac.add_un_op(ctx, "ufcv", .F_From_I, node.dt, rounded)
+
+		bits_dt: bac.Node_Datatype = node.dt == .F64 ? .I64 : .I32
+		delta := high
+		if bits_dt == .I32 {
+			delta = bac.add_un_op(ctx, "ufdc", .Cast, .I32, delta)
+		}
+		_, delta = add_node(
+			ctx,
+			"ufde",
+			.X64_Shl,
+			bits_dt,
+			{delta},
+			{imm = node.dt == .F64 ? 52 : 23},
+		)
+		delta = bac.add_un_op(ctx, "ufdb", .Cast, node.dt, delta)
+		_, res := add_node(ctx, "ufrs", .X64_Padd, node.dt, {converted, delta})
+		return res
+	case .U_F_To_I:
+		inp := expand_node(ctx, node.inps[0])
+		wide := bac.add_un_op(ctx, "uftw", .F_To_I, .I64, node.inps[0])
+		if node.dt != .I64 {
+			return bac.add_un_op(ctx, "uftc", .Cast, node.dt, wide)
+		}
+
+		_, high := add_node(ctx, "ufti", .X64_U_Shr, .I64, {wide}, {imm = 63})
+		bits_dt: bac.Node_Datatype = inp.dt == .F64 ? .I64 : .I32
+		delta := high
+		if bits_dt == .I32 {
+			delta = bac.add_un_op(ctx, "uftc", .Cast, .I32, delta)
+		}
+		_, delta = add_node(
+			ctx,
+			"ufte",
+			.X64_Shl,
+			bits_dt,
+			{delta},
+			{imm = inp.dt == .F64 ? 52 : 23},
+		)
+		delta = bac.add_un_op(ctx, "uftb", .Cast, inp.dt, delta)
+		_, adjusted := add_node(
+			ctx,
+			"ufta",
+			.X64_Psub,
+			inp.dt,
+			{node.inps[0], delta},
+		)
+		half := bac.add_un_op(ctx, "ufth", .F_To_I, .I64, adjusted)
+		return bac.add_bin_op(ctx, "uftr", .Shl, .I64, half, high)
 	case .CInt:
 		cnst: ^bac.CInt = bac.get_extra(ctx, node, bac.CInt)
 		if node.dt in bac.FLOAT_DTS && cnst.value != 0 {
@@ -992,6 +1069,8 @@ meta_of :: proc(
 	case .End,
 	     .Simd_Reduce_Add_Bisect,
 	     .Splat,
+	     .U_F_To_I,
+	     .U_F_From_I,
 	     .Then,
 	     .Else,
 	     .Nil,
@@ -1008,6 +1087,8 @@ meta_of :: proc(
 	case .CInt:
 		return {out = out}
 	case .X64_Pcmpeq,
+	     .X64_Padd,
+	     .X64_Psub,
 	     .X64_Psadbw,
 	     .X64_Pshufb,
 	     .Add ..=
@@ -1098,8 +1179,6 @@ meta_of :: proc(
 		return {out = out, masks = nmasks[:1], in_place_slot = 1}
 	case .Sext, .Uext:
 		return {out = out, masks = nmasks[:1]}
-	case .U_F_From_I:
-		panic("TODO")
 	case .F_To_I, .F_From_I, .F_Ext, .F_Demote, .Cast:
 		inp := get_node(graph, node.inps[0])
 		return {out = out, masks = masks[ra.datatype_to_reg_kind[inp.dt]][:1]}
@@ -1679,7 +1758,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 	     .Dbg_Sym_Update,
 	     .Dbg_Sym_Decl,
 	     .Dbg_Scope:
-	case .Splat:
+	case .Splat, .U_F_To_I, .U_F_From_I:
 		panic("no")
 	case .Simd_Extract_Lsbs:
 		// pmovmskb $dst(gpr), $src(xmm)
@@ -1720,6 +1799,17 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 		// psadbw $dst, $rhs
 		rx := rex(dst, rhs, NO_INDEX, false)
 		emit(ctx.code, {0x66, rx, 0x0f, 0xF6, mod_rm(.Direct, dst, rhs)})
+	case .X64_Padd, .X64_Psub:
+		dst := reg_of(ctx, instr)
+		rhs := reg_of(ctx, node.inps[1])
+		op: u8
+		if type == .X64_Padd {
+			op = node.dt == .F64 ? 0xD4 : 0xFE
+		} else {
+			op = node.dt == .F64 ? 0xFB : 0xFA
+		}
+		rx := rex(dst, rhs, NO_INDEX, false)
+		emit(ctx.code, {0x66, rx, 0x0f, op, mod_rm(.Direct, dst, rhs)})
 	case .X64_Pextr:
 		dst := reg_of(ctx, instr)
 		src := reg_of(ctx, node.inps[0])
@@ -2429,8 +2519,6 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 		case .Dest:
 			panic("")
 		}
-	case .U_F_From_I:
-		panic("TODO")
 	case .F_From_I:
 		// cvtsi2ss/cvtsi2sd $dst(xmm), $src(gpr)
 		dst := reg_of(ctx, instr)

@@ -1,0 +1,282 @@
+=========== OPT LEVEL: none-quick ===========
+convert:
+    ucvtf d0, x0
+    ret
+convert_f32:
+    ucvtf s0, x0
+    ret
+main:
+    sub sp, sp, #48
+    stp x29, x30, [xzr, #7]
+    movn x0, #64510, #0
+    movk x0, #32768, #3
+    bl 0xfffffff0
+    adr x0, 0xfb0
+    ldr.v d1, [x0]
+    fcmp d0, d1
+    csinc x0, xzr, xzr, eq
+    cbnz x0, 0xa4
+    movn x0, #49150, #0
+    movk x0, #65514, #1
+    movk x0, #127, #2
+    movk x0, #32768, #3
+    bl 0xfffffff8
+    adr x0, 0xfb8
+    ldr.v s1, [x0]
+    fcmp s0, s1
+    csinc x0, xzr, xzr, eq
+    cbnz x0, 0x9c
+    movn x0, #0, #0
+    bl 0xfffffff0
+    str.v d0, [xzr, #24]
+    movn x0, #0, #0
+    bl 0xfffffff8
+    adr x0, 0xfbc
+    ldr.v s1, [x0]
+    fdiv s0, s0, s1
+    fcvtzs x0, s0
+    adr x1, 0xfc0
+    ldr.v d0, [x1]
+    ldr.v d1, [xzr, #24]
+    fdiv d0, d1, d0
+    fcvtzs x1, d0
+    movz x2, #10, #0
+    madd x0, x0, x2, xzr
+    add x0, x1, x0
+    mov x0, x0
+    b 0xa8
+3:
+    movz x0, #0, #0
+    b 0xa8
+4:
+    movz x0, #0, #0
+5:
+    str x0, [xzr, #16]
+    ldr x0, [xzr, #16]
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #48
+    ret
+=========== OPT LEVEL: none ===========
+convert:
+    ucvtf d0, x0
+    ret
+convert_f32:
+    ucvtf s0, x0
+    ret
+main:
+    sub sp, sp, #16
+    stp x29, x30, [xzr, #7]
+    movn x0, #64510, #0
+    movk x0, #32768, #3
+    bl 0xfffffff0
+    adr x0, 0xfb0
+    ldr.v d1, [x0]
+    fcmp d0, d1
+    csinc x0, xzr, xzr, eq
+    cbnz x0, 0x9c
+    movn x0, #49150, #0
+    movk x0, #65514, #1
+    movk x0, #127, #2
+    movk x0, #32768, #3
+    bl 0xfffffff8
+    adr x0, 0xfb8
+    ldr.v s1, [x0]
+    fcmp s0, s1
+    csinc x0, xzr, xzr, eq
+    cbnz x0, 0x94
+    movn x0, #0, #0
+    bl 0xfffffff0
+    orr.v v8, v0, v0
+    movn x0, #0, #0
+    bl 0xfffffff8
+    adr x0, 0xfbc
+    ldr.v s1, [x0]
+    fdiv s0, s0, s1
+    fcvtzs x2, s0
+    adr x0, 0xfc0
+    ldr.v d0, [x0]
+    fdiv d0, d8, d0
+    fcvtzs x1, d0
+    movz x0, #10, #0
+    madd x0, x2, x0, xzr
+    add x0, x1, x0
+    b 0xa0
+3:
+    movz x0, #0, #0
+    b 0xa0
+4:
+    movz x0, #0, #0
+5:
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #16
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+convert:
+    ucvtf d0, x0
+    ret
+convert_f32:
+    ucvtf s0, x0
+    ret
+main:
+    sub sp, sp, #48
+    stp x29, x30, [xzr, #7]
+    movn x0, #64510, #0
+    movk x0, #32768, #3
+    bl 0xfffffff0
+    adr x0, 0xfb0
+    ldr.v d1, [x0]
+    fcmp d0, d1
+    csinc x0, xzr, xzr, eq
+    cbnz x0, 0xa4
+    movn x0, #49150, #0
+    movk x0, #65514, #1
+    movk x0, #127, #2
+    movk x0, #32768, #3
+    bl 0xfffffff8
+    adr x0, 0xfb8
+    ldr.v s1, [x0]
+    fcmp s0, s1
+    csinc x0, xzr, xzr, eq
+    cbnz x0, 0x9c
+    movn x0, #0, #0
+    bl 0xfffffff0
+    str.v d0, [xzr, #24]
+    movn x0, #0, #0
+    bl 0xfffffff8
+    adr x0, 0xfbc
+    ldr.v s1, [x0]
+    fdiv s0, s0, s1
+    fcvtzs x0, s0
+    adr x1, 0xfc0
+    ldr.v d0, [x1]
+    ldr.v d1, [xzr, #24]
+    fdiv d0, d1, d0
+    fcvtzs x1, d0
+    movz x2, #10, #0
+    madd x0, x0, x2, xzr
+    add x0, x1, x0
+    mov x0, x0
+    b 0xa8
+3:
+    movz x0, #0, #0
+    b 0xa8
+4:
+    movz x0, #0, #0
+5:
+    str x0, [xzr, #16]
+    ldr x0, [xzr, #16]
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #48
+    ret
+=========== OPT LEVEL: moderate ===========
+convert:
+    ucvtf d0, x0
+    ret
+convert_f32:
+    ucvtf s0, x0
+    ret
+main:
+    sub sp, sp, #16
+    stp x29, x30, [xzr, #7]
+    movn x0, #64510, #0
+    movk x0, #32768, #3
+    bl 0xfffffff0
+    adr x0, 0xfb0
+    ldr.v d1, [x0]
+    fcmp d0, d1
+    csinc x0, xzr, xzr, eq
+    cbnz x0, 0x9c
+    movn x0, #49150, #0
+    movk x0, #65514, #1
+    movk x0, #127, #2
+    movk x0, #32768, #3
+    bl 0xfffffff8
+    adr x0, 0xfb8
+    ldr.v s1, [x0]
+    fcmp s0, s1
+    csinc x0, xzr, xzr, eq
+    cbnz x0, 0x94
+    movn x0, #0, #0
+    bl 0xfffffff0
+    orr.v v8, v0, v0
+    movn x0, #0, #0
+    bl 0xfffffff8
+    adr x0, 0xfbc
+    ldr.v s1, [x0]
+    fdiv s0, s0, s1
+    fcvtzs x2, s0
+    adr x0, 0xfc0
+    ldr.v d0, [x0]
+    fdiv d0, d8, d0
+    fcvtzs x1, d0
+    movz x0, #10, #0
+    madd x0, x2, x0, xzr
+    add x0, x1, x0
+    b 0xa0
+3:
+    movz x0, #0, #0
+    b 0xa0
+4:
+    movz x0, #0, #0
+5:
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #16
+    ret
+=========== OPT LEVEL: all ===========
+convert:
+    ucvtf d0, x0
+    ret
+convert_f32:
+    ucvtf s0, x0
+    ret
+main:
+    sub sp, sp, #16
+    stp x29, x30, [xzr, #7]
+    movn x0, #64510, #0
+    movk x0, #32768, #3
+    bl 0xfffffff0
+    adr x0, 0xfb0
+    ldr.v d1, [x0]
+    fcmp d0, d1
+    csinc x0, xzr, xzr, eq
+    cbnz x0, 0x9c
+    movn x0, #49150, #0
+    movk x0, #65514, #1
+    movk x0, #127, #2
+    movk x0, #32768, #3
+    bl 0xfffffff8
+    adr x0, 0xfb8
+    ldr.v s1, [x0]
+    fcmp s0, s1
+    csinc x0, xzr, xzr, eq
+    cbnz x0, 0x94
+    movn x0, #0, #0
+    bl 0xfffffff0
+    orr.v v8, v0, v0
+    movn x0, #0, #0
+    bl 0xfffffff8
+    adr x0, 0xfbc
+    ldr.v s1, [x0]
+    fdiv s0, s0, s1
+    fcvtzs x2, s0
+    adr x0, 0xfc0
+    ldr.v d0, [x0]
+    fdiv d0, d8, d0
+    fcvtzs x1, d0
+    movz x0, #10, #0
+    madd x0, x2, x0, xzr
+    add x0, x1, x0
+    b 0xa0
+3:
+    movz x0, #0, #0
+    b 0xa0
+4:
+    movz x0, #0, #0
+5:
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #16
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    movz x0, #0, #0
+    ret

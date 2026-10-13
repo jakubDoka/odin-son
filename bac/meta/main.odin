@@ -540,6 +540,7 @@ IDEAL_CLASSES := [bac.Node_Type]Class_Spec {
 	.Uext = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
 	.Cast = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
 	.F_To_I = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
+	.U_F_To_I = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
 	.F_From_I = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
 	.U_F_From_I = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
 	.F_Ext = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},

@@ -8382,6 +8382,228 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) frontend_emits_F_To_I :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+convert :: proc(x: f64) -> i64 {
+	return i64(x)
+}
+
+main_ :: proc() -> int {
+	return int(convert(0 - 42.75))
+}
+
+main.run_test(t, `frontend_emits_F_To_I`, `
+package main
+
+opt_level :: "none"
+
+convert :: proc(x: f64) -> i64 {
+	return i64(x)
+}
+
+main :: proc() -> int {
+	return int(convert(0 - 42.75))
+}
+`, main_())
+}
+@(test) frontend_emits_U_F_To_I :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+to_u32 :: proc(x: f64) -> u32 {
+	return u32(x)
+}
+
+to_u64 :: proc(x: f64) -> u64 {
+	return u64(x)
+}
+
+to_u64_f32 :: proc(x: f32) -> u64 {
+	return u64(x)
+}
+
+main_ :: proc() -> int {
+	a := to_u32(4.0e9) / 1_000_000_000
+	b := to_u64(1.5e19) / 1_000_000_000_000_000_000
+	c := to_u64_f32(1.5e19) / 1_000_000_000_000_000_000
+	return int(a) + int(b) * 10 + int(c) * 100
+}
+
+main.run_test(t, `frontend_emits_U_F_To_I`, `
+package main
+
+opt_level :: "none"
+
+to_u32 :: proc(x: f64) -> u32 {
+	return u32(x)
+}
+
+to_u64 :: proc(x: f64) -> u64 {
+	return u64(x)
+}
+
+to_u64_f32 :: proc(x: f32) -> u64 {
+	return u64(x)
+}
+
+main :: proc() -> int {
+	a := to_u32(4.0e9) / 1_000_000_000
+	b := to_u64(1.5e19) / 1_000_000_000_000_000_000
+	c := to_u64_f32(1.5e19) / 1_000_000_000_000_000_000
+	return int(a) + int(b) * 10 + int(c) * 100
+}
+`, main_())
+}
+@(test) frontend_emits_F_From_I :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+convert :: proc(x: i64) -> f64 {
+	return f64(x)
+}
+
+main_ :: proc() -> int {
+	if convert(0 - 5_000_000_000) == 0 - 5.0e9 do return 1
+	return 0
+}
+
+main.run_test(t, `frontend_emits_F_From_I`, `
+package main
+
+opt_level :: "none"
+
+convert :: proc(x: i64) -> f64 {
+	return f64(x)
+}
+
+main :: proc() -> int {
+	if convert(0 - 5_000_000_000) == 0 - 5.0e9 do return 1
+	return 0
+}
+`, main_())
+}
+@(test) frontend_emits_U_F_From_I :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+convert :: proc(x: u64) -> f64 {
+	return f64(x)
+}
+
+convert_f32 :: proc(x: u64) -> f32 {
+	return f32(x)
+}
+
+main_ :: proc() -> int {
+	x := u64(18_446_744_073_709_551_615)
+	if convert(u64(9_223_372_036_854_776_833)) !=
+	   9_223_372_036_854_777_856.0 {
+		return 0
+	}
+	if convert_f32(u64(9_223_372_586_609_164_289)) !=
+	   9_223_373_136_366_403_584.0 {
+		return 0
+	}
+	return int(convert(x) / 1.0e18) + int(convert_f32(x) / 1.0e18) * 10
+}
+
+main.run_test(t, `frontend_emits_U_F_From_I`, `
+package main
+
+opt_level :: "none"
+
+convert :: proc(x: u64) -> f64 {
+	return f64(x)
+}
+
+convert_f32 :: proc(x: u64) -> f32 {
+	return f32(x)
+}
+
+main :: proc() -> int {
+	x := u64(18_446_744_073_709_551_615)
+	if convert(u64(9_223_372_036_854_776_833)) !=
+	   9_223_372_036_854_777_856.0 {
+		return 0
+	}
+	if convert_f32(u64(9_223_372_586_609_164_289)) !=
+	   9_223_373_136_366_403_584.0 {
+		return 0
+	}
+	return int(convert(x) / 1.0e18) + int(convert_f32(x) / 1.0e18) * 10
+}
+`, main_())
+}
+@(test) frontend_emits_F_Ext :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+convert :: proc(x: f32) -> f64 {
+	return f64(x)
+}
+
+main_ :: proc() -> int {
+	if convert(1.5) == 1.5 do return 1
+	return 0
+}
+
+main.run_test(t, `frontend_emits_F_Ext`, `
+package main
+
+opt_level :: "none"
+
+convert :: proc(x: f32) -> f64 {
+	return f64(x)
+}
+
+main :: proc() -> int {
+	if convert(1.5) == 1.5 do return 1
+	return 0
+}
+`, main_())
+}
+@(test) frontend_emits_F_Demote :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+convert :: proc(x: f64) -> f32 {
+	return f32(x)
+}
+
+main_ :: proc() -> int {
+	if convert(16_777_217.0) == 16_777_216.0 do return 1
+	return 0
+}
+
+main.run_test(t, `frontend_emits_F_Demote`, `
+package main
+
+opt_level :: "none"
+
+convert :: proc(x: f64) -> f32 {
+	return f32(x)
+}
+
+main :: proc() -> int {
+	if convert(16_777_217.0) == 16_777_216.0 do return 1
+	return 0
+}
+`, main_())
+}
 @(test) float_loads_and_stores_of_different_sizes :: proc(t: ^testing.T) {
 
 
@@ -14471,6 +14693,12 @@ NAMES := []string{
 `float_comparison_peepholes`,
 `float_comparison_with_load`,
 `float_conversions`,
+`frontend_emits_F_To_I`,
+`frontend_emits_U_F_To_I`,
+`frontend_emits_F_From_I`,
+`frontend_emits_U_F_From_I`,
+`frontend_emits_F_Ext`,
+`frontend_emits_F_Demote`,
 `float_loads_and_stores_of_different_sizes`,
 `float_variables_that_create_register_pressure`,
 `float_variables_that_create_even_more_register_pressure`,
@@ -19002,6 +19230,111 @@ package main
 
 opt_level :: "none"
 
+convert :: proc(x: f64) -> i64 {
+	return i64(x)
+}
+
+main :: proc() -> int {
+	return int(convert(0 - 42.75))
+}
+`,
+`
+package main
+
+opt_level :: "none"
+
+to_u32 :: proc(x: f64) -> u32 {
+	return u32(x)
+}
+
+to_u64 :: proc(x: f64) -> u64 {
+	return u64(x)
+}
+
+to_u64_f32 :: proc(x: f32) -> u64 {
+	return u64(x)
+}
+
+main :: proc() -> int {
+	a := to_u32(4.0e9) / 1_000_000_000
+	b := to_u64(1.5e19) / 1_000_000_000_000_000_000
+	c := to_u64_f32(1.5e19) / 1_000_000_000_000_000_000
+	return int(a) + int(b) * 10 + int(c) * 100
+}
+`,
+`
+package main
+
+opt_level :: "none"
+
+convert :: proc(x: i64) -> f64 {
+	return f64(x)
+}
+
+main :: proc() -> int {
+	if convert(0 - 5_000_000_000) == 0 - 5.0e9 do return 1
+	return 0
+}
+`,
+`
+package main
+
+opt_level :: "none"
+
+convert :: proc(x: u64) -> f64 {
+	return f64(x)
+}
+
+convert_f32 :: proc(x: u64) -> f32 {
+	return f32(x)
+}
+
+main :: proc() -> int {
+	x := u64(18_446_744_073_709_551_615)
+	if convert(u64(9_223_372_036_854_776_833)) !=
+	   9_223_372_036_854_777_856.0 {
+		return 0
+	}
+	if convert_f32(u64(9_223_372_586_609_164_289)) !=
+	   9_223_373_136_366_403_584.0 {
+		return 0
+	}
+	return int(convert(x) / 1.0e18) + int(convert_f32(x) / 1.0e18) * 10
+}
+`,
+`
+package main
+
+opt_level :: "none"
+
+convert :: proc(x: f32) -> f64 {
+	return f64(x)
+}
+
+main :: proc() -> int {
+	if convert(1.5) == 1.5 do return 1
+	return 0
+}
+`,
+`
+package main
+
+opt_level :: "none"
+
+convert :: proc(x: f64) -> f32 {
+	return f32(x)
+}
+
+main :: proc() -> int {
+	if convert(16_777_217.0) == 16_777_216.0 do return 1
+	return 0
+}
+`,
+`
+package main
+
+opt_level :: "none"
+
 main :: proc() -> int {
 	{
 		vl: f32 = 0
@@ -21603,6 +21936,12 @@ main :: proc() -> int {
 `#load("../fuzz/crashes/ffd3458647088ce1.odin")`,
 }
 IS_FUZZ := []bool{
+false,
+false,
+false,
+false,
+false,
+false,
 false,
 false,
 false,

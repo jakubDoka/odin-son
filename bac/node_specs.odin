@@ -2,16 +2,17 @@ package bac
 // NOTE: this file is generated: 
 
 Un_Op :: enum u16 {
-	Simd_Extract_Lsbs = u16(Node_Type.Simd_Extract_Lsbs),
 	Ctz = u16(Node_Type.Ctz),
-	Simd_Reduce_Add_Bisect = u16(Node_Type.Simd_Reduce_Add_Bisect),
-	F_Ext = u16(Node_Type.F_Ext),
-	U_F_From_I = u16(Node_Type.U_F_From_I),
 	Splat = u16(Node_Type.Splat),
+	Simd_Reduce_Add_Bisect = u16(Node_Type.Simd_Reduce_Add_Bisect),
+	Simd_Extract_Lsbs = u16(Node_Type.Simd_Extract_Lsbs),
+	U_F_From_I = u16(Node_Type.U_F_From_I),
+	F_From_I = u16(Node_Type.F_From_I),
 	F_Demote = u16(Node_Type.F_Demote),
+	F_Ext = u16(Node_Type.F_Ext),
 	Cast = u16(Node_Type.Cast),
 	Uext = u16(Node_Type.Uext),
-	F_From_I = u16(Node_Type.F_From_I),
+	U_F_To_I = u16(Node_Type.U_F_To_I),
 	F_To_I = u16(Node_Type.F_To_I),
 	Neg = u16(Node_Type.Neg),
 	Sext = u16(Node_Type.Sext),
@@ -107,6 +108,7 @@ Node_Type :: enum u16 {
 	Uext,
 	Cast,
 	F_To_I,
+	U_F_To_I,
 	F_From_I,
 	U_F_From_I,
 	F_Ext,
@@ -307,6 +309,7 @@ add_end :: #force_inline proc(graph: ^Proc, name: string, inputs: []Node_ID) -> 
 add_un_op :: #force_inline proc(graph: ^Proc, name: string, type: Un_Op, dt: Node_Datatype, oprnd: Node_ID, lane: Lane_Type = {}) -> (_id: Node_ID) {
 	return add_raw(graph, name, u16(type), dt, {oprnd}, {lane = lane,})
 }
+#assert(size_of(No_Extra) % PRECISION == 0)
 #assert(size_of(No_Extra) % PRECISION == 0)
 #assert(size_of(No_Extra) % PRECISION == 0)
 #assert(size_of(No_Extra) % PRECISION == 0)

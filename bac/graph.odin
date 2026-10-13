@@ -179,6 +179,7 @@ when SPEC_NOT_PRESENT {
 		Uext,
 		Cast,
 		F_To_I,
+		U_F_To_I,
 		F_From_I,
 		U_F_From_I,
 		F_Ext,
@@ -342,7 +343,10 @@ FLOAT_DTS :: bit_set[Node_Datatype]{.F64, .F32}
 INT_DTS :: bit_set[Node_Datatype]{.I8, .I16, .I32, .I64}
 VECTOR_DTS :: bit_set[Node_Datatype]{.V128, .V256, .V512}
 
-operation_datatype :: proc(graph: ^Proc, node: Expanded_Node) -> Node_Datatype {
+operation_datatype :: proc(
+	graph: ^Proc,
+	node: Expanded_Node,
+) -> Node_Datatype {
 	dt := node.dt
 	#partial switch node.itype {
 	case .Eq ..= .U_Ge:

@@ -75,6 +75,7 @@ main :: proc() {
 			.X64_Shl ..= .X64_U_Shr = X64_SIMPLE_SHIFT_OP_SPEC,
 			.X64_Neg ..= .X64_Not = X64_SIMPLE_UN_OP_SPEC,
 			.X64_Pcmpeq = {no_ctor = true},
+			.X64_Padd ..= .X64_Psub = X64_SIMPLE_BIN_OP_SPEC,
 			.X64_Psadbw = {args = {"lhs", "rhs"}},
 			.X64_Pshufd = {id = x64.Mem_Op, no_ctor = true},
 			.X64_Pshufb = {id = x64.Mem_Op, no_ctor = true},

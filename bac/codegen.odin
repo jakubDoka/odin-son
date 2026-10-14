@@ -95,6 +95,9 @@ Codegen_Emit_Ctx :: struct {
 	spill_slot_size:    []i32,
 	instr_offsets:      []u32,
 	code_start:         uint,
+	constants_start:    uint,
+	last_off:           uint,
+	sloc:               Sloc,
 }
 
 Lib_Calls :: struct {
@@ -108,11 +111,12 @@ Lib_Call :: bit_field u32 {
 }
 
 Codegen_Emit_Buf :: struct {
-	code:     ^arna.Allocator,
-	relocs:   ^arna.Allocator,
-	slocs:    ^arna.Allocator,
-	cfi:      ^arna.Allocator,
-	dbg_locs: ^arna.Allocator,
+	code:      ^arna.Allocator,
+	constants: ^arna.Allocator,
+	relocs:    ^arna.Allocator,
+	slocs:     ^arna.Allocator,
+	cfi:       ^arna.Allocator,
+	dbg_locs:  ^arna.Allocator,
 }
 
 Codegen_Output :: struct {
@@ -190,6 +194,18 @@ Reloc_Slot :: struct #raw_union #align (1) {
 		addend_lo_2:  i32 | 2,
 		padd6:        u32 | 1,
 	},
+}
+
+next_sloc :: proc(ctx: ^Codegen_Emit_Ctx) {
+	cx := ctx.sloc
+	cx.range = u32(ctx.code.pos - ctx.last_off)
+	add_sloc(ctx.slocs)^ = cx
+	ctx.last_off = ctx.code.pos
+}
+
+mount_sloc :: proc(ctx: ^Codegen_Emit_Ctx, node: Node_ID) {
+	ctx.sloc = get_sloc(ctx, get_node(ctx, node))^
+	ctx.last_off = ctx.code.pos
 }
 
 take_dbg_data :: proc(
@@ -728,15 +744,14 @@ c_int_as_global :: proc(ctx: ^Proc, node: ^Node) -> Node_ID {
 }
 
 emit_big_constant_from_global :: proc(
-	ctx: ^Proc,
-	buf: ^[dynamic]u8,
+	ctx: ^Codegen_Emit_Ctx,
 	inp: ^Node,
 ) -> bool {
 	if inp.extra_dwords != 0 {
 		tup: ^Tup = get_extra(ctx, inp, Tup)
 		dwords := get_extra_dwords(ctx, inp)
 		tup.idx = emit_big_constant(
-			buf,
+			ctx,
 			DT_SIZE[Node_Datatype(dwords[0])],
 			mem.slice_data_cast([]u8, dwords[1:]),
 		)
@@ -747,23 +762,23 @@ emit_big_constant_from_global :: proc(
 }
 
 emit_big_constant :: proc(
-	buf: ^[dynamic]u8,
-	#any_int align: int,
+	ctx: ^Codegen_Emit_Ctx,
+	#any_int align: uint,
 	bytes: []u8,
 ) -> (
 	id: u32,
 ) {
-	align_up := mem.align_backward_int(len(buf) + 2, align)
+	slc := arna.alloc(
+		ctx.constants,
+		mem.align_forward_uint(ctx.constants.pos + 2, align) -
+		ctx.constants.pos,
+		1,
+	)
+	ctx.constants.ptr[ctx.constants.pos - 2] = u8(len(bytes))
+	ctx.constants.ptr[ctx.constants.pos - 1] = u8(align)
 
-	for _ in len(buf) + 2 ..< align_up {
-		append(buf, 0)
-	}
-
-	append(buf, u8(len(bytes)), u8(align))
-
-	id = RELOC_BIG_CONSTANT_BASE + u32(len(buf))
-
-	append(buf, ..bytes)
+	id = RELOC_BIG_CONSTANT_BASE + u32(ctx.constants.pos - ctx.constants_start)
+	_ = arna.clone(ctx.constants, bytes)
 
 	return
 }

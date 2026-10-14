@@ -142,6 +142,170 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) narrow_unsigned_integer_widening :: proc(t: ^testing.T) {
+
+
+
+check :: proc(a: $T, b: T, max_value: T) -> int {
+	r := 0
+	c := a + b
+	if c / 2 == 2 do r += 1
+	if c % 3 == 1 do r += 2
+	if T(200) / (c + 1) == 40 do r += 4
+	if (T(0) - b) / 2 == (max_value - b + 1) / 2 do r += 8
+	if (~a) / 2 == 2 do r += 16
+	if (a * b) / 7 == (max_value - 59) / 7 do r += 32
+	if (a << 1) / 2 == (max_value - 11) / 2 do r += 64
+	if (c &~ T(1)) / 2 == 2 do r += 128
+	if c == 4 do r += 256
+	if c < b do r += 512
+	return r
+}
+
+main_ :: proc() -> int {
+	// COMPILER BUG: inlining literal narrow arguments loses overflow during constant folding.
+	// return check(u8(250), 10, 255) + check(u16(65530), 10, 65535)
+	@(static) seed := 0
+	s := seed
+	return check(u8(s + 250), u8(s + 10), u8(s + 255)) +
+	       check(u16(s + 65530), u16(s + 10), u16(s + 65535))
+}
+
+main.run_test(t, `narrow_unsigned_integer_widening`, `
+package main
+
+check :: proc(a: $T, b: T, max_value: T) -> int {
+	r := 0
+	c := a + b
+	if c / 2 == 2 do r += 1
+	if c % 3 == 1 do r += 2
+	if T(200) / (c + 1) == 40 do r += 4
+	if (T(0) - b) / 2 == (max_value - b + 1) / 2 do r += 8
+	if (~a) / 2 == 2 do r += 16
+	if (a * b) / 7 == (max_value - 59) / 7 do r += 32
+	if (a << 1) / 2 == (max_value - 11) / 2 do r += 64
+	if (c &~ T(1)) / 2 == 2 do r += 128
+	if c == 4 do r += 256
+	if c < b do r += 512
+	return r
+}
+
+main :: proc() -> int {
+	// COMPILER BUG: inlining literal narrow arguments loses overflow during constant folding.
+	// return check(u8(250), 10, 255) + check(u16(65530), 10, 65535)
+	@(static) seed := 0
+	s := seed
+	return check(u8(s + 250), u8(s + 10), u8(s + 255)) +
+	       check(u16(s + 65530), u16(s + 10), u16(s + 65535))
+}
+`, main_())
+}
+@(test) narrow_signed_integer_widening :: proc(t: ^testing.T) {
+
+
+
+check :: proc(a: $T, b: T, expected: int) -> int {
+	r := 0
+	c := a + b
+	if c == T(expected) do r += 1
+	if c < 0 do r += 2
+	if int(c) <= expected do r += 4
+	if int(c / 3) == expected / 3 do r += 8
+	if int(c % 5) == expected % 5 do r += 16
+	if int(c >> 2) == expected >> 2 do r += 32
+	if -c == T(-expected) do r += 64
+	if (c ~ b) == T(expected ~ int(b)) do r += 128
+	return r
+}
+
+main_ :: proc() -> int {
+	// COMPILER BUG: inlining literal narrow arguments loses overflow during constant folding.
+	// return check(i8(120), 10, -126) + check(i16(32760), 10, -32766)
+	@(static) seed := 0
+	s := seed
+	return check(i8(s + 120), i8(s + 10), s - 126) +
+	       check(i16(s + 32760), i16(s + 10), s - 32766)
+}
+
+main.run_test(t, `narrow_signed_integer_widening`, `
+package main
+
+check :: proc(a: $T, b: T, expected: int) -> int {
+	r := 0
+	c := a + b
+	if c == T(expected) do r += 1
+	if c < 0 do r += 2
+	if int(c) <= expected do r += 4
+	if int(c / 3) == expected / 3 do r += 8
+	if int(c % 5) == expected % 5 do r += 16
+	if int(c >> 2) == expected >> 2 do r += 32
+	if -c == T(-expected) do r += 64
+	if (c ~ b) == T(expected ~ int(b)) do r += 128
+	return r
+}
+
+main :: proc() -> int {
+	// COMPILER BUG: inlining literal narrow arguments loses overflow during constant folding.
+	// return check(i8(120), 10, -126) + check(i16(32760), 10, -32766)
+	@(static) seed := 0
+	s := seed
+	return check(i8(s + 120), i8(s + 10), s - 126) +
+	       check(i16(s + 32760), i16(s + 10), s - 32766)
+}
+`, main_())
+}
+@(test) narrow_integer_widening_memory_boundaries :: proc(t: ^testing.T) {
+
+
+
+update :: proc(p: ^$T, b: T) -> T {
+	p^ = (p^ + b) * 3
+	return p^ / 2
+}
+
+main_ :: proc() -> int {
+	a: [4]u8 = {11, 250, 10, 77}
+	b: [4]u16 = {13, 65530, 10, 79}
+	r := 0
+	if update(&a[1], a[2]) == 6 do r += 1
+	if update(&b[1], b[2]) == 6 do r += 2
+	if a[0] == 11 do r += 4
+	if a[1] == 12 do r += 8
+	if a[2] == 10 do r += 16
+	if a[3] == 77 do r += 32
+	if b[0] == 13 do r += 64
+	if b[1] == 12 do r += 128
+	if b[2] == 10 do r += 256
+	if b[3] == 79 do r += 512
+	return r
+}
+
+main.run_test(t, `narrow_integer_widening_memory_boundaries`, `
+package main
+
+update :: proc(p: ^$T, b: T) -> T {
+	p^ = (p^ + b) * 3
+	return p^ / 2
+}
+
+main :: proc() -> int {
+	a: [4]u8 = {11, 250, 10, 77}
+	b: [4]u16 = {13, 65530, 10, 79}
+	r := 0
+	if update(&a[1], a[2]) == 6 do r += 1
+	if update(&b[1], b[2]) == 6 do r += 2
+	if a[0] == 11 do r += 4
+	if a[1] == 12 do r += 8
+	if a[2] == 10 do r += 16
+	if a[3] == 77 do r += 32
+	if b[0] == 13 do r += 64
+	if b[1] == 12 do r += 128
+	if b[2] == 10 do r += 256
+	if b[3] == 79 do r += 512
+	return r
+}
+`, main_())
+}
 @(test) all_unsigned_integer_operators :: proc(t: ^testing.T) {
 
 
@@ -14661,6 +14825,9 @@ NAMES := []string{
 `simplest`,
 `basic_arithmetic`,
 `all_integer_operators`,
+`narrow_unsigned_integer_widening`,
+`narrow_signed_integer_widening`,
+`narrow_integer_widening_memory_boundaries`,
 `all_unsigned_integer_operators`,
 `all_signed_integer_operators`,
 `bitwise_ops_with_constants`,
@@ -15328,6 +15495,85 @@ main :: proc() -> int {
 	r += batch(i16(20), 6, -7)
 	r += batch(i32(20), 6, -7)
 
+	return r
+}
+`,
+`
+package main
+
+check :: proc(a: $T, b: T, max_value: T) -> int {
+	r := 0
+	c := a + b
+	if c / 2 == 2 do r += 1
+	if c % 3 == 1 do r += 2
+	if T(200) / (c + 1) == 40 do r += 4
+	if (T(0) - b) / 2 == (max_value - b + 1) / 2 do r += 8
+	if (~a) / 2 == 2 do r += 16
+	if (a * b) / 7 == (max_value - 59) / 7 do r += 32
+	if (a << 1) / 2 == (max_value - 11) / 2 do r += 64
+	if (c &~ T(1)) / 2 == 2 do r += 128
+	if c == 4 do r += 256
+	if c < b do r += 512
+	return r
+}
+
+main :: proc() -> int {
+	// COMPILER BUG: inlining literal narrow arguments loses overflow during constant folding.
+	// return check(u8(250), 10, 255) + check(u16(65530), 10, 65535)
+	@(static) seed := 0
+	s := seed
+	return check(u8(s + 250), u8(s + 10), u8(s + 255)) +
+	       check(u16(s + 65530), u16(s + 10), u16(s + 65535))
+}
+`,
+`
+package main
+
+check :: proc(a: $T, b: T, expected: int) -> int {
+	r := 0
+	c := a + b
+	if c == T(expected) do r += 1
+	if c < 0 do r += 2
+	if int(c) <= expected do r += 4
+	if int(c / 3) == expected / 3 do r += 8
+	if int(c % 5) == expected % 5 do r += 16
+	if int(c >> 2) == expected >> 2 do r += 32
+	if -c == T(-expected) do r += 64
+	if (c ~ b) == T(expected ~ int(b)) do r += 128
+	return r
+}
+
+main :: proc() -> int {
+	// COMPILER BUG: inlining literal narrow arguments loses overflow during constant folding.
+	// return check(i8(120), 10, -126) + check(i16(32760), 10, -32766)
+	@(static) seed := 0
+	s := seed
+	return check(i8(s + 120), i8(s + 10), s - 126) +
+	       check(i16(s + 32760), i16(s + 10), s - 32766)
+}
+`,
+`
+package main
+
+update :: proc(p: ^$T, b: T) -> T {
+	p^ = (p^ + b) * 3
+	return p^ / 2
+}
+
+main :: proc() -> int {
+	a: [4]u8 = {11, 250, 10, 77}
+	b: [4]u16 = {13, 65530, 10, 79}
+	r := 0
+	if update(&a[1], a[2]) == 6 do r += 1
+	if update(&b[1], b[2]) == 6 do r += 2
+	if a[0] == 11 do r += 4
+	if a[1] == 12 do r += 8
+	if a[2] == 10 do r += 16
+	if a[3] == 77 do r += 32
+	if b[0] == 13 do r += 64
+	if b[1] == 12 do r += 128
+	if b[2] == 10 do r += 256
+	if b[3] == 79 do r += 512
 	return r
 }
 `,
@@ -22080,6 +22326,9 @@ main :: proc() -> int {
 `#load("../fuzz/crashes/ffd3458647088ce1.odin")`,
 }
 IS_FUZZ := []bool{
+false,
+false,
+false,
 false,
 false,
 false,

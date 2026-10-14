@@ -1,0 +1,1525 @@
+=========== OPT LEVEL: none-quick ===========
+Error{inst_idx = 80, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 124, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 184, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 228, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 324, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 80, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 124, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 184, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 228, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 324, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+main:
+    sub sp, sp, #48
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    stp x29, x30, [xzr, #23]
+    adr x0, 0xfc0
+    ldr x19, [x0]
+    movz x0, #10, #0
+    add x20, x0, x19
+    movz x0, #120, #0
+    add x0, x0, x19
+    uxtb w0, w0
+    uxtb w1, w20
+    movz x2, #126, #0
+    sub x2, x19, x2
+    bl check i8
+    str x0, [xzr, #32]
+    uxth w1, w20
+    movz x0, #32760, #0
+    add x0, x0, x19
+    uxth w0, w0
+    movz x2, #32766, #0
+    sub x2, x19, x2
+    bl check i16
+    ldr x1, [xzr, #32]
+    add x0, x1, x0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldp x29, x30, [xzr, #23]
+    add sp, sp, #48
+    ret
+check i8:
+    uxtb w0, w0
+    uxtb w3, w1
+    add w0, w0, w3
+    uxtb w3, w0
+    uxtb w0, w3
+    uxtb w4, w2
+    uxtb w4, w4
+    cmp w0, w4
+    b.eq 0x2c
+    movz x0, #0, #0
+    b 0x30
+2:
+    movz x0, #1, #0
+3:
+    movz x4, #2, #0
+    sxtb w5, w3
+    movz x6, #0, #0
+    sxtb w6, w6
+    cmp w5, w6
+    b.lt 0x4c
+    b 0x50
+4:
+    add x0, x0, x4
+5:
+    invalid
+    cmp w5, w2
+    b.le 0x60
+    b 0x68
+6:
+    movz x5, #4, #0
+    add x0, x5, x0
+7:
+    sxtb w5, w3
+    movz x6, #3, #0
+    sxtb w6, w6
+    sdiv w5, w5, w6
+    uxtb w5, w5
+    invalid
+    movz x6, #3, #0
+    sdiv x6, x2, x6
+    cmp w5, w6
+    b.eq 0x94
+    b 0x9c
+8:
+    movz x5, #8, #0
+    add x0, x5, x0
+9:
+    movz x5, #5, #0
+    sxtb w6, w3
+    movz x7, #5, #0
+    sxtb w7, w7
+    sdiv w8, w6, w7
+    msub w6, w8, w7, w6
+    uxtb w6, w6
+    invalid
+    sdiv x7, x2, x5
+    msub x5, x7, x5, x2
+    cmp w6, w5
+    b.eq 0xd0
+    b 6
+10:
+    movz x5, #16, #0
+    add x0, x5, x0
+11:
+    sxtb w5, w3
+    asrv w5, w5, w4
+    uxtb w5, w5
+    invalid
+    asrv x4, x2, x4
+    cmp w5, w4
+    b.eq 0xf8
+    b 0x100
+12:
+    movz x4, #32, #0
+    add x0, x4, x0
+13:
+    uxtb w4, w3
+    neg w4, w4
+    uxtb w4, w4
+    uxtb w4, w4
+    neg x5, x2
+    uxtb w5, w5
+    uxtb w5, w5
+    cmp w4, w5
+    b.eq 0x128
+    b 0x130
+14:
+    movz x4, #64, #0
+    add x0, x4, x0
+15:
+    uxtb w3, w3
+    uxtb w4, w1
+    eor w3, w3, w4
+    uxtb w3, w3
+    uxtb w3, w3
+    invalid
+    eor x1, x1, x2
+    uxtb w1, w1
+    uxtb w1, w1
+    cmp w3, w1
+    b.eq 0x160
+    b 0x168
+16:
+    movz x1, #128, #0
+    add x0, x1, x0
+17:
+    ret
+check i16:
+    uxth w0, w0
+    uxth w3, w1
+    add w0, w0, w3
+    uxth w3, w0
+    uxth w0, w3
+    uxth w4, w2
+    uxth w4, w4
+    cmp w0, w4
+    b.eq 0x2c
+    movz x0, #0, #0
+    b 0x30
+19:
+    movz x0, #1, #0
+20:
+    movz x4, #2, #0
+    sxth w5, w3
+    movz x6, #0, #0
+    sxth w6, w6
+    cmp w5, w6
+    b.lt 0x4c
+    b 0x50
+21:
+    add x0, x0, x4
+22:
+    invalid
+    cmp w5, w2
+    b.le 0x60
+    b 0x68
+23:
+    movz x5, #4, #0
+    add x0, x5, x0
+24:
+    sxth w5, w3
+    movz x6, #3, #0
+    sxth w6, w6
+    sdiv w5, w5, w6
+    uxth w5, w5
+    invalid
+    movz x6, #3, #0
+    sdiv x6, x2, x6
+    cmp w5, w6
+    b.eq 0x94
+    b 0x9c
+25:
+    movz x5, #8, #0
+    add x0, x5, x0
+26:
+    movz x5, #5, #0
+    sxth w6, w3
+    movz x7, #5, #0
+    sxth w7, w7
+    sdiv w8, w6, w7
+    msub w6, w8, w7, w6
+    uxth w6, w6
+    invalid
+    sdiv x7, x2, x5
+    msub x5, x7, x5, x2
+    cmp w6, w5
+    b.eq 0xd0
+    b 6
+27:
+    movz x5, #16, #0
+    add x0, x5, x0
+    sxth w5, w3
+    asrv w5, w5, w4
+    uxth w5, w5
+    invalid
+    asrv x4, x2, x4
+    cmp w5, w4
+    b.eq 0xf8
+    b 0x100
+28:
+    movz x4, #32, #0
+    add x0, x4, x0
+29:
+    uxth w4, w3
+    neg w4, w4
+    uxth w4, w4
+    uxth w4, w4
+    neg x5, x2
+    uxth w5, w5
+    uxth w5, w5
+    cmp w4, w5
+    b.eq 0x128
+    b 0x130
+30:
+    movz x4, #64, #0
+    add x0, x4, x0
+31:
+    uxth w3, w3
+    uxth w4, w1
+    eor w3, w3, w4
+    uxth w3, w3
+    uxth w3, w3
+    invalid
+    eor x1, x1, x2
+    uxth w1, w1
+    uxth w1, w1
+    cmp w3, w1
+    b.eq 0x160
+    b 0x168
+32:
+    movz x1, #128, #0
+    add x0, x1, x0
+33:
+    ret
+=========== OPT LEVEL: none ===========
+Error{inst_idx = 80, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 124, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 184, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 228, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 324, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 80, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 124, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 184, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 228, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 324, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+main:
+    sub sp, sp, #48
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    stp x29, x30, [xzr, #31]
+    adr x0, 0xfc0
+    ldr x19, [x0]
+    movz x0, #10, #0
+    add x21, x0, x19
+    movz x0, #120, #0
+    add x0, x0, x19
+    uxtb w0, w0
+    uxtb w1, w21
+    movz x2, #126, #0
+    sub x2, x19, x2
+    bl check i8
+    mov x20, x0
+    uxth w1, w21
+    movz x0, #32760, #0
+    add x0, x0, x19
+    uxth w0, w0
+    movz x2, #32766, #0
+    sub x2, x19, x2
+    bl check i16
+    add x0, x20, x0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldp x29, x30, [xzr, #31]
+    add sp, sp, #48
+    ret
+check i8:
+    uxtb w3, w0
+    uxtb w0, w1
+    add w0, w3, w0
+    uxtb w3, w0
+    uxtb w4, w3
+    uxtb w0, w2
+    uxtb w0, w0
+    cmp w4, w0
+    b.eq 0x2c
+    movz x0, #0, #0
+    b 0x30
+2:
+    movz x0, #1, #0
+3:
+    movz x4, #2, #0
+    sxtb w6, w3
+    movz x5, #0, #0
+    sxtb w5, w5
+    cmp w6, w5
+    b.lt 0x4c
+    b 0x50
+4:
+    add x0, x0, x4
+5:
+    invalid
+    cmp w5, w2
+    b.le 0x60
+    b 0x68
+6:
+    movz x5, #4, #0
+    add x0, x5, x0
+7:
+    sxtb w6, w3
+    movz x5, #3, #0
+    sxtb w5, w5
+    sdiv w5, w6, w5
+    uxtb w5, w5
+    invalid
+    movz x5, #3, #0
+    sdiv x5, x2, x5
+    cmp w6, w5
+    b.eq 0x94
+    b 0x9c
+8:
+    movz x5, #8, #0
+    add x0, x5, x0
+9:
+    movz x8, #5, #0
+    sxtb w7, w3
+    movz x5, #5, #0
+    sxtb w6, w5
+    sdiv w5, w7, w6
+    msub w5, w5, w6, w7
+    uxtb w5, w5
+    invalid
+    sdiv x5, x2, x8
+    msub x5, x5, x8, x2
+    cmp w6, w5
+    b.eq 0xd0
+    b 0xd8
+10:
+    movz x5, #16, #0
+    add x0, x5, x0
+11:
+    sxtb w5, w3
+    asrv w5, w5, w4
+    uxtb w5, w5
+    invalid
+    asrv x4, x2, x4
+    cmp w5, w4
+    b.eq 0xf8
+    b 0x100
+12:
+    movz x4, #32, #0
+    add x0, x4, x0
+13:
+    uxtb w4, w3
+    neg w4, w4
+    uxtb w4, w4
+    uxtb w5, w4
+    neg x4, x2
+    uxtb w4, w4
+    uxtb w4, w4
+    cmp w5, w4
+    b.eq 0x128
+    b 0x130
+14:
+    movz x4, #64, #0
+    add x0, x4, x0
+15:
+    uxtb w4, w3
+    uxtb w3, w1
+    eor w3, w4, w3
+    uxtb w3, w3
+    uxtb w3, w3
+    invalid
+    eor x1, x1, x2
+    uxtb w1, w1
+    uxtb w1, w1
+    cmp w3, w1
+    b.eq 0x160
+    b 0x168
+16:
+    movz x1, #128, #0
+    add x0, x1, x0
+17:
+    ret
+check i16:
+    uxth w3, w0
+    uxth w0, w1
+    add w0, w3, w0
+    uxth w3, w0
+    uxth w4, w3
+    uxth w0, w2
+    uxth w0, w0
+    cmp w4, w0
+    b.eq 0x2c
+    movz x0, #0, #0
+    b 0x30
+19:
+    movz x0, #1, #0
+20:
+    movz x4, #2, #0
+    sxth w6, w3
+    movz x5, #0, #0
+    sxth w5, w5
+    cmp w6, w5
+    b.lt 0x4c
+    b 0x50
+21:
+    add x0, x0, x4
+22:
+    invalid
+    cmp w5, w2
+    b.le 0x60
+    b 0x68
+23:
+    movz x5, #4, #0
+    add x0, x5, x0
+24:
+    sxth w6, w3
+    movz x5, #3, #0
+    sxth w5, w5
+    sdiv w5, w6, w5
+    uxth w5, w5
+    invalid
+    movz x5, #3, #0
+    sdiv x5, x2, x5
+    cmp w6, w5
+    b.eq 0x94
+    b 0x9c
+25:
+    movz x5, #8, #0
+    add x0, x5, x0
+26:
+    movz x8, #5, #0
+    sxth w7, w3
+    movz x5, #5, #0
+    sxth w6, w5
+    sdiv w5, w7, w6
+    msub w5, w5, w6, w7
+    uxth w5, w5
+    invalid
+    sdiv x5, x2, x8
+    msub x5, x5, x8, x2
+    cmp w6, w5
+    b.eq 0xd0
+    b 0xd8
+27:
+    movz x5, #16, #0
+    add x0, x5, x0
+28:
+    sxth w5, w3
+    asrv w5, w5, w4
+    uxth w5, w5
+    invalid
+    asrv x4, x2, x4
+    cmp w5, w4
+    b.eq 0xf8
+    b 0x100
+29:
+    movz x4, #32, #0
+    add x0, x4, x0
+30:
+    uxth w4, w3
+    neg w4, w4
+    uxth w4, w4
+    uxth w5, w4
+    neg x4, x2
+    uxth w4, w4
+    uxth w4, w4
+    cmp w5, w4
+    b.eq 0x128
+    b 0x130
+31:
+    movz x4, #64, #0
+    add x0, x4, x0
+32:
+    uxth w4, w3
+    uxth w3, w1
+    eor w3, w4, w3
+    uxth w3, w3
+    uxth w3, w3
+    invalid
+    eor x1, x1, x2
+    uxth w1, w1
+    uxth w1, w1
+    cmp w3, w1
+    b.eq 0x160
+    b 0x168
+33:
+    movz x1, #128, #0
+    add x0, x1, x0
+34:
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+Error{inst_idx = 80, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 124, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 184, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 228, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 324, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 80, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 124, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 184, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 228, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 324, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+main:
+    sub sp, sp, #48
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    stp x29, x30, [xzr, #23]
+    adr x0, 0xfc0
+    ldr x19, [x0]
+    movz x0, #10, #0
+    add x20, x0, x19
+    movz x0, #120, #0
+    add x0, x0, x19
+    uxtb w0, w0
+    uxtb w1, w20
+    movz x2, #126, #0
+    sub x2, x19, x2
+    bl check i8
+    str x0, [xzr, #32]
+    uxth w1, w20
+    movz x0, #32760, #0
+    add x0, x0, x19
+    uxth w0, w0
+    movz x2, #32766, #0
+    sub x2, x19, x2
+    bl check i16
+    ldr x1, [xzr, #32]
+    add x0, x1, x0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldp x29, x30, [xzr, #23]
+    add sp, sp, #48
+    ret
+check i8:
+    uxtb w0, w0
+    uxtb w3, w1
+    add w0, w0, w3
+    uxtb w3, w0
+    uxtb w0, w3
+    uxtb w4, w2
+    uxtb w4, w4
+    cmp w0, w4
+    b.eq 0x2c
+    movz x0, #0, #0
+    b 0x30
+2:
+    movz x0, #1, #0
+3:
+    movz x4, #2, #0
+    sxtb w5, w3
+    movz x6, #0, #0
+    sxtb w6, w6
+    cmp w5, w6
+    b.lt 0x4c
+    b 0x50
+4:
+    add x0, x0, x4
+5:
+    invalid
+    cmp w5, w2
+    b.le 0x60
+    b 0x68
+6:
+    movz x5, #4, #0
+    add x0, x5, x0
+7:
+    sxtb w5, w3
+    movz x6, #3, #0
+    sxtb w6, w6
+    sdiv w5, w5, w6
+    uxtb w5, w5
+    invalid
+    movz x6, #3, #0
+    sdiv x6, x2, x6
+    cmp w5, w6
+    b.eq 0x94
+    b 0x9c
+8:
+    movz x5, #8, #0
+    add x0, x5, x0
+9:
+    movz x5, #5, #0
+    sxtb w6, w3
+    movz x7, #5, #0
+    sxtb w7, w7
+    sdiv w8, w6, w7
+    msub w6, w8, w7, w6
+    uxtb w6, w6
+    invalid
+    sdiv x7, x2, x5
+    msub x5, x7, x5, x2
+    cmp w6, w5
+    b.eq 0xd0
+    b 6
+10:
+    movz x5, #16, #0
+    add x0, x5, x0
+11:
+    sxtb w5, w3
+    asrv w5, w5, w4
+    uxtb w5, w5
+    invalid
+    asrv x4, x2, x4
+    cmp w5, w4
+    b.eq 0xf8
+    b 0x100
+12:
+    movz x4, #32, #0
+    add x0, x4, x0
+13:
+    uxtb w4, w3
+    neg w4, w4
+    uxtb w4, w4
+    uxtb w4, w4
+    neg x5, x2
+    uxtb w5, w5
+    uxtb w5, w5
+    cmp w4, w5
+    b.eq 0x128
+    b 0x130
+14:
+    movz x4, #64, #0
+    add x0, x4, x0
+15:
+    uxtb w3, w3
+    uxtb w4, w1
+    eor w3, w3, w4
+    uxtb w3, w3
+    uxtb w3, w3
+    invalid
+    eor x1, x1, x2
+    uxtb w1, w1
+    uxtb w1, w1
+    cmp w3, w1
+    b.eq 0x160
+    b 0x168
+16:
+    movz x1, #128, #0
+    add x0, x1, x0
+17:
+    ret
+check i16:
+    uxth w0, w0
+    uxth w3, w1
+    add w0, w0, w3
+    uxth w3, w0
+    uxth w0, w3
+    uxth w4, w2
+    uxth w4, w4
+    cmp w0, w4
+    b.eq 0x2c
+    movz x0, #0, #0
+    b 0x30
+19:
+    movz x0, #1, #0
+20:
+    movz x4, #2, #0
+    sxth w5, w3
+    movz x6, #0, #0
+    sxth w6, w6
+    cmp w5, w6
+    b.lt 0x4c
+    b 0x50
+21:
+    add x0, x0, x4
+22:
+    invalid
+    cmp w5, w2
+    b.le 0x60
+    b 0x68
+23:
+    movz x5, #4, #0
+    add x0, x5, x0
+24:
+    sxth w5, w3
+    movz x6, #3, #0
+    sxth w6, w6
+    sdiv w5, w5, w6
+    uxth w5, w5
+    invalid
+    movz x6, #3, #0
+    sdiv x6, x2, x6
+    cmp w5, w6
+    b.eq 0x94
+    b 0x9c
+25:
+    movz x5, #8, #0
+    add x0, x5, x0
+26:
+    movz x5, #5, #0
+    sxth w6, w3
+    movz x7, #5, #0
+    sxth w7, w7
+    sdiv w8, w6, w7
+    msub w6, w8, w7, w6
+    uxth w6, w6
+    invalid
+    sdiv x7, x2, x5
+    msub x5, x7, x5, x2
+    cmp w6, w5
+    b.eq 0xd0
+    b 6
+27:
+    movz x5, #16, #0
+    add x0, x5, x0
+    sxth w5, w3
+    asrv w5, w5, w4
+    uxth w5, w5
+    invalid
+    asrv x4, x2, x4
+    cmp w5, w4
+    b.eq 0xf8
+    b 0x100
+28:
+    movz x4, #32, #0
+    add x0, x4, x0
+29:
+    uxth w4, w3
+    neg w4, w4
+    uxth w4, w4
+    uxth w4, w4
+    neg x5, x2
+    uxth w5, w5
+    uxth w5, w5
+    cmp w4, w5
+    b.eq 0x128
+    b 0x130
+30:
+    movz x4, #64, #0
+    add x0, x4, x0
+31:
+    uxth w3, w3
+    uxth w4, w1
+    eor w3, w3, w4
+    uxth w3, w3
+    uxth w3, w3
+    invalid
+    eor x1, x1, x2
+    uxth w1, w1
+    uxth w1, w1
+    cmp w3, w1
+    b.eq 0x160
+    b 0x168
+32:
+    movz x1, #128, #0
+    add x0, x1, x0
+33:
+    ret
+=========== OPT LEVEL: moderate ===========
+Error{inst_idx = 80, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 124, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 184, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 228, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 324, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 80, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 124, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 184, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 228, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 324, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+main:
+    sub sp, sp, #48
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    stp x29, x30, [xzr, #31]
+    adr x0, 0xfc0
+    ldr x19, [x0]
+    movz x0, #10, #0
+    add x21, x0, x19
+    movz x0, #120, #0
+    add x0, x0, x19
+    uxtb w0, w0
+    uxtb w1, w21
+    movz x2, #126, #0
+    sub x2, x19, x2
+    bl check i8
+    mov x20, x0
+    uxth w1, w21
+    movz x0, #32760, #0
+    add x0, x0, x19
+    uxth w0, w0
+    movz x2, #32766, #0
+    sub x2, x19, x2
+    bl check i16
+    add x0, x20, x0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldp x29, x30, [xzr, #31]
+    add sp, sp, #48
+    ret
+check i8:
+    uxtb w3, w0
+    uxtb w0, w1
+    add w0, w3, w0
+    uxtb w3, w0
+    uxtb w4, w3
+    uxtb w0, w2
+    uxtb w0, w0
+    cmp w4, w0
+    b.eq 0x2c
+    movz x0, #0, #0
+    b 0x30
+2:
+    movz x0, #1, #0
+3:
+    movz x4, #2, #0
+    sxtb w6, w3
+    movz x5, #0, #0
+    sxtb w5, w5
+    cmp w6, w5
+    b.lt 0x4c
+    b 0x50
+4:
+    add x0, x0, x4
+5:
+    invalid
+    cmp w5, w2
+    b.le 0x60
+    b 0x68
+6:
+    movz x5, #4, #0
+    add x0, x5, x0
+7:
+    sxtb w6, w3
+    movz x5, #3, #0
+    sxtb w5, w5
+    sdiv w5, w6, w5
+    uxtb w5, w5
+    invalid
+    movz x5, #3, #0
+    sdiv x5, x2, x5
+    cmp w6, w5
+    b.eq 0x94
+    b 0x9c
+8:
+    movz x5, #8, #0
+    add x0, x5, x0
+9:
+    movz x8, #5, #0
+    sxtb w7, w3
+    movz x5, #5, #0
+    sxtb w6, w5
+    sdiv w5, w7, w6
+    msub w5, w5, w6, w7
+    uxtb w5, w5
+    invalid
+    sdiv x5, x2, x8
+    msub x5, x5, x8, x2
+    cmp w6, w5
+    b.eq 0xd0
+    b 0xd8
+10:
+    movz x5, #16, #0
+    add x0, x5, x0
+11:
+    sxtb w5, w3
+    asrv w5, w5, w4
+    uxtb w5, w5
+    invalid
+    asrv x4, x2, x4
+    cmp w5, w4
+    b.eq 0xf8
+    b 0x100
+12:
+    movz x4, #32, #0
+    add x0, x4, x0
+13:
+    uxtb w4, w3
+    neg w4, w4
+    uxtb w4, w4
+    uxtb w5, w4
+    neg x4, x2
+    uxtb w4, w4
+    uxtb w4, w4
+    cmp w5, w4
+    b.eq 0x128
+    b 0x130
+14:
+    movz x4, #64, #0
+    add x0, x4, x0
+15:
+    uxtb w4, w3
+    uxtb w3, w1
+    eor w3, w4, w3
+    uxtb w3, w3
+    uxtb w3, w3
+    invalid
+    eor x1, x1, x2
+    uxtb w1, w1
+    uxtb w1, w1
+    cmp w3, w1
+    b.eq 0x160
+    b 0x168
+16:
+    movz x1, #128, #0
+    add x0, x1, x0
+17:
+    ret
+check i16:
+    uxth w3, w0
+    uxth w0, w1
+    add w0, w3, w0
+    uxth w3, w0
+    uxth w4, w3
+    uxth w0, w2
+    uxth w0, w0
+    cmp w4, w0
+    b.eq 0x2c
+    movz x0, #0, #0
+    b 0x30
+19:
+    movz x0, #1, #0
+20:
+    movz x4, #2, #0
+    sxth w6, w3
+    movz x5, #0, #0
+    sxth w5, w5
+    cmp w6, w5
+    b.lt 0x4c
+    b 0x50
+21:
+    add x0, x0, x4
+22:
+    invalid
+    cmp w5, w2
+    b.le 0x60
+    b 0x68
+23:
+    movz x5, #4, #0
+    add x0, x5, x0
+24:
+    sxth w6, w3
+    movz x5, #3, #0
+    sxth w5, w5
+    sdiv w5, w6, w5
+    uxth w5, w5
+    invalid
+    movz x5, #3, #0
+    sdiv x5, x2, x5
+    cmp w6, w5
+    b.eq 0x94
+    b 0x9c
+25:
+    movz x5, #8, #0
+    add x0, x5, x0
+26:
+    movz x8, #5, #0
+    sxth w7, w3
+    movz x5, #5, #0
+    sxth w6, w5
+    sdiv w5, w7, w6
+    msub w5, w5, w6, w7
+    uxth w5, w5
+    invalid
+    sdiv x5, x2, x8
+    msub x5, x5, x8, x2
+    cmp w6, w5
+    b.eq 0xd0
+    b 0xd8
+27:
+    movz x5, #16, #0
+    add x0, x5, x0
+28:
+    sxth w5, w3
+    asrv w5, w5, w4
+    uxth w5, w5
+    invalid
+    asrv x4, x2, x4
+    cmp w5, w4
+    b.eq 0xf8
+    b 0x100
+29:
+    movz x4, #32, #0
+    add x0, x4, x0
+30:
+    uxth w4, w3
+    neg w4, w4
+    uxth w4, w4
+    uxth w5, w4
+    neg x4, x2
+    uxth w4, w4
+    uxth w4, w4
+    cmp w5, w4
+    b.eq 0x128
+    b 0x130
+31:
+    movz x4, #64, #0
+    add x0, x4, x0
+32:
+    uxth w4, w3
+    uxth w3, w1
+    eor w3, w4, w3
+    uxth w3, w3
+    uxth w3, w3
+    invalid
+    eor x1, x1, x2
+    uxth w1, w1
+    uxth w1, w1
+    cmp w3, w1
+    b.eq 0x160
+    b 0x168
+33:
+    movz x1, #128, #0
+    add x0, x1, x0
+34:
+    ret
+=========== OPT LEVEL: all ===========
+Error{inst_idx = 80, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 124, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 184, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 228, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 324, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 80, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 124, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 184, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 228, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 324, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+main:
+    sub sp, sp, #48
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    stp x29, x30, [xzr, #31]
+    adr x0, 0xfc0
+    ldr x19, [x0]
+    movz x0, #10, #0
+    add x21, x0, x19
+    movz x0, #120, #0
+    add x0, x0, x19
+    uxtb w0, w0
+    uxtb w1, w21
+    movz x2, #126, #0
+    sub x2, x19, x2
+    bl check i8
+    mov x20, x0
+    uxth w1, w21
+    movz x0, #32760, #0
+    add x0, x0, x19
+    uxth w0, w0
+    movz x2, #32766, #0
+    sub x2, x19, x2
+    bl check i16
+    add x0, x20, x0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldp x29, x30, [xzr, #31]
+    add sp, sp, #48
+    ret
+check i8:
+    uxtb w3, w0
+    uxtb w0, w1
+    add w0, w3, w0
+    uxtb w3, w0
+    uxtb w4, w3
+    uxtb w0, w2
+    uxtb w0, w0
+    cmp w4, w0
+    b.eq 0x2c
+    movz x0, #0, #0
+    b 0x30
+2:
+    movz x0, #1, #0
+3:
+    movz x4, #2, #0
+    sxtb w6, w3
+    movz x5, #0, #0
+    sxtb w5, w5
+    cmp w6, w5
+    b.lt 0x4c
+    b 0x50
+4:
+    add x0, x0, x4
+5:
+    invalid
+    cmp w5, w2
+    b.le 0x60
+    b 0x68
+6:
+    movz x5, #4, #0
+    add x0, x5, x0
+7:
+    sxtb w6, w3
+    movz x5, #3, #0
+    sxtb w5, w5
+    sdiv w5, w6, w5
+    uxtb w5, w5
+    invalid
+    movz x5, #3, #0
+    sdiv x5, x2, x5
+    cmp w6, w5
+    b.eq 0x94
+    b 0x9c
+8:
+    movz x5, #8, #0
+    add x0, x5, x0
+9:
+    movz x8, #5, #0
+    sxtb w7, w3
+    movz x5, #5, #0
+    sxtb w6, w5
+    sdiv w5, w7, w6
+    msub w5, w5, w6, w7
+    uxtb w5, w5
+    invalid
+    sdiv x5, x2, x8
+    msub x5, x5, x8, x2
+    cmp w6, w5
+    b.eq 0xd0
+    b 0xd8
+10:
+    movz x5, #16, #0
+    add x0, x5, x0
+11:
+    sxtb w5, w3
+    asrv w5, w5, w4
+    uxtb w5, w5
+    invalid
+    asrv x4, x2, x4
+    cmp w5, w4
+    b.eq 0xf8
+    b 0x100
+12:
+    movz x4, #32, #0
+    add x0, x4, x0
+13:
+    uxtb w4, w3
+    neg w4, w4
+    uxtb w4, w4
+    uxtb w5, w4
+    neg x4, x2
+    uxtb w4, w4
+    uxtb w4, w4
+    cmp w5, w4
+    b.eq 0x128
+    b 0x130
+14:
+    movz x4, #64, #0
+    add x0, x4, x0
+15:
+    uxtb w4, w3
+    uxtb w3, w1
+    eor w3, w4, w3
+    uxtb w3, w3
+    uxtb w3, w3
+    invalid
+    eor x1, x1, x2
+    uxtb w1, w1
+    uxtb w1, w1
+    cmp w3, w1
+    b.eq 0x160
+    b 0x168
+16:
+    movz x1, #128, #0
+    add x0, x1, x0
+17:
+    ret
+check i16:
+    uxth w3, w0
+    uxth w0, w1
+    add w0, w3, w0
+    uxth w3, w0
+    uxth w4, w3
+    uxth w0, w2
+    uxth w0, w0
+    cmp w4, w0
+    b.eq 0x2c
+    movz x0, #0, #0
+    b 0x30
+19:
+    movz x0, #1, #0
+20:
+    movz x4, #2, #0
+    sxth w6, w3
+    movz x5, #0, #0
+    sxth w5, w5
+    cmp w6, w5
+    b.lt 0x4c
+    b 0x50
+21:
+    add x0, x0, x4
+22:
+    invalid
+    cmp w5, w2
+    b.le 0x60
+    b 0x68
+23:
+    movz x5, #4, #0
+    add x0, x5, x0
+24:
+    sxth w6, w3
+    movz x5, #3, #0
+    sxth w5, w5
+    sdiv w5, w6, w5
+    uxth w5, w5
+    invalid
+    movz x5, #3, #0
+    sdiv x5, x2, x5
+    cmp w6, w5
+    b.eq 0x94
+    b 0x9c
+25:
+    movz x5, #8, #0
+    add x0, x5, x0
+26:
+    movz x8, #5, #0
+    sxth w7, w3
+    movz x5, #5, #0
+    sxth w6, w5
+    sdiv w5, w7, w6
+    msub w5, w5, w6, w7
+    uxth w5, w5
+    invalid
+    sdiv x5, x2, x8
+    msub x5, x5, x8, x2
+    cmp w6, w5
+    b.eq 0xd0
+    b 0xd8
+27:
+    movz x5, #16, #0
+    add x0, x5, x0
+28:
+    sxth w5, w3
+    asrv w5, w5, w4
+    uxth w5, w5
+    invalid
+    asrv x4, x2, x4
+    cmp w5, w4
+    b.eq 0xf8
+    b 0x100
+29:
+    movz x4, #32, #0
+    add x0, x4, x0
+30:
+    uxth w4, w3
+    neg w4, w4
+    uxth w4, w4
+    uxth w5, w4
+    neg x4, x2
+    uxth w4, w4
+    uxth w4, w4
+    cmp w5, w4
+    b.eq 0x128
+    b 0x130
+31:
+    movz x4, #64, #0
+    add x0, x4, x0
+32:
+    uxth w4, w3
+    uxth w3, w1
+    eor w3, w4, w3
+    uxth w3, w3
+    uxth w3, w3
+    invalid
+    eor x1, x1, x2
+    uxth w1, w1
+    uxth w1, w1
+    cmp w3, w1
+    b.eq 0x160
+    b 0x168
+33:
+    movz x1, #128, #0
+    add x0, x1, x0
+34:
+    ret
+=========== OPT LEVEL: aggresive ===========
+Error{inst_idx = 124, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 168, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 224, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 268, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 368, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 500, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 540, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 588, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 628, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 716, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+main:
+    adr x0, 0xfc0
+    ldr x2, [x0]
+    movz x0, #126, #0
+    sub x3, x2, x0
+    movz x0, #120, #0
+    add x0, x0, x2
+    uxtb w0, w0
+    uxtb w1, w0
+    movz x0, #10, #0
+    add x4, x0, x2
+    uxtb w6, w4
+    uxtb w0, w6
+    add w0, w1, w0
+    uxtb w0, w0
+    uxtb w5, w0
+    uxtb w1, w3
+    uxtb w1, w1
+    cmp w5, w1
+    b.eq 1
+    movz x1, #0, #0
+    b 2
+1:
+    movz x1, #1, #0
+2:
+    movz x8, #2, #0
+    sxtb w7, w0
+    movz x5, #0, #0
+    sxtb w5, w5
+    cmp w7, w5
+    b.lt 3
+    b 4
+3:
+    add x1, x1, x8
+4:
+    movz x13, #4, #0
+    invalid
+    cmp w5, w3
+    b.le 5
+    b 6
+5:
+    add x1, x1, x13
+6:
+    movz x12, #3, #0
+    sxtb w7, w0
+    movz x5, #3, #0
+    sxtb w5, w5
+    sdiv w5, w7, w5
+    uxtb w5, w5
+    invalid
+    movz x11, #8, #0
+    sdiv x5, x3, x12
+    cmp w7, w5
+    b.eq 7
+    b 8
+7:
+    add x1, x1, x11
+8:
+    movz x10, #5, #0
+    sxtb w9, w0
+    movz x5, #5, #0
+    sxtb w7, w5
+    sdiv w5, w9, w7
+    msub w5, w5, w7, w9
+    uxtb w5, w5
+    invalid
+    movz x9, #16, #0
+    sdiv x5, x3, x10
+    msub x5, x5, x10, x3
+    cmp w7, w5
+    b.eq 9
+    b 10
+9:
+    add x1, x1, x9
+10:
+    sxtb w5, w0
+    asrv w5, w5, w8
+    uxtb w5, w5
+    invalid
+    movz x7, #32, #0
+    asrv x5, x3, x8
+    cmp w14, w5
+    b.eq 11
+    b 12
+11:
+    add x1, x1, x7
+12:
+    movz x5, #64, #0
+    uxtb w14, w0
+    neg w14, w14
+    uxtb w14, w14
+    uxtb w15, w14
+    neg x14, x3
+    uxtb w14, w14
+    uxtb w14, w14
+    cmp w15, w14
+    b.eq 13
+    b 14
+13:
+    add x1, x1, x5
+14:
+    uxtb w15, w0
+    movz x0, #128, #0
+    uxtb w14, w6
+    eor w14, w15, w14
+    uxtb w14, w14
+    uxtb w14, w14
+    invalid
+    eor x3, x6, x3
+    uxtb w3, w3
+    uxtb w3, w3
+    cmp w14, w3
+    b.eq 15
+    b 16
+15:
+    add x1, x1, x0
+16:
+    movz x3, #32766, #0
+    sub x3, x2, x3
+    uxth w4, w4
+    movz x6, #32760, #0
+    add x2, x6, x2
+    uxth w2, w2
+    uxth w6, w2
+    uxth w2, w4
+    add w2, w6, w2
+    uxth w6, w2
+    uxth w14, w6
+    uxth w2, w3
+    uxth w2, w2
+    cmp w14, w2
+    b.eq 17
+    movz x2, #0, #0
+    b 18
+17:
+    movz x2, #1, #0
+18:
+    sxth w15, w6
+    movz x14, #0, #0
+    sxth w14, w14
+    cmp w15, w14
+    b.lt 19
+    b 20
+19:
+    add x2, x2, x8
+20:
+    invalid
+    cmp w14, w3
+    b.le 21
+    b 22
+21:
+    add x2, x2, x13
+22:
+    sxth w14, w6
+    movz x13, #3, #0
+    sxth w13, w13
+    sdiv w13, w14, w13
+    uxth w13, w13
+    invalid
+    sdiv x12, x3, x12
+    cmp w13, w12
+    b.eq 23
+    b 24
+23:
+    add x2, x2, x11
+24:
+    sxth w13, w6
+    movz x11, #5, #0
+    sxth w12, w11
+    sdiv w11, w13, w12
+    msub w11, w11, w12, w13
+    uxth w11, w11
+    invalid
+    sdiv x11, x3, x10
+    msub x10, x11, x10, x3
+    cmp w12, w10
+    b.eq 25
+    b 26
+25:
+    add x2, x2, x9
+26:
+    sxth w9, w6
+    asrv w9, w9, w8
+    uxth w9, w9
+    invalid
+    asrv x8, x3, x8
+    cmp w9, w8
+    b.eq 27
+    b 28
+27:
+    add x2, x2, x7
+28:
+    uxth w7, w6
+    neg w7, w7
+    uxth w7, w7
+    uxth w8, w7
+    neg x7, x3
+    uxth w7, w7
+    uxth w7, w7
+    cmp w8, w7
+    b.eq 29
+    b 30
+29:
+    add x2, x2, x5
+30:
+    uxth w6, w6
+    uxth w5, w4
+    eor w5, w6, w5
+    uxth w5, w5
+    uxth w5, w5
+    invalid
+    eor x3, x4, x3
+    uxth w3, w3
+    uxth w3, w3
+    cmp w5, w3
+    b.eq 31
+    mov x0, x2
+    b 32
+31:
+    add x0, x2, x0
+32:
+    add x0, x1, x0
+    ret

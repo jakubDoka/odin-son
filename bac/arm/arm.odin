@@ -165,27 +165,43 @@ peep :: proc(
 	id := bac.get_node_id(ctx, node)
 	kind := atype(node)
 
-	signed := false
 	#partial switch kind {
-	case .Le ..= .Ge, .Div, .Shr:
-		signed = true
-	}
+	case .Add ..= .And_Not, .Neg, .Not:
+		NARROW_DTS :: bit_set[bac.Node_Datatype]{.I8, .I16}
+		if node.dt in bac.VECTOR_DTS ||
+		   bac.operation_datatype(ctx, node) not_in NARROW_DTS {
+			break
+		}
 
-	ext: bac.Un_Op = signed ? .Conv : .U_Conv
-
-	changed := false
-
-	#partial switch kind {
-	case .Eq ..= .U_Ge, .Div, .Shl ..= .U_Shr:
+		signed :=
+			kind in bit_set[Node_Type]{.Le, .Lt, .Gt, .Ge, .Div, .Rem, .Shr}
+		ext: bac.Un_Op = signed ? .Conv : .U_Conv
+		inps: [2]bac.Node_ID
 		for inp, i in node.inps {
+			inps[i] = inp
 			inp_dt := get_node(ctx, inp).dt
-			if inp_dt in bac.INT_DTS && inp_dt < .I32 {
-				new := bac.add_un_op(ctx, "shext", ext, .I32, inp)
-				bac.set_input(ctx, id, i, new)
-				bac.worklist_add(ctx, ctx.worklist, new)
-				changed = true
+			if inp_dt in NARROW_DTS {
+				inp_ext := ext
+				if .Shl <= kind && kind <= .U_Shr && i == 1 do inp_ext = .U_Conv
+				inps[i] = bac.add_un_op(ctx, "iext", inp_ext, .I32, inp)
+				bac.worklist_add(ctx, ctx.worklist, inps[i])
 			}
 		}
+
+		comparison := .Eq <= kind && kind <= .U_Ge
+		dt := comparison ? node.dt : bac.Node_Datatype.I32
+		wide := bac.add_raw(
+			ctx,
+			"iwide",
+			node.rtype,
+			dt,
+			inps[:len(node.inps)],
+		)
+		bac.worklist_add(ctx, ctx.worklist, wide)
+		if comparison do return wide
+
+		// Consumers must still observe overflow at the original width, including stores.
+		return bac.add_un_op(ctx, "inar", .U_Conv, node.dt, wide)
 	}
 
 	#partial switch kind {
@@ -292,8 +308,6 @@ peep :: proc(
 		bac.worklist_add(ctx, ctx.worklist, dv)
 		return add_msub(ctx, "rmms", node.dt, dv, node.inps[1], node.inps[0])
 	}
-
-	if changed do return id
 
 	return nil
 }
@@ -450,13 +464,12 @@ meta_of :: #force_inline proc(
 }
 
 Ctx :: struct {
-	using inner:   bac.Codegen_Emit_Ctx,
-	local_relocs:  [dynamic]Local_Reloc,
-	used:          bit_arr.Bit_Set,
-	stack_size:    i32,
-	push_base:     i32,
-	has_call:      bool,
-	big_constants: [dynamic]u8,
+	using inner:  bac.Codegen_Emit_Ctx,
+	local_relocs: [dynamic]Local_Reloc,
+	used:         bit_arr.Bit_Set,
+	stack_size:   i32,
+	push_base:    i32,
+	has_call:     bool,
 }
 
 Local_Reloc :: struct {
@@ -481,6 +494,7 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 	arna.alloc(ctx.code, 0, 4)
 
 	ctx.code_start = ctx.code.pos
+	ctx.constants_start = ctx.constants.pos
 
 	params, _ := bac.assemble_args(ctx, len(ctx.param_specs))
 
@@ -604,9 +618,7 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 	}
 
 	code := ctx.code.ptr[ctx.code_start:ctx.code.pos]
-	emit(ctx.code, ctx.big_constants[:])
-	constants := ctx.code.ptr[ctx.code.pos -
-	len(ctx.big_constants):ctx.code.pos]
+	constants := ctx.constants.ptr[ctx.constants_start:ctx.constants.pos]
 	relocs := mem.slice_data_cast(
 		[]bac.Reloc,
 		ctx.relocs.ptr[relocs_start:ctx.relocs.pos],
@@ -827,18 +839,14 @@ emit_instr :: proc(
 			op | imm << 16 | u32(src.index) << 5 | u32(dst.index),
 		)
 	case .Global_Addr, .Proc_Addr:
-		scale_pow: u32 = 0
-
-		if kind != .Proc_Addr &&
-		   bac.emit_big_constant_from_global(ctx, &ctx.big_constants, inp) {
-			scale_pow = 2
-		}
-
-		id: u32
+		scale_pow, id: u32
 		if kind == .Proc_Addr {
 			id = bac.get_extra(ctx, node, bac.Tup).idx
 		} else {
 			id = bac.get_extra(ctx, inp, bac.Tup).idx
+			if bac.emit_big_constant_from_global(ctx, inp) {
+				scale_pow = 2
+			}
 		}
 
 		bac.add_reloc(ctx.relocs)^ = {

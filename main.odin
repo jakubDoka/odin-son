@@ -121,6 +121,7 @@ main :: proc() {
 	types.mems.regalloc.reserved = 4096 * 8192
 	types.mems.scratch.reserved = 4096 * 2048
 	types.mems.code.reserved = 4096 * 4096
+	types.mems.constants.reserved = 4096 * 4096
 	types.mems.reloc.reserved = 4096 * 2048
 	types.mems.sloc.reserved = 4096 * 4096
 	types.mems.cfi.reserved = 4096 * 2048

@@ -75,7 +75,10 @@ add i16:
     str x0, [xzr]
     ldr x0, [xzr]
     ldrh w0, [x0]
+    uxth w0, w0
+    uxth w1, w1
     add w0, w0, w1
+    uxth w0, w0
     ldr x1, [xzr]
     strh w0, [x1]
     add sp, sp, #16
@@ -85,7 +88,10 @@ add i8:
     str x0, [xzr]
     ldr x0, [xzr]
     ldrb w0, [x0]
+    uxtb w0, w0
+    uxtb w1, w1
     add w0, w0, w1
+    uxtb w0, w0
     ldr x1, [xzr]
     strb w0, [x1]
     add sp, sp, #16
@@ -159,13 +165,19 @@ add i32:
 add i16:
     mov x2, x0
     ldrh w0, [x2]
-    add w0, w0, w1
+    uxth w3, w0
+    uxth w0, w1
+    add w0, w3, w0
+    uxth w0, w0
     strh w0, [x2]
     ret
 add i8:
     mov x2, x0
     ldrb w0, [x2]
-    add w0, w0, w1
+    uxtb w3, w0
+    uxtb w0, w1
+    add w0, w3, w0
+    uxtb w0, w0
     strb w0, [x2]
     ret
 =========== OPT LEVEL: moderate-quick ===========
@@ -245,7 +257,10 @@ add i16:
     str x0, [xzr]
     ldr x0, [xzr]
     ldrh w0, [x0]
+    uxth w0, w0
+    uxth w1, w1
     add w0, w0, w1
+    uxth w0, w0
     ldr x1, [xzr]
     strh w0, [x1]
     add sp, sp, #16
@@ -255,7 +270,10 @@ add i8:
     str x0, [xzr]
     ldr x0, [xzr]
     ldrb w0, [x0]
+    uxtb w0, w0
+    uxtb w1, w1
     add w0, w0, w1
+    uxtb w0, w0
     ldr x1, [xzr]
     strb w0, [x1]
     add sp, sp, #16
@@ -329,13 +347,19 @@ add i32:
 add i16:
     mov x2, x0
     ldrh w0, [x2]
-    add w0, w0, w1
+    uxth w3, w0
+    uxth w0, w1
+    add w0, w3, w0
+    uxth w0, w0
     strh w0, [x2]
     ret
 add i8:
     mov x2, x0
     ldrb w0, [x2]
-    add w0, w0, w1
+    uxtb w3, w0
+    uxtb w0, w1
+    add w0, w3, w0
+    uxtb w0, w0
     strb w0, [x2]
     ret
 =========== OPT LEVEL: all ===========
@@ -407,18 +431,24 @@ add i32:
 add i16:
     mov x2, x0
     ldrh w0, [x2]
-    add w0, w0, w1
+    uxth w3, w0
+    uxth w0, w1
+    add w0, w3, w0
+    uxth w0, w0
     strh w0, [x2]
     ret
 add i8:
     mov x2, x0
     ldrb w0, [x2]
-    add w0, w0, w1
+    uxtb w3, w0
+    uxtb w0, w1
+    add w0, w3, w0
+    uxtb w0, w0
     strb w0, [x2]
     ret
 =========== OPT LEVEL: aggresive ===========
-Error{inst_idx = 116, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 128, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 140, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 152, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 main:
     sub sp, sp, #16
     add x5, sp, #0
@@ -436,13 +466,19 @@ main:
     movz x0, #1, #0
     add w0, w1, w0
     str w0, [x4]
-    ldrh w1, [x3]
+    ldrh w0, [x3]
+    uxth w1, w0
     movz x0, #1, #0
+    uxth w0, w0
     add w0, w1, w0
+    uxth w0, w0
     strh w0, [x3]
-    ldrb w1, [x2]
+    ldrb w0, [x2]
+    uxtb w1, w0
     movz x0, #1, #0
+    uxtb w0, w0
     add w0, w1, w0
+    uxtb w0, w0
     strb w0, [x2]
     ldr x1, [x5]
     ldr w0, [x4]

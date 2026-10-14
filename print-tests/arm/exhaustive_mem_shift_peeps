@@ -1,8 +1,8 @@
 =========== OPT LEVEL: none-quick ===========
-Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 Error{inst_idx = 36, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 Error{inst_idx = 36, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 44, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 44, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 main:
     sub sp, sp, #112
     stp x29, x30, [xzr, #7]
@@ -90,15 +90,19 @@ test_mem_shifts i8 u8:
     ldrb w3, [x0]
     uxtb w3, w3
     lslv w3, w3, w2
+    uxtb w3, w3
     sxtb w3, w3
     asrv w3, w3, w2
+    uxtb w3, w3
     strb w3, [x0]
     ldrb w0, [x1]
     invalid
     uxtb w0, w0
     lsrv w0, w0, w2
     uxtb w0, w0
+    uxtb w0, w0
     lslv w0, w0, w2
+    uxtb w0, w0
     strb w0, [x1]
     uxtb w0, w0
     add x0, x3, x0
@@ -107,15 +111,19 @@ test_mem_shifts i16 u16:
     ldrh w3, [x0]
     uxth w3, w3
     lslv w3, w3, w2
+    uxth w3, w3
     sxth w3, w3
     asrv w3, w3, w2
+    uxth w3, w3
     strh w3, [x0]
     ldrh w0, [x1]
     invalid
     uxth w0, w0
     lsrv w0, w0, w2
     uxth w0, w0
+    uxth w0, w0
     lslv w0, w0, w2
+    uxth w0, w0
     strh w0, [x1]
     uxth w0, w0
     add x0, x3, x0
@@ -149,8 +157,10 @@ test_mem_imm_shifts i8 u8:
     movz x3, #3, #0
     uxtb w2, w2
     lslv w2, w2, w3
+    uxtb w2, w2
     sxtb w2, w2
     asrv w2, w2, w3
+    uxtb w2, w2
     strb w2, [x0]
     ldrb w0, [x1]
     movz x3, #2, #0
@@ -158,7 +168,9 @@ test_mem_imm_shifts i8 u8:
     uxtb w0, w0
     lsrv w0, w0, w3
     uxtb w0, w0
+    uxtb w0, w0
     lslv w0, w0, w3
+    uxtb w0, w0
     strb w0, [x1]
     uxtb w0, w0
     add x0, x2, x0
@@ -168,8 +180,10 @@ test_mem_imm_shifts i16 u16:
     movz x3, #3, #0
     uxth w2, w2
     lslv w2, w2, w3
+    uxth w2, w2
     sxth w2, w2
     asrv w2, w2, w3
+    uxth w2, w2
     strh w2, [x0]
     ldrh w0, [x1]
     movz x3, #2, #0
@@ -177,7 +191,9 @@ test_mem_imm_shifts i16 u16:
     uxth w0, w0
     lsrv w0, w0, w3
     uxth w0, w0
+    uxth w0, w0
     lslv w0, w0, w3
+    uxth w0, w0
     strh w0, [x1]
     uxth w0, w0
     add x0, x2, x0
@@ -211,10 +227,10 @@ test_mem_imm_shifts i64 u64:
     add x0, x2, x0
     ret
 =========== OPT LEVEL: none ===========
-Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 Error{inst_idx = 36, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 Error{inst_idx = 36, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 44, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 44, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 main:
     sub sp, sp, #112
     str x19, [xzr]
@@ -309,15 +325,19 @@ test_mem_shifts i8 u8:
     ldrb w3, [x0]
     uxtb w3, w3
     lslv w3, w3, w2
+    uxtb w3, w3
     sxtb w3, w3
     asrv w3, w3, w2
+    uxtb w3, w3
     strb w3, [x0]
     ldrb w0, [x1]
     invalid
     uxtb w0, w0
     lsrv w0, w0, w2
     uxtb w0, w0
+    uxtb w0, w0
     lslv w0, w0, w2
+    uxtb w0, w0
     strb w0, [x1]
     uxtb w0, w0
     add x0, x3, x0
@@ -326,15 +346,19 @@ test_mem_shifts i16 u16:
     ldrh w3, [x0]
     uxth w3, w3
     lslv w3, w3, w2
+    uxth w3, w3
     sxth w3, w3
     asrv w3, w3, w2
+    uxth w3, w3
     strh w3, [x0]
     ldrh w0, [x1]
     invalid
     uxth w0, w0
     lsrv w0, w0, w2
     uxth w0, w0
+    uxth w0, w0
     lslv w0, w0, w2
+    uxth w0, w0
     strh w0, [x1]
     uxth w0, w0
     add x0, x3, x0
@@ -368,8 +392,10 @@ test_mem_imm_shifts i8 u8:
     movz x3, #3, #0
     uxtb w2, w2
     lslv w2, w2, w3
+    uxtb w2, w2
     sxtb w2, w2
     asrv w2, w2, w3
+    uxtb w2, w2
     strb w2, [x0]
     ldrb w0, [x1]
     movz x3, #2, #0
@@ -377,7 +403,9 @@ test_mem_imm_shifts i8 u8:
     uxtb w0, w0
     lsrv w0, w0, w3
     uxtb w0, w0
+    uxtb w0, w0
     lslv w0, w0, w3
+    uxtb w0, w0
     strb w0, [x1]
     uxtb w0, w0
     add x0, x2, x0
@@ -387,8 +415,10 @@ test_mem_imm_shifts i16 u16:
     movz x3, #3, #0
     uxth w2, w2
     lslv w2, w2, w3
+    uxth w2, w2
     sxth w2, w2
     asrv w2, w2, w3
+    uxth w2, w2
     strh w2, [x0]
     ldrh w0, [x1]
     movz x3, #2, #0
@@ -396,7 +426,9 @@ test_mem_imm_shifts i16 u16:
     uxth w0, w0
     lsrv w0, w0, w3
     uxth w0, w0
+    uxth w0, w0
     lslv w0, w0, w3
+    uxth w0, w0
     strh w0, [x1]
     uxth w0, w0
     add x0, x2, x0
@@ -430,10 +462,10 @@ test_mem_imm_shifts i64 u64:
     add x0, x3, x0
     ret
 =========== OPT LEVEL: moderate-quick ===========
-Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 Error{inst_idx = 36, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 Error{inst_idx = 36, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 44, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 44, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 main:
     sub sp, sp, #112
     stp x29, x30, [xzr, #7]
@@ -521,15 +553,19 @@ test_mem_shifts i8 u8:
     ldrb w3, [x0]
     uxtb w3, w3
     lslv w3, w3, w2
+    uxtb w3, w3
     sxtb w3, w3
     asrv w3, w3, w2
+    uxtb w3, w3
     strb w3, [x0]
     ldrb w0, [x1]
     invalid
     uxtb w0, w0
     lsrv w0, w0, w2
     uxtb w0, w0
+    uxtb w0, w0
     lslv w0, w0, w2
+    uxtb w0, w0
     strb w0, [x1]
     uxtb w0, w0
     add x0, x3, x0
@@ -538,15 +574,19 @@ test_mem_shifts i16 u16:
     ldrh w3, [x0]
     uxth w3, w3
     lslv w3, w3, w2
+    uxth w3, w3
     sxth w3, w3
     asrv w3, w3, w2
+    uxth w3, w3
     strh w3, [x0]
     ldrh w0, [x1]
     invalid
     uxth w0, w0
     lsrv w0, w0, w2
     uxth w0, w0
+    uxth w0, w0
     lslv w0, w0, w2
+    uxth w0, w0
     strh w0, [x1]
     uxth w0, w0
     add x0, x3, x0
@@ -580,8 +620,10 @@ test_mem_imm_shifts i8 u8:
     movz x3, #3, #0
     uxtb w2, w2
     lslv w2, w2, w3
+    uxtb w2, w2
     sxtb w2, w2
     asrv w2, w2, w3
+    uxtb w2, w2
     strb w2, [x0]
     ldrb w0, [x1]
     movz x3, #2, #0
@@ -589,7 +631,9 @@ test_mem_imm_shifts i8 u8:
     uxtb w0, w0
     lsrv w0, w0, w3
     uxtb w0, w0
+    uxtb w0, w0
     lslv w0, w0, w3
+    uxtb w0, w0
     strb w0, [x1]
     uxtb w0, w0
     add x0, x2, x0
@@ -599,8 +643,10 @@ test_mem_imm_shifts i16 u16:
     movz x3, #3, #0
     uxth w2, w2
     lslv w2, w2, w3
+    uxth w2, w2
     sxth w2, w2
     asrv w2, w2, w3
+    uxth w2, w2
     strh w2, [x0]
     ldrh w0, [x1]
     movz x3, #2, #0
@@ -608,7 +654,9 @@ test_mem_imm_shifts i16 u16:
     uxth w0, w0
     lsrv w0, w0, w3
     uxth w0, w0
+    uxth w0, w0
     lslv w0, w0, w3
+    uxth w0, w0
     strh w0, [x1]
     uxth w0, w0
     add x0, x2, x0
@@ -642,10 +690,10 @@ test_mem_imm_shifts i64 u64:
     add x0, x2, x0
     ret
 =========== OPT LEVEL: moderate ===========
-Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 Error{inst_idx = 36, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 Error{inst_idx = 36, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 44, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 44, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 main:
     sub sp, sp, #112
     str x19, [xzr]
@@ -740,15 +788,19 @@ test_mem_shifts i8 u8:
     ldrb w3, [x0]
     uxtb w3, w3
     lslv w3, w3, w2
+    uxtb w3, w3
     sxtb w3, w3
     asrv w3, w3, w2
+    uxtb w3, w3
     strb w3, [x0]
     ldrb w0, [x1]
     invalid
     uxtb w0, w0
     lsrv w0, w0, w2
     uxtb w0, w0
+    uxtb w0, w0
     lslv w0, w0, w2
+    uxtb w0, w0
     strb w0, [x1]
     uxtb w0, w0
     add x0, x3, x0
@@ -757,15 +809,19 @@ test_mem_shifts i16 u16:
     ldrh w3, [x0]
     uxth w3, w3
     lslv w3, w3, w2
+    uxth w3, w3
     sxth w3, w3
     asrv w3, w3, w2
+    uxth w3, w3
     strh w3, [x0]
     ldrh w0, [x1]
     invalid
     uxth w0, w0
     lsrv w0, w0, w2
     uxth w0, w0
+    uxth w0, w0
     lslv w0, w0, w2
+    uxth w0, w0
     strh w0, [x1]
     uxth w0, w0
     add x0, x3, x0
@@ -799,8 +855,10 @@ test_mem_imm_shifts i8 u8:
     movz x3, #3, #0
     uxtb w2, w2
     lslv w2, w2, w3
+    uxtb w2, w2
     sxtb w2, w2
     asrv w2, w2, w3
+    uxtb w2, w2
     strb w2, [x0]
     ldrb w0, [x1]
     movz x3, #2, #0
@@ -808,7 +866,9 @@ test_mem_imm_shifts i8 u8:
     uxtb w0, w0
     lsrv w0, w0, w3
     uxtb w0, w0
+    uxtb w0, w0
     lslv w0, w0, w3
+    uxtb w0, w0
     strb w0, [x1]
     uxtb w0, w0
     add x0, x2, x0
@@ -818,8 +878,10 @@ test_mem_imm_shifts i16 u16:
     movz x3, #3, #0
     uxth w2, w2
     lslv w2, w2, w3
+    uxth w2, w2
     sxth w2, w2
     asrv w2, w2, w3
+    uxth w2, w2
     strh w2, [x0]
     ldrh w0, [x1]
     movz x3, #2, #0
@@ -827,7 +889,9 @@ test_mem_imm_shifts i16 u16:
     uxth w0, w0
     lsrv w0, w0, w3
     uxth w0, w0
+    uxth w0, w0
     lslv w0, w0, w3
+    uxth w0, w0
     strh w0, [x1]
     uxth w0, w0
     add x0, x2, x0
@@ -861,10 +925,10 @@ test_mem_imm_shifts i64 u64:
     add x0, x3, x0
     ret
 =========== OPT LEVEL: all ===========
-Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 Error{inst_idx = 36, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 Error{inst_idx = 36, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 44, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 44, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 main:
     sub sp, sp, #112
     str x19, [xzr]
@@ -959,15 +1023,19 @@ test_mem_shifts i8 u8:
     ldrb w3, [x0]
     uxtb w3, w3
     lslv w3, w3, w2
+    uxtb w3, w3
     sxtb w3, w3
     asrv w3, w3, w2
+    uxtb w3, w3
     strb w3, [x0]
     ldrb w0, [x1]
     invalid
     uxtb w0, w0
     lsrv w0, w0, w2
     uxtb w0, w0
+    uxtb w0, w0
     lslv w0, w0, w2
+    uxtb w0, w0
     strb w0, [x1]
     uxtb w0, w0
     add x0, x3, x0
@@ -976,15 +1044,19 @@ test_mem_shifts i16 u16:
     ldrh w3, [x0]
     uxth w3, w3
     lslv w3, w3, w2
+    uxth w3, w3
     sxth w3, w3
     asrv w3, w3, w2
+    uxth w3, w3
     strh w3, [x0]
     ldrh w0, [x1]
     invalid
     uxth w0, w0
     lsrv w0, w0, w2
     uxth w0, w0
+    uxth w0, w0
     lslv w0, w0, w2
+    uxth w0, w0
     strh w0, [x1]
     uxth w0, w0
     add x0, x3, x0
@@ -1018,8 +1090,10 @@ test_mem_imm_shifts i8 u8:
     movz x3, #3, #0
     uxtb w2, w2
     lslv w2, w2, w3
+    uxtb w2, w2
     sxtb w2, w2
     asrv w2, w2, w3
+    uxtb w2, w2
     strb w2, [x0]
     ldrb w0, [x1]
     movz x3, #2, #0
@@ -1027,7 +1101,9 @@ test_mem_imm_shifts i8 u8:
     uxtb w0, w0
     lsrv w0, w0, w3
     uxtb w0, w0
+    uxtb w0, w0
     lslv w0, w0, w3
+    uxtb w0, w0
     strb w0, [x1]
     uxtb w0, w0
     add x0, x2, x0
@@ -1037,8 +1113,10 @@ test_mem_imm_shifts i16 u16:
     movz x3, #3, #0
     uxth w2, w2
     lslv w2, w2, w3
+    uxth w2, w2
     sxth w2, w2
     asrv w2, w2, w3
+    uxth w2, w2
     strh w2, [x0]
     ldrh w0, [x1]
     movz x3, #2, #0
@@ -1046,7 +1124,9 @@ test_mem_imm_shifts i16 u16:
     uxth w0, w0
     lsrv w0, w0, w3
     uxth w0, w0
+    uxth w0, w0
     lslv w0, w0, w3
+    uxth w0, w0
     strh w0, [x1]
     uxth w0, w0
     add x0, x2, x0

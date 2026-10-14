@@ -94,6 +94,7 @@ run_test :: proc(
 		types.mems.regalloc.reserved = 4096 * 64
 		types.mems.scratch.reserved = 4096 * 16
 		types.mems.code.reserved = 4096 * 16
+		types.mems.constants.reserved = 4096 * 16
 		types.mems.reloc.reserved = 4096 * 16
 		types.mems.sloc.reserved = 4096 * 128
 		types.mems.cfi.reserved = 4096 * 128
@@ -168,13 +169,13 @@ run_test :: proc(
 	confs: [dynamic]Test_Conf
 	confs.allocator = context.temp_allocator
 
-	for level in levels[:] {
+	for level in levels[:0] {
 		append(&confs, Test_Conf{level = level})
 	}
-	for level in levels[:] {
+	for level in levels[:0] {
 		append(&confs, Test_Conf{level = level, debug = true})
 	}
-	for level in levels[:] {
+	for level in levels[:0] {
 		append(&confs, Test_Conf{level = level, vm = .Wasm})
 	}
 	for level in levels[:] {
@@ -206,6 +207,7 @@ run_test :: proc(
 		types.mems.reloc.pos = 0
 		types.mems.cfi.pos = 0
 		types.mems.dbg_loc.pos = 0
+		types.mems.constants.pos = 0
 		types.check = level.vm == .Check
 		ctx.has_dbg = level.debug
 		ctx.ralloc_mode = level.ralloc_mode

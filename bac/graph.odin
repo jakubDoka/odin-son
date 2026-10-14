@@ -149,8 +149,9 @@ when SPEC_NOT_PRESENT {
 		Ret,
 		// Phi
 		Phi,
-		// ops
+		// CInt
 		CInt,
+		// binary ops
 		Add,
 		Sub,
 		And,
@@ -175,7 +176,9 @@ when SPEC_NOT_PRESENT {
 		Rem,
 		U_Rem,
 		And_Not,
+		// Split
 		Split,
+		// memory ops
 		Local_Addr,
 		Global_Addr,
 		Proc_Addr,
@@ -183,6 +186,7 @@ when SPEC_NOT_PRESENT {
 		Set,
 		Store,
 		Load,
+		// unary Ops
 		Neg,
 		Not,
 		Cast,

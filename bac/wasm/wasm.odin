@@ -101,12 +101,50 @@ peep :: proc(
 	node: bac.Expanded_Node,
 	_: $T,
 ) -> Maybe(bac.Node_ID) {
-	id := bac.get_node_id(ctx, node)
 	inp: bac.Expanded_Node
 	if 0 < len(node.inps) {
 		inp = expand_node(ctx, node.inps[0])
 	}
 	kind := wtype(node)
+	#partial switch kind {
+	case .Add ..= .And_Not, .Neg, .Not:
+		NARROW_DTS :: bit_set[bac.Node_Datatype]{.I8, .I16}
+		if node.dt in bac.VECTOR_DTS ||
+		   bac.operation_datatype(ctx, node) not_in NARROW_DTS {
+			break
+		}
+
+		signed :=
+			kind in bit_set[Node_Type]{.Le, .Lt, .Gt, .Ge, .Div, .Rem, .Shr}
+		ext: bac.Un_Op = signed ? .Conv : .U_Conv
+		inps: [2]bac.Node_ID
+		for inp, i in node.inps {
+			inps[i] = inp
+			inp_dt := get_node(ctx, inp).dt
+			if inp_dt in NARROW_DTS {
+				inp_ext := ext
+				if .Shl <= kind && kind <= .U_Shr && i == 1 do inp_ext = .U_Conv
+				inps[i] = bac.add_un_op(ctx, "iext", inp_ext, .I32, inp)
+				bac.worklist_add(ctx, ctx.worklist, inps[i])
+			}
+		}
+
+		comparison := .Eq <= kind && kind <= .U_Ge
+		dt := comparison ? node.dt : bac.Node_Datatype.I32
+		wide := bac.add_raw(
+			ctx,
+			"iwide",
+			node.rtype,
+			dt,
+			inps[:len(node.inps)],
+		)
+		bac.worklist_add(ctx, ctx.worklist, wide)
+		if comparison do return wide
+
+		// Consumers must still observe overflow at the original width, including stores.
+		return bac.add_un_op(ctx, "inar", .U_Conv, node.dt, wide)
+	}
+
 	#partial switch kind {
 	case .Conv, .U_Conv:
 		if inp.dt not_in bac.INT_DTS ||
@@ -164,26 +202,6 @@ peep :: proc(
 			inps[2] = base
 			return bac.add_raw(ctx, "offm", u16(op), node.dt, inps)
 		}
-	case .Shr:
-		if get_node(ctx, node.inps[0]).dt < .I32 {
-			new := bac.add_un_op(ctx, "shext", .Conv, .I32, node.inps[0])
-			bac.set_input(ctx, id, 0, new)
-			bac.worklist_add(ctx, ctx.worklist, new)
-			return id
-		}
-	case .Div, .Ne ..= .Ge:
-		changed := false
-		for inp, i in node.inps {
-			inp_dt := get_node(ctx, inp).dt
-			if inp_dt in bac.INT_DTS && inp_dt < .I32 {
-				new := bac.add_un_op(ctx, "shext", .Conv, .I32, inp)
-				bac.set_input(ctx, id, i, new)
-				bac.worklist_add(ctx, ctx.worklist, new)
-				changed = true
-			}
-		}
-
-		if changed do return id
 	case .And_Not:
 		return bac.add_bin_op(
 			ctx,
@@ -243,6 +261,7 @@ peep :: proc(
 			)
 
 			sum = bac.add_bin_op(ctx, "rabs", .Add, node.dt, sum, next)
+			bac.worklist_add(ctx, ctx.worklist, sum)
 		}
 
 		return sum
@@ -766,14 +785,13 @@ Local_Type_Projection :: struct {
 }
 
 Ctx :: struct {
-	using inner:   bac.Codegen_Emit_Ctx,
-	stack_size:    i32,
-	local_projs:   [RK_COUNT]Local_Type_Projection,
-	bb_metas:      []BB_Meta,
-	block_stack:   [dynamic]int,
-	final_order:   [dynamic]int,
-	blocks:        [dynamic]Block,
-	indirect_sigs: [dynamic]u8,
+	using inner: bac.Codegen_Emit_Ctx,
+	stack_size:  i32,
+	local_projs: [RK_COUNT]Local_Type_Projection,
+	bb_metas:    []BB_Meta,
+	block_stack: [dynamic]int,
+	final_order: [dynamic]int,
+	blocks:      [dynamic]Block,
 }
 
 BB_Meta :: struct {
@@ -822,6 +840,7 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 	}
 
 	ctx.code_start = ctx.code.pos
+	ctx.constants_start = ctx.constants.pos
 	reloc_start := ctx.relocs.pos
 
 	bac.layout_call_args(ctx.graph, ctx.schedule, &ctx.stack_size)
@@ -1087,9 +1106,7 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 		ctx.relocs.ptr[reloc_start:ctx.relocs.pos],
 	)
 	code := ctx.code.ptr[ctx.code_start:ctx.code.pos]
-	emit(ctx.code, ctx.indirect_sigs[:])
-	constants := ctx.code.ptr[ctx.code.pos -
-	len(ctx.indirect_sigs[:]):][:len(ctx.indirect_sigs)]
+	constants := ctx.constants.ptr[ctx.constants_start:ctx.constants.pos]
 
 	return {code = code, constants = constants, relocs = relocs}
 }
@@ -1374,7 +1391,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 					offset = u32(ctx.code.pos - ctx.code_start),
 					kind   = .Text,
 					size   = .r32,
-					id     = u32(len(ctx.indirect_sigs)),
+					id     = u32(ctx.constants.pos - ctx.constants_start),
 				}
 			emit(ctx.code, {0, 0, 0, 0})
 			emit_leb(ctx.code, u64(0)) // table idx
@@ -1393,20 +1410,22 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 
 			rets := call.rets[:call.ret_count]
 
-			append(&ctx.indirect_sigs, 0)
-			prev_len := len(ctx.indirect_sigs)
-			encode_func_type(&ctx.indirect_sigs, params, rets)
-			ctx.indirect_sigs[prev_len - 1] = u8(
-				len(ctx.indirect_sigs) - prev_len,
-			)
+			// TODO: write directly
+			buf: [dynamic]u8
+			append(&buf, 0)
+			prev_len := len(buf)
+			encode_func_type(&buf, params, rets)
+			buf[prev_len - 1] = u8(len(buf) - prev_len)
+
+			emit(ctx.constants, buf[:])
 		} else {
 			emit_op(ctx.code, .Call)
 			bac.add_reloc(ctx.relocs)^ = {
-				offset = u32(ctx.code.pos - ctx.code_start),
-				kind   = .Text,
-				size   = .r32,
-				id     = call.cid,
-			}
+					offset = u32(ctx.code.pos - ctx.code_start),
+					kind   = .Text,
+					size   = .r32,
+					id     = call.cid,
+				}
 			emit(ctx.code, {0, 0, 0, 0})
 		}
 	case .Extract_Lane_U:
@@ -1420,11 +1439,11 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 
 		emit_op(ctx.code, .I64_Const)
 		bac.add_reloc(ctx.relocs)^ = {
-			offset = u32(ctx.code.pos - ctx.code_start),
-			kind   = .Text,
-			size   = .r32,
-			id     = id,
-		}
+				offset = u32(ctx.code.pos - ctx.code_start),
+				kind   = .Text,
+				size   = .r32,
+				id     = id,
+			}
 		emit(ctx.code, {0, 0, 0, 0})
 	case .Return:
 		epilog: if ctx.stack_size != 0 {

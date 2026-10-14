@@ -761,3 +761,14 @@ and merge some switches.
 
 Make sure the tests pass as per AGENS.md. THis should be purely refactoring
 task, no new functionality.
+
+### add proper integer widening for WASM and ARM64
+
+As of right now, I am pretty sure we are not doing this properly. Could you add
+tests that prove this miscompilation on these targets. This should ideally be
+fixable by adding peep rewrites local to the backends. Basically, if you find a
+op that takes operands smaller then .I32, widend the operands and change the
+type of the node to .I32. This should transitively expand the width and only
+narrow the widening to the ops that actually need it like loads and stores.
+Lets not focus on missing general purpose peeps that are applicable during the
+arch specific peeps.

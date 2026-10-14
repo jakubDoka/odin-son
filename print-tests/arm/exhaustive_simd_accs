@@ -157,31 +157,31 @@ simd_fold u8:
     ldr x0, [x19]
     add x0, x0, x23
     ldr x1, [xzr, #64]
-    bl 0x678
+    bl 0x708
     add.v v8, v8, v0
     str.v q8, [x20]
     ldr x0, [x19]
     add x0, x0, x23
     ldr x1, [xzr, #64]
-    bl 0x678
+    bl 0x708
     and.v v8, v0, v8
     str.v q8, [x20]
     ldr x0, [x19]
     add x0, x0, x23
     ldr x1, [xzr, #64]
-    bl 0x678
+    bl 0x708
     eor.v v8, v0, v8
     str.v q8, [x20]
     ldr x0, [x19]
     add x0, x0, x23
     ldr x1, [xzr, #64]
-    bl 0x678
+    bl 0x708
     orr.v v8, v0, v8
     str.v q8, [x20]
     ldr x0, [x19]
     add x0, x0, x23
     ldr x1, [xzr, #64]
-    bl 0x678
+    bl 0x708
     sub.v v0, v8, v0
     str.v q0, [x20]
     mov x2, x24
@@ -198,30 +198,48 @@ simd_fold u8:
     movz x4, #0, #0
     ldrb w5, [x0]
     cmp w4, w1
-    b.ge 0x160
-    add x6, x2, x4
-    ldrb w7, [x6]
-    add w7, w7, w5
-    strb w7, [x0]
-    ldrb w8, [x6]
-    and w7, w8, w7
-    strb w7, [x0]
-    ldrb w8, [x6]
-    eor w7, w8, w7
-    strb w7, [x0]
-    ldrb w8, [x6]
-    orr w7, w8, w7
-    strb w7, [x0]
-    ldrb w6, [x6]
-    sub w6, w7, w6
+    b.ge 0x19c
+    uxtb w6, w5
+    add x7, x2, x4
+    ldrb w8, [x7]
+    uxtb w8, w8
+    add w6, w6, w8
+    uxtb w6, w6
+    uxtb w8, w6
     strb w6, [x0]
+    ldrb w6, [x7]
+    uxtb w6, w6
+    and w6, w8, w6
+    uxtb w6, w6
+    uxtb w8, w6
+    strb w6, [x0]
+    ldrb w6, [x7]
+    uxtb w6, w6
+    eor w6, w8, w6
+    uxtb w6, w6
+    uxtb w8, w6
+    strb w6, [x0]
+    ldrb w6, [x7]
+    uxtb w6, w6
+    orr w6, w8, w6
+    uxtb w6, w6
+    strb w6, [x0]
+    ldrb w7, [x7]
+    uxtb w6, w6
+    uxtb w7, w7
+    sub w6, w6, w7
+    uxtb w6, w6
     add x4, x4, x3
+    strb w6, [x0]
     b 2
 16:
     ldr.v q0, [x20]
     addv v0, v0
     fmov x0, d0
-    add w0, w0, w5
+    uxtb w0, w0
+    uxtb w1, w5
+    add w0, w0, w1
+    uxtb w0, w0
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
@@ -263,31 +281,31 @@ simd_fold u16:
     ldr x0, [x19]
     add x0, x0, x24
     ldr x1, [xzr, #72]
-    bl 0x544
+    bl 0x58c
     add.v v8, v8, v0
     str.v q8, [x20]
     ldr x0, [x19]
     add x0, x0, x24
     ldr x1, [xzr, #72]
-    bl 0x544
+    bl 0x58c
     and.v v8, v0, v8
     str.v q8, [x20]
     ldr x0, [x19]
     add x0, x0, x24
     ldr x1, [xzr, #72]
-    bl 0x544
+    bl 0x58c
     eor.v v8, v0, v8
     str.v q8, [x20]
     ldr x0, [x19]
     add x0, x0, x24
     ldr x1, [xzr, #72]
-    bl 0x544
+    bl 0x58c
     orr.v v8, v0, v8
     str.v q8, [x20]
     ldr x0, [x19]
     add x0, x0, x24
     ldr x1, [xzr, #72]
-    bl 0x544
+    bl 0x58c
     sub.v v0, v8, v0
     str.v q0, [x20]
     mov x2, x25
@@ -305,30 +323,49 @@ simd_fold u16:
 20:
     ldrh w5, [x0]
     cmp w4, w1
-    b.ge 8
-    madd x6, x4, x23, xzr
-    add x6, x2, x6
-    ldrh w7, [x6]
-    add w7, w7, w5
-    strh w7, [x0]
-    ldrh w8, [x6]
-    and w7, w8, w7
-    strh w7, [x0]
-    ldrh w8, [x6]
-    eor w7, w8, w7
-    strh w7, [x0]
-    ldrh w8, [x6]
-    orr w7, w8, w7
-    strh w7, [x0]
-    ldrh w6, [x6]
-    sub w6, w7, w6
+    b.ge 0x1a4
+    uxth w6, w5
+    madd x7, x4, x23, xzr
+    add x7, x2, x7
+    ldrh w8, [x7]
+    uxth w8, w8
+    add w6, w6, w8
+    uxth w6, w6
+    uxth w8, w6
+    strh w6, [x0]
+    ldrh w6, [x7]
+    uxth w6, w6
+    and w6, w8, w6
+    uxth w6, w6
+    uxth w8, w6
+    strh w6, [x0]
+    ldrh w6, [x7]
+    uxth w6, w6
+    eor w6, w8, w6
+    uxth w6, w6
+    uxth w8, w6
+    strh w6, [x0]
+    ldrh w6, [x7]
+    uxth w6, w6
+    orr w6, w8, w6
+    uxth w6, w6
+    strh w6, [x0]
+    ldrh w7, [x7]
+    uxth w6, w6
+    uxth w7, w7
+    sub w6, w6, w7
+    uxth w6, w6
     add x4, x4, x3
     strh w6, [x0]
     b 0x110
+21:
     ldr.v q0, [x20]
     addv v0, v0
     fmov x0, d0
-    add w0, w0, w5
+    uxth w0, w0
+    uxth w1, w5
+    add w0, w0, w1
+    uxth w0, w0
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
@@ -358,7 +395,7 @@ simd_fold u32:
     str.v q0, [x20]
     movz x22, #4, #0
     movz x2, #0, #0
-22:
+23:
     madd x23, x2, x22, xzr
     ldr x0, [x21]
     add x24, x2, x22
@@ -399,7 +436,7 @@ simd_fold u32:
     str.v q0, [x20]
     mov x2, x24
     b 0x48
-23:
+24:
     add x0, sp, #72
     movz x1, #0, #0
     str w1, [x0]
@@ -431,7 +468,7 @@ simd_fold u32:
     add x4, x4, x3
     str w6, [x0]
     b 2
-24:
+25:
     ldr.v q0, [x20]
     addv v0, v0
     fmov x0, d0
@@ -467,7 +504,7 @@ simd_fold u64:
     str.v q0, [x20]
     movz x24, #2, #0
     movz x2, #0, #0
-26:
+27:
     madd x25, x2, x21, xzr
     ldr x0, [x22]
     add x26, x24, x2
@@ -508,7 +545,7 @@ simd_fold u64:
     str.v q0, [x20]
     mov x2, x26
     b 0x54
-27:
+28:
     add x0, sp, #88
     str x23, [x0]
     ldr x1, [x22]
@@ -517,7 +554,7 @@ simd_fold u64:
     add x2, x2, x25
     movz x3, #1, #0
     movz x4, #0, #0
-28:
+29:
     ldr x5, [x0]
     cmp w4, w1
     b.ge 0x16c
@@ -540,7 +577,7 @@ simd_fold u64:
     str x6, [x0]
     add x4, x4, x3
     b 0x114
-29:
+30:
     ldr.v q0, [x20]
     invalid
     invalid
@@ -570,7 +607,7 @@ from_slice =16 u8:
     eor.v v0, v0, v0
     movz x4, #0, #0
     str.v q0, [x0]
-31:
+32:
     cmp w4, w1
     b.ge 0x54
     ldr x5, [x2]
@@ -580,7 +617,7 @@ from_slice =16 u8:
     add x4, x4, x3
     strb w5, [x6]
     b 0x30
-32:
+33:
     ldr.v q0, [x0]
     add sp, sp, #32
     ret
@@ -597,7 +634,7 @@ from_slice =8 u16:
     movz x1, #1, #0
     movz x4, #0, #0
     movz x5, #2, #0
-34:
+35:
     cmp w4, w3
     b.ge 0x58
     ldr x6, [x2]
@@ -608,7 +645,7 @@ from_slice =8 u16:
     add x4, x4, x1
     strh w6, [x7]
     b 0x30
-35:
+36:
     ldr.v q0, [x0]
     add sp, sp, #32
     ret
@@ -625,7 +662,7 @@ from_slice =4 u32:
     eor.v v0, v0, v0
     movz x4, #0, #0
     str.v q0, [x0]
-37:
+38:
     cmp w4, w1
     b.ge 0x58
     ldr x5, [x2]
@@ -636,7 +673,7 @@ from_slice =4 u32:
     add x4, x4, x3
     str w5, [x6]
     b 0x30
-38:
+39:
     ldr.v q0, [x0]
     add sp, sp, #32
     ret
@@ -653,7 +690,7 @@ from_slice =2 u64:
     eor.v v0, v0, v0
     movz x5, #0, #0
     str.v q0, [x0]
-40:
+41:
     cmp w5, w1
     b.ge 0x58
     ldr x6, [x2]
@@ -664,7 +701,7 @@ from_slice =2 u64:
     add x5, x5, x4
     str x6, [x7]
     b 0x30
-41:
+42:
     ldr.v q0, [x0]
     add sp, sp, #32
     ret
@@ -830,70 +867,89 @@ simd_fold u8:
     ldr x0, [x22]
     add x0, x0, x20
     mov x1, x25
-    bl 0x698
+    bl 0x728
     add.v v8, v8, v0
     str.v q8, [x19]
     ldr x0, [x22]
     add x0, x0, x20
     mov x1, x25
-    bl 0x698
+    bl 0x728
     and.v v8, v0, v8
     str.v q8, [x19]
     ldr x0, [x22]
     add x0, x0, x20
     mov x1, x25
-    bl 0x698
+    bl 0x728
     eor.v v8, v0, v8
     str.v q8, [x19]
     ldr x0, [x22]
     add x0, x0, x20
     mov x1, x25
-    bl 0x698
+    bl 0x728
     orr.v v8, v0, v8
     str.v q8, [x19]
     ldr x0, [x22]
     add x0, x0, x20
     mov x1, x25
-    bl 0x698
+    bl 0x728
     sub.v v0, v8, v0
     str.v q0, [x19]
     mov x0, x24
     b 0x4c
 15:
-    add x7, sp, #72
-    movz x0, #0, #0
-    strb w0, [x7]
-    ldr x0, [x21]
-    sub x6, x0, x20
-    ldr x0, [x22]
-    add x5, x0, x20
-    movz x4, #1, #0
-    movz x0, #0, #0
-    ldrb w2, [x7]
-    cmp w0, w6
-    b.ge 6
-    add x3, x5, x0
-    ldrb w1, [x3]
-    add w2, w1, w2
-    strb w2, [x7]
-    ldrb w1, [x3]
-    and w2, w1, w2
-    strb w2, [x7]
-    ldrb w1, [x3]
-    eor w2, w1, w2
-    strb w2, [x7]
-    ldrb w1, [x3]
-    orr w2, w1, w2
-    strb w2, [x7]
-    ldrb w1, [x3]
-    sub w1, w2, w1
-    strb w1, [x7]
-    add x0, x0, x4
+    add x0, sp, #72
+    movz x1, #0, #0
+    strb w1, [x0]
+    ldr x1, [x21]
+    sub x1, x1, x20
+    ldr x2, [x22]
+    add x4, x2, x20
+    movz x3, #1, #0
+    movz x2, #0, #0
+    ldrb w5, [x0]
+    cmp w2, w1
+    b.ge 0x1a0
+    uxtb w6, w5
+    add x7, x4, x2
+    ldrb w5, [x7]
+    uxtb w5, w5
+    add w5, w6, w5
+    uxtb w5, w5
+    uxtb w6, w5
+    strb w5, [x0]
+    ldrb w5, [x7]
+    uxtb w5, w5
+    and w5, w6, w5
+    uxtb w5, w5
+    uxtb w6, w5
+    strb w5, [x0]
+    ldrb w5, [x7]
+    uxtb w5, w5
+    eor w5, w6, w5
+    uxtb w5, w5
+    uxtb w6, w5
+    strb w5, [x0]
+    ldrb w5, [x7]
+    uxtb w5, w5
+    orr w5, w6, w5
+    uxtb w6, w5
+    strb w6, [x0]
+    ldrb w5, [x7]
+    uxtb w6, w6
+    uxtb w5, w5
+    sub w5, w6, w5
+    uxtb w5, w5
+    add x2, x2, x3
+    strb w5, [x0]
     b init_inc u8
+16:
     ldr.v q0, [x19]
     addv v0, v0
     fmov x0, d0
-    add w0, w0, w2
+    uxtb w1, w0
+    uxtb w0, w5
+    add w0, w1, w0
+    uxtb w0, w0
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
@@ -924,86 +980,104 @@ simd_fold u16:
     eor.v v0, v0, v0
     str.v q0, [x20]
     movz x19, #2, #0
-    movz x1, #0, #0
-17:
-    madd x21, x1, x19, xzr
+    movz x2, #0, #0
+18:
+    madd x21, x2, x19, xzr
     ldr x0, [x23]
-    add x25, x1, x24
+    add x25, x2, x24
     cmp w25, w0
     b.ge 0xf0
-    sub x0, x25, x1
+    sub x0, x25, x2
     mov x26, x0
     ldr.v q8, [x20]
     ldr x0, [x22]
     add x0, x0, x21
     mov x1, x26
-    bl 0x55c
+    bl 0x5a4
     add.v v8, v8, v0
     str.v q8, [x20]
     ldr x0, [x22]
     add x0, x0, x21
     mov x1, x26
-    bl 0x55c
+    bl 0x5a4
     and.v v8, v0, v8
     str.v q8, [x20]
     ldr x0, [x22]
     add x0, x0, x21
     mov x1, x26
-    bl 0x55c
+    bl 0x5a4
     eor.v v8, v0, v8
     str.v q8, [x20]
     ldr x0, [x22]
     add x0, x0, x21
     mov x1, x26
-    bl 0x55c
+    bl 0x5a4
     orr.v v8, v0, v8
     str.v q8, [x20]
     ldr x0, [x22]
     add x0, x0, x21
     mov x1, x26
-    bl 0x55c
+    bl 0x5a4
     sub.v v0, v8, v0
     str.v q0, [x20]
-    mov x1, x25
+    mov x2, x25
     b 0x50
-18:
-    add x7, sp, #80
-    movz x0, #0, #0
-    strh w0, [x7]
-    ldr x0, [x23]
-    sub x6, x0, x1
-    ldr x0, [x22]
-    add x5, x0, x21
-    movz x4, #1, #0
-    movz x0, #0, #0
 19:
-    ldrh w2, [x7]
-    cmp w0, w6
-    b.ge 0x16c
-    madd x1, x0, x19, xzr
-    add x3, x5, x1
-    ldrh w1, [x3]
-    add w2, w1, w2
-    strh w2, [x7]
-    ldrh w1, [x3]
-    and w2, w1, w2
-    strh w2, [x7]
-    ldrh w1, [x3]
-    eor w2, w1, w2
-    strh w2, [x7]
-    ldrh w1, [x3]
-    orr w2, w1, w2
-    strh w2, [x7]
-    ldrh w1, [x3]
-    sub w1, w2, w1
-    add x0, x0, x4
-    strh w1, [x7]
-    b 0x114
+    add x0, sp, #80
+    movz x1, #0, #0
+    strh w1, [x0]
+    ldr x1, [x23]
+    sub x1, x1, x2
+    ldr x2, [x22]
+    add x4, x2, x21
+    movz x3, #1, #0
+    movz x2, #0, #0
 20:
+    ldrh w5, [x0]
+    cmp w2, w1
+    b.ge 0x1a8
+    uxth w6, w5
+    madd x5, x2, x19, xzr
+    add x7, x4, x5
+    ldrh w5, [x7]
+    uxth w5, w5
+    add w5, w6, w5
+    uxth w5, w5
+    uxth w6, w5
+    strh w5, [x0]
+    ldrh w5, [x7]
+    uxth w5, w5
+    and w5, w6, w5
+    uxth w5, w5
+    uxth w6, w5
+    strh w5, [x0]
+    ldrh w5, [x7]
+    uxth w5, w5
+    eor w5, w6, w5
+    uxth w5, w5
+    uxth w6, w5
+    strh w5, [x0]
+    ldrh w5, [x7]
+    uxth w5, w5
+    orr w5, w6, w5
+    uxth w6, w5
+    strh w6, [x0]
+    ldrh w5, [x7]
+    uxth w6, w6
+    uxth w5, w5
+    sub w5, w6, w5
+    uxth w5, w5
+    add x2, x2, x3
+    strh w5, [x0]
+    b 0x114
+21:
     ldr.v q0, [x20]
     addv v0, v0
     fmov x0, d0
-    add w0, w0, w2
+    uxth w1, w0
+    uxth w0, w5
+    add w0, w1, w0
+    uxth w0, w0
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
@@ -1035,7 +1109,7 @@ simd_fold u32:
     str.v q0, [x20]
     movz x19, #4, #0
     movz x1, #0, #0
-22:
+23:
     madd x21, x1, x19, xzr
     ldr x0, [x22]
     add x24, x1, x19
@@ -1076,7 +1150,7 @@ simd_fold u32:
     str.v q0, [x20]
     mov x1, x24
     b 0x4c
-23:
+24:
     add x7, sp, #72
     movz x0, #0, #0
     str w0, [x7]
@@ -1145,7 +1219,7 @@ simd_fold u64:
     str.v q0, [x20]
     movz x26, #2, #0
     movz x1, #0, #0
-25:
+26:
     madd x21, x1, x19, xzr
     ldr x0, [x23]
     add x25, x26, x1
@@ -1186,7 +1260,7 @@ simd_fold u64:
     str.v q0, [x20]
     mov x1, x25
     b 0x58
-26:
+27:
     add x7, sp, #88
     str x24, [x7]
     ldr x0, [x23]
@@ -1217,7 +1291,7 @@ simd_fold u64:
     str x1, [x7]
     add x0, x0, x4
     b 2
-27:
+28:
     ldr.v q0, [x20]
     invalid
     invalid
@@ -1248,7 +1322,7 @@ from_slice =16 u8:
     eor.v v0, v0, v0
     movz x0, #0, #0
     str.v q0, [x5]
-29:
+30:
     cmp w0, w4
     b.ge 0x54
     ldr x1, [x6]
@@ -1258,7 +1332,7 @@ from_slice =16 u8:
     add x0, x0, x3
     strb w2, [x1]
     b 0x30
-30:
+31:
     ldr.v q0, [x5]
     add sp, sp, #32
     ret
@@ -1275,7 +1349,7 @@ from_slice =8 u16:
     movz x5, #1, #0
     movz x0, #0, #0
     movz x4, #2, #0
-32:
+33:
     cmp w0, w6
     b.ge 0x58
     ldr x1, [x8]
@@ -1286,7 +1360,7 @@ from_slice =8 u16:
     add x0, x0, x5
     strh w2, [x1]
     b 0x30
-33:
+34:
     ldr.v q0, [x7]
     add sp, sp, #32
     ret
@@ -1303,7 +1377,7 @@ from_slice =4 u32:
     eor.v v0, v0, v0
     movz x0, #0, #0
     str.v q0, [x6]
-35:
+36:
     cmp w0, w5
     b.ge 0x58
     ldr x1, [x7]
@@ -1314,7 +1388,7 @@ from_slice =4 u32:
     add x0, x0, x4
     str w2, [x1]
     b 0x30
-36:
+37:
     ldr.v q0, [x6]
     add sp, sp, #32
     ret
@@ -1331,7 +1405,7 @@ from_slice =2 u64:
     eor.v v0, v0, v0
     movz x0, #0, #0
     str.v q0, [x7]
-38:
+39:
     cmp w0, w5
     b.ge 0x58
     ldr x1, [x8]
@@ -1342,7 +1416,7 @@ from_slice =2 u64:
     add x0, x0, x4
     str x2, [x1]
     b 0x30
-39:
+40:
     ldr.v q0, [x7]
     add sp, sp, #32
     ret
@@ -1505,31 +1579,31 @@ simd_fold u8:
     ldr x0, [x19]
     add x0, x0, x23
     ldr x1, [xzr, #64]
-    bl 0x678
+    bl 0x708
     add.v v8, v8, v0
     str.v q8, [x20]
     ldr x0, [x19]
     add x0, x0, x23
     ldr x1, [xzr, #64]
-    bl 0x678
+    bl 0x708
     and.v v8, v0, v8
     str.v q8, [x20]
     ldr x0, [x19]
     add x0, x0, x23
     ldr x1, [xzr, #64]
-    bl 0x678
+    bl 0x708
     eor.v v8, v0, v8
     str.v q8, [x20]
     ldr x0, [x19]
     add x0, x0, x23
     ldr x1, [xzr, #64]
-    bl 0x678
+    bl 0x708
     orr.v v8, v0, v8
     str.v q8, [x20]
     ldr x0, [x19]
     add x0, x0, x23
     ldr x1, [xzr, #64]
-    bl 0x678
+    bl 0x708
     sub.v v0, v8, v0
     str.v q0, [x20]
     mov x2, x24
@@ -1546,30 +1620,48 @@ simd_fold u8:
     movz x4, #0, #0
     ldrb w5, [x0]
     cmp w4, w1
-    b.ge 0x160
-    add x6, x2, x4
-    ldrb w7, [x6]
-    add w7, w7, w5
-    strb w7, [x0]
-    ldrb w8, [x6]
-    and w7, w8, w7
-    strb w7, [x0]
-    ldrb w8, [x6]
-    eor w7, w8, w7
-    strb w7, [x0]
-    ldrb w8, [x6]
-    orr w7, w8, w7
-    strb w7, [x0]
-    ldrb w6, [x6]
-    sub w6, w7, w6
+    b.ge 0x19c
+    uxtb w6, w5
+    add x7, x2, x4
+    ldrb w8, [x7]
+    uxtb w8, w8
+    add w6, w6, w8
+    uxtb w6, w6
+    uxtb w8, w6
     strb w6, [x0]
+    ldrb w6, [x7]
+    uxtb w6, w6
+    and w6, w8, w6
+    uxtb w6, w6
+    uxtb w8, w6
+    strb w6, [x0]
+    ldrb w6, [x7]
+    uxtb w6, w6
+    eor w6, w8, w6
+    uxtb w6, w6
+    uxtb w8, w6
+    strb w6, [x0]
+    ldrb w6, [x7]
+    uxtb w6, w6
+    orr w6, w8, w6
+    uxtb w6, w6
+    strb w6, [x0]
+    ldrb w7, [x7]
+    uxtb w6, w6
+    uxtb w7, w7
+    sub w6, w6, w7
+    uxtb w6, w6
     add x4, x4, x3
+    strb w6, [x0]
     b 2
 16:
     ldr.v q0, [x20]
     addv v0, v0
     fmov x0, d0
-    add w0, w0, w5
+    uxtb w0, w0
+    uxtb w1, w5
+    add w0, w0, w1
+    uxtb w0, w0
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
@@ -1611,31 +1703,31 @@ simd_fold u16:
     ldr x0, [x19]
     add x0, x0, x24
     ldr x1, [xzr, #72]
-    bl 0x544
+    bl 0x58c
     add.v v8, v8, v0
     str.v q8, [x20]
     ldr x0, [x19]
     add x0, x0, x24
     ldr x1, [xzr, #72]
-    bl 0x544
+    bl 0x58c
     and.v v8, v0, v8
     str.v q8, [x20]
     ldr x0, [x19]
     add x0, x0, x24
     ldr x1, [xzr, #72]
-    bl 0x544
+    bl 0x58c
     eor.v v8, v0, v8
     str.v q8, [x20]
     ldr x0, [x19]
     add x0, x0, x24
     ldr x1, [xzr, #72]
-    bl 0x544
+    bl 0x58c
     orr.v v8, v0, v8
     str.v q8, [x20]
     ldr x0, [x19]
     add x0, x0, x24
     ldr x1, [xzr, #72]
-    bl 0x544
+    bl 0x58c
     sub.v v0, v8, v0
     str.v q0, [x20]
     mov x2, x25
@@ -1653,30 +1745,49 @@ simd_fold u16:
 20:
     ldrh w5, [x0]
     cmp w4, w1
-    b.ge 8
-    madd x6, x4, x23, xzr
-    add x6, x2, x6
-    ldrh w7, [x6]
-    add w7, w7, w5
-    strh w7, [x0]
-    ldrh w8, [x6]
-    and w7, w8, w7
-    strh w7, [x0]
-    ldrh w8, [x6]
-    eor w7, w8, w7
-    strh w7, [x0]
-    ldrh w8, [x6]
-    orr w7, w8, w7
-    strh w7, [x0]
-    ldrh w6, [x6]
-    sub w6, w7, w6
+    b.ge 0x1a4
+    uxth w6, w5
+    madd x7, x4, x23, xzr
+    add x7, x2, x7
+    ldrh w8, [x7]
+    uxth w8, w8
+    add w6, w6, w8
+    uxth w6, w6
+    uxth w8, w6
+    strh w6, [x0]
+    ldrh w6, [x7]
+    uxth w6, w6
+    and w6, w8, w6
+    uxth w6, w6
+    uxth w8, w6
+    strh w6, [x0]
+    ldrh w6, [x7]
+    uxth w6, w6
+    eor w6, w8, w6
+    uxth w6, w6
+    uxth w8, w6
+    strh w6, [x0]
+    ldrh w6, [x7]
+    uxth w6, w6
+    orr w6, w8, w6
+    uxth w6, w6
+    strh w6, [x0]
+    ldrh w7, [x7]
+    uxth w6, w6
+    uxth w7, w7
+    sub w6, w6, w7
+    uxth w6, w6
     add x4, x4, x3
     strh w6, [x0]
     b 0x110
+21:
     ldr.v q0, [x20]
     addv v0, v0
     fmov x0, d0
-    add w0, w0, w5
+    uxth w0, w0
+    uxth w1, w5
+    add w0, w0, w1
+    uxth w0, w0
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
@@ -1706,7 +1817,7 @@ simd_fold u32:
     str.v q0, [x20]
     movz x22, #4, #0
     movz x2, #0, #0
-22:
+23:
     madd x23, x2, x22, xzr
     ldr x0, [x21]
     add x24, x2, x22
@@ -1747,7 +1858,7 @@ simd_fold u32:
     str.v q0, [x20]
     mov x2, x24
     b 0x48
-23:
+24:
     add x0, sp, #72
     movz x1, #0, #0
     str w1, [x0]
@@ -1779,7 +1890,7 @@ simd_fold u32:
     add x4, x4, x3
     str w6, [x0]
     b 2
-24:
+25:
     ldr.v q0, [x20]
     addv v0, v0
     fmov x0, d0
@@ -1815,7 +1926,7 @@ simd_fold u64:
     str.v q0, [x20]
     movz x24, #2, #0
     movz x2, #0, #0
-26:
+27:
     madd x25, x2, x21, xzr
     ldr x0, [x22]
     add x26, x24, x2
@@ -1856,7 +1967,7 @@ simd_fold u64:
     str.v q0, [x20]
     mov x2, x26
     b 0x54
-27:
+28:
     add x0, sp, #88
     str x23, [x0]
     ldr x1, [x22]
@@ -1865,7 +1976,7 @@ simd_fold u64:
     add x2, x2, x25
     movz x3, #1, #0
     movz x4, #0, #0
-28:
+29:
     ldr x5, [x0]
     cmp w4, w1
     b.ge 0x16c
@@ -1888,7 +1999,7 @@ simd_fold u64:
     str x6, [x0]
     add x4, x4, x3
     b 0x114
-29:
+30:
     ldr.v q0, [x20]
     invalid
     invalid
@@ -1918,7 +2029,7 @@ from_slice =16 u8:
     eor.v v0, v0, v0
     movz x4, #0, #0
     str.v q0, [x0]
-31:
+32:
     cmp w4, w1
     b.ge 0x54
     ldr x5, [x2]
@@ -1928,7 +2039,7 @@ from_slice =16 u8:
     add x4, x4, x3
     strb w5, [x6]
     b 0x30
-32:
+33:
     ldr.v q0, [x0]
     add sp, sp, #32
     ret
@@ -1945,7 +2056,7 @@ from_slice =8 u16:
     movz x1, #1, #0
     movz x4, #0, #0
     movz x5, #2, #0
-34:
+35:
     cmp w4, w3
     b.ge 0x58
     ldr x6, [x2]
@@ -1956,7 +2067,7 @@ from_slice =8 u16:
     add x4, x4, x1
     strh w6, [x7]
     b 0x30
-35:
+36:
     ldr.v q0, [x0]
     add sp, sp, #32
     ret
@@ -1973,7 +2084,7 @@ from_slice =4 u32:
     eor.v v0, v0, v0
     movz x4, #0, #0
     str.v q0, [x0]
-37:
+38:
     cmp w4, w1
     b.ge 0x58
     ldr x5, [x2]
@@ -1984,7 +2095,7 @@ from_slice =4 u32:
     add x4, x4, x3
     str w5, [x6]
     b 0x30
-38:
+39:
     ldr.v q0, [x0]
     add sp, sp, #32
     ret
@@ -2001,7 +2112,7 @@ from_slice =2 u64:
     eor.v v0, v0, v0
     movz x5, #0, #0
     str.v q0, [x0]
-40:
+41:
     cmp w5, w1
     b.ge 0x58
     ldr x6, [x2]
@@ -2012,7 +2123,7 @@ from_slice =2 u64:
     add x5, x5, x4
     str x6, [x7]
     b 0x30
-41:
+42:
     ldr.v q0, [x0]
     add sp, sp, #32
     ret
@@ -2178,70 +2289,89 @@ simd_fold u8:
     ldr x0, [x22]
     add x0, x0, x20
     mov x1, x25
-    bl 0x698
+    bl 0x728
     add.v v8, v8, v0
     str.v q8, [x19]
     ldr x0, [x22]
     add x0, x0, x20
     mov x1, x25
-    bl 0x698
+    bl 0x728
     and.v v8, v0, v8
     str.v q8, [x19]
     ldr x0, [x22]
     add x0, x0, x20
     mov x1, x25
-    bl 0x698
+    bl 0x728
     eor.v v8, v0, v8
     str.v q8, [x19]
     ldr x0, [x22]
     add x0, x0, x20
     mov x1, x25
-    bl 0x698
+    bl 0x728
     orr.v v8, v0, v8
     str.v q8, [x19]
     ldr x0, [x22]
     add x0, x0, x20
     mov x1, x25
-    bl 0x698
+    bl 0x728
     sub.v v0, v8, v0
     str.v q0, [x19]
     mov x0, x24
     b 0x4c
 15:
-    add x7, sp, #72
-    movz x0, #0, #0
-    strb w0, [x7]
-    ldr x0, [x21]
-    sub x6, x0, x20
-    ldr x0, [x22]
-    add x5, x0, x20
-    movz x4, #1, #0
-    movz x0, #0, #0
-    ldrb w2, [x7]
-    cmp w0, w6
-    b.ge 6
-    add x3, x5, x0
-    ldrb w1, [x3]
-    add w2, w1, w2
-    strb w2, [x7]
-    ldrb w1, [x3]
-    and w2, w1, w2
-    strb w2, [x7]
-    ldrb w1, [x3]
-    eor w2, w1, w2
-    strb w2, [x7]
-    ldrb w1, [x3]
-    orr w2, w1, w2
-    strb w2, [x7]
-    ldrb w1, [x3]
-    sub w1, w2, w1
-    strb w1, [x7]
-    add x0, x0, x4
+    add x0, sp, #72
+    movz x1, #0, #0
+    strb w1, [x0]
+    ldr x1, [x21]
+    sub x1, x1, x20
+    ldr x2, [x22]
+    add x4, x2, x20
+    movz x3, #1, #0
+    movz x2, #0, #0
+    ldrb w5, [x0]
+    cmp w2, w1
+    b.ge 0x1a0
+    uxtb w6, w5
+    add x7, x4, x2
+    ldrb w5, [x7]
+    uxtb w5, w5
+    add w5, w6, w5
+    uxtb w5, w5
+    uxtb w6, w5
+    strb w5, [x0]
+    ldrb w5, [x7]
+    uxtb w5, w5
+    and w5, w6, w5
+    uxtb w5, w5
+    uxtb w6, w5
+    strb w5, [x0]
+    ldrb w5, [x7]
+    uxtb w5, w5
+    eor w5, w6, w5
+    uxtb w5, w5
+    uxtb w6, w5
+    strb w5, [x0]
+    ldrb w5, [x7]
+    uxtb w5, w5
+    orr w5, w6, w5
+    uxtb w6, w5
+    strb w6, [x0]
+    ldrb w5, [x7]
+    uxtb w6, w6
+    uxtb w5, w5
+    sub w5, w6, w5
+    uxtb w5, w5
+    add x2, x2, x3
+    strb w5, [x0]
     b init_inc u8
+16:
     ldr.v q0, [x19]
     addv v0, v0
     fmov x0, d0
-    add w0, w0, w2
+    uxtb w1, w0
+    uxtb w0, w5
+    add w0, w1, w0
+    uxtb w0, w0
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
@@ -2272,86 +2402,104 @@ simd_fold u16:
     eor.v v0, v0, v0
     str.v q0, [x20]
     movz x19, #2, #0
-    movz x1, #0, #0
-17:
-    madd x21, x1, x19, xzr
+    movz x2, #0, #0
+18:
+    madd x21, x2, x19, xzr
     ldr x0, [x23]
-    add x25, x1, x24
+    add x25, x2, x24
     cmp w25, w0
     b.ge 0xf0
-    sub x0, x25, x1
+    sub x0, x25, x2
     mov x26, x0
     ldr.v q8, [x20]
     ldr x0, [x22]
     add x0, x0, x21
     mov x1, x26
-    bl 0x55c
+    bl 0x5a4
     add.v v8, v8, v0
     str.v q8, [x20]
     ldr x0, [x22]
     add x0, x0, x21
     mov x1, x26
-    bl 0x55c
+    bl 0x5a4
     and.v v8, v0, v8
     str.v q8, [x20]
     ldr x0, [x22]
     add x0, x0, x21
     mov x1, x26
-    bl 0x55c
+    bl 0x5a4
     eor.v v8, v0, v8
     str.v q8, [x20]
     ldr x0, [x22]
     add x0, x0, x21
     mov x1, x26
-    bl 0x55c
+    bl 0x5a4
     orr.v v8, v0, v8
     str.v q8, [x20]
     ldr x0, [x22]
     add x0, x0, x21
     mov x1, x26
-    bl 0x55c
+    bl 0x5a4
     sub.v v0, v8, v0
     str.v q0, [x20]
-    mov x1, x25
+    mov x2, x25
     b 0x50
-18:
-    add x7, sp, #80
-    movz x0, #0, #0
-    strh w0, [x7]
-    ldr x0, [x23]
-    sub x6, x0, x1
-    ldr x0, [x22]
-    add x5, x0, x21
-    movz x4, #1, #0
-    movz x0, #0, #0
 19:
-    ldrh w2, [x7]
-    cmp w0, w6
-    b.ge 0x16c
-    madd x1, x0, x19, xzr
-    add x3, x5, x1
-    ldrh w1, [x3]
-    add w2, w1, w2
-    strh w2, [x7]
-    ldrh w1, [x3]
-    and w2, w1, w2
-    strh w2, [x7]
-    ldrh w1, [x3]
-    eor w2, w1, w2
-    strh w2, [x7]
-    ldrh w1, [x3]
-    orr w2, w1, w2
-    strh w2, [x7]
-    ldrh w1, [x3]
-    sub w1, w2, w1
-    add x0, x0, x4
-    strh w1, [x7]
-    b 0x114
+    add x0, sp, #80
+    movz x1, #0, #0
+    strh w1, [x0]
+    ldr x1, [x23]
+    sub x1, x1, x2
+    ldr x2, [x22]
+    add x4, x2, x21
+    movz x3, #1, #0
+    movz x2, #0, #0
 20:
+    ldrh w5, [x0]
+    cmp w2, w1
+    b.ge 0x1a8
+    uxth w6, w5
+    madd x5, x2, x19, xzr
+    add x7, x4, x5
+    ldrh w5, [x7]
+    uxth w5, w5
+    add w5, w6, w5
+    uxth w5, w5
+    uxth w6, w5
+    strh w5, [x0]
+    ldrh w5, [x7]
+    uxth w5, w5
+    and w5, w6, w5
+    uxth w5, w5
+    uxth w6, w5
+    strh w5, [x0]
+    ldrh w5, [x7]
+    uxth w5, w5
+    eor w5, w6, w5
+    uxth w5, w5
+    uxth w6, w5
+    strh w5, [x0]
+    ldrh w5, [x7]
+    uxth w5, w5
+    orr w5, w6, w5
+    uxth w6, w5
+    strh w6, [x0]
+    ldrh w5, [x7]
+    uxth w6, w6
+    uxth w5, w5
+    sub w5, w6, w5
+    uxth w5, w5
+    add x2, x2, x3
+    strh w5, [x0]
+    b 0x114
+21:
     ldr.v q0, [x20]
     addv v0, v0
     fmov x0, d0
-    add w0, w0, w2
+    uxth w1, w0
+    uxth w0, w5
+    add w0, w1, w0
+    uxth w0, w0
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
@@ -2383,7 +2531,7 @@ simd_fold u32:
     str.v q0, [x20]
     movz x19, #4, #0
     movz x1, #0, #0
-22:
+23:
     madd x21, x1, x19, xzr
     ldr x0, [x22]
     add x24, x1, x19
@@ -2424,7 +2572,7 @@ simd_fold u32:
     str.v q0, [x20]
     mov x1, x24
     b 0x4c
-23:
+24:
     add x7, sp, #72
     movz x0, #0, #0
     str w0, [x7]
@@ -2493,7 +2641,7 @@ simd_fold u64:
     str.v q0, [x20]
     movz x26, #2, #0
     movz x1, #0, #0
-25:
+26:
     madd x21, x1, x19, xzr
     ldr x0, [x23]
     add x25, x26, x1
@@ -2534,7 +2682,7 @@ simd_fold u64:
     str.v q0, [x20]
     mov x1, x25
     b 0x58
-26:
+27:
     add x7, sp, #88
     str x24, [x7]
     ldr x0, [x23]
@@ -2565,7 +2713,7 @@ simd_fold u64:
     str x1, [x7]
     add x0, x0, x4
     b 2
-27:
+28:
     ldr.v q0, [x20]
     invalid
     invalid
@@ -2596,7 +2744,7 @@ from_slice =16 u8:
     eor.v v0, v0, v0
     movz x0, #0, #0
     str.v q0, [x5]
-29:
+30:
     cmp w0, w4
     b.ge 0x54
     ldr x1, [x6]
@@ -2606,7 +2754,7 @@ from_slice =16 u8:
     add x0, x0, x3
     strb w2, [x1]
     b 0x30
-30:
+31:
     ldr.v q0, [x5]
     add sp, sp, #32
     ret
@@ -2623,7 +2771,7 @@ from_slice =8 u16:
     movz x5, #1, #0
     movz x0, #0, #0
     movz x4, #2, #0
-32:
+33:
     cmp w0, w6
     b.ge 0x58
     ldr x1, [x8]
@@ -2634,7 +2782,7 @@ from_slice =8 u16:
     add x0, x0, x5
     strh w2, [x1]
     b 0x30
-33:
+34:
     ldr.v q0, [x7]
     add sp, sp, #32
     ret
@@ -2651,7 +2799,7 @@ from_slice =4 u32:
     eor.v v0, v0, v0
     movz x0, #0, #0
     str.v q0, [x6]
-35:
+36:
     cmp w0, w5
     b.ge 0x58
     ldr x1, [x7]
@@ -2662,7 +2810,7 @@ from_slice =4 u32:
     add x0, x0, x4
     str w2, [x1]
     b 0x30
-36:
+37:
     ldr.v q0, [x6]
     add sp, sp, #32
     ret
@@ -2679,7 +2827,7 @@ from_slice =2 u64:
     eor.v v0, v0, v0
     movz x0, #0, #0
     str.v q0, [x7]
-38:
+39:
     cmp w0, w5
     b.ge 0x58
     ldr x1, [x8]
@@ -2690,7 +2838,7 @@ from_slice =2 u64:
     add x0, x0, x4
     str x2, [x1]
     b 0x30
-39:
+40:
     ldr.v q0, [x7]
     add sp, sp, #32
     ret
@@ -2860,23 +3008,23 @@ simd_fold u8:
     sub x24, x20, x23
     mov x0, x25
     mov x1, x24
-    bl 0x5d8
+    bl 0x678
     orr.v v10, v0, v0
     mov x0, x25
     mov x1, x24
-    bl 0x5d8
+    bl 0x678
     orr.v v9, v0, v0
     mov x0, x25
     mov x1, x24
-    bl 0x5d8
+    bl 0x678
     orr.v v12, v0, v0
     mov x0, x25
     mov x1, x24
-    bl 0x5d8
+    bl 0x678
     orr.v v11, v0, v0
     mov x0, x25
     mov x1, x24
-    bl 0x5d8
+    bl 0x678
     add.v v1, v8, v10
     and.v v2, v1, v9
     eor.v v2, v2, v12
@@ -2886,35 +3034,55 @@ simd_fold u8:
     cmp w1, w26
     mov x23, x20
     b.lt 0x50
-    add x7, x27, x20
-    sub x6, x26, x20
+    add x2, x27, x20
+    sub x1, x26, x20
     addv v0, v8
     fmov x0, d0
     b 0xf0
 15:
     addv v0, v8
     fmov x0, d0
-    mov x7, x27
-    mov x6, x26
+    mov x2, x27
+    mov x1, x26
 16:
-    cmp w6, w19
-    b.le 0x134
+    mov x7, x1
+    mov x6, x2
+    cmp w7, w19
+    b.le 0x184
     movz x5, #1, #0
     movz x2, #0, #0
     movz x3, #0, #0
 17:
-    add x1, x7, x3
+    add x1, x6, x3
     ldrb w4, [x1]
-    add w1, w2, w4
-    and w1, w1, w4
-    eor w1, w1, w4
-    orr w1, w1, w4
+    uxtb w2, w2
+    uxtb w1, w4
+    add w1, w2, w1
+    uxtb w1, w1
+    uxtb w2, w1
+    uxtb w1, w4
+    and w1, w2, w1
+    uxtb w1, w1
+    uxtb w2, w1
+    uxtb w1, w4
+    eor w1, w2, w1
+    uxtb w1, w1
+    uxtb w2, w1
+    uxtb w1, w4
+    orr w1, w2, w1
+    uxtb w1, w1
+    uxtb w2, w1
+    uxtb w1, w4
+    sub w1, w2, w1
     add x3, x5, x3
-    sub w2, w1, w4
-    cmp w3, w6
-    b.lt 0x104
-    add w0, w0, w2
-    b 0x134
+    uxtb w2, w1
+    cmp w3, w7
+    b.lt 0x10c
+    uxtb w1, w0
+    uxtb w0, w2
+    add w0, w1, w0
+    uxtb w0, w0
+    b 0x184
 18:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
@@ -2958,23 +3126,23 @@ simd_fold u16:
     sub x25, x21, x24
     mov x0, x26
     mov x1, x25
-    bl 0x47c
+    bl 0x4cc
     orr.v v10, v0, v0
     mov x0, x26
     mov x1, x25
-    bl 0x47c
+    bl 0x4cc
     orr.v v9, v0, v0
     mov x0, x26
     mov x1, x25
-    bl 0x47c
+    bl 0x4cc
     orr.v v12, v0, v0
     mov x0, x26
     mov x1, x25
-    bl 0x47c
+    bl 0x4cc
     orr.v v11, v0, v0
     mov x0, x26
     mov x1, x25
-    bl 0x47c
+    bl 0x4cc
     add.v v1, v8, v10
     and.v v2, v1, v9
     eor.v v2, v2, v12
@@ -2984,37 +3152,57 @@ simd_fold u16:
     cmp w1, w27
     mov x24, x21
     b.lt 0x58
-    sub x6, x27, x21
-    madd x1, x21, x19, xzr
-    add x7, x1, x28
+    sub x1, x27, x21
+    madd x2, x21, x19, xzr
+    add x2, x2, x28
     addv v0, v8
     fmov x0, d0
     b 0x100
 21:
     addv v0, v8
     fmov x0, d0
-    mov x7, x28
-    mov x6, x27
+    mov x2, x28
+    mov x1, x27
 22:
-    cmp w6, w20
-    b.le 0x148
-    movz x5, #1, #0
-    movz x3, #0, #0
-    movz x2, #0, #0
+    mov x7, x1
+    mov x6, x2
+    cmp w7, w20
+    b.le 0x198
+    movz x2, #1, #0
+    movz x4, #0, #0
+    movz x1, #0, #0
 23:
-    madd x4, x2, x19, xzr
-    add x1, x7, x4
-    ldrh w4, [x1]
-    add w1, w3, w4
-    and w1, w1, w4
-    eor w1, w1, w4
-    orr w1, w1, w4
-    sub w3, w1, w4
-    add x2, x5, x2
-    cmp w2, w6
-    b.lt 0x114
-    add w0, w0, w3
-    b 0x148
+    madd x5, x1, x19, xzr
+    add x3, x6, x5
+    ldrh w5, [x3]
+    uxth w4, w4
+    uxth w3, w5
+    add w3, w4, w3
+    uxth w3, w3
+    uxth w4, w3
+    uxth w3, w5
+    and w3, w4, w3
+    uxth w3, w3
+    uxth w4, w3
+    uxth w3, w5
+    eor w3, w4, w3
+    uxth w3, w3
+    uxth w4, w3
+    uxth w3, w5
+    orr w3, w4, w3
+    uxth w3, w3
+    uxth w4, w3
+    uxth w3, w5
+    sub w3, w4, w3
+    uxth w4, w3
+    add x1, x2, x1
+    cmp w1, w7
+    b.lt 0x11c
+    uxth w1, w0
+    uxth w0, w4
+    add w0, w1, w0
+    uxth w0, w0
+    b 0x198
 24:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
@@ -3242,8 +3430,8 @@ from_slice =2 u64:
     ldr.v q0, [x0]
     ret
 =========== OPT LEVEL: aggresive ===========
-Error{inst_idx = 820, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 824, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 964, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 968, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 main:
     sub sp, sp, #192
     str x19, [xzr]
@@ -3288,81 +3476,99 @@ main:
     movz x1, #0, #0
     bl 0xffffffe4
     movz x6, #4, #0
-    movz x0, #9, #0
-    movz x1, #0, #0
+    movz x3, #9, #0
+    movz x0, #0, #0
 3:
-    madd x3, x1, x6, xzr
-    add x2, sp, #115
-    add x3, x3, x2
-    mov w2, w1
-    str w2, [x3]
-    add x1, x1, x20
-    cmp w1, w0
+    madd x2, x0, x6, xzr
+    add x1, sp, #115
+    add x2, x2, x1
+    mov w1, w0
+    str w1, [x2]
+    add x0, x0, x20
+    cmp w0, w3
     b.lt 3
     add x4, sp, #151
-    movz x9, #32, #0
+    movz x8, #32, #0
     eor.v v0, v0, v0
-    movz x3, #16, #0
+    movz x2, #16, #0
     str.v q0, [x4]
-    add x1, x4, x3
-    str.v q0, [x1]
-    add x1, x4, x9
-    str x21, [x1]
-    movz x2, #8, #0
+    add x0, x4, x2
+    str.v q0, [x0]
+    add x0, x4, x8
+    str x21, [x0]
+    movz x1, #8, #0
     movz x5, #5, #0
-    movz x1, #0, #0
+    movz x0, #0, #0
 4:
-    madd x7, x1, x2, xzr
+    madd x7, x0, x1, xzr
     add x7, x7, x4
-    str x1, [x7]
-    add x1, x1, x20
-    cmp w1, w5
+    str x0, [x7]
+    add x0, x0, x20
+    cmp w0, w5
     b.lt 4
-    movz x1, #0, #0
     eor.v v0, v0, v0
+    movz x0, #0, #0
 5:
     add x7, sp, #48
-    add x7, x7, x1
+    add x7, x7, x0
     ldr.v q1, [x7]
     add.v v0, v0, v1
     and.v v0, v0, v1
     eor.v v0, v0, v1
     orr.v v0, v0, v1
-    add x7, x1, x9
-    add x8, x1, x3
+    add x7, x0, x8
+    add x9, x0, x2
     sub.v v1, v0, v1
-    movz x1, #33, #0
-    cmp w7, w1
-    mov x1, x8
+    movz x0, #33, #0
+    cmp w7, w0
+    mov x0, x9
     orr.v v0, v1, v1
     b.lt 5
-    movz x1, #33, #0
-    sub x12, x1, x8
+    movz x0, #33, #0
+    sub x8, x0, x9
     addv v0, v1
-    fmov x1, d0
-    cmp w12, w21
+    fmov x0, d0
+    cmp w8, w21
     b.le 7
     add x7, sp, #48
-    add x11, x7, x8
+    add x7, x7, x9
+    movz x11, #0, #0
     movz x9, #0, #0
-    movz x7, #0, #0
 6:
-    add x8, x11, x7
-    ldrb w10, [x8]
-    add w8, w9, w10
-    and w8, w8, w10
-    eor w8, w8, w10
-    orr w8, w8, w10
-    sub w8, w8, w10
-    add x7, x7, x20
-    cmp w7, w12
-    mov x9, x8
+    add x10, x7, x9
+    ldrb w10, [x10]
+    uxtb w12, w11
+    uxtb w11, w10
+    add w11, w12, w11
+    uxtb w11, w11
+    uxtb w12, w11
+    uxtb w11, w10
+    and w11, w12, w11
+    uxtb w11, w11
+    uxtb w12, w11
+    uxtb w11, w10
+    eor w11, w12, w11
+    uxtb w11, w11
+    uxtb w12, w11
+    uxtb w11, w10
+    orr w11, w12, w11
+    uxtb w11, w11
+    uxtb w11, w11
+    uxtb w10, w10
+    sub w10, w11, w10
+    uxtb w10, w10
+    add x9, x9, x20
+    cmp w9, w8
+    mov x11, x10
     b.lt 6
-    add w1, w8, w1
+    uxtb w7, w0
+    uxtb w0, w10
+    add w0, w7, w0
+    uxtb w0, w0
     b 7
 7:
-    movz x7, #0, #0
     eor.v v0, v0, v0
+    movz x7, #0, #0
 8:
     madd x9, x7, x19, xzr
     add x8, sp, #81
@@ -3372,40 +3578,58 @@ main:
     and.v v0, v0, v1
     eor.v v0, v0, v1
     orr.v v0, v0, v1
-    add x9, x7, x3
     add x8, x7, x2
+    add x9, x7, x1
     sub.v v1, v0, v1
-    cmp w9, w22
-    mov x7, x8
+    cmp w8, w22
     orr.v v0, v1, v1
+    mov x7, x9
     b.lt 8
-    sub x11, x22, x8
+    sub x8, x22, x9
     addv v0, v1
-    fmov x3, d0
-    cmp w11, w21
+    fmov x2, d0
+    cmp w8, w21
     b.le 10
-    madd x8, x8, x19, xzr
+    madd x9, x9, x19, xzr
     add x7, sp, #81
-    add x10, x8, x7
-    movz x8, #0, #0
-    movz x7, #0, #0
+    add x7, x9, x7
+    movz x11, #0, #0
+    movz x9, #0, #0
 9:
-    madd x9, x7, x19, xzr
-    add x9, x10, x9
-    ldrh w9, [x9]
-    add w8, w8, w9
-    and w8, w8, w9
-    eor w8, w8, w9
-    orr w8, w8, w9
-    add x7, x7, x20
-    sub w8, w8, w9
-    cmp w7, w11
+    madd x10, x9, x19, xzr
+    add x10, x7, x10
+    ldrh w10, [x10]
+    uxth w12, w11
+    uxth w11, w10
+    add w11, w12, w11
+    uxth w11, w11
+    uxth w12, w11
+    uxth w11, w10
+    and w11, w12, w11
+    uxth w11, w11
+    uxth w12, w11
+    uxth w11, w10
+    eor w11, w12, w11
+    uxth w11, w11
+    uxth w12, w11
+    uxth w11, w10
+    orr w11, w12, w11
+    uxth w11, w11
+    uxth w11, w11
+    uxth w10, w10
+    sub w10, w11, w10
+    add x9, x9, x20
+    uxth w11, w10
+    cmp w9, w8
     b.lt 9
-    add w3, w3, w8
+    uxth w7, w2
+    uxth w2, w11
+    add w2, w7, w2
+    uxth w2, w2
     b 10
 10:
-    movz x7, #0, #0
     eor.v v0, v0, v0
+    movz x7, #0, #0
 11:
     madd x9, x7, x6, xzr
     add x8, sp, #115
@@ -3415,16 +3639,16 @@ main:
     and.v v0, v0, v1
     eor.v v0, v0, v1
     orr.v v0, v0, v1
-    add x9, x7, x2
+    add x9, x7, x1
     add x8, x7, x6
     sub.v v1, v0, v1
-    cmp w9, w0
-    mov x7, x8
+    cmp w9, w3
     orr.v v0, v1, v1
+    mov x7, x8
     b.lt 11
-    sub x11, x0, x8
+    sub x11, x3, x8
     addv v0, v1
-    fmov x0, d0
+    fmov x3, d0
     cmp w11, w21
     b.le 13
     madd x8, x8, x6, xzr
@@ -3444,13 +3668,13 @@ main:
     sub w8, w8, w9
     cmp w7, w11
     b.lt 12
-    add w0, w0, w8
+    add w3, w3, w8
     b 13
 13:
-    movz x7, #0, #0
     eor.v v0, v0, v0
+    movz x7, #0, #0
 14:
-    madd x8, x7, x2, xzr
+    madd x8, x7, x1, xzr
     add x8, x8, x4
     ldr.v q1, [x8]
     add.v v0, v0, v1
@@ -3469,12 +3693,12 @@ main:
     add x8, x6, x5
     cmp w9, w21
     b.le 16
-    madd x5, x10, x2, xzr
+    madd x5, x10, x1, xzr
     add x7, x5, x4
     movz x4, #0, #0
     movz x5, #0, #0
 15:
-    madd x6, x4, x2, xzr
+    madd x6, x4, x1, xzr
     add x6, x7, x6
     ldr x6, [x6]
     add x5, x5, x6
@@ -3489,10 +3713,10 @@ main:
     add x8, x8, x6
     b 16
 16:
-    uxtb w2, w1
-    uxth w1, w3
-    add x1, x2, x1
-    mov w0, w0
+    uxtb w1, w0
+    uxth w0, w2
+    add x1, x1, x0
+    mov w0, w3
     add x0, x1, x0
     add x0, x0, x8
     ldr x19, [xzr]

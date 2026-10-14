@@ -31,15 +31,16 @@ Ty_Propagation :: struct {
 }
 
 Mems :: struct {
-	graph:    arna.Allocator,
-	regalloc: arna.Allocator,
-	scratch:  arna.Allocator,
-	code:     arna.Allocator,
-	reloc:    arna.Allocator,
-	sloc:     arna.Allocator,
-	cfi:      arna.Allocator,
-	dbg_loc:  arna.Allocator,
-	type:     arna.Allocator,
+	graph:     arna.Allocator,
+	regalloc:  arna.Allocator,
+	scratch:   arna.Allocator,
+	code:      arna.Allocator,
+	constants: arna.Allocator,
+	reloc:     arna.Allocator,
+	sloc:      arna.Allocator,
+	cfi:       arna.Allocator,
+	dbg_loc:   arna.Allocator,
+	type:      arna.Allocator,
 }
 
 Target :: struct {

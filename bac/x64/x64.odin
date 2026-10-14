@@ -17,6 +17,8 @@ emit :: bac.emit
 expand_node :: bac.expand_node
 get_node :: bac.get_node
 reg_of :: bac.reg_of
+mount_sloc :: bac.mount_sloc
+next_sloc :: bac.next_sloc
 
 xtype :: #force_inline proc(node: bac.Expanded_Node) -> Node_Type {
 	return Node_Type(node.rtype)
@@ -1310,12 +1312,9 @@ meta_of :: proc(
 
 Ctx :: struct {
 	using inner:      bac.Codegen_Emit_Ctx,
-	big_constants:    [dynamic]u8,
 	local_relocs:     [dynamic]Local_Reloc,
 	stack_size:       i32,
 	used:             bit_arr.Bit_Set,
-	last_off:         uint,
-	sloc:             bac.Sloc,
 	pushed:           i32,
 	temp_slot_offset: i32,
 }
@@ -1344,7 +1343,8 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 
 	ctx: Ctx
 	ctx.inner = ectx
-	ctx.code_start = ectx.code.pos
+	ctx.code_start = ctx.code.pos
+	ctx.constants_start = ctx.constants.pos
 	ctx.instr_offsets = make([]u32, ctx.gvn)
 
 	ctx.stack_param_offset = stack_param_offset[:]
@@ -1490,6 +1490,7 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 	}
 
 	code := ctx.code.ptr[ctx.code_start:ctx.code.pos]
+	constants := ctx.constants.ptr[ctx.constants_start:ctx.constants.pos]
 	relocs := mem.slice_data_cast(
 		[]bac.Reloc,
 		ctx.relocs.ptr[reloc_start:ctx.relocs.pos],
@@ -1502,8 +1503,6 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 		[]bac.Cfi_Op,
 		ctx.cfi.ptr[cfi_start:ctx.cfi.pos],
 	)
-	arna.alloc(ctx.code, 0, 8)
-	constants := arna.clone(ctx.code, ctx.big_constants[:])
 
 	return {
 		code = code,
@@ -1523,18 +1522,6 @@ emit_cfi :: proc(ctx: ^Ctx, kind: bac.Cfi_Kind, reg: u8 = 0, arg: u32 = 0) {
 		kind   = kind,
 		reg    = reg,
 	}
-}
-
-next_sloc :: proc(ctx: ^Ctx) {
-	cx := ctx.sloc
-	cx.range = u32(ctx.code.pos - ctx.last_off)
-	bac.add_sloc(ctx.slocs)^ = cx
-	ctx.last_off = ctx.code.pos
-}
-
-mount_sloc :: proc(ctx: ^Ctx, node: Node_ID) {
-	ctx.sloc = bac.get_sloc(ctx, get_node(ctx, node))^
-	ctx.last_off = ctx.code.pos
 }
 
 @(disabled = SPEC_NOT_PRESENT)
@@ -2709,7 +2696,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 reg_and_disp_of :: proc(ctx: ^Ctx, id: Node_ID) -> (Reg, i32, u32) {
 	node := get_node(ctx, id)
 	if node.itype == .Global {
-		bac.emit_big_constant_from_global(ctx, &ctx.big_constants, node)
+		bac.emit_big_constant_from_global(ctx, node)
 
 		// bias by one so that global 0 is distinguishable from the "no
 		// relocation" sentinel used by emit_indirect_addr

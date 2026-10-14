@@ -47,6 +47,7 @@ init_arenas :: proc() {
 	state.types.mems.regalloc.reserved = 4 * 1024 * 1024
 	state.types.mems.scratch.reserved = 2 * 1024 * 1024
 	state.types.mems.code.reserved = 4 * 1024 * 1024
+	state.types.mems.constants.reserved = 1024 * 1024
 	state.types.mems.reloc.reserved = 2 * 1024 * 1024
 	state.types.mems.sloc.reserved = 4 * 1024 * 1024
 	state.types.mems.cfi.reserved = 2 * 1024 * 1024

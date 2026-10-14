@@ -107,7 +107,7 @@ imm_cmps:
     fcmp s1, s0
     csinc x1, xzr, xzr, le
     cbnz x1, 0xc4
-    b imm_cmps
+    b 0xcc
 12:
     movz x1, #32, #0
     add x0, x1, x0
@@ -171,12 +171,11 @@ cmps:
     ldr.v s1, [x1]
     fcmp s0, s1
     csinc x1, xzr, xzr, pl
-    cbnz x1, 0xc0
+    cbnz x1, imm_cmps
     b 0xc8
-25:
     movz x1, #32, #0
     add x0, x1, x0
-26:
+25:
     add sp, sp, #16
     ret
 =========== OPT LEVEL: none ===========
@@ -454,7 +453,7 @@ imm_cmps:
     fcmp s1, s0
     csinc x1, xzr, xzr, le
     cbnz x1, 0xc4
-    b imm_cmps
+    b 0xcc
 12:
     movz x1, #32, #0
     add x0, x1, x0
@@ -518,12 +517,11 @@ cmps:
     ldr.v s1, [x1]
     fcmp s0, s1
     csinc x1, xzr, xzr, pl
-    cbnz x1, 0xc0
+    cbnz x1, imm_cmps
     b 0xc8
-25:
     movz x1, #32, #0
     add x0, x1, x0
-26:
+25:
     add sp, sp, #16
     ret
 =========== OPT LEVEL: moderate ===========

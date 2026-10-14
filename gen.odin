@@ -956,11 +956,12 @@ emit_proc_code :: proc(
 	emit_ctx.dbg_data = &dbg_data
 	emit_ctx.abi = ra.cc
 	emit_ctx.buf = {
-		code     = &ctx.mems.code,
-		relocs   = &ctx.mems.reloc,
-		slocs    = &ctx.mems.sloc,
-		cfi      = &ctx.mems.cfi,
-		dbg_locs = &ctx.mems.dbg_loc,
+		code      = &ctx.mems.code,
+		constants = &ctx.mems.constants,
+		relocs    = &ctx.mems.reloc,
+		slocs     = &ctx.mems.sloc,
+		cfi       = &ctx.mems.cfi,
+		dbg_locs  = &ctx.mems.dbg_loc,
 	}
 	emit_ctx.ra_out = regs
 	emit_ctx.param_specs = prc.param_types

@@ -329,13 +329,6 @@ collect_meta :: proc(ctx: ^%vProc,
 
 	for classes in spec.classes {
 		for class, i in classes.ids {
-			fmt.fprintfln(
-				file,
-				"#assert(size_of(%v) %% %vPRECISION == 0)",
-				qualify_type(q, locals, class.id),
-				q,
-			)
-
 			if class.no_ctor do continue
 			if !classes.gen_ctors do continue
 
@@ -490,11 +483,22 @@ collect_meta :: proc(ctx: ^%vProc,
 			idx,
 		)
 	}
+
 	os.write_string(
 		file,
 		"\telse {#panic(`the passed type is not subclass of anything`)}\n",
 	)
 	os.write_string(file, "}\n")
+
+	for id, idx in inheritable {
+		fmt.fprintfln(
+			file,
+			"#assert(size_of(%v) %% %vPRECISION == 0)",
+			qualify_type(q, locals, id),
+			q,
+		)
+	}
+
 }
 
 SIMPLE_BINOP_CLASS :: Class_Spec {

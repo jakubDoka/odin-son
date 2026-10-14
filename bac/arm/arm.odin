@@ -391,27 +391,12 @@ meta_of :: #force_inline proc(
 		sout = IOUT
 	}
 
-	#partial switch atype(node) {
-	case .Nil,
-	     .Entry,
-	     .Then,
-	     .Else,
-	     .Region,
-	     .Loop,
-	     .Call_End,
-	     .End,
-	     .Simd_Extract_Lsbs:
+	switch atype(node) {
+	case:
+		fallthrough
+	case .Nil ..= .Dbg_Scope, .Simd_Extract_Lsbs:
 		fmt.panicf("should not reach this: %v", node)
-	case .Split_Mem,
-	     .Merge_Mem,
-	     .Sym,
-	     .Jump,
-	     .Mem,
-	     .Local,
-	     .Global,
-	     .Always,
-	     .Trap,
-	     .Poison:
+	case .Poison ..= .Global, .Jump, .Always, .Trap:
 		return {out = IOUT}
 	case .Simd_Reduce_Add_Bisect, .Addv128, .Umov:
 		return {out = out, masks = VEC_MASKS[:1]}
@@ -462,8 +447,6 @@ meta_of :: #force_inline proc(
 	case .Load:
 		return {out = out, input_start = 2, masks = GPA_MASKS[:1]}
 	}
-
-	fmt.panicf("TODO %v", node)
 }
 
 Ctx :: struct {
@@ -762,29 +745,12 @@ emit_instr :: proc(
 	is_64 := node.dt == .I64
 	is_f64 = op_dt == .F64
 
-	#partial emit: switch kind {
+	emit: switch kind {
 	case:
-		fmt.panicf("TODO: %v", node)
-	case .Nil,
-	     .Entry,
-	     .Then,
-	     .Else,
-	     .Region,
-	     .Loop,
-	     .Call_End,
-	     .End,
-	     .Simd_Extract_Lsbs:
+		fallthrough
+	case .Nil ..= .Dbg_Scope, .Simd_Extract_Lsbs, .Rem, .U_Rem:
 		fmt.panicf("should not reach this: %v", node)
-	case .Split_Mem,
-	     .Merge_Mem,
-	     .Sym,
-	     .Phi,
-	     .Ret,
-	     .Mem,
-	     .Param,
-	     .Local,
-	     .Global,
-	     .Poison:
+	case .Poison ..= .Phi:
 	case .Umov:
 		dst := reg_of(ctx, instr)
 		src := reg_of(ctx, node.inps[0])

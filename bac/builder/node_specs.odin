@@ -18,9 +18,32 @@ SPEC := bac.Node_Spec{
 	inheritance_table = {
 		0b1, // Nil
 		0b1, // Entry
+		0b1, // Then
+		0b1, // Else
+		0b1, // Region
+		0b1, // Loop
+		0b1, // Call_End
+		0b10, // End
+		0b100, // Dbg_Sym_Decl
+		0b10, // Dbg_Sym_Update
+		0b10, // Dbg_Scope
+		0b1, // If
+		0b1, // Jump
+		0b1, // Trap
+		0b1001, // Call
+		0b1, // Always
+		0b1, // Return
 		0b10, // Poison
-		0b100, // Param
-		0b1000, // CInt
+		0b10, // Mem
+		0b10, // Split_Mem
+		0b10, // Merge_Mem
+		0b10, // Sym
+		0b10000, // Local
+		0b100000, // Global
+		0b100000, // Param
+		0b100000, // Ret
+		0b10, // Phi
+		0b1000000, // CInt
 		0b10, // Add
 		0b10, // Sub
 		0b10, // And
@@ -46,33 +69,13 @@ SPEC := bac.Node_Spec{
 		0b10, // U_Rem
 		0b10, // And_Not
 		0b10, // Split
-		0b10, // Phi
-		0b10, // Mem
-		0b10, // Split_Mem
-		0b10, // Merge_Mem
-		0b10, // Sym
-		0b10000, // Local
 		0b10, // Local_Addr
-		0b100, // Global
 		0b10, // Global_Addr
-		0b100, // Proc_Addr
+		0b100000, // Proc_Addr
 		0b10, // Copy
 		0b10, // Set
 		0b10, // Store
 		0b10, // Load
-		0b1, // If
-		0b1, // Then
-		0b1, // Else
-		0b1, // Jump
-		0b1, // Region
-		0b1, // Loop
-		0b1, // Always
-		0b1, // Trap
-		0b100001, // Call
-		0b1, // Call_End
-		0b100, // Ret
-		0b1, // Return
-		0b10, // End
 		0b10, // Neg
 		0b10, // Not
 		0b10, // Cast
@@ -82,17 +85,37 @@ SPEC := bac.Node_Spec{
 		0b10, // Ctz
 		0b10, // Simd_Extract_Lsbs
 		0b10, // Simd_Reduce_Add_Bisect
-		0b1000000, // Dbg_Sym_Decl
-		0b10, // Dbg_Sym_Update
-		0b10, // Dbg_Scope
 		0b10000000, // Scope
 		0b10, // Lazy_Phi
 	},
 	node_extra_sizes = {
 		1, // Nil -> Cfg
 		1, // Entry -> Cfg
+		1, // Then -> Cfg
+		1, // Else -> Cfg
+		1, // Region -> Cfg
+		1, // Loop -> Cfg
+		1, // Call_End -> Cfg
+		0, // End -> No_Extra
+		6, // Dbg_Sym_Decl -> Dbg_Sym
+		0, // Dbg_Sym_Update -> No_Extra
+		0, // Dbg_Scope -> No_Extra
+		1, // If -> Cfg
+		1, // Jump -> Cfg
+		1, // Trap -> Cfg
+		4, // Call -> Call
+		1, // Always -> Cfg
+		1, // Return -> Cfg
 		0, // Poison -> No_Extra
+		0, // Mem -> No_Extra
+		0, // Split_Mem -> No_Extra
+		0, // Merge_Mem -> No_Extra
+		0, // Sym -> No_Extra
+		2, // Local -> Local
+		1, // Global -> Tup
 		1, // Param -> Tup
+		1, // Ret -> Tup
+		0, // Phi -> No_Extra
 		2, // CInt -> CInt
 		0, // Add -> No_Extra
 		0, // Sub -> No_Extra
@@ -119,33 +142,13 @@ SPEC := bac.Node_Spec{
 		0, // U_Rem -> No_Extra
 		0, // And_Not -> No_Extra
 		0, // Split -> No_Extra
-		0, // Phi -> No_Extra
-		0, // Mem -> No_Extra
-		0, // Split_Mem -> No_Extra
-		0, // Merge_Mem -> No_Extra
-		0, // Sym -> No_Extra
-		2, // Local -> Local
 		0, // Local_Addr -> No_Extra
-		1, // Global -> Tup
 		0, // Global_Addr -> No_Extra
 		1, // Proc_Addr -> Tup
 		0, // Copy -> No_Extra
 		0, // Set -> No_Extra
 		0, // Store -> No_Extra
 		0, // Load -> No_Extra
-		1, // If -> Cfg
-		1, // Then -> Cfg
-		1, // Else -> Cfg
-		1, // Jump -> Cfg
-		1, // Region -> Cfg
-		1, // Loop -> Cfg
-		1, // Always -> Cfg
-		1, // Trap -> Cfg
-		4, // Call -> Call
-		1, // Call_End -> Cfg
-		1, // Ret -> Tup
-		1, // Return -> Cfg
-		0, // End -> No_Extra
 		0, // Neg -> No_Extra
 		0, // Not -> No_Extra
 		0, // Cast -> No_Extra
@@ -155,17 +158,37 @@ SPEC := bac.Node_Spec{
 		0, // Ctz -> No_Extra
 		0, // Simd_Extract_Lsbs -> No_Extra
 		0, // Simd_Reduce_Add_Bisect -> No_Extra
-		6, // Dbg_Sym_Decl -> Dbg_Sym
-		0, // Dbg_Sym_Update -> No_Extra
-		0, // Dbg_Scope -> No_Extra
 		1, // Scope -> Scope
 		0, // Lazy_Phi -> No_Extra
 	},
 	node_flags = {
 		{}, // Nil
 		{Class_Flag.Is_Basic_Block_Start}, // Entry
+		{Class_Flag.Is_Basic_Block_Start}, // Then
+		{Class_Flag.Is_Basic_Block_Start}, // Else
+		{Class_Flag.Is_Basic_Block_Start}, // Region
+		{Class_Flag.Is_Basic_Block_Start}, // Loop
+		{Class_Flag.Is_Basic_Block_Start}, // Call_End
+		{}, // End
+		{}, // Dbg_Sym_Decl
+		{}, // Dbg_Sym_Update
+		{}, // Dbg_Scope
+		{}, // If
+		{}, // Jump
+		{}, // Trap
+		{}, // Call
+		{}, // Always
+		{}, // Return
 		{Class_Flag.Interned}, // Poison
+		{Class_Flag.Store}, // Mem
+		{Class_Flag.Store}, // Split_Mem
+		{Class_Flag.Store}, // Merge_Mem
+		{}, // Sym
+		{}, // Local
+		{}, // Global
 		{}, // Param
+		{}, // Ret
+		{Class_Flag.Interned}, // Phi
 		{Class_Flag.Interned, Class_Flag.Clonable}, // CInt
 		{Class_Flag.Interned, Class_Flag.Comutes}, // Add
 		{Class_Flag.Interned}, // Sub
@@ -192,33 +215,13 @@ SPEC := bac.Node_Spec{
 		{Class_Flag.Interned}, // U_Rem
 		{Class_Flag.Interned}, // And_Not
 		{}, // Split
-		{Class_Flag.Interned}, // Phi
-		{Class_Flag.Store}, // Mem
-		{Class_Flag.Store}, // Split_Mem
-		{Class_Flag.Store}, // Merge_Mem
-		{}, // Sym
-		{}, // Local
 		{Class_Flag.Clonable}, // Local_Addr
-		{}, // Global
 		{Class_Flag.Interned, Class_Flag.Clonable}, // Global_Addr
 		{Class_Flag.Interned, Class_Flag.Clonable}, // Proc_Addr
 		{Class_Flag.Store}, // Copy
 		{Class_Flag.Store}, // Set
 		{Class_Flag.Store}, // Store
 		{Class_Flag.Interned, Class_Flag.Load}, // Load
-		{}, // If
-		{Class_Flag.Is_Basic_Block_Start}, // Then
-		{Class_Flag.Is_Basic_Block_Start}, // Else
-		{}, // Jump
-		{Class_Flag.Is_Basic_Block_Start}, // Region
-		{Class_Flag.Is_Basic_Block_Start}, // Loop
-		{}, // Always
-		{}, // Trap
-		{}, // Call
-		{Class_Flag.Is_Basic_Block_Start}, // Call_End
-		{}, // Ret
-		{}, // Return
-		{}, // End
 		{Class_Flag.Interned}, // Neg
 		{Class_Flag.Interned}, // Not
 		{Class_Flag.Interned}, // Cast
@@ -228,17 +231,37 @@ SPEC := bac.Node_Spec{
 		{Class_Flag.Interned}, // Ctz
 		{Class_Flag.Interned}, // Simd_Extract_Lsbs
 		{Class_Flag.Interned}, // Simd_Reduce_Add_Bisect
-		{}, // Dbg_Sym_Decl
-		{}, // Dbg_Sym_Update
-		{}, // Dbg_Scope
 		{}, // Scope
 		{}, // Lazy_Phi
 	},
 	node_extra_types = {
 		bac.Cfg,
 		bac.Cfg,
+		bac.Cfg,
+		bac.Cfg,
+		bac.Cfg,
+		bac.Cfg,
+		bac.Cfg,
 		bac.No_Extra,
+		bac.Dbg_Sym,
+		bac.No_Extra,
+		bac.No_Extra,
+		bac.Cfg,
+		bac.Cfg,
+		bac.Cfg,
+		bac.Call,
+		bac.Cfg,
+		bac.Cfg,
+		bac.No_Extra,
+		bac.No_Extra,
+		bac.No_Extra,
+		bac.No_Extra,
+		bac.No_Extra,
+		bac.Local,
 		bac.Tup,
+		bac.Tup,
+		bac.Tup,
+		bac.No_Extra,
 		bac.CInt,
 		bac.No_Extra,
 		bac.No_Extra,
@@ -267,30 +290,11 @@ SPEC := bac.Node_Spec{
 		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.Local,
-		bac.No_Extra,
-		bac.Tup,
-		bac.No_Extra,
 		bac.Tup,
 		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
-		bac.Cfg,
-		bac.Cfg,
-		bac.Cfg,
-		bac.Cfg,
-		bac.Cfg,
-		bac.Cfg,
-		bac.Cfg,
-		bac.Cfg,
-		bac.Call,
-		bac.Cfg,
-		bac.Tup,
-		bac.Cfg,
 		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
@@ -298,10 +302,6 @@ SPEC := bac.Node_Spec{
 		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.Dbg_Sym,
 		bac.No_Extra,
 		bac.No_Extra,
 		Scope,
@@ -310,8 +310,31 @@ SPEC := bac.Node_Spec{
 	node_kind_name = {
 		`Nil`,
 		`Entry`,
+		`Then`,
+		`Else`,
+		`Region`,
+		`Loop`,
+		`Call_End`,
+		`End`,
+		`Dbg_Sym_Decl`,
+		`Dbg_Sym_Update`,
+		`Dbg_Scope`,
+		`If`,
+		`Jump`,
+		`Trap`,
+		`Call`,
+		`Always`,
+		`Return`,
 		`Poison`,
+		`Mem`,
+		`Split_Mem`,
+		`Merge_Mem`,
+		`Sym`,
+		`Local`,
+		`Global`,
 		`Param`,
+		`Ret`,
+		`Phi`,
 		`CInt`,
 		`Add`,
 		`Sub`,
@@ -338,33 +361,13 @@ SPEC := bac.Node_Spec{
 		`U_Rem`,
 		`And_Not`,
 		`Split`,
-		`Phi`,
-		`Mem`,
-		`Split_Mem`,
-		`Merge_Mem`,
-		`Sym`,
-		`Local`,
 		`Local_Addr`,
-		`Global`,
 		`Global_Addr`,
 		`Proc_Addr`,
 		`Copy`,
 		`Set`,
 		`Store`,
 		`Load`,
-		`If`,
-		`Then`,
-		`Else`,
-		`Jump`,
-		`Region`,
-		`Loop`,
-		`Always`,
-		`Trap`,
-		`Call`,
-		`Call_End`,
-		`Ret`,
-		`Return`,
-		`End`,
 		`Neg`,
 		`Not`,
 		`Cast`,
@@ -374,9 +377,6 @@ SPEC := bac.Node_Spec{
 		`Ctz`,
 		`Simd_Extract_Lsbs`,
 		`Simd_Reduce_Add_Bisect`,
-		`Dbg_Sym_Decl`,
-		`Dbg_Sym_Update`,
-		`Dbg_Scope`,
 		`Scope`,
 		`Lazy_Phi`,
 	},
@@ -385,8 +385,31 @@ SPEC := bac.Node_Spec{
 Node_Type :: enum u16 {
 	Nil,
 	Entry,
+	Then,
+	Else,
+	Region,
+	Loop,
+	Call_End,
+	End,
+	Dbg_Sym_Decl,
+	Dbg_Sym_Update,
+	Dbg_Scope,
+	If,
+	Jump,
+	Trap,
+	Call,
+	Always,
+	Return,
 	Poison,
+	Mem,
+	Split_Mem,
+	Merge_Mem,
+	Sym,
+	Local,
+	Global,
 	Param,
+	Ret,
+	Phi,
 	CInt,
 	Add,
 	Sub,
@@ -413,33 +436,13 @@ Node_Type :: enum u16 {
 	U_Rem,
 	And_Not,
 	Split,
-	Phi,
-	Mem,
-	Split_Mem,
-	Merge_Mem,
-	Sym,
-	Local,
 	Local_Addr,
-	Global,
 	Global_Addr,
 	Proc_Addr,
 	Copy,
 	Set,
 	Store,
 	Load,
-	If,
-	Then,
-	Else,
-	Jump,
-	Region,
-	Loop,
-	Always,
-	Trap,
-	Call,
-	Call_End,
-	Ret,
-	Return,
-	End,
 	Neg,
 	Not,
 	Cast,
@@ -449,9 +452,6 @@ Node_Type :: enum u16 {
 	Ctz,
 	Simd_Extract_Lsbs,
 	Simd_Reduce_Add_Bisect,
-	Dbg_Sym_Decl,
-	Dbg_Sym_Update,
-	Dbg_Scope,
 	Scope,
 	Lazy_Phi,
 }
@@ -468,8 +468,31 @@ post_schedule_peep_inst :: proc(
 
 #assert(size_of(bac.Cfg) % bac.PRECISION == 0)
 #assert(size_of(bac.Cfg) % bac.PRECISION == 0)
+#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
+#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
+#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
+#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
+#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
+#assert(size_of(bac.Dbg_Sym) % bac.PRECISION == 0)
+#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
+#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
+#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
+#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
+#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
+#assert(size_of(bac.Call) % bac.PRECISION == 0)
+#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
+#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
+#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
+#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
+#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
+#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
+#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
+#assert(size_of(bac.Local) % bac.PRECISION == 0)
 #assert(size_of(bac.Tup) % bac.PRECISION == 0)
+#assert(size_of(bac.Tup) % bac.PRECISION == 0)
+#assert(size_of(bac.Tup) % bac.PRECISION == 0)
+#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.CInt) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
@@ -498,30 +521,11 @@ post_schedule_peep_inst :: proc(
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.Local) % bac.PRECISION == 0)
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.Tup) % bac.PRECISION == 0)
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.Tup) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
-#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
-#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
-#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
-#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
-#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
-#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
-#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
-#assert(size_of(bac.Call) % bac.PRECISION == 0)
-#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
-#assert(size_of(bac.Tup) % bac.PRECISION == 0)
-#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
@@ -529,10 +533,6 @@ post_schedule_peep_inst :: proc(
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.Dbg_Sym) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(Scope) % bac.PRECISION == 0)
@@ -548,12 +548,12 @@ add_lazy_phi :: #force_inline proc(graph: ^bac.Proc, name: string, dt: bac.Node_
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	when false {}
 	else when T == bac.Local {return 4}
-	else when T == bac.Dbg_Sym {return 6}
-	else when T == bac.Tup {return 2}
+	else when T == bac.Dbg_Sym {return 2}
+	else when T == bac.Tup {return 5}
 	else when T == bac.No_Extra {return 1}
-	else when T == bac.Call {return 5}
+	else when T == bac.Call {return 3}
 	else when T == bac.Cfg {return 0}
-	else when T == bac.CInt {return 3}
+	else when T == bac.CInt {return 6}
 	else when T == Scope {return 7}
 	else {#panic(`the passed type is not subclass of anything`)}
 }

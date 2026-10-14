@@ -1084,24 +1084,12 @@ meta_of :: proc(
 
 	mem_op: ^Mem_Op = xextra(graph, node, Mem_Op)
 
-	#partial switch xtype(node) {
+	switch xtype(node) {
 	case:
-		fmt.panicf("TODO: %v", node.node)
-	case .End,
-	     .Simd_Reduce_Add_Bisect,
-	     .Splat,
-	     .Then,
-	     .Else,
-	     .Nil,
-	     .Entry,
-	     .Region,
-	     .Loop,
-	     .Call_End,
-	     .Dbg_Sym_Update,
-	     .Dbg_Sym_Decl,
-	     .Dbg_Scope:
+		fallthrough
+	case .Nil ..= .Dbg_Scope, .Simd_Reduce_Add_Bisect, .Splat:
 		fmt.panicf("should not reach these: %v", node)
-	case .Poison:
+	case .Poison ..= .Global:
 		return {out = out}
 	case .CInt:
 		return {out = out}
@@ -1170,9 +1158,7 @@ meta_of :: proc(
 			masks = snmasks[:len(node.inps) - 1],
 			input_start = 1,
 		}
-	case .Global:
-		return {out = IOUT}
-	case .Mem, .Sym, .Local, .Jump, .Always, .Trap, .Split_Mem, .Merge_Mem:
+	case .Jump, .Always, .Trap:
 		return {out = IOUT}
 	case .Local_Addr, .Global_Addr, .Proc_Addr:
 		return {out = out}
@@ -1320,8 +1306,6 @@ meta_of :: proc(
 	case .X64_Pextr:
 		return {out = out, masks = XMM_MASKS[:1]}
 	}
-
-	fmt.panicf("TODO %v", node)
 }
 
 Ctx :: struct {
@@ -1751,32 +1735,12 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 
 	ctx.instr_offsets[node.gvn] = u32(ctx.code.pos)
 
-	#partial switch type {
+	switch type {
 	case:
-		fmt.panicf("TODO: %v", node.node)
-	case .Nil,
-	     .Entry,
-	     .Then,
-	     .Else,
-	     .Region,
-	     .Loop,
-	     .Call_End,
-	     .End,
-	     .Simd_Reduce_Add_Bisect:
+		fallthrough
+	case .Nil ..= .Dbg_Scope, .Simd_Reduce_Add_Bisect, .Splat:
 		fmt.panicf("Not reachable form here %v", node.node)
-	case .Poison,
-	     .Param,
-	     .Phi,
-	     .Ret,
-	     .Mem,
-	     .Split_Mem,
-	     .Merge_Mem,
-	     .Sym,
-	     .Dbg_Sym_Update,
-	     .Dbg_Sym_Decl,
-	     .Dbg_Scope:
-	case .Splat:
-		panic("no")
+	case .Poison ..= .Phi:
 	case .Simd_Extract_Lsbs:
 		// pmovmskb $dst(gpr), $src(xmm)
 		dst := reg_of(ctx, instr)
@@ -1855,8 +1819,6 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 		src := reg_of(ctx, node.inps[0])
 		rx := rex(dst, src, RAX, false)
 		emit(ctx.code, {0xf3, rx, 0x0f, 0xbc, mod_rm(.Direct, dst, src)})
-	case .Global:
-	case .Local:
 	case .Local_Addr, .Global_Addr:
 		dst := reg_of(ctx, instr)
 		addr, dis, id := reg_and_disp_of(ctx, node.inps[0])

@@ -309,35 +309,24 @@ meta_of :: #force_inline proc(
 		return slice.clone(msks)
 	}
 
-	#partial switch wtype(node) {
+	switch wtype(node) {
 	case:
-		fmt.panicf("TODO: %v", node)
-	case .Nil,
-	     .Entry,
-	     .Then,
-	     .Else,
-	     .Region,
-	     .Loop,
-	     .Call_End,
-	     .End,
-	     .Simd_Reduce_Add_Bisect:
-		fmt.panicf("Should not reach this: %v", node)
-	case .Split_Mem,
-	     .Merge_Mem,
-	     .Sym,
+		fallthrough
+	case .Nil ..= .Dbg_Scope, .Simd_Reduce_Add_Bisect:
+		fmt.panicf("should not reach these: %v", node)
+	case .Poison ..=
+	     .Global,
 	     .Return,
 	     .CInt,
 	     .Add ..=
 	     .U_Rem,
 	     .If,
 	     .Jump,
-	     .Local,
 	     .Local_Addr,
 	     .Call,
 	     .Store,
 	     .Load,
 	     .Ret,
-	     .Mem,
 	     .Drop,
 	     .Set,
 	     .Copy,
@@ -348,11 +337,9 @@ meta_of :: #force_inline proc(
 	     .Not,
 	     .Neg,
 	     .Cast,
-	     .Global,
 	     .Global_Addr,
 	     .Proc_Addr,
 	     .Always,
-	     .Poison,
 	     .Trap,
 	     .Extract_Lane_U,
 	     .Splat,
@@ -377,8 +364,6 @@ meta_of :: #force_inline proc(
 	case .Split:
 		return {out = mask, masks = masks[:1]}
 	}
-
-	fmt.panicf("TODO %v", node)
 }
 
 pre_regalloc_hook :: proc(
@@ -505,34 +490,18 @@ pre_regalloc_hook :: proc(
 	meta_of :: proc(ctx: ^Ctx, node: bac.Expanded_Node, _: $T) -> Meta {
 		// TODO: this is uselss to be strongly typed, we anyway just use the
 		// length, and wether the out is invalid
-		#partial switch wtype(node) {
+		switch wtype(node) {
 		case:
-			fmt.panicf("TODO: %v", node)
-		case .Nil,
-		     .Entry,
-		     .Then,
-		     .Else,
-		     .Region,
-		     .Loop,
-		     .Call_End,
+			fallthrough
+		case .Nil ..=
+		     .Dbg_Scope,
 		     .Simd_Reduce_Add_Bisect,
 		     .Get_Local,
 		     .Set_Local,
 		     .Tee_Local,
-		     .End,
 		     .Stub:
-			fmt.panicf("Should not reach this: %v", node)
-		case .Merge_Mem,
-		     .Split_Mem,
-		     .Sym,
-		     .Jump,
-		     .Local,
-		     .Mem,
-		     .Drop,
-		     .Global,
-		     .Always,
-		     .Poison,
-		     .Trap:
+			fmt.panicf("should not reach these: %v", node)
+		case .Poison ..= .Global, .Jump, .Drop, .Always, .Trap:
 			return {}
 		case .Load, .WASM_Load:
 			is_local := get_node(ctx, node.inps[2]).itype == .Local
@@ -589,8 +558,6 @@ pre_regalloc_hook :: proc(
 		case .CInt, .Local_Addr, .Ret, .Param, .Global_Addr, .Proc_Addr:
 			return {def = true}
 		}
-
-		fmt.panicf("TODO %v", node)
 	}
 
 	collect_meta :: #force_inline proc(
@@ -1155,32 +1122,12 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 		mem_op.source = node.dt
 	}
 
-	#partial switch kind {
+	switch kind {
 	case:
-		fmt.panicf("TODO: %v", node)
-	case .Nil,
-	     .Entry,
-	     .Then,
-	     .Else,
-	     .Region,
-	     .Loop,
-	     .Call_End,
-	     .Simd_Reduce_Add_Bisect,
-	     .And_Not,
-	     .End,
-	     .Neg:
+		fallthrough
+	case .Nil ..= .Dbg_Scope, .Simd_Reduce_Add_Bisect, .And_Not, .Neg:
 		fmt.panicf("Should not reach this: %v", node)
-	case .Split_Mem,
-	     .Merge_Mem,
-	     .Sym,
-	     .Phi,
-	     .Local,
-	     .Ret,
-	     .Mem,
-	     .Param,
-	     .Stub,
-	     .Global,
-	     .Poison:
+	case .Poison ..= .Phi, .Stub:
 	case .CInt:
 		cint := bac.get_extra(ctx, node, bac.CInt)
 

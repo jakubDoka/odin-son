@@ -96,81 +96,28 @@ SPEC := bac.Node_Spec{
 		0b10000000, // Umov
 	},
 	node_extra_sizes = {
-		1, // Nil -> Cfg
-		1, // Entry -> Cfg
-		1, // Then -> Cfg
-		1, // Else -> Cfg
-		1, // Region -> Cfg
-		1, // Loop -> Cfg
-		1, // Call_End -> Cfg
-		0, // End -> No_Extra
-		6, // Dbg_Sym_Decl -> Dbg_Sym
-		0, // Dbg_Sym_Update -> No_Extra
-		0, // Dbg_Scope -> No_Extra
-		1, // If -> Cfg
-		1, // Jump -> Cfg
-		1, // Trap -> Cfg
-		4, // Call -> Call
-		1, // Always -> Cfg
-		1, // Return -> Cfg
-		0, // Poison -> No_Extra
-		0, // Mem -> No_Extra
-		0, // Split_Mem -> No_Extra
-		0, // Merge_Mem -> No_Extra
-		0, // Sym -> No_Extra
-		2, // Local -> Local
-		1, // Global -> Tup
-		1, // Param -> Tup
-		1, // Ret -> Tup
-		0, // Phi -> No_Extra
-		2, // CInt -> CInt
-		0, // Add -> No_Extra
-		0, // Sub -> No_Extra
-		0, // And -> No_Extra
-		0, // Or -> No_Extra
-		0, // Xor -> No_Extra
-		0, // Eq -> No_Extra
-		0, // Ne -> No_Extra
-		0, // Le -> No_Extra
-		0, // Lt -> No_Extra
-		0, // Gt -> No_Extra
-		0, // Ge -> No_Extra
-		0, // U_Lt -> No_Extra
-		0, // U_Gt -> No_Extra
-		0, // U_Le -> No_Extra
-		0, // U_Ge -> No_Extra
-		0, // Shl -> No_Extra
-		0, // Shr -> No_Extra
-		0, // U_Shr -> No_Extra
-		0, // Mul -> No_Extra
-		0, // Div -> No_Extra
-		0, // U_Div -> No_Extra
-		0, // Rem -> No_Extra
-		0, // U_Rem -> No_Extra
-		0, // And_Not -> No_Extra
-		0, // Split -> No_Extra
-		0, // Local_Addr -> No_Extra
-		0, // Global_Addr -> No_Extra
-		1, // Proc_Addr -> Tup
-		0, // Copy -> No_Extra
-		0, // Set -> No_Extra
-		0, // Store -> No_Extra
-		0, // Load -> No_Extra
-		0, // Neg -> No_Extra
-		0, // Not -> No_Extra
-		0, // Cast -> No_Extra
-		0, // Conv -> No_Extra
-		0, // U_Conv -> No_Extra
-		0, // Splat -> No_Extra
-		0, // Ctz -> No_Extra
-		0, // Simd_Extract_Lsbs -> No_Extra
-		0, // Simd_Reduce_Add_Bisect -> No_Extra
-		0, // Msub -> No_Extra
-		0, // Cmlt -> No_Extra
-		1, // Ext -> Arm_Op
-		0, // Zip1 -> No_Extra
-		0, // Addv128 -> No_Extra
-		1, // Umov -> Arm_Op
+		0 = 1, // Nil -> Cfg
+		1 = 1, // Entry -> Cfg
+		2 = 1, // Then -> Cfg
+		3 = 1, // Else -> Cfg
+		4 = 1, // Region -> Cfg
+		5 = 1, // Loop -> Cfg
+		6 = 1, // Call_End -> Cfg
+		8 = 6, // Dbg_Sym_Decl -> Dbg_Sym
+		11 = 1, // If -> Cfg
+		12 = 1, // Jump -> Cfg
+		13 = 1, // Trap -> Cfg
+		14 = 4, // Call -> Call
+		15 = 1, // Always -> Cfg
+		16 = 1, // Return -> Cfg
+		22 = 2, // Local -> Local
+		23 = 1, // Global -> Tup
+		24 = 1, // Param -> Tup
+		25 = 1, // Ret -> Tup
+		27 = 2, // CInt -> CInt
+		55 = 1, // Proc_Addr -> Tup
+		71 = 1, // Ext -> Arm_Op
+		74 = 1, // Umov -> Arm_Op
 	},
 	node_flags = {
 		{}, // Nil
@@ -250,159 +197,30 @@ SPEC := bac.Node_Spec{
 		{}, // Umov
 	},
 	node_extra_types = {
-		bac.Cfg,
-		bac.Cfg,
-		bac.Cfg,
-		bac.Cfg,
-		bac.Cfg,
-		bac.Cfg,
-		bac.Cfg,
-		bac.No_Extra,
-		bac.Dbg_Sym,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.Cfg,
-		bac.Cfg,
-		bac.Cfg,
-		bac.Call,
-		bac.Cfg,
-		bac.Cfg,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.Local,
-		bac.Tup,
-		bac.Tup,
-		bac.Tup,
-		bac.No_Extra,
-		bac.CInt,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.Tup,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		Arm_Op,
-		bac.No_Extra,
-		bac.No_Extra,
-		Arm_Op,
+		0 = bac.Cfg,
+		1 = bac.Cfg,
+		2 = bac.Cfg,
+		3 = bac.Cfg,
+		4 = bac.Cfg,
+		5 = bac.Cfg,
+		6 = bac.Cfg,
+		8 = bac.Dbg_Sym,
+		11 = bac.Cfg,
+		12 = bac.Cfg,
+		13 = bac.Cfg,
+		14 = bac.Call,
+		15 = bac.Cfg,
+		16 = bac.Cfg,
+		22 = bac.Local,
+		23 = bac.Tup,
+		24 = bac.Tup,
+		25 = bac.Tup,
+		27 = bac.CInt,
+		55 = bac.Tup,
+		71 = Arm_Op,
+		74 = Arm_Op,
 	},
-	node_kind_name = {
-		`Nil`,
-		`Entry`,
-		`Then`,
-		`Else`,
-		`Region`,
-		`Loop`,
-		`Call_End`,
-		`End`,
-		`Dbg_Sym_Decl`,
-		`Dbg_Sym_Update`,
-		`Dbg_Scope`,
-		`If`,
-		`Jump`,
-		`Trap`,
-		`Call`,
-		`Always`,
-		`Return`,
-		`Poison`,
-		`Mem`,
-		`Split_Mem`,
-		`Merge_Mem`,
-		`Sym`,
-		`Local`,
-		`Global`,
-		`Param`,
-		`Ret`,
-		`Phi`,
-		`CInt`,
-		`Add`,
-		`Sub`,
-		`And`,
-		`Or`,
-		`Xor`,
-		`Eq`,
-		`Ne`,
-		`Le`,
-		`Lt`,
-		`Gt`,
-		`Ge`,
-		`U_Lt`,
-		`U_Gt`,
-		`U_Le`,
-		`U_Ge`,
-		`Shl`,
-		`Shr`,
-		`U_Shr`,
-		`Mul`,
-		`Div`,
-		`U_Div`,
-		`Rem`,
-		`U_Rem`,
-		`And_Not`,
-		`Split`,
-		`Local_Addr`,
-		`Global_Addr`,
-		`Proc_Addr`,
-		`Copy`,
-		`Set`,
-		`Store`,
-		`Load`,
-		`Neg`,
-		`Not`,
-		`Cast`,
-		`Conv`,
-		`U_Conv`,
-		`Splat`,
-		`Ctz`,
-		`Simd_Extract_Lsbs`,
-		`Simd_Reduce_Add_Bisect`,
-		`Msub`,
-		`Cmlt`,
-		`Ext`,
-		`Zip1`,
-		`Addv128`,
-		`Umov`,
-	},
+	node_kind = Node_Type,
 }
 
 Node_Type :: enum u16 {

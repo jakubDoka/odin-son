@@ -95,7 +95,7 @@ Node_Spec :: struct {
 	inheritance_table: []Inherit_Table_Elem,
 	node_flags:        []Class_Flags,
 	node_extra_types:  []typeid,
-	node_kind_name:    []string,
+	node_kind:         typeid,
 	// only true for the pre-lowering/builder spec; every codegen-target
 	// spec leaves this false so generic drivers stay spec-agnostic
 	intern:            bool,
@@ -2211,11 +2211,6 @@ get_extra :: proc {
 	get_static_extra_node_id,
 }
 
-get_extra_dyn :: proc {
-	get_any_extra_node,
-	get_any_extra_node_id,
-}
-
 @(tag = "node_proc")
 get_static_extra_node :: #force_inline proc(
 	graph: ^Proc,
@@ -2231,12 +2226,6 @@ get_static_extra_node :: #force_inline proc(
 	if graph.inheritance_table[node.rtype] & (1 << inherit_idx_of(T)) ==
 	   0 {return nil}
 	return (^T)(&node.extra)
-}
-
-@(tag = "node_proc")
-get_any_extra_node :: #force_inline proc(graph: ^Proc, node: ^Node) -> any {
-	assert(int(node.rtype) < len(graph.node_extra_types))
-	return {&node.extra, graph.node_extra_types[node.rtype]}
 }
 
 @(tag = "node_proc")

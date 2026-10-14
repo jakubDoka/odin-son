@@ -198,16 +198,26 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 		os.write_string(file, "\t},\n")
 
 		os.write_string(file, "\tnode_extra_sizes = {\n")
+		idx := 0
+		last_idx := 0
 		for classes in spec.classes {
 			for class, i in classes.ids {
-				fmt.fprintf(
-					file,
-					"\t\t%v, // %v -> %v\n",
-					reflect.size_of_typeid(class.id) / 4,
-					reflect.enum_field_names(classes.enm)[i],
-					class.id,
-				)
+				if reflect.size_of_typeid(class.id) != 0 {
+					fmt.fprintf(
+						file,
+						"\t\t%v = %v, // %v -> %v\n",
+						idx,
+						reflect.size_of_typeid(class.id) / 4,
+						reflect.enum_field_names(classes.enm)[i],
+						class.id,
+					)
+					last_idx = idx
+				}
+				idx += 1
 			}
+		}
+		if last_idx != idx - 1 {
+			fmt.fprintf(file, "\t\t%v = 0,\n", idx - 1)
 		}
 		os.write_string(file, "\t},\n")
 
@@ -225,31 +235,29 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 		os.write_string(file, "\t},\n")
 
 		os.write_string(file, "\tnode_extra_types = {\n")
+		idx = 0
 		for classes in spec.classes {
 			for class in classes.ids {
-				fmt.fprintf(
-					file,
-					"\t\t%v,\n",
-					qualify_type(q, locals, class.id),
-				)
+				if class.id != bac.No_Extra {
+					fmt.fprintf(
+						file,
+						"\t\t%v = %v,\n",
+						idx,
+						qualify_type(q, locals, class.id),
+					)
+					last_idx = idx
+				}
+				idx += 1
 			}
+		}
+		if last_idx != idx - 1 {
+			fmt.fprintf(file, "\t\t%v = nil,\n", idx - 1)
 		}
 		os.write_string(file, "\t},\n")
 
-		os.write_string(file, "\tnode_kind_name = {\n")
-		for classes in spec.classes {
-			for _, i in classes.ids {
-				fmt.fprintf(
-					file,
-					"\t\t`%v`,\n",
-					reflect.enum_field_names(classes.enm)[i],
-				)
-			}
-		}
-		os.write_string(file, "\t},\n")
+		os.write_string(file, "\tnode_kind = Node_Type,\n")
 
 		os.write_string(file, "}\n\n")
-
 	} else {
 
 		for name, members in groups {

@@ -126,109 +126,57 @@ SPEC := bac.Node_Spec{
 		0b10000000, // X64_Pextr
 	},
 	node_extra_sizes = {
-		1, // Nil -> Cfg
-		1, // Entry -> Cfg
-		1, // Then -> Cfg
-		1, // Else -> Cfg
-		1, // Region -> Cfg
-		1, // Loop -> Cfg
-		1, // Call_End -> Cfg
-		0, // End -> No_Extra
-		6, // Dbg_Sym_Decl -> Dbg_Sym
-		0, // Dbg_Sym_Update -> No_Extra
-		0, // Dbg_Scope -> No_Extra
-		1, // If -> Cfg
-		1, // Jump -> Cfg
-		1, // Trap -> Cfg
-		4, // Call -> Call
-		1, // Always -> Cfg
-		1, // Return -> Cfg
-		0, // Poison -> No_Extra
-		0, // Mem -> No_Extra
-		0, // Split_Mem -> No_Extra
-		0, // Merge_Mem -> No_Extra
-		0, // Sym -> No_Extra
-		2, // Local -> Local
-		1, // Global -> Tup
-		1, // Param -> Tup
-		1, // Ret -> Tup
-		0, // Phi -> No_Extra
-		2, // CInt -> CInt
-		0, // Add -> No_Extra
-		0, // Sub -> No_Extra
-		0, // And -> No_Extra
-		0, // Or -> No_Extra
-		0, // Xor -> No_Extra
-		0, // Eq -> No_Extra
-		0, // Ne -> No_Extra
-		0, // Le -> No_Extra
-		0, // Lt -> No_Extra
-		0, // Gt -> No_Extra
-		0, // Ge -> No_Extra
-		0, // U_Lt -> No_Extra
-		0, // U_Gt -> No_Extra
-		0, // U_Le -> No_Extra
-		0, // U_Ge -> No_Extra
-		0, // Shl -> No_Extra
-		0, // Shr -> No_Extra
-		0, // U_Shr -> No_Extra
-		0, // Mul -> No_Extra
-		0, // Div -> No_Extra
-		0, // U_Div -> No_Extra
-		0, // Rem -> No_Extra
-		0, // U_Rem -> No_Extra
-		0, // And_Not -> No_Extra
-		0, // Split -> No_Extra
-		0, // Local_Addr -> No_Extra
-		0, // Global_Addr -> No_Extra
-		1, // Proc_Addr -> Tup
-		0, // Copy -> No_Extra
-		0, // Set -> No_Extra
-		0, // Store -> No_Extra
-		0, // Load -> No_Extra
-		0, // Neg -> No_Extra
-		0, // Not -> No_Extra
-		0, // Cast -> No_Extra
-		0, // Conv -> No_Extra
-		0, // U_Conv -> No_Extra
-		0, // Splat -> No_Extra
-		0, // Ctz -> No_Extra
-		0, // Simd_Extract_Lsbs -> No_Extra
-		0, // Simd_Reduce_Add_Bisect -> No_Extra
-		3, // X64_Add -> Mem_Op
-		3, // X64_Sub -> Mem_Op
-		3, // X64_And -> Mem_Op
-		3, // X64_Or -> Mem_Op
-		3, // X64_Xor -> Mem_Op
-		3, // X64_Eq -> Mem_Op
-		3, // X64_Ne -> Mem_Op
-		3, // X64_Le -> Mem_Op
-		3, // X64_Lt -> Mem_Op
-		3, // X64_Gt -> Mem_Op
-		3, // X64_Ge -> Mem_Op
-		3, // X64_U_Lt -> Mem_Op
-		3, // X64_U_Gt -> Mem_Op
-		3, // X64_U_Le -> Mem_Op
-		3, // X64_U_Ge -> Mem_Op
-		3, // X64_Shl -> Mem_Op
-		3, // X64_Shr -> Mem_Op
-		3, // X64_U_Shr -> Mem_Op
-		3, // X64_Mul -> Mem_Op
-		3, // X64_Div -> Mem_Op
-		3, // X64_Lea -> Mem_Op
-		3, // X64_Load -> Mem_Op
-		3, // X64_Store -> Mem_Op
-		3, // X64_Neg -> Mem_Op
-		3, // X64_Not -> Mem_Op
-		0, // X64_Mul8 -> No_Extra
-		3, // X64_Fma_213 -> Mem_Op
-		0, // X64_Pcmpeq -> No_Extra
-		3, // X64_Padd -> Mem_Op
-		3, // X64_Psub -> Mem_Op
-		3, // X64_Pshufd -> Mem_Op
-		0, // X64_Psadbw -> No_Extra
-		3, // X64_Pshufb -> Mem_Op
-		3, // X64_Pextr -> Mem_Op
+		0 = 1, // Nil -> Cfg
+		1 = 1, // Entry -> Cfg
+		2 = 1, // Then -> Cfg
+		3 = 1, // Else -> Cfg
+		4 = 1, // Region -> Cfg
+		5 = 1, // Loop -> Cfg
+		6 = 1, // Call_End -> Cfg
+		8 = 6, // Dbg_Sym_Decl -> Dbg_Sym
+		11 = 1, // If -> Cfg
+		12 = 1, // Jump -> Cfg
+		13 = 1, // Trap -> Cfg
+		14 = 4, // Call -> Call
+		15 = 1, // Always -> Cfg
+		16 = 1, // Return -> Cfg
+		22 = 2, // Local -> Local
+		23 = 1, // Global -> Tup
+		24 = 1, // Param -> Tup
+		25 = 1, // Ret -> Tup
+		27 = 2, // CInt -> CInt
+		55 = 1, // Proc_Addr -> Tup
+		69 = 3, // X64_Add -> Mem_Op
+		70 = 3, // X64_Sub -> Mem_Op
+		71 = 3, // X64_And -> Mem_Op
+		72 = 3, // X64_Or -> Mem_Op
+		73 = 3, // X64_Xor -> Mem_Op
+		74 = 3, // X64_Eq -> Mem_Op
+		75 = 3, // X64_Ne -> Mem_Op
+		76 = 3, // X64_Le -> Mem_Op
+		77 = 3, // X64_Lt -> Mem_Op
+		78 = 3, // X64_Gt -> Mem_Op
+		79 = 3, // X64_Ge -> Mem_Op
+		80 = 3, // X64_U_Lt -> Mem_Op
+		81 = 3, // X64_U_Gt -> Mem_Op
+		82 = 3, // X64_U_Le -> Mem_Op
+		83 = 3, // X64_U_Ge -> Mem_Op
+		84 = 3, // X64_Shl -> Mem_Op
+		85 = 3, // X64_Shr -> Mem_Op
+		86 = 3, // X64_U_Shr -> Mem_Op
+		87 = 3, // X64_Mul -> Mem_Op
+		88 = 3, // X64_Div -> Mem_Op
+		89 = 3, // X64_Lea -> Mem_Op
+		90 = 3, // X64_Load -> Mem_Op
+		91 = 3, // X64_Store -> Mem_Op
+		92 = 3, // X64_Neg -> Mem_Op
+		93 = 3, // X64_Not -> Mem_Op
+		95 = 3, // X64_Fma_213 -> Mem_Op
+		97 = 3, // X64_Padd -> Mem_Op
+		98 = 3, // X64_Psub -> Mem_Op
+		99 = 3, // X64_Pshufd -> Mem_Op
+		101 = 3, // X64_Pshufb -> Mem_Op
+		102 = 3, // X64_Pextr -> Mem_Op
 	},
 	node_flags = {
 		{}, // Nil
@@ -336,215 +284,59 @@ SPEC := bac.Node_Spec{
 		{}, // X64_Pextr
 	},
 	node_extra_types = {
-		bac.Cfg,
-		bac.Cfg,
-		bac.Cfg,
-		bac.Cfg,
-		bac.Cfg,
-		bac.Cfg,
-		bac.Cfg,
-		bac.No_Extra,
-		bac.Dbg_Sym,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.Cfg,
-		bac.Cfg,
-		bac.Cfg,
-		bac.Call,
-		bac.Cfg,
-		bac.Cfg,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.Local,
-		bac.Tup,
-		bac.Tup,
-		bac.Tup,
-		bac.No_Extra,
-		bac.CInt,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.Tup,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		Mem_Op,
-		Mem_Op,
-		Mem_Op,
-		Mem_Op,
-		Mem_Op,
-		Mem_Op,
-		Mem_Op,
-		Mem_Op,
-		Mem_Op,
-		Mem_Op,
-		Mem_Op,
-		Mem_Op,
-		Mem_Op,
-		Mem_Op,
-		Mem_Op,
-		Mem_Op,
-		Mem_Op,
-		Mem_Op,
-		Mem_Op,
-		Mem_Op,
-		Mem_Op,
-		Mem_Op,
-		Mem_Op,
-		Mem_Op,
-		Mem_Op,
-		bac.No_Extra,
-		Mem_Op,
-		bac.No_Extra,
-		Mem_Op,
-		Mem_Op,
-		Mem_Op,
-		bac.No_Extra,
-		Mem_Op,
-		Mem_Op,
+		0 = bac.Cfg,
+		1 = bac.Cfg,
+		2 = bac.Cfg,
+		3 = bac.Cfg,
+		4 = bac.Cfg,
+		5 = bac.Cfg,
+		6 = bac.Cfg,
+		8 = bac.Dbg_Sym,
+		11 = bac.Cfg,
+		12 = bac.Cfg,
+		13 = bac.Cfg,
+		14 = bac.Call,
+		15 = bac.Cfg,
+		16 = bac.Cfg,
+		22 = bac.Local,
+		23 = bac.Tup,
+		24 = bac.Tup,
+		25 = bac.Tup,
+		27 = bac.CInt,
+		55 = bac.Tup,
+		69 = Mem_Op,
+		70 = Mem_Op,
+		71 = Mem_Op,
+		72 = Mem_Op,
+		73 = Mem_Op,
+		74 = Mem_Op,
+		75 = Mem_Op,
+		76 = Mem_Op,
+		77 = Mem_Op,
+		78 = Mem_Op,
+		79 = Mem_Op,
+		80 = Mem_Op,
+		81 = Mem_Op,
+		82 = Mem_Op,
+		83 = Mem_Op,
+		84 = Mem_Op,
+		85 = Mem_Op,
+		86 = Mem_Op,
+		87 = Mem_Op,
+		88 = Mem_Op,
+		89 = Mem_Op,
+		90 = Mem_Op,
+		91 = Mem_Op,
+		92 = Mem_Op,
+		93 = Mem_Op,
+		95 = Mem_Op,
+		97 = Mem_Op,
+		98 = Mem_Op,
+		99 = Mem_Op,
+		101 = Mem_Op,
+		102 = Mem_Op,
 	},
-	node_kind_name = {
-		`Nil`,
-		`Entry`,
-		`Then`,
-		`Else`,
-		`Region`,
-		`Loop`,
-		`Call_End`,
-		`End`,
-		`Dbg_Sym_Decl`,
-		`Dbg_Sym_Update`,
-		`Dbg_Scope`,
-		`If`,
-		`Jump`,
-		`Trap`,
-		`Call`,
-		`Always`,
-		`Return`,
-		`Poison`,
-		`Mem`,
-		`Split_Mem`,
-		`Merge_Mem`,
-		`Sym`,
-		`Local`,
-		`Global`,
-		`Param`,
-		`Ret`,
-		`Phi`,
-		`CInt`,
-		`Add`,
-		`Sub`,
-		`And`,
-		`Or`,
-		`Xor`,
-		`Eq`,
-		`Ne`,
-		`Le`,
-		`Lt`,
-		`Gt`,
-		`Ge`,
-		`U_Lt`,
-		`U_Gt`,
-		`U_Le`,
-		`U_Ge`,
-		`Shl`,
-		`Shr`,
-		`U_Shr`,
-		`Mul`,
-		`Div`,
-		`U_Div`,
-		`Rem`,
-		`U_Rem`,
-		`And_Not`,
-		`Split`,
-		`Local_Addr`,
-		`Global_Addr`,
-		`Proc_Addr`,
-		`Copy`,
-		`Set`,
-		`Store`,
-		`Load`,
-		`Neg`,
-		`Not`,
-		`Cast`,
-		`Conv`,
-		`U_Conv`,
-		`Splat`,
-		`Ctz`,
-		`Simd_Extract_Lsbs`,
-		`Simd_Reduce_Add_Bisect`,
-		`X64_Add`,
-		`X64_Sub`,
-		`X64_And`,
-		`X64_Or`,
-		`X64_Xor`,
-		`X64_Eq`,
-		`X64_Ne`,
-		`X64_Le`,
-		`X64_Lt`,
-		`X64_Gt`,
-		`X64_Ge`,
-		`X64_U_Lt`,
-		`X64_U_Gt`,
-		`X64_U_Le`,
-		`X64_U_Ge`,
-		`X64_Shl`,
-		`X64_Shr`,
-		`X64_U_Shr`,
-		`X64_Mul`,
-		`X64_Div`,
-		`X64_Lea`,
-		`X64_Load`,
-		`X64_Store`,
-		`X64_Neg`,
-		`X64_Not`,
-		`X64_Mul8`,
-		`X64_Fma_213`,
-		`X64_Pcmpeq`,
-		`X64_Padd`,
-		`X64_Psub`,
-		`X64_Pshufd`,
-		`X64_Psadbw`,
-		`X64_Pshufb`,
-		`X64_Pextr`,
-	},
+	node_kind = Node_Type,
 }
 
 Node_Type :: enum u16 {

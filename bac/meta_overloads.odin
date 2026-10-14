@@ -62,10 +62,6 @@ get_static_extra_node_id :: #force_inline proc(
 ) -> ^T {
 	return get_static_extra_node(graph, get_node(graph, id), T)
 }
-get_any_extra :: proc{get_any_extra_node, get_any_extra_node_id}
-get_any_extra_node_id :: #force_inline proc(graph: ^Proc, id: Node_ID) -> any {
-	return get_any_extra_node(graph, get_node(graph, id))
-}
 has_flag :: proc{has_flag_node, has_flag_node_id}
 has_flag_node_id :: #force_inline proc(
 	graph: ^Proc,

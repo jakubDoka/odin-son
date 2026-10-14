@@ -189,13 +189,27 @@ display_node :: proc(
 
 	node := expand_node(graph, id)
 
-	extra := get_extra_dyn(graph, node)
+	get_any_extra_node :: #force_inline proc(
+		graph: ^Proc,
+		node: ^Node,
+	) -> any {
+		assert(int(node.rtype) < len(graph.node_extra_types))
+		return {&node.extra, graph.node_extra_types[node.rtype]}
+	}
+
+	extra := get_any_extra_node(graph, node)
 
 	display_node_gvn(w, graph, id)
 	if node.dt != .Void {
 		fmt.wprintf(w, ":%v", node.dt)
 	}
-	fmt.wprintf(w, ":%v(", graph.node_kind_name[node.rtype])
+	fmt.wprintf(
+		w,
+		":%v(",
+		reflect.enum_name_from_value_any(
+			any{data = &node.rtype, id = graph.node_kind},
+		) or_else panic(""),
+	)
 
 	written_one: bool
 	if node.mem_alignment_pow != 0 {
@@ -289,6 +303,8 @@ display_extra :: proc(
 	name: string,
 	written_one: ^bool,
 ) {
+	if extra.id == nil do return
+
 	#partial switch info in
 		type_info_of(reflect.typeid_base(extra.id)).variant {
 	case runtime.Type_Info_Struct:

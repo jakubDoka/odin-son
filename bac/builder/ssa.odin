@@ -719,7 +719,7 @@ inline_graph :: proc(graph: ^bac.Proc, call: Node_ID, from: ^bac.Proc) {
 		new_node.output_idx = u32(graph.mem.pos / bac.PRECISION)
 		_ = arna.alloc(
 			graph.mem,
-			uint(node.output_cap * bac.PRECISION),
+			uint(node.output_cap * size_of(bac.Node_Output)),
 			bac.PRECISION,
 		)
 		new_node.output_count = 0

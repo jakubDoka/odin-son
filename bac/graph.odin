@@ -367,17 +367,17 @@ int_for_size :: proc(size: int) -> Node_Datatype {
 
 Node_ID :: distinct u32
 
-when false && ODIN_DEBUG {
+when #config(COMPACT_NODE_OUTPUTS, true) {
+	Node_Output :: bit_field u32 {
+		id:  Node_ID | 22,
+		idx: int     | 10,
+	}
+} else {
 	Node_Output :: struct {
 		id:      Node_ID,
 		using _: bit_field u32 {
 			idx: int | 32,
 		},
-	}
-} else {
-	Node_Output :: bit_field u32 {
-		id:  Node_ID | 22,
-		idx: int     | 10,
 	}
 }
 
@@ -1640,9 +1640,6 @@ node_approx_size :: proc(graph: ^Proc, node: ^Node) -> uint {
 }
 
 subsume :: proc(graph: ^Proc, with: Node_ID, target: Node_ID) {
-	//assert(with != graph.start)
-	//assert(target != graph.entry)
-
 	assert(target != 0)
 
 	wnode := expand_node(graph, with)

@@ -33,6 +33,7 @@ main :: proc() {
 					meta.class_array(&BUILDER_CLASSES),
 				},
 				intern            = true,
+				has_sccp          = true,
 			},
 			"bac/builder/node_specs.odin",
 		)
@@ -128,6 +129,8 @@ main :: proc() {
 				extra_args = {"laneidx"},
 				pass_lane = true,
 			},
+			.WASM_Shl ..= .WASM_U_Shr = {no_ctor = true},
+			.Select = {args = {"on_true", "on_false", "condition"}},
 		}
 
 		meta.generate_spec(
@@ -177,6 +180,12 @@ main :: proc() {
 			},
 			.Addv128 = {args = {"vec"}, pass_lane = true},
 			.Umov = {id = arm.Arm_Op, args = {"vec"}, extra_args = {"aux"}},
+			.Lslv ..= .Lsrv = {no_ctor = true},
+			.Csel_Ult_Imm = {
+				id = arm.Arm_Op,
+				args = {"on_true", "on_false", "count"},
+				extra_args = {"aux"},
+			},
 		}
 
 		meta.generate_spec(

@@ -1,0 +1,881 @@
+=========== OPT LEVEL: none-quick ===========
+main:
+    sub sp, sp, #96
+    stp x29, x30, [xzr, #7]
+    movz x1, #7, #0
+    movz x0, #165, #0
+    bl shifts u64 u8
+    str x0, [xzr, #16]
+    movz x1, #65, #0
+    movn x0, #84, #0
+    bl shifts i64 u8
+    str x0, [xzr, #24]
+    movz x0, #42405, #0
+    movz x1, #31, #0
+    bl shifts u32 u16
+    str x0, [xzr, #32]
+    movn x0, #21844, #0
+    movz x1, #65535, #0
+    bl shifts i32 u16
+    str x0, [xzr, #40]
+    movz x0, #42405, #0
+    movk x0, #42405, #1
+    movz x1, #63, #0
+    bl shifts u64 u32
+    str x0, [xzr, #48]
+    movn x0, #21844, #0
+    movk x0, #43690, #1
+    movz x1, #64, #0
+    bl shifts i64 u32
+    str x0, [xzr, #56]
+    movz x0, #165, #0
+    movz x1, #1, #0
+    movk x1, #1, #2
+    bl shifts u64 u64
+    str x0, [xzr, #64]
+    movn x0, #84, #0
+    movz x1, #1, #0
+    movk x1, #1, #2
+    bl shifts i64 u64
+    str x0, [xzr, #72]
+    movz x1, #0, #0
+    movk x1, #1, #2
+    movz x0, #165, #0
+    bl shifts u64 u64
+    str x0, [xzr, #80]
+    movn x1, #0, #0
+    movn x0, #84, #0
+    bl shifts i64 u64
+    movz x1, #251, #0
+    ldr x2, [xzr, #16]
+    ldr x3, [xzr, #24]
+    add x2, x2, x3
+    ldr x3, [xzr, #32]
+    add x2, x2, x3
+    ldr x3, [xzr, #40]
+    add x2, x2, x3
+    ldr x3, [xzr, #48]
+    add x2, x2, x3
+    ldr x3, [xzr, #56]
+    add x2, x2, x3
+    ldr x3, [xzr, #64]
+    add x2, x2, x3
+    ldr x3, [xzr, #72]
+    add x2, x2, x3
+    ldr x3, [xzr, #80]
+    add x2, x2, x3
+    add x0, x2, x0
+    sdiv x2, x0, x1
+    msub x0, x2, x1, x0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #96
+    ret
+shifts u64 u8:
+    uxtb w1, w1
+    lslv x2, x0, x1
+    lsrv x0, x0, x1
+    movz x3, #0, #0
+    cmp x1, #64
+    csel x2, x2, x3, cc
+    movz x3, #0, #0
+    cmp x1, #64
+    csel x0, x0, x3, cc
+    eor x0, x2, x0
+    ret
+shifts i64 u8:
+    uxtb w1, w1
+    lslv x2, x0, x1
+    movz x3, #0, #0
+    cmp x1, #64
+    csel x2, x2, x3, cc
+    movz x3, #63, #0
+    cmp x1, #64
+    csel x1, x1, x3, cc
+    asrv x0, x0, x1
+    eor x0, x2, x0
+    ret
+shifts u32 u16:
+    uxth w1, w1
+    lslv w2, w0, w1
+    lsrv w0, w0, w1
+    movz x3, #0, #0
+    cmp x1, #32
+    csel w2, w2, w3, cc
+    mov w2, w2
+    movz x3, #0, #0
+    cmp x1, #32
+    csel w0, w0, w3, cc
+    mov w0, w0
+    eor x0, x2, x0
+    ret
+shifts i32 u16:
+    uxth w1, w1
+    lslv w2, w0, w1
+    movz x3, #0, #0
+    cmp x1, #32
+    csel w2, w2, w3, cc
+    sxtw x2, w2
+    movz x3, #31, #0
+    cmp x1, #32
+    csel x1, x1, x3, cc
+    asrv w0, w0, w1
+    sxtw x0, w0
+    eor x0, x2, x0
+    ret
+shifts u64 u32:
+    mov w1, w1
+    lslv x2, x0, x1
+    lsrv x0, x0, x1
+    movz x3, #0, #0
+    cmp x1, #64
+    csel x2, x2, x3, cc
+    movz x3, #0, #0
+    cmp x1, #64
+    csel x0, x0, x3, cc
+    eor x0, x2, x0
+    ret
+shifts i64 u32:
+    mov w1, w1
+    lslv x2, x0, x1
+    movz x3, #0, #0
+    cmp x1, #64
+    csel x2, x2, x3, cc
+    movz x3, #63, #0
+    cmp x1, #64
+    csel x1, x1, x3, cc
+    asrv x0, x0, x1
+    eor x0, x2, x0
+    ret
+shifts u64 u64:
+    lslv x2, x0, x1
+    lsrv x0, x0, x1
+    movz x3, #0, #0
+    cmp x1, #64
+    csel x2, x2, x3, cc
+    movz x3, #0, #0
+    cmp x1, #64
+    csel x0, x0, x3, cc
+    eor x0, x2, x0
+    ret
+shifts i64 u64:
+    lslv x2, x0, x1
+    movz x3, #0, #0
+    cmp x1, #64
+    csel x2, x2, x3, cc
+    movz x3, #63, #0
+    cmp x1, #64
+    csel x1, x1, x3, cc
+    asrv x0, x0, x1
+    eor x0, x2, x0
+    ret
+=========== OPT LEVEL: none ===========
+main:
+    sub sp, sp, #96
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    str x24, [xzr, #40]
+    str x25, [xzr, #48]
+    str x26, [xzr, #56]
+    str x27, [xzr, #64]
+    stp x29, x30, [xzr, #79]
+    movz x1, #7, #0
+    movz x0, #165, #0
+    bl shifts u64 u8
+    mov x27, x0
+    movz x1, #65, #0
+    movn x0, #84, #0
+    bl shifts i64 u8
+    mov x26, x0
+    movz x0, #42405, #0
+    movz x1, #31, #0
+    bl shifts u32 u16
+    mov x25, x0
+    movn x0, #21844, #0
+    movz x1, #65535, #0
+    bl shifts i32 u16
+    mov x24, x0
+    movz x0, #42405, #0
+    movk x0, #42405, #1
+    movz x1, #63, #0
+    bl shifts u64 u32
+    mov x23, x0
+    movn x0, #21844, #0
+    movk x0, #43690, #1
+    movz x1, #64, #0
+    bl shifts i64 u32
+    mov x22, x0
+    movz x0, #165, #0
+    movz x1, #1, #0
+    movk x1, #1, #2
+    bl shifts u64 u64
+    mov x21, x0
+    movn x0, #84, #0
+    movz x1, #1, #0
+    movk x1, #1, #2
+    bl shifts i64 u64
+    mov x20, x0
+    movz x1, #0, #0
+    movk x1, #1, #2
+    movz x0, #165, #0
+    bl shifts u64 u64
+    mov x19, x0
+    movn x1, #0, #0
+    movn x0, #84, #0
+    bl shifts i64 u64
+    movz x1, #251, #0
+    add x3, x27, x26
+    add x3, x3, x25
+    add x3, x3, x24
+    add x3, x3, x23
+    add x3, x3, x22
+    add x3, x3, x21
+    add x3, x3, x20
+    add x2, x3, x19
+    add x2, x2, x0
+    sdiv x0, x2, x1
+    msub x0, x0, x1, x2
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldr x24, [xzr, #40]
+    ldr x25, [xzr, #48]
+    ldr x26, [xzr, #56]
+    ldr x27, [xzr, #64]
+    ldp x29, x30, [xzr, #79]
+    add sp, sp, #96
+    ret
+shifts u64 u8:
+    uxtb w3, w1
+    lslv x1, x0, x3
+    lsrv x2, x0, x3
+    movz x0, #0, #0
+    cmp x3, #64
+    csel x1, x1, x0, cc
+    movz x0, #0, #0
+    cmp x3, #64
+    csel x0, x2, x0, cc
+    eor x0, x1, x0
+    ret
+shifts i64 u8:
+    uxtb w3, w1
+    lslv x2, x0, x3
+    movz x1, #0, #0
+    cmp x3, #64
+    csel x2, x2, x1, cc
+    movz x1, #63, #0
+    cmp x3, #64
+    csel x1, x3, x1, cc
+    asrv x0, x0, x1
+    eor x0, x2, x0
+    ret
+shifts u32 u16:
+    uxth w3, w1
+    lslv w1, w0, w3
+    lsrv w2, w0, w3
+    movz x0, #0, #0
+    cmp x3, #32
+    csel w0, w1, w0, cc
+    mov w1, w0
+    movz x0, #0, #0
+    cmp x3, #32
+    csel w0, w2, w0, cc
+    mov w0, w0
+    eor x0, x1, x0
+    ret
+shifts i32 u16:
+    uxth w3, w1
+    lslv w2, w0, w3
+    movz x1, #0, #0
+    cmp x3, #32
+    csel w1, w2, w1, cc
+    sxtw x2, w1
+    movz x1, #31, #0
+    cmp x3, #32
+    csel x1, x3, x1, cc
+    asrv w0, w0, w1
+    sxtw x0, w0
+    eor x0, x2, x0
+    ret
+shifts u64 u32:
+    mov w3, w1
+    lslv x1, x0, x3
+    lsrv x2, x0, x3
+    movz x0, #0, #0
+    cmp x3, #64
+    csel x1, x1, x0, cc
+    movz x0, #0, #0
+    cmp x3, #64
+    csel x0, x2, x0, cc
+    eor x0, x1, x0
+    ret
+shifts i64 u32:
+    mov w3, w1
+    lslv x2, x0, x3
+    movz x1, #0, #0
+    cmp x3, #64
+    csel x2, x2, x1, cc
+    movz x1, #63, #0
+    cmp x3, #64
+    csel x1, x3, x1, cc
+    asrv x0, x0, x1
+    eor x0, x2, x0
+    ret
+shifts u64 u64:
+    lslv x2, x0, x1
+    lsrv x3, x0, x1
+    movz x0, #0, #0
+    cmp x1, #64
+    csel x2, x2, x0, cc
+    movz x0, #0, #0
+    cmp x1, #64
+    csel x0, x3, x0, cc
+    eor x0, x2, x0
+    ret
+shifts i64 u64:
+    lslv x3, x0, x1
+    movz x2, #0, #0
+    cmp x1, #64
+    csel x3, x3, x2, cc
+    movz x2, #63, #0
+    cmp x1, #64
+    csel x1, x1, x2, cc
+    asrv x0, x0, x1
+    eor x0, x3, x0
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+main:
+    sub sp, sp, #96
+    stp x29, x30, [xzr, #7]
+    movz x1, #7, #0
+    movz x0, #165, #0
+    bl shifts u64 u8
+    str x0, [xzr, #16]
+    movz x1, #65, #0
+    movn x0, #84, #0
+    bl shifts i64 u8
+    str x0, [xzr, #24]
+    movz x0, #42405, #0
+    movz x1, #31, #0
+    bl shifts u32 u16
+    str x0, [xzr, #32]
+    movn x0, #21844, #0
+    movz x1, #65535, #0
+    bl shifts i32 u16
+    str x0, [xzr, #40]
+    movz x0, #42405, #0
+    movk x0, #42405, #1
+    movz x1, #63, #0
+    bl shifts u64 u32
+    str x0, [xzr, #48]
+    movn x0, #21844, #0
+    movk x0, #43690, #1
+    movz x1, #64, #0
+    bl shifts i64 u32
+    str x0, [xzr, #56]
+    movz x0, #165, #0
+    movz x1, #1, #0
+    movk x1, #1, #2
+    bl shifts u64 u64
+    str x0, [xzr, #64]
+    movn x0, #84, #0
+    movz x1, #1, #0
+    movk x1, #1, #2
+    bl shifts i64 u64
+    str x0, [xzr, #72]
+    movz x1, #0, #0
+    movk x1, #1, #2
+    movz x0, #165, #0
+    bl shifts u64 u64
+    str x0, [xzr, #80]
+    movn x1, #0, #0
+    movn x0, #84, #0
+    bl shifts i64 u64
+    movz x1, #251, #0
+    ldr x2, [xzr, #16]
+    ldr x3, [xzr, #24]
+    add x2, x2, x3
+    ldr x3, [xzr, #32]
+    add x2, x2, x3
+    ldr x3, [xzr, #40]
+    add x2, x2, x3
+    ldr x3, [xzr, #48]
+    add x2, x2, x3
+    ldr x3, [xzr, #56]
+    add x2, x2, x3
+    ldr x3, [xzr, #64]
+    add x2, x2, x3
+    ldr x3, [xzr, #72]
+    add x2, x2, x3
+    ldr x3, [xzr, #80]
+    add x2, x2, x3
+    add x0, x2, x0
+    sdiv x2, x0, x1
+    msub x0, x2, x1, x0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #96
+    ret
+shifts u64 u8:
+    uxtb w1, w1
+    lslv x2, x0, x1
+    lsrv x0, x0, x1
+    movz x3, #0, #0
+    cmp x1, #64
+    csel x2, x2, x3, cc
+    movz x3, #0, #0
+    cmp x1, #64
+    csel x0, x0, x3, cc
+    eor x0, x2, x0
+    ret
+shifts i64 u8:
+    uxtb w1, w1
+    lslv x2, x0, x1
+    movz x3, #0, #0
+    cmp x1, #64
+    csel x2, x2, x3, cc
+    movz x3, #63, #0
+    cmp x1, #64
+    csel x1, x1, x3, cc
+    asrv x0, x0, x1
+    eor x0, x2, x0
+    ret
+shifts u32 u16:
+    uxth w1, w1
+    lslv w2, w0, w1
+    lsrv w0, w0, w1
+    movz x3, #0, #0
+    cmp x1, #32
+    csel w2, w2, w3, cc
+    mov w2, w2
+    movz x3, #0, #0
+    cmp x1, #32
+    csel w0, w0, w3, cc
+    mov w0, w0
+    eor x0, x2, x0
+    ret
+shifts i32 u16:
+    uxth w1, w1
+    lslv w2, w0, w1
+    movz x3, #0, #0
+    cmp x1, #32
+    csel w2, w2, w3, cc
+    sxtw x2, w2
+    movz x3, #31, #0
+    cmp x1, #32
+    csel x1, x1, x3, cc
+    asrv w0, w0, w1
+    sxtw x0, w0
+    eor x0, x2, x0
+    ret
+shifts u64 u32:
+    mov w1, w1
+    lslv x2, x0, x1
+    lsrv x0, x0, x1
+    movz x3, #0, #0
+    cmp x1, #64
+    csel x2, x2, x3, cc
+    movz x3, #0, #0
+    cmp x1, #64
+    csel x0, x0, x3, cc
+    eor x0, x2, x0
+    ret
+shifts i64 u32:
+    mov w1, w1
+    lslv x2, x0, x1
+    movz x3, #0, #0
+    cmp x1, #64
+    csel x2, x2, x3, cc
+    movz x3, #63, #0
+    cmp x1, #64
+    csel x1, x1, x3, cc
+    asrv x0, x0, x1
+    eor x0, x2, x0
+    ret
+shifts u64 u64:
+    lslv x2, x0, x1
+    lsrv x0, x0, x1
+    movz x3, #0, #0
+    cmp x1, #64
+    csel x2, x2, x3, cc
+    movz x3, #0, #0
+    cmp x1, #64
+    csel x0, x0, x3, cc
+    eor x0, x2, x0
+    ret
+shifts i64 u64:
+    lslv x2, x0, x1
+    movz x3, #0, #0
+    cmp x1, #64
+    csel x2, x2, x3, cc
+    movz x3, #63, #0
+    cmp x1, #64
+    csel x1, x1, x3, cc
+    asrv x0, x0, x1
+    eor x0, x2, x0
+    ret
+=========== OPT LEVEL: moderate ===========
+main:
+    sub sp, sp, #96
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    str x24, [xzr, #40]
+    str x25, [xzr, #48]
+    str x26, [xzr, #56]
+    str x27, [xzr, #64]
+    stp x29, x30, [xzr, #79]
+    movz x1, #7, #0
+    movz x0, #165, #0
+    bl shifts u64 u8
+    mov x27, x0
+    movz x1, #65, #0
+    movn x0, #84, #0
+    bl shifts i64 u8
+    mov x26, x0
+    movz x0, #42405, #0
+    movz x1, #31, #0
+    bl shifts u32 u16
+    mov x25, x0
+    movn x0, #21844, #0
+    movz x1, #65535, #0
+    bl shifts i32 u16
+    mov x24, x0
+    movz x0, #42405, #0
+    movk x0, #42405, #1
+    movz x1, #63, #0
+    bl shifts u64 u32
+    mov x23, x0
+    movn x0, #21844, #0
+    movk x0, #43690, #1
+    movz x1, #64, #0
+    bl shifts i64 u32
+    mov x22, x0
+    movz x0, #165, #0
+    movz x1, #1, #0
+    movk x1, #1, #2
+    bl shifts u64 u64
+    mov x21, x0
+    movn x0, #84, #0
+    movz x1, #1, #0
+    movk x1, #1, #2
+    bl shifts i64 u64
+    mov x20, x0
+    movz x1, #0, #0
+    movk x1, #1, #2
+    movz x0, #165, #0
+    bl shifts u64 u64
+    mov x19, x0
+    movn x1, #0, #0
+    movn x0, #84, #0
+    bl shifts i64 u64
+    movz x1, #251, #0
+    add x3, x27, x26
+    add x3, x3, x25
+    add x3, x3, x24
+    add x3, x3, x23
+    add x3, x3, x22
+    add x3, x3, x21
+    add x3, x3, x20
+    add x2, x3, x19
+    add x2, x2, x0
+    sdiv x0, x2, x1
+    msub x0, x0, x1, x2
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldr x24, [xzr, #40]
+    ldr x25, [xzr, #48]
+    ldr x26, [xzr, #56]
+    ldr x27, [xzr, #64]
+    ldp x29, x30, [xzr, #79]
+    add sp, sp, #96
+    ret
+shifts u64 u8:
+    uxtb w3, w1
+    lslv x1, x0, x3
+    lsrv x2, x0, x3
+    movz x0, #0, #0
+    cmp x3, #64
+    csel x1, x1, x0, cc
+    movz x0, #0, #0
+    cmp x3, #64
+    csel x0, x2, x0, cc
+    eor x0, x1, x0
+    ret
+shifts i64 u8:
+    uxtb w3, w1
+    lslv x2, x0, x3
+    movz x1, #0, #0
+    cmp x3, #64
+    csel x2, x2, x1, cc
+    movz x1, #63, #0
+    cmp x3, #64
+    csel x1, x3, x1, cc
+    asrv x0, x0, x1
+    eor x0, x2, x0
+    ret
+shifts u32 u16:
+    uxth w3, w1
+    lslv w1, w0, w3
+    lsrv w2, w0, w3
+    movz x0, #0, #0
+    cmp x3, #32
+    csel w0, w1, w0, cc
+    mov w1, w0
+    movz x0, #0, #0
+    cmp x3, #32
+    csel w0, w2, w0, cc
+    mov w0, w0
+    eor x0, x1, x0
+    ret
+shifts i32 u16:
+    uxth w3, w1
+    lslv w2, w0, w3
+    movz x1, #0, #0
+    cmp x3, #32
+    csel w1, w2, w1, cc
+    sxtw x2, w1
+    movz x1, #31, #0
+    cmp x3, #32
+    csel x1, x3, x1, cc
+    asrv w0, w0, w1
+    sxtw x0, w0
+    eor x0, x2, x0
+    ret
+shifts u64 u32:
+    mov w3, w1
+    lslv x1, x0, x3
+    lsrv x2, x0, x3
+    movz x0, #0, #0
+    cmp x3, #64
+    csel x1, x1, x0, cc
+    movz x0, #0, #0
+    cmp x3, #64
+    csel x0, x2, x0, cc
+    eor x0, x1, x0
+    ret
+shifts i64 u32:
+    mov w3, w1
+    lslv x2, x0, x3
+    movz x1, #0, #0
+    cmp x3, #64
+    csel x2, x2, x1, cc
+    movz x1, #63, #0
+    cmp x3, #64
+    csel x1, x3, x1, cc
+    asrv x0, x0, x1
+    eor x0, x2, x0
+    ret
+shifts u64 u64:
+    lslv x2, x0, x1
+    lsrv x3, x0, x1
+    movz x0, #0, #0
+    cmp x1, #64
+    csel x2, x2, x0, cc
+    movz x0, #0, #0
+    cmp x1, #64
+    csel x0, x3, x0, cc
+    eor x0, x2, x0
+    ret
+shifts i64 u64:
+    lslv x3, x0, x1
+    movz x2, #0, #0
+    cmp x1, #64
+    csel x3, x3, x2, cc
+    movz x2, #63, #0
+    cmp x1, #64
+    csel x1, x1, x2, cc
+    asrv x0, x0, x1
+    eor x0, x3, x0
+    ret
+=========== OPT LEVEL: all ===========
+main:
+    sub sp, sp, #96
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    str x24, [xzr, #40]
+    str x25, [xzr, #48]
+    str x26, [xzr, #56]
+    str x27, [xzr, #64]
+    stp x29, x30, [xzr, #79]
+    movz x1, #7, #0
+    movz x0, #165, #0
+    bl shifts u64 u8
+    mov x27, x0
+    movz x1, #65, #0
+    movn x0, #84, #0
+    bl shifts i64 u8
+    mov x26, x0
+    movz x0, #42405, #0
+    movz x1, #31, #0
+    bl shifts u32 u16
+    mov x25, x0
+    movn x0, #21844, #0
+    movz x1, #65535, #0
+    bl shifts i32 u16
+    mov x24, x0
+    movz x0, #42405, #0
+    movk x0, #42405, #1
+    movz x1, #63, #0
+    bl shifts u64 u32
+    mov x23, x0
+    movn x0, #21844, #0
+    movk x0, #43690, #1
+    movz x1, #64, #0
+    bl shifts i64 u32
+    mov x22, x0
+    movz x0, #165, #0
+    movz x1, #1, #0
+    movk x1, #1, #2
+    bl shifts u64 u64
+    mov x21, x0
+    movn x0, #84, #0
+    movz x1, #1, #0
+    movk x1, #1, #2
+    bl shifts i64 u64
+    mov x20, x0
+    movz x1, #0, #0
+    movk x1, #1, #2
+    movz x0, #165, #0
+    bl shifts u64 u64
+    mov x19, x0
+    movn x1, #0, #0
+    movn x0, #84, #0
+    bl shifts i64 u64
+    movz x1, #251, #0
+    add x3, x27, x26
+    add x3, x3, x25
+    add x3, x3, x24
+    add x3, x3, x23
+    add x3, x3, x22
+    add x3, x3, x21
+    add x3, x3, x20
+    add x2, x3, x19
+    add x2, x2, x0
+    sdiv x0, x2, x1
+    msub x0, x0, x1, x2
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldr x24, [xzr, #40]
+    ldr x25, [xzr, #48]
+    ldr x26, [xzr, #56]
+    ldr x27, [xzr, #64]
+    ldp x29, x30, [xzr, #79]
+    add sp, sp, #96
+    ret
+shifts u64 u8:
+    uxtb w3, w1
+    lslv x1, x0, x3
+    lsrv x2, x0, x3
+    movz x0, #0, #0
+    cmp x3, #64
+    csel x1, x1, x0, cc
+    movz x0, #0, #0
+    cmp x3, #64
+    csel x0, x2, x0, cc
+    eor x0, x1, x0
+    ret
+shifts i64 u8:
+    uxtb w3, w1
+    lslv x2, x0, x3
+    movz x1, #0, #0
+    cmp x3, #64
+    csel x2, x2, x1, cc
+    movz x1, #63, #0
+    cmp x3, #64
+    csel x1, x3, x1, cc
+    asrv x0, x0, x1
+    eor x0, x2, x0
+    ret
+shifts u32 u16:
+    uxth w3, w1
+    lslv w1, w0, w3
+    lsrv w2, w0, w3
+    movz x0, #0, #0
+    cmp x3, #32
+    csel w0, w1, w0, cc
+    mov w1, w0
+    movz x0, #0, #0
+    cmp x3, #32
+    csel w0, w2, w0, cc
+    mov w0, w0
+    eor x0, x1, x0
+    ret
+shifts i32 u16:
+    uxth w3, w1
+    lslv w2, w0, w3
+    movz x1, #0, #0
+    cmp x3, #32
+    csel w1, w2, w1, cc
+    sxtw x2, w1
+    movz x1, #31, #0
+    cmp x3, #32
+    csel x1, x3, x1, cc
+    asrv w0, w0, w1
+    sxtw x0, w0
+    eor x0, x2, x0
+    ret
+shifts u64 u32:
+    mov w3, w1
+    lslv x1, x0, x3
+    lsrv x2, x0, x3
+    movz x0, #0, #0
+    cmp x3, #64
+    csel x1, x1, x0, cc
+    movz x0, #0, #0
+    cmp x3, #64
+    csel x0, x2, x0, cc
+    eor x0, x1, x0
+    ret
+shifts i64 u32:
+    mov w3, w1
+    lslv x2, x0, x3
+    movz x1, #0, #0
+    cmp x3, #64
+    csel x2, x2, x1, cc
+    movz x1, #63, #0
+    cmp x3, #64
+    csel x1, x3, x1, cc
+    asrv x0, x0, x1
+    eor x0, x2, x0
+    ret
+shifts u64 u64:
+    lslv x2, x0, x1
+    lsrv x3, x0, x1
+    movz x0, #0, #0
+    cmp x1, #64
+    csel x2, x2, x0, cc
+    movz x0, #0, #0
+    cmp x1, #64
+    csel x0, x3, x0, cc
+    eor x0, x2, x0
+    ret
+shifts i64 u64:
+    lslv x3, x0, x1
+    movz x2, #0, #0
+    cmp x1, #64
+    csel x3, x3, x2, cc
+    movz x2, #63, #0
+    cmp x1, #64
+    csel x1, x1, x2, cc
+    asrv x0, x0, x1
+    eor x0, x3, x0
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    movn x0, #191, #0
+    ret

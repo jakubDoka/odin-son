@@ -1,0 +1,89 @@
+=========== OPT LEVEL: none-quick ===========
+main:
+    sub sp, sp, #16
+    stp x29, x30, [xzr, #7]
+    adr x0, 0xfc0
+    ldr.v d0, [x0]
+    bl id f64
+    fcvtzu w0, d0
+    movz x1, #16960, #0
+    movk x1, #15, #1
+    udiv w0, w0, w1
+    mov w0, w0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #16
+    ret
+id f64:
+    ret
+=========== OPT LEVEL: none ===========
+main:
+    sub sp, sp, #16
+    stp x29, x30, [xzr, #7]
+    adr x0, 0xfc0
+    ldr.v d0, [x0]
+    bl id f64
+    fcvtzu w1, d0
+    movz x0, #16960, #0
+    movk x0, #15, #1
+    udiv w0, w1, w0
+    mov w0, w0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #16
+    ret
+id f64:
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+main:
+    sub sp, sp, #16
+    stp x29, x30, [xzr, #7]
+    adr x0, 0xfc0
+    ldr.v d0, [x0]
+    bl id f64
+    fcvtzu w0, d0
+    movz x1, #16960, #0
+    movk x1, #15, #1
+    udiv w0, w0, w1
+    mov w0, w0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #16
+    ret
+id f64:
+    ret
+=========== OPT LEVEL: moderate ===========
+main:
+    sub sp, sp, #16
+    stp x29, x30, [xzr, #7]
+    adr x0, 0xfc0
+    ldr.v d0, [x0]
+    bl id f64
+    fcvtzu w1, d0
+    movz x0, #16960, #0
+    movk x0, #15, #1
+    udiv w0, w1, w0
+    mov w0, w0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #16
+    ret
+id f64:
+    ret
+=========== OPT LEVEL: all ===========
+main:
+    sub sp, sp, #16
+    stp x29, x30, [xzr, #7]
+    adr x0, 0xfc0
+    ldr.v d0, [x0]
+    bl id f64
+    fcvtzu w1, d0
+    movz x0, #16960, #0
+    movk x0, #15, #1
+    udiv w0, w1, w0
+    mov w0, w0
+    ldp x29, x30, [xzr, #7]
+    add sp, sp, #16
+    ret
+id f64:
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    movz x0, #4000, #0
+    ret

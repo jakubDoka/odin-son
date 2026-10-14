@@ -29,6 +29,7 @@ Spec_Gen_Input :: struct {
 	no_spec_tables:               bool,
 	does_regalloc:                bool,
 	has_regalloc_preprocess_hook: bool,
+	has_sccp:                     bool,
 }
 
 class_array :: proc(
@@ -154,6 +155,9 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 
 		fmt.fprintf(file, "\tspill_boundary = %w,\n", spec.spill_boundary)
 
+		if spec.has_sccp {
+			fmt.fprintf(file, "\tsccp_compute = sccp_compute,\n")
+		}
 		if spec.does_regalloc {
 			fmt.fprintf(file, "\tcollect_meta = collect_meta,\n")
 		}

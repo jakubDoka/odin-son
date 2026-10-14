@@ -36,8 +36,11 @@ Call_Conv :: struct {
 
 Peep_Fn :: proc(_: Peep_Ctx, _: Expanded_Node) -> Maybe(Node_ID)
 
+Sccp_Compute_Fn :: proc(_: ^Proc, _: Expanded_Node) -> Lattice
+
 Codegen_Spec :: struct {
 	emit_function:      proc(_: Codegen_Emit_Ctx) -> Codegen_Output,
+	sccp_compute:       Sccp_Compute_Fn,
 	peep:               Peep_Fn,
 	post_schedule_peep: PS_Peep_Fn,
 	pre_regalloc_hook:  Pre_Regalloc_Hook,

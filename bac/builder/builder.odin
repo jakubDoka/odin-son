@@ -11,6 +11,9 @@ import "core:sort"
 CInt :: bac.CInt
 Un_Op :: bac.Un_Op
 Bin_Op :: bac.Bin_Op
+get_lattice :: bac.get_lattice
+
+DEAD_EXCEPTIONS := bit_set[bac.Node_Type]{.Nil, .Entry, .Region, .Loop}
 
 sext :: proc(oper: i64, ty: bac.Node_Datatype) -> (value: i64) {
 	bit_size := uint(bac.DT_SIZE[ty] * 8)
@@ -139,9 +142,11 @@ fold_bin_op :: proc(
 	case .And_Not:
 		value = lhs &~ rhs
 	case .Shl:
+		if u64(rhs) >= u64(bac.DT_SIZE[op_ty] * 8) do return 0
 		value = sext(lhs << u64(rhs), op_ty)
 	case .Shr:
-		value = sext(lhs, op_ty) >> u64(rhs)
+		value =
+			sext(lhs, op_ty) >> min(u64(rhs), u64(bac.DT_SIZE[op_ty] * 8 - 1))
 	case .Eq:
 		value = i64(lhs == rhs)
 	case .Ne:
@@ -170,6 +175,7 @@ fold_bin_op :: proc(
 		if rhs == 0 do return 0
 		value = i64(u64(lhs) % u64(rhs))
 	case .U_Shr:
+		if u64(rhs) >= u64(bac.DT_SIZE[op_ty] * 8) do return 0
 		value = i64(u64(lhs) >> u64(rhs))
 	}
 	return
@@ -213,12 +219,18 @@ peep :: proc(
 
 	id := bac.get_node_id(ctx, node)
 	is_complete := bac.peep_ctx_graph_is_complete(ctx)
-
-	DEAD_EXCEPTIONS := bit_set[bac.Node_Type]{.Nil, .Entry, .Region, .Loop}
+	lat := get_lattice(ctx, id)
 
 	if bac.is_cfg(ctx, id) && node.itype not_in DEAD_EXCEPTIONS {
-		if node.inps[0] == 0 {
+		if node.inps[0] == 0 || lat.dead {
 			return 0
+		}
+	}
+
+	if lat.type == .Int {
+		if lat.min == lat.max && node.itype != .CInt {
+			fmt.println(node)
+			return bac.add_c_int(ctx, "scpf", node.dt, lat.min)
 		}
 	}
 
@@ -727,6 +739,25 @@ peep :: proc(
 		}
 
 		if is_integer && crhs != nil {
+			if .Shl <= op &&
+			   op <= .U_Shr &&
+			   u64(crhs.value) >= u64(bac.DT_SIZE[op_ty] * 8) {
+				if op != .Shr do return bac.add_c_int(ctx, "shz", node.dt, 0)
+				return bac.add_bin_op(
+					ctx,
+					"shs",
+					.Shr,
+					node.dt,
+					node.inps[0],
+					bac.add_c_int(
+						ctx,
+						"shc",
+						rhs.dt,
+						i64(bac.DT_SIZE[op_ty] * 8 - 1),
+					),
+				)
+			}
+
 			ZERO_IS_NEUTRAL := bit_set[Bin_Op] {
 				.Add,
 				.Sub,
@@ -1327,6 +1358,82 @@ post_schedule_peep :: proc(
 }
 
 emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
-
 	return {}
+}
+
+sccp_compute :: proc(
+	ctx: ^bac.Proc,
+	node: bac.Expanded_Node,
+) -> (
+	res: bac.Lattice,
+) {
+	id := bac.get_node_id(ctx, node)
+	current := &ctx.lattices[node.gvn]
+
+	if bac.is_cfg(ctx, id) && node.itype not_in DEAD_EXCEPTIONS {
+		if get_lattice(ctx, node.inps[0]).dead {
+			return {type = .Ctlr, dead = true}
+		}
+	}
+
+	#partial switch node.itype {
+	case .CInt:
+		cint := bac.get_extra(ctx, node, bac.CInt)
+		res = {
+			type = .Int,
+			min  = cint.value,
+			max  = cint.value,
+		}
+	case .Add ..= .And_Not:
+		lhs := get_lattice(ctx, node.inps[0])
+		rhs := get_lattice(ctx, node.inps[1])
+
+		lhs_known := lhs.min == lhs.max
+		rhs_known := rhs.min == rhs.max
+
+		op := Bin_Op(node.itype)
+		op_ty := bac.operation_datatype(ctx, node)
+
+		if lhs.type == .Int && rhs.type == .Int && lhs_known && rhs_known {
+			res.type = .Int
+			res.min = fold_bin_op(lhs.min, op, rhs.min, op_ty)
+			res.max = res.min
+			break
+		}
+	case .Phi:
+		ctrl := expand_node(ctx, node.inps[0])
+		for inp, i in node.inps[1:] {
+			if !get_lattice(ctx, ctrl.inps[i]).dead {
+				res = bac.lattice_meet(res, get_lattice(ctx, inp))
+			}
+		}
+	case .Mem:
+		res.type = .Mem
+	case .If, .Entry, .Call, .Call_End, .Return:
+		res.type = .Ctlr
+	case .Then, .Else:
+		res.type = .Ctlr
+
+		the_if := expand_node(ctx, node.inps[0])
+
+		cond := get_lattice(ctx, the_if.inps[1])
+		cond_known := cond.min == cond.max && cond.type == .Int
+
+		if !cond_known {
+			bac.peep_ctx_add_trigger(ctx, the_if.inps[1], id)
+			break
+		}
+
+		res.dead = (node.itype == .Else) != (cond.min == 0)
+	case .Region:
+		for inp in node.inps {
+			res = bac.lattice_meet(res, get_lattice(ctx, inp))
+		}
+	}
+
+	if res.type == .Top {
+		res.type = .Bot
+	}
+
+	return
 }

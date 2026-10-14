@@ -3,10 +3,16 @@ fld32:
     movss.d xmm1, [rdi]
     ucomiss xmm0, xmm1
     setz al
+    jnp 1
+    mov al, 0
+1:
     movzx rax, al
     movzx eax, al
     ucomiss xmm0, xmm1
     setnz cl
+    jnp 2
+    mov cl, 1
+2:
     movzx rcx, cl
     movzx ecx, cl
     lea rax, [rax + rcx*2]
@@ -37,10 +43,16 @@ fld64:
     movsd.q xmm1, [rdi]
     ucomisd xmm0, xmm1
     setz al
+    jnp 4
+    mov al, 0
+4:
     movzx rax, al
     movzx eax, al
     ucomisd xmm0, xmm1
     setnz cl
+    jnp 5
+    mov cl, 1
+5:
     movzx rcx, cl
     movzx ecx, cl
     lea rax, [rax + rcx*2]
@@ -69,11 +81,11 @@ fld64:
     ret
 main:
     sub rsp, 0x48
-    movss.d xmm0, [rip + 0xe8b]
+    movss.d xmm0, [rip + 0xe82]
     movss.d [rsp + 0x34], xmm0
     movss.d xmm0, [rsp + 0x34]
     movss.d [rsp], xmm0
-    movss.d xmm0, [rip + 0xe72]
+    movss.d xmm0, [rip + 0xe69]
     lea rdi, [rsp]
     call fld32
     mov.q [rsp + 0xc], rax
@@ -81,15 +93,15 @@ main:
     movss.d xmm0, [rsp + 0x34]
     call fld32
     mov.q [rsp + 0x14], rax
-    movss.d xmm0, [rip + 0xe4a]
+    movss.d xmm0, [rip + 0xe41]
     lea rdi, [rsp]
     call fld32
     mov.q [rsp + 0x1c], rax
-    movsd.q xmm0, [rip + 0xe3b]
+    movsd.q xmm0, [rip + 0xe32]
     movsd.q [rsp + 0x34], xmm0
     movsd.q xmm0, [rsp + 0x34]
     movsd.q [rsp + 0x4], xmm0
-    movsd.q xmm0, [rip + 0xe25]
+    movsd.q xmm0, [rip + 0xe1c]
     lea rdi, [rsp + 0x4]
     call fld64
     mov.q [rsp + 0x24], rax
@@ -97,7 +109,7 @@ main:
     movsd.q xmm0, [rsp + 0x34]
     call fld64
     mov.q [rsp + 0x2c], rax
-    movsd.q xmm0, [rip + 0xdff]
+    movsd.q xmm0, [rip + 0xdf6]
     lea rdi, [rsp + 0x4]
     call fld64
     mov.q rcx, [rsp + 0xc]
@@ -124,10 +136,16 @@ fld32:
     movss.d xmm1, [rdi]
     ucomiss xmm0, xmm1
     setz al
+    jnp 1
+    mov al, 0
+1:
     movzx rax, al
     movzx ecx, al
     ucomiss xmm0, xmm1
     setnz al
+    jnp 2
+    mov al, 1
+2:
     movzx rax, al
     movzx eax, al
     lea rcx, [rcx + rax*2]
@@ -158,10 +176,16 @@ fld64:
     movsd.q xmm1, [rdi]
     ucomisd xmm0, xmm1
     setz al
+    jnp 4
+    mov al, 0
+4:
     movzx rax, al
     movzx ecx, al
     ucomisd xmm0, xmm1
     setnz al
+    jnp 5
+    mov al, 1
+5:
     movzx rax, al
     movzx eax, al
     lea rcx, [rcx + rax*2]
@@ -195,11 +219,11 @@ main:
     push r13
     push r14
     sub rsp, 0x20
-    movss.d xmm0, [rip + 0xe81]
+    movss.d xmm0, [rip + 0xe78]
     movss.d [rsp + 0xc], xmm0
     movss.d xmm0, [rsp + 0xc]
     movss.d [rsp], xmm0
-    movss.d xmm0, [rip + 0xe68]
+    movss.d xmm0, [rip + 0xe5f]
     lea rdi, [rsp]
     call fld32
     mov r14, rax
@@ -207,15 +231,15 @@ main:
     movss.d xmm0, [rsp + 0xc]
     call fld32
     mov r13, rax
-    movss.d xmm0, [rip + 0xe44]
+    movss.d xmm0, [rip + 0xe3b]
     lea rdi, [rsp]
     call fld32
     mov r12, rax
-    movsd.q xmm0, [rip + 0xe37]
+    movsd.q xmm0, [rip + 0xe2e]
     movsd.q [rsp + 0xc], xmm0
     movsd.q xmm0, [rsp + 0xc]
     movsd.q [rsp + 0x4], xmm0
-    movsd.q xmm0, [rip + 0xe21]
+    movsd.q xmm0, [rip + 0xe18]
     lea rdi, [rsp + 0x4]
     call fld64
     mov rbp, rax
@@ -223,7 +247,7 @@ main:
     movsd.q xmm0, [rsp + 0xc]
     call fld64
     mov rbx, rax
-    movsd.q xmm0, [rip + 0xdff]
+    movsd.q xmm0, [rip + 0xdf6]
     lea rdi, [rsp + 0x4]
     call fld64
     mov rsi, rax
@@ -247,10 +271,16 @@ fld32:
     movss.d xmm1, [rdi]
     ucomiss xmm0, xmm1
     setz al
+    jnp 1
+    mov al, 0
+1:
     movzx rax, al
     movzx eax, al
     ucomiss xmm0, xmm1
     setnz cl
+    jnp 2
+    mov cl, 1
+2:
     movzx rcx, cl
     movzx ecx, cl
     lea rax, [rax + rcx*2]
@@ -281,10 +311,16 @@ fld64:
     movsd.q xmm1, [rdi]
     ucomisd xmm0, xmm1
     setz al
+    jnp 4
+    mov al, 0
+4:
     movzx rax, al
     movzx eax, al
     ucomisd xmm0, xmm1
     setnz cl
+    jnp 5
+    mov cl, 1
+5:
     movzx rcx, cl
     movzx ecx, cl
     lea rax, [rax + rcx*2]
@@ -313,11 +349,11 @@ fld64:
     ret
 main:
     sub rsp, 0x48
-    movss.d xmm0, [rip + 0xe8b]
+    movss.d xmm0, [rip + 0xe82]
     movss.d [rsp + 0x34], xmm0
     movss.d xmm0, [rsp + 0x34]
     movss.d [rsp], xmm0
-    movss.d xmm0, [rip + 0xe72]
+    movss.d xmm0, [rip + 0xe69]
     lea rdi, [rsp]
     call fld32
     mov.q [rsp + 0xc], rax
@@ -325,15 +361,15 @@ main:
     movss.d xmm0, [rsp + 0x34]
     call fld32
     mov.q [rsp + 0x14], rax
-    movss.d xmm0, [rip + 0xe4a]
+    movss.d xmm0, [rip + 0xe41]
     lea rdi, [rsp]
     call fld32
     mov.q [rsp + 0x1c], rax
-    movsd.q xmm0, [rip + 0xe3b]
+    movsd.q xmm0, [rip + 0xe32]
     movsd.q [rsp + 0x34], xmm0
     movsd.q xmm0, [rsp + 0x34]
     movsd.q [rsp + 0x4], xmm0
-    movsd.q xmm0, [rip + 0xe25]
+    movsd.q xmm0, [rip + 0xe1c]
     lea rdi, [rsp + 0x4]
     call fld64
     mov.q [rsp + 0x24], rax
@@ -341,7 +377,7 @@ main:
     movsd.q xmm0, [rsp + 0x34]
     call fld64
     mov.q [rsp + 0x2c], rax
-    movsd.q xmm0, [rip + 0xdff]
+    movsd.q xmm0, [rip + 0xdf6]
     lea rdi, [rsp + 0x4]
     call fld64
     mov.q rcx, [rsp + 0xc]
@@ -368,10 +404,16 @@ fld32:
     movss.d xmm1, [rdi]
     ucomiss xmm0, xmm1
     setz al
+    jnp 1
+    mov al, 0
+1:
     movzx rax, al
     movzx ecx, al
     ucomiss xmm0, xmm1
     setnz al
+    jnp 2
+    mov al, 1
+2:
     movzx rax, al
     movzx eax, al
     lea rcx, [rcx + rax*2]
@@ -402,10 +444,16 @@ fld64:
     movsd.q xmm1, [rdi]
     ucomisd xmm0, xmm1
     setz al
+    jnp 4
+    mov al, 0
+4:
     movzx rax, al
     movzx ecx, al
     ucomisd xmm0, xmm1
     setnz al
+    jnp 5
+    mov al, 1
+5:
     movzx rax, al
     movzx eax, al
     lea rcx, [rcx + rax*2]
@@ -439,11 +487,11 @@ main:
     push r13
     push r14
     sub rsp, 0x20
-    movss.d xmm0, [rip + 0xe81]
+    movss.d xmm0, [rip + 0xe78]
     movss.d [rsp + 0xc], xmm0
     movss.d xmm0, [rsp + 0xc]
     movss.d [rsp], xmm0
-    movss.d xmm0, [rip + 0xe68]
+    movss.d xmm0, [rip + 0xe5f]
     lea rdi, [rsp]
     call fld32
     mov r14, rax
@@ -451,15 +499,15 @@ main:
     movss.d xmm0, [rsp + 0xc]
     call fld32
     mov r13, rax
-    movss.d xmm0, [rip + 0xe44]
+    movss.d xmm0, [rip + 0xe3b]
     lea rdi, [rsp]
     call fld32
     mov r12, rax
-    movsd.q xmm0, [rip + 0xe37]
+    movsd.q xmm0, [rip + 0xe2e]
     movsd.q [rsp + 0xc], xmm0
     movsd.q xmm0, [rsp + 0xc]
     movsd.q [rsp + 0x4], xmm0
-    movsd.q xmm0, [rip + 0xe21]
+    movsd.q xmm0, [rip + 0xe18]
     lea rdi, [rsp + 0x4]
     call fld64
     mov rbp, rax
@@ -467,7 +515,7 @@ main:
     movsd.q xmm0, [rsp + 0xc]
     call fld64
     mov rbx, rax
-    movsd.q xmm0, [rip + 0xdff]
+    movsd.q xmm0, [rip + 0xdf6]
     lea rdi, [rsp + 0x4]
     call fld64
     mov rsi, rax
@@ -491,10 +539,16 @@ fld32:
     movss.d xmm1, [rdi]
     ucomiss xmm0, xmm1
     setz al
+    jnp 1
+    mov al, 0
+1:
     movzx rax, al
     movzx ecx, al
     ucomiss xmm0, xmm1
     setnz al
+    jnp 2
+    mov al, 1
+2:
     movzx rax, al
     movzx eax, al
     lea rcx, [rcx + rax*2]
@@ -525,10 +579,16 @@ fld64:
     movsd.q xmm1, [rdi]
     ucomisd xmm0, xmm1
     setz al
+    jnp 4
+    mov al, 0
+4:
     movzx rax, al
     movzx ecx, al
     ucomisd xmm0, xmm1
     setnz al
+    jnp 5
+    mov al, 1
+5:
     movzx rax, al
     movzx eax, al
     lea rcx, [rcx + rax*2]
@@ -562,11 +622,11 @@ main:
     push r13
     push r14
     sub rsp, 0x20
-    movss.d xmm0, [rip + 0xe81]
+    movss.d xmm0, [rip + 0xe78]
     movss.d [rsp + 0xc], xmm0
     movss.d xmm0, [rsp + 0xc]
     movss.d [rsp], xmm0
-    movss.d xmm0, [rip + 0xe68]
+    movss.d xmm0, [rip + 0xe5f]
     lea rdi, [rsp]
     call fld32
     mov r14, rax
@@ -574,15 +634,15 @@ main:
     movss.d xmm0, [rsp + 0xc]
     call fld32
     mov r13, rax
-    movss.d xmm0, [rip + 0xe44]
+    movss.d xmm0, [rip + 0xe3b]
     lea rdi, [rsp]
     call fld32
     mov r12, rax
-    movsd.q xmm0, [rip + 0xe37]
+    movsd.q xmm0, [rip + 0xe2e]
     movsd.q [rsp + 0xc], xmm0
     movsd.q xmm0, [rsp + 0xc]
     movsd.q [rsp + 0x4], xmm0
-    movsd.q xmm0, [rip + 0xe21]
+    movsd.q xmm0, [rip + 0xe18]
     lea rdi, [rsp + 0x4]
     call fld64
     mov rbp, rax
@@ -590,7 +650,7 @@ main:
     movsd.q xmm0, [rsp + 0xc]
     call fld64
     mov rbx, rax
-    movsd.q xmm0, [rip + 0xdff]
+    movsd.q xmm0, [rip + 0xdf6]
     lea rdi, [rsp + 0x4]
     call fld64
     mov rsi, rax

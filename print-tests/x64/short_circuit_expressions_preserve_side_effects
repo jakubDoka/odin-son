@@ -1,0 +1,582 @@
+=========== OPT LEVEL: none-quick ===========
+bump:
+    mov.q [rsp - 0x8], rsi
+    add.q [rdi], 1
+    mov.q rax, [rsp - 0x8]
+    ret
+main:
+    sub rsp, 0x38
+    mov.q [rsp], 0
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    test al, al
+    jnz 2
+    mov rax, 1
+    jmp 3
+2:
+    mov rax, 3
+3:
+    mov.q [rsp + 0x10], rax
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    test al, al
+    jnz 4
+    mov.q [rsp + 0x8], r15
+    mov.q r15, [rsp + 0x10]
+    mov.q [rsp + 0x18], r15
+    mov.q r15, [rsp + 0x8]
+    jmp 5
+4:
+    mov.q rax, [rsp + 0x10]
+    add rax, 4
+    mov.q [rsp + 0x18], rax
+5:
+    mov.q [rsp + 0x8], r15
+    mov.q r15, [rsp + 0x18]
+    mov.q [rsp + 0x10], r15
+    mov.q r15, [rsp + 0x8]
+    lea rdi, [rsp]
+    xor esi, esi
+    call bump
+    mov.q [rsp + 0x18], rax
+    mov.q rax, [rsp + 0x18]
+    test al, al
+    jnz 6
+    jmp 7
+6:
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    mov.q [rsp + 0x18], rax
+7:
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    mov.q [rsp + 0x20], rax
+    mov.q rax, [rsp + 0x20]
+    test al, al
+    jnz 8
+    lea rdi, [rsp]
+    xor esi, esi
+    call bump
+    mov.q [rsp + 0x28], rax
+    jmp 9
+8:
+    mov.q [rsp + 0x8], r15
+    mov.q r15, [rsp + 0x20]
+    mov.q [rsp + 0x28], r15
+    mov.q r15, [rsp + 0x8]
+9:
+    lea rdi, [rsp]
+    xor esi, esi
+    call bump
+    test al, al
+    jnz 10
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    jmp 10
+10:
+    test al, al
+    jnz 11
+    mov.q [rsp + 0x20], rax
+    jmp 12
+11:
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    mov.q [rsp + 0x20], rax
+12:
+    mov.q rax, [rsp + 0x18]
+    cmp al, 0
+    setz al
+    movzx rax, al
+    test al, al
+    jnz 13
+    jmp 14
+13:
+    mov.q rax, [rsp + 0x28]
+14:
+    test al, al
+    jnz 15
+    jmp 16
+15:
+    mov.q rax, [rsp + 0x20]
+16:
+    test al, al
+    jnz 17
+    mov.q [rsp + 0x8], r15
+    mov.q r15, [rsp + 0x10]
+    mov.q [rsp + 0x18], r15
+    mov.q r15, [rsp + 0x8]
+    jmp 18
+17:
+    mov.q rax, [rsp + 0x10]
+    add rax, 8
+    mov.q [rsp + 0x18], rax
+18:
+    mov.q [rsp + 0x8], r15
+    mov.q r15, [rsp + 0x18]
+    mov.q [rsp + 0x10], r15
+    mov.q r15, [rsp + 0x8]
+    mov.q rax, [rsp]
+    imul rax, rax, 0xa
+    mov.q rcx, [rsp + 0x10]
+    add rcx, rax
+    mov rax, rcx
+    add rsp, 0x38
+    ret
+=========== OPT LEVEL: none ===========
+bump:
+    mov rax, rsi
+    add.q [rdi], 1
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    sub rsp, 0x10
+    mov.q [rsp], 0
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    test al, al
+    jnz 2
+    mov rbx, 1
+    jmp 3
+2:
+    mov rbx, 3
+3:
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    test al, al
+    jnz 4
+    jmp 5
+4:
+    add rbx, 4
+5:
+    lea rdi, [rsp]
+    xor esi, esi
+    call bump
+    mov r12, rax
+    test r12b, r12b
+    jnz 6
+    jmp 7
+6:
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    mov r12, rax
+7:
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    test al, al
+    jnz 8
+    lea rdi, [rsp]
+    xor esi, esi
+    call bump
+    mov rbp, rax
+    jmp 9
+8:
+    mov rbp, rax
+9:
+    lea rdi, [rsp]
+    xor esi, esi
+    call bump
+    test al, al
+    jnz 10
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    jmp 10
+10:
+    test al, al
+    jnz 11
+    mov rcx, rax
+    jmp 12
+11:
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    mov rcx, rax
+12:
+    cmp r12b, 0
+    setz al
+    movzx rax, al
+    test al, al
+    jnz 13
+    jmp 14
+13:
+    mov rax, rbp
+14:
+    test al, al
+    jnz 15
+    jmp 16
+15:
+    mov rax, rcx
+16:
+    test al, al
+    jnz 17
+    jmp 18
+17:
+    add rbx, 8
+18:
+    mov rax, rbx
+    mov.q rcx, [rsp]
+    imul rcx, rcx, 0xa
+    add rax, rcx
+    add rsp, 0x10
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+bump:
+    mov.q [rsp - 0x8], rsi
+    add.q [rdi], 1
+    mov.q rax, [rsp - 0x8]
+    ret
+main:
+    sub rsp, 0x38
+    mov.q [rsp], 0
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    test al, al
+    jnz 2
+    mov rax, 1
+    jmp 3
+2:
+    mov rax, 3
+3:
+    mov.q [rsp + 0x10], rax
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    test al, al
+    jnz 4
+    mov.q [rsp + 0x8], r15
+    mov.q r15, [rsp + 0x10]
+    mov.q [rsp + 0x18], r15
+    mov.q r15, [rsp + 0x8]
+    jmp 5
+4:
+    mov.q rax, [rsp + 0x10]
+    add rax, 4
+    mov.q [rsp + 0x18], rax
+5:
+    mov.q [rsp + 0x8], r15
+    mov.q r15, [rsp + 0x18]
+    mov.q [rsp + 0x10], r15
+    mov.q r15, [rsp + 0x8]
+    lea rdi, [rsp]
+    xor esi, esi
+    call bump
+    mov.q [rsp + 0x18], rax
+    mov.q rax, [rsp + 0x18]
+    test al, al
+    jnz 6
+    jmp 7
+6:
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    mov.q [rsp + 0x18], rax
+7:
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    mov.q [rsp + 0x20], rax
+    mov.q rax, [rsp + 0x20]
+    test al, al
+    jnz 8
+    lea rdi, [rsp]
+    xor esi, esi
+    call bump
+    mov.q [rsp + 0x28], rax
+    jmp 9
+8:
+    mov.q [rsp + 0x8], r15
+    mov.q r15, [rsp + 0x20]
+    mov.q [rsp + 0x28], r15
+    mov.q r15, [rsp + 0x8]
+9:
+    lea rdi, [rsp]
+    xor esi, esi
+    call bump
+    test al, al
+    jnz 10
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    jmp 10
+10:
+    test al, al
+    jnz 11
+    mov.q [rsp + 0x20], rax
+    jmp 12
+11:
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    mov.q [rsp + 0x20], rax
+12:
+    mov.q rax, [rsp + 0x18]
+    cmp al, 0
+    setz al
+    movzx rax, al
+    test al, al
+    jnz 13
+    jmp 14
+13:
+    mov.q rax, [rsp + 0x28]
+14:
+    test al, al
+    jnz 15
+    jmp 16
+15:
+    mov.q rax, [rsp + 0x20]
+16:
+    test al, al
+    jnz 17
+    mov.q [rsp + 0x8], r15
+    mov.q r15, [rsp + 0x10]
+    mov.q [rsp + 0x18], r15
+    mov.q r15, [rsp + 0x8]
+    jmp 18
+17:
+    mov.q rax, [rsp + 0x10]
+    add rax, 8
+    mov.q [rsp + 0x18], rax
+18:
+    mov.q [rsp + 0x8], r15
+    mov.q r15, [rsp + 0x18]
+    mov.q [rsp + 0x10], r15
+    mov.q r15, [rsp + 0x8]
+    mov.q rax, [rsp]
+    imul rax, rax, 0xa
+    mov.q rcx, [rsp + 0x10]
+    add rcx, rax
+    mov rax, rcx
+    add rsp, 0x38
+    ret
+=========== OPT LEVEL: moderate ===========
+bump:
+    mov rax, rsi
+    add.q [rdi], 1
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    sub rsp, 0x10
+    mov.q [rsp], 0
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    test al, al
+    jnz 2
+    mov rbx, 1
+    jmp 3
+2:
+    mov rbx, 3
+3:
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    test al, al
+    jnz 4
+    jmp 5
+4:
+    add rbx, 4
+5:
+    lea rdi, [rsp]
+    xor esi, esi
+    call bump
+    mov r12, rax
+    test r12b, r12b
+    jnz 6
+    jmp 7
+6:
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    mov r12, rax
+7:
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    test al, al
+    jnz 8
+    lea rdi, [rsp]
+    xor esi, esi
+    call bump
+    mov rbp, rax
+    jmp 9
+8:
+    mov rbp, rax
+9:
+    lea rdi, [rsp]
+    xor esi, esi
+    call bump
+    test al, al
+    jnz 10
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    jmp 10
+10:
+    test al, al
+    jnz 11
+    mov rcx, rax
+    jmp 12
+11:
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    mov rcx, rax
+12:
+    cmp r12b, 0
+    setz al
+    movzx rax, al
+    test al, al
+    jnz 13
+    jmp 14
+13:
+    mov rax, rbp
+14:
+    test al, al
+    jnz 15
+    jmp 16
+15:
+    mov rax, rcx
+16:
+    test al, al
+    jnz 17
+    jmp 18
+17:
+    add rbx, 8
+18:
+    mov rax, rbx
+    mov.q rcx, [rsp]
+    imul rcx, rcx, 0xa
+    add rax, rcx
+    add rsp, 0x10
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: all ===========
+bump:
+    mov rax, rsi
+    add.q [rdi], 1
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    sub rsp, 0x10
+    mov.q [rsp], 0
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    test al, al
+    jnz 2
+    mov rbx, 1
+    jmp 3
+2:
+    mov rbx, 3
+3:
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    test al, al
+    jnz 4
+    jmp 5
+4:
+    add rbx, 4
+5:
+    lea rdi, [rsp]
+    xor esi, esi
+    call bump
+    mov r12, rax
+    test r12b, r12b
+    jnz 6
+    jmp 7
+6:
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    mov r12, rax
+7:
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    test al, al
+    jnz 8
+    lea rdi, [rsp]
+    xor esi, esi
+    call bump
+    mov rbp, rax
+    jmp 9
+8:
+    mov rbp, rax
+9:
+    lea rdi, [rsp]
+    xor esi, esi
+    call bump
+    test al, al
+    jnz 10
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    jmp 10
+10:
+    test al, al
+    jnz 11
+    mov rcx, rax
+    jmp 12
+11:
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    mov rcx, rax
+12:
+    cmp r12b, 0
+    setz al
+    movzx rax, al
+    test al, al
+    jnz 13
+    jmp 14
+13:
+    mov rax, rbp
+14:
+    test al, al
+    jnz 15
+    jmp 16
+15:
+    mov rax, rcx
+16:
+    test al, al
+    jnz 17
+    jmp 18
+17:
+    add rbx, 8
+18:
+    mov rax, rbx
+    mov.q rcx, [rsp]
+    imul rcx, rcx, 0xa
+    add rax, rcx
+    add rsp, 0x10
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    mov rax, 0x55
+    ret

@@ -445,8 +445,9 @@ Proc :: struct {
 	using meta:      Proc_Meta,
 	dont_intern:     bool,
 	dont_delete:     bool,
-	peeped:          bool,
+	computed_passes: bit_set[Pass],
 	opt_flags:       Opt_Flags,
+	lattices:        []Lattice,
 }
 
 Proc_Meta :: struct {
@@ -473,9 +474,17 @@ Stencil :: struct {
 	using meta: Proc_Meta,
 }
 
+Pass :: enum int {
+	Peep,
+	Sccp,
+	Mem,
+	Loop,
+}
+
 Opt_Flags :: bit_set[Opt_Flag]
 
 Opt_Flag :: enum int {
+	Sccp,
 	Local_Peeps,
 	Mem_Opt,
 	Loop_Opt,
@@ -486,15 +495,42 @@ Peep_Ctx :: struct {
 	using graph: ^Proc,
 }
 
+@(deferred_in = pass_quard_end)
+pass_quard :: #force_inline proc(
+	ctx: ^Proc,
+	pass: Pass,
+	opted: ^bool,
+) -> bool {
+	if pass in ctx.computed_passes do return false
+	ctx.computed_passes |= {pass}
+	return true
+}
+
+pass_quard_end :: #force_inline proc(ctx: ^Proc, pass: Pass, opted: ^bool) {
+	defer if opted^ do ctx.computed_passes = {pass}
+}
+
 invalidate_idepth :: proc(graph: ^Proc) {
 	graph.min_idepth = graph.max_idepth
 }
 
-peep_ctx_graph_is_complete :: proc(ctx: Peep_Ctx) -> bool {
+peep_ctx_graph_is_complete :: proc(ctx: ^Proc) -> bool {
 	return ctx.worklist != nil
 }
 
-peep_ctx_add_trigger :: proc(ctx: Peep_Ctx, triggerer: Node_ID, tar: Node_ID) {
+peep_ctx_flush_triggers :: proc(ctx: ^Proc, node: ^Node) {
+	if ctx.triggers == nil do return
+	assert(ctx.worklist != nil)
+
+	if int(node.gvn) < len(ctx.triggers) {
+		for trig in ctx.triggers[node.gvn] {
+			worklist_add(ctx, ctx.worklist, trig)
+		}
+		clear(&ctx.triggers[node.gvn])
+	}
+}
+
+peep_ctx_add_trigger :: proc(ctx: ^Proc, triggerer: Node_ID, tar: Node_ID) {
 	if triggerer == 0 do return
 	if ctx.triggers == nil do return
 
@@ -695,9 +731,10 @@ mount_stencil :: proc(graph: ^Proc, stencil: Stencil) {
 	}
 	graph.meta = stencil.meta
 	graph.curret_sloc = {}
+	graph.computed_passes = {}
 }
 
-worklist_init :: proc(w: ^Worklist, cap: int = 0) {
+worklist_init :: proc(w: ^Worklist, #any_int cap: int = 0) {
 	queue.init(&w.queue, cap)
 	w.in_queue = bit_arr.init(cap)
 }
@@ -1020,19 +1057,14 @@ schedule_peeps :: proc(graph: ^Proc, schedule: ^Schedule) {
 	)
 }
 
-peep_subsume :: proc(graph: Peep_Ctx, with: Node_ID, target: Node_ID) {
+peep_subsume :: proc(graph: ^Proc, with: Node_ID, target: Node_ID) {
 	node := expand_node(graph, target)
 
 	for out in node.outs {
 		worklist_add(graph, graph.worklist, out.id)
 	}
 
-	if int(node.gvn) < len(graph.triggers) {
-		for trig in graph.triggers[node.gvn] {
-			worklist_add(graph, graph.worklist, trig)
-		}
-		graph.triggers[node.gvn] = {}
-	}
+	peep_ctx_flush_triggers(graph, node)
 
 	for inp in node.inps {
 		worklist_add(graph, graph.worklist, inp)
@@ -1046,8 +1078,8 @@ apply_peeps :: proc(ctx: Peep_Ctx) -> (optimized: bool) {
 
 	is_builder := graph.node_spec.intern
 
-	if graph.peeped && is_builder do return
-	graph.peeped = true
+	if .Peep in graph.computed_passes && is_builder do return
+	graph.computed_passes |= {.Peep}
 
 	graph.dont_intern = !is_builder
 
@@ -1080,18 +1112,13 @@ apply_peeps :: proc(ctx: Peep_Ctx) -> (optimized: bool) {
 			continue
 		}
 
-		optimized = true
+		optimized |= ok
 
 		for out in node.outs {
 			worklist_add(graph, &worklist, out.id)
 		}
 
-		if int(node.gvn) < len(triggers) {
-			for trig in triggers[node.gvn] {
-				worklist_add(graph, &worklist, trig)
-			}
-			clear(&triggers[node.gvn])
-		}
+		peep_ctx_flush_triggers(graph, node)
 
 		if new_node == n {
 			unintern(graph, n, prev_hash)
@@ -1113,6 +1140,8 @@ apply_peeps :: proc(ctx: Peep_Ctx) -> (optimized: bool) {
 
 		triggered += 1
 	}
+
+	if optimized do graph.computed_passes = {.Peep}
 
 	add_efficiency_stat(graph, .redundant_peep, rounds, triggered)
 	add_efficiency_stat(graph, .peephole_rounds, rounds, graph.gvn)
@@ -1869,11 +1898,8 @@ delete_node_node :: proc(graph: ^Proc, node: ^Node) {
 
 	assert(node.itype != .End)
 
-	if graph.triggers != nil && int(node.gvn) < len(graph.triggers) {
-		for trig in graph.triggers[node.gvn] {
-			worklist_add(graph, graph.worklist, trig)
-		}
-		clear(&graph.triggers[node.gvn])
+	if graph.triggers != nil {
+		peep_ctx_flush_triggers(graph, node)
 	}
 
 	for inp, i in get_inputs(graph, node) {

@@ -470,7 +470,7 @@ inline_graph :: proc(graph: ^bac.Proc, call: Node_ID, from: ^bac.Proc) {
 
 	bac.verify(graph)
 
-	graph.peeped = false
+	graph.computed_passes = {}
 	graph.max_idepth = max(graph.max_idepth, from.max_idepth)
 	bac.invalidate_idepth(graph)
 

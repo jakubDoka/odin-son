@@ -234,9 +234,10 @@ when !SPEC_NOT_PRESENT {
 		.U_Gt = #partial{.I8 ..= .I32 = .I32_Gt_U, .I64 = .I64_Gt_U},
 		.U_Le = #partial{.I8 ..= .I32 = .I32_Le_U, .I64 = .I64_Le_U},
 		.U_Ge = #partial{.I8 ..= .I32 = .I32_Ge_U, .I64 = .I64_Ge_U},
-		.Shl = #partial{.I8 ..= .I32 = .I32_Shl, .I64 = .I64_Shl},
-		.Shr = #partial{.I8 ..= .I32 = .I32_Shr_S, .I64 = .I64_Shr_S},
-		.U_Shr = #partial{.I8 ..= .I32 = .I32_Shr_U, .I64 = .I64_Shr_U},
+		.WASM_Shl = #partial{.I32 = .I32_Shl, .I64 = .I64_Shl},
+		.WASM_Shr = #partial{.I32 = .I32_Shr_S, .I64 = .I64_Shr_S},
+		.WASM_U_Shr = #partial{.I32 = .I32_Shr_U, .I64 = .I64_Shr_U},
+		.Select = {.Void ..= .V512 = .Select},
 		.Div = #partial{
 			.I8 ..= .I32 = .I32_Div_S,
 			.I64 = .I64_Div_S,

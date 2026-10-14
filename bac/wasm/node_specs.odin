@@ -97,6 +97,10 @@ SPEC := bac.Node_Spec{
 		0b10, // Drop
 		0b10, // Stub
 		0b100000000, // Extract_Lane_U
+		0b10, // WASM_Shl
+		0b10, // WASM_Shr
+		0b10, // WASM_U_Shr
+		0b10, // Select
 	},
 	node_extra_sizes = {
 		0 = 1, // Nil -> Cfg
@@ -122,6 +126,7 @@ SPEC := bac.Node_Spec{
 		69 = 2, // WASM_Store -> Mem_Op
 		70 = 2, // WASM_Load -> Mem_Op
 		76 = 1, // Extract_Lane_U -> Lane_Op
+		80 = 0,
 	},
 	node_flags = {
 		{}, // Nil
@@ -201,6 +206,10 @@ SPEC := bac.Node_Spec{
 		{}, // Drop
 		{}, // Stub
 		{}, // Extract_Lane_U
+		{}, // WASM_Shl
+		{}, // WASM_Shr
+		{}, // WASM_U_Shr
+		{}, // Select
 	},
 	node_extra_types = {
 		0 = bac.Cfg,
@@ -226,6 +235,7 @@ SPEC := bac.Node_Spec{
 		69 = Mem_Op,
 		70 = Mem_Op,
 		76 = Lane_Op,
+		80 = nil,
 	},
 	node_kind = Node_Type,
 }
@@ -308,6 +318,10 @@ Node_Type :: enum u16 {
 	Drop,
 	Stub,
 	Extract_Lane_U,
+	WASM_Shl,
+	WASM_Shr,
+	WASM_U_Shr,
+	Select,
 }
 
 peep_inst :: proc(ctx: bac.Peep_Ctx, node: bac.Expanded_Node) -> Maybe(bac.Node_ID) {
@@ -336,6 +350,9 @@ add_extract_lane_u :: #force_inline proc(graph: ^bac.Proc, name: string, dt: bac
 		laneidx = laneidx,
 	}
 	return bac.add_raw(graph, name, u16(Node_Type.Extract_Lane_U), dt, {vec}, {lane = lane,})
+}
+add_select :: #force_inline proc(graph: ^bac.Proc, name: string, dt: bac.Node_Datatype, on_true: bac.Node_ID, on_false: bac.Node_ID, condition: bac.Node_ID) -> (_id: bac.Node_ID) {
+	return bac.add_raw(graph, name, u16(Node_Type.Select), dt, {on_true, on_false, condition})
 }
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {

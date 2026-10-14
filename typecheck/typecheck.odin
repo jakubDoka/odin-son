@@ -97,6 +97,8 @@ Loop_State :: struct {
 	parent:       ^Loop_State,
 	label:        string,
 	broken:       bool,
+	block:        ^builder.Block_State,
+	scope_count:  u16,
 	using bstate: builder.Loop_State,
 }
 
@@ -2160,6 +2162,13 @@ typecheck :: proc(
 		}
 		ty = tmeta(ctx, target)
 	case ^ast.Binary_Expr:
+		if d.op.kind == .Cmp_And || d.op.kind == .Cmp_Or {
+			typecheck_as(ctx, .Bool, d.left)
+			typecheck_as(ctx, .Bool, d.right)
+			ty = tmeta(ctx, .Bool)
+			break match
+		}
+
 		is_comparison :=
 			.B_Comparison_Begin < d.op.kind && d.op.kind < .B_Comparison_End
 
@@ -2382,6 +2391,14 @@ typecheck :: proc(
 			ty = error(ctx, d.body, "expected a switch body")
 			break match
 		}
+		block: builder.Block_State
+		sw := Loop_State {
+			parent = ctx.loop,
+			label  = src_of(ctx.file^, d.label),
+			block  = &block,
+		}
+		ctx.loop = &sw
+		defer ctx.loop = sw.parent
 		reachable, has_default: bool
 		for clause_node in body.stmts {
 			clause := clause_node.derived.(^ast.Case_Clause) or_else nil
@@ -2394,7 +2411,7 @@ typecheck :: proc(
 			if typecheck_clause(ctx, clause.body) do reachable = true
 			resize(&ctx.scope, prev)
 		}
-		if has_default && !reachable do mark_unreachable(ctx)
+		if has_default && !reachable && !sw.broken do mark_unreachable(ctx)
 		ty = &VOID
 	case ^ast.Type_Switch_Stmt:
 		tag, is_assign := d.tag.derived.(^ast.Assign_Stmt)
@@ -2421,6 +2438,14 @@ typecheck :: proc(
 			ty = error(ctx, d.body, "expected a switch body")
 			break match
 		}
+		block: builder.Block_State
+		sw := Loop_State {
+			parent = ctx.loop,
+			label  = src_of(ctx.file^, d.label),
+			block  = &block,
+		}
+		ctx.loop = &sw
+		defer ctx.loop = sw.parent
 		reachable, has_default: bool
 		covered := 0
 		for clause_node in body.stmts {
@@ -2458,7 +2483,7 @@ typecheck :: proc(
 			resize(&ctx.scope, prev)
 		}
 		exhaustive := has_default || covered == len(uni.variants)
-		if exhaustive && !reachable do mark_unreachable(ctx)
+		if exhaustive && !reachable && !sw.broken do mark_unreachable(ctx)
 		ty = &VOID
 	case ^ast.For_Stmt:
 		if d.init != nil || d.cond != nil || d.post != nil {
@@ -2524,11 +2549,18 @@ typecheck :: proc(
 		}
 		resize(&ctx.scope, prev)
 	case ^ast.Branch_Stmt:
-		loop := find_loop(ctx, d.label)
+		if d.tok.kind != .Break && d.tok.kind != .Continue {
+			ty = error(ctx, node, "TODO: %v", d.tok.text)
+			break match
+		}
+		loop := find_loop(ctx, d.label, d.tok.kind == .Continue)
 		if loop == nil {
 			error(ctx, node, "no matchin loop for the control")
 		} else {
-			if d.tok.kind == .Break do loop.broken = true
+			if d.tok.kind == .Break &&
+			   (ctx.reachable == nil || ctx.reachable^) {
+				loop.broken = true
+			}
 			mark_unreachable(ctx)
 		}
 		ty = &VOID
@@ -3360,7 +3392,7 @@ typecheck_branch :: #force_inline proc(
 ) -> (
 	reachable: bool,
 ) {
-	reachable = true
+	reachable = ctx.reachable == nil || ctx.reachable^
 	prev := begin_branch(ctx, &reachable)
 	typecheck(ctx, {}, node)
 	end_branch(ctx, prev)
@@ -3373,7 +3405,7 @@ typecheck_clause :: proc(
 ) -> (
 	reachable: bool,
 ) {
-	reachable = true
+	reachable = ctx.reachable == nil || ctx.reachable^
 	prev := begin_branch(ctx, &reachable)
 	for stmt in stmts do typecheck(ctx, {}, stmt)
 	end_branch(ctx, prev)
@@ -3407,11 +3439,16 @@ add_global :: proc(ctx: ^Gen_Ctx, bytes: []u8, align: int) -> u32 {
 	return idx
 }
 
-find_loop :: proc(ctx: ^Gen_Ctx, label: ^ast.Node) -> ^Loop_State {
+find_loop :: proc(
+	ctx: ^Gen_Ctx,
+	label: ^ast.Node,
+	skip_blocks := false,
+) -> ^Loop_State {
 	label := src_of(ctx.file^, label)
 
 	loop := ctx.loop
 	for ; loop != nil; loop = loop.parent {
+		if skip_blocks && loop.block != nil do continue
 		if loop.label == label || label == "" {
 			break
 		}

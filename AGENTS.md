@@ -6,8 +6,8 @@ node spec is generated with `gen-spec`, you can run tests with `run-test`.
 
 The backend is split into `bac` (the generic engine, shared node spec, and
 codegen scaffolding) plus one subpackage per architecture, e.g. `bac/x64` and
-the pre-lowering IR builder `bac/builder`. Shared node kinds go into
-`Node_Type` in `bac/gen_spec.odin`; target-specific node kinds go into that
+the pre-lowering IR builder `bac/builder`. Shared node kinds are in
+`Node_Type` in `bac/graph.odin`; target-specific node kinds go into that
 target's own enum in its own module (e.g. `Node_Type` in `bac/x64/x64.odin`,
 `Node_Type` in `bac/builder/builder_spec.odin`). Adding a new architecture
 means adding a new `bac/<arch>` directory — nothing in root `bac` should need
@@ -61,3 +61,10 @@ with a scoped arena. As mentioned above.
 Its preffered to use static tables over big swich statements that just select a
 value if that saves code. Of course if the table would be prohibitively big,
 compared to what entryes are actualy populated dont do this.
+
+DONT try to obtain registers/local/slot in the instruction encoding stage
+(emit_functions/emit_instr). If you need temporaries, lower the node into
+multiple in a target specific peephole and, if required, add new instructions
+to the target. I dont want to see any hacks like spilling random register to
+stack or adding a wasm local, only exception is mem2mem split and that is rare
+case, no instructions should quarantee spills.

@@ -5474,7 +5474,7 @@ main :: proc() -> int {
 ```
 
 #### foreign block
-```!odin
+```odin
 package main
 
 foreign {
@@ -6358,7 +6358,7 @@ main :: proc() -> int {
 <!-- x64.odin:2535-2541 `.Shl ..= .U_Shr` lowers to a bare `shl/shr r, cl`, which masks the count to 5/6 bits, but Odin defines a shift by >= the operand width as 0. expected 0, got 7 -->
 
 #### shift count larger than operand width
-```!odin
+```odin
 package main
 
 opt_level :: "none"
@@ -6375,7 +6375,7 @@ main :: proc() -> int {
 <!-- x64.odin:1858-1859/2674 float Eq/Ne map straight to sete/setne (and je/jne) after ucomisd; the unordered result sets ZF=1 so `NaN == x` yields true and `NaN != x` yields false (PF is never consulted). expected 2, got 1 -->
 
 #### float equality with NaN ignores the parity flag
-```!odin
+```odin
 package main
 
 opt_level :: "none"
@@ -6393,7 +6393,7 @@ main :: proc() -> int {
 <!-- x64.odin:608-616 folds a constant shift amount into X64_Shl/X64_Shr without range-checking it, and x64.odin:2368/2397 emit it as a raw `shl/shr r, imm8`, which the CPU masks to 5/6 bits; Odin defines a shift by >= the operand width as 0. expected 0, got 3 -->
 
 #### constant shift amount larger than operand width
-```!odin
+```odin
 package main
 
 opt_level :: "none"
@@ -6407,10 +6407,77 @@ main :: proc() -> int {
 }
 ```
 
+#### scalar shift boundaries
+```odin
+package main
+
+opt_level :: "none"
+
+shifts :: proc(x: $T, n: uint) -> int {
+	left := x << n
+	right := x >> n
+	return int(left) ~ int(right) ~ int(x) ~ int(n)
+}
+
+main :: proc() -> int {
+	// COMPILER BUG: inferred array lengths are rejected by the frontend.
+	// counts := [?]uint{0, 1, 7, 8, 15, 16, 31, 32, 63, 64, 65}
+	counts := [11]uint{0, 1, 7, 8, 15, 16, 31, 32, 63, 64, 65}
+	r := 0
+	for n in counts {
+		r = r * 3 + shifts(u8(165), n)
+		r = r * 3 + shifts(i8(-85), n)
+		r = r * 3 + shifts(u16(42405), n)
+		r = r * 3 + shifts(i16(-21845), n)
+		// COMPILER BUG: wasm emits an out-of-range positive i32.const for u32(2779096485).
+		// r = r * 3 + shifts(u32(2779096485), n)
+		r = r * 3 + shifts(u32(1431655765), n)
+		r = r * 3 + shifts(i32(-1431655765), n)
+		r = r * 3 + shifts(u64(11936128518282651045), n)
+		r = r * 3 + shifts(i64(-6148914691236517205), n)
+	}
+	// COMPILER BUG: ARM skips zero halfwords when materializing negative folded constants.
+	// return r
+	return r % 251
+}
+```
+
+#### mixed width shift counts
+```odin
+package main
+
+opt_level :: "none"
+
+shifts :: proc(x: $T, n: $C) -> int {
+	// COMPILER BUG: shift counts other than uint are rejected by the frontend.
+	// return int(x << n) ~ int(x >> n)
+	return int(x << uint(n)) ~ int(x >> uint(n))
+}
+
+main :: proc() -> int {
+	r := shifts(u64(165), u8(7)) +
+	       shifts(i64(-85), u8(65)) +
+	       shifts(u32(42405), u16(31)) +
+	       shifts(i32(-21845), u16(65535)) +
+	       shifts(u64(2779096485), u32(63)) +
+	       shifts(i64(-1431655765), u32(64)) +
+	       // COMPILER BUG: u64((1 << 32) + 1) is rejected during constant folding.
+	       // COMPILER BUG: Odin truncates large counts to u32 for sub-64-bit shifts.
+	       // shifts(u32(165), u64((1 << 32) + 1)) + shifts(i32(-85), u64((1 << 32) + 1))
+	       shifts(u64(165), u64(4294967297)) +
+	       shifts(i64(-85), u64(4294967297)) +
+	       shifts(u64(165), u64(4294967296)) +
+	       shifts(i64(-85), u64(18446744073709551615))
+	// COMPILER BUG: ARM skips zero halfwords when materializing negative folded constants.
+	// return r
+	return r % 251
+}
+```
+
 <!-- `.U_F_I_Conv` integer-to-float used to emit the signed `cvtsi2sd`, so a u64 with bit 63 set converted to a negative double. expected 18, got 0 -->
 
 #### u64 to f64 conversion uses signed cvtsi2sd
-```!odin
+```odin
 package main
 
 opt_level :: "none"
@@ -6732,7 +6799,7 @@ main :: proc() -> int {
 <!-- gen.odin:2299-2320 (^ast.Branch_Stmt) always resolves an unlabelled `break` against ctx.loop; the enclosing switch's builder.Block_State (gen.odin:1807) is never consulted, so `break` inside a switch case exits the loop. expected 35, got 1 -->
 
 #### break inside switch case exits the enclosing loop
-```!odin
+```odin
 package main
 
 opt_level :: "none"
@@ -6753,6 +6820,84 @@ main :: proc() -> int {
 		s += 10
 	}
 	return s
+}
+```
+
+#### switch break labels and continue target the correct scope
+```odin
+package main
+
+V :: union {int, bool}
+
+standalone :: proc(n: int) -> int {
+	s := 0
+	switch n {
+	case 1:
+		return 100
+	case:
+		tmp := 4
+		s = tmp
+		break
+	}
+	return s
+}
+
+typed :: proc(v: V) -> int {
+	s := 0
+	switch x in v {
+	case int:
+		tmp := x
+		s = tmp
+		break
+	case bool:
+		return 100
+	}
+	return s
+}
+
+main :: proc() -> int {
+	s := 0
+	i := 0
+	Outer: for {
+		i += 1
+		if i > 4 do break
+		Pick: switch i {
+		case 1:
+			tmp := 20
+			switch i {
+			case 1:
+				s += tmp
+				break
+			case:
+				s += 100
+			}
+			s += 2
+			break Pick
+		case 2:
+			continue
+		case 3:
+			break Outer
+		case:
+			s += 100
+		}
+		s += 1
+	}
+	v: V = 7
+	return s + standalone(0) + typed(v)
+}
+```
+
+#### fail switch fallthrough is unsupported
+```odin
+package main
+
+main :: proc() -> int {
+	switch 1 {
+	case 1:
+		fallthrough
+	case:
+	}
+	return 0
 }
 ```
 
@@ -6779,7 +6924,7 @@ main :: proc() -> int {
 <!-- fold_un_op used to treat demoting .F_Conv as identity, but float constants are stored as f64 bits, so f32(x) of a folded constant kept full f64 precision instead of rounding to f32. expected 146, got 0 -->
 
 #### f32 demotion of a constant does not round
-```!odin
+```odin
 package main
 
 opt_level :: "mininal"
@@ -6850,7 +6995,7 @@ main :: proc() -> int {
 <!-- gen.odin:310-339 tok_to_binop has no entry for .Cmp_And / .Cmp_Or (and none for .Mod_Mod either), so the zero value Op_Info{.Add, ""} is used and gen.odin:1336 builds a bogus node with an empty tag; the compiler then dies in regalloc ("Index 13 is out of range 0..<4"). Any `&&`, `||` or `%%` in the source crashes the compiler instead of erroring out. -->
 
 #### short circuit and or crashes the compiler
-```!odin
+```odin
 package main
 
 opt_level :: "none"
@@ -6860,6 +7005,30 @@ main :: proc() -> int {
 	x := 0
 	if r > 0 && r < 5 do x += 1
 	return x + 10
+}
+```
+
+#### short circuit expressions preserve side effects
+```odin
+package main
+
+bump :: proc(p: ^int, value: bool) -> bool {
+	p^ += 1
+	return value
+}
+
+main :: proc() -> int {
+	n := 0
+	r := 0
+	if false && bump(&n, true) do r += 100
+	if true || bump(&n, false) do r += 1
+	if true && bump(&n, true) do r += 2
+	if false || bump(&n, true) do r += 4
+	x := bump(&n, false) && bump(&n, true)
+	y := bump(&n, true) || bump(&n, false)
+	z := (bump(&n, false) || bump(&n, true)) && bump(&n, true)
+	if !x && y && z do r += 8
+	return r + n * 10
 }
 ```
 
@@ -7195,51 +7364,34 @@ main :: proc() -> int {
 }
 ```
 
-#### fail infinite loop mangling
-```!odin
+#### sccp trivial
+```odin
 package main
 
-opt_level :: "none"
-
 main :: proc() -> int {
-        arr: [32]u8 = {}
-
-        i := 0
-        for {
-                if i >= len(arr) do break
-                arr[i] = u8(i)
-                i += 1
-        }
-
-        i = 0
-        sum := 0
-        for {
-                if 6 >= len(arr) do break
-                sum += int(arr[i])
-                i += 1
-        }
-
-        return sum
+	v := 1
+	for {
+		v = 2 - v
+		if v == 1 do break
+	}
+	return v
 }
 ```
 
-#### fail regalloc ioob
-```!odin
+#### sccp more interesting
+```odin
 package main
 
-opt_level :: "none"
-
 main :: proc() -> int {
-        arr: [32]u8 = {}
-
-        i := 0
-        sum := 0
-        for {
-                if 6 >= len(arr) do break
-                sum += int(arr[i])
-                i += 1
-        }
-
-        return sum
+	x := 1;
+	for {
+		if x == 1 {
+			x = 2 - x
+		} else {
+			x = 99
+		}
+		if x == 1 do break
+	}
+	return x
 }
 ```

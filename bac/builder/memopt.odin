@@ -14,7 +14,7 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 	assert(graph.node_spec == &SPEC)
 
 	if .Mem_Opt not_in graph.opt_flags do return
-	defer graph.peeped &= !optimized
+	bac.pass_quard(graph, .Mem, &optimized) or_return
 
 	context.allocator, _ = arna.scrath()
 

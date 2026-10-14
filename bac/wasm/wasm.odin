@@ -84,6 +84,15 @@ when SPEC_NOT_PRESENT {
 		return 0
 	}
 
+	add_select :: proc(
+		graph: ^bac.Proc,
+		name: string,
+		dt: bac.Node_Datatype,
+		on_true, on_false, condition: bac.Node_ID,
+	) -> bac.Node_ID {
+		return 0
+	}
+
 	Node_Type :: enum u16 {
 		WASM_Store,
 		WASM_Load,
@@ -93,6 +102,10 @@ when SPEC_NOT_PRESENT {
 		Drop,
 		Stub,
 		Extract_Lane_U,
+		WASM_Shl,
+		WASM_Shr,
+		WASM_U_Shr,
+		Select,
 	}
 }
 
@@ -146,6 +159,70 @@ peep :: proc(
 	}
 
 	#partial switch kind {
+	case .Shl ..= .U_Shr:
+		if node.dt not_in bac.INT_DTS do break
+
+		count := node.inps[1]
+		count_dt := get_node(ctx, count).dt
+		constant := bac.get_extra(ctx, count, bac.CInt)
+		bits := i64(bac.DT_SIZE[node.dt] * 8)
+		if constant != nil && constant.value == 0 do return node.inps[0]
+		if count_dt < .I32 {
+			count_dt = .I32
+			count = bac.add_un_op(ctx, "shcext", .U_Conv, count_dt, count)
+			bac.worklist_add(ctx, ctx.worklist, count)
+		}
+
+		in_range: bac.Node_ID
+		if constant != nil {
+			if u64(constant.value) >= u64(bits) {
+				if kind != .Shr do return bac.add_c_int(ctx, "shzero", node.dt, 0)
+				count = bac.add_c_int(ctx, "shlimit", count_dt, bits - 1)
+			}
+		} else {
+			in_range = bac.add_bin_op(
+				ctx,
+				"shrange",
+				.U_Lt,
+				.I8,
+				count,
+				bac.add_c_int(ctx, "shwidth", count_dt, bits),
+			)
+			if kind == .Shr {
+				count = add_select(
+					ctx,
+					"shclamp",
+					count_dt,
+					count,
+					bac.add_c_int(ctx, "shlimit", count_dt, bits - 1),
+					in_range,
+				)
+			}
+		}
+
+		// Check the full count before wrapping it to the native shift's width.
+		if count_dt != node.dt {
+			count = bac.add_un_op(ctx, "shcount", .U_Conv, node.dt, count)
+			bac.worklist_add(ctx, ctx.worklist, count)
+		}
+		@(static, rodata)
+		NATIVE_SHIFTS := [3]Node_Type{.WASM_Shl, .WASM_Shr, .WASM_U_Shr}
+		shift := bac.add_raw(
+			ctx,
+			"shnative",
+			u16(NATIVE_SHIFTS[int(kind) - int(Node_Type.Shl)]),
+			node.dt,
+			{node.inps[0], count},
+		)
+		if constant != nil || kind == .Shr do return shift
+		return add_select(
+			ctx,
+			"shguard",
+			node.dt,
+			shift,
+			bac.add_c_int(ctx, "shzero", node.dt, 0),
+			in_range,
+		)
 	case .Conv, .U_Conv:
 		if inp.dt not_in bac.INT_DTS ||
 		   node.dt not_in bac.INT_DTS ||
@@ -364,6 +441,8 @@ meta_of :: #force_inline proc(
 	     .Splat,
 	     .Simd_Extract_Lsbs,
 	     .Ctz,
+	     .WASM_Shl ..= .WASM_U_Shr,
+	     .Select,
 	     .WASM_Load,
 	     .WASM_Store:
 		return {out = out}
@@ -562,8 +641,10 @@ pre_regalloc_hook :: proc(
 				input_start = 1,
 				input_count = u8(len(node.inps) - 1),
 			}
-		case .Add ..= .And_Not:
+		case .Add ..= .And_Not, .WASM_Shl ..= .WASM_U_Shr:
 			return {def = true, input_count = 2}
+		case .Select:
+			return {def = true, input_count = 3}
 		case .Conv,
 		     .U_Conv,
 		     .Not,
@@ -1169,6 +1250,8 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 		case .Void, .Mem, .V256, .V512:
 			panic("no")
 		}
+	case .WASM_Shl ..= .WASM_U_Shr, .Select:
+		emit_op(ctx.code, op)
 	case .Add ..= .U_Rem, .Drop, .Not, .Ctz:
 		if node.dt == .V128 {
 			fmt.assertf(lane_op != .V128_Load, "%v", node)
@@ -1176,9 +1259,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 		} else {
 			#partial switch kind {
 			case .Shl, .U_Shr, .Shr:
-				if node.dt != .I64 && get_node(ctx, node.inps[1]).dt == .I64 {
-					emit_op(ctx.code, .I32_Wrap_I64)
-				}
+				fmt.panicf("unlowered scalar shift: %v", node)
 			}
 			assert(op != .Unreachable)
 			emit_op(ctx.code, op)

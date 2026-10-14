@@ -94,6 +94,10 @@ SPEC := bac.Node_Spec{
 		0b10, // Zip1
 		0b10, // Addv128
 		0b10000000, // Umov
+		0b10, // Lslv
+		0b10, // Asrv
+		0b10, // Lsrv
+		0b10000000, // Csel_Ult_Imm
 	},
 	node_extra_sizes = {
 		0 = 1, // Nil -> Cfg
@@ -118,6 +122,7 @@ SPEC := bac.Node_Spec{
 		55 = 1, // Proc_Addr -> Tup
 		71 = 1, // Ext -> Arm_Op
 		74 = 1, // Umov -> Arm_Op
+		78 = 1, // Csel_Ult_Imm -> Arm_Op
 	},
 	node_flags = {
 		{}, // Nil
@@ -195,6 +200,10 @@ SPEC := bac.Node_Spec{
 		{}, // Zip1
 		{}, // Addv128
 		{}, // Umov
+		{}, // Lslv
+		{}, // Asrv
+		{}, // Lsrv
+		{}, // Csel_Ult_Imm
 	},
 	node_extra_types = {
 		0 = bac.Cfg,
@@ -219,6 +228,7 @@ SPEC := bac.Node_Spec{
 		55 = bac.Tup,
 		71 = Arm_Op,
 		74 = Arm_Op,
+		78 = Arm_Op,
 	},
 	node_kind = Node_Type,
 }
@@ -299,6 +309,10 @@ Node_Type :: enum u16 {
 	Zip1,
 	Addv128,
 	Umov,
+	Lslv,
+	Asrv,
+	Lsrv,
+	Csel_Ult_Imm,
 }
 
 peep_inst :: proc(ctx: bac.Peep_Ctx, node: bac.Expanded_Node) -> Maybe(bac.Node_ID) {
@@ -345,6 +359,12 @@ add_umov :: #force_inline proc(graph: ^bac.Proc, name: string, dt: bac.Node_Data
 		aux = aux,
 	}
 	return bac.add_raw(graph, name, u16(Node_Type.Umov), dt, {vec})
+}
+add_csel_ult_imm :: #force_inline proc(graph: ^bac.Proc, name: string, dt: bac.Node_Datatype, on_true: bac.Node_ID, on_false: bac.Node_ID, count: bac.Node_ID, aux: u32) -> (_id: bac.Node_ID) {
+	(^Arm_Op)(bac.get_next_extra_slot(graph, u16(Node_Type.Csel_Ult_Imm), 0))^ = {
+		aux = aux,
+	}
+	return bac.add_raw(graph, name, u16(Node_Type.Csel_Ult_Imm), dt, {on_true, on_false, count})
 }
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {

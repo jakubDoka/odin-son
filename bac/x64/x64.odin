@@ -576,7 +576,7 @@ peep :: proc(
 		op_dt := bac.operation_datatype(ctx.graph, node)
 		if op_dt not_in bac.INT_DTS {
 			if op_dt in bac.FLOAT_DTS &&
-			   .Eq <= node.itype &&
+			   .Le <= node.itype &&
 			   node.itype <= .Ge &&
 			   node.dt != .Void &&
 			   len(node.outs) == 1 &&
@@ -594,6 +594,27 @@ peep :: proc(
 		if node.dt == .V128 && node.itype == .Eq {
 			node.rtype = u16(Node_Type.X64_Pcmpeq)
 			return id
+		}
+
+		if .Shl <= node.itype && node.itype <= .U_Shr {
+			count := bac.get_extra(ctx, node.inps[1], bac.CInt)
+			if count != nil &&
+			   u64(count.value) >= u64(bac.DT_SIZE[op_dt] * 8) {
+				if node.itype != .Shr do return bac.add_c_int(ctx, "shz", node.dt, 0)
+				return bac.add_bin_op(
+					ctx,
+					"shs",
+					.Shr,
+					node.dt,
+					node.inps[0],
+					bac.add_c_int(
+						ctx,
+						"shc",
+						get_node(ctx, node.inps[1]).dt,
+						i64(bac.DT_SIZE[op_dt] * 8 - 1),
+					),
+				)
+			}
 		}
 
 		if rhs_const != nil {
@@ -779,9 +800,6 @@ peep :: proc(
 				.And,
 				.Or,
 				.Xor,
-				.Shl,
-				.Shr,
-				.U_Shr,
 				.Not,
 				.Neg,
 			}
@@ -906,6 +924,14 @@ post_schedule_peep :: proc(
 			node := expand_node(ctx, node.inps[1])
 			#partial switch xtype(node) {
 			case .Eq ..< .U_Ge, .X64_Eq ..< .X64_Ge:
+				op_dt := bac.operation_datatype(ctx, node)
+				mem_op := xextra(ctx, node, Mem_Op)
+				if mem_op != nil do op_dt = mem_op.dt
+				if op_dt in bac.FLOAT_DTS &&
+				   xtype(node) in
+					   (bit_set[Node_Type]{.Eq, .Ne, .X64_Eq, .X64_Ne}) {
+					break
+				}
 				node.dt = .Void
 			}
 		}
@@ -2397,6 +2423,19 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 			op :=
 				is_float ? FLOAT_OPCODE_TABLE[type].opcode : OPCODE_TABLE[type].opcode
 			emit(ctx.code, {rx, 0x0F, op, mod_sm(.Direct, 0b000, dst)})
+			if is_float &&
+			   type in (bit_set[Node_Type]{.Eq, .Ne, .X64_Eq, .X64_Ne}) {
+				emit(
+					ctx.code,
+					{
+						0x7B,
+						3,
+						rex(RAX, dst, RAX, false),
+						0xB0 + u8(dst.index & 7),
+						u8(type == .Ne || type == .X64_Ne),
+					},
+				)
+			}
 
 			next_sloc(ctx)
 
@@ -2419,9 +2458,26 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 		emit_sized_opcode(ctx.code, node.dt, rx, 0x21)
 		emit(ctx.code, {mod_rm(.Direct, lhs, dst)})
 	case .Shl ..= .U_Shr:
-		// shl/shr $dst, cl
 		dst := reg_of(ctx, node.inps[0])
-		rx := rex(RAX, dst, RAX, bac.DT_SIZE[node.dt] == 8)
+		count_dt := get_node(ctx, node.inps[1]).dt
+		bits := bac.DT_SIZE[node.dt] * 8
+		rx := rex(RAX, RCX, RAX, count_dt == .I64)
+		emit_sized_opcode(ctx.code, count_dt, rx, 0x81)
+		emit(ctx.code, {mod_sm(.Direct, 0b111, RCX)})
+		emit_imm_for_dt(ctx.code, count_dt, i32(bits))
+		emit(ctx.code, {0x72, 0})
+		skip := ctx.code.pos - 1
+		if type == .Shr {
+			rx = rex(RAX, dst, RAX, node.dt == .I64)
+			emit_sized_opcode(ctx.code, node.dt, rx, 0xC1)
+			emit(ctx.code, {mod_sm(.Direct, 0b111, dst), u8(bits - 1)})
+		} else {
+			rx = rex(dst, dst, RAX, false)
+			emit(ctx.code, {rx, 0x31, mod_rm(.Direct, dst, dst)})
+		}
+		emit(ctx.code, {0xEB, u8(3 + int(node.dt == .I16))})
+		ctx.code.ptr[skip] = u8(ctx.code.pos - skip - 1)
+		rx = rex(RAX, dst, RAX, bac.DT_SIZE[node.dt] == 8)
 		op := OPCODE_TABLE[xtype(node)].ext
 		emit_sized_opcode(ctx.code, node.dt, rx, 0xd3)
 		emit(ctx.code, {mod_sm(.Direct, op, dst)})

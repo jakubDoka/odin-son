@@ -10626,6 +10626,74 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) foreign_block :: proc(t: ^testing.T) {
+
+
+
+foreign {
+	malloc :: proc(size: int) -> rawptr ---
+	free :: proc(size: rawptr) ---
+}
+
+main_ :: proc() -> int {
+	slt := (^int)(malloc(8))
+	slt^ = 0
+	vl := slt^
+	free(rawptr(slt))
+	return vl
+}
+
+main.run_test(t, `foreign_block`, `
+package main
+
+foreign {
+	malloc :: proc(size: int) -> rawptr ---
+	free :: proc(size: rawptr) ---
+}
+
+main :: proc() -> int {
+	slt := (^int)(malloc(8))
+	slt^ = 0
+	vl := slt^
+	free(rawptr(slt))
+	return vl
+}
+`, main_())
+}
+@(test) enum_basic_values :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Color :: enum {
+	Red,
+	Green,
+	Blue,
+}
+
+main_ :: proc() -> int {
+	c := Color.Green
+	return int(c)
+}
+
+main.run_test(t, `enum_basic_values`, `
+package main
+
+opt_level :: "none"
+
+Color :: enum {
+	Red,
+	Green,
+	Blue,
+}
+
+main :: proc() -> int {
+	c := Color.Green
+	return int(c)
+}
+`, main_())
+}
 @(test) enum_explicit_values :: proc(t: ^testing.T) {
 
 
@@ -12224,6 +12292,274 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) shift_count_larger_than_operand_width :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+sh :: proc(a: uint, n: uint) -> uint {
+	return a << n
+}
+
+main_ :: proc() -> int {
+	return int(sh(1, 64) + sh(3, 65))
+}
+
+main.run_test(t, `shift_count_larger_than_operand_width`, `
+package main
+
+opt_level :: "none"
+
+sh :: proc(a: uint, n: uint) -> uint {
+	return a << n
+}
+
+main :: proc() -> int {
+	return int(sh(1, 64) + sh(3, 65))
+}
+`, main_())
+}
+@(test) float_equality_with_NaN_ignores_the_parity_flag :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+nan :: proc(x: f64) -> f64 {
+	return x / (x - x)
+}
+
+main_ :: proc() -> int {
+	n := nan(0)
+	return int(n == 1) + 2 * int(n != 1)
+}
+
+main.run_test(t, `float_equality_with_NaN_ignores_the_parity_flag`, `
+package main
+
+opt_level :: "none"
+
+nan :: proc(x: f64) -> f64 {
+	return x / (x - x)
+}
+
+main :: proc() -> int {
+	n := nan(0)
+	return int(n == 1) + 2 * int(n != 1)
+}
+`, main_())
+}
+@(test) constant_shift_amount_larger_than_operand_width :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+shifts :: proc(x: u32) -> u32 {
+	return (x << 40) + (x >> 33)
+}
+
+main_ :: proc() -> int {
+	return int(shifts(7))
+}
+
+main.run_test(t, `constant_shift_amount_larger_than_operand_width`, `
+package main
+
+opt_level :: "none"
+
+shifts :: proc(x: u32) -> u32 {
+	return (x << 40) + (x >> 33)
+}
+
+main :: proc() -> int {
+	return int(shifts(7))
+}
+`, main_())
+}
+@(test) scalar_shift_boundaries :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+shifts :: proc(x: $T, n: uint) -> int {
+	left := x << n
+	right := x >> n
+	return int(left) ~ int(right) ~ int(x) ~ int(n)
+}
+
+main_ :: proc() -> int {
+	// COMPILER BUG: inferred array lengths are rejected by the frontend.
+	// counts := [?]uint{0, 1, 7, 8, 15, 16, 31, 32, 63, 64, 65}
+	counts := [11]uint{0, 1, 7, 8, 15, 16, 31, 32, 63, 64, 65}
+	r := 0
+	for n in counts {
+		r = r * 3 + shifts(u8(165), n)
+		r = r * 3 + shifts(i8(-85), n)
+		r = r * 3 + shifts(u16(42405), n)
+		r = r * 3 + shifts(i16(-21845), n)
+		// COMPILER BUG: wasm emits an out-of-range positive i32.const for u32(2779096485).
+		// r = r * 3 + shifts(u32(2779096485), n)
+		r = r * 3 + shifts(u32(1431655765), n)
+		r = r * 3 + shifts(i32(-1431655765), n)
+		r = r * 3 + shifts(u64(11936128518282651045), n)
+		r = r * 3 + shifts(i64(-6148914691236517205), n)
+	}
+	// COMPILER BUG: ARM skips zero halfwords when materializing negative folded constants.
+	// return r
+	return r % 251
+}
+
+main.run_test(t, `scalar_shift_boundaries`, `
+package main
+
+opt_level :: "none"
+
+shifts :: proc(x: $T, n: uint) -> int {
+	left := x << n
+	right := x >> n
+	return int(left) ~ int(right) ~ int(x) ~ int(n)
+}
+
+main :: proc() -> int {
+	// COMPILER BUG: inferred array lengths are rejected by the frontend.
+	// counts := [?]uint{0, 1, 7, 8, 15, 16, 31, 32, 63, 64, 65}
+	counts := [11]uint{0, 1, 7, 8, 15, 16, 31, 32, 63, 64, 65}
+	r := 0
+	for n in counts {
+		r = r * 3 + shifts(u8(165), n)
+		r = r * 3 + shifts(i8(-85), n)
+		r = r * 3 + shifts(u16(42405), n)
+		r = r * 3 + shifts(i16(-21845), n)
+		// COMPILER BUG: wasm emits an out-of-range positive i32.const for u32(2779096485).
+		// r = r * 3 + shifts(u32(2779096485), n)
+		r = r * 3 + shifts(u32(1431655765), n)
+		r = r * 3 + shifts(i32(-1431655765), n)
+		r = r * 3 + shifts(u64(11936128518282651045), n)
+		r = r * 3 + shifts(i64(-6148914691236517205), n)
+	}
+	// COMPILER BUG: ARM skips zero halfwords when materializing negative folded constants.
+	// return r
+	return r % 251
+}
+`, main_())
+}
+@(test) mixed_width_shift_counts :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+shifts :: proc(x: $T, n: $C) -> int {
+	// COMPILER BUG: shift counts other than uint are rejected by the frontend.
+	// return int(x << n) ~ int(x >> n)
+	return int(x << uint(n)) ~ int(x >> uint(n))
+}
+
+main_ :: proc() -> int {
+	r := shifts(u64(165), u8(7)) +
+	       shifts(i64(-85), u8(65)) +
+	       shifts(u32(42405), u16(31)) +
+	       shifts(i32(-21845), u16(65535)) +
+	       shifts(u64(2779096485), u32(63)) +
+	       shifts(i64(-1431655765), u32(64)) +
+	       // COMPILER BUG: u64((1 << 32) + 1) is rejected during constant folding.
+	       // COMPILER BUG: Odin truncates large counts to u32 for sub-64-bit shifts.
+	       // shifts(u32(165), u64((1 << 32) + 1)) + shifts(i32(-85), u64((1 << 32) + 1))
+	       shifts(u64(165), u64(4294967297)) +
+	       shifts(i64(-85), u64(4294967297)) +
+	       shifts(u64(165), u64(4294967296)) +
+	       shifts(i64(-85), u64(18446744073709551615))
+	// COMPILER BUG: ARM skips zero halfwords when materializing negative folded constants.
+	// return r
+	return r % 251
+}
+
+main.run_test(t, `mixed_width_shift_counts`, `
+package main
+
+opt_level :: "none"
+
+shifts :: proc(x: $T, n: $C) -> int {
+	// COMPILER BUG: shift counts other than uint are rejected by the frontend.
+	// return int(x << n) ~ int(x >> n)
+	return int(x << uint(n)) ~ int(x >> uint(n))
+}
+
+main :: proc() -> int {
+	r := shifts(u64(165), u8(7)) +
+	       shifts(i64(-85), u8(65)) +
+	       shifts(u32(42405), u16(31)) +
+	       shifts(i32(-21845), u16(65535)) +
+	       shifts(u64(2779096485), u32(63)) +
+	       shifts(i64(-1431655765), u32(64)) +
+	       // COMPILER BUG: u64((1 << 32) + 1) is rejected during constant folding.
+	       // COMPILER BUG: Odin truncates large counts to u32 for sub-64-bit shifts.
+	       // shifts(u32(165), u64((1 << 32) + 1)) + shifts(i32(-85), u64((1 << 32) + 1))
+	       shifts(u64(165), u64(4294967297)) +
+	       shifts(i64(-85), u64(4294967297)) +
+	       shifts(u64(165), u64(4294967296)) +
+	       shifts(i64(-85), u64(18446744073709551615))
+	// COMPILER BUG: ARM skips zero halfwords when materializing negative folded constants.
+	// return r
+	return r % 251
+}
+`, main_())
+}
+@(test) u64_to_f64_conversion_uses_signed_cvtsi2sd :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+id :: proc(x: $T) -> T {return x}
+
+main_ :: proc() -> int {
+	c := id(u64(18446744073709551615))
+	return int(f64(c) / 1e18)
+}
+
+main.run_test(t, `u64_to_f64_conversion_uses_signed_cvtsi2sd`, `
+package main
+
+opt_level :: "none"
+
+id :: proc(x: $T) -> T {return x}
+
+main :: proc() -> int {
+	c := id(u64(18446744073709551615))
+	return int(f64(c) / 1e18)
+}
+`, main_())
+}
+@(test) f64_to_u32_conversion_uses_signed_cvttsd2si :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+id :: proc(x: $T) -> T {return x}
+
+main_ :: proc() -> int {
+	d := id(f64(4.0e9))
+	return int(u32(d) / 1000000)
+}
+
+main.run_test(t, `f64_to_u32_conversion_uses_signed_cvttsd2si`, `
+package main
+
+opt_level :: "none"
+
+id :: proc(x: $T) -> T {return x}
+
+main :: proc() -> int {
+	d := id(f64(4.0e9))
+	return int(u32(d) / 1000000)
+}
+`, main_())
+}
 @(test) float_spill_to_spill_move_writes_8_bytes_below_the_slot :: proc(t: ^testing.T) {
 
 
@@ -12770,6 +13106,290 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) break_inside_switch_case_exits_the_enclosing_loop :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	s := 0
+	i := 0
+	for {
+		i += 1
+		if i > 3 do break
+		switch i {
+		case 1:
+			s += 1
+			break
+		case:
+			s += 2
+		}
+		s += 10
+	}
+	return s
+}
+
+main.run_test(t, `break_inside_switch_case_exits_the_enclosing_loop`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	s := 0
+	i := 0
+	for {
+		i += 1
+		if i > 3 do break
+		switch i {
+		case 1:
+			s += 1
+			break
+		case:
+			s += 2
+		}
+		s += 10
+	}
+	return s
+}
+`, main_())
+}
+@(test) switch_break_labels_and_continue_target_the_correct_scope :: proc(t: ^testing.T) {
+
+
+
+V :: union {int, bool}
+
+standalone :: proc(n: int) -> int {
+	s := 0
+	switch n {
+	case 1:
+		return 100
+	case:
+		tmp := 4
+		s = tmp
+		break
+	}
+	return s
+}
+
+typed :: proc(v: V) -> int {
+	s := 0
+	switch x in v {
+	case int:
+		tmp := x
+		s = tmp
+		break
+	case bool:
+		return 100
+	}
+	return s
+}
+
+main_ :: proc() -> int {
+	s := 0
+	i := 0
+	Outer: for {
+		i += 1
+		if i > 4 do break
+		Pick: switch i {
+		case 1:
+			tmp := 20
+			switch i {
+			case 1:
+				s += tmp
+				break
+			case:
+				s += 100
+			}
+			s += 2
+			break Pick
+		case 2:
+			continue
+		case 3:
+			break Outer
+		case:
+			s += 100
+		}
+		s += 1
+	}
+	v: V = 7
+	return s + standalone(0) + typed(v)
+}
+
+main.run_test(t, `switch_break_labels_and_continue_target_the_correct_scope`, `
+package main
+
+V :: union {int, bool}
+
+standalone :: proc(n: int) -> int {
+	s := 0
+	switch n {
+	case 1:
+		return 100
+	case:
+		tmp := 4
+		s = tmp
+		break
+	}
+	return s
+}
+
+typed :: proc(v: V) -> int {
+	s := 0
+	switch x in v {
+	case int:
+		tmp := x
+		s = tmp
+		break
+	case bool:
+		return 100
+	}
+	return s
+}
+
+main :: proc() -> int {
+	s := 0
+	i := 0
+	Outer: for {
+		i += 1
+		if i > 4 do break
+		Pick: switch i {
+		case 1:
+			tmp := 20
+			switch i {
+			case 1:
+				s += tmp
+				break
+			case:
+				s += 100
+			}
+			s += 2
+			break Pick
+		case 2:
+			continue
+		case 3:
+			break Outer
+		case:
+			s += 100
+		}
+		s += 1
+	}
+	v: V = 7
+	return s + standalone(0) + typed(v)
+}
+`, main_())
+}
+@(test) fail_switch_fallthrough_is_unsupported :: proc(t: ^testing.T) {
+main.run_test(t, `fail_switch_fallthrough_is_unsupported`, `
+package main
+
+main :: proc() -> int {
+	switch 1 {
+	case 1:
+		fallthrough
+	case:
+	}
+	return 0
+}
+`, 0)
+}
+@(test) signed_constant_folding_on_narrowed_integers :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "mininal"
+
+main_ :: proc() -> int {
+	a: i64 = -8
+	b := i32(a)
+	r := 0
+	if b < 0 do r += 1
+	if b > 5 do r += 2
+	if (b >> 1) == -4 do r += 16
+	r += int(b % 3)
+	return r + 100
+}
+
+main.run_test(t, `signed_constant_folding_on_narrowed_integers`, `
+package main
+
+opt_level :: "mininal"
+
+main :: proc() -> int {
+	a: i64 = -8
+	b := i32(a)
+	r := 0
+	if b < 0 do r += 1
+	if b > 5 do r += 2
+	if (b >> 1) == -4 do r += 16
+	r += int(b % 3)
+	return r + 100
+}
+`, main_())
+}
+@(test) f32_demotion_of_a_constant_does_not_round :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "mininal"
+
+main_ :: proc() -> int {
+	x: f64 = 0.1
+	y := f32(x)
+	z := f64(y)
+	return int((z - 0.1) * 1e18) % 251
+}
+
+main.run_test(t, `f32_demotion_of_a_constant_does_not_round`, `
+package main
+
+opt_level :: "mininal"
+
+main :: proc() -> int {
+	x: f64 = 0.1
+	y := f32(x)
+	z := f64(y)
+	return int((z - 0.1) * 1e18) % 251
+}
+`, main_())
+}
+@(test) zero_init_slot_splitting_index_out_of_range :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "moderate"
+
+S :: struct {
+	a: [4]int,
+	m: int,
+	b: [4]int,
+}
+
+main_ :: proc() -> int {
+	x := S{}
+	x.m = 5
+	return x.a[0] + x.m + x.b[3] + 10
+}
+
+main.run_test(t, `zero_init_slot_splitting_index_out_of_range`, `
+package main
+
+opt_level :: "moderate"
+
+S :: struct {
+	a: [4]int,
+	m: int,
+	b: [4]int,
+}
+
+main :: proc() -> int {
+	x := S{}
+	x.m = 5
+	return x.a[0] + x.m + x.b[3] + 10
+}
+`, main_())
+}
 @(test) zero_init_only_partially_zeroes_non_power_of_two_run :: proc(t: ^testing.T) {
 
 
@@ -12829,6 +13449,106 @@ main :: proc() -> int {
 	x.m = 5
 	s := x.a[0] + x.a[1] + x.a[2] + x.m + x.b[0] + x.b[1]
 	return (s + d) % 251
+}
+`, main_())
+}
+@(test) short_circuit_and_or_crashes_the_compiler :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+main_ :: proc() -> int {
+	r := 3
+	x := 0
+	if r > 0 && r < 5 do x += 1
+	return x + 10
+}
+
+main.run_test(t, `short_circuit_and_or_crashes_the_compiler`, `
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	r := 3
+	x := 0
+	if r > 0 && r < 5 do x += 1
+	return x + 10
+}
+`, main_())
+}
+@(test) short_circuit_expressions_preserve_side_effects :: proc(t: ^testing.T) {
+
+
+
+bump :: proc(p: ^int, value: bool) -> bool {
+	p^ += 1
+	return value
+}
+
+main_ :: proc() -> int {
+	n := 0
+	r := 0
+	if false && bump(&n, true) do r += 100
+	if true || bump(&n, false) do r += 1
+	if true && bump(&n, true) do r += 2
+	if false || bump(&n, true) do r += 4
+	x := bump(&n, false) && bump(&n, true)
+	y := bump(&n, true) || bump(&n, false)
+	z := (bump(&n, false) || bump(&n, true)) && bump(&n, true)
+	if !x && y && z do r += 8
+	return r + n * 10
+}
+
+main.run_test(t, `short_circuit_expressions_preserve_side_effects`, `
+package main
+
+bump :: proc(p: ^int, value: bool) -> bool {
+	p^ += 1
+	return value
+}
+
+main :: proc() -> int {
+	n := 0
+	r := 0
+	if false && bump(&n, true) do r += 100
+	if true || bump(&n, false) do r += 1
+	if true && bump(&n, true) do r += 2
+	if false || bump(&n, true) do r += 4
+	x := bump(&n, false) && bump(&n, true)
+	y := bump(&n, true) || bump(&n, false)
+	z := (bump(&n, false) || bump(&n, true)) && bump(&n, true)
+	if !x && y && z do r += 8
+	return r + n * 10
+}
+`, main_())
+}
+@(test) load_forwarding_past_overlapping_store_of_different_size :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "moderate"
+
+main_ :: proc() -> int {
+	arr: [16]u8
+	p := transmute(^u64)&arr[0]
+	p^ = 0
+	arr[4] = 1
+	return int(p^ % 251)
+}
+
+main.run_test(t, `load_forwarding_past_overlapping_store_of_different_size`, `
+package main
+
+opt_level :: "moderate"
+
+main :: proc() -> int {
+	arr: [16]u8
+	p := transmute(^u64)&arr[0]
+	p^ = 0
+	arr[4] = 1
+	return int(p^ % 251)
 }
 `, main_())
 }
@@ -13224,6 +13944,66 @@ main :: proc() -> int {
 	}
 
 	return 0
+}
+`, main_())
+}
+@(test) sccp_trivial :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc() -> int {
+	v := 1
+	for {
+		v = 2 - v
+		if v == 1 do break
+	}
+	return v
+}
+
+main.run_test(t, `sccp_trivial`, `
+package main
+
+main :: proc() -> int {
+	v := 1
+	for {
+		v = 2 - v
+		if v == 1 do break
+	}
+	return v
+}
+`, main_())
+}
+@(test) sccp_more_interesting :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc() -> int {
+	x := 1;
+	for {
+		if x == 1 {
+			x = 2 - x
+		} else {
+			x = 99
+		}
+		if x == 1 do break
+	}
+	return x
+}
+
+main.run_test(t, `sccp_more_interesting`, `
+package main
+
+main :: proc() -> int {
+	x := 1;
+	for {
+		if x == 1 {
+			x = 2 - x
+		} else {
+			x = 99
+		}
+		if x == 1 do break
+	}
+	return x
 }
 `, main_())
 }
@@ -14819,6 +15599,14 @@ main.run_test(t, "fuzz_ff353183407ba29c", string(#load("../fuzz/crashes/ff353183
 main.run_test(t, "fuzz_ffd3458647088ce1", string(#load("../fuzz/crashes/ffd3458647088ce1.odin")), 0,
 				diff = false, no_run = true)
 }
+@(test) fuzz_infinite_loop_mangling :: proc(t: ^testing.T) {
+main.run_test(t, "fuzz_infinite_loop_mangling", string(#load("../fuzz/crashes/infinite_loop_mangling.odin")), 0,
+				diff = false, no_run = true)
+}
+@(test) fuzz_regalloc_ioob :: proc(t: ^testing.T) {
+main.run_test(t, "fuzz_regalloc_ioob", string(#load("../fuzz/crashes/regalloc_ioob.odin")), 0,
+				diff = false, no_run = true)
+}
 when #config(BENCH_TESTS, false) {
 main :: proc() {
 NAMES := []string{
@@ -14980,6 +15768,8 @@ NAMES := []string{
 `integer_materialized_compares_with_folded_load`,
 `float_materialized_compares_with_folded_load`,
 `crash_in_gcm_on_two_loops_nested_in_a_loop`,
+`foreign_block`,
+`enum_basic_values`,
 `enum_explicit_values`,
 `enum_backing_type`,
 `enum_comparison`,
@@ -15010,6 +15800,13 @@ NAMES := []string{
 `sroa_of_a_partially_initialized_struct_crashes_the_compiler`,
 `i8_multiply_missing_REX_on_imul_r_m8`,
 `indirect_call_through_high_register_missing_REX_B`,
+`shift_count_larger_than_operand_width`,
+`float_equality_with_NaN_ignores_the_parity_flag`,
+`constant_shift_amount_larger_than_operand_width`,
+`scalar_shift_boundaries`,
+`mixed_width_shift_counts`,
+`u64_to_f64_conversion_uses_signed_cvtsi2sd`,
+`f64_to_u32_conversion_uses_signed_cvttsd2si`,
 `float_spill_to_spill_move_writes_8_bytes_below_the_slot`,
 `float_compare_against_indexed_memory_drops_REX_X`,
 `regalloc_split_cleanup_removes_wrong_phi_from_schedule`,
@@ -15017,7 +15814,16 @@ NAMES := []string{
 `loop_variable_only_written_inside_loop_keeps_pre_loop_value`,
 `regalloc_coalescing_merges_interfering_live_ranges`,
 `loop_write_only_variable_lost_on_early_break`,
+`break_inside_switch_case_exits_the_enclosing_loop`,
+`switch_break_labels_and_continue_target_the_correct_scope`,
+`fail_switch_fallthrough_is_unsupported`,
+`signed_constant_folding_on_narrowed_integers`,
+`f32_demotion_of_a_constant_does_not_round`,
+`zero_init_slot_splitting_index_out_of_range`,
 `zero_init_only_partially_zeroes_non_power_of_two_run`,
+`short_circuit_and_or_crashes_the_compiler`,
+`short_circuit_expressions_preserve_side_effects`,
+`load_forwarding_past_overlapping_store_of_different_size`,
 `memopt_renames_local_with_mismatched_access_sizes`,
 `memopt_narrow_store_into_wide_slot`,
 `load_forwarding_does_not_reach_a_peephole_fixpoint`,
@@ -15034,6 +15840,8 @@ NAMES := []string{
 `fail_uninferable_polymorphism`,
 `nested_ifs_with_identical_condition`,
 `empty_loops_get_killed`,
+`sccp_trivial`,
+`sccp_more_interesting`,
 `fuzz_0092546c2ab7b49f`,
 `fuzz_00f1be4a1ea4c499`,
 `fuzz_0203aad88c140351`,
@@ -15432,6 +16240,8 @@ NAMES := []string{
 `fuzz_ff337c38918e4111`,
 `fuzz_ff353183407ba29c`,
 `fuzz_ffd3458647088ce1`,
+`fuzz_infinite_loop_mangling`,
+`fuzz_regalloc_ioob`,
 }
 CODE := []string{
 `
@@ -20588,6 +21398,38 @@ main :: proc() -> int {
 `
 package main
 
+foreign {
+	malloc :: proc(size: int) -> rawptr ---
+	free :: proc(size: rawptr) ---
+}
+
+main :: proc() -> int {
+	slt := (^int)(malloc(8))
+	slt^ = 0
+	vl := slt^
+	free(rawptr(slt))
+	return vl
+}
+`,
+`
+package main
+
+opt_level :: "none"
+
+Color :: enum {
+	Red,
+	Green,
+	Blue,
+}
+
+main :: proc() -> int {
+	c := Color.Green
+	return int(c)
+}
+`,
+`
+package main
+
 opt_level :: "none"
 
 Code :: enum {
@@ -21359,6 +22201,133 @@ package main
 
 opt_level :: "none"
 
+sh :: proc(a: uint, n: uint) -> uint {
+	return a << n
+}
+
+main :: proc() -> int {
+	return int(sh(1, 64) + sh(3, 65))
+}
+`,
+`
+package main
+
+opt_level :: "none"
+
+nan :: proc(x: f64) -> f64 {
+	return x / (x - x)
+}
+
+main :: proc() -> int {
+	n := nan(0)
+	return int(n == 1) + 2 * int(n != 1)
+}
+`,
+`
+package main
+
+opt_level :: "none"
+
+shifts :: proc(x: u32) -> u32 {
+	return (x << 40) + (x >> 33)
+}
+
+main :: proc() -> int {
+	return int(shifts(7))
+}
+`,
+`
+package main
+
+opt_level :: "none"
+
+shifts :: proc(x: $T, n: uint) -> int {
+	left := x << n
+	right := x >> n
+	return int(left) ~ int(right) ~ int(x) ~ int(n)
+}
+
+main :: proc() -> int {
+	// COMPILER BUG: inferred array lengths are rejected by the frontend.
+	// counts := [?]uint{0, 1, 7, 8, 15, 16, 31, 32, 63, 64, 65}
+	counts := [11]uint{0, 1, 7, 8, 15, 16, 31, 32, 63, 64, 65}
+	r := 0
+	for n in counts {
+		r = r * 3 + shifts(u8(165), n)
+		r = r * 3 + shifts(i8(-85), n)
+		r = r * 3 + shifts(u16(42405), n)
+		r = r * 3 + shifts(i16(-21845), n)
+		// COMPILER BUG: wasm emits an out-of-range positive i32.const for u32(2779096485).
+		// r = r * 3 + shifts(u32(2779096485), n)
+		r = r * 3 + shifts(u32(1431655765), n)
+		r = r * 3 + shifts(i32(-1431655765), n)
+		r = r * 3 + shifts(u64(11936128518282651045), n)
+		r = r * 3 + shifts(i64(-6148914691236517205), n)
+	}
+	// COMPILER BUG: ARM skips zero halfwords when materializing negative folded constants.
+	// return r
+	return r % 251
+}
+`,
+`
+package main
+
+opt_level :: "none"
+
+shifts :: proc(x: $T, n: $C) -> int {
+	// COMPILER BUG: shift counts other than uint are rejected by the frontend.
+	// return int(x << n) ~ int(x >> n)
+	return int(x << uint(n)) ~ int(x >> uint(n))
+}
+
+main :: proc() -> int {
+	r := shifts(u64(165), u8(7)) +
+	       shifts(i64(-85), u8(65)) +
+	       shifts(u32(42405), u16(31)) +
+	       shifts(i32(-21845), u16(65535)) +
+	       shifts(u64(2779096485), u32(63)) +
+	       shifts(i64(-1431655765), u32(64)) +
+	       // COMPILER BUG: u64((1 << 32) + 1) is rejected during constant folding.
+	       // COMPILER BUG: Odin truncates large counts to u32 for sub-64-bit shifts.
+	       // shifts(u32(165), u64((1 << 32) + 1)) + shifts(i32(-85), u64((1 << 32) + 1))
+	       shifts(u64(165), u64(4294967297)) +
+	       shifts(i64(-85), u64(4294967297)) +
+	       shifts(u64(165), u64(4294967296)) +
+	       shifts(i64(-85), u64(18446744073709551615))
+	// COMPILER BUG: ARM skips zero halfwords when materializing negative folded constants.
+	// return r
+	return r % 251
+}
+`,
+`
+package main
+
+opt_level :: "none"
+
+id :: proc(x: $T) -> T {return x}
+
+main :: proc() -> int {
+	c := id(u64(18446744073709551615))
+	return int(f64(c) / 1e18)
+}
+`,
+`
+package main
+
+opt_level :: "none"
+
+id :: proc(x: $T) -> T {return x}
+
+main :: proc() -> int {
+	d := id(f64(4.0e9))
+	return int(u32(d) / 1000000)
+}
+`,
+`
+package main
+
+opt_level :: "none"
+
 src :: proc(x: f64) -> f64 {
 	return x * 1.5 + 1.0
 }
@@ -21623,6 +22592,148 @@ main :: proc() -> int {
 `
 package main
 
+opt_level :: "none"
+
+main :: proc() -> int {
+	s := 0
+	i := 0
+	for {
+		i += 1
+		if i > 3 do break
+		switch i {
+		case 1:
+			s += 1
+			break
+		case:
+			s += 2
+		}
+		s += 10
+	}
+	return s
+}
+`,
+`
+package main
+
+V :: union {int, bool}
+
+standalone :: proc(n: int) -> int {
+	s := 0
+	switch n {
+	case 1:
+		return 100
+	case:
+		tmp := 4
+		s = tmp
+		break
+	}
+	return s
+}
+
+typed :: proc(v: V) -> int {
+	s := 0
+	switch x in v {
+	case int:
+		tmp := x
+		s = tmp
+		break
+	case bool:
+		return 100
+	}
+	return s
+}
+
+main :: proc() -> int {
+	s := 0
+	i := 0
+	Outer: for {
+		i += 1
+		if i > 4 do break
+		Pick: switch i {
+		case 1:
+			tmp := 20
+			switch i {
+			case 1:
+				s += tmp
+				break
+			case:
+				s += 100
+			}
+			s += 2
+			break Pick
+		case 2:
+			continue
+		case 3:
+			break Outer
+		case:
+			s += 100
+		}
+		s += 1
+	}
+	v: V = 7
+	return s + standalone(0) + typed(v)
+}
+`,
+`
+package main
+
+main :: proc() -> int {
+	switch 1 {
+	case 1:
+		fallthrough
+	case:
+	}
+	return 0
+}
+`,
+`
+package main
+
+opt_level :: "mininal"
+
+main :: proc() -> int {
+	a: i64 = -8
+	b := i32(a)
+	r := 0
+	if b < 0 do r += 1
+	if b > 5 do r += 2
+	if (b >> 1) == -4 do r += 16
+	r += int(b % 3)
+	return r + 100
+}
+`,
+`
+package main
+
+opt_level :: "mininal"
+
+main :: proc() -> int {
+	x: f64 = 0.1
+	y := f32(x)
+	z := f64(y)
+	return int((z - 0.1) * 1e18) % 251
+}
+`,
+`
+package main
+
+opt_level :: "moderate"
+
+S :: struct {
+	a: [4]int,
+	m: int,
+	b: [4]int,
+}
+
+main :: proc() -> int {
+	x := S{}
+	x.m = 5
+	return x.a[0] + x.m + x.b[3] + 10
+}
+`,
+`
+package main
+
 opt_level :: "aggresive"
 
 S :: struct {
@@ -21648,6 +22759,53 @@ main :: proc() -> int {
 	x.m = 5
 	s := x.a[0] + x.a[1] + x.a[2] + x.m + x.b[0] + x.b[1]
 	return (s + d) % 251
+}
+`,
+`
+package main
+
+opt_level :: "none"
+
+main :: proc() -> int {
+	r := 3
+	x := 0
+	if r > 0 && r < 5 do x += 1
+	return x + 10
+}
+`,
+`
+package main
+
+bump :: proc(p: ^int, value: bool) -> bool {
+	p^ += 1
+	return value
+}
+
+main :: proc() -> int {
+	n := 0
+	r := 0
+	if false && bump(&n, true) do r += 100
+	if true || bump(&n, false) do r += 1
+	if true && bump(&n, true) do r += 2
+	if false || bump(&n, true) do r += 4
+	x := bump(&n, false) && bump(&n, true)
+	y := bump(&n, true) || bump(&n, false)
+	z := (bump(&n, false) || bump(&n, true)) && bump(&n, true)
+	if !x && y && z do r += 8
+	return r + n * 10
+}
+`,
+`
+package main
+
+opt_level :: "moderate"
+
+main :: proc() -> int {
+	arr: [16]u8
+	p := transmute(^u64)&arr[0]
+	p^ = 0
+	arr[4] = 1
+	return int(p^ % 251)
 }
 `,
 `
@@ -21924,6 +23082,34 @@ main :: proc() -> int {
 	}
 
 	return 0
+}
+`,
+`
+package main
+
+main :: proc() -> int {
+	v := 1
+	for {
+		v = 2 - v
+		if v == 1 do break
+	}
+	return v
+}
+`,
+`
+package main
+
+main :: proc() -> int {
+	x := 1;
+	for {
+		if x == 1 {
+			x = 2 - x
+		} else {
+			x = 99
+		}
+		if x == 1 do break
+	}
+	return x
 }
 `,
 `#load("../fuzz/crashes/0092546c2ab7b49f.odin")`,
@@ -22324,6 +23510,8 @@ main :: proc() -> int {
 `#load("../fuzz/crashes/ff337c38918e4111.odin")`,
 `#load("../fuzz/crashes/ff353183407ba29c.odin")`,
 `#load("../fuzz/crashes/ffd3458647088ce1.odin")`,
+`#load("../fuzz/crashes/infinite_loop_mangling.odin")`,
+`#load("../fuzz/crashes/regalloc_ioob.odin")`,
 }
 IS_FUZZ := []bool{
 false,
@@ -22538,6 +23726,28 @@ false,
 false,
 false,
 false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+true,
+true,
 true,
 true,
 true,

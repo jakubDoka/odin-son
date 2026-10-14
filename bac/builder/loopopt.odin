@@ -12,8 +12,7 @@ loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 	context.allocator, _ = arna.scrath()
 
 	if .Loop_Opt not_in graph.opt_flags do return
-
-	defer graph.peeped &= !optimized
+	bac.pass_quard(graph, .Loop, &optimized) or_return
 
 	Ctx :: struct {
 		using graph:  ^bac.Proc,

@@ -903,14 +903,17 @@ opt :: proc(ctx: ^bac.Proc) {
 		assert(limit > 0)
 		dirty = false
 		DEBUG_OPT :: false
-		dirty |= bac.apply_peeps(peep_ctx)
-		when DEBUG_OPT do fmt.println("peeps:", dirty)
-		dirty |= builder.memopt(ctx)
-		when DEBUG_OPT do fmt.println("memopt:", dirty)
-		dirty |= bac.apply_peeps(peep_ctx)
-		when DEBUG_OPT do fmt.println("peeps:", dirty)
-		dirty |= builder.loopopt(ctx)
-		when DEBUG_OPT do fmt.println("loopopt:", dirty)
+		dirty_lat := bac.compute_latices(ctx)
+		when DEBUG_OPT do fmt.println("lat:", dirty_lat)
+		dirty_peep := bac.apply_peeps(peep_ctx)
+		when DEBUG_OPT do fmt.println("peeps:", dirty_peep)
+		dirty_mem := builder.memopt(ctx)
+		when DEBUG_OPT do fmt.println("memopt:", dirty_mem)
+		dirty_peep2 := bac.apply_peeps(peep_ctx)
+		when DEBUG_OPT do fmt.println("peeps:", dirty_peep2)
+		dirty_loop := builder.loopopt(ctx)
+		when DEBUG_OPT do fmt.println("loopopt:", dirty_loop)
+		dirty |= dirty_lat | dirty_peep | dirty_mem | dirty_peep2 | dirty_loop
 	}
 }
 
@@ -1241,6 +1244,29 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			bac.unpin(ctx, s.vl)
 		}
 	case ^ast.Binary_Expr:
+		if d.op.kind == .Cmp_And || d.op.kind == .Cmp_Or {
+			lhs := emit_rvalue(ctx, {}, d.left)
+			base := get_node(ctx, ctx.node_scope).input_count
+			slot := push_scope_value(ctx, nil, lhs, .Bool)
+			state: builder.If_State
+			builder.start_if(ctx, ctx.node_scope, &state, lhs)
+			if d.op.kind == .Cmp_Or {
+				builder.start_else(ctx, &ctx.node_scope, &state)
+			}
+			rhs := emit_rvalue(ctx, {}, d.right)
+			builder.set_scope_value(ctx, ctx.node_scope, slot, rhs)
+			if d.op.kind == .Cmp_Or {
+				builder.end_else(ctx, &ctx.node_scope, &state)
+			} else {
+				builder.end_if(ctx, &ctx.node_scope, &state)
+			}
+			res = builder.get_scope_value(ctx, ctx.node_scope, slot)
+			bac.pin(ctx, res)
+			builder.truncate_scope(ctx, ctx.node_scope, base)
+			bac.unpin(ctx, res, no_delete = true)
+			break
+		}
+
 		if typecheck.is_nil_lit(d.left) || typecheck.is_nil_lit(d.right) {
 			union_expr := typecheck.is_nil_lit(d.left) ? d.right : d.left
 			u := unpack_type(get_node_type(union_expr)).(^typecheck.Union)
@@ -1663,6 +1689,13 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		body := d.body.derived.(^ast.Block_Stmt)
 		sw: builder.Block_State
 		builder.start_block(&sw)
+		state := typecheck.Loop_State {
+			parent      = ctx.loop,
+			label       = typecheck.src_of(ctx.file^, d.label),
+			block       = &sw,
+			scope_count = get_node(ctx, ctx.node_scope).input_count,
+		}
+		ctx.loop = &state
 		default_clause: ^ast.Case_Clause
 		for clause_node in body.stmts {
 			clause := clause_node.derived.(^ast.Case_Clause)
@@ -1691,6 +1724,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		}
 
 		builder.end_block(ctx, &ctx.node_scope, &sw)
+		ctx.loop = state.parent
 
 		bac.unpin(ctx, condv)
 	case ^ast.Type_Switch_Stmt:
@@ -1710,6 +1744,13 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		body := d.body.derived.(^ast.Block_Stmt)
 		sw: builder.Block_State
 		builder.start_block(&sw)
+		state := typecheck.Loop_State {
+			parent      = ctx.loop,
+			label       = typecheck.src_of(ctx.file^, d.label),
+			block       = &sw,
+			scope_count = get_node(ctx, ctx.node_scope).input_count,
+		}
+		ctx.loop = &state
 		default_clause: ^ast.Case_Clause
 		for clause_node in body.stmts {
 			clause := clause_node.derived.(^ast.Case_Clause)
@@ -1755,6 +1796,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		}
 
 		builder.end_block(ctx, &ctx.node_scope, &sw)
+		ctx.loop = state.parent
 
 		bac.unpin(ctx, tagv)
 		bac.unpin(ctx, ptr)
@@ -2100,7 +2142,13 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			fmt.panicf("TODO: %v %v", base_ty, node)
 		}
 	case ^ast.Branch_Stmt:
-		loop := typecheck.find_loop(ctx, d.label)
+		loop := typecheck.find_loop(ctx, d.label, d.tok.kind == .Continue)
+		if loop.block != nil {
+			assert(d.tok.kind == .Break)
+			builder.truncate_scope(ctx, ctx.node_scope, loop.scope_count)
+			builder.break_block(ctx, &ctx.node_scope, loop.block)
+			break
+		}
 
 		variant := builder.Loop_Control(-1)
 		#partial switch d.tok.kind {

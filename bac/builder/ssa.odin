@@ -848,7 +848,7 @@ add_arbitrary_store :: proc(
 		value := bac.add_un_op(
 			ctx,
 			"rvl",
-			.Cast,
+			.U_Conv,
 			store_unit,
 			bac.add_bin_op(
 				ctx,
@@ -939,7 +939,7 @@ add_arbitrary_load :: proc(
 		)
 
 		if load_unit != unit {
-			load = bac.add_un_op(ctx, "asxt", .Uext, unit, load)
+			load = bac.add_un_op(ctx, "asxt", .U_Conv, unit, load)
 		}
 
 		if value == 0 {

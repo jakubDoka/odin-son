@@ -5,23 +5,22 @@ The tests are generated with `gen-meta` (look into `misc/profiles.fish`) and
 node spec is generated with `gen-spec`, you can run tests with `run-test`.
 
 The backend is split into `bac` (the generic engine, shared node spec, and
-codegen scaffolding) plus one subpackage per architecture, e.g. `bac/x64`
-and the pre-lowering IR builder `bac/builder`. Shared node kinds go into
-`Node_Type` in `bac/gen_spec.odin`; target-specific node kinds go
-into that target's own enum in its own module (e.g. `Node_Type` in
-`bac/x64/x64.odin`, `Node_Type` in `bac/builder/builder_spec.odin`).
-Adding a new architecture means adding a new `bac/<arch>` directory —
-nothing in root `bac` should need editing.
-If you are going to use the generated construction fuctions in the backend, or
-any generated thing for that matter, they should have a stup version in that
-module's own bootstrap file (`gen_spec.odin` for root, `<arch>_spec.odin` for
-a submodule) or the codegen will fail.
+codegen scaffolding) plus one subpackage per architecture, e.g. `bac/x64` and
+the pre-lowering IR builder `bac/builder`. Shared node kinds go into
+`Node_Type` in `bac/gen_spec.odin`; target-specific node kinds go into that
+target's own enum in its own module (e.g. `Node_Type` in `bac/x64/x64.odin`,
+`Node_Type` in `bac/builder/builder_spec.odin`). Adding a new architecture
+means adding a new `bac/<arch>` directory — nothing in root `bac` should need
+editing. If you are going to use the generated construction fuctions in the
+backend, or any generated thing for that matter, they should have a stub
+version in that module's own bootstrap file (`bac/meta/main.odin` for root,
+`bac/meta2/main.odin` for generating the submodules) or the codegen will fail.
 
 A test is specified in a TESTS.md in a standard format that is parsed by
-`meta.odin` and translated to `tests.odin` functions. The code snipped needs to
-be compilable with odin compiler and SHOULD NEVER CONTAIN REACHABLE INFINITE
-LOOP since ist ran before the actual test starts to extract the return value
-that is then asserted for changes.
+`meta.odin` and translated to `tests/tests.odin` functions. The code snipped
+needs to be compilable with odin compiler and SHOULD NEVER CONTAIN REACHABLE
+INFINITE LOOP since ist ran before the actual test starts to extract the return
+value that is then asserted for changes.
 
 The TESTS.md snippets double as the corpus for the AFL++ fuzzer, run it with
 `./misc/fuzz.sh` (`--help` for the flags). It only compiles, never runs the
@@ -32,20 +31,13 @@ Another category of tests we have are `test-programs`, that can be ran with
 `./misc/run-programs.sh`, the scripts asserts that exit codes and stdout/err
 are identical in programs compiled with each compiler.
 
-When running tests, NEVER wait for more the 8 seconds, tests usually compile in
+When running tests, NEVER wait for more the 12 seconds, tests usually compile in
 1s and run in matter of miliseconds.
-
-Whenever you see `#### Part n` you should spinn up an agent with that section
-as input.
-
-When instructed to spawn an agent to do something early, dont waste context
-analising the task, just pass down the instructions and let the agent figure it
-out.
 
 NEVER comment the code with what it does, only why we absolutely need it if its
 handling an edgecase that is unclear.
 
-The peephole optimizations can be found with `_peep :: proc`.
+The peephole optimizations can be found with `peep :: proc`.
 
 If the test segfaults use -define:NO_RUN=true to view the disassembly.
 
@@ -65,3 +57,7 @@ was not set on a `[dynamic]T` or map or anything that grabs the allocator from
 the context. So basically, grep the value and verify the allocator was properly
 set. Reason this happens is becuause its common to override the main allocator
 with a scoped arena. As mentioned above.
+
+Its preffered to use static tables over big swich statements that just select a
+value if that saves code. Of course if the table would be prohibitively big,
+compared to what entryes are actualy populated dont do this.

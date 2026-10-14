@@ -108,8 +108,14 @@ peep :: proc(
 	}
 	kind := wtype(node)
 	#partial switch kind {
-	case .Sext, .Uext:
-		signed := kind == .Sext
+	case .Conv, .U_Conv:
+		if inp.dt not_in bac.INT_DTS ||
+		   node.dt not_in bac.INT_DTS ||
+		   inp.dt >= node.dt {
+			break
+		}
+
+		signed := kind == .Conv
 
 		if wtype(inp) == .WASM_Load && len(inp.outs) == 1 {
 			ext := wextra(ctx, inp, Mem_Op)
@@ -160,7 +166,7 @@ peep :: proc(
 		}
 	case .Shr:
 		if get_node(ctx, node.inps[0]).dt < .I32 {
-			new := bac.add_un_op(ctx, "shext", .Sext, .I32, node.inps[0])
+			new := bac.add_un_op(ctx, "shext", .Conv, .I32, node.inps[0])
 			bac.set_input(ctx, id, 0, new)
 			bac.worklist_add(ctx, ctx.worklist, new)
 			return id
@@ -170,7 +176,7 @@ peep :: proc(
 		for inp, i in node.inps {
 			inp_dt := get_node(ctx, inp).dt
 			if inp_dt in bac.INT_DTS && inp_dt < .I32 {
-				new := bac.add_un_op(ctx, "shext", .Sext, .I32, inp)
+				new := bac.add_un_op(ctx, "shext", .Conv, .I32, inp)
 				bac.set_input(ctx, id, i, new)
 				bac.worklist_add(ctx, ctx.worklist, new)
 				changed = true
@@ -336,11 +342,8 @@ meta_of :: #force_inline proc(
 	     .Set,
 	     .Copy,
 	     .And_Not,
-	     .Uext,
-	     .Sext,
-	     .F_Conv,
-	     .F_I_Conv,
-	     .U_F_I_Conv,
+	     .Conv,
+	     .U_Conv,
 	     .Stub,
 	     .Not,
 	     .Neg,
@@ -573,11 +576,8 @@ pre_regalloc_hook :: proc(
 			}
 		case .Add ..= .And_Not:
 			return {def = true, input_count = 2}
-		case .Uext,
-		     .Sext,
-		     .F_Conv,
-		     .F_I_Conv,
-		     .U_F_I_Conv,
+		case .Conv,
+		     .U_Conv,
 		     .Not,
 		     .Neg,
 		     .Cast,
@@ -1205,7 +1205,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 		case .Void, .Mem, .V256, .V512:
 			panic("no")
 		}
-	case .Add ..= .U_Rem, .Drop, .Not, .F_Conv, .Ctz:
+	case .Add ..= .U_Rem, .Drop, .Not, .Ctz:
 		if node.dt == .V128 {
 			fmt.assertf(lane_op != .V128_Load, "%v", node)
 			emit_op_fd(ctx.code, lane_op)
@@ -1227,58 +1227,46 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 		emit_leb(ctx.code, loc_of(ctx, node.inps[0]))
 		emit_op(ctx.code, .Local_Set)
 		emit_leb(ctx.code, loc_of(ctx, instr))
-	case .Uext:
-		switch node.dt {
-		case .I16 ..= .I32:
-			switch inp.dt {
-			case .I8:
-				emit_op(ctx.code, .I32_Const)
-				emit_leb(ctx.code, 0xff)
-				emit_op(ctx.code, .I32_And)
-			case .I16:
-				emit_op(ctx.code, .I32_Const)
-				emit_leb(ctx.code, 0xffff)
-				emit_op(ctx.code, .I32_And)
-			case .Void, .Mem, .I32 ..= .V512:
-				panic("NO")
+	case .Conv, .U_Conv:
+		unsigned := kind == .U_Conv
+		assert(inp.dt in bac.INT_DTS || inp.dt in bac.FLOAT_DTS)
+		assert(node.dt in bac.INT_DTS || node.dt in bac.FLOAT_DTS)
+		assert(inp.dt != node.dt)
+
+		if inp.dt in bac.INT_DTS && node.dt in bac.INT_DTS {
+			int_dt := min(inp.dt, node.dt)
+			unsigned := unsigned || inp.dt > node.dt
+
+			if inp.dt == .I64 {
+				emit_op(ctx.code, .I32_Wrap_I64)
 			}
-		case .I64:
-			switch inp.dt {
-			case .I8:
-				emit_op(ctx.code, .I32_Const)
-				emit_leb(ctx.code, 0xff)
-				emit_op(ctx.code, .I32_And)
-			case .I16:
-				emit_op(ctx.code, .I32_Const)
-				emit_leb(ctx.code, 0xffff)
-				emit_op(ctx.code, .I32_And)
+
+			switch int_dt {
+			case .I8, .I16:
+				if unsigned {
+					emit_op(ctx.code, .I32_Const)
+					emit_leb(ctx.code, int_dt == .I8 ? 0xff : 0xffff)
+					emit_op(ctx.code, .I32_And)
+				} else {
+					emit_op(
+						ctx.code,
+						int_dt == .I8 ? .I32_Extend8_S : .I32_Extend16_S,
+					)
+				}
 			case .I32:
 			case .Void, .Mem, .I64 ..= .V512:
 				panic("NO")
 			}
-			emit_op(ctx.code, .I64_Extend_I32_U)
-		case .Void, .Mem, .I8, .F32 ..= .V512:
-			panic("no")
-		}
-	case .Sext:
-		switch inp.dt {
-		case .I8:
-			emit_op(ctx.code, .I32_Extend8_S)
-		case .I16:
-			emit_op(ctx.code, .I32_Extend16_S)
-		case .I32:
-		case .Void, .Mem, .I64 ..= .V512:
-			panic("NO")
+
+			if node.dt == .I64 {
+				emit_op(
+					ctx.code,
+					unsigned ? .I64_Extend_I32_U : .I64_Extend_I32_S,
+				)
+			}
+			break
 		}
 
-		switch node.dt {
-		case .I16 ..= .I32:
-		case .I64:
-			emit_op(ctx.code, .I64_Extend_I32_S)
-		case .Void, .Mem, .I8, .F32 ..= .V512:
-			panic("no")
-		}
-	case .F_I_Conv, .U_F_I_Conv:
 		Class :: enum {
 			i32,
 			i64,
@@ -1307,43 +1295,23 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 			.f32 = #partial{
 				.i32 = {.F32_Convert_I32_S, .F32_Convert_I32_U},
 				.i64 = {.F32_Convert_I64_S, .F32_Convert_I64_U},
+				.f64 = {.F32_Demote_F64, .F32_Demote_F64},
 			},
 			.f64 = #partial{
 				.i32 = {.F64_Convert_I32_S, .F64_Convert_I32_U},
 				.i64 = {.F64_Convert_I64_S, .F64_Convert_I64_U},
+				.f32 = {.F64_Promote_F32, .F64_Promote_F32},
 			},
 		}
 
 		dst := DT_TO_CLASS[node.dt]
 		src := DT_TO_CLASS[inp.dt]
-		unsigned := kind == .U_F_I_Conv
-
-		assert((dst == .f32 || dst == .f64) != (src == .f32 || src == .f64))
-
 		emit_op(ctx.code, CONV_TABLE[dst][src][int(unsigned)])
 	case .Cast:
 		switch node.dt {
-		case .I8:
-			if inp.dt == .I64 {
-				emit_op(ctx.code, .I32_Wrap_I64)
-			}
-			emit_op(ctx.code, .I32_Const)
-			emit_leb(ctx.code, 0xff)
-			emit_op(ctx.code, .I32_And)
-		case .I16:
-			if inp.dt == .I64 {
-				emit_op(ctx.code, .I32_Wrap_I64)
-			}
-			emit_op(ctx.code, .I32_Const)
-			emit_leb(ctx.code, 0xffff)
-			emit_op(ctx.code, .I32_And)
 		case .I32:
-			if inp.dt == .F32 {
-				emit_op(ctx.code, .I32_Reinterpret_F32)
-			} else {
-				assert(inp.dt == .I64)
-				emit_op(ctx.code, .I32_Wrap_I64)
-			}
+			assert(inp.dt == .F32)
+			emit_op(ctx.code, .I32_Reinterpret_F32)
 		case .F32:
 			assert(inp.dt == .I32)
 			emit_op(ctx.code, .F32_Reinterpret_I32)
@@ -1353,7 +1321,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 		case .F64:
 			assert(inp.dt == .I64)
 			emit_op(ctx.code, .F64_Reinterpret_I64)
-		case .Void, .Mem, .V128 ..= .V512:
+		case .Void, .Mem, .I8, .I16, .V128 ..= .V512:
 			fmt.panicf("no %v %v", node, inp)
 		}
 	case .Get_Local:

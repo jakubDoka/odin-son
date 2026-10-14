@@ -325,13 +325,21 @@ peep :: proc(
 	}
 
 	#partial matchx: switch xtype(node) {
-	case .U_F_I_Conv:
+	case .Conv, .U_Conv:
 		inp := expand_node(ctx, node.inps[0])
+		assert(inp.dt != node.dt)
+		if inp.dt in bac.INT_DTS && node.dt in bac.INT_DTS {
+			break matchx
+		}
+		if xtype(node) == .Conv ||
+		   (inp.dt in bac.FLOAT_DTS && node.dt in bac.FLOAT_DTS) {
+			break matchx
+		}
 		if inp.dt in bac.FLOAT_DTS {
 			assert(node.dt in bac.INT_DTS)
-			wide := bac.add_un_op(ctx, "uftw", .F_I_Conv, .I64, node.inps[0])
+			wide := bac.add_un_op(ctx, "uftw", .Conv, .I64, node.inps[0])
 			if node.dt != .I64 {
-				return bac.add_un_op(ctx, "uftc", .Cast, node.dt, wide)
+				return bac.add_un_op(ctx, "uftc", .U_Conv, node.dt, wide)
 			}
 
 			_, high := add_node(
@@ -345,7 +353,7 @@ peep :: proc(
 			bits_dt: bac.Node_Datatype = inp.dt == .F64 ? .I64 : .I32
 			delta := high
 			if bits_dt == .I32 {
-				delta = bac.add_un_op(ctx, "uftc", .Cast, .I32, delta)
+				delta = bac.add_un_op(ctx, "uftc", .U_Conv, .I32, delta)
 			}
 			_, delta = add_node(
 				ctx,
@@ -363,15 +371,15 @@ peep :: proc(
 				inp.dt,
 				{node.inps[0], delta},
 			)
-			half := bac.add_un_op(ctx, "ufth", .F_I_Conv, .I64, adjusted)
+			half := bac.add_un_op(ctx, "ufth", .Conv, .I64, adjusted)
 			return bac.add_bin_op(ctx, "uftr", .Shl, .I64, half, high)
 		}
 
 		assert(node.dt in bac.FLOAT_DTS)
 		assert(inp.dt == .I64)
-		if inp.itype == .Uext &&
+		if inp.itype == .U_Conv &&
 		   bac.DT_SIZE[get_node(ctx, inp.inps[0]).dt] < 8 {
-			return bac.add_un_op(ctx, "ufcv", .F_I_Conv, node.dt, node.inps[0])
+			return bac.add_un_op(ctx, "ufcv", .Conv, node.dt, node.inps[0])
 		}
 
 		_, high := add_node(
@@ -392,12 +400,12 @@ peep :: proc(
 		)
 		sticky := bac.add_bin_op(ctx, "ufst", .And, .I64, node.inps[0], high)
 		rounded := bac.add_bin_op(ctx, "ufrd", .Or, .I64, shifted, sticky)
-		converted := bac.add_un_op(ctx, "ufcv", .F_I_Conv, node.dt, rounded)
+		converted := bac.add_un_op(ctx, "ufcv", .Conv, node.dt, rounded)
 
 		bits_dt: bac.Node_Datatype = node.dt == .F64 ? .I64 : .I32
 		delta := high
 		if bits_dt == .I32 {
-			delta = bac.add_un_op(ctx, "ufdc", .Cast, .I32, delta)
+			delta = bac.add_un_op(ctx, "ufdc", .U_Conv, .I32, delta)
 		}
 		_, delta = add_node(
 			ctx,
@@ -692,11 +700,6 @@ peep :: proc(
 
 		bac.worklist_add(ctx, ctx.worklist, res)
 		return res
-	case .Sext, .Uext:
-		inp := get_node(ctx, node.inps[0])
-		if bac.DT_SIZE[inp.dt] >= bac.DT_SIZE[node.dt] {
-			return node.inps[0]
-		}
 	case .X64_Store, .X64_Load:
 		changed := false
 
@@ -732,15 +735,22 @@ peep :: proc(
 			dominant: bac.Node_Type
 			for out in node.outs {
 				onode := get_node(ctx, out.id)
+				if onode.dt not_in bac.INT_DTS do break widen_load
+				if bac.DT_SIZE[onode.dt] <= bac.DT_SIZE[node.dt] do break widen_load
 				if dominant != {} {
 					if dominant != onode.itype do break widen_load
 				}
 				dominant = onode.itype
 			}
-			if dominant == .Sext || dominant == .Uext {
+			if dominant == .Conv || dominant == .U_Conv {
+				context.allocator, _ = arna.scrath()
+				outs := slice.clone(node.outs)
 				mem_op.dt = node.dt
 				node.dt = .I64
-				mem_op.signed = dominant == .Sext
+				mem_op.signed = dominant == .Conv
+				for out in outs {
+					bac.peep_subsume(ctx, id, out.id)
+				}
 				changed = true
 			}
 		}
@@ -1080,7 +1090,6 @@ meta_of :: proc(
 	case .End,
 	     .Simd_Reduce_Add_Bisect,
 	     .Splat,
-	     .U_F_I_Conv,
 	     .Then,
 	     .Else,
 	     .Nil,
@@ -1187,9 +1196,7 @@ meta_of :: proc(
 	case .Ctz, .Not, .Neg:
 		assert(nkind == RK_GENERAL)
 		return {out = out, masks = nmasks[:1], in_place_slot = 1}
-	case .Sext, .Uext:
-		return {out = out, masks = nmasks[:1]}
-	case .F_Conv, .F_I_Conv, .Cast:
+	case .Conv, .U_Conv, .Cast:
 		inp := get_node(graph, node.inps[0])
 		return {out = out, masks = masks[ra.datatype_to_reg_kind[inp.dt]][:1]}
 	case .Simd_Extract_Lsbs:
@@ -1768,7 +1775,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 	     .Dbg_Sym_Update,
 	     .Dbg_Sym_Decl,
 	     .Dbg_Scope:
-	case .Splat, .U_F_I_Conv:
+	case .Splat:
 		panic("no")
 	case .Simd_Extract_Lsbs:
 		// pmovmskb $dst(gpr), $src(xmm)
@@ -1975,44 +1982,53 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 		}
 
 		emit_indirect_addr(ctx, val, bse, idx, scl, dis + sdis, id)
-	case .Sext:
-		dt := get_node(ctx, node.inps[0]).dt
+	case .Conv, .U_Conv:
+		sdt := get_node(ctx, node.inps[0]).dt
+		assert(sdt != node.dt)
 		dst := reg_of(ctx, instr)
 		src := reg_of(ctx, node.inps[0])
+		src_float := sdt in bac.FLOAT_DTS
+		dst_float := node.dt in bac.FLOAT_DTS
 
-		rx := rex(dst, src, RAX, true)
-		#partial switch dt {
-		case .Void:
-		case .I8:
-			// movsx r64, r/m8
-			emit(ctx.code, {rx, 0x0f, 0xbe})
-		case .I16:
-			// movsx r64, r/m16
-			emit(ctx.code, {rx, 0x0f, 0xbf})
-		case .I32:
-			// movsxd r64, r/m32
-			emit(ctx.code, {rx, 0x63})
-		case .I64:
-			// mov r64, r/m64
-			emit(ctx.code, {rx, 0x8b})
+		if src_float && dst_float {
+			rx := rex(dst, src, RAX, false)
+			pfx: u8 = node.dt == .F64 ? 0xF3 : 0xF2
+			emit(ctx.code, {pfx, rx, 0x0f, 0x5a, mod_rm(.Direct, dst, src)})
+			break
 		}
-		emit(ctx.code, {mod_rm(.Direct, dst, src)})
-	case .Uext:
-		dt := get_node(ctx, node.inps[0]).dt
-		dst := reg_of(ctx, instr)
-		src := reg_of(ctx, node.inps[0])
 
-		rx := rex(dst, src, RAX, bac.DT_SIZE[dt] == 8)
-		#partial switch dt {
-		case .Void:
+		if src_float || dst_float {
+			assert(type == .Conv)
+			fdt := src_float ? sdt : node.dt
+			idt := src_float ? node.dt : sdt
+			pfx: u8 = fdt == .F64 ? 0xF2 : 0xF3
+			rx := rex(dst, src, RAX, bac.DT_SIZE[idt] == 8)
+			op: u8 = src_float ? 0x2c : 0x2a
+			emit(ctx.code, {pfx, rx, 0x0f, op, mod_rm(.Direct, dst, src)})
+			break
+		}
+
+		if bac.DT_SIZE[sdt] > bac.DT_SIZE[node.dt] {
+			if src != dst {
+				rx := rex(src, dst, RAX, true)
+				emit(ctx.code, {rx, 0x89, mod_rm(.Direct, src, dst)})
+			}
+			break
+		}
+
+		signed := type == .Conv
+		rx := rex(dst, src, RAX, signed || bac.DT_SIZE[sdt] == 8)
+		#partial switch sdt {
 		case .I8:
-			// movzx $val, $src
-			emit(ctx.code, {rx, 0x0f, 0xb6})
+			op: u8 = signed ? 0xbe : 0xb6
+			emit(ctx.code, {rx, 0x0f, op})
 		case .I16:
-			// movzx $val, $src
-			emit(ctx.code, {rx, 0x0f, 0xb7})
-		case .I32, .I64:
-			// mov $val, $src
+			op: u8 = signed ? 0xbf : 0xb7
+			emit(ctx.code, {rx, 0x0f, op})
+		case .I32:
+			op: u8 = signed ? 0x63 : 0x8b
+			emit(ctx.code, {rx, op})
+		case .I64:
 			emit(ctx.code, {rx, 0x8b})
 		}
 		emit(ctx.code, {mod_rm(.Direct, dst, src)})
@@ -2020,23 +2036,16 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 		dst := reg_of(ctx, instr)
 		src := reg_of(ctx, node.inps[0])
 
-		if src == dst do break
-
-		if src.kind == dst.kind {
-			assert(dst.kind == RK_GENERAL)
-			rx := rex(src, dst, RAX, true)
-			emit(ctx.code, {rx, 0x89, mod_rm(.Direct, src, dst)})
-		} else {
-			table := [RK_COUNT]u8 {
-				RK_VECTOR  = 0x6E,
-				RK_GENERAL = 0x7E,
-			}
-			op := table[dst.kind]
-			a, b := dst, src
-			if dst.kind == RK_GENERAL do a, b = b, a
-			rx := rex(a, b, NO_INDEX, bac.DT_SIZE[node.dt] == 8)
-			emit(ctx.code, {0x66, rx, 0x0f, op, mod_rm(.Direct, a, b)})
+		assert(src.kind != dst.kind)
+		table := [RK_COUNT]u8 {
+			RK_VECTOR  = 0x6E,
+			RK_GENERAL = 0x7E,
 		}
+		op := table[dst.kind]
+		a, b := dst, src
+		if dst.kind == RK_GENERAL do a, b = b, a
+		rx := rex(a, b, NO_INDEX, bac.DT_SIZE[node.dt] == 8)
+		emit(ctx.code, {0x66, rx, 0x0f, op, mod_rm(.Direct, a, b)})
 	case .If:
 		cnode := expand_node(ctx, node.inps[1])
 		if cnode.dt != .Void {
@@ -2536,28 +2545,6 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 		case .Dest:
 			panic("")
 		}
-	case .F_I_Conv:
-		dst := reg_of(ctx, instr)
-		src := reg_of(ctx, node.inps[0])
-		sdt := get_node(ctx, node.inps[0]).dt
-		if sdt in bac.INT_DTS {
-			pfx: u8 = node.dt == .F64 ? 0xF2 : 0xF3
-			rx := rex(dst, src, RAX, bac.DT_SIZE[sdt] == 8)
-			emit(ctx.code, {pfx, rx, 0x0f, 0x2a, mod_rm(.Direct, dst, src)})
-			break
-		}
-
-		assert(sdt in bac.FLOAT_DTS)
-		pfx: u8 = sdt == .F64 ? 0xF2 : 0xF3
-		rx := rex(dst, src, RAX, bac.DT_SIZE[node.dt] == 8)
-		emit(ctx.code, {pfx, rx, 0x0f, 0x2c, mod_rm(.Direct, dst, src)})
-	case .F_Conv:
-		dst := reg_of(ctx, instr)
-		src := reg_of(ctx, node.inps[0])
-		assert(get_node(ctx, node.inps[0]).dt in bac.FLOAT_DTS)
-		rx := rex(dst, src, RAX, false)
-		pfx: u8 = node.dt == .F64 ? 0xF3 : 0xF2
-		emit(ctx.code, {pfx, rx, 0x0f, 0x5a, mod_rm(.Direct, dst, src)})
 	case .Div, .Rem:
 		rhs := reg_of(ctx, node.inps[1])
 		if type == .Div && node.dt in bac.FLOAT_DTS {

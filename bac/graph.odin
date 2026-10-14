@@ -175,12 +175,9 @@ when SPEC_NOT_PRESENT {
 		End,
 		Neg,
 		Not,
-		Sext,
-		Uext,
 		Cast,
-		F_Conv,
-		F_I_Conv,
-		U_F_I_Conv,
+		Conv,
+		U_Conv,
 		Splat,
 		Ctz,
 		Simd_Extract_Lsbs,
@@ -650,7 +647,7 @@ compute_weight :: proc(graph: ^Proc, all: []Node_ID) {
 		.Loop = 5,
 		.Call = 10,
 		.CInt = 1,
-		.Neg ..= .U_F_I_Conv      = 1,
+		.Neg ..= .U_Conv      = 1,
 		.Add ..= .And_Not      = 1,
 	}
 

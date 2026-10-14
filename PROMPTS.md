@@ -751,3 +751,13 @@ globals so ignore them. The register allocator can insert splits so make sure
 to traverse them until you find non split. And emit liveness for each subrange.
 
 Only finish after you verify with gdb that the variables are inspectable.
+
+### merge all type conversions into Conv and U_Conv nodes
+
+Right now we have Sext, Uext, F_Conv, F_I_Conv, U_F_I_Conv, for converting
+between types. I want to merge these into Conv, and U_Conv nodes. This should
+simplyfy the frontend emission code and also reduce amount of nodes to handle
+and merge some switches.
+
+Make sure the tests pass as per AGENS.md. THis should be purely refactoring
+task, no new functionality.

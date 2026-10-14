@@ -1456,6 +1456,54 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) integer_conversion_narrowing_across_widths :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+narrow :: proc(x: i64, y: u64) -> int {
+	a := i32(x)
+	b := i16(a)
+	c := i8(b)
+	d := u32(y)
+	e := u16(d)
+	f := u8(e)
+
+	return int(a) + int(b) + int(c) +
+		int(i16(x)) + int(i8(x)) + int(i8(a)) +
+		int(d) + int(e) + int(f) +
+		int(u16(y)) + int(u8(y)) + int(u8(d))
+}
+
+main_ :: proc() -> int {
+	return narrow(-257, 0x1234_5678_89ab_cdef)
+}
+
+main.run_test(t, `integer_conversion_narrowing_across_widths`, `
+package main
+
+opt_level :: "none"
+
+narrow :: proc(x: i64, y: u64) -> int {
+	a := i32(x)
+	b := i16(a)
+	c := i8(b)
+	d := u32(y)
+	e := u16(d)
+	f := u8(e)
+
+	return int(a) + int(b) + int(c) +
+		int(i16(x)) + int(i8(x)) + int(i8(a)) +
+		int(d) + int(e) + int(f) +
+		int(u16(y)) + int(u8(y)) + int(u8(d))
+}
+
+main :: proc() -> int {
+	return narrow(-257, 0x1234_5678_89ab_cdef)
+}
+`, main_())
+}
 @(test) extend_reduce_integer_chain :: proc(t: ^testing.T) {
 
 
@@ -8382,7 +8430,7 @@ main :: proc() -> int {
 }
 `, main_())
 }
-@(test) frontend_emits_F_I_Conv_float_to_int :: proc(t: ^testing.T) {
+@(test) frontend_emits_Conv_float_to_int :: proc(t: ^testing.T) {
 
 
 
@@ -8396,7 +8444,7 @@ main_ :: proc() -> int {
 	return int(convert(0 - 42.75))
 }
 
-main.run_test(t, `frontend_emits_F_I_Conv_float_to_int`, `
+main.run_test(t, `frontend_emits_Conv_float_to_int`, `
 package main
 
 opt_level :: "none"
@@ -8410,7 +8458,7 @@ main :: proc() -> int {
 }
 `, main_())
 }
-@(test) frontend_emits_U_F_I_Conv_float_to_int :: proc(t: ^testing.T) {
+@(test) frontend_emits_U_Conv_float_to_int :: proc(t: ^testing.T) {
 
 
 
@@ -8435,7 +8483,7 @@ main_ :: proc() -> int {
 	return int(a) + int(b) * 10 + int(c) * 100
 }
 
-main.run_test(t, `frontend_emits_U_F_I_Conv_float_to_int`, `
+main.run_test(t, `frontend_emits_U_Conv_float_to_int`, `
 package main
 
 opt_level :: "none"
@@ -8460,7 +8508,7 @@ main :: proc() -> int {
 }
 `, main_())
 }
-@(test) frontend_emits_F_I_Conv_int_to_float :: proc(t: ^testing.T) {
+@(test) frontend_emits_Conv_int_to_float :: proc(t: ^testing.T) {
 
 
 
@@ -8475,7 +8523,7 @@ main_ :: proc() -> int {
 	return 0
 }
 
-main.run_test(t, `frontend_emits_F_I_Conv_int_to_float`, `
+main.run_test(t, `frontend_emits_Conv_int_to_float`, `
 package main
 
 opt_level :: "none"
@@ -8490,7 +8538,55 @@ main :: proc() -> int {
 }
 `, main_())
 }
-@(test) frontend_emits_U_F_I_Conv_int_to_float :: proc(t: ^testing.T) {
+@(test) enum_int_to_float_preserves_signed_conversion :: proc(t: ^testing.T) {
+
+
+
+opt_level :: "none"
+
+Kind :: enum i64 {
+	Negative = -1,
+}
+
+to_f64 :: proc(x: Kind) -> f64 {
+	return f64(x)
+}
+
+to_f32 :: proc(x: Kind) -> f32 {
+	return f32(x)
+}
+
+main_ :: proc() -> int {
+	if to_f64(.Negative) != f64(-1) do return 1
+	if to_f32(.Negative) != f32(-1) do return 2
+	return 0
+}
+
+main.run_test(t, `enum_int_to_float_preserves_signed_conversion`, `
+package main
+
+opt_level :: "none"
+
+Kind :: enum i64 {
+	Negative = -1,
+}
+
+to_f64 :: proc(x: Kind) -> f64 {
+	return f64(x)
+}
+
+to_f32 :: proc(x: Kind) -> f32 {
+	return f32(x)
+}
+
+main :: proc() -> int {
+	if to_f64(.Negative) != f64(-1) do return 1
+	if to_f32(.Negative) != f32(-1) do return 2
+	return 0
+}
+`, main_())
+}
+@(test) frontend_emits_U_Conv_int_to_float :: proc(t: ^testing.T) {
 
 
 
@@ -8517,7 +8613,7 @@ main_ :: proc() -> int {
 	return int(convert(x) / 1.0e18) + int(convert_f32(x) / 1.0e18) * 10
 }
 
-main.run_test(t, `frontend_emits_U_F_I_Conv_int_to_float`, `
+main.run_test(t, `frontend_emits_U_Conv_int_to_float`, `
 package main
 
 opt_level :: "none"
@@ -8544,7 +8640,7 @@ main :: proc() -> int {
 }
 `, main_())
 }
-@(test) frontend_emits_F_Conv_f32_to_f64 :: proc(t: ^testing.T) {
+@(test) frontend_emits_Conv_f32_to_f64 :: proc(t: ^testing.T) {
 
 
 
@@ -8559,7 +8655,7 @@ main_ :: proc() -> int {
 	return 0
 }
 
-main.run_test(t, `frontend_emits_F_Conv_f32_to_f64`, `
+main.run_test(t, `frontend_emits_Conv_f32_to_f64`, `
 package main
 
 opt_level :: "none"
@@ -8574,7 +8670,7 @@ main :: proc() -> int {
 }
 `, main_())
 }
-@(test) frontend_emits_F_Conv_f64_to_f32 :: proc(t: ^testing.T) {
+@(test) frontend_emits_Conv_f64_to_f32 :: proc(t: ^testing.T) {
 
 
 
@@ -8589,7 +8685,7 @@ main_ :: proc() -> int {
 	return 0
 }
 
-main.run_test(t, `frontend_emits_F_Conv_f64_to_f32`, `
+main.run_test(t, `frontend_emits_Conv_f64_to_f32`, `
 package main
 
 opt_level :: "none"
@@ -14582,6 +14678,7 @@ NAMES := []string{
 `different_shift_peeps`,
 `exhaustive_mem_shift_peeps`,
 `unary_ops`,
+`integer_conversion_narrowing_across_widths`,
 `extend_reduce_integer_chain`,
 `loops`,
 `nested_loops`,
@@ -14693,12 +14790,13 @@ NAMES := []string{
 `float_comparison_peepholes`,
 `float_comparison_with_load`,
 `float_conversions`,
-`frontend_emits_F_I_Conv_float_to_int`,
-`frontend_emits_U_F_I_Conv_float_to_int`,
-`frontend_emits_F_I_Conv_int_to_float`,
-`frontend_emits_U_F_I_Conv_int_to_float`,
-`frontend_emits_F_Conv_f32_to_f64`,
-`frontend_emits_F_Conv_f64_to_f32`,
+`frontend_emits_Conv_float_to_int`,
+`frontend_emits_U_Conv_float_to_int`,
+`frontend_emits_Conv_int_to_float`,
+`enum_int_to_float_preserves_signed_conversion`,
+`frontend_emits_U_Conv_int_to_float`,
+`frontend_emits_Conv_f32_to_f64`,
+`frontend_emits_Conv_f64_to_f32`,
 `float_loads_and_stores_of_different_sizes`,
 `float_variables_that_create_register_pressure`,
 `float_variables_that_create_even_more_register_pressure`,
@@ -15871,6 +15969,29 @@ main :: proc() -> int {
 	r += test_neg(&b64)
 
 	return r
+}
+`,
+`
+package main
+
+opt_level :: "none"
+
+narrow :: proc(x: i64, y: u64) -> int {
+	a := i32(x)
+	b := i16(a)
+	c := i8(b)
+	d := u32(y)
+	e := u16(d)
+	f := u8(e)
+
+	return int(a) + int(b) + int(c) +
+		int(i16(x)) + int(i8(x)) + int(i8(a)) +
+		int(d) + int(e) + int(f) +
+		int(u16(y)) + int(u8(y)) + int(u8(d))
+}
+
+main :: proc() -> int {
+	return narrow(-257, 0x1234_5678_89ab_cdef)
 }
 `,
 `
@@ -19281,6 +19402,29 @@ package main
 
 opt_level :: "none"
 
+Kind :: enum i64 {
+	Negative = -1,
+}
+
+to_f64 :: proc(x: Kind) -> f64 {
+	return f64(x)
+}
+
+to_f32 :: proc(x: Kind) -> f32 {
+	return f32(x)
+}
+
+main :: proc() -> int {
+	if to_f64(.Negative) != f64(-1) do return 1
+	if to_f32(.Negative) != f32(-1) do return 2
+	return 0
+}
+`,
+`
+package main
+
+opt_level :: "none"
+
 convert :: proc(x: u64) -> f64 {
 	return f64(x)
 }
@@ -21936,6 +22080,8 @@ main :: proc() -> int {
 `#load("../fuzz/crashes/ffd3458647088ce1.odin")`,
 }
 IS_FUZZ := []bool{
+false,
+false,
 false,
 false,
 false,

@@ -748,6 +748,31 @@ main :: proc() -> int {
 }
 ```
 
+#### integer conversion narrowing across widths
+```odin
+package main
+
+opt_level :: "none"
+
+narrow :: proc(x: i64, y: u64) -> int {
+	a := i32(x)
+	b := i16(a)
+	c := i8(b)
+	d := u32(y)
+	e := u16(d)
+	f := u8(e)
+
+	return int(a) + int(b) + int(c) +
+		int(i16(x)) + int(i8(x)) + int(i8(a)) +
+		int(d) + int(e) + int(f) +
+		int(u16(y)) + int(u8(y)) + int(u8(d))
+}
+
+main :: proc() -> int {
+	return narrow(-257, 0x1234_5678_89ab_cdef)
+}
+```
+
 #### extend reduce integer chain
 ```odin
 package main
@@ -4324,7 +4349,7 @@ main :: proc() -> int {
 }
 ```
 
-#### frontend emits F_I_Conv float to int
+#### frontend emits Conv float to int
 ```odin
 package main
 
@@ -4339,7 +4364,7 @@ main :: proc() -> int {
 }
 ```
 
-#### frontend emits U_F_I_Conv float to int
+#### frontend emits U_Conv float to int
 ```odin
 package main
 
@@ -4365,7 +4390,7 @@ main :: proc() -> int {
 }
 ```
 
-#### frontend emits F_I_Conv int to float
+#### frontend emits Conv int to float
 ```odin
 package main
 
@@ -4381,7 +4406,32 @@ main :: proc() -> int {
 }
 ```
 
-#### frontend emits U_F_I_Conv int to float
+#### enum int to float preserves signed conversion
+```odin
+package main
+
+opt_level :: "none"
+
+Kind :: enum i64 {
+	Negative = -1,
+}
+
+to_f64 :: proc(x: Kind) -> f64 {
+	return f64(x)
+}
+
+to_f32 :: proc(x: Kind) -> f32 {
+	return f32(x)
+}
+
+main :: proc() -> int {
+	if to_f64(.Negative) != f64(-1) do return 1
+	if to_f32(.Negative) != f32(-1) do return 2
+	return 0
+}
+```
+
+#### frontend emits U_Conv int to float
 ```odin
 package main
 
@@ -4409,7 +4459,7 @@ main :: proc() -> int {
 }
 ```
 
-#### frontend emits F_Conv f32 to f64
+#### frontend emits Conv f32 to f64
 ```odin
 package main
 
@@ -4425,7 +4475,7 @@ main :: proc() -> int {
 }
 ```
 
-#### frontend emits F_Conv f64 to f32
+#### frontend emits Conv f64 to f32
 ```odin
 package main
 

@@ -249,10 +249,8 @@ when !SPEC_NOT_PRESENT {
 		.Neg = #partial{.F32 = .F32_Neg, .F64 = .F64_Neg},
 		.Not = #partial{.I8 ..= .I32 = .I32_Eqz, .I64 = .I64_Eqz},
 		.Ctz = #partial{.I8 ..= .I32 = .I32_Ctz, .I64 = .I64_Ctz},
-		.Uext = #partial{.I64 = .I64_Extend_I32_U},
 		.Set_Local = {.Void ..= .V512 = .Local_Set},
 		.Tee_Local = {.Void ..= .V512 = .Local_Tee},
-		.F_Conv = #partial{.F32 = .F32_Demote_F64, .F64 = .F64_Promote_F32},
 		.Drop = {.Void ..= .V512 = .Drop},
 		.Load = #partial{
 			.I8 = .I32_Load8_U,

@@ -1,0 +1,139 @@
+=========== OPT LEVEL: none-quick ===========
+to_f64:
+    cvtsi2sd xmm0, rdi
+    ret
+to_f32:
+    cvtsi2ss xmm0, rdi
+    ret
+main:
+    sub rsp, 8
+    mov rdi, -1
+    call to_f64
+    ucomisd.q xmm0, [rip + 0xf87]
+    jnz 4
+    mov rdi, -1
+    call to_f32
+    ucomiss.d xmm0, [rip + 0xf75]
+    jnz 3
+    xor eax, eax
+    jmp 5
+3:
+    mov rax, 2
+    jmp 5
+4:
+    mov rax, 1
+5:
+    add rsp, 8
+    ret
+=========== OPT LEVEL: none ===========
+to_f64:
+    cvtsi2sd xmm0, rdi
+    ret
+to_f32:
+    cvtsi2ss xmm0, rdi
+    ret
+main:
+    sub rsp, 8
+    mov rdi, -1
+    call to_f64
+    ucomisd.q xmm0, [rip + 0xf87]
+    jnz 4
+    mov rdi, -1
+    call to_f32
+    ucomiss.d xmm0, [rip + 0xf75]
+    jnz 3
+    xor eax, eax
+    jmp 5
+3:
+    mov rax, 2
+    jmp 5
+4:
+    mov rax, 1
+5:
+    add rsp, 8
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+to_f64:
+    cvtsi2sd xmm0, rdi
+    ret
+to_f32:
+    cvtsi2ss xmm0, rdi
+    ret
+main:
+    sub rsp, 8
+    mov rdi, -1
+    call to_f64
+    ucomisd.q xmm0, [rip + 0xf87]
+    jnz 4
+    mov rdi, -1
+    call to_f32
+    ucomiss.d xmm0, [rip + 0xf75]
+    jnz 3
+    xor eax, eax
+    jmp 5
+3:
+    mov rax, 2
+    jmp 5
+4:
+    mov rax, 1
+5:
+    add rsp, 8
+    ret
+=========== OPT LEVEL: moderate ===========
+to_f64:
+    cvtsi2sd xmm0, rdi
+    ret
+to_f32:
+    cvtsi2ss xmm0, rdi
+    ret
+main:
+    sub rsp, 8
+    mov rdi, -1
+    call to_f64
+    ucomisd.q xmm0, [rip + 0xf87]
+    jnz 4
+    mov rdi, -1
+    call to_f32
+    ucomiss.d xmm0, [rip + 0xf75]
+    jnz 3
+    xor eax, eax
+    jmp 5
+3:
+    mov rax, 2
+    jmp 5
+4:
+    mov rax, 1
+5:
+    add rsp, 8
+    ret
+=========== OPT LEVEL: all ===========
+to_f64:
+    cvtsi2sd xmm0, rdi
+    ret
+to_f32:
+    cvtsi2ss xmm0, rdi
+    ret
+main:
+    sub rsp, 8
+    mov rdi, -1
+    call to_f64
+    ucomisd.q xmm0, [rip + 0xf87]
+    jnz 4
+    mov rdi, -1
+    call to_f32
+    ucomiss.d xmm0, [rip + 0xf75]
+    jnz 3
+    xor eax, eax
+    jmp 5
+3:
+    mov rax, 2
+    jmp 5
+4:
+    mov rax, 1
+5:
+    add rsp, 8
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    xor eax, eax
+    ret

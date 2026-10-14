@@ -33,8 +33,6 @@ fold_un_op :: proc(
 ) -> (
 	value: i64,
 ) {
-	bit_size := uint(bac.DT_SIZE[src_ty] * 8)
-	mask: i64 = -1 << bit_size
 	float_value := proc(value: i64, ty: bac.Node_Datatype) -> f64 {
 		value := transmute(f64)value
 		if ty == .F32 do return f64(f32(value))
@@ -46,20 +44,30 @@ fold_un_op :: proc(
 		value = ~oper
 	case .Neg:
 		value = -oper
-	case .Uext:
-		value = oper &~ mask
 	case .Cast:
-		value = oper &~ (-1 << uint(bac.DT_SIZE[dst_ty] * 8))
-	case .Sext:
-		value = sext(oper, src_ty)
-	case .F_Conv:
-		assert(src_ty in bac.FLOAT_DTS && dst_ty in bac.FLOAT_DTS)
-		value = transmute(i64)(f64(f32(transmute(f64)oper)))
-	case .F_I_Conv, .U_F_I_Conv:
-		unsigned := op == .U_F_I_Conv
+		assert((src_ty in bac.FLOAT_DTS) != (dst_ty in bac.FLOAT_DTS))
+		if src_ty == .F32 {
+			value = i64(transmute(u32)(f32(transmute(f64)oper)))
+		} else if dst_ty == .F32 {
+			value = transmute(i64)(f64(transmute(f32)(u32(oper))))
+		} else {
+			value = oper
+		}
+	case .Conv, .U_Conv:
+		unsigned := op == .U_Conv
 		src_float := src_ty in bac.FLOAT_DTS
-		assert(src_float != (dst_ty in bac.FLOAT_DTS))
-		if src_float {
+		dst_float := dst_ty in bac.FLOAT_DTS
+		if src_float && dst_float {
+			value = transmute(i64)(f64(f32(transmute(f64)oper)))
+		} else if !src_float && !dst_float {
+			if bac.DT_SIZE[src_ty] > bac.DT_SIZE[dst_ty] {
+				value = oper &~ (-1 << uint(bac.DT_SIZE[dst_ty] * 8))
+			} else if unsigned {
+				value = oper &~ (-1 << uint(bac.DT_SIZE[src_ty] * 8))
+			} else {
+				value = sext(oper, src_ty)
+			}
+		} else if src_float {
 			if unsigned {
 				value = i64(u64(float_value(oper, src_ty)))
 			} else {
@@ -676,23 +684,32 @@ peep :: proc(
 		} else {
 			bac.peep_ctx_add_trigger(ctx, if_.inps[1], id)
 		}
-	case .Neg ..= .U_F_I_Conv:
+	case .Neg ..= .U_Conv:
 		op := Un_Op(node.itype)
 		oper := expand_node(ctx.graph, node.inps[0])
 		coper := bac.get_extra(ctx.graph, oper, CInt)
 
+		if op == .Conv || op == .U_Conv {
+			if oper.dt == node.dt do return node.inps[0]
+			if oper.dt in bac.INT_DTS &&
+			   node.dt in bac.FLOAT_DTS &&
+			   bac.DT_SIZE[oper.dt] < 8 {
+				wide := bac.add_un_op(ctx, "iwd", op, .I64, node.inps[0])
+				res := bac.add_un_op(ctx, "cnv", op, node.dt, wide)
+				bac.worklist_add(ctx, ctx.worklist, wide)
+				bac.worklist_add(ctx, ctx.worklist, res)
+				return res
+			}
+		}
+
+		if op == .Cast {
+			if oper.dt == node.dt do return node.inps[0]
+			assert(oper.dt not_in bac.INT_DTS || node.dt not_in bac.INT_DTS)
+		}
+
 		if coper != nil {
 			value := fold_un_op(op, coper.value, node.dt, oper.dt)
 			return bac.add_c_int(ctx.graph, "fld", node.dt, value)
-		}
-
-		if (op == .Sext || op == .Uext) &&
-		   bac.DT_SIZE[oper.dt] >= bac.DT_SIZE[node.dt] {
-			return node.inps[0]
-		}
-
-		if op == .Cast && oper.dt == node.dt {
-			return node.inps[0]
 		}
 	case .Add ..= .And_Not:
 		lhs := expand_node(ctx.graph, node.inps[0])

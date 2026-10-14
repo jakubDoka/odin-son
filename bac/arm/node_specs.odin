@@ -78,12 +78,9 @@ SPEC := bac.Node_Spec{
 		0b10, // End
 		0b10, // Neg
 		0b10, // Not
-		0b10, // Sext
-		0b10, // Uext
 		0b10, // Cast
-		0b10, // F_Conv
-		0b10, // F_I_Conv
-		0b10, // U_F_I_Conv
+		0b10, // Conv
+		0b10, // U_Conv
 		0b10, // Splat
 		0b10, // Ctz
 		0b10, // Simd_Extract_Lsbs
@@ -158,12 +155,9 @@ SPEC := bac.Node_Spec{
 		0, // End -> No_Extra
 		0, // Neg -> No_Extra
 		0, // Not -> No_Extra
-		0, // Sext -> No_Extra
-		0, // Uext -> No_Extra
 		0, // Cast -> No_Extra
-		0, // F_Conv -> No_Extra
-		0, // F_I_Conv -> No_Extra
-		0, // U_F_I_Conv -> No_Extra
+		0, // Conv -> No_Extra
+		0, // U_Conv -> No_Extra
 		0, // Splat -> No_Extra
 		0, // Ctz -> No_Extra
 		0, // Simd_Extract_Lsbs -> No_Extra
@@ -238,12 +232,9 @@ SPEC := bac.Node_Spec{
 		{}, // End
 		{Class_Flag.Interned}, // Neg
 		{Class_Flag.Interned}, // Not
-		{Class_Flag.Interned}, // Sext
-		{Class_Flag.Interned}, // Uext
 		{Class_Flag.Interned}, // Cast
-		{Class_Flag.Interned}, // F_Conv
-		{Class_Flag.Interned}, // F_I_Conv
-		{Class_Flag.Interned}, // U_F_I_Conv
+		{Class_Flag.Interned}, // Conv
+		{Class_Flag.Interned}, // U_Conv
 		{Class_Flag.Interned}, // Splat
 		{Class_Flag.Interned}, // Ctz
 		{Class_Flag.Interned}, // Simd_Extract_Lsbs
@@ -325,9 +316,6 @@ SPEC := bac.Node_Spec{
 		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
-		bac.No_Extra,
 		bac.Dbg_Sym,
 		bac.No_Extra,
 		bac.No_Extra,
@@ -398,12 +386,9 @@ SPEC := bac.Node_Spec{
 		`End`,
 		`Neg`,
 		`Not`,
-		`Sext`,
-		`Uext`,
 		`Cast`,
-		`F_Conv`,
-		`F_I_Conv`,
-		`U_F_I_Conv`,
+		`Conv`,
+		`U_Conv`,
 		`Splat`,
 		`Ctz`,
 		`Simd_Extract_Lsbs`,
@@ -480,12 +465,9 @@ Node_Type :: enum u16 {
 	End,
 	Neg,
 	Not,
-	Sext,
-	Uext,
 	Cast,
-	F_Conv,
-	F_I_Conv,
-	U_F_I_Conv,
+	Conv,
+	U_Conv,
 	Splat,
 	Ctz,
 	Simd_Extract_Lsbs,
@@ -578,9 +560,6 @@ collect_meta :: proc(ctx: ^bac.Proc,
 #assert(size_of(bac.Cfg) % bac.PRECISION == 0)
 #assert(size_of(bac.Tup) % bac.PRECISION == 0)
 #assert(size_of(bac.Cfg) % bac.PRECISION == 0)
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)

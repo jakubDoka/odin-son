@@ -171,7 +171,7 @@ peep :: proc(
 		signed = true
 	}
 
-	ext: bac.Un_Op = signed ? .Sext : .Uext
+	ext: bac.Un_Op = signed ? .Conv : .U_Conv
 
 	changed := false
 
@@ -424,7 +424,7 @@ meta_of :: #force_inline proc(
 	case .Eq ..= .U_Ge:
 		ikind := ra.datatype_to_reg_kind[get_node(graph, node.inps[0]).dt]
 		return {out = out, masks = masks[ikind][:2]}
-	case .F_Conv, .F_I_Conv, .U_F_I_Conv, .Cast:
+	case .Conv, .U_Conv, .Cast:
 		vl := get_node(graph, node.inps[0])
 		nkind := ra.datatype_to_reg_kind[vl.dt]
 		return {out = out, masks = masks[nkind][:1]}
@@ -434,7 +434,7 @@ meta_of :: #force_inline proc(
 		masks := make([]bac.RM_Intern_Idx, len(node.inps) - 1)
 		slice.fill(masks, sout)
 		return {out = sout, input_start = 1, masks = masks}
-	case .Uext, .Sext, .Neg, .Not, .Cmlt, .Ctz:
+	case .Neg, .Not, .Cmlt, .Ctz:
 		return {out = out, masks = nmasks[:1]}
 	case .Split:
 		return {out = sout, masks = snmasks[:1]}
@@ -892,10 +892,52 @@ emit_instr :: proc(
 			ctx.code,
 			imm12_instr(0b1001000100, reg_of(ctx, instr), SP, offset),
 		)
-	case .F_I_Conv, .U_F_I_Conv:
+	case .Conv, .U_Conv:
+		assert(inp.dt != node.dt)
 		rd := reg_of(ctx, instr)
 		rn := reg_of(ctx, node.inps[0])
-		unsigned := kind == .U_F_I_Conv
+		unsigned := kind == .U_Conv
+
+		if inp.dt in bac.INT_DTS && node.dt in bac.INT_DTS {
+			int_dt := inp.dt < node.dt ? inp.dt : node.dt
+			unsigned := unsigned || inp.dt > node.dt
+
+			UXTB :: 0x53001C00
+			UXTH :: 0x53003C00
+			MOV_W :: 0x2A0003E0
+			SXTB_W :: 0x13001C00
+			SXTH_W :: 0x13003C00
+			SXTB_X :: 0x93401C00
+			SXTH_X :: 0x93403C00
+			SXTW_X :: 0x93407C00
+
+			if unsigned && int_dt == .I32 {
+				emit_op(ctx.code, MOV_W | u32(rn.index) << 16 | u32(rd.index))
+				break
+			}
+
+			conv_op: u32
+			#partial switch int_dt {
+			case .I8:
+				conv_op = unsigned ? UXTB : (is_64 ? SXTB_X : SXTB_W)
+			case .I16:
+				conv_op = unsigned ? UXTH : (is_64 ? SXTH_X : SXTH_W)
+			case .I32:
+				conv_op = SXTW_X
+			case:
+				panic("no")
+			}
+
+			emit_op(ctx.code, conv_op | u32(rn.index) << 5 | u32(rd.index))
+			break
+		}
+
+		if inp.dt in bac.FLOAT_DTS && node.dt in bac.FLOAT_DTS {
+			conv_op: u32 = node.dt == .F64 ? 0x1E22C000 : 0x1E624000
+			emit_op(ctx.code, conv_op | u32(rn.index) << 5 | u32(rd.index))
+			break
+		}
+
 		int_dt := node.dt
 		float_dt := inp.dt
 		conv_op: u32
@@ -917,12 +959,6 @@ emit_instr :: proc(
 			u32(rn.index) << 5 |
 			u32(rd.index),
 		)
-	case .F_Conv:
-		rd := reg_of(ctx, instr)
-		rn := reg_of(ctx, node.inps[0])
-		assert(inp.dt in bac.FLOAT_DTS && node.dt in bac.FLOAT_DTS)
-		conv_op: u32 = node.dt == .F64 ? 0x1E22C000 : 0x1E624000
-		emit_op(ctx.code, conv_op | u32(rn.index) << 5 | u32(rd.index))
 	case .Store:
 		vl := get_node(ctx, node.inps[3])
 
@@ -1050,54 +1086,6 @@ emit_instr :: proc(
 			emit_op(ctx.code, sh_instr(true, 0b0101010, nil, rd, XZR, rm))
 		}
 
-	case .Uext:
-		rd := reg_of(ctx, instr)
-		rn := reg_of(ctx, node.inps[0])
-
-		UXTB :: 0x53001C00
-		UXTH :: 0x53003C00
-		MOV_W :: 0x2A0003E0
-
-		op: u32
-		#partial switch inp.dt {
-		case .I8:
-			op = UXTB | u32(rn.index) << 5 | u32(rd.index)
-		case .I16:
-			op = UXTH | u32(rn.index) << 5 | u32(rd.index)
-		case .I32:
-			op = MOV_W | u32(rn.index) << 16 | u32(rd.index)
-		case:
-			panic("no")
-		}
-
-		emit_op(ctx.code, op)
-	case .Sext:
-		rd := reg_of(ctx, instr)
-		rm := reg_of(ctx, node.inps[0])
-
-		SXTB_W :: 0x13001C00
-		SXTH_W :: 0x13003C00
-
-		SXTB_X :: 0x93401C00
-		SXTH_X :: 0x93403C00
-		SXTW_X :: 0x93407C00
-
-		op: u32
-		#partial switch inp.dt {
-		case .I8:
-			op = is_64 ? SXTB_X : SXTB_W
-		case .I16:
-			op = is_64 ? SXTH_X : SXTH_W
-		case .I32:
-			assert(is_64)
-			op = SXTW_X
-		case:
-			panic("no")
-		}
-
-		op |= u32(rm.index) << 5 | u32(rd.index)
-
-		emit_op(ctx.code, op)
 	case .Add ..= .Xor, .Div, .U_Div, .And_Not, .Shl ..= .U_Shr:
 		rd := reg_of(ctx, instr)
 		rn := reg_of(ctx, node.inps[0])
@@ -1224,49 +1212,27 @@ emit_instr :: proc(
 	case .Cast:
 		rn := reg_of(ctx, node.inps[0])
 		rd := reg_of(ctx, instr)
+		assert(rn.kind != rd.kind)
 
-		if rn.kind == rd.kind {
-			rd := reg_of(ctx, instr)
-			rn := reg_of(ctx, node.inps[0])
+		sf: u32 = 0b1
+		ftype: u32 = 0b01
+		rmode: u32 = 0b00
+		opcode: u32 = 0b110
 
-			UXTB :: u32(0x53001C00)
-			UXTH :: u32(0x53003C00)
-			MOV_W :: u32(0x2A0003E0)
-
-			op: u32
-			#partial switch node.dt {
-			case .I8:
-				op = UXTB | u32(rn.index) << 5 | u32(rd.index)
-			case .I16:
-				op = UXTH | u32(rn.index) << 5 | u32(rd.index)
-			case .I32:
-				op = MOV_W | u32(rn.index) << 16 | u32(rd.index)
-			case:
-				panic("no")
-			}
-
-			emit_op(ctx.code, op)
-		} else {
-			sf: u32 = 0b1
-			ftype: u32 = 0b01
-			rmode: u32 = 0b00
-			opcode: u32 = 0b110
-
-			if rd.kind == RK_VECTOR {
-				opcode = 0b111
-			}
-
-			emit_op(
-				ctx.code,
-				op |
-				sf << 31 |
-				ftype << 22 |
-				rmode << 19 |
-				opcode << 16 |
-				u32(rn.index) << 5 |
-				u32(rd.index),
-			)
+		if rd.kind == RK_VECTOR {
+			opcode = 0b111
 		}
+
+		emit_op(
+			ctx.code,
+			op |
+			sf << 31 |
+			ftype << 22 |
+			rmode << 19 |
+			opcode << 16 |
+			u32(rn.index) << 5 |
+			u32(rd.index),
+		)
 	case .CInt:
 		cint := bac.get_extra(ctx, node, bac.CInt)
 		reg := reg_of(ctx, instr)

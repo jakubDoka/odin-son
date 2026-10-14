@@ -3,16 +3,13 @@ package bac
 
 Un_Op :: enum u16 {
 	Simd_Reduce_Add_Bisect = u16(Node_Type.Simd_Reduce_Add_Bisect),
-	Splat = u16(Node_Type.Splat),
-	U_F_I_Conv = u16(Node_Type.U_F_I_Conv),
 	Simd_Extract_Lsbs = u16(Node_Type.Simd_Extract_Lsbs),
+	U_Conv = u16(Node_Type.U_Conv),
+	Conv = u16(Node_Type.Conv),
 	Ctz = u16(Node_Type.Ctz),
-	Cast = u16(Node_Type.Cast),
-	Uext = u16(Node_Type.Uext),
-	F_I_Conv = u16(Node_Type.F_I_Conv),
-	F_Conv = u16(Node_Type.F_Conv),
+	Splat = u16(Node_Type.Splat),
 	Neg = u16(Node_Type.Neg),
-	Sext = u16(Node_Type.Sext),
+	Cast = u16(Node_Type.Cast),
 	Not = u16(Node_Type.Not),
 }
 Bin_Op :: enum u16 {
@@ -101,12 +98,9 @@ Node_Type :: enum u16 {
 	End,
 	Neg,
 	Not,
-	Sext,
-	Uext,
 	Cast,
-	F_Conv,
-	F_I_Conv,
-	U_F_I_Conv,
+	Conv,
+	U_Conv,
 	Splat,
 	Ctz,
 	Simd_Extract_Lsbs,
@@ -303,9 +297,6 @@ add_end :: #force_inline proc(graph: ^Proc, name: string, inputs: []Node_ID) -> 
 add_un_op :: #force_inline proc(graph: ^Proc, name: string, type: Un_Op, dt: Node_Datatype, oprnd: Node_ID, lane: Lane_Type = {}) -> (_id: Node_ID) {
 	return add_raw(graph, name, u16(type), dt, {oprnd}, {lane = lane,})
 }
-#assert(size_of(No_Extra) % PRECISION == 0)
-#assert(size_of(No_Extra) % PRECISION == 0)
-#assert(size_of(No_Extra) % PRECISION == 0)
 #assert(size_of(No_Extra) % PRECISION == 0)
 #assert(size_of(No_Extra) % PRECISION == 0)
 #assert(size_of(No_Extra) % PRECISION == 0)

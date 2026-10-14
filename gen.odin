@@ -2071,48 +2071,29 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				break match
 			}
 
-			dst_float := dest_dt in bac.FLOAT_DTS
-			src_float := src_dt in bac.FLOAT_DTS
-
-			switch {
-			case dst_float && src_float:
-				if dest_dt == src_dt {
-					res = arg
-				} else {
-					res = bac.add_un_op(ctx, "fcnv", .F_Conv, dest_dt, arg)
-				}
-			case dst_float && !src_float:
-				wide := arg
-				if bac.DT_SIZE[src_dt] < 8 {
-					wop: bac.Un_Op =
-						src_ty in typecheck.SIGNED_TYPES ? .Sext : .Uext
-					wide = bac.add_un_op(ctx, "iwd", wop, .I64, arg)
-				}
-				op: bac.Un_Op = .F_I_Conv
-				if typecheck.in_set(src_ty, typecheck.UNSIGNED_TYPES) {
-					op = .U_F_I_Conv
-				}
-				res = bac.add_un_op(ctx, "i2f", op, dest_dt, wide)
-			case !dst_float && src_float:
-				op: bac.Un_Op = .F_I_Conv
-				if typecheck.in_set(
-					base_meta.typeida,
-					typecheck.UNSIGNED_TYPES,
-				) {
-					op = .U_F_I_Conv
-				}
-				res = bac.add_un_op(ctx, "f2i", op, dest_dt, arg)
-			case dest_dt != src_dt:
-				op: bac.Un_Op = .Uext
-				if src_ty in typecheck.SIGNED_TYPES {
-					op = .Sext
-				}
-				if type_size(src_ty) > type_size(base_meta.typeida) {
-					op = .Cast
-				}
-				res = bac.add_un_op(ctx, "cst", op, dest_dt, arg)
-			case:
+			if dest_dt == src_dt {
 				res = arg
+			} else {
+				// Narrow non-numeric sources were zero-extended before conversion,
+				// while wide ones used the signed integer-to-float path.
+				op: bac.Un_Op = .Conv
+				if src_dt in bac.FLOAT_DTS {
+					if typecheck.in_set(
+						base_meta.typeida,
+						typecheck.UNSIGNED_TYPES,
+					) {
+						op = .U_Conv
+					}
+				} else if !typecheck.in_set(src_ty, typecheck.SIGNED_TYPES) &&
+				   (dest_dt not_in bac.FLOAT_DTS ||
+						   bac.DT_SIZE[src_dt] < 8 ||
+						   typecheck.in_set(
+							   src_ty,
+							   typecheck.UNSIGNED_TYPES,
+						   )) {
+					op = .U_Conv
+				}
+				res = bac.add_un_op(ctx, "cnv", op, dest_dt, arg)
 			}
 		case:
 			fmt.panicf("TODO: %v %v", base_ty, node)

@@ -229,7 +229,6 @@ peep :: proc(
 
 	if lat.type == .Int {
 		if lat.min == lat.max && node.itype != .CInt {
-			fmt.println(node)
 			return bac.add_c_int(ctx, "scpf", node.dt, lat.min)
 		}
 	}
@@ -492,6 +491,7 @@ peep :: proc(
 					if onode.itype == .Phi {
 						prev := node.output_count
 						bac.peep_subsume(ctx, onode.inps[1], out.id)
+						if node.rtype == bac.DEAD_NODE_KIND do break
 						// NOTE: this might happen if the phys are entangled
 						if node.output_count != prev - 1 {
 							node = expand_node(ctx, id)
@@ -1368,7 +1368,7 @@ sccp_compute :: proc(
 	res: bac.Lattice,
 ) {
 	id := bac.get_node_id(ctx, node)
-	current := &ctx.lattices[node.gvn]
+	curr := ctx.lattices[node.gvn]
 
 	if bac.is_cfg(ctx, id) && node.itype not_in DEAD_EXCEPTIONS {
 		if get_lattice(ctx, node.inps[0]).dead {
@@ -1379,10 +1379,17 @@ sccp_compute :: proc(
 	#partial switch node.itype {
 	case .CInt:
 		cint := bac.get_extra(ctx, node, bac.CInt)
-		res = {
-			type = .Int,
-			min  = cint.value,
-			max  = cint.value,
+		if node.dt in bac.FLOAT_DTS {
+			res = {
+				type       = .Float,
+				is_not_nan = !math.is_nan(cint.fvalue),
+			}
+		} else {
+			res = {
+				type = .Int,
+				min  = cint.value,
+				max  = cint.value,
+			}
 		}
 	case .Add ..= .And_Not:
 		lhs := get_lattice(ctx, node.inps[0])
@@ -1394,6 +1401,8 @@ sccp_compute :: proc(
 		op := Bin_Op(node.itype)
 		op_ty := bac.operation_datatype(ctx, node)
 
+		if lhs.type == .Top || rhs.type == .Top do return {type = .Top}
+
 		if lhs.type == .Int && rhs.type == .Int && lhs_known && rhs_known {
 			res.type = .Int
 			res.min = fold_bin_op(lhs.min, op, rhs.min, op_ty)
@@ -1403,15 +1412,44 @@ sccp_compute :: proc(
 	case .Phi:
 		ctrl := expand_node(ctx, node.inps[0])
 		for inp, i in node.inps[1:] {
-			if !get_lattice(ctx, ctrl.inps[i]).dead {
+			if !get_lattice(ctx, ctrl.inps[i]).dead &&
+			   get_lattice(ctx, ctrl.inps[i]).type != .Top {
 				res = bac.lattice_meet(res, get_lattice(ctx, inp))
 			}
+
+			bac.peep_ctx_add_trigger(ctx, ctrl.inps[i], id)
 		}
+
+		if curr.type == .Int && res.type == .Int && curr != res {
+			curr.widens += 1
+			if curr.widens > 3 {
+				res.type = .Bot
+				break
+			}
+		}
+
+		res = bac.lattice_join(res, bac.DT_TO_LATTICE[node.dt])
+
+		return
 	case .Mem:
 		res.type = .Mem
+	case .Loop:
+		res = get_lattice(ctx, node.inps[0])
+		return
 	case .If, .Entry, .Call, .Call_End, .Return:
+		for inp in node.inps {
+			if get_lattice(ctx, inp).type == .Top {
+				return {type = .Top}
+			}
+		}
 		res.type = .Ctlr
 	case .Then, .Else:
+		for inp in node.inps {
+			if get_lattice(ctx, inp).type == .Top {
+				return {type = .Top}
+			}
+		}
+
 		res.type = .Ctlr
 
 		the_if := expand_node(ctx, node.inps[0])
@@ -1419,13 +1457,15 @@ sccp_compute :: proc(
 		cond := get_lattice(ctx, the_if.inps[1])
 		cond_known := cond.min == cond.max && cond.type == .Int
 
+		bac.peep_ctx_add_trigger(ctx, the_if.inps[1], id)
 		if !cond_known {
-			bac.peep_ctx_add_trigger(ctx, the_if.inps[1], id)
 			break
 		}
 
 		res.dead = (node.itype == .Else) != (cond.min == 0)
 	case .Region:
+		res.type = .Ctlr
+		res.dead = true
 		for inp in node.inps {
 			res = bac.lattice_meet(res, get_lattice(ctx, inp))
 		}

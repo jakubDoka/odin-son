@@ -900,6 +900,8 @@ opt :: proc(ctx: ^bac.Proc) {
 	peep_ctx.graph = ctx
 
 	for dirty, limit := true, 100; dirty; limit -= 1 {
+		context.allocator, _ = arna.scrath()
+
 		assert(limit > 0)
 		dirty = false
 		DEBUG_OPT :: false

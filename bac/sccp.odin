@@ -63,6 +63,17 @@ lattice_meet :: proc(a, b: Lattice) -> (res: Lattice) {
 	return
 }
 
+@(rodata)
+DT_TO_LATTICE := [Node_Datatype]Lattice {
+	.I8 = {type = .Int, min = i64(min(i8)), max = i64(max(i8))},
+	.I16 = {type = .Int, min = i64(min(i16)), max = i64(max(i16))},
+	.I32 = {type = .Int, min = i64(min(i32)), max = i64(max(i32))},
+	.I64 = {type = .Int, min = i64(min(i64)), max = i64(max(i64))},
+	.F32 ..= .F64 = {type = .Float},
+	.Void ..= .Mem = {type = .Bot},
+	.V128 ..= .V512 = {type = .Bot},
+}
+
 lattice_dual :: proc(v: Lattice) -> (res: Lattice) {
 	res = v
 
@@ -83,7 +94,7 @@ lattice_dual :: proc(v: Lattice) -> (res: Lattice) {
 	return
 }
 
-lattice_join :: proc(a: Lattice, b: Lattice) -> Lattice {
+lattice_join :: proc(a: Lattice, b: Lattice) -> (res: Lattice) {
 	return lattice_dual(lattice_meet(lattice_dual(a), lattice_dual(b)))
 }
 
@@ -93,8 +104,6 @@ compute_latices :: proc(
 ) -> (
 	optimized: bool,
 ) {
-	{return}
-
 	if ctx.sccp_compute == nil do return
 
 	pass_quard(ctx, .Sccp, &optimized) or_return
@@ -111,9 +120,14 @@ compute_latices :: proc(
 	worklist_init(ctx.worklist, ctx.gvn)
 	collect_nodes(ctx, ctx.worklist)
 
+	nodes := slice.clone(worklist.queue.data[:worklist.queue.len])
+
 	ctx.lattices = make([]Lattice, ctx.gvn, scratch)
 
+	lim := 10000
 	for n in worklist_next(ctx, ctx.worklist) {
+		lim -= 1
+		assert(lim != 0)
 		node := expand_node(ctx, n)
 		lat := ctx.sccp_compute(ctx, node)
 		if lat.type != .Top && ctx.lattices[node.gvn] != lat {
@@ -128,6 +142,12 @@ compute_latices :: proc(
 
 	ctx.worklist = nil
 	ctx.triggers = nil
+
+	when false {
+		for i in 0 ..< len(nodes) {
+			fmt.println(get_node(ctx, nodes[i]), ctx.lattices[i])
+		}
+	}
 
 	return
 }

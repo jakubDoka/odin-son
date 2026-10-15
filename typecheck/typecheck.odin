@@ -489,6 +489,36 @@ init_type_fmt :: proc() {
 			return true
 		},
 	)
+
+	fmt.register_user_formatter(
+		bac.Lattice,
+		proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
+			value := value.(bac.Lattice)
+			fmt.wprint(fi.writer, value.type)
+			if value.widens != 0 {
+				fmt.wprintf(fi.writer, "[%v]", value.widens)
+			}
+			switch value.type {
+			case .Top:
+			case .Int:
+				if value.min == value.max {
+					fmt.wprintf(fi.writer, ":%v", value.min)
+				} else {
+					fmt.wprintf(fi.writer, ":%v..=%v", value.min, value.max)
+				}
+			case .Float:
+				fmt.wprint(
+					fi.writer,
+					".cant_be_nan" if value.is_not_nan else "",
+				)
+			case .Ctlr:
+				fmt.wprint(fi.writer, ".dead" if value.is_not_nan else "")
+			case .Mem:
+			case .Bot:
+			}
+			return true
+		},
+	)
 }
 
 type_display :: proc(w: io.Writer, ty: Type) {

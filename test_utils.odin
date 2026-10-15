@@ -213,6 +213,8 @@ run_test :: proc(
 				)
 			}
 		}
+		bac.current_graph = &ctx
+
 		types.mems.code.pos = 0
 		types.mems.reloc.pos = 0
 		types.mems.cfi.pos = 0

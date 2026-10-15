@@ -495,18 +495,28 @@ Peep_Ctx :: struct {
 	using graph: ^Proc,
 }
 
-@(deferred_in = pass_quard_end)
+@(deferred_in_out = pass_quard_end)
 pass_quard :: #force_inline proc(
 	ctx: ^Proc,
 	pass: Pass,
 	opted: ^bool,
-) -> bool {
-	if pass in ctx.computed_passes do return false
+) -> (
+	Pass_Snapshot,
+	bool,
+) {
+	if pass in ctx.computed_passes do return {}, false
 	ctx.computed_passes |= {pass}
-	return true
+	return pass_snapshot(ctx), true
 }
 
-pass_quard_end :: #force_inline proc(ctx: ^Proc, pass: Pass, opted: ^bool) {
+pass_quard_end :: #force_inline proc(
+	ctx: ^Proc,
+	pass: Pass,
+	opted: ^bool,
+	snap: Pass_Snapshot,
+	ok: bool,
+) {
+	if ok do opted^ |= snap != pass_snapshot(ctx)
 	defer if opted^ do ctx.computed_passes = {pass}
 }
 
@@ -1073,6 +1083,16 @@ peep_subsume :: proc(graph: ^Proc, with: Node_ID, target: Node_ID) {
 	subsume(graph, with, target)
 }
 
+Pass_Snapshot :: struct {
+	prev_pos: u32,
+	waste:    u32,
+}
+
+pass_snapshot :: proc(ctx: ^Proc) -> Pass_Snapshot {
+	// TODO: this is not perfect, wee need some kind of node mod counter
+	return {u32(ctx.mem.pos), u32(ctx.waste)}
+}
+
 apply_peeps :: proc(ctx: Peep_Ctx) -> (optimized: bool) {
 	graph := ctx.graph
 
@@ -1080,6 +1100,7 @@ apply_peeps :: proc(ctx: Peep_Ctx) -> (optimized: bool) {
 
 	if .Peep in graph.computed_passes && is_builder do return
 	graph.computed_passes |= {.Peep}
+	snap := pass_snapshot(ctx)
 
 	graph.dont_intern = !is_builder
 
@@ -1094,6 +1115,10 @@ apply_peeps :: proc(ctx: Peep_Ctx) -> (optimized: bool) {
 	graph.triggers = &triggers
 
 	collect_nodes(graph, &worklist)
+
+	if .Sccp in graph.computed_passes {
+		assert(len(graph.lattices) == int(graph.gvn))
+	}
 
 	rounds := 0
 	triggered := 0
@@ -1141,13 +1166,16 @@ apply_peeps :: proc(ctx: Peep_Ctx) -> (optimized: bool) {
 		triggered += 1
 	}
 
+	optimized |= snap != pass_snapshot(ctx)
 	if optimized do graph.computed_passes = {.Peep}
 
 	add_efficiency_stat(graph, .redundant_peep, rounds, triggered)
 	add_efficiency_stat(graph, .peephole_rounds, rounds, graph.gvn)
 
 	if !ODIN_DISABLE_ASSERT {
+		gvn := graph.gvn
 		collect_nodes(graph, &worklist)
+		assert(optimized || gvn == graph.gvn)
 
 		for n in worklist_next(graph, &worklist) {
 			node := expand_node(graph, n)
@@ -1682,8 +1710,20 @@ subsume :: proc(graph: ^Proc, with: Node_ID, target: Node_ID) {
 		for out in tnode.outs {
 			unintern(graph, out.id)
 			get_inputs(graph, out.id)[out.idx] = 0
-			id := intern(graph, out.id)
-			assert(id == out.id)
+		}
+
+		for {
+			changed := false
+			for &out in tnode.outs {
+
+				id := intern(graph, out.id)
+				if id != out.id {
+					subsume(graph, id, out.id)
+					out.id = id
+					changed = true
+				}
+			}
+			if !changed do break
 		}
 
 		tnode.output_count = 0
@@ -1926,6 +1966,7 @@ delete_node_node :: proc(graph: ^Proc, node: ^Node) {
 	}
 
 	add_efficiency_stat(graph, .deleted_nodes, 1)
+
 }
 
 @(tag = "node_proc")

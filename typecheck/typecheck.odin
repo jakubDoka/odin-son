@@ -599,9 +599,17 @@ pack_type :: proc(typ: Type_Data) -> Type {
 
 unpack_type :: proc(typ: Type) -> Type_Data {
 	raw := Raw_Type(typ)
+	data := raw.data
+	when #config(TRUEOS, false) {
+		#assert(size_of(uintptr) == 8)
+		// TRUEOS allocates in the upper canonical half; packing drops bits 63..48.
+		if data & (1 << 47) != 0 {
+			data |= 0xffff_0000_0000_0000
+		}
+	}
 	return(
 		transmute(Type_Data)Raw_Type_Data {
-			data = raw.data,
+			data = data,
 			tag = int(raw.tag),
 		} \
 	)

@@ -30,7 +30,7 @@ echo "compiling boids with jit..."
 RAYLIB_LIBS="$(pkg-config --libs raylib 2>/dev/null || echo -lraylib)"
 
 echo "linking against system raylib..."
-zig cc "$OBJ" -o "$BIN" $RAYLIB_LIBS -lm -lpthread -ldl
+gcc "$OBJ" -o "$BIN" $RAYLIB_LIBS -lm -lpthread -ldl
 
 echo "running..."
 exec "$BIN"

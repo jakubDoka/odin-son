@@ -63,7 +63,7 @@ function run-test-program
 	odin build . -debug $argv[2..]
 	export ODIN_ROOT=$HOME/odin/
 	./jit test-programs/$argv[1]/
-	zig cc a.o
+	gcc a.o
 	./a.out
 end
 

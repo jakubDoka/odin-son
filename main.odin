@@ -228,3 +228,42 @@ main :: proc() {
 		log_stats(&ctx)
 	}
 }
+
+log_stats :: proc(ctx: ^bac.Stats) {
+	padded :: proc(vl: string, width: int) -> string {
+		return strings.concatenate(
+			{
+				vl,
+				strings.repeat(
+					" ",
+					max(width - len(vl), 0),
+					context.temp_allocator,
+				),
+			},
+			context.temp_allocator,
+		)
+	}
+
+	max_name_len := 0
+	for enm in reflect.enum_fields_zipped(bac.Efficiency_Stat_Kind) {
+		max_name_len = max(max_name_len, len(enm.name))
+	}
+
+	fmt.eprintfln(
+		"  %s %s %s %s",
+		padded("name", max_name_len),
+		padded("total", 8),
+		padded("ideal", 8),
+		padded("t/i", 8),
+	)
+	for eff, kind in ctx.efficiency {
+		name := reflect.enum_field_names(bac.Efficiency_Stat_Kind)[kind]
+		fmt.eprintfln(
+			"  %s % -8d % -8d % -8f",
+			padded(name, max_name_len),
+			eff.total,
+			eff.ideal,
+			f64(eff.total) / f64(eff.ideal),
+		)
+	}
+}

@@ -189,7 +189,7 @@ main :: proc() {
 				if strings.has_prefix(name, "fail ") {
 					fmt.fprintfln(
 						file,
-						"main.run_test(t, `%v`, `%v`, 0)",
+						"run_test(t, `%v`, `%v`, 0)",
 						rall_name,
 						code,
 					)
@@ -206,7 +206,7 @@ main :: proc() {
 				fmt.fprintfln(file, "%v", inlined)
 				fmt.fprintfln(
 					file,
-					"main.run_test(t, `%v`, `%v`, main_())",
+					"run_test(t, `%v`, `%v`, main_())",
 					rall_name,
 					code,
 				)
@@ -317,7 +317,7 @@ gen_fuzz_crash_tests :: proc(file: ^os.File, test_names: ^[dynamic]Test) {
 		// the input is raw fuzzer output, so it can't be inlined as a literal
 		fmt.fprintfln(
 			file,
-			`main.run_test(t, "%v", string(#load("../%v/%v")), 0,
+			`run_test(t, "%v", string(#load("../%v/%v")), 0,
 				diff = false, no_run = true)`,
 			name,
 			FUZZ_CRASH_DIR,

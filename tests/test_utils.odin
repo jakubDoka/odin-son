@@ -1,11 +1,17 @@
 #+build !wasm32
-package main
+package tests
 
-import "bac"
-import "bac/arm"
-import "bac/builder"
-import "bac/wasm"
-import "bac/x64"
+import main ".."
+import "../bac"
+import "../bac/arm"
+import "../bac/builder"
+import "../bac/wasm"
+import "../bac/x64"
+import "../typecheck"
+import "../unicorn"
+import "../vendored/gam/util/arna"
+import "../vendored/gam/util/hot"
+import "../wabt"
 import "base:intrinsics"
 import "core:dynlib"
 import "core:fmt"
@@ -25,11 +31,6 @@ import "core:simd"
 import "core:strings"
 import "core:sync"
 import "core:testing"
-import "typecheck"
-import "unicorn"
-import "vendored/gam/util/arna"
-import "vendored/gam/util/hot"
-import "wabt"
 
 TEST_OUT_DIR :: "print-tests"
 
@@ -44,7 +45,7 @@ setup_custom_fmt :: proc() {
 	})
 }
 
-init_single_file_program :: proc(ctx: ^Gen_Ctx, f: ^ast.File) {
+init_single_file_program :: proc(ctx: ^main.Gen_Ctx, f: ^ast.File) {
 	ctx.files.allocator = ctx.types.allocator
 	ctx.modules.allocator = ctx.types.allocator
 	if f.pkg_name == "" do f.pkg_name = "main"
@@ -139,7 +140,7 @@ run_test :: proc(
 
 	stats: bac.Stats
 
-	ctx: Gen_Ctx
+	ctx: main.Gen_Ctx
 	ctx.types = &types
 	ctx.stats = &stats
 	ctx.global = &global_ctx
@@ -148,7 +149,7 @@ run_test :: proc(
 	init_single_file_program(&ctx, &f)
 	typecheck.typecheck_program(&ctx)
 
-	levels := OPT_LEVELS
+	levels := main.OPT_LEVELS
 
 	Test_Vm :: enum {
 		Native,
@@ -158,7 +159,7 @@ run_test :: proc(
 	}
 
 	Test_Conf :: struct {
-		using level: Opt_Level,
+		using level: main.Opt_Level,
 		debug:       bool,
 		vm:          Test_Vm,
 	}
@@ -294,17 +295,17 @@ run_test :: proc(
 				}
 
 				builder.make_builtin_proc(&ctx, kind)
-				emit_proc_code(&ctx, &emit_ctx, prc)
+				main.emit_proc_code(&ctx, &emit_ctx, prc)
 			}
 
 			for _, i in ctx.procs[:len(ctx.procs) - 2] {
-				emit_proc(&ctx, i, level, &emit_ctx)
+				main.emit_proc(&ctx, i, level, &emit_ctx)
 			}
 
 			defer for prc in ctx.procs do delete(prc.stencil.mem)
 
 			if .Inline in level.flags {
-				if !inline_and_optimize(&ctx, &emit_ctx) do continue
+				if !main.inline_and_optimize(&ctx, &emit_ctx) do continue
 			}
 
 			arna.alloc(&types.mems.code, 0, 4096)
@@ -453,16 +454,16 @@ run_test :: proc(
 			ctx.target.spec = &wasm.SPEC
 
 			for _, i in ctx.procs {
-				emit_proc(&ctx, i, level, &emit_ctx)
+				main.emit_proc(&ctx, i, level, &emit_ctx)
 			}
 
 			defer for prc in ctx.procs do delete(prc.stencil.mem)
 
 			if .Inline in level.flags {
-				if !inline_and_optimize(&ctx, &emit_ctx) do continue
+				if !main.inline_and_optimize(&ctx, &emit_ctx) do continue
 			}
 
-			module := emit_wasm_module(&ctx, context.temp_allocator)
+			module := main.emit_wasm_module(&ctx, context.temp_allocator)
 
 			{context.allocator = context.temp_allocator
 				disasm_wasm(dsb, module)}
@@ -497,7 +498,7 @@ run_test :: proc(
 		sync.guard(&log_lock)
 		bac.aggregate_effeciency_stats(&g_stats, ctx.stats)
 		if intrinsics.atomic_sub(&test_rc, 1) == 1 {
-			log_stats(&g_stats)
+			main.log_stats(&g_stats)
 		}
 	}
 
@@ -538,45 +539,6 @@ run_test :: proc(
 				}
 			}
 		}
-	}
-}
-
-log_stats :: proc(ctx: ^bac.Stats) {
-	padded :: proc(vl: string, width: int) -> string {
-		return strings.concatenate(
-			{
-				vl,
-				strings.repeat(
-					" ",
-					max(width - len(vl), 0),
-					context.temp_allocator,
-				),
-			},
-			context.temp_allocator,
-		)
-	}
-
-	max_name_len := 0
-	for enm in reflect.enum_fields_zipped(bac.Efficiency_Stat_Kind) {
-		max_name_len = max(max_name_len, len(enm.name))
-	}
-
-	fmt.eprintfln(
-		"  %s %s %s %s",
-		padded("name", max_name_len),
-		padded("total", 8),
-		padded("ideal", 8),
-		padded("t/i", 8),
-	)
-	for eff, kind in ctx.efficiency {
-		name := reflect.enum_field_names(bac.Efficiency_Stat_Kind)[kind]
-		fmt.eprintfln(
-			"  %s % -8d % -8d % -8f",
-			padded(name, max_name_len),
-			eff.total,
-			eff.ideal,
-			f64(eff.total) / f64(eff.ideal),
-		)
 	}
 }
 
@@ -787,7 +749,7 @@ ARM_DS :: Disasm_Scope(
 	arm64.Endianness,
 ){arm64.decode, arm64.sbprint}
 
-disasm :: proc(sb: ^strings.Builder, ctx: Gen_Ctx, ds: $DS) {
+disasm :: proc(sb: ^strings.Builder, ctx: main.Gen_Ctx, ds: $DS) {
 	decoded_instrs: [dynamic]DS.Instruction
 	decoded_instr_info: [dynamic]DS.Instruction_Info
 	decoded_label_info: [dynamic]x86.Label_Definition

@@ -783,18 +783,4 @@ stay within patterns around you.
 
 ### NOTE
 
-Propagation Rules
-- A truncation to k bits demands at most k bits from its input.
-- Add, Sub, Mul, and bitwise operations propagate their result’s demanded width to their operands.
-- Left shift propagates that demand to its data operand, but not its shift count.
-- Division, remainder, comparisons, and right shifts conservatively demand their full operand width.
-- A shared value takes the maximum demand across all its users.
-Use a worklist until those demands reach a fixed point. Starting with no demand and only increasing it makes this monotonic; phis and loops do not require special recursive traversal.
-Afterward, the cleanup rule becomes straightforward:
-zext32(trunc8(x32)) => x32
-sext32(trunc8(x32)) => x32
-
-provided the extension result is only demanded at widths <= 8
-If one user needs all 32 bits while another only needs 8, retain the normalization globally, but bypass it on the low-demand user’s input edge.
-One important distinction: remove the normalization, not necessarily the narrow-typed node. Our IR still uses that datatype to determine store widths and extension semantics.
-I’d run this analysis after backend legalization, then run the cleanup peepholes. That avoids dependence on legalization order and keeps the peepholes local. A demanded width is sufficient initially; a full demanded-bit mask would add precision, but is unnecessary for these byte/halfword cases.
+Make the unicorn engine and wabt not required for the compiler.

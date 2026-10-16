@@ -1,0 +1,1161 @@
+=========== OPT LEVEL: none-quick ===========
+finite:
+    test dil, dil
+    jnz 1
+    jmp 1
+1:
+    mov rax, 1
+    ret
+main:
+    sub rsp, 0x18
+    movsd.q xmm0, [rip + 0xf92]
+    call run f64
+    mov.q [rsp], rax
+    movsd.q xmm0, [rip + 0xf80]
+    cvtsd2ss xmm0, xmm0
+    call run f32
+    mov.q [rsp + 0x8], rax
+    movsd.q xmm0, [rip + 0xf68]
+    pxor xmm1, xmm1
+    ucomisd xmm0, xmm1
+    setz dil
+    jnp 3
+    mov dil, 0
+3:
+    movzx rdi, dil
+    call finite
+    mov.q rcx, [rsp]
+    mov.q rdx, [rsp + 0x8]
+    add rcx, rdx
+    mov rcx, rcx
+    add rcx, rax
+    mov.q [rsp], rcx
+    mov rcx, 0xfb
+    mov.q rax, [rsp]
+    cqo
+    idiv rcx
+    mov rax, rdx
+    add rsp, 0x18
+    ret
+run f64:
+    sub rsp, 0x48
+    movsd.q [rsp + 0x18], xmm0
+    movsd.q xmm0, [rip + 0xf12]
+    movsd.q [rsp + 0x28], xmm0
+    movsd.q xmm1, [rsp + 0x28]
+    movsd.q xmm0, [rsp + 0x28]
+    call check f64
+    mov.q [rsp], rax
+    movsd.q xmm0, [rsp + 0x18]
+    movsd.q xmm1, [rsp + 0x18]
+    divsd xmm0, xmm1
+    movsd.q [rsp + 0x38], xmm0
+    movsd.q xmm1, [rsp + 0x28]
+    movsd.q xmm0, [rsp + 0x38]
+    call check f64
+    mov.q [rsp + 0x8], rax
+    movsd.q xmm0, [rsp + 0x28]
+    movsd.q xmm1, [rsp + 0x18]
+    divsd xmm0, xmm1
+    movsd.q [rsp + 0x18], xmm0
+    pxor xmm1, xmm1
+    movsd.q xmm0, [rsp + 0x18]
+    subsd xmm1, xmm0
+    movsd.q xmm0, [rsp + 0x18]
+    call check f64
+    mov.q [rsp + 0x10], rax
+    movsd.q xmm1, [rsp + 0x28]
+    movsd.q xmm0, [rsp + 0x18]
+    call check f64
+    mov.q rcx, [rsp + 0x8]
+    imul rcx, rcx, 3
+    mov.q rdx, [rsp]
+    add rdx, rcx
+    mov.q [rsp], rdx
+    mov.q rcx, [rsp + 0x10]
+    imul rcx, rcx, 5
+    mov.q rdx, [rsp]
+    add rdx, rcx
+    mov.q [rsp], rdx
+    imul rax, rax, 7
+    mov.q rcx, [rsp]
+    add rcx, rax
+    mov rax, rcx
+    add rsp, 0x48
+    ret
+run f32:
+    sub rsp, 0x48
+    movss.d [rsp + 0x18], xmm0
+    movss.d xmm0, [rip + 0xe23]
+    movss.d [rsp + 0x28], xmm0
+    movss.d xmm1, [rsp + 0x28]
+    movss.d xmm0, [rsp + 0x28]
+    call check f32
+    mov.q [rsp], rax
+    movss.d xmm0, [rsp + 0x18]
+    movss.d xmm1, [rsp + 0x18]
+    divss xmm0, xmm1
+    movss.d [rsp + 0x38], xmm0
+    movss.d xmm1, [rsp + 0x28]
+    movss.d xmm0, [rsp + 0x38]
+    call check f32
+    mov.q [rsp + 0x8], rax
+    movss.d xmm0, [rsp + 0x28]
+    movss.d xmm1, [rsp + 0x18]
+    divss xmm0, xmm1
+    movss.d [rsp + 0x18], xmm0
+    pxor xmm1, xmm1
+    movss.d xmm0, [rsp + 0x18]
+    subss xmm1, xmm0
+    movss.d xmm0, [rsp + 0x18]
+    call check f32
+    mov.q [rsp + 0x10], rax
+    movss.d xmm1, [rsp + 0x28]
+    movss.d xmm0, [rsp + 0x18]
+    call check f32
+    mov.q rcx, [rsp + 0x8]
+    imul rcx, rcx, 3
+    mov.q rdx, [rsp]
+    add rdx, rcx
+    mov.q [rsp], rdx
+    mov.q rcx, [rsp + 0x10]
+    imul rcx, rcx, 5
+    mov.q rdx, [rsp]
+    add rdx, rcx
+    mov.q [rsp], rdx
+    imul rax, rax, 7
+    mov.q rcx, [rsp]
+    add rcx, rax
+    mov rax, rcx
+    add rsp, 0x48
+    ret
+check f64:
+    addsd xmm0, xmm1
+    ucomisd xmm0, xmm0
+    setz al
+    jnp 7
+    mov al, 0
+7:
+    movzx rax, al
+    test al, al
+    jnz 8
+    xor eax, eax
+    jmp 9
+8:
+    mov rax, 1
+9:
+    ucomisd xmm0, xmm0
+    setnz cl
+    jnp 10
+    mov cl, 1
+10:
+    movzx rcx, cl
+    test cl, cl
+    jnz 11
+    jmp 12
+11:
+    add rax, 2
+12:
+    ucomisd xmm0, xmm0
+    jnc 13
+    jmp 14
+13:
+    add rax, 8
+14:
+    ret
+check f32:
+    addss xmm0, xmm1
+    ucomiss xmm0, xmm0
+    setz al
+    jnp 16
+    mov al, 0
+16:
+    movzx rax, al
+    test al, al
+    jnz 17
+    xor eax, eax
+    jmp 18
+17:
+    mov rax, 1
+18:
+    ucomiss xmm0, xmm0
+    setnz cl
+    jnp 19
+    mov cl, 1
+19:
+    movzx rcx, cl
+    test cl, cl
+    jnz 20
+    jmp 21
+20:
+    add rax, 2
+21:
+    ucomiss xmm0, xmm0
+    jnc 22
+    jmp 23
+22:
+    add rax, 8
+23:
+    ret
+=========== OPT LEVEL: none ===========
+finite:
+    test dil, dil
+    jnz 1
+    jmp 1
+1:
+    mov rax, 1
+    ret
+main:
+    push rbx
+    push rbp
+    sub rsp, 8
+    movsd.q xmm0, [rip + 0xf8e]
+    call run f64
+    mov rbx, rax
+    movsd.q xmm0, [rip + 0xf7d]
+    cvtsd2ss xmm0, xmm0
+    call run f32
+    mov rbp, rax
+    movsd.q xmm1, [rip + 0xf67]
+    pxor xmm0, xmm0
+    ucomisd xmm1, xmm0
+    setz dil
+    jnp 3
+    mov dil, 0
+3:
+    movzx rdi, dil
+    call finite
+    add rbx, rbp
+    add rbx, rax
+    mov rcx, 0xfb
+    mov rax, rbx
+    cqo
+    idiv rcx
+    mov rax, rdx
+    add rsp, 8
+    pop rbp
+    pop rbx
+    ret
+run f64:
+    push rbx
+    push rbp
+    push r12
+    sub rsp, 0x20
+    movsd.q [rsp], xmm0
+    movsd.q xmm0, [rip + 0xf19]
+    movsd.q [rsp + 0x10], xmm0
+    movsd.q xmm1, [rsp + 0x10]
+    movsd.q xmm0, [rsp + 0x10]
+    call check f64
+    mov r12, rax
+    movsd.q xmm0, [rsp]
+    movsd.q xmm1, [rsp]
+    divsd xmm0, xmm1
+    movsd.q xmm1, [rsp + 0x10]
+    call check f64
+    mov rbx, rax
+    movsd.q xmm1, [rsp + 0x10]
+    movsd.q xmm0, [rsp]
+    divsd xmm1, xmm0
+    movsd.q [rsp], xmm1
+    pxor xmm1, xmm1
+    movsd.q xmm0, [rsp]
+    subsd xmm1, xmm0
+    movsd.q xmm0, [rsp]
+    call check f64
+    mov rbp, rax
+    movsd.q xmm1, [rsp + 0x10]
+    movsd.q xmm0, [rsp]
+    call check f64
+    mov rcx, rax
+    imul rdx, rbx, 3
+    mov rax, r12
+    add rax, rdx
+    imul rdx, rbp, 5
+    add rax, rdx
+    imul rcx, rcx, 7
+    add rax, rcx
+    add rsp, 0x20
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+run f32:
+    push rbx
+    push rbp
+    push r12
+    sub rsp, 0x20
+    movss.d [rsp], xmm0
+    movss.d xmm0, [rip + 0xe54]
+    movss.d [rsp + 0x10], xmm0
+    movss.d xmm1, [rsp + 0x10]
+    movss.d xmm0, [rsp + 0x10]
+    call check f32
+    mov r12, rax
+    movss.d xmm0, [rsp]
+    movss.d xmm1, [rsp]
+    divss xmm0, xmm1
+    movss.d xmm1, [rsp + 0x10]
+    call check f32
+    mov rbx, rax
+    movss.d xmm1, [rsp + 0x10]
+    movss.d xmm0, [rsp]
+    divss xmm1, xmm0
+    movss.d [rsp], xmm1
+    pxor xmm1, xmm1
+    movss.d xmm0, [rsp]
+    subss xmm1, xmm0
+    movss.d xmm0, [rsp]
+    call check f32
+    mov rbp, rax
+    movss.d xmm1, [rsp + 0x10]
+    movss.d xmm0, [rsp]
+    call check f32
+    mov rcx, rax
+    imul rdx, rbx, 3
+    mov rax, r12
+    add rax, rdx
+    imul rdx, rbp, 5
+    add rax, rdx
+    imul rcx, rcx, 7
+    add rax, rcx
+    add rsp, 0x20
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+check f64:
+    addsd xmm0, xmm1
+    ucomisd xmm0, xmm0
+    setz al
+    jnp 7
+    mov al, 0
+7:
+    movzx rax, al
+    test al, al
+    jnz 8
+    xor eax, eax
+    jmp 9
+8:
+    mov rax, 1
+9:
+    ucomisd xmm0, xmm0
+    setnz cl
+    jnp 10
+    mov cl, 1
+10:
+    movzx rcx, cl
+    test cl, cl
+    jnz 11
+    jmp 12
+11:
+    add rax, 2
+12:
+    ucomisd xmm0, xmm0
+    jnc 13
+    jmp 14
+13:
+    add rax, 8
+14:
+    ret
+check f32:
+    addss xmm0, xmm1
+    ucomiss xmm0, xmm0
+    setz al
+    jnp 16
+    mov al, 0
+16:
+    movzx rax, al
+    test al, al
+    jnz 17
+    xor eax, eax
+    jmp 18
+17:
+    mov rax, 1
+18:
+    ucomiss xmm0, xmm0
+    setnz cl
+    jnp 19
+    mov cl, 1
+19:
+    movzx rcx, cl
+    test cl, cl
+    jnz 20
+    jmp 21
+20:
+    add rax, 2
+21:
+    ucomiss xmm0, xmm0
+    jnc 22
+    jmp 23
+22:
+    add rax, 8
+23:
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+finite:
+    test dil, dil
+    jnz 1
+    jmp 1
+1:
+    mov rax, 1
+    ret
+main:
+    sub rsp, 0x18
+    movsd.q xmm0, [rip + 0xf92]
+    call run f64
+    mov.q [rsp], rax
+    movsd.q xmm0, [rip + 0xf80]
+    cvtsd2ss xmm0, xmm0
+    call run f32
+    mov.q [rsp + 0x8], rax
+    movsd.q xmm0, [rip + 0xf68]
+    pxor xmm1, xmm1
+    ucomisd xmm0, xmm1
+    setz dil
+    jnp 3
+    mov dil, 0
+3:
+    movzx rdi, dil
+    call finite
+    mov.q rcx, [rsp]
+    mov.q rdx, [rsp + 0x8]
+    add rcx, rdx
+    mov rcx, rcx
+    add rcx, rax
+    mov.q [rsp], rcx
+    mov rcx, 0xfb
+    mov.q rax, [rsp]
+    cqo
+    idiv rcx
+    mov rax, rdx
+    add rsp, 0x18
+    ret
+run f64:
+    sub rsp, 0x48
+    movsd.q [rsp + 0x18], xmm0
+    movsd.q xmm0, [rip + 0xf12]
+    movsd.q [rsp + 0x28], xmm0
+    movsd.q xmm1, [rsp + 0x28]
+    movsd.q xmm0, [rsp + 0x28]
+    call check f64
+    mov.q [rsp], rax
+    movsd.q xmm0, [rsp + 0x18]
+    movsd.q xmm1, [rsp + 0x18]
+    divsd xmm0, xmm1
+    movsd.q [rsp + 0x38], xmm0
+    movsd.q xmm1, [rsp + 0x28]
+    movsd.q xmm0, [rsp + 0x38]
+    call check f64
+    mov.q [rsp + 0x8], rax
+    movsd.q xmm0, [rsp + 0x28]
+    movsd.q xmm1, [rsp + 0x18]
+    divsd xmm0, xmm1
+    movsd.q [rsp + 0x18], xmm0
+    pxor xmm1, xmm1
+    movsd.q xmm0, [rsp + 0x18]
+    subsd xmm1, xmm0
+    movsd.q xmm0, [rsp + 0x18]
+    call check f64
+    mov.q [rsp + 0x10], rax
+    movsd.q xmm1, [rsp + 0x28]
+    movsd.q xmm0, [rsp + 0x18]
+    call check f64
+    mov.q rcx, [rsp + 0x8]
+    imul rcx, rcx, 3
+    mov.q rdx, [rsp]
+    add rdx, rcx
+    mov.q [rsp], rdx
+    mov.q rcx, [rsp + 0x10]
+    imul rcx, rcx, 5
+    mov.q rdx, [rsp]
+    add rdx, rcx
+    mov.q [rsp], rdx
+    imul rax, rax, 7
+    mov.q rcx, [rsp]
+    add rcx, rax
+    mov rax, rcx
+    add rsp, 0x48
+    ret
+run f32:
+    sub rsp, 0x48
+    movss.d [rsp + 0x18], xmm0
+    movss.d xmm0, [rip + 0xe23]
+    movss.d [rsp + 0x28], xmm0
+    movss.d xmm1, [rsp + 0x28]
+    movss.d xmm0, [rsp + 0x28]
+    call check f32
+    mov.q [rsp], rax
+    movss.d xmm0, [rsp + 0x18]
+    movss.d xmm1, [rsp + 0x18]
+    divss xmm0, xmm1
+    movss.d [rsp + 0x38], xmm0
+    movss.d xmm1, [rsp + 0x28]
+    movss.d xmm0, [rsp + 0x38]
+    call check f32
+    mov.q [rsp + 0x8], rax
+    movss.d xmm0, [rsp + 0x28]
+    movss.d xmm1, [rsp + 0x18]
+    divss xmm0, xmm1
+    movss.d [rsp + 0x18], xmm0
+    pxor xmm1, xmm1
+    movss.d xmm0, [rsp + 0x18]
+    subss xmm1, xmm0
+    movss.d xmm0, [rsp + 0x18]
+    call check f32
+    mov.q [rsp + 0x10], rax
+    movss.d xmm1, [rsp + 0x28]
+    movss.d xmm0, [rsp + 0x18]
+    call check f32
+    mov.q rcx, [rsp + 0x8]
+    imul rcx, rcx, 3
+    mov.q rdx, [rsp]
+    add rdx, rcx
+    mov.q [rsp], rdx
+    mov.q rcx, [rsp + 0x10]
+    imul rcx, rcx, 5
+    mov.q rdx, [rsp]
+    add rdx, rcx
+    mov.q [rsp], rdx
+    imul rax, rax, 7
+    mov.q rcx, [rsp]
+    add rcx, rax
+    mov rax, rcx
+    add rsp, 0x48
+    ret
+check f64:
+    addsd xmm0, xmm1
+    ucomisd xmm0, xmm0
+    setz al
+    jnp 7
+    mov al, 0
+7:
+    movzx rax, al
+    test al, al
+    jnz 8
+    xor eax, eax
+    jmp 9
+8:
+    mov rax, 1
+9:
+    ucomisd xmm0, xmm0
+    setnz cl
+    jnp 10
+    mov cl, 1
+10:
+    movzx rcx, cl
+    test cl, cl
+    jnz 11
+    jmp 12
+11:
+    add rax, 2
+12:
+    ucomisd xmm0, xmm0
+    jnc 13
+    jmp 14
+13:
+    add rax, 8
+14:
+    ret
+check f32:
+    addss xmm0, xmm1
+    ucomiss xmm0, xmm0
+    setz al
+    jnp 16
+    mov al, 0
+16:
+    movzx rax, al
+    test al, al
+    jnz 17
+    xor eax, eax
+    jmp 18
+17:
+    mov rax, 1
+18:
+    ucomiss xmm0, xmm0
+    setnz cl
+    jnp 19
+    mov cl, 1
+19:
+    movzx rcx, cl
+    test cl, cl
+    jnz 20
+    jmp 21
+20:
+    add rax, 2
+21:
+    ucomiss xmm0, xmm0
+    jnc 22
+    jmp 23
+22:
+    add rax, 8
+23:
+    ret
+=========== OPT LEVEL: moderate ===========
+finite:
+    test dil, dil
+    jnz 1
+    jmp 1
+1:
+    mov rax, 1
+    ret
+main:
+    push rbx
+    push rbp
+    sub rsp, 8
+    movsd.q xmm0, [rip + 0xf8e]
+    call run f64
+    mov rbx, rax
+    movsd.q xmm0, [rip + 0xf7d]
+    cvtsd2ss xmm0, xmm0
+    call run f32
+    mov rbp, rax
+    movsd.q xmm1, [rip + 0xf67]
+    pxor xmm0, xmm0
+    ucomisd xmm1, xmm0
+    setz dil
+    jnp 3
+    mov dil, 0
+3:
+    movzx rdi, dil
+    call finite
+    add rbx, rbp
+    add rbx, rax
+    mov rcx, 0xfb
+    mov rax, rbx
+    cqo
+    idiv rcx
+    mov rax, rdx
+    add rsp, 8
+    pop rbp
+    pop rbx
+    ret
+run f64:
+    push rbx
+    push rbp
+    push r12
+    sub rsp, 0x20
+    movsd.q [rsp], xmm0
+    movsd.q xmm0, [rip + 0xf19]
+    movsd.q [rsp + 0x10], xmm0
+    movsd.q xmm1, [rsp + 0x10]
+    movsd.q xmm0, [rsp + 0x10]
+    call check f64
+    mov r12, rax
+    movsd.q xmm0, [rsp]
+    movsd.q xmm1, [rsp]
+    divsd xmm0, xmm1
+    movsd.q xmm1, [rsp + 0x10]
+    call check f64
+    mov rbx, rax
+    movsd.q xmm1, [rsp + 0x10]
+    movsd.q xmm0, [rsp]
+    divsd xmm1, xmm0
+    movsd.q [rsp], xmm1
+    pxor xmm1, xmm1
+    movsd.q xmm0, [rsp]
+    subsd xmm1, xmm0
+    movsd.q xmm0, [rsp]
+    call check f64
+    mov rbp, rax
+    movsd.q xmm1, [rsp + 0x10]
+    movsd.q xmm0, [rsp]
+    call check f64
+    mov rcx, rax
+    imul rdx, rbx, 3
+    mov rax, r12
+    add rax, rdx
+    imul rdx, rbp, 5
+    add rax, rdx
+    imul rcx, rcx, 7
+    add rax, rcx
+    add rsp, 0x20
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+run f32:
+    push rbx
+    push rbp
+    push r12
+    sub rsp, 0x20
+    movss.d [rsp], xmm0
+    movss.d xmm0, [rip + 0xe54]
+    movss.d [rsp + 0x10], xmm0
+    movss.d xmm1, [rsp + 0x10]
+    movss.d xmm0, [rsp + 0x10]
+    call check f32
+    mov r12, rax
+    movss.d xmm0, [rsp]
+    movss.d xmm1, [rsp]
+    divss xmm0, xmm1
+    movss.d xmm1, [rsp + 0x10]
+    call check f32
+    mov rbx, rax
+    movss.d xmm1, [rsp + 0x10]
+    movss.d xmm0, [rsp]
+    divss xmm1, xmm0
+    movss.d [rsp], xmm1
+    pxor xmm1, xmm1
+    movss.d xmm0, [rsp]
+    subss xmm1, xmm0
+    movss.d xmm0, [rsp]
+    call check f32
+    mov rbp, rax
+    movss.d xmm1, [rsp + 0x10]
+    movss.d xmm0, [rsp]
+    call check f32
+    mov rcx, rax
+    imul rdx, rbx, 3
+    mov rax, r12
+    add rax, rdx
+    imul rdx, rbp, 5
+    add rax, rdx
+    imul rcx, rcx, 7
+    add rax, rcx
+    add rsp, 0x20
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+check f64:
+    addsd xmm0, xmm1
+    ucomisd xmm0, xmm0
+    setz al
+    jnp 7
+    mov al, 0
+7:
+    movzx rax, al
+    test al, al
+    jnz 8
+    xor eax, eax
+    jmp 9
+8:
+    mov rax, 1
+9:
+    ucomisd xmm0, xmm0
+    setnz cl
+    jnp 10
+    mov cl, 1
+10:
+    movzx rcx, cl
+    test cl, cl
+    jnz 11
+    jmp 12
+11:
+    add rax, 2
+12:
+    ucomisd xmm0, xmm0
+    jnc 13
+    jmp 14
+13:
+    add rax, 8
+14:
+    ret
+check f32:
+    addss xmm0, xmm1
+    ucomiss xmm0, xmm0
+    setz al
+    jnp 16
+    mov al, 0
+16:
+    movzx rax, al
+    test al, al
+    jnz 17
+    xor eax, eax
+    jmp 18
+17:
+    mov rax, 1
+18:
+    ucomiss xmm0, xmm0
+    setnz cl
+    jnp 19
+    mov cl, 1
+19:
+    movzx rcx, cl
+    test cl, cl
+    jnz 20
+    jmp 21
+20:
+    add rax, 2
+21:
+    ucomiss xmm0, xmm0
+    jnc 22
+    jmp 23
+22:
+    add rax, 8
+23:
+    ret
+=========== OPT LEVEL: all ===========
+finite:
+    test dil, dil
+    jnz 1
+    jmp 1
+1:
+    mov rax, 1
+    ret
+main:
+    push rbx
+    push rbp
+    sub rsp, 8
+    movsd.q xmm0, [rip + 0xf8e]
+    call run f64
+    mov rbx, rax
+    movsd.q xmm0, [rip + 0xf7d]
+    cvtsd2ss xmm0, xmm0
+    call run f32
+    mov rbp, rax
+    movsd.q xmm1, [rip + 0xf67]
+    pxor xmm0, xmm0
+    ucomisd xmm1, xmm0
+    setz dil
+    jnp 3
+    mov dil, 0
+3:
+    movzx rdi, dil
+    call finite
+    add rbx, rbp
+    add rbx, rax
+    mov rcx, 0xfb
+    mov rax, rbx
+    cqo
+    idiv rcx
+    mov rax, rdx
+    add rsp, 8
+    pop rbp
+    pop rbx
+    ret
+run f64:
+    push rbx
+    push rbp
+    push r12
+    sub rsp, 0x20
+    movsd.q [rsp], xmm0
+    movsd.q xmm0, [rip + 0xf19]
+    movsd.q [rsp + 0x10], xmm0
+    movsd.q xmm1, [rsp + 0x10]
+    movsd.q xmm0, [rsp + 0x10]
+    call check f64
+    mov r12, rax
+    movsd.q xmm0, [rsp]
+    movsd.q xmm1, [rsp]
+    divsd xmm0, xmm1
+    movsd.q xmm1, [rsp + 0x10]
+    call check f64
+    mov rbx, rax
+    movsd.q xmm1, [rsp + 0x10]
+    movsd.q xmm0, [rsp]
+    divsd xmm1, xmm0
+    movsd.q [rsp], xmm1
+    pxor xmm1, xmm1
+    movsd.q xmm0, [rsp]
+    subsd xmm1, xmm0
+    movsd.q xmm0, [rsp]
+    call check f64
+    mov rbp, rax
+    movsd.q xmm1, [rsp + 0x10]
+    movsd.q xmm0, [rsp]
+    call check f64
+    mov rcx, rax
+    imul rdx, rbx, 3
+    mov rax, r12
+    add rax, rdx
+    imul rdx, rbp, 5
+    add rax, rdx
+    imul rcx, rcx, 7
+    add rax, rcx
+    add rsp, 0x20
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+run f32:
+    push rbx
+    push rbp
+    push r12
+    sub rsp, 0x20
+    movss.d [rsp], xmm0
+    movss.d xmm0, [rip + 0xe54]
+    movss.d [rsp + 0x10], xmm0
+    movss.d xmm1, [rsp + 0x10]
+    movss.d xmm0, [rsp + 0x10]
+    call check f32
+    mov r12, rax
+    movss.d xmm0, [rsp]
+    movss.d xmm1, [rsp]
+    divss xmm0, xmm1
+    movss.d xmm1, [rsp + 0x10]
+    call check f32
+    mov rbx, rax
+    movss.d xmm1, [rsp + 0x10]
+    movss.d xmm0, [rsp]
+    divss xmm1, xmm0
+    movss.d [rsp], xmm1
+    pxor xmm1, xmm1
+    movss.d xmm0, [rsp]
+    subss xmm1, xmm0
+    movss.d xmm0, [rsp]
+    call check f32
+    mov rbp, rax
+    movss.d xmm1, [rsp + 0x10]
+    movss.d xmm0, [rsp]
+    call check f32
+    mov rcx, rax
+    imul rdx, rbx, 3
+    mov rax, r12
+    add rax, rdx
+    imul rdx, rbp, 5
+    add rax, rdx
+    imul rcx, rcx, 7
+    add rax, rcx
+    add rsp, 0x20
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+check f64:
+    addsd xmm0, xmm1
+    ucomisd xmm0, xmm0
+    setz al
+    jnp 7
+    mov al, 0
+7:
+    movzx rax, al
+    test al, al
+    jnz 8
+    xor eax, eax
+    jmp 9
+8:
+    mov rax, 1
+9:
+    ucomisd xmm0, xmm0
+    setnz cl
+    jnp 10
+    mov cl, 1
+10:
+    movzx rcx, cl
+    test cl, cl
+    jnz 11
+    jmp 12
+11:
+    add rax, 2
+12:
+    ucomisd xmm0, xmm0
+    jnc 13
+    jmp 14
+13:
+    add rax, 8
+14:
+    ret
+check f32:
+    addss xmm0, xmm1
+    ucomiss xmm0, xmm0
+    setz al
+    jnp 16
+    mov al, 0
+16:
+    movzx rax, al
+    test al, al
+    jnz 17
+    xor eax, eax
+    jmp 18
+17:
+    mov rax, 1
+18:
+    ucomiss xmm0, xmm0
+    setnz cl
+    jnp 19
+    mov cl, 1
+19:
+    movzx rcx, cl
+    test cl, cl
+    jnz 20
+    jmp 21
+20:
+    add rax, 2
+21:
+    ucomiss xmm0, xmm0
+    jnc 22
+    jmp 23
+22:
+    add rax, 8
+23:
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    push r15
+    sub rsp, 0x28
+    movsd.q xmm0, [rip + 0xfa4]
+    movsd.q [rsp + 0x18], xmm0
+    movsd.q xmm0, [rip + 0xf8c]
+    movsd.q [rsp + 0x8], xmm0
+    movsd.q xmm0, [rsp + 0x18]
+    movsd.q xmm1, [rsp + 0x18]
+    call check f64
+    mov.q [rsp], rax
+    movsd.q xmm0, [rsp + 0x8]
+    movsd.q xmm1, [rsp + 0x8]
+    divsd xmm0, xmm1
+    movsd.q xmm1, [rsp + 0x18]
+    call check f64
+    mov r15, rax
+    movsd.q xmm1, [rsp + 0x18]
+    movsd.q xmm0, [rsp + 0x8]
+    divsd xmm1, xmm0
+    movsd.q [rsp + 0x8], xmm1
+    movsd.q xmm0, [rsp + 0x8]
+    pxor xmm1, xmm1
+    subsd xmm1, xmm0
+    movsd.q xmm0, [rsp + 0x8]
+    call check f64
+    mov r14, rax
+    movsd.q xmm1, [rsp + 0x18]
+    movsd.q xmm0, [rsp + 0x8]
+    call check f64
+    mov r13, rax
+    movss.d xmm0, [rip + 0xf03]
+    movss.d [rsp + 0x18], xmm0
+    movsd.q xmm0, [rip + 0xee3]
+    movsd.q [rsp + 0x8], xmm0
+    movss.d xmm0, [rsp + 0x18]
+    movss.d xmm1, [rsp + 0x18]
+    call check f32
+    mov r12, rax
+    movsd.q xmm0, [rsp + 0x8]
+    cvtsd2ss xmm0, xmm0
+    movss.d [rsp + 0x8], xmm0
+    movss.d xmm0, [rsp + 0x8]
+    movss.d xmm1, [rsp + 0x8]
+    divss xmm0, xmm1
+    movss.d xmm1, [rsp + 0x18]
+    call check f32
+    mov rbp, rax
+    movss.d xmm1, [rsp + 0x18]
+    movss.d xmm0, [rsp + 0x8]
+    divss xmm1, xmm0
+    movss.d [rsp + 0x8], xmm1
+    pxor xmm1, xmm1
+    movss.d xmm0, [rsp + 0x8]
+    subss xmm1, xmm0
+    movss.d xmm0, [rsp + 0x8]
+    call check f32
+    mov rbx, rax
+    movss.d xmm1, [rsp + 0x18]
+    movss.d xmm0, [rsp + 0x8]
+    call check f32
+    mov rsi, rax
+    movsd.q xmm1, [rip + 0xe38]
+    pxor xmm0, xmm0
+    ucomisd xmm1, xmm0
+    setz al
+    jnp 1
+    mov al, 0
+1:
+    movzx rax, al
+    test al, al
+    jnz 2
+    jmp 2
+2:
+    imul rcx, r15, 3
+    mov.q rax, [rsp]
+    add rax, rcx
+    imul rcx, r14, 5
+    add rax, rcx
+    mov rdx, rax
+    imul rax, r13, 7
+    add rdx, rax
+    imul rax, rbp, 3
+    mov rcx, r12
+    add rcx, rax
+    imul rax, rbx, 5
+    add rcx, rax
+    imul rax, rsi, 7
+    add rcx, rax
+    mov rax, rdx
+    add rax, rcx
+    add rax, 1
+    mov rcx, 0xfb
+    cqo
+    idiv rcx
+    mov rax, rdx
+    add rsp, 0x28
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+check f64:
+    addsd xmm0, xmm1
+    ucomisd xmm0, xmm0
+    setz al
+    jnp 4
+    mov al, 0
+4:
+    movzx rax, al
+    test al, al
+    jnz 5
+    xor eax, eax
+    jmp 6
+5:
+    mov rax, 1
+6:
+    ucomisd xmm0, xmm0
+    setnz cl
+    jnp 7
+    mov cl, 1
+7:
+    movzx rcx, cl
+    test cl, cl
+    jnz 8
+    jmp 9
+8:
+    add rax, 2
+9:
+    ucomisd xmm0, xmm0
+    jnc 10
+    jmp 11
+10:
+    add rax, 8
+11:
+    ret
+check f32:
+    addss xmm0, xmm1
+    ucomiss xmm0, xmm0
+    setz al
+    jnp 13
+    mov al, 0
+13:
+    movzx rax, al
+    test al, al
+    jnz 14
+    xor eax, eax
+    jmp 15
+14:
+    mov rax, 1
+15:
+    ucomiss xmm0, xmm0
+    setnz cl
+    jnp 16
+    mov cl, 1
+16:
+    movzx rcx, cl
+    test cl, cl
+    jnz 17
+    jmp 18
+17:
+    add rax, 2
+18:
+    ucomiss xmm0, xmm0
+    jnc 19
+    jmp 20
+19:
+    add rax, 8
+20:
+    ret

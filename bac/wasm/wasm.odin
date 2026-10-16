@@ -5,7 +5,6 @@ import "../../vendored/gam/util/arna"
 import "base:runtime"
 import "core:encoding/varint"
 import "core:fmt"
-import "core:mem"
 import "core:slice"
 import "core:sort"
 
@@ -441,7 +440,8 @@ meta_of :: #force_inline proc(
 	     .Splat,
 	     .Simd_Extract_Lsbs,
 	     .Ctz,
-	     .WASM_Shl ..= .WASM_U_Shr,
+	     .WASM_Shl ..=
+	     .WASM_U_Shr,
 	     .Select,
 	     .WASM_Load,
 	     .WASM_Store:
@@ -910,7 +910,7 @@ LOCAL_TO_WASM := [Local_Type]Type {
 	.v128 = .vec,
 }
 
-emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
+emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 	context.allocator, _ = arna.scrath()
 
 	ctx: Ctx
@@ -1182,14 +1182,7 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 
 	emit_op(ctx.code, .End)
 
-	relocs := mem.slice_data_cast(
-		[]bac.Reloc,
-		ctx.relocs.ptr[reloc_start:ctx.relocs.pos],
-	)
-	code := ctx.code.ptr[ctx.code_start:ctx.code.pos]
-	constants := ctx.constants.ptr[ctx.constants_start:ctx.constants.pos]
-
-	return {code = code, constants = constants, relocs = relocs}
+	return {}
 }
 
 @(disabled = SPEC_NOT_PRESENT)

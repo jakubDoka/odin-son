@@ -7395,3 +7395,98 @@ main :: proc() -> int {
 	return x
 }
 ```
+
+#### sccp integer range folding
+```odin
+package main
+
+check :: proc(x: int, flag: bool) -> int {
+	a := x & 7
+	b := 2
+	if flag do b = 4
+	r := 0
+	if a + b < 12 do r += 1
+	if a - b >= -4 do r += 2
+	if a * b <= 28 do r += 4
+	if a / b <= 3 do r += 8
+	if a % b < 4 do r += 16
+	if (a & b) <= 7 do r += 32
+	if (a | b) <= 7 do r += 64
+	if (a ~ b) <= 7 do r += 128
+	if (a &~ b) <= 7 do r += 256
+	if (a << uint(b)) <= 112 do r += 512
+	if (a >> uint(b)) <= 1 do r += 1024
+	if a < b do return r + a + 3
+	return r + b + 5
+}
+
+main :: proc() -> int {
+	@(static) seed := -9
+	return (check(seed, true) + check(0, false) +
+		check(127, true) + check(-128, false)) % 251
+}
+```
+
+#### sccp unsigned range folding
+```odin
+package main
+
+check :: proc(x: u8, flag: bool) -> int {
+	a := x | 128
+	b: u8 = 2
+	if flag do b = 4
+	r := 0
+	if a >= 128 do r += 1
+	if a / b < 128 do r += 2
+	if a % b < 4 do r += 4
+	if (a >> 1) < 128 do r += 8
+	if (a & 127) < 128 do r += 16
+	if (a ~ 255) < 128 do r += 32
+	if (a &~ 128) < 128 do r += 64
+	if a > b do r += 128
+	c := x & 7
+	if flag do c = 255
+	if c < 128 do r += 256
+	return r + int(c / 2) + int(c % 3) + int(c >> 1)
+}
+
+main :: proc() -> int {
+	@(static) seed: u8 = 255
+	return (check(seed, true) + check(0, false) +
+		check(127, false) + check(128, true)) % 251
+}
+```
+
+#### sccp float nan folding
+```odin
+package main
+
+check :: proc(a: $T, b: T) -> int {
+	sum := a + b
+	r := 0
+	if sum == sum do r += 1
+	if sum != sum do r += 2
+	if sum < sum do r += 4
+	if sum >= sum do r += 8
+	return r
+}
+
+finite :: proc(flag: bool) -> int {
+	a: f64 = 1
+	if flag do a = 3
+	if a == a do return 1
+	return 0
+}
+
+run :: proc(zero: $T) -> int {
+	inf := T(1) / zero
+	nan := zero / zero
+	return check(T(1), T(1)) + 3 * check(nan, T(1)) + 5 *
+		check(inf, -inf) + 7 * check(inf, T(1))
+}
+
+main :: proc() -> int {
+	@(static) zero: f64 = 0
+	return (run(zero) + run(f32(zero)) + finite(zero == 0)) % 251
+}
+```

@@ -898,14 +898,20 @@ emit_proc :: proc(
 opt :: proc(ctx: ^bac.Proc) {
 	peep_ctx: bac.Peep_Ctx
 	peep_ctx.graph = ctx
+	context.allocator, _ = arna.scrath()
+	lattice_allocator := context.allocator
+	defer {
+		ctx.computed_passes -= {.Sccp}
+		ctx.lattices = nil
+	}
 
 	for dirty, limit := true, 100; dirty; limit -= 1 {
-		context.allocator, _ = arna.scrath()
+		context.allocator, _ = arna.scrath(lattice_allocator)
 
 		assert(limit > 0)
 		dirty = false
 		DEBUG_OPT :: false
-		dirty_lat := bac.compute_latices(ctx)
+		dirty_lat := bac.compute_latices(ctx, lattice_allocator)
 		when DEBUG_OPT do fmt.println("lat:", dirty_lat)
 		dirty_peep := bac.apply_peeps(peep_ctx)
 		when DEBUG_OPT do fmt.println("peeps:", dirty_peep)
@@ -971,7 +977,7 @@ emit_proc_code :: proc(
 	emit_ctx.ra_out = regs
 	emit_ctx.param_specs = prc.param_types
 
-	prc.out = ctx.node_spec.emit_function(emit_ctx^)
+	prc.out = bac.emit_function(emit_ctx^)
 }
 
 Scope_Base :: struct {

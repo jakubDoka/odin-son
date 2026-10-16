@@ -1356,7 +1356,7 @@ Rsp_Adjust :: struct {
 	delta: i32,
 }
 
-emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
+emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 	context.allocator, _ = arna.scrath()
 
 	reloc_start := ectx.relocs.pos
@@ -1530,14 +1530,9 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 		ctx.cfi.ptr[cfi_start:ctx.cfi.pos],
 	)
 
-	return {
-		code = code,
-		relocs = relocs,
-		constants = constants,
-		slocs = slocs,
-		cfi = cfi,
-		dbg_locs = bac.emit_dbg_locations(ctx),
-	}
+	bac.emit_dbg_locations(ctx)
+
+	return {}
 }
 
 emit_cfi :: proc(ctx: ^Ctx, kind: bac.Cfi_Kind, reg: u8 = 0, arg: u32 = 0) {

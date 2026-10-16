@@ -512,7 +512,7 @@ init_type_fmt :: proc() {
 					".cant_be_nan" if value.is_not_nan else "",
 				)
 			case .Ctlr:
-				fmt.wprint(fi.writer, ".dead" if value.is_not_nan else "")
+				fmt.wprint(fi.writer, ".dead" if value.dead else "")
 			case .Mem:
 			case .Bot:
 			}

@@ -2,6 +2,7 @@ package bac
 
 import "../vendored/gam/util/arna"
 import "base:intrinsics"
+import "base:runtime"
 import "core:encoding/varint"
 import "core:fmt"
 import "core:mem"
@@ -39,7 +40,7 @@ Peep_Fn :: proc(_: Peep_Ctx, _: Expanded_Node) -> Maybe(Node_ID)
 Sccp_Compute_Fn :: proc(_: ^Proc, _: Expanded_Node) -> Lattice
 
 Codegen_Spec :: struct {
-	emit_function:      proc(_: Codegen_Emit_Ctx) -> Codegen_Output,
+	emit_function:      proc(_: Codegen_Emit_Ctx) -> Codegen_Emit_Output,
 	sccp_compute:       Sccp_Compute_Fn,
 	peep:               Peep_Fn,
 	post_schedule_peep: PS_Peep_Fn,
@@ -113,6 +114,15 @@ Lib_Call :: bit_field u32 {
 	absolute: bool | 1,
 }
 
+Codegen_Emit_Buf_Checkpoint :: struct {
+	code:      uint,
+	constants: uint,
+	relocs:    uint,
+	slocs:     uint,
+	cfi:       uint,
+	dbg_locs:  uint,
+}
+
 Codegen_Emit_Buf :: struct {
 	code:      ^arna.Allocator,
 	constants: ^arna.Allocator,
@@ -123,13 +133,30 @@ Codegen_Emit_Buf :: struct {
 }
 
 Codegen_Output :: struct {
+	using emit: Codegen_Emit_Output,
+	using bufs: Codegen_Output_Bufs,
+}
+
+Codegen_Emit_Output :: struct {}
+
+Codegen_Output_Bufs :: struct {
+	code:      []u8,
+	constants: []u8,
 	relocs:    []Reloc,
 	slocs:     []Sloc,
 	cfi:       []Cfi_Op,
 	dbg_locs:  []Dbg_Location,
-	code:      []u8,
-	constants: []u8,
 }
+
+#assert(
+	intrinsics.type_struct_field_count(Codegen_Emit_Buf_Checkpoint) ==
+	intrinsics.type_struct_field_count(Codegen_Emit_Buf),
+)
+
+#assert(
+	intrinsics.type_struct_field_count(Codegen_Output_Bufs) ==
+	intrinsics.type_struct_field_count(Codegen_Emit_Buf),
+)
 
 Dbg_Location_Kind :: enum u8 {
 	Register,
@@ -197,6 +224,52 @@ Reloc_Slot :: struct #raw_union #align (1) {
 		addend_lo_2:  i32 | 2,
 		padd6:        u32 | 1,
 	},
+}
+
+emit_function :: proc(ctx: Codegen_Emit_Ctx) -> (res: Codegen_Output) {
+	check := buf_checkpoint(ctx.buf)
+	res.emit = ctx.graph.emit_function(ctx)
+	res.bufs = buf_output(ctx.buf, check)
+	return
+}
+
+buf_checkpoint :: proc(
+	buf: Codegen_Emit_Buf,
+) -> (
+	out: Codegen_Emit_Buf_Checkpoint,
+) {
+	buf := buf
+	arenas := mem.slice_data_cast([]^arna.Allocator, mem.ptr_to_bytes(&buf))
+	checks := mem.slice_data_cast([]uint, mem.ptr_to_bytes(&out))
+
+	for i in 0 ..< len(arenas) {
+		checks[i] = arenas[i].pos
+	}
+	return
+}
+
+buf_output :: proc(
+	buf: Codegen_Emit_Buf,
+	check: Codegen_Emit_Buf_Checkpoint,
+) -> (
+	out: Codegen_Output,
+) {
+	buf, check := buf, check
+	arenas := mem.slice_data_cast([]^arna.Allocator, mem.ptr_to_bytes(&buf))
+	checks := mem.slice_data_cast([]uint, mem.ptr_to_bytes(&check))
+	slices := mem.slice_data_cast([]runtime.Raw_Slice, mem.ptr_to_bytes(&out))
+
+	decl := type_info_of(Codegen_Output_Bufs).variant.(runtime.Type_Info_Named)
+	struc := decl.base.variant.(runtime.Type_Info_Struct)
+
+	for f, i in struc.types[:len(slices)] {
+		slices[i].data = arenas[i].ptr[checks[i]:]
+		slices[i].len =
+			int(arenas[i].pos - checks[i]) /
+			f.variant.(runtime.Type_Info_Slice).elem.size
+	}
+
+	return
 }
 
 next_sloc :: proc(ctx: ^Codegen_Emit_Ctx) {
@@ -337,7 +410,7 @@ reg_of :: proc(ctx: Codegen_Emit_Ctx, id: Node_ID) -> Reg {
 	return ctx.allocs[node.gvn]
 }
 
-emit_dbg_locations :: proc(ctx: Codegen_Emit_Ctx) -> []Dbg_Location {
+emit_dbg_locations :: proc(ctx: Codegen_Emit_Ctx) {
 	context.allocator, _ = arna.scrath()
 
 	rsp := ctx.abi.stack_pointer
@@ -503,8 +576,6 @@ emit_dbg_locations :: proc(ctx: Codegen_Emit_Ctx) -> []Dbg_Location {
 		loc.start -= u32(ctx.code_start)
 		loc.end -= u32(ctx.code_start)
 	}
-
-	return dbg_locs
 }
 
 cc_node_meta :: proc(

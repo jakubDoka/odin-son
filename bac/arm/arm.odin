@@ -542,7 +542,7 @@ Local_Reloc :: struct {
 	is_bcond: bool,
 }
 
-emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
+emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 	spill_slot_base: [RK_COUNT]i32
 	stack_param_offset: [RK_COUNT][dynamic]i32
 
@@ -681,14 +681,7 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Output {
 		}
 	}
 
-	code := ctx.code.ptr[ctx.code_start:ctx.code.pos]
-	constants := ctx.constants.ptr[ctx.constants_start:ctx.constants.pos]
-	relocs := mem.slice_data_cast(
-		[]bac.Reloc,
-		ctx.relocs.ptr[relocs_start:ctx.relocs.pos],
-	)
-
-	return {code = code, relocs = relocs, constants = constants}
+	return {}
 }
 
 @(disabled = SPEC_NOT_PRESENT)
@@ -1150,7 +1143,15 @@ emit_instr :: proc(
 				reg_of(ctx, node.inps[1]),
 			),
 		)
-	case .Add ..= .Xor, .Div, .U_Div, .And_Not, .Shl ..= .U_Shr, .Lslv ..= .Lsrv:
+	case .Add ..=
+	     .Xor,
+	     .Div,
+	     .U_Div,
+	     .And_Not,
+	     .Shl ..=
+	     .U_Shr,
+	     .Lslv ..=
+	     .Lsrv:
 		rd := reg_of(ctx, instr)
 		rn := reg_of(ctx, node.inps[0])
 		rm := reg_of(ctx, node.inps[1])

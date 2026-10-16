@@ -8,7 +8,7 @@ Sccp_Output :: struct {
 	lattices: []Lattice,
 }
 
-Sccp_Lattice_Kind :: enum int {
+Lattice_Type :: enum u64 {
 	Top,
 	Int,
 	Float,
@@ -18,12 +18,17 @@ Sccp_Lattice_Kind :: enum int {
 }
 
 Lattice :: struct {
-	type:       Sccp_Lattice_Kind,
-	widens:     i64,
 	min, max:   i64,
-	is_not_nan: bool,
-	dead:       bool,
-	checksum:   u32,
+	using meta: bit_field u64 {
+		type:        Lattice_Type | 4,
+		is_not_nan:  bool         | 1,
+		is_not_ninf: bool         | 1,
+		is_not_pinf: bool         | 1,
+		is_not_zero: bool         | 1,
+		is_nan:      bool         | 1,
+		dead:        bool         | 1,
+		widens:      u64          | 3,
+	},
 }
 
 get_lattice :: proc(ctx: ^Proc, node: Node_ID) -> Lattice {
@@ -41,8 +46,6 @@ lattice_meet :: proc(a, b: Lattice) -> (res: Lattice) {
 		return
 	}
 
-	res.widens = max(a.widens, b.widens)
-
 	res.type = a.type
 
 	switch a.type {
@@ -52,6 +55,10 @@ lattice_meet :: proc(a, b: Lattice) -> (res: Lattice) {
 		res.max = max(a.max, b.max)
 	case .Float:
 		res.is_not_nan = a.is_not_nan & b.is_not_nan
+		res.is_not_ninf = a.is_not_ninf & b.is_not_ninf
+		res.is_not_pinf = a.is_not_pinf & b.is_not_pinf
+		res.is_not_zero = a.is_not_zero & b.is_not_zero
+		res.is_nan = a.is_nan & b.is_nan
 	case .Ctlr:
 		res.dead = a.dead & b.dead
 	case .Bot, .Top:
@@ -65,13 +72,32 @@ lattice_meet :: proc(a, b: Lattice) -> (res: Lattice) {
 
 @(rodata)
 DT_TO_LATTICE := [Node_Datatype]Lattice {
-	.I8 = {type = .Int, min = i64(min(i8)), max = i64(max(i8))},
-	.I16 = {type = .Int, min = i64(min(i16)), max = i64(max(i16))},
-	.I32 = {type = .Int, min = i64(min(i32)), max = i64(max(i32))},
-	.I64 = {type = .Int, min = i64(min(i64)), max = i64(max(i64))},
-	.F32 ..= .F64 = {type = .Float},
-	.Void ..= .Mem = {type = .Bot},
-	.V128 ..= .V512 = {type = .Bot},
+	.I8 = {
+		meta = auto_cast Lattice_Type.Int,
+		min = i64(min(i8)),
+		max = i64(max(i8)),
+	},
+	.I16 = {
+		meta = auto_cast Lattice_Type.Int,
+		min = i64(min(i16)),
+		max = i64(max(i16)),
+	},
+	.I32 = {
+		meta = auto_cast Lattice_Type.Int,
+		min = i64(min(i32)),
+		max = i64(max(i32)),
+	},
+	.I64 = {
+		meta = auto_cast Lattice_Type.Int,
+		min = i64(min(i64)),
+		max = i64(max(i64)),
+	},
+	.F32 ..=
+	.F64 = {meta = auto_cast Lattice_Type.Float},
+	.Void ..=
+	.Mem = {meta = auto_cast Lattice_Type.Bot},
+	.V128 ..=
+	.V512 = {meta = auto_cast Lattice_Type.Bot},
 }
 
 lattice_dual :: proc(v: Lattice) -> (res: Lattice) {
@@ -85,6 +111,10 @@ lattice_dual :: proc(v: Lattice) -> (res: Lattice) {
 		res.min, res.max = res.max, res.min
 	case .Float:
 		res.is_not_nan ~= true
+		res.is_not_ninf ~= true
+		res.is_not_pinf ~= true
+		res.is_not_zero ~= true
+		res.is_nan ~= true
 	case .Ctlr:
 		res.dead ~= true
 	case .Bot:
@@ -95,7 +125,12 @@ lattice_dual :: proc(v: Lattice) -> (res: Lattice) {
 }
 
 lattice_join :: proc(a: Lattice, b: Lattice) -> (res: Lattice) {
-	return lattice_dual(lattice_meet(lattice_dual(a), lattice_dual(b)))
+	res = lattice_dual(lattice_meet(lattice_dual(a), lattice_dual(b)))
+	if (res.type == .Int && res.min > res.max) ||
+	   (res.type == .Float && res.is_nan && res.is_not_nan) {
+		return {}
+	}
+	return
 }
 
 compute_latices :: proc(
@@ -119,15 +154,18 @@ compute_latices :: proc(
 
 	worklist_init(ctx.worklist, ctx.gvn)
 	collect_nodes(ctx, ctx.worklist)
+	slice.reverse(ctx.worklist.data[:ctx.worklist.len])
 
-	nodes := slice.clone(worklist.queue.data[:worklist.queue.len])
+	when false {
+		nodes := slice.clone(worklist.queue.data[:worklist.queue.len])
+	}
 
 	ctx.lattices = make([]Lattice, ctx.gvn, scratch)
+	ctx.lattices[0] = {
+		meta = {type = .Ctlr, dead = true},
+	}
 
-	lim := 10000
 	for n in worklist_next(ctx, ctx.worklist) {
-		lim -= 1
-		assert(lim != 0)
 		node := expand_node(ctx, n)
 		lat := ctx.sccp_compute(ctx, node)
 		if lat.type != .Top && ctx.lattices[node.gvn] != lat {
@@ -140,14 +178,32 @@ compute_latices :: proc(
 		}
 	}
 
-	ctx.worklist = nil
-	ctx.triggers = nil
+	if !ODIN_DISABLE_ASSERT {
+		collect_nodes(ctx, ctx.worklist)
+
+		//slice.reverse(ctx.worklist.data[:ctx.worklist.len])
+
+		for n in worklist_next(ctx, ctx.worklist) {
+			node := expand_node(ctx, n)
+			lat := ctx.sccp_compute(ctx, node)
+			fmt.assertf(
+				ctx.lattices[node.gvn] == lat,
+				"%v == %v %v",
+				ctx.lattices[node.gvn],
+				lat,
+				node,
+			)
+		}
+	}
 
 	when false {
 		for i in 0 ..< len(nodes) {
-			fmt.println(get_node(ctx, nodes[i]), ctx.lattices[i])
+			fmt.eprintln(get_node(ctx, nodes[i]), ctx.lattices[i])
 		}
 	}
+
+	ctx.worklist = nil
+	ctx.triggers = nil
 
 	return
 }

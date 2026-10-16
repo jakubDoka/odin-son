@@ -761,7 +761,7 @@ inline_and_optimize :: proc(
 
 add_var :: proc(ctx: ^Gen_Ctx, var: typecheck.Variable) {
 	if node, ok := var.idx.(typecheck.Node_ID); ok {
-		builder.decl_local(ctx, node, var.name, transmute(rawptr)var.type)
+		builder.decl_local(ctx, node, var.name, u64(var.type))
 	}
 	append(&ctx.scope, var)
 	//append(&ctx.decls, typecheck.Local_Decl{var.name, var.type})
@@ -778,7 +778,7 @@ push_scope_value :: proc(
 		ctx.node_scope,
 		value,
 		typecheck.src_of(ctx.file^, name),
-		transmute(rawptr)ty,
+		u64(ty),
 	)
 }
 

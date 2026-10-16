@@ -112,9 +112,9 @@ init_single_file_program :: proc(ctx: ^jit.Gen_Ctx, file: ^ast.File) {
 	typecheck.module_add_decls(ctx, 0, decls[:])
 }
 
-set_output :: proc(bytes: []u8) {
-	state.output_size = min(len(bytes), OUTPUT_CAPACITY)
-	copy(output_buffer[:state.output_size], bytes[:state.output_size])
+set_output :: proc(out: ^[]u8, bytes: []u8) {
+	out^ = out[:min(len(bytes), OUTPUT_CAPACITY)]
+	copy(out^, bytes)
 }
 
 Target :: enum int {
@@ -124,7 +124,11 @@ Target :: enum int {
 }
 
 @(export)
-compiler_compile :: proc "c" (target: Target) -> Status {
+compiler_compile_bufs :: proc "c" (
+	target: Target,
+	source: []u8,
+	out: ^[]u8,
+) -> Status {
 	context = runtime.default_context()
 	context.temp_allocator = context.allocator
 	if !state.initialized {
@@ -136,7 +140,7 @@ compiler_compile :: proc "c" (target: Target) -> Status {
 	state.output_size = 0
 
 	file := ast.File {
-		src      = string(source_buffer[:state.source_size]),
+		src      = string(source),
 		fullpath = "input.odin",
 	}
 	parse := parser.Parser{}
@@ -157,7 +161,7 @@ compiler_compile :: proc "c" (target: Target) -> Status {
 	init_single_file_program(&state.ctx, &file)
 	typecheck.typecheck_program(&state.ctx)
 	if state.ctx.error_cnt > 0 {
-		set_output(diagnostics.buf[:])
+		set_output(out, diagnostics.buf[:])
 		return .Type_Error
 	}
 
@@ -172,13 +176,55 @@ compiler_compile :: proc "c" (target: Target) -> Status {
 		jit.inline_and_optimize(&state.ctx, &emit_ctx)
 	}
 
-	output_arena := arna.init_from_buffer(output_buffer[:])
-	output := tar.emit(&state.ctx, arna.allocator(&output_arena))
-	state.output_size = len(output)
+	output_arena := arna.init_from_buffer(out^[:])
+	out^ = tar.emit(&state.ctx, arna.allocator(&output_arena))
 	return .Success
+}
+
+@(export)
+compiler_compile :: proc "c" (target: Target) -> Status {
+	out := output_buffer[:]
+	res := compiler_compile_bufs(
+		target,
+		source_buffer[:state.source_size],
+		&out,
+	)
+	state.output_size = len(out)
+	return res
 }
 
 @(export)
 compiler_output_size :: proc "c" () -> u32 {
 	return u32(state.output_size)
+}
+
+@(link_name = "__ashrti3")
+@(export)
+__ashrti3 :: proc "c" (value: i128, shift: i32) -> i128 {
+	if shift == 0 {
+		return value
+	}
+
+	// LLVM expects 0 <= shift < 128.
+	// Split into two 64-bit halves.
+	bits := u128(value)
+
+	lo := u64(bits)
+	hi := i64(u64(bits >> 64))
+
+	s := u32(shift)
+
+	result_lo: u64
+	result_hi: i64
+
+	if s >= 64 {
+		result_hi = hi >> 63
+		result_lo = u64(hi >> (s - 64))
+	} else {
+		result_hi = hi >> s
+		result_lo = (lo >> s) | (u64(hi) << (64 - s))
+	}
+
+	result := (u128(u64(result_hi)) << 64) | u128(result_lo)
+	return i128(result)
 }

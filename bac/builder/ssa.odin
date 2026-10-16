@@ -18,7 +18,7 @@ builder_extra :: proc {
 	builder_extra_node_id,
 }
 
-decl_local :: proc(graph: ^Proc, loc: Node_ID, name: string, type: rawptr) {
+decl_local :: proc(graph: ^Proc, loc: Node_ID, name: string, type: u64) {
 	loc := loc
 	if node := expand_node(graph, loc); node.itype == .Local_Addr {
 		loc = node.inps[0]
@@ -341,7 +341,7 @@ push_scope_value :: proc(
 	scope: Node_ID,
 	value: Node_ID,
 	name: string,
-	type: rawptr,
+	type: u64,
 ) -> int {
 	scope_node := get_node(graph, scope)
 	assert(Node_Type(scope_node.rtype) == .Scope)
@@ -1114,23 +1114,23 @@ make_builtin_proc :: proc(graph: ^Proc, name: Builtin_Proc) {
 
 	scope := add_scope(graph, "scp", graph.entry)
 
-	memv := push_scope_value(graph, scope, mem, "", nil)
+	memv := push_scope_value(graph, scope, mem, "", 0)
 
 	dst := bac.add_param(graph, "dst", .I64, graph.entry, 0)
-	dstv := push_scope_value(graph, scope, dst, "", nil)
+	dstv := push_scope_value(graph, scope, dst, "", 0)
 
 	val, src: Node_ID
 	srcv: int
 	switch name {
 	case .memcpy:
 		src = bac.add_param(graph, "src", .I64, graph.entry, 1)
-		srcv = push_scope_value(graph, scope, src, "", nil)
+		srcv = push_scope_value(graph, scope, src, "", 0)
 	case .memset:
 		val = bac.add_param(graph, "val", .I8, graph.entry, 1)
 	}
 
 	len := bac.add_param(graph, "len", .I64, graph.entry, 2)
-	lenv := push_scope_value(graph, scope, len, "", nil)
+	lenv := push_scope_value(graph, scope, len, "", 0)
 
 	loop: Loop_State
 	start_loop(graph, scope, &loop)

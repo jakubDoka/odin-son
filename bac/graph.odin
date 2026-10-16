@@ -223,7 +223,7 @@ when SPEC_NOT_PRESENT {
 
 Dbg_Sym :: struct {
 	name: string,
-	type: rawptr,
+	type: u64,
 }
 
 Class_Flags :: bit_set[Class_Flag;u8]

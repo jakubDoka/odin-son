@@ -5,7 +5,6 @@ import "../vendored/gam/util/bit_arr"
 import "base:runtime"
 import "core:fmt"
 import "core:log"
-import "core:os"
 import "core:slice"
 
 Basic_Block :: struct {
@@ -758,7 +757,7 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 	gs.bbs = bbs
 
 	if 0 == 1 {
-		display_graph(os.to_writer(os.stderr), graph, gs)
+		//display_graph(os.to_writer(os.stderr), graph, gs)
 		// 	if has_unscheduled do panic("")
 	}
 

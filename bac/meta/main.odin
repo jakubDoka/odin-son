@@ -25,7 +25,6 @@ Spec_Gen_Input :: struct {
 	datatype_to_reg_kind:         [bac.Node_Datatype]bac.Reg_Kind,
 	spill_boundary:               []int,
 	cc_table:                     []bac.Call_Conv,
-	intern:                       bool,
 	no_spec_tables:               bool,
 	does_regalloc:                bool,
 	has_regalloc_preprocess_hook: bool,
@@ -167,7 +166,6 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 		fmt.fprintf(file, "\temit_function = emit_function,\n")
 		fmt.fprintf(file, "\tpeep = peep_inst,\n")
 		fmt.fprintf(file, "\tpost_schedule_peep = post_schedule_peep_inst,\n")
-		fmt.fprintf(file, "\tintern = %v,\n", spec.intern)
 
 		os.write_string(file, "\tinheritance_table = {\n")
 		for classes in spec.classes {

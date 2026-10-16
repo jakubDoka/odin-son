@@ -124,7 +124,13 @@ lattice_dual :: proc(v: Lattice) -> (res: Lattice) {
 	return
 }
 
-lattice_join :: proc(a: Lattice, b: Lattice) -> (res: Lattice) {
+isa :: proc(this, that: Lattice) -> bool {
+	that := that
+	that.widens = 0
+	return lattice_meet(this, that) == that
+}
+
+lattice_join :: proc(a, b: Lattice) -> (res: Lattice) {
 	res = lattice_dual(lattice_meet(lattice_dual(a), lattice_dual(b)))
 	if (res.type == .Int && res.min > res.max) ||
 	   (res.type == .Float && res.is_nan && res.is_not_nan) {
@@ -168,6 +174,13 @@ compute_latices :: proc(
 	for n in worklist_next(ctx, ctx.worklist) {
 		node := expand_node(ctx, n)
 		lat := ctx.sccp_compute(ctx, node)
+		fmt.assertf(
+			isa(ctx.lattices[node.gvn], lat),
+			"isa(%v, %v) %v",
+			ctx.lattices[node.gvn],
+			lat,
+			node,
+		)
 		if lat.type != .Top && ctx.lattices[node.gvn] != lat {
 			optimized = true
 			ctx.lattices[node.gvn] = lat

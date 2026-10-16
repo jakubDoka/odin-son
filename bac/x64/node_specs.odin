@@ -19,7 +19,6 @@ SPEC := bac.Node_Spec{
 	emit_function = emit_function,
 	peep = peep_inst,
 	post_schedule_peep = post_schedule_peep_inst,
-	intern = false,
 	inheritance_table = {
 		0b1, // Nil
 		0b1, // Entry
@@ -273,9 +272,9 @@ SPEC := bac.Node_Spec{
 		{Class_Flag.Store}, // X64_Store
 		{}, // X64_Neg
 		{}, // X64_Not
-		{}, // X64_Mul8
+		{Class_Flag.Interned}, // X64_Mul8
 		{}, // X64_Fma_213
-		{}, // X64_Pcmpeq
+		{Class_Flag.Interned}, // X64_Pcmpeq
 		{}, // X64_Padd
 		{}, // X64_Psub
 		{}, // X64_Pshufd

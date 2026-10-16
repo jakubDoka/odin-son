@@ -938,6 +938,8 @@ emit_proc_code :: proc(
 		ctx.node_spec = &anal.SPEC
 	}
 
+	ctx.computed_passes = {}
+
 	peep_ctx: bac.Peep_Ctx
 	peep_ctx.graph = ctx
 

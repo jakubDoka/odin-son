@@ -475,8 +475,8 @@ peep :: proc(
 				inp.dt,
 				pshufd,
 				node.inps[0],
+				lane = node.lane,
 			)
-			get_node(ctx, add).lane = node.lane
 			zero := bac.add_c_int(ctx, "zro", inp.dt, 0)
 
 			psadbw := add_x64_psadbw(ctx, "psadbw", inp.dt, add, zero)
@@ -500,8 +500,8 @@ peep :: proc(
 				inp.dt,
 				pshufd,
 				node.inps[0],
+				lane = node.lane,
 			)
-			get_node(ctx, add).lane = node.lane
 
 			_, pshufd2 := add_node(
 				ctx,
@@ -512,8 +512,15 @@ peep :: proc(
 				{aux = 0b01010101},
 			)
 
-			add2 := bac.add_bin_op(ctx, "radd", .Add, inp.dt, pshufd2, add)
-			get_node(ctx, add).lane = node.lane
+			add2 := bac.add_bin_op(
+				ctx,
+				"radd",
+				.Add,
+				inp.dt,
+				pshufd2,
+				add,
+				lane = node.lane,
+			)
 
 			_, lhs := add_node(
 				ctx,
@@ -542,8 +549,8 @@ peep :: proc(
 				inp.dt,
 				pshufd,
 				node.inps[0],
+				lane = node.lane,
 			)
-			get_node(ctx, add).lane = node.lane
 
 			_, lhs := add_node(
 				ctx,
@@ -568,9 +575,6 @@ peep :: proc(
 			return bac.add_bin_op(ctx, "sum", .Add, node.dt, lhs, rhs)
 		case:
 			fmt.panicf("TODO: %v", node.lane)
-		}
-
-		if node.lane == .I8 {
 		}
 	case .Add ..= .Xor, .Eq ..= .U_Ge, .Shl ..= .U_Shr, .Mul:
 		op_dt := bac.operation_datatype(ctx.graph, node)

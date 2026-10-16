@@ -32,7 +32,6 @@ main :: proc() {
 					meta.class_array(&meta.IDEAL_CLASSES, gen_ctors = false),
 					meta.class_array(&BUILDER_CLASSES),
 				},
-				intern            = true,
 				has_sccp          = true,
 			},
 			"bac/builder/node_specs.odin",
@@ -75,7 +74,7 @@ main :: proc() {
 			.X64_Add ..= .X64_U_Ge = X64_SIMPLE_BIN_OP_SPEC,
 			.X64_Shl ..= .X64_U_Shr = X64_SIMPLE_SHIFT_OP_SPEC,
 			.X64_Neg ..= .X64_Not = X64_SIMPLE_UN_OP_SPEC,
-			.X64_Pcmpeq = {no_ctor = true},
+			.X64_Pcmpeq = {no_ctor = true, flags = {.Interned}},
 			.X64_Padd ..= .X64_Psub = X64_SIMPLE_BIN_OP_SPEC,
 			.X64_Psadbw = {args = {"lhs", "rhs"}},
 			.X64_Pshufd = {id = x64.Mem_Op, no_ctor = true},
@@ -85,7 +84,7 @@ main :: proc() {
 			.X64_Lea = {id = x64.Mem_Op, no_ctor = true},
 			.X64_Load = {id = x64.Mem_Op, flags = {.Load}, no_ctor = true},
 			.X64_Store = {id = x64.Mem_Op, flags = {.Store}, no_ctor = true},
-			.X64_Mul8 = {no_ctor = true},
+			.X64_Mul8 = {no_ctor = true, flags = {.Interned}},
 			.X64_Fma_213 = {id = x64.Mem_Op, no_ctor = true},
 		}
 

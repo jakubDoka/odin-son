@@ -96,9 +96,6 @@ Node_Spec :: struct {
 	node_flags:        []Class_Flags,
 	node_extra_types:  []typeid,
 	node_kind:         typeid,
-	// only true for the pre-lowering/builder spec; every codegen-target
-	// spec leaves this false so generic drivers stay spec-agnostic
-	intern:            bool,
 	using regalloc:    Regalloc_Spec,
 	using codegen:     Codegen_Spec,
 }
@@ -697,8 +694,6 @@ assemble_args :: proc(
 }
 
 compute_weight :: proc(graph: ^Proc, all: []Node_ID) {
-	if !graph.node_spec.intern do return
-
 	@(static, rodata)
 	WEIGHTS := #partial [Node_Type]u8 {
 		.Loop = 5,
@@ -711,7 +706,12 @@ compute_weight :: proc(graph: ^Proc, all: []Node_ID) {
 	graph.weight = 1
 
 	for n in all {
-		graph.weight += int(WEIGHTS[get_node(graph, n).itype])
+		ty := get_node(graph, n).itype
+		if ty <= max(Node_Type) {
+			graph.weight += int(WEIGHTS[ty])
+		} else {
+			graph.weight += 1
+		}
 	}
 }
 
@@ -911,13 +911,17 @@ verify :: proc(graph: ^Proc) {
 			if entry.hash == 0 {
 				assert(entry.id == 0)
 			} else {
+				node := expand_node(graph, entry.id)
+				fmt.assertf(has_flag(graph, node, .Interned), "%v", node)
+
 				fmt.assertf(
-					entry.hash == node_hash(graph, entry.id),
-					"%v %v %v %v",
-					get_node(graph, entry.id),
+					entry.hash == node_hash(graph, node),
+					"%v %v %v %v %v",
+					node,
 					int(entry.id),
 					entry.hash,
-					node_hash(graph, entry.id),
+					node,
+					node.lane,
 				)
 			}
 		}
@@ -1096,13 +1100,9 @@ pass_snapshot :: proc(ctx: ^Proc) -> Pass_Snapshot {
 apply_peeps :: proc(ctx: Peep_Ctx) -> (optimized: bool) {
 	graph := ctx.graph
 
-	is_builder := graph.node_spec.intern
-
-	if .Peep in graph.computed_passes && is_builder do return
+	if .Peep in graph.computed_passes do return
 	graph.computed_passes |= {.Peep}
 	snap := pass_snapshot(ctx)
-
-	graph.dont_intern = !is_builder
 
 	context.allocator, _ = arna.scrath()
 
@@ -1892,6 +1892,8 @@ remove_output_node :: proc(
 @(tag = "node_proc")
 node_hash_node :: proc(graph: ^Proc, node: ^Node) -> u8 {
 	if !has_flag(graph, node, .Interned) do return 0
+
+	assert(node.rtype != DEAD_NODE_KIND)
 
 	hash: u32
 

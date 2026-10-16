@@ -18,7 +18,6 @@ SPEC := bac.Node_Spec{
 	emit_function = emit_function,
 	peep = peep_inst,
 	post_schedule_peep = post_schedule_peep_inst,
-	intern = false,
 	inheritance_table = {
 		0b1, // Nil
 		0b1, // Entry

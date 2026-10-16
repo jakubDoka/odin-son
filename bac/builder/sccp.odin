@@ -2,6 +2,7 @@ package builder
 
 import bac ".."
 import "base:intrinsics"
+import "core:fmt"
 import "core:math"
 
 fold_bin_op_lattice :: proc(
@@ -319,12 +320,10 @@ sccp_compute :: proc(
 			bac.peep_ctx_add_trigger(ctx, ctrl.inps[i], id)
 		}
 
-		res = bac.lattice_meet(curr, res)
-		if res.type == .Bot do res = bac.DT_TO_LATTICE[node.dt]
+		res = bac.lattice_join(res, bac.DT_TO_LATTICE[node.dt])
 		if res.type == .Int {
 			res.widens = curr.widens
-			if curr.type == .Int &&
-			   (res.min < curr.min || res.max > curr.max) {
+			if curr != res {
 				res.widens = min(curr.widens + 1, 4)
 				if res.widens == 4 {
 					res.min = bac.DT_TO_LATTICE[node.dt].min
@@ -339,31 +338,35 @@ sccp_compute :: proc(
 	case .Entry:
 		res.type = .Ctlr
 	case .Then, .Else:
-		for inp in node.inps {
-			if get_lattice(ctx, inp).type == .Top {
-				return {type = .Top}
-			}
+		if res.type != .Ctlr {
+			return
 		}
 
 		the_if := expand_node(ctx, node.inps[0])
-		if the_if.itype != .If do break
-
 		cond := get_lattice(ctx, the_if.inps[1])
-		cond_known :=
-			cond.type == .Int &&
-			(cond.min == cond.max || cond.min > 0 || cond.max < 0)
 
-		bac.peep_ctx_add_trigger(ctx, the_if.inps[1], id)
-		if !cond_known {
+		res.type = .Ctlr
+
+		if cond.type != .Bot {
+			bac.peep_ctx_add_trigger(ctx, the_if.inps[1], id)
+		}
+
+		if cond.type == .Top {
+			res.dead = true
 			break
 		}
 
-		res.dead = (node.itype == .Else) != (cond.min == 0)
+		cond_known := cond.type == .Int && cond.min == cond.max
+
+		if cond_known {
+			res.dead = (node.itype == .Else) != (cond.min == 0)
+		}
 	case .Region:
 		res.type = .Ctlr
 		res.dead = true
 		for inp in node.inps {
-			res = bac.lattice_meet(res, get_lattice(ctx, inp))
+			lat := get_lattice(ctx, inp)
+			res = bac.lattice_meet(res, lat)
 		}
 	}
 

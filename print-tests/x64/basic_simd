@@ -1054,10 +1054,11 @@ main:
     mov rsi, 0x23
     lea rdi, [rip + 0xf81]
     call simd_search u8
-    pxor xmm0, xmm0
+    pxor xmm2, xmm2
     xor eax, eax
+    pxor xmm0, xmm0
 1:
-    lea rcx, [rip + 0xf6d]
+    lea rcx, [rip + 0xf68]
     add rcx, rax
     mov rdx, rax
     add rdx, 0x20
@@ -1065,13 +1066,15 @@ main:
     setnl dl
     movzx rdx, dl
     add rax, 0x10
-    paddb.x xmm0, [rcx]
+    movups xmm1, xmm0
+    paddb.x xmm1, [rcx]
+    movups xmm0, xmm1
     test dl, dl
     jz 1
     xor esi, esi
     xor edx, edx
 2:
-    lea rax, [rip + 0xf2f]
+    lea rax, [rip + 0xf22]
     add rax, rdx
     add rdx, 1
     cmp rdx, 0x23
@@ -1084,11 +1087,10 @@ main:
     mov.q rcx, [rsp]
     imul rcx, rcx, 0xa
     add rax, rcx
-    pshufd xmm1, xmm0, -0x12
-    paddb xmm1, xmm0
-    pxor xmm0, xmm0
-    psadbw xmm1, xmm0
-    movd ecx, xmm1
+    pshufd xmm0, xmm1, -0x12
+    paddb xmm0, xmm1
+    psadbw xmm0, xmm2
+    movd ecx, xmm0
     add cl, sil
     movzx ecx, cl
     imul rcx, rcx, 0x64

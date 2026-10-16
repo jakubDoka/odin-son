@@ -22,17 +22,11 @@ alias run-test 'odin test tests -keep-executable -debug -define:ODIN_TEST_FANCY=
 alias fuzz './misc/fuzz.sh'
 
 function build-wabt
-	g++ -std=c++17 -O2 -fPIC -shared wabt/run.cc /usr/lib/libwabt.a \
-		-lcrypto -Wl,--no-undefined -o wabt/libwabt_runner.so
+	bash misc/build-wabt.sh
 end
 
 function build-unicorn
-	cmake -S vendored/unicorn-engine -B vendored/unicorn-engine/build \
-		-DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF \
-		-DUNICORN_ARCH=aarch64 -DUNICORN_BUILD_TESTS=OFF \
-		-DUNICORN_INSTALL=OFF -DUNICORN_LEGACY_STATIC_ARCHIVE=ON
-	or return 1
-	cmake --build vendored/unicorn-engine/build --target unicorn_archive --parallel
+	bash misc/build-unicorn.sh
 end
 
 

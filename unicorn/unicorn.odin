@@ -12,7 +12,7 @@ import "core:strings"
 UNICORN_LIBRARY :: "../vendored/unicorn-engine/build/libunicorn.a"
 
 when !#exists(UNICORN_LIBRARY) {
-	#panic("Unicorn is not built; run `build-unicorn` from misc/profiles.fish")
+	#panic("Unicorn is not built; run `bash misc/build-unicorn.sh`")
 }
 
 when ODIN_OS == .Linux {

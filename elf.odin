@@ -143,6 +143,8 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 
 	// foreign procedures: undefined globals resolved at link time
 	for &prc, i in ctx.procs {
+		// Procedure zero is the frontend sentinel, not an external declaration.
+		if i == 0 do continue
 		if prc.lit.body != nil do continue
 		append(
 			&globals,
@@ -230,7 +232,12 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 			} else {
 				assert(rel.size == .r32)
 				switch rel.kind {
-				case .Text, .Global:
+				case .Text:
+					type = .X86_64_Pc32
+					if is_libcall || ctx.procs[rel.id].lit.body == nil {
+						type = .X86_64_Plt32
+					}
+				case .Global:
 					type = .X86_64_Pc32
 				case .Got:
 					type = .X86_64_Gotpcrel
@@ -1177,6 +1184,7 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 		None                  = 0,
 		X86_64_Abs64          = 1,
 		X86_64_Pc32           = 2,
+		X86_64_Plt32          = 4,
 		X86_64_Gotpcrel       = 9,
 		X86_64_Abs32          = 10,
 		AArch64_Abs64         = 257,

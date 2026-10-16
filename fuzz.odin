@@ -30,6 +30,8 @@ fuzz_main :: proc() {
 	afl_fuzz_run()
 }
 
+_ :: fuzz_main
+
 @(export)
 fuzz_one :: proc "c" (data: [^]u8, size: uint) {
 	context = runtime.default_context()

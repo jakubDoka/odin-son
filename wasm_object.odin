@@ -108,7 +108,7 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 			init_mem_start = mem_init_size
 		}
 
-		for global, i in ctx.globals {
+		for global, j in ctx.globals {
 			if do_zeroed == slice.all_of(global.bytes, 0) {
 				mem_init_size = mem.align_forward_int(
 					mem_init_size,
@@ -116,7 +116,7 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 				)
 				emit_global(&sections[.global], .i64, .const, mem_init_size)
 				mem_init_size += len(global.bytes)
-				global_idxes[i] = section_counts[.global]
+				global_idxes[j] = section_counts[.global]
 				section_counts[.global] += 1
 			}
 		}
@@ -139,7 +139,7 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 		putb(&sections[.data], wasm.Opcode.End)
 
 		uleb(&sections[.data], u64(mem_init_size - init_mem_start))
-		for global, i in ctx.globals {
+		for global in ctx.globals {
 			offset := init_mem_start
 			if !slice.all_of(global.bytes, 0) {
 				padding := mem.align_forward_int(offset, global.align) - offset
@@ -324,7 +324,7 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 				continue
 			}
 
-			rets, ok := x86_reg_class_classify(ret)
+			rets, _ := x86_reg_class_classify(ret)
 
 			if len(rets) == 1 && type_to_dt(ret) != .Void {
 				rets[0] = type_to_dt(ret)

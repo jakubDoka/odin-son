@@ -7,13 +7,10 @@ import "bac/builder"
 import "bac/wasm"
 import "bac/x64"
 import "base:intrinsics"
-import "base:runtime"
 import "core:dynlib"
-import "core:flags"
 import "core:fmt"
 import "core:hash"
 import "core:log"
-import "core:mem"
 import "core:mem/virtual"
 import "core:odin/ast"
 import "core:odin/parser"
@@ -300,7 +297,7 @@ run_test :: proc(
 				emit_proc_code(&ctx, &emit_ctx, prc)
 			}
 
-			for &prc, i in ctx.procs[:len(ctx.procs) - 2] {
+			for _, i in ctx.procs[:len(ctx.procs) - 2] {
 				emit_proc(&ctx, i, level, &emit_ctx)
 			}
 
@@ -455,7 +452,7 @@ run_test :: proc(
 			ctx.target.cc = &wasm.WASM_SYSTEMV_CC
 			ctx.target.spec = &wasm.SPEC
 
-			for &prc, i in ctx.procs {
+			for _, i in ctx.procs {
 				emit_proc(&ctx, i, level, &emit_ctx)
 			}
 
@@ -726,7 +723,7 @@ disasm_wasm :: proc(sb: ^strings.Builder, module: []u8) {
 	m: rex_wasm.Module
 	errors: [dynamic]ir.Error
 
-	ln, ok := rex_wasm.decode(module, &m, &errors)
+	_, ok := rex_wasm.decode(module, &m, &errors)
 	for err in errors {
 		fmt.sbprintln(sb, err)
 	}
@@ -818,7 +815,6 @@ disasm :: proc(sb: ^strings.Builder, ctx: Gen_Ctx, ds: $DS) {
 
 		label_base := len(decoded_label_info)
 		info_base := len(decoded_instr_info)
-		error_base := len(errors)
 		labels[x86.Label_Offset(offset)] = prc.name
 		append(&decoded_label_info, 0)
 
@@ -914,11 +910,10 @@ highlight_disasm :: proc(disasm: string) -> string {
 	}
 
 	for i in 0 ..< 100 {
+		clear(&highlight.buf)
 		off := i * 8
 
 		name := fmt.tprintf("0x%02x]", off)
-
-		highlight: strings.Builder
 
 		bac.ansi_start(strings.to_writer(&highlight), i)
 		append(&highlight.buf, name)

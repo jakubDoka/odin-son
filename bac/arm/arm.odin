@@ -489,8 +489,8 @@ meta_of :: #force_inline proc(
 		return {out = out, masks = masks[ikind][:2]}
 	case .Conv, .U_Conv, .Cast:
 		vl := get_node(graph, node.inps[0])
-		nkind := ra.datatype_to_reg_kind[vl.dt]
-		return {out = out, masks = masks[nkind][:1]}
+		ckind := ra.datatype_to_reg_kind[vl.dt]
+		return {out = out, masks = masks[ckind][:1]}
 	case .CInt, .Local_Addr, .Global_Addr, .Proc_Addr:
 		return {out = out}
 	case .Phi:
@@ -516,11 +516,11 @@ meta_of :: #force_inline proc(
 		return {out = bac.param_mask(graph, ra, node)}
 	case .Store:
 		vl := get_node(graph, node.inps[3])
-		nkind := ra.datatype_to_reg_kind[vl.dt]
+		vkind := ra.datatype_to_reg_kind[vl.dt]
 		return {
 			out = IOUT,
 			input_start = 2,
-			masks = dup({GPA_MASK_IDX, masks[nkind][0]}),
+			masks = dup({GPA_MASK_IDX, masks[vkind][0]}),
 		}
 	case .Load:
 		return {out = out, input_start = 2, masks = GPA_MASKS[:1]}
@@ -552,8 +552,6 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 	ctx.spill_slot_base = spill_slot_base[:]
 	ctx.stack_param_offset = stack_param_offset[:]
 	ctx.spill_slot_size = SPILL_SLOT_SIZE[:]
-
-	relocs_start := ctx.relocs.pos
 
 	arna.alloc(ctx.code, 0, 4)
 
@@ -658,8 +656,6 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 
 	block_base := ctx.gvn - u32(len(ctx.bbs))
 	for &reloc in ctx.local_relocs {
-		size: u32 = 4
-
 		for {
 			bb := &ctx.bbs[reloc.dest]
 
@@ -931,7 +927,7 @@ emit_instr :: proc(
 
 		if inp.dt in bac.INT_DTS && node.dt in bac.INT_DTS {
 			int_dt := inp.dt < node.dt ? inp.dt : node.dt
-			unsigned := unsigned || inp.dt > node.dt
+			unsigned |= inp.dt > node.dt
 
 			UXTB :: 0x53001C00
 			UXTH :: 0x53003C00
@@ -995,8 +991,7 @@ emit_instr :: proc(
 
 		// str rvl, [rinp2, $imm12]
 		// TODO: this can be simplified
-		op: u32
-		sz_pow := intrinsics.count_trailing_zeros(u32(bac.DT_SIZE[vl.dt]))
+		sz_pow = intrinsics.count_trailing_zeros(u32(bac.DT_SIZE[vl.dt]))
 		#partial switch vl.dt {
 		case .I8 ..= .I64:
 			op = 0b0011100100 | sz_pow << 8
@@ -1021,7 +1016,6 @@ emit_instr :: proc(
 		// ldr rinstr, [rinp2, $imm12]
 
 		// TODO: this can be simplified
-		op: u32
 		#partial switch node.dt {
 		case .I8 ..= .I64:
 			op = 0b0011100101 | sz_pow << 8
@@ -1163,7 +1157,7 @@ emit_instr :: proc(
 			UNSIZED :: bit_set[Node_Type]{.And, .Xor, .Or}
 			if kind in UNSIZED do lsz_pow = 0
 
-			op := NODE_TO_OP[.Vector][kind]
+			op = NODE_TO_OP[.Vector][kind]
 			fmt.assertf(op != 0, "%v", node)
 
 			emit_op(
@@ -1229,7 +1223,7 @@ emit_instr :: proc(
 			assert(node.lane != .F32 && node.lane != .F64)
 			rd := reg_of(ctx, instr)
 
-			op := NODE_TO_OP[.Vector][kind]
+			op = NODE_TO_OP[.Vector][kind]
 			fmt.assertf(op != 0, "%v", node)
 
 			emit_op(
@@ -1307,7 +1301,7 @@ emit_instr :: proc(
 			// TODO: this is primitive but good enough for now
 
 			// movz reg, imm, hw
-			op: u32 = 0b110100101
+			op = 0b110100101
 
 			imm := u16(cint.value)
 
@@ -1348,7 +1342,7 @@ emit_instr :: proc(
 			}
 		case .V128, .F32, .F64:
 			assert(cint.value == 0)
-			op: u32 = 0x6e201c00
+			op = 0x6e201c00
 
 			emit_op(ctx.code, rrr(false, op, reg, reg, reg))
 		case:
@@ -1379,7 +1373,7 @@ emit_instr :: proc(
 
 			emit_op(ctx.code, op << 24 | imm19 << 5 | pd << 4 | u32(cond))
 		} else {
-			op: u32 = 0b10110100 // cbnz <imm19>, rt
+			op = 0b10110100 // cbnz <imm19>, rt
 			if !is_consecutive do op = 0b10110101 // cbz <imm19>, rt
 
 			imm19 :: 0
@@ -1417,7 +1411,7 @@ emit_instr :: proc(
 			id = call.cid
 
 			if call.indirect {
-				op: u32 = 0xd63f0000
+				op = 0xd63f0000
 
 				idx := len(node.inps) - 1
 				for ; get_node(ctx, node.inps[idx]).itype == .Local;
@@ -1435,7 +1429,7 @@ emit_instr :: proc(
 		}
 
 		// bl <imm26>
-		op: u32 = 0b100101
+		op = 0b100101
 		imm26 :: 0
 
 		bac.add_reloc(ctx.relocs)^ = {

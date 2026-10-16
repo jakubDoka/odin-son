@@ -621,13 +621,13 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 			append(&advance_stack, lca)
 
 			for cursor in pop_safe(&advance_stack) {
-				node := expand_node(ctx.graph, cursor)
+				cnode := expand_node(ctx.graph, cursor)
 
-				if ctx.antidep_node[node.gvn] != id {
-					ctx.antidep_node[node.gvn] = id
+				if ctx.antidep_node[cnode.gvn] != id {
+					ctx.antidep_node[cnode.gvn] = id
 
 					if cursor != bound {
-						for inp in node.inps {
+						for inp in cnode.inps {
 							if is_cfg(ctx.graph, inp) {
 								append(&advance_stack, inp)
 							}
@@ -781,8 +781,8 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 		}
 
 		changed := true
-		for i in 0 ..< 1000 {
-			assert(i < 1000 - 1)
+		for l in 0 ..< 1000 {
+			assert(l < 1000 - 1)
 			changed = false
 
 			for &instr, i in bb.instrs {

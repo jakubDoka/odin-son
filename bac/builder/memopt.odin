@@ -79,8 +79,6 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 		mnode := expand_node(graph, mout.id)
 		if mnode.itype != .Local do continue
 
-		can_split := true
-
 		total += 1
 
 		slot_size := bac.get_extra(graph, mnode, Local).size
@@ -150,7 +148,6 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 			}
 		}
 
-		loc := bac.get_extra(ctx, mout.id, Local)
 		if !failed_split && failed_sroa {
 			append(&threads, mnode.outs[0].id)
 		}
@@ -175,7 +172,7 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 			iter = {}
 			iter.curr = mnode.outs[0].id
 			for out in bac.offset_iter_next(graph, &iter) {
-				for &slt, i in slots {
+				for &slt in slots {
 					if int(slt.start) == iter.offset {
 						append(&ops, Op{slt.local, out.id})
 						break
@@ -527,10 +524,10 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 						sloter := make([]Value_Entry, len(join.entries) + 1)
 						sloter[0] = Value_Entry(conode.inps[0])
 						next_scope := join.entries[0]
-						for i in 0 ..< len(ctx.scope) {
+						for k in 0 ..< len(ctx.scope) {
 							res, dirty := Value_Entry{}, false
 							for &v, j in sloter[1:] {
-								vl := join.entries[j][i]
+								vl := join.entries[j][k]
 								v = vl
 								if res == {} do res = vl
 								dirty |= vl != res
@@ -543,7 +540,7 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 										get_scope_value(
 											ctx,
 											join.entries[j],
-											i,
+											k,
 										),
 									)
 									if res == {} do res = v
@@ -563,7 +560,7 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 								)
 							}
 
-							next_scope[i] = res
+							next_scope[k] = res
 						}
 						ctx.scope = next_scope
 					} else if reg.itype == .Loop {
@@ -574,8 +571,8 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 
 							loop_scope := slice.clone(ctx.scope)
 							scope := make([]Value_Entry, len(ctx.scope))
-							for &s, i in scope {
-								if loop_scope[i] != {} {
+							for &s, j in scope {
+								if loop_scope[j] != {} {
 									s = Value_Entry {
 										node    = Node_ID(id),
 										is_loop = true,
@@ -593,9 +590,9 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 							loop := &ctx.loops[id]
 							backedge := ctx.scope
 
-							for i in 0 ..< len(ctx.scope) {
-								init := loop.scope[i]
-								bnode := &backedge[i]
+							for j in 0 ..< len(ctx.scope) {
+								init := loop.scope[j]
+								bnode := &backedge[j]
 								if init.is_loop do continue
 
 								inode := expand_node(ctx, init.node)
@@ -606,7 +603,7 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 									if !loop.done || id == u32(bnode.node) {
 										break
 									}
-									bnode^ = loop.scope[i]
+									bnode^ = loop.scope[j]
 								}
 
 								if bnode.is_loop || init == bnode^ {

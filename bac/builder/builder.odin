@@ -2,7 +2,6 @@ package builder
 
 import bac ".."
 import "base:intrinsics"
-import "base:runtime"
 import "core:fmt"
 import "core:math"
 import "core:slice"
@@ -453,7 +452,6 @@ peep :: proc(
 		}
 	case .Loop:
 		bedge := expand_node(ctx, node.inps[1])
-		init := expand_node(ctx, node.inps[0])
 
 		dead_by_latch := false
 		if bedge.itype == .If {
@@ -521,7 +519,6 @@ peep :: proc(
 
 		#reverse for inp, i in node.inps {
 			if inp != 0 do continue
-			inode := expand_node(ctx, inp)
 			ordered_remove(ctx, &node, i)
 
 			for out in node.outs {
@@ -634,8 +631,6 @@ peep :: proc(
 			}
 		}
 	case .Phi:
-		ctrl := expand_node(ctx, node.inps[0])
-
 		if node.inps[0] == 0 && 2 < len(node.inps) {
 			ordered_remove(ctx, &node, 2)
 			if node.rtype == bac.DEAD_NODE_KIND do break match
@@ -987,8 +982,6 @@ peep :: proc(
 		}
 
 		eliminate: {
-			fuel := 4
-
 			cursor := id
 			size := bac.mem_op_size(ctx, id) or_else panic("")
 			base, off := bac.base_and_offset(ctx, node.inps[2])
@@ -1103,7 +1096,7 @@ peep :: proc(
 
 			AUX :: bit_set[bac.Node_Type]{.Load}
 
-			#reverse for &slot, i in slots {
+			#reverse for &slot in slots {
 				send := slot.offset + slot.size
 				if end <= slot.offset || send <= offset {
 					continue

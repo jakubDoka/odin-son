@@ -11,7 +11,6 @@ import "base:runtime"
 import "core:fmt"
 import "core:mem"
 import "core:odin/ast"
-import "core:odin/tokenizer"
 import "core:slice"
 import "core:strconv"
 import "typecheck"
@@ -179,8 +178,8 @@ x86_reg_class_classify :: proc(
 					next_offset = t.fields[i + 1].offset
 				}
 				field_end := f.offset + type_size(f.ty)
-				for i in field_end ..< next_offset {
-					classify(.I8, slots, offset + i)
+				for j in field_end ..< next_offset {
+					classify(.I8, slots, offset + j)
 				}
 			}
 			return true
@@ -841,15 +840,15 @@ emit_proc :: proc(
 		assert(!apa.spilled && !apa.by_ptr)
 	}
 
-	for ast_par, i in prc.lit.type.params.list {
+	for ast_par, j in prc.lit.type.params.list {
 		fmt.assertf(len(ast_par.names) == 1, "%#v", ast_par)
 		name := ast_par.names[0].derived.(^ast.Ident) or_continue
-		par := prc.sig.params[i]
+		par := prc.sig.params[j]
 
-		apa, value := arg_gen_next(ctx, &gen, par, "arg") or_continue
+		apar, value := arg_gen_next(ctx, &gen, par, "arg") or_continue
 
 		value_idx: typecheck.Varuable_Idx
-		if apa.scalar && !apa.by_ptr {
+		if apar.scalar && !apar.by_ptr {
 			value_idx = push_scope_value(ctx, name, value, par)
 		} else {
 			value_idx = value
@@ -1084,13 +1083,13 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			if decl.is_mutable do continue
 
 			for name, i in decl.names {
-				meta := typecheck.get_node_meta(decl.values[i])
+				vmeta := typecheck.get_node_meta(decl.values[i])
 				append(
 					&ctx.scope,
 					typecheck.Variable {
 						name = typecheck.src_of(ctx.file^, name),
-						type = meta.type,
-						idx = meta.lit,
+						type = vmeta.type,
+						idx = vmeta.lit,
 						ident = name,
 					},
 				)
@@ -1885,10 +1884,10 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		)
 
 		if 1 < len(d.vals) {
-			v := d.vals[1]
-			name := typecheck.src_of(ctx.file^, v)
-			flags := typecheck.get_node_vflags(v)
-			add_var(ctx, {name, idx_slot, .Int, v, flags})
+			iv := d.vals[1]
+			name := typecheck.src_of(ctx.file^, iv)
+			flags := typecheck.get_node_vflags(iv)
+			add_var(ctx, {name, idx_slot, .Int, iv, flags})
 		}
 
 		emit_stmts(ctx, {d.body})
@@ -2049,7 +2048,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			case .simd_lanes_eq:
 				a := emit_rvalue(ctx, {}, d.args[0])
 				b := emit_rvalue(ctx, {}, d.args[1])
-				ty := get_node_type(d.args[0])
+				aty := get_node_type(d.args[0])
 				res = bac.add_bin_op(
 					ctx,
 					"seq",
@@ -2058,13 +2057,13 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 					a,
 					b,
 					typecheck.simd_lane_of(
-						unpack_type(ty).(^typecheck.Simd).elem,
+						unpack_type(aty).(^typecheck.Simd).elem,
 					),
 				)
 				break match
 			case .simd_extract_lsbs:
 				a := emit_rvalue(ctx, {}, d.args[0])
-				ty := get_node_type(d.args[0])
+				aty := get_node_type(d.args[0])
 				res = bac.add_un_op(
 					ctx,
 					"elsb",
@@ -2072,7 +2071,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 					type_to_dt(get_node_type(node)),
 					a,
 					typecheck.simd_lane_of(
-						unpack_type(ty).(^typecheck.Simd).elem,
+						unpack_type(aty).(^typecheck.Simd).elem,
 					),
 				)
 
@@ -2089,7 +2088,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				break match
 			case .simd_reduce_add_bisect:
 				a := emit_rvalue(ctx, {}, d.args[0])
-				ty := get_node_type(d.args[0])
+				aty := get_node_type(d.args[0])
 				res = bac.add_un_op(
 					ctx,
 					"srab",
@@ -2097,7 +2096,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 					type_to_dt(get_node_type(node)),
 					a,
 					typecheck.simd_lane_of(
-						unpack_type(ty).(^typecheck.Simd).elem,
+						unpack_type(aty).(^typecheck.Simd).elem,
 					),
 				)
 				break match
@@ -2249,7 +2248,7 @@ emit_call :: proc(
 	}
 
 	if spread_prc != 0 {
-		results := emit_call(
+		sresults := emit_call(
 			ctx,
 			d.args[0].derived.(^ast.Call_Expr),
 			nil,
@@ -2258,7 +2257,7 @@ emit_call :: proc(
 			nil,
 			context.allocator,
 		)
-		for r, j in results {
+		for r, j in sresults {
 			lower_call_arg(ctx, args, &lctx, ctx.procs[spread_prc].rets[j], r)
 		}
 	} else {
@@ -2305,7 +2304,6 @@ emit_call :: proc(
 	call_ext.imported = imported
 	call_ext.indirect = prc_id == 0
 
-	cnode := get_node(ctx, call)
 	for arg in args[CALL_PREFIX:ln] {
 		bac.unpin(ctx, arg)
 	}

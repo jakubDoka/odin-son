@@ -10,6 +10,8 @@ import "core:reflect"
 import "core:slice"
 import "core:sort"
 
+_ :: varint
+
 Dbg_Data :: struct {
 	syms: [dynamic]Dbg_Data_Sym,
 }
@@ -307,8 +309,8 @@ take_dbg_data :: proc(
 	phys_to_break: [dynamic]Node_ID
 
 	node_to_sym := make([]u32, ctx.gvn)
-	for &bb, bidx in ctx.bbs {
-		for instr, i in bb.instrs {
+	for &bb in ctx.bbs {
+		for instr in bb.instrs {
 			inode := expand_node(ctx, instr)
 
 			#partial switch inode.itype {
@@ -362,9 +364,9 @@ take_dbg_data :: proc(
 		}
 	}
 
-	for &bb, bidx in ctx.bbs {
+	for &bb in ctx.bbs {
 		keep := 0
-		for instr, i in bb.instrs {
+		for instr in bb.instrs {
 			inode := get_node(ctx, instr)
 			fmt.assertf(
 				inode.itype not_in
@@ -381,14 +383,16 @@ take_dbg_data :: proc(
 		resize(&bb.instrs, keep)
 	}
 
-	keep := 0
-	for sym, i in data.syms {
-		if sym.inner != {} {
-			data.syms[keep] = sym
-			keep += 1
+	{
+		keep := 0
+		for sym in data.syms {
+			if sym.inner != {} {
+				data.syms[keep] = sym
+				keep += 1
+			}
 		}
+		resize(&data.syms, keep)
 	}
-	resize(&data.syms, keep)
 
 	for &sym in data.syms {
 		keep := 0
@@ -543,7 +547,7 @@ emit_dbg_locations :: proc(ctx: Codegen_Emit_Ctx) {
 
 					if oblk.itype == .Region {
 						ready := false
-						for &blk, i in join_blocks {
+						for &blk in join_blocks {
 							if out.id == blk.node {
 								blk.reached_count += 1
 								if blk.reached_count < oblk.input_count {
@@ -842,7 +846,7 @@ emit_big_constant :: proc(
 ) -> (
 	id: u32,
 ) {
-	slc := arna.alloc(
+	_ = arna.alloc(
 		ctx.constants,
 		mem.align_forward_uint(ctx.constants.pos + 2, align) -
 		ctx.constants.pos,

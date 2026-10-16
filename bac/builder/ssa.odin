@@ -500,7 +500,6 @@ inline_graph :: proc(graph: ^bac.Proc, call: Node_ID, from: ^bac.Proc) {
 
 	bac.assert_live_pins(from)
 
-	entry := expand_node(from, from.entry)
 	params, starter := bac.assemble_args(
 		from,
 		int(call.input_cap) - bac.CALL_PREFIX,
@@ -509,9 +508,9 @@ inline_graph :: proc(graph: ^bac.Proc, call: Node_ID, from: ^bac.Proc) {
 	assert(proj_of(&ctx, starter)^ == 0)
 
 	rmem := bac.find_node(graph, .Mem)
-	for param, arg_idx in params {
+	for param, ai in params {
 		pnode := expand_node(from, param)
-		arg_idx := arg_idx + bac.CALL_PREFIX
+		arg_idx := ai + bac.CALL_PREFIX
 		arg := raw_data(call.inps)[arg_idx]
 		arg_node := expand_node(graph, arg)
 		if param == 0 do continue
@@ -813,8 +812,8 @@ add_arbitrary_store :: proc(
 	cfg: Node_ID,
 	mem: Node_ID,
 	addr: Node_ID,
-	value: Node_ID,
-	size: int,
+	rvalue: Node_ID,
+	rsize: int,
 	extra_offset := 0,
 	unit: bac.Node_Datatype = .I64,
 ) -> (
@@ -823,7 +822,7 @@ add_arbitrary_store :: proc(
 	omem = mem
 
 	store_unit := unit
-	size := min(size - extra_offset, bac.DT_SIZE[unit])
+	size := min(rsize - extra_offset, bac.DT_SIZE[unit])
 	offset: int
 
 	if bac.DT_SIZE[store_unit] == size {
@@ -834,7 +833,7 @@ add_arbitrary_store :: proc(
 			omem,
 			addr,
 			offset + extra_offset,
-			value,
+			rvalue,
 		)
 		return
 	}
@@ -855,7 +854,7 @@ add_arbitrary_store :: proc(
 				"stsh",
 				.U_Shr,
 				.I64,
-				value,
+				rvalue,
 				bac.add_c_int(ctx, "stshoff", .I64, i64(offset * 8)),
 			),
 		)
@@ -900,12 +899,12 @@ add_arbitrary_load :: proc(
 	cfg: Node_ID,
 	mem: Node_ID,
 	addr: Node_ID,
-	size: int,
+	rsize: int,
 	extra_offset := 0,
 	unit: bac.Node_Datatype = .I64,
 ) -> Node_ID {
 	load_unit := unit
-	size := min(size - extra_offset, bac.DT_SIZE[unit])
+	size := min(rsize - extra_offset, bac.DT_SIZE[unit])
 	offset: int
 	value: Node_ID
 

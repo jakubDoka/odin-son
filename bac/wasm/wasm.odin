@@ -387,8 +387,8 @@ meta_of :: #force_inline proc(
 
 	imasks := masks
 	if 0 < len(node.inps) {
-		rk := ra.datatype_to_reg_kind[get_node(graph, node.inps[0]).dt]
-		imasks = SLOT_TABLE[rk][:]
+		irk := ra.datatype_to_reg_kind[get_node(graph, node.inps[0]).dt]
+		imasks = SLOT_TABLE[irk][:]
 	}
 
 	if node.gvn == 1 {
@@ -448,9 +448,9 @@ meta_of :: #force_inline proc(
 		return {out = out}
 	case .Phi:
 		if node.dt <= .Mem do return {out = out}
-		masks := make([]bac.RM_Intern_Idx, len(node.inps) - 1)
-		slice.fill(masks, mask)
-		return {out = mask, input_start = 1, masks = masks}
+		pmasks := make([]bac.RM_Intern_Idx, len(node.inps) - 1)
+		slice.fill(pmasks, mask)
+		return {out = mask, input_start = 1, masks = pmasks}
 	case .Param:
 		return {out = bac.param_mask(graph, ra, node)}
 	case .Tee_Local:
@@ -495,7 +495,7 @@ pre_regalloc_hook :: proc(
 
 	// NOTE: we do splits here becuase dealing with phy self conflicts is just
 	// annoying, maybe we can do better, but not right now
-	for &bb, i in sched.bbs {
+	for &bb in sched.bbs {
 		hnode := expand_node(ctx, bb.head)
 
 		for i := 0; i < len(bb.instrs); i += 1 {
@@ -749,8 +749,8 @@ pre_regalloc_hook :: proc(
 			}
 
 			deps := data_deps(ctx.metas[inode.gvn], inode)
-			#reverse for dep, i in deps {
-				dnode := expand_node(ctx, dep)
+			#reverse for sdep, i in deps {
+				dnode := expand_node(ctx, sdep)
 
 				shift: {
 					if dnode.itype == .Ret do break shift
@@ -759,12 +759,12 @@ pre_regalloc_hook :: proc(
 
 					pos := slice.linear_search(
 						ctx.instrs[:ctx.cursor],
-						dep,
+						sdep,
 					) or_break shift
 
-					ctx.rcs[get_node(ctx, dep).gvn] -= 1
+					ctx.rcs[get_node(ctx, sdep).gvn] -= 1
 
-					if ctx.rcs[get_node(ctx, dep).gvn] > 0 do break shift
+					if ctx.rcs[get_node(ctx, sdep).gvn] > 0 do break shift
 
 					if ctx.metas[dnode.gvn].is_mem {
 						has_mem := false
@@ -776,7 +776,7 @@ pre_regalloc_hook :: proc(
 
 					if len(dnode.outs) > 1 {
 						dp := get_or_add_set(ctx, dnode)
-						if dp != dep {
+						if dp != sdep {
 							get_node(ctx, dp).rtype = u16(Node_Type.Tee_Local)
 						}
 					}
@@ -787,8 +787,6 @@ pre_regalloc_hook :: proc(
 				}
 
 				dep := get_or_add_set(ctx, dnode)
-
-				depn := expand_node(ctx, dep)
 
 				get := bac.add_raw(
 					ctx,
@@ -922,7 +920,6 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 
 	ctx.code_start = ctx.code.pos
 	ctx.constants_start = ctx.constants.pos
-	reloc_start := ctx.relocs.pos
 
 	bac.layout_call_args(ctx.graph, ctx.schedule, &ctx.stack_size)
 	bac.layout_locals(ctx.graph, ctx.schedule, &ctx.stack_size)
@@ -1026,18 +1023,18 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 						append(&ctx.block_stack, b)
 					}
 
-					for cursor := b;
-					    cursor != 0;
-					    cursor = blocks[cursor].worse {
+					for wcursor := b;
+					    wcursor != 0;
+					    wcursor = blocks[wcursor].worse {
 
 						fmt.assertf(
-							blocks[cursor].start >= blocks[b].start,
+							blocks[wcursor].start >= blocks[b].start,
 							"%v %v",
-							blocks[cursor],
+							blocks[wcursor],
 							blocks[b],
 						)
 
-						ctx.bb_metas[blocks[cursor].origin].break_block = b
+						ctx.bb_metas[blocks[wcursor].origin].break_block = b
 					}
 				}
 			}
@@ -1168,7 +1165,7 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 
 		if close_loop {
 			emit_op(ctx.code, .End)
-			vl := pop(&ctx.block_stack)
+			pop(&ctx.block_stack)
 		}
 
 		if get_node(ctx, bb.tail).itype == .Return {
@@ -1273,7 +1270,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 
 		if inp.dt in bac.INT_DTS && node.dt in bac.INT_DTS {
 			int_dt := min(inp.dt, node.dt)
-			unsigned := unsigned || inp.dt > node.dt
+			unsigned |= inp.dt > node.dt
 
 			if inp.dt == .I64 {
 				emit_op(ctx.code, .I32_Wrap_I64)

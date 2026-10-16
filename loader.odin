@@ -27,15 +27,15 @@ load_program :: proc(ctx: ^Gen_Ctx, entry_file: string) {
 @(private = "file")
 load_dir :: proc(
 	ctx: ^Gen_Ctx,
-	dir: string,
+	rdir: string,
 	loaded: ^map[string]typecheck.Module_ID,
 ) -> typecheck.Module_ID {
-	abs, _ := filepath.abs(dir, context.temp_allocator)
+	abs, _ := filepath.abs(rdir, context.temp_allocator)
 	if existing, ok := loaded[abs]; ok {
 		return existing
 	}
 
-	dir := strings.clone(dir, ctx.types.allocator)
+	dir := strings.clone(rdir, ctx.types.allocator)
 
 	mid := typecheck.Module_ID(len(ctx.modules))
 	loaded[abs] = mid

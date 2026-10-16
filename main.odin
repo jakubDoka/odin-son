@@ -176,8 +176,8 @@ main :: proc() {
 	}
 
 	{time.SCOPED_TICK_DURATION(&times.emit)
-		for prc, i in ctx.procs {
-			emit_proc(&ctx, i, level, &emit_ctx)
+		for _, j in ctx.procs {
+			emit_proc(&ctx, j, level, &emit_ctx)
 		}}
 
 	if .Inline in level.flags {

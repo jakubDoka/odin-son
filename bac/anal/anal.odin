@@ -30,8 +30,6 @@ when SPEC_NOT_PRESENT {
 }
 
 emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
-	msg_start := ectx.buf.code.pos
-	err_cnt := 0
 	wrt := arna.to_stream(ectx.buf.code)
 
 	check_local_bounds: {

@@ -2,6 +2,8 @@ package builder
 
 import bac ".."
 
+_ :: bac
+
 SPEC_NOT_PRESENT :: (#load("node_specs.odin", string) or_else "") == ""
 
 Scope :: struct #align (4) {

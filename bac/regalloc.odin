@@ -51,11 +51,11 @@ reg_mask_first_set :: proc(rm: Reg_Mask) -> (int, bool) {
 
 reg_mask_last_set :: proc(rm: Reg_Mask) -> (int, bool) {
 	for i in 0 ..< rm.bit_length / MASK_SIZE {
-		i := rm.bit_length / MASK_SIZE - i - 1
-		if rm.masks[i] != 0 {
-			return int(i) * MASK_SIZE +
+		ri := rm.bit_length / MASK_SIZE - i - 1
+		if rm.masks[ri] != 0 {
+			return int(ri) * MASK_SIZE +
 				MASK_SIZE -
-				int(intrinsics.count_leading_zeros(rm.masks[i])) -
+				int(intrinsics.count_leading_zeros(rm.masks[ri])) -
 				1,
 				true
 		}

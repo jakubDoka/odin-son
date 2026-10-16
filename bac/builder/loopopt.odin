@@ -5,7 +5,6 @@ import "../../vendored/gam/util/arna"
 import "../../vendored/gam/util/bit_arr"
 import "core:fmt"
 import "core:math"
-import "core:mem"
 import "core:slice"
 
 loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
@@ -53,7 +52,7 @@ loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 
 	// We go in reverse because otherwise, the interning can mess up the
 	// instantiation
-	for &bb, i in ctx.sched.bbs {
+	for &bb in ctx.sched.bbs {
 		if get_node(ctx, bb.head).rtype == bac.DEAD_NODE_KIND {
 			continue
 		}
@@ -199,9 +198,9 @@ loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 		}
 
 		if !ODIN_DISABLE_ASSERT {
-			for &bb in ctx.sched.bbs {
-				if get_node(ctx, bb.head).rtype == bac.DEAD_NODE_KIND do continue
-				assert(block_of(ctx, bb.head) == &bb)
+			for &obb in ctx.sched.bbs {
+				if get_node(ctx, obb.head).rtype == bac.DEAD_NODE_KIND do continue
+				assert(block_of(ctx, obb.head) == &obb)
 			}
 		}
 
@@ -325,7 +324,6 @@ loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 			if onode.itype != .Phi do continue
 			if onode.dt not_in bac.INT_DTS do continue
 
-			init := expand_node(ctx, onode.inps[1])
 			bvl := expand_node(ctx, onode.inps[2])
 
 			if bvl.itype != .Add do continue
@@ -342,7 +340,6 @@ loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 			slcs := [][]bac.Node_Output{bvl.outs, onode.outs}
 			find_bound: for slc in slcs {
 				for bout in slc {
-					bonode := expand_node(ctx, bout.id)
 					if bout.id == bedge.inps[1] {
 						bound = cond.inps[1 - bout.idx]
 						break find_bound
@@ -385,7 +382,6 @@ loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 				stride_node: Node_ID
 				if onode.itype == .Mul && onode.dt in bac.INT_DTS {
 					stride_node = onode.inps[1 - out.idx]
-					otnode := expand_node(ctx, stride_node)
 
 					if slice.contains(bb.instrs[:], stride_node) {
 						continue
@@ -394,15 +390,14 @@ loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 					add_candidates = onode.outs
 				}
 
-				for out in add_candidates {
-					onode := expand_node(graph, out.id)
-					if onode.itype != .Add do continue
-					if onode.dt not_in bac.INT_DTS do continue
+				for cout in add_candidates {
+					conode := expand_node(graph, cout.id)
+					if conode.itype != .Add do continue
+					if conode.dt not_in bac.INT_DTS do continue
 
-					base := onode.inps[1 - out.idx]
-					otnode := expand_node(ctx, base)
+					base := conode.inps[1 - cout.idx]
 
-					for otout in onode.outs {
+					for otout in conode.outs {
 						otonode := expand_node(ctx, otout.id)
 						if otonode.stable_id == 33 {
 						}
@@ -422,7 +417,7 @@ loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 					if stride_vl != nil do stride = stride_vl.value
 
 					if stride_vl != nil {
-						for otout in onode.outs {
+						for otout in conode.outs {
 							otonode := expand_node(ctx, otout.id)
 
 							if otonode.itype == .Store {
@@ -441,7 +436,7 @@ loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 							Indexing {
 								base,
 								stride_node,
-								bac.get_node_id(ctx, onode),
+								bac.get_node_id(ctx, conode),
 							},
 						)
 					}
@@ -523,7 +518,7 @@ loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 				}
 			}
 
-			for store, i in stores {
+			for store in stores {
 				snode := expand_node(ctx, store.node)
 				vl := expand_node(ctx, snode.inps[3])
 

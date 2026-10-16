@@ -686,11 +686,11 @@ int_type_for_size :: proc(size: int) -> Type {
 instantiate_struct :: proc(
 	ctx: ^Gen_Ctx,
 	base: ^Struct,
-	args: []Type,
+	uargs: []Type,
 ) -> Type {
 	context.allocator, _ = arna.scrath()
 
-	args := intern_type_slice(ctx, args)
+	args := intern_type_slice(ctx, uargs)
 	key := Struct_Inst_Key{base, string(mem.slice_data_cast([]u8, args))}
 	if existing, ok := ctx.struct_insts[key]; ok do return pack_type(existing)
 
@@ -849,7 +849,6 @@ typecheck_decl :: proc(
 	}
 
 	ctx.module = Module_ID(mid)
-	mod := &ctx.modules[mid]
 
 	ctx.file_id = decl.file
 	ctx.file = &ctx.files[ctx.file_id]
@@ -943,7 +942,7 @@ collect_decls :: proc(f: ast.File, decls: ^[dynamic]Decl, file_id: File_ID) {
 
 		if block, ok := stmt.derived_stmt.(^ast.Foreign_Block_Decl); ok {
 			body := block.body.derived.(^ast.Block_Stmt) or_continue
-			for vl, i in body.stmts {
+			for vl in body.stmts {
 				decl := vl.derived.(^ast.Value_Decl) or_continue
 				if len(decl.values) == 0 do continue
 				cln: ^ast.Expr
@@ -1067,9 +1066,9 @@ intern_decl :: proc(
 	bool,
 ) {
 	if key, ok := key.?; ok {
-		record, ok := mapa[key]
+		record, aok := mapa[key]
 		ret^ = tpmeta(ctx, pack_type(record))
-		if ok do return nil, false
+		if aok do return nil, false
 	}
 	record := new(T, mapa.allocator)
 	if key, ok := key.?; ok do mapa[key] = record
@@ -3252,7 +3251,7 @@ typecheck_sig :: proc(
 
 	lists := [][]^ast.Field{plist, rlist}
 
-	for param, i in plist {
+	for param in plist {
 		if len(param.names) != 1 {
 			error(ctx, param, "TODO: a parameter needs at most one name")
 		}
@@ -3291,7 +3290,7 @@ typecheck_proc :: proc(
 ) -> Proc_ID {
 	context.allocator, _ = arna.scrath()
 
-	isig, generic := typecheck_sig(ctx, prc.type)
+	isig, _ := typecheck_sig(ctx, prc.type)
 
 	decl := decl.? or_else {}
 
@@ -3391,8 +3390,8 @@ typecheck_program :: proc(ctx: ^Gen_Ctx) {
 			append(&ctx.poly_types, e)
 		}
 
-		for par, i in prc.params {
-			asta := prc.lit.type.params.list[i]
+		for par, j in prc.params {
+			asta := prc.lit.type.params.list[j]
 			if len(asta.names) != 1 do continue
 			if par == .Void do continue
 
@@ -3518,8 +3517,8 @@ tok_to_binop :: proc(
 ) {
 	ty := ty
 	has_lane := false
-	if e, ok := unpack_type(ty).(^Enum); ok do ty = e.backing
-	if s, ok := unpack_type(ty).(^Simd); ok {
+	if e, eok := unpack_type(ty).(^Enum); eok do ty = e.backing
+	if s, sok := unpack_type(ty).(^Simd); sok {
 		ty = s.elem
 		lane = simd_lane_of(s.elem)
 		has_lane = true

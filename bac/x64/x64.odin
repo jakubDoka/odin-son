@@ -426,7 +426,7 @@ peep :: proc(
 			global := bac.c_int_as_global(ctx, node)
 
 			cmem := builder.get_or_add_const_mem(ctx)
-			_, id := add_node(
+			_, cid := add_node(
 				ctx,
 				node.name,
 				.X64_Load,
@@ -434,7 +434,7 @@ peep :: proc(
 				{0, cmem, global},
 				{dt = node.dt},
 			)
-			return id
+			return cid
 		}
 	case .Splat:
 		inp := expand_node(ctx, node.inps[0])
@@ -921,18 +921,18 @@ post_schedule_peep :: proc(
 		if 0 < len(ctx.preds) &&
 		   ctx.preds[len(ctx.preds) - 1] == node.inps[1] &&
 		   len(expand_node(ctx, node.inps[1]).outs) == 1 {
-			node := expand_node(ctx, node.inps[1])
-			#partial switch xtype(node) {
+			inode := expand_node(ctx, node.inps[1])
+			#partial switch xtype(inode) {
 			case .Eq ..< .U_Ge, .X64_Eq ..< .X64_Ge:
-				op_dt := bac.operation_datatype(ctx, node)
-				mem_op := xextra(ctx, node, Mem_Op)
+				op_dt := bac.operation_datatype(ctx, inode)
+				mem_op := xextra(ctx, inode, Mem_Op)
 				if mem_op != nil do op_dt = mem_op.dt
 				if op_dt in bac.FLOAT_DTS &&
-				   xtype(node) in
+				   xtype(inode) in
 					   (bit_set[Node_Type]{.Eq, .Ne, .X64_Eq, .X64_Ne}) {
 					break
 				}
-				node.dt = .Void
+				inode.dt = .Void
 			}
 		}
 	case .Add ..= .Xor, .Eq ..= .U_Ge, .Mul, .Div:
@@ -1359,11 +1359,6 @@ Rsp_Adjust :: struct {
 emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 	context.allocator, _ = arna.scrath()
 
-	reloc_start := ectx.relocs.pos
-	sloc_start := ectx.slocs.pos
-	cfi_start := ectx.cfi.pos
-	dbg_loc_start := ectx.dbg_locs.pos
-
 	spill_slot_base: [RK_COUNT]i32
 	stack_param_offset: [RK_COUNT][dynamic]i32
 
@@ -1514,21 +1509,6 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 
 		copy(ctx.code.ptr[reloc.offset:][:size], reflect.as_bytes(jump))
 	}
-
-	code := ctx.code.ptr[ctx.code_start:ctx.code.pos]
-	constants := ctx.constants.ptr[ctx.constants_start:ctx.constants.pos]
-	relocs := mem.slice_data_cast(
-		[]bac.Reloc,
-		ctx.relocs.ptr[reloc_start:ctx.relocs.pos],
-	)
-	slocs := mem.slice_data_cast(
-		[]bac.Sloc,
-		ctx.slocs.ptr[sloc_start:ctx.slocs.pos],
-	)
-	cfi := mem.slice_data_cast(
-		[]bac.Cfi_Op,
-		ctx.cfi.ptr[cfi_start:ctx.cfi.pos],
-	)
 
 	bac.emit_dbg_locations(ctx)
 
@@ -1859,9 +1839,9 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 
 			if vdt in bac.FLOAT_DTS {
 				// movss/movsd [$bse + ...], $val
-				pfx: u8 = vdt == .F64 ? 0xF2 : 0xF3
+				fpfx: u8 = vdt == .F64 ? 0xF2 : 0xF3
 				rx := rex(val, bse, idx, false)
-				emit(ctx.code, {pfx, rx, 0x0f, 0x11})
+				emit(ctx.code, {fpfx, rx, 0x0f, 0x11})
 				emit_indirect_addr(ctx, val, bse, idx, scl, dis + sdis, id)
 				break
 			}
@@ -1962,8 +1942,8 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 
 		if src_float && dst_float {
 			rx := rex(dst, src, RAX, false)
-			pfx: u8 = node.dt == .F64 ? 0xF3 : 0xF2
-			emit(ctx.code, {pfx, rx, 0x0f, 0x5a, mod_rm(.Direct, dst, src)})
+			fpfx: u8 = node.dt == .F64 ? 0xF3 : 0xF2
+			emit(ctx.code, {fpfx, rx, 0x0f, 0x5a, mod_rm(.Direct, dst, src)})
 			break
 		}
 
@@ -1971,10 +1951,10 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 			assert(type == .Conv)
 			fdt := src_float ? sdt : node.dt
 			idt := src_float ? node.dt : sdt
-			pfx: u8 = fdt == .F64 ? 0xF2 : 0xF3
+			fpfx: u8 = fdt == .F64 ? 0xF2 : 0xF3
 			rx := rex(dst, src, RAX, bac.DT_SIZE[idt] == 8)
 			op: u8 = src_float ? 0x2c : 0x2a
-			emit(ctx.code, {pfx, rx, 0x0f, op, mod_rm(.Direct, dst, src)})
+			emit(ctx.code, {fpfx, rx, 0x0f, op, mod_rm(.Direct, dst, src)})
 			break
 		}
 
@@ -2634,41 +2614,41 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 
 		if dst.kind == RK_VECTOR {
 			// movss/movsd based moves for xmm live ranges
-			pfx: u8 = node.dt == .F64 ? 0xF2 : 0xF3
+			fpfx: u8 = node.dt == .F64 ? 0xF2 : 0xF3
 
 			if d_spill && s_spill {
 
 				TMP :: XMM15
 
 				// movss/movsd [rsp + $temp_slot_offset], $TMP
-				emit(ctx.code, {pfx, rex(TMP, RSP, RAX, false), 0x0f, 0x11})
+				emit(ctx.code, {fpfx, rex(TMP, RSP, RAX, false), 0x0f, 0x11})
 				spill_indirect_addr(ctx, TMP, ctx.temp_slot_offset)
 
 				// movss/movsd $TMP, [rsp + $src_off]
-				emit(ctx.code, {pfx, rex(TMP, RSP, RAX, false), 0x0f, 0x10})
+				emit(ctx.code, {fpfx, rex(TMP, RSP, RAX, false), 0x0f, 0x10})
 				spill_indirect_addr(ctx, TMP, src_off)
 
 				// movss/movsd [rsp + $dst_off], $TMP
-				emit(ctx.code, {pfx, rex(TMP, RSP, RAX, false), 0x0f, 0x11})
+				emit(ctx.code, {fpfx, rex(TMP, RSP, RAX, false), 0x0f, 0x11})
 				spill_indirect_addr(ctx, TMP, dst_off)
 
 				// movss/movsd $TMP, [rsp + $temp_slot_offset]
-				emit(ctx.code, {pfx, rex(TMP, RSP, RAX, false), 0x0f, 0x10})
+				emit(ctx.code, {fpfx, rex(TMP, RSP, RAX, false), 0x0f, 0x10})
 				spill_indirect_addr(ctx, TMP, ctx.temp_slot_offset)
 			} else if d_spill {
 				// movss/movsd [rsp + $dst_off], $src
-				emit(ctx.code, {pfx, rex(src, RSP, RAX, false), 0x0f, 0x11})
+				emit(ctx.code, {fpfx, rex(src, RSP, RAX, false), 0x0f, 0x11})
 				spill_indirect_addr(ctx, src, dst_off)
 			} else if s_spill {
 				// movss/movsd $dst, [rsp + $src_off]
-				emit(ctx.code, {pfx, rex(dst, RSP, RAX, false), 0x0f, 0x10})
+				emit(ctx.code, {fpfx, rex(dst, RSP, RAX, false), 0x0f, 0x10})
 				spill_indirect_addr(ctx, dst, src_off)
 			} else {
 				// movss/movsd $dst, $src
 				rx := rex(dst, src, RAX, false)
 				emit(
 					ctx.code,
-					{pfx, rx, 0x0f, 0x10, mod_rm(.Direct, dst, src)},
+					{fpfx, rx, 0x0f, 0x10, mod_rm(.Direct, dst, src)},
 				)
 			}
 			break

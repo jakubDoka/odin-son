@@ -803,14 +803,14 @@ compact :: proc(graph: ^Proc) {
 
 	iview := interner_zip(graph)
 
-	for n, i in worklist.data[1:worklist.len] {
+	for n in worklist.data[1:worklist.len] {
 		node := expand_node(graph, n)
 
 		for &inp in node.inps {
 			pnode := expand_node(&prev, inp)
 			inp = project(&prev, worklist, inp)
-			node := expand_node(graph, inp)
-			fmt.assertf(pnode.itype == node.itype, "%v", node)
+			cnode := expand_node(graph, inp)
+			fmt.assertf(pnode.itype == cnode.itype, "%v", cnode)
 		}
 
 		for &out in node.outs {
@@ -992,7 +992,7 @@ verify :: proc(graph: ^Proc) {
 // NOTE: for debugging purposes to trace where a node was created
 @(disabled = ODIN_DISABLE_ASSERT)
 on_node_creation :: proc(graph: ^Proc, node: ^Node) {
-	id := get_node_id(graph, node)
+	//id := get_node_id(graph, node)
 }
 
 unmount_peep_node :: proc(graph: ^Proc) {
@@ -1380,8 +1380,8 @@ is_noalias_ptrs :: proc(graph: ^Proc, a, b: Node_ID, as, bs: int) -> bool {
 
 is_always_valid_ptr :: proc(graph: ^Proc, ptr: Node_ID) -> bool {
 	// NOTE: it appears that this is only valid with constant offsets
-	ptr, _ := base_and_offset(graph, ptr)
-	node := expand_node(graph, ptr)
+	bptr, _ := base_and_offset(graph, ptr)
+	node := expand_node(graph, bptr)
 	#partial switch node.itype {
 	case .Global_Addr, .Local_Addr:
 		return true
@@ -1677,7 +1677,7 @@ interner_grow :: proc(graph: ^Proc, new_cap: int) {
 unintern :: proc(graph: ^Proc, id: Node_ID, precomputed_hash: u8 = 0) {
 	if !has_flag(graph, id, .Interned) || graph.dont_intern do return
 
-	idx, hash, _ := interner_find(graph, id, precomputed_hash)
+	idx, _, _ := interner_find(graph, id, precomputed_hash)
 	if idx < 0 do return
 
 	iview := interner_zip(graph)
@@ -2064,28 +2064,6 @@ Add_Raw_Meta :: bit_field u64 {
 	lane:           Lane_Type | 3,
 	extra_capacity: int       | 2,
 	extra_dwords:   int       | 4,
-}
-
-add_raw_with_extra :: proc(
-	graph: ^Proc,
-	name: Tag_Name,
-	type: u16,
-	dt: Node_Datatype,
-	inps: []Node_ID = {},
-	extra: []u8,
-) {
-	assert(len(extra) % PRECISION == 0)
-	extra_size := len(extra) / PRECISION
-	extra_ptr := get_next_extra_slot(graph, type, extra_size)
-	copy(mem.slice_data_cast([]u8, extra_ptr[:extra_size]), extra)
-	final := add_raw(
-		graph,
-		"dbgf",
-		type,
-		.Void,
-		inps,
-		meta = {extra_dwords = extra_size},
-	)
 }
 
 add_raw :: proc(

@@ -369,7 +369,7 @@ regalloc_round :: proc(
 		liveouts_clone_into(&curr_live, lbb.liveouts)
 		lbb.liveouts.old = lbb.liveouts.len
 
-		#reverse for instr, j in bb.instrs {
+		#reverse for instr in bb.instrs {
 			inode := expand_node(graph, instr)
 
 			if is_def(ctx, inode) {
@@ -464,7 +464,6 @@ regalloc_round :: proc(
 			pred_bb_idx := int(pred_block.gvn) - block_base
 			assert(pred_bb_idx >= 0)
 
-			pred_bb := sched.bbs[pred_bb_idx]
 			pred_liveouts := &blocks[pred_bb_idx].liveouts
 
 			changed := false
@@ -612,7 +611,7 @@ regalloc_round :: proc(
 			// sorted list is good
 			insertion_sort_slrg(ctx.slrgs[slrg_checkpoint:])
 			keep := slrg_checkpoint
-			for slrg, i in ctx.slrgs[slrg_checkpoint:] {
+			for slrg in ctx.slrgs[slrg_checkpoint:] {
 				ctx.slrgs[keep] = slrg
 				ctx.smetas[slrg.lrg.index].current_slrg = Slrg_ID(keep)
 				keep += 1
@@ -723,20 +722,20 @@ regalloc_round :: proc(
 						end_hash(j),
 					)
 
-					for i in bac.simd_iter_next_rev(&siter) {
-						if active.items.id[i].end == j {
+					for k in bac.simd_iter_next_rev(&siter) {
+						if active.items.id[k].end == j {
 							bac.reg_mask_set(
 								free_regs[kind],
-								active.items.id[i].lrg.reg,
+								active.items.id[k].lrg.reg,
 							)
 							active.len -= 1
-							active.items[active.len], active.items[i] =
-								active.items[i], active.items[active.len]
+							active.items[active.len], active.items[k] =
+								active.items[k], active.items[active.len]
 						}
 					}
 
 					if !ODIN_DISABLE_ASSERT {
-						for i, k in active.items.id[:active.len] {
+						for i in active.items.id[:active.len] {
 							assert(i.end != j)
 						}
 					}
@@ -801,7 +800,7 @@ regalloc_round :: proc(
 					} else {
 						best := slrg
 						best_idx := -1
-						for oslrg, i in active.items.id[:active.len] {
+						for oslrg, k in active.items.id[:active.len] {
 							if (oslrg.lrg.fails == {} &&
 								   !can_spill(ctx, oslrg.lrg) &&
 								   oslrg.end - oslrg.start >
@@ -809,7 +808,7 @@ regalloc_round :: proc(
 							   can_spill(ctx, best.lrg) ||
 							   best.lrg.fails != {} {
 								best = oslrg
-								best_idx = i
+								best_idx = k
 							}
 						}
 						best.lrg.failed_to_assign = true
@@ -954,9 +953,9 @@ regalloc_round :: proc(
 				for adj, i in ifg {
 					if lrgs[i].parent != nil do continue
 
-					for a, i in adj {
+					for a, k in adj {
 						for b, j in adj {
-							if i == j do continue
+							if k == j do continue
 							assert(a != b)
 						}
 					}
@@ -1002,7 +1001,7 @@ regalloc_round :: proc(
 		ready := 0
 		done := 0
 
-		for elm, i in ctx.color_ord {
+		for elm in ctx.color_ord {
 			lrg := &lrgs[elm]
 			if is_colorable(ctx, lrg, ready) {
 				swap_ord(ctx, lrg, &lrgs[ctx.color_ord[ready]])
@@ -1468,8 +1467,8 @@ regalloc_round :: proc(
 				nd := split_after(ctx, "scp", oth, must = true)
 				onode = expand_node(graph, out.id)
 
-				#reverse for out in onode.outs[:len(onode.outs) - 1] {
-					bac.set_input(ctx.graph, out.id, out.idx, nd)
+				#reverse for oout in onode.outs[:len(onode.outs) - 1] {
+					bac.set_input(ctx.graph, oout.id, oout.idx, nd)
 				}
 
 				continue resolve
@@ -1734,9 +1733,9 @@ regalloc_round :: proc(
 					for {
 						iblck := get_node_block(ctx, inp)
 						if slice.contains(iblck.instrs[:], inp) do break
-						inode := expand_node(ctx.graph, inp)
-						assert(inode.itype == .Split)
-						inp = inode.inps[0]
+						innode := expand_node(ctx.graph, inp)
+						assert(innode.itype == .Split)
+						inp = innode.inps[0]
 					}
 
 					bit_arr.set_all(seen, value = false)

@@ -2,7 +2,6 @@ package builder
 
 import bac ".."
 import "base:intrinsics"
-import "core:fmt"
 import "core:math"
 
 fold_bin_op_lattice :: proc(

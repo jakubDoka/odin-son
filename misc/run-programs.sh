@@ -118,8 +118,8 @@ for dir in "$PROGRAMS_DIR"/*/; do
 		fi
 
 		jit_bin="$WORK/$name-$level-jit-bin"
-		if ! zig cc "$jit_obj" -o "$jit_bin" 2>"$WORK/jit-link.log"; then
-			echo "  [$level] zig cc link FAILED"
+		if ! gcc "$jit_obj" -o "$jit_bin" 2>"$WORK/jit-link.log"; then
+			echo "  [$level] gcc link FAILED"
 			cat "$WORK/jit-link.log" | sed 's/^/    /'
 			fail=$((fail + 1))
 			failed_names+=("$name/$level (link)")

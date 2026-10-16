@@ -141,10 +141,8 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 		next_global += 1
 	}
 
-	// foreign procedures: undefined globals resolved at link time
-	for &prc, i in ctx.procs {
-		// Procedure zero is the frontend sentinel, not an external declaration.
-		if i == 0 do continue
+	// Procedure slot 0 is a null sentinel, not a foreign function.
+	for &prc, i in ctx.procs[1:] {
 		if prc.lit.body != nil do continue
 		append(
 			&globals,
@@ -154,7 +152,7 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 				st_shndx = .Null,
 			},
 		)
-		proc_sym[i] = next_global
+		proc_sym[i + 1] = next_global
 		next_global += 1
 	}
 
@@ -235,6 +233,7 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 				case .Text:
 					type = .X86_64_Pc32
 					if is_libcall || ctx.procs[rel.id].lit.body == nil {
+						// Shared-library functions need a PLT entry in PIE executables.
 						type = .X86_64_Plt32
 					}
 				case .Global:

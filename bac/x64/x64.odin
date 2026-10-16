@@ -1473,6 +1473,8 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 
 	ctx.local_relocs = make([dynamic]Local_Reloc, 0, len(ctx.bbs))
 
+	// TODO: this somehow breaks on other things
+	//prev_is_if := false
 	for &bb, i in ctx.bbs {
 		bb.offset = u32(ctx.code.pos)
 
@@ -1482,9 +1484,15 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 			0 < len(last.outs) &&
 			ctx.bbs[i + 1].head == last.outs[0].id
 
+		//if len(bb.instrs) == 1 && last.itype == .Jump && !prev_is_if {
+		//	continue
+		//}
+
 		for instr in bb.instrs {
 			emit_instr(&ctx, instr, is_consecutive, 0)
 		}
+
+		//prev_is_if = last.itype == .If
 	}
 
 	block_base := ctx.gvn - u32(len(ctx.bbs))

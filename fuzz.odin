@@ -49,5 +49,6 @@ fuzz_one :: proc "c" (data: [^]u8, size: uint) {
 		return
 	}
 
-	run_test(nil, "fuzz", source, 0)
+	{panic("")}
+	//run_test(nil, "fuzz", source, 0)
 }

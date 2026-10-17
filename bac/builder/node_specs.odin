@@ -4,7 +4,7 @@ Reg_Kind :: bac.Reg_Kind
 Class_Flag :: bac.Class_Flag
 // NOTE: this file is generated: 
 
-@(export, link_name = "bac_builder_spec")SPEC := bac.Node_Spec{
+@(rodata, export, link_name = "bac_builder_spec")SPEC := bac.Node_Spec{
 	cc_table = {
 	},
 	call_clobbers = {
@@ -185,7 +185,7 @@ Class_Flag :: bac.Class_Flag
 		{}, // Scope
 		{}, // Lazy_Phi
 	},
-	node_extra_types = {
+	node_extra_types = {} when #config(NO_FMT, false) else []typeid{
 		0 = bac.Cfg,
 		1 = bac.Cfg,
 		2 = bac.Cfg,
@@ -207,9 +207,9 @@ Class_Flag :: bac.Class_Flag
 		27 = bac.CInt,
 		55 = bac.Tup,
 		69 = Scope,
-		70 = nil,
+		70 = {},
 	},
-	node_kind = Node_Type,
+	node_kind = nil when #config(NO_FMT, false) else Node_Type,
 }
 
 Node_Type :: enum u16 {

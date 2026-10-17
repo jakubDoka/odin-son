@@ -1,11 +1,11 @@
 package bac_arm
 
 import bac ".."
-import "../../vendored/gam/util/arna"
-import "../../vendored/gam/util/bit_arr"
+import "../../utils/arna"
+import "../../utils/bit_arr"
+import "../../utils/fmt"
 import "../builder"
 import "base:intrinsics"
-import "core:fmt"
 import "core:mem"
 import "core:slice"
 

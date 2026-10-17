@@ -1,11 +1,11 @@
 package bac
 
-import "../vendored/gam/util/arna"
-import "../vendored/gam/util/bit_arr"
+import "../utils/arna"
+import "../utils/bit_arr"
+import "../utils/fmt"
 import "base:intrinsics"
 import "base:runtime"
 import "core:container/queue"
-import "core:fmt"
 import "core:math"
 import "core:mem"
 import "core:simd"

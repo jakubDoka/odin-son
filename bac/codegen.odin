@@ -1,12 +1,11 @@
 package bac
 
-import "../vendored/gam/util/arna"
+import "../utils/arna"
+import "../utils/fmt"
 import "base:intrinsics"
 import "base:runtime"
 import "core:encoding/varint"
-import "core:fmt"
 import "core:mem"
-import "core:reflect"
 import "core:slice"
 import "core:sort"
 
@@ -262,14 +261,22 @@ buf_output :: proc(
 	checks := mem.slice_data_cast([]uint, mem.ptr_to_bytes(&check))
 	slices := mem.slice_data_cast([]runtime.Raw_Slice, mem.ptr_to_bytes(&out))
 
-	decl := type_info_of(Codegen_Output_Bufs).variant.(runtime.Type_Info_Named)
-	struc := decl.base.variant.(runtime.Type_Info_Struct)
+	ELEM_SIZES :: [?]int {
+		size_of(u8),
+		size_of(u8),
+		size_of(Reloc),
+		size_of(Sloc),
+		size_of(Cfi_Op),
+		size_of(Dbg_Location),
+	}
+	#assert(
+		len(ELEM_SIZES) ==
+		intrinsics.type_struct_field_count(Codegen_Output_Bufs),
+	)
 
-	for f, i in struc.types[:len(slices)] {
+	for size, i in ELEM_SIZES {
 		slices[i].data = arenas[i].ptr[checks[i]:]
-		slices[i].len =
-			int(arenas[i].pos - checks[i]) /
-			f.variant.(runtime.Type_Info_Slice).elem.size
+		slices[i].len = int(arenas[i].pos - checks[i]) / size
 	}
 
 	return
@@ -684,12 +691,9 @@ emit :: #force_no_inline proc(buf: ^arna.Allocator, bytes: []u8) {
 	copy(b, bytes)
 }
 
-emit_anys :: #force_no_inline proc(buf: ^arna.Allocator, values: ..any) {
-	for value in values {
-		b := reflect.as_bytes(value)
-		bytes := arna.smake(buf, []u8, len(b), zeroed = false)
-		copy(bytes, b)
-	}
+emit_anys :: #force_inline proc(buf: ^arna.Allocator, value: $T) {
+	value := value
+	emit(buf, mem.ptr_to_bytes(&value))
 }
 
 emit_aligned :: #force_no_inline proc(buf: ^arna.Allocator, vl: $T) -> ^T {

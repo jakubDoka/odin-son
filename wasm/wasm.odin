@@ -3,7 +3,7 @@ package bac_wasm_main
 import jit ".."
 import "../bac"
 import "../typecheck"
-import "../vendored/gam/util/arna"
+import "../utils/arna"
 import "base:runtime"
 import "core:odin/ast"
 import "core:odin/parser"

@@ -1,6 +1,6 @@
 package meta
 
-import "../vendored/gam/util/arna"
+import "../utils/arna"
 import "core:odin/ast"
 import "core:odin/parser"
 import "core:testing"

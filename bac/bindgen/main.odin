@@ -25,7 +25,7 @@ EXPORTED_SUBMODS_PATH := [?]string {
 	"../x64",
 	"../wasm",
 	"../regalloc/",
-	"../../vendored/gam/util/arna/",
+	"../../utils/arna/",
 }
 
 API_Proc :: struct {
@@ -38,19 +38,22 @@ API_Proc :: struct {
 main :: proc() {
 	mkerr := os.make_directory("bac/bindgen/lib")
 	assert(mkerr == nil || mkerr == .Exist)
+	mkerr = os.make_directory("bac/bindgen/c")
+	assert(mkerr == nil || mkerr == .Exist)
+
 	lib, operr := os.open(
 		"bac/bindgen/lib/lib.odin",
 		flags = {.Read, .Write, .Trunc, .Create},
 	)
 	assert(operr == nil)
+	defer os.close(lib)
 
-	mkerr = os.make_directory("bac/bindgen/c")
-	assert(mkerr == nil || mkerr == .Exist)
 	c_lib, c_operr := os.open(
 		"bac/bindgen/c/bac.h",
 		flags = {.Read, .Write, .Trunc, .Create},
 	)
 	assert(c_operr == nil)
+	defer os.close(c_lib)
 
 	os.write_string(lib, `
 package bac_lib
@@ -239,7 +242,7 @@ typedef struct {
 				}
 
 				for spec in EXPORTED_SPECS {
-					fmt.fprintfln(c_lib, "static bac_Node_Spec %v;", spec)
+					fmt.fprintfln(c_lib, "extern bac_Node_Spec %v_spec;", spec)
 				}
 			}
 

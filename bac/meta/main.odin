@@ -51,6 +51,42 @@ qualify_enm :: proc(qual: string, enm: typeid) -> string {
 	return fmt.tprintf("%v", enm)
 }
 
+write_call_conv :: proc(file: ^os.File, cc: bac.Call_Conv, qual: string) {
+	fmt.fprintf(file, "\t\t{{\n\t\t\tname = %q,\n", cc.name)
+	reg_fields := [?]struct {
+		name: string,
+		regs: [][]bac.Reg,
+	} {
+		{"callee_saved", cc.callee_saved},
+		{"caller_saved", cc.caller_saved},
+		{"args", cc.args},
+		{"rets", cc.rets},
+	}
+	for field in reg_fields {
+		fmt.fprintf(file, "\t\t\t%s = {{", field.name)
+		for regs, i in field.regs {
+			if i != 0 do os.write_string(file, ", ")
+			if raw_data(regs) == nil && len(regs) != 0 {
+				// WASM needs only lengths, but constant slices require backing arrays.
+				fmt.fprintf(file, "{{%v = {{}}}", len(regs) - 1)
+			} else {
+				os.write_string(file, "{")
+				for reg, j in regs {
+					if j != 0 do os.write_string(file, ", ")
+					fmt.fprintf(file, "%v%w", qual, reg)
+				}
+				os.write_string(file, "}")
+			}
+		}
+		os.write_string(file, "},\n")
+	}
+	fmt.fprintf(file, "\t\t\tred_zone_size = %v,\n", cc.red_zone_size)
+	fmt.fprintf(file, "\t\t\tis_syscall = %v,\n", cc.is_syscall)
+	fmt.fprintf(file, "\t\t\tcfi_spec = %v%w,\n", qual, cc.cfi_spec)
+	fmt.fprintf(file, "\t\t\tstack_pointer = %v%w,\n", qual, cc.stack_pointer)
+	os.write_string(file, "\t\t},\n")
+}
+
 generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 	context.allocator = context.temp_allocator
 
@@ -126,14 +162,14 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 	if !spec.no_spec_tables {
 		fmt.fprintf(
 			file,
-			"@(export, link_name = \"%v_spec\")",
+			"@(rodata, export, link_name = \"%v_spec\")",
 			spec_in.package_name,
 		)
 		fmt.fprintf(file, "SPEC := %vNode_Spec{{\n", q)
 
 		os.write_string(file, "\tcc_table = {\n")
 		for c in spec.cc_table {
-			fmt.fprintf(file, "\t\t%s,\n", c.name)
+			write_call_conv(file, c, q)
 		}
 		os.write_string(file, "\t},\n")
 
@@ -241,7 +277,7 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 		}
 		os.write_string(file, "\t},\n")
 
-		os.write_string(file, "\tnode_extra_types = {\n")
+		os.write_string(file, "\tnode_extra_types = {} when #config(NO_FMT, false) else []typeid{\n")
 		idx = 0
 		for classes in spec.classes {
 			for class in classes.ids {
@@ -258,11 +294,11 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 			}
 		}
 		if last_idx != idx - 1 {
-			fmt.fprintf(file, "\t\t%v = nil,\n", idx - 1)
+			fmt.fprintf(file, "\t\t%v = {{}},\n", idx - 1)
 		}
 		os.write_string(file, "\t},\n")
 
-		os.write_string(file, "\tnode_kind = Node_Type,\n")
+		os.write_string(file, "\tnode_kind = nil when #config(NO_FMT, false) else Node_Type,\n")
 
 		os.write_string(file, "}\n\n")
 	} else {

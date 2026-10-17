@@ -1,8 +1,8 @@
 package bac
 
-import "../vendored/gam/util/bit_arr"
+import "../utils/bit_arr"
+import "../utils/fmt"
 import "base:intrinsics"
-import "core:fmt"
 import "core:slice"
 
 REGLOGS :: #config(REGLOGS, false)

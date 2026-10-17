@@ -931,10 +931,10 @@ struct bac_Proc {
 	bac_Bs_Opt_Flag opt_flags;
 	Slice_Of_bac_Lattice lattices;
 };
-static bac_Node_Spec bac_builder;
-static bac_Node_Spec bac_arm;
-static bac_Node_Spec bac_x64;
-static bac_Node_Spec bac_wasm;
+extern bac_Node_Spec bac_builder_spec;
+extern bac_Node_Spec bac_arm_spec;
+extern bac_Node_Spec bac_x64_spec;
+extern bac_Node_Spec bac_wasm_spec;
 bac_Node_ID bac_add_bin_op(bac_Proc *graph, bac_String name, bac_Bin_Op type, bac_Node_Datatype dt, bac_Node_ID lhs, bac_Node_ID rhs, bac_Lane_Type lane);
 bac_Node_ID bac_add_c_int(bac_Proc *graph, bac_String name, bac_Node_Datatype dt, int64_t value);
 bac_Node_ID bac_add_call(bac_Proc *graph, bac_String name, Slice_Of_bac_Node_ID inputs, bac_Call extra);

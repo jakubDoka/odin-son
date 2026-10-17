@@ -1,8 +1,8 @@
 package anal
 
 import bac ".."
-import "../../vendored/gam/util/arna"
-import "core:fmt"
+import "../../utils/arna"
+import "../../utils/fmt"
 Node_ID :: bac.Node_ID
 
 SPEC_NOT_PRESENT :: (#load("node_specs.odin", string) or_else "") == ""

@@ -29,6 +29,19 @@ function build-wabt
 		-lcrypto -Wl,--no-undefined -o wabt/libwabt_runner.so
 end
 
+function build-bac
+	odin run meta -o:none
+	or return 1
+	odin run bac/bindgen -o:none -define:NO_FMT=true
+	or return 1
+	gcc bac/bindgen/c/bac.h
+	or return 1
+	odin build bac/bindgen/lib -build-mode:obj -no-entry-point -use-single-module \
+		-out:bac/bindgen/lib/lib.o -o:size -source-code-locations:none \
+		-disable-assert -no-bounds-check -no-type-assert -define:NO_FMT=true \
+		-default-to-nil-allocator
+end
+
 function build-unicorn
 	cmake -S vendored/unicorn-engine -B vendored/unicorn-engine/build \
 		-DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF \

@@ -1,9 +1,9 @@
 package bac_builder
 
 import bac ".."
-import "../../vendored/gam/util/arna"
-import "../../vendored/gam/util/bit_arr"
-import "core:fmt"
+import "../../utils/arna"
+import "../../utils/bit_arr"
+import "../../utils/fmt"
 import "core:math"
 import "core:slice"
 

@@ -2,6 +2,7 @@
 package main
 
 import "bac"
+import "core:debug/trace"
 import "core:fmt"
 import "core:log"
 import "core:os"
@@ -9,8 +10,7 @@ import "core:reflect"
 import "core:strings"
 import "core:time"
 import "typecheck"
-import "vendored/gam/util/arna"
-import "vendored/gam/util/hot"
+import "utils/arna"
 
 main :: proc() {
 	when #config(FUZZ, false) {
@@ -18,7 +18,9 @@ main :: proc() {
 		return
 	}
 
-	context.assertion_failure_proc = hot.init_trace()
+	when ODIN_DEBUG {
+		context.assertion_failure_proc = trace.assertion_failure_proc
+	}
 	context.logger = log.create_console_logger()
 	context.logger.options &= ~{.Time, .Date, .Level, .Procedure}
 

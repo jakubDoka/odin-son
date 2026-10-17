@@ -3,7 +3,7 @@ package typecheck
 import "../bac"
 import "../bac/builder"
 import ra "../bac/regalloc"
-import "../vendored/gam/util/arna"
+import "../utils/arna"
 import "base:intrinsics"
 import "base:runtime"
 import "core:fmt"

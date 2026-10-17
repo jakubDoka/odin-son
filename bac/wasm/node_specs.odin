@@ -4,9 +4,19 @@ Reg_Kind :: bac.Reg_Kind
 Class_Flag :: bac.Class_Flag
 // NOTE: this file is generated: 
 
-@(export, link_name = "bac_wasm_spec")SPEC := bac.Node_Spec{
+@(rodata, export, link_name = "bac_wasm_spec")SPEC := bac.Node_Spec{
 	cc_table = {
-		WASM_SYSTEMV_CC,
+		{
+			name = "WASM_SYSTEMV_CC",
+			callee_saved = {},
+			caller_saved = {},
+			args = {{63 = {}}, {63 = {}}, {63 = {}}, {63 = {}}, {63 = {}}, {63 = {}}},
+			rets = {},
+			red_zone_size = 0,
+			is_syscall = false,
+			cfi_spec = bac.Cfi_Spec{cfa_reg = 0, return_addr_reg = 0, initial_cfa_offset = 0, code_align = 0, data_align = 0},
+			stack_pointer = bac.Reg{index = 0, kind = 0},
+		},
 	},
 	call_clobbers = {
 		{},
@@ -210,7 +220,7 @@ Class_Flag :: bac.Class_Flag
 		{}, // WASM_U_Shr
 		{}, // Select
 	},
-	node_extra_types = {
+	node_extra_types = {} when #config(NO_FMT, false) else []typeid{
 		0 = bac.Cfg,
 		1 = bac.Cfg,
 		2 = bac.Cfg,
@@ -234,9 +244,9 @@ Class_Flag :: bac.Class_Flag
 		69 = Mem_Op,
 		70 = Mem_Op,
 		76 = Lane_Op,
-		80 = nil,
+		80 = {},
 	},
-	node_kind = Node_Type,
+	node_kind = nil when #config(NO_FMT, false) else Node_Type,
 }
 
 Node_Type :: enum u16 {

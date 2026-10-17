@@ -4,7 +4,7 @@ Reg_Kind :: bac.Reg_Kind
 Class_Flag :: bac.Class_Flag
 // NOTE: this file is generated: 
 
-@(export, link_name = "anal_spec")SPEC := bac.Node_Spec{
+@(rodata, export, link_name = "anal_spec")SPEC := bac.Node_Spec{
 	cc_table = {
 	},
 	call_clobbers = {
@@ -179,7 +179,7 @@ Class_Flag :: bac.Class_Flag
 		{Class_Flag.Interned}, // Simd_Extract_Lsbs
 		{Class_Flag.Interned}, // Simd_Reduce_Add_Bisect
 	},
-	node_extra_types = {
+	node_extra_types = {} when #config(NO_FMT, false) else []typeid{
 		0 = bac.Cfg,
 		1 = bac.Cfg,
 		2 = bac.Cfg,
@@ -200,9 +200,9 @@ Class_Flag :: bac.Class_Flag
 		25 = bac.Tup,
 		27 = bac.CInt,
 		55 = bac.Tup,
-		68 = nil,
+		68 = {},
 	},
-	node_kind = Node_Type,
+	node_kind = nil when #config(NO_FMT, false) else Node_Type,
 }
 
 Node_Type :: enum u16 {

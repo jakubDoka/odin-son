@@ -1,8 +1,8 @@
 package bac_builder
 
 import bac ".."
-import "../../vendored/gam/util/arna"
-import "core:fmt"
+import "../../utils/arna"
+import "../../utils/fmt"
 import "core:mem"
 import "core:slice"
 

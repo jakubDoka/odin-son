@@ -1,7 +1,7 @@
 package bac
 
-import "../vendored/gam/util/arna"
-import "core:fmt"
+import "../utils/arna"
+import "../utils/fmt"
 import "core:slice"
 
 Sccp_Output :: struct {

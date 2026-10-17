@@ -803,3 +803,21 @@ can inspect the tipeinfo of each signature and generates stuff based on it and
 your role is to generate the input metadata file for this. The bindgen will be
 written by me so just create a main.odin in the bindgen that will print the
 table.
+
+### Migrate vendored /gam packages to be local and add a package that can disable all dependencies on fmt
+
+Colud you please migrate used dependencies: bit_arr, arna, to local ./utils/
+direcotory, then add fmt package under utils and make it a replacement for
+core:fmt, ONLY for functions we use. These are normally alias for fmt.assertf,
+fmt.println, fmt.printfln and fmt.panicf and so on. But if you toggle
+#config(NO_FMT, false), they will switch to generic always inline stubs that
+are also overloaded up to 5 arguments, so that no `any` type is used when the
+NO_FMT is enabled. Ideally when you build `odin build bac/bindgen/lib/
+-build-mode:lib -out:bac/bindgen/lib/lib.a -disable-assert -no-bounds-check
+-no-type-assert -define:NO_FMT=true`, you should not get any fmt references in
+the final binary. (you might need to use higher optimization level if the dead
+code does not get eliminated). Panic can just intrinsics.trap(), assert should
+conditionally trap. This of course only applyes to code included in the build
+of the mentioned command. It whould be gread if this reduces the amount of type
+info we use. You can also make it so that Node_Spec will be initialized with
+empty node_extra_types slice, so we dont include any type info if possible.

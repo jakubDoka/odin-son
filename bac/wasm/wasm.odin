@@ -1,10 +1,10 @@
 package bac_wasm
 
 import bac ".."
-import "../../vendored/gam/util/arna"
+import "../../utils/arna"
+import "../../utils/fmt"
 import "base:runtime"
 import "core:encoding/varint"
-import "core:fmt"
 import "core:slice"
 import "core:sort"
 

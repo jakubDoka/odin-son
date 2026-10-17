@@ -1,14 +1,13 @@
 package bac_x64
 
 import bac ".."
-import "../../vendored/gam/util/arna"
-import "../../vendored/gam/util/bit_arr"
+import "../../utils/arna"
+import "../../utils/bit_arr"
+import "../../utils/fmt"
 import "../builder"
 import "base:intrinsics"
-import "core:fmt"
 import "core:math"
 import "core:mem"
-import "core:reflect"
 import "core:slice"
 
 Reg :: bac.Reg
@@ -1512,7 +1511,7 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 		dst_offset := ctx.bbs[reloc.dest].offset
 		jump := dst_offset - reloc.offset - size
 
-		copy(ctx.code.ptr[reloc.offset:][:size], reflect.as_bytes(jump))
+		copy(ctx.code.ptr[reloc.offset:][:size], mem.ptr_to_bytes(&jump))
 	}
 
 	bac.emit_dbg_locations(ctx)

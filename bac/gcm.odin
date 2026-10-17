@@ -1,9 +1,9 @@
 package bac
 
-import "../vendored/gam/util/arna"
-import "../vendored/gam/util/bit_arr"
+import "../utils/arna"
+import "../utils/bit_arr"
+import "../utils/fmt"
 import "base:runtime"
-import "core:fmt"
 import "core:slice"
 
 Basic_Block :: struct {

@@ -6,7 +6,7 @@ import "core:fmt"
 import "core:mem"
 import "core:slice"
 import "typecheck"
-import "vendored/gam/util/arna"
+import "utils/arna"
 
 emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 	context.allocator, _ = arna.scrath(scratch)

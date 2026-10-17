@@ -1,11 +1,11 @@
 package bac_regalloc
 
 import ".."
-import "../../vendored/gam/util/arna"
-import "../../vendored/gam/util/bit_arr"
+import "../../utils/arna"
+import "../../utils/bit_arr"
+import "../../utils/fmt"
 import "base:runtime"
 import "core:container/queue"
-import "core:fmt"
 import "core:io"
 import "core:mem"
 import "core:slice"
@@ -1984,23 +1984,26 @@ regalloc_round :: proc(
 		)
 
 		prefix :: proc(w: io.Writer, instr: ^bac.Node, bb: bac.Basic_Block) {
-			ctx := (^Ctx)(context.user_ptr)
-			if is_def_while_splitting(ctx^, instr) && len(ctx.lrg_table) != 0 {
-				lrg := get_lrg(ctx^, bac.get_node_id(ctx.graph, instr))
-				if lrg == nil {
-					return
-				}
-				fmt.wprintf(w, "%v:", lrg.mask)
-				bac.ansi_start(w, lrg.index)
-				fmt.wprintf(w, "%3i", lrg.index)
-				bac.ansi_end(w)
-				if len(ctx.res) != 0 {
-					fmt.wprintf(w, " %02i ", ctx.res[instr.gvn].index)
+			when !fmt.NO_FMT {
+				ctx := (^Ctx)(context.user_ptr)
+				if is_def_while_splitting(ctx^, instr) &&
+				   len(ctx.lrg_table) != 0 {
+					lrg := get_lrg(ctx^, bac.get_node_id(ctx.graph, instr))
+					if lrg == nil {
+						return
+					}
+					fmt.wprintf(w, "%v:", lrg.mask)
+					bac.ansi_start(w, lrg.index)
+					fmt.wprintf(w, "%3i", lrg.index)
+					bac.ansi_end(w)
+					if len(ctx.res) != 0 {
+						fmt.wprintf(w, " %02i ", ctx.res[instr.gvn].index)
+					} else {
+						fmt.wprint(w, "       ")
+					}
 				} else {
-					fmt.wprint(w, "       ")
+					fmt.wprint(w, "                            ")
 				}
-			} else {
-				fmt.wprint(w, "                            ")
 			}
 		}
 

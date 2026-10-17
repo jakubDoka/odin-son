@@ -9,10 +9,10 @@ import "../bac/wasm"
 import "../bac/x64"
 import "../typecheck"
 import "../unicorn"
-import "../vendored/gam/util/arna"
-import "../vendored/gam/util/hot"
+import "../utils/arna"
 import "../wabt"
 import "base:intrinsics"
+import "core:debug/trace"
 import "core:dynlib"
 import "core:fmt"
 import "core:hash"
@@ -79,7 +79,9 @@ run_test :: proc(
 
 	name_str = name
 	context.logger.options &= ~{.Time, .Date, .Level, .Procedure}
-	context.assertion_failure_proc = hot.init_trace()
+	when ODIN_DEBUG {
+		context.assertion_failure_proc = trace.assertion_failure_proc
+	}
 	context.random_generator = {}
 
 	if types.mems.graph.reserved == 0 {

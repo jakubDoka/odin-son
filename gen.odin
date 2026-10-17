@@ -14,7 +14,7 @@ import "core:odin/ast"
 import "core:slice"
 import "core:strconv"
 import "typecheck"
-import "vendored/gam/util/arna"
+import "utils/arna"
 
 CALL_PREFIX :: bac.CALL_PREFIX
 get_node_type :: typecheck.get_node_type

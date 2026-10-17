@@ -8,7 +8,7 @@ import bac_arm "../../arm"
 import bac_x64 "../../x64"
 import bac_wasm "../../wasm"
 import bac_regalloc "../../regalloc/"
-import arna "../../../vendored/gam/util/arna/"
+import arna "../../../utils/arna/"
 
 _ :: bac
 _ :: bac_builder

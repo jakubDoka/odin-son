@@ -1,6 +1,6 @@
 package unicorn
 
-import "../vendored/gam/util/arna"
+import "../utils/arna"
 import "base:runtime"
 import "core:c"
 import "core:fmt"

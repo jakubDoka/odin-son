@@ -4,9 +4,19 @@ Reg_Kind :: bac.Reg_Kind
 Class_Flag :: bac.Class_Flag
 // NOTE: this file is generated: 
 
-@(export, link_name = "bac_arm_spec")SPEC := bac.Node_Spec{
+@(rodata, export, link_name = "bac_arm_spec")SPEC := bac.Node_Spec{
 	cc_table = {
-		ARM_SYSTEMV_CC,
+		{
+			name = "ARM_SYSTEMV_CC",
+			callee_saved = {{bac.Reg{index = 19, kind = 0}, bac.Reg{index = 20, kind = 0}, bac.Reg{index = 21, kind = 0}, bac.Reg{index = 22, kind = 0}, bac.Reg{index = 23, kind = 0}, bac.Reg{index = 24, kind = 0}, bac.Reg{index = 25, kind = 0}, bac.Reg{index = 26, kind = 0}, bac.Reg{index = 27, kind = 0}, bac.Reg{index = 28, kind = 0}}, {bac.Reg{index = 8, kind = 1}, bac.Reg{index = 9, kind = 1}, bac.Reg{index = 10, kind = 1}, bac.Reg{index = 11, kind = 1}, bac.Reg{index = 12, kind = 1}, bac.Reg{index = 13, kind = 1}, bac.Reg{index = 14, kind = 1}, bac.Reg{index = 15, kind = 1}}},
+			caller_saved = {{bac.Reg{index = 0, kind = 0}, bac.Reg{index = 1, kind = 0}, bac.Reg{index = 2, kind = 0}, bac.Reg{index = 3, kind = 0}, bac.Reg{index = 4, kind = 0}, bac.Reg{index = 5, kind = 0}, bac.Reg{index = 6, kind = 0}, bac.Reg{index = 7, kind = 0}, bac.Reg{index = 8, kind = 0}, bac.Reg{index = 9, kind = 0}, bac.Reg{index = 10, kind = 0}, bac.Reg{index = 11, kind = 0}, bac.Reg{index = 12, kind = 0}, bac.Reg{index = 13, kind = 0}, bac.Reg{index = 14, kind = 0}, bac.Reg{index = 15, kind = 0}, bac.Reg{index = 16, kind = 0}, bac.Reg{index = 17, kind = 0}, bac.Reg{index = 18, kind = 0}}, {bac.Reg{index = 0, kind = 1}, bac.Reg{index = 1, kind = 1}, bac.Reg{index = 2, kind = 1}, bac.Reg{index = 3, kind = 1}, bac.Reg{index = 4, kind = 1}, bac.Reg{index = 5, kind = 1}, bac.Reg{index = 6, kind = 1}, bac.Reg{index = 7, kind = 1}, bac.Reg{index = 16, kind = 1}, bac.Reg{index = 17, kind = 1}, bac.Reg{index = 18, kind = 1}, bac.Reg{index = 19, kind = 1}, bac.Reg{index = 20, kind = 1}, bac.Reg{index = 21, kind = 1}, bac.Reg{index = 22, kind = 1}, bac.Reg{index = 23, kind = 1}, bac.Reg{index = 24, kind = 1}, bac.Reg{index = 25, kind = 1}, bac.Reg{index = 26, kind = 1}, bac.Reg{index = 27, kind = 1}, bac.Reg{index = 28, kind = 1}, bac.Reg{index = 29, kind = 1}, bac.Reg{index = 30, kind = 1}, bac.Reg{index = 31, kind = 1}}},
+			args = {{bac.Reg{index = 0, kind = 0}, bac.Reg{index = 1, kind = 0}, bac.Reg{index = 2, kind = 0}, bac.Reg{index = 3, kind = 0}, bac.Reg{index = 4, kind = 0}, bac.Reg{index = 5, kind = 0}, bac.Reg{index = 6, kind = 0}, bac.Reg{index = 7, kind = 0}}, {bac.Reg{index = 0, kind = 1}, bac.Reg{index = 1, kind = 1}, bac.Reg{index = 2, kind = 1}, bac.Reg{index = 3, kind = 1}, bac.Reg{index = 4, kind = 1}, bac.Reg{index = 5, kind = 1}, bac.Reg{index = 6, kind = 1}, bac.Reg{index = 7, kind = 1}}},
+			rets = {{bac.Reg{index = 0, kind = 0}, bac.Reg{index = 1, kind = 0}}, {bac.Reg{index = 0, kind = 1}, bac.Reg{index = 1, kind = 1}}},
+			red_zone_size = 0,
+			is_syscall = false,
+			cfi_spec = bac.Cfi_Spec{cfa_reg = 0, return_addr_reg = 0, initial_cfa_offset = 0, code_align = 0, data_align = 0},
+			stack_pointer = bac.Reg{index = 31, kind = 0},
+		},
 	},
 	call_clobbers = {
 		{524287, 4294902015},
@@ -204,7 +214,7 @@ Class_Flag :: bac.Class_Flag
 		{}, // Lsrv
 		{}, // Csel_Ult_Imm
 	},
-	node_extra_types = {
+	node_extra_types = {} when #config(NO_FMT, false) else []typeid{
 		0 = bac.Cfg,
 		1 = bac.Cfg,
 		2 = bac.Cfg,
@@ -229,7 +239,7 @@ Class_Flag :: bac.Class_Flag
 		74 = Arm_Op,
 		78 = Arm_Op,
 	},
-	node_kind = Node_Type,
+	node_kind = nil when #config(NO_FMT, false) else Node_Type,
 }
 
 Node_Type :: enum u16 {

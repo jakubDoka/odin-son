@@ -1410,7 +1410,7 @@ emit_instr :: proc(
 		case .Call:
 			id = call.cid
 
-			if call.indirect {
+			if bac.is_indirect_call(node) {
 				op = 0xd63f0000
 
 				idx := len(node.inps) - 1

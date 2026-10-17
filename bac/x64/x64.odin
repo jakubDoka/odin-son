@@ -2078,7 +2078,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 		if cc.is_syscall {
 			// syscall
 			emit(ctx.code, {0x0F, 0x05})
-		} else if call.indirect {
+		} else if bac.is_indirect_call(node) {
 			// call $ptr
 			idx := len(node.inps) - 1
 			for ; get_node(ctx, node.inps[idx]).itype == .Local; idx -= 1 {}

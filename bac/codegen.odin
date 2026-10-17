@@ -228,6 +228,7 @@ Reloc_Slot :: struct #raw_union #align (1) {
 	},
 }
 
+@(tag = "api")
 emit_function :: proc(ctx: Codegen_Emit_Ctx) -> (res: Codegen_Output) {
 	check := buf_checkpoint(ctx.buf)
 	res.emit = ctx.graph.emit_function(ctx)
@@ -286,6 +287,7 @@ mount_sloc :: proc(ctx: ^Codegen_Emit_Ctx, node: Node_ID) {
 	ctx.last_off = ctx.code.pos
 }
 
+@(tag = "api")
 take_dbg_data :: proc(
 	graph: ^Proc,
 	sched: ^Schedule,
@@ -616,7 +618,7 @@ cc_node_meta :: proc(
 		counts[rk] += 1
 	}
 
-	if call != nil && call.indirect {
+	if is_indirect_call(node) {
 		nmasks[len(nmasks) - 1] = {}
 	}
 
@@ -924,6 +926,7 @@ layout_locals :: proc(ctx: ^Proc, schedule: ^Schedule, stack_size: ^i32) {
 	}
 }
 
+@(tag = "api")
 uleb :: proc(b: ^[dynamic]u8, value: u64) {
 	v := value
 	for {
@@ -935,6 +938,7 @@ uleb :: proc(b: ^[dynamic]u8, value: u64) {
 	}
 }
 
+@(tag = "api")
 sleb :: proc(b: ^[dynamic]u8, value: i64) {
 	v := value
 	for {
@@ -948,6 +952,7 @@ sleb :: proc(b: ^[dynamic]u8, value: i64) {
 	}
 }
 
+@(tag = "api")
 putb :: #force_inline proc(b: ^[dynamic]u8, vl: $T) {
 	append(b, transmute(u8)vl)
 }

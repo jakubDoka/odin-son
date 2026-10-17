@@ -10,6 +10,7 @@ Local :: bac.Local
 Node_ID :: bac.Node_ID
 expand_node :: bac.expand_node
 
+@(tag = "api")
 memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 	assert(graph.node_spec == &SPEC)
 

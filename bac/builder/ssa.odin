@@ -18,6 +18,7 @@ builder_extra :: proc {
 	builder_extra_node_id,
 }
 
+@(tag = "api")
 decl_local :: proc(graph: ^Proc, loc: Node_ID, name: string, type: u64) {
 	loc := loc
 	if node := expand_node(graph, loc); node.itype == .Local_Addr {
@@ -34,6 +35,7 @@ decl_local :: proc(graph: ^Proc, loc: Node_ID, name: string, type: u64) {
 	}
 }
 
+@(tag = "api")
 merge_returns :: proc(graph: ^Proc, args: []Node_ID) -> Node_ID {
 	ret := bac.get_inputs(graph, graph.end)[0]
 
@@ -123,6 +125,39 @@ builder_extra_node_id :: #force_inline proc(
 	return builder_extra_node(graph, get_node(graph, id), T)
 }
 
+@(tag = "api")
+add_call :: proc(
+	graph: ^bac.Proc,
+	args: []Node_ID,
+	extra: bac.Call,
+) -> (
+	ctrl: Node_ID,
+	mem: Node_ID,
+) {
+	assert(bac.is_cfg(graph, args[0]))
+	assert(get_node(graph, args[1]).dt == .Mem)
+	assert(args[2] == 0 || get_node(graph, args[2]).itype == .Sym)
+
+	call := bac.add_call(graph, "call", args, extra)
+	ctrl = bac.add_call_end(graph, "calle", call)
+	mem = bac.add_mem(graph, "cmem", ctrl)
+	return
+}
+
+add_call_ret :: proc(
+	graph: ^bac.Proc,
+	on: Node_ID,
+	dt: bac.Node_Datatype,
+) -> Node_ID {
+	assert(get_node(graph, on).itype == .Call_End)
+
+	call_ext := bac.get_extra(graph, bac.get_inputs(graph, on)[0], bac.Call)
+	call_ext.rets[call_ext.ret_count] = dt
+	call_ext.ret_count += 1
+
+	return bac.add_ret(graph, "cret", dt, on, u32(call_ext.ret_count - 1))
+}
+
 If_State :: struct {
 	if_:     Node_ID,
 	using _: struct #raw_union {
@@ -131,6 +166,7 @@ If_State :: struct {
 	},
 }
 
+@(tag = "api")
 start_if :: proc(
 	graph: ^bac.Proc,
 	scope: Node_ID,
@@ -145,17 +181,20 @@ start_if :: proc(
 	bac.set_input(graph, scope, 0, then)
 }
 
+@(tag = "api")
 end_if :: proc(graph: ^bac.Proc, then_scope: ^Node_ID, state: ^If_State) {
 	start_else(graph, then_scope, state)
 	end_else(graph, then_scope, state)
 }
 
+@(tag = "api")
 start_else :: proc(graph: ^bac.Proc, then_scope: ^Node_ID, state: ^If_State) {
 	else_ := bac.add_else(graph, "else", state.if_)
 	bac.set_input(graph, state.else_scope, 0, else_)
 	then_scope^, state.then_scope = state.else_scope, then_scope^
 }
 
+@(tag = "api")
 end_else :: proc(graph: ^bac.Proc, else_scope: ^Node_ID, state: ^If_State) {
 	else_scope^ = merge_scopes(graph, state.then_scope, else_scope^)
 }
@@ -164,15 +203,18 @@ Block_State :: struct {
 	end_scope: Node_ID,
 }
 
+@(tag = "api")
 start_block :: proc(state: ^Block_State) {
 	state^ = {}
 }
 
+@(tag = "api")
 break_block :: proc(graph: ^bac.Proc, scope: ^Node_ID, state: ^Block_State) {
 	state.end_scope = merge_scopes(graph, state.end_scope, scope^)
 	scope^ = 0
 }
 
+@(tag = "api")
 end_block :: proc(graph: ^bac.Proc, scope: ^Node_ID, state: ^Block_State) {
 	state.end_scope = merge_scopes(graph, state.end_scope, scope^)
 	scope^ = state.end_scope
@@ -188,6 +230,7 @@ Loop_State :: struct {
 	scopes: [Loop_Control]Node_ID,
 }
 
+@(tag = "api")
 start_loop :: proc(graph: ^bac.Proc, scope: Node_ID, state: ^Loop_State) {
 	snode := expand_node(graph, scope)
 	loop := bac.add_loop(graph, "loop", snode.inps[0])
@@ -202,6 +245,7 @@ start_loop :: proc(graph: ^bac.Proc, scope: Node_ID, state: ^Loop_State) {
 	}
 }
 
+@(tag = "api")
 start_loop_increment :: proc(
 	graph: ^bac.Proc,
 	node_scope: ^Node_ID,
@@ -212,6 +256,7 @@ start_loop_increment :: proc(
 	state.scopes[.Continue] = 0
 }
 
+@(tag = "api")
 end_loop :: proc(graph: ^bac.Proc, node_scope: ^Node_ID, state: ^Loop_State) {
 	start_loop_increment(graph, node_scope, state)
 
@@ -289,6 +334,7 @@ end_loop :: proc(graph: ^bac.Proc, node_scope: ^Node_ID, state: ^Loop_State) {
 	return
 }
 
+@(tag = "api")
 loop_control :: proc(
 	variant: Loop_Control,
 	ctx: ^bac.Proc,
@@ -299,6 +345,7 @@ loop_control :: proc(
 	loop.scopes[variant] = merge_scopes(ctx, scope, loop.scopes[variant])
 }
 
+@(tag = "api")
 get_scope_value :: proc(
 	graph: ^bac.Proc,
 	scope: Node_ID,
@@ -336,6 +383,7 @@ should_debug_track :: proc(graph: ^bac.Proc, value: Node_ID) -> bool {
 	return graph.has_dbg && get_node(graph, value).dt > .Mem
 }
 
+@(tag = "api")
 push_scope_value :: proc(
 	graph: ^bac.Proc,
 	scope: Node_ID,
@@ -355,6 +403,7 @@ push_scope_value :: proc(
 	return bac.connect(graph, scope, value)
 }
 
+@(tag = "api")
 set_scope_value :: proc(
 	graph: ^bac.Proc,
 	scope: Node_ID,
@@ -370,11 +419,13 @@ set_scope_value :: proc(
 	bac.set_input(graph, scope, idx, value)
 }
 
+@(tag = "api")
 delete_scope :: proc(graph: ^bac.Proc, scope: Node_ID) {
 	truncate_scope(graph, scope, 1)
 	bac.delete_node(graph, scope)
 }
 
+@(tag = "api")
 truncate_scope :: proc(
 	graph: ^bac.Proc,
 	scope: Node_ID,
@@ -451,6 +502,7 @@ inline_call :: proc {
 	inline_stencil,
 }
 
+@(tag = "api")
 inline_stencil :: proc(graph: ^bac.Proc, call: Node_ID, from: bac.Stencil) {
 	slot: arna.Allocator
 	fromg: bac.Proc
@@ -460,6 +512,7 @@ inline_stencil :: proc(graph: ^bac.Proc, call: Node_ID, from: bac.Stencil) {
 	inline_graph(graph, call, &fromg)
 }
 
+@(tag = "api")
 inline_graph :: proc(graph: ^bac.Proc, call: Node_ID, from: ^bac.Proc) {
 	assert(graph.node_spec == &SPEC)
 
@@ -758,6 +811,7 @@ ordered_remove :: proc(ctx: ^bac.Proc, node: ^bac.Expanded_Node, i: int) {
 	bac.remove_output(ctx, inp, {idx = i, id = par})
 }
 
+@(tag = "api")
 compute_index_offset :: proc(
 	ctx: ^bac.Proc,
 	base: Node_ID,
@@ -782,12 +836,14 @@ compute_index_offset :: proc(
 	return bac.add_bin_op(ctx, "snd", .Add, .I64, base, index)
 }
 
+@(tag = "api")
 add_field_offset :: proc(graph: ^Proc, base: Node_ID, offset: int) -> Node_ID {
 	if offset == 0 do return base
 	off := bac.add_c_int(graph, "foff", .I64, i64(offset))
 	return bac.add_bin_op(graph, "fld", .Add, .I64, base, off)
 }
 
+@(tag = "api")
 add_field_store :: proc(
 	ctx: ^Proc,
 	name: string,
@@ -807,6 +863,7 @@ add_field_store :: proc(
 	)
 }
 
+@(tag = "api")
 add_arbitrary_store :: proc(
 	ctx: ^Proc,
 	cfg: Node_ID,
@@ -875,6 +932,7 @@ add_arbitrary_store :: proc(
 	return
 }
 
+@(tag = "api")
 add_field_load :: proc(
 	ctx: ^Proc,
 	name: string,
@@ -894,6 +952,7 @@ add_field_load :: proc(
 	)
 }
 
+@(tag = "api")
 add_arbitrary_load :: proc(
 	ctx: ^Proc,
 	cfg: Node_ID,
@@ -982,6 +1041,7 @@ Abi_Param :: struct {
 	copied:    bool,
 }
 
+@(tag = "api")
 arg_gen_next :: proc(
 	ctx: ^Proc,
 	mem: Node_ID,
@@ -1030,6 +1090,7 @@ arg_gen_next :: proc(
 	return
 }
 
+@(tag = "api")
 arg_gen_finalize :: proc(ctx: ^Proc, gen: ^Param_Gen) -> []bac.Param_Spec {
 	arg_tys := make([]bac.Param_Spec, len(gen.vls))
 
@@ -1066,6 +1127,7 @@ Builtin_Proc :: enum {
 	memset,
 }
 
+@(tag = "api")
 init_graph :: proc(graph: ^Proc) -> Node_ID {
 	graph.gvn = 1
 	graph.gdn = 1

@@ -9,7 +9,7 @@ function gen-spec
 	odin run bac/meta2
 end
 
-# regenerate the tests and overloads
+# regenerate the tests, backend overloads, and API table
 alias gen-meta 'odin run meta -o:none'
 
 set acc '-define:ACCEPT=true'

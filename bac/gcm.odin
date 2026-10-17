@@ -132,6 +132,7 @@ insert_alwasy :: proc(ctx: ^Proc, root: Node_ID) -> Node_ID {
 	return then
 }
 
+@(tag = "api")
 schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 		for_regalloc,
 		for_loopopt,

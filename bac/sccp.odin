@@ -139,6 +139,7 @@ lattice_join :: proc(a, b: Lattice) -> (res: Lattice) {
 	return
 }
 
+@(tag = "api")
 compute_latices :: proc(
 	ctx: ^Proc,
 	scratch := context.allocator,

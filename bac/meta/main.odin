@@ -344,8 +344,14 @@ collect_meta :: proc(ctx: ^%vProc,
 
 			name := reflect.enum_field_names(classes.enm)[i]
 
-			k, _ := delete_key(&groups, class.group)
+			k, members := delete_key(&groups, class.group)
 			if k != class.group do continue
+
+			api := class.api
+			for member in members {
+				api |= spec.classes[member.class_group].ids[member.class].api
+			}
+			if api do os.write_string(file, "@(tag = \"api\")\n")
 
 			pass_lane := k == "Bin_Op" || k == "Un_Op" || class.pass_lane
 
@@ -376,9 +382,13 @@ collect_meta :: proc(ctx: ^%vProc,
 			}
 
 			for earg in class.extra_args {
-				field := reflect.struct_field_by_name(class.id, earg)
-				if field.type == nil do field.type = type_info_of(u32)
-				fmt.fprintf(file, ", %v: %v", earg, field.type)
+				if earg == "*" {
+					fmt.fprintf(file, ", extra: %v", class.id)
+				} else {
+					field := reflect.struct_field_by_name(class.id, earg)
+					if field.type == nil do field.type = type_info_of(u32)
+					fmt.fprintf(file, ", %v: %v", earg, field.type)
+				}
 			}
 
 			if pass_lane {
@@ -388,31 +398,29 @@ collect_meta :: proc(ctx: ^%vProc,
 			fmt.fprintf(file, ") -> (_id: %vNode_ID) {{\n", q)
 
 			extra_type := qualify_type(q, locals, class.id)
-
-			if len(class.extra_args) != 0 {
+			has_extra :=
+				len(class.extra_args) != 0 ||
+				reflect.size_of_typeid(class.id) > 0
+			if has_extra {
 				fmt.fprintf(
 					file,
 					"\t(^%v)(%vget_next_extra_slot(graph," +
-					" u16(%v.%v), 0))^ = {{\n",
+					" u16(%v.%v), 0))^ = ",
 					extra_type,
 					q,
 					qualify_enm(q, classes.enm),
 					name,
 				)
+			}
+
+			if len(class.extra_args) == 1 && class.extra_args[0] == "*" {
+				os.write_string(file, "extra\n")
+			} else if has_extra {
+				os.write_string(file, "{\n")
 				for earg in class.extra_args {
 					fmt.fprintf(file, "\t\t%v = %v,\n", earg, earg)
 				}
 				os.write_string(file, "\t}\n")
-			} else if reflect.size_of_typeid(class.id) > 0 {
-				fmt.fprintf(
-					file,
-					"\t(^%v)(%vget_next_extra_slot(graph," +
-					" u16(%v.%v), 0))^ = {{}}\n",
-					extra_type,
-					q,
-					qualify_enm(q, classes.enm),
-					name,
-				)
 			}
 
 			if k == "" {
@@ -515,6 +523,7 @@ SIMPLE_BINOP_CLASS :: Class_Spec {
 	args  = {"lhs", "rhs"},
 	group = "Bin_Op",
 	flags = {.Comutes, .Interned},
+	api   = true,
 }
 
 Cfg :: bac.Cfg
@@ -532,6 +541,7 @@ IDEAL_CLASSES := [bac.Node_Type]Class_Spec {
 		id = bac.CInt,
 		extra_args = {"value"},
 		flags = {.Interned, .Clonable},
+		api = true,
 	},
 	.Add = SIMPLE_BINOP_CLASS,
 	.Sub = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
@@ -548,7 +558,12 @@ IDEAL_CLASSES := [bac.Node_Type]Class_Spec {
 	.Or = SIMPLE_BINOP_CLASS,
 	.Xor = SIMPLE_BINOP_CLASS,
 	.And_Not = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
-	.Neg = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
+	.Neg = {
+		args = {"oprnd"},
+		group = "Un_Op",
+		flags = {.Interned},
+		api = true,
+	},
 	.Not = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
 	.Cast = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
 	.Conv = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
@@ -575,22 +590,44 @@ IDEAL_CLASSES := [bac.Node_Type]Class_Spec {
 	.U_Rem = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
 	.U_Shr = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
 	.Sym = {args = {"entry"}, default_type = .Void},
-	.Mem = {args = {"ctrl"}, default_type = .Mem, flags = {.Store}},
+	.Mem = {
+		args = {"ctrl"},
+		default_type = .Mem,
+		flags = {.Store},
+		api = true,
+	},
 	.Split_Mem = {args = {"mem"}, default_type = .Mem, flags = {.Store}},
 	.Merge_Mem = {default_type = .Mem, varargs = true, flags = {.Store}},
-	.Local = {id = bac.Local, args = {"mem"}, default_type = .Void},
-	.Local_Addr = {args = {"local"}, default_type = .I64, flags = {.Clonable}},
-	.Global = {id = Tup, default_type = .Void},
+	.Local = {
+		id = bac.Local,
+		args = {"mem"},
+		default_type = .Void,
+		api = true,
+	},
+	.Local_Addr = {
+		args = {"local"},
+		default_type = .I64,
+		flags = {.Clonable},
+		api = true,
+	},
+	.Global = {
+		id = Tup,
+		default_type = .Void,
+		api = true,
+		extra_args = {"idx"},
+	},
 	.Global_Addr = {
 		args = {"global"},
 		default_type = .I64,
 		flags = {.Clonable, .Interned},
+		api = true,
 	},
 	.Proc_Addr = {
 		id = Tup,
 		default_type = .I64,
 		flags = {.Clonable, .Interned},
 		extra_args = {"idx"},
+		api = true,
 	},
 	.Load = {args = {"ctrl", "mem", "addr"}, flags = {.Interned, .Load}},
 	.Store = {
@@ -602,11 +639,13 @@ IDEAL_CLASSES := [bac.Node_Type]Class_Spec {
 		args = {"ctrl", "mem", "dst", "src", "size"},
 		default_type = .Mem,
 		flags = {.Store},
+		api = true,
 	},
 	.Set = {
 		args = {"ctrl", "mem", "dst", "value", "size"},
 		default_type = .Mem,
 		flags = {.Store},
+		api = true,
 	},
 	.Split = {args = {"dest"}},
 	.Phi = {args = {"reg", "lhs", "rhs"}, flags = {.Interned}},
@@ -638,20 +677,22 @@ IDEAL_CLASSES := [bac.Node_Type]Class_Spec {
 		extra_capacity = 1,
 	},
 	.Always = {id = Cfg, default_type = .Void, varargs = true},
-	.Trap = {id = Cfg, default_type = .Void, varargs = true},
+	.Trap = {id = Cfg, default_type = .Void, varargs = true, api = true},
 	.Call = {
 		id = bac.Call,
 		varargs = true,
 		default_type = .Void,
-		extra_args = {"cid"},
+		extra_args = {"*"},
+		api = true,
 	},
 	.Call_End = {
 		id = Cfg,
 		args = {"call"},
 		flags = {.Is_Basic_Block_Start},
 		default_type = .Void,
+		api = true,
 	},
-	.Ret = {id = Tup, args = {"call_end"}, extra_args = {"idx"}},
+	.Ret = {id = Tup, args = {"call_end"}, extra_args = {"idx"}, api = true},
 	.Return = {id = Cfg, varargs = true, default_type = .Void},
 	.Dbg_Sym_Decl = {id = bac.Dbg_Sym, default_type = .Void},
 	.Dbg_Sym_Update = {
@@ -683,4 +724,5 @@ Class_Spec :: struct {
 	extra_capacity: int,
 	no_ctor:        bool,
 	pass_lane:      bool,
+	api:            bool,
 }

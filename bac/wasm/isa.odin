@@ -2,6 +2,7 @@ package wasm
 
 import ".."
 
+@(tag = "api")
 encode_func_type :: proc(
 	buf: ^[dynamic]u8,
 	params: []bac.Param_Spec,

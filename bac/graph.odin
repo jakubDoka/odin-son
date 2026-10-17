@@ -76,6 +76,7 @@ aggregate_effeciency_stats :: proc(dest: ^Stats, src: ^Stats) {
 	src^ = {}
 }
 
+@(tag = "api")
 add_efficiency_stat :: proc(
 	stats: ^Stats,
 	kind: Efficiency_Stat_Kind,
@@ -252,23 +253,23 @@ Call :: struct {
 		ccid:      u32  | 26,
 		ret_count: int  | 4,
 		imported:  bool | 1,
-		indirect:  bool | 1,
 	},
 	cid:     u32,
 	rets:    [4]Node_Datatype,
 }
 
+is_indirect_call :: proc(node: Expanded_Node) -> bool {
+	return node.itype == .Call && node.inps[2] == 0
+}
+
 Tup :: struct {
-	using fields: struct #raw_union {
-		idx: u32,
-	},
+	idx: u32,
 }
 
 Local :: struct {
 	using props: struct #raw_union {
-		size:       i32,
-		offset:     i32,
-		rename_idx: i32,
+		size:   i32,
+		offset: i32,
 	},
 	using __:    bit_field u32 {
 		idx:      u32  | 31,
@@ -287,6 +288,7 @@ Lane_Type :: enum u8 {
 	F64,
 }
 
+@(tag = "api")
 lane_from_dt :: proc(ty: Node_Datatype) -> (Lane_Type, bool) {
 	return Lane_Type(u8(ty) - (u8(Node_Datatype.I8) - u8(Lane_Type.I8))),
 		.I8 <= ty && ty <= .F64
@@ -506,6 +508,11 @@ pass_quard :: #force_inline proc(
 	return pass_snapshot(ctx), true
 }
 
+@(tag = "api")
+set_local_size :: proc(graph: ^Proc, loc: Node_ID, size: i32) {
+	get_extra(graph, loc, Local).size = size
+}
+
 pass_quard_end :: #force_inline proc(
 	ctx: ^Proc,
 	pass: Pass,
@@ -591,14 +598,17 @@ worklist_next :: proc(
 	}
 }
 
+@(tag = "api")
 pin :: proc(graph: ^Proc, id: Node_ID) {
 	add_output(graph, id, 0, 0)
 }
 
+@(tag = "api")
 unpin :: proc(graph: ^Proc, id: Node_ID, no_delete := false) {
 	remove_output(graph, id, {}, no_delete)
 }
 
+@(tag = "api")
 find_node :: proc(
 	graph: ^Proc,
 	kind: Node_Type,
@@ -616,6 +626,7 @@ find_node :: proc(
 	return 0, false
 }
 
+@(tag = "api")
 find_or_create_node :: proc(graph: ^Proc, kind: Node_Type) -> (sym: Node_ID) {
 	sym = find_node(graph, kind)
 	if sym == 0 {
@@ -628,12 +639,14 @@ find_or_create_node :: proc(graph: ^Proc, kind: Node_Type) -> (sym: Node_ID) {
 	return
 }
 
+@(tag = "api")
 get_sym_count :: proc(graph: ^Proc) -> (sym: Node_ID, count: int) {
 	sym = find_node(graph, .Sym)
 	count = len(get_outputs(graph, sym))
 	return
 }
 
+@(tag = "api")
 sym_iter_next :: proc(
 	graph: ^Proc,
 	sym: Node_ID,
@@ -716,12 +729,14 @@ compute_weight :: proc(graph: ^Proc, all: []Node_ID) {
 }
 
 // mem is borrowed
+@(tag = "api")
 get_stencil :: proc(graph: ^Proc) -> (s: Stencil) {
 	s.mem = graph.mem.ptr[:graph.mem.pos]
 	s.meta = graph.meta
 	return
 }
 
+@(tag = "api")
 mount_stencil :: proc(graph: ^Proc, stencil: Stencil) {
 	if graph.mem.ptr == nil {
 		if false {
@@ -749,6 +764,7 @@ worklist_init :: proc(w: ^Worklist, #any_int cap: int = 0) {
 	w.in_queue = bit_arr.init(cap)
 }
 
+@(tag = "api")
 compact :: proc(graph: ^Proc) {
 	context.allocator, _ = arna.scrath()
 
@@ -875,6 +891,7 @@ init_counts :: proc(graph: ^Proc, new_node: ^Node) {
 	}
 }
 
+@(tag = "api")
 apply_peep :: proc(graph: ^Proc, id: Node_ID) -> (r: Node_ID) {
 	defer add_efficiency_stat(graph, .redundant_peep, 1, int(id != r))
 
@@ -1007,6 +1024,7 @@ mount_peep_node :: proc(graph: ^Proc, node: ^Node) {
 	graph.curret_sloc = get_sloc(graph, node)^
 }
 
+@(tag = "api")
 schedule_peeps :: proc(graph: ^Proc, schedule: ^Schedule) {
 	for &bb in schedule.bbs {
 		for &instr, i in bb.instrs {
@@ -1097,6 +1115,7 @@ pass_snapshot :: proc(ctx: ^Proc) -> Pass_Snapshot {
 	return {u32(ctx.mem.pos), u32(ctx.waste)}
 }
 
+@(tag = "api")
 apply_peeps :: proc(ctx: Peep_Ctx) -> (optimized: bool) {
 	graph := ctx.graph
 
@@ -1518,6 +1537,7 @@ Simd_Iter :: struct {
 	needle:   u8,
 }
 
+@(tag = "api")
 simd_iter_from :: #force_no_inline proc(
 	haystack: []u8,
 	needle: u8,
@@ -1561,6 +1581,7 @@ simd_iter_next_rev :: proc(siter: ^Simd_Iter) -> (int, bool) {
 	}
 }
 
+@(tag = "api")
 simd_iter_next :: proc(siter: ^Simd_Iter) -> (int, bool) {
 	for {
 		if siter.mask != 0 {
@@ -1641,6 +1662,7 @@ SS_Entry :: struct($V: typeid) {
 	id:   V,
 }
 
+@(tag = "api")
 grow_search_space :: proc(
 	ss: ^#soa[]SS_Entry($V),
 	new_cap: int,
@@ -1818,6 +1840,7 @@ node_eq :: proc(graph: ^Proc, a, b: Node_ID) -> bool {
 	return true
 }
 
+@(tag = "api")
 set_input :: proc(
 	graph: ^Proc,
 	id: Node_ID,
@@ -1929,7 +1952,7 @@ get_node_id :: #force_inline proc(graph: ^Proc, node: ^Node) -> Node_ID {
 	return node == &NIL_NODE ? 0 : id
 }
 
-@(tag = "node_proc")
+@(tag = "node_proc,api")
 delete_node_node :: proc(graph: ^Proc, node: ^Node) {
 	id := get_node_id(graph, node)
 
@@ -1990,6 +2013,7 @@ NIL_NODE: struct {
 	cfg:        Cfg,
 }
 
+@(tag = "api")
 get_node :: #force_inline proc(graph: ^Proc, id: Node_ID) -> ^Node {
 	node := (^Node)(&([^]u32)(graph.mem.ptr)[id])
 	return id == 0 ? &NIL_NODE : node
@@ -2001,6 +2025,7 @@ Expanded_Node :: struct {
 	outs:       []Node_Output,
 }
 
+@(tag = "api")
 expand_node :: proc(graph: ^Proc, id: Node_ID) -> Expanded_Node {
 	node := get_node(graph, id)
 
@@ -2008,7 +2033,7 @@ expand_node :: proc(graph: ^Proc, id: Node_ID) -> Expanded_Node {
 	return {node, get_inputs(graph, node), get_outputs(graph, node)}
 }
 
-@(tag = "node_proc")
+@(tag = "node_proc,api")
 get_inputs_node :: #force_inline proc(graph: ^Proc, node: ^Node) -> []Node_ID {
 
 	return ([^]Node_ID)(graph.mem.ptr)[node.input_idx:][:node.input_count]
@@ -2124,6 +2149,7 @@ add_raw :: proc(
 }
 
 @(deferred_out = pop_sloc)
+@(tag = "api")
 sloc_scope :: proc(graph: ^Proc, sloc: Sloc) -> (agraph: ^Proc, prev: Sloc) {
 	agraph = graph
 	prev = push_sloc(graph, sloc)
@@ -2165,6 +2191,7 @@ swap_inputs :: proc(graph: ^Proc, node: Expanded_Node, i, j: int) {
 	assert(nid == id)
 }
 
+@(tag = "api")
 connect :: proc(graph: ^Proc, use: Node_ID, def: Node_ID) -> int {
 	idx := add_input(graph, use, def)
 	add_output(graph, def, use, idx)
@@ -2259,7 +2286,7 @@ get_extra :: proc {
 	get_static_extra_node_id,
 }
 
-@(tag = "node_proc")
+@(tag = "node_proc,api")
 get_static_extra_node :: #force_inline proc(
 	graph: ^Proc,
 	node: ^Node,

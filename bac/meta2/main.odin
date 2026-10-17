@@ -15,6 +15,7 @@ main :: proc() {
 				id = builder.Scope,
 				args = {"cfg"},
 				default_type = .Void,
+				api = true,
 			},
 			.Lazy_Phi = {args = {"reg", "lhs"}, extra_capacity = 1},
 		}

@@ -36,7 +36,6 @@ Compiler_State :: struct {
 	initialized: bool,
 }
 
-@(private)
 state: Compiler_State
 
 init_arenas :: proc() {

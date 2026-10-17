@@ -296,8 +296,10 @@ post_schedule_peep_inst :: proc(
 	return post_schedule_peep(ctx, node, struct{}{})
 }
 
+@(tag = "api")
 add_scope :: #force_inline proc(graph: ^bac.Proc, name: string, cfg: bac.Node_ID) -> (_id: bac.Node_ID) {
-	(^Scope)(bac.get_next_extra_slot(graph, u16(Node_Type.Scope), 0))^ = {}
+	(^Scope)(bac.get_next_extra_slot(graph, u16(Node_Type.Scope), 0))^ = {
+	}
 	return bac.add_raw(graph, name, u16(Node_Type.Scope), .Void, {cfg})
 }
 add_lazy_phi :: #force_inline proc(graph: ^bac.Proc, name: string, dt: bac.Node_Datatype, reg: bac.Node_ID, lhs: bac.Node_ID) -> (_id: bac.Node_ID) {

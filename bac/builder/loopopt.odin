@@ -7,6 +7,7 @@ import "core:fmt"
 import "core:math"
 import "core:slice"
 
+@(tag = "api")
 loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 	context.allocator, _ = arna.scrath()
 

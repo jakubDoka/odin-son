@@ -23,6 +23,7 @@ Mode :: enum {
 	with_coloring,
 }
 
+@(tag = "api")
 regalloc :: proc(
 	ra: ^bac.Regalloc,
 	graph: ^bac.Proc,

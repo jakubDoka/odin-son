@@ -33,7 +33,6 @@ import "core:testing"
 
 TEST_OUT_DIR :: "print-tests"
 
-@(private)
 custom_fmt_once: sync.Once
 
 // Sets up all user formatters (bac + `main::Type`) exactly once.

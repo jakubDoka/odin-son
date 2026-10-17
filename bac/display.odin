@@ -11,6 +11,7 @@ import "core:terminal/ansi"
 @(thread_local)
 current_graph: ^Proc
 
+@(tag = "api")
 init_custom_fmt :: proc() {
 	Scratch :: struct #align (4096) {
 		buf: [4096]u8,

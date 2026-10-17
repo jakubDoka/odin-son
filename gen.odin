@@ -354,8 +354,7 @@ emit_lvalue :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Sym {
 		gv := idmt.decl
 
 		if gv.is_mutable {
-			g := bac.add_global(ctx, gv.name)
-			bac.get_extra(ctx, g, bac.Tup).idx = gv.global_idx
+			g := bac.add_global(ctx, gv.name, gv.global_idx)
 			ptr := bac.add_global_addr(ctx, gv.name, g)
 			return Value{id = ptr, is_lvalue = true}
 		} else {
@@ -468,7 +467,7 @@ alloca :: proc(
 
 	size := i32(min(type_size(ty), int(max(i32))))
 
-	bac.get_extra(ctx, alloca, bac.Local).size = size
+	bac.set_local_size(ctx, alloca, size)
 	ptr := bac.add_local_addr(ctx, name, alloca)
 
 	if zeroed {
@@ -1424,8 +1423,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 						bytes,
 						typecheck.type_align(vty),
 					)
-					g := bac.add_global(ctx, name)
-					bac.get_extra(ctx, g, bac.Tup).idx = idx
+					g := bac.add_global(ctx, name, idx)
 					ptr := bac.add_global_addr(ctx, name, g)
 					bac.pin(ctx, ptr)
 
@@ -1468,8 +1466,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 					bytes,
 					typecheck.type_align(vty),
 				)
-				g := bac.add_global(ctx, name)
-				bac.get_extra(ctx, g, bac.Tup).idx = idx
+				g := bac.add_global(ctx, name, idx)
 				ptr := bac.add_global_addr(ctx, name, g)
 				bac.pin(ctx, ptr)
 
@@ -2024,9 +2021,12 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				args[0] = ctx_ctrl(ctx)
 				args[1] = ctx_mem(ctx)
 
-				call := bac.add_call(ctx, "call", args, ~u32(0))
-				bac.get_extra(ctx, call, bac.Call).ccid = 1
-				bac.get_extra(ctx, call, bac.Call).ret_count = 1
+				call := bac.add_call(
+					ctx,
+					"call",
+					args,
+					{cid = ~u32(0), ccid = 1, ret_count = 1},
+				)
 				for arg in args[CALL_PREFIX:] {
 					bac.unpin(ctx, arg)
 				}
@@ -2294,25 +2294,25 @@ emit_call :: proc(
 
 	args[0] = ctx_ctrl(ctx)
 	args[1] = ctx_mem(ctx)
-	args[2] = bac.find_or_create_node(ctx, .Sym)
-	if ptr != 0 do args[2] = 0
+	args[2] = 0
+	if ptr == 0 do args[2] = bac.find_or_create_node(ctx, .Sym)
 
 	slice.reverse(args[lctx.ri:])
 	copy(args[lctx.i:], args[lctx.ri:])
 	ln := lctx.i + len(args) - lctx.ri
 
-	call := bac.add_call(ctx, "call", args[:ln], u32(prc_id))
-	call_ext := bac.get_extra(ctx, call, bac.Call)
-	call_ext.imported = imported
-	call_ext.indirect = prc_id == 0
+	call_end, mem := builder.add_call(
+		ctx,
+		args[:ln],
+		{imported = imported, cid = u32(prc_id)},
+	)
 
 	for arg in args[CALL_PREFIX:ln] {
 		bac.unpin(ctx, arg)
 	}
-	call_end := bac.add_call_end(ctx, "calle", call)
 
 	bac.set_input(ctx, ctx.node_scope, 0, call_end)
-	ctx_set_mem(ctx, bac.add_mem(ctx, "cmem", call_end))
+	ctx_set_mem(ctx, mem)
 
 	for s in slots {
 		bac.unpin(ctx, s)
@@ -2331,9 +2331,8 @@ emit_call :: proc(
 
 			for i in 0 ..< (size + 7) / 8 {
 				rid := u32(i)
-				vl := bac.add_ret(ctx, "cret", .I64, call_end, rid)
+				vl := builder.add_call_ret(ctx, call_end, .I64)
 				emit_arbitrary_store(ctx, d, vl, size, i * 8)
-				call_ext.ret_count += 1
 			}
 
 			results[res_idx] = {
@@ -2341,14 +2340,9 @@ emit_call :: proc(
 				is_lvalue = true,
 			}
 		} else {
-			vl := bac.add_ret(ctx, "cret", dt, call_end, 0)
-			call_ext.ret_count += 1
+			vl := builder.add_call_ret(ctx, call_end, dt)
 			results[res_idx] = Value(vl)
 		}
-	}
-
-	for v, i in results[len(rabi.extras):] {
-		call_ext.rets[i] = bac.get_node(ctx, v.id).dt
 	}
 
 	return results
@@ -2446,8 +2440,7 @@ emit_string :: proc(ctx: ^Gen_Ctx, prop: Prop, value: string) -> Node_ID {
 	assert(ok)
 
 	idx := typecheck.add_global(ctx, transmute([]u8)str, 1)
-	g := bac.add_global(ctx, "str")
-	bac.get_extra(ctx, g, bac.Tup).idx = idx
+	g := bac.add_global(ctx, "str", idx)
 	addr := bac.add_global_addr(ctx, "str", g)
 
 	slot := prop.dest

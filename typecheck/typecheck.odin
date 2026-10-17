@@ -1351,7 +1351,6 @@ types_reset :: proc(types: ^Types) {
 	types_bind_allocators(types)
 }
 
-@(private = "file")
 types_bind_allocators :: proc(types: ^Types) {
 	types.allocator = arna.allocator(&types.mems.type)
 

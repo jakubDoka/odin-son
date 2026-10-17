@@ -1455,7 +1455,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 	case .Call:
 		call := bac.get_extra(ctx, node, bac.Call)
 
-		if call.indirect {
+		if bac.is_indirect_call(node) {
 			emit_op(ctx.code, .I32_Wrap_I64)
 			emit_op(ctx.code, .Call_Indirect)
 			bac.add_reloc(ctx.relocs)^ = {

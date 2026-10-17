@@ -4,7 +4,6 @@ import "../vendored/gam/util/arna"
 import "../vendored/gam/util/bit_arr"
 import "base:runtime"
 import "core:fmt"
-import "core:log"
 import "core:slice"
 
 Basic_Block :: struct {
@@ -485,7 +484,7 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 					ctx.nodes[node.gvn] = n
 					lca = graph.entry
 				}
-				log.warn("free node with no outputs:", node.node, lca)
+				//log.warn("free node with no outputs:", node.node, lca)
 			}
 
 			for out in node.outs {
@@ -695,7 +694,7 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 			loop_tree := lctx.loop_trees[block.gvn]
 
 			if loop_tree == nil {
-				log.error("missing loop tree at", block)
+				//log.error("missing loop tree at", block)
 				loop_tree = new(Loop_Tree)
 			}
 			tree_depth(loop_tree)
@@ -737,7 +736,7 @@ schedule_graph :: proc(graph: ^Proc, gs: ^Schedule, purpose: enum {
 		sched := no_late_pass ? early : late
 		ctx.late_schedules[i] = sched
 		if sched == 0 {
-			log.error("not scheduled:", node)
+			//log.error("not scheduled:", node)
 			has_unscheduled = true
 			continue
 		}

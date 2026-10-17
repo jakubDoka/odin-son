@@ -8,6 +8,7 @@ import bac_arm "../../arm"
 import bac_x64 "../../x64"
 import bac_wasm "../../wasm"
 import bac_regalloc "../../regalloc/"
+import arna "../../../vendored/gam/util/arna/"
 
 _ :: bac
 _ :: bac_builder
@@ -15,6 +16,7 @@ _ :: bac_arm
 _ :: bac_x64
 _ :: bac_wasm
 _ :: bac_regalloc
+_ :: arna
 @(export)
 bac_add_bin_op :: proc "c" (
 	graph: ^bac.Proc,
@@ -744,16 +746,6 @@ bac_builder_get_scope_value :: proc "c" (
 }
 
 @(export)
-bac_builder_init_graph :: proc "c" (
-	graph: ^bac.Proc,
-) -> (
-	bac.Node_ID,
-) {
-	context = {}
-	return bac_builder.init_graph(graph)
-}
-
-@(export)
 bac_builder_inline_graph :: proc "c" (
 	graph: ^bac.Proc,
 	call: bac.Node_ID,
@@ -887,6 +879,17 @@ bac_builder_start_loop_increment :: proc "c" (
 ) {
 	context = {}
 	bac_builder.start_loop_increment(graph, node_scope, state)
+}
+
+@(export)
+bac_builder_start_proc :: proc "c" (
+	graph: ^bac.Proc,
+	mem: ^arna.Allocator,
+) -> (
+	bac.Node_ID,
+) {
+	context = {}
+	return bac_builder.start_proc(graph, mem)
 }
 
 @(export)

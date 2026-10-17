@@ -7,6 +7,9 @@ function gen-spec
 
 	odin run bac/meta
 	odin run bac/meta2
+	gen-meta
+	odin run bac/bindgen
+	gcc bac/bindgen/c/bac.h
 end
 
 # regenerate the tests, backend overloads, and API table

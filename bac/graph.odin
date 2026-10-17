@@ -8,7 +8,6 @@ import "core:container/queue"
 import "core:fmt"
 import "core:math"
 import "core:mem"
-import "core:mem/virtual"
 import "core:simd"
 import "core:slice"
 
@@ -739,17 +738,8 @@ get_stencil :: proc(graph: ^Proc) -> (s: Stencil) {
 @(tag = "api")
 mount_stencil :: proc(graph: ^Proc, stencil: Stencil) {
 	if graph.mem.ptr == nil {
-		if false {
-			arna.init(
-				graph.mem,
-				mem.align_forward_int(len(stencil.mem), mem.PAGE_SIZE),
-			)
-			arna.clone(graph.mem, stencil.mem)
-			virtual.protect(graph.mem.ptr, graph.mem.reserved, {.Read})
-		} else {
-			graph.mem^ = arna.init_from_buffer(stencil.mem)
-			graph.mem.pos = graph.mem.reserved
-		}
+		graph.mem^ = arna.init_from_buffer(stencil.mem)
+		graph.mem.pos = graph.mem.reserved
 	} else {
 		graph.mem.pos = 0
 		arna.clone(graph.mem, stencil.mem)
@@ -2100,6 +2090,8 @@ add_raw :: proc(
 ) -> (
 	id: Node_ID,
 ) {
+	assert(graph.node_spec != nil, "call bac_builder.start_proc first")
+
 	id = Node_ID(graph.mem.pos / PRECISION)
 
 	size := compute_node_size(graph, type, meta.extra_dwords)
@@ -2329,4 +2321,10 @@ truncate_inputs :: proc(graph: ^Proc, scope: Node_ID, #any_int to_len: int) {
 	}
 
 	snode.input_count = u16(to_len)
+}
+
+ensure_init :: proc() {
+	when ODIN_BUILD_MODE != .Executable {
+		runtime._startup_runtime()
+	}
 }

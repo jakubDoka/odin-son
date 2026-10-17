@@ -1,12 +1,13 @@
 package bac_bindgen
 
 import "base:runtime"
-import "core:crypto/_fiat/field_curve25519"
 import "core:fmt"
 import "core:os"
 import "core:reflect"
 import "core:slice"
 import "core:strings"
+
+EXPORTED_SPECS := [?]string{"bac_builder", "bac_arm", "bac_x64", "bac_wasm"}
 
 EXPORTED_SUBMODS := [?]string {
 	"bac",
@@ -15,6 +16,7 @@ EXPORTED_SUBMODS := [?]string {
 	"bac_x64",
 	"bac_wasm",
 	"bac_regalloc",
+	"arna",
 }
 EXPORTED_SUBMODS_PATH := [?]string {
 	"..",
@@ -23,12 +25,14 @@ EXPORTED_SUBMODS_PATH := [?]string {
 	"../x64",
 	"../wasm",
 	"../regalloc/",
+	"../../vendored/gam/util/arna/",
 }
 
 API_Proc :: struct {
 	package_path: string,
 	name:         string,
 	type:         typeid,
+	doc_comment:  string,
 }
 
 main :: proc() {
@@ -233,10 +237,18 @@ typedef struct {
 						fmt.fprintfln(c_lib, ";")
 					}
 				}
+
+				for spec in EXPORTED_SPECS {
+					fmt.fprintfln(c_lib, "static bac_Node_Spec %v;", spec)
+				}
 			}
 
 			c_fn: if !first_pass {
 				f := c_lib
+
+				if entry.doc_comment != "" {
+					fmt.fprintln(f, entry.doc_comment)
+				}
 
 				if 0 < len(results.types) {
 					ty := results.types[len(results.types) - 1]
@@ -460,10 +472,29 @@ typedef struct {
 				name^ = {}
 			}
 		case runtime.Type_Info_Bit_Set:
-			if mode == .Decl {
-				name^ = {}
-			} else {
+			switch mode {
+			case .Field:
+				fmt.fprint(f, c_type_name(ty))
+			case .Typedef:
 				fmt.fprintf(f, "uint%v_t", ty.size * 8)
+			case .Decl:
+				if _, ok := runtime.type_info_base(t.elem).variant.(runtime.Type_Info_Enum);
+				   ok {
+					fmt.fprintln(f, "enum {")
+					for field in reflect.enum_fields_zipped(t.elem.id) {
+						indent(f, depth + 1)
+						fmt.fprintfln(
+							f,
+							"%v_%v = UINT64_C(1) << %v,",
+							name^,
+							c_type_to_name(field.name),
+							i64(field.value) - t.lower,
+						)
+					}
+					indent(f, depth)
+					fmt.fprintf(f, "}}")
+				}
+				name^ = {}
 			}
 		case runtime.Type_Info_Type_Id:
 			if mode == .Decl {
@@ -654,7 +685,7 @@ typedef struct {
 			case .Decl, .Typedef:
 				c_display_type(f, t.base, mode, name, depth)
 			case .Field:
-				fmt.fprintf(f, "%v_%v", t.pkg, c_type_to_name(t.name))
+				fmt.fprint(f, c_type_name(ty))
 			}
 		case runtime.Type_Info_Integer:
 			switch mode {
@@ -761,6 +792,10 @@ typedef struct {
 		case:
 			return ""
 		case runtime.Type_Info_Named:
+			if _, ok := runtime.type_info_base(ty).variant.(runtime.Type_Info_Bit_Set);
+			   ok {
+				return fmt.tprintf("%v_Bs_%v", t.pkg, c_type_to_name(t.name))
+			}
 			return fmt.tprintf("%v_%v", t.pkg, c_type_to_name(t.name))
 		case runtime.Type_Info_Struct:
 			if t.soa_kind != .None {
@@ -771,8 +806,15 @@ typedef struct {
 				)
 			}
 		case runtime.Type_Info_Bit_Set:
+			if elem, ok := t.elem.variant.(runtime.Type_Info_Named); ok {
+				return fmt.tprintf(
+					"%v_Bs_%v",
+					elem.pkg,
+					c_type_to_name(elem.name),
+				)
+			}
 			return fmt.tprintf(
-				"Bit_Set_Of_%v_%v",
+				"Bs_Bit_Set_Of_%v_%v",
 				c_type_name(t.elem),
 				ty.size * 8,
 			)

@@ -800,9 +800,6 @@ emit_proc :: proc(
 	ctx.graph = {
 		has_dbg = ctx.graph.has_dbg,
 	}
-	ctx.node_spec = &builder.SPEC
-	ctx.mem = &ctx.mems.graph
-	ctx.mem.pos = bac.PRECISION
 	ctx.opt_flags = level.flags
 	ctx.stats = &ctx.tstats
 
@@ -819,7 +816,7 @@ emit_proc :: proc(
 		append(&ctx.poly_types, e)
 	}
 
-	rmem := builder.init_graph(ctx)
+	rmem := builder.start_proc(ctx, &ctx.mems.graph)
 
 	ctx.node_scope = builder.add_scope(ctx, "scope", ctx.entry)
 	ctx.mem_slot = push_scope_value(ctx, nil, rmem, .Void)

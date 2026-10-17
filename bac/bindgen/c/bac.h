@@ -61,7 +61,7 @@ typedef struct Slice_Of_Soa_Slice_Of_bac_SS_Entry_V____i64 Slice_Of_Soa_Slice_Of
 typedef struct bac_Loop_Tree bac_Loop_Tree;
 typedef struct Fidxe_Cap_Dyn_Arr_Of_2_bac_Node_Datatype Fidxe_Cap_Dyn_Arr_Of_2_bac_Node_Datatype;
 typedef struct bac_Worklist bac_Worklist;
-typedef uint8_t Bit_Set_Of_bac_Opt_Flag_8;
+typedef uint8_t bac_Bs_Opt_Flag;
 typedef struct bac_Node_Output bac_Node_Output;
 typedef struct runtime_Allocator runtime_Allocator;
 typedef struct bac_Regalloc_Output bac_Regalloc_Output;
@@ -72,7 +72,7 @@ typedef int64_t bac_Opt_Flag;
 typedef struct Slice_Of_bac_Node_ID Slice_Of_bac_Node_ID;
 typedef struct bac_Sym_Ref bac_Sym_Ref;
 typedef struct Slice_Of_uint16_t Slice_Of_uint16_t;
-typedef struct Slice_Of_Bit_Set_Of_bac_Class_Flag_8 Slice_Of_Bit_Set_Of_bac_Class_Flag_8;
+typedef struct Slice_Of_bac_Bs_Class_Flag Slice_Of_bac_Bs_Class_Flag;
 typedef struct Slice_Of_Dyn_Arr_Of_int32_t Slice_Of_Dyn_Arr_Of_int32_t;
 typedef struct arna_Allocator arna_Allocator;
 typedef struct bac_Cfi_Op bac_Cfi_Op;
@@ -108,7 +108,7 @@ typedef struct bac_Node bac_Node;
 typedef struct container_queue_Queue_T_Node_ID container_queue_Queue_T_Node_ID;
 typedef struct bac_Codegen_Emit_Output bac_Codegen_Emit_Output;
 typedef struct bac_Call_Conv bac_Call_Conv;
-typedef uint8_t Bit_Set_Of_bac_Pass_8;
+typedef uint8_t bac_Bs_Pass;
 typedef struct bac_builder_Abi_Param bac_builder_Abi_Param;
 typedef struct bac_Regalloc_Spec bac_Regalloc_Spec;
 typedef uint16_t bac_Un_Op;
@@ -120,7 +120,7 @@ typedef uint32_t bac_Reloc_Size;
 typedef uint32_t bac_Node_ID;
 typedef struct Slice_Of_uint32_t Slice_Of_uint32_t;
 typedef struct Slice_Of_bac_Cfi_Op Slice_Of_bac_Cfi_Op;
-typedef uint8_t Bit_Set_Of_bac_Class_Flag_8;
+typedef uint8_t bac_Bs_Class_Flag;
 typedef int64_t bac_Pass;
 typedef bac_Lattice(*bac_Sccp_Compute_Fn)(bac_Proc *, bac_Expanded_Node);
 typedef bac_Node_ID(*bac_PS_Peep_Fn)(bac_PS_Peep_Ctx, bac_Expanded_Node);
@@ -448,7 +448,13 @@ struct bac_Node_Output {
 	uint32_t id : 22;
 	uint32_t idx : 10;
 };
-;
+enum {
+	bac_Bs_Opt_Flag_Sccp = UINT64_C(1) << 0,
+	bac_Bs_Opt_Flag_Local_Peeps = UINT64_C(1) << 1,
+	bac_Bs_Opt_Flag_Mem_Opt = UINT64_C(1) << 2,
+	bac_Bs_Opt_Flag_Loop_Opt = UINT64_C(1) << 3,
+	bac_Bs_Opt_Flag_Inline = UINT64_C(1) << 4,
+};
 struct Fidxe_Cap_Dyn_Arr_Of_2_bac_Node_Datatype {
 	bac_Node_Datatype data[2];
 	uint8_t _padding[6];
@@ -468,8 +474,20 @@ struct bit_arr_Bit_Set {
 struct bac_builder_Block_State {
 	bac_Node_ID end_scope;
 };
-;
-;
+enum {
+	bac_Bs_Class_Flag_Is_Basic_Block_Start = UINT64_C(1) << 0,
+	bac_Bs_Class_Flag_Interned = UINT64_C(1) << 1,
+	bac_Bs_Class_Flag_Comutes = UINT64_C(1) << 2,
+	bac_Bs_Class_Flag_Store = UINT64_C(1) << 3,
+	bac_Bs_Class_Flag_Load = UINT64_C(1) << 4,
+	bac_Bs_Class_Flag_Clonable = UINT64_C(1) << 5,
+};
+enum {
+	bac_Bs_Pass_Peep = UINT64_C(1) << 0,
+	bac_Bs_Pass_Sccp = UINT64_C(1) << 1,
+	bac_Bs_Pass_Mem = UINT64_C(1) << 2,
+	bac_Bs_Pass_Loop = UINT64_C(1) << 3,
+};
 struct bac_RM_Intern_Idx {
 	uint16_t index : 12;
 	uint16_t kind : 4;
@@ -574,8 +592,8 @@ struct bac_Cfi_Op {
 	bac_Cfi_Kind kind;
 	uint8_t reg;
 };
-struct Slice_Of_Bit_Set_Of_bac_Class_Flag_8 {
-	uint8_t *data;
+struct Slice_Of_bac_Bs_Class_Flag {
+	bac_Bs_Class_Flag *data;
 	size_t len;
 };
 ;
@@ -893,7 +911,7 @@ struct bac_Codegen_Spec {
 struct bac_Node_Spec {
 	Slice_Of_uint8_t node_extra_sizes;
 	Slice_Of_uint16_t inheritance_table;
-	Slice_Of_Bit_Set_Of_bac_Class_Flag_8 node_flags;
+	Slice_Of_bac_Bs_Class_Flag node_flags;
 	Slice_Of_uintptr_t node_extra_types;
 	uintptr_t node_kind;
 	bac_Regalloc_Spec regalloc;
@@ -909,10 +927,14 @@ struct bac_Proc {
 	bac_Proc_Meta meta;
 	bool dont_intern;
 	bool dont_delete;
-	uint8_t computed_passes;
-	uint8_t opt_flags;
+	bac_Bs_Pass computed_passes;
+	bac_Bs_Opt_Flag opt_flags;
 	Slice_Of_bac_Lattice lattices;
 };
+static bac_Node_Spec bac_builder;
+static bac_Node_Spec bac_arm;
+static bac_Node_Spec bac_x64;
+static bac_Node_Spec bac_wasm;
 bac_Node_ID bac_add_bin_op(bac_Proc *graph, bac_String name, bac_Bin_Op type, bac_Node_Datatype dt, bac_Node_ID lhs, bac_Node_ID rhs, bac_Lane_Type lane);
 bac_Node_ID bac_add_c_int(bac_Proc *graph, bac_String name, bac_Node_Datatype dt, int64_t value);
 bac_Node_ID bac_add_call(bac_Proc *graph, bac_String name, Slice_Of_bac_Node_ID inputs, bac_Call extra);
@@ -943,6 +965,7 @@ bac_Node_ID bac_find_or_create_node(bac_Proc *graph, bac_Node_Type kind);
 Slice_Of_bac_Node_ID bac_get_inputs_node(bac_Proc *graph, bac_Node *node);
 Slice_Of_bac_Node_ID bac_get_inputs_node_id(bac_Proc *graph, bac_Node_ID id);
 bac_Node * bac_get_node(bac_Proc *graph, bac_Node_ID id);
+// mem is borrowed
 bac_Stencil bac_get_stencil(bac_Proc *graph);
 int64_t bac_get_sym_count(bac_Proc *graph, bac_Node_ID *sym);
 void  bac_init_custom_fmt();
@@ -975,7 +998,6 @@ void  bac_builder_end_else(bac_Proc *graph, bac_Node_ID *else_scope, bac_builder
 void  bac_builder_end_if(bac_Proc *graph, bac_Node_ID *then_scope, bac_builder_If_State *state);
 void  bac_builder_end_loop(bac_Proc *graph, bac_Node_ID *node_scope, bac_builder_Loop_State *state);
 bac_Node_ID bac_builder_get_scope_value(bac_Proc *graph, bac_Node_ID scope, int64_t idx);
-bac_Node_ID bac_builder_init_graph(bac_Proc *graph);
 void  bac_builder_inline_graph(bac_Proc *graph, bac_Node_ID call, bac_Proc *from);
 void  bac_builder_inline_stencil(bac_Proc *graph, bac_Node_ID call, bac_Stencil from);
 void  bac_builder_loop_control(bac_builder_Loop_Control variant, bac_Proc *ctx, bac_Node_ID scope, bac_builder_Loop_State *loop);
@@ -989,5 +1011,6 @@ void  bac_builder_start_else(bac_Proc *graph, bac_Node_ID *then_scope, bac_build
 void  bac_builder_start_if(bac_Proc *graph, bac_Node_ID scope, bac_builder_If_State *state, bac_Node_ID cond);
 void  bac_builder_start_loop(bac_Proc *graph, bac_Node_ID scope, bac_builder_Loop_State *state);
 void  bac_builder_start_loop_increment(bac_Proc *graph, bac_Node_ID *node_scope, bac_builder_Loop_State *state);
+bac_Node_ID bac_builder_start_proc(bac_Proc *graph, arna_Allocator *mem);
 void  bac_builder_truncate_scope(bac_Proc *graph, bac_Node_ID scope, int64_t to_len);
 bac_Regalloc_Output bac_regalloc_regalloc(bac_Regalloc *ra, bac_Proc *graph, bac_Schedule *sched, bac_regalloc_Mode mode, runtime_Allocator scratch);

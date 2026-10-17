@@ -3,12 +3,10 @@ package bac_regalloc
 import ".."
 import "../../vendored/gam/util/arna"
 import "../../vendored/gam/util/bit_arr"
-import "../x64"
 import "base:runtime"
 import "core:container/queue"
 import "core:fmt"
 import "core:io"
-import "core:log"
 import "core:mem"
 import "core:slice"
 import "core:strings"
@@ -43,7 +41,7 @@ regalloc :: proc(
 		res, ok := regalloc_round(ra, graph, sched, scratch, mode, i)
 		if ok {
 			bac.add_efficiency_stat(graph, .regalloc_rounds, total, base)
-			if bac.REGLOGS do log.info("regalloc rounds:", i)
+			//if bac.REGLOGS do log.info("regalloc rounds:", i)
 			return res
 		}
 		total += int(graph.gvn)
@@ -1224,7 +1222,7 @@ regalloc_round :: proc(
 		}
 
 		if bac.REGLOGS {
-			log.info("fail:", lrg, lrg.fails)
+			//log.info("fail:", lrg, lrg.fails)
 		}
 
 		fail_count += 1
@@ -1835,7 +1833,7 @@ regalloc_round :: proc(
 		node := get_node(ctx.graph, node)
 		if int(node.gvn) >= len(ctx.lrg_table) {
 			if logg {
-				log.error("lrg table out of bounds")
+				//log.error("lrg table out of bounds")
 			}
 			return nil
 		}
@@ -1856,7 +1854,8 @@ regalloc_round :: proc(
 		}
 
 		umask := bac.rm_get(ctx.ra, ctx.gmetas[fnode.gvn].out)
-		if (bac.reg_mask_first_set(umask) or_else 0) >= x64.GPA_REG_COUNT {
+		if (bac.reg_mask_first_set(umask) or_else 0) >=
+		   ctx.ra.spill_boundary[graph.datatype_to_reg_kind[fnode.dt]] {
 			return use
 		}
 
@@ -2005,7 +2004,7 @@ regalloc_round :: proc(
 			}
 		}
 
-		log.info(string(sb.buf[:]))
+		//log.info(string(sb.buf[:]))
 	}
 
 	is_def :: proc(ctx: Ctx, node: ^bac.Node) -> bool {

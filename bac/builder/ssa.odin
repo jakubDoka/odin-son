@@ -1122,13 +1122,14 @@ arg_gen_finalize :: proc(ctx: ^Proc, gen: ^Param_Gen) -> []bac.Param_Spec {
 	return arg_tys
 }
 
-Builtin_Proc :: enum {
-	memcpy,
-	memset,
-}
-
 @(tag = "api")
-init_graph :: proc(graph: ^Proc) -> Node_ID {
+start_proc :: proc(graph: ^Proc, mem: ^arna.Allocator) -> Node_ID {
+	bac.ensure_init()
+
+	graph.node_spec = &SPEC
+	graph.mem = mem
+	graph.mem.pos = bac.PRECISION
+
 	graph.gvn = 1
 	graph.gdn = 1
 	graph.entry = bac.add_entry(graph, "entry")
@@ -1171,8 +1172,13 @@ get_or_add_const_mem :: proc(graph: ^Proc) -> (cmem: Node_ID) {
 	return graph.cmem
 }
 
+Builtin_Proc :: enum {
+	memcpy,
+	memset,
+}
+
 make_builtin_proc :: proc(graph: ^Proc, name: Builtin_Proc) {
-	mem := init_graph(graph)
+	mem := start_proc(graph, graph.mem)
 
 	scope := add_scope(graph, "scp", graph.entry)
 

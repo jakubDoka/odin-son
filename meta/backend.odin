@@ -19,11 +19,12 @@ Backend_Package :: struct {
 }
 
 Backend_Proc :: struct {
-	name:      string,
-	file:      ^ast.File,
-	lit:       ^ast.Proc_Lit,
-	api:       bool,
-	node_proc: bool,
+	name:        string,
+	file:        ^ast.File,
+	lit:         ^ast.Proc_Lit,
+	api:         bool,
+	node_proc:   bool,
+	doc_comment: string,
 }
 
 has_tag :: proc(decl: ^ast.Value_Decl, tag: string) -> bool {
@@ -97,6 +98,7 @@ load_backend_packages :: proc(
 					lit = lit,
 					api = api,
 					node_proc = node_proc,
+					doc_comment = src_of(f^, vdecl.docs),
 				},
 			)
 		}
@@ -234,7 +236,14 @@ API := [?]API_Proc{
 			if !prc.api do continue
 			ty := fmt.tprintf("type_of(pkg_%v.%v)", i, prc.name)
 
-			fmt.fprintfln(file, "\t{{%q, %q, %v}},", relpath, prc.name, ty)
+			fmt.fprintfln(
+				file,
+				"\t{{%q, %q, %v, %q}},",
+				relpath,
+				prc.name,
+				ty,
+				prc.doc_comment,
+			)
 		}
 	}
 	os.write_string(file, "}\n")

@@ -52,7 +52,6 @@ get_sloc_node_id :: #force_inline proc(graph: ^Proc, id: Node_ID) -> ^Sloc {
 	return get_sloc_node(graph, get_node(graph, id))
 }
 get_static_extra :: proc{get_static_extra_node, get_static_extra_node_id}
-@(tag = "api")
 get_static_extra_node_id :: #force_inline proc(
 	graph: ^Proc,
 	id: Node_ID,

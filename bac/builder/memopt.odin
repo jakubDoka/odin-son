@@ -1,4 +1,4 @@
-package builder
+package bac_builder
 
 import bac ".."
 import "../../vendored/gam/util/arna"

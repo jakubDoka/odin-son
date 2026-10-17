@@ -22,7 +22,7 @@ main :: proc() {
 
 		meta.generate_spec(
 			meta.Spec_Gen_Input {
-				package_name      = "builder",
+				package_name      = "bac_builder",
 				// %w-formatted table values bake in bare Reg_Kind/Class_Flag
 				// names, so alias them locally instead of teaching the
 				// generator about every %w call site
@@ -91,7 +91,7 @@ main :: proc() {
 
 		meta.generate_spec(
 			meta.Spec_Gen_Input {
-				package_name = "x64",
+				package_name = "bac_x64",
 				// %w-formatted table values bake in bare Reg_Kind/Class_Flag
 				// names, so alias them locally instead of teaching the
 				// generator about every %w call site
@@ -135,7 +135,7 @@ main :: proc() {
 
 		meta.generate_spec(
 			meta.Spec_Gen_Input {
-				package_name = "wasm",
+				package_name = "bac_wasm",
 				// %w-formatted table values bake in bare Reg_Kind/Class_Flag
 				// names, so alias them locally instead of teaching the
 				// generator about every %w call site
@@ -190,7 +190,7 @@ main :: proc() {
 
 		meta.generate_spec(
 			meta.Spec_Gen_Input {
-				package_name = "arm",
+				package_name = "bac_arm",
 				header_import = "import bac \"..\"\n" +
 				"Reg_Kind :: bac.Reg_Kind\n" +
 				"Class_Flag :: bac.Class_Flag\n",

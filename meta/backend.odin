@@ -222,12 +222,6 @@ gen_backend_api :: proc(packages: []Backend_Package) {
 	os.write_string(
 		file,
 		`
-API_Proc :: struct {
-	name:         string,
-	package_path: string,
-	type:         typeid,
-}
-
 // Unspecialized generic procedures have no runtime typeid.
 @(rodata)
 API := [?]API_Proc{
@@ -238,9 +232,9 @@ API := [?]API_Proc{
 		relpath, _ := filepath.rel(base, abs)
 		for prc in pkg.procs {
 			if !prc.api do continue
-			ty := "nil"
-			if !proc_type_is_generic(prc.lit.type) do ty = fmt.tprintf("type_of(pkg_%v.%v)", i, prc.name)
-			fmt.fprintfln(file, "\t{{%q, %q, %v}},", prc.name, relpath, ty)
+			ty := fmt.tprintf("type_of(pkg_%v.%v)", i, prc.name)
+
+			fmt.fprintfln(file, "\t{{%q, %q, %v}},", relpath, prc.name, ty)
 		}
 	}
 	os.write_string(file, "}\n")

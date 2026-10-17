@@ -1537,7 +1537,6 @@ Simd_Iter :: struct {
 	needle:   u8,
 }
 
-@(tag = "api")
 simd_iter_from :: #force_no_inline proc(
 	haystack: []u8,
 	needle: u8,
@@ -1581,7 +1580,6 @@ simd_iter_next_rev :: proc(siter: ^Simd_Iter) -> (int, bool) {
 	}
 }
 
-@(tag = "api")
 simd_iter_next :: proc(siter: ^Simd_Iter) -> (int, bool) {
 	for {
 		if siter.mask != 0 {
@@ -1662,7 +1660,6 @@ SS_Entry :: struct($V: typeid) {
 	id:   V,
 }
 
-@(tag = "api")
 grow_search_space :: proc(
 	ss: ^#soa[]SS_Entry($V),
 	new_cap: int,
@@ -2286,7 +2283,7 @@ get_extra :: proc {
 	get_static_extra_node_id,
 }
 
-@(tag = "node_proc,api")
+@(tag = "node_proc")
 get_static_extra_node :: #force_inline proc(
 	graph: ^Proc,
 	node: ^Node,

@@ -1,4 +1,4 @@
-package builder
+package bac_builder
 
 import bac ".."
 import "../../vendored/gam/util/arna"
@@ -159,8 +159,8 @@ add_call_ret :: proc(
 }
 
 If_State :: struct {
-	if_:     Node_ID,
-	using _: struct #raw_union {
+	if_:          Node_ID,
+	using branch: struct #raw_union {
 		else_scope: Node_ID,
 		then_scope: Node_ID,
 	},

@@ -1,4 +1,4 @@
-package x64
+package bac_x64
 
 import bac ".."
 import "../../vendored/gam/util/arna"

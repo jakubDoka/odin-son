@@ -1,4 +1,4 @@
-package regalloc
+package bac_regalloc
 
 import ".."
 import "../../vendored/gam/util/arna"

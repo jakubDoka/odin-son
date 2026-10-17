@@ -124,6 +124,11 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 	)
 
 	if !spec.no_spec_tables {
+		fmt.fprintf(
+			file,
+			"@(export, link_name = \"%v_spec\")",
+			spec_in.package_name,
+		)
 		fmt.fprintf(file, "SPEC := %vNode_Spec{{\n", q)
 
 		os.write_string(file, "\tcc_table = {\n")

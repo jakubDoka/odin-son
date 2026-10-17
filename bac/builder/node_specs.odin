@@ -1,10 +1,10 @@
-package builder
+package bac_builder
 import bac ".."
 Reg_Kind :: bac.Reg_Kind
 Class_Flag :: bac.Class_Flag
 // NOTE: this file is generated: 
 
-SPEC := bac.Node_Spec{
+@(export, link_name = "bac_builder_spec")SPEC := bac.Node_Spec{
 	cc_table = {
 	},
 	call_clobbers = {
@@ -314,8 +314,8 @@ inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	else when T == bac.No_Extra {return 1}
 	else when T == bac.Call {return 3}
 	else when T == bac.Cfg {return 0}
-	else when T == bac.CInt {return 6}
 	else when T == Scope {return 7}
+	else when T == bac.CInt {return 6}
 	else {#panic(`the passed type is not subclass of anything`)}
 }
 #assert(size_of(bac.Local) % bac.PRECISION == 0)
@@ -324,5 +324,5 @@ inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.Call) % bac.PRECISION == 0)
 #assert(size_of(bac.Cfg) % bac.PRECISION == 0)
-#assert(size_of(bac.CInt) % bac.PRECISION == 0)
 #assert(size_of(Scope) % bac.PRECISION == 0)
+#assert(size_of(bac.CInt) % bac.PRECISION == 0)

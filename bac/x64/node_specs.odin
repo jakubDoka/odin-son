@@ -1,10 +1,10 @@
-package x64
+package bac_x64
 import bac ".."
 Reg_Kind :: bac.Reg_Kind
 Class_Flag :: bac.Class_Flag
 // NOTE: this file is generated: 
 
-SPEC := bac.Node_Spec{
+@(export, link_name = "bac_x64_spec")SPEC := bac.Node_Spec{
 	cc_table = {
 		X64_SYSTEMV_CC,
 		X64_LINUX_SYSCALL_CC,

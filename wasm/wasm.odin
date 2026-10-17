@@ -1,4 +1,4 @@
-package wasm_main
+package bac_wasm_main
 
 import jit ".."
 import "../bac"

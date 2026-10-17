@@ -926,7 +926,6 @@ layout_locals :: proc(ctx: ^Proc, schedule: ^Schedule, stack_size: ^i32) {
 	}
 }
 
-@(tag = "api")
 uleb :: proc(b: ^[dynamic]u8, value: u64) {
 	v := value
 	for {
@@ -938,7 +937,6 @@ uleb :: proc(b: ^[dynamic]u8, value: u64) {
 	}
 }
 
-@(tag = "api")
 sleb :: proc(b: ^[dynamic]u8, value: i64) {
 	v := value
 	for {
@@ -952,7 +950,6 @@ sleb :: proc(b: ^[dynamic]u8, value: i64) {
 	}
 }
 
-@(tag = "api")
 putb :: #force_inline proc(b: ^[dynamic]u8, vl: $T) {
 	append(b, transmute(u8)vl)
 }

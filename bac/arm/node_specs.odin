@@ -1,10 +1,10 @@
-package arm
+package bac_arm
 import bac ".."
 Reg_Kind :: bac.Reg_Kind
 Class_Flag :: bac.Class_Flag
 // NOTE: this file is generated: 
 
-SPEC := bac.Node_Spec{
+@(export, link_name = "bac_arm_spec")SPEC := bac.Node_Spec{
 	cc_table = {
 		ARM_SYSTEMV_CC,
 	},

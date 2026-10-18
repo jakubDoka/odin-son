@@ -1,10 +1,10 @@
-package bac_builder
+package bac_ssa
 import bac ".."
 Reg_Kind :: bac.Reg_Kind
 Class_Flag :: bac.Class_Flag
 // NOTE: this file is generated: 
 
-@(rodata, export, link_name = "bac_builder_spec")SPEC := bac.Node_Spec{
+@(rodata, export, link_name = "bac_ssa_spec")SPEC := bac.Node_Spec{
 	call_clobbers = {
 	},
 	datatype_to_reg_kind = {.Void = 0, .Mem = 0, .I8 = 0, .I16 = 0, .I32 = 0, .I64 = 0, .F32 = 0, .F64 = 0, .V128 = 0, .V256 = 0, .V512 = 0},

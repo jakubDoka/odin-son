@@ -1,4 +1,4 @@
-package bac_builder
+package bac_ssa
 
 import bac ".."
 import "../../utils/arna"
@@ -13,9 +13,9 @@ btype :: #force_inline proc(node: bac.Expanded_Node) -> Node_Type {
 	return Node_Type(node.rtype)
 }
 
-builder_extra :: proc {
-	builder_extra_node,
-	builder_extra_node_id,
+ssa_extra :: proc {
+	ssa_extra_node,
+	ssa_extra_node_id,
 }
 
 @(tag = "api")
@@ -106,7 +106,7 @@ add_store :: proc(
 	return bac.add_store(graph, name, ctrl, mem, addr, value)
 }
 
-builder_extra_node :: #force_inline proc(
+ssa_extra_node :: #force_inline proc(
 	graph: ^bac.Proc,
 	node: ^bac.Node,
 	$T: typeid,
@@ -117,12 +117,12 @@ builder_extra_node :: #force_inline proc(
 	return (^T)(&node.extra)
 }
 
-builder_extra_node_id :: #force_inline proc(
+ssa_extra_node_id :: #force_inline proc(
 	graph: ^bac.Proc,
 	id: Node_ID,
 	$T: typeid,
 ) -> ^T {
-	return builder_extra_node(graph, get_node(graph, id), T)
+	return ssa_extra_node(graph, get_node(graph, id), T)
 }
 
 @(tag = "api")
@@ -282,7 +282,7 @@ end_loop :: proc(graph: ^bac.Proc, node_scope: ^Node_ID, state: ^Loop_State) {
 			if btype(inode) != .Lazy_Phi || inode.inps[0] != loop do continue
 
 			for {
-				scp := builder_extra(graph, bnode, Scope)
+				scp := ssa_extra(graph, bnode, Scope)
 				if scp == nil || !scp.done || bnode.inps[0] == loop do break
 				bnode = expand_node(graph, bnode.inps[i])
 			}
@@ -315,7 +315,7 @@ end_loop :: proc(graph: ^bac.Proc, node_scope: ^Node_ID, state: ^Loop_State) {
 		}
 	}
 
-	builder_extra(graph, state.scope, Scope).done = true
+	ssa_extra(graph, state.scope, Scope).done = true
 	bac.remove_output(graph, state.scope, {id = 0, idx = 0})
 
 	if bscope != 0 {
@@ -356,7 +356,7 @@ get_scope_value :: proc(
 
 	val := bac.get_inputs(graph, snode)[idx]
 	vnode := expand_node(graph, val)
-	loop_scope := builder_extra(graph, vnode, Scope)
+	loop_scope := ssa_extra(graph, vnode, Scope)
 	if loop_scope != nil {
 		pval := val
 		val = get_scope_value(graph, val, idx)

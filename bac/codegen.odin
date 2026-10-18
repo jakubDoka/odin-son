@@ -25,7 +25,6 @@ Dbg_Data_Def :: struct {
 }
 
 Call_Conv :: struct {
-	name:          string,
 	callee_saved:  [][]Reg,
 	caller_saved:  [][]Reg,
 	args:          [][]Reg,
@@ -626,7 +625,7 @@ cc_node_meta :: proc(
 		counts[rk] += 1
 	}
 
-	if is_indirect_call(node) {
+	if is_indirect_call(node) && !cc.is_syscall {
 		nmasks[len(nmasks) - 1] = {}
 	}
 

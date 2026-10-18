@@ -44,7 +44,6 @@ WASM_SYSTEMV_CC :: 0
 
 CC_TABLE := [?]bac.Call_Conv {
 	WASM_SYSTEMV_CC = {
-		name = "WASM_SYSTEMV_CC",
 		args = {0 ..= RK_COUNT = transmute([]Reg)runtime.Raw_Slice{len = 64}},
 	},
 }

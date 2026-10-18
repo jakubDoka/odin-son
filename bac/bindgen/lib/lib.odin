@@ -3,7 +3,7 @@ package bac_lib
 
 import "base:runtime"
 import bac "../.."
-import bac_builder "../../builder"
+import bac_ssa "../../ssa"
 import bac_arm "../../arm"
 import bac_x64 "../../x64"
 import bac_wasm "../../wasm"
@@ -11,7 +11,7 @@ import bac_regalloc "../../regalloc/"
 import arna "../../../utils/arna/"
 
 _ :: bac
-_ :: bac_builder
+_ :: bac_ssa
 _ :: bac_arm
 _ :: bac_x64
 _ :: bac_wasm
@@ -523,7 +523,21 @@ bac_unpin :: proc "c" (
 }
 
 @(export)
-bac_builder_add_arbitrary_load :: proc "c" (
+bac_regalloc_regalloc :: proc "c" (
+	ra: ^bac.Regalloc,
+	graph: ^bac.Proc,
+	sched: ^bac.Schedule,
+	mode: bac_regalloc.Mode,
+	scratch: runtime.Allocator,
+) -> (
+	bac.Regalloc_Output,
+) {
+	context = {}
+	return bac_regalloc.regalloc(ra, graph, sched, mode, scratch)
+}
+
+@(export)
+bac_ssa_add_arbitrary_load :: proc "c" (
 	ctx: ^bac.Proc,
 	cfg: bac.Node_ID,
 	mem: bac.Node_ID,
@@ -535,11 +549,11 @@ bac_builder_add_arbitrary_load :: proc "c" (
 	bac.Node_ID,
 ) {
 	context = {}
-	return bac_builder.add_arbitrary_load(ctx, cfg, mem, addr, rsize, extra_offset, unit)
+	return bac_ssa.add_arbitrary_load(ctx, cfg, mem, addr, rsize, extra_offset, unit)
 }
 
 @(export)
-bac_builder_add_arbitrary_store :: proc "c" (
+bac_ssa_add_arbitrary_store :: proc "c" (
 	ctx: ^bac.Proc,
 	cfg: bac.Node_ID,
 	mem: bac.Node_ID,
@@ -552,11 +566,11 @@ bac_builder_add_arbitrary_store :: proc "c" (
 	bac.Node_ID,
 ) {
 	context = {}
-	return bac_builder.add_arbitrary_store(ctx, cfg, mem, addr, rvalue, rsize, extra_offset, unit)
+	return bac_ssa.add_arbitrary_store(ctx, cfg, mem, addr, rvalue, rsize, extra_offset, unit)
 }
 
 @(export)
-bac_builder_add_call :: proc "c" (
+bac_ssa_add_call :: proc "c" (
 	graph: ^bac.Proc,
 	args: []bac.Node_ID,
 	extra: bac.Call,
@@ -565,11 +579,11 @@ bac_builder_add_call :: proc "c" (
 	bac.Node_ID,
 ) {
 	context = {}
-	return bac_builder.add_call(graph, args, extra)
+	return bac_ssa.add_call(graph, args, extra)
 }
 
 @(export)
-bac_builder_add_field_load :: proc "c" (
+bac_ssa_add_field_load :: proc "c" (
 	ctx: ^bac.Proc,
 	name: string,
 	dt: bac.Node_Datatype,
@@ -581,11 +595,11 @@ bac_builder_add_field_load :: proc "c" (
 	bac.Node_ID,
 ) {
 	context = {}
-	return bac_builder.add_field_load(ctx, name, dt, cfg, mem, base, offset)
+	return bac_ssa.add_field_load(ctx, name, dt, cfg, mem, base, offset)
 }
 
 @(export)
-bac_builder_add_field_offset :: proc "c" (
+bac_ssa_add_field_offset :: proc "c" (
 	graph: ^bac.Proc,
 	base: bac.Node_ID,
 	offset: int,
@@ -593,11 +607,11 @@ bac_builder_add_field_offset :: proc "c" (
 	bac.Node_ID,
 ) {
 	context = {}
-	return bac_builder.add_field_offset(graph, base, offset)
+	return bac_ssa.add_field_offset(graph, base, offset)
 }
 
 @(export)
-bac_builder_add_field_store :: proc "c" (
+bac_ssa_add_field_store :: proc "c" (
 	ctx: ^bac.Proc,
 	name: string,
 	cfg: bac.Node_ID,
@@ -609,11 +623,11 @@ bac_builder_add_field_store :: proc "c" (
 	bac.Node_ID,
 ) {
 	context = {}
-	return bac_builder.add_field_store(ctx, name, cfg, mem, base, offset, value)
+	return bac_ssa.add_field_store(ctx, name, cfg, mem, base, offset, value)
 }
 
 @(export)
-bac_builder_add_scope :: proc "c" (
+bac_ssa_add_scope :: proc "c" (
 	graph: ^bac.Proc,
 	name: string,
 	cfg: bac.Node_ID,
@@ -621,47 +635,47 @@ bac_builder_add_scope :: proc "c" (
 	bac.Node_ID,
 ) {
 	context = {}
-	return bac_builder.add_scope(graph, name, cfg)
+	return bac_ssa.add_scope(graph, name, cfg)
 }
 
 @(export)
-bac_builder_arg_gen_finalize :: proc "c" (
+bac_ssa_arg_gen_finalize :: proc "c" (
 	ctx: ^bac.Proc,
-	gen: ^bac_builder.Param_Gen,
+	gen: ^bac_ssa.Param_Gen,
 ) -> (
 	[]bac.Param_Spec,
 ) {
 	context = {}
-	return bac_builder.arg_gen_finalize(ctx, gen)
+	return bac_ssa.arg_gen_finalize(ctx, gen)
 }
 
 @(export)
-bac_builder_arg_gen_next :: proc "c" (
+bac_ssa_arg_gen_next :: proc "c" (
 	ctx: ^bac.Proc,
 	mem: bac.Node_ID,
-	gen: ^bac_builder.Param_Gen,
+	gen: ^bac_ssa.Param_Gen,
 	name: string,
-	apa: ^bac_builder.Abi_Param,
+	apa: ^bac_ssa.Abi_Param,
 ) -> (
 	bac.Node_ID,
 	bac.Node_ID,
 ) {
 	context = {}
-	return bac_builder.arg_gen_next(ctx, mem, gen, name, apa)
+	return bac_ssa.arg_gen_next(ctx, mem, gen, name, apa)
 }
 
 @(export)
-bac_builder_break_block :: proc "c" (
+bac_ssa_break_block :: proc "c" (
 	graph: ^bac.Proc,
 	scope: ^bac.Node_ID,
-	state: ^bac_builder.Block_State,
+	state: ^bac_ssa.Block_State,
 ) {
 	context = {}
-	bac_builder.break_block(graph, scope, state)
+	bac_ssa.break_block(graph, scope, state)
 }
 
 @(export)
-bac_builder_compute_index_offset :: proc "c" (
+bac_ssa_compute_index_offset :: proc "c" (
 	ctx: ^bac.Proc,
 	base: bac.Node_ID,
 	index: bac.Node_ID,
@@ -670,71 +684,71 @@ bac_builder_compute_index_offset :: proc "c" (
 	bac.Node_ID,
 ) {
 	context = {}
-	return bac_builder.compute_index_offset(ctx, base, index, stride)
+	return bac_ssa.compute_index_offset(ctx, base, index, stride)
 }
 
 @(export)
-bac_builder_decl_local :: proc "c" (
+bac_ssa_decl_local :: proc "c" (
 	graph: ^bac.Proc,
 	loc: bac.Node_ID,
 	name: string,
 	type: u64,
 ) {
 	context = {}
-	bac_builder.decl_local(graph, loc, name, type)
+	bac_ssa.decl_local(graph, loc, name, type)
 }
 
 @(export)
-bac_builder_delete_scope :: proc "c" (
+bac_ssa_delete_scope :: proc "c" (
 	graph: ^bac.Proc,
 	scope: bac.Node_ID,
 ) {
 	context = {}
-	bac_builder.delete_scope(graph, scope)
+	bac_ssa.delete_scope(graph, scope)
 }
 
 @(export)
-bac_builder_end_block :: proc "c" (
+bac_ssa_end_block :: proc "c" (
 	graph: ^bac.Proc,
 	scope: ^bac.Node_ID,
-	state: ^bac_builder.Block_State,
+	state: ^bac_ssa.Block_State,
 ) {
 	context = {}
-	bac_builder.end_block(graph, scope, state)
+	bac_ssa.end_block(graph, scope, state)
 }
 
 @(export)
-bac_builder_end_else :: proc "c" (
+bac_ssa_end_else :: proc "c" (
 	graph: ^bac.Proc,
 	else_scope: ^bac.Node_ID,
-	state: ^bac_builder.If_State,
+	state: ^bac_ssa.If_State,
 ) {
 	context = {}
-	bac_builder.end_else(graph, else_scope, state)
+	bac_ssa.end_else(graph, else_scope, state)
 }
 
 @(export)
-bac_builder_end_if :: proc "c" (
+bac_ssa_end_if :: proc "c" (
 	graph: ^bac.Proc,
 	then_scope: ^bac.Node_ID,
-	state: ^bac_builder.If_State,
+	state: ^bac_ssa.If_State,
 ) {
 	context = {}
-	bac_builder.end_if(graph, then_scope, state)
+	bac_ssa.end_if(graph, then_scope, state)
 }
 
 @(export)
-bac_builder_end_loop :: proc "c" (
+bac_ssa_end_loop :: proc "c" (
 	graph: ^bac.Proc,
 	node_scope: ^bac.Node_ID,
-	state: ^bac_builder.Loop_State,
+	state: ^bac_ssa.Loop_State,
 ) {
 	context = {}
-	bac_builder.end_loop(graph, node_scope, state)
+	bac_ssa.end_loop(graph, node_scope, state)
 }
 
 @(export)
-bac_builder_get_scope_value :: proc "c" (
+bac_ssa_get_scope_value :: proc "c" (
 	graph: ^bac.Proc,
 	scope: bac.Node_ID,
 	idx: int,
@@ -742,73 +756,73 @@ bac_builder_get_scope_value :: proc "c" (
 	bac.Node_ID,
 ) {
 	context = {}
-	return bac_builder.get_scope_value(graph, scope, idx)
+	return bac_ssa.get_scope_value(graph, scope, idx)
 }
 
 @(export)
-bac_builder_inline_graph :: proc "c" (
+bac_ssa_inline_graph :: proc "c" (
 	graph: ^bac.Proc,
 	call: bac.Node_ID,
 	from: ^bac.Proc,
 ) {
 	context = {}
-	bac_builder.inline_graph(graph, call, from)
+	bac_ssa.inline_graph(graph, call, from)
 }
 
 @(export)
-bac_builder_inline_stencil :: proc "c" (
+bac_ssa_inline_stencil :: proc "c" (
 	graph: ^bac.Proc,
 	call: bac.Node_ID,
 	from: bac.Stencil,
 ) {
 	context = {}
-	bac_builder.inline_stencil(graph, call, from)
+	bac_ssa.inline_stencil(graph, call, from)
 }
 
 @(export)
-bac_builder_loop_control :: proc "c" (
-	variant: bac_builder.Loop_Control,
+bac_ssa_loop_control :: proc "c" (
+	variant: bac_ssa.Loop_Control,
 	ctx: ^bac.Proc,
 	scope: bac.Node_ID,
-	loop: ^bac_builder.Loop_State,
+	loop: ^bac_ssa.Loop_State,
 ) {
 	context = {}
-	bac_builder.loop_control(variant, ctx, scope, loop)
+	bac_ssa.loop_control(variant, ctx, scope, loop)
 }
 
 @(export)
-bac_builder_loopopt :: proc "c" (
+bac_ssa_loopopt :: proc "c" (
 	graph: ^bac.Proc,
 ) -> (
 	bool,
 ) {
 	context = {}
-	return bac_builder.loopopt(graph)
+	return bac_ssa.loopopt(graph)
 }
 
 @(export)
-bac_builder_memopt :: proc "c" (
+bac_ssa_memopt :: proc "c" (
 	graph: ^bac.Proc,
 ) -> (
 	bool,
 ) {
 	context = {}
-	return bac_builder.memopt(graph)
+	return bac_ssa.memopt(graph)
 }
 
 @(export)
-bac_builder_merge_returns :: proc "c" (
+bac_ssa_merge_returns :: proc "c" (
 	graph: ^bac.Proc,
 	args: []bac.Node_ID,
 ) -> (
 	bac.Node_ID,
 ) {
 	context = {}
-	return bac_builder.merge_returns(graph, args)
+	return bac_ssa.merge_returns(graph, args)
 }
 
 @(export)
-bac_builder_push_scope_value :: proc "c" (
+bac_ssa_push_scope_value :: proc "c" (
 	graph: ^bac.Proc,
 	scope: bac.Node_ID,
 	value: bac.Node_ID,
@@ -818,101 +832,87 @@ bac_builder_push_scope_value :: proc "c" (
 	int,
 ) {
 	context = {}
-	return bac_builder.push_scope_value(graph, scope, value, name, type)
+	return bac_ssa.push_scope_value(graph, scope, value, name, type)
 }
 
 @(export)
-bac_builder_set_scope_value :: proc "c" (
+bac_ssa_set_scope_value :: proc "c" (
 	graph: ^bac.Proc,
 	scope: bac.Node_ID,
 	idx: int,
 	value: bac.Node_ID,
 ) {
 	context = {}
-	bac_builder.set_scope_value(graph, scope, idx, value)
+	bac_ssa.set_scope_value(graph, scope, idx, value)
 }
 
 @(export)
-bac_builder_start_block :: proc "c" (
-	state: ^bac_builder.Block_State,
+bac_ssa_start_block :: proc "c" (
+	state: ^bac_ssa.Block_State,
 ) {
 	context = {}
-	bac_builder.start_block(state)
+	bac_ssa.start_block(state)
 }
 
 @(export)
-bac_builder_start_else :: proc "c" (
+bac_ssa_start_else :: proc "c" (
 	graph: ^bac.Proc,
 	then_scope: ^bac.Node_ID,
-	state: ^bac_builder.If_State,
+	state: ^bac_ssa.If_State,
 ) {
 	context = {}
-	bac_builder.start_else(graph, then_scope, state)
+	bac_ssa.start_else(graph, then_scope, state)
 }
 
 @(export)
-bac_builder_start_if :: proc "c" (
+bac_ssa_start_if :: proc "c" (
 	graph: ^bac.Proc,
 	scope: bac.Node_ID,
-	state: ^bac_builder.If_State,
+	state: ^bac_ssa.If_State,
 	cond: bac.Node_ID,
 ) {
 	context = {}
-	bac_builder.start_if(graph, scope, state, cond)
+	bac_ssa.start_if(graph, scope, state, cond)
 }
 
 @(export)
-bac_builder_start_loop :: proc "c" (
+bac_ssa_start_loop :: proc "c" (
 	graph: ^bac.Proc,
 	scope: bac.Node_ID,
-	state: ^bac_builder.Loop_State,
+	state: ^bac_ssa.Loop_State,
 ) {
 	context = {}
-	bac_builder.start_loop(graph, scope, state)
+	bac_ssa.start_loop(graph, scope, state)
 }
 
 @(export)
-bac_builder_start_loop_increment :: proc "c" (
+bac_ssa_start_loop_increment :: proc "c" (
 	graph: ^bac.Proc,
 	node_scope: ^bac.Node_ID,
-	state: ^bac_builder.Loop_State,
+	state: ^bac_ssa.Loop_State,
 ) {
 	context = {}
-	bac_builder.start_loop_increment(graph, node_scope, state)
+	bac_ssa.start_loop_increment(graph, node_scope, state)
 }
 
 @(export)
-bac_builder_start_proc :: proc "c" (
+bac_ssa_start_proc :: proc "c" (
 	graph: ^bac.Proc,
 	mem: ^arna.Allocator,
 ) -> (
 	bac.Node_ID,
 ) {
 	context = {}
-	return bac_builder.start_proc(graph, mem)
+	return bac_ssa.start_proc(graph, mem)
 }
 
 @(export)
-bac_builder_truncate_scope :: proc "c" (
+bac_ssa_truncate_scope :: proc "c" (
 	graph: ^bac.Proc,
 	scope: bac.Node_ID,
 	to_len: int,
 ) {
 	context = {}
-	bac_builder.truncate_scope(graph, scope, to_len)
-}
-
-@(export)
-bac_regalloc_regalloc :: proc "c" (
-	ra: ^bac.Regalloc,
-	graph: ^bac.Proc,
-	sched: ^bac.Schedule,
-	mode: bac_regalloc.Mode,
-	scratch: runtime.Allocator,
-) -> (
-	bac.Regalloc_Output,
-) {
-	context = {}
-	return bac_regalloc.regalloc(ra, graph, sched, mode, scratch)
+	bac_ssa.truncate_scope(graph, scope, to_len)
 }
 

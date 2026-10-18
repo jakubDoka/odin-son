@@ -1,7 +1,7 @@
 package typecheck
 
 import "../bac"
-import "../bac/builder"
+import "../bac/ssa"
 import ra "../bac/regalloc"
 import "../utils/arna"
 import "base:intrinsics"
@@ -97,9 +97,9 @@ Loop_State :: struct {
 	parent:       ^Loop_State,
 	label:        string,
 	broken:       bool,
-	block:        ^builder.Block_State,
+	block:        ^ssa.Block_State,
 	scope_count:  u16,
-	using bstate: builder.Loop_State,
+	using bstate: ssa.Loop_State,
 }
 
 Lit :: struct #raw_union {
@@ -2419,7 +2419,7 @@ typecheck :: proc(
 			ty = error(ctx, d.body, "expected a switch body")
 			break match
 		}
-		block: builder.Block_State
+		block: ssa.Block_State
 		sw := Loop_State {
 			parent = ctx.loop,
 			label  = src_of(ctx.file^, d.label),
@@ -2466,7 +2466,7 @@ typecheck :: proc(
 			ty = error(ctx, d.body, "expected a switch body")
 			break match
 		}
-		block: builder.Block_State
+		block: ssa.Block_State
 		sw := Loop_State {
 			parent = ctx.loop,
 			label  = src_of(ctx.file^, d.label),

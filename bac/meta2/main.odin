@@ -3,16 +3,16 @@ package bac_meta2
 import ".."
 import "../anal"
 import "../arm"
-import "../builder"
+import "../ssa"
 import "../meta"
 import "../wasm"
 import "../x64"
 
 main :: proc() {
-	when builder.SPEC_NOT_PRESENT {
-		BUILDER_CLASSES := [builder.Node_Type]meta.Class_Spec {
+	when ssa.SPEC_NOT_PRESENT {
+		SSA_CLASSES := [ssa.Node_Type]meta.Class_Spec {
 			.Scope = {
-				id = builder.Scope,
+				id = ssa.Scope,
 				args = {"cfg"},
 				default_type = .Void,
 				api = true,
@@ -22,20 +22,20 @@ main :: proc() {
 
 		meta.generate_spec(
 			meta.Spec_Gen_Input {
-				package_name      = "bac_builder",
+				package_name      = "bac_ssa",
 				// %w-formatted table values bake in bare Reg_Kind/Class_Flag
 				// names, so alias them locally instead of teaching the
 				// generator about every %w call site
 				header_import     = "import bac \"..\"\n" + "Reg_Kind :: bac.Reg_Kind\n" + "Class_Flag :: bac.Class_Flag\n",
 				qual              = "bac.",
-				local_extra_types = {builder.Scope},
+				local_extra_types = {ssa.Scope},
 				classes           = {
 					meta.class_array(&meta.IDEAL_CLASSES, gen_ctors = false),
-					meta.class_array(&BUILDER_CLASSES),
+					meta.class_array(&SSA_CLASSES),
 				},
 				has_sccp          = true,
 			},
-			"bac/builder/node_specs.odin",
+			"bac/ssa/node_specs.odin",
 		)
 	}
 

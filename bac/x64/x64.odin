@@ -4,7 +4,7 @@ import bac ".."
 import "../../utils/arna"
 import "../../utils/bit_arr"
 import "../../utils/fmt"
-import "../builder"
+import "../ssa"
 import "base:intrinsics"
 import "core:math"
 import "core:mem"
@@ -106,7 +106,6 @@ X64_LINUX_SYSCALL_CC :: 1
 @(rodata)
 CC_TABLE := [?]bac.Call_Conv {
 	X64_SYSTEMV_CC = {
-		name = "X64_SYSTEMV_CC",
 		callee_saved = {{RBX, RBP, R12, R13, R14, R15}, {}},
 		caller_saved = {
 			{RAX, RCX, RDX, RSI, RDI, R8, R9, R10, R11},
@@ -139,7 +138,6 @@ CC_TABLE := [?]bac.Call_Conv {
 		stack_pointer = RSP,
 	},
 	X64_LINUX_SYSCALL_CC = {
-		name = "X64_LINUX_SYSCALL_CC",
 		callee_saved = {
 			{RBX, RDX, RDI, RSI, RBP, R8, R9, R10, R12, R13, R14, R15},
 			{},
@@ -427,7 +425,7 @@ peep :: proc(
 		if node.dt in bac.FLOAT_DTS && cnst.value != 0 {
 			global := bac.c_int_as_global(ctx, node)
 
-			cmem := builder.get_or_add_const_mem(ctx)
+			cmem := ssa.get_or_add_const_mem(ctx)
 			_, cid := add_node(
 				ctx,
 				node.name,

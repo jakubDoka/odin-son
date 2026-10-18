@@ -4,7 +4,7 @@ import bac ".."
 import "../../utils/arna"
 import "../../utils/bit_arr"
 import "../../utils/fmt"
-import "../builder"
+import "../ssa"
 import "base:intrinsics"
 import "core:mem"
 import "core:slice"
@@ -56,7 +56,6 @@ ARM_SYSTEMV_CC :: 0
 @(rodata)
 CC_TABLE := [?]bac.Call_Conv {
 	ARM_SYSTEMV_CC = {
-		name = "ARM_SYSTEMV_CC",
 		caller_saved = {
 			{
 				X0,
@@ -279,7 +278,7 @@ peep :: proc(
 		if node.dt in bac.FLOAT_DTS && cnst.value != 0 {
 			global := bac.c_int_as_global(ctx, node)
 			addr := bac.add_global_addr(ctx, "caddr", global)
-			cmem := builder.get_or_add_const_mem(ctx)
+			cmem := ssa.get_or_add_const_mem(ctx)
 			return bac.add_load(ctx, "cild", node.dt, 0, cmem, addr)
 		}
 	case .Eq ..= .U_Ge:
@@ -321,7 +320,7 @@ peep :: proc(
 			meta = {extra_dwords = size},
 		)
 		addr := bac.add_global_addr(ctx, "selmka", msk)
-		cmem := builder.get_or_add_const_mem(ctx)
+		cmem := ssa.get_or_add_const_mem(ctx)
 		mskld := bac.add_load(ctx, "seld", .V128, 0, cmem, addr)
 
 		shl := bac.add_bin_op(

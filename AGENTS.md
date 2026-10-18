@@ -6,10 +6,10 @@ node spec is generated with `gen-spec`, you can run tests with `run-test`.
 
 The backend is split into `bac` (the generic engine, shared node spec, and
 codegen scaffolding) plus one subpackage per architecture, e.g. `bac/x64` and
-the pre-lowering IR builder `bac/builder`. Shared node kinds are in
+the pre-lowering SSA IR `bac/ssa`. Shared node kinds are in
 `Node_Type` in `bac/graph.odin`; target-specific node kinds go into that
 target's own enum in its own module (e.g. `Node_Type` in `bac/x64/x64.odin`,
-`Node_Type` in `bac/builder/builder_spec.odin`). Adding a new architecture
+`Node_Type` in `bac/ssa/ssa_spec.odin`). Adding a new architecture
 means adding a new `bac/<arch>` directory — nothing in root `bac` should need
 editing. If you are going to use the generated construction fuctions in the
 backend, or any generated thing for that matter, they should have a stub

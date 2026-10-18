@@ -4,7 +4,7 @@ package tests
 import main ".."
 import "../bac"
 import "../bac/arm"
-import "../bac/builder"
+import "../bac/ssa"
 import "../bac/wasm"
 import "../bac/x64"
 import "../typecheck"
@@ -278,11 +278,11 @@ run_test :: proc(
 				emit_got_imports = true,
 			}
 
-			for kind, i in ([]builder.Builtin_Proc{.memcpy, .memset}) {
+			for kind, i in ([]ssa.Builtin_Proc{.memcpy, .memset}) {
 				ctx.graph = {
 					has_dbg = ctx.graph.has_dbg,
 				}
-				ctx.node_spec = &builder.SPEC
+				ctx.node_spec = &ssa.SPEC
 				ctx.mem = &ctx.mems.graph
 				ctx.mem.pos = bac.PRECISION
 				ctx.opt_flags = level.flags
@@ -294,7 +294,7 @@ run_test :: proc(
 					0 ..< 3 = {dt = .I64},
 				}
 
-				builder.make_builtin_proc(&ctx, kind)
+				ssa.make_builtin_proc(&ctx, kind)
 				main.emit_proc_code(&ctx, &emit_ctx, prc)
 			}
 

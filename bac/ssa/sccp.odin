@@ -1,4 +1,4 @@
-package bac_builder
+package bac_ssa
 
 import bac ".."
 import "base:intrinsics"

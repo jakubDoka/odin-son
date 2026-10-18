@@ -10,7 +10,7 @@ int main() {
 
 	bac_Proc proc = {0};
 
-	bac_builder_start_proc(&proc, &mem);
+	bac_ssa_start_proc(&proc, &mem);
 
 	return 0;
 }

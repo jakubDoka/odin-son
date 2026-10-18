@@ -7,11 +7,11 @@ import "core:reflect"
 import "core:slice"
 import "core:strings"
 
-EXPORTED_SPECS := [?]string{"bac_builder", "bac_arm", "bac_x64", "bac_wasm"}
+EXPORTED_SPECS := [?]string{"bac_ssa", "bac_arm", "bac_x64", "bac_wasm"}
 
 EXPORTED_SUBMODS := [?]string {
 	"bac",
-	"bac_builder",
+	"bac_ssa",
 	"bac_arm",
 	"bac_x64",
 	"bac_wasm",
@@ -20,7 +20,7 @@ EXPORTED_SUBMODS := [?]string {
 }
 EXPORTED_SUBMODS_PATH := [?]string {
 	"..",
-	"../builder",
+	"../ssa",
 	"../arm",
 	"../x64",
 	"../wasm",

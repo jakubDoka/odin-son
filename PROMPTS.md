@@ -506,7 +506,7 @@ The backend module is getting bulky and bottle necks the compile times. Make a
 plan to split the backend module so that each Node_Spec is in its own module.
 
 The node spec array should be abolished and the big node spec should be placed
-into a file in each platform module. This also includes the Builder spec. The
+into a file in each platform module. This also includes the SSA spec. The
 codegen function in bac/gen_spec_fn.odin should be parametrized by
 Codegen_Spec that is right now hardcoded. It should also intake a file path to
 generate. Each backend submodule than runts its spec gen separately. All reused

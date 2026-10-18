@@ -2090,7 +2090,7 @@ add_raw :: proc(
 ) -> (
 	id: Node_ID,
 ) {
-	assert(graph.node_spec != nil, "call bac_builder.start_proc first")
+	assert(graph.node_spec != nil, "call bac_ssa.start_proc first")
 
 	id = Node_ID(graph.mem.pos / PRECISION)
 

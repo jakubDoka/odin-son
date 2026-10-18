@@ -53,7 +53,7 @@ V30, V31 :: Reg(V_BANK | 30), Reg(V_BANK | 31)
 
 ARM_SYSTEMV_CC :: 0
 
-@(rodata)
+@(tag = "api", rodata, export, link_name = "bac_arm_CC_TABLE")
 CC_TABLE := [?]bac.Call_Conv {
 	ARM_SYSTEMV_CC = {
 		caller_saved = {
@@ -956,7 +956,7 @@ emit_instr :: proc(
 			case .I32:
 				conv_op = SXTW_X
 			case:
-				panic("no")
+				fmt.panicf("no")
 			}
 
 			emit_op(ctx.code, conv_op | u32(rn.index) << 5 | u32(rd.index))

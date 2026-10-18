@@ -25,7 +25,7 @@ main:
     mov.q rax, [rsp + 0x18]
     mov.q rdx, [rsp + 0x10]
     cmp rax, rdx
-    jnl 4
+    jge 4
     mov.q rax, [rsp + 0x20]
     add rax, 1
     mov.q [rsp + 0x28], rax
@@ -35,7 +35,7 @@ main:
     cqo
     idiv rcx
     cmp rdx, 0
-    jz 3
+    je 3
     mov.q rax, [rsp + 0x28]
     add.q [rsp + 0x8], rax
     jmp 3
@@ -73,14 +73,14 @@ main:
 2:
     mov.q rsi, [rsp]
     cmp rcx, r8
-    jnl 4
+    jge 4
     add rsi, 1
     mov.q [rsp], rsi
     mov rax, rsi
     cqo
     idiv rdi
     cmp rdx, 0
-    jz 3
+    je 3
     add.q [rsp + 0x8], rsi
     jmp 3
 3:
@@ -118,7 +118,7 @@ main:
     mov.q rax, [rsp + 0x18]
     mov.q rdx, [rsp + 0x10]
     cmp rax, rdx
-    jnl 4
+    jge 4
     mov.q rax, [rsp + 0x20]
     add rax, 1
     mov.q [rsp + 0x28], rax
@@ -128,7 +128,7 @@ main:
     cqo
     idiv rcx
     cmp rdx, 0
-    jz 3
+    je 3
     mov.q rax, [rsp + 0x28]
     add.q [rsp + 0x8], rax
     jmp 3
@@ -166,14 +166,14 @@ main:
 2:
     mov.q rsi, [rsp]
     cmp rcx, r8
-    jnl 4
+    jge 4
     add rsi, 1
     mov.q [rsp], rsi
     mov rax, rsi
     cqo
     idiv rdi
     cmp rdx, 0
-    jz 3
+    je 3
     add.q [rsp + 0x8], rsi
     jmp 3
 3:
@@ -202,7 +202,7 @@ main:
     call opaque
     mov r9, rax
     cmp r9, 0
-    jng 4
+    jle 4
     pxor xmm0, xmm0
     movups.x [rsp], xmm0
     mov.q [rsp], rbp
@@ -217,7 +217,7 @@ main:
     cqo
     idiv r8
     cmp rdx, 0
-    jz 3
+    je 3
     add.q [rsp + 0x8], rsi
     jmp 3
 3:
@@ -225,7 +225,7 @@ main:
     mov.q rsi, [rsp]
     add rcx, 1
     cmp rcx, r9
-    jnge 2
+    jl 2
     imul rax, rsi, 0x64
     add rax, rdi
     jmp 5
@@ -253,7 +253,7 @@ main:
     cqo
     idiv rsi
     cmp rdx, 0
-    jz 2
+    je 2
     add.q [rsp - 0x10], rcx
     jmp 2
 2:
@@ -261,10 +261,10 @@ main:
     mov.q rcx, [rsp - 0x10]
     add rdi, 1
     cmp rdi, 9
-    setnl al
+    setge al
     movzx rax, al
     test al, al
-    jz 1
+    je 1
     imul rax, rdx, 0x64
     add rax, rcx
     ret

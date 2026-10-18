@@ -3,8 +3,8 @@ package main
 import "bac"
 import "bac/anal"
 import "bac/arm"
-import "bac/ssa"
 import "bac/regalloc"
+import "bac/ssa"
 import "bac/wasm"
 import "bac/x64"
 import "base:runtime"
@@ -524,7 +524,7 @@ field_store :: proc(
 ) {
 	ctx_set_mem(
 		ctx,
-	ssa.add_field_store(
+		ssa.add_field_store(
 			ctx,
 			name,
 			ctx_ctrl(ctx),
@@ -808,8 +808,6 @@ emit_proc :: proc(
 	ctx.opt_flags = level.flags
 	ctx.stats = &ctx.tstats
 
-	bac.current_graph = ctx
-
 	ctx.mems.scratch.pos = 0
 	ctx.scope = make(
 		[dynamic]typecheck.Variable,
@@ -932,8 +930,6 @@ emit_proc_code :: proc(
 ) {
 	context.allocator, _ = arna.scrath()
 
-	bac.current_graph = ctx
-
 	ctx.node_spec = ctx.target.spec
 	if ctx.check {
 		ctx.node_spec = &anal.SPEC
@@ -980,6 +976,9 @@ emit_proc_code :: proc(
 	emit_ctx.param_specs = prc.param_types
 
 	prc.out = bac.emit_function(emit_ctx^)
+
+	emit_ctx.schedule = {}
+	emit_ctx.dbg_data = {}
 }
 
 Scope_Base :: struct {

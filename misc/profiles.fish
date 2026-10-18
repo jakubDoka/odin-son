@@ -19,8 +19,7 @@ set acc '-define:ACCEPT=true'
 set rlg '-define:REGLOGS=true'
 set dff '-define:DIFF=false'
  
-alias run-test 'odin test tests -keep-executable -debug\
-	-ignore-warnings -define:ODIN_TEST_FANCY=false'
+alias run-test 'odin test tests -keep-executable -debug -define:ODIN_TEST_FANCY=false'
 
 # ./misc/fuzz.sh [-t <secs>] [-j <jobs>] [--until-crash] [--skip-build]
 alias fuzz './misc/fuzz.sh'
@@ -40,7 +39,8 @@ function build-bac
 	odin build bac/bindgen/lib -build-mode:obj -no-entry-point -use-single-module \
 		-out:bac/bindgen/lib/lib.o -o:size -source-code-locations:none \
 		-disable-assert -no-bounds-check -no-type-assert -define:NO_FMT=true \
-		-default-to-nil-allocator -ignore-warnings
+		-default-to-nil-allocator -define:ARNA_DISABLE_VIRTUAL=true \
+		-disable-init-fini -define:INIT_FINI=false
 end
 
 function build-unicorn
@@ -56,14 +56,14 @@ end
 function build-wasm-debug
 	odin build wasm -target:freestanding_wasm32 -no-entry-point \
 		-disable-assert -no-bounds-check -no-type-assert \
-		-extra-linker-flags:"-z stack-size=8388608 --export=source_buffer --export=output_buffer --export=__stack_pointer" $argv -ignore-warnings
+		-extra-linker-flags:"-z stack-size=8388608 --export=source_buffer --export=output_buffer --export=__stack_pointer" $argv
 	mv wasm.wasm mini-odin
 end
 
 function build-wasm
 	odin build wasm -target:freestanding_wasm32 -no-entry-point -o:size \
 		-disable-assert -no-bounds-check -no-type-assert \
-		-extra-linker-flags:"-z stack-size=8388608 --export=source_buffer --export=output_buffer --export=__stack_pointer" $argv -ignore-warnings
+		-extra-linker-flags:"-z stack-size=8388608 --export=source_buffer --export=output_buffer --export=__stack_pointer" $argv
 	wasm-opt -Oz wasm.wasm -o wasm.wasm
 	mv wasm.wasm mini-odin
 end

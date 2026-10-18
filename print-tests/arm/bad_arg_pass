@@ -1,7 +1,7 @@
 =========== OPT LEVEL: none-quick ===========
 w_call:
     sub sp, sp, #64
-    stp x29, x30, [xzr, #7]
+    stp x29, x30, [xzr]
     str x0, [xzr, #16]
     str x1, [xzr, #24]
     str x6, [xzr, #32]
@@ -11,10 +11,10 @@ w_call:
     bl w_find_func
     str x0, [xzr, #48]
     ldr x0, [xzr, #48]
-    movz x1, #0, #0
+    movz x1, #0
     cmp w0, w1
     b.lt 5
-    movz x0, #1, #0
+    movz x0, #1
     ldr x1, [xzr, #64]
     cmp w1, w0
     b.ge 1
@@ -23,7 +23,7 @@ w_call:
     ldr x0, [xzr, #32]
     bl wpush
 2:
-    movz x0, #2, #0
+    movz x0, #2
     ldr x1, [xzr, #64]
     cmp w1, w0
     b.ge 3
@@ -40,18 +40,18 @@ w_call:
     b 6
 5:
     adr x0, 0xfc8
-    movz x1, #12, #0
+    movz x1, #12
     bl print
-    movz x2, #0, #0
+    movz x2, #0
 6:
     mov x0, x2
-    ldp x29, x30, [xzr, #7]
+    ldp x29, x30, [xzr]
     add sp, sp, #64
     ret
 print:
     ret
 w_find_func:
-    movz x0, #10, #0
+    movz x0, #10
     ret
 wpush:
     adr x1, 0xf0c
@@ -60,8 +60,8 @@ wpush:
     str x0, [x1]
     adr x0, 0xf0c
     ldr x1, [x0]
-    movz x2, #10, #0
-    lslv x1, x1, x2
+    movz x2, #10
+    lsl x1, x1, x2
     str x1, [x0]
     ret
 w_finish:
@@ -70,26 +70,26 @@ w_finish:
     ret
 main:
     sub sp, sp, #32
-    stp x29, x30, [xzr, #15]
+    stp x29, x30, [xzr, #8]
     add x0, sp, #0
-    movz x1, #1, #0
-    movz x6, #2, #0
+    movz x1, #1
+    movz x6, #2
     adr x2, 0xed8
-    movz x3, #0, #0
+    movz x3, #0
     str x3, [x2]
     adr x2, 0xeec
     adr x4, 0xeec
-    movz x3, #4, #0
+    movz x3, #4
     str x3, [x0]
-    movz x7, #3, #0
-    movz x0, #0, #0
-    movz x3, #0, #0
-    movz x5, #0, #0
+    movz x7, #3
+    movz x0, #0
+    movz x3, #0
+    movz x5, #0
     bl 0xffffff18
     adr x1, 0xed8
     ldr x1, [x1]
     add x0, x0, x1
-    ldp x29, x30, [xzr, #15]
+    ldp x29, x30, [xzr, #8]
     add sp, sp, #32
     ret
 =========== OPT LEVEL: none ===========
@@ -100,7 +100,7 @@ w_call:
     str x21, [xzr, #16]
     str x22, [xzr, #24]
     str x23, [xzr, #32]
-    stp x29, x30, [xzr, #47]
+    stp x29, x30, [xzr, #40]
     mov x23, x0
     mov x22, x1
     mov x21, x6
@@ -110,10 +110,10 @@ w_call:
     bl w_find_func
     mov x19, x0
     mov x1, x19
-    movz x0, #0, #0
+    movz x0, #0
     cmp w1, w0
     b.lt 5
-    movz x1, #1, #0
+    movz x1, #1
     ldr x0, [xzr, #64]
     cmp w0, w1
     b.ge 1
@@ -122,7 +122,7 @@ w_call:
     mov x0, x21
     bl wpush
 2:
-    movz x1, #2, #0
+    movz x1, #2
     ldr x0, [xzr, #64]
     cmp w0, w1
     b.ge 3
@@ -138,22 +138,22 @@ w_call:
     b 6
 5:
     adr x0, 0xfc8
-    movz x1, #12, #0
+    movz x1, #12
     bl print
-    movz x0, #0, #0
+    movz x0, #0
 6:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
     ldr x22, [xzr, #24]
     ldr x23, [xzr, #32]
-    ldp x29, x30, [xzr, #47]
+    ldp x29, x30, [xzr, #40]
     add sp, sp, #64
     ret
 print:
     ret
 w_find_func:
-    movz x0, #10, #0
+    movz x0, #10
     ret
 wpush:
     adr x2, 0xeec
@@ -162,8 +162,8 @@ wpush:
     str x0, [x2]
     adr x2, 0xeec
     ldr x1, [x2]
-    movz x0, #10, #0
-    lslv x0, x1, x0
+    movz x0, #10
+    lsl x0, x1, x0
     str x0, [x2]
     ret
 w_finish:
@@ -172,32 +172,32 @@ w_finish:
     ret
 main:
     sub sp, sp, #32
-    stp x29, x30, [xzr, #15]
+    stp x29, x30, [xzr, #8]
     add x3, sp, #0
-    movz x1, #1, #0
-    movz x6, #2, #0
+    movz x1, #1
+    movz x6, #2
     adr x2, 0xeb8
-    movz x0, #0, #0
+    movz x0, #0
     str x0, [x2]
     adr x2, 0xecc
     adr x4, 0xecc
-    movz x0, #4, #0
+    movz x0, #4
     str x0, [x3]
-    movz x7, #3, #0
-    movz x0, #0, #0
-    movz x3, #0, #0
-    movz x5, #0, #0
+    movz x7, #3
+    movz x0, #0
+    movz x3, #0
+    movz x5, #0
     bl 0xfffffef8
     adr x1, 0xeb8
     ldr x1, [x1]
     add x0, x0, x1
-    ldp x29, x30, [xzr, #15]
+    ldp x29, x30, [xzr, #8]
     add sp, sp, #32
     ret
 =========== OPT LEVEL: moderate-quick ===========
 w_call:
     sub sp, sp, #64
-    stp x29, x30, [xzr, #7]
+    stp x29, x30, [xzr]
     str x0, [xzr, #16]
     str x1, [xzr, #24]
     str x6, [xzr, #32]
@@ -207,10 +207,10 @@ w_call:
     bl w_find_func
     str x0, [xzr, #48]
     ldr x0, [xzr, #48]
-    movz x1, #0, #0
+    movz x1, #0
     cmp w0, w1
     b.lt 5
-    movz x0, #1, #0
+    movz x0, #1
     ldr x1, [xzr, #64]
     cmp w1, w0
     b.ge 1
@@ -219,7 +219,7 @@ w_call:
     ldr x0, [xzr, #32]
     bl wpush
 2:
-    movz x0, #2, #0
+    movz x0, #2
     ldr x1, [xzr, #64]
     cmp w1, w0
     b.ge 3
@@ -236,18 +236,18 @@ w_call:
     b 6
 5:
     adr x0, 0xfc8
-    movz x1, #12, #0
+    movz x1, #12
     bl print
-    movz x2, #0, #0
+    movz x2, #0
 6:
     mov x0, x2
-    ldp x29, x30, [xzr, #7]
+    ldp x29, x30, [xzr]
     add sp, sp, #64
     ret
 print:
     ret
 w_find_func:
-    movz x0, #10, #0
+    movz x0, #10
     ret
 wpush:
     adr x1, 0xf0c
@@ -256,8 +256,8 @@ wpush:
     str x0, [x1]
     adr x0, 0xf0c
     ldr x1, [x0]
-    movz x2, #10, #0
-    lslv x1, x1, x2
+    movz x2, #10
+    lsl x1, x1, x2
     str x1, [x0]
     ret
 w_finish:
@@ -266,26 +266,26 @@ w_finish:
     ret
 main:
     sub sp, sp, #32
-    stp x29, x30, [xzr, #15]
+    stp x29, x30, [xzr, #8]
     add x0, sp, #0
-    movz x1, #1, #0
-    movz x6, #2, #0
+    movz x1, #1
+    movz x6, #2
     adr x2, 0xed8
-    movz x3, #0, #0
+    movz x3, #0
     str x3, [x2]
     adr x2, 0xeec
     adr x4, 0xeec
-    movz x3, #4, #0
+    movz x3, #4
     str x3, [x0]
-    movz x7, #3, #0
-    movz x0, #0, #0
-    movz x3, #0, #0
-    movz x5, #0, #0
+    movz x7, #3
+    movz x0, #0
+    movz x3, #0
+    movz x5, #0
     bl 0xffffff18
     adr x1, 0xed8
     ldr x1, [x1]
     add x0, x0, x1
-    ldp x29, x30, [xzr, #15]
+    ldp x29, x30, [xzr, #8]
     add sp, sp, #32
     ret
 =========== OPT LEVEL: moderate ===========
@@ -296,7 +296,7 @@ w_call:
     str x21, [xzr, #16]
     str x22, [xzr, #24]
     str x23, [xzr, #32]
-    stp x29, x30, [xzr, #47]
+    stp x29, x30, [xzr, #40]
     mov x23, x0
     mov x22, x1
     mov x21, x6
@@ -306,10 +306,10 @@ w_call:
     bl w_find_func
     mov x19, x0
     mov x1, x19
-    movz x0, #0, #0
+    movz x0, #0
     cmp w1, w0
     b.lt 5
-    movz x1, #1, #0
+    movz x1, #1
     ldr x0, [xzr, #64]
     cmp w0, w1
     b.ge 1
@@ -318,7 +318,7 @@ w_call:
     mov x0, x21
     bl wpush
 2:
-    movz x1, #2, #0
+    movz x1, #2
     ldr x0, [xzr, #64]
     cmp w0, w1
     b.ge 3
@@ -334,22 +334,22 @@ w_call:
     b 6
 5:
     adr x0, 0xfc8
-    movz x1, #12, #0
+    movz x1, #12
     bl print
-    movz x0, #0, #0
+    movz x0, #0
 6:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
     ldr x22, [xzr, #24]
     ldr x23, [xzr, #32]
-    ldp x29, x30, [xzr, #47]
+    ldp x29, x30, [xzr, #40]
     add sp, sp, #64
     ret
 print:
     ret
 w_find_func:
-    movz x0, #10, #0
+    movz x0, #10
     ret
 wpush:
     adr x2, 0xeec
@@ -358,8 +358,8 @@ wpush:
     str x0, [x2]
     adr x2, 0xeec
     ldr x1, [x2]
-    movz x0, #10, #0
-    lslv x0, x1, x0
+    movz x0, #10
+    lsl x0, x1, x0
     str x0, [x2]
     ret
 w_finish:
@@ -368,26 +368,26 @@ w_finish:
     ret
 main:
     sub sp, sp, #32
-    stp x29, x30, [xzr, #15]
+    stp x29, x30, [xzr, #8]
     add x3, sp, #0
-    movz x1, #1, #0
-    movz x6, #2, #0
+    movz x1, #1
+    movz x6, #2
     adr x2, 0xeb8
-    movz x0, #0, #0
+    movz x0, #0
     str x0, [x2]
     adr x2, 0xecc
     adr x4, 0xecc
-    movz x0, #4, #0
+    movz x0, #4
     str x0, [x3]
-    movz x7, #3, #0
-    movz x0, #0, #0
-    movz x3, #0, #0
-    movz x5, #0, #0
+    movz x7, #3
+    movz x0, #0
+    movz x3, #0
+    movz x5, #0
     bl 0xfffffef8
     adr x1, 0xeb8
     ldr x1, [x1]
     add x0, x0, x1
-    ldp x29, x30, [xzr, #15]
+    ldp x29, x30, [xzr, #8]
     add sp, sp, #32
     ret
 =========== OPT LEVEL: all ===========
@@ -398,7 +398,7 @@ w_call:
     str x21, [xzr, #16]
     str x22, [xzr, #24]
     str x23, [xzr, #32]
-    stp x29, x30, [xzr, #47]
+    stp x29, x30, [xzr, #40]
     mov x23, x0
     mov x22, x1
     mov x21, x6
@@ -408,10 +408,10 @@ w_call:
     bl w_find_func
     mov x19, x0
     mov x1, x19
-    movz x0, #0, #0
+    movz x0, #0
     cmp w1, w0
     b.lt 5
-    movz x1, #1, #0
+    movz x1, #1
     ldr x0, [xzr, #64]
     cmp w0, w1
     b.ge 1
@@ -420,7 +420,7 @@ w_call:
     mov x0, x21
     bl wpush
 2:
-    movz x1, #2, #0
+    movz x1, #2
     ldr x0, [xzr, #64]
     cmp w0, w1
     b.ge 3
@@ -436,22 +436,22 @@ w_call:
     b 6
 5:
     adr x0, 0xfc8
-    movz x1, #12, #0
+    movz x1, #12
     bl print
-    movz x0, #0, #0
+    movz x0, #0
 6:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
     ldr x22, [xzr, #24]
     ldr x23, [xzr, #32]
-    ldp x29, x30, [xzr, #47]
+    ldp x29, x30, [xzr, #40]
     add sp, sp, #64
     ret
 print:
     ret
 w_find_func:
-    movz x0, #10, #0
+    movz x0, #10
     ret
 wpush:
     adr x2, 0xeec
@@ -460,8 +460,8 @@ wpush:
     str x0, [x2]
     adr x2, 0xeec
     ldr x1, [x2]
-    movz x0, #10, #0
-    lslv x0, x1, x0
+    movz x0, #10
+    lsl x0, x1, x0
     str x0, [x2]
     ret
 w_finish:
@@ -470,51 +470,51 @@ w_finish:
     ret
 main:
     sub sp, sp, #32
-    stp x29, x30, [xzr, #15]
+    stp x29, x30, [xzr, #8]
     add x3, sp, #0
-    movz x1, #1, #0
-    movz x6, #2, #0
+    movz x1, #1
+    movz x6, #2
     adr x2, 0xeb8
-    movz x0, #0, #0
+    movz x0, #0
     str x0, [x2]
     adr x2, 0xecc
     adr x4, 0xecc
-    movz x0, #4, #0
+    movz x0, #4
     str x0, [x3]
-    movz x7, #3, #0
-    movz x0, #0, #0
-    movz x3, #0, #0
-    movz x5, #0, #0
+    movz x7, #3
+    movz x0, #0
+    movz x3, #0
+    movz x5, #0
     bl 0xfffffef8
     adr x1, 0xeb8
     ldr x1, [x1]
     add x0, x0, x1
-    ldp x29, x30, [xzr, #15]
+    ldp x29, x30, [xzr, #8]
     add sp, sp, #32
     ret
 =========== OPT LEVEL: aggresive ===========
 main:
     adr x1, 0xfc0
-    movz x0, #0, #0
+    movz x0, #0
     str x0, [x1]
     adr x2, 0xfc0
     ldr x1, [x2]
     adr x4, 0xfc0
-    movz x3, #10, #0
-    movz x0, #2, #0
+    movz x3, #10
+    movz x0, #2
     add x0, x1, x0
     str x0, [x2]
     adr x1, 0xfc0
     ldr x0, [x1]
     adr x2, 0xfc0
-    lslv x0, x0, x3
+    lsl x0, x0, x3
     str x0, [x1]
     ldr x1, [x2]
-    movz x0, #3, #0
+    movz x0, #3
     add x0, x1, x0
     str x0, [x2]
     ldr x0, [x4]
-    lslv x0, x0, x3
+    lsl x0, x0, x3
     str x0, [x4]
     adr x0, 0xfc0
     ldr x0, [x0]

@@ -1,14 +1,14 @@
 =========== OPT LEVEL: none-quick ===========
 fsrc32:
     ucomiss.d xmm0, [rdi]
-    setz al
+    sete al
     jnp 1
     mov al, 0
 1:
     movzx rax, al
     movzx eax, al
     ucomiss.d xmm0, [rdi + 0x4]
-    setnz cl
+    setne cl
     jnp 2
     mov cl, 1
 2:
@@ -17,24 +17,24 @@ fsrc32:
     lea rax, [rax + rcx*2]
     movss.d xmm1, [rdi + 0x8]
     ucomiss xmm1, xmm0
-    setnbe cl
+    seta cl
     movzx rcx, cl
     movzx ecx, cl
     lea rax, [rax + rcx*4]
     movss.d xmm1, [rdi + 0xc]
     ucomiss xmm1, xmm0
-    setnc cl
+    setae cl
     movzx rcx, cl
     movzx ecx, cl
     lea rax, [rax + rcx*8]
     ucomiss.d xmm0, [rdi + 0x10]
-    setnbe cl
+    seta cl
     movzx rcx, cl
     movzx ecx, cl
     imul rcx, rcx, 0x10
     add rax, rcx
     ucomiss.d xmm0, [rdi + 0x14]
-    setnc cl
+    setae cl
     movzx rcx, cl
     movzx ecx, cl
     imul rcx, rcx, 0x20
@@ -42,14 +42,14 @@ fsrc32:
     ret
 fsrc64:
     ucomisd.q xmm0, [rdi]
-    setz al
+    sete al
     jnp 4
     mov al, 0
 4:
     movzx rax, al
     movzx eax, al
     ucomisd.q xmm0, [rdi + 0x8]
-    setnz cl
+    setne cl
     jnp 5
     mov cl, 1
 5:
@@ -58,24 +58,24 @@ fsrc64:
     lea rax, [rax + rcx*2]
     movsd.q xmm1, [rdi + 0x10]
     ucomisd xmm1, xmm0
-    setnbe cl
+    seta cl
     movzx rcx, cl
     movzx ecx, cl
     lea rax, [rax + rcx*4]
     movsd.q xmm1, [rdi + 0x18]
     ucomisd xmm1, xmm0
-    setnc cl
+    setae cl
     movzx rcx, cl
     movzx ecx, cl
     lea rax, [rax + rcx*8]
     ucomisd.q xmm0, [rdi + 0x20]
-    setnbe cl
+    seta cl
     movzx rcx, cl
     movzx ecx, cl
     imul rcx, rcx, 0x10
     add rax, rcx
     ucomisd.q xmm0, [rdi + 0x28]
-    setnc cl
+    setae cl
     movzx rcx, cl
     movzx ecx, cl
     imul rcx, rcx, 0x20
@@ -156,14 +156,14 @@ main:
 =========== OPT LEVEL: none ===========
 fsrc32:
     ucomiss.d xmm0, [rdi]
-    setz al
+    sete al
     jnp 1
     mov al, 0
 1:
     movzx rax, al
     movzx ecx, al
     ucomiss.d xmm0, [rdi + 0x4]
-    setnz al
+    setne al
     jnp 2
     mov al, 1
 2:
@@ -172,24 +172,24 @@ fsrc32:
     lea rcx, [rcx + rax*2]
     movss.d xmm1, [rdi + 0x8]
     ucomiss xmm1, xmm0
-    setnbe al
+    seta al
     movzx rax, al
     movzx eax, al
     lea rcx, [rcx + rax*4]
     movss.d xmm1, [rdi + 0xc]
     ucomiss xmm1, xmm0
-    setnc al
+    setae al
     movzx rax, al
     movzx eax, al
     lea rax, [rcx + rax*8]
     ucomiss.d xmm0, [rdi + 0x10]
-    setnbe cl
+    seta cl
     movzx rcx, cl
     movzx ecx, cl
     imul rcx, rcx, 0x10
     add rax, rcx
     ucomiss.d xmm0, [rdi + 0x14]
-    setnc cl
+    setae cl
     movzx rcx, cl
     movzx ecx, cl
     imul rcx, rcx, 0x20
@@ -197,14 +197,14 @@ fsrc32:
     ret
 fsrc64:
     ucomisd.q xmm0, [rdi]
-    setz al
+    sete al
     jnp 4
     mov al, 0
 4:
     movzx rax, al
     movzx ecx, al
     ucomisd.q xmm0, [rdi + 0x8]
-    setnz al
+    setne al
     jnp 5
     mov al, 1
 5:
@@ -213,24 +213,24 @@ fsrc64:
     lea rcx, [rcx + rax*2]
     movsd.q xmm1, [rdi + 0x10]
     ucomisd xmm1, xmm0
-    setnbe al
+    seta al
     movzx rax, al
     movzx eax, al
     lea rcx, [rcx + rax*4]
     movsd.q xmm1, [rdi + 0x18]
     ucomisd xmm1, xmm0
-    setnc al
+    setae al
     movzx rax, al
     movzx eax, al
     lea rax, [rcx + rax*8]
     ucomisd.q xmm0, [rdi + 0x20]
-    setnbe cl
+    seta cl
     movzx rcx, cl
     movzx ecx, cl
     imul rcx, rcx, 0x10
     add rax, rcx
     ucomisd.q xmm0, [rdi + 0x28]
-    setnc cl
+    setae cl
     movzx rcx, cl
     movzx ecx, cl
     imul rcx, rcx, 0x20
@@ -313,14 +313,14 @@ main:
 =========== OPT LEVEL: moderate-quick ===========
 fsrc32:
     ucomiss.d xmm0, [rdi]
-    setz al
+    sete al
     jnp 1
     mov al, 0
 1:
     movzx rax, al
     movzx eax, al
     ucomiss.d xmm0, [rdi + 0x4]
-    setnz cl
+    setne cl
     jnp 2
     mov cl, 1
 2:
@@ -329,24 +329,24 @@ fsrc32:
     lea rax, [rax + rcx*2]
     movss.d xmm1, [rdi + 0x8]
     ucomiss xmm1, xmm0
-    setnbe cl
+    seta cl
     movzx rcx, cl
     movzx ecx, cl
     lea rax, [rax + rcx*4]
     movss.d xmm1, [rdi + 0xc]
     ucomiss xmm1, xmm0
-    setnc cl
+    setae cl
     movzx rcx, cl
     movzx ecx, cl
     lea rax, [rax + rcx*8]
     ucomiss.d xmm0, [rdi + 0x10]
-    setnbe cl
+    seta cl
     movzx rcx, cl
     movzx ecx, cl
     imul rcx, rcx, 0x10
     add rax, rcx
     ucomiss.d xmm0, [rdi + 0x14]
-    setnc cl
+    setae cl
     movzx rcx, cl
     movzx ecx, cl
     imul rcx, rcx, 0x20
@@ -354,14 +354,14 @@ fsrc32:
     ret
 fsrc64:
     ucomisd.q xmm0, [rdi]
-    setz al
+    sete al
     jnp 4
     mov al, 0
 4:
     movzx rax, al
     movzx eax, al
     ucomisd.q xmm0, [rdi + 0x8]
-    setnz cl
+    setne cl
     jnp 5
     mov cl, 1
 5:
@@ -370,24 +370,24 @@ fsrc64:
     lea rax, [rax + rcx*2]
     movsd.q xmm1, [rdi + 0x10]
     ucomisd xmm1, xmm0
-    setnbe cl
+    seta cl
     movzx rcx, cl
     movzx ecx, cl
     lea rax, [rax + rcx*4]
     movsd.q xmm1, [rdi + 0x18]
     ucomisd xmm1, xmm0
-    setnc cl
+    setae cl
     movzx rcx, cl
     movzx ecx, cl
     lea rax, [rax + rcx*8]
     ucomisd.q xmm0, [rdi + 0x20]
-    setnbe cl
+    seta cl
     movzx rcx, cl
     movzx ecx, cl
     imul rcx, rcx, 0x10
     add rax, rcx
     ucomisd.q xmm0, [rdi + 0x28]
-    setnc cl
+    setae cl
     movzx rcx, cl
     movzx ecx, cl
     imul rcx, rcx, 0x20
@@ -468,14 +468,14 @@ main:
 =========== OPT LEVEL: moderate ===========
 fsrc32:
     ucomiss.d xmm0, [rdi]
-    setz al
+    sete al
     jnp 1
     mov al, 0
 1:
     movzx rax, al
     movzx ecx, al
     ucomiss.d xmm0, [rdi + 0x4]
-    setnz al
+    setne al
     jnp 2
     mov al, 1
 2:
@@ -484,24 +484,24 @@ fsrc32:
     lea rcx, [rcx + rax*2]
     movss.d xmm1, [rdi + 0x8]
     ucomiss xmm1, xmm0
-    setnbe al
+    seta al
     movzx rax, al
     movzx eax, al
     lea rcx, [rcx + rax*4]
     movss.d xmm1, [rdi + 0xc]
     ucomiss xmm1, xmm0
-    setnc al
+    setae al
     movzx rax, al
     movzx eax, al
     lea rax, [rcx + rax*8]
     ucomiss.d xmm0, [rdi + 0x10]
-    setnbe cl
+    seta cl
     movzx rcx, cl
     movzx ecx, cl
     imul rcx, rcx, 0x10
     add rax, rcx
     ucomiss.d xmm0, [rdi + 0x14]
-    setnc cl
+    setae cl
     movzx rcx, cl
     movzx ecx, cl
     imul rcx, rcx, 0x20
@@ -509,14 +509,14 @@ fsrc32:
     ret
 fsrc64:
     ucomisd.q xmm0, [rdi]
-    setz al
+    sete al
     jnp 4
     mov al, 0
 4:
     movzx rax, al
     movzx ecx, al
     ucomisd.q xmm0, [rdi + 0x8]
-    setnz al
+    setne al
     jnp 5
     mov al, 1
 5:
@@ -525,24 +525,24 @@ fsrc64:
     lea rcx, [rcx + rax*2]
     movsd.q xmm1, [rdi + 0x10]
     ucomisd xmm1, xmm0
-    setnbe al
+    seta al
     movzx rax, al
     movzx eax, al
     lea rcx, [rcx + rax*4]
     movsd.q xmm1, [rdi + 0x18]
     ucomisd xmm1, xmm0
-    setnc al
+    setae al
     movzx rax, al
     movzx eax, al
     lea rax, [rcx + rax*8]
     ucomisd.q xmm0, [rdi + 0x20]
-    setnbe cl
+    seta cl
     movzx rcx, cl
     movzx ecx, cl
     imul rcx, rcx, 0x10
     add rax, rcx
     ucomisd.q xmm0, [rdi + 0x28]
-    setnc cl
+    setae cl
     movzx rcx, cl
     movzx ecx, cl
     imul rcx, rcx, 0x20
@@ -625,14 +625,14 @@ main:
 =========== OPT LEVEL: all ===========
 fsrc32:
     ucomiss.d xmm0, [rdi]
-    setz al
+    sete al
     jnp 1
     mov al, 0
 1:
     movzx rax, al
     movzx ecx, al
     ucomiss.d xmm0, [rdi + 0x4]
-    setnz al
+    setne al
     jnp 2
     mov al, 1
 2:
@@ -641,24 +641,24 @@ fsrc32:
     lea rcx, [rcx + rax*2]
     movss.d xmm1, [rdi + 0x8]
     ucomiss xmm1, xmm0
-    setnbe al
+    seta al
     movzx rax, al
     movzx eax, al
     lea rcx, [rcx + rax*4]
     movss.d xmm1, [rdi + 0xc]
     ucomiss xmm1, xmm0
-    setnc al
+    setae al
     movzx rax, al
     movzx eax, al
     lea rax, [rcx + rax*8]
     ucomiss.d xmm0, [rdi + 0x10]
-    setnbe cl
+    seta cl
     movzx rcx, cl
     movzx ecx, cl
     imul rcx, rcx, 0x10
     add rax, rcx
     ucomiss.d xmm0, [rdi + 0x14]
-    setnc cl
+    setae cl
     movzx rcx, cl
     movzx ecx, cl
     imul rcx, rcx, 0x20
@@ -666,14 +666,14 @@ fsrc32:
     ret
 fsrc64:
     ucomisd.q xmm0, [rdi]
-    setz al
+    sete al
     jnp 4
     mov al, 0
 4:
     movzx rax, al
     movzx ecx, al
     ucomisd.q xmm0, [rdi + 0x8]
-    setnz al
+    setne al
     jnp 5
     mov al, 1
 5:
@@ -682,24 +682,24 @@ fsrc64:
     lea rcx, [rcx + rax*2]
     movsd.q xmm1, [rdi + 0x10]
     ucomisd xmm1, xmm0
-    setnbe al
+    seta al
     movzx rax, al
     movzx eax, al
     lea rcx, [rcx + rax*4]
     movsd.q xmm1, [rdi + 0x18]
     ucomisd xmm1, xmm0
-    setnc al
+    setae al
     movzx rax, al
     movzx eax, al
     lea rax, [rcx + rax*8]
     ucomisd.q xmm0, [rdi + 0x20]
-    setnbe cl
+    seta cl
     movzx rcx, cl
     movzx ecx, cl
     imul rcx, rcx, 0x10
     add rax, rcx
     ucomisd.q xmm0, [rdi + 0x28]
-    setnc cl
+    setae cl
     movzx rcx, cl
     movzx ecx, cl
     imul rcx, rcx, 0x20

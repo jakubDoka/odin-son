@@ -19,12 +19,25 @@ Backend_Package :: struct {
 }
 
 Backend_Proc :: struct {
-	name:        string,
-	file:        ^ast.File,
-	lit:         ^ast.Proc_Lit,
-	api:         bool,
-	node_proc:   bool,
-	doc_comment: string,
+	name:         string,
+	file:         ^ast.File,
+	lit:          ^ast.Proc_Lit,
+	api:          bool,
+	node_proc:    bool,
+	thread_local: bool,
+	doc_comment:  string,
+}
+
+has_thread_local :: proc(decl: ^ast.Value_Decl) -> bool {
+	for attr in decl.attributes {
+		for elem in attr.elems {
+			field := elem.derived.(^ast.Ident) or_continue
+			if field.name == "thread_local" {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 has_tag :: proc(decl: ^ast.Value_Decl, tag: string) -> bool {
@@ -78,26 +91,43 @@ load_backend_packages :: proc(
 			vdecl := decl.derived.(^ast.Value_Decl) or_continue
 			api := has_tag(vdecl, "api")
 			node_proc := has_tag(vdecl, "node_proc")
+			thread_local := has_thread_local(vdecl)
 			if !api && !node_proc do continue
 			fmt.assertf(
-				len(vdecl.names) == 1 && len(vdecl.values) == 1,
+				len(vdecl.names) == 1,
 				"%v: tagged declarations must name a single procedure",
 				entry.fullpath,
 			)
-			lit, pok := vdecl.values[0].derived.(^ast.Proc_Lit)
-			fmt.assertf(
-				pok,
-				"%v: tag overload children, not overload groups",
-				entry.fullpath,
-			)
+
+			if len(vdecl.values) > 0 {
+				if lit, pok := vdecl.values[0].derived.(^ast.Proc_Lit); pok {
+					fmt.assertf(
+						pok,
+						"%v: tag overload children, not overload groups",
+						entry.fullpath,
+					)
+					append(
+						&pkg.procs,
+						Backend_Proc {
+							name = src_of(f^, vdecl.names[0]),
+							file = f,
+							lit = lit,
+							api = api,
+							node_proc = node_proc,
+							doc_comment = src_of(f^, vdecl.docs),
+						},
+					)
+					continue
+				}
+			}
+
 			append(
 				&pkg.procs,
 				Backend_Proc {
 					name = src_of(f^, vdecl.names[0]),
 					file = f,
-					lit = lit,
 					api = api,
-					node_proc = node_proc,
+					thread_local = thread_local,
 					doc_comment = src_of(f^, vdecl.docs),
 				},
 			)
@@ -221,14 +251,11 @@ gen_backend_api :: proc(packages: []Backend_Package) {
 		fmt.assertf(rerr == nil, "%v: %v", pkg.path, rerr)
 		fmt.fprintfln(file, "import pkg_%v %q", i, relpath)
 	}
-	os.write_string(
-		file,
-		`
-// Unspecialized generic procedures have no runtime typeid.
+	os.write_string(file, `
 @(rodata)
 API := [?]API_Proc{
-`,
-	)
+`)
+
 	for pkg, i in api_packages {
 		abs, _ := filepath.abs(pkg.path)
 		relpath, _ := filepath.rel(base, abs)
@@ -238,7 +265,8 @@ API := [?]API_Proc{
 
 			fmt.fprintfln(
 				file,
-				"\t{{%q, %q, %v, %q}},",
+				"\t{{%v, %q, %q, %v, %q}},",
+				prc.thread_local,
 				relpath,
 				prc.name,
 				ty,
@@ -246,6 +274,7 @@ API := [?]API_Proc{
 			)
 		}
 	}
+
 	os.write_string(file, "}\n")
 }
 

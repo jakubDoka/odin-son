@@ -103,7 +103,7 @@ X64_CFI_SPEC :: bac.Cfi_Spec {
 X64_SYSTEMV_CC :: 0
 X64_LINUX_SYSCALL_CC :: 1
 
-@(rodata)
+@(tag = "api", rodata, export, link_name = "bac_x64_CC_TABLE")
 CC_TABLE := [?]bac.Call_Conv {
 	X64_SYSTEMV_CC = {
 		callee_saved = {{RBX, RBP, R12, R13, R14, R15}, {}},
@@ -748,7 +748,7 @@ peep :: proc(
 				slice.linear_search(
 					outs,
 					bac.Node_Output{idx = 4, id = id},
-				) or_else panic("")
+				) or_else fmt.panicf("")
 			outs[oi].idx = 3
 			node.inps[3], node.inps[4] = node.inps[4], node.inps[3]
 		}
@@ -1259,7 +1259,7 @@ meta_of :: proc(
 			case .None:
 				masks = {}
 			case .Src:
-				panic("does not support")
+				fmt.panicf("does not support")
 			case .Dest:
 				if len(node.inps) - const_off == 4 {
 					masks[0] = single(ra, RCX)
@@ -1665,7 +1665,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 		case .X64_Ge:
 			return is_float ? .U_Lt : .Lt
 		}
-		panic("invalid comparison")
+		fmt.panicf("invalid comparison")
 	}
 
 	@(static, rodata)
@@ -2112,7 +2112,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 		case .Set:
 			lib_call = ctx.lib_calls.set
 		case:
-			panic("wuwut")
+			fmt.panicf("wuwut")
 		}
 
 		if lib_call.absolute {
@@ -2154,7 +2154,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 
 		switch node.dt {
 		case .Void, .Mem:
-			panic("")
+			fmt.panicf("")
 		case .I8:
 			emit_single_op(ctx.code, 0xb0, dst)
 			emit(ctx.code, {u8(imm)})
@@ -2170,7 +2170,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 			emit_single_op(ctx.code, 0xb8, dst)
 			bac.emit_anys(ctx.code, imm)
 		case .F32, .F64, .V128, .V256, .V512:
-			panic("")
+			fmt.panicf("")
 		}
 	case .X64_Add ..= .X64_Xor, .X64_Shl ..= .X64_U_Shr, .X64_Mul, .X64_Div:
 		if mem_op.dt in bac.FLOAT_DTS {
@@ -2319,7 +2319,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 		if is_float {
 			switch mem_op.mem_mode {
 			case .Dest:
-				panic("never")
+				fmt.panicf("never")
 			case .Src:
 				is_cload := get_node(ctx, node.inps[0]).itype == .Global
 				lhs_idx := is_cload ? 1 : 3
@@ -2525,10 +2525,10 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 			)
 			emit_indirect_addr(ctx, dst, sadd, idx, scl, sdis + dis, id)
 			if mem_idx == 2 {
-				panic("bra")
+				fmt.panicf("bra")
 			}
 		case .Dest:
-			panic("")
+			fmt.panicf("")
 		}
 	case .Div, .Rem:
 		rhs := reg_of(ctx, node.inps[1])
@@ -2541,7 +2541,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 		}
 		#partial switch node.dt {
 		case .Void:
-			panic("")
+			fmt.panicf("")
 		case .I8:
 			// cbw
 			emit(ctx.code, {0x66, 0x98})
@@ -2600,7 +2600,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 
 		if dst.kind == RK_VECTOR && node.dt == .V128 {
 			if d_spill && s_spill {
-				panic("no")
+				fmt.panicf("no")
 			} else if d_spill {
 				// movups [rsp + $dst_off], $src
 				emit(ctx.code, {rex(src, RSP, RAX, false), 0x0f, 0x11})
@@ -2822,7 +2822,7 @@ emit_indirect_addr_reg :: proc(
 	case .Direct:
 		fallthrough
 	case:
-		panic("unreachable")
+		fmt.panicf("unreachable")
 	}
 
 	if reloc != 0 {
@@ -2956,7 +2956,7 @@ emit_imm_for_dt :: proc(
 ) {
 	switch dt {
 	case .Void, .Mem:
-		panic("")
+		fmt.panicf("")
 	case .I8:
 		bac.emit_anys(code, i8(imm))
 	case .I16:
@@ -2964,7 +2964,7 @@ emit_imm_for_dt :: proc(
 	case .I64, .I32, .F32:
 		bac.emit_anys(code, imm)
 	case .F64, .V128, .V256, .V512:
-		panic("no")
+		fmt.panicf("no")
 	}
 }
 
@@ -2976,7 +2976,7 @@ emit_extended_sized_opcode :: proc(
 ) {
 	switch dt {
 	case .Void, .Mem:
-		panic("")
+		fmt.panicf("")
 	case .I8:
 		emit(code, {rx, 0x0f, op - 1})
 	case .I16:
@@ -2984,7 +2984,7 @@ emit_extended_sized_opcode :: proc(
 	case .I32, .I64:
 		emit(code, {rx, 0x0f, op})
 	case .F32, .F64, .V128, .V256, .V512:
-		panic("no")
+		fmt.panicf("no")
 	}
 }
 
@@ -2996,7 +2996,7 @@ emit_sized_opcode :: proc(
 ) {
 	switch dt {
 	case .Void, .Mem:
-		panic("")
+		fmt.panicf("")
 	case .I8:
 		emit(code, {rx, op - 1})
 	case .I16:
@@ -3004,6 +3004,6 @@ emit_sized_opcode :: proc(
 	case .I32, .I64, .F32:
 		emit(code, {rx, op})
 	case .F64, .V128, .V256, .V512:
-		panic("no")
+		fmt.panicf("no")
 	}
 }

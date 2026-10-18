@@ -3,10 +3,7 @@
 int main() {
 	char buf[4096];
 
-	arna_Allocator mem = {0};
-	mem.ptr = buf;
-	mem.reserved = sizeof(buf);
-	mem.commited = sizeof(buf) + 1;
+	arna_Allocator mem = arna_init_from_buffer(bac_slice_array(bac_u8, buf));
 
 	bac_Proc proc = {0};
 

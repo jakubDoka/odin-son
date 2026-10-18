@@ -62,7 +62,7 @@ lattice_meet :: proc(a, b: Lattice) -> (res: Lattice) {
 	case .Ctlr:
 		res.dead = a.dead & b.dead
 	case .Bot, .Top:
-		panic("should not reach")
+		fmt.panicf("should not reach")
 	case:
 		fmt.panicf("Unhandled type: %v", a.type)
 	}

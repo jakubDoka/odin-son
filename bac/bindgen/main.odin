@@ -7,8 +7,6 @@ import "core:reflect"
 import "core:slice"
 import "core:strings"
 
-EXPORTED_SPECS := [?]string{"bac_ssa", "bac_arm", "bac_x64", "bac_wasm"}
-
 EXPORTED_SUBMODS := [?]string {
 	"bac",
 	"bac_ssa",
@@ -29,6 +27,7 @@ EXPORTED_SUBMODS_PATH := [?]string {
 }
 
 API_Proc :: struct {
+	trhead_local: bool,
 	package_path: string,
 	name:         string,
 	type:         typeid,
@@ -48,12 +47,15 @@ main :: proc() {
 	assert(operr == nil)
 	defer os.close(lib)
 
-	c_lib, c_operr := os.open(
+	c_file, c_operr := os.open(
 		"bac/bindgen/c/bac.h",
 		flags = {.Read, .Write, .Trunc, .Create},
 	)
 	assert(c_operr == nil)
-	defer os.close(c_lib)
+	defer os.close(c_file)
+
+	c_lib := strings.builder_make()
+	defer strings.builder_destroy(&c_lib)
 
 	os.write_string(lib, `
 package bac_lib
@@ -77,38 +79,65 @@ import "base:runtime"
 	types: map[typeid]int
 	seen: map[typeid]struct{}
 
-	os.write_string(
-		c_lib,
+	strings.write_string(
+		&c_lib,
 		`
-#include <stdbool.h>
-#include <stdint.h>
-#include <stddef.h>
+#define bac_i8       signed char
+#define bac_i16      short
+#define bac_i32      int
+#define bac_i64      long long
+
+#define bac_u8       unsigned char
+#define bac_u16      unsigned short
+#define bac_u32      unsigned int
+#define bac_u64      unsigned long long
+
+#define bac_f16      _Float16
+#define bac_f32      float
+#define bac_f64      double
+
+#define bac_int      __INTPTR_TYPE__
+#define bac_uint     __UINTPTR_TYPE__
+#define bac_uintptr  __UINTPTR_TYPE__
+
+#define bac_byte     unsigned char
+#define bac_rune     int
+#define bac_bool     _Bool
+
+#define bac_str(s) ((bac_String){(bac_u8 *)(s), (bac_int)(sizeof(s) - 1)})
+#define bac_slice(ptr, count) { (ptr), (bac_int)(count) }
+#define bac_slice_array(ty, arr) \
+    (Slice_Of_##ty){ (arr), (bac_int)(sizeof(arr) / sizeof((arr)[0])) }
 
 typedef struct {
-	char* data;
-	size_t len;
+	bac_u8* data;
+	bac_int len;
 } bac_String;
 
 `,
 	)
 
-	for i in 0 ..< 2 {for entry, j in API {
+	for i in 0 ..< 2 {
+		for entry, j in API {
 			first_pass := i == 0
 
-			sig := type_info_of(entry.type).variant.(runtime.Type_Info_Procedure)
+			sig, is_proc := type_info_of(entry.type).variant.(runtime.Type_Info_Procedure)
 
 			params, results := proc_lists(sig)
 
 			packag := entry.package_path
-			packag = strings.trim_prefix(packag, "..")
-			packag = strings.trim_prefix(packag, "/")
-			if len(packag) != 0 {
+			for _ in 0 ..< 10 {
+				packag = strings.trim_prefix(packag, "..")
+				packag = strings.trim_prefix(packag, "/")
+				packag = strings.trim_prefix(packag, "utils")
+			}
+			if packag == "arna" {} else if len(packag) != 0 {
 				packag = strings.concatenate({"bac_", packag})
 			} else {
 				packag = "bac"
 			}
 
-			gen_lib: if first_pass {
+			gen_lib: if first_pass && is_proc {
 				fmt.fprintln(lib, `@(export)`)
 				fmt.fprintfln(lib, `%v_%v :: proc "c" (`, packag, entry.name)
 
@@ -116,7 +145,7 @@ typedef struct {
 					name := params.names[i]
 					type := params.types[i]
 
-					reflect.qualify = true
+					reflect.qualified = true
 
 					fmt.fprintfln(lib, "\t%v: %T,", name, type)
 				}
@@ -148,10 +177,10 @@ typedef struct {
 
 			if first_pass {
 				for par in params.types {
-					visit(par.id, &types, &seen)
+					visit(type_info_of(par.id), &types, &seen)
 				}
 				for result in results.types {
-					visit(result.id, &types, &seen)
+					visit(type_info_of(result.id), &types, &seen)
 				}
 			}
 
@@ -204,17 +233,17 @@ typedef struct {
 					name := c_type_name(type_info_of(ty))
 					if name != "" && name not_in typedefs {
 						typedefs[name] = {}
-						fmt.fprintf(c_lib, "typedef ")
+						fmt.sbprintf(&c_lib, "typedef ")
 						c_display_type(
-							c_lib,
+							&c_lib,
 							type_info_of(ty),
 							.Typedef,
 							&name,
 							0,
 						)
 
-						c_disp_name(c_lib, name)
-						fmt.fprintfln(c_lib, ";")
+						c_disp_name(&c_lib, name)
+						fmt.sbprintfln(&c_lib, ";")
 					}
 				}
 
@@ -228,108 +257,138 @@ typedef struct {
 					ty := ent.type
 					name := c_type_name(type_info_of(ty))
 					if name != "" && name in typedefs && name not_in decls {
+						prev_len := len(c_lib.buf)
 						decls[name] = {}
+						start := len(c_lib.buf)
 						c_display_type(
-							c_lib,
+							&c_lib,
 							type_info_of(ty),
 							.Decl,
 							&name,
 							0,
 						)
-						c_disp_name(c_lib, name)
-						fmt.fprintfln(c_lib, ";")
+						if len(c_lib.buf) == start do continue
+						c_disp_name(&c_lib, name)
+						if prev_len != len(c_lib.buf) {
+							fmt.sbprintfln(&c_lib, ";")
+						}
 					}
-				}
-
-				for spec in EXPORTED_SPECS {
-					fmt.fprintfln(c_lib, "extern bac_Node_Spec %v_spec;", spec)
 				}
 			}
 
 			c_fn: if !first_pass {
-				f := c_lib
+				f := &c_lib
 
 				if entry.doc_comment != "" {
-					fmt.fprintln(f, entry.doc_comment)
+					fmt.sbprintln(f, entry.doc_comment)
 				}
 
-				if 0 < len(results.types) {
-					ty := results.types[len(results.types) - 1]
-					result_name := ""
-					c_display_type(f, ty, .Field, &result_name, 0)
-					c_disp_name(f, result_name)
-				} else {
-					fmt.fprintf(f, "void ")
+				fmt.sbprint(f, "extern ")
+				if entry.trhead_local {
+					fmt.sbprint(f, "_Thread_local ")
 				}
+				if is_proc {
 
-				fmt.fprintf(f, " %v_%v(", packag, entry.name)
-				for ty, i in params.types {
-					if i != 0 do fmt.fprint(f, ", ")
-					name := params.names[i]
-					c_display_type(f, ty, .Field, &name, 0)
-					c_disp_name(f, name)
-				}
-
-				for i in 0 ..< len(results.types) - 1 {
-					// NOTE: we dont have zero arg multireturns
-					fmt.fprint(f, ", ")
-					name := fmt.tprintf("ret%v", i)
-					if results.names[i] != "" {
-						name = results.names[i]
+					if 0 < len(results.types) {
+						ty := results.types[len(results.types) - 1]
+						result_name := ""
+						c_display_type(f, ty, .Field, &result_name, 0)
+						c_disp_name(f, result_name)
+					} else {
+						fmt.sbprintf(f, "void")
 					}
-					c_display_pointer(f, results.types[i], .Field, &name, 0)
-					c_disp_name(f, name)
-				}
 
-				fmt.fprintfln(f, ");")
+					fmt.sbprintf(f, " %v_%v(", packag, entry.name)
+					for ty, i in params.types {
+						if i != 0 do fmt.sbprint(f, ", ")
+						name := params.names[i]
+						c_display_type(f, ty, .Field, &name, 0)
+						c_disp_name(f, name)
+					}
+
+					for i in 0 ..< len(results.types) - 1 {
+						// NOTE: we dont have zero arg multireturns
+						fmt.sbprint(f, ", ")
+						name := fmt.tprintf("ret%v", i)
+						if results.names[i] != "" {
+							name = results.names[i]
+						}
+						c_display_pointer(
+							f,
+							results.types[i],
+							.Field,
+							&name,
+							0,
+						)
+						c_disp_name(f, name)
+					}
+
+					fmt.sbprintfln(f, ");")
+				} else {
+					name := fmt.tprintf("%v_%v", packag, entry.name)
+					c_display_type(
+						f,
+						type_info_of(entry.type),
+						.Field,
+						&name,
+						0,
+					)
+					c_disp_name(f, name)
+					fmt.sbprintfln(f, ";")
+				}
 			}
 		}
 	}
 
+	os.write_string(c_file, strings.to_string(c_lib))
+
 	visit :: proc(
-		ty: typeid,
+		ty: ^runtime.Type_Info,
 		coll: ^map[typeid]int,
 		seen: ^map[typeid]struct{},
 	) -> (
 		depth: int,
 	) {
-		if ty in seen do return coll[ty]
-		seen[ty] = {}
+		if ty.id in seen do return coll[ty.id]
+		seen[ty.id] = {}
 
-		#partial switch t in type_info_of(ty).variant {
+		#partial switch t in ty.variant {
 		case runtime.Type_Info_Multi_Pointer:
-			depth = visit(t.elem.id, coll, seen)
+			depth = visit(t.elem, coll, seen)
 		case runtime.Type_Info_Pointer:
 			if t.elem != nil {
-				depth = visit(t.elem.id, coll, seen)
+				depth = visit(t.elem, coll, seen)
 			}
 		case runtime.Type_Info_Named:
-			depth = visit(t.base.id, coll, seen)
+			depth = visit(t.base, coll, seen)
 		case runtime.Type_Info_Struct:
 			for field in t.types[:t.field_count] {
-				depth = max(depth, visit(field.id, coll, seen))
+				depth = max(depth, visit(field, coll, seen))
 			}
 		case runtime.Type_Info_Bit_Field:
-			depth = visit(t.backing_type.id, coll, seen)
+			depth = visit(t.backing_type, coll, seen)
 			for field in t.types[:t.field_count] {
-				depth = max(depth, visit(field.id, coll, seen))
+				depth = max(depth, visit(field, coll, seen))
 			}
 		case runtime.Type_Info_Union:
 			for field in t.variants {
-				depth = max(depth, visit(field.id, coll, seen))
+				depth = max(depth, visit(field, coll, seen))
 			}
 			if t.tag_type != nil {
-				depth = max(depth, visit(t.tag_type.id, coll, seen))
+				depth = max(depth, visit(t.tag_type, coll, seen))
 			}
 		case runtime.Type_Info_Slice:
-			depth = max(depth, visit(t.elem.id, coll, seen))
+			depth = max(depth, visit(t.elem, coll, seen))
 		case runtime.Type_Info_Dynamic_Array:
-			depth = max(depth, visit(t.elem.id, coll, seen))
-			depth = max(depth, visit(runtime.Raw_Dynamic_Array, coll, seen))
+			depth = max(depth, visit(t.elem, coll, seen))
+			depth = max(
+				depth,
+				visit(type_info_of(runtime.Raw_Dynamic_Array), coll, seen),
+			)
 		case runtime.Type_Info_Array:
-			depth = max(depth, visit(t.elem.id, coll, seen))
+			depth = max(depth, visit(t.elem, coll, seen))
 		case runtime.Type_Info_Fixed_Capacity_Dynamic_Array:
-			depth = max(depth, visit(t.elem.id, coll, seen))
+			depth = max(depth, visit(t.elem, coll, seen))
 		case runtime.Type_Info_Integer,
 		     runtime.Type_Info_Float,
 		     runtime.Type_Info_Rune,
@@ -339,27 +398,27 @@ typedef struct {
 		case runtime.Type_Info_Procedure:
 			params, results := proc_lists(t)
 			for ty in params.types {
-				depth = max(depth, visit(ty.id, coll, seen))
+				depth = max(depth, visit(ty, coll, seen))
 			}
 			for ty in results.types {
-				depth = max(depth, visit(ty.id, coll, seen))
+				depth = max(depth, visit(ty, coll, seen))
 			}
 		case runtime.Type_Info_Enumerated_Array:
-			depth = max(depth, visit(t.elem.id, coll, seen))
-			depth = max(depth, visit(t.index.id, coll, seen))
+			depth = max(depth, visit(t.elem, coll, seen))
+			depth = max(depth, visit(t.index, coll, seen))
 		case runtime.Type_Info_Bit_Set:
-			depth = max(depth, visit(t.elem.id, coll, seen))
+			depth = max(depth, visit(t.elem, coll, seen))
 			if t.underlying != nil {
-				depth = max(depth, visit(t.underlying.id, coll, seen))
+				depth = max(depth, visit(t.underlying, coll, seen))
 			}
 		case runtime.Type_Info_Enum:
-			depth = max(depth, visit(t.base.id, coll, seen))
+			depth = max(depth, visit(t.base, coll, seen))
 		case:
 			fmt.panicf("unhandled type: %v", t)
 		}
 
 		depth += 1
-		coll[ty] = depth
+		coll[ty.id] = depth
 
 		return
 	}
@@ -384,9 +443,9 @@ typedef struct {
 		return strings.to_string(b)
 	}
 
-	indent :: proc(f: ^os.File, depth: int) {
+	indent :: proc(f: ^strings.Builder, depth: int) {
 		for _ in 0 ..< depth {
-			os.write_byte(f, '\t')
+			strings.write_byte(f, '\t')
 		}
 	}
 
@@ -396,19 +455,19 @@ typedef struct {
 		Decl,
 	}
 
-	c_disp_name :: proc(f: ^os.File, name: string) {
+	c_disp_name :: proc(f: ^strings.Builder, name: string) {
 		@(static) anon_idx := 0
 
 		if name == "_" {
-			fmt.fprintf(f, " _%v", anon_idx)
+			fmt.sbprintf(f, " _%v", anon_idx)
 			anon_idx += 1
 		} else if name != "" {
-			fmt.fprintf(f, " %v", name)
+			fmt.sbprintf(f, " %v", name)
 		}
 	}
 
 	c_display_field :: proc(
-		f: ^os.File,
+		f: ^strings.Builder,
 		ty: ^runtime.Type_Info,
 		name: string,
 		depth: int,
@@ -417,11 +476,11 @@ typedef struct {
 		name := c_type_to_name(name)
 		c_display_type(f, ty, .Field, &name, depth + 1)
 		c_disp_name(f, name)
-		fmt.fprintfln(f, ";")
+		fmt.sbprintfln(f, ";")
 	}
 
 	c_display_type :: proc(
-		f: ^os.File,
+		f: ^strings.Builder,
 		ty: ^runtime.Type_Info,
 		mode: Display_Mode,
 		name: ^string,
@@ -431,7 +490,7 @@ typedef struct {
 		case runtime.Type_Info_Boolean:
 			switch mode {
 			case .Field, .Typedef:
-				fmt.fprint(f, "bool")
+				fmt.sbprint(f, "_Bool")
 			case .Decl:
 				name^ = {}
 			}
@@ -452,11 +511,11 @@ typedef struct {
 		case runtime.Type_Info_Fixed_Capacity_Dynamic_Array:
 			switch mode {
 			case .Typedef:
-				fmt.fprint(f, "struct", name^)
+				fmt.sbprint(f, "struct", name^)
 			case .Field:
-				fmt.fprint(f, c_type_name(ty))
+				fmt.sbprint(f, c_type_name(ty))
 			case .Decl:
-				fmt.fprintfln(f, "struct %v {{", name^)
+				fmt.sbprintfln(f, "struct %v {{", name^)
 				info: runtime.Type_Info
 				info.variant = runtime.Type_Info_Array {
 					elem  = t.elem,
@@ -466,36 +525,36 @@ typedef struct {
 				padding := int(t.len_offset) - t.capacity * t.elem_size
 				if padding > 0 {
 					indent(f, depth + 1)
-					fmt.fprintfln(f, "uint8_t _padding[%v];", padding)
+					fmt.sbprintfln(f, "bac_u8 _padding[%v];", padding)
 				}
 				indent(f, depth + 1)
-				fmt.fprintln(f, "intptr_t len;")
+				fmt.sbprintln(f, "bac_int len;")
 				indent(f, depth)
-				fmt.fprintf(f, "}}")
+				fmt.sbprintf(f, "}}")
 				name^ = {}
 			}
 		case runtime.Type_Info_Bit_Set:
 			switch mode {
 			case .Field:
-				fmt.fprint(f, c_type_name(ty))
+				fmt.sbprint(f, c_type_name(ty))
 			case .Typedef:
-				fmt.fprintf(f, "uint%v_t", ty.size * 8)
+				fmt.sbprintf(f, "bac_u%v", ty.size * 8)
 			case .Decl:
 				if _, ok := runtime.type_info_base(t.elem).variant.(runtime.Type_Info_Enum);
 				   ok {
-					fmt.fprintln(f, "enum {")
+					fmt.sbprintln(f, "enum {")
 					for field in reflect.enum_fields_zipped(t.elem.id) {
 						indent(f, depth + 1)
-						fmt.fprintfln(
+						fmt.sbprintfln(
 							f,
-							"%v_%v = UINT64_C(1) << %v,",
+							"%v_%v = 1 << %v,",
 							name^,
 							c_type_to_name(field.name),
 							i64(field.value) - t.lower,
 						)
 					}
 					indent(f, depth)
-					fmt.fprintf(f, "}}")
+					fmt.sbprintf(f, "}}")
 				}
 				name^ = {}
 			}
@@ -503,53 +562,53 @@ typedef struct {
 			if mode == .Decl {
 				name^ = {}
 			} else {
-				fmt.fprintf(f, "uintptr_t")
+				fmt.sbprintf(f, "bac_int")
 			}
 		case runtime.Type_Info_Float:
 			if mode == .Decl {
 				name^ = {}
 			} else {
 				assert(ty.size == 4 || ty.size == 8)
-				fmt.fprintf(f, "%v", "float" if ty.size == 4 else "double")
+				fmt.sbprintf(f, "%v", "float" if ty.size == 4 else "double")
 			}
 		case runtime.Type_Info_Rune:
 			if mode == .Decl {
 				name^ = {}
 			} else {
-				fmt.fprintf(f, "int32_t")
+				fmt.sbprintf(f, "bac_rune")
 			}
 		case runtime.Type_Info_Slice:
 			switch mode {
 			case .Typedef:
-				fmt.fprint(f, "struct", c_type_name(ty))
+				fmt.sbprint(f, "struct", c_type_name(ty))
 			case .Field:
-				fmt.fprint(f, c_type_name(ty))
+				fmt.sbprint(f, c_type_name(ty))
 			case .Decl:
-				fmt.fprintfln(f, `struct %v {{`, name^)
+				fmt.sbprintfln(f, `struct %v {{`, name^)
 				info: runtime.Type_Info
 				info.variant = runtime.Type_Info_Pointer {
 					elem = t.elem,
 				}
 				c_display_field(f, &info, "data", depth)
-				fmt.fprintln(f, "\tsize_t len;\n};")
+				fmt.sbprint(f, "\tbac_int len;\n}")
 				name^ = {}
 			}
 		case runtime.Type_Info_Dynamic_Array:
 			switch mode {
 			case .Typedef:
-				fmt.fprint(f, "struct", c_type_name(ty))
+				fmt.sbprint(f, "struct", c_type_name(ty))
 			case .Field:
-				fmt.fprint(f, c_type_name(ty))
+				fmt.sbprint(f, c_type_name(ty))
 			case .Decl:
-				fmt.fprintfln(f, `struct %v {{`, name^)
+				fmt.sbprintfln(f, `struct %v {{`, name^)
 				info: runtime.Type_Info
 				info.variant = runtime.Type_Info_Pointer {
 					elem = t.elem,
 				}
 				c_display_field(f, &info, "data", depth)
-				fmt.fprintln(f, "\tsize_t len, cap;")
-				fmt.fprintln(f, "\truntime_Allocator allocator;")
-				fmt.fprintln(f, "};")
+				fmt.sbprintln(f, "\tbac_int len, cap;")
+				fmt.sbprintln(f, "\truntime_Allocator allocator;")
+				fmt.sbprint(f, "}")
 				name^ = {}
 			}
 		case runtime.Type_Info_Enum:
@@ -559,11 +618,11 @@ typedef struct {
 			case .Typedef:
 				c_display_type(f, t.base, mode, name, depth)
 			case .Decl:
-				fmt.fprintln(f, "enum {")
+				fmt.sbprintln(f, "enum {")
 
 				for field in reflect.enum_fields_zipped(ty.id) {
 					indent(f, depth + 1)
-					fmt.fprintfln(
+					fmt.sbprintfln(
 						f,
 						"%v_%v = %v,",
 						name^,
@@ -573,24 +632,24 @@ typedef struct {
 				}
 
 				indent(f, depth)
-				fmt.fprintf(f, "}}")
+				fmt.sbprintf(f, "}}")
 				name^ = {}
 			}
 		case runtime.Type_Info_Union:
 			keyw := "struct" if t.tag_type != nil else "union"
 			switch mode {
 			case .Typedef:
-				fmt.fprintf(f, "%v %v", keyw, name^)
+				fmt.sbprintf(f, "%v %v", keyw, name^)
 			case .Decl, .Field:
 				if mode == .Field {
-					fmt.fprintfln(f, "%v {{", keyw)
+					fmt.sbprintfln(f, "%v {{", keyw)
 				} else {
-					fmt.fprintfln(f, "%v %v {{", keyw, name^)
+					fmt.sbprintfln(f, "%v %v {{", keyw, name^)
 					name^ = {}
 				}
 				if t.tag_type != nil {
 					indent(f, depth + 1)
-					fmt.fprintln(f, "union {")
+					fmt.sbprintln(f, "union {")
 				}
 				payload_depth := depth + int(t.tag_type != nil)
 				for variant, i in t.variants {
@@ -603,25 +662,25 @@ typedef struct {
 				}
 				if t.tag_type != nil {
 					indent(f, payload_depth + 1)
-					fmt.fprintfln(f, "uint8_t _payload[%v];", t.tag_offset)
+					fmt.sbprintfln(f, "bac_u8 _payload[%v];", t.tag_offset)
 					indent(f, depth + 1)
-					fmt.fprintln(f, "};")
+					fmt.sbprintln(f, "};")
 					c_display_field(f, t.tag_type, "tag", depth)
 				}
 				indent(f, depth)
-				fmt.fprintf(f, "}}")
+				fmt.sbprintf(f, "}}")
 			}
 		case runtime.Type_Info_Struct:
 			keyw := "union" if .raw_union in t.flags else "struct"
 
 			switch mode {
 			case .Typedef:
-				fmt.fprintf(f, "%v %v", keyw, name^)
+				fmt.sbprintf(f, "%v %v", keyw, name^)
 			case .Decl, .Field:
 				if mode == .Field {
-					fmt.fprintfln(f, "%v {{", keyw)
+					fmt.sbprintfln(f, "%v {{", keyw)
 				} else {
-					fmt.fprintfln(f, "%v %v {{", keyw, name^)
+					fmt.sbprintfln(f, "%v %v {{", keyw, name^)
 					name^ = {}
 				}
 
@@ -632,9 +691,9 @@ typedef struct {
 					   .raw_union not_in t.flags &&
 					   t.offsets[i] > offset {
 						indent(f, depth + 1)
-						fmt.fprintfln(
+						fmt.sbprintfln(
 							f,
-							"uint8_t _padding_%v[%v];",
+							"bac_u8 _padding_%v[%v];",
 							i,
 							t.offsets[i] - offset,
 						)
@@ -644,9 +703,9 @@ typedef struct {
 				}
 
 				indent(f, depth)
-				fmt.fprintf(f, "}}")
+				fmt.sbprintf(f, "}}")
 				if custom_layout {
-					fmt.fprintf(
+					fmt.sbprintf(
 						f,
 						" __attribute__((packed, aligned(%v)))",
 						ty.align,
@@ -656,27 +715,27 @@ typedef struct {
 		case runtime.Type_Info_Bit_Field:
 			switch mode {
 			case .Typedef:
-				fmt.fprintf(f, "struct %v", name^)
+				fmt.sbprintf(f, "struct %v", name^)
 			case .Decl, .Field:
 				if mode == .Field {
-					fmt.fprintln(f, "struct {")
+					fmt.sbprintln(f, "struct {")
 				} else {
-					fmt.fprintfln(f, "struct %v {{", name^)
+					fmt.sbprintfln(f, "struct %v {{", name^)
 					name^ = {}
 				}
 
 				for field in reflect.bit_fields_zipped(ty.id) {
 					indent(f, depth + 1)
 					name := field.name
-					fmt.fprintf(f, "uint%v_t", ty.size * 8)
-					fmt.fprintfln(f, " %v : %v;", name, field.size)
+					fmt.sbprintf(f, "bac_u%v", ty.size * 8)
+					fmt.sbprintfln(f, " %v : %v;", name, field.size)
 				}
 
 				indent(f, depth)
-				fmt.fprintf(f, "}}")
+				fmt.sbprintf(f, "}}")
 				if _, ok := t.backing_type.variant.(runtime.Type_Info_Array);
 				   ok {
-					fmt.fprintf(
+					fmt.sbprintf(
 						f,
 						" __attribute__((packed, aligned(%v)))",
 						ty.align,
@@ -688,22 +747,17 @@ typedef struct {
 			case .Decl, .Typedef:
 				c_display_type(f, t.base, mode, name, depth)
 			case .Field:
-				fmt.fprint(f, c_type_name(ty))
+				fmt.sbprint(f, c_type_name(ty))
 			}
 		case runtime.Type_Info_Integer:
 			switch mode {
 			case .Decl:
 				name^ = {}
 			case .Field, .Typedef:
-				fmt.fprintf(
-					f,
-					"%v%v_t",
-					"int" if t.signed else "uint",
-					ty.size * 8,
-				)
+				fmt.sbprintf(f, "bac_%v", ty)
 			}
 		case runtime.Type_Info_String:
-			fmt.fprintf(f, "bac_String")
+			fmt.sbprintf(f, "bac_String")
 		case runtime.Type_Info_Procedure:
 			switch mode {
 			case .Field, .Typedef:
@@ -714,12 +768,12 @@ typedef struct {
 					c_display_type(f, ty, .Field, &result_name, depth + 1)
 					c_disp_name(f, result_name)
 				} else {
-					fmt.fprintf(f, "void ")
+					fmt.sbprintf(f, "void")
 				}
 
-				fmt.fprintf(f, "(*%v)(", name^)
+				fmt.sbprintf(f, " (*%v)(", name^)
 				for ty, i in params.types {
-					if i != 0 do fmt.fprint(f, ", ")
+					if i != 0 do fmt.sbprint(f, ", ")
 					name := ""
 					c_display_type(f, ty, .Field, &name, depth + 1)
 					c_disp_name(f, name)
@@ -727,7 +781,7 @@ typedef struct {
 
 				for i in 0 ..< len(results.types) - 1 {
 					// NOTE: we dont have zero arg multireturns
-					fmt.fprint(f, ", ")
+					fmt.sbprint(f, ", ")
 					name := ""
 					c_display_pointer(
 						f,
@@ -739,7 +793,7 @@ typedef struct {
 					c_disp_name(f, name)
 				}
 
-				fmt.fprintf(f, ")")
+				fmt.sbprintf(f, ")")
 				name^ = {}
 			case .Decl:
 				name^ = {}
@@ -754,7 +808,7 @@ typedef struct {
 	}
 
 	c_display_pointer :: proc(
-		f: ^os.File,
+		f: ^strings.Builder,
 		elem: ^runtime.Type_Info,
 		mode: Display_Mode,
 		name: ^string,
@@ -766,7 +820,7 @@ typedef struct {
 		}
 		name^ = fmt.tprintf("*%v", name^)
 		if elem == nil {
-			fmt.fprint(f, "void")
+			fmt.sbprint(f, "void")
 		} else {
 			#partial switch _ in elem.variant {
 			case runtime.Type_Info_Array, runtime.Type_Info_Enumerated_Array:
@@ -822,13 +876,13 @@ typedef struct {
 				ty.size * 8,
 			)
 		case runtime.Type_Info_Type_Id:
-			return "uintptr_t"
+			return "bac_int"
 		case runtime.Type_Info_Boolean:
-			return "bool"
+			return "_Bool"
 		case runtime.Type_Info_Float:
 			return "float" if ty.size == 4 else "double"
 		case runtime.Type_Info_Rune:
-			return "int32_t"
+			return "bac_rune"
 		case runtime.Type_Info_String:
 			return "bac_String"
 		case runtime.Type_Info_Array:
@@ -846,11 +900,7 @@ typedef struct {
 				c_type_name(t.elem),
 			)
 		case runtime.Type_Info_Integer:
-			return fmt.tprintf(
-				"%v%v_t",
-				"int" if t.signed else "uint",
-				ty.size * 8,
-			)
+			return fmt.tprintf("bac_%v", ty)
 		}
 		return ""
 	}

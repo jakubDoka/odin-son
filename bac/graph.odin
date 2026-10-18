@@ -1486,7 +1486,7 @@ offset_iter_next :: proc(
 					slice.linear_search(
 						parent.outs,
 						Node_Output{id = iter.curr, idx = 0},
-					) or_else panic("")
+					) or_else fmt.panicf("")
 				iter.out_idx += 1
 				iter.curr = curr.inps[0]
 				continue

@@ -11,10 +11,10 @@ sum_ints:
     mov.q rax, [rsp + 0x10]
     mov.q rbx, [rsp]
     cmp.q rax, [rbx + 0x8]
-    setnl al
+    setge al
     movzx rax, al
     test al, al
-    jnz 2
+    jne 2
     mov.q rsi, [rsp + 0x10]
     mov.q rdi, [rsp]
     call vec_at int
@@ -124,10 +124,10 @@ sum_ints:
     mov rbp, rcx
     mov rbx, rdx
     cmp.q rbx, [r12 + 0x8]
-    setnl al
+    setge al
     movzx rax, al
     test al, al
-    jnz 2
+    jne 2
     mov rsi, rbx
     mov rdi, r12
     call vec_at int
@@ -232,10 +232,10 @@ sum_ints:
     mov.q rax, [rsp + 0x10]
     mov.q rbx, [rsp]
     cmp.q rax, [rbx + 0x8]
-    setnl al
+    setge al
     movzx rax, al
     test al, al
-    jnz 2
+    jne 2
     mov.q rsi, [rsp + 0x10]
     mov.q rdi, [rsp]
     call vec_at int
@@ -345,10 +345,10 @@ sum_ints:
     mov rbp, rcx
     mov rbx, rdx
     cmp.q rbx, [r12 + 0x8]
-    setnl al
+    setge al
     movzx rax, al
     test al, al
-    jnz 2
+    jne 2
     mov rsi, rbx
     mov rdi, r12
     call vec_at int
@@ -447,7 +447,7 @@ sum_ints:
     push r12
     mov r12, rdi
     cmp.q [r12 + 0x8], 0
-    jng 2
+    jle 2
     xor edx, edx
     xor eax, eax
 1:
@@ -461,11 +461,11 @@ sum_ints:
     mov rcx, rbp
     add.q rcx, [rax]
     cmp.q rdx, [r12 + 0x8]
-    setnl sil
+    setge sil
     movzx rsi, sil
     mov rax, rcx
     test sil, sil
-    jz 1
+    je 1
     jmp 3
 2:
     xor ecx, ecx
@@ -599,22 +599,22 @@ main:
     mov.q [rsp + 0x8], rbx
     xor eax, eax
     cmp rbx, 0
-    jng 2
+    jle 2
     xor ecx, ecx
     xor eax, eax
 1:
     mov.q r8, [rsp]
-    mov rdi, rax
+    mov rdi, rcx
     add rdi, 1
     cmp.q rdi, [rsp + 0x8]
-    setnl sil
+    setge sil
     movzx rsi, sil
-    mov rdx, rcx
-    add.q rdx, [r8 + rax*8]
-    mov rcx, rdx
-    mov rax, rdi
+    mov rdx, rax
+    add.q rdx, [r8 + rcx*8]
+    mov rcx, rdi
+    mov rax, rdx
     test sil, sil
-    jz 1
+    je 1
     mov rax, rdx
     jmp 2
 2:

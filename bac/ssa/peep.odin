@@ -202,7 +202,7 @@ fold_bin_op :: proc(
 		case .Ge:
 			return i64(lhs >= rhs)
 		case:
-			panic("invalid f32/f64 binary operation")
+			fmt.panicf("invalid f32/f64 binary operation")
 		}
 	}
 }
@@ -983,7 +983,7 @@ peep :: proc(
 
 		eliminate: {
 			cursor := id
-			size := bac.mem_op_size(ctx, id) or_else panic("")
+			size := bac.mem_op_size(ctx, id) or_else fmt.panicf("")
 			base, off := bac.base_and_offset(ctx, node.inps[2])
 			for {
 				cnode := expand_node(ctx, cursor)
@@ -1189,7 +1189,7 @@ peep :: proc(
 			}
 
 			if cursor == 0 do break
-			size := bac.mem_op_size(ctx, cursor) or_else panic("")
+			size := bac.mem_op_size(ctx, cursor) or_else fmt.panicf("")
 			end := offset + size
 			for &slot in slots {
 				send := slot.offset + slot.size

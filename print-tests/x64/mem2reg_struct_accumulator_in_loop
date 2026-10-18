@@ -11,7 +11,7 @@ main:
     xor ecx, ecx
 2:
     cmp rcx, rax
-    jnl 3
+    jge 3
     add.q [rsp], rcx
     add.q [rsp + 0x8], 1
     add rcx, 1
@@ -35,7 +35,7 @@ main:
     xor ecx, ecx
 2:
     cmp rcx, rax
-    jnl 3
+    jge 3
     add.q [rsp], rcx
     add.q [rsp + 0x8], 1
     add rcx, 1
@@ -59,7 +59,7 @@ main:
     xor ecx, ecx
 2:
     cmp rcx, rax
-    jnl 3
+    jge 3
     add.q [rsp], rcx
     add.q [rsp + 0x8], 1
     add rcx, 1
@@ -83,7 +83,7 @@ main:
     xor ecx, ecx
 2:
     cmp rcx, rax
-    jnl 3
+    jge 3
     add.q [rsp], rcx
     add.q [rsp + 0x8], 1
     add rcx, 1
@@ -107,43 +107,43 @@ main:
     xor esi, esi
 2:
     mov r10, rsi
-    mov r9, rcx
-    cmp rdx, rax
-    setnl r8b
+    mov r9, rdx
+    cmp rcx, rax
+    setge r8b
     movzx r8, r8b
-    mov rdi, rdx
+    mov rdi, rcx
     add rdi, 1
-    mov rcx, r9
-    add rcx, 1
     mov rsi, r10
-    add rsi, rdx
-    mov rdx, rdi
+    add rsi, 1
+    mov rdx, r9
+    add rdx, rcx
+    mov rcx, rdi
     test r8b, r8b
-    jz 2
-    imul rax, r10, 0x64
-    add rax, r9
+    je 2
+    imul rax, r9, 0x64
+    add rax, r10
     add rsp, 8
     ret
 =========== OPT LEVEL: aggresive ===========
 main:
+    xor eax, eax
     xor ecx, ecx
     xor edx, edx
-    xor eax, eax
 1:
-    mov r9, rdx
-    mov r8, rax
-    cmp rcx, 5
-    setnl dil
+    mov r9, rcx
+    mov r8, rdx
+    cmp rax, 5
+    setge dil
     movzx rdi, dil
-    mov rsi, rcx
+    mov rsi, rax
     add rsi, 1
-    mov rdx, r9
+    mov rdx, r8
     add rdx, 1
-    mov rax, r8
-    add rax, rcx
-    mov rcx, rsi
+    mov rcx, r9
+    add rcx, rax
+    mov rax, rsi
     test dil, dil
-    jz 1
-    imul rax, r8, 0x64
-    add rax, r9
+    je 1
+    imul rax, r9, 0x64
+    add rax, r8
     ret

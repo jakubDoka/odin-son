@@ -47,7 +47,7 @@ regalloc :: proc(
 		total += int(graph.gvn)
 	}
 
-	panic("Ralloc took too many rounds")
+	fmt.panicf("Ralloc took too many rounds")
 }
 
 regalloc_round :: proc(
@@ -77,7 +77,7 @@ regalloc_round :: proc(
 		mode:            Mode,
 		instr_placement: [dynamic]Instr_Placement,
 		lrg_table:       []^bac.Lrg,
-		self_conflicts:  map[Self_Conflict]Node_ID,
+		self_conflicts:  Self_Conflicts,
 		adj:             [][]u32,
 		gmetas:          []bac.Regalloc_Node_Meta,
 		smetas:          []Lrg_Meta,
@@ -88,6 +88,11 @@ regalloc_round :: proc(
 		res:             []bac.Reg,
 		block_base:      int,
 		pre_split_gvn:   u32,
+	}
+
+	Self_Conflicts :: struct {
+		data: #soa[]bac.SS_Entry(Self_Conflict),
+		len:  int,
 	}
 
 	ctx: Ctx
@@ -333,8 +338,9 @@ regalloc_round :: proc(
 	ctx.blocks = blocks
 
 	Self_Conflict :: struct {
-		lrg:  u32,
-		node: Node_ID,
+		lrg:   u32,
+		node:  Node_ID,
+		other: Node_ID,
 	}
 
 	worklist: queue.Queue(u32)
@@ -398,7 +404,7 @@ regalloc_round :: proc(
 									rl.mask,
 									bac.reg_mask_first_set(
 										ll.mask,
-									) or_else panic(""),
+									) or_else fmt.panicf(""),
 									false,
 								)
 
@@ -521,14 +527,46 @@ regalloc_round :: proc(
 			return
 		}
 
+		conflict_hash :: proc(sc: Self_Conflict) -> u8 {
+			return max(1, u8(sc.lrg + u32(sc.node) + u32(sc.other)))
+		}
+
 		add_conflict :: proc(ctx: ^Ctx, lrg: ^bac.Lrg, a, b: Node_ID) -> bool {
 			assert(a != 0)
 			assert(b != 0)
 
-			if a != b {
+			insert: if a != b {
 				lrg.self_conflict = true
-				ctx.self_conflicts[Self_Conflict{lrg.index, a}] = b
-				ctx.self_conflicts[Self_Conflict{lrg.index, b}] = a
+
+				sc := Self_Conflict{lrg.index, min(a, b), max(a, b)}
+				hash := conflict_hash(sc)
+
+				l := &ctx.self_conflicts
+
+				iter := bac.simd_iter_from(
+					l.data.hash[:mem.align_forward_int(
+						l.len,
+						size_of(bac.Intern_Vec),
+					)],
+					hash,
+				)
+				for idx in bac.simd_iter_next(&iter) {
+					if l.data.id[idx] == sc do break insert
+				}
+
+				if ctx.self_conflicts.len == len(ctx.self_conflicts.data) {
+					bac.grow_search_space(
+						&ctx.self_conflicts.data,
+						ctx.self_conflicts.len + size_of(bac.Intern_Vec),
+						context.allocator,
+					)
+				}
+
+				ctx.self_conflicts.data[ctx.self_conflicts.len] = {
+					hash = hash,
+					id   = sc,
+				}
+				ctx.self_conflicts.len += 1
 			}
 
 			return a == b
@@ -542,7 +580,7 @@ regalloc_round :: proc(
 		failed_any |= lrg.fails != {}
 	}
 
-	if len(ctx.self_conflicts) != 0 || failed_any {
+	if ctx.self_conflicts.len != 0 || failed_any {
 		used_lrgs = 0
 		interference.bit_length = 0
 		ok = false
@@ -772,7 +810,7 @@ regalloc_round :: proc(
 						reg =
 							bac.reg_mask_first_set(
 								slrg.lrg.mask,
-							) or_else panic("")
+							) or_else fmt.panicf("")
 						for oslrg in active.items.id[:active.len] {
 							bac.reg_mask_set(
 								oslrg.lrg.mask,
@@ -1068,7 +1106,7 @@ regalloc_round :: proc(
 			for adj in ctx.adj[lrg.index] {
 				slc := &ctx.adj[adj]
 				idx :=
-					lrg_search(slc^, lrg.index) or_else panic(
+					lrg_search(slc^, lrg.index) or_else fmt.panicf(
 						"removed a lrg twice",
 					)
 				slc[idx], slc[len(slc) - 1] = slc[len(slc) - 1], slc[idx]
@@ -1281,9 +1319,10 @@ regalloc_round :: proc(
 				if fnode.output_count == 0 {
 					block := get_node_block(ctx, m)
 					idx :=
-						slice.linear_search(block.instrs[:], id) or_else panic(
-							"",
-						)
+						slice.linear_search(
+							block.instrs[:],
+							id,
+						) or_else fmt.panicf("")
 					ordered_remove(&block.instrs, idx)
 					bac.delete_node(ctx.graph, fnode)
 				}
@@ -1448,99 +1487,106 @@ regalloc_round :: proc(
 
 	assert(any_fails == !ok)
 
-	resolve: for sc, oth in ctx.self_conflicts {
+	resolve: for sc in ctx.self_conflicts.data[:ctx.self_conflicts.len] {
+		sc := sc.id
 		lrg := &lrgs[sc.lrg]
-		id := sc.node
 
-		node := expand_node(graph, id)
-		node.outs = slice.clone(node.outs)
+		scs := [?]Self_Conflict{sc, {0, sc.other, sc.node}}
 
-		// NOTE: we could be using the same value multiple times, so since we
-		// are at it, lets reuse the immediate split
-		last_split: Node_ID
+		for sc in scs {
+			id := sc.node
+			oth := sc.other
 
-		for out in node.outs {
-			onode := expand_node(graph, out.id)
+			node := expand_node(graph, id)
+			node.outs = slice.clone(node.outs)
 
-			if oth == out.id && onode.itype == .Phi {
-				nd := split_after(ctx, "scp", oth, must = true)
-				onode = expand_node(graph, out.id)
+			// NOTE: we could be using the same value multiple times, so since we
+			// are at it, lets reuse the immediate split
+			last_split: Node_ID
 
-				#reverse for oout in onode.outs[:len(onode.outs) - 1] {
-					bac.set_input(ctx.graph, oout.id, oout.idx, nd)
+			for out in node.outs {
+				onode := expand_node(graph, out.id)
+
+				if oth == out.id && onode.itype == .Phi {
+					nd := split_after(ctx, "scp", oth, must = true)
+					onode = expand_node(graph, out.id)
+
+					#reverse for oout in onode.outs[:len(onode.outs) - 1] {
+						bac.set_input(ctx.graph, oout.id, oout.idx, nd)
+					}
+
+					continue resolve
 				}
-
-				continue resolve
-			}
-		}
-
-		for inp, j in node.inps {
-			if get_lrg(ctx, inp) == nil do continue
-
-			inode := get_node(graph, inp)
-
-			if j != int(ctx.gmetas[node.gvn].in_place_slot) &&
-			   node.itype != .Phi {
-				continue
 			}
 
-			if !is_def(ctx, inode) do continue
-			if inode.gvn >= ctx.pre_split_gvn {
-				if get_node(graph, inp).itype == .Split {
-					last_split = inp
-				}
-				continue
-			}
+			for inp, j in node.inps {
+				if get_lrg(ctx, inp) == nil do continue
 
-			inp_lrg := ctx.lrg_table[inode.gvn]
-			if inp_lrg == lrg &&
-			   ((inode.itype != .Split &&
-						   (ctx.instr_placement[inode.gvn] !=
-									   ctx.instr_placement[node.gvn] ||
-								   inode.gvn != node.gvn - 1)) ||
-					   inode.output_count > 1) {
-				split: Node_ID
-				if last_split != 0 &&
-				   bac.get_inputs(graph, last_split)[0] == inp &&
+				inode := get_node(graph, inp)
+
+				if j != int(ctx.gmetas[node.gvn].in_place_slot) &&
 				   node.itype != .Phi {
-					split = last_split
-				} else {
-					split = split_before(ctx, id, j, "sci")
+					continue
 				}
 
-				if get_node(graph, split).itype == .Split {
-					last_split = split
+				if !is_def(ctx, inode) do continue
+				if inode.gvn >= ctx.pre_split_gvn {
+					if get_node(graph, inp).itype == .Split {
+						last_split = inp
+					}
+					continue
 				}
 
-				bac.set_input(graph, id, j, split)
+				inp_lrg := ctx.lrg_table[inode.gvn]
+				if inp_lrg == lrg &&
+				   ((inode.itype != .Split &&
+							   (ctx.instr_placement[inode.gvn] !=
+										   ctx.instr_placement[node.gvn] ||
+									   inode.gvn != node.gvn - 1)) ||
+						   inode.output_count > 1) {
+					split: Node_ID
+					if last_split != 0 &&
+					   bac.get_inputs(graph, last_split)[0] == inp &&
+					   node.itype != .Phi {
+						split = last_split
+					} else {
+						split = split_before(ctx, id, j, "sci")
+					}
+
+					if get_node(graph, split).itype == .Split {
+						last_split = split
+					}
+
+					bac.set_input(graph, id, j, split)
+				}
 			}
-		}
 
-		last_split = 0
-		last_split_out: Node_ID
-		for out in slice.clone(node.outs) {
-			onode := expand_node(graph, out.id)
+			last_split = 0
+			last_split_out: Node_ID
+			for out in slice.clone(node.outs) {
+				onode := expand_node(graph, out.id)
 
-			if !is_def_while_splitting(ctx, onode) do continue
-			if onode.gvn >= ctx.pre_split_gvn do continue
+				if !is_def_while_splitting(ctx, onode) do continue
+				if onode.gvn >= ctx.pre_split_gvn do continue
 
-			if out.idx == int(ctx.gmetas[onode.gvn].in_place_slot) ||
-			   onode.itype == .Phi {
-				split: Node_ID
-				if last_split != 0 &&
-				   last_split_out == out.id &&
-				   onode.itype != .Phi {
-					split = last_split
-				} else {
-					split = split_before(ctx, out.id, out.idx, "sco")
+				if out.idx == int(ctx.gmetas[onode.gvn].in_place_slot) ||
+				   onode.itype == .Phi {
+					split: Node_ID
+					if last_split != 0 &&
+					   last_split_out == out.id &&
+					   onode.itype != .Phi {
+						split = last_split
+					} else {
+						split = split_before(ctx, out.id, out.idx, "sco")
+					}
+
+					if get_node(graph, split).itype == .Split {
+						last_split_out = out.id
+						last_split = split
+					}
+
+					bac.set_input(graph, out.id, out.idx, split)
 				}
-
-				if get_node(graph, split).itype == .Split {
-					last_split_out = out.id
-					last_split = split
-				}
-
-				bac.set_input(graph, out.id, out.idx, split)
 			}
 		}
 	}
@@ -1600,7 +1646,6 @@ regalloc_round :: proc(
 								res.allocs[inp.gvn] = res.allocs[inode.gvn]
 								res.allocs[in_slot_node.gvn] =
 									res.allocs[inode.gvn]
-								//if true do panic("")
 								continue
 							}
 						}

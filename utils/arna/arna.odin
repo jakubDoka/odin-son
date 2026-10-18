@@ -11,7 +11,9 @@ import "core:slice"
 _ :: simd
 _ :: slice
 
-@(thread_local)
+DISABLE_VIRTUAL :: #config(ARNA_DISABLE_VIRTUAL, false)
+
+@(tag = "api", thread_local)
 scratch: [2]Allocator
 
 Allocator :: struct {
@@ -39,7 +41,7 @@ commit :: proc "contextless" (
 	data: rawptr,
 	size: uint,
 ) -> runtime.Allocator_Error {
-	when ODIN_ARCH == .wasm32 {
+	when ODIN_ARCH == .wasm32 || DISABLE_VIRTUAL {
 		return nil
 	} else when ODIN_OS == .Freestanding {
 		return .Mode_Not_Implemented
@@ -73,6 +75,7 @@ init :: proc "contextless" (
 	return .None
 }
 
+@(tag = "api")
 init_from_buffer :: proc "contextless" (buf: []u8) -> Allocator {
 	return {
 		ptr = raw_data(buf),
@@ -213,8 +216,8 @@ alloc :: proc(
 		commit_pos := uintptr(arena.ptr) + uintptr(arena.commited)
 		commit(rawptr(commit_pos), commit_chunk) or_return
 		arena.commited += commit_chunk
-		assert_contextless(arena.commited <= arena.reserved)
-		assert_contextless(end <= arena.commited)
+		assert(arena.commited <= arena.reserved)
+		assert(end <= arena.commited)
 	}
 
 	arena.pos = end

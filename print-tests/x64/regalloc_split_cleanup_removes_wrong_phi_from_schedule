@@ -34,7 +34,7 @@ main:
     mov r15, rdx
     mov.q [rsp + 0x28], rcx
     cmp r12, 5
-    jz 3
+    je 3
     add r12, 1
     mov.q rax, [rsp + 0x28]
     add rax, r12
@@ -126,7 +126,7 @@ main:
     mov.q [rsp + 0x8], rcx
     mov.q [rsp], rdx
     cmp rbp, 5
-    jz 3
+    je 3
     add rbp, 1
     mov.q rax, [rsp]
     add rax, rbp
@@ -219,7 +219,7 @@ main:
     mov r15, rdx
     mov.q [rsp + 0x28], rcx
     cmp r12, 5
-    jz 3
+    je 3
     add r12, 1
     mov.q rax, [rsp + 0x28]
     add rax, r12
@@ -311,7 +311,7 @@ main:
     mov.q [rsp + 0x8], rcx
     mov.q [rsp], rdx
     cmp rbp, 5
-    jz 3
+    je 3
     add rbp, 1
     mov.q rax, [rsp]
     add rax, rbp
@@ -381,18 +381,19 @@ main:
     push r14
     push r15
     sub rsp, 0x18
-    mov r8, 6
+    mov r9, 6
     mov r15, 4
     mov r13, 3
     mov r12, 2
     xor ebp, ebp
-    mov rdi, 7
+    mov r8, 7
     mov rax, 1
-    mov r14, 8
+    mov rdi, 8
     mov rbx, 5
 2:
-    mov.q [rsp + 0x10], rdi
-    mov.q [rsp + 0x8], r8
+    mov.q [rsp + 0x10], r8
+    mov.q [rsp + 0x8], r9
+    mov r14, rdi
     mov.q [rsp], rax
     add rbp, 1
     mov.q rax, [rsp]
@@ -402,9 +403,8 @@ main:
     mov.q rsi, [rsp]
     add rsi, r12
     add rsi, rax
-    mov rdx, rsi
-    mov rcx, r14
-    add rcx, rdx
+    mov rcx, rsi
+    add rcx, r14
     add rcx, rax
     add r12, r13
     add r12, rax
@@ -419,27 +419,27 @@ main:
     mov.q r8, [rsp + 0x10]
     add rdi, r8
     add rdi, rax
-    mov r10, rdi
+    mov r11, rdi
     mov.q rdi, [rsp + 0x10]
     add rdi, r14
     add rdi, rax
-    mov r9, rdi
+    mov r10, rdi
     cmp rbp, 5
     mov rax, rsi
-    mov r14, rcx
+    mov rdi, rcx
+    mov r9, r11
     mov r8, r10
-    mov rdi, r9
     mov rbx, rdx
-    jnz 2
+    jne 2
     lea rsi, [rsi]
     imul rax, r13, 3
     add rsi, rax
     lea rsi, [rsi + r15*4]
     imul rax, rdx, 5
     add rsi, rax
-    imul rax, r10, 6
+    imul rax, r11, 6
     add rsi, rax
-    imul rax, r9, 7
+    imul rax, r10, 7
     add rsi, rax
     lea rax, [rsi + rcx*8]
     mov rcx, 0xfb
@@ -467,15 +467,15 @@ main:
     mov rcx, 7
     xor r12d, r12d
     mov rdx, 6
-    mov r10, 1
-    mov r9, 8
+    mov r10, 8
+    mov r9, 1
 1:
     add r12, 1
-    mov rax, r10
+    mov rax, r9
     add rax, r12
     imul rbp, rax, 3
     add rbp, 1
-    mov rbx, r10
+    mov rbx, r9
     add rbx, r13
     add r13, r8
     add r8, rdi
@@ -483,11 +483,11 @@ main:
     add rsi, rdx
     add rdx, rcx
     add rbx, rbp
-    mov rax, r9
+    mov rax, r10
     add rax, rbx
-    add rcx, r9
+    add rcx, r10
     cmp r12, 5
-    setz r11b
+    sete r11b
     movzx r11, r11b
     add rax, rbp
     add rcx, rbp
@@ -496,10 +496,10 @@ main:
     add rdi, rbp
     add rsi, rbp
     add rdx, rbp
-    mov r10, rbx
-    mov r9, rax
+    mov r10, rax
+    mov r9, rbx
     test r11b, r11b
-    jz 1
+    je 1
     lea r9, [rbx + r13*2]
     imul r8, r8, 3
     add r9, r8

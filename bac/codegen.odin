@@ -737,7 +737,7 @@ emit_leb :: proc(buf: ^arna.Allocator, value: $T) {
 
 	LEB_MAX_BYTES :: 10
 	bf := arna.alloc(buf, LEB_MAX_BYTES, 1)
-	size := encode(bf, up(value)) or_else panic("")
+	size := encode(bf, up(value)) or_else fmt.panicf("")
 	buf.pos -= len(bf) - uint(size)
 }
 

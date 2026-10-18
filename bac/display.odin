@@ -216,7 +216,7 @@ when !fmt.NO_FMT {
 			":%v(",
 			reflect.enum_name_from_value_any(
 				any{data = &node.rtype, id = graph.node_kind},
-			) or_else panic(""),
+			) or_else fmt.panicf(""),
 		)
 
 		written_one: bool

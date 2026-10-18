@@ -2,7 +2,6 @@ package anal
 
 import bac ".."
 import "../../utils/arna"
-import "../../utils/fmt"
 Node_ID :: bac.Node_ID
 
 SPEC_NOT_PRESENT :: (#load("node_specs.odin", string) or_else "") == ""
@@ -33,7 +32,7 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 	wrt := arna.to_stream(ectx.buf.code)
 
 	check_local_bounds: {
-		fmt.wprintln(wrt, "wootah")
+		//fmt.wprintln(wrt, "wootah")
 	}
 
 	return {}

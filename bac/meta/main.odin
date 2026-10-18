@@ -126,7 +126,7 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 	if !spec.no_spec_tables {
 		fmt.fprintf(
 			file,
-			"@(rodata, export, link_name = \"%v_spec\")",
+			"@(tag = \"api\", rodata, export, link_name = \"%v_SPEC\")",
 			spec_in.package_name,
 		)
 		fmt.fprintf(file, "SPEC := %vNode_Spec{{\n", q)
@@ -235,7 +235,10 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 		}
 		os.write_string(file, "\t},\n")
 
-		os.write_string(file, "\tnode_extra_types = {} when #config(NO_FMT, false) else []typeid{\n")
+		os.write_string(
+			file,
+			"\tnode_extra_types = ({}) when #config(NO_FMT, false) else ([]typeid{\n",
+		)
 		idx = 0
 		for classes in spec.classes {
 			for class in classes.ids {
@@ -254,9 +257,12 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 		if last_idx != idx - 1 {
 			fmt.fprintf(file, "\t\t%v = {{}},\n", idx - 1)
 		}
-		os.write_string(file, "\t},\n")
+		os.write_string(file, "\t}),\n")
 
-		os.write_string(file, "\tnode_kind = nil when #config(NO_FMT, false) else Node_Type,\n")
+		os.write_string(
+			file,
+			"\tnode_kind = nil when #config(NO_FMT, false) else Node_Type,\n",
+		)
 
 		os.write_string(file, "}\n\n")
 	} else {

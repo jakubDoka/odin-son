@@ -19,7 +19,7 @@ main :: proc() {
 	context.allocator = context.temp_allocator
 
 	gen_backend_overloads(load_backend_packages("bac")[:])
-	gen_backend_api(load_backend_packages("bac")[:])
+	gen_backend_api(load_backend_packages(".")[:])
 
 	{
 

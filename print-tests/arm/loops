@@ -1,84 +1,92 @@
 =========== OPT LEVEL: none-quick ===========
 main:
-    movz x1, #0, #0
-    movz x2, #10, #0
-    movz x3, #1, #0
-    movz x0, #1, #0
-    movz x4, #0, #0
+    sub sp, sp, #16
+    movz x1, #0
+    movz x2, #10
+    movz x3, #1
+    movz x4, #1
+    movz x5, #0
 1:
+    str x5, [xzr]
+    mov x0, x4
+    ldr x6, [xzr]
     cmp w2, w1
     b.eq 2
     sub x2, x2, x3
-    add x5, x4, x0
-    mov x4, x0
-    mov x0, x5
+    add x4, x6, x0
+    mov x5, x0
     b 1
 2:
+    add sp, sp, #16
     ret
 =========== OPT LEVEL: none ===========
 main:
-    movz x5, #0, #0
-    movz x3, #10, #0
-    movz x4, #1, #0
-    movz x0, #1, #0
-    movz x1, #0, #0
+    movz x5, #0
+    movz x2, #10
+    movz x4, #1
+    movz x1, #1
+    movz x3, #0
 1:
-    cmp w3, w5
+    mov x0, x1
+    cmp w2, w5
     b.eq 2
-    sub x3, x3, x4
-    add x2, x1, x0
-    mov x1, x0
-    mov x0, x2
+    sub x2, x2, x4
+    add x1, x3, x0
+    mov x3, x0
     b 1
 2:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 main:
-    movz x1, #0, #0
-    movz x2, #10, #0
-    movz x3, #1, #0
-    movz x0, #1, #0
-    movz x4, #0, #0
+    sub sp, sp, #16
+    movz x1, #0
+    movz x2, #10
+    movz x3, #1
+    movz x4, #1
+    movz x5, #0
 1:
+    str x5, [xzr]
+    mov x0, x4
+    ldr x6, [xzr]
     cmp w2, w1
     b.eq 2
     sub x2, x2, x3
-    add x5, x4, x0
-    mov x4, x0
-    mov x0, x5
+    add x4, x6, x0
+    mov x5, x0
     b 1
 2:
+    add sp, sp, #16
     ret
 =========== OPT LEVEL: moderate ===========
 main:
-    movz x5, #0, #0
-    movz x3, #10, #0
-    movz x4, #1, #0
-    movz x0, #1, #0
-    movz x1, #0, #0
+    movz x5, #0
+    movz x2, #10
+    movz x4, #1
+    movz x1, #1
+    movz x3, #0
 1:
-    cmp w3, w5
+    mov x0, x1
+    cmp w2, w5
     b.eq 2
-    sub x3, x3, x4
-    add x2, x1, x0
-    mov x1, x0
-    mov x0, x2
+    sub x2, x2, x4
+    add x1, x3, x0
+    mov x3, x0
     b 1
 2:
     ret
 =========== OPT LEVEL: all ===========
 main:
-    movz x6, #0, #0
-    movz x5, #1, #0
-    movz x3, #10, #0
-    movz x2, #1, #0
-    movz x1, #0, #0
+    movz x6, #0
+    movz x5, #1
+    movz x3, #1
+    movz x2, #10
+    movz x1, #0
 1:
-    mov x0, x2
-    sub x4, x3, x5
-    add x2, x1, x0
-    cmp w3, w6
-    mov x3, x4
+    mov x4, x2
+    mov x0, x3
+    sub x2, x4, x5
+    add x3, x1, x0
+    cmp w4, w6
     mov x1, x0
     b.ne 1
     ret

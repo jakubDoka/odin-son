@@ -42,7 +42,7 @@ check i8:
     mov.q rax, [rsp - 0x20]
     mov.q rcx, [rsp - 0x28]
     cmp cl, al
-    jz 2
+    je 2
     xor eax, eax
     jmp 3
 2:
@@ -51,7 +51,7 @@ check i8:
     mov.q [rsp - 0x18], rax
     mov.q rax, [rsp - 0x28]
     cmp al, 0
-    jnge 4
+    jl 4
     mov.q [rsp - 0x30], r15
     mov.q r15, [rsp - 0x18]
     mov.q [rsp - 0x10], r15
@@ -70,7 +70,7 @@ check i8:
     movsx rax, al
     mov.q rcx, [rsp - 0x20]
     cmp rax, rcx
-    jng 6
+    jle 6
     mov.q [rsp - 0x30], r15
     mov.q r15, [rsp - 0x18]
     mov.q [rsp - 0x10], r15
@@ -97,7 +97,7 @@ check i8:
     idiv rbx
     mov rax, rax
     cmp rcx, rax
-    jz 8
+    je 8
     mov.q [rsp - 0x30], r15
     mov.q r15, [rsp - 0x18]
     mov.q [rsp - 0x10], r15
@@ -123,7 +123,7 @@ check i8:
     cqo
     idiv rbx
     cmp rcx, rdx
-    jz 10
+    je 10
     mov.q [rsp - 0x30], r15
     mov.q r15, [rsp - 0x18]
     mov.q [rsp - 0x10], r15
@@ -146,7 +146,7 @@ check i8:
     sar rcx, 2
     mov rcx, rcx
     cmp rax, rcx
-    jz 12
+    je 12
     mov.q [rsp - 0x30], r15
     mov.q r15, [rsp - 0x18]
     mov.q [rsp - 0x10], r15
@@ -169,7 +169,7 @@ check i8:
     mov rax, rax
     mov.q rcx, [rsp - 0x10]
     cmp cl, al
-    jz 14
+    je 14
     mov.q [rsp - 0x30], r15
     mov.q r15, [rsp - 0x18]
     mov.q [rsp - 0x10], r15
@@ -192,7 +192,7 @@ check i8:
     xor rax, rcx
     mov.q rcx, [rsp - 0x28]
     cmp cl, al
-    jz 16
+    je 16
     mov.q [rsp - 0x30], r15
     mov.q r15, [rsp - 0x18]
     mov.q [rsp - 0x28], r15
@@ -216,7 +216,7 @@ check i16:
     mov.q rax, [rsp - 0x20]
     mov.q rcx, [rsp - 0x28]
     cmp cx, ax
-    jz 19
+    je 19
     xor eax, eax
     jmp 20
 19:
@@ -225,7 +225,7 @@ check i16:
     mov.q [rsp - 0x18], rax
     mov.q rax, [rsp - 0x28]
     cmp ax, 0
-    jnge 21
+    jl 21
     mov.q [rsp - 0x30], r15
     mov.q r15, [rsp - 0x18]
     mov.q [rsp - 0x10], r15
@@ -244,7 +244,7 @@ check i16:
     movsx rax, ax
     mov.q rcx, [rsp - 0x20]
     cmp rax, rcx
-    jng 23
+    jle 23
     mov.q [rsp - 0x30], r15
     mov.q r15, [rsp - 0x18]
     mov.q [rsp - 0x10], r15
@@ -271,7 +271,7 @@ check i16:
     idiv rbx
     mov rax, rax
     cmp rcx, rax
-    jz 25
+    je 25
     mov.q [rsp - 0x30], r15
     mov.q r15, [rsp - 0x18]
     mov.q [rsp - 0x10], r15
@@ -296,7 +296,7 @@ check i16:
     cqo
     idiv rbx
     cmp rcx, rdx
-    jz 27
+    je 27
     mov.q [rsp - 0x30], r15
     mov.q r15, [rsp - 0x18]
     mov.q [rsp - 0x10], r15
@@ -319,7 +319,7 @@ check i16:
     sar rcx, 2
     mov rcx, rcx
     cmp rax, rcx
-    jz 29
+    je 29
     mov.q [rsp - 0x30], r15
     mov.q r15, [rsp - 0x18]
     mov.q [rsp - 0x10], r15
@@ -342,7 +342,7 @@ check i16:
     mov rax, rax
     mov.q rcx, [rsp - 0x10]
     cmp cx, ax
-    jz 31
+    je 31
     mov.q [rsp - 0x30], r15
     mov.q r15, [rsp - 0x18]
     mov.q [rsp - 0x10], r15
@@ -365,7 +365,7 @@ check i16:
     xor rax, rcx
     mov.q rcx, [rsp - 0x28]
     cmp cx, ax
-    jz 33
+    je 33
     mov.q [rsp - 0x30], r15
     mov.q r15, [rsp - 0x18]
     mov.q [rsp - 0x28], r15
@@ -420,21 +420,21 @@ check i8:
     mov r9, rax
     mov rcx, r10
     cmp r9b, cl
-    jz 2
+    je 2
     xor edx, edx
     jmp 3
 2:
     mov rdx, 1
 3:
     cmp r9b, 0
-    jnge 4
+    jl 4
     jmp 5
 4:
     add rdx, 2
 5:
     movsx rcx, r9b
     cmp rcx, r10
-    jng 6
+    jle 6
     jmp 7
 6:
     add rdx, 4
@@ -450,7 +450,7 @@ check i8:
     cqo
     idiv rdi
     cmp r8, rax
-    jz 8
+    je 8
     jmp 9
 8:
     add rcx, 8
@@ -466,7 +466,7 @@ check i8:
     cqo
     idiv rdi
     cmp r8, rdx
-    jz 10
+    je 10
     jmp 11
 10:
     add rcx, 0x10
@@ -477,7 +477,7 @@ check i8:
     mov rax, r10
     sar rax, 2
     cmp rdx, rax
-    jz 12
+    je 12
     jmp 13
 12:
     add rcx, 0x20
@@ -488,7 +488,7 @@ check i8:
     mov rdx, r10
     neg rdx
     cmp cl, dl
-    jz 14
+    je 14
     jmp 15
 14:
     add rax, 0x40
@@ -499,7 +499,7 @@ check i8:
     xor rsi, r10
     mov rdx, rsi
     cmp cl, dl
-    jz 16
+    je 16
     jmp 17
 16:
     add rax, 0x80
@@ -512,21 +512,21 @@ check i16:
     mov r9, rax
     mov rcx, r10
     cmp r9w, cx
-    jz 19
+    je 19
     xor edx, edx
     jmp 20
 19:
     mov rdx, 1
 20:
     cmp r9w, 0
-    jnge 21
+    jl 21
     jmp 22
 21:
     add rdx, 2
 22:
     movsx rcx, r9w
     cmp rcx, r10
-    jng 23
+    jle 23
     jmp 24
 23:
     add rdx, 4
@@ -542,7 +542,7 @@ check i16:
     cqo
     idiv rdi
     cmp r8, rax
-    jz 25
+    je 25
     jmp 26
 25:
     add rcx, 8
@@ -557,7 +557,7 @@ check i16:
     cqo
     idiv rdi
     cmp r8, rdx
-    jz 27
+    je 27
     jmp 28
 27:
     add rcx, 0x10
@@ -568,7 +568,7 @@ check i16:
     mov rax, r10
     sar rax, 2
     cmp rdx, rax
-    jz 29
+    je 29
     jmp 30
 29:
     add rcx, 0x20
@@ -579,7 +579,7 @@ check i16:
     mov rdx, r10
     neg rdx
     cmp cx, dx
-    jz 31
+    je 31
     jmp 32
 31:
     add rax, 0x40
@@ -590,7 +590,7 @@ check i16:
     xor rsi, r10
     mov rdx, rsi
     cmp cx, dx
-    jz 33
+    je 33
     jmp 34
 33:
     add rax, 0x80
@@ -640,7 +640,7 @@ check i8:
     mov.q rax, [rsp - 0x20]
     mov.q rcx, [rsp - 0x28]
     cmp cl, al
-    jz 2
+    je 2
     xor eax, eax
     jmp 3
 2:
@@ -649,7 +649,7 @@ check i8:
     mov.q [rsp - 0x18], rax
     mov.q rax, [rsp - 0x28]
     cmp al, 0
-    jnge 4
+    jl 4
     mov.q [rsp - 0x30], r15
     mov.q r15, [rsp - 0x18]
     mov.q [rsp - 0x10], r15
@@ -668,7 +668,7 @@ check i8:
     movsx rax, al
     mov.q rcx, [rsp - 0x20]
     cmp rax, rcx
-    jng 6
+    jle 6
     mov.q [rsp - 0x30], r15
     mov.q r15, [rsp - 0x18]
     mov.q [rsp - 0x10], r15
@@ -695,7 +695,7 @@ check i8:
     idiv rbx
     mov rax, rax
     cmp rcx, rax
-    jz 8
+    je 8
     mov.q [rsp - 0x30], r15
     mov.q r15, [rsp - 0x18]
     mov.q [rsp - 0x10], r15
@@ -721,7 +721,7 @@ check i8:
     cqo
     idiv rbx
     cmp rcx, rdx
-    jz 10
+    je 10
     mov.q [rsp - 0x30], r15
     mov.q r15, [rsp - 0x18]
     mov.q [rsp - 0x10], r15
@@ -744,7 +744,7 @@ check i8:
     sar rcx, 2
     mov rcx, rcx
     cmp rax, rcx
-    jz 12
+    je 12
     mov.q [rsp - 0x30], r15
     mov.q r15, [rsp - 0x18]
     mov.q [rsp - 0x10], r15
@@ -767,7 +767,7 @@ check i8:
     mov rax, rax
     mov.q rcx, [rsp - 0x10]
     cmp cl, al
-    jz 14
+    je 14
     mov.q [rsp - 0x30], r15
     mov.q r15, [rsp - 0x18]
     mov.q [rsp - 0x10], r15
@@ -790,7 +790,7 @@ check i8:
     xor rax, rcx
     mov.q rcx, [rsp - 0x28]
     cmp cl, al
-    jz 16
+    je 16
     mov.q [rsp - 0x30], r15
     mov.q r15, [rsp - 0x18]
     mov.q [rsp - 0x28], r15
@@ -814,7 +814,7 @@ check i16:
     mov.q rax, [rsp - 0x20]
     mov.q rcx, [rsp - 0x28]
     cmp cx, ax
-    jz 19
+    je 19
     xor eax, eax
     jmp 20
 19:
@@ -823,7 +823,7 @@ check i16:
     mov.q [rsp - 0x18], rax
     mov.q rax, [rsp - 0x28]
     cmp ax, 0
-    jnge 21
+    jl 21
     mov.q [rsp - 0x30], r15
     mov.q r15, [rsp - 0x18]
     mov.q [rsp - 0x10], r15
@@ -842,7 +842,7 @@ check i16:
     movsx rax, ax
     mov.q rcx, [rsp - 0x20]
     cmp rax, rcx
-    jng 23
+    jle 23
     mov.q [rsp - 0x30], r15
     mov.q r15, [rsp - 0x18]
     mov.q [rsp - 0x10], r15
@@ -869,7 +869,7 @@ check i16:
     idiv rbx
     mov rax, rax
     cmp rcx, rax
-    jz 25
+    je 25
     mov.q [rsp - 0x30], r15
     mov.q r15, [rsp - 0x18]
     mov.q [rsp - 0x10], r15
@@ -894,7 +894,7 @@ check i16:
     cqo
     idiv rbx
     cmp rcx, rdx
-    jz 27
+    je 27
     mov.q [rsp - 0x30], r15
     mov.q r15, [rsp - 0x18]
     mov.q [rsp - 0x10], r15
@@ -917,7 +917,7 @@ check i16:
     sar rcx, 2
     mov rcx, rcx
     cmp rax, rcx
-    jz 29
+    je 29
     mov.q [rsp - 0x30], r15
     mov.q r15, [rsp - 0x18]
     mov.q [rsp - 0x10], r15
@@ -940,7 +940,7 @@ check i16:
     mov rax, rax
     mov.q rcx, [rsp - 0x10]
     cmp cx, ax
-    jz 31
+    je 31
     mov.q [rsp - 0x30], r15
     mov.q r15, [rsp - 0x18]
     mov.q [rsp - 0x10], r15
@@ -963,7 +963,7 @@ check i16:
     xor rax, rcx
     mov.q rcx, [rsp - 0x28]
     cmp cx, ax
-    jz 33
+    je 33
     mov.q [rsp - 0x30], r15
     mov.q r15, [rsp - 0x18]
     mov.q [rsp - 0x28], r15
@@ -1018,21 +1018,21 @@ check i8:
     mov r9, rax
     mov rcx, r10
     cmp r9b, cl
-    jz 2
+    je 2
     xor edx, edx
     jmp 3
 2:
     mov rdx, 1
 3:
     cmp r9b, 0
-    jnge 4
+    jl 4
     jmp 5
 4:
     add rdx, 2
 5:
     movsx rcx, r9b
     cmp rcx, r10
-    jng 6
+    jle 6
     jmp 7
 6:
     add rdx, 4
@@ -1048,7 +1048,7 @@ check i8:
     cqo
     idiv rdi
     cmp r8, rax
-    jz 8
+    je 8
     jmp 9
 8:
     add rcx, 8
@@ -1064,7 +1064,7 @@ check i8:
     cqo
     idiv rdi
     cmp r8, rdx
-    jz 10
+    je 10
     jmp 11
 10:
     add rcx, 0x10
@@ -1075,7 +1075,7 @@ check i8:
     mov rax, r10
     sar rax, 2
     cmp rdx, rax
-    jz 12
+    je 12
     jmp 13
 12:
     add rcx, 0x20
@@ -1086,7 +1086,7 @@ check i8:
     mov rdx, r10
     neg rdx
     cmp cl, dl
-    jz 14
+    je 14
     jmp 15
 14:
     add rax, 0x40
@@ -1097,7 +1097,7 @@ check i8:
     xor rsi, r10
     mov rdx, rsi
     cmp cl, dl
-    jz 16
+    je 16
     jmp 17
 16:
     add rax, 0x80
@@ -1110,21 +1110,21 @@ check i16:
     mov r9, rax
     mov rcx, r10
     cmp r9w, cx
-    jz 19
+    je 19
     xor edx, edx
     jmp 20
 19:
     mov rdx, 1
 20:
     cmp r9w, 0
-    jnge 21
+    jl 21
     jmp 22
 21:
     add rdx, 2
 22:
     movsx rcx, r9w
     cmp rcx, r10
-    jng 23
+    jle 23
     jmp 24
 23:
     add rdx, 4
@@ -1140,7 +1140,7 @@ check i16:
     cqo
     idiv rdi
     cmp r8, rax
-    jz 25
+    je 25
     jmp 26
 25:
     add rcx, 8
@@ -1155,7 +1155,7 @@ check i16:
     cqo
     idiv rdi
     cmp r8, rdx
-    jz 27
+    je 27
     jmp 28
 27:
     add rcx, 0x10
@@ -1166,7 +1166,7 @@ check i16:
     mov rax, r10
     sar rax, 2
     cmp rdx, rax
-    jz 29
+    je 29
     jmp 30
 29:
     add rcx, 0x20
@@ -1177,7 +1177,7 @@ check i16:
     mov rdx, r10
     neg rdx
     cmp cx, dx
-    jz 31
+    je 31
     jmp 32
 31:
     add rax, 0x40
@@ -1188,7 +1188,7 @@ check i16:
     xor rsi, r10
     mov rdx, rsi
     cmp cx, dx
-    jz 33
+    je 33
     jmp 34
 33:
     add rax, 0x80
@@ -1235,21 +1235,21 @@ check i8:
     mov r9, rax
     mov rcx, r10
     cmp r9b, cl
-    jz 2
+    je 2
     xor edx, edx
     jmp 3
 2:
     mov rdx, 1
 3:
     cmp r9b, 0
-    jnge 4
+    jl 4
     jmp 5
 4:
     add rdx, 2
 5:
     movsx rcx, r9b
     cmp rcx, r10
-    jng 6
+    jle 6
     jmp 7
 6:
     add rdx, 4
@@ -1265,7 +1265,7 @@ check i8:
     cqo
     idiv rdi
     cmp r8, rax
-    jz 8
+    je 8
     jmp 9
 8:
     add rcx, 8
@@ -1281,7 +1281,7 @@ check i8:
     cqo
     idiv rdi
     cmp r8, rdx
-    jz 10
+    je 10
     jmp 11
 10:
     add rcx, 0x10
@@ -1292,7 +1292,7 @@ check i8:
     mov rax, r10
     sar rax, 2
     cmp rdx, rax
-    jz 12
+    je 12
     jmp 13
 12:
     add rcx, 0x20
@@ -1303,7 +1303,7 @@ check i8:
     mov rdx, r10
     neg rdx
     cmp cl, dl
-    jz 14
+    je 14
     jmp 15
 14:
     add rax, 0x40
@@ -1314,7 +1314,7 @@ check i8:
     xor rsi, r10
     mov rdx, rsi
     cmp cl, dl
-    jz 16
+    je 16
     jmp 17
 16:
     add rax, 0x80
@@ -1327,21 +1327,21 @@ check i16:
     mov r9, rax
     mov rcx, r10
     cmp r9w, cx
-    jz 19
+    je 19
     xor edx, edx
     jmp 20
 19:
     mov rdx, 1
 20:
     cmp r9w, 0
-    jnge 21
+    jl 21
     jmp 22
 21:
     add rdx, 2
 22:
     movsx rcx, r9w
     cmp rcx, r10
-    jng 23
+    jle 23
     jmp 24
 23:
     add rdx, 4
@@ -1357,7 +1357,7 @@ check i16:
     cqo
     idiv rdi
     cmp r8, rax
-    jz 25
+    je 25
     jmp 26
 25:
     add rcx, 8
@@ -1372,7 +1372,7 @@ check i16:
     cqo
     idiv rdi
     cmp r8, rdx
-    jz 27
+    je 27
     jmp 28
 27:
     add rcx, 0x10
@@ -1383,7 +1383,7 @@ check i16:
     mov rax, r10
     sar rax, 2
     cmp rdx, rax
-    jz 29
+    je 29
     jmp 30
 29:
     add rcx, 0x20
@@ -1394,7 +1394,7 @@ check i16:
     mov rdx, r10
     neg rdx
     cmp cx, dx
-    jz 31
+    je 31
     jmp 32
 31:
     add rax, 0x40
@@ -1405,7 +1405,7 @@ check i16:
     xor rsi, r10
     mov rdx, rsi
     cmp cx, dx
-    jz 33
+    je 33
     jmp 34
 33:
     add rax, 0x80
@@ -1431,21 +1431,21 @@ main:
     mov r10, rax
     mov rdx, r11
     cmp r10b, dl
-    jz 1
+    je 1
     xor esi, esi
     jmp 2
 1:
     mov rsi, 1
 2:
     cmp r10b, 0
-    jnge 3
+    jl 3
     jmp 4
 3:
     add rsi, 2
 4:
     movsx rdx, r10b
     cmp rdx, r11
-    jng 5
+    jle 5
     jmp 6
 5:
     add rsi, 4
@@ -1460,7 +1460,7 @@ main:
     cqo
     idiv rdi
     cmp r8, rax
-    jz 7
+    je 7
     jmp 8
 7:
     add rsi, 8
@@ -1477,7 +1477,7 @@ main:
     cqo
     idiv rsi
     cmp r9, rdx
-    jz 9
+    je 9
     jmp 10
 9:
     add r8, 0x10
@@ -1489,7 +1489,7 @@ main:
     mov rdx, r11
     sar rdx, 2
     cmp r8, rdx
-    jz 11
+    je 11
     jmp 12
 11:
     add rax, 0x20
@@ -1499,7 +1499,7 @@ main:
     mov r8, r11
     neg r8
     cmp dl, r8b
-    jz 13
+    je 13
     jmp 14
 13:
     add rax, 0x40
@@ -1510,7 +1510,7 @@ main:
     xor r8, r11
     mov rcx, r8
     cmp dl, cl
-    jz 15
+    je 15
     jmp 16
 15:
     add rax, 0x80
@@ -1526,21 +1526,21 @@ main:
     mov r10, rax
     mov rdx, r11
     cmp r10w, dx
-    jz 17
+    je 17
     xor r8d, r8d
     jmp 18
 17:
     mov r8, 1
 18:
     cmp r10w, 0
-    jnge 19
+    jl 19
     jmp 20
 19:
     add r8, 2
 20:
     movsx rdx, r10w
     cmp rdx, r11
-    jng 21
+    jle 21
     jmp 22
 21:
     add r8, 4
@@ -1554,7 +1554,7 @@ main:
     cqo
     idiv rdi
     cmp r9, rax
-    jz 23
+    je 23
     jmp 24
 23:
     add r8, 8
@@ -1569,7 +1569,7 @@ main:
     cqo
     idiv rsi
     cmp r8, rdx
-    jz 25
+    je 25
     jmp 26
 25:
     add rdi, 0x10
@@ -1580,7 +1580,7 @@ main:
     mov rax, r11
     sar rax, 2
     cmp rdx, rax
-    jz 27
+    je 27
     jmp 28
 27:
     add rdi, 0x20
@@ -1591,7 +1591,7 @@ main:
     mov rsi, r11
     neg rsi
     cmp ax, si
-    jz 29
+    je 29
     jmp 30
 29:
     add rdx, 0x40
@@ -1602,7 +1602,7 @@ main:
     xor rsi, r11
     mov rcx, rsi
     cmp ax, cx
-    jz 31
+    je 31
     jmp 32
 31:
     add rdx, 0x80

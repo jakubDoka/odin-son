@@ -1,8 +1,8 @@
 package typecheck
 
 import "../bac"
-import "../bac/ssa"
 import ra "../bac/regalloc"
+import "../bac/ssa"
 import "../utils/arna"
 import "base:intrinsics"
 import "base:runtime"
@@ -3442,7 +3442,7 @@ typecheck_clause :: proc(
 
 begin_branch :: proc(ctx: ^Gen_Ctx, branch: ^bool) -> (prev: ^bool) {
 	prev = ctx.reachable
-	ctx.reachable = branch
+	ctx.reachable = transmute(^bool)branch
 	return
 }
 

@@ -4,7 +4,7 @@ Reg_Kind :: bac.Reg_Kind
 Class_Flag :: bac.Class_Flag
 // NOTE: this file is generated: 
 
-@(rodata, export, link_name = "anal_spec")SPEC := bac.Node_Spec{
+@(tag = "api", rodata, export, link_name = "anal_SPEC")SPEC := bac.Node_Spec{
 	call_clobbers = {
 	},
 	datatype_to_reg_kind = {.Void = 0, .Mem = 0, .I8 = 0, .I16 = 0, .I32 = 0, .I64 = 0, .F32 = 0, .F64 = 0, .V128 = 0, .V256 = 0, .V512 = 0},
@@ -177,7 +177,7 @@ Class_Flag :: bac.Class_Flag
 		{Class_Flag.Interned}, // Simd_Extract_Lsbs
 		{Class_Flag.Interned}, // Simd_Reduce_Add_Bisect
 	},
-	node_extra_types = {} when #config(NO_FMT, false) else []typeid{
+	node_extra_types = ({}) when #config(NO_FMT, false) else ([]typeid{
 		0 = bac.Cfg,
 		1 = bac.Cfg,
 		2 = bac.Cfg,
@@ -199,7 +199,7 @@ Class_Flag :: bac.Class_Flag
 		27 = bac.CInt,
 		55 = bac.Tup,
 		68 = {},
-	},
+	}),
 	node_kind = nil when #config(NO_FMT, false) else Node_Type,
 }
 
@@ -288,19 +288,19 @@ post_schedule_peep_inst :: proc(
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	when false {}
-	else when T == bac.Local {return 4}
-	else when T == bac.Dbg_Sym {return 2}
-	else when T == bac.Tup {return 5}
-	else when T == bac.No_Extra {return 1}
-	else when T == bac.Call {return 3}
-	else when T == bac.Cfg {return 0}
 	else when T == bac.CInt {return 6}
+	else when T == bac.No_Extra {return 1}
+	else when T == bac.Cfg {return 0}
+	else when T == bac.Tup {return 5}
+	else when T == bac.Dbg_Sym {return 2}
+	else when T == bac.Call {return 3}
+	else when T == bac.Local {return 4}
 	else {#panic(`the passed type is not subclass of anything`)}
 }
-#assert(size_of(bac.Local) % bac.PRECISION == 0)
-#assert(size_of(bac.Dbg_Sym) % bac.PRECISION == 0)
-#assert(size_of(bac.Tup) % bac.PRECISION == 0)
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.Call) % bac.PRECISION == 0)
-#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
 #assert(size_of(bac.CInt) % bac.PRECISION == 0)
+#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
+#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
+#assert(size_of(bac.Tup) % bac.PRECISION == 0)
+#assert(size_of(bac.Dbg_Sym) % bac.PRECISION == 0)
+#assert(size_of(bac.Call) % bac.PRECISION == 0)
+#assert(size_of(bac.Local) % bac.PRECISION == 0)

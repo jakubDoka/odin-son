@@ -211,7 +211,9 @@ run_test :: proc(
 				)
 			}
 		}
+
 		bac.current_graph = &ctx
+		defer bac.current_graph = nil
 
 		types.mems.code.pos = 0
 		types.mems.reloc.pos = 0

@@ -21,10 +21,10 @@ main:
     mov.q [rsp + 0x60], rcx
     mov.q rax, [rsp + 0x58]
     cmp rax, 0xb
-    setnl al
+    setge al
     movzx rax, al
     test al, al
-    jnz 2
+    jne 2
     mov.q rax, [rsp + 0x58]
     mov.q rsi, [rsp + rax*8]
     mov dil, -0x5b
@@ -111,17 +111,17 @@ shifts u8:
     mov.q rcx, [rsp - 0x8]
     mov rax, rdi
     cmp rcx, 8
-    jnae 4
+    jb 4
     xor eax, eax
     jmp 5
 4:
-    sal al, cl
+    shl al, cl
 5:
     movzx eax, al
     mov.q rcx, [rsp - 0x8]
     mov rdx, rdi
     cmp rcx, 8
-    jnae 6
+    jb 6
     xor edx, edx
     jmp 7
 6:
@@ -139,17 +139,17 @@ shifts i8:
     mov.q rcx, [rsp - 0x8]
     mov rax, rdi
     cmp rcx, 8
-    jnae 9
+    jb 9
     xor eax, eax
     jmp 10
 9:
-    sal al, cl
+    shl al, cl
 10:
     movsx rax, al
     mov.q rcx, [rsp - 0x8]
     mov rdx, rdi
     cmp rcx, 8
-    jnae 11
+    jb 11
     sar dl, 7
     jmp 12
 11:
@@ -167,17 +167,17 @@ shifts u16:
     mov.q rcx, [rsp - 0x8]
     mov rax, rdi
     cmp rcx, 0x10
-    jnae 14
+    jb 14
     xor eax, eax
     jmp 15
 14:
-    sal ax, cl
+    shl ax, cl
 15:
     movzx eax, ax
     mov.q rcx, [rsp - 0x8]
     mov rdx, rdi
     cmp rcx, 0x10
-    jnae 16
+    jb 16
     xor edx, edx
     jmp 17
 16:
@@ -195,17 +195,17 @@ shifts i16:
     mov.q rcx, [rsp - 0x8]
     mov rax, rdi
     cmp rcx, 0x10
-    jnae 19
+    jb 19
     xor eax, eax
     jmp 20
 19:
-    sal ax, cl
+    shl ax, cl
 20:
     movsx rax, ax
     mov.q rcx, [rsp - 0x8]
     mov rdx, rdi
     cmp rcx, 0x10
-    jnae 21
+    jb 21
     sar dx, 0xf
     jmp 22
 21:
@@ -223,17 +223,17 @@ shifts u32:
     mov.q rcx, [rsp - 0x8]
     mov rax, rdi
     cmp rcx, 0x20
-    jnae 24
+    jb 24
     xor eax, eax
     jmp 25
 24:
-    sal eax, cl
+    shl eax, cl
 25:
     mov eax, eax
     mov.q rcx, [rsp - 0x8]
     mov rdx, rdi
     cmp rcx, 0x20
-    jnae 26
+    jb 26
     xor edx, edx
     jmp 27
 26:
@@ -251,17 +251,17 @@ shifts i32:
     mov.q rcx, [rsp - 0x8]
     mov rax, rdi
     cmp rcx, 0x20
-    jnae 29
+    jb 29
     xor eax, eax
     jmp 30
 29:
-    sal eax, cl
+    shl eax, cl
 30:
     movsxd rax, eax
     mov.q rcx, [rsp - 0x8]
     mov rdx, rdi
     cmp rcx, 0x20
-    jnae 31
+    jb 31
     sar edx, 0x1f
     jmp 32
 31:
@@ -280,17 +280,17 @@ shifts u64:
     mov.q rax, [rsp - 0x28]
     mov.q rcx, [rsp - 0x20]
     cmp rcx, 0x40
-    jnae 34
+    jb 34
     xor eax, eax
     jmp 35
 34:
-    sal rax, cl
+    shl rax, cl
 35:
     mov.q [rsp - 0x18], rax
     mov.q rax, [rsp - 0x28]
     mov.q rcx, [rsp - 0x20]
     cmp rcx, 0x40
-    jnae 36
+    jb 36
     xor eax, eax
     jmp 37
 36:
@@ -315,17 +315,17 @@ shifts i64:
     mov.q rax, [rsp - 0x28]
     mov.q rcx, [rsp - 0x20]
     cmp rcx, 0x40
-    jnae 39
+    jb 39
     xor eax, eax
     jmp 40
 39:
-    sal rax, cl
+    shl rax, cl
 40:
     mov.q [rsp - 0x18], rax
     mov.q rax, [rsp - 0x28]
     mov.q rcx, [rsp - 0x20]
     cmp rcx, 0x40
-    jnae 41
+    jb 41
     sar rax, 0x3f
     jmp 42
 41:
@@ -371,10 +371,10 @@ main:
     mov.q [rsp + 0x60], rcx
     mov.q rax, [rsp + 0x68]
     cmp rax, 0xb
-    setnl al
+    setge al
     movzx rax, al
     test al, al
-    jnz 2
+    jne 2
     mov.q rax, [rsp + 0x68]
     mov.q rsi, [rsp + rax*8]
     mov dil, -0x5b
@@ -455,17 +455,17 @@ shifts u8:
     mov rcx, rdx
     mov rax, rdi
     cmp rcx, 8
-    jnae 4
+    jb 4
     xor eax, eax
     jmp 5
 4:
-    sal al, cl
+    shl al, cl
 5:
     movzx eax, al
     mov rcx, rdx
     mov rsi, rdi
     cmp rcx, 8
-    jnae 6
+    jb 6
     xor esi, esi
     jmp 7
 6:
@@ -482,17 +482,17 @@ shifts i8:
     mov rcx, rdx
     mov rax, rdi
     cmp rcx, 8
-    jnae 9
+    jb 9
     xor eax, eax
     jmp 10
 9:
-    sal al, cl
+    shl al, cl
 10:
     movsx rax, al
     mov rcx, rdx
     mov rsi, rdi
     cmp rcx, 8
-    jnae 11
+    jb 11
     sar sil, 7
     jmp 12
 11:
@@ -509,17 +509,17 @@ shifts u16:
     mov rcx, rdx
     mov rax, rdi
     cmp rcx, 0x10
-    jnae 14
+    jb 14
     xor eax, eax
     jmp 15
 14:
-    sal ax, cl
+    shl ax, cl
 15:
     movzx eax, ax
     mov rcx, rdx
     mov rsi, rdi
     cmp rcx, 0x10
-    jnae 16
+    jb 16
     xor esi, esi
     jmp 17
 16:
@@ -536,17 +536,17 @@ shifts i16:
     mov rcx, rdx
     mov rax, rdi
     cmp rcx, 0x10
-    jnae 19
+    jb 19
     xor eax, eax
     jmp 20
 19:
-    sal ax, cl
+    shl ax, cl
 20:
     movsx rax, ax
     mov rcx, rdx
     mov rsi, rdi
     cmp rcx, 0x10
-    jnae 21
+    jb 21
     sar si, 0xf
     jmp 22
 21:
@@ -563,17 +563,17 @@ shifts u32:
     mov rcx, rdx
     mov rax, rdi
     cmp rcx, 0x20
-    jnae 24
+    jb 24
     xor eax, eax
     jmp 25
 24:
-    sal eax, cl
+    shl eax, cl
 25:
     mov eax, eax
     mov rcx, rdx
     mov rsi, rdi
     cmp rcx, 0x20
-    jnae 26
+    jb 26
     xor esi, esi
     jmp 27
 26:
@@ -590,17 +590,17 @@ shifts i32:
     mov rcx, rdx
     mov rax, rdi
     cmp rcx, 0x20
-    jnae 29
+    jb 29
     xor eax, eax
     jmp 30
 29:
-    sal eax, cl
+    shl eax, cl
 30:
     movsxd rax, eax
     mov rcx, rdx
     mov rsi, rdi
     cmp rcx, 0x20
-    jnae 31
+    jb 31
     sar esi, 0x1f
     jmp 32
 31:
@@ -617,16 +617,16 @@ shifts u64:
     mov rdx, rdi
     mov rcx, rax
     cmp rcx, 0x40
-    jnae 34
+    jb 34
     xor edx, edx
     jmp 35
 34:
-    sal rdx, cl
+    shl rdx, cl
 35:
     mov rsi, rdi
     mov rcx, rax
     cmp rcx, 0x40
-    jnae 36
+    jb 36
     xor esi, esi
     jmp 37
 36:
@@ -642,16 +642,16 @@ shifts i64:
     mov rdx, rdi
     mov rcx, rax
     cmp rcx, 0x40
-    jnae 39
+    jb 39
     xor edx, edx
     jmp 40
 39:
-    sal rdx, cl
+    shl rdx, cl
 40:
     mov rsi, rdi
     mov rcx, rax
     cmp rcx, 0x40
-    jnae 41
+    jb 41
     sar rsi, 0x3f
     jmp 42
 41:
@@ -685,10 +685,10 @@ main:
     mov.q [rsp + 0x60], rcx
     mov.q rax, [rsp + 0x58]
     cmp rax, 0xb
-    setnl al
+    setge al
     movzx rax, al
     test al, al
-    jnz 2
+    jne 2
     mov.q rax, [rsp + 0x58]
     mov.q rsi, [rsp + rax*8]
     mov dil, -0x5b
@@ -775,17 +775,17 @@ shifts u8:
     mov.q rcx, [rsp - 0x8]
     mov rax, rdi
     cmp rcx, 8
-    jnae 4
+    jb 4
     xor eax, eax
     jmp 5
 4:
-    sal al, cl
+    shl al, cl
 5:
     movzx eax, al
     mov.q rcx, [rsp - 0x8]
     mov rdx, rdi
     cmp rcx, 8
-    jnae 6
+    jb 6
     xor edx, edx
     jmp 7
 6:
@@ -803,17 +803,17 @@ shifts i8:
     mov.q rcx, [rsp - 0x8]
     mov rax, rdi
     cmp rcx, 8
-    jnae 9
+    jb 9
     xor eax, eax
     jmp 10
 9:
-    sal al, cl
+    shl al, cl
 10:
     movsx rax, al
     mov.q rcx, [rsp - 0x8]
     mov rdx, rdi
     cmp rcx, 8
-    jnae 11
+    jb 11
     sar dl, 7
     jmp 12
 11:
@@ -831,17 +831,17 @@ shifts u16:
     mov.q rcx, [rsp - 0x8]
     mov rax, rdi
     cmp rcx, 0x10
-    jnae 14
+    jb 14
     xor eax, eax
     jmp 15
 14:
-    sal ax, cl
+    shl ax, cl
 15:
     movzx eax, ax
     mov.q rcx, [rsp - 0x8]
     mov rdx, rdi
     cmp rcx, 0x10
-    jnae 16
+    jb 16
     xor edx, edx
     jmp 17
 16:
@@ -859,17 +859,17 @@ shifts i16:
     mov.q rcx, [rsp - 0x8]
     mov rax, rdi
     cmp rcx, 0x10
-    jnae 19
+    jb 19
     xor eax, eax
     jmp 20
 19:
-    sal ax, cl
+    shl ax, cl
 20:
     movsx rax, ax
     mov.q rcx, [rsp - 0x8]
     mov rdx, rdi
     cmp rcx, 0x10
-    jnae 21
+    jb 21
     sar dx, 0xf
     jmp 22
 21:
@@ -887,17 +887,17 @@ shifts u32:
     mov.q rcx, [rsp - 0x8]
     mov rax, rdi
     cmp rcx, 0x20
-    jnae 24
+    jb 24
     xor eax, eax
     jmp 25
 24:
-    sal eax, cl
+    shl eax, cl
 25:
     mov eax, eax
     mov.q rcx, [rsp - 0x8]
     mov rdx, rdi
     cmp rcx, 0x20
-    jnae 26
+    jb 26
     xor edx, edx
     jmp 27
 26:
@@ -915,17 +915,17 @@ shifts i32:
     mov.q rcx, [rsp - 0x8]
     mov rax, rdi
     cmp rcx, 0x20
-    jnae 29
+    jb 29
     xor eax, eax
     jmp 30
 29:
-    sal eax, cl
+    shl eax, cl
 30:
     movsxd rax, eax
     mov.q rcx, [rsp - 0x8]
     mov rdx, rdi
     cmp rcx, 0x20
-    jnae 31
+    jb 31
     sar edx, 0x1f
     jmp 32
 31:
@@ -944,17 +944,17 @@ shifts u64:
     mov.q rax, [rsp - 0x28]
     mov.q rcx, [rsp - 0x20]
     cmp rcx, 0x40
-    jnae 34
+    jb 34
     xor eax, eax
     jmp 35
 34:
-    sal rax, cl
+    shl rax, cl
 35:
     mov.q [rsp - 0x18], rax
     mov.q rax, [rsp - 0x28]
     mov.q rcx, [rsp - 0x20]
     cmp rcx, 0x40
-    jnae 36
+    jb 36
     xor eax, eax
     jmp 37
 36:
@@ -979,17 +979,17 @@ shifts i64:
     mov.q rax, [rsp - 0x28]
     mov.q rcx, [rsp - 0x20]
     cmp rcx, 0x40
-    jnae 39
+    jb 39
     xor eax, eax
     jmp 40
 39:
-    sal rax, cl
+    shl rax, cl
 40:
     mov.q [rsp - 0x18], rax
     mov.q rax, [rsp - 0x28]
     mov.q rcx, [rsp - 0x20]
     cmp rcx, 0x40
-    jnae 41
+    jb 41
     sar rax, 0x3f
     jmp 42
 41:
@@ -1035,10 +1035,10 @@ main:
     mov.q [rsp + 0x60], rcx
     mov.q rax, [rsp + 0x68]
     cmp rax, 0xb
-    setnl al
+    setge al
     movzx rax, al
     test al, al
-    jnz 2
+    jne 2
     mov.q rax, [rsp + 0x68]
     mov.q rsi, [rsp + rax*8]
     mov dil, -0x5b
@@ -1119,17 +1119,17 @@ shifts u8:
     mov rcx, rdx
     mov rax, rdi
     cmp rcx, 8
-    jnae 4
+    jb 4
     xor eax, eax
     jmp 5
 4:
-    sal al, cl
+    shl al, cl
 5:
     movzx eax, al
     mov rcx, rdx
     mov rsi, rdi
     cmp rcx, 8
-    jnae 6
+    jb 6
     xor esi, esi
     jmp 7
 6:
@@ -1146,17 +1146,17 @@ shifts i8:
     mov rcx, rdx
     mov rax, rdi
     cmp rcx, 8
-    jnae 9
+    jb 9
     xor eax, eax
     jmp 10
 9:
-    sal al, cl
+    shl al, cl
 10:
     movsx rax, al
     mov rcx, rdx
     mov rsi, rdi
     cmp rcx, 8
-    jnae 11
+    jb 11
     sar sil, 7
     jmp 12
 11:
@@ -1173,17 +1173,17 @@ shifts u16:
     mov rcx, rdx
     mov rax, rdi
     cmp rcx, 0x10
-    jnae 14
+    jb 14
     xor eax, eax
     jmp 15
 14:
-    sal ax, cl
+    shl ax, cl
 15:
     movzx eax, ax
     mov rcx, rdx
     mov rsi, rdi
     cmp rcx, 0x10
-    jnae 16
+    jb 16
     xor esi, esi
     jmp 17
 16:
@@ -1200,17 +1200,17 @@ shifts i16:
     mov rcx, rdx
     mov rax, rdi
     cmp rcx, 0x10
-    jnae 19
+    jb 19
     xor eax, eax
     jmp 20
 19:
-    sal ax, cl
+    shl ax, cl
 20:
     movsx rax, ax
     mov rcx, rdx
     mov rsi, rdi
     cmp rcx, 0x10
-    jnae 21
+    jb 21
     sar si, 0xf
     jmp 22
 21:
@@ -1227,17 +1227,17 @@ shifts u32:
     mov rcx, rdx
     mov rax, rdi
     cmp rcx, 0x20
-    jnae 24
+    jb 24
     xor eax, eax
     jmp 25
 24:
-    sal eax, cl
+    shl eax, cl
 25:
     mov eax, eax
     mov rcx, rdx
     mov rsi, rdi
     cmp rcx, 0x20
-    jnae 26
+    jb 26
     xor esi, esi
     jmp 27
 26:
@@ -1254,17 +1254,17 @@ shifts i32:
     mov rcx, rdx
     mov rax, rdi
     cmp rcx, 0x20
-    jnae 29
+    jb 29
     xor eax, eax
     jmp 30
 29:
-    sal eax, cl
+    shl eax, cl
 30:
     movsxd rax, eax
     mov rcx, rdx
     mov rsi, rdi
     cmp rcx, 0x20
-    jnae 31
+    jb 31
     sar esi, 0x1f
     jmp 32
 31:
@@ -1281,16 +1281,16 @@ shifts u64:
     mov rdx, rdi
     mov rcx, rax
     cmp rcx, 0x40
-    jnae 34
+    jb 34
     xor edx, edx
     jmp 35
 34:
-    sal rdx, cl
+    shl rdx, cl
 35:
     mov rsi, rdi
     mov rcx, rax
     cmp rcx, 0x40
-    jnae 36
+    jb 36
     xor esi, esi
     jmp 37
 36:
@@ -1306,16 +1306,16 @@ shifts i64:
     mov rdx, rdi
     mov rcx, rax
     cmp rcx, 0x40
-    jnae 39
+    jb 39
     xor edx, edx
     jmp 40
 39:
-    sal rdx, cl
+    shl rdx, cl
 40:
     mov rsi, rdi
     mov rcx, rax
     cmp rcx, 0x40
-    jnae 41
+    jb 41
     sar rsi, 0x3f
     jmp 42
 41:
@@ -1413,12 +1413,12 @@ main:
     imul rsi, rcx, 3
     add rsi, rdx
     cmp rdi, 0xb
-    setnl dl
+    setge dl
     movzx rdx, dl
     mov rcx, rsi
     mov rax, rdi
     test dl, dl
-    jz 1
+    je 1
     mov rcx, 0xfb
     mov rax, rsi
     cqo
@@ -1437,17 +1437,17 @@ shifts u8:
     mov rcx, rdx
     mov rax, rdi
     cmp rcx, 8
-    jnae 3
+    jb 3
     xor eax, eax
     jmp 4
 3:
-    sal al, cl
+    shl al, cl
 4:
     movzx eax, al
     mov rcx, rdx
     mov rsi, rdi
     cmp rcx, 8
-    jnae 5
+    jb 5
     xor esi, esi
     jmp 6
 5:
@@ -1464,17 +1464,17 @@ shifts i8:
     mov rcx, rdx
     mov rax, rdi
     cmp rcx, 8
-    jnae 8
+    jb 8
     xor eax, eax
     jmp 9
 8:
-    sal al, cl
+    shl al, cl
 9:
     movsx rax, al
     mov rcx, rdx
     mov rsi, rdi
     cmp rcx, 8
-    jnae 10
+    jb 10
     sar sil, 7
     jmp 11
 10:
@@ -1491,17 +1491,17 @@ shifts u16:
     mov rcx, rdx
     mov rax, rdi
     cmp rcx, 0x10
-    jnae 13
+    jb 13
     xor eax, eax
     jmp 14
 13:
-    sal ax, cl
+    shl ax, cl
 14:
     movzx eax, ax
     mov rcx, rdx
     mov rsi, rdi
     cmp rcx, 0x10
-    jnae 15
+    jb 15
     xor esi, esi
     jmp 16
 15:
@@ -1518,17 +1518,17 @@ shifts i16:
     mov rcx, rdx
     mov rax, rdi
     cmp rcx, 0x10
-    jnae 18
+    jb 18
     xor eax, eax
     jmp 19
 18:
-    sal ax, cl
+    shl ax, cl
 19:
     movsx rax, ax
     mov rcx, rdx
     mov rsi, rdi
     cmp rcx, 0x10
-    jnae 20
+    jb 20
     sar si, 0xf
     jmp 21
 20:
@@ -1545,17 +1545,17 @@ shifts u32:
     mov rcx, rdx
     mov rax, rdi
     cmp rcx, 0x20
-    jnae 23
+    jb 23
     xor eax, eax
     jmp 24
 23:
-    sal eax, cl
+    shl eax, cl
 24:
     mov eax, eax
     mov rcx, rdx
     mov rsi, rdi
     cmp rcx, 0x20
-    jnae 25
+    jb 25
     xor esi, esi
     jmp 26
 25:
@@ -1572,17 +1572,17 @@ shifts i32:
     mov rcx, rdx
     mov rax, rdi
     cmp rcx, 0x20
-    jnae 28
+    jb 28
     xor eax, eax
     jmp 29
 28:
-    sal eax, cl
+    shl eax, cl
 29:
     movsxd rax, eax
     mov rcx, rdx
     mov rsi, rdi
     cmp rcx, 0x20
-    jnae 30
+    jb 30
     sar esi, 0x1f
     jmp 31
 30:
@@ -1599,16 +1599,16 @@ shifts u64:
     mov rdx, rdi
     mov rcx, rax
     cmp rcx, 0x40
-    jnae 33
+    jb 33
     xor edx, edx
     jmp 34
 33:
-    sal rdx, cl
+    shl rdx, cl
 34:
     mov rsi, rdi
     mov rcx, rax
     cmp rcx, 0x40
-    jnae 35
+    jb 35
     xor esi, esi
     jmp 36
 35:
@@ -1624,16 +1624,16 @@ shifts i64:
     mov rdx, rdi
     mov rcx, rax
     cmp rcx, 0x40
-    jnae 38
+    jb 38
     xor edx, edx
     jmp 39
 38:
-    sal rdx, cl
+    shl rdx, cl
 39:
     mov rsi, rdi
     mov rcx, rax
     cmp rcx, 0x40
-    jnae 40
+    jb 40
     sar rsi, 0x3f
     jmp 41
 40:
@@ -1664,84 +1664,84 @@ main:
     mov.q [rsp - 0x10], 0x41
     movabs r8, -0x5a5a5a5a5a5a5a5b
     movabs rdi, -0x5555555555555555
-    xor esi, esi
     xor edx, edx
+    xor esi, esi
 1:
-    mov.q rcx, [rsp + rsi*8 - 0x60]
+    mov.q rcx, [rsp + rdx*8 - 0x60]
     mov al, -0x5b
     cmp rcx, 8
-    jnae 2
+    jb 2
     xor eax, eax
     jmp 3
 2:
-    sal al, cl
+    shl al, cl
 3:
     movzx r13d, al
     mov al, -0x55
     cmp rcx, 8
-    jnae 4
+    jb 4
     xor eax, eax
     jmp 5
 4:
-    sal al, cl
+    shl al, cl
 5:
     movsx r12, al
     mov rax, 0xa5a5
     cmp rcx, 0x10
-    jnae 6
+    jb 6
     xor eax, eax
     jmp 7
 6:
-    sal ax, cl
+    shl ax, cl
 7:
     movzx ebp, ax
     mov rax, -0x5555
     cmp rcx, 0x10
-    jnae 8
+    jb 8
     xor eax, eax
     jmp 9
 8:
-    sal ax, cl
+    shl ax, cl
 9:
     movsx rbx, ax
     mov rax, 0x55555555
     cmp rcx, 0x20
-    jnae 10
+    jb 10
     xor eax, eax
     jmp 11
 10:
-    sal eax, cl
+    shl eax, cl
 11:
     mov r11d, eax
     mov rax, -0x55555555
     cmp rcx, 0x20
-    jnae 12
+    jb 12
     xor eax, eax
     jmp 13
 12:
-    sal eax, cl
+    shl eax, cl
 13:
     movsxd r10, eax
     movabs r9, -0x5a5a5a5a5a5a5a5b
     cmp rcx, 0x40
-    jnae 14
+    jb 14
     xor r9d, r9d
     jmp 15
 14:
-    sal r9, cl
+    shl r9, cl
 15:
     movabs rax, -0x5555555555555555
     cmp rcx, 0x40
-    jnae 16
+    jb 16
     xor eax, eax
     jmp 17
 16:
-    sal rax, cl
+    shl rax, cl
 17:
-    imul rdx, rdx, 3
+    imul rsi, rsi, 3
     mov r14b, -0x5b
     cmp rcx, 8
-    jnae 18
+    jb 18
     xor r14d, r14d
     jmp 19
 18:
@@ -1751,113 +1751,113 @@ main:
     xor r13, r14
     xor r13, 0xa5
     xor r13, rcx
-    add rdx, r13
-    imul r13, rdx, 3
-    mov dl, -0x55
+    add rsi, r13
+    imul r13, rsi, 3
+    mov sil, -0x55
     cmp rcx, 8
-    jnae 20
-    sar dl, 7
+    jb 20
+    sar sil, 7
     jmp 21
 20:
-    sar dl, cl
+    sar sil, cl
 21:
-    movsx rdx, dl
-    xor r12, rdx
+    movsx rsi, sil
+    xor r12, rsi
     xor r12, -0x55
     xor r12, rcx
     add r13, r12
     imul r12, r13, 3
-    mov rdx, 0xa5a5
+    mov rsi, 0xa5a5
     cmp rcx, 0x10
-    jnae 22
-    xor edx, edx
+    jb 22
+    xor esi, esi
     jmp 23
 22:
-    shr dx, cl
+    shr si, cl
 23:
-    movzx edx, dx
-    xor rbp, rdx
+    movzx esi, si
+    xor rbp, rsi
     xor rbp, 0xa5a5
     xor rbp, rcx
     add r12, rbp
     imul rbp, r12, 3
-    mov rdx, -0x5555
+    mov rsi, -0x5555
     cmp rcx, 0x10
-    jnae 24
-    sar dx, 0xf
+    jb 24
+    sar si, 0xf
     jmp 25
 24:
-    sar dx, cl
+    sar si, cl
 25:
-    movsx rdx, dx
-    xor rbx, rdx
+    movsx rsi, si
+    xor rbx, rsi
     xor rbx, -0x5555
     xor rbx, rcx
     add rbp, rbx
     imul rbx, rbp, 3
-    mov rdx, 0x55555555
+    mov rsi, 0x55555555
     cmp rcx, 0x20
-    jnae 26
-    xor edx, edx
+    jb 26
+    xor esi, esi
     jmp 27
 26:
-    shr edx, cl
+    shr esi, cl
 27:
-    mov edx, edx
-    xor r11, rdx
+    mov esi, esi
+    xor r11, rsi
     xor r11, 0x55555555
     xor r11, rcx
     add rbx, r11
     imul r11, rbx, 3
-    mov rdx, -0x55555555
+    mov rsi, -0x55555555
     cmp rcx, 0x20
-    jnae 28
-    sar edx, 0x1f
+    jb 28
+    sar esi, 0x1f
     jmp 29
 28:
-    sar edx, cl
+    sar esi, cl
 29:
-    movsxd rdx, edx
-    xor r10, rdx
+    movsxd rsi, esi
+    xor r10, rsi
     xor r10, -0x55555555
     xor r10, rcx
     add r11, r10
     imul r11, r11, 3
     movabs r10, -0x5a5a5a5a5a5a5a5b
     cmp rcx, 0x40
-    jnae 30
+    jb 30
     xor r10d, r10d
     jmp 31
 30:
     shr r10, cl
 31:
-    mov rdx, r9
-    xor rdx, r10
-    xor rdx, r8
-    xor rdx, rcx
-    add r11, rdx
+    mov rsi, r9
+    xor rsi, r10
+    xor rsi, r8
+    xor rsi, rcx
+    add r11, rsi
     imul r10, r11, 3
     movabs r9, -0x5555555555555555
     cmp rcx, 0x40
-    jnae 32
+    jb 32
     sar r9, 0x3f
     jmp 33
 32:
     sar r9, cl
 33:
-    mov rdx, rax
-    xor rdx, r9
-    xor rdx, rdi
-    xor rdx, rcx
-    add rsi, 1
-    cmp rsi, 0xb
-    setnl cl
+    mov rsi, rax
+    xor rsi, r9
+    xor rsi, rdi
+    xor rsi, rcx
+    add rdx, 1
+    cmp rdx, 0xb
+    setge cl
     movzx rcx, cl
     mov rax, r10
-    add rax, rdx
-    mov rdx, rax
+    add rax, rsi
+    mov rsi, rax
     test cl, cl
-    jz 1
+    je 1
     mov rcx, 0xfb
     cqo
     idiv rcx

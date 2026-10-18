@@ -916,3 +916,13 @@ bac_ssa_truncate_scope :: proc "c" (
 	bac_ssa.truncate_scope(graph, scope, to_len)
 }
 
+@(export)
+arna_init_from_buffer :: proc "c" (
+	buf: []u8,
+) -> (
+	arna.Allocator,
+) {
+	context = {}
+	return arna.init_from_buffer(buf)
+}
+

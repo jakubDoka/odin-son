@@ -408,7 +408,8 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 			case .Call:
 				assert(len(cnode.outs) == 1)
 				cursor = cnode.outs[0].id
-				cursor = bac.find_node(ctx, .Mem, cursor) or_else panic("")
+				cursor =
+					bac.find_node(ctx, .Mem, cursor) or_else fmt.panicf("")
 				continue
 			case .Mem, .Phi, .Return, .Split_Mem, .Merge_Mem:
 			case:
@@ -625,7 +626,7 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 
 							break
 						}
-					} else do panic("")
+					} else do fmt.panicf("")
 
 					fallthrough
 				case .Store, .Call, .Set, .Copy, .Return, .Mem, .Split_Mem:

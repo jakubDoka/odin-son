@@ -22,9 +22,8 @@ fn main() {
     let mut temps = [Arena::new(4096 * 128), Arena::new(4096 * 128)];
     let mut memory = Arena::new(4096 * 8);
     let mut proc = Proc::new(&mut memory, &mut temps);
-    let mut nodes = Vec::new();
     {
-        let mut builder = proc.builder(&mut nodes);
+        let builder = proc.builder();
         let value = builder.add_c_int("mcnst", Datatype::I64, 69);
         builder.merge_returns(&[builder.entry(), builder.initial_memory(), value]);
     }

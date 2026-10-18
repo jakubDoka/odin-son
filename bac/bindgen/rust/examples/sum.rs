@@ -22,14 +22,14 @@ fn main() {
     let mut temps = [Arena::new(4096 * 128), Arena::new(4096 * 128)];
     let mut memory = Arena::new(4096 * 8);
     let mut proc = Proc::new(&mut memory, &mut temps);
-    let mut nodes = Vec::new();
     let mut param_specs = [ParamSpec::default(); 2];
     {
-        let mut builder = proc.builder(&mut nodes);
+        let builder = proc.builder();
         let mut memory = builder.initial_memory();
 
         let mut params = builder.param_gen();
 
+        // TODO: this needs better documentation
         let mut int_spec = bac::AbiParam::new(&[Datatype::I64]);
         int_spec.scalar = true;
 

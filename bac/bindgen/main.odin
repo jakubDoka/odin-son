@@ -230,6 +230,10 @@ typedef struct {
 				for result in results.types {
 					visit(type_info_of(result.id), &types, &seen)
 				}
+
+				if !is_proc {
+					visit(type_info_of(entry.type), &types, &seen)
+				}
 			}
 
 			c: if !first_pass && j == 0 {

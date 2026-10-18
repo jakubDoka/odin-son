@@ -72,6 +72,7 @@ rust_type :: proc(g: ^Rust_Gen, ty: ^runtime.Type_Info, hint := "") -> string {
 		}
 		name = strings.to_string(builder)
 	}
+	name = strings.trim_prefix(name, "bac_")
 	assert(name != "", "anonymous Rust types require a parent name")
 	g.names[ty.id] = name
 	append(&g.pending, ty)
@@ -174,7 +175,7 @@ pub struct DynamicArray<T> { pub data: *mut T, pub len: isize, pub cap: isize, p
 		if sig, ok := type_info_of(entry.type).variant.(runtime.Type_Info_Procedure); ok {
 			params, results := rust_lists(sig)
 			fmt.fprintf(f, "pub fn %v_%v(", rust_prefix(entry.package_path), entry.name)
-			for ty, i in params.types do fmt.fprintf(f, "arg%v: %v,", i, rust_type(&g, ty, fmt.tprintf("%v_%v_%v", rust_prefix(entry.package_path), entry.name, params.names[i])))
+			for ty, i in params.types do fmt.fprintf(f, "%v: %v,", rust_ident(params.names[i]), rust_type(&g, ty, fmt.tprintf("%v_%v_%v", rust_prefix(entry.package_path), entry.name, params.names[i])))
 			for ty, i in results.types[:max(0, len(results.types) - 1)] do fmt.fprintf(f, "out%v: *mut %v,", i, rust_type(&g, ty, fmt.tprintf("%v_%v_out%v", rust_prefix(entry.package_path), entry.name, i)))
 			fmt.fprintf(f, ")")
 			if len(results.types) > 0 do fmt.fprintf(f, " -> %v", rust_type(&g, results.types[len(results.types) - 1], fmt.tprintf("%v_%v_result", rust_prefix(entry.package_path), entry.name)))
@@ -228,6 +229,19 @@ rust_safe_type :: proc(ty: ^runtime.Type_Info) -> string {
 	return ""
 }
 
+rust_api_type :: proc(st: string, checked: bool) -> string {
+	switch st {
+	case "NodeId": if checked do return "&Node"
+	case "&mut NodeId": if checked do return "&mut &'p Node"
+	case "&[NodeId]": if checked do return "&[&Node]"
+	case "&str": if checked do return "&'static str"
+	case "&mut IfState": return "&mut sys::ssa_If_State"
+	case "&mut LoopState": return "&mut sys::ssa_Loop_State"
+	case "&mut BlockState": return "&mut sys::ssa_Block_State"
+	}
+	return st
+}
+
 generate_rust_api :: proc(api: []API_Proc) {
 	f, err := os.open("bac/bindgen/rust/src/generated.rs", {.Create, .Write, .Trunc})
 	assert(err == nil)
@@ -242,75 +256,109 @@ generate_rust_api :: proc(api: []API_Proc) {
 		for ty, i in params.types do _ = rust_type(&g, ty, fmt.tprintf("%v_%v_%v", rust_prefix(entry.package_path), entry.name, params.names[i]))
 	}
 	for e in Rust_ENUMS {
+		name := strings.trim_prefix(e.odin, "bac_")
 		for ty in g.pending {
-			if g.names[ty.id] != e.odin do continue
+			if g.names[ty.id] != name do continue
 			zero_valid := false
 			for field in reflect.enum_fields_zipped(ty.id) do zero_valid ||= field.value == 0
-			fmt.fprintfln(f, "#[repr(transparent)]\n#[derive(Clone, Copy, Debug, PartialEq, Eq%v)]\npub struct %v(pub(crate) sys::%v);\n#[allow(non_upper_case_globals)]\nimpl %v {{", ", Default" if zero_valid else "", e.rust, e.odin, e.rust)
-			for field in reflect.enum_fields_zipped(ty.id) do fmt.fprintfln(f, "pub const %v: Self = Self(sys::%v_%v);", field.name, e.odin, field.name)
+			fmt.fprintfln(f, "#[repr(transparent)]\n#[derive(Clone, Copy, Debug, PartialEq, Eq%v)]\npub struct %v(pub(crate) sys::%v);\n#[allow(non_upper_case_globals)]\nimpl %v {{", ", Default" if zero_valid else "", e.rust, name, e.rust)
+			for field in reflect.enum_fields_zipped(ty.id) do fmt.fprintfln(f, "pub const %v: Self = Self(sys::%v_%v);", field.name, name, field.name)
 			fmt.fprintln(f, "}")
 		}
 	}
-	for checked in ([?]bool{false, true}) {
-		if checked {
-			fmt.fprintln(f, "impl Builder<'_, '_> {")
+	for receiver in ([?]string{"Proc", "Builder", "IfState", "LoopState", "BlockState"}) {
+		checked := receiver != "Proc"
+		state_receiver := checked && receiver != "Builder"
+		if state_receiver {
+			fmt.fprintfln(f, "impl<'p, 'a> %v<'p, 'a> {{", receiver)
 		} else {
-			fmt.fprintln(f, "impl Proc<'_> {")
+			fmt.fprintfln(f, "impl %v<'_> {{", receiver)
 		}
 		for entry in api {
 			sig, ok := type_info_of(entry.type).variant.(runtime.Type_Info_Procedure)
 			if !ok do continue
 			params, results := rust_lists(sig)
-			if len(params.types) == 0 || rust_type(&g, params.types[0]) != "*mut bac_Proc" do continue
+			if len(params.types) == 0 || rust_type(&g, params.types[0]) != "*mut Proc" do continue
 			if entry.name == "start_proc" || entry.name == "compact" do continue
 			supported := true
 			for ty in params.types[1:] do supported &&= rust_safe_type(ty) != ""
 			for ty in results.types do supported &&= rust_safe_type(ty) != "" && rust_safe_type(ty) != "&[NodeId]"
 			if !supported do continue
-			fmt.fprintf(f, "pub %vfn %v(&mut self", "" if checked else "unsafe ", rust_ident(entry.name))
+			state_index := -1
+			state_type := ""
 			for ty, i in params.types[1:] {
 				st := rust_safe_type(ty)
-				if checked && st == "&str" do st = "&'static str"
+				if st == "&mut IfState" || st == "&mut LoopState" || st == "&mut BlockState" {
+					state_index = i
+					state_type = strings.trim_prefix(st, "&mut ")
+				}
+			}
+			if checked {
+				if state_receiver {
+					if state_type != receiver do continue
+				} else if state_index != -1 do continue
+			}
+			mut_node := false
+			for ty in params.types[1:] do mut_node ||= rust_safe_type(ty) == "&mut NodeId"
+			borrow := checked && mut_node && !state_receiver
+			self_borrow := "mut " if state_receiver else ("'p " if borrow else "")
+			fmt.fprintf(f, "pub %vfn %v%v(&%vself", "" if checked else "unsafe ", rust_ident(entry.name), "<'p>" if borrow else "", self_borrow)
+			for ty, i in params.types[1:] {
+				if state_receiver && i == state_index do continue
+				st := rust_api_type(rust_safe_type(ty), checked)
 				fmt.fprintf(f, ", %v: %v", rust_ident(params.names[i + 1]), st)
 			}
 			fmt.fprintf(f, ")")
-			if len(results.types) == 1 do fmt.fprintf(f, " -> %v", rust_safe_type(results.types[0]))
+			if len(results.types) == 1 do fmt.fprintf(f, " -> %v", rust_api_type(rust_safe_type(results.types[0]), checked))
 			if len(results.types) > 1 {
 				fmt.fprint(f, " -> (")
-				for ty in results.types do fmt.fprintf(f, "%v,", rust_safe_type(ty))
+				for ty in results.types do fmt.fprintf(f, "%v,", rust_api_type(rust_safe_type(ty), checked))
 				fmt.fprint(f, ")")
 			}
 			fmt.fprintln(f, " {")
+			if state_receiver do fmt.fprintln(f, "self.check_state();")
 			for ty, i in params.types[1:] {
+				if state_receiver && i == state_index do continue
 				name := rust_ident(params.names[i + 1])
 				st := rust_safe_type(ty)
 				if checked {
+					checker := "self.proc" if state_receiver else "self"
 					switch st {
-					case "NodeId", "&mut NodeId": fmt.fprintfln(f, "self.check(%v%v);", "*" if st == "&mut NodeId" else "", name)
-					case "&[NodeId]": fmt.fprintfln(f, "for &id in %v {{ self.check(id); }}", name)
-					case "&mut IfState", "&mut LoopState", "&mut BlockState": fmt.fprintfln(f, "self.check_state(%v);", name)
+					case "NodeId": fmt.fprintfln(f, "let %v = %v.check(%v);", name, checker, name)
+					case "&mut NodeId": fmt.fprintfln(f, "let mut %v_id = %v.check(%v);", name, checker, name)
 					}
 				}
 			}
 			if checked {
+				for ty, i in params.types[1:] {
+					if rust_safe_type(ty) != "&[NodeId]" do continue
+					name := rust_ident(params.names[i + 1])
+					fmt.fprintfln(f, "self.proc.with_node_ids(%v, |%v| {{", name, name)
+				}
 				fmt.fprint(f, "let result = unsafe { self.proc.")
 				fmt.fprintf(f, "%v(", rust_ident(entry.name))
-				for _, i in params.types[1:] do fmt.fprintf(f, "%v,", rust_ident(params.names[i + 1]))
+				for ty, i in params.types[1:] {
+					name := rust_ident(params.names[i + 1])
+					if state_receiver && i == state_index {
+						fmt.fprint(f, "&mut self.raw,")
+					} else if rust_safe_type(ty) == "&mut NodeId" {
+						fmt.fprintf(f, "&mut %v_id,", name)
+					} else {
+						fmt.fprintf(f, "%v,", name)
+					}
+				}
 				fmt.fprintln(f, ") };")
 			} else {
-				for ty, i in params.types[1:] {
-					if rust_safe_type(ty) == "&str" do fmt.fprintfln(f, "let %v = raw_string(%v);", rust_ident(params.names[i + 1]), rust_ident(params.names[i + 1]))
-				}
 				for _, i in results.types[:max(0, len(results.types) - 1)] do fmt.fprintfln(f, "let mut out%v = Default::default();", i)
-				fmt.fprintf(f, "let result = unsafe {{ sys::%v_%v(&mut self.raw,", rust_prefix(entry.package_path), entry.name)
+				fmt.fprintf(f, "let result = unsafe {{ sys::%v_%v(self.raw_ptr(),", rust_prefix(entry.package_path), entry.name)
 				for ty, i in params.types[1:] {
 					name := rust_ident(params.names[i + 1])
 					st := rust_safe_type(ty)
 					switch st {
-					case "&[NodeId]": fmt.fprintf(f, "sys::Slice {{ data: %v.as_ptr().cast_mut().cast(), len: %v.len() as isize }},", name, name)
-					case "&str": fmt.fprintf(f, "%v,", name)
+					case "&[NodeId]": fmt.fprintf(f, "sys::Slice::from(%v).cast(),", name)
+					case "&str": fmt.fprintf(f, "%v.into(),", name)
 					case "&mut NodeId": fmt.fprintf(f, "core::ptr::from_mut(%v).cast(),", name)
-					case "&mut IfState", "&mut LoopState", "&mut BlockState": fmt.fprintf(f, "&mut %v.raw,", name)
+					case "&mut IfState", "&mut LoopState", "&mut BlockState": fmt.fprintf(f, "%v,", name)
 					case "NodeId", "Datatype", "NodeType", "BinOp", "UnOp", "Lane", "LoopControl", "RegallocMode", "Call": fmt.fprintf(f, "%v.0,", name)
 					case: fmt.fprintf(f, "%v,", name)
 					}
@@ -330,19 +378,27 @@ generate_rust_api :: proc(api: []API_Proc) {
 				}
 			}
 			if checked {
-				for ty, i in results.types {
-					if rust_safe_type(ty) != "NodeId" do continue
-					expr := "result" if len(results.types) == 1 else fmt.tprintf("result.%v", i)
-					fmt.fprintfln(f, "self.register(%v);", expr)
-				}
 				for ty, i in params.types[1:] {
 					name := rust_ident(params.names[i + 1])
 					st := rust_safe_type(ty)
-					if st == "&mut NodeId" do fmt.fprintfln(f, "self.register(*%v);", name)
-					if st == "&mut IfState" || st == "&mut LoopState" || st == "&mut BlockState" do fmt.fprintfln(f, "self.register_state(%v);", name)
+					if st == "&mut NodeId" do fmt.fprintfln(f, "*%v = unsafe {{ self.proc.get_node(%v_id) }};", name, name)
 				}
+				if len(results.types) == 1 && rust_safe_type(results.types[0]) == "NodeId" do fmt.fprintln(f, "let result = unsafe { self.proc.get_node(result) };")
+				if len(results.types) > 1 {
+					fmt.fprint(f, "let result = (")
+					for ty, i in results.types {
+						expr := fmt.tprintf("result.%v", i)
+						if rust_safe_type(ty) == "NodeId" do expr = fmt.tprintf("unsafe {{ self.proc.get_node(%v) }}", expr)
+						fmt.fprintf(f, "%v,", expr)
+					}
+					fmt.fprintln(f, ");")
+				}
+				fmt.fprintln(f, "result")
+				for ty in params.types[1:] do if rust_safe_type(ty) == "&[NodeId]" do fmt.fprintln(f, "})")
+			} else {
+				fmt.fprintln(f, "result")
 			}
-			fmt.fprintln(f, "result\n}")
+			fmt.fprintln(f, "}")
 		}
 		fmt.fprintln(f, "}")
 	}

@@ -12,6 +12,7 @@ import pkg_7 "../../utils/arna"
 
 @(rodata)
 API := [?]API_Proc{
+	{false, "..", "NIL_NODE", type_of(pkg_0.NIL_NODE), ""},
 	{false, "..", "add_always", type_of(pkg_0.add_always), ""},
 	{false, "..", "add_bin_op", type_of(pkg_0.add_bin_op), ""},
 	{false, "..", "add_c_int", type_of(pkg_0.add_c_int), ""},

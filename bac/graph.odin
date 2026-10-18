@@ -348,10 +348,7 @@ FLOAT_DTS :: bit_set[Node_Datatype]{.F64, .F32}
 INT_DTS :: bit_set[Node_Datatype]{.I8, .I16, .I32, .I64}
 VECTOR_DTS :: bit_set[Node_Datatype]{.V128, .V256, .V512}
 
-operation_datatype :: proc(
-	prc: ^Proc,
-	node: Expanded_Node,
-) -> Node_Datatype {
+operation_datatype :: proc(prc: ^Proc, node: Expanded_Node) -> Node_Datatype {
 	dt := node.dt
 	#partial switch node.itype {
 	case .Eq ..= .U_Ge:
@@ -1307,10 +1304,7 @@ collect_nodes :: proc(prc: ^Proc, worklist: ^Worklist, renumber := true) {
 		when !ODIN_DISABLE_ASSERT {
 			for n in worklist.data[1:worklist.len] {
 				assert(
-					bit_arr.contains(
-						worklist.in_queue,
-						get_node(prc, n).gvn,
-					),
+					bit_arr.contains(worklist.in_queue, get_node(prc, n).gvn),
 				)
 			}
 		}
@@ -1800,8 +1794,7 @@ subsume :: proc(prc: ^Proc, with: Node_ID, target: Node_ID) {
 	when !ODIN_DISABLE_ASSERT {
 		for out in tnode.outs {
 			fmt.assertf(
-				get_node(prc, out.id).itype != .Region ||
-				is_cfg(prc, with),
+				get_node(prc, out.id).itype != .Region || is_cfg(prc, with),
 				"%v %v %v",
 				wnode,
 				tnode,
@@ -1914,11 +1907,7 @@ set_input :: proc(
 
 clone :: proc(prc: ^Proc, id: Node_ID) -> Node_ID {
 	node := expand_node(prc, id)
-	fmt.assertf(
-		!has_flag(prc, node, .Interned) || prc.dont_intern,
-		"%v",
-		node,
-	)
+	fmt.assertf(!has_flag(prc, node, .Interned) || prc.dont_intern, "%v", node)
 	assert(node.itype != .Call)
 	idx := get_next_extra_slot(prc, node.rtype, node.extra_dwords)
 	extra := get_extra_dwords(prc, node, consider_dbg = true)
@@ -2044,11 +2033,13 @@ get_extra_dwords_node :: proc(
 	return raw_data(&node.extra)[:total]
 }
 
-@(rodata)
-NIL_NODE: struct {
+Nil_Node :: struct {
 	using base: Node,
 	cfg:        Cfg,
 }
+
+@(tag = "api", rodata, export, link_name = "bac_NIL_NODE")
+NIL_NODE: Nil_Node
 
 @(tag = "api")
 get_node :: #force_inline proc(prc: ^Proc, id: Node_ID) -> ^Node {
@@ -2072,7 +2063,6 @@ expand_node :: proc(prc: ^Proc, id: Node_ID) -> Expanded_Node {
 
 @(tag = "node_proc,api")
 get_inputs_node :: #force_inline proc(prc: ^Proc, node: ^Node) -> []Node_ID {
-
 	return ([^]Node_ID)(prc.mem.ptr)[node.input_idx:][:node.input_count]
 }
 
@@ -2266,11 +2256,7 @@ add_input_node :: proc(prc: ^Proc, node: ^Node, inp: Node_ID) -> int {
 	return free_idx
 }
 
-ensure_available_output_cap :: proc(
-	prc: ^Proc,
-	node: ^Node,
-	available: u16,
-) {
+ensure_available_output_cap :: proc(prc: ^Proc, node: ^Node, available: u16) {
 	if node.output_cap - node.output_count < available {
 		prc.waste += int(node.output_cap * size_of(Node_ID))
 		base := u32(prc.mem.pos / PRECISION)
@@ -2280,10 +2266,7 @@ ensure_available_output_cap :: proc(
 			uint(new_cap * size_of(Node_Output)),
 			PRECISION,
 		)
-		copy(
-			mem.slice_data_cast([]Node_Output, slot),
-			get_outputs(prc, node),
-		)
+		copy(mem.slice_data_cast([]Node_Output, slot), get_outputs(prc, node))
 		node.output_cap = new_cap
 		node.output_idx = base
 	}

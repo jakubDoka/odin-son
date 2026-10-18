@@ -4,19 +4,17 @@
 
 extern crate alloc;
 
-use alloc::{
-    alloc::{Layout, alloc_zeroed, dealloc, handle_alloc_error},
-    vec::Vec,
-};
-use core::{marker::PhantomData, ptr};
+use alloc::alloc::{Layout, alloc_zeroed, dealloc, handle_alloc_error};
+use core::{cell::UnsafeCell, fmt, marker::PhantomData, ptr};
 
 mod fixed_cap_dyn_array;
 pub use fixed_cap_dyn_array::FixedCapDynArray;
 
 mod generated;
 pub mod sys;
+mod sys_ext;
 pub use generated::*;
-pub use sys::bac_ssa_Abi_Param as AbiParam;
+pub use sys::ssa_Abi_Param as AbiParam;
 
 const PAGE_ALIGN: usize = 4096;
 
@@ -65,7 +63,11 @@ impl<'a> Arena<'a> {
     }
 
     pub fn bytes(&self) -> &[u8] {
-        unsafe { raw_slice(self.raw.ptr, self.raw.pos) }
+        if self.raw.pos == 0 {
+            &[]
+        } else {
+            unsafe { core::slice::from_raw_parts(self.raw.ptr, self.raw.pos) }
+        }
     }
 
     pub fn reset(&mut self) {
@@ -114,292 +116,332 @@ impl NodeId {
 }
 
 #[repr(transparent)]
+pub struct Node {
+    raw: UnsafeCell<sys::Node>,
+}
+
+impl Node {
+    pub const NONE: &'static Self = unsafe { &*ptr::addr_of!(sys::bac_NIL_NODE).cast() };
+
+    fn snapshot(&self) -> sys::Node {
+        unsafe { self.raw.get().read() }
+    }
+
+    pub fn is_dead(&self) -> bool {
+        unsafe { self.snapshot().spec.r#type.rtype == u16::MAX }
+    }
+}
+
+impl PartialEq for Node {
+    fn eq(&self, other: &Self) -> bool {
+        ptr::eq(self, other)
+    }
+}
+
+impl Eq for Node {}
+
+impl fmt::Debug for Node {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Pointer::fmt(&ptr::from_ref(self), f)
+    }
+}
+
+#[repr(transparent)]
 pub struct Proc<'a> {
-    raw: sys::bac_Proc,
+    raw: UnsafeCell<sys::Proc>,
     _arena: PhantomData<(&'a mut Arena<'a>, &'a mut Temps<'a>)>,
 }
 
 impl<'a> Proc<'a> {
     pub fn new(arena: &'a mut Arena<'_>, temps: &'a mut Temps<'_>) -> Self {
-        let mut raw = sys::bac_Proc::default();
+        let mut raw = sys::Proc::default();
         unsafe { sys::bac_start_proc(&mut raw, &mut arena.raw, ptr::from_mut(temps).cast()) };
         Self {
-            raw,
+            raw: UnsafeCell::new(raw),
             _arena: PhantomData,
         }
     }
 
-    pub fn builder<'p>(&'p mut self, nodes: &'p mut Vec<u64>) -> Builder<'p, 'a> {
-        nodes.clear();
-        let mut builder = Builder { proc: self, nodes };
-        builder.seed();
-        builder
+    pub fn builder(&self) -> &Builder<'a> {
+        unsafe { &*ptr::from_ref(self).cast() }
     }
 
-    pub fn entry(&self) -> NodeId {
-        NodeId(self.raw.meta.pinned.entry)
+    pub fn entry(&self) -> &Node {
+        unsafe { self.get_node(NodeId((*self.raw_ptr()).meta.pinned.entry)) }
     }
 
-    pub fn set_target(&mut self, spec: &'static NodeSpec) {
-        self.raw.node_spec = spec.as_ptr();
+    pub fn end(&self) -> &Node {
+        unsafe { self.get_node(NodeId((*self.raw_ptr()).meta.pinned.end)) }
+    }
+
+    pub unsafe fn get_node(&self, id: NodeId) -> &Node {
+        if id == NodeId::NONE {
+            return Node::NONE;
+        }
+        let used = unsafe { (*(*self.raw_ptr()).mem).pos };
+        assert!(
+            (id.0 as usize)
+                .checked_mul(4)
+                .and_then(|offset| offset.checked_add(core::mem::size_of::<Node>()))
+                .is_some_and(|end| end <= used),
+            "node index is out of bounds: {}",
+            id.0
+        );
+        unsafe { &*sys::bac_get_node(self.raw_ptr(), id.0).cast() }
+    }
+
+    pub fn node_id(&self, node: &Node) -> NodeId {
+        if ptr::eq(node, Node::NONE) {
+            return NodeId::NONE;
+        }
+        let arena = unsafe { &*(*self.raw_ptr()).mem };
+        let offset = (ptr::from_ref(node) as usize).checked_sub(arena.ptr as usize);
+        assert!(
+            offset.is_some_and(|offset| {
+                offset % 4 == 0
+                    && offset
+                        .checked_add(core::mem::size_of::<Node>())
+                        .is_some_and(|end| end <= arena.pos)
+                    && offset / 4 <= u32::MAX as usize
+            }),
+            "node does not belong to this proc's arena"
+        );
+        NodeId((offset.unwrap() / 4) as u32)
+    }
+
+    fn check(&self, node: &Node) -> NodeId {
+        let id = self.node_id(node);
+        assert!(!node.is_dead(), "node has been deleted: {}", id.0);
+        id
+    }
+
+    pub unsafe fn set_target(&mut self, spec: &'static NodeSpec) {
+        self.raw.get_mut().node_spec = spec.as_ptr();
+    }
+
+    pub fn apply_peeps(&mut self) -> bool {
+        unsafe {
+            sys::bac_apply_peeps(sys::Peep_Ctx {
+                prc: self.raw_ptr(),
+            })
+        }
+    }
+
+    pub fn opt(&mut self) {
+        unsafe {
+            sys::bac_opt(sys::Peep_Ctx {
+                prc: self.raw_ptr(),
+            });
+        }
     }
 
     pub fn stencil(&self) -> Stencil {
         let raw = unsafe { sys::bac_get_stencil(self.raw_ptr()) };
         Stencil {
-            arena: Arena::copy(unsafe { raw_slice(raw.mem.data, raw.mem.len as usize) }),
+            arena: Arena::copy(unsafe { raw.mem.as_slice() }),
             meta: raw.meta,
-            spec: self.raw.node_spec,
+            spec: unsafe { (*self.raw_ptr()).node_spec },
         }
     }
 
     pub fn mount_stencil(&mut self, stencil: &Stencil) {
-        self.raw.node_spec = stencil.spec;
-        unsafe { sys::bac_mount_stencil(&mut self.raw, stencil.raw()) };
+        self.raw.get_mut().node_spec = stencil.spec;
+        unsafe { sys::bac_mount_stencil(self.raw.get_mut(), stencil.raw()) };
     }
 
-    fn raw_ptr(&self) -> *mut sys::bac_Proc {
-        ptr::from_ref(&self.raw).cast_mut()
+    fn raw_ptr(&self) -> *mut sys::Proc {
+        self.raw.get()
     }
 
-    pub unsafe fn as_raw(&mut self) -> *mut sys::bac_Proc {
-        &mut self.raw
+    pub fn as_raw(&mut self) -> *mut sys::Proc {
+        self.raw.get_mut()
     }
 
-    pub unsafe fn compact(&mut self) {
-        unsafe { sys::bac_compact(&mut self.raw) };
+    pub fn compact(&mut self) {
+        unsafe { sys::bac_compact(self.raw.get_mut()) };
+    }
+
+    fn with_node_ids<R>(&self, nodes: &[&Node], f: impl FnOnce(&[NodeId]) -> R) -> R {
+        if nodes.is_empty() {
+            return f(&[]);
+        }
+        let arena = unsafe { ptr::addr_of_mut!((*(*self.raw_ptr()).temps)[0]) };
+        let pos = unsafe { (*arena).pos };
+        let start = pos.checked_add(3).expect("node inputs overflow") & !3;
+        let end = nodes
+            .len()
+            .checked_mul(core::mem::size_of::<NodeId>())
+            .and_then(|size| start.checked_add(size))
+            .expect("node inputs overflow");
+        assert!(
+            end <= unsafe { (*arena).reserved },
+            "temporary arena is full"
+        );
+        let data = unsafe { (*arena).ptr.add(start).cast::<NodeId>() };
+        for (index, node) in nodes.iter().enumerate() {
+            unsafe { data.add(index).write(self.check(node)) };
+        }
+        unsafe { (*arena).pos = end };
+        let _reset = TempNodes { arena, pos };
+        f(unsafe { core::slice::from_raw_parts(data, nodes.len()) })
     }
 }
 
-pub struct Builder<'p, 'a> {
-    proc: &'p mut Proc<'a>,
-    nodes: &'p mut Vec<u64>,
+struct TempNodes {
+    arena: *mut sys::arna_Allocator,
+    pos: usize,
 }
 
-impl Builder<'_, '_> {
-    fn register(&mut self, id: NodeId) {
-        if id == NodeId::NONE {
-            return;
-        }
-        let index = id.0 as usize;
-        let used = unsafe { (*self.proc.raw.mem).pos };
-        assert!(
-            index
-                .checked_mul(4)
-                .and_then(|offset| offset.checked_add(core::mem::size_of::<sys::bac_Node>()))
-                .is_some_and(|end| end <= used),
-            "BAC returned an out-of-bounds node"
-        );
-        if self.nodes.len() <= index / 64 {
-            self.nodes.resize(index / 64 + 1, 0);
-        }
-        self.nodes[index / 64] |= 1 << (index % 64);
+impl Drop for TempNodes {
+    fn drop(&mut self) {
+        unsafe { (*self.arena).pos = self.pos };
+    }
+}
+
+#[repr(transparent)]
+pub struct Builder<'a> {
+    proc: Proc<'a>,
+}
+
+impl<'a> Builder<'a> {
+    fn check(&self, node: &Node) -> NodeId {
+        self.proc.check(node)
     }
 
-    fn check(&self, id: NodeId) {
-        if id == NodeId::NONE {
-            return;
-        }
-        let index = id.0 as usize;
-        assert!(
-            self.nodes
-                .get(index / 64)
-                .is_some_and(|word| word & (1 << (index % 64)) != 0),
-            "index does not address a known node: {}",
-            id.0
-        );
-        let node = unsafe { sys::bac_get_node(self.proc.raw_ptr(), id.0).read() };
-        assert_ne!(
-            unsafe { node.spec.r#type.rtype },
-            u16::MAX,
-            "node has been deleted: {}",
-            id.0
-        );
-    }
-
-    fn seed(&mut self) {
-        let mut pending = alloc::vec![self.entry(), self.end()];
-        while let Some(id) = pending.pop() {
-            if id == NodeId::NONE {
-                continue;
-            }
-            let index = id.0 as usize;
-            if self
-                .nodes
-                .get(index / 64)
-                .is_some_and(|word| word & (1 << (index % 64)) != 0)
-            {
-                continue;
-            }
-            self.register(id);
-            let node = unsafe { sys::bac_expand_node(self.proc.raw_ptr(), id.0) };
-            pending.extend(
-                unsafe { raw_slice(node.inps.data, node.inps.len as usize) }
-                    .iter()
-                    .copied()
-                    .map(NodeId),
-            );
-            pending.extend(
-                unsafe { raw_slice(node.outs.data, node.outs.len as usize) }
-                    .iter()
-                    .map(|out| NodeId(out.id() as u32)),
-            );
-        }
-    }
-
-    pub fn entry(&self) -> NodeId {
+    pub fn entry(&self) -> &Node {
         self.proc.entry()
     }
 
-    pub fn end(&self) -> NodeId {
-        NodeId(self.proc.raw.meta.pinned.end)
+    pub fn end(&self) -> &Node {
+        self.proc.end()
     }
 
-    pub fn initial_memory(&self) -> NodeId {
+    pub fn initial_memory(&self) -> &Node {
         let mut id = 0;
         unsafe {
             sys::bac_find_node(
                 self.proc.raw_ptr(),
                 NodeType::Mem.0,
-                self.entry().0,
+                self.check(self.entry()).0,
                 &mut id,
             )
         };
-        let id = NodeId(id);
-        self.check(id);
-        id
+        unsafe { self.proc.get_node(NodeId(id)) }
     }
 
-    pub fn inputs(&mut self, id: NodeId) -> &[NodeId] {
-        self.check(id);
-        let inputs = unsafe { sys::bac_get_inputs_node_id(&mut self.proc.raw, id.0) };
-        let result = unsafe { raw_slice(inputs.data.cast::<NodeId>(), inputs.len as usize) };
-        for &id in result {
-            self.register(id);
+    pub fn inputs(&self, node: &Node) -> NodeInputs<'_, 'a> {
+        let id = self.check(node);
+        let inputs = unsafe { sys::bac_get_inputs_node_id(self.proc.raw_ptr(), id.0) };
+        NodeInputs {
+            proc: &self.proc,
+            data: inputs.data,
+            len: inputs.len as usize,
         }
-        result
     }
 
-    pub fn node_type(&self, id: NodeId) -> NodeType {
-        self.check(id);
-        NodeType(unsafe {
-            (*sys::bac_get_node(self.proc.raw_ptr(), id.0))
-                .spec
-                .r#type
-                .rtype
-        })
+    pub fn node_type(&self, node: &Node) -> NodeType {
+        self.check(node);
+        NodeType(unsafe { node.snapshot().spec.r#type.rtype })
     }
 
-    pub fn datatype(&self, id: NodeId) -> Datatype {
-        self.check(id);
-        Datatype(unsafe {
-            (*sys::bac_get_node(self.proc.raw_ptr(), id.0))
-                .spec
-                .meta
-                .dt() as u8
-        })
+    pub fn datatype(&self, node: &Node) -> Datatype {
+        self.check(node);
+        Datatype(node.snapshot().spec.meta.dt() as u8)
     }
 
-    pub fn node_name(&self, id: NodeId) -> &str {
-        self.check(id);
-        let names = unsafe { (*sys::bac_get_node(self.proc.raw_ptr(), id.0)).tag.name };
+    pub fn node_name(&self, node: &Node) -> &str {
+        self.check(node);
+        let names = node.snapshot().tag.name;
         let Some(name) = names.first() else {
             return "";
         };
-        core::str::from_utf8(unsafe { raw_slice(name.data, name.len as usize) })
-            .expect("node name is not UTF-8")
+        unsafe { name.as_str() }.expect("node name is not UTF-8")
     }
 
     pub fn stencil(&self) -> Stencil {
         self.proc.stencil()
     }
 
-    pub unsafe fn import_node(&mut self, id: NodeId) -> NodeId {
-        self.register(id);
-        self.check(id);
-        id
-    }
-
-    fn check_state(&self, state: &impl State) {
-        for id in state.ids() {
-            self.check(id);
-        }
-    }
-
-    fn register_state(&mut self, state: &impl State) {
-        for id in state.ids() {
-            self.register(id);
-        }
-    }
-
-    pub fn loop_control(&mut self, variant: LoopControl, scope: NodeId, state: &mut LoopState) {
-        self.check(scope);
-        self.check_state(state);
-        unsafe { self.proc.loop_control(variant, scope, state) };
-        self.register_state(state);
-    }
-
-    pub fn inline_stencil(&mut self, call: NodeId, from: &Stencil) {
-        self.check(call);
+    pub fn inline_stencil(&self, call: &Node, from: &Stencil) {
+        let call = self.check(call);
         unsafe { self.proc.inline_stencil(call, from) };
     }
 
-    pub fn inline_graph(&mut self, call: NodeId, from: &Proc<'_>) {
-        self.check(call);
+    pub fn inline_graph(&self, call: &Node, from: &Proc<'_>) {
+        assert_ne!(
+            self.proc.raw_ptr(),
+            from.raw_ptr(),
+            "cannot inline a proc into itself"
+        );
+        let call = self.check(call);
         unsafe { self.proc.inline_graph(call, from) };
     }
 }
 
-trait State {
-    fn ids(&self) -> [NodeId; 3];
+pub struct NodeInputs<'p, 'a> {
+    proc: &'p Proc<'a>,
+    data: *mut sys::Node_ID,
+    len: usize,
 }
+
+impl<'p> Iterator for NodeInputs<'p, '_> {
+    type Item = &'p Node;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.len == 0 {
+            return None;
+        }
+        let id = unsafe { self.data.read() };
+        self.data = unsafe { self.data.add(1) };
+        self.len -= 1;
+        Some(unsafe { self.proc.get_node(NodeId(id)) })
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.len, Some(self.len))
+    }
+}
+
+impl ExactSizeIterator for NodeInputs<'_, '_> {}
+impl core::iter::FusedIterator for NodeInputs<'_, '_> {}
 
 macro_rules! state {
     ($name:ident, $raw:ty) => {
-        #[repr(transparent)]
-        #[derive(Default)]
-        pub struct $name {
+        pub struct $name<'p, 'a> {
+            proc: &'p Proc<'a>,
             raw: $raw,
+        }
+
+        impl<'p, 'a> $name<'p, 'a> {
+            pub fn new(proc: &'p Proc<'a>) -> Self {
+                Self {
+                    proc,
+                    raw: Default::default(),
+                }
+            }
         }
     };
 }
 
-state!(IfState, sys::bac_ssa_If_State);
-state!(LoopState, sys::bac_ssa_Loop_State);
-state!(BlockState, sys::bac_ssa_Block_State);
+state!(IfState, sys::ssa_If_State);
+state!(LoopState, sys::ssa_Loop_State);
+state!(BlockState, sys::ssa_Block_State);
 
-impl State for IfState {
-    fn ids(&self) -> [NodeId; 3] {
-        [
-            NodeId(self.raw.if_),
-            NodeId(unsafe { self.raw.branch.else_scope }),
-            NodeId::NONE,
-        ]
-    }
-}
-impl State for LoopState {
-    fn ids(&self) -> [NodeId; 3] {
-        [
-            NodeId(self.raw.scope),
-            NodeId(self.raw.scopes[0]),
-            NodeId(self.raw.scopes[1]),
-        ]
-    }
-}
-impl State for BlockState {
-    fn ids(&self) -> [NodeId; 3] {
-        [NodeId(self.raw.end_scope), NodeId::NONE, NodeId::NONE]
+impl LoopState<'_, '_> {
+    pub fn loop_control(&mut self, variant: LoopControl, scope: &Node) {
+        let scope = self.proc.check(scope);
+        unsafe { self.proc.loop_control(variant, scope, &mut self.raw) };
     }
 }
 
 #[repr(transparent)]
 #[derive(Clone, Copy, Default)]
-pub struct Call(sys::bac_Call);
+pub struct Call(sys::Call);
 
 impl Call {
     pub fn new(id: u32, returns: &[Datatype]) -> Self {
         assert!(returns.len() <= 4);
-        let mut raw = sys::bac_Call {
+        let mut raw = sys::Call {
             cid: id,
             ..Default::default()
         };
@@ -423,8 +465,8 @@ impl Call {
 
 pub struct Stencil {
     arena: Arena<'static>,
-    meta: sys::bac_Proc_Meta,
-    spec: *mut sys::bac_Node_Spec,
+    meta: sys::Proc_Meta,
+    spec: *mut sys::Node_Spec,
 }
 
 // Graph bytes are frozen; embedded pointers refer only to static names and BAC globals.
@@ -450,34 +492,35 @@ impl Stencil {
         self.arena.bytes().is_empty()
     }
 
-    fn raw(&self) -> sys::bac_Stencil {
-        sys::bac_Stencil {
-            mem: sys::Slice {
-                data: self.arena.raw.ptr,
-                len: self.len() as isize,
-            },
+    fn raw(&self) -> sys::Stencil {
+        sys::Stencil {
+            mem: self.arena.bytes().into(),
             meta: self.meta,
         }
     }
 }
 
 #[repr(transparent)]
-pub struct NodeSpec(sys::bac_Node_Spec);
+pub struct NodeSpec(sys::Node_Spec);
 #[repr(transparent)]
-pub struct CallConv(sys::bac_Call_Conv);
+pub struct CallConv(sys::Call_Conv);
 
 // These wrappers are constructed only from the exported read-only globals.
 unsafe impl Sync for NodeSpec {}
 unsafe impl Sync for CallConv {}
 
 impl NodeSpec {
-    fn as_ptr(&self) -> *mut sys::bac_Node_Spec {
+    fn as_ptr(&self) -> *mut sys::Node_Spec {
         ptr::from_ref(self).cast_mut().cast()
     }
 }
 impl CallConv {
-    fn as_ptr(&self) -> *mut sys::bac_Call_Conv {
+    fn as_ptr(&self) -> *mut sys::Call_Conv {
         ptr::from_ref(self).cast_mut().cast()
+    }
+
+    fn from_raw_slice(raw: &'static [sys::Call_Conv]) -> &'static [Self] {
+        unsafe { &*(ptr::from_ref(raw) as *const [Self]) }
     }
 }
 
@@ -497,41 +540,26 @@ pub fn wasm_spec() -> &'static NodeSpec {
     unsafe { &*ptr::addr_of!(sys::bac_wasm_SPEC).cast() }
 }
 pub fn x64_call_conventions() -> &'static [CallConv] {
-    unsafe {
-        raw_slice(
-            sys::bac_x64_CC_TABLE.as_ptr().cast(),
-            sys::bac_x64_CC_TABLE.len(),
-        )
-    }
+    CallConv::from_raw_slice(unsafe { &sys::bac_x64_CC_TABLE })
 }
 pub fn arm_call_conventions() -> &'static [CallConv] {
-    unsafe {
-        raw_slice(
-            sys::bac_arm_CC_TABLE.as_ptr().cast(),
-            sys::bac_arm_CC_TABLE.len(),
-        )
-    }
+    CallConv::from_raw_slice(unsafe { &sys::bac_arm_CC_TABLE })
 }
 pub fn wasm_call_conventions() -> &'static [CallConv] {
-    unsafe {
-        raw_slice(
-            sys::bac_wasm_CC_TABLE.as_ptr().cast(),
-            sys::bac_wasm_CC_TABLE.len(),
-        )
-    }
+    CallConv::from_raw_slice(unsafe { &sys::bac_wasm_CC_TABLE })
 }
 
 #[repr(transparent)]
 pub struct CodegenEmitCtx<'p, 'a> {
-    raw: sys::bac_Codegen_Emit_Ctx,
+    raw: sys::Codegen_Emit_Ctx,
     _borrow: PhantomData<(&'p mut Proc<'a>, &'p mut Arena<'p>, &'p [ParamSpec])>,
 }
 
 impl<'p, 'a> CodegenEmitCtx<'p, 'a> {
     pub fn new(proc: &'p mut Proc<'a>, code: &'p mut Arena<'_>) -> Self {
-        let raw = sys::bac_Codegen_Emit_Ctx {
-            prc: &mut proc.raw,
-            buf: sys::bac_Codegen_Emit_Buf {
+        let raw = sys::Codegen_Emit_Ctx {
+            prc: proc.raw.get_mut(),
+            buf: sys::Codegen_Emit_Buf {
                 code: &mut code.raw,
                 ..Default::default()
             },
@@ -554,10 +582,7 @@ impl<'p, 'a> CodegenEmitCtx<'p, 'a> {
     }
 
     pub fn set_params(&mut self, specs: &'p [ParamSpec]) -> &mut Self {
-        self.raw.param_specs = sys::Slice {
-            data: specs.as_ptr().cast_mut().cast(),
-            len: specs.len() as isize,
-        };
+        self.raw.param_specs = sys::Slice::from(specs).cast();
         self
     }
 
@@ -589,14 +614,12 @@ impl<'p, 'a> CodegenEmitCtx<'p, 'a> {
     pub fn compile(&mut self) -> CodegenOutput<'_> {
         let raw = unsafe { sys::bac_compile(self.raw) };
         CodegenOutput {
-            code: unsafe { raw_slice(raw.bufs.code.data, raw.bufs.code.len as usize) },
-            constants: unsafe {
-                raw_slice(raw.bufs.constants.data, raw.bufs.constants.len as usize)
-            },
-            relocs: unsafe { raw_slice(raw.bufs.relocs.data, raw.bufs.relocs.len as usize) },
-            slocs: unsafe { raw_slice(raw.bufs.slocs.data, raw.bufs.slocs.len as usize) },
-            cfi: unsafe { raw_slice(raw.bufs.cfi.data, raw.bufs.cfi.len as usize) },
-            dbg_locs: unsafe { raw_slice(raw.bufs.dbg_locs.data, raw.bufs.dbg_locs.len as usize) },
+            code: unsafe { raw.bufs.code.as_slice() },
+            constants: unsafe { raw.bufs.constants.as_slice() },
+            relocs: unsafe { raw.bufs.relocs.as_slice() },
+            slocs: unsafe { raw.bufs.slocs.as_slice() },
+            cfi: unsafe { raw.bufs.cfi.as_slice() },
+            dbg_locs: unsafe { raw.bufs.dbg_locs.as_slice() },
         }
     }
 }
@@ -604,67 +627,44 @@ impl<'p, 'a> CodegenEmitCtx<'p, 'a> {
 pub struct CodegenOutput<'a> {
     pub code: &'a [u8],
     pub constants: &'a [u8],
-    pub relocs: &'a [sys::bac_Reloc],
-    pub slocs: &'a [sys::bac_Sloc],
-    pub cfi: &'a [sys::bac_Cfi_Op],
-    pub dbg_locs: &'a [sys::bac_Dbg_Location],
-}
-
-unsafe fn raw_slice<'a, T>(data: *const T, len: usize) -> &'a [T] {
-    if len == 0 {
-        &[]
-    } else {
-        unsafe { core::slice::from_raw_parts(data, len) }
-    }
-}
-
-unsafe fn raw_slice_mut<'a, T>(data: *mut T, len: usize) -> &'a mut [T] {
-    if len == 0 {
-        &mut []
-    } else {
-        unsafe { core::slice::from_raw_parts_mut(data, len) }
-    }
-}
-
-fn raw_string(text: &str) -> sys::String {
-    sys::String {
-        data: text.as_ptr().cast_mut(),
-        len: text.len() as isize,
-    }
+    pub relocs: &'a [sys::Reloc],
+    pub slocs: &'a [sys::Sloc],
+    pub cfi: &'a [sys::Cfi_Op],
+    pub dbg_locs: &'a [sys::Dbg_Location],
 }
 
 impl Proc<'_> {
     pub unsafe fn loop_control(
-        &mut self,
+        &self,
         variant: LoopControl,
         scope: NodeId,
-        state: &mut LoopState,
+        state: &mut sys::ssa_Loop_State,
     ) {
-        unsafe { sys::bac_loop_control(variant.0, &mut self.raw, scope.0, &mut state.raw) };
+        unsafe { sys::bac_loop_control(variant.0, self.raw_ptr(), scope.0, state) };
     }
 
-    pub unsafe fn inline_stencil(&mut self, call: NodeId, from: &Stencil) {
-        unsafe { sys::bac_inline_stencil(&mut self.raw, call.0, from.raw()) };
+    pub unsafe fn inline_stencil(&self, call: NodeId, from: &Stencil) {
+        unsafe { sys::bac_inline_stencil(self.raw_ptr(), call.0, from.raw()) };
     }
 
-    pub unsafe fn inline_graph(&mut self, call: NodeId, from: &Proc<'_>) {
-        unsafe { sys::bac_inline_graph(&mut self.raw, call.0, from.raw_ptr()) };
+    pub unsafe fn inline_graph(&self, call: NodeId, from: &Proc<'_>) {
+        unsafe { sys::bac_inline_graph(self.raw_ptr(), call.0, from.raw_ptr()) };
     }
 
     pub unsafe fn arg_gen_next(
-        &mut self,
+        &self,
         mem: NodeId,
-        generator: &mut sys::bac_ssa_Param_Gen,
+        generator: &mut sys::ssa_Param_Gen,
         name: &str,
-        abi: &mut sys::bac_ssa_Abi_Param,
+        abi: &mut sys::ssa_Abi_Param,
     ) -> (NodeId, NodeId) {
         let mut out_mem = 0;
         let value = unsafe {
             sys::bac_arg_gen_next(
-                &mut self.raw,
+                self.raw_ptr(),
                 mem.0,
                 generator,
-                raw_string(name),
+                name.into(),
                 abi,
                 &mut out_mem,
             )
@@ -672,12 +672,13 @@ impl Proc<'_> {
         (NodeId(out_mem), NodeId(value))
     }
 
-    pub unsafe fn arg_gen_finalize(
-        &mut self,
-        generator: &mut sys::bac_ssa_Param_Gen,
-    ) -> &mut [ParamSpec] {
-        let specs = unsafe { sys::bac_arg_gen_finalize(&mut self.raw, generator) };
-        unsafe { raw_slice_mut(specs.data.cast::<ParamSpec>(), specs.len as usize) }
+    #[allow(
+        clippy::mut_from_ref,
+        reason = "each call allocates a disjoint arena slice"
+    )]
+    pub unsafe fn arg_gen_finalize(&self, generator: &mut sys::ssa_Param_Gen) -> &mut [ParamSpec] {
+        let specs = unsafe { sys::bac_arg_gen_finalize(self.raw_ptr(), generator) };
+        unsafe { specs.cast::<ParamSpec>().as_mut_slice() }
     }
 }
 
@@ -689,15 +690,12 @@ pub struct ParamSpec {
 }
 
 const _: () = {
-    assert!(core::mem::size_of::<ParamSpec>() == core::mem::size_of::<sys::bac_Param_Spec>());
-    assert!(core::mem::align_of::<ParamSpec>() == core::mem::align_of::<sys::bac_Param_Spec>());
+    assert!(core::mem::size_of::<ParamSpec>() == core::mem::size_of::<sys::Param_Spec>());
+    assert!(core::mem::align_of::<ParamSpec>() == core::mem::align_of::<sys::Param_Spec>());
     assert!(
-        core::mem::offset_of!(ParamSpec, datatype)
-            == core::mem::offset_of!(sys::bac_Param_Spec, dt)
+        core::mem::offset_of!(ParamSpec, datatype) == core::mem::offset_of!(sys::Param_Spec, dt)
     );
-    assert!(
-        core::mem::offset_of!(ParamSpec, size) == core::mem::offset_of!(sys::bac_Param_Spec, size)
-    );
+    assert!(core::mem::offset_of!(ParamSpec, size) == core::mem::offset_of!(sys::Param_Spec, size));
 };
 
 impl AbiParam {
@@ -713,39 +711,30 @@ impl AbiParam {
     }
 }
 
-pub struct ParamGen<'b, 'p, 'a> {
-    builder: &'b mut Builder<'p, 'a>,
-    raw: sys::bac_ssa_Param_Gen,
+pub struct ParamGen<'p, 'a> {
+    proc: &'p Proc<'a>,
+    raw: sys::ssa_Param_Gen,
 }
 
-impl<'p, 'a> Builder<'p, 'a> {
-    pub fn param_gen<'b>(&'b mut self) -> ParamGen<'b, 'p, 'a> {
+impl<'a> Builder<'a> {
+    pub fn param_gen(&self) -> ParamGen<'_, 'a> {
         ParamGen {
-            builder: self,
+            proc: &self.proc,
             raw: Default::default(),
         }
     }
 }
 
-impl<'b, 'p, 'a> ParamGen<'b, 'p, 'a> {
-    pub fn next(&mut self, mem: &mut NodeId, name: &'static str, abi: &AbiParam) -> NodeId {
-        self.builder.check(*mem);
+impl<'p, 'a> ParamGen<'p, 'a> {
+    pub fn next(&mut self, mem: &mut &'p Node, name: &'static str, abi: &AbiParam) -> &'p Node {
+        let id = self.proc.check(mem);
         let mut abi = *abi;
-        let result = unsafe {
-            self.builder
-                .proc
-                .arg_gen_next(*mem, &mut self.raw, name, &mut abi)
-        };
-        for &id in unsafe { raw_slice(self.raw.vls.data, self.raw.vls.len as usize) } {
-            self.builder.register(NodeId(id));
-        }
-        self.builder.register(result.0);
-        self.builder.register(result.1);
-        *mem = result.0;
-        result.1
+        let result = unsafe { self.proc.arg_gen_next(id, &mut self.raw, name, &mut abi) };
+        *mem = unsafe { self.proc.get_node(result.0) };
+        unsafe { self.proc.get_node(result.1) }
     }
 
-    pub fn finalize(mut self) -> &'b mut [ParamSpec] {
-        unsafe { self.builder.proc.arg_gen_finalize(&mut self.raw) }
+    pub fn finalize(mut self) -> &'p mut [ParamSpec] {
+        unsafe { self.proc.arg_gen_finalize(&mut self.raw) }
     }
 }

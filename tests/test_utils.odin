@@ -233,10 +233,10 @@ run_test :: proc(
 		switch level.vm {
 		case .Native, .Arm:
 			if level.vm == .Native {
-				ctx.target.cc = &x64.X64_SYSTEMV_CC
+				ctx.target.cc = &x64.CC_TABLE[x64.X64_SYSTEMV_CC]
 				ctx.target.spec = &x64.SPEC
 			} else {
-				ctx.target.cc = &arm.ARM_SYSTEMV_CC
+				ctx.target.cc = &arm.CC_TABLE[arm.ARM_SYSTEMV_CC]
 				ctx.target.spec = &arm.SPEC
 			}
 
@@ -450,7 +450,7 @@ run_test :: proc(
 
 			resize(&ctx.procs, len(ctx.procs) - 2)
 		case .Wasm:
-			ctx.target.cc = &wasm.WASM_SYSTEMV_CC
+			ctx.target.cc = &wasm.CC_TABLE[wasm.WASM_SYSTEMV_CC]
 			ctx.target.spec = &wasm.SPEC
 
 			for _, i in ctx.procs {

@@ -100,53 +100,56 @@ X64_CFI_SPEC :: bac.Cfi_Spec {
 // * The `context` pointer is then the last parameter to the procedure
 // arguments
 
-@(rodata)
-X64_SYSTEMV_CC := bac.Call_Conv {
-	name          = "X64_SYSTEMV_CC",
-	callee_saved  = {{RBX, RBP, R12, R13, R14, R15}, {}},
-	caller_saved  = {
-		{RAX, RCX, RDX, RSI, RDI, R8, R9, R10, R11},
-		{
-			XMM0,
-			XMM1,
-			XMM2,
-			XMM3,
-			XMM4,
-			XMM5,
-			XMM6,
-			XMM7,
-			XMM8,
-			XMM9,
-			XMM10,
-			XMM11,
-			XMM12,
-			XMM13,
-			XMM14,
-			XMM15,
-		},
-	},
-	args          = {
-		{RDI, RSI, RDX, RCX, R8, R9},
-		{XMM0, XMM1, XMM2, XMM3, XMM4, XMM5, XMM6, XMM7},
-	},
-	rets          = {{RAX, RDX}, {XMM0, XMM1}},
-	red_zone_size = 128,
-	cfi_spec      = X64_CFI_SPEC,
-	stack_pointer = RSP,
-}
+X64_SYSTEMV_CC :: 0
+X64_LINUX_SYSCALL_CC :: 1
 
 @(rodata)
-X64_LINUX_SYSCALL_CC := bac.Call_Conv {
-	name         = "X64_LINUX_SYSCALL_CC",
-	callee_saved = {
-		{RBX, RDX, RDI, RSI, RBP, R8, R9, R10, R12, R13, R14, R15},
-		{},
+CC_TABLE := [?]bac.Call_Conv {
+	X64_SYSTEMV_CC = {
+		name = "X64_SYSTEMV_CC",
+		callee_saved = {{RBX, RBP, R12, R13, R14, R15}, {}},
+		caller_saved = {
+			{RAX, RCX, RDX, RSI, RDI, R8, R9, R10, R11},
+			{
+				XMM0,
+				XMM1,
+				XMM2,
+				XMM3,
+				XMM4,
+				XMM5,
+				XMM6,
+				XMM7,
+				XMM8,
+				XMM9,
+				XMM10,
+				XMM11,
+				XMM12,
+				XMM13,
+				XMM14,
+				XMM15,
+			},
+		},
+		args = {
+			{RDI, RSI, RDX, RCX, R8, R9},
+			{XMM0, XMM1, XMM2, XMM3, XMM4, XMM5, XMM6, XMM7},
+		},
+		rets = {{RAX, RDX}, {XMM0, XMM1}},
+		red_zone_size = 128,
+		cfi_spec = X64_CFI_SPEC,
+		stack_pointer = RSP,
 	},
-	caller_saved = {{RAX, RCX, R11}, {}},
-	args         = {{RAX, RDI, RSI, RDX, R10, R8, R9}, {}},
-	rets         = {{RAX}, {}},
-	is_syscall   = true,
-	cfi_spec     = X64_CFI_SPEC,
+	X64_LINUX_SYSCALL_CC = {
+		name = "X64_LINUX_SYSCALL_CC",
+		callee_saved = {
+			{RBX, RDX, RDI, RSI, RBP, R8, R9, R10, R12, R13, R14, R15},
+			{},
+		},
+		caller_saved = {{RAX, RCX, R11}, {}},
+		args = {{RAX, RDI, RSI, RDX, R10, R8, R9}, {}},
+		rets = {{RAX}, {}},
+		is_syscall = true,
+		cfi_spec = X64_CFI_SPEC,
+	},
 }
 
 Instr_Info :: struct {
@@ -1194,7 +1197,7 @@ meta_of :: proc(
 	case .Local_Addr, .Global_Addr, .Proc_Addr:
 		return {out = out}
 	case .Copy, .Set, .Call, .Return:
-		return bac.cc_node_meta(graph, ra, node)
+		return bac.cc_node_meta(graph, ra, node, CC_TABLE[:])
 	case .Param:
 		return {out = bac.param_mask(graph, ra, node)}
 	case .Ret:
@@ -2073,7 +2076,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 	case .Call:
 		call := bac.get_extra(ctx, node, bac.Call)
 
-		cc := ctx.graph.cc_table[call.ccid]
+		cc := CC_TABLE[call.ccid]
 		if cc.is_syscall {
 			// syscall
 			emit(ctx.code, {0x0F, 0x05})

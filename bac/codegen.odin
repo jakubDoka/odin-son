@@ -595,6 +595,7 @@ cc_node_meta :: proc(
 	graph: ^Proc,
 	ra: ^Regalloc,
 	node: Expanded_Node,
+	cc_table: []Call_Conv,
 ) -> Regalloc_Node_Meta {
 	cc := ra.cc
 	// NOTE: this handles the edge case where there is no memory returned,
@@ -604,7 +605,7 @@ cc_node_meta :: proc(
 	call: ^Call = get_extra(graph, node, Call)
 	if call != nil {
 		prefix = CALL_PREFIX
-		cc = &graph.cc_table[call.ccid]
+		cc = &cc_table[call.ccid]
 	}
 
 	real_len := len(node.inps)

@@ -51,67 +51,72 @@ V24, V25, V26 :: Reg(V_BANK | 24), Reg(V_BANK | 25), Reg(V_BANK | 26)
 V27, V28, V29 :: Reg(V_BANK | 27), Reg(V_BANK | 28), Reg(V_BANK | 29)
 V30, V31 :: Reg(V_BANK | 30), Reg(V_BANK | 31)
 
-ARM_SYSTEMV_CC := bac.Call_Conv {
-	name          = "ARM_SYSTEMV_CC",
-	caller_saved  = {
-		{
-			X0,
-			X1,
-			X2,
-			X3,
-			X4,
-			X5,
-			X6,
-			X7,
-			X8,
-			X9,
-			X10,
-			X11,
-			X12,
-			X13,
-			X14,
-			X15,
-			X16,
-			X17,
-			X18,
+ARM_SYSTEMV_CC :: 0
+
+@(rodata)
+CC_TABLE := [?]bac.Call_Conv {
+	ARM_SYSTEMV_CC = {
+		name = "ARM_SYSTEMV_CC",
+		caller_saved = {
+			{
+				X0,
+				X1,
+				X2,
+				X3,
+				X4,
+				X5,
+				X6,
+				X7,
+				X8,
+				X9,
+				X10,
+				X11,
+				X12,
+				X13,
+				X14,
+				X15,
+				X16,
+				X17,
+				X18,
+			},
+			{
+				V0,
+				V1,
+				V2,
+				V3,
+				V4,
+				V5,
+				V6,
+				V7,
+				V16,
+				V17,
+				V18,
+				V19,
+				V20,
+				V21,
+				V22,
+				V23,
+				V24,
+				V25,
+				V26,
+				V27,
+				V28,
+				V29,
+				V30,
+				V31,
+			},
 		},
-		{
-			V0,
-			V1,
-			V2,
-			V3,
-			V4,
-			V5,
-			V6,
-			V7,
-			V16,
-			V17,
-			V18,
-			V19,
-			V20,
-			V21,
-			V22,
-			V23,
-			V24,
-			V25,
-			V26,
-			V27,
-			V28,
-			V29,
-			V30,
-			V31,
+		callee_saved = {
+			{X19, X20, X21, X22, X23, X24, X25, X26, X27, X28},
+			{V8, V9, V10, V11, V12, V13, V14, V15},
 		},
+		args = {
+			{X0, X1, X2, X3, X4, X5, X6, X7},
+			{V0, V1, V2, V3, V4, V5, V6, V7},
+		},
+		rets = {{X0, X1}, {V0, V1}},
+		stack_pointer = SP,
 	},
-	callee_saved  = {
-		{X19, X20, X21, X22, X23, X24, X25, X26, X27, X28},
-		{V8, V9, V10, V11, V12, V13, V14, V15},
-	},
-	args          = {
-		{X0, X1, X2, X3, X4, X5, X6, X7},
-		{V0, V1, V2, V3, V4, V5, V6, V7},
-	},
-	rets          = {{X0, X1}, {V0, V1}},
-	stack_pointer = SP,
 }
 
 SPEC_NOT_PRESENT :: (#load("node_specs.odin", string) or_else "") == ""
@@ -509,7 +514,7 @@ meta_of :: #force_inline proc(
 			int(get_node(graph, node.inps[1]).dt == .Void)],
 		}
 	case .Call, .Return, .Set, .Copy:
-		return bac.cc_node_meta(graph, ra, node)
+		return bac.cc_node_meta(graph, ra, node, CC_TABLE[:])
 	case .Ret:
 		return {out = bac.ret_mask(graph, ra, node)}
 	case .Param:

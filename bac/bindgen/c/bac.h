@@ -36,7 +36,6 @@ typedef struct Slice_Of_bac_Lattice Slice_Of_bac_Lattice;
 typedef struct bac_Dbg_Location bac_Dbg_Location;
 typedef struct bac_Regalloc_Node_Meta bac_Regalloc_Node_Meta;
 typedef struct Slice_Of_bac_Param_Spec Slice_Of_bac_Param_Spec;
-typedef struct Slice_Of_bac_Call_Conv Slice_Of_bac_Call_Conv;
 typedef struct Slice_Of_bac_Regalloc_Node_Meta Slice_Of_bac_Regalloc_Node_Meta;
 typedef int64_t bac_builder_Loop_Control;
 typedef struct bac_Dbg_Data bac_Dbg_Data;
@@ -780,11 +779,6 @@ struct runtime_Raw_Dynamic_Array {
 	int64_t cap;
 	runtime_Allocator allocator;
 };
-struct Slice_Of_bac_Call_Conv {
-	bac_Call_Conv *data;
-	size_t len;
-};
-;
 struct Dyn_Arr_Of_bac_Node_ID {
 	bac_Node_ID *data;
 	size_t len, cap;
@@ -897,7 +891,6 @@ struct bac_Codegen_Emit_Ctx {
 struct bac_Regalloc_Spec {
 	bac_Reg_Kind datatype_to_reg_kind[11];
 	Slice_Of_int64_t spill_boundary;
-	Slice_Of_bac_Call_Conv cc_table;
 	Slice_Of_Slice_Of_int64_t call_clobbers;
 	int64_t(*collect_meta)(bac_Proc *, bac_Regalloc *, bac_Schedule *, Slice_Of_bac_Regalloc_Node_Meta *);
 };

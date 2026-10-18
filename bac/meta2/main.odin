@@ -108,7 +108,7 @@ main :: proc() {
 					.F32 ..= .V512 = x64.RK_VECTOR,
 				},
 				spill_boundary = {16, 16},
-				cc_table = {x64.X64_SYSTEMV_CC, x64.X64_LINUX_SYSCALL_CC},
+				cc_table = x64.CC_TABLE[:],
 			},
 			"bac/x64/node_specs.odin",
 		)
@@ -156,7 +156,7 @@ main :: proc() {
 					.V128 = wasm.RK_V128,
 				},
 				spill_boundary = {0 ..= wasm.RK_COUNT = 64},
-				cc_table = {wasm.WASM_SYSTEMV_CC},
+				cc_table = wasm.CC_TABLE[:],
 			},
 			"bac/wasm/node_specs.odin",
 		)
@@ -206,7 +206,7 @@ main :: proc() {
 					.F32 ..= .V512 = arm.RK_VECTOR,
 				},
 				spill_boundary = {32, 32},
-				cc_table = {arm.ARM_SYSTEMV_CC},
+				cc_table = arm.CC_TABLE[:],
 			},
 			"bac/arm/node_specs.odin",
 		)

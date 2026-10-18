@@ -5,30 +5,6 @@ Class_Flag :: bac.Class_Flag
 // NOTE: this file is generated: 
 
 @(rodata, export, link_name = "bac_x64_spec")SPEC := bac.Node_Spec{
-	cc_table = {
-		{
-			name = "X64_SYSTEMV_CC",
-			callee_saved = {{bac.Reg{index = 3, kind = 0}, bac.Reg{index = 5, kind = 0}, bac.Reg{index = 12, kind = 0}, bac.Reg{index = 13, kind = 0}, bac.Reg{index = 14, kind = 0}, bac.Reg{index = 15, kind = 0}}, {}},
-			caller_saved = {{bac.Reg{index = 0, kind = 0}, bac.Reg{index = 1, kind = 0}, bac.Reg{index = 2, kind = 0}, bac.Reg{index = 6, kind = 0}, bac.Reg{index = 7, kind = 0}, bac.Reg{index = 8, kind = 0}, bac.Reg{index = 9, kind = 0}, bac.Reg{index = 10, kind = 0}, bac.Reg{index = 11, kind = 0}}, {bac.Reg{index = 0, kind = 1}, bac.Reg{index = 1, kind = 1}, bac.Reg{index = 2, kind = 1}, bac.Reg{index = 3, kind = 1}, bac.Reg{index = 4, kind = 1}, bac.Reg{index = 5, kind = 1}, bac.Reg{index = 6, kind = 1}, bac.Reg{index = 7, kind = 1}, bac.Reg{index = 8, kind = 1}, bac.Reg{index = 9, kind = 1}, bac.Reg{index = 10, kind = 1}, bac.Reg{index = 11, kind = 1}, bac.Reg{index = 12, kind = 1}, bac.Reg{index = 13, kind = 1}, bac.Reg{index = 14, kind = 1}, bac.Reg{index = 15, kind = 1}}},
-			args = {{bac.Reg{index = 7, kind = 0}, bac.Reg{index = 6, kind = 0}, bac.Reg{index = 2, kind = 0}, bac.Reg{index = 1, kind = 0}, bac.Reg{index = 8, kind = 0}, bac.Reg{index = 9, kind = 0}}, {bac.Reg{index = 0, kind = 1}, bac.Reg{index = 1, kind = 1}, bac.Reg{index = 2, kind = 1}, bac.Reg{index = 3, kind = 1}, bac.Reg{index = 4, kind = 1}, bac.Reg{index = 5, kind = 1}, bac.Reg{index = 6, kind = 1}, bac.Reg{index = 7, kind = 1}}},
-			rets = {{bac.Reg{index = 0, kind = 0}, bac.Reg{index = 2, kind = 0}}, {bac.Reg{index = 0, kind = 1}, bac.Reg{index = 1, kind = 1}}},
-			red_zone_size = 128,
-			is_syscall = false,
-			cfi_spec = bac.Cfi_Spec{cfa_reg = 7, return_addr_reg = 16, initial_cfa_offset = 8, code_align = 1, data_align = -8},
-			stack_pointer = bac.Reg{index = 4, kind = 0},
-		},
-		{
-			name = "X64_LINUX_SYSCALL_CC",
-			callee_saved = {{bac.Reg{index = 3, kind = 0}, bac.Reg{index = 2, kind = 0}, bac.Reg{index = 7, kind = 0}, bac.Reg{index = 6, kind = 0}, bac.Reg{index = 5, kind = 0}, bac.Reg{index = 8, kind = 0}, bac.Reg{index = 9, kind = 0}, bac.Reg{index = 10, kind = 0}, bac.Reg{index = 12, kind = 0}, bac.Reg{index = 13, kind = 0}, bac.Reg{index = 14, kind = 0}, bac.Reg{index = 15, kind = 0}}, {}},
-			caller_saved = {{bac.Reg{index = 0, kind = 0}, bac.Reg{index = 1, kind = 0}, bac.Reg{index = 11, kind = 0}}, {}},
-			args = {{bac.Reg{index = 0, kind = 0}, bac.Reg{index = 7, kind = 0}, bac.Reg{index = 6, kind = 0}, bac.Reg{index = 2, kind = 0}, bac.Reg{index = 10, kind = 0}, bac.Reg{index = 8, kind = 0}, bac.Reg{index = 9, kind = 0}}, {}},
-			rets = {{bac.Reg{index = 0, kind = 0}}, {}},
-			red_zone_size = 0,
-			is_syscall = true,
-			cfi_spec = bac.Cfi_Spec{cfa_reg = 7, return_addr_reg = 16, initial_cfa_offset = 8, code_align = 1, data_align = -8},
-			stack_pointer = bac.Reg{index = 0, kind = 0},
-		},
-	},
 	call_clobbers = {
 		{4039, 65535},
 		{2051, 0},

@@ -40,9 +40,13 @@ wextra :: #force_inline proc(
 
 SPEC_NOT_PRESENT :: (#load("node_specs.odin", string) or_else "") == ""
 
-WASM_SYSTEMV_CC := bac.Call_Conv {
-	name = "WASM_SYSTEMV_CC",
-	args = {0 ..= RK_COUNT = transmute([]Reg)runtime.Raw_Slice{len = 64}},
+WASM_SYSTEMV_CC :: 0
+
+CC_TABLE := [?]bac.Call_Conv {
+	WASM_SYSTEMV_CC = {
+		name = "WASM_SYSTEMV_CC",
+		args = {0 ..= RK_COUNT = transmute([]Reg)runtime.Raw_Slice{len = 64}},
+	},
 }
 
 Lane_Op :: struct {

@@ -131,7 +131,6 @@ reg_mask_contains :: proc(bset: Reg_Mask, #any_int index: u32) -> bool {
 Regalloc_Spec :: struct {
 	datatype_to_reg_kind: [Node_Datatype]Reg_Kind,
 	spill_boundary:       []int,
-	cc_table:             []Call_Conv,
 	call_clobbers:        [][]i64,
 	collect_meta:         proc(
 		graph: ^Proc,

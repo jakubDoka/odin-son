@@ -49,9 +49,14 @@ OPT_LEVELS :: [?]Opt_Level {
 }
 
 TARGETS := [?]typecheck.Target {
-	{"amd64", &x64.X64_SYSTEMV_CC, &x64.SPEC, emit_elf},
-	{"wasm64", &wasm.WASM_SYSTEMV_CC, &wasm.SPEC, emit_wasm_module},
-	{"arm64", &arm.ARM_SYSTEMV_CC, &arm.SPEC, emit_elf},
+	{"amd64", &x64.CC_TABLE[x64.X64_SYSTEMV_CC], &x64.SPEC, emit_elf},
+	{
+		"wasm64",
+		&wasm.CC_TABLE[wasm.WASM_SYSTEMV_CC],
+		&wasm.SPEC,
+		emit_wasm_module,
+	},
+	{"arm64", &arm.CC_TABLE[arm.ARM_SYSTEMV_CC], &arm.SPEC, emit_elf},
 }
 
 Abi_Param :: struct {
@@ -2018,21 +2023,20 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				args[0] = ctx_ctrl(ctx)
 				args[1] = ctx_mem(ctx)
 
-				call := bac.add_call(
+				// NOTE: we pass garbage cid, to verify backend is sane
+				call_end, mem := builder.add_call(
 					ctx,
-					"call",
 					args,
-					{cid = ~u32(0), ccid = 1, ret_count = 1},
+					{cid = ~u32(0), flags = {ccid = x64.X64_LINUX_SYSCALL_CC}},
 				)
 				for arg in args[CALL_PREFIX:] {
 					bac.unpin(ctx, arg)
 				}
-				call_end := bac.add_call_end(ctx, "calle", call)
 
 				bac.set_input(ctx, ctx.node_scope, 0, call_end)
-				ctx_set_mem(ctx, bac.add_mem(ctx, "cmem", call_end))
+				ctx_set_mem(ctx, mem)
 
-				res = bac.add_ret(ctx, "cret", .I64, call_end, 0)
+				res = builder.add_call_ret(ctx, call_end, .I64)
 
 				break match
 			case .trap:
@@ -2301,7 +2305,7 @@ emit_call :: proc(
 	call_end, mem := builder.add_call(
 		ctx,
 		args[:ln],
-		{imported = imported, cid = u32(prc_id)},
+		{flags = {imported = imported}, cid = u32(prc_id)},
 	)
 
 	for arg in args[CALL_PREFIX:ln] {

@@ -5,19 +5,6 @@ Class_Flag :: bac.Class_Flag
 // NOTE: this file is generated: 
 
 @(rodata, export, link_name = "bac_wasm_spec")SPEC := bac.Node_Spec{
-	cc_table = {
-		{
-			name = "WASM_SYSTEMV_CC",
-			callee_saved = {},
-			caller_saved = {},
-			args = {{63 = {}}, {63 = {}}, {63 = {}}, {63 = {}}, {63 = {}}, {63 = {}}},
-			rets = {},
-			red_zone_size = 0,
-			is_syscall = false,
-			cfi_spec = bac.Cfi_Spec{cfa_reg = 0, return_addr_reg = 0, initial_cfa_offset = 0, code_align = 0, data_align = 0},
-			stack_pointer = bac.Reg{index = 0, kind = 0},
-		},
-	},
 	call_clobbers = {
 		{},
 	},

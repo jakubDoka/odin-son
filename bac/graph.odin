@@ -247,14 +247,14 @@ CInt :: struct #raw_union #align (4) {
 }
 
 Call :: struct {
-	using _: Cfg,
-	using _: bit_field u32 {
+	using _:     Cfg,
+	using flags: bit_field u32 {
 		ccid:      u32  | 26,
 		ret_count: int  | 4,
 		imported:  bool | 1,
 	},
-	cid:     u32,
-	rets:    [4]Node_Datatype,
+	cid:         u32,
+	rets:        [4]Node_Datatype,
 }
 
 is_indirect_call :: proc(node: Expanded_Node) -> bool {

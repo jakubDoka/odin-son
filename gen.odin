@@ -557,18 +557,18 @@ inline_and_optimize :: proc(
 	sctx: S_Ctx
 	sctx.caller_to_callee = make([][]u32, len(ctx.procs))
 
-	for prc, i in ctx.procs {
-		if len(prc.stencil.mem) == 0 do continue
+	for src, i in ctx.procs {
+		if len(src.stencil.mem) == 0 do continue
 
 		slot: arna.Allocator
-		graph: bac.Proc
-		graph.node_spec = &ssa.SPEC
-		graph.mem = &slot
-		bac.mount_stencil(&graph, prc.stencil)
+		prc: bac.Proc
+		prc.node_spec = &ssa.SPEC
+		prc.mem = &slot
+		bac.mount_stencil(&prc, src.stencil)
 
-		sym, sc := bac.get_sym_count(&graph)
+		sym, sc := bac.get_sym_count(&prc)
 		sctx.caller_to_callee[i] = make([]u32, sc)
-		for j := sc; sr in bac.sym_iter_next(&graph, sym, &j) {
+		for j := sc; sr in bac.sym_iter_next(&prc, sym, &j) {
 			assert(sr.type == .Func)
 			sctx.caller_to_callee[i][j] = sr.id
 		}
@@ -798,12 +798,12 @@ emit_proc :: proc(
 	prc := &ctx.procs[i]
 	if prc.sig == nil do return
 
-	ctx.prc = auto_cast i
+	ctx.prc_id = auto_cast i
 	ctx.module = prc.module
 	ctx.file = prc.file
 	ctx.file_id = prc.file_id
-	ctx.graph = {
-		has_dbg = ctx.graph.has_dbg,
+	ctx.prc = {
+		has_dbg = ctx.prc.has_dbg,
 	}
 	ctx.opt_flags = level.flags
 	ctx.stats = &ctx.tstats
@@ -819,7 +819,7 @@ emit_proc :: proc(
 		append(&ctx.poly_types, e)
 	}
 
-	rmem := ssa.start_proc(ctx, &ctx.mems.graph)
+	rmem := ssa.start_proc(ctx, &ctx.mems.prc)
 
 	ctx.node_scope = ssa.add_scope(ctx, "scope", ctx.entry)
 	ctx.mem_slot = push_scope_value(ctx, nil, rmem, .Void)
@@ -895,7 +895,7 @@ emit_proc :: proc(
 
 opt :: proc(ctx: ^bac.Proc) {
 	peep_ctx: bac.Peep_Ctx
-	peep_ctx.graph = ctx
+	peep_ctx.prc = ctx
 	context.allocator, _ = arna.scrath()
 	lattice_allocator := context.allocator
 	defer {
@@ -936,7 +936,7 @@ emit_proc_code :: proc(
 	}
 
 	peep_ctx: bac.Peep_Ctx
-	peep_ctx.graph = ctx
+	peep_ctx.prc = ctx
 
 	// We are doing this with different spec now
 	bac.apply_peeps(peep_ctx)
@@ -958,7 +958,7 @@ emit_proc_code :: proc(
 
 	regs := regalloc.regalloc(&ra, ctx, &schedule, ctx.ralloc_mode)
 
-	emit_ctx.graph = ctx
+	emit_ctx.prc = ctx
 	emit_ctx.schedule = &schedule
 	emit_ctx.dbg_data = &dbg_data
 	emit_ctx.abi = ra.cc
@@ -1327,7 +1327,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		res = emit_rvalue(ctx, {}, d.expr)
 		lvalue = true
 	case ^ast.Return_Stmt:
-		rets := ctx.procs[ctx.prc].rets
+		rets := ctx.procs[ctx.prc_id].rets
 		rabi := typecheck.ret_abi(rets)
 
 		values := make([]Node_ID, 4)

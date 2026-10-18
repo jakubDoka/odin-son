@@ -79,12 +79,12 @@ PS_Peep_Fn :: proc(_: PS_Peep_Ctx, node: Expanded_Node) -> Node_ID
 Pre_Regalloc_Hook :: proc(_: ^Regalloc, _: ^Proc, _: ^Schedule)
 
 PS_Peep_Ctx :: struct {
-	using graph: ^Proc,
+	using prc:   ^Proc,
 	preds:       []Node_ID,
 }
 
 Codegen_Emit_Ctx :: struct {
-	using graph:        ^Proc,
+	using prc:          ^Proc,
 	using schedule:     ^Schedule,
 	using dbg_data:     ^Dbg_Data,
 	using abi:          ^Call_Conv,
@@ -294,22 +294,22 @@ mount_sloc :: proc(ctx: ^Codegen_Emit_Ctx, node: Node_ID) {
 
 @(tag = "api")
 take_dbg_data :: proc(
-	graph: ^Proc,
+	prc: ^Proc,
 	sched: ^Schedule,
 	data: ^Dbg_Data,
 	scratch := context.allocator,
 ) {
 	context.allocator, _ = arna.scrath(scratch)
 
-	if !graph.has_dbg do return
+	if !prc.has_dbg do return
 
 	Ctx :: struct {
-		using graph: ^Proc,
+		using prc:   ^Proc,
 		using sched: ^Schedule,
 	}
 
 	ctx: Ctx
-	ctx.graph = graph
+	ctx.prc = prc
 	ctx.sched = sched
 
 	data.syms = make([dynamic]Dbg_Data_Sym, scratch)
@@ -412,7 +412,7 @@ take_dbg_data :: proc(
 		resize(&sym.defs, keep)
 	}
 
-	schedule_graph(graph, sched, .for_regalloc, scratch)
+	schedule_graph(prc, sched, .for_regalloc, scratch)
 }
 
 reg_of :: proc(ctx: Codegen_Emit_Ctx, id: Node_ID) -> Reg {
@@ -590,7 +590,7 @@ emit_dbg_locations :: proc(ctx: Codegen_Emit_Ctx) {
 }
 
 cc_node_meta :: proc(
-	graph: ^Proc,
+	prc: ^Proc,
 	ra: ^Regalloc,
 	node: Expanded_Node,
 	cc_table: []Call_Conv,
@@ -600,14 +600,14 @@ cc_node_meta :: proc(
 	// this happens when we only have infinite loops that terminate the
 	// function
 	prefix := min(2, len(node.inps))
-	call: ^Call = get_extra(graph, node, Call)
+	call: ^Call = get_extra(prc, node, Call)
 	if call != nil {
 		prefix = CALL_PREFIX
 		cc = &cc_table[call.ccid]
 	}
 
 	real_len := len(node.inps)
-	for ; get_node(graph, node.inps[real_len - 1]).itype == .Local;
+	for ; get_node(prc, node.inps[real_len - 1]).itype == .Local;
 	    real_len -= 1 {}
 
 	inited := prefix
@@ -619,7 +619,7 @@ cc_node_meta :: proc(
 
 	counts := make([]int, len(ra.spill_boundary))
 	for n, i in node.inps[inited:real_len] {
-		rk := graph.datatype_to_reg_kind[get_node(graph, n).dt]
+		rk := prc.datatype_to_reg_kind[get_node(prc, n).dt]
 		nmasks[i] = rm_intern_single(ra, banks[rk][counts[rk]])
 		counts[rk] += 1
 	}
@@ -632,14 +632,14 @@ cc_node_meta :: proc(
 }
 
 param_mask :: proc(
-	graph: ^Proc,
+	prc: ^Proc,
 	ra: ^Regalloc,
 	node: ^Node,
 	mask: Maybe(Reg) = nil,
 ) -> RM_Intern_Idx {
 	kind := ra.datatype_to_reg_kind[node.dt]
 	args := ra.args[kind]
-	arg_ext := get_extra(graph, node, Tup)
+	arg_ext := get_extra(prc, node, Tup)
 	idx := 0
 	for a in ra.param_specs[:arg_ext.idx] {
 		if a.dt == .Void do continue
@@ -666,15 +666,15 @@ param_mask :: proc(
 }
 
 ret_mask :: proc(
-	graph: ^Proc,
+	prc: ^Proc,
 	ra: ^Regalloc,
 	node: Expanded_Node,
 ) -> RM_Intern_Idx {
 	// TODO: this is actually incorrect, we need to iterate the previous
 	// rets to figure this out safely
-	cend := expand_node(graph, node.inps[0])
-	call := get_extra(graph, cend.inps[0], Call)
-	ret_ext := get_extra(graph, node, Tup)
+	cend := expand_node(prc, node.inps[0])
+	call := get_extra(prc, cend.inps[0], Call)
+	ret_ext := get_extra(prc, node, Tup)
 	kind := ra.datatype_to_reg_kind[node.dt]
 
 	idx := 0
@@ -780,7 +780,7 @@ compute_param_offsets :: proc(
 	for param, i in ctx.param_specs {
 		param_id := params[i]
 
-		extra := get_extra(ctx.graph, param_id, Local)
+		extra := get_extra(ctx.prc, param_id, Local)
 		if extra != nil {
 			fmt.assertf(
 				extra.size == param.size,

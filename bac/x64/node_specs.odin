@@ -461,8 +461,8 @@ collect_meta :: proc(ctx: ^bac.Proc,
 	return bac.regalloc_collect_meta(ctx, ra, sched, meta_of_)
 }
 
-add_x64_psadbw :: #force_inline proc(graph: ^bac.Proc, name: string, dt: bac.Node_Datatype, lhs: bac.Node_ID, rhs: bac.Node_ID) -> (_id: bac.Node_ID) {
-	return bac.add_raw(graph, name, u16(Node_Type.X64_Psadbw), dt, {lhs, rhs})
+add_x64_psadbw :: #force_inline proc(prc: ^bac.Proc, name: string, dt: bac.Node_Datatype, lhs: bac.Node_ID, rhs: bac.Node_ID) -> (_id: bac.Node_ID) {
+	return bac.add_raw(prc, name, u16(Node_Type.X64_Psadbw), dt, {lhs, rhs})
 }
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {

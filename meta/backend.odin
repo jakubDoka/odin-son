@@ -90,6 +90,9 @@ load_backend_packages :: proc(
 		for decl in f.decls {
 			vdecl := decl.derived.(^ast.Value_Decl) or_continue
 			api := has_tag(vdecl, "api")
+			if (pkg.name == "bac" || pkg.name == "bac_ssa") && entry.name == "node_specs.odin" && len(vdecl.names) == 1 {
+				api |= strings.has_prefix(src_of(f^, vdecl.names[0]), "add_")
+			}
 			node_proc := has_tag(vdecl, "node_proc")
 			thread_local := has_thread_local(vdecl)
 			if !api && !node_proc do continue
@@ -204,7 +207,7 @@ gen_backend_overloads :: proc(packages: []Backend_Package) {
 			for arg, i in prc.lit.type.params.list {
 				if i != 0 do os.write_string(file, ", ")
 				if src_of(prc.file^, arg) == the_arg {
-					os.write_string(file, "get_node(graph, id)")
+					os.write_string(file, "get_node(prc, id)")
 				} else {
 					repl, _ := strings.replace_all(
 						src_of(prc.file^, arg.names[0]),

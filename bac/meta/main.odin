@@ -365,7 +365,7 @@ collect_meta :: proc(ctx: ^%vProc,
 
 			fmt.fprintf(
 				file,
-				"add_%v :: #force_inline proc(graph: ^%vProc, name: string",
+				"add_%v :: #force_inline proc(prc: ^%vProc, name: string",
 				strings.to_snake_case(fname),
 				q,
 			)
@@ -409,7 +409,7 @@ collect_meta :: proc(ctx: ^%vProc,
 			if has_extra {
 				fmt.fprintf(
 					file,
-					"\t(^%v)(%vget_next_extra_slot(graph," +
+					"\t(^%v)(%vget_next_extra_slot(prc," +
 					" u16(%v.%v), 0))^ = ",
 					extra_type,
 					q,
@@ -431,7 +431,7 @@ collect_meta :: proc(ctx: ^%vProc,
 			if k == "" {
 				fmt.fprintf(
 					file,
-					"\treturn %vadd_raw(graph, name, u16(%v.%v), ",
+					"\treturn %vadd_raw(prc, name, u16(%v.%v), ",
 					q,
 					qualify_enm(q, classes.enm),
 					name,
@@ -439,7 +439,7 @@ collect_meta :: proc(ctx: ^%vProc,
 			} else {
 				fmt.fprintf(
 					file,
-					"\treturn %vadd_raw(graph, name, u16(type), ",
+					"\treturn %vadd_raw(prc, name, u16(type), ",
 					q,
 				)
 			}

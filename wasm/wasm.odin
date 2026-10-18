@@ -42,7 +42,7 @@ init_arenas :: proc() {
 	arna.scratch[0].reserved = 8 * 1024 * 1024
 	arna.scratch[1].reserved = 8 * 1024 * 1024
 
-	state.types.mems.graph.reserved = 8 * 1024 * 1024
+	state.types.mems.prc.reserved = 8 * 1024 * 1024
 	state.types.mems.regalloc.reserved = 4 * 1024 * 1024
 	state.types.mems.scratch.reserved = 2 * 1024 * 1024
 	state.types.mems.code.reserved = 4 * 1024 * 1024

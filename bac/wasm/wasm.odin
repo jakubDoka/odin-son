@@ -28,11 +28,11 @@ wtype :: #force_inline proc(node: bac.Expanded_Node) -> Node_Type {
 }
 
 wextra :: #force_inline proc(
-	graph: ^bac.Proc,
+	prc: ^bac.Proc,
 	node: ^bac.Node,
 	$T: typeid,
 ) -> ^T {
-	if graph.inheritance_table[node.rtype] & (1 << inherit_idx_of(T)) == 0 {
+	if prc.inheritance_table[node.rtype] & (1 << inherit_idx_of(T)) == 0 {
 		return nil
 	}
 	return (^T)(&node.extra)
@@ -78,7 +78,7 @@ when SPEC_NOT_PRESENT {
 	}
 
 	add_extract_lane_u :: proc(
-		graph: ^bac.Proc,
+		prc: ^bac.Proc,
 		name: string,
 		dt: bac.Node_Datatype,
 		vec: bac.Node_ID,
@@ -88,7 +88,7 @@ when SPEC_NOT_PRESENT {
 	}
 
 	add_select :: proc(
-		graph: ^bac.Proc,
+		prc: ^bac.Proc,
 		name: string,
 		dt: bac.Node_Datatype,
 		on_true, on_false, condition: bac.Node_ID,
@@ -359,7 +359,7 @@ post_schedule_peep :: proc(
 }
 
 meta_of :: #force_inline proc(
-	graph: ^bac.Proc,
+	prc: ^bac.Proc,
 	ra: ^bac.Regalloc,
 	node: bac.Expanded_Node,
 	_: $T,
@@ -391,7 +391,7 @@ meta_of :: #force_inline proc(
 
 	imasks := masks
 	if 0 < len(node.inps) {
-		irk := ra.datatype_to_reg_kind[get_node(graph, node.inps[0]).dt]
+		irk := ra.datatype_to_reg_kind[get_node(prc, node.inps[0]).dt]
 		imasks = SLOT_TABLE[irk][:]
 	}
 
@@ -460,7 +460,7 @@ meta_of :: #force_inline proc(
 		slice.fill(pmasks, mask)
 		return {out = mask, input_start = 1, masks = pmasks}
 	case .Param:
-		return {out = bac.param_mask(graph, ra, node)}
+		return {out = bac.param_mask(prc, ra, node)}
 	case .Tee_Local:
 		return {out = mask}
 	case .Set_Local:
@@ -474,14 +474,14 @@ meta_of :: #force_inline proc(
 
 pre_regalloc_hook :: proc(
 	ra: ^bac.Regalloc,
-	graph: ^bac.Proc,
+	prc: ^bac.Proc,
 	sched: ^bac.Schedule,
 ) {
 	// NOTE: try to find a efficient ordering of instructions to use the wasm
 	// stack as much as possible, its greedy
 
 	Ctx :: struct {
-		using graph: ^bac.Proc,
+		using prc: ^bac.Proc,
 		metas:       []Meta,
 		instrs:      ^[dynamic]bac.Node_ID,
 		sets:        []bac.Node_ID,
@@ -490,10 +490,10 @@ pre_regalloc_hook :: proc(
 	}
 
 	ctx: Ctx
-	ctx.graph = graph
+	ctx.prc = prc
 
-	graph.dont_delete, graph.dont_intern = true, true
-	defer graph.dont_delete, graph.dont_intern = false, false
+	prc.dont_delete, prc.dont_intern = true, true
+	defer prc.dont_delete, prc.dont_intern = false, false
 
 	for bb, i in sched.bbs {
 		get_node(ctx, bb.head).gvn = u32(i)
@@ -675,16 +675,16 @@ pre_regalloc_hook :: proc(
 		slots: []Meta,
 		def_count: int,
 	) {
-		graph := ctx.graph
+		prc := ctx.prc
 
-		slots = make([]Meta, int(graph.gvn) - len(sched.bbs))
-		rev_count := int(graph.gvn) - len(sched.bbs)
+		slots = make([]Meta, int(prc.gvn) - len(sched.bbs))
+		rev_count := int(prc.gvn) - len(sched.bbs)
 
 		idx := 0
 		for bb, j in sched.bbs {
-			get_node(graph, bb.head).gvn = u32(len(slots) + 1 + j)
+			get_node(prc, bb.head).gvn = u32(len(slots) + 1 + j)
 			for instr in bb.instrs {
-				inode := expand_node(graph, instr)
+				inode := expand_node(prc, instr)
 
 				inode.gvn = u32(idx)
 				idx += 1
@@ -929,8 +929,8 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 	ctx.code_start = ctx.code.pos
 	ctx.constants_start = ctx.constants.pos
 
-	bac.layout_call_args(ctx.graph, ctx.schedule, &ctx.stack_size)
-	bac.layout_locals(ctx.graph, ctx.schedule, &ctx.stack_size)
+	bac.layout_call_args(ctx.prc, ctx.schedule, &ctx.stack_size)
+	bac.layout_locals(ctx.prc, ctx.schedule, &ctx.stack_size)
 
 	compute_blocks: {
 		ctx.blocks = make([dynamic]Block, 1, len(ctx.schedule.bbs) + 1)

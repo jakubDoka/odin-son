@@ -341,14 +341,14 @@ collect_meta :: proc(ctx: ^bac.Proc,
 	return bac.regalloc_collect_meta(ctx, ra, sched, meta_of_)
 }
 
-add_extract_lane_u :: #force_inline proc(graph: ^bac.Proc, name: string, dt: bac.Node_Datatype, vec: bac.Node_ID, laneidx: u32, lane: bac.Lane_Type = {}) -> (_id: bac.Node_ID) {
-	(^Lane_Op)(bac.get_next_extra_slot(graph, u16(Node_Type.Extract_Lane_U), 0))^ = {
+add_extract_lane_u :: #force_inline proc(prc: ^bac.Proc, name: string, dt: bac.Node_Datatype, vec: bac.Node_ID, laneidx: u32, lane: bac.Lane_Type = {}) -> (_id: bac.Node_ID) {
+	(^Lane_Op)(bac.get_next_extra_slot(prc, u16(Node_Type.Extract_Lane_U), 0))^ = {
 		laneidx = laneidx,
 	}
-	return bac.add_raw(graph, name, u16(Node_Type.Extract_Lane_U), dt, {vec}, {lane = lane,})
+	return bac.add_raw(prc, name, u16(Node_Type.Extract_Lane_U), dt, {vec}, {lane = lane,})
 }
-add_select :: #force_inline proc(graph: ^bac.Proc, name: string, dt: bac.Node_Datatype, on_true: bac.Node_ID, on_false: bac.Node_ID, condition: bac.Node_ID) -> (_id: bac.Node_ID) {
-	return bac.add_raw(graph, name, u16(Node_Type.Select), dt, {on_true, on_false, condition})
+add_select :: #force_inline proc(prc: ^bac.Proc, name: string, dt: bac.Node_Datatype, on_true: bac.Node_ID, on_false: bac.Node_ID, condition: bac.Node_ID) -> (_id: bac.Node_ID) {
+	return bac.add_raw(prc, name, u16(Node_Type.Select), dt, {on_true, on_false, condition})
 }
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {

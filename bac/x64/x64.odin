@@ -23,11 +23,11 @@ xtype :: #force_inline proc(node: bac.Expanded_Node) -> Node_Type {
 }
 
 xextra :: #force_inline proc(
-	graph: ^bac.Proc,
+	prc: ^bac.Proc,
 	node: ^bac.Node,
 	$T: typeid,
 ) -> ^T {
-	if graph.inheritance_table[node.rtype] & (1 << inherit_idx_of(T)) == 0 {
+	if prc.inheritance_table[node.rtype] & (1 << inherit_idx_of(T)) == 0 {
 		return nil
 	}
 	return (^T)(&node.extra)
@@ -576,7 +576,7 @@ peep :: proc(
 			fmt.panicf("TODO: %v", node.lane)
 		}
 	case .Add ..= .Xor, .Eq ..= .U_Ge, .Shl ..= .U_Shr, .Mul:
-		op_dt := bac.operation_datatype(ctx.graph, node)
+		op_dt := bac.operation_datatype(ctx.prc, node)
 		if op_dt not_in bac.INT_DTS {
 			if op_dt in bac.FLOAT_DTS &&
 			   .Le <= node.itype &&
@@ -892,16 +892,16 @@ add_node :: proc(
 }
 
 make_node :: proc(
-	graph: ^bac.Proc,
+	prc: ^bac.Proc,
 	from: Node_ID,
 	type: u16,
 	inps: []Node_ID,
 	extra: Mem_Op,
 	force_load := false,
 ) -> Node_ID {
-	fnode := get_node(graph, from)
-	id := bac.add_raw(graph, fnode.name, type, fnode.dt, inps)
-	node := get_node(graph, id)
+	fnode := get_node(prc, from)
+	id := bac.add_raw(prc, fnode.name, type, fnode.dt, inps)
+	node := get_node(prc, id)
 	// TODO: I no longer understand this, needs better comment
 	// NOTE: afaik this is sufficient since we don't insert load ops before
 	// scheduling
@@ -909,7 +909,7 @@ make_node :: proc(
 	node.is_load =
 		fnode.is_load || type == u16(Node_Type.X64_Load) || force_load
 	node.lane = fnode.lane
-	xextra(graph, node, Mem_Op)^ = extra
+	xextra(prc, node, Mem_Op)^ = extra
 	return id
 }
 
@@ -939,7 +939,7 @@ post_schedule_peep :: proc(
 			}
 		}
 	case .Add ..= .Xor, .Eq ..= .U_Ge, .Mul, .Div:
-		op_dt := bac.operation_datatype(ctx.graph, node)
+		op_dt := bac.operation_datatype(ctx.prc, node)
 		if op_dt in bac.FLOAT_DTS {
 			FLOAT_FOLD_OPS :: bit_set[bac.Node_Type] {
 				.Add,
@@ -1009,7 +1009,7 @@ post_schedule_peep :: proc(
 }
 
 addr_add_offset :: proc(
-	graph: ^bac.Proc,
+	prc: ^bac.Proc,
 	node: bac.Expanded_Node,
 ) -> (
 	base: Node_ID,
@@ -1017,11 +1017,11 @@ addr_add_offset :: proc(
 	ok: bool,
 ) {
 	if xtype(node) != .X64_Add do return
-	return node.inps[0], int(xextra(graph, node, Mem_Op).imm), true
+	return node.inps[0], int(xextra(prc, node, Mem_Op).imm), true
 }
 
 meta_of :: proc(
-	graph: ^bac.Proc,
+	prc: ^bac.Proc,
 	ra: ^bac.Regalloc,
 	node: bac.Expanded_Node,
 	_: $T,
@@ -1117,7 +1117,7 @@ meta_of :: proc(
 		sout = IOUT
 	}
 
-	mem_op: ^Mem_Op = xextra(graph, node, Mem_Op)
+	mem_op: ^Mem_Op = xextra(prc, node, Mem_Op)
 
 	switch xtype(node) {
 	case:
@@ -1138,7 +1138,7 @@ meta_of :: proc(
 	     .Mul:
 		return {out = out, masks = nmasks[:2], in_place_slot = 1}
 	case .Eq ..= .U_Ge:
-		ikind := ra.datatype_to_reg_kind[get_node(graph, node.inps[0]).dt]
+		ikind := ra.datatype_to_reg_kind[get_node(prc, node.inps[0]).dt]
 		return {out = out, masks = masks[ikind][:2]}
 	case .Shl ..= .U_Shr:
 		return {
@@ -1198,17 +1198,17 @@ meta_of :: proc(
 	case .Local_Addr, .Global_Addr, .Proc_Addr:
 		return {out = out}
 	case .Copy, .Set, .Call, .Return:
-		return bac.cc_node_meta(graph, ra, node, CC_TABLE[:])
+		return bac.cc_node_meta(prc, ra, node, CC_TABLE[:])
 	case .Param:
-		return {out = bac.param_mask(graph, ra, node)}
+		return {out = bac.param_mask(prc, ra, node)}
 	case .Ret:
-		return {out = bac.ret_mask(graph, ra, node)}
+		return {out = bac.ret_mask(prc, ra, node)}
 	case .Store:
 		return {masks = dup({GPA_MASK_IDX, out}), out = out, input_start = 2}
 	case .Load:
 		return {out = out, masks = GPA_MASKS[:1], input_start = 2}
 	case .If:
-		cond := get_node(graph, node.inps[1])
+		cond := get_node(prc, node.inps[1])
 		return {
 			out = out,
 			masks = nmasks[:int(cond.dt != .Void)],
@@ -1218,7 +1218,7 @@ meta_of :: proc(
 		assert(nkind == RK_GENERAL)
 		return {out = out, masks = nmasks[:1], in_place_slot = 1}
 	case .Conv, .U_Conv, .Cast:
-		inp := get_node(graph, node.inps[0])
+		inp := get_node(prc, node.inps[0])
 		return {out = out, masks = masks[ra.datatype_to_reg_kind[inp.dt]][:1]}
 	case .Simd_Extract_Lsbs:
 		return {out = out, masks = XMM_MASKS[:1]}
@@ -1245,7 +1245,7 @@ meta_of :: proc(
 		}
 
 		if xtype(node) == .X64_Store && len(node.inps) - const_off == 4 {
-			dt := get_node(graph, node.inps[3]).dt
+			dt := get_node(prc, node.inps[3]).dt
 			nmasks = masks[ra.datatype_to_reg_kind[dt]]
 		}
 
@@ -1254,7 +1254,7 @@ meta_of :: proc(
 		masks: [dynamic; 4]bac.RM_Intern_Idx
 		append(&masks, nmasks[0])
 
-		is_cload := get_node(graph, node.inps[0]).itype == .Global
+		is_cload := get_node(prc, node.inps[0]).itype == .Global
 
 		#partial switch xtype(node) {
 		case .X64_Shl ..= .X64_U_Shr:
@@ -1303,7 +1303,7 @@ meta_of :: proc(
 				in_place_slot -= 1
 			} else {
 				start = 2
-				extra_start := get_node(graph, node.inps[start]).dt == .Void
+				extra_start := get_node(prc, node.inps[start]).dt == .Void
 				start += u8(extra_start)
 				in_place_slot -= i8(extra_start)
 				if start == 2 {
@@ -1321,7 +1321,7 @@ meta_of :: proc(
 			in_place_slot = in_place_slot,
 		}
 	case .X64_Lea:
-		inp := get_node(graph, node.inps[0])
+		inp := get_node(prc, node.inps[0])
 		return {
 			out = out,
 			masks = nmasks[:1 + int(mem_op.scale != 0) - int(inp.dt == .Void)],
@@ -1331,7 +1331,7 @@ meta_of :: proc(
 		return {
 			out = out,
 			masks = GPA_MASKS[:1 + int(mem_op.scale != 0)],
-			input_start = 2 + u8(get_node(graph, node.inps[2]).dt == .Void),
+			input_start = 2 + u8(get_node(prc, node.inps[2]).dt == .Void),
 		}
 	case .X64_Mul8:
 		rax := single(ra, RAX)
@@ -1386,8 +1386,8 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 	slot: [2]int
 	ctx.used = bit_arr.init_from_masks(slot[:])
 
-	has_call := bac.layout_call_args(ctx.graph, ctx.schedule, &ctx.stack_size)
-	bac.layout_locals(ctx.graph, ctx.schedule, &ctx.stack_size)
+	has_call := bac.layout_call_args(ctx.prc, ctx.schedule, &ctx.stack_size)
+	bac.layout_locals(ctx.prc, ctx.schedule, &ctx.stack_size)
 
 	if ctx.temp_stack_slot != max(Reg_Kind) {
 		ctx.temp_slot_offset = ctx.stack_size
@@ -1455,7 +1455,7 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 	for param in params {
 		enode := expand_node(ctx, param)
 		if enode.itype == .Local {
-			extra := bac.get_extra(ctx.graph, enode, bac.Local)
+			extra := bac.get_extra(ctx.prc, enode, bac.Local)
 			extra.offset += ctx.stack_size
 		}
 	}

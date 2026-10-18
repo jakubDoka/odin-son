@@ -9,7 +9,7 @@ import "core:reflect"
 import "core:terminal/ansi"
 
 @(thread_local)
-current_graph: ^Proc
+current_prc: ^Proc
 
 @(tag = "api")
 init_custom_fmt :: #force_inline proc() {
@@ -73,7 +73,7 @@ when !fmt.NO_FMT {
 			proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
 				value := value.(Node_ID)
 				if value != 0 {
-					display_node_gvn(fi.writer, current_graph, value)
+					display_node_gvn(fi.writer, current_prc, value)
 				} else {
 					fmt.wprint(fi.writer, "nl")
 				}
@@ -85,8 +85,8 @@ when !fmt.NO_FMT {
 			Node,
 			proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
 				value := &value.(Node)
-				id := get_node_id(current_graph, value)
-				display_node(fi.writer, current_graph, id)
+				id := get_node_id(current_prc, value)
+				display_node(fi.writer, current_prc, id)
 				return true
 			},
 		)
@@ -95,8 +95,8 @@ when !fmt.NO_FMT {
 			Expanded_Node,
 			proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
 				value := &value.(Expanded_Node)
-				id := get_node_id(current_graph, value)
-				display_node(fi.writer, current_graph, id)
+				id := get_node_id(current_prc, value)
+				display_node(fi.writer, current_prc, id)
 				return true
 			},
 		)
@@ -113,7 +113,7 @@ when !fmt.NO_FMT {
 
 	display_graph :: proc(
 		w: io.Writer,
-		graph: ^Proc,
+		prc: ^Proc,
 		ctx: ^Schedule = nil,
 		prefix: proc(_: io.Writer, _: ^Node, _: Basic_Block) = nil,
 		regs: []Reg = {},
@@ -124,7 +124,7 @@ when !fmt.NO_FMT {
 		our_ctx: Schedule
 
 		if ctx == nil {
-			schedule_graph(graph, &our_ctx, .for_regalloc)
+			schedule_graph(prc, &our_ctx, .for_regalloc)
 			ctx = &our_ctx
 		}
 
@@ -149,12 +149,12 @@ when !fmt.NO_FMT {
 				)
 			}
 
-			display_node(w, graph, bb.head, scheduled = true)
+			display_node(w, prc, bb.head, scheduled = true)
 
 			fmt.wprint(w, " {\n")
 
 			for instr in bb.instrs {
-				inode := get_node(graph, instr)
+				inode := get_node(prc, instr)
 				if inode.itype == .Phi {
 					//continue
 				}
@@ -176,7 +176,7 @@ when !fmt.NO_FMT {
 				} else if prefix != nil {
 					prefix(w, inode, bb)
 				}
-				display_node(w, graph, instr, scheduled = true)
+				display_node(w, prc, instr, scheduled = true)
 				fmt.wprint(w, "\n")
 			}
 
@@ -186,28 +186,28 @@ when !fmt.NO_FMT {
 
 	display_node :: proc(
 		w: io.Writer,
-		graph: ^Proc,
+		prc: ^Proc,
 		id: Node_ID,
 		scheduled := false,
 	) {
-		if get_node(graph, id).rtype == DEAD_NODE_KIND {
+		if get_node(prc, id).rtype == DEAD_NODE_KIND {
 			fmt.wprintln(w, "<dead>")
 			return
 		}
 
-		node := expand_node(graph, id)
+		node := expand_node(prc, id)
 
 		get_any_extra_node :: #force_inline proc(
-			graph: ^Proc,
+			prc: ^Proc,
 			node: ^Node,
 		) -> any {
-			assert(int(node.rtype) < len(graph.node_extra_types))
-			return {&node.extra, graph.node_extra_types[node.rtype]}
+			assert(int(node.rtype) < len(prc.node_extra_types))
+			return {&node.extra, prc.node_extra_types[node.rtype]}
 		}
 
-		extra := get_any_extra_node(graph, node)
+		extra := get_any_extra_node(prc, node)
 
-		display_node_gvn(w, graph, id)
+		display_node_gvn(w, prc, id)
 		if node.dt != .Void {
 			fmt.wprintf(w, ":%v", node.dt)
 		}
@@ -215,7 +215,7 @@ when !fmt.NO_FMT {
 			w,
 			":%v(",
 			reflect.enum_name_from_value_any(
-				any{data = &node.rtype, id = graph.node_kind},
+				any{data = &node.rtype, id = prc.node_kind},
 			) or_else fmt.panicf(""),
 		)
 
@@ -248,29 +248,29 @@ when !fmt.NO_FMT {
 				}
 			}
 			written_one = true
-			display_node_gvn(w, graph, inp)
+			display_node_gvn(w, prc, inp)
 		}
 
 		if node.itype == .Jump && scheduled {
 			reg := node.outs[0]
-			rnode := expand_node(graph, reg.id)
+			rnode := expand_node(prc, reg.id)
 			for out in rnode.outs {
-				onode := expand_node(graph, out.id)
+				onode := expand_node(prc, out.id)
 				if false && onode.itype == .Phi {
 					if written_one do fmt.wprintf(w, ", ")
 					written_one = true
-					display_node_gvn(w, graph, onode.inps[1 + reg.idx])
+					display_node_gvn(w, prc, onode.inps[1 + reg.idx])
 				}
 			}
 		}
 
 		if (node.itype == .Region || node.itype == .Loop) && scheduled {
 			for out in node.outs {
-				onode := get_node(graph, out.id)
+				onode := get_node(prc, out.id)
 				if false && onode.itype == .Phi {
 					if written_one do fmt.wprintf(w, ", ")
 					written_one = true
-					display_node_gvn(w, graph, out.id)
+					display_node_gvn(w, prc, out.id)
 				}
 			}
 		}
@@ -279,19 +279,19 @@ when !fmt.NO_FMT {
 		written_one = false
 		for out in node.outs {
 			if out.id != 0 {
-				onode := expand_node(graph, out.id)
+				onode := expand_node(prc, out.id)
 				if false && onode.itype == .Phi && scheduled {
 					if out.idx != 0 {
 						reg := onode.inps[0]
-						rnode := expand_node(graph, reg)
+						rnode := expand_node(prc, reg)
 						idx := 0
 						for ro in rnode.outs {
 							if ro.id == out.id do break
-							idx += int(get_node(graph, ro.id).itype == .Phi)
+							idx += int(get_node(prc, ro.id).itype == .Phi)
 						}
 						if written_one do fmt.wprintf(w, ", ")
 						written_one = true
-						display_node_gvn(w, graph, rnode.inps[out.idx - 1])
+						display_node_gvn(w, prc, rnode.inps[out.idx - 1])
 						fmt.wprintf(w, ":%v", 1 + idx)
 					}
 					continue
@@ -299,7 +299,7 @@ when !fmt.NO_FMT {
 			}
 			if written_one do fmt.wprintf(w, ", ")
 			written_one = true
-			display_node_gvn(w, graph, out.id)
+			display_node_gvn(w, prc, out.id)
 			fmt.wprintf(w, ":%v", out.idx)
 		}
 		fmt.wprint(w, "]")
@@ -393,12 +393,12 @@ when !fmt.NO_FMT {
 		}
 	}
 
-	display_node_gvn :: proc(w: io.Writer, graph: ^Proc, id: Node_ID) {
+	display_node_gvn :: proc(w: io.Writer, prc: ^Proc, id: Node_ID) {
 		if id == 0 {
 			fmt.wprint(w, "nl")
 			return
 		}
-		n := get_node(graph, id)
+		n := get_node(prc, id)
 
 		stable_id := n.gvn
 		name := ""
@@ -423,7 +423,7 @@ when !fmt.NO_FMT {
 } else {
 	display_graph :: #force_inline proc(
 		w: io.Writer,
-		graph: ^Proc,
+		prc: ^Proc,
 		ctx: ^Schedule = nil,
 		prefix: proc(_: io.Writer, _: ^Node, _: Basic_Block) = nil,
 		regs: []Reg = {},
@@ -431,14 +431,14 @@ when !fmt.NO_FMT {
 
 	display_node :: #force_inline proc(
 		w: io.Writer,
-		graph: ^Proc,
+		prc: ^Proc,
 		id: Node_ID,
 		scheduled := false,
 	) {}
 
 	display_node_gvn :: #force_inline proc(
 		w: io.Writer,
-		graph: ^Proc,
+		prc: ^Proc,
 		id: Node_ID,
 	) {}
 	ansi_start :: #force_inline proc(w: io.Writer, #any_int gvn: int) {}

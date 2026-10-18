@@ -119,7 +119,7 @@ main :: proc() {
 	arna.scratch[1].reserved = 64 * 1024 * 1024
 
 	types: typecheck.Types
-	types.mems.graph.reserved = 4096 * 16384
+	types.mems.prc.reserved = 4096 * 16384
 	types.mems.regalloc.reserved = 4096 * 8192
 	types.mems.scratch.reserved = 4096 * 2048
 	types.mems.code.reserved = 4096 * 4096
@@ -153,7 +153,7 @@ main :: proc() {
 	ctx.global = &global_ctx
 	ctx.target = target
 	ctx.check = check
-	ctx.graph.has_dbg = debug
+	ctx.prc.has_dbg = debug
 	ctx.ralloc_mode = level.ralloc_mode
 	ctx.errors = os.to_writer(os.stderr)
 

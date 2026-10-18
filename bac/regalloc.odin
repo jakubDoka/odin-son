@@ -133,7 +133,7 @@ Regalloc_Spec :: struct {
 	spill_boundary:       []int,
 	call_clobbers:        [][]i64,
 	collect_meta:         proc(
-		graph: ^Proc,
+		prc: ^Proc,
 		ra: ^Regalloc,
 		sched: ^Schedule,
 	) -> (
@@ -284,7 +284,7 @@ Regalloc_Node_Meta :: struct {
 }
 
 regalloc_collect_meta :: #force_inline proc(
-	graph: ^Proc,
+	prc: ^Proc,
 	ra: ^Regalloc,
 	sched: ^Schedule,
 	meta_of: proc(
@@ -299,18 +299,18 @@ regalloc_collect_meta :: #force_inline proc(
 	ra.rms.slots = make(type_of(ra.rms.slots), len(ra.spill_boundary))
 	ra.rms.lens = make(type_of(ra.rms.lens), len(ra.spill_boundary))
 
-	slots = make([]Regalloc_Node_Meta, int(graph.gvn) - len(sched.bbs))
-	rev_count := int(graph.gvn) - len(sched.bbs)
+	slots = make([]Regalloc_Node_Meta, int(prc.gvn) - len(sched.bbs))
+	rev_count := int(prc.gvn) - len(sched.bbs)
 
 	when !ODIN_DISABLE_ASSERT {
-		seen := bit_arr.init(graph.gvn)
+		seen := bit_arr.init(prc.gvn)
 	}
 
 	idx := 1
 	for bb, j in sched.bbs {
-		get_node(graph, bb.head).gvn = u32(len(slots) + j)
+		get_node(prc, bb.head).gvn = u32(len(slots) + j)
 		for instr in bb.instrs {
-			inode := expand_node(graph, instr)
+			inode := expand_node(prc, instr)
 			when !ODIN_DISABLE_ASSERT {
 				fmt.assertf(bit_arr.set(seen, inode.gvn), "%v", inode)
 			}
@@ -318,7 +318,7 @@ regalloc_collect_meta :: #force_inline proc(
 			inode.gvn = u32(idx)
 			idx += 1
 
-			meta := meta_of(graph, ra, inode)
+			meta := meta_of(prc, ra, inode)
 
 			if meta.out == INVALID_RM_INDEX {
 				rev_count -= 1

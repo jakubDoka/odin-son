@@ -11,15 +11,15 @@ Node_ID :: bac.Node_ID
 expand_node :: bac.expand_node
 
 @(tag = "api")
-memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
-	assert(graph.node_spec == &SPEC)
+memopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
+	assert(prc.node_spec == &SPEC)
 
-	if .Mem_Opt not_in graph.opt_flags do return
-	bac.pass_quard(graph, .Mem, &optimized) or_return
+	if .Mem_Opt not_in prc.opt_flags do return
+	bac.pass_quard(prc, .Mem, &optimized) or_return
 
 	context.allocator, _ = arna.scrath()
 
-	bac.verify(graph)
+	bac.verify(prc)
 
 	Edit_Slot :: struct {
 		prev: u32,
@@ -36,7 +36,7 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 	}
 
 	Ctx :: struct {
-		using graph:       ^bac.Proc,
+		using prc:         ^bac.Proc,
 		deleted_lazy_phys: [dynamic]Node_ID,
 		joins:             [dynamic]Join,
 		loops:             [dynamic]Loop,
@@ -64,28 +64,28 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 	}
 
 	ctx: Ctx
-	ctx.graph = graph
-	ctx.slot_idx = make([]u32, graph.gvn)
-	ctx.graph.dont_delete = true
+	ctx.prc = prc
+	ctx.slot_idx = make([]u32, prc.gvn)
+	ctx.prc.dont_delete = true
 
 	threads: [dynamic]Node_ID
 
-	emem := bac.find_node(graph, .Mem)
+	emem := bac.find_node(prc, .Mem)
 
 	sroad := 0
 	total := 0
 	mismatches := 0
 	rename_slot_count: u32
-	sroa: for mout in bac.get_outputs(graph, emem) {
-		mnode := expand_node(graph, mout.id)
+	sroa: for mout in bac.get_outputs(prc, emem) {
+		mnode := expand_node(prc, mout.id)
 		if mnode.itype != .Local do continue
 
 		total += 1
 
-		slot_size := bac.get_extra(graph, mnode, Local).size
+		slot_size := bac.get_extra(prc, mnode, Local).size
 
 		assert(len(mnode.outs) == 1)
-		local_addr := expand_node(graph, mnode.outs[0].id)
+		local_addr := expand_node(prc, mnode.outs[0].id)
 
 		assert(local_addr.itype == .Local_Addr)
 
@@ -102,10 +102,10 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 
 		iter: bac.Offset_Iter
 		iter.curr = mnode.outs[0].id
-		collect_slot: for out in bac.offset_iter_next(graph, &iter) {
-			onode := get_node(graph, out.id)
+		collect_slot: for out in bac.offset_iter_next(prc, &iter) {
+			onode := get_node(prc, out.id)
 			//fmt.println(onode)
-			size, ok := bac.mem_op_size(graph, out.id)
+			size, ok := bac.mem_op_size(prc, out.id)
 			if !ok {
 				failed_sroa = true
 				failed_split = true
@@ -158,9 +158,9 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 		sroad += 1
 		if len(slots) != 1 {
 			for &slot in slots {
-				local := bac.add_local(graph, "sroal", emem)
-				bac.get_extra(graph, local, Local).size = slot.end - slot.start
-				slot.local = bac.add_local_addr(graph, "sroadr", local)
+				local := bac.add_local(prc, "sroal", emem)
+				bac.get_extra(prc, local, Local).size = slot.end - slot.start
+				slot.local = bac.add_local_addr(prc, "sroadr", local)
 			}
 
 			Op :: struct {
@@ -172,7 +172,7 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 
 			iter = {}
 			iter.curr = mnode.outs[0].id
-			for out in bac.offset_iter_next(graph, &iter) {
+			for out in bac.offset_iter_next(prc, &iter) {
 				for &slt in slots {
 					if int(slt.start) == iter.offset {
 						append(&ops, Op{slt.local, out.id})
@@ -182,7 +182,7 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 			}
 
 			for op in ops {
-				bac.set_input(graph, op.id, 2, op.local)
+				bac.set_input(prc, op.id, 2, op.local)
 			}
 		} else {
 			slots[0].local = mnode.outs[0].id
@@ -191,7 +191,7 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 		for slot in slots {
 			iter = {}
 			iter.curr = slot.local
-			for op in bac.offset_iter_next(graph, &iter) {
+			for op in bac.offset_iter_next(prc, &iter) {
 				edit_node_id(&ctx, op.id, rename_slot_count)
 			}
 			rename_slot_count += 1
@@ -204,7 +204,7 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 	for thread in threads {
 		iter = {}
 		iter.curr = thread
-		for op in bac.offset_iter_next(graph, &iter) {
+		for op in bac.offset_iter_next(prc, &iter) {
 			edit_node_id(&ctx, op.id, rename_slot_count)
 		}
 
@@ -214,15 +214,15 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 		// freedom already, in which case we revert
 		iter = {}
 		iter.curr = thread
-		for op in bac.offset_iter_next(graph, &iter) {
-			opnode := expand_node(graph, op.id)
+		for op in bac.offset_iter_next(prc, &iter) {
+			opnode := expand_node(prc, op.id)
 			#partial switch opnode.itype {
 			case .Load, .Store, .Set:
 				outs := opnode.outs
 				if opnode.itype == .Load do outs = {}
 
 				for opout in outs {
-					oponode := expand_node(graph, opout.id)
+					oponode := expand_node(prc, opout.id)
 					if id, ok := get_edited_node_idx(&ctx, oponode);
 					   ok && id == rename_slot_count {
 						continue
@@ -243,20 +243,20 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 				}
 
 				inp_restricted: {
-					opinode := expand_node(graph, opnode.inps[1])
+					opinode := expand_node(prc, opnode.inps[1])
 					if id, ok := get_edited_node_idx(&ctx, opinode);
 					   ok && id == rename_slot_count {
 						break inp_restricted
 					}
 
 					if opinode.itype == .Mem {
-						opinode = expand_node(graph, opinode.inps[0])
+						opinode = expand_node(prc, opinode.inps[0])
 						if opinode.itype == .Split_Mem {
-							opinode = expand_node(graph, opinode.inps[0])
+							opinode = expand_node(prc, opinode.inps[0])
 						}
 
 						if opinode.itype == .Mem {
-							opinode = expand_node(graph, opinode.inps[0])
+							opinode = expand_node(prc, opinode.inps[0])
 						}
 
 						if opinode.itype == .Entry {
@@ -278,7 +278,7 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 		if already_loose {
 			iter = {}
 			iter.curr = thread
-			for op in bac.offset_iter_next(graph, &iter) {
+			for op in bac.offset_iter_next(prc, &iter) {
 				edit_node_id(&ctx, op.id, max(u32))
 			}
 		} else {
@@ -286,8 +286,8 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 		}
 	}
 
-	bac.add_efficiency_stat(graph, .sroa_slot_mismatch, mismatches, 0)
-	bac.add_efficiency_stat(graph, .sroad_locals, total, sroad)
+	bac.add_efficiency_stat(prc, .sroa_slot_mismatch, mismatches, 0)
+	bac.add_efficiency_stat(prc, .sroad_locals, total, sroad)
 
 	edit_node_id :: proc(ctx: ^Ctx, id: Node_ID, new: u32) {
 		node := get_node(ctx, id)
@@ -311,7 +311,7 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 			split = bac.add_split_mem(ctx, "ptspl", emem)
 			split_mem := bac.add_mem(ctx, "mscm", split)
 			for out in bac.get_outputs(ctx, emem) {
-				if out.id != split && get_node(graph, out.id).itype != .Local {
+				if out.id != split && get_node(prc, out.id).itype != .Local {
 					bac.set_input(ctx, out.id, out.idx, split_mem)
 				}
 			}
@@ -329,13 +329,13 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 	ctx.dont_delete = false
 
 	for phi in ctx.deleted_lazy_phys {
-		if get_node(graph, phi).rtype == bac.DEAD_NODE_KIND do continue
-		bac.subsume(graph, bac.get_inputs(graph, phi)[1], phi)
+		if get_node(prc, phi).rtype == bac.DEAD_NODE_KIND do continue
+		bac.subsume(prc, bac.get_inputs(prc, phi)[1], phi)
 	}
 
 	if len(ctx.scope) > int(ctx.threads_start) {
 		for einp in bac.get_inputs(ctx, ctx.end) {
-			if bac.is_end_ctrl(graph, einp) {
+			if bac.is_end_ctrl(prc, einp) {
 				node := expand_node(ctx, einp)
 				connect_to := einp
 				if node.itype == .Return {
@@ -359,11 +359,11 @@ memopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 
 	if !ODIN_DISABLE_ASSERT {
 		wl: bac.Worklist
-		bac.worklist_init(&wl, int(graph.gvn))
-		bac.collect_nodes(graph, &wl)
+		bac.worklist_init(&wl, int(prc.gvn))
+		bac.collect_nodes(prc, &wl)
 
 		for n in wl.data[:wl.len] {
-			expand_node(graph, n)
+			expand_node(prc, n)
 		}
 	}
 

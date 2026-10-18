@@ -332,35 +332,35 @@ collect_meta :: proc(ctx: ^bac.Proc,
 	return bac.regalloc_collect_meta(ctx, ra, sched, meta_of_)
 }
 
-add_msub :: #force_inline proc(graph: ^bac.Proc, name: string, dt: bac.Node_Datatype, multiplicant: bac.Node_ID, multiplier: bac.Node_ID, subtractant: bac.Node_ID) -> (_id: bac.Node_ID) {
-	return bac.add_raw(graph, name, u16(Node_Type.Msub), dt, {multiplicant, multiplier, subtractant})
+add_msub :: #force_inline proc(prc: ^bac.Proc, name: string, dt: bac.Node_Datatype, multiplicant: bac.Node_ID, multiplier: bac.Node_ID, subtractant: bac.Node_ID) -> (_id: bac.Node_ID) {
+	return bac.add_raw(prc, name, u16(Node_Type.Msub), dt, {multiplicant, multiplier, subtractant})
 }
-add_cmlt :: #force_inline proc(graph: ^bac.Proc, name: string, lhs: bac.Node_ID, lane: bac.Lane_Type = {}) -> (_id: bac.Node_ID) {
-	return bac.add_raw(graph, name, u16(Node_Type.Cmlt), .V128, {lhs}, {lane = lane,})
+add_cmlt :: #force_inline proc(prc: ^bac.Proc, name: string, lhs: bac.Node_ID, lane: bac.Lane_Type = {}) -> (_id: bac.Node_ID) {
+	return bac.add_raw(prc, name, u16(Node_Type.Cmlt), .V128, {lhs}, {lane = lane,})
 }
-add_ext :: #force_inline proc(graph: ^bac.Proc, name: string, lhs: bac.Node_ID, rhs: bac.Node_ID, aux: u32, lane: bac.Lane_Type = {}) -> (_id: bac.Node_ID) {
-	(^Arm_Op)(bac.get_next_extra_slot(graph, u16(Node_Type.Ext), 0))^ = {
+add_ext :: #force_inline proc(prc: ^bac.Proc, name: string, lhs: bac.Node_ID, rhs: bac.Node_ID, aux: u32, lane: bac.Lane_Type = {}) -> (_id: bac.Node_ID) {
+	(^Arm_Op)(bac.get_next_extra_slot(prc, u16(Node_Type.Ext), 0))^ = {
 		aux = aux,
 	}
-	return bac.add_raw(graph, name, u16(Node_Type.Ext), .V128, {lhs, rhs}, {lane = lane,})
+	return bac.add_raw(prc, name, u16(Node_Type.Ext), .V128, {lhs, rhs}, {lane = lane,})
 }
-add_zip1 :: #force_inline proc(graph: ^bac.Proc, name: string, lsh: bac.Node_ID, rhs: bac.Node_ID, lane: bac.Lane_Type = {}) -> (_id: bac.Node_ID) {
-	return bac.add_raw(graph, name, u16(Node_Type.Zip1), .V128, {lsh, rhs}, {lane = lane,})
+add_zip1 :: #force_inline proc(prc: ^bac.Proc, name: string, lsh: bac.Node_ID, rhs: bac.Node_ID, lane: bac.Lane_Type = {}) -> (_id: bac.Node_ID) {
+	return bac.add_raw(prc, name, u16(Node_Type.Zip1), .V128, {lsh, rhs}, {lane = lane,})
 }
-add_addv128 :: #force_inline proc(graph: ^bac.Proc, name: string, dt: bac.Node_Datatype, vec: bac.Node_ID, lane: bac.Lane_Type = {}) -> (_id: bac.Node_ID) {
-	return bac.add_raw(graph, name, u16(Node_Type.Addv128), dt, {vec}, {lane = lane,})
+add_addv128 :: #force_inline proc(prc: ^bac.Proc, name: string, dt: bac.Node_Datatype, vec: bac.Node_ID, lane: bac.Lane_Type = {}) -> (_id: bac.Node_ID) {
+	return bac.add_raw(prc, name, u16(Node_Type.Addv128), dt, {vec}, {lane = lane,})
 }
-add_umov :: #force_inline proc(graph: ^bac.Proc, name: string, dt: bac.Node_Datatype, vec: bac.Node_ID, aux: u32) -> (_id: bac.Node_ID) {
-	(^Arm_Op)(bac.get_next_extra_slot(graph, u16(Node_Type.Umov), 0))^ = {
+add_umov :: #force_inline proc(prc: ^bac.Proc, name: string, dt: bac.Node_Datatype, vec: bac.Node_ID, aux: u32) -> (_id: bac.Node_ID) {
+	(^Arm_Op)(bac.get_next_extra_slot(prc, u16(Node_Type.Umov), 0))^ = {
 		aux = aux,
 	}
-	return bac.add_raw(graph, name, u16(Node_Type.Umov), dt, {vec})
+	return bac.add_raw(prc, name, u16(Node_Type.Umov), dt, {vec})
 }
-add_csel_ult_imm :: #force_inline proc(graph: ^bac.Proc, name: string, dt: bac.Node_Datatype, on_true: bac.Node_ID, on_false: bac.Node_ID, count: bac.Node_ID, aux: u32) -> (_id: bac.Node_ID) {
-	(^Arm_Op)(bac.get_next_extra_slot(graph, u16(Node_Type.Csel_Ult_Imm), 0))^ = {
+add_csel_ult_imm :: #force_inline proc(prc: ^bac.Proc, name: string, dt: bac.Node_Datatype, on_true: bac.Node_ID, on_false: bac.Node_ID, count: bac.Node_ID, aux: u32) -> (_id: bac.Node_ID) {
+	(^Arm_Op)(bac.get_next_extra_slot(prc, u16(Node_Type.Csel_Ult_Imm), 0))^ = {
 		aux = aux,
 	}
-	return bac.add_raw(graph, name, u16(Node_Type.Csel_Ult_Imm), dt, {on_true, on_false, count})
+	return bac.add_raw(prc, name, u16(Node_Type.Csel_Ult_Imm), dt, {on_true, on_false, count})
 }
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {

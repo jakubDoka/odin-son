@@ -35,6 +35,11 @@ API_Proc :: struct {
 }
 
 main :: proc() {
+	when #config(BAC_RUST_ONLY, false) {
+		generate_rust(API[:])
+		return
+	}
+
 	mkerr := os.make_directory("bac/bindgen/lib")
 	assert(mkerr == nil || mkerr == .Exist)
 	mkerr = os.make_directory("bac/bindgen/c")
@@ -155,20 +160,30 @@ typedef struct {
 
 					fmt.fprintfln(lib, "\t%v: %T,", name, type)
 				}
+				for i in 0 ..< len(results.types) - 1 {
+					fmt.fprintfln(lib, "\tbinding_out_%v: ^%T,", i, results.types[i])
+				}
 
 				fmt.fprintf(lib, `)`)
 
 				if len(results.types) != 0 {
 					fmt.fprintfln(lib, " -> (")
-					for i in 0 ..< len(results.types) {
-						fmt.fprintfln(lib, "\t%T,", results.types[i])
-					}
+					fmt.fprintfln(lib, "\t%T,", results.types[len(results.types) - 1])
 					fmt.fprintf(lib, ")")
 				}
 
 				fmt.fprintf(lib, " {{\n\tcontext = {{}}\n\t")
-				if len(results.types) != 0 {
+				if entry.name == "arg_gen_finalize" {
+					fmt.fprintf(lib, "context.allocator = arna.allocator(ctx.mem)\n\t")
+				}
+				if len(results.types) == 1 {
 					fmt.fprintf(lib, "return ")
+				} else if len(results.types) > 1 {
+					for i in 0 ..< len(results.types) {
+						if i != 0 do fmt.fprintf(lib, ", ")
+						fmt.fprintf(lib, "binding_result_%v", i)
+					}
+					fmt.fprintf(lib, " := ")
 				}
 
 				fmt.fprintf(lib, "%v.%v(", packag, entry.name)
@@ -177,6 +192,12 @@ typedef struct {
 					fmt.fprintf(lib, "%v", params.names[i])
 				}
 				fmt.fprintfln(lib, ")")
+				if len(results.types) > 1 {
+					for i in 0 ..< len(results.types) - 1 {
+						fmt.fprintfln(lib, "\tbinding_out_%v^ = binding_result_%v", i, i)
+					}
+					fmt.fprintfln(lib, "\treturn binding_result_%v", len(results.types) - 1)
+				}
 
 				fmt.fprintfln(lib, "}}\n")
 			}
@@ -331,7 +352,7 @@ typedef struct {
 
 					fmt.sbprintfln(f, ");")
 				} else {
-					name := fmt.tprintf("%v_%v", prefix, entry.name)
+					name := fmt.tprintf("%v_%v", packag, entry.name)
 					c_display_type(
 						f,
 						type_info_of(entry.type),
@@ -347,6 +368,7 @@ typedef struct {
 	}
 
 	os.write_string(c_file, strings.to_string(c_lib))
+	generate_rust(API[:])
 
 	visit :: proc(
 		ty: ^runtime.Type_Info,

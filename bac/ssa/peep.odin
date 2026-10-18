@@ -693,8 +693,8 @@ peep :: proc(
 		}
 	case .Neg ..= .U_Conv:
 		op := Un_Op(node.itype)
-		oper := expand_node(ctx.graph, node.inps[0])
-		coper := bac.get_extra(ctx.graph, oper, CInt)
+		oper := expand_node(ctx.prc, node.inps[0])
+		coper := bac.get_extra(ctx.prc, oper, CInt)
 
 		if op == .Conv || op == .U_Conv {
 			if oper.dt == node.dt do return node.inps[0]
@@ -716,21 +716,21 @@ peep :: proc(
 
 		if coper != nil {
 			value := fold_un_op(op, coper.value, node.dt, oper.dt)
-			return bac.add_c_int(ctx.graph, "fld", node.dt, value)
+			return bac.add_c_int(ctx.prc, "fld", node.dt, value)
 		}
 	case .Add ..= .And_Not:
-		lhs := expand_node(ctx.graph, node.inps[0])
-		rhs := expand_node(ctx.graph, node.inps[1])
+		lhs := expand_node(ctx.prc, node.inps[0])
+		rhs := expand_node(ctx.prc, node.inps[1])
 
-		clhs := bac.get_extra(ctx.graph, lhs, CInt)
-		crhs := bac.get_extra(ctx.graph, rhs, CInt)
+		clhs := bac.get_extra(ctx.prc, lhs, CInt)
+		crhs := bac.get_extra(ctx.prc, rhs, CInt)
 		op := Bin_Op(node.itype)
-		op_ty := bac.operation_datatype(ctx.graph, node)
+		op_ty := bac.operation_datatype(ctx.prc, node)
 		is_integer := op_ty in bac.INT_DTS
 
 		if clhs != nil && crhs != nil {
 			value := fold_bin_op(clhs.value, op, crhs.value, op_ty)
-			return bac.add_c_int(ctx.graph, "fld", node.dt, value)
+			return bac.add_c_int(ctx.prc, "fld", node.dt, value)
 		}
 
 		if is_integer && crhs != nil {
@@ -785,12 +785,12 @@ peep :: proc(
 				.U_Gt,
 			}
 			if op in SYMETRI_IS_ZERO {
-				return bac.add_c_int(ctx.graph, "sim0", .I64, 0)
+				return bac.add_c_int(ctx.prc, "sim0", .I64, 0)
 			}
 
 			SYMETRI_IS_ONE := bit_set[Bin_Op]{.Eq, .Le, .Ge, .U_Le, .U_Ge}
 			if op in SYMETRI_IS_ONE {
-				return bac.add_c_int(ctx.graph, "sim1", .I64, 1)
+				return bac.add_c_int(ctx.prc, "sim1", .I64, 1)
 			}
 		}
 
@@ -804,13 +804,13 @@ peep :: proc(
 			clhs_rhs := bac.get_extra(ctx, lhs.inps[1], CInt)
 			for clhs_rhs != nil && clhs_lhs == nil {
 				res := bac.add_bin_op(
-					ctx.graph,
+					ctx.prc,
 					"rsoc",
 					bac.Bin_Op(op),
 					node.dt,
 					lhs.inps[0],
 					bac.add_c_int(
-						ctx.graph,
+						ctx.prc,
 						"rfld",
 						node.dt,
 						fold_bin_op(clhs_rhs.value, op, crhs.value, op_ty),

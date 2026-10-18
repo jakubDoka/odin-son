@@ -84,11 +84,11 @@ run_test :: proc(
 	}
 	context.random_generator = {}
 
-	if types.mems.graph.reserved == 0 {
+	if types.mems.prc.reserved == 0 {
 		arna.scratch[0].reserved = 1024 * 1024
 		arna.scratch[1].reserved = 1024 * 1024
 
-		types.mems.graph.reserved = 4096 * 128
+		types.mems.prc.reserved = 4096 * 128
 		types.mems.regalloc.reserved = 4096 * 64
 		types.mems.scratch.reserved = 4096 * 16
 		types.mems.code.reserved = 4096 * 16
@@ -212,8 +212,8 @@ run_test :: proc(
 			}
 		}
 
-		bac.current_graph = &ctx
-		defer bac.current_graph = nil
+		bac.current_prc = &ctx
+		defer bac.current_prc = nil
 
 		types.mems.code.pos = 0
 		types.mems.reloc.pos = 0
@@ -281,11 +281,11 @@ run_test :: proc(
 			}
 
 			for kind, i in ([]ssa.Builtin_Proc{.memcpy, .memset}) {
-				ctx.graph = {
-					has_dbg = ctx.graph.has_dbg,
+				ctx.prc = {
+					has_dbg = ctx.prc.has_dbg,
 				}
 				ctx.node_spec = &ssa.SPEC
-				ctx.mem = &ctx.mems.graph
+				ctx.mem = &ctx.mems.prc
 				ctx.mem.pos = bac.PRECISION
 				ctx.opt_flags = level.flags
 				ctx.stats = &ctx.tstats

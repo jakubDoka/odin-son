@@ -140,7 +140,7 @@ schedule_graph :: proc(prc: ^Proc, gs: ^Schedule, purpose: enum {
 	no_late_pass := purpose == .for_loopopt
 	gs^ = {}
 
-	context.allocator, _ = arna.scrath(scratch)
+	context.allocator, _ = arna.scrath(prc.temps, scratch)
 
 	Loop_Ctx :: struct {
 		using prc:   ^Proc,

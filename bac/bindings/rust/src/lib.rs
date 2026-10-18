@@ -4,6 +4,8 @@
 
 // AMEND CODEGEN:
 //  - Generate better names for the anon types, use the parent struct name + field name
+//  - Generate better formatting
+//  - Generate generic version of fixed size array FixedCapDynArray<LEN, T>
 
 extern crate alloc;
 
@@ -105,16 +107,7 @@ fn arena_raw(data: *mut u8, len: usize) -> sys::arna_Allocator {
     }
 }
 
-pub fn set_scratch(arenas: [Arena<'static>; 2]) {
-    let slots = unsafe { sys::arna_get_scratch() }.cast::<Arena<'static>>();
-    for (i, arena) in arenas.into_iter().enumerate() {
-        unsafe { drop(slots.add(i).replace(arena)) };
-    }
-}
-
-pub fn clear_scratch() {
-    set_scratch([Arena::default(), Arena::default()]);
-}
+pub type Temps<'a> = [Arena<'a>; 2];
 
 #[repr(transparent)]
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
@@ -134,13 +127,13 @@ impl NodeId {
 #[repr(transparent)]
 pub struct Proc<'a> {
     raw: sys::bac_Proc,
-    _arena: PhantomData<&'a mut Arena<'a>>,
+    _arena: PhantomData<(&'a mut Arena<'a>, &'a mut Temps<'a>)>,
 }
 
 impl<'a> Proc<'a> {
-    pub fn new(arena: &'a mut Arena<'_>) -> Self {
+    pub fn new(arena: &'a mut Arena<'_>, temps: &'a mut Temps<'_>) -> Self {
         let mut raw = unsafe { core::mem::zeroed() };
-        unsafe { sys::bac_start_proc(&mut raw, &mut arena.raw) };
+        unsafe { sys::bac_start_proc(&mut raw, &mut arena.raw, ptr::from_mut(temps).cast()) };
         Self {
             raw,
             _arena: PhantomData,

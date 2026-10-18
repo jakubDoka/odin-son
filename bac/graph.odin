@@ -441,7 +441,9 @@ Proc :: struct {
 	worklist:        ^Worklist,
 	triggers:        ^[dynamic][dynamic]Node_ID,
 	mem:             ^arna.Allocator,
+	temps:           ^arna.Temps,
 	curret_sloc:     Sloc,
+	nil_sloc_slot:   Sloc,
 	using meta:      Proc_Meta,
 	dont_intern:     bool,
 	dont_delete:     bool,
@@ -688,9 +690,11 @@ assemble_args :: proc(
 	res: []Node_ID,
 	starter: Node_ID,
 ) {
-	prev := current_prc
-	current_prc = ctx
-	defer current_prc = prev
+	when !fmt.NO_FMT {
+		prev := current_prc
+		current_prc = ctx
+		defer current_prc = prev
+	}
 
 	params := make([]Node_ID, param_count)
 	find_args: for eout in get_outputs(ctx, ctx.entry) {
@@ -767,7 +771,7 @@ worklist_init :: proc(w: ^Worklist, #any_int cap: int = 0) {
 
 @(tag = "api")
 compact :: proc(prc: ^Proc) {
-	context.allocator, _ = arna.scrath()
+	context.allocator, _ = arna.scrath(prc.temps)
 
 	assert_live_pins(prc)
 
@@ -1157,7 +1161,7 @@ apply_peeps :: proc(ctx: Peep_Ctx) -> (optimized: bool) {
 	prc.computed_passes |= {.Peep}
 	snap := pass_snapshot(ctx)
 
-	context.allocator, _ = arna.scrath()
+	context.allocator, _ = arna.scrath(prc.temps)
 
 	worklist: Worklist
 	worklist_init(&worklist, int(prc.gvn))
@@ -1313,7 +1317,7 @@ collect_nodes :: proc(prc: ^Proc, worklist: ^Worklist, renumber := true) {
 	}
 
 	when !ODIN_DISABLE_ASSERT {
-		context.allocator, _ = arna.scrath()
+		context.allocator, _ = arna.scrath(prc.temps)
 		seen := bit_arr.init(prc.gvn)
 		for n in worklist.data[:worklist.len] {
 			node := get_node(prc, n)
@@ -1328,9 +1332,11 @@ collect_nodes :: proc(prc: ^Proc, worklist: ^Worklist, renumber := true) {
 
 @(disabled = ODIN_DISABLE_ASSERT)
 assert_live_pins :: proc(prc: ^Proc) {
-	prev := current_prc
-	current_prc = prc
-	defer current_prc = prev
+	when !fmt.NO_FMT {
+		prev := current_prc
+		current_prc = prc
+		defer current_prc = prev
+	}
 	expected := [?]Node_Type{.Entry, .End}
 	for &n, i in mem.slice_data_cast(
 		[]Node_ID,
@@ -2108,15 +2114,12 @@ get_tag :: proc(prc: ^Proc, node: Node_ID) -> ^Tag {
 	}
 }
 
-@(thread_local)
-nil_sloc_slot: Sloc
-
 @(tag = "node_proc")
 get_sloc_node :: proc(prc: ^Proc, node: ^Node) -> ^Sloc {
 	assert(int(node.rtype) < len(prc.node_extra_sizes))
 	pos := prc.node_extra_sizes[node.rtype] + u8(node.extra_dwords)
 	ptr := &([^]u32)(&node.extra)[pos]
-	return prc.has_dbg ? (^Sloc)(ptr) : &nil_sloc_slot
+	return prc.has_dbg ? (^Sloc)(ptr) : &prc.nil_sloc_slot
 }
 
 Add_Raw_Meta :: bit_field u64 {

@@ -8,9 +8,6 @@ import "core:mem"
 import "core:reflect"
 import "core:terminal/ansi"
 
-@(thread_local)
-current_prc: ^Proc
-
 @(tag = "api")
 init_custom_fmt :: #force_inline proc() {
 	when !fmt.NO_FMT {
@@ -19,6 +16,9 @@ init_custom_fmt :: #force_inline proc() {
 }
 
 when !fmt.NO_FMT {
+	@(thread_local)
+	current_prc: ^Proc
+
 	init_custom_fmt_impl :: proc() {
 		Scratch :: struct #align (4096) {
 			buf: [4096]u8,
@@ -118,7 +118,7 @@ when !fmt.NO_FMT {
 		prefix: proc(_: io.Writer, _: ^Node, _: Basic_Block) = nil,
 		regs: []Reg = {},
 	) {
-		context.allocator, _ = arna.scrath()
+		context.allocator, _ = arna.scrath(prc.temps)
 
 		ctx := ctx
 		our_ctx: Schedule

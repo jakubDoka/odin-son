@@ -152,7 +152,7 @@ compute_latices :: proc(
 
 	if .Sccp not_in ctx.opt_flags && false do return
 
-	context.allocator, _ = arna.scrath(scratch)
+	context.allocator, _ = arna.scrath(ctx.temps, scratch)
 
 	worklist: Worklist
 	triggers: [dynamic][dynamic]Node_ID

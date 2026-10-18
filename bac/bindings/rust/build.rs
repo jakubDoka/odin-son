@@ -29,7 +29,7 @@ fn watch(path: &Path) {
 }
 
 fn main() {
-    for key in ["BAC_LIB_PATH", "ODIN", "AR"] {
+    for key in ["BAC_LIB_PATH", "ODIN"] {
         println!("cargo:rerun-if-env-changed={key}");
     }
     let manifest = PathBuf::from(env::var_os("CARGO_MANIFEST_DIR").unwrap());
@@ -61,6 +61,7 @@ fn main() {
                     "-define:NO_FMT=true",
                     "-default-to-nil-allocator",
                     "-define:ARNA_DISABLE_VIRTUAL=true",
+                    "-define:ARNA_DISABLE_THREAD_LOCAL=true",
                     "-disable-init-fini",
                     "-define:INIT_FINI=false",
                 ])
@@ -80,20 +81,18 @@ fn main() {
     if env::var_os("CARGO_FEATURE_BUILD_FROM_SOURCE").is_none() {
         println!("cargo:rerun-if-changed={}", library.display());
     }
-    let archive = out.join("libbac.a");
-    if library.extension().is_some_and(|ext| ext == "a") {
-        std::fs::copy(library, &archive).unwrap();
+    let library = library.canonicalize().unwrap();
+    let modifiers = if library.extension().is_some_and(|ext| ext == "a") {
+        "+verbatim"
     } else {
-        if archive.exists() {
-            std::fs::remove_file(&archive).unwrap();
-        }
-        run(
-            Command::new(env::var_os("AR").unwrap_or_else(|| "ar".into()))
-                .arg("crs")
-                .arg(&archive)
-                .arg(&library),
-        );
-    }
-    println!("cargo:rustc-link-search=native={}", out.display());
-    println!("cargo:rustc-link-lib=static=bac");
+        "-bundle,+verbatim"
+    };
+    println!(
+        "cargo:rustc-link-search=native={}",
+        library.parent().unwrap().display()
+    );
+    println!(
+        "cargo:rustc-link-lib=static:{modifiers}={}",
+        library.file_name().unwrap().to_str().unwrap()
+    );
 }

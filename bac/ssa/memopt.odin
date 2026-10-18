@@ -17,7 +17,7 @@ memopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 	if .Mem_Opt not_in prc.opt_flags do return
 	bac.pass_quard(prc, .Mem, &optimized) or_return
 
-	context.allocator, _ = arna.scrath()
+	context.allocator, _ = arna.scrath(prc.temps)
 
 	bac.verify(prc)
 

@@ -564,6 +564,7 @@ inline_and_optimize :: proc(
 		prc: bac.Proc
 		prc.node_spec = &ssa.SPEC
 		prc.mem = &slot
+		prc.temps = &arna.scratch
 		bac.mount_stencil(&prc, src.stencil)
 
 		sym, sc := bac.get_sym_count(&prc)
@@ -819,7 +820,7 @@ emit_proc :: proc(
 		append(&ctx.poly_types, e)
 	}
 
-	rmem := ssa.start_proc(ctx, &ctx.mems.prc)
+	rmem := ssa.start_proc(ctx, &ctx.mems.prc, &arna.scratch)
 
 	ctx.node_scope = ssa.add_scope(ctx, "scope", ctx.entry)
 	ctx.mem_slot = push_scope_value(ctx, nil, rmem, .Void)

@@ -19,11 +19,10 @@ btype :: #force_inline proc(node: bac.Expanded_Node) -> Node_Type {
 
 @(tag = "api")
 compile :: proc(ctx: bac.Codegen_Emit_Ctx) -> (res: bac.Codegen_Output) {
-	context.allocator, _ = arna.scrath()
-
 	ctx := ctx
 
 	fmt.assertf(ctx.prc != nil, "codegen context needs a .prc to be set")
+	context.allocator, _ = arna.scrath(ctx.prc.temps)
 
 	if ctx.prc.node_spec == &SPEC {
 		when !SPEC_NOT_PRESENT {
@@ -337,7 +336,7 @@ end_loop :: proc(prc: ^bac.Proc, node_scope: ^Node_ID, state: ^Loop_State) {
 
 	bscope := node_scope^
 	if bscope != 0 {
-		context.allocator, _ = arna.scrath()
+		context.allocator, _ = arna.scrath(prc.temps)
 
 		backedge := expand_node(prc, bscope)
 		fmt.assertf(
@@ -501,7 +500,7 @@ truncate_scope :: proc(prc: ^bac.Proc, scope: Node_ID, #any_int to_len: int) {
 	snode := expand_node(prc, scope)
 
 	if prc.has_dbg && scope != 0 {
-		context.allocator, _ = arna.scrath()
+		context.allocator, _ = arna.scrath(prc.temps)
 		vars: [dynamic]Node_ID
 		append(&vars, snode.inps[0])
 
@@ -575,6 +574,7 @@ inline_stencil :: proc(prc: ^bac.Proc, call: Node_ID, from: bac.Stencil) {
 	from_prc: bac.Proc
 	from_prc.node_spec = &SPEC
 	from_prc.mem = &slot
+	from_prc.temps = prc.temps
 	bac.mount_stencil(&from_prc, from)
 	inline_graph(prc, call, &from_prc)
 }
@@ -586,7 +586,7 @@ inline_graph :: proc(prc: ^bac.Proc, call: Node_ID, from: ^bac.Proc) {
 	bac.add_efficiency_stat(prc, .inlines, 1)
 	bac.add_efficiency_stat(prc, .duplicated_nodes, from.gvn)
 
-	context.allocator, _ = arna.scrath()
+	context.allocator, _ = arna.scrath(prc.temps)
 
 	bac.verify(prc)
 
@@ -1192,11 +1192,13 @@ arg_gen_finalize :: proc(ctx: ^Proc, gen: ^Param_Gen) -> []bac.Param_Spec {
 }
 
 @(tag = "api")
-start_proc :: proc(prc: ^Proc, mem: ^arna.Allocator) -> Node_ID {
+start_proc :: proc(prc: ^Proc, mem: ^arna.Allocator, temps: ^arna.Temps) -> Node_ID {
 	bac.ensure_init()
 
+	assert(temps != nil)
 	prc.node_spec = &SPEC
 	prc.mem = mem
+	prc.temps = temps
 	prc.mem.pos = bac.PRECISION
 
 	prc.gvn = 1
@@ -1213,7 +1215,7 @@ Builtin_Proc :: enum {
 }
 
 make_builtin_proc :: proc(prc: ^Proc, name: Builtin_Proc) {
-	mem := start_proc(prc, prc.mem)
+	mem := start_proc(prc, prc.mem, prc.temps)
 
 	scope := add_scope(prc, "scp", prc.entry)
 

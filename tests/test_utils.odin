@@ -283,6 +283,7 @@ run_test :: proc(
 			for kind, i in ([]ssa.Builtin_Proc{.memcpy, .memset}) {
 				ctx.prc = {
 					has_dbg = ctx.prc.has_dbg,
+					temps = &arna.scratch,
 				}
 				ctx.node_spec = &ssa.SPEC
 				ctx.mem = &ctx.mems.prc

@@ -917,7 +917,7 @@ LOCAL_TO_WASM := [Local_Type]Type {
 }
 
 emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
-	context.allocator, _ = arna.scrath()
+	context.allocator, _ = arna.scrath(ectx.prc.temps)
 
 	ctx: Ctx
 	ctx.inner = ectx

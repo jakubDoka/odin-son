@@ -41,6 +41,7 @@ function build-bac
 		-o:size -source-code-locations:none \
 		-disable-assert -no-bounds-check -no-type-assert -define:NO_FMT=true \
 		-default-to-nil-allocator -define:ARNA_DISABLE_VIRTUAL=true \
+		-define:ARNA_DISABLE_THREAD_LOCAL=true \
 		-disable-init-fini -define:INIT_FINI=false
 end
 

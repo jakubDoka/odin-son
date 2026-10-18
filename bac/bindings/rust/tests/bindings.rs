@@ -1,22 +1,13 @@
 use bac::{
     Arena, BinOp, Builder, CodegenEmitCtx, Datatype, IfState, Lane, NodeId, NodeType, ParamSpec,
-    Proc, clear_scratch, set_scratch, sys,
+    Proc, sys,
 };
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
-struct Scratch;
-
-impl Drop for Scratch {
-    fn drop(&mut self) {
-        clear_scratch();
-    }
-}
-
 fn with_proc(test: impl FnOnce(&mut Proc<'_>)) {
-    set_scratch([Arena::new(1024 * 1024), Arena::new(1024 * 1024)]);
-    let _scratch = Scratch;
+    let mut temps = [Arena::new(1024 * 1024), Arena::new(1024 * 1024)];
     let mut arena = Arena::new(1024 * 1024);
-    let mut proc = Proc::new(&mut arena);
+    let mut proc = Proc::new(&mut arena, &mut temps);
     test(&mut proc);
 }
 
@@ -280,8 +271,9 @@ fn caller_storage_and_borrowed_arena_bytes() {
     let mut buffer = Aligned([0; 4096 * 64]);
     let buffer_ptr = buffer.0.as_ptr();
     let mut arena = Arena::from_buffer(&mut buffer.0);
+    let mut temps = [Arena::new(1024 * 1024), Arena::new(1024 * 1024)];
     {
-        let mut proc = Proc::new(&mut arena);
+        let mut proc = Proc::new(&mut arena, &mut temps);
         constant(&mut proc.builder(), 69);
     }
     assert_eq!(arena.bytes().as_ptr(), buffer_ptr);
@@ -296,18 +288,29 @@ fn caller_storage_and_borrowed_arena_bytes() {
 fn empty_arenas_are_supported() {
     assert!(Arena::default().bytes().is_empty());
     assert!(Arena::new(0).bytes().is_empty());
-    clear_scratch();
-    clear_scratch();
 }
 
 #[test]
-fn scratch_can_be_replaced_between_calls() {
-    with_proc(|proc| {
-        constant(&mut proc.builder(), 69);
-        set_scratch([Arena::new(1024 * 1024), Arena::new(1024 * 1024)]);
-        compile(proc);
-        clear_scratch();
-    });
+fn independent_procs_use_their_own_temps() {
+    let mut first_temps = [Arena::new(1024 * 1024), Arena::new(1024 * 1024)];
+    let mut second_temps = [Arena::new(1024 * 1024), Arena::new(1024 * 1024)];
+    let mut first_arena = Arena::new(1024 * 1024);
+    let mut second_arena = Arena::new(1024 * 1024);
+    let mut first = Proc::new(&mut first_arena, &mut first_temps);
+    let mut second = Proc::new(&mut second_arena, &mut second_temps);
+    constant(&mut first.builder(), 69);
+    constant(&mut second.builder(), 42);
+    compile(&mut second);
+    compile(&mut first);
+    unsafe {
+        let first_temps = (*first.as_raw()).temps;
+        let second_temps = (*second.as_raw()).temps;
+        assert_ne!(first_temps, second_temps);
+        for temps in [first_temps, second_temps] {
+            assert_eq!((*temps)[0].pos, 0);
+            assert_eq!((*temps)[1].pos, 0);
+        }
+    }
 }
 
 #[test]
@@ -364,6 +367,7 @@ fn wrapper_layouts_match_ffi() {
         assert_eq!(std::mem::align_of::<T>(), std::mem::align_of::<U>());
     }
     same_layout::<Arena<'_>, sys::arna_Allocator>();
+    same_layout::<bac::Temps<'_>, sys::arna_Temps>();
     same_layout::<Proc<'_>, sys::bac_Proc>();
     same_layout::<CodegenEmitCtx<'_, '_>, sys::bac_Codegen_Emit_Ctx>();
     same_layout::<ParamSpec, sys::bac_Param_Spec>();

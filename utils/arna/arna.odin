@@ -12,9 +12,14 @@ _ :: simd
 _ :: slice
 
 DISABLE_VIRTUAL :: #config(ARNA_DISABLE_VIRTUAL, false)
+DISABLE_THREAD_LOCAL :: #config(ARNA_DISABLE_THREAD_LOCAL, false)
 
-@(thread_local)
-scratch: [2]Allocator
+Temps :: distinct [2]Allocator
+
+when !DISABLE_THREAD_LOCAL {
+	@(thread_local)
+	scratch: Temps
+}
 
 Allocator :: struct {
 	ptr:      [^]u8,
@@ -75,13 +80,6 @@ init :: proc "contextless" (
 	return .None
 }
 
-/// This is to get the thread local arenas, since odin does not allow exporting
-/// thread locals
-@(tag = "api")
-get_scratch :: proc "contextless" () -> [^]Allocator {
-	return raw_data(&scratch)
-}
-
 @(tag = "api")
 init_from_buffer :: proc "contextless" (buf: []u8) -> Allocator {
 	return {
@@ -108,38 +106,67 @@ reset :: proc "contextless" (arena: ^Allocator, decommit_: bool = true) {
 	arena.pos = 0
 }
 
-init_scratch :: proc "contextless" (size: int) {
-	init(&scratch[0], size)
-	init(&scratch[1], size)
-}
+when DISABLE_THREAD_LOCAL {
+	scrath :: proc {
+		scrath_temps_with_clobber,
+		scrath_temps_no_clobber,
+		scrath_existing,
+	}
+} else {
+	init_scratch :: proc(size: int) {
+		for &s in scratch do init(&s, size)
+	}
 
-deinit_scratch :: proc() {
-	destroy(&scratch[0])
-	destroy(&scratch[1])
-}
+	deinit_scratch :: proc() {
+		for &s in scratch do destroy(&s)
+	}
 
-scrath :: proc {
-	scrath_with_clobber,
-	scrath_no_clobber,
-	scrath_existing,
+	scrath :: proc {
+		scrath_temps_with_clobber,
+		scrath_temps_no_clobber,
+		scrath_with_clobber,
+		scrath_no_clobber,
+		scrath_existing,
+	}
+
+	@(deferred_out = scrath_end)
+	scrath_no_clobber :: proc "contextless" () -> (runtime.Allocator, uint) {
+		return scrath_temps_no_clobber(&scratch)
+	}
+
+	@(deferred_out = scrath_end)
+	scrath_with_clobber :: proc "contextless" (
+		clobber: runtime.Allocator,
+	) -> (
+		runtime.Allocator,
+		uint,
+	) {
+		return scrath_temps_with_clobber(&scratch, clobber)
+	}
 }
 
 @(deferred_out = scrath_end)
-scrath_no_clobber :: proc "contextless" () -> (runtime.Allocator, uint) {
-	return allocator(&scratch[0]), scratch[0].pos
+scrath_temps_no_clobber :: proc "contextless" (
+	temps: ^Temps,
+) -> (
+	runtime.Allocator,
+	uint,
+) {
+	return allocator(&temps[0]), temps[0].pos
 }
 
 @(deferred_out = scrath_end)
-scrath_with_clobber :: proc "contextless" (
+scrath_temps_with_clobber :: proc "contextless" (
+	temps: ^Temps,
 	clobber: runtime.Allocator,
 ) -> (
 	runtime.Allocator,
 	uint,
 ) {
-	if &scratch[0] == clobber.data {
-		return allocator(&scratch[1]), scratch[1].pos
+	if &temps[0] == clobber.data {
+		return allocator(&temps[1]), temps[1].pos
 	}
-	return allocator(&scratch[0]), scratch[0].pos
+	return allocator(&temps[0]), temps[0].pos
 }
 
 @(deferred_in_out = scrath_existing_end)

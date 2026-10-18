@@ -299,7 +299,7 @@ take_dbg_data :: proc(
 	data: ^Dbg_Data,
 	scratch := context.allocator,
 ) {
-	context.allocator, _ = arna.scrath(scratch)
+	context.allocator, _ = arna.scrath(prc.temps, scratch)
 
 	if !prc.has_dbg do return
 
@@ -422,7 +422,7 @@ reg_of :: proc(ctx: Codegen_Emit_Ctx, id: Node_ID) -> Reg {
 }
 
 emit_dbg_locations :: proc(ctx: Codegen_Emit_Ctx) {
-	context.allocator, _ = arna.scrath()
+	context.allocator, _ = arna.scrath(ctx.prc.temps)
 
 	rsp := ctx.abi.stack_pointer
 

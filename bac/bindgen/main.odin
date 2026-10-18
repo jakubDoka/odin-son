@@ -161,20 +161,32 @@ typedef struct {
 					fmt.fprintfln(lib, "\t%v: %T,", name, type)
 				}
 				for i in 0 ..< len(results.types) - 1 {
-					fmt.fprintfln(lib, "\tbinding_out_%v: ^%T,", i, results.types[i])
+					fmt.fprintfln(
+						lib,
+						"\tbinding_out_%v: ^%T,",
+						i,
+						results.types[i],
+					)
 				}
 
 				fmt.fprintf(lib, `)`)
 
 				if len(results.types) != 0 {
 					fmt.fprintfln(lib, " -> (")
-					fmt.fprintfln(lib, "\t%T,", results.types[len(results.types) - 1])
+					fmt.fprintfln(
+						lib,
+						"\t%T,",
+						results.types[len(results.types) - 1],
+					)
 					fmt.fprintf(lib, ")")
 				}
 
 				fmt.fprintf(lib, " {{\n\tcontext = {{}}\n\t")
 				if entry.name == "arg_gen_finalize" {
-					fmt.fprintf(lib, "context.allocator = arna.allocator(ctx.mem)\n\t")
+					fmt.fprintf(
+						lib,
+						"context.allocator = arna.allocator(ctx.mem)\n\t",
+					)
 				}
 				if len(results.types) == 1 {
 					fmt.fprintf(lib, "return ")
@@ -194,9 +206,18 @@ typedef struct {
 				fmt.fprintfln(lib, ")")
 				if len(results.types) > 1 {
 					for i in 0 ..< len(results.types) - 1 {
-						fmt.fprintfln(lib, "\tbinding_out_%v^ = binding_result_%v", i, i)
+						fmt.fprintfln(
+							lib,
+							"\tbinding_out_%v^ = binding_result_%v",
+							i,
+							i,
+						)
 					}
-					fmt.fprintfln(lib, "\treturn binding_result_%v", len(results.types) - 1)
+					fmt.fprintfln(
+						lib,
+						"\treturn binding_result_%v",
+						len(results.types) - 1,
+					)
 				}
 
 				fmt.fprintfln(lib, "}}\n")
@@ -260,6 +281,13 @@ typedef struct {
 					name := c_type_name(type_info_of(ty))
 					if name != "" && name not_in typedefs {
 						typedefs[name] = {}
+						// C array typedefs require complete element definitions.
+						#partial switch t in
+							runtime.type_info_base(type_info_of(ty)).variant {
+						case runtime.Type_Info_Array,
+						     runtime.Type_Info_Enumerated_Array:
+							continue
+						}
 						fmt.sbprintf(&c_lib, "typedef ")
 						c_display_type(
 							&c_lib,
@@ -287,10 +315,18 @@ typedef struct {
 						prev_len := len(c_lib.buf)
 						decls[name] = {}
 						start := len(c_lib.buf)
+						mode := Display_Mode.Decl
+						#partial switch t in
+							runtime.type_info_base(type_info_of(ty)).variant {
+						case runtime.Type_Info_Array,
+						     runtime.Type_Info_Enumerated_Array:
+							fmt.sbprintf(&c_lib, "typedef ")
+							mode = .Typedef
+						}
 						c_display_type(
 							&c_lib,
 							type_info_of(ty),
-							.Decl,
+							mode,
 							&name,
 							0,
 						)

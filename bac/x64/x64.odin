@@ -769,7 +769,7 @@ peep :: proc(
 				dominant = onode.itype
 			}
 			if dominant == .Conv || dominant == .U_Conv {
-				context.allocator, _ = arna.scrath()
+				context.allocator, _ = arna.scrath(ctx.temps)
 				outs := slice.clone(node.outs)
 				mem_op.dt = node.dt
 				node.dt = .I64
@@ -1364,7 +1364,7 @@ Rsp_Adjust :: struct {
 }
 
 emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
-	context.allocator, _ = arna.scrath()
+	context.allocator, _ = arna.scrath(ectx.prc.temps)
 
 	spill_slot_base: [RK_COUNT]i32
 	stack_param_offset: [RK_COUNT][dynamic]i32

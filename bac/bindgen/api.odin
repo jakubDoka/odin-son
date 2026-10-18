@@ -121,6 +121,5 @@ API := [?]API_Proc{
 	{false, "../wasm", "SPEC", type_of(pkg_5.SPEC), ""},
 	{false, "../x64", "CC_TABLE", type_of(pkg_6.CC_TABLE), ""},
 	{false, "../x64", "SPEC", type_of(pkg_6.SPEC), ""},
-	{false, "../../utils/arna", "get_scratch", type_of(pkg_7.get_scratch), "/// This is to get the thread local arenas, since odin does not allow exporting\n/// thread locals"},
 	{false, "../../utils/arna", "init_from_buffer", type_of(pkg_7.init_from_buffer), ""},
 }

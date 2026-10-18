@@ -27,14 +27,15 @@ bac_u8 proc_mem[4096 * 8];
 _Alignas(4096) bac_u8 code_mem[4096];
 
 int main() {
+	arna_Temps temps;
 	for EACH(i, 0, 2) {
-		arna_get_scratch()[i] = make_arna(local_buf[i]);
+		temps[i] = make_arna(local_buf[i]);
 	}
 	
 	bac_Proc proc = {0};
 	
 	arna_Allocator mem = make_arna(proc_mem);
-	bac_Node_ID rmem = bac_start_proc(&proc, &mem);
+	bac_Node_ID rmem = bac_start_proc(&proc, &mem, &temps);
 	
 	bac_Node_ID value = bac_add_c_int(&proc, bac_str("mcnst"), bac_Node_Datatype_I64, 69);
 	

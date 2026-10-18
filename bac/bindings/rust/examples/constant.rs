@@ -3,7 +3,7 @@
     any(target_arch = "x86_64", target_arch = "aarch64")
 ))]
 fn main() {
-    use bac::{Arena, CodegenEmitCtx, Datatype, Proc, clear_scratch, set_scratch};
+    use bac::{Arena, CodegenEmitCtx, Datatype, Proc};
     use core::{ffi::c_void, ptr};
 
     unsafe extern "C" {
@@ -19,9 +19,9 @@ fn main() {
         fn munmap(addr: *mut c_void, len: usize) -> i32;
     }
 
-    set_scratch([Arena::new(4096 * 128), Arena::new(4096 * 128)]);
+    let mut temps = [Arena::new(4096 * 128), Arena::new(4096 * 128)];
     let mut memory = Arena::new(4096 * 8);
-    let mut proc = Proc::new(&mut memory);
+    let mut proc = Proc::new(&mut memory, &mut temps);
     {
         let mut builder = proc.builder();
         let value = builder.add_c_int("mcnst", Datatype::I64, 69);
@@ -49,7 +49,6 @@ fn main() {
     let result = unsafe { function() };
     assert_eq!(unsafe { munmap(page, 4096) }, 0);
     assert_eq!(result, 69);
-    clear_scratch();
     std::process::exit(result as i32);
 }
 

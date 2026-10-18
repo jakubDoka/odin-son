@@ -1203,11 +1203,12 @@ bac_start_loop_increment :: proc "c" (
 bac_start_proc :: proc "c" (
 	prc: ^bac.Proc,
 	mem: ^arna.Allocator,
+	temps: ^arna.Temps,
 ) -> (
 	bac.Node_ID,
 ) {
 	context = {}
-	return bac_ssa.start_proc(prc, mem)
+	return bac_ssa.start_proc(prc, mem, temps)
 }
 
 @(export)
@@ -1218,15 +1219,6 @@ bac_truncate_scope :: proc "c" (
 ) {
 	context = {}
 	bac_ssa.truncate_scope(prc, scope, to_len)
-}
-
-@(export)
-arna_get_scratch :: proc "c" (
-) -> (
-	[^]arna.Allocator,
-) {
-	context = {}
-	return arna.get_scratch()
 }
 
 @(export)

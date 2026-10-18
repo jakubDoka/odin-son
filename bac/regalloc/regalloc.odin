@@ -59,7 +59,7 @@ regalloc_round :: proc(
 ) {
 	res.computed = true
 
-	context.allocator, _ = arna.scrath(scratch)
+	context.allocator, _ = arna.scrath(prc.temps, scratch)
 
 	prc.dont_intern = true
 	defer prc.dont_intern = false

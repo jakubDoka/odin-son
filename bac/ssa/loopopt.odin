@@ -9,7 +9,7 @@ import "core:slice"
 
 @(tag = "api")
 loopopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
-	context.allocator, _ = arna.scrath()
+	context.allocator, _ = arna.scrath(prc.temps)
 
 	if .Loop_Opt not_in prc.opt_flags do return
 	bac.pass_quard(prc, .Loop, &optimized) or_return

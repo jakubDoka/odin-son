@@ -13,7 +13,7 @@ _ :: slice
 
 DISABLE_VIRTUAL :: #config(ARNA_DISABLE_VIRTUAL, false)
 
-@(tag = "api", thread_local)
+@(thread_local)
 scratch: [2]Allocator
 
 Allocator :: struct {
@@ -73,6 +73,13 @@ init :: proc "contextless" (
 	mem := reserve(uint(size)) or_return
 	slot^ = {raw_data(mem), 0, 0, uint(size)}
 	return .None
+}
+
+/// This is to get the thread local arenas, since odin does not allow exporting
+/// thread locals
+@(tag = "api")
+get_scratch :: proc "contextless" () -> [^]Allocator {
+	return raw_data(&scratch)
 }
 
 @(tag = "api")

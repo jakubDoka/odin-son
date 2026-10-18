@@ -5,8 +5,8 @@ main:
     xor ecx, ecx
     xor edx, edx
 1:
-    xor ebx, ebx
     mov.q [rsp - 0x8], rdx
+    xor ebx, ebx
 2:
     mov rbp, rcx
     imul rbp, rbx
@@ -27,8 +27,8 @@ main:
     add rbx, 1
     cmp rbx, 3
     jg 4
-    mov rcx, rbx
     mov rdx, rax
+    mov rcx, rbx
     jmp 1
 4:
     pop rbp
@@ -65,8 +65,8 @@ main:
     xor ecx, ecx
     xor edx, edx
 1:
-    xor ebx, ebx
     mov.q [rsp - 0x8], rdx
+    xor ebx, ebx
 2:
     mov rbp, rcx
     imul rbp, rbx
@@ -87,8 +87,8 @@ main:
     add rbx, 1
     cmp rbx, 3
     jg 4
-    mov rcx, rbx
     mov rdx, rax
+    mov rcx, rbx
     jmp 1
 4:
     pop rbp
@@ -120,25 +120,25 @@ main:
     ret
 =========== OPT LEVEL: all ===========
 main:
-    xor edx, edx
     xor ecx, ecx
-1:
     xor esi, esi
+1:
+    xor edx, edx
 2:
     mov r8, rcx
-    imul r8, rsi
-    add rsi, 1
-    cmp rsi, 3
+    imul r8, rdx
+    add rdx, 1
+    cmp rdx, 3
     setg dil
     movzx rdi, dil
-    mov rax, rdx
+    mov rax, rsi
     add rax, r8
-    mov rdx, rax
+    mov rsi, rax
     test dil, dil
     je 2
     add rcx, 1
     cmp rcx, 3
-    mov rdx, rax
+    mov rsi, rax
     jle 1
     ret
 =========== OPT LEVEL: aggresive ===========

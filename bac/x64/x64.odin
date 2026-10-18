@@ -4,7 +4,6 @@ import bac ".."
 import "../../utils/arna"
 import "../../utils/bit_arr"
 import "../../utils/fmt"
-import "../ssa"
 import "base:intrinsics"
 import "core:math"
 import "core:mem"
@@ -425,7 +424,7 @@ peep :: proc(
 		if node.dt in bac.FLOAT_DTS && cnst.value != 0 {
 			global := bac.c_int_as_global(ctx, node)
 
-			cmem := ssa.get_or_add_const_mem(ctx)
+			cmem := bac.get_or_add_const_mem(ctx)
 			_, cid := add_node(
 				ctx,
 				node.name,
@@ -1077,6 +1076,10 @@ meta_of :: proc(
 	IOUT :: bac.INVALID_RM_INDEX
 
 	if node.gvn == 1 {
+		if ra.cc == nil {
+			ra.cc = &CC_TABLE[X64_SYSTEMV_CC]
+		}
+
 		ra.mask_len = MASK_SIZE
 		rslice(ra, RK_GENERAL, GPA_MASK[:])
 		rslice(ra, RK_VECTOR, XMM_MASK[:])
@@ -1371,6 +1374,10 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 	ctx.code_start = ctx.code.pos
 	ctx.constants_start = ctx.constants.pos
 	ctx.instr_offsets = make([]u32, ctx.gvn)
+
+	if ctx.abi == nil {
+		ctx.abi = &CC_TABLE[X64_SYSTEMV_CC]
+	}
 
 	ctx.stack_param_offset = stack_param_offset[:]
 	ctx.spill_slot_base = spill_slot_base[:]

@@ -46,8 +46,7 @@ typedef struct bac_Peep_Ctx bac_Peep_Ctx;
 typedef struct bac_ssa_Loop_State bac_ssa_Loop_State;
 typedef struct bac_Proc_Meta bac_Proc_Meta;
 typedef struct bac_Node_Output bac_Node_Output;
-typedef struct bac_Loop_Tree bac_Loop_Tree;
-typedef struct bac_Cfi_Op bac_Cfi_Op;
+typedef bac_int bac_Class_Flag;
 typedef struct bac_Cfi_Spec bac_Cfi_Spec;
 typedef struct Dyn_Arr_Of_bac_Dbg_Data_Def Dyn_Arr_Of_bac_Dbg_Data_Def;
 typedef struct Dyn_Arr_Of_bac_i32 Dyn_Arr_Of_bac_i32;
@@ -56,6 +55,7 @@ typedef struct Slice_Of_Slice_Of_bac_i64 Slice_Of_Slice_Of_bac_i64;
 typedef bac_u8 bac_Bs_Class_Flag;
 typedef struct bac_Stats bac_Stats;
 typedef struct bac_Codegen_Spec bac_Codegen_Spec;
+typedef struct Slice_Of_bac_u16 Slice_Of_bac_u16;
 typedef bac_u8 runtime_Allocator_Mode;
 typedef struct bac_Node_Spec bac_Node_Spec;
 typedef bac_u16 bac_Bin_Op;
@@ -69,12 +69,10 @@ typedef struct bac_Lattice bac_Lattice;
 typedef struct bac_Dbg_Sym bac_Dbg_Sym;
 typedef struct bac_Reloc bac_Reloc;
 typedef struct Slice_Of_bac_Reg Slice_Of_bac_Reg;
-typedef struct Slice_Of_bac_u16 Slice_Of_bac_u16;
 typedef struct bac_Sloc bac_Sloc;
 typedef bac_int bac_ssa_Loop_Control;
 typedef struct runtime_Source_Code_Location runtime_Source_Code_Location;
-typedef bac_u32 bac_Node_ID;
-typedef struct bac_Tag bac_Tag;
+typedef struct bac_Lib_Calls bac_Lib_Calls;
 typedef struct bac_ssa_Param_Gen bac_ssa_Param_Gen;
 typedef struct bac_Expanded_Node bac_Expanded_Node;
 typedef struct Dyn_Arr_Of_Dyn_Arr_Of_bac_Node_ID Dyn_Arr_Of_Dyn_Arr_Of_bac_Node_ID;
@@ -82,18 +80,19 @@ typedef struct Slice_Of_bac_Cfi_Op Slice_Of_bac_Cfi_Op;
 typedef bac_u8 bac_Bs_Pass;
 typedef struct Soa_Slice_Of_bac_SS_Entry_V____i64 Soa_Slice_Of_bac_SS_Entry_V____i64;
 typedef struct Slice_Of_Soa_Slice_Of_bac_SS_Entry_V____i64 Slice_Of_Soa_Slice_Of_bac_SS_Entry_V____i64;
-typedef struct bac_Lib_Calls bac_Lib_Calls;
 typedef struct Slice_Of_bac_Lattice Slice_Of_bac_Lattice;
 typedef struct container_queue_Queue_T_Node_ID container_queue_Queue_T_Node_ID;
+typedef struct Slice_Of_bac_Reloc Slice_Of_bac_Reloc;
+typedef bac_u32 bac_Node_ID;
 typedef struct bac_Call bac_Call;
 typedef struct bac_Codegen_Output_Bufs bac_Codegen_Output_Bufs;
 typedef struct bac_Efficiency_Stat bac_Efficiency_Stat;
-typedef struct bac_Dbg_Location bac_Dbg_Location;
-typedef bac_int bac_Class_Flag;
 typedef struct bac_Codegen_Emit_Output bac_Codegen_Emit_Output;
+typedef struct bac_Dbg_Location bac_Dbg_Location;
 typedef struct bac_Basic_Block bac_Basic_Block;
 typedef bac_u32 bac_Reloc_Size;
-typedef struct Slice_Of_bac_Reloc Slice_Of_bac_Reloc;
+typedef struct bac_Cfi_Op bac_Cfi_Op;
+typedef struct bac_Tag bac_Tag;
 typedef struct bac_RM_Intern_Idx bac_RM_Intern_Idx;
 typedef struct Slice_Of_bac_Param_Spec Slice_Of_bac_Param_Spec;
 typedef struct Slice_Of_bac_u32 Slice_Of_bac_u32;
@@ -103,117 +102,125 @@ typedef bac_u8 runtime_Allocator_Error;
 typedef struct Slice_Of_bac_RM_Intern_Idx Slice_Of_bac_RM_Intern_Idx;
 typedef struct bac_ssa_Abi_Param bac_ssa_Abi_Param;
 typedef struct Dyn_Arr_Of_bac_Node_ID Dyn_Arr_Of_bac_Node_ID;
+typedef struct bac_Interner bac_Interner;
 typedef bac_u8 bac_Lane_Type;
 typedef struct Slice_Of_bac_u8 Slice_Of_bac_u8;
 typedef struct bac_Sym_Ref bac_Sym_Ref;
 typedef bac_u16 bac_Reg_Kind;
 typedef bac_u8 bac_Node_Datatype;
 typedef struct runtime_Maybe_T_Node_ID runtime_Maybe_T_Node_ID;
-typedef struct bac_Interner bac_Interner;
+typedef struct bac_Regalloc_Output bac_Regalloc_Output;
+typedef struct bac_ssa_Block_State bac_ssa_Block_State;
 typedef struct bac_Call_Conv bac_Call_Conv;
 typedef bac_int bac_Efficiency_Stat_Kind;
-typedef struct bac_Regalloc_Output bac_Regalloc_Output;
+typedef bac_u64 bac_Lattice_Type;
 typedef struct bac_Reg bac_Reg;
 typedef bac_u8 bac_Cfi_Kind;
 typedef struct bac_PS_Peep_Ctx bac_PS_Peep_Ctx;
-typedef bac_u64 bac_Lattice_Type;
 typedef bac_int bac_Pass;
 typedef struct bac_Schedule bac_Schedule;
 typedef struct bac_Stencil bac_Stencil;
-typedef struct bac_ssa_Block_State bac_ssa_Block_State;
+typedef bac_int bac_Opt_Flag;
 typedef struct bac_Codegen_Output bac_Codegen_Output;
 typedef struct bit_arr_Bit_Set bit_arr_Bit_Set;
 typedef struct bac_Proc bac_Proc;
-typedef bac_int bac_Opt_Flag;
 typedef struct Slice_Of_bac_Node_Output Slice_Of_bac_Node_Output;
-typedef struct Slice_Of_bac_Regalloc_Node_Meta Slice_Of_bac_Regalloc_Node_Meta;
+typedef struct bac_Dbg_Data_Def bac_Dbg_Data_Def;
+typedef struct bac_Loop_Tree bac_Loop_Tree;
 typedef struct bac_Dbg_Data_Sym bac_Dbg_Data_Sym;
 typedef struct bac_Cfg bac_Cfg;
 typedef struct bac_Regalloc_Spec bac_Regalloc_Spec;
 typedef struct bac_Param_Spec bac_Param_Spec;
 typedef bac_u32 bac_Sym_Ref_Type;
-typedef struct bac_Regalloc bac_Regalloc;
 typedef bac_u8 bac_Bs_Opt_Flag;
+typedef struct bac_Regalloc bac_Regalloc;
 typedef bac_int bac_regalloc_Mode;
 typedef struct Fidxe_Cap_Dyn_Arr_Of_2_bac_Node_Datatype Fidxe_Cap_Dyn_Arr_Of_2_bac_Node_Datatype;
 typedef struct Slice_Of_bac_Bs_Class_Flag Slice_Of_bac_Bs_Class_Flag;
-typedef struct bac_Dbg_Data_Def bac_Dbg_Data_Def;
 typedef struct bac_Node bac_Node;
 typedef struct bac_RM_Interner bac_RM_Interner;
 typedef struct Slice_Of_bac_Node_ID Slice_Of_bac_Node_ID;
+typedef struct Slice_Of_bac_Regalloc_Node_Meta Slice_Of_bac_Regalloc_Node_Meta;
 typedef struct runtime_Allocator runtime_Allocator;
 typedef struct bac_Codegen_Emit_Ctx bac_Codegen_Emit_Ctx;
 typedef struct bac_Worklist bac_Worklist;
 typedef runtime_Allocator_Error (*runtime_Allocator_Proc)(void *, runtime_Allocator_Mode, bac_int, bac_int, void *, bac_int, runtime_Source_Code_Location, Slice_Of_bac_u8 *);
 typedef bac_Node_ID (*bac_PS_Peep_Fn)(bac_PS_Peep_Ctx, bac_Expanded_Node);
 typedef void (*bac_Pre_Regalloc_Hook)(bac_Regalloc *, bac_Proc *, bac_Schedule *);
-typedef runtime_Maybe_T_Node_ID (*bac_Peep_Fn)(bac_Peep_Ctx, bac_Expanded_Node);
 typedef bac_Lattice (*bac_Sccp_Compute_Fn)(bac_Proc *, bac_Expanded_Node);
-struct bac_Peep_Ctx {
-	bac_Proc *graph;
-};
-struct bac_Codegen_Emit_Output {
-};
+typedef runtime_Maybe_T_Node_ID (*bac_Peep_Fn)(bac_Peep_Ctx, bac_Expanded_Node);
 struct Slice_Of_bac_i64 {
 	bac_i64 *data;
 	bac_int len;
 };
-struct Slice_Of_bac_int {
-	bac_int *data;
-	bac_int len;
+struct bac_Peep_Ctx {
+	bac_Proc *graph;
 };
-struct Slice_Of_bac_u8 {
-	bac_u8 *data;
-	bac_int len;
-};
-struct Slice_Of_bac_i32 {
-	bac_i32 *data;
+struct Slice_Of_bac_u32 {
+	bac_u32 *data;
 	bac_int len;
 };
 struct Slice_Of_bac_u16 {
 	bac_u16 *data;
 	bac_int len;
 };
-struct Slice_Of_bac_u32 {
-	bac_u32 *data;
+struct Slice_Of_bac_int {
+	bac_int *data;
 	bac_int len;
+};
+struct Slice_Of_bac_i32 {
+	bac_i32 *data;
+	bac_int len;
+};
+struct Slice_Of_bac_u8 {
+	bac_u8 *data;
+	bac_int len;
+};
+struct bac_Codegen_Emit_Output {
 };
 struct bac_Dbg_Sym {
 	bac_String name;
 	bac_u64 type;
 };
-enum {
-	bac_Dbg_Location_Kind_Register = 0,
-	bac_Dbg_Location_Kind_Register_Offset = 1,
-};
 struct bac_Cfg {
 	bac_u32 idepth;
 };
 enum {
-	bac_Bin_Op_U_Lt = 39,
-	bac_Bin_Op_Add = 28,
-	bac_Bin_Op_Gt = 37,
-	bac_Bin_Op_Mul = 46,
-	bac_Bin_Op_U_Rem = 50,
-	bac_Bin_Op_Ne = 34,
-	bac_Bin_Op_U_Le = 41,
+	bac_Dbg_Location_Kind_Register = 0,
+	bac_Dbg_Location_Kind_Register_Offset = 1,
+};
+enum {
+	bac_Opt_Flag_Sccp = 0,
+	bac_Opt_Flag_Local_Peeps = 1,
+	bac_Opt_Flag_Mem_Opt = 2,
+	bac_Opt_Flag_Loop_Opt = 3,
+	bac_Opt_Flag_Inline = 4,
+};
+enum {
 	bac_Bin_Op_Shr = 44,
+	bac_Bin_Op_And_Not = 51,
+	bac_Bin_Op_U_Ge = 42,
+	bac_Bin_Op_Eq = 33,
+	bac_Bin_Op_Ne = 34,
+	bac_Bin_Op_U_Div = 48,
+	bac_Bin_Op_Mul = 46,
+	bac_Bin_Op_U_Gt = 40,
+	bac_Bin_Op_Xor = 32,
+	bac_Bin_Op_Ge = 38,
+	bac_Bin_Op_Or = 31,
+	bac_Bin_Op_Le = 35,
+	bac_Bin_Op_Gt = 37,
+	bac_Bin_Op_U_Le = 41,
+	bac_Bin_Op_U_Shr = 45,
+	bac_Bin_Op_U_Lt = 39,
+	bac_Bin_Op_Rem = 49,
+	bac_Bin_Op_U_Rem = 50,
+	bac_Bin_Op_Add = 28,
+	bac_Bin_Op_Sub = 29,
 	bac_Bin_Op_Div = 47,
 	bac_Bin_Op_Shl = 43,
-	bac_Bin_Op_Ge = 38,
-	bac_Bin_Op_And_Not = 51,
-	bac_Bin_Op_Or = 31,
-	bac_Bin_Op_Xor = 32,
-	bac_Bin_Op_U_Ge = 42,
-	bac_Bin_Op_Le = 35,
-	bac_Bin_Op_Eq = 33,
-	bac_Bin_Op_U_Shr = 45,
-	bac_Bin_Op_U_Gt = 40,
-	bac_Bin_Op_Rem = 49,
 	bac_Bin_Op_And = 30,
-	bac_Bin_Op_U_Div = 48,
 	bac_Bin_Op_Lt = 36,
-	bac_Bin_Op_Sub = 29,
 };
 enum {
 	bac_Node_Type_Nil = 0,
@@ -297,14 +304,6 @@ enum {
 	runtime_Allocator_Mode_Resize_Non_Zeroed = 7,
 };
 enum {
-	bac_Lane_Type_I8 = 0,
-	bac_Lane_Type_I16 = 1,
-	bac_Lane_Type_I32 = 2,
-	bac_Lane_Type_I64 = 3,
-	bac_Lane_Type_F32 = 4,
-	bac_Lane_Type_F64 = 5,
-};
-enum {
 	bac_Node_Datatype_Void = 0,
 	bac_Node_Datatype_Mem = 1,
 	bac_Node_Datatype_I8 = 2,
@@ -322,36 +321,42 @@ struct Slice_Of_Slice_Of_bac_i64 {
 	bac_int len;
 };
 enum {
-	bac_Cfi_Kind_Def_Cfa_Offset = 0,
-	bac_Cfi_Kind_Save_Reg = 1,
-	bac_Cfi_Kind_Restore_Reg = 2,
-	bac_Cfi_Kind_Remember_State = 3,
-	bac_Cfi_Kind_Restore_State = 4,
-};
-struct bac_Loop_Tree {
-	bac_Loop_Tree *parent;
-	bac_u32 depth;
-	_Bool infinite;
-	_Bool already_always;
+	bac_Sym_Ref_Type_Func = 14,
 };
 enum {
-	bac_Lattice_Type_Top = 0,
-	bac_Lattice_Type_Int = 1,
-	bac_Lattice_Type_Float = 2,
-	bac_Lattice_Type_Ctlr = 3,
-	bac_Lattice_Type_Mem = 4,
-	bac_Lattice_Type_Bot = 5,
+	bac_Lane_Type_I8 = 0,
+	bac_Lane_Type_I16 = 1,
+	bac_Lane_Type_I32 = 2,
+	bac_Lane_Type_I64 = 3,
+	bac_Lane_Type_F32 = 4,
+	bac_Lane_Type_F64 = 5,
+};
+enum {
+	bac_Class_Flag_Is_Basic_Block_Start = 0,
+	bac_Class_Flag_Interned = 1,
+	bac_Class_Flag_Comutes = 2,
+	bac_Class_Flag_Store = 3,
+	bac_Class_Flag_Load = 4,
+	bac_Class_Flag_Clonable = 5,
+};
+struct bac_Cfi_Spec {
+	bac_u8 cfa_reg;
+	bac_u8 return_addr_reg;
+	bac_u32 initial_cfa_offset;
+	bac_u32 code_align;
+	bac_i32 data_align;
 };
 struct bac_Lib_Call {
 	bac_u32 id : 31;
 	bac_u32 absolute : 1;
 };
+struct Slice_Of_bac_Node_ID {
+	bac_Node_ID *data;
+	bac_int len;
+};
 enum {
-	bac_Opt_Flag_Sccp = 0,
-	bac_Opt_Flag_Local_Peeps = 1,
-	bac_Opt_Flag_Mem_Opt = 2,
-	bac_Opt_Flag_Loop_Opt = 3,
-	bac_Opt_Flag_Inline = 4,
+	bac_regalloc_Mode_with_scan = 0,
+	bac_regalloc_Mode_with_coloring = 1,
 };
 enum {
 	bac_Efficiency_Stat_Kind_graph_waste = 0,
@@ -380,68 +385,11 @@ enum {
 	bac_Reloc_Kind_Got = 1,
 	bac_Reloc_Kind_Global = 2,
 };
-struct bac_Cfi_Spec {
-	bac_u8 cfa_reg;
-	bac_u8 return_addr_reg;
-	bac_u32 initial_cfa_offset;
-	bac_u32 code_align;
-	bac_i32 data_align;
-};
-struct Slice_Of_bac_Node_ID {
-	bac_Node_ID *data;
-	bac_int len;
-};
-enum {
-	bac_Un_Op_Ctz = 66,
-	bac_Un_Op_Splat = 65,
-	bac_Un_Op_Neg = 60,
-	bac_Un_Op_U_Conv = 64,
-	bac_Un_Op_Simd_Extract_Lsbs = 67,
-	bac_Un_Op_Simd_Reduce_Add_Bisect = 68,
-	bac_Un_Op_Not = 61,
-	bac_Un_Op_Conv = 63,
-	bac_Un_Op_Cast = 62,
-};
-enum {
-	bac_regalloc_Mode_with_scan = 0,
-	bac_regalloc_Mode_with_coloring = 1,
-};
-enum {
-	bac_Sym_Ref_Type_Func = 14,
-};
-struct runtime_Source_Code_Location {
-	bac_String file_path;
-	bac_i32 line;
-	bac_i32 column;
-	bac_String procedure;
-};
-enum {
-	bac_ssa_Loop_Control_Break = 0,
-	bac_ssa_Loop_Control_Continue = 1,
-};
-enum {
-	bac_Pass_Peep = 0,
-	bac_Pass_Sccp = 1,
-	bac_Pass_Mem = 2,
-	bac_Pass_Loop = 3,
-};
-struct bac_Efficiency_Stat {
-	bac_int total;
-	bac_int ideal;
-};
-enum {
-	bac_Class_Flag_Is_Basic_Block_Start = 0,
-	bac_Class_Flag_Interned = 1,
-	bac_Class_Flag_Comutes = 2,
-	bac_Class_Flag_Store = 3,
-	bac_Class_Flag_Load = 4,
-	bac_Class_Flag_Clonable = 5,
-};
-enum {
-	bac_Reloc_Size_r32 = 0,
-	bac_Reloc_Size_r26 = 1,
-	bac_Reloc_Size_r19 = 2,
-	bac_Reloc_Size_r2_19 = 3,
+struct bac_Loop_Tree {
+	bac_Loop_Tree *parent;
+	bac_u32 depth;
+	_Bool infinite;
+	_Bool already_always;
 };
 enum {
 	runtime_Allocator_Error_None = 0,
@@ -455,6 +403,65 @@ struct bac_Interner {
 	bac_uintptr node_idx;
 	bac_int len;
 	bac_int cap;
+};
+enum {
+	bac_Lattice_Type_Top = 0,
+	bac_Lattice_Type_Int = 1,
+	bac_Lattice_Type_Float = 2,
+	bac_Lattice_Type_Ctlr = 3,
+	bac_Lattice_Type_Mem = 4,
+	bac_Lattice_Type_Bot = 5,
+};
+struct runtime_Source_Code_Location {
+	bac_String file_path;
+	bac_i32 line;
+	bac_i32 column;
+	bac_String procedure;
+};
+enum {
+	bac_ssa_Loop_Control_Break = 0,
+	bac_ssa_Loop_Control_Continue = 1,
+};
+struct bac_Efficiency_Stat {
+	bac_int total;
+	bac_int ideal;
+};
+enum {
+	bac_Reloc_Size_r32 = 0,
+	bac_Reloc_Size_r26 = 1,
+	bac_Reloc_Size_r19 = 2,
+	bac_Reloc_Size_r2_19 = 3,
+};
+enum {
+	bac_Cfi_Kind_Def_Cfa_Offset = 0,
+	bac_Cfi_Kind_Save_Reg = 1,
+	bac_Cfi_Kind_Restore_Reg = 2,
+	bac_Cfi_Kind_Remember_State = 3,
+	bac_Cfi_Kind_Restore_State = 4,
+};
+enum {
+	bac_Un_Op_Cast = 62,
+	bac_Un_Op_Neg = 60,
+	bac_Un_Op_Simd_Extract_Lsbs = 67,
+	bac_Un_Op_Simd_Reduce_Add_Bisect = 68,
+	bac_Un_Op_U_Conv = 64,
+	bac_Un_Op_Splat = 65,
+	bac_Un_Op_Not = 61,
+	bac_Un_Op_Ctz = 66,
+	bac_Un_Op_Conv = 63,
+};
+enum {
+	bac_Pass_Peep = 0,
+	bac_Pass_Sccp = 1,
+	bac_Pass_Mem = 2,
+	bac_Pass_Loop = 3,
+};
+struct bac_Dbg_Data_Def {
+	bac_Node_ID node;
+};
+struct bit_arr_Bit_Set {
+	bac_int *masks;
+	bac_int bit_length;
 };
 struct Soa_Slice_Of_bac_SS_Entry_V____i64 {
 	bac_u8 *hash;
@@ -473,22 +480,11 @@ struct bac_Sloc {
 	bac_u64 col : 16;
 	bac_u64 range : 8;
 } __attribute__((packed, aligned(4)));
-struct bac_Tag {
-	bac_String name[1];
-	bac_u32 stable_id[1];
-} __attribute__((packed, aligned(4)));
-struct bit_arr_Bit_Set {
-	bac_int *masks;
-	bac_int bit_length;
-};
 struct arna_Allocator {
 	bac_u8 *ptr;
 	bac_uint pos;
 	bac_uint commited;
 	bac_uint reserved;
-};
-struct bac_Dbg_Data_Def {
-	bac_Node_ID node;
 };
 enum {
 	bac_Bs_Class_Flag_Is_Basic_Block_Start = 1 << 0,
@@ -498,13 +494,6 @@ enum {
 	bac_Bs_Class_Flag_Load = 1 << 4,
 	bac_Bs_Class_Flag_Clonable = 1 << 5,
 };
-enum {
-	bac_Bs_Opt_Flag_Sccp = 1 << 0,
-	bac_Bs_Opt_Flag_Local_Peeps = 1 << 1,
-	bac_Bs_Opt_Flag_Mem_Opt = 1 << 2,
-	bac_Bs_Opt_Flag_Loop_Opt = 1 << 3,
-	bac_Bs_Opt_Flag_Inline = 1 << 4,
-};
 struct bac_Node_Output {
 	bac_u32 id : 22;
 	bac_u32 idx : 10;
@@ -513,6 +502,13 @@ struct Fidxe_Cap_Dyn_Arr_Of_2_bac_Node_Datatype {
 	bac_Node_Datatype data[2];
 	bac_u8 _padding[6];
 	bac_int len;
+};
+enum {
+	bac_Bs_Opt_Flag_Sccp = 1 << 0,
+	bac_Bs_Opt_Flag_Local_Peeps = 1 << 1,
+	bac_Bs_Opt_Flag_Mem_Opt = 1 << 2,
+	bac_Bs_Opt_Flag_Loop_Opt = 1 << 3,
+	bac_Bs_Opt_Flag_Inline = 1 << 4,
 };
 struct runtime_Maybe_T_Node_ID {
 	union {
@@ -528,6 +524,10 @@ struct bac_RM_Intern_Idx {
 	bac_u16 index : 12;
 	bac_u16 kind : 4;
 };
+struct bac_Tag {
+	bac_String name[1];
+	bac_u32 stable_id[1];
+} __attribute__((packed, aligned(4)));
 struct bac_Reg {
 	bac_u16 index : 12;
 	bac_u16 kind : 4;
@@ -540,6 +540,12 @@ struct Slice_Of_Soa_Slice_Of_bac_SS_Entry_V____i64 {
 	} *data;
 	bac_int len;
 };
+struct bac_Cfi_Op {
+	bac_u32 offset;
+	bac_u32 arg;
+	bac_Cfi_Kind kind;
+	bac_u8 reg;
+};
 struct bac_Lib_Calls {
 	bac_Lib_Call copy;
 	bac_Lib_Call set;
@@ -550,6 +556,10 @@ struct Slice_Of_bac_Reg {
 };
 struct Slice_Of_bac_Sloc {
 	bac_Sloc *data;
+	bac_int len;
+};
+struct Slice_Of_bac_Bs_Class_Flag {
+	bac_Bs_Class_Flag *data;
 	bac_int len;
 };
 struct bac_ssa_If_State {
@@ -577,19 +587,13 @@ struct bac_Proc_Meta {
 		bac_Node_ID cmem;
 	} cached;
 };
-struct bac_Cfi_Op {
-	bac_u32 offset;
-	bac_u32 arg;
-	bac_Cfi_Kind kind;
-	bac_u8 reg;
+struct bac_Param_Spec {
+	bac_Node_Datatype dt;
+	bac_i32 size;
 };
 struct bac_PS_Peep_Ctx {
 	bac_Proc *graph;
 	Slice_Of_bac_Node_ID preds;
-};
-struct bac_Param_Spec {
-	bac_Node_Datatype dt;
-	bac_i32 size;
 };
 struct bac_Sym_Ref {
 	bac_Sym_Ref_Type type;
@@ -600,13 +604,18 @@ struct Slice_Of_bac_RM_Intern_Idx {
 	bac_RM_Intern_Idx *data;
 	bac_int len;
 };
-struct Slice_Of_bac_Bs_Class_Flag {
-	bac_Bs_Class_Flag *data;
-	bac_int len;
-};
 struct Slice_Of_bac_Node_Output {
 	bac_Node_Output *data;
 	bac_int len;
+};
+struct bac_Dbg_Location {
+	bac_Dbg_Sym sym;
+	bac_u32 start;
+	bac_u32 end;
+	bac_u32 symbol;
+	bac_i32 offset;
+	bac_Reg reg;
+	bac_Dbg_Location_Kind kind;
 };
 struct bac_Call {
 	bac_Cfg _0;
@@ -617,15 +626,6 @@ struct bac_Call {
 	} flags;
 	bac_u32 cid;
 	bac_Node_Datatype rets[4];
-};
-struct bac_Dbg_Location {
-	bac_Dbg_Sym sym;
-	bac_u32 start;
-	bac_u32 end;
-	bac_u32 symbol;
-	bac_i32 offset;
-	bac_Reg reg;
-	bac_Dbg_Location_Kind kind;
 };
 struct Slice_Of_bac_Cfi_Op {
 	bac_Cfi_Op *data;
@@ -681,18 +681,9 @@ struct bac_Stencil {
 	Slice_Of_bac_u8 mem;
 	bac_Proc_Meta meta;
 };
-struct runtime_Allocator {
-	runtime_Allocator_Proc procedure;
-	void *data;
-};
 struct bac_Regalloc_Output {
 	Slice_Of_bac_Reg allocs;
 	bac_Reg_Kind temp_stack_slot;
-};
-struct bac_RM_Interner {
-	Slice_Of_Soa_Slice_Of_bac_SS_Entry_V____i64 slots;
-	Slice_Of_bac_int lens;
-	bac_u32 mask_len;
 };
 struct bac_Regalloc_Node_Meta {
 	Slice_Of_bac_RM_Intern_Idx masks;
@@ -748,6 +739,15 @@ struct bac_Codegen_Emit_Buf {
 	arna_Allocator *slocs;
 	arna_Allocator *cfi;
 	arna_Allocator *dbg_locs;
+};
+struct bac_RM_Interner {
+	Slice_Of_Soa_Slice_Of_bac_SS_Entry_V____i64 slots;
+	Slice_Of_bac_int lens;
+	bac_u32 mask_len;
+};
+struct runtime_Allocator {
+	runtime_Allocator_Proc procedure;
+	void *data;
 };
 struct bac_Call_Conv {
 	Slice_Of_Slice_Of_bac_Reg callee_saved;
@@ -823,14 +823,14 @@ struct bac_Basic_Block {
 	bac_u32 offset;
 	bac_Loop_Tree *loop_tree;
 };
-struct bac_ssa_Param_Gen {
-	Dyn_Arr_Of_bac_Node_ID vls;
-	bac_int spill_start;
-};
 struct container_queue_Queue_T_Node_ID {
 	Dyn_Arr_Of_bac_Node_ID data;
 	bac_uint len;
 	bac_uint offset;
+};
+struct bac_ssa_Param_Gen {
+	Dyn_Arr_Of_bac_Node_ID vls;
+	bac_int spill_start;
 };
 struct bac_Dbg_Data_Sym {
 	bac_Dbg_Sym inner;
@@ -934,7 +934,6 @@ extern _Bool bac_compute_latices(bac_Proc *ctx, runtime_Allocator scratch);
 extern bac_int bac_connect(bac_Proc *graph, bac_Node_ID use, bac_Node_ID def);
 extern void bac_delete_node_node(bac_Proc *graph, bac_Node *node);
 extern void bac_delete_node_node_id(bac_Proc *graph, bac_Node_ID id);
-extern bac_Codegen_Output bac_emit_function(bac_Codegen_Emit_Ctx ctx);
 extern bac_Expanded_Node bac_expand_node(bac_Proc *graph, bac_Node_ID id);
 extern _Bool bac_find_node(bac_Proc *graph, bac_Node_Type kind, bac_Node_ID on, bac_Node_ID *ret0);
 extern bac_Node_ID bac_find_or_create_node(bac_Proc *graph, bac_Node_Type kind);
@@ -959,44 +958,47 @@ extern void bac_unpin(bac_Proc *graph, bac_Node_ID id, _Bool no_delete);
 extern bac_Node_Spec bac_anal_SPEC;
 extern bac_Call_Conv bac_arm_CC_TABLE[1];
 extern bac_Node_Spec bac_arm_SPEC;
-extern bac_Regalloc_Output bac_regalloc_regalloc(bac_Regalloc *ra, bac_Proc *graph, bac_Schedule *sched, bac_regalloc_Mode mode, runtime_Allocator scratch);
-extern bac_Node_Spec bac_ssa_SPEC;
-extern bac_Node_ID bac_ssa_add_arbitrary_load(bac_Proc *ctx, bac_Node_ID cfg, bac_Node_ID mem, bac_Node_ID addr, bac_int rsize, bac_int extra_offset, bac_Node_Datatype unit);
-extern bac_Node_ID bac_ssa_add_arbitrary_store(bac_Proc *ctx, bac_Node_ID cfg, bac_Node_ID mem, bac_Node_ID addr, bac_Node_ID rvalue, bac_int rsize, bac_int extra_offset, bac_Node_Datatype unit);
-extern bac_Node_ID bac_ssa_add_call(bac_Proc *graph, Slice_Of_bac_Node_ID args, bac_Call extra, bac_Node_ID *ctrl);
-extern bac_Node_ID bac_ssa_add_field_load(bac_Proc *ctx, bac_String name, bac_Node_Datatype dt, bac_Node_ID cfg, bac_Node_ID mem, bac_Node_ID base, bac_int offset);
-extern bac_Node_ID bac_ssa_add_field_offset(bac_Proc *graph, bac_Node_ID base, bac_int offset);
-extern bac_Node_ID bac_ssa_add_field_store(bac_Proc *ctx, bac_String name, bac_Node_ID cfg, bac_Node_ID mem, bac_Node_ID base, bac_int offset, bac_Node_ID value);
-extern bac_Node_ID bac_ssa_add_scope(bac_Proc *graph, bac_String name, bac_Node_ID cfg);
-extern Slice_Of_bac_Param_Spec bac_ssa_arg_gen_finalize(bac_Proc *ctx, bac_ssa_Param_Gen *gen);
-extern bac_Node_ID bac_ssa_arg_gen_next(bac_Proc *ctx, bac_Node_ID mem, bac_ssa_Param_Gen *gen, bac_String name, bac_ssa_Abi_Param *apa, bac_Node_ID *omem);
-extern void bac_ssa_break_block(bac_Proc *graph, bac_Node_ID *scope, bac_ssa_Block_State *state);
-extern bac_Node_ID bac_ssa_compute_index_offset(bac_Proc *ctx, bac_Node_ID base, bac_Node_ID index, bac_i64 stride);
-extern void bac_ssa_decl_local(bac_Proc *graph, bac_Node_ID loc, bac_String name, bac_u64 type);
-extern void bac_ssa_delete_scope(bac_Proc *graph, bac_Node_ID scope);
-extern void bac_ssa_end_block(bac_Proc *graph, bac_Node_ID *scope, bac_ssa_Block_State *state);
-extern void bac_ssa_end_else(bac_Proc *graph, bac_Node_ID *else_scope, bac_ssa_If_State *state);
-extern void bac_ssa_end_if(bac_Proc *graph, bac_Node_ID *then_scope, bac_ssa_If_State *state);
-extern void bac_ssa_end_loop(bac_Proc *graph, bac_Node_ID *node_scope, bac_ssa_Loop_State *state);
-extern bac_Node_ID bac_ssa_get_scope_value(bac_Proc *graph, bac_Node_ID scope, bac_int idx);
-extern void bac_ssa_inline_graph(bac_Proc *graph, bac_Node_ID call, bac_Proc *from);
-extern void bac_ssa_inline_stencil(bac_Proc *graph, bac_Node_ID call, bac_Stencil from);
-extern void bac_ssa_loop_control(bac_ssa_Loop_Control variant, bac_Proc *ctx, bac_Node_ID scope, bac_ssa_Loop_State *loop);
-extern _Bool bac_ssa_loopopt(bac_Proc *graph);
-extern _Bool bac_ssa_memopt(bac_Proc *graph);
-extern bac_Node_ID bac_ssa_merge_returns(bac_Proc *graph, Slice_Of_bac_Node_ID args);
-extern bac_int bac_ssa_push_scope_value(bac_Proc *graph, bac_Node_ID scope, bac_Node_ID value, bac_String name, bac_u64 type);
-extern void bac_ssa_set_scope_value(bac_Proc *graph, bac_Node_ID scope, bac_int idx, bac_Node_ID value);
-extern void bac_ssa_start_block(bac_ssa_Block_State *state);
-extern void bac_ssa_start_else(bac_Proc *graph, bac_Node_ID *then_scope, bac_ssa_If_State *state);
-extern void bac_ssa_start_if(bac_Proc *graph, bac_Node_ID scope, bac_ssa_If_State *state, bac_Node_ID cond);
-extern void bac_ssa_start_loop(bac_Proc *graph, bac_Node_ID scope, bac_ssa_Loop_State *state);
-extern void bac_ssa_start_loop_increment(bac_Proc *graph, bac_Node_ID *node_scope, bac_ssa_Loop_State *state);
-extern bac_Node_ID bac_ssa_start_proc(bac_Proc *graph, arna_Allocator *mem);
-extern void bac_ssa_truncate_scope(bac_Proc *graph, bac_Node_ID scope, bac_int to_len);
+extern bac_Regalloc_Output bac_regalloc(bac_Regalloc *ra, bac_Proc *graph, bac_Schedule *sched, bac_regalloc_Mode mode, runtime_Allocator scratch);
+extern bac_Node_Spec bac_SPEC;
+extern bac_Node_ID bac_add_arbitrary_load(bac_Proc *ctx, bac_Node_ID cfg, bac_Node_ID mem, bac_Node_ID addr, bac_int rsize, bac_int extra_offset, bac_Node_Datatype unit);
+extern bac_Node_ID bac_add_arbitrary_store(bac_Proc *ctx, bac_Node_ID cfg, bac_Node_ID mem, bac_Node_ID addr, bac_Node_ID rvalue, bac_int rsize, bac_int extra_offset, bac_Node_Datatype unit);
+extern bac_Node_ID bac_add_field_load(bac_Proc *ctx, bac_String name, bac_Node_Datatype dt, bac_Node_ID cfg, bac_Node_ID mem, bac_Node_ID base, bac_int offset);
+extern bac_Node_ID bac_add_field_offset(bac_Proc *graph, bac_Node_ID base, bac_int offset);
+extern bac_Node_ID bac_add_field_store(bac_Proc *ctx, bac_String name, bac_Node_ID cfg, bac_Node_ID mem, bac_Node_ID base, bac_int offset, bac_Node_ID value);
+extern bac_Node_ID bac_add_scope(bac_Proc *graph, bac_String name, bac_Node_ID cfg);
+extern Slice_Of_bac_Param_Spec bac_arg_gen_finalize(bac_Proc *ctx, bac_ssa_Param_Gen *gen);
+extern bac_Node_ID bac_arg_gen_next(bac_Proc *ctx, bac_Node_ID mem, bac_ssa_Param_Gen *gen, bac_String name, bac_ssa_Abi_Param *apa, bac_Node_ID *omem);
+extern void bac_break_block(bac_Proc *graph, bac_Node_ID *scope, bac_ssa_Block_State *state);
+extern bac_Codegen_Output bac_compile(bac_Codegen_Emit_Ctx ctx);
+extern bac_Node_ID bac_compute_index_offset(bac_Proc *ctx, bac_Node_ID base, bac_Node_ID index, bac_i64 stride);
+extern void bac_decl_local(bac_Proc *graph, bac_Node_ID loc, bac_String name, bac_u64 type);
+extern void bac_delete_scope(bac_Proc *graph, bac_Node_ID scope);
+extern void bac_end_block(bac_Proc *graph, bac_Node_ID *scope, bac_ssa_Block_State *state);
+extern void bac_end_else(bac_Proc *graph, bac_Node_ID *else_scope, bac_ssa_If_State *state);
+extern void bac_end_if(bac_Proc *graph, bac_Node_ID *then_scope, bac_ssa_If_State *state);
+extern void bac_end_loop(bac_Proc *graph, bac_Node_ID *node_scope, bac_ssa_Loop_State *state);
+extern bac_Node_ID bac_get_scope_value(bac_Proc *graph, bac_Node_ID scope, bac_int idx);
+extern void bac_inline_graph(bac_Proc *graph, bac_Node_ID call, bac_Proc *from);
+extern void bac_inline_stencil(bac_Proc *graph, bac_Node_ID call, bac_Stencil from);
+extern void bac_loop_control(bac_ssa_Loop_Control variant, bac_Proc *ctx, bac_Node_ID scope, bac_ssa_Loop_State *loop);
+extern _Bool bac_loopopt(bac_Proc *graph);
+extern bac_Node_ID bac_make_call(bac_Proc *graph, Slice_Of_bac_Node_ID args, bac_Call extra, bac_Node_ID *ctrl);
+extern _Bool bac_memopt(bac_Proc *graph);
+extern bac_Node_ID bac_merge_returns(bac_Proc *graph, Slice_Of_bac_Node_ID args);
+extern bac_int bac_push_scope_value(bac_Proc *graph, bac_Node_ID scope, bac_Node_ID value, bac_String name, bac_u64 type);
+extern void bac_set_scope_value(bac_Proc *graph, bac_Node_ID scope, bac_int idx, bac_Node_ID value);
+extern void bac_start_block(bac_ssa_Block_State *state);
+extern void bac_start_else(bac_Proc *graph, bac_Node_ID *then_scope, bac_ssa_If_State *state);
+extern void bac_start_if(bac_Proc *graph, bac_Node_ID scope, bac_ssa_If_State *state, bac_Node_ID cond);
+extern void bac_start_loop(bac_Proc *graph, bac_Node_ID scope, bac_ssa_Loop_State *state);
+extern void bac_start_loop_increment(bac_Proc *graph, bac_Node_ID *node_scope, bac_ssa_Loop_State *state);
+extern bac_Node_ID bac_start_proc(bac_Proc *graph, arna_Allocator *mem);
+extern void bac_truncate_scope(bac_Proc *graph, bac_Node_ID scope, bac_int to_len);
 extern bac_Call_Conv bac_wasm_CC_TABLE[1];
 extern bac_Node_Spec bac_wasm_SPEC;
 extern bac_Call_Conv bac_x64_CC_TABLE[2];
 extern bac_Node_Spec bac_x64_SPEC;
+/// This is to get the thread local arenas, since odin does not allow exporting
+/// thread locals
+extern arna_Allocator * arna_get_scratch();
 extern arna_Allocator arna_init_from_buffer(Slice_Of_bac_u8 buf);
-extern _Thread_local arna_Allocator arna_scratch[2];

@@ -95,30 +95,27 @@ main:
     add rsp, 0x28
     ret
 from_slice u8:
-    push rbx
-    mov.q [rsp - 0x20], rdi
-    mov.q [rsp - 0x18], rsi
+    mov.q [rsp - 0x28], rdi
+    mov.q [rsp - 0x20], rsi
     pxor xmm0, xmm0
-    movups.x [rsp - 0x10], xmm0
+    movups.x [rsp - 0x18], xmm0
     xor eax, eax
 7:
-    mov rcx, rax
-    cmp rcx, 0x10
-    setge dl
-    movzx rdx, dl
-    test dl, dl
+    cmp rax, 0x10
+    setge cl
+    movzx rcx, cl
+    test cl, cl
     jne 8
-    mov.q rdx, [rsp - 0x20]
-    add rdx, rcx
-    movzx.b edx, [rdx]
-    mov rbx, rcx
-    add rbx, 1
-    mov.b [rsp + rcx - 0x10], dl
-    mov rax, rbx
+    mov.q rcx, [rsp - 0x28]
+    add rcx, rax
+    movzx.b ecx, [rcx]
+    mov rdx, rax
+    add rdx, 1
+    mov.b [rsp + rax - 0x18], cl
+    mov rax, rdx
     jmp 7
 8:
-    movups.x xmm0, [rsp - 0x10]
-    pop rbx
+    movups.x xmm0, [rsp - 0x18]
     ret
 simd_search u8:
     push rbx
@@ -522,30 +519,27 @@ main:
     add rsp, 0x28
     ret
 from_slice u8:
-    push rbx
-    mov.q [rsp - 0x20], rdi
-    mov.q [rsp - 0x18], rsi
+    mov.q [rsp - 0x28], rdi
+    mov.q [rsp - 0x20], rsi
     pxor xmm0, xmm0
-    movups.x [rsp - 0x10], xmm0
+    movups.x [rsp - 0x18], xmm0
     xor eax, eax
 7:
-    mov rcx, rax
-    cmp rcx, 0x10
-    setge dl
-    movzx rdx, dl
-    test dl, dl
+    cmp rax, 0x10
+    setge cl
+    movzx rcx, cl
+    test cl, cl
     jne 8
-    mov.q rdx, [rsp - 0x20]
-    add rdx, rcx
-    movzx.b edx, [rdx]
-    mov rbx, rcx
-    add rbx, 1
-    mov.b [rsp + rcx - 0x10], dl
-    mov rax, rbx
+    mov.q rcx, [rsp - 0x28]
+    add rcx, rax
+    movzx.b ecx, [rcx]
+    mov rdx, rax
+    add rdx, 1
+    mov.b [rsp + rax - 0x18], cl
+    mov rax, rdx
     jmp 7
 8:
-    movups.x xmm0, [rsp - 0x10]
-    pop rbx
+    movups.x xmm0, [rsp - 0x18]
     ret
 simd_search u8:
     push rbx
@@ -1061,8 +1055,8 @@ main:
     lea rdi, [rip + 0xf81]
     call simd_search u8
     pxor xmm2, xmm2
-    xor eax, eax
     pxor xmm0, xmm0
+    xor eax, eax
 1:
     lea rcx, [rip + 0xf68]
     add rcx, rax

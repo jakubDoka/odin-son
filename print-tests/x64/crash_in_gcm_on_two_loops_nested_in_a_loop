@@ -2,8 +2,8 @@
 main:
     push rbx
     push rbp
-    xor ecx, ecx
     xor eax, eax
+    xor ecx, ecx
 1:
     cmp rcx, 4
     setge dl
@@ -13,36 +13,34 @@ main:
     xor edx, edx
     xor ebx, ebx
 2:
-    cmp rdx, 4
-    setge bpl
-    movzx rbp, bpl
-    test bpl, bpl
+    mov rbp, rbx
+    cmp rbp, 4
+    setge sil
+    movzx rsi, sil
+    test sil, sil
     jne 3
-    mov rbp, rdx
-    add rbp, 1
-    mov rsi, rbx
-    add rsi, rdx
-    mov rdx, rbp
+    mov rsi, rbp
+    add rsi, 1
+    add rdx, rbp
     mov rbx, rsi
     jmp 2
 3:
-    xor edx, edx
+    xor ebx, ebx
     xor ebp, ebp
 4:
-    cmp rdx, 4
+    cmp rbp, 4
     setge sil
     movzx rsi, sil
     test sil, sil
     jne 5
-    mov rsi, rdx
+    mov rsi, rbp
     add rsi, 1
-    lea rdi, [rbp + rdx*2]
-    mov rdx, rsi
-    mov rbp, rdi
+    lea rdi, [rbx + rbp*2]
+    mov rbx, rdi
+    mov rbp, rsi
     jmp 4
 5:
-    mov rdx, rbx
-    add rdx, rbp
+    add rdx, rbx
     mov rbx, rcx
     add rbx, 1
     add rax, rdx
@@ -58,16 +56,16 @@ main:
     ret
 =========== OPT LEVEL: none ===========
 main:
-    xor ecx, ecx
     xor eax, eax
+    xor ecx, ecx
 1:
     cmp rcx, 4
     setge dl
     movzx rdx, dl
     test dl, dl
     jne 6
-    xor edx, edx
     xor r8d, r8d
+    xor edx, edx
 2:
     cmp rdx, 4
     setge sil
@@ -83,18 +81,18 @@ main:
     xor esi, esi
     xor edx, edx
 4:
-    cmp rsi, 4
+    cmp rdx, 4
     setge dil
     movzx rdi, dil
     test dil, dil
     jne 5
-    mov rdi, rsi
+    mov rdi, rdx
     add rdi, 1
-    lea rdx, [rdx + rsi*2]
-    mov rsi, rdi
+    lea rsi, [rsi + rdx*2]
+    mov rdx, rdi
     jmp 4
 5:
-    add r8, rdx
+    add r8, rsi
     add rcx, 1
     add rax, r8
     jmp 1
@@ -108,8 +106,8 @@ main:
 main:
     push rbx
     push rbp
-    xor ecx, ecx
     xor eax, eax
+    xor ecx, ecx
 1:
     cmp rcx, 4
     setge dl
@@ -119,36 +117,34 @@ main:
     xor edx, edx
     xor ebx, ebx
 2:
-    cmp rdx, 4
-    setge bpl
-    movzx rbp, bpl
-    test bpl, bpl
+    mov rbp, rbx
+    cmp rbp, 4
+    setge sil
+    movzx rsi, sil
+    test sil, sil
     jne 3
-    mov rbp, rdx
-    add rbp, 1
-    mov rsi, rbx
-    add rsi, rdx
-    mov rdx, rbp
+    mov rsi, rbp
+    add rsi, 1
+    add rdx, rbp
     mov rbx, rsi
     jmp 2
 3:
-    xor edx, edx
+    xor ebx, ebx
     xor ebp, ebp
 4:
-    cmp rdx, 4
+    cmp rbp, 4
     setge sil
     movzx rsi, sil
     test sil, sil
     jne 5
-    mov rsi, rdx
+    mov rsi, rbp
     add rsi, 1
-    lea rdi, [rbp + rdx*2]
-    mov rdx, rsi
-    mov rbp, rdi
+    lea rdi, [rbx + rbp*2]
+    mov rbx, rdi
+    mov rbp, rsi
     jmp 4
 5:
-    mov rdx, rbx
-    add rdx, rbp
+    add rdx, rbx
     mov rbx, rcx
     add rbx, 1
     add rax, rdx
@@ -164,16 +160,16 @@ main:
     ret
 =========== OPT LEVEL: moderate ===========
 main:
-    xor ecx, ecx
     xor eax, eax
+    xor ecx, ecx
 1:
     cmp rcx, 4
     setge dl
     movzx rdx, dl
     test dl, dl
     jne 6
-    xor edx, edx
     xor r8d, r8d
+    xor edx, edx
 2:
     cmp rdx, 4
     setge sil
@@ -189,18 +185,18 @@ main:
     xor esi, esi
     xor edx, edx
 4:
-    cmp rsi, 4
+    cmp rdx, 4
     setge dil
     movzx rdi, dil
     test dil, dil
     jne 5
-    mov rdi, rsi
+    mov rdi, rdx
     add rdi, 1
-    lea rdx, [rdx + rsi*2]
-    mov rsi, rdi
+    lea rsi, [rsi + rdx*2]
+    mov rdx, rdi
     jmp 4
 5:
-    add r8, rdx
+    add r8, rsi
     add rcx, 1
     add rax, r8
     jmp 1
@@ -227,27 +223,27 @@ main:
     add rax, 1
     test r8b, r8b
     je 2
-    xor edi, edi
     xor eax, eax
+    xor edi, edi
 3:
-    mov r10, rax
-    cmp rdi, 4
+    mov r10, rdi
+    cmp rax, 4
     setge r9b
     movzx r9, r9b
-    mov r8, rdi
+    mov r8, rax
     add r8, 1
-    lea rax, [r10 + rdi*2]
-    mov rdi, r8
+    lea rdi, [r10 + rax*2]
+    mov rax, r8
     test r9b, r9b
     je 3
-    add rdx, 1
+    add rcx, 1
     add rsi, r10
-    mov rax, rcx
+    mov rax, rdx
     add rax, rsi
-    cmp rdx, 4
+    cmp rcx, 4
     setge sil
     movzx rsi, sil
-    mov rcx, rax
+    mov rdx, rax
     test sil, sil
     je 1
     mov rcx, 0xfb

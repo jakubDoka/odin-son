@@ -30,17 +30,18 @@ function build-wabt
 end
 
 function build-bac
-	odin run meta -o:none
-	or return 1
-	odin run bac/bindgen -o:none -define:NO_FMT=true
-	or return 1
-	gcc bac/bindgen/c/bac.h
-	or return 1
+	#odin run meta -o:none
+	#or return 1
+	#odin run bac/bindgen -o:none -define:NO_FMT=true
+	#or return 1
+	#gcc bac/bindgen/c/bac.h
+	#or return 1
 	odin build bac/bindgen/lib -build-mode:obj -no-entry-point -use-single-module \
-		-out:bac/bindgen/lib/lib.o -o:size -source-code-locations:none \
-		-disable-assert -no-bounds-check -no-type-assert -define:NO_FMT=true \
-		-default-to-nil-allocator -define:ARNA_DISABLE_VIRTUAL=true \
-		-disable-init-fini -define:INIT_FINI=false
+		-out:bac/bindgen/lib/lib.o -debug
+		#-o:size -source-code-locations:none \
+		#-disable-assert -no-bounds-check -no-type-assert -define:NO_FMT=true \
+		#-default-to-nil-allocator -define:ARNA_DISABLE_VIRTUAL=true \
+		#-disable-init-fini -define:INIT_FINI=false
 end
 
 function build-unicorn

@@ -91,6 +91,7 @@ Codegen_Emit_Ctx :: struct {
 	using buf:          Codegen_Emit_Buf,
 	emit_got_imports:   bool,
 	lib_calls:          Lib_Calls,
+	regalloc_mode:      Regalloc_Mode,
 	using ra_out:       Regalloc_Output,
 	param_specs:        []Param_Spec,
 	// NOTE: these are filled in by the backend
@@ -226,24 +227,20 @@ Reloc_Slot :: struct #raw_union #align (1) {
 	},
 }
 
-@(tag = "api")
-emit_function :: proc(ctx: Codegen_Emit_Ctx) -> (res: Codegen_Output) {
-	check := buf_checkpoint(ctx.buf)
-	res.emit = ctx.graph.emit_function(ctx)
-	res.bufs = buf_output(ctx.buf, check)
-	return
-}
-
 buf_checkpoint :: proc(
-	buf: Codegen_Emit_Buf,
+	buf: ^Codegen_Emit_Buf,
 ) -> (
 	out: Codegen_Emit_Buf_Checkpoint,
 ) {
 	buf := buf
-	arenas := mem.slice_data_cast([]^arna.Allocator, mem.ptr_to_bytes(&buf))
+	arenas := mem.slice_data_cast([]^arna.Allocator, mem.ptr_to_bytes(buf))
 	checks := mem.slice_data_cast([]uint, mem.ptr_to_bytes(&out))
 
+	@(rodata, static)
+	ARNA_SENTINEL: arna.Allocator
+
 	for i in 0 ..< len(arenas) {
+		if arenas[i] == nil do arenas[i] = &ARNA_SENTINEL
 		checks[i] = arenas[i].pos
 	}
 	return
@@ -282,10 +279,12 @@ buf_output :: proc(
 }
 
 next_sloc :: proc(ctx: ^Codegen_Emit_Ctx) {
-	cx := ctx.sloc
-	cx.range = u32(ctx.code.pos - ctx.last_off)
-	add_sloc(ctx.slocs)^ = cx
-	ctx.last_off = ctx.code.pos
+	if ctx.has_dbg {
+		cx := ctx.sloc
+		cx.range = u32(ctx.code.pos - ctx.last_off)
+		add_sloc(ctx.slocs)^ = cx
+		ctx.last_off = ctx.code.pos
+	}
 }
 
 mount_sloc :: proc(ctx: ^Codegen_Emit_Ctx, node: Node_ID) {

@@ -935,8 +935,6 @@ emit_proc_code :: proc(
 		ctx.node_spec = &anal.SPEC
 	}
 
-	ctx.computed_passes = {}
-
 	peep_ctx: bac.Peep_Ctx
 	peep_ctx.graph = ctx
 
@@ -975,7 +973,7 @@ emit_proc_code :: proc(
 	emit_ctx.ra_out = regs
 	emit_ctx.param_specs = prc.param_types
 
-	prc.out = bac.emit_function(emit_ctx^)
+	prc.out = ssa.compile(emit_ctx^)
 
 	emit_ctx.schedule = {}
 	emit_ctx.dbg_data = {}
@@ -2023,7 +2021,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				args[1] = ctx_mem(ctx)
 
 				// NOTE: we pass garbage cid, to verify backend is sane
-				call_end, mem := ssa.add_call(
+				call_end, mem := ssa.make_call(
 					ctx,
 					args,
 					{cid = ~u32(0), flags = {ccid = x64.X64_LINUX_SYSCALL_CC}},
@@ -2301,7 +2299,7 @@ emit_call :: proc(
 	copy(args[lctx.i:], args[lctx.ri:])
 	ln := lctx.i + len(args) - lctx.ri
 
-	call_end, mem := ssa.add_call(
+	call_end, mem := ssa.make_call(
 		ctx,
 		args[:ln],
 		{flags = {imported = imported}, cid = u32(prc_id)},

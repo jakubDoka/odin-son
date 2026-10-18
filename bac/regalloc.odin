@@ -147,6 +147,11 @@ Param_Spec :: struct {
 	size: i32,
 }
 
+Regalloc_Mode :: enum {
+	with_scan,
+	with_coloring,
+}
+
 Regalloc :: struct {
 	using spec:  ^Regalloc_Spec,
 	using cc:    ^Call_Conv,
@@ -157,6 +162,7 @@ Regalloc :: struct {
 Regalloc_Output :: struct {
 	allocs:          []Reg,
 	temp_stack_slot: Reg_Kind,
+	computed:        bool,
 }
 
 RM_Interner :: struct {

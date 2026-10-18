@@ -1172,9 +1172,8 @@ simd_search u8:
     ldr q9, [x0]
     movz x0, #7
     dup v8.16b, w0
-    movz x0, #0
+    movz x24, #0
 9:
-    mov x24, x0
     cmp w24, w21
     b.ge 0xe0
     movz x0, #16
@@ -1190,9 +1189,10 @@ simd_search u8:
     zip1 v0.16b, v1.16b, v0.16b
     addv h0, v0.8h
     fmov x2, d0
-    add x0, x22, x24
-    uxth w1, w2
-    cmp w1, w23
+    add x1, x22, x24
+    uxth w0, w2
+    cmp w0, w23
+    mov x24, x1
     b.eq 0x74
     rbit w0, w2
     clz w0, w0
@@ -1365,24 +1365,24 @@ simd_search u8:
     uxtb w9, w2
     add x8, x6, x11
     movn x7, #0
-    movz x1, #0
+    movz x2, #0
 6:
-    mov x6, x1
-    cmp w6, w10
+    mov x1, x2
+    cmp w1, w10
     b.ge 0xd4
-    add x1, x8, x6
-    ldrb w2, [x1]
-    add x1, x6, x5
-    uxtb w2, w2
-    cmp w2, w9
+    add x2, x8, x1
+    ldrb w6, [x2]
+    add x2, x1, x5
+    uxtb w6, w6
+    cmp w6, w9
     b.ne 0xac
     b 0xd8
 7:
-    movn x6, #0
+    movn x1, #0
 8:
-    cmp w6, w4
+    cmp w1, w4
     b.lt simd_search u8
-    add x1, x11, x6
+    add x1, x11, x1
     str x1, [x3]
     b 0xf4
 9:

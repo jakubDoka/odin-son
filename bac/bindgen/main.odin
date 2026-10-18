@@ -131,15 +131,21 @@ typedef struct {
 				packag = strings.trim_prefix(packag, "/")
 				packag = strings.trim_prefix(packag, "utils")
 			}
-			if packag == "arna" {} else if len(packag) != 0 {
+			if packag == "arna" {
+			} else if len(packag) != 0 {
+
 				packag = strings.concatenate({"bac_", packag})
 			} else {
 				packag = "bac"
 			}
 
+			prefix := packag
+			if prefix == "bac_ssa" do prefix = "bac"
+			if prefix == "bac_regalloc" do prefix = "bac"
+
 			gen_lib: if first_pass && is_proc {
 				fmt.fprintln(lib, `@(export)`)
-				fmt.fprintfln(lib, `%v_%v :: proc "c" (`, packag, entry.name)
+				fmt.fprintfln(lib, `%v_%v :: proc "c" (`, prefix, entry.name)
 
 				for i in 0 ..< len(params.types) {
 					name := params.names[i]
@@ -298,7 +304,7 @@ typedef struct {
 						fmt.sbprintf(f, "void")
 					}
 
-					fmt.sbprintf(f, " %v_%v(", packag, entry.name)
+					fmt.sbprintf(f, " %v_%v(", prefix, entry.name)
 					for ty, i in params.types {
 						if i != 0 do fmt.sbprint(f, ", ")
 						name := params.names[i]
@@ -325,7 +331,7 @@ typedef struct {
 
 					fmt.sbprintfln(f, ");")
 				} else {
-					name := fmt.tprintf("%v_%v", packag, entry.name)
+					name := fmt.tprintf("%v_%v", prefix, entry.name)
 					c_display_type(
 						f,
 						type_info_of(entry.type),

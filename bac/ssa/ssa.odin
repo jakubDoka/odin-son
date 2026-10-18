@@ -3,6 +3,10 @@ package bac_ssa
 import bac ".."
 import "../../utils/arna"
 import "../../utils/fmt"
+import "../arm"
+import "../regalloc"
+import "../wasm"
+import "../x64"
 import "core:mem"
 import "core:slice"
 
@@ -11,6 +15,71 @@ get_node :: bac.get_node
 
 btype :: #force_inline proc(node: bac.Expanded_Node) -> Node_Type {
 	return Node_Type(node.rtype)
+}
+
+@(tag = "api")
+compile :: proc(ctx: bac.Codegen_Emit_Ctx) -> (res: bac.Codegen_Output) {
+	context.allocator, _ = arna.scrath()
+
+	ctx := ctx
+
+	fmt.assertf(ctx.graph != nil, "codegen context needs a .graph to be set")
+
+	if ctx.graph.node_spec == &SPEC {
+		when ODIN_ARCH == .amd64 {
+			ctx.graph.node_spec = &x64.SPEC
+		} else when ODIN_ARCH == .arm64 {
+			ctx.graph.node_spec = &arm.SPEC
+		} else when ODIN_ARCH == .wasm64p32 {
+			ctx.graph.node_spec = &wasm.SPEC
+		}
+	}
+
+	fmt.assertf(
+		ctx.graph.node_spec != nil && ctx.graph.node_spec != &SPEC,
+		"target not configured, set .graph.node_spec",
+	)
+
+	fmt.assertf(
+		ctx.buf.code != nil,
+		"code buffer not configured, set .buf.code",
+	)
+
+	if ctx.schedule == nil {
+		bac.apply_peeps({ctx})
+
+		gs: bac.Schedule
+		bac.schedule_graph(ctx, &gs, .for_regalloc)
+		ctx.schedule = &gs
+
+		bac.schedule_peeps(ctx, &gs)
+	}
+
+	if ctx.dbg_data == nil {
+		data: bac.Dbg_Data
+		bac.take_dbg_data(ctx, ctx.schedule, &data)
+		ctx.dbg_data = &data
+	}
+
+	if !ctx.ra_out.computed {
+		ra: bac.Regalloc
+		ra.spec = ctx.node_spec
+		ra.cc = ctx.abi
+		ra.param_specs = ctx.param_specs
+
+		ctx.ra_out = regalloc.regalloc(
+			&ra,
+			ctx.graph,
+			ctx.schedule,
+			ctx.regalloc_mode,
+		)
+	}
+
+	check := bac.buf_checkpoint(&ctx.buf)
+	res.emit = ctx.graph.emit_function(ctx)
+	res.bufs = bac.buf_output(ctx.buf, check)
+
+	return
 }
 
 ssa_extra :: proc {
@@ -126,7 +195,7 @@ ssa_extra_node_id :: #force_inline proc(
 }
 
 @(tag = "api")
-add_call :: proc(
+make_call :: proc(
 	graph: ^bac.Proc,
 	args: []Node_ID,
 	extra: bac.Call,
@@ -1136,40 +1205,6 @@ start_proc :: proc(graph: ^Proc, mem: ^arna.Allocator) -> Node_ID {
 	graph.end = bac.add_end(graph, "end", {0})
 	bac.pin(graph, graph.end)
 	return bac.add_mem(graph, "rmem", graph.entry)
-}
-
-get_or_add_const_mem :: proc(graph: ^Proc) -> (cmem: Node_ID) {
-	if graph.cmem == 0 ||
-	   get_node(graph, graph.cmem).rtype == bac.DEAD_NODE_KIND {
-		rmem := bac.find_node(graph, .Mem)
-
-		split := bac.add_split_mem(graph, "cptspl", rmem)
-		graph.cmem = bac.add_mem(graph, "cslcm", split)
-		split_mem := bac.add_mem(graph, "cmscm", split)
-		for out in bac.get_outputs(graph, rmem) {
-			if out.id != split && get_node(graph, out.id).itype != .Local {
-				bac.set_input(graph, out.id, out.idx, split_mem)
-			}
-		}
-
-		for einp in bac.get_inputs(graph, graph.end) {
-			if bac.is_end_ctrl(graph, einp) {
-				node := expand_node(graph, einp)
-				connect_to := einp
-				if node.itype == .Return {
-					connect_to = bac.add_merge_mem(
-						graph,
-						"cmmrg",
-						{node.inps[1]},
-					)
-					bac.set_input(graph, einp, 1, connect_to)
-				}
-				bac.connect(graph, connect_to, split_mem)
-			}
-		}
-	}
-
-	return graph.cmem
 }
 
 Builtin_Proc :: enum {

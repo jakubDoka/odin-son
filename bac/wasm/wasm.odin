@@ -396,6 +396,10 @@ meta_of :: #force_inline proc(
 	}
 
 	if node.gvn == 1 {
+		if ra.cc == nil {
+			ra.cc = &CC_TABLE[WASM_SYSTEMV_CC]
+		}
+
 		ra.mask_len = MASK_SIZE
 		for kind in 0 ..< RK_COUNT {
 			rslice(ra, kind, FULL_MASK[:])

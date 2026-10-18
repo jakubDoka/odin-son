@@ -15,11 +15,7 @@ Call :: bac.Call
 Node_ID :: bac.Node_ID
 expand_node :: bac.expand_node
 get_node :: bac.get_node
-
-Mode :: enum {
-	with_scan,
-	with_coloring,
-}
+Mode :: bac.Regalloc_Mode
 
 @(tag = "api")
 regalloc :: proc(
@@ -61,6 +57,8 @@ regalloc_round :: proc(
 	res: bac.Regalloc_Output,
 	ok: bool = true,
 ) {
+	res.computed = true
+
 	context.allocator, _ = arna.scrath(scratch)
 
 	graph.dont_intern = true
@@ -567,6 +565,7 @@ regalloc_round :: proc(
 					id   = sc,
 				}
 				ctx.self_conflicts.len += 1
+
 			}
 
 			return a == b
@@ -1487,13 +1486,13 @@ regalloc_round :: proc(
 
 	assert(any_fails == !ok)
 
-	resolve: for sc in ctx.self_conflicts.data[:ctx.self_conflicts.len] {
+	for sc in ctx.self_conflicts.data[:ctx.self_conflicts.len] {
 		sc := sc.id
 		lrg := &lrgs[sc.lrg]
 
 		scs := [?]Self_Conflict{sc, {0, sc.other, sc.node}}
 
-		for sc in scs {
+		resolve: for sc in scs {
 			id := sc.node
 			oth := sc.other
 
@@ -2052,7 +2051,7 @@ regalloc_round :: proc(
 			}
 		}
 
-		//log.info(string(sb.buf[:]))
+		fmt.eprintln(string(sb.buf[:]))
 	}
 
 	is_def :: proc(ctx: Ctx, node: ^bac.Node) -> bool {

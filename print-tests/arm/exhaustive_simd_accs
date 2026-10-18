@@ -847,48 +847,47 @@ simd_fold u8:
     str x1, [x21]
     eor v0.16b, v0.16b, v0.16b
     str q0, [x19]
-    movz x23, #16
-    movz x0, #0
+    movz x24, #16
+    movz x20, #0
 14:
-    mov x20, x0
     ldr x0, [x21]
-    add x24, x23, x20
-    cmp w24, w0
-    b.ge 0xec
-    sub x0, x24, x20
+    add x23, x24, x20
+    cmp w23, w0
+    b.ge 0xe8
+    sub x0, x23, x20
     mov x25, x0
     ldr q8, [x19]
     ldr x0, [x22]
     add x0, x0, x20
     mov x1, x25
-    bl 0x720
+    bl 0x71c
     add v8.16b, v8.16b, v0.16b
     str q8, [x19]
     ldr x0, [x22]
     add x0, x0, x20
     mov x1, x25
-    bl 0x720
+    bl 0x71c
     and v8.16b, v0.16b, v8.16b
     str q8, [x19]
     ldr x0, [x22]
     add x0, x0, x20
     mov x1, x25
-    bl 0x720
+    bl 0x71c
     eor v8.16b, v0.16b, v8.16b
     str q8, [x19]
     ldr x0, [x22]
     add x0, x0, x20
     mov x1, x25
-    bl 0x720
+    bl 0x71c
     orr v8.16b, v0.16b, v8.16b
     str q8, [x19]
     ldr x0, [x22]
     add x0, x0, x20
     mov x1, x25
-    bl 0x720
+    bl 0x71c
     sub v0.16b, v8.16b, v0.16b
     str q0, [x19]
-    mov x0, x24
+    mov x20, x23
     b 0x4c
 15:
     add x0, sp, #72
@@ -900,10 +899,11 @@ simd_fold u8:
     add x4, x2, x20
     movz x3, #1
     movz x2, #0
+16:
     ldrb w5, [x0]
     uxtb w6, w5
     cmp w2, w1
-    b.ge 0x1a0
+    b.ge 0x19c
     add x7, x4, x2
     ldrb w5, [x7]
     uxtb w5, w5
@@ -935,8 +935,8 @@ simd_fold u8:
     uxtb w5, w5
     add x2, x2, x3
     strb w5, [x0]
-    b init_inc u8
-16:
+    b 0x10c
+17:
     ldr q0, [x19]
     addv b0, v0.16b
     fmov x0, d0
@@ -974,7 +974,7 @@ simd_fold u16:
     str q0, [x20]
     movz x19, #2
     movz x2, #0
-18:
+19:
     madd x21, x2, x19, xzr
     ldr x0, [x23]
     add x25, x2, x24
@@ -1015,7 +1015,7 @@ simd_fold u16:
     str q0, [x20]
     mov x2, x25
     b 0x50
-19:
+20:
     add x0, sp, #80
     movz x1, #0
     strh w1, [x0]
@@ -1025,7 +1025,7 @@ simd_fold u16:
     add x4, x2, x21
     movz x3, #1
     movz x2, #0
-20:
+21:
     ldrh w5, [x0]
     uxth w6, w5
     cmp w2, w1
@@ -1063,7 +1063,7 @@ simd_fold u16:
     add x2, x2, x3
     strh w5, [x0]
     b 0x114
-21:
+22:
     ldr q0, [x20]
     addv h0, v0.8h
     fmov x0, d0
@@ -1101,7 +1101,7 @@ simd_fold u32:
     str q0, [x20]
     movz x19, #4
     movz x1, #0
-23:
+24:
     madd x21, x1, x19, xzr
     ldr x0, [x22]
     add x24, x1, x19
@@ -1142,7 +1142,7 @@ simd_fold u32:
     str q0, [x20]
     mov x1, x24
     b 0x4c
-24:
+25:
     add x7, sp, #72
     movz x0, #0
     str w0, [x7]
@@ -1211,7 +1211,7 @@ simd_fold u64:
     str q0, [x20]
     movz x26, #2
     movz x1, #0
-26:
+27:
     madd x21, x1, x19, xzr
     ldr x0, [x23]
     add x25, x26, x1
@@ -1252,7 +1252,7 @@ simd_fold u64:
     str q0, [x20]
     mov x1, x25
     b 0x58
-27:
+28:
     add x7, sp, #88
     str x24, [x7]
     ldr x0, [x23]
@@ -1283,7 +1283,7 @@ simd_fold u64:
     str x1, [x7]
     add x0, x0, x4
     b 2
-28:
+29:
     ldr q0, [x20]
     mov x1[0]
     invalid
@@ -1314,7 +1314,7 @@ from_slice =16 u8:
     eor v0.16b, v0.16b, v0.16b
     movz x0, #0
     str q0, [x5]
-30:
+31:
     cmp w0, w4
     b.ge 0x54
     ldr x1, [x6]
@@ -1324,7 +1324,7 @@ from_slice =16 u8:
     add x0, x0, x3
     strb w2, [x1]
     b 0x30
-31:
+32:
     ldr q0, [x5]
     add sp, sp, #32
     ret
@@ -1341,7 +1341,7 @@ from_slice =8 u16:
     movz x5, #1
     movz x0, #0
     movz x4, #2
-33:
+34:
     cmp w0, w6
     b.ge 0x58
     ldr x1, [x8]
@@ -1352,7 +1352,7 @@ from_slice =8 u16:
     add x0, x0, x5
     strh w2, [x1]
     b 0x30
-34:
+35:
     ldr q0, [x7]
     add sp, sp, #32
     ret
@@ -1369,7 +1369,7 @@ from_slice =4 u32:
     eor v0.16b, v0.16b, v0.16b
     movz x0, #0
     str q0, [x6]
-36:
+37:
     cmp w0, w5
     b.ge 0x58
     ldr x1, [x7]
@@ -1380,7 +1380,7 @@ from_slice =4 u32:
     add x0, x0, x4
     str w2, [x1]
     b 0x30
-37:
+38:
     ldr q0, [x6]
     add sp, sp, #32
     ret
@@ -1397,7 +1397,7 @@ from_slice =2 u64:
     eor v0.16b, v0.16b, v0.16b
     movz x0, #0
     str q0, [x7]
-39:
+40:
     cmp w0, w5
     b.ge 0x58
     ldr x1, [x8]
@@ -1408,7 +1408,7 @@ from_slice =2 u64:
     add x0, x0, x4
     str x2, [x1]
     b 0x30
-40:
+41:
     ldr q0, [x7]
     add sp, sp, #32
     ret
@@ -2261,48 +2261,47 @@ simd_fold u8:
     str x1, [x21]
     eor v0.16b, v0.16b, v0.16b
     str q0, [x19]
-    movz x23, #16
-    movz x0, #0
+    movz x24, #16
+    movz x20, #0
 14:
-    mov x20, x0
     ldr x0, [x21]
-    add x24, x23, x20
-    cmp w24, w0
-    b.ge 0xec
-    sub x0, x24, x20
+    add x23, x24, x20
+    cmp w23, w0
+    b.ge 0xe8
+    sub x0, x23, x20
     mov x25, x0
     ldr q8, [x19]
     ldr x0, [x22]
     add x0, x0, x20
     mov x1, x25
-    bl 0x720
+    bl 0x71c
     add v8.16b, v8.16b, v0.16b
     str q8, [x19]
     ldr x0, [x22]
     add x0, x0, x20
     mov x1, x25
-    bl 0x720
+    bl 0x71c
     and v8.16b, v0.16b, v8.16b
     str q8, [x19]
     ldr x0, [x22]
     add x0, x0, x20
     mov x1, x25
-    bl 0x720
+    bl 0x71c
     eor v8.16b, v0.16b, v8.16b
     str q8, [x19]
     ldr x0, [x22]
     add x0, x0, x20
     mov x1, x25
-    bl 0x720
+    bl 0x71c
     orr v8.16b, v0.16b, v8.16b
     str q8, [x19]
     ldr x0, [x22]
     add x0, x0, x20
     mov x1, x25
-    bl 0x720
+    bl 0x71c
     sub v0.16b, v8.16b, v0.16b
     str q0, [x19]
-    mov x0, x24
+    mov x20, x23
     b 0x4c
 15:
     add x0, sp, #72
@@ -2314,10 +2313,11 @@ simd_fold u8:
     add x4, x2, x20
     movz x3, #1
     movz x2, #0
+16:
     ldrb w5, [x0]
     uxtb w6, w5
     cmp w2, w1
-    b.ge 0x1a0
+    b.ge 0x19c
     add x7, x4, x2
     ldrb w5, [x7]
     uxtb w5, w5
@@ -2349,8 +2349,8 @@ simd_fold u8:
     uxtb w5, w5
     add x2, x2, x3
     strb w5, [x0]
-    b init_inc u8
-16:
+    b 0x10c
+17:
     ldr q0, [x19]
     addv b0, v0.16b
     fmov x0, d0
@@ -2388,7 +2388,7 @@ simd_fold u16:
     str q0, [x20]
     movz x19, #2
     movz x2, #0
-18:
+19:
     madd x21, x2, x19, xzr
     ldr x0, [x23]
     add x25, x2, x24
@@ -2429,7 +2429,7 @@ simd_fold u16:
     str q0, [x20]
     mov x2, x25
     b 0x50
-19:
+20:
     add x0, sp, #80
     movz x1, #0
     strh w1, [x0]
@@ -2439,7 +2439,7 @@ simd_fold u16:
     add x4, x2, x21
     movz x3, #1
     movz x2, #0
-20:
+21:
     ldrh w5, [x0]
     uxth w6, w5
     cmp w2, w1
@@ -2477,7 +2477,7 @@ simd_fold u16:
     add x2, x2, x3
     strh w5, [x0]
     b 0x114
-21:
+22:
     ldr q0, [x20]
     addv h0, v0.8h
     fmov x0, d0
@@ -2515,7 +2515,7 @@ simd_fold u32:
     str q0, [x20]
     movz x19, #4
     movz x1, #0
-23:
+24:
     madd x21, x1, x19, xzr
     ldr x0, [x22]
     add x24, x1, x19
@@ -2556,7 +2556,7 @@ simd_fold u32:
     str q0, [x20]
     mov x1, x24
     b 0x4c
-24:
+25:
     add x7, sp, #72
     movz x0, #0
     str w0, [x7]
@@ -2625,7 +2625,7 @@ simd_fold u64:
     str q0, [x20]
     movz x26, #2
     movz x1, #0
-26:
+27:
     madd x21, x1, x19, xzr
     ldr x0, [x23]
     add x25, x26, x1
@@ -2666,7 +2666,7 @@ simd_fold u64:
     str q0, [x20]
     mov x1, x25
     b 0x58
-27:
+28:
     add x7, sp, #88
     str x24, [x7]
     ldr x0, [x23]
@@ -2697,7 +2697,7 @@ simd_fold u64:
     str x1, [x7]
     add x0, x0, x4
     b 2
-28:
+29:
     ldr q0, [x20]
     mov x1[0]
     invalid
@@ -2728,7 +2728,7 @@ from_slice =16 u8:
     eor v0.16b, v0.16b, v0.16b
     movz x0, #0
     str q0, [x5]
-30:
+31:
     cmp w0, w4
     b.ge 0x54
     ldr x1, [x6]
@@ -2738,7 +2738,7 @@ from_slice =16 u8:
     add x0, x0, x3
     strb w2, [x1]
     b 0x30
-31:
+32:
     ldr q0, [x5]
     add sp, sp, #32
     ret
@@ -2755,7 +2755,7 @@ from_slice =8 u16:
     movz x5, #1
     movz x0, #0
     movz x4, #2
-33:
+34:
     cmp w0, w6
     b.ge 0x58
     ldr x1, [x8]
@@ -2766,7 +2766,7 @@ from_slice =8 u16:
     add x0, x0, x5
     strh w2, [x1]
     b 0x30
-34:
+35:
     ldr q0, [x7]
     add sp, sp, #32
     ret
@@ -2783,7 +2783,7 @@ from_slice =4 u32:
     eor v0.16b, v0.16b, v0.16b
     movz x0, #0
     str q0, [x6]
-36:
+37:
     cmp w0, w5
     b.ge 0x58
     ldr x1, [x7]
@@ -2794,7 +2794,7 @@ from_slice =4 u32:
     add x0, x0, x4
     str w2, [x1]
     b 0x30
-37:
+38:
     ldr q0, [x6]
     add sp, sp, #32
     ret
@@ -2811,7 +2811,7 @@ from_slice =2 u64:
     eor v0.16b, v0.16b, v0.16b
     movz x0, #0
     str q0, [x7]
-39:
+40:
     cmp w0, w5
     b.ge 0x58
     ldr x1, [x8]
@@ -2822,7 +2822,7 @@ from_slice =2 u64:
     add x0, x0, x4
     str x2, [x1]
     b 0x30
-40:
+41:
     ldr q0, [x7]
     add sp, sp, #32
     ret
@@ -3360,20 +3360,20 @@ simd_fold u64:
     cmp w6, w20
     b.le 5
     movz x5, #1
-    movz x2, #0
     movz x1, #0
+    movz x2, #0
 34:
-    madd x4, x2, x19, xzr
+    madd x4, x1, x19, xzr
     add x3, x7, x4
     ldr x3, [x3]
-    add x1, x1, x3
-    and x1, x1, x3
-    eor x1, x1, x3
-    orr x1, x1, x3
-    sub x3, x1, x3
-    add x2, x5, x2
-    cmp w2, w6
-    mov x1, x3
+    add x2, x2, x3
+    and x2, x2, x3
+    eor x2, x2, x3
+    orr x2, x2, x3
+    sub x3, x2, x3
+    add x1, x5, x1
+    cmp w1, w6
+    mov x2, x3
     b.lt 0x11c
     add x0, x0, x3
     b 5
@@ -3493,8 +3493,8 @@ main:
     sub v1.16b, v0.16b, v1.16b
     movz x0, #33
     cmp w7, w0
-    orr v0.16b, v1.16b, v1.16b
     mov x0, x9
+    orr v0.16b, v1.16b, v1.16b
     b.lt 5
     movz x0, #33
     sub x8, x0, x9

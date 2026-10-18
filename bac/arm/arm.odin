@@ -4,7 +4,6 @@ import bac ".."
 import "../../utils/arna"
 import "../../utils/bit_arr"
 import "../../utils/fmt"
-import "../ssa"
 import "base:intrinsics"
 import "core:mem"
 import "core:slice"
@@ -278,7 +277,7 @@ peep :: proc(
 		if node.dt in bac.FLOAT_DTS && cnst.value != 0 {
 			global := bac.c_int_as_global(ctx, node)
 			addr := bac.add_global_addr(ctx, "caddr", global)
-			cmem := ssa.get_or_add_const_mem(ctx)
+			cmem := bac.get_or_add_const_mem(ctx)
 			return bac.add_load(ctx, "cild", node.dt, 0, cmem, addr)
 		}
 	case .Eq ..= .U_Ge:
@@ -320,7 +319,7 @@ peep :: proc(
 			meta = {extra_dwords = size},
 		)
 		addr := bac.add_global_addr(ctx, "selmka", msk)
-		cmem := ssa.get_or_add_const_mem(ctx)
+		cmem := bac.get_or_add_const_mem(ctx)
 		mskld := bac.add_load(ctx, "seld", .V128, 0, cmem, addr)
 
 		shl := bac.add_bin_op(
@@ -436,6 +435,10 @@ meta_of :: #force_inline proc(
 	}
 
 	if node.gvn == 1 {
+		if ra.cc == nil {
+			ra.cc = &CC_TABLE[ARM_SYSTEMV_CC]
+		}
+
 		ra.mask_len = MASK_SIZE
 		rslice(ra, RK_GENERAL, GPA_MASK[:])
 		rslice(ra, RK_VECTOR, VEC_MASK[:])
@@ -556,6 +559,10 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 	ctx.spill_slot_base = spill_slot_base[:]
 	ctx.stack_param_offset = stack_param_offset[:]
 	ctx.spill_slot_size = SPILL_SLOT_SIZE[:]
+
+	if ctx.abi == nil {
+		ctx.abi = &CC_TABLE[ARM_SYSTEMV_CC]
+	}
 
 	arna.alloc(ctx.code, 0, 4)
 

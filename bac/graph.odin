@@ -218,6 +218,8 @@ when SPEC_NOT_PRESENT {
 	) -> Node_ID {return 0}
 	add_then :: add_jump
 	add_else :: add_jump
+	add_mem :: add_jump
+	add_split_mem :: add_jump
 	add_poison :: proc(graph: ^Proc, name: string) -> Node_ID {return 0}
 }
 
@@ -449,20 +451,21 @@ Proc :: struct {
 }
 
 Proc_Meta :: struct {
-	interner:     Interner,
-	weight:       int,
-	waste:        int,
-	gvn:          u32,
-	gdn:          u32,
-	stable_id:    u32,
-	min_idepth:   u32,
-	max_idepth:   u32,
-	has_dbg:      bool,
-	using pinned: struct {
+	last_pass_spec: ^Node_Spec,
+	interner:       Interner,
+	weight:         int,
+	waste:          int,
+	gvn:            u32,
+	gdn:            u32,
+	stable_id:      u32,
+	min_idepth:     u32,
+	max_idepth:     u32,
+	has_dbg:        bool,
+	using pinned:   struct {
 		entry: Node_ID,
 		end:   Node_ID,
 	},
-	using cached: struct {
+	using cached:   struct {
 		cmem: Node_ID,
 	},
 }
@@ -493,6 +496,13 @@ Peep_Ctx :: struct {
 	using graph: ^Proc,
 }
 
+ensure_spec_pass_match :: #force_inline proc(ctx: ^Proc) {
+	if ctx.node_spec != ctx.last_pass_spec {
+		ctx.computed_passes = {}
+		ctx.last_pass_spec = ctx.node_spec
+	}
+}
+
 @(deferred_in_out = pass_quard_end)
 pass_quard :: #force_inline proc(
 	ctx: ^Proc,
@@ -502,6 +512,7 @@ pass_quard :: #force_inline proc(
 	Pass_Snapshot,
 	bool,
 ) {
+	ensure_spec_pass_match(ctx)
 	if pass in ctx.computed_passes do return {}, false
 	ctx.computed_passes |= {pass}
 	return pass_snapshot(ctx), true
@@ -775,6 +786,8 @@ compact :: proc(graph: ^Proc) {
 	graph.gvn = 1
 	graph.gdn = 1
 	graph.cached = {}
+	graph.computed_passes &~= {.Sccp}
+	graph.lattices = {}
 
 	interned_count := 0
 
@@ -1014,6 +1027,35 @@ mount_peep_node :: proc(graph: ^Proc, node: ^Node) {
 	graph.curret_sloc = get_sloc(graph, node)^
 }
 
+get_or_add_const_mem :: proc(graph: ^Proc) -> (cmem: Node_ID) {
+	if graph.cmem == 0 || get_node(graph, graph.cmem).rtype == DEAD_NODE_KIND {
+		rmem := find_node(graph, .Mem)
+
+		split := add_split_mem(graph, "cptspl", rmem)
+		graph.cmem = add_mem(graph, "cslcm", split)
+		split_mem := add_mem(graph, "cmscm", split)
+		for out in get_outputs(graph, rmem) {
+			if out.id != split && get_node(graph, out.id).itype != .Local {
+				set_input(graph, out.id, out.idx, split_mem)
+			}
+		}
+
+		for einp in get_inputs(graph, graph.end) {
+			if is_end_ctrl(graph, einp) {
+				node := expand_node(graph, einp)
+				connect_to := einp
+				if node.itype == .Return {
+					connect_to = add_merge_mem(graph, "cmmrg", {node.inps[1]})
+					set_input(graph, einp, 1, connect_to)
+				}
+				connect(graph, connect_to, split_mem)
+			}
+		}
+	}
+
+	return graph.cmem
+}
+
 @(tag = "api")
 schedule_peeps :: proc(graph: ^Proc, schedule: ^Schedule) {
 	for &bb in schedule.bbs {
@@ -1108,6 +1150,8 @@ pass_snapshot :: proc(ctx: ^Proc) -> Pass_Snapshot {
 @(tag = "api")
 apply_peeps :: proc(ctx: Peep_Ctx) -> (optimized: bool) {
 	graph := ctx.graph
+
+	ensure_spec_pass_match(ctx)
 
 	if .Peep in graph.computed_passes do return
 	graph.computed_passes |= {.Peep}

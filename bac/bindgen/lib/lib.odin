@@ -298,16 +298,6 @@ bac_delete_node_node_id :: proc "c" (
 }
 
 @(export)
-bac_emit_function :: proc "c" (
-	ctx: bac.Codegen_Emit_Ctx,
-) -> (
-	bac.Codegen_Output,
-) {
-	context = {}
-	return bac.emit_function(ctx)
-}
-
-@(export)
 bac_expand_node :: proc "c" (
 	graph: ^bac.Proc,
 	id: bac.Node_ID,
@@ -523,7 +513,7 @@ bac_unpin :: proc "c" (
 }
 
 @(export)
-bac_regalloc_regalloc :: proc "c" (
+bac_regalloc :: proc "c" (
 	ra: ^bac.Regalloc,
 	graph: ^bac.Proc,
 	sched: ^bac.Schedule,
@@ -537,7 +527,7 @@ bac_regalloc_regalloc :: proc "c" (
 }
 
 @(export)
-bac_ssa_add_arbitrary_load :: proc "c" (
+bac_add_arbitrary_load :: proc "c" (
 	ctx: ^bac.Proc,
 	cfg: bac.Node_ID,
 	mem: bac.Node_ID,
@@ -553,7 +543,7 @@ bac_ssa_add_arbitrary_load :: proc "c" (
 }
 
 @(export)
-bac_ssa_add_arbitrary_store :: proc "c" (
+bac_add_arbitrary_store :: proc "c" (
 	ctx: ^bac.Proc,
 	cfg: bac.Node_ID,
 	mem: bac.Node_ID,
@@ -570,20 +560,7 @@ bac_ssa_add_arbitrary_store :: proc "c" (
 }
 
 @(export)
-bac_ssa_add_call :: proc "c" (
-	graph: ^bac.Proc,
-	args: []bac.Node_ID,
-	extra: bac.Call,
-) -> (
-	bac.Node_ID,
-	bac.Node_ID,
-) {
-	context = {}
-	return bac_ssa.add_call(graph, args, extra)
-}
-
-@(export)
-bac_ssa_add_field_load :: proc "c" (
+bac_add_field_load :: proc "c" (
 	ctx: ^bac.Proc,
 	name: string,
 	dt: bac.Node_Datatype,
@@ -599,7 +576,7 @@ bac_ssa_add_field_load :: proc "c" (
 }
 
 @(export)
-bac_ssa_add_field_offset :: proc "c" (
+bac_add_field_offset :: proc "c" (
 	graph: ^bac.Proc,
 	base: bac.Node_ID,
 	offset: int,
@@ -611,7 +588,7 @@ bac_ssa_add_field_offset :: proc "c" (
 }
 
 @(export)
-bac_ssa_add_field_store :: proc "c" (
+bac_add_field_store :: proc "c" (
 	ctx: ^bac.Proc,
 	name: string,
 	cfg: bac.Node_ID,
@@ -627,7 +604,7 @@ bac_ssa_add_field_store :: proc "c" (
 }
 
 @(export)
-bac_ssa_add_scope :: proc "c" (
+bac_add_scope :: proc "c" (
 	graph: ^bac.Proc,
 	name: string,
 	cfg: bac.Node_ID,
@@ -639,7 +616,7 @@ bac_ssa_add_scope :: proc "c" (
 }
 
 @(export)
-bac_ssa_arg_gen_finalize :: proc "c" (
+bac_arg_gen_finalize :: proc "c" (
 	ctx: ^bac.Proc,
 	gen: ^bac_ssa.Param_Gen,
 ) -> (
@@ -650,7 +627,7 @@ bac_ssa_arg_gen_finalize :: proc "c" (
 }
 
 @(export)
-bac_ssa_arg_gen_next :: proc "c" (
+bac_arg_gen_next :: proc "c" (
 	ctx: ^bac.Proc,
 	mem: bac.Node_ID,
 	gen: ^bac_ssa.Param_Gen,
@@ -665,7 +642,7 @@ bac_ssa_arg_gen_next :: proc "c" (
 }
 
 @(export)
-bac_ssa_break_block :: proc "c" (
+bac_break_block :: proc "c" (
 	graph: ^bac.Proc,
 	scope: ^bac.Node_ID,
 	state: ^bac_ssa.Block_State,
@@ -675,7 +652,17 @@ bac_ssa_break_block :: proc "c" (
 }
 
 @(export)
-bac_ssa_compute_index_offset :: proc "c" (
+bac_compile :: proc "c" (
+	ctx: bac.Codegen_Emit_Ctx,
+) -> (
+	bac.Codegen_Output,
+) {
+	context = {}
+	return bac_ssa.compile(ctx)
+}
+
+@(export)
+bac_compute_index_offset :: proc "c" (
 	ctx: ^bac.Proc,
 	base: bac.Node_ID,
 	index: bac.Node_ID,
@@ -688,7 +675,7 @@ bac_ssa_compute_index_offset :: proc "c" (
 }
 
 @(export)
-bac_ssa_decl_local :: proc "c" (
+bac_decl_local :: proc "c" (
 	graph: ^bac.Proc,
 	loc: bac.Node_ID,
 	name: string,
@@ -699,7 +686,7 @@ bac_ssa_decl_local :: proc "c" (
 }
 
 @(export)
-bac_ssa_delete_scope :: proc "c" (
+bac_delete_scope :: proc "c" (
 	graph: ^bac.Proc,
 	scope: bac.Node_ID,
 ) {
@@ -708,7 +695,7 @@ bac_ssa_delete_scope :: proc "c" (
 }
 
 @(export)
-bac_ssa_end_block :: proc "c" (
+bac_end_block :: proc "c" (
 	graph: ^bac.Proc,
 	scope: ^bac.Node_ID,
 	state: ^bac_ssa.Block_State,
@@ -718,7 +705,7 @@ bac_ssa_end_block :: proc "c" (
 }
 
 @(export)
-bac_ssa_end_else :: proc "c" (
+bac_end_else :: proc "c" (
 	graph: ^bac.Proc,
 	else_scope: ^bac.Node_ID,
 	state: ^bac_ssa.If_State,
@@ -728,7 +715,7 @@ bac_ssa_end_else :: proc "c" (
 }
 
 @(export)
-bac_ssa_end_if :: proc "c" (
+bac_end_if :: proc "c" (
 	graph: ^bac.Proc,
 	then_scope: ^bac.Node_ID,
 	state: ^bac_ssa.If_State,
@@ -738,7 +725,7 @@ bac_ssa_end_if :: proc "c" (
 }
 
 @(export)
-bac_ssa_end_loop :: proc "c" (
+bac_end_loop :: proc "c" (
 	graph: ^bac.Proc,
 	node_scope: ^bac.Node_ID,
 	state: ^bac_ssa.Loop_State,
@@ -748,7 +735,7 @@ bac_ssa_end_loop :: proc "c" (
 }
 
 @(export)
-bac_ssa_get_scope_value :: proc "c" (
+bac_get_scope_value :: proc "c" (
 	graph: ^bac.Proc,
 	scope: bac.Node_ID,
 	idx: int,
@@ -760,7 +747,7 @@ bac_ssa_get_scope_value :: proc "c" (
 }
 
 @(export)
-bac_ssa_inline_graph :: proc "c" (
+bac_inline_graph :: proc "c" (
 	graph: ^bac.Proc,
 	call: bac.Node_ID,
 	from: ^bac.Proc,
@@ -770,7 +757,7 @@ bac_ssa_inline_graph :: proc "c" (
 }
 
 @(export)
-bac_ssa_inline_stencil :: proc "c" (
+bac_inline_stencil :: proc "c" (
 	graph: ^bac.Proc,
 	call: bac.Node_ID,
 	from: bac.Stencil,
@@ -780,7 +767,7 @@ bac_ssa_inline_stencil :: proc "c" (
 }
 
 @(export)
-bac_ssa_loop_control :: proc "c" (
+bac_loop_control :: proc "c" (
 	variant: bac_ssa.Loop_Control,
 	ctx: ^bac.Proc,
 	scope: bac.Node_ID,
@@ -791,7 +778,7 @@ bac_ssa_loop_control :: proc "c" (
 }
 
 @(export)
-bac_ssa_loopopt :: proc "c" (
+bac_loopopt :: proc "c" (
 	graph: ^bac.Proc,
 ) -> (
 	bool,
@@ -801,7 +788,20 @@ bac_ssa_loopopt :: proc "c" (
 }
 
 @(export)
-bac_ssa_memopt :: proc "c" (
+bac_make_call :: proc "c" (
+	graph: ^bac.Proc,
+	args: []bac.Node_ID,
+	extra: bac.Call,
+) -> (
+	bac.Node_ID,
+	bac.Node_ID,
+) {
+	context = {}
+	return bac_ssa.make_call(graph, args, extra)
+}
+
+@(export)
+bac_memopt :: proc "c" (
 	graph: ^bac.Proc,
 ) -> (
 	bool,
@@ -811,7 +811,7 @@ bac_ssa_memopt :: proc "c" (
 }
 
 @(export)
-bac_ssa_merge_returns :: proc "c" (
+bac_merge_returns :: proc "c" (
 	graph: ^bac.Proc,
 	args: []bac.Node_ID,
 ) -> (
@@ -822,7 +822,7 @@ bac_ssa_merge_returns :: proc "c" (
 }
 
 @(export)
-bac_ssa_push_scope_value :: proc "c" (
+bac_push_scope_value :: proc "c" (
 	graph: ^bac.Proc,
 	scope: bac.Node_ID,
 	value: bac.Node_ID,
@@ -836,7 +836,7 @@ bac_ssa_push_scope_value :: proc "c" (
 }
 
 @(export)
-bac_ssa_set_scope_value :: proc "c" (
+bac_set_scope_value :: proc "c" (
 	graph: ^bac.Proc,
 	scope: bac.Node_ID,
 	idx: int,
@@ -847,7 +847,7 @@ bac_ssa_set_scope_value :: proc "c" (
 }
 
 @(export)
-bac_ssa_start_block :: proc "c" (
+bac_start_block :: proc "c" (
 	state: ^bac_ssa.Block_State,
 ) {
 	context = {}
@@ -855,7 +855,7 @@ bac_ssa_start_block :: proc "c" (
 }
 
 @(export)
-bac_ssa_start_else :: proc "c" (
+bac_start_else :: proc "c" (
 	graph: ^bac.Proc,
 	then_scope: ^bac.Node_ID,
 	state: ^bac_ssa.If_State,
@@ -865,7 +865,7 @@ bac_ssa_start_else :: proc "c" (
 }
 
 @(export)
-bac_ssa_start_if :: proc "c" (
+bac_start_if :: proc "c" (
 	graph: ^bac.Proc,
 	scope: bac.Node_ID,
 	state: ^bac_ssa.If_State,
@@ -876,7 +876,7 @@ bac_ssa_start_if :: proc "c" (
 }
 
 @(export)
-bac_ssa_start_loop :: proc "c" (
+bac_start_loop :: proc "c" (
 	graph: ^bac.Proc,
 	scope: bac.Node_ID,
 	state: ^bac_ssa.Loop_State,
@@ -886,7 +886,7 @@ bac_ssa_start_loop :: proc "c" (
 }
 
 @(export)
-bac_ssa_start_loop_increment :: proc "c" (
+bac_start_loop_increment :: proc "c" (
 	graph: ^bac.Proc,
 	node_scope: ^bac.Node_ID,
 	state: ^bac_ssa.Loop_State,
@@ -896,7 +896,7 @@ bac_ssa_start_loop_increment :: proc "c" (
 }
 
 @(export)
-bac_ssa_start_proc :: proc "c" (
+bac_start_proc :: proc "c" (
 	graph: ^bac.Proc,
 	mem: ^arna.Allocator,
 ) -> (
@@ -907,13 +907,22 @@ bac_ssa_start_proc :: proc "c" (
 }
 
 @(export)
-bac_ssa_truncate_scope :: proc "c" (
+bac_truncate_scope :: proc "c" (
 	graph: ^bac.Proc,
 	scope: bac.Node_ID,
 	to_len: int,
 ) {
 	context = {}
 	bac_ssa.truncate_scope(graph, scope, to_len)
+}
+
+@(export)
+arna_get_scratch :: proc "c" (
+) -> (
+	[^]arna.Allocator,
+) {
+	context = {}
+	return arna.get_scratch()
 }
 
 @(export)

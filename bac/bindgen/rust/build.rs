@@ -17,7 +17,7 @@ fn watch(path: &Path) {
             let path = entry.unwrap().path();
             if path
                 .file_name()
-                .is_some_and(|name| name == "bindings" || name == "c")
+                .is_some_and(|name| name == "rust" || name == "c")
             {
                 continue;
             }

@@ -39,7 +39,7 @@ rust_prefix :: proc(path: string, global := false) -> string {
 	return strings.concatenate({"bac_", strings.trim_prefix(path, "../")})
 }
 
-rust_type :: proc(g: ^Rust_Gen, ty: ^runtime.Type_Info) -> string {
+rust_type :: proc(g: ^Rust_Gen, ty: ^runtime.Type_Info, hint := "") -> string {
 	if ty == nil do return "core::ffi::c_void"
 	if name, ok := g.names[ty.id]; ok do return name
 	#partial switch t in ty.variant {
@@ -52,15 +52,17 @@ rust_type :: proc(g: ^Rust_Gen, ty: ^runtime.Type_Info) -> string {
 	case runtime.Type_Info_Float: return fmt.tprintf("f%v", ty.size * 8)
 	case runtime.Type_Info_Type_Id: return "usize"
 	case runtime.Type_Info_String: return "String"
-	case runtime.Type_Info_Pointer: return fmt.tprintf("*mut %v", rust_type(g, t.elem))
-	case runtime.Type_Info_Multi_Pointer: return fmt.tprintf("*mut %v", rust_type(g, t.elem))
+	case runtime.Type_Info_Pointer: return fmt.tprintf("*mut %v", rust_type(g, t.elem, hint))
+	case runtime.Type_Info_Multi_Pointer: return fmt.tprintf("*mut %v", rust_type(g, t.elem, hint))
 	case runtime.Type_Info_Procedure: return "*mut core::ffi::c_void"
-	case runtime.Type_Info_Array: return fmt.tprintf("[%v; %v]", rust_type(g, t.elem), t.count)
-	case runtime.Type_Info_Enumerated_Array: return fmt.tprintf("[%v; %v]", rust_type(g, t.elem), t.count)
-	case runtime.Type_Info_Slice: return fmt.tprintf("Slice<%v>", rust_type(g, t.elem))
-	case runtime.Type_Info_Dynamic_Array: return fmt.tprintf("DynamicArray<%v>", rust_type(g, t.elem))
+	case runtime.Type_Info_Array: return fmt.tprintf("[%v; %v]", rust_type(g, t.elem, hint), t.count)
+	case runtime.Type_Info_Enumerated_Array: return fmt.tprintf("[%v; %v]", rust_type(g, t.elem, hint), t.count)
+	case runtime.Type_Info_Slice: return fmt.tprintf("Slice<%v>", rust_type(g, t.elem, hint))
+	case runtime.Type_Info_Dynamic_Array: return fmt.tprintf("DynamicArray<%v>", rust_type(g, t.elem, hint))
+	case runtime.Type_Info_Fixed_Capacity_Dynamic_Array:
+		return fmt.tprintf("FixedCapDynArray<%v, %v>", t.capacity, rust_type(g, t.elem, hint))
 	}
-	name := fmt.tprintf("anon_%v", len(g.pending))
+	name := hint
 	if t, ok := ty.variant.(runtime.Type_Info_Named); ok {
 		name = fmt.tprintf("%v_%v", t.pkg, t.name)
 		builder := strings.builder_make()
@@ -70,9 +72,14 @@ rust_type :: proc(g: ^Rust_Gen, ty: ^runtime.Type_Info) -> string {
 		}
 		name = strings.to_string(builder)
 	}
+	assert(name != "", "anonymous Rust types require a parent name")
 	g.names[ty.id] = name
 	append(&g.pending, ty)
 	return name
+}
+
+rust_default :: proc(f: ^os.File, name: string, generics := "") {
+	fmt.fprintfln(f, "impl%v Default for %v {{ fn default() -> Self {{ unsafe {{ core::mem::zeroed() }} }} }}", generics, name)
 }
 
 rust_decl :: proc(g: ^Rust_Gen, ty: ^runtime.Type_Info) {
@@ -107,7 +114,7 @@ rust_decl :: proc(g: ^Rust_Gen, ty: ^runtime.Type_Info) {
 		for field, i in reflect.struct_fields_zipped(base.id) {
 			fname := field.name
 			if fname == "_" do fname = fmt.tprintf("field_%v", i)
-			fmt.fprintfln(f, "pub %v: %v,", rust_ident(fname), rust_type(g, field.type))
+			fmt.fprintfln(f, "pub %v: %v,", rust_ident(fname), rust_type(g, field.type, fmt.tprintf("%v_%v", name, fname)))
 		}
 		fmt.fprintln(f, "}")
 		for field, i in reflect.struct_fields_zipped(base.id) {
@@ -118,30 +125,35 @@ rust_decl :: proc(g: ^Rust_Gen, ty: ^runtime.Type_Info) {
 	case runtime.Type_Info_Union:
 		if t.tag_type == nil {
 			fmt.fprintfln(f, "#[repr(C, align(%v))]\n#[derive(Clone, Copy)]\npub union %v {{", ty.align, name)
-			for v, i in t.variants do fmt.fprintfln(f, "pub variant_%v: %v,", i, rust_type(g, v))
+			for v, i in t.variants do fmt.fprintfln(f, "pub variant_%v: %v,", i, rust_type(g, v, fmt.tprintf("%v_variant_%v", name, i)))
 			fmt.fprintln(f, "}")
 		} else {
 			fmt.fprintfln(f, "#[repr(C, align(%v))]\n#[derive(Clone, Copy)]\npub struct %v {{ pub payload: [u8; %v], pub tag: %v }}", ty.align, name, t.tag_offset, rust_type(g, t.tag_type))
 		}
 	case runtime.Type_Info_Fixed_Capacity_Dynamic_Array:
-		fmt.fprintfln(f, "#[repr(C, align(%v))]\n#[derive(Clone, Copy)]\npub struct %v {{ pub data: [%v; %v], pub len: isize }}", ty.align, name, rust_type(g, t.elem), t.capacity)
+		fmt.fprintfln(f, "pub type %v = FixedCapDynArray<%v, %v>;", name, t.capacity, rust_type(g, t.elem, name))
 	case:
 		fmt.fprintfln(f, "pub type %v = %v;", name, rust_type(g, base))
+	}
+	#partial switch _ in base.variant {
+	case runtime.Type_Info_Bit_Field, runtime.Type_Info_Struct, runtime.Type_Info_Union:
+		rust_default(f, name)
 	}
 	fmt.fprintfln(f, "const _: () = assert!(core::mem::size_of::<%v>() == %v);", name, ty.size)
 	fmt.fprintfln(f, "const _: () = assert!(core::mem::align_of::<%v>() == %v);", name, ty.align)
 }
 
 generate_rust :: proc(api: []API_Proc) {
-	err := os.make_directory_all("bac/bindings/rust/src")
+	err := os.make_directory_all("bac/bindgen/rust/src")
 	assert(err == nil || err == .Exist)
-	f, ferr := os.open("bac/bindings/rust/src/sys.rs", {.Create, .Write, .Trunc})
+	f, ferr := os.open("bac/bindgen/rust/src/sys.rs", {.Create, .Write, .Trunc})
 	assert(ferr == nil)
 	defer os.close(f)
 	g := Rust_Gen{file = f}
 	_ = rust_type(&g, type_info_of(bac_ssa.Node_Type))
 	fmt.fprintln(f, `// Generated by odin run bac/bindgen. Do not edit.
 #![allow(non_camel_case_types, non_upper_case_globals, non_snake_case, improper_ctypes, clippy::identity_op)]
+pub use crate::FixedCapDynArray;
 #[cfg(not(target_endian = "little"))]
 compile_error!("BAC Rust bitfield bindings currently require a little-endian target");
 #[repr(C)]
@@ -154,15 +166,18 @@ pub struct String { pub data: *mut u8, pub len: isize }
 #[derive(Clone, Copy)]
 pub struct DynamicArray<T> { pub data: *mut T, pub len: isize, pub cap: isize, pub allocator: runtime_Allocator }
 `)
+	rust_default(f, "Slice<T>", "<T>")
+	rust_default(f, "String")
+	rust_default(f, "DynamicArray<T>", "<T>")
 	fmt.fprintln(f, "unsafe extern \"C\" {")
 	for entry in api {
 		if sig, ok := type_info_of(entry.type).variant.(runtime.Type_Info_Procedure); ok {
 			params, results := rust_lists(sig)
 			fmt.fprintf(f, "pub fn %v_%v(", rust_prefix(entry.package_path), entry.name)
-			for ty, i in params.types do fmt.fprintf(f, "arg%v: %v,", i, rust_type(&g, ty))
-			for ty, i in results.types[:max(0, len(results.types) - 1)] do fmt.fprintf(f, "out%v: *mut %v,", i, rust_type(&g, ty))
+			for ty, i in params.types do fmt.fprintf(f, "arg%v: %v,", i, rust_type(&g, ty, fmt.tprintf("%v_%v_%v", rust_prefix(entry.package_path), entry.name, params.names[i])))
+			for ty, i in results.types[:max(0, len(results.types) - 1)] do fmt.fprintf(f, "out%v: *mut %v,", i, rust_type(&g, ty, fmt.tprintf("%v_%v_out%v", rust_prefix(entry.package_path), entry.name, i)))
 			fmt.fprintf(f, ")")
-			if len(results.types) > 0 do fmt.fprintf(f, " -> %v", rust_type(&g, results.types[len(results.types) - 1]))
+			if len(results.types) > 0 do fmt.fprintf(f, " -> %v", rust_type(&g, results.types[len(results.types) - 1], fmt.tprintf("%v_%v_result", rust_prefix(entry.package_path), entry.name)))
 			fmt.fprintln(f, ";")
 		} else {
 			assert(!entry.trhead_local)
@@ -172,6 +187,10 @@ pub struct DynamicArray<T> { pub data: *mut T, pub len: isize, pub cap: isize, p
 	fmt.fprintln(f, "}")
 	for i := 0; i < len(g.pending); i += 1 do rust_decl(&g, g.pending[i])
 	generate_rust_api(api)
+	format: os.Process_Desc
+	format.command = {"rustfmt", "--edition", "2024", "bac/bindgen/rust/src/sys.rs", "bac/bindgen/rust/src/generated.rs"}
+	state, _, stderr, format_err := os.process_exec(format, context.temp_allocator)
+	fmt.assertf(format_err == nil && state.exit_code == 0, "rustfmt failed: %v %s", format_err, stderr)
 }
 
 Rust_ENUMS :: [?]struct{odin, rust: string}{
@@ -210,7 +229,7 @@ rust_safe_type :: proc(ty: ^runtime.Type_Info) -> string {
 }
 
 generate_rust_api :: proc(api: []API_Proc) {
-	f, err := os.open("bac/bindings/rust/src/generated.rs", {.Create, .Write, .Trunc})
+	f, err := os.open("bac/bindgen/rust/src/generated.rs", {.Create, .Write, .Trunc})
 	assert(err == nil)
 	defer os.close(f)
 	fmt.fprintln(f, "// Generated by odin run bac/bindgen. Do not edit.\n#![allow(clippy::let_and_return, clippy::let_unit_value, clippy::too_many_arguments)]\nuse crate::*;")
@@ -220,12 +239,14 @@ generate_rust_api :: proc(api: []API_Proc) {
 		sig, ok := type_info_of(entry.type).variant.(runtime.Type_Info_Procedure)
 		if !ok do continue
 		params, _ := rust_lists(sig)
-		for ty in params.types do _ = rust_type(&g, ty)
+		for ty, i in params.types do _ = rust_type(&g, ty, fmt.tprintf("%v_%v_%v", rust_prefix(entry.package_path), entry.name, params.names[i]))
 	}
 	for e in Rust_ENUMS {
 		for ty in g.pending {
 			if g.names[ty.id] != e.odin do continue
-			fmt.fprintfln(f, "#[repr(transparent)]\n#[derive(Clone, Copy, Debug, PartialEq, Eq)]\npub struct %v(pub(crate) sys::%v);\n#[allow(non_upper_case_globals)]\nimpl %v {{", e.rust, e.odin, e.rust)
+			zero_valid := false
+			for field in reflect.enum_fields_zipped(ty.id) do zero_valid ||= field.value == 0
+			fmt.fprintfln(f, "#[repr(transparent)]\n#[derive(Clone, Copy, Debug, PartialEq, Eq%v)]\npub struct %v(pub(crate) sys::%v);\n#[allow(non_upper_case_globals)]\nimpl %v {{", ", Default" if zero_valid else "", e.rust, e.odin, e.rust)
 			for field in reflect.enum_fields_zipped(ty.id) do fmt.fprintfln(f, "pub const %v: Self = Self(sys::%v_%v);", field.name, e.odin, field.name)
 			fmt.fprintln(f, "}")
 		}
@@ -280,7 +301,7 @@ generate_rust_api :: proc(api: []API_Proc) {
 				for ty, i in params.types[1:] {
 					if rust_safe_type(ty) == "&str" do fmt.fprintfln(f, "let %v = raw_string(%v);", rust_ident(params.names[i + 1]), rust_ident(params.names[i + 1]))
 				}
-				for _, i in results.types[:max(0, len(results.types) - 1)] do fmt.fprintfln(f, "let mut out%v = unsafe {{ core::mem::zeroed() }};", i)
+				for _, i in results.types[:max(0, len(results.types) - 1)] do fmt.fprintfln(f, "let mut out%v = Default::default();", i)
 				fmt.fprintf(f, "let result = unsafe {{ sys::%v_%v(&mut self.raw,", rust_prefix(entry.package_path), entry.name)
 				for ty, i in params.types[1:] {
 					name := rust_ident(params.names[i + 1])

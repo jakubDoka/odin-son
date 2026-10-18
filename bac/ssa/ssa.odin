@@ -1161,7 +1161,7 @@ arg_gen_next :: proc(
 
 @(tag = "api")
 arg_gen_finalize :: proc(ctx: ^Proc, gen: ^Param_Gen) -> []bac.Param_Spec {
-	arg_tys := make([]bac.Param_Spec, len(gen.vls))
+	arg_tys := make([]bac.Param_Spec, len(gen.vls), arna.allocator(ctx.mem))
 
 	j, ri: u32
 	for arg in gen.vls {
@@ -1192,7 +1192,11 @@ arg_gen_finalize :: proc(ctx: ^Proc, gen: ^Param_Gen) -> []bac.Param_Spec {
 }
 
 @(tag = "api")
-start_proc :: proc(prc: ^Proc, mem: ^arna.Allocator, temps: ^arna.Temps) -> Node_ID {
+start_proc :: proc(
+	prc: ^Proc,
+	mem: ^arna.Allocator,
+	temps: ^arna.Temps,
+) -> Node_ID {
 	bac.ensure_init()
 
 	assert(temps != nil)

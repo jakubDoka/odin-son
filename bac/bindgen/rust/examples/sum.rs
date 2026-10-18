@@ -3,7 +3,7 @@
     any(target_arch = "x86_64", target_arch = "aarch64")
 ))]
 fn main() {
-    use bac::{Arena, CodegenEmitCtx, Datatype, Proc};
+    use bac::{Arena, BinOp, CodegenEmitCtx, Datatype, Lane, ParamSpec, Proc};
     use core::{ffi::c_void, ptr};
 
     unsafe extern "C" {
@@ -22,13 +22,27 @@ fn main() {
     let mut temps = [Arena::new(4096 * 128), Arena::new(4096 * 128)];
     let mut memory = Arena::new(4096 * 8);
     let mut proc = Proc::new(&mut memory, &mut temps);
+    let mut nodes = Vec::new();
+    let mut param_specs = [ParamSpec::default(); 2];
     {
-        let mut builder = proc.builder();
-        let value = builder.add_c_int("mcnst", Datatype::I64, 69);
-        builder.merge_returns(&[builder.entry(), builder.initial_memory(), value]);
+        let mut builder = proc.builder(&mut nodes);
+        let mut memory = builder.initial_memory();
+
+        let mut params = builder.param_gen();
+
+        let mut int_spec = bac::AbiParam::new(&[Datatype::I64]);
+        int_spec.scalar = true;
+
+        let left = params.next(&mut memory, "left", &int_spec);
+        let right = params.next(&mut memory, "right", &int_spec);
+        param_specs.copy_from_slice(params.finalize());
+
+        let sum = builder.add_bin_op("sum", BinOp::Add, Datatype::I64, left, right, Lane::I8);
+        builder.merge_returns(&[builder.entry(), memory, sum]);
     }
     let mut code = Arena::new(4096);
     let mut ctx = CodegenEmitCtx::new(&mut proc, &mut code);
+    ctx.set_params(&param_specs);
     let output = ctx.compile();
     assert!(!output.code.is_empty() && output.code.len() <= 4096);
 
@@ -45,11 +59,13 @@ fn main() {
         __clear_cache(page, page.add(output.code.len()));
     }
 
-    let function: unsafe extern "C" fn() -> i64 = unsafe { core::mem::transmute(page) };
-    let result = unsafe { function() };
+    let sum: unsafe extern "C" fn(i64, i64) -> i64 = unsafe { core::mem::transmute(page) };
+    for (left, right) in [(27, 42), (-10, 3), (0, 0), (1 << 40, 9)] {
+        let result = unsafe { sum(left, right) };
+        assert_eq!(result, left + right);
+        println!("{left} + {right} = {result}");
+    }
     assert_eq!(unsafe { munmap(page, 4096) }, 0);
-    assert_eq!(result, 69);
-    std::process::exit(result as i32);
 }
 
 #[cfg(not(all(

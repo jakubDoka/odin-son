@@ -4,11 +4,11 @@ use bac::{
 };
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
-fn with_proc(test: impl FnOnce(&mut Proc<'_>)) {
+fn with_proc(test: impl FnOnce(&mut Proc<'_>, &mut Vec<u64>)) {
     let mut temps = [Arena::new(1024 * 1024), Arena::new(1024 * 1024)];
     let mut arena = Arena::new(1024 * 1024);
     let mut proc = Proc::new(&mut arena, &mut temps);
-    test(&mut proc);
+    test(&mut proc, &mut Vec::new());
 }
 
 fn constant(builder: &mut Builder<'_, '_>, value: i64) {
@@ -28,22 +28,22 @@ fn compile(proc: &mut Proc<'_>) {
 
 #[test]
 fn build_and_compile_constant() {
-    with_proc(|proc| {
-        constant(&mut proc.builder(), 69);
+    with_proc(|proc, nodes| {
+        constant(&mut proc.builder(nodes), 69);
         compile(proc);
     });
 }
 
 #[test]
 fn checked_nodes_survive_builder_recreation() {
-    with_proc(|proc| {
+    with_proc(|proc, nodes| {
         let value = {
-            let mut builder = proc.builder();
+            let mut builder = proc.builder(nodes);
             let value = builder.add_c_int("value", Datatype::I64, 42);
             builder.merge_returns(&[builder.entry(), builder.initial_memory(), value]);
             value
         };
-        let mut builder = proc.builder();
+        let mut builder = proc.builder(nodes);
         assert_eq!(builder.node_type(value), NodeType::CInt);
         assert_eq!(builder.datatype(value), Datatype::I64);
         let sum = builder.add_bin_op("sum", BinOp::Add, Datatype::I64, value, value, Lane::I8);
@@ -53,9 +53,9 @@ fn checked_nodes_survive_builder_recreation() {
 
 #[test]
 fn detached_nodes_can_be_explicitly_imported() {
-    with_proc(|proc| {
-        let value = proc.builder().add_c_int("value", Datatype::I64, 42);
-        let mut builder = proc.builder();
+    with_proc(|proc, nodes| {
+        let value = proc.builder(nodes).add_c_int("value", Datatype::I64, 42);
+        let mut builder = proc.builder(nodes);
         assert!(catch_unwind(AssertUnwindSafe(|| builder.node_type(value))).is_err());
         unsafe { builder.import_node(value) };
         assert_eq!(builder.node_type(value), NodeType::CInt);
@@ -64,8 +64,8 @@ fn detached_nodes_can_be_explicitly_imported() {
 
 #[test]
 fn rejects_arena_data_that_is_not_a_node() {
-    with_proc(|proc| {
-        let builder = proc.builder();
+    with_proc(|proc, nodes| {
+        let builder = proc.builder(nodes);
         let bad = unsafe { NodeId::from_raw(builder.entry().index() + 1) };
         assert!(catch_unwind(AssertUnwindSafe(|| builder.node_type(bad))).is_err());
         let bad = unsafe { NodeId::from_raw(u32::MAX) };
@@ -75,8 +75,8 @@ fn rejects_arena_data_that_is_not_a_node() {
 
 #[test]
 fn rejects_deleted_nodes() {
-    with_proc(|proc| {
-        let mut builder = proc.builder();
+    with_proc(|proc, nodes| {
+        let mut builder = proc.builder(nodes);
         let value = builder.add_c_int("unused", Datatype::I64, 42);
         builder.delete_node_node_id(value);
         assert!(catch_unwind(AssertUnwindSafe(|| builder.datatype(value))).is_err());
@@ -86,8 +86,8 @@ fn rejects_deleted_nodes() {
 #[test]
 fn stencil_owns_graph_and_crosses_threads() {
     let mut snapshot = None;
-    with_proc(|proc| {
-        let mut builder = proc.builder();
+    with_proc(|proc, nodes| {
+        let mut builder = proc.builder(nodes);
         constant(&mut builder, 69);
         snapshot = Some(builder.stencil());
         builder.add_c_int("later mutation", Datatype::I64, 99);
@@ -96,13 +96,12 @@ fn stencil_owns_graph_and_crosses_threads() {
     fn send_sync<T: Send + Sync>(_: &T) {}
     send_sync(&stencil);
     std::thread::spawn(move || {
-        with_proc(|proc| {
+        with_proc(|proc, nodes| {
             proc.mount_stencil(&stencil.clone());
-            let mut builder = proc.builder();
+            let mut builder = proc.builder(nodes);
             let ret = builder.inputs(builder.end())[0];
             let value = builder.inputs(ret)[2];
             assert_eq!(builder.node_name(value), "value");
-            drop(builder);
             compile(proc);
         });
     })
@@ -112,8 +111,8 @@ fn stencil_owns_graph_and_crosses_threads() {
 
 #[test]
 fn branch_helpers_track_internal_nodes() {
-    with_proc(|proc| {
-        let mut builder = proc.builder();
+    with_proc(|proc, nodes| {
+        let mut builder = proc.builder(nodes);
         let mut scope = builder.add_scope("scope", builder.entry());
         let mem_slot = builder.push_scope_value(scope, builder.initial_memory(), "memory", 0);
         let initial = builder.add_c_int("initial", Datatype::I64, 0);
@@ -132,14 +131,13 @@ fn branch_helpers_track_internal_nodes() {
         let ctrl = builder.inputs(scope)[0];
         builder.merge_returns(&[ctrl, mem, value]);
         builder.delete_scope(scope);
-        drop(builder);
         compile(proc);
     });
 }
 
 #[test]
 fn unchecked_construction_has_no_node_tracker_requirement() {
-    with_proc(|proc| {
+    with_proc(|proc, _| {
         let value = unsafe { proc.add_c_int("value", Datatype::I64, 69) };
         let entry = proc.entry();
         let (mem, found) = unsafe { proc.find_node(NodeType::Mem, entry) };
@@ -151,32 +149,29 @@ fn unchecked_construction_has_no_node_tracker_requirement() {
 
 #[test]
 fn parameter_generator_borrows_builder_and_tracks_abi_nodes() {
-    with_proc(|proc| {
-        let mut builder = proc.builder();
-        let initial_memory = builder.initial_memory();
+    with_proc(|proc, nodes| {
+        let mut builder = proc.builder(nodes);
+        let mut mem = builder.initial_memory();
         let mut generator = builder.param_gen();
         let abi = bac::AbiParam {
-            datatypes: vec![Datatype::I64],
             size: 8,
             real_size: 8,
-            spilled: false,
-            scalar: false,
-            copied: false,
+            ..bac::AbiParam::new(&[Datatype::I64])
         };
-        let (mem, value) = generator.next(initial_memory, "parameter", &abi);
+        let value = generator.next(&mut mem, "parameter", &abi);
         let specs = generator.finalize();
-        assert_eq!(builder.datatype(mem), Datatype::Mem);
-        assert_eq!(builder.node_type(value), NodeType::Local_Addr);
         assert_eq!(specs.len(), 2);
         assert_eq!(specs[0].datatype, Datatype::I64);
         assert_eq!(specs[1].size, 8);
+        assert_eq!(builder.datatype(mem), Datatype::Mem);
+        assert_eq!(builder.node_type(value), NodeType::Local_Addr);
     });
 }
 
 #[test]
 fn loop_helpers_track_lazy_phis_and_internal_scopes() {
-    with_proc(|proc| {
-        let mut builder = proc.builder();
+    with_proc(|proc, nodes| {
+        let mut builder = proc.builder(nodes);
         let mut scope = builder.add_scope("scope", builder.entry());
         let mem_slot = builder.push_scope_value(scope, builder.initial_memory(), "memory", 0);
         let initial = builder.add_c_int("initial", Datatype::I64, 3);
@@ -206,15 +201,14 @@ fn loop_helpers_track_lazy_phis_and_internal_scopes() {
         let value = builder.get_scope_value(scope, slot);
         builder.merge_returns(&[ctrl, mem, value]);
         builder.delete_scope(scope);
-        drop(builder);
         compile(proc);
     });
 }
 
 #[test]
 fn block_helpers_update_node_handles() {
-    with_proc(|proc| {
-        let mut builder = proc.builder();
+    with_proc(|proc, nodes| {
+        let mut builder = proc.builder(nodes);
         let mut scope = builder.add_scope("scope", builder.entry());
         let mut state = bac::BlockState::default();
         builder.break_block(&mut scope, &mut state);
@@ -228,13 +222,13 @@ fn block_helpers_update_node_handles() {
 #[test]
 fn inline_snapshot_replaces_call_nodes() {
     let mut snapshot = None;
-    with_proc(|proc| {
-        constant(&mut proc.builder(), 69);
+    with_proc(|proc, nodes| {
+        constant(&mut proc.builder(nodes), 69);
         snapshot = Some(proc.stencil());
     });
     let stencil = snapshot.unwrap();
-    with_proc(|proc| {
-        let mut builder = proc.builder();
+    with_proc(|proc, nodes| {
+        let mut builder = proc.builder(nodes);
         let (ctrl, mem) = builder.make_call(
             &[builder.entry(), builder.initial_memory(), NodeId::NONE],
             bac::Call::new(1, &[Datatype::I64]),
@@ -245,21 +239,20 @@ fn inline_snapshot_replaces_call_nodes() {
         let value = builder.add_ret("result", Datatype::I64, ctrl, 0);
         builder.merge_returns(&[ctrl, mem, value]);
         builder.inline_stencil(call, &stencil);
-        drop(builder);
         compile(proc);
     });
 }
 
 #[test]
 fn mounting_discards_old_node_boundaries() {
-    with_proc(|proc| {
-        constant(&mut proc.builder(), 69);
+    with_proc(|proc, nodes| {
+        constant(&mut proc.builder(nodes), 69);
         let stencil = proc.stencil();
         let old = proc
-            .builder()
+            .builder(nodes)
             .add_c_int("not in snapshot", Datatype::I64, 100);
         proc.mount_stencil(&stencil);
-        let builder = proc.builder();
+        let builder = proc.builder(nodes);
         assert!(catch_unwind(AssertUnwindSafe(|| builder.node_type(old))).is_err());
     });
 }
@@ -274,7 +267,7 @@ fn caller_storage_and_borrowed_arena_bytes() {
     let mut temps = [Arena::new(1024 * 1024), Arena::new(1024 * 1024)];
     {
         let mut proc = Proc::new(&mut arena, &mut temps);
-        constant(&mut proc.builder(), 69);
+        constant(&mut proc.builder(&mut Vec::new()), 69);
     }
     assert_eq!(arena.bytes().as_ptr(), buffer_ptr);
     assert!(!arena.bytes().is_empty());
@@ -298,8 +291,9 @@ fn independent_procs_use_their_own_temps() {
     let mut second_arena = Arena::new(1024 * 1024);
     let mut first = Proc::new(&mut first_arena, &mut first_temps);
     let mut second = Proc::new(&mut second_arena, &mut second_temps);
-    constant(&mut first.builder(), 69);
-    constant(&mut second.builder(), 42);
+    let mut nodes = Vec::new();
+    constant(&mut first.builder(&mut nodes), 69);
+    constant(&mut second.builder(&mut nodes), 42);
     compile(&mut second);
     compile(&mut first);
     unsafe {
@@ -315,8 +309,8 @@ fn independent_procs_use_their_own_temps() {
 
 #[test]
 fn codegen_borrows_parameters_and_all_output_buffers() {
-    with_proc(|proc| {
-        constant(&mut proc.builder(), 69);
+    with_proc(|proc, nodes| {
+        constant(&mut proc.builder(nodes), 69);
         let params = [ParamSpec {
             datatype: Datatype::I64,
             size: 0,
@@ -374,4 +368,171 @@ fn wrapper_layouts_match_ffi() {
     same_layout::<IfState, sys::bac_ssa_If_State>();
     same_layout::<bac::LoopState, sys::bac_ssa_Loop_State>();
     same_layout::<bac::BlockState, sys::bac_ssa_Block_State>();
+    same_layout::<bac::AbiParam, sys::bac_ssa_Abi_Param>();
+}
+
+#[test]
+fn builder_reuses_caller_node_storage() {
+    with_proc(|proc, nodes| {
+        nodes.resize(4096, u64::MAX);
+        let storage = nodes.as_ptr();
+        let capacity = nodes.capacity();
+        let detached = proc.builder(nodes).add_c_int("detached", Datatype::I64, 42);
+        let builder = proc.builder(nodes);
+        assert!(catch_unwind(AssertUnwindSafe(|| builder.node_type(detached))).is_err());
+        assert_eq!(nodes.as_ptr(), storage);
+        assert_eq!(nodes.capacity(), capacity);
+    });
+}
+
+#[test]
+fn parameter_generator_grows_in_the_proc_arena() {
+    let mut temps = [Arena::new(1024 * 1024), Arena::new(1024 * 1024)];
+    let mut arena = Arena::new(1024 * 1024);
+    let specs_ptr;
+    {
+        let mut proc = Proc::new(&mut arena, &mut temps);
+        let mut nodes = Vec::new();
+        let mut builder = proc.builder(&mut nodes);
+        let mut mem = builder.initial_memory();
+        let initial_memory = mem;
+        let mut generator = builder.param_gen();
+        let abi = bac::AbiParam {
+            scalar: true,
+            real_size: 8,
+            ..bac::AbiParam::new(&[Datatype::I64])
+        };
+        for _ in 0..128 {
+            let value = generator.next(&mut mem, "parameter", &abi);
+            assert_eq!(mem, initial_memory);
+            assert_ne!(value, NodeId::NONE);
+        }
+        let specs = generator.finalize();
+        assert_eq!(specs.len(), 128);
+        assert!(
+            specs
+                .iter()
+                .all(|spec| spec.datatype == Datatype::I64 && spec.size == 0)
+        );
+        specs[0].size = 8;
+        assert_eq!(specs[0].size, 8);
+        specs_ptr = specs.as_ptr() as usize;
+    }
+    let bytes = arena.bytes();
+    assert!((bytes.as_ptr() as usize..bytes.as_ptr() as usize + bytes.len()).contains(&specs_ptr));
+}
+
+#[test]
+fn empty_parameter_generator_returns_an_empty_slice() {
+    with_proc(|proc, nodes| {
+        assert!(proc.builder(nodes).param_gen().finalize().is_empty());
+    });
+}
+
+#[test]
+fn fixed_capacity_array_tracks_initialized_elements() {
+    let mut values = bac::FixedCapDynArray::<2, u8>::new();
+    assert!(values.is_empty());
+    values.push(1);
+    values.push(2);
+    values[0] = 3;
+    assert_eq!(values.as_slice(), &[3, 2]);
+    assert!(catch_unwind(AssertUnwindSafe(|| values.push(4))).is_err());
+    assert_eq!(values.pop(), Some(2));
+    assert_eq!(values.pop(), Some(3));
+    assert_eq!(values.pop(), None);
+    values.push(5);
+    values.clear();
+    assert!(values.is_empty());
+    let values = bac::FixedCapDynArray::<2, u8>::from([6]);
+    assert_eq!(values.as_slice(), &[6]);
+    assert!(bac::FixedCapDynArray::<0, u8>::new().is_empty());
+    let mut units = bac::FixedCapDynArray::<2, ()>::new();
+    units.push(());
+    assert_eq!(units.as_slice(), &[()]);
+}
+
+#[test]
+fn raw_container_defaults_do_not_require_an_element_default() {
+    struct NoDefault;
+
+    let slice = sys::Slice::<NoDefault>::default();
+    assert!(slice.data.is_null());
+    assert_eq!(slice.len, 0);
+
+    let array = sys::DynamicArray::<NoDefault>::default();
+    assert!(array.data.is_null());
+    assert_eq!(array.len, 0);
+    assert_eq!(array.cap, 0);
+    assert!(array.allocator.procedure.is_null());
+    assert!(array.allocator.data.is_null());
+
+    let string = sys::String::default();
+    assert!(string.data.is_null());
+    assert_eq!(string.len, 0);
+}
+
+#[test]
+fn raw_defaults_zero_nested_structs_unions_and_bitfields() {
+    let proc = sys::bac_Proc::default();
+    assert!(proc.mem.is_null());
+    assert!(proc.temps.is_null());
+    assert!(proc.node_spec.is_null());
+    assert_eq!(proc.meta.pinned.entry, 0);
+    assert_eq!(proc.meta.pinned.end, 0);
+    assert!(!proc.dont_intern);
+
+    let ctx = sys::bac_Codegen_Emit_Ctx::default();
+    assert!(ctx.prc.is_null());
+    assert!(ctx.buf.code.is_null());
+    assert!(ctx.param_specs.data.is_null());
+    assert_eq!(ctx.param_specs.len, 0);
+    assert_eq!(ctx.regalloc_mode, sys::bac_Regalloc_Mode_with_scan);
+
+    let stats = sys::bac_Stats::default();
+    assert!(
+        stats
+            .efficiency
+            .iter()
+            .all(|stat| stat.total == 0 && stat.ideal == 0)
+    );
+
+    let branch = sys::bac_ssa_If_State_branch::default();
+    assert_eq!(unsafe { branch.else_scope }, 0);
+    assert_eq!(unsafe { branch.then_scope }, 0);
+
+    let flags = sys::bac_Call_flags::default();
+    assert_eq!(flags.bytes, [0; 4]);
+    assert_eq!(flags.ccid(), 0);
+    assert_eq!(flags.ret_count(), 0);
+    assert_eq!(flags.imported(), 0);
+}
+
+#[test]
+fn safe_defaults_use_valid_zero_values() {
+    assert_eq!(NodeId::default(), NodeId::NONE);
+    assert_eq!(Datatype::default(), Datatype::Void);
+    assert_eq!(NodeType::default(), NodeType::Nil);
+    assert_eq!(Lane::default(), Lane::I8);
+    assert_eq!(bac::LoopControl::default(), bac::LoopControl::Break);
+    assert_eq!(bac::RegallocMode::default(), bac::RegallocMode::with_scan);
+    assert_eq!(
+        ParamSpec::default(),
+        ParamSpec {
+            datatype: Datatype::Void,
+            size: 0
+        }
+    );
+
+    let abi = bac::AbiParam::default();
+    assert!(abi.dt.is_empty());
+    assert_eq!(abi.size, 0);
+    assert_eq!(abi.real_size, 0);
+    assert!(!abi.spilled && !abi.scalar && !abi.copied);
+
+    let call = bac::Call::default();
+    let call = unsafe { &*std::ptr::from_ref(&call).cast::<sys::bac_Call>() };
+    assert_eq!(call.cid, 0);
+    assert_eq!(call.flags.ret_count(), 0);
+    assert_eq!(call.rets, [sys::bac_Node_Datatype_Void; 4]);
 }

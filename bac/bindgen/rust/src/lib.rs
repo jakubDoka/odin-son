@@ -2,11 +2,6 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 #![allow(clippy::missing_safety_doc)]
 
-// AMEND CODEGEN:
-//  - Generate better names for the anon types, use the parent struct name + field name
-//  - Generate better formatting
-//  - Generate generic version of fixed size array FixedCapDynArray<LEN, T>
-
 extern crate alloc;
 
 use alloc::{
@@ -15,15 +10,18 @@ use alloc::{
 };
 use core::{marker::PhantomData, ptr};
 
-#[rustfmt::skip]
-pub mod sys;
-#[rustfmt::skip]
+mod fixed_cap_dyn_array;
+pub use fixed_cap_dyn_array::FixedCapDynArray;
+
 mod generated;
+pub mod sys;
 pub use generated::*;
+pub use sys::bac_ssa_Abi_Param as AbiParam;
 
 const PAGE_ALIGN: usize = 4096;
 
 #[repr(transparent)]
+#[derive(Default)]
 pub struct Arena<'a> {
     raw: sys::arna_Allocator,
     _borrow: PhantomData<&'a mut [u8]>,
@@ -75,15 +73,6 @@ impl<'a> Arena<'a> {
     }
 }
 
-impl Default for Arena<'_> {
-    fn default() -> Self {
-        Self {
-            raw: unsafe { core::mem::zeroed() },
-            _borrow: PhantomData,
-        }
-    }
-}
-
 impl Drop for Arena<'_> {
     fn drop(&mut self) {
         if self.raw.commited == self.raw.reserved + 2 {
@@ -132,7 +121,7 @@ pub struct Proc<'a> {
 
 impl<'a> Proc<'a> {
     pub fn new(arena: &'a mut Arena<'_>, temps: &'a mut Temps<'_>) -> Self {
-        let mut raw = unsafe { core::mem::zeroed() };
+        let mut raw = sys::bac_Proc::default();
         unsafe { sys::bac_start_proc(&mut raw, &mut arena.raw, ptr::from_mut(temps).cast()) };
         Self {
             raw,
@@ -140,11 +129,9 @@ impl<'a> Proc<'a> {
         }
     }
 
-    pub fn builder(&mut self) -> Builder<'_, 'a> {
-        let mut builder = Builder {
-            proc: self,
-            nodes: Vec::new(),
-        };
+    pub fn builder<'p>(&'p mut self, nodes: &'p mut Vec<u64>) -> Builder<'p, 'a> {
+        nodes.clear();
+        let mut builder = Builder { proc: self, nodes };
         builder.seed();
         builder
     }
@@ -186,7 +173,7 @@ impl<'a> Proc<'a> {
 
 pub struct Builder<'p, 'a> {
     proc: &'p mut Proc<'a>,
-    nodes: Vec<u64>,
+    nodes: &'p mut Vec<u64>,
 }
 
 impl Builder<'_, '_> {
@@ -370,15 +357,9 @@ trait State {
 macro_rules! state {
     ($name:ident, $raw:ty) => {
         #[repr(transparent)]
+        #[derive(Default)]
         pub struct $name {
             raw: $raw,
-        }
-        impl Default for $name {
-            fn default() -> Self {
-                Self {
-                    raw: unsafe { core::mem::zeroed() },
-                }
-            }
         }
     };
 }
@@ -412,14 +393,16 @@ impl State for BlockState {
 }
 
 #[repr(transparent)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default)]
 pub struct Call(sys::bac_Call);
 
 impl Call {
     pub fn new(id: u32, returns: &[Datatype]) -> Self {
         assert!(returns.len() <= 4);
-        let mut raw: sys::bac_Call = unsafe { core::mem::zeroed() };
-        raw.cid = id;
+        let mut raw = sys::bac_Call {
+            cid: id,
+            ..Default::default()
+        };
         for (slot, dt) in raw.rets.iter_mut().zip(returns) {
             *slot = dt.0;
         }
@@ -546,9 +529,14 @@ pub struct CodegenEmitCtx<'p, 'a> {
 
 impl<'p, 'a> CodegenEmitCtx<'p, 'a> {
     pub fn new(proc: &'p mut Proc<'a>, code: &'p mut Arena<'_>) -> Self {
-        let mut raw: sys::bac_Codegen_Emit_Ctx = unsafe { core::mem::zeroed() };
-        raw.prc = &mut proc.raw;
-        raw.buf.code = &mut code.raw;
+        let raw = sys::bac_Codegen_Emit_Ctx {
+            prc: &mut proc.raw,
+            buf: sys::bac_Codegen_Emit_Buf {
+                code: &mut code.raw,
+                ..Default::default()
+            },
+            ..Default::default()
+        };
         Self {
             raw,
             _borrow: PhantomData,
@@ -630,6 +618,14 @@ unsafe fn raw_slice<'a, T>(data: *const T, len: usize) -> &'a [T] {
     }
 }
 
+unsafe fn raw_slice_mut<'a, T>(data: *mut T, len: usize) -> &'a mut [T] {
+    if len == 0 {
+        &mut []
+    } else {
+        unsafe { core::slice::from_raw_parts_mut(data, len) }
+    }
+}
+
 fn raw_string(text: &str) -> sys::String {
     sys::String {
         data: text.as_ptr().cast_mut(),
@@ -679,14 +675,14 @@ impl Proc<'_> {
     pub unsafe fn arg_gen_finalize(
         &mut self,
         generator: &mut sys::bac_ssa_Param_Gen,
-    ) -> Vec<ParamSpec> {
+    ) -> &mut [ParamSpec] {
         let specs = unsafe { sys::bac_arg_gen_finalize(&mut self.raw, generator) };
-        unsafe { raw_slice(specs.data.cast::<ParamSpec>(), specs.len as usize) }.to_vec()
+        unsafe { raw_slice_mut(specs.data.cast::<ParamSpec>(), specs.len as usize) }
     }
 }
 
 #[repr(C)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct ParamSpec {
     pub datatype: Datatype,
     pub size: i32,
@@ -704,89 +700,52 @@ const _: () = {
     );
 };
 
-// AMEND: make a proper rust counterpart to [dynamic; LEN]T, and use the native AbiParam for
-// this.
-pub struct AbiParam {
-    pub datatypes: Vec<Datatype>,
-    pub size: isize,
-    pub real_size: isize,
-    pub spilled: bool,
-    pub scalar: bool,
-    pub copied: bool,
-}
-
 impl AbiParam {
-    fn raw(&self) -> sys::bac_ssa_Abi_Param {
-        assert!(self.datatypes.len() <= 2);
-        let mut raw: sys::bac_ssa_Abi_Param = unsafe { core::mem::zeroed() };
-        for (slot, dt) in raw.dt.data.iter_mut().zip(&self.datatypes) {
-            *slot = dt.0;
+    pub fn new(datatypes: &[Datatype]) -> Self {
+        let mut dt = FixedCapDynArray::new();
+        for datatype in datatypes {
+            dt.push(datatype.0);
         }
-        raw.dt.len = self.datatypes.len() as isize;
-        raw.size = self.size;
-        raw.real_size = self.real_size;
-        raw.spilled = self.spilled;
-        raw.scalar = self.scalar;
-        raw.copied = self.copied;
-        raw
+        Self {
+            dt,
+            ..Default::default()
+        }
     }
 }
 
 pub struct ParamGen<'b, 'p, 'a> {
     builder: &'b mut Builder<'p, 'a>,
-    values: Vec<u32>,
-    spill_start: isize,
+    raw: sys::bac_ssa_Param_Gen,
 }
 
 impl<'p, 'a> Builder<'p, 'a> {
     pub fn param_gen<'b>(&'b mut self) -> ParamGen<'b, 'p, 'a> {
         ParamGen {
             builder: self,
-            values: Vec::new(),
-            spill_start: 0,
+            raw: Default::default(),
         }
     }
 }
 
-impl<'p, 'a> ParamGen<'_, 'p, 'a> {
-    fn with<T>(
-        &mut self,
-        extra: usize,
-        call: impl FnOnce(&mut Builder<'p, 'a>, &mut sys::bac_ssa_Param_Gen) -> T,
-    ) -> T {
-        for &id in &self.values {
-            self.builder.check(NodeId(id));
-        }
-        self.values.reserve(extra);
-        let mut raw: sys::bac_ssa_Param_Gen = unsafe { core::mem::zeroed() };
-        raw.vls.data = self.values.as_mut_ptr();
-        raw.vls.len = self.values.len() as isize;
-        raw.vls.cap = self.values.capacity() as isize;
-        raw.spill_start = self.spill_start;
-        let result = call(self.builder, &mut raw);
-        assert!(raw.vls.len >= 0 && raw.vls.len as usize <= self.values.capacity());
-        unsafe { self.values.set_len(raw.vls.len as usize) };
-        for &id in &self.values {
+impl<'b, 'p, 'a> ParamGen<'b, 'p, 'a> {
+    pub fn next(&mut self, mem: &mut NodeId, name: &'static str, abi: &AbiParam) -> NodeId {
+        self.builder.check(*mem);
+        let mut abi = *abi;
+        let result = unsafe {
+            self.builder
+                .proc
+                .arg_gen_next(*mem, &mut self.raw, name, &mut abi)
+        };
+        for &id in unsafe { raw_slice(self.raw.vls.data, self.raw.vls.len as usize) } {
             self.builder.register(NodeId(id));
         }
-        self.spill_start = raw.spill_start;
-        result
-    }
-
-    pub fn next(&mut self, mem: NodeId, name: &'static str, abi: &AbiParam) -> (NodeId, NodeId) {
-        self.builder.check(mem);
-        let mut abi = abi.raw();
-        let result = self.with(3, |builder, raw| unsafe {
-            builder.proc.arg_gen_next(mem, raw, name, &mut abi)
-        });
         self.builder.register(result.0);
         self.builder.register(result.1);
-        result
+        *mem = result.0;
+        result.1
     }
 
-    pub fn finalize(mut self) -> Vec<ParamSpec> {
-        self.with(0, |builder, raw| unsafe {
-            builder.proc.arg_gen_finalize(raw)
-        })
+    pub fn finalize(mut self) -> &'b mut [ParamSpec] {
+        unsafe { self.builder.proc.arg_gen_finalize(&mut self.raw) }
     }
 }

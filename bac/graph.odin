@@ -383,7 +383,6 @@ when #config(COMPACT_NODE_OUTPUTS, true) {
 }
 
 Node :: struct {
-	using tag:       Tag,
 	using spec:      struct #align (4) {
 		using type: struct #raw_union {
 			itype: Node_Type,
@@ -408,6 +407,7 @@ Node :: struct {
 	output_idx:      u32,
 	output_count:    u16,
 	output_cap:      u16,
+	using tag:       Tag,
 	extra:           [0]u32,
 }
 

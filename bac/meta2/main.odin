@@ -3,8 +3,8 @@ package bac_meta2
 import ".."
 import "../anal"
 import "../arm"
-import "../ssa"
 import "../meta"
+import "../ssa"
 import "../wasm"
 import "../x64"
 
@@ -42,7 +42,7 @@ main :: proc() {
 	when anal.SPEC_NOT_PRESENT {
 		meta.generate_spec(
 			meta.Spec_Gen_Input {
-				package_name = "anal",
+				package_name = "bac_anal",
 				header_import = "import bac \"..\"\n" +
 				"Reg_Kind :: bac.Reg_Kind\n" +
 				"Class_Flag :: bac.Class_Flag\n",

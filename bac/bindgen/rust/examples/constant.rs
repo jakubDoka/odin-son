@@ -3,7 +3,7 @@
     any(target_arch = "x86_64", target_arch = "aarch64")
 ))]
 fn main() {
-    use bac::{Arena, CodegenEmitCtx, Datatype, Proc};
+    use bac::{Arena, CodegenEmitCtx, Datatype, MinAligned, Proc};
     use core::{ffi::c_void, ptr};
 
     unsafe extern "C" {
@@ -19,15 +19,18 @@ fn main() {
         fn munmap(addr: *mut c_void, len: usize) -> i32;
     }
 
-    let mut temps = [Arena::new(4096 * 128), Arena::new(4096 * 128)];
-    let mut memory = Arena::new(4096 * 8);
+    let MinAligned([temp1, temp2, memory, code]) = &mut MinAligned([[0u8; 4096]; 4]);
+
+    let mut temps = [Arena::from_buffer(temp1), Arena::from_buffer(temp2)];
+    let mut memory = Arena::from_buffer(memory);
+
     let mut proc = Proc::new(&mut memory, &mut temps);
     {
         let builder = proc.builder();
         let value = builder.add_c_int("mcnst", Datatype::I64, 69);
         builder.merge_returns(&[builder.entry(), builder.initial_memory(), value]);
     }
-    let mut code = Arena::new(4096);
+    let mut code = Arena::from_buffer(code);
     let mut ctx = CodegenEmitCtx::new(&mut proc, &mut code);
     let output = ctx.compile();
     assert!(!output.code.is_empty() && output.code.len() <= 4096);

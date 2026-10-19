@@ -2,10 +2,22 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 #![allow(clippy::missing_safety_doc)]
 
+#[cfg(feature = "alloc")]
 extern crate alloc;
 
-use alloc::alloc::{Layout, alloc_zeroed, dealloc, handle_alloc_error};
-use core::{cell::UnsafeCell, fmt, marker::PhantomData, ptr};
+#[cfg(feature = "alloc")]
+use alloc::alloc::{alloc_zeroed, dealloc, handle_alloc_error};
+
+#[cfg(feature = "alloc")]
+use core::alloc::Layout;
+
+use core::{
+    cell::UnsafeCell,
+    fmt,
+    marker::PhantomData,
+    ops::{Deref, DerefMut},
+    ptr,
+};
 
 mod fixed_cap_dyn_array;
 pub use fixed_cap_dyn_array::FixedCapDynArray;
@@ -16,7 +28,24 @@ mod sys_ext;
 pub use generated::*;
 pub use sys::ssa_Abi_Param as AbiParam;
 
-const PAGE_ALIGN: usize = 4096;
+const MIN_ALIGN: usize = 4096;
+
+#[repr(align(4096))]
+pub struct MinAligned<T>(pub T);
+
+impl<T> DerefMut for MinAligned<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl<T> Deref for MinAligned<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 #[repr(transparent)]
 #[derive(Default)]
@@ -25,6 +54,7 @@ pub struct Arena<'a> {
     _borrow: PhantomData<&'a mut [u8]>,
 }
 
+#[cfg(feature = "alloc")]
 impl Arena<'static> {
     pub fn new(capacity: usize) -> Self {
         let layout = arena_layout(capacity);
@@ -52,7 +82,7 @@ impl Arena<'static> {
 impl<'a> Arena<'a> {
     pub fn from_buffer(buffer: &'a mut [u8]) -> Self {
         assert_eq!(
-            buffer.as_ptr() as usize % PAGE_ALIGN,
+            buffer.as_ptr() as usize % MIN_ALIGN,
             0,
             "arena buffer must be page aligned"
         );
@@ -75,6 +105,7 @@ impl<'a> Arena<'a> {
     }
 }
 
+#[cfg(feature = "alloc")]
 impl Drop for Arena<'_> {
     fn drop(&mut self) {
         if self.raw.commited == self.raw.reserved + 2 {
@@ -83,9 +114,10 @@ impl Drop for Arena<'_> {
     }
 }
 
+#[cfg(feature = "alloc")]
 fn arena_layout(capacity: usize) -> Layout {
     assert!(capacity < isize::MAX as usize);
-    Layout::from_size_align(capacity.max(1), PAGE_ALIGN).expect("invalid arena capacity")
+    Layout::from_size_align(capacity.max(1), MIN_ALIGN).expect("invalid arena capacity")
 }
 
 fn arena_raw(data: *mut u8, len: usize) -> sys::arna_Allocator {
@@ -235,6 +267,7 @@ impl<'a> Proc<'a> {
         }
     }
 
+    #[cfg(feature = "alloc")]
     pub fn stencil(&self) -> Stencil {
         let raw = unsafe { sys::bac_get_stencil(self.raw_ptr()) };
         Stencil {
@@ -349,15 +382,7 @@ impl<'a> Builder<'a> {
         Datatype(node.snapshot().spec.meta.dt() as u8)
     }
 
-    pub fn node_name(&self, node: &Node) -> &str {
-        self.check(node);
-        let names = node.snapshot().tag.name;
-        let Some(name) = names.first() else {
-            return "";
-        };
-        unsafe { name.as_str() }.expect("node name is not UTF-8")
-    }
-
+    #[cfg(feature = "alloc")]
     pub fn stencil(&self) -> Stencil {
         self.proc.stencil()
     }
@@ -473,6 +498,7 @@ pub struct Stencil {
 unsafe impl Send for Stencil {}
 unsafe impl Sync for Stencil {}
 
+#[cfg(feature = "alloc")]
 impl Clone for Stencil {
     fn clone(&self) -> Self {
         Self {

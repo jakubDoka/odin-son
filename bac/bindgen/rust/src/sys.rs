@@ -646,7 +646,6 @@ const _: () = assert!(core::mem::align_of::<runtime_Allocator>() == 8);
 #[repr(C, align(4))]
 #[derive(Clone, Copy)]
 pub struct Node {
-    pub r#tag: Tag,
     pub r#spec: Node_spec,
     pub r#gvn_group: Node_gvn_group,
     pub r#input_idx: u32,
@@ -655,17 +654,18 @@ pub struct Node {
     pub r#output_idx: u32,
     pub r#output_count: u16,
     pub r#output_cap: u16,
+    pub r#tag: Tag,
     pub r#extra: [u32; 0],
 }
-const _: () = assert!(core::mem::offset_of!(Node, r#tag) == 0);
-const _: () = assert!(core::mem::offset_of!(Node, r#spec) == 20);
-const _: () = assert!(core::mem::offset_of!(Node, r#gvn_group) == 24);
-const _: () = assert!(core::mem::offset_of!(Node, r#input_idx) == 28);
-const _: () = assert!(core::mem::offset_of!(Node, r#input_count) == 32);
-const _: () = assert!(core::mem::offset_of!(Node, r#input_cap) == 34);
-const _: () = assert!(core::mem::offset_of!(Node, r#output_idx) == 36);
-const _: () = assert!(core::mem::offset_of!(Node, r#output_count) == 40);
-const _: () = assert!(core::mem::offset_of!(Node, r#output_cap) == 42);
+const _: () = assert!(core::mem::offset_of!(Node, r#spec) == 0);
+const _: () = assert!(core::mem::offset_of!(Node, r#gvn_group) == 4);
+const _: () = assert!(core::mem::offset_of!(Node, r#input_idx) == 8);
+const _: () = assert!(core::mem::offset_of!(Node, r#input_count) == 12);
+const _: () = assert!(core::mem::offset_of!(Node, r#input_cap) == 14);
+const _: () = assert!(core::mem::offset_of!(Node, r#output_idx) == 16);
+const _: () = assert!(core::mem::offset_of!(Node, r#output_count) == 20);
+const _: () = assert!(core::mem::offset_of!(Node, r#output_cap) == 22);
+const _: () = assert!(core::mem::offset_of!(Node, r#tag) == 24);
 const _: () = assert!(core::mem::offset_of!(Node, r#extra) == 44);
 impl Default for Node {
     fn default() -> Self {
@@ -1320,21 +1320,6 @@ const _: () = assert!(core::mem::align_of::<Efficiency_Stat>() == 8);
 pub type runtime_Allocator_Proc = *mut core::ffi::c_void;
 const _: () = assert!(core::mem::size_of::<runtime_Allocator_Proc>() == 8);
 const _: () = assert!(core::mem::align_of::<runtime_Allocator_Proc>() == 8);
-#[repr(C, packed(4))]
-#[derive(Clone, Copy)]
-pub struct Tag {
-    pub r#name: [String; 1],
-    pub r#stable_id: [u32; 1],
-}
-const _: () = assert!(core::mem::offset_of!(Tag, r#name) == 0);
-const _: () = assert!(core::mem::offset_of!(Tag, r#stable_id) == 16);
-impl Default for Tag {
-    fn default() -> Self {
-        unsafe { core::mem::zeroed() }
-    }
-}
-const _: () = assert!(core::mem::size_of::<Tag>() == 20);
-const _: () = assert!(core::mem::align_of::<Tag>() == 4);
 #[repr(C, align(4))]
 #[derive(Clone, Copy)]
 pub struct Node_spec {
@@ -1400,6 +1385,21 @@ impl Default for Node_gvn_group {
 }
 const _: () = assert!(core::mem::size_of::<Node_gvn_group>() == 4);
 const _: () = assert!(core::mem::align_of::<Node_gvn_group>() == 4);
+#[repr(C, packed(4))]
+#[derive(Clone, Copy)]
+pub struct Tag {
+    pub r#name: [String; 1],
+    pub r#stable_id: [u32; 1],
+}
+const _: () = assert!(core::mem::offset_of!(Tag, r#name) == 0);
+const _: () = assert!(core::mem::offset_of!(Tag, r#stable_id) == 16);
+impl Default for Tag {
+    fn default() -> Self {
+        unsafe { core::mem::zeroed() }
+    }
+}
+const _: () = assert!(core::mem::size_of::<Tag>() == 20);
+const _: () = assert!(core::mem::align_of::<Tag>() == 4);
 #[repr(C, align(4))]
 #[derive(Clone, Copy)]
 pub struct Node_Output {

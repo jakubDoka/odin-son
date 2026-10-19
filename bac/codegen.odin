@@ -79,8 +79,8 @@ PS_Peep_Fn :: proc(_: PS_Peep_Ctx, node: Expanded_Node) -> Node_ID
 Pre_Regalloc_Hook :: proc(_: ^Regalloc, _: ^Proc, _: ^Schedule)
 
 PS_Peep_Ctx :: struct {
-	using prc:   ^Proc,
-	preds:       []Node_ID,
+	using prc: ^Proc,
+	preds:     []Node_ID,
 }
 
 Codegen_Emit_Ctx :: struct {

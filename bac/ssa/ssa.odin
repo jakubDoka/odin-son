@@ -18,6 +18,41 @@ btype :: #force_inline proc(node: bac.Expanded_Node) -> Node_Type {
 }
 
 @(tag = "api")
+opt :: proc(ctx: bac.Peep_Ctx) {
+	DEBUG_OPT :: false
+
+	for dirty, limit := true, 100; dirty; limit -= 1 {
+		assert(limit > 0)
+
+		dirty = false
+		dirty_peep := bac.apply_peeps(ctx)
+		when DEBUG_OPT do fmt.println("peeps:", dirty_lat)
+		dirty_mem := memopt(ctx)
+		when DEBUG_OPT do fmt.println("mem:", dirty_lat)
+
+		dirty = dirty_peep | dirty_mem
+	}
+
+	when DEBUG_OPT do fmt.println("next pass")
+
+	for dirty, limit := true, 100; dirty; limit -= 1 {
+		context.allocator, _ = arna.scrath(ctx.temps)
+
+		assert(limit > 0)
+		dirty = false
+		dirty_loop := loopopt(ctx)
+		when DEBUG_OPT do fmt.println("loopopt:", dirty_loop)
+		dirty_lat := bac.compute_latices(ctx)
+		when DEBUG_OPT do fmt.println("lat:", dirty_lat)
+		dirty_peep := bac.apply_peeps(ctx)
+		when DEBUG_OPT do fmt.println("peeps:", dirty_peep)
+		dirty_mem := memopt(ctx)
+		when DEBUG_OPT do fmt.println("mem:", dirty_mem)
+		dirty = dirty_lat | dirty_peep | dirty_mem | dirty_loop
+	}
+}
+
+@(tag = "api")
 compile :: proc(ctx: bac.Codegen_Emit_Ctx) -> (res: bac.Codegen_Output) {
 	ctx := ctx
 
@@ -1161,7 +1196,10 @@ arg_gen_next :: proc(
 
 @(tag = "api")
 arg_gen_finalize :: proc(ctx: ^Proc, gen: ^Param_Gen) -> []bac.Param_Spec {
-	arg_tys := make([]bac.Param_Spec, len(gen.vls), arna.allocator(ctx.mem))
+	inside := arna.allocator(ctx.mem)
+	if context.allocator != {} do inside = context.allocator
+
+	arg_tys := make([]bac.Param_Spec, len(gen.vls), inside)
 
 	j, ri: u32
 	for arg in gen.vls {

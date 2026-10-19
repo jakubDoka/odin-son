@@ -747,7 +747,7 @@ inline_and_optimize :: proc(
 			}
 		}
 
-		opt(ctx)
+		ssa.opt(ctx)
 		bac.compact(ctx)
 
 		delete(caller.stencil.mem, perm)
@@ -883,7 +883,7 @@ emit_proc :: proc(
 		ctx.node_scope = 0
 	}
 
-	opt(ctx)
+	ssa.opt(ctx)
 
 	if .Inline in level.flags {
 		bac.compact(ctx)
@@ -891,36 +891,6 @@ emit_proc :: proc(
 		prc.stencil.mem = slice.clone(prc.stencil.mem, glob)
 	} else {
 		emit_proc_code(ctx, emit_ctx, prc)
-	}
-}
-
-opt :: proc(ctx: ^bac.Proc) {
-	peep_ctx: bac.Peep_Ctx
-	peep_ctx.prc = ctx
-	context.allocator, _ = arna.scrath()
-	lattice_allocator := context.allocator
-	defer {
-		ctx.computed_passes -= {.Sccp}
-		ctx.lattices = nil
-	}
-
-	for dirty, limit := true, 100; dirty; limit -= 1 {
-		context.allocator, _ = arna.scrath(lattice_allocator)
-
-		assert(limit > 0)
-		dirty = false
-		DEBUG_OPT :: false
-		dirty_lat := bac.compute_latices(ctx, lattice_allocator)
-		when DEBUG_OPT do fmt.println("lat:", dirty_lat)
-		dirty_peep := bac.apply_peeps(peep_ctx)
-		when DEBUG_OPT do fmt.println("peeps:", dirty_peep)
-		dirty_mem := ssa.memopt(ctx)
-		when DEBUG_OPT do fmt.println("memopt:", dirty_mem)
-		dirty_peep2 := bac.apply_peeps(peep_ctx)
-		when DEBUG_OPT do fmt.println("peeps:", dirty_peep2)
-		dirty_loop := ssa.loopopt(ctx)
-		when DEBUG_OPT do fmt.println("loopopt:", dirty_loop)
-		dirty |= dirty_lat | dirty_peep | dirty_mem | dirty_peep2 | dirty_loop
 	}
 }
 

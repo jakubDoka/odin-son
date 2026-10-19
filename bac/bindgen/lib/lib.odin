@@ -1126,6 +1126,14 @@ bac_merge_returns :: proc "c" (
 }
 
 @(export)
+bac_opt :: proc "c" (
+	ctx: bac.Peep_Ctx,
+) {
+	context = {}
+	bac_ssa.opt(ctx)
+}
+
+@(export)
 bac_push_scope_value :: proc "c" (
 	prc: ^bac.Proc,
 	scope: bac.Node_ID,

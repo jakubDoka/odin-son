@@ -109,6 +109,7 @@ API := [?]API_Proc{
 	{false, "../ssa", "make_call", type_of(pkg_4.make_call), ""},
 	{false, "../ssa", "memopt", type_of(pkg_4.memopt), ""},
 	{false, "../ssa", "merge_returns", type_of(pkg_4.merge_returns), ""},
+	{false, "../ssa", "opt", type_of(pkg_4.opt), ""},
 	{false, "../ssa", "push_scope_value", type_of(pkg_4.push_scope_value), ""},
 	{false, "../ssa", "set_scope_value", type_of(pkg_4.set_scope_value), ""},
 	{false, "../ssa", "start_block", type_of(pkg_4.start_block), ""},

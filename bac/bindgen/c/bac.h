@@ -31,6 +31,7 @@ typedef struct {
 	bac_int len;
 } bac_String;
 
+typedef bac_u8 bac_Bs_Opt_Flag;
 typedef bac_u16 bac_Un_Op;
 typedef struct Slice_Of_bac_i32 Slice_Of_bac_i32;
 typedef struct runtime_Raw_Dynamic_Array runtime_Raw_Dynamic_Array;
@@ -52,7 +53,6 @@ typedef struct Slice_Of_Slice_Of_bac_i64 Slice_Of_Slice_Of_bac_i64;
 typedef bac_u8 bac_Bs_Class_Flag;
 typedef struct bac_Stats bac_Stats;
 typedef struct Dyn_Arr_Of_Dyn_Arr_Of_bac_Node_ID Dyn_Arr_Of_Dyn_Arr_Of_bac_Node_ID;
-typedef bac_u8 bac_Bs_Opt_Flag;
 typedef struct bac_Codegen_Spec bac_Codegen_Spec;
 typedef struct Dyn_Arr_Of_bac_Dbg_Data_Sym Dyn_Arr_Of_bac_Dbg_Data_Sym;
 typedef bac_u8 runtime_Allocator_Mode;
@@ -662,7 +662,6 @@ struct bac_ssa_Loop_State {
 	bac_Node_ID scopes[2];
 };
 struct bac_Node {
-	bac_Tag tag;
 	struct {
 		union {
 			bac_Node_Type itype;
@@ -687,6 +686,7 @@ struct bac_Node {
 	bac_u32 output_idx;
 	bac_u16 output_count;
 	bac_u16 output_cap;
+	bac_Tag tag;
 	bac_u32 extra[0];
 };
 struct runtime_Allocator {
@@ -1020,6 +1020,7 @@ extern _Bool bac_loopopt(bac_Proc *prc);
 extern bac_Node_ID bac_make_call(bac_Proc *prc, Slice_Of_bac_Node_ID args, bac_Call extra, bac_Node_ID *ctrl);
 extern _Bool bac_memopt(bac_Proc *prc);
 extern bac_Node_ID bac_merge_returns(bac_Proc *prc, Slice_Of_bac_Node_ID args);
+extern void bac_opt(bac_Peep_Ctx ctx);
 extern bac_int bac_push_scope_value(bac_Proc *prc, bac_Node_ID scope, bac_Node_ID value, bac_String name, bac_u64 type);
 extern void bac_set_scope_value(bac_Proc *prc, bac_Node_ID scope, bac_int idx, bac_Node_ID value);
 extern void bac_start_block(bac_ssa_Block_State *state);

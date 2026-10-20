@@ -62,11 +62,17 @@ main :: proc() {
 	c_lib := strings.builder_make()
 	defer strings.builder_destroy(&c_lib)
 
-	os.write_string(lib, `
+	os.write_string(
+		lib,
+		`
 package bac_lib
 
 import "base:runtime"
-`)
+
+Proc :: bac.Proc
+Node_ID :: bac.Node_ID
+`,
+	)
 
 	for i in 0 ..< len(EXPORTED_SUBMODS) {
 		name := EXPORTED_SUBMODS[i]
@@ -152,20 +158,36 @@ typedef struct {
 				fmt.fprintln(lib, `@(export)`)
 				fmt.fprintfln(lib, `%v_%v :: proc "c" (`, prefix, entry.name)
 
+				type_name :: proc(id: ^runtime.Type_Info) -> string {
+					#partial switch t in id.variant {
+					case runtime.Type_Info_Named:
+						return fmt.tprintf("%v.%v", t.pkg, t.name)
+					case runtime.Type_Info_Pointer:
+						return fmt.tprintf("^%v", type_name(t.elem))
+					case runtime.Type_Info_Slice:
+						return fmt.tprintf("[]%v", type_name(t.elem))
+					case runtime.Type_Info_String,
+					     runtime.Type_Info_Integer,
+					     runtime.Type_Info_Enum,
+					     runtime.Type_Info_Boolean:
+						return fmt.tprint(id)
+					case:
+						fmt.panicf("%v", id)
+					}
+				}
+
 				for i in 0 ..< len(params.types) {
 					name := params.names[i]
 					type := params.types[i]
 
-					reflect.qualified = true
-
-					fmt.fprintfln(lib, "\t%v: %T,", name, type)
+					fmt.fprintfln(lib, "\t%v: %v,", name, type_name(type))
 				}
 				for i in 0 ..< len(results.types) - 1 {
 					fmt.fprintfln(
 						lib,
-						"\tbinding_out_%v: ^%T,",
+						"\tbinding_out_%v: ^%v,",
 						i,
-						results.types[i],
+						type_name(results.types[i]),
 					)
 				}
 
@@ -175,8 +197,8 @@ typedef struct {
 					fmt.fprintfln(lib, " -> (")
 					fmt.fprintfln(
 						lib,
-						"\t%T,",
-						results.types[len(results.types) - 1],
+						"\t%v,",
+						type_name(results.types[len(results.types) - 1]),
 					)
 					fmt.fprintf(lib, ")")
 				}
@@ -246,6 +268,12 @@ typedef struct {
 				for k, v in types {
 					append(&ents, Entry{v, k})
 				}
+
+				// make it deterministic
+				slice.sort_by_key(
+					ents[:],
+					proc(v: Entry) -> string {return fmt.tprint(v.type)},
+				)
 
 				cmp :: proc(v: Entry) -> int {
 					#partial switch t in type_info_of(v.type).variant {

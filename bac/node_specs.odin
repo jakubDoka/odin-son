@@ -1,42 +1,42 @@
 package bac
 // NOTE: this file is generated: 
 
+Un_Op :: enum u16 {
+	U_Conv = u16(Node_Type.U_Conv),
+	Simd_Reduce_Add_Bisect = u16(Node_Type.Simd_Reduce_Add_Bisect),
+	Conv = u16(Node_Type.Conv),
+	Neg = u16(Node_Type.Neg),
+	Ctz = u16(Node_Type.Ctz),
+	Simd_Extract_Lsbs = u16(Node_Type.Simd_Extract_Lsbs),
+	Splat = u16(Node_Type.Splat),
+	Cast = u16(Node_Type.Cast),
+	Not = u16(Node_Type.Not),
+}
 Bin_Op :: enum u16 {
-	Shr = u16(Node_Type.Shr),
-	And_Not = u16(Node_Type.And_Not),
-	U_Ge = u16(Node_Type.U_Ge),
-	Eq = u16(Node_Type.Eq),
 	Ne = u16(Node_Type.Ne),
-	U_Div = u16(Node_Type.U_Div),
-	Mul = u16(Node_Type.Mul),
-	U_Gt = u16(Node_Type.U_Gt),
+	U_Rem = u16(Node_Type.U_Rem),
+	Shl = u16(Node_Type.Shl),
 	Xor = u16(Node_Type.Xor),
 	Ge = u16(Node_Type.Ge),
-	Or = u16(Node_Type.Or),
-	Le = u16(Node_Type.Le),
-	Gt = u16(Node_Type.Gt),
-	U_Le = u16(Node_Type.U_Le),
-	U_Shr = u16(Node_Type.U_Shr),
-	U_Lt = u16(Node_Type.U_Lt),
-	Rem = u16(Node_Type.Rem),
-	U_Rem = u16(Node_Type.U_Rem),
-	Add = u16(Node_Type.Add),
-	Sub = u16(Node_Type.Sub),
-	Div = u16(Node_Type.Div),
-	Shl = u16(Node_Type.Shl),
+	Mul = u16(Node_Type.Mul),
 	And = u16(Node_Type.And),
+	Div = u16(Node_Type.Div),
+	And_Not = u16(Node_Type.And_Not),
+	U_Ge = u16(Node_Type.U_Ge),
+	U_Shr = u16(Node_Type.U_Shr),
+	Le = u16(Node_Type.Le),
+	Add = u16(Node_Type.Add),
+	U_Gt = u16(Node_Type.U_Gt),
+	U_Lt = u16(Node_Type.U_Lt),
+	Gt = u16(Node_Type.Gt),
+	Eq = u16(Node_Type.Eq),
+	Or = u16(Node_Type.Or),
+	Rem = u16(Node_Type.Rem),
+	Sub = u16(Node_Type.Sub),
 	Lt = u16(Node_Type.Lt),
-}
-Un_Op :: enum u16 {
-	Cast = u16(Node_Type.Cast),
-	Neg = u16(Node_Type.Neg),
-	Simd_Extract_Lsbs = u16(Node_Type.Simd_Extract_Lsbs),
-	Simd_Reduce_Add_Bisect = u16(Node_Type.Simd_Reduce_Add_Bisect),
-	U_Conv = u16(Node_Type.U_Conv),
-	Splat = u16(Node_Type.Splat),
-	Not = u16(Node_Type.Not),
-	Ctz = u16(Node_Type.Ctz),
-	Conv = u16(Node_Type.Conv),
+	U_Le = u16(Node_Type.U_Le),
+	Shr = u16(Node_Type.Shr),
+	U_Div = u16(Node_Type.U_Div),
 }
 Node_Type :: enum u16 {
 	Nil,
@@ -281,18 +281,18 @@ add_un_op :: #force_inline proc(prc: ^Proc, name: string, type: Un_Op, dt: Node_
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	when false {}
 	else when T == Cfg {return 0}
-	else when T == No_Extra {return 1}
 	else when T == Dbg_Sym {return 2}
 	else when T == CInt {return 6}
-	else when T == Tup {return 5}
 	else when T == Call {return 3}
+	else when T == Tup {return 5}
+	else when T == No_Extra {return 1}
 	else when T == Local {return 4}
 	else {#panic(`the passed type is not subclass of anything`)}
 }
 #assert(size_of(Cfg) % PRECISION == 0)
-#assert(size_of(No_Extra) % PRECISION == 0)
 #assert(size_of(Dbg_Sym) % PRECISION == 0)
 #assert(size_of(CInt) % PRECISION == 0)
-#assert(size_of(Tup) % PRECISION == 0)
 #assert(size_of(Call) % PRECISION == 0)
+#assert(size_of(Tup) % PRECISION == 0)
+#assert(size_of(No_Extra) % PRECISION == 0)
 #assert(size_of(Local) % PRECISION == 0)

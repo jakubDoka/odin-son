@@ -104,45 +104,45 @@ impl NodeType {
 pub struct BinOp(pub(crate) sys::Bin_Op);
 #[allow(non_upper_case_globals)]
 impl BinOp {
-    pub const Shr: Self = Self(sys::Bin_Op_Shr);
-    pub const And_Not: Self = Self(sys::Bin_Op_And_Not);
-    pub const U_Ge: Self = Self(sys::Bin_Op_U_Ge);
-    pub const Eq: Self = Self(sys::Bin_Op_Eq);
     pub const Ne: Self = Self(sys::Bin_Op_Ne);
-    pub const U_Div: Self = Self(sys::Bin_Op_U_Div);
-    pub const Mul: Self = Self(sys::Bin_Op_Mul);
-    pub const U_Gt: Self = Self(sys::Bin_Op_U_Gt);
+    pub const U_Rem: Self = Self(sys::Bin_Op_U_Rem);
+    pub const Shl: Self = Self(sys::Bin_Op_Shl);
     pub const Xor: Self = Self(sys::Bin_Op_Xor);
     pub const Ge: Self = Self(sys::Bin_Op_Ge);
-    pub const Or: Self = Self(sys::Bin_Op_Or);
-    pub const Le: Self = Self(sys::Bin_Op_Le);
-    pub const Gt: Self = Self(sys::Bin_Op_Gt);
-    pub const U_Le: Self = Self(sys::Bin_Op_U_Le);
-    pub const U_Shr: Self = Self(sys::Bin_Op_U_Shr);
-    pub const U_Lt: Self = Self(sys::Bin_Op_U_Lt);
-    pub const Rem: Self = Self(sys::Bin_Op_Rem);
-    pub const U_Rem: Self = Self(sys::Bin_Op_U_Rem);
-    pub const Add: Self = Self(sys::Bin_Op_Add);
-    pub const Sub: Self = Self(sys::Bin_Op_Sub);
-    pub const Div: Self = Self(sys::Bin_Op_Div);
-    pub const Shl: Self = Self(sys::Bin_Op_Shl);
+    pub const Mul: Self = Self(sys::Bin_Op_Mul);
     pub const And: Self = Self(sys::Bin_Op_And);
+    pub const Div: Self = Self(sys::Bin_Op_Div);
+    pub const And_Not: Self = Self(sys::Bin_Op_And_Not);
+    pub const U_Ge: Self = Self(sys::Bin_Op_U_Ge);
+    pub const U_Shr: Self = Self(sys::Bin_Op_U_Shr);
+    pub const Le: Self = Self(sys::Bin_Op_Le);
+    pub const Add: Self = Self(sys::Bin_Op_Add);
+    pub const U_Gt: Self = Self(sys::Bin_Op_U_Gt);
+    pub const U_Lt: Self = Self(sys::Bin_Op_U_Lt);
+    pub const Gt: Self = Self(sys::Bin_Op_Gt);
+    pub const Eq: Self = Self(sys::Bin_Op_Eq);
+    pub const Or: Self = Self(sys::Bin_Op_Or);
+    pub const Rem: Self = Self(sys::Bin_Op_Rem);
+    pub const Sub: Self = Self(sys::Bin_Op_Sub);
     pub const Lt: Self = Self(sys::Bin_Op_Lt);
+    pub const U_Le: Self = Self(sys::Bin_Op_U_Le);
+    pub const Shr: Self = Self(sys::Bin_Op_Shr);
+    pub const U_Div: Self = Self(sys::Bin_Op_U_Div);
 }
 #[repr(transparent)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct UnOp(pub(crate) sys::Un_Op);
 #[allow(non_upper_case_globals)]
 impl UnOp {
-    pub const Cast: Self = Self(sys::Un_Op_Cast);
-    pub const Neg: Self = Self(sys::Un_Op_Neg);
-    pub const Simd_Extract_Lsbs: Self = Self(sys::Un_Op_Simd_Extract_Lsbs);
-    pub const Simd_Reduce_Add_Bisect: Self = Self(sys::Un_Op_Simd_Reduce_Add_Bisect);
     pub const U_Conv: Self = Self(sys::Un_Op_U_Conv);
-    pub const Splat: Self = Self(sys::Un_Op_Splat);
-    pub const Not: Self = Self(sys::Un_Op_Not);
-    pub const Ctz: Self = Self(sys::Un_Op_Ctz);
+    pub const Simd_Reduce_Add_Bisect: Self = Self(sys::Un_Op_Simd_Reduce_Add_Bisect);
     pub const Conv: Self = Self(sys::Un_Op_Conv);
+    pub const Neg: Self = Self(sys::Un_Op_Neg);
+    pub const Ctz: Self = Self(sys::Un_Op_Ctz);
+    pub const Simd_Extract_Lsbs: Self = Self(sys::Un_Op_Simd_Extract_Lsbs);
+    pub const Splat: Self = Self(sys::Un_Op_Splat);
+    pub const Cast: Self = Self(sys::Un_Op_Cast);
+    pub const Not: Self = Self(sys::Un_Op_Not);
 }
 #[repr(transparent)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]

@@ -2,6 +2,9 @@
 package bac_lib
 
 import "base:runtime"
+
+Proc :: bac.Proc
+Node_ID :: bac.Node_ID
 import bac "../.."
 import bac_ssa "../../ssa"
 import bac_arm "../../arm"

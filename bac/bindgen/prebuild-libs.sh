@@ -71,3 +71,5 @@ for target in "${targets[@]}"; do
     fi
 done
 
+cp bac/bindgen/lib/*.o bac/bindgen/rust/lib/
+

@@ -24,10 +24,9 @@ fn main() {
     } else {
         format!("{os}_{arch}_{lib_name}.o")
     };
-    let root = manifest.join("../../..").canonicalize().unwrap();
     let library = env::var_os("BAC_LIB_PATH")
         .map(PathBuf::from)
-        .unwrap_or_else(|| root.join("bac/bindgen/lib/").join(lib_name));
+        .unwrap_or_else(|| manifest.join("lib").join(lib_name));
     assert!(
         library.is_file(),
         "BAC library not found at {}. Set BAC_LIB_PATH to a BAC object, or run \

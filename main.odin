@@ -2,6 +2,7 @@
 package main
 
 import "bac"
+import "core:debug/trace"
 import "core:fmt"
 import "core:log"
 import "core:os"
@@ -9,8 +10,7 @@ import "core:reflect"
 import "core:strings"
 import "core:time"
 import "typecheck"
-import "vendored/gam/util/arna"
-import "vendored/gam/util/hot"
+import "utils/arna"
 
 main :: proc() {
 	when #config(FUZZ, false) {
@@ -18,7 +18,9 @@ main :: proc() {
 		return
 	}
 
-	context.assertion_failure_proc = hot.init_trace()
+	when ODIN_DEBUG {
+		context.assertion_failure_proc = trace.assertion_failure_proc
+	}
 	context.logger = log.create_console_logger()
 	context.logger.options &= ~{.Time, .Date, .Level, .Procedure}
 
@@ -117,7 +119,7 @@ main :: proc() {
 	arna.scratch[1].reserved = 64 * 1024 * 1024
 
 	types: typecheck.Types
-	types.mems.graph.reserved = 4096 * 16384
+	types.mems.prc.reserved = 4096 * 16384
 	types.mems.regalloc.reserved = 4096 * 8192
 	types.mems.scratch.reserved = 4096 * 2048
 	types.mems.code.reserved = 4096 * 4096
@@ -151,7 +153,7 @@ main :: proc() {
 	ctx.global = &global_ctx
 	ctx.target = target
 	ctx.check = check
-	ctx.graph.has_dbg = debug
+	ctx.prc.has_dbg = debug
 	ctx.ralloc_mode = level.ralloc_mode
 	ctx.errors = os.to_writer(os.stderr)
 

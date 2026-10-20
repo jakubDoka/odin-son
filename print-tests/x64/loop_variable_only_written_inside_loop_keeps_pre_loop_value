@@ -1,20 +1,16 @@
 =========== OPT LEVEL: none-quick ===========
 main:
-    push rbx
     xor ecx, ecx
     mov rax, 0x2a
 1:
     cmp rcx, 3
-    jz 2
+    je 2
     mov rdx, rcx
     add rdx, 8
-    mov rbx, rcx
-    add rbx, 1
+    add rcx, 1
     mov rax, rdx
-    mov rcx, rbx
     jmp 1
 2:
-    pop rbx
     ret
 =========== OPT LEVEL: none ===========
 main:
@@ -22,7 +18,7 @@ main:
     mov rax, 0x2a
 1:
     cmp rcx, 3
-    jz 2
+    je 2
     mov rax, rcx
     add rax, 8
     add rcx, 1
@@ -31,21 +27,17 @@ main:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 main:
-    push rbx
     xor ecx, ecx
     mov rax, 0x2a
 1:
     cmp rcx, 3
-    jz 2
+    je 2
     mov rdx, rcx
     add rdx, 8
-    mov rbx, rcx
-    add rbx, 1
+    add rcx, 1
     mov rax, rdx
-    mov rcx, rbx
     jmp 1
 2:
-    pop rbx
     ret
 =========== OPT LEVEL: moderate ===========
 main:
@@ -53,7 +45,7 @@ main:
     mov rax, 0x2a
 1:
     cmp rcx, 3
-    jz 2
+    je 2
     mov rax, rcx
     add rax, 8
     add rcx, 1
@@ -62,17 +54,17 @@ main:
     ret
 =========== OPT LEVEL: all ===========
 main:
-    xor edx, edx
-    mov rcx, 0x2a
+    xor ecx, ecx
+    mov rdx, 0x2a
 1:
-    mov rax, rcx
-    cmp rdx, 3
-    setz sil
+    mov rax, rdx
+    cmp rcx, 3
+    sete sil
     movzx rsi, sil
-    mov rcx, rdx
-    add rcx, 8
-    add rdx, 1
+    mov rdx, rcx
+    add rdx, 8
+    add rcx, 1
     test sil, sil
-    jz 1
+    je 1
     ret
 =========== OPT LEVEL: aggresive ===========

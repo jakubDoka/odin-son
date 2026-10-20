@@ -1,12 +1,10 @@
-package builder
+package bac_ssa
 import bac ".."
 Reg_Kind :: bac.Reg_Kind
 Class_Flag :: bac.Class_Flag
 // NOTE: this file is generated: 
 
-SPEC := bac.Node_Spec{
-	cc_table = {
-	},
+@(tag = "api", rodata, export, link_name = "bac_ssa_SPEC")SPEC := bac.Node_Spec{
 	call_clobbers = {
 	},
 	datatype_to_reg_kind = {.Void = 0, .Mem = 0, .I8 = 0, .I16 = 0, .I32 = 0, .I64 = 0, .F32 = 0, .F64 = 0, .V128 = 0, .V256 = 0, .V512 = 0},
@@ -185,7 +183,7 @@ SPEC := bac.Node_Spec{
 		{}, // Scope
 		{}, // Lazy_Phi
 	},
-	node_extra_types = {
+	node_extra_types = ({}) when #config(NO_FMT, false) else ([]typeid{
 		0 = bac.Cfg,
 		1 = bac.Cfg,
 		2 = bac.Cfg,
@@ -207,9 +205,9 @@ SPEC := bac.Node_Spec{
 		27 = bac.CInt,
 		55 = bac.Tup,
 		69 = Scope,
-		70 = nil,
-	},
-	node_kind = Node_Type,
+		70 = {},
+	}),
+	node_kind = nil when #config(NO_FMT, false) else Node_Type,
 }
 
 Node_Type :: enum u16 {
@@ -296,31 +294,33 @@ post_schedule_peep_inst :: proc(
 	return post_schedule_peep(ctx, node, struct{}{})
 }
 
-add_scope :: #force_inline proc(graph: ^bac.Proc, name: string, cfg: bac.Node_ID) -> (_id: bac.Node_ID) {
-	(^Scope)(bac.get_next_extra_slot(graph, u16(Node_Type.Scope), 0))^ = {}
-	return bac.add_raw(graph, name, u16(Node_Type.Scope), .Void, {cfg})
+@(tag = "api")
+add_scope :: #force_inline proc(prc: ^bac.Proc, name: string, cfg: bac.Node_ID) -> (_id: bac.Node_ID) {
+	(^Scope)(bac.get_next_extra_slot(prc, u16(Node_Type.Scope), 0))^ = {
+	}
+	return bac.add_raw(prc, name, u16(Node_Type.Scope), .Void, {cfg})
 }
-add_lazy_phi :: #force_inline proc(graph: ^bac.Proc, name: string, dt: bac.Node_Datatype, reg: bac.Node_ID, lhs: bac.Node_ID) -> (_id: bac.Node_ID) {
-	return bac.add_raw(graph, name, u16(Node_Type.Lazy_Phi), dt, {reg, lhs}, {extra_capacity = 1,})
+add_lazy_phi :: #force_inline proc(prc: ^bac.Proc, name: string, dt: bac.Node_Datatype, reg: bac.Node_ID, lhs: bac.Node_ID) -> (_id: bac.Node_ID) {
+	return bac.add_raw(prc, name, u16(Node_Type.Lazy_Phi), dt, {reg, lhs}, {extra_capacity = 1,})
 }
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	when false {}
-	else when T == bac.Local {return 4}
-	else when T == bac.Dbg_Sym {return 2}
-	else when T == bac.Tup {return 5}
 	else when T == bac.No_Extra {return 1}
+	else when T == bac.Local {return 4}
 	else when T == bac.Call {return 3}
-	else when T == bac.Cfg {return 0}
-	else when T == bac.CInt {return 6}
 	else when T == Scope {return 7}
+	else when T == bac.Cfg {return 0}
+	else when T == bac.Dbg_Sym {return 2}
+	else when T == bac.CInt {return 6}
+	else when T == bac.Tup {return 5}
 	else {#panic(`the passed type is not subclass of anything`)}
 }
-#assert(size_of(bac.Local) % bac.PRECISION == 0)
-#assert(size_of(bac.Dbg_Sym) % bac.PRECISION == 0)
-#assert(size_of(bac.Tup) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
+#assert(size_of(bac.Local) % bac.PRECISION == 0)
 #assert(size_of(bac.Call) % bac.PRECISION == 0)
-#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
-#assert(size_of(bac.CInt) % bac.PRECISION == 0)
 #assert(size_of(Scope) % bac.PRECISION == 0)
+#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
+#assert(size_of(bac.Dbg_Sym) % bac.PRECISION == 0)
+#assert(size_of(bac.CInt) % bac.PRECISION == 0)
+#assert(size_of(bac.Tup) % bac.PRECISION == 0)

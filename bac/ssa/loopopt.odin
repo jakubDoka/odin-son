@@ -1,20 +1,21 @@
-package builder
+package bac_ssa
 
 import bac ".."
-import "../../vendored/gam/util/arna"
-import "../../vendored/gam/util/bit_arr"
-import "core:fmt"
+import "../../utils/arna"
+import "../../utils/bit_arr"
+import "../../utils/fmt"
 import "core:math"
 import "core:slice"
 
-loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
-	context.allocator, _ = arna.scrath()
+@(tag = "api")
+loopopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
+	context.allocator, _ = arna.scrath(prc.temps)
 
-	if .Loop_Opt not_in graph.opt_flags do return
-	bac.pass_quard(graph, .Loop, &optimized) or_return
+	if .Loop_Opt not_in prc.opt_flags do return
+	bac.pass_quard(prc, .Loop, &optimized) or_return
 
 	Ctx :: struct {
-		using graph:  ^bac.Proc,
+		using prc:    ^bac.Proc,
 		sched:        bac.Schedule,
 		cloned_up:    []Node_ID,
 		cloned_down:  []Node_ID,
@@ -25,25 +26,25 @@ loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 	}
 
 	ctx: Ctx
-	ctx.graph = graph
-	ctx.cloned_up = make([]Node_ID, graph.gvn * 2)
-	ctx.cloned_down = make([]Node_ID, graph.gvn * 2)
-	ctx.node_blocks = make(type_of(ctx.node_blocks), graph.gvn * 2)
-	bac.schedule_graph(graph, &ctx.sched, .for_loopopt)
+	ctx.prc = prc
+	ctx.cloned_up = make([]Node_ID, prc.gvn * 2)
+	ctx.cloned_down = make([]Node_ID, prc.gvn * 2)
+	ctx.node_blocks = make(type_of(ctx.node_blocks), prc.gvn * 2)
+	bac.schedule_graph(prc, &ctx.sched, .for_loopopt)
 
 	if 2 == 3 {
-		//	bac.display_graph(os.to_writer(os.stderr), graph, &ctx.sched)
+		//	bac.display_graph(os.to_writer(os.stderr), prc, &ctx.sched)
 	}
 
 	reserve(&ctx.sched.bbs, len(ctx.sched.bbs) * 2)
 	ctx.sched.bbs.allocator = {}
 
 	for &bb in ctx.sched.bbs {
-		hnode := get_node(ctx.graph, bb.head)
+		hnode := get_node(ctx.prc, bb.head)
 		ctx.node_blocks[hnode.gvn] = &bb
 		for instr in bb.instrs {
-			if bac.has_flag(ctx.graph, instr, .Is_Basic_Block_Start) {continue}
-			inode := get_node(ctx.graph, instr)
+			if bac.has_flag(ctx.prc, instr, .Is_Basic_Block_Start) {continue}
+			inode := get_node(ctx.prc, instr)
 			ctx.node_blocks[inode.gvn] = &bb
 		}
 	}
@@ -265,7 +266,7 @@ loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 	optimized |= rotated
 
 	if rotated {
-		bac.invalidate_idepth(graph)
+		bac.invalidate_idepth(prc)
 		bac.schedule_graph(ctx, &ctx.sched, .for_loopopt)
 	}
 
@@ -283,7 +284,7 @@ loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 
 		inverted := bedge.outs[0].id != bb.head
 		cond := expand_node(ctx, bedge.inps[1])
-		if bac.operation_datatype(ctx.graph, cond) not_in bac.INT_DTS do continue
+		if bac.operation_datatype(ctx.prc, cond) not_in bac.INT_DTS do continue
 
 		@(rodata, static)
 		CMP_OP_REVERSE := #partial [bac.Node_Type]bac.Node_Type {
@@ -391,7 +392,7 @@ loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 				}
 
 				for cout in add_candidates {
-					conode := expand_node(graph, cout.id)
+					conode := expand_node(prc, cout.id)
 					if conode.itype != .Add do continue
 					if conode.dt not_in bac.INT_DTS do continue
 
@@ -581,7 +582,7 @@ loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 
 					if can_memset {
 						cpy = bac.add_set(
-							graph,
+							prc,
 							"mstf",
 							head.inps[0],
 							mem.inps[1],
@@ -593,7 +594,7 @@ loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 
 					if can_memcpy {
 						cpy = bac.add_copy(
-							graph,
+							prc,
 							"mcpf",
 							head.inps[0],
 							mem.inps[1],
@@ -609,8 +610,8 @@ loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 					}
 
 					if cpy != 0 {
-						bac.set_input(graph, snode.inps[1], 1, cpy)
-						bac.subsume(graph, snode.inps[1], store.node)
+						bac.set_input(prc, snode.inps[1], 1, cpy)
+						bac.subsume(prc, snode.inps[1], store.node)
 						continue
 					}
 				}
@@ -810,10 +811,10 @@ loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 			if node.itype == .Phi && node.inps[0] == ctx.current_loop {
 				cloned[node.gvn] = node.inps[phy_idx]
 			} else {
-				graph := ctx.graph
+				prc := ctx.prc
 				PRECISION :: bac.PRECISION
 
-				prev := graph.mem.pos
+				prev := prc.mem.pos
 
 				inps := make([]Node_ID, len(node.inps))
 
@@ -821,29 +822,29 @@ loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 					inp = clone_by(ctx, node.inps[i], phy_idx, ctrl)
 				}
 
-				new_node, id := bac.shallow_clone(graph, node)
-				bac.init_counts(graph, new_node)
+				new_node, id := bac.shallow_clone(prc, node)
+				bac.init_counts(prc, new_node)
 
-				new_node.input_idx = u32(graph.mem.pos / bac.PRECISION)
-				_ = arna.clone(graph.mem, inps)
+				new_node.input_idx = u32(prc.mem.pos / bac.PRECISION)
+				_ = arna.clone(prc.mem, inps)
 				new_node.input_cap = new_node.input_count
 
 				// This should be fine since we kind of reserver memory for
 				// dependants, even if we overallocate its a good estimate
-				new_node.output_idx = u32(graph.mem.pos / bac.PRECISION)
+				new_node.output_idx = u32(prc.mem.pos / bac.PRECISION)
 				_ = arna.alloc(
-					graph.mem,
+					prc.mem,
 					uint(node.output_cap * size_of(bac.Node_Output)),
 					bac.PRECISION,
 				)
 				new_node.output_count = 0
 				new_node.output_cap = node.output_cap
 
-				interned := bac.intern(graph, id)
+				interned := bac.intern(prc, id)
 				if interned != id {
-					graph.mem.pos = prev
+					prc.mem.pos = prev
 					id = interned
-					graph.gvn -= 1
+					prc.gvn -= 1
 					cloned[node.gvn] = id
 				} else {
 					ctx.node_blocks[new_node.gvn] = ctrl
@@ -853,7 +854,7 @@ loopopt :: proc(graph: ^bac.Proc) -> (optimized: bool) {
 						bac.add_output(ctx, inp, cloned[node.gvn], i)
 					}
 
-					bac.on_node_creation(graph, new_node)
+					bac.on_node_creation(prc, new_node)
 					// NOTE: no need to clone the debug info
 				}
 			}

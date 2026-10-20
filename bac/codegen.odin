@@ -1,12 +1,11 @@
 package bac
 
-import "../vendored/gam/util/arna"
+import "../utils/arna"
+import "../utils/fmt"
 import "base:intrinsics"
 import "base:runtime"
 import "core:encoding/varint"
-import "core:fmt"
 import "core:mem"
-import "core:reflect"
 import "core:slice"
 import "core:sort"
 
@@ -26,7 +25,6 @@ Dbg_Data_Def :: struct {
 }
 
 Call_Conv :: struct {
-	name:          string,
 	callee_saved:  [][]Reg,
 	caller_saved:  [][]Reg,
 	args:          [][]Reg,
@@ -81,18 +79,19 @@ PS_Peep_Fn :: proc(_: PS_Peep_Ctx, node: Expanded_Node) -> Node_ID
 Pre_Regalloc_Hook :: proc(_: ^Regalloc, _: ^Proc, _: ^Schedule)
 
 PS_Peep_Ctx :: struct {
-	using graph: ^Proc,
-	preds:       []Node_ID,
+	using prc: ^Proc,
+	preds:     []Node_ID,
 }
 
 Codegen_Emit_Ctx :: struct {
-	using graph:        ^Proc,
+	using prc:          ^Proc,
 	using schedule:     ^Schedule,
 	using dbg_data:     ^Dbg_Data,
 	using abi:          ^Call_Conv,
 	using buf:          Codegen_Emit_Buf,
 	emit_got_imports:   bool,
 	lib_calls:          Lib_Calls,
+	regalloc_mode:      Regalloc_Mode,
 	using ra_out:       Regalloc_Output,
 	param_specs:        []Param_Spec,
 	// NOTE: these are filled in by the backend
@@ -228,23 +227,20 @@ Reloc_Slot :: struct #raw_union #align (1) {
 	},
 }
 
-emit_function :: proc(ctx: Codegen_Emit_Ctx) -> (res: Codegen_Output) {
-	check := buf_checkpoint(ctx.buf)
-	res.emit = ctx.graph.emit_function(ctx)
-	res.bufs = buf_output(ctx.buf, check)
-	return
-}
-
 buf_checkpoint :: proc(
-	buf: Codegen_Emit_Buf,
+	buf: ^Codegen_Emit_Buf,
 ) -> (
 	out: Codegen_Emit_Buf_Checkpoint,
 ) {
 	buf := buf
-	arenas := mem.slice_data_cast([]^arna.Allocator, mem.ptr_to_bytes(&buf))
+	arenas := mem.slice_data_cast([]^arna.Allocator, mem.ptr_to_bytes(buf))
 	checks := mem.slice_data_cast([]uint, mem.ptr_to_bytes(&out))
 
+	@(rodata, static)
+	ARNA_SENTINEL: arna.Allocator
+
 	for i in 0 ..< len(arenas) {
+		if arenas[i] == nil do arenas[i] = &ARNA_SENTINEL
 		checks[i] = arenas[i].pos
 	}
 	return
@@ -261,24 +257,34 @@ buf_output :: proc(
 	checks := mem.slice_data_cast([]uint, mem.ptr_to_bytes(&check))
 	slices := mem.slice_data_cast([]runtime.Raw_Slice, mem.ptr_to_bytes(&out))
 
-	decl := type_info_of(Codegen_Output_Bufs).variant.(runtime.Type_Info_Named)
-	struc := decl.base.variant.(runtime.Type_Info_Struct)
+	ELEM_SIZES :: [?]int {
+		size_of(u8),
+		size_of(u8),
+		size_of(Reloc),
+		size_of(Sloc),
+		size_of(Cfi_Op),
+		size_of(Dbg_Location),
+	}
+	#assert(
+		len(ELEM_SIZES) ==
+		intrinsics.type_struct_field_count(Codegen_Output_Bufs),
+	)
 
-	for f, i in struc.types[:len(slices)] {
+	for size, i in ELEM_SIZES {
 		slices[i].data = arenas[i].ptr[checks[i]:]
-		slices[i].len =
-			int(arenas[i].pos - checks[i]) /
-			f.variant.(runtime.Type_Info_Slice).elem.size
+		slices[i].len = int(arenas[i].pos - checks[i]) / size
 	}
 
 	return
 }
 
 next_sloc :: proc(ctx: ^Codegen_Emit_Ctx) {
-	cx := ctx.sloc
-	cx.range = u32(ctx.code.pos - ctx.last_off)
-	add_sloc(ctx.slocs)^ = cx
-	ctx.last_off = ctx.code.pos
+	if ctx.has_dbg {
+		cx := ctx.sloc
+		cx.range = u32(ctx.code.pos - ctx.last_off)
+		add_sloc(ctx.slocs)^ = cx
+		ctx.last_off = ctx.code.pos
+	}
 }
 
 mount_sloc :: proc(ctx: ^Codegen_Emit_Ctx, node: Node_ID) {
@@ -286,23 +292,24 @@ mount_sloc :: proc(ctx: ^Codegen_Emit_Ctx, node: Node_ID) {
 	ctx.last_off = ctx.code.pos
 }
 
+@(tag = "api")
 take_dbg_data :: proc(
-	graph: ^Proc,
+	prc: ^Proc,
 	sched: ^Schedule,
 	data: ^Dbg_Data,
 	scratch := context.allocator,
 ) {
-	context.allocator, _ = arna.scrath(scratch)
+	context.allocator, _ = arna.scrath(prc.temps, scratch)
 
-	if !graph.has_dbg do return
+	if !prc.has_dbg do return
 
 	Ctx :: struct {
-		using graph: ^Proc,
+		using prc:   ^Proc,
 		using sched: ^Schedule,
 	}
 
 	ctx: Ctx
-	ctx.graph = graph
+	ctx.prc = prc
 	ctx.sched = sched
 
 	data.syms = make([dynamic]Dbg_Data_Sym, scratch)
@@ -405,7 +412,7 @@ take_dbg_data :: proc(
 		resize(&sym.defs, keep)
 	}
 
-	schedule_graph(graph, sched, .for_regalloc, scratch)
+	schedule_graph(prc, sched, .for_regalloc, scratch)
 }
 
 reg_of :: proc(ctx: Codegen_Emit_Ctx, id: Node_ID) -> Reg {
@@ -415,7 +422,7 @@ reg_of :: proc(ctx: Codegen_Emit_Ctx, id: Node_ID) -> Reg {
 }
 
 emit_dbg_locations :: proc(ctx: Codegen_Emit_Ctx) {
-	context.allocator, _ = arna.scrath()
+	context.allocator, _ = arna.scrath(ctx.prc.temps)
 
 	rsp := ctx.abi.stack_pointer
 
@@ -583,23 +590,24 @@ emit_dbg_locations :: proc(ctx: Codegen_Emit_Ctx) {
 }
 
 cc_node_meta :: proc(
-	graph: ^Proc,
+	prc: ^Proc,
 	ra: ^Regalloc,
 	node: Expanded_Node,
+	cc_table: []Call_Conv,
 ) -> Regalloc_Node_Meta {
 	cc := ra.cc
 	// NOTE: this handles the edge case where there is no memory returned,
 	// this happens when we only have infinite loops that terminate the
 	// function
 	prefix := min(2, len(node.inps))
-	call: ^Call = get_extra(graph, node, Call)
+	call: ^Call = get_extra(prc, node, Call)
 	if call != nil {
 		prefix = CALL_PREFIX
-		cc = &graph.cc_table[call.ccid]
+		cc = &cc_table[call.ccid]
 	}
 
 	real_len := len(node.inps)
-	for ; get_node(graph, node.inps[real_len - 1]).itype == .Local;
+	for ; get_node(prc, node.inps[real_len - 1]).itype == .Local;
 	    real_len -= 1 {}
 
 	inited := prefix
@@ -611,12 +619,12 @@ cc_node_meta :: proc(
 
 	counts := make([]int, len(ra.spill_boundary))
 	for n, i in node.inps[inited:real_len] {
-		rk := graph.datatype_to_reg_kind[get_node(graph, n).dt]
+		rk := prc.datatype_to_reg_kind[get_node(prc, n).dt]
 		nmasks[i] = rm_intern_single(ra, banks[rk][counts[rk]])
 		counts[rk] += 1
 	}
 
-	if call != nil && call.indirect {
+	if is_indirect_call(node) && !cc.is_syscall {
 		nmasks[len(nmasks) - 1] = {}
 	}
 
@@ -624,14 +632,14 @@ cc_node_meta :: proc(
 }
 
 param_mask :: proc(
-	graph: ^Proc,
+	prc: ^Proc,
 	ra: ^Regalloc,
 	node: ^Node,
 	mask: Maybe(Reg) = nil,
 ) -> RM_Intern_Idx {
 	kind := ra.datatype_to_reg_kind[node.dt]
 	args := ra.args[kind]
-	arg_ext := get_extra(graph, node, Tup)
+	arg_ext := get_extra(prc, node, Tup)
 	idx := 0
 	for a in ra.param_specs[:arg_ext.idx] {
 		if a.dt == .Void do continue
@@ -658,15 +666,15 @@ param_mask :: proc(
 }
 
 ret_mask :: proc(
-	graph: ^Proc,
+	prc: ^Proc,
 	ra: ^Regalloc,
 	node: Expanded_Node,
 ) -> RM_Intern_Idx {
 	// TODO: this is actually incorrect, we need to iterate the previous
 	// rets to figure this out safely
-	cend := expand_node(graph, node.inps[0])
-	call := get_extra(graph, cend.inps[0], Call)
-	ret_ext := get_extra(graph, node, Tup)
+	cend := expand_node(prc, node.inps[0])
+	call := get_extra(prc, cend.inps[0], Call)
+	ret_ext := get_extra(prc, node, Tup)
 	kind := ra.datatype_to_reg_kind[node.dt]
 
 	idx := 0
@@ -682,12 +690,9 @@ emit :: #force_no_inline proc(buf: ^arna.Allocator, bytes: []u8) {
 	copy(b, bytes)
 }
 
-emit_anys :: #force_no_inline proc(buf: ^arna.Allocator, values: ..any) {
-	for value in values {
-		b := reflect.as_bytes(value)
-		bytes := arna.smake(buf, []u8, len(b), zeroed = false)
-		copy(bytes, b)
-	}
+emit_anys :: #force_inline proc(buf: ^arna.Allocator, value: $T) {
+	value := value
+	emit(buf, mem.ptr_to_bytes(&value))
 }
 
 emit_aligned :: #force_no_inline proc(buf: ^arna.Allocator, vl: $T) -> ^T {
@@ -731,7 +736,7 @@ emit_leb :: proc(buf: ^arna.Allocator, value: $T) {
 
 	LEB_MAX_BYTES :: 10
 	bf := arna.alloc(buf, LEB_MAX_BYTES, 1)
-	size := encode(bf, up(value)) or_else panic("")
+	size := encode(bf, up(value)) or_else fmt.panicf("")
 	buf.pos -= len(bf) - uint(size)
 }
 
@@ -775,7 +780,7 @@ compute_param_offsets :: proc(
 	for param, i in ctx.param_specs {
 		param_id := params[i]
 
-		extra := get_extra(ctx.graph, param_id, Local)
+		extra := get_extra(ctx.prc, param_id, Local)
 		if extra != nil {
 			fmt.assertf(
 				extra.size == param.size,

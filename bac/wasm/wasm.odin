@@ -1,10 +1,10 @@
-package wasm
+package bac_wasm
 
 import bac ".."
-import "../../vendored/gam/util/arna"
+import "../../utils/arna"
+import "../../utils/fmt"
 import "base:runtime"
 import "core:encoding/varint"
-import "core:fmt"
 import "core:slice"
 import "core:sort"
 
@@ -28,11 +28,11 @@ wtype :: #force_inline proc(node: bac.Expanded_Node) -> Node_Type {
 }
 
 wextra :: #force_inline proc(
-	graph: ^bac.Proc,
+	prc: ^bac.Proc,
 	node: ^bac.Node,
 	$T: typeid,
 ) -> ^T {
-	if graph.inheritance_table[node.rtype] & (1 << inherit_idx_of(T)) == 0 {
+	if prc.inheritance_table[node.rtype] & (1 << inherit_idx_of(T)) == 0 {
 		return nil
 	}
 	return (^T)(&node.extra)
@@ -40,9 +40,13 @@ wextra :: #force_inline proc(
 
 SPEC_NOT_PRESENT :: (#load("node_specs.odin", string) or_else "") == ""
 
-WASM_SYSTEMV_CC := bac.Call_Conv {
-	name = "WASM_SYSTEMV_CC",
-	args = {0 ..= RK_COUNT = transmute([]Reg)runtime.Raw_Slice{len = 64}},
+WASM_SYSTEMV_CC :: 0
+
+@(tag = "api", export, link_name = "bac_wasm_CC_TABLE")
+CC_TABLE := [?]bac.Call_Conv {
+	WASM_SYSTEMV_CC = {
+		args = {0 ..= RK_COUNT = transmute([]Reg)runtime.Raw_Slice{len = 64}},
+	},
 }
 
 Lane_Op :: struct {
@@ -74,7 +78,7 @@ when SPEC_NOT_PRESENT {
 	}
 
 	add_extract_lane_u :: proc(
-		graph: ^bac.Proc,
+		prc: ^bac.Proc,
 		name: string,
 		dt: bac.Node_Datatype,
 		vec: bac.Node_ID,
@@ -84,7 +88,7 @@ when SPEC_NOT_PRESENT {
 	}
 
 	add_select :: proc(
-		graph: ^bac.Proc,
+		prc: ^bac.Proc,
 		name: string,
 		dt: bac.Node_Datatype,
 		on_true, on_false, condition: bac.Node_ID,
@@ -355,7 +359,7 @@ post_schedule_peep :: proc(
 }
 
 meta_of :: #force_inline proc(
-	graph: ^bac.Proc,
+	prc: ^bac.Proc,
 	ra: ^bac.Regalloc,
 	node: bac.Expanded_Node,
 	_: $T,
@@ -387,11 +391,15 @@ meta_of :: #force_inline proc(
 
 	imasks := masks
 	if 0 < len(node.inps) {
-		irk := ra.datatype_to_reg_kind[get_node(graph, node.inps[0]).dt]
+		irk := ra.datatype_to_reg_kind[get_node(prc, node.inps[0]).dt]
 		imasks = SLOT_TABLE[irk][:]
 	}
 
 	if node.gvn == 1 {
+		if ra.cc == nil {
+			ra.cc = &CC_TABLE[WASM_SYSTEMV_CC]
+		}
+
 		ra.mask_len = MASK_SIZE
 		for kind in 0 ..< RK_COUNT {
 			rslice(ra, kind, FULL_MASK[:])
@@ -452,7 +460,7 @@ meta_of :: #force_inline proc(
 		slice.fill(pmasks, mask)
 		return {out = mask, input_start = 1, masks = pmasks}
 	case .Param:
-		return {out = bac.param_mask(graph, ra, node)}
+		return {out = bac.param_mask(prc, ra, node)}
 	case .Tee_Local:
 		return {out = mask}
 	case .Set_Local:
@@ -466,14 +474,14 @@ meta_of :: #force_inline proc(
 
 pre_regalloc_hook :: proc(
 	ra: ^bac.Regalloc,
-	graph: ^bac.Proc,
+	prc: ^bac.Proc,
 	sched: ^bac.Schedule,
 ) {
 	// NOTE: try to find a efficient ordering of instructions to use the wasm
 	// stack as much as possible, its greedy
 
 	Ctx :: struct {
-		using graph: ^bac.Proc,
+		using prc: ^bac.Proc,
 		metas:       []Meta,
 		instrs:      ^[dynamic]bac.Node_ID,
 		sets:        []bac.Node_ID,
@@ -482,10 +490,10 @@ pre_regalloc_hook :: proc(
 	}
 
 	ctx: Ctx
-	ctx.graph = graph
+	ctx.prc = prc
 
-	graph.dont_delete, graph.dont_intern = true, true
-	defer graph.dont_delete, graph.dont_intern = false, false
+	prc.dont_delete, prc.dont_intern = true, true
+	defer prc.dont_delete, prc.dont_intern = false, false
 
 	for bb, i in sched.bbs {
 		get_node(ctx, bb.head).gvn = u32(i)
@@ -667,16 +675,16 @@ pre_regalloc_hook :: proc(
 		slots: []Meta,
 		def_count: int,
 	) {
-		graph := ctx.graph
+		prc := ctx.prc
 
-		slots = make([]Meta, int(graph.gvn) - len(sched.bbs))
-		rev_count := int(graph.gvn) - len(sched.bbs)
+		slots = make([]Meta, int(prc.gvn) - len(sched.bbs))
+		rev_count := int(prc.gvn) - len(sched.bbs)
 
 		idx := 0
 		for bb, j in sched.bbs {
-			get_node(graph, bb.head).gvn = u32(len(slots) + 1 + j)
+			get_node(prc, bb.head).gvn = u32(len(slots) + 1 + j)
 			for instr in bb.instrs {
-				inode := expand_node(graph, instr)
+				inode := expand_node(prc, instr)
 
 				inode.gvn = u32(idx)
 				idx += 1
@@ -909,7 +917,7 @@ LOCAL_TO_WASM := [Local_Type]Type {
 }
 
 emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
-	context.allocator, _ = arna.scrath()
+	context.allocator, _ = arna.scrath(ectx.prc.temps)
 
 	ctx: Ctx
 	ctx.inner = ectx
@@ -921,8 +929,8 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 	ctx.code_start = ctx.code.pos
 	ctx.constants_start = ctx.constants.pos
 
-	bac.layout_call_args(ctx.graph, ctx.schedule, &ctx.stack_size)
-	bac.layout_locals(ctx.graph, ctx.schedule, &ctx.stack_size)
+	bac.layout_call_args(ctx.prc, ctx.schedule, &ctx.stack_size)
+	bac.layout_locals(ctx.prc, ctx.schedule, &ctx.stack_size)
 
 	compute_blocks: {
 		ctx.blocks = make([dynamic]Block, 1, len(ctx.schedule.bbs) + 1)
@@ -1238,7 +1246,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 			emit_leb(ctx.code, cint.value)
 			emit_op_fd(ctx.code, .I32x4_Splat)
 		case .Void, .Mem, .V256, .V512:
-			panic("no")
+			fmt.panicf("no")
 		}
 	case .WASM_Shl ..= .WASM_U_Shr, .Select:
 		emit_op(ctx.code, op)
@@ -1290,7 +1298,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 				}
 			case .I32:
 			case .Void, .Mem, .I64 ..= .V512:
-				panic("NO")
+				fmt.panicf("NO")
 			}
 
 			if node.dt == .I64 {
@@ -1455,7 +1463,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 	case .Call:
 		call := bac.get_extra(ctx, node, bac.Call)
 
-		if call.indirect {
+		if bac.is_indirect_call(node) {
 			emit_op(ctx.code, .I32_Wrap_I64)
 			emit_op(ctx.code, .Call_Indirect)
 			bac.add_reloc(ctx.relocs)^ = {

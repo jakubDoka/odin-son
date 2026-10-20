@@ -3,29 +3,29 @@ opaque32:
     ret
 test_f32:
     ucomiss xmm0, xmm1
-    setz al
+    sete al
     jnp 2
     mov al, 0
 2:
     movzx rax, al
     test al, al
-    jnz 9
+    jne 9
     ucomiss xmm0, xmm1
-    setnz al
+    setne al
     jnp 3
     mov al, 1
 3:
     movzx rax, al
     test al, al
-    jnz 8
+    jne 8
     ucomiss xmm1, xmm0
-    jnbe 7
+    ja 7
     ucomiss xmm0, xmm1
-    jnc 6
+    jae 6
     ucomiss xmm0, xmm1
-    jnbe 5
+    ja 5
     ucomiss xmm1, xmm0
-    jnc 4
+    jae 4
     xor eax, eax
     jmp 10
 4:
@@ -49,28 +49,28 @@ test_f32:
     ret
 test_f64:
     ucomisd xmm0, xmm1
-    setz al
+    sete al
     jnp +0x3
     mov al, 0
     movzx rax, al
     test al, al
-    jnz 18
+    jne 18
     ucomisd xmm0, xmm1
-    setnz al
+    setne al
     jnp 12
     mov al, 1
 12:
     movzx rax, al
     test al, al
-    jnz 17
+    jne 17
     ucomisd xmm1, xmm0
-    jnbe 16
+    ja 16
     ucomisd xmm0, xmm1
-    jnc 15
+    jae 15
     ucomisd xmm0, xmm1
-    jnbe 14
+    ja 14
     ucomisd xmm1, xmm0
-    jnc 13
+    jae 13
     xor eax, eax
     jmp 19
 13:
@@ -104,43 +104,43 @@ test_mixed_patterns:
     call opaque32
     movss.d xmm1, [rsp + 0x10]
     ucomiss xmm0, xmm1
-    jnbe 21
+    ja 21
     jmp 24
 21:
     movss.d xmm1, [rsp + 0x10]
     ucomiss xmm0, xmm1
-    jnc 22
+    jae 22
     jmp 24
 22:
     movss.d xmm1, [rsp + 0x10]
     ucomiss xmm1, xmm0
-    setnz al
+    setne al
     jnp 23
     mov al, 1
 23:
     movzx rax, al
     test al, al
-    jnz 30
+    jne 30
 24:
     movss.d xmm1, [rsp + 0x10]
     ucomiss xmm1, xmm0
-    jnbe 25
+    ja 25
     jmp 28
 25:
     movss.d xmm1, [rsp + 0x10]
     ucomiss xmm1, xmm0
-    jnc 26
+    jae 26
     jmp 28
 26:
     movss.d xmm1, [rsp + 0x10]
     ucomiss xmm1, xmm0
-    setz al
+    sete al
     jnp 27
     mov al, 0
 27:
     movzx rax, al
     test al, al
-    jnz 29
+    jne 29
 28:
     xor eax, eax
     jmp 31
@@ -213,29 +213,29 @@ opaque32:
     ret
 test_f32:
     ucomiss xmm0, xmm1
-    setz al
+    sete al
     jnp 2
     mov al, 0
 2:
     movzx rax, al
     test al, al
-    jnz 9
+    jne 9
     ucomiss xmm0, xmm1
-    setnz al
+    setne al
     jnp 3
     mov al, 1
 3:
     movzx rax, al
     test al, al
-    jnz 8
+    jne 8
     ucomiss xmm1, xmm0
-    jnbe 7
+    ja 7
     ucomiss xmm0, xmm1
-    jnc 6
+    jae 6
     ucomiss xmm0, xmm1
-    jnbe 5
+    ja 5
     ucomiss xmm1, xmm0
-    jnc 4
+    jae 4
     xor eax, eax
     jmp 10
 4:
@@ -259,28 +259,28 @@ test_f32:
     ret
 test_f64:
     ucomisd xmm0, xmm1
-    setz al
+    sete al
     jnp +0x3
     mov al, 0
     movzx rax, al
     test al, al
-    jnz 18
+    jne 18
     ucomisd xmm0, xmm1
-    setnz al
+    setne al
     jnp 12
     mov al, 1
 12:
     movzx rax, al
     test al, al
-    jnz 17
+    jne 17
     ucomisd xmm1, xmm0
-    jnbe 16
+    ja 16
     ucomisd xmm0, xmm1
-    jnc 15
+    jae 15
     ucomisd xmm0, xmm1
-    jnbe 14
+    ja 14
     ucomisd xmm1, xmm0
-    jnc 13
+    jae 13
     xor eax, eax
     jmp 19
 13:
@@ -313,43 +313,43 @@ test_mixed_patterns:
     call opaque32
     movss.d xmm1, [rsp]
     ucomiss xmm0, xmm1
-    jnbe 21
+    ja 21
     jmp 24
 21:
     movss.d xmm1, [rsp]
     ucomiss xmm0, xmm1
-    jnc 22
+    jae 22
     jmp 24
 22:
     movss.d xmm1, [rsp]
     ucomiss xmm1, xmm0
-    setnz al
+    setne al
     jnp 23
     mov al, 1
 23:
     movzx rax, al
     test al, al
-    jnz 30
+    jne 30
 24:
     movss.d xmm1, [rsp]
     ucomiss xmm1, xmm0
-    jnbe 25
+    ja 25
     jmp 28
 25:
     movss.d xmm1, [rsp]
     ucomiss xmm1, xmm0
-    jnc 26
+    jae 26
     jmp 28
 26:
     movss.d xmm1, [rsp]
     ucomiss xmm1, xmm0
-    setz al
+    sete al
     jnp 27
     mov al, 0
 27:
     movzx rax, al
     test al, al
-    jnz 29
+    jne 29
 28:
     xor eax, eax
     jmp 31
@@ -425,29 +425,29 @@ opaque32:
     ret
 test_f32:
     ucomiss xmm0, xmm1
-    setz al
+    sete al
     jnp 2
     mov al, 0
 2:
     movzx rax, al
     test al, al
-    jnz 9
+    jne 9
     ucomiss xmm0, xmm1
-    setnz al
+    setne al
     jnp 3
     mov al, 1
 3:
     movzx rax, al
     test al, al
-    jnz 8
+    jne 8
     ucomiss xmm1, xmm0
-    jnbe 7
+    ja 7
     ucomiss xmm0, xmm1
-    jnc 6
+    jae 6
     ucomiss xmm0, xmm1
-    jnbe 5
+    ja 5
     ucomiss xmm1, xmm0
-    jnc 4
+    jae 4
     xor eax, eax
     jmp 10
 4:
@@ -471,28 +471,28 @@ test_f32:
     ret
 test_f64:
     ucomisd xmm0, xmm1
-    setz al
+    sete al
     jnp +0x3
     mov al, 0
     movzx rax, al
     test al, al
-    jnz 18
+    jne 18
     ucomisd xmm0, xmm1
-    setnz al
+    setne al
     jnp 12
     mov al, 1
 12:
     movzx rax, al
     test al, al
-    jnz 17
+    jne 17
     ucomisd xmm1, xmm0
-    jnbe 16
+    ja 16
     ucomisd xmm0, xmm1
-    jnc 15
+    jae 15
     ucomisd xmm0, xmm1
-    jnbe 14
+    ja 14
     ucomisd xmm1, xmm0
-    jnc 13
+    jae 13
     xor eax, eax
     jmp 19
 13:
@@ -526,43 +526,43 @@ test_mixed_patterns:
     call opaque32
     movss.d xmm1, [rsp + 0x10]
     ucomiss xmm0, xmm1
-    jnbe 21
+    ja 21
     jmp 24
 21:
     movss.d xmm1, [rsp + 0x10]
     ucomiss xmm0, xmm1
-    jnc 22
+    jae 22
     jmp 24
 22:
     movss.d xmm1, [rsp + 0x10]
     ucomiss xmm1, xmm0
-    setnz al
+    setne al
     jnp 23
     mov al, 1
 23:
     movzx rax, al
     test al, al
-    jnz 30
+    jne 30
 24:
     movss.d xmm1, [rsp + 0x10]
     ucomiss xmm1, xmm0
-    jnbe 25
+    ja 25
     jmp 28
 25:
     movss.d xmm1, [rsp + 0x10]
     ucomiss xmm1, xmm0
-    jnc 26
+    jae 26
     jmp 28
 26:
     movss.d xmm1, [rsp + 0x10]
     ucomiss xmm1, xmm0
-    setz al
+    sete al
     jnp 27
     mov al, 0
 27:
     movzx rax, al
     test al, al
-    jnz 29
+    jne 29
 28:
     xor eax, eax
     jmp 31
@@ -635,29 +635,29 @@ opaque32:
     ret
 test_f32:
     ucomiss xmm0, xmm1
-    setz al
+    sete al
     jnp 2
     mov al, 0
 2:
     movzx rax, al
     test al, al
-    jnz 9
+    jne 9
     ucomiss xmm0, xmm1
-    setnz al
+    setne al
     jnp 3
     mov al, 1
 3:
     movzx rax, al
     test al, al
-    jnz 8
+    jne 8
     ucomiss xmm1, xmm0
-    jnbe 7
+    ja 7
     ucomiss xmm0, xmm1
-    jnc 6
+    jae 6
     ucomiss xmm0, xmm1
-    jnbe 5
+    ja 5
     ucomiss xmm1, xmm0
-    jnc 4
+    jae 4
     xor eax, eax
     jmp 10
 4:
@@ -681,28 +681,28 @@ test_f32:
     ret
 test_f64:
     ucomisd xmm0, xmm1
-    setz al
+    sete al
     jnp +0x3
     mov al, 0
     movzx rax, al
     test al, al
-    jnz 18
+    jne 18
     ucomisd xmm0, xmm1
-    setnz al
+    setne al
     jnp 12
     mov al, 1
 12:
     movzx rax, al
     test al, al
-    jnz 17
+    jne 17
     ucomisd xmm1, xmm0
-    jnbe 16
+    ja 16
     ucomisd xmm0, xmm1
-    jnc 15
+    jae 15
     ucomisd xmm0, xmm1
-    jnbe 14
+    ja 14
     ucomisd xmm1, xmm0
-    jnc 13
+    jae 13
     xor eax, eax
     jmp 19
 13:
@@ -735,43 +735,43 @@ test_mixed_patterns:
     call opaque32
     movss.d xmm1, [rsp]
     ucomiss xmm0, xmm1
-    jnbe 21
+    ja 21
     jmp 24
 21:
     movss.d xmm1, [rsp]
     ucomiss xmm0, xmm1
-    jnc 22
+    jae 22
     jmp 24
 22:
     movss.d xmm1, [rsp]
     ucomiss xmm1, xmm0
-    setnz al
+    setne al
     jnp 23
     mov al, 1
 23:
     movzx rax, al
     test al, al
-    jnz 30
+    jne 30
 24:
     movss.d xmm1, [rsp]
     ucomiss xmm1, xmm0
-    jnbe 25
+    ja 25
     jmp 28
 25:
     movss.d xmm1, [rsp]
     ucomiss xmm1, xmm0
-    jnc 26
+    jae 26
     jmp 28
 26:
     movss.d xmm1, [rsp]
     ucomiss xmm1, xmm0
-    setz al
+    sete al
     jnp 27
     mov al, 0
 27:
     movzx rax, al
     test al, al
-    jnz 29
+    jne 29
 28:
     xor eax, eax
     jmp 31
@@ -847,29 +847,29 @@ opaque32:
     ret
 test_f32:
     ucomiss xmm0, xmm1
-    setz al
+    sete al
     jnp 2
     mov al, 0
 2:
     movzx rax, al
     test al, al
-    jnz 9
+    jne 9
     ucomiss xmm0, xmm1
-    setnz al
+    setne al
     jnp 3
     mov al, 1
 3:
     movzx rax, al
     test al, al
-    jnz 8
+    jne 8
     ucomiss xmm1, xmm0
-    jnbe 7
+    ja 7
     ucomiss xmm0, xmm1
-    jnc 6
+    jae 6
     ucomiss xmm0, xmm1
-    jnbe 5
+    ja 5
     ucomiss xmm1, xmm0
-    jnc 4
+    jae 4
     xor eax, eax
     jmp 10
 4:
@@ -893,28 +893,28 @@ test_f32:
     ret
 test_f64:
     ucomisd xmm0, xmm1
-    setz al
+    sete al
     jnp +0x3
     mov al, 0
     movzx rax, al
     test al, al
-    jnz 18
+    jne 18
     ucomisd xmm0, xmm1
-    setnz al
+    setne al
     jnp 12
     mov al, 1
 12:
     movzx rax, al
     test al, al
-    jnz 17
+    jne 17
     ucomisd xmm1, xmm0
-    jnbe 16
+    ja 16
     ucomisd xmm0, xmm1
-    jnc 15
+    jae 15
     ucomisd xmm0, xmm1
-    jnbe 14
+    ja 14
     ucomisd xmm1, xmm0
-    jnc 13
+    jae 13
     xor eax, eax
     jmp 19
 13:
@@ -947,43 +947,43 @@ test_mixed_patterns:
     call opaque32
     movss.d xmm1, [rsp]
     ucomiss xmm0, xmm1
-    jnbe 21
+    ja 21
     jmp 24
 21:
     movss.d xmm1, [rsp]
     ucomiss xmm0, xmm1
-    jnc 22
+    jae 22
     jmp 24
 22:
     movss.d xmm1, [rsp]
     ucomiss xmm1, xmm0
-    setnz al
+    setne al
     jnp 23
     mov al, 1
 23:
     movzx rax, al
     test al, al
-    jnz 30
+    jne 30
 24:
     movss.d xmm1, [rsp]
     ucomiss xmm1, xmm0
-    jnbe 25
+    ja 25
     jmp 28
 25:
     movss.d xmm1, [rsp]
     ucomiss xmm1, xmm0
-    jnc 26
+    jae 26
     jmp 28
 26:
     movss.d xmm1, [rsp]
     ucomiss xmm1, xmm0
-    setz al
+    sete al
     jnp 27
     mov al, 0
 27:
     movzx rax, al
     test al, al
-    jnz 29
+    jne 29
 28:
     xor eax, eax
     jmp 31
@@ -1057,29 +1057,29 @@ main:
 =========== OPT LEVEL: aggresive ===========
 test_f32:
     ucomiss xmm0, xmm1
-    setz al
+    sete al
     jnp 1
     mov al, 0
 1:
     movzx rax, al
     test al, al
-    jnz 8
+    jne 8
     ucomiss xmm0, xmm1
-    setnz al
+    setne al
     jnp 2
     mov al, 1
 2:
     movzx rax, al
     test al, al
-    jnz 7
+    jne 7
     ucomiss xmm1, xmm0
-    jnbe 6
+    ja 6
     ucomiss xmm0, xmm1
-    jnc 5
+    jae 5
     ucomiss xmm0, xmm1
-    jnbe 4
+    ja 4
     ucomiss xmm1, xmm0
-    jnc 3
+    jae 3
     xor eax, eax
     jmp 9
 3:
@@ -1103,29 +1103,29 @@ test_f32:
     ret
 test_f64:
     ucomisd xmm0, xmm1
-    setz al
+    sete al
     jnp 11
     mov al, 0
 11:
     movzx rax, al
     test al, al
-    jnz 18
+    jne 18
     ucomisd xmm0, xmm1
-    setnz al
+    setne al
     jnp 12
     mov al, 1
 12:
     movzx rax, al
     test al, al
-    jnz 17
+    jne 17
     ucomisd xmm1, xmm0
-    jnbe 16
+    ja 16
     ucomisd xmm0, xmm1
-    jnc 15
+    jae 15
     ucomisd xmm0, xmm1
-    jnbe 14
+    ja 14
     ucomisd xmm1, xmm0
-    jnc 13
+    jae 13
     xor eax, eax
     jmp 19
 13:

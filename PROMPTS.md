@@ -506,7 +506,7 @@ The backend module is getting bulky and bottle necks the compile times. Make a
 plan to split the backend module so that each Node_Spec is in its own module.
 
 The node spec array should be abolished and the big node spec should be placed
-into a file in each platform module. This also includes the Builder spec. The
+into a file in each platform module. This also includes the SSA spec. The
 codegen function in bac/gen_spec_fn.odin should be parametrized by
 Codegen_Spec that is right now hardcoded. It should also intake a file path to
 generate. Each backend submodule than runts its spec gen separately. All reused
@@ -781,6 +781,43 @@ but if they are backend as well then fix the bugs, but if you are not sure what
 would be the best fix, please stop and ask for clarifications. Make sure to
 stay within patterns around you.
 
-### NOTE
+### Setup tooling for generating bindings for languages
 
-Make the unicorn engine and wabt not required for the compiler.
+could you go trough the frontend part of the compiler and find all of the
+function it uses from the ./bac/ directory and then mark the functions that are
+not generated and mark them with @(tag = "api"), if a function is a overload,
+dont mark it with the tag, mark its children, if they are generated, then
+add a bool to the bac/meta/ codegen setup that will generate this attribute.
+Then the node spec declaration should have them added.
+
+Once thats done, edit the ./meta/ package to traverse all packages in ./bac/
+and look for attribute it already has, and also the attributes with "api", the
+meta should generate a odin file, it should be in the
+./bac/bindgen/api_table.odin that will import all of the packages with "api" in
+them and make a global table of all of the functions, where ieach entry has a
+package path from where it is (relative to the bindgen), function name, and a
+type_of() of the function.
+
+The intent here is to then write a script that generates bindings, because I
+can inspect the tipeinfo of each signature and generates stuff based on it and
+your role is to generate the input metadata file for this. The bindgen will be
+written by me so just create a main.odin in the bindgen that will print the
+table.
+
+### Migrate vendored /gam packages to be local and add a package that can disable all dependencies on fmt
+
+Colud you please migrate used dependencies: bit_arr, arna, to local ./utils/
+direcotory, then add fmt package under utils and make it a replacement for
+core:fmt, ONLY for functions we use. These are normally alias for fmt.assertf,
+fmt.println, fmt.printfln and fmt.panicf and so on. But if you toggle
+#config(NO_FMT, false), they will switch to generic always inline stubs that
+are also overloaded up to 5 arguments, so that no `any` type is used when the
+NO_FMT is enabled. Ideally when you build `odin build bac/bindgen/lib/
+-build-mode:lib -out:bac/bindgen/lib/lib.a -disable-assert -no-bounds-check
+-no-type-assert -define:NO_FMT=true`, you should not get any fmt references in
+the final binary. (you might need to use higher optimization level if the dead
+code does not get eliminated). Panic can just intrinsics.trap(), assert should
+conditionally trap. This of course only applyes to code included in the build
+of the mentioned command. It whould be gread if this reduces the amount of type
+info we use. You can also make it so that Node_Spec will be initialized with
+empty node_extra_types slice, so we dont include any type info if possible.

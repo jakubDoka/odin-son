@@ -1,14 +1,12 @@
-package x64
+package bac_x64
 
 import bac ".."
-import "../../vendored/gam/util/arna"
-import "../../vendored/gam/util/bit_arr"
-import "../builder"
+import "../../utils/arna"
+import "../../utils/bit_arr"
+import "../../utils/fmt"
 import "base:intrinsics"
-import "core:fmt"
 import "core:math"
 import "core:mem"
-import "core:reflect"
 import "core:slice"
 
 Reg :: bac.Reg
@@ -25,11 +23,11 @@ xtype :: #force_inline proc(node: bac.Expanded_Node) -> Node_Type {
 }
 
 xextra :: #force_inline proc(
-	graph: ^bac.Proc,
+	prc: ^bac.Proc,
 	node: ^bac.Node,
 	$T: typeid,
 ) -> ^T {
-	if graph.inheritance_table[node.rtype] & (1 << inherit_idx_of(T)) == 0 {
+	if prc.inheritance_table[node.rtype] & (1 << inherit_idx_of(T)) == 0 {
 		return nil
 	}
 	return (^T)(&node.extra)
@@ -101,53 +99,54 @@ X64_CFI_SPEC :: bac.Cfi_Spec {
 // * The `context` pointer is then the last parameter to the procedure
 // arguments
 
-@(rodata)
-X64_SYSTEMV_CC := bac.Call_Conv {
-	name          = "X64_SYSTEMV_CC",
-	callee_saved  = {{RBX, RBP, R12, R13, R14, R15}, {}},
-	caller_saved  = {
-		{RAX, RCX, RDX, RSI, RDI, R8, R9, R10, R11},
-		{
-			XMM0,
-			XMM1,
-			XMM2,
-			XMM3,
-			XMM4,
-			XMM5,
-			XMM6,
-			XMM7,
-			XMM8,
-			XMM9,
-			XMM10,
-			XMM11,
-			XMM12,
-			XMM13,
-			XMM14,
-			XMM15,
-		},
-	},
-	args          = {
-		{RDI, RSI, RDX, RCX, R8, R9},
-		{XMM0, XMM1, XMM2, XMM3, XMM4, XMM5, XMM6, XMM7},
-	},
-	rets          = {{RAX, RDX}, {XMM0, XMM1}},
-	red_zone_size = 128,
-	cfi_spec      = X64_CFI_SPEC,
-	stack_pointer = RSP,
-}
+X64_SYSTEMV_CC :: 0
+X64_LINUX_SYSCALL_CC :: 1
 
-@(rodata)
-X64_LINUX_SYSCALL_CC := bac.Call_Conv {
-	name         = "X64_LINUX_SYSCALL_CC",
-	callee_saved = {
-		{RBX, RDX, RDI, RSI, RBP, R8, R9, R10, R12, R13, R14, R15},
-		{},
+@(tag = "api", rodata, export, link_name = "bac_x64_CC_TABLE")
+CC_TABLE := [?]bac.Call_Conv {
+	X64_SYSTEMV_CC = {
+		callee_saved = {{RBX, RBP, R12, R13, R14, R15}, {}},
+		caller_saved = {
+			{RAX, RCX, RDX, RSI, RDI, R8, R9, R10, R11},
+			{
+				XMM0,
+				XMM1,
+				XMM2,
+				XMM3,
+				XMM4,
+				XMM5,
+				XMM6,
+				XMM7,
+				XMM8,
+				XMM9,
+				XMM10,
+				XMM11,
+				XMM12,
+				XMM13,
+				XMM14,
+				XMM15,
+			},
+		},
+		args = {
+			{RDI, RSI, RDX, RCX, R8, R9},
+			{XMM0, XMM1, XMM2, XMM3, XMM4, XMM5, XMM6, XMM7},
+		},
+		rets = {{RAX, RDX}, {XMM0, XMM1}},
+		red_zone_size = 128,
+		cfi_spec = X64_CFI_SPEC,
+		stack_pointer = RSP,
 	},
-	caller_saved = {{RAX, RCX, R11}, {}},
-	args         = {{RAX, RDI, RSI, RDX, R10, R8, R9}, {}},
-	rets         = {{RAX}, {}},
-	is_syscall   = true,
-	cfi_spec     = X64_CFI_SPEC,
+	X64_LINUX_SYSCALL_CC = {
+		callee_saved = {
+			{RBX, RDX, RDI, RSI, RBP, R8, R9, R10, R12, R13, R14, R15},
+			{},
+		},
+		caller_saved = {{RAX, RCX, R11}, {}},
+		args = {{RAX, RDI, RSI, RDX, R10, R8, R9}, {}},
+		rets = {{RAX}, {}},
+		is_syscall = true,
+		cfi_spec = X64_CFI_SPEC,
+	},
 }
 
 Instr_Info :: struct {
@@ -425,7 +424,7 @@ peep :: proc(
 		if node.dt in bac.FLOAT_DTS && cnst.value != 0 {
 			global := bac.c_int_as_global(ctx, node)
 
-			cmem := builder.get_or_add_const_mem(ctx)
+			cmem := bac.get_or_add_const_mem(ctx)
 			_, cid := add_node(
 				ctx,
 				node.name,
@@ -577,7 +576,7 @@ peep :: proc(
 			fmt.panicf("TODO: %v", node.lane)
 		}
 	case .Add ..= .Xor, .Eq ..= .U_Ge, .Shl ..= .U_Shr, .Mul:
-		op_dt := bac.operation_datatype(ctx.graph, node)
+		op_dt := bac.operation_datatype(ctx.prc, node)
 		if op_dt not_in bac.INT_DTS {
 			if op_dt in bac.FLOAT_DTS &&
 			   .Le <= node.itype &&
@@ -748,7 +747,7 @@ peep :: proc(
 				slice.linear_search(
 					outs,
 					bac.Node_Output{idx = 4, id = id},
-				) or_else panic("")
+				) or_else fmt.panicf("")
 			outs[oi].idx = 3
 			node.inps[3], node.inps[4] = node.inps[4], node.inps[3]
 		}
@@ -770,7 +769,7 @@ peep :: proc(
 				dominant = onode.itype
 			}
 			if dominant == .Conv || dominant == .U_Conv {
-				context.allocator, _ = arna.scrath()
+				context.allocator, _ = arna.scrath(ctx.temps)
 				outs := slice.clone(node.outs)
 				mem_op.dt = node.dt
 				node.dt = .I64
@@ -893,16 +892,16 @@ add_node :: proc(
 }
 
 make_node :: proc(
-	graph: ^bac.Proc,
+	prc: ^bac.Proc,
 	from: Node_ID,
 	type: u16,
 	inps: []Node_ID,
 	extra: Mem_Op,
 	force_load := false,
 ) -> Node_ID {
-	fnode := get_node(graph, from)
-	id := bac.add_raw(graph, fnode.name, type, fnode.dt, inps)
-	node := get_node(graph, id)
+	fnode := get_node(prc, from)
+	id := bac.add_raw(prc, fnode.name, type, fnode.dt, inps)
+	node := get_node(prc, id)
 	// TODO: I no longer understand this, needs better comment
 	// NOTE: afaik this is sufficient since we don't insert load ops before
 	// scheduling
@@ -910,7 +909,7 @@ make_node :: proc(
 	node.is_load =
 		fnode.is_load || type == u16(Node_Type.X64_Load) || force_load
 	node.lane = fnode.lane
-	xextra(graph, node, Mem_Op)^ = extra
+	xextra(prc, node, Mem_Op)^ = extra
 	return id
 }
 
@@ -940,7 +939,7 @@ post_schedule_peep :: proc(
 			}
 		}
 	case .Add ..= .Xor, .Eq ..= .U_Ge, .Mul, .Div:
-		op_dt := bac.operation_datatype(ctx.graph, node)
+		op_dt := bac.operation_datatype(ctx.prc, node)
 		if op_dt in bac.FLOAT_DTS {
 			FLOAT_FOLD_OPS :: bit_set[bac.Node_Type] {
 				.Add,
@@ -1010,7 +1009,7 @@ post_schedule_peep :: proc(
 }
 
 addr_add_offset :: proc(
-	graph: ^bac.Proc,
+	prc: ^bac.Proc,
 	node: bac.Expanded_Node,
 ) -> (
 	base: Node_ID,
@@ -1018,11 +1017,11 @@ addr_add_offset :: proc(
 	ok: bool,
 ) {
 	if xtype(node) != .X64_Add do return
-	return node.inps[0], int(xextra(graph, node, Mem_Op).imm), true
+	return node.inps[0], int(xextra(prc, node, Mem_Op).imm), true
 }
 
 meta_of :: proc(
-	graph: ^bac.Proc,
+	prc: ^bac.Proc,
 	ra: ^bac.Regalloc,
 	node: bac.Expanded_Node,
 	_: $T,
@@ -1077,6 +1076,10 @@ meta_of :: proc(
 	IOUT :: bac.INVALID_RM_INDEX
 
 	if node.gvn == 1 {
+		if ra.cc == nil {
+			ra.cc = &CC_TABLE[X64_SYSTEMV_CC]
+		}
+
 		ra.mask_len = MASK_SIZE
 		rslice(ra, RK_GENERAL, GPA_MASK[:])
 		rslice(ra, RK_VECTOR, XMM_MASK[:])
@@ -1114,7 +1117,7 @@ meta_of :: proc(
 		sout = IOUT
 	}
 
-	mem_op: ^Mem_Op = xextra(graph, node, Mem_Op)
+	mem_op: ^Mem_Op = xextra(prc, node, Mem_Op)
 
 	switch xtype(node) {
 	case:
@@ -1135,7 +1138,7 @@ meta_of :: proc(
 	     .Mul:
 		return {out = out, masks = nmasks[:2], in_place_slot = 1}
 	case .Eq ..= .U_Ge:
-		ikind := ra.datatype_to_reg_kind[get_node(graph, node.inps[0]).dt]
+		ikind := ra.datatype_to_reg_kind[get_node(prc, node.inps[0]).dt]
 		return {out = out, masks = masks[ikind][:2]}
 	case .Shl ..= .U_Shr:
 		return {
@@ -1195,17 +1198,17 @@ meta_of :: proc(
 	case .Local_Addr, .Global_Addr, .Proc_Addr:
 		return {out = out}
 	case .Copy, .Set, .Call, .Return:
-		return bac.cc_node_meta(graph, ra, node)
+		return bac.cc_node_meta(prc, ra, node, CC_TABLE[:])
 	case .Param:
-		return {out = bac.param_mask(graph, ra, node)}
+		return {out = bac.param_mask(prc, ra, node)}
 	case .Ret:
-		return {out = bac.ret_mask(graph, ra, node)}
+		return {out = bac.ret_mask(prc, ra, node)}
 	case .Store:
 		return {masks = dup({GPA_MASK_IDX, out}), out = out, input_start = 2}
 	case .Load:
 		return {out = out, masks = GPA_MASKS[:1], input_start = 2}
 	case .If:
-		cond := get_node(graph, node.inps[1])
+		cond := get_node(prc, node.inps[1])
 		return {
 			out = out,
 			masks = nmasks[:int(cond.dt != .Void)],
@@ -1215,7 +1218,7 @@ meta_of :: proc(
 		assert(nkind == RK_GENERAL)
 		return {out = out, masks = nmasks[:1], in_place_slot = 1}
 	case .Conv, .U_Conv, .Cast:
-		inp := get_node(graph, node.inps[0])
+		inp := get_node(prc, node.inps[0])
 		return {out = out, masks = masks[ra.datatype_to_reg_kind[inp.dt]][:1]}
 	case .Simd_Extract_Lsbs:
 		return {out = out, masks = XMM_MASKS[:1]}
@@ -1242,7 +1245,7 @@ meta_of :: proc(
 		}
 
 		if xtype(node) == .X64_Store && len(node.inps) - const_off == 4 {
-			dt := get_node(graph, node.inps[3]).dt
+			dt := get_node(prc, node.inps[3]).dt
 			nmasks = masks[ra.datatype_to_reg_kind[dt]]
 		}
 
@@ -1251,7 +1254,7 @@ meta_of :: proc(
 		masks: [dynamic; 4]bac.RM_Intern_Idx
 		append(&masks, nmasks[0])
 
-		is_cload := get_node(graph, node.inps[0]).itype == .Global
+		is_cload := get_node(prc, node.inps[0]).itype == .Global
 
 		#partial switch xtype(node) {
 		case .X64_Shl ..= .X64_U_Shr:
@@ -1259,7 +1262,7 @@ meta_of :: proc(
 			case .None:
 				masks = {}
 			case .Src:
-				panic("does not support")
+				fmt.panicf("does not support")
 			case .Dest:
 				if len(node.inps) - const_off == 4 {
 					masks[0] = single(ra, RCX)
@@ -1300,7 +1303,7 @@ meta_of :: proc(
 				in_place_slot -= 1
 			} else {
 				start = 2
-				extra_start := get_node(graph, node.inps[start]).dt == .Void
+				extra_start := get_node(prc, node.inps[start]).dt == .Void
 				start += u8(extra_start)
 				in_place_slot -= i8(extra_start)
 				if start == 2 {
@@ -1318,7 +1321,7 @@ meta_of :: proc(
 			in_place_slot = in_place_slot,
 		}
 	case .X64_Lea:
-		inp := get_node(graph, node.inps[0])
+		inp := get_node(prc, node.inps[0])
 		return {
 			out = out,
 			masks = nmasks[:1 + int(mem_op.scale != 0) - int(inp.dt == .Void)],
@@ -1328,7 +1331,7 @@ meta_of :: proc(
 		return {
 			out = out,
 			masks = GPA_MASKS[:1 + int(mem_op.scale != 0)],
-			input_start = 2 + u8(get_node(graph, node.inps[2]).dt == .Void),
+			input_start = 2 + u8(get_node(prc, node.inps[2]).dt == .Void),
 		}
 	case .X64_Mul8:
 		rax := single(ra, RAX)
@@ -1361,7 +1364,7 @@ Rsp_Adjust :: struct {
 }
 
 emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
-	context.allocator, _ = arna.scrath()
+	context.allocator, _ = arna.scrath(ectx.prc.temps)
 
 	spill_slot_base: [RK_COUNT]i32
 	stack_param_offset: [RK_COUNT][dynamic]i32
@@ -1372,6 +1375,10 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 	ctx.constants_start = ctx.constants.pos
 	ctx.instr_offsets = make([]u32, ctx.gvn)
 
+	if ctx.abi == nil {
+		ctx.abi = &CC_TABLE[X64_SYSTEMV_CC]
+	}
+
 	ctx.stack_param_offset = stack_param_offset[:]
 	ctx.spill_slot_base = spill_slot_base[:]
 	ctx.spill_slot_size = SPILL_SLOT_SIZE[:]
@@ -1379,8 +1386,8 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 	slot: [2]int
 	ctx.used = bit_arr.init_from_masks(slot[:])
 
-	has_call := bac.layout_call_args(ctx.graph, ctx.schedule, &ctx.stack_size)
-	bac.layout_locals(ctx.graph, ctx.schedule, &ctx.stack_size)
+	has_call := bac.layout_call_args(ctx.prc, ctx.schedule, &ctx.stack_size)
+	bac.layout_locals(ctx.prc, ctx.schedule, &ctx.stack_size)
 
 	if ctx.temp_stack_slot != max(Reg_Kind) {
 		ctx.temp_slot_offset = ctx.stack_size
@@ -1448,7 +1455,7 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 	for param in params {
 		enode := expand_node(ctx, param)
 		if enode.itype == .Local {
-			extra := bac.get_extra(ctx.graph, enode, bac.Local)
+			extra := bac.get_extra(ctx.prc, enode, bac.Local)
 			extra.offset += ctx.stack_size
 		}
 	}
@@ -1512,7 +1519,7 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 		dst_offset := ctx.bbs[reloc.dest].offset
 		jump := dst_offset - reloc.offset - size
 
-		copy(ctx.code.ptr[reloc.offset:][:size], reflect.as_bytes(jump))
+		copy(ctx.code.ptr[reloc.offset:][:size], mem.ptr_to_bytes(&jump))
 	}
 
 	bac.emit_dbg_locations(ctx)
@@ -1665,7 +1672,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 		case .X64_Ge:
 			return is_float ? .U_Lt : .Lt
 		}
-		panic("invalid comparison")
+		fmt.panicf("invalid comparison")
 	}
 
 	@(static, rodata)
@@ -2074,11 +2081,11 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 	case .Call:
 		call := bac.get_extra(ctx, node, bac.Call)
 
-		cc := ctx.graph.cc_table[call.ccid]
+		cc := CC_TABLE[call.ccid]
 		if cc.is_syscall {
 			// syscall
 			emit(ctx.code, {0x0F, 0x05})
-		} else if call.indirect {
+		} else if bac.is_indirect_call(node) {
 			// call $ptr
 			idx := len(node.inps) - 1
 			for ; get_node(ctx, node.inps[idx]).itype == .Local; idx -= 1 {}
@@ -2112,7 +2119,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 		case .Set:
 			lib_call = ctx.lib_calls.set
 		case:
-			panic("wuwut")
+			fmt.panicf("wuwut")
 		}
 
 		if lib_call.absolute {
@@ -2154,7 +2161,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 
 		switch node.dt {
 		case .Void, .Mem:
-			panic("")
+			fmt.panicf("")
 		case .I8:
 			emit_single_op(ctx.code, 0xb0, dst)
 			emit(ctx.code, {u8(imm)})
@@ -2170,7 +2177,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 			emit_single_op(ctx.code, 0xb8, dst)
 			bac.emit_anys(ctx.code, imm)
 		case .F32, .F64, .V128, .V256, .V512:
-			panic("")
+			fmt.panicf("")
 		}
 	case .X64_Add ..= .X64_Xor, .X64_Shl ..= .X64_U_Shr, .X64_Mul, .X64_Div:
 		if mem_op.dt in bac.FLOAT_DTS {
@@ -2319,7 +2326,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 		if is_float {
 			switch mem_op.mem_mode {
 			case .Dest:
-				panic("never")
+				fmt.panicf("never")
 			case .Src:
 				is_cload := get_node(ctx, node.inps[0]).itype == .Global
 				lhs_idx := is_cload ? 1 : 3
@@ -2525,10 +2532,10 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 			)
 			emit_indirect_addr(ctx, dst, sadd, idx, scl, sdis + dis, id)
 			if mem_idx == 2 {
-				panic("bra")
+				fmt.panicf("bra")
 			}
 		case .Dest:
-			panic("")
+			fmt.panicf("")
 		}
 	case .Div, .Rem:
 		rhs := reg_of(ctx, node.inps[1])
@@ -2541,7 +2548,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 		}
 		#partial switch node.dt {
 		case .Void:
-			panic("")
+			fmt.panicf("")
 		case .I8:
 			// cbw
 			emit(ctx.code, {0x66, 0x98})
@@ -2600,7 +2607,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 
 		if dst.kind == RK_VECTOR && node.dt == .V128 {
 			if d_spill && s_spill {
-				panic("no")
+				fmt.panicf("no")
 			} else if d_spill {
 				// movups [rsp + $dst_off], $src
 				emit(ctx.code, {rex(src, RSP, RAX, false), 0x0f, 0x11})
@@ -2822,7 +2829,7 @@ emit_indirect_addr_reg :: proc(
 	case .Direct:
 		fallthrough
 	case:
-		panic("unreachable")
+		fmt.panicf("unreachable")
 	}
 
 	if reloc != 0 {
@@ -2956,7 +2963,7 @@ emit_imm_for_dt :: proc(
 ) {
 	switch dt {
 	case .Void, .Mem:
-		panic("")
+		fmt.panicf("")
 	case .I8:
 		bac.emit_anys(code, i8(imm))
 	case .I16:
@@ -2964,7 +2971,7 @@ emit_imm_for_dt :: proc(
 	case .I64, .I32, .F32:
 		bac.emit_anys(code, imm)
 	case .F64, .V128, .V256, .V512:
-		panic("no")
+		fmt.panicf("no")
 	}
 }
 
@@ -2976,7 +2983,7 @@ emit_extended_sized_opcode :: proc(
 ) {
 	switch dt {
 	case .Void, .Mem:
-		panic("")
+		fmt.panicf("")
 	case .I8:
 		emit(code, {rx, 0x0f, op - 1})
 	case .I16:
@@ -2984,7 +2991,7 @@ emit_extended_sized_opcode :: proc(
 	case .I32, .I64:
 		emit(code, {rx, 0x0f, op})
 	case .F32, .F64, .V128, .V256, .V512:
-		panic("no")
+		fmt.panicf("no")
 	}
 }
 
@@ -2996,7 +3003,7 @@ emit_sized_opcode :: proc(
 ) {
 	switch dt {
 	case .Void, .Mem:
-		panic("")
+		fmt.panicf("")
 	case .I8:
 		emit(code, {rx, op - 1})
 	case .I16:
@@ -3004,6 +3011,6 @@ emit_sized_opcode :: proc(
 	case .I32, .I64, .F32:
 		emit(code, {rx, op})
 	case .F64, .V128, .V256, .V512:
-		panic("no")
+		fmt.panicf("no")
 	}
 }

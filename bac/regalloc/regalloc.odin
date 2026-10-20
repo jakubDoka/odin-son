@@ -1,14 +1,12 @@
-package regalloc
+package bac_regalloc
 
 import ".."
-import "../../vendored/gam/util/arna"
-import "../../vendored/gam/util/bit_arr"
-import "../x64"
+import "../../utils/arna"
+import "../../utils/bit_arr"
+import "../../utils/fmt"
 import "base:runtime"
 import "core:container/queue"
-import "core:fmt"
 import "core:io"
-import "core:log"
 import "core:mem"
 import "core:slice"
 import "core:strings"
@@ -17,43 +15,40 @@ Call :: bac.Call
 Node_ID :: bac.Node_ID
 expand_node :: bac.expand_node
 get_node :: bac.get_node
+Mode :: bac.Regalloc_Mode
 
-Mode :: enum {
-	with_scan,
-	with_coloring,
-}
-
+@(tag = "api")
 regalloc :: proc(
 	ra: ^bac.Regalloc,
-	graph: ^bac.Proc,
+	prc: ^bac.Proc,
 	sched: ^bac.Schedule,
 	mode: Mode,
 	scratch := context.allocator,
 ) -> bac.Regalloc_Output {
-	if graph.node_spec.collect_meta == nil do return {}
+	if prc.node_spec.collect_meta == nil do return {}
 
-	if graph.node_spec.pre_regalloc_hook != nil {
-		graph.node_spec.pre_regalloc_hook(ra, graph, sched)
+	if prc.node_spec.pre_regalloc_hook != nil {
+		prc.node_spec.pre_regalloc_hook(ra, prc, sched)
 	}
 
-	base := int(graph.gvn)
+	base := int(prc.gvn)
 	total := base
 	for i in 0 ..< 7 {
-		res, ok := regalloc_round(ra, graph, sched, scratch, mode, i)
+		res, ok := regalloc_round(ra, prc, sched, scratch, mode, i)
 		if ok {
-			bac.add_efficiency_stat(graph, .regalloc_rounds, total, base)
-			if bac.REGLOGS do log.info("regalloc rounds:", i)
+			bac.add_efficiency_stat(prc, .regalloc_rounds, total, base)
+			//if bac.REGLOGS do log.info("regalloc rounds:", i)
 			return res
 		}
-		total += int(graph.gvn)
+		total += int(prc.gvn)
 	}
 
-	panic("Ralloc took too many rounds")
+	fmt.panicf("Ralloc took too many rounds")
 }
 
 regalloc_round :: proc(
 	ra: ^bac.Regalloc,
-	graph: ^bac.Proc,
+	prc: ^bac.Proc,
 	sched: ^bac.Schedule,
 	scratch: runtime.Allocator,
 	mode: Mode,
@@ -62,23 +57,25 @@ regalloc_round :: proc(
 	res: bac.Regalloc_Output,
 	ok: bool = true,
 ) {
-	context.allocator, _ = arna.scrath(scratch)
+	res.computed = true
 
-	graph.dont_intern = true
-	defer graph.dont_intern = false
+	context.allocator, _ = arna.scrath(prc.temps, scratch)
+
+	prc.dont_intern = true
+	defer prc.dont_intern = false
 
 	Instr_Placement :: struct {
 		block: u32,
 	}
 
 	Ctx :: struct {
-		graph:           ^bac.Proc,
+		prc:             ^bac.Proc,
 		ra:              ^bac.Regalloc,
 		sched:           ^bac.Schedule,
 		mode:            Mode,
 		instr_placement: [dynamic]Instr_Placement,
 		lrg_table:       []^bac.Lrg,
-		self_conflicts:  map[Self_Conflict]Node_ID,
+		self_conflicts:  Self_Conflicts,
 		adj:             [][]u32,
 		gmetas:          []bac.Regalloc_Node_Meta,
 		smetas:          []Lrg_Meta,
@@ -91,23 +88,28 @@ regalloc_round :: proc(
 		pre_split_gvn:   u32,
 	}
 
+	Self_Conflicts :: struct {
+		data: #soa[]bac.SS_Entry(Self_Conflict),
+		len:  int,
+	}
+
 	ctx: Ctx
 	ctx.mode = mode
 	ctx.ra = ra
 	ctx.ra.rms = {}
-	ctx.graph = graph
+	ctx.prc = prc
 	ctx.sched = sched
 
-	block_base := int(graph.gvn) - len(sched.bbs)
+	block_base := int(prc.gvn) - len(sched.bbs)
 	ctx.block_base = block_base
 	def_count: int
-	ctx.gmetas, def_count = graph.collect_meta(graph, ra, sched)
+	ctx.gmetas, def_count = prc.collect_meta(prc, ra, sched)
 
 	ctx.instr_placement = make([dynamic]Instr_Placement, block_base)
 
 	for bb, j in sched.bbs {
 		for instr in bb.instrs {
-			instr_node := get_node(graph, instr)
+			instr_node := get_node(prc, instr)
 			ctx.instr_placement[instr_node.gvn] = {
 				block = u32(j),
 			}
@@ -121,14 +123,14 @@ regalloc_round :: proc(
 
 	for bb in sched.bbs {
 		for instr in bb.instrs {
-			inode := expand_node(graph, instr)
+			inode := expand_node(prc, instr)
 
 			if is_def(ctx, inode) {
 				lrg: ^bac.Lrg
 
-				if bac.has_flag(graph, inode, .Comutes) {
-					lhs := expand_node(graph, inode.inps[0])
-					rhs := expand_node(graph, inode.inps[1])
+				if bac.has_flag(prc, inode, .Comutes) {
+					lhs := expand_node(prc, inode.inps[0])
+					rhs := expand_node(prc, inode.inps[1])
 
 					swap_becuase_use := true
 					swap_becuase_use &= rhs.output_count == 1
@@ -138,13 +140,13 @@ regalloc_round :: proc(
 						inode.outs[0].id != inode.inps[0]
 
 					if swap_becuase_use {
-						bac.swap_inputs(ctx.graph, inode, 0, 1)
+						bac.swap_inputs(ctx.prc, inode, 0, 1)
 					}
 				}
 
 				inplace_slot := ctx.gmetas[inode.gvn].in_place_slot
 				if inplace_slot >= 0 {
-					inplace_node := get_node(graph, inode.inps[inplace_slot])
+					inplace_node := get_node(prc, inode.inps[inplace_slot])
 					lrg = ctx.lrg_table[inplace_node.gvn]
 				} else if inode.itype == .Phi {
 					for inp in inode.inps[1:] {
@@ -153,7 +155,7 @@ regalloc_round :: proc(
 				}
 
 				for o in inode.outs {
-					onode := expand_node(graph, o.id)
+					onode := expand_node(prc, o.id)
 					if ctx.gmetas[onode.gvn].in_place_slot == i8(o.idx) {
 						lrg = unify(lrg, ctx.lrg_table[onode.gvn])
 					}
@@ -173,7 +175,7 @@ regalloc_round :: proc(
 				}
 
 				for o in inode.outs {
-					onode := expand_node(graph, o.id)
+					onode := expand_node(prc, o.id)
 					if !is_data_dep(ctx, onode, o.idx) do continue
 
 					if onode.itype == .Phi {
@@ -334,8 +336,9 @@ regalloc_round :: proc(
 	ctx.blocks = blocks
 
 	Self_Conflict :: struct {
-		lrg:  u32,
-		node: Node_ID,
+		lrg:   u32,
+		node:  Node_ID,
+		other: Node_ID,
 	}
 
 	worklist: queue.Queue(u32)
@@ -370,7 +373,7 @@ regalloc_round :: proc(
 		lbb.liveouts.old = lbb.liveouts.len
 
 		#reverse for instr in bb.instrs {
-			inode := expand_node(graph, instr)
+			inode := expand_node(prc, instr)
 
 			if is_def(ctx, inode) {
 				lrg := ctx.lrg_table[inode.gvn]
@@ -399,7 +402,7 @@ regalloc_round :: proc(
 									rl.mask,
 									bac.reg_mask_first_set(
 										ll.mask,
-									) or_else panic(""),
+									) or_else fmt.panicf(""),
 									false,
 								)
 
@@ -422,7 +425,7 @@ regalloc_round :: proc(
 
 			clobbers := ctx.gmetas[inode.gvn].clobbers
 			if inode.itype == .Call {
-				call := bac.get_extra(graph, inode, Call)
+				call := bac.get_extra(prc, inode, Call)
 				clobbers = ra.call_clobbers[call.ccid]
 			} else if inode.itype in bac.CALLS {
 				clobbers = ra.call_clobbers[0]
@@ -442,7 +445,7 @@ regalloc_round :: proc(
 			if !visited {
 				if inode.itype != .Phi {
 					for inp in data_deps(ctx, inode) {
-						inp_node := get_node(graph, inp)
+						inp_node := get_node(prc, inp)
 						lrg := ctx.lrg_table[inp_node.gvn]
 
 						add_liveout(&ctx, &curr_live, lrg, {node = inp})
@@ -451,12 +454,12 @@ regalloc_round :: proc(
 			}
 		}
 
-		head := expand_node(graph, bb.head)
+		head := expand_node(prc, bb.head)
 		for pred, j in head.inps {
 
-			pred_block := get_node(graph, bac.get_idom(graph, pred))
+			pred_block := get_node(prc, bac.get_idom(prc, pred))
 			fmt.assertf(
-				bac.has_flag(graph, pred_block, .Is_Basic_Block_Start),
+				bac.has_flag(prc, pred_block, .Is_Basic_Block_Start),
 				"%v",
 				pred_block,
 			)
@@ -476,12 +479,12 @@ regalloc_round :: proc(
 
 			if !visited {
 				for out in head.outs {
-					onode := expand_node(graph, out.id)
+					onode := expand_node(prc, out.id)
 					if onode.itype == .Phi && onode.dt > .Mem {
 						lrg := ctx.lrg_table[onode.gvn]
 						n := onode.inps[1 + j]
 
-						if get_node(graph, n).itype == .Poison do continue
+						if get_node(prc, n).itype == .Poison do continue
 
 						changed |= add_liveout(
 							&ctx,
@@ -522,28 +525,61 @@ regalloc_round :: proc(
 			return
 		}
 
+		conflict_hash :: proc(sc: Self_Conflict) -> u8 {
+			return max(1, u8(sc.lrg + u32(sc.node) + u32(sc.other)))
+		}
+
 		add_conflict :: proc(ctx: ^Ctx, lrg: ^bac.Lrg, a, b: Node_ID) -> bool {
 			assert(a != 0)
 			assert(b != 0)
 
-			if a != b {
+			insert: if a != b {
 				lrg.self_conflict = true
-				ctx.self_conflicts[Self_Conflict{lrg.index, a}] = b
-				ctx.self_conflicts[Self_Conflict{lrg.index, b}] = a
+
+				sc := Self_Conflict{lrg.index, min(a, b), max(a, b)}
+				hash := conflict_hash(sc)
+
+				l := &ctx.self_conflicts
+
+				iter := bac.simd_iter_from(
+					l.data.hash[:mem.align_forward_int(
+						l.len,
+						size_of(bac.Intern_Vec),
+					)],
+					hash,
+				)
+				for idx in bac.simd_iter_next(&iter) {
+					if l.data.id[idx] == sc do break insert
+				}
+
+				if ctx.self_conflicts.len == len(ctx.self_conflicts.data) {
+					bac.grow_search_space(
+						&ctx.self_conflicts.data,
+						ctx.self_conflicts.len + size_of(bac.Intern_Vec),
+						context.allocator,
+					)
+				}
+
+				ctx.self_conflicts.data[ctx.self_conflicts.len] = {
+					hash = hash,
+					id   = sc,
+				}
+				ctx.self_conflicts.len += 1
+
 			}
 
 			return a == b
 		}
 	}
 
-	bac.add_efficiency_stat(graph, .ifg_rounds, rounds, len(sched.bbs))
+	bac.add_efficiency_stat(prc, .ifg_rounds, rounds, len(sched.bbs))
 
 	used_lrgs_check := used_lrgs
 	for lrg in lrgs {
 		failed_any |= lrg.fails != {}
 	}
 
-	if len(ctx.self_conflicts) != 0 || failed_any {
+	if ctx.self_conflicts.len != 0 || failed_any {
 		used_lrgs = 0
 		interference.bit_length = 0
 		ok = false
@@ -577,11 +613,11 @@ regalloc_round :: proc(
 
 			for instr, i in bb.instrs {
 				instr_idx := ctx.block_offset + i
-				inode := expand_node(ctx.graph, instr)
+				inode := expand_node(ctx.prc, instr)
 
 				if is_def(ctx, inode) || inode.itype != .Phi {
 					for dd in data_deps(ctx, inode) {
-						ddnode := expand_node(ctx.graph, dd)
+						ddnode := expand_node(ctx.prc, dd)
 						if ddnode.itype == .Poison do continue
 						add_slrg_use(&ctx, ctx.lrg_table[ddnode.gvn], bi, i)
 					}
@@ -773,7 +809,7 @@ regalloc_round :: proc(
 						reg =
 							bac.reg_mask_first_set(
 								slrg.lrg.mask,
-							) or_else panic("")
+							) or_else fmt.panicf("")
 						for oslrg in active.items.id[:active.len] {
 							bac.reg_mask_set(
 								oslrg.lrg.mask,
@@ -836,7 +872,7 @@ regalloc_round :: proc(
 		slice_cursor := 0
 
 		bac.add_efficiency_stat(
-			graph,
+			prc,
 			.regalloc_memory_overhead,
 			len(slices),
 			used_lrgs,
@@ -877,7 +913,7 @@ regalloc_round :: proc(
 			if !ok do break
 
 			#reverse for instr, j in bb.instrs {
-				inode := expand_node(graph, instr)
+				inode := expand_node(prc, instr)
 				if inode.itype != .Split do continue
 
 				ilrg := find(get_lrg(ctx, instr))
@@ -909,7 +945,7 @@ regalloc_round :: proc(
 				if total >= leeway &&
 				   (leeway == 0 ||
 						   max(len(inadj), len(iadj)) != total ||
-						   get_node(graph, inode.inps[0]).itype != .Split ||
+						   get_node(prc, inode.inps[0]).itype != .Split ||
 						   j == 0 ||
 						   bb.instrs[j - 1] != inode.inps[0]) {
 					continue
@@ -944,7 +980,7 @@ regalloc_round :: proc(
 				ifg[other.index] = {}
 
 				ordered_remove(&bb.instrs, j)
-				bac.subsume(graph, inode.inps[0], instr)
+				bac.subsume(prc, inode.inps[0], instr)
 			}
 		}
 
@@ -992,7 +1028,7 @@ regalloc_round :: proc(
 		ctx.color_ord = ctx.color_ord[:alive_lrgs]
 
 		bac.add_efficiency_stat(
-			graph,
+			prc,
 			.regalloc_wasted_lrgs,
 			used_lrgs,
 			len(ctx.color_ord),
@@ -1069,7 +1105,7 @@ regalloc_round :: proc(
 			for adj in ctx.adj[lrg.index] {
 				slc := &ctx.adj[adj]
 				idx :=
-					lrg_search(slc^, lrg.index) or_else panic(
+					lrg_search(slc^, lrg.index) or_else fmt.panicf(
 						"removed a lrg twice",
 					)
 				slc[idx], slc[len(slc) - 1] = slc[len(slc) - 1], slc[idx]
@@ -1208,7 +1244,7 @@ regalloc_round :: proc(
 		return cursor
 	}
 
-	ctx.pre_split_gvn = graph.gvn
+	ctx.pre_split_gvn = prc.gvn
 
 	any_fails := false
 
@@ -1223,7 +1259,7 @@ regalloc_round :: proc(
 		}
 
 		if bac.REGLOGS {
-			log.info("fail:", lrg, lrg.fails)
+			//log.info("fail:", lrg, lrg.fails)
 		}
 
 		fail_count += 1
@@ -1236,9 +1272,9 @@ regalloc_round :: proc(
 			inserted_splits := 0
 			for m in members {
 				is_internal := true
-				for out in bac.get_outputs(graph, m) {
+				for out in bac.get_outputs(prc, m) {
 					if get_lrg(ctx, out.id) == &lrg do continue
-					if get_node(graph, out.id).itype == .Split {
+					if get_node(prc, out.id).itype == .Split {
 						block, placement := get_node_block_and_idx(ctx, m)
 						if block.instrs[placement + 1] == out.id {
 							continue
@@ -1248,20 +1284,20 @@ regalloc_round :: proc(
 				}
 
 				id = m
-				fnode := get_node(graph, m)
+				fnode := get_node(prc, m)
 
 				fmt.assertf(fnode.output_count > 0, "%v", members)
 
-				outs := slice.clone(bac.get_outputs(graph, m))
+				outs := slice.clone(bac.get_outputs(prc, m))
 
 				if fnode.itype != .Split {
 					id = split_after(ctx, "sdef", m, must = is_internal)
-					fnode = get_node(graph, id)
+					fnode = get_node(prc, id)
 					inserted_splits += 1
 				}
 
 				for out in outs {
-					out_node := get_node(graph, out.id)
+					out_node := get_node(prc, out.id)
 
 					split := id
 					if out_node.itype != .Split {
@@ -1276,22 +1312,23 @@ regalloc_round :: proc(
 						inserted_splits += 1
 					}
 
-					bac.set_input(graph, out.id, out.idx, split)
+					bac.set_input(prc, out.id, out.idx, split)
 				}
 
 				if fnode.output_count == 0 {
 					block := get_node_block(ctx, m)
 					idx :=
-						slice.linear_search(block.instrs[:], id) or_else panic(
-							"",
-						)
+						slice.linear_search(
+							block.instrs[:],
+							id,
+						) or_else fmt.panicf("")
 					ordered_remove(&block.instrs, idx)
-					bac.delete_node(ctx.graph, fnode)
+					bac.delete_node(ctx.prc, fnode)
 				}
 			}
 
 			bac.add_efficiency_stat(
-				graph,
+				prc,
 				.pressure_splits_inserted,
 				inserted_splits,
 				1,
@@ -1303,14 +1340,14 @@ regalloc_round :: proc(
 		if lrg.killed {
 			inserted_splits := 0
 			for m in members {
-				mnode := expand_node(graph, m)
+				mnode := expand_node(prc, m)
 				redirect := m
 				for out in slice.clone(mnode.outs) {
-					onode := expand_node(graph, out.id)
+					onode := expand_node(prc, out.id)
 					oblock := get_node_block(ctx, out.id)
 					if onode.itype == .Phi {
 						last :=
-							bac.get_inputs(ctx.graph, onode.inps[0])[out.idx - 1]
+							bac.get_inputs(ctx.prc, onode.inps[0])[out.idx - 1]
 						oblock = get_node_block(ctx, last)
 					}
 
@@ -1330,12 +1367,12 @@ regalloc_round :: proc(
 						)
 						inserted_splits += int(split != redirect)
 					}
-					bac.set_input(graph, out.id, out.idx, split)
+					bac.set_input(prc, out.id, out.idx, split)
 				}
 			}
 
 			bac.add_efficiency_stat(
-				graph,
+				prc,
 				.kill_splits_inserted,
 				inserted_splits,
 				1,
@@ -1350,21 +1387,21 @@ regalloc_round :: proc(
 				split := m
 
 				has_call_use := false
-				for out in bac.get_outputs(graph, m) {
-					if get_node(graph, out.id).itype in bac.CALLS {
+				for out in bac.get_outputs(prc, m) {
+					if get_node(prc, out.id).itype in bac.CALLS {
 						has_call_use = true
 						break
 					}
 				}
 
-				for out in bac.get_outputs(graph, m) {
+				for out in bac.get_outputs(prc, m) {
 					if split == m {
 						split = split_after(ctx, "rcd", m)
 						inserted_splits += int(split != m)
 					}
 
 					splita := split
-					if get_node(graph, out.id).itype != .Split {
+					if get_node(prc, out.id).itype != .Split {
 						splita = split_before(
 							ctx,
 							out.id,
@@ -1375,12 +1412,12 @@ regalloc_round :: proc(
 						inserted_splits += int(splita != split)
 					}
 
-					bac.set_input(graph, out.id, out.idx, splita)
+					bac.set_input(prc, out.id, out.idx, splita)
 				}
 			}
 
 			bac.add_efficiency_stat(
-				graph,
+				prc,
 				.conflict_splits_inserted,
 				inserted_splits,
 				1,
@@ -1393,14 +1430,14 @@ regalloc_round :: proc(
 			inserted_splits := 0
 
 			for m in members {
-				mnode := expand_node(graph, m)
+				mnode := expand_node(prc, m)
 				redirect := m
 				for out in slice.clone(mnode.outs) {
-					onode := expand_node(graph, out.id)
+					onode := expand_node(prc, out.id)
 					oblock := get_node_block(ctx, out.id)
 					if onode.itype == .Phi {
 						last :=
-							bac.get_inputs(ctx.graph, onode.inps[0])[out.idx - 1]
+							bac.get_inputs(ctx.prc, onode.inps[0])[out.idx - 1]
 						oblock = get_node_block(ctx, last)
 					}
 
@@ -1425,12 +1462,12 @@ regalloc_round :: proc(
 						)
 						inserted_splits += 1
 					}
-					bac.set_input(graph, out.id, out.idx, split)
+					bac.set_input(prc, out.id, out.idx, split)
 				}
 			}
 
 			bac.add_efficiency_stat(
-				graph,
+				prc,
 				.pressure_splits_inserted,
 				inserted_splits,
 				1,
@@ -1441,7 +1478,7 @@ regalloc_round :: proc(
 	}
 
 	bac.add_efficiency_stat(
-		graph,
+		prc,
 		.fail_count_ratio,
 		int(fail_count == 1 && round > 0),
 		0,
@@ -1449,105 +1486,112 @@ regalloc_round :: proc(
 
 	assert(any_fails == !ok)
 
-	resolve: for sc, oth in ctx.self_conflicts {
+	for sc in ctx.self_conflicts.data[:ctx.self_conflicts.len] {
+		sc := sc.id
 		lrg := &lrgs[sc.lrg]
-		id := sc.node
 
-		node := expand_node(graph, id)
-		node.outs = slice.clone(node.outs)
+		scs := [?]Self_Conflict{sc, {0, sc.other, sc.node}}
 
-		// NOTE: we could be using the same value multiple times, so since we
-		// are at it, lets reuse the immediate split
-		last_split: Node_ID
+		resolve: for sc in scs {
+			id := sc.node
+			oth := sc.other
 
-		for out in node.outs {
-			onode := expand_node(graph, out.id)
+			node := expand_node(prc, id)
+			node.outs = slice.clone(node.outs)
 
-			if oth == out.id && onode.itype == .Phi {
-				nd := split_after(ctx, "scp", oth, must = true)
-				onode = expand_node(graph, out.id)
+			// NOTE: we could be using the same value multiple times, so since we
+			// are at it, lets reuse the immediate split
+			last_split: Node_ID
 
-				#reverse for oout in onode.outs[:len(onode.outs) - 1] {
-					bac.set_input(ctx.graph, oout.id, oout.idx, nd)
+			for out in node.outs {
+				onode := expand_node(prc, out.id)
+
+				if oth == out.id && onode.itype == .Phi {
+					nd := split_after(ctx, "scp", oth, must = true)
+					onode = expand_node(prc, out.id)
+
+					#reverse for oout in onode.outs[:len(onode.outs) - 1] {
+						bac.set_input(ctx.prc, oout.id, oout.idx, nd)
+					}
+
+					continue resolve
 				}
-
-				continue resolve
-			}
-		}
-
-		for inp, j in node.inps {
-			if get_lrg(ctx, inp) == nil do continue
-
-			inode := get_node(graph, inp)
-
-			if j != int(ctx.gmetas[node.gvn].in_place_slot) &&
-			   node.itype != .Phi {
-				continue
 			}
 
-			if !is_def(ctx, inode) do continue
-			if inode.gvn >= ctx.pre_split_gvn {
-				if get_node(graph, inp).itype == .Split {
-					last_split = inp
-				}
-				continue
-			}
+			for inp, j in node.inps {
+				if get_lrg(ctx, inp) == nil do continue
 
-			inp_lrg := ctx.lrg_table[inode.gvn]
-			if inp_lrg == lrg &&
-			   ((inode.itype != .Split &&
-						   (ctx.instr_placement[inode.gvn] !=
-									   ctx.instr_placement[node.gvn] ||
-								   inode.gvn != node.gvn - 1)) ||
-					   inode.output_count > 1) {
-				split: Node_ID
-				if last_split != 0 &&
-				   bac.get_inputs(graph, last_split)[0] == inp &&
+				inode := get_node(prc, inp)
+
+				if j != int(ctx.gmetas[node.gvn].in_place_slot) &&
 				   node.itype != .Phi {
-					split = last_split
-				} else {
-					split = split_before(ctx, id, j, "sci")
+					continue
 				}
 
-				if get_node(graph, split).itype == .Split {
-					last_split = split
+				if !is_def(ctx, inode) do continue
+				if inode.gvn >= ctx.pre_split_gvn {
+					if get_node(prc, inp).itype == .Split {
+						last_split = inp
+					}
+					continue
 				}
 
-				bac.set_input(graph, id, j, split)
+				inp_lrg := ctx.lrg_table[inode.gvn]
+				if inp_lrg == lrg &&
+				   ((inode.itype != .Split &&
+							   (ctx.instr_placement[inode.gvn] !=
+										   ctx.instr_placement[node.gvn] ||
+									   inode.gvn != node.gvn - 1)) ||
+						   inode.output_count > 1) {
+					split: Node_ID
+					if last_split != 0 &&
+					   bac.get_inputs(prc, last_split)[0] == inp &&
+					   node.itype != .Phi {
+						split = last_split
+					} else {
+						split = split_before(ctx, id, j, "sci")
+					}
+
+					if get_node(prc, split).itype == .Split {
+						last_split = split
+					}
+
+					bac.set_input(prc, id, j, split)
+				}
 			}
-		}
 
-		last_split = 0
-		last_split_out: Node_ID
-		for out in slice.clone(node.outs) {
-			onode := expand_node(graph, out.id)
+			last_split = 0
+			last_split_out: Node_ID
+			for out in slice.clone(node.outs) {
+				onode := expand_node(prc, out.id)
 
-			if !is_def_while_splitting(ctx, onode) do continue
-			if onode.gvn >= ctx.pre_split_gvn do continue
+				if !is_def_while_splitting(ctx, onode) do continue
+				if onode.gvn >= ctx.pre_split_gvn do continue
 
-			if out.idx == int(ctx.gmetas[onode.gvn].in_place_slot) ||
-			   onode.itype == .Phi {
-				split: Node_ID
-				if last_split != 0 &&
-				   last_split_out == out.id &&
-				   onode.itype != .Phi {
-					split = last_split
-				} else {
-					split = split_before(ctx, out.id, out.idx, "sco")
+				if out.idx == int(ctx.gmetas[onode.gvn].in_place_slot) ||
+				   onode.itype == .Phi {
+					split: Node_ID
+					if last_split != 0 &&
+					   last_split_out == out.id &&
+					   onode.itype != .Phi {
+						split = last_split
+					} else {
+						split = split_before(ctx, out.id, out.idx, "sco")
+					}
+
+					if get_node(prc, split).itype == .Split {
+						last_split_out = out.id
+						last_split = split
+					}
+
+					bac.set_input(prc, out.id, out.idx, split)
 				}
-
-				if get_node(graph, split).itype == .Split {
-					last_split_out = out.id
-					last_split = split
-				}
-
-				bac.set_input(graph, out.id, out.idx, split)
 			}
 		}
 	}
 
 	//log_lrgs(&ctx)
-	bac.verify_schedule_integrity(ctx.graph, ctx.sched)
+	bac.verify_schedule_integrity(ctx.prc, ctx.sched)
 	if ok {
 		total_splits := 0
 		redundant_splits := 0
@@ -1555,12 +1599,12 @@ regalloc_round :: proc(
 		for &bb in sched.bbs {
 			keep := len(bb.instrs) - 1
 			#reverse for instr, i in bb.instrs[:keep] {
-				inode := expand_node(graph, instr)
+				inode := expand_node(prc, instr)
 
 				if inode.itype == .Split {
 					total_splits += 1
 					redundant_splits += 1
-					inp := expand_node(graph, inode.inps[0])
+					inp := expand_node(prc, inode.inps[0])
 
 					src, dst := res.allocs[inode.gvn], res.allocs[inp.gvn]
 
@@ -1576,7 +1620,7 @@ regalloc_round :: proc(
 
 						in_slot_id :=
 							inp.inps[ctx.gmetas[inp.gvn].in_place_slot]
-						in_slot_node := expand_node(graph, in_slot_id)
+						in_slot_node := expand_node(prc, in_slot_id)
 
 						umask := rm_get_use(
 							ctx,
@@ -1595,13 +1639,12 @@ regalloc_round :: proc(
 						   in_slot_node.output_count == 1 &&
 						   in_slot_node.itype == .Split {
 
-							if res.allocs[get_node(graph, in_slot_node.inps[0]).gvn] ==
+							if res.allocs[get_node(prc, in_slot_node.inps[0]).gvn] ==
 							   res.allocs[inode.gvn] {
 
 								res.allocs[inp.gvn] = res.allocs[inode.gvn]
 								res.allocs[in_slot_node.gvn] =
 									res.allocs[inode.gvn]
-								//if true do panic("")
 								continue
 							}
 						}
@@ -1611,7 +1654,7 @@ regalloc_round :: proc(
 					   len(inode.outs) == 1 &&
 					   inode.outs[0].id == bb.instrs[keep] {
 						o := inode.outs[0]
-						onode := expand_node(graph, o.id)
+						onode := expand_node(prc, o.id)
 
 						umask := rm_get_use(ctx, onode, o.idx)
 						overlaps := bac.reg_mask_contains(
@@ -1621,7 +1664,7 @@ regalloc_round :: proc(
 
 						if overlaps &&
 						   get_lrg(ctx, instr) != get_lrg(ctx, o.id) {
-							bac.subsume(graph, inode.inps[0], instr)
+							bac.subsume(prc, inode.inps[0], instr)
 							continue
 						}
 					}
@@ -1647,7 +1690,7 @@ regalloc_round :: proc(
 		res.temp_stack_slot -= 1
 
 		bac.add_efficiency_stat(
-			graph,
+			prc,
 			.splits_inserted,
 			total_splits,
 			total_splits - redundant_splits,
@@ -1698,12 +1741,12 @@ regalloc_round :: proc(
 
 	@(disabled = ODIN_DISABLE_ASSERT)
 	verify_alloc_integrity :: proc(ctx: Ctx, res: []bac.Reg) {
-		seen := bit_arr.init(ctx.graph.gvn)
+		seen := bit_arr.init(ctx.prc.gvn)
 		for &bb in ctx.sched.bbs {
 			if !ODIN_DISABLE_ASSERT {
 				seen_phi := false
 				#reverse for instr in bb.instrs {
-					inode := get_node(ctx.graph, instr)
+					inode := get_node(ctx.prc, instr)
 					is_phi_or_mem := inode.itype == .Phi || inode.itype == .Mem
 					fmt.assertf(!seen_phi || is_phi_or_mem, "%v", inode)
 					seen_phi |= inode.itype == .Phi
@@ -1711,7 +1754,7 @@ regalloc_round :: proc(
 			}
 
 			for instr, i in bb.instrs {
-				inode := expand_node(ctx.graph, instr)
+				inode := expand_node(ctx.prc, instr)
 				if inode.dt <= .Mem && inode.itype == .Phi do continue
 
 				deps := inode.inps
@@ -1725,7 +1768,7 @@ regalloc_round :: proc(
 					block := &bb
 					i := i
 					if inode.itype == .Phi {
-						last := bac.get_inputs(ctx.graph, inode.inps[0])[idx]
+						last := bac.get_inputs(ctx.prc, inode.inps[0])[idx]
 						block = get_node_block(ctx, last)
 						i = len(block.instrs)
 					}
@@ -1733,14 +1776,14 @@ regalloc_round :: proc(
 					for {
 						iblck := get_node_block(ctx, inp)
 						if slice.contains(iblck.instrs[:], inp) do break
-						innode := expand_node(ctx.graph, inp)
+						innode := expand_node(ctx.prc, inp)
 						assert(innode.itype == .Split)
 						inp = innode.inps[0]
 					}
 
 					bit_arr.set_all(seen, value = false)
 
-					nd := get_node(ctx.graph, inp)
+					nd := get_node(ctx.prc, inp)
 					if nd.itype == .Poison do continue
 
 					fmt.assertf(is_def(ctx, nd), "%v", nd)
@@ -1758,7 +1801,7 @@ regalloc_round :: proc(
 			sindex: int,
 			seen: bit_arr.Bit_Set,
 		) {
-			cbnode := expand_node(ctx.graph, cb)
+			cbnode := expand_node(ctx.prc, cb)
 
 			bb: ^bac.Basic_Block
 			for &b in ctx.sched.bbs {
@@ -1766,16 +1809,16 @@ regalloc_round :: proc(
 					bb = &b
 				}
 			}
-			inpnode := expand_node(ctx.graph, inp)
+			inpnode := expand_node(ctx.prc, inp)
 			block, idx := get_node_block_and_idx(ctx, inp)
 			if block != bb do idx = -1
 			for j in idx + 1 ..< sindex {
-				clobber := expand_node(ctx.graph, bb.instrs[j])
+				clobber := expand_node(ctx.prc, bb.instrs[j])
 				if !is_def(ctx, clobber) do continue
 				if res[inpnode.gvn] == res[clobber.gvn] {
 					//bac.display_graph(
 					//	os.to_writer(os.stderr),
-					//	ctx.graph,
+					//	ctx.prc,
 					//	ctx.sched,
 					//)
 					fmt.assertf(
@@ -1795,8 +1838,8 @@ regalloc_round :: proc(
 			}
 
 			for cbinp in cbnode.inps {
-				if bac.is_cfg(ctx.graph, cbinp) {
-					cbinode := expand_node(ctx.graph, cbinp)
+				if bac.is_cfg(ctx.prc, cbinp) {
+					cbinode := expand_node(ctx.prc, cbinp)
 					if !bit_arr.set(seen, cbinode.gvn) {
 						return
 					}
@@ -1808,18 +1851,18 @@ regalloc_round :: proc(
 	}
 
 	collect_lrg_members :: proc(ctx: Ctx, lrg: ^bac.Lrg) -> []Node_ID {
-		graph := ctx.graph
+		prc := ctx.prc
 		members := make([dynamic]Node_ID)
 		append(&members, lrg.node)
 		for i := 0; i < len(members); i += 1 {
 			member := members[i]
-			for out in bac.get_outputs(graph, member) {
+			for out in bac.get_outputs(prc, member) {
 				if get_lrg(ctx, out.id) == lrg &&
 				   !slice.contains(members[:], out.id) {
 					append(&members, out.id)
 				}
 			}
-			for inp in bac.get_inputs(graph, member) {
+			for inp in bac.get_inputs(prc, member) {
 				if inp == 0 do continue
 				if get_lrg(ctx, inp) == lrg &&
 				   !slice.contains(members[:], inp) {
@@ -1831,10 +1874,10 @@ regalloc_round :: proc(
 	}
 
 	get_lrg :: proc(ctx: Ctx, node: Node_ID, logg := false) -> ^bac.Lrg {
-		node := get_node(ctx.graph, node)
+		node := get_node(ctx.prc, node)
 		if int(node.gvn) >= len(ctx.lrg_table) {
 			if logg {
-				log.error("lrg table out of bounds")
+				//log.error("lrg table out of bounds")
 			}
 			return nil
 		}
@@ -1847,23 +1890,24 @@ regalloc_round :: proc(
 		use: Node_ID,
 		must := false,
 	) -> Node_ID {
-		graph := ctx.graph
-		fnode := get_node(graph, use)
+		prc := ctx.prc
+		fnode := get_node(prc, use)
 
-		if bac.has_flag(graph, fnode, .Clonable) && !must {
+		if bac.has_flag(prc, fnode, .Clonable) && !must {
 			return use
 		}
 
 		umask := bac.rm_get(ctx.ra, ctx.gmetas[fnode.gvn].out)
-		if (bac.reg_mask_first_set(umask) or_else 0) >= x64.GPA_REG_COUNT {
+		if (bac.reg_mask_first_set(umask) or_else 0) >=
+		   ctx.ra.spill_boundary[prc.datatype_to_reg_kind[fnode.dt]] {
 			return use
 		}
 
-		split := bac.add_split(graph, name, fnode.dt, use)
+		split := bac.add_split(prc, name, fnode.dt, use)
 
 		block, idx := get_node_block_and_idx(ctx, use)
 		for {
-			nd := get_node(ctx.graph, block.instrs[idx + 1])
+			nd := get_node(ctx.prc, block.instrs[idx + 1])
 			if nd.itype != .Phi && nd.itype != .Mem do break
 			idx += 1
 		}
@@ -1881,14 +1925,14 @@ regalloc_round :: proc(
 		redirect: Node_ID = 0,
 		must := false,
 	) -> Node_ID {
-		node := expand_node(ctx.graph, id)
+		node := expand_node(ctx.prc, id)
 		inp := redirect if redirect != 0 else node.inps[idx]
-		inp_node := get_node(ctx.graph, inp)
+		inp_node := get_node(ctx.prc, inp)
 
 		if !is_def_while_splitting(ctx, inp_node) do return inp
 
 		split: Node_ID
-		if bac.has_flag(ctx.graph, inp_node, .Clonable) && !must {
+		if bac.has_flag(ctx.prc, inp_node, .Clonable) && !must {
 			if int(inp_node.gvn) > len(ctx.instr_placement) {
 				// NOTE: means we already split this to the largest extent
 				return inp
@@ -1897,21 +1941,21 @@ regalloc_round :: proc(
 				block, bidx := get_node_block_and_idx(ctx, inp)
 				ordered_remove(&block.instrs, bidx)
 
-				inp_node.gvn = ctx.graph.gvn
-				ctx.graph.gvn += 1
+				inp_node.gvn = ctx.prc.gvn
+				ctx.prc.gvn += 1
 				split = inp
 			} else {
-				bac.add_efficiency_stat(ctx.graph, .clones, 1)
-				split = bac.clone(ctx.graph, inp)
+				bac.add_efficiency_stat(ctx.prc, .clones, 1)
+				split = bac.clone(ctx.prc, inp)
 			}
 		} else {
-			split = bac.add_split(ctx.graph, name, inp_node.dt, inp)
+			split = bac.add_split(ctx.prc, name, inp_node.dt, inp)
 		}
 
 		block: ^bac.Basic_Block
 		bidx: int
 		if node.itype == .Phi {
-			last := bac.get_inputs(ctx.graph, node.inps[0])[idx - 1]
+			last := bac.get_inputs(ctx.prc, node.inps[0])[idx - 1]
 			block = get_node_block(ctx, last)
 			bidx = len(block.instrs) - 1
 		} else {
@@ -1926,7 +1970,7 @@ regalloc_round :: proc(
 		ctx: Ctx,
 		node: Node_ID,
 	) -> ^bac.Basic_Block {
-		node := get_node(ctx.graph, node)
+		node := get_node(ctx.prc, node)
 		fmt.assertf(
 			int(node.gvn) < len(ctx.instr_placement),
 			"%v %v",
@@ -1950,17 +1994,17 @@ regalloc_round :: proc(
 	}
 
 	forward_lrg :: proc(
-		graph: ^bac.Proc,
+		prc: ^bac.Proc,
 		lrg: ^bac.Lrg,
 		lrg_table: []^bac.Lrg,
 	) -> Node_ID {
 		id := lrg.node
-		fnode := get_node(graph, id)
-		fouts := bac.get_outputs(graph, fnode)
+		fnode := get_node(prc, id)
+		fouts := bac.get_outputs(prc, fnode)
 
 		if fnode.itype == .Split && fnode.output_count == 1 {
 			sid := fouts[0].id
-			snode := get_node(graph, sid)
+			snode := get_node(prc, sid)
 			if int(snode.gvn) >= len(lrg_table) do return id
 			if lrg_table[snode.gvn] != lrg do return id
 			id = sid
@@ -1978,33 +2022,38 @@ regalloc_round :: proc(
 		context.user_ptr = ctx
 		bac.display_graph(
 			strings.to_writer(&sb),
-			ctx.graph,
+			ctx.prc,
 			ctx.sched,
 			prefix = prefix,
 		)
 
 		prefix :: proc(w: io.Writer, instr: ^bac.Node, bb: bac.Basic_Block) {
-			ctx := (^Ctx)(context.user_ptr)
-			if is_def_while_splitting(ctx^, instr) && len(ctx.lrg_table) != 0 {
-				lrg := get_lrg(ctx^, bac.get_node_id(ctx.graph, instr))
-				if lrg == nil {
-					return
-				}
-				fmt.wprintf(w, "%v:", lrg.mask)
-				bac.ansi_start(w, lrg.index)
-				fmt.wprintf(w, "%3i", lrg.index)
-				bac.ansi_end(w)
-				if len(ctx.res) != 0 {
-					fmt.wprintf(w, " %02i ", ctx.res[instr.gvn].index)
+			when !fmt.NO_FMT {
+				ctx := (^Ctx)(context.user_ptr)
+				if is_def_while_splitting(ctx^, instr) &&
+				   len(ctx.lrg_table) != 0 {
+					lrg := get_lrg(ctx^, bac.get_node_id(ctx.prc, instr))
+					if lrg == nil {
+						return
+					}
+					fmt.wprintf(w, "%v:", lrg.mask)
+					bac.ansi_start(w, lrg.index)
+					fmt.wprintf(w, "%3i", lrg.index)
+					bac.ansi_end(w)
+					if len(ctx.res) != 0 {
+						fmt.wprintf(w, " %02i ", ctx.res[instr.gvn].index)
+					} else {
+						fmt.wprint(w, "       ")
+					}
 				} else {
-					fmt.wprint(w, "       ")
+					fmt.wprint(w, "                            ")
 				}
-			} else {
-				fmt.wprint(w, "                            ")
 			}
 		}
 
-		log.info(string(sb.buf[:]))
+		when bac.REGLOGS {
+			fmt.eprintln(string(sb.buf[:]))
+		}
 	}
 
 	is_def :: proc(ctx: Ctx, node: ^bac.Node) -> bool {

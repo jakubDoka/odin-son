@@ -1,10 +1,10 @@
 =========== OPT LEVEL: none-quick ===========
 main:
     sub sp, sp, #16
-    movz x0, #8, #0
-    movz x1, #1, #0
+    movz x0, #8
+    movz x1, #1
     adr x2, 0xfc0
-    movz x3, #0, #0
+    movz x3, #0
 1:
     mov x4, x3
     cmp w4, w0
@@ -13,65 +13,65 @@ main:
     add x5, x5, x2
     scvtf d0, x4
     add x4, x4, x1
-    str.v d0, [x5]
+    str d0, [x5]
     mov x3, x4
     b 1
 2:
     adr x3, 0x1060
-    ldr.v d0, [x3]
-    movz x3, #0, #0
-    movz x4, #0, #0
+    ldr d0, [x3]
+    movz x3, #0
+    movz x4, #0
 3:
-    cmp w4, w0
+    cmp w3, w0
     b.eq 6
-    madd x5, x4, x0, xzr
+    madd x5, x3, x0, xzr
     add x5, x5, x2
-    ldr.v d1, [x5]
+    ldr d1, [x5]
     fcmp d1, d0
-    csinc x5, xzr, xzr, pl
+    cset x5, mi
     cbnz x5, 4
-    str x3, [xzr]
+    str x4, [xzr]
     b 5
 4:
-    add x5, x3, x1
+    add x5, x4, x1
     str x5, [xzr]
 5:
-    add x5, x4, x1
-    ldr x3, [xzr]
-    mov x4, x5
+    add x5, x3, x1
+    mov x3, x5
+    ldr x4, [xzr]
     b 3
 6:
     adr x1, 0x1000
     ldr x2, [x1]
     add x0, x1, x0
     ldr x0, [x0]
-    movz x4, #16, #0
-    add x4, x4, x1
-    ldr x4, [x4]
-    movz x5, #24, #0
+    movz x3, #16
+    add x3, x3, x1
+    ldr x3, [x3]
+    movz x5, #24
     add x5, x5, x1
     ldr x5, [x5]
-    movz x6, #32, #0
+    movz x6, #32
     add x6, x6, x1
     ldr x6, [x6]
-    movz x7, #40, #0
+    movz x7, #40
     add x7, x7, x1
     ldr x7, [x7]
-    movz x8, #64, #0
+    movz x8, #64
     add x8, x8, x1
     ldr x8, [x8]
-    movz x9, #72, #0
+    movz x9, #72
     add x9, x9, x1
     ldr x9, [x9]
-    movz x10, #48, #0
+    movz x10, #48
     add x10, x10, x1
     ldr x10, [x10]
-    movz x11, #56, #0
+    movz x11, #56
     add x1, x11, x1
     ldr x1, [x1]
-    add x2, x2, x3
+    add x2, x2, x4
     add x0, x2, x0
-    add x0, x0, x4
+    add x0, x0, x3
     add x0, x0, x5
     add x0, x0, x6
     add x0, x0, x7
@@ -83,10 +83,10 @@ main:
     ret
 =========== OPT LEVEL: none ===========
 main:
-    movz x5, #8, #0
-    movz x4, #1, #0
+    movz x5, #8
+    movz x4, #1
     adr x3, 0xfc0
-    movz x0, #0, #0
+    movz x0, #0
 1:
     cmp w0, w5
     b.eq 2
@@ -94,21 +94,21 @@ main:
     add x1, x1, x3
     scvtf d0, x0
     add x0, x0, x4
-    str.v d0, [x1]
+    str d0, [x1]
     b 1
 2:
     adr x0, 0x1060
-    ldr.v d1, [x0]
-    movz x0, #0, #0
-    movz x1, #0, #0
+    ldr d1, [x0]
+    movz x1, #0
+    movz x0, #0
 3:
     cmp w1, w5
     b.eq 6
     madd x2, x1, x5, xzr
     add x2, x2, x3
-    ldr.v d0, [x2]
+    ldr d0, [x2]
     fcmp d0, d1
-    csinc x2, xzr, xzr, pl
+    cset x2, mi
     cbnz x2, 4
     b 5
 4:
@@ -121,28 +121,28 @@ main:
     ldr x10, [x11]
     add x1, x11, x5
     ldr x9, [x1]
-    movz x1, #16, #0
+    movz x1, #16
     add x1, x1, x11
     ldr x8, [x1]
-    movz x1, #24, #0
+    movz x1, #24
     add x1, x1, x11
     ldr x7, [x1]
-    movz x1, #32, #0
+    movz x1, #32
     add x1, x1, x11
     ldr x6, [x1]
-    movz x1, #40, #0
+    movz x1, #40
     add x1, x1, x11
     ldr x5, [x1]
-    movz x1, #64, #0
+    movz x1, #64
     add x1, x1, x11
     ldr x4, [x1]
-    movz x1, #72, #0
+    movz x1, #72
     add x1, x1, x11
     ldr x3, [x1]
-    movz x1, #48, #0
+    movz x1, #48
     add x1, x1, x11
     ldr x2, [x1]
-    movz x1, #56, #0
+    movz x1, #56
     add x1, x1, x11
     ldr x1, [x1]
     add x0, x10, x0
@@ -159,76 +159,77 @@ main:
 =========== OPT LEVEL: moderate-quick ===========
 main:
     sub sp, sp, #16
-    movz x0, #8, #0
-    movz x1, #1, #0
+    movz x0, #8
+    movz x1, #1
     adr x2, 0xfc0
-    movz x3, #0, #0
+    movz x3, #0
 1:
-    cmp w3, w0
+    mov x4, x3
+    cmp w4, w0
     b.eq 2
-    madd x4, x3, x0, xzr
-    add x4, x4, x2
-    scvtf d0, x3
-    add x5, x3, x1
-    str.v d0, [x4]
-    mov x3, x5
+    madd x5, x4, x0, xzr
+    add x5, x5, x2
+    scvtf d0, x4
+    add x4, x4, x1
+    str d0, [x5]
+    mov x3, x4
     b 1
 2:
     adr x3, 0x1060
-    ldr.v d0, [x3]
-    movz x3, #0, #0
-    movz x4, #0, #0
+    ldr d0, [x3]
+    movz x3, #0
+    movz x4, #0
 3:
-    cmp w4, w0
+    cmp w3, w0
     b.eq 6
-    madd x5, x4, x0, xzr
+    madd x5, x3, x0, xzr
     add x5, x5, x2
-    ldr.v d1, [x5]
+    ldr d1, [x5]
     fcmp d1, d0
-    csinc x5, xzr, xzr, pl
+    cset x5, mi
     cbnz x5, 4
-    str x3, [xzr]
+    str x4, [xzr]
     b 5
 4:
-    add x5, x3, x1
+    add x5, x4, x1
     str x5, [xzr]
 5:
-    add x5, x4, x1
-    ldr x3, [xzr]
-    mov x4, x5
+    add x5, x3, x1
+    mov x3, x5
+    ldr x4, [xzr]
     b 3
 6:
     adr x1, 0x1000
     ldr x2, [x1]
     add x0, x1, x0
     ldr x0, [x0]
-    movz x4, #16, #0
-    add x4, x4, x1
-    ldr x4, [x4]
-    movz x5, #24, #0
+    movz x3, #16
+    add x3, x3, x1
+    ldr x3, [x3]
+    movz x5, #24
     add x5, x5, x1
     ldr x5, [x5]
-    movz x6, #32, #0
+    movz x6, #32
     add x6, x6, x1
     ldr x6, [x6]
-    movz x7, #40, #0
+    movz x7, #40
     add x7, x7, x1
     ldr x7, [x7]
-    movz x8, #64, #0
+    movz x8, #64
     add x8, x8, x1
     ldr x8, [x8]
-    movz x9, #72, #0
+    movz x9, #72
     add x9, x9, x1
     ldr x9, [x9]
-    movz x10, #48, #0
+    movz x10, #48
     add x10, x10, x1
     ldr x10, [x10]
-    movz x11, #56, #0
+    movz x11, #56
     add x1, x11, x1
     ldr x1, [x1]
-    add x2, x2, x3
+    add x2, x2, x4
     add x0, x2, x0
-    add x0, x0, x4
+    add x0, x0, x3
     add x0, x0, x5
     add x0, x0, x6
     add x0, x0, x7
@@ -240,10 +241,10 @@ main:
     ret
 =========== OPT LEVEL: moderate ===========
 main:
-    movz x5, #8, #0
-    movz x4, #1, #0
+    movz x5, #8
+    movz x4, #1
     adr x3, 0xfc0
-    movz x0, #0, #0
+    movz x0, #0
 1:
     cmp w0, w5
     b.eq 2
@@ -251,21 +252,21 @@ main:
     add x1, x1, x3
     scvtf d0, x0
     add x0, x0, x4
-    str.v d0, [x1]
+    str d0, [x1]
     b 1
 2:
     adr x0, 0x1060
-    ldr.v d1, [x0]
-    movz x0, #0, #0
-    movz x1, #0, #0
+    ldr d1, [x0]
+    movz x1, #0
+    movz x0, #0
 3:
     cmp w1, w5
     b.eq 6
     madd x2, x1, x5, xzr
     add x2, x2, x3
-    ldr.v d0, [x2]
+    ldr d0, [x2]
     fcmp d0, d1
-    csinc x2, xzr, xzr, pl
+    cset x2, mi
     cbnz x2, 4
     b 5
 4:
@@ -278,28 +279,28 @@ main:
     ldr x10, [x11]
     add x1, x11, x5
     ldr x9, [x1]
-    movz x1, #16, #0
+    movz x1, #16
     add x1, x1, x11
     ldr x8, [x1]
-    movz x1, #24, #0
+    movz x1, #24
     add x1, x1, x11
     ldr x7, [x1]
-    movz x1, #32, #0
+    movz x1, #32
     add x1, x1, x11
     ldr x6, [x1]
-    movz x1, #40, #0
+    movz x1, #40
     add x1, x1, x11
     ldr x5, [x1]
-    movz x1, #64, #0
+    movz x1, #64
     add x1, x1, x11
     ldr x4, [x1]
-    movz x1, #72, #0
+    movz x1, #72
     add x1, x1, x11
     ldr x3, [x1]
-    movz x1, #48, #0
+    movz x1, #48
     add x1, x1, x11
     ldr x2, [x1]
-    movz x1, #56, #0
+    movz x1, #56
     add x1, x1, x11
     ldr x1, [x1]
     add x0, x10, x0
@@ -321,33 +322,33 @@ main:
     str x21, [xzr, #16]
     str x22, [xzr, #24]
     str x23, [xzr, #32]
-    movz x9, #8, #0
-    movz x8, #1, #0
+    movz x9, #8
+    movz x8, #1
     adr x17, 0x1000
     adr x7, 0xfc0
     add x16, x17, x9
-    movz x0, #16, #0
+    movz x0, #16
     add x15, x0, x17
-    movz x0, #24, #0
+    movz x0, #24
     add x14, x0, x17
-    movz x0, #32, #0
+    movz x0, #32
     add x13, x0, x17
-    movz x0, #40, #0
+    movz x0, #40
     add x23, x0, x17
-    movz x0, #48, #0
+    movz x0, #48
     add x22, x0, x17
-    movz x0, #56, #0
+    movz x0, #56
     add x21, x0, x17
-    movz x0, #64, #0
+    movz x0, #64
     add x20, x0, x17
-    movz x0, #72, #0
+    movz x0, #72
     add x19, x0, x17
-    movz x18, #0, #0
+    movz x18, #0
 1:
     madd x0, x18, x9, xzr
     add x0, x0, x7
     scvtf d0, x18
-    str.v d0, [x0]
+    str d0, [x0]
     ldr x12, [x17]
     ldr x11, [x16]
     ldr x10, [x15]
@@ -362,15 +363,15 @@ main:
     cmp w18, w9
     b.ne 1
     adr x13, 0x1060
-    ldr.v d1, [x13]
-    movz x14, #0, #0
-    movz x13, #0, #0
+    ldr d1, [x13]
+    movz x14, #0
+    movz x13, #0
 2:
     madd x15, x14, x9, xzr
     add x15, x15, x7
-    ldr.v d0, [x15]
+    ldr d0, [x15]
     fcmp d0, d1
-    csinc x15, xzr, xzr, pl
+    cset x15, mi
     cbnz x15, 3
     mov x15, x13
     b 4

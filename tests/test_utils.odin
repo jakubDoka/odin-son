@@ -1,18 +1,17 @@
-#+build !wasm32
 package tests
 
 import main ".."
 import "../bac"
 import "../bac/arm"
-import "../bac/builder"
+import "../bac/ssa"
 import "../bac/wasm"
 import "../bac/x64"
 import "../typecheck"
 import "../unicorn"
-import "../vendored/gam/util/arna"
-import "../vendored/gam/util/hot"
+import "../utils/arna"
 import "../wabt"
 import "base:intrinsics"
+import "core:debug/trace"
 import "core:dynlib"
 import "core:fmt"
 import "core:hash"
@@ -33,7 +32,6 @@ import "core:testing"
 
 TEST_OUT_DIR :: "print-tests"
 
-@(private)
 custom_fmt_once: sync.Once
 
 // Sets up all user formatters (bac + `main::Type`) exactly once.
@@ -80,14 +78,16 @@ run_test :: proc(
 
 	name_str = name
 	context.logger.options &= ~{.Time, .Date, .Level, .Procedure}
-	context.assertion_failure_proc = hot.init_trace()
+	when ODIN_DEBUG {
+		context.assertion_failure_proc = trace.assertion_failure_proc
+	}
 	context.random_generator = {}
 
-	if types.mems.graph.reserved == 0 {
+	if types.mems.prc.reserved == 0 {
 		arna.scratch[0].reserved = 1024 * 1024
 		arna.scratch[1].reserved = 1024 * 1024
 
-		types.mems.graph.reserved = 4096 * 128
+		types.mems.prc.reserved = 4096 * 128
 		types.mems.regalloc.reserved = 4096 * 64
 		types.mems.scratch.reserved = 4096 * 16
 		types.mems.code.reserved = 4096 * 16
@@ -210,7 +210,9 @@ run_test :: proc(
 				)
 			}
 		}
-		bac.current_graph = &ctx
+
+		bac.current_prc = &ctx
+		defer bac.current_prc = nil
 
 		types.mems.code.pos = 0
 		types.mems.reloc.pos = 0
@@ -232,10 +234,10 @@ run_test :: proc(
 		switch level.vm {
 		case .Native, .Arm:
 			if level.vm == .Native {
-				ctx.target.cc = &x64.X64_SYSTEMV_CC
+				ctx.target.cc = &x64.CC_TABLE[x64.X64_SYSTEMV_CC]
 				ctx.target.spec = &x64.SPEC
 			} else {
-				ctx.target.cc = &arm.ARM_SYSTEMV_CC
+				ctx.target.cc = &arm.CC_TABLE[arm.ARM_SYSTEMV_CC]
 				ctx.target.spec = &arm.SPEC
 			}
 
@@ -277,12 +279,13 @@ run_test :: proc(
 				emit_got_imports = true,
 			}
 
-			for kind, i in ([]builder.Builtin_Proc{.memcpy, .memset}) {
-				ctx.graph = {
-					has_dbg = ctx.graph.has_dbg,
+			for kind, i in ([]ssa.Builtin_Proc{.memcpy, .memset}) {
+				ctx.prc = {
+					has_dbg = ctx.prc.has_dbg,
+					temps   = &arna.scratch,
 				}
-				ctx.node_spec = &builder.SPEC
-				ctx.mem = &ctx.mems.graph
+				ctx.node_spec = &ssa.SPEC
+				ctx.mem = &ctx.mems.prc
 				ctx.mem.pos = bac.PRECISION
 				ctx.opt_flags = level.flags
 				ctx.stats = &ctx.tstats
@@ -293,7 +296,7 @@ run_test :: proc(
 					0 ..< 3 = {dt = .I64},
 				}
 
-				builder.make_builtin_proc(&ctx, kind)
+				ssa.make_builtin_proc(&ctx, kind)
 				main.emit_proc_code(&ctx, &emit_ctx, prc)
 			}
 
@@ -449,7 +452,7 @@ run_test :: proc(
 
 			resize(&ctx.procs, len(ctx.procs) - 2)
 		case .Wasm:
-			ctx.target.cc = &wasm.WASM_SYSTEMV_CC
+			ctx.target.cc = &wasm.CC_TABLE[wasm.WASM_SYSTEMV_CC]
 			ctx.target.spec = &wasm.SPEC
 
 			for _, i in ctx.procs {

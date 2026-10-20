@@ -1,4 +1,4 @@
-package wasm
+package bac_wasm
 
 import ".."
 

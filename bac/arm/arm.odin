@@ -1,11 +1,10 @@
-package arm
+package bac_arm
 
 import bac ".."
-import "../../vendored/gam/util/arna"
-import "../../vendored/gam/util/bit_arr"
-import "../builder"
+import "../../utils/arna"
+import "../../utils/bit_arr"
+import "../../utils/fmt"
 import "base:intrinsics"
-import "core:fmt"
 import "core:mem"
 import "core:slice"
 
@@ -51,67 +50,71 @@ V24, V25, V26 :: Reg(V_BANK | 24), Reg(V_BANK | 25), Reg(V_BANK | 26)
 V27, V28, V29 :: Reg(V_BANK | 27), Reg(V_BANK | 28), Reg(V_BANK | 29)
 V30, V31 :: Reg(V_BANK | 30), Reg(V_BANK | 31)
 
-ARM_SYSTEMV_CC := bac.Call_Conv {
-	name          = "ARM_SYSTEMV_CC",
-	caller_saved  = {
-		{
-			X0,
-			X1,
-			X2,
-			X3,
-			X4,
-			X5,
-			X6,
-			X7,
-			X8,
-			X9,
-			X10,
-			X11,
-			X12,
-			X13,
-			X14,
-			X15,
-			X16,
-			X17,
-			X18,
+ARM_SYSTEMV_CC :: 0
+
+@(tag = "api", rodata, export, link_name = "bac_arm_CC_TABLE")
+CC_TABLE := [?]bac.Call_Conv {
+	ARM_SYSTEMV_CC = {
+		caller_saved = {
+			{
+				X0,
+				X1,
+				X2,
+				X3,
+				X4,
+				X5,
+				X6,
+				X7,
+				X8,
+				X9,
+				X10,
+				X11,
+				X12,
+				X13,
+				X14,
+				X15,
+				X16,
+				X17,
+				X18,
+			},
+			{
+				V0,
+				V1,
+				V2,
+				V3,
+				V4,
+				V5,
+				V6,
+				V7,
+				V16,
+				V17,
+				V18,
+				V19,
+				V20,
+				V21,
+				V22,
+				V23,
+				V24,
+				V25,
+				V26,
+				V27,
+				V28,
+				V29,
+				V30,
+				V31,
+			},
 		},
-		{
-			V0,
-			V1,
-			V2,
-			V3,
-			V4,
-			V5,
-			V6,
-			V7,
-			V16,
-			V17,
-			V18,
-			V19,
-			V20,
-			V21,
-			V22,
-			V23,
-			V24,
-			V25,
-			V26,
-			V27,
-			V28,
-			V29,
-			V30,
-			V31,
+		callee_saved = {
+			{X19, X20, X21, X22, X23, X24, X25, X26, X27, X28},
+			{V8, V9, V10, V11, V12, V13, V14, V15},
 		},
+		args = {
+			{X0, X1, X2, X3, X4, X5, X6, X7},
+			{V0, V1, V2, V3, V4, V5, V6, V7},
+		},
+		rets = {{X0, X1}, {V0, V1}},
+		stack_pointer = SP,
 	},
-	callee_saved  = {
-		{X19, X20, X21, X22, X23, X24, X25, X26, X27, X28},
-		{V8, V9, V10, V11, V12, V13, V14, V15},
-	},
-	args          = {
-		{X0, X1, X2, X3, X4, X5, X6, X7},
-		{V0, V1, V2, V3, V4, V5, V6, V7},
-	},
-	rets          = {{X0, X1}, {V0, V1}},
-	stack_pointer = SP,
 }
 
 SPEC_NOT_PRESENT :: (#load("node_specs.odin", string) or_else "") == ""
@@ -122,7 +125,7 @@ when SPEC_NOT_PRESENT {
 	inherit_idx_of :: proc($T: typeid) -> u8 {return 0}
 
 	add_csel_ult_imm :: proc(
-		graph: ^bac.Proc,
+		prc: ^bac.Proc,
 		name: string,
 		dt: bac.Node_Datatype,
 		on_true, on_false, count: bac.Node_ID,
@@ -161,11 +164,11 @@ atype :: proc(node: ^Node) -> Node_Type {
 }
 
 aextra :: #force_inline proc(
-	graph: ^bac.Proc,
+	prc: ^bac.Proc,
 	node: ^bac.Node,
 	$T: typeid,
 ) -> ^T {
-	if graph.inheritance_table[node.rtype] & (1 << inherit_idx_of(T)) == 0 {
+	if prc.inheritance_table[node.rtype] & (1 << inherit_idx_of(T)) == 0 {
 		return nil
 	}
 	return (^T)(&node.extra)
@@ -274,11 +277,11 @@ peep :: proc(
 		if node.dt in bac.FLOAT_DTS && cnst.value != 0 {
 			global := bac.c_int_as_global(ctx, node)
 			addr := bac.add_global_addr(ctx, "caddr", global)
-			cmem := builder.get_or_add_const_mem(ctx)
+			cmem := bac.get_or_add_const_mem(ctx)
 			return bac.add_load(ctx, "cild", node.dt, 0, cmem, addr)
 		}
 	case .Eq ..= .U_Ge:
-		if bac.operation_datatype(ctx.graph, node) in bac.FLOAT_DTS do break
+		if bac.operation_datatype(ctx.prc, node) in bac.FLOAT_DTS do break
 		if len(node.outs) == 1 &&
 		   get_node(ctx, node.outs[0].id).itype == .If &&
 		   node.dt != .Void {
@@ -316,7 +319,7 @@ peep :: proc(
 			meta = {extra_dwords = size},
 		)
 		addr := bac.add_global_addr(ctx, "selmka", msk)
-		cmem := builder.get_or_add_const_mem(ctx)
+		cmem := bac.get_or_add_const_mem(ctx)
 		mskld := bac.add_load(ctx, "seld", .V128, 0, cmem, addr)
 
 		shl := bac.add_bin_op(
@@ -385,7 +388,7 @@ post_schedule_peep :: proc(
 }
 
 meta_of :: #force_inline proc(
-	graph: ^bac.Proc,
+	prc: ^bac.Proc,
 	ra: ^bac.Regalloc,
 	node: bac.Expanded_Node,
 	_: $T,
@@ -432,6 +435,10 @@ meta_of :: #force_inline proc(
 	}
 
 	if node.gvn == 1 {
+		if ra.cc == nil {
+			ra.cc = &CC_TABLE[ARM_SYSTEMV_CC]
+		}
+
 		ra.mask_len = MASK_SIZE
 		rslice(ra, RK_GENERAL, GPA_MASK[:])
 		rslice(ra, RK_VECTOR, VEC_MASK[:])
@@ -485,10 +492,10 @@ meta_of :: #force_inline proc(
 	case .Msub, .Csel_Ult_Imm:
 		return {out = out, masks = nmasks[:3]}
 	case .Eq ..= .U_Ge:
-		ikind := ra.datatype_to_reg_kind[get_node(graph, node.inps[0]).dt]
+		ikind := ra.datatype_to_reg_kind[get_node(prc, node.inps[0]).dt]
 		return {out = out, masks = masks[ikind][:2]}
 	case .Conv, .U_Conv, .Cast:
-		vl := get_node(graph, node.inps[0])
+		vl := get_node(prc, node.inps[0])
 		ckind := ra.datatype_to_reg_kind[vl.dt]
 		return {out = out, masks = masks[ckind][:1]}
 	case .CInt, .Local_Addr, .Global_Addr, .Proc_Addr:
@@ -506,16 +513,16 @@ meta_of :: #force_inline proc(
 			out = IOUT,
 			input_start = 1,
 			masks = nmasks[:1 -
-			int(get_node(graph, node.inps[1]).dt == .Void)],
+			int(get_node(prc, node.inps[1]).dt == .Void)],
 		}
 	case .Call, .Return, .Set, .Copy:
-		return bac.cc_node_meta(graph, ra, node)
+		return bac.cc_node_meta(prc, ra, node, CC_TABLE[:])
 	case .Ret:
-		return {out = bac.ret_mask(graph, ra, node)}
+		return {out = bac.ret_mask(prc, ra, node)}
 	case .Param:
-		return {out = bac.param_mask(graph, ra, node)}
+		return {out = bac.param_mask(prc, ra, node)}
 	case .Store:
-		vl := get_node(graph, node.inps[3])
+		vl := get_node(prc, node.inps[3])
 		vkind := ra.datatype_to_reg_kind[vl.dt]
 		return {
 			out = IOUT,
@@ -552,6 +559,10 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 	ctx.spill_slot_base = spill_slot_base[:]
 	ctx.stack_param_offset = stack_param_offset[:]
 	ctx.spill_slot_size = SPILL_SLOT_SIZE[:]
+
+	if ctx.abi == nil {
+		ctx.abi = &CC_TABLE[ARM_SYSTEMV_CC]
+	}
 
 	arna.alloc(ctx.code, 0, 4)
 
@@ -619,7 +630,7 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 	for param in params {
 		enode := expand_node(ctx, param)
 		if enode.itype == .Local {
-			extra := bac.get_extra(ctx.graph, enode, bac.Local)
+			extra := bac.get_extra(ctx.prc, enode, bac.Local)
 			extra.offset += ctx.stack_size
 		}
 	}
@@ -952,7 +963,7 @@ emit_instr :: proc(
 			case .I32:
 				conv_op = SXTW_X
 			case:
-				panic("no")
+				fmt.panicf("no")
 			}
 
 			emit_op(ctx.code, conv_op | u32(rn.index) << 5 | u32(rd.index))
@@ -1410,7 +1421,7 @@ emit_instr :: proc(
 		case .Call:
 			id = call.cid
 
-			if call.indirect {
+			if bac.is_indirect_call(node) {
 				op = 0xd63f0000
 
 				idx := len(node.inps) - 1

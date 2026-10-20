@@ -3,26 +3,26 @@ finite:
     cbnz x0, 1
     b 1
 1:
-    movz x0, #1, #0
+    movz x0, #1
     ret
 main:
     sub sp, sp, #48
     str x19, [xzr]
-    stp x29, x30, [xzr, #15]
+    stp x29, x30, [xzr, #8]
     adr x19, 0xfb0
-    ldr.v d0, [x19]
+    ldr d0, [x19]
     bl 0x6c
     str x0, [xzr, #24]
-    ldr.v d0, [x19]
+    ldr d0, [x19]
     fcvt s0, d0
     bl 0x11c
     str x0, [xzr, #32]
-    ldr.v d0, [x19]
-    eor.v v1, v1, v1
+    ldr d0, [x19]
+    eor v1.16b, v1.16b, v1.16b
     fcmp d0, d1
-    csinc x0, xzr, xzr, ne
+    cset x0, eq
     bl 0xfffffff0
-    movz x1, #251, #0
+    movz x1, #251
     ldr x2, [xzr, #24]
     ldr x3, [xzr, #32]
     add x2, x2, x3
@@ -30,150 +30,150 @@ main:
     sdiv x2, x0, x1
     msub x0, x2, x1, x0
     ldr x19, [xzr]
-    ldp x29, x30, [xzr, #15]
+    ldp x29, x30, [xzr, #8]
     add sp, sp, #48
     ret
 run f64:
     sub sp, sp, #80
-    stp x29, x30, [xzr, #7]
-    str.v d0, [xzr, #40]
+    stp x29, x30, [xzr]
+    str d0, [xzr, #40]
     adr x0, 0xf4c
-    ldr.v d0, [x0]
-    str.v d0, [xzr, #56]
-    ldr.v d1, [xzr, #56]
-    ldr.v d0, [xzr, #56]
+    ldr d0, [x0]
+    str d0, [xzr, #56]
+    ldr d1, [xzr, #56]
+    ldr d0, [xzr, #56]
     bl 0x160
     str x0, [xzr, #16]
-    ldr.v d0, [xzr, #40]
-    ldr.v d1, [xzr, #40]
+    ldr d0, [xzr, #40]
+    ldr d1, [xzr, #40]
     fdiv d0, d0, d1
-    ldr.v d1, [xzr, #56]
+    ldr d1, [xzr, #56]
     bl 0x160
     str x0, [xzr, #24]
-    ldr.v d0, [xzr, #56]
-    ldr.v d1, [xzr, #40]
+    ldr d0, [xzr, #56]
+    ldr d1, [xzr, #40]
     fdiv d0, d0, d1
-    str.v d0, [xzr, #40]
-    eor.v v0, v0, v0
-    ldr.v d1, [xzr, #40]
+    str d0, [xzr, #40]
+    eor v0.16b, v0.16b, v0.16b
+    ldr d1, [xzr, #40]
     fsub d1, d0, d1
-    ldr.v d0, [xzr, #40]
+    ldr d0, [xzr, #40]
     bl 0x160
     str x0, [xzr, #32]
-    ldr.v d1, [xzr, #56]
-    ldr.v d0, [xzr, #40]
+    ldr d1, [xzr, #56]
+    ldr d0, [xzr, #40]
     bl 0x160
-    movz x1, #3, #0
+    movz x1, #3
     ldr x2, [xzr, #24]
     madd x1, x2, x1, xzr
     ldr x2, [xzr, #16]
     add x1, x2, x1
-    movz x2, #5, #0
+    movz x2, #5
     ldr x3, [xzr, #32]
     madd x2, x3, x2, xzr
     add x1, x1, x2
-    movz x2, #7, #0
+    movz x2, #7
     madd x0, x0, x2, xzr
     add x0, x1, x0
-    ldp x29, x30, [xzr, #7]
+    ldp x29, x30, [xzr]
     add sp, sp, #80
     ret
 run f32:
     sub sp, sp, #80
-    stp x29, x30, [xzr, #7]
-    str.v d0, [xzr, #40]
+    stp x29, x30, [xzr]
+    str d0, [xzr, #40]
     adr x0, 0xea4
-    ldr.v s0, [x0]
-    str.v d0, [xzr, #56]
-    ldr.v d1, [xzr, #56]
-    ldr.v d0, [xzr, #56]
+    ldr s0, [x0]
+    str d0, [xzr, #56]
+    ldr d1, [xzr, #56]
+    ldr d0, [xzr, #56]
     bl 0x100
     str x0, [xzr, #16]
-    ldr.v d0, [xzr, #40]
-    ldr.v d1, [xzr, #40]
+    ldr d0, [xzr, #40]
+    ldr d1, [xzr, #40]
     fdiv s0, s0, s1
-    ldr.v d1, [xzr, #56]
+    ldr d1, [xzr, #56]
     bl 0x100
     str x0, [xzr, #24]
-    ldr.v d0, [xzr, #56]
-    ldr.v d1, [xzr, #40]
+    ldr d0, [xzr, #56]
+    ldr d1, [xzr, #40]
     fdiv s0, s0, s1
-    str.v d0, [xzr, #40]
-    eor.v v0, v0, v0
-    ldr.v d1, [xzr, #40]
+    str d0, [xzr, #40]
+    eor v0.16b, v0.16b, v0.16b
+    ldr d1, [xzr, #40]
     fsub s1, s0, s1
-    ldr.v d0, [xzr, #40]
+    ldr d0, [xzr, #40]
     bl 0x100
     str x0, [xzr, #32]
-    ldr.v d1, [xzr, #56]
-    ldr.v d0, [xzr, #40]
+    ldr d1, [xzr, #56]
+    ldr d0, [xzr, #40]
     bl 0x100
-    movz x1, #3, #0
+    movz x1, #3
     ldr x2, [xzr, #24]
     madd x1, x2, x1, xzr
     ldr x2, [xzr, #16]
     add x1, x2, x1
-    movz x2, #5, #0
+    movz x2, #5
     ldr x3, [xzr, #32]
     madd x2, x3, x2, xzr
     add x1, x1, x2
-    movz x2, #7, #0
+    movz x2, #7
     madd x0, x0, x2, xzr
     add x0, x1, x0
-    ldp x29, x30, [xzr, #7]
+    ldp x29, x30, [xzr]
     add sp, sp, #80
     ret
 check f64:
     fadd d0, d0, d1
     fcmp d0, d0
-    csinc x0, xzr, xzr, ne
+    cset x0, eq
     cbnz x0, 0x18
-    movz x0, #0, #0
+    movz x0, #0
     b 0x1c
 6:
-    movz x0, #1, #0
+    movz x0, #1
 7:
     fcmp d0, d0
-    csinc x1, xzr, xzr, eq
+    cset x1, ne
     cbnz x1, 0x2c
     b 0x34
 8:
-    movz x1, #2, #0
+    movz x1, #2
     add x0, x1, x0
 9:
     fcmp d0, d0
-    csinc x1, xzr, xzr, lt
+    cset x1, ge
     cbnz x1, 0x44
     b 0x4c
 10:
-    movz x1, #8, #0
+    movz x1, #8
     add x0, x1, x0
 11:
     ret
 check f32:
     fadd s0, s0, s1
     fcmp s0, s0
-    csinc x0, xzr, xzr, ne
+    cset x0, eq
     cbnz x0, 0x18
-    movz x0, #0, #0
+    movz x0, #0
     b 0x1c
 13:
-    movz x0, #1, #0
+    movz x0, #1
 14:
     fcmp s0, s0
-    csinc x1, xzr, xzr, eq
+    cset x1, ne
     cbnz x1, 0x2c
     b 0x34
 15:
-    movz x1, #2, #0
+    movz x1, #2
     add x0, x1, x0
 16:
     fcmp s0, s0
-    csinc x1, xzr, xzr, lt
+    cset x1, ge
     cbnz x1, 0x44
     b 0x4c
 17:
-    movz x1, #8, #0
+    movz x1, #8
     add x0, x1, x0
 18:
     ret
@@ -182,28 +182,28 @@ finite:
     cbnz x0, 1
     b 1
 1:
-    movz x0, #1, #0
+    movz x0, #1
     ret
 main:
     sub sp, sp, #48
     str x19, [xzr]
     str x20, [xzr, #8]
     str x21, [xzr, #16]
-    stp x29, x30, [xzr, #31]
+    stp x29, x30, [xzr, #24]
     adr x21, 0xfb0
-    ldr.v d0, [x21]
+    ldr d0, [x21]
     bl 0x74
     mov x20, x0
-    ldr.v d0, [x21]
+    ldr d0, [x21]
     fcvt s0, d0
     bl 0x118
     mov x19, x0
-    ldr.v d1, [x21]
-    eor.v v0, v0, v0
+    ldr d1, [x21]
+    eor v0.16b, v0.16b, v0.16b
     fcmp d1, d0
-    csinc x0, xzr, xzr, ne
+    cset x0, eq
     bl 0xfffffff0
-    movz x2, #251, #0
+    movz x2, #251
     add x1, x20, x19
     add x1, x1, x0
     sdiv x0, x1, x2
@@ -211,7 +211,7 @@ main:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
-    ldp x29, x30, [xzr, #31]
+    ldp x29, x30, [xzr, #24]
     add sp, sp, #48
     ret
 run f64:
@@ -219,41 +219,41 @@ run f64:
     str x19, [xzr]
     str x20, [xzr, #8]
     str x21, [xzr, #16]
-    stp x29, x30, [xzr, #31]
-    orr.v v8, v0, v0
+    stp x29, x30, [xzr, #24]
+    orr v8.16b, v0.16b, v0.16b
     adr x0, 0xf44
-    ldr.v d0, [x0]
-    orr.v v9, v0, v0
-    orr.v v1, v9, v9
-    orr.v v0, v9, v9
+    ldr d0, [x0]
+    orr v9.16b, v0.16b, v0.16b
+    orr v1.16b, v9.16b, v9.16b
+    orr v0.16b, v9.16b, v9.16b
     bl 0x148
     mov x20, x0
     fdiv d0, d8, d8
-    orr.v v1, v9, v9
+    orr v1.16b, v9.16b, v9.16b
     bl 0x148
     mov x21, x0
     fdiv d8, d9, d8
-    eor.v v1, v1, v1
+    eor v1.16b, v1.16b, v1.16b
     fsub d1, d1, d8
-    orr.v v0, v8, v8
+    orr v0.16b, v8.16b, v8.16b
     bl 0x148
     mov x19, x0
-    orr.v v1, v9, v9
-    orr.v v0, v8, v8
+    orr v1.16b, v9.16b, v9.16b
+    orr v0.16b, v8.16b, v8.16b
     bl 0x148
-    movz x1, #3, #0
+    movz x1, #3
     madd x1, x21, x1, xzr
     add x2, x20, x1
-    movz x1, #5, #0
+    movz x1, #5
     madd x1, x19, x1, xzr
     add x2, x2, x1
-    movz x1, #7, #0
+    movz x1, #7
     madd x0, x0, x1, xzr
     add x0, x2, x0
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
-    ldp x29, x30, [xzr, #31]
+    ldp x29, x30, [xzr, #24]
     add sp, sp, #48
     ret
 run f32:
@@ -261,94 +261,94 @@ run f32:
     str x19, [xzr]
     str x20, [xzr, #8]
     str x21, [xzr, #16]
-    stp x29, x30, [xzr, #31]
-    orr.v v8, v0, v0
+    stp x29, x30, [xzr, #24]
+    orr v8.16b, v0.16b, v0.16b
     adr x0, 0xea8
-    ldr.v s0, [x0]
-    orr.v v9, v0, v0
-    orr.v v1, v9, v9
-    orr.v v0, v9, v9
+    ldr s0, [x0]
+    orr v9.16b, v0.16b, v0.16b
+    orr v1.16b, v9.16b, v9.16b
+    orr v0.16b, v9.16b, v9.16b
     bl 0xf4
     mov x20, x0
     fdiv s0, s8, s8
-    orr.v v1, v9, v9
+    orr v1.16b, v9.16b, v9.16b
     bl 0xf4
     mov x21, x0
     fdiv s8, s9, s8
-    eor.v v1, v1, v1
+    eor v1.16b, v1.16b, v1.16b
     fsub s1, s1, s8
-    orr.v v0, v8, v8
+    orr v0.16b, v8.16b, v8.16b
     bl 0xf4
     mov x19, x0
-    orr.v v1, v9, v9
-    orr.v v0, v8, v8
+    orr v1.16b, v9.16b, v9.16b
+    orr v0.16b, v8.16b, v8.16b
     bl 0xf4
-    movz x1, #3, #0
+    movz x1, #3
     madd x1, x21, x1, xzr
     add x2, x20, x1
-    movz x1, #5, #0
+    movz x1, #5
     madd x1, x19, x1, xzr
     add x2, x2, x1
-    movz x1, #7, #0
+    movz x1, #7
     madd x0, x0, x1, xzr
     add x0, x2, x0
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
-    ldp x29, x30, [xzr, #31]
+    ldp x29, x30, [xzr, #24]
     add sp, sp, #48
     ret
 check f64:
     fadd d0, d0, d1
     fcmp d0, d0
-    csinc x0, xzr, xzr, ne
+    cset x0, eq
     cbnz x0, 0x18
-    movz x0, #0, #0
+    movz x0, #0
     b 0x1c
 6:
-    movz x0, #1, #0
+    movz x0, #1
 7:
     fcmp d0, d0
-    csinc x1, xzr, xzr, eq
+    cset x1, ne
     cbnz x1, 0x2c
     b 0x34
 8:
-    movz x1, #2, #0
+    movz x1, #2
     add x0, x1, x0
 9:
     fcmp d0, d0
-    csinc x1, xzr, xzr, lt
+    cset x1, ge
     cbnz x1, 0x44
     b 0x4c
 10:
-    movz x1, #8, #0
+    movz x1, #8
     add x0, x1, x0
 11:
     ret
 check f32:
     fadd s0, s0, s1
     fcmp s0, s0
-    csinc x0, xzr, xzr, ne
+    cset x0, eq
     cbnz x0, 0x18
-    movz x0, #0, #0
+    movz x0, #0
     b 0x1c
 13:
-    movz x0, #1, #0
+    movz x0, #1
 14:
     fcmp s0, s0
-    csinc x1, xzr, xzr, eq
+    cset x1, ne
     cbnz x1, 0x2c
     b 0x34
 15:
-    movz x1, #2, #0
+    movz x1, #2
     add x0, x1, x0
 16:
     fcmp s0, s0
-    csinc x1, xzr, xzr, lt
+    cset x1, ge
     cbnz x1, 0x44
     b 0x4c
 17:
-    movz x1, #8, #0
+    movz x1, #8
     add x0, x1, x0
 18:
     ret
@@ -357,26 +357,26 @@ finite:
     cbnz x0, 1
     b 1
 1:
-    movz x0, #1, #0
+    movz x0, #1
     ret
 main:
     sub sp, sp, #48
     str x19, [xzr]
-    stp x29, x30, [xzr, #15]
+    stp x29, x30, [xzr, #8]
     adr x19, 0xfb0
-    ldr.v d0, [x19]
+    ldr d0, [x19]
     bl 0x6c
     str x0, [xzr, #24]
-    ldr.v d0, [x19]
+    ldr d0, [x19]
     fcvt s0, d0
     bl 0x11c
     str x0, [xzr, #32]
-    ldr.v d0, [x19]
-    eor.v v1, v1, v1
+    ldr d0, [x19]
+    eor v1.16b, v1.16b, v1.16b
     fcmp d0, d1
-    csinc x0, xzr, xzr, ne
+    cset x0, eq
     bl 0xfffffff0
-    movz x1, #251, #0
+    movz x1, #251
     ldr x2, [xzr, #24]
     ldr x3, [xzr, #32]
     add x2, x2, x3
@@ -384,150 +384,150 @@ main:
     sdiv x2, x0, x1
     msub x0, x2, x1, x0
     ldr x19, [xzr]
-    ldp x29, x30, [xzr, #15]
+    ldp x29, x30, [xzr, #8]
     add sp, sp, #48
     ret
 run f64:
     sub sp, sp, #80
-    stp x29, x30, [xzr, #7]
-    str.v d0, [xzr, #40]
+    stp x29, x30, [xzr]
+    str d0, [xzr, #40]
     adr x0, 0xf4c
-    ldr.v d0, [x0]
-    str.v d0, [xzr, #56]
-    ldr.v d1, [xzr, #56]
-    ldr.v d0, [xzr, #56]
+    ldr d0, [x0]
+    str d0, [xzr, #56]
+    ldr d1, [xzr, #56]
+    ldr d0, [xzr, #56]
     bl 0x160
     str x0, [xzr, #16]
-    ldr.v d0, [xzr, #40]
-    ldr.v d1, [xzr, #40]
+    ldr d0, [xzr, #40]
+    ldr d1, [xzr, #40]
     fdiv d0, d0, d1
-    ldr.v d1, [xzr, #56]
+    ldr d1, [xzr, #56]
     bl 0x160
     str x0, [xzr, #24]
-    ldr.v d0, [xzr, #56]
-    ldr.v d1, [xzr, #40]
+    ldr d0, [xzr, #56]
+    ldr d1, [xzr, #40]
     fdiv d0, d0, d1
-    str.v d0, [xzr, #40]
-    eor.v v0, v0, v0
-    ldr.v d1, [xzr, #40]
+    str d0, [xzr, #40]
+    eor v0.16b, v0.16b, v0.16b
+    ldr d1, [xzr, #40]
     fsub d1, d0, d1
-    ldr.v d0, [xzr, #40]
+    ldr d0, [xzr, #40]
     bl 0x160
     str x0, [xzr, #32]
-    ldr.v d1, [xzr, #56]
-    ldr.v d0, [xzr, #40]
+    ldr d1, [xzr, #56]
+    ldr d0, [xzr, #40]
     bl 0x160
-    movz x1, #3, #0
+    movz x1, #3
     ldr x2, [xzr, #24]
     madd x1, x2, x1, xzr
     ldr x2, [xzr, #16]
     add x1, x2, x1
-    movz x2, #5, #0
+    movz x2, #5
     ldr x3, [xzr, #32]
     madd x2, x3, x2, xzr
     add x1, x1, x2
-    movz x2, #7, #0
+    movz x2, #7
     madd x0, x0, x2, xzr
     add x0, x1, x0
-    ldp x29, x30, [xzr, #7]
+    ldp x29, x30, [xzr]
     add sp, sp, #80
     ret
 run f32:
     sub sp, sp, #80
-    stp x29, x30, [xzr, #7]
-    str.v d0, [xzr, #40]
+    stp x29, x30, [xzr]
+    str d0, [xzr, #40]
     adr x0, 0xea4
-    ldr.v s0, [x0]
-    str.v d0, [xzr, #56]
-    ldr.v d1, [xzr, #56]
-    ldr.v d0, [xzr, #56]
+    ldr s0, [x0]
+    str d0, [xzr, #56]
+    ldr d1, [xzr, #56]
+    ldr d0, [xzr, #56]
     bl 0x100
     str x0, [xzr, #16]
-    ldr.v d0, [xzr, #40]
-    ldr.v d1, [xzr, #40]
+    ldr d0, [xzr, #40]
+    ldr d1, [xzr, #40]
     fdiv s0, s0, s1
-    ldr.v d1, [xzr, #56]
+    ldr d1, [xzr, #56]
     bl 0x100
     str x0, [xzr, #24]
-    ldr.v d0, [xzr, #56]
-    ldr.v d1, [xzr, #40]
+    ldr d0, [xzr, #56]
+    ldr d1, [xzr, #40]
     fdiv s0, s0, s1
-    str.v d0, [xzr, #40]
-    eor.v v0, v0, v0
-    ldr.v d1, [xzr, #40]
+    str d0, [xzr, #40]
+    eor v0.16b, v0.16b, v0.16b
+    ldr d1, [xzr, #40]
     fsub s1, s0, s1
-    ldr.v d0, [xzr, #40]
+    ldr d0, [xzr, #40]
     bl 0x100
     str x0, [xzr, #32]
-    ldr.v d1, [xzr, #56]
-    ldr.v d0, [xzr, #40]
+    ldr d1, [xzr, #56]
+    ldr d0, [xzr, #40]
     bl 0x100
-    movz x1, #3, #0
+    movz x1, #3
     ldr x2, [xzr, #24]
     madd x1, x2, x1, xzr
     ldr x2, [xzr, #16]
     add x1, x2, x1
-    movz x2, #5, #0
+    movz x2, #5
     ldr x3, [xzr, #32]
     madd x2, x3, x2, xzr
     add x1, x1, x2
-    movz x2, #7, #0
+    movz x2, #7
     madd x0, x0, x2, xzr
     add x0, x1, x0
-    ldp x29, x30, [xzr, #7]
+    ldp x29, x30, [xzr]
     add sp, sp, #80
     ret
 check f64:
     fadd d0, d0, d1
     fcmp d0, d0
-    csinc x0, xzr, xzr, ne
+    cset x0, eq
     cbnz x0, 0x18
-    movz x0, #0, #0
+    movz x0, #0
     b 0x1c
 6:
-    movz x0, #1, #0
+    movz x0, #1
 7:
     fcmp d0, d0
-    csinc x1, xzr, xzr, eq
+    cset x1, ne
     cbnz x1, 0x2c
     b 0x34
 8:
-    movz x1, #2, #0
+    movz x1, #2
     add x0, x1, x0
 9:
     fcmp d0, d0
-    csinc x1, xzr, xzr, lt
+    cset x1, ge
     cbnz x1, 0x44
     b 0x4c
 10:
-    movz x1, #8, #0
+    movz x1, #8
     add x0, x1, x0
 11:
     ret
 check f32:
     fadd s0, s0, s1
     fcmp s0, s0
-    csinc x0, xzr, xzr, ne
+    cset x0, eq
     cbnz x0, 0x18
-    movz x0, #0, #0
+    movz x0, #0
     b 0x1c
 13:
-    movz x0, #1, #0
+    movz x0, #1
 14:
     fcmp s0, s0
-    csinc x1, xzr, xzr, eq
+    cset x1, ne
     cbnz x1, 0x2c
     b 0x34
 15:
-    movz x1, #2, #0
+    movz x1, #2
     add x0, x1, x0
 16:
     fcmp s0, s0
-    csinc x1, xzr, xzr, lt
+    cset x1, ge
     cbnz x1, 0x44
     b 0x4c
 17:
-    movz x1, #8, #0
+    movz x1, #8
     add x0, x1, x0
 18:
     ret
@@ -536,28 +536,28 @@ finite:
     cbnz x0, 1
     b 1
 1:
-    movz x0, #1, #0
+    movz x0, #1
     ret
 main:
     sub sp, sp, #48
     str x19, [xzr]
     str x20, [xzr, #8]
     str x21, [xzr, #16]
-    stp x29, x30, [xzr, #31]
+    stp x29, x30, [xzr, #24]
     adr x21, 0xfb0
-    ldr.v d0, [x21]
+    ldr d0, [x21]
     bl 0x74
     mov x20, x0
-    ldr.v d0, [x21]
+    ldr d0, [x21]
     fcvt s0, d0
     bl 0x118
     mov x19, x0
-    ldr.v d1, [x21]
-    eor.v v0, v0, v0
+    ldr d1, [x21]
+    eor v0.16b, v0.16b, v0.16b
     fcmp d1, d0
-    csinc x0, xzr, xzr, ne
+    cset x0, eq
     bl 0xfffffff0
-    movz x2, #251, #0
+    movz x2, #251
     add x1, x20, x19
     add x1, x1, x0
     sdiv x0, x1, x2
@@ -565,7 +565,7 @@ main:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
-    ldp x29, x30, [xzr, #31]
+    ldp x29, x30, [xzr, #24]
     add sp, sp, #48
     ret
 run f64:
@@ -573,41 +573,41 @@ run f64:
     str x19, [xzr]
     str x20, [xzr, #8]
     str x21, [xzr, #16]
-    stp x29, x30, [xzr, #31]
-    orr.v v8, v0, v0
+    stp x29, x30, [xzr, #24]
+    orr v8.16b, v0.16b, v0.16b
     adr x0, 0xf44
-    ldr.v d0, [x0]
-    orr.v v9, v0, v0
-    orr.v v1, v9, v9
-    orr.v v0, v9, v9
+    ldr d0, [x0]
+    orr v9.16b, v0.16b, v0.16b
+    orr v1.16b, v9.16b, v9.16b
+    orr v0.16b, v9.16b, v9.16b
     bl 0x148
     mov x20, x0
     fdiv d0, d8, d8
-    orr.v v1, v9, v9
+    orr v1.16b, v9.16b, v9.16b
     bl 0x148
     mov x21, x0
     fdiv d8, d9, d8
-    eor.v v1, v1, v1
+    eor v1.16b, v1.16b, v1.16b
     fsub d1, d1, d8
-    orr.v v0, v8, v8
+    orr v0.16b, v8.16b, v8.16b
     bl 0x148
     mov x19, x0
-    orr.v v1, v9, v9
-    orr.v v0, v8, v8
+    orr v1.16b, v9.16b, v9.16b
+    orr v0.16b, v8.16b, v8.16b
     bl 0x148
-    movz x1, #3, #0
+    movz x1, #3
     madd x1, x21, x1, xzr
     add x2, x20, x1
-    movz x1, #5, #0
+    movz x1, #5
     madd x1, x19, x1, xzr
     add x2, x2, x1
-    movz x1, #7, #0
+    movz x1, #7
     madd x0, x0, x1, xzr
     add x0, x2, x0
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
-    ldp x29, x30, [xzr, #31]
+    ldp x29, x30, [xzr, #24]
     add sp, sp, #48
     ret
 run f32:
@@ -615,94 +615,94 @@ run f32:
     str x19, [xzr]
     str x20, [xzr, #8]
     str x21, [xzr, #16]
-    stp x29, x30, [xzr, #31]
-    orr.v v8, v0, v0
+    stp x29, x30, [xzr, #24]
+    orr v8.16b, v0.16b, v0.16b
     adr x0, 0xea8
-    ldr.v s0, [x0]
-    orr.v v9, v0, v0
-    orr.v v1, v9, v9
-    orr.v v0, v9, v9
+    ldr s0, [x0]
+    orr v9.16b, v0.16b, v0.16b
+    orr v1.16b, v9.16b, v9.16b
+    orr v0.16b, v9.16b, v9.16b
     bl 0xf4
     mov x20, x0
     fdiv s0, s8, s8
-    orr.v v1, v9, v9
+    orr v1.16b, v9.16b, v9.16b
     bl 0xf4
     mov x21, x0
     fdiv s8, s9, s8
-    eor.v v1, v1, v1
+    eor v1.16b, v1.16b, v1.16b
     fsub s1, s1, s8
-    orr.v v0, v8, v8
+    orr v0.16b, v8.16b, v8.16b
     bl 0xf4
     mov x19, x0
-    orr.v v1, v9, v9
-    orr.v v0, v8, v8
+    orr v1.16b, v9.16b, v9.16b
+    orr v0.16b, v8.16b, v8.16b
     bl 0xf4
-    movz x1, #3, #0
+    movz x1, #3
     madd x1, x21, x1, xzr
     add x2, x20, x1
-    movz x1, #5, #0
+    movz x1, #5
     madd x1, x19, x1, xzr
     add x2, x2, x1
-    movz x1, #7, #0
+    movz x1, #7
     madd x0, x0, x1, xzr
     add x0, x2, x0
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
-    ldp x29, x30, [xzr, #31]
+    ldp x29, x30, [xzr, #24]
     add sp, sp, #48
     ret
 check f64:
     fadd d0, d0, d1
     fcmp d0, d0
-    csinc x0, xzr, xzr, ne
+    cset x0, eq
     cbnz x0, 0x18
-    movz x0, #0, #0
+    movz x0, #0
     b 0x1c
 6:
-    movz x0, #1, #0
+    movz x0, #1
 7:
     fcmp d0, d0
-    csinc x1, xzr, xzr, eq
+    cset x1, ne
     cbnz x1, 0x2c
     b 0x34
 8:
-    movz x1, #2, #0
+    movz x1, #2
     add x0, x1, x0
 9:
     fcmp d0, d0
-    csinc x1, xzr, xzr, lt
+    cset x1, ge
     cbnz x1, 0x44
     b 0x4c
 10:
-    movz x1, #8, #0
+    movz x1, #8
     add x0, x1, x0
 11:
     ret
 check f32:
     fadd s0, s0, s1
     fcmp s0, s0
-    csinc x0, xzr, xzr, ne
+    cset x0, eq
     cbnz x0, 0x18
-    movz x0, #0, #0
+    movz x0, #0
     b 0x1c
 13:
-    movz x0, #1, #0
+    movz x0, #1
 14:
     fcmp s0, s0
-    csinc x1, xzr, xzr, eq
+    cset x1, ne
     cbnz x1, 0x2c
     b 0x34
 15:
-    movz x1, #2, #0
+    movz x1, #2
     add x0, x1, x0
 16:
     fcmp s0, s0
-    csinc x1, xzr, xzr, lt
+    cset x1, ge
     cbnz x1, 0x44
     b 0x4c
 17:
-    movz x1, #8, #0
+    movz x1, #8
     add x0, x1, x0
 18:
     ret
@@ -711,28 +711,28 @@ finite:
     cbnz x0, 1
     b 1
 1:
-    movz x0, #1, #0
+    movz x0, #1
     ret
 main:
     sub sp, sp, #48
     str x19, [xzr]
     str x20, [xzr, #8]
     str x21, [xzr, #16]
-    stp x29, x30, [xzr, #31]
+    stp x29, x30, [xzr, #24]
     adr x21, 0xfb0
-    ldr.v d0, [x21]
+    ldr d0, [x21]
     bl 0x74
     mov x20, x0
-    ldr.v d0, [x21]
+    ldr d0, [x21]
     fcvt s0, d0
     bl 0x118
     mov x19, x0
-    ldr.v d1, [x21]
-    eor.v v0, v0, v0
+    ldr d1, [x21]
+    eor v0.16b, v0.16b, v0.16b
     fcmp d1, d0
-    csinc x0, xzr, xzr, ne
+    cset x0, eq
     bl 0xfffffff0
-    movz x2, #251, #0
+    movz x2, #251
     add x1, x20, x19
     add x1, x1, x0
     sdiv x0, x1, x2
@@ -740,7 +740,7 @@ main:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
-    ldp x29, x30, [xzr, #31]
+    ldp x29, x30, [xzr, #24]
     add sp, sp, #48
     ret
 run f64:
@@ -748,41 +748,41 @@ run f64:
     str x19, [xzr]
     str x20, [xzr, #8]
     str x21, [xzr, #16]
-    stp x29, x30, [xzr, #31]
-    orr.v v8, v0, v0
+    stp x29, x30, [xzr, #24]
+    orr v8.16b, v0.16b, v0.16b
     adr x0, 0xf44
-    ldr.v d0, [x0]
-    orr.v v9, v0, v0
-    orr.v v1, v9, v9
-    orr.v v0, v9, v9
+    ldr d0, [x0]
+    orr v9.16b, v0.16b, v0.16b
+    orr v1.16b, v9.16b, v9.16b
+    orr v0.16b, v9.16b, v9.16b
     bl 0x148
     mov x20, x0
     fdiv d0, d8, d8
-    orr.v v1, v9, v9
+    orr v1.16b, v9.16b, v9.16b
     bl 0x148
     mov x21, x0
     fdiv d8, d9, d8
-    eor.v v1, v1, v1
+    eor v1.16b, v1.16b, v1.16b
     fsub d1, d1, d8
-    orr.v v0, v8, v8
+    orr v0.16b, v8.16b, v8.16b
     bl 0x148
     mov x19, x0
-    orr.v v1, v9, v9
-    orr.v v0, v8, v8
+    orr v1.16b, v9.16b, v9.16b
+    orr v0.16b, v8.16b, v8.16b
     bl 0x148
-    movz x1, #3, #0
+    movz x1, #3
     madd x1, x21, x1, xzr
     add x2, x20, x1
-    movz x1, #5, #0
+    movz x1, #5
     madd x1, x19, x1, xzr
     add x2, x2, x1
-    movz x1, #7, #0
+    movz x1, #7
     madd x0, x0, x1, xzr
     add x0, x2, x0
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
-    ldp x29, x30, [xzr, #31]
+    ldp x29, x30, [xzr, #24]
     add sp, sp, #48
     ret
 run f32:
@@ -790,94 +790,94 @@ run f32:
     str x19, [xzr]
     str x20, [xzr, #8]
     str x21, [xzr, #16]
-    stp x29, x30, [xzr, #31]
-    orr.v v8, v0, v0
+    stp x29, x30, [xzr, #24]
+    orr v8.16b, v0.16b, v0.16b
     adr x0, 0xea8
-    ldr.v s0, [x0]
-    orr.v v9, v0, v0
-    orr.v v1, v9, v9
-    orr.v v0, v9, v9
+    ldr s0, [x0]
+    orr v9.16b, v0.16b, v0.16b
+    orr v1.16b, v9.16b, v9.16b
+    orr v0.16b, v9.16b, v9.16b
     bl 0xf4
     mov x20, x0
     fdiv s0, s8, s8
-    orr.v v1, v9, v9
+    orr v1.16b, v9.16b, v9.16b
     bl 0xf4
     mov x21, x0
     fdiv s8, s9, s8
-    eor.v v1, v1, v1
+    eor v1.16b, v1.16b, v1.16b
     fsub s1, s1, s8
-    orr.v v0, v8, v8
+    orr v0.16b, v8.16b, v8.16b
     bl 0xf4
     mov x19, x0
-    orr.v v1, v9, v9
-    orr.v v0, v8, v8
+    orr v1.16b, v9.16b, v9.16b
+    orr v0.16b, v8.16b, v8.16b
     bl 0xf4
-    movz x1, #3, #0
+    movz x1, #3
     madd x1, x21, x1, xzr
     add x2, x20, x1
-    movz x1, #5, #0
+    movz x1, #5
     madd x1, x19, x1, xzr
     add x2, x2, x1
-    movz x1, #7, #0
+    movz x1, #7
     madd x0, x0, x1, xzr
     add x0, x2, x0
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
-    ldp x29, x30, [xzr, #31]
+    ldp x29, x30, [xzr, #24]
     add sp, sp, #48
     ret
 check f64:
     fadd d0, d0, d1
     fcmp d0, d0
-    csinc x0, xzr, xzr, ne
+    cset x0, eq
     cbnz x0, 0x18
-    movz x0, #0, #0
+    movz x0, #0
     b 0x1c
 6:
-    movz x0, #1, #0
+    movz x0, #1
 7:
     fcmp d0, d0
-    csinc x1, xzr, xzr, eq
+    cset x1, ne
     cbnz x1, 0x2c
     b 0x34
 8:
-    movz x1, #2, #0
+    movz x1, #2
     add x0, x1, x0
 9:
     fcmp d0, d0
-    csinc x1, xzr, xzr, lt
+    cset x1, ge
     cbnz x1, 0x44
     b 0x4c
 10:
-    movz x1, #8, #0
+    movz x1, #8
     add x0, x1, x0
 11:
     ret
 check f32:
     fadd s0, s0, s1
     fcmp s0, s0
-    csinc x0, xzr, xzr, ne
+    cset x0, eq
     cbnz x0, 0x18
-    movz x0, #0, #0
+    movz x0, #0
     b 0x1c
 13:
-    movz x0, #1, #0
+    movz x0, #1
 14:
     fcmp s0, s0
-    csinc x1, xzr, xzr, eq
+    cset x1, ne
     cbnz x1, 0x2c
     b 0x34
 15:
-    movz x1, #2, #0
+    movz x1, #2
     add x0, x1, x0
 16:
     fcmp s0, s0
-    csinc x1, xzr, xzr, lt
+    cset x1, ge
     cbnz x1, 0x44
     b 0x4c
 17:
-    movz x1, #8, #0
+    movz x1, #8
     add x0, x1, x0
 18:
     ret
@@ -892,63 +892,63 @@ main:
     str x24, [xzr, #40]
     str x25, [xzr, #48]
     str x26, [xzr, #56]
-    stp x29, x30, [xzr, #71]
+    stp x29, x30, [xzr, #64]
     adr x26, 0xfc0
     adr x0, 0xfc8
-    ldr.v d10, [x0]
-    ldr.v d8, [x26]
-    orr.v v0, v10, v10
-    orr.v v1, v10, v10
+    ldr d10, [x0]
+    ldr d8, [x26]
+    orr v0.16b, v10.16b, v10.16b
+    orr v1.16b, v10.16b, v10.16b
     bl check f64
     mov x25, x0
     fdiv d0, d8, d8
-    orr.v v1, v10, v10
+    orr v1.16b, v10.16b, v10.16b
     bl check f64
     mov x24, x0
     fdiv d9, d10, d8
-    eor.v v8, v8, v8
+    eor v8.16b, v8.16b, v8.16b
     fsub d1, d8, d9
-    orr.v v0, v9, v9
+    orr v0.16b, v9.16b, v9.16b
     bl check f64
     mov x23, x0
-    orr.v v1, v10, v10
-    orr.v v0, v9, v9
+    orr v1.16b, v10.16b, v10.16b
+    orr v0.16b, v9.16b, v9.16b
     bl check f64
     mov x22, x0
-    ldr.v d9, [x26]
+    ldr d9, [x26]
     adr x0, 0xfd0
-    ldr.v s0, [x0]
-    orr.v v10, v0, v0
-    orr.v v0, v10, v10
-    orr.v v1, v10, v10
+    ldr s0, [x0]
+    orr v10.16b, v0.16b, v0.16b
+    orr v0.16b, v10.16b, v10.16b
+    orr v1.16b, v10.16b, v10.16b
     bl check f32
     mov x21, x0
     fcvt s9, d9
     fdiv s0, s9, s9
-    orr.v v1, v10, v10
+    orr v1.16b, v10.16b, v10.16b
     bl check f32
     mov x20, x0
     fdiv s9, s10, s9
-    eor.v v1, v1, v1
+    eor v1.16b, v1.16b, v1.16b
     fsub s1, s1, s9
-    orr.v v0, v9, v9
+    orr v0.16b, v9.16b, v9.16b
     bl check f32
     mov x19, x0
-    orr.v v1, v10, v10
-    orr.v v0, v9, v9
+    orr v1.16b, v10.16b, v10.16b
+    orr v0.16b, v9.16b, v9.16b
     bl check f32
-    ldr.v d0, [x26]
+    ldr d0, [x26]
     fcmp d0, d8
-    csinc x1, xzr, xzr, ne
+    cset x1, eq
     cbnz x1, 1
     b 1
 1:
-    movz x4, #3, #0
-    movz x1, #251, #0
+    movz x4, #3
+    movz x1, #251
     madd x3, x24, x4, xzr
     add x7, x25, x3
-    movz x6, #5, #0
-    movz x5, #7, #0
+    movz x6, #5
+    movz x5, #7
     madd x3, x20, x4, xzr
     add x3, x21, x3
     madd x2, x19, x6, xzr
@@ -960,7 +960,7 @@ main:
     madd x0, x0, x5, xzr
     add x0, x4, x0
     add x2, x2, x0
-    movz x0, #1, #0
+    movz x0, #1
     add x2, x2, x0
     sdiv x0, x2, x1
     msub x0, x0, x1, x2
@@ -972,60 +972,60 @@ main:
     ldr x24, [xzr, #40]
     ldr x25, [xzr, #48]
     ldr x26, [xzr, #56]
-    ldp x29, x30, [xzr, #71]
+    ldp x29, x30, [xzr, #64]
     add sp, sp, #80
     ret
 check f64:
     fadd d0, d0, d1
     fcmp d0, d0
-    csinc x0, xzr, xzr, ne
+    cset x0, eq
     cbnz x0, 0x18
-    movz x0, #0, #0
+    movz x0, #0
     b 0x1c
 3:
-    movz x0, #1, #0
+    movz x0, #1
 4:
     fcmp d0, d0
-    csinc x1, xzr, xzr, eq
+    cset x1, ne
     cbnz x1, 0x2c
     b 0x34
 5:
-    movz x1, #2, #0
+    movz x1, #2
     add x0, x1, x0
 6:
     fcmp d0, d0
-    csinc x1, xzr, xzr, lt
+    cset x1, ge
     cbnz x1, 0x44
     b 0x4c
 7:
-    movz x1, #8, #0
+    movz x1, #8
     add x0, x1, x0
 8:
     ret
 check f32:
     fadd s0, s0, s1
     fcmp s0, s0
-    csinc x0, xzr, xzr, ne
+    cset x0, eq
     cbnz x0, 0x18
-    movz x0, #0, #0
+    movz x0, #0
     b 0x1c
 10:
-    movz x0, #1, #0
+    movz x0, #1
 11:
     fcmp s0, s0
-    csinc x1, xzr, xzr, eq
+    cset x1, ne
     cbnz x1, 0x2c
     b 0x34
 12:
-    movz x1, #2, #0
+    movz x1, #2
     add x0, x1, x0
 13:
     fcmp s0, s0
-    csinc x1, xzr, xzr, lt
+    cset x1, ge
     cbnz x1, 0x44
     b 0x4c
 14:
-    movz x1, #8, #0
+    movz x1, #8
     add x0, x1, x0
 15:
     ret

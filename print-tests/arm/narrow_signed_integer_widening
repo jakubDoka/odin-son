@@ -13,31 +13,31 @@ main:
     sub sp, sp, #48
     str x19, [xzr]
     str x20, [xzr, #8]
-    stp x29, x30, [xzr, #23]
+    stp x29, x30, [xzr, #16]
     adr x0, 0xfc0
     ldr x19, [x0]
-    movz x0, #10, #0
+    movz x0, #10
     add x20, x0, x19
-    movz x0, #120, #0
+    movz x0, #120
     add x0, x0, x19
     uxtb w0, w0
     uxtb w1, w20
-    movz x2, #126, #0
+    movz x2, #126
     sub x2, x19, x2
     bl check i8
     str x0, [xzr, #32]
     uxth w1, w20
-    movz x0, #32760, #0
+    movz x0, #32760
     add x0, x0, x19
     uxth w0, w0
-    movz x2, #32766, #0
+    movz x2, #32766
     sub x2, x19, x2
     bl check i16
     ldr x1, [xzr, #32]
     add x0, x1, x0
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
-    ldp x29, x30, [xzr, #23]
+    ldp x29, x30, [xzr, #16]
     add sp, sp, #48
     ret
 check i8:
@@ -50,14 +50,14 @@ check i8:
     uxtb w0, w0
     cmp w5, w0
     b.eq 0x2c
-    movz x0, #0, #0
+    movz x0, #0
     b 0x30
 2:
-    movz x0, #1, #0
+    movz x0, #1
 3:
-    movz x6, #2, #0
+    movz x6, #2
     sxtb w7, w4
-    movz x8, #0, #0
+    movz x8, #0
     sxtb w8, w8
     cmp w7, w8
     b.lt 0x4c
@@ -70,25 +70,25 @@ check i8:
     b.le 0x60
     b 0x68
 6:
-    movz x4, #4, #0
+    movz x4, #4
     add x0, x4, x0
 7:
-    movz x4, #3, #0
+    movz x4, #3
     sxtb w4, w4
     sdiv w4, w7, w4
     uxtb w4, w4
     invalid
-    movz x8, #3, #0
+    movz x8, #3
     sdiv x8, x2, x8
     cmp w4, w8
     b.eq 0x90
     b 0x98
 8:
-    movz x4, #8, #0
+    movz x4, #8
     add x0, x4, x0
 9:
-    movz x4, #5, #0
-    movz x8, #5, #0
+    movz x4, #5
+    movz x8, #5
     sxtb w8, w8
     sdiv w9, w7, w8
     msub w8, w9, w8, w7
@@ -100,18 +100,18 @@ check i8:
     b.eq 5
     b 0xd0
 10:
-    movz x4, #16, #0
+    movz x4, #16
     add x0, x4, x0
 11:
-    asrv w4, w7, w6
+    asr w4, w7, w6
     uxtb w4, w4
     invalid
-    asrv x6, x2, x6
+    asr x6, x2, x6
     cmp w4, w6
     b.eq 0xec
     b 0xf4
 12:
-    movz x4, #32, #0
+    movz x4, #32
     add x0, x4, x0
 13:
     neg w4, w5
@@ -124,7 +124,7 @@ check i8:
     b.eq 0x118
     b 0x120
 14:
-    movz x4, #64, #0
+    movz x4, #64
     add x0, x4, x0
 15:
     eor w3, w5, w3
@@ -138,7 +138,7 @@ check i8:
     b.eq 11
     b 0x150
 16:
-    movz x1, #128, #0
+    movz x1, #128
     add x0, x1, x0
 17:
     ret
@@ -152,14 +152,14 @@ check i16:
     uxth w0, w0
     cmp w5, w0
     b.eq 0x2c
-    movz x0, #0, #0
+    movz x0, #0
     b 0x30
 19:
-    movz x0, #1, #0
+    movz x0, #1
 20:
-    movz x6, #2, #0
+    movz x6, #2
     sxth w7, w4
-    movz x8, #0, #0
+    movz x8, #0
     sxth w8, w8
     cmp w7, w8
     b.lt 0x4c
@@ -172,25 +172,25 @@ check i16:
     b.le 0x60
     b 0x68
 23:
-    movz x4, #4, #0
+    movz x4, #4
     add x0, x4, x0
 24:
-    movz x4, #3, #0
+    movz x4, #3
     sxth w4, w4
     sdiv w4, w7, w4
     uxth w4, w4
     invalid
-    movz x8, #3, #0
+    movz x8, #3
     sdiv x8, x2, x8
     cmp w4, w8
     b.eq 0x90
     b 0x98
 25:
-    movz x4, #8, #0
+    movz x4, #8
     add x0, x4, x0
 26:
-    movz x4, #5, #0
-    movz x8, #5, #0
+    movz x4, #5
+    movz x8, #5
     sxth w8, w8
     sdiv w9, w7, w8
     msub w8, w9, w8, w7
@@ -201,18 +201,18 @@ check i16:
     cmp w8, w4
     b.eq 5
     b 0xd0
-    movz x4, #16, #0
+    movz x4, #16
     add x0, x4, x0
 27:
-    asrv w4, w7, w6
+    asr w4, w7, w6
     uxth w4, w4
     invalid
-    asrv x6, x2, x6
+    asr x6, x2, x6
     cmp w4, w6
     b.eq 0xec
     b 0xf4
 28:
-    movz x4, #32, #0
+    movz x4, #32
     add x0, x4, x0
 29:
     neg w4, w5
@@ -225,7 +225,7 @@ check i16:
     b.eq 0x118
     b 0x120
 30:
-    movz x4, #64, #0
+    movz x4, #64
     add x0, x4, x0
 31:
     eor w3, w5, w3
@@ -238,7 +238,7 @@ check i16:
     cmp w3, w1
     b.eq 11
     b 0x150
-    movz x1, #128, #0
+    movz x1, #128
     add x0, x1, x0
 32:
     ret
@@ -258,31 +258,31 @@ main:
     str x19, [xzr]
     str x20, [xzr, #8]
     str x21, [xzr, #16]
-    stp x29, x30, [xzr, #31]
+    stp x29, x30, [xzr, #24]
     adr x0, 0xfc0
     ldr x19, [x0]
-    movz x0, #10, #0
+    movz x0, #10
     add x21, x0, x19
-    movz x0, #120, #0
+    movz x0, #120
     add x0, x0, x19
     uxtb w0, w0
     uxtb w1, w21
-    movz x2, #126, #0
+    movz x2, #126
     sub x2, x19, x2
     bl check i8
     mov x20, x0
     uxth w1, w21
-    movz x0, #32760, #0
+    movz x0, #32760
     add x0, x0, x19
     uxth w0, w0
-    movz x2, #32766, #0
+    movz x2, #32766
     sub x2, x19, x2
     bl check i16
     add x0, x20, x0
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
-    ldp x29, x30, [xzr, #31]
+    ldp x29, x30, [xzr, #24]
     add sp, sp, #48
     ret
 check i8:
@@ -295,14 +295,14 @@ check i8:
     uxtb w0, w0
     cmp w3, w0
     b.eq 0x2c
-    movz x0, #0, #0
+    movz x0, #0
     b 0x30
 2:
-    movz x0, #1, #0
+    movz x0, #1
 3:
-    movz x5, #2, #0
+    movz x5, #2
     sxtb w6, w8
-    movz x7, #0, #0
+    movz x7, #0
     sxtb w7, w7
     cmp w6, w7
     b.lt 0x4c
@@ -315,25 +315,25 @@ check i8:
     b.le 0x60
     b 0x68
 6:
-    movz x7, #4, #0
+    movz x7, #4
     add x0, x7, x0
 7:
-    movz x7, #3, #0
+    movz x7, #3
     sxtb w7, w7
     sdiv w7, w6, w7
     uxtb w7, w7
     invalid
-    movz x7, #3, #0
+    movz x7, #3
     sdiv x7, x2, x7
     cmp w8, w7
     b.eq 0x90
     b 0x98
 8:
-    movz x7, #8, #0
+    movz x7, #8
     add x0, x7, x0
 9:
-    movz x9, #5, #0
-    movz x7, #5, #0
+    movz x9, #5
+    movz x7, #5
     sxtb w8, w7
     sdiv w7, w6, w8
     msub w7, w7, w8, w6
@@ -345,18 +345,18 @@ check i8:
     b.eq 4
     b 0xd0
 10:
-    movz x7, #16, #0
+    movz x7, #16
     add x0, x7, x0
 11:
-    asrv w6, w6, w5
+    asr w6, w6, w5
     uxtb w6, w6
     invalid
-    asrv x5, x2, x5
+    asr x5, x2, x5
     cmp w6, w5
     b.eq 0xec
     b 0xf4
 12:
-    movz x5, #32, #0
+    movz x5, #32
     add x0, x5, x0
 13:
     neg w5, w3
@@ -369,7 +369,7 @@ check i8:
     b.eq 0x118
     b 0x120
 14:
-    movz x5, #64, #0
+    movz x5, #64
     add x0, x5, x0
 15:
     eor w3, w3, w4
@@ -383,7 +383,7 @@ check i8:
     b.eq 0x148
     b 0x150
 16:
-    movz x1, #128, #0
+    movz x1, #128
     add x0, x1, x0
 17:
     ret
@@ -397,14 +397,14 @@ check i16:
     uxth w0, w0
     cmp w3, w0
     b.eq 0x2c
-    movz x0, #0, #0
+    movz x0, #0
     b 0x30
 19:
-    movz x0, #1, #0
+    movz x0, #1
 20:
-    movz x5, #2, #0
+    movz x5, #2
     sxth w6, w8
-    movz x7, #0, #0
+    movz x7, #0
     sxth w7, w7
     cmp w6, w7
     b.lt 0x4c
@@ -417,25 +417,25 @@ check i16:
     b.le 0x60
     b 0x68
 23:
-    movz x7, #4, #0
+    movz x7, #4
     add x0, x7, x0
 24:
-    movz x7, #3, #0
+    movz x7, #3
     sxth w7, w7
     sdiv w7, w6, w7
     uxth w7, w7
     invalid
-    movz x7, #3, #0
+    movz x7, #3
     sdiv x7, x2, x7
     cmp w8, w7
     b.eq 0x90
     b 0x98
 25:
-    movz x7, #8, #0
+    movz x7, #8
     add x0, x7, x0
 26:
-    movz x9, #5, #0
-    movz x7, #5, #0
+    movz x9, #5
+    movz x7, #5
     sxth w8, w7
     sdiv w7, w6, w8
     msub w7, w7, w8, w6
@@ -446,18 +446,18 @@ check i16:
     cmp w8, w7
     b.eq 4
     b 0xd0
-    movz x7, #16, #0
+    movz x7, #16
     add x0, x7, x0
 27:
-    asrv w6, w6, w5
+    asr w6, w6, w5
     uxth w6, w6
     invalid
-    asrv x5, x2, x5
+    asr x5, x2, x5
     cmp w6, w5
     b.eq 0xec
     b 0xf4
 28:
-    movz x5, #32, #0
+    movz x5, #32
     add x0, x5, x0
 29:
     neg w5, w3
@@ -470,7 +470,7 @@ check i16:
     b.eq 0x118
     b 0x120
 30:
-    movz x5, #64, #0
+    movz x5, #64
     add x0, x5, x0
 31:
     eor w3, w3, w4
@@ -484,7 +484,7 @@ check i16:
     b.eq 0x148
     b 0x150
 32:
-    movz x1, #128, #0
+    movz x1, #128
     add x0, x1, x0
 33:
     ret
@@ -503,31 +503,31 @@ main:
     sub sp, sp, #48
     str x19, [xzr]
     str x20, [xzr, #8]
-    stp x29, x30, [xzr, #23]
+    stp x29, x30, [xzr, #16]
     adr x0, 0xfc0
     ldr x19, [x0]
-    movz x0, #10, #0
+    movz x0, #10
     add x20, x0, x19
-    movz x0, #120, #0
+    movz x0, #120
     add x0, x0, x19
     uxtb w0, w0
     uxtb w1, w20
-    movz x2, #126, #0
+    movz x2, #126
     sub x2, x19, x2
     bl check i8
     str x0, [xzr, #32]
     uxth w1, w20
-    movz x0, #32760, #0
+    movz x0, #32760
     add x0, x0, x19
     uxth w0, w0
-    movz x2, #32766, #0
+    movz x2, #32766
     sub x2, x19, x2
     bl check i16
     ldr x1, [xzr, #32]
     add x0, x1, x0
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
-    ldp x29, x30, [xzr, #23]
+    ldp x29, x30, [xzr, #16]
     add sp, sp, #48
     ret
 check i8:
@@ -540,14 +540,14 @@ check i8:
     uxtb w0, w0
     cmp w5, w0
     b.eq 0x2c
-    movz x0, #0, #0
+    movz x0, #0
     b 0x30
 2:
-    movz x0, #1, #0
+    movz x0, #1
 3:
-    movz x6, #2, #0
+    movz x6, #2
     sxtb w7, w4
-    movz x8, #0, #0
+    movz x8, #0
     sxtb w8, w8
     cmp w7, w8
     b.lt 0x4c
@@ -560,25 +560,25 @@ check i8:
     b.le 0x60
     b 0x68
 6:
-    movz x4, #4, #0
+    movz x4, #4
     add x0, x4, x0
 7:
-    movz x4, #3, #0
+    movz x4, #3
     sxtb w4, w4
     sdiv w4, w7, w4
     uxtb w4, w4
     invalid
-    movz x8, #3, #0
+    movz x8, #3
     sdiv x8, x2, x8
     cmp w4, w8
     b.eq 0x90
     b 0x98
 8:
-    movz x4, #8, #0
+    movz x4, #8
     add x0, x4, x0
 9:
-    movz x4, #5, #0
-    movz x8, #5, #0
+    movz x4, #5
+    movz x8, #5
     sxtb w8, w8
     sdiv w9, w7, w8
     msub w8, w9, w8, w7
@@ -590,18 +590,18 @@ check i8:
     b.eq 5
     b 0xd0
 10:
-    movz x4, #16, #0
+    movz x4, #16
     add x0, x4, x0
 11:
-    asrv w4, w7, w6
+    asr w4, w7, w6
     uxtb w4, w4
     invalid
-    asrv x6, x2, x6
+    asr x6, x2, x6
     cmp w4, w6
     b.eq 0xec
     b 0xf4
 12:
-    movz x4, #32, #0
+    movz x4, #32
     add x0, x4, x0
 13:
     neg w4, w5
@@ -614,7 +614,7 @@ check i8:
     b.eq 0x118
     b 0x120
 14:
-    movz x4, #64, #0
+    movz x4, #64
     add x0, x4, x0
 15:
     eor w3, w5, w3
@@ -628,7 +628,7 @@ check i8:
     b.eq 11
     b 0x150
 16:
-    movz x1, #128, #0
+    movz x1, #128
     add x0, x1, x0
 17:
     ret
@@ -642,14 +642,14 @@ check i16:
     uxth w0, w0
     cmp w5, w0
     b.eq 0x2c
-    movz x0, #0, #0
+    movz x0, #0
     b 0x30
 19:
-    movz x0, #1, #0
+    movz x0, #1
 20:
-    movz x6, #2, #0
+    movz x6, #2
     sxth w7, w4
-    movz x8, #0, #0
+    movz x8, #0
     sxth w8, w8
     cmp w7, w8
     b.lt 0x4c
@@ -662,25 +662,25 @@ check i16:
     b.le 0x60
     b 0x68
 23:
-    movz x4, #4, #0
+    movz x4, #4
     add x0, x4, x0
 24:
-    movz x4, #3, #0
+    movz x4, #3
     sxth w4, w4
     sdiv w4, w7, w4
     uxth w4, w4
     invalid
-    movz x8, #3, #0
+    movz x8, #3
     sdiv x8, x2, x8
     cmp w4, w8
     b.eq 0x90
     b 0x98
 25:
-    movz x4, #8, #0
+    movz x4, #8
     add x0, x4, x0
 26:
-    movz x4, #5, #0
-    movz x8, #5, #0
+    movz x4, #5
+    movz x8, #5
     sxth w8, w8
     sdiv w9, w7, w8
     msub w8, w9, w8, w7
@@ -691,18 +691,18 @@ check i16:
     cmp w8, w4
     b.eq 5
     b 0xd0
-    movz x4, #16, #0
+    movz x4, #16
     add x0, x4, x0
 27:
-    asrv w4, w7, w6
+    asr w4, w7, w6
     uxth w4, w4
     invalid
-    asrv x6, x2, x6
+    asr x6, x2, x6
     cmp w4, w6
     b.eq 0xec
     b 0xf4
 28:
-    movz x4, #32, #0
+    movz x4, #32
     add x0, x4, x0
 29:
     neg w4, w5
@@ -715,7 +715,7 @@ check i16:
     b.eq 0x118
     b 0x120
 30:
-    movz x4, #64, #0
+    movz x4, #64
     add x0, x4, x0
 31:
     eor w3, w5, w3
@@ -728,7 +728,7 @@ check i16:
     cmp w3, w1
     b.eq 11
     b 0x150
-    movz x1, #128, #0
+    movz x1, #128
     add x0, x1, x0
 32:
     ret
@@ -748,31 +748,31 @@ main:
     str x19, [xzr]
     str x20, [xzr, #8]
     str x21, [xzr, #16]
-    stp x29, x30, [xzr, #31]
+    stp x29, x30, [xzr, #24]
     adr x0, 0xfc0
     ldr x19, [x0]
-    movz x0, #10, #0
+    movz x0, #10
     add x21, x0, x19
-    movz x0, #120, #0
+    movz x0, #120
     add x0, x0, x19
     uxtb w0, w0
     uxtb w1, w21
-    movz x2, #126, #0
+    movz x2, #126
     sub x2, x19, x2
     bl check i8
     mov x20, x0
     uxth w1, w21
-    movz x0, #32760, #0
+    movz x0, #32760
     add x0, x0, x19
     uxth w0, w0
-    movz x2, #32766, #0
+    movz x2, #32766
     sub x2, x19, x2
     bl check i16
     add x0, x20, x0
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
-    ldp x29, x30, [xzr, #31]
+    ldp x29, x30, [xzr, #24]
     add sp, sp, #48
     ret
 check i8:
@@ -785,14 +785,14 @@ check i8:
     uxtb w0, w0
     cmp w3, w0
     b.eq 0x2c
-    movz x0, #0, #0
+    movz x0, #0
     b 0x30
 2:
-    movz x0, #1, #0
+    movz x0, #1
 3:
-    movz x5, #2, #0
+    movz x5, #2
     sxtb w6, w8
-    movz x7, #0, #0
+    movz x7, #0
     sxtb w7, w7
     cmp w6, w7
     b.lt 0x4c
@@ -805,25 +805,25 @@ check i8:
     b.le 0x60
     b 0x68
 6:
-    movz x7, #4, #0
+    movz x7, #4
     add x0, x7, x0
 7:
-    movz x7, #3, #0
+    movz x7, #3
     sxtb w7, w7
     sdiv w7, w6, w7
     uxtb w7, w7
     invalid
-    movz x7, #3, #0
+    movz x7, #3
     sdiv x7, x2, x7
     cmp w8, w7
     b.eq 0x90
     b 0x98
 8:
-    movz x7, #8, #0
+    movz x7, #8
     add x0, x7, x0
 9:
-    movz x9, #5, #0
-    movz x7, #5, #0
+    movz x9, #5
+    movz x7, #5
     sxtb w8, w7
     sdiv w7, w6, w8
     msub w7, w7, w8, w6
@@ -835,18 +835,18 @@ check i8:
     b.eq 4
     b 0xd0
 10:
-    movz x7, #16, #0
+    movz x7, #16
     add x0, x7, x0
 11:
-    asrv w6, w6, w5
+    asr w6, w6, w5
     uxtb w6, w6
     invalid
-    asrv x5, x2, x5
+    asr x5, x2, x5
     cmp w6, w5
     b.eq 0xec
     b 0xf4
 12:
-    movz x5, #32, #0
+    movz x5, #32
     add x0, x5, x0
 13:
     neg w5, w3
@@ -859,7 +859,7 @@ check i8:
     b.eq 0x118
     b 0x120
 14:
-    movz x5, #64, #0
+    movz x5, #64
     add x0, x5, x0
 15:
     eor w3, w3, w4
@@ -873,7 +873,7 @@ check i8:
     b.eq 0x148
     b 0x150
 16:
-    movz x1, #128, #0
+    movz x1, #128
     add x0, x1, x0
 17:
     ret
@@ -887,14 +887,14 @@ check i16:
     uxth w0, w0
     cmp w3, w0
     b.eq 0x2c
-    movz x0, #0, #0
+    movz x0, #0
     b 0x30
 19:
-    movz x0, #1, #0
+    movz x0, #1
 20:
-    movz x5, #2, #0
+    movz x5, #2
     sxth w6, w8
-    movz x7, #0, #0
+    movz x7, #0
     sxth w7, w7
     cmp w6, w7
     b.lt 0x4c
@@ -907,25 +907,25 @@ check i16:
     b.le 0x60
     b 0x68
 23:
-    movz x7, #4, #0
+    movz x7, #4
     add x0, x7, x0
 24:
-    movz x7, #3, #0
+    movz x7, #3
     sxth w7, w7
     sdiv w7, w6, w7
     uxth w7, w7
     invalid
-    movz x7, #3, #0
+    movz x7, #3
     sdiv x7, x2, x7
     cmp w8, w7
     b.eq 0x90
     b 0x98
 25:
-    movz x7, #8, #0
+    movz x7, #8
     add x0, x7, x0
 26:
-    movz x9, #5, #0
-    movz x7, #5, #0
+    movz x9, #5
+    movz x7, #5
     sxth w8, w7
     sdiv w7, w6, w8
     msub w7, w7, w8, w6
@@ -936,18 +936,18 @@ check i16:
     cmp w8, w7
     b.eq 4
     b 0xd0
-    movz x7, #16, #0
+    movz x7, #16
     add x0, x7, x0
 27:
-    asrv w6, w6, w5
+    asr w6, w6, w5
     uxth w6, w6
     invalid
-    asrv x5, x2, x5
+    asr x5, x2, x5
     cmp w6, w5
     b.eq 0xec
     b 0xf4
 28:
-    movz x5, #32, #0
+    movz x5, #32
     add x0, x5, x0
 29:
     neg w5, w3
@@ -960,7 +960,7 @@ check i16:
     b.eq 0x118
     b 0x120
 30:
-    movz x5, #64, #0
+    movz x5, #64
     add x0, x5, x0
 31:
     eor w3, w3, w4
@@ -974,7 +974,7 @@ check i16:
     b.eq 0x148
     b 0x150
 32:
-    movz x1, #128, #0
+    movz x1, #128
     add x0, x1, x0
 33:
     ret
@@ -994,31 +994,31 @@ main:
     str x19, [xzr]
     str x20, [xzr, #8]
     str x21, [xzr, #16]
-    stp x29, x30, [xzr, #31]
+    stp x29, x30, [xzr, #24]
     adr x0, 0xfc0
     ldr x19, [x0]
-    movz x0, #10, #0
+    movz x0, #10
     add x21, x0, x19
-    movz x0, #120, #0
+    movz x0, #120
     add x0, x0, x19
     uxtb w0, w0
     uxtb w1, w21
-    movz x2, #126, #0
+    movz x2, #126
     sub x2, x19, x2
     bl check i8
     mov x20, x0
     uxth w1, w21
-    movz x0, #32760, #0
+    movz x0, #32760
     add x0, x0, x19
     uxth w0, w0
-    movz x2, #32766, #0
+    movz x2, #32766
     sub x2, x19, x2
     bl check i16
     add x0, x20, x0
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
-    ldp x29, x30, [xzr, #31]
+    ldp x29, x30, [xzr, #24]
     add sp, sp, #48
     ret
 check i8:
@@ -1031,14 +1031,14 @@ check i8:
     uxtb w0, w0
     cmp w3, w0
     b.eq 0x2c
-    movz x0, #0, #0
+    movz x0, #0
     b 0x30
 2:
-    movz x0, #1, #0
+    movz x0, #1
 3:
-    movz x5, #2, #0
+    movz x5, #2
     sxtb w6, w8
-    movz x7, #0, #0
+    movz x7, #0
     sxtb w7, w7
     cmp w6, w7
     b.lt 0x4c
@@ -1051,25 +1051,25 @@ check i8:
     b.le 0x60
     b 0x68
 6:
-    movz x7, #4, #0
+    movz x7, #4
     add x0, x7, x0
 7:
-    movz x7, #3, #0
+    movz x7, #3
     sxtb w7, w7
     sdiv w7, w6, w7
     uxtb w7, w7
     invalid
-    movz x7, #3, #0
+    movz x7, #3
     sdiv x7, x2, x7
     cmp w8, w7
     b.eq 0x90
     b 0x98
 8:
-    movz x7, #8, #0
+    movz x7, #8
     add x0, x7, x0
 9:
-    movz x9, #5, #0
-    movz x7, #5, #0
+    movz x9, #5
+    movz x7, #5
     sxtb w8, w7
     sdiv w7, w6, w8
     msub w7, w7, w8, w6
@@ -1081,18 +1081,18 @@ check i8:
     b.eq 4
     b 0xd0
 10:
-    movz x7, #16, #0
+    movz x7, #16
     add x0, x7, x0
 11:
-    asrv w6, w6, w5
+    asr w6, w6, w5
     uxtb w6, w6
     invalid
-    asrv x5, x2, x5
+    asr x5, x2, x5
     cmp w6, w5
     b.eq 0xec
     b 0xf4
 12:
-    movz x5, #32, #0
+    movz x5, #32
     add x0, x5, x0
 13:
     neg w5, w3
@@ -1105,7 +1105,7 @@ check i8:
     b.eq 0x118
     b 0x120
 14:
-    movz x5, #64, #0
+    movz x5, #64
     add x0, x5, x0
 15:
     eor w3, w3, w4
@@ -1119,7 +1119,7 @@ check i8:
     b.eq 0x148
     b 0x150
 16:
-    movz x1, #128, #0
+    movz x1, #128
     add x0, x1, x0
 17:
     ret
@@ -1133,14 +1133,14 @@ check i16:
     uxth w0, w0
     cmp w3, w0
     b.eq 0x2c
-    movz x0, #0, #0
+    movz x0, #0
     b 0x30
 19:
-    movz x0, #1, #0
+    movz x0, #1
 20:
-    movz x5, #2, #0
+    movz x5, #2
     sxth w6, w8
-    movz x7, #0, #0
+    movz x7, #0
     sxth w7, w7
     cmp w6, w7
     b.lt 0x4c
@@ -1153,25 +1153,25 @@ check i16:
     b.le 0x60
     b 0x68
 23:
-    movz x7, #4, #0
+    movz x7, #4
     add x0, x7, x0
 24:
-    movz x7, #3, #0
+    movz x7, #3
     sxth w7, w7
     sdiv w7, w6, w7
     uxth w7, w7
     invalid
-    movz x7, #3, #0
+    movz x7, #3
     sdiv x7, x2, x7
     cmp w8, w7
     b.eq 0x90
     b 0x98
 25:
-    movz x7, #8, #0
+    movz x7, #8
     add x0, x7, x0
 26:
-    movz x9, #5, #0
-    movz x7, #5, #0
+    movz x9, #5
+    movz x7, #5
     sxth w8, w7
     sdiv w7, w6, w8
     msub w7, w7, w8, w6
@@ -1182,18 +1182,18 @@ check i16:
     cmp w8, w7
     b.eq 4
     b 0xd0
-    movz x7, #16, #0
+    movz x7, #16
     add x0, x7, x0
 27:
-    asrv w6, w6, w5
+    asr w6, w6, w5
     uxth w6, w6
     invalid
-    asrv x5, x2, x5
+    asr x5, x2, x5
     cmp w6, w5
     b.eq 0xec
     b 0xf4
 28:
-    movz x5, #32, #0
+    movz x5, #32
     add x0, x5, x0
 29:
     neg w5, w3
@@ -1206,7 +1206,7 @@ check i16:
     b.eq 0x118
     b 0x120
 30:
-    movz x5, #64, #0
+    movz x5, #64
     add x0, x5, x0
 31:
     eor w3, w3, w4
@@ -1220,7 +1220,7 @@ check i16:
     b.eq 0x148
     b 0x150
 32:
-    movz x1, #128, #0
+    movz x1, #128
     add x0, x1, x0
 33:
     ret
@@ -1238,13 +1238,13 @@ Error{inst_idx = 668, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 main:
     adr x0, 0xfc0
     ldr x2, [x0]
-    movz x0, #126, #0
+    movz x0, #126
     sub x4, x2, x0
-    movz x0, #10, #0
+    movz x0, #10
     add x5, x0, x2
     uxtb w6, w5
     uxtb w12, w6
-    movz x0, #120, #0
+    movz x0, #120
     add x0, x0, x2
     uxtb w0, w0
     uxtb w0, w0
@@ -1255,14 +1255,14 @@ main:
     uxtb w0, w0
     cmp w9, w0
     b.eq 1
-    movz x1, #0, #0
+    movz x1, #0
     b 2
 1:
-    movz x1, #1, #0
+    movz x1, #1
 2:
-    movz x8, #2, #0
+    movz x8, #2
     sxtb w0, w7
-    movz x3, #0, #0
+    movz x3, #0
     sxtb w3, w3
     cmp w0, w3
     b.lt 3
@@ -1270,7 +1270,7 @@ main:
 3:
     add x1, x1, x8
 4:
-    movz x15, #4, #0
+    movz x15, #4
     invalid
     cmp w3, w4
     b.le 5
@@ -1278,13 +1278,13 @@ main:
 5:
     add x1, x1, x15
 6:
-    movz x14, #3, #0
-    movz x3, #3, #0
+    movz x14, #3
+    movz x3, #3
     sxtb w3, w3
     sdiv w3, w0, w3
     uxtb w3, w3
     invalid
-    movz x13, #8, #0
+    movz x13, #8
     sdiv x3, x4, x14
     cmp w7, w3
     b.eq 7
@@ -1292,14 +1292,14 @@ main:
 7:
     add x1, x1, x13
 8:
-    movz x11, #5, #0
-    movz x3, #5, #0
+    movz x11, #5
+    movz x3, #5
     sxtb w7, w3
     sdiv w3, w0, w7
     msub w3, w3, w7, w0
     uxtb w3, w3
     invalid
-    movz x10, #16, #0
+    movz x10, #16
     sdiv x3, x4, x11
     msub x3, x3, x11, x4
     cmp w7, w3
@@ -1308,11 +1308,11 @@ main:
 9:
     add x1, x1, x10
 10:
-    asrv w0, w0, w8
+    asr w0, w0, w8
     uxtb w0, w0
     invalid
-    movz x7, #32, #0
-    asrv x0, x4, x8
+    movz x7, #32
+    asr x0, x4, x8
     cmp w3, w0
     b.eq 11
     b 12
@@ -1322,7 +1322,7 @@ main:
     neg w0, w9
     uxtb w0, w0
     uxtb w16, w0
-    movz x3, #64, #0
+    movz x3, #64
     neg x0, x4
     uxtb w0, w0
     uxtb w0, w0
@@ -1332,7 +1332,7 @@ main:
 13:
     add x1, x1, x3
 14:
-    movz x0, #128, #0
+    movz x0, #128
     eor w9, w9, w12
     uxtb w9, w9
     uxtb w9, w9
@@ -1346,11 +1346,11 @@ main:
 15:
     add x1, x1, x0
 16:
-    movz x4, #32766, #0
+    movz x4, #32766
     sub x4, x2, x4
     uxth w5, w5
     uxth w6, w5
-    movz x9, #32760, #0
+    movz x9, #32760
     add x2, x9, x2
     uxth w2, w2
     uxth w2, w2
@@ -1361,13 +1361,13 @@ main:
     uxth w2, w2
     cmp w9, w2
     b.eq 17
-    movz x2, #0, #0
+    movz x2, #0
     b 18
 17:
-    movz x2, #1, #0
+    movz x2, #1
 18:
     sxth w12, w17
-    movz x16, #0, #0
+    movz x16, #0
     sxth w16, w16
     cmp w12, w16
     b.lt 19
@@ -1382,7 +1382,7 @@ main:
 21:
     add x2, x2, x15
 22:
-    movz x15, #3, #0
+    movz x15, #3
     sxth w15, w15
     sdiv w15, w12, w15
     uxth w15, w15
@@ -1394,7 +1394,7 @@ main:
 23:
     add x2, x2, x13
 24:
-    movz x13, #5, #0
+    movz x13, #5
     sxth w14, w13
     sdiv w13, w12, w14
     msub w13, w13, w14, w12
@@ -1408,10 +1408,10 @@ main:
 25:
     add x2, x2, x10
 26:
-    asrv w10, w12, w8
+    asr w10, w12, w8
     uxth w10, w10
     invalid
-    asrv x8, x4, x8
+    asr x8, x4, x8
     cmp w10, w8
     b.eq 27
     b 28

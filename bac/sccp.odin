@@ -1,7 +1,7 @@
 package bac
 
-import "../vendored/gam/util/arna"
-import "core:fmt"
+import "../utils/arna"
+import "../utils/fmt"
 import "core:slice"
 
 Sccp_Output :: struct {
@@ -62,7 +62,7 @@ lattice_meet :: proc(a, b: Lattice) -> (res: Lattice) {
 	case .Ctlr:
 		res.dead = a.dead & b.dead
 	case .Bot, .Top:
-		panic("should not reach")
+		fmt.panicf("should not reach")
 	case:
 		fmt.panicf("Unhandled type: %v", a.type)
 	}
@@ -139,6 +139,7 @@ lattice_join :: proc(a, b: Lattice) -> (res: Lattice) {
 	return
 }
 
+@(tag = "api")
 compute_latices :: proc(
 	ctx: ^Proc,
 	scratch := context.allocator,
@@ -151,7 +152,7 @@ compute_latices :: proc(
 
 	if .Sccp not_in ctx.opt_flags && false do return
 
-	context.allocator, _ = arna.scrath(scratch)
+	context.allocator, _ = arna.scrath(ctx.temps, scratch)
 
 	worklist: Worklist
 	triggers: [dynamic][dynamic]Node_ID

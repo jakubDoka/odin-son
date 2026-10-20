@@ -1,415 +1,448 @@
 package bac
 
-import "../vendored/gam/util/arna"
+import "../utils/arna"
+import "../utils/fmt"
 import "base:runtime"
-import "core:fmt"
 import "core:io"
 import "core:mem"
 import "core:reflect"
 import "core:terminal/ansi"
 
-@(thread_local)
-current_graph: ^Proc
-
-init_custom_fmt :: proc() {
-	Scratch :: struct #align (4096) {
-		buf: [4096]u8,
+@(tag = "api")
+init_custom_fmt :: #force_inline proc() {
+	when !fmt.NO_FMT {
+		init_custom_fmt_impl()
 	}
-
-	@(static) fmts: map[typeid]fmt.User_Formatter
-	@(static) scratch: Scratch
-
-	arnar := arna.init_from_buffer(scratch.buf[:])
-	context.allocator = arna.allocator(&arnar)
-
-	fmt.set_user_formatters(&fmts)
-
-	fmt.register_user_formatter(
-		Reg_Mask,
-		proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
-			value := value.(Reg_Mask)
-			io.write_rune(fi.writer, reg_kind_char(value.kind))
-			for m in 0 ..< value.bit_length / MASK_SIZE {
-				fmt.wprintf(fi.writer, "%016x", uint(value.masks[m]))
-			}
-			return true
-		},
-	)
-
-	fmt.register_user_formatter(
-		Lrg,
-		proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
-			value := value.(Lrg)
-			fmt.wprintf(fi.writer, "%v%v", value.mask, value.node)
-			if value.reg != -1 {
-				fmt.wprintf(fi.writer, "%03i", value.reg)
-			}
-			ansi_start(fi.writer, value.index)
-			fmt.wprintf(fi.writer, "%3i", value.index)
-			ansi_end(fi.writer)
-			return true
-		},
-	)
-
-	fmt.register_user_formatter(
-		Node_Output,
-		proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
-			value := value.(Node_Output)
-			fmt.wprintf(fi.writer, "%v:%v", value.id, value.idx)
-			return true
-		},
-	)
-
-	fmt.register_user_formatter(
-		Node_ID,
-		proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
-			value := value.(Node_ID)
-			if value != 0 {
-				display_node_gvn(fi.writer, current_graph, value)
-			} else {
-				fmt.wprint(fi.writer, "nl")
-			}
-			return true
-		},
-	)
-
-	fmt.register_user_formatter(
-		Node,
-		proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
-			value := &value.(Node)
-			id := get_node_id(current_graph, value)
-			display_node(fi.writer, current_graph, id)
-			return true
-		},
-	)
-
-	fmt.register_user_formatter(
-		Expanded_Node,
-		proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
-			value := &value.(Expanded_Node)
-			id := get_node_id(current_graph, value)
-			display_node(fi.writer, current_graph, id)
-			return true
-		},
-	)
-
-	fmt.register_user_formatter(
-		Proc,
-		proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
-			value := &value.(Proc)
-			display_graph(fi.writer, value)
-			return true
-		},
-	)
 }
 
-display_graph :: proc(
-	w: io.Writer,
-	graph: ^Proc,
-	ctx: ^Schedule = nil,
-	prefix: proc(_: io.Writer, _: ^Node, _: Basic_Block) = nil,
-	regs: []Reg = {},
-) {
-	context.allocator, _ = arna.scrath()
+when !fmt.NO_FMT {
+	@(thread_local)
+	current_prc: ^Proc
 
-	ctx := ctx
-	our_ctx: Schedule
-
-	if ctx == nil {
-		schedule_graph(graph, &our_ctx, .for_regalloc)
-		ctx = &our_ctx
-	}
-
-	seen_loop_trees: map[^Loop_Tree]int
-
-	instr_idx := 0
-	for bb in ctx.bbs {
-		if bb.loop_tree != nil {
-			if bb.loop_tree not_in seen_loop_trees {
-				seen_loop_trees[bb.loop_tree] = len(seen_loop_trees)
-			}
-			if bb.loop_tree.parent not_in seen_loop_trees {
-				seen_loop_trees[bb.loop_tree.parent] = len(seen_loop_trees)
-			}
-
-			fmt.wprintf(
-				w,
-				"%02i:%02i:%02i ",
-				bb.loop_tree.depth,
-				seen_loop_trees[bb.loop_tree],
-				seen_loop_trees[bb.loop_tree.parent],
-			)
+	init_custom_fmt_impl :: proc() {
+		Scratch :: struct #align (4096) {
+			buf: [4096]u8,
 		}
 
-		display_node(w, graph, bb.head, scheduled = true)
+		@(static) fmts: map[typeid]fmt.User_Formatter
+		@(static) scratch: Scratch
 
-		fmt.wprint(w, " {\n")
+		arnar := arna.init_from_buffer(scratch.buf[:])
+		context.allocator = arna.allocator(&arnar)
 
-		for instr in bb.instrs {
-			inode := get_node(graph, instr)
-			if inode.itype == .Phi {
-				//continue
-			}
+		fmt.set_user_formatters(&fmts)
 
-			fmt.wprintf(w, " %03i ", instr_idx)
-			instr_idx += 1
-			if len(regs) != 0 {
-				if inode.dt != .Void {
-					reg := regs[inode.gvn]
-					fmt.wprintf(
-						w,
-						"%v%03i",
-						reg_kind_char(reg.kind),
-						reg.index,
-					)
-				} else {
-					fmt.wprint(w, "    ")
+		fmt.register_user_formatter(
+			Reg_Mask,
+			proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
+				value := value.(Reg_Mask)
+				io.write_rune(fi.writer, reg_kind_char(value.kind))
+				for m in 0 ..< value.bit_length / MASK_SIZE {
+					fmt.wprintf(fi.writer, "%016x", uint(value.masks[m]))
 				}
-			} else if prefix != nil {
-				prefix(w, inode, bb)
+				return true
+			},
+		)
+
+		fmt.register_user_formatter(
+			Lrg,
+			proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
+				value := value.(Lrg)
+				fmt.wprintf(fi.writer, "%v%v", value.mask, value.node)
+				if value.reg != -1 {
+					fmt.wprintf(fi.writer, "%03i", value.reg)
+				}
+				ansi_start(fi.writer, value.index)
+				fmt.wprintf(fi.writer, "%3i", value.index)
+				ansi_end(fi.writer)
+				return true
+			},
+		)
+
+		fmt.register_user_formatter(
+			Node_Output,
+			proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
+				value := value.(Node_Output)
+				fmt.wprintf(fi.writer, "%v:%v", value.id, value.idx)
+				return true
+			},
+		)
+
+		fmt.register_user_formatter(
+			Node_ID,
+			proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
+				value := value.(Node_ID)
+				if value != 0 {
+					display_node_gvn(fi.writer, current_prc, value)
+				} else {
+					fmt.wprint(fi.writer, "nl")
+				}
+				return true
+			},
+		)
+
+		fmt.register_user_formatter(
+			Node,
+			proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
+				value := &value.(Node)
+				id := get_node_id(current_prc, value)
+				display_node(fi.writer, current_prc, id)
+				return true
+			},
+		)
+
+		fmt.register_user_formatter(
+			Expanded_Node,
+			proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
+				value := &value.(Expanded_Node)
+				id := get_node_id(current_prc, value)
+				display_node(fi.writer, current_prc, id)
+				return true
+			},
+		)
+
+		fmt.register_user_formatter(
+			Proc,
+			proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
+				value := &value.(Proc)
+				display_graph(fi.writer, value)
+				return true
+			},
+		)
+	}
+
+	display_graph :: proc(
+		w: io.Writer,
+		prc: ^Proc,
+		ctx: ^Schedule = nil,
+		prefix: proc(_: io.Writer, _: ^Node, _: Basic_Block) = nil,
+		regs: []Reg = {},
+	) {
+		context.allocator, _ = arna.scrath(prc.temps)
+
+		ctx := ctx
+		our_ctx: Schedule
+
+		if ctx == nil {
+			schedule_graph(prc, &our_ctx, .for_regalloc)
+			ctx = &our_ctx
+		}
+
+		seen_loop_trees: map[^Loop_Tree]int
+
+		instr_idx := 0
+		for bb in ctx.bbs {
+			if bb.loop_tree != nil {
+				if bb.loop_tree not_in seen_loop_trees {
+					seen_loop_trees[bb.loop_tree] = len(seen_loop_trees)
+				}
+				if bb.loop_tree.parent not_in seen_loop_trees {
+					seen_loop_trees[bb.loop_tree.parent] = len(seen_loop_trees)
+				}
+
+				fmt.wprintf(
+					w,
+					"%02i:%02i:%02i ",
+					bb.loop_tree.depth,
+					seen_loop_trees[bb.loop_tree],
+					seen_loop_trees[bb.loop_tree.parent],
+				)
 			}
-			display_node(w, graph, instr, scheduled = true)
-			fmt.wprint(w, "\n")
+
+			display_node(w, prc, bb.head, scheduled = true)
+
+			fmt.wprint(w, " {\n")
+
+			for instr in bb.instrs {
+				inode := get_node(prc, instr)
+				if inode.itype == .Phi {
+					//continue
+				}
+
+				fmt.wprintf(w, " %03i ", instr_idx)
+				instr_idx += 1
+				if len(regs) != 0 {
+					if inode.dt != .Void {
+						reg := regs[inode.gvn]
+						fmt.wprintf(
+							w,
+							"%v%03i",
+							reg_kind_char(reg.kind),
+							reg.index,
+						)
+					} else {
+						fmt.wprint(w, "    ")
+					}
+				} else if prefix != nil {
+					prefix(w, inode, bb)
+				}
+				display_node(w, prc, instr, scheduled = true)
+				fmt.wprint(w, "\n")
+			}
+
+			fmt.wprint(w, "}\n")
+		}
+	}
+
+	display_node :: proc(
+		w: io.Writer,
+		prc: ^Proc,
+		id: Node_ID,
+		scheduled := false,
+	) {
+		if get_node(prc, id).rtype == DEAD_NODE_KIND {
+			fmt.wprintln(w, "<dead>")
+			return
 		}
 
-		fmt.wprint(w, "}\n")
-	}
-}
+		node := expand_node(prc, id)
 
-display_node :: proc(
-	w: io.Writer,
-	graph: ^Proc,
-	id: Node_ID,
-	scheduled := false,
-) {
-	if get_node(graph, id).rtype == DEAD_NODE_KIND {
-		fmt.wprintln(w, "<dead>")
-		return
-	}
-
-	node := expand_node(graph, id)
-
-	get_any_extra_node :: #force_inline proc(
-		graph: ^Proc,
-		node: ^Node,
-	) -> any {
-		assert(int(node.rtype) < len(graph.node_extra_types))
-		return {&node.extra, graph.node_extra_types[node.rtype]}
-	}
-
-	extra := get_any_extra_node(graph, node)
-
-	display_node_gvn(w, graph, id)
-	if node.dt != .Void {
-		fmt.wprintf(w, ":%v", node.dt)
-	}
-	fmt.wprintf(
-		w,
-		":%v(",
-		reflect.enum_name_from_value_any(
-			any{data = &node.rtype, id = graph.node_kind},
-		) or_else panic(""),
-	)
-
-	written_one: bool
-	if node.mem_alignment_pow != 0 {
-		written_one = true
-		fmt.wprintf(w, "align: %v", 1 << node.mem_alignment_pow)
-	}
-
-	if vl, ok := extra.(CInt); ok {
-		if written_one {
-			fmt.wprintf(w, ", ")
+		get_any_extra_node :: #force_inline proc(
+			prc: ^Proc,
+			node: ^Node,
+		) -> any {
+			assert(int(node.rtype) < len(prc.node_extra_types))
+			return {&node.extra, prc.node_extra_types[node.rtype]}
 		}
-		if node.dt in FLOAT_DTS {
-			fmt.wprintf(w, "%v", transmute(f64)vl.value)
-		} else {
-			fmt.wprintf(w, "%v", vl.value)
-		}
-		written_one = true
-	} else {
-		display_extra(w, extra, "", &written_one)
-	}
 
-	for inp, i in node.inps {
-		if written_one {
-			if i == int(node.input_count) {
-				fmt.wprintf(w, "; ")
-			} else {
+		extra := get_any_extra_node(prc, node)
+
+		display_node_gvn(w, prc, id)
+		if node.dt != .Void {
+			fmt.wprintf(w, ":%v", node.dt)
+		}
+		fmt.wprintf(
+			w,
+			":%v(",
+			reflect.enum_name_from_value_any(
+				any{data = &node.rtype, id = prc.node_kind},
+			) or_else fmt.panicf(""),
+		)
+
+		written_one: bool
+		if node.mem_alignment_pow != 0 {
+			written_one = true
+			fmt.wprintf(w, "align: %v", 1 << node.mem_alignment_pow)
+		}
+
+		if vl, ok := extra.(CInt); ok {
+			if written_one {
 				fmt.wprintf(w, ", ")
 			}
-		}
-		written_one = true
-		display_node_gvn(w, graph, inp)
-	}
-
-	if node.itype == .Jump && scheduled {
-		reg := node.outs[0]
-		rnode := expand_node(graph, reg.id)
-		for out in rnode.outs {
-			onode := expand_node(graph, out.id)
-			if false && onode.itype == .Phi {
-				if written_one do fmt.wprintf(w, ", ")
-				written_one = true
-				display_node_gvn(w, graph, onode.inps[1 + reg.idx])
+			if node.dt in FLOAT_DTS {
+				fmt.wprintf(w, "%v", transmute(f64)vl.value)
+			} else {
+				fmt.wprintf(w, "%v", vl.value)
 			}
+			written_one = true
+		} else {
+			display_extra(w, extra, "", &written_one)
 		}
-	}
 
-	if (node.itype == .Region || node.itype == .Loop) && scheduled {
-		for out in node.outs {
-			onode := get_node(graph, out.id)
-			if false && onode.itype == .Phi {
-				if written_one do fmt.wprintf(w, ", ")
-				written_one = true
-				display_node_gvn(w, graph, out.id)
+		for inp, i in node.inps {
+			if written_one {
+				if i == int(node.input_count) {
+					fmt.wprintf(w, "; ")
+				} else {
+					fmt.wprintf(w, ", ")
+				}
 			}
+			written_one = true
+			display_node_gvn(w, prc, inp)
 		}
-	}
 
-	fmt.wprint(w, ") [")
-	written_one = false
-	for out in node.outs {
-		if out.id != 0 {
-			onode := expand_node(graph, out.id)
-			if false && onode.itype == .Phi && scheduled {
-				if out.idx != 0 {
-					reg := onode.inps[0]
-					rnode := expand_node(graph, reg)
-					idx := 0
-					for ro in rnode.outs {
-						if ro.id == out.id do break
-						idx += int(get_node(graph, ro.id).itype == .Phi)
-					}
+		if node.itype == .Jump && scheduled {
+			reg := node.outs[0]
+			rnode := expand_node(prc, reg.id)
+			for out in rnode.outs {
+				onode := expand_node(prc, out.id)
+				if false && onode.itype == .Phi {
 					if written_one do fmt.wprintf(w, ", ")
 					written_one = true
-					display_node_gvn(w, graph, rnode.inps[out.idx - 1])
-					fmt.wprintf(w, ":%v", 1 + idx)
+					display_node_gvn(w, prc, onode.inps[1 + reg.idx])
 				}
-				continue
 			}
 		}
-		if written_one do fmt.wprintf(w, ", ")
-		written_one = true
-		display_node_gvn(w, graph, out.id)
-		fmt.wprintf(w, ":%v", out.idx)
-	}
-	fmt.wprint(w, "]")
-}
 
-display_extra :: proc(
-	w: io.Writer,
-	extra: any,
-	name: string,
-	written_one: ^bool,
-) {
-	if extra.id == nil do return
-
-	#partial switch info in
-		type_info_of(reflect.typeid_base(extra.id)).variant {
-	case runtime.Type_Info_Struct:
-		for field in reflect.struct_fields_zipped(extra.id) {
-			extra_field := reflect.struct_field_value(extra, field)
-			display_extra(w, extra_field, field.name, written_one)
-			if .raw_union in info.flags do break
-		}
-		return
-	case runtime.Type_Info_Bit_Field:
-		slt: i64
-		for fld in reflect.bit_fields_zipped(extra.id) {
-			copy(mem.ptr_to_bytes(&slt), reflect.as_bytes(extra))
-			slt >>= fld.offset
-			slt &~= (i64(-1) << fld.size)
-			display_extra(w, any{&slt, fld.type.id}, fld.name, written_one)
-		}
-		return
-	}
-
-	if !mem.check_zero(reflect.as_bytes(extra)) {
-		if written_one^ do fmt.wprint(w, ", ")
-		written_one^ = true
-		if name != "" {
-			fmt.wprintf(w, "%v: ", name)
-		}
-		fmt.wprint(w, extra)
-	}
-}
-
-ansi_start :: proc(w: io.Writer, #any_int gvn: int) {
-	if .Terminal_Color in context.logger.options {
-		Combo :: struct {
-			fg: string,
-			bg: string,
+		if (node.itype == .Region || node.itype == .Loop) && scheduled {
+			for out in node.outs {
+				onode := get_node(prc, out.id)
+				if false && onode.itype == .Phi {
+					if written_one do fmt.wprintf(w, ", ")
+					written_one = true
+					display_node_gvn(w, prc, out.id)
+				}
+			}
 		}
 
-		colors := [?]Combo {
-			{fg = ansi.FG_BRIGHT_BLACK},
-			{fg = ansi.FG_BRIGHT_RED},
-			{fg = ansi.FG_BRIGHT_GREEN},
-			{fg = ansi.FG_BRIGHT_YELLOW},
-			{fg = ansi.FG_BRIGHT_BLUE},
-			{fg = ansi.FG_BRIGHT_MAGENTA},
-			{fg = ansi.FG_BRIGHT_CYAN},
-			{fg = ansi.FG_RED},
-			{fg = ansi.FG_GREEN},
-			{fg = ansi.FG_YELLOW},
-			{fg = ansi.FG_BLUE},
-			{fg = ansi.FG_MAGENTA},
-			{fg = ansi.FG_CYAN},
-			{fg = ansi.FG_BLACK, bg = ansi.BG_WHITE},
-			{fg = ansi.FG_BLACK, bg = ansi.BG_RED},
-			{fg = ansi.FG_BLACK, bg = ansi.BG_GREEN},
-			{fg = ansi.FG_BLACK, bg = ansi.BG_YELLOW},
-			{fg = ansi.FG_BLACK, bg = ansi.BG_BLUE},
-			{fg = ansi.FG_WHITE, bg = ansi.BG_BRIGHT_BLACK},
-			{fg = ansi.FG_BLACK, bg = ansi.BG_MAGENTA},
-			{fg = ansi.FG_BLACK, bg = ansi.BG_CYAN},
-			{fg = ansi.FG_BLACK, bg = ansi.BG_WHITE},
+		fmt.wprint(w, ") [")
+		written_one = false
+		for out in node.outs {
+			if out.id != 0 {
+				onode := expand_node(prc, out.id)
+				if false && onode.itype == .Phi && scheduled {
+					if out.idx != 0 {
+						reg := onode.inps[0]
+						rnode := expand_node(prc, reg)
+						idx := 0
+						for ro in rnode.outs {
+							if ro.id == out.id do break
+							idx += int(get_node(prc, ro.id).itype == .Phi)
+						}
+						if written_one do fmt.wprintf(w, ", ")
+						written_one = true
+						display_node_gvn(w, prc, rnode.inps[out.idx - 1])
+						fmt.wprintf(w, ":%v", 1 + idx)
+					}
+					continue
+				}
+			}
+			if written_one do fmt.wprintf(w, ", ")
+			written_one = true
+			display_node_gvn(w, prc, out.id)
+			fmt.wprintf(w, ":%v", out.idx)
+		}
+		fmt.wprint(w, "]")
+	}
+
+	display_extra :: proc(
+		w: io.Writer,
+		extra: any,
+		name: string,
+		written_one: ^bool,
+	) {
+		if extra.id == nil do return
+
+		#partial switch info in
+			type_info_of(reflect.typeid_base(extra.id)).variant {
+		case runtime.Type_Info_Struct:
+			for field in reflect.struct_fields_zipped(extra.id) {
+				extra_field := reflect.struct_field_value(extra, field)
+				display_extra(w, extra_field, field.name, written_one)
+				if .raw_union in info.flags do break
+			}
+			return
+		case runtime.Type_Info_Bit_Field:
+			slt: i64
+			for fld in reflect.bit_fields_zipped(extra.id) {
+				copy(mem.ptr_to_bytes(&slt), reflect.as_bytes(extra))
+				slt >>= fld.offset
+				slt &~= (i64(-1) << fld.size)
+				display_extra(w, any{&slt, fld.type.id}, fld.name, written_one)
+			}
+			return
 		}
 
-		pick := colors[gvn % len(colors)]
+		if !mem.check_zero(reflect.as_bytes(extra)) {
+			if written_one^ do fmt.wprint(w, ", ")
+			written_one^ = true
+			if name != "" {
+				fmt.wprintf(w, "%v: ", name)
+			}
+			fmt.wprint(w, extra)
+		}
+	}
 
-		if pick.fg != "" {
-			fmt.wprintf(w, ansi.CSI + "%v" + ansi.SGR, pick.fg)
+	ansi_start :: proc(w: io.Writer, #any_int gvn: int) {
+		if .Terminal_Color in context.logger.options {
+			Combo :: struct {
+				fg: string,
+				bg: string,
+			}
+
+			colors := [?]Combo {
+				{fg = ansi.FG_BRIGHT_BLACK},
+				{fg = ansi.FG_BRIGHT_RED},
+				{fg = ansi.FG_BRIGHT_GREEN},
+				{fg = ansi.FG_BRIGHT_YELLOW},
+				{fg = ansi.FG_BRIGHT_BLUE},
+				{fg = ansi.FG_BRIGHT_MAGENTA},
+				{fg = ansi.FG_BRIGHT_CYAN},
+				{fg = ansi.FG_RED},
+				{fg = ansi.FG_GREEN},
+				{fg = ansi.FG_YELLOW},
+				{fg = ansi.FG_BLUE},
+				{fg = ansi.FG_MAGENTA},
+				{fg = ansi.FG_CYAN},
+				{fg = ansi.FG_BLACK, bg = ansi.BG_WHITE},
+				{fg = ansi.FG_BLACK, bg = ansi.BG_RED},
+				{fg = ansi.FG_BLACK, bg = ansi.BG_GREEN},
+				{fg = ansi.FG_BLACK, bg = ansi.BG_YELLOW},
+				{fg = ansi.FG_BLACK, bg = ansi.BG_BLUE},
+				{fg = ansi.FG_WHITE, bg = ansi.BG_BRIGHT_BLACK},
+				{fg = ansi.FG_BLACK, bg = ansi.BG_MAGENTA},
+				{fg = ansi.FG_BLACK, bg = ansi.BG_CYAN},
+				{fg = ansi.FG_BLACK, bg = ansi.BG_WHITE},
+			}
+
+			pick := colors[gvn % len(colors)]
+
+			if pick.fg != "" {
+				fmt.wprintf(w, ansi.CSI + "%v" + ansi.SGR, pick.fg)
+			}
+
+			if pick.bg != "" {
+				fmt.wprintf(w, ansi.CSI + "%v" + ansi.SGR, pick.bg)
+			}
+		}
+	}
+
+	ansi_end :: proc(w: io.Writer) {
+		if .Terminal_Color in context.logger.options {
+			fmt.wprint(w, ansi.CSI + ansi.RESET + ansi.SGR)
+		}
+	}
+
+	display_node_gvn :: proc(w: io.Writer, prc: ^Proc, id: Node_ID) {
+		if id == 0 {
+			fmt.wprint(w, "nl")
+			return
+		}
+		n := get_node(prc, id)
+
+		stable_id := n.gvn
+		name := ""
+		when NODE_NAMES {
+			if n.stable_id != 0 do stable_id = n.stable_id[0]
+			name = n.name[0]
 		}
 
-		if pick.bg != "" {
-			fmt.wprintf(w, ansi.CSI + "%v" + ansi.SGR, pick.bg)
+		ansi_start(w, stable_id)
+
+		fmt.wprintf(w, "#%v%v", stable_id, name)
+
+		if stable_id != n.gvn {
+			fmt.wprintf(w, "%v", n.gvn)
+		} else {
+			fmt.wprintf(w, "%%")
 		}
-	}
-}
 
-ansi_end :: proc(w: io.Writer) {
-	if .Terminal_Color in context.logger.options {
-		fmt.wprint(w, ansi.CSI + ansi.RESET + ansi.SGR)
-	}
-}
-
-display_node_gvn :: proc(w: io.Writer, graph: ^Proc, id: Node_ID) {
-	if id == 0 {
-		fmt.wprint(w, "nl")
-		return
-	}
-	n := get_node(graph, id)
-
-	stable_id := n.gvn
-	name := ""
-	when NODE_NAMES {
-		if n.stable_id != 0 do stable_id = n.stable_id[0]
-		name = n.name[0]
+		ansi_end(w)
 	}
 
-	ansi_start(w, stable_id)
+} else {
+	display_graph :: #force_inline proc(
+		w: io.Writer,
+		prc: ^Proc,
+		ctx: ^Schedule = nil,
+		prefix: proc(_: io.Writer, _: ^Node, _: Basic_Block) = nil,
+		regs: []Reg = {},
+	) {}
 
-	fmt.wprintf(w, "#%v%v", stable_id, name)
+	display_node :: #force_inline proc(
+		w: io.Writer,
+		prc: ^Proc,
+		id: Node_ID,
+		scheduled := false,
+	) {}
 
-	if stable_id != n.gvn {
-		fmt.wprintf(w, "%v", n.gvn)
-	} else {
-		fmt.wprintf(w, "%%")
-	}
-
-	ansi_end(w)
+	display_node_gvn :: #force_inline proc(
+		w: io.Writer,
+		prc: ^Proc,
+		id: Node_ID,
+	) {}
+	ansi_start :: #force_inline proc(w: io.Writer, #any_int gvn: int) {}
+	ansi_end :: #force_inline proc(w: io.Writer) {}
 }
 
 reg_kind_char :: proc(kind: Reg_Kind) -> rune {

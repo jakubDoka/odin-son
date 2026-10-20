@@ -23,7 +23,7 @@ f:
     mov.q r15, [rsp + 0x61]
     mov.q rax, [rsp + 0x81]
     cmp rax, 0
-    jz 2
+    je 2
     mov.q rbx, [rsp + 0x51]
     mov.q rax, [rsp + 0x81]
     mov.q rbp, [rsp + 0x71]
@@ -57,7 +57,7 @@ f:
     mov.q rcx, [rsp + 0x79]
     mov.q rdx, [rsp + 0x71]
     cmp rdx, rcx
-    jnl 4
+    jge 4
     mov.q rcx, [rsp + 0x41]
     mov.q rdx, [rsp + 0x71]
     mov.q rbx, [rsp + 0x69]
@@ -116,7 +116,7 @@ f:
 1:
     mov r8, rcx
     cmp rbx, 0
-    jz 2
+    je 2
     mov.q rsi, [rsp + 0x51]
     mov rax, rbx
     xor rdx, rdx
@@ -137,7 +137,7 @@ f:
     xor eax, eax
 3:
     cmp rax, r8
-    jnl 4
+    jge 4
     mov.q rsi, [rsp + 0x41]
     mov rdx, rax
     mov rcx, rdi
@@ -196,7 +196,7 @@ f:
     mov.q r15, [rsp + 0x61]
     mov.q rax, [rsp + 0x81]
     cmp rax, 0
-    jz 2
+    je 2
     mov.q rbx, [rsp + 0x51]
     mov.q rax, [rsp + 0x81]
     mov.q rbp, [rsp + 0x71]
@@ -230,7 +230,7 @@ f:
     mov.q rcx, [rsp + 0x79]
     mov.q rdx, [rsp + 0x71]
     cmp rdx, rcx
-    jnl 4
+    jge 4
     mov.q rcx, [rsp + 0x41]
     mov.q rdx, [rsp + 0x71]
     mov.q rbx, [rsp + 0x69]
@@ -289,7 +289,7 @@ f:
 1:
     mov r8, rcx
     cmp rbx, 0
-    jz 2
+    je 2
     mov.q rsi, [rsp + 0x51]
     mov rax, rbx
     xor rdx, rdx
@@ -310,7 +310,7 @@ f:
     xor eax, eax
 3:
     cmp rax, r8
-    jnl 4
+    jge 4
     mov.q rsi, [rsp + 0x41]
     mov rdx, rax
     mov rcx, rdi
@@ -358,7 +358,7 @@ f:
     mov rdx, 0x41
     call -0x46
     cmp rbx, 0
-    jz 2
+    je 2
     xor ecx, ecx
 1:
     mov rax, rbx
@@ -373,13 +373,13 @@ f:
     div rbp
     mov rbx, rax
     cmp rbx, 0
-    setz dl
+    sete dl
     movzx rdx, dl
     mov rax, rcx
     add rax, 1
     mov rcx, rax
     test dl, dl
-    jz 1
+    je 1
     mov rcx, rax
     sub rcx, 1
     jmp 3
@@ -390,7 +390,7 @@ f:
     mov r8, rax
     mov rdi, rcx
     cmp r8, 0
-    jng 5
+    jle 5
     xor eax, eax
 4:
     mov rcx, rdi
@@ -401,7 +401,7 @@ f:
     mov.b [rcx], sil
     add rax, 1
     cmp rax, r8
-    jnge 4
+    jl 4
     jmp 5
 5:
     mov rax, r8
@@ -455,15 +455,15 @@ main:
     div r8
     mov rsi, rax
     cmp rsi, 0
-    setz al
+    sete al
     movzx rax, al
     mov rdi, rcx
     add rdi, 1
     mov rcx, rdi
     test al, al
-    jz 1
+    je 1
     cmp rdi, 0
-    jng 3
+    jle 3
     mov rdx, rdi
     sub rdx, 1
     xor eax, eax
@@ -474,7 +474,7 @@ main:
     mov.b [rsp + rax], cl
     add rax, 1
     cmp rax, rdi
-    jnge 2
+    jl 2
     jmp 3
 3:
     movzx.b eax, [rsp]

@@ -3,45 +3,46 @@ package bac_meta2
 import ".."
 import "../anal"
 import "../arm"
-import "../builder"
 import "../meta"
+import "../ssa"
 import "../wasm"
 import "../x64"
 
 main :: proc() {
-	when builder.SPEC_NOT_PRESENT {
-		BUILDER_CLASSES := [builder.Node_Type]meta.Class_Spec {
+	when ssa.SPEC_NOT_PRESENT {
+		SSA_CLASSES := [ssa.Node_Type]meta.Class_Spec {
 			.Scope = {
-				id = builder.Scope,
+				id = ssa.Scope,
 				args = {"cfg"},
 				default_type = .Void,
+				api = true,
 			},
 			.Lazy_Phi = {args = {"reg", "lhs"}, extra_capacity = 1},
 		}
 
 		meta.generate_spec(
 			meta.Spec_Gen_Input {
-				package_name      = "builder",
+				package_name      = "bac_ssa",
 				// %w-formatted table values bake in bare Reg_Kind/Class_Flag
 				// names, so alias them locally instead of teaching the
 				// generator about every %w call site
 				header_import     = "import bac \"..\"\n" + "Reg_Kind :: bac.Reg_Kind\n" + "Class_Flag :: bac.Class_Flag\n",
 				qual              = "bac.",
-				local_extra_types = {builder.Scope},
+				local_extra_types = {ssa.Scope},
 				classes           = {
 					meta.class_array(&meta.IDEAL_CLASSES, gen_ctors = false),
-					meta.class_array(&BUILDER_CLASSES),
+					meta.class_array(&SSA_CLASSES),
 				},
 				has_sccp          = true,
 			},
-			"bac/builder/node_specs.odin",
+			"bac/ssa/node_specs.odin",
 		)
 	}
 
 	when anal.SPEC_NOT_PRESENT {
 		meta.generate_spec(
 			meta.Spec_Gen_Input {
-				package_name = "anal",
+				package_name = "bac_anal",
 				header_import = "import bac \"..\"\n" +
 				"Reg_Kind :: bac.Reg_Kind\n" +
 				"Class_Flag :: bac.Class_Flag\n",
@@ -90,7 +91,7 @@ main :: proc() {
 
 		meta.generate_spec(
 			meta.Spec_Gen_Input {
-				package_name = "x64",
+				package_name = "bac_x64",
 				// %w-formatted table values bake in bare Reg_Kind/Class_Flag
 				// names, so alias them locally instead of teaching the
 				// generator about every %w call site
@@ -107,7 +108,7 @@ main :: proc() {
 					.F32 ..= .V512 = x64.RK_VECTOR,
 				},
 				spill_boundary = {16, 16},
-				cc_table = {x64.X64_SYSTEMV_CC, x64.X64_LINUX_SYSCALL_CC},
+				cc_table = x64.CC_TABLE[:],
 			},
 			"bac/x64/node_specs.odin",
 		)
@@ -134,7 +135,7 @@ main :: proc() {
 
 		meta.generate_spec(
 			meta.Spec_Gen_Input {
-				package_name = "wasm",
+				package_name = "bac_wasm",
 				// %w-formatted table values bake in bare Reg_Kind/Class_Flag
 				// names, so alias them locally instead of teaching the
 				// generator about every %w call site
@@ -155,7 +156,7 @@ main :: proc() {
 					.V128 = wasm.RK_V128,
 				},
 				spill_boundary = {0 ..= wasm.RK_COUNT = 64},
-				cc_table = {wasm.WASM_SYSTEMV_CC},
+				cc_table = wasm.CC_TABLE[:],
 			},
 			"bac/wasm/node_specs.odin",
 		)
@@ -189,7 +190,7 @@ main :: proc() {
 
 		meta.generate_spec(
 			meta.Spec_Gen_Input {
-				package_name = "arm",
+				package_name = "bac_arm",
 				header_import = "import bac \"..\"\n" +
 				"Reg_Kind :: bac.Reg_Kind\n" +
 				"Class_Flag :: bac.Class_Flag\n",
@@ -205,7 +206,7 @@ main :: proc() {
 					.F32 ..= .V512 = arm.RK_VECTOR,
 				},
 				spill_boundary = {32, 32},
-				cc_table = {arm.ARM_SYSTEMV_CC},
+				cc_table = arm.CC_TABLE[:],
 			},
 			"bac/arm/node_specs.odin",
 		)

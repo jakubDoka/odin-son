@@ -1,13 +1,10 @@
-package arm
+package bac_arm
 import bac ".."
 Reg_Kind :: bac.Reg_Kind
 Class_Flag :: bac.Class_Flag
 // NOTE: this file is generated: 
 
-SPEC := bac.Node_Spec{
-	cc_table = {
-		ARM_SYSTEMV_CC,
-	},
+@(tag = "api", rodata, export, link_name = "bac_arm_SPEC")SPEC := bac.Node_Spec{
 	call_clobbers = {
 		{524287, 4294902015},
 	},
@@ -204,7 +201,7 @@ SPEC := bac.Node_Spec{
 		{}, // Lsrv
 		{}, // Csel_Ult_Imm
 	},
-	node_extra_types = {
+	node_extra_types = ({}) when #config(NO_FMT, false) else ([]typeid{
 		0 = bac.Cfg,
 		1 = bac.Cfg,
 		2 = bac.Cfg,
@@ -228,8 +225,8 @@ SPEC := bac.Node_Spec{
 		71 = Arm_Op,
 		74 = Arm_Op,
 		78 = Arm_Op,
-	},
-	node_kind = Node_Type,
+	}),
+	node_kind = nil when #config(NO_FMT, false) else Node_Type,
 }
 
 Node_Type :: enum u16 {
@@ -335,54 +332,54 @@ collect_meta :: proc(ctx: ^bac.Proc,
 	return bac.regalloc_collect_meta(ctx, ra, sched, meta_of_)
 }
 
-add_msub :: #force_inline proc(graph: ^bac.Proc, name: string, dt: bac.Node_Datatype, multiplicant: bac.Node_ID, multiplier: bac.Node_ID, subtractant: bac.Node_ID) -> (_id: bac.Node_ID) {
-	return bac.add_raw(graph, name, u16(Node_Type.Msub), dt, {multiplicant, multiplier, subtractant})
+add_msub :: #force_inline proc(prc: ^bac.Proc, name: string, dt: bac.Node_Datatype, multiplicant: bac.Node_ID, multiplier: bac.Node_ID, subtractant: bac.Node_ID) -> (_id: bac.Node_ID) {
+	return bac.add_raw(prc, name, u16(Node_Type.Msub), dt, {multiplicant, multiplier, subtractant})
 }
-add_cmlt :: #force_inline proc(graph: ^bac.Proc, name: string, lhs: bac.Node_ID, lane: bac.Lane_Type = {}) -> (_id: bac.Node_ID) {
-	return bac.add_raw(graph, name, u16(Node_Type.Cmlt), .V128, {lhs}, {lane = lane,})
+add_cmlt :: #force_inline proc(prc: ^bac.Proc, name: string, lhs: bac.Node_ID, lane: bac.Lane_Type = {}) -> (_id: bac.Node_ID) {
+	return bac.add_raw(prc, name, u16(Node_Type.Cmlt), .V128, {lhs}, {lane = lane,})
 }
-add_ext :: #force_inline proc(graph: ^bac.Proc, name: string, lhs: bac.Node_ID, rhs: bac.Node_ID, aux: u32, lane: bac.Lane_Type = {}) -> (_id: bac.Node_ID) {
-	(^Arm_Op)(bac.get_next_extra_slot(graph, u16(Node_Type.Ext), 0))^ = {
+add_ext :: #force_inline proc(prc: ^bac.Proc, name: string, lhs: bac.Node_ID, rhs: bac.Node_ID, aux: u32, lane: bac.Lane_Type = {}) -> (_id: bac.Node_ID) {
+	(^Arm_Op)(bac.get_next_extra_slot(prc, u16(Node_Type.Ext), 0))^ = {
 		aux = aux,
 	}
-	return bac.add_raw(graph, name, u16(Node_Type.Ext), .V128, {lhs, rhs}, {lane = lane,})
+	return bac.add_raw(prc, name, u16(Node_Type.Ext), .V128, {lhs, rhs}, {lane = lane,})
 }
-add_zip1 :: #force_inline proc(graph: ^bac.Proc, name: string, lsh: bac.Node_ID, rhs: bac.Node_ID, lane: bac.Lane_Type = {}) -> (_id: bac.Node_ID) {
-	return bac.add_raw(graph, name, u16(Node_Type.Zip1), .V128, {lsh, rhs}, {lane = lane,})
+add_zip1 :: #force_inline proc(prc: ^bac.Proc, name: string, lsh: bac.Node_ID, rhs: bac.Node_ID, lane: bac.Lane_Type = {}) -> (_id: bac.Node_ID) {
+	return bac.add_raw(prc, name, u16(Node_Type.Zip1), .V128, {lsh, rhs}, {lane = lane,})
 }
-add_addv128 :: #force_inline proc(graph: ^bac.Proc, name: string, dt: bac.Node_Datatype, vec: bac.Node_ID, lane: bac.Lane_Type = {}) -> (_id: bac.Node_ID) {
-	return bac.add_raw(graph, name, u16(Node_Type.Addv128), dt, {vec}, {lane = lane,})
+add_addv128 :: #force_inline proc(prc: ^bac.Proc, name: string, dt: bac.Node_Datatype, vec: bac.Node_ID, lane: bac.Lane_Type = {}) -> (_id: bac.Node_ID) {
+	return bac.add_raw(prc, name, u16(Node_Type.Addv128), dt, {vec}, {lane = lane,})
 }
-add_umov :: #force_inline proc(graph: ^bac.Proc, name: string, dt: bac.Node_Datatype, vec: bac.Node_ID, aux: u32) -> (_id: bac.Node_ID) {
-	(^Arm_Op)(bac.get_next_extra_slot(graph, u16(Node_Type.Umov), 0))^ = {
+add_umov :: #force_inline proc(prc: ^bac.Proc, name: string, dt: bac.Node_Datatype, vec: bac.Node_ID, aux: u32) -> (_id: bac.Node_ID) {
+	(^Arm_Op)(bac.get_next_extra_slot(prc, u16(Node_Type.Umov), 0))^ = {
 		aux = aux,
 	}
-	return bac.add_raw(graph, name, u16(Node_Type.Umov), dt, {vec})
+	return bac.add_raw(prc, name, u16(Node_Type.Umov), dt, {vec})
 }
-add_csel_ult_imm :: #force_inline proc(graph: ^bac.Proc, name: string, dt: bac.Node_Datatype, on_true: bac.Node_ID, on_false: bac.Node_ID, count: bac.Node_ID, aux: u32) -> (_id: bac.Node_ID) {
-	(^Arm_Op)(bac.get_next_extra_slot(graph, u16(Node_Type.Csel_Ult_Imm), 0))^ = {
+add_csel_ult_imm :: #force_inline proc(prc: ^bac.Proc, name: string, dt: bac.Node_Datatype, on_true: bac.Node_ID, on_false: bac.Node_ID, count: bac.Node_ID, aux: u32) -> (_id: bac.Node_ID) {
+	(^Arm_Op)(bac.get_next_extra_slot(prc, u16(Node_Type.Csel_Ult_Imm), 0))^ = {
 		aux = aux,
 	}
-	return bac.add_raw(graph, name, u16(Node_Type.Csel_Ult_Imm), dt, {on_true, on_false, count})
+	return bac.add_raw(prc, name, u16(Node_Type.Csel_Ult_Imm), dt, {on_true, on_false, count})
 }
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	when false {}
-	else when T == bac.Local {return 4}
-	else when T == bac.Dbg_Sym {return 2}
-	else when T == bac.Tup {return 5}
-	else when T == bac.No_Extra {return 1}
-	else when T == bac.Call {return 3}
-	else when T == Arm_Op {return 7}
 	else when T == bac.Cfg {return 0}
+	else when T == bac.No_Extra {return 1}
+	else when T == bac.Tup {return 5}
+	else when T == Arm_Op {return 7}
+	else when T == bac.Local {return 4}
 	else when T == bac.CInt {return 6}
+	else when T == bac.Call {return 3}
+	else when T == bac.Dbg_Sym {return 2}
 	else {#panic(`the passed type is not subclass of anything`)}
 }
-#assert(size_of(bac.Local) % bac.PRECISION == 0)
-#assert(size_of(bac.Dbg_Sym) % bac.PRECISION == 0)
-#assert(size_of(bac.Tup) % bac.PRECISION == 0)
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.Call) % bac.PRECISION == 0)
-#assert(size_of(Arm_Op) % bac.PRECISION == 0)
 #assert(size_of(bac.Cfg) % bac.PRECISION == 0)
+#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
+#assert(size_of(bac.Tup) % bac.PRECISION == 0)
+#assert(size_of(Arm_Op) % bac.PRECISION == 0)
+#assert(size_of(bac.Local) % bac.PRECISION == 0)
 #assert(size_of(bac.CInt) % bac.PRECISION == 0)
+#assert(size_of(bac.Call) % bac.PRECISION == 0)
+#assert(size_of(bac.Dbg_Sym) % bac.PRECISION == 0)

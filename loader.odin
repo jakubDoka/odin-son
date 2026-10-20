@@ -24,7 +24,6 @@ load_program :: proc(ctx: ^Gen_Ctx, entry_file: string) {
 	load_dir(ctx, entry_dir, &loaded)
 }
 
-@(private = "file")
 load_dir :: proc(
 	ctx: ^Gen_Ctx,
 	rdir: string,

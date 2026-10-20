@@ -1,14 +1,10 @@
-package x64
+package bac_x64
 import bac ".."
 Reg_Kind :: bac.Reg_Kind
 Class_Flag :: bac.Class_Flag
 // NOTE: this file is generated: 
 
-SPEC := bac.Node_Spec{
-	cc_table = {
-		X64_SYSTEMV_CC,
-		X64_LINUX_SYSCALL_CC,
-	},
+@(tag = "api", rodata, export, link_name = "bac_x64_SPEC")SPEC := bac.Node_Spec{
 	call_clobbers = {
 		{4039, 65535},
 		{2051, 0},
@@ -282,7 +278,7 @@ SPEC := bac.Node_Spec{
 		{}, // X64_Pshufb
 		{}, // X64_Pextr
 	},
-	node_extra_types = {
+	node_extra_types = ({}) when #config(NO_FMT, false) else ([]typeid{
 		0 = bac.Cfg,
 		1 = bac.Cfg,
 		2 = bac.Cfg,
@@ -334,8 +330,8 @@ SPEC := bac.Node_Spec{
 		99 = Mem_Op,
 		101 = Mem_Op,
 		102 = Mem_Op,
-	},
-	node_kind = Node_Type,
+	}),
+	node_kind = nil when #config(NO_FMT, false) else Node_Type,
 }
 
 Node_Type :: enum u16 {
@@ -465,27 +461,27 @@ collect_meta :: proc(ctx: ^bac.Proc,
 	return bac.regalloc_collect_meta(ctx, ra, sched, meta_of_)
 }
 
-add_x64_psadbw :: #force_inline proc(graph: ^bac.Proc, name: string, dt: bac.Node_Datatype, lhs: bac.Node_ID, rhs: bac.Node_ID) -> (_id: bac.Node_ID) {
-	return bac.add_raw(graph, name, u16(Node_Type.X64_Psadbw), dt, {lhs, rhs})
+add_x64_psadbw :: #force_inline proc(prc: ^bac.Proc, name: string, dt: bac.Node_Datatype, lhs: bac.Node_ID, rhs: bac.Node_ID) -> (_id: bac.Node_ID) {
+	return bac.add_raw(prc, name, u16(Node_Type.X64_Psadbw), dt, {lhs, rhs})
 }
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	when false {}
-	else when T == bac.Local {return 4}
-	else when T == Mem_Op {return 7}
-	else when T == bac.Dbg_Sym {return 2}
-	else when T == bac.Tup {return 5}
-	else when T == bac.No_Extra {return 1}
-	else when T == bac.Call {return 3}
-	else when T == bac.Cfg {return 0}
 	else when T == bac.CInt {return 6}
+	else when T == bac.Cfg {return 0}
+	else when T == bac.No_Extra {return 1}
+	else when T == bac.Local {return 4}
+	else when T == bac.Call {return 3}
+	else when T == bac.Dbg_Sym {return 2}
+	else when T == Mem_Op {return 7}
+	else when T == bac.Tup {return 5}
 	else {#panic(`the passed type is not subclass of anything`)}
 }
-#assert(size_of(bac.Local) % bac.PRECISION == 0)
-#assert(size_of(Mem_Op) % bac.PRECISION == 0)
-#assert(size_of(bac.Dbg_Sym) % bac.PRECISION == 0)
-#assert(size_of(bac.Tup) % bac.PRECISION == 0)
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.Call) % bac.PRECISION == 0)
-#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
 #assert(size_of(bac.CInt) % bac.PRECISION == 0)
+#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
+#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
+#assert(size_of(bac.Local) % bac.PRECISION == 0)
+#assert(size_of(bac.Call) % bac.PRECISION == 0)
+#assert(size_of(bac.Dbg_Sym) % bac.PRECISION == 0)
+#assert(size_of(Mem_Op) % bac.PRECISION == 0)
+#assert(size_of(bac.Tup) % bac.PRECISION == 0)

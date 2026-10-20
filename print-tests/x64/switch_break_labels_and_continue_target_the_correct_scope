@@ -1,7 +1,7 @@
 =========== OPT LEVEL: none-quick ===========
 standalone:
     cmp rdi, 1
-    jz 1
+    je 1
     mov rax, 4
     jmp 2
 1:
@@ -11,9 +11,9 @@ standalone:
 typed:
     mov.q [rsp - 0x8], rdi
     cmp rsi, 1
-    jz 5
+    je 5
     cmp rsi, 2
-    jz 4
+    je 4
     xor eax, eax
     jmp 6
 4:
@@ -37,20 +37,21 @@ main:
     mov.q [rsp + 0x20], rdx
     mov.q rdx, [rsp + 0x20]
     cmp rdx, 4
-    jnle 14
+    jg 14
     mov.q rdx, [rsp + 0x20]
     cmp rdx, 1
-    jz 11
+    je 11
     mov.q rdx, [rsp + 0x20]
     cmp rdx, 2
-    jz 10
+    je 10
     mov.q rdx, [rsp + 0x20]
     cmp rdx, 3
-    jz 14
+    je 14
     mov.q rdx, [rsp + 0x18]
     add rdx, 0x64
     mov.q [rsp + 0x28], rdx
     jmp 12
+    jmp 14
 10:
     mov.q [rsp + 0x10], r15
     mov.q r15, [rsp + 0x18]
@@ -93,7 +94,7 @@ main:
 =========== OPT LEVEL: none ===========
 standalone:
     cmp rdi, 1
-    jz 1
+    je 1
     mov rax, 4
     jmp 2
 1:
@@ -103,9 +104,9 @@ standalone:
 typed:
     mov rax, rdi
     cmp rsi, 1
-    jz 5
+    je 5
     cmp rsi, 2
-    jz 4
+    je 4
     xor eax, eax
     jmp 5
 4:
@@ -123,16 +124,18 @@ main:
     mov rbp, rax
     add rcx, 1
     cmp rcx, 4
-    jnle 11
+    jg 11
     cmp rcx, 1
-    jz 8
+    je 8
     cmp rcx, 2
-    jz 10
+    je 10
     cmp rcx, 3
-    jz 11
+    je 11
     mov rax, rbp
     add rax, 0x64
     jmp 9
+    jmp 11
+    jmp 10
 8:
     mov rax, rbp
     add rax, 0x16
@@ -161,7 +164,7 @@ main:
 =========== OPT LEVEL: moderate-quick ===========
 standalone:
     cmp rdi, 1
-    jz 1
+    je 1
     mov rax, 4
     jmp 2
 1:
@@ -171,9 +174,9 @@ standalone:
 typed:
     mov.q [rsp - 0x8], rdi
     cmp rsi, 1
-    jz 5
+    je 5
     cmp rsi, 2
-    jz 4
+    je 4
     xor eax, eax
     jmp 6
 4:
@@ -197,20 +200,21 @@ main:
     mov.q [rsp + 0x20], rdx
     mov.q rdx, [rsp + 0x20]
     cmp rdx, 4
-    jnle 14
+    jg 14
     mov.q rdx, [rsp + 0x20]
     cmp rdx, 1
-    jz 11
+    je 11
     mov.q rdx, [rsp + 0x20]
     cmp rdx, 2
-    jz 10
+    je 10
     mov.q rdx, [rsp + 0x20]
     cmp rdx, 3
-    jz 14
+    je 14
     mov.q rdx, [rsp + 0x18]
     add rdx, 0x64
     mov.q [rsp + 0x28], rdx
     jmp 12
+    jmp 14
 10:
     mov.q [rsp + 0x10], r15
     mov.q r15, [rsp + 0x18]
@@ -253,7 +257,7 @@ main:
 =========== OPT LEVEL: moderate ===========
 standalone:
     cmp rdi, 1
-    jz 1
+    je 1
     mov rax, 4
     jmp 2
 1:
@@ -263,9 +267,9 @@ standalone:
 typed:
     mov rax, rdi
     cmp rsi, 1
-    jz 5
+    je 5
     cmp rsi, 2
-    jz 4
+    je 4
     xor eax, eax
     jmp 5
 4:
@@ -283,16 +287,18 @@ main:
     mov rbp, rax
     add rcx, 1
     cmp rcx, 4
-    jnle 11
+    jg 11
     cmp rcx, 1
-    jz 8
+    je 8
     cmp rcx, 2
-    jz 10
+    je 10
     cmp rcx, 3
-    jz 11
+    je 11
     mov rax, rbp
     add rax, 0x64
     jmp 9
+    jmp 11
+    jmp 10
 8:
     mov rax, rbp
     add rax, 0x16
@@ -321,7 +327,7 @@ main:
 =========== OPT LEVEL: all ===========
 standalone:
     cmp rdi, 1
-    jz 1
+    je 1
     mov rax, 4
     jmp 2
 1:
@@ -331,9 +337,9 @@ standalone:
 typed:
     mov rax, rdi
     cmp rsi, 1
-    jz 5
+    je 5
     cmp rsi, 2
-    jz 4
+    je 4
     xor eax, eax
     jmp 5
 4:
@@ -352,13 +358,15 @@ main:
     mov rax, rcx
     add rax, 1
     cmp rax, 1
-    jz 8
+    je 8
     cmp rax, 2
-    jz 10
+    je 10
     cmp rax, 3
-    jz 11
+    je 11
     add rsi, 0x64
     jmp 9
+    jmp 11
+    jmp 10
 8:
     add rsi, 0x16
 9:
@@ -368,7 +376,7 @@ main:
     add rcx, 2
     cmp rcx, 4
     mov rsi, rdx
-    jng 7
+    jle 7
     mov rsi, rdx
 11:
     mov rbx, rsi
@@ -393,11 +401,11 @@ main:
     mov rsi, rax
     add rsi, 1
     cmp rsi, 1
-    jz 4
+    je 4
     cmp rsi, 2
-    jz 3
+    je 3
     cmp rsi, 3
-    jz 2
+    je 2
     add rdx, 0x64
     jmp 5
 2:
@@ -414,9 +422,9 @@ main:
 6:
     add rax, 2
     cmp rax, 4
-    mov rax, rsi
     mov rdx, rcx
-    jng 1
+    mov rax, rsi
+    jle 1
     mov rax, rcx
 7:
     add rax, 0xb

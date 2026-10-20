@@ -3,8 +3,8 @@ package main
 import "bac"
 import "bac/anal"
 import "bac/arm"
-import "bac/builder"
 import "bac/regalloc"
+import "bac/ssa"
 import "bac/wasm"
 import "bac/x64"
 import "base:runtime"
@@ -14,7 +14,7 @@ import "core:odin/ast"
 import "core:slice"
 import "core:strconv"
 import "typecheck"
-import "vendored/gam/util/arna"
+import "utils/arna"
 
 CALL_PREFIX :: bac.CALL_PREFIX
 get_node_type :: typecheck.get_node_type
@@ -27,7 +27,7 @@ Type :: typecheck.Type
 Node_ID :: bac.Node_ID
 expand_node :: bac.expand_node
 get_node :: bac.get_node
-index_offset :: builder.compute_index_offset
+index_offset :: ssa.compute_index_offset
 
 Opt_Level :: struct {
 	name:        string,
@@ -49,14 +49,19 @@ OPT_LEVELS :: [?]Opt_Level {
 }
 
 TARGETS := [?]typecheck.Target {
-	{"amd64", &x64.X64_SYSTEMV_CC, &x64.SPEC, emit_elf},
-	{"wasm64", &wasm.WASM_SYSTEMV_CC, &wasm.SPEC, emit_wasm_module},
-	{"arm64", &arm.ARM_SYSTEMV_CC, &arm.SPEC, emit_elf},
+	{"amd64", &x64.CC_TABLE[x64.X64_SYSTEMV_CC], &x64.SPEC, emit_elf},
+	{
+		"wasm64",
+		&wasm.CC_TABLE[wasm.WASM_SYSTEMV_CC],
+		&wasm.SPEC,
+		emit_wasm_module,
+	},
+	{"arm64", &arm.CC_TABLE[arm.ARM_SYSTEMV_CC], &arm.SPEC, emit_elf},
 }
 
 Abi_Param :: struct {
 	by_ptr:     bool,
-	using base: builder.Abi_Param,
+	using base: ssa.Abi_Param,
 }
 
 Abi_Type :: enum int {
@@ -79,7 +84,7 @@ X86_Reg_Class :: enum u8 {
 
 Param_Gen :: struct {
 	using sm:  Abi_Sm,
-	using gen: builder.Param_Gen,
+	using gen: ssa.Param_Gen,
 }
 
 arg_gen_next :: proc(
@@ -95,7 +100,7 @@ arg_gen_next :: proc(
 	apa = abi_sm_add(ctx, gen, ty) or_return
 	ok = true
 	mem: Node_ID
-	mem, value = builder.arg_gen_next(ctx, ctx_mem(ctx), gen, name, &apa)
+	mem, value = ssa.arg_gen_next(ctx, ctx_mem(ctx), gen, name, &apa)
 	ctx_set_mem(ctx, mem)
 	return
 }
@@ -279,11 +284,11 @@ ctx_ctrl :: proc(ctx: ^Gen_Ctx) -> Node_ID {
 }
 
 ctx_mem :: proc(ctx: ^Gen_Ctx) -> Node_ID {
-	return builder.get_scope_value(ctx, ctx.node_scope, ctx.mem_slot)
+	return ssa.get_scope_value(ctx, ctx.node_scope, ctx.mem_slot)
 }
 
 ctx_set_mem :: proc(ctx: ^Gen_Ctx, mem: Node_ID) {
-	builder.set_scope_value(ctx, ctx.node_scope, ctx.mem_slot, mem)
+	ssa.set_scope_value(ctx, ctx.node_scope, ctx.mem_slot, mem)
 }
 
 Value :: bit_field u32 {
@@ -354,8 +359,7 @@ emit_lvalue :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Sym {
 		gv := idmt.decl
 
 		if gv.is_mutable {
-			g := bac.add_global(ctx, gv.name)
-			bac.get_extra(ctx, g, bac.Tup).idx = gv.global_idx
+			g := bac.add_global(ctx, gv.name, gv.global_idx)
 			ptr := bac.add_global_addr(ctx, gv.name, g)
 			return Value{id = ptr, is_lvalue = true}
 		} else {
@@ -468,7 +472,7 @@ alloca :: proc(
 
 	size := i32(min(type_size(ty), int(max(i32))))
 
-	bac.get_extra(ctx, alloca, bac.Local).size = size
+	bac.set_local_size(ctx, alloca, size)
 	ptr := bac.add_local_addr(ctx, name, alloca)
 
 	if zeroed {
@@ -491,7 +495,7 @@ alloca :: proc(
 	return ptr
 }
 
-field_offset :: builder.add_field_offset
+field_offset :: ssa.add_field_offset
 
 field_load :: proc(
 	ctx: ^Gen_Ctx,
@@ -500,7 +504,7 @@ field_load :: proc(
 	base: Node_ID,
 	offset: int = 0,
 ) -> Node_ID {
-	return builder.add_field_load(
+	return ssa.add_field_load(
 		ctx,
 		name,
 		dt,
@@ -520,7 +524,7 @@ field_store :: proc(
 ) {
 	ctx_set_mem(
 		ctx,
-		builder.add_field_store(
+		ssa.add_field_store(
 			ctx,
 			name,
 			ctx_ctrl(ctx),
@@ -553,18 +557,19 @@ inline_and_optimize :: proc(
 	sctx: S_Ctx
 	sctx.caller_to_callee = make([][]u32, len(ctx.procs))
 
-	for prc, i in ctx.procs {
-		if len(prc.stencil.mem) == 0 do continue
+	for src, i in ctx.procs {
+		if len(src.stencil.mem) == 0 do continue
 
 		slot: arna.Allocator
-		graph: bac.Proc
-		graph.node_spec = &builder.SPEC
-		graph.mem = &slot
-		bac.mount_stencil(&graph, prc.stencil)
+		prc: bac.Proc
+		prc.node_spec = &ssa.SPEC
+		prc.mem = &slot
+		prc.temps = &arna.scratch
+		bac.mount_stencil(&prc, src.stencil)
 
-		sym, sc := bac.get_sym_count(&graph)
+		sym, sc := bac.get_sym_count(&prc)
 		sctx.caller_to_callee[i] = make([]u32, sc)
-		for j := sc; sr in bac.sym_iter_next(&graph, sym, &j) {
+		for j := sc; sr in bac.sym_iter_next(&prc, sym, &j) {
 			assert(sr.type == .Func)
 			sctx.caller_to_callee[i][j] = sr.id
 		}
@@ -731,7 +736,7 @@ inline_and_optimize :: proc(
 				continue
 			}
 
-			builder.inline_call(ctx, sim.node, callee.stencil)
+			ssa.inline_call(ctx, sim.node, callee.stencil)
 			inline_count += 1
 
 			slt^ = slt^[:len(slt^) - 1]
@@ -742,7 +747,7 @@ inline_and_optimize :: proc(
 			}
 		}
 
-		opt(ctx)
+		ssa.opt({ctx})
 		bac.compact(ctx)
 
 		delete(caller.stencil.mem, perm)
@@ -761,7 +766,7 @@ inline_and_optimize :: proc(
 
 add_var :: proc(ctx: ^Gen_Ctx, var: typecheck.Variable) {
 	if node, ok := var.idx.(typecheck.Node_ID); ok {
-		builder.decl_local(ctx, node, var.name, u64(var.type))
+		ssa.decl_local(ctx, node, var.name, u64(var.type))
 	}
 	append(&ctx.scope, var)
 	//append(&ctx.decls, typecheck.Local_Decl{var.name, var.type})
@@ -773,7 +778,7 @@ push_scope_value :: proc(
 	value: Node_ID,
 	ty: Type,
 ) -> int {
-	return builder.push_scope_value(
+	return ssa.push_scope_value(
 		ctx,
 		ctx.node_scope,
 		value,
@@ -794,20 +799,15 @@ emit_proc :: proc(
 	prc := &ctx.procs[i]
 	if prc.sig == nil do return
 
-	ctx.prc = auto_cast i
+	ctx.prc_id = auto_cast i
 	ctx.module = prc.module
 	ctx.file = prc.file
 	ctx.file_id = prc.file_id
-	ctx.graph = {
-		has_dbg = ctx.graph.has_dbg,
+	ctx.prc = {
+		has_dbg = ctx.prc.has_dbg,
 	}
-	ctx.node_spec = &builder.SPEC
-	ctx.mem = &ctx.mems.graph
-	ctx.mem.pos = bac.PRECISION
 	ctx.opt_flags = level.flags
 	ctx.stats = &ctx.tstats
-
-	bac.current_graph = ctx
 
 	ctx.mems.scratch.pos = 0
 	ctx.scope = make(
@@ -820,9 +820,9 @@ emit_proc :: proc(
 		append(&ctx.poly_types, e)
 	}
 
-	rmem := builder.init_graph(ctx)
+	rmem := ssa.start_proc(ctx, &ctx.mems.prc, &arna.scratch)
 
-	ctx.node_scope = builder.add_scope(ctx, "scope", ctx.entry)
+	ctx.node_scope = ssa.add_scope(ctx, "scope", ctx.entry)
 	ctx.mem_slot = push_scope_value(ctx, nil, rmem, .Void)
 
 	rabi := typecheck.ret_abi(prc.rets[:])
@@ -864,7 +864,7 @@ emit_proc :: proc(
 	}
 
 	{context.allocator = ctx.types.allocator
-		prc.param_types = builder.arg_gen_finalize(ctx, &gen)}
+		prc.param_types = ssa.arg_gen_finalize(ctx, &gen)}
 
 	if prc.lit.body == nil do return
 
@@ -878,12 +878,12 @@ emit_proc :: proc(
 	if ctx.node_scope != 0 {
 		assert(len(prc.rets) == 0)
 		values := [2]Node_ID{ctx_ctrl(ctx), ctx_mem(ctx)}
-		builder.merge_returns(ctx, values[:])
-		builder.delete_scope(ctx, ctx.node_scope)
+		ssa.merge_returns(ctx, values[:])
+		ssa.delete_scope(ctx, ctx.node_scope)
 		ctx.node_scope = 0
 	}
 
-	opt(ctx)
+	ssa.opt({ctx})
 
 	if .Inline in level.flags {
 		bac.compact(ctx)
@@ -894,36 +894,6 @@ emit_proc :: proc(
 	}
 }
 
-opt :: proc(ctx: ^bac.Proc) {
-	peep_ctx: bac.Peep_Ctx
-	peep_ctx.graph = ctx
-	context.allocator, _ = arna.scrath()
-	lattice_allocator := context.allocator
-	defer {
-		ctx.computed_passes -= {.Sccp}
-		ctx.lattices = nil
-	}
-
-	for dirty, limit := true, 100; dirty; limit -= 1 {
-		context.allocator, _ = arna.scrath(lattice_allocator)
-
-		assert(limit > 0)
-		dirty = false
-		DEBUG_OPT :: false
-		dirty_lat := bac.compute_latices(ctx, lattice_allocator)
-		when DEBUG_OPT do fmt.println("lat:", dirty_lat)
-		dirty_peep := bac.apply_peeps(peep_ctx)
-		when DEBUG_OPT do fmt.println("peeps:", dirty_peep)
-		dirty_mem := builder.memopt(ctx)
-		when DEBUG_OPT do fmt.println("memopt:", dirty_mem)
-		dirty_peep2 := bac.apply_peeps(peep_ctx)
-		when DEBUG_OPT do fmt.println("peeps:", dirty_peep2)
-		dirty_loop := builder.loopopt(ctx)
-		when DEBUG_OPT do fmt.println("loopopt:", dirty_loop)
-		dirty |= dirty_lat | dirty_peep | dirty_mem | dirty_peep2 | dirty_loop
-	}
-}
-
 emit_proc_code :: proc(
 	ctx: ^Gen_Ctx,
 	emit_ctx: ^bac.Codegen_Emit_Ctx,
@@ -931,17 +901,13 @@ emit_proc_code :: proc(
 ) {
 	context.allocator, _ = arna.scrath()
 
-	bac.current_graph = ctx
-
 	ctx.node_spec = ctx.target.spec
 	if ctx.check {
 		ctx.node_spec = &anal.SPEC
 	}
 
-	ctx.computed_passes = {}
-
 	peep_ctx: bac.Peep_Ctx
-	peep_ctx.graph = ctx
+	peep_ctx.prc = ctx
 
 	// We are doing this with different spec now
 	bac.apply_peeps(peep_ctx)
@@ -963,7 +929,7 @@ emit_proc_code :: proc(
 
 	regs := regalloc.regalloc(&ra, ctx, &schedule, ctx.ralloc_mode)
 
-	emit_ctx.graph = ctx
+	emit_ctx.prc = ctx
 	emit_ctx.schedule = &schedule
 	emit_ctx.dbg_data = &dbg_data
 	emit_ctx.abi = ra.cc
@@ -978,7 +944,10 @@ emit_proc_code :: proc(
 	emit_ctx.ra_out = regs
 	emit_ctx.param_specs = prc.param_types
 
-	prc.out = bac.emit_function(emit_ctx^)
+	prc.out = ssa.compile(emit_ctx^)
+
+	emit_ctx.schedule = {}
+	emit_ctx.dbg_data = {}
 }
 
 Scope_Base :: struct {
@@ -1011,7 +980,7 @@ emit_stmts :: proc(
 	assert(base.gen <= len(ctx.scope))
 
 	resize(&ctx.scope, base.gen)
-	builder.truncate_scope(ctx, ctx.node_scope, base.node)
+	ssa.truncate_scope(ctx, ctx.node_scope, base.node)
 }
 
 ctx_sloc_of :: proc(ctx: ^Gen_Ctx, node: ^ast.Node) -> bac.Sloc {
@@ -1143,7 +1112,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				switch sym in syms[i] {
 				case int:
 					rv := to_rvalue_ty(ctx, r, vty)
-					builder.set_scope_value(ctx, ctx.node_scope, sym, rv)
+					ssa.set_scope_value(ctx, ctx.node_scope, sym, rv)
 				case Value:
 					store_value(ctx, "masss", sym.id, r, vty)
 				}
@@ -1187,7 +1156,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 						name,
 						op,
 						type_to_dt(get_node_type(lhs)),
-						builder.get_scope_value(ctx, ctx.node_scope, sym),
+						ssa.get_scope_value(ctx, ctx.node_scope, sym),
 						value,
 						lane,
 					)
@@ -1244,7 +1213,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		}
 
 		for s in values {
-			builder.set_scope_value(ctx, ctx.node_scope, s.idx, s.vl)
+			ssa.set_scope_value(ctx, ctx.node_scope, s.idx, s.vl)
 			bac.unpin(ctx, s.vl)
 		}
 
@@ -1257,21 +1226,21 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			lhs := emit_rvalue(ctx, {}, d.left)
 			base := get_node(ctx, ctx.node_scope).input_count
 			slot := push_scope_value(ctx, nil, lhs, .Bool)
-			state: builder.If_State
-			builder.start_if(ctx, ctx.node_scope, &state, lhs)
+			state: ssa.If_State
+			ssa.start_if(ctx, ctx.node_scope, &state, lhs)
 			if d.op.kind == .Cmp_Or {
-				builder.start_else(ctx, &ctx.node_scope, &state)
+				ssa.start_else(ctx, &ctx.node_scope, &state)
 			}
 			rhs := emit_rvalue(ctx, {}, d.right)
-			builder.set_scope_value(ctx, ctx.node_scope, slot, rhs)
+			ssa.set_scope_value(ctx, ctx.node_scope, slot, rhs)
 			if d.op.kind == .Cmp_Or {
-				builder.end_else(ctx, &ctx.node_scope, &state)
+				ssa.end_else(ctx, &ctx.node_scope, &state)
 			} else {
-				builder.end_if(ctx, &ctx.node_scope, &state)
+				ssa.end_if(ctx, &ctx.node_scope, &state)
 			}
-			res = builder.get_scope_value(ctx, ctx.node_scope, slot)
+			res = ssa.get_scope_value(ctx, ctx.node_scope, slot)
 			bac.pin(ctx, res)
-			builder.truncate_scope(ctx, ctx.node_scope, base)
+			ssa.truncate_scope(ctx, ctx.node_scope, base)
 			bac.unpin(ctx, res, no_delete = true)
 			break
 		}
@@ -1329,7 +1298,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		res = emit_rvalue(ctx, {}, d.expr)
 		lvalue = true
 	case ^ast.Return_Stmt:
-		rets := ctx.procs[ctx.prc].rets
+		rets := ctx.procs[ctx.prc_id].rets
 		rabi := typecheck.ret_abi(rets)
 
 		values := make([]Node_ID, 4)
@@ -1370,8 +1339,8 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 
 		values[0] = ctx_ctrl(ctx)
 		values[1] = ctx_mem(ctx)
-		builder.merge_returns(ctx, values[:i])
-		builder.delete_scope(ctx, ctx.node_scope)
+		ssa.merge_returns(ctx, values[:i])
+		ssa.delete_scope(ctx, ctx.node_scope)
 		ctx.node_scope = 0
 	case ^ast.Value_Decl:
 		if !d.is_mutable do break
@@ -1424,8 +1393,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 						bytes,
 						typecheck.type_align(vty),
 					)
-					g := bac.add_global(ctx, name)
-					bac.get_extra(ctx, g, bac.Tup).idx = idx
+					g := bac.add_global(ctx, name, idx)
 					ptr := bac.add_global_addr(ctx, name, g)
 					bac.pin(ctx, ptr)
 
@@ -1468,8 +1436,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 					bytes,
 					typecheck.type_align(vty),
 				)
-				g := bac.add_global(ctx, name)
-				bac.get_extra(ctx, g, bac.Tup).idx = idx
+				g := bac.add_global(ctx, name, idx)
 				ptr := bac.add_global_addr(ctx, name, g)
 				bac.pin(ctx, ptr)
 
@@ -1667,8 +1634,8 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		sym := emit_lvalue(ctx, d)
 		switch sym in sym {
 		case int:
-			res = builder.get_scope_value(ctx, ctx.node_scope, sym)
-			assert(builder.Node_Type(get_node(ctx, res).rtype) != .Scope)
+			res = ssa.get_scope_value(ctx, ctx.node_scope, sym)
+			assert(ssa.Node_Type(get_node(ctx, res).rtype) != .Scope)
 		case Value:
 			res, lvalue = unpack(sym)
 		}
@@ -1685,19 +1652,19 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 	case ^ast.If_Stmt:
 		cond := emit_rvalue(ctx, {}, d.cond)
 
-		if_state: builder.If_State
-		builder.start_if(ctx, ctx.node_scope, &if_state, cond)
+		if_state: ssa.If_State
+		ssa.start_if(ctx, ctx.node_scope, &if_state, cond)
 		emit_stmts(ctx, {d.body})
-		builder.start_else(ctx, &ctx.node_scope, &if_state)
+		ssa.start_else(ctx, &ctx.node_scope, &if_state)
 		emit_stmts(ctx, {d.else_stmt})
-		builder.end_else(ctx, &ctx.node_scope, &if_state)
+		ssa.end_else(ctx, &ctx.node_scope, &if_state)
 	case ^ast.Switch_Stmt:
 		condv := emit_rvalue(ctx, {}, d.cond)
 		bac.pin(ctx, condv)
 
 		body := d.body.derived.(^ast.Block_Stmt)
-		sw: builder.Block_State
-		builder.start_block(&sw)
+		sw: ssa.Block_State
+		ssa.start_block(&sw)
 		state := typecheck.Loop_State {
 			parent      = ctx.loop,
 			label       = typecheck.src_of(ctx.file^, d.label),
@@ -1721,18 +1688,18 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 					cond == 0 ? eq : bac.add_bin_op(ctx, "sor", .Or, .I8, cond, eq)
 			}
 
-			arm: builder.If_State
-			builder.start_if(ctx, ctx.node_scope, &arm, cond)
+			arm: ssa.If_State
+			ssa.start_if(ctx, ctx.node_scope, &arm, cond)
 			emit_stmts(ctx, clause.body)
-			builder.break_block(ctx, &ctx.node_scope, &sw)
-			builder.end_if(ctx, &ctx.node_scope, &arm)
+			ssa.break_block(ctx, &ctx.node_scope, &sw)
+			ssa.end_if(ctx, &ctx.node_scope, &arm)
 		}
 
 		if default_clause != nil {
 			emit_stmts(ctx, default_clause.body)
 		}
 
-		builder.end_block(ctx, &ctx.node_scope, &sw)
+		ssa.end_block(ctx, &ctx.node_scope, &sw)
 		ctx.loop = state.parent
 
 		bac.unpin(ctx, condv)
@@ -1751,8 +1718,8 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		bac.pin(ctx, tagv)
 
 		body := d.body.derived.(^ast.Block_Stmt)
-		sw: builder.Block_State
-		builder.start_block(&sw)
+		sw: ssa.Block_State
+		ssa.start_block(&sw)
 		state := typecheck.Loop_State {
 			parent      = ctx.loop,
 			label       = typecheck.src_of(ctx.file^, d.label),
@@ -1773,8 +1740,8 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			cval := bac.add_c_int(ctx, "tsc", tag_dt, i64(idx + 1))
 			cond := bac.add_bin_op(ctx, "tseq", .Eq, .I8, tagv, cval)
 
-			arm: builder.If_State
-			builder.start_if(ctx, ctx.node_scope, &arm, cond)
+			arm: ssa.If_State
+			ssa.start_if(ctx, ctx.node_scope, &arm, cond)
 			{
 				base := ctx_scope_base(ctx)
 				bac.pin(ctx, ptr)
@@ -1783,9 +1750,9 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 					{binding, ptr, case_ty, tag.lhs[0], {.Referenced}},
 				)
 				emit_stmts(ctx, clause.body, base)
-				builder.break_block(ctx, &ctx.node_scope, &sw)
+				ssa.break_block(ctx, &ctx.node_scope, &sw)
 			}
-			builder.end_if(ctx, &ctx.node_scope, &arm)
+			ssa.end_if(ctx, &ctx.node_scope, &arm)
 		}
 
 		if default_clause != nil {
@@ -1804,7 +1771,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			emit_stmts(ctx, default_clause.body, base)
 		}
 
-		builder.end_block(ctx, &ctx.node_scope, &sw)
+		ssa.end_block(ctx, &ctx.node_scope, &sw)
 		ctx.loop = state.parent
 
 		bac.unpin(ctx, tagv)
@@ -1819,10 +1786,10 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		loop_state.parent = ctx.loop
 		ctx.loop = &loop_state
 
-		builder.start_loop(ctx, ctx.node_scope, &loop_state.bstate)
+		ssa.start_loop(ctx, ctx.node_scope, &loop_state.bstate)
 		emit_stmts(ctx, {d.body})
 
-		builder.end_loop(ctx, &ctx.node_scope, &loop_state.bstate)
+		ssa.end_loop(ctx, &ctx.node_scope, &loop_state.bstate)
 
 		ctx.loop = ctx.loop.parent
 	case ^ast.Range_Stmt:
@@ -1865,16 +1832,16 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		loop_state.parent = ctx.loop
 		ctx.loop = &loop_state
 
-		builder.start_loop(ctx, ctx.node_scope, &loop_state.bstate)
+		ssa.start_loop(ctx, ctx.node_scope, &loop_state.bstate)
 
-		idxv := builder.get_scope_value(ctx, ctx.node_scope, idx_slot)
+		idxv := ssa.get_scope_value(ctx, ctx.node_scope, idx_slot)
 		cond := bac.add_bin_op(ctx, "rge", .Ge, .I8, idxv, length)
 
-		if_state: builder.If_State
-		builder.start_if(ctx, ctx.node_scope, &if_state, cond)
-		builder.loop_control(.Break, ctx, ctx.node_scope, &loop_state.bstate)
+		if_state: ssa.If_State
+		ssa.start_if(ctx, ctx.node_scope, &if_state, cond)
+		ssa.loop_control(.Break, ctx, ctx.node_scope, &loop_state.bstate)
 		ctx.node_scope = 0 // NOTE: no dbg scope
-		builder.end_if(ctx, &ctx.node_scope, &if_state)
+		ssa.end_if(ctx, &ctx.node_scope, &if_state)
 
 		elem_addr := index_offset(ctx, data_ptr, idxv, stride)
 
@@ -1894,16 +1861,16 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 
 		emit_stmts(ctx, {d.body})
 
-		builder.start_loop_increment(ctx, &ctx.node_scope, &loop_state.bstate)
+		ssa.start_loop_increment(ctx, &ctx.node_scope, &loop_state.bstate)
 
 		if ctx.node_scope != 0 {
-			idxv3 := builder.get_scope_value(ctx, ctx.node_scope, idx_slot)
+			idxv3 := ssa.get_scope_value(ctx, ctx.node_scope, idx_slot)
 			one := bac.add_c_int(ctx, "r1", .I64, 1)
 			nidx := bac.add_bin_op(ctx, "rinc", .Add, .I64, idxv3, one)
-			builder.set_scope_value(ctx, ctx.node_scope, idx_slot, nidx)
+			ssa.set_scope_value(ctx, ctx.node_scope, idx_slot, nidx)
 		}
 
-		builder.end_loop(ctx, &ctx.node_scope, &loop_state.bstate)
+		ssa.end_loop(ctx, &ctx.node_scope, &loop_state.bstate)
 		ctx.loop = ctx.loop.parent
 
 		emit_stmts(ctx, {}, sbase)
@@ -2024,18 +1991,20 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				args[0] = ctx_ctrl(ctx)
 				args[1] = ctx_mem(ctx)
 
-				call := bac.add_call(ctx, "call", args, ~u32(0))
-				bac.get_extra(ctx, call, bac.Call).ccid = 1
-				bac.get_extra(ctx, call, bac.Call).ret_count = 1
+				// NOTE: we pass garbage cid, to verify backend is sane
+				call_end, mem := ssa.make_call(
+					ctx,
+					args,
+					{cid = ~u32(0), flags = {ccid = x64.X64_LINUX_SYSCALL_CC}},
+				)
 				for arg in args[CALL_PREFIX:] {
 					bac.unpin(ctx, arg)
 				}
-				call_end := bac.add_call_end(ctx, "calle", call)
 
 				bac.set_input(ctx, ctx.node_scope, 0, call_end)
-				ctx_set_mem(ctx, bac.add_mem(ctx, "cmem", call_end))
+				ctx_set_mem(ctx, mem)
 
-				res = bac.add_ret(ctx, "cret", .I64, call_end, 0)
+				res = ssa.add_call_ret(ctx, call_end, .I64)
 
 				break match
 			case .trap:
@@ -2045,7 +2014,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 					{ctx_ctrl(ctx), ctx_mem(ctx)},
 				)
 				bac.connect(ctx, ctx.end, trap)
-				builder.delete_scope(ctx, ctx.node_scope)
+				ssa.delete_scope(ctx, ctx.node_scope)
 				ctx.node_scope = 0
 			case .simd_lanes_eq:
 				a := emit_rvalue(ctx, {}, d.args[0])
@@ -2154,12 +2123,12 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		loop := typecheck.find_loop(ctx, d.label, d.tok.kind == .Continue)
 		if loop.block != nil {
 			assert(d.tok.kind == .Break)
-			builder.truncate_scope(ctx, ctx.node_scope, loop.scope_count)
-			builder.break_block(ctx, &ctx.node_scope, loop.block)
+			ssa.truncate_scope(ctx, ctx.node_scope, loop.scope_count)
+			ssa.break_block(ctx, &ctx.node_scope, loop.block)
 			break
 		}
 
-		variant := builder.Loop_Control(-1)
+		variant := ssa.Loop_Control(-1)
 		#partial switch d.tok.kind {
 		case .Break:
 			variant = .Break
@@ -2169,7 +2138,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			fmt.panicf("TODO: %#v", node.derived)
 		}
 
-		builder.loop_control(variant, ctx, ctx.node_scope, &loop.bstate)
+		ssa.loop_control(variant, ctx, ctx.node_scope, &loop.bstate)
 		ctx.node_scope = 0
 	case:
 		fmt.panicf("TODO: %v %#v", meta, node.derived)
@@ -2294,25 +2263,25 @@ emit_call :: proc(
 
 	args[0] = ctx_ctrl(ctx)
 	args[1] = ctx_mem(ctx)
-	args[2] = bac.find_or_create_node(ctx, .Sym)
-	if ptr != 0 do args[2] = 0
+	args[2] = 0
+	if ptr == 0 do args[2] = bac.find_or_create_node(ctx, .Sym)
 
 	slice.reverse(args[lctx.ri:])
 	copy(args[lctx.i:], args[lctx.ri:])
 	ln := lctx.i + len(args) - lctx.ri
 
-	call := bac.add_call(ctx, "call", args[:ln], u32(prc_id))
-	call_ext := bac.get_extra(ctx, call, bac.Call)
-	call_ext.imported = imported
-	call_ext.indirect = prc_id == 0
+	call_end, mem := ssa.make_call(
+		ctx,
+		args[:ln],
+		{flags = {imported = imported}, cid = u32(prc_id)},
+	)
 
 	for arg in args[CALL_PREFIX:ln] {
 		bac.unpin(ctx, arg)
 	}
-	call_end := bac.add_call_end(ctx, "calle", call)
 
 	bac.set_input(ctx, ctx.node_scope, 0, call_end)
-	ctx_set_mem(ctx, bac.add_mem(ctx, "cmem", call_end))
+	ctx_set_mem(ctx, mem)
 
 	for s in slots {
 		bac.unpin(ctx, s)
@@ -2331,9 +2300,8 @@ emit_call :: proc(
 
 			for i in 0 ..< (size + 7) / 8 {
 				rid := u32(i)
-				vl := bac.add_ret(ctx, "cret", .I64, call_end, rid)
+				vl := ssa.add_call_ret(ctx, call_end, .I64)
 				emit_arbitrary_store(ctx, d, vl, size, i * 8)
-				call_ext.ret_count += 1
 			}
 
 			results[res_idx] = {
@@ -2341,14 +2309,9 @@ emit_call :: proc(
 				is_lvalue = true,
 			}
 		} else {
-			vl := bac.add_ret(ctx, "cret", dt, call_end, 0)
-			call_ext.ret_count += 1
+			vl := ssa.add_call_ret(ctx, call_end, dt)
 			results[res_idx] = Value(vl)
 		}
-	}
-
-	for v, i in results[len(rabi.extras):] {
-		call_ext.rets[i] = bac.get_node(ctx, v.id).dt
 	}
 
 	return results
@@ -2407,7 +2370,7 @@ emit_arbitrary_load :: proc(
 	extra_offset := 0,
 	unit: bac.Node_Datatype = .I64,
 ) -> Node_ID {
-	return builder.add_arbitrary_load(
+	return ssa.add_arbitrary_load(
 		ctx,
 		ctx_ctrl(ctx),
 		ctx_mem(ctx),
@@ -2428,7 +2391,7 @@ emit_arbitrary_store :: proc(
 ) {
 	ctx_set_mem(
 		ctx,
-		builder.add_arbitrary_store(
+		ssa.add_arbitrary_store(
 			ctx,
 			ctx_ctrl(ctx),
 			ctx_mem(ctx),
@@ -2446,8 +2409,7 @@ emit_string :: proc(ctx: ^Gen_Ctx, prop: Prop, value: string) -> Node_ID {
 	assert(ok)
 
 	idx := typecheck.add_global(ctx, transmute([]u8)str, 1)
-	g := bac.add_global(ctx, "str")
-	bac.get_extra(ctx, g, bac.Tup).idx = idx
+	g := bac.add_global(ctx, "str", idx)
 	addr := bac.add_global_addr(ctx, "str", g)
 
 	slot := prop.dest

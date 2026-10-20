@@ -7,9 +7,12 @@ function gen-spec
 
 	odin run bac/meta
 	odin run bac/meta2
+	gen-meta
+	odin run bac/bindgen
+	gcc bac/bindgen/c/bac.h
 end
 
-# regenerate the tests and overloads
+# regenerate the tests, backend overloads, and API table
 alias gen-meta 'odin run meta -o:none'
 
 set acc '-define:ACCEPT=true'
@@ -23,6 +26,33 @@ alias fuzz './misc/fuzz.sh'
 
 function build-wabt
 	bash misc/build-wabt.sh
+end
+
+function build-bac
+    set -l flags -debug
+
+    if test "$argv[1]" != "debug"
+        set flags \
+            -o:size \
+            -source-code-locations:none \
+            -disable-assert \
+            -no-bounds-check \
+            -no-type-assert \
+            -define:NO_FMT=true \
+            -default-to-nil-allocator \
+            -define:ARNA_DISABLE_VIRTUAL=true \
+            -define:ARNA_DISABLE_THREAD_LOCAL=true \
+	    -define:NO_DEFAULT_RANDOM_GENERATOR=true \
+            -disable-init-fini \
+            -define:INIT_FINI=false
+    end
+
+    odin build bac/bindgen/lib \
+        -build-mode:obj \
+        -no-entry-point \
+        -use-single-module \
+        "-out:bac/bindgen/lib/linux_amd64_lib$argv[1].o" \
+        $flags $argv[2..]
 end
 
 function build-unicorn

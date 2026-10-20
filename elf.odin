@@ -7,7 +7,7 @@ import "core:fmt"
 import "core:mem"
 import "core:slice"
 import "typecheck"
-import "vendored/gam/util/arna"
+import "utils/arna"
 
 LIBCALL_BASE :: bac.RELOC_BIG_CONSTANT_BASE - 32
 MEMCPY_ID :: LIBCALL_BASE

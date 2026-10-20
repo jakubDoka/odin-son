@@ -1,6 +1,6 @@
 package unicorn
 
-import "../vendored/gam/util/arna"
+import "../utils/arna"
 import "base:runtime"
 import "core:c"
 import "core:fmt"
@@ -8,7 +8,6 @@ import "core:log"
 import arm64 "core:rexcode/isa/arm64"
 import "core:strings"
 
-@(private)
 UNICORN_LIBRARY :: "../vendored/unicorn-engine/build/libunicorn.a"
 
 when !#exists(UNICORN_LIBRARY) {

@@ -1,9 +1,9 @@
 package typecheck
 
 import "../bac"
-import "../bac/builder"
 import ra "../bac/regalloc"
-import "../vendored/gam/util/arna"
+import "../bac/ssa"
+import "../utils/arna"
 import "base:intrinsics"
 import "base:runtime"
 import "core:fmt"
@@ -31,7 +31,7 @@ Ty_Propagation :: struct {
 }
 
 Mems :: struct {
-	graph:     arna.Allocator,
+	prc:       arna.Allocator,
 	regalloc:  arna.Allocator,
 	scratch:   arna.Allocator,
 	code:      arna.Allocator,
@@ -57,14 +57,14 @@ Sloc_Key :: struct {
 Gen_Ctx :: struct {
 	using global: ^Global_Ctx,
 	using types:  ^Types,
-	using graph:  bac.Proc,
+	using prc:    bac.Proc,
 	node_scope:   Node_ID,
 	mem_slot:     int,
 	loop:         ^Loop_State,
 	file:         ^ast.File,
 	file_id:      File_ID,
 	module:       Module_ID,
-	prc:          Proc_ID,
+	prc_id:       Proc_ID,
 	ret_ptrs:     []Node_ID,
 	poly_types:   #soa[dynamic]Poly_Entry,
 	eval_depth:   int,
@@ -97,9 +97,9 @@ Loop_State :: struct {
 	parent:       ^Loop_State,
 	label:        string,
 	broken:       bool,
-	block:        ^builder.Block_State,
+	block:        ^ssa.Block_State,
 	scope_count:  u16,
-	using bstate: builder.Loop_State,
+	using bstate: ssa.Loop_State,
 }
 
 Lit :: struct #raw_union {
@@ -1359,7 +1359,6 @@ types_reset :: proc(types: ^Types) {
 	types_bind_allocators(types)
 }
 
-@(private = "file")
 types_bind_allocators :: proc(types: ^Types) {
 	types.allocator = arna.allocator(&types.mems.type)
 
@@ -2428,7 +2427,7 @@ typecheck :: proc(
 			ty = error(ctx, d.body, "expected a switch body")
 			break match
 		}
-		block: builder.Block_State
+		block: ssa.Block_State
 		sw := Loop_State {
 			parent = ctx.loop,
 			label  = src_of(ctx.file^, d.label),
@@ -2475,7 +2474,7 @@ typecheck :: proc(
 			ty = error(ctx, d.body, "expected a switch body")
 			break match
 		}
-		block: builder.Block_State
+		block: ssa.Block_State
 		sw := Loop_State {
 			parent = ctx.loop,
 			label  = src_of(ctx.file^, d.label),
@@ -3093,7 +3092,7 @@ typecheck :: proc(
 			ty = &VOID
 		}
 	case ^ast.Return_Stmt:
-		prc := &ctx.procs[ctx.prc]
+		prc := &ctx.procs[ctx.prc_id]
 		mark_unreachable(ctx)
 		if len(d.results) != len(prc.rets) {
 			ty = error(
@@ -3386,7 +3385,7 @@ typecheck_program :: proc(ctx: ^Gen_Ctx) {
 		prc := ctx.procs[i]
 		if prc.sig == nil do continue
 
-		ctx.prc = auto_cast i
+		ctx.prc_id = auto_cast i
 		ctx.module = prc.module
 		ctx.file = prc.file
 		ctx.file_id = prc.file_id
@@ -3451,7 +3450,7 @@ typecheck_clause :: proc(
 
 begin_branch :: proc(ctx: ^Gen_Ctx, branch: ^bool) -> (prev: ^bool) {
 	prev = ctx.reachable
-	ctx.reachable = branch
+	ctx.reachable = transmute(^bool)branch
 	return
 }
 

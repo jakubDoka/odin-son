@@ -5,27 +5,27 @@ check:
 1:
     cbnz x1, 2
     uxtb w0, w0
-    movz x1, #7, #0
+    movz x1, #7
     uxtb w1, w1
     and w0, w0, w1
     uxtb w0, w0
     b 3
 2:
-    movz x0, #255, #0
+    movz x0, #255
 3:
     uxtb w0, w0
-    movz x1, #128, #0
+    movz x1, #128
     uxtb w1, w1
     cmp w0, w1
     b.cc 4
-    movz x1, #255, #0
+    movz x1, #255
     b 5
 4:
-    movz x1, #511, #0
+    movz x1, #511
 5:
-    movz x2, #3, #0
+    movz x2, #3
     uxtb w2, w2
-    movz x3, #2, #0
+    movz x3, #2
     uxtb w3, w3
     udiv w3, w0, w3
     uxtb w3, w3
@@ -36,32 +36,32 @@ check:
     uxtb w2, w2
     uxtb w2, w2
     add x1, x1, x2
-    movz x2, #1, #0
-    lsrv w0, w0, w2
+    movz x2, #1
+    lsr w0, w0, w2
     uxtb w0, w0
     uxtb w0, w0
     add x0, x1, x0
     ret
 main:
     sub sp, sp, #48
-    stp x29, x30, [xzr, #7]
+    stp x29, x30, [xzr]
     adr x0, 0xf2c
     ldrb w0, [x0]
-    movz x1, #1, #0
+    movz x1, #1
     bl 0xffffff6c
     str x0, [xzr, #16]
-    movz x1, #0, #0
-    movz x0, #0, #0
+    movz x1, #0
+    movz x0, #0
     bl 0xffffff6c
     str x0, [xzr, #24]
-    movz x0, #127, #0
-    movz x1, #0, #0
+    movz x0, #127
+    movz x1, #0
     bl 0xffffff6c
     str x0, [xzr, #32]
-    movz x0, #128, #0
-    movz x1, #1, #0
+    movz x0, #128
+    movz x1, #1
     bl 0xffffff6c
-    movz x1, #251, #0
+    movz x1, #251
     ldr x2, [xzr, #16]
     ldr x3, [xzr, #24]
     add x2, x2, x3
@@ -70,7 +70,7 @@ main:
     add x0, x2, x0
     sdiv x2, x0, x1
     msub x0, x2, x1, x0
-    ldp x29, x30, [xzr, #7]
+    ldp x29, x30, [xzr]
     add sp, sp, #48
     ret
 =========== OPT LEVEL: none ===========
@@ -80,27 +80,27 @@ check:
 1:
     cbnz x1, 2
     uxtb w1, w0
-    movz x0, #7, #0
+    movz x0, #7
     uxtb w0, w0
     and w0, w1, w0
     uxtb w0, w0
     b 3
 2:
-    movz x0, #255, #0
+    movz x0, #255
 3:
     uxtb w3, w0
-    movz x0, #128, #0
+    movz x0, #128
     uxtb w0, w0
     cmp w3, w0
     b.cc 4
-    movz x1, #255, #0
+    movz x1, #255
     b 5
 4:
-    movz x1, #511, #0
+    movz x1, #511
 5:
-    movz x0, #3, #0
+    movz x0, #3
     uxtb w2, w0
-    movz x0, #2, #0
+    movz x0, #2
     uxtb w0, w0
     udiv w0, w3, w0
     uxtb w0, w0
@@ -111,8 +111,8 @@ check:
     uxtb w0, w0
     uxtb w0, w0
     add x1, x1, x0
-    movz x0, #1, #0
-    lsrv w0, w3, w0
+    movz x0, #1
+    lsr w0, w3, w0
     uxtb w0, w0
     uxtb w0, w0
     add x0, x1, x0
@@ -122,24 +122,24 @@ main:
     str x19, [xzr]
     str x20, [xzr, #8]
     str x21, [xzr, #16]
-    stp x29, x30, [xzr, #31]
+    stp x29, x30, [xzr, #24]
     adr x0, 0xf2c
     ldrb w0, [x0]
-    movz x1, #1, #0
+    movz x1, #1
     bl 0xffffff6c
     mov x21, x0
-    movz x1, #0, #0
-    movz x0, #0, #0
+    movz x1, #0
+    movz x0, #0
     bl 0xffffff6c
     mov x20, x0
-    movz x0, #127, #0
-    movz x1, #0, #0
+    movz x0, #127
+    movz x1, #0
     bl 0xffffff6c
     mov x19, x0
-    movz x0, #128, #0
-    movz x1, #1, #0
+    movz x0, #128
+    movz x1, #1
     bl 0xffffff6c
-    movz x2, #251, #0
+    movz x2, #251
     add x1, x21, x20
     add x1, x1, x19
     add x1, x1, x0
@@ -148,7 +148,7 @@ main:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
-    ldp x29, x30, [xzr, #31]
+    ldp x29, x30, [xzr, #24]
     add sp, sp, #48
     ret
 =========== OPT LEVEL: moderate-quick ===========
@@ -158,27 +158,27 @@ check:
 1:
     cbnz x1, 2
     uxtb w0, w0
-    movz x1, #7, #0
+    movz x1, #7
     uxtb w1, w1
     and w0, w0, w1
     uxtb w0, w0
     b 3
 2:
-    movz x0, #255, #0
+    movz x0, #255
 3:
     uxtb w0, w0
-    movz x1, #128, #0
+    movz x1, #128
     uxtb w1, w1
     cmp w0, w1
     b.cc 4
-    movz x1, #255, #0
+    movz x1, #255
     b 5
 4:
-    movz x1, #511, #0
+    movz x1, #511
 5:
-    movz x2, #3, #0
+    movz x2, #3
     uxtb w2, w2
-    movz x3, #2, #0
+    movz x3, #2
     uxtb w3, w3
     udiv w3, w0, w3
     uxtb w3, w3
@@ -189,32 +189,32 @@ check:
     uxtb w2, w2
     uxtb w2, w2
     add x1, x1, x2
-    movz x2, #1, #0
-    lsrv w0, w0, w2
+    movz x2, #1
+    lsr w0, w0, w2
     uxtb w0, w0
     uxtb w0, w0
     add x0, x1, x0
     ret
 main:
     sub sp, sp, #48
-    stp x29, x30, [xzr, #7]
+    stp x29, x30, [xzr]
     adr x0, 0xf2c
     ldrb w0, [x0]
-    movz x1, #1, #0
+    movz x1, #1
     bl 0xffffff6c
     str x0, [xzr, #16]
-    movz x1, #0, #0
-    movz x0, #0, #0
+    movz x1, #0
+    movz x0, #0
     bl 0xffffff6c
     str x0, [xzr, #24]
-    movz x0, #127, #0
-    movz x1, #0, #0
+    movz x0, #127
+    movz x1, #0
     bl 0xffffff6c
     str x0, [xzr, #32]
-    movz x0, #128, #0
-    movz x1, #1, #0
+    movz x0, #128
+    movz x1, #1
     bl 0xffffff6c
-    movz x1, #251, #0
+    movz x1, #251
     ldr x2, [xzr, #16]
     ldr x3, [xzr, #24]
     add x2, x2, x3
@@ -223,7 +223,7 @@ main:
     add x0, x2, x0
     sdiv x2, x0, x1
     msub x0, x2, x1, x0
-    ldp x29, x30, [xzr, #7]
+    ldp x29, x30, [xzr]
     add sp, sp, #48
     ret
 =========== OPT LEVEL: moderate ===========
@@ -233,27 +233,27 @@ check:
 1:
     cbnz x1, 2
     uxtb w1, w0
-    movz x0, #7, #0
+    movz x0, #7
     uxtb w0, w0
     and w0, w1, w0
     uxtb w0, w0
     b 3
 2:
-    movz x0, #255, #0
+    movz x0, #255
 3:
     uxtb w3, w0
-    movz x0, #128, #0
+    movz x0, #128
     uxtb w0, w0
     cmp w3, w0
     b.cc 4
-    movz x1, #255, #0
+    movz x1, #255
     b 5
 4:
-    movz x1, #511, #0
+    movz x1, #511
 5:
-    movz x0, #3, #0
+    movz x0, #3
     uxtb w2, w0
-    movz x0, #2, #0
+    movz x0, #2
     uxtb w0, w0
     udiv w0, w3, w0
     uxtb w0, w0
@@ -264,8 +264,8 @@ check:
     uxtb w0, w0
     uxtb w0, w0
     add x1, x1, x0
-    movz x0, #1, #0
-    lsrv w0, w3, w0
+    movz x0, #1
+    lsr w0, w3, w0
     uxtb w0, w0
     uxtb w0, w0
     add x0, x1, x0
@@ -275,24 +275,24 @@ main:
     str x19, [xzr]
     str x20, [xzr, #8]
     str x21, [xzr, #16]
-    stp x29, x30, [xzr, #31]
+    stp x29, x30, [xzr, #24]
     adr x0, 0xf2c
     ldrb w0, [x0]
-    movz x1, #1, #0
+    movz x1, #1
     bl 0xffffff6c
     mov x21, x0
-    movz x1, #0, #0
-    movz x0, #0, #0
+    movz x1, #0
+    movz x0, #0
     bl 0xffffff6c
     mov x20, x0
-    movz x0, #127, #0
-    movz x1, #0, #0
+    movz x0, #127
+    movz x1, #0
     bl 0xffffff6c
     mov x19, x0
-    movz x0, #128, #0
-    movz x1, #1, #0
+    movz x0, #128
+    movz x1, #1
     bl 0xffffff6c
-    movz x2, #251, #0
+    movz x2, #251
     add x1, x21, x20
     add x1, x1, x19
     add x1, x1, x0
@@ -301,7 +301,7 @@ main:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
-    ldp x29, x30, [xzr, #31]
+    ldp x29, x30, [xzr, #24]
     add sp, sp, #48
     ret
 =========== OPT LEVEL: all ===========
@@ -311,27 +311,27 @@ check:
 1:
     cbnz x1, 2
     uxtb w1, w0
-    movz x0, #7, #0
+    movz x0, #7
     uxtb w0, w0
     and w0, w1, w0
     uxtb w0, w0
     b 3
 2:
-    movz x0, #255, #0
+    movz x0, #255
 3:
     uxtb w3, w0
-    movz x0, #128, #0
+    movz x0, #128
     uxtb w0, w0
     cmp w3, w0
     b.cc 4
-    movz x1, #255, #0
+    movz x1, #255
     b 5
 4:
-    movz x1, #511, #0
+    movz x1, #511
 5:
-    movz x0, #3, #0
+    movz x0, #3
     uxtb w2, w0
-    movz x0, #2, #0
+    movz x0, #2
     uxtb w0, w0
     udiv w0, w3, w0
     uxtb w0, w0
@@ -342,8 +342,8 @@ check:
     uxtb w0, w0
     uxtb w0, w0
     add x1, x1, x0
-    movz x0, #1, #0
-    lsrv w0, w3, w0
+    movz x0, #1
+    lsr w0, w3, w0
     uxtb w0, w0
     uxtb w0, w0
     add x0, x1, x0
@@ -353,24 +353,24 @@ main:
     str x19, [xzr]
     str x20, [xzr, #8]
     str x21, [xzr, #16]
-    stp x29, x30, [xzr, #31]
+    stp x29, x30, [xzr, #24]
     adr x0, 0xf2c
     ldrb w0, [x0]
-    movz x1, #1, #0
+    movz x1, #1
     bl 0xffffff6c
     mov x21, x0
-    movz x1, #0, #0
-    movz x0, #0, #0
+    movz x1, #0
+    movz x0, #0
     bl 0xffffff6c
     mov x20, x0
-    movz x0, #127, #0
-    movz x1, #0, #0
+    movz x0, #127
+    movz x1, #0
     bl 0xffffff6c
     mov x19, x0
-    movz x0, #128, #0
-    movz x1, #1, #0
+    movz x0, #128
+    movz x1, #1
     bl 0xffffff6c
-    movz x2, #251, #0
+    movz x2, #251
     add x1, x21, x20
     add x1, x1, x19
     add x1, x1, x0
@@ -379,7 +379,7 @@ main:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
-    ldp x29, x30, [xzr, #31]
+    ldp x29, x30, [xzr, #24]
     add sp, sp, #48
     ret
 =========== OPT LEVEL: aggresive ===========

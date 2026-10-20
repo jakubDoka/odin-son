@@ -59,5 +59,15 @@ for target in "${targets[@]}"; do
     echo " building release"
     odin build "${base_flags[@]}" -o:size "-target:$target" "${release_flags[@]}"\
         "-out:bac/bindgen/lib/${target}_lib.o"
+
+    if [[ "$target" == windows_amd64 ]]; then
+        echo " building GNU objects"
+        for lib in libdebug lib; do
+            "${OBJCOPY:-x86_64-w64-mingw32-objcopy}" \
+                --redefine-sym __chkstk=___chkstk_ms \
+                "bac/bindgen/lib/${target}_${lib}.o" \
+                "bac/bindgen/lib/${target}_gnu_${lib}.o"
+        done
+    fi
 done
 

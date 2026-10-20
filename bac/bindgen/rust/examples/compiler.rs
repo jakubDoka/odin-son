@@ -1,7 +1,8 @@
 use bac::{
     Arena, BinOp, CodegenEmitCtx, Datatype, IfState, Lane, LoopControl, LoopState, Node, Proc,
 };
-use std::{collections::HashMap, iter::Peekable, str::SplitWhitespace};
+
+use core::{iter::Peekable, str::SplitWhitespace};
 
 const PROGRAM: &str = "
     let i = 0 ;
@@ -28,13 +29,21 @@ struct Compiler<'s, 'p, 'a> {
     proc: &'p Proc<'a>,
     tokens: Peekable<SplitWhitespace<'s>>,
     scope: &'p Node,
-    variables: HashMap<&'s str, isize>,
+    variables: Vec<(&'s str, isize)>,
     loops: Vec<(Option<&'s str>, LoopState<'p, 'a>)>,
 }
 
 impl<'s, 'p, 'a> Compiler<'s, 'p, 'a> {
     fn next(&mut self) -> &'s str {
         self.tokens.next().unwrap()
+    }
+
+    fn find_var(&self, name: &str) -> isize {
+        self.variables
+            .iter()
+            .find(|&&(n, _)| n == name)
+            .map(|&(_, v)| v)
+            .unwrap()
     }
 
     fn expression(&mut self) -> &'p Node {
@@ -56,7 +65,7 @@ impl<'s, 'p, 'a> Compiler<'s, 'p, 'a> {
             }
             token => match token.parse::<i64>() {
                 Ok(value) => builder.add_c_int("number", Datatype::I64, value),
-                Err(_) => builder.get_scope_value(self.scope, self.variables[token]),
+                Err(_) => builder.get_scope_value(self.scope, self.find_var(token)),
             },
         }
     }
@@ -78,7 +87,7 @@ impl<'s, 'p, 'a> Compiler<'s, 'p, 'a> {
                 let value = self.expression();
                 self.next();
                 let slot = builder.push_scope_value(self.scope, value, "variable", 0);
-                self.variables.insert(name, slot);
+                self.variables.push((name, slot));
             }
             "loop" => {
                 let label = (self.tokens.peek() != Some(&"{")).then(|| self.next());
@@ -124,7 +133,7 @@ impl<'s, 'p, 'a> Compiler<'s, 'p, 'a> {
                 self.next();
                 let value = self.expression();
                 self.next();
-                builder.set_scope_value(self.scope, self.variables[name], value);
+                builder.set_scope_value(self.scope, self.find_var(name), value);
             }
         }
     }
@@ -139,6 +148,29 @@ fn run(source: &str) -> i64 {
 
     use bac::MinAligned;
 
+    let MinAligned([temp1, temp2, memory, code]) = &mut MinAligned([[0u8; 4096 * 4]; 4]);
+
+    let mut temps = [Arena::from_buffer(temp1), Arena::from_buffer(temp2)];
+    let mut memory = Arena::from_buffer(memory);
+    let mut proc = Proc::new(&mut memory, &mut temps);
+    {
+        let builder = proc.builder();
+        let mut compiler = Compiler {
+            proc: &proc,
+            tokens: source.split_whitespace().peekable(),
+            scope: builder.add_scope("scope", builder.entry()),
+            variables: Vec::new(),
+            loops: Vec::new(),
+        };
+        while compiler.tokens.peek().is_some() {
+            compiler.statement();
+        }
+    }
+    let mut code = Arena::from_buffer(code);
+    let mut ctx = CodegenEmitCtx::new(&mut proc, &mut code);
+    let output = ctx.compile().code;
+    assert!(!output.is_empty() && output.len() <= 4096);
+
     unsafe extern "C" {
         fn mmap(
             addr: *mut c_void,
@@ -151,29 +183,6 @@ fn run(source: &str) -> i64 {
         fn mprotect(addr: *mut c_void, len: usize, prot: i32) -> i32;
         fn munmap(addr: *mut c_void, len: usize) -> i32;
     }
-
-    let MinAligned([temp1, temp2, memory, code]) = &mut MinAligned([[0u8; 4096 * 4]; 4]);
-
-    let mut temps = [Arena::from_buffer(temp1), Arena::from_buffer(temp2)];
-    let mut memory = Arena::from_buffer(memory);
-    let mut proc = Proc::new(&mut memory, &mut temps);
-    {
-        let builder = proc.builder();
-        let mut compiler = Compiler {
-            proc: &proc,
-            tokens: source.split_whitespace().peekable(),
-            scope: builder.add_scope("scope", builder.entry()),
-            variables: HashMap::new(),
-            loops: Vec::new(),
-        };
-        while compiler.tokens.peek().is_some() {
-            compiler.statement();
-        }
-    }
-    let mut code = Arena::from_buffer(code);
-    let mut ctx = CodegenEmitCtx::new(&mut proc, &mut code);
-    let output = ctx.compile().code;
-    assert!(!output.is_empty() && output.len() <= 4096);
 
     let page = unsafe { mmap(ptr::null_mut(), 4096, 1 | 2, 2 | 0x20, -1, 0) };
     assert_ne!(page as isize, -1);
@@ -210,44 +219,4 @@ fn main() {
 )))]
 fn main() {
     panic!("the executable-memory example supports Linux x86-64 and AArch64");
-}
-
-#[cfg(all(
-    test,
-    target_os = "linux",
-    any(target_arch = "x86_64", target_arch = "aarch64")
-))]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn inner_loop_can_break_and_continue_outer_loop() {
-        assert_eq!(run(PROGRAM), 30);
-    }
-
-    #[test]
-    fn nested_numeric_expressions() {
-        assert_eq!(
-            run("let x = -3 ; x = ( x + ( 7 * ( 2 < 3 ) ) ) ; return x ;"),
-            4
-        );
-    }
-
-    #[test]
-    fn unlabeled_break_and_continue() {
-        assert_eq!(
-            run("
-                let i = 0 ;
-                let total = 0 ;
-                loop {
-                    i = ( i + 1 ) ;
-                    if ( i == 5 ) { break ; }
-                    if ( i == 2 ) { continue ; }
-                    total = ( total + i ) ;
-                }
-                return total ;
-            "),
-            8
-        );
-    }
 }

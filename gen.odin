@@ -747,7 +747,7 @@ inline_and_optimize :: proc(
 			}
 		}
 
-		ssa.opt(ctx)
+		ssa.opt({ctx})
 		bac.compact(ctx)
 
 		delete(caller.stencil.mem, perm)
@@ -883,7 +883,7 @@ emit_proc :: proc(
 		ctx.node_scope = 0
 	}
 
-	ssa.opt(ctx)
+	ssa.opt({ctx})
 
 	if .Inline in level.flags {
 		bac.compact(ctx)

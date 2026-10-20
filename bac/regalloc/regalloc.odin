@@ -2051,7 +2051,9 @@ regalloc_round :: proc(
 			}
 		}
 
-		fmt.eprintln(string(sb.buf[:]))
+		when bac.REGLOGS {
+			fmt.eprintln(string(sb.buf[:]))
+		}
 	}
 
 	is_def :: proc(ctx: Ctx, node: ^bac.Node) -> bool {

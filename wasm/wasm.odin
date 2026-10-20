@@ -156,6 +156,7 @@ compiler_compile_bufs :: proc "c" (
 	state.ctx.global = &state.global
 	state.ctx.target = tar
 	state.ctx.errors = strings.to_writer(&diagnostics)
+	defer state.ctx.errors = {}
 
 	init_single_file_program(&state.ctx, &file)
 	typecheck.typecheck_program(&state.ctx)
@@ -195,35 +196,4 @@ compiler_compile :: proc "c" (target: Target) -> Status {
 @(export)
 compiler_output_size :: proc "c" () -> u32 {
 	return u32(state.output_size)
-}
-
-@(link_name = "__ashrti3")
-@(export)
-__ashrti3 :: proc "c" (value: i128, shift: i32) -> i128 {
-	if shift == 0 {
-		return value
-	}
-
-	// LLVM expects 0 <= shift < 128.
-	// Split into two 64-bit halves.
-	bits := u128(value)
-
-	lo := u64(bits)
-	hi := i64(u64(bits >> 64))
-
-	s := u32(shift)
-
-	result_lo: u64
-	result_hi: i64
-
-	if s >= 64 {
-		result_hi = hi >> 63
-		result_lo = u64(hi >> (s - 64))
-	} else {
-		result_hi = hi >> s
-		result_lo = (lo >> s) | (u64(hi) << (64 - s))
-	}
-
-	result := (u128(u64(result_hi)) << 64) | u128(result_lo)
-	return i128(result)
 }

@@ -99,29 +99,67 @@ fold_bin_op_lattice :: proc(
 		return {type = .Int, min = value, max = value}
 	}
 
-	lo, hi: i128
-	amin, amax := i128(a.min), i128(a.max)
-	bmin, bmax := i128(b.min), i128(b.max)
-	unsigned := false
-	#partial switch op {
-	case .U_Div, .U_Rem, .U_Lt, .U_Le, .U_Gt, .U_Ge, .U_Shr:
-		unsigned = true
-		amin, amax = unsigned_bounds(a, mask)
-		if op != .U_Shr do bmin, bmax = unsigned_bounds(b, mask)
-	}
-
+	lo, hi: i64
+	amin, amax := a.min, a.max
+	bmin, bmax := b.min, b.max
 	switch op {
+	case .U_Div, .U_Rem, .U_Lt, .U_Le, .U_Gt, .U_Ge, .U_Shr:
+		amin, amax := unsigned_bounds(a, mask)
+		bmin, bmax := unsigned_bounds(b, mask)
+		lo, hi: u64
+		#partial switch op {
+		case .U_Div:
+			if bmin == 0 do return
+			lo, hi = amin / bmax, amax / bmin
+		case .U_Rem:
+			if bmin == 0 do return
+			lo, hi = 0, min(amax, bmax - 1)
+		case .U_Lt:
+			lo, hi = u64(amax < bmin), u64(amin < bmax)
+		case .U_Le:
+			lo, hi = u64(amax <= bmin), u64(amin <= bmax)
+		case .U_Gt:
+			lo, hi = u64(amin > bmax), u64(amax > bmin)
+		case .U_Ge:
+			lo, hi = u64(amin >= bmax), u64(amax >= bmin)
+		case .U_Shr:
+			if b.max < 0 || b.min >= i64(bits) {
+				return {meta = {type = .Int}, min = 0, max = 0}
+			}
+			if b.min < 0 do return
+			smin, smax := u64(b.min), min(u64(b.max), bits - 1)
+			lo, hi = amin >> smax, amax >> smin
+			if b.max >= i64(bits) do lo = 0
+		}
+		if comparison do return {type = .Int, min = i64(lo), max = i64(hi)}
+		sign := u64(1) << (bits - 1)
+		if lo < sign && hi >= sign do return full
+		return {
+			type = .Int,
+			min = sext(i64(lo), op_ty),
+			max = sext(i64(hi), op_ty),
+		}
 	case .Add:
-		lo, hi = amin + bmin, amax + bmax
+		lo_overflow, hi_overflow: bool
+		lo, lo_overflow = intrinsics.overflow_add(amin, bmin)
+		hi, hi_overflow = intrinsics.overflow_add(amax, bmax)
+		if lo_overflow || hi_overflow do return
 	case .Sub:
-		lo, hi = amin - bmax, amax - bmin
+		lo_overflow, hi_overflow: bool
+		lo, lo_overflow = intrinsics.overflow_sub(amin, bmax)
+		hi, hi_overflow = intrinsics.overflow_sub(amax, bmin)
+		if lo_overflow || hi_overflow do return
 	case .Mul:
-		products := [4]i128{amin * bmin, amin * bmax, amax * bmin, amax * bmax}
-		lo, hi = products[0], products[0]
-		for v in products[1:] do lo, hi = min(lo, v), max(hi, v)
-	case .Div, .U_Div:
-		if bmin <= 0 && bmax >= 0 do return
-		quotients := [4]i128 {
+		lo, hi = max(i64), min(i64)
+		for av in ([2]i64{amin, amax}) {
+			for bv in ([2]i64{bmin, bmax}) {
+				product, overflow := intrinsics.overflow_mul(av, bv)
+				if overflow do return
+				lo, hi = min(lo, product), max(hi, product)
+			}
+		}
+	case .Div:
+		quotients := [4]i64 {
 			amin / bmin,
 			amin / bmax,
 			amax / bmin,
@@ -129,36 +167,37 @@ fold_bin_op_lattice :: proc(
 		}
 		lo, hi = quotients[0], quotients[0]
 		for v in quotients[1:] do lo, hi = min(lo, v), max(hi, v)
-	case .Rem, .U_Rem:
-		if bmin <= 0 && bmax >= 0 do return
-		magnitude := max(abs(bmin), abs(bmax)) - 1
+	case .Rem:
+		// abs(min(i64)) is not representable, but its remainder bound is.
+		magnitude := -(bmin + 1) if bmin < 0 else bmax - 1
 		lo = max(amin, -magnitude) if amin < 0 else 0
 		hi = min(amax, magnitude) if amax > 0 else 0
 	case .Eq, .Ne:
 		if amax < bmin || bmax < amin {
-			lo = i128(op == .Ne)
+			lo = i64(op == .Ne)
 			hi = lo
 		} else {
 			lo, hi = 0, 1
 		}
-	case .Lt, .U_Lt:
-		lo, hi = i128(amax < bmin), i128(amin < bmax)
-	case .Le, .U_Le:
-		lo, hi = i128(amax <= bmin), i128(amin <= bmax)
-	case .Gt, .U_Gt:
-		lo, hi = i128(amin > bmax), i128(amax > bmin)
-	case .Ge, .U_Ge:
-		lo, hi = i128(amin >= bmax), i128(amax >= bmin)
-	case .Shl, .Shr, .U_Shr:
+	case .Lt:
+		lo, hi = i64(amax < bmin), i64(amin < bmax)
+	case .Le:
+		lo, hi = i64(amax <= bmin), i64(amin <= bmax)
+	case .Gt:
+		lo, hi = i64(amin > bmax), i64(amax > bmin)
+	case .Ge:
+		lo, hi = i64(amin >= bmax), i64(amax >= bmin)
+	case .Shl, .Shr:
 		if b.max < 0 || b.min >= i64(bits) {
 			if op != .Shr do return {meta = {type = .Int}, min = 0, max = 0}
-			lo, hi = i128(a.min >> (bits - 1)), i128(a.max >> (bits - 1))
+			lo, hi = a.min >> (bits - 1), a.max >> (bits - 1)
 			break
 		}
 		if b.min < 0 do return
 		smin, smax := u64(b.min), min(u64(b.max), bits - 1)
 		if op == .Shl {
-			values := [4]i128 {
+			if amin < full.min >> smax || amax > full.max >> smax do return
+			values := [4]i64 {
 				amin << smin,
 				amin << smax,
 				amax << smin,
@@ -167,7 +206,7 @@ fold_bin_op_lattice :: proc(
 			lo, hi = values[0], values[0]
 			for v in values[1:] do lo, hi = min(lo, v), max(hi, v)
 		} else {
-			values := [4]i128 {
+			values := [4]i64 {
 				amin >> smin,
 				amin >> smax,
 				amax >> smin,
@@ -207,22 +246,12 @@ fold_bin_op_lattice :: proc(
 		}
 	}
 
-	if comparison do return {type = .Int, min = i64(lo), max = i64(hi)}
-	if unsigned {
-		sign := i128(1) << (bits - 1)
-		if lo < sign && hi >= sign do return full
-		return {
-			type = .Int,
-			min = sext(i64(lo), op_ty),
-			max = sext(i64(hi), op_ty),
-		}
-	}
-	if lo < i128(full.min) || hi > i128(full.max) do return full
-	return {type = .Int, min = i64(lo), max = i64(hi)}
+	if !comparison && (lo < full.min || hi > full.max) do return full
+	return {type = .Int, min = lo, max = hi}
 
-	unsigned_bounds :: proc(v: bac.Lattice, mask: u64) -> (lo, hi: i128) {
-		if v.min < 0 && v.max >= 0 do return 0, i128(mask)
-		return i128(u64(v.min) & mask), i128(u64(v.max) & mask)
+	unsigned_bounds :: proc(v: bac.Lattice, mask: u64) -> (lo, hi: u64) {
+		if v.min < 0 && v.max >= 0 do return 0, mask
+		return u64(v.min) & mask, u64(v.max) & mask
 	}
 
 	known_bits :: proc(v: bac.Lattice, mask: u64) -> (one, possible: u64) {

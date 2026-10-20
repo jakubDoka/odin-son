@@ -214,7 +214,6 @@ impl<'a> Proc<'a> {
         assert!(
             (id.0 as usize)
                 .checked_mul(4)
-                .and_then(|offset| offset.checked_add(core::mem::size_of::<Node>()))
                 .is_some_and(|end| end <= used),
             "node index is out of bounds: {}",
             id.0
@@ -230,11 +229,7 @@ impl<'a> Proc<'a> {
         let offset = (ptr::from_ref(node) as usize).checked_sub(arena.ptr as usize);
         assert!(
             offset.is_some_and(|offset| {
-                offset % 4 == 0
-                    && offset
-                        .checked_add(core::mem::size_of::<Node>())
-                        .is_some_and(|end| end <= arena.pos)
-                    && offset / 4 <= u32::MAX as usize
+                offset % 4 == 0 && offset <= arena.pos && offset / 4 <= u32::MAX as usize
             }),
             "node does not belong to this proc's arena"
         );

@@ -1,4 +1,3 @@
-#+build !wasm32
 package tests
 
 import main ".."

@@ -84,6 +84,321 @@ collect_paths :: proc(root: string) -> []string {
 	return files[:]
 }
 
+generate_stress :: proc(builder: ^strings.Builder) {
+	FUNCTION_COUNT :: 4
+	BLOCK_COUNT :: 100
+	VALUE_COUNT :: 24
+	MASK :: 0xffff
+
+	state := u64(0x4d595df4d0f33173)
+
+	next_random :: proc(state: ^u64) -> u64 {
+		x := state^
+		x = x ~ (x << 13)
+		x = x ~ (x >> 7)
+		x = x ~ (x << 17)
+		state^ = x
+		return x
+	}
+
+	pick_value :: proc(state: ^u64) -> int {
+		return int(next_random(state) % VALUE_COUNT)
+	}
+
+	pick_distinct :: proc(state: ^u64, avoid: int) -> int {
+		value := pick_value(state)
+		if value == avoid {
+			value = (value + 1) % VALUE_COUNT
+		}
+		return value
+	}
+
+	fmt.sbprintln(builder, "package main")
+	fmt.sbprintln(builder)
+
+	fmt.sbprintln(
+		builder,
+		"// COMPILER BUG: grouped parameters are counted as one parameter by the JIT frontend.",
+	)
+	fmt.sbprintln(builder, "// stir :: proc(a, b, c, d, k0, k1: int) -> int {")
+	fmt.sbprintln(
+		builder,
+		"stir :: proc(a: int, b: int, c: int, d: int, k0: int, k1: int) -> int {",
+	)
+	fmt.sbprintfln(
+		builder,
+		"\treturn ((a + b * k0) ~ (c + d * k1)) & %v",
+		MASK,
+	)
+	fmt.sbprintln(builder, "}")
+	fmt.sbprintln(builder)
+
+	for function_id in 0 ..< FUNCTION_COUNT {
+		fmt.sbprintfln(
+			builder,
+			"stress_%v :: proc(seed: int) -> int {{",
+			function_id,
+		)
+
+		for i in 0 ..< VALUE_COUNT {
+			constant := int(next_random(&state) % 251) + 1
+			fmt.sbprintfln(
+				builder,
+				"\tv%v := (seed + %v) & %v",
+				i,
+				constant,
+				MASK,
+			)
+		}
+		fmt.sbprintln(builder)
+
+		for block_id in 0 ..< BLOCK_COUNT {
+			id := function_id * BLOCK_COUNT + block_id
+
+			a := pick_value(&state)
+			b := pick_distinct(&state, a)
+			c := pick_distinct(&state, b)
+			d := pick_distinct(&state, c)
+			k0 := int(next_random(&state) % 13) + 3
+			k1 := int(next_random(&state) % 251) + 1
+
+			switch next_random(&state) % 6 {
+			case 0:
+				fmt.sbprintfln(
+					builder,
+					"\tv%v = (v%v + v%v * %v + %v) & %v",
+					a,
+					b,
+					c,
+					k0,
+					k1,
+					MASK,
+				)
+				fmt.sbprintfln(
+					builder,
+					"\tv%v = (v%v ~ v%v) & %v",
+					d,
+					d,
+					a,
+					MASK,
+				)
+				fmt.sbprintfln(
+					builder,
+					"\tv%v = (v%v + v%v + %v) & %v",
+					b,
+					b,
+					d,
+					k0,
+					MASK,
+				)
+
+			case 1:
+				fmt.sbprintfln(builder, "\tif (v%v & 1) == 0 {{", a)
+				fmt.sbprintfln(
+					builder,
+					"\t\tv%v = (v%v + v%v * %v) & %v",
+					b,
+					b,
+					c,
+					k0,
+					MASK,
+				)
+				fmt.sbprintfln(
+					builder,
+					"\t\tv%v = (v%v ~ v%v) & %v",
+					d,
+					d,
+					b,
+					MASK,
+				)
+				fmt.sbprintln(builder, "\t} else {")
+				fmt.sbprintfln(
+					builder,
+					"\t\tv%v = (v%v + v%v + %v) & %v",
+					b,
+					b,
+					d,
+					k1,
+					MASK,
+				)
+				fmt.sbprintfln(
+					builder,
+					"\t\tv%v = (v%v * %v + v%v) & %v",
+					d,
+					d,
+					k0,
+					c,
+					MASK,
+				)
+				fmt.sbprintln(builder, "\t}")
+
+			case 2:
+				fmt.sbprintfln(
+					builder,
+					"\tt%v := (v%v * %v + v%v) & %v",
+					id,
+					a,
+					k0,
+					b,
+					MASK,
+				)
+				fmt.sbprintfln(
+					builder,
+					"\tv%v = (v%v + v%v) & %v",
+					c,
+					c,
+					d,
+					MASK,
+				)
+				fmt.sbprintfln(
+					builder,
+					"\tv%v = (v%v ~ t%v) & %v",
+					a,
+					a,
+					id,
+					MASK,
+				)
+				fmt.sbprintfln(
+					builder,
+					"\tv%v = (v%v + t%v + %v) & %v",
+					d,
+					d,
+					id,
+					k1,
+					MASK,
+				)
+
+			case 3:
+				shift := int(next_random(&state) % 5) + 1
+				fmt.sbprintfln(
+					builder,
+					"\tv%v = ((v%v << %v) ~ v%v) & %v",
+					a,
+					b,
+					shift,
+					c,
+					MASK,
+				)
+				fmt.sbprintfln(
+					builder,
+					"\tv%v = ((v%v >> %v) + v%v + %v) & %v",
+					d,
+					a,
+					shift,
+					d,
+					k1,
+					MASK,
+				)
+				fmt.sbprintfln(
+					builder,
+					"\tv%v = (v%v + v%v * %v) & %v",
+					c,
+					c,
+					d,
+					k0,
+					MASK,
+				)
+
+			case 4:
+				fmt.sbprintfln(
+					builder,
+					"\tt%v := stir(v%v, v%v, v%v, v%v, %v, %v)",
+					id,
+					a,
+					b,
+					c,
+					d,
+					k0,
+					k1,
+				)
+				fmt.sbprintfln(
+					builder,
+					"\tv%v = (v%v + t%v) & %v",
+					a,
+					a,
+					id,
+					MASK,
+				)
+				fmt.sbprintfln(
+					builder,
+					"\tv%v = (v%v ~ t%v) & %v",
+					c,
+					c,
+					id,
+					MASK,
+				)
+
+			case:
+				fmt.sbprintfln(builder, "\tif v%v < v%v {{", a, b)
+				fmt.sbprintfln(
+					builder,
+					"\t\tv%v = (v%v + %v) & %v",
+					c,
+					c,
+					k1,
+					MASK,
+				)
+				fmt.sbprintfln(builder, "\t} else if (v%v & 3) == 1 {{", d)
+				fmt.sbprintfln(
+					builder,
+					"\t\tv%v = (v%v * %v + v%v) & %v",
+					c,
+					c,
+					k0,
+					a,
+					MASK,
+				)
+				fmt.sbprintln(builder, "\t} else {")
+				fmt.sbprintfln(
+					builder,
+					"\t\tv%v = (v%v ~ v%v ~ %v) & %v",
+					c,
+					c,
+					b,
+					k1,
+					MASK,
+				)
+				fmt.sbprintln(builder, "\t}")
+				fmt.sbprintfln(
+					builder,
+					"\tv%v = (v%v + v%v + %v) & %v",
+					d,
+					d,
+					c,
+					k0,
+					MASK,
+				)
+			}
+		}
+
+		fmt.sbprintf(builder, "\treturn (")
+		for i in 0 ..< VALUE_COUNT {
+			if i != 0 {
+				fmt.sbprintf(builder, " + ")
+			}
+			fmt.sbprintf(builder, "v%v", i)
+		}
+		fmt.sbprintln(builder, ") & 0xff")
+		fmt.sbprintln(builder, "}")
+		fmt.sbprintln(builder)
+	}
+
+	fmt.sbprintln(builder, "main :: proc() -> int {")
+	fmt.sbprintln(builder, "\tresult := 0")
+
+	for function_id in 0 ..< FUNCTION_COUNT {
+		fmt.sbprintfln(
+			builder,
+			"\tresult = (result + stress_%v(result + %v)) & 0xff",
+			function_id,
+			function_id + 1,
+		)
+	}
+
+	fmt.sbprintln(builder, "\treturn result")
+	fmt.sbprintln(builder, "}")
+}
+
 main :: proc() {
 	context.allocator = context.temp_allocator
 
@@ -117,24 +432,27 @@ main :: proc() {
 
 			fmt.println("===", name, "===")
 
-			entry := join(item.fullpath, "main.odin")
-
-			if !exists(entry) do continue
-
 			subdir := join(MOD_DIR, name)
 			mkdir(subdir)
 
 			switch name {
+			case "regalloc-stress":
+				genned: strings.Builder
+				generate_stress(&genned)
+				write(
+					join(item.fullpath, "main.odin"),
+					strings.to_string(genned),
+				)
 			case "wasm":
 				genned: strings.Builder
 				append(
 					&genned.buf,
 					`
-package main // generated
-
-run_generated :: proc() -> int {
-    acc := 0
-`,
+                    package main // generated
+                    
+                    run_generated :: proc() -> int {
+                        acc := 0
+                    `,
 				)
 
 				for file in list_dir(join(item.fullpath, "programs")) {
@@ -167,9 +485,9 @@ run_generated :: proc() -> int {
 					fmt.sbprintf(
 						&genned,
 						`
-    %v :: "%v"
-    acc += run_module_auto("%v", %v)
-`,
+                        %v :: "%v"
+                        acc += run_module_auto("%v", %v)
+                        `,
 						cname[:len(cname) - 5],
 						strings.to_string(encoded),
 						file.name,
@@ -177,16 +495,22 @@ run_generated :: proc() -> int {
 					)
 				}
 
-				append(&genned.buf, `
-    return acc
-}
-`)
+				append(
+					&genned.buf,
+					`
+                    return acc
+                    }`,
+				)
 
 				write(
 					join(item.fullpath, "generated.odin"),
 					strings.to_string(genned),
 				)
 			}
+
+			entry := join(item.fullpath, "main.odin")
+
+			if !exists(entry) do continue
 
 			cp(item.fullpath, subdir)
 

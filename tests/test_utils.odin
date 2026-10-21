@@ -313,11 +313,7 @@ run_test :: proc(
 			arna.alloc(&types.mems.code, 0, 4096)
 			code_until := types.mems.code.pos
 
-			global_addrs := make(
-				[]uintptr,
-				len(ctx.globals),
-				context.temp_allocator,
-			)
+			global_addrs := make([]uintptr, len(ctx.globals), context.temp_allocator)
 			for glob, i in ctx.globals {
 				align := uint(max(glob.align, 1))
 				slot := arna.alloc(&types.mems.code, len(glob.bytes), align)
@@ -337,18 +333,12 @@ run_test :: proc(
 					case .Global:
 						if rel.id >= bac.RELOC_BIG_CONSTANT_BASE {
 
-							slc := p.out.constants[rel.id -
-							bac.RELOC_BIG_CONSTANT_BASE -
-							2:]
+							slc := p.out.constants[rel.id - bac.RELOC_BIG_CONSTANT_BASE - 2:]
 
 							size := slc[0]
 							align := slc[1]
 
-							off := arna.alloc(
-								&types.mems.code,
-								uint(size),
-								uint(align),
-							)
+							off := arna.alloc(&types.mems.code, uint(size), uint(align))
 
 							copy(off, slc[2:])
 
@@ -358,8 +348,7 @@ run_test :: proc(
 						}
 					}
 
-					source :=
-						uintptr(raw_data(p.out.code)) + uintptr(rel.offset)
+					source := uintptr(raw_data(p.out.code)) + uintptr(rel.offset)
 					jump := i32(target_off - source)
 
 					jump = jump / (1 << rel.scale_pow)
@@ -415,14 +404,11 @@ run_test :: proc(
 					vl: int
 
 					if level.vm == .Native {
-						ptr := transmute(proc() -> int)(raw_data(
-								main.out.code,
-							))
+						ptr := transmute(proc() -> int)(raw_data(main.out.code))
 						vl = ptr()
 					} else {
 						start := int(
-							uintptr(raw_data(main.out.code)) -
-							uintptr(types.mems.code.ptr),
+							uintptr(raw_data(main.out.code)) - uintptr(types.mems.code.ptr),
 						)
 						avl, err := unicorn.run_arm64(
 							types.mems.code.ptr[:types.mems.code.pos],
@@ -443,11 +429,7 @@ run_test :: proc(
 				}
 			}
 
-			oka = virtual.protect(
-				types.mems.code.ptr,
-				code_until,
-				{.Read, .Write},
-			)
+			oka = virtual.protect(types.mems.code.ptr, code_until, {.Read, .Write})
 			assert(oka)
 
 			resize(&ctx.procs, len(ctx.procs) - 2)
@@ -532,8 +514,7 @@ run_test :: proc(
 				new, old := string(dsb.buf[:]), string(file)
 				if new != old {
 					new, old =
-						highlight_disasm(strings.clone(new)),
-						highlight_disasm(old)
+						highlight_disasm(strings.clone(new)), highlight_disasm(old)
 					clear(&dsb.buf)
 					append(&dsb.buf, "\n")
 					print_diff(&dsb, old, new)
@@ -772,9 +753,7 @@ disasm :: proc(sb: ^strings.Builder, ctx: odin.Gen_Ctx, ds: $DS) {
 		instructions := prc.out.code
 
 		offset := u32(
-			uintptr(raw_data(instructions)) -
-			uintptr(ctx.types.mems.code.ptr) -
-			mn,
+			uintptr(raw_data(instructions)) - uintptr(ctx.types.mems.code.ptr) - mn,
 		)
 
 		label_base := len(decoded_label_info)

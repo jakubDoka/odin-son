@@ -1000,12 +1000,7 @@ verify :: proc(prc: ^Proc) {
 					bit_arr.set(seen_intern_slots, idx)
 				} else {
 					when !ODIN_DISABLE_ASSERT {
-						fmt.eprintln(
-							idx,
-							u32(arr[idx].id),
-							grub,
-							prc.interner.len,
-						)
+						fmt.eprintln(idx, u32(arr[idx].id), grub, prc.interner.len)
 					}
 				}
 			}
@@ -1097,8 +1092,7 @@ schedule_peeps :: proc(prc: ^Proc, schedule: ^Schedule) {
 			   (0 == len(inode.inps) ||
 					   (get_node(prc, inode.inps[0]).itype == .Phi &&
 							   inode.inps[0] == inode.outs[0].id &&
-							   get_node(prc, inode.inps[0]).output_count >
-								   1)) {
+							   get_node(prc, inode.inps[0]).output_count > 1)) {
 
 				has_phy_inp := false
 				for inp in inode.inps[min(1, len(inode.inps)):] {
@@ -1245,8 +1239,7 @@ apply_peeps :: proc(ctx: Peep_Ctx) -> (optimized: bool) {
 				}
 			}
 			fmt.assertf(
-				node.itype != .Local ||
-				get_extra(prc, node, Local).size != DEAD_LOCAL,
+				node.itype != .Local || get_extra(prc, node, Local).size != DEAD_LOCAL,
 				"%v",
 				node,
 			)
@@ -1303,9 +1296,7 @@ collect_nodes :: proc(prc: ^Proc, worklist: ^Worklist, renumber := true) {
 
 		when !ODIN_DISABLE_ASSERT {
 			for n in worklist.data[1:worklist.len] {
-				assert(
-					bit_arr.contains(worklist.in_queue, get_node(prc, n).gvn),
-				)
+				assert(bit_arr.contains(worklist.in_queue, get_node(prc, n).gvn))
 			}
 		}
 	}
@@ -1332,16 +1323,9 @@ assert_live_pins :: proc(prc: ^Proc) {
 		defer current_prc = prev
 	}
 	expected := [?]Node_Type{.Entry, .End}
-	for &n, i in mem.slice_data_cast(
-		[]Node_ID,
-		mem.ptr_to_bytes(&prc.pinned),
-	) {
+	for &n, i in mem.slice_data_cast([]Node_ID, mem.ptr_to_bytes(&prc.pinned)) {
 		if expected[i] == .Return && n == 0 do continue
-		fmt.assertf(
-			get_node(prc, n).rtype != DEAD_NODE_KIND,
-			"%v",
-			expected[i],
-		)
+		fmt.assertf(get_node(prc, n).rtype != DEAD_NODE_KIND, "%v", expected[i])
 		fmt.assertf(
 			get_node(prc, n).itype == expected[i],
 			"%v %v",
@@ -1626,10 +1610,7 @@ simd_iter_next :: proc(siter: ^Simd_Iter) -> (int, bool) {
 		}
 
 		if siter.i < len(siter.haystack) {
-			mask := simd.lanes_eq(
-				siter.haystack[siter.i],
-				Intern_Vec(siter.needle),
-			)
+			mask := simd.lanes_eq(siter.haystack[siter.i], Intern_Vec(siter.needle))
 			siter.mask = transmute(u16)simd.extract_lsbs(mask)
 			siter.i += 1
 		} else {
@@ -2334,10 +2315,7 @@ has_flag_node :: #force_inline proc(
 }
 
 is_end_ctrl :: proc(prc: ^Proc, node: Node_ID) -> bool {
-	return(
-		get_node(prc, node).itype not_in
-		bit_set[Node_Type]{.Dbg_Scope, .Nil} \
-	)
+	return get_node(prc, node).itype not_in bit_set[Node_Type]{.Dbg_Scope, .Nil}
 }
 
 truncate_inputs :: proc(prc: ^Proc, scope: Node_ID, #any_int to_len: int) {

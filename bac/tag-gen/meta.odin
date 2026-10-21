@@ -67,51 +67,30 @@ main :: proc() {
 				code := src[:code_end_idx]
 				src = src[code_end_idx + len(needle):]
 
-				rall_name, _ := strings.replace_all(
-					name,
-					" ",
-					"_",
-					context.allocator,
-				)
+				rall_name, _ := strings.replace_all(name, " ", "_", context.allocator)
 
 				corpus_path, _ := os.join_path(
 					{FUZZ_CORPUS_DIR, fmt.tprintf("%v.odin", rall_name)},
 					context.allocator,
 				)
-				cerr := os.write_entire_file(
-					corpus_path,
-					transmute([]byte)code,
-				)
+				cerr := os.write_entire_file(corpus_path, transmute([]byte)code)
 				fmt.assertf(cerr == nil, "%v: %v", corpus_path, cerr)
 
 				append(&tests, Test{rall_name, code, .Normal})
 
-				fmt.fprintfln(
-					file,
-					"@(test) %v :: proc(t: ^testing.T) {{",
-					rall_name,
-				)
+				fmt.fprintfln(file, "@(test) %v :: proc(t: ^testing.T) {{", rall_name)
 
 				// a `fail ...` test is expected to be rejected by our
 				// typechecker, so it can't be compiled by odin to obtain the
 				// expected exit code
 				if strings.has_prefix(name, "fail ") {
-					fmt.fprintfln(
-						file,
-						"run_test(t, `%v`, `%v`, 0)",
-						rall_name,
-						code,
-					)
+					fmt.fprintfln(file, "run_test(t, `%v`, `%v`, 0)", rall_name, code)
 					fmt.fprintfln(file, "}}")
 					continue
 				}
 
 				inlined, _ := strings.replace_all(code, "package main", "")
-				inlined, _ = strings.replace_all(
-					inlined,
-					"main ::",
-					"main_ ::",
-				)
+				inlined, _ = strings.replace_all(inlined, "main ::", "main_ ::")
 				fmt.fprintfln(file, "%v", inlined)
 				fmt.fprintfln(
 					file,
@@ -205,10 +184,7 @@ gen_fuzz_crash_tests :: proc(file: ^os.File, test_names: ^[dynamic]Test) {
 
 	for crash in kept {
 		if !strings.has_suffix(crash.name, ".odin") do continue
-		name := fmt.tprintf(
-			"fuzz_%v",
-			crash.name[:len(crash.name) - len(".odin")],
-		)
+		name := fmt.tprintf("fuzz_%v", crash.name[:len(crash.name) - len(".odin")])
 
 		append(
 			test_names,

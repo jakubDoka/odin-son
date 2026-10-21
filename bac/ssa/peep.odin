@@ -144,8 +144,7 @@ fold_bin_op :: proc(
 		if u64(rhs) >= u64(bac.DT_SIZE[op_ty] * 8) do return 0
 		value = sext(lhs << u64(rhs), op_ty)
 	case .Shr:
-		value =
-			sext(lhs, op_ty) >> min(u64(rhs), u64(bac.DT_SIZE[op_ty] * 8 - 1))
+		value = sext(lhs, op_ty) >> min(u64(rhs), u64(bac.DT_SIZE[op_ty] * 8 - 1))
 	case .Eq:
 		value = i64(lhs == rhs)
 	case .Ne:
@@ -342,11 +341,7 @@ peep :: proc(
 				}
 
 				if get_node(ctx, user.id).itype == .Add {
-					bac.peep_ctx_add_trigger(
-						ctx,
-						bac.get_inputs(ctx, user.id)[1],
-						id,
-					)
+					bac.peep_ctx_add_trigger(ctx, bac.get_inputs(ctx, user.id)[1], id)
 				}
 
 				bac.peep_ctx_add_trigger(ctx, user.id, id)
@@ -391,9 +386,7 @@ peep :: proc(
 					continue
 				}
 
-				if unode.itype == .Copy &&
-				   user.idx == 3 &&
-				   forward_candidate == 0 {
+				if unode.itype == .Copy && user.idx == 3 && forward_candidate == 0 {
 					forward_candidate = user.id
 					continue
 				}
@@ -408,8 +401,7 @@ peep :: proc(
 			}
 
 			if load_base != 0 &&
-			   (((load_base != rev_forward_candidate) &&
-						   forward_candidate == 0) ||
+			   (((load_base != rev_forward_candidate) && forward_candidate == 0) ||
 					   forward_candidate != 0) {
 				break forward
 			}
@@ -420,11 +412,7 @@ peep :: proc(
 				bse, _ := bac.base_and_offset(ctx, fnode.inps[2])
 				subs := get_node(ctx, bse)
 
-				VALID :: bit_set[bac.Node_Type] {
-					.Local_Addr,
-					.Param,
-					.Global_Addr,
-				}
+				VALID :: bit_set[bac.Node_Type]{.Local_Addr, .Param, .Global_Addr}
 				if subs.itype not_in VALID {break forward}
 
 				cursor := fnode.inps[1]
@@ -433,8 +421,7 @@ peep :: proc(
 					cnode := expand_node(ctx, cursor)
 					if cnode.itype not_in STORES do break forward
 					base, _ := bac.base_and_offset(ctx, cnode.inps[2])
-					if base != id &&
-					   !bac.is_noalias(ctx, cursor, forward_candidate) {
+					if base != id && !bac.is_noalias(ctx, cursor, forward_candidate) {
 						bac.peep_ctx_add_trigger(ctx, cursor, id)
 						break forward
 					}
@@ -466,8 +453,7 @@ peep :: proc(
 				for out in bedge.outs {
 					if out.id != id {
 						we_are_alive =
-							(get_node(ctx, out.id).itype == .Else) ~
-							(cond_const.value == 0)
+							(get_node(ctx, out.id).itype == .Else) ~ (cond_const.value == 0)
 					}
 				}
 
@@ -507,12 +493,7 @@ peep :: proc(
 			for o in node.outs {
 				n := get_node(ctx, o.id)
 				if n.itype == .Phi {
-					fmt.assertf(
-						n.input_count == node.input_count + 1,
-						"%v %v",
-						n,
-						node,
-					)
+					fmt.assertf(n.input_count == node.input_count + 1, "%v %v", n, node)
 				}
 			}
 		}
@@ -621,12 +602,7 @@ peep :: proc(
 			for o in node.outs {
 				n := get_node(ctx, o.id)
 				if n.itype == .Phi {
-					fmt.assertf(
-						n.input_count == node.input_count + 1,
-						"%v %v",
-						n,
-						node,
-					)
+					fmt.assertf(n.input_count == node.input_count + 1, "%v %v", n, node)
 				}
 			}
 		}
@@ -665,12 +641,7 @@ peep :: proc(
 						ctx,
 						id,
 						1,
-						bac.add_c_int(
-							ctx,
-							"shfld",
-							.I8,
-							i64(pcnode.itype != .Else),
-						),
+						bac.add_c_int(ctx, "shfld", .I8, i64(pcnode.itype != .Else)),
 					)
 					return id
 				}
@@ -744,12 +715,7 @@ peep :: proc(
 					.Shr,
 					node.dt,
 					node.inps[0],
-					bac.add_c_int(
-						ctx,
-						"shc",
-						rhs.dt,
-						i64(bac.DT_SIZE[op_ty] * 8 - 1),
-					),
+					bac.add_c_int(ctx, "shc", rhs.dt, i64(bac.DT_SIZE[op_ty] * 8 - 1)),
 				)
 			}
 
@@ -991,8 +957,7 @@ peep :: proc(
 				for out in cnode.outs {
 					onode := expand_node(ctx, out.id)
 					if !onode.is_store ||
-					   (onode.itype == .Copy &&
-							   onode.inps[2] == onode.inps[3]) {
+					   (onode.itype == .Copy && onode.inps[2] == onode.inps[3]) {
 						bac.peep_ctx_add_trigger(ctx, out.id, id)
 						break eliminate
 					}
@@ -1218,13 +1183,7 @@ peep :: proc(
 		for i in 0 ..= prev_len {
 			slot := i == prev_len ? Slot{} : slots[prev_len - i - 1]
 
-			fmt.assertf(
-				offset >= slot.offset,
-				"%v, %v, %#v",
-				offset,
-				slot,
-				slots,
-			)
+			fmt.assertf(offset >= slot.offset, "%v, %v, %#v", offset, slot, slots)
 			rev_offset := slot.offset + slot.size
 			inserts := 0
 			for rev_offset < offset {
@@ -1298,10 +1257,7 @@ peep :: proc(
 					inject_at(
 						&slots,
 						i + 1,
-						Slot {
-							offset = slot.offset + chip,
-							size = slot.size - chip,
-						},
+						Slot{offset = slot.offset + chip, size = slot.size - chip},
 					)
 					slot.size = chip
 				}
@@ -1315,12 +1271,7 @@ peep :: proc(
 
 		mem_thread := mm
 		for slot in slots {
-			fmt.assertf(
-				math.is_power_of_two(slot.size),
-				"%v %#v",
-				slot.size,
-				slots,
-			)
+			fmt.assertf(math.is_power_of_two(slot.size), "%v %#v", slot.size, slots)
 			idx := intrinsics.count_trailing_zeros(slot.size)
 			table := [?]bac.Node_Datatype{.I8, .I16, .I32, .I64, .V128}
 			dt := table[idx]

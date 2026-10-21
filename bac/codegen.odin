@@ -266,8 +266,7 @@ buf_output :: proc(
 		size_of(Dbg_Location),
 	}
 	#assert(
-		len(ELEM_SIZES) ==
-		intrinsics.type_struct_field_count(Codegen_Output_Bufs),
+		len(ELEM_SIZES) == intrinsics.type_struct_field_count(Codegen_Output_Bufs),
 	)
 
 	for size, i in ELEM_SIZES {
@@ -514,8 +513,7 @@ emit_dbg_locations :: proc(ctx: Codegen_Emit_Ctx) {
 						continue
 					}
 
-					if int(tcnode.gvn) < len(ctx.allocs) &&
-					   reg_of(ctx, tc) == reg {
+					if int(tcnode.gvn) < len(ctx.allocs) && reg_of(ctx, tc) == reg {
 						{
 							add_dbg_location(ctx.dbg_locs)^ = {
 								sym    = sym.inner,
@@ -722,9 +720,7 @@ add_dbg_location :: #force_no_inline proc(
 	buf: ^arna.Allocator,
 ) -> ^Dbg_Location {
 	return (^Dbg_Location)(
-		raw_data(
-			arna.alloc(buf, size_of(Dbg_Location), align_of(Dbg_Location)),
-		),
+		raw_data(arna.alloc(buf, size_of(Dbg_Location), align_of(Dbg_Location))),
 	)
 }
 
@@ -785,12 +781,7 @@ compute_param_offsets :: proc(
 
 		extra := get_extra(ctx.prc, param_id, Local)
 		if extra != nil {
-			fmt.assertf(
-				extra.size == param.size,
-				"%v == %v",
-				extra.size,
-				param.size,
-			)
+			fmt.assertf(extra.size == param.size, "%v == %v", extra.size, param.size)
 			extra.offset = param_offset
 		}
 
@@ -856,8 +847,7 @@ emit_big_constant :: proc(
 ) {
 	_ = arna.alloc(
 		ctx.constants,
-		mem.align_forward_uint(ctx.constants.pos + 2, align) -
-		ctx.constants.pos,
+		mem.align_forward_uint(ctx.constants.pos + 2, align) - ctx.constants.pos,
 		1,
 	)
 	ctx.constants.ptr[ctx.constants.pos - 2] = u8(len(bytes))

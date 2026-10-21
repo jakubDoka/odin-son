@@ -190,8 +190,7 @@ peep :: proc(
 			break
 		}
 
-		signed :=
-			kind in bit_set[Node_Type]{.Le, .Lt, .Gt, .Ge, .Div, .Rem, .Shr}
+		signed := kind in bit_set[Node_Type]{.Le, .Lt, .Gt, .Ge, .Div, .Rem, .Shr}
 		ext: bac.Un_Op = signed ? .Conv : .U_Conv
 		inps: [2]bac.Node_ID
 		for inp, i in node.inps {
@@ -207,13 +206,7 @@ peep :: proc(
 
 		comparison := .Eq <= kind && kind <= .U_Ge
 		dt := comparison ? node.dt : bac.Node_Datatype.I32
-		wide := bac.add_raw(
-			ctx,
-			"iwide",
-			node.rtype,
-			dt,
-			inps[:len(node.inps)],
-		)
+		wide := bac.add_raw(ctx, "iwide", node.rtype, dt, inps[:len(node.inps)])
 		bac.worklist_add(ctx, ctx.worklist, wide)
 		if comparison do return wide
 
@@ -449,9 +442,7 @@ meta_of :: #force_inline proc(
 	single :: bac.rm_intern_single
 	rslice :: bac.rm_intern_slice
 
-	dup :: #force_inline proc(
-		msks: []bac.RM_Intern_Idx,
-	) -> []bac.RM_Intern_Idx {
+	dup :: #force_inline proc(msks: []bac.RM_Intern_Idx) -> []bac.RM_Intern_Idx {
 		return slice.clone(msks)
 	}
 
@@ -834,11 +825,7 @@ emit_instr :: proc(
 
 		emit_op(
 			ctx.code,
-			op |
-			u32(is_64) << 30 |
-			imm << 16 |
-			u32(src.index) << 5 |
-			u32(dst.index),
+			op | u32(is_64) << 30 | imm << 16 | u32(src.index) << 5 | u32(dst.index),
 		)
 	case .Ext:
 		dst := reg_of(ctx, instr)
@@ -897,10 +884,7 @@ emit_instr :: proc(
 		dst := reg_of(ctx, instr)
 		src := reg_of(ctx, node.inps[0])
 
-		emit_op(
-			ctx.code,
-			op | imm << 16 | u32(src.index) << 5 | u32(dst.index),
-		)
+		emit_op(ctx.code, op | imm << 16 | u32(src.index) << 5 | u32(dst.index))
 	case .Global_Addr, .Proc_Addr:
 		scale_pow, id: u32
 		if kind == .Proc_Addr {
@@ -1015,12 +999,7 @@ emit_instr :: proc(
 
 		emit_op(
 			ctx.code,
-			imm12_instr(
-				op,
-				reg_of(ctx, node.inps[3]),
-				reg_of(ctx, node.inps[2]),
-				0,
-			),
+			imm12_instr(op, reg_of(ctx, node.inps[3]), reg_of(ctx, node.inps[2]), 0),
 		)
 	case .Load:
 		// ldr rinstr, [rinp2, $imm12]
@@ -1062,16 +1041,10 @@ emit_instr :: proc(
 				emit_op(ctx.code, 0x3D8003FF)
 
 				// ldr d31, [sp, rm_off + 16]
-				emit_op(
-					ctx.code,
-					imm12_instr(0b1111110101, V31, SP, rm_off + 2),
-				)
+				emit_op(ctx.code, imm12_instr(0b1111110101, V31, SP, rm_off + 2))
 
 				// str d31, [sp, rd_off + 16]
-				emit_op(
-					ctx.code,
-					imm12_instr(0b1111110100, V31, SP, rd_off + 2),
-				)
+				emit_op(ctx.code, imm12_instr(0b1111110100, V31, SP, rd_off + 2))
 
 				// ldr q31, [sp]
 				emit_op(ctx.code, 0x3DC003FF)
@@ -1088,10 +1061,7 @@ emit_instr :: proc(
 				MOV :: 0x4EA01C00
 				emit_op(
 					ctx.code,
-					MOV |
-					u32(rm.index) << 16 |
-					u32(rm.index) << 5 |
-					u32(rd.index),
+					MOV | u32(rm.index) << 16 | u32(rm.index) << 5 | u32(rd.index),
 				)
 			}
 			break
@@ -1147,15 +1117,7 @@ emit_instr :: proc(
 				reg_of(ctx, node.inps[1]),
 			),
 		)
-	case .Add ..=
-	     .Xor,
-	     .Div,
-	     .U_Div,
-	     .And_Not,
-	     .Shl ..=
-	     .U_Shr,
-	     .Lslv ..=
-	     .Lsrv:
+	case .Add ..= .Xor, .Div, .U_Div, .And_Not, .Shl ..= .U_Shr, .Lslv ..= .Lsrv:
 		rd := reg_of(ctx, instr)
 		rn := reg_of(ctx, node.inps[0])
 		rm := reg_of(ctx, node.inps[1])
@@ -1323,20 +1285,13 @@ emit_instr :: proc(
 
 			hw: u32 = 0b00
 
-			emit_op(
-				ctx.code,
-				op << 23 | hw << 21 | u32(imm) << 5 | u32(reg.index),
-			)
+			emit_op(ctx.code, op << 23 | hw << 21 | u32(imm) << 5 | u32(reg.index))
 
 			remining_subs :=
 				(64 - intrinsics.count_leading_ones(cint.value) + 16 - 1) / 16
 			if cint.value >= 0 {
 				remining_subs =
-					(64 -
-						intrinsics.count_leading_zeros(cint.value) +
-						16 -
-						1) /
-					16
+					(64 - intrinsics.count_leading_zeros(cint.value) + 16 - 1) / 16
 			}
 
 			op = 0b111100101
@@ -1424,8 +1379,7 @@ emit_instr :: proc(
 				op = 0xd63f0000
 
 				idx := len(node.inps) - 1
-				for ; get_node(ctx, node.inps[idx]).itype == .Local;
-				    idx -= 1 {}
+				for ; get_node(ctx, node.inps[idx]).itype == .Local; idx -= 1 {}
 				ptr := reg_of(ctx, node.inps[idx])
 
 				emit_op(ctx.code, op | u32(ptr.index) << 5)
@@ -1456,10 +1410,7 @@ emit_instr :: proc(
 			for reg in ctx.callee_saved[RK_GENERAL] {
 				if bit_arr.contains(ctx.used, int(reg)) {
 					// ldr rt, [sp, $imm12]
-					emit_op(
-						ctx.code,
-						imm12_instr(0b1111100101, reg, SP, pushed / 8),
-					)
+					emit_op(ctx.code, imm12_instr(0b1111100101, reg, SP, pushed / 8))
 					pushed += 8
 				}
 			}
@@ -1486,10 +1437,7 @@ emit_instr :: proc(
 
 			if ctx.stack_size != 0 {
 				// add sp, sp, ctx.stack_size
-				emit_op(
-					ctx.code,
-					imm12_instr(0b1001000100, SP, SP, ctx.stack_size),
-				)
+				emit_op(ctx.code, imm12_instr(0b1001000100, SP, SP, ctx.stack_size))
 			}
 		}
 

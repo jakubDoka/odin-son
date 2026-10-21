@@ -90,14 +90,9 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 		for class, i in classes.ids {
 			collect_inheritable(class.id, &inheritable)
 
-			collect_inheritable :: proc(
-				id: typeid,
-				inheritable: ^map[typeid]int,
-			) {
+			collect_inheritable :: proc(id: typeid, inheritable: ^map[typeid]int) {
 				if id not_in inheritable {
-					assert(
-						len(inheritable) < size_of(bac.Inherit_Table_Elem) * 8,
-					)
+					assert(len(inheritable) < size_of(bac.Inherit_Table_Elem) * 8)
 					inheritable[id] = len(inheritable)
 				}
 
@@ -427,13 +422,11 @@ collect_meta :: proc(ctx: ^%vProc,
 
 			extra_type := qualify_type(q, locals, class.id)
 			has_extra :=
-				len(class.extra_args) != 0 ||
-				reflect.size_of_typeid(class.id) > 0
+				len(class.extra_args) != 0 || reflect.size_of_typeid(class.id) > 0
 			if has_extra {
 				fmt.fprintf(
 					file,
-					"\t(^%v)(%vget_next_extra_slot(prc," +
-					" u16(%v.%v), 0))^ = ",
+					"\t(^%v)(%vget_next_extra_slot(prc," + " u16(%v.%v), 0))^ = ",
 					extra_type,
 					q,
 					qualify_enm(q, classes.enm),
@@ -460,11 +453,7 @@ collect_meta :: proc(ctx: ^%vProc,
 					name,
 				)
 			} else {
-				fmt.fprintf(
-					file,
-					"\treturn %vadd_raw(prc, name, u16(type), ",
-					q,
-				)
+				fmt.fprintf(file, "\treturn %vadd_raw(prc, name, u16(type), ", q)
 			}
 
 			if ty, ok := class.default_type.?; ok {
@@ -496,11 +485,7 @@ collect_meta :: proc(ctx: ^%vProc,
 				os.write_string(file, ", {")
 
 				if class.extra_capacity != 0 {
-					fmt.fprintf(
-						file,
-						"extra_capacity = %v,",
-						class.extra_capacity,
-					)
+					fmt.fprintf(file, "extra_capacity = %v,", class.extra_capacity)
 				}
 
 				if pass_lane {
@@ -601,12 +586,7 @@ IDEAL_CLASSES := [bac.Node_Type]Class_Spec {
 	.Or = SIMPLE_BINOP_CLASS,
 	.Xor = SIMPLE_BINOP_CLASS,
 	.And_Not = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
-	.Neg = {
-		args = {"oprnd"},
-		group = "Un_Op",
-		flags = {.Interned},
-		api = true,
-	},
+	.Neg = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}, api = true},
 	.Not = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
 	.Cast = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
 	.Conv = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
@@ -633,32 +613,17 @@ IDEAL_CLASSES := [bac.Node_Type]Class_Spec {
 	.U_Rem = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
 	.U_Shr = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
 	.Sym = {args = {"entry"}, default_type = .Void},
-	.Mem = {
-		args = {"ctrl"},
-		default_type = .Mem,
-		flags = {.Store},
-		api = true,
-	},
+	.Mem = {args = {"ctrl"}, default_type = .Mem, flags = {.Store}, api = true},
 	.Split_Mem = {args = {"mem"}, default_type = .Mem, flags = {.Store}},
 	.Merge_Mem = {default_type = .Mem, varargs = true, flags = {.Store}},
-	.Local = {
-		id = bac.Local,
-		args = {"mem"},
-		default_type = .Void,
-		api = true,
-	},
+	.Local = {id = bac.Local, args = {"mem"}, default_type = .Void, api = true},
 	.Local_Addr = {
 		args = {"local"},
 		default_type = .I64,
 		flags = {.Clonable},
 		api = true,
 	},
-	.Global = {
-		id = Tup,
-		default_type = .Void,
-		api = true,
-		extra_args = {"idx"},
-	},
+	.Global = {id = Tup, default_type = .Void, api = true, extra_args = {"idx"}},
 	.Global_Addr = {
 		args = {"global"},
 		default_type = .I64,

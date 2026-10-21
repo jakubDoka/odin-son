@@ -234,8 +234,7 @@ acquire_thread_vm :: proc(
 		cpacr_el1 := u64(3 << 20)
 		ARM64_CPACR_EL1 :: 261
 
-		if err = uc_reg_write(engine, ARM64_CPACR_EL1, &cpacr_el1);
-		   err != .OK {
+		if err = uc_reg_write(engine, ARM64_CPACR_EL1, &cpacr_el1); err != .OK {
 			uc_close(engine)
 			return nil, err
 		}
@@ -340,12 +339,8 @@ run_arm64 :: proc(
 	if err = uc_context_restore(engine, thread_vm.initial); err != .OK {
 		return
 	}
-	if err = uc_mem_write(
-		engine,
-		CODE_ADDRESS,
-		raw_data(code),
-		u64(len(code)),
-	); err != .OK {
+	if err = uc_mem_write(engine, CODE_ADDRESS, raw_data(code), u64(len(code)));
+	   err != .OK {
 		return
 	}
 	if err = uc_ctl(

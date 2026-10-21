@@ -110,9 +110,7 @@ main :: proc() {
 	}
 
 	if input == "" {
-		fmt.eprintln(
-			"usage: jit <entry.odin> [-o output.o] [-O:<level>] [-debug]",
-		)
+		fmt.eprintln("usage: jit <entry.odin> [-o output.o] [-O:<level>] [-debug]")
 		os.exit(1)
 	}
 
@@ -237,11 +235,7 @@ log_stats :: proc(ctx: ^bac.Stats) {
 		return strings.concatenate(
 			{
 				vl,
-				strings.repeat(
-					" ",
-					max(width - len(vl), 0),
-					context.temp_allocator,
-				),
+				strings.repeat(" ", max(width - len(vl), 0), context.temp_allocator),
 			},
 			context.temp_allocator,
 		)

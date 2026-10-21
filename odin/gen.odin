@@ -41,11 +41,7 @@ OPT_LEVELS :: [?]Opt_Level {
 	{"moderate-quick", {.Local_Peeps}, .with_scan},
 	{"moderate", {.Local_Peeps}, .with_coloring},
 	{"all", {.Local_Peeps, .Mem_Opt, .Loop_Opt}, .with_coloring},
-	{
-		"aggresive",
-		{.Local_Peeps, .Mem_Opt, .Inline, .Loop_Opt},
-		.with_coloring,
-	},
+	{"aggresive", {.Local_Peeps, .Mem_Opt, .Inline, .Loop_Opt}, .with_coloring},
 }
 
 TARGETS := [?]typecheck.Target {
@@ -141,15 +137,8 @@ x86_reg_class_classify :: proc(
 	ok = true
 	return
 
-	classify :: proc(
-		ty: Type,
-		slots: []X86_Reg_Class,
-		offset: int = 0,
-	) -> bool {
-		mem.is_aligned(
-			rawptr(uintptr(offset)),
-			typecheck.type_align(ty),
-		) or_return
+	classify :: proc(ty: Type, slots: []X86_Reg_Class, offset: int = 0) -> bool {
+		mem.is_aligned(rawptr(uintptr(offset)), typecheck.type_align(ty)) or_return
 
 		@(static, rodata)
 		TYPE_TO_REGLCASS := #partial [Type]X86_Reg_Class {
@@ -369,30 +358,20 @@ emit_lvalue :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Sym {
 		}
 	case .Const:
 		if meta.type == .String {
-			return Value {
-				id = emit_string(ctx, {}, meta.string^),
-				is_lvalue = true,
-			}
+			return Value{id = emit_string(ctx, {}, meta.string^), is_lvalue = true}
 		}
 
-		return Value(
-			bac.add_c_int(ctx, "cnst", type_to_dt(meta.type), idmt.value),
-		)
+		return Value(bac.add_c_int(ctx, "cnst", type_to_dt(meta.type), idmt.value))
 	case .Nil:
 		#partial switch t in unpack_type(meta.type) {
 		case ^typecheck.Slice:
-			return Value {
-				id = alloca(ctx, "nilslc", meta.type),
-				is_lvalue = true,
-			}
+			return Value{id = alloca(ctx, "nilslc", meta.type), is_lvalue = true}
 		case:
 			fmt.panicf("TODO: %v", meta.type)
 		}
 	case .Module:
 	case .Builtin:
-		return Value(
-			bac.add_c_int(ctx, "cnst", type_to_dt(meta.type), idmt.value),
-		)
+		return Value(bac.add_c_int(ctx, "cnst", type_to_dt(meta.type), idmt.value))
 	}
 
 	fmt.panicf(
@@ -482,15 +461,7 @@ alloca :: proc(
 		size := bac.add_c_int(ctx, "size", .I64, i64(size))
 		ctx_set_mem(
 			ctx,
-			bac.add_set(
-				ctx,
-				"zinit",
-				ctx_ctrl(ctx),
-				ctx_mem(ctx),
-				ptr,
-				zero,
-				size,
-			),
+			bac.add_set(ctx, "zinit", ctx_ctrl(ctx), ctx_mem(ctx), ptr, zero, size),
 		)
 	}
 
@@ -1106,8 +1077,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			)
 
 			for r, i in results {
-				if id, iok := d.lhs[i].derived.(^ast.Ident);
-				   iok && id.name == "_" {
+				if id, iok := d.lhs[i].derived.(^ast.Ident); iok && id.name == "_" {
 					continue
 				}
 				vty := prc.rets[i]
@@ -1265,10 +1235,9 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		rhsv := emit_nodes(ctx, {}, d.right)
 		lhs, rhs := to_rvalue(ctx, lhsv, d.left), to_rvalue(ctx, rhsv, d.right)
 		kind, name, lane :=
-			typecheck.tok_to_binop(
-				get_node_type(d.left),
-				d.op.kind,
-			) or_else panic("")
+			typecheck.tok_to_binop(get_node_type(d.left), d.op.kind) or_else panic(
+				"",
+			)
 		res = bac.add_bin_op(ctx, name, kind, dt, lhs, rhs, lane)
 		bac.unpin(ctx, lhsv.id)
 	case ^ast.Unary_Expr:
@@ -1390,11 +1359,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 					size := type_size(vty)
 					bytes := make([]u8, size, ctx.globals.allocator)
 
-					idx := typecheck.add_global(
-						ctx,
-						bytes,
-						typecheck.type_align(vty),
-					)
+					idx := typecheck.add_global(ctx, bytes, typecheck.type_align(vty))
 					g := bac.add_global(ctx, name, idx)
 					ptr := bac.add_global_addr(ctx, name, g)
 					bac.pin(ctx, ptr)
@@ -1424,32 +1389,20 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				if type_to_dt(vty) != .Void {
 					value, cok := typecheck.const_eval_int(d.values[i])
 					if !cok {
-						fmt.panicf(
-							"TODO: non-constant static initializer: %v",
-							name,
-						)
+						fmt.panicf("TODO: non-constant static initializer: %v", name)
 					}
 					val_bytes := transmute([8]u8)value
 					copy(bytes, val_bytes[:size])
 				}
 
-				idx := typecheck.add_global(
-					ctx,
-					bytes,
-					typecheck.type_align(vty),
-				)
+				idx := typecheck.add_global(ctx, bytes, typecheck.type_align(vty))
 				g := bac.add_global(ctx, name, idx)
 				ptr := bac.add_global_addr(ctx, name, g)
 				bac.pin(ctx, ptr)
 
 				add_var(ctx, {name, ptr, vty, d.names[i], flags})
 			} else if .Referenced in flags || type_to_dt(vty) == .Void {
-				ptr := alloca(
-					ctx,
-					name,
-					vty,
-					zeroed = type_to_dt(vty) == .Void,
-				)
+				ptr := alloca(ctx, name, vty, zeroed = type_to_dt(vty) == .Void)
 				bac.pin(ctx, ptr)
 
 				value := emit_nodes(ctx, {dest = ptr}, d.values[i])
@@ -1686,8 +1639,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			for v in clause.list {
 				cv := emit_rvalue(ctx, {}, v)
 				eq := bac.add_bin_op(ctx, "seq", .Eq, .I8, condv, cv)
-				cond =
-					cond == 0 ? eq : bac.add_bin_op(ctx, "sor", .Or, .I8, cond, eq)
+				cond = cond == 0 ? eq : bac.add_bin_op(ctx, "sor", .Or, .I8, cond, eq)
 			}
 
 			arm: ssa.If_State
@@ -1747,10 +1699,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			{
 				base := ctx_scope_base(ctx)
 				bac.pin(ctx, ptr)
-				add_var(
-					ctx,
-					{binding, ptr, case_ty, tag.lhs[0], {.Referenced}},
-				)
+				add_var(ctx, {binding, ptr, case_ty, tag.lhs[0], {.Referenced}})
 				emit_stmts(ctx, clause.body, base)
 				ssa.break_block(ctx, &ctx.node_scope, &sw)
 			}
@@ -1762,13 +1711,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			bac.pin(ctx, ptr)
 			add_var(
 				ctx,
-				{
-					binding,
-					ptr,
-					get_node_type(tag.rhs[0]),
-					tag.lhs[0],
-					{.Referenced},
-				},
+				{binding, ptr, get_node_type(tag.rhs[0]), tag.lhs[0], {.Referenced}},
 			)
 			emit_stmts(ctx, default_clause.body, base)
 		}
@@ -1849,10 +1792,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 
 		v := d.vals[0]
 		bac.pin(ctx, elem_addr)
-		add_var(
-			ctx,
-			{typecheck.src_of(ctx.file^, v), elem_addr, elem_ty, v, {}},
-		)
+		add_var(ctx, {typecheck.src_of(ctx.file^, v), elem_addr, elem_ty, v, {}})
 
 		if 1 < len(d.vals) {
 			iv := d.vals[1]
@@ -1944,11 +1884,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				ctx,
 				"cnst",
 				dt,
-				i64(
-					typecheck.type_align(
-						typecheck.get_node_meta(d.args[0]).typeida,
-					),
-				),
+				i64(typecheck.type_align(typecheck.get_node_meta(d.args[0]).typeida)),
 			)
 			break match
 		}
@@ -2010,11 +1946,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 
 				break match
 			case .trap:
-				trap := bac.add_trap(
-					ctx,
-					"trap",
-					{ctx_ctrl(ctx), ctx_mem(ctx)},
-				)
+				trap := bac.add_trap(ctx, "trap", {ctx_ctrl(ctx), ctx_mem(ctx)})
 				bac.connect(ctx, ctx.end, trap)
 				ssa.delete_scope(ctx, ctx.node_scope)
 				ctx.node_scope = 0
@@ -2029,9 +1961,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 					.V128,
 					a,
 					b,
-					typecheck.simd_lane_of(
-						unpack_type(aty).(^typecheck.Simd).elem,
-					),
+					typecheck.simd_lane_of(unpack_type(aty).(^typecheck.Simd).elem),
 				)
 				break match
 			case .simd_extract_lsbs:
@@ -2043,9 +1973,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 					.Simd_Extract_Lsbs,
 					type_to_dt(get_node_type(node)),
 					a,
-					typecheck.simd_lane_of(
-						unpack_type(aty).(^typecheck.Simd).elem,
-					),
+					typecheck.simd_lane_of(unpack_type(aty).(^typecheck.Simd).elem),
 				)
 
 				break match
@@ -2068,9 +1996,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 					.Simd_Reduce_Add_Bisect,
 					type_to_dt(get_node_type(node)),
 					a,
-					typecheck.simd_lane_of(
-						unpack_type(aty).(^typecheck.Simd).elem,
-					),
+					typecheck.simd_lane_of(unpack_type(aty).(^typecheck.Simd).elem),
 				)
 				break match
 			}
@@ -2101,19 +2027,13 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				// while wide ones used the signed integer-to-float path.
 				op: bac.Un_Op = .Conv
 				if src_dt in bac.FLOAT_DTS {
-					if typecheck.in_set(
-						base_meta.typeida,
-						typecheck.UNSIGNED_TYPES,
-					) {
+					if typecheck.in_set(base_meta.typeida, typecheck.UNSIGNED_TYPES) {
 						op = .U_Conv
 					}
 				} else if !typecheck.in_set(src_ty, typecheck.SIGNED_TYPES) &&
 				   (dest_dt not_in bac.FLOAT_DTS ||
 						   bac.DT_SIZE[src_dt] < 8 ||
-						   typecheck.in_set(
-							   src_ty,
-							   typecheck.UNSIGNED_TYPES,
-						   )) {
+						   typecheck.in_set(src_ty, typecheck.UNSIGNED_TYPES)) {
 					op = .U_Conv
 				}
 				res = bac.add_un_op(ctx, "cnv", op, dest_dt, arg)

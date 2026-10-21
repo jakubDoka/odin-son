@@ -110,10 +110,7 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 
 		for global, j in ctx.globals {
 			if do_zeroed == slice.all_of(global.bytes, 0) {
-				mem_init_size = mem.align_forward_int(
-					mem_init_size,
-					global.align,
-				)
+				mem_init_size = mem.align_forward_int(mem_init_size, global.align)
 				emit_global(&sections[.global], .i64, .const, mem_init_size)
 				mem_init_size += len(global.bytes)
 				global_idxes[j] = section_counts[.global]
@@ -124,10 +121,7 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 
 	memory: {
 		putb(&sections[.memory], Limit_Type.I64_Open)
-		uleb(
-			&sections[.memory],
-			u64((mem_init_size + PAGE_SIZE - 1) / PAGE_SIZE),
-		)
+		uleb(&sections[.memory], u64((mem_init_size + PAGE_SIZE - 1) / PAGE_SIZE))
 		section_counts[.memory] += 1
 	}
 
@@ -162,8 +156,7 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 
 	for prc, i in ctx.procs[1:] {
 		if len(prc.out.code) != 0 {
-			func_idxes[1 + i] =
-				section_counts[.import_] + section_counts[.function]
+			func_idxes[1 + i] = section_counts[.import_] + section_counts[.function]
 			section_counts[.function] += 1
 		}
 	}

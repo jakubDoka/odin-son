@@ -47,9 +47,7 @@ main :: proc() {
 				"Reg_Kind :: bac.Reg_Kind\n" +
 				"Class_Flag :: bac.Class_Flag\n",
 				qual = "bac.",
-				classes = {
-					meta.class_array(&meta.IDEAL_CLASSES, gen_ctors = false),
-				},
+				classes = {meta.class_array(&meta.IDEAL_CLASSES, gen_ctors = false)},
 			},
 			"bac/anal/node_specs.odin",
 		)
@@ -173,11 +171,7 @@ main :: proc() {
 				extra_args = {"aux"},
 				pass_lane = true,
 			},
-			.Zip1 = {
-				default_type = .V128,
-				args = {"lsh", "rhs"},
-				pass_lane = true,
-			},
+			.Zip1 = {default_type = .V128, args = {"lsh", "rhs"}, pass_lane = true},
 			.Addv128 = {args = {"vec"}, pass_lane = true},
 			.Umov = {id = arm.Arm_Op, args = {"vec"}, extra_args = {"aux"}},
 			.Lslv ..= .Lsrv = {no_ctor = true},

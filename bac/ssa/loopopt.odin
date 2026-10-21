@@ -174,10 +174,7 @@ loopopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 			node: Node_ID,
 			ltree: ^bac.Loop_Tree,
 		) -> ^bac.Basic_Block {
-			append(
-				&ctx.sched.bbs,
-				bac.Basic_Block{head = node, loop_tree = ltree},
-			)
+			append(&ctx.sched.bbs, bac.Basic_Block{head = node, loop_tree = ltree})
 			join_bb := &ctx.sched.bbs[len(ctx.sched.bbs) - 1]
 			ctx.node_blocks[get_node(ctx, node).gvn] = join_bb
 			return join_bb
@@ -434,11 +431,7 @@ loopopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 					if stride_node != 0 && (!stride_is_pow2 || stride > 8) {
 						append(
 							&indexings,
-							Indexing {
-								base,
-								stride_node,
-								bac.get_node_id(ctx, conode),
-							},
+							Indexing{base, stride_node, bac.get_node_id(ctx, conode)},
 						)
 					}
 				}
@@ -465,14 +458,7 @@ loopopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 				) -> Node_ID {
 					index := idx
 
-					index = bac.add_bin_op(
-						ctx,
-						"snoff",
-						.Mul,
-						.I64,
-						index,
-						stride,
-					)
+					index = bac.add_bin_op(ctx, "snoff", .Mul, .I64, index, stride)
 					index = bac.apply_peep(ctx, index)
 
 					return bac.add_bin_op(ctx, "snd", .Add, .I64, base, index)
@@ -486,14 +472,7 @@ loopopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 				)
 
 				nphy := add_lazy_phi(ctx, "srdph", phy.dt, bb.head, init)
-				next := bac.add_bin_op(
-					ctx,
-					"srdnt",
-					.Add,
-					phy.dt,
-					nphy,
-					idx.stride,
-				)
+				next := bac.add_bin_op(ctx, "srdnt", .Add, phy.dt, nphy, idx.stride)
 				bac.connect(ctx, nphy, next)
 				get_node(ctx, nphy).itype = .Phi
 				nphy = bac.intern(ctx, nphy)
@@ -541,8 +520,7 @@ loopopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 				   ind.bound != 0 {
 
 					can_memset :=
-						!slice.contains(bb.instrs[:], snode.inps[3]) &&
-						stride == 1
+						!slice.contains(bb.instrs[:], snode.inps[3]) && stride == 1
 
 					lidx, lok := slice.linear_search(
 						loads.node[:len(loads)],
@@ -562,22 +540,10 @@ loopopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 							"lnscl",
 							.Mul,
 							.I64,
-							bac.add_bin_op(
-								ctx,
-								"ln",
-								.Sub,
-								.I64,
-								ind.bound,
-								phy.inps[1],
-							),
+							bac.add_bin_op(ctx, "ln", .Sub, .I64, ind.bound, phy.inps[1]),
 							bac.add_c_int(ctx, "scl", .I64, store.stride),
 						)
-						dst = compute_index_offset(
-							ctx,
-							store.base,
-							phy.inps[1],
-							stride,
-						)
+						dst = compute_index_offset(ctx, store.base, phy.inps[1], stride)
 					}
 
 					if can_memset {
@@ -599,12 +565,7 @@ loopopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 							head.inps[0],
 							mem.inps[1],
 							dst,
-							compute_index_offset(
-								ctx,
-								loads[lidx].base,
-								phy.inps[1],
-								stride,
-							),
+							compute_index_offset(ctx, loads[lidx].base, phy.inps[1], stride),
 							size,
 						)
 					}
@@ -656,10 +617,7 @@ loopopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 							break
 						}
 
-						idx := slice.linear_search(
-							bb.instrs[:],
-							out.id,
-						) or_continue
+						idx := slice.linear_search(bb.instrs[:], out.id) or_continue
 
 						if bit_arr.contains(req_sched, idx) {
 							ok := bit_arr.set(req_sched, i)

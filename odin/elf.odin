@@ -116,10 +116,7 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 		}) {
 		append(
 			&locals,
-			Elf64_Sym {
-				st_info = {bind = .Local, type = .Section},
-				st_shndx = shndx,
-			},
+			Elf64_Sym{st_info = {bind = .Local, type = .Section}, st_shndx = shndx},
 		)
 	}
 	next_local += 5
@@ -194,9 +191,7 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 			addend: i64
 			if rel.kind == .Global && rel.id >= bac.RELOC_BIG_CONSTANT_BASE {
 				sym = sec_rodata_sym
-				addend = i64(
-					const_off[i] + int(rel.id - bac.RELOC_BIG_CONSTANT_BASE),
-				)
+				addend = i64(const_off[i] + int(rel.id - bac.RELOC_BIG_CONSTANT_BASE))
 			} else {
 				switch rel.kind {
 				case .Text:
@@ -419,11 +414,7 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 		}
 		append(&dbg_line, 0, 1, u8(Dw_Lne.End_Sequence))
 	}
-	patch_u32(
-		&dbg_line,
-		line_unit_len_pos,
-		u32(len(dbg_line) - line_prog_base),
-	)
+	patch_u32(&dbg_line, line_unit_len_pos, u32(len(dbg_line) - line_prog_base))
 
 	// -- .debug_info : one compile unit -----------------------------------
 	cu_name := ctx.files[0].fullpath if len(ctx.files) > 0 else ""
@@ -489,8 +480,7 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 		}
 	}
 	for i := 0; i < len(dbg_types); i += 1 {
-		if t, ok := typecheck.unpack_type(dbg_types[i]).(^typecheck.Struct);
-		   ok {
+		if t, ok := typecheck.unpack_type(dbg_types[i]).(^typecheck.Struct); ok {
 			for field in t.fields {
 				if !slice.contains(dbg_types[:], field.ty) {
 					append(&dbg_types, field.ty)
@@ -517,10 +507,7 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 				uleb(&dbg_info, 6)
 				append(&dbg_info, field.name)
 				append(&dbg_info, 0)
-				append(
-					&dbg_type_rels,
-					{offset = len(dbg_info), type = field.ty},
-				)
+				append(&dbg_type_rels, {offset = len(dbg_info), type = field.ty})
 				put_u32(&dbg_info, 0)
 				uleb(&dbg_info, u64(field.offset))
 			}
@@ -544,19 +531,13 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 				     ^typecheck.Proc_Type:
 					encoding = .Address
 				case ^typecheck.Enum:
-					if typecheck.in_set(
-						inner.backing,
-						typecheck.UNSIGNED_TYPES,
-					) {
+					if typecheck.in_set(inner.backing, typecheck.UNSIGNED_TYPES) {
 						encoding = .Unsigned
 					}
 				case ^typecheck.Simd:
 					if typecheck.in_set(inner.elem, typecheck.FLOAT_TYPES) {
 						encoding = .Float
-					} else if typecheck.in_set(
-						inner.elem,
-						typecheck.UNSIGNED_TYPES,
-					) {
+					} else if typecheck.in_set(inner.elem, typecheck.UNSIGNED_TYPES) {
 						encoding = .Unsigned
 					}
 				}
@@ -596,8 +577,7 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 
 			ranges: [dynamic]bac.Dbg_Location
 			for candidate in prc.out.dbg_locs {
-				if candidate.symbol == loc.symbol &&
-				   candidate.start < candidate.end {
+				if candidate.symbol == loc.symbol && candidate.start < candidate.end {
 					append(&ranges, candidate)
 				}
 			}
@@ -766,10 +746,7 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 					delta := (op.offset - cur) / spec.code_align
 					switch {
 					case delta < 64:
-						putb(
-							&eh_frame,
-							Dw_Cfa_Op{op = .Advance_Loc, arg = u8(delta)},
-						)
+						putb(&eh_frame, Dw_Cfa_Op{op = .Advance_Loc, arg = u8(delta)})
 					case delta < 0x100:
 						append(&eh_frame, u8(Dw_Cfa.Advance_Loc1), u8(delta))
 					case delta < 0x10000:

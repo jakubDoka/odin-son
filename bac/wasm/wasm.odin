@@ -128,8 +128,7 @@ peep :: proc(
 			break
 		}
 
-		signed :=
-			kind in bit_set[Node_Type]{.Le, .Lt, .Gt, .Ge, .Div, .Rem, .Shr}
+		signed := kind in bit_set[Node_Type]{.Le, .Lt, .Gt, .Ge, .Div, .Rem, .Shr}
 		ext: bac.Un_Op = signed ? .Conv : .U_Conv
 		inps: [2]bac.Node_ID
 		for inp, i in node.inps {
@@ -145,13 +144,7 @@ peep :: proc(
 
 		comparison := .Eq <= kind && kind <= .U_Ge
 		dt := comparison ? node.dt : bac.Node_Datatype.I32
-		wide := bac.add_raw(
-			ctx,
-			"iwide",
-			node.rtype,
-			dt,
-			inps[:len(node.inps)],
-		)
+		wide := bac.add_raw(ctx, "iwide", node.rtype, dt, inps[:len(node.inps)])
 		bac.worklist_add(ctx, ctx.worklist, wide)
 		if comparison do return wide
 
@@ -243,9 +236,7 @@ peep :: proc(
 		}
 
 		if wtype(inp) == .Load && len(inp.outs) == 1 {
-			(^Mem_Op)(
-				bac.get_next_extra_slot(ctx, u16(Node_Type.WASM_Load), 0),
-			)^ = {
+			(^Mem_Op)(bac.get_next_extra_slot(ctx, u16(Node_Type.WASM_Load), 0))^ = {
 				source = inp.dt,
 				signed = signed,
 			}
@@ -404,9 +395,7 @@ meta_of :: #force_inline proc(
 		}
 	}
 
-	dup :: #force_inline proc(
-		msks: []bac.RM_Intern_Idx,
-	) -> []bac.RM_Intern_Idx {
+	dup :: #force_inline proc(msks: []bac.RM_Intern_Idx) -> []bac.RM_Intern_Idx {
 		return slice.clone(msks)
 	}
 
@@ -514,10 +503,7 @@ pre_regalloc_hook :: proc(
 				cint := bac.get_extra(ctx, innode, bac.CInt)
 				if cint != nil && innode.dt <= .I64 {
 					bufa: [1]u8
-					_, error := varint.encode_ileb128(
-						bufa[:],
-						i128(cint.value),
-					)
+					_, error := varint.encode_ileb128(bufa[:], i128(cint.value))
 					is_clonable = error == nil
 				}
 
@@ -561,8 +547,7 @@ pre_regalloc_hook :: proc(
 				return bac.add_raw(ctx, "rdrp", u16(Node_Type.Drop), .Void, {})
 			}
 
-			real_ret_count :=
-				bac.get_extra(ctx, hnode.inps[0], bac.Call).ret_count
+			real_ret_count := bac.get_extra(ctx, hnode.inps[0], bac.Call).ret_count
 
 			// NOTE: we need to insert drops ofr the rets that are dead
 			laxt_idx := real_ret_count
@@ -794,23 +779,11 @@ pre_regalloc_hook :: proc(
 
 				dep := get_or_add_set(ctx, dnode)
 
-				get := bac.add_raw(
-					ctx,
-					"uget",
-					u16(Node_Type.Get_Local),
-					.Void,
-					{dep},
-				)
+				get := bac.add_raw(ctx, "uget", u16(Node_Type.Get_Local), .Void, {dep})
 
 				if dnode.itype in NO_SET_KINDS {
 					// TODO: reuse these
-					stub := bac.add_raw(
-						ctx,
-						"stub",
-						u16(Node_Type.Stub),
-						dnode.dt,
-						{},
-					)
+					stub := bac.add_raw(ctx, "stub", u16(Node_Type.Stub), dnode.dt, {})
 
 					inject_at(ctx.instrs, ctx.cursor, stub)
 
@@ -949,12 +922,7 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 				pred_blk := int(get_node(ctx, pred.inps[0]).gvn)
 				append(
 					blocks,
-					Block {
-						loop_too = true,
-						start = i,
-						origin = pred_blk,
-						end = pred_blk,
-					},
+					Block{loop_too = true, start = i, origin = pred_blk, end = pred_blk},
 				)
 			}
 
@@ -965,8 +933,7 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 				   nnode.itype != .End {
 					start := i
 
-					for ; get_node(ctx, ctx.schedule.bbs[start].head).itype ==
-					    .Call_End;
+					for ; get_node(ctx, ctx.schedule.bbs[start].head).itype == .Call_End;
 					    start -= 1 {
 					}
 
@@ -999,8 +966,7 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 			best_start := len(ctx.schedule.bbs)
 			best := 0
 			loop := 0
-			for ; cursor < len(blocks) && blocks[cursor].end == i;
-			    cursor += 1 {
+			for ; cursor < len(blocks) && blocks[cursor].end == i; cursor += 1 {
 				if blocks[cursor].loop_too {
 					loop = cursor
 					continue
@@ -1029,9 +995,7 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 						append(&ctx.block_stack, b)
 					}
 
-					for wcursor := b;
-					    wcursor != 0;
-					    wcursor = blocks[wcursor].worse {
+					for wcursor := b; wcursor != 0; wcursor = blocks[wcursor].worse {
 
 						fmt.assertf(
 							blocks[wcursor].start >= blocks[b].start,
@@ -1117,12 +1081,9 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 				a_block := ctx.blocks[a]
 				b_block := ctx.blocks[b]
 				fmt.assertf(
-					(a_block.start >= b_block.end ||
-						b_block.start >= a_block.end) ||
-					(a_block.start >= b_block.start &&
-							b_block.end >= a_block.end) ||
-					(a_block.start <= b_block.start &&
-							b_block.end <= a_block.end),
+					(a_block.start >= b_block.end || b_block.start >= a_block.end) ||
+					(a_block.start >= b_block.start && b_block.end >= a_block.end) ||
+					(a_block.start <= b_block.start && b_block.end <= a_block.end),
 					"%v %v",
 					a_block,
 					b_block,
@@ -1150,9 +1111,7 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 
 		for ; cursor >= 0 && ctx.blocks[ctx.final_order[cursor]].start == i;
 		    cursor -= 1 {
-			ctx.blocks[ctx.final_order[cursor]].stack_pos = len(
-				ctx.block_stack,
-			)
+			ctx.blocks[ctx.final_order[cursor]].stack_pos = len(ctx.block_stack)
 			append(&ctx.block_stack, ctx.final_order[cursor])
 			if ctx.blocks[ctx.final_order[cursor]].loop_too {
 				emit_op(ctx.code, .Loop)
@@ -1289,10 +1248,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 					emit_leb(ctx.code, int_dt == .I8 ? 0xff : 0xffff)
 					emit_op(ctx.code, .I32_And)
 				} else {
-					emit_op(
-						ctx.code,
-						int_dt == .I8 ? .I32_Extend8_S : .I32_Extend16_S,
-					)
+					emit_op(ctx.code, int_dt == .I8 ? .I32_Extend8_S : .I32_Extend16_S)
 				}
 			case .I32:
 			case .Void, .Mem, .I64 ..= .V512:
@@ -1300,10 +1256,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 			}
 
 			if node.dt == .I64 {
-				emit_op(
-					ctx.code,
-					unsigned ? .I64_Extend_I32_U : .I64_Extend_I32_S,
-				)
+				emit_op(ctx.code, unsigned ? .I64_Extend_I32_U : .I64_Extend_I32_S)
 			}
 			break
 		}
@@ -1413,36 +1366,28 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 		} else {
 			if mem_op.signed {
 				@(static, rodata)
-				OP_TABLE :=
-					#partial [bac.Node_Datatype][bac.Node_Datatype]Opcode {
-						.I64 = #partial{
-							.I8 = .I64_Load8_S,
-							.I16 = .I64_Load16_S,
-							.I32 = .I64_Load32_S,
-						},
-						.I32 = #partial{
-							.I8 = .I32_Load8_S,
-							.I16 = .I32_Load16_S,
-						},
-						.I16 = #partial{.I8 = .I32_Load8_S},
-					}
+				OP_TABLE := #partial [bac.Node_Datatype][bac.Node_Datatype]Opcode {
+					.I64 = #partial{
+						.I8 = .I64_Load8_S,
+						.I16 = .I64_Load16_S,
+						.I32 = .I64_Load32_S,
+					},
+					.I32 = #partial{.I8 = .I32_Load8_S, .I16 = .I32_Load16_S},
+					.I16 = #partial{.I8 = .I32_Load8_S},
+				}
 
 				op = OP_TABLE[node.dt][mem_op.source]
 			} else if mem_op.source != node.dt {
 				@(static, rodata)
-				OP_TABLE :=
-					#partial [bac.Node_Datatype][bac.Node_Datatype]Opcode {
-						.I64 = #partial{
-							.I8 = .I64_Load8_U,
-							.I16 = .I64_Load16_U,
-							.I32 = .I64_Load32_U,
-						},
-						.I32 = #partial{
-							.I8 = .I32_Load8_U,
-							.I16 = .I32_Load16_U,
-						},
-						.I16 = #partial{.I8 = .I32_Load8_U},
-					}
+				OP_TABLE := #partial [bac.Node_Datatype][bac.Node_Datatype]Opcode {
+					.I64 = #partial{
+						.I8 = .I64_Load8_U,
+						.I16 = .I64_Load16_U,
+						.I32 = .I64_Load32_U,
+					},
+					.I32 = #partial{.I8 = .I32_Load8_U, .I16 = .I32_Load16_U},
+					.I16 = #partial{.I8 = .I32_Load8_U},
+				}
 
 				op = OP_TABLE[node.dt][mem_op.source]
 			}
@@ -1465,11 +1410,11 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 			emit_op(ctx.code, .I32_Wrap_I64)
 			emit_op(ctx.code, .Call_Indirect)
 			bac.add_reloc(ctx.relocs)^ = {
-					offset = u32(ctx.code.pos - ctx.code_start),
-					kind   = .Text,
-					size   = .r32,
-					id     = u32(ctx.constants.pos - ctx.constants_start),
-				}
+				offset = u32(ctx.code.pos - ctx.code_start),
+				kind   = .Text,
+				size   = .r32,
+				id     = u32(ctx.constants.pos - ctx.constants_start),
+			}
 			emit(ctx.code, {0, 0, 0, 0})
 			emit_leb(ctx.code, u64(0)) // table idx
 
@@ -1481,8 +1426,8 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 
 			for inp, i in node.inps[bac.CALL_PREFIX + 1:real_len] {
 				params[i] = {
-						dt = get_node(ctx, inp).dt,
-					}
+					dt = get_node(ctx, inp).dt,
+				}
 			}
 
 			rets := call.rets[:call.ret_count]
@@ -1498,11 +1443,11 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 		} else {
 			emit_op(ctx.code, .Call)
 			bac.add_reloc(ctx.relocs)^ = {
-					offset = u32(ctx.code.pos - ctx.code_start),
-					kind   = .Text,
-					size   = .r32,
-					id     = call.cid,
-				}
+				offset = u32(ctx.code.pos - ctx.code_start),
+				kind   = .Text,
+				size   = .r32,
+				id     = call.cid,
+			}
 			emit(ctx.code, {0, 0, 0, 0})
 		}
 	case .Extract_Lane_U:
@@ -1516,11 +1461,11 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 
 		emit_op(ctx.code, .I64_Const)
 		bac.add_reloc(ctx.relocs)^ = {
-				offset = u32(ctx.code.pos - ctx.code_start),
-				kind   = .Text,
-				size   = .r32,
-				id     = id,
-			}
+			offset = u32(ctx.code.pos - ctx.code_start),
+			kind   = .Text,
+			size   = .r32,
+			id     = id,
+		}
 		emit(ctx.code, {0, 0, 0, 0})
 	case .Return:
 		epilog: if ctx.stack_size != 0 {

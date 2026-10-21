@@ -98,12 +98,7 @@ load_backend_packages :: proc(
 			for tag in tags {
 				if strings.starts_with(tag, "priority=") {
 					priority, ok = strconv.parse_int(tag[len("priority="):])
-					fmt.assertf(
-						ok,
-						"priority should be a number: %v %v",
-						tag,
-						decl.pos,
-					)
+					fmt.assertf(ok, "priority should be a number: %v %v", tag, decl.pos)
 				}
 			}
 

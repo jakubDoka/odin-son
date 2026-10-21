@@ -507,10 +507,7 @@ init_type_fmt :: proc() {
 					fmt.wprintf(fi.writer, ":%v..=%v", value.min, value.max)
 				}
 			case .Float:
-				fmt.wprint(
-					fi.writer,
-					".cant_be_nan" if value.is_not_nan else "",
-				)
+				fmt.wprint(fi.writer, ".cant_be_nan" if value.is_not_nan else "")
 			case .Ctlr:
 				fmt.wprint(fi.writer, ".dead" if value.dead else "")
 			case .Mem:
@@ -599,12 +596,7 @@ pack_type :: proc(typ: Type_Data) -> Type {
 
 unpack_type :: proc(typ: Type) -> Type_Data {
 	raw := Raw_Type(typ)
-	return(
-		transmute(Type_Data)Raw_Type_Data {
-			data = raw.data,
-			tag = int(raw.tag),
-		} \
-	)
+	return transmute(Type_Data)Raw_Type_Data{data = raw.data, tag = int(raw.tag)}
 }
 
 intern_type_slice :: proc(ctx: ^Gen_Ctx, tys: []Type) -> []Type {
@@ -711,21 +703,14 @@ instantiate_struct :: proc(
 		)
 	}
 
-	structa.fields = make(
-		[]Struct_Field,
-		len(base.fields),
-		ctx.types.allocator,
-	)
+	structa.fields = make([]Struct_Field, len(base.fields), ctx.types.allocator)
 
 	for &field, i in structa.fields {
 		field = base.fields[i]
 		field.ty = emit_type(ctx, ast.clone(field.ty_ast))
 
 		// TODO: extract this to a layout computation
-		field.offset = mem.align_forward_int(
-			structa.size,
-			type_align(field.ty),
-		)
+		field.offset = mem.align_forward_int(structa.size, type_align(field.ty))
 		structa.size = field.offset + type_size(field.ty)
 		structa.align = max(structa.align, type_align(field.ty))
 	}
@@ -867,11 +852,7 @@ typecheck_decl :: proc(
 			ctx,
 			{
 				inferred_ty = ty,
-				key = Decl_Key {
-					decl.name,
-					decl.file,
-					u32(decl.value.pos.offset),
-				},
+				key = Decl_Key{decl.name, decl.file, u32(decl.value.pos.offset)},
 			},
 			decl.value,
 		)
@@ -883,11 +864,7 @@ typecheck_decl :: proc(
 			ctx,
 			{
 				inferred_ty = ty,
-				key = Decl_Key {
-					decl.name,
-					decl.file,
-					u32(decl.value.pos.offset),
-				},
+				key = Decl_Key{decl.name, decl.file, u32(decl.value.pos.offset)},
 			},
 			decl.value,
 		)
@@ -984,21 +961,11 @@ extract_polys :: proc(
 	case ^ast.Pointer_Type:
 		if croot.type != .Typeid do return false
 		ptr := unpack_type(croot.typeida).(Pointer) or_return
-		return extract_polys(
-			ctx,
-			slots,
-			{type = .Typeid, typeida = ptr^},
-			d.elem,
-		)
+		return extract_polys(ctx, slots, {type = .Typeid, typeida = ptr^}, d.elem)
 	case ^ast.Multi_Pointer_Type:
 		if croot.type != .Typeid do return false
 		ptr := unpack_type(croot.typeida).(Multi_Pointer) or_return
-		return extract_polys(
-			ctx,
-			slots,
-			{type = .Typeid, typeida = ptr^},
-			d.elem,
-		)
+		return extract_polys(ctx, slots, {type = .Typeid, typeida = ptr^}, d.elem)
 	case ^ast.Call_Expr:
 		if croot.type != .Typeid do return false
 		stru := unpack_type(croot.typeida).(^Struct) or_return
@@ -1171,13 +1138,7 @@ expect_args :: proc(
 	ok: bool,
 ) {
 	if len(args) != count {
-		ty^ = error(
-			ctx,
-			node,
-			"expected %v arguments, found %v",
-			count,
-			len(args),
-		)
+		ty^ = error(ctx, node, "expected %v arguments, found %v", count, len(args))
 		return nil, false
 	}
 	return args, true
@@ -1195,12 +1156,7 @@ destructured_sig :: proc(
 ) {
 	ok: bool
 	if sig, ok = call_sig(ctx, node); !ok {
-		return nil, error(
-			ctx,
-			node,
-			"expected a call returning %v values",
-			count,
-		)
+		return nil, error(ctx, node, "expected a call returning %v values", count)
 	}
 	if len(sig.rets) != count {
 		return nil, error(
@@ -1498,11 +1454,7 @@ typecheck :: proc(
 	STACK_LIMIT :: 1024 * 1024 - 1024 * 16
 
 	if ctx.stack_top - get_stack_pointer() > STACK_LIMIT {
-		return error(
-			ctx,
-			node,
-			"reached the stack limit when typechecking this",
-		)
+		return error(ctx, node, "reached the stack limit when typechecking this")
 	}
 
 	for p in ctx.procs[1:] {
@@ -1549,11 +1501,7 @@ typecheck :: proc(
 					break match
 				}
 				if len(fld.names) != 1 {
-					ty = error(
-						ctx,
-						param,
-						"TODO: support multiple identifiers",
-					)
+					ty = error(ctx, param, "TODO: support multiple identifiers")
 					break match
 				}
 				pd, is_poly := fld.names[0].derived.(^ast.Poly_Type)
@@ -1948,12 +1896,7 @@ typecheck :: proc(
 				break match
 			}
 
-			ty = expect(
-				ctx,
-				node,
-				tcmeta(ctx, .String, {string = &d.tok.text}),
-				tp,
-			)
+			ty = expect(ctx, node, tcmeta(ctx, .String, {string = &d.tok.text}), tp)
 		case:
 			ty = error(ctx, node, "TODO: %v literals", d.tok.kind)
 		}
@@ -1975,13 +1918,7 @@ typecheck :: proc(
 						typecheck_as(ctx, field.ty, e.value)
 					}
 					if !found {
-						error(
-							ctx,
-							e.field,
-							"%v has no field %q",
-							inferred_ty,
-							name,
-						)
+						error(ctx, e.field, "%v has no field %q", inferred_ty, name)
 					}
 				case:
 					if i >= len(t.fields) {
@@ -2179,13 +2116,7 @@ typecheck :: proc(
 		) or_break match
 		target := emit_type(ctx, d.type)
 		if _, found := union_variant_index(u, target); !found {
-			ty = error(
-				ctx,
-				d.type,
-				"%v is not a variant of %v",
-				target,
-				base.type,
-			)
+			ty = error(ctx, d.type, "%v is not a variant of %v", target, base.type)
 			break match
 		}
 		ty = tmeta(ctx, target)
@@ -2254,12 +2185,7 @@ typecheck :: proc(
 			is_unsigned := lhs_ty.type in UNSIGNED_TYPES
 
 			if !is_float && !is_signed && !is_unsigned {
-				ty = error(
-					ctx,
-					node,
-					"operation not supported for %v",
-					lhs_ty.type,
-				)
+				ty = error(ctx, node, "operation not supported for %v", lhs_ty.type)
 				break match
 			}
 
@@ -2295,12 +2221,7 @@ typecheck :: proc(
 					lhs_ty.int -= rhs_ty.int
 				}
 			case:
-				ty = error(
-					ctx,
-					node,
-					"TODO: constant folding of %v",
-					d.op.text,
-				)
+				ty = error(ctx, node, "TODO: constant folding of %v", d.op.text)
 				break match
 			}
 		} else {
@@ -2345,11 +2266,7 @@ typecheck :: proc(
 		case .Xor:
 			vl := typecheck(ctx, prop, d.expr)
 			if !in_set(vl.type, INTEGER_TYPES) {
-				ty = error(
-					ctx,
-					node,
-					"only integers support this, TODO: vectors",
-				)
+				ty = error(ctx, node, "only integers support this, TODO: vectors")
 				break match
 			}
 			if vl.known {
@@ -2361,11 +2278,7 @@ typecheck :: proc(
 			vl := typecheck(ctx, prop, d.expr)
 			is_float := in_set(vl.type, FLOAT_TYPES)
 			if !in_set(vl.type, NUMBER_TYPES) {
-				ty = error(
-					ctx,
-					node,
-					"only numbers support this, TODO: vectors",
-				)
+				ty = error(ctx, node, "only numbers support this, TODO: vectors")
 				break match
 			}
 			if vl.known {
@@ -2585,8 +2498,7 @@ typecheck :: proc(
 		if loop == nil {
 			error(ctx, node, "no matchin loop for the control")
 		} else {
-			if d.tok.kind == .Break &&
-			   (ctx.reachable == nil || ctx.reachable^) {
+			if d.tok.kind == .Break && (ctx.reachable == nil || ctx.reachable^) {
 				loop.broken = true
 			}
 			mark_unreachable(ctx)
@@ -2663,12 +2575,7 @@ typecheck :: proc(
 		if decl, ok := find_module_decl(ctx, ctx.module, d.name); ok {
 			meta.kind = .Decl
 			meta.decl = decl
-			res := integrate_inferrence(
-				ctx,
-				ctx.module,
-				decl,
-				prop.inferred_ty,
-			)
+			res := integrate_inferrence(ctx, ctx.module, decl, prop.inferred_ty)
 			if !decl.is_mutable {
 				meta.kind = .Const
 				meta.value = res.int
@@ -2691,14 +2598,8 @@ typecheck :: proc(
 				ty = error(ctx, node, "can not infer the type of nil")
 				break match
 			}
-			if !is_of(prop.inferred_ty, ^Union) &&
-			   !is_of(prop.inferred_ty, ^Slice) {
-				ty = error(
-					ctx,
-					d,
-					"TODO: suport materializing %v",
-					prop.inferred_ty,
-				)
+			if !is_of(prop.inferred_ty, ^Union) && !is_of(prop.inferred_ty, ^Slice) {
+				ty = error(ctx, d, "TODO: suport materializing %v", prop.inferred_ty)
 				break match
 			}
 			meta.kind = .Nil
@@ -2727,12 +2628,7 @@ typecheck :: proc(
 				ty = tmeta(ctx, .Int)
 				break match
 			}
-			ty = error(
-				ctx,
-				args[0],
-				"can not take the len of a %v",
-				arg_ty.type,
-			)
+			ty = error(ctx, args[0], "can not take the len of a %v", arg_ty.type)
 			break match
 		case .raw_data:
 			args := expect_args(ctx, node, d.args, 1, &ty) or_break match
@@ -2823,12 +2719,7 @@ typecheck :: proc(
 				args := expect_args(ctx, node, d.args, 1, &ty) or_break match
 				a := typecheck(ctx, {inferred_ty = prop.inferred_ty}, args[0])
 				if !in_set(a.type, INTEGER_TYPES) {
-					ty = error(
-						ctx,
-						args[0],
-						"expected an integer, found %v",
-						a.type,
-					)
+					ty = error(ctx, args[0], "expected an integer, found %v", a.type)
 					break match
 				}
 				ty = tmeta(ctx, a.type)
@@ -2876,11 +2767,7 @@ typecheck :: proc(
 				break match
 			case:
 				expect_args(ctx, d, d.args, 1, &ty) or_break match
-				src := typecheck(
-					ctx,
-					{inferred_ty = callee.typeida},
-					d.args[0],
-				)
+				src := typecheck(ctx, {inferred_ty = callee.typeida}, d.args[0])
 
 				valid_conv_type :: proc(type: Type) -> bool {
 					return(
@@ -2960,24 +2847,12 @@ typecheck :: proc(
 					}
 
 					res: ^Check_Meta
-					if poly, ok := param_ast.names[0].derived.(^ast.Poly_Type);
-					   ok {
-						res = typecheck_eval(
-							ctx,
-							{inferred_ty = inferred_ty},
-							d.args[i],
-						)
+					if poly, ok := param_ast.names[0].derived.(^ast.Poly_Type); ok {
+						res = typecheck_eval(ctx, {inferred_ty = inferred_ty}, d.args[i])
 
-						append(
-							&ctx.poly_types,
-							Poly_Entry{poly.type.name, res^},
-						)
+						append(&ctx.poly_types, Poly_Entry{poly.type.name, res^})
 					} else {
-						res = typecheck(
-							ctx,
-							{inferred_ty = inferred_ty},
-							d.args[i],
-						)
+						res = typecheck(ctx, {inferred_ty = inferred_ty}, d.args[i])
 					}
 
 					if !extract_polys(
@@ -3358,11 +3233,7 @@ typecheck_program :: proc(ctx: ^Gen_Ctx) {
 			if decl.id.value.derived != &nil_node {
 				value, cok := const_eval_int(decl.id.value)
 				if !cok {
-					error(
-						ctx,
-						decl.id.value,
-						"TODO: non constant global initializer",
-					)
+					error(ctx, decl.id.value, "TODO: non constant global initializer")
 					continue
 				}
 				val_bytes := transmute([8]u8)value

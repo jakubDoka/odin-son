@@ -52,12 +52,10 @@ fold_bin_op_lattice :: proc(
 				(lhs.is_not_pinf || rhs.is_not_pinf)
 		case .Mul:
 			res.is_not_nan =
-				(lhs_finite || rhs.is_not_zero) &&
-				(rhs_finite || lhs.is_not_zero)
+				(lhs_finite || rhs.is_not_zero) && (rhs_finite || lhs.is_not_zero)
 		case .Div:
 			res.is_not_nan =
-				(lhs.is_not_zero || rhs.is_not_zero) &&
-				(lhs_finite || rhs_finite)
+				(lhs.is_not_zero || rhs.is_not_zero) && (lhs_finite || rhs_finite)
 		}
 		// Finite operands can still overflow to infinity or underflow to zero.
 		return
@@ -159,12 +157,7 @@ fold_bin_op_lattice :: proc(
 			}
 		}
 	case .Div:
-		quotients := [4]i64 {
-			amin / bmin,
-			amin / bmax,
-			amax / bmin,
-			amax / bmax,
-		}
+		quotients := [4]i64{amin / bmin, amin / bmax, amax / bmin, amax / bmax}
 		lo, hi = quotients[0], quotients[0]
 		for v in quotients[1:] do lo, hi = min(lo, v), max(hi, v)
 	case .Rem:
@@ -197,21 +190,11 @@ fold_bin_op_lattice :: proc(
 		smin, smax := u64(b.min), min(u64(b.max), bits - 1)
 		if op == .Shl {
 			if amin < full.min >> smax || amax > full.max >> smax do return
-			values := [4]i64 {
-				amin << smin,
-				amin << smax,
-				amax << smin,
-				amax << smax,
-			}
+			values := [4]i64{amin << smin, amin << smax, amax << smin, amax << smax}
 			lo, hi = values[0], values[0]
 			for v in values[1:] do lo, hi = min(lo, v), max(hi, v)
 		} else {
-			values := [4]i64 {
-				amin >> smin,
-				amin >> smax,
-				amax >> smin,
-				amax >> smax,
-			}
+			values := [4]i64{amin >> smin, amin >> smax, amax >> smin, amax >> smax}
 			lo, hi = values[0], values[0]
 			for v in values[1:] do lo, hi = min(lo, v), max(hi, v)
 		}
@@ -317,16 +300,9 @@ sccp_compute :: proc(
 		   node.inps[0] == node.inps[1] &&
 		   op >= .Eq &&
 		   op <= .U_Ge {
-			if op_ty in bac.INT_DTS ||
-			   lhs.is_not_nan ||
-			   op == .Lt ||
-			   op == .Gt {
+			if op_ty in bac.INT_DTS || lhs.is_not_nan || op == .Lt || op == .Gt {
 				value := i64(
-					op == .Eq ||
-					op == .Le ||
-					op == .Ge ||
-					op == .U_Le ||
-					op == .U_Ge,
+					op == .Eq || op == .Le || op == .Ge || op == .U_Le || op == .U_Ge,
 				)
 				res = {
 					type = .Int,

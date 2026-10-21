@@ -243,10 +243,7 @@ alloc :: proc(
 			min(commit_chunk, arena.reserved - arena.commited),
 			size,
 		)
-		commit_chunk = mem.align_forward_uint(
-			commit_chunk,
-			uint(mem.PAGE_SIZE),
-		)
+		commit_chunk = mem.align_forward_uint(commit_chunk, uint(mem.PAGE_SIZE))
 		commit_pos := uintptr(arena.ptr) + uintptr(arena.commited)
 		commit(rawptr(commit_pos), commit_chunk) or_return
 		arena.commited += commit_chunk

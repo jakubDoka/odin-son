@@ -164,12 +164,7 @@ when !fmt.NO_FMT {
 				if len(regs) != 0 {
 					if inode.dt != .Void {
 						reg := regs[inode.gvn]
-						fmt.wprintf(
-							w,
-							"%v%03i",
-							reg_kind_char(reg.kind),
-							reg.index,
-						)
+						fmt.wprintf(w, "%v%03i", reg_kind_char(reg.kind), reg.index)
 					} else {
 						fmt.wprint(w, "    ")
 					}
@@ -197,10 +192,7 @@ when !fmt.NO_FMT {
 
 		node := expand_node(prc, id)
 
-		get_any_extra_node :: #force_inline proc(
-			prc: ^Proc,
-			node: ^Node,
-		) -> any {
+		get_any_extra_node :: #force_inline proc(prc: ^Proc, node: ^Node) -> any {
 			assert(int(node.rtype) < len(prc.node_extra_types))
 			return {&node.extra, prc.node_extra_types[node.rtype]}
 		}

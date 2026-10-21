@@ -76,10 +76,7 @@ compile :: proc(ctx: bac.Codegen_Emit_Ctx) -> (res: bac.Codegen_Output) {
 		"target not configured, set .prc.node_spec",
 	)
 
-	fmt.assertf(
-		ctx.buf.code != nil,
-		"code buffer not configured, set .buf.code",
-	)
+	fmt.assertf(ctx.buf.code != nil, "code buffer not configured, set .buf.code")
 
 	if ctx.schedule == nil {
 		bac.apply_peeps({ctx})
@@ -149,25 +146,14 @@ merge_returns :: proc(prc: ^Proc, args: []Node_ID) -> Node_ID {
 		bac.set_input(prc, prc.end, 0, ret)
 	} else {
 		// TODO: extend existing region if possible
-		reg := bac.add_region(
-			prc,
-			"rreg",
-			{bac.get_inputs(prc, ret)[0], args[0]},
-		)
+		reg := bac.add_region(prc, "rreg", {bac.get_inputs(prc, ret)[0], args[0]})
 		bac.set_input(prc, ret, 0, reg)
 		for inp, i in bac.get_inputs(prc, ret)[1:] {
 			bac.set_input(
 				prc,
 				ret,
 				i + 1,
-				bac.add_phi(
-					prc,
-					"rphy",
-					get_node(prc, inp).dt,
-					reg,
-					inp,
-					args[i + 1],
-				),
+				bac.add_phi(prc, "rphy", get_node(prc, inp).dt, reg, inp, args[i + 1]),
 			)
 		}
 	}
@@ -830,8 +816,7 @@ inline_graph :: proc(prc: ^bac.Proc, call: Node_ID, from: ^bac.Proc) {
 			input_cap = 1
 		}
 
-		if node.itype == .Phi &&
-		   get_node(ctx.from, node.inps[0]).itype == .Loop {
+		if node.itype == .Phi && get_node(ctx.from, node.inps[0]).itype == .Loop {
 			rtype = u16(Node_Type.Lazy_Phi)
 			input_cap = 2
 		}
@@ -1044,14 +1029,7 @@ add_field_load :: proc(
 	base: Node_ID,
 	offset: int = 0,
 ) -> Node_ID {
-	return add_load(
-		ctx,
-		name,
-		dt,
-		cfg,
-		mem,
-		add_field_offset(ctx, base, offset),
-	)
+	return add_load(ctx, name, dt, cfg, mem, add_field_offset(ctx, base, offset))
 }
 
 @(tag = "api")

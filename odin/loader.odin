@@ -102,8 +102,7 @@ load_dir :: proc(
 			if col, ok := strings.split_iterator(&col_rel_path, ":");
 			   ok && col_rel_path != "" {
 				if col == "base" && col_rel_path == "intrinsics" {
-					ctx.modules[mid].imports[name] =
-						typecheck.MODULE_INTRINSICS
+					ctx.modules[mid].imports[name] = typecheck.MODULE_INTRINSICS
 					continue
 				}
 
@@ -114,10 +113,7 @@ load_dir :: proc(
 					col,
 					ctx.collections,
 				)
-				path, _ = os.join_path(
-					{path, col_rel_path},
-					context.temp_allocator,
-				)
+				path, _ = os.join_path({path, col_rel_path}, context.temp_allocator)
 			} else {
 				path, _ = filepath.join(
 					{ctx.modules[mid].dir, path},

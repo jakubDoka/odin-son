@@ -54,12 +54,7 @@ when !NO_FMT {
 		assertf_1 :: #force_inline proc(condition: bool, _: string, _: $A) {
 			assertf_0(condition, "")
 		}
-		assertf_2 :: #force_inline proc(
-			condition: bool,
-			_: string,
-			_: $A,
-			_: $B,
-		) {
+		assertf_2 :: #force_inline proc(condition: bool, _: string, _: $A, _: $B) {
 			assertf_0(condition, "")
 		}
 		assertf_3 :: #force_inline proc(

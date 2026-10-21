@@ -99,10 +99,7 @@ init_single_file_program :: proc(ctx: ^jit.Gen_Ctx, file: ^ast.File) {
 	ctx.modules.allocator = ctx.types.allocator
 	if file.pkg_name == "" do file.pkg_name = "main"
 	append(&ctx.files, file^)
-	append(
-		&ctx.modules,
-		typecheck.Module{name = file.pkg_name, file_count = 1},
-	)
+	append(&ctx.modules, typecheck.Module{name = file.pkg_name, file_count = 1})
 	ctx.modules[0].imports.allocator = ctx.types.allocator
 	ctx.modules[0].imports["intrinsics"] = typecheck.MODULE_INTRINSICS
 
@@ -184,11 +181,7 @@ compiler_compile_bufs :: proc "c" (
 @(export)
 compiler_compile :: proc "c" (target: Target) -> Status {
 	out := output_buffer[:]
-	res := compiler_compile_bufs(
-		target,
-		source_buffer[:state.source_size],
-		&out,
-	)
+	res := compiler_compile_bufs(target, source_buffer[:state.source_size], &out)
 	state.output_size = len(out)
 	return res
 }

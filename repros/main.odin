@@ -51,8 +51,7 @@ arm_simd_iter_next_ :: proc(siter: ^Arm_Simd_Iter) -> (int, bool) {
 				trail := intrinsics.count_trailing_zeros(siter.mask & m)
 				mask_offset := trail / 8 + 8 * u64(i)
 				siter.mask &= ~(1 << trail)
-				return (siter.i - 1) * size_of(Intern_Vec) + int(mask_offset),
-					true
+				return (siter.i - 1) * size_of(Intern_Vec) + int(mask_offset), true
 			}
 		}
 

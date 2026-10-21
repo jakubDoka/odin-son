@@ -6,9 +6,14 @@ import subprocess
 import sys
 
 IMPORTS = {
+    'trueos_cabi_vgpu_call_f32_v1',
+    'trueos_cabi_shell_attached_write', 'trueos_cabi_shell_attached_read_byte', 'trueos_cabi_sleep_ms',
+    'trueos_cabi_blueprint_terminal_lease_current_v1', 'trueos_cabi_blueprint_terminal_lease_release_v1',
+    'trueos_cabi_blueprint_terminal_surface_snapshot_v1', 'trueos_cabi_async_fs_create_dir_all_start',
     'memcpy', 'memmove', 'memset', 'sys_alloc_aligned',
     'trueos_cabi_alloc', 'trueos_cabi_calloc', 'trueos_cabi_realloc', 'trueos_cabi_free',
     'trueos_cabi_write', 'trueos_cabi_blueprint_stop_control_v1', 'trueos_cabi_blueprint_shutdown',
+    'trueos_cabi_blueprint_launch_script_v1',
     'trueos_cabi_async_fs_read_start', 'trueos_cabi_async_fs_stat_start',
     'trueos_cabi_async_fs_typed_list_dir_start', 'trueos_cabi_async_fs_write_begin',
     'trueos_cabi_async_fs_write_chunk', 'trueos_cabi_async_fs_write_commit',

@@ -14191,6 +14191,421 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) for_loop_sum :: proc(t: ^testing.T) {
+
+
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main_ :: proc() -> int {
+total := 0; for i := 0; i < 10; i += 1 { total += i }; return total
+}
+
+run_test(t, `for_loop_sum`, `
+package main
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main :: proc() -> int {
+total := 0; for i := 0; i < 10; i += 1 { total += i }; return total
+}
+`, main_())
+}
+@(test) for_loop_empty :: proc(t: ^testing.T) {
+
+
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main_ :: proc() -> int {
+total := 7; for i := 8; i < 3; i += 1 { total += i }; return total
+}
+
+run_test(t, `for_loop_empty`, `
+package main
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main :: proc() -> int {
+total := 7; for i := 8; i < 3; i += 1 { total += i }; return total
+}
+`, main_())
+}
+@(test) for_loop_continue :: proc(t: ^testing.T) {
+
+
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main_ :: proc() -> int {
+total := 0; for i := 0; i < 8; i += 1 { if i % 2 == 0 do continue; total += i }; return total
+}
+
+run_test(t, `for_loop_continue`, `
+package main
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main :: proc() -> int {
+total := 0; for i := 0; i < 8; i += 1 { if i % 2 == 0 do continue; total += i }; return total
+}
+`, main_())
+}
+@(test) for_loop_all_continue :: proc(t: ^testing.T) {
+
+
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main_ :: proc() -> int {
+i := 0; for ; i < 5; i += 1 { continue }; return i
+}
+
+run_test(t, `for_loop_all_continue`, `
+package main
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main :: proc() -> int {
+i := 0; for ; i < 5; i += 1 { continue }; return i
+}
+`, main_())
+}
+@(test) for_loop_break :: proc(t: ^testing.T) {
+
+
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main_ :: proc() -> int {
+post := 0; for i := 0; i < 10; post += 1 { if i == 3 do break; i += 1 }; return post
+}
+
+run_test(t, `for_loop_break`, `
+package main
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main :: proc() -> int {
+post := 0; for i := 0; i < 10; post += 1 { if i == 3 do break; i += 1 }; return post
+}
+`, main_())
+}
+@(test) for_loop_while :: proc(t: ^testing.T) {
+
+
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main_ :: proc() -> int {
+i := 0; for i < 9 { i += 1 }; return i
+}
+
+run_test(t, `for_loop_while`, `
+package main
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main :: proc() -> int {
+i := 0; for i < 9 { i += 1 }; return i
+}
+`, main_())
+}
+@(test) for_loop_no_condition :: proc(t: ^testing.T) {
+
+
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main_ :: proc() -> int {
+total := 0; for i := 0; ; i += 1 { if i == 5 do break; total += i }; return total
+}
+
+run_test(t, `for_loop_no_condition`, `
+package main
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main :: proc() -> int {
+total := 0; for i := 0; ; i += 1 { if i == 5 do break; total += i }; return total
+}
+`, main_())
+}
+@(test) for_loop_post_call :: proc(t: ^testing.T) {
+
+
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main_ :: proc() -> int {
+i := 0; total := 0; for ; i < 5; i = tick(&i) { total += i }; return total
+}
+
+run_test(t, `for_loop_post_call`, `
+package main
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main :: proc() -> int {
+i := 0; total := 0; for ; i < 5; i = tick(&i) { total += i }; return total
+}
+`, main_())
+}
+@(test) for_loop_init_once :: proc(t: ^testing.T) {
+
+
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main_ :: proc() -> int {
+i := 9; total := 0; for i = 0; i < 4; i += 1 { total += i }; return total + i
+}
+
+run_test(t, `for_loop_init_once`, `
+package main
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main :: proc() -> int {
+i := 9; total := 0; for i = 0; i < 4; i += 1 { total += i }; return total + i
+}
+`, main_())
+}
+@(test) for_loop_no_init :: proc(t: ^testing.T) {
+
+
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main_ :: proc() -> int {
+i := 1; total := 0; for ; i < 5; i += 1 { total += i }; return total
+}
+
+run_test(t, `for_loop_no_init`, `
+package main
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main :: proc() -> int {
+i := 1; total := 0; for ; i < 5; i += 1 { total += i }; return total
+}
+`, main_())
+}
+@(test) for_loop_shadow :: proc(t: ^testing.T) {
+
+
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main_ :: proc() -> int {
+i := 70; total := 0; for i := 0; i < 4; i += 1 { total += i }; return i + total
+}
+
+run_test(t, `for_loop_shadow`, `
+package main
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main :: proc() -> int {
+i := 70; total := 0; for i := 0; i < 4; i += 1 { total += i }; return i + total
+}
+`, main_())
+}
+@(test) for_loop_nested :: proc(t: ^testing.T) {
+
+
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main_ :: proc() -> int {
+total := 0; for i := 0; i < 4; i += 1 { for j := 0; j < 5; j += 1 { if j == 1 do continue; if j == 4 do break; total += i + j } }; return total
+}
+
+run_test(t, `for_loop_nested`, `
+package main
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main :: proc() -> int {
+total := 0; for i := 0; i < 4; i += 1 { for j := 0; j < 5; j += 1 { if j == 1 do continue; if j == 4 do break; total += i + j } }; return total
+}
+`, main_())
+}
+@(test) for_loop_outer_continue :: proc(t: ^testing.T) {
+
+
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main_ :: proc() -> int {
+total := 0; outer: for i := 0; i < 4; i += 1 { for j := 0; j < 5; j += 1 { if j == 2 do continue outer; total += i + j } }; return total
+}
+
+run_test(t, `for_loop_outer_continue`, `
+package main
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main :: proc() -> int {
+total := 0; outer: for i := 0; i < 4; i += 1 { for j := 0; j < 5; j += 1 { if j == 2 do continue outer; total += i + j } }; return total
+}
+`, main_())
+}
+@(test) for_loop_outer_break :: proc(t: ^testing.T) {
+
+
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main_ :: proc() -> int {
+total := 0; outer: for i := 0; i < 4; i += 1 { for j := 0; j < 5; j += 1 { if i == 2 do break outer; total += j } }; return total
+}
+
+run_test(t, `for_loop_outer_break`, `
+package main
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main :: proc() -> int {
+total := 0; outer: for i := 0; i < 4; i += 1 { for j := 0; j < 5; j += 1 { if i == 2 do break outer; total += j } }; return total
+}
+`, main_())
+}
+@(test) for_loop_body_shadow :: proc(t: ^testing.T) {
+
+
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main_ :: proc() -> int {
+total := 0; for i := 0; i < 4; i += 1 { i := 2; total += i }; return total
+}
+
+run_test(t, `for_loop_body_shadow`, `
+package main
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main :: proc() -> int {
+total := 0; for i := 0; i < 4; i += 1 { i := 2; total += i }; return total
+}
+`, main_())
+}
+@(test) for_loop_return :: proc(t: ^testing.T) {
+
+
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main_ :: proc() -> int {
+for i := 0; i < 5; i += 1 { if i == 2 do return 22 }; return 3
+}
+
+run_test(t, `for_loop_return`, `
+package main
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main :: proc() -> int {
+for i := 0; i < 5; i += 1 { if i == 2 do return 22 }; return 3
+}
+`, main_())
+}
+@(test) for_loop_side_effects :: proc(t: ^testing.T) {
+
+
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main_ :: proc() -> int {
+init := 0; cond := 0; post := 0; body := 0; for i := tick(&init); tick(&cond) < 4; post += 1 { body += i }; return init * 100 + cond * 10 + post + body
+}
+
+run_test(t, `for_loop_side_effects`, `
+package main
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main :: proc() -> int {
+init := 0; cond := 0; post := 0; body := 0; for i := tick(&init); tick(&cond) < 4; post += 1 { body += i }; return init * 100 + cond * 10 + post + body
+}
+`, main_())
+}
+@(test) for_loop_constant_true :: proc(t: ^testing.T) {
+
+
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main_ :: proc() -> int {
+for true { return 17 }; return 99
+}
+
+run_test(t, `for_loop_constant_true`, `
+package main
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main :: proc() -> int {
+for true { return 17 }; return 99
+}
+`, main_())
+}
+@(test) for_loop_constant_false :: proc(t: ^testing.T) {
+
+
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main_ :: proc() -> int {
+for false { return 3 }; return 9
+}
+
+run_test(t, `for_loop_constant_false`, `
+package main
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main :: proc() -> int {
+for false { return 3 }; return 9
+}
+`, main_())
+}
+@(test) fail_for_loop_initializer_scope :: proc(t: ^testing.T) {
+run_test(t, `fail_for_loop_initializer_scope`, `
+package main
+main :: proc() -> int {
+    for i := 0; i < 2; i += 1 {}
+    return i
+}
+`, 0)
+}
+@(test) fail_for_loop_condition_type :: proc(t: ^testing.T) {
+run_test(t, `fail_for_loop_condition_type`, `
+package main
+main :: proc() -> int {
+    for i := 0; i; i += 1 { break }
+    return 0
+}
+`, 0)
+}
+@(test) fail_for_loop_post_body_scope :: proc(t: ^testing.T) {
+run_test(t, `fail_for_loop_post_body_scope`, `
+package main
+main :: proc() -> int {
+    for i := 0; i < 2; i += step { step := 1 }
+    return 0
+}
+`, 0)
+}
+@(test) fail_for_loop_conditional_return :: proc(t: ^testing.T) {
+run_test(t, `fail_for_loop_conditional_return`, `
+package main
+main :: proc() -> int {
+    for true { return 17 }
+}
+`, 0)
+}
 @(test) fuzz_0092546c2ab7b49f :: proc(t: ^testing.T) {
 run_test(t, "fuzz_0092546c2ab7b49f", string(#load("../fuzz/crashes/0092546c2ab7b49f.odin")), 0,
 				diff = false, no_run = true)
@@ -16029,6 +16444,29 @@ NAMES := []string{
 `sccp_integer_range_folding`,
 `sccp_unsigned_range_folding`,
 `sccp_float_nan_folding`,
+`for_loop_sum`,
+`for_loop_empty`,
+`for_loop_continue`,
+`for_loop_all_continue`,
+`for_loop_break`,
+`for_loop_while`,
+`for_loop_no_condition`,
+`for_loop_post_call`,
+`for_loop_init_once`,
+`for_loop_no_init`,
+`for_loop_shadow`,
+`for_loop_nested`,
+`for_loop_outer_continue`,
+`for_loop_outer_break`,
+`for_loop_body_shadow`,
+`for_loop_return`,
+`for_loop_side_effects`,
+`for_loop_constant_true`,
+`for_loop_constant_false`,
+`fail_for_loop_initializer_scope`,
+`fail_for_loop_condition_type`,
+`fail_for_loop_post_body_scope`,
+`fail_for_loop_conditional_return`,
 `fuzz_0092546c2ab7b49f`,
 `fuzz_00f1be4a1ea4c499`,
 `fuzz_0203aad88c140351`,
@@ -23388,6 +23826,204 @@ main :: proc() -> int {
 	return (run(zero) + run(f32(zero)) + finite(zero == 0)) % 251
 }
 `,
+`
+package main
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main :: proc() -> int {
+total := 0; for i := 0; i < 10; i += 1 { total += i }; return total
+}
+`,
+`
+package main
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main :: proc() -> int {
+total := 7; for i := 8; i < 3; i += 1 { total += i }; return total
+}
+`,
+`
+package main
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main :: proc() -> int {
+total := 0; for i := 0; i < 8; i += 1 { if i % 2 == 0 do continue; total += i }; return total
+}
+`,
+`
+package main
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main :: proc() -> int {
+i := 0; for ; i < 5; i += 1 { continue }; return i
+}
+`,
+`
+package main
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main :: proc() -> int {
+post := 0; for i := 0; i < 10; post += 1 { if i == 3 do break; i += 1 }; return post
+}
+`,
+`
+package main
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main :: proc() -> int {
+i := 0; for i < 9 { i += 1 }; return i
+}
+`,
+`
+package main
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main :: proc() -> int {
+total := 0; for i := 0; ; i += 1 { if i == 5 do break; total += i }; return total
+}
+`,
+`
+package main
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main :: proc() -> int {
+i := 0; total := 0; for ; i < 5; i = tick(&i) { total += i }; return total
+}
+`,
+`
+package main
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main :: proc() -> int {
+i := 9; total := 0; for i = 0; i < 4; i += 1 { total += i }; return total + i
+}
+`,
+`
+package main
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main :: proc() -> int {
+i := 1; total := 0; for ; i < 5; i += 1 { total += i }; return total
+}
+`,
+`
+package main
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main :: proc() -> int {
+i := 70; total := 0; for i := 0; i < 4; i += 1 { total += i }; return i + total
+}
+`,
+`
+package main
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main :: proc() -> int {
+total := 0; for i := 0; i < 4; i += 1 { for j := 0; j < 5; j += 1 { if j == 1 do continue; if j == 4 do break; total += i + j } }; return total
+}
+`,
+`
+package main
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main :: proc() -> int {
+total := 0; outer: for i := 0; i < 4; i += 1 { for j := 0; j < 5; j += 1 { if j == 2 do continue outer; total += i + j } }; return total
+}
+`,
+`
+package main
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main :: proc() -> int {
+total := 0; outer: for i := 0; i < 4; i += 1 { for j := 0; j < 5; j += 1 { if i == 2 do break outer; total += j } }; return total
+}
+`,
+`
+package main
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main :: proc() -> int {
+total := 0; for i := 0; i < 4; i += 1 { i := 2; total += i }; return total
+}
+`,
+`
+package main
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main :: proc() -> int {
+for i := 0; i < 5; i += 1 { if i == 2 do return 22 }; return 3
+}
+`,
+`
+package main
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main :: proc() -> int {
+init := 0; cond := 0; post := 0; body := 0; for i := tick(&init); tick(&cond) < 4; post += 1 { body += i }; return init * 100 + cond * 10 + post + body
+}
+`,
+`
+package main
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main :: proc() -> int {
+for true { return 17 }; return 99
+}
+`,
+`
+package main
+
+tick :: proc(v: ^int) -> int { v^ += 1; return v^ }
+
+main :: proc() -> int {
+for false { return 3 }; return 9
+}
+`,
+`
+package main
+main :: proc() -> int {
+    for i := 0; i < 2; i += 1 {}
+    return i
+}
+`,
+`
+package main
+main :: proc() -> int {
+    for i := 0; i; i += 1 { break }
+    return 0
+}
+`,
+`
+package main
+main :: proc() -> int {
+    for i := 0; i < 2; i += step { step := 1 }
+    return 0
+}
+`,
+`
+package main
+main :: proc() -> int {
+    for true { return 17 }
+}
+`,
 `#load("../fuzz/crashes/0092546c2ab7b49f.odin")`,
 `#load("../fuzz/crashes/00f1be4a1ea4c499.odin")`,
 `#load("../fuzz/crashes/0203aad88c140351.odin")`,
@@ -23790,6 +24426,29 @@ main :: proc() -> int {
 `#load("../fuzz/crashes/regalloc_ioob.odin")`,
 }
 IS_FUZZ := []bool{
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
 false,
 false,
 false,

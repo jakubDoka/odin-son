@@ -7,12 +7,20 @@
 #include <dirent.h>
 #include <sys/stat.h>
 extern int32_t trueos_main(size_t, char **);
-void *trueos_cabi_alloc(size_t n) { return malloc(n); }
-void *trueos_cabi_calloc(size_t n, size_t s) { return calloc(n, s); }
-void *trueos_cabi_realloc(void *p, size_t n) { return realloc(p, n); }
-void trueos_cabi_free(void *p) { free(p); }
-void *sys_alloc_aligned(size_t n, size_t a) { void *p = NULL; return posix_memalign(&p, a, n) ? NULL : p; }
-void trueos_cabi_write(uint32_t s, const void *p, size_t n) { fwrite(p, 1, n, s == 2 ? stderr : stdout); }
+void trueos_cabi_poll_once(void);
+static size_t guest_allocations;
+void *trueos_cabi_alloc(size_t n) { void *p = malloc(n); if (p) ++guest_allocations; return p; }
+void *trueos_cabi_calloc(size_t n, size_t s) { void *p = calloc(n, s); if (p) ++guest_allocations; return p; }
+void *trueos_cabi_realloc(void *p, size_t n) { void *q = realloc(p, n); if (!p && q) ++guest_allocations; else if (p && !n) --guest_allocations; return q; }
+void trueos_cabi_free(void *p) { if (p) { assert(guest_allocations); --guest_allocations; } free(p); }
+void *sys_alloc_aligned(size_t n, size_t a) { void *p = NULL; if (posix_memalign(&p, a, n)) return NULL; ++guest_allocations; return p; }
+void trueos_cabi_write(uint32_t s, const void *p, size_t n) {
+    if (getenv("TRUEOS_TEST_LINE_WRITES") && n >= 9 &&
+        (!memcmp(p, "odin-son:", 9) || !memcmp(p, "[odin-son", 9))) {
+        assert(((const char *)p)[n-1] == '\n');
+    }
+    fwrite(p, 1, n, s == 2 ? stderr : stdout);
+}
 int32_t trueos_cabi_blueprint_stop_control_v1(uint32_t op) { return 0; }
 int32_t trueos_cabi_blueprint_shutdown(const void *p, size_t n) { return 0; }
 
@@ -26,6 +34,50 @@ typedef struct {
 static Operation operations[32];
 static uint32_t next_id;
 static size_t live, polls, discarded;
+static int terminal_released;
+int32_t trueos_cabi_blueprint_terminal_lease_current_v1(uint64_t ready, uint64_t *epoch) {
+    assert(getenv("TRUEOS_TEST_TUI_KEYS")); assert(!terminal_released); *epoch = 1; return 0;
+}
+int32_t trueos_cabi_blueprint_terminal_lease_release_v1(uint64_t epoch, uint64_t *ticket) {
+    assert(epoch == 1 && !terminal_released); terminal_released = 1; *ticket = 1; return 0;
+}
+int32_t trueos_cabi_blueprint_terminal_surface_snapshot_v1(uint64_t *gen, uint32_t *cols, uint32_t *rows) {
+    static size_t calls;
+    ++calls;
+    if (getenv("TRUEOS_TEST_REENTRY") && calls >= 2 && calls <= 4) return -3;
+    *gen = calls < 5 ? 1 : 2; *cols = calls < 5 ? 100 : 95; *rows = 35; return 0;
+}
+size_t trueos_cabi_shell_attached_write(const void *p, size_t n) {
+    if (n > 73) n = 73;
+    return fwrite(p, 1, n, stdout);
+}
+int32_t trueos_cabi_shell_attached_read_byte(void) {
+    static size_t offset;
+    const char *keys = getenv("TRUEOS_TEST_TUI_KEYS");
+    assert(keys && keys[offset]);
+    static size_t idle;
+    if (!offset && getenv("TRUEOS_TEST_AUTO_DISCOVER") && idle++ < 102) {
+        if (idle == 1) {
+            assert(!mkdir("auto", 0755));
+            FILE *file = fopen("auto/main.odin", "wb"); assert(file);
+            fputs("package main\nmain :: proc() -> i32 { return 0 }\n", file); fclose(file);
+        }
+        return -1;
+    }
+    static size_t initial_allocations;
+    if (getenv("TRUEOS_TEST_STABLE_HEAP")) {
+        if (!offset) initial_allocations = guest_allocations;
+        else assert(guest_allocations == initial_allocations);
+    }
+    if (keys[offset] == 'f' && getenv("TRUEOS_TEST_ADD_DEMO")) {
+        assert(!mkdir("extra", 0755));
+        FILE *file = fopen("extra/main.odin", "wb"); assert(file);
+        fputs("package main\nmain :: proc() -> i32 { return 0 }\n", file); fclose(file);
+    }
+    return (unsigned char)keys[offset++];
+}
+void trueos_cabi_sleep_ms(uint64_t ms) { trueos_cabi_poll_once(); }
+
 
 static Operation *get(uint32_t id) {
     for (size_t i = 0; i < 32; ++i) if (operations[i].id == id) return &operations[i];
@@ -89,6 +141,11 @@ static void complete(Operation *op) {
         closedir(dir);
         for (size_t i = 0; i < 4; ++i) op->bytes[8 + i] = count >> (8 * i);
         op->size = pos;
+    } else if (op->kind == 5) {
+        if (mkdir(op->path, 0755)) {
+            struct stat st;
+            if (stat(op->path, &st) || !S_ISDIR(st.st_mode)) op->error = -2;
+        }
     } else {
         assert(op->kind == 4 && op->committed && op->offset == op->size);
         if (getenv("TRUEOS_TEST_COMMIT_FAIL")) { op->error = -2; return; }
@@ -106,6 +163,7 @@ void trueos_cabi_poll_once(void) {
         if (--op->ticks == 0) { complete(op); op->ready = 1; }
     }
 }
+int32_t trueos_cabi_async_fs_create_dir_all_start(const void *p, size_t n) { return start(5, p, n)->id; }
 int32_t trueos_cabi_async_fs_read_start(const void *p, size_t n) { assert(!getenv("TRUEOS_TEST_NO_SOURCE_IO")); return start(1, p, n)->id; }
 int32_t trueos_cabi_async_fs_stat_start(const void *p, size_t n) { assert(!getenv("TRUEOS_TEST_NO_SOURCE_IO")); return start(2, p, n)->id; }
 int32_t trueos_cabi_async_fs_typed_list_dir_start(const void *p, size_t n) { assert(!getenv("TRUEOS_TEST_NO_SOURCE_IO")); return start(3, p, n)->id; }
@@ -157,6 +215,20 @@ int32_t trueos_cabi_async_fs_discard(uint32_t id) {
     memset(op, 0, sizeof(*op));
     --live;
     ++discarded;
+    return 0;
+}
+int32_t trueos_cabi_blueprint_launch_script_v1(const void *p, size_t n) {
+    const char *payload = p;
+    size_t path_len = strlen(payload);
+    const char *script = payload + path_len + 1;
+    size_t script_len = strlen(script);
+    assert(path_len + script_len + 10 == n);
+    assert(!memcmp(script + script_len, "\0headless", 9));
+    FILE *file = fopen(payload, "rb");
+    assert(file);
+    char magic[4];
+    assert(fread(magic, 1, 4, file) == 4 && !memcmp(magic, "TRBP", 4));
+    fclose(file);
     return 0;
 }
 int main(int argc, char **argv) {

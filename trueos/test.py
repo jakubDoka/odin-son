@@ -40,8 +40,8 @@ def main():
         rejection = run(['python3', NATIVE / 'package.py', work / 'retired.o', work / 'retired.bp'], expected=1)
         assert b'retired synchronous filesystem imports' in rejection.stderr
         assert not (work / 'retired.bp').exists()
-        demo = run([exe], cwd=work, env=dict(os.environ, TRUEOS_TEST_NO_SOURCE_IO='1'))
-        assert b'argc=1' in demo.stdout and b'argv[0]=' in demo.stdout
+        demo = run([exe, "--cpu-boids"], cwd=work, env=dict(os.environ, TRUEOS_TEST_NO_SOURCE_IO='1'))
+        assert b'argc=2' in demo.stdout and b'argv[0]=' in demo.stdout
         assert b'compiling embedded TRUEOS boids' in demo.stdout
         assert b'stored boids.o' in demo.stdout and b'stored boids.bp' in demo.stdout
         assert b'commit complete; boids is ready to load' in demo.stdout

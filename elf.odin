@@ -38,8 +38,15 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 
 	// --- .data : concatenate globals honouring their alignment ----------
 	data: [dynamic]u8
+	gpu: [dynamic]u8
 	global_off := make([]int, len(ctx.globals))
 	for glob, i in ctx.globals {
+		if glob.gpu {
+			for len(gpu) % 64 != 0 do append(&gpu, 0)
+			global_off[i] = len(gpu)
+			append(&gpu, ..glob.bytes)
+			continue
+		}
 		align := max(glob.align, 1)
 		for len(data) % align != 0 do append(&data, 0)
 		global_off[i] = len(data)
@@ -91,7 +98,7 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 			Elf64_Sym {
 				st_name = 0,
 				st_info = {bind = .Local, type = .Object},
-				st_shndx = .Data,
+				st_shndx = glob.gpu ? .Gpu : .Data,
 				st_value = u64(global_off[i]),
 				st_size = u64(len(glob.bytes)),
 			},
@@ -819,6 +826,7 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	name_relatext := strtab_add(&shstr, ".rela.text")
 	name_rodata := strtab_add(&shstr, ".rodata")
 	name_data := strtab_add(&shstr, ".data")
+	name_gpu := strtab_add(&shstr, ".gpu.xelp")
 	name_dbg_abbrev := strtab_add(&shstr, ".debug_abbrev")
 	name_dbg_info := strtab_add(&shstr, ".debug_info")
 	name_rela_dbg_info := strtab_add(&shstr, ".rela.debug_info")
@@ -846,6 +854,8 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 
 	eb_align(&b, 8)
 	data_off := eb_bytes(&b, data[:])
+	eb_align(&b, 64)
+	gpu_off := eb_bytes(&b, gpu[:])
 
 	eb_align(&b, 8)
 	rela_off := len(b.buf)
@@ -922,6 +932,10 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 			sh_offset = u64(data_off),
 			sh_size = u64(len(data)),
 			sh_addralign = 8,
+		},
+		.Gpu = {
+			sh_name = name_gpu, sh_type = .Progbits, sh_flags = {.Alloc},
+			sh_offset = u64(gpu_off), sh_size = u64(len(gpu)), sh_addralign = 64,
 		},
 		.Debug_Abbrev = {
 			sh_name = name_dbg_abbrev,
@@ -1207,6 +1221,7 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 		Rela_Text,
 		Rodata,
 		Data,
+		Gpu,
 		Debug_Abbrev,
 		Debug_Info,
 		Rela_Debug_Info,

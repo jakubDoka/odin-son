@@ -26,6 +26,7 @@ main :: proc() {
 
 	input: string
 	output := "a.o"
+	xelp_body_output := ""
 
 	levels := OPT_LEVELS
 	level := levels[len(levels) - 1]
@@ -42,6 +43,10 @@ main :: proc() {
 	for i < len(args) {
 		arg := args[i]
 		switch {
+		case arg == "-emit-xelp-body":
+			i += 1
+			if i >= len(args) { fmt.eprintln("missing argument to -emit-xelp-body"); os.exit(1) }
+			xelp_body_output = args[i]
 		case arg == "-o":
 			i += 1
 			if i >= len(args) {
@@ -110,7 +115,7 @@ main :: proc() {
 
 	if input == "" {
 		fmt.eprintln(
-			"usage: jit <entry.odin> [-o output.o] [-O:<level>] [-debug]",
+			"usage: jit <entry.odin> [-o output.o] [-O:<level>] [-debug] [-emit-xelp-body body.bin]",
 		)
 		os.exit(1)
 	}
@@ -172,6 +177,15 @@ main :: proc() {
 		typecheck.typecheck_program(&ctx)}
 
 	if ctx.error_cnt > 0 do os.exit(1)
+
+	if xelp_body_output != "" {
+		if xelp_body_output == output { fmt.eprintln("Xe-LP body and CPU object require different output paths"); os.exit(1) }
+		body, ok := typecheck.emit_gpu_xelp_body(&ctx)
+		if !ok { fmt.eprintln("Xe-LP body emission requires exactly one nonempty tagged gpu arithmetic procedure"); os.exit(1) }
+		if err := os.write_entire_file(xelp_body_output, body); err != nil { fmt.eprintln("cannot write Xe-LP body:", err); os.exit(1) }
+		fmt.eprintfln("[odin-son xelp] stage=body-emitted target=12p1 bytes=%d complete_kernel=false artifact=%s", len(body), xelp_body_output)
+	}
+
 
 	emit_ctx := bac.Codegen_Emit_Ctx {
 		lib_calls = {copy = {id = MEMCPY_ID}, set = {id = MEMSET_ID}},

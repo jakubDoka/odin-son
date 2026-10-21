@@ -1,5 +1,5 @@
 # regenerates bac's own node_specs.odin, then every bac/<arch>
-# submodule that has a gen_<arch>.odin (its own spec generator) — so adding a
+# submodule that has a gen/main.odin (its own spec generator) — so adding a
 # new architecture directory is enough on its own, no edit needed here
 function gen-spec
 	rm -f bac/node_specs.odin
@@ -7,6 +7,9 @@ function gen-spec
 
 	odin run bac/meta
 	odin run bac/meta2
+	for spec_generator in bac/*/gen/main.odin
+		odin run (path dirname $spec_generator)
+	end
 	gen-meta
 	odin run bac/bindgen
 	gcc bac/bindgen/c/bac.h

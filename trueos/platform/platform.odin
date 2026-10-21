@@ -1,17 +1,19 @@
 package platform
 import "core:io"
+import "core:fmt"
 foreign _ { trueos_cabi_write :: proc "c" (stream: u32, data: rawptr, size: uintptr) --- }
 stderr :: u32(2)
 to_writer :: proc(stream: u32) -> io.Writer { return {writer, rawptr(uintptr(stream))} }
 writer :: proc(data: rawptr, mode: io.Stream_Mode, p: []u8, offset: i64, whence: io.Seek_From) -> (i64, io.Error) {
     if mode != .Write do return 0, nil
-    trueos_cabi_write(u32(uintptr(data)), raw_data(p), uintptr(len(p)))
+    fmt.trueos_write(u32(uintptr(data)), string(p))
     return i64(len(p)), nil
 }
 
 import "core:strings"
 
 foreign _ {
+    trueos_cabi_async_fs_create_dir_all_start :: proc "c" (path: rawptr, len: uintptr) -> i32 ---
     trueos_cabi_async_fs_read_start :: proc "c" (path: rawptr, len: uintptr) -> i32 ---
     trueos_cabi_async_fs_stat_start :: proc "c" (path: rawptr, len: uintptr) -> i32 ---
     trueos_cabi_async_fs_typed_list_dir_start :: proc "c" (path: rawptr, len: uintptr) -> i32 ---
@@ -152,4 +154,11 @@ write_entire_file :: proc(path: string, data: []u8) -> Error {
     }
     if trueos_cabi_async_fs_write_commit(id) != 0 do return .IO
     return wait_ready(id)
+}
+
+create_dir_all :: proc(path: string) -> Error {
+    start := trueos_cabi_async_fs_create_dir_all_start(raw_data(path), uintptr(len(path)))
+    if start <= 0 do return .IO
+    defer trueos_cabi_async_fs_discard(u32(start))
+    return wait_ready(u32(start))
 }

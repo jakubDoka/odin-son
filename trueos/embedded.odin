@@ -6,9 +6,10 @@ import "core:odin/parser"
 import "typecheck"
 
 EMBEDDED_BOIDS :: #load("boids.source", string)
+EMBEDDED_GPU_BOIDS :: #load("gpu-boids.source", string)
 
-load_embedded_boids :: proc(ctx: ^Gen_Ctx) -> bool {
-    file := ast.File{src = EMBEDDED_BOIDS, fullpath = "embedded/boids/main.odin"}
+load_embedded_boids :: proc(ctx: ^Gen_Ctx, gpu := false) -> bool {
+    file := ast.File{src = gpu ? EMBEDDED_GPU_BOIDS : EMBEDDED_BOIDS, fullpath = gpu ? "embedded/gpu-boids/main.odin" : "embedded/boids/main.odin"}
     p: parser.Parser
     {
         context.allocator = ctx.types.allocator

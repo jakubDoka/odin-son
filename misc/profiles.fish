@@ -7,18 +7,7 @@ function script
 end
 
 function script-alias
-	alias $argv[1] "script $argv"
-end
-
-function gen-spec
-	rm -f bac/node_specs.odin
-	rm -f bac/*/node_specs.odin
-
-	odin run bac/meta
-	odin run bac/meta2
-	gen-meta
-	odin run bac/bindgen
-	gcc bac/bindgen/c/bac.h
+    alias $argv[1] "script $argv"
 end
 
 script-alias gen-sepc

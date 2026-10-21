@@ -13,6 +13,7 @@ import "typecheck"
 import "utils/arna"
 
 main :: proc() {
+
 	when #config(FUZZ, false) {
 		fuzz_main()
 		return

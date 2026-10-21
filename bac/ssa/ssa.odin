@@ -1229,7 +1229,7 @@ arg_gen_finalize :: proc(ctx: ^Proc, gen: ^Param_Gen) -> []bac.Param_Spec {
 	return arg_tys
 }
 
-@(tag = "api")
+@(tag = "api,priority=100")
 start_proc :: proc(
 	prc: ^Proc,
 	mem: ^arna.Allocator,

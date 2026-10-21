@@ -225,8 +225,8 @@ abi_sm_add :: proc(
 	par: Abi_Param,
 	ok: bool,
 ) {
-	if len(sm.used_regs) == 0 {
-		sm.used_regs = make([]int, len(ctx.target.spec.spill_boundary))
+	if len(sm.used_regs) != len(ctx.target.cc.args) {
+		sm.used_regs = make([]int, len(ctx.target.cc.args))
 	}
 
 	cata, oka := x86_reg_class_classify(ty)
@@ -253,10 +253,12 @@ abi_sm_add :: proc(
 		return
 	}
 
-	for p in cata {
-		rk := ctx.target.spec.datatype_to_reg_kind[p]
-		par.spilled |= sm.used_regs[rk] >= len(ctx.target.cc.args[rk])
-		sm.used_regs[rk] += 1
+	if len(ctx.target.cc.args) != 0 {
+		for p in cata {
+			rk := ctx.target.spec.datatype_to_reg_kind[p]
+			par.spilled |= sm.used_regs[rk] >= len(ctx.target.cc.args[rk])
+			sm.used_regs[rk] += 1
+		}
 	}
 
 	if par.spilled {

@@ -1,6 +1,8 @@
 #!/bin/bash
 
-REAL_ODIN_ROOT=$(odin root)
+set -e
+
+REAL_ODIN_ROOT=$(oding root)
 
 TEMP_ODIN_ROOT=$(mktemp -d /tmp/odin.XXXXX)
 
@@ -41,6 +43,7 @@ release_flags=(
     -define:ARNA_DISABLE_THREAD_LOCAL=true
     -disable-init-fini
     -define:NODE_NAMES=false
+    -disable-non-constant-globals
 )
 
 base_flags=(

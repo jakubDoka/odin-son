@@ -21,6 +21,18 @@ _ :: bac_wasm
 _ :: bac_regalloc
 _ :: arna
 @(export)
+bac_start_proc :: proc "c" (
+	prc: ^bac.Proc,
+	mem: ^arna.Allocator,
+	temps: ^arna.Temps,
+) -> (
+	bac.Node_ID,
+) {
+	context = {}
+	return bac_ssa.start_proc(prc, mem, temps)
+}
+
+@(export)
 bac_add_always :: proc "c" (
 	prc: ^bac.Proc,
 	name: string,
@@ -30,22 +42,6 @@ bac_add_always :: proc "c" (
 ) {
 	context = {}
 	return bac.add_always(prc, name, inputs)
-}
-
-@(export)
-bac_add_bin_op :: proc "c" (
-	prc: ^bac.Proc,
-	name: string,
-	type: bac.Bin_Op,
-	dt: bac.Node_Datatype,
-	lhs: bac.Node_ID,
-	rhs: bac.Node_ID,
-	lane: bac.Lane_Type,
-) -> (
-	bac.Node_ID,
-) {
-	context = {}
-	return bac.add_bin_op(prc, name, type, dt, lhs, rhs, lane)
 }
 
 @(export)
@@ -62,16 +58,19 @@ bac_add_c_int :: proc "c" (
 }
 
 @(export)
-bac_add_call :: proc "c" (
+bac_add_bin_op :: proc "c" (
 	prc: ^bac.Proc,
 	name: string,
-	inputs: []bac.Node_ID,
-	extra: bac.Call,
+	type: bac.Bin_Op,
+	dt: bac.Node_Datatype,
+	lhs: bac.Node_ID,
+	rhs: bac.Node_ID,
+	lane: bac.Lane_Type,
 ) -> (
 	bac.Node_ID,
 ) {
 	context = {}
-	return bac.add_call(prc, name, inputs, extra)
+	return bac.add_bin_op(prc, name, type, dt, lhs, rhs, lane)
 }
 
 @(export)
@@ -115,14 +114,16 @@ bac_add_dbg_scope :: proc "c" (
 }
 
 @(export)
-bac_add_dbg_sym_decl :: proc "c" (
+bac_add_call :: proc "c" (
 	prc: ^bac.Proc,
 	name: string,
+	inputs: []bac.Node_ID,
+	extra: bac.Call,
 ) -> (
 	bac.Node_ID,
 ) {
 	context = {}
-	return bac.add_dbg_sym_decl(prc, name)
+	return bac.add_call(prc, name, inputs, extra)
 }
 
 @(export)
@@ -185,15 +186,14 @@ bac_add_entry :: proc "c" (
 }
 
 @(export)
-bac_add_global :: proc "c" (
+bac_add_dbg_sym_decl :: proc "c" (
 	prc: ^bac.Proc,
 	name: string,
-	idx: u32,
 ) -> (
 	bac.Node_ID,
 ) {
 	context = {}
-	return bac.add_global(prc, name, idx)
+	return bac.add_dbg_sym_decl(prc, name)
 }
 
 @(export)
@@ -297,15 +297,15 @@ bac_add_mem :: proc "c" (
 }
 
 @(export)
-bac_add_merge_mem :: proc "c" (
+bac_add_global :: proc "c" (
 	prc: ^bac.Proc,
 	name: string,
-	inputs: []bac.Node_ID,
+	idx: u32,
 ) -> (
 	bac.Node_ID,
 ) {
 	context = {}
-	return bac.add_merge_mem(prc, name, inputs)
+	return bac.add_global(prc, name, idx)
 }
 
 @(export)
@@ -491,18 +491,15 @@ bac_add_trap :: proc "c" (
 }
 
 @(export)
-bac_add_un_op :: proc "c" (
+bac_add_merge_mem :: proc "c" (
 	prc: ^bac.Proc,
 	name: string,
-	type: bac.Un_Op,
-	dt: bac.Node_Datatype,
-	oprnd: bac.Node_ID,
-	lane: bac.Lane_Type,
+	inputs: []bac.Node_ID,
 ) -> (
 	bac.Node_ID,
 ) {
 	context = {}
-	return bac.add_un_op(prc, name, type, dt, oprnd, lane)
+	return bac.add_merge_mem(prc, name, inputs)
 }
 
 @(export)
@@ -695,6 +692,21 @@ bac_mount_stencil :: proc "c" (
 ) {
 	context = {}
 	bac.mount_stencil(prc, stencil)
+}
+
+@(export)
+bac_add_un_op :: proc "c" (
+	prc: ^bac.Proc,
+	name: string,
+	type: bac.Un_Op,
+	dt: bac.Node_Datatype,
+	oprnd: bac.Node_ID,
+	lane: bac.Lane_Type,
+) -> (
+	bac.Node_ID,
+) {
+	context = {}
+	return bac.add_un_op(prc, name, type, dt, oprnd, lane)
 }
 
 @(export)
@@ -1137,6 +1149,17 @@ bac_opt :: proc "c" (
 }
 
 @(export)
+bac_set_scope_value :: proc "c" (
+	prc: ^bac.Proc,
+	scope: bac.Node_ID,
+	idx: int,
+	value: bac.Node_ID,
+) {
+	context = {}
+	bac_ssa.set_scope_value(prc, scope, idx, value)
+}
+
+@(export)
 bac_push_scope_value :: proc "c" (
 	prc: ^bac.Proc,
 	scope: bac.Node_ID,
@@ -1151,14 +1174,13 @@ bac_push_scope_value :: proc "c" (
 }
 
 @(export)
-bac_set_scope_value :: proc "c" (
+bac_start_else :: proc "c" (
 	prc: ^bac.Proc,
-	scope: bac.Node_ID,
-	idx: int,
-	value: bac.Node_ID,
+	then_scope: ^bac.Node_ID,
+	state: ^bac_ssa.If_State,
 ) {
 	context = {}
-	bac_ssa.set_scope_value(prc, scope, idx, value)
+	bac_ssa.start_else(prc, then_scope, state)
 }
 
 @(export)
@@ -1167,16 +1189,6 @@ bac_start_block :: proc "c" (
 ) {
 	context = {}
 	bac_ssa.start_block(state)
-}
-
-@(export)
-bac_start_else :: proc "c" (
-	prc: ^bac.Proc,
-	then_scope: ^bac.Node_ID,
-	state: ^bac_ssa.If_State,
-) {
-	context = {}
-	bac_ssa.start_else(prc, then_scope, state)
 }
 
 @(export)
@@ -1191,16 +1203,6 @@ bac_start_if :: proc "c" (
 }
 
 @(export)
-bac_start_loop :: proc "c" (
-	prc: ^bac.Proc,
-	scope: bac.Node_ID,
-	state: ^bac_ssa.Loop_State,
-) {
-	context = {}
-	bac_ssa.start_loop(prc, scope, state)
-}
-
-@(export)
 bac_start_loop_increment :: proc "c" (
 	prc: ^bac.Proc,
 	node_scope: ^bac.Node_ID,
@@ -1211,15 +1213,13 @@ bac_start_loop_increment :: proc "c" (
 }
 
 @(export)
-bac_start_proc :: proc "c" (
+bac_start_loop :: proc "c" (
 	prc: ^bac.Proc,
-	mem: ^arna.Allocator,
-	temps: ^arna.Temps,
-) -> (
-	bac.Node_ID,
+	scope: bac.Node_ID,
+	state: ^bac_ssa.Loop_State,
 ) {
 	context = {}
-	return bac_ssa.start_proc(prc, mem, temps)
+	bac_ssa.start_loop(prc, scope, state)
 }
 
 @(export)

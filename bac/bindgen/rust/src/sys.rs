@@ -46,8 +46,19 @@ impl<T> Default for DynamicArray<T> {
     }
 }
 unsafe extern "C" {
-    pub static bac_NIL_NODE: Nil_Node;
+    pub fn bac_start_proc(
+        r#prc: *mut Proc,
+        r#mem: *mut arna_Allocator,
+        r#temps: *mut arna_Temps,
+    ) -> Node_ID;
     pub fn bac_add_always(r#prc: *mut Proc, r#name: String, r#inputs: Slice<Node_ID>) -> Node_ID;
+    pub static bac_NIL_NODE: Nil_Node;
+    pub fn bac_add_c_int(
+        r#prc: *mut Proc,
+        r#name: String,
+        r#dt: Node_Datatype,
+        r#value: i64,
+    ) -> Node_ID;
     pub fn bac_add_bin_op(
         r#prc: *mut Proc,
         r#name: String,
@@ -56,18 +67,6 @@ unsafe extern "C" {
         r#lhs: Node_ID,
         r#rhs: Node_ID,
         r#lane: Lane_Type,
-    ) -> Node_ID;
-    pub fn bac_add_c_int(
-        r#prc: *mut Proc,
-        r#name: String,
-        r#dt: Node_Datatype,
-        r#value: i64,
-    ) -> Node_ID;
-    pub fn bac_add_call(
-        r#prc: *mut Proc,
-        r#name: String,
-        r#inputs: Slice<Node_ID>,
-        r#extra: Call,
     ) -> Node_ID;
     pub fn bac_add_call_end(r#prc: *mut Proc, r#name: String, r#call: Node_ID) -> Node_ID;
     pub fn bac_add_copy(
@@ -81,7 +80,12 @@ unsafe extern "C" {
     ) -> Node_ID;
     pub fn bac_add_dbg_scope(r#prc: *mut Proc, r#name: String, r#inputs: Slice<Node_ID>)
     -> Node_ID;
-    pub fn bac_add_dbg_sym_decl(r#prc: *mut Proc, r#name: String) -> Node_ID;
+    pub fn bac_add_call(
+        r#prc: *mut Proc,
+        r#name: String,
+        r#inputs: Slice<Node_ID>,
+        r#extra: Call,
+    ) -> Node_ID;
     pub fn bac_add_dbg_sym_update(
         r#prc: *mut Proc,
         r#name: String,
@@ -97,7 +101,7 @@ unsafe extern "C" {
     pub fn bac_add_else(r#prc: *mut Proc, r#name: String, r#ctrl: Node_ID) -> Node_ID;
     pub fn bac_add_end(r#prc: *mut Proc, r#name: String, r#inputs: Slice<Node_ID>) -> Node_ID;
     pub fn bac_add_entry(r#prc: *mut Proc, r#name: String) -> Node_ID;
-    pub fn bac_add_global(r#prc: *mut Proc, r#name: String, r#idx: u32) -> Node_ID;
+    pub fn bac_add_dbg_sym_decl(r#prc: *mut Proc, r#name: String) -> Node_ID;
     pub fn bac_add_global_addr(r#prc: *mut Proc, r#name: String, r#global: Node_ID) -> Node_ID;
     pub fn bac_add_if(
         r#prc: *mut Proc,
@@ -118,8 +122,7 @@ unsafe extern "C" {
     pub fn bac_add_local_addr(r#prc: *mut Proc, r#name: String, r#local: Node_ID) -> Node_ID;
     pub fn bac_add_loop(r#prc: *mut Proc, r#name: String, r#ctrl: Node_ID) -> Node_ID;
     pub fn bac_add_mem(r#prc: *mut Proc, r#name: String, r#ctrl: Node_ID) -> Node_ID;
-    pub fn bac_add_merge_mem(r#prc: *mut Proc, r#name: String, r#inputs: Slice<Node_ID>)
-    -> Node_ID;
+    pub fn bac_add_global(r#prc: *mut Proc, r#name: String, r#idx: u32) -> Node_ID;
     pub fn bac_add_param(
         r#prc: *mut Proc,
         r#name: String,
@@ -173,14 +176,8 @@ unsafe extern "C" {
     pub fn bac_add_sym(r#prc: *mut Proc, r#name: String, r#entry: Node_ID) -> Node_ID;
     pub fn bac_add_then(r#prc: *mut Proc, r#name: String, r#ctrl: Node_ID) -> Node_ID;
     pub fn bac_add_trap(r#prc: *mut Proc, r#name: String, r#inputs: Slice<Node_ID>) -> Node_ID;
-    pub fn bac_add_un_op(
-        r#prc: *mut Proc,
-        r#name: String,
-        r#type: Un_Op,
-        r#dt: Node_Datatype,
-        r#oprnd: Node_ID,
-        r#lane: Lane_Type,
-    ) -> Node_ID;
+    pub fn bac_add_merge_mem(r#prc: *mut Proc, r#name: String, r#inputs: Slice<Node_ID>)
+    -> Node_ID;
     pub fn bac_apply_peep(r#prc: *mut Proc, r#id: Node_ID) -> Node_ID;
     pub fn bac_apply_peeps(r#ctx: Peep_Ctx) -> bool;
     pub fn bac_compact(r#prc: *mut Proc);
@@ -204,6 +201,14 @@ unsafe extern "C" {
     pub fn bac_init_custom_fmt();
     pub fn bac_lane_from_dt(r#ty: Node_Datatype, out0: *mut Lane_Type) -> bool;
     pub fn bac_mount_stencil(r#prc: *mut Proc, r#stencil: Stencil);
+    pub fn bac_add_un_op(
+        r#prc: *mut Proc,
+        r#name: String,
+        r#type: Un_Op,
+        r#dt: Node_Datatype,
+        r#oprnd: Node_ID,
+        r#lane: Lane_Type,
+    ) -> Node_ID;
     pub fn bac_pin(r#prc: *mut Proc, r#id: Node_ID);
     pub fn bac_schedule_graph(
         r#prc: *mut Proc,
@@ -333,6 +338,7 @@ unsafe extern "C" {
     pub fn bac_memopt(r#prc: *mut Proc) -> bool;
     pub fn bac_merge_returns(r#prc: *mut Proc, r#args: Slice<Node_ID>) -> Node_ID;
     pub fn bac_opt(r#ctx: Peep_Ctx);
+    pub fn bac_set_scope_value(r#prc: *mut Proc, r#scope: Node_ID, r#idx: isize, r#value: Node_ID);
     pub fn bac_push_scope_value(
         r#prc: *mut Proc,
         r#scope: Node_ID,
@@ -340,26 +346,20 @@ unsafe extern "C" {
         r#name: String,
         r#type: u64,
     ) -> isize;
-    pub fn bac_set_scope_value(r#prc: *mut Proc, r#scope: Node_ID, r#idx: isize, r#value: Node_ID);
-    pub fn bac_start_block(r#state: *mut ssa_Block_State);
     pub fn bac_start_else(r#prc: *mut Proc, r#then_scope: *mut Node_ID, r#state: *mut ssa_If_State);
+    pub fn bac_start_block(r#state: *mut ssa_Block_State);
     pub fn bac_start_if(
         r#prc: *mut Proc,
         r#scope: Node_ID,
         r#state: *mut ssa_If_State,
         r#cond: Node_ID,
     );
-    pub fn bac_start_loop(r#prc: *mut Proc, r#scope: Node_ID, r#state: *mut ssa_Loop_State);
     pub fn bac_start_loop_increment(
         r#prc: *mut Proc,
         r#node_scope: *mut Node_ID,
         r#state: *mut ssa_Loop_State,
     );
-    pub fn bac_start_proc(
-        r#prc: *mut Proc,
-        r#mem: *mut arna_Allocator,
-        r#temps: *mut arna_Temps,
-    ) -> Node_ID;
+    pub fn bac_start_loop(r#prc: *mut Proc, r#scope: Node_ID, r#state: *mut ssa_Loop_State);
     pub fn bac_truncate_scope(r#prc: *mut Proc, r#scope: Node_ID, r#to_len: isize);
     pub static bac_wasm_CC_TABLE: [Call_Conv; 1];
     pub static bac_wasm_SPEC: Node_Spec;
@@ -441,21 +441,6 @@ pub const ssa_Node_Type_Scope: ssa_Node_Type = 69;
 pub const ssa_Node_Type_Lazy_Phi: ssa_Node_Type = 70;
 const _: () = assert!(core::mem::size_of::<ssa_Node_Type>() == 2);
 const _: () = assert!(core::mem::align_of::<ssa_Node_Type>() == 2);
-#[repr(C, align(4))]
-#[derive(Clone, Copy)]
-pub struct Nil_Node {
-    pub r#base: Node,
-    pub r#cfg: Cfg,
-}
-const _: () = assert!(core::mem::offset_of!(Nil_Node, r#base) == 0);
-const _: () = assert!(core::mem::offset_of!(Nil_Node, r#cfg) == 44);
-impl Default for Nil_Node {
-    fn default() -> Self {
-        unsafe { core::mem::zeroed() }
-    }
-}
-const _: () = assert!(core::mem::size_of::<Nil_Node>() == 48);
-const _: () = assert!(core::mem::align_of::<Nil_Node>() == 4);
 #[repr(C, align(8))]
 #[derive(Clone, Copy)]
 pub struct Proc {
@@ -495,36 +480,46 @@ impl Default for Proc {
 }
 const _: () = assert!(core::mem::size_of::<Proc>() == 184);
 const _: () = assert!(core::mem::align_of::<Proc>() == 8);
+#[repr(C, align(8))]
+#[derive(Clone, Copy)]
+pub struct arna_Allocator {
+    pub r#ptr: *mut u8,
+    pub r#pos: usize,
+    pub r#commited: usize,
+    pub r#reserved: usize,
+}
+const _: () = assert!(core::mem::offset_of!(arna_Allocator, r#ptr) == 0);
+const _: () = assert!(core::mem::offset_of!(arna_Allocator, r#pos) == 8);
+const _: () = assert!(core::mem::offset_of!(arna_Allocator, r#commited) == 16);
+const _: () = assert!(core::mem::offset_of!(arna_Allocator, r#reserved) == 24);
+impl Default for arna_Allocator {
+    fn default() -> Self {
+        unsafe { core::mem::zeroed() }
+    }
+}
+const _: () = assert!(core::mem::size_of::<arna_Allocator>() == 32);
+const _: () = assert!(core::mem::align_of::<arna_Allocator>() == 8);
+pub type arna_Temps = [arna_Allocator; 2];
+const _: () = assert!(core::mem::size_of::<arna_Temps>() == 64);
+const _: () = assert!(core::mem::align_of::<arna_Temps>() == 8);
 pub type Node_ID = u32;
 const _: () = assert!(core::mem::size_of::<Node_ID>() == 4);
 const _: () = assert!(core::mem::align_of::<Node_ID>() == 4);
-pub type Bin_Op = u16;
-pub const Bin_Op_Ne: Bin_Op = 34;
-pub const Bin_Op_U_Rem: Bin_Op = 50;
-pub const Bin_Op_Shl: Bin_Op = 43;
-pub const Bin_Op_Xor: Bin_Op = 32;
-pub const Bin_Op_Ge: Bin_Op = 38;
-pub const Bin_Op_Mul: Bin_Op = 46;
-pub const Bin_Op_And: Bin_Op = 30;
-pub const Bin_Op_Div: Bin_Op = 47;
-pub const Bin_Op_And_Not: Bin_Op = 51;
-pub const Bin_Op_U_Ge: Bin_Op = 42;
-pub const Bin_Op_U_Shr: Bin_Op = 45;
-pub const Bin_Op_Le: Bin_Op = 35;
-pub const Bin_Op_Add: Bin_Op = 28;
-pub const Bin_Op_U_Gt: Bin_Op = 40;
-pub const Bin_Op_U_Lt: Bin_Op = 39;
-pub const Bin_Op_Gt: Bin_Op = 37;
-pub const Bin_Op_Eq: Bin_Op = 33;
-pub const Bin_Op_Or: Bin_Op = 31;
-pub const Bin_Op_Rem: Bin_Op = 49;
-pub const Bin_Op_Sub: Bin_Op = 29;
-pub const Bin_Op_Lt: Bin_Op = 36;
-pub const Bin_Op_U_Le: Bin_Op = 41;
-pub const Bin_Op_Shr: Bin_Op = 44;
-pub const Bin_Op_U_Div: Bin_Op = 48;
-const _: () = assert!(core::mem::size_of::<Bin_Op>() == 2);
-const _: () = assert!(core::mem::align_of::<Bin_Op>() == 2);
+#[repr(C, align(4))]
+#[derive(Clone, Copy)]
+pub struct Nil_Node {
+    pub r#base: Node,
+    pub r#cfg: Cfg,
+}
+const _: () = assert!(core::mem::offset_of!(Nil_Node, r#base) == 0);
+const _: () = assert!(core::mem::offset_of!(Nil_Node, r#cfg) == 44);
+impl Default for Nil_Node {
+    fn default() -> Self {
+        unsafe { core::mem::zeroed() }
+    }
+}
+const _: () = assert!(core::mem::size_of::<Nil_Node>() == 48);
+const _: () = assert!(core::mem::align_of::<Nil_Node>() == 4);
 pub type Node_Datatype = u8;
 pub const Node_Datatype_Void: Node_Datatype = 0;
 pub const Node_Datatype_Mem: Node_Datatype = 1;
@@ -539,6 +534,33 @@ pub const Node_Datatype_V256: Node_Datatype = 9;
 pub const Node_Datatype_V512: Node_Datatype = 10;
 const _: () = assert!(core::mem::size_of::<Node_Datatype>() == 1);
 const _: () = assert!(core::mem::align_of::<Node_Datatype>() == 1);
+pub type Bin_Op = u16;
+pub const Bin_Op_Add: Bin_Op = 28;
+pub const Bin_Op_Sub: Bin_Op = 29;
+pub const Bin_Op_And: Bin_Op = 30;
+pub const Bin_Op_Or: Bin_Op = 31;
+pub const Bin_Op_Xor: Bin_Op = 32;
+pub const Bin_Op_Eq: Bin_Op = 33;
+pub const Bin_Op_Ne: Bin_Op = 34;
+pub const Bin_Op_Le: Bin_Op = 35;
+pub const Bin_Op_Lt: Bin_Op = 36;
+pub const Bin_Op_Gt: Bin_Op = 37;
+pub const Bin_Op_Ge: Bin_Op = 38;
+pub const Bin_Op_U_Lt: Bin_Op = 39;
+pub const Bin_Op_U_Gt: Bin_Op = 40;
+pub const Bin_Op_U_Le: Bin_Op = 41;
+pub const Bin_Op_U_Ge: Bin_Op = 42;
+pub const Bin_Op_Shl: Bin_Op = 43;
+pub const Bin_Op_Shr: Bin_Op = 44;
+pub const Bin_Op_U_Shr: Bin_Op = 45;
+pub const Bin_Op_Mul: Bin_Op = 46;
+pub const Bin_Op_Div: Bin_Op = 47;
+pub const Bin_Op_U_Div: Bin_Op = 48;
+pub const Bin_Op_Rem: Bin_Op = 49;
+pub const Bin_Op_U_Rem: Bin_Op = 50;
+pub const Bin_Op_And_Not: Bin_Op = 51;
+const _: () = assert!(core::mem::size_of::<Bin_Op>() == 2);
+const _: () = assert!(core::mem::align_of::<Bin_Op>() == 2);
 pub type Lane_Type = u8;
 pub const Lane_Type_I8: Lane_Type = 0;
 pub const Lane_Type_I16: Lane_Type = 1;
@@ -603,18 +625,6 @@ pub const Efficiency_Stat_Kind_sroad_locals: Efficiency_Stat_Kind = 18;
 pub const Efficiency_Stat_Kind_sroa_slot_mismatch: Efficiency_Stat_Kind = 19;
 const _: () = assert!(core::mem::size_of::<Efficiency_Stat_Kind>() == 8);
 const _: () = assert!(core::mem::align_of::<Efficiency_Stat_Kind>() == 8);
-pub type Un_Op = u16;
-pub const Un_Op_U_Conv: Un_Op = 64;
-pub const Un_Op_Simd_Reduce_Add_Bisect: Un_Op = 68;
-pub const Un_Op_Conv: Un_Op = 63;
-pub const Un_Op_Neg: Un_Op = 60;
-pub const Un_Op_Ctz: Un_Op = 66;
-pub const Un_Op_Simd_Extract_Lsbs: Un_Op = 67;
-pub const Un_Op_Splat: Un_Op = 65;
-pub const Un_Op_Cast: Un_Op = 62;
-pub const Un_Op_Not: Un_Op = 61;
-const _: () = assert!(core::mem::size_of::<Un_Op>() == 2);
-const _: () = assert!(core::mem::align_of::<Un_Op>() == 2);
 #[repr(C, align(8))]
 #[derive(Clone, Copy)]
 pub struct Peep_Ctx {
@@ -778,6 +788,18 @@ impl Default for Stencil {
 }
 const _: () = assert!(core::mem::size_of::<Stencil>() == 112);
 const _: () = assert!(core::mem::align_of::<Stencil>() == 8);
+pub type Un_Op = u16;
+pub const Un_Op_Neg: Un_Op = 60;
+pub const Un_Op_Not: Un_Op = 61;
+pub const Un_Op_Cast: Un_Op = 62;
+pub const Un_Op_Conv: Un_Op = 63;
+pub const Un_Op_U_Conv: Un_Op = 64;
+pub const Un_Op_Splat: Un_Op = 65;
+pub const Un_Op_Ctz: Un_Op = 66;
+pub const Un_Op_Simd_Extract_Lsbs: Un_Op = 67;
+pub const Un_Op_Simd_Reduce_Add_Bisect: Un_Op = 68;
+const _: () = assert!(core::mem::size_of::<Un_Op>() == 2);
+const _: () = assert!(core::mem::align_of::<Un_Op>() == 2);
 #[repr(C, align(8))]
 #[derive(Clone, Copy)]
 pub struct Schedule {
@@ -1146,41 +1168,6 @@ const _: () = assert!(core::mem::size_of::<ssa_Loop_Control>() == 8);
 const _: () = assert!(core::mem::align_of::<ssa_Loop_Control>() == 8);
 #[repr(C, align(8))]
 #[derive(Clone, Copy)]
-pub struct arna_Allocator {
-    pub r#ptr: *mut u8,
-    pub r#pos: usize,
-    pub r#commited: usize,
-    pub r#reserved: usize,
-}
-const _: () = assert!(core::mem::offset_of!(arna_Allocator, r#ptr) == 0);
-const _: () = assert!(core::mem::offset_of!(arna_Allocator, r#pos) == 8);
-const _: () = assert!(core::mem::offset_of!(arna_Allocator, r#commited) == 16);
-const _: () = assert!(core::mem::offset_of!(arna_Allocator, r#reserved) == 24);
-impl Default for arna_Allocator {
-    fn default() -> Self {
-        unsafe { core::mem::zeroed() }
-    }
-}
-const _: () = assert!(core::mem::size_of::<arna_Allocator>() == 32);
-const _: () = assert!(core::mem::align_of::<arna_Allocator>() == 8);
-pub type arna_Temps = [arna_Allocator; 2];
-const _: () = assert!(core::mem::size_of::<arna_Temps>() == 64);
-const _: () = assert!(core::mem::align_of::<arna_Temps>() == 8);
-#[repr(C, align(4))]
-#[derive(Clone, Copy)]
-pub struct Cfg {
-    pub r#idepth: u32,
-}
-const _: () = assert!(core::mem::offset_of!(Cfg, r#idepth) == 0);
-impl Default for Cfg {
-    fn default() -> Self {
-        unsafe { core::mem::zeroed() }
-    }
-}
-const _: () = assert!(core::mem::size_of::<Cfg>() == 4);
-const _: () = assert!(core::mem::align_of::<Cfg>() == 4);
-#[repr(C, align(8))]
-#[derive(Clone, Copy)]
 pub struct Worklist {
     pub r#queue: container_queue_Queue__T_Node_ID_,
     pub r#in_queue: bit_arr_Bit_Set,
@@ -1252,6 +1239,19 @@ impl Default for Lattice {
 }
 const _: () = assert!(core::mem::size_of::<Lattice>() == 24);
 const _: () = assert!(core::mem::align_of::<Lattice>() == 8);
+#[repr(C, align(4))]
+#[derive(Clone, Copy)]
+pub struct Cfg {
+    pub r#idepth: u32,
+}
+const _: () = assert!(core::mem::offset_of!(Cfg, r#idepth) == 0);
+impl Default for Cfg {
+    fn default() -> Self {
+        unsafe { core::mem::zeroed() }
+    }
+}
+const _: () = assert!(core::mem::size_of::<Cfg>() == 4);
+const _: () = assert!(core::mem::align_of::<Cfg>() == 4);
 #[repr(C, align(4))]
 #[derive(Clone, Copy)]
 pub struct Call_flags {

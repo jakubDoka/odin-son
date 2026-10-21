@@ -42,11 +42,9 @@ SPEC_NOT_PRESENT :: (#load("node_specs.odin", string) or_else "") == ""
 
 WASM_SYSTEMV_CC :: 0
 
-@(tag = "api", export, link_name = "bac_wasm_CC_TABLE")
+@(tag = "api", rodata, export, link_name = "bac_wasm_CC_TABLE")
 CC_TABLE := [?]bac.Call_Conv {
-	WASM_SYSTEMV_CC = {
-		args = {0 ..= RK_COUNT = transmute([]Reg)runtime.Raw_Slice{len = 64}},
-	},
+	WASM_SYSTEMV_CC = {},
 }
 
 Lane_Op :: struct {
@@ -482,11 +480,11 @@ pre_regalloc_hook :: proc(
 
 	Ctx :: struct {
 		using prc: ^bac.Proc,
-		metas:       []Meta,
-		instrs:      ^[dynamic]bac.Node_ID,
-		sets:        []bac.Node_ID,
-		rcs:         []int,
-		cursor:      int,
+		metas:     []Meta,
+		instrs:    ^[dynamic]bac.Node_ID,
+		sets:      []bac.Node_ID,
+		rcs:       []int,
+		cursor:    int,
 	}
 
 	ctx: Ctx

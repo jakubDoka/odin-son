@@ -266,10 +266,33 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 
 		os.write_string(file, "}\n\n")
 	} else {
+		Group :: struct {
+			name:    string,
+			members: [dynamic]Group_Member,
+		}
+
+		sorted_groups: [dynamic]Group
 
 		for name, members in groups {
-			fmt.fprintfln(file, "%v :: enum u16 {{", name)
+			group_members: [dynamic]Group_Member
 			for member in members {
+				append(&group_members, member)
+			}
+			slice.sort_by_key(
+				group_members[:],
+				proc(m: Group_Member) -> i128 {return transmute(i128)m},
+			)
+			append(&sorted_groups, Group{name, group_members})
+		}
+
+		slice.sort_by_key(
+			sorted_groups[:][:],
+			proc(m: Group) -> string {return m.name},
+		)
+
+		for group in sorted_groups {
+			fmt.fprintfln(file, "%v :: enum u16 {{", group.name)
+			for member in group.members {
 				classes := spec.classes[member.class_group]
 				class := reflect.enum_fields_zipped(classes.enm)[member.class]
 				fmt.fprintfln(
@@ -493,17 +516,32 @@ collect_meta :: proc(ctx: ^%vProc,
 	}
 	os.write_string(file, "\n")
 
+	Inher :: struct {
+		type: typeid,
+		idx:  int,
+	}
+
+	inhers: [dynamic]Inher
+	for id, idx in inheritable {
+		append(&inhers, Inher{id, idx})
+	}
+
+	slice.sort_by_key(
+		inhers[:],
+		proc(i: Inher) -> string {return fmt.tprint(i.type)},
+	)
+
 	os.write_string(
 		file,
 		"inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {\n",
 	)
 	os.write_string(file, "\twhen false {}\n")
-	for id, idx in inheritable {
+	for inh in inhers {
 		fmt.fprintf(
 			file,
 			"\telse when T == %v {{return %v}}\n",
-			qualify_type(q, locals, id),
-			idx,
+			qualify_type(q, locals, inh.type),
+			inh.idx,
 		)
 	}
 
@@ -513,11 +551,11 @@ collect_meta :: proc(ctx: ^%vProc,
 	)
 	os.write_string(file, "}\n")
 
-	for id, idx in inheritable {
+	for inh in inhers {
 		fmt.fprintfln(
 			file,
 			"#assert(size_of(%v) %% %vPRECISION == 0)",
-			qualify_type(q, locals, id),
+			qualify_type(q, locals, inh.type),
 			q,
 		)
 	}

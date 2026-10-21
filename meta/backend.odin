@@ -15,47 +15,18 @@ OVERLOAD_FILE :: "meta_overloads.odin"
 Backend_Package :: struct {
 	path:  string,
 	name:  string,
-	procs: [dynamic]Backend_Proc,
+	procs: [dynamic]Backend_Item,
 }
 
-Backend_Proc :: struct {
+Backend_Item :: struct {
 	name:         string,
 	file:         ^ast.File,
 	lit:          ^ast.Proc_Lit,
 	api:          bool,
 	node_proc:    bool,
+	priority:     int,
 	thread_local: bool,
 	doc_comment:  string,
-}
-
-has_thread_local :: proc(decl: ^ast.Value_Decl) -> bool {
-	for attr in decl.attributes {
-		for elem in attr.elems {
-			field := elem.derived.(^ast.Ident) or_continue
-			if field.name == "thread_local" {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-has_tag :: proc(decl: ^ast.Value_Decl, tag: string) -> bool {
-	for attr in decl.attributes {
-		for elem in attr.elems {
-			field := elem.derived.(^ast.Field_Value) or_continue
-			ident := field.field.derived.(^ast.Ident) or_continue
-			if ident.name != "tag" do continue
-			lit := field.value.derived.(^ast.Basic_Lit) or_continue
-			tags, _, ok := strconv.unquote_string(lit.tok.text)
-			if !ok do continue
-			for tags != "" {
-				part, _ := strings.split_iterator(&tags, ",")
-				if strings.trim_space(part) == tag do return true
-			}
-		}
-	}
-	return false
 }
 
 load_backend_packages :: proc(
@@ -89,12 +60,32 @@ load_backend_packages :: proc(
 
 		for decl in f.decls {
 			vdecl := decl.derived.(^ast.Value_Decl) or_continue
-			api := has_tag(vdecl, "api")
-			if (pkg.name == "bac" || pkg.name == "bac_ssa") && entry.name == "node_specs.odin" && len(vdecl.names) == 1 {
+
+			thread_local: bool
+
+			tags: []string
+			for attr in vdecl.attributes {
+				for elem in attr.elems {
+					if field, ok := elem.derived.(^ast.Ident);
+					   ok && field.name == "thread_local" {
+						thread_local = true
+					}
+					field := elem.derived.(^ast.Field_Value) or_continue
+					ident := field.field.derived.(^ast.Ident) or_continue
+					if ident.name != "tag" do continue
+					lit := field.value.derived.(^ast.Basic_Lit) or_continue
+					unq_tags, _, ok := strconv.unquote_string(lit.tok.text)
+					if ok do tags = strings.split(unq_tags, ",")
+				}
+			}
+
+			api := slice.contains(tags, "api")
+			if (pkg.name == "bac" || pkg.name == "bac_ssa") &&
+			   entry.name == "node_specs.odin" &&
+			   len(vdecl.names) == 1 {
 				api |= strings.has_prefix(src_of(f^, vdecl.names[0]), "add_")
 			}
-			node_proc := has_tag(vdecl, "node_proc")
-			thread_local := has_thread_local(vdecl)
+			node_proc := slice.contains(tags, "node_proc")
 			if !api && !node_proc do continue
 			fmt.assertf(
 				len(vdecl.names) == 1,
@@ -102,34 +93,35 @@ load_backend_packages :: proc(
 				entry.fullpath,
 			)
 
-			if len(vdecl.values) > 0 {
-				if lit, pok := vdecl.values[0].derived.(^ast.Proc_Lit); pok {
+			priority: int
+
+			for tag in tags {
+				if strings.starts_with(tag, "priority=") {
+					priority, ok = strconv.parse_int(tag[len("priority="):])
 					fmt.assertf(
-						pok,
-						"%v: tag overload children, not overload groups",
-						entry.fullpath,
+						ok,
+						"priority should be a number: %v %v",
+						tag,
+						decl.pos,
 					)
-					append(
-						&pkg.procs,
-						Backend_Proc {
-							name = src_of(f^, vdecl.names[0]),
-							file = f,
-							lit = lit,
-							api = api,
-							node_proc = node_proc,
-							doc_comment = src_of(f^, vdecl.docs),
-						},
-					)
-					continue
 				}
+			}
+
+			lit: ^ast.Proc_Lit
+
+			if len(vdecl.values) > 0 {
+				lit, _ = vdecl.values[0].derived.(^ast.Proc_Lit)
 			}
 
 			append(
 				&pkg.procs,
-				Backend_Proc {
+				Backend_Item {
 					name = src_of(f^, vdecl.names[0]),
 					file = f,
+					lit = lit,
 					api = api,
+					node_proc = node_proc,
+					priority = priority,
 					thread_local = thread_local,
 					doc_comment = src_of(f^, vdecl.docs),
 				},
@@ -138,9 +130,10 @@ load_backend_packages :: proc(
 	}
 
 	if pkg.name != "" {
-		slice.sort_by(pkg.procs[:], proc(a, b: Backend_Proc) -> bool {
-			return a.name < b.name
-		})
+		slice.sort_by(
+			pkg.procs[:],
+			proc(a, b: Backend_Item) -> bool {return a.name < b.name},
+		)
 		append(&packages, pkg)
 	}
 	for entry in entries {
@@ -162,7 +155,7 @@ gen_backend_overloads :: proc(packages: []Backend_Package) {
 		fmt.fprintfln(file, "package %v", pkg.name)
 		fmt.fprintfln(file, "// NOTE: this file is generated: %v\n", COMMAND)
 
-		imports: map[string]bool
+		imports: map[string]struct{}
 		for prc in pkg.procs {
 			if !prc.node_proc do continue
 			for imp in prc.file.imports {
@@ -175,7 +168,7 @@ gen_backend_overloads :: proc(packages: []Backend_Package) {
 				if !strings.contains(src_of(prc.file^, prc.lit.type), fmt.tprintf("%v.", alias)) do continue
 				source := src_of(prc.file^, imp)
 				if source in imports do continue
-				imports[source] = true
+				imports[source] = {}
 				fmt.fprintln(file, source)
 			}
 		}
@@ -259,23 +252,37 @@ gen_backend_api :: proc(packages: []Backend_Package) {
 API := [?]API_Proc{
 `)
 
+	Item :: struct {
+		using prc: Backend_Item,
+		relpath:   string,
+		pkg:       int,
+	}
+
+	items: [dynamic]Item
+
 	for pkg, i in api_packages {
 		abs, _ := filepath.abs(pkg.path)
 		relpath, _ := filepath.rel(base, abs)
 		for prc in pkg.procs {
-			if !prc.api do continue
-			ty := fmt.tprintf("type_of(pkg_%v.%v)", i, prc.name)
-
-			fmt.fprintfln(
-				file,
-				"\t{{%v, %q, %q, %v, %q}},",
-				prc.thread_local,
-				relpath,
-				prc.name,
-				ty,
-				prc.doc_comment,
-			)
+			append(&items, {prc, relpath, i})
 		}
+	}
+
+	slice.sort_by_key(items[:], proc(i: Item) -> int {return -i.priority})
+
+	for prc in items {
+		if !prc.api do continue
+		ty := fmt.tprintf("type_of(pkg_%v.%v)", prc.pkg, prc.name)
+
+		fmt.fprintfln(
+			file,
+			"\t{{%v, %q, %q, %v, %q}},",
+			prc.thread_local,
+			prc.relpath,
+			prc.name,
+			ty,
+			prc.doc_comment,
+		)
 	}
 
 	os.write_string(file, "}\n")

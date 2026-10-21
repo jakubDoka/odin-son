@@ -638,7 +638,6 @@ param_mask :: proc(
 	mask: Maybe(Reg) = nil,
 ) -> RM_Intern_Idx {
 	kind := ra.datatype_to_reg_kind[node.dt]
-	args := ra.args[kind]
 	arg_ext := get_extra(prc, node, Tup)
 	idx := 0
 	for a in ra.param_specs[:arg_ext.idx] {
@@ -646,22 +645,26 @@ param_mask :: proc(
 		idx += int(ra.datatype_to_reg_kind[a.dt] == kind)
 	}
 
+	args: []Reg
+	if len(ra.args) != 0 {
+		args = ra.args[kind]
+	}
+
 	reg: Reg
-	if int(idx) < len(args) {
-		if raw_data(args) == nil {
-			reg = {
-				kind  = kind,
-				index = u16(idx),
-			}
-		} else {
-			reg = args[idx]
+	if raw_data(args) == nil {
+		reg = {
+			kind  = kind,
+			index = u16(idx),
 		}
+	} else if int(idx) < len(args) {
+		reg = args[idx]
 	} else {
 		reg = {
 			kind  = kind,
 			index = u16(ra.spill_boundary[kind]) + u16(idx) - u16(len(args)),
 		}
 	}
+
 	return rm_intern_single(ra, reg)
 }
 

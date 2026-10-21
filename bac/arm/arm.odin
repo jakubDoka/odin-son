@@ -512,8 +512,7 @@ meta_of :: #force_inline proc(
 		return {
 			out = IOUT,
 			input_start = 1,
-			masks = nmasks[:1 -
-			int(get_node(prc, node.inps[1]).dt == .Void)],
+			masks = nmasks[:1 - int(get_node(prc, node.inps[1]).dt == .Void)],
 		}
 	case .Call, .Return, .Set, .Copy:
 		return bac.cc_node_meta(prc, ra, node, CC_TABLE[:])
@@ -818,7 +817,7 @@ emit_instr :: proc(
 	if op_dt in bac.FLOAT_DTS && NODE_TO_OP[.Float][kind] != 0 {
 		op = NODE_TO_OP[.Float][kind]
 	}
-	is_64 := node.dt == .I64
+	is_64 := op_dt == .I64
 	is_f64 = op_dt == .F64
 
 	emit: switch kind {

@@ -1,5 +1,6 @@
 package script
 
+import "core:container/intrusive/list"
 import "core:fmt"
 import "core:os"
 import "core:slice"
@@ -9,7 +10,11 @@ TEMP_DIR :: ".tmp/build"
 
 Cmd_Out :: struct {
 	stdout, stderr: string,
-	state:          os.Process_State,
+	using state:    os.Process_State,
+}
+
+env :: proc(name: string) -> (string, bool) #optional_ok {
+	return os.lookup_env(name, context.allocator)
 }
 
 cmd_exists :: proc(name: string) -> bool {
@@ -18,6 +23,8 @@ cmd_exists :: proc(name: string) -> bool {
 	_, _, _, err := os.process_exec(pd, context.allocator)
 	return err == nil
 }
+
+exists :: os.exists
 
 cmd :: proc(args: ..string, env_map := []string{}) -> Cmd_Out {
 	pd: os.Process_Desc
@@ -37,6 +44,12 @@ mkdir :: proc(name: string) {
 rmdir :: proc(name: string) {
 	err := os.remove_all(name)
 	fmt.assertf(err == nil || err == .Not_Exist, "rmdir (%v): %v", name, err)
+}
+
+list_dir :: proc(path: string) -> []os.File_Info {
+	list, err := os.read_all_directory_by_path(path, context.allocator)
+	fmt.assertf(err == nil, "list_sir (%v): %v", path, err)
+	return list
 }
 
 cp :: proc(from, to: string) {
@@ -77,6 +90,148 @@ main :: proc() {
 	rmdir(TEMP_DIR)
 
 	switch args[1] {
+	case "run-programs":
+		jit_path := env("JIT")
+		if jit_path == "" {
+			cmd("odin", "build", "odin", "-out:jit", "-debug")
+			jit_path = "./jit"
+		}
+
+		PROGRAMS_DIR :: "test-programs"
+
+		MOD_DIR :: TEMP_DIR + "/patched-tests"
+
+		mkdir(MOD_DIR)
+
+		for item in list_dir(PROGRAMS_DIR) {
+			name := item.name
+
+			if 2 < len(args) && args[2] != name {
+				continue
+			}
+
+			fmt.println("===", name, "===")
+
+			entry, _ := os.join_path(
+				{item.fullpath, "main.odin"},
+				context.allocator,
+			)
+
+			if !exists(entry) do continue
+
+			subdir, _ := os.join_path({MOD_DIR, name}, context.allocator)
+			mkdir(subdir)
+
+			cp(item.fullpath, subdir)
+
+			content := cat(entry)
+
+			builder: strings.Builder
+			append(&builder.buf, content)
+
+			strings.builder_replace(
+				&builder,
+				"main :: proc() -> int {",
+				"_main :: proc() -> int {",
+				1,
+			)
+			strings.builder_replace(
+				&builder,
+				"package main",
+				"package main\nimport __os \"core:os\"\n",
+				1,
+			)
+			append(&builder.buf, "\nmain :: proc() { __os.exit(_main()) }\n")
+
+			dest, _ := os.join_path(
+				{MOD_DIR, name, "main.odin"},
+				context.allocator,
+			)
+
+			write(dest, strings.to_string(builder))
+
+			odin_bin, _ := os.join_path(
+				{MOD_DIR, name, "ref-bin.bin"},
+				context.allocator,
+			)
+			if cmd("odin", "build", subdir, fmt.tprintf("-out:%v", odin_bin)).exit_code !=
+			   0 {
+				continue
+			}
+
+			ref_res := cmd(odin_bin)
+
+			LEVELS :: []string {
+				"moderate-quick",
+				"none",
+				"none-quick",
+				"moderate",
+				"all",
+				"aggresive",
+			}
+
+			for level in LEVELS {
+				res_obj, _ := os.join_path(
+					{MOD_DIR, name, fmt.tprintf("%v-%v.o", name, level)},
+					context.allocator,
+				)
+
+				if cmd(jit_path, entry, fmt.tprintf("-o:%v", level), "-o", res_obj, env_map = {root_env}).exit_code !=
+				   0 {
+					continue
+				}
+
+				res_bin, _ := os.join_path(
+					{MOD_DIR, name, fmt.tprintf("%v-%v-bin", name, level)},
+					context.allocator,
+				)
+
+				if cmd("gcc", res_obj, "-o", res_bin).exit_code != 0 {
+					continue
+				}
+
+				prog_res := cmd(res_bin)
+
+				ok := true
+				if ref_res.exit_code != prog_res.exit_code {
+					fmt.printfln(
+						" [%v] exit code mismatch: %v != %v",
+						level,
+						ref_res.exit_code,
+						prog_res.exit_code,
+					)
+					ok = false
+				}
+
+				if ref_res.stdout != prog_res.stdout {
+					fmt.printfln(
+						" [%v] stdout mismatch: %v != %v",
+						level,
+						ref_res.stdout,
+						prog_res.stdout,
+					)
+					ok = false
+				}
+
+				if ref_res.stderr != prog_res.stderr {
+					fmt.printfln(
+						" [%v] stderr mismatch: %v != %v",
+						level,
+						ref_res.stderr,
+						prog_res.stderr,
+					)
+					ok = false
+				}
+
+				if ok {
+					fmt.printfln(
+						" [%v] OK (exit=%v)",
+						level,
+						prog_res.exit_code,
+					)
+				}
+			}
+		}
 	case "prebuild-libs":
 		TO_COMMENT_OUT :: []string {
 			"\n" + `query_page_size_init :: proc "contextless" `,

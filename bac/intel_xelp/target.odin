@@ -100,6 +100,7 @@ emit_function :: proc(ctx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 			put(ctx.code, Sync({kind = .Destination, value = 1, write_enable = true}))
 			put(ctx.code, ALU({op = .Mov, type = .U32, dst = 127, src0 = reg(0), distance = 1, write_enable = true}))
 			put_instruction(ctx.code, {0x80040061, 0x20014aa0, 0, 0}, .None)
+			put(ctx.code, Sync({kind = .Distance, value = 1}))
 			put(ctx.code, Send({sfid = .Thread_Spawner, dst = NULL, src0 = 127, src1 = NULL, descriptor = 0x02000010, sbid = 1, end_of_thread = true, write_enable = true}))
 			continue
 		case: fmt.panicf("unimplemented Xe-LP instruction: %v", n)

@@ -120,6 +120,12 @@ at 16/20, and click position at 24/28. Those offsets belong to that kernel ABI,
 not to the hardware or all Odin procedures. Continuous live input would need a
 separate synchronized producer/consumer protocol.
 
+Scalar v1 does not render images. Shadertoy-style image kernels still need
+batched invocation IDs, buffer/image load and store lowering, and a surface
+output contract; many shaders also need control flow and math intrinsics.
+TRUEOS already has the dispatch, surface, and uniform plumbing. This Odin
+target does not yet lower those additional source constructs.
+
 Hardware references: Intel's [thread/EOT terminology](https://www.intel.com/content/www/us/en/docs/oneapi/optimization-guide-gpu/2025-0/terminology-002.html)
 and [Gen12LP descriptor, walker, and PIPE_CONTROL definitions](https://github.com/intel/compute-runtime/blob/master/shared/source/generated/gen12lp/hw_cmds_generated_gen12lp.inl).
 EOT terminates a thread; it does not carry a CPU return value or replace the
@@ -132,7 +138,8 @@ ODIN=/path/to/odin python3 trueos/test_gpu_scalar.py
 python3 ../TRUEOS/tools/testpy/test_odin_native_scalar.py
 ```
 
-The scalar tests exercise six kernels and 601,734 arithmetic cases, including
+The scalar tests exercise six kernels plus assertions-disabled emission and
+702,023 arithmetic cases, including
 subnormals, infinities, NaNs, and signed zero. They check actual CPU stubs against
 a native-instruction interpreter, kernel admission, IGA roundtrip equality,
 runtime error traps, and unsupported-source diagnostics. If a freestanding
@@ -140,6 +147,11 @@ compiler object is present, its output is also compared with the host compiler.
 The driver harness checks production payload/command construction, concurrent
 callers, and timeout quarantine with hardware calls mocked. **These are offline
 checks, not proof of physical GPU execution.**
+
+The scalar arithmetic oracle uses Clang by default (`CC` overrides it). On this
+host, the GCC 15.2 oracle intermittently failed even with a pure C wrapper and
+no Odin-generated CPU code; the cause remains unresolved. The same preserved
+case passed 400 repeated Clang runs.
 
 ```odin
 import xelp "bac/intel_xelp"

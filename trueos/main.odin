@@ -144,6 +144,10 @@ run_compiler :: proc(argc: uintptr, argv: [^]cstring) -> i32 {
 
     for prc in ctx.procs {
         if !prc.gpu_tag do continue
+        if prc.gpu_native {
+            fmt.printfln("[odin-son gpu-backend] proc=%s source_ops=%d target=intel_xelp abi=scalar-f32-v1", prc.name, len(prc.gpu_ops))
+            continue
+        }
         fmt.printfln("[odin-son gpu-backend] proc=%s instructions=%d words=%d target=arithmetic-v1", prc.name, len(prc.gpu_program)/4, len(prc.gpu_program))
         for i := 0; i < len(prc.gpu_program); i += 4 {
             fmt.printfln("[odin-son gpu-backend] op=%d dst=%d src=%d imm=0x%08x", prc.gpu_program[i], prc.gpu_program[i+1], prc.gpu_program[i+2], prc.gpu_program[i+3])

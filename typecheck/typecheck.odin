@@ -3357,7 +3357,7 @@ typecheck_proc :: proc(
 			gpu_dispatch = gpu_scalar_runtime(ctx)
 		} else if len(isig.params) != 2 || len(isig.rets) != 1 ||
 		          isig.params[0] != .U64 || isig.params[1] != .U64 || isig.rets[0] != .I32 {
-			error(ctx, prc, "GPU kernel requires proc(handle: u64, frame: u64) -> i32")
+			error(ctx, prc, "GPU kernel requires proc(a: f32, b: f32) -> f32 or legacy proc(handle: u64, frame: u64) -> i32")
 		} else if ctx.target.name != "amd64" {
 			error(ctx, prc, "native GPU backend requires the amd64 TRUEOS target")
 		} else {

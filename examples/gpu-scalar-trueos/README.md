@@ -9,7 +9,7 @@ From the odin-son repository:
 ```sh
 odin build . -out:/tmp/odin-son-native
 ODIN_ROOT="$(odin root)" /tmp/odin-son-native examples/gpu-scalar-trueos/main.odin -o /tmp/gpu-scalar.o
-objcopy --redefine-sym main=trueos_main /tmp/gpu-scalar.o
+objcopy --strip-debug --redefine-sym main=trueos_main /tmp/gpu-scalar.o
 python3 trueos/package.py /tmp/gpu-scalar.o /tmp/gpu-scalar.bp
 ```
 

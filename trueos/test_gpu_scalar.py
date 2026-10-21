@@ -44,7 +44,7 @@ static uint32_t random_bits(void) {
 }
 int32_t trueos_cabi_vgpu_call_f32_v1(const uint8_t *code, size_t size, float a, float b, float *out) {
     if (getenv("FAIL_DISPATCH")) return -5;
-    assert(size>=160 && size<=24576 && !(size%16));
+    assert(size>=176 && size<=24576 && !(size%16));
     uint32_t r[128]={0}; r[1]=bits(a); r[2]=bits(b);
     for (size_t at=0; at<size; at+=16) {
         uint32_t w[4]; memcpy(w,code+at,16);
@@ -93,6 +93,9 @@ int main(void) {
 
 def main():
     odin = os.environ.get('ODIN', 'odin')
+    # The GCC-built oracle also failed intermittently with a pure C wrapper on
+    # this host. Use an independent Clang build; CC permits reproducing either.
+    cc = os.environ.get('CC', 'clang')
     with tempfile.TemporaryDirectory(prefix='odin-native-scalar-') as directory:
         work = Path(directory)
         compiler = work/'compiler'
@@ -104,7 +107,7 @@ def main():
         native = work/'native-compiler'
         native_object = ROOT/'trueos/build/odin-son.o'
         if native_object.exists():
-            run(['gcc', '-std=c11', ROOT/'trueos/test_host.c', native_object, '-lm', '-o', native])
+            run([cc, '-std=c11', ROOT/'trueos/test_host.c', native_object, '-lm', '-o', native])
         validator = work/'validate.rs'
         validator.write_text(f'#[path="{TRUEOS}/src/gpu/native_xelp.rs"] mod native;\n'
                              'fn main(){ assert!(native::validate(&std::fs::read(std::env::args().nth(1).unwrap()).unwrap())); }\n')
@@ -127,7 +130,9 @@ def main():
                 assert sections(case/'native.o')['.gpu.xelp'][1] == code
             if index == 0:
                 run([unchecked_compiler, source, '-o', case/'unchecked.o', '-o:all'], env=env)
-                assert sections(case/'unchecked.o')['.gpu.xelp'][1] == code
+                unchecked_code = case/'unchecked.bin'
+                unchecked_code.write_bytes(sections(case/'unchecked.o')['.gpu.xelp'][1])
+                run([work/'validate', unchecked_code])
             binary = case/'kernel.bin'; binary.write_bytes(code)
             run([work/'validate', binary])
             disassembly = run(['iga64', '-p=12p1', '-d', binary]).stdout
@@ -139,8 +144,12 @@ def main():
             c_expression = re.sub(r'(\d+\.\d+)', r'\1f', expression)
             harness.write_text('#define EXPRESSION ('+c_expression+')\n#define EXPECTED_MAIN '+str(expected_main)+'\n'+HARNESS)
             executable = case/'test'
-            run(['gcc', '-std=c11', '-O2', '-ffp-contract=off', harness, obj, '-lm', '-o', executable])
+            run([cc, '-std=c11', '-O2', '-ffp-contract=off', harness, obj, '-lm', '-o', executable])
             run([executable])
+            if index == 0:
+                run(['objcopy', '--redefine-sym', 'main=odin_entry', '--globalize-symbol=process', case/'unchecked.o'])
+                run([cc, '-std=c11', '-O2', '-ffp-contract=off', harness, case/'unchecked.o', '-lm', '-o', case/'unchecked-test'])
+                run([case/'unchecked-test'])
             failed = subprocess.run([str(executable)], capture_output=True, timeout=12,
                                     env=dict(os.environ, FAIL_DISPATCH='1'))
             assert failed.returncode in [-signal.SIGILL, -signal.SIGTRAP], failed.returncode
@@ -151,7 +160,7 @@ def main():
                                     capture_output=True, timeout=12, env=env)
             assert result.returncode == 1, (body, result.returncode, result.stderr)
             assert not (bad/'bad.o').exists()
-    print('PASS 6 native scalar kernels, 601734 arithmetic cases, IGA roundtrips, admission, CPU ABI, failure traps and diagnostics. No hardware dispatch tested.')
+    print('PASS 6 native scalar kernels plus assertions-disabled emission, 702023 arithmetic cases, IGA roundtrips, admission, CPU ABI, failure traps and diagnostics. No hardware dispatch tested.')
 
 
 if __name__ == '__main__':

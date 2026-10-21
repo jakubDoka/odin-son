@@ -798,7 +798,6 @@ emit_proc :: proc(
 
 	prc := &ctx.procs[i]
 	if prc.sig == nil do return
-	if prc.lit.type == nil && prc.lit.body == nil do return
 
 	ctx.prc_id = auto_cast i
 	ctx.module = prc.module

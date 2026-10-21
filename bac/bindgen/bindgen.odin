@@ -27,7 +27,6 @@ EXPORTED_SUBMODS_PATH := [?]string {
 }
 
 API_Proc :: struct {
-	trhead_local: bool,
 	package_path: string,
 	name:         string,
 	type:         typeid,
@@ -354,9 +353,6 @@ typedef struct {
 				}
 
 				fmt.sbprint(f, "extern ")
-				if entry.trhead_local {
-					fmt.sbprint(f, "_Thread_local ")
-				}
 				if is_proc {
 
 					if 0 < len(results.types) {

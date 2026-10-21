@@ -305,7 +305,6 @@ pub struct DynamicArray<T> { pub data: *mut T, pub len: isize, pub cap: isize, p
 			if len(results.types) > 0 do fmt.fprintf(f, " -> %v", rust_type(&g, results.types[len(results.types) - 1], fmt.tprintf("%v_%v_result", rust_prefix(entry.package_path), entry.name)))
 			fmt.fprintln(f, ";")
 		} else {
-			assert(!entry.trhead_local)
 			fmt.fprintfln(
 				f,
 				"pub static %v_%v: %v;",

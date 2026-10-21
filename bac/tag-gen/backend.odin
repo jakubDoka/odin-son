@@ -271,8 +271,7 @@ API := [?]API_Proc{
 
 		fmt.fprintfln(
 			file,
-			"\t{{%v, %q, %q, %v, %q}},",
-			prc.thread_local,
+			"\t{{%q, %q, %v, %q}},",
 			prc.relpath,
 			prc.name,
 			ty,

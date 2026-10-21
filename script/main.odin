@@ -13,6 +13,11 @@ Cmd_Out :: struct {
 	using state:    os.Process_State,
 }
 
+join :: proc(segments: ..string) -> string {
+	res, _ := os.join_path(segments, context.allocator)
+	return res
+}
+
 env :: proc(name: string) -> (string, bool) #optional_ok {
 	return os.lookup_env(name, context.allocator)
 }
@@ -112,15 +117,76 @@ main :: proc() {
 
 			fmt.println("===", name, "===")
 
-			entry, _ := os.join_path(
-				{item.fullpath, "main.odin"},
-				context.allocator,
-			)
+			entry := join(item.fullpath, "main.odin")
 
 			if !exists(entry) do continue
 
-			subdir, _ := os.join_path({MOD_DIR, name}, context.allocator)
+			subdir := join(MOD_DIR, name)
 			mkdir(subdir)
+
+			switch name {
+			case "wasm":
+				genned: strings.Builder
+				append(
+					&genned.buf,
+					`
+package main // generated
+
+run_generated :: proc() -> int {
+    acc := 0
+`,
+				)
+
+				for file in list_dir(join(item.fullpath, "programs")) {
+					path := join(subdir, fmt.tprintf("%v.wasm", file.name))
+					res := cmd(
+						"odin",
+						"build",
+						file.fullpath,
+						"-file",
+						"-target:freestanding_wasm32",
+						"-no-entry-point",
+						"-no-bounds-check",
+						"-disable-assert",
+						"-o:none",
+						fmt.tprintf("-out:%v", path),
+					)
+
+					if res.exit_code != 0 {
+						continue
+					}
+
+					wasm := cat(path)
+
+					encoded: strings.Builder
+					for b in wasm {
+						fmt.sbprintf(&encoded, "\\x%02x", b)
+					}
+
+					cname := strings.to_upper(file.name)
+					fmt.sbprintf(
+						&genned,
+						`
+    %v :: "%v"
+    acc += run_module_auto("%v", %v)
+`,
+						cname[:len(cname) - 5],
+						strings.to_string(encoded),
+						file.name,
+						cname[:len(cname) - 5],
+					)
+				}
+
+				append(&genned.buf, `
+    return acc
+}
+`)
+
+				write(
+					join(item.fullpath, "generated.odin"),
+					strings.to_string(genned),
+				)
+			}
 
 			cp(item.fullpath, subdir)
 
@@ -143,17 +209,11 @@ main :: proc() {
 			)
 			append(&builder.buf, "\nmain :: proc() { __os.exit(_main()) }\n")
 
-			dest, _ := os.join_path(
-				{MOD_DIR, name, "main.odin"},
-				context.allocator,
-			)
+			dest := join(MOD_DIR, name, "main.odin")
 
 			write(dest, strings.to_string(builder))
 
-			odin_bin, _ := os.join_path(
-				{MOD_DIR, name, "ref-bin.bin"},
-				context.allocator,
-			)
+			odin_bin := join(MOD_DIR, name, "ref-bin.bin")
 			if cmd("odin", "build", subdir, fmt.tprintf("-out:%v", odin_bin)).exit_code !=
 			   0 {
 				continue
@@ -171,9 +231,10 @@ main :: proc() {
 			}
 
 			for level in LEVELS {
-				res_obj, _ := os.join_path(
-					{MOD_DIR, name, fmt.tprintf("%v-%v.o", name, level)},
-					context.allocator,
+				res_obj := join(
+					MOD_DIR,
+					name,
+					fmt.tprintf("%v-%v.o", name, level),
 				)
 
 				if cmd(jit_path, entry, fmt.tprintf("-o:%v", level), "-o", res_obj, env_map = {root_env}).exit_code !=
@@ -181,9 +242,10 @@ main :: proc() {
 					continue
 				}
 
-				res_bin, _ := os.join_path(
-					{MOD_DIR, name, fmt.tprintf("%v-%v-bin", name, level)},
-					context.allocator,
+				res_bin := join(
+					MOD_DIR,
+					name,
+					fmt.tprintf("%v-%v-bin", name, level),
 				)
 
 				if cmd("gcc", res_obj, "-o", res_bin).exit_code != 0 {
@@ -204,22 +266,35 @@ main :: proc() {
 				}
 
 				if ref_res.stdout != prog_res.stdout {
-					fmt.printfln(
-						" [%v] stdout mismatch: %v != %v",
-						level,
-						ref_res.stdout,
-						prog_res.stdout,
-					)
+					fmt.printfln(" [%v] stdout mismatch", level)
+
+					if cmd_exists("diff") {
+						write(join(subdir, "a"), prog_res.stdout)
+						write(join(subdir, "b"), ref_res.stdout)
+						res := cmd(
+							"diff",
+							join(subdir, "b"),
+							join(subdir, "a"),
+						)
+						fmt.println(res.stdout)
+					}
 					ok = false
 				}
 
 				if ref_res.stderr != prog_res.stderr {
-					fmt.printfln(
-						" [%v] stderr mismatch: %v != %v",
-						level,
-						ref_res.stderr,
-						prog_res.stderr,
-					)
+					fmt.printfln(" [%v] stderr mismatch", level)
+
+					if cmd_exists("diff") {
+						write(join(subdir, "a"), prog_res.stderr)
+						write(join(subdir, "b"), ref_res.stderr)
+						res := cmd(
+							"diff",
+							join(subdir, "b"),
+							join(subdir, "a"),
+						)
+						fmt.println(res.stderr)
+					}
+
 					ok = false
 				}
 

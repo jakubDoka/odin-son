@@ -1,6 +1,6 @@
 package unicorn
 
-import "../utils/arna"
+import "../arna"
 import "base:runtime"
 import "core:log"
 import "core:testing"

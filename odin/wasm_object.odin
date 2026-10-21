@@ -1,12 +1,12 @@
-package main
+package odin_son
 
-import "bac"
-import "bac/wasm"
+import "../bac"
+import "../bac/wasm"
+import "../utils/arna"
 import "core:fmt"
 import "core:mem"
 import "core:slice"
 import "typecheck"
-import "utils/arna"
 
 emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 	context.allocator, _ = arna.scrath(scratch)

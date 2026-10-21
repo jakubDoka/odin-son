@@ -3,11 +3,7 @@ package tests
 // NOTE: this file is generated: odin run meta
 
 import "core:testing"
-
 import "base:intrinsics"
-
-import main ".."
-
 @(test) simplest :: proc(t: ^testing.T) {
 
 
@@ -24426,7 +24422,7 @@ true,
 true,
 true,
 }
-for i in 0 ..< len(CODE) {main.run_test(nil, NAMES[i], CODE[i], 0, diff = false, no_run = IS_FUZZ[i] || main.NO_RUN)
+for i in 0 ..< len(CODE) {run_test(nil, NAMES[i], CODE[i], 0, diff = false, no_run = IS_FUZZ[i] || NO_RUN)
 }
 }
 }

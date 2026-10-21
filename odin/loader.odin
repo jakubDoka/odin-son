@@ -1,5 +1,5 @@
 #+build !wasm32
-package main
+package odin_son
 
 import "core:fmt"
 import "core:odin/ast"

@@ -2,7 +2,7 @@
 
 set -e
 
-REAL_ODIN_ROOT=$(oding root)
+REAL_ODIN_ROOT=$(odin root)
 
 TEMP_ODIN_ROOT=$(mktemp -d /tmp/odin.XXXXX)
 
@@ -35,15 +35,15 @@ targets=(windows_amd64 linux_amd64 linux_arm64 darwin_arm64)
 release_flags=(
     -source-code-locations:none
     -disable-assert
+    -disable-non-constant-globals
+    -disable-init-fini
+    -default-to-nil-allocator
     -no-bounds-check
     -no-type-assert
     -define:NO_FMT=true
-    -default-to-nil-allocator
     -define:ARNA_DISABLE_VIRTUAL=true
     -define:ARNA_DISABLE_THREAD_LOCAL=true
-    -disable-init-fini
     -define:NODE_NAMES=false
-    -disable-non-constant-globals
 )
 
 base_flags=(
@@ -63,10 +63,11 @@ for target in "${targets[@]}"; do
     odin build "${base_flags[@]}" -o:size "-target:$target" "${release_flags[@]}"\
         "-out:bac/bindgen/lib/${target}_lib.o"
 
-    if [[ "$target" == windows_amd64 ]]; then
+    objcpy=x86_64-w64-mingw32-objcopy
+    if command -v $objcpy &>/dev/null && [[ "$target" == windows_amd64 ]]; then
         echo " building GNU objects"
         for lib in libdebug lib; do
-            "${OBJCOPY:-x86_64-w64-mingw32-objcopy}" \
+            $objcpy \
                 --redefine-sym __chkstk=___chkstk_ms \
                 "bac/bindgen/lib/${target}_${lib}.o" \
                 "bac/bindgen/lib/${target}_gnu_${lib}.o"

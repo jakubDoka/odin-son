@@ -1,6 +1,6 @@
 package unicorn
 
-import "../utils/arna"
+import "../arna"
 import "base:runtime"
 import "core:c"
 import "core:fmt"
@@ -8,7 +8,7 @@ import "core:log"
 import arm64 "core:rexcode/isa/arm64"
 import "core:strings"
 
-UNICORN_LIBRARY :: "../vendored/unicorn-engine/build/libunicorn.a"
+UNICORN_LIBRARY :: "../../vendored/unicorn-engine/build/libunicorn.a"
 
 when !#exists(UNICORN_LIBRARY) {
 	#panic("Unicorn is not built; run `build-unicorn` from misc/profiles.fish")

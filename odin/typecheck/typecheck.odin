@@ -1,9 +1,9 @@
 package typecheck
 
-import "../bac"
-import ra "../bac/regalloc"
-import "../bac/ssa"
-import "../utils/arna"
+import "../../bac"
+import ra "../../bac/regalloc"
+import "../../bac/ssa"
+import "../../utils/arna"
 import "base:intrinsics"
 import "base:runtime"
 import "core:fmt"

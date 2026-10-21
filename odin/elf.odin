@@ -1,13 +1,13 @@
-package main
+package odin_son
 
-import "bac"
-import "bac/arm"
-import "bac/x64"
+import "../bac"
+import "../bac/arm"
+import "../bac/x64"
+import "../utils/arna"
 import "core:fmt"
 import "core:mem"
 import "core:slice"
 import "typecheck"
-import "utils/arna"
 
 LIBCALL_BASE :: bac.RELOC_BIG_CONSTANT_BASE - 32
 MEMCPY_ID :: LIBCALL_BASE

@@ -1,7 +1,8 @@
 #+build !wasm32
-package main
+package odin_son
 
-import "bac"
+import "../bac"
+import "../utils/arna"
 import "core:debug/trace"
 import "core:fmt"
 import "core:log"
@@ -10,7 +11,6 @@ import "core:reflect"
 import "core:strings"
 import "core:time"
 import "typecheck"
-import "utils/arna"
 
 main :: proc() {
 

@@ -1,15 +1,15 @@
 package tests
 
-import main ".."
 import "../bac"
 import "../bac/arm"
 import "../bac/ssa"
 import "../bac/wasm"
 import "../bac/x64"
-import "../typecheck"
-import "../unicorn"
+import "../odin"
+import "../odin/typecheck"
 import "../utils/arna"
-import "../wabt"
+import "../utils/unicorn"
+import "../utils/wabt"
 import "base:intrinsics"
 import "core:debug/trace"
 import "core:dynlib"
@@ -42,7 +42,7 @@ setup_custom_fmt :: proc() {
 	})
 }
 
-init_single_file_program :: proc(ctx: ^main.Gen_Ctx, f: ^ast.File) {
+init_single_file_program :: proc(ctx: ^odin.Gen_Ctx, f: ^ast.File) {
 	ctx.files.allocator = ctx.types.allocator
 	ctx.modules.allocator = ctx.types.allocator
 	if f.pkg_name == "" do f.pkg_name = "main"
@@ -139,7 +139,7 @@ run_test :: proc(
 
 	stats: bac.Stats
 
-	ctx: main.Gen_Ctx
+	ctx: odin.Gen_Ctx
 	ctx.types = &types
 	ctx.stats = &stats
 	ctx.global = &global_ctx
@@ -148,7 +148,7 @@ run_test :: proc(
 	init_single_file_program(&ctx, &f)
 	typecheck.typecheck_program(&ctx)
 
-	levels := main.OPT_LEVELS
+	levels := odin.OPT_LEVELS
 
 	Test_Vm :: enum {
 		Native,
@@ -158,7 +158,7 @@ run_test :: proc(
 	}
 
 	Test_Conf :: struct {
-		using level: main.Opt_Level,
+		using level: odin.Opt_Level,
 		debug:       bool,
 		vm:          Test_Vm,
 	}
@@ -297,17 +297,17 @@ run_test :: proc(
 				}
 
 				ssa.make_builtin_proc(&ctx, kind)
-				main.emit_proc_code(&ctx, &emit_ctx, prc)
+				odin.emit_proc_code(&ctx, &emit_ctx, prc)
 			}
 
 			for _, i in ctx.procs[:len(ctx.procs) - 2] {
-				main.emit_proc(&ctx, i, level, &emit_ctx)
+				odin.emit_proc(&ctx, i, level, &emit_ctx)
 			}
 
 			defer for prc in ctx.procs do delete(prc.stencil.mem)
 
 			if .Inline in level.flags {
-				if !main.inline_and_optimize(&ctx, &emit_ctx) do continue
+				if !odin.inline_and_optimize(&ctx, &emit_ctx) do continue
 			}
 
 			arna.alloc(&types.mems.code, 0, 4096)
@@ -456,16 +456,16 @@ run_test :: proc(
 			ctx.target.spec = &wasm.SPEC
 
 			for _, i in ctx.procs {
-				main.emit_proc(&ctx, i, level, &emit_ctx)
+				odin.emit_proc(&ctx, i, level, &emit_ctx)
 			}
 
 			defer for prc in ctx.procs do delete(prc.stencil.mem)
 
 			if .Inline in level.flags {
-				if !main.inline_and_optimize(&ctx, &emit_ctx) do continue
+				if !odin.inline_and_optimize(&ctx, &emit_ctx) do continue
 			}
 
-			module := main.emit_wasm_module(&ctx, context.temp_allocator)
+			module := odin.emit_wasm_module(&ctx, context.temp_allocator)
 
 			{context.allocator = context.temp_allocator
 				disasm_wasm(dsb, module)}
@@ -500,7 +500,7 @@ run_test :: proc(
 		sync.guard(&log_lock)
 		bac.aggregate_effeciency_stats(&g_stats, ctx.stats)
 		if intrinsics.atomic_sub(&test_rc, 1) == 1 {
-			main.log_stats(&g_stats)
+			odin.log_stats(&g_stats)
 		}
 	}
 
@@ -751,7 +751,7 @@ ARM_DS :: Disasm_Scope(
 	arm64.Endianness,
 ){arm64.decode, arm64.sbprint}
 
-disasm :: proc(sb: ^strings.Builder, ctx: main.Gen_Ctx, ds: $DS) {
+disasm :: proc(sb: ^strings.Builder, ctx: odin.Gen_Ctx, ds: $DS) {
 	decoded_instrs: [dynamic]DS.Instruction
 	decoded_instr_info: [dynamic]DS.Instruction_Info
 	decoded_label_info: [dynamic]x86.Label_Definition

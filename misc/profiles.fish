@@ -1,6 +1,3 @@
-# regenerates bac's own node_specs.odin, then every bac/<arch>
-# submodule that has a gen_<arch>.odin (its own spec generator) — so adding a
-# new architecture directory is enough on its own, no edit needed here
 function gen-spec
 	rm -f bac/node_specs.odin
 	rm -f bac/*/node_specs.odin
@@ -12,8 +9,7 @@ function gen-spec
 	gcc bac/bindgen/c/bac.h
 end
 
-# regenerate the tests, backend overloads, and API table
-alias gen-meta 'odin run meta -o:none'
+alias gen-meta 'odin run bac/tag-gen'
 
 set acc '-define:ACCEPT=true'
 set rlg '-define:REGLOGS=true'

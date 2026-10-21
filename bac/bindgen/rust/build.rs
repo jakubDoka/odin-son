@@ -30,7 +30,7 @@ fn main() {
     assert!(
         library.is_file(),
         "BAC library not found at {}. Set BAC_LIB_PATH to a BAC object, or run \
-        `bash bac/bindgen/prebuild-libs.sh` (requires Odin and MinGW objcopy).",
+        `../prebuild-libs.sh` (requires Odin and MinGW objcopy).",
         library.display()
     );
     let library = library.canonicalize().unwrap();

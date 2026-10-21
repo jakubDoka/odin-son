@@ -22,7 +22,6 @@ main :: proc() {
 	gen_backend_api(load_backend_packages(".")[:])
 
 	{
-
 		tests: [dynamic]Test
 
 		file, err := os.open("tests/tests.odin", {.Create, .Trunc, .Write})
@@ -33,14 +32,13 @@ main :: proc() {
 		os.write_string(file, "package tests\n")
 		os.write_string(file, "// NOTE: this file is generated: " + COMMAND)
 		os.write_string(file, "\n\n")
-		os.write_string(file, "import \"core:testing\"\n\n")
-		os.write_string(file, "import \"base:intrinsics\"\n\n")
-		os.write_string(file, "import main \"..\"\n\n")
+		os.write_string(file, "import \"core:testing\"\n")
+		os.write_string(file, "import \"base:intrinsics\"\n")
 
 		os.remove_all(FUZZ_CORPUS_DIR)
 		os.make_directory_all(FUZZ_CORPUS_DIR)
 
-		file_paths := []string{"TESTS.md"}
+		file_paths := []string{"tests/TESTS.md"}
 		for file_path in file_paths {
 			data, derr := os.read_entire_file(file_path, context.allocator)
 			fmt.assertf(derr == nil, "%v", derr)
@@ -149,11 +147,8 @@ main :: proc() {
 		os.write_string(file, "}\n")
 
 		os.write_string(file, "for i in 0 ..< len(CODE) {")
-		os.write_string(file, "main.run_test(nil, NAMES[i], CODE[i], 0, ")
-		os.write_string(
-			file,
-			"diff = false, no_run = IS_FUZZ[i] || main.NO_RUN)\n",
-		)
+		os.write_string(file, "run_test(nil, NAMES[i], CODE[i], 0, ")
+		os.write_string(file, "diff = false, no_run = IS_FUZZ[i] || NO_RUN)\n")
 		os.write_string(file, "}\n")
 
 		os.write_string(file, "}\n")

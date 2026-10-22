@@ -173,172 +173,47 @@ impl RegallocMode {
     pub const with_coloring: Self = Self(sys::Regalloc_Mode_with_coloring);
 }
 impl Proc<'_> {
-    pub unsafe fn r#add_always(&self, r#name: &str, r#inputs: &[NodeId]) -> NodeId {
-        let result = unsafe {
-            sys::bac_add_always(
-                self.raw_ptr(),
-                r#name.into(),
-                sys::Slice::from(r#inputs).cast(),
-            )
-        };
+    pub unsafe fn r#merge_return(&self, r#args: &[NodeId]) -> NodeId {
+        let result =
+            unsafe { sys::bac_merge_return(self.raw_ptr(), sys::Slice::from(r#args).cast()) };
         let result = NodeId(result);
         result
     }
-    pub unsafe fn r#add_c_int(&self, r#name: &str, r#dt: Datatype, r#value: i64) -> NodeId {
-        let result = unsafe { sys::bac_add_c_int(self.raw_ptr(), r#name.into(), r#dt.0, r#value) };
-        let result = NodeId(result);
+    pub unsafe fn r#truncate_scope(&self, r#scope: NodeId, r#to_len: isize) {
+        let result = unsafe { sys::bac_truncate_scope(self.raw_ptr(), r#scope.0, r#to_len) };
         result
     }
-    pub unsafe fn r#add_bin_op(
+    pub unsafe fn r#delete_scope(&self, r#scope: NodeId) {
+        let result = unsafe { sys::bac_delete_scope(self.raw_ptr(), r#scope.0) };
+        result
+    }
+    pub unsafe fn r#push_scope_value(
         &self,
+        r#scope: NodeId,
+        r#value: NodeId,
         r#name: &str,
-        r#type: BinOp,
-        r#dt: Datatype,
-        r#lhs: NodeId,
-        r#rhs: NodeId,
-        r#lane: Lane,
-    ) -> NodeId {
+        r#type: u64,
+    ) -> isize {
         let result = unsafe {
-            sys::bac_add_bin_op(
-                self.raw_ptr(),
-                r#name.into(),
-                r#type.0,
-                r#dt.0,
-                r#lhs.0,
-                r#rhs.0,
-                r#lane.0,
-            )
+            sys::bac_push_scope_value(self.raw_ptr(), r#scope.0, r#value.0, r#name.into(), r#type)
         };
-        let result = NodeId(result);
         result
     }
-    pub unsafe fn r#add_call_end(&self, r#name: &str, r#call: NodeId) -> NodeId {
-        let result = unsafe { sys::bac_add_call_end(self.raw_ptr(), r#name.into(), r#call.0) };
-        let result = NodeId(result);
+    pub unsafe fn r#set_scope_value(&self, r#scope: NodeId, r#idx: isize, r#value: NodeId) {
+        let result =
+            unsafe { sys::bac_set_scope_value(self.raw_ptr(), r#scope.0, r#idx, r#value.0) };
         result
     }
-    pub unsafe fn r#add_copy(
-        &self,
-        r#name: &str,
-        r#ctrl: NodeId,
-        r#mem: NodeId,
-        r#dst: NodeId,
-        r#src: NodeId,
-        r#size: NodeId,
-    ) -> NodeId {
-        let result = unsafe {
-            sys::bac_add_copy(
-                self.raw_ptr(),
-                r#name.into(),
-                r#ctrl.0,
-                r#mem.0,
-                r#dst.0,
-                r#src.0,
-                r#size.0,
-            )
-        };
-        let result = NodeId(result);
+    pub unsafe fn r#memopt(&self) -> bool {
+        let result = unsafe { sys::bac_memopt(self.raw_ptr()) };
         result
     }
-    pub unsafe fn r#add_dbg_scope(&self, r#name: &str, r#inputs: &[NodeId]) -> NodeId {
-        let result = unsafe {
-            sys::bac_add_dbg_scope(
-                self.raw_ptr(),
-                r#name.into(),
-                sys::Slice::from(r#inputs).cast(),
-            )
-        };
-        let result = NodeId(result);
+    pub unsafe fn r#loopopt(&self) -> bool {
+        let result = unsafe { sys::bac_loopopt(self.raw_ptr()) };
         result
     }
-    pub unsafe fn r#add_call(&self, r#name: &str, r#inputs: &[NodeId], r#extra: Call) -> NodeId {
-        let result = unsafe {
-            sys::bac_add_call(
-                self.raw_ptr(),
-                r#name.into(),
-                sys::Slice::from(r#inputs).cast(),
-                r#extra.0,
-            )
-        };
-        let result = NodeId(result);
-        result
-    }
-    pub unsafe fn r#add_dbg_sym_update(
-        &self,
-        r#name: &str,
-        r#new_value: NodeId,
-        r#prev_update: NodeId,
-    ) -> NodeId {
-        let result = unsafe {
-            sys::bac_add_dbg_sym_update(
-                self.raw_ptr(),
-                r#name.into(),
-                r#new_value.0,
-                r#prev_update.0,
-            )
-        };
-        let result = NodeId(result);
-        result
-    }
-    pub unsafe fn r#add_else(&self, r#name: &str, r#ctrl: NodeId) -> NodeId {
-        let result = unsafe { sys::bac_add_else(self.raw_ptr(), r#name.into(), r#ctrl.0) };
-        let result = NodeId(result);
-        result
-    }
-    pub unsafe fn r#add_end(&self, r#name: &str, r#inputs: &[NodeId]) -> NodeId {
-        let result = unsafe {
-            sys::bac_add_end(
-                self.raw_ptr(),
-                r#name.into(),
-                sys::Slice::from(r#inputs).cast(),
-            )
-        };
-        let result = NodeId(result);
-        result
-    }
-    pub unsafe fn r#add_entry(&self, r#name: &str) -> NodeId {
-        let result = unsafe { sys::bac_add_entry(self.raw_ptr(), r#name.into()) };
-        let result = NodeId(result);
-        result
-    }
-    pub unsafe fn r#add_dbg_sym_decl(&self, r#name: &str) -> NodeId {
-        let result = unsafe { sys::bac_add_dbg_sym_decl(self.raw_ptr(), r#name.into()) };
-        let result = NodeId(result);
-        result
-    }
-    pub unsafe fn r#add_global_addr(&self, r#name: &str, r#global: NodeId) -> NodeId {
-        let result = unsafe { sys::bac_add_global_addr(self.raw_ptr(), r#name.into(), r#global.0) };
-        let result = NodeId(result);
-        result
-    }
-    pub unsafe fn r#add_if(&self, r#name: &str, r#ctrl: NodeId, r#cond: NodeId) -> NodeId {
-        let result = unsafe { sys::bac_add_if(self.raw_ptr(), r#name.into(), r#ctrl.0, r#cond.0) };
-        let result = NodeId(result);
-        result
-    }
-    pub unsafe fn r#add_jump(&self, r#name: &str, r#ctrl: NodeId) -> NodeId {
-        let result = unsafe { sys::bac_add_jump(self.raw_ptr(), r#name.into(), r#ctrl.0) };
-        let result = NodeId(result);
-        result
-    }
-    pub unsafe fn r#add_load(
-        &self,
-        r#name: &str,
-        r#dt: Datatype,
-        r#ctrl: NodeId,
-        r#mem: NodeId,
-        r#addr: NodeId,
-    ) -> NodeId {
-        let result = unsafe {
-            sys::bac_add_load(
-                self.raw_ptr(),
-                r#name.into(),
-                r#dt.0,
-                r#ctrl.0,
-                r#mem.0,
-                r#addr.0,
-            )
-        };
+    pub unsafe fn r#add_local_addr(&self, r#name: &str, r#local: NodeId) -> NodeId {
+        let result = unsafe { sys::bac_add_local_addr(self.raw_ptr(), r#name.into(), r#local.0) };
         let result = NodeId(result);
         result
     }
@@ -347,23 +222,13 @@ impl Proc<'_> {
         let result = NodeId(result);
         result
     }
-    pub unsafe fn r#add_local_addr(&self, r#name: &str, r#local: NodeId) -> NodeId {
-        let result = unsafe { sys::bac_add_local_addr(self.raw_ptr(), r#name.into(), r#local.0) };
-        let result = NodeId(result);
-        result
-    }
     pub unsafe fn r#add_loop(&self, r#name: &str, r#ctrl: NodeId) -> NodeId {
         let result = unsafe { sys::bac_add_loop(self.raw_ptr(), r#name.into(), r#ctrl.0) };
         let result = NodeId(result);
         result
     }
-    pub unsafe fn r#add_mem(&self, r#name: &str, r#ctrl: NodeId) -> NodeId {
-        let result = unsafe { sys::bac_add_mem(self.raw_ptr(), r#name.into(), r#ctrl.0) };
-        let result = NodeId(result);
-        result
-    }
-    pub unsafe fn r#add_global(&self, r#name: &str, r#idx: u32) -> NodeId {
-        let result = unsafe { sys::bac_add_global(self.raw_ptr(), r#name.into(), r#idx) };
+    pub unsafe fn r#add_jump(&self, r#name: &str, r#ctrl: NodeId) -> NodeId {
+        let result = unsafe { sys::bac_add_jump(self.raw_ptr(), r#name.into(), r#ctrl.0) };
         let result = NodeId(result);
         result
     }
@@ -519,14 +384,39 @@ impl Proc<'_> {
         let result = NodeId(result);
         result
     }
-    pub unsafe fn r#add_merge_mem(&self, r#name: &str, r#inputs: &[NodeId]) -> NodeId {
+    pub unsafe fn r#add_if(&self, r#name: &str, r#ctrl: NodeId, r#cond: NodeId) -> NodeId {
+        let result = unsafe { sys::bac_add_if(self.raw_ptr(), r#name.into(), r#ctrl.0, r#cond.0) };
+        let result = NodeId(result);
+        result
+    }
+    pub unsafe fn r#add_global_addr(&self, r#name: &str, r#global: NodeId) -> NodeId {
+        let result = unsafe { sys::bac_add_global_addr(self.raw_ptr(), r#name.into(), r#global.0) };
+        let result = NodeId(result);
+        result
+    }
+    pub unsafe fn r#add_load(
+        &self,
+        r#name: &str,
+        r#dt: Datatype,
+        r#ctrl: NodeId,
+        r#mem: NodeId,
+        r#addr: NodeId,
+    ) -> NodeId {
         let result = unsafe {
-            sys::bac_add_merge_mem(
+            sys::bac_add_load(
                 self.raw_ptr(),
                 r#name.into(),
-                sys::Slice::from(r#inputs).cast(),
+                r#dt.0,
+                r#ctrl.0,
+                r#mem.0,
+                r#addr.0,
             )
         };
+        let result = NodeId(result);
+        result
+    }
+    pub unsafe fn r#add_mem(&self, r#name: &str, r#ctrl: NodeId) -> NodeId {
+        let result = unsafe { sys::bac_add_mem(self.raw_ptr(), r#name.into(), r#ctrl.0) };
         let result = NodeId(result);
         result
     }
@@ -537,10 +427,6 @@ impl Proc<'_> {
     }
     pub unsafe fn r#connect(&self, r#use: NodeId, r#def: NodeId) -> isize {
         let result = unsafe { sys::bac_connect(self.raw_ptr(), r#use.0, r#def.0) };
-        result
-    }
-    pub unsafe fn r#delete_node_node_id(&self, r#id: NodeId) {
-        let result = unsafe { sys::bac_delete_node_node_id(self.raw_ptr(), r#id.0) };
         result
     }
     pub unsafe fn r#find_node(&self, r#kind: NodeType, r#on: NodeId) -> (NodeId, bool) {
@@ -554,35 +440,107 @@ impl Proc<'_> {
         let result = NodeId(result);
         result
     }
+    pub unsafe fn r#delete_node_node_id(&self, r#id: NodeId) {
+        let result = unsafe { sys::bac_delete_node_node_id(self.raw_ptr(), r#id.0) };
+        result
+    }
     pub unsafe fn r#get_sym_count(&self) -> (NodeId, isize) {
         let mut out0 = Default::default();
         let result = unsafe { sys::bac_get_sym_count(self.raw_ptr(), &mut out0) };
         let result = (NodeId(out0), result);
         result
     }
-    pub unsafe fn r#add_un_op(
-        &self,
-        r#name: &str,
-        r#type: UnOp,
-        r#dt: Datatype,
-        r#oprnd: NodeId,
-        r#lane: Lane,
-    ) -> NodeId {
+    pub unsafe fn r#add_end(&self, r#name: &str, r#inputs: &[NodeId]) -> NodeId {
         let result = unsafe {
-            sys::bac_add_un_op(
+            sys::bac_add_end(
                 self.raw_ptr(),
                 r#name.into(),
-                r#type.0,
-                r#dt.0,
-                r#oprnd.0,
-                r#lane.0,
+                sys::Slice::from(r#inputs).cast(),
             )
         };
         let result = NodeId(result);
         result
     }
-    pub unsafe fn r#pin(&self, r#id: NodeId) {
-        let result = unsafe { sys::bac_pin(self.raw_ptr(), r#id.0) };
+    pub unsafe fn r#add_dbg_sym_update(
+        &self,
+        r#name: &str,
+        r#new_value: NodeId,
+        r#prev_update: NodeId,
+    ) -> NodeId {
+        let result = unsafe {
+            sys::bac_add_dbg_sym_update(
+                self.raw_ptr(),
+                r#name.into(),
+                r#new_value.0,
+                r#prev_update.0,
+            )
+        };
+        let result = NodeId(result);
+        result
+    }
+    pub unsafe fn r#add_else(&self, r#name: &str, r#ctrl: NodeId) -> NodeId {
+        let result = unsafe { sys::bac_add_else(self.raw_ptr(), r#name.into(), r#ctrl.0) };
+        let result = NodeId(result);
+        result
+    }
+    pub unsafe fn r#add_entry(&self, r#name: &str) -> NodeId {
+        let result = unsafe { sys::bac_add_entry(self.raw_ptr(), r#name.into()) };
+        let result = NodeId(result);
+        result
+    }
+    pub unsafe fn r#add_copy(
+        &self,
+        r#name: &str,
+        r#ctrl: NodeId,
+        r#mem: NodeId,
+        r#dst: NodeId,
+        r#src: NodeId,
+        r#size: NodeId,
+    ) -> NodeId {
+        let result = unsafe {
+            sys::bac_add_copy(
+                self.raw_ptr(),
+                r#name.into(),
+                r#ctrl.0,
+                r#mem.0,
+                r#dst.0,
+                r#src.0,
+                r#size.0,
+            )
+        };
+        let result = NodeId(result);
+        result
+    }
+    pub unsafe fn r#add_call_end(&self, r#name: &str, r#call: NodeId) -> NodeId {
+        let result = unsafe { sys::bac_add_call_end(self.raw_ptr(), r#name.into(), r#call.0) };
+        let result = NodeId(result);
+        result
+    }
+    pub unsafe fn r#add_dbg_scope(&self, r#name: &str, r#inputs: &[NodeId]) -> NodeId {
+        let result = unsafe {
+            sys::bac_add_dbg_scope(
+                self.raw_ptr(),
+                r#name.into(),
+                sys::Slice::from(r#inputs).cast(),
+            )
+        };
+        let result = NodeId(result);
+        result
+    }
+    pub unsafe fn r#add_c_int(&self, r#name: &str, r#dt: Datatype, r#value: i64) -> NodeId {
+        let result = unsafe { sys::bac_add_c_int(self.raw_ptr(), r#name.into(), r#dt.0, r#value) };
+        let result = NodeId(result);
+        result
+    }
+    pub unsafe fn r#add_always(&self, r#name: &str, r#inputs: &[NodeId]) -> NodeId {
+        let result = unsafe {
+            sys::bac_add_always(
+                self.raw_ptr(),
+                r#name.into(),
+                sys::Slice::from(r#inputs).cast(),
+            )
+        };
+        let result = NodeId(result);
         result
     }
     pub unsafe fn r#set_input(
@@ -604,12 +562,12 @@ impl Proc<'_> {
         let result = NodeId(result);
         result
     }
-    pub unsafe fn r#set_local_size(&self, r#loc: NodeId, r#size: i32) {
-        let result = unsafe { sys::bac_set_local_size(self.raw_ptr(), r#loc.0, r#size) };
-        result
-    }
     pub unsafe fn r#unpin(&self, r#id: NodeId, r#no_delete: bool) {
         let result = unsafe { sys::bac_unpin(self.raw_ptr(), r#id.0, r#no_delete) };
+        result
+    }
+    pub unsafe fn r#set_local_size(&self, r#loc: NodeId, r#size: i32) {
+        let result = unsafe { sys::bac_set_local_size(self.raw_ptr(), r#loc.0, r#size) };
         result
     }
     pub unsafe fn r#add_arbitrary_load(
@@ -729,10 +687,8 @@ impl Proc<'_> {
         let result = NodeId(result);
         result
     }
-    pub unsafe fn r#break_block(&self, r#scope: &mut NodeId, r#state: &mut sys::ssa_Block_State) {
-        let result = unsafe {
-            sys::bac_break_block(self.raw_ptr(), core::ptr::from_mut(r#scope).cast(), r#state)
-        };
+    pub unsafe fn r#pin(&self, r#id: NodeId) {
+        let result = unsafe { sys::bac_pin(self.raw_ptr(), r#id.0) };
         result
     }
     pub unsafe fn r#compute_index_offset(
@@ -744,14 +700,6 @@ impl Proc<'_> {
         let result =
             unsafe { sys::bac_compute_index_offset(self.raw_ptr(), r#base.0, r#index.0, r#stride) };
         let result = NodeId(result);
-        result
-    }
-    pub unsafe fn r#decl_local(&self, r#loc: NodeId, r#name: &str, r#type: u64) {
-        let result = unsafe { sys::bac_decl_local(self.raw_ptr(), r#loc.0, r#name.into(), r#type) };
-        result
-    }
-    pub unsafe fn r#delete_scope(&self, r#scope: NodeId) {
-        let result = unsafe { sys::bac_delete_scope(self.raw_ptr(), r#scope.0) };
         result
     }
     pub unsafe fn r#end_block(&self, r#scope: &mut NodeId, r#state: &mut sys::ssa_Block_State) {
@@ -770,14 +718,19 @@ impl Proc<'_> {
         };
         result
     }
-    pub unsafe fn r#end_if(&self, r#then_scope: &mut NodeId, r#state: &mut sys::ssa_If_State) {
+    pub unsafe fn r#break_block(&self, r#scope: &mut NodeId, r#state: &mut sys::ssa_Block_State) {
         let result = unsafe {
-            sys::bac_end_if(
-                self.raw_ptr(),
-                core::ptr::from_mut(r#then_scope).cast(),
-                r#state,
-            )
+            sys::bac_break_block(self.raw_ptr(), core::ptr::from_mut(r#scope).cast(), r#state)
         };
+        result
+    }
+    pub unsafe fn r#decl_local(&self, r#loc: NodeId, r#name: &str, r#type: u64) {
+        let result = unsafe { sys::bac_decl_local(self.raw_ptr(), r#loc.0, r#name.into(), r#type) };
+        result
+    }
+    pub unsafe fn r#get_scope_value(&self, r#scope: NodeId, r#idx: isize) -> NodeId {
+        let result = unsafe { sys::bac_get_scope_value(self.raw_ptr(), r#scope.0, r#idx) };
+        let result = NodeId(result);
         result
     }
     pub unsafe fn r#end_loop(&self, r#node_scope: &mut NodeId, r#state: &mut sys::ssa_Loop_State) {
@@ -790,13 +743,14 @@ impl Proc<'_> {
         };
         result
     }
-    pub unsafe fn r#get_scope_value(&self, r#scope: NodeId, r#idx: isize) -> NodeId {
-        let result = unsafe { sys::bac_get_scope_value(self.raw_ptr(), r#scope.0, r#idx) };
-        let result = NodeId(result);
-        result
-    }
-    pub unsafe fn r#loopopt(&self) -> bool {
-        let result = unsafe { sys::bac_loopopt(self.raw_ptr()) };
+    pub unsafe fn r#end_if(&self, r#then_scope: &mut NodeId, r#state: &mut sys::ssa_If_State) {
+        let result = unsafe {
+            sys::bac_end_if(
+                self.raw_ptr(),
+                core::ptr::from_mut(r#then_scope).cast(),
+                r#state,
+            )
+        };
         result
     }
     pub unsafe fn r#make_call(&self, r#args: &[NodeId], r#extra: Call) -> (NodeId, NodeId) {
@@ -812,31 +766,90 @@ impl Proc<'_> {
         let result = (NodeId(out0), NodeId(result));
         result
     }
-    pub unsafe fn r#memopt(&self) -> bool {
-        let result = unsafe { sys::bac_memopt(self.raw_ptr()) };
-        result
-    }
-    pub unsafe fn r#merge_returns(&self, r#args: &[NodeId]) -> NodeId {
-        let result =
-            unsafe { sys::bac_merge_returns(self.raw_ptr(), sys::Slice::from(r#args).cast()) };
+    pub unsafe fn r#add_bin_op(
+        &self,
+        r#name: &str,
+        r#type: BinOp,
+        r#dt: Datatype,
+        r#lhs: NodeId,
+        r#rhs: NodeId,
+        r#lane: Lane,
+    ) -> NodeId {
+        let result = unsafe {
+            sys::bac_add_bin_op(
+                self.raw_ptr(),
+                r#name.into(),
+                r#type.0,
+                r#dt.0,
+                r#lhs.0,
+                r#rhs.0,
+                r#lane.0,
+            )
+        };
         let result = NodeId(result);
         result
     }
-    pub unsafe fn r#set_scope_value(&self, r#scope: NodeId, r#idx: isize, r#value: NodeId) {
-        let result =
-            unsafe { sys::bac_set_scope_value(self.raw_ptr(), r#scope.0, r#idx, r#value.0) };
+    pub unsafe fn r#add_call(&self, r#name: &str, r#inputs: &[NodeId], r#extra: Call) -> NodeId {
+        let result = unsafe {
+            sys::bac_add_call(
+                self.raw_ptr(),
+                r#name.into(),
+                sys::Slice::from(r#inputs).cast(),
+                r#extra.0,
+            )
+        };
+        let result = NodeId(result);
         result
     }
-    pub unsafe fn r#push_scope_value(
+    pub unsafe fn r#add_dbg_sym_decl(&self, r#name: &str) -> NodeId {
+        let result = unsafe { sys::bac_add_dbg_sym_decl(self.raw_ptr(), r#name.into()) };
+        let result = NodeId(result);
+        result
+    }
+    pub unsafe fn r#add_global(&self, r#name: &str, r#idx: u32) -> NodeId {
+        let result = unsafe { sys::bac_add_global(self.raw_ptr(), r#name.into(), r#idx) };
+        let result = NodeId(result);
+        result
+    }
+    pub unsafe fn r#add_merge_mem(&self, r#name: &str, r#inputs: &[NodeId]) -> NodeId {
+        let result = unsafe {
+            sys::bac_add_merge_mem(
+                self.raw_ptr(),
+                r#name.into(),
+                sys::Slice::from(r#inputs).cast(),
+            )
+        };
+        let result = NodeId(result);
+        result
+    }
+    pub unsafe fn r#add_un_op(
+        &self,
+        r#name: &str,
+        r#type: UnOp,
+        r#dt: Datatype,
+        r#oprnd: NodeId,
+        r#lane: Lane,
+    ) -> NodeId {
+        let result = unsafe {
+            sys::bac_add_un_op(
+                self.raw_ptr(),
+                r#name.into(),
+                r#type.0,
+                r#dt.0,
+                r#oprnd.0,
+                r#lane.0,
+            )
+        };
+        let result = NodeId(result);
+        result
+    }
+    pub unsafe fn r#start_if(
         &self,
         r#scope: NodeId,
-        r#value: NodeId,
-        r#name: &str,
-        r#type: u64,
-    ) -> isize {
-        let result = unsafe {
-            sys::bac_push_scope_value(self.raw_ptr(), r#scope.0, r#value.0, r#name.into(), r#type)
-        };
+        r#state: &mut sys::ssa_If_State,
+        r#cond: NodeId,
+    ) {
+        let result = unsafe { sys::bac_start_if(self.raw_ptr(), r#scope.0, r#state, r#cond.0) };
         result
     }
     pub unsafe fn r#start_else(&self, r#then_scope: &mut NodeId, r#state: &mut sys::ssa_If_State) {
@@ -849,13 +862,8 @@ impl Proc<'_> {
         };
         result
     }
-    pub unsafe fn r#start_if(
-        &self,
-        r#scope: NodeId,
-        r#state: &mut sys::ssa_If_State,
-        r#cond: NodeId,
-    ) {
-        let result = unsafe { sys::bac_start_if(self.raw_ptr(), r#scope.0, r#state, r#cond.0) };
+    pub unsafe fn r#start_loop(&self, r#scope: NodeId, r#state: &mut sys::ssa_Loop_State) {
+        let result = unsafe { sys::bac_start_loop(self.raw_ptr(), r#scope.0, r#state) };
         result
     }
     pub unsafe fn r#start_loop_increment(
@@ -872,156 +880,57 @@ impl Proc<'_> {
         };
         result
     }
-    pub unsafe fn r#start_loop(&self, r#scope: NodeId, r#state: &mut sys::ssa_Loop_State) {
-        let result = unsafe { sys::bac_start_loop(self.raw_ptr(), r#scope.0, r#state) };
-        result
-    }
-    pub unsafe fn r#truncate_scope(&self, r#scope: NodeId, r#to_len: isize) {
-        let result = unsafe { sys::bac_truncate_scope(self.raw_ptr(), r#scope.0, r#to_len) };
-        result
-    }
 }
 impl Builder<'_> {
-    pub fn r#add_always(&self, r#name: &'static str, r#inputs: &[&Node]) -> &Node {
-        self.proc.with_node_ids(r#inputs, |r#inputs| {
-            let result = unsafe { self.proc.r#add_always(r#name, r#inputs) };
+    pub fn r#merge_return(&self, r#args: &[&Node]) -> &Node {
+        self.proc.with_node_ids(r#args, |r#args| {
+            let result = unsafe { self.proc.r#merge_return(r#args) };
             let result = unsafe { self.proc.get_node(result) };
             result
         })
     }
-    pub fn r#add_c_int(&self, r#name: &'static str, r#dt: Datatype, r#value: i64) -> &Node {
-        let result = unsafe { self.proc.r#add_c_int(r#name, r#dt, r#value) };
-        let result = unsafe { self.proc.get_node(result) };
+    pub fn r#truncate_scope(&self, r#scope: &Node, r#to_len: isize) {
+        let r#scope = self.check(r#scope);
+        let result = unsafe { self.proc.r#truncate_scope(r#scope, r#to_len) };
         result
     }
-    pub fn r#add_bin_op(
+    pub fn r#delete_scope(&self, r#scope: &Node) {
+        let r#scope = self.check(r#scope);
+        let result = unsafe { self.proc.r#delete_scope(r#scope) };
+        result
+    }
+    pub fn r#push_scope_value(
         &self,
+        r#scope: &Node,
+        r#value: &Node,
         r#name: &'static str,
-        r#type: BinOp,
-        r#dt: Datatype,
-        r#lhs: &Node,
-        r#rhs: &Node,
-        r#lane: Lane,
-    ) -> &Node {
-        let r#lhs = self.check(r#lhs);
-        let r#rhs = self.check(r#rhs);
+        r#type: u64,
+    ) -> isize {
+        let r#scope = self.check(r#scope);
+        let r#value = self.check(r#value);
         let result = unsafe {
             self.proc
-                .r#add_bin_op(r#name, r#type, r#dt, r#lhs, r#rhs, r#lane)
+                .r#push_scope_value(r#scope, r#value, r#name, r#type)
         };
-        let result = unsafe { self.proc.get_node(result) };
         result
     }
-    pub fn r#add_call_end(&self, r#name: &'static str, r#call: &Node) -> &Node {
-        let r#call = self.check(r#call);
-        let result = unsafe { self.proc.r#add_call_end(r#name, r#call) };
-        let result = unsafe { self.proc.get_node(result) };
+    pub fn r#set_scope_value(&self, r#scope: &Node, r#idx: isize, r#value: &Node) {
+        let r#scope = self.check(r#scope);
+        let r#value = self.check(r#value);
+        let result = unsafe { self.proc.r#set_scope_value(r#scope, r#idx, r#value) };
         result
     }
-    pub fn r#add_copy(
-        &self,
-        r#name: &'static str,
-        r#ctrl: &Node,
-        r#mem: &Node,
-        r#dst: &Node,
-        r#src: &Node,
-        r#size: &Node,
-    ) -> &Node {
-        let r#ctrl = self.check(r#ctrl);
-        let r#mem = self.check(r#mem);
-        let r#dst = self.check(r#dst);
-        let r#src = self.check(r#src);
-        let r#size = self.check(r#size);
-        let result = unsafe {
-            self.proc
-                .r#add_copy(r#name, r#ctrl, r#mem, r#dst, r#src, r#size)
-        };
-        let result = unsafe { self.proc.get_node(result) };
+    pub fn r#memopt(&self) -> bool {
+        let result = unsafe { self.proc.r#memopt() };
         result
     }
-    pub fn r#add_dbg_scope(&self, r#name: &'static str, r#inputs: &[&Node]) -> &Node {
-        self.proc.with_node_ids(r#inputs, |r#inputs| {
-            let result = unsafe { self.proc.r#add_dbg_scope(r#name, r#inputs) };
-            let result = unsafe { self.proc.get_node(result) };
-            result
-        })
-    }
-    pub fn r#add_call(&self, r#name: &'static str, r#inputs: &[&Node], r#extra: Call) -> &Node {
-        self.proc.with_node_ids(r#inputs, |r#inputs| {
-            let result = unsafe { self.proc.r#add_call(r#name, r#inputs, r#extra) };
-            let result = unsafe { self.proc.get_node(result) };
-            result
-        })
-    }
-    pub fn r#add_dbg_sym_update(
-        &self,
-        r#name: &'static str,
-        r#new_value: &Node,
-        r#prev_update: &Node,
-    ) -> &Node {
-        let r#new_value = self.check(r#new_value);
-        let r#prev_update = self.check(r#prev_update);
-        let result = unsafe {
-            self.proc
-                .r#add_dbg_sym_update(r#name, r#new_value, r#prev_update)
-        };
-        let result = unsafe { self.proc.get_node(result) };
+    pub fn r#loopopt(&self) -> bool {
+        let result = unsafe { self.proc.r#loopopt() };
         result
     }
-    pub fn r#add_else(&self, r#name: &'static str, r#ctrl: &Node) -> &Node {
-        let r#ctrl = self.check(r#ctrl);
-        let result = unsafe { self.proc.r#add_else(r#name, r#ctrl) };
-        let result = unsafe { self.proc.get_node(result) };
-        result
-    }
-    pub fn r#add_end(&self, r#name: &'static str, r#inputs: &[&Node]) -> &Node {
-        self.proc.with_node_ids(r#inputs, |r#inputs| {
-            let result = unsafe { self.proc.r#add_end(r#name, r#inputs) };
-            let result = unsafe { self.proc.get_node(result) };
-            result
-        })
-    }
-    pub fn r#add_entry(&self, r#name: &'static str) -> &Node {
-        let result = unsafe { self.proc.r#add_entry(r#name) };
-        let result = unsafe { self.proc.get_node(result) };
-        result
-    }
-    pub fn r#add_dbg_sym_decl(&self, r#name: &'static str) -> &Node {
-        let result = unsafe { self.proc.r#add_dbg_sym_decl(r#name) };
-        let result = unsafe { self.proc.get_node(result) };
-        result
-    }
-    pub fn r#add_global_addr(&self, r#name: &'static str, r#global: &Node) -> &Node {
-        let r#global = self.check(r#global);
-        let result = unsafe { self.proc.r#add_global_addr(r#name, r#global) };
-        let result = unsafe { self.proc.get_node(result) };
-        result
-    }
-    pub fn r#add_if(&self, r#name: &'static str, r#ctrl: &Node, r#cond: &Node) -> &Node {
-        let r#ctrl = self.check(r#ctrl);
-        let r#cond = self.check(r#cond);
-        let result = unsafe { self.proc.r#add_if(r#name, r#ctrl, r#cond) };
-        let result = unsafe { self.proc.get_node(result) };
-        result
-    }
-    pub fn r#add_jump(&self, r#name: &'static str, r#ctrl: &Node) -> &Node {
-        let r#ctrl = self.check(r#ctrl);
-        let result = unsafe { self.proc.r#add_jump(r#name, r#ctrl) };
-        let result = unsafe { self.proc.get_node(result) };
-        result
-    }
-    pub fn r#add_load(
-        &self,
-        r#name: &'static str,
-        r#dt: Datatype,
-        r#ctrl: &Node,
-        r#mem: &Node,
-        r#addr: &Node,
-    ) -> &Node {
-        let r#ctrl = self.check(r#ctrl);
-        let r#mem = self.check(r#mem);
-        let r#addr = self.check(r#addr);
-        let result = unsafe { self.proc.r#add_load(r#name, r#dt, r#ctrl, r#mem, r#addr) };
+    pub fn r#add_local_addr(&self, r#name: &'static str, r#local: &Node) -> &Node {
+        let r#local = self.check(r#local);
+        let result = unsafe { self.proc.r#add_local_addr(r#name, r#local) };
         let result = unsafe { self.proc.get_node(result) };
         result
     }
@@ -1031,26 +940,15 @@ impl Builder<'_> {
         let result = unsafe { self.proc.get_node(result) };
         result
     }
-    pub fn r#add_local_addr(&self, r#name: &'static str, r#local: &Node) -> &Node {
-        let r#local = self.check(r#local);
-        let result = unsafe { self.proc.r#add_local_addr(r#name, r#local) };
-        let result = unsafe { self.proc.get_node(result) };
-        result
-    }
     pub fn r#add_loop(&self, r#name: &'static str, r#ctrl: &Node) -> &Node {
         let r#ctrl = self.check(r#ctrl);
         let result = unsafe { self.proc.r#add_loop(r#name, r#ctrl) };
         let result = unsafe { self.proc.get_node(result) };
         result
     }
-    pub fn r#add_mem(&self, r#name: &'static str, r#ctrl: &Node) -> &Node {
+    pub fn r#add_jump(&self, r#name: &'static str, r#ctrl: &Node) -> &Node {
         let r#ctrl = self.check(r#ctrl);
-        let result = unsafe { self.proc.r#add_mem(r#name, r#ctrl) };
-        let result = unsafe { self.proc.get_node(result) };
-        result
-    }
-    pub fn r#add_global(&self, r#name: &'static str, r#idx: u32) -> &Node {
-        let result = unsafe { self.proc.r#add_global(r#name, r#idx) };
+        let result = unsafe { self.proc.r#add_jump(r#name, r#ctrl) };
         let result = unsafe { self.proc.get_node(result) };
         result
     }
@@ -1188,12 +1086,39 @@ impl Builder<'_> {
             result
         })
     }
-    pub fn r#add_merge_mem(&self, r#name: &'static str, r#inputs: &[&Node]) -> &Node {
-        self.proc.with_node_ids(r#inputs, |r#inputs| {
-            let result = unsafe { self.proc.r#add_merge_mem(r#name, r#inputs) };
-            let result = unsafe { self.proc.get_node(result) };
-            result
-        })
+    pub fn r#add_if(&self, r#name: &'static str, r#ctrl: &Node, r#cond: &Node) -> &Node {
+        let r#ctrl = self.check(r#ctrl);
+        let r#cond = self.check(r#cond);
+        let result = unsafe { self.proc.r#add_if(r#name, r#ctrl, r#cond) };
+        let result = unsafe { self.proc.get_node(result) };
+        result
+    }
+    pub fn r#add_global_addr(&self, r#name: &'static str, r#global: &Node) -> &Node {
+        let r#global = self.check(r#global);
+        let result = unsafe { self.proc.r#add_global_addr(r#name, r#global) };
+        let result = unsafe { self.proc.get_node(result) };
+        result
+    }
+    pub fn r#add_load(
+        &self,
+        r#name: &'static str,
+        r#dt: Datatype,
+        r#ctrl: &Node,
+        r#mem: &Node,
+        r#addr: &Node,
+    ) -> &Node {
+        let r#ctrl = self.check(r#ctrl);
+        let r#mem = self.check(r#mem);
+        let r#addr = self.check(r#addr);
+        let result = unsafe { self.proc.r#add_load(r#name, r#dt, r#ctrl, r#mem, r#addr) };
+        let result = unsafe { self.proc.get_node(result) };
+        result
+    }
+    pub fn r#add_mem(&self, r#name: &'static str, r#ctrl: &Node) -> &Node {
+        let r#ctrl = self.check(r#ctrl);
+        let result = unsafe { self.proc.r#add_mem(r#name, r#ctrl) };
+        let result = unsafe { self.proc.get_node(result) };
+        result
     }
     pub fn r#apply_peep(&self, r#id: &Node) -> &Node {
         let r#id = self.check(r#id);
@@ -1207,11 +1132,6 @@ impl Builder<'_> {
         let result = unsafe { self.proc.r#connect(r#use, r#def) };
         result
     }
-    pub fn r#delete_node_node_id(&self, r#id: &Node) {
-        let r#id = self.check(r#id);
-        let result = unsafe { self.proc.r#delete_node_node_id(r#id) };
-        result
-    }
     pub fn r#find_node(&self, r#kind: NodeType, r#on: &Node) -> (&Node, bool) {
         let r#on = self.check(r#on);
         let result = unsafe { self.proc.r#find_node(r#kind, r#on) };
@@ -1223,28 +1143,94 @@ impl Builder<'_> {
         let result = unsafe { self.proc.get_node(result) };
         result
     }
+    pub fn r#delete_node_node_id(&self, r#id: &Node) {
+        let r#id = self.check(r#id);
+        let result = unsafe { self.proc.r#delete_node_node_id(r#id) };
+        result
+    }
     pub fn r#get_sym_count(&self) -> (&Node, isize) {
         let result = unsafe { self.proc.r#get_sym_count() };
         let result = (unsafe { self.proc.get_node(result.0) }, result.1);
         result
     }
-    pub fn r#add_un_op(
+    pub fn r#add_end(&self, r#name: &'static str, r#inputs: &[&Node]) -> &Node {
+        self.proc.with_node_ids(r#inputs, |r#inputs| {
+            let result = unsafe { self.proc.r#add_end(r#name, r#inputs) };
+            let result = unsafe { self.proc.get_node(result) };
+            result
+        })
+    }
+    pub fn r#add_dbg_sym_update(
         &self,
         r#name: &'static str,
-        r#type: UnOp,
-        r#dt: Datatype,
-        r#oprnd: &Node,
-        r#lane: Lane,
+        r#new_value: &Node,
+        r#prev_update: &Node,
     ) -> &Node {
-        let r#oprnd = self.check(r#oprnd);
-        let result = unsafe { self.proc.r#add_un_op(r#name, r#type, r#dt, r#oprnd, r#lane) };
+        let r#new_value = self.check(r#new_value);
+        let r#prev_update = self.check(r#prev_update);
+        let result = unsafe {
+            self.proc
+                .r#add_dbg_sym_update(r#name, r#new_value, r#prev_update)
+        };
         let result = unsafe { self.proc.get_node(result) };
         result
     }
-    pub fn r#pin(&self, r#id: &Node) {
-        let r#id = self.check(r#id);
-        let result = unsafe { self.proc.r#pin(r#id) };
+    pub fn r#add_else(&self, r#name: &'static str, r#ctrl: &Node) -> &Node {
+        let r#ctrl = self.check(r#ctrl);
+        let result = unsafe { self.proc.r#add_else(r#name, r#ctrl) };
+        let result = unsafe { self.proc.get_node(result) };
         result
+    }
+    pub fn r#add_entry(&self, r#name: &'static str) -> &Node {
+        let result = unsafe { self.proc.r#add_entry(r#name) };
+        let result = unsafe { self.proc.get_node(result) };
+        result
+    }
+    pub fn r#add_copy(
+        &self,
+        r#name: &'static str,
+        r#ctrl: &Node,
+        r#mem: &Node,
+        r#dst: &Node,
+        r#src: &Node,
+        r#size: &Node,
+    ) -> &Node {
+        let r#ctrl = self.check(r#ctrl);
+        let r#mem = self.check(r#mem);
+        let r#dst = self.check(r#dst);
+        let r#src = self.check(r#src);
+        let r#size = self.check(r#size);
+        let result = unsafe {
+            self.proc
+                .r#add_copy(r#name, r#ctrl, r#mem, r#dst, r#src, r#size)
+        };
+        let result = unsafe { self.proc.get_node(result) };
+        result
+    }
+    pub fn r#add_call_end(&self, r#name: &'static str, r#call: &Node) -> &Node {
+        let r#call = self.check(r#call);
+        let result = unsafe { self.proc.r#add_call_end(r#name, r#call) };
+        let result = unsafe { self.proc.get_node(result) };
+        result
+    }
+    pub fn r#add_dbg_scope(&self, r#name: &'static str, r#inputs: &[&Node]) -> &Node {
+        self.proc.with_node_ids(r#inputs, |r#inputs| {
+            let result = unsafe { self.proc.r#add_dbg_scope(r#name, r#inputs) };
+            let result = unsafe { self.proc.get_node(result) };
+            result
+        })
+    }
+    pub fn r#add_c_int(&self, r#name: &'static str, r#dt: Datatype, r#value: i64) -> &Node {
+        let result = unsafe { self.proc.r#add_c_int(r#name, r#dt, r#value) };
+        let result = unsafe { self.proc.get_node(result) };
+        result
+    }
+    pub fn r#add_always(&self, r#name: &'static str, r#inputs: &[&Node]) -> &Node {
+        self.proc.with_node_ids(r#inputs, |r#inputs| {
+            let result = unsafe { self.proc.r#add_always(r#name, r#inputs) };
+            let result = unsafe { self.proc.get_node(result) };
+            result
+        })
     }
     pub fn r#set_input(
         &self,
@@ -1262,14 +1248,14 @@ impl Builder<'_> {
         let result = unsafe { self.proc.get_node(result) };
         result
     }
-    pub fn r#set_local_size(&self, r#loc: &Node, r#size: i32) {
-        let r#loc = self.check(r#loc);
-        let result = unsafe { self.proc.r#set_local_size(r#loc, r#size) };
-        result
-    }
     pub fn r#unpin(&self, r#id: &Node, r#no_delete: bool) {
         let r#id = self.check(r#id);
         let result = unsafe { self.proc.r#unpin(r#id, r#no_delete) };
+        result
+    }
+    pub fn r#set_local_size(&self, r#loc: &Node, r#size: i32) {
+        let r#loc = self.check(r#loc);
+        let result = unsafe { self.proc.r#set_local_size(r#loc, r#size) };
         result
     }
     pub fn r#add_arbitrary_load(
@@ -1383,6 +1369,11 @@ impl Builder<'_> {
         let result = unsafe { self.proc.get_node(result) };
         result
     }
+    pub fn r#pin(&self, r#id: &Node) {
+        let r#id = self.check(r#id);
+        let result = unsafe { self.proc.r#pin(r#id) };
+        result
+    }
     pub fn r#compute_index_offset(&self, r#base: &Node, r#index: &Node, r#stride: i64) -> &Node {
         let r#base = self.check(r#base);
         let r#index = self.check(r#index);
@@ -1395,19 +1386,10 @@ impl Builder<'_> {
         let result = unsafe { self.proc.r#decl_local(r#loc, r#name, r#type) };
         result
     }
-    pub fn r#delete_scope(&self, r#scope: &Node) {
-        let r#scope = self.check(r#scope);
-        let result = unsafe { self.proc.r#delete_scope(r#scope) };
-        result
-    }
     pub fn r#get_scope_value(&self, r#scope: &Node, r#idx: isize) -> &Node {
         let r#scope = self.check(r#scope);
         let result = unsafe { self.proc.r#get_scope_value(r#scope, r#idx) };
         let result = unsafe { self.proc.get_node(result) };
-        result
-    }
-    pub fn r#loopopt(&self) -> bool {
-        let result = unsafe { self.proc.r#loopopt() };
         result
     }
     pub fn r#make_call(&self, r#args: &[&Node], r#extra: Call) -> (&Node, &Node) {
@@ -1419,41 +1401,59 @@ impl Builder<'_> {
             result
         })
     }
-    pub fn r#memopt(&self) -> bool {
-        let result = unsafe { self.proc.r#memopt() };
+    pub fn r#add_bin_op(
+        &self,
+        r#name: &'static str,
+        r#type: BinOp,
+        r#dt: Datatype,
+        r#lhs: &Node,
+        r#rhs: &Node,
+        r#lane: Lane,
+    ) -> &Node {
+        let r#lhs = self.check(r#lhs);
+        let r#rhs = self.check(r#rhs);
+        let result = unsafe {
+            self.proc
+                .r#add_bin_op(r#name, r#type, r#dt, r#lhs, r#rhs, r#lane)
+        };
+        let result = unsafe { self.proc.get_node(result) };
         result
     }
-    pub fn r#merge_returns(&self, r#args: &[&Node]) -> &Node {
-        self.proc.with_node_ids(r#args, |r#args| {
-            let result = unsafe { self.proc.r#merge_returns(r#args) };
+    pub fn r#add_call(&self, r#name: &'static str, r#inputs: &[&Node], r#extra: Call) -> &Node {
+        self.proc.with_node_ids(r#inputs, |r#inputs| {
+            let result = unsafe { self.proc.r#add_call(r#name, r#inputs, r#extra) };
             let result = unsafe { self.proc.get_node(result) };
             result
         })
     }
-    pub fn r#set_scope_value(&self, r#scope: &Node, r#idx: isize, r#value: &Node) {
-        let r#scope = self.check(r#scope);
-        let r#value = self.check(r#value);
-        let result = unsafe { self.proc.r#set_scope_value(r#scope, r#idx, r#value) };
+    pub fn r#add_dbg_sym_decl(&self, r#name: &'static str) -> &Node {
+        let result = unsafe { self.proc.r#add_dbg_sym_decl(r#name) };
+        let result = unsafe { self.proc.get_node(result) };
         result
     }
-    pub fn r#push_scope_value(
+    pub fn r#add_global(&self, r#name: &'static str, r#idx: u32) -> &Node {
+        let result = unsafe { self.proc.r#add_global(r#name, r#idx) };
+        let result = unsafe { self.proc.get_node(result) };
+        result
+    }
+    pub fn r#add_merge_mem(&self, r#name: &'static str, r#inputs: &[&Node]) -> &Node {
+        self.proc.with_node_ids(r#inputs, |r#inputs| {
+            let result = unsafe { self.proc.r#add_merge_mem(r#name, r#inputs) };
+            let result = unsafe { self.proc.get_node(result) };
+            result
+        })
+    }
+    pub fn r#add_un_op(
         &self,
-        r#scope: &Node,
-        r#value: &Node,
         r#name: &'static str,
-        r#type: u64,
-    ) -> isize {
-        let r#scope = self.check(r#scope);
-        let r#value = self.check(r#value);
-        let result = unsafe {
-            self.proc
-                .r#push_scope_value(r#scope, r#value, r#name, r#type)
-        };
-        result
-    }
-    pub fn r#truncate_scope(&self, r#scope: &Node, r#to_len: isize) {
-        let r#scope = self.check(r#scope);
-        let result = unsafe { self.proc.r#truncate_scope(r#scope, r#to_len) };
+        r#type: UnOp,
+        r#dt: Datatype,
+        r#oprnd: &Node,
+        r#lane: Lane,
+    ) -> &Node {
+        let r#oprnd = self.check(r#oprnd);
+        let result = unsafe { self.proc.r#add_un_op(r#name, r#type, r#dt, r#oprnd, r#lane) };
+        let result = unsafe { self.proc.get_node(result) };
         result
     }
 }
@@ -1470,16 +1470,16 @@ impl<'p, 'a> IfState<'p, 'a> {
         *r#then_scope = unsafe { self.proc.get_node(r#then_scope_id) };
         result
     }
-    pub fn r#start_else(&mut self, r#then_scope: &mut &'p Node) {
-        let mut r#then_scope_id = self.proc.check(r#then_scope);
-        let result = unsafe { self.proc.r#start_else(&mut r#then_scope_id, &mut self.raw) };
-        *r#then_scope = unsafe { self.proc.get_node(r#then_scope_id) };
-        result
-    }
     pub fn r#start_if(&mut self, r#scope: &Node, r#cond: &Node) {
         let r#scope = self.proc.check(r#scope);
         let r#cond = self.proc.check(r#cond);
         let result = unsafe { self.proc.r#start_if(r#scope, &mut self.raw, r#cond) };
+        result
+    }
+    pub fn r#start_else(&mut self, r#then_scope: &mut &'p Node) {
+        let mut r#then_scope_id = self.proc.check(r#then_scope);
+        let result = unsafe { self.proc.r#start_else(&mut r#then_scope_id, &mut self.raw) };
+        *r#then_scope = unsafe { self.proc.get_node(r#then_scope_id) };
         result
     }
 }
@@ -1488,6 +1488,11 @@ impl<'p, 'a> LoopState<'p, 'a> {
         let mut r#node_scope_id = self.proc.check(r#node_scope);
         let result = unsafe { self.proc.r#end_loop(&mut r#node_scope_id, &mut self.raw) };
         *r#node_scope = unsafe { self.proc.get_node(r#node_scope_id) };
+        result
+    }
+    pub fn r#start_loop(&mut self, r#scope: &Node) {
+        let r#scope = self.proc.check(r#scope);
+        let result = unsafe { self.proc.r#start_loop(r#scope, &mut self.raw) };
         result
     }
     pub fn r#start_loop_increment(&mut self, r#node_scope: &mut &'p Node) {
@@ -1499,22 +1504,17 @@ impl<'p, 'a> LoopState<'p, 'a> {
         *r#node_scope = unsafe { self.proc.get_node(r#node_scope_id) };
         result
     }
-    pub fn r#start_loop(&mut self, r#scope: &Node) {
-        let r#scope = self.proc.check(r#scope);
-        let result = unsafe { self.proc.r#start_loop(r#scope, &mut self.raw) };
-        result
-    }
 }
 impl<'p, 'a> BlockState<'p, 'a> {
-    pub fn r#break_block(&mut self, r#scope: &mut &'p Node) {
-        let mut r#scope_id = self.proc.check(r#scope);
-        let result = unsafe { self.proc.r#break_block(&mut r#scope_id, &mut self.raw) };
-        *r#scope = unsafe { self.proc.get_node(r#scope_id) };
-        result
-    }
     pub fn r#end_block(&mut self, r#scope: &mut &'p Node) {
         let mut r#scope_id = self.proc.check(r#scope);
         let result = unsafe { self.proc.r#end_block(&mut r#scope_id, &mut self.raw) };
+        *r#scope = unsafe { self.proc.get_node(r#scope_id) };
+        result
+    }
+    pub fn r#break_block(&mut self, r#scope: &mut &'p Node) {
+        let mut r#scope_id = self.proc.check(r#scope);
+        let result = unsafe { self.proc.r#break_block(&mut r#scope_id, &mut self.raw) };
         *r#scope = unsafe { self.proc.get_node(r#scope_id) };
         result
     }

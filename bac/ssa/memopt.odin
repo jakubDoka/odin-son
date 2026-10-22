@@ -10,7 +10,12 @@ Local :: bac.Local
 Node_ID :: bac.Node_ID
 expand_node :: bac.expand_node
 
-@(tag = "api")
+/// Pass will rename scalar local variables to registers and also pull
+/// non-escaping local variables that are too big to a separate memory threads.
+/// It's a good idea to run this in combination of `apply_peeps` to termination.
+/// Pass complexity scales with the amount of locals in the function and memory
+/// ops they have.
+@(tag = "api,priority=95")
 memopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 	assert(prc.node_spec == &SPEC)
 

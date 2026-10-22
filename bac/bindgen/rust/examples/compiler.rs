@@ -125,7 +125,7 @@ impl<'s, 'p, 'a> Compiler<'s, 'p, 'a> {
                 let value = self.expression();
                 self.next();
                 let control = builder.inputs(self.scope).next().unwrap();
-                builder.merge_returns(&[control, builder.initial_memory(), value]);
+                builder.merge_return(&[control, builder.initial_memory(), value]);
                 builder.delete_scope(self.scope);
                 self.scope = Node::NONE;
             }

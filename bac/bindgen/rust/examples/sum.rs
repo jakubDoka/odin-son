@@ -40,7 +40,7 @@ fn main() {
         param_specs.copy_from_slice(params.finalize());
 
         let sum = builder.add_bin_op("sum", BinOp::Add, Datatype::I64, left, right, Lane::I8);
-        builder.merge_returns(&[builder.entry(), memory, sum]);
+        builder.merge_return(&[builder.entry(), memory, sum]);
     }
 
     let mut code = Arena::from_buffer(code);

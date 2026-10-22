@@ -7,7 +7,10 @@ import "../../utils/fmt"
 import "core:math"
 import "core:slice"
 
-@(tag = "api")
+/// Pass will normalize loops, and apply loop specific optimizations. As of
+/// right now, the loop can be turned into memset or memcpy, or get eliminated
+/// if they have no sideffects.
+@(tag = "api,priority=95")
 loopopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 	context.allocator, _ = arna.scrath(prc.temps)
 

@@ -17,7 +17,13 @@ btype :: #force_inline proc(node: bac.Expanded_Node) -> Node_Type {
 	return Node_Type(node.rtype)
 }
 
-@(tag = "api")
+/// Run the platform independend optimizations. This is preconfigured simple run
+/// of passes. To enable passes, you can configure them in the
+/// ctx.prc.opt_flags, by default, no passes except mandatory ones are enabled.
+///
+/// For separate passes, grep for `apply_peeps`, `conpute_latices`, `memopt`,
+/// `loopopt`. They have their own documentation.
+@(tag = "api,priority=97")
 opt :: proc(ctx: bac.Peep_Ctx) {
 	DEBUG_OPT :: false
 
@@ -52,7 +58,13 @@ opt :: proc(ctx: bac.Peep_Ctx) {
 	}
 }
 
-@(tag = "api")
+/// Compile the proc to the current node_spec. The minimal configuration of the
+/// context is the `.prc` and `.buf.code`. Function will crash the program if
+/// other buffers are required. This function also computes missing
+/// datastructures, you can compute them your self and set the pointers if you
+/// need customization. Note that all of the functions this calls are also
+/// available in the API.
+@(tag = "api,priority=98")
 compile :: proc(ctx: bac.Codegen_Emit_Ctx) -> (res: bac.Codegen_Output) {
 	ctx := ctx
 
@@ -137,8 +149,11 @@ decl_local :: proc(prc: ^Proc, loc: Node_ID, name: string, type: u64) {
 	}
 }
 
-@(tag = "api")
-merge_returns :: proc(prc: ^Proc, args: []Node_ID) -> Node_ID {
+/// The args[0] needs to be a control flow, args[1] should be an end of a memory
+/// thread. You have to call this at least once if the function has reachable
+/// return path.
+@(tag = "api,priority=99")
+merge_return :: proc(prc: ^Proc, args: []Node_ID) -> Node_ID {
 	ret := bac.get_inputs(prc, prc.end)[0]
 
 	if ret == 0 {
@@ -443,7 +458,7 @@ get_scope_value :: proc(
 	#any_int idx: int,
 ) -> Node_ID {
 	snode := get_node(prc, scope)
-	assert(Node_Type(snode.rtype) == .Scope)
+	fmt.assertf(Node_Type(snode.rtype) == .Scope, "%v")
 
 	val := bac.get_inputs(prc, snode)[idx]
 	vnode := expand_node(prc, val)
@@ -474,14 +489,20 @@ should_debug_track :: proc(prc: ^bac.Proc, value: Node_ID) -> bool {
 	return prc.has_dbg && get_node(prc, value).dt > .Mem
 }
 
-@(tag = "api")
+/// declare a scalar value or a memory thread that should have phys generated
+/// based on updates done by set_scope_value and must be accessed trough
+/// get_scope_value, it retunrs the index withing the scope by which you can
+/// acces and modify the value.
+@(tag = "api,priority=99")
 push_scope_value :: proc(
 	prc: ^bac.Proc,
 	scope: Node_ID,
 	value: Node_ID,
 	name: string,
 	type: u64,
-) -> int {
+) -> (
+	id: int,
+) {
 	scope_node := get_node(prc, scope)
 	assert(Node_Type(scope_node.rtype) == .Scope)
 	if should_debug_track(prc, value) {
@@ -494,7 +515,9 @@ push_scope_value :: proc(
 	return bac.connect(prc, scope, value)
 }
 
-@(tag = "api")
+/// Update the scope value so it gets phys generated to express the ssa
+/// changes.
+@(tag = "api,priority=99")
 set_scope_value :: proc(
 	prc: ^bac.Proc,
 	scope: Node_ID,
@@ -510,13 +533,17 @@ set_scope_value :: proc(
 	bac.set_input(prc, scope, idx, value)
 }
 
-@(tag = "api")
+/// Delete the scope properly. This is nescessary to generate a proper debug
+/// info.
+@(tag = "api,priority=99")
 delete_scope :: proc(prc: ^bac.Proc, scope: Node_ID) {
 	truncate_scope(prc, scope, 1)
 	bac.delete_node(prc, scope)
 }
 
-@(tag = "api")
+/// Drops value that are no loger alive from the scope, this usually should be
+/// called at the end of a lexical scope.
+@(tag = "api,priority=99")
 truncate_scope :: proc(prc: ^bac.Proc, scope: Node_ID, #any_int to_len: int) {
 	snode := expand_node(prc, scope)
 
@@ -589,7 +616,9 @@ inline_call :: proc {
 	inline_stencil,
 }
 
-@(tag = "api")
+/// This just expands the `from` into a graph, refer to `inline_graph` for
+/// docs.
+@(tag = "api,priority=95")
 inline_stencil :: proc(prc: ^bac.Proc, call: Node_ID, from: bac.Stencil) {
 	slot: arna.Allocator
 	from_prc: bac.Proc
@@ -600,7 +629,17 @@ inline_stencil :: proc(prc: ^bac.Proc, call: Node_ID, from: bac.Stencil) {
 	inline_graph(prc, call, &from_prc)
 }
 
-@(tag = "api")
+/// Grep for "inline_and_optimize ::" for an example usage.
+///
+/// Inline a `from` into `prc` at `call`, the from and the call node shoul
+/// refer to the same function, or more precisely, the signatrue needs to be
+/// compatible. This invalidates whatever passes that were computes so its
+/// better to do this in bulk.
+///
+/// Good strategy is to optimize the `from` before inlining to maximize inline
+/// performance since same code does not get copyes and reoptimized
+/// redundantly.
+@(tag = "api,priority=95")
 inline_graph :: proc(prc: ^bac.Proc, call: Node_ID, from: ^bac.Proc) {
 	assert(prc.node_spec == &SPEC)
 
@@ -1127,7 +1166,7 @@ arg_gen_next :: proc(
 	mem: Node_ID,
 	gen: ^Param_Gen,
 	name: string,
-	apa: ^Abi_Param,
+	apa: Abi_Param,
 ) -> (
 	omem: Node_ID,
 	value: Node_ID,
@@ -1153,7 +1192,9 @@ arg_gen_next :: proc(
 		}
 	}
 
-	for dt, j in apa.dt[:(apa.size + 7) / 8] {
+	dt := apa.dt
+
+	for dt, j in dt[:(apa.size + 7) / 8] {
 		vl := bac.add_param(ctx, name, dt, ctx.entry, 0)
 		gen.spill_start += int(j == 1)
 		append(&gen.vls, vl)
@@ -1207,12 +1248,21 @@ arg_gen_finalize :: proc(ctx: ^Proc, gen: ^Param_Gen) -> []bac.Param_Spec {
 	return arg_tys
 }
 
+/// Refer to examples/bac/ for a quick start.
+///
+/// Initialize the Proc for code emission. This returns the initial mem node
+/// that should be used to advance the memory state. The starting control flow
+/// node can be accessed in prc.meta.pinned.entry. Any non trivial codegen needs
+/// to track control flow and initial memory in a Scope node, all of the ssa
+/// builders expect the scope to have the control flow as the first input node.
 @(tag = "api,priority=100")
 start_proc :: proc(
 	prc: ^Proc,
 	mem: ^arna.Allocator,
 	temps: ^arna.Temps,
-) -> Node_ID {
+) -> (
+	rmem: Node_ID,
+) {
 	bac.ensure_init()
 
 	assert(temps != nil)
@@ -1297,7 +1347,7 @@ make_builtin_proc :: proc(prc: ^Proc, name: Builtin_Proc) {
 
 	ctrl = bac.get_inputs(prc, scope)[0]
 	mem = get_scope_value(prc, scope, memv)
-	merge_returns(prc, {ctrl, mem})
+	merge_return(prc, {ctrl, mem})
 
 	bac.delete_node(prc, scope)
 }

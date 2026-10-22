@@ -28,7 +28,7 @@ fn main() {
     {
         let builder = proc.builder();
         let value = builder.add_c_int("mcnst", Datatype::I64, 69);
-        builder.merge_returns(&[builder.entry(), builder.initial_memory(), value]);
+        builder.merge_return(&[builder.entry(), builder.initial_memory(), value]);
     }
     let mut code = Arena::from_buffer(code);
     let mut ctx = CodegenEmitCtx::new(&mut proc, &mut code);

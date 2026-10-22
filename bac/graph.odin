@@ -739,15 +739,25 @@ compute_weight :: proc(prc: ^Proc, all: []Node_ID) {
 	}
 }
 
-// mem is borrowed
-@(tag = "api")
+/// Extract the stencil from the function. The resulting stencil does not own
+/// the .mem, you need to clone it if you want to save the stencil for later.
+/// Stencil represents a compressed state of a graph, you can recover the
+/// function with mount_stencil. You usually want to store the stencils when
+/// collecting functions for inlining.
+///
+/// Note that stencil can be stored on disk and loaded just fine, it does not
+/// contain any global pointers that break the integrity.
+@(tag = "api,priority=95")
 get_stencil :: proc(prc: ^Proc) -> (s: Stencil) {
 	s.mem = prc.mem.ptr[:prc.mem.pos]
 	s.meta = prc.meta
 	return
 }
 
-@(tag = "api")
+/// Reverse of get_stencil, if the proc has empty arena, the proc will borrow the
+/// .mem field and the prc should not be modifyed, but its safe to use it for
+/// inlining or other ops that just read the graph.
+@(tag = "api,priority=95")
 mount_stencil :: proc(prc: ^Proc, stencil: Stencil) {
 	if prc.mem.ptr == nil {
 		prc.mem^ = arna.init_from_buffer(stencil.mem)
@@ -766,7 +776,11 @@ worklist_init :: proc(w: ^Worklist, #any_int cap: int = 0) {
 	w.in_queue = bit_arr.init(cap)
 }
 
-@(tag = "api")
+/// The graph can accumulate wasted space of dead nodes during optimizations.
+/// Function will garbige collect the nodes into the smallest possible
+/// allocation. This is particularly usefull before `get_stencil`, as it
+/// reduces the memory usage of cold functions.
+@(tag = "api,priority=95")
 compact :: proc(prc: ^Proc) {
 	context.allocator, _ = arna.scrath(prc.temps)
 
@@ -1142,7 +1156,10 @@ pass_snapshot :: proc(ctx: ^Proc) -> Pass_Snapshot {
 	return {u32(ctx.mem.pos), u32(ctx.waste)}
 }
 
-@(tag = "api")
+/// Apply peephole optimizations until fixpoint, the peephole strategy is picked
+/// from the ctx.prc.node_spec.peep. If you use `compute_latices` before this
+/// pass, the latices will be used to improve optimizations.
+@(tag = "api,priority=95")
 apply_peeps :: proc(ctx: Peep_Ctx) -> (optimized: bool) {
 	prc := ctx.prc
 
@@ -1997,6 +2014,14 @@ delete_node_node :: proc(prc: ^Proc, node: ^Node) {
 		rtype = DEAD_NODE_KIND,
 	}
 
+	//lines, err := trace.resolve(
+	//	trace.capture(skip = 1),
+	//	context.temp_allocator,
+	//	context.temp_allocator,
+	//)
+	//runtime.print_string("[back trace]\n")
+	//trace.print(lines)
+
 	add_efficiency_stat(prc, .deleted_nodes, 1)
 
 }
@@ -2334,6 +2359,9 @@ truncate_inputs :: proc(prc: ^Proc, scope: Node_ID, #any_int to_len: int) {
 
 ensure_init :: proc() {
 	when ODIN_BUILD_MODE != .Executable {
-		runtime._startup_runtime()
+		@(static) inited: bool
+		if !intrinsics.atomic_exchange(&inited, true) {
+			runtime._startup_runtime()
+		}
 	}
 }

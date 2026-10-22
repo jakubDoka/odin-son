@@ -80,8 +80,11 @@ init :: proc "contextless" (
 	return .None
 }
 
-@(tag = "api")
-init_from_buffer :: proc "contextless" (buf: []u8) -> Allocator {
+/// Creates an arena backed by the slice of borrowed memory. The allocator
+/// assumes, the full memory region is mapped. If you are planning to allocate,
+/// you should make sure the `buf` is aligned to the max alignment you will use.
+@(tag = "api,priority=101")
+init_from_buffer :: proc(buf: []u8) -> Allocator {
 	return {
 		ptr = raw_data(buf),
 		pos = 0,

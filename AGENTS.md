@@ -13,19 +13,19 @@ target's own enum in its own module (e.g. `Node_Type` in `bac/x64/x64.odin`,
 means adding a new `bac/<arch>` directory — nothing in root `bac` should need
 editing. If you are going to use the generated construction fuctions in the
 backend, or any generated thing for that matter, they should have a stub
-version in that module's own bootstrap file (`bac/meta/main.odin` for root,
-`bac/meta2/main.odin` for generating the submodules) or the codegen will fail.
+version in that module's own bootstrap file (`bac/meta/meta.odin` for root,
+`bac/meta2/meta2.odin` for generating the submodules) or the codegen will fail.
 
-A test is specified in a TESTS.md in a standard format that is parsed by
-`meta.odin` and translated to `tests/tests.odin` functions. The code snipped
+A test is specified in a `tests/TESTS.md` in a standard format that is parsed
+by `meta.odin` and translated to `tests/tests.odin` functions. The code snipped
 needs to be compilable with odin compiler and SHOULD NEVER CONTAIN REACHABLE
 INFINITE LOOP since ist ran before the actual test starts to extract the return
 value that is then asserted for changes.
 
-The TESTS.md snippets double as the corpus for the AFL++ fuzzer, run it with
-`./misc/fuzz.sh` (`--help` for the flags). It only compiles, never runs the
-generated code. `gen-meta` imports whatever crashed into `fuzz/crashes/` and
-turns each one into a test.
+The `tests/TESTS.md` snippets double as the corpus for the AFL++ fuzzer, run it
+with `./misc/fuzz.sh` (`--help` for the flags). It only compiles, never runs
+the generated code. `gen-meta` imports whatever crashed into `fuzz/crashes/`
+and turns each one into a test.
 
 Another category of tests we have are `test-programs`, that can be ran with
 `./misc/run-programs.sh`, the scripts asserts that exit codes and stdout/err
@@ -68,3 +68,7 @@ multiple in a target specific peephole and, if required, add new instructions
 to the target. I dont want to see any hacks like spilling random register to
 stack or adding a wasm local, only exception is mem2mem split and that is rare
 case, no instructions should quarantee spills.
+
+DONT keep tests in the repo unless instructed otherwise, you can write tests as
+a intermediary step in sloving something but dont keep them, unless instructed
+to write tests.

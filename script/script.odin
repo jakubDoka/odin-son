@@ -1,6 +1,5 @@
 package script
 
-import "core:container/intrusive/list"
 import "core:fmt"
 import "core:os"
 import "core:slice"
@@ -37,7 +36,7 @@ main :: proc() {
 			"-no-bounds-check",
 			"-no-type-assert",
 			`-extra-linker-flags:"-z stack-size=8388608 --export=source_buffer
-    --export=output_buffer --export=__stack_pointer"`,
+       --export=output_buffer --export=__stack_pointer"`,
 		)
 		cmd("wasm-opt", "-Oz", "wasm.wasm", "-o", "wasm.wasm")
 		cmd("mv", "wasm.wasm", "mini-odin")
@@ -80,7 +79,7 @@ main :: proc() {
 	case "run-programs":
 		jit_path := env("JIT")
 		if jit_path == "" {
-			cmd("odin", "build", "odin", "-out:jit", "-debug")
+			cmd("odin", "build", "odinc", "-out:jit", "-debug")
 			jit_path = "./jit"
 		}
 

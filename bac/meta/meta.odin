@@ -733,4 +733,5 @@ Class_Spec :: struct {
 	no_ctor:        bool,
 	pass_lane:      bool,
 	api:            bool,
+	comment:        string,
 }

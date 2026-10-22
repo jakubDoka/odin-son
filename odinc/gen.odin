@@ -851,7 +851,7 @@ emit_proc :: proc(
 	if ctx.node_scope != 0 {
 		assert(len(prc.rets) == 0)
 		values := [2]Node_ID{ctx_ctrl(ctx), ctx_mem(ctx)}
-		ssa.merge_returns(ctx, values[:])
+		ssa.merge_return(ctx, values[:])
 		ssa.delete_scope(ctx, ctx.node_scope)
 		ctx.node_scope = 0
 	}
@@ -1310,7 +1310,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 
 		values[0] = ctx_ctrl(ctx)
 		values[1] = ctx_mem(ctx)
-		ssa.merge_returns(ctx, values[:i])
+		ssa.merge_return(ctx, values[:i])
 		ssa.delete_scope(ctx, ctx.node_scope)
 		ctx.node_scope = 0
 	case ^ast.Value_Decl:

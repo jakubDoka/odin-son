@@ -139,7 +139,11 @@ lattice_join :: proc(a, b: Lattice) -> (res: Lattice) {
 	return
 }
 
-@(tag = "api")
+/// Pass does not modify the graph but it computes more specialized latices for
+/// each node. This pass should be uned in conjungtion with `apply_peeps` which
+/// will clean up the graph based on the computed latices. The latices will be
+/// allocated in scratch and stored in ctx.lattices.
+@(tag = "api,priority=95")
 compute_latices :: proc(
 	ctx: ^Proc,
 	scratch := context.allocator,

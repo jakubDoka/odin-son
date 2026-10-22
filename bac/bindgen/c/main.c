@@ -40,7 +40,7 @@ int main() {
 	bac_Node_ID value = bac_add_c_int(&proc, bac_str("mcnst"), bac_Node_Datatype_I64, 69);
 	
 	bac_Node_ID rets[] = {proc.meta.pinned.entry, rmem, value};
-	bac_merge_returns(&proc, bac_slice_array(bac_Node_ID, rets));
+	bac_merge_return(&proc, bac_slice_array(bac_Node_ID, rets));
 	
 	arna_Allocator code = make_arna(code_mem);
 	

@@ -17,7 +17,16 @@ expand_node :: bac.expand_node
 get_node :: bac.get_node
 Mode :: bac.Regalloc_Mode
 
-@(tag = "api")
+/// Regalloc computes the register allocation information for the given proc.
+/// You can choose between scan and graph coloring strategy. Scan scales
+/// linearly with the size fo the graph, but will not discover better
+/// allocation on average. Graph mode will have better results but scales
+/// quadratically with the input.
+///
+/// You need to configure the `ra` with the function param specs, calling
+/// convention and regalloc spec, but call convention can be nil, in which case
+/// the backend will select default one.
+@(tag = "api,priority=94")
 regalloc :: proc(
 	ra: ^bac.Regalloc,
 	prc: ^bac.Proc,

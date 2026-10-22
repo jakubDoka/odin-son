@@ -10,11 +10,12 @@ function script-alias
     alias $argv[1] "script $argv"
 end
 
-script-alias gen-sepc
+script-alias gen-spec
 script-alias run-programs
 script-alias build-unicorn
 script-alias build-wabt
 script-alias build-wasm
+script-alias prebuild-libs
 
 alias gen-meta 'odin run bac/tag-gen'
 

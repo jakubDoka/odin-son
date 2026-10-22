@@ -227,6 +227,7 @@ Reloc_Slot :: struct #raw_union #align (1) {
 	},
 }
 
+@(tag = "api")
 buf_checkpoint :: proc(
 	buf: ^Codegen_Emit_Buf,
 ) -> (
@@ -246,6 +247,7 @@ buf_checkpoint :: proc(
 	return
 }
 
+@(tag = "api")
 buf_output :: proc(
 	buf: Codegen_Emit_Buf,
 	check: Codegen_Emit_Buf_Checkpoint,
@@ -291,7 +293,12 @@ mount_sloc :: proc(ctx: ^Codegen_Emit_Ctx, node: Node_ID) {
 	ctx.last_off = ctx.code.pos
 }
 
-@(tag = "api")
+/// Call this after scheduling the graph and before register allocation. It will
+/// strip the debug info related nodes. This is a no-op if the debug info is not
+/// enabled so you can call this unconditionally. The `data` param will be
+/// initialized with the debug info. The graph from this point on should not be
+/// modified because the `data` relyes on the node ids not changing.
+@(tag = "api,priority=94")
 take_dbg_data :: proc(
 	prc: ^Proc,
 	sched: ^Schedule,

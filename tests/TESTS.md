@@ -7490,3 +7490,253 @@ main :: proc() -> int {
 	return (run(zero) + run(f32(zero)) + finite(zero == 0)) % 251
 }
 ```
+
+<!-- bac/arm/arm.odin emit_instr (.CInt): MOVN initializes the upper halfwords
+to ones, but the MOVK loop skips zero halfwords that must overwrite those ones.
+-4294967296 is materialized as -65536. Expected 1, got 0 on ARM64 at none-quick,
+none, moderate-quick, moderate, and all. -->
+
+#### arm negative constant preserves zero halfwords
+```odin
+package main
+
+main :: proc() -> int {
+	@(static) expected: i64 = -4294967296
+	x: i64 = -4294967296
+	return int(x == expected)
+}
+```
+
+<!-- bac/wasm/wasm.odin emit_instr (.CInt): an I32 constant is encoded from the
+untruncated i64 value, so positive u32 values above max(i32) produce an invalid
+signed i32 LEB. Expected 1; WABT rejects the module with "unable to read i32
+leb128: i32.const value" at every level except aggresive. -->
+
+#### wasm u32 constant uses signed i32 leb encoding
+```odin
+package main
+
+id :: proc(x: u32) -> u32 {
+	return x
+}
+
+main :: proc() -> int {
+	return int(id(2147483649) & 255)
+}
+```
+
+<!-- bac/x64/x64.odin peep (.Simd_Reduce_Add_Bisect, .I16): the second PSHUFD
+reads the original vector instead of the first partial sum, dropping lanes 6
+and 7. Expected 255, got 63 on x64 at every level except aggresive, with and
+without debug info. -->
+
+#### simd u16 reduction includes every lane
+```odin
+package main
+
+main :: proc() -> int {
+	a: [8]u16 = {1, 2, 4, 8, 16, 32, 64, 128}
+	v := transmute(#simd[8]u16)a
+	return int(intrinsics.simd_reduce_add_bisect(v))
+}
+```
+
+<!-- bac/ssa/loopopt.odin loopopt: the memset size is bound - initial even
+when the exit comparison uses the current induction phi after the store. The
+iteration at i == n still stores, so this loop writes n + 1 bytes, not n.
+Expected 28, got 21 on x64, ARM64, and Wasm at all and aggresive. -->
+
+#### memset conversion preserves store before loop exit
+```odin
+package main
+
+fill :: proc(p: [^]u8, n: int) {
+	i := 0
+	for {
+		p[i] = 7
+		if i >= n do break
+		i += 1
+	}
+}
+
+main :: proc() -> int {
+	a: [8]u8
+	fill(([^]u8)(&a[0]), 3)
+	return int(a[0]) + int(a[1]) + int(a[2]) + int(a[3])
+}
+```
+
+<!-- bac/ssa/loopopt.odin loopopt: can_memcpy does not rule out aliasing
+between iterations. Replacing a forward byte loop with Copy changes its
+semantics when dst == src + 1: each iteration must read the previous store.
+Expected 1, got 7 on Wasm at all and aggresive, where Copy becomes memory.copy. -->
+
+#### memcpy conversion preserves overlapping loop dependencies
+```odin
+package main
+
+copy_forward :: proc(dst: [^]u8, src: [^]u8, n: int) {
+	i := 0
+	for {
+		if i >= n do break
+		dst[i] = src[i]
+		i += 1
+	}
+}
+
+main :: proc() -> int {
+	a: [8]u8 = {1, 2, 3, 4, 5, 6, 7, 8}
+	copy_forward(([^]u8)(&a[1]), ([^]u8)(&a[0]), 7)
+	return int(a[7])
+}
+```
+
+<!-- bac/x64/x64.odin emit_instr (.Ctz) always clears REX.W, so TZCNT only
+examines the low 32 bits even for I64 inputs. Expected 40 for 2^40, got 32 on
+x64 at every optimization level, with and without debug info. -->
+
+#### count trailing zeros examines all 64 bits
+```odin
+package main
+
+ctz :: proc(x: u64) -> int {
+	return int(intrinsics.count_trailing_zeros(x))
+}
+
+main :: proc() -> int {
+	return ctz(1099511627776)
+}
+```
+
+<!-- bac/x64/x64.odin and bac/arm/arm.odin emit_instr (.Ctz), and the Ctz
+opcode table in bac/wasm/isa.odin, use 32-bit operations for narrow inputs
+without adjusting the zero case to the original width. Expected 8, got 32
+on every target at every optimization level. -->
+
+#### count trailing zeros of a narrow zero uses its own width
+```odin
+package main
+
+ctz :: proc(x: u8) -> int {
+	return int(intrinsics.count_trailing_zeros(x))
+}
+
+main :: proc() -> int {
+	return ctz(0)
+}
+```
+
+<!-- bac/x64/x64.odin emit_instr (.Simd_Extract_Lsbs) emits PMOVMSKB, and
+bac/wasm/isa.odin selects i8x16.bitmask; both extract MSBs without first moving
+the LSBs into position. Comparison masks hide this because all bits in a lane
+are equal. Expected 85, got 0 on x64 and Wasm except at aggresive. -->
+
+#### simd byte mask extracts least significant bits
+```odin
+package main
+
+main :: proc() -> int {
+	a: [16]u8 = {1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	v := transmute(#simd[16]u8)a
+	return int(transmute(u16)intrinsics.simd_extract_lsbs(v))
+}
+```
+
+<!-- bac/x64/x64.odin emit_instr (.Simd_Extract_Lsbs) extracts one bit per
+byte instead of one per word, returning 51 instead of 85. On ARM64 the same
+input reaches the .Ext assertion node.lane == .I8 in bac/arm/arm.odin because
+the mask-lowering peep propagates the I16 lane type to a byte-only operation. -->
+
+#### simd word mask extracts one bit per lane
+```odin
+package main
+
+main :: proc() -> int {
+	a: [8]u16 = {65535, 0, 65535, 0, 65535, 0, 65535, 0}
+	v := transmute(#simd[8]u16)a
+	return int(transmute(u8)intrinsics.simd_extract_lsbs(v))
+}
+```
+
+<!-- bac/x64/x64.odin peep (.Simd_Reduce_Add_Bisect, .I8) returns a Cast to
+I16 instead of the original I8 datatype, so widening the reduction exposes
+the unwrapped PSADBW sum. Expected 144, got 400 on x64 at every level except
+aggresive, with and without debug info. -->
+
+#### simd byte reduction wraps before widening
+```odin
+package main
+
+main :: proc() -> int {
+	a: [16]u8 = {200, 200, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	v := transmute(#simd[16]u8)a
+	return int(intrinsics.simd_reduce_add_bisect(v))
+}
+```
+
+<!-- bac/ssa/loopopt.odin loopopt converts the store to Set even when a
+load inside the loop observes its progress. The check of snode.outs only
+continues the inner scan instead of rejecting the candidate. Hoisting all
+stores makes every iteration read 7, rather than only the last iteration.
+Expected 7, got 28 on every target at all and aggresive. -->
+
+#### memset conversion preserves reads inside the loop
+```odin
+package main
+
+fill_sum :: proc(p: [^]u8, n: int) -> int {
+	i := 0
+	r := 0
+	for {
+		if i >= n do break
+		p[i] = 7
+		r += int(p[n - 1])
+		i += 1
+	}
+	return r
+}
+
+main :: proc() -> int {
+	a: [4]u8
+	return fill_sum(([^]u8)(&a[0]), 4)
+}
+```
+
+<!-- bac/x64/x64.odin peep contracts floating-point Mul followed by Add to
+X64_Fma_213 unconditionally, including at none. The reference rounds the
+product to 1 before subtracting 1; the fused operation instead produces
+-2^-54. Expected 1, got 0 on x64 except at aggresive. -->
+
+#### multiply add preserves intermediate rounding
+```odin
+package main
+
+check :: proc(a: f64, b: f64, c: f64) -> int {
+	product := a * b
+	sum := product + c
+	return int(sum == 0)
+}
+
+main :: proc() -> int {
+	return check(1.000000007450580596923828125, 0.999999992549419403076171875, -1)
+}
+```
+
+<!-- bac/graph.odin apply_peeps fails its fixpoint verifier after a partial
+aggregate Copy: a Store is still eliminable after worklist exhaustion. The
+verifier calls the SSA peep again and asserts new_node == 0, but gets the
+previous Store instead. Expected 13; compilation aborts with new/old Store. -->
+
+#### partial aggregate copy reaches a dead store peephole fixpoint
+```odin
+package main
+
+main :: proc() -> int {
+	x: [2]int = {11, 22}
+	y: [2]int = {1, 2}
+	p := transmute(^[1]int)(&x[0])
+	q := transmute(^[1]int)(&y[0])
+	q^ = p^
+	return y[0] + y[1]
+}
+```

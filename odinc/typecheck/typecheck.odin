@@ -1191,6 +1191,7 @@ Intrinsic :: enum int {
 	trap,
 	simd_lanes_eq,
 	simd_extract_lsbs,
+	simd_extract_msbs,
 	simd_reduce_add_bisect,
 	count_trailing_zeros,
 }
@@ -2701,7 +2702,7 @@ typecheck :: proc(
 				) or_break match
 				ty = tmeta(ctx, a.type)
 				break match
-			case .simd_extract_lsbs:
+			case .simd_extract_lsbs, .simd_extract_msbs:
 				args := expect_args(ctx, node, d.args, 1, &ty) or_break match
 				a := typecheck(ctx, {}, args[0])
 				sd := unwrap_type(

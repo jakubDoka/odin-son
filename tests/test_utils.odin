@@ -196,6 +196,22 @@ run_test :: proc(
 
 	prev_glob_count := len(ctx.globals)
 
+	append(
+		&ctx.procs,
+		typecheck.Proc {
+			name = "memmove",
+			hidden = true,
+			lit = &ast.Proc_Lit{body = &ast.Stmt{}},
+			sig = &{params = {.I64, .I64, .I64}},
+		},
+		typecheck.Proc {
+			name = "memset",
+			hidden = true,
+			lit = &ast.Proc_Lit{body = &ast.Stmt{}},
+			sig = &{params = {.I64, .I8, .I64}},
+		},
+	)
+
 	for level in confs {
 		dsb := &dsbs[level.vm]
 
@@ -229,18 +245,51 @@ run_test :: proc(
 			prc.stencil = {}
 		}
 
-		emit_ctx := bac.Codegen_Emit_Ctx{}
+		emit_ctx := bac.Codegen_Emit_Ctx {
+			lib_calls = {
+				copy = {id = u32(len(ctx.procs)) - 2},
+				set = {id = u32(len(ctx.procs)) - 1},
+			},
+			emit_got_imports = true,
+		}
+
+		switch level.vm {
+		case .Native:
+			ctx.target.cc = &x64.CC_TABLE[x64.X64_SYSTEMV_CC]
+			ctx.target.spec = &x64.SPEC
+		case .Arm:
+			ctx.target.cc = &arm.CC_TABLE[arm.ARM_SYSTEMV_CC]
+			ctx.target.spec = &arm.SPEC
+		case .Wasm:
+			ctx.target.cc = &wasm.CC_TABLE[wasm.WASM_SYSTEMV_CC]
+			ctx.target.spec = &wasm.SPEC
+		case .Check:
+			unreachable()
+		}
+
+		for kind, i in ([]ssa.Builtin_Proc{.memmove, .memset}) {
+			ctx.prc = {
+				has_dbg = ctx.prc.has_dbg,
+				temps   = &arna.scratch,
+			}
+			ctx.node_spec = &ssa.SPEC
+			ctx.mem = &ctx.mems.prc
+			ctx.mem.pos = bac.PRECISION
+			ctx.opt_flags = level.flags
+			ctx.stats = &ctx.tstats
+
+			prc := &ctx.procs[len(ctx.procs) - 2 + i]
+
+			prc.param_types = {
+				0 ..< 3 = {dt = .I64},
+			}
+
+			ssa.make_builtin_proc(&ctx, kind)
+			odinc.emit_proc_code(&ctx, &emit_ctx, prc)
+		}
 
 		switch level.vm {
 		case .Native, .Arm:
-			if level.vm == .Native {
-				ctx.target.cc = &x64.CC_TABLE[x64.X64_SYSTEMV_CC]
-				ctx.target.spec = &x64.SPEC
-			} else {
-				ctx.target.cc = &arm.CC_TABLE[arm.ARM_SYSTEMV_CC]
-				ctx.target.spec = &arm.SPEC
-			}
-
 			imported_offsets: [dynamic]uintptr
 			imported_offsets.allocator = context.temp_allocator
 			append(&imported_offsets, 0)
@@ -255,49 +304,6 @@ run_test :: proc(
 					slot := bac.emit_aligned(&types.mems.code, addr)
 					append(&imported_offsets, uintptr(slot))
 				}
-			}
-
-			append(
-				&ctx.procs,
-				typecheck.Proc {
-					name = "memcpy",
-					hidden = true,
-					lit = &ast.Proc_Lit{body = &ast.Stmt{}},
-				},
-				typecheck.Proc {
-					name = "memset",
-					hidden = true,
-					lit = &ast.Proc_Lit{body = &ast.Stmt{}},
-				},
-			)
-
-			emit_ctx = bac.Codegen_Emit_Ctx {
-				lib_calls = {
-					copy = {id = u32(len(ctx.procs)) - 2},
-					set = {id = u32(len(ctx.procs)) - 1},
-				},
-				emit_got_imports = true,
-			}
-
-			for kind, i in ([]ssa.Builtin_Proc{.memcpy, .memset}) {
-				ctx.prc = {
-					has_dbg = ctx.prc.has_dbg,
-					temps   = &arna.scratch,
-				}
-				ctx.node_spec = &ssa.SPEC
-				ctx.mem = &ctx.mems.prc
-				ctx.mem.pos = bac.PRECISION
-				ctx.opt_flags = level.flags
-				ctx.stats = &ctx.tstats
-
-				prc := &ctx.procs[len(ctx.procs) - 2 + i]
-
-				prc.param_types = {
-					0 ..< 3 = {dt = .I64},
-				}
-
-				ssa.make_builtin_proc(&ctx, kind)
-				odinc.emit_proc_code(&ctx, &emit_ctx, prc)
 			}
 
 			for _, i in ctx.procs[:len(ctx.procs) - 2] {
@@ -431,13 +437,8 @@ run_test :: proc(
 
 			oka = virtual.protect(types.mems.code.ptr, code_until, {.Read, .Write})
 			assert(oka)
-
-			resize(&ctx.procs, len(ctx.procs) - 2)
 		case .Wasm:
-			ctx.target.cc = &wasm.CC_TABLE[wasm.WASM_SYSTEMV_CC]
-			ctx.target.spec = &wasm.SPEC
-
-			for _, i in ctx.procs {
+			for _, i in ctx.procs[:len(ctx.procs) - 2] {
 				odinc.emit_proc(&ctx, i, level, &emit_ctx)
 			}
 
@@ -673,6 +674,8 @@ disasm_wasm :: proc(sb: ^strings.Builder, module: []u8) {
 		fmt.sbprintln(sb, err)
 	}
 	if ok {
+		m.functions = m.functions[:len(m.functions) - 2]
+		m.func_types = m.func_types[:len(m.func_types) - 2]
 		rex_wasm.sbprint_wat(sb, m)
 	} else {
 		hash := hash.fnv64(module)

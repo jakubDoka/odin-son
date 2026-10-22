@@ -14192,8 +14192,8 @@ main :: proc() -> int {
 
 
 main_ :: proc() -> int {
-	@(static) expected: i64 = -4294967296
-	x: i64 = -4294967296
+	@(static) expected: i64 = -0x100000000
+	x: i64 = -0x100000000
 	return int(x == expected)
 }
 
@@ -14201,8 +14201,8 @@ run_test(t, `arm_negative_constant_preserves_zero_halfwords`, `
 package main
 
 main :: proc() -> int {
-	@(static) expected: i64 = -4294967296
-	x: i64 = -4294967296
+	@(static) expected: i64 = -0x100000000
+	x: i64 = -0x100000000
 	return int(x == expected)
 }
 `, main_())
@@ -14216,7 +14216,7 @@ id :: proc(x: u32) -> u32 {
 }
 
 main_ :: proc() -> int {
-	return int(id(2147483649) & 255)
+	return int(id(0x80000001) & 255)
 }
 
 run_test(t, `wasm_u32_constant_uses_signed_i32_leb_encoding`, `
@@ -14227,7 +14227,7 @@ id :: proc(x: u32) -> u32 {
 }
 
 main :: proc() -> int {
-	return int(id(2147483649) & 255)
+	return int(id(0x80000001) & 255)
 }
 `, main_())
 }
@@ -23745,8 +23745,8 @@ main :: proc() -> int {
 package main
 
 main :: proc() -> int {
-	@(static) expected: i64 = -4294967296
-	x: i64 = -4294967296
+	@(static) expected: i64 = -0x100000000
+	x: i64 = -0x100000000
 	return int(x == expected)
 }
 `,
@@ -23758,7 +23758,7 @@ id :: proc(x: u32) -> u32 {
 }
 
 main :: proc() -> int {
-	return int(id(2147483649) & 255)
+	return int(id(0x80000001) & 255)
 }
 `,
 `

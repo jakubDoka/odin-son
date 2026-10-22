@@ -1964,13 +1964,19 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 					typecheck.simd_lane_of(unpack_type(aty).(^typecheck.Simd).elem),
 				)
 				break match
-			case .simd_extract_lsbs:
+			case .simd_extract_lsbs, .simd_extract_msbs, .simd_reduce_add_bisect:
+				un_op := #partial [typecheck.Intrinsic]bac.Un_Op {
+					.simd_extract_lsbs      = .Simd_Extract_Lsbs,
+					.simd_extract_msbs      = .Simd_Extract_Msbs,
+					.simd_reduce_add_bisect = .Simd_Reduce_Add_Bisect,
+				}
+
 				a := emit_rvalue(ctx, {}, d.args[0])
 				aty := get_node_type(d.args[0])
 				res = bac.add_un_op(
 					ctx,
 					"elsb",
-					.Simd_Extract_Lsbs,
+					un_op[base_meta.lit.intrinsic],
 					type_to_dt(get_node_type(node)),
 					a,
 					typecheck.simd_lane_of(unpack_type(aty).(^typecheck.Simd).elem),
@@ -1985,18 +1991,6 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 					.Ctz,
 					type_to_dt(get_node_type(node)),
 					a,
-				)
-				break match
-			case .simd_reduce_add_bisect:
-				a := emit_rvalue(ctx, {}, d.args[0])
-				aty := get_node_type(d.args[0])
-				res = bac.add_un_op(
-					ctx,
-					"srab",
-					.Simd_Reduce_Add_Bisect,
-					type_to_dt(get_node_type(node)),
-					a,
-					typecheck.simd_lane_of(unpack_type(aty).(^typecheck.Simd).elem),
 				)
 				break match
 			}

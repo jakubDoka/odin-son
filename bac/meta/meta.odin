@@ -598,6 +598,11 @@ IDEAL_CLASSES := [bac.Node_Type]Class_Spec {
 		group = "Un_Op",
 		flags = {.Interned},
 	},
+	.Simd_Extract_Msbs = {
+		args = {"oprnd"},
+		group = "Un_Op",
+		flags = {.Interned},
+	},
 	.Simd_Reduce_Add_Bisect = {
 		args = {"oprnd"},
 		group = "Un_Op",

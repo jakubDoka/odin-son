@@ -36,6 +36,7 @@ Un_Op :: enum u16 {
 	Splat = u16(Node_Type.Splat),
 	Ctz = u16(Node_Type.Ctz),
 	Simd_Extract_Lsbs = u16(Node_Type.Simd_Extract_Lsbs),
+	Simd_Extract_Msbs = u16(Node_Type.Simd_Extract_Msbs),
 	Simd_Reduce_Add_Bisect = u16(Node_Type.Simd_Reduce_Add_Bisect),
 }
 Node_Type :: enum u16 {
@@ -107,6 +108,7 @@ Node_Type :: enum u16 {
 	Splat,
 	Ctz,
 	Simd_Extract_Lsbs,
+	Simd_Extract_Msbs,
 	Simd_Reduce_Add_Bisect,
 }
 add_entry :: #force_inline proc(prc: ^Proc, name: string) -> (_id: Node_ID) {

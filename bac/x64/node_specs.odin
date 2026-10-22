@@ -84,6 +84,7 @@ Class_Flag :: bac.Class_Flag
 		0b10, // Splat
 		0b10, // Ctz
 		0b10, // Simd_Extract_Lsbs
+		0b10, // Simd_Extract_Msbs
 		0b10, // Simd_Reduce_Add_Bisect
 		0b10000000, // X64_Add
 		0b10000000, // X64_Sub
@@ -141,37 +142,37 @@ Class_Flag :: bac.Class_Flag
 		25 = 1, // Ret -> Tup
 		27 = 2, // CInt -> CInt
 		55 = 1, // Proc_Addr -> Tup
-		69 = 3, // X64_Add -> Mem_Op
-		70 = 3, // X64_Sub -> Mem_Op
-		71 = 3, // X64_And -> Mem_Op
-		72 = 3, // X64_Or -> Mem_Op
-		73 = 3, // X64_Xor -> Mem_Op
-		74 = 3, // X64_Eq -> Mem_Op
-		75 = 3, // X64_Ne -> Mem_Op
-		76 = 3, // X64_Le -> Mem_Op
-		77 = 3, // X64_Lt -> Mem_Op
-		78 = 3, // X64_Gt -> Mem_Op
-		79 = 3, // X64_Ge -> Mem_Op
-		80 = 3, // X64_U_Lt -> Mem_Op
-		81 = 3, // X64_U_Gt -> Mem_Op
-		82 = 3, // X64_U_Le -> Mem_Op
-		83 = 3, // X64_U_Ge -> Mem_Op
-		84 = 3, // X64_Shl -> Mem_Op
-		85 = 3, // X64_Shr -> Mem_Op
-		86 = 3, // X64_U_Shr -> Mem_Op
-		87 = 3, // X64_Mul -> Mem_Op
-		88 = 3, // X64_Div -> Mem_Op
-		89 = 3, // X64_Lea -> Mem_Op
-		90 = 3, // X64_Load -> Mem_Op
-		91 = 3, // X64_Store -> Mem_Op
-		92 = 3, // X64_Neg -> Mem_Op
-		93 = 3, // X64_Not -> Mem_Op
-		95 = 3, // X64_Fma_213 -> Mem_Op
-		97 = 3, // X64_Padd -> Mem_Op
-		98 = 3, // X64_Psub -> Mem_Op
-		99 = 3, // X64_Pshufd -> Mem_Op
-		101 = 3, // X64_Pshufb -> Mem_Op
-		102 = 3, // X64_Pextr -> Mem_Op
+		70 = 3, // X64_Add -> Mem_Op
+		71 = 3, // X64_Sub -> Mem_Op
+		72 = 3, // X64_And -> Mem_Op
+		73 = 3, // X64_Or -> Mem_Op
+		74 = 3, // X64_Xor -> Mem_Op
+		75 = 3, // X64_Eq -> Mem_Op
+		76 = 3, // X64_Ne -> Mem_Op
+		77 = 3, // X64_Le -> Mem_Op
+		78 = 3, // X64_Lt -> Mem_Op
+		79 = 3, // X64_Gt -> Mem_Op
+		80 = 3, // X64_Ge -> Mem_Op
+		81 = 3, // X64_U_Lt -> Mem_Op
+		82 = 3, // X64_U_Gt -> Mem_Op
+		83 = 3, // X64_U_Le -> Mem_Op
+		84 = 3, // X64_U_Ge -> Mem_Op
+		85 = 3, // X64_Shl -> Mem_Op
+		86 = 3, // X64_Shr -> Mem_Op
+		87 = 3, // X64_U_Shr -> Mem_Op
+		88 = 3, // X64_Mul -> Mem_Op
+		89 = 3, // X64_Div -> Mem_Op
+		90 = 3, // X64_Lea -> Mem_Op
+		91 = 3, // X64_Load -> Mem_Op
+		92 = 3, // X64_Store -> Mem_Op
+		93 = 3, // X64_Neg -> Mem_Op
+		94 = 3, // X64_Not -> Mem_Op
+		96 = 3, // X64_Fma_213 -> Mem_Op
+		98 = 3, // X64_Padd -> Mem_Op
+		99 = 3, // X64_Psub -> Mem_Op
+		100 = 3, // X64_Pshufd -> Mem_Op
+		102 = 3, // X64_Pshufb -> Mem_Op
+		103 = 3, // X64_Pextr -> Mem_Op
 	},
 	node_flags = {
 		{}, // Nil
@@ -242,6 +243,7 @@ Class_Flag :: bac.Class_Flag
 		{Class_Flag.Interned}, // Splat
 		{Class_Flag.Interned}, // Ctz
 		{Class_Flag.Interned}, // Simd_Extract_Lsbs
+		{Class_Flag.Interned}, // Simd_Extract_Msbs
 		{Class_Flag.Interned}, // Simd_Reduce_Add_Bisect
 		{}, // X64_Add
 		{}, // X64_Sub
@@ -299,7 +301,6 @@ Class_Flag :: bac.Class_Flag
 		25 = bac.Tup,
 		27 = bac.CInt,
 		55 = bac.Tup,
-		69 = Mem_Op,
 		70 = Mem_Op,
 		71 = Mem_Op,
 		72 = Mem_Op,
@@ -324,12 +325,13 @@ Class_Flag :: bac.Class_Flag
 		91 = Mem_Op,
 		92 = Mem_Op,
 		93 = Mem_Op,
-		95 = Mem_Op,
-		97 = Mem_Op,
+		94 = Mem_Op,
+		96 = Mem_Op,
 		98 = Mem_Op,
 		99 = Mem_Op,
-		101 = Mem_Op,
+		100 = Mem_Op,
 		102 = Mem_Op,
+		103 = Mem_Op,
 	}),
 	node_kind = nil when #config(NO_FMT, false) else Node_Type,
 }
@@ -403,6 +405,7 @@ Node_Type :: enum u16 {
 	Splat,
 	Ctz,
 	Simd_Extract_Lsbs,
+	Simd_Extract_Msbs,
 	Simd_Reduce_Add_Bisect,
 	X64_Add,
 	X64_Sub,

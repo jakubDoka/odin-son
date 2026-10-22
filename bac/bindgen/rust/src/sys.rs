@@ -305,7 +305,7 @@ unsafe extern "C" {
         r#mem: Node_ID,
         r#gen: *mut ssa_Param_Gen,
         r#name: String,
-        r#apa: *mut ssa_Abi_Param,
+        r#apa: ssa_Abi_Param,
         out0: *mut Node_ID,
     ) -> Node_ID;
     pub fn bac_decl_local(r#prc: *mut Proc, r#loc: Node_ID, r#name: String, r#type: u64);
@@ -441,9 +441,10 @@ pub const ssa_Node_Type_U_Conv: ssa_Node_Type = 64;
 pub const ssa_Node_Type_Splat: ssa_Node_Type = 65;
 pub const ssa_Node_Type_Ctz: ssa_Node_Type = 66;
 pub const ssa_Node_Type_Simd_Extract_Lsbs: ssa_Node_Type = 67;
-pub const ssa_Node_Type_Simd_Reduce_Add_Bisect: ssa_Node_Type = 68;
-pub const ssa_Node_Type_Scope: ssa_Node_Type = 69;
-pub const ssa_Node_Type_Lazy_Phi: ssa_Node_Type = 70;
+pub const ssa_Node_Type_Simd_Extract_Msbs: ssa_Node_Type = 68;
+pub const ssa_Node_Type_Simd_Reduce_Add_Bisect: ssa_Node_Type = 69;
+pub const ssa_Node_Type_Scope: ssa_Node_Type = 70;
+pub const ssa_Node_Type_Lazy_Phi: ssa_Node_Type = 71;
 const _: () = assert!(core::mem::size_of::<ssa_Node_Type>() == 2);
 const _: () = assert!(core::mem::align_of::<ssa_Node_Type>() == 2);
 #[repr(C, align(8))]
@@ -864,7 +865,8 @@ pub const Node_Type_U_Conv: Node_Type = 64;
 pub const Node_Type_Splat: Node_Type = 65;
 pub const Node_Type_Ctz: Node_Type = 66;
 pub const Node_Type_Simd_Extract_Lsbs: Node_Type = 67;
-pub const Node_Type_Simd_Reduce_Add_Bisect: Node_Type = 68;
+pub const Node_Type_Simd_Extract_Msbs: Node_Type = 68;
+pub const Node_Type_Simd_Reduce_Add_Bisect: Node_Type = 69;
 const _: () = assert!(core::mem::size_of::<Node_Type>() == 2);
 const _: () = assert!(core::mem::align_of::<Node_Type>() == 2);
 #[repr(C, align(8))]
@@ -1214,7 +1216,8 @@ pub const Un_Op_U_Conv: Un_Op = 64;
 pub const Un_Op_Splat: Un_Op = 65;
 pub const Un_Op_Ctz: Un_Op = 66;
 pub const Un_Op_Simd_Extract_Lsbs: Un_Op = 67;
-pub const Un_Op_Simd_Reduce_Add_Bisect: Un_Op = 68;
+pub const Un_Op_Simd_Extract_Msbs: Un_Op = 68;
+pub const Un_Op_Simd_Reduce_Add_Bisect: Un_Op = 69;
 const _: () = assert!(core::mem::size_of::<Un_Op>() == 2);
 const _: () = assert!(core::mem::align_of::<Un_Op>() == 2);
 #[repr(C, align(8))]

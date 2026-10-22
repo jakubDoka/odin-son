@@ -326,6 +326,8 @@ peep :: proc(
 	}
 
 	#partial matchx: switch xtype(node) {
+	case .Simd_Extract_Lsbs:
+		return bac.lsbs_to_msbs(ctx, node, struct{}{})
 	case .Conv, .U_Conv:
 		inp := expand_node(ctx, node.inps[0])
 		assert(inp.dt != node.dt)
@@ -404,6 +406,13 @@ peep :: proc(
 		delta = bac.add_un_op(ctx, "ufdb", .Cast, node.dt, delta)
 		_, res := add_node(ctx, "ufrs", .X64_Padd, node.dt, {converted, delta})
 		return res
+	case .Ctz:
+		if node.dt == .I8 {
+			bctzg := bac.add_c_int(ctx, "bctzg", .I16, 256)
+			ext := bac.add_bin_op(ctx, "bctzo", .Or, .I16, node.inps[0], bctzg)
+			bac.worklist_add(ctx, ctx.worklist, ext)
+			return bac.add_un_op(ctx, "bctz", .Ctz, .I16, ext)
+		}
 	case .CInt:
 		cnst: ^bac.CInt = bac.get_extra(ctx, node, bac.CInt)
 		if node.dt in bac.FLOAT_DTS && cnst.value != 0 {
@@ -1061,7 +1070,11 @@ meta_of :: proc(
 	switch xtype(node) {
 	case:
 		fallthrough
-	case .Nil ..= .Dbg_Scope, .Simd_Reduce_Add_Bisect, .Splat:
+	case .Nil ..=
+	     .Dbg_Scope,
+	     .Simd_Reduce_Add_Bisect,
+	     .Splat,
+	     .Simd_Extract_Lsbs:
 		fmt.panicf("should not reach these: %v", node)
 	case .Poison ..= .Global:
 		return {out = out}
@@ -1080,10 +1093,14 @@ meta_of :: proc(
 		ikind := ra.datatype_to_reg_kind[get_node(prc, node.inps[0]).dt]
 		return {out = out, masks = masks[ikind][:2]}
 	case .Shl ..= .U_Shr:
-		return {
-			out = GPA_MASK_IDX,
-			masks = dup({GPA_MASK_IDX, single(ra, RCX)}),
-			in_place_slot = 1,
+		if node.dt in bac.VECTOR_DTS {
+			return {out = out, masks = nmasks[:2]}
+		} else {
+			return {
+				out = GPA_MASK_IDX,
+				masks = dup({GPA_MASK_IDX, single(ra, RCX)}),
+				in_place_slot = 1,
+			}
 		}
 	case .Div:
 		if node.dt in bac.FLOAT_DTS {
@@ -1153,7 +1170,7 @@ meta_of :: proc(
 	case .Conv, .U_Conv, .Cast:
 		inp := get_node(prc, node.inps[0])
 		return {out = out, masks = masks[ra.datatype_to_reg_kind[inp.dt]][:1]}
-	case .Simd_Extract_Lsbs:
+	case .Simd_Extract_Msbs:
 		return {out = out, masks = XMM_MASKS[:1]}
 	case .X64_Mul, .X64_Div:
 		if mem_op.dt not_in bac.FLOAT_DTS {
@@ -1665,10 +1682,14 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 	switch type {
 	case:
 		fallthrough
-	case .Nil ..= .Dbg_Scope, .Simd_Reduce_Add_Bisect, .Splat:
+	case .Nil ..=
+	     .Dbg_Scope,
+	     .Simd_Reduce_Add_Bisect,
+	     .Splat,
+	     .Simd_Extract_Lsbs:
 		fmt.panicf("Not reachable form here %v", node.node)
 	case .Poison ..= .Phi:
-	case .Simd_Extract_Lsbs:
+	case .Simd_Extract_Msbs:
 		// pmovmskb $dst(gpr), $src(xmm)
 		dst := reg_of(ctx, instr)
 		src := reg_of(ctx, node.inps[0])
@@ -1744,8 +1765,15 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 		// tzcnt $dst, $src (dst == src in place)
 		dst := reg_of(ctx, instr)
 		src := reg_of(ctx, node.inps[0])
-		rx := rex(dst, src, RAX, false)
-		emit(ctx.code, {0xf3, rx, 0x0f, 0xbc, mod_rm(.Direct, dst, src)})
+
+		emit(ctx.code, {0xf3})
+
+		if node.dt == .I16 {
+			emit(ctx.code, {0x66})
+		}
+
+		rx := rex(dst, src, RAX, node.dt == .I64)
+		emit(ctx.code, {rx, 0x0f, 0xbc, mod_rm(.Direct, dst, src)})
 	case .Local_Addr, .Global_Addr:
 		dst := reg_of(ctx, instr)
 		addr, dis, id := reg_and_disp_of(ctx, node.inps[0])

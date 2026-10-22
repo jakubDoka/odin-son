@@ -95,6 +95,7 @@ impl NodeType {
     pub const Splat: Self = Self(sys::ssa_Node_Type_Splat);
     pub const Ctz: Self = Self(sys::ssa_Node_Type_Ctz);
     pub const Simd_Extract_Lsbs: Self = Self(sys::ssa_Node_Type_Simd_Extract_Lsbs);
+    pub const Simd_Extract_Msbs: Self = Self(sys::ssa_Node_Type_Simd_Extract_Msbs);
     pub const Simd_Reduce_Add_Bisect: Self = Self(sys::ssa_Node_Type_Simd_Reduce_Add_Bisect);
     pub const Scope: Self = Self(sys::ssa_Node_Type_Scope);
     pub const Lazy_Phi: Self = Self(sys::ssa_Node_Type_Lazy_Phi);
@@ -142,6 +143,7 @@ impl UnOp {
     pub const Splat: Self = Self(sys::Un_Op_Splat);
     pub const Ctz: Self = Self(sys::Un_Op_Ctz);
     pub const Simd_Extract_Lsbs: Self = Self(sys::Un_Op_Simd_Extract_Lsbs);
+    pub const Simd_Extract_Msbs: Self = Self(sys::Un_Op_Simd_Extract_Msbs);
     pub const Simd_Reduce_Add_Bisect: Self = Self(sys::Un_Op_Simd_Reduce_Add_Bisect);
 }
 #[repr(transparent)]

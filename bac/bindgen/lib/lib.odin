@@ -1042,7 +1042,7 @@ bac_arg_gen_next :: proc "c" (
 	mem: bac.Node_ID,
 	gen: ^bac_ssa.Param_Gen,
 	name: string,
-	apa: ^bac_ssa.Abi_Param,
+	apa: bac_ssa.Abi_Param,
 	binding_out_0: ^bac.Node_ID,
 ) -> (
 	bac.Node_ID,

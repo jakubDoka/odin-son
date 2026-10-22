@@ -121,6 +121,8 @@ peep :: proc(
 	}
 	kind := wtype(node)
 	#partial switch kind {
+	case .Simd_Extract_Lsbs:
+		return bac.lsbs_to_msbs(ctx, node, struct{}{})
 	case .Add ..= .And_Not, .Neg, .Not:
 		NARROW_DTS :: bit_set[bac.Node_Datatype]{.I8, .I16}
 		if node.dt in bac.VECTOR_DTS ||
@@ -402,7 +404,7 @@ meta_of :: #force_inline proc(
 	switch wtype(node) {
 	case:
 		fallthrough
-	case .Nil ..= .Dbg_Scope, .Simd_Reduce_Add_Bisect:
+	case .Nil ..= .Dbg_Scope, .Simd_Reduce_Add_Bisect, .Simd_Extract_Lsbs:
 		fmt.panicf("should not reach these: %v", node)
 	case .Poison ..=
 	     .Global,
@@ -433,7 +435,7 @@ meta_of :: #force_inline proc(
 	     .Trap,
 	     .Extract_Lane_U,
 	     .Splat,
-	     .Simd_Extract_Lsbs,
+	     .Simd_Extract_Msbs,
 	     .Ctz,
 	     .WASM_Shl ..=
 	     .WASM_U_Shr,
@@ -585,6 +587,7 @@ pre_regalloc_hook :: proc(
 		case .Nil ..=
 		     .Dbg_Scope,
 		     .Simd_Reduce_Add_Bisect,
+		     .Simd_Extract_Lsbs,
 		     .Get_Local,
 		     .Set_Local,
 		     .Tee_Local,
@@ -643,7 +646,7 @@ pre_regalloc_hook :: proc(
 		     .Cast,
 		     .Extract_Lane_U,
 		     .Splat,
-		     .Simd_Extract_Lsbs,
+		     .Simd_Extract_Msbs,
 		     .Ctz:
 			return {def = true, input_count = 1}
 		case .CInt, .Local_Addr, .Ret, .Param, .Global_Addr, .Proc_Addr:
@@ -1178,7 +1181,12 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 	switch kind {
 	case:
 		fallthrough
-	case .Nil ..= .Dbg_Scope, .Simd_Reduce_Add_Bisect, .And_Not, .Neg:
+	case .Nil ..=
+	     .Dbg_Scope,
+	     .Simd_Reduce_Add_Bisect,
+	     .Simd_Extract_Lsbs,
+	     .And_Not,
+	     .Neg:
 		fmt.panicf("Should not reach this: %v", node)
 	case .Poison ..= .Phi, .Stub:
 	case .CInt:
@@ -1187,7 +1195,8 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 		switch node.dt {
 		case .I8, .I16, .I32:
 			emit_op(ctx.code, .I32_Const)
-			emit_leb(ctx.code, cint.value)
+			prev := ctx.code.pos
+			emit_leb(ctx.code, i32(cint.value))
 		case .I64:
 			emit_op(ctx.code, .I64_Const)
 			emit_leb(ctx.code, cint.value)
@@ -1399,11 +1408,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 	case .Set:
 		emit_op_fc(ctx.code, .Memory_Fill)
 		emit_leb(ctx.code, u64(0))
-	case .Copy:
-		emit_op_fc(ctx.code, .Memory_Copy)
-		emit_leb(ctx.code, u64(0))
-		emit_leb(ctx.code, u64(0))
-	case .Call:
+	case .Call, .Copy:
 		call := bac.get_extra(ctx, node, bac.Call)
 
 		if bac.is_indirect_call(node) {
@@ -1441,12 +1446,15 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 
 			emit(ctx.constants, buf[:])
 		} else {
+			id := ctx.lib_calls.copy.id
+			if call != nil do id = call.cid
+
 			emit_op(ctx.code, .Call)
 			bac.add_reloc(ctx.relocs)^ = {
 				offset = u32(ctx.code.pos - ctx.code_start),
 				kind   = .Text,
 				size   = .r32,
-				id     = call.cid,
+				id     = id,
 			}
 			emit(ctx.code, {0, 0, 0, 0})
 		}
@@ -1454,7 +1462,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block: int, _: $T) {
 		lane := wextra(ctx, node, Lane_Op).laneidx
 		emit_op_fd(ctx.code, lane_op)
 		emit_leb(ctx.code, lane)
-	case .Splat, .Simd_Extract_Lsbs:
+	case .Splat, .Simd_Extract_Msbs:
 		emit_op_fd(ctx.code, lane_op)
 	case .Proc_Addr:
 		id := bac.get_extra(ctx, instr, bac.Tup).idx

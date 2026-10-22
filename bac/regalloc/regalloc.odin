@@ -116,6 +116,8 @@ regalloc_round :: proc(
 
 	ctx.instr_placement = make([dynamic]Instr_Placement, block_base)
 
+	log_lrgs(&ctx)
+
 	for bb, j in sched.bbs {
 		for instr in bb.instrs {
 			instr_node := get_node(prc, instr)
@@ -1614,7 +1616,7 @@ regalloc_round :: proc(
 
 	if ok do verify_alloc_integrity(ctx, res.allocs)
 
-	log_lrgs(&ctx)
+	//log_lrgs(&ctx)
 
 	return
 

@@ -971,6 +971,7 @@ peep :: proc(
 					onode := expand_node(ctx, out.id)
 					if bac.is_noalias(ctx, id, out.id) {
 						if cursor != 0 do break eliminate
+						clobbered = false
 						cursor = out.id
 						continue
 					}
@@ -979,6 +980,7 @@ peep :: proc(
 					osize := bac.mem_op_size(ctx, out.id) or_break eliminate
 					obase, ooff := bac.base_and_offset(ctx, onode.inps[2])
 					if base != obase {
+						bac.peep_ctx_add_trigger(ctx, obase, id)
 						break eliminate
 					}
 

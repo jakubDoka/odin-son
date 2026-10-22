@@ -7501,8 +7501,8 @@ none, moderate-quick, moderate, and all. -->
 package main
 
 main :: proc() -> int {
-	@(static) expected: i64 = -4294967296
-	x: i64 = -4294967296
+	@(static) expected: i64 = -0x100000000
+	x: i64 = -0x100000000
 	return int(x == expected)
 }
 ```
@@ -7521,7 +7521,7 @@ id :: proc(x: u32) -> u32 {
 }
 
 main :: proc() -> int {
-	return int(id(2147483649) & 255)
+	return int(id(0x80000001) & 255)
 }
 ```
 

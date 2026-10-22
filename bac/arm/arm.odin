@@ -470,7 +470,7 @@ meta_of :: #force_inline proc(
 	switch atype(node) {
 	case:
 		fallthrough
-	case .Nil ..= .Dbg_Scope, .Simd_Extract_Lsbs:
+	case .Nil ..= .Dbg_Scope, .Simd_Extract_Lsbs, .Simd_Extract_Msbs:
 		fmt.panicf("should not reach this: %v", node)
 	case .Poison ..= .Global, .Jump, .Always, .Trap:
 		return {out = IOUT}
@@ -814,7 +814,12 @@ emit_instr :: proc(
 	emit: switch kind {
 	case:
 		fallthrough
-	case .Nil ..= .Dbg_Scope, .Simd_Extract_Lsbs, .Rem, .U_Rem:
+	case .Nil ..=
+	     .Dbg_Scope,
+	     .Simd_Extract_Lsbs,
+	     .Simd_Extract_Msbs,
+	     .Rem,
+	     .U_Rem:
 		fmt.panicf("should not reach this: %v", node)
 	case .Poison ..= .Phi:
 	case .Umov:
@@ -1298,7 +1303,7 @@ emit_instr :: proc(
 			for i in 1 ..< remining_subs {
 				hw = u32(i)
 				vl := u16(cint.value >> (hw * 16))
-				if vl != 0 {
+				if (vl != 0 || cint.value < 0) && (vl != max(u16) || cint.value >= 0) {
 					emit_op(
 						ctx.code,
 						op << 23 | hw << 21 | u32(vl) << 5 | u32(reg.index),

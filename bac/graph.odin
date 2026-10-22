@@ -192,6 +192,7 @@ when SPEC_NOT_PRESENT {
 		Splat,
 		Ctz,
 		Simd_Extract_Lsbs,
+		Simd_Extract_Msbs,
 		Simd_Reduce_Add_Bisect,
 	}
 
@@ -951,12 +952,11 @@ verify :: proc(prc: ^Proc) {
 
 				fmt.assertf(
 					entry.hash == node_hash(prc, node),
-					"%v %v %v %v %v",
+					"%v %v %v %v",
 					node,
 					int(entry.id),
 					entry.hash,
 					node,
-					node.lane,
 				)
 			}
 		}

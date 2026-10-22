@@ -956,3 +956,44 @@ sleb :: proc(b: ^[dynamic]u8, value: i64) {
 putb :: #force_inline proc(b: ^[dynamic]u8, vl: $T) {
 	append(b, transmute(u8)vl)
 }
+
+lsbs_to_msbs :: proc(ctx: ^Proc, node: Expanded_Node, _: $T) -> Node_ID {
+	if true {
+		return add_un_op(
+			ctx,
+			"lsbs",
+			.Simd_Extract_Msbs,
+			node.dt,
+			node.inps[0],
+			lane = node.lane,
+		)
+	}
+
+	assert(node.itype == .Simd_Extract_Lsbs)
+	lsbsmt := add_c_int(
+		ctx,
+		"lsbsmt",
+		LANE_TO_DT[node.lane],
+		i64(LANE_SIZE[node.lane] * 8 - 1),
+	)
+	lsbssp := add_un_op(ctx, "lsbssp", .Splat, .V128, lsbsmt, lane = node.lane)
+	worklist_add(ctx, ctx.worklist, lsbssp)
+	lsbssh := add_bin_op(
+		ctx,
+		"lsbssh",
+		.Shr,
+		.V128,
+		node.inps[0],
+		lsbssp,
+		lane = node.lane,
+	)
+	worklist_add(ctx, ctx.worklist, lsbssh)
+	return add_un_op(
+		ctx,
+		"lsbs",
+		.Simd_Extract_Msbs,
+		node.dt,
+		lsbssh,
+		lane = node.lane,
+	)
+}

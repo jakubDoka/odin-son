@@ -82,6 +82,7 @@ Class_Flag :: bac.Class_Flag
 		0b10, // Splat
 		0b10, // Ctz
 		0b10, // Simd_Extract_Lsbs
+		0b10, // Simd_Extract_Msbs
 		0b10, // Simd_Reduce_Add_Bisect
 		0b10000000, // Scope
 		0b10, // Lazy_Phi
@@ -107,8 +108,8 @@ Class_Flag :: bac.Class_Flag
 		25 = 1, // Ret -> Tup
 		27 = 2, // CInt -> CInt
 		55 = 1, // Proc_Addr -> Tup
-		69 = 1, // Scope -> Scope
-		70 = 0,
+		70 = 1, // Scope -> Scope
+		71 = 0,
 	},
 	node_flags = {
 		{}, // Nil
@@ -179,6 +180,7 @@ Class_Flag :: bac.Class_Flag
 		{Class_Flag.Interned}, // Splat
 		{Class_Flag.Interned}, // Ctz
 		{Class_Flag.Interned}, // Simd_Extract_Lsbs
+		{Class_Flag.Interned}, // Simd_Extract_Msbs
 		{Class_Flag.Interned}, // Simd_Reduce_Add_Bisect
 		{}, // Scope
 		{}, // Lazy_Phi
@@ -204,8 +206,8 @@ Class_Flag :: bac.Class_Flag
 		25 = bac.Tup,
 		27 = bac.CInt,
 		55 = bac.Tup,
-		69 = Scope,
-		70 = {},
+		70 = Scope,
+		71 = {},
 	}),
 	node_kind = nil when #config(NO_FMT, false) else Node_Type,
 }
@@ -279,6 +281,7 @@ Node_Type :: enum u16 {
 	Splat,
 	Ctz,
 	Simd_Extract_Lsbs,
+	Simd_Extract_Msbs,
 	Simd_Reduce_Add_Bisect,
 	Scope,
 	Lazy_Phi,

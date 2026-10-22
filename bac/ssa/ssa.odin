@@ -1280,7 +1280,7 @@ start_proc :: proc(
 }
 
 Builtin_Proc :: enum {
-	memcpy,
+	memmove,
 	memset,
 }
 
@@ -1297,7 +1297,7 @@ make_builtin_proc :: proc(prc: ^Proc, name: Builtin_Proc) {
 	val, src: Node_ID
 	srcv: int
 	switch name {
-	case .memcpy:
+	case .memmove:
 		src = bac.add_param(prc, "src", .I64, prc.entry, 1)
 		srcv = push_scope_value(prc, scope, src, "", 0)
 	case .memset:
@@ -1307,45 +1307,81 @@ make_builtin_proc :: proc(prc: ^Proc, name: Builtin_Proc) {
 	len := bac.add_param(prc, "len", .I64, prc.entry, 2)
 	lenv := push_scope_value(prc, scope, len, "", 0)
 
-	loop: Loop_State
-	start_loop(prc, scope, &loop)
+	move_if: If_State
+	if name == .memmove {
+		diff := bac.add_bin_op(prc, "send", .Sub, .I64, dst, src)
+		cond := bac.add_bin_op(prc, "cond", .U_Lt, .I8, diff, len)
+		start_if(prc, scope, &move_if, cond)
+	}
 
-	if_: If_State
-	cond := get_scope_value(prc, scope, lenv)
-	start_if(prc, scope, &if_, cond)
+	for i in 0 ..< 2 {
+		loop: Loop_State
+		start_loop(prc, scope, &loop)
+
+		if_: If_State
+		cond := get_scope_value(prc, scope, lenv)
+		start_if(prc, scope, &if_, cond)
+
+		ctrl := bac.get_inputs(prc, scope)[0]
+		one := bac.add_c_int(prc, "one", .I64, 1)
+
+		dst = get_scope_value(prc, scope, dstv)
+		if src != 0 {
+			src = get_scope_value(prc, scope, srcv)
+		}
+
+		for j in 0 ..< 2 {
+			if j == i {
+				mem = get_scope_value(prc, scope, memv)
+				if src != 0 {
+					val = bac.add_load(prc, "ld", .I8, ctrl, mem, src)
+				}
+
+				mem = bac.add_store(prc, "st", ctrl, mem, dst, val)
+				set_scope_value(prc, scope, memv, mem)
+			} else {
+				op: Bin_Op = i == 0 ? .Add : .Sub
+
+				dst = bac.add_bin_op(prc, "add_dst", op, .I64, dst, one)
+				set_scope_value(prc, scope, dstv, dst)
+
+				if src != 0 {
+					src = bac.add_bin_op(prc, "add_src", op, .I64, src, one)
+					set_scope_value(prc, scope, srcv, src)
+				}
+			}
+		}
+
+		sub := bac.add_bin_op(prc, "sub_len", .Sub, .I64, cond, one)
+		set_scope_value(prc, scope, lenv, sub)
+
+		start_else(prc, &scope, &if_)
+		loop_control(.Break, prc, scope, &loop)
+		scope = 0
+		end_else(prc, &scope, &if_)
+
+		end_loop(prc, &scope, &loop)
+
+		if name == .memmove {
+			if i == 0 {
+				start_else(prc, &scope, &move_if)
+				dst := get_scope_value(prc, scope, dstv)
+				src := get_scope_value(prc, scope, srcv)
+				dend := bac.add_bin_op(prc, "dend", .Add, .I64, dst, len)
+				send := bac.add_bin_op(prc, "dend", .Add, .I64, src, len)
+				set_scope_value(prc, scope, dstv, dend)
+				set_scope_value(prc, scope, srcv, send)
+			} else {
+				end_else(prc, &scope, &move_if)
+			}
+		} else {
+			if i == 0 {
+				break
+			}
+		}
+	}
 
 	ctrl := bac.get_inputs(prc, scope)[0]
-	one := bac.add_c_int(prc, "one", .I64, 1)
-
-	mem = get_scope_value(prc, scope, memv)
-	dst = get_scope_value(prc, scope, dstv)
-	if src != 0 {
-		src = get_scope_value(prc, scope, srcv)
-		val = bac.add_load(prc, "ld", .I8, ctrl, mem, src)
-	}
-
-	mem = bac.add_store(prc, "st", ctrl, mem, dst, val)
-	set_scope_value(prc, scope, memv, mem)
-
-	add := bac.add_bin_op(prc, "add_dst", .Add, .I64, dst, one)
-	set_scope_value(prc, scope, dstv, add)
-
-	if src != 0 {
-		ads := bac.add_bin_op(prc, "add_src", .Add, .I64, src, one)
-		set_scope_value(prc, scope, srcv, ads)
-	}
-
-	sub := bac.add_bin_op(prc, "sub_len", .Sub, .I64, cond, one)
-	set_scope_value(prc, scope, lenv, sub)
-
-	start_else(prc, &scope, &if_)
-	loop_control(.Break, prc, scope, &loop)
-	scope = 0
-	end_else(prc, &scope, &if_)
-
-	end_loop(prc, &scope, &loop)
-
-	ctrl = bac.get_inputs(prc, scope)[0]
 	mem = get_scope_value(prc, scope, memv)
 	merge_return(prc, {ctrl, mem})
 

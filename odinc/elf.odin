@@ -154,7 +154,7 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	}
 
 	// undefined libc helpers, added lazily if referenced
-	lib_names := [2]string{"memcpy", "memset"}
+	lib_names := [2]string{"memmove", "memset"}
 	for &prc in ctx.procs {
 		for rel in prc.out.relocs {
 			is_libcall :=

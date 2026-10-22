@@ -72,3 +72,9 @@ case, no instructions should quarantee spills.
 DONT keep tests in the repo unless instructed otherwise, you can write tests as
 a intermediary step in sloving something but dont keep them, unless instructed
 to write tests.
+
+Its better wo write constants as hex in tests if it makes it more obvious what
+is happening.
+
+When hardcoding instructions encodings, it is adamant that you add a comment
+with the parametrized assembly to make it clear what is being encoded.

@@ -20,6 +20,11 @@ main :: proc() {
 
 	switch args[1] {
 	case "gen-spec":
+		rm("bac/node_specs.odin")
+		for file in list_dir("bac") {
+			rm(join(file.fullpath, "node_specs.odin"))
+		}
+
 		cmd("odin", "run", "bac/meta")
 		cmd("odin", "run", "bac/meta2")
 		cmd("odin", "run", "bac/tag-gen")
@@ -821,4 +826,8 @@ collect_paths :: proc(root: string) -> []string {
 		}
 	}
 	return files[:]
+}
+
+rm :: proc(path: string) {
+	os.remove(path)
 }

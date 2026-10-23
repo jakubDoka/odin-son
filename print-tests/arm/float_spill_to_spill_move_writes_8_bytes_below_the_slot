@@ -952,6 +952,7 @@ main:
     orr v0.16b, v11.16b, v11.16b
     bl 0xffffffe4
     movz x3, #2
+    movz x0, #0
     movz x2, #1
     sub sp, sp, #16
     str q31, [xzr]
@@ -986,7 +987,6 @@ main:
     ldr d26, [xzr, #160]
     ldr d24, [xzr, #144]
     ldr d25, [xzr, #128]
-    movz x0, #0
 2:
     ldr d1, [xzr, #368]
     ldr d2, [xzr, #352]
@@ -1004,8 +1004,9 @@ main:
     orr v21.16b, v26.16b, v26.16b
     orr v23.16b, v25.16b, v25.16b
     orr v22.16b, v24.16b, v24.16b
-    add x1, x2, x0
-    cmp x0, x3
+    cmp x3, x0
+    cset x1, eq
+    add x0, x0, x2
     str d0, [xzr, #368]
     str d1, [xzr, #352]
     str d22, [xzr, #336]
@@ -1022,8 +1023,7 @@ main:
     orr v26.16b, v20.16b, v20.16b
     orr v25.16b, v21.16b, v21.16b
     orr v24.16b, v23.16b, v23.16b
-    mov x0, x1
-    b.ne 0x20c
+    cbz x1, 0x20c
     movz x2, #241
     ldr d24, [xzr, #112]
     fmul d23, d24, d23

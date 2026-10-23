@@ -9,14 +9,17 @@ main:
     add rdx, 1
     cmp rdx, 2
     je 2
-    mov rbx, 1
     cmp rdx, 1
-    cmove rbx, rcx
+    sete bl
+    movzx rbx, bl
     mov rbp, rax
     add rbp, 2
-    cmp rdx, 1
-    cmove rbp, rdx
-    mov rcx, rbx
+    test bl, bl
+    cmovne rbp, rdx
+    mov rdx, 1
+    test bl, bl
+    cmovne rdx, rcx
+    mov rcx, rdx
     mov rax, rbp
     jmp 1
 2:
@@ -82,16 +85,19 @@ main:
     xor ecx, ecx
     xor eax, eax
 1:
-    mov rsi, rcx
-    add rsi, 1
-    cmp rsi, 2
+    mov rdx, rcx
+    add rdx, 1
+    cmp rdx, 2
     je 2
-    mov rdx, 1
-    cmp rsi, 1
-    cmove rdx, rax
+    cmp rdx, 1
+    sete sil
+    movzx rsi, sil
     add rcx, 2
-    cmp rsi, 1
-    cmove rcx, rsi
+    test sil, sil
+    cmovne rcx, rdx
+    mov rdx, 1
+    test sil, sil
+    cmovne rdx, rax
     mov rax, rdx
     jmp 1
 2:
@@ -150,14 +156,17 @@ main:
     add rdx, 1
     cmp rdx, 2
     je 2
-    mov rbx, 1
     cmp rdx, 1
-    cmove rbx, rcx
+    sete bl
+    movzx rbx, bl
     mov rbp, rax
     add rbp, 2
-    cmp rdx, 1
-    cmove rbp, rdx
-    mov rcx, rbx
+    test bl, bl
+    cmovne rbp, rdx
+    mov rdx, 1
+    test bl, bl
+    cmovne rdx, rcx
+    mov rcx, rdx
     mov rax, rbp
     jmp 1
 2:
@@ -223,16 +232,19 @@ main:
     xor ecx, ecx
     xor eax, eax
 1:
-    mov rsi, rcx
-    add rsi, 1
-    cmp rsi, 2
+    mov rdx, rcx
+    add rdx, 1
+    cmp rdx, 2
     je 2
-    mov rdx, 1
-    cmp rsi, 1
-    cmove rdx, rax
+    cmp rdx, 1
+    sete sil
+    movzx rsi, sil
     add rcx, 2
-    cmp rsi, 1
-    cmove rcx, rsi
+    test sil, sil
+    cmovne rcx, rdx
+    mov rdx, 1
+    test sil, sil
+    cmovne rdx, rax
     mov rax, rdx
     jmp 1
 2:
@@ -286,17 +298,20 @@ main:
     xor edx, edx
 1:
     mov rax, rdx
-    mov rdi, rcx
-    add rdi, 1
+    mov r8, rcx
+    add r8, 1
+    cmp r8, 1
+    sete dil
+    movzx rdi, dil
     add rcx, 2
-    cmp rdi, 2
+    cmp r8, 2
     sete sil
     movzx rsi, sil
     mov rdx, 1
-    cmp rdi, 1
-    cmove rdx, rax
-    cmp rdi, 1
-    cmove rcx, rdi
+    test dil, dil
+    cmovne rdx, rax
+    test dil, dil
+    cmovne rcx, r8
     test sil, sil
     je 1
     cmp rax, 0

@@ -693,50 +693,38 @@ main:
     bl 0xfffffdec
     movz x20, #0
     ldr x1, [xzr, #80]
-    cmp x1, x20
-    cset x1, ge
     movz x2, #1
-    cmp w1, #0
-    csel x1, x2, x20, ne
+    cmp x1, x20
+    csel x1, x2, x20, ge
     movz x2, #2
     add x2, x2, x1
     ldr x3, [xzr, #88]
     cmp x3, x20
-    cset x3, ge
-    cmp w3, #0
-    csel x1, x2, x1, ne
+    csel x1, x2, x1, ge
     movz x2, #4
     add x2, x2, x1
     ldr x3, [xzr, #96]
     cmp x3, x20
-    cset x3, ge
-    cmp w3, #0
-    csel x1, x2, x1, ne
+    csel x1, x2, x1, ge
     movz x2, #8
     add x2, x2, x1
     ldr x3, [xzr, #104]
     cmp x3, x20
-    cset x3, ge
-    cmp w3, #0
-    csel x1, x2, x1, ne
+    csel x1, x2, x1, ge
     movz x2, #16
     add x2, x2, x1
     movz x3, #15
     ldr x4, [xzr, #88]
     and x3, x3, x4
     cmp x3, x20
-    cset x3, eq
-    cmp w3, #0
-    csel x1, x2, x1, ne
+    csel x1, x2, x1, eq
     movz x2, #32
     add x2, x2, x1
     movz x3, #31
     ldr x4, [xzr, #104]
     and x3, x3, x4
     cmp x3, x20
-    cset x3, eq
-    cmp w3, #0
-    csel x1, x2, x1, ne
+    csel x1, x2, x1, eq
     movz x2, #64
     add x2, x2, x1
     ldr x3, [xzr, #112]
@@ -747,8 +735,8 @@ main:
     ldr x3, [xzr, #120]
     cmp w3, #0
     csel x21, x2, x1, ne
-    cbnz x0, 0x2c8
-    b 0x2d0
+    cbnz x0, 0x298
+    b 0x2a0
 46:
     movz x0, #256
     add x21, x0, x21
@@ -806,11 +794,9 @@ main:
     add x2, x2, x1
     ldr x3, [xzr, #96]
     cmp x3, x20
-    cset x3, ge
-    cmp w3, #0
-    csel x21, x2, x1, ne
-    cbnz x0, 0x3b8
-    b 0x3c0
+    csel x21, x2, x1, ge
+    cbnz x0, 0x380
+    b 0x388
 48:
     movz x0, #4096
     add x21, x0, x21
@@ -833,9 +819,7 @@ main:
     movz x2, #16384
     add x2, x2, x1
     cmp x0, x20
-    cset x0, lt
-    cmp w0, #0
-    csel x0, x2, x1, ne
+    csel x0, x2, x1, lt
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
@@ -1528,48 +1512,36 @@ main:
     movz x2, #100
     bl 0xfffffdec
     movz x23, #0
-    ldr x1, [xzr, #104]
-    cmp x1, x23
-    cset x2, ge
+    ldr x2, [xzr, #104]
     movz x1, #1
-    cmp w2, #0
-    csel x3, x1, x23, ne
+    cmp x2, x23
+    csel x3, x1, x23, ge
     movz x1, #2
     add x2, x1, x3
     cmp x27, x23
-    cset x1, ge
-    cmp w1, #0
-    csel x3, x2, x3, ne
+    csel x3, x2, x3, ge
     movz x1, #4
     add x2, x1, x3
     cmp x28, x23
-    cset x1, ge
-    cmp w1, #0
-    csel x3, x2, x3, ne
+    csel x3, x2, x3, ge
     movz x1, #8
     add x2, x1, x3
     ldr x1, [xzr, #96]
     cmp x1, x23
-    cset x1, ge
-    cmp w1, #0
-    csel x4, x2, x3, ne
+    csel x4, x2, x3, ge
     movz x1, #16
     add x3, x1, x4
     movz x2, #15
     and x1, x2, x27
     cmp x1, x23
-    cset x1, eq
-    cmp w1, #0
-    csel x4, x3, x4, ne
+    csel x4, x3, x4, eq
     movz x1, #32
     add x3, x1, x4
     movz x2, #31
     ldr x1, [xzr, #96]
     and x1, x2, x1
     cmp x1, x23
-    cset x1, eq
-    cmp w1, #0
-    csel x3, x3, x4, ne
+    csel x3, x3, x4, eq
     movz x1, #64
     add x2, x1, x3
     cmp w29, #0
@@ -1578,8 +1550,8 @@ main:
     add x2, x1, x3
     cmp w25, #0
     csel x24, x2, x3, ne
-    cbnz x0, 0x2b4
-    b 0x2bc
+    cbnz x0, 0x284
+    b 0x28c
 46:
     movz x0, #256
     add x24, x0, x24
@@ -1631,11 +1603,9 @@ main:
     movz x1, #2048
     add x2, x1, x3
     cmp x25, x23
-    cset x1, ge
-    cmp w1, #0
-    csel x21, x2, x3, ne
-    cbnz x0, 0x38c
-    b 0x394
+    csel x21, x2, x3, ge
+    cbnz x0, 0x354
+    b 0x35c
 48:
     movz x0, #4096
     add x21, x0, x21
@@ -1657,9 +1627,7 @@ main:
     movz x1, #16384
     add x1, x1, x2
     cmp x0, x23
-    cset x0, lt
-    cmp w0, #0
-    csel x0, x1, x2, ne
+    csel x0, x1, x2, lt
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
@@ -2368,50 +2336,38 @@ main:
     bl 0xfffffdec
     movz x20, #0
     ldr x1, [xzr, #80]
-    cmp x1, x20
-    cset x1, ge
     movz x2, #1
-    cmp w1, #0
-    csel x1, x2, x20, ne
+    cmp x1, x20
+    csel x1, x2, x20, ge
     movz x2, #2
     add x2, x2, x1
     ldr x3, [xzr, #88]
     cmp x3, x20
-    cset x3, ge
-    cmp w3, #0
-    csel x1, x2, x1, ne
+    csel x1, x2, x1, ge
     movz x2, #4
     add x2, x2, x1
     ldr x3, [xzr, #96]
     cmp x3, x20
-    cset x3, ge
-    cmp w3, #0
-    csel x1, x2, x1, ne
+    csel x1, x2, x1, ge
     movz x2, #8
     add x2, x2, x1
     ldr x3, [xzr, #104]
     cmp x3, x20
-    cset x3, ge
-    cmp w3, #0
-    csel x1, x2, x1, ne
+    csel x1, x2, x1, ge
     movz x2, #16
     add x2, x2, x1
     movz x3, #15
     ldr x4, [xzr, #88]
     and x3, x3, x4
     cmp x3, x20
-    cset x3, eq
-    cmp w3, #0
-    csel x1, x2, x1, ne
+    csel x1, x2, x1, eq
     movz x2, #32
     add x2, x2, x1
     movz x3, #31
     ldr x4, [xzr, #104]
     and x3, x3, x4
     cmp x3, x20
-    cset x3, eq
-    cmp w3, #0
-    csel x1, x2, x1, ne
+    csel x1, x2, x1, eq
     movz x2, #64
     add x2, x2, x1
     ldr x3, [xzr, #112]
@@ -2422,11 +2378,12 @@ main:
     ldr x3, [xzr, #120]
     cmp w3, #0
     csel x21, x2, x1, ne
-    cbnz x0, 0x2c8
-    b 13
+    cbnz x0, 0x298
+    b 0x2a0
 47:
     movz x0, #256
     add x21, x0, x21
+48:
     ldr x0, [x22]
     ldr x1, [x26]
     movz x2, #7
@@ -2480,15 +2437,13 @@ main:
     add x2, x2, x1
     ldr x3, [xzr, #96]
     cmp x3, x20
-    cset x3, ge
-    cmp w3, #0
-    csel x21, x2, x1, ne
-    cbnz x0, 0x3b8
-    b 0x3c0
-48:
+    csel x21, x2, x1, ge
+    cbnz x0, 0x380
+    b 0x388
+49:
     movz x0, #4096
     add x21, x0, x21
-49:
+50:
     ldr x0, [x19]
     ldr x1, [x23]
     movz x2, #1
@@ -2507,9 +2462,7 @@ main:
     movz x2, #16384
     add x2, x2, x1
     cmp x0, x20
-    cset x0, lt
-    cmp w0, #0
-    csel x0, x2, x1, ne
+    csel x0, x2, x1, lt
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
@@ -3203,48 +3156,36 @@ main:
     movz x2, #100
     bl 0xfffffdec
     movz x23, #0
-    ldr x1, [xzr, #104]
-    cmp x1, x23
-    cset x2, ge
+    ldr x2, [xzr, #104]
     movz x1, #1
-    cmp w2, #0
-    csel x3, x1, x23, ne
+    cmp x2, x23
+    csel x3, x1, x23, ge
     movz x1, #2
     add x2, x1, x3
     cmp x27, x23
-    cset x1, ge
-    cmp w1, #0
-    csel x3, x2, x3, ne
+    csel x3, x2, x3, ge
     movz x1, #4
     add x2, x1, x3
     cmp x28, x23
-    cset x1, ge
-    cmp w1, #0
-    csel x3, x2, x3, ne
+    csel x3, x2, x3, ge
     movz x1, #8
     add x2, x1, x3
     ldr x1, [xzr, #96]
     cmp x1, x23
-    cset x1, ge
-    cmp w1, #0
-    csel x4, x2, x3, ne
+    csel x4, x2, x3, ge
     movz x1, #16
     add x3, x1, x4
     movz x2, #15
     and x1, x2, x27
     cmp x1, x23
-    cset x1, eq
-    cmp w1, #0
-    csel x4, x3, x4, ne
+    csel x4, x3, x4, eq
     movz x1, #32
     add x3, x1, x4
     movz x2, #31
     ldr x1, [xzr, #96]
     and x1, x2, x1
     cmp x1, x23
-    cset x1, eq
-    cmp w1, #0
-    csel x3, x3, x4, ne
+    csel x3, x3, x4, eq
     movz x1, #64
     add x2, x1, x3
     cmp w29, #0
@@ -3253,12 +3194,11 @@ main:
     add x2, x1, x3
     cmp w25, #0
     csel x24, x2, x3, ne
-    cbnz x0, 0x2b4
-    b 0x2bc
+    cbnz x0, 0x284
+    b 10
 46:
     movz x0, #256
     add x24, x0, x24
-47:
     ldr x0, [x22]
     ldr x1, [x21]
     movz x2, #7
@@ -3306,15 +3246,13 @@ main:
     movz x1, #2048
     add x2, x1, x3
     cmp x25, x23
-    cset x1, ge
-    cmp w1, #0
-    csel x21, x2, x3, ne
-    cbnz x0, 0x38c
-    b 0x394
-48:
+    csel x21, x2, x3, ge
+    cbnz x0, 0x354
+    b 0x35c
+47:
     movz x0, #4096
     add x21, x0, x21
-49:
+48:
     ldr x0, [x20]
     ldr x1, [x19]
     movz x2, #1
@@ -3332,9 +3270,7 @@ main:
     movz x1, #16384
     add x1, x1, x2
     cmp x0, x23
-    cset x0, lt
-    cmp w0, #0
-    csel x0, x1, x2, ne
+    csel x0, x1, x2, lt
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
@@ -3791,32 +3727,33 @@ check_pattern:
 free_block_count:
     mov x1, x0
     movz x2, #1552
-    add x9, x2, x1
+    add x10, x2, x1
     movz x0, #0
-    ldr x2, [x9]
+    ldr x2, [x10]
     cmp x2, x0
-    b.le 0x6c
-    movz x8, #16
-    add x7, x1, x8
-    movz x6, #1
-    movz x5, #24
-    movz x0, #0
+    b.le 0x70
+    movz x9, #16
+    add x8, x1, x9
+    movz x7, #1
+    movz x6, #24
     movz x1, #0
+    movz x0, #0
 38:
-    add x4, x1, x6
-    madd x2, x5, x0, xzr
-    add x2, x7, x2
-    add x2, x2, x8
-    ldrb w2, [x2]
-    ldr x3, [x9]
-    cmp w2, #0
-    csel x2, x4, x1, ne
-    add x0, x0, x6
-    cmp x0, x3
+    add x5, x1, x7
+    madd x2, x6, x0, xzr
+    add x2, x8, x2
+    add x2, x2, x9
+    ldrb w4, [x2]
+    ldr x2, [x10]
+    add x0, x0, x7
+    cmp x0, x2
+    cset x3, ge
+    cmp w4, #0
+    csel x2, x5, x1, ne
     mov x1, x2
-    b.lt 0x34
+    cbz x3, 0x34
     mov x0, x2
-    b 0x6c
+    b 0x70
 39:
     ret
 test_coalesce:
@@ -3832,25 +3769,25 @@ test_coalesce:
     movz x2, #1560
     movz x1, #0
     add x0, sp, #56
-    bl 0xfffff92c
+    bl 0xfffff928
     mov x1, x19
     mov x2, x23
     add x0, sp, #56
-    bl 0xfffff948
+    bl 0xfffff944
     add x0, sp, #56
     movz x1, #100
     movz x2, #1
-    bl 0xfffffa04
+    bl 0xfffffa00
     mov x22, x0
     add x0, sp, #56
     movz x1, #100
     movz x2, #1
-    bl 0xfffffa04
+    bl 0xfffffa00
     mov x21, x0
     add x0, sp, #56
     movz x1, #100
     movz x2, #1
-    bl 0xfffffa04
+    bl 0xfffffa00
     mov x20, x0
     movz x19, #0
     cmp x22, x19
@@ -3873,27 +3810,27 @@ test_coalesce:
     cbnz x0, 0x144
     mov x1, x22
     add x0, sp, #56
-    bl 0xfffffd58
+    bl 0xfffffd54
     mov x1, x20
     add x0, sp, #56
-    bl 0xfffffd58
+    bl 0xfffffd54
     add x0, sp, #56
-    bl 0xffffff90
+    bl 0xffffff8c
     movz x1, #2
     cmp x0, x1
     b.ne 0x13c
     mov x1, x21
     add x0, sp, #56
-    bl 0xfffffd58
+    bl 0xfffffd54
     add x0, sp, #56
-    bl 0xffffff90
+    bl 0xffffff8c
     movz x1, #1
     cmp x0, x1
     b.ne 0x134
     mov x1, x23
     add x0, sp, #56
     movz x2, #1
-    bl 0xfffffa04
+    bl 0xfffffa00
     cmp x0, x19
     cset x0, eq
     b 0x148
@@ -3930,32 +3867,32 @@ main:
     movz x1, #0
     movz x2, #1560
     add x0, sp, #112
-    bl 0xfffff7c4
+    bl 0xfffff7c0
     add x0, sp, #112
     movz x2, #1024
-    adr x1, 0x76c
-    bl 0xfffff7e0
+    adr x1, 0x768
+    bl 0xfffff7dc
     add x0, sp, #112
     movz x1, #100
     movz x2, #8
-    bl 0xfffff89c
+    bl 0xfffff898
     mov x29, x0
     add x0, sp, #112
     movz x1, #40
     movz x2, #16
-    bl 0xfffff89c
-    mov x23, x0
+    bl 0xfffff898
+    mov x24, x0
     add x0, sp, #112
     movz x1, #7
     movz x2, #1
-    bl 0xfffff89c
+    bl 0xfffff898
     mov x26, x0
     add x0, sp, #112
     movz x1, #200
     movz x2, #32
-    bl 0xfffff89c
-    mov x28, x0
-    adr x1, 0x76c
+    bl 0xfffff898
+    mov x27, x0
+    adr x1, 0x768
     add x0, x1, x29
     mov x22, x0
     movz x1, #100
@@ -3965,22 +3902,22 @@ main:
     mov x0, x22
     movz x2, #1
     mov x1, x21
-    bl 0xfffffda8
-    mov x1, x23
-    adr x0, 0x76c
+    bl 0xfffffda4
+    mov x1, x24
+    adr x0, 0x768
     add x0, x1, x0
     str x0, [xzr, #104]
-    mov x1, x23
+    mov x1, x24
     movz x0, #40
     add x1, x1, x0
-    sub x0, x1, x23
+    sub x0, x1, x24
     mov x20, x0
     ldr x0, [xzr, #104]
     movz x2, #50
     mov x1, x20
-    bl 0xfffffda8
+    bl 0xfffffda4
     mov x1, x26
-    adr x0, 0x76c
+    adr x0, 0x768
     add x0, x1, x0
     str x0, [xzr, #96]
     mov x1, x26
@@ -3991,107 +3928,96 @@ main:
     ldr x0, [xzr, #96]
     movz x2, #100
     mov x1, x19
-    bl 0xfffffda8
-    adr x1, 0x76c
-    add x0, x1, x28
+    bl 0xfffffda4
+    adr x1, 0x768
+    add x0, x1, x27
     mov x25, x0
     movz x1, #200
-    add x1, x28, x1
-    sub x0, x1, x28
-    mov x24, x0
+    add x1, x27, x1
+    sub x0, x1, x27
+    mov x23, x0
     mov x0, x25
     movz x2, #7
-    mov x1, x24
-    bl 0xfffffda8
+    mov x1, x23
+    bl 0xfffffda4
     mov x0, x22
     movz x2, #1
     mov x1, x21
-    bl 0xfffffde0
-    mov x27, x0
+    bl 0xfffffddc
+    mov x28, x0
     ldr x0, [xzr, #104]
     movz x2, #50
     mov x1, x20
-    bl 0xfffffde0
+    bl 0xfffffddc
     mov x20, x0
     ldr x0, [xzr, #96]
     movz x2, #100
     mov x1, x19
-    bl 0xfffffde0
+    bl 0xfffffddc
     movz x19, #0
-    cmp x29, x19
-    cset x2, ge
+    mov x2, x29
     movz x1, #1
-    cmp w2, #0
-    csel x3, x1, x19, ne
+    cmp x2, x19
+    csel x3, x1, x19, ge
     movz x1, #2
     add x2, x1, x3
-    cmp x23, x19
-    cset x1, ge
-    cmp w1, #0
-    csel x3, x2, x3, ne
+    cmp x24, x19
+    csel x3, x2, x3, ge
     movz x1, #4
     add x2, x1, x3
     cmp x26, x19
-    cset x1, ge
-    cmp w1, #0
-    csel x3, x2, x3, ne
+    csel x3, x2, x3, ge
     movz x1, #8
     add x2, x1, x3
-    cmp x28, x19
-    cset x1, ge
-    cmp w1, #0
-    csel x4, x2, x3, ne
+    cmp x27, x19
+    csel x4, x2, x3, ge
     movz x1, #16
     add x3, x1, x4
     movz x2, #15
-    and x1, x2, x23
+    and x1, x2, x24
     cmp x1, x19
-    cset x1, eq
-    cmp w1, #0
-    csel x4, x3, x4, ne
+    csel x4, x3, x4, eq
     movz x1, #32
     add x3, x1, x4
     movz x2, #31
-    and x1, x2, x28
+    and x1, x2, x27
     cmp x1, x19
-    cset x1, eq
-    cmp w1, #0
-    csel x3, x3, x4, ne
+    csel x3, x3, x4, eq
     movz x1, #64
     add x2, x1, x3
-    cmp w27, #0
+    cmp w28, #0
     csel x3, x2, x3, ne
     movz x1, #128
     add x2, x1, x3
     cmp w20, #0
     csel x20, x2, x3, ne
-    cbnz x0, 0x260
-    b 0x268
+    cbnz x0, 0x234
+    b 0x23c
 46:
     movz x0, #256
     add x20, x0, x20
 47:
     mov x0, x25
     movz x2, #7
-    mov x1, x24
-    bl 0xfffffde0
-    mov x27, x0
     mov x1, x23
+    bl 0xfffffddc
+    mov x27, x0
+    mov x1, x24
     add x0, sp, #112
-    bl 0xfffffbf0
+    bl 0xfffffbec
     mov x1, x26
     add x0, sp, #112
-    bl 0xfffffbf0
-    adr x0, 0xb6c
+    bl 0xfffffbec
+    adr x0, 0xb68
     movz x1, #512
     bl 0xfffffe98
     mov x26, x0
     add x0, sp, #112
     movz x2, #8
     movz x1, #45
-    bl 0xfffff89c
+    bl 0xfffff898
     mov x25, x0
-    adr x1, 0x76c
+    adr x1, 0x768
     add x0, x1, x25
     mov x24, x0
     movz x1, #45
@@ -4100,11 +4026,11 @@ main:
     mov x0, x24
     movz x2, #200
     mov x1, x23
-    bl 0xfffffda8
+    bl 0xfffffda4
     mov x0, x24
     movz x2, #200
     mov x1, x23
-    bl 0xfffffde0
+    bl 0xfffffddc
     movz x1, #512
     add x2, x1, x20
     cmp w27, #0
@@ -4116,11 +4042,9 @@ main:
     movz x1, #2048
     add x2, x1, x3
     cmp x25, x19
-    cset x1, ge
-    cmp w1, #0
-    csel x23, x2, x3, ne
-    cbnz x0, 0x330
-    b 0x338
+    csel x23, x2, x3, ge
+    cbnz x0, 0x2fc
+    b 0x304
 48:
     movz x0, #4096
     add x23, x0, x23
@@ -4128,13 +4052,13 @@ main:
     mov x0, x22
     movz x2, #1
     mov x1, x21
-    bl 0xfffffde0
+    bl 0xfffffddc
     mov x20, x0
     movz x1, #34464
     movk x1, #1, lsl #16
     add x0, sp, #112
     movz x2, #8
-    bl 0xfffff89c
+    bl 0xfffff898
     movz x1, #8192
     add x1, x1, x23
     cmp w20, #0
@@ -4142,9 +4066,7 @@ main:
     movz x1, #16384
     add x1, x1, x2
     cmp x0, x19
-    cset x0, lt
-    cmp w0, #0
-    csel x0, x1, x2, ne
+    csel x0, x1, x2, lt
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
@@ -4511,32 +4433,33 @@ check_pattern:
 free_block_count:
     mov x1, x0
     movz x2, #1552
-    add x9, x2, x1
+    add x10, x2, x1
     movz x0, #0
-    ldr x2, [x9]
+    ldr x2, [x10]
     cmp x2, x0
-    b.le 0x6c
-    movz x8, #16
-    add x7, x1, x8
-    movz x6, #1
-    movz x5, #24
-    movz x0, #0
+    b.le 0x70
+    movz x9, #16
+    add x8, x1, x9
+    movz x7, #1
+    movz x6, #24
     movz x1, #0
+    movz x0, #0
 32:
-    add x4, x1, x6
-    madd x2, x5, x0, xzr
-    add x2, x7, x2
-    add x2, x2, x8
-    ldrb w2, [x2]
-    ldr x3, [x9]
-    cmp w2, #0
-    csel x2, x4, x1, ne
-    add x0, x0, x6
-    cmp x0, x3
+    add x5, x1, x7
+    madd x2, x6, x0, xzr
+    add x2, x8, x2
+    add x2, x2, x9
+    ldrb w4, [x2]
+    ldr x2, [x10]
+    add x0, x0, x7
+    cmp x0, x2
+    cset x3, ge
+    cmp w4, #0
+    csel x2, x5, x1, ne
     mov x1, x2
-    b.lt 0x34
+    cbz x3, 0x34
     mov x0, x2
-    b 0x6c
+    b 0x70
 33:
     ret
 main:
@@ -4553,7 +4476,7 @@ main:
     str x28, [xzr, #72]
     stp x29, x30, [xzr, #80]
     movz x25, #1552
-    adr x23, 0xa24
+    adr x23, 0xa20
     add x1, sp, #3288
     movz x0, #8
     add x19, x1, x0
@@ -4563,14 +4486,14 @@ main:
     add x0, sp, #152
     movz x1, #0
     movz x2, #1560
-    bl 0xfffffa7c
+    bl 0xfffffa78
     add x0, sp, #3288
     str x23, [x0]
     str x21, [x19]
     add x0, sp, #152
     add x1, sp, #3288
     movz x2, #16
-    bl 0xfffffa24
+    bl 0xfffffa20
     add x0, sp, #152
     add x1, x0, x25
     movz x0, #1
@@ -4591,22 +4514,22 @@ main:
     add x0, sp, #152
     movz x2, #8
     movz x1, #100
-    bl 0xfffffa98
+    bl 0xfffffa94
     mov x20, x0
     add x0, sp, #152
     movz x2, #16
     movz x1, #40
-    bl 0xfffffa98
+    bl 0xfffffa94
     mov x29, x0
     add x0, sp, #152
     movz x2, #1
     movz x1, #7
-    bl 0xfffffa98
+    bl 0xfffffa94
     str x0, [xzr, #104]
     add x0, sp, #152
     movz x2, #32
     movz x1, #200
-    bl 0xfffffa98
+    bl 0xfffffa94
     str x0, [xzr, #120]
     add x0, x20, x23
     mov x27, x0
@@ -4617,7 +4540,7 @@ main:
     movz x2, #1
     mov x0, x27
     mov x1, x26
-    bl 0xffffff10
+    bl 0xffffff0c
     add x0, x29, x23
     str x0, [xzr, #144]
     mov x1, x29
@@ -4628,7 +4551,7 @@ main:
     ldr x0, [xzr, #144]
     movz x2, #50
     mov x1, x19
-    bl 0xffffff10
+    bl 0xffffff0c
     ldr x0, [xzr, #104]
     add x0, x0, x23
     str x0, [xzr, #136]
@@ -4641,7 +4564,7 @@ main:
     ldr x0, [xzr, #136]
     movz x2, #100
     ldr x1, [xzr, #128]
-    bl 0xffffff10
+    bl 0xffffff0c
     ldr x0, [xzr, #120]
     add x0, x0, x23
     str x0, [xzr, #96]
@@ -4654,63 +4577,51 @@ main:
     ldr x0, [xzr, #96]
     movz x2, #7
     mov x1, x28
-    bl 0xffffff10
+    bl 0xffffff0c
     movz x2, #1
     mov x0, x27
     mov x1, x26
-    bl 0xffffff48
+    bl 0xffffff44
     str x0, [xzr, #112]
     ldr x0, [xzr, #144]
     movz x2, #50
     mov x1, x19
-    bl 0xffffff48
+    bl 0xffffff44
     mov x19, x0
     ldr x0, [xzr, #136]
     movz x2, #100
     ldr x1, [xzr, #128]
-    bl 0xffffff48
+    bl 0xffffff44
+    movz x2, #1
     cmp x20, x22
-    cset x2, ge
-    movz x1, #1
-    cmp w2, #0
-    csel x3, x1, x22, ne
+    csel x3, x2, x22, ge
     movz x20, #2
     add x2, x3, x20
     cmp x29, x22
-    cset x1, ge
-    cmp w1, #0
-    csel x3, x2, x3, ne
+    csel x3, x2, x3, ge
     movz x1, #4
     add x2, x1, x3
     ldr x1, [xzr, #104]
     cmp x1, x22
-    cset x1, ge
-    cmp w1, #0
-    csel x3, x2, x3, ne
+    csel x3, x2, x3, ge
     movz x1, #8
     add x2, x1, x3
     ldr x1, [xzr, #120]
     cmp x1, x22
-    cset x1, ge
-    cmp w1, #0
-    csel x4, x2, x3, ne
+    csel x4, x2, x3, ge
     movz x1, #16
     add x3, x1, x4
     movz x2, #15
     and x1, x2, x29
     cmp x1, x22
-    cset x1, eq
-    cmp w1, #0
-    csel x4, x3, x4, ne
+    csel x4, x3, x4, eq
     movz x1, #32
     add x3, x1, x4
     movz x2, #31
     ldr x1, [xzr, #120]
     and x1, x2, x1
     cmp x1, x22
-    cset x1, eq
-    cmp w1, #0
-    csel x3, x3, x4, ne
+    csel x3, x3, x4, eq
     movz x1, #64
     add x2, x1, x3
     ldr x1, [xzr, #112]
@@ -4720,31 +4631,29 @@ main:
     add x2, x1, x3
     cmp w19, #0
     csel x19, x2, x3, ne
-    cbnz x0, 0x2d8
-    b 0x2e0
-35:
+    cbnz x0, 13
+    b 14
     movz x0, #256
     add x19, x0, x19
-36:
     ldr x0, [xzr, #96]
     movz x2, #7
     mov x1, x28
-    bl 0xffffff48
+    bl 0xffffff44
     mov x28, x0
     mov x1, x29
     add x0, sp, #152
-    bl 0xfffffd80
+    bl 0xfffffd7c
     ldr x1, [xzr, #104]
     add x0, sp, #152
-    bl 0xfffffd80
+    bl 0xfffffd7c
     movz x1, #0
     movz x2, #1560
     add x0, sp, #1712
-    bl 0xfffffa7c
+    bl 0xfffffa78
     movz x1, #8
     add x0, sp, #3272
     add x29, x0, x1
-    adr x1, 0xe24
+    adr x1, 0xe20
     add x0, sp, #3272
     str x1, [x0]
     movz x0, #512
@@ -4752,7 +4661,7 @@ main:
     movz x2, #16
     add x0, sp, #1712
     add x1, sp, #3272
-    bl 0xfffffa24
+    bl 0xfffffa20
     add x0, sp, #1712
     add x1, x0, x25
     movz x0, #1
@@ -4773,17 +4682,17 @@ main:
     movz x1, #100
     movz x2, #1
     add x0, sp, #1712
-    bl 0xfffffa98
+    bl 0xfffffa94
     mov x29, x0
     movz x1, #100
     movz x2, #1
     add x0, sp, #1712
-    bl 0xfffffa98
+    bl 0xfffffa94
     mov x25, x0
     movz x1, #100
     movz x2, #1
     add x0, sp, #1712
-    bl 0xfffffa98
+    bl 0xfffffa94
     mov x24, x0
     cmp x29, x22
     cset x0, ne
@@ -4803,45 +4712,45 @@ main:
     uxtb w0, w0
     orr w0, w2, w0
     uxtb w0, w0
-    cbnz x0, 25
+    cbnz x0, 0x45c
     mov x1, x29
     add x0, sp, #1712
-    bl 0xfffffd80
+    bl 0xfffffd7c
     mov x1, x24
     add x0, sp, #1712
-    bl 0xfffffd80
+    bl 0xfffffd7c
     add x0, sp, #1712
-    bl 0xffffff90
+    bl 0xffffff8c
     cmp x0, x20
-    b.ne 0x484
+    b.ne 0x454
     mov x1, x25
     add x0, sp, #1712
-    bl 0xfffffd80
+    bl 0xfffffd7c
     add x0, sp, #1712
-    bl 0xffffff90
+    bl 0xffffff8c
     movz x1, #1
     cmp x0, x1
-    b.ne 0x47c
+    b.ne 22
     movz x2, #1
     add x0, sp, #1712
     movz x1, #512
-    bl 0xfffffa98
+    bl 0xfffffa94
     cmp x0, x22
     cset x0, eq
-    b 0x490
+    b 0x460
+    movz x0, #0
+    b 0x460
+35:
+    movz x0, #0
+    b 0x460
+36:
+    movz x0, #0
 37:
-    movz x0, #0
-    b 0x490
-38:
-    movz x0, #0
-    b 0x490
-    movz x0, #0
-39:
     mov x25, x0
     add x0, sp, #152
     movz x2, #8
     movz x1, #45
-    bl 0xfffffa98
+    bl 0xfffffa94
     mov x24, x0
     add x0, x24, x23
     mov x23, x0
@@ -4852,11 +4761,11 @@ main:
     mov x0, x23
     movz x2, #200
     mov x1, x20
-    bl 0xffffff10
+    bl 0xffffff0c
     mov x0, x23
     movz x2, #200
     mov x1, x20
-    bl 0xffffff48
+    bl 0xffffff44
     movz x1, #512
     add x2, x1, x19
     cmp w28, #0
@@ -4867,25 +4776,23 @@ main:
     movz x1, #2048
     add x2, x1, x3
     cmp x24, x22
-    cset x1, ge
-    cmp w1, #0
-    csel x20, x2, x3, ne
-    cbnz x0, 0x51c
-    b 0x524
-40:
+    csel x20, x2, x3, ge
+    cbnz x0, 0x4e4
+    b 0x4ec
+38:
     movz x0, #4096
     add x20, x0, x20
-41:
+39:
     movz x2, #1
     mov x0, x27
     mov x1, x26
-    bl 0xffffff48
+    bl 0xffffff44
     mov x19, x0
     movz x1, #34464
     movk x1, #1, lsl #16
     add x0, sp, #152
     movz x2, #8
-    bl 0xfffffa98
+    bl 0xfffffa94
     movz x1, #8192
     add x1, x1, x20
     cmp w19, #0
@@ -4893,9 +4800,7 @@ main:
     movz x1, #16384
     add x1, x1, x2
     cmp x0, x22
-    cset x0, lt
-    cmp w0, #0
-    csel x0, x1, x2, ne
+    csel x0, x1, x2, lt
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]

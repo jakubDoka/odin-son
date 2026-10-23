@@ -73,49 +73,61 @@ main:
 shifts u64 u8:
     uxtb w1, w1
     movz x2, #0
-    lsl x3, x0, x1
-    cmp x1, #64
-    csel x3, x3, x2, cc
+    movz x3, #64
+    cmp x1, x3
+    cset x3, cc
+    lsl x4, x0, x1
+    cmp w3, #0
+    csel x4, x4, x2, ne
     lsr x0, x0, x1
-    cmp x1, #64
-    csel x0, x0, x2, cc
-    eor x0, x3, x0
+    cmp w3, #0
+    csel x0, x0, x2, ne
+    eor x0, x4, x0
     ret
 shifts i64 u8:
     uxtb w1, w1
     lsl x2, x0, x1
-    movz x3, #0
-    cmp x1, #64
-    csel x2, x2, x3, cc
-    movz x3, #63
-    cmp x1, #64
-    csel x1, x1, x3, cc
+    movz x3, #64
+    cmp x1, x3
+    cset x3, cc
+    movz x4, #0
+    cmp w3, #0
+    csel x2, x2, x4, ne
+    movz x4, #63
+    cmp w3, #0
+    csel x1, x1, x4, ne
     asr x0, x0, x1
     eor x0, x2, x0
     ret
 shifts u32 u16:
     uxth w1, w1
     movz x2, #0
-    lsl w3, w0, w1
-    cmp x1, #32
-    csel w3, w3, w2, cc
-    mov w3, w3
+    movz x3, #32
+    cmp x1, x3
+    cset x3, cc
+    lsl w4, w0, w1
+    cmp w3, #0
+    csel w4, w4, w2, ne
+    mov w4, w4
     lsr w0, w0, w1
-    cmp x1, #32
-    csel w0, w0, w2, cc
+    cmp w3, #0
+    csel w0, w0, w2, ne
     mov w0, w0
-    eor x0, x3, x0
+    eor x0, x4, x0
     ret
 shifts i32 u16:
     uxth w1, w1
     lsl w2, w0, w1
-    movz x3, #0
-    cmp x1, #32
-    csel w2, w2, w3, cc
+    movz x3, #32
+    cmp x1, x3
+    cset x3, cc
+    movz x4, #0
+    cmp w3, #0
+    csel w2, w2, w4, ne
     sxtw x2, w2
-    movz x3, #31
-    cmp x1, #32
-    csel x1, x1, x3, cc
+    movz x4, #31
+    cmp w3, #0
+    csel x1, x1, x4, ne
     asr w0, w0, w1
     sxtw x0, w0
     eor x0, x2, x0
@@ -123,44 +135,56 @@ shifts i32 u16:
 shifts u64 u32:
     mov w1, w1
     movz x2, #0
-    lsl x3, x0, x1
-    cmp x1, #64
-    csel x3, x3, x2, cc
+    movz x3, #64
+    cmp x1, x3
+    cset x3, cc
+    lsl x4, x0, x1
+    cmp w3, #0
+    csel x4, x4, x2, ne
     lsr x0, x0, x1
-    cmp x1, #64
-    csel x0, x0, x2, cc
-    eor x0, x3, x0
+    cmp w3, #0
+    csel x0, x0, x2, ne
+    eor x0, x4, x0
     ret
 shifts i64 u32:
     mov w1, w1
     lsl x2, x0, x1
-    movz x3, #0
-    cmp x1, #64
-    csel x2, x2, x3, cc
-    movz x3, #63
-    cmp x1, #64
-    csel x1, x1, x3, cc
+    movz x3, #64
+    cmp x1, x3
+    cset x3, cc
+    movz x4, #0
+    cmp w3, #0
+    csel x2, x2, x4, ne
+    movz x4, #63
+    cmp w3, #0
+    csel x1, x1, x4, ne
     asr x0, x0, x1
     eor x0, x2, x0
     ret
 shifts u64 u64:
     movz x2, #0
-    lsl x3, x0, x1
-    cmp x1, #64
-    csel x3, x3, x2, cc
+    movz x3, #64
+    cmp x1, x3
+    cset x3, cc
+    lsl x4, x0, x1
+    cmp w3, #0
+    csel x4, x4, x2, ne
     lsr x0, x0, x1
-    cmp x1, #64
-    csel x0, x0, x2, cc
-    eor x0, x3, x0
+    cmp w3, #0
+    csel x0, x0, x2, ne
+    eor x0, x4, x0
     ret
 shifts i64 u64:
     lsl x2, x0, x1
-    movz x3, #0
-    cmp x1, #64
-    csel x2, x2, x3, cc
-    movz x3, #63
-    cmp x1, #64
-    csel x1, x1, x3, cc
+    movz x3, #64
+    cmp x1, x3
+    cset x3, cc
+    movz x4, #0
+    cmp w3, #0
+    csel x2, x2, x4, ne
+    movz x4, #63
+    cmp w3, #0
+    csel x1, x1, x4, ne
     asr x0, x0, x1
     eor x0, x2, x0
     ret
@@ -246,96 +270,120 @@ main:
     add sp, sp, #96
     ret
 shifts u64 u8:
-    uxtb w3, w1
-    movz x2, #0
-    lsl x1, x0, x3
-    cmp x3, #64
-    csel x1, x1, x2, cc
-    lsr x0, x0, x3
-    cmp x3, #64
-    csel x0, x0, x2, cc
+    uxtb w4, w1
+    movz x3, #0
+    movz x1, #64
+    cmp x4, x1
+    cset x2, cc
+    lsl x1, x0, x4
+    cmp w2, #0
+    csel x1, x1, x3, ne
+    lsr x0, x0, x4
+    cmp w2, #0
+    csel x0, x0, x3, ne
     eor x0, x1, x0
     ret
 shifts i64 u8:
-    uxtb w3, w1
-    lsl x2, x0, x3
+    uxtb w4, w1
+    lsl x2, x0, x4
+    movz x1, #64
+    cmp x4, x1
+    cset x3, cc
     movz x1, #0
-    cmp x3, #64
-    csel x2, x2, x1, cc
+    cmp w3, #0
+    csel x2, x2, x1, ne
     movz x1, #63
-    cmp x3, #64
-    csel x1, x3, x1, cc
+    cmp w3, #0
+    csel x1, x4, x1, ne
     asr x0, x0, x1
     eor x0, x2, x0
     ret
 shifts u32 u16:
-    uxth w3, w1
-    movz x2, #0
-    lsl w1, w0, w3
-    cmp x3, #32
-    csel w1, w1, w2, cc
+    uxth w4, w1
+    movz x3, #0
+    movz x1, #32
+    cmp x4, x1
+    cset x2, cc
+    lsl w1, w0, w4
+    cmp w2, #0
+    csel w1, w1, w3, ne
     mov w1, w1
-    lsr w0, w0, w3
-    cmp x3, #32
-    csel w0, w0, w2, cc
+    lsr w0, w0, w4
+    cmp w2, #0
+    csel w0, w0, w3, ne
     mov w0, w0
     eor x0, x1, x0
     ret
 shifts i32 u16:
-    uxth w3, w1
-    lsl w2, w0, w3
+    uxth w4, w1
+    lsl w2, w0, w4
+    movz x1, #32
+    cmp x4, x1
+    cset x3, cc
     movz x1, #0
-    cmp x3, #32
-    csel w1, w2, w1, cc
+    cmp w3, #0
+    csel w1, w2, w1, ne
     sxtw x2, w1
     movz x1, #31
-    cmp x3, #32
-    csel x1, x3, x1, cc
+    cmp w3, #0
+    csel x1, x4, x1, ne
     asr w0, w0, w1
     sxtw x0, w0
     eor x0, x2, x0
     ret
 shifts u64 u32:
-    mov w3, w1
-    movz x2, #0
-    lsl x1, x0, x3
-    cmp x3, #64
-    csel x1, x1, x2, cc
-    lsr x0, x0, x3
-    cmp x3, #64
-    csel x0, x0, x2, cc
+    mov w4, w1
+    movz x3, #0
+    movz x1, #64
+    cmp x4, x1
+    cset x2, cc
+    lsl x1, x0, x4
+    cmp w2, #0
+    csel x1, x1, x3, ne
+    lsr x0, x0, x4
+    cmp w2, #0
+    csel x0, x0, x3, ne
     eor x0, x1, x0
     ret
 shifts i64 u32:
-    mov w3, w1
-    lsl x2, x0, x3
+    mov w4, w1
+    lsl x2, x0, x4
+    movz x1, #64
+    cmp x4, x1
+    cset x3, cc
     movz x1, #0
-    cmp x3, #64
-    csel x2, x2, x1, cc
+    cmp w3, #0
+    csel x2, x2, x1, ne
     movz x1, #63
-    cmp x3, #64
-    csel x1, x3, x1, cc
+    cmp w3, #0
+    csel x1, x4, x1, ne
     asr x0, x0, x1
     eor x0, x2, x0
     ret
 shifts u64 u64:
-    movz x3, #0
+    movz x4, #0
+    movz x2, #64
+    cmp x1, x2
+    cset x3, cc
     lsl x2, x0, x1
-    cmp x1, #64
-    csel x2, x2, x3, cc
+    cmp w3, #0
+    csel x2, x2, x4, ne
     lsr x0, x0, x1
-    cmp x1, #64
-    csel x0, x0, x3, cc
+    cmp w3, #0
+    csel x0, x0, x4, ne
     eor x0, x2, x0
     ret
 shifts i64 u64:
     lsl x3, x0, x1
+    movz x2, #64
+    cmp x1, x2
+    cset x4, cc
     movz x2, #0
-    cmp x1, #64
-    csel x3, x3, x2, cc
+    cmp w4, #0
+    csel x3, x3, x2, ne
     movz x2, #63
-    cmp x1, #64
-    csel x1, x1, x2, cc
+    cmp w4, #0
+    csel x1, x1, x2, ne
     asr x0, x0, x1
     eor x0, x3, x0
     ret
@@ -414,49 +462,61 @@ main:
 shifts u64 u8:
     uxtb w1, w1
     movz x2, #0
-    lsl x3, x0, x1
-    cmp x1, #64
-    csel x3, x3, x2, cc
+    movz x3, #64
+    cmp x1, x3
+    cset x3, cc
+    lsl x4, x0, x1
+    cmp w3, #0
+    csel x4, x4, x2, ne
     lsr x0, x0, x1
-    cmp x1, #64
-    csel x0, x0, x2, cc
-    eor x0, x3, x0
+    cmp w3, #0
+    csel x0, x0, x2, ne
+    eor x0, x4, x0
     ret
 shifts i64 u8:
     uxtb w1, w1
     lsl x2, x0, x1
-    movz x3, #0
-    cmp x1, #64
-    csel x2, x2, x3, cc
-    movz x3, #63
-    cmp x1, #64
-    csel x1, x1, x3, cc
+    movz x3, #64
+    cmp x1, x3
+    cset x3, cc
+    movz x4, #0
+    cmp w3, #0
+    csel x2, x2, x4, ne
+    movz x4, #63
+    cmp w3, #0
+    csel x1, x1, x4, ne
     asr x0, x0, x1
     eor x0, x2, x0
     ret
 shifts u32 u16:
     uxth w1, w1
     movz x2, #0
-    lsl w3, w0, w1
-    cmp x1, #32
-    csel w3, w3, w2, cc
-    mov w3, w3
+    movz x3, #32
+    cmp x1, x3
+    cset x3, cc
+    lsl w4, w0, w1
+    cmp w3, #0
+    csel w4, w4, w2, ne
+    mov w4, w4
     lsr w0, w0, w1
-    cmp x1, #32
-    csel w0, w0, w2, cc
+    cmp w3, #0
+    csel w0, w0, w2, ne
     mov w0, w0
-    eor x0, x3, x0
+    eor x0, x4, x0
     ret
 shifts i32 u16:
     uxth w1, w1
     lsl w2, w0, w1
-    movz x3, #0
-    cmp x1, #32
-    csel w2, w2, w3, cc
+    movz x3, #32
+    cmp x1, x3
+    cset x3, cc
+    movz x4, #0
+    cmp w3, #0
+    csel w2, w2, w4, ne
     sxtw x2, w2
-    movz x3, #31
-    cmp x1, #32
-    csel x1, x1, x3, cc
+    movz x4, #31
+    cmp w3, #0
+    csel x1, x1, x4, ne
     asr w0, w0, w1
     sxtw x0, w0
     eor x0, x2, x0
@@ -464,44 +524,56 @@ shifts i32 u16:
 shifts u64 u32:
     mov w1, w1
     movz x2, #0
-    lsl x3, x0, x1
-    cmp x1, #64
-    csel x3, x3, x2, cc
+    movz x3, #64
+    cmp x1, x3
+    cset x3, cc
+    lsl x4, x0, x1
+    cmp w3, #0
+    csel x4, x4, x2, ne
     lsr x0, x0, x1
-    cmp x1, #64
-    csel x0, x0, x2, cc
-    eor x0, x3, x0
+    cmp w3, #0
+    csel x0, x0, x2, ne
+    eor x0, x4, x0
     ret
 shifts i64 u32:
     mov w1, w1
     lsl x2, x0, x1
-    movz x3, #0
-    cmp x1, #64
-    csel x2, x2, x3, cc
-    movz x3, #63
-    cmp x1, #64
-    csel x1, x1, x3, cc
+    movz x3, #64
+    cmp x1, x3
+    cset x3, cc
+    movz x4, #0
+    cmp w3, #0
+    csel x2, x2, x4, ne
+    movz x4, #63
+    cmp w3, #0
+    csel x1, x1, x4, ne
     asr x0, x0, x1
     eor x0, x2, x0
     ret
 shifts u64 u64:
     movz x2, #0
-    lsl x3, x0, x1
-    cmp x1, #64
-    csel x3, x3, x2, cc
+    movz x3, #64
+    cmp x1, x3
+    cset x3, cc
+    lsl x4, x0, x1
+    cmp w3, #0
+    csel x4, x4, x2, ne
     lsr x0, x0, x1
-    cmp x1, #64
-    csel x0, x0, x2, cc
-    eor x0, x3, x0
+    cmp w3, #0
+    csel x0, x0, x2, ne
+    eor x0, x4, x0
     ret
 shifts i64 u64:
     lsl x2, x0, x1
-    movz x3, #0
-    cmp x1, #64
-    csel x2, x2, x3, cc
-    movz x3, #63
-    cmp x1, #64
-    csel x1, x1, x3, cc
+    movz x3, #64
+    cmp x1, x3
+    cset x3, cc
+    movz x4, #0
+    cmp w3, #0
+    csel x2, x2, x4, ne
+    movz x4, #63
+    cmp w3, #0
+    csel x1, x1, x4, ne
     asr x0, x0, x1
     eor x0, x2, x0
     ret
@@ -587,96 +659,120 @@ main:
     add sp, sp, #96
     ret
 shifts u64 u8:
-    uxtb w3, w1
-    movz x2, #0
-    lsl x1, x0, x3
-    cmp x3, #64
-    csel x1, x1, x2, cc
-    lsr x0, x0, x3
-    cmp x3, #64
-    csel x0, x0, x2, cc
+    uxtb w4, w1
+    movz x3, #0
+    movz x1, #64
+    cmp x4, x1
+    cset x2, cc
+    lsl x1, x0, x4
+    cmp w2, #0
+    csel x1, x1, x3, ne
+    lsr x0, x0, x4
+    cmp w2, #0
+    csel x0, x0, x3, ne
     eor x0, x1, x0
     ret
 shifts i64 u8:
-    uxtb w3, w1
-    lsl x2, x0, x3
+    uxtb w4, w1
+    lsl x2, x0, x4
+    movz x1, #64
+    cmp x4, x1
+    cset x3, cc
     movz x1, #0
-    cmp x3, #64
-    csel x2, x2, x1, cc
+    cmp w3, #0
+    csel x2, x2, x1, ne
     movz x1, #63
-    cmp x3, #64
-    csel x1, x3, x1, cc
+    cmp w3, #0
+    csel x1, x4, x1, ne
     asr x0, x0, x1
     eor x0, x2, x0
     ret
 shifts u32 u16:
-    uxth w3, w1
-    movz x2, #0
-    lsl w1, w0, w3
-    cmp x3, #32
-    csel w1, w1, w2, cc
+    uxth w4, w1
+    movz x3, #0
+    movz x1, #32
+    cmp x4, x1
+    cset x2, cc
+    lsl w1, w0, w4
+    cmp w2, #0
+    csel w1, w1, w3, ne
     mov w1, w1
-    lsr w0, w0, w3
-    cmp x3, #32
-    csel w0, w0, w2, cc
+    lsr w0, w0, w4
+    cmp w2, #0
+    csel w0, w0, w3, ne
     mov w0, w0
     eor x0, x1, x0
     ret
 shifts i32 u16:
-    uxth w3, w1
-    lsl w2, w0, w3
+    uxth w4, w1
+    lsl w2, w0, w4
+    movz x1, #32
+    cmp x4, x1
+    cset x3, cc
     movz x1, #0
-    cmp x3, #32
-    csel w1, w2, w1, cc
+    cmp w3, #0
+    csel w1, w2, w1, ne
     sxtw x2, w1
     movz x1, #31
-    cmp x3, #32
-    csel x1, x3, x1, cc
+    cmp w3, #0
+    csel x1, x4, x1, ne
     asr w0, w0, w1
     sxtw x0, w0
     eor x0, x2, x0
     ret
 shifts u64 u32:
-    mov w3, w1
-    movz x2, #0
-    lsl x1, x0, x3
-    cmp x3, #64
-    csel x1, x1, x2, cc
-    lsr x0, x0, x3
-    cmp x3, #64
-    csel x0, x0, x2, cc
+    mov w4, w1
+    movz x3, #0
+    movz x1, #64
+    cmp x4, x1
+    cset x2, cc
+    lsl x1, x0, x4
+    cmp w2, #0
+    csel x1, x1, x3, ne
+    lsr x0, x0, x4
+    cmp w2, #0
+    csel x0, x0, x3, ne
     eor x0, x1, x0
     ret
 shifts i64 u32:
-    mov w3, w1
-    lsl x2, x0, x3
+    mov w4, w1
+    lsl x2, x0, x4
+    movz x1, #64
+    cmp x4, x1
+    cset x3, cc
     movz x1, #0
-    cmp x3, #64
-    csel x2, x2, x1, cc
+    cmp w3, #0
+    csel x2, x2, x1, ne
     movz x1, #63
-    cmp x3, #64
-    csel x1, x3, x1, cc
+    cmp w3, #0
+    csel x1, x4, x1, ne
     asr x0, x0, x1
     eor x0, x2, x0
     ret
 shifts u64 u64:
-    movz x3, #0
+    movz x4, #0
+    movz x2, #64
+    cmp x1, x2
+    cset x3, cc
     lsl x2, x0, x1
-    cmp x1, #64
-    csel x2, x2, x3, cc
+    cmp w3, #0
+    csel x2, x2, x4, ne
     lsr x0, x0, x1
-    cmp x1, #64
-    csel x0, x0, x3, cc
+    cmp w3, #0
+    csel x0, x0, x4, ne
     eor x0, x2, x0
     ret
 shifts i64 u64:
     lsl x3, x0, x1
+    movz x2, #64
+    cmp x1, x2
+    cset x4, cc
     movz x2, #0
-    cmp x1, #64
-    csel x3, x3, x2, cc
+    cmp w4, #0
+    csel x3, x3, x2, ne
     movz x2, #63
-    cmp x1, #64
-    csel x1, x1, x2, cc
+    cmp w4, #0
+    csel x1, x1, x2, ne
     asr x0, x0, x1
     eor x0, x3, x0
     ret
@@ -762,96 +858,120 @@ main:
     add sp, sp, #96
     ret
 shifts u64 u8:
-    uxtb w3, w1
-    movz x2, #0
-    lsl x1, x0, x3
-    cmp x3, #64
-    csel x1, x1, x2, cc
-    lsr x0, x0, x3
-    cmp x3, #64
-    csel x0, x0, x2, cc
+    uxtb w4, w1
+    movz x3, #0
+    movz x1, #64
+    cmp x4, x1
+    cset x2, cc
+    lsl x1, x0, x4
+    cmp w2, #0
+    csel x1, x1, x3, ne
+    lsr x0, x0, x4
+    cmp w2, #0
+    csel x0, x0, x3, ne
     eor x0, x1, x0
     ret
 shifts i64 u8:
-    uxtb w3, w1
-    lsl x2, x0, x3
+    uxtb w4, w1
+    lsl x2, x0, x4
+    movz x1, #64
+    cmp x4, x1
+    cset x3, cc
     movz x1, #0
-    cmp x3, #64
-    csel x2, x2, x1, cc
+    cmp w3, #0
+    csel x2, x2, x1, ne
     movz x1, #63
-    cmp x3, #64
-    csel x1, x3, x1, cc
+    cmp w3, #0
+    csel x1, x4, x1, ne
     asr x0, x0, x1
     eor x0, x2, x0
     ret
 shifts u32 u16:
-    uxth w3, w1
-    movz x2, #0
-    lsl w1, w0, w3
-    cmp x3, #32
-    csel w1, w1, w2, cc
+    uxth w4, w1
+    movz x3, #0
+    movz x1, #32
+    cmp x4, x1
+    cset x2, cc
+    lsl w1, w0, w4
+    cmp w2, #0
+    csel w1, w1, w3, ne
     mov w1, w1
-    lsr w0, w0, w3
-    cmp x3, #32
-    csel w0, w0, w2, cc
+    lsr w0, w0, w4
+    cmp w2, #0
+    csel w0, w0, w3, ne
     mov w0, w0
     eor x0, x1, x0
     ret
 shifts i32 u16:
-    uxth w3, w1
-    lsl w2, w0, w3
+    uxth w4, w1
+    lsl w2, w0, w4
+    movz x1, #32
+    cmp x4, x1
+    cset x3, cc
     movz x1, #0
-    cmp x3, #32
-    csel w1, w2, w1, cc
+    cmp w3, #0
+    csel w1, w2, w1, ne
     sxtw x2, w1
     movz x1, #31
-    cmp x3, #32
-    csel x1, x3, x1, cc
+    cmp w3, #0
+    csel x1, x4, x1, ne
     asr w0, w0, w1
     sxtw x0, w0
     eor x0, x2, x0
     ret
 shifts u64 u32:
-    mov w3, w1
-    movz x2, #0
-    lsl x1, x0, x3
-    cmp x3, #64
-    csel x1, x1, x2, cc
-    lsr x0, x0, x3
-    cmp x3, #64
-    csel x0, x0, x2, cc
+    mov w4, w1
+    movz x3, #0
+    movz x1, #64
+    cmp x4, x1
+    cset x2, cc
+    lsl x1, x0, x4
+    cmp w2, #0
+    csel x1, x1, x3, ne
+    lsr x0, x0, x4
+    cmp w2, #0
+    csel x0, x0, x3, ne
     eor x0, x1, x0
     ret
 shifts i64 u32:
-    mov w3, w1
-    lsl x2, x0, x3
+    mov w4, w1
+    lsl x2, x0, x4
+    movz x1, #64
+    cmp x4, x1
+    cset x3, cc
     movz x1, #0
-    cmp x3, #64
-    csel x2, x2, x1, cc
+    cmp w3, #0
+    csel x2, x2, x1, ne
     movz x1, #63
-    cmp x3, #64
-    csel x1, x3, x1, cc
+    cmp w3, #0
+    csel x1, x4, x1, ne
     asr x0, x0, x1
     eor x0, x2, x0
     ret
 shifts u64 u64:
-    movz x3, #0
+    movz x4, #0
+    movz x2, #64
+    cmp x1, x2
+    cset x3, cc
     lsl x2, x0, x1
-    cmp x1, #64
-    csel x2, x2, x3, cc
+    cmp w3, #0
+    csel x2, x2, x4, ne
     lsr x0, x0, x1
-    cmp x1, #64
-    csel x0, x0, x3, cc
+    cmp w3, #0
+    csel x0, x0, x4, ne
     eor x0, x2, x0
     ret
 shifts i64 u64:
     lsl x3, x0, x1
+    movz x2, #64
+    cmp x1, x2
+    cset x4, cc
     movz x2, #0
-    cmp x1, #64
-    csel x3, x3, x2, cc
+    cmp w4, #0
+    csel x3, x3, x2, ne
     movz x2, #63
-    cmp x1, #64
-    csel x1, x1, x2, cc
+    cmp w4, #0
+    csel x1, x1, x2, ne
     asr x0, x0, x1
     eor x0, x3, x0
     ret

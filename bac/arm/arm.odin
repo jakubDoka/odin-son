@@ -129,16 +129,6 @@ when SPEC_NOT_PRESENT {
 
 	inherit_idx_of :: proc($T: typeid) -> u8 {return 0}
 
-	add_csel_ult_imm :: proc(
-		prc: ^bac.Proc,
-		name: string,
-		dt: bac.Node_Datatype,
-		on_true, on_false, count: bac.Node_ID,
-		aux: u32,
-	) -> bac.Node_ID {
-		return 0
-	}
-
 	Node_Type :: enum u16 {
 		Msub,
 		Cmlt,
@@ -149,7 +139,6 @@ when SPEC_NOT_PRESENT {
 		Lslv,
 		Asrv,
 		Lsrv,
-		Csel_Ult_Imm,
 	}
 }
 
@@ -220,24 +209,6 @@ peep :: proc(
 	}
 
 	#partial switch kind {
-	case .Select:
-		cond := expand_node(ctx, node.inps[2])
-		if node.dt in bac.INT_DTS &&
-		   cond.itype == .U_Lt &&
-		   get_node(ctx, cond.inps[0]).dt >= .I32 {
-			limit := bac.get_extra(ctx, cond.inps[1], bac.CInt)
-			if limit != nil && 0 <= limit.value && limit.value < 4096 {
-				return add_csel_ult_imm(
-					ctx,
-					"selcmp",
-					node.dt,
-					node.inps[0],
-					node.inps[1],
-					cond.inps[0],
-					u32(limit.value),
-				)
-			}
-		}
 	case .Shl ..= .U_Shr:
 		if node.dt not_in bac.INT_DTS do break
 
@@ -308,14 +279,6 @@ peep :: proc(
 			addr := bac.add_global_addr(ctx, "caddr", global)
 			cmem := bac.get_or_add_const_mem(ctx)
 			return bac.add_load(ctx, "cild", node.dt, 0, cmem, addr)
-		}
-	case .Eq ..= .U_Ge:
-		if bac.operation_datatype(ctx.prc, node) in bac.FLOAT_DTS do break
-		if len(node.outs) == 1 &&
-		   get_node(ctx, node.outs[0].id).itype == .If &&
-		   node.dt != .Void {
-			node.dt = .Void
-			return id
 		}
 	case .Simd_Reduce_Add_Bisect:
 		if node.dt == .I64 {
@@ -409,10 +372,22 @@ peep :: proc(
 }
 
 post_schedule_peep :: proc(
-	_: bac.PS_Peep_Ctx,
-	_: bac.Expanded_Node,
+	ctx: bac.PS_Peep_Ctx,
+	node: bac.Expanded_Node,
 	_: $T,
 ) -> bac.Node_ID {
+	#partial switch node.itype {
+	case .If, .Select:
+		cond := node.inps[len(node.inps) - 1]
+		if 0 < len(ctx.preds) && ctx.preds[len(ctx.preds) - 1] == cond {
+			cnode := expand_node(ctx, cond)
+			if len(cnode.outs) != 1 || cnode.dt in bac.VECTOR_DTS do break
+			#partial switch cnode.itype {
+			case .Eq ..= .U_Ge:
+				cnode.dt = .Void
+			}
+		}
+	}
 	return 0
 }
 
@@ -516,13 +491,21 @@ meta_of :: #force_inline proc(
 		return {out = out, masks = GPA_MASKS[:1]}
 	case .Add ..= .Xor, .Shl ..= .And_Not, .Zip1, .Ext, .Lslv ..= .Lsrv:
 		return {out = out, masks = nmasks[:2]}
-	case .Msub, .Csel_Ult_Imm:
+	case .Msub:
 		return {out = out, masks = nmasks[:3]}
 	case .Select:
-		return {out = out, masks = dup({out, out, GPA_MASK_IDX})}
+		masks := dup({out, out, GPA_MASK_IDX})
+		return {
+			out = out,
+			masks = masks[:2 + int(get_node(prc, node.inps[2]).dt != .Void)],
+		}
 	case .Eq ..= .U_Ge:
 		ikind := ra.datatype_to_reg_kind[get_node(prc, node.inps[0]).dt]
-		return {out = out, masks = masks[ikind][:2]}
+		return {
+			out = out,
+			masks = masks[ikind][:2],
+			is_flag_dep = node.dt == .Void,
+		}
 	case .Conv, .U_Conv, .Cast:
 		vl := get_node(prc, node.inps[0])
 		ckind := ra.datatype_to_reg_kind[vl.dt]
@@ -1135,58 +1118,36 @@ emit_instr :: proc(
 		}
 
 	case .Select:
-		cond := reg_of(ctx, node.inps[2])
-		cond_64 := get_node(ctx, node.inps[2]).dt == .I64
-		// cmp wcond/xcond, #0
-		emit_op(
-			ctx.code,
-			imm12_instr(cond_64 ? 0b1111000100 : 0b0111000100, XZR, cond, 0),
-		)
+		cnode := expand_node(ctx, node.inps[2])
+		cc := Cond.NE
+		if cnode.dt == .Void {
+			cc = condition_for(atype(cnode), get_node(ctx, cnode.inps[0]).dt)
+		} else {
+			cond := reg_of(ctx, node.inps[2])
+			cond_64 := cnode.dt == .I64
+			// cmp wcond/xcond, #0
+			emit_op(
+				ctx.code,
+				imm12_instr(cond_64 ? 0b1111000100 : 0b0111000100, XZR, cond, 0),
+			)
+		}
 		dst := reg_of(ctx, instr)
 		on_true := reg_of(ctx, node.inps[0])
 		on_false := reg_of(ctx, node.inps[1])
 		if node.dt in bac.FLOAT_DTS {
-			// fcsel sdst/ddst, son_true/don_true, son_false/don_false, ne
+			// fcsel sdst/ddst, son_true/don_true, son_false/don_false, cc
 			emit_op(
 				ctx.code,
-				fff(is_f64, 0x1E200C00 | u32(Cond.NE) << 12, dst, on_true, on_false),
+				fff(is_f64, 0x1E200C00 | u32(cc) << 12, dst, on_true, on_false),
 			)
 		} else {
 			assert(node.dt in bac.INT_DTS)
-			// csel wdst/xdst, won_true/xon_true, won_false/xon_false, ne
+			// csel wdst/xdst, won_true/xon_true, won_false/xon_false, cc
 			emit_op(
 				ctx.code,
-				rrr(is_64, 0x1A800000 | u32(Cond.NE) << 12, dst, on_true, on_false),
+				rrr(is_64, 0x1A800000 | u32(cc) << 12, dst, on_true, on_false),
 			)
 		}
-	case .Csel_Ult_Imm:
-		CMP_W :: 0b0111000100
-		CMP_X :: 0b1111000100
-		CSEL :: 0x1A800000
-
-		count_64 := get_node(ctx, node.inps[2]).dt == .I64
-		// Keep NZCV internal to this node so scheduling cannot clobber the comparison.
-		// cmp wcount/xcount, #aux
-		emit_op(
-			ctx.code,
-			imm12_instr(
-				count_64 ? CMP_X : CMP_W,
-				XZR,
-				reg_of(ctx, node.inps[2]),
-				arm_op.aux,
-			),
-		)
-		// csel wdst/xdst, won_true/xon_true, won_false/xon_false, cc
-		emit_op(
-			ctx.code,
-			rrr(
-				is_64,
-				CSEL | u32(Cond.CC) << 12,
-				reg_of(ctx, instr),
-				reg_of(ctx, node.inps[0]),
-				reg_of(ctx, node.inps[1]),
-			),
-		)
 	case .Add ..= .Xor, .Div, .U_Div, .And_Not, .Shl ..= .U_Shr, .Lslv ..= .Lsrv:
 		rd := reg_of(ctx, instr)
 		rn := reg_of(ctx, node.inps[0])

@@ -23,14 +23,15 @@ main:
     movz x7, #0
 4:
     add x8, x7, x2
-    add x9, x6, x2
-    cmp x9, x0
-    b.eq 5
+    cmp x0, x8
+    cset x9, eq
+    add x10, x6, x2
+    cbnz x9, 5
+    mov x6, x10
     mov x7, x8
-    mov x6, x9
     b 4
 5:
-    mov x0, x8
+    mov x0, x10
     b 8
 6:
     mov x4, x5
@@ -41,31 +42,32 @@ main:
     ret
 =========== OPT LEVEL: none ===========
 main:
-    movz x4, #4
-    movz x3, #1
+    movz x3, #4
+    movz x4, #1
     movz x2, #2
     movz x0, #0
 1:
-    add x0, x0, x3
-    cmp x0, x4
+    add x0, x0, x4
+    cmp x0, x3
     b.eq 6
     movz x1, #0
 2:
-    add x1, x1, x3
-    cmp x1, x4
+    add x1, x1, x4
+    cmp x1, x3
     b.eq 1
     cmp x1, x2
     b.eq 3
     b 2
 3:
-    movz x2, #5
-    movz x0, #0
+    movz x3, #5
     movz x1, #0
+    movz x0, #0
 4:
-    add x1, x1, x3
-    add x0, x0, x3
-    cmp x0, x2
-    b.eq 5
+    add x0, x0, x4
+    cmp x3, x0
+    cset x2, eq
+    add x1, x1, x4
+    cbnz x2, 5
     b 4
 5:
     mov x0, x1
@@ -100,14 +102,15 @@ main:
     movz x7, #0
 4:
     add x8, x7, x2
-    add x9, x6, x2
-    cmp x9, x0
-    b.eq 5
+    cmp x0, x8
+    cset x9, eq
+    add x10, x6, x2
+    cbnz x9, 5
+    mov x6, x10
     mov x7, x8
-    mov x6, x9
     b 4
 5:
-    mov x0, x8
+    mov x0, x10
     b 8
 6:
     mov x4, x5
@@ -118,31 +121,32 @@ main:
     ret
 =========== OPT LEVEL: moderate ===========
 main:
-    movz x4, #4
-    movz x3, #1
+    movz x3, #4
+    movz x4, #1
     movz x2, #2
     movz x0, #0
 1:
-    add x0, x0, x3
-    cmp x0, x4
+    add x0, x0, x4
+    cmp x0, x3
     b.eq 6
     movz x1, #0
 2:
-    add x1, x1, x3
-    cmp x1, x4
+    add x1, x1, x4
+    cmp x1, x3
     b.eq 1
     cmp x1, x2
     b.eq 3
     b 2
 3:
-    movz x2, #5
-    movz x0, #0
+    movz x3, #5
     movz x1, #0
+    movz x0, #0
 4:
-    add x1, x1, x3
-    add x0, x0, x3
-    cmp x0, x2
-    b.eq 5
+    add x0, x0, x4
+    cmp x3, x0
+    cset x2, eq
+    add x1, x1, x4
+    cbnz x2, 5
     b 4
 5:
     mov x0, x1
@@ -155,30 +159,31 @@ main:
 =========== OPT LEVEL: all ===========
 main:
     movz x3, #4
-    movz x4, #1
+    movz x5, #1
     movz x2, #2
     movz x0, #0
 1:
     movz x1, #0
 2:
-    add x1, x1, x4
+    add x1, x1, x5
     cmp x1, x3
     b.eq 4
     cmp x1, x2
     b.ne 2
-    movz x3, #5
+    movz x4, #5
     movz x1, #0
     movz x0, #0
 3:
-    add x2, x1, x4
-    add x0, x0, x4
-    cmp x0, x3
+    add x0, x0, x5
+    cmp x4, x0
+    cset x3, eq
+    add x2, x1, x5
     mov x1, x2
-    b.ne 3
+    cbz x3, 3
     mov x0, x2
     b 5
 4:
-    add x1, x0, x4
+    add x1, x0, x5
     add x0, x0, x2
     cmp x0, x3
     mov x0, x1

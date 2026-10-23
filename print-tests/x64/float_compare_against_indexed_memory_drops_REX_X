@@ -24,26 +24,23 @@ main:
     mov rbx, rcx
     add rbx, 1
     movsd.q xmm1, [rax + rdx*8]
+    mov rbp, rdx
+    add rbp, 1
     ucomisd xmm0, xmm1
-    seta bpl
-    movzx rbp, bpl
-    mov rsi, rdx
-    add rsi, 1
-    cmp bpl, 0
-    cmovne rcx, rbx
-    mov rdx, rsi
+    cmova rcx, rbx
+    mov rdx, rbp
     jmp 3
 4:
-    mov.q rax, [rip + 0xf16]
-    mov.q rdx, [rip + 0xf4f]
-    mov.q rbx, [rip + 0xf10]
-    mov.q rbp, [rip + 0xf11]
-    mov.q rsi, [rip + 0xf12]
-    mov.q rdi, [rip + 0xf13]
-    mov.q r8, [rip + 0xf14]
-    mov.q r9, [rip + 0xf15]
-    mov.q r10, [rip + 0xf16]
-    mov.q r11, [rip + 0xf1f]
+    mov.q rax, [rip + 0xf22]
+    mov.q rdx, [rip + 0xf5b]
+    mov.q rbx, [rip + 0xf1c]
+    mov.q rbp, [rip + 0xf1d]
+    mov.q rsi, [rip + 0xf1e]
+    mov.q rdi, [rip + 0xf1f]
+    mov.q r8, [rip + 0xf20]
+    mov.q r9, [rip + 0xf21]
+    mov.q r10, [rip + 0xf22]
+    mov.q r11, [rip + 0xf2b]
     add rax, rcx
     add rax, rbx
     add rax, rbp
@@ -61,7 +58,7 @@ main:
 main:
     push rbx
     push rbp
-    lea rdi, [rip + 0xf60]
+    lea rdx, [rip + 0xf60]
     xor eax, eax
 1:
     cmp rax, 8
@@ -69,47 +66,44 @@ main:
     cvtsi2sd xmm0, rax
     mov rcx, rax
     add rcx, 1
-    movsd.q [rdi + rax*8], xmm0
+    movsd.q [rdx + rax*8], xmm0
     mov rax, rcx
     jmp 1
 2:
     movsd.q xmm1, [rip + 0xfca]
-    xor ecx, ecx
+    xor ebp, ebp
     xor eax, eax
 3:
     cmp rax, 8
     je 4
-    mov rsi, rcx
-    add rsi, 1
-    movsd.q xmm0, [rdi + rax*8]
-    ucomisd xmm1, xmm0
-    seta dl
-    movzx rdx, dl
+    mov rcx, rbp
+    add rcx, 1
+    movsd.q xmm0, [rdx + rax*8]
     add rax, 1
-    cmp dl, 0
-    cmovne rcx, rsi
+    ucomisd xmm1, xmm0
+    cmova rbp, rcx
     jmp 3
 4:
-    mov.q rax, [rip + 0xf1f]
-    mov.q rbp, [rip + 0xf58]
-    mov.q rbx, [rip + 0xf19]
-    mov.q r11, [rip + 0xf1a]
-    mov.q r10, [rip + 0xf1b]
-    mov.q r9, [rip + 0xf1c]
-    mov.q r8, [rip + 0xf1d]
-    mov.q rdi, [rip + 0xf1e]
-    mov.q rsi, [rip + 0xf1f]
-    mov.q rdx, [rip + 0xf28]
-    add rax, rcx
-    add rax, rbx
+    mov.q rax, [rip + 0xf2b]
+    mov.q rbx, [rip + 0xf64]
+    mov.q r11, [rip + 0xf25]
+    mov.q r10, [rip + 0xf26]
+    mov.q r9, [rip + 0xf27]
+    mov.q r8, [rip + 0xf28]
+    mov.q rdi, [rip + 0xf29]
+    mov.q rsi, [rip + 0xf2a]
+    mov.q rdx, [rip + 0xf2b]
+    mov.q rcx, [rip + 0xf34]
+    add rax, rbp
     add rax, r11
     add rax, r10
     add rax, r9
     add rax, r8
     add rax, rdi
     add rax, rsi
-    add rax, rbp
     add rax, rdx
+    add rax, rbx
+    add rax, rcx
     pop rbp
     pop rbx
     ret
@@ -139,26 +133,23 @@ main:
     mov rbx, rcx
     add rbx, 1
     movsd.q xmm1, [rax + rdx*8]
+    mov rbp, rdx
+    add rbp, 1
     ucomisd xmm0, xmm1
-    seta bpl
-    movzx rbp, bpl
-    mov rsi, rdx
-    add rsi, 1
-    cmp bpl, 0
-    cmovne rcx, rbx
-    mov rdx, rsi
+    cmova rcx, rbx
+    mov rdx, rbp
     jmp 3
 4:
-    mov.q rax, [rip + 0xf16]
-    mov.q rdx, [rip + 0xf4f]
-    mov.q rbx, [rip + 0xf10]
-    mov.q rbp, [rip + 0xf11]
-    mov.q rsi, [rip + 0xf12]
-    mov.q rdi, [rip + 0xf13]
-    mov.q r8, [rip + 0xf14]
-    mov.q r9, [rip + 0xf15]
-    mov.q r10, [rip + 0xf16]
-    mov.q r11, [rip + 0xf1f]
+    mov.q rax, [rip + 0xf22]
+    mov.q rdx, [rip + 0xf5b]
+    mov.q rbx, [rip + 0xf1c]
+    mov.q rbp, [rip + 0xf1d]
+    mov.q rsi, [rip + 0xf1e]
+    mov.q rdi, [rip + 0xf1f]
+    mov.q r8, [rip + 0xf20]
+    mov.q r9, [rip + 0xf21]
+    mov.q r10, [rip + 0xf22]
+    mov.q r11, [rip + 0xf2b]
     add rax, rcx
     add rax, rbx
     add rax, rbp
@@ -176,7 +167,7 @@ main:
 main:
     push rbx
     push rbp
-    lea rdi, [rip + 0xf60]
+    lea rdx, [rip + 0xf60]
     xor eax, eax
 1:
     cmp rax, 8
@@ -184,47 +175,44 @@ main:
     cvtsi2sd xmm0, rax
     mov rcx, rax
     add rcx, 1
-    movsd.q [rdi + rax*8], xmm0
+    movsd.q [rdx + rax*8], xmm0
     mov rax, rcx
     jmp 1
 2:
     movsd.q xmm1, [rip + 0xfca]
-    xor ecx, ecx
+    xor ebp, ebp
     xor eax, eax
 3:
     cmp rax, 8
     je 4
-    mov rsi, rcx
-    add rsi, 1
-    movsd.q xmm0, [rdi + rax*8]
-    ucomisd xmm1, xmm0
-    seta dl
-    movzx rdx, dl
+    mov rcx, rbp
+    add rcx, 1
+    movsd.q xmm0, [rdx + rax*8]
     add rax, 1
-    cmp dl, 0
-    cmovne rcx, rsi
+    ucomisd xmm1, xmm0
+    cmova rbp, rcx
     jmp 3
 4:
-    mov.q rax, [rip + 0xf1f]
-    mov.q rbp, [rip + 0xf58]
-    mov.q rbx, [rip + 0xf19]
-    mov.q r11, [rip + 0xf1a]
-    mov.q r10, [rip + 0xf1b]
-    mov.q r9, [rip + 0xf1c]
-    mov.q r8, [rip + 0xf1d]
-    mov.q rdi, [rip + 0xf1e]
-    mov.q rsi, [rip + 0xf1f]
-    mov.q rdx, [rip + 0xf28]
-    add rax, rcx
-    add rax, rbx
+    mov.q rax, [rip + 0xf2b]
+    mov.q rbx, [rip + 0xf64]
+    mov.q r11, [rip + 0xf25]
+    mov.q r10, [rip + 0xf26]
+    mov.q r9, [rip + 0xf27]
+    mov.q r8, [rip + 0xf28]
+    mov.q rdi, [rip + 0xf29]
+    mov.q rsi, [rip + 0xf2a]
+    mov.q rdx, [rip + 0xf2b]
+    mov.q rcx, [rip + 0xf34]
+    add rax, rbp
     add rax, r11
     add rax, r10
     add rax, r9
     add rax, r8
     add rax, rdi
     add rax, rsi
-    add rax, rbp
     add rax, rdx
+    add rax, rbx
+    add rax, rcx
     pop rbp
     pop rbx
     ret
@@ -271,7 +259,7 @@ main:
     sete r13b
     movzx r13, r13b
     mov rbp, r12
-    cmp cl, 0
+    test cl, cl
     cmovne rbp, rdx
     mov r12, rbp
     test r13b, r13b

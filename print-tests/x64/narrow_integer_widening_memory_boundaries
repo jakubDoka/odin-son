@@ -15,64 +15,58 @@ main:
     movzx.w esi, [rsp + 0x8]
     call update u16
     mov rcx, 1
-    mov.q rdx, [rsp + 0xc]
-    xor ebx, ebx
-    cmp dl, 6
-    cmove rbx, rcx
-    mov rcx, rbx
-    add rcx, 2
-    mov rdx, rbx
-    cmp ax, 6
+    xor edx, edx
+    mov.q rbx, [rsp + 0xc]
+    cmp bl, 6
     cmove rdx, rcx
+    mov rcx, rdx
+    add rcx, 2
+    cmp ax, 6
     mov rax, rdx
-    add rax, 4
-    movzx.b ecx, [rsp]
-    cmp cl, 0xb
-    cmove rdx, rax
+    cmove rax, rcx
+    mov rcx, rax
+    add rcx, 4
+    cmp.b [rsp], 0xb
+    cmove rax, rcx
     cmp.b [rsp + 0x1], 0xc
     je 1
-    mov.q [rsp + 0xc], rdx
+    mov.q [rsp + 0xc], rax
     jmp 2
 1:
-    add rdx, 8
-    mov.q [rsp + 0xc], rdx
+    add rax, 8
+    mov.q [rsp + 0xc], rax
 2:
     mov.q rax, [rsp + 0xc]
     add rax, 0x10
-    movzx.b ecx, [rsp + 0x2]
-    mov.q rdx, [rsp + 0xc]
-    cmp cl, 0xa
-    cmove rdx, rax
+    cmp.b [rsp + 0x2], 0xa
+    mov.q rcx, [rsp + 0xc]
+    cmove rcx, rax
     cmp.b [rsp + 0x3], 0x4d
     je 3
-    mov.q [rsp + 0xc], rdx
+    mov.q [rsp + 0xc], rcx
     jmp 4
 3:
-    add rdx, 0x20
-    mov.q [rsp + 0xc], rdx
+    add rcx, 0x20
+    mov.q [rsp + 0xc], rcx
 4:
     mov.q rax, [rsp + 0xc]
     add rax, 0x40
-    movzx.w ecx, [rsp + 0x4]
-    mov.q rdx, [rsp + 0xc]
-    cmp cx, 0xd
-    cmove rdx, rax
-    mov rax, rdx
+    cmp.w [rsp + 0x4], 0xd
+    mov.q rcx, [rsp + 0xc]
+    cmove rcx, rax
+    mov rax, rcx
     add rax, 0x80
-    movzx.w ecx, [rsp + 0x6]
-    cmp cx, 0xc
-    cmove rdx, rax
-    mov rax, rdx
+    cmp.w [rsp + 0x6], 0xc
+    cmove rcx, rax
+    mov rax, rcx
     add rax, 0x100
-    movzx.w ecx, [rsp + 0x8]
-    cmp cx, 0xa
-    cmove rdx, rax
-    mov rcx, rdx
-    add rcx, 0x200
-    movzx.w ebx, [rsp + 0xa]
-    mov rax, rdx
-    cmp bx, 0x4f
-    cmove rax, rcx
+    cmp.w [rsp + 0x8], 0xa
+    cmove rcx, rax
+    mov rdx, rcx
+    add rdx, 0x200
+    cmp.w [rsp + 0xa], 0x4f
+    mov rax, rcx
+    cmove rax, rdx
     add rsp, 0x20
     pop rbx
     ret
@@ -112,56 +106,50 @@ main:
     movzx.w esi, [rsp + 0x8]
     call update u16
     mov rcx, 1
-    xor esi, esi
+    xor edx, edx
     cmp bl, 6
-    cmove rsi, rcx
-    mov rcx, rsi
+    cmove rdx, rcx
+    mov rcx, rdx
     add rcx, 2
     cmp ax, 6
-    cmove rsi, rcx
-    mov rcx, rsi
-    add rcx, 4
-    movzx.b eax, [rsp]
-    cmp al, 0xb
-    cmove rsi, rcx
+    cmove rdx, rcx
+    mov rax, rdx
+    add rax, 4
+    cmp.b [rsp], 0xb
+    cmove rdx, rax
     cmp.b [rsp + 0x1], 0xc
     je 1
     jmp 2
 1:
-    add rsi, 8
+    add rdx, 8
 2:
-    mov rcx, rsi
-    add rcx, 0x10
-    movzx.b eax, [rsp + 0x2]
-    cmp al, 0xa
-    cmove rsi, rcx
+    mov rax, rdx
+    add rax, 0x10
+    cmp.b [rsp + 0x2], 0xa
+    cmove rdx, rax
     cmp.b [rsp + 0x3], 0x4d
     je 3
     jmp 4
 3:
-    add rsi, 0x20
+    add rdx, 0x20
 4:
-    mov rdx, rsi
-    add rdx, 0x40
-    movzx.w ecx, [rsp + 0x4]
-    mov rax, rsi
-    cmp cx, 0xd
-    cmove rax, rdx
-    mov rdx, rax
-    add rdx, 0x80
-    movzx.w ecx, [rsp + 0x6]
-    cmp cx, 0xc
-    cmove rax, rdx
-    mov rdx, rax
-    add rdx, 0x100
-    movzx.w ecx, [rsp + 0x8]
-    cmp cx, 0xa
-    cmove rax, rdx
-    mov rdx, rax
-    add rdx, 0x200
-    movzx.w ecx, [rsp + 0xa]
-    cmp cx, 0x4f
-    cmove rax, rdx
+    mov rax, rdx
+    add rax, 0x40
+    cmp.w [rsp + 0x4], 0xd
+    cmove rdx, rax
+    mov rax, rdx
+    add rax, 0x80
+    cmp.w [rsp + 0x6], 0xc
+    cmove rdx, rax
+    mov rax, rdx
+    add rax, 0x100
+    cmp.w [rsp + 0x8], 0xa
+    cmove rdx, rax
+    mov rcx, rdx
+    add rcx, 0x200
+    cmp.w [rsp + 0xa], 0x4f
+    mov rax, rdx
+    cmove rax, rcx
     add rsp, 0x10
     pop rbx
     ret
@@ -201,64 +189,58 @@ main:
     movzx.w esi, [rsp + 0x8]
     call update u16
     mov rcx, 1
-    mov.q rdx, [rsp + 0xc]
-    xor ebx, ebx
-    cmp dl, 6
-    cmove rbx, rcx
-    mov rcx, rbx
-    add rcx, 2
-    mov rdx, rbx
-    cmp ax, 6
+    xor edx, edx
+    mov.q rbx, [rsp + 0xc]
+    cmp bl, 6
     cmove rdx, rcx
+    mov rcx, rdx
+    add rcx, 2
+    cmp ax, 6
     mov rax, rdx
-    add rax, 4
-    movzx.b ecx, [rsp]
-    cmp cl, 0xb
-    cmove rdx, rax
+    cmove rax, rcx
+    mov rcx, rax
+    add rcx, 4
+    cmp.b [rsp], 0xb
+    cmove rax, rcx
     cmp.b [rsp + 0x1], 0xc
     je 1
-    mov.q [rsp + 0xc], rdx
+    mov.q [rsp + 0xc], rax
     jmp 2
 1:
-    add rdx, 8
-    mov.q [rsp + 0xc], rdx
+    add rax, 8
+    mov.q [rsp + 0xc], rax
 2:
     mov.q rax, [rsp + 0xc]
     add rax, 0x10
-    movzx.b ecx, [rsp + 0x2]
-    mov.q rdx, [rsp + 0xc]
-    cmp cl, 0xa
-    cmove rdx, rax
+    cmp.b [rsp + 0x2], 0xa
+    mov.q rcx, [rsp + 0xc]
+    cmove rcx, rax
     cmp.b [rsp + 0x3], 0x4d
     je 3
-    mov.q [rsp + 0xc], rdx
+    mov.q [rsp + 0xc], rcx
     jmp 4
 3:
-    add rdx, 0x20
-    mov.q [rsp + 0xc], rdx
+    add rcx, 0x20
+    mov.q [rsp + 0xc], rcx
 4:
     mov.q rax, [rsp + 0xc]
     add rax, 0x40
-    movzx.w ecx, [rsp + 0x4]
-    mov.q rdx, [rsp + 0xc]
-    cmp cx, 0xd
-    cmove rdx, rax
-    mov rax, rdx
+    cmp.w [rsp + 0x4], 0xd
+    mov.q rcx, [rsp + 0xc]
+    cmove rcx, rax
+    mov rax, rcx
     add rax, 0x80
-    movzx.w ecx, [rsp + 0x6]
-    cmp cx, 0xc
-    cmove rdx, rax
-    mov rax, rdx
+    cmp.w [rsp + 0x6], 0xc
+    cmove rcx, rax
+    mov rax, rcx
     add rax, 0x100
-    movzx.w ecx, [rsp + 0x8]
-    cmp cx, 0xa
-    cmove rdx, rax
-    mov rcx, rdx
-    add rcx, 0x200
-    movzx.w ebx, [rsp + 0xa]
-    mov rax, rdx
-    cmp bx, 0x4f
-    cmove rax, rcx
+    cmp.w [rsp + 0x8], 0xa
+    cmove rcx, rax
+    mov rdx, rcx
+    add rdx, 0x200
+    cmp.w [rsp + 0xa], 0x4f
+    mov rax, rcx
+    cmove rax, rdx
     add rsp, 0x20
     pop rbx
     ret
@@ -298,56 +280,50 @@ main:
     movzx.w esi, [rsp + 0x8]
     call update u16
     mov rcx, 1
-    xor esi, esi
+    xor edx, edx
     cmp bl, 6
-    cmove rsi, rcx
-    mov rcx, rsi
+    cmove rdx, rcx
+    mov rcx, rdx
     add rcx, 2
     cmp ax, 6
-    cmove rsi, rcx
-    mov rcx, rsi
-    add rcx, 4
-    movzx.b eax, [rsp]
-    cmp al, 0xb
-    cmove rsi, rcx
+    cmove rdx, rcx
+    mov rax, rdx
+    add rax, 4
+    cmp.b [rsp], 0xb
+    cmove rdx, rax
     cmp.b [rsp + 0x1], 0xc
     je 1
     jmp 2
 1:
-    add rsi, 8
+    add rdx, 8
 2:
-    mov rcx, rsi
-    add rcx, 0x10
-    movzx.b eax, [rsp + 0x2]
-    cmp al, 0xa
-    cmove rsi, rcx
+    mov rax, rdx
+    add rax, 0x10
+    cmp.b [rsp + 0x2], 0xa
+    cmove rdx, rax
     cmp.b [rsp + 0x3], 0x4d
     je 3
     jmp 4
 3:
-    add rsi, 0x20
+    add rdx, 0x20
 4:
-    mov rdx, rsi
-    add rdx, 0x40
-    movzx.w ecx, [rsp + 0x4]
-    mov rax, rsi
-    cmp cx, 0xd
-    cmove rax, rdx
-    mov rdx, rax
-    add rdx, 0x80
-    movzx.w ecx, [rsp + 0x6]
-    cmp cx, 0xc
-    cmove rax, rdx
-    mov rdx, rax
-    add rdx, 0x100
-    movzx.w ecx, [rsp + 0x8]
-    cmp cx, 0xa
-    cmove rax, rdx
-    mov rdx, rax
-    add rdx, 0x200
-    movzx.w ecx, [rsp + 0xa]
-    cmp cx, 0x4f
-    cmove rax, rdx
+    mov rax, rdx
+    add rax, 0x40
+    cmp.w [rsp + 0x4], 0xd
+    cmove rdx, rax
+    mov rax, rdx
+    add rax, 0x80
+    cmp.w [rsp + 0x6], 0xc
+    cmove rdx, rax
+    mov rax, rdx
+    add rax, 0x100
+    cmp.w [rsp + 0x8], 0xa
+    cmove rdx, rax
+    mov rcx, rdx
+    add rcx, 0x200
+    cmp.w [rsp + 0xa], 0x4f
+    mov rax, rdx
+    cmove rax, rcx
     add rsp, 0x10
     pop rbx
     ret
@@ -387,56 +363,50 @@ main:
     movzx.w esi, [rsp + 0x8]
     call update u16
     mov rcx, 1
-    xor esi, esi
+    xor edx, edx
     cmp bl, 6
-    cmove rsi, rcx
-    mov rcx, rsi
+    cmove rdx, rcx
+    mov rcx, rdx
     add rcx, 2
     cmp ax, 6
-    cmove rsi, rcx
-    mov rcx, rsi
-    add rcx, 4
-    movzx.b eax, [rsp]
-    cmp al, 0xb
-    cmove rsi, rcx
+    cmove rdx, rcx
+    mov rax, rdx
+    add rax, 4
+    cmp.b [rsp], 0xb
+    cmove rdx, rax
     cmp.b [rsp + 0x1], 0xc
     je 1
     jmp 2
 1:
-    add rsi, 8
+    add rdx, 8
 2:
-    mov rcx, rsi
-    add rcx, 0x10
-    movzx.b eax, [rsp + 0x2]
-    cmp al, 0xa
-    cmove rsi, rcx
+    mov rax, rdx
+    add rax, 0x10
+    cmp.b [rsp + 0x2], 0xa
+    cmove rdx, rax
     cmp.b [rsp + 0x3], 0x4d
     je 3
     jmp 4
 3:
-    add rsi, 0x20
+    add rdx, 0x20
 4:
-    mov rdx, rsi
-    add rdx, 0x40
-    movzx.w ecx, [rsp + 0x4]
-    mov rax, rsi
-    cmp cx, 0xd
-    cmove rax, rdx
-    mov rdx, rax
-    add rdx, 0x80
-    movzx.w ecx, [rsp + 0x6]
-    cmp cx, 0xc
-    cmove rax, rdx
-    mov rdx, rax
-    add rdx, 0x100
-    movzx.w ecx, [rsp + 0x8]
-    cmp cx, 0xa
-    cmove rax, rdx
-    mov rdx, rax
-    add rdx, 0x200
-    movzx.w ecx, [rsp + 0xa]
-    cmp cx, 0x4f
-    cmove rax, rdx
+    mov rax, rdx
+    add rax, 0x40
+    cmp.w [rsp + 0x4], 0xd
+    cmove rdx, rax
+    mov rax, rdx
+    add rax, 0x80
+    cmp.w [rsp + 0x6], 0xc
+    cmove rdx, rax
+    mov rax, rdx
+    add rax, 0x100
+    cmp.w [rsp + 0x8], 0xa
+    cmove rdx, rax
+    mov rcx, rdx
+    add rcx, 0x200
+    cmp.w [rsp + 0xa], 0x4f
+    mov rax, rdx
+    cmove rax, rcx
     add rsp, 0x10
     pop rbx
     ret
@@ -473,44 +443,41 @@ main:
     add.w cx, [rsp - 0x10]
     imul cx, cx, 3
     mov rsi, rcx
-    mov r8, 1
+    mov rdi, 1
     mov cl, 2
     movzx eax, al
     div cl
-    xor edi, edi
+    xor ecx, ecx
     cmp al, 6
-    cmove rdi, r8
-    mov rcx, rdi
-    add rcx, 2
+    cmove rcx, rdi
+    mov rdi, rcx
+    add rdi, 2
     mov r8, 2
     mov rax, rsi
     xor rdx, rdx
     div r8w
     cmp ax, 6
-    cmove rdi, rcx
-    mov rax, rdi
+    cmove rcx, rdi
+    mov rax, rcx
     add rax, 4
-    movzx.b ecx, [rsp - 0x18]
-    cmp cl, 0xb
-    cmove rdi, rax
+    cmp.b [rsp - 0x18], 0xb
+    cmove rcx, rax
     cmp.b [rsp - 0x17], 0xc
     je 1
     jmp 2
 1:
-    add rdi, 8
+    add rcx, 8
 2:
-    mov rax, rdi
+    mov rax, rcx
     add rax, 0x10
-    movzx.b ecx, [rsp - 0x16]
-    cmp cl, 0xa
-    cmove rdi, rax
+    cmp.b [rsp - 0x16], 0xa
+    cmove rcx, rax
     cmp.b [rsp - 0x15], 0x4d
     je 3
     jmp 4
 3:
-    add rdi, 0x20
+    add rcx, 0x20
 4:
-    mov rcx, rdi
     mov.w [rsp - 0x12], si
     movzx.w r8d, [rsp - 0xe]
     movzx.w edi, [rsp - 0x10]

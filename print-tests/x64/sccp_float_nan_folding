@@ -126,9 +126,8 @@ run f32:
     add rsp, 0x48
     ret
 check f64:
-    push rbx
-    addsd xmm0, xmm1
     mov rax, 1
+    addsd xmm0, xmm1
     ucomisd xmm0, xmm0
     sete cl
     jnp 6
@@ -136,7 +135,7 @@ check f64:
 6:
     movzx rcx, cl
     xor edx, edx
-    cmp cl, 0
+    test cl, cl
     cmovne rdx, rax
     mov rax, rdx
     add rax, 2
@@ -146,22 +145,17 @@ check f64:
     mov cl, 1
 7:
     movzx rcx, cl
-    cmp cl, 0
+    test cl, cl
     cmovne rdx, rax
     mov rcx, rdx
     add rcx, 8
     ucomisd xmm0, xmm0
-    setae bl
-    movzx rbx, bl
     mov rax, rdx
-    cmp bl, 0
-    cmovne rax, rcx
-    pop rbx
+    cmovae rax, rcx
     ret
 check f32:
-    push rbx
-    addss xmm0, xmm1
     mov rax, 1
+    addss xmm0, xmm1
     ucomiss xmm0, xmm0
     sete cl
     jnp 9
@@ -169,7 +163,7 @@ check f32:
 9:
     movzx rcx, cl
     xor edx, edx
-    cmp cl, 0
+    test cl, cl
     cmovne rdx, rax
     mov rax, rdx
     add rax, 2
@@ -179,17 +173,13 @@ check f32:
     mov cl, 1
 10:
     movzx rcx, cl
-    cmp cl, 0
+    test cl, cl
     cmovne rdx, rax
     mov rcx, rdx
     add rcx, 8
     ucomiss xmm0, xmm0
-    setae bl
-    movzx rbx, bl
     mov rax, rdx
-    cmp bl, 0
-    cmovne rax, rcx
-    pop rbx
+    cmovae rax, rcx
     ret
 =========== OPT LEVEL: none ===========
 finite:
@@ -315,8 +305,8 @@ run f32:
     pop rbx
     ret
 check f64:
-    addsd xmm0, xmm1
     mov rdx, 1
+    addsd xmm0, xmm1
     ucomisd xmm0, xmm0
     sete cl
     jnp 6
@@ -324,7 +314,7 @@ check f64:
 6:
     movzx rcx, cl
     xor eax, eax
-    cmp cl, 0
+    test cl, cl
     cmovne rax, rdx
     mov rdx, rax
     add rdx, 2
@@ -334,19 +324,16 @@ check f64:
     mov cl, 1
 7:
     movzx rcx, cl
-    cmp cl, 0
+    test cl, cl
     cmovne rax, rdx
-    mov rdx, rax
-    add rdx, 8
+    mov rcx, rax
+    add rcx, 8
     ucomisd xmm0, xmm0
-    setae cl
-    movzx rcx, cl
-    cmp cl, 0
-    cmovne rax, rdx
+    cmovae rax, rcx
     ret
 check f32:
-    addss xmm0, xmm1
     mov rdx, 1
+    addss xmm0, xmm1
     ucomiss xmm0, xmm0
     sete cl
     jnp 9
@@ -354,7 +341,7 @@ check f32:
 9:
     movzx rcx, cl
     xor eax, eax
-    cmp cl, 0
+    test cl, cl
     cmovne rax, rdx
     mov rdx, rax
     add rdx, 2
@@ -364,15 +351,12 @@ check f32:
     mov cl, 1
 10:
     movzx rcx, cl
-    cmp cl, 0
+    test cl, cl
     cmovne rax, rdx
-    mov rdx, rax
-    add rdx, 8
+    mov rcx, rax
+    add rcx, 8
     ucomiss xmm0, xmm0
-    setae cl
-    movzx rcx, cl
-    cmp cl, 0
-    cmovne rax, rdx
+    cmovae rax, rcx
     ret
 =========== OPT LEVEL: moderate-quick ===========
 finite:
@@ -502,9 +486,8 @@ run f32:
     add rsp, 0x48
     ret
 check f64:
-    push rbx
-    addsd xmm0, xmm1
     mov rax, 1
+    addsd xmm0, xmm1
     ucomisd xmm0, xmm0
     sete cl
     jnp 6
@@ -512,7 +495,7 @@ check f64:
 6:
     movzx rcx, cl
     xor edx, edx
-    cmp cl, 0
+    test cl, cl
     cmovne rdx, rax
     mov rax, rdx
     add rax, 2
@@ -522,22 +505,17 @@ check f64:
     mov cl, 1
 7:
     movzx rcx, cl
-    cmp cl, 0
+    test cl, cl
     cmovne rdx, rax
     mov rcx, rdx
     add rcx, 8
     ucomisd xmm0, xmm0
-    setae bl
-    movzx rbx, bl
     mov rax, rdx
-    cmp bl, 0
-    cmovne rax, rcx
-    pop rbx
+    cmovae rax, rcx
     ret
 check f32:
-    push rbx
-    addss xmm0, xmm1
     mov rax, 1
+    addss xmm0, xmm1
     ucomiss xmm0, xmm0
     sete cl
     jnp 9
@@ -545,7 +523,7 @@ check f32:
 9:
     movzx rcx, cl
     xor edx, edx
-    cmp cl, 0
+    test cl, cl
     cmovne rdx, rax
     mov rax, rdx
     add rax, 2
@@ -555,17 +533,13 @@ check f32:
     mov cl, 1
 10:
     movzx rcx, cl
-    cmp cl, 0
+    test cl, cl
     cmovne rdx, rax
     mov rcx, rdx
     add rcx, 8
     ucomiss xmm0, xmm0
-    setae bl
-    movzx rbx, bl
     mov rax, rdx
-    cmp bl, 0
-    cmovne rax, rcx
-    pop rbx
+    cmovae rax, rcx
     ret
 =========== OPT LEVEL: moderate ===========
 finite:
@@ -691,8 +665,8 @@ run f32:
     pop rbx
     ret
 check f64:
-    addsd xmm0, xmm1
     mov rdx, 1
+    addsd xmm0, xmm1
     ucomisd xmm0, xmm0
     sete cl
     jnp 6
@@ -700,7 +674,7 @@ check f64:
 6:
     movzx rcx, cl
     xor eax, eax
-    cmp cl, 0
+    test cl, cl
     cmovne rax, rdx
     mov rdx, rax
     add rdx, 2
@@ -710,19 +684,16 @@ check f64:
     mov cl, 1
 7:
     movzx rcx, cl
-    cmp cl, 0
+    test cl, cl
     cmovne rax, rdx
-    mov rdx, rax
-    add rdx, 8
+    mov rcx, rax
+    add rcx, 8
     ucomisd xmm0, xmm0
-    setae cl
-    movzx rcx, cl
-    cmp cl, 0
-    cmovne rax, rdx
+    cmovae rax, rcx
     ret
 check f32:
-    addss xmm0, xmm1
     mov rdx, 1
+    addss xmm0, xmm1
     ucomiss xmm0, xmm0
     sete cl
     jnp 9
@@ -730,7 +701,7 @@ check f32:
 9:
     movzx rcx, cl
     xor eax, eax
-    cmp cl, 0
+    test cl, cl
     cmovne rax, rdx
     mov rdx, rax
     add rdx, 2
@@ -740,15 +711,12 @@ check f32:
     mov cl, 1
 10:
     movzx rcx, cl
-    cmp cl, 0
+    test cl, cl
     cmovne rax, rdx
-    mov rdx, rax
-    add rdx, 8
+    mov rcx, rax
+    add rcx, 8
     ucomiss xmm0, xmm0
-    setae cl
-    movzx rcx, cl
-    cmp cl, 0
-    cmovne rax, rdx
+    cmovae rax, rcx
     ret
 =========== OPT LEVEL: all ===========
 finite:
@@ -874,8 +842,8 @@ run f32:
     pop rbx
     ret
 check f64:
-    addsd xmm0, xmm1
     mov rdx, 1
+    addsd xmm0, xmm1
     ucomisd xmm0, xmm0
     sete cl
     jnp 6
@@ -883,7 +851,7 @@ check f64:
 6:
     movzx rcx, cl
     xor eax, eax
-    cmp cl, 0
+    test cl, cl
     cmovne rax, rdx
     mov rdx, rax
     add rdx, 2
@@ -893,19 +861,16 @@ check f64:
     mov cl, 1
 7:
     movzx rcx, cl
-    cmp cl, 0
+    test cl, cl
     cmovne rax, rdx
-    mov rdx, rax
-    add rdx, 8
+    mov rcx, rax
+    add rcx, 8
     ucomisd xmm0, xmm0
-    setae cl
-    movzx rcx, cl
-    cmp cl, 0
-    cmovne rax, rdx
+    cmovae rax, rcx
     ret
 check f32:
-    addss xmm0, xmm1
     mov rdx, 1
+    addss xmm0, xmm1
     ucomiss xmm0, xmm0
     sete cl
     jnp 9
@@ -913,7 +878,7 @@ check f32:
 9:
     movzx rcx, cl
     xor eax, eax
-    cmp cl, 0
+    test cl, cl
     cmovne rax, rdx
     mov rdx, rax
     add rdx, 2
@@ -923,15 +888,12 @@ check f32:
     mov cl, 1
 10:
     movzx rcx, cl
-    cmp cl, 0
+    test cl, cl
     cmovne rax, rdx
-    mov rdx, rax
-    add rdx, 8
+    mov rcx, rax
+    add rcx, 8
     ucomiss xmm0, xmm0
-    setae cl
-    movzx rcx, cl
-    cmp cl, 0
-    cmovne rax, rdx
+    cmovae rax, rcx
     ret
 =========== OPT LEVEL: aggresive ===========
 main:
@@ -1032,8 +994,8 @@ main:
     pop rbx
     ret
 check f64:
-    addsd xmm0, xmm1
     mov rdx, 1
+    addsd xmm0, xmm1
     ucomisd xmm0, xmm0
     sete cl
     jnp 2
@@ -1041,7 +1003,7 @@ check f64:
 2:
     movzx rcx, cl
     xor eax, eax
-    cmp cl, 0
+    test cl, cl
     cmovne rax, rdx
     mov rdx, rax
     add rdx, 2
@@ -1051,19 +1013,16 @@ check f64:
     mov cl, 1
 3:
     movzx rcx, cl
-    cmp cl, 0
+    test cl, cl
     cmovne rax, rdx
-    mov rdx, rax
-    add rdx, 8
+    mov rcx, rax
+    add rcx, 8
     ucomisd xmm0, xmm0
-    setae cl
-    movzx rcx, cl
-    cmp cl, 0
-    cmovne rax, rdx
+    cmovae rax, rcx
     ret
 check f32:
-    addss xmm0, xmm1
     mov rdx, 1
+    addss xmm0, xmm1
     ucomiss xmm0, xmm0
     sete cl
     jnp 5
@@ -1071,7 +1030,7 @@ check f32:
 5:
     movzx rcx, cl
     xor eax, eax
-    cmp cl, 0
+    test cl, cl
     cmovne rax, rdx
     mov rdx, rax
     add rdx, 2
@@ -1081,13 +1040,10 @@ check f32:
     mov cl, 1
 6:
     movzx rcx, cl
-    cmp cl, 0
+    test cl, cl
     cmovne rax, rdx
-    mov rdx, rax
-    add rdx, 8
+    mov rcx, rax
+    add rcx, 8
     ucomiss xmm0, xmm0
-    setae cl
-    movzx rcx, cl
-    cmp cl, 0
-    cmovne rax, rdx
+    cmovae rax, rcx
     ret

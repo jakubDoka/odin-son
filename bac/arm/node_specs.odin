@@ -95,7 +95,6 @@ Class_Flag :: bac.Class_Flag
 		0b10, // Lslv
 		0b10, // Asrv
 		0b10, // Lsrv
-		0b10000000, // Csel_Ult_Imm
 	},
 	node_extra_sizes = {
 		0 = 1, // Nil -> Cfg
@@ -120,7 +119,7 @@ Class_Flag :: bac.Class_Flag
 		55 = 1, // Proc_Addr -> Tup
 		73 = 1, // Ext -> Arm_Op
 		76 = 1, // Umov -> Arm_Op
-		80 = 1, // Csel_Ult_Imm -> Arm_Op
+		79 = 0,
 	},
 	node_flags = {
 		{}, // Nil
@@ -203,7 +202,6 @@ Class_Flag :: bac.Class_Flag
 		{}, // Lslv
 		{}, // Asrv
 		{}, // Lsrv
-		{}, // Csel_Ult_Imm
 	},
 	node_extra_types = ({}) when #config(NO_FMT, false) else ([]typeid{
 		0 = bac.Cfg,
@@ -228,7 +226,7 @@ Class_Flag :: bac.Class_Flag
 		55 = bac.Tup,
 		73 = Arm_Op,
 		76 = Arm_Op,
-		80 = Arm_Op,
+		79 = {},
 	}),
 	node_kind = nil when #config(NO_FMT, false) else Node_Type,
 }
@@ -314,7 +312,6 @@ Node_Type :: enum u16 {
 	Lslv,
 	Asrv,
 	Lsrv,
-	Csel_Ult_Imm,
 }
 
 peep_inst :: proc(ctx: bac.Peep_Ctx, node: bac.Expanded_Node) -> Maybe(bac.Node_ID) {
@@ -361,12 +358,6 @@ add_umov :: #force_inline proc(prc: ^bac.Proc, name: string, dt: bac.Node_Dataty
 		aux = aux,
 	}
 	return bac.add_raw(prc, name, u16(Node_Type.Umov), dt, {vec})
-}
-add_csel_ult_imm :: #force_inline proc(prc: ^bac.Proc, name: string, dt: bac.Node_Datatype, on_true: bac.Node_ID, on_false: bac.Node_ID, count: bac.Node_ID, aux: u32) -> (_id: bac.Node_ID) {
-	(^Arm_Op)(bac.get_next_extra_slot(prc, u16(Node_Type.Csel_Ult_Imm), 0))^ = {
-		aux = aux,
-	}
-	return bac.add_raw(prc, name, u16(Node_Type.Csel_Ult_Imm), dt, {on_true, on_false, count})
 }
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {

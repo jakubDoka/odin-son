@@ -85,7 +85,6 @@ main :: proc() {
 			.X64_Store = {id = x64.Mem_Op, flags = {.Store}, no_ctor = true},
 			.X64_Mul8 = {no_ctor = true, flags = {.Interned}},
 			.X64_Fma_213 = {id = x64.Mem_Op, no_ctor = true},
-			.X64_Cmovcc = {id = x64.Mem_Op, no_ctor = true},
 		}
 
 		meta.generate_spec(
@@ -175,11 +174,6 @@ main :: proc() {
 			.Addv128 = {args = {"vec"}, pass_lane = true},
 			.Umov = {id = arm.Arm_Op, args = {"vec"}, extra_args = {"aux"}},
 			.Lslv ..= .Lsrv = {no_ctor = true},
-			.Csel_Ult_Imm = {
-				id = arm.Arm_Op,
-				args = {"on_true", "on_false", "count"},
-				extra_args = {"aux"},
-			},
 		}
 
 		meta.generate_spec(

@@ -13,9 +13,7 @@ main:
     add x7, x0, x4
     add x8, x5, x0
     cmp x6, x4
-    cset x9, eq
-    cmp w9, #0
-    csel x7, x7, x8, ne
+    csel x7, x7, x8, eq
     add x7, x7, x3
     mov x0, x7
     mov x1, x6
@@ -25,22 +23,20 @@ main:
 =========== OPT LEVEL: none ===========
 main:
     movz x1, #0
-    movz x7, #3
-    movz x6, #10
-    movz x5, #1
-    movz x4, #2
+    movz x6, #3
+    movz x5, #10
+    movz x4, #1
+    movz x3, #2
     movz x0, #0
 1:
-    add x1, x1, x5
-    cmp x1, x7
+    add x1, x1, x4
+    cmp x1, x6
     b.gt 2
-    add x3, x0, x5
-    add x2, x4, x0
-    cmp x1, x5
-    cset x0, eq
-    cmp w0, #0
-    csel x0, x3, x2, ne
-    add x0, x0, x6
+    add x2, x0, x4
+    add x0, x3, x0
+    cmp x1, x4
+    csel x0, x2, x0, eq
+    add x0, x0, x5
     b 1
 2:
     ret
@@ -59,9 +55,7 @@ main:
     add x7, x0, x4
     add x8, x5, x0
     cmp x6, x4
-    cset x9, eq
-    cmp w9, #0
-    csel x7, x7, x8, ne
+    csel x7, x7, x8, eq
     add x7, x7, x3
     mov x0, x7
     mov x1, x6
@@ -71,44 +65,41 @@ main:
 =========== OPT LEVEL: moderate ===========
 main:
     movz x1, #0
-    movz x7, #3
-    movz x6, #10
-    movz x5, #1
-    movz x4, #2
+    movz x6, #3
+    movz x5, #10
+    movz x4, #1
+    movz x3, #2
     movz x0, #0
 1:
-    add x1, x1, x5
-    cmp x1, x7
+    add x1, x1, x4
+    cmp x1, x6
     b.gt 2
-    add x3, x0, x5
-    add x2, x4, x0
-    cmp x1, x5
-    cset x0, eq
-    cmp w0, #0
-    csel x0, x3, x2, ne
-    add x0, x0, x6
+    add x2, x0, x4
+    add x0, x3, x0
+    cmp x1, x4
+    csel x0, x2, x0, eq
+    add x0, x0, x5
     b 1
 2:
     ret
 =========== OPT LEVEL: all ===========
 main:
-    movz x8, #3
-    movz x7, #10
-    movz x6, #1
-    movz x5, #2
+    movz x7, #3
+    movz x6, #10
+    movz x5, #1
+    movz x4, #2
     movz x1, #0
     movz x2, #0
 1:
     mov x0, x2
-    add x4, x0, x6
-    add x3, x5, x0
-    add x1, x1, x6
-    cmp x1, x6
-    cset x2, eq
-    cmp w2, #0
-    csel x2, x4, x3, ne
-    add x2, x2, x7
-    cmp x1, x8
-    b.le 1
+    add x3, x0, x5
+    add x2, x4, x0
+    add x1, x1, x5
+    cmp x1, x5
+    csel x2, x3, x2, eq
+    cmp x1, x7
+    cset x3, gt
+    add x2, x2, x6
+    cbz x3, 1
     ret
 =========== OPT LEVEL: aggresive ===========

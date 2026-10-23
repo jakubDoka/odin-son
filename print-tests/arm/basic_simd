@@ -1089,11 +1089,12 @@ sum:
     add x1, x25, x3
     ldrb w1, [x1]
     uxtb w1, w1
-    add w1, w2, w1
+    add w2, w2, w1
     add x3, x4, x3
-    uxtb w2, w1
     cmp x3, x24
-    b.lt 4
+    cset x1, ge
+    uxtb w2, w2
+    cbz x1, 4
     uxtb w1, w0
     uxtb w0, w2
     add w0, w1, w0
@@ -1116,16 +1117,16 @@ main:
     movz x2, #122
     movz x1, #35
     add x3, sp, #24
-    adr x0, 0xe98
+    adr x0, 0xe94
     bl 0x7c
     movz x2, #97
     movz x1, #35
-    adr x0, 0xe98
+    adr x0, 0xe94
     add x3, sp, #16
     bl 0x7c
     movz x1, #35
-    adr x0, 0xe98
-    bl 0xffffff0c
+    adr x0, 0xe94
+    bl 0xffffff08
     add x1, sp, #24
     ldr x3, [x1]
     add x1, sp, #16
@@ -1168,7 +1169,7 @@ simd_search u8:
     movz x22, #1
     movz x0, #0
     uxth w23, w0
-    adr x0, 0xe4c
+    adr x0, 0xe48
     ldr q9, [x0]
     movz x0, #7
     dup v8.16b, w0
@@ -1280,11 +1281,12 @@ main:
     add x1, x1, x0
     ldr q1, [x1]
     add x2, x4, x0
-    add x0, x3, x0
-    add v0.16b, v0.16b, v1.16b
     movz x1, #35
     cmp x2, x1
-    b.lt 1
+    cset x1, ge
+    add x0, x3, x0
+    add v0.16b, v0.16b, v1.16b
+    cbz x1, 1
     movz x4, #1
     movz x3, #0
     movz x1, #0
@@ -1294,12 +1296,13 @@ main:
     add x0, x0, x1
     ldrb w0, [x0]
     uxtb w0, w0
-    add w0, w2, w0
+    add w2, w2, w0
     add x1, x4, x1
-    uxtb w3, w0
     movz x0, #35
     cmp x1, x0
-    b.lt 2
+    cset x0, ge
+    uxtb w3, w2
+    cbz x0, 2
     add x0, sp, #24
     ldr x2, [x0]
     add x0, sp, #16
@@ -1330,7 +1333,7 @@ simd_search u8:
     movz x5, #1
     movz x7, #0
     uxth w11, w7
-    adr x7, 0xed0
+    adr x7, 0xec8
     ldr q3, [x7]
     movz x7, #7
     dup v2.16b, w7
@@ -1358,7 +1361,7 @@ simd_search u8:
     uxth w1, w1
     add x1, x1, x10
     str x1, [x3]
-    b 0xf4
+    b simd_search u8
 5:
     madd x11, x12, x13, xzr
     sub x10, x1, x11
@@ -1381,10 +1384,10 @@ simd_search u8:
     movn x1, #0
 8:
     cmp x1, x4
-    b.lt simd_search u8
+    b.lt 0xec
     add x1, x11, x1
     str x1, [x3]
-    b 0xf4
+    b simd_search u8
 9:
     str x7, [x3]
     movz x0, #0

@@ -1,32 +1,30 @@
 =========== OPT LEVEL: none-quick ===========
 convert:
-    xor eax, eax
+    mov rax, rdi
+    shr rax, 0x3f
+    shrx rcx, rdi, rax
+    xor edx, edx
+    cmp rax, 0x40
+    cmovb rdx, rcx
     mov rcx, rdi
-    shr rcx, 0x3f
-    shrx rdx, rdi, rcx
-    cmp rcx, 0x40
-    cmovb rax, rdx
-    mov rdx, rdi
-    and rdx, rcx
-    or rax, rdx
-    cvtsi2sd xmm0, rax
-    mov rax, rcx
+    and rcx, rax
+    or rdx, rcx
+    cvtsi2sd xmm0, rdx
     shl rax, 0x34
     movq xmm1, rax
     paddq xmm0, xmm1
     ret
 convert_f32:
-    xor eax, eax
+    mov rax, rdi
+    shr rax, 0x3f
+    shrx rcx, rdi, rax
+    xor edx, edx
+    cmp rax, 0x40
+    cmovb rdx, rcx
     mov rcx, rdi
-    shr rcx, 0x3f
-    shrx rdx, rdi, rcx
-    cmp rcx, 0x40
-    cmovb rax, rdx
-    mov rdx, rdi
-    and rdx, rcx
-    or rax, rdx
-    cvtsi2ss xmm0, rax
-    mov rax, rcx
+    and rcx, rax
+    or rdx, rcx
+    cvtsi2ss xmm0, rdx
     shl eax, 0x17
     movd xmm1, eax
     paddd xmm0, xmm1
@@ -35,7 +33,7 @@ main:
     sub rsp, 0x18
     movabs rdi, -0x7ffffffffffffbff
     call convert
-    ucomisd.q xmm0, [rip + 0xedb]
+    ucomisd.q xmm0, [rip + 0xee1]
     setne al
     jnp 3
     mov al, 1
@@ -45,7 +43,7 @@ main:
     jne 6
     movabs rdi, -0x7fffff800015bfff
     call convert_f32
-    ucomiss.d xmm0, [rip + 0xeb6]
+    ucomiss.d xmm0, [rip + 0xebc]
     setne al
     jnp 4
     mov al, 1
@@ -59,11 +57,11 @@ main:
     mov rdi, -1
     call convert_f32
     movsd.q xmm1, [rsp + 0x8]
-    divsd.q xmm1, [rip + 0xe79]
+    divsd.q xmm1, [rip + 0xe7f]
     movsd xmm1, xmm1
     cvttsd2si rax, xmm1
     mov.q [rsp], rax
-    divss.d xmm0, [rip + 0xe6a]
+    divss.d xmm0, [rip + 0xe70]
     cvttss2si rax, xmm0
     imul rax, rax, 0xa
     mov.q rcx, [rsp]
@@ -82,10 +80,10 @@ main:
     ret
 =========== OPT LEVEL: none ===========
 convert:
-    xor edx, edx
     mov rax, rdi
     shr rax, 0x3f
     shrx rcx, rdi, rax
+    xor edx, edx
     cmp rax, 0x40
     cmovb rdx, rcx
     mov rcx, rdi
@@ -97,17 +95,17 @@ convert:
     paddq xmm0, xmm1
     ret
 convert_f32:
-    xor edx, edx
-    mov rcx, rdi
-    shr rcx, 0x3f
-    shrx rax, rdi, rcx
-    cmp rcx, 0x40
-    cmovb rdx, rax
+    mov rdx, rdi
+    shr rdx, 0x3f
+    shrx rax, rdi, rdx
+    xor ecx, ecx
+    cmp rdx, 0x40
+    cmovb rcx, rax
     mov rax, rdi
-    and rax, rcx
-    or rdx, rax
-    cvtsi2ss xmm0, rdx
-    mov rax, rcx
+    and rax, rdx
+    or rcx, rax
+    cvtsi2ss xmm0, rcx
+    mov rax, rdx
     shl eax, 0x17
     movd xmm1, eax
     paddd xmm0, xmm1
@@ -157,33 +155,31 @@ main:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 convert:
-    xor eax, eax
+    mov rax, rdi
+    shr rax, 0x3f
+    shrx rcx, rdi, rax
+    xor edx, edx
+    cmp rax, 0x40
+    cmovb rdx, rcx
     mov rcx, rdi
-    shr rcx, 0x3f
-    shrx rdx, rdi, rcx
-    cmp rcx, 0x40
-    cmovb rax, rdx
-    mov rdx, rdi
-    and rdx, rcx
-    or rax, rdx
-    cvtsi2sd xmm0, rax
-    mov rax, rcx
+    and rcx, rax
+    or rdx, rcx
+    cvtsi2sd xmm0, rdx
     shl rax, 0x34
     movq xmm1, rax
     paddq xmm0, xmm1
     ret
 convert_f32:
-    xor eax, eax
+    mov rax, rdi
+    shr rax, 0x3f
+    shrx rcx, rdi, rax
+    xor edx, edx
+    cmp rax, 0x40
+    cmovb rdx, rcx
     mov rcx, rdi
-    shr rcx, 0x3f
-    shrx rdx, rdi, rcx
-    cmp rcx, 0x40
-    cmovb rax, rdx
-    mov rdx, rdi
-    and rdx, rcx
-    or rax, rdx
-    cvtsi2ss xmm0, rax
-    mov rax, rcx
+    and rcx, rax
+    or rdx, rcx
+    cvtsi2ss xmm0, rdx
     shl eax, 0x17
     movd xmm1, eax
     paddd xmm0, xmm1
@@ -192,7 +188,7 @@ main:
     sub rsp, 0x18
     movabs rdi, -0x7ffffffffffffbff
     call convert
-    ucomisd.q xmm0, [rip + 0xedb]
+    ucomisd.q xmm0, [rip + 0xee1]
     setne al
     jnp 3
     mov al, 1
@@ -202,7 +198,7 @@ main:
     jne 6
     movabs rdi, -0x7fffff800015bfff
     call convert_f32
-    ucomiss.d xmm0, [rip + 0xeb6]
+    ucomiss.d xmm0, [rip + 0xebc]
     setne al
     jnp 4
     mov al, 1
@@ -216,11 +212,11 @@ main:
     mov rdi, -1
     call convert_f32
     movsd.q xmm1, [rsp + 0x8]
-    divsd.q xmm1, [rip + 0xe79]
+    divsd.q xmm1, [rip + 0xe7f]
     movsd xmm1, xmm1
     cvttsd2si rax, xmm1
     mov.q [rsp], rax
-    divss.d xmm0, [rip + 0xe6a]
+    divss.d xmm0, [rip + 0xe70]
     cvttss2si rax, xmm0
     imul rax, rax, 0xa
     mov.q rcx, [rsp]
@@ -239,10 +235,10 @@ main:
     ret
 =========== OPT LEVEL: moderate ===========
 convert:
-    xor edx, edx
     mov rax, rdi
     shr rax, 0x3f
     shrx rcx, rdi, rax
+    xor edx, edx
     cmp rax, 0x40
     cmovb rdx, rcx
     mov rcx, rdi
@@ -254,17 +250,17 @@ convert:
     paddq xmm0, xmm1
     ret
 convert_f32:
-    xor edx, edx
-    mov rcx, rdi
-    shr rcx, 0x3f
-    shrx rax, rdi, rcx
-    cmp rcx, 0x40
-    cmovb rdx, rax
+    mov rdx, rdi
+    shr rdx, 0x3f
+    shrx rax, rdi, rdx
+    xor ecx, ecx
+    cmp rdx, 0x40
+    cmovb rcx, rax
     mov rax, rdi
-    and rax, rcx
-    or rdx, rax
-    cvtsi2ss xmm0, rdx
-    mov rax, rcx
+    and rax, rdx
+    or rcx, rax
+    cvtsi2ss xmm0, rcx
+    mov rax, rdx
     shl eax, 0x17
     movd xmm1, eax
     paddd xmm0, xmm1
@@ -314,10 +310,10 @@ main:
     ret
 =========== OPT LEVEL: all ===========
 convert:
-    xor edx, edx
     mov rax, rdi
     shr rax, 0x3f
     shrx rcx, rdi, rax
+    xor edx, edx
     cmp rax, 0x40
     cmovb rdx, rcx
     mov rcx, rdi
@@ -329,17 +325,17 @@ convert:
     paddq xmm0, xmm1
     ret
 convert_f32:
-    xor edx, edx
-    mov rcx, rdi
-    shr rcx, 0x3f
-    shrx rax, rdi, rcx
-    cmp rcx, 0x40
-    cmovb rdx, rax
+    mov rdx, rdi
+    shr rdx, 0x3f
+    shrx rax, rdi, rdx
+    xor ecx, ecx
+    cmp rdx, 0x40
+    cmovb rcx, rax
     mov rax, rdi
-    and rax, rcx
-    or rdx, rax
-    cvtsi2ss xmm0, rdx
-    mov rax, rcx
+    and rax, rdx
+    or rcx, rax
+    cvtsi2ss xmm0, rcx
+    mov rax, rdx
     shl eax, 0x17
     movd xmm1, eax
     paddd xmm0, xmm1

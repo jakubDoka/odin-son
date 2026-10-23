@@ -84,13 +84,13 @@ run f32:
     str d0, [xzr, #56]
     ldr d1, [xzr, #56]
     ldr d0, [xzr, #56]
-    bl 0x100
+    bl 0xe8
     str x0, [xzr, #16]
     ldr d0, [xzr, #40]
     ldr d1, [xzr, #40]
     fdiv s0, s0, s1
     ldr d1, [xzr, #56]
-    bl 0x100
+    bl 0xe8
     str x0, [xzr, #24]
     ldr d0, [xzr, #56]
     ldr d1, [xzr, #40]
@@ -100,11 +100,11 @@ run f32:
     ldr d1, [xzr, #40]
     fsub s1, s0, s1
     ldr d0, [xzr, #40]
-    bl 0x100
+    bl 0xe8
     str x0, [xzr, #32]
     ldr d1, [xzr, #56]
     ldr d0, [xzr, #40]
-    bl 0x100
+    bl 0xe8
     movz x1, #3
     ldr x2, [xzr, #24]
     madd x1, x2, x1, xzr
@@ -125,42 +125,30 @@ check f64:
     fadd d0, d0, d1
     movz x1, #0
     fcmp d0, d0
-    cset x2, eq
-    cmp w2, #0
-    csel x0, x0, x1, ne
+    csel x0, x0, x1, eq
     movz x1, #2
     add x1, x1, x0
     fcmp d0, d0
-    cset x2, ne
-    cmp w2, #0
     csel x0, x1, x0, ne
     movz x1, #8
     add x1, x1, x0
     fcmp d0, d0
-    cset x2, ge
-    cmp w2, #0
-    csel x0, x1, x0, ne
+    csel x0, x1, x0, ge
     ret
 check f32:
     movz x0, #1
     fadd s0, s0, s1
     movz x1, #0
     fcmp s0, s0
-    cset x2, eq
-    cmp w2, #0
-    csel x0, x0, x1, ne
+    csel x0, x0, x1, eq
     movz x1, #2
     add x1, x1, x0
     fcmp s0, s0
-    cset x2, ne
-    cmp w2, #0
     csel x0, x1, x0, ne
     movz x1, #8
     add x1, x1, x0
     fcmp s0, s0
-    cset x2, ge
-    cmp w2, #0
-    csel x0, x1, x0, ne
+    csel x0, x1, x0, ge
     ret
 =========== OPT LEVEL: none ===========
 finite:
@@ -250,21 +238,21 @@ run f32:
     orr v9.16b, v0.16b, v0.16b
     orr v1.16b, v9.16b, v9.16b
     orr v0.16b, v9.16b, v9.16b
-    bl 0xf4
+    bl 0xdc
     mov x20, x0
     fdiv s0, s8, s8
     orr v1.16b, v9.16b, v9.16b
-    bl 0xf4
+    bl 0xdc
     mov x21, x0
     fdiv s8, s9, s8
     eor v1.16b, v1.16b, v1.16b
     fsub s1, s1, s8
     orr v0.16b, v8.16b, v8.16b
-    bl 0xf4
+    bl 0xdc
     mov x19, x0
     orr v1.16b, v9.16b, v9.16b
     orr v0.16b, v8.16b, v8.16b
-    bl 0xf4
+    bl 0xdc
     movz x1, #3
     madd x1, x21, x1, xzr
     add x2, x20, x1
@@ -281,46 +269,34 @@ run f32:
     add sp, sp, #48
     ret
 check f64:
-    movz x2, #1
+    movz x1, #1
     fadd d0, d0, d1
-    movz x1, #0
+    movz x0, #0
     fcmp d0, d0
-    cset x0, eq
-    cmp w0, #0
-    csel x2, x2, x1, ne
+    csel x1, x1, x0, eq
     movz x0, #2
-    add x1, x0, x2
+    add x0, x0, x1
     fcmp d0, d0
-    cset x0, ne
-    cmp w0, #0
-    csel x2, x1, x2, ne
+    csel x1, x0, x1, ne
     movz x0, #8
-    add x1, x0, x2
+    add x0, x0, x1
     fcmp d0, d0
-    cset x0, ge
-    cmp w0, #0
-    csel x0, x1, x2, ne
+    csel x0, x0, x1, ge
     ret
 check f32:
-    movz x2, #1
+    movz x1, #1
     fadd s0, s0, s1
-    movz x1, #0
+    movz x0, #0
     fcmp s0, s0
-    cset x0, eq
-    cmp w0, #0
-    csel x2, x2, x1, ne
+    csel x1, x1, x0, eq
     movz x0, #2
-    add x1, x0, x2
+    add x0, x0, x1
     fcmp s0, s0
-    cset x0, ne
-    cmp w0, #0
-    csel x2, x1, x2, ne
+    csel x1, x0, x1, ne
     movz x0, #8
-    add x1, x0, x2
+    add x0, x0, x1
     fcmp s0, s0
-    cset x0, ge
-    cmp w0, #0
-    csel x0, x1, x2, ne
+    csel x0, x0, x1, ge
     ret
 =========== OPT LEVEL: moderate-quick ===========
 finite:
@@ -408,13 +384,13 @@ run f32:
     str d0, [xzr, #56]
     ldr d1, [xzr, #56]
     ldr d0, [xzr, #56]
-    bl 0x100
+    bl 0xe8
     str x0, [xzr, #16]
     ldr d0, [xzr, #40]
     ldr d1, [xzr, #40]
     fdiv s0, s0, s1
     ldr d1, [xzr, #56]
-    bl 0x100
+    bl 0xe8
     str x0, [xzr, #24]
     ldr d0, [xzr, #56]
     ldr d1, [xzr, #40]
@@ -424,11 +400,11 @@ run f32:
     ldr d1, [xzr, #40]
     fsub s1, s0, s1
     ldr d0, [xzr, #40]
-    bl 0x100
+    bl 0xe8
     str x0, [xzr, #32]
     ldr d1, [xzr, #56]
     ldr d0, [xzr, #40]
-    bl 0x100
+    bl 0xe8
     movz x1, #3
     ldr x2, [xzr, #24]
     madd x1, x2, x1, xzr
@@ -449,42 +425,30 @@ check f64:
     fadd d0, d0, d1
     movz x1, #0
     fcmp d0, d0
-    cset x2, eq
-    cmp w2, #0
-    csel x0, x0, x1, ne
+    csel x0, x0, x1, eq
     movz x1, #2
     add x1, x1, x0
     fcmp d0, d0
-    cset x2, ne
-    cmp w2, #0
     csel x0, x1, x0, ne
     movz x1, #8
     add x1, x1, x0
     fcmp d0, d0
-    cset x2, ge
-    cmp w2, #0
-    csel x0, x1, x0, ne
+    csel x0, x1, x0, ge
     ret
 check f32:
     movz x0, #1
     fadd s0, s0, s1
     movz x1, #0
     fcmp s0, s0
-    cset x2, eq
-    cmp w2, #0
-    csel x0, x0, x1, ne
+    csel x0, x0, x1, eq
     movz x1, #2
     add x1, x1, x0
     fcmp s0, s0
-    cset x2, ne
-    cmp w2, #0
     csel x0, x1, x0, ne
     movz x1, #8
     add x1, x1, x0
     fcmp s0, s0
-    cset x2, ge
-    cmp w2, #0
-    csel x0, x1, x0, ne
+    csel x0, x1, x0, ge
     ret
 =========== OPT LEVEL: moderate ===========
 finite:
@@ -574,21 +538,21 @@ run f32:
     orr v9.16b, v0.16b, v0.16b
     orr v1.16b, v9.16b, v9.16b
     orr v0.16b, v9.16b, v9.16b
-    bl 0xf4
+    bl 0xdc
     mov x20, x0
     fdiv s0, s8, s8
     orr v1.16b, v9.16b, v9.16b
-    bl 0xf4
+    bl 0xdc
     mov x21, x0
     fdiv s8, s9, s8
     eor v1.16b, v1.16b, v1.16b
     fsub s1, s1, s8
     orr v0.16b, v8.16b, v8.16b
-    bl 0xf4
+    bl 0xdc
     mov x19, x0
     orr v1.16b, v9.16b, v9.16b
     orr v0.16b, v8.16b, v8.16b
-    bl 0xf4
+    bl 0xdc
     movz x1, #3
     madd x1, x21, x1, xzr
     add x2, x20, x1
@@ -605,46 +569,34 @@ run f32:
     add sp, sp, #48
     ret
 check f64:
-    movz x2, #1
+    movz x1, #1
     fadd d0, d0, d1
-    movz x1, #0
+    movz x0, #0
     fcmp d0, d0
-    cset x0, eq
-    cmp w0, #0
-    csel x2, x2, x1, ne
+    csel x1, x1, x0, eq
     movz x0, #2
-    add x1, x0, x2
+    add x0, x0, x1
     fcmp d0, d0
-    cset x0, ne
-    cmp w0, #0
-    csel x2, x1, x2, ne
+    csel x1, x0, x1, ne
     movz x0, #8
-    add x1, x0, x2
+    add x0, x0, x1
     fcmp d0, d0
-    cset x0, ge
-    cmp w0, #0
-    csel x0, x1, x2, ne
+    csel x0, x0, x1, ge
     ret
 check f32:
-    movz x2, #1
+    movz x1, #1
     fadd s0, s0, s1
-    movz x1, #0
+    movz x0, #0
     fcmp s0, s0
-    cset x0, eq
-    cmp w0, #0
-    csel x2, x2, x1, ne
+    csel x1, x1, x0, eq
     movz x0, #2
-    add x1, x0, x2
+    add x0, x0, x1
     fcmp s0, s0
-    cset x0, ne
-    cmp w0, #0
-    csel x2, x1, x2, ne
+    csel x1, x0, x1, ne
     movz x0, #8
-    add x1, x0, x2
+    add x0, x0, x1
     fcmp s0, s0
-    cset x0, ge
-    cmp w0, #0
-    csel x0, x1, x2, ne
+    csel x0, x0, x1, ge
     ret
 =========== OPT LEVEL: all ===========
 finite:
@@ -734,21 +686,21 @@ run f32:
     orr v9.16b, v0.16b, v0.16b
     orr v1.16b, v9.16b, v9.16b
     orr v0.16b, v9.16b, v9.16b
-    bl 0xf4
+    bl 0xdc
     mov x20, x0
     fdiv s0, s8, s8
     orr v1.16b, v9.16b, v9.16b
-    bl 0xf4
+    bl 0xdc
     mov x21, x0
     fdiv s8, s9, s8
     eor v1.16b, v1.16b, v1.16b
     fsub s1, s1, s8
     orr v0.16b, v8.16b, v8.16b
-    bl 0xf4
+    bl 0xdc
     mov x19, x0
     orr v1.16b, v9.16b, v9.16b
     orr v0.16b, v8.16b, v8.16b
-    bl 0xf4
+    bl 0xdc
     movz x1, #3
     madd x1, x21, x1, xzr
     add x2, x20, x1
@@ -765,46 +717,34 @@ run f32:
     add sp, sp, #48
     ret
 check f64:
-    movz x2, #1
+    movz x1, #1
     fadd d0, d0, d1
-    movz x1, #0
+    movz x0, #0
     fcmp d0, d0
-    cset x0, eq
-    cmp w0, #0
-    csel x2, x2, x1, ne
+    csel x1, x1, x0, eq
     movz x0, #2
-    add x1, x0, x2
+    add x0, x0, x1
     fcmp d0, d0
-    cset x0, ne
-    cmp w0, #0
-    csel x2, x1, x2, ne
+    csel x1, x0, x1, ne
     movz x0, #8
-    add x1, x0, x2
+    add x0, x0, x1
     fcmp d0, d0
-    cset x0, ge
-    cmp w0, #0
-    csel x0, x1, x2, ne
+    csel x0, x0, x1, ge
     ret
 check f32:
-    movz x2, #1
+    movz x1, #1
     fadd s0, s0, s1
-    movz x1, #0
+    movz x0, #0
     fcmp s0, s0
-    cset x0, eq
-    cmp w0, #0
-    csel x2, x2, x1, ne
+    csel x1, x1, x0, eq
     movz x0, #2
-    add x1, x0, x2
+    add x0, x0, x1
     fcmp s0, s0
-    cset x0, ne
-    cmp w0, #0
-    csel x2, x1, x2, ne
+    csel x1, x0, x1, ne
     movz x0, #8
-    add x1, x0, x2
+    add x0, x0, x1
     fcmp s0, s0
-    cset x0, ge
-    cmp w0, #0
-    csel x0, x1, x2, ne
+    csel x0, x0, x1, ge
     ret
 =========== OPT LEVEL: aggresive ===========
 main:
@@ -892,44 +832,32 @@ main:
     add sp, sp, #80
     ret
 check f64:
-    movz x2, #1
+    movz x1, #1
     fadd d0, d0, d1
-    movz x1, #0
+    movz x0, #0
     fcmp d0, d0
-    cset x0, eq
-    cmp w0, #0
-    csel x2, x2, x1, ne
+    csel x1, x1, x0, eq
     movz x0, #2
-    add x1, x0, x2
+    add x0, x0, x1
     fcmp d0, d0
-    cset x0, ne
-    cmp w0, #0
-    csel x2, x1, x2, ne
+    csel x1, x0, x1, ne
     movz x0, #8
-    add x1, x0, x2
+    add x0, x0, x1
     fcmp d0, d0
-    cset x0, ge
-    cmp w0, #0
-    csel x0, x1, x2, ne
+    csel x0, x0, x1, ge
     ret
 check f32:
-    movz x2, #1
+    movz x1, #1
     fadd s0, s0, s1
-    movz x1, #0
+    movz x0, #0
     fcmp s0, s0
-    cset x0, eq
-    cmp w0, #0
-    csel x2, x2, x1, ne
+    csel x1, x1, x0, eq
     movz x0, #2
-    add x1, x0, x2
+    add x0, x0, x1
     fcmp s0, s0
-    cset x0, ne
-    cmp w0, #0
-    csel x2, x1, x2, ne
+    csel x1, x0, x1, ne
     movz x0, #8
-    add x1, x0, x2
+    add x0, x0, x1
     fcmp s0, s0
-    cset x0, ge
-    cmp w0, #0
-    csel x0, x1, x2, ne
+    csel x0, x0, x1, ge
     ret

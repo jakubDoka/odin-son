@@ -1,7 +1,7 @@
 =========== OPT LEVEL: none-quick ===========
 standalone:
-    mov rax, 4
     mov rcx, 0x64
+    mov rax, 4
     cmp rdi, 1
     cmove rax, rcx
     ret
@@ -40,12 +40,15 @@ main:
     mov.q [rsp + 0x28], rdx
     mov.q rdx, [rsp + 0x20]
     cmp rdx, 1
-    je 8
-    mov.q rdx, [rsp + 0x20]
-    cmp rdx, 2
+    sete dl
+    movzx rdx, dl
+    test dl, dl
+    jne 8
+    mov.q rbx, [rsp + 0x20]
+    cmp rbx, 2
     je 7
-    mov.q rdx, [rsp + 0x20]
-    cmp rdx, 3
+    mov.q rbx, [rsp + 0x20]
+    cmp rbx, 3
     je 11
     mov.q [rsp + 0x10], r15
     mov.q r15, [rsp + 0x28]
@@ -60,14 +63,12 @@ main:
     mov.q r15, [rsp + 0x10]
     jmp 10
 8:
-    mov.q rdx, [rsp + 0x18]
-    add rdx, 0x14
-    mov.q [rsp + 0x40], rdx
-    mov.q rdx, [rsp + 0x20]
-    mov.q rbx, [rsp + 0x40]
+    mov.q rbx, [rsp + 0x18]
+    add rbx, 0x14
+    mov rbx, rbx
     mov.q rbp, [rsp + 0x28]
-    cmp rdx, 1
-    cmove rbp, rbx
+    test dl, dl
+    cmovne rbp, rbx
     mov rdx, rbp
     add rdx, 2
     mov.q [rsp + 0x30], rdx
@@ -104,8 +105,8 @@ main:
     ret
 =========== OPT LEVEL: none ===========
 standalone:
-    mov rax, 4
     mov rcx, 0x64
+    mov rax, 4
     cmp rdi, 1
     cmove rax, rcx
     ret
@@ -136,7 +137,10 @@ main:
     mov rax, rbp
     add rax, 0x64
     cmp rsi, 1
-    je 6
+    sete dl
+    movzx rdx, dl
+    test dl, dl
+    jne 6
     cmp rsi, 2
     je 8
     cmp rsi, 3
@@ -147,8 +151,8 @@ main:
 6:
     mov rcx, rbp
     add rcx, 0x14
-    cmp rsi, 1
-    cmove rax, rcx
+    test dl, dl
+    cmovne rax, rcx
     add rax, 2
 7:
     add rax, 1
@@ -174,8 +178,8 @@ main:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 standalone:
-    mov rax, 4
     mov rcx, 0x64
+    mov rax, 4
     cmp rdi, 1
     cmove rax, rcx
     ret
@@ -214,12 +218,15 @@ main:
     mov.q [rsp + 0x28], rdx
     mov.q rdx, [rsp + 0x20]
     cmp rdx, 1
-    je 8
-    mov.q rdx, [rsp + 0x20]
-    cmp rdx, 2
+    sete dl
+    movzx rdx, dl
+    test dl, dl
+    jne 8
+    mov.q rbx, [rsp + 0x20]
+    cmp rbx, 2
     je 7
-    mov.q rdx, [rsp + 0x20]
-    cmp rdx, 3
+    mov.q rbx, [rsp + 0x20]
+    cmp rbx, 3
     je 11
     mov.q [rsp + 0x10], r15
     mov.q r15, [rsp + 0x28]
@@ -234,14 +241,12 @@ main:
     mov.q r15, [rsp + 0x10]
     jmp 10
 8:
-    mov.q rdx, [rsp + 0x18]
-    add rdx, 0x14
-    mov.q [rsp + 0x40], rdx
-    mov.q rdx, [rsp + 0x20]
-    mov.q rbx, [rsp + 0x40]
+    mov.q rbx, [rsp + 0x18]
+    add rbx, 0x14
+    mov rbx, rbx
     mov.q rbp, [rsp + 0x28]
-    cmp rdx, 1
-    cmove rbp, rbx
+    test dl, dl
+    cmovne rbp, rbx
     mov rdx, rbp
     add rdx, 2
     mov.q [rsp + 0x30], rdx
@@ -278,8 +283,8 @@ main:
     ret
 =========== OPT LEVEL: moderate ===========
 standalone:
-    mov rax, 4
     mov rcx, 0x64
+    mov rax, 4
     cmp rdi, 1
     cmove rax, rcx
     ret
@@ -310,7 +315,10 @@ main:
     mov rax, rbp
     add rax, 0x64
     cmp rsi, 1
-    je 6
+    sete dl
+    movzx rdx, dl
+    test dl, dl
+    jne 6
     cmp rsi, 2
     je 8
     cmp rsi, 3
@@ -321,8 +329,8 @@ main:
 6:
     mov rcx, rbp
     add rcx, 0x14
-    cmp rsi, 1
-    cmove rax, rcx
+    test dl, dl
+    cmovne rax, rcx
     add rax, 2
 7:
     add rax, 1
@@ -348,8 +356,8 @@ main:
     ret
 =========== OPT LEVEL: all ===========
 standalone:
-    mov rax, 4
     mov rcx, 0x64
+    mov rax, 4
     cmp rdi, 1
     cmove rax, rcx
     ret
@@ -371,15 +379,18 @@ main:
     push rbp
     sub rsp, 8
     xor eax, eax
-    xor edi, edi
+    xor esi, esi
 5:
     mov rcx, rax
-    mov rdx, rdi
+    mov rdx, rsi
     add rdx, 0x64
     mov rax, rcx
     add rax, 1
     cmp rax, 1
-    je 6
+    sete dil
+    movzx rdi, dil
+    test dil, dil
+    jne 6
     cmp rax, 2
     je 8
     cmp rax, 3
@@ -388,22 +399,22 @@ main:
     jmp 9
     jmp 8
 6:
-    add rdi, 0x14
-    cmp rax, 1
-    cmove rdx, rdi
+    add rsi, 0x14
+    test dil, dil
+    cmovne rdx, rsi
     add rdx, 2
 7:
-    mov rdi, rdx
-    add rdi, 1
+    mov rsi, rdx
+    add rsi, 1
 8:
-    mov rdx, rdi
+    mov rdx, rsi
     add rcx, 2
     cmp rcx, 4
-    mov rdi, rdx
+    mov rsi, rdx
     jle 5
-    mov rdi, rdx
+    mov rsi, rdx
 9:
-    mov rbx, rdi
+    mov rbx, rsi
     xor edi, edi
     call standalone
     mov rbp, rax
@@ -424,13 +435,16 @@ main:
 1:
     mov rdx, rcx
     add rdx, 0x64
-    mov rsi, rax
-    add rsi, 1
-    cmp rsi, 1
-    je 4
-    cmp rsi, 2
+    mov rdi, rax
+    add rdi, 1
+    cmp rdi, 1
+    sete sil
+    movzx rsi, sil
+    test sil, sil
+    jne 4
+    cmp rdi, 2
     je 3
-    cmp rsi, 3
+    cmp rdi, 3
     je 2
     jmp 5
 2:
@@ -441,8 +455,8 @@ main:
     jmp 6
 4:
     add rcx, 0x14
-    cmp rsi, 1
-    cmove rdx, rcx
+    test sil, sil
+    cmovne rdx, rcx
     add rdx, 2
 5:
     add rdx, 1
@@ -450,7 +464,7 @@ main:
     add rax, 2
     cmp rax, 4
     mov rcx, rdx
-    mov rax, rsi
+    mov rax, rdi
     jle 1
     mov rax, rdx
 7:

@@ -818,32 +818,32 @@ main:
     stp x29, x30, [xzr, #80]
     add x5, sp, #152
     eor v0.16b, v0.16b, v0.16b
-    add x27, sp, #104
+    add x29, sp, #104
     movz x0, #16
     add x0, x0, x5
     str q0, [x0]
     str q0, [x5]
     add x0, sp, #216
-    str q0, [x27]
-    str x5, [x27]
-    add x29, sp, #136
-    movz x1, #8
-    add x1, x1, x27
-    str x1, [xzr, #96]
     str q0, [x29]
-    str x0, [x29]
+    str x5, [x29]
+    add x27, sp, #136
     movz x1, #8
-    add x28, x1, x29
+    add x1, x1, x29
+    str x1, [xzr, #96]
+    str q0, [x27]
+    str x0, [x27]
+    movz x1, #8
+    add x28, x1, x27
     ldr x1, [xzr, #96]
     ldr x4, [x1]
     movz x1, #0
     movz x25, #1
     add x24, x4, x25
-    ldr x3, [x27]
+    ldr x3, [x29]
     movz x2, #48
     add x2, x2, x5
     str q0, [x2]
-    ldr x20, [x29]
+    ldr x20, [x27]
     movz x2, #32
     add x2, x2, x5
     str q0, [x2]
@@ -852,7 +852,7 @@ main:
     add x21, x3, x2
     ldr x2, [xzr, #96]
     str x24, [x2]
-    ldr x26, [x27]
+    ldr x26, [x29]
     movz x2, #2
     add x22, x2, x4
     ldr x19, [x28]
@@ -885,27 +885,28 @@ main:
     cmp x22, x23
     b.le 2
     movz x0, #0
-    movz x2, #0
+    movz x3, #0
 1:
-    ldr x3, [x27]
+    ldr x2, [x29]
     movz x1, #8
-    madd x1, x1, x2, xzr
-    add x1, x3, x1
+    madd x1, x1, x3, xzr
+    add x1, x2, x1
     ldr x4, [x1]
     ldr x1, [xzr, #96]
-    ldr x3, [x1]
-    add x2, x2, x25
+    ldr x1, [x1]
+    add x3, x3, x25
+    cmp x3, x1
+    cset x2, ge
     add x1, x0, x4
-    cmp x2, x3
     mov x0, x1
-    b.lt 1
+    cbz x2, 1
     mov x23, x1
     b 2
 2:
     add x0, x19, x25
     str x0, [x28]
     ldr x4, [x28]
-    ldr x1, [x29]
+    ldr x1, [x27]
     movz x0, #8
     add x0, x0, x1
     ldr x3, [x0]

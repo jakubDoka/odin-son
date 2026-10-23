@@ -121,7 +121,6 @@ Class_Flag :: bac.Class_Flag
 		0b10, // X64_Psadbw
 		0b10000000, // X64_Pshufb
 		0b10000000, // X64_Pextr
-		0b10000000, // X64_Cmovcc
 	},
 	node_extra_sizes = {
 		0 = 1, // Nil -> Cfg
@@ -175,7 +174,6 @@ Class_Flag :: bac.Class_Flag
 		101 = 3, // X64_Pshufd -> Mem_Op
 		103 = 3, // X64_Pshufb -> Mem_Op
 		104 = 3, // X64_Pextr -> Mem_Op
-		105 = 3, // X64_Cmovcc -> Mem_Op
 	},
 	node_flags = {
 		{}, // Nil
@@ -283,7 +281,6 @@ Class_Flag :: bac.Class_Flag
 		{}, // X64_Psadbw
 		{}, // X64_Pshufb
 		{}, // X64_Pextr
-		{}, // X64_Cmovcc
 	},
 	node_extra_types = ({}) when #config(NO_FMT, false) else ([]typeid{
 		0 = bac.Cfg,
@@ -337,7 +334,6 @@ Class_Flag :: bac.Class_Flag
 		101 = Mem_Op,
 		103 = Mem_Op,
 		104 = Mem_Op,
-		105 = Mem_Op,
 	}),
 	node_kind = nil when #config(NO_FMT, false) else Node_Type,
 }
@@ -448,7 +444,6 @@ Node_Type :: enum u16 {
 	X64_Psadbw,
 	X64_Pshufb,
 	X64_Pextr,
-	X64_Cmovcc,
 }
 
 peep_inst :: proc(ctx: bac.Peep_Ctx, node: bac.Expanded_Node) -> Maybe(bac.Node_ID) {

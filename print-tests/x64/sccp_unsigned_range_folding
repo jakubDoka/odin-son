@@ -1,15 +1,14 @@
 =========== OPT LEVEL: none-quick ===========
 check:
     mov.q [rsp - 0x18], rdi
-    mov.q rax, [rsp - 0x18]
-    and al, 7
-    mov.q [rsp - 0x18], rax
-    mov al, -1
-    mov.q rcx, [rsp - 0x18]
-    cmp sil, 0
-    cmovne ecx, eax
-    mov.q [rsp - 0x18], rcx
     mov rax, 0x1ff
+    mov cl, -1
+    mov.q rdx, [rsp - 0x18]
+    and dl, 7
+    mov rdx, rdx
+    test sil, sil
+    cmovne edx, ecx
+    mov.q [rsp - 0x18], rdx
     mov.q rcx, [rsp - 0x18]
     mov rdx, 0xff
     cmp cl, -0x80
@@ -43,7 +42,7 @@ check:
     ret
 main:
     sub rsp, 0x18
-    movzx.b edi, [rip + 0xeb7]
+    movzx.b edi, [rip + 0xebf]
     mov sil, 1
     call check
     mov.q [rsp], rax
@@ -76,11 +75,11 @@ main:
     ret
 =========== OPT LEVEL: none ===========
 check:
-    and dil, 7
-    mov al, -1
-    cmp sil, 0
-    cmovne edi, eax
     mov rdx, 0x1ff
+    mov al, -1
+    and dil, 7
+    test sil, sil
+    cmovne edi, eax
     mov rax, rdi
     mov rcx, 0xff
     cmp al, -0x80
@@ -108,7 +107,7 @@ main:
     push rbx
     push rbp
     push r12
-    movzx.b edi, [rip + 0xefa]
+    movzx.b edi, [rip + 0xefb]
     mov sil, 1
     call check
     mov r12, rax
@@ -139,15 +138,14 @@ main:
 =========== OPT LEVEL: moderate-quick ===========
 check:
     mov.q [rsp - 0x18], rdi
-    mov.q rax, [rsp - 0x18]
-    and al, 7
-    mov.q [rsp - 0x18], rax
-    mov al, -1
-    mov.q rcx, [rsp - 0x18]
-    cmp sil, 0
-    cmovne ecx, eax
-    mov.q [rsp - 0x18], rcx
     mov rax, 0x1ff
+    mov cl, -1
+    mov.q rdx, [rsp - 0x18]
+    and dl, 7
+    mov rdx, rdx
+    test sil, sil
+    cmovne edx, ecx
+    mov.q [rsp - 0x18], rdx
     mov.q rcx, [rsp - 0x18]
     mov rdx, 0xff
     cmp cl, -0x80
@@ -181,7 +179,7 @@ check:
     ret
 main:
     sub rsp, 0x18
-    movzx.b edi, [rip + 0xeb7]
+    movzx.b edi, [rip + 0xebf]
     mov sil, 1
     call check
     mov.q [rsp], rax
@@ -214,11 +212,11 @@ main:
     ret
 =========== OPT LEVEL: moderate ===========
 check:
-    and dil, 7
-    mov al, -1
-    cmp sil, 0
-    cmovne edi, eax
     mov rdx, 0x1ff
+    mov al, -1
+    and dil, 7
+    test sil, sil
+    cmovne edi, eax
     mov rax, rdi
     mov rcx, 0xff
     cmp al, -0x80
@@ -246,7 +244,7 @@ main:
     push rbx
     push rbp
     push r12
-    movzx.b edi, [rip + 0xefa]
+    movzx.b edi, [rip + 0xefb]
     mov sil, 1
     call check
     mov r12, rax
@@ -276,11 +274,11 @@ main:
     ret
 =========== OPT LEVEL: all ===========
 check:
-    and dil, 7
-    mov al, -1
-    cmp sil, 0
-    cmovne edi, eax
     mov rdx, 0x1ff
+    mov al, -1
+    and dil, 7
+    test sil, sil
+    cmovne edi, eax
     mov rax, rdi
     mov rcx, 0xff
     cmp al, -0x80
@@ -308,7 +306,7 @@ main:
     push rbx
     push rbp
     push r12
-    movzx.b edi, [rip + 0xefa]
+    movzx.b edi, [rip + 0xefb]
     mov sil, 1
     call check
     mov r12, rax

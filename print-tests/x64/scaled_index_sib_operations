@@ -14,29 +14,20 @@ main:
     xor eax, eax
 1:
     cmp rax, 8
-    setge dl
-    movzx rdx, dl
-    test dl, dl
-    jne 2
+    jge 2
     mov rdx, rcx
     add rdx, 1
-    mov.q rbx, [rsp + rax*8 - 0x48]
-    mov rbp, rcx
-    cmp rbx, 0x14
-    cmovg rbp, rdx
-    mov rdx, rax
-    add rdx, 1
-    mov rcx, rbp
-    mov rax, rdx
+    mov rbx, rax
+    add rbx, 1
+    cmp.q [rsp + rax*8 - 0x48], 0x14
+    cmovg rcx, rdx
+    mov rax, rbx
     jmp 1
 2:
     xor eax, eax
 3:
     cmp rax, 8
-    setge dl
-    movzx rdx, dl
-    test dl, dl
-    jne 4
+    jge 4
     neg.q [rsp + rax*8 - 0x48]
     add rax, 1
     jmp 3
@@ -45,10 +36,7 @@ main:
 5:
     mov rdx, rax
     cmp rdx, 8
-    setge bl
-    movzx rbx, bl
-    test bl, bl
-    jne 6
+    jge 6
     not.q [rsp + rdx*8 - 0x48]
     add rdx, 1
     mov rax, rdx
@@ -57,10 +45,7 @@ main:
     xor eax, eax
 7:
     cmp rax, 8
-    setge dl
-    movzx rdx, dl
-    test dl, dl
-    jne 8
+    jge 8
     add.q [rsp + rax*8 - 0x48], 7
     add rax, 1
     jmp 7
@@ -68,10 +53,7 @@ main:
     xor eax, eax
 9:
     cmp rax, 8
-    setge dl
-    movzx rdx, dl
-    test dl, dl
-    jne 12
+    jge 12
     mov rdx, rax
     and rdx, 1
     cmp rdx, 0
@@ -87,10 +69,7 @@ main:
     xor edx, edx
 13:
     cmp rdx, 8
-    setge bl
-    movzx rbx, bl
-    test bl, bl
-    jne 14
+    jge 14
     mov rbx, rax
     add.q rbx, [rsp + rdx*8 - 0x48]
     mov rbp, rdx
@@ -113,29 +92,24 @@ main:
     mov.q [rsp - 0x20], 0x11
     mov.q [rsp - 0x18], 0x37
     mov.q [rsp - 0x10], 2
-    xor ecx, ecx
+    xor edx, edx
     xor eax, eax
 1:
     cmp rax, 8
-    setge dl
-    movzx rdx, dl
-    test dl, dl
-    jne 2
-    mov rsi, rcx
+    jge 2
+    mov rsi, rdx
     add rsi, 1
-    mov.q rdx, [rsp + rax*8 - 0x48]
-    cmp rdx, 0x14
-    cmovg rcx, rsi
-    add rax, 1
+    mov rcx, rax
+    add rcx, 1
+    cmp.q [rsp + rax*8 - 0x48], 0x14
+    cmovg rdx, rsi
+    mov rax, rcx
     jmp 1
 2:
     xor eax, eax
 3:
     cmp rax, 8
-    setge dl
-    movzx rdx, dl
-    test dl, dl
-    jne 4
+    jge 4
     neg.q [rsp + rax*8 - 0x48]
     add rax, 1
     jmp 3
@@ -143,10 +117,7 @@ main:
     xor eax, eax
 5:
     cmp rax, 8
-    setge dl
-    movzx rdx, dl
-    test dl, dl
-    jne 6
+    jge 6
     not.q [rsp + rax*8 - 0x48]
     add rax, 1
     jmp 5
@@ -154,10 +125,7 @@ main:
     xor eax, eax
 7:
     cmp rax, 8
-    setge dl
-    movzx rdx, dl
-    test dl, dl
-    jne 8
+    jge 8
     add.q [rsp + rax*8 - 0x48], 7
     add rax, 1
     jmp 7
@@ -165,13 +133,10 @@ main:
     xor eax, eax
 9:
     cmp rax, 8
-    setge dl
-    movzx rdx, dl
-    test dl, dl
-    jne 12
-    mov rdx, rax
-    and rdx, 1
-    cmp rdx, 0
+    jge 12
+    mov rcx, rax
+    and rcx, 1
+    cmp rcx, 0
     je 10
     jmp 11
 10:
@@ -180,20 +145,17 @@ main:
     add rax, 1
     jmp 9
 12:
-    xor edx, edx
+    xor ecx, ecx
     xor eax, eax
 13:
     cmp rax, 8
-    setge sil
-    movzx rsi, sil
-    test sil, sil
-    jne 14
-    add.q rdx, [rsp + rax*8 - 0x48]
+    jge 14
+    add.q rcx, [rsp + rax*8 - 0x48]
     add rax, 1
     jmp 13
 14:
-    mov rax, rdx
-    add rax, rcx
+    mov rax, rcx
+    add rax, rdx
     ret
 =========== OPT LEVEL: moderate-quick ===========
 main:
@@ -211,29 +173,20 @@ main:
     xor eax, eax
 1:
     cmp rax, 8
-    setge dl
-    movzx rdx, dl
-    test dl, dl
-    jne 2
+    jge 2
     mov rdx, rcx
     add rdx, 1
-    mov.q rbx, [rsp + rax*8 - 0x48]
-    mov rbp, rcx
-    cmp rbx, 0x14
-    cmovg rbp, rdx
-    mov rdx, rax
-    add rdx, 1
-    mov rcx, rbp
-    mov rax, rdx
+    mov rbx, rax
+    add rbx, 1
+    cmp.q [rsp + rax*8 - 0x48], 0x14
+    cmovg rcx, rdx
+    mov rax, rbx
     jmp 1
 2:
     xor eax, eax
 3:
     cmp rax, 8
-    setge dl
-    movzx rdx, dl
-    test dl, dl
-    jne 4
+    jge 4
     neg.q [rsp + rax*8 - 0x48]
     add rax, 1
     jmp 3
@@ -242,10 +195,7 @@ main:
 5:
     mov rdx, rax
     cmp rdx, 8
-    setge bl
-    movzx rbx, bl
-    test bl, bl
-    jne 6
+    jge 6
     not.q [rsp + rdx*8 - 0x48]
     add rdx, 1
     mov rax, rdx
@@ -254,10 +204,7 @@ main:
     xor eax, eax
 7:
     cmp rax, 8
-    setge dl
-    movzx rdx, dl
-    test dl, dl
-    jne 8
+    jge 8
     add.q [rsp + rax*8 - 0x48], 7
     add rax, 1
     jmp 7
@@ -265,10 +212,7 @@ main:
     xor eax, eax
 9:
     cmp rax, 8
-    setge dl
-    movzx rdx, dl
-    test dl, dl
-    jne 12
+    jge 12
     mov rdx, rax
     and rdx, 1
     cmp rdx, 0
@@ -284,10 +228,7 @@ main:
     xor edx, edx
 13:
     cmp rdx, 8
-    setge bl
-    movzx rbx, bl
-    test bl, bl
-    jne 14
+    jge 14
     mov rbx, rax
     add.q rbx, [rsp + rdx*8 - 0x48]
     mov rbp, rdx
@@ -310,29 +251,24 @@ main:
     mov.q [rsp - 0x20], 0x11
     mov.q [rsp - 0x18], 0x37
     mov.q [rsp - 0x10], 2
-    xor ecx, ecx
+    xor edx, edx
     xor eax, eax
 1:
     cmp rax, 8
-    setge dl
-    movzx rdx, dl
-    test dl, dl
-    jne 2
-    mov rsi, rcx
+    jge 2
+    mov rsi, rdx
     add rsi, 1
-    mov.q rdx, [rsp + rax*8 - 0x48]
-    cmp rdx, 0x14
-    cmovg rcx, rsi
-    add rax, 1
+    mov rcx, rax
+    add rcx, 1
+    cmp.q [rsp + rax*8 - 0x48], 0x14
+    cmovg rdx, rsi
+    mov rax, rcx
     jmp 1
 2:
     xor eax, eax
 3:
     cmp rax, 8
-    setge dl
-    movzx rdx, dl
-    test dl, dl
-    jne 4
+    jge 4
     neg.q [rsp + rax*8 - 0x48]
     add rax, 1
     jmp 3
@@ -340,10 +276,7 @@ main:
     xor eax, eax
 5:
     cmp rax, 8
-    setge dl
-    movzx rdx, dl
-    test dl, dl
-    jne 6
+    jge 6
     not.q [rsp + rax*8 - 0x48]
     add rax, 1
     jmp 5
@@ -351,10 +284,7 @@ main:
     xor eax, eax
 7:
     cmp rax, 8
-    setge dl
-    movzx rdx, dl
-    test dl, dl
-    jne 8
+    jge 8
     add.q [rsp + rax*8 - 0x48], 7
     add rax, 1
     jmp 7
@@ -362,13 +292,10 @@ main:
     xor eax, eax
 9:
     cmp rax, 8
-    setge dl
-    movzx rdx, dl
-    test dl, dl
-    jne 12
-    mov rdx, rax
-    and rdx, 1
-    cmp rdx, 0
+    jge 12
+    mov rcx, rax
+    and rcx, 1
+    cmp rcx, 0
     je 10
     jmp 11
 10:
@@ -377,20 +304,17 @@ main:
     add rax, 1
     jmp 9
 12:
-    xor edx, edx
+    xor ecx, ecx
     xor eax, eax
 13:
     cmp rax, 8
-    setge sil
-    movzx rsi, sil
-    test sil, sil
-    jne 14
-    add.q rdx, [rsp + rax*8 - 0x48]
+    jge 14
+    add.q rcx, [rsp + rax*8 - 0x48]
     add rax, 1
     jmp 13
 14:
-    mov rax, rdx
-    add rax, rcx
+    mov rax, rcx
+    add rax, rdx
     ret
 =========== OPT LEVEL: all ===========
 main:
@@ -407,14 +331,16 @@ main:
 1:
     mov r8, rdx
     add r8, 1
-    mov.q rdi, [rsp + rax*8 - 0x48]
+    cmp.q [rsp + rax*8 - 0x48], 0x14
+    setg dil
+    movzx rdi, dil
     add rax, 1
     cmp rax, 8
     setge sil
     movzx rsi, sil
     mov rcx, rdx
-    cmp rdi, 0x14
-    cmovg rcx, r8
+    test dil, dil
+    cmovne rcx, r8
     mov rdx, rcx
     test sil, sil
     je 1
@@ -423,28 +349,19 @@ main:
     neg.q [rsp + rax*8 - 0x48]
     add rax, 1
     cmp rax, 8
-    setge dl
-    movzx rdx, dl
-    test dl, dl
-    je 2
+    jl 2
     xor eax, eax
 3:
     not.q [rsp + rax*8 - 0x48]
     add rax, 1
     cmp rax, 8
-    setge dl
-    movzx rdx, dl
-    test dl, dl
-    je 3
+    jl 3
     xor eax, eax
 4:
     add.q [rsp + rax*8 - 0x48], 7
     add rax, 1
     cmp rax, 8
-    setge dl
-    movzx rdx, dl
-    test dl, dl
-    je 4
+    jl 4
     xor eax, eax
 5:
     mov rdx, rax
@@ -457,10 +374,7 @@ main:
 7:
     add rax, 1
     cmp rax, 8
-    setge dl
-    movzx rdx, dl
-    test dl, dl
-    je 5
+    jl 5
     xor eax, eax
     xor edx, edx
 8:

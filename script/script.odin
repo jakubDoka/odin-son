@@ -121,6 +121,10 @@ main :: proc() {
 				for i in 0 ..< file_count {
 					genned: strings.Builder
 
+					append(&genned.buf, "package main\n")
+
+					start := len(fns)
+
 					generate :: proc(fns: ^[dynamic]Fn, max_depth: int, depht := 0) {
 						id := len(fns)
 						append(fns, Fn{})
@@ -140,19 +144,25 @@ main :: proc() {
 					append(&roots, len(fns))
 					generate(&fns, depth)
 
-					for fn, i in fns {
+					for i in start ..< len(fns) {
+						fn := fns[i]
 						if fn == {} {
-							fmt.sbprintfln(&genned, "f%v :: proc() -> int {return %v}", i, i)
+							fmt.sbprintfln(
+								&genned,
+								"f%v :: proc() -> int {{return %v}}",
+								i,
+								i,
+							)
 						} else {
 							fmt.sbprintfln(
 								&genned,
 								`
-f%v :: proc() -> int {
+f%v :: proc() -> int {{
     sum := %v
     sum += f%v()
     sum += f%v()
     return sum
-}
+}}
 `,
 								i,
 								i,
@@ -182,7 +192,7 @@ main :: proc() -> int {
 				)
 
 				for root in roots {
-					fmt.sbprintfln(&genned, "   i += f$v()", root)
+					fmt.sbprintfln(&genned, "   i += f%v()", root)
 				}
 
 				append(&genned.buf, `
@@ -203,7 +213,7 @@ main :: proc() -> int {
 package main // generated
 
 run_generated :: proc() -> int {
-    acc := 0
+  acc := 0
 `,
 				)
 
@@ -229,7 +239,7 @@ run_generated :: proc() -> int {
 					wasm := cat(path)
 
 					encoded: strings.Builder
-					for b in wasm {
+					for b in transmute([]u8)wasm {
 						fmt.sbprintf(&encoded, "\\x%02x", b)
 					}
 
@@ -237,8 +247,8 @@ run_generated :: proc() -> int {
 					fmt.sbprintf(
 						&genned,
 						`
-%v :: "%v"
-acc += run_module_auto("%v", %v)
+  %v :: "%v"
+  acc += run_module_auto("%v", %v)
 `,
 						cname[:len(cname) - 5],
 						strings.to_string(encoded),

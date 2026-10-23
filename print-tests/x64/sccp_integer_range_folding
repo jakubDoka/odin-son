@@ -1,23 +1,24 @@
 =========== OPT LEVEL: none-quick ===========
 check:
     push rbx
-    mov rcx, rdi
-    and rcx, 7
-    mov rax, 4
-    mov rdx, 2
-    cmp sil, 0
-    cmovne rdx, rax
+    mov rax, rdi
+    and rax, 7
+    mov rcx, rax
+    add rcx, 0x802
+    mov rdx, 4
+    mov rbx, 2
+    test sil, sil
+    cmovne rbx, rdx
+    mov rdx, rbx
+    add rdx, 0x804
+    cmp rax, rbx
     mov rax, rdx
-    add rax, 0x804
-    mov rbx, rcx
-    add rbx, 0x802
-    cmp rcx, rdx
-    cmovl rax, rbx
+    cmovl rax, rcx
     pop rbx
     ret
 main:
     sub rsp, 0x18
-    mov.q rdi, [rip + 0xf20]
+    mov.q rdi, [rip + 0xf1e]
     mov sil, 1
     call check
     mov.q [rsp], rax
@@ -51,22 +52,22 @@ main:
 =========== OPT LEVEL: none ===========
 check:
     and rdi, 7
+    mov rdx, rdi
+    add rdx, 0x802
     mov rax, 4
-    mov rdx, 2
-    cmp sil, 0
-    cmovne rdx, rax
-    mov rax, rdx
+    mov rcx, 2
+    test sil, sil
+    cmovne rcx, rax
+    mov rax, rcx
     add rax, 0x804
-    mov rcx, rdi
-    add rcx, 0x802
-    cmp rdi, rdx
-    cmovl rax, rcx
+    cmp rdi, rcx
+    cmovl rax, rdx
     ret
 main:
     push rbx
     push rbp
     push r12
-    mov.q rdi, [rip + 0xf25]
+    mov.q rdi, [rip + 0xf26]
     mov sil, 1
     call check
     mov r12, rax
@@ -97,23 +98,24 @@ main:
 =========== OPT LEVEL: moderate-quick ===========
 check:
     push rbx
-    mov rcx, rdi
-    and rcx, 7
-    mov rax, 4
-    mov rdx, 2
-    cmp sil, 0
-    cmovne rdx, rax
+    mov rax, rdi
+    and rax, 7
+    mov rcx, rax
+    add rcx, 0x802
+    mov rdx, 4
+    mov rbx, 2
+    test sil, sil
+    cmovne rbx, rdx
+    mov rdx, rbx
+    add rdx, 0x804
+    cmp rax, rbx
     mov rax, rdx
-    add rax, 0x804
-    mov rbx, rcx
-    add rbx, 0x802
-    cmp rcx, rdx
-    cmovl rax, rbx
+    cmovl rax, rcx
     pop rbx
     ret
 main:
     sub rsp, 0x18
-    mov.q rdi, [rip + 0xf20]
+    mov.q rdi, [rip + 0xf1e]
     mov sil, 1
     call check
     mov.q [rsp], rax
@@ -147,22 +149,22 @@ main:
 =========== OPT LEVEL: moderate ===========
 check:
     and rdi, 7
+    mov rdx, rdi
+    add rdx, 0x802
     mov rax, 4
-    mov rdx, 2
-    cmp sil, 0
-    cmovne rdx, rax
-    mov rax, rdx
+    mov rcx, 2
+    test sil, sil
+    cmovne rcx, rax
+    mov rax, rcx
     add rax, 0x804
-    mov rcx, rdi
-    add rcx, 0x802
-    cmp rdi, rdx
-    cmovl rax, rcx
+    cmp rdi, rcx
+    cmovl rax, rdx
     ret
 main:
     push rbx
     push rbp
     push r12
-    mov.q rdi, [rip + 0xf25]
+    mov.q rdi, [rip + 0xf26]
     mov sil, 1
     call check
     mov r12, rax
@@ -193,22 +195,22 @@ main:
 =========== OPT LEVEL: all ===========
 check:
     and rdi, 7
+    mov rdx, rdi
+    add rdx, 0x802
     mov rax, 4
-    mov rdx, 2
-    cmp sil, 0
-    cmovne rdx, rax
-    mov rax, rdx
+    mov rcx, 2
+    test sil, sil
+    cmovne rcx, rax
+    mov rax, rcx
     add rax, 0x804
-    mov rcx, rdi
-    add rcx, 0x802
-    cmp rdi, rdx
-    cmovl rax, rcx
+    cmp rdi, rcx
+    cmovl rax, rdx
     ret
 main:
     push rbx
     push rbp
     push r12
-    mov.q rdi, [rip + 0xf25]
+    mov.q rdi, [rip + 0xf26]
     mov sil, 1
     call check
     mov r12, rax

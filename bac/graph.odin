@@ -1126,7 +1126,15 @@ schedule_peeps :: proc(prc: ^Proc, schedule: ^Schedule) {
 				}
 				if has_phy_inp do continue
 
-				slice.rotate_left(bb.instrs[i:until - 1], 1)
+				end := until - 1
+				for other, j in bb.instrs[i:end] {
+					if get_node(prc, other).dt == .Void {
+						// Flag producers must remain adjacent to their consumers.
+						end = i + j
+						break
+					}
+				}
+				slice.rotate_left(bb.instrs[i:end], 1)
 			}
 		}
 	}

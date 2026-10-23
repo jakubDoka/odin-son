@@ -769,12 +769,12 @@ main:
     mov x1, x5
     mov x29, x4
     mov x28, x3
-    mov x3, x2
-    orr x2, x1, x0
-    madd x2, x2, x9, xzr
-    and x18, x2, x12
-    add x2, x3, x11
-    cmp x3, x13
+    orr x3, x1, x0
+    madd x3, x3, x9, xzr
+    cmp x2, x13
+    cset x19, eq
+    and x18, x3, x12
+    add x2, x2, x11
     mov x17, x10
     mov x16, x8
     mov x7, x28
@@ -782,7 +782,7 @@ main:
     mov x5, x22
     mov x4, x1
     mov x3, x29
-    b.ne 0x64
+    cbz x19, 0x64
     lsl x21, x10, x11
     movz x20, #25
     movz x19, #2
@@ -809,17 +809,17 @@ main:
     mov x1, x29
     mov x0, x28
     sub x25, x1, x21
-    add x23, x24, x11
-    and x25, x25, x12
     cmp x24, x19
+    cset x23, eq
+    add x24, x24, x11
+    and x25, x25, x12
     str x2, [xzr, #88]
     str x5, [xzr, #80]
     mov x27, x0
     mov x26, x3
     mov x29, x4
     mov x28, x25
-    mov x24, x23
-    b.ne 0x100
+    cbz x23, 0x100
     sub x17, x20, x17
     madd x16, x16, x17, xzr
     and x17, x16, x12

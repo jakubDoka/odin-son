@@ -57,12 +57,10 @@ imm_cmps:
     movz x2, #0
     movz x3, #1
     cmp x1, x2
-    cset x4, eq
-    cmp w4, #0
-    csel x3, x3, x2, ne
+    csel x3, x3, x2, eq
     cmp x1, x2
-    b.ne 0x28
-    b 0x30
+    b.ne 0x20
+    b 0x28
 2:
     movz x1, #2
     add x3, x1, x3
@@ -71,12 +69,10 @@ imm_cmps:
     movz x4, #4
     add x4, x4, x3
     cmp x1, x2
-    cset x5, le
-    cmp w5, #0
-    csel x3, x4, x3, ne
+    csel x3, x4, x3, le
     cmp x1, x2
-    b.ge 0x58
-    b 0x60
+    b.ge 0x48
+    b 0x50
 4:
     movz x1, #8
     add x3, x1, x3
@@ -85,27 +81,21 @@ imm_cmps:
     movz x1, #16
     add x1, x1, x3
     cmp x0, x2
-    cset x4, lt
-    cmp w4, #0
-    csel x1, x1, x3, ne
+    csel x1, x1, x3, lt
     movz x3, #32
     add x3, x3, x1
     cmp x0, x2
-    cset x0, gt
-    cmp w0, #0
-    csel x0, x3, x1, ne
+    csel x0, x3, x1, gt
     ret
 cmps:
     ldr x2, [x1]
     movz x3, #1
     movz x4, #0
     cmp x0, x2
-    cset x5, eq
-    cmp w5, #0
-    csel x3, x3, x4, ne
+    csel x3, x3, x4, eq
     cmp x0, x2
-    b.ne 0x28
-    b 0x30
+    b.ne 0x20
+    b 0x28
 7:
     movz x2, #2
     add x3, x2, x3
@@ -114,12 +104,10 @@ cmps:
     movz x4, #4
     add x4, x4, x3
     cmp x0, x2
-    cset x5, ge
-    cmp w5, #0
-    csel x3, x4, x3, ne
+    csel x3, x4, x3, ge
     cmp x0, x2
-    b.le 0x58
-    b 0x60
+    b.le 0x48
+    b 0x50
 9:
     movz x2, #8
     add x3, x2, x3
@@ -128,15 +116,11 @@ cmps:
     movz x2, #16
     add x2, x2, x3
     cmp x0, x1
-    cset x4, gt
-    cmp w4, #0
-    csel x2, x2, x3, ne
+    csel x2, x2, x3, gt
     movz x3, #32
     add x3, x3, x2
     cmp x0, x1
-    cset x0, lt
-    cmp w0, #0
-    csel x0, x3, x2, ne
+    csel x0, x3, x2, lt
     ret
 =========== OPT LEVEL: none ===========
 main:
@@ -200,90 +184,74 @@ main:
     add sp, sp, #96
     ret
 imm_cmps:
-    ldr x3, [x0]
-    movz x5, #0
-    movz x2, #1
-    cmp x3, x5
-    cset x1, eq
-    cmp w1, #0
-    csel x4, x2, x5, ne
-    cmp x3, x5
-    b.ne 0x28
-    b 0x30
+    ldr x2, [x0]
+    movz x4, #0
+    movz x1, #1
+    cmp x2, x4
+    csel x3, x1, x4, eq
+    cmp x2, x4
+    b.ne 0x20
+    b 0x28
 2:
     movz x1, #2
-    add x4, x1, x4
+    add x3, x1, x3
 3:
-    ldr x3, [x0]
+    ldr x2, [x0]
     movz x1, #4
-    add x2, x1, x4
-    cmp x3, x5
-    cset x1, le
-    cmp w1, #0
-    csel x2, x2, x4, ne
-    cmp x3, x5
-    b.ge 0x58
-    b 0x60
+    add x1, x1, x3
+    cmp x2, x4
+    csel x1, x1, x3, le
+    cmp x2, x4
+    b.ge 0x48
+    b 0x50
 4:
-    movz x1, #8
-    add x2, x1, x2
+    movz x2, #8
+    add x1, x2, x1
 5:
-    ldr x3, [x0]
+    ldr x2, [x0]
     movz x0, #16
-    add x1, x0, x2
-    cmp x3, x5
-    cset x0, lt
-    cmp w0, #0
-    csel x2, x1, x2, ne
+    add x0, x0, x1
+    cmp x2, x4
+    csel x1, x0, x1, lt
     movz x0, #32
-    add x1, x0, x2
-    cmp x3, x5
-    cset x0, gt
-    cmp w0, #0
-    csel x0, x1, x2, ne
+    add x0, x0, x1
+    cmp x2, x4
+    csel x0, x0, x1, gt
     ret
 cmps:
     ldr x5, [x1]
-    movz x4, #1
-    movz x3, #0
+    movz x3, #1
+    movz x2, #0
     cmp x0, x5
-    cset x2, eq
-    cmp w2, #0
-    csel x4, x4, x3, ne
+    csel x4, x3, x2, eq
     cmp x0, x5
-    b.ne 0x28
-    b 0x30
+    b.ne 0x20
+    b 0x28
 7:
     movz x2, #2
     add x4, x2, x4
 8:
-    ldr x5, [x1]
+    ldr x3, [x1]
     movz x2, #4
-    add x3, x2, x4
-    cmp x0, x5
-    cset x2, ge
-    cmp w2, #0
-    csel x4, x3, x4, ne
-    cmp x0, x5
-    b.le 0x58
-    b 0x60
+    add x2, x2, x4
+    cmp x0, x3
+    csel x2, x2, x4, ge
+    cmp x0, x3
+    b.le 0x48
+    b 0x50
 9:
-    movz x2, #8
-    add x4, x2, x4
+    movz x3, #8
+    add x2, x3, x2
 10:
     ldr x3, [x1]
     movz x1, #16
-    add x2, x1, x4
+    add x1, x1, x2
     cmp x0, x3
-    cset x1, gt
-    cmp w1, #0
-    csel x2, x2, x4, ne
+    csel x2, x1, x2, gt
     movz x1, #32
     add x1, x1, x2
     cmp x0, x3
-    cset x0, lt
-    cmp w0, #0
-    csel x0, x1, x2, ne
+    csel x0, x1, x2, lt
     ret
 =========== OPT LEVEL: moderate-quick ===========
 main:
@@ -344,12 +312,10 @@ imm_cmps:
     movz x2, #0
     movz x3, #1
     cmp x1, x2
-    cset x4, eq
-    cmp w4, #0
-    csel x3, x3, x2, ne
+    csel x3, x3, x2, eq
     cmp x1, x2
-    b.ne 0x28
-    b 0x30
+    b.ne 0x20
+    b 0x28
 2:
     movz x1, #2
     add x3, x1, x3
@@ -358,12 +324,10 @@ imm_cmps:
     movz x4, #4
     add x4, x4, x3
     cmp x1, x2
-    cset x5, le
-    cmp w5, #0
-    csel x3, x4, x3, ne
+    csel x3, x4, x3, le
     cmp x1, x2
-    b.ge 0x58
-    b 0x60
+    b.ge 0x48
+    b 0x50
 4:
     movz x1, #8
     add x3, x1, x3
@@ -372,27 +336,21 @@ imm_cmps:
     movz x1, #16
     add x1, x1, x3
     cmp x0, x2
-    cset x4, lt
-    cmp w4, #0
-    csel x1, x1, x3, ne
+    csel x1, x1, x3, lt
     movz x3, #32
     add x3, x3, x1
     cmp x0, x2
-    cset x0, gt
-    cmp w0, #0
-    csel x0, x3, x1, ne
+    csel x0, x3, x1, gt
     ret
 cmps:
     ldr x2, [x1]
     movz x3, #1
     movz x4, #0
     cmp x0, x2
-    cset x5, eq
-    cmp w5, #0
-    csel x3, x3, x4, ne
+    csel x3, x3, x4, eq
     cmp x0, x2
-    b.ne 0x28
-    b 0x30
+    b.ne 0x20
+    b 0x28
 7:
     movz x2, #2
     add x3, x2, x3
@@ -401,12 +359,10 @@ cmps:
     movz x4, #4
     add x4, x4, x3
     cmp x0, x2
-    cset x5, ge
-    cmp w5, #0
-    csel x3, x4, x3, ne
+    csel x3, x4, x3, ge
     cmp x0, x2
-    b.le 0x58
-    b 0x60
+    b.le 0x48
+    b 0x50
 9:
     movz x2, #8
     add x3, x2, x3
@@ -415,15 +371,11 @@ cmps:
     movz x2, #16
     add x2, x2, x3
     cmp x0, x1
-    cset x4, gt
-    cmp w4, #0
-    csel x2, x2, x3, ne
+    csel x2, x2, x3, gt
     movz x3, #32
     add x3, x3, x2
     cmp x0, x1
-    cset x0, lt
-    cmp w0, #0
-    csel x0, x3, x2, ne
+    csel x0, x3, x2, lt
     ret
 =========== OPT LEVEL: moderate ===========
 main:
@@ -487,90 +439,74 @@ main:
     add sp, sp, #96
     ret
 imm_cmps:
-    ldr x3, [x0]
-    movz x5, #0
-    movz x2, #1
-    cmp x3, x5
-    cset x1, eq
-    cmp w1, #0
-    csel x4, x2, x5, ne
-    cmp x3, x5
-    b.ne 0x28
-    b 0x30
+    ldr x2, [x0]
+    movz x4, #0
+    movz x1, #1
+    cmp x2, x4
+    csel x3, x1, x4, eq
+    cmp x2, x4
+    b.ne 0x20
+    b 0x28
 2:
     movz x1, #2
-    add x4, x1, x4
+    add x3, x1, x3
 3:
-    ldr x3, [x0]
+    ldr x2, [x0]
     movz x1, #4
-    add x2, x1, x4
-    cmp x3, x5
-    cset x1, le
-    cmp w1, #0
-    csel x2, x2, x4, ne
-    cmp x3, x5
-    b.ge 0x58
-    b 0x60
+    add x1, x1, x3
+    cmp x2, x4
+    csel x1, x1, x3, le
+    cmp x2, x4
+    b.ge 0x48
+    b 0x50
 4:
-    movz x1, #8
-    add x2, x1, x2
+    movz x2, #8
+    add x1, x2, x1
 5:
-    ldr x3, [x0]
+    ldr x2, [x0]
     movz x0, #16
-    add x1, x0, x2
-    cmp x3, x5
-    cset x0, lt
-    cmp w0, #0
-    csel x2, x1, x2, ne
+    add x0, x0, x1
+    cmp x2, x4
+    csel x1, x0, x1, lt
     movz x0, #32
-    add x1, x0, x2
-    cmp x3, x5
-    cset x0, gt
-    cmp w0, #0
-    csel x0, x1, x2, ne
+    add x0, x0, x1
+    cmp x2, x4
+    csel x0, x0, x1, gt
     ret
 cmps:
     ldr x5, [x1]
-    movz x4, #1
-    movz x3, #0
+    movz x3, #1
+    movz x2, #0
     cmp x0, x5
-    cset x2, eq
-    cmp w2, #0
-    csel x4, x4, x3, ne
+    csel x4, x3, x2, eq
     cmp x0, x5
-    b.ne 0x28
-    b 0x30
+    b.ne 0x20
+    b 0x28
 7:
     movz x2, #2
     add x4, x2, x4
 8:
-    ldr x5, [x1]
+    ldr x3, [x1]
     movz x2, #4
-    add x3, x2, x4
-    cmp x0, x5
-    cset x2, ge
-    cmp w2, #0
-    csel x4, x3, x4, ne
-    cmp x0, x5
-    b.le 0x58
-    b 0x60
+    add x2, x2, x4
+    cmp x0, x3
+    csel x2, x2, x4, ge
+    cmp x0, x3
+    b.le 0x48
+    b 0x50
 9:
-    movz x2, #8
-    add x4, x2, x4
+    movz x3, #8
+    add x2, x3, x2
 10:
     ldr x3, [x1]
     movz x1, #16
-    add x2, x1, x4
+    add x1, x1, x2
     cmp x0, x3
-    cset x1, gt
-    cmp w1, #0
-    csel x2, x2, x4, ne
+    csel x2, x1, x2, gt
     movz x1, #32
     add x1, x1, x2
     cmp x0, x3
-    cset x0, lt
-    cmp w0, #0
-    csel x0, x1, x2, ne
+    csel x0, x1, x2, lt
     ret
 =========== OPT LEVEL: all ===========
 main:
@@ -634,89 +570,73 @@ main:
     add sp, sp, #96
     ret
 imm_cmps:
-    ldr x3, [x0]
-    movz x5, #0
-    movz x2, #1
-    cmp x3, x5
-    cset x1, eq
-    cmp w1, #0
-    csel x4, x2, x5, ne
-    cmp x3, x5
-    b.ne 0x28
-    b 0x30
+    ldr x2, [x0]
+    movz x4, #0
+    movz x1, #1
+    cmp x2, x4
+    csel x3, x1, x4, eq
+    cmp x2, x4
+    b.ne 0x20
+    b 0x28
 2:
     movz x1, #2
-    add x4, x1, x4
+    add x3, x1, x3
 3:
-    ldr x3, [x0]
+    ldr x2, [x0]
     movz x1, #4
-    add x2, x1, x4
-    cmp x3, x5
-    cset x1, le
-    cmp w1, #0
-    csel x2, x2, x4, ne
-    cmp x3, x5
-    b.ge 0x58
-    b 0x60
+    add x1, x1, x3
+    cmp x2, x4
+    csel x1, x1, x3, le
+    cmp x2, x4
+    b.ge 0x48
+    b 0x50
 4:
-    movz x1, #8
-    add x2, x1, x2
+    movz x2, #8
+    add x1, x2, x1
 5:
-    ldr x3, [x0]
+    ldr x2, [x0]
     movz x0, #16
-    add x1, x0, x2
-    cmp x3, x5
-    cset x0, lt
-    cmp w0, #0
-    csel x2, x1, x2, ne
+    add x0, x0, x1
+    cmp x2, x4
+    csel x1, x0, x1, lt
     movz x0, #32
-    add x1, x0, x2
-    cmp x3, x5
-    cset x0, gt
-    cmp w0, #0
-    csel x0, x1, x2, ne
+    add x0, x0, x1
+    cmp x2, x4
+    csel x0, x0, x1, gt
     ret
 cmps:
     ldr x5, [x1]
-    movz x4, #1
-    movz x3, #0
+    movz x3, #1
+    movz x2, #0
     cmp x0, x5
-    cset x2, eq
-    cmp w2, #0
-    csel x4, x4, x3, ne
+    csel x4, x3, x2, eq
     cmp x0, x5
-    b.ne 0x28
-    b 0x30
+    b.ne 0x20
+    b 0x28
 7:
     movz x2, #2
     add x4, x2, x4
 8:
-    ldr x5, [x1]
+    ldr x3, [x1]
     movz x2, #4
-    add x3, x2, x4
-    cmp x0, x5
-    cset x2, ge
-    cmp w2, #0
-    csel x4, x3, x4, ne
-    cmp x0, x5
-    b.le 0x58
-    b 0x60
+    add x2, x2, x4
+    cmp x0, x3
+    csel x2, x2, x4, ge
+    cmp x0, x3
+    b.le 0x48
+    b 0x50
 9:
-    movz x2, #8
-    add x4, x2, x4
+    movz x3, #8
+    add x2, x3, x2
 10:
     ldr x3, [x1]
     movz x1, #16
-    add x2, x1, x4
+    add x1, x1, x2
     cmp x0, x3
-    cset x1, gt
-    cmp w1, #0
-    csel x2, x2, x4, ne
+    csel x2, x1, x2, gt
     movz x1, #32
     add x1, x1, x2
     cmp x0, x3
-    cset x0, lt
-    cmp w0, #0
-    csel x0, x1, x2, ne
+    csel x0, x1, x2, lt
     ret
 =========== OPT LEVEL: aggresive ===========

@@ -77,119 +77,143 @@ main:
 shifts u64 u8:
     push rbx
     movzx eax, sil
-    shlx rcx, rdi, rax
-    xor edx, edx
     cmp rax, 0x40
-    cmovb rdx, rcx
-    shrx rcx, rdi, rax
+    setb cl
+    movzx rcx, cl
+    shlx rdx, rdi, rax
     xor ebx, ebx
-    cmp rax, 0x40
-    cmovb rbx, rcx
-    mov rax, rdx
-    xor rax, rbx
+    test cl, cl
+    cmovne rbx, rdx
+    shrx rax, rdi, rax
+    xor edx, edx
+    test cl, cl
+    cmovne rdx, rax
+    mov rax, rbx
+    xor rax, rdx
     pop rbx
     ret
 shifts i64 u8:
     push rbx
+    movzx eax, sil
+    shlx rcx, rdi, rax
+    sarx rdx, rdi, rax
+    cmp rax, 0x40
+    setb bl
+    movzx rbx, bl
     xor eax, eax
-    mov rcx, rdi
-    sar rcx, 0x3f
-    movzx edx, sil
-    shlx rbx, rdi, rdx
-    cmp rdx, 0x40
-    cmovb rax, rbx
-    sarx rbx, rdi, rdx
-    cmp rdx, 0x40
-    cmovb rcx, rbx
-    xor rax, rcx
+    test bl, bl
+    cmovne rax, rcx
+    sar rdi, 0x3f
+    test bl, bl
+    cmovne rdi, rdx
+    xor rax, rdi
     pop rbx
     ret
 shifts u32 u16:
     push rbx
     movzx ecx, si
+    cmp rcx, 0x20
+    setb dl
+    movzx rdx, dl
     shlx eax, edi, ecx
-    xor edx, edx
-    cmp rcx, 0x20
-    cmovb edx, eax
-    mov eax, edx
-    shrx edx, edi, ecx
     xor ebx, ebx
-    cmp rcx, 0x20
-    cmovb ebx, edx
+    test dl, dl
+    cmovne ebx, eax
+    mov eax, ebx
+    shrx ecx, edi, ecx
+    xor ebx, ebx
+    test dl, dl
+    cmovne ebx, ecx
     mov ecx, ebx
     xor rax, rcx
     pop rbx
     ret
 shifts i32 u16:
     push rbx
+    movzx eax, si
+    shlx ecx, edi, eax
+    sarx edx, edi, eax
+    cmp rax, 0x20
+    setb bl
+    movzx rbx, bl
     xor eax, eax
-    mov rcx, rdi
-    sar ecx, 0x1f
-    movzx edx, si
-    shlx ebx, edi, edx
-    cmp rdx, 0x20
-    cmovb eax, ebx
+    test bl, bl
+    cmovne eax, ecx
     movsxd rax, eax
-    sarx ebx, edi, edx
-    cmp rdx, 0x20
-    cmovb ecx, ebx
-    movsxd rcx, ecx
+    sar edi, 0x1f
+    test bl, bl
+    cmovne edi, edx
+    movsxd rcx, edi
     xor rax, rcx
     pop rbx
     ret
 shifts u64 u32:
     push rbx
     mov eax, esi
-    shlx rcx, rdi, rax
-    xor edx, edx
     cmp rax, 0x40
-    cmovb rdx, rcx
-    shrx rcx, rdi, rax
+    setb cl
+    movzx rcx, cl
+    shlx rdx, rdi, rax
     xor ebx, ebx
-    cmp rax, 0x40
-    cmovb rbx, rcx
-    mov rax, rdx
-    xor rax, rbx
+    test cl, cl
+    cmovne rbx, rdx
+    shrx rax, rdi, rax
+    xor edx, edx
+    test cl, cl
+    cmovne rdx, rax
+    mov rax, rbx
+    xor rax, rdx
     pop rbx
     ret
 shifts i64 u32:
     push rbx
+    mov eax, esi
+    shlx rcx, rdi, rax
+    sarx rdx, rdi, rax
+    cmp rax, 0x40
+    setb bl
+    movzx rbx, bl
     xor eax, eax
-    mov rcx, rdi
-    sar rcx, 0x3f
-    mov edx, esi
-    shlx rbx, rdi, rdx
-    cmp rdx, 0x40
-    cmovb rax, rbx
-    sarx rbx, rdi, rdx
-    cmp rdx, 0x40
-    cmovb rcx, rbx
-    xor rax, rcx
+    test bl, bl
+    cmovne rax, rcx
+    sar rdi, 0x3f
+    test bl, bl
+    cmovne rdi, rdx
+    xor rax, rdi
     pop rbx
     ret
 shifts u64 u64:
-    shlx rax, rdi, rsi
-    xor ecx, ecx
+    push rbx
     cmp rsi, 0x40
-    cmovb rcx, rax
-    shrx rax, rdi, rsi
+    setb al
+    movzx rax, al
+    shlx rcx, rdi, rsi
     xor edx, edx
-    cmp rsi, 0x40
-    cmovb rdx, rax
-    mov rax, rcx
-    xor rax, rdx
+    test al, al
+    cmovne rdx, rcx
+    shrx rcx, rdi, rsi
+    xor ebx, ebx
+    test al, al
+    cmovne rbx, rcx
+    mov rax, rdx
+    xor rax, rbx
+    pop rbx
     ret
 shifts i64 u64:
-    xor eax, eax
-    mov rcx, rdi
-    sar rcx, 0x3f
-    shlx rdx, rdi, rsi
-    cmp rsi, 0x40
-    cmovb rax, rdx
+    push rbx
+    shlx rcx, rdi, rsi
     sarx rdx, rdi, rsi
     cmp rsi, 0x40
-    cmovb rcx, rdx
-    xor rax, rcx
+    setb bl
+    movzx rbx, bl
+    xor eax, eax
+    test bl, bl
+    cmovne rax, rcx
+    sar rdi, 0x3f
+    test bl, bl
+    cmovne rdi, rdx
+    xor rax, rdi
+    pop rbx
     ret
 =========== OPT LEVEL: none ===========
 main:
@@ -266,109 +290,129 @@ main:
     pop rbx
     ret
 shifts u64 u8:
-    movzx esi, sil
-    shlx rax, rdi, rsi
+    movzx ecx, sil
+    cmp rcx, 0x40
+    setb sil
+    movzx rsi, sil
+    shlx rax, rdi, rcx
     xor edx, edx
-    cmp rsi, 0x40
-    cmovb rdx, rax
-    shrx rax, rdi, rsi
+    test sil, sil
+    cmovne rdx, rax
+    shrx rax, rdi, rcx
     xor ecx, ecx
-    cmp rsi, 0x40
-    cmovb rcx, rax
+    test sil, sil
+    cmovne rcx, rax
     mov rax, rdx
     xor rax, rcx
     ret
 shifts i64 u8:
+    movzx eax, sil
+    shlx rsi, rdi, rax
+    sarx rdx, rdi, rax
+    cmp rax, 0x40
+    setb cl
+    movzx rcx, cl
     xor eax, eax
-    mov rcx, rdi
-    sar rcx, 0x3f
-    movzx esi, sil
-    shlx rdx, rdi, rsi
-    cmp rsi, 0x40
-    cmovb rax, rdx
-    sarx rdx, rdi, rsi
-    cmp rsi, 0x40
-    cmovb rcx, rdx
-    xor rax, rcx
+    test cl, cl
+    cmovne rax, rsi
+    sar rdi, 0x3f
+    test cl, cl
+    cmovne rdi, rdx
+    xor rax, rdi
     ret
 shifts u32 u16:
-    movzx esi, si
-    shlx ecx, edi, esi
+    movzx edx, si
+    cmp rdx, 0x20
+    setb sil
+    movzx rsi, sil
+    shlx ecx, edi, edx
     xor eax, eax
-    cmp rsi, 0x20
-    cmovb eax, ecx
+    test sil, sil
+    cmovne eax, ecx
     mov eax, eax
-    shrx edx, edi, esi
+    shrx edx, edi, edx
     xor ecx, ecx
-    cmp rsi, 0x20
-    cmovb ecx, edx
+    test sil, sil
+    cmovne ecx, edx
     mov ecx, ecx
     xor rax, rcx
     ret
 shifts i32 u16:
-    xor edx, edx
-    mov rcx, rdi
-    sar ecx, 0x1f
-    movzx esi, si
-    shlx eax, edi, esi
-    cmp rsi, 0x20
-    cmovb edx, eax
-    movsxd rax, edx
-    sarx edx, edi, esi
-    cmp rsi, 0x20
-    cmovb ecx, edx
-    movsxd rcx, ecx
+    movzx eax, si
+    shlx esi, edi, eax
+    sarx edx, edi, eax
+    cmp rax, 0x20
+    setb cl
+    movzx rcx, cl
+    xor eax, eax
+    test cl, cl
+    cmovne eax, esi
+    movsxd rax, eax
+    sar edi, 0x1f
+    test cl, cl
+    cmovne edi, edx
+    movsxd rcx, edi
     xor rax, rcx
     ret
 shifts u64 u32:
-    mov esi, esi
-    shlx rax, rdi, rsi
+    mov ecx, esi
+    cmp rcx, 0x40
+    setb sil
+    movzx rsi, sil
+    shlx rax, rdi, rcx
     xor edx, edx
-    cmp rsi, 0x40
-    cmovb rdx, rax
-    shrx rax, rdi, rsi
+    test sil, sil
+    cmovne rdx, rax
+    shrx rax, rdi, rcx
     xor ecx, ecx
-    cmp rsi, 0x40
-    cmovb rcx, rax
+    test sil, sil
+    cmovne rcx, rax
     mov rax, rdx
     xor rax, rcx
     ret
 shifts i64 u32:
+    mov eax, esi
+    shlx rsi, rdi, rax
+    sarx rdx, rdi, rax
+    cmp rax, 0x40
+    setb cl
+    movzx rcx, cl
     xor eax, eax
-    mov rcx, rdi
-    sar rcx, 0x3f
-    mov esi, esi
-    shlx rdx, rdi, rsi
-    cmp rsi, 0x40
-    cmovb rax, rdx
-    sarx rdx, rdi, rsi
-    cmp rsi, 0x40
-    cmovb rcx, rdx
-    xor rax, rcx
+    test cl, cl
+    cmovne rax, rsi
+    sar rdi, 0x3f
+    test cl, cl
+    cmovne rdi, rdx
+    xor rax, rdi
     ret
 shifts u64 u64:
+    cmp rsi, 0x40
+    setb r8b
+    movzx r8, r8b
     shlx rax, rdi, rsi
     xor edx, edx
-    cmp rsi, 0x40
-    cmovb rdx, rax
+    test r8b, r8b
+    cmovne rdx, rax
     shrx rax, rdi, rsi
     xor ecx, ecx
-    cmp rsi, 0x40
-    cmovb rcx, rax
+    test r8b, r8b
+    cmovne rcx, rax
     mov rax, rdx
     xor rax, rcx
     ret
 shifts i64 u64:
-    xor eax, eax
-    mov rcx, rdi
-    sar rcx, 0x3f
-    shlx rdx, rdi, rsi
-    cmp rsi, 0x40
-    cmovb rax, rdx
+    shlx r8, rdi, rsi
     sarx rdx, rdi, rsi
     cmp rsi, 0x40
-    cmovb rcx, rdx
-    xor rax, rcx
+    setb cl
+    movzx rcx, cl
+    xor eax, eax
+    test cl, cl
+    cmovne rax, r8
+    sar rdi, 0x3f
+    test cl, cl
+    cmovne rdi, rdx
+    xor rax, rdi
     ret
 =========== OPT LEVEL: moderate-quick ===========
 main:
@@ -449,119 +493,143 @@ main:
 shifts u64 u8:
     push rbx
     movzx eax, sil
-    shlx rcx, rdi, rax
-    xor edx, edx
     cmp rax, 0x40
-    cmovb rdx, rcx
-    shrx rcx, rdi, rax
+    setb cl
+    movzx rcx, cl
+    shlx rdx, rdi, rax
     xor ebx, ebx
-    cmp rax, 0x40
-    cmovb rbx, rcx
-    mov rax, rdx
-    xor rax, rbx
+    test cl, cl
+    cmovne rbx, rdx
+    shrx rax, rdi, rax
+    xor edx, edx
+    test cl, cl
+    cmovne rdx, rax
+    mov rax, rbx
+    xor rax, rdx
     pop rbx
     ret
 shifts i64 u8:
     push rbx
+    movzx eax, sil
+    shlx rcx, rdi, rax
+    sarx rdx, rdi, rax
+    cmp rax, 0x40
+    setb bl
+    movzx rbx, bl
     xor eax, eax
-    mov rcx, rdi
-    sar rcx, 0x3f
-    movzx edx, sil
-    shlx rbx, rdi, rdx
-    cmp rdx, 0x40
-    cmovb rax, rbx
-    sarx rbx, rdi, rdx
-    cmp rdx, 0x40
-    cmovb rcx, rbx
-    xor rax, rcx
+    test bl, bl
+    cmovne rax, rcx
+    sar rdi, 0x3f
+    test bl, bl
+    cmovne rdi, rdx
+    xor rax, rdi
     pop rbx
     ret
 shifts u32 u16:
     push rbx
     movzx ecx, si
+    cmp rcx, 0x20
+    setb dl
+    movzx rdx, dl
     shlx eax, edi, ecx
-    xor edx, edx
-    cmp rcx, 0x20
-    cmovb edx, eax
-    mov eax, edx
-    shrx edx, edi, ecx
     xor ebx, ebx
-    cmp rcx, 0x20
-    cmovb ebx, edx
+    test dl, dl
+    cmovne ebx, eax
+    mov eax, ebx
+    shrx ecx, edi, ecx
+    xor ebx, ebx
+    test dl, dl
+    cmovne ebx, ecx
     mov ecx, ebx
     xor rax, rcx
     pop rbx
     ret
 shifts i32 u16:
     push rbx
+    movzx eax, si
+    shlx ecx, edi, eax
+    sarx edx, edi, eax
+    cmp rax, 0x20
+    setb bl
+    movzx rbx, bl
     xor eax, eax
-    mov rcx, rdi
-    sar ecx, 0x1f
-    movzx edx, si
-    shlx ebx, edi, edx
-    cmp rdx, 0x20
-    cmovb eax, ebx
+    test bl, bl
+    cmovne eax, ecx
     movsxd rax, eax
-    sarx ebx, edi, edx
-    cmp rdx, 0x20
-    cmovb ecx, ebx
-    movsxd rcx, ecx
+    sar edi, 0x1f
+    test bl, bl
+    cmovne edi, edx
+    movsxd rcx, edi
     xor rax, rcx
     pop rbx
     ret
 shifts u64 u32:
     push rbx
     mov eax, esi
-    shlx rcx, rdi, rax
-    xor edx, edx
     cmp rax, 0x40
-    cmovb rdx, rcx
-    shrx rcx, rdi, rax
+    setb cl
+    movzx rcx, cl
+    shlx rdx, rdi, rax
     xor ebx, ebx
-    cmp rax, 0x40
-    cmovb rbx, rcx
-    mov rax, rdx
-    xor rax, rbx
+    test cl, cl
+    cmovne rbx, rdx
+    shrx rax, rdi, rax
+    xor edx, edx
+    test cl, cl
+    cmovne rdx, rax
+    mov rax, rbx
+    xor rax, rdx
     pop rbx
     ret
 shifts i64 u32:
     push rbx
+    mov eax, esi
+    shlx rcx, rdi, rax
+    sarx rdx, rdi, rax
+    cmp rax, 0x40
+    setb bl
+    movzx rbx, bl
     xor eax, eax
-    mov rcx, rdi
-    sar rcx, 0x3f
-    mov edx, esi
-    shlx rbx, rdi, rdx
-    cmp rdx, 0x40
-    cmovb rax, rbx
-    sarx rbx, rdi, rdx
-    cmp rdx, 0x40
-    cmovb rcx, rbx
-    xor rax, rcx
+    test bl, bl
+    cmovne rax, rcx
+    sar rdi, 0x3f
+    test bl, bl
+    cmovne rdi, rdx
+    xor rax, rdi
     pop rbx
     ret
 shifts u64 u64:
-    shlx rax, rdi, rsi
-    xor ecx, ecx
+    push rbx
     cmp rsi, 0x40
-    cmovb rcx, rax
-    shrx rax, rdi, rsi
+    setb al
+    movzx rax, al
+    shlx rcx, rdi, rsi
     xor edx, edx
-    cmp rsi, 0x40
-    cmovb rdx, rax
-    mov rax, rcx
-    xor rax, rdx
+    test al, al
+    cmovne rdx, rcx
+    shrx rcx, rdi, rsi
+    xor ebx, ebx
+    test al, al
+    cmovne rbx, rcx
+    mov rax, rdx
+    xor rax, rbx
+    pop rbx
     ret
 shifts i64 u64:
-    xor eax, eax
-    mov rcx, rdi
-    sar rcx, 0x3f
-    shlx rdx, rdi, rsi
-    cmp rsi, 0x40
-    cmovb rax, rdx
+    push rbx
+    shlx rcx, rdi, rsi
     sarx rdx, rdi, rsi
     cmp rsi, 0x40
-    cmovb rcx, rdx
-    xor rax, rcx
+    setb bl
+    movzx rbx, bl
+    xor eax, eax
+    test bl, bl
+    cmovne rax, rcx
+    sar rdi, 0x3f
+    test bl, bl
+    cmovne rdi, rdx
+    xor rax, rdi
+    pop rbx
     ret
 =========== OPT LEVEL: moderate ===========
 main:
@@ -638,109 +706,129 @@ main:
     pop rbx
     ret
 shifts u64 u8:
-    movzx esi, sil
-    shlx rax, rdi, rsi
+    movzx ecx, sil
+    cmp rcx, 0x40
+    setb sil
+    movzx rsi, sil
+    shlx rax, rdi, rcx
     xor edx, edx
-    cmp rsi, 0x40
-    cmovb rdx, rax
-    shrx rax, rdi, rsi
+    test sil, sil
+    cmovne rdx, rax
+    shrx rax, rdi, rcx
     xor ecx, ecx
-    cmp rsi, 0x40
-    cmovb rcx, rax
+    test sil, sil
+    cmovne rcx, rax
     mov rax, rdx
     xor rax, rcx
     ret
 shifts i64 u8:
+    movzx eax, sil
+    shlx rsi, rdi, rax
+    sarx rdx, rdi, rax
+    cmp rax, 0x40
+    setb cl
+    movzx rcx, cl
     xor eax, eax
-    mov rcx, rdi
-    sar rcx, 0x3f
-    movzx esi, sil
-    shlx rdx, rdi, rsi
-    cmp rsi, 0x40
-    cmovb rax, rdx
-    sarx rdx, rdi, rsi
-    cmp rsi, 0x40
-    cmovb rcx, rdx
-    xor rax, rcx
+    test cl, cl
+    cmovne rax, rsi
+    sar rdi, 0x3f
+    test cl, cl
+    cmovne rdi, rdx
+    xor rax, rdi
     ret
 shifts u32 u16:
-    movzx esi, si
-    shlx ecx, edi, esi
+    movzx edx, si
+    cmp rdx, 0x20
+    setb sil
+    movzx rsi, sil
+    shlx ecx, edi, edx
     xor eax, eax
-    cmp rsi, 0x20
-    cmovb eax, ecx
+    test sil, sil
+    cmovne eax, ecx
     mov eax, eax
-    shrx edx, edi, esi
+    shrx edx, edi, edx
     xor ecx, ecx
-    cmp rsi, 0x20
-    cmovb ecx, edx
+    test sil, sil
+    cmovne ecx, edx
     mov ecx, ecx
     xor rax, rcx
     ret
 shifts i32 u16:
-    xor edx, edx
-    mov rcx, rdi
-    sar ecx, 0x1f
-    movzx esi, si
-    shlx eax, edi, esi
-    cmp rsi, 0x20
-    cmovb edx, eax
-    movsxd rax, edx
-    sarx edx, edi, esi
-    cmp rsi, 0x20
-    cmovb ecx, edx
-    movsxd rcx, ecx
+    movzx eax, si
+    shlx esi, edi, eax
+    sarx edx, edi, eax
+    cmp rax, 0x20
+    setb cl
+    movzx rcx, cl
+    xor eax, eax
+    test cl, cl
+    cmovne eax, esi
+    movsxd rax, eax
+    sar edi, 0x1f
+    test cl, cl
+    cmovne edi, edx
+    movsxd rcx, edi
     xor rax, rcx
     ret
 shifts u64 u32:
-    mov esi, esi
-    shlx rax, rdi, rsi
+    mov ecx, esi
+    cmp rcx, 0x40
+    setb sil
+    movzx rsi, sil
+    shlx rax, rdi, rcx
     xor edx, edx
-    cmp rsi, 0x40
-    cmovb rdx, rax
-    shrx rax, rdi, rsi
+    test sil, sil
+    cmovne rdx, rax
+    shrx rax, rdi, rcx
     xor ecx, ecx
-    cmp rsi, 0x40
-    cmovb rcx, rax
+    test sil, sil
+    cmovne rcx, rax
     mov rax, rdx
     xor rax, rcx
     ret
 shifts i64 u32:
+    mov eax, esi
+    shlx rsi, rdi, rax
+    sarx rdx, rdi, rax
+    cmp rax, 0x40
+    setb cl
+    movzx rcx, cl
     xor eax, eax
-    mov rcx, rdi
-    sar rcx, 0x3f
-    mov esi, esi
-    shlx rdx, rdi, rsi
-    cmp rsi, 0x40
-    cmovb rax, rdx
-    sarx rdx, rdi, rsi
-    cmp rsi, 0x40
-    cmovb rcx, rdx
-    xor rax, rcx
+    test cl, cl
+    cmovne rax, rsi
+    sar rdi, 0x3f
+    test cl, cl
+    cmovne rdi, rdx
+    xor rax, rdi
     ret
 shifts u64 u64:
+    cmp rsi, 0x40
+    setb r8b
+    movzx r8, r8b
     shlx rax, rdi, rsi
     xor edx, edx
-    cmp rsi, 0x40
-    cmovb rdx, rax
+    test r8b, r8b
+    cmovne rdx, rax
     shrx rax, rdi, rsi
     xor ecx, ecx
-    cmp rsi, 0x40
-    cmovb rcx, rax
+    test r8b, r8b
+    cmovne rcx, rax
     mov rax, rdx
     xor rax, rcx
     ret
 shifts i64 u64:
-    xor eax, eax
-    mov rcx, rdi
-    sar rcx, 0x3f
-    shlx rdx, rdi, rsi
-    cmp rsi, 0x40
-    cmovb rax, rdx
+    shlx r8, rdi, rsi
     sarx rdx, rdi, rsi
     cmp rsi, 0x40
-    cmovb rcx, rdx
-    xor rax, rcx
+    setb cl
+    movzx rcx, cl
+    xor eax, eax
+    test cl, cl
+    cmovne rax, r8
+    sar rdi, 0x3f
+    test cl, cl
+    cmovne rdi, rdx
+    xor rax, rdi
     ret
 =========== OPT LEVEL: all ===========
 main:
@@ -817,109 +905,129 @@ main:
     pop rbx
     ret
 shifts u64 u8:
-    movzx esi, sil
-    shlx rax, rdi, rsi
+    movzx ecx, sil
+    cmp rcx, 0x40
+    setb sil
+    movzx rsi, sil
+    shlx rax, rdi, rcx
     xor edx, edx
-    cmp rsi, 0x40
-    cmovb rdx, rax
-    shrx rax, rdi, rsi
+    test sil, sil
+    cmovne rdx, rax
+    shrx rax, rdi, rcx
     xor ecx, ecx
-    cmp rsi, 0x40
-    cmovb rcx, rax
+    test sil, sil
+    cmovne rcx, rax
     mov rax, rdx
     xor rax, rcx
     ret
 shifts i64 u8:
+    movzx eax, sil
+    shlx rsi, rdi, rax
+    sarx rdx, rdi, rax
+    cmp rax, 0x40
+    setb cl
+    movzx rcx, cl
     xor eax, eax
-    mov rcx, rdi
-    sar rcx, 0x3f
-    movzx esi, sil
-    shlx rdx, rdi, rsi
-    cmp rsi, 0x40
-    cmovb rax, rdx
-    sarx rdx, rdi, rsi
-    cmp rsi, 0x40
-    cmovb rcx, rdx
-    xor rax, rcx
+    test cl, cl
+    cmovne rax, rsi
+    sar rdi, 0x3f
+    test cl, cl
+    cmovne rdi, rdx
+    xor rax, rdi
     ret
 shifts u32 u16:
-    movzx esi, si
-    shlx ecx, edi, esi
+    movzx edx, si
+    cmp rdx, 0x20
+    setb sil
+    movzx rsi, sil
+    shlx ecx, edi, edx
     xor eax, eax
-    cmp rsi, 0x20
-    cmovb eax, ecx
+    test sil, sil
+    cmovne eax, ecx
     mov eax, eax
-    shrx edx, edi, esi
+    shrx edx, edi, edx
     xor ecx, ecx
-    cmp rsi, 0x20
-    cmovb ecx, edx
+    test sil, sil
+    cmovne ecx, edx
     mov ecx, ecx
     xor rax, rcx
     ret
 shifts i32 u16:
-    xor edx, edx
-    mov rcx, rdi
-    sar ecx, 0x1f
-    movzx esi, si
-    shlx eax, edi, esi
-    cmp rsi, 0x20
-    cmovb edx, eax
-    movsxd rax, edx
-    sarx edx, edi, esi
-    cmp rsi, 0x20
-    cmovb ecx, edx
-    movsxd rcx, ecx
+    movzx eax, si
+    shlx esi, edi, eax
+    sarx edx, edi, eax
+    cmp rax, 0x20
+    setb cl
+    movzx rcx, cl
+    xor eax, eax
+    test cl, cl
+    cmovne eax, esi
+    movsxd rax, eax
+    sar edi, 0x1f
+    test cl, cl
+    cmovne edi, edx
+    movsxd rcx, edi
     xor rax, rcx
     ret
 shifts u64 u32:
-    mov esi, esi
-    shlx rax, rdi, rsi
+    mov ecx, esi
+    cmp rcx, 0x40
+    setb sil
+    movzx rsi, sil
+    shlx rax, rdi, rcx
     xor edx, edx
-    cmp rsi, 0x40
-    cmovb rdx, rax
-    shrx rax, rdi, rsi
+    test sil, sil
+    cmovne rdx, rax
+    shrx rax, rdi, rcx
     xor ecx, ecx
-    cmp rsi, 0x40
-    cmovb rcx, rax
+    test sil, sil
+    cmovne rcx, rax
     mov rax, rdx
     xor rax, rcx
     ret
 shifts i64 u32:
+    mov eax, esi
+    shlx rsi, rdi, rax
+    sarx rdx, rdi, rax
+    cmp rax, 0x40
+    setb cl
+    movzx rcx, cl
     xor eax, eax
-    mov rcx, rdi
-    sar rcx, 0x3f
-    mov esi, esi
-    shlx rdx, rdi, rsi
-    cmp rsi, 0x40
-    cmovb rax, rdx
-    sarx rdx, rdi, rsi
-    cmp rsi, 0x40
-    cmovb rcx, rdx
-    xor rax, rcx
+    test cl, cl
+    cmovne rax, rsi
+    sar rdi, 0x3f
+    test cl, cl
+    cmovne rdi, rdx
+    xor rax, rdi
     ret
 shifts u64 u64:
+    cmp rsi, 0x40
+    setb r8b
+    movzx r8, r8b
     shlx rax, rdi, rsi
     xor edx, edx
-    cmp rsi, 0x40
-    cmovb rdx, rax
+    test r8b, r8b
+    cmovne rdx, rax
     shrx rax, rdi, rsi
     xor ecx, ecx
-    cmp rsi, 0x40
-    cmovb rcx, rax
+    test r8b, r8b
+    cmovne rcx, rax
     mov rax, rdx
     xor rax, rcx
     ret
 shifts i64 u64:
-    xor eax, eax
-    mov rcx, rdi
-    sar rcx, 0x3f
-    shlx rdx, rdi, rsi
-    cmp rsi, 0x40
-    cmovb rax, rdx
+    shlx r8, rdi, rsi
     sarx rdx, rdi, rsi
     cmp rsi, 0x40
-    cmovb rcx, rdx
-    xor rax, rcx
+    setb cl
+    movzx rcx, cl
+    xor eax, eax
+    test cl, cl
+    cmovne rax, r8
+    sar rdi, 0x3f
+    test cl, cl
+    cmovne rdi, rdx
+    xor rax, rdi
     ret
 =========== OPT LEVEL: aggresive ===========
 main:

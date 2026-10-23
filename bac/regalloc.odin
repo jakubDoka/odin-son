@@ -276,6 +276,7 @@ Regalloc_Node_Meta :: struct {
 	out:           RM_Intern_Idx,
 	in_place_slot: i8,
 	input_start:   u8,
+	is_flag_dep:   bool,
 }
 
 regalloc_collect_meta :: #force_inline proc(

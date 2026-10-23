@@ -72,30 +72,29 @@ main:
     call bump
 8:
     mov rcx, 3
-    mov.q rdx, [rsp + 0x10]
-    mov rbx, 1
-    cmp dl, 0
-    cmovne rbx, rcx
-    mov rcx, rbx
-    add rcx, 4
-    mov.q rdx, [rsp + 0x18]
-    cmp dl, 0
-    cmovne rbx, rcx
+    mov rdx, 1
+    mov.q rbx, [rsp + 0x10]
+    test bl, bl
+    cmovne rdx, rcx
     mov.q rcx, [rsp + 0x20]
     cmp cl, 0
     sete cl
     movzx rcx, cl
-    mov.q rdx, [rsp + 0x20]
-    mov.q rbp, [rsp + 0x28]
-    cmp dl, 0
-    cmove ecx, ebp
-    mov rdx, rbx
-    add rdx, 8
-    cmp cl, 0
+    mov rbx, rdx
+    add rbx, 4
+    mov.q rbp, [rsp + 0x18]
+    test bpl, bpl
+    cmovne rdx, rbx
+    mov.q rbx, [rsp + 0x28]
+    test cl, cl
+    cmovne ecx, ebx
+    mov rbx, rdx
+    add rbx, 8
+    test cl, cl
     cmovne ecx, eax
-    mov rax, rbx
-    cmp cl, 0
-    cmovne rax, rdx
+    mov rax, rdx
+    test cl, cl
+    cmovne rax, rbx
     mov.q rcx, [rsp]
     imul rcx, rcx, 0xa
     add rax, rcx
@@ -151,44 +150,40 @@ main:
     lea rdi, [rsp]
     xor esi, esi
     call bump
-    mov rdi, rax
-    test dil, dil
+    test al, al
     jne 5
     lea rdi, [rsp]
     mov sil, 1
     call bump
-    mov rdi, rax
     jmp 5
 5:
-    test dil, dil
+    test al, al
     jne 6
     jmp 7
 6:
     lea rdi, [rsp]
     mov sil, 1
     call bump
-    mov rdi, rax
 7:
-    mov rcx, 3
-    mov rax, r13
-    mov rsi, 1
-    cmp al, 0
-    cmovne rsi, rcx
-    mov rcx, rsi
-    add rcx, 4
-    cmp r12b, 0
-    cmovne rsi, rcx
+    mov rsi, 3
+    mov rdx, 1
+    test r13b, r13b
+    cmovne rdx, rsi
     cmp bpl, 0
-    sete dl
-    movzx rdx, dl
-    cmp bpl, 0
-    cmove edx, ebx
-    mov rcx, rsi
+    sete dil
+    movzx rdi, dil
+    mov rsi, rdx
+    add rsi, 4
+    test r12b, r12b
+    cmovne rdx, rsi
+    test dil, dil
+    cmovne edi, ebx
+    mov rcx, rdx
     add rcx, 8
-    cmp dl, 0
-    cmovne edx, edi
-    mov rax, rsi
-    cmp dl, 0
+    test dil, dil
+    cmovne edi, eax
+    mov rax, rdx
+    test dil, dil
     cmovne rax, rcx
     mov.q rcx, [rsp]
     imul rcx, rcx, 0xa
@@ -273,30 +268,29 @@ main:
     call bump
 8:
     mov rcx, 3
-    mov.q rdx, [rsp + 0x10]
-    mov rbx, 1
-    cmp dl, 0
-    cmovne rbx, rcx
-    mov rcx, rbx
-    add rcx, 4
-    mov.q rdx, [rsp + 0x18]
-    cmp dl, 0
-    cmovne rbx, rcx
+    mov rdx, 1
+    mov.q rbx, [rsp + 0x10]
+    test bl, bl
+    cmovne rdx, rcx
     mov.q rcx, [rsp + 0x20]
     cmp cl, 0
     sete cl
     movzx rcx, cl
-    mov.q rdx, [rsp + 0x20]
-    mov.q rbp, [rsp + 0x28]
-    cmp dl, 0
-    cmove ecx, ebp
-    mov rdx, rbx
-    add rdx, 8
-    cmp cl, 0
+    mov rbx, rdx
+    add rbx, 4
+    mov.q rbp, [rsp + 0x18]
+    test bpl, bpl
+    cmovne rdx, rbx
+    mov.q rbx, [rsp + 0x28]
+    test cl, cl
+    cmovne ecx, ebx
+    mov rbx, rdx
+    add rbx, 8
+    test cl, cl
     cmovne ecx, eax
-    mov rax, rbx
-    cmp cl, 0
-    cmovne rax, rdx
+    mov rax, rdx
+    test cl, cl
+    cmovne rax, rbx
     mov.q rcx, [rsp]
     imul rcx, rcx, 0xa
     add rax, rcx
@@ -352,44 +346,40 @@ main:
     lea rdi, [rsp]
     xor esi, esi
     call bump
-    mov rdi, rax
-    test dil, dil
+    test al, al
     jne 5
     lea rdi, [rsp]
     mov sil, 1
     call bump
-    mov rdi, rax
     jmp 5
 5:
-    test dil, dil
+    test al, al
     jne 6
     jmp 7
 6:
     lea rdi, [rsp]
     mov sil, 1
     call bump
-    mov rdi, rax
 7:
-    mov rcx, 3
-    mov rax, r13
-    mov rsi, 1
-    cmp al, 0
-    cmovne rsi, rcx
-    mov rcx, rsi
-    add rcx, 4
-    cmp r12b, 0
-    cmovne rsi, rcx
+    mov rsi, 3
+    mov rdx, 1
+    test r13b, r13b
+    cmovne rdx, rsi
     cmp bpl, 0
-    sete dl
-    movzx rdx, dl
-    cmp bpl, 0
-    cmove edx, ebx
-    mov rcx, rsi
+    sete dil
+    movzx rdi, dil
+    mov rsi, rdx
+    add rsi, 4
+    test r12b, r12b
+    cmovne rdx, rsi
+    test dil, dil
+    cmovne edi, ebx
+    mov rcx, rdx
     add rcx, 8
-    cmp dl, 0
-    cmovne edx, edi
-    mov rax, rsi
-    cmp dl, 0
+    test dil, dil
+    cmovne edi, eax
+    mov rax, rdx
+    test dil, dil
     cmovne rax, rcx
     mov.q rcx, [rsp]
     imul rcx, rcx, 0xa
@@ -448,44 +438,40 @@ main:
     lea rdi, [rsp]
     xor esi, esi
     call bump
-    mov rdi, rax
-    test dil, dil
+    test al, al
     jne 5
     lea rdi, [rsp]
     mov sil, 1
     call bump
-    mov rdi, rax
     jmp 5
 5:
-    test dil, dil
+    test al, al
     jne 6
     jmp 7
 6:
     lea rdi, [rsp]
     mov sil, 1
     call bump
-    mov rdi, rax
 7:
-    mov rcx, 3
-    mov rax, r13
-    mov rsi, 1
-    cmp al, 0
-    cmovne rsi, rcx
-    mov rcx, rsi
-    add rcx, 4
-    cmp r12b, 0
-    cmovne rsi, rcx
+    mov rsi, 3
+    mov rdx, 1
+    test r13b, r13b
+    cmovne rdx, rsi
     cmp bpl, 0
-    sete dl
-    movzx rdx, dl
-    cmp bpl, 0
-    cmove edx, ebx
-    mov rcx, rsi
+    sete dil
+    movzx rdi, dil
+    mov rsi, rdx
+    add rsi, 4
+    test r12b, r12b
+    cmovne rdx, rsi
+    test dil, dil
+    cmovne edi, ebx
+    mov rcx, rdx
     add rcx, 8
-    cmp dl, 0
-    cmovne edx, edi
-    mov rax, rsi
-    cmp dl, 0
+    test dil, dil
+    cmovne edi, eax
+    mov rax, rdx
+    test dil, dil
     cmovne rax, rcx
     mov.q rcx, [rsp]
     imul rcx, rcx, 0xa

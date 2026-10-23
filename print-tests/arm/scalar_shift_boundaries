@@ -1,10 +1,10 @@
 =========== OPT LEVEL: none-quick ===========
-Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 52, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 60, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 52, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 60, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 40, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 64, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 72, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 40, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 64, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 72, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 main:
     sub sp, sp, #224
     str x19, [xzr]
@@ -148,17 +148,20 @@ main:
 shifts u8:
     uxtb w2, w0
     movz x3, #0
-    lsl w4, w2, w1
-    cmp x1, #32
-    csel w4, w4, w3, cc
-    uxtb w4, w4
-    uxtb w4, w4
+    movz x4, #32
+    cmp x1, x4
+    cset x4, cc
+    lsl w5, w2, w1
+    cmp w4, #0
+    csel w5, w5, w3, ne
+    uxtb w5, w5
+    uxtb w5, w5
     lsr w2, w2, w1
-    cmp x1, #32
-    csel w2, w2, w3, cc
+    cmp w4, #0
+    csel w2, w2, w3, ne
     uxtb w2, w2
     uxtb w2, w2
-    eor x2, x4, x2
+    eor x2, x5, x2
     uxtb w0, w0
     eor x0, x2, x0
     eor x0, x0, x1
@@ -167,14 +170,17 @@ shifts i8:
     uxtb w2, w0
     lsl w2, w2, w1
     sxtb w3, w0
-    movz x4, #0
-    cmp x1, #32
-    csel w2, w2, w4, cc
+    movz x4, #32
+    cmp x1, x4
+    cset x4, cc
+    movz x5, #0
+    cmp w4, #0
+    csel w2, w2, w5, ne
     uxtb w2, w2
     invalid
-    movz x4, #31
-    cmp x1, #32
-    csel x4, x1, x4, cc
+    movz x5, #31
+    cmp w4, #0
+    csel x4, x1, x5, ne
     asr w3, w3, w4
     uxtb w3, w3
     invalid
@@ -186,17 +192,20 @@ shifts i8:
 shifts u16:
     uxth w2, w0
     movz x3, #0
-    lsl w4, w2, w1
-    cmp x1, #32
-    csel w4, w4, w3, cc
-    uxth w4, w4
-    uxth w4, w4
+    movz x4, #32
+    cmp x1, x4
+    cset x4, cc
+    lsl w5, w2, w1
+    cmp w4, #0
+    csel w5, w5, w3, ne
+    uxth w5, w5
+    uxth w5, w5
     lsr w2, w2, w1
-    cmp x1, #32
-    csel w2, w2, w3, cc
+    cmp w4, #0
+    csel w2, w2, w3, ne
     uxth w2, w2
     uxth w2, w2
-    eor x2, x4, x2
+    eor x2, x5, x2
     uxth w0, w0
     eor x0, x2, x0
     eor x0, x0, x1
@@ -205,14 +214,17 @@ shifts i16:
     uxth w2, w0
     lsl w2, w2, w1
     sxth w3, w0
-    movz x4, #0
-    cmp x1, #32
-    csel w2, w2, w4, cc
+    movz x4, #32
+    cmp x1, x4
+    cset x4, cc
+    movz x5, #0
+    cmp w4, #0
+    csel w2, w2, w5, ne
     uxth w2, w2
     invalid
-    movz x4, #31
-    cmp x1, #32
-    csel x4, x1, x4, cc
+    movz x5, #31
+    cmp w4, #0
+    csel x4, x1, x5, ne
     asr w3, w3, w4
     uxth w3, w3
     invalid
@@ -223,28 +235,34 @@ shifts i16:
     ret
 shifts u32:
     movz x2, #0
-    lsl w3, w0, w1
-    cmp x1, #32
-    csel w3, w3, w2, cc
-    mov w3, w3
-    lsr w4, w0, w1
-    cmp x1, #32
-    csel w2, w4, w2, cc
+    movz x3, #32
+    cmp x1, x3
+    cset x3, cc
+    lsl w4, w0, w1
+    cmp w3, #0
+    csel w4, w4, w2, ne
+    mov w4, w4
+    lsr w5, w0, w1
+    cmp w3, #0
+    csel w2, w5, w2, ne
     mov w2, w2
-    eor x2, x3, x2
+    eor x2, x4, x2
     mov w0, w0
     eor x0, x2, x0
     eor x0, x0, x1
     ret
 shifts i32:
     lsl w2, w0, w1
-    movz x3, #0
-    cmp x1, #32
-    csel w2, w2, w3, cc
+    movz x3, #32
+    cmp x1, x3
+    cset x3, cc
+    movz x4, #0
+    cmp w3, #0
+    csel w2, w2, w4, ne
     sxtw x2, w2
-    movz x3, #31
-    cmp x1, #32
-    csel x3, x1, x3, cc
+    movz x4, #31
+    cmp w3, #0
+    csel x3, x1, x4, ne
     asr w3, w0, w3
     sxtw x3, w3
     eor x2, x2, x3
@@ -254,36 +272,42 @@ shifts i32:
     ret
 shifts u64:
     movz x2, #0
-    lsl x3, x0, x1
-    cmp x1, #64
-    csel x3, x3, x2, cc
-    lsr x4, x0, x1
-    cmp x1, #64
-    csel x2, x4, x2, cc
-    eor x2, x3, x2
+    movz x3, #64
+    cmp x1, x3
+    cset x3, cc
+    lsl x4, x0, x1
+    cmp w3, #0
+    csel x4, x4, x2, ne
+    lsr x5, x0, x1
+    cmp w3, #0
+    csel x2, x5, x2, ne
+    eor x2, x4, x2
     eor x0, x2, x0
     eor x0, x0, x1
     ret
 shifts i64:
     lsl x2, x0, x1
-    movz x3, #0
-    cmp x1, #64
-    csel x2, x2, x3, cc
-    movz x3, #63
-    cmp x1, #64
-    csel x3, x1, x3, cc
+    movz x3, #64
+    cmp x1, x3
+    cset x3, cc
+    movz x4, #0
+    cmp w3, #0
+    csel x2, x2, x4, ne
+    movz x4, #63
+    cmp w3, #0
+    csel x3, x1, x4, ne
     asr x3, x0, x3
     eor x2, x2, x3
     eor x0, x2, x0
     eor x0, x0, x1
     ret
 =========== OPT LEVEL: none ===========
-Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 52, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 60, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 52, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 60, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 40, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 64, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 72, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 40, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 64, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 72, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 main:
     sub sp, sp, #224
     str x19, [xzr]
@@ -426,16 +450,19 @@ main:
     add sp, sp, #224
     ret
 shifts u8:
-    uxtb w5, w0
-    movz x4, #0
-    lsl w2, w5, w1
-    cmp x1, #32
-    csel w2, w2, w4, cc
+    uxtb w6, w0
+    movz x5, #0
+    movz x2, #32
+    cmp x1, x2
+    cset x4, cc
+    lsl w2, w6, w1
+    cmp w4, #0
+    csel w2, w2, w5, ne
     uxtb w2, w2
     uxtb w3, w2
-    lsr w2, w5, w1
-    cmp x1, #32
-    csel w2, w2, w4, cc
+    lsr w2, w6, w1
+    cmp w4, #0
+    csel w2, w2, w5, ne
     uxtb w2, w2
     uxtb w2, w2
     eor x2, x3, x2
@@ -446,16 +473,19 @@ shifts u8:
 shifts i8:
     uxtb w2, w0
     lsl w3, w2, w1
-    sxtb w4, w0
+    sxtb w5, w0
+    movz x2, #32
+    cmp x1, x2
+    cset x4, cc
     movz x2, #0
-    cmp x1, #32
-    csel w2, w3, w2, cc
+    cmp w4, #0
+    csel w2, w3, w2, ne
     uxtb w2, w2
     invalid
     movz x2, #31
-    cmp x1, #32
-    csel x2, x1, x2, cc
-    asr w2, w4, w2
+    cmp w4, #0
+    csel x2, x1, x2, ne
+    asr w2, w5, w2
     uxtb w2, w2
     invalid
     eor x2, x3, x2
@@ -464,16 +494,19 @@ shifts i8:
     eor x0, x0, x1
     ret
 shifts u16:
-    uxth w5, w0
-    movz x4, #0
-    lsl w2, w5, w1
-    cmp x1, #32
-    csel w2, w2, w4, cc
+    uxth w6, w0
+    movz x5, #0
+    movz x2, #32
+    cmp x1, x2
+    cset x4, cc
+    lsl w2, w6, w1
+    cmp w4, #0
+    csel w2, w2, w5, ne
     uxth w2, w2
     uxth w3, w2
-    lsr w2, w5, w1
-    cmp x1, #32
-    csel w2, w2, w4, cc
+    lsr w2, w6, w1
+    cmp w4, #0
+    csel w2, w2, w5, ne
     uxth w2, w2
     uxth w2, w2
     eor x2, x3, x2
@@ -484,16 +517,19 @@ shifts u16:
 shifts i16:
     uxth w2, w0
     lsl w3, w2, w1
-    sxth w4, w0
+    sxth w5, w0
+    movz x2, #32
+    cmp x1, x2
+    cset x4, cc
     movz x2, #0
-    cmp x1, #32
-    csel w2, w3, w2, cc
+    cmp w4, #0
+    csel w2, w3, w2, ne
     uxth w2, w2
     invalid
     movz x2, #31
-    cmp x1, #32
-    csel x2, x1, x2, cc
-    asr w2, w4, w2
+    cmp w4, #0
+    csel x2, x1, x2, ne
+    asr w2, w5, w2
     uxth w2, w2
     invalid
     eor x2, x3, x2
@@ -502,14 +538,17 @@ shifts i16:
     eor x0, x0, x1
     ret
 shifts u32:
-    movz x4, #0
+    movz x5, #0
+    movz x2, #32
+    cmp x1, x2
+    cset x4, cc
     lsl w2, w0, w1
-    cmp x1, #32
-    csel w2, w2, w4, cc
+    cmp w4, #0
+    csel w2, w2, w5, ne
     mov w3, w2
     lsr w2, w0, w1
-    cmp x1, #32
-    csel w2, w2, w4, cc
+    cmp w4, #0
+    csel w2, w2, w5, ne
     mov w2, w2
     eor x2, x3, x2
     mov w0, w0
@@ -518,13 +557,16 @@ shifts u32:
     ret
 shifts i32:
     lsl w3, w0, w1
+    movz x2, #32
+    cmp x1, x2
+    cset x4, cc
     movz x2, #0
-    cmp x1, #32
-    csel w2, w3, w2, cc
+    cmp w4, #0
+    csel w2, w3, w2, ne
     sxtw x3, w2
     movz x2, #31
-    cmp x1, #32
-    csel x2, x1, x2, cc
+    cmp w4, #0
+    csel x2, x1, x2, ne
     asr w2, w0, w2
     sxtw x2, w2
     eor x2, x3, x2
@@ -533,37 +575,43 @@ shifts i32:
     eor x0, x0, x1
     ret
 shifts u64:
-    movz x4, #0
+    movz x5, #0
+    movz x2, #64
+    cmp x1, x2
+    cset x4, cc
     lsl x2, x0, x1
-    cmp x1, #64
-    csel x3, x2, x4, cc
+    cmp w4, #0
+    csel x3, x2, x5, ne
     lsr x2, x0, x1
-    cmp x1, #64
-    csel x2, x2, x4, cc
+    cmp w4, #0
+    csel x2, x2, x5, ne
     eor x2, x3, x2
     eor x0, x2, x0
     eor x0, x0, x1
     ret
 shifts i64:
     lsl x3, x0, x1
+    movz x2, #64
+    cmp x1, x2
+    cset x4, cc
     movz x2, #0
-    cmp x1, #64
-    csel x3, x3, x2, cc
+    cmp w4, #0
+    csel x3, x3, x2, ne
     movz x2, #63
-    cmp x1, #64
-    csel x2, x1, x2, cc
+    cmp w4, #0
+    csel x2, x1, x2, ne
     asr x2, x0, x2
     eor x2, x3, x2
     eor x0, x2, x0
     eor x0, x0, x1
     ret
 =========== OPT LEVEL: moderate-quick ===========
-Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 52, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 60, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 52, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 60, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 40, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 64, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 72, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 40, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 64, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 72, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 main:
     sub sp, sp, #224
     str x19, [xzr]
@@ -707,17 +755,20 @@ main:
 shifts u8:
     uxtb w2, w0
     movz x3, #0
-    lsl w4, w2, w1
-    cmp x1, #32
-    csel w4, w4, w3, cc
-    uxtb w4, w4
-    uxtb w4, w4
+    movz x4, #32
+    cmp x1, x4
+    cset x4, cc
+    lsl w5, w2, w1
+    cmp w4, #0
+    csel w5, w5, w3, ne
+    uxtb w5, w5
+    uxtb w5, w5
     lsr w2, w2, w1
-    cmp x1, #32
-    csel w2, w2, w3, cc
+    cmp w4, #0
+    csel w2, w2, w3, ne
     uxtb w2, w2
     uxtb w2, w2
-    eor x2, x4, x2
+    eor x2, x5, x2
     uxtb w0, w0
     eor x0, x2, x0
     eor x0, x0, x1
@@ -726,14 +777,17 @@ shifts i8:
     uxtb w2, w0
     lsl w2, w2, w1
     sxtb w3, w0
-    movz x4, #0
-    cmp x1, #32
-    csel w2, w2, w4, cc
+    movz x4, #32
+    cmp x1, x4
+    cset x4, cc
+    movz x5, #0
+    cmp w4, #0
+    csel w2, w2, w5, ne
     uxtb w2, w2
     invalid
-    movz x4, #31
-    cmp x1, #32
-    csel x4, x1, x4, cc
+    movz x5, #31
+    cmp w4, #0
+    csel x4, x1, x5, ne
     asr w3, w3, w4
     uxtb w3, w3
     invalid
@@ -745,17 +799,20 @@ shifts i8:
 shifts u16:
     uxth w2, w0
     movz x3, #0
-    lsl w4, w2, w1
-    cmp x1, #32
-    csel w4, w4, w3, cc
-    uxth w4, w4
-    uxth w4, w4
+    movz x4, #32
+    cmp x1, x4
+    cset x4, cc
+    lsl w5, w2, w1
+    cmp w4, #0
+    csel w5, w5, w3, ne
+    uxth w5, w5
+    uxth w5, w5
     lsr w2, w2, w1
-    cmp x1, #32
-    csel w2, w2, w3, cc
+    cmp w4, #0
+    csel w2, w2, w3, ne
     uxth w2, w2
     uxth w2, w2
-    eor x2, x4, x2
+    eor x2, x5, x2
     uxth w0, w0
     eor x0, x2, x0
     eor x0, x0, x1
@@ -764,14 +821,17 @@ shifts i16:
     uxth w2, w0
     lsl w2, w2, w1
     sxth w3, w0
-    movz x4, #0
-    cmp x1, #32
-    csel w2, w2, w4, cc
+    movz x4, #32
+    cmp x1, x4
+    cset x4, cc
+    movz x5, #0
+    cmp w4, #0
+    csel w2, w2, w5, ne
     uxth w2, w2
     invalid
-    movz x4, #31
-    cmp x1, #32
-    csel x4, x1, x4, cc
+    movz x5, #31
+    cmp w4, #0
+    csel x4, x1, x5, ne
     asr w3, w3, w4
     uxth w3, w3
     invalid
@@ -782,28 +842,34 @@ shifts i16:
     ret
 shifts u32:
     movz x2, #0
-    lsl w3, w0, w1
-    cmp x1, #32
-    csel w3, w3, w2, cc
-    mov w3, w3
-    lsr w4, w0, w1
-    cmp x1, #32
-    csel w2, w4, w2, cc
+    movz x3, #32
+    cmp x1, x3
+    cset x3, cc
+    lsl w4, w0, w1
+    cmp w3, #0
+    csel w4, w4, w2, ne
+    mov w4, w4
+    lsr w5, w0, w1
+    cmp w3, #0
+    csel w2, w5, w2, ne
     mov w2, w2
-    eor x2, x3, x2
+    eor x2, x4, x2
     mov w0, w0
     eor x0, x2, x0
     eor x0, x0, x1
     ret
 shifts i32:
     lsl w2, w0, w1
-    movz x3, #0
-    cmp x1, #32
-    csel w2, w2, w3, cc
+    movz x3, #32
+    cmp x1, x3
+    cset x3, cc
+    movz x4, #0
+    cmp w3, #0
+    csel w2, w2, w4, ne
     sxtw x2, w2
-    movz x3, #31
-    cmp x1, #32
-    csel x3, x1, x3, cc
+    movz x4, #31
+    cmp w3, #0
+    csel x3, x1, x4, ne
     asr w3, w0, w3
     sxtw x3, w3
     eor x2, x2, x3
@@ -813,36 +879,42 @@ shifts i32:
     ret
 shifts u64:
     movz x2, #0
-    lsl x3, x0, x1
-    cmp x1, #64
-    csel x3, x3, x2, cc
-    lsr x4, x0, x1
-    cmp x1, #64
-    csel x2, x4, x2, cc
-    eor x2, x3, x2
+    movz x3, #64
+    cmp x1, x3
+    cset x3, cc
+    lsl x4, x0, x1
+    cmp w3, #0
+    csel x4, x4, x2, ne
+    lsr x5, x0, x1
+    cmp w3, #0
+    csel x2, x5, x2, ne
+    eor x2, x4, x2
     eor x0, x2, x0
     eor x0, x0, x1
     ret
 shifts i64:
     lsl x2, x0, x1
-    movz x3, #0
-    cmp x1, #64
-    csel x2, x2, x3, cc
-    movz x3, #63
-    cmp x1, #64
-    csel x3, x1, x3, cc
+    movz x3, #64
+    cmp x1, x3
+    cset x3, cc
+    movz x4, #0
+    cmp w3, #0
+    csel x2, x2, x4, ne
+    movz x4, #63
+    cmp w3, #0
+    csel x3, x1, x4, ne
     asr x3, x0, x3
     eor x2, x2, x3
     eor x0, x2, x0
     eor x0, x0, x1
     ret
 =========== OPT LEVEL: moderate ===========
-Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 52, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 60, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 52, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 60, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 40, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 64, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 72, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 40, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 64, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 72, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 main:
     sub sp, sp, #224
     str x19, [xzr]
@@ -985,16 +1057,19 @@ main:
     add sp, sp, #224
     ret
 shifts u8:
-    uxtb w5, w0
-    movz x4, #0
-    lsl w2, w5, w1
-    cmp x1, #32
-    csel w2, w2, w4, cc
+    uxtb w6, w0
+    movz x5, #0
+    movz x2, #32
+    cmp x1, x2
+    cset x4, cc
+    lsl w2, w6, w1
+    cmp w4, #0
+    csel w2, w2, w5, ne
     uxtb w2, w2
     uxtb w3, w2
-    lsr w2, w5, w1
-    cmp x1, #32
-    csel w2, w2, w4, cc
+    lsr w2, w6, w1
+    cmp w4, #0
+    csel w2, w2, w5, ne
     uxtb w2, w2
     uxtb w2, w2
     eor x2, x3, x2
@@ -1005,16 +1080,19 @@ shifts u8:
 shifts i8:
     uxtb w2, w0
     lsl w3, w2, w1
-    sxtb w4, w0
+    sxtb w5, w0
+    movz x2, #32
+    cmp x1, x2
+    cset x4, cc
     movz x2, #0
-    cmp x1, #32
-    csel w2, w3, w2, cc
+    cmp w4, #0
+    csel w2, w3, w2, ne
     uxtb w2, w2
     invalid
     movz x2, #31
-    cmp x1, #32
-    csel x2, x1, x2, cc
-    asr w2, w4, w2
+    cmp w4, #0
+    csel x2, x1, x2, ne
+    asr w2, w5, w2
     uxtb w2, w2
     invalid
     eor x2, x3, x2
@@ -1023,16 +1101,19 @@ shifts i8:
     eor x0, x0, x1
     ret
 shifts u16:
-    uxth w5, w0
-    movz x4, #0
-    lsl w2, w5, w1
-    cmp x1, #32
-    csel w2, w2, w4, cc
+    uxth w6, w0
+    movz x5, #0
+    movz x2, #32
+    cmp x1, x2
+    cset x4, cc
+    lsl w2, w6, w1
+    cmp w4, #0
+    csel w2, w2, w5, ne
     uxth w2, w2
     uxth w3, w2
-    lsr w2, w5, w1
-    cmp x1, #32
-    csel w2, w2, w4, cc
+    lsr w2, w6, w1
+    cmp w4, #0
+    csel w2, w2, w5, ne
     uxth w2, w2
     uxth w2, w2
     eor x2, x3, x2
@@ -1043,16 +1124,19 @@ shifts u16:
 shifts i16:
     uxth w2, w0
     lsl w3, w2, w1
-    sxth w4, w0
+    sxth w5, w0
+    movz x2, #32
+    cmp x1, x2
+    cset x4, cc
     movz x2, #0
-    cmp x1, #32
-    csel w2, w3, w2, cc
+    cmp w4, #0
+    csel w2, w3, w2, ne
     uxth w2, w2
     invalid
     movz x2, #31
-    cmp x1, #32
-    csel x2, x1, x2, cc
-    asr w2, w4, w2
+    cmp w4, #0
+    csel x2, x1, x2, ne
+    asr w2, w5, w2
     uxth w2, w2
     invalid
     eor x2, x3, x2
@@ -1061,14 +1145,17 @@ shifts i16:
     eor x0, x0, x1
     ret
 shifts u32:
-    movz x4, #0
+    movz x5, #0
+    movz x2, #32
+    cmp x1, x2
+    cset x4, cc
     lsl w2, w0, w1
-    cmp x1, #32
-    csel w2, w2, w4, cc
+    cmp w4, #0
+    csel w2, w2, w5, ne
     mov w3, w2
     lsr w2, w0, w1
-    cmp x1, #32
-    csel w2, w2, w4, cc
+    cmp w4, #0
+    csel w2, w2, w5, ne
     mov w2, w2
     eor x2, x3, x2
     mov w0, w0
@@ -1077,13 +1164,16 @@ shifts u32:
     ret
 shifts i32:
     lsl w3, w0, w1
+    movz x2, #32
+    cmp x1, x2
+    cset x4, cc
     movz x2, #0
-    cmp x1, #32
-    csel w2, w3, w2, cc
+    cmp w4, #0
+    csel w2, w3, w2, ne
     sxtw x3, w2
     movz x2, #31
-    cmp x1, #32
-    csel x2, x1, x2, cc
+    cmp w4, #0
+    csel x2, x1, x2, ne
     asr w2, w0, w2
     sxtw x2, w2
     eor x2, x3, x2
@@ -1092,37 +1182,43 @@ shifts i32:
     eor x0, x0, x1
     ret
 shifts u64:
-    movz x4, #0
+    movz x5, #0
+    movz x2, #64
+    cmp x1, x2
+    cset x4, cc
     lsl x2, x0, x1
-    cmp x1, #64
-    csel x3, x2, x4, cc
+    cmp w4, #0
+    csel x3, x2, x5, ne
     lsr x2, x0, x1
-    cmp x1, #64
-    csel x2, x2, x4, cc
+    cmp w4, #0
+    csel x2, x2, x5, ne
     eor x2, x3, x2
     eor x0, x2, x0
     eor x0, x0, x1
     ret
 shifts i64:
     lsl x3, x0, x1
+    movz x2, #64
+    cmp x1, x2
+    cset x4, cc
     movz x2, #0
-    cmp x1, #64
-    csel x3, x3, x2, cc
+    cmp w4, #0
+    csel x3, x3, x2, ne
     movz x2, #63
-    cmp x1, #64
-    csel x2, x1, x2, cc
+    cmp w4, #0
+    csel x2, x1, x2, ne
     asr x2, x0, x2
     eor x2, x3, x2
     eor x0, x2, x0
     eor x0, x0, x1
     ret
 =========== OPT LEVEL: all ===========
-Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 52, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 60, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 52, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 60, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 40, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 64, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 72, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 40, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 64, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 72, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 main:
     sub sp, sp, #224
     str x19, [xzr]
@@ -1263,16 +1359,19 @@ main:
     add sp, sp, #224
     ret
 shifts u8:
-    uxtb w5, w0
-    movz x4, #0
-    lsl w2, w5, w1
-    cmp x1, #32
-    csel w2, w2, w4, cc
+    uxtb w6, w0
+    movz x5, #0
+    movz x2, #32
+    cmp x1, x2
+    cset x4, cc
+    lsl w2, w6, w1
+    cmp w4, #0
+    csel w2, w2, w5, ne
     uxtb w2, w2
     uxtb w3, w2
-    lsr w2, w5, w1
-    cmp x1, #32
-    csel w2, w2, w4, cc
+    lsr w2, w6, w1
+    cmp w4, #0
+    csel w2, w2, w5, ne
     uxtb w2, w2
     uxtb w2, w2
     eor x2, x3, x2
@@ -1283,16 +1382,19 @@ shifts u8:
 shifts i8:
     uxtb w2, w0
     lsl w3, w2, w1
-    sxtb w4, w0
+    sxtb w5, w0
+    movz x2, #32
+    cmp x1, x2
+    cset x4, cc
     movz x2, #0
-    cmp x1, #32
-    csel w2, w3, w2, cc
+    cmp w4, #0
+    csel w2, w3, w2, ne
     uxtb w2, w2
     invalid
     movz x2, #31
-    cmp x1, #32
-    csel x2, x1, x2, cc
-    asr w2, w4, w2
+    cmp w4, #0
+    csel x2, x1, x2, ne
+    asr w2, w5, w2
     uxtb w2, w2
     invalid
     eor x2, x3, x2
@@ -1301,16 +1403,19 @@ shifts i8:
     eor x0, x0, x1
     ret
 shifts u16:
-    uxth w5, w0
-    movz x4, #0
-    lsl w2, w5, w1
-    cmp x1, #32
-    csel w2, w2, w4, cc
+    uxth w6, w0
+    movz x5, #0
+    movz x2, #32
+    cmp x1, x2
+    cset x4, cc
+    lsl w2, w6, w1
+    cmp w4, #0
+    csel w2, w2, w5, ne
     uxth w2, w2
     uxth w3, w2
-    lsr w2, w5, w1
-    cmp x1, #32
-    csel w2, w2, w4, cc
+    lsr w2, w6, w1
+    cmp w4, #0
+    csel w2, w2, w5, ne
     uxth w2, w2
     uxth w2, w2
     eor x2, x3, x2
@@ -1321,16 +1426,19 @@ shifts u16:
 shifts i16:
     uxth w2, w0
     lsl w3, w2, w1
-    sxth w4, w0
+    sxth w5, w0
+    movz x2, #32
+    cmp x1, x2
+    cset x4, cc
     movz x2, #0
-    cmp x1, #32
-    csel w2, w3, w2, cc
+    cmp w4, #0
+    csel w2, w3, w2, ne
     uxth w2, w2
     invalid
     movz x2, #31
-    cmp x1, #32
-    csel x2, x1, x2, cc
-    asr w2, w4, w2
+    cmp w4, #0
+    csel x2, x1, x2, ne
+    asr w2, w5, w2
     uxth w2, w2
     invalid
     eor x2, x3, x2
@@ -1339,14 +1447,17 @@ shifts i16:
     eor x0, x0, x1
     ret
 shifts u32:
-    movz x4, #0
+    movz x5, #0
+    movz x2, #32
+    cmp x1, x2
+    cset x4, cc
     lsl w2, w0, w1
-    cmp x1, #32
-    csel w2, w2, w4, cc
+    cmp w4, #0
+    csel w2, w2, w5, ne
     mov w3, w2
     lsr w2, w0, w1
-    cmp x1, #32
-    csel w2, w2, w4, cc
+    cmp w4, #0
+    csel w2, w2, w5, ne
     mov w2, w2
     eor x2, x3, x2
     mov w0, w0
@@ -1355,13 +1466,16 @@ shifts u32:
     ret
 shifts i32:
     lsl w3, w0, w1
+    movz x2, #32
+    cmp x1, x2
+    cset x4, cc
     movz x2, #0
-    cmp x1, #32
-    csel w2, w3, w2, cc
+    cmp w4, #0
+    csel w2, w3, w2, ne
     sxtw x3, w2
     movz x2, #31
-    cmp x1, #32
-    csel x2, x1, x2, cc
+    cmp w4, #0
+    csel x2, x1, x2, ne
     asr w2, w0, w2
     sxtw x2, w2
     eor x2, x3, x2
@@ -1370,35 +1484,41 @@ shifts i32:
     eor x0, x0, x1
     ret
 shifts u64:
-    movz x4, #0
+    movz x5, #0
+    movz x2, #64
+    cmp x1, x2
+    cset x4, cc
     lsl x2, x0, x1
-    cmp x1, #64
-    csel x3, x2, x4, cc
+    cmp w4, #0
+    csel x3, x2, x5, ne
     lsr x2, x0, x1
-    cmp x1, #64
-    csel x2, x2, x4, cc
+    cmp w4, #0
+    csel x2, x2, x5, ne
     eor x2, x3, x2
     eor x0, x2, x0
     eor x0, x0, x1
     ret
 shifts i64:
     lsl x3, x0, x1
+    movz x2, #64
+    cmp x1, x2
+    cset x4, cc
     movz x2, #0
-    cmp x1, #64
-    csel x3, x3, x2, cc
+    cmp w4, #0
+    csel x3, x3, x2, ne
     movz x2, #63
-    cmp x1, #64
-    csel x2, x1, x2, cc
+    cmp w4, #0
+    csel x2, x1, x2, ne
     asr x2, x0, x2
     eor x2, x3, x2
     eor x0, x2, x0
     eor x0, x0, x1
     ret
 =========== OPT LEVEL: aggresive ===========
-Error{inst_idx = 520, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 560, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 612, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 684, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 504, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 544, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 644, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 716, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 main:
     sub sp, sp, #176
     str x19, [xzr]
@@ -1419,220 +1539,232 @@ main:
     add x1, x1, x0
     movz x0, #1
     str x0, [x1]
-    movz x8, #16
-    movz x4, #32
-    movz x3, #64
+    movz x6, #16
     add x0, sp, #80
-    add x5, x0, x8
-    movz x23, #11
+    add x4, x0, x6
+    movz x18, #11
     movn x2, #84
-    movz x22, #63
     movn x1, #21844
-    movz x21, #0
-    movz x20, #21845
-    movk x20, #21845, lsl #16
-    movz x19, #3
+    add x3, sp, #80
+    movz x0, #32
+    add x5, x3, x0
+    movz x17, #3
     movz x0, #7
-    str x0, [x5]
-    movz x5, #80
+    str x0, [x4]
+    movz x3, #80
     add x0, sp, #80
-    add x0, x5, x0
-    add x5, sp, #80
-    add x7, x5, x4
-    movz x6, #24
-    add x5, sp, #80
-    add x6, x6, x5
-    movz x5, #8
-    str x5, [x6]
-    movz x5, #15
-    str x5, [x7]
-    movz x6, #40
-    add x5, sp, #80
-    add x5, x6, x5
-    str x8, [x5]
-    movz x6, #48
-    add x5, sp, #80
-    add x6, x6, x5
-    movz x5, #31
-    str x5, [x6]
-    movz x6, #56
-    add x5, sp, #80
-    add x5, x6, x5
-    str x4, [x5]
-    add x4, sp, #80
+    add x0, x3, x0
+    movz x4, #24
+    add x3, sp, #80
     add x4, x4, x3
-    str x22, [x4]
-    movz x5, #72
-    add x4, sp, #80
-    add x4, x5, x4
+    movz x3, #8
     str x3, [x4]
-    movz x18, #165
+    movz x3, #15
+    str x3, [x5]
+    movz x4, #40
+    add x3, sp, #80
+    add x3, x4, x3
+    str x6, [x3]
+    movz x4, #48
+    add x3, sp, #80
+    add x4, x4, x3
+    movz x3, #31
+    str x3, [x4]
+    movz x4, #56
+    add x3, sp, #80
+    add x4, x4, x3
+    movz x3, #32
+    str x3, [x4]
+    add x4, sp, #80
+    movz x3, #64
+    add x4, x4, x3
+    movz x3, #63
+    str x3, [x4]
+    movz x4, #72
+    add x3, sp, #80
+    add x4, x4, x3
+    movz x3, #64
+    str x3, [x4]
+    movz x16, #165
     movz x3, #165
-    uxtb w17, w3
-    movn x16, #84
-    uxtb w15, w2
-    movz x14, #42405
+    uxtb w15, w3
+    movz x14, #0
+    movn x13, #84
+    uxtb w12, w2
+    movz x11, #42405
     movz x3, #42405
-    uxth w13, w3
-    movn x12, #21844
-    uxth w11, w1
-    movz x10, #21845
-    movk x10, #21845, lsl #16
+    uxth w10, w3
     movn x9, #21844
-    movk x9, #43690, lsl #16
-    sxtb w8, w2
-    sxth w7, w1
+    uxth w8, w1
+    movz x7, #21845
+    movk x7, #21845, lsl #16
+    movn x6, #21844
+    movk x6, #43690, lsl #16
+    sxtb w5, w2
+    sxth w4, w1
     movz x1, #65
     str x1, [x0]
     movz x0, #0
-    movz x24, #0
+    movz x19, #0
 1:
     movz x1, #8
     madd x2, x1, x0, xzr
     add x1, sp, #80
     add x1, x2, x1
-    ldr x6, [x1]
+    ldr x3, [x1]
+    movz x1, #32
+    cmp x3, x1
+    cset x23, cc
+    movz x1, #64
+    cmp x3, x1
+    cset x2, cc
     movz x1, #31
-    cmp x6, #32
-    csel x5, x6, x1, cc
+    cmp w23, #0
+    csel x22, x3, x1, ne
     movn x1, #23130
     movk x1, #42405, lsl #16
     movk x1, #42405, lsl #32
     movk x1, #42405, lsl #48
-    lsl x2, x1, x6
+    lsl x20, x1, x3
     movz x1, #0
-    cmp x6, #64
-    csel x4, x2, x1, cc
+    cmp w2, #0
+    csel x21, x20, x1, ne
     movn x1, #21844
     movk x1, #43690, lsl #16
     movk x1, #43690, lsl #32
     movk x1, #43690, lsl #48
-    lsl x2, x1, x6
+    lsl x20, x1, x3
     movz x1, #0
-    cmp x6, #64
-    csel x3, x2, x1, cc
-    lsl w1, w20, w6
-    cmp x6, #32
-    csel w1, w1, w21, cc
-    mov w2, w1
-    movn x1, #21844
-    movk x1, #43690, lsl #16
-    lsl w1, w1, w6
-    cmp x6, #32
-    csel w1, w1, w21, cc
-    sxtw x1, w1
-    madd x26, x24, x19, xzr
-    lsl w24, w17, w6
-    cmp x6, #32
-    csel w24, w24, w21, cc
-    uxtb w24, w24
-    uxtb w28, w24
-    lsl w24, w15, w6
-    cmp x6, #32
-    csel w24, w24, w21, cc
-    uxtb w24, w24
+    cmp w2, #0
+    csel x1, x20, x1, ne
+    madd x26, x19, x17, xzr
+    lsl w19, w15, w3
+    cmp w23, #0
+    csel w19, w19, w14, ne
+    uxtb w19, w19
+    uxtb w28, w19
+    lsl w19, w12, w3
+    cmp w23, #0
+    csel w19, w19, w14, ne
+    uxtb w19, w19
     invalid
-    lsl w24, w13, w6
-    cmp x6, #32
-    csel w24, w24, w21, cc
-    uxth w24, w24
-    uxth w25, w24
-    lsl w24, w11, w6
-    cmp x6, #32
-    csel w24, w24, w21, cc
-    uxth w24, w24
+    lsl w19, w10, w3
+    cmp w23, #0
+    csel w19, w19, w14, ne
+    uxth w19, w19
+    uxth w25, w19
+    lsl w19, w8, w3
+    cmp w23, #0
+    csel w19, w19, w14, ne
+    uxth w19, w19
     invalid
-    lsr w29, w17, w6
-    cmp x6, #32
-    csel w29, w29, w21, cc
+    movz x19, #21845
+    movk x19, #21845, lsl #16
+    lsl w19, w19, w3
+    cmp w23, #0
+    csel w19, w19, w14, ne
+    mov w19, w19
+    movn x20, #21844
+    movk x20, #43690, lsl #16
+    lsl w20, w20, w3
+    cmp w23, #0
+    csel w20, w20, w14, ne
+    sxtw x20, w20
+    lsr w29, w15, w3
+    cmp w23, #0
+    csel w29, w29, w14, ne
     uxtb w29, w29
     uxtb w29, w29
     eor x28, x28, x29
-    eor x28, x28, x18
-    eor x28, x28, x6
+    eor x28, x28, x16
+    eor x28, x28, x3
     add x26, x26, x28
-    madd x26, x26, x19, xzr
-    asr w28, w8, w5
+    madd x26, x26, x17, xzr
+    asr w28, w5, w22
     uxtb w28, w28
     invalid
     eor x27, x27, x28
-    eor x27, x27, x16
-    eor x27, x27, x6
+    eor x27, x27, x13
+    eor x27, x27, x3
     add x26, x26, x27
-    madd x26, x26, x19, xzr
-    lsr w27, w13, w6
-    cmp x6, #32
-    csel w27, w27, w21, cc
+    madd x26, x26, x17, xzr
+    lsr w27, w10, w3
+    cmp w23, #0
+    csel w27, w27, w14, ne
     uxth w27, w27
     uxth w27, w27
     eor x25, x25, x27
-    eor x25, x25, x14
-    eor x25, x25, x6
+    eor x25, x25, x11
+    eor x25, x25, x3
     add x25, x26, x25
-    madd x25, x25, x19, xzr
-    asr w26, w7, w5
+    madd x25, x25, x17, xzr
+    asr w26, w4, w22
     uxth w26, w26
     invalid
     eor x24, x24, x26
-    eor x24, x24, x12
-    eor x24, x24, x6
+    eor x24, x24, x9
+    eor x24, x24, x3
     add x24, x25, x24
-    madd x24, x24, x19, xzr
-    lsr w25, w20, w6
-    cmp x6, #32
-    csel w25, w25, w21, cc
-    mov w25, w25
-    eor x2, x2, x25
-    eor x2, x2, x10
-    eor x2, x2, x6
-    add x2, x24, x2
-    madd x24, x2, x19, xzr
+    madd x24, x24, x17, xzr
+    movz x25, #21845
+    movk x25, #21845, lsl #16
+    lsr w25, w25, w3
+    cmp w23, #0
+    csel w23, w25, w14, ne
+    mov w23, w23
+    eor x19, x19, x23
+    eor x19, x19, x7
+    eor x19, x19, x3
+    add x19, x24, x19
+    madd x23, x19, x17, xzr
+    movn x19, #21844
+    movk x19, #43690, lsl #16
+    asr w19, w19, w22
+    sxtw x19, w19
+    eor x19, x20, x19
+    eor x19, x19, x6
+    eor x19, x19, x3
+    add x19, x23, x19
+    madd x22, x19, x17, xzr
+    movn x19, #23130
+    movk x19, #42405, lsl #16
+    movk x19, #42405, lsl #32
+    movk x19, #42405, lsl #48
+    lsr x20, x19, x3
+    movz x19, #0
+    cmp w2, #0
+    csel x19, x20, x19, ne
+    eor x20, x21, x19
+    movn x19, #23130
+    movk x19, #42405, lsl #16
+    movk x19, #42405, lsl #32
+    movk x19, #42405, lsl #48
+    eor x19, x20, x19
+    eor x19, x19, x3
+    add x19, x22, x19
+    madd x19, x19, x17, xzr
+    movz x20, #63
+    cmp w2, #0
+    csel x20, x3, x20, ne
     movn x2, #21844
     movk x2, #43690, lsl #16
-    asr w2, w2, w5
-    sxtw x2, w2
-    eor x1, x1, x2
-    eor x1, x1, x9
-    eor x1, x1, x6
-    add x1, x24, x1
-    madd x5, x1, x19, xzr
-    movn x1, #23130
-    movk x1, #42405, lsl #16
-    movk x1, #42405, lsl #32
-    movk x1, #42405, lsl #48
-    lsr x2, x1, x6
-    movz x1, #0
-    cmp x6, #64
-    csel x1, x2, x1, cc
-    eor x2, x4, x1
-    movn x1, #23130
-    movk x1, #42405, lsl #16
-    movk x1, #42405, lsl #32
-    movk x1, #42405, lsl #48
-    eor x1, x2, x1
-    eor x1, x1, x6
-    add x1, x5, x1
-    madd x4, x1, x19, xzr
-    cmp x6, #64
-    csel x2, x6, x22, cc
-    movn x1, #21844
-    movk x1, #43690, lsl #16
-    movk x1, #43690, lsl #32
-    movk x1, #43690, lsl #48
-    asr x1, x1, x2
-    eor x2, x3, x1
+    movk x2, #43690, lsl #32
+    movk x2, #43690, lsl #48
+    asr x2, x2, x20
+    eor x2, x1, x2
     movn x1, #21844
     movk x1, #43690, lsl #16
     movk x1, #43690, lsl #32
     movk x1, #43690, lsl #48
     eor x1, x2, x1
-    eor x2, x1, x6
+    eor x2, x1, x3
     movz x1, #1
     add x0, x1, x0
-    add x2, x4, x2
-    cmp x0, x23
-    mov x24, x2
-    b.lt 1
+    cmp x0, x18
+    cset x1, ge
+    add x2, x19, x2
+    mov x19, x2
+    cbz x1, 1
     movz x1, #251
     sdiv x0, x2, x1
     msub x0, x0, x1, x2

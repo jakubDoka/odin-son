@@ -109,11 +109,11 @@ main:
 2:
     mov x0, x3
     madd x3, x1, x2, xzr
-    add x3, x3, x0
-    add x4, x2, x5
     cmp x2, x6
-    mov x2, x4
-    b.ne 2
+    cset x4, eq
+    add x3, x3, x0
+    add x2, x2, x5
+    cbz x4, 2
     add x1, x1, x5
     cmp x1, x6
     mov x3, x0

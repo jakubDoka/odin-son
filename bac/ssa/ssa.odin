@@ -91,7 +91,7 @@ compile :: proc(ctx: bac.Codegen_Emit_Ctx) -> (res: bac.Codegen_Output) {
 	fmt.assertf(ctx.buf.code != nil, "code buffer not configured, set .buf.code")
 
 	if ctx.schedule == nil {
-		bac.apply_peeps({ctx})
+		bac.apply_peeps({ctx, {}})
 
 		gs: bac.Schedule
 		bac.schedule_graph(ctx, &gs, .for_regalloc)

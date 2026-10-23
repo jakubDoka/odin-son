@@ -52,6 +52,11 @@ V30, V31 :: Reg(V_BANK | 30), Reg(V_BANK | 31)
 
 ARM_SYSTEMV_CC :: 0
 
+@(tag = "api", rodata, export, link_name = "bac_arm_OPT_HINTS")
+OPT_HINTS := bac.Opt_Hints {
+	select_types = {.I8, .I16, .I32, .I64, .F32, .F64},
+}
+
 @(tag = "api", rodata, export, link_name = "bac_arm_CC_TABLE")
 CC_TABLE := [?]bac.Call_Conv {
 	ARM_SYSTEMV_CC = {
@@ -215,6 +220,24 @@ peep :: proc(
 	}
 
 	#partial switch kind {
+	case .Select:
+		cond := expand_node(ctx, node.inps[2])
+		if node.dt in bac.INT_DTS &&
+		   cond.itype == .U_Lt &&
+		   get_node(ctx, cond.inps[0]).dt >= .I32 {
+			limit := bac.get_extra(ctx, cond.inps[1], bac.CInt)
+			if limit != nil && 0 <= limit.value && limit.value < 4096 {
+				return add_csel_ult_imm(
+					ctx,
+					"selcmp",
+					node.dt,
+					node.inps[0],
+					node.inps[1],
+					cond.inps[0],
+					u32(limit.value),
+				)
+			}
+		}
 	case .Shl ..= .U_Shr:
 		if node.dt not_in bac.INT_DTS do break
 
@@ -229,21 +252,33 @@ peep :: proc(
 			bac.worklist_add(ctx, ctx.worklist, count)
 		}
 
+		in_range: bac.Node_ID
 		if constant != nil {
 			if u64(constant.value) >= u64(bits) {
 				if kind != .Shr do return bac.add_c_int(ctx, "shzero", node.dt, 0)
 				count = bac.add_c_int(ctx, "shlimit", count_dt, bits - 1)
 			}
-		} else if kind == .Shr {
-			count = add_csel_ult_imm(
+		} else {
+			in_range = bac.add_bin_op(
 				ctx,
-				"shclamp",
-				count_dt,
+				"shrange",
+				.U_Lt,
+				.I8,
 				count,
-				bac.add_c_int(ctx, "shlimit", count_dt, bits - 1),
-				count,
-				u32(bits),
+				bac.add_c_int(ctx, "shwidth", count_dt, bits),
 			)
+			bac.worklist_add(ctx, ctx.worklist, in_range)
+			if kind == .Shr {
+				count = bac.add_select(
+					ctx,
+					"shclamp",
+					count_dt,
+					count,
+					bac.add_c_int(ctx, "shlimit", count_dt, bits - 1),
+					in_range,
+				)
+				bac.worklist_add(ctx, ctx.worklist, count)
+			}
 		}
 
 		@(static, rodata)
@@ -256,15 +291,16 @@ peep :: proc(
 			{node.inps[0], count},
 		)
 		if constant != nil || kind == .Shr do return shift
-		return add_csel_ult_imm(
+		guard := bac.add_select(
 			ctx,
 			"shguard",
 			node.dt,
 			shift,
 			bac.add_c_int(ctx, "shzero", node.dt, 0),
-			count,
-			u32(bits),
+			in_range,
 		)
+		bac.worklist_add(ctx, ctx.worklist, guard)
+		return guard
 	case .CInt:
 		cnst: ^bac.CInt = bac.get_extra(ctx, node, bac.CInt)
 		if node.dt in bac.FLOAT_DTS && cnst.value != 0 {
@@ -482,6 +518,8 @@ meta_of :: #force_inline proc(
 		return {out = out, masks = nmasks[:2]}
 	case .Msub, .Csel_Ult_Imm:
 		return {out = out, masks = nmasks[:3]}
+	case .Select:
+		return {out = out, masks = dup({out, out, GPA_MASK_IDX})}
 	case .Eq ..= .U_Ge:
 		ikind := ra.datatype_to_reg_kind[get_node(prc, node.inps[0]).dt]
 		return {out = out, masks = masks[ikind][:2]}
@@ -1096,6 +1134,31 @@ emit_instr :: proc(
 			emit_op(ctx.code, sh_instr(true, 0b0101010, nil, rd, XZR, rm))
 		}
 
+	case .Select:
+		cond := reg_of(ctx, node.inps[2])
+		cond_64 := get_node(ctx, node.inps[2]).dt == .I64
+		// cmp wcond/xcond, #0
+		emit_op(
+			ctx.code,
+			imm12_instr(cond_64 ? 0b1111000100 : 0b0111000100, XZR, cond, 0),
+		)
+		dst := reg_of(ctx, instr)
+		on_true := reg_of(ctx, node.inps[0])
+		on_false := reg_of(ctx, node.inps[1])
+		if node.dt in bac.FLOAT_DTS {
+			// fcsel sdst/ddst, son_true/don_true, son_false/don_false, ne
+			emit_op(
+				ctx.code,
+				fff(is_f64, 0x1E200C00 | u32(Cond.NE) << 12, dst, on_true, on_false),
+			)
+		} else {
+			assert(node.dt in bac.INT_DTS)
+			// csel wdst/xdst, won_true/xon_true, won_false/xon_false, ne
+			emit_op(
+				ctx.code,
+				rrr(is_64, 0x1A800000 | u32(Cond.NE) << 12, dst, on_true, on_false),
+			)
+		}
 	case .Csel_Ult_Imm:
 		CMP_W :: 0b0111000100
 		CMP_X :: 0b1111000100
@@ -1103,6 +1166,7 @@ emit_instr :: proc(
 
 		count_64 := get_node(ctx, node.inps[2]).dt == .I64
 		// Keep NZCV internal to this node so scheduling cannot clobber the comparison.
+		// cmp wcount/xcount, #aux
 		emit_op(
 			ctx.code,
 			imm12_instr(
@@ -1112,6 +1176,7 @@ emit_instr :: proc(
 				arm_op.aux,
 			),
 		)
+		// csel wdst/xdst, won_true/xon_true, won_false/xon_false, cc
 		emit_op(
 			ctx.code,
 			rrr(

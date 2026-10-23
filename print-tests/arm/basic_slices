@@ -296,8 +296,8 @@ main:
     add sp, sp, #160
     ret
 bubble_sort:
-    sub sp, sp, #48
-    add x2, sp, #24
+    sub sp, sp, #32
+    add x2, sp, #16
     str x0, [x2]
     movz x3, #1
     movz x0, #0
@@ -313,7 +313,7 @@ bubble_sort:
     mov x9, x1
 17:
     cmp x9, x5
-    b.ge 0xc4
+    b.ge 0xb4
     ldr x10, [x2]
     madd x11, x9, x4, xzr
     add x12, x9, x3
@@ -326,46 +326,38 @@ bubble_sort:
     b.gt 0x74
     str x7, [xzr]
     str x8, [xzr, #8]
-    b 0xb4
+    b 0xa4
 18:
-    cmp x7, x6
-    b.eq 0x84
-    str x7, [xzr, #16]
-    b 0x88
-19:
-    str x9, [xzr, #16]
-20:
-    str x17, [xzr, #-16]!
-    ldr x17, [xzr, #32]
-    str x17, [xzr, #16]
-    ldr x17, [xzr], #16
     ldr x13, [x13]
     ldr x14, [x10]
     str x13, [x10]
     ldr x10, [x2]
+    cmp x7, x6
+    cset x13, eq
+    cmp w13, #0
+    csel x13, x9, x7, ne
     add x10, x10, x11
     str x14, [x10]
     str x9, [xzr, #8]
-21:
+    str x13, [xzr]
+19:
     ldr x7, [xzr]
     ldr x8, [xzr, #8]
     mov x9, x12
     b 0x38
-22:
+20:
     cmp x8, x6
-    b.eq 0xec
+    b.eq 0xdc
     sub x7, x7, x3
     cmp x7, x0
-    b.lt 0xdc
-    b 0xe0
-23:
-    movz x7, #0
-24:
+    cset x9, lt
+    cmp w9, #0
+    csel x7, x0, x7, ne
     mov x5, x8
     mov x1, x7
     b 0x2c
-25:
-    add sp, sp, #48
+21:
+    add sp, sp, #32
     ret
 quick_sort:
     sub sp, sp, #80
@@ -392,10 +384,10 @@ quick_sort:
     ldr x0, [xzr, #32]
     sub x4, x0, x3
     movz x5, #0
-27:
+23:
     str x5, [xzr, #40]
     ldr x0, [x19]
-28:
+24:
     str x17, [xzr, #-16]!
     ldr x17, [xzr, #56]
     str x17, [xzr, #64]
@@ -414,9 +406,9 @@ quick_sort:
     str x17, [xzr, #56]
     ldr x17, [xzr], #16
     b 0x68
-29:
+25:
     str x4, [xzr, #40]
-30:
+26:
     ldr x7, [xzr, #40]
     madd x8, x7, x2, xzr
     add x8, x8, x0
@@ -426,7 +418,7 @@ quick_sort:
     b.ge 0xd8
     str x4, [xzr, #40]
     b 0xb4
-31:
+27:
     ldr x9, [xzr, #48]
     cmp x9, x7
     b.ge 0x104
@@ -438,7 +430,7 @@ quick_sort:
     str x7, [x6]
     ldr x5, [xzr, #56]
     b 0x60
-32:
+28:
     ldr x1, [xzr, #48]
     bl main
     ldr x0, [x19]
@@ -448,7 +440,7 @@ quick_sort:
     sub x1, x2, x1
     bl main
     b 0x128
-33:
+29:
     movz x0, #0
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
@@ -639,58 +631,55 @@ bubble_sort:
     movz x13, #1
     movz x0, #0
     movz x12, #8
-    sub x2, x1, x13
+    sub x3, x1, x13
     movn x11, #0
-    add x3, x14, x12
-    str x1, [x3]
-    movz x1, #0
+    add x2, x14, x12
+    str x1, [x2]
+    movz x2, #0
+    mov x1, x3
 16:
-    movn x5, #0
     movn x3, #0
+    movn x4, #0
 17:
-    cmp x1, x2
-    b.ge 0x9c
+    cmp x2, x1
+    b.ge 0xa0
     ldr x6, [x14]
-    madd x10, x1, x12, xzr
-    add x9, x1, x13
+    madd x10, x2, x12, xzr
+    add x9, x2, x13
     add x8, x6, x10
-    madd x4, x9, x12, xzr
-    add x7, x4, x6
+    madd x5, x9, x12, xzr
+    add x7, x5, x6
     ldr x6, [x8]
-    ldr x4, [x7]
-    cmp x6, x4
-    b.gt 0x68
-    b 0x94
+    ldr x5, [x7]
+    cmp x6, x5
+    b.gt 0x6c
+    b 0x98
 18:
-    cmp x5, x11
-    b.eq 0x74
-    b 0x78
-19:
-    mov x5, x1
-20:
-    ldr x3, [x8]
-    ldr x4, [x7]
-    str x3, [x7]
-    ldr x3, [x14]
-    add x3, x3, x10
-    str x4, [x3]
-    mov x3, x1
-21:
-    mov x1, x9
-    b 0x34
-22:
+    ldr x4, [x8]
+    ldr x6, [x7]
+    str x4, [x7]
+    ldr x5, [x14]
     cmp x3, x11
-    b.eq 0xc0
-    sub x1, x5, x13
-    cmp x1, x0
-    b.lt 0xb4
-    b 0xb8
-23:
-    movz x1, #0
-24:
-    mov x2, x3
-    b 0x2c
-25:
+    cset x4, eq
+    cmp w4, #0
+    csel x3, x2, x3, ne
+    add x4, x5, x10
+    str x6, [x4]
+    mov x4, x2
+19:
+    mov x2, x9
+    b 0x38
+20:
+    cmp x4, x11
+    b.eq 0xc4
+    sub x2, x3, x13
+    cmp x2, x0
+    cset x1, lt
+    cmp w1, #0
+    csel x2, x0, x2, ne
+    mov x1, x4
+    b 0x30
+21:
     add sp, sp, #16
     ret
 quick_sort:
@@ -716,9 +705,9 @@ quick_sort:
     ldr x8, [x0]
     sub x3, x22, x9
     movz x6, #0
-27:
+23:
     ldr x0, [x19]
-28:
+24:
     mov x21, x6
     madd x20, x21, x1, xzr
     add x7, x0, x20
@@ -727,7 +716,7 @@ quick_sort:
     cmp x4, x8
     b.ge 0x7c
     b 0x5c
-29:
+25:
     mov x5, x3
     madd x2, x5, x1, xzr
     add x4, x2, x0
@@ -736,7 +725,7 @@ quick_sort:
     cmp x8, x2
     b.ge 0x9c
     b 0x7c
-30:
+26:
     cmp x21, x5
     b.ge 0xc0
     ldr x0, [x7]
@@ -746,7 +735,7 @@ quick_sort:
     add x0, x0, x20
     str x2, [x0]
     b 0x58
-31:
+27:
     mov x1, x21
     bl main
     ldr x0, [x19]
@@ -1060,8 +1049,8 @@ main:
     add sp, sp, #160
     ret
 bubble_sort:
-    sub sp, sp, #48
-    add x2, sp, #24
+    sub sp, sp, #32
+    add x2, sp, #16
     str x0, [x2]
     movz x3, #1
     movz x0, #0
@@ -1077,7 +1066,7 @@ bubble_sort:
     mov x9, x1
 17:
     cmp x9, x5
-    b.ge 0xc4
+    b.ge 0xb4
     ldr x10, [x2]
     madd x11, x9, x4, xzr
     add x12, x9, x3
@@ -1090,46 +1079,38 @@ bubble_sort:
     b.gt 0x74
     str x7, [xzr]
     str x8, [xzr, #8]
-    b 0xb4
+    b 0xa4
 18:
-    cmp x7, x6
-    b.eq 0x84
-    str x7, [xzr, #16]
-    b 0x88
-19:
-    str x9, [xzr, #16]
-20:
-    str x17, [xzr, #-16]!
-    ldr x17, [xzr, #32]
-    str x17, [xzr, #16]
-    ldr x17, [xzr], #16
     ldr x13, [x13]
     ldr x14, [x10]
     str x13, [x10]
     ldr x10, [x2]
+    cmp x7, x6
+    cset x13, eq
+    cmp w13, #0
+    csel x13, x9, x7, ne
     add x10, x10, x11
     str x14, [x10]
     str x9, [xzr, #8]
-21:
+    str x13, [xzr]
+19:
     ldr x7, [xzr]
     ldr x8, [xzr, #8]
     mov x9, x12
     b 0x38
-22:
+20:
     cmp x8, x6
-    b.eq 0xec
+    b.eq 0xdc
     sub x7, x7, x3
     cmp x7, x0
-    b.lt 0xdc
-    b 0xe0
-23:
-    movz x7, #0
-24:
+    cset x9, lt
+    cmp w9, #0
+    csel x7, x0, x7, ne
     mov x5, x8
     mov x1, x7
     b 0x2c
-25:
-    add sp, sp, #48
+21:
+    add sp, sp, #32
     ret
 quick_sort:
     sub sp, sp, #80
@@ -1156,10 +1137,10 @@ quick_sort:
     ldr x0, [xzr, #32]
     sub x4, x0, x3
     movz x5, #0
-27:
+23:
     str x5, [xzr, #40]
     ldr x0, [x19]
-28:
+24:
     str x17, [xzr, #-16]!
     ldr x17, [xzr, #56]
     str x17, [xzr, #64]
@@ -1178,9 +1159,9 @@ quick_sort:
     str x17, [xzr, #56]
     ldr x17, [xzr], #16
     b 0x68
-29:
+25:
     str x4, [xzr, #40]
-30:
+26:
     ldr x7, [xzr, #40]
     madd x8, x7, x2, xzr
     add x8, x8, x0
@@ -1190,7 +1171,7 @@ quick_sort:
     b.ge 0xd8
     str x4, [xzr, #40]
     b 0xb4
-31:
+27:
     ldr x9, [xzr, #48]
     cmp x9, x7
     b.ge 0x104
@@ -1202,7 +1183,7 @@ quick_sort:
     str x7, [x6]
     ldr x5, [xzr, #56]
     b 0x60
-32:
+28:
     ldr x1, [xzr, #48]
     bl main
     ldr x0, [x19]
@@ -1212,7 +1193,7 @@ quick_sort:
     sub x1, x2, x1
     bl main
     b 0x128
-33:
+29:
     movz x0, #0
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
@@ -1403,58 +1384,55 @@ bubble_sort:
     movz x13, #1
     movz x0, #0
     movz x12, #8
-    sub x2, x1, x13
+    sub x3, x1, x13
     movn x11, #0
-    add x3, x14, x12
-    str x1, [x3]
-    movz x1, #0
+    add x2, x14, x12
+    str x1, [x2]
+    movz x2, #0
+    mov x1, x3
 16:
-    movn x5, #0
     movn x3, #0
+    movn x4, #0
 17:
-    cmp x1, x2
-    b.ge 0x9c
+    cmp x2, x1
+    b.ge 0xa0
     ldr x6, [x14]
-    madd x10, x1, x12, xzr
-    add x9, x1, x13
+    madd x10, x2, x12, xzr
+    add x9, x2, x13
     add x8, x6, x10
-    madd x4, x9, x12, xzr
-    add x7, x4, x6
+    madd x5, x9, x12, xzr
+    add x7, x5, x6
     ldr x6, [x8]
-    ldr x4, [x7]
-    cmp x6, x4
-    b.gt 0x68
-    b 0x94
+    ldr x5, [x7]
+    cmp x6, x5
+    b.gt 0x6c
+    b 0x98
 18:
-    cmp x5, x11
-    b.eq 0x74
-    b 0x78
-19:
-    mov x5, x1
-20:
-    ldr x3, [x8]
-    ldr x4, [x7]
-    str x3, [x7]
-    ldr x3, [x14]
-    add x3, x3, x10
-    str x4, [x3]
-    mov x3, x1
-21:
-    mov x1, x9
-    b 0x34
-22:
+    ldr x4, [x8]
+    ldr x6, [x7]
+    str x4, [x7]
+    ldr x5, [x14]
     cmp x3, x11
-    b.eq 0xc0
-    sub x1, x5, x13
-    cmp x1, x0
-    b.lt 0xb4
-    b 0xb8
-23:
-    movz x1, #0
-24:
-    mov x2, x3
-    b 0x2c
-25:
+    cset x4, eq
+    cmp w4, #0
+    csel x3, x2, x3, ne
+    add x4, x5, x10
+    str x6, [x4]
+    mov x4, x2
+19:
+    mov x2, x9
+    b 0x38
+20:
+    cmp x4, x11
+    b.eq 0xc4
+    sub x2, x3, x13
+    cmp x2, x0
+    cset x1, lt
+    cmp w1, #0
+    csel x2, x0, x2, ne
+    mov x1, x4
+    b 0x30
+21:
     add sp, sp, #16
     ret
 quick_sort:
@@ -1480,9 +1458,9 @@ quick_sort:
     ldr x8, [x0]
     sub x3, x22, x9
     movz x6, #0
-27:
+23:
     ldr x0, [x19]
-28:
+24:
     mov x21, x6
     madd x20, x21, x1, xzr
     add x7, x0, x20
@@ -1491,7 +1469,7 @@ quick_sort:
     cmp x4, x8
     b.ge 0x7c
     b 0x5c
-29:
+25:
     mov x5, x3
     madd x2, x5, x1, xzr
     add x4, x2, x0
@@ -1500,7 +1478,7 @@ quick_sort:
     cmp x8, x2
     b.ge 0x9c
     b 0x7c
-30:
+26:
     cmp x21, x5
     b.ge 0xc0
     ldr x0, [x7]
@@ -1510,7 +1488,7 @@ quick_sort:
     add x0, x0, x20
     str x2, [x0]
     b 0x58
-31:
+27:
     mov x1, x21
     bl main
     ldr x0, [x19]
@@ -1696,71 +1674,61 @@ main:
     add sp, sp, #144
     ret
 bubble_sort:
-    mov x14, x0
-    movz x13, #1
+    mov x13, x0
+    movz x12, #1
     movz x0, #0
-    sub x1, x1, x13
-    movn x12, #0
-    movz x11, #8
+    sub x1, x1, x12
+    movn x11, #0
+    movz x10, #8
     movz x4, #0
 9:
     cmp x4, x1
-    b.ge 0xb0
-    movn x3, #0
-    movn x6, #0
+    b.ge 1
+    movn x5, #0
+    movn x2, #0
 10:
-    madd x5, x4, x11, xzr
-    add x10, x5, x14
-    ldr x9, [x10]
-    add x8, x4, x13
-    madd x5, x8, x11, xzr
-    add x7, x5, x14
-    ldr x2, [x7]
-    cmp x9, x2
+    madd x6, x4, x10, xzr
+    add x9, x6, x13
+    ldr x8, [x9]
+    add x7, x4, x12
+    madd x6, x7, x10, xzr
+    add x6, x6, x13
+    ldr x3, [x6]
+    cmp x8, x3
     b.gt 0x5c
-    mov x2, x3
-    mov x5, x6
-    b 0x84
+    mov x3, x5
+    mov x6, x2
+    b 0x80
 11:
-    cmp x6, x12
-    b.eq 0x68
-    b 0x6c
+    ldr x5, [x9]
+    ldr x3, [x6]
+    str x5, [x6]
+    str x3, [x9]
+    cmp x2, x11
+    cset x3, eq
+    cmp w3, #0
+    csel x6, x4, x2, ne
+    mov x3, x4
 12:
-    mov x6, x4
-13:
-    mov x5, x6
-    ldr x3, [x10]
-    ldr x2, [x7]
-    str x3, [x7]
-    str x2, [x10]
-    mov x2, x4
-14:
-    cmp x8, x1
-    mov x3, x2
-    mov x4, x8
-    mov x6, x5
+    cmp x7, x1
+    mov x5, x3
+    mov x2, x6
+    mov x4, x7
     b.lt 0x2c
-    sub x4, x5, x13
+    sub x4, x6, x12
+    cmp x3, x11
+    cset x2, eq
     cmp x4, x0
     cset x1, lt
-    cmp x2, x12
-    cset x3, eq
+    cmp w1, #0
+    csel x4, x0, x4, ne
     b 0xc0
-15:
-    movn x4, #1
-    movz x3, #1
-    movz x1, #1
-    movn x2, #0
-16:
-    cbnz x3, 0xd8
-    cbnz x1, 0xcc
-    b 0xd0
-17:
     movz x4, #0
-18:
-    mov x1, x2
-    b 0x1c
-19:
+    movn x3, #0
+    movz x2, #1
+13:
+    mov x1, x3
+    cbz x2, 0x1c
     ret
 quick_sort:
     sub sp, sp, #48
@@ -1780,7 +1748,7 @@ quick_sort:
     add x4, x4, x0
     ldr x8, [x4]
     movz x4, #0
-21:
+15:
     mov x20, x4
     madd x4, x20, x1, xzr
     add x4, x4, x0
@@ -1790,7 +1758,7 @@ quick_sort:
     cmp x5, x8
     mov x4, x7
     b.lt 0x44
-22:
+16:
     mov x4, x3
     madd x3, x4, x1, xzr
     add x6, x3, x0
@@ -1808,14 +1776,14 @@ quick_sort:
     mov x4, x7
     mov x3, x5
     b 0x44
-23:
+17:
     mov x1, x20
     bl main
     sub x1, x21, x20
     mov x0, x19
     bl main
     b 0xc4
-24:
+18:
     movz x0, #0
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
@@ -1967,7 +1935,7 @@ main:
 7:
     mov x9, x1
     cmp x3, x9
-    b.ge 13
+    b.ge 11
     movn x4, #0
     movn x5, #0
 8:
@@ -1985,54 +1953,46 @@ main:
     ldr x1, [x6]
     cmp x2, x1
     b.gt 9
-    b 12
+    b 10
 9:
-    mov x2, x4
-    movn x1, #0
-    cmp x2, x1
-    b.eq 10
-    b 11
-10:
-    mov x4, x8
-11:
     ldr x2, [x7]
     ldr x1, [x6]
     str x2, [x6]
     str x1, [x7]
+    mov x2, x4
+    movn x1, #0
+    cmp x2, x1
+    cset x2, eq
+    cmp w2, #0
+    csel x4, x8, x4, ne
     mov x5, x8
-12:
+10:
     mov x2, x4
     mov x1, x5
     cmp x3, x9
     mov x5, x1
     mov x4, x2
     b.lt 8
-    sub x2, x2, x19
-    movz x4, #0
-    cmp x2, x4
-    cset x4, lt
-    mov x5, x1
-    movn x3, #0
-    cmp x5, x3
-    cset x3, eq
-    b 14
-13:
-    movn x2, #1
+    sub x4, x2, x19
+    movz x2, #0
+    cmp x4, x2
+    cset x3, lt
+    movz x2, #0
+    cmp w3, #0
+    csel x3, x2, x4, ne
+    mov x4, x1
+    movn x2, #0
+    cmp x4, x2
+    cset x2, eq
+    b 12
+11:
+    movz x3, #0
     movn x1, #0
-    movz x4, #1
-    movz x3, #1
-14:
-    cbnz x3, 17
-    cbnz x4, 15
-    b 16
-15:
+    movz x2, #1
+12:
+    cbz x2, 7
     movz x2, #0
-16:
-    mov x3, x2
-    b 7
-17:
-    movz x2, #0
-18:
+13:
     movz x3, #8
     madd x3, x2, x3, xzr
     add x1, sp, #64
@@ -2049,7 +2009,7 @@ main:
     movz x1, #8
     cmp x2, x1
     mov x0, x3
-    b.lt 18
+    b.lt 13
     mov x0, x3
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
@@ -2074,7 +2034,7 @@ quick_sort:
     add x4, x4, x0
     ldr x8, [x4]
     movz x4, #0
-20:
+15:
     mov x20, x4
     madd x4, x20, x1, xzr
     add x4, x4, x0
@@ -2084,7 +2044,7 @@ quick_sort:
     cmp x5, x8
     mov x4, x7
     b.lt 0x44
-21:
+16:
     mov x4, x3
     madd x3, x4, x1, xzr
     add x6, x3, x0
@@ -2102,14 +2062,14 @@ quick_sort:
     mov x4, x7
     mov x3, x5
     b 0x44
-22:
+17:
     mov x1, x20
     bl main
     sub x1, x21, x20
     mov x0, x19
     bl main
     b 0xc4
-23:
+18:
     movz x0, #0
     ldr x19, [xzr]
     ldr x20, [xzr, #8]

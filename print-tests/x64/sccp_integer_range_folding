@@ -1,35 +1,23 @@
 =========== OPT LEVEL: none-quick ===========
 check:
-    mov.q [rsp - 0x10], rdi
-    test sil, sil
-    jne 1
-    mov rax, 2
-    jmp 2
-1:
+    push rbx
+    mov rcx, rdi
+    and rcx, 7
     mov rax, 4
-2:
-    mov.q [rsp - 0x8], rax
-    mov.q rax, [rsp - 0x10]
-    and rax, 7
-    mov.q [rsp - 0x10], rax
-    mov.q rax, [rsp - 0x8]
-    mov.q rcx, [rsp - 0x10]
-    cmp rcx, rax
-    jl 3
-    mov.q rax, [rsp - 0x8]
+    mov rdx, 2
+    cmp sil, 0
+    cmovne rdx, rax
+    mov rax, rdx
     add rax, 0x804
-    mov.q [rsp - 0x8], rax
-    jmp 4
-3:
-    mov.q rax, [rsp - 0x10]
-    add rax, 0x802
-    mov.q [rsp - 0x8], rax
-4:
-    mov.q rax, [rsp - 0x8]
+    mov rbx, rcx
+    add rbx, 0x802
+    cmp rcx, rdx
+    cmovl rax, rbx
+    pop rbx
     ret
 main:
     sub rsp, 0x18
-    mov.q rdi, [rip + 0xf33]
+    mov.q rdi, [rip + 0xf20]
     mov sil, 1
     call check
     mov.q [rsp], rax
@@ -62,28 +50,23 @@ main:
     ret
 =========== OPT LEVEL: none ===========
 check:
-    test sil, sil
-    jne 1
-    mov rax, 2
-    jmp 2
-1:
-    mov rax, 4
-2:
     and rdi, 7
-    cmp rdi, rax
-    jl 3
+    mov rax, 4
+    mov rdx, 2
+    cmp sil, 0
+    cmovne rdx, rax
+    mov rax, rdx
     add rax, 0x804
-    jmp 4
-3:
-    mov rax, rdi
-    add rax, 0x802
-4:
+    mov rcx, rdi
+    add rcx, 0x802
+    cmp rdi, rdx
+    cmovl rax, rcx
     ret
 main:
     push rbx
     push rbp
     push r12
-    mov.q rdi, [rip + 0xf65]
+    mov.q rdi, [rip + 0xf25]
     mov sil, 1
     call check
     mov r12, rax
@@ -113,36 +96,24 @@ main:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 check:
-    mov.q [rsp - 0x10], rdi
-    test sil, sil
-    jne 1
-    mov rax, 2
-    jmp 2
-1:
+    push rbx
+    mov rcx, rdi
+    and rcx, 7
     mov rax, 4
-2:
-    mov.q [rsp - 0x8], rax
-    mov.q rax, [rsp - 0x10]
-    and rax, 7
-    mov.q [rsp - 0x10], rax
-    mov.q rax, [rsp - 0x8]
-    mov.q rcx, [rsp - 0x10]
-    cmp rcx, rax
-    jl 3
-    mov.q rax, [rsp - 0x8]
+    mov rdx, 2
+    cmp sil, 0
+    cmovne rdx, rax
+    mov rax, rdx
     add rax, 0x804
-    mov.q [rsp - 0x8], rax
-    jmp 4
-3:
-    mov.q rax, [rsp - 0x10]
-    add rax, 0x802
-    mov.q [rsp - 0x8], rax
-4:
-    mov.q rax, [rsp - 0x8]
+    mov rbx, rcx
+    add rbx, 0x802
+    cmp rcx, rdx
+    cmovl rax, rbx
+    pop rbx
     ret
 main:
     sub rsp, 0x18
-    mov.q rdi, [rip + 0xf33]
+    mov.q rdi, [rip + 0xf20]
     mov sil, 1
     call check
     mov.q [rsp], rax
@@ -175,28 +146,23 @@ main:
     ret
 =========== OPT LEVEL: moderate ===========
 check:
-    test sil, sil
-    jne 1
-    mov rax, 2
-    jmp 2
-1:
-    mov rax, 4
-2:
     and rdi, 7
-    cmp rdi, rax
-    jl 3
+    mov rax, 4
+    mov rdx, 2
+    cmp sil, 0
+    cmovne rdx, rax
+    mov rax, rdx
     add rax, 0x804
-    jmp 4
-3:
-    mov rax, rdi
-    add rax, 0x802
-4:
+    mov rcx, rdi
+    add rcx, 0x802
+    cmp rdi, rdx
+    cmovl rax, rcx
     ret
 main:
     push rbx
     push rbp
     push r12
-    mov.q rdi, [rip + 0xf65]
+    mov.q rdi, [rip + 0xf25]
     mov sil, 1
     call check
     mov r12, rax
@@ -226,28 +192,23 @@ main:
     ret
 =========== OPT LEVEL: all ===========
 check:
-    test sil, sil
-    jne 1
-    mov rax, 2
-    jmp 2
-1:
-    mov rax, 4
-2:
     and rdi, 7
-    cmp rdi, rax
-    jl 3
+    mov rax, 4
+    mov rdx, 2
+    cmp sil, 0
+    cmovne rdx, rax
+    mov rax, rdx
     add rax, 0x804
-    jmp 4
-3:
-    mov rax, rdi
-    add rax, 0x802
-4:
+    mov rcx, rdi
+    add rcx, 0x802
+    cmp rdi, rdx
+    cmovl rax, rcx
     ret
 main:
     push rbx
     push rbp
     push r12
-    mov.q rdi, [rip + 0xf65]
+    mov.q rdi, [rip + 0xf25]
     mov sil, 1
     call check
     mov r12, rax

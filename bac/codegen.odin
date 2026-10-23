@@ -47,6 +47,10 @@ Codegen_Spec :: struct {
 	pre_regalloc_hook:  Pre_Regalloc_Hook,
 }
 
+Opt_Hints :: struct {
+	select_types: bit_set[Node_Datatype],
+}
+
 // The fixed part of a DWARF CIE: everything the unwinder needs before the
 // first Cfi_Op of a procedure is applied.
 Cfi_Spec :: struct {

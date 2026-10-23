@@ -110,6 +110,7 @@ Node_Type :: enum u16 {
 	Simd_Extract_Lsbs,
 	Simd_Extract_Msbs,
 	Simd_Reduce_Add_Bisect,
+	Select,
 }
 add_entry :: #force_inline proc(prc: ^Proc, name: string) -> (_id: Node_ID) {
 	(^Cfg)(get_next_extra_slot(prc, u16(Node_Type.Entry), 0))^ = {
@@ -278,6 +279,10 @@ add_load :: #force_inline proc(prc: ^Proc, name: string, dt: Node_Datatype, ctrl
 @(tag = "api")
 add_un_op :: #force_inline proc(prc: ^Proc, name: string, type: Un_Op, dt: Node_Datatype, oprnd: Node_ID, lane: Lane_Type = {}) -> (_id: Node_ID) {
 	return add_raw(prc, name, u16(type), dt, {oprnd}, {lane = lane,})
+}
+@(tag = "api")
+add_select :: #force_inline proc(prc: ^Proc, name: string, dt: Node_Datatype, on_true: Node_ID, on_false: Node_ID, condition: Node_ID) -> (_id: Node_ID) {
+	return add_raw(prc, name, u16(Node_Type.Select), dt, {on_true, on_false, condition})
 }
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {

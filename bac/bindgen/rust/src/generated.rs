@@ -97,6 +97,7 @@ impl NodeType {
     pub const Simd_Extract_Lsbs: Self = Self(sys::ssa_Node_Type_Simd_Extract_Lsbs);
     pub const Simd_Extract_Msbs: Self = Self(sys::ssa_Node_Type_Simd_Extract_Msbs);
     pub const Simd_Reduce_Add_Bisect: Self = Self(sys::ssa_Node_Type_Simd_Reduce_Add_Bisect);
+    pub const Select: Self = Self(sys::ssa_Node_Type_Select);
     pub const Scope: Self = Self(sys::ssa_Node_Type_Scope);
     pub const Lazy_Phi: Self = Self(sys::ssa_Node_Type_Lazy_Phi);
 }
@@ -306,6 +307,27 @@ impl Proc<'_> {
                 self.raw_ptr(),
                 r#name.into(),
                 sys::Slice::from(r#inputs).cast(),
+            )
+        };
+        let result = NodeId(result);
+        result
+    }
+    pub unsafe fn r#add_select(
+        &self,
+        r#name: &str,
+        r#dt: Datatype,
+        r#on_true: NodeId,
+        r#on_false: NodeId,
+        r#condition: NodeId,
+    ) -> NodeId {
+        let result = unsafe {
+            sys::bac_add_select(
+                self.raw_ptr(),
+                r#name.into(),
+                r#dt.0,
+                r#on_true.0,
+                r#on_false.0,
+                r#condition.0,
             )
         };
         let result = NodeId(result);
@@ -1016,6 +1038,24 @@ impl Builder<'_> {
             let result = unsafe { self.proc.get_node(result) };
             result
         })
+    }
+    pub fn r#add_select(
+        &self,
+        r#name: &'static str,
+        r#dt: Datatype,
+        r#on_true: &Node,
+        r#on_false: &Node,
+        r#condition: &Node,
+    ) -> &Node {
+        let r#on_true = self.check(r#on_true);
+        let r#on_false = self.check(r#on_false);
+        let r#condition = self.check(r#condition);
+        let result = unsafe {
+            self.proc
+                .r#add_select(r#name, r#dt, r#on_true, r#on_false, r#condition)
+        };
+        let result = unsafe { self.proc.get_node(result) };
+        result
     }
     pub fn r#add_set(
         &self,

@@ -44,6 +44,7 @@ API := [?]API_Proc{
 	{"..", "add_region", type_of(pkg_0.add_region), ""},
 	{"..", "add_ret", type_of(pkg_0.add_ret), ""},
 	{"..", "add_return", type_of(pkg_0.add_return), ""},
+	{"..", "add_select", type_of(pkg_0.add_select), ""},
 	{"..", "add_set", type_of(pkg_0.add_set), ""},
 	{"..", "add_split", type_of(pkg_0.add_split), ""},
 	{"..", "add_split_mem", type_of(pkg_0.add_split_mem), ""},

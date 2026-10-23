@@ -68,170 +68,127 @@ main:
     add rsp, 0x58
     ret
 test_mem_shifts i8 u8:
-    mov.q [rsp - 0x8], rdx
+    push rbx
     movzx.b eax, [rdi]
-    mov.q rcx, [rsp - 0x8]
-    cmp rcx, 8
-    jb 2
-    xor eax, eax
-    jmp 3
-2:
-    shl al, cl
-3:
-    mov.q rcx, [rsp - 0x8]
-    cmp rcx, 8
-    jb 4
-    sar al, 7
-    jmp 5
-4:
-    sar al, cl
-5:
-    mov.b [rdi], al
+    shlx eax, eax, edx
+    xor ecx, ecx
+    cmp rdx, 0x20
+    cmovb ecx, eax
+    mov rax, rcx
     movsx rax, al
-    movzx.b edx, [rsi]
-    mov.q rcx, [rsp - 0x8]
-    cmp rcx, 8
-    jb 6
-    xor edx, edx
-    jmp 7
-6:
-    shr dl, cl
-7:
-    mov.q rcx, [rsp - 0x8]
-    cmp rcx, 8
-    jb 8
-    xor edx, edx
-    jmp 9
-8:
-    shl dl, cl
-9:
-    mov.b [rsi], dl
-    movzx ecx, dl
+    mov rcx, rax
+    sar ecx, 0x1f
+    sarx eax, eax, edx
+    cmp rdx, 0x20
+    cmovb ecx, eax
+    mov rax, rcx
+    mov.b [rdi], al
+    movzx.b ecx, [rsi]
+    movsx rax, al
+    shrx ecx, ecx, edx
+    xor ebx, ebx
+    cmp rdx, 0x20
+    cmovb ebx, ecx
+    mov rcx, rbx
+    movzx ecx, cl
+    shlx ecx, ecx, edx
+    xor ebx, ebx
+    cmp rdx, 0x20
+    cmovb ebx, ecx
+    mov rcx, rbx
+    mov.b [rsi], cl
+    movzx ecx, cl
     add rax, rcx
+    pop rbx
     ret
 test_mem_shifts i16 u16:
-    mov.q [rsp - 0x8], rdx
+    push rbx
     movzx.w eax, [rdi]
-    mov.q rcx, [rsp - 0x8]
-    cmp rcx, 0x10
-    jb 11
-    xor eax, eax
-    jmp 12
-11:
-    shl ax, cl
-12:
-    mov.q rcx, [rsp - 0x8]
-    cmp rcx, 0x10
-    jb 13
-    sar ax, 0xf
-    jmp 14
-13:
-    sar ax, cl
-14:
-    mov.w [rdi], ax
+    shlx eax, eax, edx
+    xor ecx, ecx
+    cmp rdx, 0x20
+    cmovb ecx, eax
+    mov rax, rcx
     movsx rax, ax
-    movzx.w edx, [rsi]
-    mov.q rcx, [rsp - 0x8]
-    cmp rcx, 0x10
-    jb 15
-    xor edx, edx
-    jmp 16
-15:
-    shr dx, cl
-16:
-    mov.q rcx, [rsp - 0x8]
-    cmp rcx, 0x10
-    jb 17
-    xor edx, edx
-    jmp 18
-17:
-    shl dx, cl
-18:
-    mov.w [rsi], dx
-    movzx ecx, dx
+    mov rcx, rax
+    sar ecx, 0x1f
+    sarx eax, eax, edx
+    cmp rdx, 0x20
+    cmovb ecx, eax
+    mov rax, rcx
+    mov.w [rdi], ax
+    movzx.w ecx, [rsi]
+    movsx rax, ax
+    shrx ecx, ecx, edx
+    xor ebx, ebx
+    cmp rdx, 0x20
+    cmovb ebx, ecx
+    mov rcx, rbx
+    movzx ecx, cx
+    shlx ecx, ecx, edx
+    xor ebx, ebx
+    cmp rdx, 0x20
+    cmovb ebx, ecx
+    mov rcx, rbx
+    mov.w [rsi], cx
+    movzx ecx, cx
     add rax, rcx
+    pop rbx
     ret
 test_mem_shifts i32 u32:
-    mov.q [rsp - 0x8], rdx
+    push rbx
     mov.d eax, [rdi]
-    mov.q rcx, [rsp - 0x8]
-    cmp rcx, 0x20
-    jb 20
-    xor eax, eax
-    jmp 21
-20:
-    shl eax, cl
-21:
-    mov.q rcx, [rsp - 0x8]
-    cmp rcx, 0x20
-    jb 22
+    shlx eax, eax, edx
+    xor ecx, ecx
+    cmp rdx, 0x20
+    cmovb ecx, eax
+    mov rax, rcx
     sar eax, 0x1f
-    jmp 23
-22:
-    sar eax, cl
-23:
-    mov.d [rdi], eax
-    movsxd rax, eax
-    mov.d edx, [rsi]
-    mov.q rcx, [rsp - 0x8]
-    cmp rcx, 0x20
-    jb 24
-    xor edx, edx
-    jmp 25
-24:
-    shr edx, cl
-25:
-    mov.q rcx, [rsp - 0x8]
-    cmp rcx, 0x20
-    jb 26
-    xor edx, edx
-    jmp 27
-26:
-    shl edx, cl
-27:
-    mov.d [rsi], edx
-    mov ecx, edx
+    sarx ecx, ecx, edx
+    mov rbx, rax
+    cmp rdx, 0x20
+    cmovb ebx, ecx
+    movsxd rax, ebx
+    mov.d [rdi], ebx
+    mov.d ecx, [rsi]
+    shrx ecx, ecx, edx
+    xor ebx, ebx
+    cmp rdx, 0x20
+    cmovb ebx, ecx
+    shlx ecx, ebx, edx
+    xor ebx, ebx
+    cmp rdx, 0x20
+    cmovb ebx, ecx
+    mov.d [rsi], ebx
+    mov ecx, ebx
     add rax, rcx
+    pop rbx
     ret
 test_mem_shifts i64 u64:
-    mov.q [rsp - 0x8], rdx
+    push rbx
     mov.q rax, [rdi]
-    mov.q rcx, [rsp - 0x8]
-    cmp rcx, 0x40
-    jb 29
-    xor eax, eax
-    jmp 30
-29:
-    shl rax, cl
-30:
-    mov.q rcx, [rsp - 0x8]
-    cmp rcx, 0x40
-    jb 31
+    shlx rax, rax, rdx
+    xor ecx, ecx
+    cmp rdx, 0x40
+    cmovb rcx, rax
+    mov rax, rcx
     sar rax, 0x3f
-    jmp 32
-31:
-    sar rax, cl
-32:
+    sarx rcx, rcx, rdx
+    cmp rdx, 0x40
+    cmovb rax, rcx
     mov.q [rdi], rax
-    mov.q rdx, [rsi]
-    mov.q rcx, [rsp - 0x8]
-    cmp rcx, 0x40
-    jb 33
-    xor edx, edx
-    jmp 34
-33:
-    shr rdx, cl
-34:
-    mov.q rcx, [rsp - 0x8]
-    cmp rcx, 0x40
-    jb 35
-    xor edx, edx
-    jmp 36
-35:
-    shl rdx, cl
-36:
-    mov.q [rsi], rdx
-    add rax, rdx
+    mov.q rcx, [rsi]
+    shrx rcx, rcx, rdx
+    xor ebx, ebx
+    cmp rdx, 0x40
+    cmovb rbx, rcx
+    shlx rcx, rbx, rdx
+    xor ebx, ebx
+    cmp rdx, 0x40
+    cmovb rbx, rcx
+    mov.q [rsi], rbx
+    add rax, rbx
+    pop rbx
     ret
 test_mem_imm_shifts i8 u8:
     movzx.b eax, [rdi]
@@ -354,170 +311,111 @@ main:
     pop rbx
     ret
 test_mem_shifts i8 u8:
-    mov r8, rdx
     movzx.b eax, [rdi]
-    mov rcx, r8
-    cmp rcx, 8
-    jb 2
+    shlx ecx, eax, edx
     xor eax, eax
-    jmp 3
-2:
-    shl al, cl
-3:
-    mov rcx, r8
-    cmp rcx, 8
-    jb 4
-    sar al, 7
-    jmp 5
-4:
-    sar al, cl
-5:
+    cmp rdx, 0x20
+    cmovb eax, ecx
+    movsx rcx, al
+    mov rax, rcx
+    sar eax, 0x1f
+    sarx ecx, ecx, edx
+    cmp rdx, 0x20
+    cmovb eax, ecx
     mov.b [rdi], al
+    movzx.b ecx, [rsi]
     movsx rax, al
-    movzx.b edx, [rsi]
-    mov rcx, r8
-    cmp rcx, 8
-    jb 6
-    xor edx, edx
-    jmp 7
-6:
-    shr dl, cl
-7:
-    mov rcx, r8
-    cmp rcx, 8
-    jb 8
-    xor edx, edx
-    jmp 9
-8:
-    shl dl, cl
-9:
-    mov.b [rsi], dl
-    movzx ecx, dl
+    shrx edi, ecx, edx
+    xor ecx, ecx
+    cmp rdx, 0x20
+    cmovb ecx, edi
+    movzx ecx, cl
+    shlx edi, ecx, edx
+    xor ecx, ecx
+    cmp rdx, 0x20
+    cmovb ecx, edi
+    mov.b [rsi], cl
+    movzx ecx, cl
     add rax, rcx
     ret
 test_mem_shifts i16 u16:
-    mov r8, rdx
     movzx.w eax, [rdi]
-    mov rcx, r8
-    cmp rcx, 0x10
-    jb 11
+    shlx ecx, eax, edx
     xor eax, eax
-    jmp 12
-11:
-    shl ax, cl
-12:
-    mov rcx, r8
-    cmp rcx, 0x10
-    jb 13
-    sar ax, 0xf
-    jmp 14
-13:
-    sar ax, cl
-14:
+    cmp rdx, 0x20
+    cmovb eax, ecx
+    movsx rcx, ax
+    mov rax, rcx
+    sar eax, 0x1f
+    sarx ecx, ecx, edx
+    cmp rdx, 0x20
+    cmovb eax, ecx
     mov.w [rdi], ax
+    movzx.w ecx, [rsi]
     movsx rax, ax
-    movzx.w edx, [rsi]
-    mov rcx, r8
-    cmp rcx, 0x10
-    jb 15
-    xor edx, edx
-    jmp 16
-15:
-    shr dx, cl
-16:
-    mov rcx, r8
-    cmp rcx, 0x10
-    jb 17
-    xor edx, edx
-    jmp 18
-17:
-    shl dx, cl
-18:
-    mov.w [rsi], dx
-    movzx ecx, dx
+    shrx edi, ecx, edx
+    xor ecx, ecx
+    cmp rdx, 0x20
+    cmovb ecx, edi
+    movzx ecx, cx
+    shlx edi, ecx, edx
+    xor ecx, ecx
+    cmp rdx, 0x20
+    cmovb ecx, edi
+    mov.w [rsi], cx
+    movzx ecx, cx
     add rax, rcx
     ret
 test_mem_shifts i32 u32:
-    mov r8, rdx
     mov.d eax, [rdi]
-    mov rcx, r8
-    cmp rcx, 0x20
-    jb 20
+    shlx ecx, eax, edx
     xor eax, eax
-    jmp 21
-20:
-    shl eax, cl
-21:
-    mov rcx, r8
-    cmp rcx, 0x20
-    jb 22
-    sar eax, 0x1f
-    jmp 23
-22:
-    sar eax, cl
-23:
-    mov.d [rdi], eax
-    movsxd rax, eax
-    mov.d edx, [rsi]
-    mov rcx, r8
-    cmp rcx, 0x20
-    jb 24
-    xor edx, edx
-    jmp 25
-24:
-    shr edx, cl
-25:
-    mov rcx, r8
-    cmp rcx, 0x20
-    jb 26
-    xor edx, edx
-    jmp 27
-26:
-    shl edx, cl
-27:
-    mov.d [rsi], edx
-    mov ecx, edx
+    cmp rdx, 0x20
+    cmovb eax, ecx
+    mov rcx, rax
+    sar ecx, 0x1f
+    sarx eax, eax, edx
+    cmp rdx, 0x20
+    cmovb ecx, eax
+    movsxd rax, ecx
+    mov.d [rdi], ecx
+    mov.d ecx, [rsi]
+    shrx edi, ecx, edx
+    xor ecx, ecx
+    cmp rdx, 0x20
+    cmovb ecx, edi
+    shlx edi, ecx, edx
+    xor ecx, ecx
+    cmp rdx, 0x20
+    cmovb ecx, edi
+    mov.d [rsi], ecx
+    mov ecx, ecx
     add rax, rcx
     ret
 test_mem_shifts i64 u64:
-    mov r8, rdx
     mov.q rax, [rdi]
-    mov rcx, r8
-    cmp rcx, 0x40
-    jb 29
+    shlx rcx, rax, rdx
     xor eax, eax
-    jmp 30
-29:
-    shl rax, cl
-30:
-    mov rcx, r8
-    cmp rcx, 0x40
-    jb 31
-    sar rax, 0x3f
-    jmp 32
-31:
-    sar rax, cl
-32:
-    mov.q [rdi], rax
-    mov.q rdx, [rsi]
-    mov rcx, r8
-    cmp rcx, 0x40
-    jb 33
-    xor edx, edx
-    jmp 34
-33:
-    shr rdx, cl
-34:
-    mov rcx, r8
-    cmp rcx, 0x40
-    jb 35
-    xor edx, edx
-    jmp 36
-35:
-    shl rdx, cl
-36:
-    mov.q [rsi], rdx
-    add rax, rdx
+    cmp rdx, 0x40
+    cmovb rax, rcx
+    mov r8, rax
+    sar r8, 0x3f
+    sarx rax, rax, rdx
+    cmp rdx, 0x40
+    cmovb r8, rax
+    mov.q [rdi], r8
+    mov.q rax, [rsi]
+    shrx rcx, rax, rdx
+    xor eax, eax
+    cmp rdx, 0x40
+    cmovb rax, rcx
+    shlx rax, rax, rdx
+    xor ecx, ecx
+    cmp rdx, 0x40
+    cmovb rcx, rax
+    mov.q [rsi], rcx
+    mov rax, r8
+    add rax, rcx
     ret
 test_mem_imm_shifts i8 u8:
     movzx.b eax, [rdi]
@@ -639,170 +537,127 @@ main:
     add rsp, 0x58
     ret
 test_mem_shifts i8 u8:
-    mov.q [rsp - 0x8], rdx
+    push rbx
     movzx.b eax, [rdi]
-    mov.q rcx, [rsp - 0x8]
-    cmp rcx, 8
-    jb 2
-    xor eax, eax
-    jmp 3
-2:
-    shl al, cl
-3:
-    mov.q rcx, [rsp - 0x8]
-    cmp rcx, 8
-    jb 4
-    sar al, 7
-    jmp 5
-4:
-    sar al, cl
-5:
-    mov.b [rdi], al
+    shlx eax, eax, edx
+    xor ecx, ecx
+    cmp rdx, 0x20
+    cmovb ecx, eax
+    mov rax, rcx
     movsx rax, al
-    movzx.b edx, [rsi]
-    mov.q rcx, [rsp - 0x8]
-    cmp rcx, 8
-    jb 6
-    xor edx, edx
-    jmp 7
-6:
-    shr dl, cl
-7:
-    mov.q rcx, [rsp - 0x8]
-    cmp rcx, 8
-    jb 8
-    xor edx, edx
-    jmp 9
-8:
-    shl dl, cl
-9:
-    mov.b [rsi], dl
-    movzx ecx, dl
+    mov rcx, rax
+    sar ecx, 0x1f
+    sarx eax, eax, edx
+    cmp rdx, 0x20
+    cmovb ecx, eax
+    mov rax, rcx
+    mov.b [rdi], al
+    movzx.b ecx, [rsi]
+    movsx rax, al
+    shrx ecx, ecx, edx
+    xor ebx, ebx
+    cmp rdx, 0x20
+    cmovb ebx, ecx
+    mov rcx, rbx
+    movzx ecx, cl
+    shlx ecx, ecx, edx
+    xor ebx, ebx
+    cmp rdx, 0x20
+    cmovb ebx, ecx
+    mov rcx, rbx
+    mov.b [rsi], cl
+    movzx ecx, cl
     add rax, rcx
+    pop rbx
     ret
 test_mem_shifts i16 u16:
-    mov.q [rsp - 0x8], rdx
+    push rbx
     movzx.w eax, [rdi]
-    mov.q rcx, [rsp - 0x8]
-    cmp rcx, 0x10
-    jb 11
-    xor eax, eax
-    jmp 12
-11:
-    shl ax, cl
-12:
-    mov.q rcx, [rsp - 0x8]
-    cmp rcx, 0x10
-    jb 13
-    sar ax, 0xf
-    jmp 14
-13:
-    sar ax, cl
-14:
-    mov.w [rdi], ax
+    shlx eax, eax, edx
+    xor ecx, ecx
+    cmp rdx, 0x20
+    cmovb ecx, eax
+    mov rax, rcx
     movsx rax, ax
-    movzx.w edx, [rsi]
-    mov.q rcx, [rsp - 0x8]
-    cmp rcx, 0x10
-    jb 15
-    xor edx, edx
-    jmp 16
-15:
-    shr dx, cl
-16:
-    mov.q rcx, [rsp - 0x8]
-    cmp rcx, 0x10
-    jb 17
-    xor edx, edx
-    jmp 18
-17:
-    shl dx, cl
-18:
-    mov.w [rsi], dx
-    movzx ecx, dx
+    mov rcx, rax
+    sar ecx, 0x1f
+    sarx eax, eax, edx
+    cmp rdx, 0x20
+    cmovb ecx, eax
+    mov rax, rcx
+    mov.w [rdi], ax
+    movzx.w ecx, [rsi]
+    movsx rax, ax
+    shrx ecx, ecx, edx
+    xor ebx, ebx
+    cmp rdx, 0x20
+    cmovb ebx, ecx
+    mov rcx, rbx
+    movzx ecx, cx
+    shlx ecx, ecx, edx
+    xor ebx, ebx
+    cmp rdx, 0x20
+    cmovb ebx, ecx
+    mov rcx, rbx
+    mov.w [rsi], cx
+    movzx ecx, cx
     add rax, rcx
+    pop rbx
     ret
 test_mem_shifts i32 u32:
-    mov.q [rsp - 0x8], rdx
+    push rbx
     mov.d eax, [rdi]
-    mov.q rcx, [rsp - 0x8]
-    cmp rcx, 0x20
-    jb 20
-    xor eax, eax
-    jmp 21
-20:
-    shl eax, cl
-21:
-    mov.q rcx, [rsp - 0x8]
-    cmp rcx, 0x20
-    jb 22
+    shlx eax, eax, edx
+    xor ecx, ecx
+    cmp rdx, 0x20
+    cmovb ecx, eax
+    mov rax, rcx
     sar eax, 0x1f
-    jmp 23
-22:
-    sar eax, cl
-23:
-    mov.d [rdi], eax
-    movsxd rax, eax
-    mov.d edx, [rsi]
-    mov.q rcx, [rsp - 0x8]
-    cmp rcx, 0x20
-    jb 24
-    xor edx, edx
-    jmp 25
-24:
-    shr edx, cl
-25:
-    mov.q rcx, [rsp - 0x8]
-    cmp rcx, 0x20
-    jb 26
-    xor edx, edx
-    jmp 27
-26:
-    shl edx, cl
-27:
-    mov.d [rsi], edx
-    mov ecx, edx
+    sarx ecx, ecx, edx
+    mov rbx, rax
+    cmp rdx, 0x20
+    cmovb ebx, ecx
+    movsxd rax, ebx
+    mov.d [rdi], ebx
+    mov.d ecx, [rsi]
+    shrx ecx, ecx, edx
+    xor ebx, ebx
+    cmp rdx, 0x20
+    cmovb ebx, ecx
+    shlx ecx, ebx, edx
+    xor ebx, ebx
+    cmp rdx, 0x20
+    cmovb ebx, ecx
+    mov.d [rsi], ebx
+    mov ecx, ebx
     add rax, rcx
+    pop rbx
     ret
 test_mem_shifts i64 u64:
-    mov.q [rsp - 0x8], rdx
+    push rbx
     mov.q rax, [rdi]
-    mov.q rcx, [rsp - 0x8]
-    cmp rcx, 0x40
-    jb 29
-    xor eax, eax
-    jmp 30
-29:
-    shl rax, cl
-30:
-    mov.q rcx, [rsp - 0x8]
-    cmp rcx, 0x40
-    jb 31
+    shlx rax, rax, rdx
+    xor ecx, ecx
+    cmp rdx, 0x40
+    cmovb rcx, rax
+    mov rax, rcx
     sar rax, 0x3f
-    jmp 32
-31:
-    sar rax, cl
-32:
+    sarx rcx, rcx, rdx
+    cmp rdx, 0x40
+    cmovb rax, rcx
     mov.q [rdi], rax
-    mov.q rdx, [rsi]
-    mov.q rcx, [rsp - 0x8]
-    cmp rcx, 0x40
-    jb 33
-    xor edx, edx
-    jmp 34
-33:
-    shr rdx, cl
-34:
-    mov.q rcx, [rsp - 0x8]
-    cmp rcx, 0x40
-    jb 35
-    xor edx, edx
-    jmp 36
-35:
-    shl rdx, cl
-36:
-    mov.q [rsi], rdx
-    add rax, rdx
+    mov.q rcx, [rsi]
+    shrx rcx, rcx, rdx
+    xor ebx, ebx
+    cmp rdx, 0x40
+    cmovb rbx, rcx
+    shlx rcx, rbx, rdx
+    xor ebx, ebx
+    cmp rdx, 0x40
+    cmovb rbx, rcx
+    mov.q [rsi], rbx
+    add rax, rbx
+    pop rbx
     ret
 test_mem_imm_shifts i8 u8:
     movzx.b eax, [rdi]
@@ -925,170 +780,111 @@ main:
     pop rbx
     ret
 test_mem_shifts i8 u8:
-    mov r8, rdx
     movzx.b eax, [rdi]
-    mov rcx, r8
-    cmp rcx, 8
-    jb 2
+    shlx ecx, eax, edx
     xor eax, eax
-    jmp 3
-2:
-    shl al, cl
-3:
-    mov rcx, r8
-    cmp rcx, 8
-    jb 4
-    sar al, 7
-    jmp 5
-4:
-    sar al, cl
-5:
+    cmp rdx, 0x20
+    cmovb eax, ecx
+    movsx rcx, al
+    mov rax, rcx
+    sar eax, 0x1f
+    sarx ecx, ecx, edx
+    cmp rdx, 0x20
+    cmovb eax, ecx
     mov.b [rdi], al
+    movzx.b ecx, [rsi]
     movsx rax, al
-    movzx.b edx, [rsi]
-    mov rcx, r8
-    cmp rcx, 8
-    jb 6
-    xor edx, edx
-    jmp 7
-6:
-    shr dl, cl
-7:
-    mov rcx, r8
-    cmp rcx, 8
-    jb 8
-    xor edx, edx
-    jmp 9
-8:
-    shl dl, cl
-9:
-    mov.b [rsi], dl
-    movzx ecx, dl
+    shrx edi, ecx, edx
+    xor ecx, ecx
+    cmp rdx, 0x20
+    cmovb ecx, edi
+    movzx ecx, cl
+    shlx edi, ecx, edx
+    xor ecx, ecx
+    cmp rdx, 0x20
+    cmovb ecx, edi
+    mov.b [rsi], cl
+    movzx ecx, cl
     add rax, rcx
     ret
 test_mem_shifts i16 u16:
-    mov r8, rdx
     movzx.w eax, [rdi]
-    mov rcx, r8
-    cmp rcx, 0x10
-    jb 11
+    shlx ecx, eax, edx
     xor eax, eax
-    jmp 12
-11:
-    shl ax, cl
-12:
-    mov rcx, r8
-    cmp rcx, 0x10
-    jb 13
-    sar ax, 0xf
-    jmp 14
-13:
-    sar ax, cl
-14:
+    cmp rdx, 0x20
+    cmovb eax, ecx
+    movsx rcx, ax
+    mov rax, rcx
+    sar eax, 0x1f
+    sarx ecx, ecx, edx
+    cmp rdx, 0x20
+    cmovb eax, ecx
     mov.w [rdi], ax
+    movzx.w ecx, [rsi]
     movsx rax, ax
-    movzx.w edx, [rsi]
-    mov rcx, r8
-    cmp rcx, 0x10
-    jb 15
-    xor edx, edx
-    jmp 16
-15:
-    shr dx, cl
-16:
-    mov rcx, r8
-    cmp rcx, 0x10
-    jb 17
-    xor edx, edx
-    jmp 18
-17:
-    shl dx, cl
-18:
-    mov.w [rsi], dx
-    movzx ecx, dx
+    shrx edi, ecx, edx
+    xor ecx, ecx
+    cmp rdx, 0x20
+    cmovb ecx, edi
+    movzx ecx, cx
+    shlx edi, ecx, edx
+    xor ecx, ecx
+    cmp rdx, 0x20
+    cmovb ecx, edi
+    mov.w [rsi], cx
+    movzx ecx, cx
     add rax, rcx
     ret
 test_mem_shifts i32 u32:
-    mov r8, rdx
     mov.d eax, [rdi]
-    mov rcx, r8
-    cmp rcx, 0x20
-    jb 20
+    shlx ecx, eax, edx
     xor eax, eax
-    jmp 21
-20:
-    shl eax, cl
-21:
-    mov rcx, r8
-    cmp rcx, 0x20
-    jb 22
-    sar eax, 0x1f
-    jmp 23
-22:
-    sar eax, cl
-23:
-    mov.d [rdi], eax
-    movsxd rax, eax
-    mov.d edx, [rsi]
-    mov rcx, r8
-    cmp rcx, 0x20
-    jb 24
-    xor edx, edx
-    jmp 25
-24:
-    shr edx, cl
-25:
-    mov rcx, r8
-    cmp rcx, 0x20
-    jb 26
-    xor edx, edx
-    jmp 27
-26:
-    shl edx, cl
-27:
-    mov.d [rsi], edx
-    mov ecx, edx
+    cmp rdx, 0x20
+    cmovb eax, ecx
+    mov rcx, rax
+    sar ecx, 0x1f
+    sarx eax, eax, edx
+    cmp rdx, 0x20
+    cmovb ecx, eax
+    movsxd rax, ecx
+    mov.d [rdi], ecx
+    mov.d ecx, [rsi]
+    shrx edi, ecx, edx
+    xor ecx, ecx
+    cmp rdx, 0x20
+    cmovb ecx, edi
+    shlx edi, ecx, edx
+    xor ecx, ecx
+    cmp rdx, 0x20
+    cmovb ecx, edi
+    mov.d [rsi], ecx
+    mov ecx, ecx
     add rax, rcx
     ret
 test_mem_shifts i64 u64:
-    mov r8, rdx
     mov.q rax, [rdi]
-    mov rcx, r8
-    cmp rcx, 0x40
-    jb 29
+    shlx rcx, rax, rdx
     xor eax, eax
-    jmp 30
-29:
-    shl rax, cl
-30:
-    mov rcx, r8
-    cmp rcx, 0x40
-    jb 31
-    sar rax, 0x3f
-    jmp 32
-31:
-    sar rax, cl
-32:
-    mov.q [rdi], rax
-    mov.q rdx, [rsi]
-    mov rcx, r8
-    cmp rcx, 0x40
-    jb 33
-    xor edx, edx
-    jmp 34
-33:
-    shr rdx, cl
-34:
-    mov rcx, r8
-    cmp rcx, 0x40
-    jb 35
-    xor edx, edx
-    jmp 36
-35:
-    shl rdx, cl
-36:
-    mov.q [rsi], rdx
-    add rax, rdx
+    cmp rdx, 0x40
+    cmovb rax, rcx
+    mov r8, rax
+    sar r8, 0x3f
+    sarx rax, rax, rdx
+    cmp rdx, 0x40
+    cmovb r8, rax
+    mov.q [rdi], r8
+    mov.q rax, [rsi]
+    shrx rcx, rax, rdx
+    xor eax, eax
+    cmp rdx, 0x40
+    cmovb rax, rcx
+    shlx rax, rax, rdx
+    xor ecx, ecx
+    cmp rdx, 0x40
+    cmovb rcx, rax
+    mov.q [rsi], rcx
+    mov rax, r8
+    add rax, rcx
     ret
 test_mem_imm_shifts i8 u8:
     movzx.b eax, [rdi]
@@ -1211,170 +1007,111 @@ main:
     pop rbx
     ret
 test_mem_shifts i8 u8:
-    mov r8, rdx
     movzx.b eax, [rdi]
-    mov rcx, r8
-    cmp rcx, 8
-    jb 2
+    shlx ecx, eax, edx
     xor eax, eax
-    jmp 3
-2:
-    shl al, cl
-3:
-    mov rcx, r8
-    cmp rcx, 8
-    jb 4
-    sar al, 7
-    jmp 5
-4:
-    sar al, cl
-5:
+    cmp rdx, 0x20
+    cmovb eax, ecx
+    movsx rcx, al
+    mov rax, rcx
+    sar eax, 0x1f
+    sarx ecx, ecx, edx
+    cmp rdx, 0x20
+    cmovb eax, ecx
     mov.b [rdi], al
+    movzx.b ecx, [rsi]
     movsx rax, al
-    movzx.b edx, [rsi]
-    mov rcx, r8
-    cmp rcx, 8
-    jb 6
-    xor edx, edx
-    jmp 7
-6:
-    shr dl, cl
-7:
-    mov rcx, r8
-    cmp rcx, 8
-    jb 8
-    xor edx, edx
-    jmp 9
-8:
-    shl dl, cl
-9:
-    mov.b [rsi], dl
-    movzx ecx, dl
+    shrx edi, ecx, edx
+    xor ecx, ecx
+    cmp rdx, 0x20
+    cmovb ecx, edi
+    movzx ecx, cl
+    shlx edi, ecx, edx
+    xor ecx, ecx
+    cmp rdx, 0x20
+    cmovb ecx, edi
+    mov.b [rsi], cl
+    movzx ecx, cl
     add rax, rcx
     ret
 test_mem_shifts i16 u16:
-    mov r8, rdx
     movzx.w eax, [rdi]
-    mov rcx, r8
-    cmp rcx, 0x10
-    jb 11
+    shlx ecx, eax, edx
     xor eax, eax
-    jmp 12
-11:
-    shl ax, cl
-12:
-    mov rcx, r8
-    cmp rcx, 0x10
-    jb 13
-    sar ax, 0xf
-    jmp 14
-13:
-    sar ax, cl
-14:
+    cmp rdx, 0x20
+    cmovb eax, ecx
+    movsx rcx, ax
+    mov rax, rcx
+    sar eax, 0x1f
+    sarx ecx, ecx, edx
+    cmp rdx, 0x20
+    cmovb eax, ecx
     mov.w [rdi], ax
+    movzx.w ecx, [rsi]
     movsx rax, ax
-    movzx.w edx, [rsi]
-    mov rcx, r8
-    cmp rcx, 0x10
-    jb 15
-    xor edx, edx
-    jmp 16
-15:
-    shr dx, cl
-16:
-    mov rcx, r8
-    cmp rcx, 0x10
-    jb 17
-    xor edx, edx
-    jmp 18
-17:
-    shl dx, cl
-18:
-    mov.w [rsi], dx
-    movzx ecx, dx
+    shrx edi, ecx, edx
+    xor ecx, ecx
+    cmp rdx, 0x20
+    cmovb ecx, edi
+    movzx ecx, cx
+    shlx edi, ecx, edx
+    xor ecx, ecx
+    cmp rdx, 0x20
+    cmovb ecx, edi
+    mov.w [rsi], cx
+    movzx ecx, cx
     add rax, rcx
     ret
 test_mem_shifts i32 u32:
-    mov r8, rdx
     mov.d eax, [rdi]
-    mov rcx, r8
-    cmp rcx, 0x20
-    jb 20
+    shlx ecx, eax, edx
     xor eax, eax
-    jmp 21
-20:
-    shl eax, cl
-21:
-    mov rcx, r8
-    cmp rcx, 0x20
-    jb 22
-    sar eax, 0x1f
-    jmp 23
-22:
-    sar eax, cl
-23:
-    mov.d [rdi], eax
-    movsxd rax, eax
-    mov.d edx, [rsi]
-    mov rcx, r8
-    cmp rcx, 0x20
-    jb 24
-    xor edx, edx
-    jmp 25
-24:
-    shr edx, cl
-25:
-    mov rcx, r8
-    cmp rcx, 0x20
-    jb 26
-    xor edx, edx
-    jmp 27
-26:
-    shl edx, cl
-27:
-    mov.d [rsi], edx
-    mov ecx, edx
+    cmp rdx, 0x20
+    cmovb eax, ecx
+    mov rcx, rax
+    sar ecx, 0x1f
+    sarx eax, eax, edx
+    cmp rdx, 0x20
+    cmovb ecx, eax
+    movsxd rax, ecx
+    mov.d [rdi], ecx
+    mov.d ecx, [rsi]
+    shrx edi, ecx, edx
+    xor ecx, ecx
+    cmp rdx, 0x20
+    cmovb ecx, edi
+    shlx edi, ecx, edx
+    xor ecx, ecx
+    cmp rdx, 0x20
+    cmovb ecx, edi
+    mov.d [rsi], ecx
+    mov ecx, ecx
     add rax, rcx
     ret
 test_mem_shifts i64 u64:
-    mov r8, rdx
     mov.q rax, [rdi]
-    mov rcx, r8
-    cmp rcx, 0x40
-    jb 29
+    shlx rcx, rax, rdx
     xor eax, eax
-    jmp 30
-29:
-    shl rax, cl
-30:
-    mov rcx, r8
-    cmp rcx, 0x40
-    jb 31
-    sar rax, 0x3f
-    jmp 32
-31:
-    sar rax, cl
-32:
-    mov.q [rdi], rax
-    mov.q rdx, [rsi]
-    mov rcx, r8
-    cmp rcx, 0x40
-    jb 33
-    xor edx, edx
-    jmp 34
-33:
-    shr rdx, cl
-34:
-    mov rcx, r8
-    cmp rcx, 0x40
-    jb 35
-    xor edx, edx
-    jmp 36
-35:
-    shl rdx, cl
-36:
-    mov.q [rsi], rdx
-    add rax, rdx
+    cmp rdx, 0x40
+    cmovb rax, rcx
+    mov r8, rax
+    sar r8, 0x3f
+    sarx rax, rax, rdx
+    cmp rdx, 0x40
+    cmovb r8, rax
+    mov.q [rdi], r8
+    mov.q rax, [rsi]
+    shrx rcx, rax, rdx
+    xor eax, eax
+    cmp rdx, 0x40
+    cmovb rax, rcx
+    shlx rax, rax, rdx
+    xor ecx, ecx
+    cmp rdx, 0x40
+    cmovb rcx, rax
+    mov.q [rsi], rcx
+    mov rax, r8
+    add rax, rcx
     ret
 test_mem_imm_shifts i8 u8:
     movzx.b eax, [rdi]

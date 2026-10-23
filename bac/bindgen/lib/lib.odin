@@ -378,6 +378,21 @@ bac_add_return :: proc "c" (
 }
 
 @(export)
+bac_add_select :: proc "c" (
+	prc: ^bac.Proc,
+	name: string,
+	dt: bac.Node_Datatype,
+	on_true: bac.Node_ID,
+	on_false: bac.Node_ID,
+	condition: bac.Node_ID,
+) -> (
+	bac.Node_ID,
+) {
+	context = {}
+	return bac.add_select(prc, name, dt, on_true, on_false, condition)
+}
+
+@(export)
 bac_add_set :: proc "c" (
 	prc: ^bac.Proc,
 	name: string,

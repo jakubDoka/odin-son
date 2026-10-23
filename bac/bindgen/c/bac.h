@@ -294,6 +294,7 @@ enum {
 	bac_Node_Type_Simd_Extract_Lsbs = 67,
 	bac_Node_Type_Simd_Extract_Msbs = 68,
 	bac_Node_Type_Simd_Reduce_Add_Bisect = 69,
+	bac_Node_Type_Select = 70,
 };
 struct bac_Codegen_Emit_Buf_Checkpoint {
 	bac_uint code;
@@ -1078,6 +1079,7 @@ extern bac_Node_ID bac_add_proc_addr(bac_Proc *prc, bac_String name, bac_u32 idx
 extern bac_Node_ID bac_add_region(bac_Proc *prc, bac_String name, Slice_Of_bac_Node_ID inputs);
 extern bac_Node_ID bac_add_ret(bac_Proc *prc, bac_String name, bac_Node_Datatype dt, bac_Node_ID call_end, bac_u32 idx);
 extern bac_Node_ID bac_add_return(bac_Proc *prc, bac_String name, Slice_Of_bac_Node_ID inputs);
+extern bac_Node_ID bac_add_select(bac_Proc *prc, bac_String name, bac_Node_Datatype dt, bac_Node_ID on_true, bac_Node_ID on_false, bac_Node_ID condition);
 extern bac_Node_ID bac_add_set(bac_Proc *prc, bac_String name, bac_Node_ID ctrl, bac_Node_ID mem, bac_Node_ID dst, bac_Node_ID value, bac_Node_ID size);
 extern bac_Node_ID bac_add_split(bac_Proc *prc, bac_String name, bac_Node_Datatype dt, bac_Node_ID dest);
 extern bac_Node_ID bac_add_split_mem(bac_Proc *prc, bac_String name, bac_Node_ID mem);

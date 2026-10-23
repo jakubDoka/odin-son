@@ -102,6 +102,11 @@ X64_CFI_SPEC :: bac.Cfi_Spec {
 X64_SYSTEMV_CC :: 0
 X64_LINUX_SYSCALL_CC :: 1
 
+@(tag = "api", rodata, export, link_name = "bac_x64_OPT_HINTS")
+OPT_HINTS := bac.Opt_Hints {
+	select_types = {.I8, .I16, .I32, .I64},
+}
+
 @(tag = "api", rodata, export, link_name = "bac_x64_CC_TABLE")
 CC_TABLE := [?]bac.Call_Conv {
 	X64_SYSTEMV_CC = {
@@ -196,6 +201,7 @@ when SPEC_NOT_PRESENT {
 		X64_Psadbw,
 		X64_Pshufb,
 		X64_Pextr,
+		X64_Cmovcc,
 	}
 }
 
@@ -326,6 +332,119 @@ peep :: proc(
 	}
 
 	#partial matchx: switch xtype(node) {
+	case .Select:
+		assert(node.dt in bac.INT_DTS)
+		cond := expand_node(ctx, node.inps[2])
+		inps := [4]Node_ID{node.inps[1], node.inps[0], node.inps[2], 0}
+		count := 3
+		extra := Mem_Op {
+			aux = 5,
+			dt  = cond.dt,
+		}
+		comparison := cond.itype
+		if .X64_Eq <= xtype(cond) && xtype(cond) <= .X64_U_Ge {
+			comparison = bac.Node_Type(cond.rtype - BIN_OP_OFFSET)
+			if xextra(ctx, cond, Mem_Op).mem_mode != .None do comparison = .Nil
+		}
+		if .Eq <= comparison &&
+		   comparison <= .U_Ge &&
+		   get_node(ctx, cond.inps[0]).dt in bac.INT_DTS {
+			@(static, rodata)
+			CONDITIONS := [10]u8{4, 5, 14, 12, 15, 13, 2, 7, 6, 3}
+			extra.aux = CONDITIONS[int(comparison) - int(bac.Node_Type.Eq)]
+			extra.dt = get_node(ctx, cond.inps[0]).dt
+			inps[2] = cond.inps[0]
+			if xtype(cond) >= .X64_Eq {
+				cmem := xextra(ctx, cond, Mem_Op)
+				extra.imm = cmem.imm
+			} else {
+				cnst := bac.get_extra(ctx, cond.inps[1], bac.CInt)
+				if cnst != nil && i64(i32(cnst.value)) == cnst.value {
+					extra.imm = i32(cnst.value)
+				} else {
+					inps[3] = cond.inps[1]
+					count = 4
+				}
+			}
+		}
+		return make_node(ctx, id, u16(Node_Type.X64_Cmovcc), inps[:count], extra)
+	case .Shl ..= .U_Shr:
+		if node.dt not_in bac.INT_DTS do break matchx
+		count := node.inps[1]
+		count_dt := get_node(ctx, count).dt
+		constant := bac.get_extra(ctx, count, bac.CInt)
+		bits := i64(bac.DT_SIZE[node.dt] * 8)
+		if constant != nil {
+			if constant.value == 0 do return node.inps[0]
+			if u64(constant.value) >= u64(bits) {
+				if node.itype != .Shr do return bac.add_c_int(ctx, "shzero", node.dt, 0)
+				_, shifted := add_node(
+					ctx,
+					"shsign",
+					.X64_Shr,
+					node.dt,
+					node.inps[:1],
+					{imm = i32(bits - 1)},
+				)
+				return shifted
+			}
+			return make_node(
+				ctx,
+				id,
+				node.rtype + BIN_OP_OFFSET,
+				node.inps[:1],
+				{imm = i32(constant.value)},
+			)
+		}
+		if node.dt < .I32 {
+			ext := bac.add_un_op(
+				ctx,
+				"shwide",
+				node.itype == .Shr ? .Conv : .U_Conv,
+				.I32,
+				node.inps[0],
+			)
+			shift := bac.add_bin_op(
+				ctx,
+				"shwide",
+				bac.Bin_Op(node.itype),
+				.I32,
+				ext,
+				count,
+			)
+			bac.worklist_add(ctx, ctx.worklist, shift)
+			return bac.add_un_op(ctx, "shnarrow", .U_Conv, node.dt, shift)
+		}
+		in_range := bac.add_bin_op(
+			ctx,
+			"shrange",
+			.U_Lt,
+			.I8,
+			count,
+			bac.add_c_int(ctx, "shwidth", count_dt, bits),
+		)
+		bac.worklist_add(ctx, ctx.worklist, in_range)
+		_, shift := add_node(
+			ctx,
+			"shnative",
+			Node_Type(node.rtype + BIN_OP_OFFSET),
+			node.dt,
+			node.inps,
+		)
+		fallback := bac.add_c_int(ctx, "shzero", node.dt, 0)
+		if node.itype == .Shr {
+			_, fallback = add_node(
+				ctx,
+				"shsign",
+				.X64_Shr,
+				node.dt,
+				node.inps[:1],
+				{imm = i32(bits - 1)},
+			)
+		}
+		guard := bac.add_select(ctx, "shguard", node.dt, shift, fallback, in_range)
+		bac.worklist_add(ctx, ctx.worklist, guard)
+		return guard
 	case .Simd_Extract_Lsbs:
 		return bac.lsbs_to_msbs(ctx, node, struct{}{})
 	case .Conv, .U_Conv:
@@ -368,7 +487,9 @@ peep :: proc(
 				{node.inps[0], delta},
 			)
 			half := bac.add_un_op(ctx, "ufth", .Conv, .I64, adjusted)
-			return bac.add_bin_op(ctx, "uftr", .Shl, .I64, half, high)
+			result := bac.add_bin_op(ctx, "uftr", .Shl, .I64, half, high)
+			bac.worklist_add(ctx, ctx.worklist, result)
+			return result
 		}
 
 		assert(node.dt in bac.FLOAT_DTS)
@@ -386,6 +507,7 @@ peep :: proc(
 			{imm = 63},
 		)
 		shifted := bac.add_bin_op(ctx, "ufsh", .U_Shr, .I64, node.inps[0], high)
+		bac.worklist_add(ctx, ctx.worklist, shifted)
 		sticky := bac.add_bin_op(ctx, "ufst", .And, .I64, node.inps[0], high)
 		rounded := bac.add_bin_op(ctx, "ufrd", .Or, .I64, shifted, sticky)
 		converted := bac.add_un_op(ctx, "ufcv", .Conv, node.dt, rounded)
@@ -549,7 +671,7 @@ peep :: proc(
 		case:
 			fmt.panicf("TODO: %v", node.lane)
 		}
-	case .Add ..= .Xor, .Eq ..= .U_Ge, .Shl ..= .U_Shr, .Mul:
+	case .Add ..= .Xor, .Eq ..= .U_Ge, .Mul:
 		op_dt := bac.operation_datatype(ctx.prc, node)
 		if op_dt not_in bac.INT_DTS {
 			if op_dt in bac.FLOAT_DTS &&
@@ -571,26 +693,6 @@ peep :: proc(
 		if node.dt == .V128 && node.itype == .Eq {
 			node.rtype = u16(Node_Type.X64_Pcmpeq)
 			return id
-		}
-
-		if .Shl <= node.itype && node.itype <= .U_Shr {
-			count := bac.get_extra(ctx, node.inps[1], bac.CInt)
-			if count != nil && u64(count.value) >= u64(bac.DT_SIZE[op_dt] * 8) {
-				if node.itype != .Shr do return bac.add_c_int(ctx, "shz", node.dt, 0)
-				return bac.add_bin_op(
-					ctx,
-					"shs",
-					.Shr,
-					node.dt,
-					node.inps[0],
-					bac.add_c_int(
-						ctx,
-						"shc",
-						get_node(ctx, node.inps[1]).dt,
-						i64(bac.DT_SIZE[op_dt] * 8 - 1),
-					),
-				)
-			}
 		}
 
 		if rhs_const != nil {
@@ -1074,12 +1176,15 @@ meta_of :: proc(
 	     .Dbg_Scope,
 	     .Simd_Reduce_Add_Bisect,
 	     .Splat,
-	     .Simd_Extract_Lsbs:
+	     .Simd_Extract_Lsbs,
+	     .Select:
 		fmt.panicf("should not reach these: %v", node)
 	case .Poison ..= .Global:
 		return {out = out}
 	case .CInt:
 		return {out = out}
+	case .X64_Cmovcc:
+		return {out = out, masks = GPA_MASKS[:len(node.inps)], in_place_slot = 1}
 	case .X64_Pcmpeq,
 	     .X64_Padd,
 	     .X64_Psub,
@@ -1096,11 +1201,7 @@ meta_of :: proc(
 		if node.dt in bac.VECTOR_DTS {
 			return {out = out, masks = nmasks[:2]}
 		} else {
-			return {
-				out = GPA_MASK_IDX,
-				masks = dup({GPA_MASK_IDX, single(ra, RCX)}),
-				in_place_slot = 1,
-			}
+			fmt.panicf("unlowered scalar shift: %v", node)
 		}
 	case .Div:
 		if node.dt in bac.FLOAT_DTS {
@@ -1187,6 +1288,12 @@ meta_of :: proc(
 	     .X64_Neg,
 	     .X64_Not,
 	     .X64_Fma_213:
+		if .X64_Shl <= xtype(node) &&
+		   xtype(node) <= .X64_U_Shr &&
+		   mem_op.mem_mode == .None &&
+		   len(node.inps) == 2 {
+			return {out = out, masks = nmasks[:2]}
+		}
 		const_off := int(mem_op.scale != 0)
 
 		#partial switch xtype(node) {
@@ -1686,7 +1793,8 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 	     .Dbg_Scope,
 	     .Simd_Reduce_Add_Bisect,
 	     .Splat,
-	     .Simd_Extract_Lsbs:
+	     .Simd_Extract_Lsbs,
+	     .Select:
 		fmt.panicf("Not reachable form here %v", node.node)
 	case .Poison ..= .Phi:
 	case .Simd_Extract_Msbs:
@@ -2135,6 +2243,35 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 			fmt.panicf("")
 		}
 	case .X64_Add ..= .X64_Xor, .X64_Shl ..= .X64_U_Shr, .X64_Mul, .X64_Div:
+		if .X64_Shl <= type &&
+		   type <= .X64_U_Shr &&
+		   mem_op.mem_mode == .None &&
+		   len(node.inps) == 2 {
+			dst := reg_of(ctx, instr)
+			src := reg_of(ctx, node.inps[0])
+			count := reg_of(ctx, node.inps[1])
+			@(static, rodata)
+			PREFIXES := [3]Vex_PP{.P66, .F3, .F2}
+			// shlx/sarx/shrx $dst, $src, $count
+			emit(
+				ctx.code,
+				{
+					vex3(
+						dst,
+						src,
+						NO_INDEX,
+						count,
+						node.dt == .I64,
+						._0F38,
+						PREFIXES[int(type) - int(Node_Type.X64_Shl)],
+						false,
+					),
+					0xF7,
+					mod_rm(.Direct, dst, src),
+				},
+			)
+			break
+		}
 		if mem_op.dt in bac.FLOAT_DTS {
 			assert(mem_op.mem_mode == .Src)
 			is_cload := get_node(ctx, node.inps[0]).itype == .Global
@@ -2389,30 +2526,30 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 		rx = rex(lhs, dst, RAX, bac.DT_SIZE[node.dt] == 8)
 		emit_sized_opcode(ctx.code, node.dt, rx, 0x21)
 		emit(ctx.code, {mod_rm(.Direct, lhs, dst)})
-	case .Shl ..= .U_Shr:
-		dst := reg_of(ctx, node.inps[0])
-		count_dt := get_node(ctx, node.inps[1]).dt
-		bits := bac.DT_SIZE[node.dt] * 8
-		rx := rex(RAX, RCX, RAX, count_dt == .I64)
-		emit_sized_opcode(ctx.code, count_dt, rx, 0x81)
-		emit(ctx.code, {mod_sm(.Direct, 0b111, RCX)})
-		emit_imm_for_dt(ctx.code, count_dt, i32(bits))
-		emit(ctx.code, {0x72, 0})
-		skip := ctx.code.pos - 1
-		if type == .Shr {
-			rx = rex(RAX, dst, RAX, node.dt == .I64)
-			emit_sized_opcode(ctx.code, node.dt, rx, 0xC1)
-			emit(ctx.code, {mod_sm(.Direct, 0b111, dst), u8(bits - 1)})
+	case .X64_Cmovcc:
+		// Flags stay internal so scheduling and register-allocation moves cannot clobber them.
+		lhs := reg_of(ctx, node.inps[2])
+		if len(node.inps) == 4 {
+			rhs := reg_of(ctx, node.inps[3])
+			// cmp $lhs, $rhs
+			rx := rex(lhs, rhs, NO_INDEX, mem_op.dt == .I64)
+			emit_sized_opcode(ctx.code, mem_op.dt, rx, 0x3B)
+			emit(ctx.code, {mod_rm(.Direct, lhs, rhs)})
 		} else {
-			rx = rex(dst, dst, RAX, false)
-			emit(ctx.code, {rx, 0x31, mod_rm(.Direct, dst, dst)})
+			// cmp $lhs, $imm
+			rx := rex(RAX, lhs, NO_INDEX, mem_op.dt == .I64)
+			emit_sized_opcode(ctx.code, mem_op.dt, rx, 0x81)
+			emit(ctx.code, {mod_sm(.Direct, 0b111, lhs)})
+			emit_imm_for_dt(ctx.code, mem_op.dt, mem_op.imm)
 		}
-		emit(ctx.code, {0xEB, u8(3 + int(node.dt == .I16))})
-		ctx.code.ptr[skip] = u8(ctx.code.pos - skip - 1)
-		rx = rex(RAX, dst, RAX, bac.DT_SIZE[node.dt] == 8)
-		op := OPCODE_TABLE[xtype(node)].ext
-		emit_sized_opcode(ctx.code, node.dt, rx, 0xd3)
-		emit(ctx.code, {mod_sm(.Direct, op, dst)})
+		next_sloc(ctx)
+		dst := reg_of(ctx, instr)
+		src := reg_of(ctx, node.inps[1])
+		// cmovcc $dst, $src
+		rx := rex(dst, src, NO_INDEX, node.dt == .I64)
+		emit(ctx.code, {rx, 0x0F, 0x40 | mem_op.aux, mod_rm(.Direct, dst, src)})
+	case .Shl ..= .U_Shr:
+		fmt.panicf("unlowered scalar shift: %v", node)
 	case .X64_Neg ..= .X64_Not:
 		assert(mem_op.mem_mode == .Dest)
 		dis := mem_op.dis

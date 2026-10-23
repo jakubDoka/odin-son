@@ -44,10 +44,11 @@ Mems :: struct {
 }
 
 Target :: struct {
-	name: string,
-	cc:   ^Call_Conv,
-	spec: ^bac.Node_Spec,
-	emit: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8,
+	name:      string,
+	cc:        ^Call_Conv,
+	spec:      ^bac.Node_Spec,
+	opt_hints: bac.Opt_Hints,
+	emit:      proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8,
 }
 
 Sloc_Key :: struct {

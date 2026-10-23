@@ -1395,10 +1395,10 @@ shifts i64:
     eor x0, x0, x1
     ret
 =========== OPT LEVEL: aggresive ===========
-Error{inst_idx = 508, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 548, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 608, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 688, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 520, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 560, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 612, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 684, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 main:
     sub sp, sp, #176
     str x19, [xzr]
@@ -1424,15 +1424,14 @@ main:
     movz x3, #64
     add x0, sp, #80
     add x5, x0, x8
-    movz x20, #11
-    movz x19, #0
-    movz x18, #31
-    movz x17, #63
-    movz x16, #21845
-    movk x16, #21845, lsl #16
+    movz x23, #11
     movn x2, #84
+    movz x22, #63
     movn x1, #21844
-    movz x15, #3
+    movz x21, #0
+    movz x20, #21845
+    movk x20, #21845, lsl #16
+    movz x19, #3
     movz x0, #7
     str x0, [x5]
     movz x5, #80
@@ -1453,35 +1452,36 @@ main:
     str x8, [x5]
     movz x6, #48
     add x5, sp, #80
-    add x5, x6, x5
-    str x18, [x5]
+    add x6, x6, x5
+    movz x5, #31
+    str x5, [x6]
     movz x6, #56
     add x5, sp, #80
     add x5, x6, x5
     str x4, [x5]
     add x4, sp, #80
     add x4, x4, x3
-    str x17, [x4]
+    str x22, [x4]
     movz x5, #72
     add x4, sp, #80
     add x4, x5, x4
     str x3, [x4]
-    movz x14, #165
-    movn x13, #84
-    sxtb w12, w2
-    movz x11, #42405
-    movn x10, #21844
-    sxth w9, w1
-    movz x8, #21845
-    movk x8, #21845, lsl #16
-    movn x7, #21844
-    movk x7, #43690, lsl #16
+    movz x18, #165
     movz x3, #165
-    uxtb w6, w3
-    uxtb w5, w2
-    movz x2, #42405
-    uxth w4, w2
-    uxth w3, w1
+    uxtb w17, w3
+    movn x16, #84
+    uxtb w15, w2
+    movz x14, #42405
+    movz x3, #42405
+    uxth w13, w3
+    movn x12, #21844
+    uxth w11, w1
+    movz x10, #21845
+    movk x10, #21845, lsl #16
+    movn x9, #21844
+    movk x9, #43690, lsl #16
+    sxtb w8, w2
+    sxth w7, w1
     movz x1, #65
     str x1, [x0]
     movz x0, #0
@@ -1491,149 +1491,146 @@ main:
     madd x2, x1, x0, xzr
     add x1, sp, #80
     add x1, x2, x1
-    ldr x2, [x1]
+    ldr x6, [x1]
+    movz x1, #31
+    cmp x6, #32
+    csel x5, x6, x1, cc
     movn x1, #23130
     movk x1, #42405, lsl #16
     movk x1, #42405, lsl #32
     movk x1, #42405, lsl #48
-    lsl x21, x1, x2
+    lsl x2, x1, x6
     movz x1, #0
-    cmp x2, #64
-    csel x21, x21, x1, cc
+    cmp x6, #64
+    csel x4, x2, x1, cc
     movn x1, #21844
     movk x1, #43690, lsl #16
     movk x1, #43690, lsl #32
     movk x1, #43690, lsl #48
-    lsl x22, x1, x2
+    lsl x2, x1, x6
     movz x1, #0
-    cmp x2, #64
-    csel x1, x22, x1, cc
-    lsl w22, w16, w2
-    cmp x2, #32
-    csel w22, w22, w19, cc
-    mov w23, w22
-    movn x22, #21844
-    movk x22, #43690, lsl #16
-    lsl w22, w22, w2
-    cmp x2, #32
-    csel w22, w22, w19, cc
-    sxtw x22, w22
-    madd x26, x24, x15, xzr
-    lsl w24, w6, w2
-    cmp x2, #32
-    csel w24, w24, w19, cc
+    cmp x6, #64
+    csel x3, x2, x1, cc
+    lsl w1, w20, w6
+    cmp x6, #32
+    csel w1, w1, w21, cc
+    mov w2, w1
+    movn x1, #21844
+    movk x1, #43690, lsl #16
+    lsl w1, w1, w6
+    cmp x6, #32
+    csel w1, w1, w21, cc
+    sxtw x1, w1
+    madd x26, x24, x19, xzr
+    lsl w24, w17, w6
+    cmp x6, #32
+    csel w24, w24, w21, cc
     uxtb w24, w24
     uxtb w28, w24
-    lsl w24, w5, w2
-    cmp x2, #32
-    csel w24, w24, w19, cc
+    lsl w24, w15, w6
+    cmp x6, #32
+    csel w24, w24, w21, cc
     uxtb w24, w24
     invalid
-    lsl w24, w4, w2
-    cmp x2, #32
-    csel w24, w24, w19, cc
+    lsl w24, w13, w6
+    cmp x6, #32
+    csel w24, w24, w21, cc
     uxth w24, w24
     uxth w25, w24
-    lsl w24, w3, w2
-    cmp x2, #32
-    csel w24, w24, w19, cc
+    lsl w24, w11, w6
+    cmp x6, #32
+    csel w24, w24, w21, cc
     uxth w24, w24
     invalid
-    lsr w29, w6, w2
-    cmp x2, #32
-    csel w29, w29, w19, cc
+    lsr w29, w17, w6
+    cmp x6, #32
+    csel w29, w29, w21, cc
     uxtb w29, w29
     uxtb w29, w29
     eor x28, x28, x29
-    eor x28, x28, x14
-    eor x28, x28, x2
+    eor x28, x28, x18
+    eor x28, x28, x6
     add x26, x26, x28
-    madd x26, x26, x15, xzr
-    cmp x2, #32
-    csel x28, x2, x18, cc
-    asr w28, w12, w28
+    madd x26, x26, x19, xzr
+    asr w28, w8, w5
     uxtb w28, w28
     invalid
     eor x27, x27, x28
-    eor x27, x27, x13
-    eor x27, x27, x2
+    eor x27, x27, x16
+    eor x27, x27, x6
     add x26, x26, x27
-    madd x26, x26, x15, xzr
-    lsr w27, w4, w2
-    cmp x2, #32
-    csel w27, w27, w19, cc
+    madd x26, x26, x19, xzr
+    lsr w27, w13, w6
+    cmp x6, #32
+    csel w27, w27, w21, cc
     uxth w27, w27
     uxth w27, w27
     eor x25, x25, x27
-    eor x25, x25, x11
-    eor x25, x25, x2
+    eor x25, x25, x14
+    eor x25, x25, x6
     add x25, x26, x25
-    madd x25, x25, x15, xzr
-    cmp x2, #32
-    csel x26, x2, x18, cc
-    asr w26, w9, w26
+    madd x25, x25, x19, xzr
+    asr w26, w7, w5
     uxth w26, w26
     invalid
     eor x24, x24, x26
-    eor x24, x24, x10
-    eor x24, x24, x2
+    eor x24, x24, x12
+    eor x24, x24, x6
     add x24, x25, x24
-    madd x24, x24, x15, xzr
-    lsr w25, w16, w2
-    cmp x2, #32
-    csel w25, w25, w19, cc
+    madd x24, x24, x19, xzr
+    lsr w25, w20, w6
+    cmp x6, #32
+    csel w25, w25, w21, cc
     mov w25, w25
-    eor x23, x23, x25
-    eor x23, x23, x8
-    eor x23, x23, x2
-    add x23, x24, x23
-    madd x23, x23, x15, xzr
-    cmp x2, #32
-    csel x25, x2, x18, cc
-    movn x24, #21844
-    movk x24, #43690, lsl #16
-    asr w24, w24, w25
-    sxtw x24, w24
-    eor x22, x22, x24
-    eor x22, x22, x7
-    eor x22, x22, x2
-    add x22, x23, x22
-    madd x22, x22, x15, xzr
-    movn x23, #23130
-    movk x23, #42405, lsl #16
-    movk x23, #42405, lsl #32
-    movk x23, #42405, lsl #48
-    lsr x24, x23, x2
-    movz x23, #0
-    cmp x2, #64
-    csel x23, x24, x23, cc
-    eor x23, x21, x23
-    movn x21, #23130
-    movk x21, #42405, lsl #16
-    movk x21, #42405, lsl #32
-    movk x21, #42405, lsl #48
-    eor x21, x23, x21
-    eor x21, x21, x2
-    add x21, x22, x21
-    madd x21, x21, x15, xzr
-    cmp x2, #64
-    csel x23, x2, x17, cc
-    movn x22, #21844
-    movk x22, #43690, lsl #16
-    movk x22, #43690, lsl #32
-    movk x22, #43690, lsl #48
-    asr x22, x22, x23
-    eor x22, x1, x22
+    eor x2, x2, x25
+    eor x2, x2, x10
+    eor x2, x2, x6
+    add x2, x24, x2
+    madd x24, x2, x19, xzr
+    movn x2, #21844
+    movk x2, #43690, lsl #16
+    asr w2, w2, w5
+    sxtw x2, w2
+    eor x1, x1, x2
+    eor x1, x1, x9
+    eor x1, x1, x6
+    add x1, x24, x1
+    madd x5, x1, x19, xzr
+    movn x1, #23130
+    movk x1, #42405, lsl #16
+    movk x1, #42405, lsl #32
+    movk x1, #42405, lsl #48
+    lsr x2, x1, x6
+    movz x1, #0
+    cmp x6, #64
+    csel x1, x2, x1, cc
+    eor x2, x4, x1
+    movn x1, #23130
+    movk x1, #42405, lsl #16
+    movk x1, #42405, lsl #32
+    movk x1, #42405, lsl #48
+    eor x1, x2, x1
+    eor x1, x1, x6
+    add x1, x5, x1
+    madd x4, x1, x19, xzr
+    cmp x6, #64
+    csel x2, x6, x22, cc
     movn x1, #21844
     movk x1, #43690, lsl #16
     movk x1, #43690, lsl #32
     movk x1, #43690, lsl #48
-    eor x1, x22, x1
-    eor x2, x1, x2
+    asr x1, x1, x2
+    eor x2, x3, x1
+    movn x1, #21844
+    movk x1, #43690, lsl #16
+    movk x1, #43690, lsl #32
+    movk x1, #43690, lsl #48
+    eor x1, x2, x1
+    eor x2, x1, x6
     movz x1, #1
     add x0, x1, x0
-    add x2, x21, x2
-    cmp x0, x20
+    add x2, x4, x2
+    cmp x0, x23
     mov x24, x2
     b.lt 1
     movz x1, #251

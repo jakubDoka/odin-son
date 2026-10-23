@@ -527,6 +527,14 @@ peep :: proc(
 			return node.inps[0]
 		}
 
+		if if_, ok := select_diamond(ctx, id); ok {
+			has_phis := false
+			for out in node.outs {
+				has_phis |= get_node(ctx, out.id).itype == .Phi
+			}
+			if !has_phis do return bac.get_inputs(ctx, if_)[0]
+		}
+
 		phi_count := 0
 		for out in node.outs {
 			onode := expand_node(ctx, out.id)
@@ -618,6 +626,36 @@ peep :: proc(
 
 		if 2 < len(node.inps) && node.inps[2] == id {
 			return node.inps[1]
+		}
+
+		if len(node.inps) == 3 && node.inps[1] == node.inps[2] {
+			return node.inps[1]
+		}
+
+		if node.dt in ctx.select_types {
+			region := expand_node(ctx, node.inps[0])
+			if if_, ok := select_diamond(ctx, node.inps[0]); ok {
+				budget := 64
+				if !can_speculate_select_value(ctx, node.inps[1], &budget) ||
+				   !can_speculate_select_value(ctx, node.inps[2], &budget) {
+					break match
+				}
+				first_is_then := get_node(ctx, region.inps[0]).itype == .Then
+				return bac.add_select(
+					ctx,
+					"phisel",
+					node.dt,
+					node.inps[1 + int(!first_is_then)],
+					node.inps[1 + int(first_is_then)],
+					bac.get_inputs(ctx, if_)[1],
+				)
+			}
+			bac.peep_ctx_add_trigger(ctx, node.inps[0], id)
+		}
+	case .Select:
+		if node.inps[0] == node.inps[1] do return node.inps[0]
+		if cond := bac.get_extra(ctx, node.inps[2], CInt); cond != nil {
+			return node.inps[int(cond.value == 0)]
 		}
 	case .If:
 		if len(node.outs) < 2 {
@@ -1293,6 +1331,59 @@ peep :: proc(
 	}
 
 	return nil
+}
+
+select_diamond :: proc(ctx: bac.Peep_Ctx, region: Node_ID) -> (Node_ID, bool) {
+	if !bac.peep_ctx_graph_is_complete(ctx) do return 0, false
+	rnode := expand_node(ctx, region)
+	if rnode.itype != .Region || len(rnode.inps) != 2 do return 0, false
+	lhs := expand_node(ctx, rnode.inps[0])
+	rhs := expand_node(ctx, rnode.inps[1])
+	if !((lhs.itype == .Then && rhs.itype == .Else) ||
+		   (lhs.itype == .Else && rhs.itype == .Then)) {
+		return 0, false
+	}
+	if lhs.inps[0] != rhs.inps[0] do return 0, false
+	if get_node(ctx, lhs.inps[0]).itype != .If do return 0, false
+	// Branch-pinned memory operations must not become speculative select operands.
+	for head in rnode.inps {
+		for out in bac.get_outputs(ctx, head) {
+			if out.id != region {
+				bac.peep_ctx_add_trigger(ctx, out.id, region)
+				return 0, false
+			}
+		}
+	}
+	return lhs.inps[0], true
+}
+
+can_speculate_select_value :: proc(
+	ctx: bac.Peep_Ctx,
+	value: Node_ID,
+	budget: ^int,
+) -> bool {
+	if budget^ == 0 do return false
+	budget^ -= 1
+	node := expand_node(ctx, value)
+	#partial switch node.itype {
+	case .CInt,
+	     .Param,
+	     .Ret,
+	     .Phi,
+	     .Local_Addr,
+	     .Global_Addr,
+	     .Proc_Addr,
+	     .Poison:
+		return true
+	case .Div, .U_Div, .Rem, .U_Rem:
+		// Select evaluates both arms, including a formerly untaken division or load.
+		if node.dt in bac.INT_DTS do return false
+	}
+	if node.is_load || node.is_store || bac.is_cfg(ctx, value) do return false
+	for inp in node.inps {
+		if !can_speculate_select_value(ctx, inp, budget) do return false
+	}
+	return true
 }
 
 post_schedule_peep :: proc(

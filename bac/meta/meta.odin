@@ -662,6 +662,11 @@ IDEAL_CLASSES := [bac.Node_Type]Class_Spec {
 	},
 	.Split = {args = {"dest"}},
 	.Phi = {args = {"reg", "lhs", "rhs"}, flags = {.Interned}},
+	.Select = {
+		args = {"on_true", "on_false", "condition"},
+		flags = {.Interned},
+		api = true,
+	},
 	.If = {id = Cfg, args = {"ctrl", "cond"}, default_type = .Void},
 	.Then = {
 		id = Cfg,

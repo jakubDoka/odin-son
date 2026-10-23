@@ -1,20 +1,13 @@
 =========== OPT LEVEL: none-quick ===========
 apply:
-    mov.q [rsp - 0x10], rsi
-    cmp rdi, 1
-    je 1
-    mov.q [rsp - 0x18], r15
-    mov.q r15, [rsp - 0x10]
-    mov.q [rsp - 0x8], r15
-    mov.q r15, [rsp - 0x18]
-    jmp 2
-1:
+    mov.q [rsp - 0x8], rsi
     mov rax, 0x64
-    mov.q rcx, [rsp - 0x10]
+    mov.q rcx, [rsp - 0x8]
     sub rax, rcx
-    mov.q [rsp - 0x8], rax
-2:
-    mov.q rax, [rsp - 0x8]
+    mov.q rcx, [rsp - 0x8]
+    cmp rdi, 1
+    cmove rcx, rax
+    mov rax, rcx
     ret
 main:
     sub rsp, 8
@@ -26,14 +19,10 @@ main:
 =========== OPT LEVEL: none ===========
 apply:
     mov rax, rsi
+    mov rdx, 0x64
+    sub rdx, rax
     cmp rdi, 1
-    je 1
-    jmp 2
-1:
-    mov rcx, 0x64
-    sub rcx, rax
-    mov rax, rcx
-2:
+    cmove rax, rdx
     ret
 main:
     sub rsp, 8
@@ -44,21 +33,14 @@ main:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 apply:
-    mov.q [rsp - 0x10], rsi
-    cmp rdi, 1
-    je 1
-    mov.q [rsp - 0x18], r15
-    mov.q r15, [rsp - 0x10]
-    mov.q [rsp - 0x8], r15
-    mov.q r15, [rsp - 0x18]
-    jmp 2
-1:
+    mov.q [rsp - 0x8], rsi
     mov rax, 0x64
-    mov.q rcx, [rsp - 0x10]
+    mov.q rcx, [rsp - 0x8]
     sub rax, rcx
-    mov.q [rsp - 0x8], rax
-2:
-    mov.q rax, [rsp - 0x8]
+    mov.q rcx, [rsp - 0x8]
+    cmp rdi, 1
+    cmove rcx, rax
+    mov rax, rcx
     ret
 main:
     sub rsp, 8
@@ -70,14 +52,10 @@ main:
 =========== OPT LEVEL: moderate ===========
 apply:
     mov rax, rsi
+    mov rdx, 0x64
+    sub rdx, rax
     cmp rdi, 1
-    je 1
-    jmp 2
-1:
-    mov rcx, 0x64
-    sub rcx, rax
-    mov rax, rcx
-2:
+    cmove rax, rdx
     ret
 main:
     sub rsp, 8
@@ -89,14 +67,10 @@ main:
 =========== OPT LEVEL: all ===========
 apply:
     mov rax, rsi
+    mov rdx, 0x64
+    sub rdx, rax
     cmp rdi, 1
-    je 1
-    jmp 2
-1:
-    mov rcx, 0x64
-    sub rcx, rax
-    mov rax, rcx
-2:
+    cmove rax, rdx
     ret
 main:
     sub rsp, 8

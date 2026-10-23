@@ -1,32 +1,20 @@
 =========== OPT LEVEL: none-quick ===========
 check:
     mov.q [rsp - 0x18], rdi
-    test sil, sil
-    jne 1
-    jmp 1
-1:
-    test sil, sil
-    jne 2
     mov.q rax, [rsp - 0x18]
     and al, 7
-    mov rax, rax
-    jmp 3
-2:
-    mov al, -1
-3:
     mov.q [rsp - 0x18], rax
-    mov.q rax, [rsp - 0x18]
-    cmp al, -0x80
-    setb al
-    movzx rax, al
-    test al, al
-    jne 4
-    mov rax, 0xff
-    jmp 5
-4:
+    mov al, -1
+    mov.q rcx, [rsp - 0x18]
+    cmp sil, 0
+    cmovne ecx, eax
+    mov.q [rsp - 0x18], rcx
     mov rax, 0x1ff
-5:
-    mov.q [rsp - 0x10], rax
+    mov.q rcx, [rsp - 0x18]
+    mov rdx, 0xff
+    cmp cl, -0x80
+    cmovb rdx, rax
+    mov.q [rsp - 0x10], rdx
     mov cl, 2
     mov.q rax, [rsp - 0x18]
     movzx eax, al
@@ -55,7 +43,7 @@ check:
     ret
 main:
     sub rsp, 0x18
-    movzx.b edi, [rip + 0xee2]
+    movzx.b edi, [rip + 0xeb7]
     mov sil, 1
     call check
     mov.q [rsp], rax
@@ -88,29 +76,15 @@ main:
     ret
 =========== OPT LEVEL: none ===========
 check:
-    mov rax, rdi
-    test sil, sil
-    jne 1
-    jmp 1
-1:
-    test sil, sil
-    jne 2
-    and al, 7
-    jmp 3
-2:
+    and dil, 7
     mov al, -1
-3:
-    mov rdi, rax
-    cmp dil, -0x80
-    setb al
-    movzx rax, al
-    test al, al
-    jne 4
+    cmp sil, 0
+    cmovne edi, eax
+    mov rdx, 0x1ff
+    mov rax, rdi
     mov rcx, 0xff
-    jmp 5
-4:
-    mov rcx, 0x1ff
-5:
+    cmp al, -0x80
+    cmovb rcx, rdx
     mov sil, 2
     mov rax, rdi
     movzx eax, al
@@ -134,7 +108,7 @@ main:
     push rbx
     push rbp
     push r12
-    movzx.b edi, [rip + 0xf1b]
+    movzx.b edi, [rip + 0xefa]
     mov sil, 1
     call check
     mov r12, rax
@@ -165,32 +139,20 @@ main:
 =========== OPT LEVEL: moderate-quick ===========
 check:
     mov.q [rsp - 0x18], rdi
-    test sil, sil
-    jne 1
-    jmp 1
-1:
-    test sil, sil
-    jne 2
     mov.q rax, [rsp - 0x18]
     and al, 7
-    mov rax, rax
-    jmp 3
-2:
-    mov al, -1
-3:
     mov.q [rsp - 0x18], rax
-    mov.q rax, [rsp - 0x18]
-    cmp al, -0x80
-    setb al
-    movzx rax, al
-    test al, al
-    jne 4
-    mov rax, 0xff
-    jmp 5
-4:
+    mov al, -1
+    mov.q rcx, [rsp - 0x18]
+    cmp sil, 0
+    cmovne ecx, eax
+    mov.q [rsp - 0x18], rcx
     mov rax, 0x1ff
-5:
-    mov.q [rsp - 0x10], rax
+    mov.q rcx, [rsp - 0x18]
+    mov rdx, 0xff
+    cmp cl, -0x80
+    cmovb rdx, rax
+    mov.q [rsp - 0x10], rdx
     mov cl, 2
     mov.q rax, [rsp - 0x18]
     movzx eax, al
@@ -219,7 +181,7 @@ check:
     ret
 main:
     sub rsp, 0x18
-    movzx.b edi, [rip + 0xee2]
+    movzx.b edi, [rip + 0xeb7]
     mov sil, 1
     call check
     mov.q [rsp], rax
@@ -252,29 +214,15 @@ main:
     ret
 =========== OPT LEVEL: moderate ===========
 check:
-    mov rax, rdi
-    test sil, sil
-    jne 1
-    jmp 1
-1:
-    test sil, sil
-    jne 2
-    and al, 7
-    jmp 3
-2:
+    and dil, 7
     mov al, -1
-3:
-    mov rdi, rax
-    cmp dil, -0x80
-    setb al
-    movzx rax, al
-    test al, al
-    jne 4
+    cmp sil, 0
+    cmovne edi, eax
+    mov rdx, 0x1ff
+    mov rax, rdi
     mov rcx, 0xff
-    jmp 5
-4:
-    mov rcx, 0x1ff
-5:
+    cmp al, -0x80
+    cmovb rcx, rdx
     mov sil, 2
     mov rax, rdi
     movzx eax, al
@@ -298,7 +246,7 @@ main:
     push rbx
     push rbp
     push r12
-    movzx.b edi, [rip + 0xf1b]
+    movzx.b edi, [rip + 0xefa]
     mov sil, 1
     call check
     mov r12, rax
@@ -328,29 +276,15 @@ main:
     ret
 =========== OPT LEVEL: all ===========
 check:
-    mov rax, rdi
-    test sil, sil
-    jne 1
-    jmp 1
-1:
-    test sil, sil
-    jne 2
-    and al, 7
-    jmp 3
-2:
+    and dil, 7
     mov al, -1
-3:
-    mov rdi, rax
-    cmp dil, -0x80
-    setb al
-    movzx rax, al
-    test al, al
-    jne 4
+    cmp sil, 0
+    cmovne edi, eax
+    mov rdx, 0x1ff
+    mov rax, rdi
     mov rcx, 0xff
-    jmp 5
-4:
-    mov rcx, 0x1ff
-5:
+    cmp al, -0x80
+    cmovb rcx, rdx
     mov sil, 2
     mov rax, rdi
     movzx eax, al
@@ -374,7 +308,7 @@ main:
     push rbx
     push rbp
     push r12
-    movzx.b edi, [rip + 0xf1b]
+    movzx.b edi, [rip + 0xefa]
     mov sil, 1
     call check
     mov r12, rax

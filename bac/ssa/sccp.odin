@@ -312,6 +312,16 @@ sccp_compute :: proc(
 			}
 		}
 		return
+	case .Select:
+		cond := get_lattice(ctx, node.inps[2])
+		if cond.type == .Top do return {}
+		if cond.type == .Int && cond.min == cond.max {
+			return get_lattice(ctx, node.inps[int(cond.min == 0)])
+		}
+		return bac.lattice_meet(
+			get_lattice(ctx, node.inps[0]),
+			get_lattice(ctx, node.inps[1]),
+		)
 	case .Phi:
 		if node.inps[0] == 0 do return {}
 		ctrl := expand_node(ctx, node.inps[0])

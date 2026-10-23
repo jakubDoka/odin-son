@@ -1,0 +1,159 @@
+=========== OPT LEVEL: none-quick ===========
+copy_forward:
+    push rbx
+    xor eax, eax
+1:
+    cmp rax, rdx
+    jge 2
+    mov rcx, rsi
+    add rcx, rax
+    movzx.b ecx, [rcx]
+    mov rbx, rdi
+    add rbx, rax
+    mov.b [rbx], cl
+    add rax, 1
+    jmp 1
+2:
+    pop rbx
+    ret
+main:
+    sub rsp, 0x18
+    lea rax, [rsp]
+    add rax, 1
+    mov.q [rsp + 0x8], rax
+    movabs rax, 0x807060504030201
+    mov.q [rsp], rax
+    mov rdx, 7
+    lea rsi, [rsp]
+    mov.q rdi, [rsp + 0x8]
+    call copy_forward
+    movzx.b eax, [rsp + 0x7]
+    add rsp, 0x18
+    ret
+=========== OPT LEVEL: none ===========
+copy_forward:
+    xor r8d, r8d
+1:
+    cmp r8, rdx
+    jge 2
+    mov rax, rsi
+    add rax, r8
+    movzx.b ecx, [rax]
+    mov rax, rdi
+    add rax, r8
+    mov.b [rax], cl
+    add r8, 1
+    jmp 1
+2:
+    ret
+main:
+    sub rsp, 8
+    lea rcx, [rsp]
+    add rcx, 1
+    movabs rax, 0x807060504030201
+    mov.q [rsp], rax
+    mov rdx, 7
+    lea rsi, [rsp]
+    mov rdi, rcx
+    call copy_forward
+    movzx.b eax, [rsp + 0x7]
+    add rsp, 8
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+copy_forward:
+    push rbx
+    xor eax, eax
+1:
+    cmp rax, rdx
+    jge 2
+    mov rcx, rsi
+    add rcx, rax
+    movzx.b ecx, [rcx]
+    mov rbx, rdi
+    add rbx, rax
+    mov.b [rbx], cl
+    add rax, 1
+    jmp 1
+2:
+    pop rbx
+    ret
+main:
+    sub rsp, 0x18
+    lea rax, [rsp]
+    add rax, 1
+    mov.q [rsp + 0x8], rax
+    movabs rax, 0x807060504030201
+    mov.q [rsp], rax
+    mov rdx, 7
+    lea rsi, [rsp]
+    mov.q rdi, [rsp + 0x8]
+    call copy_forward
+    movzx.b eax, [rsp + 0x7]
+    add rsp, 0x18
+    ret
+=========== OPT LEVEL: moderate ===========
+copy_forward:
+    xor r8d, r8d
+1:
+    cmp r8, rdx
+    jge 2
+    mov rax, rsi
+    add rax, r8
+    movzx.b ecx, [rax]
+    mov rax, rdi
+    add rax, r8
+    mov.b [rax], cl
+    add r8, 1
+    jmp 1
+2:
+    ret
+main:
+    sub rsp, 8
+    lea rcx, [rsp]
+    add rcx, 1
+    movabs rax, 0x807060504030201
+    mov.q [rsp], rax
+    mov rdx, 7
+    lea rsi, [rsp]
+    mov rdi, rcx
+    call copy_forward
+    movzx.b eax, [rsp + 0x7]
+    add rsp, 8
+    ret
+=========== OPT LEVEL: all ===========
+copy_forward:
+    sub rsp, 8
+    cmp rdx, 0
+    jle 1
+    call -0xab
+    jmp 1
+1:
+    add rsp, 8
+    ret
+main:
+    sub rsp, 8
+    lea rcx, [rsp]
+    add rcx, 1
+    movabs rax, 0x807060504030201
+    mov.q [rsp], rax
+    mov rdx, 7
+    lea rsi, [rsp]
+    mov rdi, rcx
+    call copy_forward
+    movzx.b eax, [rsp + 0x7]
+    add rsp, 8
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    sub rsp, 8
+    movabs rax, 0x807060504030201
+    mov.q [rsp], rax
+    lea rax, [rsp]
+    add rax, 1
+    mov rdx, 7
+    lea rsi, [rsp]
+    mov rdi, rax
+    call -0xc5
+    movzx.b eax, [rsp + 0x7]
+    add rsp, 8
+    ret

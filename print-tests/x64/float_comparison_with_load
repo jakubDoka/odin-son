@@ -1,9 +1,9 @@
 =========== OPT LEVEL: none-quick ===========
 main:
     sub rsp, 0x58
-    movss.d xmm0, [rip + 0xfa8]
+    movss.d xmm0, [rip + 0xf5e]
     movss.d [rsp + 0x30], xmm0
-    movss.d xmm0, [rip + 0xf9c]
+    movss.d xmm0, [rip + 0xf52]
     movss.d [rsp + 0x40], xmm0
     movss.d xmm0, [rsp + 0x40]
     movss.d [rsp], xmm0
@@ -48,115 +48,131 @@ main:
     add rsp, 0x58
     ret
 imm_cmps:
-    pxor xmm0, xmm0
-    movss.d xmm1, [rdi]
-    ucomiss xmm1, xmm0
-    sete al
-    jnp 2
-    mov al, 0
-2:
-    movzx rax, al
-    test al, al
-    jne 3
+    push rbx
+    movss.d xmm0, [rdi]
+    pxor xmm1, xmm1
     xor eax, eax
-    jmp 4
-3:
-    mov rax, 1
-4:
-    movss.d xmm1, [rdi]
-    ucomiss xmm1, xmm0
+    mov rcx, 1
+    ucomiss xmm0, xmm1
+    sete dl
+    jnp 2
+    mov dl, 0
+2:
+    movzx rdx, dl
+    cmp dl, 0
+    cmovne rax, rcx
+    ucomiss xmm0, xmm1
     setne cl
-    jnp 5
+    jnp 3
     mov cl, 1
-5:
+3:
     movzx rcx, cl
     test cl, cl
-    jne 6
+    jne 4
+    mov.q [rsp - 0x10], rax
+    jmp 5
+4:
+    add rax, 2
+    mov.q [rsp - 0x10], rax
+5:
+    movss.d xmm0, [rdi]
+    mov.q rax, [rsp - 0x10]
+    add rax, 4
+    ucomiss xmm1, xmm0
+    setae cl
+    movzx rcx, cl
+    mov.q rdx, [rsp - 0x10]
+    cmp cl, 0
+    cmovne rdx, rax
+    ucomiss xmm0, xmm1
+    jae 6
+    mov.q [rsp - 0x10], rdx
     jmp 7
 6:
-    add rax, 2
+    add rdx, 8
+    mov.q [rsp - 0x10], rdx
 7:
-    movss.d xmm1, [rdi]
-    ucomiss xmm0, xmm1
-    jae 8
-    jmp 9
-8:
-    add rax, 4
-9:
-    movss.d xmm1, [rdi]
-    ucomiss xmm1, xmm0
-    jae 10
-    jmp 11
-10:
-    add rax, 8
-11:
-    movss.d xmm1, [rdi]
-    ucomiss xmm0, xmm1
-    ja 12
-    jmp 13
-12:
+    movss.d xmm0, [rdi]
+    mov.q rax, [rsp - 0x10]
     add rax, 0x10
-13:
-    movss.d xmm1, [rdi]
     ucomiss xmm1, xmm0
-    ja 14
-    jmp 15
-14:
-    add rax, 0x20
-15:
+    seta cl
+    movzx rcx, cl
+    mov.q rdx, [rsp - 0x10]
+    cmp cl, 0
+    cmovne rdx, rax
+    mov rcx, rdx
+    add rcx, 0x20
+    ucomiss xmm0, xmm1
+    seta bl
+    movzx rbx, bl
+    mov rax, rdx
+    cmp bl, 0
+    cmovne rax, rcx
+    pop rbx
     ret
 cmps:
-    ucomiss.d xmm0, [rdi]
-    sete al
-    jnp 17
-    mov al, 0
-17:
-    movzx rax, al
-    test al, al
-    jne 18
+    push rbx
+    movss.d xmm1, [rdi]
     xor eax, eax
-    jmp 19
-18:
-    mov rax, 1
-19:
-    ucomiss.d xmm0, [rdi]
+    mov rcx, 1
+    ucomiss xmm0, xmm1
+    sete dl
+    jnp 9
+    mov dl, 0
+9:
+    movzx rdx, dl
+    cmp dl, 0
+    cmovne rax, rcx
+    ucomiss xmm0, xmm1
     setne cl
-    jnp 20
+    jnp 10
     mov cl, 1
-20:
+10:
     movzx rcx, cl
     test cl, cl
-    jne 21
-    jmp 22
-21:
+    jne 11
+    mov.q [rsp - 0x10], rax
+    jmp 12
+11:
     add rax, 2
-22:
-    ucomiss.d xmm0, [rdi]
-    jae 23
-    jmp 24
-23:
+    mov.q [rsp - 0x10], rax
+12:
+    movss.d xmm1, [rdi]
+    mov.q rax, [rsp - 0x10]
     add rax, 4
-24:
-    movss.d xmm1, [rdi]
+    ucomiss xmm0, xmm1
+    setae cl
+    movzx rcx, cl
+    mov.q rdx, [rsp - 0x10]
+    cmp cl, 0
+    cmovne rdx, rax
     ucomiss xmm1, xmm0
-    jae 25
-    jmp 26
-25:
-    add rax, 8
-26:
-    ucomiss.d xmm0, [rdi]
-    ja 27
-    jmp 28
-27:
+    jae 13
+    mov.q [rsp - 0x10], rdx
+    jmp 14
+13:
+    add rdx, 8
+    mov.q [rsp - 0x10], rdx
+14:
+    movss.d xmm1, [rdi]
+    mov.q rax, [rsp - 0x10]
     add rax, 0x10
-28:
-    movss.d xmm1, [rdi]
+    ucomiss xmm0, xmm1
+    seta cl
+    movzx rcx, cl
+    mov.q rdx, [rsp - 0x10]
+    cmp cl, 0
+    cmovne rdx, rax
+    mov rcx, rdx
+    add rcx, 0x20
     ucomiss xmm1, xmm0
-    ja 29
-    jmp 30
-29:
-    add rax, 0x20
-30:
+    seta bl
+    movzx rbx, bl
+    mov rax, rdx
+    cmp bl, 0
+    cmovne rax, rcx
+    pop rbx
     ret
 =========== OPT LEVEL: none ===========
 main:
@@ -166,9 +182,9 @@ main:
     push r13
     push r14
     sub rsp, 0x30
-    movss.d xmm0, [rip + 0xf9e]
+    movss.d xmm0, [rip + 0xf54]
     movss.d [rsp + 0x18], xmm0
-    movss.d xmm0, [rip + 0xf92]
+    movss.d xmm0, [rip + 0xf48]
     movss.d [rsp + 0x8], xmm0
     movss.d xmm0, [rsp + 0x8]
     movss.d [rsp], xmm0
@@ -211,122 +227,122 @@ main:
     pop rbx
     ret
 imm_cmps:
-    pxor xmm1, xmm1
     movss.d xmm0, [rdi]
+    pxor xmm1, xmm1
+    xor esi, esi
+    mov rcx, 1
     ucomiss xmm0, xmm1
     sete al
     jnp 2
     mov al, 0
 2:
     movzx rax, al
-    test al, al
-    jne 3
-    xor eax, eax
-    jmp 4
+    cmp al, 0
+    cmovne rsi, rcx
+    ucomiss xmm0, xmm1
+    setne al
+    jnp 3
+    mov al, 1
 3:
-    mov rax, 1
-4:
-    movss.d xmm0, [rdi]
-    ucomiss xmm0, xmm1
-    setne cl
-    jnp 5
-    mov cl, 1
-5:
-    movzx rcx, cl
-    test cl, cl
-    jne 6
-    jmp 7
-6:
-    add rax, 2
-7:
-    movss.d xmm0, [rdi]
-    ucomiss xmm1, xmm0
-    jae 8
-    jmp 9
-8:
-    add rax, 4
-9:
-    movss.d xmm0, [rdi]
-    ucomiss xmm0, xmm1
-    jae 10
-    jmp 11
-10:
-    add rax, 8
-11:
-    movss.d xmm0, [rdi]
-    ucomiss xmm1, xmm0
-    ja 12
-    jmp 13
-12:
-    add rax, 0x10
-13:
-    movss.d xmm0, [rdi]
-    ucomiss xmm0, xmm1
-    ja 14
-    jmp 15
-14:
-    add rax, 0x20
-15:
-    ret
-cmps:
-    ucomiss.d xmm0, [rdi]
-    sete al
-    jnp 17
-    mov al, 0
-17:
     movzx rax, al
     test al, al
-    jne 18
-    xor eax, eax
-    jmp 19
-18:
-    mov rax, 1
-19:
-    ucomiss.d xmm0, [rdi]
-    setne cl
-    jnp 20
-    mov cl, 1
-20:
+    jne 4
+    jmp 5
+4:
+    add rsi, 2
+5:
+    movss.d xmm0, [rdi]
+    mov rcx, rsi
+    add rcx, 4
+    ucomiss xmm1, xmm0
+    setae al
+    movzx rax, al
+    cmp al, 0
+    cmovne rsi, rcx
+    ucomiss xmm0, xmm1
+    jae 6
+    jmp 7
+6:
+    add rsi, 8
+7:
+    movss.d xmm0, [rdi]
+    mov rcx, rsi
+    add rcx, 0x10
+    ucomiss xmm1, xmm0
+    seta al
+    movzx rax, al
+    cmp al, 0
+    cmovne rsi, rcx
+    mov rdx, rsi
+    add rdx, 0x20
+    ucomiss xmm0, xmm1
+    seta cl
     movzx rcx, cl
-    test cl, cl
-    jne 21
-    jmp 22
-21:
-    add rax, 2
-22:
-    ucomiss.d xmm0, [rdi]
-    jae 23
-    jmp 24
-23:
-    add rax, 4
-24:
+    mov rax, rsi
+    cmp cl, 0
+    cmovne rax, rdx
+    ret
+cmps:
     movss.d xmm1, [rdi]
-    ucomiss xmm1, xmm0
-    jae 25
-    jmp 26
-25:
-    add rax, 8
-26:
-    ucomiss.d xmm0, [rdi]
-    ja 27
-    jmp 28
-27:
-    add rax, 0x10
-28:
+    xor esi, esi
+    mov rcx, 1
+    ucomiss xmm0, xmm1
+    sete al
+    jnp 9
+    mov al, 0
+9:
+    movzx rax, al
+    cmp al, 0
+    cmovne rsi, rcx
+    ucomiss xmm0, xmm1
+    setne al
+    jnp 10
+    mov al, 1
+10:
+    movzx rax, al
+    test al, al
+    jne 11
+    jmp 12
+11:
+    add rsi, 2
+12:
     movss.d xmm1, [rdi]
+    mov rcx, rsi
+    add rcx, 4
+    ucomiss xmm0, xmm1
+    setae al
+    movzx rax, al
+    cmp al, 0
+    cmovne rsi, rcx
     ucomiss xmm1, xmm0
-    ja 29
-    jmp 30
-29:
-    add rax, 0x20
-30:
+    jae 13
+    jmp 14
+13:
+    add rsi, 8
+14:
+    movss.d xmm1, [rdi]
+    mov rcx, rsi
+    add rcx, 0x10
+    ucomiss xmm0, xmm1
+    seta al
+    movzx rax, al
+    cmp al, 0
+    cmovne rsi, rcx
+    mov rdx, rsi
+    add rdx, 0x20
+    ucomiss xmm1, xmm0
+    seta cl
+    movzx rcx, cl
+    mov rax, rsi
+    cmp cl, 0
+    cmovne rax, rdx
     ret
 =========== OPT LEVEL: moderate-quick ===========
 main:
     sub rsp, 0x58
-    movss.d xmm0, [rip + 0xfa8]
+    movss.d xmm0, [rip + 0xf5e]
     movss.d [rsp + 0x30], xmm0
-    movss.d xmm0, [rip + 0xf9c]
+    movss.d xmm0, [rip + 0xf52]
     movss.d [rsp + 0x40], xmm0
     movss.d xmm0, [rsp + 0x40]
     movss.d [rsp], xmm0
@@ -371,115 +387,131 @@ main:
     add rsp, 0x58
     ret
 imm_cmps:
-    pxor xmm0, xmm0
-    movss.d xmm1, [rdi]
-    ucomiss xmm1, xmm0
-    sete al
-    jnp 2
-    mov al, 0
-2:
-    movzx rax, al
-    test al, al
-    jne 3
+    push rbx
+    movss.d xmm0, [rdi]
+    pxor xmm1, xmm1
     xor eax, eax
-    jmp 4
-3:
-    mov rax, 1
-4:
-    movss.d xmm1, [rdi]
-    ucomiss xmm1, xmm0
+    mov rcx, 1
+    ucomiss xmm0, xmm1
+    sete dl
+    jnp 2
+    mov dl, 0
+2:
+    movzx rdx, dl
+    cmp dl, 0
+    cmovne rax, rcx
+    ucomiss xmm0, xmm1
     setne cl
-    jnp 5
+    jnp 3
     mov cl, 1
-5:
+3:
     movzx rcx, cl
     test cl, cl
-    jne 6
+    jne 4
+    mov.q [rsp - 0x10], rax
+    jmp 5
+4:
+    add rax, 2
+    mov.q [rsp - 0x10], rax
+5:
+    movss.d xmm0, [rdi]
+    mov.q rax, [rsp - 0x10]
+    add rax, 4
+    ucomiss xmm1, xmm0
+    setae cl
+    movzx rcx, cl
+    mov.q rdx, [rsp - 0x10]
+    cmp cl, 0
+    cmovne rdx, rax
+    ucomiss xmm0, xmm1
+    jae 6
+    mov.q [rsp - 0x10], rdx
     jmp 7
 6:
-    add rax, 2
+    add rdx, 8
+    mov.q [rsp - 0x10], rdx
 7:
-    movss.d xmm1, [rdi]
-    ucomiss xmm0, xmm1
-    jae 8
-    jmp 9
-8:
-    add rax, 4
-9:
-    movss.d xmm1, [rdi]
-    ucomiss xmm1, xmm0
-    jae 10
-    jmp 11
-10:
-    add rax, 8
-11:
-    movss.d xmm1, [rdi]
-    ucomiss xmm0, xmm1
-    ja 12
-    jmp 13
-12:
+    movss.d xmm0, [rdi]
+    mov.q rax, [rsp - 0x10]
     add rax, 0x10
-13:
-    movss.d xmm1, [rdi]
     ucomiss xmm1, xmm0
-    ja 14
-    jmp 15
-14:
-    add rax, 0x20
-15:
+    seta cl
+    movzx rcx, cl
+    mov.q rdx, [rsp - 0x10]
+    cmp cl, 0
+    cmovne rdx, rax
+    mov rcx, rdx
+    add rcx, 0x20
+    ucomiss xmm0, xmm1
+    seta bl
+    movzx rbx, bl
+    mov rax, rdx
+    cmp bl, 0
+    cmovne rax, rcx
+    pop rbx
     ret
 cmps:
-    ucomiss.d xmm0, [rdi]
-    sete al
-    jnp 17
-    mov al, 0
-17:
-    movzx rax, al
-    test al, al
-    jne 18
+    push rbx
+    movss.d xmm1, [rdi]
     xor eax, eax
-    jmp 19
-18:
-    mov rax, 1
-19:
-    ucomiss.d xmm0, [rdi]
+    mov rcx, 1
+    ucomiss xmm0, xmm1
+    sete dl
+    jnp 9
+    mov dl, 0
+9:
+    movzx rdx, dl
+    cmp dl, 0
+    cmovne rax, rcx
+    ucomiss xmm0, xmm1
     setne cl
-    jnp 20
+    jnp 10
     mov cl, 1
-20:
+10:
     movzx rcx, cl
     test cl, cl
-    jne 21
-    jmp 22
-21:
+    jne 11
+    mov.q [rsp - 0x10], rax
+    jmp 12
+11:
     add rax, 2
-22:
-    ucomiss.d xmm0, [rdi]
-    jae 23
-    jmp 24
-23:
+    mov.q [rsp - 0x10], rax
+12:
+    movss.d xmm1, [rdi]
+    mov.q rax, [rsp - 0x10]
     add rax, 4
-24:
-    movss.d xmm1, [rdi]
+    ucomiss xmm0, xmm1
+    setae cl
+    movzx rcx, cl
+    mov.q rdx, [rsp - 0x10]
+    cmp cl, 0
+    cmovne rdx, rax
     ucomiss xmm1, xmm0
-    jae 25
-    jmp 26
-25:
-    add rax, 8
-26:
-    ucomiss.d xmm0, [rdi]
-    ja 27
-    jmp 28
-27:
+    jae 13
+    mov.q [rsp - 0x10], rdx
+    jmp 14
+13:
+    add rdx, 8
+    mov.q [rsp - 0x10], rdx
+14:
+    movss.d xmm1, [rdi]
+    mov.q rax, [rsp - 0x10]
     add rax, 0x10
-28:
-    movss.d xmm1, [rdi]
+    ucomiss xmm0, xmm1
+    seta cl
+    movzx rcx, cl
+    mov.q rdx, [rsp - 0x10]
+    cmp cl, 0
+    cmovne rdx, rax
+    mov rcx, rdx
+    add rcx, 0x20
     ucomiss xmm1, xmm0
-    ja 29
-    jmp 30
-29:
-    add rax, 0x20
-30:
+    seta bl
+    movzx rbx, bl
+    mov rax, rdx
+    cmp bl, 0
+    cmovne rax, rcx
+    pop rbx
     ret
 =========== OPT LEVEL: moderate ===========
 main:
@@ -489,9 +521,9 @@ main:
     push r13
     push r14
     sub rsp, 0x30
-    movss.d xmm0, [rip + 0xf9e]
+    movss.d xmm0, [rip + 0xf54]
     movss.d [rsp + 0x18], xmm0
-    movss.d xmm0, [rip + 0xf92]
+    movss.d xmm0, [rip + 0xf48]
     movss.d [rsp + 0x8], xmm0
     movss.d xmm0, [rsp + 0x8]
     movss.d [rsp], xmm0
@@ -534,115 +566,115 @@ main:
     pop rbx
     ret
 imm_cmps:
-    pxor xmm1, xmm1
     movss.d xmm0, [rdi]
+    pxor xmm1, xmm1
+    xor esi, esi
+    mov rcx, 1
     ucomiss xmm0, xmm1
     sete al
     jnp 2
     mov al, 0
 2:
     movzx rax, al
-    test al, al
-    jne 3
-    xor eax, eax
-    jmp 4
+    cmp al, 0
+    cmovne rsi, rcx
+    ucomiss xmm0, xmm1
+    setne al
+    jnp 3
+    mov al, 1
 3:
-    mov rax, 1
-4:
-    movss.d xmm0, [rdi]
-    ucomiss xmm0, xmm1
-    setne cl
-    jnp 5
-    mov cl, 1
-5:
-    movzx rcx, cl
-    test cl, cl
-    jne 6
-    jmp 7
-6:
-    add rax, 2
-7:
-    movss.d xmm0, [rdi]
-    ucomiss xmm1, xmm0
-    jae 8
-    jmp 9
-8:
-    add rax, 4
-9:
-    movss.d xmm0, [rdi]
-    ucomiss xmm0, xmm1
-    jae 10
-    jmp 11
-10:
-    add rax, 8
-11:
-    movss.d xmm0, [rdi]
-    ucomiss xmm1, xmm0
-    ja 12
-    jmp 13
-12:
-    add rax, 0x10
-13:
-    movss.d xmm0, [rdi]
-    ucomiss xmm0, xmm1
-    ja 14
-    jmp 15
-14:
-    add rax, 0x20
-15:
-    ret
-cmps:
-    ucomiss.d xmm0, [rdi]
-    sete al
-    jnp 17
-    mov al, 0
-17:
     movzx rax, al
     test al, al
-    jne 18
-    xor eax, eax
-    jmp 19
-18:
-    mov rax, 1
-19:
-    ucomiss.d xmm0, [rdi]
-    setne cl
-    jnp 20
-    mov cl, 1
-20:
+    jne 4
+    jmp 5
+4:
+    add rsi, 2
+5:
+    movss.d xmm0, [rdi]
+    mov rcx, rsi
+    add rcx, 4
+    ucomiss xmm1, xmm0
+    setae al
+    movzx rax, al
+    cmp al, 0
+    cmovne rsi, rcx
+    ucomiss xmm0, xmm1
+    jae 6
+    jmp 7
+6:
+    add rsi, 8
+7:
+    movss.d xmm0, [rdi]
+    mov rcx, rsi
+    add rcx, 0x10
+    ucomiss xmm1, xmm0
+    seta al
+    movzx rax, al
+    cmp al, 0
+    cmovne rsi, rcx
+    mov rdx, rsi
+    add rdx, 0x20
+    ucomiss xmm0, xmm1
+    seta cl
     movzx rcx, cl
-    test cl, cl
-    jne 21
-    jmp 22
-21:
-    add rax, 2
-22:
-    ucomiss.d xmm0, [rdi]
-    jae 23
-    jmp 24
-23:
-    add rax, 4
-24:
+    mov rax, rsi
+    cmp cl, 0
+    cmovne rax, rdx
+    ret
+cmps:
     movss.d xmm1, [rdi]
-    ucomiss xmm1, xmm0
-    jae 25
-    jmp 26
-25:
-    add rax, 8
-26:
-    ucomiss.d xmm0, [rdi]
-    ja 27
-    jmp 28
-27:
-    add rax, 0x10
-28:
+    xor esi, esi
+    mov rcx, 1
+    ucomiss xmm0, xmm1
+    sete al
+    jnp 9
+    mov al, 0
+9:
+    movzx rax, al
+    cmp al, 0
+    cmovne rsi, rcx
+    ucomiss xmm0, xmm1
+    setne al
+    jnp 10
+    mov al, 1
+10:
+    movzx rax, al
+    test al, al
+    jne 11
+    jmp 12
+11:
+    add rsi, 2
+12:
     movss.d xmm1, [rdi]
+    mov rcx, rsi
+    add rcx, 4
+    ucomiss xmm0, xmm1
+    setae al
+    movzx rax, al
+    cmp al, 0
+    cmovne rsi, rcx
     ucomiss xmm1, xmm0
-    ja 29
-    jmp 30
-29:
-    add rax, 0x20
-30:
+    jae 13
+    jmp 14
+13:
+    add rsi, 8
+14:
+    movss.d xmm1, [rdi]
+    mov rcx, rsi
+    add rcx, 0x10
+    ucomiss xmm0, xmm1
+    seta al
+    movzx rax, al
+    cmp al, 0
+    cmovne rsi, rcx
+    mov rdx, rsi
+    add rdx, 0x20
+    ucomiss xmm1, xmm0
+    seta cl
+    movzx rcx, cl
+    mov rax, rsi
+    cmp cl, 0
+    cmovne rax, rdx
     ret
 =========== OPT LEVEL: all ===========
 main:
@@ -652,9 +684,9 @@ main:
     push r13
     push r14
     sub rsp, 0x30
-    movss.d xmm0, [rip + 0xf9e]
+    movss.d xmm0, [rip + 0xf54]
     movss.d [rsp + 0x18], xmm0
-    movss.d xmm0, [rip + 0xf92]
+    movss.d xmm0, [rip + 0xf48]
     movss.d [rsp + 0x8], xmm0
     movss.d xmm0, [rsp + 0x8]
     movss.d [rsp], xmm0
@@ -697,114 +729,114 @@ main:
     pop rbx
     ret
 imm_cmps:
-    pxor xmm1, xmm1
     movss.d xmm0, [rdi]
+    pxor xmm1, xmm1
+    xor esi, esi
+    mov rcx, 1
     ucomiss xmm0, xmm1
     sete al
     jnp 2
     mov al, 0
 2:
     movzx rax, al
-    test al, al
-    jne 3
-    xor eax, eax
-    jmp 4
+    cmp al, 0
+    cmovne rsi, rcx
+    ucomiss xmm0, xmm1
+    setne al
+    jnp 3
+    mov al, 1
 3:
-    mov rax, 1
-4:
-    movss.d xmm0, [rdi]
-    ucomiss xmm0, xmm1
-    setne cl
-    jnp 5
-    mov cl, 1
-5:
-    movzx rcx, cl
-    test cl, cl
-    jne 6
-    jmp 7
-6:
-    add rax, 2
-7:
-    movss.d xmm0, [rdi]
-    ucomiss xmm1, xmm0
-    jae 8
-    jmp 9
-8:
-    add rax, 4
-9:
-    movss.d xmm0, [rdi]
-    ucomiss xmm0, xmm1
-    jae 10
-    jmp 11
-10:
-    add rax, 8
-11:
-    movss.d xmm0, [rdi]
-    ucomiss xmm1, xmm0
-    ja 12
-    jmp 13
-12:
-    add rax, 0x10
-13:
-    movss.d xmm0, [rdi]
-    ucomiss xmm0, xmm1
-    ja 14
-    jmp 15
-14:
-    add rax, 0x20
-15:
-    ret
-cmps:
-    ucomiss.d xmm0, [rdi]
-    sete al
-    jnp 17
-    mov al, 0
-17:
     movzx rax, al
     test al, al
-    jne 18
-    xor eax, eax
-    jmp 19
-18:
-    mov rax, 1
-19:
-    ucomiss.d xmm0, [rdi]
-    setne cl
-    jnp 20
-    mov cl, 1
-20:
+    jne 4
+    jmp 5
+4:
+    add rsi, 2
+5:
+    movss.d xmm0, [rdi]
+    mov rcx, rsi
+    add rcx, 4
+    ucomiss xmm1, xmm0
+    setae al
+    movzx rax, al
+    cmp al, 0
+    cmovne rsi, rcx
+    ucomiss xmm0, xmm1
+    jae 6
+    jmp 7
+6:
+    add rsi, 8
+7:
+    movss.d xmm0, [rdi]
+    mov rcx, rsi
+    add rcx, 0x10
+    ucomiss xmm1, xmm0
+    seta al
+    movzx rax, al
+    cmp al, 0
+    cmovne rsi, rcx
+    mov rdx, rsi
+    add rdx, 0x20
+    ucomiss xmm0, xmm1
+    seta cl
     movzx rcx, cl
-    test cl, cl
-    jne 21
-    jmp 22
-21:
-    add rax, 2
-22:
-    ucomiss.d xmm0, [rdi]
-    jae 23
-    jmp 24
-23:
-    add rax, 4
-24:
+    mov rax, rsi
+    cmp cl, 0
+    cmovne rax, rdx
+    ret
+cmps:
     movss.d xmm1, [rdi]
-    ucomiss xmm1, xmm0
-    jae 25
-    jmp 26
-25:
-    add rax, 8
-26:
-    ucomiss.d xmm0, [rdi]
-    ja 27
-    jmp 28
-27:
-    add rax, 0x10
-28:
+    xor esi, esi
+    mov rcx, 1
+    ucomiss xmm0, xmm1
+    sete al
+    jnp 9
+    mov al, 0
+9:
+    movzx rax, al
+    cmp al, 0
+    cmovne rsi, rcx
+    ucomiss xmm0, xmm1
+    setne al
+    jnp 10
+    mov al, 1
+10:
+    movzx rax, al
+    test al, al
+    jne 11
+    jmp 12
+11:
+    add rsi, 2
+12:
     movss.d xmm1, [rdi]
+    mov rcx, rsi
+    add rcx, 4
+    ucomiss xmm0, xmm1
+    setae al
+    movzx rax, al
+    cmp al, 0
+    cmovne rsi, rcx
     ucomiss xmm1, xmm0
-    ja 29
-    jmp 30
-29:
-    add rax, 0x20
-30:
+    jae 13
+    jmp 14
+13:
+    add rsi, 8
+14:
+    movss.d xmm1, [rdi]
+    mov rcx, rsi
+    add rcx, 0x10
+    ucomiss xmm0, xmm1
+    seta al
+    movzx rax, al
+    cmp al, 0
+    cmovne rsi, rcx
+    mov rdx, rsi
+    add rdx, 0x20
+    ucomiss xmm1, xmm0
+    seta cl
+    movzx rcx, cl
+    mov rax, rsi
+    cmp cl, 0
+    cmovne rax, rdx
     ret
 =========== OPT LEVEL: aggresive ===========

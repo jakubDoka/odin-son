@@ -85,6 +85,7 @@ Class_Flag :: bac.Class_Flag
 		0b10, // Simd_Extract_Lsbs
 		0b10, // Simd_Extract_Msbs
 		0b10, // Simd_Reduce_Add_Bisect
+		0b10, // Select
 		0b10, // Msub
 		0b10, // Cmlt
 		0b10000000, // Ext
@@ -117,9 +118,9 @@ Class_Flag :: bac.Class_Flag
 		25 = 1, // Ret -> Tup
 		27 = 2, // CInt -> CInt
 		55 = 1, // Proc_Addr -> Tup
-		72 = 1, // Ext -> Arm_Op
-		75 = 1, // Umov -> Arm_Op
-		79 = 1, // Csel_Ult_Imm -> Arm_Op
+		73 = 1, // Ext -> Arm_Op
+		76 = 1, // Umov -> Arm_Op
+		80 = 1, // Csel_Ult_Imm -> Arm_Op
 	},
 	node_flags = {
 		{}, // Nil
@@ -192,6 +193,7 @@ Class_Flag :: bac.Class_Flag
 		{Class_Flag.Interned}, // Simd_Extract_Lsbs
 		{Class_Flag.Interned}, // Simd_Extract_Msbs
 		{Class_Flag.Interned}, // Simd_Reduce_Add_Bisect
+		{Class_Flag.Interned}, // Select
 		{}, // Msub
 		{}, // Cmlt
 		{}, // Ext
@@ -224,9 +226,9 @@ Class_Flag :: bac.Class_Flag
 		25 = bac.Tup,
 		27 = bac.CInt,
 		55 = bac.Tup,
-		72 = Arm_Op,
-		75 = Arm_Op,
-		79 = Arm_Op,
+		73 = Arm_Op,
+		76 = Arm_Op,
+		80 = Arm_Op,
 	}),
 	node_kind = nil when #config(NO_FMT, false) else Node_Type,
 }
@@ -302,6 +304,7 @@ Node_Type :: enum u16 {
 	Simd_Extract_Lsbs,
 	Simd_Extract_Msbs,
 	Simd_Reduce_Add_Bisect,
+	Select,
 	Msub,
 	Cmlt,
 	Ext,

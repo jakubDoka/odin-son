@@ -257,12 +257,15 @@ run_test :: proc(
 		case .Native:
 			ctx.target.cc = &x64.CC_TABLE[x64.X64_SYSTEMV_CC]
 			ctx.target.spec = &x64.SPEC
+			ctx.target.opt_hints = x64.OPT_HINTS
 		case .Arm:
 			ctx.target.cc = &arm.CC_TABLE[arm.ARM_SYSTEMV_CC]
 			ctx.target.spec = &arm.SPEC
+			ctx.target.opt_hints = arm.OPT_HINTS
 		case .Wasm:
 			ctx.target.cc = &wasm.CC_TABLE[wasm.WASM_SYSTEMV_CC]
 			ctx.target.spec = &wasm.SPEC
+			ctx.target.opt_hints = wasm.OPT_HINTS
 		case .Check:
 			unreachable()
 		}

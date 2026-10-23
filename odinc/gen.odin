@@ -45,14 +45,27 @@ OPT_LEVELS :: [?]Opt_Level {
 }
 
 TARGETS := [?]typecheck.Target {
-	{"amd64", &x64.CC_TABLE[x64.X64_SYSTEMV_CC], &x64.SPEC, emit_elf},
+	{
+		"amd64",
+		&x64.CC_TABLE[x64.X64_SYSTEMV_CC],
+		&x64.SPEC,
+		x64.OPT_HINTS,
+		emit_elf,
+	},
 	{
 		"wasm64",
 		&wasm.CC_TABLE[wasm.WASM_SYSTEMV_CC],
 		&wasm.SPEC,
+		wasm.OPT_HINTS,
 		emit_wasm_module,
 	},
-	{"arm64", &arm.CC_TABLE[arm.ARM_SYSTEMV_CC], &arm.SPEC, emit_elf},
+	{
+		"arm64",
+		&arm.CC_TABLE[arm.ARM_SYSTEMV_CC],
+		&arm.SPEC,
+		arm.OPT_HINTS,
+		emit_elf,
+	},
 }
 
 Abi_Param :: struct {
@@ -720,7 +733,7 @@ inline_and_optimize :: proc(
 			}
 		}
 
-		ssa.opt({ctx})
+		ssa.opt({ctx, ctx.target.opt_hints})
 		bac.compact(ctx)
 
 		delete(caller.stencil.mem, perm)
@@ -856,7 +869,7 @@ emit_proc :: proc(
 		ctx.node_scope = 0
 	}
 
-	ssa.opt({ctx})
+	ssa.opt({ctx, ctx.target.opt_hints})
 
 	if .Inline in level.flags {
 		bac.compact(ctx)

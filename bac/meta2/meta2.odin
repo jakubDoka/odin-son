@@ -85,6 +85,7 @@ main :: proc() {
 			.X64_Store = {id = x64.Mem_Op, flags = {.Store}, no_ctor = true},
 			.X64_Mul8 = {no_ctor = true, flags = {.Interned}},
 			.X64_Fma_213 = {id = x64.Mem_Op, no_ctor = true},
+			.X64_Cmovcc = {id = x64.Mem_Op, no_ctor = true},
 		}
 
 		meta.generate_spec(
@@ -128,7 +129,6 @@ main :: proc() {
 				pass_lane = true,
 			},
 			.WASM_Shl ..= .WASM_U_Shr = {no_ctor = true},
-			.Select = {args = {"on_true", "on_false", "condition"}},
 		}
 
 		meta.generate_spec(

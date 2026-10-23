@@ -5,128 +5,103 @@ bump:
     mov.q rax, [rsp - 0x8]
     ret
 main:
+    push rbx
+    push rbp
     sub rsp, 0x38
     mov.q [rsp], 0
     lea rdi, [rsp]
     mov sil, 1
     call bump
-    test al, al
-    jne 2
-    mov rax, 1
-    jmp 3
-2:
-    mov rax, 3
-3:
     mov.q [rsp + 0x10], rax
     lea rdi, [rsp]
     mov sil, 1
     call bump
+    mov.q [rsp + 0x18], rax
+    lea rdi, [rsp]
+    xor esi, esi
+    call bump
+    mov.q [rsp + 0x20], rax
+    mov.q rax, [rsp + 0x20]
+    test al, al
+    jne 2
+    jmp 3
+2:
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    mov.q [rsp + 0x20], rax
+3:
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    mov.q [rsp + 0x28], rax
+    mov.q rax, [rsp + 0x28]
     test al, al
     jne 4
-    mov.q [rsp + 0x8], r15
-    mov.q r15, [rsp + 0x10]
-    mov.q [rsp + 0x18], r15
-    mov.q r15, [rsp + 0x8]
+    lea rdi, [rsp]
+    xor esi, esi
+    call bump
+    mov.q [rsp + 0x30], rax
     jmp 5
 4:
-    mov.q rax, [rsp + 0x10]
-    add rax, 4
-    mov.q [rsp + 0x18], rax
+    mov.q [rsp + 0x8], r15
+    mov.q r15, [rsp + 0x28]
+    mov.q [rsp + 0x30], r15
+    mov.q r15, [rsp + 0x8]
 5:
     mov.q [rsp + 0x8], r15
-    mov.q r15, [rsp + 0x18]
-    mov.q [rsp + 0x10], r15
+    mov.q r15, [rsp + 0x30]
+    mov.q [rsp + 0x28], r15
     mov.q r15, [rsp + 0x8]
     lea rdi, [rsp]
     xor esi, esi
     call bump
-    mov.q [rsp + 0x18], rax
-    mov.q rax, [rsp + 0x18]
     test al, al
     jne 6
-    jmp 7
-6:
     lea rdi, [rsp]
     mov sil, 1
     call bump
-    mov.q [rsp + 0x18], rax
+    jmp 6
+6:
+    test al, al
+    jne 7
+    jmp 8
 7:
     lea rdi, [rsp]
     mov sil, 1
     call bump
-    mov.q [rsp + 0x20], rax
-    mov.q rax, [rsp + 0x20]
-    test al, al
-    jne 8
-    lea rdi, [rsp]
-    xor esi, esi
-    call bump
-    mov.q [rsp + 0x28], rax
-    jmp 9
 8:
-    mov.q [rsp + 0x8], r15
-    mov.q r15, [rsp + 0x20]
-    mov.q [rsp + 0x28], r15
-    mov.q r15, [rsp + 0x8]
-9:
-    lea rdi, [rsp]
-    xor esi, esi
-    call bump
-    test al, al
-    jne 10
-    lea rdi, [rsp]
-    mov sil, 1
-    call bump
-    jmp 10
-10:
-    test al, al
-    jne 11
-    mov.q [rsp + 0x20], rax
-    jmp 12
-11:
-    lea rdi, [rsp]
-    mov sil, 1
-    call bump
-    mov.q [rsp + 0x20], rax
-12:
-    mov.q rax, [rsp + 0x18]
-    cmp al, 0
-    sete al
-    movzx rax, al
-    test al, al
-    jne 13
-    jmp 14
-13:
-    mov.q rax, [rsp + 0x28]
-14:
-    test al, al
-    jne 15
-    jmp 16
-15:
-    mov.q rax, [rsp + 0x20]
-16:
-    test al, al
-    jne 17
-    mov.q [rsp + 0x8], r15
-    mov.q r15, [rsp + 0x10]
-    mov.q [rsp + 0x18], r15
-    mov.q r15, [rsp + 0x8]
-    jmp 18
-17:
-    mov.q rax, [rsp + 0x10]
-    add rax, 8
-    mov.q [rsp + 0x18], rax
-18:
-    mov.q [rsp + 0x8], r15
-    mov.q r15, [rsp + 0x18]
-    mov.q [rsp + 0x10], r15
-    mov.q r15, [rsp + 0x8]
-    mov.q rax, [rsp]
-    imul rax, rax, 0xa
-    mov.q rcx, [rsp + 0x10]
-    add rcx, rax
-    mov rax, rcx
+    mov rcx, 3
+    mov.q rdx, [rsp + 0x10]
+    mov rbx, 1
+    cmp dl, 0
+    cmovne rbx, rcx
+    mov rcx, rbx
+    add rcx, 4
+    mov.q rdx, [rsp + 0x18]
+    cmp dl, 0
+    cmovne rbx, rcx
+    mov.q rcx, [rsp + 0x20]
+    cmp cl, 0
+    sete cl
+    movzx rcx, cl
+    mov.q rdx, [rsp + 0x20]
+    mov.q rbp, [rsp + 0x28]
+    cmp dl, 0
+    cmove ecx, ebp
+    mov rdx, rbx
+    add rdx, 8
+    cmp cl, 0
+    cmovne ecx, eax
+    mov rax, rbx
+    cmp cl, 0
+    cmovne rax, rdx
+    mov.q rcx, [rsp]
+    imul rcx, rcx, 0xa
+    add rax, rcx
     add rsp, 0x38
+    pop rbp
+    pop rbx
     ret
 =========== OPT LEVEL: none ===========
 bump:
@@ -137,99 +112,89 @@ main:
     push rbx
     push rbp
     push r12
-    sub rsp, 0x10
+    push r13
+    sub rsp, 8
     mov.q [rsp], 0
     lea rdi, [rsp]
     mov sil, 1
     call bump
-    test al, al
+    mov r13, rax
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    mov r12, rax
+    lea rdi, [rsp]
+    xor esi, esi
+    call bump
+    mov rbp, rax
+    test bpl, bpl
     jne 2
-    mov rbx, 1
     jmp 3
 2:
-    mov rbx, 3
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    mov rbp, rax
 3:
     lea rdi, [rsp]
     mov sil, 1
     call bump
-    test al, al
+    mov rbx, rax
+    test bl, bl
     jne 4
-    jmp 5
-4:
-    add rbx, 4
-5:
     lea rdi, [rsp]
     xor esi, esi
     call bump
-    mov r12, rax
-    test r12b, r12b
+    mov rbx, rax
+    jmp 4
+4:
+    lea rdi, [rsp]
+    xor esi, esi
+    call bump
+    mov rdi, rax
+    test dil, dil
+    jne 5
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    mov rdi, rax
+    jmp 5
+5:
+    test dil, dil
     jne 6
     jmp 7
 6:
     lea rdi, [rsp]
     mov sil, 1
     call bump
-    mov r12, rax
+    mov rdi, rax
 7:
-    lea rdi, [rsp]
-    mov sil, 1
-    call bump
-    test al, al
-    jne 8
-    lea rdi, [rsp]
-    xor esi, esi
-    call bump
-    mov rbp, rax
-    jmp 9
-8:
-    mov rbp, rax
-9:
-    lea rdi, [rsp]
-    xor esi, esi
-    call bump
-    test al, al
-    jne 10
-    lea rdi, [rsp]
-    mov sil, 1
-    call bump
-    jmp 10
-10:
-    test al, al
-    jne 11
-    mov rcx, rax
-    jmp 12
-11:
-    lea rdi, [rsp]
-    mov sil, 1
-    call bump
-    mov rcx, rax
-12:
+    mov rcx, 3
+    mov rax, r13
+    mov rsi, 1
+    cmp al, 0
+    cmovne rsi, rcx
+    mov rcx, rsi
+    add rcx, 4
     cmp r12b, 0
-    sete al
-    movzx rax, al
-    test al, al
-    jne 13
-    jmp 14
-13:
-    mov rax, rbp
-14:
-    test al, al
-    jne 15
-    jmp 16
-15:
-    mov rax, rcx
-16:
-    test al, al
-    jne 17
-    jmp 18
-17:
-    add rbx, 8
-18:
-    mov rax, rbx
+    cmovne rsi, rcx
+    cmp bpl, 0
+    sete dl
+    movzx rdx, dl
+    cmp bpl, 0
+    cmove edx, ebx
+    mov rcx, rsi
+    add rcx, 8
+    cmp dl, 0
+    cmovne edx, edi
+    mov rax, rsi
+    cmp dl, 0
+    cmovne rax, rcx
     mov.q rcx, [rsp]
     imul rcx, rcx, 0xa
     add rax, rcx
-    add rsp, 0x10
+    add rsp, 8
+    pop r13
     pop r12
     pop rbp
     pop rbx
@@ -241,128 +206,103 @@ bump:
     mov.q rax, [rsp - 0x8]
     ret
 main:
+    push rbx
+    push rbp
     sub rsp, 0x38
     mov.q [rsp], 0
     lea rdi, [rsp]
     mov sil, 1
     call bump
-    test al, al
-    jne 2
-    mov rax, 1
-    jmp 3
-2:
-    mov rax, 3
-3:
     mov.q [rsp + 0x10], rax
     lea rdi, [rsp]
     mov sil, 1
     call bump
+    mov.q [rsp + 0x18], rax
+    lea rdi, [rsp]
+    xor esi, esi
+    call bump
+    mov.q [rsp + 0x20], rax
+    mov.q rax, [rsp + 0x20]
+    test al, al
+    jne 2
+    jmp 3
+2:
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    mov.q [rsp + 0x20], rax
+3:
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    mov.q [rsp + 0x28], rax
+    mov.q rax, [rsp + 0x28]
     test al, al
     jne 4
-    mov.q [rsp + 0x8], r15
-    mov.q r15, [rsp + 0x10]
-    mov.q [rsp + 0x18], r15
-    mov.q r15, [rsp + 0x8]
+    lea rdi, [rsp]
+    xor esi, esi
+    call bump
+    mov.q [rsp + 0x30], rax
     jmp 5
 4:
-    mov.q rax, [rsp + 0x10]
-    add rax, 4
-    mov.q [rsp + 0x18], rax
+    mov.q [rsp + 0x8], r15
+    mov.q r15, [rsp + 0x28]
+    mov.q [rsp + 0x30], r15
+    mov.q r15, [rsp + 0x8]
 5:
     mov.q [rsp + 0x8], r15
-    mov.q r15, [rsp + 0x18]
-    mov.q [rsp + 0x10], r15
+    mov.q r15, [rsp + 0x30]
+    mov.q [rsp + 0x28], r15
     mov.q r15, [rsp + 0x8]
     lea rdi, [rsp]
     xor esi, esi
     call bump
-    mov.q [rsp + 0x18], rax
-    mov.q rax, [rsp + 0x18]
     test al, al
     jne 6
-    jmp 7
-6:
     lea rdi, [rsp]
     mov sil, 1
     call bump
-    mov.q [rsp + 0x18], rax
+    jmp 6
+6:
+    test al, al
+    jne 7
+    jmp 8
 7:
     lea rdi, [rsp]
     mov sil, 1
     call bump
-    mov.q [rsp + 0x20], rax
-    mov.q rax, [rsp + 0x20]
-    test al, al
-    jne 8
-    lea rdi, [rsp]
-    xor esi, esi
-    call bump
-    mov.q [rsp + 0x28], rax
-    jmp 9
 8:
-    mov.q [rsp + 0x8], r15
-    mov.q r15, [rsp + 0x20]
-    mov.q [rsp + 0x28], r15
-    mov.q r15, [rsp + 0x8]
-9:
-    lea rdi, [rsp]
-    xor esi, esi
-    call bump
-    test al, al
-    jne 10
-    lea rdi, [rsp]
-    mov sil, 1
-    call bump
-    jmp 10
-10:
-    test al, al
-    jne 11
-    mov.q [rsp + 0x20], rax
-    jmp 12
-11:
-    lea rdi, [rsp]
-    mov sil, 1
-    call bump
-    mov.q [rsp + 0x20], rax
-12:
-    mov.q rax, [rsp + 0x18]
-    cmp al, 0
-    sete al
-    movzx rax, al
-    test al, al
-    jne 13
-    jmp 14
-13:
-    mov.q rax, [rsp + 0x28]
-14:
-    test al, al
-    jne 15
-    jmp 16
-15:
-    mov.q rax, [rsp + 0x20]
-16:
-    test al, al
-    jne 17
-    mov.q [rsp + 0x8], r15
-    mov.q r15, [rsp + 0x10]
-    mov.q [rsp + 0x18], r15
-    mov.q r15, [rsp + 0x8]
-    jmp 18
-17:
-    mov.q rax, [rsp + 0x10]
-    add rax, 8
-    mov.q [rsp + 0x18], rax
-18:
-    mov.q [rsp + 0x8], r15
-    mov.q r15, [rsp + 0x18]
-    mov.q [rsp + 0x10], r15
-    mov.q r15, [rsp + 0x8]
-    mov.q rax, [rsp]
-    imul rax, rax, 0xa
-    mov.q rcx, [rsp + 0x10]
-    add rcx, rax
-    mov rax, rcx
+    mov rcx, 3
+    mov.q rdx, [rsp + 0x10]
+    mov rbx, 1
+    cmp dl, 0
+    cmovne rbx, rcx
+    mov rcx, rbx
+    add rcx, 4
+    mov.q rdx, [rsp + 0x18]
+    cmp dl, 0
+    cmovne rbx, rcx
+    mov.q rcx, [rsp + 0x20]
+    cmp cl, 0
+    sete cl
+    movzx rcx, cl
+    mov.q rdx, [rsp + 0x20]
+    mov.q rbp, [rsp + 0x28]
+    cmp dl, 0
+    cmove ecx, ebp
+    mov rdx, rbx
+    add rdx, 8
+    cmp cl, 0
+    cmovne ecx, eax
+    mov rax, rbx
+    cmp cl, 0
+    cmovne rax, rdx
+    mov.q rcx, [rsp]
+    imul rcx, rcx, 0xa
+    add rax, rcx
     add rsp, 0x38
+    pop rbp
+    pop rbx
     ret
 =========== OPT LEVEL: moderate ===========
 bump:
@@ -373,99 +313,89 @@ main:
     push rbx
     push rbp
     push r12
-    sub rsp, 0x10
+    push r13
+    sub rsp, 8
     mov.q [rsp], 0
     lea rdi, [rsp]
     mov sil, 1
     call bump
-    test al, al
+    mov r13, rax
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    mov r12, rax
+    lea rdi, [rsp]
+    xor esi, esi
+    call bump
+    mov rbp, rax
+    test bpl, bpl
     jne 2
-    mov rbx, 1
     jmp 3
 2:
-    mov rbx, 3
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    mov rbp, rax
 3:
     lea rdi, [rsp]
     mov sil, 1
     call bump
-    test al, al
+    mov rbx, rax
+    test bl, bl
     jne 4
-    jmp 5
-4:
-    add rbx, 4
-5:
     lea rdi, [rsp]
     xor esi, esi
     call bump
-    mov r12, rax
-    test r12b, r12b
+    mov rbx, rax
+    jmp 4
+4:
+    lea rdi, [rsp]
+    xor esi, esi
+    call bump
+    mov rdi, rax
+    test dil, dil
+    jne 5
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    mov rdi, rax
+    jmp 5
+5:
+    test dil, dil
     jne 6
     jmp 7
 6:
     lea rdi, [rsp]
     mov sil, 1
     call bump
-    mov r12, rax
+    mov rdi, rax
 7:
-    lea rdi, [rsp]
-    mov sil, 1
-    call bump
-    test al, al
-    jne 8
-    lea rdi, [rsp]
-    xor esi, esi
-    call bump
-    mov rbp, rax
-    jmp 9
-8:
-    mov rbp, rax
-9:
-    lea rdi, [rsp]
-    xor esi, esi
-    call bump
-    test al, al
-    jne 10
-    lea rdi, [rsp]
-    mov sil, 1
-    call bump
-    jmp 10
-10:
-    test al, al
-    jne 11
-    mov rcx, rax
-    jmp 12
-11:
-    lea rdi, [rsp]
-    mov sil, 1
-    call bump
-    mov rcx, rax
-12:
+    mov rcx, 3
+    mov rax, r13
+    mov rsi, 1
+    cmp al, 0
+    cmovne rsi, rcx
+    mov rcx, rsi
+    add rcx, 4
     cmp r12b, 0
-    sete al
-    movzx rax, al
-    test al, al
-    jne 13
-    jmp 14
-13:
-    mov rax, rbp
-14:
-    test al, al
-    jne 15
-    jmp 16
-15:
-    mov rax, rcx
-16:
-    test al, al
-    jne 17
-    jmp 18
-17:
-    add rbx, 8
-18:
-    mov rax, rbx
+    cmovne rsi, rcx
+    cmp bpl, 0
+    sete dl
+    movzx rdx, dl
+    cmp bpl, 0
+    cmove edx, ebx
+    mov rcx, rsi
+    add rcx, 8
+    cmp dl, 0
+    cmovne edx, edi
+    mov rax, rsi
+    cmp dl, 0
+    cmovne rax, rcx
     mov.q rcx, [rsp]
     imul rcx, rcx, 0xa
     add rax, rcx
-    add rsp, 0x10
+    add rsp, 8
+    pop r13
     pop r12
     pop rbp
     pop rbx
@@ -479,99 +409,89 @@ main:
     push rbx
     push rbp
     push r12
-    sub rsp, 0x10
+    push r13
+    sub rsp, 8
     mov.q [rsp], 0
     lea rdi, [rsp]
     mov sil, 1
     call bump
-    test al, al
+    mov r13, rax
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    mov r12, rax
+    lea rdi, [rsp]
+    xor esi, esi
+    call bump
+    mov rbp, rax
+    test bpl, bpl
     jne 2
-    mov rbx, 1
     jmp 3
 2:
-    mov rbx, 3
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    mov rbp, rax
 3:
     lea rdi, [rsp]
     mov sil, 1
     call bump
-    test al, al
+    mov rbx, rax
+    test bl, bl
     jne 4
-    jmp 5
-4:
-    add rbx, 4
-5:
     lea rdi, [rsp]
     xor esi, esi
     call bump
-    mov r12, rax
-    test r12b, r12b
+    mov rbx, rax
+    jmp 4
+4:
+    lea rdi, [rsp]
+    xor esi, esi
+    call bump
+    mov rdi, rax
+    test dil, dil
+    jne 5
+    lea rdi, [rsp]
+    mov sil, 1
+    call bump
+    mov rdi, rax
+    jmp 5
+5:
+    test dil, dil
     jne 6
     jmp 7
 6:
     lea rdi, [rsp]
     mov sil, 1
     call bump
-    mov r12, rax
+    mov rdi, rax
 7:
-    lea rdi, [rsp]
-    mov sil, 1
-    call bump
-    test al, al
-    jne 8
-    lea rdi, [rsp]
-    xor esi, esi
-    call bump
-    mov rbp, rax
-    jmp 9
-8:
-    mov rbp, rax
-9:
-    lea rdi, [rsp]
-    xor esi, esi
-    call bump
-    test al, al
-    jne 10
-    lea rdi, [rsp]
-    mov sil, 1
-    call bump
-    jmp 10
-10:
-    test al, al
-    jne 11
-    mov rcx, rax
-    jmp 12
-11:
-    lea rdi, [rsp]
-    mov sil, 1
-    call bump
-    mov rcx, rax
-12:
+    mov rcx, 3
+    mov rax, r13
+    mov rsi, 1
+    cmp al, 0
+    cmovne rsi, rcx
+    mov rcx, rsi
+    add rcx, 4
     cmp r12b, 0
-    sete al
-    movzx rax, al
-    test al, al
-    jne 13
-    jmp 14
-13:
-    mov rax, rbp
-14:
-    test al, al
-    jne 15
-    jmp 16
-15:
-    mov rax, rcx
-16:
-    test al, al
-    jne 17
-    jmp 18
-17:
-    add rbx, 8
-18:
-    mov rax, rbx
+    cmovne rsi, rcx
+    cmp bpl, 0
+    sete dl
+    movzx rdx, dl
+    cmp bpl, 0
+    cmove edx, ebx
+    mov rcx, rsi
+    add rcx, 8
+    cmp dl, 0
+    cmovne edx, edi
+    mov rax, rsi
+    cmp dl, 0
+    cmovne rax, rcx
     mov.q rcx, [rsp]
     imul rcx, rcx, 0xa
     add rax, rcx
-    add rsp, 0x10
+    add rsp, 8
+    pop r13
     pop r12
     pop rbp
     pop rbx

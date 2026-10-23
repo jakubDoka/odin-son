@@ -194,6 +194,7 @@ when SPEC_NOT_PRESENT {
 		Simd_Extract_Lsbs,
 		Simd_Extract_Msbs,
 		Simd_Reduce_Add_Bisect,
+		Select,
 	}
 
 	inherit_idx_of :: proc($T: typeid) -> u8 {return 0}
@@ -222,6 +223,12 @@ when SPEC_NOT_PRESENT {
 	add_mem :: add_jump
 	add_split_mem :: add_jump
 	add_poison :: proc(prc: ^Proc, name: string) -> Node_ID {return 0}
+	add_select :: proc(
+		prc: ^Proc,
+		name: string,
+		dt: Node_Datatype,
+		on_true, on_false, condition: Node_ID,
+	) -> Node_ID {return 0}
 }
 
 Dbg_Sym :: struct {
@@ -493,7 +500,8 @@ Opt_Flag :: enum int {
 }
 
 Peep_Ctx :: struct {
-	using prc: ^Proc,
+	using prc:       ^Proc,
+	using opt_hints: Opt_Hints,
 }
 
 ensure_spec_pass_match :: #force_inline proc(ctx: ^Proc) {
@@ -721,11 +729,12 @@ assemble_args :: proc(
 compute_weight :: proc(prc: ^Proc, all: []Node_ID) {
 	@(static, rodata)
 	WEIGHTS := #partial [Node_Type]u8 {
-		.Loop = 5,
-		.Call = 10,
-		.CInt = 1,
-		.Neg ..= .U_Conv      = 1,
-		.Add ..= .And_Not      = 1,
+		.Loop   = 5,
+		.Call   = 10,
+		.CInt   = 1,
+		.Select = 1,
+		.Neg ..= .U_Conv        = 1,
+		.Add ..= .And_Not        = 1,
 	}
 
 	prc.weight = 1

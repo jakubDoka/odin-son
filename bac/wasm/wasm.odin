@@ -42,6 +42,11 @@ SPEC_NOT_PRESENT :: (#load("node_specs.odin", string) or_else "") == ""
 
 WASM_SYSTEMV_CC :: 0
 
+@(tag = "api", rodata, export, link_name = "bac_wasm_OPT_HINTS")
+OPT_HINTS := bac.Opt_Hints {
+	select_types = ~{},
+}
+
 @(tag = "api", rodata, export, link_name = "bac_wasm_CC_TABLE")
 CC_TABLE := [?]bac.Call_Conv {
 	WASM_SYSTEMV_CC = {},
@@ -85,15 +90,6 @@ when SPEC_NOT_PRESENT {
 		return 0
 	}
 
-	add_select :: proc(
-		prc: ^bac.Proc,
-		name: string,
-		dt: bac.Node_Datatype,
-		on_true, on_false, condition: bac.Node_ID,
-	) -> bac.Node_ID {
-		return 0
-	}
-
 	Node_Type :: enum u16 {
 		WASM_Store,
 		WASM_Load,
@@ -106,7 +102,6 @@ when SPEC_NOT_PRESENT {
 		WASM_Shl,
 		WASM_Shr,
 		WASM_U_Shr,
-		Select,
 	}
 }
 
@@ -185,7 +180,7 @@ peep :: proc(
 				bac.add_c_int(ctx, "shwidth", count_dt, bits),
 			)
 			if kind == .Shr {
-				count = add_select(
+				count = bac.add_select(
 					ctx,
 					"shclamp",
 					count_dt,
@@ -211,7 +206,7 @@ peep :: proc(
 			{node.inps[0], count},
 		)
 		if constant != nil || kind == .Shr do return shift
-		return add_select(
+		return bac.add_select(
 			ctx,
 			"shguard",
 			node.dt,

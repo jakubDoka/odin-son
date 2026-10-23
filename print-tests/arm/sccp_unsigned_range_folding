@@ -1,41 +1,35 @@
 =========== OPT LEVEL: none-quick ===========
 check:
-    cbnz x1, 1
-    b 1
-1:
-    cbnz x1, 2
+    movz x2, #511
     uxtb w0, w0
-    movz x1, #7
+    movz x3, #255
+    movz x4, #255
+    movz x5, #7
+    uxtb w5, w5
+    and w0, w0, w5
+    uxtb w0, w0
+    cmp w1, #0
+    csel w0, w3, w0, ne
+    uxtb w0, w0
+    movz x1, #3
     uxtb w1, w1
-    and w0, w0, w1
-    uxtb w0, w0
-    b 3
-2:
-    movz x0, #255
-3:
-    uxtb w0, w0
-    movz x1, #128
-    uxtb w1, w1
-    cmp w0, w1
-    b.cc 4
-    movz x1, #255
-    b 5
-4:
-    movz x1, #511
-5:
-    movz x2, #3
-    uxtb w2, w2
+    movz x3, #128
+    uxtb w3, w3
+    cmp w0, w3
+    cset x3, cc
+    cmp w3, #0
+    csel x2, x2, x4, ne
     movz x3, #2
     uxtb w3, w3
     udiv w3, w0, w3
     uxtb w3, w3
     uxtb w3, w3
-    add x1, x1, x3
-    udiv w3, w0, w2
-    msub w2, w3, w2, w0
-    uxtb w2, w2
-    uxtb w2, w2
-    add x1, x1, x2
+    add x2, x2, x3
+    udiv w3, w0, w1
+    msub w1, w3, w1, w0
+    uxtb w1, w1
+    uxtb w1, w1
+    add x1, x2, x1
     movz x2, #1
     lsr w0, w0, w2
     uxtb w0, w0
@@ -45,22 +39,22 @@ check:
 main:
     sub sp, sp, #48
     stp x29, x30, [xzr]
-    adr x0, 0xf2c
+    adr x0, 0xefc
     ldrb w0, [x0]
     movz x1, #1
-    bl 0xffffff6c
+    bl 0xffffff70
     str x0, [xzr, #16]
     movz x1, #0
     movz x0, #0
-    bl 0xffffff6c
+    bl 0xffffff70
     str x0, [xzr, #24]
     movz x0, #127
     movz x1, #0
-    bl 0xffffff6c
+    bl 0xffffff70
     str x0, [xzr, #32]
     movz x0, #128
     movz x1, #1
-    bl 0xffffff6c
+    bl 0xffffff70
     movz x1, #251
     ldr x2, [xzr, #16]
     ldr x3, [xzr, #24]
@@ -75,31 +69,25 @@ main:
     ret
 =========== OPT LEVEL: none ===========
 check:
-    cbnz x1, 1
-    b 1
-1:
-    cbnz x1, 2
-    uxtb w1, w0
+    movz x5, #511
+    uxtb w3, w0
+    movz x2, #255
+    movz x4, #255
     movz x0, #7
     uxtb w0, w0
-    and w0, w1, w0
+    and w0, w3, w0
     uxtb w0, w0
-    b 3
-2:
-    movz x0, #255
-3:
+    cmp w1, #0
+    csel w0, w2, w0, ne
     uxtb w3, w0
+    movz x0, #3
+    uxtb w2, w0
     movz x0, #128
     uxtb w0, w0
     cmp w3, w0
-    b.cc 4
-    movz x1, #255
-    b 5
-4:
-    movz x1, #511
-5:
-    movz x0, #3
-    uxtb w2, w0
+    cset x0, cc
+    cmp w0, #0
+    csel x1, x5, x4, ne
     movz x0, #2
     uxtb w0, w0
     udiv w0, w3, w0
@@ -123,22 +111,22 @@ main:
     str x20, [xzr, #8]
     str x21, [xzr, #16]
     stp x29, x30, [xzr, #24]
-    adr x0, 0xf2c
+    adr x0, 0xefc
     ldrb w0, [x0]
     movz x1, #1
-    bl 0xffffff6c
+    bl 0xffffff70
     mov x21, x0
     movz x1, #0
     movz x0, #0
-    bl 0xffffff6c
+    bl 0xffffff70
     mov x20, x0
     movz x0, #127
     movz x1, #0
-    bl 0xffffff6c
+    bl 0xffffff70
     mov x19, x0
     movz x0, #128
     movz x1, #1
-    bl 0xffffff6c
+    bl 0xffffff70
     movz x2, #251
     add x1, x21, x20
     add x1, x1, x19
@@ -153,42 +141,36 @@ main:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 check:
-    cbnz x1, 1
-    b 1
-1:
-    cbnz x1, 2
+    movz x2, #511
     uxtb w0, w0
-    movz x1, #7
+    movz x3, #255
+    movz x4, #255
+    movz x5, #7
+    uxtb w5, w5
+    and w0, w0, w5
+    uxtb w0, w0
+    cmp w1, #0
+    csel w0, w3, w0, ne
+    uxtb w0, w0
+    movz x1, #3
     uxtb w1, w1
-    and w0, w0, w1
-    uxtb w0, w0
-    b 3
-2:
-    movz x0, #255
-3:
-    uxtb w0, w0
-    movz x1, #128
-    uxtb w1, w1
-    cmp w0, w1
-    b.cc 4
-    movz x1, #255
-    b 5
-4:
-    movz x1, #511
-5:
-    movz x2, #3
-    uxtb w2, w2
+    movz x3, #128
+    uxtb w3, w3
+    cmp w0, w3
+    cset x3, cc
+    cmp w3, #0
+    csel x2, x2, x4, ne
     movz x3, #2
     uxtb w3, w3
     udiv w3, w0, w3
     uxtb w3, w3
     uxtb w3, w3
-    add x1, x1, x3
-    udiv w3, w0, w2
-    msub w2, w3, w2, w0
-    uxtb w2, w2
-    uxtb w2, w2
-    add x1, x1, x2
+    add x2, x2, x3
+    udiv w3, w0, w1
+    msub w1, w3, w1, w0
+    uxtb w1, w1
+    uxtb w1, w1
+    add x1, x2, x1
     movz x2, #1
     lsr w0, w0, w2
     uxtb w0, w0
@@ -198,22 +180,22 @@ check:
 main:
     sub sp, sp, #48
     stp x29, x30, [xzr]
-    adr x0, 0xf2c
+    adr x0, 0xefc
     ldrb w0, [x0]
     movz x1, #1
-    bl 0xffffff6c
+    bl 0xffffff70
     str x0, [xzr, #16]
     movz x1, #0
     movz x0, #0
-    bl 0xffffff6c
+    bl 0xffffff70
     str x0, [xzr, #24]
     movz x0, #127
     movz x1, #0
-    bl 0xffffff6c
+    bl 0xffffff70
     str x0, [xzr, #32]
     movz x0, #128
     movz x1, #1
-    bl 0xffffff6c
+    bl 0xffffff70
     movz x1, #251
     ldr x2, [xzr, #16]
     ldr x3, [xzr, #24]
@@ -228,31 +210,25 @@ main:
     ret
 =========== OPT LEVEL: moderate ===========
 check:
-    cbnz x1, 1
-    b 1
-1:
-    cbnz x1, 2
-    uxtb w1, w0
+    movz x5, #511
+    uxtb w3, w0
+    movz x2, #255
+    movz x4, #255
     movz x0, #7
     uxtb w0, w0
-    and w0, w1, w0
+    and w0, w3, w0
     uxtb w0, w0
-    b 3
-2:
-    movz x0, #255
-3:
+    cmp w1, #0
+    csel w0, w2, w0, ne
     uxtb w3, w0
+    movz x0, #3
+    uxtb w2, w0
     movz x0, #128
     uxtb w0, w0
     cmp w3, w0
-    b.cc 4
-    movz x1, #255
-    b 5
-4:
-    movz x1, #511
-5:
-    movz x0, #3
-    uxtb w2, w0
+    cset x0, cc
+    cmp w0, #0
+    csel x1, x5, x4, ne
     movz x0, #2
     uxtb w0, w0
     udiv w0, w3, w0
@@ -276,22 +252,22 @@ main:
     str x20, [xzr, #8]
     str x21, [xzr, #16]
     stp x29, x30, [xzr, #24]
-    adr x0, 0xf2c
+    adr x0, 0xefc
     ldrb w0, [x0]
     movz x1, #1
-    bl 0xffffff6c
+    bl 0xffffff70
     mov x21, x0
     movz x1, #0
     movz x0, #0
-    bl 0xffffff6c
+    bl 0xffffff70
     mov x20, x0
     movz x0, #127
     movz x1, #0
-    bl 0xffffff6c
+    bl 0xffffff70
     mov x19, x0
     movz x0, #128
     movz x1, #1
-    bl 0xffffff6c
+    bl 0xffffff70
     movz x2, #251
     add x1, x21, x20
     add x1, x1, x19
@@ -306,31 +282,25 @@ main:
     ret
 =========== OPT LEVEL: all ===========
 check:
-    cbnz x1, 1
-    b 1
-1:
-    cbnz x1, 2
-    uxtb w1, w0
+    movz x5, #511
+    uxtb w3, w0
+    movz x2, #255
+    movz x4, #255
     movz x0, #7
     uxtb w0, w0
-    and w0, w1, w0
+    and w0, w3, w0
     uxtb w0, w0
-    b 3
-2:
-    movz x0, #255
-3:
+    cmp w1, #0
+    csel w0, w2, w0, ne
     uxtb w3, w0
+    movz x0, #3
+    uxtb w2, w0
     movz x0, #128
     uxtb w0, w0
     cmp w3, w0
-    b.cc 4
-    movz x1, #255
-    b 5
-4:
-    movz x1, #511
-5:
-    movz x0, #3
-    uxtb w2, w0
+    cset x0, cc
+    cmp w0, #0
+    csel x1, x5, x4, ne
     movz x0, #2
     uxtb w0, w0
     udiv w0, w3, w0
@@ -354,22 +324,22 @@ main:
     str x20, [xzr, #8]
     str x21, [xzr, #16]
     stp x29, x30, [xzr, #24]
-    adr x0, 0xf2c
+    adr x0, 0xefc
     ldrb w0, [x0]
     movz x1, #1
-    bl 0xffffff6c
+    bl 0xffffff70
     mov x21, x0
     movz x1, #0
     movz x0, #0
-    bl 0xffffff6c
+    bl 0xffffff70
     mov x20, x0
     movz x0, #127
     movz x1, #0
-    bl 0xffffff6c
+    bl 0xffffff70
     mov x19, x0
     movz x0, #128
     movz x1, #1
-    bl 0xffffff6c
+    bl 0xffffff70
     movz x2, #251
     add x1, x21, x20
     add x1, x1, x19

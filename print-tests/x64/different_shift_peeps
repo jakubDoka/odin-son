@@ -30,37 +30,25 @@ test_imm_inplace_shifts:
     add rax, rcx
     ret
 test_inplace_shifts:
-    mov.q [rsp - 0x8], rdx
     mov.q rax, [rdi]
-    mov.q rcx, [rsp - 0x8]
-    cmp rcx, 0x40
-    jb 3
-    xor eax, eax
-    jmp 4
-3:
-    shl rax, cl
-4:
-    mov.q rcx, [rsp - 0x8]
-    cmp rcx, 0x40
-    jb 5
+    shlx rax, rax, rdx
+    xor ecx, ecx
+    cmp rdx, 0x40
+    cmovb rcx, rax
+    mov rax, rcx
     sar rax, 0x3f
-    jmp 6
-5:
-    sar rax, cl
-6:
+    sarx rcx, rcx, rdx
+    cmp rdx, 0x40
+    cmovb rax, rcx
     mov.q [rdi], rax
-    mov.q rdx, [rsi]
-    mov.q rcx, [rsp - 0x8]
-    cmp rcx, 0x40
-    jb 7
-    xor edx, edx
-    jmp 8
-7:
-    shr rdx, cl
-8:
-    mov.q [rsi], rdx
+    mov.q rax, [rsi]
+    shrx rax, rax, rdx
+    xor ecx, ecx
+    cmp rdx, 0x40
+    cmovb rcx, rax
+    mov.q [rsi], rcx
     mov.q rax, [rdi]
-    add rax, rdx
+    add rax, rcx
     ret
 main:
     sub rsp, 0x28
@@ -108,37 +96,25 @@ test_imm_inplace_shifts:
     add rax, rcx
     ret
 test_inplace_shifts:
-    mov r8, rdx
     mov.q rax, [rdi]
-    mov rcx, r8
-    cmp rcx, 0x40
-    jb 3
-    xor eax, eax
-    jmp 4
-3:
-    shl rax, cl
-4:
-    mov rcx, r8
-    cmp rcx, 0x40
-    jb 5
+    shlx rax, rax, rdx
+    xor ecx, ecx
+    cmp rdx, 0x40
+    cmovb rcx, rax
+    mov rax, rcx
     sar rax, 0x3f
-    jmp 6
-5:
-    sar rax, cl
-6:
+    sarx rcx, rcx, rdx
+    cmp rdx, 0x40
+    cmovb rax, rcx
     mov.q [rdi], rax
-    mov.q rdx, [rsi]
-    mov rcx, r8
-    cmp rcx, 0x40
-    jb 7
-    xor edx, edx
-    jmp 8
-7:
-    shr rdx, cl
-8:
-    mov.q [rsi], rdx
+    mov.q rax, [rsi]
+    shrx rax, rax, rdx
+    xor ecx, ecx
+    cmp rdx, 0x40
+    cmovb rcx, rax
+    mov.q [rsi], rcx
     mov.q rax, [rdi]
-    add rax, rdx
+    add rax, rcx
     ret
 main:
     push rbx
@@ -196,37 +172,25 @@ test_imm_inplace_shifts:
     add rax, rcx
     ret
 test_inplace_shifts:
-    mov.q [rsp - 0x8], rdx
     mov.q rax, [rdi]
-    mov.q rcx, [rsp - 0x8]
-    cmp rcx, 0x40
-    jb 3
-    xor eax, eax
-    jmp 4
-3:
-    shl rax, cl
-4:
-    mov.q rcx, [rsp - 0x8]
-    cmp rcx, 0x40
-    jb 5
+    shlx rax, rax, rdx
+    xor ecx, ecx
+    cmp rdx, 0x40
+    cmovb rcx, rax
+    mov rax, rcx
     sar rax, 0x3f
-    jmp 6
-5:
-    sar rax, cl
-6:
+    sarx rcx, rcx, rdx
+    cmp rdx, 0x40
+    cmovb rax, rcx
     mov.q [rdi], rax
-    mov.q rdx, [rsi]
-    mov.q rcx, [rsp - 0x8]
-    cmp rcx, 0x40
-    jb 7
-    xor edx, edx
-    jmp 8
-7:
-    shr rdx, cl
-8:
-    mov.q [rsi], rdx
+    mov.q rax, [rsi]
+    shrx rax, rax, rdx
+    xor ecx, ecx
+    cmp rdx, 0x40
+    cmovb rcx, rax
+    mov.q [rsi], rcx
     mov.q rax, [rdi]
-    add rax, rdx
+    add rax, rcx
     ret
 main:
     sub rsp, 0x28
@@ -274,37 +238,25 @@ test_imm_inplace_shifts:
     add rax, rcx
     ret
 test_inplace_shifts:
-    mov r8, rdx
     mov.q rax, [rdi]
-    mov rcx, r8
-    cmp rcx, 0x40
-    jb 3
-    xor eax, eax
-    jmp 4
-3:
-    shl rax, cl
-4:
-    mov rcx, r8
-    cmp rcx, 0x40
-    jb 5
+    shlx rax, rax, rdx
+    xor ecx, ecx
+    cmp rdx, 0x40
+    cmovb rcx, rax
+    mov rax, rcx
     sar rax, 0x3f
-    jmp 6
-5:
-    sar rax, cl
-6:
+    sarx rcx, rcx, rdx
+    cmp rdx, 0x40
+    cmovb rax, rcx
     mov.q [rdi], rax
-    mov.q rdx, [rsi]
-    mov rcx, r8
-    cmp rcx, 0x40
-    jb 7
-    xor edx, edx
-    jmp 8
-7:
-    shr rdx, cl
-8:
-    mov.q [rsi], rdx
+    mov.q rax, [rsi]
+    shrx rax, rax, rdx
+    xor ecx, ecx
+    cmp rdx, 0x40
+    cmovb rcx, rax
+    mov.q [rsi], rcx
     mov.q rax, [rdi]
-    add rax, rdx
+    add rax, rcx
     ret
 main:
     push rbx
@@ -353,37 +305,25 @@ test_imm_inplace_shifts:
     add rax, rcx
     ret
 test_inplace_shifts:
-    mov r8, rdx
     mov.q rax, [rdi]
-    mov rcx, r8
-    cmp rcx, 0x40
-    jb 3
-    xor eax, eax
-    jmp 4
-3:
-    shl rax, cl
-4:
-    mov rcx, r8
-    cmp rcx, 0x40
-    jb 5
+    shlx rax, rax, rdx
+    xor ecx, ecx
+    cmp rdx, 0x40
+    cmovb rcx, rax
+    mov rax, rcx
     sar rax, 0x3f
-    jmp 6
-5:
-    sar rax, cl
-6:
+    sarx rcx, rcx, rdx
+    cmp rdx, 0x40
+    cmovb rax, rcx
     mov.q [rdi], rax
-    mov.q rdx, [rsi]
-    mov rcx, r8
-    cmp rcx, 0x40
-    jb 7
-    xor edx, edx
-    jmp 8
-7:
-    shr rdx, cl
-8:
-    mov.q [rsi], rdx
+    mov.q rax, [rsi]
+    shrx rax, rax, rdx
+    xor ecx, ecx
+    cmp rdx, 0x40
+    cmovb rcx, rax
+    mov.q [rsi], rcx
     mov.q rax, [rdi]
-    add rax, rdx
+    add rax, rcx
     ret
 main:
     push rbx

@@ -1,17 +1,9 @@
 =========== OPT LEVEL: none-quick ===========
 sh:
-    mov.q [rsp - 0x18], rdi
-    mov.q [rsp - 0x10], rsi
-    mov.q rax, [rsp - 0x18]
-    mov.q rcx, [rsp - 0x10]
-    cmp rcx, 0x40
-    jb 1
     xor eax, eax
-    jmp 2
-1:
-    shl rax, cl
-2:
-    mov rax, rax
+    shlx rcx, rdi, rsi
+    cmp rsi, 0x40
+    cmovb rax, rcx
     ret
 main:
     sub rsp, 8
@@ -29,15 +21,10 @@ main:
     ret
 =========== OPT LEVEL: none ===========
 sh:
-    mov rax, rdi
-    mov rcx, rsi
-    cmp rcx, 0x40
-    jb 1
     xor eax, eax
-    jmp 2
-1:
-    shl rax, cl
-2:
+    shlx rcx, rdi, rsi
+    cmp rsi, 0x40
+    cmovb rax, rcx
     ret
 main:
     push rbx
@@ -54,18 +41,10 @@ main:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 sh:
-    mov.q [rsp - 0x18], rdi
-    mov.q [rsp - 0x10], rsi
-    mov.q rax, [rsp - 0x18]
-    mov.q rcx, [rsp - 0x10]
-    cmp rcx, 0x40
-    jb 1
     xor eax, eax
-    jmp 2
-1:
-    shl rax, cl
-2:
-    mov rax, rax
+    shlx rcx, rdi, rsi
+    cmp rsi, 0x40
+    cmovb rax, rcx
     ret
 main:
     sub rsp, 8
@@ -83,15 +62,10 @@ main:
     ret
 =========== OPT LEVEL: moderate ===========
 sh:
-    mov rax, rdi
-    mov rcx, rsi
-    cmp rcx, 0x40
-    jb 1
     xor eax, eax
-    jmp 2
-1:
-    shl rax, cl
-2:
+    shlx rcx, rdi, rsi
+    cmp rsi, 0x40
+    cmovb rax, rcx
     ret
 main:
     push rbx
@@ -108,15 +82,10 @@ main:
     ret
 =========== OPT LEVEL: all ===========
 sh:
-    mov rax, rdi
-    mov rcx, rsi
-    cmp rcx, 0x40
-    jb 1
     xor eax, eax
-    jmp 2
-1:
-    shl rax, cl
-2:
+    shlx rcx, rdi, rsi
+    cmp rsi, 0x40
+    cmovb rax, rcx
     ret
 main:
     push rbx

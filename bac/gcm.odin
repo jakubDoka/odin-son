@@ -835,14 +835,6 @@ schedule_graph :: proc(
 					posa += pos
 					lowest_schedule = min(lowest_schedule, posa)
 				}
-				for other, j in bb.instrs[pos:lowest_schedule] {
-					if get_node(prc, other).dt == .Void {
-						// Debug-info rescheduling must preserve existing flag dependencies.
-						lowest_schedule = pos + j
-						break
-					}
-				}
-
 				slice.rotate_left(bb.instrs[pos:lowest_schedule], 1)
 			}
 		}

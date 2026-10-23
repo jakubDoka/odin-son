@@ -1,23 +1,24 @@
 =========== OPT LEVEL: none-quick ===========
 si:
+    sub sp, sp, #16
     movz x1, #7
     cmp w0, w1
-    cset x2, eq
+    cset w2, eq
     uxtb w2, w2
     cmp w0, w1
-    cset x3, ne
+    cset w3, ne
     uxtb w3, w3
     cmp w0, w1
-    cset x4, ge
+    cset w4, ge
     uxtb w4, w4
     cmp w0, w1
-    cset x5, lt
+    cset w5, lt
     uxtb w5, w5
     cmp w0, w1
-    cset x6, le
+    cset w6, le
     uxtb w6, w6
     cmp w0, w1
-    cset x0, gt
+    cset w0, gt
     uxtb w0, w0
     movz x1, #2
     madd x1, x3, x1, xzr
@@ -34,26 +35,28 @@ si:
     movz x1, #32
     madd x1, x4, x1, xzr
     add x0, x0, x1
+    add sp, sp, #16
     ret
 sil:
+    sub sp, sp, #16
     movz x1, #7
     cmp x0, x1
-    cset x2, eq
+    cset w2, eq
     uxtb w2, w2
     cmp x0, x1
-    cset x3, ne
+    cset w3, ne
     uxtb w3, w3
     cmp x0, x1
-    cset x4, ge
+    cset w4, ge
     uxtb w4, w4
     cmp x0, x1
-    cset x5, lt
+    cset w5, lt
     uxtb w5, w5
     cmp x0, x1
-    cset x6, le
+    cset w6, le
     uxtb w6, w6
     cmp x0, x1
-    cset x0, gt
+    cset w0, gt
     uxtb w0, w0
     movz x1, #2
     madd x1, x3, x1, xzr
@@ -70,26 +73,28 @@ sil:
     movz x1, #32
     madd x1, x4, x1, xzr
     add x0, x0, x1
+    add sp, sp, #16
     ret
 ui:
+    sub sp, sp, #16
     movz x1, #7
     cmp w0, w1
-    cset x2, eq
+    cset w2, eq
     uxtb w2, w2
     cmp w0, w1
-    cset x3, ne
+    cset w3, ne
     uxtb w3, w3
     cmp w0, w1
-    cset x4, cs
+    cset w4, cs
     uxtb w4, w4
     cmp w0, w1
-    cset x5, cc
+    cset w5, cc
     uxtb w5, w5
     cmp w0, w1
-    cset x6, ls
+    cset w6, ls
     uxtb w6, w6
     cmp w0, w1
-    cset x0, hi
+    cset w0, hi
     uxtb w0, w0
     movz x1, #2
     madd x1, x3, x1, xzr
@@ -106,26 +111,28 @@ ui:
     movz x1, #32
     madd x1, x4, x1, xzr
     add x0, x0, x1
+    add sp, sp, #16
     ret
 uil:
+    sub sp, sp, #16
     movz x1, #7
     cmp x0, x1
-    cset x2, eq
+    cset w2, eq
     uxtb w2, w2
     cmp x0, x1
-    cset x3, ne
+    cset w3, ne
     uxtb w3, w3
     cmp x0, x1
-    cset x4, cs
+    cset w4, cs
     uxtb w4, w4
     cmp x0, x1
-    cset x5, cc
+    cset w5, cc
     uxtb w5, w5
     cmp x0, x1
-    cset x6, ls
+    cset w6, ls
     uxtb w6, w6
     cmp x0, x1
-    cset x0, hi
+    cset w0, hi
     uxtb w0, w0
     movz x1, #2
     madd x1, x3, x1, xzr
@@ -142,48 +149,49 @@ uil:
     movz x1, #32
     madd x1, x4, x1, xzr
     add x0, x0, x1
+    add sp, sp, #16
     ret
 main:
     sub sp, sp, #112
     stp x29, x30, [xzr]
     movz x0, #3
-    bl 0xfffffdd0
+    bl 0xfffffdb0
     str x0, [xzr, #16]
     movz x0, #7
-    bl 0xfffffdd0
+    bl 0xfffffdb0
     str x0, [xzr, #24]
     movn x0, #2
-    bl 0xfffffdd0
+    bl 0xfffffdb0
     str x0, [xzr, #32]
     movz x0, #3
-    bl 0xfffffe5c
+    bl 0xfffffe44
     str x0, [xzr, #40]
     movz x0, #7
-    bl 0xfffffe5c
+    bl 0xfffffe44
     str x0, [xzr, #48]
     movn x0, #2
-    bl 0xfffffe5c
+    bl 0xfffffe44
     str x0, [xzr, #56]
     movz x0, #3
-    bl 0xfffffee8
+    bl 0xfffffed8
     str x0, [xzr, #64]
     movz x0, #7
-    bl 0xfffffee8
+    bl 0xfffffed8
     str x0, [xzr, #72]
     movz x0, #23040
     movk x0, #610, lsl #16
-    bl 0xfffffee8
+    bl 0xfffffed8
     str x0, [xzr, #80]
     movz x0, #3
-    bl 0xffffff74
+    bl 0xffffff6c
     str x0, [xzr, #88]
     movz x0, #7
-    bl 0xffffff74
+    bl 0xffffff6c
     str x0, [xzr, #96]
     movz x0, #40960
     movk x0, #20082, lsl #16
     movk x0, #2328, lsl #32
-    bl 0xffffff74
+    bl 0xffffff6c
     ldr x1, [xzr, #16]
     ldr x2, [xzr, #24]
     add x1, x1, x2
@@ -213,22 +221,22 @@ main:
 si:
     movz x2, #7
     cmp w0, w2
-    cset x1, eq
+    cset w1, eq
     uxtb w7, w1
     cmp w0, w2
-    cset x1, ne
+    cset w1, ne
     uxtb w6, w1
     cmp w0, w2
-    cset x1, ge
+    cset w1, ge
     uxtb w5, w1
     cmp w0, w2
-    cset x1, lt
+    cset w1, lt
     uxtb w4, w1
     cmp w0, w2
-    cset x1, le
+    cset w1, le
     uxtb w3, w1
     cmp w0, w2
-    cset x0, gt
+    cset w0, gt
     uxtb w2, w0
     movz x0, #2
     madd x0, x6, x0, xzr
@@ -249,22 +257,22 @@ si:
 sil:
     movz x2, #7
     cmp x0, x2
-    cset x1, eq
+    cset w1, eq
     uxtb w7, w1
     cmp x0, x2
-    cset x1, ne
+    cset w1, ne
     uxtb w6, w1
     cmp x0, x2
-    cset x1, ge
+    cset w1, ge
     uxtb w5, w1
     cmp x0, x2
-    cset x1, lt
+    cset w1, lt
     uxtb w4, w1
     cmp x0, x2
-    cset x1, le
+    cset w1, le
     uxtb w3, w1
     cmp x0, x2
-    cset x0, gt
+    cset w0, gt
     uxtb w2, w0
     movz x0, #2
     madd x0, x6, x0, xzr
@@ -285,22 +293,22 @@ sil:
 ui:
     movz x2, #7
     cmp w0, w2
-    cset x1, eq
+    cset w1, eq
     uxtb w7, w1
     cmp w0, w2
-    cset x1, ne
+    cset w1, ne
     uxtb w6, w1
     cmp w0, w2
-    cset x1, cs
+    cset w1, cs
     uxtb w5, w1
     cmp w0, w2
-    cset x1, cc
+    cset w1, cc
     uxtb w4, w1
     cmp w0, w2
-    cset x1, ls
+    cset w1, ls
     uxtb w3, w1
     cmp w0, w2
-    cset x0, hi
+    cset w0, hi
     uxtb w2, w0
     movz x0, #2
     madd x0, x6, x0, xzr
@@ -321,22 +329,22 @@ ui:
 uil:
     movz x2, #7
     cmp x0, x2
-    cset x1, eq
+    cset w1, eq
     uxtb w7, w1
     cmp x0, x2
-    cset x1, ne
+    cset w1, ne
     uxtb w6, w1
     cmp x0, x2
-    cset x1, cs
+    cset w1, cs
     uxtb w5, w1
     cmp x0, x2
-    cset x1, cc
+    cset w1, cc
     uxtb w4, w1
     cmp x0, x2
-    cset x1, ls
+    cset w1, ls
     uxtb w3, w1
     cmp x0, x2
-    cset x0, hi
+    cset w0, hi
     uxtb w2, w0
     movz x0, #2
     madd x0, x6, x0, xzr
@@ -431,24 +439,25 @@ main:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 si:
+    sub sp, sp, #16
     movz x1, #7
     cmp w0, w1
-    cset x2, eq
+    cset w2, eq
     uxtb w2, w2
     cmp w0, w1
-    cset x3, ne
+    cset w3, ne
     uxtb w3, w3
     cmp w0, w1
-    cset x4, ge
+    cset w4, ge
     uxtb w4, w4
     cmp w0, w1
-    cset x5, lt
+    cset w5, lt
     uxtb w5, w5
     cmp w0, w1
-    cset x6, le
+    cset w6, le
     uxtb w6, w6
     cmp w0, w1
-    cset x0, gt
+    cset w0, gt
     uxtb w0, w0
     movz x1, #2
     madd x1, x3, x1, xzr
@@ -465,26 +474,28 @@ si:
     movz x1, #32
     madd x1, x4, x1, xzr
     add x0, x0, x1
+    add sp, sp, #16
     ret
 sil:
+    sub sp, sp, #16
     movz x1, #7
     cmp x0, x1
-    cset x2, eq
+    cset w2, eq
     uxtb w2, w2
     cmp x0, x1
-    cset x3, ne
+    cset w3, ne
     uxtb w3, w3
     cmp x0, x1
-    cset x4, ge
+    cset w4, ge
     uxtb w4, w4
     cmp x0, x1
-    cset x5, lt
+    cset w5, lt
     uxtb w5, w5
     cmp x0, x1
-    cset x6, le
+    cset w6, le
     uxtb w6, w6
     cmp x0, x1
-    cset x0, gt
+    cset w0, gt
     uxtb w0, w0
     movz x1, #2
     madd x1, x3, x1, xzr
@@ -501,26 +512,28 @@ sil:
     movz x1, #32
     madd x1, x4, x1, xzr
     add x0, x0, x1
+    add sp, sp, #16
     ret
 ui:
+    sub sp, sp, #16
     movz x1, #7
     cmp w0, w1
-    cset x2, eq
+    cset w2, eq
     uxtb w2, w2
     cmp w0, w1
-    cset x3, ne
+    cset w3, ne
     uxtb w3, w3
     cmp w0, w1
-    cset x4, cs
+    cset w4, cs
     uxtb w4, w4
     cmp w0, w1
-    cset x5, cc
+    cset w5, cc
     uxtb w5, w5
     cmp w0, w1
-    cset x6, ls
+    cset w6, ls
     uxtb w6, w6
     cmp w0, w1
-    cset x0, hi
+    cset w0, hi
     uxtb w0, w0
     movz x1, #2
     madd x1, x3, x1, xzr
@@ -537,26 +550,28 @@ ui:
     movz x1, #32
     madd x1, x4, x1, xzr
     add x0, x0, x1
+    add sp, sp, #16
     ret
 uil:
+    sub sp, sp, #16
     movz x1, #7
     cmp x0, x1
-    cset x2, eq
+    cset w2, eq
     uxtb w2, w2
     cmp x0, x1
-    cset x3, ne
+    cset w3, ne
     uxtb w3, w3
     cmp x0, x1
-    cset x4, cs
+    cset w4, cs
     uxtb w4, w4
     cmp x0, x1
-    cset x5, cc
+    cset w5, cc
     uxtb w5, w5
     cmp x0, x1
-    cset x6, ls
+    cset w6, ls
     uxtb w6, w6
     cmp x0, x1
-    cset x0, hi
+    cset w0, hi
     uxtb w0, w0
     movz x1, #2
     madd x1, x3, x1, xzr
@@ -573,48 +588,49 @@ uil:
     movz x1, #32
     madd x1, x4, x1, xzr
     add x0, x0, x1
+    add sp, sp, #16
     ret
 main:
     sub sp, sp, #112
     stp x29, x30, [xzr]
     movz x0, #3
-    bl 0xfffffdd0
+    bl 0xfffffdb0
     str x0, [xzr, #16]
     movz x0, #7
-    bl 0xfffffdd0
+    bl 0xfffffdb0
     str x0, [xzr, #24]
     movn x0, #2
-    bl 0xfffffdd0
+    bl 0xfffffdb0
     str x0, [xzr, #32]
     movz x0, #3
-    bl 0xfffffe5c
+    bl 0xfffffe44
     str x0, [xzr, #40]
     movz x0, #7
-    bl 0xfffffe5c
+    bl 0xfffffe44
     str x0, [xzr, #48]
     movn x0, #2
-    bl 0xfffffe5c
+    bl 0xfffffe44
     str x0, [xzr, #56]
     movz x0, #3
-    bl 0xfffffee8
+    bl 0xfffffed8
     str x0, [xzr, #64]
     movz x0, #7
-    bl 0xfffffee8
+    bl 0xfffffed8
     str x0, [xzr, #72]
     movz x0, #23040
     movk x0, #610, lsl #16
-    bl 0xfffffee8
+    bl 0xfffffed8
     str x0, [xzr, #80]
     movz x0, #3
-    bl 0xffffff74
+    bl 0xffffff6c
     str x0, [xzr, #88]
     movz x0, #7
-    bl 0xffffff74
+    bl 0xffffff6c
     str x0, [xzr, #96]
     movz x0, #40960
     movk x0, #20082, lsl #16
     movk x0, #2328, lsl #32
-    bl 0xffffff74
+    bl 0xffffff6c
     ldr x1, [xzr, #16]
     ldr x2, [xzr, #24]
     add x1, x1, x2
@@ -644,22 +660,22 @@ main:
 si:
     movz x2, #7
     cmp w0, w2
-    cset x1, eq
+    cset w1, eq
     uxtb w7, w1
     cmp w0, w2
-    cset x1, ne
+    cset w1, ne
     uxtb w6, w1
     cmp w0, w2
-    cset x1, ge
+    cset w1, ge
     uxtb w5, w1
     cmp w0, w2
-    cset x1, lt
+    cset w1, lt
     uxtb w4, w1
     cmp w0, w2
-    cset x1, le
+    cset w1, le
     uxtb w3, w1
     cmp w0, w2
-    cset x0, gt
+    cset w0, gt
     uxtb w2, w0
     movz x0, #2
     madd x0, x6, x0, xzr
@@ -680,22 +696,22 @@ si:
 sil:
     movz x2, #7
     cmp x0, x2
-    cset x1, eq
+    cset w1, eq
     uxtb w7, w1
     cmp x0, x2
-    cset x1, ne
+    cset w1, ne
     uxtb w6, w1
     cmp x0, x2
-    cset x1, ge
+    cset w1, ge
     uxtb w5, w1
     cmp x0, x2
-    cset x1, lt
+    cset w1, lt
     uxtb w4, w1
     cmp x0, x2
-    cset x1, le
+    cset w1, le
     uxtb w3, w1
     cmp x0, x2
-    cset x0, gt
+    cset w0, gt
     uxtb w2, w0
     movz x0, #2
     madd x0, x6, x0, xzr
@@ -716,22 +732,22 @@ sil:
 ui:
     movz x2, #7
     cmp w0, w2
-    cset x1, eq
+    cset w1, eq
     uxtb w7, w1
     cmp w0, w2
-    cset x1, ne
+    cset w1, ne
     uxtb w6, w1
     cmp w0, w2
-    cset x1, cs
+    cset w1, cs
     uxtb w5, w1
     cmp w0, w2
-    cset x1, cc
+    cset w1, cc
     uxtb w4, w1
     cmp w0, w2
-    cset x1, ls
+    cset w1, ls
     uxtb w3, w1
     cmp w0, w2
-    cset x0, hi
+    cset w0, hi
     uxtb w2, w0
     movz x0, #2
     madd x0, x6, x0, xzr
@@ -752,22 +768,22 @@ ui:
 uil:
     movz x2, #7
     cmp x0, x2
-    cset x1, eq
+    cset w1, eq
     uxtb w7, w1
     cmp x0, x2
-    cset x1, ne
+    cset w1, ne
     uxtb w6, w1
     cmp x0, x2
-    cset x1, cs
+    cset w1, cs
     uxtb w5, w1
     cmp x0, x2
-    cset x1, cc
+    cset w1, cc
     uxtb w4, w1
     cmp x0, x2
-    cset x1, ls
+    cset w1, ls
     uxtb w3, w1
     cmp x0, x2
-    cset x0, hi
+    cset w0, hi
     uxtb w2, w0
     movz x0, #2
     madd x0, x6, x0, xzr
@@ -864,22 +880,22 @@ main:
 si:
     movz x2, #7
     cmp w0, w2
-    cset x1, eq
+    cset w1, eq
     uxtb w7, w1
     cmp w0, w2
-    cset x1, ne
+    cset w1, ne
     uxtb w6, w1
     cmp w0, w2
-    cset x1, ge
+    cset w1, ge
     uxtb w5, w1
     cmp w0, w2
-    cset x1, lt
+    cset w1, lt
     uxtb w4, w1
     cmp w0, w2
-    cset x1, le
+    cset w1, le
     uxtb w3, w1
     cmp w0, w2
-    cset x0, gt
+    cset w0, gt
     uxtb w2, w0
     movz x0, #2
     madd x0, x6, x0, xzr
@@ -900,22 +916,22 @@ si:
 sil:
     movz x2, #7
     cmp x0, x2
-    cset x1, eq
+    cset w1, eq
     uxtb w7, w1
     cmp x0, x2
-    cset x1, ne
+    cset w1, ne
     uxtb w6, w1
     cmp x0, x2
-    cset x1, ge
+    cset w1, ge
     uxtb w5, w1
     cmp x0, x2
-    cset x1, lt
+    cset w1, lt
     uxtb w4, w1
     cmp x0, x2
-    cset x1, le
+    cset w1, le
     uxtb w3, w1
     cmp x0, x2
-    cset x0, gt
+    cset w0, gt
     uxtb w2, w0
     movz x0, #2
     madd x0, x6, x0, xzr
@@ -936,22 +952,22 @@ sil:
 ui:
     movz x2, #7
     cmp w0, w2
-    cset x1, eq
+    cset w1, eq
     uxtb w7, w1
     cmp w0, w2
-    cset x1, ne
+    cset w1, ne
     uxtb w6, w1
     cmp w0, w2
-    cset x1, cs
+    cset w1, cs
     uxtb w5, w1
     cmp w0, w2
-    cset x1, cc
+    cset w1, cc
     uxtb w4, w1
     cmp w0, w2
-    cset x1, ls
+    cset w1, ls
     uxtb w3, w1
     cmp w0, w2
-    cset x0, hi
+    cset w0, hi
     uxtb w2, w0
     movz x0, #2
     madd x0, x6, x0, xzr
@@ -972,22 +988,22 @@ ui:
 uil:
     movz x2, #7
     cmp x0, x2
-    cset x1, eq
+    cset w1, eq
     uxtb w7, w1
     cmp x0, x2
-    cset x1, ne
+    cset w1, ne
     uxtb w6, w1
     cmp x0, x2
-    cset x1, cs
+    cset w1, cs
     uxtb w5, w1
     cmp x0, x2
-    cset x1, cc
+    cset w1, cc
     uxtb w4, w1
     cmp x0, x2
-    cset x1, ls
+    cset w1, ls
     uxtb w3, w1
     cmp x0, x2
-    cset x0, hi
+    cset w0, hi
     uxtb w2, w0
     movz x0, #2
     madd x0, x6, x0, xzr

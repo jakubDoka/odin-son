@@ -36,6 +36,7 @@ X17, X18, X19, X20, X21 :: Reg(17), Reg(18), Reg(19), Reg(20), Reg(21)
 X22, X23, X24, X25, X26 :: Reg(22), Reg(23), Reg(24), Reg(25), Reg(26)
 X27, X28, X29, X30 :: Reg(27), Reg(28), Reg(29), Reg(30)
 XZR, SP :: Reg(31), Reg(31)
+FLAGS :: Reg(32)
 
 V_BANK :: u16(RK_VECTOR) << 12
 V0, V1, V2 :: Reg(V_BANK | 0), Reg(V_BANK | 1), Reg(V_BANK | 2)
@@ -81,6 +82,7 @@ CC_TABLE := [?]bac.Call_Conv {
 				X16,
 				X17,
 				X18,
+				FLAGS,
 			},
 			{
 				V0,
@@ -376,18 +378,6 @@ post_schedule_peep :: proc(
 	node: bac.Expanded_Node,
 	_: $T,
 ) -> bac.Node_ID {
-	#partial switch node.itype {
-	case .If, .Select:
-		cond := node.inps[len(node.inps) - 1]
-		if 0 < len(ctx.preds) && ctx.preds[len(ctx.preds) - 1] == cond {
-			cnode := expand_node(ctx, cond)
-			if len(cnode.outs) != 1 || cnode.dt in bac.VECTOR_DTS do break
-			#partial switch cnode.itype {
-			case .Eq ..= .U_Ge:
-				cnode.dt = .Void
-			}
-		}
-	}
 	return 0
 }
 
@@ -402,7 +392,9 @@ meta_of :: #force_inline proc(
 	@(static, rodata)
 	GPA_MASK := [?]i64{0x3FFFFFFF}
 	@(static, rodata)
-	GPA_SPILL_MASK := [?]i64{~i64(1 << uint(SP) | 1 << 30)}
+	GPA_SPILL_MASK := [?]i64{~i64(1 << uint(SP) | 1 << 30 | 1 << uint(FLAGS))}
+	@(static, rodata)
+	GPA_SPLIT_MASK := [?]i64{~i64(1 << uint(SP) | 1 << 30)}
 	@(static, rodata)
 	VEC_MASK := [?]i64{0xFFFFFFFF}
 	@(static, rodata)
@@ -494,17 +486,12 @@ meta_of :: #force_inline proc(
 	case .Msub:
 		return {out = out, masks = nmasks[:3]}
 	case .Select:
-		masks := dup({out, out, GPA_MASK_IDX})
-		return {
-			out = out,
-			masks = masks[:2 + int(get_node(prc, node.inps[2]).dt != .Void)],
-		}
+		return {out = out, masks = dup({out, out, single(ra, FLAGS)})}
 	case .Eq ..= .U_Ge:
 		ikind := ra.datatype_to_reg_kind[get_node(prc, node.inps[0]).dt]
 		return {
-			out = out,
+			out = node.dt in bac.VECTOR_DTS ? out : single(ra, FLAGS),
 			masks = masks[ikind][:2],
-			is_flag_dep = node.dt == .Void,
 		}
 	case .Conv, .U_Conv, .Cast:
 		vl := get_node(prc, node.inps[0])
@@ -519,13 +506,21 @@ meta_of :: #force_inline proc(
 	case .Neg, .Not, .Cmlt, .Ctz:
 		return {out = out, masks = nmasks[:1]}
 	case .Split:
+		if nkind == RK_GENERAL {
+			mask := rslice(ra, RK_GENERAL, GPA_SPLIT_MASK[:])
+			// Flags preserve truth values, not arbitrary integers.
+			flag_uses := len(node.outs) != 0
+			for use in node.outs {
+				user := get_node(prc, use.id)
+				flag_uses &=
+					(user.itype == .If && use.idx == 1) ||
+					(user.itype == .Select && use.idx == 2)
+			}
+			return {out = flag_uses ? mask : sout, masks = dup({mask})}
+		}
 		return {out = sout, masks = snmasks[:1]}
 	case .If:
-		return {
-			out = IOUT,
-			input_start = 1,
-			masks = nmasks[:1 - int(get_node(prc, node.inps[1]).dt == .Void)],
-		}
+		return {out = IOUT, input_start = 1, masks = dup({single(ra, FLAGS)})}
 	case .Call, .Return, .Set, .Copy:
 		return bac.cc_node_meta(prc, ra, node, CC_TABLE[:])
 	case .Ret:
@@ -743,8 +738,16 @@ emit_instr :: proc(
 		.Le   = {.LE, .LS},
 	}
 
-	condition_for :: proc(kind: Node_Type, dt: bac.Node_Datatype) -> Cond {
-		return CC_TABLE[kind][int(dt in bac.FLOAT_DTS)]
+	condition_for :: proc(ctx: ^Ctx, id: Node_ID) -> Cond {
+		id := id
+		node := expand_node(ctx, id)
+		for node.itype == .Split {
+			id = node.inps[0]
+			if reg_of(ctx, id) != FLAGS do return .NE
+			node = expand_node(ctx, id)
+		}
+		dt := get_node(ctx, node.inps[0]).dt
+		return CC_TABLE[atype(node)][int(dt in bac.FLOAT_DTS)]
 	}
 
 	Op_Type :: enum {
@@ -1056,6 +1059,46 @@ emit_instr :: proc(
 		assert(rd_off < 4096)
 		assert(rm_off < 4096)
 
+		if rm == FLAGS || rd == FLAGS {
+			other := rm == FLAGS ? rd : rm
+			spill := int(other.index) >= ctx.spill_boundary[RK_GENERAL]
+			tmp := other
+			if spill {
+				tmp = X17
+				// str x17, [sp, #-16]!
+				emit_op(ctx.code, 0xF81F0FF1)
+			}
+			if rm == FLAGS {
+				cc := condition_for(ctx, node.inps[0])
+				// cset wtmp, cc
+				emit_op(ctx.code, 0x1A9F07E0 | u32(cc_neg(cc)) << 12 | u32(tmp.index))
+				if spill {
+					// str x17, [sp, rd_off + 16]
+					emit_op(ctx.code, imm12_instr(0b1111100100, tmp, SP, rd_off + 2))
+				}
+			} else {
+				if spill {
+					// ldr x17, [sp, rm_off + 16]
+					emit_op(ctx.code, imm12_instr(0b1111100101, tmp, SP, rm_off + 2))
+				}
+				// cmp wtmp/xtmp, #0
+				emit_op(
+					ctx.code,
+					imm12_instr(
+						node.dt == .I64 ? 0b1111000100 : 0b0111000100,
+						XZR,
+						tmp,
+						0,
+					),
+				)
+			}
+			if spill {
+				// ldr x17, [sp], #16
+				emit_op(ctx.code, 0xF84107F1)
+			}
+			break
+		}
+
 		if rm.kind == RK_VECTOR {
 			if rm.index >= 32 && rd.index >= 32 {
 				// this is atroucious
@@ -1093,7 +1136,8 @@ emit_instr :: proc(
 			break
 		}
 
-		if rm.index >= 32 && rd.index >= 32 {
+		if int(rm.index) >= ctx.spill_boundary[RK_GENERAL] &&
+		   int(rd.index) >= ctx.spill_boundary[RK_GENERAL] {
 			// str x17, [sp, #-16]!
 			emit_op(ctx.code, 0xF81F0FF1)
 
@@ -1106,10 +1150,10 @@ emit_instr :: proc(
 
 			// ldr x17, [sp], #16
 			emit_op(ctx.code, 0xF84107F1)
-		} else if rm.index >= 32 {
+		} else if int(rm.index) >= ctx.spill_boundary[RK_GENERAL] {
 			// ldr rd, [SP, rm_off]
 			emit_op(ctx.code, imm12_instr(0b1111100101, rd, SP, rm_off))
-		} else if rd.index >= 32 {
+		} else if int(rd.index) >= ctx.spill_boundary[RK_GENERAL] {
 			// str rm, [SP, rd_off]
 			emit_op(ctx.code, imm12_instr(0b1111100100, rm, SP, rd_off))
 		} else {
@@ -1118,19 +1162,7 @@ emit_instr :: proc(
 		}
 
 	case .Select:
-		cnode := expand_node(ctx, node.inps[2])
-		cc := Cond.NE
-		if cnode.dt == .Void {
-			cc = condition_for(atype(cnode), get_node(ctx, cnode.inps[0]).dt)
-		} else {
-			cond := reg_of(ctx, node.inps[2])
-			cond_64 := cnode.dt == .I64
-			// cmp wcond/xcond, #0
-			emit_op(
-				ctx.code,
-				imm12_instr(cond_64 ? 0b1111000100 : 0b0111000100, XZR, cond, 0),
-			)
-		}
+		cc := condition_for(ctx, node.inps[2])
 		dst := reg_of(ctx, instr)
 		on_true := reg_of(ctx, node.inps[0])
 		on_false := reg_of(ctx, node.inps[1])
@@ -1247,25 +1279,6 @@ emit_instr :: proc(
 			// cmp rn, rm
 			emit_op(ctx.code, rrr(is_64, op, XZR, rn, rm))
 		}
-
-		if node.dt != .Void {
-			// csinc rd, xzr, xzr, cc
-			op :: 0b10011010100
-			rm :: XZR
-			cond := cc_neg(condition_for(kind, inp.dt))
-			pd :: 0b01
-			rn :: XZR
-			rd := reg_of(ctx, instr)
-			emit_op(
-				ctx.code,
-				op << 21 |
-				u32(rm.index) << 16 |
-				u32(cond) << 12 |
-				pd << 10 |
-				u32(rn.index) << 5 |
-				u32(rd.index),
-			)
-		}
 	case .Neg, .Not:
 		emit_op(
 			ctx.code,
@@ -1355,28 +1368,10 @@ emit_instr :: proc(
 			},
 		)
 
-		cond := get_node(ctx, node.inps[1])
-
-		if cond.dt == .Void {
-			// b.<cond> <imm19>
-			op :: 0b01010100
-			imm19 :: 0
-			pd :: 0
-
-			operand_dt := get_node(ctx, bac.get_inputs(ctx, cond)[0]).dt
-			cond := cc_neg(condition_for(atype(cond), operand_dt))
-			if !is_consecutive do cond = cc_neg(cond)
-
-			emit_op(ctx.code, op << 24 | imm19 << 5 | pd << 4 | u32(cond))
-		} else {
-			op = 0b10110100 // cbnz <imm19>, rt
-			if !is_consecutive do op = 0b10110101 // cbz <imm19>, rt
-
-			imm19 :: 0
-			rt := reg_of(ctx, node.inps[1])
-
-			emit_op(ctx.code, op << 24 | imm19 << 5 | u32(rt.index))
-		}
+		cc := condition_for(ctx, node.inps[1])
+		if is_consecutive do cc = cc_neg(cc)
+		// b.<cc> <imm19>
+		emit_op(ctx.code, 0x54000000 | u32(cc))
 
 		if !is_consecutive do break
 		fallthrough

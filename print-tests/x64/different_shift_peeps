@@ -30,29 +30,31 @@ test_imm_inplace_shifts:
     add rax, rcx
     ret
 test_inplace_shifts:
-    push rbx
     mov.q rax, [rdi]
     cmp rdx, 0x40
-    setb cl
-    movzx rcx, cl
+    mov.q [rsp - 0x10], 0
+    setb.b [rsp - 0x10]
     shlx rax, rax, rdx
-    xor ebx, ebx
-    test cl, cl
-    cmovne rbx, rax
-    sarx rax, rbx, rdx
-    sar rbx, 0x3f
-    test cl, cl
-    cmovne rbx, rax
-    mov.q [rdi], rbx
+    mov.q [rsp - 0x18], r15
+    mov.q r15, [rsp - 0x10]
+    mov.q [rsp - 0x8], r15
+    mov.q r15, [rsp - 0x18]
+    xor ecx, ecx
+    cmp.b [rsp - 0x8], 0
+    cmovne rcx, rax
+    sarx rax, rcx, rdx
+    sar rcx, 0x3f
+    cmp.b [rsp - 0x10], 0
+    cmovne rcx, rax
+    mov.q [rdi], rcx
     mov.q rax, [rsi]
     shrx rax, rax, rdx
-    xor edx, edx
-    test cl, cl
-    cmovne rdx, rax
-    mov.q [rsi], rdx
+    xor ecx, ecx
+    cmp.b [rsp - 0x10], 0
+    cmovne rcx, rax
+    mov.q [rsi], rcx
     mov.q rax, [rdi]
-    add rax, rdx
-    pop rbx
+    add rax, rcx
     ret
 main:
     sub rsp, 0x28
@@ -100,24 +102,25 @@ test_imm_inplace_shifts:
     add rax, rcx
     ret
 test_inplace_shifts:
-    mov.q rax, [rdi]
+    mov.q rcx, [rdi]
     cmp rdx, 0x40
-    setb r8b
-    movzx r8, r8b
-    shlx rax, rax, rdx
+    setb al
+    movzx eax, al
+    shlx r9, rcx, rdx
+    mov rcx, rax
+    xor r8d, r8d
+    test cl, cl
+    cmovne r8, r9
+    sarx rcx, r8, rdx
+    sar r8, 0x3f
+    test al, al
+    cmovne r8, rcx
+    mov.q [rdi], r8
+    mov.q rcx, [rsi]
+    shrx rdx, rcx, rdx
     xor ecx, ecx
-    test r8b, r8b
-    cmovne rcx, rax
-    sarx rax, rcx, rdx
-    sar rcx, 0x3f
-    test r8b, r8b
-    cmovne rcx, rax
-    mov.q [rdi], rcx
-    mov.q rax, [rsi]
-    shrx rax, rax, rdx
-    xor ecx, ecx
-    test r8b, r8b
-    cmovne rcx, rax
+    test al, al
+    cmovne rcx, rdx
     mov.q [rsi], rcx
     mov.q rax, [rdi]
     add rax, rcx
@@ -178,29 +181,31 @@ test_imm_inplace_shifts:
     add rax, rcx
     ret
 test_inplace_shifts:
-    push rbx
     mov.q rax, [rdi]
     cmp rdx, 0x40
-    setb cl
-    movzx rcx, cl
+    mov.q [rsp - 0x10], 0
+    setb.b [rsp - 0x10]
     shlx rax, rax, rdx
-    xor ebx, ebx
-    test cl, cl
-    cmovne rbx, rax
-    sarx rax, rbx, rdx
-    sar rbx, 0x3f
-    test cl, cl
-    cmovne rbx, rax
-    mov.q [rdi], rbx
+    mov.q [rsp - 0x18], r15
+    mov.q r15, [rsp - 0x10]
+    mov.q [rsp - 0x8], r15
+    mov.q r15, [rsp - 0x18]
+    xor ecx, ecx
+    cmp.b [rsp - 0x8], 0
+    cmovne rcx, rax
+    sarx rax, rcx, rdx
+    sar rcx, 0x3f
+    cmp.b [rsp - 0x10], 0
+    cmovne rcx, rax
+    mov.q [rdi], rcx
     mov.q rax, [rsi]
     shrx rax, rax, rdx
-    xor edx, edx
-    test cl, cl
-    cmovne rdx, rax
-    mov.q [rsi], rdx
+    xor ecx, ecx
+    cmp.b [rsp - 0x10], 0
+    cmovne rcx, rax
+    mov.q [rsi], rcx
     mov.q rax, [rdi]
-    add rax, rdx
-    pop rbx
+    add rax, rcx
     ret
 main:
     sub rsp, 0x28
@@ -248,24 +253,25 @@ test_imm_inplace_shifts:
     add rax, rcx
     ret
 test_inplace_shifts:
-    mov.q rax, [rdi]
+    mov.q rcx, [rdi]
     cmp rdx, 0x40
-    setb r8b
-    movzx r8, r8b
-    shlx rax, rax, rdx
+    setb al
+    movzx eax, al
+    shlx r9, rcx, rdx
+    mov rcx, rax
+    xor r8d, r8d
+    test cl, cl
+    cmovne r8, r9
+    sarx rcx, r8, rdx
+    sar r8, 0x3f
+    test al, al
+    cmovne r8, rcx
+    mov.q [rdi], r8
+    mov.q rcx, [rsi]
+    shrx rdx, rcx, rdx
     xor ecx, ecx
-    test r8b, r8b
-    cmovne rcx, rax
-    sarx rax, rcx, rdx
-    sar rcx, 0x3f
-    test r8b, r8b
-    cmovne rcx, rax
-    mov.q [rdi], rcx
-    mov.q rax, [rsi]
-    shrx rax, rax, rdx
-    xor ecx, ecx
-    test r8b, r8b
-    cmovne rcx, rax
+    test al, al
+    cmovne rcx, rdx
     mov.q [rsi], rcx
     mov.q rax, [rdi]
     add rax, rcx
@@ -317,24 +323,25 @@ test_imm_inplace_shifts:
     add rax, rcx
     ret
 test_inplace_shifts:
-    mov.q rax, [rdi]
+    mov.q rcx, [rdi]
     cmp rdx, 0x40
-    setb r8b
-    movzx r8, r8b
-    shlx rax, rax, rdx
+    setb al
+    movzx eax, al
+    shlx r9, rcx, rdx
+    mov rcx, rax
+    xor r8d, r8d
+    test cl, cl
+    cmovne r8, r9
+    sarx rcx, r8, rdx
+    sar r8, 0x3f
+    test al, al
+    cmovne r8, rcx
+    mov.q [rdi], r8
+    mov.q rcx, [rsi]
+    shrx rdx, rcx, rdx
     xor ecx, ecx
-    test r8b, r8b
-    cmovne rcx, rax
-    sarx rax, rcx, rdx
-    sar rcx, 0x3f
-    test r8b, r8b
-    cmovne rcx, rax
-    mov.q [rdi], rcx
-    mov.q rax, [rsi]
-    shrx rax, rax, rdx
-    xor ecx, ecx
-    test r8b, r8b
-    cmovne rcx, rax
+    test al, al
+    cmovne rcx, rdx
     mov.q [rsi], rcx
     mov.q rax, [rdi]
     add rax, rcx

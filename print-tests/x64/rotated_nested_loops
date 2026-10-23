@@ -5,7 +5,7 @@ main:
     xor ecx, ecx
     xor edx, edx
 1:
-    mov.q [rsp - 0x8], rdx
+    mov.q [rsp - 0x18], rdx
     xor ebx, ebx
 2:
     mov rbp, rcx
@@ -13,13 +13,13 @@ main:
     mov rsi, rbx
     add rsi, 1
     cmp rsi, 3
-    setg dil
-    movzx rdi, dil
-    mov.q rax, [rsp - 0x8]
+    mov.q [rsp - 0x10], 0
+    setg.b [rsp - 0x10]
+    mov.q rax, [rsp - 0x18]
     add rax, rbp
-    test dil, dil
+    cmp.b [rsp - 0x10], 0
     jne 3
-    mov.q [rsp - 0x8], rax
+    mov.q [rsp - 0x18], rax
     mov rbx, rsi
     jmp 2
 3:
@@ -46,7 +46,7 @@ main:
     add rdx, 1
     cmp rdx, 3
     setg sil
-    movzx rsi, sil
+    movzx esi, sil
     add rax, rdi
     test sil, sil
     jne 3
@@ -65,7 +65,7 @@ main:
     xor ecx, ecx
     xor edx, edx
 1:
-    mov.q [rsp - 0x8], rdx
+    mov.q [rsp - 0x18], rdx
     xor ebx, ebx
 2:
     mov rbp, rcx
@@ -73,13 +73,13 @@ main:
     mov rsi, rbx
     add rsi, 1
     cmp rsi, 3
-    setg dil
-    movzx rdi, dil
-    mov.q rax, [rsp - 0x8]
+    mov.q [rsp - 0x10], 0
+    setg.b [rsp - 0x10]
+    mov.q rax, [rsp - 0x18]
     add rax, rbp
-    test dil, dil
+    cmp.b [rsp - 0x10], 0
     jne 3
-    mov.q [rsp - 0x8], rax
+    mov.q [rsp - 0x18], rax
     mov rbx, rsi
     jmp 2
 3:
@@ -106,7 +106,7 @@ main:
     add rdx, 1
     cmp rdx, 3
     setg sil
-    movzx rsi, sil
+    movzx esi, sil
     add rax, rdi
     test sil, sil
     jne 3
@@ -130,11 +130,11 @@ main:
     add rdx, 1
     cmp rdx, 3
     setg dil
-    movzx rdi, dil
+    movzx edi, dil
     mov rax, rsi
     add rax, r8
-    mov rsi, rax
     test dil, dil
+    mov rsi, rax
     je 2
     add rcx, 1
     cmp rcx, 3

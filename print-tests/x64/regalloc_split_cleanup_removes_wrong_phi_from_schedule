@@ -461,48 +461,47 @@ main:
     push rbx
     push rbp
     push r12
-    push r13
     mov rsi, 5
     mov rdi, 4
     mov r8, 3
-    mov r13, 2
+    mov r12, 2
     mov rcx, 7
-    xor r12d, r12d
+    xor ebp, ebp
     mov rdx, 6
     mov r10, 8
     mov r9, 1
 1:
-    add r12, 1
-    mov rax, r9
-    add rax, r12
-    imul rbp, rax, 3
     add rbp, 1
-    mov rbx, r9
-    add rbx, r13
-    add r13, r8
+    mov rax, r9
+    add rax, rbp
+    imul rbx, rax, 3
+    add rbx, 1
+    mov r11, r9
+    add r11, r12
+    add r12, r8
     add r8, rdi
     add rdi, rsi
     add rsi, rdx
     add rdx, rcx
-    add rbx, rbp
+    add r11, rbx
     mov rax, r10
-    add rax, rbx
+    add rax, r11
     add rcx, r10
-    cmp r12, 5
-    sete r11b
-    movzx r11, r11b
-    add rax, rbp
-    add rcx, rbp
-    add r13, rbp
-    add r8, rbp
-    add rdi, rbp
-    add rsi, rbp
-    add rdx, rbp
+    cmp rbp, 5
+    sete r9b
+    movzx r9d, r9b
+    add rax, rbx
+    add rcx, rbx
+    add r12, rbx
+    add r8, rbx
+    add rdi, rbx
+    add rsi, rbx
+    add rdx, rbx
+    test r9b, r9b
     mov r10, rax
-    mov r9, rbx
-    test r11b, r11b
+    mov r9, r11
     je 1
-    lea r9, [rbx + r13*2]
+    lea r9, [r11]
     imul r8, r8, 3
     add r9, r8
     lea rdi, [r9 + rdi*4]
@@ -517,7 +516,6 @@ main:
     cqo
     idiv rcx
     mov rax, rdx
-    pop r13
     pop r12
     pop rbp
     pop rbx

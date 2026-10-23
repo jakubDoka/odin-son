@@ -27,19 +27,15 @@ test_inplace_shifts:
     movz x4, #0
     movz x5, #64
     cmp x2, x5
-    cset x5, cc
     lsl x3, x3, x2
-    cmp w5, #0
-    csel x3, x3, x4, ne
-    movz x6, #63
-    cmp w5, #0
-    csel x6, x2, x6, ne
-    asr x3, x3, x6
+    csel x3, x3, x4, cc
+    movz x5, #63
+    csel x5, x2, x5, cc
+    asr x3, x3, x5
     str x3, [x0]
     ldr x3, [x1]
     lsr x2, x3, x2
-    cmp w5, #0
-    csel x2, x2, x4, ne
+    csel x2, x2, x4, cc
     str x2, [x1]
     ldr x0, [x0]
     add x0, x0, x2
@@ -54,16 +50,16 @@ main:
     add x1, sp, #40
     str x0, [x1]
     movn x0, #0
-    bl 0xffffff58
+    bl 0xffffff68
     str x0, [xzr, #16]
     add x0, sp, #32
     add x1, sp, #40
-    bl 0xffffff78
+    bl 0xffffff88
     str x0, [xzr, #24]
     movz x2, #4
     add x0, sp, #32
     add x1, sp, #40
-    bl 0xffffffac
+    bl 0xffffffbc
     ldr x1, [xzr, #16]
     ldr x2, [xzr, #24]
     add x1, x1, x2
@@ -97,22 +93,18 @@ test_imm_inplace_shifts:
     ret
 test_inplace_shifts:
     ldr x4, [x0]
-    movz x6, #0
+    movz x5, #0
     movz x3, #64
     cmp x2, x3
-    cset x5, cc
     lsl x3, x4, x2
-    cmp w5, #0
-    csel x4, x3, x6, ne
+    csel x4, x3, x5, cc
     movz x3, #63
-    cmp w5, #0
-    csel x3, x2, x3, ne
+    csel x3, x2, x3, cc
     asr x3, x4, x3
     str x3, [x0]
     ldr x3, [x1]
     lsr x2, x3, x2
-    cmp w5, #0
-    csel x2, x2, x6, ne
+    csel x2, x2, x5, cc
     str x2, [x1]
     ldr x0, [x0]
     add x0, x0, x2
@@ -129,16 +121,16 @@ main:
     add x0, sp, #40
     str x1, [x0]
     movn x0, #0
-    bl 0xffffff58
+    bl 0xffffff68
     mov x20, x0
     add x0, sp, #32
     add x1, sp, #40
-    bl 0xffffff78
+    bl 0xffffff88
     mov x19, x0
     movz x2, #4
     add x0, sp, #32
     add x1, sp, #40
-    bl 0xffffffac
+    bl 0xffffffbc
     add x1, x20, x19
     add x0, x1, x0
     ldr x19, [xzr]
@@ -175,19 +167,15 @@ test_inplace_shifts:
     movz x4, #0
     movz x5, #64
     cmp x2, x5
-    cset x5, cc
     lsl x3, x3, x2
-    cmp w5, #0
-    csel x3, x3, x4, ne
-    movz x6, #63
-    cmp w5, #0
-    csel x6, x2, x6, ne
-    asr x3, x3, x6
+    csel x3, x3, x4, cc
+    movz x5, #63
+    csel x5, x2, x5, cc
+    asr x3, x3, x5
     str x3, [x0]
     ldr x3, [x1]
     lsr x2, x3, x2
-    cmp w5, #0
-    csel x2, x2, x4, ne
+    csel x2, x2, x4, cc
     str x2, [x1]
     ldr x0, [x0]
     add x0, x0, x2
@@ -202,16 +190,16 @@ main:
     add x1, sp, #40
     str x0, [x1]
     movn x0, #0
-    bl 0xffffff58
+    bl 0xffffff68
     str x0, [xzr, #16]
     add x0, sp, #32
     add x1, sp, #40
-    bl 0xffffff78
+    bl 0xffffff88
     str x0, [xzr, #24]
     movz x2, #4
     add x0, sp, #32
     add x1, sp, #40
-    bl 0xffffffac
+    bl 0xffffffbc
     ldr x1, [xzr, #16]
     ldr x2, [xzr, #24]
     add x1, x1, x2
@@ -245,22 +233,18 @@ test_imm_inplace_shifts:
     ret
 test_inplace_shifts:
     ldr x4, [x0]
-    movz x6, #0
+    movz x5, #0
     movz x3, #64
     cmp x2, x3
-    cset x5, cc
     lsl x3, x4, x2
-    cmp w5, #0
-    csel x4, x3, x6, ne
+    csel x4, x3, x5, cc
     movz x3, #63
-    cmp w5, #0
-    csel x3, x2, x3, ne
+    csel x3, x2, x3, cc
     asr x3, x4, x3
     str x3, [x0]
     ldr x3, [x1]
     lsr x2, x3, x2
-    cmp w5, #0
-    csel x2, x2, x6, ne
+    csel x2, x2, x5, cc
     str x2, [x1]
     ldr x0, [x0]
     add x0, x0, x2
@@ -277,16 +261,16 @@ main:
     add x0, sp, #40
     str x1, [x0]
     movn x0, #0
-    bl 0xffffff58
+    bl 0xffffff68
     mov x20, x0
     add x0, sp, #32
     add x1, sp, #40
-    bl 0xffffff78
+    bl 0xffffff88
     mov x19, x0
     movz x2, #4
     add x0, sp, #32
     add x1, sp, #40
-    bl 0xffffffac
+    bl 0xffffffbc
     add x1, x20, x19
     add x0, x1, x0
     ldr x19, [xzr]
@@ -320,22 +304,18 @@ test_imm_inplace_shifts:
     ret
 test_inplace_shifts:
     ldr x4, [x0]
-    movz x6, #0
+    movz x5, #0
     movz x3, #64
     cmp x2, x3
-    cset x5, cc
     lsl x3, x4, x2
-    cmp w5, #0
-    csel x4, x3, x6, ne
+    csel x4, x3, x5, cc
     movz x3, #63
-    cmp w5, #0
-    csel x3, x2, x3, ne
+    csel x3, x2, x3, cc
     asr x3, x4, x3
     str x3, [x0]
     ldr x3, [x1]
     lsr x2, x3, x2
-    cmp w5, #0
-    csel x2, x2, x6, ne
+    csel x2, x2, x5, cc
     str x2, [x1]
     ldr x0, [x0]
     add x0, x0, x2
@@ -352,16 +332,16 @@ main:
     add x0, sp, #40
     str x1, [x0]
     movn x0, #0
-    bl 0xffffff58
+    bl 0xffffff68
     mov x20, x0
     add x0, sp, #32
     add x1, sp, #40
-    bl 0xffffff78
+    bl 0xffffff88
     mov x19, x0
     movz x2, #4
     add x0, sp, #32
     add x1, sp, #40
-    bl 0xffffffac
+    bl 0xffffffbc
     add x1, x20, x19
     add x0, x1, x0
     ldr x19, [xzr]

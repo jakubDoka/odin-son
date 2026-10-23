@@ -1,7 +1,6 @@
 =========== OPT LEVEL: none-quick ===========
 main:
-    push rbx
-    sub rsp, 0x20
+    sub rsp, 0x18
     mov.d [rsp], 0x4d0afa0b
     movabs rax, 0x4f000afffa000d
     mov.q [rsp + 0x4], rax
@@ -15,10 +14,13 @@ main:
     movzx.w esi, [rsp + 0x8]
     call update u16
     mov rcx, 1
+    mov.q rdx, [rsp + 0xc]
+    cmp dl, 6
+    mov.q [rsp + 0xc], 0
+    sete.b [rsp + 0xc]
     xor edx, edx
-    mov.q rbx, [rsp + 0xc]
-    cmp bl, 6
-    cmove rdx, rcx
+    cmp.b [rsp + 0xc], 0
+    cmovne rdx, rcx
     mov rcx, rdx
     add rcx, 2
     cmp ax, 6
@@ -67,8 +69,7 @@ main:
     cmp.w [rsp + 0xa], 0x4f
     mov rax, rcx
     cmove rax, rdx
-    add rsp, 0x20
-    pop rbx
+    add rsp, 0x18
     ret
 update u8:
     movzx.b ecx, [rdi]
@@ -105,10 +106,13 @@ main:
     add rdi, 2
     movzx.w esi, [rsp + 0x8]
     call update u16
-    mov rcx, 1
-    xor edx, edx
+    mov rsi, 1
     cmp bl, 6
-    cmove rdx, rcx
+    sete cl
+    movzx ecx, cl
+    xor edx, edx
+    test cl, cl
+    cmovne rdx, rsi
     mov rcx, rdx
     add rcx, 2
     cmp ax, 6
@@ -174,8 +178,7 @@ update u16:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 main:
-    push rbx
-    sub rsp, 0x20
+    sub rsp, 0x18
     mov.d [rsp], 0x4d0afa0b
     movabs rax, 0x4f000afffa000d
     mov.q [rsp + 0x4], rax
@@ -189,10 +192,13 @@ main:
     movzx.w esi, [rsp + 0x8]
     call update u16
     mov rcx, 1
+    mov.q rdx, [rsp + 0xc]
+    cmp dl, 6
+    mov.q [rsp + 0xc], 0
+    sete.b [rsp + 0xc]
     xor edx, edx
-    mov.q rbx, [rsp + 0xc]
-    cmp bl, 6
-    cmove rdx, rcx
+    cmp.b [rsp + 0xc], 0
+    cmovne rdx, rcx
     mov rcx, rdx
     add rcx, 2
     cmp ax, 6
@@ -241,8 +247,7 @@ main:
     cmp.w [rsp + 0xa], 0x4f
     mov rax, rcx
     cmove rax, rdx
-    add rsp, 0x20
-    pop rbx
+    add rsp, 0x18
     ret
 update u8:
     movzx.b ecx, [rdi]
@@ -279,10 +284,13 @@ main:
     add rdi, 2
     movzx.w esi, [rsp + 0x8]
     call update u16
-    mov rcx, 1
-    xor edx, edx
+    mov rsi, 1
     cmp bl, 6
-    cmove rdx, rcx
+    sete cl
+    movzx ecx, cl
+    xor edx, edx
+    test cl, cl
+    cmovne rdx, rsi
     mov rcx, rdx
     add rcx, 2
     cmp ax, 6
@@ -362,10 +370,13 @@ main:
     add rdi, 2
     movzx.w esi, [rsp + 0x8]
     call update u16
-    mov rcx, 1
-    xor edx, edx
+    mov rsi, 1
     cmp bl, 6
-    cmove rdx, rcx
+    sete cl
+    movzx ecx, cl
+    xor edx, edx
+    test cl, cl
+    cmovne rdx, rsi
     mov rcx, rdx
     add rcx, 2
     cmp ax, 6
@@ -447,9 +458,12 @@ main:
     mov cl, 2
     movzx eax, al
     div cl
-    xor ecx, ecx
     cmp al, 6
-    cmove rcx, rdi
+    sete al
+    movzx eax, al
+    xor ecx, ecx
+    test al, al
+    cmovne rcx, rdi
     mov rdi, rcx
     add rdi, 2
     mov r8, 2

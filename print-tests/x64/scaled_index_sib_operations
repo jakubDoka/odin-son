@@ -17,10 +17,13 @@ main:
     jge 2
     mov rdx, rcx
     add rdx, 1
+    cmp.q [rsp + rax*8 - 0x48], 0x14
+    mov.q [rsp - 0x8], 0
+    setg.b [rsp - 0x8]
     mov rbx, rax
     add rbx, 1
-    cmp.q [rsp + rax*8 - 0x48], 0x14
-    cmovg rcx, rdx
+    cmp.b [rsp - 0x8], 0
+    cmovne rcx, rdx
     mov rax, rbx
     jmp 1
 2:
@@ -99,11 +102,12 @@ main:
     jge 2
     mov rsi, rdx
     add rsi, 1
-    mov rcx, rax
-    add rcx, 1
     cmp.q [rsp + rax*8 - 0x48], 0x14
-    cmovg rdx, rsi
-    mov rax, rcx
+    setg cl
+    movzx ecx, cl
+    add rax, 1
+    test cl, cl
+    cmovne rdx, rsi
     jmp 1
 2:
     xor eax, eax
@@ -176,10 +180,13 @@ main:
     jge 2
     mov rdx, rcx
     add rdx, 1
+    cmp.q [rsp + rax*8 - 0x48], 0x14
+    mov.q [rsp - 0x8], 0
+    setg.b [rsp - 0x8]
     mov rbx, rax
     add rbx, 1
-    cmp.q [rsp + rax*8 - 0x48], 0x14
-    cmovg rcx, rdx
+    cmp.b [rsp - 0x8], 0
+    cmovne rcx, rdx
     mov rax, rbx
     jmp 1
 2:
@@ -258,11 +265,12 @@ main:
     jge 2
     mov rsi, rdx
     add rsi, 1
-    mov rcx, rax
-    add rcx, 1
     cmp.q [rsp + rax*8 - 0x48], 0x14
-    cmovg rdx, rsi
-    mov rax, rcx
+    setg cl
+    movzx ecx, cl
+    add rax, 1
+    test cl, cl
+    cmovne rdx, rsi
     jmp 1
 2:
     xor eax, eax
@@ -329,18 +337,18 @@ main:
     xor eax, eax
     xor edx, edx
 1:
-    mov r8, rdx
-    add r8, 1
+    mov rdi, rdx
+    add rdi, 1
     cmp.q [rsp + rax*8 - 0x48], 0x14
-    setg dil
-    movzx rdi, dil
+    setg cl
+    movzx ecx, cl
     add rax, 1
     cmp rax, 8
     setge sil
-    movzx rsi, sil
+    movzx esi, sil
+    test cl, cl
     mov rcx, rdx
-    test dil, dil
-    cmovne rcx, r8
+    cmovne rcx, rdi
     mov rdx, rcx
     test sil, sil
     je 1
@@ -382,12 +390,12 @@ main:
     add r8, 1
     cmp r8, 8
     setge dil
-    movzx rdi, dil
+    movzx edi, dil
     mov rsi, rdx
     add.q rsi, [rsp + rax*8 - 0x48]
+    test dil, dil
     mov rdx, rsi
     mov rax, r8
-    test dil, dil
     je 8
     mov rax, rsi
     add rax, rcx

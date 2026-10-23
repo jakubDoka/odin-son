@@ -12,9 +12,8 @@ main:
     madd x0, x3, x6, xzr
     add x7, x6, x1
     cmp x7, x2
-    cset x8, gt
     add x0, x5, x0
-    cbnz x8, 3
+    b.gt 3
     mov x5, x0
     mov x6, x7
     b 2
@@ -30,23 +29,22 @@ main:
     ret
 =========== OPT LEVEL: none ===========
 main:
-    movz x6, #1
-    movz x5, #3
+    movz x5, #1
+    movz x4, #3
     movz x1, #0
     movz x0, #0
 1:
     movz x2, #0
 2:
-    madd x4, x1, x2, xzr
-    add x2, x2, x6
-    cmp x2, x5
-    cset x3, gt
-    add x0, x0, x4
-    cbnz x3, 3
+    madd x3, x1, x2, xzr
+    add x2, x2, x5
+    cmp x2, x4
+    add x0, x0, x3
+    b.gt 3
     b 2
 3:
-    add x1, x1, x6
-    cmp x1, x5
+    add x1, x1, x5
+    cmp x1, x4
     b.gt 4
     b 1
 4:
@@ -65,9 +63,8 @@ main:
     madd x0, x3, x6, xzr
     add x7, x6, x1
     cmp x7, x2
-    cset x8, gt
     add x0, x5, x0
-    cbnz x8, 3
+    b.gt 3
     mov x5, x0
     mov x6, x7
     b 2
@@ -83,45 +80,43 @@ main:
     ret
 =========== OPT LEVEL: moderate ===========
 main:
-    movz x6, #1
-    movz x5, #3
+    movz x5, #1
+    movz x4, #3
     movz x1, #0
     movz x0, #0
 1:
     movz x2, #0
 2:
-    madd x4, x1, x2, xzr
-    add x2, x2, x6
-    cmp x2, x5
-    cset x3, gt
-    add x0, x0, x4
-    cbnz x3, 3
+    madd x3, x1, x2, xzr
+    add x2, x2, x5
+    cmp x2, x4
+    add x0, x0, x3
+    b.gt 3
     b 2
 3:
-    add x1, x1, x6
-    cmp x1, x5
+    add x1, x1, x5
+    cmp x1, x4
     b.gt 4
     b 1
 4:
     ret
 =========== OPT LEVEL: all ===========
 main:
-    movz x6, #3
-    movz x5, #1
+    movz x5, #3
+    movz x4, #1
     movz x1, #0
     movz x3, #0
 1:
     movz x2, #0
 2:
     madd x0, x1, x2, xzr
-    add x2, x2, x5
-    cmp x2, x6
-    cset x4, gt
+    add x2, x2, x4
+    cmp x2, x5
     add x0, x3, x0
     mov x3, x0
-    cbz x4, 2
-    add x1, x1, x5
-    cmp x1, x6
+    b.le 2
+    add x1, x1, x4
+    cmp x1, x5
     mov x3, x0
     b.le 1
     ret

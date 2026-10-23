@@ -23,8 +23,7 @@ typed:
     ret
 main:
     push rbx
-    push rbp
-    sub rsp, 0x48
+    sub rsp, 0x50
     xor eax, eax
     xor ecx, ecx
 6:
@@ -40,45 +39,45 @@ main:
     mov.q [rsp + 0x28], rdx
     mov.q rdx, [rsp + 0x20]
     cmp rdx, 1
-    sete dl
-    movzx rdx, dl
-    test dl, dl
+    mov.q [rsp + 0x30], 0
+    sete.b [rsp + 0x30]
+    cmp.b [rsp + 0x30], 0
     jne 8
-    mov.q rbx, [rsp + 0x20]
-    cmp rbx, 2
+    mov.q rdx, [rsp + 0x20]
+    cmp rdx, 2
     je 7
-    mov.q rbx, [rsp + 0x20]
-    cmp rbx, 3
+    mov.q rdx, [rsp + 0x20]
+    cmp rdx, 3
     je 11
     mov.q [rsp + 0x10], r15
     mov.q r15, [rsp + 0x28]
-    mov.q [rsp + 0x30], r15
+    mov.q [rsp + 0x38], r15
     mov.q r15, [rsp + 0x10]
     jmp 9
     jmp 11
 7:
     mov.q [rsp + 0x10], r15
     mov.q r15, [rsp + 0x18]
-    mov.q [rsp + 0x38], r15
+    mov.q [rsp + 0x40], r15
     mov.q r15, [rsp + 0x10]
     jmp 10
 8:
-    mov.q rbx, [rsp + 0x18]
-    add rbx, 0x14
-    mov rbx, rbx
-    mov.q rbp, [rsp + 0x28]
-    test dl, dl
-    cmovne rbp, rbx
-    mov rdx, rbp
+    mov.q rdx, [rsp + 0x18]
+    add rdx, 0x14
+    mov rdx, rdx
+    mov.q rbx, [rsp + 0x28]
+    cmp.b [rsp + 0x30], 0
+    cmovne rbx, rdx
+    mov rdx, rbx
     add rdx, 2
-    mov.q [rsp + 0x30], rdx
-9:
-    mov.q rdx, [rsp + 0x30]
-    add rdx, 1
     mov.q [rsp + 0x38], rdx
+9:
+    mov.q rdx, [rsp + 0x38]
+    add rdx, 1
+    mov.q [rsp + 0x40], rdx
 10:
     mov.q [rsp + 0x10], r15
-    mov.q r15, [rsp + 0x38]
+    mov.q r15, [rsp + 0x40]
     mov.q [rsp + 0x28], r15
     mov.q r15, [rsp + 0x10]
     mov.q rax, [rsp + 0x20]
@@ -99,8 +98,7 @@ main:
     mov rcx, rdx
     add rcx, rax
     mov rax, rcx
-    add rsp, 0x48
-    pop rbp
+    add rsp, 0x50
     pop rbx
     ret
 =========== OPT LEVEL: none ===========
@@ -138,7 +136,7 @@ main:
     add rax, 0x64
     cmp rsi, 1
     sete dl
-    movzx rdx, dl
+    movzx edx, dl
     test dl, dl
     jne 6
     cmp rsi, 2
@@ -201,8 +199,7 @@ typed:
     ret
 main:
     push rbx
-    push rbp
-    sub rsp, 0x48
+    sub rsp, 0x50
     xor eax, eax
     xor ecx, ecx
 6:
@@ -218,45 +215,45 @@ main:
     mov.q [rsp + 0x28], rdx
     mov.q rdx, [rsp + 0x20]
     cmp rdx, 1
-    sete dl
-    movzx rdx, dl
-    test dl, dl
+    mov.q [rsp + 0x30], 0
+    sete.b [rsp + 0x30]
+    cmp.b [rsp + 0x30], 0
     jne 8
-    mov.q rbx, [rsp + 0x20]
-    cmp rbx, 2
+    mov.q rdx, [rsp + 0x20]
+    cmp rdx, 2
     je 7
-    mov.q rbx, [rsp + 0x20]
-    cmp rbx, 3
+    mov.q rdx, [rsp + 0x20]
+    cmp rdx, 3
     je 11
     mov.q [rsp + 0x10], r15
     mov.q r15, [rsp + 0x28]
-    mov.q [rsp + 0x30], r15
+    mov.q [rsp + 0x38], r15
     mov.q r15, [rsp + 0x10]
     jmp 9
     jmp 11
 7:
     mov.q [rsp + 0x10], r15
     mov.q r15, [rsp + 0x18]
-    mov.q [rsp + 0x38], r15
+    mov.q [rsp + 0x40], r15
     mov.q r15, [rsp + 0x10]
     jmp 10
 8:
-    mov.q rbx, [rsp + 0x18]
-    add rbx, 0x14
-    mov rbx, rbx
-    mov.q rbp, [rsp + 0x28]
-    test dl, dl
-    cmovne rbp, rbx
-    mov rdx, rbp
+    mov.q rdx, [rsp + 0x18]
+    add rdx, 0x14
+    mov rdx, rdx
+    mov.q rbx, [rsp + 0x28]
+    cmp.b [rsp + 0x30], 0
+    cmovne rbx, rdx
+    mov rdx, rbx
     add rdx, 2
-    mov.q [rsp + 0x30], rdx
-9:
-    mov.q rdx, [rsp + 0x30]
-    add rdx, 1
     mov.q [rsp + 0x38], rdx
+9:
+    mov.q rdx, [rsp + 0x38]
+    add rdx, 1
+    mov.q [rsp + 0x40], rdx
 10:
     mov.q [rsp + 0x10], r15
-    mov.q r15, [rsp + 0x38]
+    mov.q r15, [rsp + 0x40]
     mov.q [rsp + 0x28], r15
     mov.q r15, [rsp + 0x10]
     mov.q rax, [rsp + 0x20]
@@ -277,8 +274,7 @@ main:
     mov rcx, rdx
     add rcx, rax
     mov rax, rcx
-    add rsp, 0x48
-    pop rbp
+    add rsp, 0x50
     pop rbx
     ret
 =========== OPT LEVEL: moderate ===========
@@ -316,7 +312,7 @@ main:
     add rax, 0x64
     cmp rsi, 1
     sete dl
-    movzx rdx, dl
+    movzx edx, dl
     test dl, dl
     jne 6
     cmp rsi, 2
@@ -388,7 +384,7 @@ main:
     add rax, 1
     cmp rax, 1
     sete dil
-    movzx rdi, dil
+    movzx edi, dil
     test dil, dil
     jne 6
     cmp rax, 2
@@ -439,7 +435,7 @@ main:
     add rdi, 1
     cmp rdi, 1
     sete sil
-    movzx rsi, sil
+    movzx esi, sil
     test sil, sil
     jne 4
     cmp rdi, 2

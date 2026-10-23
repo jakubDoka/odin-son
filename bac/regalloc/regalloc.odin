@@ -1875,18 +1875,6 @@ regalloc_round :: proc(
 			bidx = len(block.instrs) - 1
 		} else {
 			block, bidx = get_node_block_and_idx(ctx, id)
-
-			if inp_node.itype == .CInt {
-				cond := node.inps[len(node.inps) - 1]
-
-				if int(get_node(ctx.prc, cond).gvn) < len(ctx.gmetas) &&
-				   ctx.gmetas[get_node(ctx.prc, cond).gvn].is_flag_dep {
-					assert(get_node(ctx.prc, cond).dt == .Void)
-					// Rematerializing zero may use XOR and clobber the condition flags.
-					bidx =
-						slice.linear_search(block.instrs[:bidx], cond) or_else panic("")
-				}
-			}
 		}
 
 		inject_at(&block.instrs, bidx, split)

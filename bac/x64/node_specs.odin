@@ -6,11 +6,11 @@ Class_Flag :: bac.Class_Flag
 
 @(tag = "api", rodata, export, link_name = "bac_x64_SPEC")SPEC := bac.Node_Spec{
 	call_clobbers = {
-		{4039, 65535},
-		{2051, 0},
+		{69575, 65535},
+		{67587, 0},
 	},
 	datatype_to_reg_kind = {.Void = 0, .Mem = 0, .I8 = 0, .I16 = 0, .I32 = 0, .I64 = 0, .F32 = 1, .F64 = 1, .V128 = 1, .V256 = 1, .V512 = 1},
-	spill_boundary = {16, 16},
+	spill_boundary = {17, 16},
 	collect_meta = collect_meta,
 	emit_function = emit_function,
 	peep = peep_inst,

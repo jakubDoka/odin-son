@@ -2,13 +2,15 @@
 test_not_reg:
     cmp dil, 0
     sete al
-    movzx rax, al
+    movzx eax, al
     ret
 test_not_i8:
     cmp.b [rdi], 0
-    sete al
-    movzx rax, al
+    mov.q [rsp - 0x8], 0
+    sete.b [rsp - 0x8]
+    mov.q rax, [rsp - 0x8]
     mov.b [rdi], al
+    mov.q rax, [rsp - 0x8]
     ret
 test_bitnot_reg:
     mov rax, rdi
@@ -238,13 +240,14 @@ test_neg u64:
 test_not_reg:
     cmp dil, 0
     sete al
-    movzx rax, al
+    movzx eax, al
     ret
 test_not_i8:
     cmp.b [rdi], 0
-    sete al
-    movzx rax, al
-    mov.b [rdi], al
+    sete cl
+    movzx ecx, cl
+    mov.b [rdi], cl
+    mov rax, rcx
     ret
 test_bitnot_reg:
     mov rax, rdi
@@ -477,13 +480,15 @@ test_neg u64:
 test_not_reg:
     cmp dil, 0
     sete al
-    movzx rax, al
+    movzx eax, al
     ret
 test_not_i8:
     cmp.b [rdi], 0
-    sete al
-    movzx rax, al
+    mov.q [rsp - 0x8], 0
+    sete.b [rsp - 0x8]
+    mov.q rax, [rsp - 0x8]
     mov.b [rdi], al
+    mov.q rax, [rsp - 0x8]
     ret
 test_bitnot_reg:
     mov rax, rdi
@@ -713,13 +718,14 @@ test_neg u64:
 test_not_reg:
     cmp dil, 0
     sete al
-    movzx rax, al
+    movzx eax, al
     ret
 test_not_i8:
     cmp.b [rdi], 0
-    sete al
-    movzx rax, al
-    mov.b [rdi], al
+    sete cl
+    movzx ecx, cl
+    mov.b [rdi], cl
+    mov rax, rcx
     ret
 test_bitnot_reg:
     mov rax, rdi
@@ -952,13 +958,14 @@ test_neg u64:
 test_not_reg:
     cmp dil, 0
     sete al
-    movzx rax, al
+    movzx eax, al
     ret
 test_not_i8:
     cmp.b [rdi], 0
-    sete al
-    movzx rax, al
-    mov.b [rdi], al
+    sete cl
+    movzx ecx, cl
+    mov.b [rdi], cl
+    mov rax, rcx
     ret
 test_bitnot_reg:
     mov rax, rdi
@@ -1190,9 +1197,10 @@ test_neg u64:
 =========== OPT LEVEL: aggresive ===========
 test_not_i8:
     cmp.b [rdi], 0
-    sete al
-    movzx rax, al
-    mov.b [rdi], al
+    sete cl
+    movzx ecx, cl
+    mov.b [rdi], cl
+    mov rax, rcx
     ret
 main:
     movabs rax, 0x100010102

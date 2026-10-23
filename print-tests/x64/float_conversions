@@ -39,12 +39,18 @@ main:
     shrx rsi, rax, rbx
     cvtsi2ss xmm0, rcx
     cvttss2si rdi, xmm0
-    xor r8d, r8d
     cmp rdx, 0x40
-    cmovb r8, rbp
-    xor ebp, ebp
+    mov.q [rsp], 0
+    setb.b [rsp]
+    xor r8d, r8d
+    cmp.b [rsp], 0
+    cmovne r8, rbp
     cmp rbx, 0x40
-    cmovb rbp, rsi
+    mov.q [rsp], 0
+    setb.b [rsp]
+    xor ebp, ebp
+    cmp.b [rsp], 0
+    cmovne rbp, rsi
     mov rsi, rax
     and rsi, rbx
     or rbp, rsi
@@ -157,92 +163,98 @@ main:
     mov rdi, 0x6acfc0
     call opaque
     mov.q rcx, [rsp]
-    movsx r10, cl
-    mov rdx, rax
-    shr rdx, 0x3f
+    movsx rdi, cl
     mov rcx, rax
     shr rcx, 0x3f
+    mov rdx, rax
+    shr rdx, 0x3f
+    shrx r10, rax, rcx
     shrx r9, rax, rdx
-    shrx rdi, rax, rcx
-    cvtsi2ss xmm0, r10
-    cvttss2si r8, xmm0
-    xor esi, esi
-    cmp rdx, 0x40
-    cmovb rsi, r9
-    xor r9d, r9d
+    cvtsi2ss xmm0, rdi
+    cvttss2si rsi, xmm0
     cmp rcx, 0x40
-    cmovb r9, rdi
-    mov rdi, rax
-    and rdi, rcx
-    or r9, rdi
-    cvtsi2ss xmm2, r9
-    mov rdi, rax
-    and rdi, rdx
-    mov rax, rsi
-    or rax, rdi
+    setb r11b
+    movzx r11d, r11b
+    xor r8d, r8d
+    test r11b, r11b
+    cmovne r8, r10
+    cmp rdx, 0x40
+    setb r11b
+    movzx r11d, r11b
+    xor r10d, r10d
+    test r11b, r11b
+    cmovne r10, r9
+    mov r9, rax
+    and r9, rdx
+    or r10, r9
+    cvtsi2ss xmm2, r10
+    mov r9, rax
+    and r9, rcx
+    mov rax, r8
+    or rax, r9
     cvtsi2sd xmm0, rax
     mov rax, r15
     movsx r11, ax
     mov rax, r14
-    movsxd r9, eax
+    movsxd r10, eax
     mov rax, r12
-    movzx edi, al
+    movzx r9d, al
     mov rax, rbp
-    movzx esi, ax
+    movzx r8d, ax
     mov rax, rbx
     mov eax, eax
-    cvtsi2sd xmm1, r10
-    cvttsd2si r10, xmm1
-    lea r8, [r8 + r10 + 0x6]
-    cvtsi2ss xmm1, r11
-    cvttss2si r10, xmm1
-    add r8, r10
-    cvtsi2sd xmm1, r11
-    cvttsd2si r10, xmm1
-    add r8, r10
-    cvtsi2ss xmm1, r9
-    cvttss2si r10, xmm1
-    add r8, r10
-    cvtsi2sd xmm1, r9
-    cvttsd2si r9, xmm1
-    add r8, r9
-    cvtsi2ss xmm1, r13
-    cvttss2si r9, xmm1
-    add r8, r9
-    cvtsi2sd xmm1, r13
-    cvttsd2si r9, xmm1
-    add r8, r9
-    cvtsi2ss xmm1, rdi
-    cvttss2si r9, xmm1
-    add r8, r9
     cvtsi2sd xmm1, rdi
     cvttsd2si rdi, xmm1
-    add r8, rdi
-    cvtsi2ss xmm1, rsi
+    lea rsi, [rsi + rdi + 0x6]
+    cvtsi2ss xmm1, r11
     cvttss2si rdi, xmm1
-    add r8, rdi
-    cvtsi2sd xmm1, rsi
-    cvttsd2si rsi, xmm1
-    add r8, rsi
+    add rsi, rdi
+    cvtsi2sd xmm1, r11
+    cvttsd2si rdi, xmm1
+    add rsi, rdi
+    cvtsi2ss xmm1, r10
+    cvttss2si rdi, xmm1
+    add rsi, rdi
+    cvtsi2sd xmm1, r10
+    cvttsd2si rdi, xmm1
+    add rsi, rdi
+    cvtsi2ss xmm1, r13
+    cvttss2si rdi, xmm1
+    add rsi, rdi
+    cvtsi2sd xmm1, r13
+    cvttsd2si rdi, xmm1
+    add rsi, rdi
+    cvtsi2ss xmm1, r9
+    cvttss2si rdi, xmm1
+    add rsi, rdi
+    cvtsi2sd xmm1, r9
+    cvttsd2si rdi, xmm1
+    add rsi, rdi
+    cvtsi2ss xmm1, r8
+    cvttss2si rdi, xmm1
+    add rsi, rdi
+    cvtsi2sd xmm1, r8
+    cvttsd2si rdi, xmm1
+    add rsi, rdi
     cvtsi2ss xmm1, rax
-    cvttss2si rsi, xmm1
-    add r8, rsi
+    cvttss2si rdi, xmm1
+    add rsi, rdi
     cvtsi2sd xmm1, rax
     cvttsd2si rax, xmm1
-    add r8, rax
-    mov rax, rcx
+    add rsi, rax
+    mov rax, rdx
     shl eax, 0x17
     movd xmm1, eax
     paddd xmm2, xmm1
     cvttss2si rax, xmm2
-    add r8, rax
-    mov rax, rdx
+    add rsi, rax
+    mov rax, rcx
     shl rax, 0x34
     movq xmm1, rax
     paddq xmm0, xmm1
     cvttsd2si rax, xmm0
-    add r8, rax
-    mov rax, r8
+    add rsi, rax
+    mov rax, rsi
     add rax, 0x100cc
     add rsp, 8
     pop r15
@@ -293,12 +305,18 @@ main:
     shrx rsi, rax, rbx
     cvtsi2ss xmm0, rcx
     cvttss2si rdi, xmm0
-    xor r8d, r8d
     cmp rdx, 0x40
-    cmovb r8, rbp
-    xor ebp, ebp
+    mov.q [rsp], 0
+    setb.b [rsp]
+    xor r8d, r8d
+    cmp.b [rsp], 0
+    cmovne r8, rbp
     cmp rbx, 0x40
-    cmovb rbp, rsi
+    mov.q [rsp], 0
+    setb.b [rsp]
+    xor ebp, ebp
+    cmp.b [rsp], 0
+    cmovne rbp, rsi
     mov rsi, rax
     and rsi, rbx
     or rbp, rsi
@@ -411,92 +429,98 @@ main:
     mov rdi, 0x6acfc0
     call opaque
     mov.q rcx, [rsp]
-    movsx r10, cl
-    mov rdx, rax
-    shr rdx, 0x3f
+    movsx rdi, cl
     mov rcx, rax
     shr rcx, 0x3f
+    mov rdx, rax
+    shr rdx, 0x3f
+    shrx r10, rax, rcx
     shrx r9, rax, rdx
-    shrx rdi, rax, rcx
-    cvtsi2ss xmm0, r10
-    cvttss2si r8, xmm0
-    xor esi, esi
-    cmp rdx, 0x40
-    cmovb rsi, r9
-    xor r9d, r9d
+    cvtsi2ss xmm0, rdi
+    cvttss2si rsi, xmm0
     cmp rcx, 0x40
-    cmovb r9, rdi
-    mov rdi, rax
-    and rdi, rcx
-    or r9, rdi
-    cvtsi2ss xmm2, r9
-    mov rdi, rax
-    and rdi, rdx
-    mov rax, rsi
-    or rax, rdi
+    setb r11b
+    movzx r11d, r11b
+    xor r8d, r8d
+    test r11b, r11b
+    cmovne r8, r10
+    cmp rdx, 0x40
+    setb r11b
+    movzx r11d, r11b
+    xor r10d, r10d
+    test r11b, r11b
+    cmovne r10, r9
+    mov r9, rax
+    and r9, rdx
+    or r10, r9
+    cvtsi2ss xmm2, r10
+    mov r9, rax
+    and r9, rcx
+    mov rax, r8
+    or rax, r9
     cvtsi2sd xmm0, rax
     mov rax, r15
     movsx r11, ax
     mov rax, r14
-    movsxd r9, eax
+    movsxd r10, eax
     mov rax, r12
-    movzx edi, al
+    movzx r9d, al
     mov rax, rbp
-    movzx esi, ax
+    movzx r8d, ax
     mov rax, rbx
     mov eax, eax
-    cvtsi2sd xmm1, r10
-    cvttsd2si r10, xmm1
-    lea r8, [r8 + r10 + 0x6]
-    cvtsi2ss xmm1, r11
-    cvttss2si r10, xmm1
-    add r8, r10
-    cvtsi2sd xmm1, r11
-    cvttsd2si r10, xmm1
-    add r8, r10
-    cvtsi2ss xmm1, r9
-    cvttss2si r10, xmm1
-    add r8, r10
-    cvtsi2sd xmm1, r9
-    cvttsd2si r9, xmm1
-    add r8, r9
-    cvtsi2ss xmm1, r13
-    cvttss2si r9, xmm1
-    add r8, r9
-    cvtsi2sd xmm1, r13
-    cvttsd2si r9, xmm1
-    add r8, r9
-    cvtsi2ss xmm1, rdi
-    cvttss2si r9, xmm1
-    add r8, r9
     cvtsi2sd xmm1, rdi
     cvttsd2si rdi, xmm1
-    add r8, rdi
-    cvtsi2ss xmm1, rsi
+    lea rsi, [rsi + rdi + 0x6]
+    cvtsi2ss xmm1, r11
     cvttss2si rdi, xmm1
-    add r8, rdi
-    cvtsi2sd xmm1, rsi
-    cvttsd2si rsi, xmm1
-    add r8, rsi
+    add rsi, rdi
+    cvtsi2sd xmm1, r11
+    cvttsd2si rdi, xmm1
+    add rsi, rdi
+    cvtsi2ss xmm1, r10
+    cvttss2si rdi, xmm1
+    add rsi, rdi
+    cvtsi2sd xmm1, r10
+    cvttsd2si rdi, xmm1
+    add rsi, rdi
+    cvtsi2ss xmm1, r13
+    cvttss2si rdi, xmm1
+    add rsi, rdi
+    cvtsi2sd xmm1, r13
+    cvttsd2si rdi, xmm1
+    add rsi, rdi
+    cvtsi2ss xmm1, r9
+    cvttss2si rdi, xmm1
+    add rsi, rdi
+    cvtsi2sd xmm1, r9
+    cvttsd2si rdi, xmm1
+    add rsi, rdi
+    cvtsi2ss xmm1, r8
+    cvttss2si rdi, xmm1
+    add rsi, rdi
+    cvtsi2sd xmm1, r8
+    cvttsd2si rdi, xmm1
+    add rsi, rdi
     cvtsi2ss xmm1, rax
-    cvttss2si rsi, xmm1
-    add r8, rsi
+    cvttss2si rdi, xmm1
+    add rsi, rdi
     cvtsi2sd xmm1, rax
     cvttsd2si rax, xmm1
-    add r8, rax
-    mov rax, rcx
+    add rsi, rax
+    mov rax, rdx
     shl eax, 0x17
     movd xmm1, eax
     paddd xmm2, xmm1
     cvttss2si rax, xmm2
-    add r8, rax
-    mov rax, rdx
+    add rsi, rax
+    mov rax, rcx
     shl rax, 0x34
     movq xmm1, rax
     paddq xmm0, xmm1
     cvttsd2si rax, xmm0
-    add r8, rax
-    mov rax, r8
+    add rsi, rax
+    mov rax, rsi
     add rax, 0x100cc
     add rsp, 8
     pop r15
@@ -542,92 +566,98 @@ main:
     mov rdi, 0x6acfc0
     call opaque
     mov.q rcx, [rsp]
-    movsx r10, cl
-    mov rdx, rax
-    shr rdx, 0x3f
+    movsx rdi, cl
     mov rcx, rax
     shr rcx, 0x3f
+    mov rdx, rax
+    shr rdx, 0x3f
+    shrx r10, rax, rcx
     shrx r9, rax, rdx
-    shrx rdi, rax, rcx
-    cvtsi2ss xmm0, r10
-    cvttss2si r8, xmm0
-    xor esi, esi
-    cmp rdx, 0x40
-    cmovb rsi, r9
-    xor r9d, r9d
+    cvtsi2ss xmm0, rdi
+    cvttss2si rsi, xmm0
     cmp rcx, 0x40
-    cmovb r9, rdi
-    mov rdi, rax
-    and rdi, rcx
-    or r9, rdi
-    cvtsi2ss xmm2, r9
-    mov rdi, rax
-    and rdi, rdx
-    mov rax, rsi
-    or rax, rdi
+    setb r11b
+    movzx r11d, r11b
+    xor r8d, r8d
+    test r11b, r11b
+    cmovne r8, r10
+    cmp rdx, 0x40
+    setb r11b
+    movzx r11d, r11b
+    xor r10d, r10d
+    test r11b, r11b
+    cmovne r10, r9
+    mov r9, rax
+    and r9, rdx
+    or r10, r9
+    cvtsi2ss xmm2, r10
+    mov r9, rax
+    and r9, rcx
+    mov rax, r8
+    or rax, r9
     cvtsi2sd xmm0, rax
     mov rax, r15
     movsx r11, ax
     mov rax, r14
-    movsxd r9, eax
+    movsxd r10, eax
     mov rax, r12
-    movzx edi, al
+    movzx r9d, al
     mov rax, rbp
-    movzx esi, ax
+    movzx r8d, ax
     mov rax, rbx
     mov eax, eax
-    cvtsi2sd xmm1, r10
-    cvttsd2si r10, xmm1
-    lea r8, [r8 + r10 + 0x6]
-    cvtsi2ss xmm1, r11
-    cvttss2si r10, xmm1
-    add r8, r10
-    cvtsi2sd xmm1, r11
-    cvttsd2si r10, xmm1
-    add r8, r10
-    cvtsi2ss xmm1, r9
-    cvttss2si r10, xmm1
-    add r8, r10
-    cvtsi2sd xmm1, r9
-    cvttsd2si r9, xmm1
-    add r8, r9
-    cvtsi2ss xmm1, r13
-    cvttss2si r9, xmm1
-    add r8, r9
-    cvtsi2sd xmm1, r13
-    cvttsd2si r9, xmm1
-    add r8, r9
-    cvtsi2ss xmm1, rdi
-    cvttss2si r9, xmm1
-    add r8, r9
     cvtsi2sd xmm1, rdi
     cvttsd2si rdi, xmm1
-    add r8, rdi
-    cvtsi2ss xmm1, rsi
+    lea rsi, [rsi + rdi + 0x6]
+    cvtsi2ss xmm1, r11
     cvttss2si rdi, xmm1
-    add r8, rdi
-    cvtsi2sd xmm1, rsi
-    cvttsd2si rsi, xmm1
-    add r8, rsi
+    add rsi, rdi
+    cvtsi2sd xmm1, r11
+    cvttsd2si rdi, xmm1
+    add rsi, rdi
+    cvtsi2ss xmm1, r10
+    cvttss2si rdi, xmm1
+    add rsi, rdi
+    cvtsi2sd xmm1, r10
+    cvttsd2si rdi, xmm1
+    add rsi, rdi
+    cvtsi2ss xmm1, r13
+    cvttss2si rdi, xmm1
+    add rsi, rdi
+    cvtsi2sd xmm1, r13
+    cvttsd2si rdi, xmm1
+    add rsi, rdi
+    cvtsi2ss xmm1, r9
+    cvttss2si rdi, xmm1
+    add rsi, rdi
+    cvtsi2sd xmm1, r9
+    cvttsd2si rdi, xmm1
+    add rsi, rdi
+    cvtsi2ss xmm1, r8
+    cvttss2si rdi, xmm1
+    add rsi, rdi
+    cvtsi2sd xmm1, r8
+    cvttsd2si rdi, xmm1
+    add rsi, rdi
     cvtsi2ss xmm1, rax
-    cvttss2si rsi, xmm1
-    add r8, rsi
+    cvttss2si rdi, xmm1
+    add rsi, rdi
     cvtsi2sd xmm1, rax
     cvttsd2si rax, xmm1
-    add r8, rax
-    mov rax, rcx
+    add rsi, rax
+    mov rax, rdx
     shl eax, 0x17
     movd xmm1, eax
     paddd xmm2, xmm1
     cvttss2si rax, xmm2
-    add r8, rax
-    mov rax, rdx
+    add rsi, rax
+    mov rax, rcx
     shl rax, 0x34
     movq xmm1, rax
     paddq xmm0, xmm1
     cvttsd2si rax, xmm0
-    add r8, rax
-    mov rax, r8
+    add rsi, rax
+    mov rax, rsi
     add rax, 0x100cc
     add rsp, 8
     pop r15

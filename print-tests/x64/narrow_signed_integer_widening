@@ -1,7 +1,7 @@
 =========== OPT LEVEL: none-quick ===========
 main:
     sub rsp, 0x28
-    mov.q rax, [rip + 0xf60]
+    mov.q rax, [rip + 0xeb2]
     mov.q [rsp], rax
     mov.q rax, [rsp]
     add rax, 0xa
@@ -49,10 +49,13 @@ check i8:
     movsx rbx, al
     mov.q rax, [rsp - 0x38]
     mov.q rdx, [rsp - 0x40]
-    xor ebp, ebp
-    cmp dl, al
-    cmove rbp, rcx
-    mov.q [rsp - 0x30], rbp
+    cmp al, dl
+    mov.q [rsp - 0x30], 0
+    sete.b [rsp - 0x30]
+    xor eax, eax
+    cmp.b [rsp - 0x30], 0
+    cmovne rax, rcx
+    mov.q [rsp - 0x30], rax
     mov.q rax, [rsp - 0x30]
     add rax, 2
     mov.q [rsp - 0x28], rax
@@ -177,10 +180,13 @@ check i16:
     movsx rbx, ax
     mov.q rax, [rsp - 0x38]
     mov.q rdx, [rsp - 0x40]
-    xor ebp, ebp
-    cmp dx, ax
-    cmove rbp, rcx
-    mov.q [rsp - 0x30], rbp
+    cmp ax, dx
+    mov.q [rsp - 0x30], 0
+    sete.b [rsp - 0x30]
+    xor eax, eax
+    cmp.b [rsp - 0x30], 0
+    cmovne rax, rcx
+    mov.q [rsp - 0x30], rax
     mov.q rax, [rsp - 0x30]
     add rax, 2
     mov.q [rsp - 0x28], rax
@@ -292,7 +298,7 @@ main:
     push rbx
     push rbp
     push r12
-    mov.q rax, [rip + 0xf5e]
+    mov.q rax, [rip + 0xf55]
     mov r12, rax
     mov rax, r12
     add rax, 0xa
@@ -336,10 +342,12 @@ check i8:
     idiv cl
     movsx rcx, al
     mov rdx, r12
-    mov rax, rbp
+    cmp dl, bpl
+    sete al
+    movzx eax, al
     xor r8d, r8d
-    cmp al, dl
-    cmove r8, rdi
+    test al, al
+    cmovne r8, rdi
     mov rax, r8
     add rax, 2
     cmp bpl, 0
@@ -426,10 +434,12 @@ check i16:
     idiv cx
     movsx rcx, ax
     mov rdx, r12
-    mov rax, rbp
+    cmp dx, bp
+    sete al
+    movzx eax, al
     xor r8d, r8d
-    cmp ax, dx
-    cmove r8, rdi
+    test al, al
+    cmovne r8, rdi
     mov rax, r8
     add rax, 2
     cmp bp, 0
@@ -503,7 +513,7 @@ check i16:
 =========== OPT LEVEL: moderate-quick ===========
 main:
     sub rsp, 0x28
-    mov.q rax, [rip + 0xf60]
+    mov.q rax, [rip + 0xeb2]
     mov.q [rsp], rax
     mov.q rax, [rsp]
     add rax, 0xa
@@ -551,10 +561,13 @@ check i8:
     movsx rbx, al
     mov.q rax, [rsp - 0x38]
     mov.q rdx, [rsp - 0x40]
-    xor ebp, ebp
-    cmp dl, al
-    cmove rbp, rcx
-    mov.q [rsp - 0x30], rbp
+    cmp al, dl
+    mov.q [rsp - 0x30], 0
+    sete.b [rsp - 0x30]
+    xor eax, eax
+    cmp.b [rsp - 0x30], 0
+    cmovne rax, rcx
+    mov.q [rsp - 0x30], rax
     mov.q rax, [rsp - 0x30]
     add rax, 2
     mov.q [rsp - 0x28], rax
@@ -679,10 +692,13 @@ check i16:
     movsx rbx, ax
     mov.q rax, [rsp - 0x38]
     mov.q rdx, [rsp - 0x40]
-    xor ebp, ebp
-    cmp dx, ax
-    cmove rbp, rcx
-    mov.q [rsp - 0x30], rbp
+    cmp ax, dx
+    mov.q [rsp - 0x30], 0
+    sete.b [rsp - 0x30]
+    xor eax, eax
+    cmp.b [rsp - 0x30], 0
+    cmovne rax, rcx
+    mov.q [rsp - 0x30], rax
     mov.q rax, [rsp - 0x30]
     add rax, 2
     mov.q [rsp - 0x28], rax
@@ -794,7 +810,7 @@ main:
     push rbx
     push rbp
     push r12
-    mov.q rax, [rip + 0xf5e]
+    mov.q rax, [rip + 0xf55]
     mov r12, rax
     mov rax, r12
     add rax, 0xa
@@ -838,10 +854,12 @@ check i8:
     idiv cl
     movsx rcx, al
     mov rdx, r12
-    mov rax, rbp
+    cmp dl, bpl
+    sete al
+    movzx eax, al
     xor r8d, r8d
-    cmp al, dl
-    cmove r8, rdi
+    test al, al
+    cmovne r8, rdi
     mov rax, r8
     add rax, 2
     cmp bpl, 0
@@ -928,10 +946,12 @@ check i16:
     idiv cx
     movsx rcx, ax
     mov rdx, r12
-    mov rax, rbp
+    cmp dx, bp
+    sete al
+    movzx eax, al
     xor r8d, r8d
-    cmp ax, dx
-    cmove r8, rdi
+    test al, al
+    cmovne r8, rdi
     mov rax, r8
     add rax, 2
     cmp bp, 0
@@ -1007,7 +1027,7 @@ main:
     push rbx
     push rbp
     push r12
-    mov.q rax, [rip + 0xf5e]
+    mov.q rax, [rip + 0xf55]
     mov r12, rax
     mov rax, r12
     add rax, 0xa
@@ -1051,10 +1071,12 @@ check i8:
     idiv cl
     movsx rcx, al
     mov rdx, r12
-    mov rax, rbp
+    cmp dl, bpl
+    sete al
+    movzx eax, al
     xor r8d, r8d
-    cmp al, dl
-    cmove r8, rdi
+    test al, al
+    cmovne r8, rdi
     mov rax, r8
     add rax, 2
     cmp bpl, 0
@@ -1141,10 +1163,12 @@ check i16:
     idiv cx
     movsx rcx, ax
     mov rdx, r12
-    mov rax, rbp
+    cmp dx, bp
+    sete al
+    movzx eax, al
     xor r8d, r8d
-    cmp ax, dx
-    cmove r8, rdi
+    test al, al
+    cmovne r8, rdi
     mov rax, r8
     add rax, 2
     cmp bp, 0
@@ -1223,7 +1247,7 @@ main:
     push r13
     push r14
     push r15
-    mov.q rax, [rip + 0xf58]
+    mov.q rax, [rip + 0xf4f]
     mov rbp, rax
     mov rax, rbp
     add rax, 0xa
@@ -1244,10 +1268,12 @@ main:
     movsx rsi, al
     mov rdi, 1
     mov rdx, r11
-    mov rax, r12
+    cmp dl, r12b
+    sete al
+    movzx eax, al
     xor r8d, r8d
-    cmp al, dl
-    cmove r8, rdi
+    test al, al
+    cmovne r8, rdi
     mov rax, r8
     add rax, 2
     cmp r12b, 0
@@ -1277,11 +1303,14 @@ main:
     add rax, 0x7ff8
     add ax, si
     mov.q [rsp - 0x10], rax
-    mov r10, r8
-    xor edx, edx
+    mov rdx, r8
     mov.q rax, [rsp - 0x10]
-    cmp ax, r10w
-    cmove rdx, rdi
+    cmp dx, ax
+    sete al
+    movzx eax, al
+    xor edx, edx
+    test al, al
+    cmovne rdx, rdi
     mov rax, rdx
     add rax, 2
     mov.q rdi, [rsp - 0x10]

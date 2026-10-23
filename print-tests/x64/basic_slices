@@ -165,19 +165,23 @@ main:
     mov.q rdx, [rsp + 0x78]
     shlx rcx, rcx, rdx
     mov.q rdx, [rsp + 0x78]
-    add rdx, 1
-    mov.q [rsp + 0x80], rdx
+    cmp rdx, 0x40
+    mov.q [rsp + 0x80], 0
+    setb.b [rsp + 0x80]
     xor edx, edx
-    mov.q rbx, [rsp + 0x78]
-    cmp rbx, 0x40
-    cmovb rdx, rcx
-    mov rcx, rdx
+    cmp.b [rsp + 0x80], 0
+    cmovne rdx, rcx
+    mov.q [rsp + 0x80], rdx
+    mov.q rcx, [rsp + 0x78]
+    add rcx, 1
+    mov.q [rsp + 0x78], rcx
+    mov.q rcx, [rsp + 0x80]
     mov.q rdx, [rsp + 0x70]
     add rdx, rcx
-    mov.q [rsp + 0x78], rdx
-    mov.q rax, [rsp + 0x80]
+    mov.q [rsp + 0x80], rdx
+    mov.q rax, [rsp + 0x78]
     mov.q [rsp + 0x60], r15
-    mov.q r15, [rsp + 0x78]
+    mov.q r15, [rsp + 0x80]
     mov.q [rsp + 0x68], r15
     mov.q r15, [rsp + 0x60]
     jmp 11
@@ -207,19 +211,23 @@ main:
     mov.q rbx, [rsp + 0x78]
     mov.q [rsp + rbx*8 + 0x20], rcx
     mov.q rcx, [rsp + 0x78]
-    add rcx, 1
-    mov.q [rsp + 0x80], rcx
+    cmp rcx, 0x40
+    mov.q [rsp + 0x80], 0
+    setb.b [rsp + 0x80]
     xor ecx, ecx
-    mov.q rbx, [rsp + 0x78]
-    cmp rbx, 0x40
-    cmovb rcx, rdx
-    mov rcx, rcx
+    cmp.b [rsp + 0x80], 0
+    cmovne rcx, rdx
+    mov.q [rsp + 0x80], rcx
+    mov.q rcx, [rsp + 0x78]
+    add rcx, 1
+    mov.q [rsp + 0x78], rcx
+    mov.q rcx, [rsp + 0x80]
     mov.q rdx, [rsp + 0x70]
     add rdx, rcx
-    mov.q [rsp + 0x78], rdx
-    mov.q rax, [rsp + 0x80]
+    mov.q [rsp + 0x80], rdx
+    mov.q rax, [rsp + 0x78]
     mov.q [rsp + 0x60], r15
-    mov.q r15, [rsp + 0x78]
+    mov.q r15, [rsp + 0x80]
     mov.q [rsp + 0x68], r15
     mov.q r15, [rsp + 0x60]
     jmp 13
@@ -316,10 +324,13 @@ bubble_sort:
     sub rcx, 1
     mov.q [rsp - 0x48], rcx
     mov.q rcx, [rsp - 0x48]
-    xor edx, edx
     cmp rcx, 0
+    mov.q [rsp - 0x40], 0
+    setl.b [rsp - 0x40]
     mov.q rcx, [rsp - 0x48]
-    cmovl rcx, rdx
+    xor edx, edx
+    cmp.b [rsp - 0x40], 0
+    cmovne rcx, rdx
     mov.q [rsp - 0x48], rcx
     mov.q [rsp - 0x58], r15
     mov.q r15, [rsp - 0x28]
@@ -368,15 +379,15 @@ quick_sort:
     mov.q rdx, [rsp + 0x38]
     mov.q rdx, [rdi + rdx*8]
     cmp rdx, rax
-    setge dl
-    movzx rdx, dl
-    mov.q rbx, [rsp + 0x38]
-    add rbx, 1
-    mov.q [rsp + 0x40], rbx
-    test dl, dl
+    mov.q [rsp + 0x40], 0
+    setge.b [rsp + 0x40]
+    mov.q rdx, [rsp + 0x38]
+    add rdx, 1
+    mov.q [rsp + 0x48], rdx
+    cmp.b [rsp + 0x40], 0
     jne 25
     mov.q [rsp + 0x10], r15
-    mov.q r15, [rsp + 0x40]
+    mov.q r15, [rsp + 0x48]
     mov.q [rsp + 0x28], r15
     mov.q r15, [rsp + 0x10]
     jmp 24
@@ -392,15 +403,15 @@ quick_sort:
     mov.q r15, [rsp + 0x10]
     mov.q rdx, [rsp + 0x30]
     cmp.q rax, [rdi + rdx*8]
-    setge dl
-    movzx rdx, dl
-    mov.q rbx, [rsp + 0x30]
-    sub rbx, 1
-    mov.q [rsp + 0x48], rbx
-    test dl, dl
+    mov.q [rsp + 0x40], 0
+    setge.b [rsp + 0x40]
+    mov.q rdx, [rsp + 0x30]
+    sub rdx, 1
+    mov.q [rsp + 0x50], rdx
+    cmp.b [rsp + 0x40], 0
     jne 27
     mov.q [rsp + 0x10], r15
-    mov.q r15, [rsp + 0x48]
+    mov.q r15, [rsp + 0x50]
     mov.q [rsp + 0x28], r15
     mov.q r15, [rsp + 0x10]
     jmp 26
@@ -419,10 +430,10 @@ quick_sort:
     mov.q rbp, [rsp + 0x38]
     mov.q [rdx + rbp*8], rbx
     mov.q [rsp + 0x10], r15
-    mov.q r15, [rsp + 0x48]
+    mov.q r15, [rsp + 0x50]
     mov.q [rsp + 0x20], r15
     mov.q r15, [rsp + 0x10]
-    mov.q rcx, [rsp + 0x40]
+    mov.q rcx, [rsp + 0x48]
     jmp 23
 28:
     mov.q rsi, [rsp + 0x38]
@@ -512,13 +523,14 @@ main:
     mov.q rdx, [rsp + rax*8 + 0x20]
     neg.q [rsp + rax*8 + 0x20]
     shlx rsi, rdx, rax
-    mov rdx, rax
-    add rdx, 1
-    xor ecx, ecx
     cmp rax, 0x40
-    cmovb rcx, rsi
-    add rbx, rcx
-    mov rax, rdx
+    setb cl
+    movzx ecx, cl
+    xor edx, edx
+    test cl, cl
+    cmovne rdx, rsi
+    add rax, 1
+    add rbx, rdx
     jmp 11
 12:
     lea rdi, [rsp + 0x20]
@@ -532,13 +544,14 @@ main:
     neg rdx
     shlx rsi, rdx, rax
     mov.q [rsp + rax*8 + 0x20], rdx
-    mov rdx, rax
-    add rdx, 1
-    xor ecx, ecx
     cmp rax, 0x40
-    cmovb rcx, rsi
-    add rbx, rcx
-    mov rax, rdx
+    setb cl
+    movzx ecx, cl
+    xor edx, edx
+    test cl, cl
+    cmovne rdx, rsi
+    add rax, 1
+    add rbx, rdx
     jmp 13
 14:
     mov rax, rbx
@@ -588,10 +601,12 @@ bubble_sort:
     cmp rsi, -1
     je 20
     sub rdx, 1
-    mov rcx, rdx
+    cmp rdx, 0
+    setl cl
+    movzx ecx, cl
     xor eax, eax
-    cmp rcx, 0
-    cmovl rdx, rax
+    test cl, cl
+    cmovne rdx, rax
     mov rax, rsi
     jmp 16
 20:
@@ -622,7 +637,7 @@ quick_sort:
     mov.q rcx, [rdi + rbx*8]
     cmp rcx, rax
     setge dl
-    movzx rdx, dl
+    movzx edx, dl
     mov rcx, rbx
     add rcx, 1
     mov r10, rcx
@@ -633,7 +648,7 @@ quick_sort:
 24:
     cmp.q rax, [rdi + r8*8]
     setge dl
-    movzx rdx, dl
+    movzx edx, dl
     mov rcx, r8
     sub rcx, 1
     mov r9, rcx
@@ -835,19 +850,23 @@ main:
     mov.q rdx, [rsp + 0x78]
     shlx rcx, rcx, rdx
     mov.q rdx, [rsp + 0x78]
-    add rdx, 1
-    mov.q [rsp + 0x80], rdx
+    cmp rdx, 0x40
+    mov.q [rsp + 0x80], 0
+    setb.b [rsp + 0x80]
     xor edx, edx
-    mov.q rbx, [rsp + 0x78]
-    cmp rbx, 0x40
-    cmovb rdx, rcx
-    mov rcx, rdx
+    cmp.b [rsp + 0x80], 0
+    cmovne rdx, rcx
+    mov.q [rsp + 0x80], rdx
+    mov.q rcx, [rsp + 0x78]
+    add rcx, 1
+    mov.q [rsp + 0x78], rcx
+    mov.q rcx, [rsp + 0x80]
     mov.q rdx, [rsp + 0x70]
     add rdx, rcx
-    mov.q [rsp + 0x78], rdx
-    mov.q rax, [rsp + 0x80]
+    mov.q [rsp + 0x80], rdx
+    mov.q rax, [rsp + 0x78]
     mov.q [rsp + 0x60], r15
-    mov.q r15, [rsp + 0x78]
+    mov.q r15, [rsp + 0x80]
     mov.q [rsp + 0x68], r15
     mov.q r15, [rsp + 0x60]
     jmp 11
@@ -877,19 +896,23 @@ main:
     mov.q rbx, [rsp + 0x78]
     mov.q [rsp + rbx*8 + 0x20], rcx
     mov.q rcx, [rsp + 0x78]
-    add rcx, 1
-    mov.q [rsp + 0x80], rcx
+    cmp rcx, 0x40
+    mov.q [rsp + 0x80], 0
+    setb.b [rsp + 0x80]
     xor ecx, ecx
-    mov.q rbx, [rsp + 0x78]
-    cmp rbx, 0x40
-    cmovb rcx, rdx
-    mov rcx, rcx
+    cmp.b [rsp + 0x80], 0
+    cmovne rcx, rdx
+    mov.q [rsp + 0x80], rcx
+    mov.q rcx, [rsp + 0x78]
+    add rcx, 1
+    mov.q [rsp + 0x78], rcx
+    mov.q rcx, [rsp + 0x80]
     mov.q rdx, [rsp + 0x70]
     add rdx, rcx
-    mov.q [rsp + 0x78], rdx
-    mov.q rax, [rsp + 0x80]
+    mov.q [rsp + 0x80], rdx
+    mov.q rax, [rsp + 0x78]
     mov.q [rsp + 0x60], r15
-    mov.q r15, [rsp + 0x78]
+    mov.q r15, [rsp + 0x80]
     mov.q [rsp + 0x68], r15
     mov.q r15, [rsp + 0x60]
     jmp 13
@@ -986,10 +1009,13 @@ bubble_sort:
     sub rcx, 1
     mov.q [rsp - 0x48], rcx
     mov.q rcx, [rsp - 0x48]
-    xor edx, edx
     cmp rcx, 0
+    mov.q [rsp - 0x40], 0
+    setl.b [rsp - 0x40]
     mov.q rcx, [rsp - 0x48]
-    cmovl rcx, rdx
+    xor edx, edx
+    cmp.b [rsp - 0x40], 0
+    cmovne rcx, rdx
     mov.q [rsp - 0x48], rcx
     mov.q [rsp - 0x58], r15
     mov.q r15, [rsp - 0x28]
@@ -1038,15 +1064,15 @@ quick_sort:
     mov.q rdx, [rsp + 0x38]
     mov.q rdx, [rdi + rdx*8]
     cmp rdx, rax
-    setge dl
-    movzx rdx, dl
-    mov.q rbx, [rsp + 0x38]
-    add rbx, 1
-    mov.q [rsp + 0x40], rbx
-    test dl, dl
+    mov.q [rsp + 0x40], 0
+    setge.b [rsp + 0x40]
+    mov.q rdx, [rsp + 0x38]
+    add rdx, 1
+    mov.q [rsp + 0x48], rdx
+    cmp.b [rsp + 0x40], 0
     jne 25
     mov.q [rsp + 0x10], r15
-    mov.q r15, [rsp + 0x40]
+    mov.q r15, [rsp + 0x48]
     mov.q [rsp + 0x28], r15
     mov.q r15, [rsp + 0x10]
     jmp 24
@@ -1062,15 +1088,15 @@ quick_sort:
     mov.q r15, [rsp + 0x10]
     mov.q rdx, [rsp + 0x30]
     cmp.q rax, [rdi + rdx*8]
-    setge dl
-    movzx rdx, dl
-    mov.q rbx, [rsp + 0x30]
-    sub rbx, 1
-    mov.q [rsp + 0x48], rbx
-    test dl, dl
+    mov.q [rsp + 0x40], 0
+    setge.b [rsp + 0x40]
+    mov.q rdx, [rsp + 0x30]
+    sub rdx, 1
+    mov.q [rsp + 0x50], rdx
+    cmp.b [rsp + 0x40], 0
     jne 27
     mov.q [rsp + 0x10], r15
-    mov.q r15, [rsp + 0x48]
+    mov.q r15, [rsp + 0x50]
     mov.q [rsp + 0x28], r15
     mov.q r15, [rsp + 0x10]
     jmp 26
@@ -1089,10 +1115,10 @@ quick_sort:
     mov.q rbp, [rsp + 0x38]
     mov.q [rdx + rbp*8], rbx
     mov.q [rsp + 0x10], r15
-    mov.q r15, [rsp + 0x48]
+    mov.q r15, [rsp + 0x50]
     mov.q [rsp + 0x20], r15
     mov.q r15, [rsp + 0x10]
-    mov.q rcx, [rsp + 0x40]
+    mov.q rcx, [rsp + 0x48]
     jmp 23
 28:
     mov.q rsi, [rsp + 0x38]
@@ -1182,13 +1208,14 @@ main:
     mov.q rdx, [rsp + rax*8 + 0x20]
     neg.q [rsp + rax*8 + 0x20]
     shlx rsi, rdx, rax
-    mov rdx, rax
-    add rdx, 1
-    xor ecx, ecx
     cmp rax, 0x40
-    cmovb rcx, rsi
-    add rbx, rcx
-    mov rax, rdx
+    setb cl
+    movzx ecx, cl
+    xor edx, edx
+    test cl, cl
+    cmovne rdx, rsi
+    add rax, 1
+    add rbx, rdx
     jmp 11
 12:
     lea rdi, [rsp + 0x20]
@@ -1202,13 +1229,14 @@ main:
     neg rdx
     shlx rsi, rdx, rax
     mov.q [rsp + rax*8 + 0x20], rdx
-    mov rdx, rax
-    add rdx, 1
-    xor ecx, ecx
     cmp rax, 0x40
-    cmovb rcx, rsi
-    add rbx, rcx
-    mov rax, rdx
+    setb cl
+    movzx ecx, cl
+    xor edx, edx
+    test cl, cl
+    cmovne rdx, rsi
+    add rax, 1
+    add rbx, rdx
     jmp 13
 14:
     mov rax, rbx
@@ -1258,10 +1286,12 @@ bubble_sort:
     cmp rsi, -1
     je 20
     sub rdx, 1
-    mov rcx, rdx
+    cmp rdx, 0
+    setl cl
+    movzx ecx, cl
     xor eax, eax
-    cmp rcx, 0
-    cmovl rdx, rax
+    test cl, cl
+    cmovne rdx, rax
     mov rax, rsi
     jmp 16
 20:
@@ -1292,7 +1322,7 @@ quick_sort:
     mov.q rcx, [rdi + rbx*8]
     cmp rcx, rax
     setge dl
-    movzx rdx, dl
+    movzx edx, dl
     mov rcx, rbx
     add rcx, 1
     mov r10, rcx
@@ -1303,7 +1333,7 @@ quick_sort:
 24:
     cmp.q rax, [rdi + r8*8]
     setge dl
-    movzx rdx, dl
+    movzx edx, dl
     mov rcx, r8
     sub rcx, 1
     mov r9, rcx
@@ -1359,7 +1389,7 @@ main:
     add rax, 1
     cmp rax, 8
     setge sil
-    movzx rsi, sil
+    movzx esi, sil
     add.q rdx, [rsp + rcx*8 + 0x20]
     mov rcx, rdx
     test sil, sil
@@ -1372,7 +1402,7 @@ main:
     add rax, 1
     cmp rax, 7
     setge sil
-    movzx rsi, sil
+    movzx esi, sil
     add.q rcx, [rsp + rdx*8 + 0x28]
     mov rdx, rcx
     test sil, sil
@@ -1385,7 +1415,7 @@ main:
     add rax, 1
     cmp rax, 5
     setge sil
-    movzx rsi, sil
+    movzx esi, sil
     add.q rdx, [rsp + rcx*8 + 0x28]
     mov rcx, rdx
     test sil, sil
@@ -1398,7 +1428,7 @@ main:
     add rax, 1
     cmp rax, 2
     setge sil
-    movzx rsi, sil
+    movzx esi, sil
     add.q rcx, [rsp + rdx*8 + 0x30]
     mov rdx, rcx
     test sil, sil
@@ -1414,7 +1444,7 @@ main:
     add rax, 1
     cmp rax, 4
     setge sil
-    movzx rsi, sil
+    movzx esi, sil
     mov rbx, rcx
     add.q rbx, [rsp + rdx*8]
     mov rcx, rbx
@@ -1429,13 +1459,16 @@ main:
     mov.q rsi, [rsp + rcx*8 + 0x20]
     neg.q [rsp + rcx*8 + 0x20]
     shlx rdi, rsi, rcx
-    xor edx, edx
     cmp rcx, 0x40
-    cmovb rdx, rdi
+    setb sil
+    movzx esi, sil
+    xor edx, edx
+    test sil, sil
+    cmovne rdx, rdi
     add rcx, 1
     cmp rcx, 8
     setge sil
-    movzx rsi, sil
+    movzx esi, sil
     mov rbx, rax
     add rbx, rdx
     mov rax, rbx
@@ -1451,13 +1484,16 @@ main:
     neg rsi
     shlx rdi, rsi, rcx
     mov.q [rsp + rcx*8 + 0x20], rsi
-    xor esi, esi
     cmp rcx, 0x40
-    cmovb rsi, rdi
+    setb dl
+    movzx edx, dl
+    xor esi, esi
+    test dl, dl
+    cmovne rsi, rdi
     add rcx, 1
     cmp rcx, 8
     setge dil
-    movzx rdi, dil
+    movzx edi, dil
     mov rdx, rax
     add rdx, rsi
     mov rax, rdx
@@ -1474,7 +1510,7 @@ bubble_sort:
 9:
     mov r11, rax
     cmp rdx, r11
-    jge 13
+    jge +0xa1
     mov rcx, -1
     mov rax, -1
 10:
@@ -1506,17 +1542,19 @@ bubble_sort:
     sub rdx, 1
     cmp r8, -1
     sete cl
-    movzx rcx, cl
-    xor esi, esi
+    movzx ecx, cl
     cmp rdx, 0
-    cmovl rdx, rsi
+    setl sil
+    movzx esi, sil
+    xor eax, eax
+    test sil, sil
+    cmovne rdx, rax
     mov rax, r8
-    jmp 14
-13:
+    jmp 13
     xor edx, edx
     mov rax, -1
     mov cl, 1
-14:
+13:
     test cl, cl
     je 9
     xor eax, eax
@@ -1528,7 +1566,7 @@ quick_sort:
     mov r12, rdi
     mov rbp, rsi
     cmp rbp, 2
-    jl 19
+    jl 18
     mov rcx, rbp
     sub rcx, 1
     mov rsi, 2
@@ -1537,39 +1575,39 @@ quick_sort:
     idiv rsi
     mov.q rax, [r12 + rax*8]
     xor edx, edx
-16:
+15:
     mov rbx, rdx
     mov.q rdx, [r12 + rbx*8]
     cmp rdx, rax
     setge sil
-    movzx rsi, sil
+    movzx esi, sil
     mov rdx, rbx
     add rdx, 1
     mov r10, rdx
     mov rdx, r10
     test sil, sil
-    je 16
-17:
+    je 15
+16:
     mov r9, rcx
     cmp.q rax, [r12 + r9*8]
     setge dl
-    movzx rdx, dl
+    movzx edx, dl
     mov rcx, r9
     sub rcx, 1
     mov r8, rcx
     mov rcx, r8
     test dl, dl
-    je 17
+    je 16
     cmp rbx, r9
-    jge 18
+    jge 17
     mov.q rdi, [r12 + rbx*8]
     mov.q rsi, [r12 + r9*8]
     mov.q [r12 + r9*8], rdi
     mov.q [r12 + rbx*8], rsi
     mov rcx, r8
     mov rdx, r10
-    jmp 16
-18:
+    jmp 15
+17:
     mov rsi, rbx
     mov rdi, r12
     call quick_sort
@@ -1578,8 +1616,8 @@ quick_sort:
     sub rcx, rbx
     mov rsi, rcx
     call quick_sort
-    jmp 19
-19:
+    jmp 18
+18:
     xor eax, eax
     pop r12
     pop rbp
@@ -1606,7 +1644,7 @@ main:
     add rax, 1
     cmp rax, 8
     setge sil
-    movzx rsi, sil
+    movzx esi, sil
     add.q rdx, [rsp + rcx*8 + 0x20]
     mov rcx, rdx
     test sil, sil
@@ -1619,7 +1657,7 @@ main:
     add rax, 1
     cmp rax, 7
     setge sil
-    movzx rsi, sil
+    movzx esi, sil
     add.q rcx, [rsp + rdx*8 + 0x28]
     mov rdx, rcx
     test sil, sil
@@ -1632,7 +1670,7 @@ main:
     add rax, 1
     cmp rax, 5
     setge sil
-    movzx rsi, sil
+    movzx esi, sil
     add.q rdx, [rsp + rcx*8 + 0x28]
     mov rcx, rdx
     test sil, sil
@@ -1645,7 +1683,7 @@ main:
     add rax, 1
     cmp rax, 2
     setge sil
-    movzx rsi, sil
+    movzx esi, sil
     add.q rcx, [rsp + rdx*8 + 0x30]
     mov rdx, rcx
     test sil, sil
@@ -1661,7 +1699,7 @@ main:
     add rax, 1
     cmp rax, 4
     setge sil
-    movzx rsi, sil
+    movzx esi, sil
     mov rbx, rcx
     add.q rbx, [rsp + rdx*8]
     mov rcx, rbx
@@ -1670,72 +1708,81 @@ main:
     lea rdi, [rsp + 0x20]
     mov rsi, 8
     call quick_sort
-    xor ecx, ecx
-    mov rdx, rbx
+    xor edx, edx
+    mov rcx, rbx
 6:
-    mov.q rsi, [rsp + rcx*8 + 0x20]
-    neg.q [rsp + rcx*8 + 0x20]
-    shlx rdi, rsi, rcx
-    xor eax, eax
-    cmp rcx, 0x40
-    cmovb rax, rdi
-    add rcx, 1
-    cmp rcx, 8
-    setge sil
-    movzx rsi, sil
-    add rdx, rax
-    mov rax, rdx
-    mov rdx, rax
-    test sil, sil
-    je 6
+    mov rdi, rdx
+    mov.q rdx, [rsp + rdi*8 + 0x20]
+    neg.q [rsp + rdi*8 + 0x20]
+    shlx rdx, rdx, rdi
+    cmp rdi, 0x40
+    setb al
+    movzx eax, al
     xor esi, esi
+    test al, al
+    cmovne rsi, rdx
+    mov rdx, rdi
+    add rdx, 1
+    cmp rdx, 8
+    setge dil
+    movzx edi, dil
+    mov rax, rcx
+    add rax, rsi
+    mov rcx, rax
+    test dil, dil
+    je 6
+    xor edi, edi
     mov rcx, 7
 7:
     mov r10, rcx
-    cmp rsi, r10
+    cmp rdi, r10
     jge 11
     mov rcx, -1
     mov rdx, -1
 8:
-    mov rdi, rcx
-    mov r8, rsi
-    mov.q rsi, [rsp + r8*8 + 0x20]
+    mov rsi, rcx
+    mov r8, rdi
+    mov.q rdi, [rsp + r8*8 + 0x20]
     mov rcx, r8
     add rcx, 1
     mov r9, rcx
-    cmp.q rsi, [rsp + r9*8 + 0x20]
+    cmp.q rdi, [rsp + r9*8 + 0x20]
     jg 9
     mov r8, rdx
     jmp 10
 9:
-    mov.q rsi, [rsp + r9*8 + 0x20]
+    mov.q rdi, [rsp + r9*8 + 0x20]
     mov.q rdx, [rsp + r8*8 + 0x20]
     mov.q [rsp + r9*8 + 0x20], rdx
-    mov.q [rsp + r8*8 + 0x20], rsi
-    cmp rdi, -1
-    cmove rdi, r8
+    mov.q [rsp + r8*8 + 0x20], rdi
+    cmp rsi, -1
+    cmove rsi, r8
 10:
     cmp r9, r10
-    mov rsi, r9
+    mov rdi, r9
     mov rdx, r8
-    mov rcx, rdi
+    mov rcx, rsi
     jl 8
-    mov rsi, rdi
-    sub rsi, 1
-    xor edx, edx
-    cmp rsi, 0
-    cmovl rsi, rdx
+    mov rdx, rsi
+    sub rdx, 1
+    cmp rdx, 0
+    setl sil
+    movzx esi, sil
+    xor ecx, ecx
+    test sil, sil
+    cmovne rdx, rcx
     cmp r8, -1
-    sete dl
-    movzx rdx, dl
+    sete sil
+    movzx esi, sil
     mov rcx, r8
     jmp 12
 11:
-    xor esi, esi
+    mov sil, 1
+    xor edx, edx
     mov rcx, -1
-    mov dl, 1
 12:
-    test dl, dl
+    mov rdi, rdx
+    test sil, sil
     je 7
     xor ecx, ecx
 13:
@@ -1743,13 +1790,16 @@ main:
     neg rsi
     shlx rdi, rsi, rcx
     mov.q [rsp + rcx*8 + 0x20], rsi
-    xor esi, esi
     cmp rcx, 0x40
-    cmovb rsi, rdi
+    setb dl
+    movzx edx, dl
+    xor esi, esi
+    test dl, dl
+    cmovne rsi, rdi
     add rcx, 1
     cmp rcx, 8
     setge dil
-    movzx rdi, dil
+    movzx edi, dil
     mov rdx, rax
     add rdx, rsi
     mov rax, rdx
@@ -1780,7 +1830,7 @@ quick_sort:
     mov.q rdx, [r12 + rbx*8]
     cmp rdx, rax
     setge sil
-    movzx rsi, sil
+    movzx esi, sil
     mov rdx, rbx
     add rdx, 1
     mov r10, rdx
@@ -1791,7 +1841,7 @@ quick_sort:
     mov r9, rcx
     cmp.q rax, [r12 + r9*8]
     setge dl
-    movzx rdx, dl
+    movzx edx, dl
     mov rcx, r9
     sub rcx, 1
     mov r8, rcx

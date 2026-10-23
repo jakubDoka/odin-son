@@ -2,7 +2,7 @@
 main:
     movz x0, #8
     movz x1, #1
-    adr x2, 0xf8c
+    adr x2, 0xed0
     movz x3, #0
 1:
     mov x4, x3
@@ -16,7 +16,7 @@ main:
     mov x3, x4
     b 1
 2:
-    adr x3, 0x102c
+    adr x3, 0xf70
     ldr d0, [x3]
     movz x3, #0
     movz x4, #0
@@ -34,7 +34,7 @@ main:
     mov x4, x5
     b 3
 4:
-    adr x1, 0xfcc
+    adr x1, 0xf10
     ldr x2, [x1]
     add x0, x1, x0
     ldr x0, [x0]
@@ -77,7 +77,7 @@ main:
 main:
     movz x6, #8
     movz x5, #1
-    adr x4, 0xf8c
+    adr x4, 0xf80
     movz x0, #0
 1:
     cmp x0, x6
@@ -89,7 +89,7 @@ main:
     str d0, [x1]
     b 1
 2:
-    adr x0, 0x102c
+    adr x0, 0x1020
     ldr d1, [x0]
     movz x1, #0
     movz x0, #0
@@ -105,7 +105,7 @@ main:
     add x1, x1, x5
     b 3
 4:
-    adr x11, 0xfcc
+    adr x11, 0xfc0
     ldr x10, [x11]
     add x1, x11, x6
     ldr x9, [x1]
@@ -148,7 +148,7 @@ main:
 main:
     movz x0, #8
     movz x1, #1
-    adr x2, 0xf8c
+    adr x2, 0xed0
     movz x3, #0
 1:
     mov x4, x3
@@ -162,7 +162,7 @@ main:
     mov x3, x4
     b 1
 2:
-    adr x3, 0x102c
+    adr x3, 0xf70
     ldr d0, [x3]
     movz x3, #0
     movz x4, #0
@@ -173,14 +173,14 @@ main:
     madd x6, x4, x0, xzr
     add x6, x6, x2
     ldr d1, [x6]
-    add x6, x4, x1
     fcmp d1, d0
+    add x6, x4, x1
     csel x5, x5, x3, mi
     mov x3, x5
     mov x4, x6
     b 3
 4:
-    adr x1, 0xfcc
+    adr x1, 0xf10
     ldr x2, [x1]
     add x0, x1, x0
     ldr x0, [x0]
@@ -223,7 +223,7 @@ main:
 main:
     movz x6, #8
     movz x5, #1
-    adr x4, 0xf8c
+    adr x4, 0xf80
     movz x0, #0
 1:
     cmp x0, x6
@@ -235,7 +235,7 @@ main:
     str d0, [x1]
     b 1
 2:
-    adr x0, 0x102c
+    adr x0, 0x1020
     ldr d1, [x0]
     movz x0, #0
     movz x1, #0
@@ -246,12 +246,12 @@ main:
     madd x2, x1, x6, xzr
     add x2, x2, x4
     ldr d0, [x2]
-    add x1, x1, x5
     fcmp d0, d1
+    add x1, x1, x5
     csel x0, x3, x0, mi
     b 3
 4:
-    adr x11, 0xfcc
+    adr x11, 0xfc0
     ldr x10, [x11]
     add x1, x11, x6
     ldr x9, [x1]
@@ -300,8 +300,8 @@ main:
     str x23, [xzr, #32]
     movz x10, #8
     movz x9, #1
-    adr x17, 0xfcc
-    adr x8, 0xf8c
+    adr x17, 0xfc0
+    adr x8, 0xf80
     add x16, x17, x10
     movz x0, #16
     add x15, x0, x17
@@ -338,7 +338,7 @@ main:
     add x18, x18, x9
     cmp x18, x10
     b.ne 1
-    adr x13, 0x102c
+    adr x13, 0x1020
     ldr d1, [x13]
     movz x14, #0
     movz x13, #0
@@ -348,14 +348,15 @@ main:
     add x15, x15, x8
     ldr d0, [x15]
     fcmp d0, d1
-    cset x15, mi
+    cset w15, mi
     add x13, x13, x9
     cmp x13, x10
-    cset x16, eq
+    cset w16, eq
     cmp w15, #0
     csel x15, x17, x14, ne
     mov x14, x15
-    cbz x16, 2
+    cmp w16, #0
+    b.eq 2
     add x8, x12, x15
     add x8, x8, x11
     add x7, x8, x7

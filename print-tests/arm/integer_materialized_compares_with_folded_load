@@ -1,22 +1,23 @@
 =========== OPT LEVEL: none-quick ===========
 msrc:
+    sub sp, sp, #16
     movz x2, #4
     movz x3, #8
     movz x4, #16
     ldr w5, [x1]
     cmp w5, w0
-    cset x5, eq
+    cset w5, eq
     uxtb w5, w5
     add x6, x1, x2
     ldr w6, [x6]
     cmp w6, w0
-    cset x6, ne
+    cset w6, ne
     uxtb w6, w6
     movz x7, #20
     add x7, x7, x1
     ldr w7, [x7]
     cmp w0, w7
-    cset x7, ge
+    cset w7, ge
     uxtb w7, w7
     movz x8, #2
     madd x6, x6, x8, xzr
@@ -24,7 +25,7 @@ msrc:
     add x6, x1, x3
     ldr w6, [x6]
     cmp w0, w6
-    cset x6, lt
+    cset w6, lt
     uxtb w6, w6
     madd x2, x6, x2, xzr
     add x2, x5, x2
@@ -32,39 +33,41 @@ msrc:
     add x5, x5, x1
     ldr w5, [x5]
     cmp w0, w5
-    cset x5, le
+    cset w5, le
     uxtb w5, w5
     madd x3, x5, x3, xzr
     add x2, x2, x3
     add x1, x1, x4
     ldr w1, [x1]
     cmp w0, w1
-    cset x0, gt
+    cset w0, gt
     uxtb w0, w0
     madd x0, x0, x4, xzr
     add x0, x2, x0
     movz x1, #32
     madd x1, x7, x1, xzr
     add x0, x0, x1
+    add sp, sp, #16
     ret
 usrc:
+    sub sp, sp, #16
     movz x2, #4
     movz x3, #8
     movz x4, #16
     ldr w5, [x1]
     cmp w5, w0
-    cset x5, eq
+    cset w5, eq
     uxtb w5, w5
     add x6, x1, x2
     ldr w6, [x6]
     cmp w6, w0
-    cset x6, ne
+    cset w6, ne
     uxtb w6, w6
     movz x7, #20
     add x7, x7, x1
     ldr w7, [x7]
     cmp w0, w7
-    cset x7, cs
+    cset w7, cs
     uxtb w7, w7
     movz x8, #2
     madd x6, x6, x8, xzr
@@ -72,7 +75,7 @@ usrc:
     add x6, x1, x3
     ldr w6, [x6]
     cmp w0, w6
-    cset x6, cc
+    cset w6, cc
     uxtb w6, w6
     madd x2, x6, x2, xzr
     add x2, x5, x2
@@ -80,40 +83,42 @@ usrc:
     add x5, x5, x1
     ldr w5, [x5]
     cmp w0, w5
-    cset x5, ls
+    cset w5, ls
     uxtb w5, w5
     madd x3, x5, x3, xzr
     add x2, x2, x3
     add x1, x1, x4
     ldr w1, [x1]
     cmp w0, w1
-    cset x0, hi
+    cset w0, hi
     uxtb w0, w0
     madd x0, x0, x4, xzr
     add x0, x2, x0
     movz x1, #32
     madd x1, x7, x1, xzr
     add x0, x0, x1
+    add sp, sp, #16
     ret
 mdst:
+    sub sp, sp, #16
     movz x1, #4
     movz x2, #8
     movz x3, #16
     movz x4, #7
     ldr w5, [x0]
     cmp w5, w4
-    cset x5, eq
+    cset w5, eq
     uxtb w5, w5
     movz x6, #20
     add x6, x6, x0
     ldr w6, [x6]
     cmp w6, w4
-    cset x6, ge
+    cset w6, ge
     uxtb w6, w6
     add x7, x0, x1
     ldr w7, [x7]
     cmp w7, w4
-    cset x7, ne
+    cset w7, ne
     uxtb w7, w7
     movz x8, #2
     madd x7, x7, x8, xzr
@@ -121,7 +126,7 @@ mdst:
     add x7, x0, x2
     ldr w7, [x7]
     cmp w7, w4
-    cset x7, lt
+    cset w7, lt
     uxtb w7, w7
     madd x1, x7, x1, xzr
     add x1, x5, x1
@@ -129,40 +134,42 @@ mdst:
     add x5, x5, x0
     ldr w5, [x5]
     cmp w5, w4
-    cset x5, le
+    cset w5, le
     uxtb w5, w5
     madd x2, x5, x2, xzr
     add x1, x1, x2
     add x0, x0, x3
     ldr w0, [x0]
     cmp w0, w4
-    cset x0, gt
+    cset w0, gt
     uxtb w0, w0
     madd x0, x0, x3, xzr
     add x0, x1, x0
     movz x1, #32
     madd x1, x6, x1, xzr
     add x0, x0, x1
+    add sp, sp, #16
     ret
 udst:
+    sub sp, sp, #16
     movz x1, #4
     movz x2, #8
     movz x3, #16
     movz x4, #7
     ldr w5, [x0]
     cmp w5, w4
-    cset x5, eq
+    cset w5, eq
     uxtb w5, w5
     movz x6, #20
     add x6, x6, x0
     ldr w6, [x6]
     cmp w6, w4
-    cset x6, cs
+    cset w6, cs
     uxtb w6, w6
     add x7, x0, x1
     ldr w7, [x7]
     cmp w7, w4
-    cset x7, ne
+    cset w7, ne
     uxtb w7, w7
     movz x8, #2
     madd x7, x7, x8, xzr
@@ -170,7 +177,7 @@ udst:
     add x7, x0, x2
     ldr w7, [x7]
     cmp w7, w4
-    cset x7, cc
+    cset w7, cc
     uxtb w7, w7
     madd x1, x7, x1, xzr
     add x1, x5, x1
@@ -178,20 +185,21 @@ udst:
     add x5, x5, x0
     ldr w5, [x5]
     cmp w5, w4
-    cset x5, ls
+    cset w5, ls
     uxtb w5, w5
     madd x2, x5, x2, xzr
     add x1, x1, x2
     add x0, x0, x3
     ldr w0, [x0]
     cmp w0, w4
-    cset x0, hi
+    cset w0, hi
     uxtb w0, w0
     madd x0, x0, x3, xzr
     add x0, x1, x0
     movz x1, #32
     madd x1, x6, x1, xzr
     add x0, x0, x1
+    add sp, sp, #16
     ret
 main:
     sub sp, sp, #272
@@ -214,15 +222,15 @@ main:
     str x0, [x1]
     movn x0, #8
     add x1, sp, #120
-    bl 0xfffffd08
+    bl 0xfffffce8
     str x0, [xzr, #48]
     movn x0, #4
     add x1, sp, #120
-    bl 0xfffffd08
+    bl 0xfffffce8
     str x0, [xzr, #56]
     movz x0, #3
     add x1, sp, #120
-    bl 0xfffffd08
+    bl 0xfffffce8
     str x0, [xzr, #64]
     movz x21, #23040
     movk x21, #610, lsl #16
@@ -238,17 +246,17 @@ main:
     str x21, [x0]
     movz x0, #5
     add x1, sp, #144
-    bl 0xfffffdc4
+    bl 0xfffffdac
     str x0, [xzr, #72]
     movz x0, #23040
     movk x0, #610, lsl #16
     add x1, sp, #144
-    bl 0xfffffdc4
+    bl 0xfffffdac
     str x0, [xzr, #80]
     movz x0, #23041
     movk x0, #610, lsl #16
     add x1, sp, #144
-    bl 0xfffffdc4
+    bl 0xfffffdac
     str x0, [xzr, #88]
     add x0, sp, #168
     movz x22, #3
@@ -258,7 +266,7 @@ main:
     str x22, [x1]
     add x1, x0, x20
     str x22, [x1]
-    bl 0xfffffe80
+    bl 0xfffffe70
     str x0, [xzr, #96]
     add x0, sp, #192
     movz x1, #9
@@ -268,7 +276,7 @@ main:
     str x1, [x2]
     add x2, x0, x20
     str x1, [x2]
-    bl 0xfffffe80
+    bl 0xfffffe70
     str x0, [xzr, #104]
     add x0, sp, #216
     str x22, [x0]
@@ -276,7 +284,7 @@ main:
     str x22, [x1]
     add x1, x0, x20
     str x22, [x1]
-    bl 0xffffff40
+    bl 0xffffff38
     str x0, [xzr, #112]
     add x0, sp, #240
     str x21, [x0]
@@ -284,7 +292,7 @@ main:
     str x21, [x1]
     add x1, x0, x20
     str x21, [x1]
-    bl 0xffffff40
+    bl 0xffffff38
     ldr x1, [xzr, #48]
     ldr x2, [xzr, #56]
     add x1, x1, x2
@@ -317,18 +325,18 @@ msrc:
     movz x2, #16
     ldr w3, [x1]
     cmp w3, w0
-    cset x3, eq
+    cset w3, eq
     uxtb w7, w3
     add x3, x1, x8
     ldr w3, [x3]
     cmp w3, w0
-    cset x3, ne
+    cset w3, ne
     uxtb w6, w3
     movz x3, #20
     add x3, x3, x1
     ldr w3, [x3]
     cmp w0, w3
-    cset x3, ge
+    cset w3, ge
     uxtb w3, w3
     movz x5, #2
     madd x5, x6, x5, xzr
@@ -336,7 +344,7 @@ msrc:
     add x5, x1, x4
     ldr w5, [x5]
     cmp w0, w5
-    cset x5, lt
+    cset w5, lt
     uxtb w5, w5
     madd x5, x5, x8, xzr
     add x6, x6, x5
@@ -344,14 +352,14 @@ msrc:
     add x5, x5, x1
     ldr w5, [x5]
     cmp w0, w5
-    cset x5, le
+    cset w5, le
     uxtb w5, w5
     madd x4, x5, x4, xzr
     add x4, x6, x4
     add x1, x1, x2
     ldr w1, [x1]
     cmp w0, w1
-    cset x0, gt
+    cset w0, gt
     uxtb w0, w0
     madd x0, x0, x2, xzr
     add x1, x4, x0
@@ -365,18 +373,18 @@ usrc:
     movz x2, #16
     ldr w3, [x1]
     cmp w3, w0
-    cset x3, eq
+    cset w3, eq
     uxtb w7, w3
     add x3, x1, x8
     ldr w3, [x3]
     cmp w3, w0
-    cset x3, ne
+    cset w3, ne
     uxtb w6, w3
     movz x3, #20
     add x3, x3, x1
     ldr w3, [x3]
     cmp w0, w3
-    cset x3, cs
+    cset w3, cs
     uxtb w3, w3
     movz x5, #2
     madd x5, x6, x5, xzr
@@ -384,7 +392,7 @@ usrc:
     add x5, x1, x4
     ldr w5, [x5]
     cmp w0, w5
-    cset x5, cc
+    cset w5, cc
     uxtb w5, w5
     madd x5, x5, x8, xzr
     add x6, x6, x5
@@ -392,14 +400,14 @@ usrc:
     add x5, x5, x1
     ldr w5, [x5]
     cmp w0, w5
-    cset x5, ls
+    cset w5, ls
     uxtb w5, w5
     madd x4, x5, x4, xzr
     add x4, x6, x4
     add x1, x1, x2
     ldr w1, [x1]
     cmp w0, w1
-    cset x0, hi
+    cset w0, hi
     uxtb w0, w0
     madd x0, x0, x2, xzr
     add x1, x4, x0
@@ -414,18 +422,18 @@ mdst:
     movz x3, #7
     ldr w1, [x0]
     cmp w1, w3
-    cset x1, eq
+    cset w1, eq
     uxtb w7, w1
     movz x1, #20
     add x1, x1, x0
     ldr w1, [x1]
     cmp w1, w3
-    cset x1, ge
+    cset w1, ge
     uxtb w1, w1
     add x5, x0, x8
     ldr w5, [x5]
     cmp w5, w3
-    cset x5, ne
+    cset w5, ne
     uxtb w6, w5
     movz x5, #2
     madd x5, x6, x5, xzr
@@ -433,7 +441,7 @@ mdst:
     add x5, x0, x4
     ldr w5, [x5]
     cmp w5, w3
-    cset x5, lt
+    cset w5, lt
     uxtb w5, w5
     madd x5, x5, x8, xzr
     add x6, x6, x5
@@ -441,14 +449,14 @@ mdst:
     add x5, x5, x0
     ldr w5, [x5]
     cmp w5, w3
-    cset x5, le
+    cset w5, le
     uxtb w5, w5
     madd x4, x5, x4, xzr
     add x4, x6, x4
     add x0, x0, x2
     ldr w0, [x0]
     cmp w0, w3
-    cset x0, gt
+    cset w0, gt
     uxtb w0, w0
     madd x0, x0, x2, xzr
     add x2, x4, x0
@@ -463,18 +471,18 @@ udst:
     movz x3, #7
     ldr w1, [x0]
     cmp w1, w3
-    cset x1, eq
+    cset w1, eq
     uxtb w7, w1
     movz x1, #20
     add x1, x1, x0
     ldr w1, [x1]
     cmp w1, w3
-    cset x1, cs
+    cset w1, cs
     uxtb w1, w1
     add x5, x0, x8
     ldr w5, [x5]
     cmp w5, w3
-    cset x5, ne
+    cset w5, ne
     uxtb w6, w5
     movz x5, #2
     madd x5, x6, x5, xzr
@@ -482,7 +490,7 @@ udst:
     add x5, x0, x4
     ldr w5, [x5]
     cmp w5, w3
-    cset x5, cc
+    cset w5, cc
     uxtb w5, w5
     madd x5, x5, x8, xzr
     add x6, x6, x5
@@ -490,14 +498,14 @@ udst:
     add x5, x5, x0
     ldr w5, [x5]
     cmp w5, w3
-    cset x5, ls
+    cset w5, ls
     uxtb w5, w5
     madd x4, x5, x4, xzr
     add x4, x6, x4
     add x0, x0, x2
     ldr w0, [x0]
     cmp w0, w3
-    cset x0, hi
+    cset w0, hi
     uxtb w0, w0
     madd x0, x0, x2, xzr
     add x2, x4, x0
@@ -628,23 +636,24 @@ main:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 msrc:
+    sub sp, sp, #16
     movz x2, #4
     movz x3, #8
     movz x4, #16
     ldr w5, [x1]
     cmp w5, w0
-    cset x5, eq
+    cset w5, eq
     uxtb w5, w5
     add x6, x1, x2
     ldr w6, [x6]
     cmp w6, w0
-    cset x6, ne
+    cset w6, ne
     uxtb w6, w6
     movz x7, #20
     add x7, x7, x1
     ldr w7, [x7]
     cmp w0, w7
-    cset x7, ge
+    cset w7, ge
     uxtb w7, w7
     movz x8, #2
     madd x6, x6, x8, xzr
@@ -652,7 +661,7 @@ msrc:
     add x6, x1, x3
     ldr w6, [x6]
     cmp w0, w6
-    cset x6, lt
+    cset w6, lt
     uxtb w6, w6
     madd x2, x6, x2, xzr
     add x2, x5, x2
@@ -660,39 +669,41 @@ msrc:
     add x5, x5, x1
     ldr w5, [x5]
     cmp w0, w5
-    cset x5, le
+    cset w5, le
     uxtb w5, w5
     madd x3, x5, x3, xzr
     add x2, x2, x3
     add x1, x1, x4
     ldr w1, [x1]
     cmp w0, w1
-    cset x0, gt
+    cset w0, gt
     uxtb w0, w0
     madd x0, x0, x4, xzr
     add x0, x2, x0
     movz x1, #32
     madd x1, x7, x1, xzr
     add x0, x0, x1
+    add sp, sp, #16
     ret
 usrc:
+    sub sp, sp, #16
     movz x2, #4
     movz x3, #8
     movz x4, #16
     ldr w5, [x1]
     cmp w5, w0
-    cset x5, eq
+    cset w5, eq
     uxtb w5, w5
     add x6, x1, x2
     ldr w6, [x6]
     cmp w6, w0
-    cset x6, ne
+    cset w6, ne
     uxtb w6, w6
     movz x7, #20
     add x7, x7, x1
     ldr w7, [x7]
     cmp w0, w7
-    cset x7, cs
+    cset w7, cs
     uxtb w7, w7
     movz x8, #2
     madd x6, x6, x8, xzr
@@ -700,7 +711,7 @@ usrc:
     add x6, x1, x3
     ldr w6, [x6]
     cmp w0, w6
-    cset x6, cc
+    cset w6, cc
     uxtb w6, w6
     madd x2, x6, x2, xzr
     add x2, x5, x2
@@ -708,40 +719,42 @@ usrc:
     add x5, x5, x1
     ldr w5, [x5]
     cmp w0, w5
-    cset x5, ls
+    cset w5, ls
     uxtb w5, w5
     madd x3, x5, x3, xzr
     add x2, x2, x3
     add x1, x1, x4
     ldr w1, [x1]
     cmp w0, w1
-    cset x0, hi
+    cset w0, hi
     uxtb w0, w0
     madd x0, x0, x4, xzr
     add x0, x2, x0
     movz x1, #32
     madd x1, x7, x1, xzr
     add x0, x0, x1
+    add sp, sp, #16
     ret
 mdst:
+    sub sp, sp, #16
     movz x1, #4
     movz x2, #8
     movz x3, #16
     movz x4, #7
     ldr w5, [x0]
     cmp w5, w4
-    cset x5, eq
+    cset w5, eq
     uxtb w5, w5
     movz x6, #20
     add x6, x6, x0
     ldr w6, [x6]
     cmp w6, w4
-    cset x6, ge
+    cset w6, ge
     uxtb w6, w6
     add x7, x0, x1
     ldr w7, [x7]
     cmp w7, w4
-    cset x7, ne
+    cset w7, ne
     uxtb w7, w7
     movz x8, #2
     madd x7, x7, x8, xzr
@@ -749,7 +762,7 @@ mdst:
     add x7, x0, x2
     ldr w7, [x7]
     cmp w7, w4
-    cset x7, lt
+    cset w7, lt
     uxtb w7, w7
     madd x1, x7, x1, xzr
     add x1, x5, x1
@@ -757,40 +770,42 @@ mdst:
     add x5, x5, x0
     ldr w5, [x5]
     cmp w5, w4
-    cset x5, le
+    cset w5, le
     uxtb w5, w5
     madd x2, x5, x2, xzr
     add x1, x1, x2
     add x0, x0, x3
     ldr w0, [x0]
     cmp w0, w4
-    cset x0, gt
+    cset w0, gt
     uxtb w0, w0
     madd x0, x0, x3, xzr
     add x0, x1, x0
     movz x1, #32
     madd x1, x6, x1, xzr
     add x0, x0, x1
+    add sp, sp, #16
     ret
 udst:
+    sub sp, sp, #16
     movz x1, #4
     movz x2, #8
     movz x3, #16
     movz x4, #7
     ldr w5, [x0]
     cmp w5, w4
-    cset x5, eq
+    cset w5, eq
     uxtb w5, w5
     movz x6, #20
     add x6, x6, x0
     ldr w6, [x6]
     cmp w6, w4
-    cset x6, cs
+    cset w6, cs
     uxtb w6, w6
     add x7, x0, x1
     ldr w7, [x7]
     cmp w7, w4
-    cset x7, ne
+    cset w7, ne
     uxtb w7, w7
     movz x8, #2
     madd x7, x7, x8, xzr
@@ -798,7 +813,7 @@ udst:
     add x7, x0, x2
     ldr w7, [x7]
     cmp w7, w4
-    cset x7, cc
+    cset w7, cc
     uxtb w7, w7
     madd x1, x7, x1, xzr
     add x1, x5, x1
@@ -806,20 +821,21 @@ udst:
     add x5, x5, x0
     ldr w5, [x5]
     cmp w5, w4
-    cset x5, ls
+    cset w5, ls
     uxtb w5, w5
     madd x2, x5, x2, xzr
     add x1, x1, x2
     add x0, x0, x3
     ldr w0, [x0]
     cmp w0, w4
-    cset x0, hi
+    cset w0, hi
     uxtb w0, w0
     madd x0, x0, x3, xzr
     add x0, x1, x0
     movz x1, #32
     madd x1, x6, x1, xzr
     add x0, x0, x1
+    add sp, sp, #16
     ret
 main:
     sub sp, sp, #272
@@ -842,15 +858,15 @@ main:
     str x0, [x1]
     movn x0, #8
     add x1, sp, #120
-    bl 0xfffffd08
+    bl 0xfffffce8
     str x0, [xzr, #48]
     movn x0, #4
     add x1, sp, #120
-    bl 0xfffffd08
+    bl 0xfffffce8
     str x0, [xzr, #56]
     movz x0, #3
     add x1, sp, #120
-    bl 0xfffffd08
+    bl 0xfffffce8
     str x0, [xzr, #64]
     movz x21, #23040
     movk x21, #610, lsl #16
@@ -866,17 +882,17 @@ main:
     str x21, [x0]
     movz x0, #5
     add x1, sp, #144
-    bl 0xfffffdc4
+    bl 0xfffffdac
     str x0, [xzr, #72]
     movz x0, #23040
     movk x0, #610, lsl #16
     add x1, sp, #144
-    bl 0xfffffdc4
+    bl 0xfffffdac
     str x0, [xzr, #80]
     movz x0, #23041
     movk x0, #610, lsl #16
     add x1, sp, #144
-    bl 0xfffffdc4
+    bl 0xfffffdac
     str x0, [xzr, #88]
     add x0, sp, #168
     movz x22, #3
@@ -886,7 +902,7 @@ main:
     str x22, [x1]
     add x1, x0, x20
     str x22, [x1]
-    bl 0xfffffe80
+    bl 0xfffffe70
     str x0, [xzr, #96]
     add x0, sp, #192
     movz x1, #9
@@ -896,7 +912,7 @@ main:
     str x1, [x2]
     add x2, x0, x20
     str x1, [x2]
-    bl 0xfffffe80
+    bl 0xfffffe70
     str x0, [xzr, #104]
     add x0, sp, #216
     str x22, [x0]
@@ -904,7 +920,7 @@ main:
     str x22, [x1]
     add x1, x0, x20
     str x22, [x1]
-    bl 0xffffff40
+    bl 0xffffff38
     str x0, [xzr, #112]
     add x0, sp, #240
     str x21, [x0]
@@ -912,7 +928,7 @@ main:
     str x21, [x1]
     add x1, x0, x20
     str x21, [x1]
-    bl 0xffffff40
+    bl 0xffffff38
     ldr x1, [xzr, #48]
     ldr x2, [xzr, #56]
     add x1, x1, x2
@@ -945,18 +961,18 @@ msrc:
     movz x2, #16
     ldr w3, [x1]
     cmp w3, w0
-    cset x3, eq
+    cset w3, eq
     uxtb w7, w3
     add x3, x1, x8
     ldr w3, [x3]
     cmp w3, w0
-    cset x3, ne
+    cset w3, ne
     uxtb w6, w3
     movz x3, #20
     add x3, x3, x1
     ldr w3, [x3]
     cmp w0, w3
-    cset x3, ge
+    cset w3, ge
     uxtb w3, w3
     movz x5, #2
     madd x5, x6, x5, xzr
@@ -964,7 +980,7 @@ msrc:
     add x5, x1, x4
     ldr w5, [x5]
     cmp w0, w5
-    cset x5, lt
+    cset w5, lt
     uxtb w5, w5
     madd x5, x5, x8, xzr
     add x6, x6, x5
@@ -972,14 +988,14 @@ msrc:
     add x5, x5, x1
     ldr w5, [x5]
     cmp w0, w5
-    cset x5, le
+    cset w5, le
     uxtb w5, w5
     madd x4, x5, x4, xzr
     add x4, x6, x4
     add x1, x1, x2
     ldr w1, [x1]
     cmp w0, w1
-    cset x0, gt
+    cset w0, gt
     uxtb w0, w0
     madd x0, x0, x2, xzr
     add x1, x4, x0
@@ -993,18 +1009,18 @@ usrc:
     movz x2, #16
     ldr w3, [x1]
     cmp w3, w0
-    cset x3, eq
+    cset w3, eq
     uxtb w7, w3
     add x3, x1, x8
     ldr w3, [x3]
     cmp w3, w0
-    cset x3, ne
+    cset w3, ne
     uxtb w6, w3
     movz x3, #20
     add x3, x3, x1
     ldr w3, [x3]
     cmp w0, w3
-    cset x3, cs
+    cset w3, cs
     uxtb w3, w3
     movz x5, #2
     madd x5, x6, x5, xzr
@@ -1012,7 +1028,7 @@ usrc:
     add x5, x1, x4
     ldr w5, [x5]
     cmp w0, w5
-    cset x5, cc
+    cset w5, cc
     uxtb w5, w5
     madd x5, x5, x8, xzr
     add x6, x6, x5
@@ -1020,14 +1036,14 @@ usrc:
     add x5, x5, x1
     ldr w5, [x5]
     cmp w0, w5
-    cset x5, ls
+    cset w5, ls
     uxtb w5, w5
     madd x4, x5, x4, xzr
     add x4, x6, x4
     add x1, x1, x2
     ldr w1, [x1]
     cmp w0, w1
-    cset x0, hi
+    cset w0, hi
     uxtb w0, w0
     madd x0, x0, x2, xzr
     add x1, x4, x0
@@ -1042,18 +1058,18 @@ mdst:
     movz x3, #7
     ldr w1, [x0]
     cmp w1, w3
-    cset x1, eq
+    cset w1, eq
     uxtb w7, w1
     movz x1, #20
     add x1, x1, x0
     ldr w1, [x1]
     cmp w1, w3
-    cset x1, ge
+    cset w1, ge
     uxtb w1, w1
     add x5, x0, x8
     ldr w5, [x5]
     cmp w5, w3
-    cset x5, ne
+    cset w5, ne
     uxtb w6, w5
     movz x5, #2
     madd x5, x6, x5, xzr
@@ -1061,7 +1077,7 @@ mdst:
     add x5, x0, x4
     ldr w5, [x5]
     cmp w5, w3
-    cset x5, lt
+    cset w5, lt
     uxtb w5, w5
     madd x5, x5, x8, xzr
     add x6, x6, x5
@@ -1069,14 +1085,14 @@ mdst:
     add x5, x5, x0
     ldr w5, [x5]
     cmp w5, w3
-    cset x5, le
+    cset w5, le
     uxtb w5, w5
     madd x4, x5, x4, xzr
     add x4, x6, x4
     add x0, x0, x2
     ldr w0, [x0]
     cmp w0, w3
-    cset x0, gt
+    cset w0, gt
     uxtb w0, w0
     madd x0, x0, x2, xzr
     add x2, x4, x0
@@ -1091,18 +1107,18 @@ udst:
     movz x3, #7
     ldr w1, [x0]
     cmp w1, w3
-    cset x1, eq
+    cset w1, eq
     uxtb w7, w1
     movz x1, #20
     add x1, x1, x0
     ldr w1, [x1]
     cmp w1, w3
-    cset x1, cs
+    cset w1, cs
     uxtb w1, w1
     add x5, x0, x8
     ldr w5, [x5]
     cmp w5, w3
-    cset x5, ne
+    cset w5, ne
     uxtb w6, w5
     movz x5, #2
     madd x5, x6, x5, xzr
@@ -1110,7 +1126,7 @@ udst:
     add x5, x0, x4
     ldr w5, [x5]
     cmp w5, w3
-    cset x5, cc
+    cset w5, cc
     uxtb w5, w5
     madd x5, x5, x8, xzr
     add x6, x6, x5
@@ -1118,14 +1134,14 @@ udst:
     add x5, x5, x0
     ldr w5, [x5]
     cmp w5, w3
-    cset x5, ls
+    cset w5, ls
     uxtb w5, w5
     madd x4, x5, x4, xzr
     add x4, x6, x4
     add x0, x0, x2
     ldr w0, [x0]
     cmp w0, w3
-    cset x0, hi
+    cset w0, hi
     uxtb w0, w0
     madd x0, x0, x2, xzr
     add x2, x4, x0
@@ -1261,18 +1277,18 @@ msrc:
     movz x2, #16
     ldr w3, [x1]
     cmp w3, w0
-    cset x3, eq
+    cset w3, eq
     uxtb w7, w3
     add x3, x1, x8
     ldr w3, [x3]
     cmp w3, w0
-    cset x3, ne
+    cset w3, ne
     uxtb w6, w3
     movz x3, #20
     add x3, x3, x1
     ldr w3, [x3]
     cmp w0, w3
-    cset x3, ge
+    cset w3, ge
     uxtb w3, w3
     movz x5, #2
     madd x5, x6, x5, xzr
@@ -1280,7 +1296,7 @@ msrc:
     add x5, x1, x4
     ldr w5, [x5]
     cmp w0, w5
-    cset x5, lt
+    cset w5, lt
     uxtb w5, w5
     madd x5, x5, x8, xzr
     add x6, x6, x5
@@ -1288,14 +1304,14 @@ msrc:
     add x5, x5, x1
     ldr w5, [x5]
     cmp w0, w5
-    cset x5, le
+    cset w5, le
     uxtb w5, w5
     madd x4, x5, x4, xzr
     add x4, x6, x4
     add x1, x1, x2
     ldr w1, [x1]
     cmp w0, w1
-    cset x0, gt
+    cset w0, gt
     uxtb w0, w0
     madd x0, x0, x2, xzr
     add x1, x4, x0
@@ -1309,18 +1325,18 @@ usrc:
     movz x2, #16
     ldr w3, [x1]
     cmp w3, w0
-    cset x3, eq
+    cset w3, eq
     uxtb w7, w3
     add x3, x1, x8
     ldr w3, [x3]
     cmp w3, w0
-    cset x3, ne
+    cset w3, ne
     uxtb w6, w3
     movz x3, #20
     add x3, x3, x1
     ldr w3, [x3]
     cmp w0, w3
-    cset x3, cs
+    cset w3, cs
     uxtb w3, w3
     movz x5, #2
     madd x5, x6, x5, xzr
@@ -1328,7 +1344,7 @@ usrc:
     add x5, x1, x4
     ldr w5, [x5]
     cmp w0, w5
-    cset x5, cc
+    cset w5, cc
     uxtb w5, w5
     madd x5, x5, x8, xzr
     add x6, x6, x5
@@ -1336,14 +1352,14 @@ usrc:
     add x5, x5, x1
     ldr w5, [x5]
     cmp w0, w5
-    cset x5, ls
+    cset w5, ls
     uxtb w5, w5
     madd x4, x5, x4, xzr
     add x4, x6, x4
     add x1, x1, x2
     ldr w1, [x1]
     cmp w0, w1
-    cset x0, hi
+    cset w0, hi
     uxtb w0, w0
     madd x0, x0, x2, xzr
     add x1, x4, x0
@@ -1358,18 +1374,18 @@ mdst:
     movz x3, #7
     ldr w1, [x0]
     cmp w1, w3
-    cset x1, eq
+    cset w1, eq
     uxtb w7, w1
     movz x1, #20
     add x1, x1, x0
     ldr w1, [x1]
     cmp w1, w3
-    cset x1, ge
+    cset w1, ge
     uxtb w1, w1
     add x5, x0, x8
     ldr w5, [x5]
     cmp w5, w3
-    cset x5, ne
+    cset w5, ne
     uxtb w6, w5
     movz x5, #2
     madd x5, x6, x5, xzr
@@ -1377,7 +1393,7 @@ mdst:
     add x5, x0, x4
     ldr w5, [x5]
     cmp w5, w3
-    cset x5, lt
+    cset w5, lt
     uxtb w5, w5
     madd x5, x5, x8, xzr
     add x6, x6, x5
@@ -1385,14 +1401,14 @@ mdst:
     add x5, x5, x0
     ldr w5, [x5]
     cmp w5, w3
-    cset x5, le
+    cset w5, le
     uxtb w5, w5
     madd x4, x5, x4, xzr
     add x4, x6, x4
     add x0, x0, x2
     ldr w0, [x0]
     cmp w0, w3
-    cset x0, gt
+    cset w0, gt
     uxtb w0, w0
     madd x0, x0, x2, xzr
     add x2, x4, x0
@@ -1407,18 +1423,18 @@ udst:
     movz x3, #7
     ldr w1, [x0]
     cmp w1, w3
-    cset x1, eq
+    cset w1, eq
     uxtb w7, w1
     movz x1, #20
     add x1, x1, x0
     ldr w1, [x1]
     cmp w1, w3
-    cset x1, cs
+    cset w1, cs
     uxtb w1, w1
     add x5, x0, x8
     ldr w5, [x5]
     cmp w5, w3
-    cset x5, ne
+    cset w5, ne
     uxtb w6, w5
     movz x5, #2
     madd x5, x6, x5, xzr
@@ -1426,7 +1442,7 @@ udst:
     add x5, x0, x4
     ldr w5, [x5]
     cmp w5, w3
-    cset x5, cc
+    cset w5, cc
     uxtb w5, w5
     madd x5, x5, x8, xzr
     add x6, x6, x5
@@ -1434,14 +1450,14 @@ udst:
     add x5, x5, x0
     ldr w5, [x5]
     cmp w5, w3
-    cset x5, ls
+    cset w5, ls
     uxtb w5, w5
     madd x4, x5, x4, xzr
     add x4, x6, x4
     add x0, x0, x2
     ldr w0, [x0]
     cmp w0, w3
-    cset x0, hi
+    cset w0, hi
     uxtb w0, w0
     madd x0, x0, x2, xzr
     add x2, x4, x0

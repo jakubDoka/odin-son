@@ -3,15 +3,17 @@ finite:
     mov rax, 1
     ret
 main:
-    sub rsp, 0x18
-    movsd.q xmm0, [rip + 0xea8]
+    push rbx
+    push rbp
+    sub rsp, 8
+    movsd.q xmm0, [rip + 0xf2c]
     call run f64
-    mov.q [rsp], rax
-    movsd.q xmm0, [rip + 0xe96]
+    mov rbx, rax
+    movsd.q xmm0, [rip + 0xf1b]
     cvtsd2ss xmm0, xmm0
     call run f32
-    mov.q [rsp + 0x8], rax
-    movsd.q xmm0, [rip + 0xe7e]
+    mov rbp, rax
+    movsd.q xmm0, [rip + 0xf05]
     pxor xmm1, xmm1
     ucomisd xmm0, xmm1
     sete dil
@@ -20,126 +22,124 @@ main:
 2:
     movzx edi, dil
     call finite
-    mov.q rcx, [rsp]
-    mov.q rdx, [rsp + 0x8]
-    add rcx, rdx
-    mov rcx, rcx
+    mov rcx, rbx
+    add rcx, rbp
     add rcx, rax
-    mov.q [rsp], rcx
+    mov rax, rcx
     mov rcx, 0xfb
-    mov.q rax, [rsp]
     cqo
     idiv rcx
     mov rax, rdx
-    add rsp, 0x18
+    add rsp, 8
+    pop rbp
+    pop rbx
     ret
 run f64:
-    sub rsp, 0x48
-    movsd.q [rsp + 0x18], xmm0
-    movsd.q xmm0, [rip + 0xe28]
-    movsd.q [rsp + 0x28], xmm0
-    movsd.q xmm1, [rsp + 0x28]
-    movsd.q xmm0, [rsp + 0x28]
+    push rbx
+    push rbp
+    push r12
+    sub rsp, 0x20
+    movsd.q [rsp], xmm0
+    movsd.q xmm0, [rip + 0xeb4]
+    movsd.q [rsp + 0x10], xmm0
+    movsd.q xmm1, [rsp + 0x10]
+    movsd.q xmm0, [rsp + 0x10]
     call check f64
-    mov.q [rsp], rax
-    movsd.q xmm0, [rsp + 0x18]
-    movsd.q xmm1, [rsp + 0x18]
+    mov rbx, rax
+    movsd.q xmm0, [rsp]
+    movsd.q xmm1, [rsp]
     divsd xmm0, xmm1
-    movsd.q [rsp + 0x38], xmm0
-    movsd.q xmm1, [rsp + 0x28]
-    movsd.q xmm0, [rsp + 0x38]
+    movsd.q xmm1, [rsp + 0x10]
     call check f64
-    mov.q [rsp + 0x8], rax
-    movsd.q xmm0, [rsp + 0x28]
-    movsd.q xmm1, [rsp + 0x18]
+    mov rbp, rax
+    movsd.q xmm0, [rsp + 0x10]
+    movsd.q xmm1, [rsp]
     divsd xmm0, xmm1
-    movsd.q [rsp + 0x18], xmm0
+    movsd.q [rsp], xmm0
     pxor xmm1, xmm1
-    movsd.q xmm0, [rsp + 0x18]
+    movsd.q xmm0, [rsp]
     subsd xmm1, xmm0
-    movsd.q xmm0, [rsp + 0x18]
+    movsd.q xmm0, [rsp]
     call check f64
-    mov.q [rsp + 0x10], rax
-    movsd.q xmm1, [rsp + 0x28]
-    movsd.q xmm0, [rsp + 0x18]
+    mov r12, rax
+    movsd.q xmm1, [rsp + 0x10]
+    movsd.q xmm0, [rsp]
     call check f64
-    mov.q rcx, [rsp + 0x8]
-    imul rcx, rcx, 3
-    mov.q rdx, [rsp]
+    imul rcx, rbp, 3
+    mov rdx, rbx
     add rdx, rcx
-    mov.q [rsp], rdx
-    mov.q rcx, [rsp + 0x10]
-    imul rcx, rcx, 5
-    mov.q rdx, [rsp]
-    add rdx, rcx
-    mov.q [rsp], rdx
+    mov rcx, rdx
+    imul rdx, r12, 5
+    add rcx, rdx
     imul rax, rax, 7
-    mov.q rcx, [rsp]
     add rcx, rax
     mov rax, rcx
-    add rsp, 0x48
+    add rsp, 0x20
+    pop r12
+    pop rbp
+    pop rbx
     ret
 run f32:
-    sub rsp, 0x48
-    movss.d [rsp + 0x18], xmm0
-    movss.d xmm0, [rip + 0xd39]
-    movss.d [rsp + 0x28], xmm0
-    movss.d xmm1, [rsp + 0x28]
-    movss.d xmm0, [rsp + 0x28]
+    push rbx
+    push rbp
+    push r12
+    sub rsp, 0x20
+    movss.d [rsp], xmm0
+    movss.d xmm0, [rip + 0xdec]
+    movss.d [rsp + 0x10], xmm0
+    movss.d xmm1, [rsp + 0x10]
+    movss.d xmm0, [rsp + 0x10]
     call check f32
-    mov.q [rsp], rax
-    movss.d xmm0, [rsp + 0x18]
-    movss.d xmm1, [rsp + 0x18]
+    mov rbx, rax
+    movss.d xmm0, [rsp]
+    movss.d xmm1, [rsp]
     divss xmm0, xmm1
-    movss.d [rsp + 0x38], xmm0
-    movss.d xmm1, [rsp + 0x28]
-    movss.d xmm0, [rsp + 0x38]
+    movss.d xmm1, [rsp + 0x10]
     call check f32
-    mov.q [rsp + 0x8], rax
-    movss.d xmm0, [rsp + 0x28]
-    movss.d xmm1, [rsp + 0x18]
+    mov rbp, rax
+    movss.d xmm0, [rsp + 0x10]
+    movss.d xmm1, [rsp]
     divss xmm0, xmm1
-    movss.d [rsp + 0x18], xmm0
+    movss.d [rsp], xmm0
     pxor xmm1, xmm1
-    movss.d xmm0, [rsp + 0x18]
+    movss.d xmm0, [rsp]
     subss xmm1, xmm0
-    movss.d xmm0, [rsp + 0x18]
+    movss.d xmm0, [rsp]
     call check f32
-    mov.q [rsp + 0x10], rax
-    movss.d xmm1, [rsp + 0x28]
-    movss.d xmm0, [rsp + 0x18]
+    mov r12, rax
+    movss.d xmm1, [rsp + 0x10]
+    movss.d xmm0, [rsp]
     call check f32
-    mov.q rcx, [rsp + 0x8]
-    imul rcx, rcx, 3
-    mov.q rdx, [rsp]
+    imul rcx, rbp, 3
+    mov rdx, rbx
     add rdx, rcx
-    mov.q [rsp], rdx
-    mov.q rcx, [rsp + 0x10]
-    imul rcx, rcx, 5
-    mov.q rdx, [rsp]
-    add rdx, rcx
-    mov.q [rsp], rdx
+    mov rcx, rdx
+    imul rdx, r12, 5
+    add rcx, rdx
     imul rax, rax, 7
-    mov.q rcx, [rsp]
     add rcx, rax
     mov rax, rcx
-    add rsp, 0x48
+    add rsp, 0x20
+    pop r12
+    pop rbp
+    pop rbx
     ret
 check f64:
     mov rax, 1
     addsd xmm0, xmm1
     ucomisd xmm0, xmm0
-    mov.q [rsp - 0x8], 0
-    sete.b [rsp - 0x8]
+    sete cl
     jnp 6
-    mov.b [rsp - 0x8], 0
+    mov cl, 0
 6:
-    xor ecx, ecx
-    cmp.b [rsp - 0x8], 0
-    cmovne rcx, rax
-    mov rax, rcx
+    movzx ecx, cl
+    xor edx, edx
+    test cl, cl
+    cmovne rdx, rax
+    mov rax, rdx
     add rax, 2
     ucomisd xmm0, xmm0
+    mov rcx, rdx
     cmovne rcx, rax
     cmovp rcx, rax
     mov rdx, rcx
@@ -152,17 +152,18 @@ check f32:
     mov rax, 1
     addss xmm0, xmm1
     ucomiss xmm0, xmm0
-    mov.q [rsp - 0x8], 0
-    sete.b [rsp - 0x8]
+    sete cl
     jnp 8
-    mov.b [rsp - 0x8], 0
+    mov cl, 0
 8:
-    xor ecx, ecx
-    cmp.b [rsp - 0x8], 0
-    cmovne rcx, rax
-    mov rax, rcx
+    movzx ecx, cl
+    xor edx, edx
+    test cl, cl
+    cmovne rdx, rax
+    mov rax, rdx
     add rax, 2
     ucomiss xmm0, xmm0
+    mov rcx, rdx
     cmovne rcx, rax
     cmovp rcx, rax
     mov rdx, rcx
@@ -343,15 +344,17 @@ finite:
     mov rax, 1
     ret
 main:
-    sub rsp, 0x18
-    movsd.q xmm0, [rip + 0xea8]
+    push rbx
+    push rbp
+    sub rsp, 8
+    movsd.q xmm0, [rip + 0xf2c]
     call run f64
-    mov.q [rsp], rax
-    movsd.q xmm0, [rip + 0xe96]
+    mov rbx, rax
+    movsd.q xmm0, [rip + 0xf1b]
     cvtsd2ss xmm0, xmm0
     call run f32
-    mov.q [rsp + 0x8], rax
-    movsd.q xmm0, [rip + 0xe7e]
+    mov rbp, rax
+    movsd.q xmm0, [rip + 0xf05]
     pxor xmm1, xmm1
     ucomisd xmm0, xmm1
     sete dil
@@ -360,126 +363,124 @@ main:
 2:
     movzx edi, dil
     call finite
-    mov.q rcx, [rsp]
-    mov.q rdx, [rsp + 0x8]
-    add rcx, rdx
-    mov rcx, rcx
+    mov rcx, rbx
+    add rcx, rbp
     add rcx, rax
-    mov.q [rsp], rcx
+    mov rax, rcx
     mov rcx, 0xfb
-    mov.q rax, [rsp]
     cqo
     idiv rcx
     mov rax, rdx
-    add rsp, 0x18
+    add rsp, 8
+    pop rbp
+    pop rbx
     ret
 run f64:
-    sub rsp, 0x48
-    movsd.q [rsp + 0x18], xmm0
-    movsd.q xmm0, [rip + 0xe28]
-    movsd.q [rsp + 0x28], xmm0
-    movsd.q xmm1, [rsp + 0x28]
-    movsd.q xmm0, [rsp + 0x28]
+    push rbx
+    push rbp
+    push r12
+    sub rsp, 0x20
+    movsd.q [rsp], xmm0
+    movsd.q xmm0, [rip + 0xeb4]
+    movsd.q [rsp + 0x10], xmm0
+    movsd.q xmm1, [rsp + 0x10]
+    movsd.q xmm0, [rsp + 0x10]
     call check f64
-    mov.q [rsp], rax
-    movsd.q xmm0, [rsp + 0x18]
-    movsd.q xmm1, [rsp + 0x18]
+    mov rbx, rax
+    movsd.q xmm0, [rsp]
+    movsd.q xmm1, [rsp]
     divsd xmm0, xmm1
-    movsd.q [rsp + 0x38], xmm0
-    movsd.q xmm1, [rsp + 0x28]
-    movsd.q xmm0, [rsp + 0x38]
+    movsd.q xmm1, [rsp + 0x10]
     call check f64
-    mov.q [rsp + 0x8], rax
-    movsd.q xmm0, [rsp + 0x28]
-    movsd.q xmm1, [rsp + 0x18]
+    mov rbp, rax
+    movsd.q xmm0, [rsp + 0x10]
+    movsd.q xmm1, [rsp]
     divsd xmm0, xmm1
-    movsd.q [rsp + 0x18], xmm0
+    movsd.q [rsp], xmm0
     pxor xmm1, xmm1
-    movsd.q xmm0, [rsp + 0x18]
+    movsd.q xmm0, [rsp]
     subsd xmm1, xmm0
-    movsd.q xmm0, [rsp + 0x18]
+    movsd.q xmm0, [rsp]
     call check f64
-    mov.q [rsp + 0x10], rax
-    movsd.q xmm1, [rsp + 0x28]
-    movsd.q xmm0, [rsp + 0x18]
+    mov r12, rax
+    movsd.q xmm1, [rsp + 0x10]
+    movsd.q xmm0, [rsp]
     call check f64
-    mov.q rcx, [rsp + 0x8]
-    imul rcx, rcx, 3
-    mov.q rdx, [rsp]
+    imul rcx, rbp, 3
+    mov rdx, rbx
     add rdx, rcx
-    mov.q [rsp], rdx
-    mov.q rcx, [rsp + 0x10]
-    imul rcx, rcx, 5
-    mov.q rdx, [rsp]
-    add rdx, rcx
-    mov.q [rsp], rdx
+    mov rcx, rdx
+    imul rdx, r12, 5
+    add rcx, rdx
     imul rax, rax, 7
-    mov.q rcx, [rsp]
     add rcx, rax
     mov rax, rcx
-    add rsp, 0x48
+    add rsp, 0x20
+    pop r12
+    pop rbp
+    pop rbx
     ret
 run f32:
-    sub rsp, 0x48
-    movss.d [rsp + 0x18], xmm0
-    movss.d xmm0, [rip + 0xd39]
-    movss.d [rsp + 0x28], xmm0
-    movss.d xmm1, [rsp + 0x28]
-    movss.d xmm0, [rsp + 0x28]
+    push rbx
+    push rbp
+    push r12
+    sub rsp, 0x20
+    movss.d [rsp], xmm0
+    movss.d xmm0, [rip + 0xdec]
+    movss.d [rsp + 0x10], xmm0
+    movss.d xmm1, [rsp + 0x10]
+    movss.d xmm0, [rsp + 0x10]
     call check f32
-    mov.q [rsp], rax
-    movss.d xmm0, [rsp + 0x18]
-    movss.d xmm1, [rsp + 0x18]
+    mov rbx, rax
+    movss.d xmm0, [rsp]
+    movss.d xmm1, [rsp]
     divss xmm0, xmm1
-    movss.d [rsp + 0x38], xmm0
-    movss.d xmm1, [rsp + 0x28]
-    movss.d xmm0, [rsp + 0x38]
+    movss.d xmm1, [rsp + 0x10]
     call check f32
-    mov.q [rsp + 0x8], rax
-    movss.d xmm0, [rsp + 0x28]
-    movss.d xmm1, [rsp + 0x18]
+    mov rbp, rax
+    movss.d xmm0, [rsp + 0x10]
+    movss.d xmm1, [rsp]
     divss xmm0, xmm1
-    movss.d [rsp + 0x18], xmm0
+    movss.d [rsp], xmm0
     pxor xmm1, xmm1
-    movss.d xmm0, [rsp + 0x18]
+    movss.d xmm0, [rsp]
     subss xmm1, xmm0
-    movss.d xmm0, [rsp + 0x18]
+    movss.d xmm0, [rsp]
     call check f32
-    mov.q [rsp + 0x10], rax
-    movss.d xmm1, [rsp + 0x28]
-    movss.d xmm0, [rsp + 0x18]
+    mov r12, rax
+    movss.d xmm1, [rsp + 0x10]
+    movss.d xmm0, [rsp]
     call check f32
-    mov.q rcx, [rsp + 0x8]
-    imul rcx, rcx, 3
-    mov.q rdx, [rsp]
+    imul rcx, rbp, 3
+    mov rdx, rbx
     add rdx, rcx
-    mov.q [rsp], rdx
-    mov.q rcx, [rsp + 0x10]
-    imul rcx, rcx, 5
-    mov.q rdx, [rsp]
-    add rdx, rcx
-    mov.q [rsp], rdx
+    mov rcx, rdx
+    imul rdx, r12, 5
+    add rcx, rdx
     imul rax, rax, 7
-    mov.q rcx, [rsp]
     add rcx, rax
     mov rax, rcx
-    add rsp, 0x48
+    add rsp, 0x20
+    pop r12
+    pop rbp
+    pop rbx
     ret
 check f64:
     mov rax, 1
     addsd xmm0, xmm1
     ucomisd xmm0, xmm0
-    mov.q [rsp - 0x8], 0
-    sete.b [rsp - 0x8]
+    sete cl
     jnp 6
-    mov.b [rsp - 0x8], 0
+    mov cl, 0
 6:
-    xor ecx, ecx
-    cmp.b [rsp - 0x8], 0
-    cmovne rcx, rax
-    mov rax, rcx
+    movzx ecx, cl
+    xor edx, edx
+    test cl, cl
+    cmovne rdx, rax
+    mov rax, rdx
     add rax, 2
     ucomisd xmm0, xmm0
+    mov rcx, rdx
     cmovne rcx, rax
     cmovp rcx, rax
     mov rdx, rcx
@@ -492,17 +493,18 @@ check f32:
     mov rax, 1
     addss xmm0, xmm1
     ucomiss xmm0, xmm0
-    mov.q [rsp - 0x8], 0
-    sete.b [rsp - 0x8]
+    sete cl
     jnp 8
-    mov.b [rsp - 0x8], 0
+    mov cl, 0
 8:
-    xor ecx, ecx
-    cmp.b [rsp - 0x8], 0
-    cmovne rcx, rax
-    mov rax, rcx
+    movzx ecx, cl
+    xor edx, edx
+    test cl, cl
+    cmovne rdx, rax
+    mov rax, rdx
     add rax, 2
     ucomiss xmm0, xmm0
+    mov rcx, rdx
     cmovne rcx, rax
     cmovp rcx, rax
     mov rdx, rcx

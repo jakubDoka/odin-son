@@ -1,13 +1,14 @@
 =========== OPT LEVEL: none-quick ===========
 main:
-    sub rsp, 0x18
+    push rbx
+    sub rsp, 0x10
     mov rdi, 0xa
     call opaque
     mov.q [rsp], rax
     lea rdi, [rsp]
     call opaque_ptr
     mov.q rax, [rax]
-    mov.q [rsp + 0x8], rax
+    mov rbx, rax
     mov.q [rsp], 0x63
     mov rdi, 1
     call opaque
@@ -16,10 +17,10 @@ main:
     xor eax, eax
     jmp 2
 1:
-    mov.q rax, [rsp + 0x8]
+    mov rax, rbx
 2:
-    mov rax, rax
-    add rsp, 0x18
+    add rsp, 0x10
+    pop rbx
     ret
 opaque_ptr:
     mov rax, rdi
@@ -57,14 +58,15 @@ opaque:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 main:
-    sub rsp, 0x18
+    push rbx
+    sub rsp, 0x10
     mov rdi, 0xa
     call opaque
     mov.q [rsp], rax
     lea rdi, [rsp]
     call opaque_ptr
     mov.q rax, [rax]
-    mov.q [rsp + 0x8], rax
+    mov rbx, rax
     mov.q [rsp], 0x63
     mov rdi, 1
     call opaque
@@ -73,10 +75,10 @@ main:
     xor eax, eax
     jmp 2
 1:
-    mov.q rax, [rsp + 0x8]
+    mov rax, rbx
 2:
-    mov rax, rax
-    add rsp, 0x18
+    add rsp, 0x10
+    pop rbx
     ret
 opaque_ptr:
     mov rax, rdi

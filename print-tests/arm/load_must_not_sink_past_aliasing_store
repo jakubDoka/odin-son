@@ -1,7 +1,8 @@
 =========== OPT LEVEL: none-quick ===========
 main:
     sub sp, sp, #32
-    stp x29, x30, [xzr]
+    str x19, [xzr]
+    stp x29, x30, [xzr, #8]
     movz x0, #10
     bl opaque
     add x1, sp, #24
@@ -9,7 +10,7 @@ main:
     add x0, sp, #24
     bl opaque_ptr
     ldr x0, [x0]
-    str x0, [xzr, #16]
+    mov x19, x0
     movz x0, #99
     add x1, sp, #24
     str x0, [x1]
@@ -21,10 +22,10 @@ main:
     movz x0, #0
     b 2
 1:
-    ldr x0, [xzr, #16]
+    mov x0, x19
 2:
-    mov x0, x0
-    ldp x29, x30, [xzr]
+    ldr x19, [xzr]
+    ldp x29, x30, [xzr, #8]
     add sp, sp, #32
     ret
 opaque_ptr:
@@ -66,7 +67,8 @@ opaque:
 =========== OPT LEVEL: moderate-quick ===========
 main:
     sub sp, sp, #32
-    stp x29, x30, [xzr]
+    str x19, [xzr]
+    stp x29, x30, [xzr, #8]
     movz x0, #10
     bl opaque
     add x1, sp, #24
@@ -74,7 +76,7 @@ main:
     add x0, sp, #24
     bl opaque_ptr
     ldr x0, [x0]
-    str x0, [xzr, #16]
+    mov x19, x0
     movz x0, #99
     add x1, sp, #24
     str x0, [x1]
@@ -86,10 +88,10 @@ main:
     movz x0, #0
     b 2
 1:
-    ldr x0, [xzr, #16]
+    mov x0, x19
 2:
-    mov x0, x0
-    ldp x29, x30, [xzr]
+    ldr x19, [xzr]
+    ldp x29, x30, [xzr, #8]
     add sp, sp, #32
     ret
 opaque_ptr:

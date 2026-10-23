@@ -82,76 +82,78 @@ fsrc64:
     add rax, rcx
     ret
 main:
-    sub rsp, 0x88
-    movss.d xmm0, [rip + 0xd73]
-    movss.d [rsp + 0x70], xmm0
-    movss.d xmm0, [rsp + 0x70]
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    sub rsp, 0x60
+    movss.d xmm0, [rip + 0xdf4]
+    movss.d [rsp + 0x48], xmm0
+    movss.d xmm0, [rsp + 0x48]
     movss.d [rsp], xmm0
-    movss.d xmm0, [rsp + 0x70]
+    movss.d xmm0, [rsp + 0x48]
     movss.d [rsp + 0x4], xmm0
-    movss.d xmm0, [rsp + 0x70]
+    movss.d xmm0, [rsp + 0x48]
     movss.d [rsp + 0x8], xmm0
-    movss.d xmm0, [rsp + 0x70]
+    movss.d xmm0, [rsp + 0x48]
     movss.d [rsp + 0xc], xmm0
-    movss.d xmm0, [rsp + 0x70]
+    movss.d xmm0, [rsp + 0x48]
     movss.d [rsp + 0x10], xmm0
-    movss.d xmm0, [rsp + 0x70]
+    movss.d xmm0, [rsp + 0x48]
     movss.d [rsp + 0x14], xmm0
-    movss.d xmm0, [rip + 0xd14]
+    movss.d xmm0, [rip + 0xd95]
     lea rdi, [rsp]
     call fsrc32
-    mov.q [rsp + 0x48], rax
+    mov rbx, rax
     lea rdi, [rsp]
-    movss.d xmm0, [rsp + 0x70]
+    movss.d xmm0, [rsp + 0x48]
     call fsrc32
-    mov.q [rsp + 0x50], rax
-    movss.d xmm0, [rip + 0xcec]
+    mov rbp, rax
+    movss.d xmm0, [rip + 0xd71]
     lea rdi, [rsp]
     call fsrc32
-    mov.q [rsp + 0x58], rax
-    movsd.q xmm0, [rip + 0xcdd]
-    movsd.q [rsp + 0x70], xmm0
-    movsd.q xmm0, [rsp + 0x70]
+    mov r12, rax
+    movsd.q xmm0, [rip + 0xd64]
+    movsd.q [rsp + 0x48], xmm0
+    movsd.q xmm0, [rsp + 0x48]
     movsd.q [rsp + 0x18], xmm0
-    movsd.q xmm0, [rsp + 0x70]
+    movsd.q xmm0, [rsp + 0x48]
     movsd.q [rsp + 0x20], xmm0
-    movsd.q xmm0, [rsp + 0x70]
+    movsd.q xmm0, [rsp + 0x48]
     movsd.q [rsp + 0x28], xmm0
-    movsd.q xmm0, [rsp + 0x70]
+    movsd.q xmm0, [rsp + 0x48]
     movsd.q [rsp + 0x30], xmm0
-    movsd.q xmm0, [rsp + 0x70]
+    movsd.q xmm0, [rsp + 0x48]
     movsd.q [rsp + 0x38], xmm0
-    movsd.q xmm0, [rsp + 0x70]
+    movsd.q xmm0, [rsp + 0x48]
     movsd.q [rsp + 0x40], xmm0
-    movsd.q xmm0, [rip + 0xc81]
+    movsd.q xmm0, [rip + 0xd08]
     lea rdi, [rsp + 0x18]
     call fsrc64
-    mov.q [rsp + 0x60], rax
+    mov r13, rax
     lea rdi, [rsp + 0x18]
-    movsd.q xmm0, [rsp + 0x70]
+    movsd.q xmm0, [rsp + 0x48]
     call fsrc64
-    mov.q [rsp + 0x68], rax
-    movsd.q xmm0, [rip + 0xc5b]
+    mov r14, rax
+    movsd.q xmm0, [rip + 0xce6]
     lea rdi, [rsp + 0x18]
     call fsrc64
-    mov.q rcx, [rsp + 0x48]
-    mov.q rdx, [rsp + 0x50]
-    add rcx, rdx
-    mov rcx, rcx
-    mov.q rdx, [rsp + 0x58]
-    add rcx, rdx
-    mov.q [rsp + 0x48], rcx
-    mov.q rcx, [rsp + 0x60]
-    mov.q rdx, [rsp + 0x68]
-    add rcx, rdx
-    mov rcx, rcx
+    mov rcx, rbx
+    add rcx, rbp
+    add rcx, r12
+    mov rdx, r13
+    add rdx, r14
+    add rdx, rax
+    mov rax, rdx
     add rcx, rax
-    mov.q [rsp + 0x50], rcx
-    mov.q rax, [rsp + 0x48]
-    mov.q rcx, [rsp + 0x50]
-    add rax, rcx
-    mov rax, rax
-    add rsp, 0x88
+    mov rax, rcx
+    add rsp, 0x60
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
     ret
 =========== OPT LEVEL: none ===========
 fsrc32:
@@ -394,76 +396,78 @@ fsrc64:
     add rax, rcx
     ret
 main:
-    sub rsp, 0x88
-    movss.d xmm0, [rip + 0xd73]
-    movss.d [rsp + 0x70], xmm0
-    movss.d xmm0, [rsp + 0x70]
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    sub rsp, 0x60
+    movss.d xmm0, [rip + 0xdf4]
+    movss.d [rsp + 0x48], xmm0
+    movss.d xmm0, [rsp + 0x48]
     movss.d [rsp], xmm0
-    movss.d xmm0, [rsp + 0x70]
+    movss.d xmm0, [rsp + 0x48]
     movss.d [rsp + 0x4], xmm0
-    movss.d xmm0, [rsp + 0x70]
+    movss.d xmm0, [rsp + 0x48]
     movss.d [rsp + 0x8], xmm0
-    movss.d xmm0, [rsp + 0x70]
+    movss.d xmm0, [rsp + 0x48]
     movss.d [rsp + 0xc], xmm0
-    movss.d xmm0, [rsp + 0x70]
+    movss.d xmm0, [rsp + 0x48]
     movss.d [rsp + 0x10], xmm0
-    movss.d xmm0, [rsp + 0x70]
+    movss.d xmm0, [rsp + 0x48]
     movss.d [rsp + 0x14], xmm0
-    movss.d xmm0, [rip + 0xd14]
+    movss.d xmm0, [rip + 0xd95]
     lea rdi, [rsp]
     call fsrc32
-    mov.q [rsp + 0x48], rax
+    mov rbx, rax
     lea rdi, [rsp]
-    movss.d xmm0, [rsp + 0x70]
+    movss.d xmm0, [rsp + 0x48]
     call fsrc32
-    mov.q [rsp + 0x50], rax
-    movss.d xmm0, [rip + 0xcec]
+    mov rbp, rax
+    movss.d xmm0, [rip + 0xd71]
     lea rdi, [rsp]
     call fsrc32
-    mov.q [rsp + 0x58], rax
-    movsd.q xmm0, [rip + 0xcdd]
-    movsd.q [rsp + 0x70], xmm0
-    movsd.q xmm0, [rsp + 0x70]
+    mov r12, rax
+    movsd.q xmm0, [rip + 0xd64]
+    movsd.q [rsp + 0x48], xmm0
+    movsd.q xmm0, [rsp + 0x48]
     movsd.q [rsp + 0x18], xmm0
-    movsd.q xmm0, [rsp + 0x70]
+    movsd.q xmm0, [rsp + 0x48]
     movsd.q [rsp + 0x20], xmm0
-    movsd.q xmm0, [rsp + 0x70]
+    movsd.q xmm0, [rsp + 0x48]
     movsd.q [rsp + 0x28], xmm0
-    movsd.q xmm0, [rsp + 0x70]
+    movsd.q xmm0, [rsp + 0x48]
     movsd.q [rsp + 0x30], xmm0
-    movsd.q xmm0, [rsp + 0x70]
+    movsd.q xmm0, [rsp + 0x48]
     movsd.q [rsp + 0x38], xmm0
-    movsd.q xmm0, [rsp + 0x70]
+    movsd.q xmm0, [rsp + 0x48]
     movsd.q [rsp + 0x40], xmm0
-    movsd.q xmm0, [rip + 0xc81]
+    movsd.q xmm0, [rip + 0xd08]
     lea rdi, [rsp + 0x18]
     call fsrc64
-    mov.q [rsp + 0x60], rax
+    mov r13, rax
     lea rdi, [rsp + 0x18]
-    movsd.q xmm0, [rsp + 0x70]
+    movsd.q xmm0, [rsp + 0x48]
     call fsrc64
-    mov.q [rsp + 0x68], rax
-    movsd.q xmm0, [rip + 0xc5b]
+    mov r14, rax
+    movsd.q xmm0, [rip + 0xce6]
     lea rdi, [rsp + 0x18]
     call fsrc64
-    mov.q rcx, [rsp + 0x48]
-    mov.q rdx, [rsp + 0x50]
-    add rcx, rdx
-    mov rcx, rcx
-    mov.q rdx, [rsp + 0x58]
-    add rcx, rdx
-    mov.q [rsp + 0x48], rcx
-    mov.q rcx, [rsp + 0x60]
-    mov.q rdx, [rsp + 0x68]
-    add rcx, rdx
-    mov rcx, rcx
+    mov rcx, rbx
+    add rcx, rbp
+    add rcx, r12
+    mov rdx, r13
+    add rdx, r14
+    add rdx, rax
+    mov rax, rdx
     add rcx, rax
-    mov.q [rsp + 0x50], rcx
-    mov.q rax, [rsp + 0x48]
-    mov.q rcx, [rsp + 0x50]
-    add rax, rcx
-    mov rax, rax
-    add rsp, 0x88
+    mov rax, rcx
+    add rsp, 0x60
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
     ret
 =========== OPT LEVEL: moderate ===========
 fsrc32:

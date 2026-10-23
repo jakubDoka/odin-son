@@ -6,99 +6,83 @@ standalone:
     cmove rax, rcx
     ret
 typed:
-    mov.q [rsp - 0x8], rdi
+    mov rax, rdi
     cmp rsi, 1
     je 3
     cmp rsi, 2
     je 2
-    xor eax, eax
+    xor ecx, ecx
     jmp 4
 2:
-    mov rax, 0x64
+    mov rcx, 0x64
     jmp 4
 3:
-    mov.q rax, [rsp - 0x8]
+    mov rcx, rax
 4:
-    mov rax, rax
+    mov rax, rcx
     ret
 main:
     push rbx
-    sub rsp, 0x50
+    push rbp
+    sub rsp, 0x18
     xor eax, eax
     xor ecx, ecx
 6:
-    mov.q [rsp + 0x18], rcx
+    mov rbx, rcx
     mov rdx, rax
     add rdx, 1
-    mov.q [rsp + 0x20], rdx
-    mov.q rdx, [rsp + 0x20]
     cmp rdx, 4
     jg 11
-    mov.q rdx, [rsp + 0x18]
-    add rdx, 0x64
-    mov.q [rsp + 0x28], rdx
-    mov.q rdx, [rsp + 0x20]
+    mov rbp, rbx
+    add rbp, 0x64
     cmp rdx, 1
-    mov.q [rsp + 0x30], 0
-    sete.b [rsp + 0x30]
-    cmp.b [rsp + 0x30], 0
+    sete sil
+    movzx esi, sil
+    test sil, sil
     jne 8
-    mov.q rdx, [rsp + 0x20]
     cmp rdx, 2
     je 7
-    mov.q rdx, [rsp + 0x20]
     cmp rdx, 3
     je 11
-    mov.q [rsp + 0x10], r15
-    mov.q r15, [rsp + 0x28]
-    mov.q [rsp + 0x38], r15
-    mov.q r15, [rsp + 0x10]
+    mov rdi, rbp
     jmp 9
     jmp 11
 7:
-    mov.q [rsp + 0x10], r15
-    mov.q r15, [rsp + 0x18]
-    mov.q [rsp + 0x40], r15
-    mov.q r15, [rsp + 0x10]
+    mov r8, rbx
     jmp 10
 8:
-    mov.q rdx, [rsp + 0x18]
-    add rdx, 0x14
-    mov rdx, rdx
-    mov.q rbx, [rsp + 0x28]
-    cmp.b [rsp + 0x30], 0
-    cmovne rbx, rdx
-    mov rdx, rbx
-    add rdx, 2
-    mov.q [rsp + 0x38], rdx
+    mov r9, rbx
+    add r9, 0x14
+    test sil, sil
+    cmovne rbp, r9
+    add rbp, 2
+    mov rdi, rbp
 9:
-    mov.q rdx, [rsp + 0x38]
-    add rdx, 1
-    mov.q [rsp + 0x40], rdx
+    mov rbp, rdi
+    add rbp, 1
+    mov r8, rbp
 10:
-    mov.q [rsp + 0x10], r15
-    mov.q r15, [rsp + 0x40]
-    mov.q [rsp + 0x28], r15
-    mov.q r15, [rsp + 0x10]
-    mov.q rax, [rsp + 0x20]
-    mov.q rcx, [rsp + 0x28]
+    mov rbp, r8
+    mov rax, rdx
+    mov rcx, rbp
     jmp 6
 11:
     mov.q [rsp], 7
     mov.q [rsp + 0x8], 1
     xor edi, edi
     call standalone
-    mov.q [rsp + 0x20], rax
+    mov rbp, rax
     mov.q rdi, [rsp]
     mov.q rsi, [rsp + 0x8]
     call typed
-    mov.q rcx, [rsp + 0x18]
-    mov.q rdx, [rsp + 0x20]
+    mov rcx, rbx
+    mov rdx, rbp
     add rdx, rcx
     mov rcx, rdx
     add rcx, rax
     mov rax, rcx
-    add rsp, 0x50
+    add rsp, 0x18
+    pop rbp
     pop rbx
     ret
 =========== OPT LEVEL: none ===========
@@ -182,99 +166,83 @@ standalone:
     cmove rax, rcx
     ret
 typed:
-    mov.q [rsp - 0x8], rdi
+    mov rax, rdi
     cmp rsi, 1
     je 3
     cmp rsi, 2
     je 2
-    xor eax, eax
+    xor ecx, ecx
     jmp 4
 2:
-    mov rax, 0x64
+    mov rcx, 0x64
     jmp 4
 3:
-    mov.q rax, [rsp - 0x8]
+    mov rcx, rax
 4:
-    mov rax, rax
+    mov rax, rcx
     ret
 main:
     push rbx
-    sub rsp, 0x50
+    push rbp
+    sub rsp, 0x18
     xor eax, eax
     xor ecx, ecx
 6:
-    mov.q [rsp + 0x18], rcx
+    mov rbx, rcx
     mov rdx, rax
     add rdx, 1
-    mov.q [rsp + 0x20], rdx
-    mov.q rdx, [rsp + 0x20]
     cmp rdx, 4
     jg 11
-    mov.q rdx, [rsp + 0x18]
-    add rdx, 0x64
-    mov.q [rsp + 0x28], rdx
-    mov.q rdx, [rsp + 0x20]
+    mov rbp, rbx
+    add rbp, 0x64
     cmp rdx, 1
-    mov.q [rsp + 0x30], 0
-    sete.b [rsp + 0x30]
-    cmp.b [rsp + 0x30], 0
+    sete sil
+    movzx esi, sil
+    test sil, sil
     jne 8
-    mov.q rdx, [rsp + 0x20]
     cmp rdx, 2
     je 7
-    mov.q rdx, [rsp + 0x20]
     cmp rdx, 3
     je 11
-    mov.q [rsp + 0x10], r15
-    mov.q r15, [rsp + 0x28]
-    mov.q [rsp + 0x38], r15
-    mov.q r15, [rsp + 0x10]
+    mov rdi, rbp
     jmp 9
     jmp 11
 7:
-    mov.q [rsp + 0x10], r15
-    mov.q r15, [rsp + 0x18]
-    mov.q [rsp + 0x40], r15
-    mov.q r15, [rsp + 0x10]
+    mov r8, rbx
     jmp 10
 8:
-    mov.q rdx, [rsp + 0x18]
-    add rdx, 0x14
-    mov rdx, rdx
-    mov.q rbx, [rsp + 0x28]
-    cmp.b [rsp + 0x30], 0
-    cmovne rbx, rdx
-    mov rdx, rbx
-    add rdx, 2
-    mov.q [rsp + 0x38], rdx
+    mov r9, rbx
+    add r9, 0x14
+    test sil, sil
+    cmovne rbp, r9
+    add rbp, 2
+    mov rdi, rbp
 9:
-    mov.q rdx, [rsp + 0x38]
-    add rdx, 1
-    mov.q [rsp + 0x40], rdx
+    mov rbp, rdi
+    add rbp, 1
+    mov r8, rbp
 10:
-    mov.q [rsp + 0x10], r15
-    mov.q r15, [rsp + 0x40]
-    mov.q [rsp + 0x28], r15
-    mov.q r15, [rsp + 0x10]
-    mov.q rax, [rsp + 0x20]
-    mov.q rcx, [rsp + 0x28]
+    mov rbp, r8
+    mov rax, rdx
+    mov rcx, rbp
     jmp 6
 11:
     mov.q [rsp], 7
     mov.q [rsp + 0x8], 1
     xor edi, edi
     call standalone
-    mov.q [rsp + 0x20], rax
+    mov rbp, rax
     mov.q rdi, [rsp]
     mov.q rsi, [rsp + 0x8]
     call typed
-    mov.q rcx, [rsp + 0x18]
-    mov.q rdx, [rsp + 0x20]
+    mov rcx, rbx
+    mov rdx, rbp
     add rdx, rcx
     mov rcx, rdx
     add rcx, rax
     mov rax, rcx
-    add rsp, 0x50
+    add rsp, 0x18
+    pop rbp
     pop rbx
     ret
 =========== OPT LEVEL: moderate ===========

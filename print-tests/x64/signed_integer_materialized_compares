@@ -165,117 +165,105 @@ sint:
     add rax, rcx
     ret
 main:
-    sub rsp, 0x78
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    push r15
+    sub rsp, 0x48
     mov dil, -1
     mov sil, 1
     call s8
-    mov.q [rsp], rax
+    mov rbx, rax
     mov sil, 5
     mov dil, 5
     call s8
-    mov.q [rsp + 0x8], rax
+    mov rbp, rax
     mov dil, 7
     mov sil, -3
     call s8
+    mov r12, rax
+    mov rdi, -1
+    mov rsi, 1
+    call s16
+    mov r13, rax
+    mov rsi, 5
+    mov rdi, 5
+    call s16
+    mov r14, rax
+    mov rdi, 7
+    mov rsi, -3
+    call s16
+    mov r15, rax
+    mov rdi, -1
+    mov rsi, 1
+    call s32
+    mov.q [rsp], rax
+    mov rsi, 5
+    mov rdi, 5
+    call s32
+    mov.q [rsp + 0x8], rax
+    mov rdi, 7
+    mov rsi, -3
+    call s32
     mov.q [rsp + 0x10], rax
     mov rdi, -1
     mov rsi, 1
-    call s16
+    call s64
     mov.q [rsp + 0x18], rax
     mov rsi, 5
     mov rdi, 5
-    call s16
+    call s64
     mov.q [rsp + 0x20], rax
     mov rdi, 7
     mov rsi, -3
-    call s16
+    call s64
     mov.q [rsp + 0x28], rax
     mov rdi, -1
     mov rsi, 1
-    call s32
+    call sint
     mov.q [rsp + 0x30], rax
     mov rsi, 5
     mov rdi, 5
-    call s32
+    call sint
     mov.q [rsp + 0x38], rax
     mov rdi, 7
     mov rsi, -3
-    call s32
-    mov.q [rsp + 0x40], rax
-    mov rdi, -1
-    mov rsi, 1
-    call s64
-    mov.q [rsp + 0x48], rax
-    mov rsi, 5
-    mov rdi, 5
-    call s64
-    mov.q [rsp + 0x50], rax
-    mov rdi, 7
-    mov rsi, -3
-    call s64
-    mov.q [rsp + 0x58], rax
-    mov rdi, -1
-    mov rsi, 1
     call sint
-    mov.q [rsp + 0x60], rax
-    mov rsi, 5
-    mov rdi, 5
-    call sint
-    mov.q [rsp + 0x68], rax
-    mov rdi, 7
-    mov rsi, -3
-    call sint
-    mov.q rcx, [rsp]
-    mov.q rdx, [rsp + 0x8]
+    mov rcx, rbx
+    add rcx, rbp
+    add rcx, r12
+    mov rdx, r13
+    add rdx, r14
+    add rdx, r15
     add rcx, rdx
-    mov rcx, rcx
-    mov.q rdx, [rsp + 0x10]
+    mov.q rdx, [rsp]
+    mov.q rbx, [rsp + 0x8]
+    add rdx, rbx
+    mov.q rbx, [rsp + 0x10]
+    add rdx, rbx
     add rcx, rdx
-    mov.q [rsp], rcx
-    mov.q rcx, [rsp + 0x18]
-    mov.q rdx, [rsp + 0x20]
+    mov.q rdx, [rsp + 0x18]
+    mov.q rbx, [rsp + 0x20]
+    add rdx, rbx
+    mov.q rbx, [rsp + 0x28]
+    add rdx, rbx
     add rcx, rdx
-    mov rcx, rcx
-    mov.q rdx, [rsp + 0x28]
-    add rcx, rdx
-    mov.q [rsp + 0x8], rcx
-    mov.q rcx, [rsp]
-    mov.q rdx, [rsp + 0x8]
-    add rcx, rdx
-    mov.q [rsp], rcx
-    mov.q rcx, [rsp + 0x30]
-    mov.q rdx, [rsp + 0x38]
-    add rcx, rdx
-    mov rcx, rcx
-    mov.q rdx, [rsp + 0x40]
-    add rcx, rdx
-    mov.q [rsp + 0x8], rcx
-    mov.q rcx, [rsp]
-    mov.q rdx, [rsp + 0x8]
-    add rcx, rdx
-    mov.q [rsp], rcx
-    mov.q rcx, [rsp + 0x48]
-    mov.q rdx, [rsp + 0x50]
-    add rcx, rdx
-    mov rcx, rcx
-    mov.q rdx, [rsp + 0x58]
-    add rcx, rdx
-    mov.q [rsp + 0x8], rcx
-    mov.q rcx, [rsp]
-    mov.q rdx, [rsp + 0x8]
-    add rcx, rdx
-    mov.q [rsp], rcx
-    mov.q rcx, [rsp + 0x60]
-    mov.q rdx, [rsp + 0x68]
-    add rcx, rdx
-    mov rcx, rcx
+    mov.q rdx, [rsp + 0x30]
+    mov.q rbx, [rsp + 0x38]
+    add rdx, rbx
+    add rdx, rax
+    mov rax, rdx
     add rcx, rax
-    mov.q [rsp + 0x8], rcx
-    mov.q rax, [rsp]
-    mov.q rcx, [rsp + 0x8]
-    add rax, rcx
-    mov rax, rax
-    add rsp, 0x78
+    mov rax, rcx
+    add rsp, 0x48
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
     ret
 =========== OPT LEVEL: none ===========
 s8:
@@ -715,117 +703,105 @@ sint:
     add rax, rcx
     ret
 main:
-    sub rsp, 0x78
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    push r15
+    sub rsp, 0x48
     mov dil, -1
     mov sil, 1
     call s8
-    mov.q [rsp], rax
+    mov rbx, rax
     mov sil, 5
     mov dil, 5
     call s8
-    mov.q [rsp + 0x8], rax
+    mov rbp, rax
     mov dil, 7
     mov sil, -3
     call s8
+    mov r12, rax
+    mov rdi, -1
+    mov rsi, 1
+    call s16
+    mov r13, rax
+    mov rsi, 5
+    mov rdi, 5
+    call s16
+    mov r14, rax
+    mov rdi, 7
+    mov rsi, -3
+    call s16
+    mov r15, rax
+    mov rdi, -1
+    mov rsi, 1
+    call s32
+    mov.q [rsp], rax
+    mov rsi, 5
+    mov rdi, 5
+    call s32
+    mov.q [rsp + 0x8], rax
+    mov rdi, 7
+    mov rsi, -3
+    call s32
     mov.q [rsp + 0x10], rax
     mov rdi, -1
     mov rsi, 1
-    call s16
+    call s64
     mov.q [rsp + 0x18], rax
     mov rsi, 5
     mov rdi, 5
-    call s16
+    call s64
     mov.q [rsp + 0x20], rax
     mov rdi, 7
     mov rsi, -3
-    call s16
+    call s64
     mov.q [rsp + 0x28], rax
     mov rdi, -1
     mov rsi, 1
-    call s32
+    call sint
     mov.q [rsp + 0x30], rax
     mov rsi, 5
     mov rdi, 5
-    call s32
+    call sint
     mov.q [rsp + 0x38], rax
     mov rdi, 7
     mov rsi, -3
-    call s32
-    mov.q [rsp + 0x40], rax
-    mov rdi, -1
-    mov rsi, 1
-    call s64
-    mov.q [rsp + 0x48], rax
-    mov rsi, 5
-    mov rdi, 5
-    call s64
-    mov.q [rsp + 0x50], rax
-    mov rdi, 7
-    mov rsi, -3
-    call s64
-    mov.q [rsp + 0x58], rax
-    mov rdi, -1
-    mov rsi, 1
     call sint
-    mov.q [rsp + 0x60], rax
-    mov rsi, 5
-    mov rdi, 5
-    call sint
-    mov.q [rsp + 0x68], rax
-    mov rdi, 7
-    mov rsi, -3
-    call sint
-    mov.q rcx, [rsp]
-    mov.q rdx, [rsp + 0x8]
+    mov rcx, rbx
+    add rcx, rbp
+    add rcx, r12
+    mov rdx, r13
+    add rdx, r14
+    add rdx, r15
     add rcx, rdx
-    mov rcx, rcx
-    mov.q rdx, [rsp + 0x10]
+    mov.q rdx, [rsp]
+    mov.q rbx, [rsp + 0x8]
+    add rdx, rbx
+    mov.q rbx, [rsp + 0x10]
+    add rdx, rbx
     add rcx, rdx
-    mov.q [rsp], rcx
-    mov.q rcx, [rsp + 0x18]
-    mov.q rdx, [rsp + 0x20]
+    mov.q rdx, [rsp + 0x18]
+    mov.q rbx, [rsp + 0x20]
+    add rdx, rbx
+    mov.q rbx, [rsp + 0x28]
+    add rdx, rbx
     add rcx, rdx
-    mov rcx, rcx
-    mov.q rdx, [rsp + 0x28]
-    add rcx, rdx
-    mov.q [rsp + 0x8], rcx
-    mov.q rcx, [rsp]
-    mov.q rdx, [rsp + 0x8]
-    add rcx, rdx
-    mov.q [rsp], rcx
-    mov.q rcx, [rsp + 0x30]
-    mov.q rdx, [rsp + 0x38]
-    add rcx, rdx
-    mov rcx, rcx
-    mov.q rdx, [rsp + 0x40]
-    add rcx, rdx
-    mov.q [rsp + 0x8], rcx
-    mov.q rcx, [rsp]
-    mov.q rdx, [rsp + 0x8]
-    add rcx, rdx
-    mov.q [rsp], rcx
-    mov.q rcx, [rsp + 0x48]
-    mov.q rdx, [rsp + 0x50]
-    add rcx, rdx
-    mov rcx, rcx
-    mov.q rdx, [rsp + 0x58]
-    add rcx, rdx
-    mov.q [rsp + 0x8], rcx
-    mov.q rcx, [rsp]
-    mov.q rdx, [rsp + 0x8]
-    add rcx, rdx
-    mov.q [rsp], rcx
-    mov.q rcx, [rsp + 0x60]
-    mov.q rdx, [rsp + 0x68]
-    add rcx, rdx
-    mov rcx, rcx
+    mov.q rdx, [rsp + 0x30]
+    mov.q rbx, [rsp + 0x38]
+    add rdx, rbx
+    add rdx, rax
+    mov rax, rdx
     add rcx, rax
-    mov.q [rsp + 0x8], rcx
-    mov.q rax, [rsp]
-    mov.q rcx, [rsp + 0x8]
-    add rax, rcx
-    mov rax, rax
-    add rsp, 0x78
+    mov rax, rcx
+    add rsp, 0x48
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
     ret
 =========== OPT LEVEL: moderate ===========
 s8:

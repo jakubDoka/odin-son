@@ -8,7 +8,10 @@ main:
     str x23, [xzr, #32]
     str x24, [xzr, #40]
     str x25, [xzr, #48]
-    stp x29, x30, [xzr, #56]
+    str x26, [xzr, #56]
+    str x27, [xzr, #64]
+    str x28, [xzr, #72]
+    stp x29, x30, [xzr, #80]
     add x19, sp, #96
     movz x20, #1
     movz x0, #64011
@@ -22,25 +25,23 @@ main:
     movk x0, #79, lsl #48
     str x0, [x22]
     add x0, x19, x20
-    str x0, [xzr, #72]
-    add x23, x19, x21
-    ldrb w1, [x23]
-    ldr x0, [xzr, #72]
+    mov x23, x0
+    add x24, x19, x21
+    ldrb w1, [x24]
+    mov x0, x23
     bl update u8
-    str x0, [xzr, #80]
+    mov x25, x0
     add x0, x22, x21
-    str x0, [xzr, #88]
-    movz x24, #4
-    add x25, x22, x24
-    ldrh w1, [x25]
-    ldr x0, [xzr, #88]
+    mov x26, x0
+    movz x27, #4
+    add x28, x22, x27
+    ldrh w1, [x28]
+    mov x0, x26
     bl update u16
     movz x1, #0
-    ldr x2, [xzr, #72]
-    ldrb w2, [x2]
+    ldrb w2, [x23]
     uxtb w2, w2
-    ldr x3, [xzr, #80]
-    uxtb w3, w3
+    uxtb w3, w25
     ldrb w4, [x19]
     uxtb w4, w4
     uxth w0, w0
@@ -53,7 +54,7 @@ main:
     uxth w5, w5
     cmp w0, w5
     csel x0, x3, x1, eq
-    add x1, x0, x24
+    add x1, x0, x27
     movz x3, #11
     uxtb w3, w3
     cmp w4, w3
@@ -67,7 +68,7 @@ main:
     movz x1, #8
     add x0, x1, x0
 2:
-    ldrb w1, [x23]
+    ldrb w1, [x24]
     uxtb w1, w1
     movz x2, #3
     add x2, x2, x19
@@ -92,10 +93,9 @@ main:
     add x1, x1, x0
     ldrh w2, [x22]
     uxth w2, w2
-    ldr x3, [xzr, #88]
-    ldrh w3, [x3]
+    ldrh w3, [x26]
     uxth w3, w3
-    ldrh w4, [x25]
+    ldrh w4, [x28]
     uxth w4, w4
     movz x5, #6
     add x5, x5, x22
@@ -130,7 +130,10 @@ main:
     ldr x23, [xzr, #32]
     ldr x24, [xzr, #40]
     ldr x25, [xzr, #48]
-    ldp x29, x30, [xzr, #56]
+    ldr x26, [xzr, #56]
+    ldr x27, [xzr, #64]
+    ldr x28, [xzr, #72]
+    ldp x29, x30, [xzr, #80]
     add sp, sp, #112
     ret
 update u8:
@@ -353,7 +356,10 @@ main:
     str x23, [xzr, #32]
     str x24, [xzr, #40]
     str x25, [xzr, #48]
-    stp x29, x30, [xzr, #56]
+    str x26, [xzr, #56]
+    str x27, [xzr, #64]
+    str x28, [xzr, #72]
+    stp x29, x30, [xzr, #80]
     add x19, sp, #96
     movz x20, #1
     movz x0, #64011
@@ -367,25 +373,23 @@ main:
     movk x0, #79, lsl #48
     str x0, [x22]
     add x0, x19, x20
-    str x0, [xzr, #72]
-    add x23, x19, x21
-    ldrb w1, [x23]
-    ldr x0, [xzr, #72]
+    mov x23, x0
+    add x24, x19, x21
+    ldrb w1, [x24]
+    mov x0, x23
     bl update u8
-    str x0, [xzr, #80]
+    mov x25, x0
     add x0, x22, x21
-    str x0, [xzr, #88]
-    movz x24, #4
-    add x25, x22, x24
-    ldrh w1, [x25]
-    ldr x0, [xzr, #88]
+    mov x26, x0
+    movz x27, #4
+    add x28, x22, x27
+    ldrh w1, [x28]
+    mov x0, x26
     bl update u16
     movz x1, #0
-    ldr x2, [xzr, #72]
-    ldrb w2, [x2]
+    ldrb w2, [x23]
     uxtb w2, w2
-    ldr x3, [xzr, #80]
-    uxtb w3, w3
+    uxtb w3, w25
     ldrb w4, [x19]
     uxtb w4, w4
     uxth w0, w0
@@ -398,7 +402,7 @@ main:
     uxth w5, w5
     cmp w0, w5
     csel x0, x3, x1, eq
-    add x1, x0, x24
+    add x1, x0, x27
     movz x3, #11
     uxtb w3, w3
     cmp w4, w3
@@ -412,7 +416,7 @@ main:
     movz x1, #8
     add x0, x1, x0
 2:
-    ldrb w1, [x23]
+    ldrb w1, [x24]
     uxtb w1, w1
     movz x2, #3
     add x2, x2, x19
@@ -437,10 +441,9 @@ main:
     add x1, x1, x0
     ldrh w2, [x22]
     uxth w2, w2
-    ldr x3, [xzr, #88]
-    ldrh w3, [x3]
+    ldrh w3, [x26]
     uxth w3, w3
-    ldrh w4, [x25]
+    ldrh w4, [x28]
     uxth w4, w4
     movz x5, #6
     add x5, x5, x22
@@ -475,7 +478,10 @@ main:
     ldr x23, [xzr, #32]
     ldr x24, [xzr, #40]
     ldr x25, [xzr, #48]
-    ldp x29, x30, [xzr, #56]
+    ldr x26, [xzr, #56]
+    ldr x27, [xzr, #64]
+    ldr x28, [xzr, #72]
+    ldp x29, x30, [xzr, #80]
     add sp, sp, #112
     ret
 update u8:

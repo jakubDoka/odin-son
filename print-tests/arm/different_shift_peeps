@@ -42,7 +42,9 @@ test_inplace_shifts:
     ret
 main:
     sub sp, sp, #48
-    stp x29, x30, [xzr]
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    stp x29, x30, [xzr, #16]
     movn x0, #4
     add x1, sp, #32
     str x0, [x1]
@@ -51,20 +53,20 @@ main:
     str x0, [x1]
     movn x0, #0
     bl 0xffffff68
-    str x0, [xzr, #16]
+    mov x19, x0
     add x0, sp, #32
     add x1, sp, #40
     bl 0xffffff88
-    str x0, [xzr, #24]
+    mov x20, x0
     movz x2, #4
     add x0, sp, #32
     add x1, sp, #40
     bl 0xffffffbc
-    ldr x1, [xzr, #16]
-    ldr x2, [xzr, #24]
-    add x1, x1, x2
+    add x1, x19, x20
     add x0, x1, x0
-    ldp x29, x30, [xzr]
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldp x29, x30, [xzr, #16]
     add sp, sp, #48
     ret
 =========== OPT LEVEL: none ===========
@@ -182,7 +184,9 @@ test_inplace_shifts:
     ret
 main:
     sub sp, sp, #48
-    stp x29, x30, [xzr]
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    stp x29, x30, [xzr, #16]
     movn x0, #4
     add x1, sp, #32
     str x0, [x1]
@@ -191,20 +195,20 @@ main:
     str x0, [x1]
     movn x0, #0
     bl 0xffffff68
-    str x0, [xzr, #16]
+    mov x19, x0
     add x0, sp, #32
     add x1, sp, #40
     bl 0xffffff88
-    str x0, [xzr, #24]
+    mov x20, x0
     movz x2, #4
     add x0, sp, #32
     add x1, sp, #40
     bl 0xffffffbc
-    ldr x1, [xzr, #16]
-    ldr x2, [xzr, #24]
-    add x1, x1, x2
+    add x1, x19, x20
     add x0, x1, x0
-    ldp x29, x30, [xzr]
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldp x29, x30, [xzr, #16]
     add sp, sp, #48
     ret
 =========== OPT LEVEL: moderate ===========

@@ -70,94 +70,95 @@ test_unsigned:
     ret
 test_mixed_patterns:
     sub sp, sp, #32
-    stp x29, x30, [xzr]
-    str x0, [xzr, #16]
-    ldr x0, [xzr, #16]
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    stp x29, x30, [xzr, #16]
+    mov x19, x0
+    mov x0, x19
     bl 0xffffff2c
-    str x0, [xzr, #24]
+    mov x20, x0
     movz x0, #1
-    ldr x1, [xzr, #16]
-    add x0, x0, x1
+    add x0, x0, x19
     bl 0xffffff2c
-    ldr x1, [xzr, #24]
-    cmp x1, x0
+    cmp x20, x0
     b.lt 0x38
-    b 5
+    b 4
 17:
-    ldr x1, [xzr, #24]
-    cmp x1, x0
-    b.le 0x48
-    b 5
+    cmp x20, x0
+    b.le 3
+    b 4
+    cmp x20, x0
+    b.ne 0x7c
+    cmp x20, x0
+    b.gt 0x58
+    b test_unsigned
 18:
-    ldr x1, [xzr, #24]
-    cmp x1, x0
-    b.ne 0x90
-    ldr x1, [xzr, #24]
-    cmp x1, x0
-    b.gt 7
-    b 0x80
-    ldr x1, [xzr, #24]
-    cmp x1, x0
-    b.ge 0x74
+    cmp x20, x0
+    b.ge 7
+    b test_unsigned
+    cmp x20, x0
+    b.eq 0x74
+    movz x0, #0
     b 0x80
 19:
-    ldr x1, [xzr, #24]
-    cmp x1, x0
-    b.eq 0x88
-20:
-    movz x0, #0
-    b 0x94
-21:
     movz x0, #200
-    b 0x94
-22:
+    b 0x80
+20:
     movz x0, #100
-23:
-    ldp x29, x30, [xzr]
+21:
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldp x29, x30, [xzr, #16]
     add sp, sp, #32
     ret
 main:
     sub sp, sp, #64
-    stp x29, x30, [xzr]
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    str x24, [xzr, #40]
+    stp x29, x30, [xzr, #48]
     movz x0, #10
     movz x1, #20
-    bl 0xfffffe90
-    str x0, [xzr, #16]
+    bl 0xfffffe9c
+    mov x19, x0
     movz x1, #20
     movz x0, #20
-    bl 0xfffffe90
-    str x0, [xzr, #24]
+    bl 0xfffffe9c
+    mov x20, x0
     movz x1, #10
     movz x0, #30
-    bl 0xfffffe90
-    str x0, [xzr, #32]
+    bl 0xfffffe9c
+    mov x21, x0
     movz x0, #10
     movz x1, #20
-    bl 0xfffffef8
-    str x0, [xzr, #40]
+    bl 0xffffff04
+    mov x22, x0
     movz x1, #20
     movz x0, #20
-    bl 0xfffffef8
-    str x0, [xzr, #48]
+    bl 0xffffff04
+    mov x23, x0
     movz x1, #10
     movz x0, #30
-    bl 0xfffffef8
-    str x0, [xzr, #56]
+    bl 0xffffff04
+    mov x24, x0
     movz x0, #42
-    bl 0xffffff60
-    ldr x1, [xzr, #16]
-    ldr x2, [xzr, #24]
-    add x1, x1, x2
-    ldr x2, [xzr, #32]
-    add x1, x1, x2
-    ldr x2, [xzr, #40]
-    add x1, x1, x2
-    ldr x2, [xzr, #48]
-    add x1, x1, x2
-    ldr x2, [xzr, #56]
-    add x1, x1, x2
+    bl 0xffffff6c
+    add x1, x19, x20
+    add x1, x1, x21
+    add x1, x1, x22
+    add x1, x1, x23
+    add x1, x1, x24
     add x0, x1, x0
-    ldp x29, x30, [xzr]
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldr x24, [xzr, #40]
+    ldp x29, x30, [xzr, #48]
     add sp, sp, #64
     ret
 =========== OPT LEVEL: none ===========
@@ -395,94 +396,95 @@ test_unsigned:
     ret
 test_mixed_patterns:
     sub sp, sp, #32
-    stp x29, x30, [xzr]
-    str x0, [xzr, #16]
-    ldr x0, [xzr, #16]
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    stp x29, x30, [xzr, #16]
+    mov x19, x0
+    mov x0, x19
     bl 0xffffff2c
-    str x0, [xzr, #24]
+    mov x20, x0
     movz x0, #1
-    ldr x1, [xzr, #16]
-    add x0, x0, x1
+    add x0, x0, x19
     bl 0xffffff2c
-    ldr x1, [xzr, #24]
-    cmp x1, x0
+    cmp x20, x0
     b.lt 0x38
-    b 5
+    b 4
 17:
-    ldr x1, [xzr, #24]
-    cmp x1, x0
-    b.le 0x48
-    b 5
+    cmp x20, x0
+    b.le 3
+    b 4
+    cmp x20, x0
+    b.ne 0x7c
+    cmp x20, x0
+    b.gt 0x58
+    b test_unsigned
 18:
-    ldr x1, [xzr, #24]
-    cmp x1, x0
-    b.ne 0x90
-    ldr x1, [xzr, #24]
-    cmp x1, x0
-    b.gt 7
-    b 0x80
-    ldr x1, [xzr, #24]
-    cmp x1, x0
-    b.ge 0x74
+    cmp x20, x0
+    b.ge 7
+    b test_unsigned
+    cmp x20, x0
+    b.eq 0x74
+    movz x0, #0
     b 0x80
 19:
-    ldr x1, [xzr, #24]
-    cmp x1, x0
-    b.eq 0x88
-20:
-    movz x0, #0
-    b 0x94
-21:
     movz x0, #200
-    b 0x94
-22:
+    b 0x80
+20:
     movz x0, #100
-23:
-    ldp x29, x30, [xzr]
+21:
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldp x29, x30, [xzr, #16]
     add sp, sp, #32
     ret
 main:
     sub sp, sp, #64
-    stp x29, x30, [xzr]
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    str x24, [xzr, #40]
+    stp x29, x30, [xzr, #48]
     movz x0, #10
     movz x1, #20
-    bl 0xfffffe90
-    str x0, [xzr, #16]
+    bl 0xfffffe9c
+    mov x19, x0
     movz x1, #20
     movz x0, #20
-    bl 0xfffffe90
-    str x0, [xzr, #24]
+    bl 0xfffffe9c
+    mov x20, x0
     movz x1, #10
     movz x0, #30
-    bl 0xfffffe90
-    str x0, [xzr, #32]
+    bl 0xfffffe9c
+    mov x21, x0
     movz x0, #10
     movz x1, #20
-    bl 0xfffffef8
-    str x0, [xzr, #40]
+    bl 0xffffff04
+    mov x22, x0
     movz x1, #20
     movz x0, #20
-    bl 0xfffffef8
-    str x0, [xzr, #48]
+    bl 0xffffff04
+    mov x23, x0
     movz x1, #10
     movz x0, #30
-    bl 0xfffffef8
-    str x0, [xzr, #56]
+    bl 0xffffff04
+    mov x24, x0
     movz x0, #42
-    bl 0xffffff60
-    ldr x1, [xzr, #16]
-    ldr x2, [xzr, #24]
-    add x1, x1, x2
-    ldr x2, [xzr, #32]
-    add x1, x1, x2
-    ldr x2, [xzr, #40]
-    add x1, x1, x2
-    ldr x2, [xzr, #48]
-    add x1, x1, x2
-    ldr x2, [xzr, #56]
-    add x1, x1, x2
+    bl 0xffffff6c
+    add x1, x19, x20
+    add x1, x1, x21
+    add x1, x1, x22
+    add x1, x1, x23
+    add x1, x1, x24
     add x0, x1, x0
-    ldp x29, x30, [xzr]
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldr x24, [xzr, #40]
+    ldp x29, x30, [xzr, #48]
     add sp, sp, #64
     ret
 =========== OPT LEVEL: moderate ===========

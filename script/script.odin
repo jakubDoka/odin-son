@@ -84,7 +84,14 @@ main :: proc() {
 	case "run-programs":
 		jit_path := env("JIT")
 		if jit_path == "" {
-			cmd("odin", "build", "odinc", "-out:jit", "-debug")
+			cmd(
+				"odin",
+				"build",
+				"odinc",
+				"-out:jit",
+				"-debug",
+				extras = args[min(len(args), 3):],
+			)
 			jit_path = "./jit"
 		}
 
@@ -301,7 +308,7 @@ run_generated :: proc() -> int {
 
 			ref_res := cmd(odin_bin)
 
-			LEVELS :: []string {
+			LEVELS := []string {
 				"moderate-quick",
 				"none",
 				"none-quick",
@@ -313,8 +320,16 @@ run_generated :: proc() -> int {
 			for level in LEVELS {
 				res_obj := join(MOD_DIR, name, fmt.tprintf("%v-%v.o", name, level))
 
-				if cmd(jit_path, entry, fmt.tprintf("-o:%v", level), "-o", res_obj, env_map = {root_env}).exit_code !=
-				   0 {
+				res := cmd(
+					jit_path,
+					entry,
+					fmt.tprintf("-o:%v", level),
+					"-o",
+					res_obj,
+					env_map = {root_env},
+				)
+				fmt.println(res.stdout)
+				if res.exit_code != 0 {
 					continue
 				}
 
@@ -785,9 +800,13 @@ cmd_exists :: proc(name: string) -> bool {
 
 exists :: os.exists
 
-cmd :: proc(args: ..string, env_map := []string{}) -> Cmd_Out {
+cmd :: proc(
+	args: ..string,
+	env_map := []string{},
+	extras := []string{},
+) -> Cmd_Out {
 	pd: os.Process_Desc
-	pd.command = args
+	pd.command = slice.concatenate([][]string{args, extras})
 	pd.env = env_map
 	state, stdout, stderr, err := os.process_exec(pd, context.allocator)
 	fmt.assertf(err == nil, "cmd err (%v): %v", args, err)

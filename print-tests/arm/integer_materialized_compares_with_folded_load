@@ -1,6 +1,5 @@
 =========== OPT LEVEL: none-quick ===========
 msrc:
-    sub sp, sp, #16
     movz x2, #4
     movz x3, #8
     movz x4, #16
@@ -47,10 +46,8 @@ msrc:
     movz x1, #32
     madd x1, x7, x1, xzr
     add x0, x0, x1
-    add sp, sp, #16
     ret
 usrc:
-    sub sp, sp, #16
     movz x2, #4
     movz x3, #8
     movz x4, #16
@@ -97,10 +94,8 @@ usrc:
     movz x1, #32
     madd x1, x7, x1, xzr
     add x0, x0, x1
-    add sp, sp, #16
     ret
 mdst:
-    sub sp, sp, #16
     movz x1, #4
     movz x2, #8
     movz x3, #16
@@ -148,10 +143,8 @@ mdst:
     movz x1, #32
     madd x1, x6, x1, xzr
     add x0, x0, x1
-    add sp, sp, #16
     ret
 udst:
-    sub sp, sp, #16
     movz x1, #4
     movz x2, #8
     movz x3, #16
@@ -199,76 +192,81 @@ udst:
     movz x1, #32
     madd x1, x6, x1, xzr
     add x0, x0, x1
-    add sp, sp, #16
     ret
 main:
-    sub sp, sp, #272
+    sub sp, sp, #256
     str x19, [xzr]
     str x20, [xzr, #8]
     str x21, [xzr, #16]
     str x22, [xzr, #24]
-    stp x29, x30, [xzr, #32]
+    str x23, [xzr, #32]
+    str x24, [xzr, #40]
+    str x25, [xzr, #48]
+    str x26, [xzr, #56]
+    str x27, [xzr, #64]
+    str x28, [xzr, #72]
+    stp x29, x30, [xzr, #80]
     movn x0, #4
     movk x0, #65531, lsl #32
-    add x1, sp, #120
+    add x1, sp, #104
     str x0, [x1]
     movz x19, #8
     movz x20, #16
-    add x1, sp, #120
+    add x1, sp, #104
     add x1, x1, x19
     str x0, [x1]
-    add x1, sp, #120
+    add x1, sp, #104
     add x1, x1, x20
     str x0, [x1]
     movn x0, #8
-    add x1, sp, #120
-    bl 0xfffffce8
-    str x0, [xzr, #48]
+    add x1, sp, #104
+    bl 0xfffffd08
+    mov x21, x0
     movn x0, #4
-    add x1, sp, #120
-    bl 0xfffffce8
-    str x0, [xzr, #56]
+    add x1, sp, #104
+    bl 0xfffffd08
+    mov x22, x0
     movz x0, #3
-    add x1, sp, #120
-    bl 0xfffffce8
-    str x0, [xzr, #64]
-    movz x21, #23040
-    movk x21, #610, lsl #16
-    movk x21, #23040, lsl #32
-    movk x21, #610, lsl #48
-    add x0, sp, #144
-    str x21, [x0]
-    add x0, sp, #144
+    add x1, sp, #104
+    bl 0xfffffd08
+    mov x23, x0
+    movz x24, #23040
+    movk x24, #610, lsl #16
+    movk x24, #23040, lsl #32
+    movk x24, #610, lsl #48
+    add x0, sp, #128
+    str x24, [x0]
+    add x0, sp, #128
     add x0, x0, x19
-    str x21, [x0]
-    add x0, sp, #144
+    str x24, [x0]
+    add x0, sp, #128
     add x0, x0, x20
-    str x21, [x0]
+    str x24, [x0]
     movz x0, #5
-    add x1, sp, #144
-    bl 0xfffffdac
-    str x0, [xzr, #72]
+    add x1, sp, #128
+    bl 0xfffffdc4
+    mov x25, x0
     movz x0, #23040
     movk x0, #610, lsl #16
-    add x1, sp, #144
-    bl 0xfffffdac
-    str x0, [xzr, #80]
+    add x1, sp, #128
+    bl 0xfffffdc4
+    mov x26, x0
     movz x0, #23041
     movk x0, #610, lsl #16
-    add x1, sp, #144
-    bl 0xfffffdac
-    str x0, [xzr, #88]
-    add x0, sp, #168
-    movz x22, #3
-    movk x22, #3, lsl #32
-    str x22, [x0]
+    add x1, sp, #128
+    bl 0xfffffdc4
+    mov x27, x0
+    add x0, sp, #152
+    movz x28, #3
+    movk x28, #3, lsl #32
+    str x28, [x0]
     add x1, x0, x19
-    str x22, [x1]
+    str x28, [x1]
     add x1, x0, x20
-    str x22, [x1]
-    bl 0xfffffe70
-    str x0, [xzr, #96]
-    add x0, sp, #192
+    str x28, [x1]
+    bl 0xfffffe80
+    mov x29, x0
+    add x0, sp, #176
     movz x1, #9
     movk x1, #9, lsl #32
     str x1, [x0]
@@ -276,47 +274,45 @@ main:
     str x1, [x2]
     add x2, x0, x20
     str x1, [x2]
-    bl 0xfffffe70
-    str x0, [xzr, #104]
-    add x0, sp, #216
-    str x22, [x0]
+    bl 0xfffffe80
+    str x0, [xzr, #96]
+    add x0, sp, #200
+    str x28, [x0]
     add x1, x0, x19
-    str x22, [x1]
+    str x28, [x1]
     add x1, x0, x20
-    str x22, [x1]
-    bl 0xffffff38
-    str x0, [xzr, #112]
-    add x0, sp, #240
-    str x21, [x0]
+    str x28, [x1]
+    bl 0xffffff40
+    mov x28, x0
+    add x0, sp, #224
+    str x24, [x0]
     add x1, x0, x19
-    str x21, [x1]
+    str x24, [x1]
     add x1, x0, x20
-    str x21, [x1]
-    bl 0xffffff38
-    ldr x1, [xzr, #48]
-    ldr x2, [xzr, #56]
+    str x24, [x1]
+    bl 0xffffff40
+    add x1, x21, x22
+    add x1, x1, x23
+    add x2, x25, x26
+    add x2, x2, x27
     add x1, x1, x2
-    ldr x2, [xzr, #64]
-    add x1, x1, x2
-    ldr x2, [xzr, #72]
-    ldr x3, [xzr, #80]
-    add x2, x2, x3
-    ldr x3, [xzr, #88]
-    add x2, x2, x3
-    add x1, x1, x2
+    add x1, x1, x29
     ldr x2, [xzr, #96]
     add x1, x1, x2
-    ldr x2, [xzr, #104]
-    add x1, x1, x2
-    ldr x2, [xzr, #112]
-    add x1, x1, x2
+    add x1, x1, x28
     add x0, x1, x0
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
     ldr x22, [xzr, #24]
-    ldp x29, x30, [xzr, #32]
-    add sp, sp, #272
+    ldr x23, [xzr, #32]
+    ldr x24, [xzr, #40]
+    ldr x25, [xzr, #48]
+    ldr x26, [xzr, #56]
+    ldr x27, [xzr, #64]
+    ldr x28, [xzr, #72]
+    ldp x29, x30, [xzr, #80]
+    add sp, sp, #256
     ret
 =========== OPT LEVEL: none ===========
 msrc:
@@ -636,7 +632,6 @@ main:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 msrc:
-    sub sp, sp, #16
     movz x2, #4
     movz x3, #8
     movz x4, #16
@@ -683,10 +678,8 @@ msrc:
     movz x1, #32
     madd x1, x7, x1, xzr
     add x0, x0, x1
-    add sp, sp, #16
     ret
 usrc:
-    sub sp, sp, #16
     movz x2, #4
     movz x3, #8
     movz x4, #16
@@ -733,10 +726,8 @@ usrc:
     movz x1, #32
     madd x1, x7, x1, xzr
     add x0, x0, x1
-    add sp, sp, #16
     ret
 mdst:
-    sub sp, sp, #16
     movz x1, #4
     movz x2, #8
     movz x3, #16
@@ -784,10 +775,8 @@ mdst:
     movz x1, #32
     madd x1, x6, x1, xzr
     add x0, x0, x1
-    add sp, sp, #16
     ret
 udst:
-    sub sp, sp, #16
     movz x1, #4
     movz x2, #8
     movz x3, #16
@@ -835,76 +824,81 @@ udst:
     movz x1, #32
     madd x1, x6, x1, xzr
     add x0, x0, x1
-    add sp, sp, #16
     ret
 main:
-    sub sp, sp, #272
+    sub sp, sp, #256
     str x19, [xzr]
     str x20, [xzr, #8]
     str x21, [xzr, #16]
     str x22, [xzr, #24]
-    stp x29, x30, [xzr, #32]
+    str x23, [xzr, #32]
+    str x24, [xzr, #40]
+    str x25, [xzr, #48]
+    str x26, [xzr, #56]
+    str x27, [xzr, #64]
+    str x28, [xzr, #72]
+    stp x29, x30, [xzr, #80]
     movn x0, #4
     movk x0, #65531, lsl #32
-    add x1, sp, #120
+    add x1, sp, #104
     str x0, [x1]
     movz x19, #8
     movz x20, #16
-    add x1, sp, #120
+    add x1, sp, #104
     add x1, x1, x19
     str x0, [x1]
-    add x1, sp, #120
+    add x1, sp, #104
     add x1, x1, x20
     str x0, [x1]
     movn x0, #8
-    add x1, sp, #120
-    bl 0xfffffce8
-    str x0, [xzr, #48]
+    add x1, sp, #104
+    bl 0xfffffd08
+    mov x21, x0
     movn x0, #4
-    add x1, sp, #120
-    bl 0xfffffce8
-    str x0, [xzr, #56]
+    add x1, sp, #104
+    bl 0xfffffd08
+    mov x22, x0
     movz x0, #3
-    add x1, sp, #120
-    bl 0xfffffce8
-    str x0, [xzr, #64]
-    movz x21, #23040
-    movk x21, #610, lsl #16
-    movk x21, #23040, lsl #32
-    movk x21, #610, lsl #48
-    add x0, sp, #144
-    str x21, [x0]
-    add x0, sp, #144
+    add x1, sp, #104
+    bl 0xfffffd08
+    mov x23, x0
+    movz x24, #23040
+    movk x24, #610, lsl #16
+    movk x24, #23040, lsl #32
+    movk x24, #610, lsl #48
+    add x0, sp, #128
+    str x24, [x0]
+    add x0, sp, #128
     add x0, x0, x19
-    str x21, [x0]
-    add x0, sp, #144
+    str x24, [x0]
+    add x0, sp, #128
     add x0, x0, x20
-    str x21, [x0]
+    str x24, [x0]
     movz x0, #5
-    add x1, sp, #144
-    bl 0xfffffdac
-    str x0, [xzr, #72]
+    add x1, sp, #128
+    bl 0xfffffdc4
+    mov x25, x0
     movz x0, #23040
     movk x0, #610, lsl #16
-    add x1, sp, #144
-    bl 0xfffffdac
-    str x0, [xzr, #80]
+    add x1, sp, #128
+    bl 0xfffffdc4
+    mov x26, x0
     movz x0, #23041
     movk x0, #610, lsl #16
-    add x1, sp, #144
-    bl 0xfffffdac
-    str x0, [xzr, #88]
-    add x0, sp, #168
-    movz x22, #3
-    movk x22, #3, lsl #32
-    str x22, [x0]
+    add x1, sp, #128
+    bl 0xfffffdc4
+    mov x27, x0
+    add x0, sp, #152
+    movz x28, #3
+    movk x28, #3, lsl #32
+    str x28, [x0]
     add x1, x0, x19
-    str x22, [x1]
+    str x28, [x1]
     add x1, x0, x20
-    str x22, [x1]
-    bl 0xfffffe70
-    str x0, [xzr, #96]
-    add x0, sp, #192
+    str x28, [x1]
+    bl 0xfffffe80
+    mov x29, x0
+    add x0, sp, #176
     movz x1, #9
     movk x1, #9, lsl #32
     str x1, [x0]
@@ -912,47 +906,45 @@ main:
     str x1, [x2]
     add x2, x0, x20
     str x1, [x2]
-    bl 0xfffffe70
-    str x0, [xzr, #104]
-    add x0, sp, #216
-    str x22, [x0]
+    bl 0xfffffe80
+    str x0, [xzr, #96]
+    add x0, sp, #200
+    str x28, [x0]
     add x1, x0, x19
-    str x22, [x1]
+    str x28, [x1]
     add x1, x0, x20
-    str x22, [x1]
-    bl 0xffffff38
-    str x0, [xzr, #112]
-    add x0, sp, #240
-    str x21, [x0]
+    str x28, [x1]
+    bl 0xffffff40
+    mov x28, x0
+    add x0, sp, #224
+    str x24, [x0]
     add x1, x0, x19
-    str x21, [x1]
+    str x24, [x1]
     add x1, x0, x20
-    str x21, [x1]
-    bl 0xffffff38
-    ldr x1, [xzr, #48]
-    ldr x2, [xzr, #56]
+    str x24, [x1]
+    bl 0xffffff40
+    add x1, x21, x22
+    add x1, x1, x23
+    add x2, x25, x26
+    add x2, x2, x27
     add x1, x1, x2
-    ldr x2, [xzr, #64]
-    add x1, x1, x2
-    ldr x2, [xzr, #72]
-    ldr x3, [xzr, #80]
-    add x2, x2, x3
-    ldr x3, [xzr, #88]
-    add x2, x2, x3
-    add x1, x1, x2
+    add x1, x1, x29
     ldr x2, [xzr, #96]
     add x1, x1, x2
-    ldr x2, [xzr, #104]
-    add x1, x1, x2
-    ldr x2, [xzr, #112]
-    add x1, x1, x2
+    add x1, x1, x28
     add x0, x1, x0
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
     ldr x22, [xzr, #24]
-    ldp x29, x30, [xzr, #32]
-    add sp, sp, #272
+    ldr x23, [xzr, #32]
+    ldr x24, [xzr, #40]
+    ldr x25, [xzr, #48]
+    ldr x26, [xzr, #56]
+    ldr x27, [xzr, #64]
+    ldr x28, [xzr, #72]
+    ldp x29, x30, [xzr, #80]
+    add sp, sp, #256
     ret
 =========== OPT LEVEL: moderate ===========
 msrc:

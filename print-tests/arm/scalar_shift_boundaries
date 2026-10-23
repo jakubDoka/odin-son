@@ -15,8 +15,10 @@ main:
     str x24, [xzr, #40]
     str x25, [xzr, #48]
     str x26, [xzr, #56]
-    stp x29, x30, [xzr, #64]
-    add x19, sp, #136
+    str x27, [xzr, #64]
+    str x28, [xzr, #72]
+    stp x29, x30, [xzr, #80]
+    add x19, sp, #128
     movz x0, #0
     str x0, [x19]
     movz x20, #8
@@ -67,36 +69,36 @@ main:
     ldr x1, [x26]
     movz x0, #165
     bl shifts u8
-    str x0, [xzr, #80]
+    mov x27, x0
     ldr x1, [x26]
     movn x0, #84
     bl shifts i8
-    str x0, [xzr, #88]
+    mov x28, x0
     ldr x1, [x26]
     movz x0, #42405
     bl shifts u16
-    str x0, [xzr, #96]
+    mov x29, x0
     ldr x1, [x26]
     movn x0, #21844
     bl shifts i16
-    str x0, [xzr, #104]
+    str x0, [xzr, #96]
     ldr x1, [x26]
     movz x0, #21845
     movk x0, #21845, lsl #16
     bl shifts u32
-    str x0, [xzr, #112]
+    str x0, [xzr, #104]
     ldr x1, [x26]
     movn x0, #21844
     movk x0, #43690, lsl #16
     bl shifts i32
-    str x0, [xzr, #120]
+    str x0, [xzr, #112]
     ldr x1, [x26]
     movn x0, #23130
     movk x0, #42405, lsl #16
     movk x0, #42405, lsl #32
     movk x0, #42405, lsl #48
     bl shifts u64
-    str x0, [xzr, #128]
+    str x0, [xzr, #120]
     ldr x1, [x26]
     movn x0, #21844
     movk x0, #43690, lsl #16
@@ -104,11 +106,11 @@ main:
     movk x0, #43690, lsl #48
     bl shifts i64
     madd x1, x25, x23, xzr
-    ldr x2, [xzr, #80]
-    add x1, x1, x2
+    add x1, x1, x27
     madd x1, x1, x23, xzr
-    ldr x2, [xzr, #88]
-    add x1, x1, x2
+    add x1, x1, x28
+    madd x1, x1, x23, xzr
+    add x1, x1, x29
     madd x1, x1, x23, xzr
     ldr x2, [xzr, #96]
     add x1, x1, x2
@@ -120,9 +122,6 @@ main:
     add x1, x1, x2
     madd x1, x1, x23, xzr
     ldr x2, [xzr, #120]
-    add x1, x1, x2
-    madd x1, x1, x23, xzr
-    ldr x2, [xzr, #128]
     add x1, x1, x2
     madd x1, x1, x23, xzr
     add x2, x24, x21
@@ -142,7 +141,9 @@ main:
     ldr x24, [xzr, #40]
     ldr x25, [xzr, #48]
     ldr x26, [xzr, #56]
-    ldp x29, x30, [xzr, #64]
+    ldr x27, [xzr, #64]
+    ldr x28, [xzr, #72]
+    ldp x29, x30, [xzr, #80]
     add sp, sp, #224
     ret
 shifts u8:
@@ -574,8 +575,10 @@ main:
     str x24, [xzr, #40]
     str x25, [xzr, #48]
     str x26, [xzr, #56]
-    stp x29, x30, [xzr, #64]
-    add x19, sp, #136
+    str x27, [xzr, #64]
+    str x28, [xzr, #72]
+    stp x29, x30, [xzr, #80]
+    add x19, sp, #128
     movz x0, #0
     str x0, [x19]
     movz x20, #8
@@ -626,36 +629,36 @@ main:
     ldr x1, [x26]
     movz x0, #165
     bl shifts u8
-    str x0, [xzr, #80]
+    mov x27, x0
     ldr x1, [x26]
     movn x0, #84
     bl shifts i8
-    str x0, [xzr, #88]
+    mov x28, x0
     ldr x1, [x26]
     movz x0, #42405
     bl shifts u16
-    str x0, [xzr, #96]
+    mov x29, x0
     ldr x1, [x26]
     movn x0, #21844
     bl shifts i16
-    str x0, [xzr, #104]
+    str x0, [xzr, #96]
     ldr x1, [x26]
     movz x0, #21845
     movk x0, #21845, lsl #16
     bl shifts u32
-    str x0, [xzr, #112]
+    str x0, [xzr, #104]
     ldr x1, [x26]
     movn x0, #21844
     movk x0, #43690, lsl #16
     bl shifts i32
-    str x0, [xzr, #120]
+    str x0, [xzr, #112]
     ldr x1, [x26]
     movn x0, #23130
     movk x0, #42405, lsl #16
     movk x0, #42405, lsl #32
     movk x0, #42405, lsl #48
     bl shifts u64
-    str x0, [xzr, #128]
+    str x0, [xzr, #120]
     ldr x1, [x26]
     movn x0, #21844
     movk x0, #43690, lsl #16
@@ -663,11 +666,11 @@ main:
     movk x0, #43690, lsl #48
     bl shifts i64
     madd x1, x25, x23, xzr
-    ldr x2, [xzr, #80]
-    add x1, x1, x2
+    add x1, x1, x27
     madd x1, x1, x23, xzr
-    ldr x2, [xzr, #88]
-    add x1, x1, x2
+    add x1, x1, x28
+    madd x1, x1, x23, xzr
+    add x1, x1, x29
     madd x1, x1, x23, xzr
     ldr x2, [xzr, #96]
     add x1, x1, x2
@@ -679,9 +682,6 @@ main:
     add x1, x1, x2
     madd x1, x1, x23, xzr
     ldr x2, [xzr, #120]
-    add x1, x1, x2
-    madd x1, x1, x23, xzr
-    ldr x2, [xzr, #128]
     add x1, x1, x2
     madd x1, x1, x23, xzr
     add x2, x24, x21
@@ -701,7 +701,9 @@ main:
     ldr x24, [xzr, #40]
     ldr x25, [xzr, #48]
     ldr x26, [xzr, #56]
-    ldp x29, x30, [xzr, #64]
+    ldr x27, [xzr, #64]
+    ldr x28, [xzr, #72]
+    ldp x29, x30, [xzr, #80]
     add sp, sp, #224
     ret
 shifts u8:

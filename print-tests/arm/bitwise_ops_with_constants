@@ -1,25 +1,24 @@
 =========== OPT LEVEL: none-quick ===========
 main:
     sub sp, sp, #32
-    stp x29, x30, [xzr]
+    str x19, [xzr]
+    stp x29, x30, [xzr, #8]
     movz x0, #12
     bl opaqe
-    str x0, [xzr, #16]
+    mov x19, x0
     movz x0, #0
     bl opaqe
     movz x1, #10
-    ldr x2, [xzr, #16]
-    and x1, x1, x2
+    and x1, x1, x19
     add x0, x0, x1
     movz x1, #3
-    ldr x2, [xzr, #16]
-    orr x1, x1, x2
+    orr x1, x1, x19
     add x0, x0, x1
     movz x1, #6
-    ldr x2, [xzr, #16]
-    eor x1, x1, x2
+    eor x1, x1, x19
     add x0, x0, x1
-    ldp x29, x30, [xzr]
+    ldr x19, [xzr]
+    ldp x29, x30, [xzr, #8]
     add sp, sp, #32
     ret
 opaqe:
@@ -52,25 +51,24 @@ opaqe:
 =========== OPT LEVEL: moderate-quick ===========
 main:
     sub sp, sp, #32
-    stp x29, x30, [xzr]
+    str x19, [xzr]
+    stp x29, x30, [xzr, #8]
     movz x0, #12
     bl opaqe
-    str x0, [xzr, #16]
+    mov x19, x0
     movz x0, #0
     bl opaqe
     movz x1, #10
-    ldr x2, [xzr, #16]
-    and x1, x1, x2
+    and x1, x1, x19
     add x0, x0, x1
     movz x1, #3
-    ldr x2, [xzr, #16]
-    orr x1, x1, x2
+    orr x1, x1, x19
     add x0, x0, x1
     movz x1, #6
-    ldr x2, [xzr, #16]
-    eor x1, x1, x2
+    eor x1, x1, x19
     add x0, x0, x1
-    ldp x29, x30, [xzr]
+    ldr x19, [xzr]
+    ldp x29, x30, [xzr, #8]
     add sp, sp, #32
     ret
 opaqe:

@@ -3,7 +3,8 @@ opaque:
     mov rax, rdi
     ret
 main:
-    sub rsp, 0x28
+    push rbx
+    sub rsp, 0x20
     pxor xmm0, xmm0
     movups.x [rsp], xmm0
     movups.x [rsp + 0x10], xmm0
@@ -21,29 +22,28 @@ main:
     mov.q [rsp + 0x18], rax
     xor eax, eax
 2:
-    mov.q [rsp + 0x20], rax
-    mov.q rcx, [rsp]
-    mov.q rdx, [rsp + 0x20]
-    cmp rdx, 0xa
+    mov rcx, rax
+    mov.q rdx, [rsp]
+    cmp rcx, 0xa
     jge 5
-    add.q rcx, [rsp + 0x10]
-    mov.q [rsp], rcx
-    mov.q rdx, [rsp + 0x18]
-    add.q [rsp + 0x8], rdx
-    cmp rcx, 5
+    add.q rdx, [rsp + 0x10]
+    mov.q [rsp], rdx
+    mov.q rbx, [rsp + 0x18]
+    add.q [rsp + 0x8], rbx
+    cmp rdx, 5
     jg 3
     jmp 4
 3:
     add.q [rsp + 0x10], 1
 4:
-    mov.q rdx, [rsp + 0x20]
-    add rdx, 1
-    mov rax, rdx
+    add rcx, 1
+    mov rax, rcx
     jmp 2
 5:
-    imul rax, rcx, 0x3e8
+    imul rax, rdx, 0x3e8
     add.q rax, [rsp + 0x8]
-    add rsp, 0x28
+    add rsp, 0x20
+    pop rbx
     ret
 =========== OPT LEVEL: none ===========
 opaque:
@@ -93,7 +93,8 @@ opaque:
     mov rax, rdi
     ret
 main:
-    sub rsp, 0x28
+    push rbx
+    sub rsp, 0x20
     pxor xmm0, xmm0
     movups.x [rsp], xmm0
     movups.x [rsp + 0x10], xmm0
@@ -111,29 +112,28 @@ main:
     mov.q [rsp + 0x18], rax
     xor eax, eax
 2:
-    mov.q [rsp + 0x20], rax
-    mov.q rcx, [rsp]
-    mov.q rdx, [rsp + 0x20]
-    cmp rdx, 0xa
+    mov rcx, rax
+    mov.q rdx, [rsp]
+    cmp rcx, 0xa
     jge 5
-    add.q rcx, [rsp + 0x10]
-    mov.q [rsp], rcx
-    mov.q rdx, [rsp + 0x18]
-    add.q [rsp + 0x8], rdx
-    cmp rcx, 5
+    add.q rdx, [rsp + 0x10]
+    mov.q [rsp], rdx
+    mov.q rbx, [rsp + 0x18]
+    add.q [rsp + 0x8], rbx
+    cmp rdx, 5
     jg 3
     jmp 4
 3:
     add.q [rsp + 0x10], 1
 4:
-    mov.q rdx, [rsp + 0x20]
-    add rdx, 1
-    mov rax, rdx
+    add rcx, 1
+    mov rax, rcx
     jmp 2
 5:
-    imul rax, rcx, 0x3e8
+    imul rax, rdx, 0x3e8
     add.q rax, [rsp + 0x8]
-    add rsp, 0x28
+    add rsp, 0x20
+    pop rbx
     ret
 =========== OPT LEVEL: moderate ===========
 opaque:

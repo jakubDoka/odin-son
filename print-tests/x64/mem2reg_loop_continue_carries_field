@@ -4,7 +4,8 @@ opaque:
     ret
 main:
     push rbx
-    sub rsp, 0x30
+    push rbp
+    sub rsp, 0x18
     pxor xmm0, xmm0
     movups.x [rsp], xmm0
     mov rdi, 1
@@ -15,40 +16,36 @@ main:
     mov.q [rsp + 0x8], rax
     mov rdi, 9
     call opaque
-    mov.q [rsp + 0x10], rax
-    mov rcx, 2
-    xor ebx, ebx
+    mov rcx, rax
+    mov rbx, 2
+    xor ebp, ebp
 2:
-    mov.q [rsp + 0x18], rbx
+    mov rsi, rbp
     mov.q rax, [rsp]
-    mov.q [rsp + 0x20], rax
-    mov.q rax, [rsp + 0x18]
-    mov.q rdx, [rsp + 0x10]
-    cmp rax, rdx
+    mov rdi, rax
+    cmp rsi, rcx
     jge 4
-    mov.q rax, [rsp + 0x20]
+    mov rax, rdi
     add rax, 1
-    mov.q [rsp + 0x28], rax
-    mov.q rax, [rsp + 0x28]
-    mov.q [rsp], rax
-    mov.q rax, [rsp + 0x28]
+    mov r8, rax
+    mov.q [rsp], r8
+    mov rax, r8
     cqo
-    idiv rcx
+    idiv rbx
     cmp rdx, 0
     je 3
-    mov.q rax, [rsp + 0x28]
-    add.q [rsp + 0x8], rax
+    add.q [rsp + 0x8], r8
     jmp 3
 3:
-    mov.q rax, [rsp + 0x18]
+    mov rax, rsi
     add rax, 1
-    mov rbx, rax
+    mov rbp, rax
     jmp 2
 4:
-    mov.q rax, [rsp + 0x20]
-    imul rax, rax, 0x64
+    imul rax, rdi, 0x64
     add.q rax, [rsp + 0x8]
-    add rsp, 0x30
+    add rsp, 0x18
+    pop rbp
     pop rbx
     ret
 =========== OPT LEVEL: none ===========
@@ -97,7 +94,8 @@ opaque:
     ret
 main:
     push rbx
-    sub rsp, 0x30
+    push rbp
+    sub rsp, 0x18
     pxor xmm0, xmm0
     movups.x [rsp], xmm0
     mov rdi, 1
@@ -108,40 +106,36 @@ main:
     mov.q [rsp + 0x8], rax
     mov rdi, 9
     call opaque
-    mov.q [rsp + 0x10], rax
-    mov rcx, 2
-    xor ebx, ebx
+    mov rcx, rax
+    mov rbx, 2
+    xor ebp, ebp
 2:
-    mov.q [rsp + 0x18], rbx
+    mov rsi, rbp
     mov.q rax, [rsp]
-    mov.q [rsp + 0x20], rax
-    mov.q rax, [rsp + 0x18]
-    mov.q rdx, [rsp + 0x10]
-    cmp rax, rdx
+    mov rdi, rax
+    cmp rsi, rcx
     jge 4
-    mov.q rax, [rsp + 0x20]
+    mov rax, rdi
     add rax, 1
-    mov.q [rsp + 0x28], rax
-    mov.q rax, [rsp + 0x28]
-    mov.q [rsp], rax
-    mov.q rax, [rsp + 0x28]
+    mov r8, rax
+    mov.q [rsp], r8
+    mov rax, r8
     cqo
-    idiv rcx
+    idiv rbx
     cmp rdx, 0
     je 3
-    mov.q rax, [rsp + 0x28]
-    add.q [rsp + 0x8], rax
+    add.q [rsp + 0x8], r8
     jmp 3
 3:
-    mov.q rax, [rsp + 0x18]
+    mov rax, rsi
     add rax, 1
-    mov rbx, rax
+    mov rbp, rax
     jmp 2
 4:
-    mov.q rax, [rsp + 0x20]
-    imul rax, rax, 0x64
+    imul rax, rdi, 0x64
     add.q rax, [rsp + 0x8]
-    add rsp, 0x30
+    add rsp, 0x18
+    pop rbp
     pop rbx
     ret
 =========== OPT LEVEL: moderate ===========

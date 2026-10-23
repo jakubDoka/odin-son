@@ -1,7 +1,7 @@
 =========== OPT LEVEL: none-quick ===========
 main:
-    sub sp, sp, #80
-    add x1, sp, #8
+    sub sp, sp, #64
+    add x1, sp, #0
     eor v0.16b, v0.16b, v0.16b
     movz x0, #0
     movz x2, #16
@@ -22,24 +22,24 @@ main:
 1:
     cmp x6, x2
     b.lt 2
-    add sp, sp, #80
+    add sp, sp, #64
     ret
 2:
     add x7, x6, x3
     cmp x7, x5
     b.gt 3
-    str x7, [xzr]
+    mov x8, x7
     b 4
 3:
     sdiv x7, x7, x4
     madd x7, x7, x4, xzr
     add x7, x7, x3
-    str x7, [xzr]
+    mov x8, x7
 4:
     madd x7, x6, x2, xzr
     add x7, x7, x1
     str x6, [x7]
-    ldr x6, [xzr]
+    mov x6, x8
     b 1
 =========== OPT LEVEL: none ===========
 main:
@@ -84,8 +84,8 @@ main:
     b 1
 =========== OPT LEVEL: moderate-quick ===========
 main:
-    sub sp, sp, #80
-    add x1, sp, #8
+    sub sp, sp, #64
+    add x1, sp, #0
     eor v0.16b, v0.16b, v0.16b
     movz x0, #0
     movz x2, #16
@@ -106,24 +106,24 @@ main:
 1:
     cmp x6, x2
     b.lt 2
-    add sp, sp, #80
+    add sp, sp, #64
     ret
 2:
     add x7, x6, x3
     cmp x7, x5
     b.gt 3
-    str x7, [xzr]
+    mov x8, x7
     b 4
 3:
     sdiv x7, x7, x4
     madd x7, x7, x4, xzr
     add x7, x7, x3
-    str x7, [xzr]
+    mov x8, x7
 4:
     madd x7, x6, x2, xzr
     add x7, x7, x1
     str x6, [x7]
-    ldr x6, [xzr]
+    mov x6, x8
     b 1
 =========== OPT LEVEL: moderate ===========
 main:

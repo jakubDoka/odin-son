@@ -1,14 +1,12 @@
 =========== OPT LEVEL: none-quick ===========
 neg32_reg:
-    movss.d [rsp - 0x18], xmm0
+    movss xmm1, xmm0
     pxor xmm0, xmm0
-    movss.d xmm1, [rsp - 0x18]
     subss xmm0, xmm1
     ret
 neg64_reg:
-    movsd.q [rsp - 0x18], xmm0
+    movsd xmm1, xmm0
     pxor xmm0, xmm0
-    movsd.q xmm1, [rsp - 0x18]
     subsd xmm0, xmm1
     ret
 neg32:
@@ -23,14 +21,14 @@ neg64:
     ret
 main:
     sub rsp, 0x48
-    movss.d xmm0, [rip + 0xe5e]
+    movss.d xmm0, [rip + 0xef8]
     movss.d [rsp], xmm0
-    movsd.q xmm0, [rip + 0xe57]
+    movsd.q xmm0, [rip + 0xef1]
     movsd.q [rsp + 0x4], xmm0
-    movss.d xmm0, [rip + 0xe4f]
+    movss.d xmm0, [rip + 0xee9]
     call neg32_reg
     movss.d [rsp + 0xc], xmm0
-    movsd.q xmm0, [rip + 0xe42]
+    movsd.q xmm0, [rip + 0xedc]
     call neg64_reg
     movsd.q [rsp + 0x1c], xmm0
     lea rdi, [rsp]
@@ -114,15 +112,13 @@ main:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 neg32_reg:
-    movss.d [rsp - 0x18], xmm0
+    movss xmm1, xmm0
     pxor xmm0, xmm0
-    movss.d xmm1, [rsp - 0x18]
     subss xmm0, xmm1
     ret
 neg64_reg:
-    movsd.q [rsp - 0x18], xmm0
+    movsd xmm1, xmm0
     pxor xmm0, xmm0
-    movsd.q xmm1, [rsp - 0x18]
     subsd xmm0, xmm1
     ret
 neg32:
@@ -137,14 +133,14 @@ neg64:
     ret
 main:
     sub rsp, 0x48
-    movss.d xmm0, [rip + 0xe5e]
+    movss.d xmm0, [rip + 0xef8]
     movss.d [rsp], xmm0
-    movsd.q xmm0, [rip + 0xe57]
+    movsd.q xmm0, [rip + 0xef1]
     movsd.q [rsp + 0x4], xmm0
-    movss.d xmm0, [rip + 0xe4f]
+    movss.d xmm0, [rip + 0xee9]
     call neg32_reg
     movss.d [rsp + 0xc], xmm0
-    movsd.q xmm0, [rip + 0xe42]
+    movsd.q xmm0, [rip + 0xedc]
     call neg64_reg
     movsd.q [rsp + 0x1c], xmm0
     lea rdi, [rsp]

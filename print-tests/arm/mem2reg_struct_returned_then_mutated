@@ -5,20 +5,22 @@ mk:
     ret
 main:
     sub sp, sp, #32
-    stp x29, x30, [xzr]
+    str x19, [xzr]
+    stp x29, x30, [xzr, #8]
     movz x0, #6
     bl 0xfffffff8
-    str x0, [xzr, #16]
+    mov x19, x0
     movz x0, #9
     bl 0xfffffff8
     mov x1, x0
-    ldr x0, [xzr, #16]
+    mov x0, x19
     bl 0xfffffffc
     add x0, x0, x1
     movz x2, #100
     madd x0, x0, x2, xzr
     add x0, x0, x1
-    ldp x29, x30, [xzr]
+    ldr x19, [xzr]
+    ldp x29, x30, [xzr, #8]
     add sp, sp, #32
     ret
 =========== OPT LEVEL: none ===========
@@ -53,20 +55,22 @@ mk:
     ret
 main:
     sub sp, sp, #32
-    stp x29, x30, [xzr]
+    str x19, [xzr]
+    stp x29, x30, [xzr, #8]
     movz x0, #6
     bl 0xfffffff8
-    str x0, [xzr, #16]
+    mov x19, x0
     movz x0, #9
     bl 0xfffffff8
     mov x1, x0
-    ldr x0, [xzr, #16]
+    mov x0, x19
     bl 0xfffffffc
     add x0, x0, x1
     movz x2, #100
     madd x0, x0, x2, xzr
     add x0, x0, x1
-    ldp x29, x30, [xzr]
+    ldr x19, [xzr]
+    ldp x29, x30, [xzr, #8]
     add sp, sp, #32
     ret
 =========== OPT LEVEL: moderate ===========

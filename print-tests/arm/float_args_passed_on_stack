@@ -1,61 +1,59 @@
 =========== OPT LEVEL: none-quick ===========
 main:
-    sub sp, sp, #128
+    sub sp, sp, #32
     stp x29, x30, [xzr, #16]
     add x0, sp, #0
-    adr x1, 0xed0
+    adr x1, 0xf64
     ldr d0, [x1]
-    adr x1, 0xed8
+    adr x1, 0xf6c
     ldr d1, [x1]
-    str d1, [xzr, #32]
-    adr x1, 0xee0
+    orr v8.16b, v1.16b, v1.16b
+    adr x1, 0xf74
     ldr d2, [x1]
-    adr x1, 0xee8
+    adr x1, 0xf7c
     ldr d1, [x1]
-    str d1, [xzr, #48]
-    adr x1, 0xef0
+    orr v9.16b, v1.16b, v1.16b
+    adr x1, 0xf84
     ldr d4, [x1]
-    adr x1, 0xef8
+    adr x1, 0xf8c
     ldr d1, [x1]
-    str d1, [xzr, #64]
-    adr x1, 0xf00
+    orr v10.16b, v1.16b, v1.16b
+    adr x1, 0xf94
     ldr d1, [x1]
-    str d1, [xzr, #80]
-    adr x1, 0xf08
+    orr v11.16b, v1.16b, v1.16b
+    adr x1, 0xf9c
     ldr d1, [x1]
-    str d1, [xzr, #96]
-    adr x1, 0xf10
+    orr v12.16b, v1.16b, v1.16b
+    adr x1, 0xfa4
     ldr d1, [x1]
     str d1, [x0]
     add x0, sp, #8
-    ldr d1, [xzr, #96]
-    str d1, [x0]
-    adr x0, 0xf18
+    str d12, [x0]
+    adr x0, 0xfac
     ldr d6, [x0]
-    ldr d1, [xzr, #32]
-    ldr d3, [xzr, #48]
-    ldr d5, [xzr, #64]
-    ldr d7, [xzr, #80]
+    orr v1.16b, v8.16b, v8.16b
+    orr v3.16b, v9.16b, v9.16b
+    orr v5.16b, v10.16b, v10.16b
+    orr v7.16b, v11.16b, v11.16b
     bl load_of_args
-    str d0, [xzr, #112]
+    orr v13.16b, v0.16b, v0.16b
     movz x0, #1
     movz x1, #3
     movz x2, #5
     movz x3, #7
     movz x4, #9
-    ldr d0, [xzr, #32]
-    ldr d1, [xzr, #48]
-    ldr d2, [xzr, #64]
-    ldr d3, [xzr, #80]
-    ldr d4, [xzr, #96]
+    orr v0.16b, v8.16b, v8.16b
+    orr v1.16b, v9.16b, v9.16b
+    orr v2.16b, v10.16b, v10.16b
+    orr v3.16b, v11.16b, v11.16b
+    orr v4.16b, v12.16b, v12.16b
     bl mixed
     eor v1.16b, v1.16b, v1.16b
-    ldr d2, [xzr, #112]
-    fadd d1, d2, d1
+    fadd d1, d13, d1
     fadd d0, d1, d0
     fcvtzs x0, d0
     ldp x29, x30, [xzr, #16]
-    add sp, sp, #128
+    add sp, sp, #32
     ret
 load_of_args:
     sub sp, sp, #16
@@ -178,62 +176,60 @@ mixed:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 main:
-    sub sp, sp, #128
+    sub sp, sp, #32
     stp x29, x30, [xzr, #16]
     add x0, sp, #0
-    adr x1, 0xed0
+    adr x1, 0xf64
     ldr d0, [x1]
-    adr x1, 0xed8
+    adr x1, 0xf6c
     ldr d1, [x1]
-    str d1, [xzr, #32]
-    adr x1, 0xee0
+    orr v8.16b, v1.16b, v1.16b
+    adr x1, 0xf74
     ldr d2, [x1]
-    adr x1, 0xee8
+    adr x1, 0xf7c
     ldr d1, [x1]
-    str d1, [xzr, #48]
-    adr x1, 0xef0
+    orr v9.16b, v1.16b, v1.16b
+    adr x1, 0xf84
     ldr d4, [x1]
-    adr x1, 0xef8
+    adr x1, 0xf8c
     ldr d1, [x1]
-    str d1, [xzr, #64]
-    adr x1, 0xf00
+    orr v10.16b, v1.16b, v1.16b
+    adr x1, 0xf94
     ldr d1, [x1]
-    str d1, [xzr, #80]
-    adr x1, 0xf08
+    orr v11.16b, v1.16b, v1.16b
+    adr x1, 0xf9c
     ldr d1, [x1]
-    str d1, [xzr, #96]
-    adr x1, 0xf10
+    orr v12.16b, v1.16b, v1.16b
+    adr x1, 0xfa4
     ldr d1, [x1]
     str d1, [x0]
     add x0, sp, #8
-    ldr d1, [xzr, #96]
-    str d1, [x0]
-    adr x0, 0xf18
+    str d12, [x0]
+    adr x0, 0xfac
     ldr d6, [x0]
-    ldr d1, [xzr, #32]
-    ldr d3, [xzr, #48]
-    ldr d5, [xzr, #64]
-    ldr d7, [xzr, #80]
+    orr v1.16b, v8.16b, v8.16b
+    orr v3.16b, v9.16b, v9.16b
+    orr v5.16b, v10.16b, v10.16b
+    orr v7.16b, v11.16b, v11.16b
     bl load_of_args
-    str d0, [xzr, #112]
+    orr v13.16b, v0.16b, v0.16b
     movz x0, #1
     movz x1, #3
     movz x2, #5
     movz x3, #7
     movz x4, #9
-    ldr d0, [xzr, #32]
-    ldr d1, [xzr, #48]
-    ldr d2, [xzr, #64]
-    ldr d3, [xzr, #80]
-    ldr d4, [xzr, #96]
+    orr v0.16b, v8.16b, v8.16b
+    orr v1.16b, v9.16b, v9.16b
+    orr v2.16b, v10.16b, v10.16b
+    orr v3.16b, v11.16b, v11.16b
+    orr v4.16b, v12.16b, v12.16b
     bl mixed
     eor v1.16b, v1.16b, v1.16b
-    ldr d2, [xzr, #112]
-    fadd d1, d2, d1
+    fadd d1, d13, d1
     fadd d0, d1, d0
     fcvtzs x0, d0
     ldp x29, x30, [xzr, #16]
-    add sp, sp, #128
+    add sp, sp, #32
     ret
 load_of_args:
     sub sp, sp, #16

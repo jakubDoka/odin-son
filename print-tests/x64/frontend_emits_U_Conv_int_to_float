@@ -33,30 +33,26 @@ main:
     sub rsp, 0x18
     movabs rdi, -0x7ffffffffffffbff
     call convert
-    ucomisd.q xmm0, [rip + 0xe33]
+    ucomisd.q xmm0, [rip + 0xebb]
     jp 4
     jne 4
     movabs rdi, -0x7fffff800015bfff
     call convert_f32
-    ucomiss.d xmm0, [rip + 0xe18]
+    ucomiss.d xmm0, [rip + 0xea0]
     jp 3
     jne 3
     mov rdi, -1
     call convert
-    movsd.q [rsp + 0x8], xmm0
+    movsd.q [rsp], xmm0
     mov rdi, -1
     call convert_f32
-    movsd.q xmm1, [rsp + 0x8]
-    divsd.q xmm1, [rip + 0xde5]
-    movsd xmm1, xmm1
+    movsd.q xmm1, [rsp]
+    divsd.q xmm1, [rip + 0xe6f]
     cvttsd2si rax, xmm1
-    mov.q [rsp], rax
-    divss.d xmm0, [rip + 0xdd6]
-    cvttss2si rax, xmm0
-    imul rax, rax, 0xa
-    mov.q rcx, [rsp]
-    add rcx, rax
-    mov rax, rcx
+    divss.d xmm0, [rip + 0xe69]
+    cvttss2si rcx, xmm0
+    imul rcx, rcx, 0xa
+    add rax, rcx
     jmp 5
 3:
     xor eax, eax
@@ -64,8 +60,6 @@ main:
 4:
     xor eax, eax
 5:
-    mov.q [rsp], rax
-    mov.q rax, [rsp]
     add rsp, 0x18
     ret
 =========== OPT LEVEL: none ===========
@@ -168,30 +162,26 @@ main:
     sub rsp, 0x18
     movabs rdi, -0x7ffffffffffffbff
     call convert
-    ucomisd.q xmm0, [rip + 0xe33]
+    ucomisd.q xmm0, [rip + 0xebb]
     jp 4
     jne 4
     movabs rdi, -0x7fffff800015bfff
     call convert_f32
-    ucomiss.d xmm0, [rip + 0xe18]
+    ucomiss.d xmm0, [rip + 0xea0]
     jp 3
     jne 3
     mov rdi, -1
     call convert
-    movsd.q [rsp + 0x8], xmm0
+    movsd.q [rsp], xmm0
     mov rdi, -1
     call convert_f32
-    movsd.q xmm1, [rsp + 0x8]
-    divsd.q xmm1, [rip + 0xde5]
-    movsd xmm1, xmm1
+    movsd.q xmm1, [rsp]
+    divsd.q xmm1, [rip + 0xe6f]
     cvttsd2si rax, xmm1
-    mov.q [rsp], rax
-    divss.d xmm0, [rip + 0xdd6]
-    cvttss2si rax, xmm0
-    imul rax, rax, 0xa
-    mov.q rcx, [rsp]
-    add rcx, rax
-    mov rax, rcx
+    divss.d xmm0, [rip + 0xe69]
+    cvttss2si rcx, xmm0
+    imul rcx, rcx, 0xa
+    add rax, rcx
     jmp 5
 3:
     xor eax, eax
@@ -199,8 +189,6 @@ main:
 4:
     xor eax, eax
 5:
-    mov.q [rsp], rax
-    mov.q rax, [rsp]
     add rsp, 0x18
     ret
 =========== OPT LEVEL: moderate ===========

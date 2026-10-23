@@ -20,41 +20,38 @@ neg64:
     str d0, [x0]
     ret
 main:
-    sub sp, sp, #80
+    sub sp, sp, #32
     stp x29, x30, [xzr]
-    adr x0, 0xe90
+    adr x0, 0xf24
     ldr s0, [x0]
-    add x0, sp, #64
+    add x0, sp, #16
     str s0, [x0]
-    adr x0, 0xe98
+    adr x0, 0xf2c
     ldr d0, [x0]
-    add x0, sp, #68
+    add x0, sp, #20
     str d0, [x0]
-    adr x0, 0xea0
+    adr x0, 0xf34
     ldr s0, [x0]
     bl 0xffffffc0
-    str d0, [xzr, #16]
-    adr x0, 0xea8
+    orr v8.16b, v0.16b, v0.16b
+    adr x0, 0xf3c
     ldr d0, [x0]
     bl 0xffffffcc
-    str d0, [xzr, #32]
-    add x0, sp, #64
+    orr v9.16b, v0.16b, v0.16b
+    add x0, sp, #16
     bl 0xffffffd8
-    str d0, [xzr, #48]
-    add x0, sp, #68
+    orr v10.16b, v0.16b, v0.16b
+    add x0, sp, #20
     bl 0xffffffec
-    ldr d1, [xzr, #16]
-    fcvt d1, s1
-    add x0, sp, #68
+    fcvt d1, s8
+    add x0, sp, #20
     ldr d2, [x0]
-    add x0, sp, #64
+    add x0, sp, #16
     ldr s3, [x0]
     eor v4.16b, v4.16b, v4.16b
     fadd d1, d1, d4
-    ldr d4, [xzr, #32]
-    fadd d1, d1, d4
-    ldr d4, [xzr, #48]
-    fcvt d4, s4
+    fadd d1, d1, d9
+    fcvt d4, s10
     fadd d1, d1, d4
     fadd d0, d1, d0
     fcvt d1, s3
@@ -62,7 +59,7 @@ main:
     fadd d0, d0, d2
     fcvtzs x0, d0
     ldp x29, x30, [xzr]
-    add sp, sp, #80
+    add sp, sp, #32
     ret
 =========== OPT LEVEL: none ===========
 neg32_reg:
@@ -149,41 +146,38 @@ neg64:
     str d0, [x0]
     ret
 main:
-    sub sp, sp, #80
+    sub sp, sp, #32
     stp x29, x30, [xzr]
-    adr x0, 0xe90
+    adr x0, 0xf24
     ldr s0, [x0]
-    add x0, sp, #64
+    add x0, sp, #16
     str s0, [x0]
-    adr x0, 0xe98
+    adr x0, 0xf2c
     ldr d0, [x0]
-    add x0, sp, #68
+    add x0, sp, #20
     str d0, [x0]
-    adr x0, 0xea0
+    adr x0, 0xf34
     ldr s0, [x0]
     bl 0xffffffc0
-    str d0, [xzr, #16]
-    adr x0, 0xea8
+    orr v8.16b, v0.16b, v0.16b
+    adr x0, 0xf3c
     ldr d0, [x0]
     bl 0xffffffcc
-    str d0, [xzr, #32]
-    add x0, sp, #64
+    orr v9.16b, v0.16b, v0.16b
+    add x0, sp, #16
     bl 0xffffffd8
-    str d0, [xzr, #48]
-    add x0, sp, #68
+    orr v10.16b, v0.16b, v0.16b
+    add x0, sp, #20
     bl 0xffffffec
-    ldr d1, [xzr, #16]
-    fcvt d1, s1
-    add x0, sp, #68
+    fcvt d1, s8
+    add x0, sp, #20
     ldr d2, [x0]
-    add x0, sp, #64
+    add x0, sp, #16
     ldr s3, [x0]
     eor v4.16b, v4.16b, v4.16b
     fadd d1, d1, d4
-    ldr d4, [xzr, #32]
-    fadd d1, d1, d4
-    ldr d4, [xzr, #48]
-    fcvt d4, s4
+    fadd d1, d1, d9
+    fcvt d4, s10
     fadd d1, d1, d4
     fadd d0, d1, d0
     fcvt d1, s3
@@ -191,7 +185,7 @@ main:
     fadd d0, d0, d2
     fcvtzs x0, d0
     ldp x29, x30, [xzr]
-    add sp, sp, #80
+    add sp, sp, #32
     ret
 =========== OPT LEVEL: moderate ===========
 neg32_reg:

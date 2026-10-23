@@ -68,50 +68,52 @@ uld:
     add rax, rcx
     ret
 main:
-    sub rsp, 0x38
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    sub rsp, 0x10
     mov.d [rsp], 5
     mov rdi, 3
     lea rsi, [rsp]
     call sld
-    mov.q [rsp + 0x8], rax
+    mov rbx, rax
     lea rsi, [rsp]
     mov rdi, 5
     call sld
-    mov.q [rsp + 0x10], rax
+    mov rbp, rax
     mov rdi, 9
     lea rsi, [rsp]
     call sld
-    mov.q [rsp + 0x18], rax
+    mov r12, rax
     mov.d [rsp + 0x4], 0x3d0900
     mov rdi, 5
     lea rsi, [rsp + 0x4]
     call uld
-    mov.q [rsp + 0x20], rax
+    mov r13, rax
     lea rsi, [rsp + 0x4]
     mov rdi, 0x3d0900
     call uld
-    mov.q [rsp + 0x28], rax
+    mov r14, rax
     lea rsi, [rsp + 0x4]
     mov rdi, 0x3d0900
     call uld
-    mov.q rcx, [rsp + 0x8]
-    mov.q rdx, [rsp + 0x10]
-    add rcx, rdx
-    mov rcx, rcx
-    mov.q rdx, [rsp + 0x18]
-    add rcx, rdx
-    mov.q [rsp + 0x8], rcx
-    mov.q rcx, [rsp + 0x20]
-    mov.q rdx, [rsp + 0x28]
-    add rcx, rdx
-    mov rcx, rcx
+    mov rcx, rbx
+    add rcx, rbp
+    add rcx, r12
+    mov rdx, r13
+    add rdx, r14
+    add rdx, rax
+    mov rax, rdx
     add rcx, rax
-    mov.q [rsp + 0x10], rcx
-    mov.q rax, [rsp + 0x8]
-    mov.q rcx, [rsp + 0x10]
-    add rax, rcx
-    mov rax, rax
-    add rsp, 0x38
+    mov rax, rcx
+    add rsp, 0x10
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
     ret
 =========== OPT LEVEL: none ===========
 sld:
@@ -300,50 +302,52 @@ uld:
     add rax, rcx
     ret
 main:
-    sub rsp, 0x38
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    sub rsp, 0x10
     mov.d [rsp], 5
     mov rdi, 3
     lea rsi, [rsp]
     call sld
-    mov.q [rsp + 0x8], rax
+    mov rbx, rax
     lea rsi, [rsp]
     mov rdi, 5
     call sld
-    mov.q [rsp + 0x10], rax
+    mov rbp, rax
     mov rdi, 9
     lea rsi, [rsp]
     call sld
-    mov.q [rsp + 0x18], rax
+    mov r12, rax
     mov.d [rsp + 0x4], 0x3d0900
     mov rdi, 5
     lea rsi, [rsp + 0x4]
     call uld
-    mov.q [rsp + 0x20], rax
+    mov r13, rax
     lea rsi, [rsp + 0x4]
     mov rdi, 0x3d0900
     call uld
-    mov.q [rsp + 0x28], rax
+    mov r14, rax
     lea rsi, [rsp + 0x4]
     mov rdi, 0x3d0900
     call uld
-    mov.q rcx, [rsp + 0x8]
-    mov.q rdx, [rsp + 0x10]
-    add rcx, rdx
-    mov rcx, rcx
-    mov.q rdx, [rsp + 0x18]
-    add rcx, rdx
-    mov.q [rsp + 0x8], rcx
-    mov.q rcx, [rsp + 0x20]
-    mov.q rdx, [rsp + 0x28]
-    add rcx, rdx
-    mov rcx, rcx
+    mov rcx, rbx
+    add rcx, rbp
+    add rcx, r12
+    mov rdx, r13
+    add rdx, r14
+    add rdx, rax
+    mov rax, rdx
     add rcx, rax
-    mov.q [rsp + 0x10], rcx
-    mov.q rax, [rsp + 0x8]
-    mov.q rcx, [rsp + 0x10]
-    add rax, rcx
-    mov rax, rax
-    add rsp, 0x38
+    mov rax, rcx
+    add rsp, 0x10
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
     ret
 =========== OPT LEVEL: moderate ===========
 sld:

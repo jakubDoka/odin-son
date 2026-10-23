@@ -887,6 +887,9 @@ emit_proc_code :: proc(
 ) {
 	context.allocator, _ = arna.scrath()
 
+	bac.current_prc = ctx
+	defer bac.current_prc = nil
+
 	ctx.node_spec = ctx.target.spec
 	if ctx.check {
 		ctx.node_spec = &anal.SPEC

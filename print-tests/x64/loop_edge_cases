@@ -1,6 +1,7 @@
 =========== OPT LEVEL: none-quick ===========
 main:
     push rbx
+    push rbp
     xor eax, eax
     xor ecx, ecx
 1:
@@ -9,17 +10,17 @@ main:
     cmp rdx, 2
     je 2
     cmp rdx, 1
-    mov.q [rsp - 0x10], 0
-    sete.b [rsp - 0x10]
-    mov rbx, rax
-    add rbx, 2
-    cmp.b [rsp - 0x10], 0
-    cmovne rbx, rdx
-    cmp.b [rsp - 0x10], 0
+    sete bl
+    movzx ebx, bl
+    mov rbp, rax
+    add rbp, 2
+    test bl, bl
+    cmovne rbp, rdx
+    test bl, bl
     mov rdx, 1
     cmovne rdx, rcx
     mov rcx, rdx
-    mov rax, rbx
+    mov rax, rbp
     jmp 1
 2:
     cmp rcx, 0
@@ -28,31 +29,29 @@ main:
     jmp 8
 3:
     xor edx, edx
-    mov.q [rsp - 0x10], rcx
 4:
-    mov rcx, rdx
-    add rcx, 1
-    cmp rcx, 3
-    je 7
-    cmp rcx, 2
-    je 5
-    cmp rcx, 1
-    je 5
     mov rbx, rdx
-    add rbx, 2
-    mov.q [rsp - 0x8], rbx
-    mov rbx, 2
+    add rbx, 1
+    cmp rbx, 3
+    je 7
+    cmp rbx, 2
+    je 5
+    cmp rbx, 1
+    je 5
+    mov rbp, rdx
+    add rbp, 2
+    mov rsi, 2
     jmp 6
     jmp 5
 5:
-    mov.q rbx, [rsp - 0x10]
-    mov.q [rsp - 0x8], rcx
+    mov rsi, rcx
+    mov rbp, rbx
 6:
-    mov.q [rsp - 0x10], rbx
-    mov.q rdx, [rsp - 0x8]
+    mov rcx, rsi
+    mov rdx, rbp
     jmp 4
 7:
-    mov.q rax, [rsp - 0x10]
+    mov rax, rcx
 8:
     cmp rax, 0
     jne 9
@@ -76,6 +75,7 @@ main:
 12:
     mov rax, 1
 13:
+    pop rbp
     pop rbx
     ret
 =========== OPT LEVEL: none ===========
@@ -146,6 +146,7 @@ main:
 =========== OPT LEVEL: moderate-quick ===========
 main:
     push rbx
+    push rbp
     xor eax, eax
     xor ecx, ecx
 1:
@@ -154,17 +155,17 @@ main:
     cmp rdx, 2
     je 2
     cmp rdx, 1
-    mov.q [rsp - 0x10], 0
-    sete.b [rsp - 0x10]
-    mov rbx, rax
-    add rbx, 2
-    cmp.b [rsp - 0x10], 0
-    cmovne rbx, rdx
-    cmp.b [rsp - 0x10], 0
+    sete bl
+    movzx ebx, bl
+    mov rbp, rax
+    add rbp, 2
+    test bl, bl
+    cmovne rbp, rdx
+    test bl, bl
     mov rdx, 1
     cmovne rdx, rcx
     mov rcx, rdx
-    mov rax, rbx
+    mov rax, rbp
     jmp 1
 2:
     cmp rcx, 0
@@ -173,31 +174,29 @@ main:
     jmp 8
 3:
     xor edx, edx
-    mov.q [rsp - 0x10], rcx
 4:
-    mov rcx, rdx
-    add rcx, 1
-    cmp rcx, 3
-    je 7
-    cmp rcx, 2
-    je 5
-    cmp rcx, 1
-    je 5
     mov rbx, rdx
-    add rbx, 2
-    mov.q [rsp - 0x8], rbx
-    mov rbx, 2
+    add rbx, 1
+    cmp rbx, 3
+    je 7
+    cmp rbx, 2
+    je 5
+    cmp rbx, 1
+    je 5
+    mov rbp, rdx
+    add rbp, 2
+    mov rsi, 2
     jmp 6
     jmp 5
 5:
-    mov.q rbx, [rsp - 0x10]
-    mov.q [rsp - 0x8], rcx
+    mov rsi, rcx
+    mov rbp, rbx
 6:
-    mov.q [rsp - 0x10], rbx
-    mov.q rdx, [rsp - 0x8]
+    mov rcx, rsi
+    mov rdx, rbp
     jmp 4
 7:
-    mov.q rax, [rsp - 0x10]
+    mov rax, rcx
 8:
     cmp rax, 0
     jne 9
@@ -221,6 +220,7 @@ main:
 12:
     mov rax, 1
 13:
+    pop rbp
     pop rbx
     ret
 =========== OPT LEVEL: moderate ===========

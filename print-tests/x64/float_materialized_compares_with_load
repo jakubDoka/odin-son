@@ -80,56 +80,58 @@ fld64:
     add rax, rcx
     ret
 main:
-    sub rsp, 0x48
-    movss.d xmm0, [rip + 0xd8a]
-    movss.d [rsp + 0x34], xmm0
-    movss.d xmm0, [rsp + 0x34]
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    sub rsp, 0x20
+    movss.d xmm0, [rip + 0xe08]
+    movss.d [rsp + 0xc], xmm0
+    movss.d xmm0, [rsp + 0xc]
     movss.d [rsp], xmm0
-    movss.d xmm0, [rip + 0xd71]
+    movss.d xmm0, [rip + 0xdef]
     lea rdi, [rsp]
     call fld32
-    mov.q [rsp + 0xc], rax
+    mov rbx, rax
     lea rdi, [rsp]
-    movss.d xmm0, [rsp + 0x34]
+    movss.d xmm0, [rsp + 0xc]
     call fld32
-    mov.q [rsp + 0x14], rax
-    movss.d xmm0, [rip + 0xd49]
+    mov rbp, rax
+    movss.d xmm0, [rip + 0xdcb]
     lea rdi, [rsp]
     call fld32
-    mov.q [rsp + 0x1c], rax
-    movsd.q xmm0, [rip + 0xd3a]
-    movsd.q [rsp + 0x34], xmm0
-    movsd.q xmm0, [rsp + 0x34]
+    mov r12, rax
+    movsd.q xmm0, [rip + 0xdbe]
+    movsd.q [rsp + 0xc], xmm0
+    movsd.q xmm0, [rsp + 0xc]
     movsd.q [rsp + 0x4], xmm0
-    movsd.q xmm0, [rip + 0xd24]
+    movsd.q xmm0, [rip + 0xda8]
     lea rdi, [rsp + 0x4]
     call fld64
-    mov.q [rsp + 0x24], rax
+    mov r13, rax
     lea rdi, [rsp + 0x4]
-    movsd.q xmm0, [rsp + 0x34]
+    movsd.q xmm0, [rsp + 0xc]
     call fld64
-    mov.q [rsp + 0x2c], rax
-    movsd.q xmm0, [rip + 0xcfe]
+    mov r14, rax
+    movsd.q xmm0, [rip + 0xd86]
     lea rdi, [rsp + 0x4]
     call fld64
-    mov.q rcx, [rsp + 0xc]
-    mov.q rdx, [rsp + 0x14]
-    add rcx, rdx
-    mov rcx, rcx
-    mov.q rdx, [rsp + 0x1c]
-    add rcx, rdx
-    mov.q [rsp + 0xc], rcx
-    mov.q rcx, [rsp + 0x24]
-    mov.q rdx, [rsp + 0x2c]
-    add rcx, rdx
-    mov rcx, rcx
+    mov rcx, rbx
+    add rcx, rbp
+    add rcx, r12
+    mov rdx, r13
+    add rdx, r14
+    add rdx, rax
+    mov rax, rdx
     add rcx, rax
-    mov.q [rsp + 0x14], rcx
-    mov.q rax, [rsp + 0xc]
-    mov.q rcx, [rsp + 0x14]
-    add rax, rcx
-    mov rax, rax
-    add rsp, 0x48
+    mov rax, rcx
+    add rsp, 0x20
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
     ret
 =========== OPT LEVEL: none ===========
 fld32:
@@ -348,56 +350,58 @@ fld64:
     add rax, rcx
     ret
 main:
-    sub rsp, 0x48
-    movss.d xmm0, [rip + 0xd8a]
-    movss.d [rsp + 0x34], xmm0
-    movss.d xmm0, [rsp + 0x34]
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    sub rsp, 0x20
+    movss.d xmm0, [rip + 0xe08]
+    movss.d [rsp + 0xc], xmm0
+    movss.d xmm0, [rsp + 0xc]
     movss.d [rsp], xmm0
-    movss.d xmm0, [rip + 0xd71]
+    movss.d xmm0, [rip + 0xdef]
     lea rdi, [rsp]
     call fld32
-    mov.q [rsp + 0xc], rax
+    mov rbx, rax
     lea rdi, [rsp]
-    movss.d xmm0, [rsp + 0x34]
+    movss.d xmm0, [rsp + 0xc]
     call fld32
-    mov.q [rsp + 0x14], rax
-    movss.d xmm0, [rip + 0xd49]
+    mov rbp, rax
+    movss.d xmm0, [rip + 0xdcb]
     lea rdi, [rsp]
     call fld32
-    mov.q [rsp + 0x1c], rax
-    movsd.q xmm0, [rip + 0xd3a]
-    movsd.q [rsp + 0x34], xmm0
-    movsd.q xmm0, [rsp + 0x34]
+    mov r12, rax
+    movsd.q xmm0, [rip + 0xdbe]
+    movsd.q [rsp + 0xc], xmm0
+    movsd.q xmm0, [rsp + 0xc]
     movsd.q [rsp + 0x4], xmm0
-    movsd.q xmm0, [rip + 0xd24]
+    movsd.q xmm0, [rip + 0xda8]
     lea rdi, [rsp + 0x4]
     call fld64
-    mov.q [rsp + 0x24], rax
+    mov r13, rax
     lea rdi, [rsp + 0x4]
-    movsd.q xmm0, [rsp + 0x34]
+    movsd.q xmm0, [rsp + 0xc]
     call fld64
-    mov.q [rsp + 0x2c], rax
-    movsd.q xmm0, [rip + 0xcfe]
+    mov r14, rax
+    movsd.q xmm0, [rip + 0xd86]
     lea rdi, [rsp + 0x4]
     call fld64
-    mov.q rcx, [rsp + 0xc]
-    mov.q rdx, [rsp + 0x14]
-    add rcx, rdx
-    mov rcx, rcx
-    mov.q rdx, [rsp + 0x1c]
-    add rcx, rdx
-    mov.q [rsp + 0xc], rcx
-    mov.q rcx, [rsp + 0x24]
-    mov.q rdx, [rsp + 0x2c]
-    add rcx, rdx
-    mov rcx, rcx
+    mov rcx, rbx
+    add rcx, rbp
+    add rcx, r12
+    mov rdx, r13
+    add rdx, r14
+    add rdx, rax
+    mov rax, rdx
     add rcx, rax
-    mov.q [rsp + 0x14], rcx
-    mov.q rax, [rsp + 0xc]
-    mov.q rcx, [rsp + 0x14]
-    add rax, rcx
-    mov rax, rax
-    add rsp, 0x48
+    mov rax, rcx
+    add rsp, 0x20
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
     ret
 =========== OPT LEVEL: moderate ===========
 fld32:

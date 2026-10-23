@@ -1,29 +1,31 @@
 =========== OPT LEVEL: none-quick ===========
 main:
     push rbx
+    push rbp
     xor eax, eax
     xor ecx, ecx
 1:
     add rcx, 1
     cmp rcx, 5
     je 4
-    mov.q [rsp - 0x10], rax
-    xor edx, edx
+    mov rdx, rax
+    xor ebx, ebx
 2:
-    add rdx, 1
-    cmp rdx, 2
-    mov.q [rsp - 0x8], 0
-    sete.b [rsp - 0x8]
-    mov.q rbx, [rsp - 0x10]
     add rbx, 1
-    cmp.b [rsp - 0x8], 0
+    cmp rbx, 2
+    sete bpl
+    movzx ebp, bpl
+    mov rsi, rdx
+    add rsi, 1
+    test bpl, bpl
     jne 3
-    mov.q [rsp - 0x10], rbx
+    mov rdx, rsi
     jmp 2
 3:
-    mov rax, rbx
+    mov rax, rsi
     jmp 1
 4:
+    pop rbp
     pop rbx
     ret
 =========== OPT LEVEL: none ===========
@@ -53,29 +55,31 @@ main:
 =========== OPT LEVEL: moderate-quick ===========
 main:
     push rbx
+    push rbp
     xor eax, eax
     xor ecx, ecx
 1:
     add rcx, 1
     cmp rcx, 5
     je 4
-    mov.q [rsp - 0x10], rax
-    xor edx, edx
+    mov rdx, rax
+    xor ebx, ebx
 2:
-    add rdx, 1
-    cmp rdx, 2
-    mov.q [rsp - 0x8], 0
-    sete.b [rsp - 0x8]
-    mov.q rbx, [rsp - 0x10]
     add rbx, 1
-    cmp.b [rsp - 0x8], 0
+    cmp rbx, 2
+    sete bpl
+    movzx ebp, bpl
+    mov rsi, rdx
+    add rsi, 1
+    test bpl, bpl
     jne 3
-    mov.q [rsp - 0x10], rbx
+    mov rdx, rsi
     jmp 2
 3:
-    mov rax, rbx
+    mov rax, rsi
     jmp 1
 4:
+    pop rbp
     pop rbx
     ret
 =========== OPT LEVEL: moderate ===========

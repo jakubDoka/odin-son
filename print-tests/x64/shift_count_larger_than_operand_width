@@ -6,18 +6,18 @@ sh:
     cmovb rax, rcx
     ret
 main:
-    sub rsp, 8
+    push rbx
     mov rdi, 1
     mov rsi, 0x40
     call sh
-    mov.q [rsp], rax
+    mov rbx, rax
     mov rdi, 3
     mov rsi, 0x41
     call sh
-    mov.q rcx, [rsp]
+    mov rcx, rbx
     add rcx, rax
     mov rax, rcx
-    add rsp, 8
+    pop rbx
     ret
 =========== OPT LEVEL: none ===========
 sh:
@@ -47,18 +47,18 @@ sh:
     cmovb rax, rcx
     ret
 main:
-    sub rsp, 8
+    push rbx
     mov rdi, 1
     mov rsi, 0x40
     call sh
-    mov.q [rsp], rax
+    mov rbx, rax
     mov rdi, 3
     mov rsi, 0x41
     call sh
-    mov.q rcx, [rsp]
+    mov rcx, rbx
     add rcx, rax
     mov rax, rcx
-    add rsp, 8
+    pop rbx
     ret
 =========== OPT LEVEL: moderate ===========
 sh:

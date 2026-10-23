@@ -2,11 +2,11 @@
 opaque:
     ret
 main:
-    sub sp, sp, #64
+    sub sp, sp, #48
     str x19, [xzr]
     str x20, [xzr, #8]
     stp x29, x30, [xzr, #16]
-    add x19, sp, #40
+    add x19, sp, #32
     eor v0.16b, v0.16b, v0.16b
     str q0, [x19]
     movz x0, #1
@@ -22,38 +22,36 @@ main:
     movz x1, #2
     movz x2, #0
 2:
-    str x2, [xzr, #32]
-    ldr x3, [x19]
-    ldr x4, [xzr, #32]
-    cmp x4, x0
-    b.ge 0xa4
-    movz x4, #1
-    add x4, x4, x3
-    str x4, [x19]
-    sdiv x5, x4, x1
-    msub x5, x5, x1, x4
-    movz x6, #0
-    cmp x5, x6
-    b.eq 0x90
-    ldr x5, [x20]
-    add x4, x5, x4
-    str x4, [x20]
-    b 0x90
+    mov x3, x2
+    ldr x4, [x19]
+    cmp x3, x0
+    b.ge 0x9c
+    movz x5, #1
+    add x5, x5, x4
+    str x5, [x19]
+    sdiv x6, x5, x1
+    msub x6, x6, x1, x5
+    movz x7, #0
+    cmp x6, x7
+    b.eq 0x8c
+    ldr x6, [x20]
+    add x5, x6, x5
+    str x5, [x20]
+    b 0x8c
 3:
-    movz x4, #1
-    ldr x5, [xzr, #32]
-    add x4, x5, x4
-    mov x2, x4
+    movz x5, #1
+    add x3, x3, x5
+    mov x2, x3
     b 0x4c
 4:
     movz x0, #100
-    madd x0, x0, x3, xzr
+    madd x0, x0, x4, xzr
     ldr x1, [x20]
     add x0, x0, x1
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldp x29, x30, [xzr, #16]
-    add sp, sp, #64
+    add sp, sp, #48
     ret
 =========== OPT LEVEL: none ===========
 opaque:
@@ -113,11 +111,11 @@ main:
 opaque:
     ret
 main:
-    sub sp, sp, #64
+    sub sp, sp, #48
     str x19, [xzr]
     str x20, [xzr, #8]
     stp x29, x30, [xzr, #16]
-    add x19, sp, #40
+    add x19, sp, #32
     eor v0.16b, v0.16b, v0.16b
     str q0, [x19]
     movz x0, #1
@@ -133,38 +131,36 @@ main:
     movz x1, #2
     movz x2, #0
 2:
-    str x2, [xzr, #32]
-    ldr x3, [x19]
-    ldr x4, [xzr, #32]
-    cmp x4, x0
-    b.ge 0xa4
-    movz x4, #1
-    add x4, x4, x3
-    str x4, [x19]
-    sdiv x5, x4, x1
-    msub x5, x5, x1, x4
-    movz x6, #0
-    cmp x5, x6
-    b.eq 0x90
-    ldr x5, [x20]
-    add x4, x5, x4
-    str x4, [x20]
-    b 0x90
+    mov x3, x2
+    ldr x4, [x19]
+    cmp x3, x0
+    b.ge 0x9c
+    movz x5, #1
+    add x5, x5, x4
+    str x5, [x19]
+    sdiv x6, x5, x1
+    msub x6, x6, x1, x5
+    movz x7, #0
+    cmp x6, x7
+    b.eq 0x8c
+    ldr x6, [x20]
+    add x5, x6, x5
+    str x5, [x20]
+    b 0x8c
 3:
-    movz x4, #1
-    ldr x5, [xzr, #32]
-    add x4, x5, x4
-    mov x2, x4
+    movz x5, #1
+    add x3, x3, x5
+    mov x2, x3
     b 0x4c
 4:
     movz x0, #100
-    madd x0, x0, x3, xzr
+    madd x0, x0, x4, xzr
     ldr x1, [x20]
     add x0, x0, x1
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldp x29, x30, [xzr, #16]
-    add sp, sp, #64
+    add sp, sp, #48
     ret
 =========== OPT LEVEL: moderate ===========
 opaque:

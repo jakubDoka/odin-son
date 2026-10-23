@@ -17,18 +17,17 @@ copy_forward:
     pop rbx
     ret
 main:
-    sub rsp, 0x18
+    sub rsp, 8
     lea rax, [rsp]
     add rax, 1
-    mov.q [rsp + 0x8], rax
-    movabs rax, 0x807060504030201
-    mov.q [rsp], rax
+    movabs rcx, 0x807060504030201
+    mov.q [rsp], rcx
     mov rdx, 7
     lea rsi, [rsp]
-    mov.q rdi, [rsp + 0x8]
+    mov rdi, rax
     call copy_forward
     movzx.b eax, [rsp + 0x7]
-    add rsp, 0x18
+    add rsp, 8
     ret
 =========== OPT LEVEL: none ===========
 copy_forward:
@@ -78,18 +77,17 @@ copy_forward:
     pop rbx
     ret
 main:
-    sub rsp, 0x18
+    sub rsp, 8
     lea rax, [rsp]
     add rax, 1
-    mov.q [rsp + 0x8], rax
-    movabs rax, 0x807060504030201
-    mov.q [rsp], rax
+    movabs rcx, 0x807060504030201
+    mov.q [rsp], rcx
     mov rdx, 7
     lea rsi, [rsp]
-    mov.q rdi, [rsp + 0x8]
+    mov rdi, rax
     call copy_forward
     movzx.b eax, [rsp + 0x7]
-    add rsp, 0x18
+    add rsp, 8
     ret
 =========== OPT LEVEL: moderate ===========
 copy_forward:

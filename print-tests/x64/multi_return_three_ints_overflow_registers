@@ -1,15 +1,14 @@
 =========== OPT LEVEL: none-quick ===========
 three:
-    mov.q [rsp - 0x18], rdi
-    mov.q rax, [rsp - 0x18]
-    add rax, rsi
-    mov rax, rax
-    mov.q [rcx], rax
+    push rbx
+    mov rax, rdi
+    mov rbx, rax
+    add rbx, rsi
+    mov.q [rcx], rbx
     add rsi, rdx
     mov.q [r8], rsi
-    mov.q rax, [rsp - 0x18]
     add rax, rdx
-    mov rax, rax
+    pop rbx
     ret
 main:
     sub rsp, 0x18
@@ -19,13 +18,12 @@ main:
     lea rcx, [rsp]
     lea r8, [rsp + 0x8]
     call three
-    mov.q [rsp + 0x10], rax
+    mov rcx, rax
     mov.q rax, [rsp]
     imul rax, rax, 0x64
-    mov.q rcx, [rsp + 0x8]
-    imul rcx, rcx, 0xa
-    add rax, rcx
-    mov.q rcx, [rsp + 0x10]
+    mov.q rdx, [rsp + 0x8]
+    imul rdx, rdx, 0xa
+    add rax, rdx
     add rax, rcx
     add rsp, 0x18
     ret
@@ -58,16 +56,15 @@ main:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 three:
-    mov.q [rsp - 0x18], rdi
-    mov.q rax, [rsp - 0x18]
-    add rax, rsi
-    mov rax, rax
-    mov.q [rcx], rax
+    push rbx
+    mov rax, rdi
+    mov rbx, rax
+    add rbx, rsi
+    mov.q [rcx], rbx
     add rsi, rdx
     mov.q [r8], rsi
-    mov.q rax, [rsp - 0x18]
     add rax, rdx
-    mov rax, rax
+    pop rbx
     ret
 main:
     sub rsp, 0x18
@@ -77,13 +74,12 @@ main:
     lea rcx, [rsp]
     lea r8, [rsp + 0x8]
     call three
-    mov.q [rsp + 0x10], rax
+    mov rcx, rax
     mov.q rax, [rsp]
     imul rax, rax, 0x64
-    mov.q rcx, [rsp + 0x8]
-    imul rcx, rcx, 0xa
-    add rax, rcx
-    mov.q rcx, [rsp + 0x10]
+    mov.q rdx, [rsp + 0x8]
+    imul rdx, rdx, 0xa
+    add rax, rdx
     add rax, rcx
     add rsp, 0x18
     ret

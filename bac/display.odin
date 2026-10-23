@@ -32,6 +32,21 @@ when !fmt.NO_FMT {
 
 		fmt.set_user_formatters(&fmts)
 
+		fmt.register_user_formatter(Lrg_Fails, proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
+			value := value.(Lrg_Fails)
+			io.write_rune(fi.writer, '{')
+			first := true
+			for field in reflect.bit_fields_zipped(Lrg_Fails) {
+				if u8(value) & (1 << field.offset) != 0 {
+					if !first do io.write_rune(fi.writer, '|')
+					first = false
+					io.write_string(fi.writer, field.name)
+				}
+			}
+			io.write_rune(fi.writer, '}')
+			return true
+		})
+
 		fmt.register_user_formatter(
 			Reg_Mask,
 			proc(fi: ^fmt.Info, value: any, r: rune) -> bool {

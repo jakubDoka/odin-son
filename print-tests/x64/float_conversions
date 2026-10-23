@@ -5,73 +5,78 @@ opaque:
 main:
     push rbx
     push rbp
-    sub rsp, 0x38
+    push r12
+    push r13
+    push r14
+    push r15
+    sub rsp, 8
     mov rdi, -0x64
     call opaque
-    mov.q [rsp], rax
+    mov rbx, rax
     mov rdi, -0xbb8
     call opaque
-    mov.q [rsp + 0x8], rax
+    mov rbp, rax
     mov rdi, -0x11170
     call opaque
-    mov.q [rsp + 0x10], rax
+    mov r12, rax
     mov rdi, -0x4c4b40
     call opaque
-    mov.q [rsp + 0x18], rax
+    mov r13, rax
     mov rdi, 0xc8
     call opaque
-    mov.q [rsp + 0x20], rax
+    mov r14, rax
     mov rdi, 0xea60
     call opaque
-    mov.q [rsp + 0x28], rax
+    mov r15, rax
     mov rdi, 0x3d0900
     call opaque
-    mov.q [rsp + 0x30], rax
+    mov.q [rsp], rax
     mov rdi, 0x6acfc0
     call opaque
-    mov.q rcx, [rsp]
+    mov rcx, rbx
     movsx rcx, cl
     mov rdx, rax
     shr rdx, 0x3f
     mov rbx, rax
     shr rbx, 0x3f
-    shrx rbp, rax, rdx
-    shrx rsi, rax, rbx
+    shrx rsi, rax, rdx
+    shrx rdi, rax, rbx
     cvtsi2ss xmm0, rcx
-    cvttss2si rdi, xmm0
+    cvttss2si r8, xmm0
     cmp rdx, 0x40
-    mov.q [rsp], 0
-    setb.b [rsp]
-    xor r8d, r8d
-    cmp.b [rsp], 0
-    cmovne r8, rbp
+    setb r9b
+    movzx r9d, r9b
+    xor r10d, r10d
+    test r9b, r9b
+    cmovne r10, rsi
     cmp rbx, 0x40
-    mov.q [rsp], 0
-    setb.b [rsp]
-    xor ebp, ebp
-    cmp.b [rsp], 0
-    cmovne rbp, rsi
+    setb sil
+    movzx esi, sil
+    xor r9d, r9d
+    test sil, sil
+    cmovne r9, rdi
     mov rsi, rax
     and rsi, rbx
-    or rbp, rsi
-    cvtsi2ss xmm0, rbp
+    mov rdi, r9
+    or rdi, rsi
+    cvtsi2ss xmm0, rdi
     and rax, rdx
-    mov rbp, r8
-    or rbp, rax
-    cvtsi2sd xmm1, rbp
-    mov.q rax, [rsp + 0x8]
+    mov rsi, r10
+    or rsi, rax
+    cvtsi2sd xmm1, rsi
+    mov rax, rbp
     movsx rbp, ax
-    mov.q rax, [rsp + 0x10]
+    mov rax, r12
     movsxd rsi, eax
-    mov.q rax, [rsp + 0x20]
-    movzx r8d, al
-    mov.q rax, [rsp + 0x28]
+    mov rax, r14
+    movzx edi, al
+    mov rax, r15
     movzx r9d, ax
-    mov.q rax, [rsp + 0x30]
+    mov.q rax, [rsp]
     mov r10d, eax
     cvtsi2sd xmm2, rcx
     cvttsd2si rax, xmm2
-    lea rax, [rdi + rax + 0x6]
+    lea rax, [r8 + rax + 0x6]
     cvtsi2ss xmm2, rbp
     cvttss2si rcx, xmm2
     add rax, rcx
@@ -84,18 +89,16 @@ main:
     cvtsi2sd xmm2, rsi
     cvttsd2si rcx, xmm2
     add rax, rcx
-    mov.q rcx, [rsp + 0x18]
-    cvtsi2ss xmm2, rcx
+    cvtsi2ss xmm2, r13
     cvttss2si rcx, xmm2
     add rax, rcx
-    mov.q rcx, [rsp + 0x18]
-    cvtsi2sd xmm2, rcx
+    cvtsi2sd xmm2, r13
     cvttsd2si rcx, xmm2
     add rax, rcx
-    cvtsi2ss xmm2, r8
+    cvtsi2ss xmm2, rdi
     cvttss2si rcx, xmm2
     add rax, rcx
-    cvtsi2sd xmm2, r8
+    cvtsi2sd xmm2, rdi
     cvttsd2si rcx, xmm2
     add rax, rcx
     cvtsi2ss xmm2, r9
@@ -123,7 +126,11 @@ main:
     cvttsd2si rcx, xmm1
     add rax, rcx
     add rax, 0x100cc
-    add rsp, 0x38
+    add rsp, 8
+    pop r15
+    pop r14
+    pop r13
+    pop r12
     pop rbp
     pop rbx
     ret
@@ -271,73 +278,78 @@ opaque:
 main:
     push rbx
     push rbp
-    sub rsp, 0x38
+    push r12
+    push r13
+    push r14
+    push r15
+    sub rsp, 8
     mov rdi, -0x64
     call opaque
-    mov.q [rsp], rax
+    mov rbx, rax
     mov rdi, -0xbb8
     call opaque
-    mov.q [rsp + 0x8], rax
+    mov rbp, rax
     mov rdi, -0x11170
     call opaque
-    mov.q [rsp + 0x10], rax
+    mov r12, rax
     mov rdi, -0x4c4b40
     call opaque
-    mov.q [rsp + 0x18], rax
+    mov r13, rax
     mov rdi, 0xc8
     call opaque
-    mov.q [rsp + 0x20], rax
+    mov r14, rax
     mov rdi, 0xea60
     call opaque
-    mov.q [rsp + 0x28], rax
+    mov r15, rax
     mov rdi, 0x3d0900
     call opaque
-    mov.q [rsp + 0x30], rax
+    mov.q [rsp], rax
     mov rdi, 0x6acfc0
     call opaque
-    mov.q rcx, [rsp]
+    mov rcx, rbx
     movsx rcx, cl
     mov rdx, rax
     shr rdx, 0x3f
     mov rbx, rax
     shr rbx, 0x3f
-    shrx rbp, rax, rdx
-    shrx rsi, rax, rbx
+    shrx rsi, rax, rdx
+    shrx rdi, rax, rbx
     cvtsi2ss xmm0, rcx
-    cvttss2si rdi, xmm0
+    cvttss2si r8, xmm0
     cmp rdx, 0x40
-    mov.q [rsp], 0
-    setb.b [rsp]
-    xor r8d, r8d
-    cmp.b [rsp], 0
-    cmovne r8, rbp
+    setb r9b
+    movzx r9d, r9b
+    xor r10d, r10d
+    test r9b, r9b
+    cmovne r10, rsi
     cmp rbx, 0x40
-    mov.q [rsp], 0
-    setb.b [rsp]
-    xor ebp, ebp
-    cmp.b [rsp], 0
-    cmovne rbp, rsi
+    setb sil
+    movzx esi, sil
+    xor r9d, r9d
+    test sil, sil
+    cmovne r9, rdi
     mov rsi, rax
     and rsi, rbx
-    or rbp, rsi
-    cvtsi2ss xmm0, rbp
+    mov rdi, r9
+    or rdi, rsi
+    cvtsi2ss xmm0, rdi
     and rax, rdx
-    mov rbp, r8
-    or rbp, rax
-    cvtsi2sd xmm1, rbp
-    mov.q rax, [rsp + 0x8]
+    mov rsi, r10
+    or rsi, rax
+    cvtsi2sd xmm1, rsi
+    mov rax, rbp
     movsx rbp, ax
-    mov.q rax, [rsp + 0x10]
+    mov rax, r12
     movsxd rsi, eax
-    mov.q rax, [rsp + 0x20]
-    movzx r8d, al
-    mov.q rax, [rsp + 0x28]
+    mov rax, r14
+    movzx edi, al
+    mov rax, r15
     movzx r9d, ax
-    mov.q rax, [rsp + 0x30]
+    mov.q rax, [rsp]
     mov r10d, eax
     cvtsi2sd xmm2, rcx
     cvttsd2si rax, xmm2
-    lea rax, [rdi + rax + 0x6]
+    lea rax, [r8 + rax + 0x6]
     cvtsi2ss xmm2, rbp
     cvttss2si rcx, xmm2
     add rax, rcx
@@ -350,18 +362,16 @@ main:
     cvtsi2sd xmm2, rsi
     cvttsd2si rcx, xmm2
     add rax, rcx
-    mov.q rcx, [rsp + 0x18]
-    cvtsi2ss xmm2, rcx
+    cvtsi2ss xmm2, r13
     cvttss2si rcx, xmm2
     add rax, rcx
-    mov.q rcx, [rsp + 0x18]
-    cvtsi2sd xmm2, rcx
+    cvtsi2sd xmm2, r13
     cvttsd2si rcx, xmm2
     add rax, rcx
-    cvtsi2ss xmm2, r8
+    cvtsi2ss xmm2, rdi
     cvttss2si rcx, xmm2
     add rax, rcx
-    cvtsi2sd xmm2, r8
+    cvtsi2sd xmm2, rdi
     cvttsd2si rcx, xmm2
     add rax, rcx
     cvtsi2ss xmm2, r9
@@ -389,7 +399,11 @@ main:
     cvttsd2si rcx, xmm1
     add rax, rcx
     add rax, 0x100cc
-    add rsp, 0x38
+    add rsp, 8
+    pop r15
+    pop r14
+    pop r13
+    pop r12
     pop rbp
     pop rbx
     ret

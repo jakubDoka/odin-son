@@ -1,6 +1,5 @@
 =========== OPT LEVEL: none-quick ===========
 sld:
-    sub sp, sp, #16
     ldr w1, [x1]
     cmp w0, w1
     cset w2, eq
@@ -35,10 +34,8 @@ sld:
     movz x1, #32
     madd x1, x3, x1, xzr
     add x0, x0, x1
-    add sp, sp, #16
     ret
 uld:
-    sub sp, sp, #16
     ldr w1, [x1]
     cmp w0, w1
     cset w2, eq
@@ -73,54 +70,58 @@ uld:
     movz x1, #32
     madd x1, x3, x1, xzr
     add x0, x0, x1
-    add sp, sp, #16
     ret
 main:
     sub sp, sp, #64
-    stp x29, x30, [xzr]
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    stp x29, x30, [xzr, #40]
     add x0, sp, #56
     movz x1, #5
     str w1, [x0]
     movz x0, #3
     add x1, sp, #56
-    bl 0xfffffed8
-    str x0, [xzr, #16]
+    bl 0xfffffee8
+    mov x19, x0
     add x1, sp, #56
     movz x0, #5
-    bl 0xfffffed8
-    str x0, [xzr, #24]
+    bl 0xfffffee8
+    mov x20, x0
     movz x0, #9
     add x1, sp, #56
-    bl 0xfffffed8
-    str x0, [xzr, #32]
+    bl 0xfffffee8
+    mov x21, x0
     add x0, sp, #60
     movz x1, #2304
     movk x1, #61, lsl #16
     str w1, [x0]
     movz x0, #5
     add x1, sp, #60
-    bl 0xffffff6c
-    str x0, [xzr, #40]
+    bl 0xffffff74
+    mov x22, x0
     add x1, sp, #60
     movz x0, #2304
     movk x0, #61, lsl #16
-    bl 0xffffff6c
-    str x0, [xzr, #48]
+    bl 0xffffff74
+    mov x23, x0
     add x1, sp, #60
     movz x0, #2304
     movk x0, #61, lsl #16
-    bl 0xffffff6c
-    ldr x1, [xzr, #16]
-    ldr x2, [xzr, #24]
-    add x1, x1, x2
-    ldr x2, [xzr, #32]
-    add x1, x1, x2
-    ldr x2, [xzr, #40]
-    ldr x3, [xzr, #48]
-    add x2, x2, x3
+    bl 0xffffff74
+    add x1, x19, x20
+    add x1, x1, x21
+    add x2, x22, x23
     add x0, x2, x0
     add x0, x1, x0
-    ldp x29, x30, [xzr]
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldp x29, x30, [xzr, #40]
     add sp, sp, #64
     ret
 =========== OPT LEVEL: none ===========
@@ -251,7 +252,6 @@ main:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 sld:
-    sub sp, sp, #16
     ldr w1, [x1]
     cmp w0, w1
     cset w2, eq
@@ -286,10 +286,8 @@ sld:
     movz x1, #32
     madd x1, x3, x1, xzr
     add x0, x0, x1
-    add sp, sp, #16
     ret
 uld:
-    sub sp, sp, #16
     ldr w1, [x1]
     cmp w0, w1
     cset w2, eq
@@ -324,54 +322,58 @@ uld:
     movz x1, #32
     madd x1, x3, x1, xzr
     add x0, x0, x1
-    add sp, sp, #16
     ret
 main:
     sub sp, sp, #64
-    stp x29, x30, [xzr]
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    stp x29, x30, [xzr, #40]
     add x0, sp, #56
     movz x1, #5
     str w1, [x0]
     movz x0, #3
     add x1, sp, #56
-    bl 0xfffffed8
-    str x0, [xzr, #16]
+    bl 0xfffffee8
+    mov x19, x0
     add x1, sp, #56
     movz x0, #5
-    bl 0xfffffed8
-    str x0, [xzr, #24]
+    bl 0xfffffee8
+    mov x20, x0
     movz x0, #9
     add x1, sp, #56
-    bl 0xfffffed8
-    str x0, [xzr, #32]
+    bl 0xfffffee8
+    mov x21, x0
     add x0, sp, #60
     movz x1, #2304
     movk x1, #61, lsl #16
     str w1, [x0]
     movz x0, #5
     add x1, sp, #60
-    bl 0xffffff6c
-    str x0, [xzr, #40]
+    bl 0xffffff74
+    mov x22, x0
     add x1, sp, #60
     movz x0, #2304
     movk x0, #61, lsl #16
-    bl 0xffffff6c
-    str x0, [xzr, #48]
+    bl 0xffffff74
+    mov x23, x0
     add x1, sp, #60
     movz x0, #2304
     movk x0, #61, lsl #16
-    bl 0xffffff6c
-    ldr x1, [xzr, #16]
-    ldr x2, [xzr, #24]
-    add x1, x1, x2
-    ldr x2, [xzr, #32]
-    add x1, x1, x2
-    ldr x2, [xzr, #40]
-    ldr x3, [xzr, #48]
-    add x2, x2, x3
+    bl 0xffffff74
+    add x1, x19, x20
+    add x1, x1, x21
+    add x2, x22, x23
     add x0, x2, x0
     add x0, x1, x0
-    ldp x29, x30, [xzr]
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldp x29, x30, [xzr, #40]
     add sp, sp, #64
     ret
 =========== OPT LEVEL: moderate ===========

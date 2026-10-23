@@ -10,16 +10,18 @@ to_u64_f32:
     ret
 main:
     sub sp, sp, #32
-    stp x29, x30, [xzr]
-    adr x0, 0xeb8
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    stp x29, x30, [xzr, #16]
+    adr x0, 0xf4c
     ldr d0, [x0]
     bl 0xffffffe8
-    str x0, [xzr, #16]
-    adr x0, 0xec0
+    mov x19, x0
+    adr x0, 0xf54
     ldr d0, [x0]
     bl 0xfffffff0
-    str x0, [xzr, #24]
-    adr x0, 0xec8
+    mov x20, x0
+    adr x0, 0xf5c
     ldr s0, [x0]
     bl 0xfffffff8
     movz x1, #0
@@ -28,19 +30,19 @@ main:
     movk x1, #3552, lsl #48
     movz x2, #51712
     movk x2, #15258, lsl #16
-    ldr x3, [xzr, #16]
-    udiv w2, w3, w2
+    udiv w2, w19, w2
     mov w2, w2
     udiv x0, x0, x1
-    ldr x3, [xzr, #24]
-    udiv x1, x3, x1
+    udiv x1, x20, x1
     movz x3, #10
     madd x1, x1, x3, xzr
     add x1, x2, x1
     movz x2, #100
     madd x0, x0, x2, xzr
     add x0, x1, x0
-    ldp x29, x30, [xzr]
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldp x29, x30, [xzr, #16]
     add sp, sp, #32
     ret
 =========== OPT LEVEL: none ===========
@@ -102,16 +104,18 @@ to_u64_f32:
     ret
 main:
     sub sp, sp, #32
-    stp x29, x30, [xzr]
-    adr x0, 0xeb8
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    stp x29, x30, [xzr, #16]
+    adr x0, 0xf4c
     ldr d0, [x0]
     bl 0xffffffe8
-    str x0, [xzr, #16]
-    adr x0, 0xec0
+    mov x19, x0
+    adr x0, 0xf54
     ldr d0, [x0]
     bl 0xfffffff0
-    str x0, [xzr, #24]
-    adr x0, 0xec8
+    mov x20, x0
+    adr x0, 0xf5c
     ldr s0, [x0]
     bl 0xfffffff8
     movz x1, #0
@@ -120,19 +124,19 @@ main:
     movk x1, #3552, lsl #48
     movz x2, #51712
     movk x2, #15258, lsl #16
-    ldr x3, [xzr, #16]
-    udiv w2, w3, w2
+    udiv w2, w19, w2
     mov w2, w2
     udiv x0, x0, x1
-    ldr x3, [xzr, #24]
-    udiv x1, x3, x1
+    udiv x1, x20, x1
     movz x3, #10
     madd x1, x1, x3, xzr
     add x1, x2, x1
     movz x2, #100
     madd x0, x0, x2, xzr
     add x0, x1, x0
-    ldp x29, x30, [xzr]
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldp x29, x30, [xzr, #16]
     add sp, sp, #32
     ret
 =========== OPT LEVEL: moderate ===========

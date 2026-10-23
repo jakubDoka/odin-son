@@ -2,52 +2,39 @@
 opaque:
     ret
 minmax:
-    sub sp, sp, #32
-    str x0, [xzr]
-    str x1, [xzr, #8]
-    ldr x0, [xzr, #8]
-    ldr x1, [xzr]
-    cmp x1, x0
-    b.lt 0x38
-    ldr x0, [xzr, #8]
-    str x0, [x2]
-    str x17, [xzr, #-16]!
-    ldr x17, [xzr, #16]
-    str x17, [xzr, #32]
-    ldr x17, [xzr], #16
-    b 0x50
+    cmp x0, x1
+    b.lt 0x14
+    str x1, [x2]
+    mov x3, x0
+    b 0x1c
 2:
-    ldr x0, [xzr]
     str x0, [x2]
-    str x17, [xzr, #-16]!
-    ldr x17, [xzr, #24]
-    str x17, [xzr, #32]
-    ldr x17, [xzr], #16
+    mov x3, x1
 3:
-    ldr x0, [xzr, #16]
-    add sp, sp, #32
+    mov x0, x3
     ret
 main:
-    sub sp, sp, #48
-    stp x29, x30, [xzr]
+    sub sp, sp, #32
+    str x19, [xzr]
+    stp x29, x30, [xzr, #8]
     movz x0, #9
-    bl 0xffffffa0
-    str x0, [xzr, #16]
+    bl 0xffffffd8
+    mov x19, x0
     movz x0, #4
-    bl 0xffffffa0
-    str x0, [xzr, #24]
-    ldr x1, [xzr, #24]
-    ldr x0, [xzr, #16]
-    add x2, sp, #32
-    bl 0xffffffa4
-    add x1, sp, #32
+    bl 0xffffffd8
+    mov x1, x0
+    mov x0, x19
+    add x2, sp, #24
+    bl 0xffffffdc
+    add x1, sp, #24
     ldr x1, [x1]
     sub x0, x0, x1
     movz x2, #2
     madd x0, x0, x2, xzr
     add x0, x0, x1
-    ldp x29, x30, [xzr]
-    add sp, sp, #48
+    ldr x19, [xzr]
+    ldp x29, x30, [xzr, #8]
+    add sp, sp, #32
     ret
 =========== OPT LEVEL: none ===========
 opaque:
@@ -89,52 +76,39 @@ main:
 opaque:
     ret
 minmax:
-    sub sp, sp, #32
-    str x0, [xzr]
-    str x1, [xzr, #8]
-    ldr x0, [xzr, #8]
-    ldr x1, [xzr]
-    cmp x1, x0
-    b.lt 0x38
-    ldr x0, [xzr, #8]
-    str x0, [x2]
-    str x17, [xzr, #-16]!
-    ldr x17, [xzr, #16]
-    str x17, [xzr, #32]
-    ldr x17, [xzr], #16
-    b 0x50
+    cmp x0, x1
+    b.lt 0x14
+    str x1, [x2]
+    mov x3, x0
+    b 0x1c
 2:
-    ldr x0, [xzr]
     str x0, [x2]
-    str x17, [xzr, #-16]!
-    ldr x17, [xzr, #24]
-    str x17, [xzr, #32]
-    ldr x17, [xzr], #16
+    mov x3, x1
 3:
-    ldr x0, [xzr, #16]
-    add sp, sp, #32
+    mov x0, x3
     ret
 main:
-    sub sp, sp, #48
-    stp x29, x30, [xzr]
+    sub sp, sp, #32
+    str x19, [xzr]
+    stp x29, x30, [xzr, #8]
     movz x0, #9
-    bl 0xffffffa0
-    str x0, [xzr, #16]
+    bl 0xffffffd8
+    mov x19, x0
     movz x0, #4
-    bl 0xffffffa0
-    str x0, [xzr, #24]
-    ldr x1, [xzr, #24]
-    ldr x0, [xzr, #16]
-    add x2, sp, #32
-    bl 0xffffffa4
-    add x1, sp, #32
+    bl 0xffffffd8
+    mov x1, x0
+    mov x0, x19
+    add x2, sp, #24
+    bl 0xffffffdc
+    add x1, sp, #24
     ldr x1, [x1]
     sub x0, x0, x1
     movz x2, #2
     madd x0, x0, x2, xzr
     add x0, x0, x1
-    ldp x29, x30, [xzr]
-    add sp, sp, #48
+    ldr x19, [xzr]
+    ldp x29, x30, [xzr, #8]
+    add sp, sp, #32
     ret
 =========== OPT LEVEL: moderate ===========
 opaque:

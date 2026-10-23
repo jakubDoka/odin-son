@@ -1,53 +1,50 @@
 =========== OPT LEVEL: none-quick ===========
 check:
-    sub sp, sp, #16
-    str x1, [xzr]
-    movz x1, #7
-    and x0, x0, x1
-    movz x1, #4
-    movz x2, #2
-    str x17, [xzr, #-16]!
-    ldr x17, [xzr, #16]
-    cmp w17, #0
-    ldr x17, [xzr], #16
-    csel x1, x1, x2, ne
+    movz x2, #7
+    and x0, x0, x2
+    movz x2, #4
+    movz x3, #2
+    cmp w1, #0
+    csel x1, x2, x3, ne
     movz x2, #2050
     add x2, x2, x0
     movz x3, #2052
     add x3, x3, x1
     cmp x0, x1
     csel x0, x2, x3, lt
-    add sp, sp, #16
     ret
 main:
     sub sp, sp, #48
-    stp x29, x30, [xzr]
-    adr x0, 0xe84
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    stp x29, x30, [xzr, #24]
+    adr x0, 0xf30
     ldr x0, [x0]
     movz x1, #1
-    bl 0xffffffb4
-    str x0, [xzr, #16]
+    bl 0xffffffcc
+    mov x19, x0
     movz x0, #0
     movz x1, #0
-    bl 0xffffffb4
-    str x0, [xzr, #24]
+    bl 0xffffffcc
+    mov x20, x0
     movz x0, #127
     movz x1, #1
-    bl 0xffffffb4
-    str x0, [xzr, #32]
+    bl 0xffffffcc
+    mov x21, x0
     movn x0, #127
     movz x1, #0
-    bl 0xffffffb4
+    bl 0xffffffcc
     movz x1, #251
-    ldr x2, [xzr, #16]
-    ldr x3, [xzr, #24]
-    add x2, x2, x3
-    ldr x3, [xzr, #32]
-    add x2, x2, x3
+    add x2, x19, x20
+    add x2, x2, x21
     add x0, x2, x0
     sdiv x2, x0, x1
     msub x0, x2, x1, x0
-    ldp x29, x30, [xzr]
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldp x29, x30, [xzr, #24]
     add sp, sp, #48
     ret
 =========== OPT LEVEL: none ===========
@@ -102,54 +99,51 @@ main:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 check:
-    sub sp, sp, #16
-    str x1, [xzr]
-    movz x1, #7
-    and x0, x0, x1
-    movz x1, #4
-    movz x2, #2
-    str x17, [xzr, #-16]!
-    ldr x17, [xzr, #16]
-    cmp w17, #0
-    ldr x17, [xzr], #16
-    csel x1, x1, x2, ne
+    movz x2, #7
+    and x0, x0, x2
+    movz x2, #4
+    movz x3, #2
+    cmp w1, #0
+    csel x1, x2, x3, ne
     movz x2, #2050
     add x2, x2, x0
     movz x3, #2052
     add x3, x3, x1
     cmp x0, x1
     csel x0, x2, x3, lt
-    add sp, sp, #16
     ret
 main:
     sub sp, sp, #48
-    stp x29, x30, [xzr]
-    adr x0, 0xe84
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    stp x29, x30, [xzr, #24]
+    adr x0, 0xf30
     ldr x0, [x0]
     movz x1, #1
-    bl 0xffffffb4
-    str x0, [xzr, #16]
+    bl 0xffffffcc
+    mov x19, x0
     movz x0, #0
     movz x1, #0
-    bl 0xffffffb4
-    str x0, [xzr, #24]
+    bl 0xffffffcc
+    mov x20, x0
     movz x0, #127
     movz x1, #1
-    bl 0xffffffb4
-    str x0, [xzr, #32]
+    bl 0xffffffcc
+    mov x21, x0
     movn x0, #127
     movz x1, #0
-    bl 0xffffffb4
+    bl 0xffffffcc
     movz x1, #251
-    ldr x2, [xzr, #16]
-    ldr x3, [xzr, #24]
-    add x2, x2, x3
-    ldr x3, [xzr, #32]
-    add x2, x2, x3
+    add x2, x19, x20
+    add x2, x2, x21
     add x0, x2, x0
     sdiv x2, x0, x1
     msub x0, x2, x1, x0
-    ldp x29, x30, [xzr]
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldp x29, x30, [xzr, #24]
     add sp, sp, #48
     ret
 =========== OPT LEVEL: moderate ===========

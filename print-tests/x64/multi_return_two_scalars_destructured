@@ -1,30 +1,29 @@
 =========== OPT LEVEL: none-quick ===========
 divmod:
-    mov.q [rsp - 0x18], rdi
-    mov.q [rsp - 0x10], rdx
-    mov.q rax, [rsp - 0x18]
+    push rbx
+    mov rcx, rdi
+    mov rbx, rdx
+    mov rax, rcx
     cqo
     idiv rsi
-    mov rax, rax
-    mov.q rcx, [rsp - 0x10]
-    mov.q [rcx], rax
-    mov.q rax, [rsp - 0x18]
+    mov.q [rbx], rax
+    mov rax, rcx
     cqo
     idiv rsi
     mov rax, rdx
+    pop rbx
     ret
 main:
-    sub rsp, 0x18
+    sub rsp, 8
     mov rdi, 0x2f
     mov rsi, 5
     lea rdx, [rsp]
     call divmod
-    mov.q [rsp + 0x8], rax
+    mov rcx, rax
     mov.q rax, [rsp]
     imul rax, rax, 0x64
-    mov.q rcx, [rsp + 0x8]
     add rax, rcx
-    add rsp, 0x18
+    add rsp, 8
     ret
 =========== OPT LEVEL: none ===========
 divmod:
@@ -52,31 +51,30 @@ main:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 divmod:
-    mov.q [rsp - 0x18], rdi
-    mov.q [rsp - 0x10], rdx
-    mov.q rax, [rsp - 0x18]
+    push rbx
+    mov rcx, rdi
+    mov rbx, rdx
+    mov rax, rcx
     cqo
     idiv rsi
-    mov rax, rax
-    mov.q rcx, [rsp - 0x10]
-    mov.q [rcx], rax
-    mov.q rax, [rsp - 0x18]
+    mov.q [rbx], rax
+    mov rax, rcx
     cqo
     idiv rsi
     mov rax, rdx
+    pop rbx
     ret
 main:
-    sub rsp, 0x18
+    sub rsp, 8
     mov rdi, 0x2f
     mov rsi, 5
     lea rdx, [rsp]
     call divmod
-    mov.q [rsp + 0x8], rax
+    mov rcx, rax
     mov.q rax, [rsp]
     imul rax, rax, 0x64
-    mov.q rcx, [rsp + 0x8]
     add rax, rcx
-    add rsp, 0x18
+    add rsp, 8
     ret
 =========== OPT LEVEL: moderate ===========
 divmod:

@@ -71,100 +71,98 @@ test_unsigned:
 16:
     ret
 test_mixed_patterns:
-    sub rsp, 0x18
-    mov.q [rsp], rdi
-    mov.q rdi, [rsp]
+    push rbx
+    push rbp
+    sub rsp, 8
+    mov rbx, rdi
+    mov rdi, rbx
     call opaques
-    mov.q [rsp + 0x8], rax
-    mov.q rax, [rsp]
+    mov rbp, rax
+    mov rax, rbx
     add rax, 1
     mov rdi, rax
     call opaques
-    mov.q rcx, [rsp + 0x8]
-    cmp rcx, rax
+    cmp rbp, rax
     jl 18
     jmp 20
 18:
-    mov.q rcx, [rsp + 0x8]
-    cmp rcx, rax
+    cmp rbp, rax
     jle 19
     jmp 20
 19:
-    mov.q rcx, [rsp + 0x8]
-    cmp rcx, rax
-    jne 25
+    cmp rbp, rax
+    jne +0x39
 20:
-    mov.q rcx, [rsp + 0x8]
-    cmp rcx, rax
+    cmp rbp, rax
     jg 21
-    jmp 23
+    jmp +0x17
 21:
-    mov.q rcx, [rsp + 0x8]
-    cmp rcx, rax
+    cmp rbp, rax
     jge 22
-    jmp 23
+    jmp +0x9
 22:
-    mov.q rcx, [rsp + 0x8]
-    cmp rcx, rax
-    je 24
-23:
+    cmp rbp, rax
+    je 23
     xor eax, eax
-    jmp 26
-24:
+    jmp 24
+23:
     mov rax, 0xc8
-    jmp 26
-25:
+    jmp 24
     mov rax, 0x64
-26:
-    add rsp, 0x18
+24:
+    add rsp, 8
+    pop rbp
+    pop rbx
     ret
 main:
-    sub rsp, 0x38
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    push r15
+    sub rsp, 8
     mov rdi, 0xa
     mov rsi, 0x14
     call test_signed
-    mov.q [rsp], rax
+    mov rbx, rax
     mov rsi, 0x14
     mov rdi, 0x14
     call test_signed
-    mov.q [rsp + 0x8], rax
+    mov rbp, rax
     mov rsi, 0xa
     mov rdi, 0x1e
     call test_signed
-    mov.q [rsp + 0x10], rax
+    mov r12, rax
     mov rdi, 0xa
     mov rsi, 0x14
     call test_unsigned
-    mov.q [rsp + 0x18], rax
+    mov r13, rax
     mov rsi, 0x14
     mov rdi, 0x14
     call test_unsigned
-    mov.q [rsp + 0x20], rax
+    mov r14, rax
     mov rsi, 0xa
     mov rdi, 0x1e
     call test_unsigned
-    mov.q [rsp + 0x28], rax
+    mov r15, rax
     mov rdi, 0x2a
     call test_mixed_patterns
-    mov.q rcx, [rsp]
-    mov.q rdx, [rsp + 0x8]
-    add rcx, rdx
-    mov rcx, rcx
-    mov.q rdx, [rsp + 0x10]
-    add rcx, rdx
-    mov rcx, rcx
-    mov.q rdx, [rsp + 0x18]
-    add rcx, rdx
-    mov rcx, rcx
-    mov.q rdx, [rsp + 0x20]
-    add rcx, rdx
-    mov rcx, rcx
-    mov.q rdx, [rsp + 0x28]
-    add rcx, rdx
-    mov rcx, rcx
+    mov rcx, rbx
+    add rcx, rbp
+    add rcx, r12
+    add rcx, r13
+    add rcx, r14
+    add rcx, r15
     add rcx, rax
     mov rax, rcx
-    add rsp, 0x38
+    add rsp, 8
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
     ret
 =========== OPT LEVEL: none ===========
 opaques:
@@ -406,100 +404,98 @@ test_unsigned:
 16:
     ret
 test_mixed_patterns:
-    sub rsp, 0x18
-    mov.q [rsp], rdi
-    mov.q rdi, [rsp]
+    push rbx
+    push rbp
+    sub rsp, 8
+    mov rbx, rdi
+    mov rdi, rbx
     call opaques
-    mov.q [rsp + 0x8], rax
-    mov.q rax, [rsp]
+    mov rbp, rax
+    mov rax, rbx
     add rax, 1
     mov rdi, rax
     call opaques
-    mov.q rcx, [rsp + 0x8]
-    cmp rcx, rax
+    cmp rbp, rax
     jl 18
     jmp 20
 18:
-    mov.q rcx, [rsp + 0x8]
-    cmp rcx, rax
+    cmp rbp, rax
     jle 19
     jmp 20
 19:
-    mov.q rcx, [rsp + 0x8]
-    cmp rcx, rax
-    jne 25
+    cmp rbp, rax
+    jne +0x39
 20:
-    mov.q rcx, [rsp + 0x8]
-    cmp rcx, rax
+    cmp rbp, rax
     jg 21
-    jmp 23
+    jmp +0x17
 21:
-    mov.q rcx, [rsp + 0x8]
-    cmp rcx, rax
+    cmp rbp, rax
     jge 22
-    jmp 23
+    jmp +0x9
 22:
-    mov.q rcx, [rsp + 0x8]
-    cmp rcx, rax
-    je 24
-23:
+    cmp rbp, rax
+    je 23
     xor eax, eax
-    jmp 26
-24:
+    jmp 24
+23:
     mov rax, 0xc8
-    jmp 26
-25:
+    jmp 24
     mov rax, 0x64
-26:
-    add rsp, 0x18
+24:
+    add rsp, 8
+    pop rbp
+    pop rbx
     ret
 main:
-    sub rsp, 0x38
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    push r15
+    sub rsp, 8
     mov rdi, 0xa
     mov rsi, 0x14
     call test_signed
-    mov.q [rsp], rax
+    mov rbx, rax
     mov rsi, 0x14
     mov rdi, 0x14
     call test_signed
-    mov.q [rsp + 0x8], rax
+    mov rbp, rax
     mov rsi, 0xa
     mov rdi, 0x1e
     call test_signed
-    mov.q [rsp + 0x10], rax
+    mov r12, rax
     mov rdi, 0xa
     mov rsi, 0x14
     call test_unsigned
-    mov.q [rsp + 0x18], rax
+    mov r13, rax
     mov rsi, 0x14
     mov rdi, 0x14
     call test_unsigned
-    mov.q [rsp + 0x20], rax
+    mov r14, rax
     mov rsi, 0xa
     mov rdi, 0x1e
     call test_unsigned
-    mov.q [rsp + 0x28], rax
+    mov r15, rax
     mov rdi, 0x2a
     call test_mixed_patterns
-    mov.q rcx, [rsp]
-    mov.q rdx, [rsp + 0x8]
-    add rcx, rdx
-    mov rcx, rcx
-    mov.q rdx, [rsp + 0x10]
-    add rcx, rdx
-    mov rcx, rcx
-    mov.q rdx, [rsp + 0x18]
-    add rcx, rdx
-    mov rcx, rcx
-    mov.q rdx, [rsp + 0x20]
-    add rcx, rdx
-    mov rcx, rcx
-    mov.q rdx, [rsp + 0x28]
-    add rcx, rdx
-    mov rcx, rcx
+    mov rcx, rbx
+    add rcx, rbp
+    add rcx, r12
+    add rcx, r13
+    add rcx, r14
+    add rcx, r15
     add rcx, rax
     mov rax, rcx
-    add rsp, 0x38
+    add rsp, 8
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
     ret
 =========== OPT LEVEL: moderate ===========
 opaques:

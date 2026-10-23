@@ -1,6 +1,5 @@
 =========== OPT LEVEL: none-quick ===========
 fsrc32:
-    sub sp, sp, #16
     movz x1, #4
     movz x2, #8
     movz x3, #16
@@ -47,10 +46,8 @@ fsrc32:
     movz x1, #32
     madd x1, x6, x1, xzr
     add x0, x0, x1
-    add sp, sp, #16
     ret
 fsrc64:
-    sub sp, sp, #16
     movz x1, #8
     movz x2, #16
     movz x3, #32
@@ -97,114 +94,102 @@ fsrc64:
     uxtb w0, w0
     madd x0, x0, x3, xzr
     add x0, x1, x0
-    add sp, sp, #16
     ret
 main:
-    sub sp, sp, #160
+    sub sp, sp, #128
     str x19, [xzr]
     str x20, [xzr, #8]
-    stp x29, x30, [xzr, #16]
-    adr x0, 0xd48
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    stp x29, x30, [xzr, #40]
+    adr x0, 0xdec
     ldr s0, [x0]
-    str d0, [xzr, #72]
-    add x0, sp, #88
-    ldr d0, [xzr, #72]
-    str s0, [x0]
+    orr v8.16b, v0.16b, v0.16b
+    add x0, sp, #56
+    str s8, [x0]
     movz x19, #8
     movz x20, #16
     movz x0, #4
-    add x1, sp, #88
+    add x1, sp, #56
     add x0, x0, x1
-    ldr d0, [xzr, #72]
-    str s0, [x0]
-    add x0, sp, #88
+    str s8, [x0]
+    add x0, sp, #56
     add x0, x0, x19
-    ldr d0, [xzr, #72]
-    str s0, [x0]
+    str s8, [x0]
     movz x0, #12
-    add x1, sp, #88
+    add x1, sp, #56
     add x0, x0, x1
-    ldr d0, [xzr, #72]
-    str s0, [x0]
-    add x0, sp, #88
+    str s8, [x0]
+    add x0, sp, #56
     add x0, x0, x20
-    ldr d0, [xzr, #72]
-    str s0, [x0]
+    str s8, [x0]
     movz x0, #20
-    add x1, sp, #88
+    add x1, sp, #56
     add x0, x0, x1
-    ldr d0, [xzr, #72]
-    str s0, [x0]
-    adr x0, 0xd4c
+    str s8, [x0]
+    adr x0, 0xdf0
     ldr s0, [x0]
-    add x0, sp, #88
-    bl 0xfffffe78
-    str x0, [xzr, #32]
-    add x0, sp, #88
-    ldr d0, [xzr, #72]
-    bl 0xfffffe78
-    str x0, [xzr, #40]
-    adr x0, 0xd50
+    add x0, sp, #56
+    bl 0xfffffe88
+    mov x21, x0
+    add x0, sp, #56
+    orr v0.16b, v8.16b, v8.16b
+    bl 0xfffffe88
+    mov x22, x0
+    adr x0, 0xdf4
     ldr s0, [x0]
-    add x0, sp, #88
-    bl 0xfffffe78
-    str x0, [xzr, #48]
-    adr x0, 0xd58
+    add x0, sp, #56
+    bl 0xfffffe88
+    mov x23, x0
+    adr x0, 0xdfc
     ldr d0, [x0]
-    str d0, [xzr, #72]
-    add x0, sp, #112
-    ldr d0, [xzr, #72]
-    str d0, [x0]
-    add x0, sp, #112
+    orr v8.16b, v0.16b, v0.16b
+    add x0, sp, #80
+    str d8, [x0]
+    add x0, sp, #80
     add x0, x0, x19
-    ldr d0, [xzr, #72]
-    str d0, [x0]
-    add x0, sp, #112
+    str d8, [x0]
+    add x0, sp, #80
     add x0, x0, x20
-    ldr d0, [xzr, #72]
-    str d0, [x0]
+    str d8, [x0]
     movz x0, #24
-    add x1, sp, #112
+    add x1, sp, #80
     add x0, x0, x1
-    ldr d0, [xzr, #72]
-    str d0, [x0]
+    str d8, [x0]
     movz x0, #32
-    add x1, sp, #112
+    add x1, sp, #80
     add x0, x0, x1
-    ldr d0, [xzr, #72]
-    str d0, [x0]
+    str d8, [x0]
     movz x0, #40
-    add x1, sp, #112
+    add x1, sp, #80
     add x0, x0, x1
-    ldr d0, [xzr, #72]
-    str d0, [x0]
-    adr x0, 0xd60
+    str d8, [x0]
+    adr x0, 0xe04
     ldr d0, [x0]
-    add x0, sp, #112
-    bl 0xffffff3c
-    str x0, [xzr, #56]
-    add x0, sp, #112
-    ldr d0, [xzr, #72]
-    bl 0xffffff3c
-    str x0, [xzr, #64]
-    adr x0, 0xd68
+    add x0, sp, #80
+    bl 0xffffff44
+    mov x19, x0
+    add x0, sp, #80
+    orr v0.16b, v8.16b, v8.16b
+    bl 0xffffff44
+    mov x20, x0
+    adr x0, 0xe0c
     ldr d0, [x0]
-    add x0, sp, #112
-    bl 0xffffff3c
-    ldr x1, [xzr, #32]
-    ldr x2, [xzr, #40]
-    add x1, x1, x2
-    ldr x2, [xzr, #48]
-    add x1, x1, x2
-    ldr x2, [xzr, #56]
-    ldr x3, [xzr, #64]
-    add x2, x2, x3
+    add x0, sp, #80
+    bl 0xffffff44
+    add x1, x21, x22
+    add x1, x1, x23
+    add x2, x19, x20
     add x0, x2, x0
     add x0, x1, x0
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
-    ldp x29, x30, [xzr, #16]
-    add sp, sp, #160
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldp x29, x30, [xzr, #40]
+    add sp, sp, #128
     ret
 =========== OPT LEVEL: none ===========
 fsrc32:
@@ -399,7 +384,6 @@ main:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 fsrc32:
-    sub sp, sp, #16
     movz x1, #4
     movz x2, #8
     movz x3, #16
@@ -446,10 +430,8 @@ fsrc32:
     movz x1, #32
     madd x1, x6, x1, xzr
     add x0, x0, x1
-    add sp, sp, #16
     ret
 fsrc64:
-    sub sp, sp, #16
     movz x1, #8
     movz x2, #16
     movz x3, #32
@@ -496,114 +478,102 @@ fsrc64:
     uxtb w0, w0
     madd x0, x0, x3, xzr
     add x0, x1, x0
-    add sp, sp, #16
     ret
 main:
-    sub sp, sp, #160
+    sub sp, sp, #128
     str x19, [xzr]
     str x20, [xzr, #8]
-    stp x29, x30, [xzr, #16]
-    adr x0, 0xd48
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    stp x29, x30, [xzr, #40]
+    adr x0, 0xdec
     ldr s0, [x0]
-    str d0, [xzr, #72]
-    add x0, sp, #88
-    ldr d0, [xzr, #72]
-    str s0, [x0]
+    orr v8.16b, v0.16b, v0.16b
+    add x0, sp, #56
+    str s8, [x0]
     movz x19, #8
     movz x20, #16
     movz x0, #4
-    add x1, sp, #88
+    add x1, sp, #56
     add x0, x0, x1
-    ldr d0, [xzr, #72]
-    str s0, [x0]
-    add x0, sp, #88
+    str s8, [x0]
+    add x0, sp, #56
     add x0, x0, x19
-    ldr d0, [xzr, #72]
-    str s0, [x0]
+    str s8, [x0]
     movz x0, #12
-    add x1, sp, #88
+    add x1, sp, #56
     add x0, x0, x1
-    ldr d0, [xzr, #72]
-    str s0, [x0]
-    add x0, sp, #88
+    str s8, [x0]
+    add x0, sp, #56
     add x0, x0, x20
-    ldr d0, [xzr, #72]
-    str s0, [x0]
+    str s8, [x0]
     movz x0, #20
-    add x1, sp, #88
+    add x1, sp, #56
     add x0, x0, x1
-    ldr d0, [xzr, #72]
-    str s0, [x0]
-    adr x0, 0xd4c
+    str s8, [x0]
+    adr x0, 0xdf0
     ldr s0, [x0]
-    add x0, sp, #88
-    bl 0xfffffe78
-    str x0, [xzr, #32]
-    add x0, sp, #88
-    ldr d0, [xzr, #72]
-    bl 0xfffffe78
-    str x0, [xzr, #40]
-    adr x0, 0xd50
+    add x0, sp, #56
+    bl 0xfffffe88
+    mov x21, x0
+    add x0, sp, #56
+    orr v0.16b, v8.16b, v8.16b
+    bl 0xfffffe88
+    mov x22, x0
+    adr x0, 0xdf4
     ldr s0, [x0]
-    add x0, sp, #88
-    bl 0xfffffe78
-    str x0, [xzr, #48]
-    adr x0, 0xd58
+    add x0, sp, #56
+    bl 0xfffffe88
+    mov x23, x0
+    adr x0, 0xdfc
     ldr d0, [x0]
-    str d0, [xzr, #72]
-    add x0, sp, #112
-    ldr d0, [xzr, #72]
-    str d0, [x0]
-    add x0, sp, #112
+    orr v8.16b, v0.16b, v0.16b
+    add x0, sp, #80
+    str d8, [x0]
+    add x0, sp, #80
     add x0, x0, x19
-    ldr d0, [xzr, #72]
-    str d0, [x0]
-    add x0, sp, #112
+    str d8, [x0]
+    add x0, sp, #80
     add x0, x0, x20
-    ldr d0, [xzr, #72]
-    str d0, [x0]
+    str d8, [x0]
     movz x0, #24
-    add x1, sp, #112
+    add x1, sp, #80
     add x0, x0, x1
-    ldr d0, [xzr, #72]
-    str d0, [x0]
+    str d8, [x0]
     movz x0, #32
-    add x1, sp, #112
+    add x1, sp, #80
     add x0, x0, x1
-    ldr d0, [xzr, #72]
-    str d0, [x0]
+    str d8, [x0]
     movz x0, #40
-    add x1, sp, #112
+    add x1, sp, #80
     add x0, x0, x1
-    ldr d0, [xzr, #72]
-    str d0, [x0]
-    adr x0, 0xd60
+    str d8, [x0]
+    adr x0, 0xe04
     ldr d0, [x0]
-    add x0, sp, #112
-    bl 0xffffff3c
-    str x0, [xzr, #56]
-    add x0, sp, #112
-    ldr d0, [xzr, #72]
-    bl 0xffffff3c
-    str x0, [xzr, #64]
-    adr x0, 0xd68
+    add x0, sp, #80
+    bl 0xffffff44
+    mov x19, x0
+    add x0, sp, #80
+    orr v0.16b, v8.16b, v8.16b
+    bl 0xffffff44
+    mov x20, x0
+    adr x0, 0xe0c
     ldr d0, [x0]
-    add x0, sp, #112
-    bl 0xffffff3c
-    ldr x1, [xzr, #32]
-    ldr x2, [xzr, #40]
-    add x1, x1, x2
-    ldr x2, [xzr, #48]
-    add x1, x1, x2
-    ldr x2, [xzr, #56]
-    ldr x3, [xzr, #64]
-    add x2, x2, x3
+    add x0, sp, #80
+    bl 0xffffff44
+    add x1, x21, x22
+    add x1, x1, x23
+    add x2, x19, x20
     add x0, x2, x0
     add x0, x1, x0
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
-    ldp x29, x30, [xzr, #16]
-    add sp, sp, #160
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldp x29, x30, [xzr, #40]
+    add sp, sp, #128
     ret
 =========== OPT LEVEL: moderate ===========
 fsrc32:

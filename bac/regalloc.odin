@@ -362,8 +362,18 @@ data_deps :: proc(
 MASK_SIZE :: size_of(int) * 8
 
 Lrg_Meta :: bit_field u32 {
-	index: u32 | 23,
-	rank:  u8  | 8,
+	index:      u32  | 23,
+	rank:       u8   | 8,
+	must_spill: bool | 1,
+}
+
+Lrg_Fail :: enum int {
+	Killed,
+	Failed_To_Color,
+	Failed_To_Assign,
+	Reg_Conflict,
+	Self_Conflict,
+	Pushed_Out,
 }
 
 Lrg_Fails :: bit_field u8 {

@@ -1,6 +1,7 @@
 =========== OPT LEVEL: none-quick ===========
 main:
-    sub rsp, 0x18
+    push rbx
+    sub rsp, 0x10
     mov.d [rsp], 0x4d0afa0b
     movabs rax, 0x4f000afffa000d
     mov.q [rsp + 0x4], rax
@@ -8,23 +9,22 @@ main:
     add rdi, 1
     movzx.b esi, [rsp + 0x2]
     call update u8
-    mov.q [rsp + 0xc], rax
+    mov rbx, rax
     lea rdi, [rsp + 0x4]
     add rdi, 2
     movzx.w esi, [rsp + 0x8]
     call update u16
     mov rcx, 1
-    mov.q rdx, [rsp + 0xc]
-    cmp dl, 6
-    mov.q [rsp + 0xc], 0
-    sete.b [rsp + 0xc]
-    xor edx, edx
-    cmp.b [rsp + 0xc], 0
-    cmovne rdx, rcx
-    mov rcx, rdx
+    cmp bl, 6
+    sete dl
+    movzx edx, dl
+    xor ebx, ebx
+    test dl, dl
+    cmovne rbx, rcx
+    mov rcx, rbx
     add rcx, 2
     cmp ax, 6
-    mov rax, rdx
+    mov rax, rbx
     cmove rax, rcx
     mov rcx, rax
     add rcx, 4
@@ -32,44 +32,42 @@ main:
     cmove rax, rcx
     cmp.b [rsp + 0x1], 0xc
     je 1
-    mov.q [rsp + 0xc], rax
+    mov rcx, rax
     jmp 2
 1:
     add rax, 8
-    mov.q [rsp + 0xc], rax
+    mov rcx, rax
 2:
-    mov.q rax, [rsp + 0xc]
+    mov rax, rcx
     add rax, 0x10
     cmp.b [rsp + 0x2], 0xa
-    mov.q rcx, [rsp + 0xc]
     cmove rcx, rax
     cmp.b [rsp + 0x3], 0x4d
     je 3
-    mov.q [rsp + 0xc], rcx
+    mov rax, rcx
     jmp 4
 3:
     add rcx, 0x20
-    mov.q [rsp + 0xc], rcx
+    mov rax, rcx
 4:
-    mov.q rax, [rsp + 0xc]
-    add rax, 0x40
+    mov rcx, rax
+    add rcx, 0x40
     cmp.w [rsp + 0x4], 0xd
-    mov.q rcx, [rsp + 0xc]
-    cmove rcx, rax
-    mov rax, rcx
-    add rax, 0x80
+    cmove rax, rcx
+    mov rcx, rax
+    add rcx, 0x80
     cmp.w [rsp + 0x6], 0xc
-    cmove rcx, rax
-    mov rax, rcx
-    add rax, 0x100
+    cmove rax, rcx
+    mov rcx, rax
+    add rcx, 0x100
     cmp.w [rsp + 0x8], 0xa
-    cmove rcx, rax
-    mov rdx, rcx
-    add rdx, 0x200
+    cmove rax, rcx
+    mov rcx, rax
+    add rcx, 0x200
     cmp.w [rsp + 0xa], 0x4f
-    mov rax, rcx
-    cmove rax, rdx
-    add rsp, 0x18
+    cmove rax, rcx
+    add rsp, 0x10
+    pop rbx
     ret
 update u8:
     movzx.b ecx, [rdi]
@@ -178,7 +176,8 @@ update u16:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 main:
-    sub rsp, 0x18
+    push rbx
+    sub rsp, 0x10
     mov.d [rsp], 0x4d0afa0b
     movabs rax, 0x4f000afffa000d
     mov.q [rsp + 0x4], rax
@@ -186,23 +185,22 @@ main:
     add rdi, 1
     movzx.b esi, [rsp + 0x2]
     call update u8
-    mov.q [rsp + 0xc], rax
+    mov rbx, rax
     lea rdi, [rsp + 0x4]
     add rdi, 2
     movzx.w esi, [rsp + 0x8]
     call update u16
     mov rcx, 1
-    mov.q rdx, [rsp + 0xc]
-    cmp dl, 6
-    mov.q [rsp + 0xc], 0
-    sete.b [rsp + 0xc]
-    xor edx, edx
-    cmp.b [rsp + 0xc], 0
-    cmovne rdx, rcx
-    mov rcx, rdx
+    cmp bl, 6
+    sete dl
+    movzx edx, dl
+    xor ebx, ebx
+    test dl, dl
+    cmovne rbx, rcx
+    mov rcx, rbx
     add rcx, 2
     cmp ax, 6
-    mov rax, rdx
+    mov rax, rbx
     cmove rax, rcx
     mov rcx, rax
     add rcx, 4
@@ -210,44 +208,42 @@ main:
     cmove rax, rcx
     cmp.b [rsp + 0x1], 0xc
     je 1
-    mov.q [rsp + 0xc], rax
+    mov rcx, rax
     jmp 2
 1:
     add rax, 8
-    mov.q [rsp + 0xc], rax
+    mov rcx, rax
 2:
-    mov.q rax, [rsp + 0xc]
+    mov rax, rcx
     add rax, 0x10
     cmp.b [rsp + 0x2], 0xa
-    mov.q rcx, [rsp + 0xc]
     cmove rcx, rax
     cmp.b [rsp + 0x3], 0x4d
     je 3
-    mov.q [rsp + 0xc], rcx
+    mov rax, rcx
     jmp 4
 3:
     add rcx, 0x20
-    mov.q [rsp + 0xc], rcx
+    mov rax, rcx
 4:
-    mov.q rax, [rsp + 0xc]
-    add rax, 0x40
+    mov rcx, rax
+    add rcx, 0x40
     cmp.w [rsp + 0x4], 0xd
-    mov.q rcx, [rsp + 0xc]
-    cmove rcx, rax
-    mov rax, rcx
-    add rax, 0x80
+    cmove rax, rcx
+    mov rcx, rax
+    add rcx, 0x80
     cmp.w [rsp + 0x6], 0xc
-    cmove rcx, rax
-    mov rax, rcx
-    add rax, 0x100
+    cmove rax, rcx
+    mov rcx, rax
+    add rcx, 0x100
     cmp.w [rsp + 0x8], 0xa
-    cmove rcx, rax
-    mov rdx, rcx
-    add rdx, 0x200
+    cmove rax, rcx
+    mov rcx, rax
+    add rcx, 0x200
     cmp.w [rsp + 0xa], 0x4f
-    mov rax, rcx
-    cmove rax, rdx
-    add rsp, 0x18
+    cmove rax, rcx
+    add rsp, 0x10
+    pop rbx
     ret
 update u8:
     movzx.b ecx, [rdi]

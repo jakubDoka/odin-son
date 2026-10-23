@@ -1,57 +1,58 @@
 =========== OPT LEVEL: none-quick ===========
 main:
-    sub rsp, 0x48
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    push r15
+    sub rsp, 0x18
     mov.q [rsp], 1
     mov.q [rsp + 0x8], -1
     lea rsi, [rsp]
     mov rdi, -1
     call cmps
-    mov.q [rsp + 0x10], rax
+    mov rbx, rax
     lea rsi, [rsp]
     mov rdi, 1
     call cmps
-    mov.q [rsp + 0x18], rax
+    mov rbp, rax
     lea rsi, [rsp + 0x8]
     mov rdi, -1
     call cmps
-    mov.q [rsp + 0x20], rax
+    mov r12, rax
     lea rsi, [rsp + 0x8]
     mov rdi, 1
     call cmps
-    mov.q [rsp + 0x28], rax
+    mov r13, rax
     lea rdi, [rsp]
     call imm_cmps
-    mov.q [rsp + 0x30], rax
+    mov r14, rax
     lea rdi, [rsp]
     call imm_cmps
-    mov.q [rsp + 0x38], rax
+    mov r15, rax
     lea rdi, [rsp + 0x8]
     call imm_cmps
-    mov.q [rsp + 0x40], rax
+    mov.q [rsp + 0x10], rax
     lea rdi, [rsp + 0x8]
     call imm_cmps
-    mov.q rcx, [rsp + 0x10]
-    mov.q rdx, [rsp + 0x18]
+    mov rcx, rbx
+    add rcx, rbp
+    add rcx, r12
+    add rcx, r13
+    add rcx, r14
+    add rcx, r15
+    mov.q rdx, [rsp + 0x10]
     add rcx, rdx
-    mov rcx, rcx
-    mov.q rdx, [rsp + 0x20]
-    add rcx, rdx
-    mov rcx, rcx
-    mov.q rdx, [rsp + 0x28]
-    add rcx, rdx
-    mov rcx, rcx
-    mov.q rdx, [rsp + 0x30]
-    add rcx, rdx
-    mov rcx, rcx
-    mov.q rdx, [rsp + 0x38]
-    add rcx, rdx
-    mov rcx, rcx
-    mov.q rdx, [rsp + 0x40]
-    add rcx, rdx
-    mov rcx, rcx
     add rcx, rax
     mov rax, rcx
-    add rsp, 0x48
+    add rsp, 0x18
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
     ret
 imm_cmps:
     mov.q rax, [rdi]
@@ -61,37 +62,35 @@ imm_cmps:
     cmove rdx, rcx
     cmp rax, 0
     jne 2
-    mov.q [rsp - 0x8], rdx
+    mov rax, rdx
     jmp 3
 2:
     add rdx, 2
-    mov.q [rsp - 0x8], rdx
+    mov rax, rdx
 3:
-    mov.q rax, [rdi]
-    mov.q rcx, [rsp - 0x8]
-    add rcx, 4
-    cmp rax, 0
-    mov.q rdx, [rsp - 0x8]
-    cmovle rdx, rcx
-    cmp rax, 0
+    mov.q rcx, [rdi]
+    mov rdx, rax
+    add rdx, 4
+    cmp rcx, 0
+    cmovle rax, rdx
+    cmp rcx, 0
     jge 4
-    mov.q [rsp - 0x8], rdx
+    mov rcx, rax
     jmp 5
 4:
-    add rdx, 8
-    mov.q [rsp - 0x8], rdx
+    add rax, 8
+    mov rcx, rax
 5:
     mov.q rax, [rdi]
-    mov.q rcx, [rsp - 0x8]
-    add rcx, 0x10
+    mov rdx, rcx
+    add rdx, 0x10
     cmp rax, 0
-    mov.q rdx, [rsp - 0x8]
-    cmovl rdx, rcx
-    mov rcx, rdx
-    add rcx, 0x20
+    cmovl rcx, rdx
+    mov rdx, rcx
+    add rdx, 0x20
     cmp rax, 0
-    mov rax, rdx
-    cmovg rax, rcx
+    mov rax, rcx
+    cmovg rax, rdx
     ret
 cmps:
     mov.q rax, [rsi]
@@ -101,37 +100,35 @@ cmps:
     cmove rdx, rcx
     cmp rdi, rax
     jne 7
-    mov.q [rsp - 0x8], rdx
+    mov rax, rdx
     jmp 8
 7:
     add rdx, 2
-    mov.q [rsp - 0x8], rdx
+    mov rax, rdx
 8:
-    mov.q rax, [rsi]
-    mov.q rcx, [rsp - 0x8]
-    add rcx, 4
-    cmp rdi, rax
-    mov.q rdx, [rsp - 0x8]
-    cmovge rdx, rcx
-    cmp rdi, rax
+    mov.q rcx, [rsi]
+    mov rdx, rax
+    add rdx, 4
+    cmp rdi, rcx
+    cmovge rax, rdx
+    cmp rdi, rcx
     jle 9
-    mov.q [rsp - 0x8], rdx
+    mov rcx, rax
     jmp 10
 9:
-    add rdx, 8
-    mov.q [rsp - 0x8], rdx
+    add rax, 8
+    mov rcx, rax
 10:
     mov.q rax, [rsi]
-    mov.q rcx, [rsp - 0x8]
-    add rcx, 0x10
+    mov rdx, rcx
+    add rdx, 0x10
     cmp rdi, rax
-    mov.q rdx, [rsp - 0x8]
-    cmovg rdx, rcx
-    mov rcx, rdx
-    add rcx, 0x20
+    cmovg rcx, rdx
+    mov rdx, rcx
+    add rdx, 0x20
     cmp rdi, rax
-    mov rax, rdx
-    cmovl rax, rcx
+    mov rax, rcx
+    cmovl rax, rdx
     ret
 =========== OPT LEVEL: none ===========
 main:
@@ -259,58 +256,59 @@ cmps:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 main:
-    sub rsp, 0x48
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    push r15
+    sub rsp, 0x18
     mov.q [rsp], 1
     mov.q [rsp + 0x8], -1
     lea rsi, [rsp]
     mov rdi, -1
     call cmps
-    mov.q [rsp + 0x10], rax
+    mov rbx, rax
     lea rsi, [rsp]
     mov rdi, 1
     call cmps
-    mov.q [rsp + 0x18], rax
+    mov rbp, rax
     lea rsi, [rsp + 0x8]
     mov rdi, -1
     call cmps
-    mov.q [rsp + 0x20], rax
+    mov r12, rax
     lea rsi, [rsp + 0x8]
     mov rdi, 1
     call cmps
-    mov.q [rsp + 0x28], rax
+    mov r13, rax
     lea rdi, [rsp]
     call imm_cmps
-    mov.q [rsp + 0x30], rax
+    mov r14, rax
     lea rdi, [rsp]
     call imm_cmps
-    mov.q [rsp + 0x38], rax
+    mov r15, rax
     lea rdi, [rsp + 0x8]
     call imm_cmps
-    mov.q [rsp + 0x40], rax
+    mov.q [rsp + 0x10], rax
     lea rdi, [rsp + 0x8]
     call imm_cmps
-    mov.q rcx, [rsp + 0x10]
-    mov.q rdx, [rsp + 0x18]
+    mov rcx, rbx
+    add rcx, rbp
+    add rcx, r12
+    add rcx, r13
+    add rcx, r14
+    add rcx, r15
+    mov.q rdx, [rsp + 0x10]
     add rcx, rdx
-    mov rcx, rcx
-    mov.q rdx, [rsp + 0x20]
-    add rcx, rdx
-    mov rcx, rcx
-    mov.q rdx, [rsp + 0x28]
-    add rcx, rdx
-    mov rcx, rcx
-    mov.q rdx, [rsp + 0x30]
-    add rcx, rdx
-    mov rcx, rcx
-    mov.q rdx, [rsp + 0x38]
-    add rcx, rdx
-    mov rcx, rcx
-    mov.q rdx, [rsp + 0x40]
-    add rcx, rdx
-    mov rcx, rcx
     add rcx, rax
     mov rax, rcx
-    add rsp, 0x48
+    add rsp, 0x18
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
     ret
 imm_cmps:
     mov.q rax, [rdi]
@@ -320,37 +318,35 @@ imm_cmps:
     cmove rdx, rcx
     cmp rax, 0
     jne 2
-    mov.q [rsp - 0x8], rdx
+    mov rax, rdx
     jmp 3
 2:
     add rdx, 2
-    mov.q [rsp - 0x8], rdx
+    mov rax, rdx
 3:
-    mov.q rax, [rdi]
-    mov.q rcx, [rsp - 0x8]
-    add rcx, 4
-    cmp rax, 0
-    mov.q rdx, [rsp - 0x8]
-    cmovle rdx, rcx
-    cmp rax, 0
+    mov.q rcx, [rdi]
+    mov rdx, rax
+    add rdx, 4
+    cmp rcx, 0
+    cmovle rax, rdx
+    cmp rcx, 0
     jge 4
-    mov.q [rsp - 0x8], rdx
+    mov rcx, rax
     jmp 5
 4:
-    add rdx, 8
-    mov.q [rsp - 0x8], rdx
+    add rax, 8
+    mov rcx, rax
 5:
     mov.q rax, [rdi]
-    mov.q rcx, [rsp - 0x8]
-    add rcx, 0x10
+    mov rdx, rcx
+    add rdx, 0x10
     cmp rax, 0
-    mov.q rdx, [rsp - 0x8]
-    cmovl rdx, rcx
-    mov rcx, rdx
-    add rcx, 0x20
+    cmovl rcx, rdx
+    mov rdx, rcx
+    add rdx, 0x20
     cmp rax, 0
-    mov rax, rdx
-    cmovg rax, rcx
+    mov rax, rcx
+    cmovg rax, rdx
     ret
 cmps:
     mov.q rax, [rsi]
@@ -360,37 +356,35 @@ cmps:
     cmove rdx, rcx
     cmp rdi, rax
     jne 7
-    mov.q [rsp - 0x8], rdx
+    mov rax, rdx
     jmp 8
 7:
     add rdx, 2
-    mov.q [rsp - 0x8], rdx
+    mov rax, rdx
 8:
-    mov.q rax, [rsi]
-    mov.q rcx, [rsp - 0x8]
-    add rcx, 4
-    cmp rdi, rax
-    mov.q rdx, [rsp - 0x8]
-    cmovge rdx, rcx
-    cmp rdi, rax
+    mov.q rcx, [rsi]
+    mov rdx, rax
+    add rdx, 4
+    cmp rdi, rcx
+    cmovge rax, rdx
+    cmp rdi, rcx
     jle 9
-    mov.q [rsp - 0x8], rdx
+    mov rcx, rax
     jmp 10
 9:
-    add rdx, 8
-    mov.q [rsp - 0x8], rdx
+    add rax, 8
+    mov rcx, rax
 10:
     mov.q rax, [rsi]
-    mov.q rcx, [rsp - 0x8]
-    add rcx, 0x10
+    mov rdx, rcx
+    add rdx, 0x10
     cmp rdi, rax
-    mov.q rdx, [rsp - 0x8]
-    cmovg rdx, rcx
-    mov rcx, rdx
-    add rcx, 0x20
+    cmovg rcx, rdx
+    mov rdx, rcx
+    add rdx, 0x20
     cmp rdi, rax
-    mov rax, rdx
-    cmovl rax, rcx
+    mov rax, rcx
+    cmovl rax, rdx
     ret
 =========== OPT LEVEL: moderate ===========
 main:

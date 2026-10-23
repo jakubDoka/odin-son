@@ -1,52 +1,55 @@
 =========== OPT LEVEL: none-quick ===========
 main:
-    sub sp, sp, #96
-    stp x29, x30, [xzr]
-    adr x0, 0xed0
+    sub sp, sp, #64
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    stp x29, x30, [xzr, #40]
+    adr x0, 0xf64
     ldr s0, [x0]
-    str d0, [xzr, #56]
-    adr x0, 0xed4
+    orr v8.16b, v0.16b, v0.16b
+    adr x0, 0xf68
     ldr s0, [x0]
-    str d0, [xzr, #72]
-    add x0, sp, #88
-    ldr d0, [xzr, #56]
-    str s0, [x0]
-    add x0, sp, #92
-    ldr d0, [xzr, #72]
-    str s0, [x0]
-    add x0, sp, #88
-    ldr d0, [xzr, #72]
+    orr v9.16b, v0.16b, v0.16b
+    add x0, sp, #56
+    str s8, [x0]
+    add x0, sp, #60
+    str s9, [x0]
+    add x0, sp, #56
+    orr v0.16b, v9.16b, v9.16b
     bl cmps
-    str x0, [xzr, #16]
-    add x0, sp, #88
-    ldr d0, [xzr, #56]
+    mov x19, x0
+    add x0, sp, #56
+    orr v0.16b, v8.16b, v8.16b
     bl cmps
-    str x0, [xzr, #24]
-    add x0, sp, #92
-    ldr d0, [xzr, #72]
+    mov x20, x0
+    add x0, sp, #60
+    orr v0.16b, v9.16b, v9.16b
     bl cmps
-    str x0, [xzr, #32]
-    add x0, sp, #92
-    ldr d0, [xzr, #56]
+    mov x21, x0
+    add x0, sp, #60
+    orr v0.16b, v8.16b, v8.16b
     bl cmps
-    str x0, [xzr, #40]
-    add x0, sp, #88
+    mov x22, x0
+    add x0, sp, #56
     bl imm_cmps
-    str x0, [xzr, #48]
-    add x0, sp, #92
+    mov x23, x0
+    add x0, sp, #60
     bl imm_cmps
-    ldr x1, [xzr, #16]
-    ldr x2, [xzr, #24]
-    add x1, x1, x2
-    ldr x2, [xzr, #32]
-    add x1, x1, x2
-    ldr x2, [xzr, #40]
-    add x1, x1, x2
-    ldr x2, [xzr, #48]
-    add x1, x1, x2
+    add x1, x19, x20
+    add x1, x1, x21
+    add x1, x1, x22
+    add x1, x1, x23
     add x0, x1, x0
-    ldp x29, x30, [xzr]
-    add sp, sp, #96
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldp x29, x30, [xzr, #40]
+    add sp, sp, #64
     ret
 imm_cmps:
     ldr s0, [x0]
@@ -243,53 +246,56 @@ cmps:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 main:
-    sub sp, sp, #96
-    stp x29, x30, [xzr]
-    adr x0, 0xed0
+    sub sp, sp, #64
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    stp x29, x30, [xzr, #40]
+    adr x0, 0xf64
     ldr s0, [x0]
-    str d0, [xzr, #56]
-    adr x0, 0xed4
+    orr v8.16b, v0.16b, v0.16b
+    adr x0, 0xf68
     ldr s0, [x0]
-    str d0, [xzr, #72]
-    add x0, sp, #88
-    ldr d0, [xzr, #56]
-    str s0, [x0]
-    add x0, sp, #92
-    ldr d0, [xzr, #72]
-    str s0, [x0]
-    add x0, sp, #88
-    ldr d0, [xzr, #72]
+    orr v9.16b, v0.16b, v0.16b
+    add x0, sp, #56
+    str s8, [x0]
+    add x0, sp, #60
+    str s9, [x0]
+    add x0, sp, #56
+    orr v0.16b, v9.16b, v9.16b
     bl cmps
-    str x0, [xzr, #16]
-    add x0, sp, #88
-    ldr d0, [xzr, #56]
+    mov x19, x0
+    add x0, sp, #56
+    orr v0.16b, v8.16b, v8.16b
     bl cmps
-    str x0, [xzr, #24]
-    add x0, sp, #92
-    ldr d0, [xzr, #72]
+    mov x20, x0
+    add x0, sp, #60
+    orr v0.16b, v9.16b, v9.16b
     bl cmps
-    str x0, [xzr, #32]
-    add x0, sp, #92
-    ldr d0, [xzr, #56]
+    mov x21, x0
+    add x0, sp, #60
+    orr v0.16b, v8.16b, v8.16b
     bl cmps
-    str x0, [xzr, #40]
-    add x0, sp, #88
+    mov x22, x0
+    add x0, sp, #56
     bl imm_cmps
-    str x0, [xzr, #48]
-    add x0, sp, #92
+    mov x23, x0
+    add x0, sp, #60
     bl imm_cmps
-    ldr x1, [xzr, #16]
-    ldr x2, [xzr, #24]
-    add x1, x1, x2
-    ldr x2, [xzr, #32]
-    add x1, x1, x2
-    ldr x2, [xzr, #40]
-    add x1, x1, x2
-    ldr x2, [xzr, #48]
-    add x1, x1, x2
+    add x1, x19, x20
+    add x1, x1, x21
+    add x1, x1, x22
+    add x1, x1, x23
     add x0, x1, x0
-    ldp x29, x30, [xzr]
-    add sp, sp, #96
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldp x29, x30, [xzr, #40]
+    add sp, sp, #64
     ret
 imm_cmps:
     ldr s0, [x0]

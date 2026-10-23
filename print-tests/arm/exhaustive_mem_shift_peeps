@@ -5,7 +5,14 @@ Error{inst_idx = 44, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 Error{inst_idx = 44, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 main:
     sub sp, sp, #112
-    stp x29, x30, [xzr]
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    str x24, [xzr, #40]
+    str x25, [xzr, #48]
+    stp x29, x30, [xzr, #56]
     movn x0, #32
     add x1, sp, #72
     strb w0, [x1]
@@ -38,52 +45,52 @@ main:
     add x1, sp, #73
     movz x2, #3
     bl test_mem_shifts i8 u8
-    str x0, [xzr, #16]
+    mov x19, x0
     movz x2, #3
     add x0, sp, #74
     add x1, sp, #76
     bl test_mem_shifts i16 u16
-    str x0, [xzr, #24]
+    mov x20, x0
     movz x2, #3
     add x0, sp, #78
     add x1, sp, #82
     bl test_mem_shifts i32 u32
-    str x0, [xzr, #32]
+    mov x21, x0
     movz x2, #3
     add x0, sp, #86
     add x1, sp, #94
     bl test_mem_shifts i64 u64
-    str x0, [xzr, #40]
+    mov x22, x0
     add x0, sp, #72
     add x1, sp, #73
     bl test_mem_imm_shifts i8 u8
-    str x0, [xzr, #48]
+    mov x23, x0
     add x0, sp, #74
     add x1, sp, #76
     bl test_mem_imm_shifts i16 u16
-    str x0, [xzr, #56]
+    mov x24, x0
     add x0, sp, #78
     add x1, sp, #82
     bl test_mem_imm_shifts i32 u32
-    str x0, [xzr, #64]
+    mov x25, x0
     add x0, sp, #86
     add x1, sp, #94
     bl test_mem_imm_shifts i64 u64
-    ldr x1, [xzr, #16]
-    ldr x2, [xzr, #24]
-    add x1, x1, x2
-    ldr x2, [xzr, #32]
-    add x1, x1, x2
-    ldr x2, [xzr, #40]
-    add x1, x1, x2
-    ldr x2, [xzr, #48]
-    add x1, x1, x2
-    ldr x2, [xzr, #56]
-    add x1, x1, x2
-    ldr x2, [xzr, #64]
-    add x1, x1, x2
+    add x1, x19, x20
+    add x1, x1, x21
+    add x1, x1, x22
+    add x1, x1, x23
+    add x1, x1, x24
+    add x1, x1, x25
     add x0, x1, x0
-    ldp x29, x30, [xzr]
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldr x24, [xzr, #40]
+    ldr x25, [xzr, #48]
+    ldp x29, x30, [xzr, #56]
     add sp, sp, #112
     ret
 test_mem_shifts i8 u8:
@@ -532,7 +539,14 @@ Error{inst_idx = 44, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 Error{inst_idx = 44, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 main:
     sub sp, sp, #112
-    stp x29, x30, [xzr]
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    str x24, [xzr, #40]
+    str x25, [xzr, #48]
+    stp x29, x30, [xzr, #56]
     movn x0, #32
     add x1, sp, #72
     strb w0, [x1]
@@ -565,52 +579,52 @@ main:
     add x1, sp, #73
     movz x2, #3
     bl test_mem_shifts i8 u8
-    str x0, [xzr, #16]
+    mov x19, x0
     movz x2, #3
     add x0, sp, #74
     add x1, sp, #76
     bl test_mem_shifts i16 u16
-    str x0, [xzr, #24]
+    mov x20, x0
     movz x2, #3
     add x0, sp, #78
     add x1, sp, #82
     bl test_mem_shifts i32 u32
-    str x0, [xzr, #32]
+    mov x21, x0
     movz x2, #3
     add x0, sp, #86
     add x1, sp, #94
     bl test_mem_shifts i64 u64
-    str x0, [xzr, #40]
+    mov x22, x0
     add x0, sp, #72
     add x1, sp, #73
     bl test_mem_imm_shifts i8 u8
-    str x0, [xzr, #48]
+    mov x23, x0
     add x0, sp, #74
     add x1, sp, #76
     bl test_mem_imm_shifts i16 u16
-    str x0, [xzr, #56]
+    mov x24, x0
     add x0, sp, #78
     add x1, sp, #82
     bl test_mem_imm_shifts i32 u32
-    str x0, [xzr, #64]
+    mov x25, x0
     add x0, sp, #86
     add x1, sp, #94
     bl test_mem_imm_shifts i64 u64
-    ldr x1, [xzr, #16]
-    ldr x2, [xzr, #24]
-    add x1, x1, x2
-    ldr x2, [xzr, #32]
-    add x1, x1, x2
-    ldr x2, [xzr, #40]
-    add x1, x1, x2
-    ldr x2, [xzr, #48]
-    add x1, x1, x2
-    ldr x2, [xzr, #56]
-    add x1, x1, x2
-    ldr x2, [xzr, #64]
-    add x1, x1, x2
+    add x1, x19, x20
+    add x1, x1, x21
+    add x1, x1, x22
+    add x1, x1, x23
+    add x1, x1, x24
+    add x1, x1, x25
     add x0, x1, x0
-    ldp x29, x30, [xzr]
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldr x24, [xzr, #40]
+    ldr x25, [xzr, #48]
+    ldp x29, x30, [xzr, #56]
     add sp, sp, #112
     ret
 test_mem_shifts i8 u8:

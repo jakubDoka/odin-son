@@ -46,7 +46,7 @@ meta_of :: proc(prc: ^bac.Proc, ra: ^bac.Regalloc, n: bac.Expanded_Node, _: $T) 
 	case .Ret: return {out = bac.ret_mask(prc, ra, n)}
 	case .Return: return bac.cc_node_meta(prc, ra, n, CC_TABLE[:])
 	case .CInt: return {out = {}}
-	case .Add, .Mul, .And, .Or, .Xor, .Shl, .U_Shr:
+	case .Add, .Mul, .And, .Or, .Xor, .Shl, .U_Shr, .Eq, .Ne, .Lt, .Le, .Gt, .Ge:
 		return {out = {}, masks = INPUTS[:]}
 	case .Cast: return {out = {}, masks = INPUTS[:1]}
 	case .Split: return {out = {index = 1}, masks = INPUTS[:1]}
@@ -66,10 +66,18 @@ put_instruction :: proc(code: ^arna.Allocator, instruction: Instruction, err: Er
 }
 
 emit_function :: proc(ctx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
+	return emit_code(ctx, false)
+}
+
+emit_body :: proc(ctx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
+	return emit_code(ctx, true)
+}
+
+emit_code :: proc(ctx: bac.Codegen_Emit_Ctx, body_only: bool) -> bac.Codegen_Emit_Output {
 	for r in ctx.allocs do assert(r.index < 112, "Xe-LP register spills are not implemented")
 	assert(len(ctx.bbs) == 1, "Xe-LP control flow is not implemented")
 	// Preserve denormals and round-to-nearest in the newly dispatched thread.
-	put_instruction(ctx.code, {0x80000166, 0x80018220, 0x01008000, 0x04c004c0}, .None)
+	if !body_only do put_instruction(ctx.code, {0x80000166, 0x80018220, 0x01008000, 0x04c004c0}, .None)
 	for id in ctx.bbs[0].instrs {
 		n := bac.expand_node(ctx.prc, id)
 		dst := int(bac.reg_of(ctx, id).index) if n.dt > .Mem else 0
@@ -92,7 +100,18 @@ emit_function :: proc(ctx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 			a.op = OPS[n.itype]
 			a.src0 = reg(int(bac.reg_of(ctx, n.inps[0]).index))
 			a.src1 = reg(int(bac.reg_of(ctx, n.inps[1]).index))
+		case .Eq, .Ne, .Lt, .Le, .Gt, .Ge:
+			@(static, rodata) CONDITIONS := #partial [bac.Node_Type]Condition{.Eq = .Eq, .Ne = .Ne, .Lt = .Lt, .Le = .Le, .Gt = .Gt, .Ge = .Ge}
+			a.op = .Cmp
+			a.condition = CONDITIONS[n.itype]
+			a.type = bac.get_node(ctx.prc, n.inps[0]).dt == .F32 ? .F32 : .U32
+			a.src0 = reg(int(bac.reg_of(ctx, n.inps[0]).index))
+			a.src1 = reg(int(bac.reg_of(ctx, n.inps[1]).index))
+			put(ctx.code, a)
+			// BAC comparisons produce 0/1; EU cmp writes a full dword mask.
+			a = {op = .And, type = .U32, dst = dst, src0 = reg(dst), src1 = imm(1), distance = 1}
 		case .Return:
+			if body_only do continue
 			put(ctx.code, Sync({kind = .Distance, value = 1}))
 			put(ctx.code, Send({sfid = .DC1, dst = NULL, src0 = 3, src1 = 4, descriptor = 0x02026e00, extended_descriptor = 0x40, sbid = 0}))
 			put(ctx.code, Sync({kind = .Source, value = 0}))

@@ -30,6 +30,8 @@ shutil.copytree(NATIVE / 'platform', stage / 'platform', dirs_exist_ok=True)
 shutil.copy2(NATIVE / 'main.odin', stage / 'main.odin')
 shutil.copy2(NATIVE / 'embedded.odin', stage / 'embedded.odin')
 shutil.copy2(NATIVE / 'tui.odin', stage / 'tui.odin')
+shutil.copy2(NATIVE / 'mandelbrot.odin', stage / 'mandelbrot.odin')
+shutil.copy2(ROOT / 'examples/gpu-mandelbrot-trueos/main.odin', stage / 'mandelbrot.source')
 shutil.copy2(NATIVE / 'hello.odin.source', stage / 'hello.source')
 arena = stage / 'utils/arna/arna.odin'
 arena.write_text(arena.read_text().replace('ODIN_OS == .Freestanding', 'false'))

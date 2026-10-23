@@ -154,7 +154,7 @@ def main():
                                     env=dict(os.environ, FAIL_DISPATCH='1'))
             assert failed.returncode in [-signal.SIGILL, -signal.SIGTRAP], failed.returncode
         bad = work/'bad'; bad.mkdir()
-        for body in ['return a - b', 'return unknown(a)', 'x := a; return x', 'return a / b / a / b']:
+        for body in ['return a % b', 'return unknown(a)', 'x := true; return x', 'return a / b / a / b']:
             (bad/'main.odin').write_text('package main\n@(tag="gpu")\nprocess :: proc(a,b:f32)->f32{'+body+'}\n')
             result = subprocess.run([str(compiler), str(bad/'main.odin'), '-o', str(bad/'bad.o')],
                                     capture_output=True, timeout=12, env=env)

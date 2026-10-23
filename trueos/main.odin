@@ -26,8 +26,23 @@ trueos_main :: proc "c" (argc: uintptr, argv: [^]cstring) -> i32 {
     }
     bac.init_custom_fmt()
     typecheck.init_type_fmt()
-    if argc <= 1 do return run_tui()
+    if argc <= 1 {
+        when #config(TRUEOS_MANDELBROT_SMOKE_DEFAULT, false) {
+            return run_gpu_envelope_smoke()
+        } else when #config(TRUEOS_MANDELBROT_VERIFY_DEFAULT, false) {
+            return run_gpu_mandelbrot("--verify-gpu-mandelbrot")
+        } else {
+            return run_tui()
+        }
+    }
     if argc == 2 && string(argv[1]) == "--tui" do return run_tui()
+    if argc == 2 {
+        mode := string(argv[1])
+        if mode == "--verify-gpu-envelope" do return run_gpu_envelope_smoke()
+        if mode == "--gpu-mandelbrot" || mode == "--run-gpu-mandelbrot" || mode == "--verify-gpu-mandelbrot" {
+            return run_gpu_mandelbrot(mode)
+        }
+    }
     return run_compiler(argc, argv)
 }
 run_compiler :: proc(argc: uintptr, argv: [^]cstring) -> i32 {
@@ -65,6 +80,7 @@ run_compiler :: proc(argc: uintptr, argv: [^]cstring) -> i32 {
             fmt.println("usage: odin-son [entry.odin] [-o output.o] [--odin-root odin] [-target:amd64|arm64|wasm64] [-o:level] [-debug] [-check] [-emit-xelp-body body.bin]")
             fmt.println("No source argument opens the persistent demo TUI. --cpu-boids compiles the embedded CPU demo. --blueprint also packages an amd64 input as a .bp.")
             fmt.println("--gpu-boids compiles embedded tagged native GPU boids and stores gpu-boids.o and gpu-boids.bp.")
+            fmt.println("--gpu-mandelbrot stores an embedded source's native EU body. --run-gpu-mandelbrot compiles and displays it; --verify-gpu-mandelbrot renders two source variants.")
             return 0
         case arg == "--gpu-boids": gpu_boids = true
         case arg == "--run-gpu-boids": gpu_boids = true; gpu_autorun = true
@@ -136,7 +152,21 @@ run_compiler :: proc(argc: uintptr, argv: [^]cstring) -> i32 {
     if ctx.error_cnt > 0 do return 1
     if xelp_body_output != "" {
         if xelp_body_output == output { fmt.eprintln("Xe-LP body and CPU object require different output paths"); return 1 }
-        body, ok := typecheck.emit_gpu_xelp_body(&ctx)
+        body: []u8
+        native_index := -1
+        gpu_count := 0
+        for prc, j in ctx.procs {
+            if !prc.gpu_tag do continue
+            gpu_count += 1
+            if prc.gpu_native do native_index = j
+        }
+        ok := false
+        if gpu_count == 1 && native_index >= 0 {
+            body = compile_gpu_scalar_body(&ctx, &ctx.procs[native_index])
+            ok = true
+        } else {
+            body, ok = typecheck.emit_gpu_xelp_body(&ctx)
+        }
         if !ok { fmt.eprintln("Xe-LP body emission requires exactly one nonempty tagged gpu arithmetic procedure"); return 1 }
         if os.write_entire_file(xelp_body_output, body) != nil { fmt.eprintln("cannot write Xe-LP body"); return 1 }
         fmt.printfln("[odin-son xelp] stage=body-emitted target=12p1 bytes=%d complete_kernel=false artifact=%s", len(body), xelp_body_output)

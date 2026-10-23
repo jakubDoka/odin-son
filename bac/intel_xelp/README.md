@@ -52,11 +52,15 @@ flags are not transferred. The expansion trades code size for a small primitive
 instruction foundation and avoids silently substituting approximate reciprocal
 arithmetic.
 
-The initial source subset is exactly two `f32` parameters, one `f32` return
-expression, parameter references, numeric literals, parentheses, `+`, `*`, and
-`/`. It accepts at most 64 source operations and two divisions. Other source
-constructs receive diagnostics. Other ideal nodes, datatypes, general control
-flow, GPU calls, and register spilling remain unimplemented in the target.
+The source subset has exactly two `f32` parameters and a final `f32` return.
+It supports `f32`/`bool` locals, `=`, `+=`, `-=`, and `*=` assignments, numeric and bool literals,
+parentheses, unary minus/not, `+`, `-`, `*`, `/`, comparisons, bool conjunction
+and disjunction, and ternary selection. Canonical loops of the form
+`for i := 0; i < N; i += 1` are unrolled during compilation for literal bounds
+in `1..64`. Positive bounds ensure every body receives source checking. The
+procedure is limited to 4096 lowered values and two expanded
+divisions. GPU calls, arbitrary memory access, dynamic control flow and register
+spilling remain unimplemented. Pure ternary expressions evaluate both arms.
 
 Regenerate the target's own spec with:
 
@@ -120,11 +124,37 @@ at 16/20, and click position at 24/28. Those offsets belong to that kernel ABI,
 not to the hardware or all Odin procedures. Continuous live input would need a
 separate synchronized producer/consumer protocol.
 
-Scalar v1 does not render images. Shadertoy-style image kernels still need
-batched invocation IDs, buffer/image load and store lowering, and a surface
-output contract; many shaders also need control flow and math intrinsics.
-TRUEOS already has the dispatch, surface, and uniform plumbing. This Odin
-target does not yet lower those additional source constructs.
+Scalar v1 does not render images. General image kernels still need batched
+invocation IDs, buffer/image load and store lowering, and a surface output
+contract; many shaders also need dynamic control flow and math intrinsics.
+The Mandelbrot experiment instead compiles a bounded per-pixel math body and
+uses a separate fixed TRUEOS envelope for coordinates and surface output.
+
+### Bounded Mandelbrot math bodies
+
+`compile_gpu_scalar_body` uses the same checked source, BAC graph and register
+allocator as scalar calls. Its SIMD8/M0 body reads eight `f32` coordinates each
+from r1 and r2, returns eight `f32` values in r4, and may overwrite r4..r111.
+It preserves r0..r3 and r112..r127. It emits only arithmetic instructions: no
+floating-point control setup, SENDs, stores, fences, EOT or dispatch metadata.
+The caller supplies those parts of the kernel and preserves denormals and
+round-to-nearest. Every emitted arithmetic instruction carries `@1` dependency
+control. Comparisons materialize ordinary 0/1 values; selects use bitwise
+operations so instruction scheduling does not depend on implicit flag state.
+
+For exactly one native tagged scalar procedure, `-emit-xelp-body body.bin`
+exports this math body. The legacy boids meaning of that option is preserved.
+Changing the source loop bound changes the emitted recurrence instructions;
+the compiler does not substitute a precompiled Mandelbrot program.
+
+```sh
+ODIN=/path/to/odin python3 trueos/test_gpu_mandelbrot.py
+```
+
+The test compiles 8- and 25-iteration source variants, checks body register and
+opcode constraints, verifies IGA roundtrips, and compares 2376 pixels across all
+eight SIMD lanes against an independent C implementation for each variant.
+These checks do not dispatch work to a physical GPU.
 
 Hardware references: Intel's [thread/EOT terminology](https://www.intel.com/content/www/us/en/docs/oneapi/optimization-guide-gpu/2025-0/terminology-002.html)
 and [Gen12LP descriptor, walker, and PIPE_CONTROL definitions](https://github.com/intel/compute-runtime/blob/master/shared/source/generated/gen12lp/hw_cmds_generated_gen12lp.inl).

@@ -180,7 +180,21 @@ main :: proc() {
 
 	if xelp_body_output != "" {
 		if xelp_body_output == output { fmt.eprintln("Xe-LP body and CPU object require different output paths"); os.exit(1) }
-		body, ok := typecheck.emit_gpu_xelp_body(&ctx)
+			body: []u8
+			native_index := -1
+			gpu_count := 0
+			for prc, j in ctx.procs {
+				if !prc.gpu_tag do continue
+				gpu_count += 1
+				if prc.gpu_native do native_index = j
+			}
+			ok := false
+			if gpu_count == 1 && native_index >= 0 {
+				body = compile_gpu_scalar_body(&ctx, &ctx.procs[native_index])
+				ok = true
+			} else {
+				body, ok = typecheck.emit_gpu_xelp_body(&ctx)
+			}
 		if !ok { fmt.eprintln("Xe-LP body emission requires exactly one nonempty tagged gpu arithmetic procedure"); os.exit(1) }
 		if err := os.write_entire_file(xelp_body_output, body); err != nil { fmt.eprintln("cannot write Xe-LP body:", err); os.exit(1) }
 		fmt.eprintfln("[odin-son xelp] stage=body-emitted target=12p1 bytes=%d complete_kernel=false artifact=%s", len(body), xelp_body_output)

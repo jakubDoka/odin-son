@@ -6,6 +6,14 @@ import subprocess
 import sys
 
 IMPORTS = {
+    'trueos_cabi_ui4_scene_frame_open_visual',
+    'trueos_cabi_ui4_scene_visual_frame_begin',
+    'trueos_cabi_ui4_scene_native_compute_upload_v1',
+    'trueos_cabi_ui4_scene_native_compute_render_v1',
+    'trueos_cabi_ui4_scene_compute_frame_publish',
+    'trueos_cabi_ui4_solara_frame_close',
+    'trueos_cabi_ui4_scene_keyboard_state',
+    'trueos_cabi_ui4_scene_pointer_event_take',
     'trueos_cabi_vgpu_call_f32_v1',
     'trueos_cabi_shell_attached_write', 'trueos_cabi_shell_attached_read_byte', 'trueos_cabi_sleep_ms',
     'trueos_cabi_blueprint_terminal_lease_current_v1', 'trueos_cabi_blueprint_terminal_lease_release_v1',

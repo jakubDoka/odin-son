@@ -11,6 +11,17 @@ Outputs:
 - `trueos/build/odin-son.o`: freestanding x86-64 ELF relocatable compiler.
 - `trueos/build/odin-son.bp`: Blueprint with an argv-v1 `trueos_main` entry.
 
+The sibling TRUEOS-Blueprints repository also supports the named native build
+and its ordinary single-app publication path:
+
+```bash
+ODIN=/home/t4ce/Programmme/odin/odin cargo bp odin-son
+```
+
+Run that command from TRUEOS-Blueprints. It rebuilds this checkout, copies the
+package into `dist/odin-son.bp`, and publishes its SHA-256-qualified filename.
+`TRUEOS_ODIN_SON_DIR` can select another source checkout.
+
 The upstream Odin compiler compiles the shared parser, type checker, optimizer,
 register allocators, and x64, ARM64, and WebAssembly emitters. The native build
 uses the actual repository sources at build time. Its entry point and platform
@@ -55,6 +66,10 @@ Crossterm, with the shared three-row `[16,16,16]` control background. There is n
 Rust wrapper or new kernel transport. The compiler remains resident and yields
 while idle; this is a running VM, not a saved checkpoint.
 
+In the current Shell3, submit `§§odin-son` and Enter to fetch and launch the
+published compiler. An AppDB-installed copy launches by exact name `odin-son`
+in CMD mode.
+
 On first launch it seeds `gpu-boids/main.odin`, `cpu-boids/main.odin`, and
 `hello/main.odin` under its app root, normally `apps/odin-son`. Existing files
 are preserved. Each example has its own directory because Odin modules load
@@ -62,8 +77,16 @@ all `.odin` files in their directory. Add another `<demo>/main.odin`; the picker
 discovers it automatically while visible, or immediately with `f`. Demo folder
 names may contain ASCII letters, digits, `_`, and `-` (maximum 64 characters).
 
-Use arrows or `j/k` to select, Enter to compile, `r` to queue the last successful
-build in its own headless VM, and `q` to quit. Outputs are
+The picker also includes `gpu-mandelbrot`, backed directly by the embedded
+source. Enter compiles its native EU arithmetic body to `mandelbrot.eu.bin`.
+Press `r` to compile and display it through the brokered UI4 compute frame;
+mouse dragging pans, the wheel zooms, and Q or Escape in the image returns to
+the compiler TUI. Native dispatch requires the kernel's `odin-native-gpgpu`
+feature and a supported Xe-LP device. This entry reserves its picker name and
+does not read a `gpu-mandelbrot/main.odin` file from disk.
+
+Use arrows or `j/k` to select and `q` to quit. For source directories, Enter
+compiles and `r` queues the last successful build in its own headless VM. Outputs are
 `demo-<name>.o` and `demo-<name>.bp` in the compiler app root. GPU boids creates
 its own UI4 frame and runs continuously. The GPU island admits one owner at a
 time. A queued launch is not proof that a child started or completed.

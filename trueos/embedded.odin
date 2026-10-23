@@ -7,9 +7,14 @@ import "typecheck"
 
 EMBEDDED_BOIDS :: #load("boids.source", string)
 EMBEDDED_GPU_BOIDS :: #load("gpu-boids.source", string)
+EMBEDDED_MANDELBROT :: #load("mandelbrot.source", string)
 
 load_embedded_boids :: proc(ctx: ^Gen_Ctx, gpu := false) -> bool {
-    file := ast.File{src = gpu ? EMBEDDED_GPU_BOIDS : EMBEDDED_BOIDS, fullpath = gpu ? "embedded/gpu-boids/main.odin" : "embedded/boids/main.odin"}
+    return load_embedded_source(ctx, gpu ? EMBEDDED_GPU_BOIDS : EMBEDDED_BOIDS, gpu ? "embedded/gpu-boids/main.odin" : "embedded/boids/main.odin")
+}
+
+load_embedded_source :: proc(ctx: ^Gen_Ctx, source: string, path: string) -> bool {
+    file := ast.File{src = source, fullpath = path}
     p: parser.Parser
     {
         context.allocator = ctx.types.allocator

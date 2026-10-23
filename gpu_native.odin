@@ -8,34 +8,67 @@ import "typecheck"
 import "utils/arna"
 
 compile_gpu_scalar :: proc(ctx: ^Gen_Ctx, prc: ^typecheck.Proc) -> []u8 {
+	return compile_gpu_scalar_code(ctx, prc, false)
+}
+
+compile_gpu_scalar_body :: proc(ctx: ^Gen_Ctx, prc: ^typecheck.Proc) -> []u8 {
+	return compile_gpu_scalar_code(ctx, prc, true)
+}
+
+compile_gpu_scalar_code :: proc(ctx: ^Gen_Ctx, prc: ^typecheck.Proc, body_only: bool) -> []u8 {
 	context.allocator, _ = arna.scrath()
 	p: bac.Proc
 	memory: arna.Allocator
 	if err := arna.init(&memory, 8 * 1024 * 1024); err != nil do panic("GPU graph allocation failed")
 	defer arna.destroy(&memory)
 	rmem := ssa.start_proc(&p, &memory, &arna.scratch)
-	p.node_spec = &eu.SPEC
+	spec := eu.SPEC
+	if body_only do spec.emit_function = eu.emit_body
+	p.node_spec = &spec
 	previous := bac.current_prc
 	bac.current_prc = &p
 	defer bac.current_prc = previous
 	a := bac.add_param(&p, "a", .F32, p.entry, 0)
 	b := bac.add_param(&p, "b", .F32, p.entry, 1)
-	stack: [dynamic]Node_ID
-	for op in prc.gpu_ops {
+	values := make([]Node_ID, len(prc.gpu_ops))
+	result: Node_ID
+	for op, i in prc.gpu_ops {
+		lhs, rhs := values[op.inputs[0]], values[op.inputs[1]]
+		dt: bac.Node_Datatype = op.type == .Bool ? .I32 : .F32
 		switch op.kind {
-		case .A: append(&stack, a)
-		case .B: append(&stack, b)
-		case .Constant: append(&stack, bac.add_c_int(&p, "literal", .F32, i64(op.bits)))
+		case .A: values[i] = a
+		case .B: values[i] = b
+		case .Constant: values[i] = bac.add_c_int(&p, "literal", dt, i64(op.bits))
 		case .Add, .Mul, .Div:
-			rhs, lhs := pop(&stack), pop(&stack)
 			k: bac.Bin_Op = .Add
 			if op.kind == .Mul do k = .Mul
 			if op.kind == .Div do k = .Div
-			append(&stack, bac.add_bin_op(&p, "expression", k, .F32, lhs, rhs))
+			values[i] = bac.add_bin_op(&p, "expression", k, .F32, lhs, rhs)
+		case .Sub, .Neg:
+			value := op.kind == .Sub ? rhs : lhs
+			bits := bac.add_un_op(&p, "neg-bits", .Cast, .I32, value)
+			neg := bac.add_un_op(&p, "neg-value", .Cast, .F32, eu.iop(&p, .Xor, bits, eu.icon(&p, 0x8000_0000)))
+			values[i] = op.kind == .Sub ? bac.add_bin_op(&p, "subtract", .Add, .F32, lhs, neg) : neg
+		case .Eq, .Ne, .Lt, .Le, .Gt, .Ge:
+			@(static, rodata) OPS := #partial [typecheck.Gpu_Op_Kind]bac.Bin_Op{.Eq = .Eq, .Ne = .Ne, .Lt = .Lt, .Le = .Le, .Gt = .Gt, .Ge = .Ge}
+			values[i] = bac.add_bin_op(&p, "comparison", OPS[op.kind], .I32, lhs, rhs)
+		case .And, .Or:
+			values[i] = eu.iop(&p, op.kind == .And ? .And : .Or, lhs, rhs)
+		case .Not: values[i] = eu.iop(&p, .Xor, lhs, eu.icon(&p, 1))
+		case .Select:
+			mask := eu.ineg(&p, lhs)
+			left, right := rhs, values[op.inputs[2]]
+			if dt == .F32 {
+				left = bac.add_un_op(&p, "select-left", .Cast, .I32, left)
+				right = bac.add_un_op(&p, "select-right", .Cast, .I32, right)
+			}
+			selected := eu.iselect(&p, mask, left, right)
+			values[i] = dt == .F32 ? bac.add_un_op(&p, "select-value", .Cast, .F32, selected) : selected
+		case .Return: result = lhs
 		}
 	}
-	assert(len(stack) == 1)
-	ssa.merge_returns(&p, {p.entry, rmem, stack[0]})
+	assert(result != 0)
+	ssa.merge_returns(&p, {p.entry, rmem, result})
 	code: arna.Allocator
 	if err := arna.init(&code, 1024 * 1024); err != nil do panic("GPU code allocation failed")
 	defer arna.destroy(&code)

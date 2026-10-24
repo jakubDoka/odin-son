@@ -77,6 +77,7 @@ main :: proc() {
 			.X64_Padd ..= .X64_Psub = X64_SIMPLE_BIN_OP_SPEC,
 			.X64_Psadbw = {args = {"lhs", "rhs"}},
 			.X64_Pshufd = {id = x64.Mem_Op, no_ctor = true},
+			.X64_Pshuflw = {id = x64.Mem_Op, no_ctor = true},
 			.X64_Pshufb = {id = x64.Mem_Op, no_ctor = true},
 			.X64_Pextr = {id = x64.Mem_Op, no_ctor = true},
 			.X64_Mul ..= .X64_Div = X64_SIMPLE_BIN_OP_SPEC,

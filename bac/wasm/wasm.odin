@@ -117,7 +117,31 @@ peep :: proc(
 	kind := wtype(node)
 	#partial switch kind {
 	case .Simd_Extract_Lsbs:
-		return bac.lsbs_to_msbs(ctx, node, struct{}{})
+		assert(node.itype == .Simd_Extract_Lsbs)
+		lsbsmt := bac.add_c_int(
+			ctx,
+			"lsbsmt",
+			bac.LANE_TO_DT[node.lane],
+			i64(bac.LANE_SIZE[node.lane] * 8 - 1),
+		)
+		lsbssh := bac.add_bin_op(
+			ctx,
+			"lsbssh",
+			.Shl,
+			.V128,
+			node.inps[0],
+			lsbsmt,
+			lane = node.lane,
+		)
+		bac.worklist_add(ctx, ctx.worklist, lsbssh)
+		return bac.add_un_op(
+			ctx,
+			"lsbs",
+			.Simd_Extract_Msbs,
+			node.dt,
+			lsbssh,
+			lane = node.lane,
+		)
 	case .Add ..= .And_Not, .Neg, .Not:
 		NARROW_DTS :: bit_set[bac.Node_Datatype]{.I8, .I16}
 		if node.dt in bac.VECTOR_DTS ||
@@ -214,6 +238,8 @@ peep :: proc(
 			bac.add_c_int(ctx, "shzero", node.dt, 0),
 			in_range,
 		)
+	case .Ctz:
+		return bac.normalize_ctz(ctx, node, .I32, struct{}{})
 	case .Conv, .U_Conv:
 		if inp.dt not_in bac.INT_DTS ||
 		   node.dt not_in bac.INT_DTS ||

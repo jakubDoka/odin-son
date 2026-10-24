@@ -106,18 +106,20 @@ typedef bac_u8 bac_Node_Datatype;
 typedef bac_u32 bac_Node_ID;
 typedef struct bac_Node_Output bac_Node_Output;
 typedef bac_int bac_Opt_Flag;
+typedef struct bac_Opt_Hints bac_Opt_Hints;
 typedef struct bac_PS_Peep_Ctx bac_PS_Peep_Ctx;
-typedef bac_int bac_Pass;
 typedef struct bac_Param_Spec bac_Param_Spec;
-typedef struct bac_Proc bac_Proc;
+typedef bac_u16 bac_Reg_Kind;
+typedef bac_int bac_Pass;
 typedef struct bac_Peep_Ctx bac_Peep_Ctx;
-typedef struct bac_Regalloc bac_Regalloc;
-typedef bac_int bac_Schedule_Mode;
+typedef struct bac_Schedule bac_Schedule;
+typedef struct bit_arr_Bit_Set bit_arr_Bit_Set;
+typedef struct bac_Proc bac_Proc;
 typedef struct bac_Proc_Meta bac_Proc_Meta;
 typedef struct bac_RM_Intern_Idx bac_RM_Intern_Idx;
 typedef struct bac_RM_Interner bac_RM_Interner;
 typedef struct bac_Reg bac_Reg;
-typedef bac_u16 bac_Reg_Kind;
+typedef struct bac_Regalloc bac_Regalloc;
 typedef bac_int bac_Regalloc_Mode;
 typedef struct bac_Regalloc_Node_Meta bac_Regalloc_Node_Meta;
 typedef struct bac_Regalloc_Output bac_Regalloc_Output;
@@ -125,7 +127,7 @@ typedef struct bac_Regalloc_Spec bac_Regalloc_Spec;
 typedef struct bac_Reloc bac_Reloc;
 typedef bac_u32 bac_Reloc_Kind;
 typedef bac_u32 bac_Reloc_Size;
-typedef struct bac_Schedule bac_Schedule;
+typedef bac_int bac_Schedule_Mode;
 typedef struct bac_Sloc bac_Sloc;
 typedef struct bac_Stats bac_Stats;
 typedef struct bac_Stencil bac_Stencil;
@@ -140,28 +142,34 @@ typedef struct bac_ssa_If_State bac_ssa_If_State;
 typedef bac_int bac_ssa_Loop_Control;
 typedef struct bac_ssa_Loop_State bac_ssa_Loop_State;
 typedef struct bac_ssa_Param_Gen bac_ssa_Param_Gen;
-typedef struct bit_arr_Bit_Set bit_arr_Bit_Set;
 typedef bac_u8 bac_Bs_Class_Flag;
+typedef bac_u16 bac_Bs_Node_Datatype;
 typedef bac_u8 bac_Bs_Opt_Flag;
 typedef bac_u8 bac_Bs_Pass;
 typedef struct container_queue_Queue_T_Node_ID container_queue_Queue_T_Node_ID;
-typedef struct runtime_Source_Code_Location runtime_Source_Code_Location;
-typedef bac_u8 runtime_Allocator_Error;
-typedef struct runtime_Raw_Dynamic_Array runtime_Raw_Dynamic_Array;
-typedef struct runtime_Allocator runtime_Allocator;
-typedef bac_u8 runtime_Allocator_Mode;
 typedef struct runtime_Maybe_T_Node_ID runtime_Maybe_T_Node_ID;
+typedef struct runtime_Allocator runtime_Allocator;
+typedef bac_u8 runtime_Allocator_Error;
+typedef bac_u8 runtime_Allocator_Mode;
+typedef struct runtime_Raw_Dynamic_Array runtime_Raw_Dynamic_Array;
+typedef struct runtime_Source_Code_Location runtime_Source_Code_Location;
 typedef bac_Lattice (*bac_Sccp_Compute_Fn)(bac_Proc *, bac_Expanded_Node);
 typedef runtime_Maybe_T_Node_ID (*bac_Peep_Fn)(bac_Peep_Ctx, bac_Expanded_Node);
-typedef void (*bac_Pre_Regalloc_Hook)(bac_Regalloc *, bac_Proc *, bac_Schedule *);
 typedef bac_Node_ID (*bac_PS_Peep_Fn)(bac_PS_Peep_Ctx, bac_Expanded_Node);
+typedef void (*bac_Pre_Regalloc_Hook)(bac_Regalloc *, bac_Proc *, bac_Schedule *);
 typedef runtime_Allocator_Error (*runtime_Allocator_Proc)(void *, runtime_Allocator_Mode, bac_int, bac_int, void *, bac_int, runtime_Source_Code_Location, Slice_Of_bac_u8 *);
+struct bac_Codegen_Emit_Output {
+};
+struct Slice_Of_bac_u32 {
+	bac_u32 *data;
+	bac_int len;
+};
 struct Slice_Of_bac_i32 {
 	bac_i32 *data;
 	bac_int len;
 };
-struct Slice_Of_bac_u32 {
-	bac_u32 *data;
+struct Slice_Of_bac_i64 {
+	bac_i64 *data;
 	bac_int len;
 };
 struct Slice_Of_bac_int {
@@ -172,18 +180,41 @@ struct Slice_Of_bac_u16 {
 	bac_u16 *data;
 	bac_int len;
 };
-struct Slice_Of_bac_i64 {
-	bac_i64 *data;
-	bac_int len;
-};
 struct Slice_Of_bac_u8 {
 	bac_u8 *data;
 	bac_int len;
 };
-struct bac_Codegen_Emit_Output {
+enum {
+	bac_Reloc_Kind_Text = 0,
+	bac_Reloc_Kind_Got = 1,
+	bac_Reloc_Kind_Global = 2,
 };
-struct bac_Peep_Ctx {
-	bac_Proc *prc;
+enum {
+	bac_Opt_Flag_Sccp = 0,
+	bac_Opt_Flag_Local_Peeps = 1,
+	bac_Opt_Flag_Mem_Opt = 2,
+	bac_Opt_Flag_Loop_Opt = 3,
+	bac_Opt_Flag_Inline = 4,
+};
+enum {
+	bac_Un_Op_Neg = 60,
+	bac_Un_Op_Not = 61,
+	bac_Un_Op_Cast = 62,
+	bac_Un_Op_Conv = 63,
+	bac_Un_Op_U_Conv = 64,
+	bac_Un_Op_Splat = 65,
+	bac_Un_Op_Ctz = 66,
+	bac_Un_Op_Simd_Extract_Lsbs = 67,
+	bac_Un_Op_Simd_Extract_Msbs = 68,
+	bac_Un_Op_Simd_Reduce_Add_Bisect = 69,
+};
+enum {
+	bac_Schedule_Mode_for_regalloc = 0,
+	bac_Schedule_Mode_for_loopopt = 1,
+};
+enum {
+	bac_Regalloc_Mode_with_scan = 0,
+	bac_Regalloc_Mode_with_coloring = 1,
 };
 enum {
 	bac_Reloc_Size_r32 = 0,
@@ -191,37 +222,15 @@ enum {
 	bac_Reloc_Size_r19 = 2,
 	bac_Reloc_Size_r2_19 = 3,
 };
+struct Slice_Of_bac_Node_ID {
+	bac_Node_ID *data;
+	bac_int len;
+};
 struct runtime_Source_Code_Location {
 	bac_String file_path;
 	bac_i32 line;
 	bac_i32 column;
 	bac_String procedure;
-};
-enum {
-	runtime_Allocator_Mode_Alloc = 0,
-	runtime_Allocator_Mode_Free = 1,
-	runtime_Allocator_Mode_Free_All = 2,
-	runtime_Allocator_Mode_Resize = 3,
-	runtime_Allocator_Mode_Query_Features = 4,
-	runtime_Allocator_Mode_Query_Info = 5,
-	runtime_Allocator_Mode_Alloc_Non_Zeroed = 6,
-	runtime_Allocator_Mode_Resize_Non_Zeroed = 7,
-};
-enum {
-	bac_Sym_Ref_Type_Func = 14,
-};
-enum {
-	bac_Regalloc_Mode_with_scan = 0,
-	bac_Regalloc_Mode_with_coloring = 1,
-};
-enum {
-	bac_Reloc_Kind_Text = 0,
-	bac_Reloc_Kind_Got = 1,
-	bac_Reloc_Kind_Global = 2,
-};
-struct Slice_Of_bac_Node_ID {
-	bac_Node_ID *data;
-	bac_int len;
 };
 enum {
 	bac_Node_Type_Nil = 0,
@@ -312,20 +321,16 @@ struct bac_Cfi_Spec {
 	bac_i32 data_align;
 };
 enum {
+	bac_Dbg_Location_Kind_Register = 0,
+	bac_Dbg_Location_Kind_Register_Offset = 1,
+};
+enum {
 	bac_Class_Flag_Is_Basic_Block_Start = 0,
 	bac_Class_Flag_Interned = 1,
 	bac_Class_Flag_Comutes = 2,
 	bac_Class_Flag_Store = 3,
 	bac_Class_Flag_Load = 4,
 	bac_Class_Flag_Clonable = 5,
-};
-enum {
-	bac_ssa_Loop_Control_Break = 0,
-	bac_ssa_Loop_Control_Continue = 1,
-};
-enum {
-	bac_Dbg_Location_Kind_Register = 0,
-	bac_Dbg_Location_Kind_Register_Offset = 1,
 };
 struct bac_Cfg {
 	bac_u32 idepth;
@@ -411,20 +416,21 @@ struct bac_Efficiency_Stat {
 	bac_int total;
 	bac_int ideal;
 };
-enum {
-	bac_Lane_Type_I8 = 0,
-	bac_Lane_Type_I16 = 1,
-	bac_Lane_Type_I32 = 2,
-	bac_Lane_Type_I64 = 3,
-	bac_Lane_Type_F32 = 4,
-	bac_Lane_Type_F64 = 5,
+struct bac_Loop_Tree {
+	bac_Loop_Tree *parent;
+	bac_u32 depth;
+	_Bool infinite;
+	_Bool already_always;
 };
 enum {
-	bac_Opt_Flag_Sccp = 0,
-	bac_Opt_Flag_Local_Peeps = 1,
-	bac_Opt_Flag_Mem_Opt = 2,
-	bac_Opt_Flag_Loop_Opt = 3,
-	bac_Opt_Flag_Inline = 4,
+	runtime_Allocator_Mode_Alloc = 0,
+	runtime_Allocator_Mode_Free = 1,
+	runtime_Allocator_Mode_Free_All = 2,
+	runtime_Allocator_Mode_Resize = 3,
+	runtime_Allocator_Mode_Query_Features = 4,
+	runtime_Allocator_Mode_Query_Info = 5,
+	runtime_Allocator_Mode_Alloc_Non_Zeroed = 6,
+	runtime_Allocator_Mode_Resize_Non_Zeroed = 7,
 };
 enum {
 	bac_Node_Datatype_Void = 0,
@@ -439,20 +445,6 @@ enum {
 	bac_Node_Datatype_V256 = 9,
 	bac_Node_Datatype_V512 = 10,
 };
-struct bac_Loop_Tree {
-	bac_Loop_Tree *parent;
-	bac_u32 depth;
-	_Bool infinite;
-	_Bool already_always;
-};
-enum {
-	bac_Schedule_Mode_for_regalloc = 0,
-	bac_Schedule_Mode_for_loopopt = 1,
-};
-struct Slice_Of_Slice_Of_bac_i64 {
-	Slice_Of_bac_i64 *data;
-	bac_int len;
-};
 enum {
 	runtime_Allocator_Error_None = 0,
 	runtime_Allocator_Error_Out_Of_Memory = 1,
@@ -461,16 +453,12 @@ enum {
 	runtime_Allocator_Error_Mode_Not_Implemented = 4,
 };
 enum {
-	bac_Un_Op_Neg = 60,
-	bac_Un_Op_Not = 61,
-	bac_Un_Op_Cast = 62,
-	bac_Un_Op_Conv = 63,
-	bac_Un_Op_U_Conv = 64,
-	bac_Un_Op_Splat = 65,
-	bac_Un_Op_Ctz = 66,
-	bac_Un_Op_Simd_Extract_Lsbs = 67,
-	bac_Un_Op_Simd_Extract_Msbs = 68,
-	bac_Un_Op_Simd_Reduce_Add_Bisect = 69,
+	bac_Lane_Type_I8 = 0,
+	bac_Lane_Type_I16 = 1,
+	bac_Lane_Type_I32 = 2,
+	bac_Lane_Type_I64 = 3,
+	bac_Lane_Type_F32 = 4,
+	bac_Lane_Type_F64 = 5,
 };
 enum {
 	bac_Pass_Peep = 0,
@@ -478,9 +466,26 @@ enum {
 	bac_Pass_Mem = 2,
 	bac_Pass_Loop = 3,
 };
+struct Slice_Of_Slice_Of_bac_i64 {
+	Slice_Of_bac_i64 *data;
+	bac_int len;
+};
+enum {
+	bac_ssa_Loop_Control_Break = 0,
+	bac_ssa_Loop_Control_Continue = 1,
+};
+enum {
+	bac_Sym_Ref_Type_Func = 14,
+};
 struct bac_Node_Output {
 	bac_u32 id : 22;
 	bac_u32 idx : 10;
+};
+enum {
+	bac_Bs_Pass_Peep = 1 << 0,
+	bac_Bs_Pass_Sccp = 1 << 1,
+	bac_Bs_Pass_Mem = 1 << 2,
+	bac_Bs_Pass_Loop = 1 << 3,
 };
 struct bac_Dbg_Data_Def {
 	bac_Node_ID node;
@@ -491,6 +496,15 @@ struct arna_Allocator {
 	bac_uint commited;
 	bac_uint reserved;
 };
+struct bit_arr_Bit_Set {
+	bac_int *masks;
+	bac_int bit_length;
+};
+struct Fidxe_Cap_Dyn_Arr_Of_2_bac_Node_Datatype {
+	bac_Node_Datatype data[2];
+	bac_u8 _padding[6];
+	bac_int len;
+};
 enum {
 	bac_Bs_Class_Flag_Is_Basic_Block_Start = 1 << 0,
 	bac_Bs_Class_Flag_Interned = 1 << 1,
@@ -500,22 +514,11 @@ enum {
 	bac_Bs_Class_Flag_Clonable = 1 << 5,
 };
 enum {
-	bac_Bs_Pass_Peep = 1 << 0,
-	bac_Bs_Pass_Sccp = 1 << 1,
-	bac_Bs_Pass_Mem = 1 << 2,
-	bac_Bs_Pass_Loop = 1 << 3,
-};
-struct runtime_Maybe_T_Node_ID {
-	union {
-		bac_Node_ID variant_0;
-		bac_u8 _payload[4];
-	};
-	bac_u32 tag;
-};
-struct Fidxe_Cap_Dyn_Arr_Of_2_bac_Node_Datatype {
-	bac_Node_Datatype data[2];
-	bac_u8 _padding[6];
-	bac_int len;
+	bac_Bs_Opt_Flag_Sccp = 1 << 0,
+	bac_Bs_Opt_Flag_Local_Peeps = 1 << 1,
+	bac_Bs_Opt_Flag_Mem_Opt = 1 << 2,
+	bac_Bs_Opt_Flag_Loop_Opt = 1 << 3,
+	bac_Bs_Opt_Flag_Inline = 1 << 4,
 };
 struct Soa_Slice_Of_bac_SS_Entry_V____i64 {
 	bac_u8 *hash;
@@ -523,14 +526,24 @@ struct Soa_Slice_Of_bac_SS_Entry_V____i64 {
 	bac_int __len;
 };
 enum {
-	bac_Bs_Opt_Flag_Sccp = 1 << 0,
-	bac_Bs_Opt_Flag_Local_Peeps = 1 << 1,
-	bac_Bs_Opt_Flag_Mem_Opt = 1 << 2,
-	bac_Bs_Opt_Flag_Loop_Opt = 1 << 3,
-	bac_Bs_Opt_Flag_Inline = 1 << 4,
+	bac_Bs_Node_Datatype_Void = 1 << 0,
+	bac_Bs_Node_Datatype_Mem = 1 << 1,
+	bac_Bs_Node_Datatype_I8 = 1 << 2,
+	bac_Bs_Node_Datatype_I16 = 1 << 3,
+	bac_Bs_Node_Datatype_I32 = 1 << 4,
+	bac_Bs_Node_Datatype_I64 = 1 << 5,
+	bac_Bs_Node_Datatype_F32 = 1 << 6,
+	bac_Bs_Node_Datatype_F64 = 1 << 7,
+	bac_Bs_Node_Datatype_V128 = 1 << 8,
+	bac_Bs_Node_Datatype_V256 = 1 << 9,
+	bac_Bs_Node_Datatype_V512 = 1 << 10,
 };
-struct bac_ssa_Block_State {
-	bac_Node_ID end_scope;
+struct runtime_Maybe_T_Node_ID {
+	union {
+		bac_Node_ID variant_0;
+		bac_u8 _payload[4];
+	};
+	bac_u32 tag;
 };
 struct bac_Reg {
 	bac_u16 index : 12;
@@ -540,20 +553,19 @@ struct bac_RM_Intern_Idx {
 	bac_u16 index : 12;
 	bac_u16 kind : 4;
 };
-struct bac_Tag {
-	bac_String name[1];
-	bac_u32 stable_id[1];
-} __attribute__((packed, aligned(4)));
-struct bit_arr_Bit_Set {
-	bac_int *masks;
-	bac_int bit_length;
-};
 struct bac_Sloc {
 	bac_u64 file : 20;
 	bac_u64 line : 20;
 	bac_u64 col : 16;
 	bac_u64 range : 8;
 } __attribute__((packed, aligned(4)));
+struct bac_Tag {
+	bac_String name[1];
+	bac_u32 stable_id[1];
+} __attribute__((packed, aligned(4)));
+struct bac_ssa_Block_State {
+	bac_Node_ID end_scope;
+};
 struct bac_Lib_Calls {
 	bac_Lib_Call copy;
 	bac_Lib_Call set;
@@ -626,12 +638,14 @@ struct bac_Lattice {
 		bac_u64 widens : 3;
 	} meta;
 };
-struct bac_ssa_Loop_State {
-	bac_Node_ID scope;
-	bac_Node_ID scopes[2];
-};
-struct bac_Stats {
-	bac_Efficiency_Stat efficiency[20];
+struct bac_Dbg_Location {
+	bac_Dbg_Sym sym;
+	bac_u32 start;
+	bac_u32 end;
+	bac_u32 symbol;
+	bac_i32 offset;
+	bac_Reg reg;
+	bac_Dbg_Location_Kind kind;
 };
 struct bac_ssa_Abi_Param {
 	Fidxe_Cap_Dyn_Arr_Of_2_bac_Node_Datatype dt;
@@ -640,6 +654,13 @@ struct bac_ssa_Abi_Param {
 	_Bool spilled;
 	_Bool scalar;
 	_Bool copied;
+};
+struct bac_ssa_Loop_State {
+	bac_Node_ID scope;
+	bac_Node_ID scopes[2];
+};
+struct bac_Stats {
+	bac_Efficiency_Stat efficiency[20];
 };
 struct bac_Reloc {
 	bac_u32 offset;
@@ -650,14 +671,9 @@ struct bac_Reloc {
 		bac_u32 id : 26;
 	} _0;
 };
-struct bac_Dbg_Location {
-	bac_Dbg_Sym sym;
-	bac_u32 start;
-	bac_u32 end;
-	bac_u32 symbol;
-	bac_i32 offset;
-	bac_Reg reg;
-	bac_Dbg_Location_Kind kind;
+typedef arna_Allocator arna_Temps[2];
+struct bac_Opt_Hints {
+	bac_Bs_Node_Datatype select_types;
 };
 struct bac_Call {
 	bac_Cfg _1;
@@ -669,7 +685,6 @@ struct bac_Call {
 	bac_u32 cid;
 	bac_Node_Datatype rets[4];
 };
-typedef arna_Allocator arna_Temps[2];
 struct Slice_Of_bac_Param_Spec {
 	bac_Param_Spec *data;
 	bac_int len;
@@ -682,17 +697,17 @@ struct Slice_Of_Slice_Of_bac_Reg {
 	Slice_Of_bac_Reg *data;
 	bac_int len;
 };
+struct bac_Regalloc_Output {
+	Slice_Of_bac_Reg allocs;
+	bac_Reg_Kind temp_stack_slot;
+	_Bool computed;
+};
 struct bac_Regalloc_Node_Meta {
 	Slice_Of_bac_RM_Intern_Idx masks;
 	Slice_Of_bac_i64 clobbers;
 	bac_RM_Intern_Idx out;
 	bac_i8 in_place_slot;
 	bac_u8 input_start;
-};
-struct bac_Regalloc_Output {
-	Slice_Of_bac_Reg allocs;
-	bac_Reg_Kind temp_stack_slot;
-	_Bool computed;
 };
 struct bac_RM_Interner {
 	Slice_Of_Soa_Slice_Of_bac_SS_Entry_V____i64 slots;
@@ -715,8 +730,8 @@ struct bac_Node {
 	} __attribute__((packed, aligned(4))) spec;
 	struct {
 		bac_u32 gvn : 26;
-		bac_u32 scan_split : 1;
 		bac_u32 extra_dwords : 4;
+		bac_u32 must_spill : 1;
 	} gvn_group;
 	bac_u32 input_idx;
 	bac_u16 input_count;
@@ -750,6 +765,10 @@ struct Slice_Of_bac_Dbg_Location {
 struct runtime_Allocator {
 	runtime_Allocator_Proc procedure;
 	void *data;
+};
+struct bac_Peep_Ctx {
+	bac_Proc *prc;
+	bac_Opt_Hints opt_hints;
 };
 struct bac_Call_Conv {
 	Slice_Of_Slice_Of_bac_Reg callee_saved;
@@ -962,24 +981,24 @@ extern arna_Allocator arna_init_from_buffer(Slice_Of_bac_u8 buf);
 /// to track control flow and initial memory in a Scope node, all of the ssa
 /// builders expect the scope to have the control flow as the first input node.
 extern bac_Node_ID bac_start_proc(bac_Proc *prc, arna_Allocator *mem, arna_Temps *temps);
-/// The args[0] needs to be a control flow, args[1] should be an end of a memory
-/// thread. You have to call this at least once if the function has reachable
-/// return path.
-extern bac_Node_ID bac_merge_return(bac_Proc *prc, Slice_Of_bac_Node_ID args);
 /// Drops value that are no loger alive from the scope, this usually should be
 /// called at the end of a lexical scope.
 extern void bac_truncate_scope(bac_Proc *prc, bac_Node_ID scope, bac_int to_len);
-/// Delete the scope properly. This is nescessary to generate a proper debug
-/// info.
-extern void bac_delete_scope(bac_Proc *prc, bac_Node_ID scope);
+/// Update the scope value so it gets phys generated to express the ssa
+/// changes.
+extern void bac_set_scope_value(bac_Proc *prc, bac_Node_ID scope, bac_int idx, bac_Node_ID value);
 /// declare a scalar value or a memory thread that should have phys generated
 /// based on updates done by set_scope_value and must be accessed trough
 /// get_scope_value, it retunrs the index withing the scope by which you can
 /// acces and modify the value.
 extern bac_int bac_push_scope_value(bac_Proc *prc, bac_Node_ID scope, bac_Node_ID value, bac_String name, bac_u64 type);
-/// Update the scope value so it gets phys generated to express the ssa
-/// changes.
-extern void bac_set_scope_value(bac_Proc *prc, bac_Node_ID scope, bac_int idx, bac_Node_ID value);
+/// Delete the scope properly. This is nescessary to generate a proper debug
+/// info.
+extern void bac_delete_scope(bac_Proc *prc, bac_Node_ID scope);
+/// The args[0] needs to be a control flow, args[1] should be an end of a memory
+/// thread. You have to call this at least once if the function has reachable
+/// return path.
+extern bac_Node_ID bac_merge_return(bac_Proc *prc, Slice_Of_bac_Node_ID args);
 /// Compile the proc to the current node_spec. The minimal configuration of the
 /// context is the `.prc` and `.buf.code`. Function will crash the program if
 /// other buffers are required. This function also computes missing
@@ -1000,22 +1019,6 @@ extern void bac_opt(bac_Peep_Ctx ctx);
 /// Pass complexity scales with the amount of locals in the function and memory
 /// ops they have.
 extern _Bool bac_memopt(bac_Proc *prc);
-/// This just expands the `from` into a graph, refer to `inline_graph` for
-/// docs.
-extern void bac_inline_stencil(bac_Proc *prc, bac_Node_ID call, bac_Stencil from);
-/// The graph can accumulate wasted space of dead nodes during optimizations.
-/// Function will garbige collect the nodes into the smallest possible
-/// allocation. This is particularly usefull before `get_stencil`, as it
-/// reduces the memory usage of cold functions.
-extern void bac_compact(bac_Proc *prc);
-/// Pass will normalize loops, and apply loop specific optimizations. As of
-/// right now, the loop can be turned into memset or memcpy, or get eliminated
-/// if they have no sideffects.
-extern _Bool bac_loopopt(bac_Proc *prc);
-/// Apply peephole optimizations until fixpoint, the peephole strategy is picked
-/// from the ctx.prc.node_spec.peep. If you use `compute_latices` before this
-/// pass, the latices will be used to improve optimizations.
-extern _Bool bac_apply_peeps(bac_Peep_Ctx ctx);
 /// Grep for "inline_and_optimize ::" for an example usage.
 ///
 /// Inline a `from` into `prc` at `call`, the from and the call node shoul
@@ -1027,6 +1030,13 @@ extern _Bool bac_apply_peeps(bac_Peep_Ctx ctx);
 /// performance since same code does not get copyes and reoptimized
 /// redundantly.
 extern void bac_inline_graph(bac_Proc *prc, bac_Node_ID call, bac_Proc *from);
+/// This just expands the `from` into a graph, refer to `inline_graph` for
+/// docs.
+extern void bac_inline_stencil(bac_Proc *prc, bac_Node_ID call, bac_Stencil from);
+/// Apply peephole optimizations until fixpoint, the peephole strategy is picked
+/// from the ctx.prc.node_spec.peep. If you use `compute_latices` before this
+/// pass, the latices will be used to improve optimizations.
+extern _Bool bac_apply_peeps(bac_Peep_Ctx ctx);
 /// Extract the stencil from the function. The resulting stencil does not own
 /// the .mem, you need to clone it if you want to save the stencil for later.
 /// Stencil represents a compressed state of a graph, you can recover the
@@ -1036,6 +1046,15 @@ extern void bac_inline_graph(bac_Proc *prc, bac_Node_ID call, bac_Proc *from);
 /// Note that stencil can be stored on disk and loaded just fine, it does not
 /// contain any global pointers that break the integrity.
 extern bac_Stencil bac_get_stencil(bac_Proc *prc);
+/// Pass will normalize loops, and apply loop specific optimizations. As of
+/// right now, the loop can be turned into memset or memcpy, or get eliminated
+/// if they have no sideffects.
+extern _Bool bac_loopopt(bac_Proc *prc);
+/// The graph can accumulate wasted space of dead nodes during optimizations.
+/// Function will garbige collect the nodes into the smallest possible
+/// allocation. This is particularly usefull before `get_stencil`, as it
+/// reduces the memory usage of cold functions.
+extern void bac_compact(bac_Proc *prc);
 /// Reverse of get_stencil, if the proc has empty arena, the proc will borrow the
 /// .mem field and the prc should not be modifyed, but its safe to use it for
 /// inlining or other ops that just read the graph.
@@ -1055,6 +1074,12 @@ extern _Bool bac_compute_latices(bac_Proc *ctx, runtime_Allocator scratch);
 /// convention and regalloc spec, but call convention can be nil, in which case
 /// the backend will select default one.
 extern bac_Regalloc_Output bac_regalloc(bac_Regalloc *ra, bac_Proc *prc, bac_Schedule *sched, bac_Regalloc_Mode mode, runtime_Allocator scratch);
+/// Call this after scheduling the graph and before register allocation. It will
+/// strip the debug info related nodes. This is a no-op if the debug info is not
+/// enabled so you can call this unconditionally. The `data` param will be
+/// initialized with the debug info. The graph from this point on should not be
+/// modified because the `data` relyes on the node ids not changing.
+extern void bac_take_dbg_data(bac_Proc *prc, bac_Schedule *sched, bac_Dbg_Data *data, runtime_Allocator scratch);
 /// The function initialzes `gs` with the graph schedule. This is a
 /// sidestructure that is trivial to invalidate. It supports 2 modes:
 /// - regalloc - slow and full schedule, it is required for regalloc to work
@@ -1062,12 +1087,6 @@ extern bac_Regalloc_Output bac_regalloc(bac_Regalloc *ra, bac_Proc *prc, bac_Sch
 /// - loopopt - this is fast aproximet schedule that mainly makes querying loop
 ///   invariant code more efficiently.
 extern void bac_schedule_graph(bac_Proc *prc, bac_Schedule *gs, bac_Schedule_Mode purpose, runtime_Allocator scratch);
-/// Call this after scheduling the graph and before register allocation. It will
-/// strip the debug info related nodes. This is a no-op if the debug info is not
-/// enabled so you can call this unconditionally. The `data` param will be
-/// initialized with the debug info. The graph from this point on should not be
-/// modified because the `data` relyes on the node ids not changing.
-extern void bac_take_dbg_data(bac_Proc *prc, bac_Schedule *sched, bac_Dbg_Data *data, runtime_Allocator scratch);
 extern bac_Node_ID bac_add_local_addr(bac_Proc *prc, bac_String name, bac_Node_ID local);
 extern bac_Node_ID bac_add_local(bac_Proc *prc, bac_String name, bac_Node_ID mem);
 extern bac_Node_ID bac_add_loop(bac_Proc *prc, bac_String name, bac_Node_ID ctrl);
@@ -1086,25 +1105,24 @@ extern bac_Node_ID bac_add_split_mem(bac_Proc *prc, bac_String name, bac_Node_ID
 extern bac_Node_ID bac_add_store(bac_Proc *prc, bac_String name, bac_Node_ID ctrl, bac_Node_ID mem, bac_Node_ID addr, bac_Node_ID value);
 extern bac_Node_ID bac_add_sym(bac_Proc *prc, bac_String name, bac_Node_ID entry);
 extern bac_Node_ID bac_add_then(bac_Proc *prc, bac_String name, bac_Node_ID ctrl);
-extern bac_Node_ID bac_add_trap(bac_Proc *prc, bac_String name, Slice_Of_bac_Node_ID inputs);
 extern bac_Node_ID bac_add_if(bac_Proc *prc, bac_String name, bac_Node_ID ctrl, bac_Node_ID cond);
 extern bac_Node_ID bac_add_global_addr(bac_Proc *prc, bac_String name, bac_Node_ID global);
 extern bac_Node_ID bac_add_load(bac_Proc *prc, bac_String name, bac_Node_Datatype dt, bac_Node_ID ctrl, bac_Node_ID mem, bac_Node_ID addr);
 extern bac_Node_ID bac_add_mem(bac_Proc *prc, bac_String name, bac_Node_ID ctrl);
-extern bac_Codegen_Output bac_buf_output(bac_Codegen_Emit_Buf buf, bac_Codegen_Emit_Buf_Checkpoint check);
-extern bac_Node_ID bac_apply_peep(bac_Proc *prc, bac_Node_ID id);
-extern bac_int bac_connect(bac_Proc *prc, bac_Node_ID use, bac_Node_ID def);
-extern void bac_delete_node_node(bac_Proc *prc, bac_Node *node);
 extern bac_Codegen_Emit_Buf_Checkpoint bac_buf_checkpoint(bac_Codegen_Emit_Buf *buf);
+extern bac_Node_ID bac_apply_peep(bac_Proc *prc, bac_Node_ID id);
+extern bac_Node_ID bac_add_un_op(bac_Proc *prc, bac_String name, bac_Un_Op type, bac_Node_Datatype dt, bac_Node_ID oprnd, bac_Lane_Type lane);
+extern bac_int bac_connect(bac_Proc *prc, bac_Node_ID use, bac_Node_ID def);
+extern bac_Codegen_Output bac_buf_output(bac_Codegen_Emit_Buf buf, bac_Codegen_Emit_Buf_Checkpoint check);
+extern void bac_delete_node_node_id(bac_Proc *prc, bac_Node_ID id);
 extern bac_Expanded_Node bac_expand_node(bac_Proc *prc, bac_Node_ID id);
 extern _Bool bac_find_node(bac_Proc *prc, bac_Node_Type kind, bac_Node_ID on, bac_Node_ID *ret0);
 extern bac_Node_ID bac_find_or_create_node(bac_Proc *prc, bac_Node_Type kind);
-extern void bac_delete_node_node_id(bac_Proc *prc, bac_Node_ID id);
-extern Slice_Of_bac_Node_ID bac_get_inputs_node_id(bac_Proc *prc, bac_Node_ID id);
+extern void bac_delete_node_node(bac_Proc *prc, bac_Node *node);
 extern Slice_Of_bac_Node_ID bac_get_inputs_node(bac_Proc *prc, bac_Node *node);
 extern bac_Node * bac_get_node(bac_Proc *prc, bac_Node_ID id);
+extern Slice_Of_bac_Node_ID bac_get_inputs_node_id(bac_Proc *prc, bac_Node_ID id);
 extern bac_int bac_get_sym_count(bac_Proc *prc, bac_Node_ID *sym);
-extern void bac_init_custom_fmt();
 extern bac_Node_ID bac_add_end(bac_Proc *prc, bac_String name, Slice_Of_bac_Node_ID inputs);
 extern void bac_add_efficiency_stat(bac_Stats *stats, bac_Efficiency_Stat_Kind kind, bac_int total, bac_int ideal);
 extern bac_Node_ID bac_add_dbg_sym_update(bac_Proc *prc, bac_String name, bac_Node_ID new_value, bac_Node_ID prev_update);
@@ -1114,51 +1132,55 @@ extern bac_Node_ID bac_add_copy(bac_Proc *prc, bac_String name, bac_Node_ID ctrl
 extern bac_Node_ID bac_add_call_end(bac_Proc *prc, bac_String name, bac_Node_ID call);
 extern bac_Node_ID bac_add_dbg_scope(bac_Proc *prc, bac_String name, Slice_Of_bac_Node_ID inputs);
 extern bac_Node_ID bac_add_c_int(bac_Proc *prc, bac_String name, bac_Node_Datatype dt, bac_i64 value);
-extern bac_Node_ID bac_add_always(bac_Proc *prc, bac_String name, Slice_Of_bac_Node_ID inputs);
+extern void bac_schedule_peeps(bac_Proc *prc, bac_Schedule *schedule);
 extern bac_Node_ID bac_set_input(bac_Proc *prc, bac_Node_ID id, bac_int idx, bac_Node_ID value, _Bool subsume_on_intern);
 extern _Bool bac_sym_iter_next(bac_Proc *prc, bac_Node_ID sym, bac_int *iter, bac_Sym_Ref *res);
+extern bac_Sloc bac_sloc_scope(bac_Proc *prc, bac_Sloc sloc, bac_Proc **out_prc);
 extern void bac_unpin(bac_Proc *prc, bac_Node_ID id, _Bool no_delete);
 extern bac_Node_Spec bac_anal_SPEC;
-extern bac_Call_Conv bac_arm_CC_TABLE[1];
-extern void bac_schedule_peeps(bac_Proc *prc, bac_Schedule *schedule);
-extern void bac_set_local_size(bac_Proc *prc, bac_Node_ID loc, bac_i32 size);
+extern void bac_pin(bac_Proc *prc, bac_Node_ID id);
+extern _Bool bac_lane_from_dt(bac_Node_Datatype ty, bac_Lane_Type *ret0);
+extern bac_Node_Spec bac_arm_SPEC;
+extern bac_Opt_Hints bac_arm_OPT_HINTS;
 extern bac_Node_Spec bac_ssa_SPEC;
 extern bac_Node_ID bac_add_arbitrary_load(bac_Proc *ctx, bac_Node_ID cfg, bac_Node_ID mem, bac_Node_ID addr, bac_int rsize, bac_int extra_offset, bac_Node_Datatype unit);
 extern bac_Node_ID bac_add_arbitrary_store(bac_Proc *ctx, bac_Node_ID cfg, bac_Node_ID mem, bac_Node_ID addr, bac_Node_ID rvalue, bac_int rsize, bac_int extra_offset, bac_Node_Datatype unit);
 extern bac_Node_ID bac_add_field_load(bac_Proc *ctx, bac_String name, bac_Node_Datatype dt, bac_Node_ID cfg, bac_Node_ID mem, bac_Node_ID base, bac_int offset);
 extern bac_Node_ID bac_add_field_offset(bac_Proc *prc, bac_Node_ID base, bac_int offset);
 extern bac_Node_ID bac_add_field_store(bac_Proc *ctx, bac_String name, bac_Node_ID cfg, bac_Node_ID mem, bac_Node_ID base, bac_int offset, bac_Node_ID value);
+extern void bac_set_local_size(bac_Proc *prc, bac_Node_ID loc, bac_i32 size);
+extern bac_Call_Conv bac_arm_CC_TABLE[1];
 extern bac_Node_ID bac_add_lazy_phi(bac_Proc *prc, bac_String name, bac_Node_Datatype dt, bac_Node_ID reg, bac_Node_ID lhs);
-extern bac_Node_ID bac_add_scope(bac_Proc *prc, bac_String name, bac_Node_ID cfg);
-extern void bac_pin(bac_Proc *prc, bac_Node_ID id);
-extern bac_Sloc bac_sloc_scope(bac_Proc *prc, bac_Sloc sloc, bac_Proc **out_prc);
-extern bac_Node_Spec bac_arm_SPEC;
-extern Slice_Of_bac_Param_Spec bac_arg_gen_finalize(bac_Proc *ctx, bac_ssa_Param_Gen *gen);
-extern bac_Node_ID bac_compute_index_offset(bac_Proc *ctx, bac_Node_ID base, bac_Node_ID index, bac_i64 stride);
-extern void bac_end_block(bac_Proc *prc, bac_Node_ID *scope, bac_ssa_Block_State *state);
-extern void bac_end_else(bac_Proc *prc, bac_Node_ID *else_scope, bac_ssa_If_State *state);
 extern void bac_break_block(bac_Proc *prc, bac_Node_ID *scope, bac_ssa_Block_State *state);
-extern bac_Node_ID bac_arg_gen_next(bac_Proc *ctx, bac_Node_ID mem, bac_ssa_Param_Gen *gen, bac_String name, bac_ssa_Abi_Param apa, bac_Node_ID *omem);
+extern Slice_Of_bac_Param_Spec bac_arg_gen_finalize(bac_Proc *ctx, bac_ssa_Param_Gen *gen);
 extern void bac_decl_local(bac_Proc *prc, bac_Node_ID loc, bac_String name, bac_u64 type);
+extern bac_Node_ID bac_compute_index_offset(bac_Proc *ctx, bac_Node_ID base, bac_Node_ID index, bac_i64 stride);
+extern bac_Node_ID bac_add_scope(bac_Proc *prc, bac_String name, bac_Node_ID cfg);
+extern bac_Node_ID bac_arg_gen_next(bac_Proc *ctx, bac_Node_ID mem, bac_ssa_Param_Gen *gen, bac_String name, bac_ssa_Abi_Param apa, bac_Node_ID *omem);
+extern void bac_end_if(bac_Proc *prc, bac_Node_ID *then_scope, bac_ssa_If_State *state);
+extern void bac_end_else(bac_Proc *prc, bac_Node_ID *else_scope, bac_ssa_If_State *state);
 extern bac_Node_ID bac_get_scope_value(bac_Proc *prc, bac_Node_ID scope, bac_int idx);
 extern void bac_end_loop(bac_Proc *prc, bac_Node_ID *node_scope, bac_ssa_Loop_State *state);
+extern void bac_end_block(bac_Proc *prc, bac_Node_ID *scope, bac_ssa_Block_State *state);
 extern void bac_loop_control(bac_ssa_Loop_Control variant, bac_Proc *ctx, bac_Node_ID scope, bac_ssa_Loop_State *loop);
-extern void bac_end_if(bac_Proc *prc, bac_Node_ID *then_scope, bac_ssa_If_State *state);
-extern bac_Node_ID bac_make_call(bac_Proc *prc, Slice_Of_bac_Node_ID args, bac_Call extra, bac_Node_ID *ctrl);
+extern bac_Node_ID bac_add_always(bac_Proc *prc, bac_String name, Slice_Of_bac_Node_ID inputs);
 extern bac_Nil_Node bac_NIL_NODE;
 extern bac_Node_ID bac_add_bin_op(bac_Proc *prc, bac_String name, bac_Bin_Op type, bac_Node_Datatype dt, bac_Node_ID lhs, bac_Node_ID rhs, bac_Lane_Type lane);
 extern bac_Node_ID bac_add_call(bac_Proc *prc, bac_String name, Slice_Of_bac_Node_ID inputs, bac_Call extra);
 extern bac_Node_ID bac_add_dbg_sym_decl(bac_Proc *prc, bac_String name);
 extern bac_Node_ID bac_add_global(bac_Proc *prc, bac_String name, bac_u32 idx);
 extern bac_Node_ID bac_add_merge_mem(bac_Proc *prc, bac_String name, Slice_Of_bac_Node_ID inputs);
-extern bac_Node_ID bac_add_un_op(bac_Proc *prc, bac_String name, bac_Un_Op type, bac_Node_Datatype dt, bac_Node_ID oprnd, bac_Lane_Type lane);
-extern _Bool bac_lane_from_dt(bac_Node_Datatype ty, bac_Lane_Type *ret0);
-extern void bac_start_if(bac_Proc *prc, bac_Node_ID scope, bac_ssa_If_State *state, bac_Node_ID cond);
-extern void bac_start_else(bac_Proc *prc, bac_Node_ID *then_scope, bac_ssa_If_State *state);
-extern void bac_start_loop(bac_Proc *prc, bac_Node_ID scope, bac_ssa_Loop_State *state);
+extern bac_Node_ID bac_add_trap(bac_Proc *prc, bac_String name, Slice_Of_bac_Node_ID inputs);
+extern void bac_init_custom_fmt();
 extern void bac_start_block(bac_ssa_Block_State *state);
-extern bac_Call_Conv bac_wasm_CC_TABLE[1];
-extern bac_Node_Spec bac_wasm_SPEC;
-extern bac_Call_Conv bac_x64_CC_TABLE[2];
+extern void bac_start_else(bac_Proc *prc, bac_Node_ID *then_scope, bac_ssa_If_State *state);
+extern bac_Node_ID bac_make_call(bac_Proc *prc, Slice_Of_bac_Node_ID args, bac_Call extra, bac_Node_ID *ctrl);
 extern void bac_start_loop_increment(bac_Proc *prc, bac_Node_ID *node_scope, bac_ssa_Loop_State *state);
+extern void bac_start_loop(bac_Proc *prc, bac_Node_ID scope, bac_ssa_Loop_State *state);
+extern bac_Call_Conv bac_wasm_CC_TABLE[1];
+extern void bac_start_if(bac_Proc *prc, bac_Node_ID scope, bac_ssa_If_State *state, bac_Node_ID cond);
+extern bac_Opt_Hints bac_wasm_OPT_HINTS;
+extern bac_Call_Conv bac_x64_CC_TABLE[2];
+extern bac_Node_Spec bac_wasm_SPEC;
 extern bac_Node_Spec bac_x64_SPEC;
+extern bac_Opt_Hints bac_x64_OPT_HINTS;

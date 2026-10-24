@@ -14353,8 +14353,7 @@ main :: proc() -> int {
 }
 `, main_())
 }
-// Disabled: known failure predating select lowering.
-count_trailing_zeros_of_a_narrow_zero_uses_its_own_width :: proc(t: ^testing.T) {
+@(test) count_trailing_zeros_of_a_narrow_zero_uses_its_own_width :: proc(t: ^testing.T) {
 
 
 
@@ -14378,8 +14377,7 @@ main :: proc() -> int {
 }
 `, main_())
 }
-// Disabled: known failure predating select lowering.
-simd_byte_mask_extracts_least_significant_bits :: proc(t: ^testing.T) {
+@(test) simd_byte_mask_extracts_least_significant_bits :: proc(t: ^testing.T) {
 
 
 

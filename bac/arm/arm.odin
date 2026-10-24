@@ -274,6 +274,8 @@ peep :: proc(
 		)
 		bac.worklist_add(ctx, ctx.worklist, guard)
 		return guard
+	case .Ctz:
+		return bac.normalize_ctz(ctx, node, .I32, struct{}{})
 	case .CInt:
 		cnst: ^bac.CInt = bac.get_extra(ctx, node, bac.CInt)
 		if node.dt in bac.FLOAT_DTS && cnst.value != 0 {

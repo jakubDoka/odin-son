@@ -43,17 +43,6 @@ bac_start_proc :: proc "c" (
 }
 
 @(export)
-bac_merge_return :: proc "c" (
-	prc: ^bac.Proc,
-	args: []bac.Node_ID,
-) -> (
-	bac.Node_ID,
-) {
-	context = {}
-	return bac_ssa.merge_return(prc, args)
-}
-
-@(export)
 bac_truncate_scope :: proc "c" (
 	prc: ^bac.Proc,
 	scope: bac.Node_ID,
@@ -64,12 +53,14 @@ bac_truncate_scope :: proc "c" (
 }
 
 @(export)
-bac_delete_scope :: proc "c" (
+bac_set_scope_value :: proc "c" (
 	prc: ^bac.Proc,
 	scope: bac.Node_ID,
+	idx: int,
+	value: bac.Node_ID,
 ) {
 	context = {}
-	bac_ssa.delete_scope(prc, scope)
+	bac_ssa.set_scope_value(prc, scope, idx, value)
 }
 
 @(export)
@@ -87,14 +78,23 @@ bac_push_scope_value :: proc "c" (
 }
 
 @(export)
-bac_set_scope_value :: proc "c" (
+bac_delete_scope :: proc "c" (
 	prc: ^bac.Proc,
 	scope: bac.Node_ID,
-	idx: int,
-	value: bac.Node_ID,
 ) {
 	context = {}
-	bac_ssa.set_scope_value(prc, scope, idx, value)
+	bac_ssa.delete_scope(prc, scope)
+}
+
+@(export)
+bac_merge_return :: proc "c" (
+	prc: ^bac.Proc,
+	args: []bac.Node_ID,
+) -> (
+	bac.Node_ID,
+) {
+	context = {}
+	return bac_ssa.merge_return(prc, args)
 }
 
 @(export)
@@ -126,6 +126,16 @@ bac_memopt :: proc "c" (
 }
 
 @(export)
+bac_inline_graph :: proc "c" (
+	prc: ^bac.Proc,
+	call: bac.Node_ID,
+	from: ^bac.Proc,
+) {
+	context = {}
+	bac_ssa.inline_graph(prc, call, from)
+}
+
+@(export)
 bac_inline_stencil :: proc "c" (
 	prc: ^bac.Proc,
 	call: bac.Node_ID,
@@ -133,24 +143,6 @@ bac_inline_stencil :: proc "c" (
 ) {
 	context = {}
 	bac_ssa.inline_stencil(prc, call, from)
-}
-
-@(export)
-bac_compact :: proc "c" (
-	prc: ^bac.Proc,
-) {
-	context = {}
-	bac.compact(prc)
-}
-
-@(export)
-bac_loopopt :: proc "c" (
-	prc: ^bac.Proc,
-) -> (
-	bool,
-) {
-	context = {}
-	return bac_ssa.loopopt(prc)
 }
 
 @(export)
@@ -164,16 +156,6 @@ bac_apply_peeps :: proc "c" (
 }
 
 @(export)
-bac_inline_graph :: proc "c" (
-	prc: ^bac.Proc,
-	call: bac.Node_ID,
-	from: ^bac.Proc,
-) {
-	context = {}
-	bac_ssa.inline_graph(prc, call, from)
-}
-
-@(export)
 bac_get_stencil :: proc "c" (
 	prc: ^bac.Proc,
 ) -> (
@@ -181,6 +163,24 @@ bac_get_stencil :: proc "c" (
 ) {
 	context = {}
 	return bac.get_stencil(prc)
+}
+
+@(export)
+bac_loopopt :: proc "c" (
+	prc: ^bac.Proc,
+) -> (
+	bool,
+) {
+	context = {}
+	return bac_ssa.loopopt(prc)
+}
+
+@(export)
+bac_compact :: proc "c" (
+	prc: ^bac.Proc,
+) {
+	context = {}
+	bac.compact(prc)
 }
 
 @(export)
@@ -218,17 +218,6 @@ bac_regalloc :: proc "c" (
 }
 
 @(export)
-bac_schedule_graph :: proc "c" (
-	prc: ^bac.Proc,
-	gs: ^bac.Schedule,
-	purpose: bac.Schedule_Mode,
-	scratch: runtime.Allocator,
-) {
-	context = {}
-	bac.schedule_graph(prc, gs, purpose, scratch)
-}
-
-@(export)
 bac_take_dbg_data :: proc "c" (
 	prc: ^bac.Proc,
 	sched: ^bac.Schedule,
@@ -237,6 +226,17 @@ bac_take_dbg_data :: proc "c" (
 ) {
 	context = {}
 	bac.take_dbg_data(prc, sched, data, scratch)
+}
+
+@(export)
+bac_schedule_graph :: proc "c" (
+	prc: ^bac.Proc,
+	gs: ^bac.Schedule,
+	purpose: bac.Schedule_Mode,
+	scratch: runtime.Allocator,
+) {
+	context = {}
+	bac.schedule_graph(prc, gs, purpose, scratch)
 }
 
 @(export)
@@ -473,18 +473,6 @@ bac_add_then :: proc "c" (
 }
 
 @(export)
-bac_add_trap :: proc "c" (
-	prc: ^bac.Proc,
-	name: string,
-	inputs: []bac.Node_ID,
-) -> (
-	bac.Node_ID,
-) {
-	context = {}
-	return bac.add_trap(prc, name, inputs)
-}
-
-@(export)
 bac_add_if :: proc "c" (
 	prc: ^bac.Proc,
 	name: string,
@@ -537,14 +525,13 @@ bac_add_mem :: proc "c" (
 }
 
 @(export)
-bac_buf_output :: proc "c" (
-	buf: bac.Codegen_Emit_Buf,
-	check: bac.Codegen_Emit_Buf_Checkpoint,
+bac_buf_checkpoint :: proc "c" (
+	buf: ^bac.Codegen_Emit_Buf,
 ) -> (
-	bac.Codegen_Output,
+	bac.Codegen_Emit_Buf_Checkpoint,
 ) {
 	context = {}
-	return bac.buf_output(buf, check)
+	return bac.buf_checkpoint(buf)
 }
 
 @(export)
@@ -556,6 +543,21 @@ bac_apply_peep :: proc "c" (
 ) {
 	context = {}
 	return bac.apply_peep(prc, id)
+}
+
+@(export)
+bac_add_un_op :: proc "c" (
+	prc: ^bac.Proc,
+	name: string,
+	type: bac.Un_Op,
+	dt: bac.Node_Datatype,
+	oprnd: bac.Node_ID,
+	lane: bac.Lane_Type,
+) -> (
+	bac.Node_ID,
+) {
+	context = {}
+	return bac.add_un_op(prc, name, type, dt, oprnd, lane)
 }
 
 @(export)
@@ -571,22 +573,23 @@ bac_connect :: proc "c" (
 }
 
 @(export)
-bac_delete_node_node :: proc "c" (
-	prc: ^bac.Proc,
-	node: ^bac.Node,
+bac_buf_output :: proc "c" (
+	buf: bac.Codegen_Emit_Buf,
+	check: bac.Codegen_Emit_Buf_Checkpoint,
+) -> (
+	bac.Codegen_Output,
 ) {
 	context = {}
-	bac.delete_node_node(prc, node)
+	return bac.buf_output(buf, check)
 }
 
 @(export)
-bac_buf_checkpoint :: proc "c" (
-	buf: ^bac.Codegen_Emit_Buf,
-) -> (
-	bac.Codegen_Emit_Buf_Checkpoint,
+bac_delete_node_node_id :: proc "c" (
+	prc: ^bac.Proc,
+	id: bac.Node_ID,
 ) {
 	context = {}
-	return bac.buf_checkpoint(buf)
+	bac.delete_node_node_id(prc, id)
 }
 
 @(export)
@@ -627,23 +630,12 @@ bac_find_or_create_node :: proc "c" (
 }
 
 @(export)
-bac_delete_node_node_id :: proc "c" (
+bac_delete_node_node :: proc "c" (
 	prc: ^bac.Proc,
-	id: bac.Node_ID,
+	node: ^bac.Node,
 ) {
 	context = {}
-	bac.delete_node_node_id(prc, id)
-}
-
-@(export)
-bac_get_inputs_node_id :: proc "c" (
-	prc: ^bac.Proc,
-	id: bac.Node_ID,
-) -> (
-	[]bac.Node_ID,
-) {
-	context = {}
-	return bac.get_inputs_node_id(prc, id)
+	bac.delete_node_node(prc, node)
 }
 
 @(export)
@@ -669,6 +661,17 @@ bac_get_node :: proc "c" (
 }
 
 @(export)
+bac_get_inputs_node_id :: proc "c" (
+	prc: ^bac.Proc,
+	id: bac.Node_ID,
+) -> (
+	[]bac.Node_ID,
+) {
+	context = {}
+	return bac.get_inputs_node_id(prc, id)
+}
+
+@(export)
 bac_get_sym_count :: proc "c" (
 	prc: ^bac.Proc,
 	binding_out_0: ^bac.Node_ID,
@@ -679,13 +682,6 @@ bac_get_sym_count :: proc "c" (
 	binding_result_0, binding_result_1 := bac.get_sym_count(prc)
 	binding_out_0^ = binding_result_0
 	return binding_result_1
-}
-
-@(export)
-bac_init_custom_fmt :: proc "c" (
-) {
-	context = {}
-	bac.init_custom_fmt()
 }
 
 @(export)
@@ -801,15 +797,12 @@ bac_add_c_int :: proc "c" (
 }
 
 @(export)
-bac_add_always :: proc "c" (
+bac_schedule_peeps :: proc "c" (
 	prc: ^bac.Proc,
-	name: string,
-	inputs: []bac.Node_ID,
-) -> (
-	bac.Node_ID,
+	schedule: ^bac.Schedule,
 ) {
 	context = {}
-	return bac.add_always(prc, name, inputs)
+	bac.schedule_peeps(prc, schedule)
 }
 
 @(export)
@@ -842,6 +835,20 @@ bac_sym_iter_next :: proc "c" (
 }
 
 @(export)
+bac_sloc_scope :: proc "c" (
+	prc: ^bac.Proc,
+	sloc: bac.Sloc,
+	binding_out_0: ^^bac.Proc,
+) -> (
+	bac.Sloc,
+) {
+	context = {}
+	binding_result_0, binding_result_1 := bac.sloc_scope(prc, sloc)
+	binding_out_0^ = binding_result_0
+	return binding_result_1
+}
+
+@(export)
 bac_unpin :: proc "c" (
 	prc: ^bac.Proc,
 	id: bac.Node_ID,
@@ -852,22 +859,25 @@ bac_unpin :: proc "c" (
 }
 
 @(export)
-bac_schedule_peeps :: proc "c" (
+bac_pin :: proc "c" (
 	prc: ^bac.Proc,
-	schedule: ^bac.Schedule,
+	id: bac.Node_ID,
 ) {
 	context = {}
-	bac.schedule_peeps(prc, schedule)
+	bac.pin(prc, id)
 }
 
 @(export)
-bac_set_local_size :: proc "c" (
-	prc: ^bac.Proc,
-	loc: bac.Node_ID,
-	size: i32,
+bac_lane_from_dt :: proc "c" (
+	ty: bac.Node_Datatype,
+	binding_out_0: ^bac.Lane_Type,
+) -> (
+	bool,
 ) {
 	context = {}
-	bac.set_local_size(prc, loc, size)
+	binding_result_0, binding_result_1 := bac.lane_from_dt(ty)
+	binding_out_0^ = binding_result_0
+	return binding_result_1
 }
 
 @(export)
@@ -948,6 +958,16 @@ bac_add_field_store :: proc "c" (
 }
 
 @(export)
+bac_set_local_size :: proc "c" (
+	prc: ^bac.Proc,
+	loc: bac.Node_ID,
+	size: i32,
+) {
+	context = {}
+	bac.set_local_size(prc, loc, size)
+}
+
+@(export)
 bac_add_lazy_phi :: proc "c" (
 	prc: ^bac.Proc,
 	name: string,
@@ -962,38 +982,13 @@ bac_add_lazy_phi :: proc "c" (
 }
 
 @(export)
-bac_add_scope :: proc "c" (
+bac_break_block :: proc "c" (
 	prc: ^bac.Proc,
-	name: string,
-	cfg: bac.Node_ID,
-) -> (
-	bac.Node_ID,
+	scope: ^bac.Node_ID,
+	state: ^bac_ssa.Block_State,
 ) {
 	context = {}
-	return bac_ssa.add_scope(prc, name, cfg)
-}
-
-@(export)
-bac_pin :: proc "c" (
-	prc: ^bac.Proc,
-	id: bac.Node_ID,
-) {
-	context = {}
-	bac.pin(prc, id)
-}
-
-@(export)
-bac_sloc_scope :: proc "c" (
-	prc: ^bac.Proc,
-	sloc: bac.Sloc,
-	binding_out_0: ^^bac.Proc,
-) -> (
-	bac.Sloc,
-) {
-	context = {}
-	binding_result_0, binding_result_1 := bac.sloc_scope(prc, sloc)
-	binding_out_0^ = binding_result_0
-	return binding_result_1
+	bac_ssa.break_block(prc, scope, state)
 }
 
 @(export)
@@ -1006,6 +1001,17 @@ bac_arg_gen_finalize :: proc "c" (
 	context = {}
 	context.allocator = arna.allocator(ctx.mem)
 	return bac_ssa.arg_gen_finalize(ctx, gen)
+}
+
+@(export)
+bac_decl_local :: proc "c" (
+	prc: ^bac.Proc,
+	loc: bac.Node_ID,
+	name: string,
+	type: u64,
+) {
+	context = {}
+	bac_ssa.decl_local(prc, loc, name, type)
 }
 
 @(export)
@@ -1022,33 +1028,15 @@ bac_compute_index_offset :: proc "c" (
 }
 
 @(export)
-bac_end_block :: proc "c" (
+bac_add_scope :: proc "c" (
 	prc: ^bac.Proc,
-	scope: ^bac.Node_ID,
-	state: ^bac_ssa.Block_State,
+	name: string,
+	cfg: bac.Node_ID,
+) -> (
+	bac.Node_ID,
 ) {
 	context = {}
-	bac_ssa.end_block(prc, scope, state)
-}
-
-@(export)
-bac_end_else :: proc "c" (
-	prc: ^bac.Proc,
-	else_scope: ^bac.Node_ID,
-	state: ^bac_ssa.If_State,
-) {
-	context = {}
-	bac_ssa.end_else(prc, else_scope, state)
-}
-
-@(export)
-bac_break_block :: proc "c" (
-	prc: ^bac.Proc,
-	scope: ^bac.Node_ID,
-	state: ^bac_ssa.Block_State,
-) {
-	context = {}
-	bac_ssa.break_block(prc, scope, state)
+	return bac_ssa.add_scope(prc, name, cfg)
 }
 
 @(export)
@@ -1069,14 +1057,23 @@ bac_arg_gen_next :: proc "c" (
 }
 
 @(export)
-bac_decl_local :: proc "c" (
+bac_end_if :: proc "c" (
 	prc: ^bac.Proc,
-	loc: bac.Node_ID,
-	name: string,
-	type: u64,
+	then_scope: ^bac.Node_ID,
+	state: ^bac_ssa.If_State,
 ) {
 	context = {}
-	bac_ssa.decl_local(prc, loc, name, type)
+	bac_ssa.end_if(prc, then_scope, state)
+}
+
+@(export)
+bac_end_else :: proc "c" (
+	prc: ^bac.Proc,
+	else_scope: ^bac.Node_ID,
+	state: ^bac_ssa.If_State,
+) {
+	context = {}
+	bac_ssa.end_else(prc, else_scope, state)
 }
 
 @(export)
@@ -1102,6 +1099,16 @@ bac_end_loop :: proc "c" (
 }
 
 @(export)
+bac_end_block :: proc "c" (
+	prc: ^bac.Proc,
+	scope: ^bac.Node_ID,
+	state: ^bac_ssa.Block_State,
+) {
+	context = {}
+	bac_ssa.end_block(prc, scope, state)
+}
+
+@(export)
 bac_loop_control :: proc "c" (
 	variant: bac_ssa.Loop_Control,
 	ctx: ^bac.Proc,
@@ -1113,28 +1120,15 @@ bac_loop_control :: proc "c" (
 }
 
 @(export)
-bac_end_if :: proc "c" (
+bac_add_always :: proc "c" (
 	prc: ^bac.Proc,
-	then_scope: ^bac.Node_ID,
-	state: ^bac_ssa.If_State,
-) {
-	context = {}
-	bac_ssa.end_if(prc, then_scope, state)
-}
-
-@(export)
-bac_make_call :: proc "c" (
-	prc: ^bac.Proc,
-	args: []bac.Node_ID,
-	extra: bac.Call,
-	binding_out_0: ^bac.Node_ID,
+	name: string,
+	inputs: []bac.Node_ID,
 ) -> (
 	bac.Node_ID,
 ) {
 	context = {}
-	binding_result_0, binding_result_1 := bac_ssa.make_call(prc, args, extra)
-	binding_out_0^ = binding_result_0
-	return binding_result_1
+	return bac.add_always(prc, name, inputs)
 }
 
 @(export)
@@ -1202,42 +1196,30 @@ bac_add_merge_mem :: proc "c" (
 }
 
 @(export)
-bac_add_un_op :: proc "c" (
+bac_add_trap :: proc "c" (
 	prc: ^bac.Proc,
 	name: string,
-	type: bac.Un_Op,
-	dt: bac.Node_Datatype,
-	oprnd: bac.Node_ID,
-	lane: bac.Lane_Type,
+	inputs: []bac.Node_ID,
 ) -> (
 	bac.Node_ID,
 ) {
 	context = {}
-	return bac.add_un_op(prc, name, type, dt, oprnd, lane)
+	return bac.add_trap(prc, name, inputs)
 }
 
 @(export)
-bac_lane_from_dt :: proc "c" (
-	ty: bac.Node_Datatype,
-	binding_out_0: ^bac.Lane_Type,
-) -> (
-	bool,
+bac_init_custom_fmt :: proc "c" (
 ) {
 	context = {}
-	binding_result_0, binding_result_1 := bac.lane_from_dt(ty)
-	binding_out_0^ = binding_result_0
-	return binding_result_1
+	bac.init_custom_fmt()
 }
 
 @(export)
-bac_start_if :: proc "c" (
-	prc: ^bac.Proc,
-	scope: bac.Node_ID,
-	state: ^bac_ssa.If_State,
-	cond: bac.Node_ID,
+bac_start_block :: proc "c" (
+	state: ^bac_ssa.Block_State,
 ) {
 	context = {}
-	bac_ssa.start_if(prc, scope, state, cond)
+	bac_ssa.start_block(state)
 }
 
 @(export)
@@ -1251,21 +1233,18 @@ bac_start_else :: proc "c" (
 }
 
 @(export)
-bac_start_loop :: proc "c" (
+bac_make_call :: proc "c" (
 	prc: ^bac.Proc,
-	scope: bac.Node_ID,
-	state: ^bac_ssa.Loop_State,
+	args: []bac.Node_ID,
+	extra: bac.Call,
+	binding_out_0: ^bac.Node_ID,
+) -> (
+	bac.Node_ID,
 ) {
 	context = {}
-	bac_ssa.start_loop(prc, scope, state)
-}
-
-@(export)
-bac_start_block :: proc "c" (
-	state: ^bac_ssa.Block_State,
-) {
-	context = {}
-	bac_ssa.start_block(state)
+	binding_result_0, binding_result_1 := bac_ssa.make_call(prc, args, extra)
+	binding_out_0^ = binding_result_0
+	return binding_result_1
 }
 
 @(export)
@@ -1276,5 +1255,26 @@ bac_start_loop_increment :: proc "c" (
 ) {
 	context = {}
 	bac_ssa.start_loop_increment(prc, node_scope, state)
+}
+
+@(export)
+bac_start_loop :: proc "c" (
+	prc: ^bac.Proc,
+	scope: bac.Node_ID,
+	state: ^bac_ssa.Loop_State,
+) {
+	context = {}
+	bac_ssa.start_loop(prc, scope, state)
+}
+
+@(export)
+bac_start_if :: proc "c" (
+	prc: ^bac.Proc,
+	scope: bac.Node_ID,
+	state: ^bac_ssa.If_State,
+	cond: bac.Node_ID,
+) {
+	context = {}
+	bac_ssa.start_if(prc, scope, state, cond)
 }
 

@@ -199,6 +199,7 @@ when SPEC_NOT_PRESENT {
 		X64_Padd,
 		X64_Psub,
 		X64_Pshufd,
+		X64_Pshuflw,
 		X64_Psadbw,
 		X64_Pshufb,
 		X64_Pextr,
@@ -493,12 +494,7 @@ peep :: proc(
 		_, res := add_node(ctx, "ufrs", .X64_Padd, node.dt, {converted, delta})
 		return res
 	case .Ctz:
-		if node.dt == .I8 {
-			bctzg := bac.add_c_int(ctx, "bctzg", .I16, 256)
-			ext := bac.add_bin_op(ctx, "bctzo", .Or, .I16, node.inps[0], bctzg)
-			bac.worklist_add(ctx, ctx.worklist, ext)
-			return bac.add_un_op(ctx, "bctz", .Ctz, .I16, ext)
-		}
+		return bac.normalize_ctz(ctx, node, .I16, struct{}{})
 	case .CInt:
 		cnst: ^bac.CInt = bac.get_extra(ctx, node, bac.CInt)
 		if node.dt in bac.FLOAT_DTS && cnst.value != 0 {
@@ -517,15 +513,29 @@ peep :: proc(
 		}
 	case .Splat:
 		inp := expand_node(ctx, node.inps[0])
-		assert(inp.dt == .I8)
+		assert(inp.dt == .I8 || inp.dt == .I16)
 
 		vec := bac.add_un_op(ctx, "elem", .Cast, .V128, node.inps[0])
-		zero := bac.add_c_int(ctx, "zro", node.dt, 0)
+		#partial switch inp.dt {
+		case .I8:
+			zero := bac.add_c_int(ctx, "zro", node.dt, 0)
 
-		pnode, pshufb := add_node(ctx, "pshufb", .X64_Pshufb, node.dt, {vec, zero})
-		pnode.lane = node.lane
+			pnode, pshufb := add_node(
+				ctx,
+				"pshufb",
+				.X64_Pshufb,
+				node.dt,
+				{vec, zero},
+			)
 
-		return pshufb
+			return pshufb
+		case .I16:
+			_, words := add_node(ctx, "pshuflw", .X64_Pshuflw, node.dt, {vec})
+			_, splat := add_node(ctx, "pshufd", .X64_Pshufd, node.dt, {words})
+			return splat
+		case:
+			fmt.panicf("TODO: %v %v", node, inp)
+		}
 	case .Simd_Reduce_Add_Bisect:
 		inp := expand_node(ctx, node.inps[0])
 		assert(inp.dt == .V128)
@@ -888,13 +898,14 @@ add_node :: proc(
 	dt: bac.Node_Datatype,
 	inps: []Node_ID,
 	extra: Mem_Op = {},
+	lane: bac.Lane_Type = .I8,
 ) -> (
 	^bac.Node,
 	Node_ID,
 ) {
 	slot := (^Mem_Op)(bac.get_next_extra_slot(ctx, u16(type), 0))
 	slot^ = extra
-	id := bac.add_raw(ctx, name, u16(type), dt, inps)
+	id := bac.add_raw(ctx, name, u16(type), dt, inps, meta = {lane = lane})
 	return get_node(ctx, id), id
 }
 
@@ -1021,13 +1032,13 @@ meta_of :: proc(
 	}
 	@(static, rodata)
 	SETS_FLAGS := #partial [Node_Type]bool {
-		.Add ..= .Xor = true,
-		.Mul ..= .And_Not = true,
-		.Neg = true,
-		.Ctz = true,
-		.X64_Add ..= .X64_Xor = true,
-		.X64_Shl ..= .X64_Div = true,
-		.X64_Neg = true,
+		.Add ..= .Xor          = true,
+		.Mul ..= .And_Not          = true,
+		.Neg      = true,
+		.Ctz      = true,
+		.X64_Add ..= .X64_Xor          = true,
+		.X64_Shl ..= .X64_Div          = true,
+		.X64_Neg  = true,
 		.X64_Mul8 = true,
 	}
 	mem_op := xextra(prc, node, Mem_Op)
@@ -1381,7 +1392,7 @@ meta_of_raw :: proc(
 	case .X64_Mul8:
 		rax := single(ra, RAX)
 		return {out = rax, masks = dup({GPA_MASK_IDX, rax})}
-	case .X64_Pshufd:
+	case .X64_Pshufd, .X64_Pshuflw:
 		return {out = out, masks = nmasks[:1]}
 	case .X64_Pextr:
 		return {out = out, masks = XMM_MASKS[:1]}
@@ -1669,6 +1680,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 		.X64_And = #partial{.I8 ..= .I64 = 0xDB},
 		.X64_Or = #partial{.I8 ..= .I64 = 0xEB},
 		.X64_Xor = #partial{.I8 ..= .I64 = 0xEF},
+		.Shl = #partial{.I16 = 0xF1, .I32 = 0xF2, .I64 = 0xF3},
 		.Add = ADD_LANE_TABLE,
 		.Sub = SUB_LANE_TABLE,
 		.And = #partial{.I8 ..= .I64 = 0xDB},
@@ -1715,18 +1727,19 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 		src := reg_of(ctx, node.inps[0])
 		rx := rex(dst, src, RAX, false)
 		emit(ctx.code, {0x66, rx, 0x0f, 0xd7, mod_rm(.Direct, dst, src)})
-	case .X64_Pshufd:
+	case .X64_Pshufd, .X64_Pshuflw:
 		dst := reg_of(ctx, instr)
 		src := reg_of(ctx, node.inps[0])
 
 		assert(node.dt == .V128)
 		assert(node.lane == .I8)
 
-		// pshufd $dst, $src, prj
+		// pshufd/pshuflw $dst, $src, $prj
 		rx := rex(dst, src, NO_INDEX, false)
+		prefix: u8 = type == .X64_Pshuflw ? 0xF2 : 0x66
 		emit(
 			ctx.code,
-			{0x66, rx, 0xf, 0x70, mod_rm(.Direct, dst, src), mem_op.aux},
+			{prefix, rx, 0xf, 0x70, mod_rm(.Direct, dst, src), mem_op.aux},
 		)
 	case .X64_Pshufb:
 		dst := reg_of(ctx, node.inps[0])
@@ -2389,7 +2402,21 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 			emit(ctx.code, {rx, 0x0F, 0x4A, mod_rm(.Direct, dst, src)})
 		}
 	case .Shl ..= .U_Shr:
-		fmt.panicf("unlowered scalar shift: %v", node)
+		assert(node.dt == .V128)
+		assert(node.itype == .Shl)
+		op := SIMD_OPCODE_TABLE[type][node.lane]
+		dst := reg_of(ctx, instr)
+		a := reg_of(ctx, node.inps[0])
+		b := reg_of(ctx, node.inps[1])
+		// vpsllw $dst, $a, $b
+		emit(
+			ctx.code,
+			{
+				vex3(dst, b, idx, a, false, ._0F, .P66, false),
+				op,
+				mod_rm(.Direct, dst, b),
+			},
+		)
 	case .X64_Neg ..= .X64_Not:
 		assert(mem_op.mem_mode == .Dest)
 		dis := mem_op.dis

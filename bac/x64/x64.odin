@@ -565,7 +565,7 @@ peep :: proc(
 			psadbw := add_x64_psadbw(ctx, "psadbw", inp.dt, add, zero)
 			get_node(ctx, psadbw).lane = node.lane
 
-			return bac.add_un_op(ctx, "sum", .Cast, .I16, psadbw)
+			return bac.add_un_op(ctx, "sum", .Cast, .I8, psadbw)
 		case .I16:
 			_, pshufd := add_node(
 				ctx,

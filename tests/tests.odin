@@ -14252,8 +14252,7 @@ main :: proc() -> int {
 }
 `, main_())
 }
-// Disabled: known failure predating select lowering.
-memset_conversion_preserves_store_before_loop_exit :: proc(t: ^testing.T) {
+@(test) memset_conversion_preserves_store_before_loop_exit :: proc(t: ^testing.T) {
 
 
 
@@ -14418,8 +14417,7 @@ main :: proc() -> int {
 }
 `, main_())
 }
-// Disabled: known failure predating select lowering.
-simd_byte_reduction_wraps_before_widening :: proc(t: ^testing.T) {
+@(test) simd_byte_reduction_wraps_before_widening :: proc(t: ^testing.T) {
 
 
 
@@ -14439,8 +14437,7 @@ main :: proc() -> int {
 }
 `, main_())
 }
-// Disabled: known failure predating select lowering.
-memset_conversion_preserves_reads_inside_the_loop :: proc(t: ^testing.T) {
+@(test) memset_conversion_preserves_reads_inside_the_loop :: proc(t: ^testing.T) {
 
 
 

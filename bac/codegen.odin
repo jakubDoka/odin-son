@@ -47,6 +47,10 @@ Codegen_Spec :: struct {
 	pre_regalloc_hook:  Pre_Regalloc_Hook,
 }
 
+Opt_Hints :: struct {
+	select_types: bit_set[Node_Datatype],
+}
+
 // The fixed part of a DWARF CIE: everything the unwinder needs before the
 // first Cfi_Op of a procedure is applied.
 Cfi_Spec :: struct {
@@ -227,6 +231,7 @@ Reloc_Slot :: struct #raw_union #align (1) {
 	},
 }
 
+@(tag = "api")
 buf_checkpoint :: proc(
 	buf: ^Codegen_Emit_Buf,
 ) -> (
@@ -246,6 +251,7 @@ buf_checkpoint :: proc(
 	return
 }
 
+@(tag = "api")
 buf_output :: proc(
 	buf: Codegen_Emit_Buf,
 	check: Codegen_Emit_Buf_Checkpoint,
@@ -266,8 +272,7 @@ buf_output :: proc(
 		size_of(Dbg_Location),
 	}
 	#assert(
-		len(ELEM_SIZES) ==
-		intrinsics.type_struct_field_count(Codegen_Output_Bufs),
+		len(ELEM_SIZES) == intrinsics.type_struct_field_count(Codegen_Output_Bufs),
 	)
 
 	for size, i in ELEM_SIZES {
@@ -292,7 +297,12 @@ mount_sloc :: proc(ctx: ^Codegen_Emit_Ctx, node: Node_ID) {
 	ctx.last_off = ctx.code.pos
 }
 
-@(tag = "api")
+/// Call this after scheduling the graph and before register allocation. It will
+/// strip the debug info related nodes. This is a no-op if the debug info is not
+/// enabled so you can call this unconditionally. The `data` param will be
+/// initialized with the debug info. The graph from this point on should not be
+/// modified because the `data` relyes on the node ids not changing.
+@(tag = "api,priority=94")
 take_dbg_data :: proc(
 	prc: ^Proc,
 	sched: ^Schedule,
@@ -514,8 +524,7 @@ emit_dbg_locations :: proc(ctx: Codegen_Emit_Ctx) {
 						continue
 					}
 
-					if int(tcnode.gvn) < len(ctx.allocs) &&
-					   reg_of(ctx, tc) == reg {
+					if int(tcnode.gvn) < len(ctx.allocs) && reg_of(ctx, tc) == reg {
 						{
 							add_dbg_location(ctx.dbg_locs)^ = {
 								sym    = sym.inner,
@@ -638,7 +647,6 @@ param_mask :: proc(
 	mask: Maybe(Reg) = nil,
 ) -> RM_Intern_Idx {
 	kind := ra.datatype_to_reg_kind[node.dt]
-	args := ra.args[kind]
 	arg_ext := get_extra(prc, node, Tup)
 	idx := 0
 	for a in ra.param_specs[:arg_ext.idx] {
@@ -646,22 +654,26 @@ param_mask :: proc(
 		idx += int(ra.datatype_to_reg_kind[a.dt] == kind)
 	}
 
+	args: []Reg
+	if len(ra.args) != 0 {
+		args = ra.args[kind]
+	}
+
 	reg: Reg
-	if int(idx) < len(args) {
-		if raw_data(args) == nil {
-			reg = {
-				kind  = kind,
-				index = u16(idx),
-			}
-		} else {
-			reg = args[idx]
+	if raw_data(args) == nil {
+		reg = {
+			kind  = kind,
+			index = u16(idx),
 		}
+	} else if int(idx) < len(args) {
+		reg = args[idx]
 	} else {
 		reg = {
 			kind  = kind,
 			index = u16(ra.spill_boundary[kind]) + u16(idx) - u16(len(args)),
 		}
 	}
+
 	return rm_intern_single(ra, reg)
 }
 
@@ -719,9 +731,7 @@ add_dbg_location :: #force_no_inline proc(
 	buf: ^arna.Allocator,
 ) -> ^Dbg_Location {
 	return (^Dbg_Location)(
-		raw_data(
-			arna.alloc(buf, size_of(Dbg_Location), align_of(Dbg_Location)),
-		),
+		raw_data(arna.alloc(buf, size_of(Dbg_Location), align_of(Dbg_Location))),
 	)
 }
 
@@ -782,12 +792,7 @@ compute_param_offsets :: proc(
 
 		extra := get_extra(ctx.prc, param_id, Local)
 		if extra != nil {
-			fmt.assertf(
-				extra.size == param.size,
-				"%v == %v",
-				extra.size,
-				param.size,
-			)
+			fmt.assertf(extra.size == param.size, "%v == %v", extra.size, param.size)
 			extra.offset = param_offset
 		}
 
@@ -853,8 +858,7 @@ emit_big_constant :: proc(
 ) {
 	_ = arna.alloc(
 		ctx.constants,
-		mem.align_forward_uint(ctx.constants.pos + 2, align) -
-		ctx.constants.pos,
+		mem.align_forward_uint(ctx.constants.pos + 2, align) - ctx.constants.pos,
 		1,
 	)
 	ctx.constants.ptr[ctx.constants.pos - 2] = u8(len(bytes))
@@ -955,4 +959,55 @@ sleb :: proc(b: ^[dynamic]u8, value: i64) {
 
 putb :: #force_inline proc(b: ^[dynamic]u8, vl: $T) {
 	append(b, transmute(u8)vl)
+}
+
+normalize_ctz :: proc(
+	ctx: ^Proc,
+	node: Expanded_Node,
+	min_width: Node_Datatype,
+	_: $T,
+) -> Maybe(Node_ID) {
+	assert(node.itype == .Ctz)
+	if node.dt < min_width {
+		bctzg := add_c_int(
+			ctx,
+			"bctzg",
+			min_width,
+			1 << uint(DT_SIZE[node.dt] * 8),
+		)
+		ext := add_bin_op(ctx, "bctzo", .Or, min_width, node.inps[0], bctzg)
+		worklist_add(ctx, ctx.worklist, ext)
+		return add_un_op(ctx, "bctz", .Ctz, min_width, ext)
+	}
+	return nil
+}
+
+lsbs_to_msbs :: proc(ctx: ^Proc, node: Expanded_Node, _: $T) -> Node_ID {
+	assert(node.itype == .Simd_Extract_Lsbs)
+	lsbsmt := add_c_int(
+		ctx,
+		"lsbsmt",
+		LANE_TO_DT[max(node.lane, .I16)],
+		i64(LANE_SIZE[node.lane] * 8 - 1),
+	)
+	lsbssp := add_un_op(ctx, "lsbssp", .Cast, .V128, lsbsmt)
+	worklist_add(ctx, ctx.worklist, lsbssp)
+	lsbssh := add_bin_op(
+		ctx,
+		"lsbssh",
+		.Shl,
+		.V128,
+		node.inps[0],
+		lsbssp,
+		lane = max(node.lane, .I16),
+	)
+	worklist_add(ctx, ctx.worklist, lsbssh)
+	return add_un_op(
+		ctx,
+		"lsbs",
+		.Simd_Extract_Msbs,
+		node.dt,
+		lsbssh,
+		lane = node.lane,
+	)
 }

@@ -1,124 +1,24 @@
 =========== OPT LEVEL: none-quick ===========
 standalone:
-    movz x1, #1
-    cmp w0, w1
-    b.eq 1
-    movz x0, #4
-    b 2
-1:
-    movz x0, #100
-2:
+    movz x1, #100
+    movz x2, #4
+    movz x3, #1
+    cmp x0, x3
+    csel x0, x1, x2, eq
     ret
 typed:
     movz x2, #1
-    cmp w1, w2
+    cmp x2, x1
     b.eq 0x28
     movz x2, #2
-    cmp w1, w2
+    cmp x2, x1
     b.eq 0x20
     movz x0, #0
     b 0x28
-4:
-    movz x0, #100
-    b 0x28
-5:
-    ret
-main:
-    sub sp, sp, #80
-    str x19, [xzr]
-    str x20, [xzr, #8]
-    stp x29, x30, [xzr, #16]
-    movz x0, #1
-    movz x1, #4
-    movz x2, #22
-    movz x3, #100
-    movz x4, #3
-    movz x5, #2
-    movz x6, #0
-    movz x7, #0
-7:
-    str x7, [xzr, #32]
-    mov x8, x6
-    add x8, x8, x0
-    str x8, [xzr, #40]
-    ldr x8, [xzr, #40]
-    cmp w8, w1
-    b.gt 0xb0
-    ldr x8, [xzr, #40]
-    cmp w8, w0
-    b.eq 0x94
-    ldr x8, [xzr, #40]
-    cmp w8, w5
-    b.eq 0x80
-    ldr x8, [xzr, #40]
-    cmp w8, w4
-    b.eq 0xb0
-    ldr x8, [xzr, #32]
-    add x8, x3, x8
-    b 0x9c
-    b 0xb0
-8:
-    str x17, [xzr, #-16]!
-    ldr x17, [xzr, #48]
-    str x17, [xzr, #64]
-    ldr x17, [xzr], #16
-    b 0xa4
-9:
-    ldr x9, [xzr, #32]
-    add x8, x2, x9
-10:
-    add x8, x8, x0
-    str x8, [xzr, #48]
-11:
-    ldr x6, [xzr, #40]
-    ldr x7, [xzr, #48]
-    b 0x30
-12:
-    add x19, sp, #64
-    movz x1, #8
-    add x20, x1, x19
-    movz x1, #7
-    str x1, [x19]
-    str x0, [x20]
-    movz x0, #0
-    bl 0xffffffb8
-    str x0, [xzr, #40]
-    ldr x0, [x19]
-    ldr x1, [x20]
-    bl 0xffffffd4
-    ldr x1, [xzr, #32]
-    ldr x2, [xzr, #40]
-    add x1, x2, x1
-    add x0, x1, x0
-    ldr x19, [xzr]
-    ldr x20, [xzr, #8]
-    ldp x29, x30, [xzr, #16]
-    add sp, sp, #80
-    ret
-=========== OPT LEVEL: none ===========
-standalone:
-    movz x1, #1
-    cmp w0, w1
-    b.eq 1
-    movz x0, #4
-    b 2
-1:
-    movz x0, #100
 2:
-    ret
-typed:
-    movz x2, #1
-    cmp w1, w2
-    b.eq 0x28
-    movz x0, #2
-    cmp w1, w0
-    b.eq 0x20
-    movz x0, #0
-    b 0x28
-4:
     movz x0, #100
     b 0x28
-5:
+3:
     ret
 main:
     sub sp, sp, #64
@@ -127,46 +27,138 @@ main:
     str x21, [xzr, #16]
     str x22, [xzr, #24]
     stp x29, x30, [xzr, #32]
-    movz x7, #1
-    movz x6, #4
-    movz x5, #22
-    movz x4, #100
-    movz x3, #3
-    movz x2, #2
-    movz x1, #0
-    movz x0, #0
+    movz x0, #1
+    movz x1, #4
+    movz x2, #20
+    movz x3, #100
+    movz x4, #3
+    movz x5, #2
+    movz x6, #0
+    movz x7, #0
+    mov x19, x7
+    mov x8, x6
+    add x8, x8, x0
+    cmp x8, x1
+    b.gt 0xa8
+    add x9, x3, x19
+    cmp x8, x0
+    cset w10, eq
+    cmp w10, #0
+    b.ne 0x80
+    cmp x8, x5
+    b.eq 0x78
+    cmp x4, x8
+    b.eq 0xa8
+    b 0x90
+    b 0xa8
+5:
+    mov x11, x19
+    b 0x98
+6:
+    add x12, x2, x19
+    cmp w10, #0
+    csel x10, x12, x9, ne
+    add x9, x10, x5
 7:
-    mov x22, x0
-    add x1, x1, x7
-    cmp w1, w6
-    b.gt 0x84
-    cmp w1, w7
-    b.eq 0x70
-    cmp w1, w2
-    b.eq 0x7c
-    cmp w1, w3
-    b.eq 0x84
-    add x0, x4, x22
-    b 0x74
-    b 0x84
-    b 0x7c
+    add x9, x9, x0
+    mov x11, x9
 8:
-    add x0, x5, x22
+    mov x9, x11
+    mov x6, x8
+    mov x7, x9
+    b 2
 9:
-    add x0, x0, x7
+    add x20, sp, #48
+    movz x1, #8
+    add x21, x1, x20
+    movz x1, #7
+    str x1, [x20]
+    str x0, [x21]
+    movz x0, #0
+    bl 0xffffffbc
     mov x22, x0
-10:
+    ldr x0, [x20]
+    ldr x1, [x21]
+    bl 0xffffffd4
+    add x1, x22, x19
+    add x0, x1, x0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldp x29, x30, [xzr, #32]
+    add sp, sp, #64
+    ret
+=========== OPT LEVEL: none ===========
+standalone:
+    movz x3, #100
+    movz x2, #4
+    movz x1, #1
+    cmp x0, x1
+    csel x0, x3, x2, eq
+    ret
+typed:
+    movz x2, #1
+    cmp x2, x1
+    b.eq 0x28
+    movz x0, #2
+    cmp x0, x1
+    b.eq 0x20
+    movz x0, #0
+    b 0x28
+2:
+    movz x0, #100
+    b 0x28
+3:
+    ret
+main:
+    sub sp, sp, #64
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    stp x29, x30, [xzr, #32]
+    movz x8, #1
+    movz x7, #4
+    movz x6, #20
+    movz x5, #100
+    movz x4, #3
+    movz x3, #2
+    movz x2, #0
+    movz x0, #0
+    mov x22, x0
+    add x2, x2, x8
+    cmp x2, x7
+    b.gt 0x8c
+    add x0, x5, x22
+    cmp x2, x8
+    b.eq 0x70
+    cmp x2, x3
+    b.eq 0x84
+    cmp x4, x2
+    b.eq 0x8c
+    b 0x7c
+    b 0x8c
+    b 0x84
+5:
+    add x1, x6, x22
+    csel x0, x1, x0, eq
+    add x0, x0, x3
+6:
+    add x0, x0, x8
+    mov x22, x0
+7:
     mov x0, x22
-    b 0x38
-11:
+    b 2
+8:
     add x21, sp, #48
     movz x0, #8
     add x20, x0, x21
     movz x0, #7
     str x0, [x21]
-    str x7, [x20]
+    str x8, [x20]
     movz x0, #0
-    bl 0xffffffb8
+    bl 0xffffffbc
     mov x19, x0
     ldr x0, [x21]
     ldr x1, [x20]
@@ -182,125 +174,25 @@ main:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 standalone:
-    movz x1, #1
-    cmp w0, w1
-    b.eq 1
-    movz x0, #4
-    b 2
-1:
-    movz x0, #100
-2:
+    movz x1, #100
+    movz x2, #4
+    movz x3, #1
+    cmp x0, x3
+    csel x0, x1, x2, eq
     ret
 typed:
     movz x2, #1
-    cmp w1, w2
+    cmp x2, x1
     b.eq 0x28
     movz x2, #2
-    cmp w1, w2
+    cmp x2, x1
     b.eq 0x20
     movz x0, #0
     b 0x28
-4:
-    movz x0, #100
-    b 0x28
-5:
-    ret
-main:
-    sub sp, sp, #80
-    str x19, [xzr]
-    str x20, [xzr, #8]
-    stp x29, x30, [xzr, #16]
-    movz x0, #1
-    movz x1, #4
-    movz x2, #22
-    movz x3, #100
-    movz x4, #3
-    movz x5, #2
-    movz x6, #0
-    movz x7, #0
-7:
-    str x7, [xzr, #32]
-    mov x8, x6
-    add x8, x8, x0
-    str x8, [xzr, #40]
-    ldr x8, [xzr, #40]
-    cmp w8, w1
-    b.gt 0xb0
-    ldr x8, [xzr, #40]
-    cmp w8, w0
-    b.eq 0x94
-    ldr x8, [xzr, #40]
-    cmp w8, w5
-    b.eq 0x80
-    ldr x8, [xzr, #40]
-    cmp w8, w4
-    b.eq 0xb0
-    ldr x8, [xzr, #32]
-    add x8, x3, x8
-    b 0x9c
-    b 0xb0
-8:
-    str x17, [xzr, #-16]!
-    ldr x17, [xzr, #48]
-    str x17, [xzr, #64]
-    ldr x17, [xzr], #16
-    b 0xa4
-9:
-    ldr x9, [xzr, #32]
-    add x8, x2, x9
-10:
-    add x8, x8, x0
-    str x8, [xzr, #48]
-11:
-    ldr x6, [xzr, #40]
-    ldr x7, [xzr, #48]
-    b 0x30
-12:
-    add x19, sp, #64
-    movz x1, #8
-    add x20, x1, x19
-    movz x1, #7
-    str x1, [x19]
-    str x0, [x20]
-    movz x0, #0
-    bl 0xffffffb8
-    str x0, [xzr, #40]
-    ldr x0, [x19]
-    ldr x1, [x20]
-    bl 0xffffffd4
-    ldr x1, [xzr, #32]
-    ldr x2, [xzr, #40]
-    add x1, x2, x1
-    add x0, x1, x0
-    ldr x19, [xzr]
-    ldr x20, [xzr, #8]
-    ldp x29, x30, [xzr, #16]
-    add sp, sp, #80
-    ret
-=========== OPT LEVEL: moderate ===========
-standalone:
-    movz x1, #1
-    cmp w0, w1
-    b.eq 1
-    movz x0, #4
-    b 2
-1:
-    movz x0, #100
 2:
-    ret
-typed:
-    movz x2, #1
-    cmp w1, w2
-    b.eq 0x28
-    movz x0, #2
-    cmp w1, w0
-    b.eq 0x20
-    movz x0, #0
-    b 0x28
-4:
     movz x0, #100
     b 0x28
-5:
+3:
     ret
 main:
     sub sp, sp, #64
@@ -309,46 +201,138 @@ main:
     str x21, [xzr, #16]
     str x22, [xzr, #24]
     stp x29, x30, [xzr, #32]
-    movz x7, #1
-    movz x6, #4
-    movz x5, #22
-    movz x4, #100
-    movz x3, #3
-    movz x2, #2
-    movz x1, #0
-    movz x0, #0
+    movz x0, #1
+    movz x1, #4
+    movz x2, #20
+    movz x3, #100
+    movz x4, #3
+    movz x5, #2
+    movz x6, #0
+    movz x7, #0
+    mov x19, x7
+    mov x8, x6
+    add x8, x8, x0
+    cmp x8, x1
+    b.gt 0xa8
+    add x9, x3, x19
+    cmp x8, x0
+    cset w10, eq
+    cmp w10, #0
+    b.ne 0x80
+    cmp x8, x5
+    b.eq 0x78
+    cmp x4, x8
+    b.eq 0xa8
+    b 0x90
+    b 0xa8
+5:
+    mov x11, x19
+    b 0x98
+6:
+    add x12, x2, x19
+    cmp w10, #0
+    csel x10, x12, x9, ne
+    add x9, x10, x5
 7:
-    mov x22, x0
-    add x1, x1, x7
-    cmp w1, w6
-    b.gt 0x84
-    cmp w1, w7
-    b.eq 0x70
-    cmp w1, w2
-    b.eq 0x7c
-    cmp w1, w3
-    b.eq 0x84
-    add x0, x4, x22
-    b 0x74
-    b 0x84
-    b 0x7c
+    add x9, x9, x0
+    mov x11, x9
 8:
-    add x0, x5, x22
+    mov x9, x11
+    mov x6, x8
+    mov x7, x9
+    b 2
 9:
-    add x0, x0, x7
+    add x20, sp, #48
+    movz x1, #8
+    add x21, x1, x20
+    movz x1, #7
+    str x1, [x20]
+    str x0, [x21]
+    movz x0, #0
+    bl 0xffffffbc
     mov x22, x0
-10:
+    ldr x0, [x20]
+    ldr x1, [x21]
+    bl 0xffffffd4
+    add x1, x22, x19
+    add x0, x1, x0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldp x29, x30, [xzr, #32]
+    add sp, sp, #64
+    ret
+=========== OPT LEVEL: moderate ===========
+standalone:
+    movz x3, #100
+    movz x2, #4
+    movz x1, #1
+    cmp x0, x1
+    csel x0, x3, x2, eq
+    ret
+typed:
+    movz x2, #1
+    cmp x2, x1
+    b.eq 0x28
+    movz x0, #2
+    cmp x0, x1
+    b.eq 0x20
+    movz x0, #0
+    b 0x28
+2:
+    movz x0, #100
+    b 0x28
+3:
+    ret
+main:
+    sub sp, sp, #64
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    stp x29, x30, [xzr, #32]
+    movz x8, #1
+    movz x7, #4
+    movz x6, #20
+    movz x5, #100
+    movz x4, #3
+    movz x3, #2
+    movz x2, #0
+    movz x0, #0
+    mov x22, x0
+    add x2, x2, x8
+    cmp x2, x7
+    b.gt 0x8c
+    add x0, x5, x22
+    cmp x2, x8
+    b.eq 0x70
+    cmp x2, x3
+    b.eq 0x84
+    cmp x4, x2
+    b.eq 0x8c
+    b 0x7c
+    b 0x8c
+    b 0x84
+5:
+    add x1, x6, x22
+    csel x0, x1, x0, eq
+    add x0, x0, x3
+6:
+    add x0, x0, x8
+    mov x22, x0
+7:
     mov x0, x22
-    b 0x38
-11:
+    b 2
+8:
     add x21, sp, #48
     movz x0, #8
     add x20, x0, x21
     movz x0, #7
     str x0, [x21]
-    str x7, [x20]
+    str x8, [x20]
     movz x0, #0
-    bl 0xffffffb8
+    bl 0xffffffbc
     mov x19, x0
     ldr x0, [x21]
     ldr x1, [x20]
@@ -364,72 +348,71 @@ main:
     ret
 =========== OPT LEVEL: all ===========
 standalone:
+    movz x3, #100
+    movz x2, #4
     movz x1, #1
-    cmp w0, w1
-    b.eq 1
-    movz x0, #4
-    b 2
-1:
-    movz x0, #100
-2:
+    cmp x0, x1
+    csel x0, x3, x2, eq
     ret
 typed:
     movz x2, #1
-    cmp w1, w2
+    cmp x2, x1
     b.eq 0x28
     movz x0, #2
-    cmp w1, w0
+    cmp x0, x1
     b.eq 0x20
     movz x0, #0
     b 0x28
-4:
+2:
     movz x0, #100
     b 0x28
-5:
+3:
     ret
 main:
     sub sp, sp, #32
     str x19, [xzr]
     str x20, [xzr, #8]
     stp x29, x30, [xzr, #16]
-    movz x9, #4
-    movz x8, #22
-    movz x7, #100
-    movz x6, #2
-    movz x5, #3
+    movz x10, #4
+    movz x9, #20
+    movz x8, #100
+    movz x7, #2
+    movz x6, #3
     movz x0, #0
-    movz x2, #0
-7:
-    movz x3, #1
-    add x4, x0, x3
-    movz x3, #1
-    cmp w4, w3
+    movz x3, #0
+5:
+    add x2, x8, x3
+    movz x4, #1
+    add x5, x0, x4
+    movz x4, #1
+    cmp x5, x4
     b.eq 0x60
-    cmp w4, w6
-    b.eq 0x6c
-    cmp w4, w5
-    b.eq 0x88
-    add x2, x7, x2
-    b 0x64
-    b 0x88
+    cmp x5, x7
+    b.eq 0x74
+    cmp x6, x5
+    b.eq 0x90
     b 0x6c
-8:
-    add x2, x8, x2
-9:
+    b 0x90
+    b 0x74
+6:
+    add x1, x9, x3
+    csel x1, x1, x2, eq
+    add x2, x1, x7
+7:
     movz x1, #1
-    add x2, x2, x1
-10:
-    mov x1, x2
-    add x0, x0, x6
-    cmp w0, w9
-    mov x0, x4
-    mov x2, x1
+    add x3, x2, x1
+8:
+    mov x1, x3
+    add x0, x0, x7
+    cmp x0, x10
+    mov x0, x5
+    mov x3, x1
     b.le 0x2c
-    mov x2, x1
-11:
-    mov x20, x2
+    mov x3, x1
+9:
+    mov x20, x3
     movz x0, #0
-    bl 0xffffffb8
+    bl 0xffffffbc
     mov x19, x0
     movz x0, #7
     movz x1, #1
@@ -445,33 +428,35 @@ main:
 main:
     movz x9, #4
     movz x8, #1
-    movz x7, #22
+    movz x7, #20
     movz x6, #100
     movz x5, #2
     movz x4, #3
     movz x0, #0
     movz x2, #0
 1:
-    add x3, x0, x8
-    cmp w3, w8
-    b.eq 3
-    cmp w3, w5
-    b.eq 2
-    cmp w3, w4
-    b.eq 6
     add x1, x6, x2
+    add x3, x0, x8
+    cmp x3, x8
+    b.eq 3
+    cmp x3, x5
+    b.eq 2
+    cmp x4, x3
+    b.eq 6
     b 4
     b 6
 2:
     mov x1, x2
     b 5
 3:
-    add x1, x7, x2
+    add x2, x7, x2
+    csel x1, x2, x1, eq
+    add x1, x1, x5
 4:
     add x1, x1, x8
 5:
     add x0, x0, x5
-    cmp w0, w9
+    cmp x0, x9
     mov x0, x3
     mov x2, x1
     b.le 1

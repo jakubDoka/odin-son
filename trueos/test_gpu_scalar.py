@@ -99,9 +99,9 @@ def main():
     with tempfile.TemporaryDirectory(prefix='odin-native-scalar-') as directory:
         work = Path(directory)
         compiler = work/'compiler'
-        run([odin, 'build', ROOT, '-out:'+str(compiler)])
+        run([odin, 'build', ROOT / 'odinc', '-out:'+str(compiler)])
         unchecked_compiler = work/'unchecked-compiler'
-        run([odin, 'build', ROOT, '-disable-assert', '-out:'+str(unchecked_compiler)])
+        run([odin, 'build', ROOT / 'odinc', '-disable-assert', '-out:'+str(unchecked_compiler)])
         sdk = run([odin, 'root']).stdout.decode().strip()
         env = dict(os.environ, ODIN_ROOT=sdk)
         native = work/'native-compiler'

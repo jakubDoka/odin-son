@@ -1,6 +1,5 @@
 =========== OPT LEVEL: none-quick ===========
 main:
-    sub sp, sp, #16
     movz x1, #1
     movz x2, #3
     movz x3, #0
@@ -11,21 +10,20 @@ main:
 2:
     madd x0, x3, x6, xzr
     add x7, x6, x1
+    cmp x7, x2
     add x0, x5, x0
-    cmp w7, w2
     b.gt 3
     mov x5, x0
     mov x6, x7
     b 2
 3:
     add x5, x3, x1
-    cmp w5, w2
+    cmp x5, x2
     b.gt 4
     mov x4, x0
     mov x3, x5
     b 1
 4:
-    add sp, sp, #16
     ret
 =========== OPT LEVEL: none ===========
 main:
@@ -38,20 +36,19 @@ main:
 2:
     madd x3, x1, x2, xzr
     add x2, x2, x5
+    cmp x2, x4
     add x0, x0, x3
-    cmp w2, w4
     b.gt 3
     b 2
 3:
     add x1, x1, x5
-    cmp w1, w4
+    cmp x1, x4
     b.gt 4
     b 1
 4:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 main:
-    sub sp, sp, #16
     movz x1, #1
     movz x2, #3
     movz x3, #0
@@ -62,21 +59,20 @@ main:
 2:
     madd x0, x3, x6, xzr
     add x7, x6, x1
+    cmp x7, x2
     add x0, x5, x0
-    cmp w7, w2
     b.gt 3
     mov x5, x0
     mov x6, x7
     b 2
 3:
     add x5, x3, x1
-    cmp w5, w2
+    cmp x5, x2
     b.gt 4
     mov x4, x0
     mov x3, x5
     b 1
 4:
-    add sp, sp, #16
     ret
 =========== OPT LEVEL: moderate ===========
 main:
@@ -89,13 +85,13 @@ main:
 2:
     madd x3, x1, x2, xzr
     add x2, x2, x5
+    cmp x2, x4
     add x0, x0, x3
-    cmp w2, w4
     b.gt 3
     b 2
 3:
     add x1, x1, x5
-    cmp w1, w4
+    cmp x1, x4
     b.gt 4
     b 1
 4:
@@ -111,12 +107,12 @@ main:
 2:
     madd x0, x1, x2, xzr
     add x2, x2, x4
+    cmp x2, x5
     add x0, x3, x0
-    cmp w2, w5
     mov x3, x0
     b.le 2
     add x1, x1, x4
-    cmp w1, w5
+    cmp x1, x5
     mov x3, x0
     b.le 1
     ret

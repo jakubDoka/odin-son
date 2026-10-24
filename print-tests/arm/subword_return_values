@@ -3,15 +3,16 @@ Error{inst_idx = 24, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 main:
     sub sp, sp, #32
-    stp x29, x30, [xzr]
+    str x19, [xzr]
+    stp x29, x30, [xzr, #8]
     bl get8
-    str x0, [xzr, #16]
+    mov x19, x0
     bl get16
-    ldr x1, [xzr, #16]
     invalid
     invalid
     add x0, x1, x0
-    ldp x29, x30, [xzr]
+    ldr x19, [xzr]
+    ldp x29, x30, [xzr, #8]
     add sp, sp, #32
     ret
 get8:
@@ -48,15 +49,16 @@ Error{inst_idx = 24, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 Error{inst_idx = 28, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 main:
     sub sp, sp, #32
-    stp x29, x30, [xzr]
+    str x19, [xzr]
+    stp x29, x30, [xzr, #8]
     bl get8
-    str x0, [xzr, #16]
+    mov x19, x0
     bl get16
-    ldr x1, [xzr, #16]
     invalid
     invalid
     add x0, x1, x0
-    ldp x29, x30, [xzr]
+    ldr x19, [xzr]
+    ldp x29, x30, [xzr, #8]
     add sp, sp, #32
     ret
 get8:

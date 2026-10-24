@@ -25,7 +25,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix='odin-son-xelp-compiler-') as directory:
         work = Path(directory)
         host, native = work/'host', work/'native'
-        run([args.odin, 'build', root, '-out:' + str(host)])
+        run([args.odin, 'build', root / 'odinc', '-out:' + str(host)])
         run(['gcc', '-std=c11', root/'trueos/test_host.c', root/'trueos/build/odin-son.o', '-lm', '-o', native])
         sdk = run([args.odin, 'root']).stdout.decode().strip()
         environment = dict(os.environ, ODIN_ROOT=sdk)

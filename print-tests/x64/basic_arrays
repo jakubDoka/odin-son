@@ -2,49 +2,36 @@
 main:
     push rbx
     push rbp
-    sub rsp, 0xc8
+    sub rsp, 0x88
     pxor xmm0, xmm0
     movups.x [rsp + 0x58], xmm0
     movups.x [rsp + 0x48], xmm0
     xor eax, eax
 1:
-    mov.q [rsp + 0x90], rax
-    mov.q rcx, [rsp + 0x90]
+    mov rcx, rax
     cmp rcx, 0x20
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    jne 2
-    mov.q rcx, [rsp + 0x90]
-    mov.q rdx, [rsp + 0x90]
-    add rdx, 1
-    mov.q [rsp + 0x98], rdx
-    mov.q rdx, [rsp + 0x90]
-    mov.b [rsp + rdx + 0x48], cl
-    mov.q rax, [rsp + 0x98]
+    jge 2
+    mov rdx, rcx
+    mov rbx, rcx
+    add rbx, 1
+    mov.b [rsp + rcx + 0x48], dl
+    mov rax, rbx
     jmp 1
 2:
     xor eax, eax
     xor ecx, ecx
 3:
-    mov.q [rsp + 0x90], rcx
-    mov.q [rsp + 0x98], rax
-    mov.q rdx, [rsp + 0x90]
+    mov rdx, rcx
+    mov rbx, rax
     cmp rdx, 0x20
-    setge dl
-    movzx rdx, dl
-    test dl, dl
-    jne 4
-    mov.q rdx, [rsp + 0x90]
-    movzx.b edx, [rsp + rdx + 0x48]
-    mov.q rbx, [rsp + 0x98]
-    add rbx, rdx
-    mov.q [rsp + 0xa0], rbx
-    mov.q rdx, [rsp + 0x90]
+    jge 4
+    movzx.b ebp, [rsp + rdx + 0x48]
+    mov rsi, rbx
+    add rsi, rbp
+    mov rbp, rsi
     add rdx, 1
-    mov.q [rsp + 0x90], rdx
-    mov.q rax, [rsp + 0xa0]
-    mov.q rcx, [rsp + 0x90]
+    mov rax, rbp
+    mov rcx, rdx
     jmp 3
 4:
     mov.q [rsp + 0x68], 0x10
@@ -53,33 +40,20 @@ main:
     mov.q [rsp + 0x80], 0x40
     xor eax, eax
 5:
-    mov.q [rsp + 0x90], rax
-    mov.q rcx, [rsp + 0x90]
+    mov rcx, rax
     cmp rcx, 4
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    jne 6
-    mov.q rcx, [rsp + 0x90]
-    mov.q rdx, [rsp + 0x90]
-    add.q [rsp + rdx*8 + 0x68], rcx
-    mov.q rcx, [rsp + 0x90]
+    jge 6
+    add.q [rsp + rcx*8 + 0x68], rcx
     add rcx, 1
     mov rax, rcx
     jmp 5
 6:
     xor eax, eax
 7:
-    mov.q [rsp + 0x90], rax
-    mov.q rcx, [rsp + 0x90]
+    mov rcx, rax
     cmp rcx, 4
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    jne 8
-    mov.q rcx, [rsp + 0x90]
+    jge 8
     add.q [rsp + rcx*8 + 0x68], 1
-    mov.q rcx, [rsp + 0x90]
     add rcx, 1
     mov rax, rcx
     jmp 7
@@ -87,159 +61,94 @@ main:
     mov rax, 1
     xor ecx, ecx
 9:
-    mov.q [rsp + 0x90], rcx
+    mov rdx, rcx
     cmp rax, 4
-    setge dl
-    movzx rdx, dl
-    test dl, dl
-    jne 10
-    mov.q rdx, [rsp + rax*8 + 0x68]
-    add rdx, 1
-    mov.q rbx, [rsp + 0x90]
-    mov.q [rsp + rbx*8 + 0x68], rdx
+    jge 10
+    mov.q rbp, [rsp + rax*8 + 0x68]
+    add rbp, 1
+    mov.q [rsp + rdx*8 + 0x68], rbp
     add rax, 1
-    mov.q rdx, [rsp + 0x90]
     add rdx, 1
     mov rcx, rdx
     jmp 9
 10:
     xor eax, eax
-    mov.q [rsp + 0x88], r15
-    mov.q r15, [rsp + 0x98]
-    mov.q [rsp + 0x90], r15
-    mov.q r15, [rsp + 0x88]
+    mov rcx, rbx
 11:
-    mov.q [rsp + 0x88], r15
-    mov.q r15, [rsp + 0x90]
-    mov.q [rsp + 0x98], r15
-    mov.q r15, [rsp + 0x88]
-    mov.q [rsp + 0xa0], rax
-    mov.q rcx, [rsp + 0xa0]
-    cmp rcx, 4
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    jne 12
-    mov.q rcx, [rsp + 0xa0]
-    mov.q rdx, [rsp + 0x98]
-    add.q rdx, [rsp + rcx*8 + 0x68]
-    mov.q [rsp + 0xa8], rdx
-    mov.q rcx, [rsp + 0xa0]
-    add rcx, 1
-    mov.q [rsp + 0xa0], rcx
-    mov.q [rsp + 0x88], r15
-    mov.q r15, [rsp + 0xa8]
-    mov.q [rsp + 0x90], r15
-    mov.q r15, [rsp + 0x88]
-    mov.q rax, [rsp + 0xa0]
+    mov rbx, rcx
+    mov rdx, rax
+    cmp rdx, 4
+    jge 12
+    mov rbp, rdx
+    mov rsi, rbx
+    add.q rsi, [rsp + rbp*8 + 0x68]
+    mov rbp, rsi
+    add rdx, 1
+    mov rcx, rbp
+    mov rax, rdx
     jmp 11
 12:
     xor esi, esi
     mov rdx, 0x48
     lea rdi, [rsp]
-    call -0x334
+    call -0x1b2
     xor eax, eax
 13:
-    mov.q [rsp + 0x90], rax
-    mov.q rcx, [rsp + 0x90]
+    mov rcx, rax
     cmp rcx, 3
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    jne 16
-    mov.q rcx, [rsp + 0x90]
-    imul rcx, rcx, 0x18
-    lea rdx, [rsp]
-    add rcx, rdx
-    xor edx, edx
+    jge 16
+    imul rdx, rcx, 0x18
+    lea rbp, [rsp]
+    add rdx, rbp
+    xor ebp, ebp
 14:
-    mov.q [rsp + 0xa0], rdx
-    mov.q rbx, [rsp + 0xa0]
-    cmp rbx, 3
-    setge bl
-    movzx rbx, bl
-    test bl, bl
-    jne 15
-    mov.q rbx, [rsp + 0x90]
-    mov.q rbp, [rsp + 0xa0]
-    imul rbx, rbp
-    mov.q [rsp + 0xa8], rbx
-    mov.q rbx, [rsp + 0xa0]
-    mov.q rbp, [rsp + 0xa8]
-    mov.q [rcx + rbx*8], rbp
-    mov.q rbx, [rsp + 0xa0]
-    add rbx, 1
-    mov rdx, rbx
+    mov rsi, rbp
+    cmp rsi, 3
+    jge 15
+    mov rdi, rcx
+    imul rdi, rsi
+    mov.q [rdx + rsi*8], rdi
+    add rsi, 1
+    mov rbp, rsi
     jmp 14
 15:
-    mov.q rcx, [rsp + 0x90]
     add rcx, 1
     mov rax, rcx
     jmp 13
 16:
     xor eax, eax
-    mov.q [rsp + 0x88], r15
-    mov.q r15, [rsp + 0x98]
-    mov.q [rsp + 0x90], r15
-    mov.q r15, [rsp + 0x88]
+    mov rcx, rbx
 17:
-    mov.q [rsp + 0x88], r15
-    mov.q r15, [rsp + 0x90]
-    mov.q [rsp + 0x98], r15
-    mov.q r15, [rsp + 0x88]
-    mov.q [rsp + 0xa0], rax
-    mov.q rcx, [rsp + 0xa0]
-    cmp rcx, 3
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    jne 20
-    mov.q rcx, [rsp + 0xa0]
-    imul rcx, rcx, 0x18
-    lea rdx, [rsp]
-    add rcx, rdx
-    xor edx, edx
-    mov.q [rsp + 0x88], r15
-    mov.q r15, [rsp + 0x98]
-    mov.q [rsp + 0xa8], r15
-    mov.q r15, [rsp + 0x88]
-18:
-    mov.q [rsp + 0x88], r15
-    mov.q r15, [rsp + 0xa8]
-    mov.q [rsp + 0xb0], r15
-    mov.q r15, [rsp + 0x88]
-    mov.q [rsp + 0xb8], rdx
-    mov.q rbx, [rsp + 0xb8]
+    mov rdx, rcx
+    mov rbx, rax
     cmp rbx, 3
-    setge bl
-    movzx rbx, bl
-    test bl, bl
-    jne 19
-    mov.q rbx, [rsp + 0xb8]
-    mov.q rbp, [rsp + 0xb0]
-    add.q rbp, [rcx + rbx*8]
-    mov.q [rsp + 0xc0], rbp
-    mov.q rbx, [rsp + 0xb8]
-    add rbx, 1
-    mov.q [rsp + 0xb8], rbx
-    mov.q [rsp + 0x88], r15
-    mov.q r15, [rsp + 0xc0]
-    mov.q [rsp + 0xa8], r15
-    mov.q r15, [rsp + 0x88]
-    mov.q rdx, [rsp + 0xb8]
+    jge 20
+    imul rbp, rbx, 0x18
+    lea rsi, [rsp]
+    add rbp, rsi
+    xor esi, esi
+    mov rdi, rdx
+18:
+    mov r8, rdi
+    mov r9, rsi
+    cmp r9, 3
+    jge 19
+    mov r10, r9
+    mov r11, r8
+    add.q r11, [rbp + r10*8]
+    mov r10, r11
+    add r9, 1
+    mov rdi, r10
+    mov rsi, r9
     jmp 18
 19:
-    mov.q rcx, [rsp + 0xa0]
-    add rcx, 1
-    mov rax, rcx
-    mov.q [rsp + 0x88], r15
-    mov.q r15, [rsp + 0xb0]
-    mov.q [rsp + 0x90], r15
-    mov.q r15, [rsp + 0x88]
+    add rbx, 1
+    mov rax, rbx
+    mov rcx, r8
     jmp 17
 20:
-    mov.q rax, [rsp + 0x98]
-    add rsp, 0xc8
+    mov rax, rdx
+    add rsp, 0x88
     pop rbp
     pop rbx
     ret
@@ -253,10 +162,7 @@ main:
     xor eax, eax
 1:
     cmp rax, 0x20
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    jne 2
+    jge 2
     mov rdx, rax
     mov rcx, rax
     add rcx, 1
@@ -269,10 +175,7 @@ main:
 3:
     mov rbx, rcx
     cmp rax, 0x20
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    jne 4
+    jge 4
     movzx.b edx, [rsp + rax + 0x48]
     mov rcx, rbx
     add rcx, rdx
@@ -286,10 +189,7 @@ main:
     xor eax, eax
 5:
     cmp rax, 4
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    jne 6
+    jge 6
     add.q [rsp + rax*8 + 0x68], rax
     add rax, 1
     jmp 5
@@ -297,10 +197,7 @@ main:
     xor eax, eax
 7:
     cmp rax, 4
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    jne 8
+    jge 8
     add.q [rsp + rax*8 + 0x68], 1
     add rax, 1
     jmp 7
@@ -309,10 +206,7 @@ main:
     xor eax, eax
 9:
     cmp rsi, 4
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    jne 10
+    jge 10
     mov.q rdx, [rsp + rsi*8 + 0x68]
     add rdx, 1
     mov.q [rsp + rax*8 + 0x68], rdx
@@ -323,10 +217,7 @@ main:
     xor eax, eax
 11:
     cmp rax, 4
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    jne 12
+    jge 12
     add.q rbx, [rsp + rax*8 + 0x68]
     add rax, 1
     jmp 11
@@ -334,24 +225,18 @@ main:
     xor esi, esi
     mov rdx, 0x48
     lea rdi, [rsp]
-    call -0x1b0
+    call -0x171
     xor eax, eax
 13:
     cmp rax, 3
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    jne 16
+    jge 16
     imul rdi, rax, 0x18
     lea rcx, [rsp]
     add rdi, rcx
     xor ecx, ecx
 14:
     cmp rcx, 3
-    setge dl
-    movzx rdx, dl
-    test dl, dl
-    jne 15
+    jge 15
     mov rdx, rax
     imul rdx, rcx
     mov.q [rdi + rcx*8], rdx
@@ -364,20 +249,14 @@ main:
     xor eax, eax
 17:
     cmp rax, 3
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    jne 20
+    jge 20
     imul rdi, rax, 0x18
     lea rcx, [rsp]
     add rdi, rcx
     xor ecx, ecx
 18:
     cmp rcx, 3
-    setge dl
-    movzx rdx, dl
-    test dl, dl
-    jne 19
+    jge 19
     add.q rbx, [rdi + rcx*8]
     add rcx, 1
     jmp 18
@@ -393,49 +272,36 @@ main:
 main:
     push rbx
     push rbp
-    sub rsp, 0xc8
+    sub rsp, 0x88
     pxor xmm0, xmm0
     movups.x [rsp + 0x58], xmm0
     movups.x [rsp + 0x48], xmm0
     xor eax, eax
 1:
-    mov.q [rsp + 0x90], rax
-    mov.q rcx, [rsp + 0x90]
+    mov rcx, rax
     cmp rcx, 0x20
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    jne 2
-    mov.q rcx, [rsp + 0x90]
-    mov.q rdx, [rsp + 0x90]
-    add rdx, 1
-    mov.q [rsp + 0x98], rdx
-    mov.q rdx, [rsp + 0x90]
-    mov.b [rsp + rdx + 0x48], cl
-    mov.q rax, [rsp + 0x98]
+    jge 2
+    mov rdx, rcx
+    mov rbx, rcx
+    add rbx, 1
+    mov.b [rsp + rcx + 0x48], dl
+    mov rax, rbx
     jmp 1
 2:
     xor eax, eax
     xor ecx, ecx
 3:
-    mov.q [rsp + 0x90], rcx
-    mov.q [rsp + 0x98], rax
-    mov.q rdx, [rsp + 0x90]
+    mov rdx, rcx
+    mov rbx, rax
     cmp rdx, 0x20
-    setge dl
-    movzx rdx, dl
-    test dl, dl
-    jne 4
-    mov.q rdx, [rsp + 0x90]
-    movzx.b edx, [rsp + rdx + 0x48]
-    mov.q rbx, [rsp + 0x98]
-    add rbx, rdx
-    mov.q [rsp + 0xa0], rbx
-    mov.q rdx, [rsp + 0x90]
+    jge 4
+    movzx.b ebp, [rsp + rdx + 0x48]
+    mov rsi, rbx
+    add rsi, rbp
+    mov rbp, rsi
     add rdx, 1
-    mov.q [rsp + 0x90], rdx
-    mov.q rax, [rsp + 0xa0]
-    mov.q rcx, [rsp + 0x90]
+    mov rax, rbp
+    mov rcx, rdx
     jmp 3
 4:
     mov.q [rsp + 0x68], 0x10
@@ -444,33 +310,20 @@ main:
     mov.q [rsp + 0x80], 0x40
     xor eax, eax
 5:
-    mov.q [rsp + 0x90], rax
-    mov.q rcx, [rsp + 0x90]
+    mov rcx, rax
     cmp rcx, 4
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    jne 6
-    mov.q rcx, [rsp + 0x90]
-    mov.q rdx, [rsp + 0x90]
-    add.q [rsp + rdx*8 + 0x68], rcx
-    mov.q rcx, [rsp + 0x90]
+    jge 6
+    add.q [rsp + rcx*8 + 0x68], rcx
     add rcx, 1
     mov rax, rcx
     jmp 5
 6:
     xor eax, eax
 7:
-    mov.q [rsp + 0x90], rax
-    mov.q rcx, [rsp + 0x90]
+    mov rcx, rax
     cmp rcx, 4
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    jne 8
-    mov.q rcx, [rsp + 0x90]
+    jge 8
     add.q [rsp + rcx*8 + 0x68], 1
-    mov.q rcx, [rsp + 0x90]
     add rcx, 1
     mov rax, rcx
     jmp 7
@@ -478,159 +331,94 @@ main:
     mov rax, 1
     xor ecx, ecx
 9:
-    mov.q [rsp + 0x90], rcx
+    mov rdx, rcx
     cmp rax, 4
-    setge dl
-    movzx rdx, dl
-    test dl, dl
-    jne 10
-    mov.q rdx, [rsp + rax*8 + 0x68]
-    add rdx, 1
-    mov.q rbx, [rsp + 0x90]
-    mov.q [rsp + rbx*8 + 0x68], rdx
+    jge 10
+    mov.q rbp, [rsp + rax*8 + 0x68]
+    add rbp, 1
+    mov.q [rsp + rdx*8 + 0x68], rbp
     add rax, 1
-    mov.q rdx, [rsp + 0x90]
     add rdx, 1
     mov rcx, rdx
     jmp 9
 10:
     xor eax, eax
-    mov.q [rsp + 0x88], r15
-    mov.q r15, [rsp + 0x98]
-    mov.q [rsp + 0x90], r15
-    mov.q r15, [rsp + 0x88]
+    mov rcx, rbx
 11:
-    mov.q [rsp + 0x88], r15
-    mov.q r15, [rsp + 0x90]
-    mov.q [rsp + 0x98], r15
-    mov.q r15, [rsp + 0x88]
-    mov.q [rsp + 0xa0], rax
-    mov.q rcx, [rsp + 0xa0]
-    cmp rcx, 4
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    jne 12
-    mov.q rcx, [rsp + 0xa0]
-    mov.q rdx, [rsp + 0x98]
-    add.q rdx, [rsp + rcx*8 + 0x68]
-    mov.q [rsp + 0xa8], rdx
-    mov.q rcx, [rsp + 0xa0]
-    add rcx, 1
-    mov.q [rsp + 0xa0], rcx
-    mov.q [rsp + 0x88], r15
-    mov.q r15, [rsp + 0xa8]
-    mov.q [rsp + 0x90], r15
-    mov.q r15, [rsp + 0x88]
-    mov.q rax, [rsp + 0xa0]
+    mov rbx, rcx
+    mov rdx, rax
+    cmp rdx, 4
+    jge 12
+    mov rbp, rdx
+    mov rsi, rbx
+    add.q rsi, [rsp + rbp*8 + 0x68]
+    mov rbp, rsi
+    add rdx, 1
+    mov rcx, rbp
+    mov rax, rdx
     jmp 11
 12:
     xor esi, esi
     mov rdx, 0x48
     lea rdi, [rsp]
-    call -0x334
+    call -0x1b2
     xor eax, eax
 13:
-    mov.q [rsp + 0x90], rax
-    mov.q rcx, [rsp + 0x90]
+    mov rcx, rax
     cmp rcx, 3
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    jne 16
-    mov.q rcx, [rsp + 0x90]
-    imul rcx, rcx, 0x18
-    lea rdx, [rsp]
-    add rcx, rdx
-    xor edx, edx
+    jge 16
+    imul rdx, rcx, 0x18
+    lea rbp, [rsp]
+    add rdx, rbp
+    xor ebp, ebp
 14:
-    mov.q [rsp + 0xa0], rdx
-    mov.q rbx, [rsp + 0xa0]
-    cmp rbx, 3
-    setge bl
-    movzx rbx, bl
-    test bl, bl
-    jne 15
-    mov.q rbx, [rsp + 0x90]
-    mov.q rbp, [rsp + 0xa0]
-    imul rbx, rbp
-    mov.q [rsp + 0xa8], rbx
-    mov.q rbx, [rsp + 0xa0]
-    mov.q rbp, [rsp + 0xa8]
-    mov.q [rcx + rbx*8], rbp
-    mov.q rbx, [rsp + 0xa0]
-    add rbx, 1
-    mov rdx, rbx
+    mov rsi, rbp
+    cmp rsi, 3
+    jge 15
+    mov rdi, rcx
+    imul rdi, rsi
+    mov.q [rdx + rsi*8], rdi
+    add rsi, 1
+    mov rbp, rsi
     jmp 14
 15:
-    mov.q rcx, [rsp + 0x90]
     add rcx, 1
     mov rax, rcx
     jmp 13
 16:
     xor eax, eax
-    mov.q [rsp + 0x88], r15
-    mov.q r15, [rsp + 0x98]
-    mov.q [rsp + 0x90], r15
-    mov.q r15, [rsp + 0x88]
+    mov rcx, rbx
 17:
-    mov.q [rsp + 0x88], r15
-    mov.q r15, [rsp + 0x90]
-    mov.q [rsp + 0x98], r15
-    mov.q r15, [rsp + 0x88]
-    mov.q [rsp + 0xa0], rax
-    mov.q rcx, [rsp + 0xa0]
-    cmp rcx, 3
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    jne 20
-    mov.q rcx, [rsp + 0xa0]
-    imul rcx, rcx, 0x18
-    lea rdx, [rsp]
-    add rcx, rdx
-    xor edx, edx
-    mov.q [rsp + 0x88], r15
-    mov.q r15, [rsp + 0x98]
-    mov.q [rsp + 0xa8], r15
-    mov.q r15, [rsp + 0x88]
-18:
-    mov.q [rsp + 0x88], r15
-    mov.q r15, [rsp + 0xa8]
-    mov.q [rsp + 0xb0], r15
-    mov.q r15, [rsp + 0x88]
-    mov.q [rsp + 0xb8], rdx
-    mov.q rbx, [rsp + 0xb8]
+    mov rdx, rcx
+    mov rbx, rax
     cmp rbx, 3
-    setge bl
-    movzx rbx, bl
-    test bl, bl
-    jne 19
-    mov.q rbx, [rsp + 0xb8]
-    mov.q rbp, [rsp + 0xb0]
-    add.q rbp, [rcx + rbx*8]
-    mov.q [rsp + 0xc0], rbp
-    mov.q rbx, [rsp + 0xb8]
-    add rbx, 1
-    mov.q [rsp + 0xb8], rbx
-    mov.q [rsp + 0x88], r15
-    mov.q r15, [rsp + 0xc0]
-    mov.q [rsp + 0xa8], r15
-    mov.q r15, [rsp + 0x88]
-    mov.q rdx, [rsp + 0xb8]
+    jge 20
+    imul rbp, rbx, 0x18
+    lea rsi, [rsp]
+    add rbp, rsi
+    xor esi, esi
+    mov rdi, rdx
+18:
+    mov r8, rdi
+    mov r9, rsi
+    cmp r9, 3
+    jge 19
+    mov r10, r9
+    mov r11, r8
+    add.q r11, [rbp + r10*8]
+    mov r10, r11
+    add r9, 1
+    mov rdi, r10
+    mov rsi, r9
     jmp 18
 19:
-    mov.q rcx, [rsp + 0xa0]
-    add rcx, 1
-    mov rax, rcx
-    mov.q [rsp + 0x88], r15
-    mov.q r15, [rsp + 0xb0]
-    mov.q [rsp + 0x90], r15
-    mov.q r15, [rsp + 0x88]
+    add rbx, 1
+    mov rax, rbx
+    mov rcx, r8
     jmp 17
 20:
-    mov.q rax, [rsp + 0x98]
-    add rsp, 0xc8
+    mov rax, rdx
+    add rsp, 0x88
     pop rbp
     pop rbx
     ret
@@ -644,10 +432,7 @@ main:
     xor eax, eax
 1:
     cmp rax, 0x20
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    jne 2
+    jge 2
     mov rdx, rax
     mov rcx, rax
     add rcx, 1
@@ -660,10 +445,7 @@ main:
 3:
     mov rbx, rcx
     cmp rax, 0x20
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    jne 4
+    jge 4
     movzx.b edx, [rsp + rax + 0x48]
     mov rcx, rbx
     add rcx, rdx
@@ -677,10 +459,7 @@ main:
     xor eax, eax
 5:
     cmp rax, 4
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    jne 6
+    jge 6
     add.q [rsp + rax*8 + 0x68], rax
     add rax, 1
     jmp 5
@@ -688,10 +467,7 @@ main:
     xor eax, eax
 7:
     cmp rax, 4
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    jne 8
+    jge 8
     add.q [rsp + rax*8 + 0x68], 1
     add rax, 1
     jmp 7
@@ -700,10 +476,7 @@ main:
     xor eax, eax
 9:
     cmp rsi, 4
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    jne 10
+    jge 10
     mov.q rdx, [rsp + rsi*8 + 0x68]
     add rdx, 1
     mov.q [rsp + rax*8 + 0x68], rdx
@@ -714,10 +487,7 @@ main:
     xor eax, eax
 11:
     cmp rax, 4
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    jne 12
+    jge 12
     add.q rbx, [rsp + rax*8 + 0x68]
     add rax, 1
     jmp 11
@@ -725,24 +495,18 @@ main:
     xor esi, esi
     mov rdx, 0x48
     lea rdi, [rsp]
-    call -0x1b0
+    call -0x171
     xor eax, eax
 13:
     cmp rax, 3
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    jne 16
+    jge 16
     imul rdi, rax, 0x18
     lea rcx, [rsp]
     add rdi, rcx
     xor ecx, ecx
 14:
     cmp rcx, 3
-    setge dl
-    movzx rdx, dl
-    test dl, dl
-    jne 15
+    jge 15
     mov rdx, rax
     imul rdx, rcx
     mov.q [rdi + rcx*8], rdx
@@ -755,20 +519,14 @@ main:
     xor eax, eax
 17:
     cmp rax, 3
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    jne 20
+    jge 20
     imul rdi, rax, 0x18
     lea rcx, [rsp]
     add rdi, rcx
     xor ecx, ecx
 18:
     cmp rcx, 3
-    setge dl
-    movzx rdx, dl
-    test dl, dl
-    jne 19
+    jge 19
     add.q rbx, [rdi + rcx*8]
     add rcx, 1
     jmp 18
@@ -790,10 +548,7 @@ main:
     xor eax, eax
 1:
     cmp rax, 0x20
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    jne 2
+    jge 2
     mov rdx, rax
     mov rcx, rax
     add rcx, 1
@@ -808,7 +563,7 @@ main:
     add rax, 1
     cmp rax, 0x20
     setge sil
-    movzx rsi, sil
+    movzx esi, sil
     add rdx, rdi
     mov rcx, rdx
     mov rdx, rcx
@@ -823,19 +578,13 @@ main:
     add.q [rsp + rax*8 + 0x68], rax
     add rax, 1
     cmp rax, 4
-    setge dl
-    movzx rdx, dl
-    test dl, dl
-    je 4
+    jl 4
     xor eax, eax
 5:
     add.q [rsp + rax*8 + 0x68], 1
     add rax, 1
     cmp rax, 4
-    setge dl
-    movzx rdx, dl
-    test dl, dl
-    je 5
+    jl 5
     mov rdi, 1
     xor eax, eax
 6:
@@ -845,7 +594,7 @@ main:
     add rdi, 1
     cmp rdi, 4
     setge dl
-    movzx rdx, dl
+    movzx edx, dl
     add rax, 1
     test dl, dl
     je 6
@@ -856,7 +605,7 @@ main:
     add rax, 1
     cmp rax, 4
     setge sil
-    movzx rsi, sil
+    movzx esi, sil
     add.q rcx, [rsp + rdx*8 + 0x68]
     mov rbx, rcx
     mov rcx, rbx
@@ -865,7 +614,7 @@ main:
     xor esi, esi
     mov rdx, 0x48
     lea rdi, [rsp]
-    call -0x1a3
+    call -0x185
     xor eax, eax
 8:
     imul rdi, rax, 0x18
@@ -878,16 +627,10 @@ main:
     mov.q [rdi + rcx*8], rdx
     add rcx, 1
     cmp rcx, 3
-    setge dl
-    movzx rdx, dl
-    test dl, dl
-    je 9
+    jl 9
     add rax, 1
     cmp rax, 3
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    je 8
+    jl 8
     xor eax, eax
 10:
     imul r8, rax, 0x18
@@ -901,18 +644,15 @@ main:
     add rcx, 1
     cmp rcx, 3
     setge dil
-    movzx rdi, dil
+    movzx edi, dil
     add.q rdx, [r8 + rsi*8]
     mov rbx, rdx
     test dil, dil
     je 11
     add rax, 1
     cmp rax, 3
-    setge cl
-    movzx rcx, cl
     mov rbx, rdx
-    test cl, cl
-    je 10
+    jl 10
     mov rax, rdx
     add rsp, 0x90
     pop rbx

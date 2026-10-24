@@ -1,229 +1,200 @@
 =========== OPT LEVEL: none-quick ===========
 finite:
-    test dil, dil
-    jne 1
-    jmp 1
-1:
     mov rax, 1
     ret
 main:
-    sub rsp, 0x18
-    movsd.q xmm0, [rip + 0xf92]
+    push rbx
+    push rbp
+    sub rsp, 8
+    movsd.q xmm0, [rip + 0xf2c]
     call run f64
-    mov.q [rsp], rax
-    movsd.q xmm0, [rip + 0xf80]
+    mov rbx, rax
+    movsd.q xmm0, [rip + 0xf1b]
     cvtsd2ss xmm0, xmm0
     call run f32
-    mov.q [rsp + 0x8], rax
-    movsd.q xmm0, [rip + 0xf68]
+    mov rbp, rax
+    movsd.q xmm0, [rip + 0xf05]
     pxor xmm1, xmm1
     ucomisd xmm0, xmm1
     sete dil
-    jnp 3
+    jnp 2
     mov dil, 0
-3:
-    movzx rdi, dil
+2:
+    movzx edi, dil
     call finite
-    mov.q rcx, [rsp]
-    mov.q rdx, [rsp + 0x8]
-    add rcx, rdx
-    mov rcx, rcx
+    mov rcx, rbx
+    add rcx, rbp
     add rcx, rax
-    mov.q [rsp], rcx
+    mov rax, rcx
     mov rcx, 0xfb
-    mov.q rax, [rsp]
     cqo
     idiv rcx
     mov rax, rdx
-    add rsp, 0x18
+    add rsp, 8
+    pop rbp
+    pop rbx
     ret
 run f64:
-    sub rsp, 0x48
-    movsd.q [rsp + 0x18], xmm0
-    movsd.q xmm0, [rip + 0xf12]
-    movsd.q [rsp + 0x28], xmm0
-    movsd.q xmm1, [rsp + 0x28]
-    movsd.q xmm0, [rsp + 0x28]
+    push rbx
+    push rbp
+    push r12
+    sub rsp, 0x20
+    movsd.q [rsp], xmm0
+    movsd.q xmm0, [rip + 0xeb4]
+    movsd.q [rsp + 0x10], xmm0
+    movsd.q xmm1, [rsp + 0x10]
+    movsd.q xmm0, [rsp + 0x10]
     call check f64
-    mov.q [rsp], rax
-    movsd.q xmm0, [rsp + 0x18]
-    movsd.q xmm1, [rsp + 0x18]
+    mov rbx, rax
+    movsd.q xmm0, [rsp]
+    movsd.q xmm1, [rsp]
     divsd xmm0, xmm1
-    movsd.q [rsp + 0x38], xmm0
-    movsd.q xmm1, [rsp + 0x28]
-    movsd.q xmm0, [rsp + 0x38]
+    movsd.q xmm1, [rsp + 0x10]
     call check f64
-    mov.q [rsp + 0x8], rax
-    movsd.q xmm0, [rsp + 0x28]
-    movsd.q xmm1, [rsp + 0x18]
+    mov rbp, rax
+    movsd.q xmm0, [rsp + 0x10]
+    movsd.q xmm1, [rsp]
     divsd xmm0, xmm1
-    movsd.q [rsp + 0x18], xmm0
+    movsd.q [rsp], xmm0
     pxor xmm1, xmm1
-    movsd.q xmm0, [rsp + 0x18]
+    movsd.q xmm0, [rsp]
     subsd xmm1, xmm0
-    movsd.q xmm0, [rsp + 0x18]
+    movsd.q xmm0, [rsp]
     call check f64
-    mov.q [rsp + 0x10], rax
-    movsd.q xmm1, [rsp + 0x28]
-    movsd.q xmm0, [rsp + 0x18]
+    mov r12, rax
+    movsd.q xmm1, [rsp + 0x10]
+    movsd.q xmm0, [rsp]
     call check f64
-    mov.q rcx, [rsp + 0x8]
-    imul rcx, rcx, 3
-    mov.q rdx, [rsp]
+    imul rcx, rbp, 3
+    mov rdx, rbx
     add rdx, rcx
-    mov.q [rsp], rdx
-    mov.q rcx, [rsp + 0x10]
-    imul rcx, rcx, 5
-    mov.q rdx, [rsp]
-    add rdx, rcx
-    mov.q [rsp], rdx
+    mov rcx, rdx
+    imul rdx, r12, 5
+    add rcx, rdx
     imul rax, rax, 7
-    mov.q rcx, [rsp]
     add rcx, rax
     mov rax, rcx
-    add rsp, 0x48
+    add rsp, 0x20
+    pop r12
+    pop rbp
+    pop rbx
     ret
 run f32:
-    sub rsp, 0x48
-    movss.d [rsp + 0x18], xmm0
-    movss.d xmm0, [rip + 0xe23]
-    movss.d [rsp + 0x28], xmm0
-    movss.d xmm1, [rsp + 0x28]
-    movss.d xmm0, [rsp + 0x28]
+    push rbx
+    push rbp
+    push r12
+    sub rsp, 0x20
+    movss.d [rsp], xmm0
+    movss.d xmm0, [rip + 0xdec]
+    movss.d [rsp + 0x10], xmm0
+    movss.d xmm1, [rsp + 0x10]
+    movss.d xmm0, [rsp + 0x10]
     call check f32
-    mov.q [rsp], rax
-    movss.d xmm0, [rsp + 0x18]
-    movss.d xmm1, [rsp + 0x18]
+    mov rbx, rax
+    movss.d xmm0, [rsp]
+    movss.d xmm1, [rsp]
     divss xmm0, xmm1
-    movss.d [rsp + 0x38], xmm0
-    movss.d xmm1, [rsp + 0x28]
-    movss.d xmm0, [rsp + 0x38]
+    movss.d xmm1, [rsp + 0x10]
     call check f32
-    mov.q [rsp + 0x8], rax
-    movss.d xmm0, [rsp + 0x28]
-    movss.d xmm1, [rsp + 0x18]
+    mov rbp, rax
+    movss.d xmm0, [rsp + 0x10]
+    movss.d xmm1, [rsp]
     divss xmm0, xmm1
-    movss.d [rsp + 0x18], xmm0
+    movss.d [rsp], xmm0
     pxor xmm1, xmm1
-    movss.d xmm0, [rsp + 0x18]
+    movss.d xmm0, [rsp]
     subss xmm1, xmm0
-    movss.d xmm0, [rsp + 0x18]
+    movss.d xmm0, [rsp]
     call check f32
-    mov.q [rsp + 0x10], rax
-    movss.d xmm1, [rsp + 0x28]
-    movss.d xmm0, [rsp + 0x18]
+    mov r12, rax
+    movss.d xmm1, [rsp + 0x10]
+    movss.d xmm0, [rsp]
     call check f32
-    mov.q rcx, [rsp + 0x8]
-    imul rcx, rcx, 3
-    mov.q rdx, [rsp]
+    imul rcx, rbp, 3
+    mov rdx, rbx
     add rdx, rcx
-    mov.q [rsp], rdx
-    mov.q rcx, [rsp + 0x10]
-    imul rcx, rcx, 5
-    mov.q rdx, [rsp]
-    add rdx, rcx
-    mov.q [rsp], rdx
+    mov rcx, rdx
+    imul rdx, r12, 5
+    add rcx, rdx
     imul rax, rax, 7
-    mov.q rcx, [rsp]
     add rcx, rax
     mov rax, rcx
-    add rsp, 0x48
+    add rsp, 0x20
+    pop r12
+    pop rbp
+    pop rbx
     ret
 check f64:
+    mov rax, 1
     addsd xmm0, xmm1
     ucomisd xmm0, xmm0
-    sete al
-    jnp 7
-    mov al, 0
-7:
-    movzx rax, al
-    test al, al
-    jne 8
-    xor eax, eax
-    jmp 9
-8:
-    mov rax, 1
-9:
-    ucomisd xmm0, xmm0
-    setne cl
-    jnp 10
-    mov cl, 1
-10:
-    movzx rcx, cl
+    sete cl
+    jnp 6
+    mov cl, 0
+6:
+    movzx ecx, cl
+    xor edx, edx
     test cl, cl
-    jne 11
-    jmp 12
-11:
+    cmovne rdx, rax
+    mov rax, rdx
     add rax, 2
-12:
     ucomisd xmm0, xmm0
-    jae 13
-    jmp 14
-13:
-    add rax, 8
-14:
+    mov rcx, rdx
+    cmovne rcx, rax
+    cmovp rcx, rax
+    mov rdx, rcx
+    add rdx, 8
+    ucomisd xmm0, xmm0
+    mov rax, rcx
+    cmovae rax, rdx
     ret
 check f32:
+    mov rax, 1
     addss xmm0, xmm1
     ucomiss xmm0, xmm0
-    sete al
-    jnp 16
-    mov al, 0
-16:
-    movzx rax, al
-    test al, al
-    jne 17
-    xor eax, eax
-    jmp 18
-17:
-    mov rax, 1
-18:
-    ucomiss xmm0, xmm0
-    setne cl
-    jnp 19
-    mov cl, 1
-19:
-    movzx rcx, cl
+    sete cl
+    jnp 8
+    mov cl, 0
+8:
+    movzx ecx, cl
+    xor edx, edx
     test cl, cl
-    jne 20
-    jmp 21
-20:
+    cmovne rdx, rax
+    mov rax, rdx
     add rax, 2
-21:
     ucomiss xmm0, xmm0
-    jae 22
-    jmp 23
-22:
-    add rax, 8
-23:
+    mov rcx, rdx
+    cmovne rcx, rax
+    cmovp rcx, rax
+    mov rdx, rcx
+    add rdx, 8
+    ucomiss xmm0, xmm0
+    mov rax, rcx
+    cmovae rax, rdx
     ret
 =========== OPT LEVEL: none ===========
 finite:
-    test dil, dil
-    jne 1
-    jmp 1
-1:
     mov rax, 1
     ret
 main:
     push rbx
     push rbp
     sub rsp, 8
-    movsd.q xmm0, [rip + 0xf8e]
+    movsd.q xmm0, [rip + 0xf49]
     call run f64
     mov rbx, rax
-    movsd.q xmm0, [rip + 0xf7d]
+    movsd.q xmm0, [rip + 0xf38]
     cvtsd2ss xmm0, xmm0
     call run f32
     mov rbp, rax
-    movsd.q xmm1, [rip + 0xf67]
+    movsd.q xmm1, [rip + 0xf22]
     pxor xmm0, xmm0
     ucomisd xmm1, xmm0
     sete dil
-    jnp 3
+    jnp 2
     mov dil, 0
-3:
-    movzx rdi, dil
+2:
+    movzx edi, dil
     call finite
     add rbx, rbp
     add rbx, rax
@@ -242,7 +213,7 @@ run f64:
     push r12
     sub rsp, 0x20
     movsd.q [rsp], xmm0
-    movsd.q xmm0, [rip + 0xf19]
+    movsd.q xmm0, [rip + 0xed4]
     movsd.q [rsp + 0x10], xmm0
     movsd.q xmm1, [rsp + 0x10]
     movsd.q xmm0, [rsp + 0x10]
@@ -286,7 +257,7 @@ run f32:
     push r12
     sub rsp, 0x20
     movss.d [rsp], xmm0
-    movss.d xmm0, [rip + 0xe54]
+    movss.d xmm0, [rip + 0xe0f]
     movss.d [rsp + 0x10], xmm0
     movss.d xmm1, [rsp + 0x10]
     movss.d xmm0, [rsp + 0x10]
@@ -325,299 +296,246 @@ run f32:
     pop rbx
     ret
 check f64:
+    mov rdx, 1
     addsd xmm0, xmm1
     ucomisd xmm0, xmm0
-    sete al
-    jnp 7
-    mov al, 0
-7:
-    movzx rax, al
-    test al, al
-    jne 8
+    sete cl
+    jnp 6
+    mov cl, 0
+6:
+    movzx ecx, cl
     xor eax, eax
-    jmp 9
-8:
-    mov rax, 1
-9:
-    ucomisd xmm0, xmm0
-    setne cl
-    jnp 10
-    mov cl, 1
-10:
-    movzx rcx, cl
     test cl, cl
-    jne 11
-    jmp 12
-11:
-    add rax, 2
-12:
+    cmovne rax, rdx
+    mov rcx, rax
+    add rcx, 2
     ucomisd xmm0, xmm0
-    jae 13
-    jmp 14
-13:
-    add rax, 8
-14:
+    cmovne rax, rcx
+    cmovp rax, rcx
+    mov rcx, rax
+    add rcx, 8
+    ucomisd xmm0, xmm0
+    cmovae rax, rcx
     ret
 check f32:
+    mov rdx, 1
     addss xmm0, xmm1
     ucomiss xmm0, xmm0
-    sete al
-    jnp 16
-    mov al, 0
-16:
-    movzx rax, al
-    test al, al
-    jne 17
+    sete cl
+    jnp 8
+    mov cl, 0
+8:
+    movzx ecx, cl
     xor eax, eax
-    jmp 18
-17:
-    mov rax, 1
-18:
-    ucomiss xmm0, xmm0
-    setne cl
-    jnp 19
-    mov cl, 1
-19:
-    movzx rcx, cl
     test cl, cl
-    jne 20
-    jmp 21
-20:
-    add rax, 2
-21:
+    cmovne rax, rdx
+    mov rcx, rax
+    add rcx, 2
     ucomiss xmm0, xmm0
-    jae 22
-    jmp 23
-22:
-    add rax, 8
-23:
+    cmovne rax, rcx
+    cmovp rax, rcx
+    mov rcx, rax
+    add rcx, 8
+    ucomiss xmm0, xmm0
+    cmovae rax, rcx
     ret
 =========== OPT LEVEL: moderate-quick ===========
 finite:
-    test dil, dil
-    jne 1
-    jmp 1
-1:
     mov rax, 1
     ret
 main:
-    sub rsp, 0x18
-    movsd.q xmm0, [rip + 0xf92]
+    push rbx
+    push rbp
+    sub rsp, 8
+    movsd.q xmm0, [rip + 0xf2c]
     call run f64
-    mov.q [rsp], rax
-    movsd.q xmm0, [rip + 0xf80]
+    mov rbx, rax
+    movsd.q xmm0, [rip + 0xf1b]
     cvtsd2ss xmm0, xmm0
     call run f32
-    mov.q [rsp + 0x8], rax
-    movsd.q xmm0, [rip + 0xf68]
+    mov rbp, rax
+    movsd.q xmm0, [rip + 0xf05]
     pxor xmm1, xmm1
     ucomisd xmm0, xmm1
     sete dil
-    jnp 3
+    jnp 2
     mov dil, 0
-3:
-    movzx rdi, dil
+2:
+    movzx edi, dil
     call finite
-    mov.q rcx, [rsp]
-    mov.q rdx, [rsp + 0x8]
-    add rcx, rdx
-    mov rcx, rcx
+    mov rcx, rbx
+    add rcx, rbp
     add rcx, rax
-    mov.q [rsp], rcx
+    mov rax, rcx
     mov rcx, 0xfb
-    mov.q rax, [rsp]
     cqo
     idiv rcx
     mov rax, rdx
-    add rsp, 0x18
+    add rsp, 8
+    pop rbp
+    pop rbx
     ret
 run f64:
-    sub rsp, 0x48
-    movsd.q [rsp + 0x18], xmm0
-    movsd.q xmm0, [rip + 0xf12]
-    movsd.q [rsp + 0x28], xmm0
-    movsd.q xmm1, [rsp + 0x28]
-    movsd.q xmm0, [rsp + 0x28]
+    push rbx
+    push rbp
+    push r12
+    sub rsp, 0x20
+    movsd.q [rsp], xmm0
+    movsd.q xmm0, [rip + 0xeb4]
+    movsd.q [rsp + 0x10], xmm0
+    movsd.q xmm1, [rsp + 0x10]
+    movsd.q xmm0, [rsp + 0x10]
     call check f64
-    mov.q [rsp], rax
-    movsd.q xmm0, [rsp + 0x18]
-    movsd.q xmm1, [rsp + 0x18]
+    mov rbx, rax
+    movsd.q xmm0, [rsp]
+    movsd.q xmm1, [rsp]
     divsd xmm0, xmm1
-    movsd.q [rsp + 0x38], xmm0
-    movsd.q xmm1, [rsp + 0x28]
-    movsd.q xmm0, [rsp + 0x38]
+    movsd.q xmm1, [rsp + 0x10]
     call check f64
-    mov.q [rsp + 0x8], rax
-    movsd.q xmm0, [rsp + 0x28]
-    movsd.q xmm1, [rsp + 0x18]
+    mov rbp, rax
+    movsd.q xmm0, [rsp + 0x10]
+    movsd.q xmm1, [rsp]
     divsd xmm0, xmm1
-    movsd.q [rsp + 0x18], xmm0
+    movsd.q [rsp], xmm0
     pxor xmm1, xmm1
-    movsd.q xmm0, [rsp + 0x18]
+    movsd.q xmm0, [rsp]
     subsd xmm1, xmm0
-    movsd.q xmm0, [rsp + 0x18]
+    movsd.q xmm0, [rsp]
     call check f64
-    mov.q [rsp + 0x10], rax
-    movsd.q xmm1, [rsp + 0x28]
-    movsd.q xmm0, [rsp + 0x18]
+    mov r12, rax
+    movsd.q xmm1, [rsp + 0x10]
+    movsd.q xmm0, [rsp]
     call check f64
-    mov.q rcx, [rsp + 0x8]
-    imul rcx, rcx, 3
-    mov.q rdx, [rsp]
+    imul rcx, rbp, 3
+    mov rdx, rbx
     add rdx, rcx
-    mov.q [rsp], rdx
-    mov.q rcx, [rsp + 0x10]
-    imul rcx, rcx, 5
-    mov.q rdx, [rsp]
-    add rdx, rcx
-    mov.q [rsp], rdx
+    mov rcx, rdx
+    imul rdx, r12, 5
+    add rcx, rdx
     imul rax, rax, 7
-    mov.q rcx, [rsp]
     add rcx, rax
     mov rax, rcx
-    add rsp, 0x48
+    add rsp, 0x20
+    pop r12
+    pop rbp
+    pop rbx
     ret
 run f32:
-    sub rsp, 0x48
-    movss.d [rsp + 0x18], xmm0
-    movss.d xmm0, [rip + 0xe23]
-    movss.d [rsp + 0x28], xmm0
-    movss.d xmm1, [rsp + 0x28]
-    movss.d xmm0, [rsp + 0x28]
+    push rbx
+    push rbp
+    push r12
+    sub rsp, 0x20
+    movss.d [rsp], xmm0
+    movss.d xmm0, [rip + 0xdec]
+    movss.d [rsp + 0x10], xmm0
+    movss.d xmm1, [rsp + 0x10]
+    movss.d xmm0, [rsp + 0x10]
     call check f32
-    mov.q [rsp], rax
-    movss.d xmm0, [rsp + 0x18]
-    movss.d xmm1, [rsp + 0x18]
+    mov rbx, rax
+    movss.d xmm0, [rsp]
+    movss.d xmm1, [rsp]
     divss xmm0, xmm1
-    movss.d [rsp + 0x38], xmm0
-    movss.d xmm1, [rsp + 0x28]
-    movss.d xmm0, [rsp + 0x38]
+    movss.d xmm1, [rsp + 0x10]
     call check f32
-    mov.q [rsp + 0x8], rax
-    movss.d xmm0, [rsp + 0x28]
-    movss.d xmm1, [rsp + 0x18]
+    mov rbp, rax
+    movss.d xmm0, [rsp + 0x10]
+    movss.d xmm1, [rsp]
     divss xmm0, xmm1
-    movss.d [rsp + 0x18], xmm0
+    movss.d [rsp], xmm0
     pxor xmm1, xmm1
-    movss.d xmm0, [rsp + 0x18]
+    movss.d xmm0, [rsp]
     subss xmm1, xmm0
-    movss.d xmm0, [rsp + 0x18]
+    movss.d xmm0, [rsp]
     call check f32
-    mov.q [rsp + 0x10], rax
-    movss.d xmm1, [rsp + 0x28]
-    movss.d xmm0, [rsp + 0x18]
+    mov r12, rax
+    movss.d xmm1, [rsp + 0x10]
+    movss.d xmm0, [rsp]
     call check f32
-    mov.q rcx, [rsp + 0x8]
-    imul rcx, rcx, 3
-    mov.q rdx, [rsp]
+    imul rcx, rbp, 3
+    mov rdx, rbx
     add rdx, rcx
-    mov.q [rsp], rdx
-    mov.q rcx, [rsp + 0x10]
-    imul rcx, rcx, 5
-    mov.q rdx, [rsp]
-    add rdx, rcx
-    mov.q [rsp], rdx
+    mov rcx, rdx
+    imul rdx, r12, 5
+    add rcx, rdx
     imul rax, rax, 7
-    mov.q rcx, [rsp]
     add rcx, rax
     mov rax, rcx
-    add rsp, 0x48
+    add rsp, 0x20
+    pop r12
+    pop rbp
+    pop rbx
     ret
 check f64:
+    mov rax, 1
     addsd xmm0, xmm1
     ucomisd xmm0, xmm0
-    sete al
-    jnp 7
-    mov al, 0
-7:
-    movzx rax, al
-    test al, al
-    jne 8
-    xor eax, eax
-    jmp 9
-8:
-    mov rax, 1
-9:
-    ucomisd xmm0, xmm0
-    setne cl
-    jnp 10
-    mov cl, 1
-10:
-    movzx rcx, cl
+    sete cl
+    jnp 6
+    mov cl, 0
+6:
+    movzx ecx, cl
+    xor edx, edx
     test cl, cl
-    jne 11
-    jmp 12
-11:
+    cmovne rdx, rax
+    mov rax, rdx
     add rax, 2
-12:
     ucomisd xmm0, xmm0
-    jae 13
-    jmp 14
-13:
-    add rax, 8
-14:
+    mov rcx, rdx
+    cmovne rcx, rax
+    cmovp rcx, rax
+    mov rdx, rcx
+    add rdx, 8
+    ucomisd xmm0, xmm0
+    mov rax, rcx
+    cmovae rax, rdx
     ret
 check f32:
+    mov rax, 1
     addss xmm0, xmm1
     ucomiss xmm0, xmm0
-    sete al
-    jnp 16
-    mov al, 0
-16:
-    movzx rax, al
-    test al, al
-    jne 17
-    xor eax, eax
-    jmp 18
-17:
-    mov rax, 1
-18:
-    ucomiss xmm0, xmm0
-    setne cl
-    jnp 19
-    mov cl, 1
-19:
-    movzx rcx, cl
+    sete cl
+    jnp 8
+    mov cl, 0
+8:
+    movzx ecx, cl
+    xor edx, edx
     test cl, cl
-    jne 20
-    jmp 21
-20:
+    cmovne rdx, rax
+    mov rax, rdx
     add rax, 2
-21:
     ucomiss xmm0, xmm0
-    jae 22
-    jmp 23
-22:
-    add rax, 8
-23:
+    mov rcx, rdx
+    cmovne rcx, rax
+    cmovp rcx, rax
+    mov rdx, rcx
+    add rdx, 8
+    ucomiss xmm0, xmm0
+    mov rax, rcx
+    cmovae rax, rdx
     ret
 =========== OPT LEVEL: moderate ===========
 finite:
-    test dil, dil
-    jne 1
-    jmp 1
-1:
     mov rax, 1
     ret
 main:
     push rbx
     push rbp
     sub rsp, 8
-    movsd.q xmm0, [rip + 0xf8e]
+    movsd.q xmm0, [rip + 0xf49]
     call run f64
     mov rbx, rax
-    movsd.q xmm0, [rip + 0xf7d]
+    movsd.q xmm0, [rip + 0xf38]
     cvtsd2ss xmm0, xmm0
     call run f32
     mov rbp, rax
-    movsd.q xmm1, [rip + 0xf67]
+    movsd.q xmm1, [rip + 0xf22]
     pxor xmm0, xmm0
     ucomisd xmm1, xmm0
     sete dil
-    jnp 3
+    jnp 2
     mov dil, 0
-3:
-    movzx rdi, dil
+2:
+    movzx edi, dil
     call finite
     add rbx, rbp
     add rbx, rax
@@ -636,7 +554,7 @@ run f64:
     push r12
     sub rsp, 0x20
     movsd.q [rsp], xmm0
-    movsd.q xmm0, [rip + 0xf19]
+    movsd.q xmm0, [rip + 0xed4]
     movsd.q [rsp + 0x10], xmm0
     movsd.q xmm1, [rsp + 0x10]
     movsd.q xmm0, [rsp + 0x10]
@@ -680,7 +598,7 @@ run f32:
     push r12
     sub rsp, 0x20
     movss.d [rsp], xmm0
-    movss.d xmm0, [rip + 0xe54]
+    movss.d xmm0, [rip + 0xe0f]
     movss.d [rsp + 0x10], xmm0
     movss.d xmm1, [rsp + 0x10]
     movss.d xmm0, [rsp + 0x10]
@@ -719,100 +637,72 @@ run f32:
     pop rbx
     ret
 check f64:
+    mov rdx, 1
     addsd xmm0, xmm1
     ucomisd xmm0, xmm0
-    sete al
-    jnp 7
-    mov al, 0
-7:
-    movzx rax, al
-    test al, al
-    jne 8
+    sete cl
+    jnp 6
+    mov cl, 0
+6:
+    movzx ecx, cl
     xor eax, eax
-    jmp 9
-8:
-    mov rax, 1
-9:
-    ucomisd xmm0, xmm0
-    setne cl
-    jnp 10
-    mov cl, 1
-10:
-    movzx rcx, cl
     test cl, cl
-    jne 11
-    jmp 12
-11:
-    add rax, 2
-12:
+    cmovne rax, rdx
+    mov rcx, rax
+    add rcx, 2
     ucomisd xmm0, xmm0
-    jae 13
-    jmp 14
-13:
-    add rax, 8
-14:
+    cmovne rax, rcx
+    cmovp rax, rcx
+    mov rcx, rax
+    add rcx, 8
+    ucomisd xmm0, xmm0
+    cmovae rax, rcx
     ret
 check f32:
+    mov rdx, 1
     addss xmm0, xmm1
     ucomiss xmm0, xmm0
-    sete al
-    jnp 16
-    mov al, 0
-16:
-    movzx rax, al
-    test al, al
-    jne 17
+    sete cl
+    jnp 8
+    mov cl, 0
+8:
+    movzx ecx, cl
     xor eax, eax
-    jmp 18
-17:
-    mov rax, 1
-18:
-    ucomiss xmm0, xmm0
-    setne cl
-    jnp 19
-    mov cl, 1
-19:
-    movzx rcx, cl
     test cl, cl
-    jne 20
-    jmp 21
-20:
-    add rax, 2
-21:
+    cmovne rax, rdx
+    mov rcx, rax
+    add rcx, 2
     ucomiss xmm0, xmm0
-    jae 22
-    jmp 23
-22:
-    add rax, 8
-23:
+    cmovne rax, rcx
+    cmovp rax, rcx
+    mov rcx, rax
+    add rcx, 8
+    ucomiss xmm0, xmm0
+    cmovae rax, rcx
     ret
 =========== OPT LEVEL: all ===========
 finite:
-    test dil, dil
-    jne 1
-    jmp 1
-1:
     mov rax, 1
     ret
 main:
     push rbx
     push rbp
     sub rsp, 8
-    movsd.q xmm0, [rip + 0xf8e]
+    movsd.q xmm0, [rip + 0xf49]
     call run f64
     mov rbx, rax
-    movsd.q xmm0, [rip + 0xf7d]
+    movsd.q xmm0, [rip + 0xf38]
     cvtsd2ss xmm0, xmm0
     call run f32
     mov rbp, rax
-    movsd.q xmm1, [rip + 0xf67]
+    movsd.q xmm1, [rip + 0xf22]
     pxor xmm0, xmm0
     ucomisd xmm1, xmm0
     sete dil
-    jnp 3
+    jnp 2
     mov dil, 0
-3:
-    movzx rdi, dil
+2:
+    movzx edi, dil
     call finite
     add rbx, rbp
     add rbx, rax
@@ -831,7 +721,7 @@ run f64:
     push r12
     sub rsp, 0x20
     movsd.q [rsp], xmm0
-    movsd.q xmm0, [rip + 0xf19]
+    movsd.q xmm0, [rip + 0xed4]
     movsd.q [rsp + 0x10], xmm0
     movsd.q xmm1, [rsp + 0x10]
     movsd.q xmm0, [rsp + 0x10]
@@ -875,7 +765,7 @@ run f32:
     push r12
     sub rsp, 0x20
     movss.d [rsp], xmm0
-    movss.d xmm0, [rip + 0xe54]
+    movss.d xmm0, [rip + 0xe0f]
     movss.d [rsp + 0x10], xmm0
     movss.d xmm1, [rsp + 0x10]
     movss.d xmm0, [rsp + 0x10]
@@ -914,72 +804,48 @@ run f32:
     pop rbx
     ret
 check f64:
+    mov rdx, 1
     addsd xmm0, xmm1
     ucomisd xmm0, xmm0
-    sete al
-    jnp 7
-    mov al, 0
-7:
-    movzx rax, al
-    test al, al
-    jne 8
+    sete cl
+    jnp 6
+    mov cl, 0
+6:
+    movzx ecx, cl
     xor eax, eax
-    jmp 9
-8:
-    mov rax, 1
-9:
-    ucomisd xmm0, xmm0
-    setne cl
-    jnp 10
-    mov cl, 1
-10:
-    movzx rcx, cl
     test cl, cl
-    jne 11
-    jmp 12
-11:
-    add rax, 2
-12:
+    cmovne rax, rdx
+    mov rcx, rax
+    add rcx, 2
     ucomisd xmm0, xmm0
-    jae 13
-    jmp 14
-13:
-    add rax, 8
-14:
+    cmovne rax, rcx
+    cmovp rax, rcx
+    mov rcx, rax
+    add rcx, 8
+    ucomisd xmm0, xmm0
+    cmovae rax, rcx
     ret
 check f32:
+    mov rdx, 1
     addss xmm0, xmm1
     ucomiss xmm0, xmm0
-    sete al
-    jnp 16
-    mov al, 0
-16:
-    movzx rax, al
-    test al, al
-    jne 17
+    sete cl
+    jnp 8
+    mov cl, 0
+8:
+    movzx ecx, cl
     xor eax, eax
-    jmp 18
-17:
-    mov rax, 1
-18:
-    ucomiss xmm0, xmm0
-    setne cl
-    jnp 19
-    mov cl, 1
-19:
-    movzx rcx, cl
     test cl, cl
-    jne 20
-    jmp 21
-20:
-    add rax, 2
-21:
+    cmovne rax, rdx
+    mov rcx, rax
+    add rcx, 2
     ucomiss xmm0, xmm0
-    jae 22
-    jmp 23
-22:
-    add rax, 8
-23:
+    cmovne rax, rcx
+    cmovp rax, rcx
+    mov rcx, rax
+    add rcx, 8
+    ucomiss xmm0, xmm0
+    cmovae rax, rcx
     ret
 =========== OPT LEVEL: aggresive ===========
 main:
@@ -990,9 +856,9 @@ main:
     push r14
     push r15
     sub rsp, 0x28
-    movsd.q xmm0, [rip + 0xfa4]
+    movsd.q xmm0, [rip + 0xf51]
     movsd.q [rsp + 0x18], xmm0
-    movsd.q xmm0, [rip + 0xf8c]
+    movsd.q xmm0, [rip + 0xf39]
     movsd.q [rsp + 0x8], xmm0
     movsd.q xmm0, [rsp + 0x18]
     movsd.q xmm1, [rsp + 0x18]
@@ -1008,8 +874,8 @@ main:
     movsd.q xmm0, [rsp + 0x8]
     divsd xmm1, xmm0
     movsd.q [rsp + 0x8], xmm1
-    movsd.q xmm0, [rsp + 0x8]
     pxor xmm1, xmm1
+    movsd.q xmm0, [rsp + 0x8]
     subsd xmm1, xmm0
     movsd.q xmm0, [rsp + 0x8]
     call check f64
@@ -1018,9 +884,9 @@ main:
     movsd.q xmm0, [rsp + 0x8]
     call check f64
     mov r13, rax
-    movss.d xmm0, [rip + 0xf03]
+    movss.d xmm0, [rip + 0xeb0]
     movss.d [rsp + 0x18], xmm0
-    movsd.q xmm0, [rip + 0xee3]
+    movsd.q xmm0, [rip + 0xe90]
     movsd.q [rsp + 0x8], xmm0
     movss.d xmm0, [rsp + 0x18]
     movss.d xmm1, [rsp + 0x18]
@@ -1049,18 +915,6 @@ main:
     movss.d xmm0, [rsp + 0x8]
     call check f32
     mov rsi, rax
-    movsd.q xmm1, [rip + 0xe38]
-    pxor xmm0, xmm0
-    ucomisd xmm1, xmm0
-    sete al
-    jnp 1
-    mov al, 0
-1:
-    movzx rax, al
-    test al, al
-    jne 2
-    jmp 2
-2:
     imul rcx, r15, 3
     mov.q rax, [rsp]
     add rax, rcx
@@ -1092,70 +946,46 @@ main:
     pop rbx
     ret
 check f64:
+    mov rdx, 1
     addsd xmm0, xmm1
     ucomisd xmm0, xmm0
-    sete al
-    jnp 4
-    mov al, 0
-4:
-    movzx rax, al
-    test al, al
-    jne 5
+    sete cl
+    jnp 2
+    mov cl, 0
+2:
+    movzx ecx, cl
     xor eax, eax
-    jmp 6
-5:
-    mov rax, 1
-6:
-    ucomisd xmm0, xmm0
-    setne cl
-    jnp 7
-    mov cl, 1
-7:
-    movzx rcx, cl
     test cl, cl
-    jne 8
-    jmp 9
-8:
-    add rax, 2
-9:
+    cmovne rax, rdx
+    mov rcx, rax
+    add rcx, 2
     ucomisd xmm0, xmm0
-    jae 10
-    jmp 11
-10:
-    add rax, 8
-11:
+    cmovne rax, rcx
+    cmovp rax, rcx
+    mov rcx, rax
+    add rcx, 8
+    ucomisd xmm0, xmm0
+    cmovae rax, rcx
     ret
 check f32:
+    mov rdx, 1
     addss xmm0, xmm1
     ucomiss xmm0, xmm0
-    sete al
-    jnp 13
-    mov al, 0
-13:
-    movzx rax, al
-    test al, al
-    jne 14
+    sete cl
+    jnp 4
+    mov cl, 0
+4:
+    movzx ecx, cl
     xor eax, eax
-    jmp 15
-14:
-    mov rax, 1
-15:
-    ucomiss xmm0, xmm0
-    setne cl
-    jnp 16
-    mov cl, 1
-16:
-    movzx rcx, cl
     test cl, cl
-    jne 17
-    jmp 18
-17:
-    add rax, 2
-18:
+    cmovne rax, rdx
+    mov rcx, rax
+    add rcx, 2
     ucomiss xmm0, xmm0
-    jae 19
-    jmp 20
-19:
-    add rax, 8
-20:
+    cmovne rax, rcx
+    cmovp rax, rcx
+    mov rcx, rax
+    add rcx, 8
+    ucomiss xmm0, xmm0
+    cmovae rax, rcx
     ret

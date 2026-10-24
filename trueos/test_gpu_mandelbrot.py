@@ -128,7 +128,7 @@ def main():
         compiler = os.environ.get('ODIN_SON_DESKTOP')
         if not compiler:
             compiler = work/'compiler'
-            run([odin, 'build', ROOT, '-out:'+str(compiler)])
+            run([odin, 'build', ROOT / 'odinc', '-out:'+str(compiler)])
         sdk = run([odin, 'root']).stdout.decode().strip()
         env = dict(os.environ, ODIN_ROOT=sdk)
         native_object = ROOT/'trueos/build/odin-son.o'

@@ -8,21 +8,21 @@ main:
     add rcx, 1
     cmp rcx, 5
     je 4
-    mov.q [rsp - 0x8], rax
-    xor edx, edx
+    mov rdx, rax
+    xor ebx, ebx
 2:
-    add rdx, 1
-    cmp rdx, 2
-    sete bl
-    movzx rbx, bl
-    mov.q rbp, [rsp - 0x8]
-    add rbp, 1
-    test bl, bl
+    add rbx, 1
+    cmp rbx, 2
+    sete bpl
+    movzx ebp, bpl
+    mov rsi, rdx
+    add rsi, 1
+    test bpl, bpl
     jne 3
-    mov.q [rsp - 0x8], rbp
+    mov rdx, rsi
     jmp 2
 3:
-    mov rax, rbp
+    mov rax, rsi
     jmp 1
 4:
     pop rbp
@@ -42,7 +42,7 @@ main:
     add rax, 1
     cmp rax, 2
     sete sil
-    movzx rsi, sil
+    movzx esi, sil
     add rdx, 1
     test sil, sil
     jne 3
@@ -62,21 +62,21 @@ main:
     add rcx, 1
     cmp rcx, 5
     je 4
-    mov.q [rsp - 0x8], rax
-    xor edx, edx
+    mov rdx, rax
+    xor ebx, ebx
 2:
-    add rdx, 1
-    cmp rdx, 2
-    sete bl
-    movzx rbx, bl
-    mov.q rbp, [rsp - 0x8]
-    add rbp, 1
-    test bl, bl
+    add rbx, 1
+    cmp rbx, 2
+    sete bpl
+    movzx ebp, bpl
+    mov rsi, rdx
+    add rsi, 1
+    test bpl, bpl
     jne 3
-    mov.q [rsp - 0x8], rbp
+    mov rdx, rsi
     jmp 2
 3:
-    mov rax, rbp
+    mov rax, rsi
     jmp 1
 4:
     pop rbp
@@ -96,7 +96,7 @@ main:
     add rax, 1
     cmp rax, 2
     sete sil
-    movzx rsi, sil
+    movzx esi, sil
     add rdx, 1
     test sil, sil
     jne 3
@@ -116,18 +116,17 @@ main:
     add rdx, 1
     cmp rdx, 2
     sete dil
-    movzx rdi, dil
+    movzx edi, dil
     mov rax, rsi
     add rax, 1
-    mov rsi, rax
     test dil, dil
+    mov rsi, rax
     je 2
     mov rdx, rcx
-    add rdx, 1
-    add rcx, 2
-    cmp rcx, 5
+    add rdx, 2
+    add rcx, 1
+    cmp rdx, 5
     mov rsi, rax
-    mov rcx, rdx
     jne 1
     ret
 =========== OPT LEVEL: aggresive ===========

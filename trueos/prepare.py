@@ -5,6 +5,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parent.parent
 NATIVE = ROOT / 'trueos'
+COMPILER = ROOT / 'odinc'
 BUILD = NATIVE / 'build'
 SDK = Path(sys.argv[1]).resolve()
 
@@ -20,10 +21,12 @@ def overlay(source, dest, replace=()):
 stage = BUILD / 'src'
 stage.mkdir(parents=True, exist_ok=True)
 for name in ('gen.odin', 'elf.odin', 'wasm_object.odin', 'gpu_native.odin'):
-    shutil.copy2(ROOT / name, stage / name)
+    (stage / name).write_text((COMPILER / name).read_text().replace('package odin_son', 'package main').replace('"../', '"'))
 for name in ('bac', 'typecheck', 'utils'):
-    shutil.copytree(ROOT / name, stage / name, dirs_exist_ok=True)
+    shutil.copytree((COMPILER if name == 'typecheck' else ROOT) / name, stage / name, dirs_exist_ok=True)
 shutil.copytree(ROOT / 'vendored/gam/util', stage / 'vendored/gam/util', dirs_exist_ok=True)
+for source in (stage / 'typecheck').glob('*.odin'):
+    source.write_text(source.read_text().replace('"../../', '"../'))
 for test in stage.rglob('*_test.odin'):
     test.unlink()
 shutil.copytree(NATIVE / 'platform', stage / 'platform', dirs_exist_ok=True)
@@ -46,7 +49,8 @@ if b'intrinsics.syscall' in boids or b'trueos_cabi_shell_attached_write' not in 
 gpu_boids = (ROOT / 'examples/gpu-boids-trueos/main.odin').read_text()
 gpu_phy = (ROOT / 'examples/gpu-boids-trueos/phy.odin').read_text().removeprefix('package main\n')
 (stage / 'gpu-boids.source').write_text(gpu_boids + '\n' + gpu_phy)
-loader = (ROOT / 'loader.odin').read_text().replace('#+build !wasm32\n', '')
+loader = (COMPILER / 'loader.odin').read_text().replace('#+build !wasm32\n', '')
+loader = loader.replace('package odin_son', 'package main').replace('"../', '"')
 loader = loader.replace('import "core:os"', 'import os "platform"').replace('import "core:path/filepath"', '').replace('filepath.', 'os.')
 loader = loader.replace('fmt.assertf(oerr == nil, "cannot open module directory %q", dir)', 'if oerr != nil { fmt.eprintln("cannot open module directory", dir); ctx.error_cnt += 1; return mid }')
 loader = loader.replace('fmt.assertf(rerr == nil, "cannot read module directory %q", dir)', 'if rerr != nil { fmt.eprintln("cannot read module directory", dir); ctx.error_cnt += 1; return mid }')

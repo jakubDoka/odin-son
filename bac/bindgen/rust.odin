@@ -260,10 +260,7 @@ rust_decl :: proc(g: ^Rust_Gen, ty: ^runtime.Type_Info) {
 generate_rust :: proc(api: []API_Proc) {
 	err := os.make_directory_all("bac/bindgen/rust/src")
 	assert(err == nil || err == .Exist)
-	f, ferr := os.open(
-		"bac/bindgen/rust/src/sys.rs",
-		{.Create, .Write, .Trunc},
-	)
+	f, ferr := os.open("bac/bindgen/rust/src/sys.rs", {.Create, .Write, .Trunc})
 	assert(ferr == nil)
 	defer os.close(f)
 	g := Rust_Gen {
@@ -308,7 +305,6 @@ pub struct DynamicArray<T> { pub data: *mut T, pub len: isize, pub cap: isize, p
 			if len(results.types) > 0 do fmt.fprintf(f, " -> %v", rust_type(&g, results.types[len(results.types) - 1], fmt.tprintf("%v_%v_result", rust_prefix(entry.package_path), entry.name)))
 			fmt.fprintln(f, ";")
 		} else {
-			assert(!entry.trhead_local)
 			fmt.fprintfln(
 				f,
 				"pub static %v_%v: %v;",
@@ -483,8 +479,7 @@ generate_rust_api :: proc(api: []API_Proc) {
 			mut_node := false
 			for ty in params.types[1:] do mut_node ||= rust_safe_type(ty) == "&mut NodeId"
 			borrow := checked && mut_node && !state_receiver
-			self_borrow :=
-				"mut " if state_receiver else ("'p " if borrow else "")
+			self_borrow := "mut " if state_receiver else ("'p " if borrow else "")
 			fmt.fprintf(
 				f,
 				"pub %vfn %v%v(&%vself",
@@ -514,13 +509,7 @@ generate_rust_api :: proc(api: []API_Proc) {
 					checker := "self.proc" if state_receiver else "self"
 					switch st {
 					case "NodeId":
-						fmt.fprintfln(
-							f,
-							"let %v = %v.check(%v);",
-							name,
-							checker,
-							name,
-						)
+						fmt.fprintfln(f, "let %v = %v.check(%v);", name, checker, name)
 					case "&mut NodeId":
 						fmt.fprintfln(
 							f,
@@ -536,12 +525,7 @@ generate_rust_api :: proc(api: []API_Proc) {
 				for ty, i in params.types[1:] {
 					if rust_safe_type(ty) != "&[NodeId]" do continue
 					name := rust_ident(params.names[i + 1])
-					fmt.fprintfln(
-						f,
-						"self.proc.with_node_ids(%v, |%v| {{",
-						name,
-						name,
-					)
+					fmt.fprintfln(f, "self.proc.with_node_ids(%v, |%v| {{", name, name)
 				}
 				fmt.fprint(f, "let result = unsafe { self.proc.")
 				fmt.fprintf(f, "%v(", rust_ident(entry.name))

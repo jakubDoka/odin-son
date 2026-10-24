@@ -82,7 +82,9 @@ Class_Flag :: bac.Class_Flag
 		0b10, // Splat
 		0b10, // Ctz
 		0b10, // Simd_Extract_Lsbs
+		0b10, // Simd_Extract_Msbs
 		0b10, // Simd_Reduce_Add_Bisect
+		0b10, // Select
 		0b10000000, // Scope
 		0b10, // Lazy_Phi
 	},
@@ -107,8 +109,8 @@ Class_Flag :: bac.Class_Flag
 		25 = 1, // Ret -> Tup
 		27 = 2, // CInt -> CInt
 		55 = 1, // Proc_Addr -> Tup
-		69 = 1, // Scope -> Scope
-		70 = 0,
+		71 = 1, // Scope -> Scope
+		72 = 0,
 	},
 	node_flags = {
 		{}, // Nil
@@ -179,7 +181,9 @@ Class_Flag :: bac.Class_Flag
 		{Class_Flag.Interned}, // Splat
 		{Class_Flag.Interned}, // Ctz
 		{Class_Flag.Interned}, // Simd_Extract_Lsbs
+		{Class_Flag.Interned}, // Simd_Extract_Msbs
 		{Class_Flag.Interned}, // Simd_Reduce_Add_Bisect
+		{Class_Flag.Interned}, // Select
 		{}, // Scope
 		{}, // Lazy_Phi
 	},
@@ -204,8 +208,8 @@ Class_Flag :: bac.Class_Flag
 		25 = bac.Tup,
 		27 = bac.CInt,
 		55 = bac.Tup,
-		69 = Scope,
-		70 = {},
+		71 = Scope,
+		72 = {},
 	}),
 	node_kind = nil when #config(NO_FMT, false) else Node_Type,
 }
@@ -279,7 +283,9 @@ Node_Type :: enum u16 {
 	Splat,
 	Ctz,
 	Simd_Extract_Lsbs,
+	Simd_Extract_Msbs,
 	Simd_Reduce_Add_Bisect,
+	Select,
 	Scope,
 	Lazy_Phi,
 }
@@ -306,21 +312,21 @@ add_lazy_phi :: #force_inline proc(prc: ^bac.Proc, name: string, dt: bac.Node_Da
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	when false {}
-	else when T == bac.No_Extra {return 1}
-	else when T == bac.Local {return 4}
+	else when T == bac.CInt {return 6}
 	else when T == bac.Call {return 3}
-	else when T == Scope {return 7}
 	else when T == bac.Cfg {return 0}
 	else when T == bac.Dbg_Sym {return 2}
-	else when T == bac.CInt {return 6}
+	else when T == bac.Local {return 4}
+	else when T == bac.No_Extra {return 1}
+	else when T == Scope {return 7}
 	else when T == bac.Tup {return 5}
 	else {#panic(`the passed type is not subclass of anything`)}
 }
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.Local) % bac.PRECISION == 0)
+#assert(size_of(bac.CInt) % bac.PRECISION == 0)
 #assert(size_of(bac.Call) % bac.PRECISION == 0)
-#assert(size_of(Scope) % bac.PRECISION == 0)
 #assert(size_of(bac.Cfg) % bac.PRECISION == 0)
 #assert(size_of(bac.Dbg_Sym) % bac.PRECISION == 0)
-#assert(size_of(bac.CInt) % bac.PRECISION == 0)
+#assert(size_of(bac.Local) % bac.PRECISION == 0)
+#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
+#assert(size_of(Scope) % bac.PRECISION == 0)
 #assert(size_of(bac.Tup) % bac.PRECISION == 0)

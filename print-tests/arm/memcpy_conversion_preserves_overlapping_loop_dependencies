@@ -1,0 +1,212 @@
+=========== OPT LEVEL: none-quick ===========
+copy_forward:
+    movz x3, #0
+    movz x4, #1
+1:
+    cmp x3, x2
+    b.ge 2
+    add x5, x1, x3
+    ldrb w5, [x5]
+    add x6, x0, x3
+    strb w5, [x6]
+    add x3, x3, x4
+    b 1
+2:
+    ret
+main:
+    sub sp, sp, #32
+    stp x29, x30, [xzr]
+    movz x0, #513
+    movk x0, #1027, lsl #16
+    movk x0, #1541, lsl #32
+    movk x0, #2055, lsl #48
+    add x1, sp, #16
+    str x0, [x1]
+    movz x0, #1
+    add x1, sp, #16
+    add x0, x0, x1
+    add x1, sp, #16
+    movz x2, #7
+    bl 0xffffffd4
+    add x0, sp, #16
+    movz x1, #7
+    add x0, x0, x1
+    ldrb w0, [x0]
+    uxtb w0, w0
+    ldp x29, x30, [xzr]
+    add sp, sp, #32
+    ret
+=========== OPT LEVEL: none ===========
+copy_forward:
+    movz x3, #0
+    movz x6, #1
+1:
+    cmp x3, x2
+    b.ge 2
+    add x4, x1, x3
+    ldrb w5, [x4]
+    add x4, x0, x3
+    strb w5, [x4]
+    add x3, x3, x6
+    b 1
+2:
+    ret
+main:
+    sub sp, sp, #32
+    stp x29, x30, [xzr]
+    movz x1, #513
+    movk x1, #1027, lsl #16
+    movk x1, #1541, lsl #32
+    movk x1, #2055, lsl #48
+    add x0, sp, #16
+    str x1, [x0]
+    movz x1, #1
+    add x0, sp, #16
+    add x0, x1, x0
+    add x1, sp, #16
+    movz x2, #7
+    bl 0xffffffd4
+    add x1, sp, #16
+    movz x0, #7
+    add x0, x1, x0
+    ldrb w0, [x0]
+    uxtb w0, w0
+    ldp x29, x30, [xzr]
+    add sp, sp, #32
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+copy_forward:
+    movz x3, #0
+    movz x4, #1
+1:
+    cmp x3, x2
+    b.ge 2
+    add x5, x1, x3
+    ldrb w5, [x5]
+    add x6, x0, x3
+    strb w5, [x6]
+    add x3, x3, x4
+    b 1
+2:
+    ret
+main:
+    sub sp, sp, #32
+    stp x29, x30, [xzr]
+    movz x0, #513
+    movk x0, #1027, lsl #16
+    movk x0, #1541, lsl #32
+    movk x0, #2055, lsl #48
+    add x1, sp, #16
+    str x0, [x1]
+    movz x0, #1
+    add x1, sp, #16
+    add x0, x0, x1
+    add x1, sp, #16
+    movz x2, #7
+    bl 0xffffffd4
+    add x0, sp, #16
+    movz x1, #7
+    add x0, x0, x1
+    ldrb w0, [x0]
+    uxtb w0, w0
+    ldp x29, x30, [xzr]
+    add sp, sp, #32
+    ret
+=========== OPT LEVEL: moderate ===========
+copy_forward:
+    movz x3, #0
+    movz x6, #1
+1:
+    cmp x3, x2
+    b.ge 2
+    add x4, x1, x3
+    ldrb w5, [x4]
+    add x4, x0, x3
+    strb w5, [x4]
+    add x3, x3, x6
+    b 1
+2:
+    ret
+main:
+    sub sp, sp, #32
+    stp x29, x30, [xzr]
+    movz x1, #513
+    movk x1, #1027, lsl #16
+    movk x1, #1541, lsl #32
+    movk x1, #2055, lsl #48
+    add x0, sp, #16
+    str x1, [x0]
+    movz x1, #1
+    add x0, sp, #16
+    add x0, x1, x0
+    add x1, sp, #16
+    movz x2, #7
+    bl 0xffffffd4
+    add x1, sp, #16
+    movz x0, #7
+    add x0, x1, x0
+    ldrb w0, [x0]
+    uxtb w0, w0
+    ldp x29, x30, [xzr]
+    add sp, sp, #32
+    ret
+=========== OPT LEVEL: all ===========
+copy_forward:
+    sub sp, sp, #16
+    stp x29, x30, [xzr]
+    movz x3, #0
+    cmp x2, x3
+    b.le 1
+    bl 0xffffff80
+    b 1
+1:
+    ldp x29, x30, [xzr]
+    add sp, sp, #16
+    ret
+main:
+    sub sp, sp, #32
+    stp x29, x30, [xzr]
+    movz x1, #513
+    movk x1, #1027, lsl #16
+    movk x1, #1541, lsl #32
+    movk x1, #2055, lsl #48
+    add x0, sp, #16
+    str x1, [x0]
+    movz x1, #1
+    add x0, sp, #16
+    add x0, x1, x0
+    add x1, sp, #16
+    movz x2, #7
+    bl 0xffffffd8
+    add x1, sp, #16
+    movz x0, #7
+    add x0, x1, x0
+    ldrb w0, [x0]
+    uxtb w0, w0
+    ldp x29, x30, [xzr]
+    add sp, sp, #32
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    sub sp, sp, #32
+    stp x29, x30, [xzr]
+    movz x1, #513
+    movk x1, #1027, lsl #16
+    movk x1, #1541, lsl #32
+    movk x1, #2055, lsl #48
+    add x0, sp, #16
+    str x1, [x0]
+    movz x1, #1
+    add x0, sp, #16
+    add x0, x1, x0
+    add x1, sp, #16
+    movz x2, #7
+    bl 0xffffff80
+    add x1, sp, #16
+    movz x0, #7
+    add x0, x1, x0
+    ldrb w0, [x0]
+    uxtb w0, w0
+    ldp x29, x30, [xzr]
+    add sp, sp, #32
+    ret

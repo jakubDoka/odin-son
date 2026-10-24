@@ -1,14 +1,13 @@
 =========== OPT LEVEL: none-quick ===========
 with_args:
-    mov.q [rsp - 0x8], rdi
-    mov.q rax, [rsp - 0x8]
+    push rbx
+    mov rax, rdi
     add rsi, rax
     mov.q [r8], rsi
     add rdx, rcx
     mov.q [r9], rdx
-    mov.q rax, [rsp - 0x8]
     add rax, rcx
-    mov rax, rax
+    pop rbx
     ret
 main:
     sub rsp, 0x18
@@ -19,13 +18,12 @@ main:
     lea r8, [rsp]
     lea r9, [rsp + 0x8]
     call with_args
-    mov.q [rsp + 0x10], rax
+    mov rcx, rax
     mov.q rax, [rsp]
     imul rax, rax, 0x64
-    mov.q rcx, [rsp + 0x8]
-    imul rcx, rcx, 0xa
-    add rax, rcx
-    mov.q rcx, [rsp + 0x10]
+    mov.q rdx, [rsp + 0x8]
+    imul rdx, rdx, 0xa
+    add rax, rdx
     add rax, rcx
     add rsp, 0x18
     ret
@@ -58,15 +56,14 @@ main:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 with_args:
-    mov.q [rsp - 0x8], rdi
-    mov.q rax, [rsp - 0x8]
+    push rbx
+    mov rax, rdi
     add rsi, rax
     mov.q [r8], rsi
     add rdx, rcx
     mov.q [r9], rdx
-    mov.q rax, [rsp - 0x8]
     add rax, rcx
-    mov rax, rax
+    pop rbx
     ret
 main:
     sub rsp, 0x18
@@ -77,13 +74,12 @@ main:
     lea r8, [rsp]
     lea r9, [rsp + 0x8]
     call with_args
-    mov.q [rsp + 0x10], rax
+    mov rcx, rax
     mov.q rax, [rsp]
     imul rax, rax, 0x64
-    mov.q rcx, [rsp + 0x8]
-    imul rcx, rcx, 0xa
-    add rax, rcx
-    mov.q rcx, [rsp + 0x10]
+    mov.q rdx, [rsp + 0x8]
+    imul rdx, rdx, 0xa
+    add rax, rdx
     add rax, rcx
     add rsp, 0x18
     ret

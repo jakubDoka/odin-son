@@ -1,123 +1,85 @@
 =========== OPT LEVEL: none-quick ===========
 apply:
-    sub sp, sp, #16
-    str x1, [xzr]
-    movz x1, #1
-    cmp w0, w1
-    b.eq 1
-    str x17, [xzr, #-16]!
-    ldr x17, [xzr, #16]
-    str x17, [xzr, #24]
-    ldr x17, [xzr], #16
-    b 2
-1:
-    movz x0, #100
-    ldr x1, [xzr]
-    sub x0, x0, x1
-    str x0, [xzr, #8]
-2:
-    ldr x0, [xzr, #8]
-    add sp, sp, #16
+    movz x2, #100
+    sub x2, x2, x1
+    movz x3, #1
+    cmp x0, x3
+    csel x0, x2, x1, eq
     ret
 main:
     sub sp, sp, #16
     stp x29, x30, [xzr]
     movz x0, #1
     movz x1, #9
-    bl 0xffffffbc
+    bl 0xffffffe8
     ldp x29, x30, [xzr]
     add sp, sp, #16
     ret
 =========== OPT LEVEL: none ===========
 apply:
+    movz x2, #100
+    sub x3, x2, x1
     movz x2, #1
-    cmp w0, w2
-    b.eq 1
-    b 2
-1:
-    movz x0, #100
-    sub x1, x0, x1
-2:
-    mov x0, x1
+    cmp x0, x2
+    csel x0, x3, x1, eq
     ret
 main:
     sub sp, sp, #16
     stp x29, x30, [xzr]
     movz x0, #1
     movz x1, #9
-    bl 0xffffffe0
+    bl 0xffffffe8
     ldp x29, x30, [xzr]
     add sp, sp, #16
     ret
 =========== OPT LEVEL: moderate-quick ===========
 apply:
-    sub sp, sp, #16
-    str x1, [xzr]
-    movz x1, #1
-    cmp w0, w1
-    b.eq 1
-    str x17, [xzr, #-16]!
-    ldr x17, [xzr, #16]
-    str x17, [xzr, #24]
-    ldr x17, [xzr], #16
-    b 2
-1:
-    movz x0, #100
-    ldr x1, [xzr]
-    sub x0, x0, x1
-    str x0, [xzr, #8]
-2:
-    ldr x0, [xzr, #8]
-    add sp, sp, #16
+    movz x2, #100
+    sub x2, x2, x1
+    movz x3, #1
+    cmp x0, x3
+    csel x0, x2, x1, eq
     ret
 main:
     sub sp, sp, #16
     stp x29, x30, [xzr]
     movz x0, #1
     movz x1, #9
-    bl 0xffffffbc
+    bl 0xffffffe8
     ldp x29, x30, [xzr]
     add sp, sp, #16
     ret
 =========== OPT LEVEL: moderate ===========
 apply:
+    movz x2, #100
+    sub x3, x2, x1
     movz x2, #1
-    cmp w0, w2
-    b.eq 1
-    b 2
-1:
-    movz x0, #100
-    sub x1, x0, x1
-2:
-    mov x0, x1
+    cmp x0, x2
+    csel x0, x3, x1, eq
     ret
 main:
     sub sp, sp, #16
     stp x29, x30, [xzr]
     movz x0, #1
     movz x1, #9
-    bl 0xffffffe0
+    bl 0xffffffe8
     ldp x29, x30, [xzr]
     add sp, sp, #16
     ret
 =========== OPT LEVEL: all ===========
 apply:
+    movz x2, #100
+    sub x3, x2, x1
     movz x2, #1
-    cmp w0, w2
-    b.eq 1
-    b 2
-1:
-    movz x0, #100
-    sub x1, x0, x1
-2:
-    mov x0, x1
+    cmp x0, x2
+    csel x0, x3, x1, eq
     ret
 main:
     sub sp, sp, #16
     stp x29, x30, [xzr]
     movz x0, #1
     movz x1, #9
-    bl 0xffffffe0
+    bl 0xffffffe8
     ldp x29, x30, [xzr]
     add sp, sp, #16
     ret

@@ -192,7 +192,9 @@ when SPEC_NOT_PRESENT {
 		Splat,
 		Ctz,
 		Simd_Extract_Lsbs,
+		Simd_Extract_Msbs,
 		Simd_Reduce_Add_Bisect,
+		Select,
 	}
 
 	inherit_idx_of :: proc($T: typeid) -> u8 {return 0}
@@ -221,6 +223,12 @@ when SPEC_NOT_PRESENT {
 	add_mem :: add_jump
 	add_split_mem :: add_jump
 	add_poison :: proc(prc: ^Proc, name: string) -> Node_ID {return 0}
+	add_select :: proc(
+		prc: ^Proc,
+		name: string,
+		dt: Node_Datatype,
+		on_true, on_false, condition: Node_ID,
+	) -> Node_ID {return 0}
 }
 
 Dbg_Sym :: struct {
@@ -398,8 +406,8 @@ Node :: struct {
 	},
 	using gvn_group: bit_field u32 {
 		gvn:          u32  | 26,
-		scan_split:   bool | 1,
 		extra_dwords: int  | 4,
+		must_spill:   bool | 1,
 	},
 	input_idx:       u32,
 	input_count:     u16,
@@ -492,7 +500,8 @@ Opt_Flag :: enum int {
 }
 
 Peep_Ctx :: struct {
-	using prc: ^Proc,
+	using prc:       ^Proc,
+	using opt_hints: Opt_Hints,
 }
 
 ensure_spec_pass_match :: #force_inline proc(ctx: ^Proc) {
@@ -720,11 +729,12 @@ assemble_args :: proc(
 compute_weight :: proc(prc: ^Proc, all: []Node_ID) {
 	@(static, rodata)
 	WEIGHTS := #partial [Node_Type]u8 {
-		.Loop = 5,
-		.Call = 10,
-		.CInt = 1,
-		.Neg ..= .U_Conv      = 1,
-		.Add ..= .And_Not      = 1,
+		.Loop   = 5,
+		.Call   = 10,
+		.CInt   = 1,
+		.Select = 1,
+		.Neg ..= .U_Conv        = 1,
+		.Add ..= .And_Not        = 1,
 	}
 
 	prc.weight = 1
@@ -739,15 +749,25 @@ compute_weight :: proc(prc: ^Proc, all: []Node_ID) {
 	}
 }
 
-// mem is borrowed
-@(tag = "api")
+/// Extract the stencil from the function. The resulting stencil does not own
+/// the .mem, you need to clone it if you want to save the stencil for later.
+/// Stencil represents a compressed state of a graph, you can recover the
+/// function with mount_stencil. You usually want to store the stencils when
+/// collecting functions for inlining.
+///
+/// Note that stencil can be stored on disk and loaded just fine, it does not
+/// contain any global pointers that break the integrity.
+@(tag = "api,priority=95")
 get_stencil :: proc(prc: ^Proc) -> (s: Stencil) {
 	s.mem = prc.mem.ptr[:prc.mem.pos]
 	s.meta = prc.meta
 	return
 }
 
-@(tag = "api")
+/// Reverse of get_stencil, if the proc has empty arena, the proc will borrow the
+/// .mem field and the prc should not be modifyed, but its safe to use it for
+/// inlining or other ops that just read the graph.
+@(tag = "api,priority=95")
 mount_stencil :: proc(prc: ^Proc, stencil: Stencil) {
 	if prc.mem.ptr == nil {
 		prc.mem^ = arna.init_from_buffer(stencil.mem)
@@ -766,7 +786,11 @@ worklist_init :: proc(w: ^Worklist, #any_int cap: int = 0) {
 	w.in_queue = bit_arr.init(cap)
 }
 
-@(tag = "api")
+/// The graph can accumulate wasted space of dead nodes during optimizations.
+/// Function will garbige collect the nodes into the smallest possible
+/// allocation. This is particularly usefull before `get_stencil`, as it
+/// reduces the memory usage of cold functions.
+@(tag = "api,priority=95")
 compact :: proc(prc: ^Proc) {
 	context.allocator, _ = arna.scrath(prc.temps)
 
@@ -937,12 +961,11 @@ verify :: proc(prc: ^Proc) {
 
 				fmt.assertf(
 					entry.hash == node_hash(prc, node),
-					"%v %v %v %v %v",
+					"%v %v %v %v",
 					node,
 					int(entry.id),
 					entry.hash,
 					node,
-					node.lane,
 				)
 			}
 		}
@@ -1000,12 +1023,7 @@ verify :: proc(prc: ^Proc) {
 					bit_arr.set(seen_intern_slots, idx)
 				} else {
 					when !ODIN_DISABLE_ASSERT {
-						fmt.eprintln(
-							idx,
-							u32(arr[idx].id),
-							grub,
-							prc.interner.len,
-						)
+						fmt.eprintln(idx, u32(arr[idx].id), grub, prc.interner.len)
 					}
 				}
 			}
@@ -1097,8 +1115,7 @@ schedule_peeps :: proc(prc: ^Proc, schedule: ^Schedule) {
 			   (0 == len(inode.inps) ||
 					   (get_node(prc, inode.inps[0]).itype == .Phi &&
 							   inode.inps[0] == inode.outs[0].id &&
-							   get_node(prc, inode.inps[0]).output_count >
-								   1)) {
+							   get_node(prc, inode.inps[0]).output_count > 1)) {
 
 				has_phy_inp := false
 				for inp in inode.inps[min(1, len(inode.inps)):] {
@@ -1109,7 +1126,15 @@ schedule_peeps :: proc(prc: ^Proc, schedule: ^Schedule) {
 				}
 				if has_phy_inp do continue
 
-				slice.rotate_left(bb.instrs[i:until - 1], 1)
+				end := until - 1
+				for other, j in bb.instrs[i:end] {
+					if get_node(prc, other).dt == .Void {
+						// Flag producers must remain adjacent to their consumers.
+						end = i + j
+						break
+					}
+				}
+				slice.rotate_left(bb.instrs[i:end], 1)
 			}
 		}
 	}
@@ -1148,7 +1173,10 @@ pass_snapshot :: proc(ctx: ^Proc) -> Pass_Snapshot {
 	return {u32(ctx.mem.pos), u32(ctx.waste)}
 }
 
-@(tag = "api")
+/// Apply peephole optimizations until fixpoint, the peephole strategy is picked
+/// from the ctx.prc.node_spec.peep. If you use `compute_latices` before this
+/// pass, the latices will be used to improve optimizations.
+@(tag = "api,priority=95")
 apply_peeps :: proc(ctx: Peep_Ctx) -> (optimized: bool) {
 	prc := ctx.prc
 
@@ -1245,8 +1273,7 @@ apply_peeps :: proc(ctx: Peep_Ctx) -> (optimized: bool) {
 				}
 			}
 			fmt.assertf(
-				node.itype != .Local ||
-				get_extra(prc, node, Local).size != DEAD_LOCAL,
+				node.itype != .Local || get_extra(prc, node, Local).size != DEAD_LOCAL,
 				"%v",
 				node,
 			)
@@ -1303,9 +1330,7 @@ collect_nodes :: proc(prc: ^Proc, worklist: ^Worklist, renumber := true) {
 
 		when !ODIN_DISABLE_ASSERT {
 			for n in worklist.data[1:worklist.len] {
-				assert(
-					bit_arr.contains(worklist.in_queue, get_node(prc, n).gvn),
-				)
+				assert(bit_arr.contains(worklist.in_queue, get_node(prc, n).gvn))
 			}
 		}
 	}
@@ -1332,16 +1357,9 @@ assert_live_pins :: proc(prc: ^Proc) {
 		defer current_prc = prev
 	}
 	expected := [?]Node_Type{.Entry, .End}
-	for &n, i in mem.slice_data_cast(
-		[]Node_ID,
-		mem.ptr_to_bytes(&prc.pinned),
-	) {
+	for &n, i in mem.slice_data_cast([]Node_ID, mem.ptr_to_bytes(&prc.pinned)) {
 		if expected[i] == .Return && n == 0 do continue
-		fmt.assertf(
-			get_node(prc, n).rtype != DEAD_NODE_KIND,
-			"%v",
-			expected[i],
-		)
+		fmt.assertf(get_node(prc, n).rtype != DEAD_NODE_KIND, "%v", expected[i])
 		fmt.assertf(
 			get_node(prc, n).itype == expected[i],
 			"%v %v",
@@ -1626,10 +1644,7 @@ simd_iter_next :: proc(siter: ^Simd_Iter) -> (int, bool) {
 		}
 
 		if siter.i < len(siter.haystack) {
-			mask := simd.lanes_eq(
-				siter.haystack[siter.i],
-				Intern_Vec(siter.needle),
-			)
+			mask := simd.lanes_eq(siter.haystack[siter.i], Intern_Vec(siter.needle))
 			siter.mask = transmute(u16)simd.extract_lsbs(mask)
 			siter.i += 1
 		} else {
@@ -2016,6 +2031,14 @@ delete_node_node :: proc(prc: ^Proc, node: ^Node) {
 		rtype = DEAD_NODE_KIND,
 	}
 
+	//lines, err := trace.resolve(
+	//	trace.capture(skip = 1),
+	//	context.temp_allocator,
+	//	context.temp_allocator,
+	//)
+	//runtime.print_string("[back trace]\n")
+	//trace.print(lines)
+
 	add_efficiency_stat(prc, .deleted_nodes, 1)
 
 }
@@ -2334,10 +2357,7 @@ has_flag_node :: #force_inline proc(
 }
 
 is_end_ctrl :: proc(prc: ^Proc, node: Node_ID) -> bool {
-	return(
-		get_node(prc, node).itype not_in
-		bit_set[Node_Type]{.Dbg_Scope, .Nil} \
-	)
+	return get_node(prc, node).itype not_in bit_set[Node_Type]{.Dbg_Scope, .Nil}
 }
 
 truncate_inputs :: proc(prc: ^Proc, scope: Node_ID, #any_int to_len: int) {
@@ -2356,6 +2376,9 @@ truncate_inputs :: proc(prc: ^Proc, scope: Node_ID, #any_int to_len: int) {
 
 ensure_init :: proc() {
 	when ODIN_BUILD_MODE != .Executable {
-		runtime._startup_runtime()
+		@(static) inited: bool
+		if !intrinsics.atomic_exchange(&inited, true) {
+			runtime._startup_runtime()
+		}
 	}
 }

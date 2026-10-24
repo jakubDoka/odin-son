@@ -10,7 +10,12 @@ Local :: bac.Local
 Node_ID :: bac.Node_ID
 expand_node :: bac.expand_node
 
-@(tag = "api")
+/// Pass will rename scalar local variables to registers and also pull
+/// non-escaping local variables that are too big to a separate memory threads.
+/// It's a good idea to run this in combination of `apply_peeps` to termination.
+/// Pass complexity scales with the amount of locals in the function and memory
+/// ops they have.
+@(tag = "api,priority=95")
 memopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 	assert(prc.node_spec == &SPEC)
 
@@ -341,11 +346,7 @@ memopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 				if node.itype == .Return {
 					connect_to = node.inps[1]
 					if get_node(ctx, connect_to).itype != .Merge_Mem {
-						connect_to = bac.add_merge_mem(
-							ctx,
-							"mmrg",
-							{connect_to},
-						)
+						connect_to = bac.add_merge_mem(ctx, "mmrg", {connect_to})
 						bac.set_input(ctx, einp, 1, connect_to)
 					}
 				}
@@ -385,8 +386,7 @@ memopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 
 			outs := slice.clone(cnode.outs)
 			if cnode.itype == .Split_Mem && cnode.inps[0] == root {
-				outs = outs[:len(outs) -
-				(len(ctx.scope) - int(ctx.threads_start))]
+				outs = outs[:len(outs) - (len(ctx.scope) - int(ctx.threads_start))]
 			}
 			prev: Node_ID
 
@@ -408,8 +408,7 @@ memopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 			case .Call:
 				assert(len(cnode.outs) == 1)
 				cursor = cnode.outs[0].id
-				cursor =
-					bac.find_node(ctx, .Mem, cursor) or_else fmt.panicf("")
+				cursor = bac.find_node(ctx, .Mem, cursor) or_else fmt.panicf("")
 				continue
 			case .Mem, .Phi, .Return, .Split_Mem, .Merge_Mem:
 			case:
@@ -429,23 +428,11 @@ memopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 						} else {
 							value := get_scope_value(ctx, ctx.scope, id)
 
-							bac.set_input(
-								ctx,
-								cout.id,
-								1,
-								value,
-								subsume_on_intern = true,
-							)
+							bac.set_input(ctx, cout.id, 1, value, subsume_on_intern = true)
 						}
 					} else {
 						if prev != 0 {
-							bac.set_input(
-								ctx,
-								cout.id,
-								1,
-								prev,
-								subsume_on_intern = true,
-							)
+							bac.set_input(ctx, cout.id, 1, prev, subsume_on_intern = true)
 						}
 					}
 				case .Store,
@@ -506,10 +493,7 @@ memopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 						if !ok {
 							id = u32(len(ctx.joins))
 							edit_node_id(ctx, cout.id, id)
-							entries := make(
-								[][]Value_Entry,
-								len(conode.inps) - 1,
-							)
+							entries := make([][]Value_Entry, len(conode.inps) - 1)
 							append(&ctx.joins, Join{entries, 0})
 						}
 
@@ -538,13 +522,7 @@ memopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 							if dirty {
 								res, dirty = {}, false
 								for &v, j in sloter[1:] {
-									v = Value_Entry(
-										get_scope_value(
-											ctx,
-											join.entries[j],
-											k,
-										),
-									)
+									v = Value_Entry(get_scope_value(ctx, join.entries[j], k))
 									if res == {} do res = v
 									dirty |= v != res
 								}
@@ -582,10 +560,7 @@ memopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 								}
 							}
 
-							append(
-								&ctx.loops,
-								Loop{loop_scope, conode.inps[0], false},
-							)
+							append(&ctx.loops, Loop{loop_scope, conode.inps[0], false})
 
 							ctx.scope = scope
 						} else {
@@ -654,17 +629,10 @@ memopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 			loop := &ctx.loops[val]
 			val = get_scope_value(ctx, loop.scope, idx)
 			vnode := expand_node(ctx, val)
-			if (btype(vnode) != .Lazy_Phi ||
-				   vnode.inps[0] != loop.loop_node) &&
+			if (btype(vnode) != .Lazy_Phi || vnode.inps[0] != loop.loop_node) &&
 			   !loop.done {
 				assert(vnode.itype != .Phi || vnode.inps[0] != loop.loop_node)
-				val = add_lazy_phi(
-					ctx,
-					"srlphi",
-					vnode.dt,
-					loop.loop_node,
-					val,
-				)
+				val = add_lazy_phi(ctx, "srlphi", vnode.dt, loop.loop_node, val)
 				loop.scope[idx] = Value_Entry(val)
 			}
 

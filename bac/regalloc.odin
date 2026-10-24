@@ -68,8 +68,7 @@ reg_mask_first_common_set :: proc(a, b: Reg_Mask) -> (int, bool) {
 	for i in 0 ..< a.bit_length / MASK_SIZE {
 		inter := a.masks[i] & b.masks[i]
 		if inter != 0 {
-			return int(i) * MASK_SIZE +
-				int(intrinsics.count_trailing_zeros(inter)),
+			return int(i) * MASK_SIZE + int(intrinsics.count_trailing_zeros(inter)),
 				true
 		}
 	}
@@ -239,11 +238,7 @@ rm_intern :: proc(interner: ^RM_Interner, mask: Reg_Mask) -> RM_Intern_Idx {
 	if ok do return {index = ex, kind = mask.kind}
 
 	if ln^ == len(slot) {
-		grow_search_space(
-			slot,
-			len(slot) + size_of(Intern_Vec),
-			context.allocator,
-		)
+		grow_search_space(slot, len(slot) + size_of(Intern_Vec), context.allocator)
 	}
 
 	slot[ln^] = {hash, mask.masks}
@@ -331,9 +326,7 @@ regalloc_collect_meta :: #force_inline proc(
 			slots[inode.gvn] = meta
 			slots[inode.gvn].in_place_slot -= 1
 			if slots[inode.gvn].in_place_slot >= 0 {
-				slots[inode.gvn].in_place_slot += i8(
-					slots[inode.gvn].input_start,
-				)
+				slots[inode.gvn].in_place_slot += i8(slots[inode.gvn].input_start)
 			}
 		}
 	}
@@ -369,8 +362,18 @@ data_deps :: proc(
 MASK_SIZE :: size_of(int) * 8
 
 Lrg_Meta :: bit_field u32 {
-	index: u32 | 23,
-	rank:  u8  | 8,
+	index:      u32  | 23,
+	rank:       u8   | 8,
+	must_spill: bool | 1,
+}
+
+Lrg_Fail :: enum int {
+	Killed,
+	Failed_To_Color,
+	Failed_To_Assign,
+	Reg_Conflict,
+	Self_Conflict,
+	Pushed_Out,
 }
 
 Lrg_Fails :: bit_field u8 {

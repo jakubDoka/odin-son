@@ -131,21 +131,33 @@ insert_alwasy :: proc(ctx: ^Proc, root: Node_ID) -> Node_ID {
 	return then
 }
 
-@(tag = "api")
-schedule_graph :: proc(prc: ^Proc, gs: ^Schedule, purpose: enum {
-		for_regalloc,
-		for_loopopt,
-	}, scratch := context.allocator) {
+Schedule_Mode :: enum {
+	for_regalloc,
+	for_loopopt,
+}
 
-	no_late_pass := purpose == .for_loopopt
+/// The function initialzes `gs` with the graph schedule. This is a
+/// sidestructure that is trivial to invalidate. It supports 2 modes:
+/// - regalloc - slow and full schedule, it is required for regalloc to work
+///   properly
+/// - loopopt - this is fast aproximet schedule that mainly makes querying loop
+///   invariant code more efficiently.
+@(tag = "api,priority=94")
+schedule_graph :: proc(
+	prc: ^Proc,
+	gs: ^Schedule,
+	purpose: Schedule_Mode,
+	scratch := context.allocator,
+) {
+	loop_opt := purpose == .for_loopopt
 	gs^ = {}
 
 	context.allocator, _ = arna.scrath(prc.temps, scratch)
 
 	Loop_Ctx :: struct {
-		using prc:   ^Proc,
-		loop_trees:  []^Loop_Tree,
-		root:        ^Loop_Tree,
+		using prc:  ^Proc,
+		loop_trees: []^Loop_Tree,
+		root:       ^Loop_Tree,
 	}
 
 	lctx: Loop_Ctx
@@ -164,7 +176,7 @@ schedule_graph :: proc(prc: ^Proc, gs: ^Schedule, purpose: enum {
 		}
 	}
 
-	build_loop_tree(&lctx, prc.entry, lctx.root, !no_late_pass, scratch)
+	build_loop_tree(&lctx, prc.entry, lctx.root, !loop_opt, scratch)
 	lctx.root.depth = 0
 
 	tree_depth :: proc(tree: ^Loop_Tree, depht := 0) -> u32 {
@@ -260,11 +272,7 @@ schedule_graph :: proc(prc: ^Proc, gs: ^Schedule, purpose: enum {
 
 		return deepest
 
-		select :: proc(
-			a: ^Loop_Tree,
-			b: ^Loop_Tree,
-			deepest: bool,
-		) -> ^Loop_Tree {
+		select :: proc(a: ^Loop_Tree, b: ^Loop_Tree, deepest: bool) -> ^Loop_Tree {
 			assert(a == nil || a.depth != 0)
 			assert(b == nil || b.depth != 0)
 			if a == nil do return b
@@ -284,13 +292,7 @@ schedule_graph :: proc(prc: ^Proc, gs: ^Schedule, purpose: enum {
 	cfg_rpos: [dynamic]Node_ID
 	visited := bit_arr.init(prc.gvn * 2)
 
-	cfg_reverse_postorder(
-		prc,
-		prc.entry,
-		&cfg_rpos,
-		visited,
-		!no_late_pass,
-	)
+	cfg_reverse_postorder(prc, prc.entry, &cfg_rpos, visited, !loop_opt)
 
 	cfg_reverse_postorder :: proc(
 		prc: ^Proc,
@@ -318,21 +320,9 @@ schedule_graph :: proc(prc: ^Proc, gs: ^Schedule, purpose: enum {
 					jmp := add_jump(prc, "jump", root)
 					pop_sloc(prc, prev)
 					set_input(prc, o.id, o.idx, jmp)
-					cfg_reverse_postorder(
-						prc,
-						jmp,
-						cfg_rpos,
-						visited,
-						insert_jumps,
-					)
+					cfg_reverse_postorder(prc, jmp, cfg_rpos, visited, insert_jumps)
 				} else {
-					cfg_reverse_postorder(
-						prc,
-						o.id,
-						cfg_rpos,
-						visited,
-						insert_jumps,
-					)
+					cfg_reverse_postorder(prc, o.id, cfg_rpos, visited, insert_jumps)
 				}
 			}
 		}
@@ -422,7 +412,7 @@ schedule_graph :: proc(prc: ^Proc, gs: ^Schedule, purpose: enum {
 	worklist: Worklist
 	worklist_init(&worklist, int(prc.gvn))
 	bit_arr.set(worklist.in_queue, 0)
-	if !no_late_pass {
+	if !loop_opt {
 		for inp in get_inputs(prc, prc.end) {
 			worklist_add(prc, &worklist, inp)
 		}
@@ -565,8 +555,7 @@ schedule_graph :: proc(prc: ^Proc, gs: ^Schedule, purpose: enum {
 				for inp in node.inps[1:] {
 					for out in get_outputs(prc, inp) {
 						onode := expand_node(prc, out.id)
-						if ctx.late_schedules[onode.gvn] == 0 &&
-						   onode.is_load {
+						if ctx.late_schedules[onode.gvn] == 0 && onode.is_load {
 							worklist_add(prc, &worklist, out.id)
 						}
 					}
@@ -649,13 +638,11 @@ schedule_graph :: proc(prc: ^Proc, gs: ^Schedule, purpose: enum {
 				if onode.itype == .Phi {
 					jmp := cnode.inps[out.idx - 1]
 					ctrl = get_inputs(ctx.prc, jmp)[0]
-					pull_up =
-						ctx.antidep_node[get_node(ctx.prc, ctrl).gvn] == id
+					pull_up = ctx.antidep_node[get_node(ctx.prc, ctrl).gvn] == id
 				}
 
 				fmt.assertf(
-					has_flag(ctx.prc, ctrl, .Is_Basic_Block_Start) ||
-					ctrl == 0,
+					has_flag(ctx.prc, ctrl, .Is_Basic_Block_Start) || ctrl == 0,
 					"%v",
 					ctrl,
 				)
@@ -733,7 +720,7 @@ schedule_graph :: proc(prc: ^Proc, gs: ^Schedule, purpose: enum {
 		node := get_node(prc, n)
 		late := ctx.late_schedules[i]
 		early := ctx.early_schedules[i]
-		sched := no_late_pass ? early : late
+		sched := loop_opt ? early : late
 		ctx.late_schedules[i] = sched
 		if sched == 0 {
 			//log.error("not scheduled:", node)
@@ -749,7 +736,7 @@ schedule_graph :: proc(prc: ^Proc, gs: ^Schedule, purpose: enum {
 		if bb.tail == 0 do continue
 		append(&bb.instrs, bb.tail)
 		ctx.late_schedules[get_node(prc, bb.tail).gvn] = bb.head
-		if !no_late_pass {
+		if !loop_opt {
 			schedule_block(ctx, &bb)
 		}
 	}
@@ -761,8 +748,8 @@ schedule_graph :: proc(prc: ^Proc, gs: ^Schedule, purpose: enum {
 		// 	if has_unscheduled do panic("")
 	}
 
-	if !no_late_pass {
-		verify_schedule_integrity(prc, gs, ctx.antideps, no_late_pass)
+	if !loop_opt {
+		verify_schedule_integrity(prc, gs, ctx.antideps, loop_opt)
 	}
 
 	schedule_block :: proc(ctx: Ctx, bb: ^Basic_Block) {
@@ -791,12 +778,8 @@ schedule_graph :: proc(prc: ^Proc, gs: ^Schedule, purpose: enum {
 					slcs := [][]Node_ID{inode.inps, ctx.antideps[inode.gvn][:]}
 					search: for slc in slcs {
 						for inp in slc {
-							idx := arna.simd_search(
-								bb.instrs[i + 1:],
-								inp,
-							) or_continue
-							instr, bb.instrs[i + 1 + idx] =
-								bb.instrs[i + 1 + idx], instr
+							idx := arna.simd_search(bb.instrs[i + 1:], inp) or_continue
+							instr, bb.instrs[i + 1 + idx] = bb.instrs[i + 1 + idx], instr
 							changed = true
 							break search
 						}
@@ -826,8 +809,7 @@ schedule_graph :: proc(prc: ^Proc, gs: ^Schedule, purpose: enum {
 		// likes that more
 		push_down: if get_node(prc, bb.head).itype == .Loop {
 			boundary := len(bb.instrs) - 1
-			for ; boundary > 0 &&
-			    get_node(prc, bb.instrs[boundary - 1]).dt == .Void;
+			for ; boundary > 0 && get_node(prc, bb.instrs[boundary - 1]).dt == .Void;
 			    boundary -= 1 {}
 
 			if phi_count > boundary do break push_down
@@ -853,7 +835,6 @@ schedule_graph :: proc(prc: ^Proc, gs: ^Schedule, purpose: enum {
 					posa += pos
 					lowest_schedule = min(lowest_schedule, posa)
 				}
-
 				slice.rotate_left(bb.instrs[pos:lowest_schedule], 1)
 			}
 		}

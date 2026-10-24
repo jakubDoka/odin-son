@@ -6,55 +6,51 @@ convert_f32:
     ucvtf s0, x0
     ret
 main:
-    sub sp, sp, #48
+    sub sp, sp, #16
     stp x29, x30, [xzr]
     movn x0, #64510
+    movk x0, #0, lsl #16
+    movk x0, #0, lsl #32
     movk x0, #32768, lsl #48
     bl 0xfffffff0
-    adr x0, 0xfb0
+    adr x0, 0xf54
     ldr d1, [x0]
     fcmp d0, d1
-    cset x0, ne
-    cbnz x0, 0xa4
+    b.ne 0x9c
     movn x0, #49150
     movk x0, #65514, lsl #16
     movk x0, #127, lsl #32
     movk x0, #32768, lsl #48
     bl 0xfffffff8
-    adr x0, 0xfb8
+    adr x0, 0xf5c
     ldr s1, [x0]
     fcmp s0, s1
-    cset x0, ne
-    cbnz x0, 0x9c
+    b.ne 0x94
     movn x0, #0
     bl 0xfffffff0
-    str d0, [xzr, #24]
+    orr v8.16b, v0.16b, v0.16b
     movn x0, #0
     bl 0xfffffff8
-    adr x0, 0xfbc
+    adr x0, 0xf60
     ldr s1, [x0]
     fdiv s0, s0, s1
     fcvtzs x0, s0
-    adr x1, 0xfc0
+    adr x1, 0xf64
     ldr d0, [x1]
-    ldr d1, [xzr, #24]
-    fdiv d0, d1, d0
+    fdiv d0, d8, d0
     fcvtzs x1, d0
     movz x2, #10
     madd x0, x0, x2, xzr
     add x0, x1, x0
-    mov x0, x0
-    b 0xa8
+    b 0xa0
 3:
     movz x0, #0
-    b 0xa8
+    b 0xa0
 4:
     movz x0, #0
 5:
-    str x0, [xzr, #16]
-    ldr x0, [xzr, #16]
     ldp x29, x30, [xzr]
-    add sp, sp, #48
+    add sp, sp, #16
     ret
 =========== OPT LEVEL: none ===========
 convert:
@@ -67,33 +63,33 @@ main:
     sub sp, sp, #16
     stp x29, x30, [xzr]
     movn x0, #64510
+    movk x0, #0, lsl #16
+    movk x0, #0, lsl #32
     movk x0, #32768, lsl #48
     bl 0xfffffff0
-    adr x0, 0xfb0
+    adr x0, 0xf70
     ldr d1, [x0]
     fcmp d0, d1
-    cset x0, ne
-    cbnz x0, 0x9c
+    b.ne 0x9c
     movn x0, #49150
     movk x0, #65514, lsl #16
     movk x0, #127, lsl #32
     movk x0, #32768, lsl #48
     bl 0xfffffff8
-    adr x0, 0xfb8
+    adr x0, 0xf78
     ldr s1, [x0]
     fcmp s0, s1
-    cset x0, ne
-    cbnz x0, 0x94
+    b.ne 0x94
     movn x0, #0
     bl 0xfffffff0
     orr v8.16b, v0.16b, v0.16b
     movn x0, #0
     bl 0xfffffff8
-    adr x0, 0xfbc
+    adr x0, 0xf7c
     ldr s1, [x0]
     fdiv s0, s0, s1
     fcvtzs x2, s0
-    adr x0, 0xfc0
+    adr x0, 0xf80
     ldr d0, [x0]
     fdiv d0, d8, d0
     fcvtzs x1, d0
@@ -118,55 +114,51 @@ convert_f32:
     ucvtf s0, x0
     ret
 main:
-    sub sp, sp, #48
+    sub sp, sp, #16
     stp x29, x30, [xzr]
     movn x0, #64510
+    movk x0, #0, lsl #16
+    movk x0, #0, lsl #32
     movk x0, #32768, lsl #48
     bl 0xfffffff0
-    adr x0, 0xfb0
+    adr x0, 0xf54
     ldr d1, [x0]
     fcmp d0, d1
-    cset x0, ne
-    cbnz x0, 0xa4
+    b.ne 0x9c
     movn x0, #49150
     movk x0, #65514, lsl #16
     movk x0, #127, lsl #32
     movk x0, #32768, lsl #48
     bl 0xfffffff8
-    adr x0, 0xfb8
+    adr x0, 0xf5c
     ldr s1, [x0]
     fcmp s0, s1
-    cset x0, ne
-    cbnz x0, 0x9c
+    b.ne 0x94
     movn x0, #0
     bl 0xfffffff0
-    str d0, [xzr, #24]
+    orr v8.16b, v0.16b, v0.16b
     movn x0, #0
     bl 0xfffffff8
-    adr x0, 0xfbc
+    adr x0, 0xf60
     ldr s1, [x0]
     fdiv s0, s0, s1
     fcvtzs x0, s0
-    adr x1, 0xfc0
+    adr x1, 0xf64
     ldr d0, [x1]
-    ldr d1, [xzr, #24]
-    fdiv d0, d1, d0
+    fdiv d0, d8, d0
     fcvtzs x1, d0
     movz x2, #10
     madd x0, x0, x2, xzr
     add x0, x1, x0
-    mov x0, x0
-    b 0xa8
+    b 0xa0
 3:
     movz x0, #0
-    b 0xa8
+    b 0xa0
 4:
     movz x0, #0
 5:
-    str x0, [xzr, #16]
-    ldr x0, [xzr, #16]
     ldp x29, x30, [xzr]
-    add sp, sp, #48
+    add sp, sp, #16
     ret
 =========== OPT LEVEL: moderate ===========
 convert:
@@ -179,33 +171,33 @@ main:
     sub sp, sp, #16
     stp x29, x30, [xzr]
     movn x0, #64510
+    movk x0, #0, lsl #16
+    movk x0, #0, lsl #32
     movk x0, #32768, lsl #48
     bl 0xfffffff0
-    adr x0, 0xfb0
+    adr x0, 0xf70
     ldr d1, [x0]
     fcmp d0, d1
-    cset x0, ne
-    cbnz x0, 0x9c
+    b.ne 0x9c
     movn x0, #49150
     movk x0, #65514, lsl #16
     movk x0, #127, lsl #32
     movk x0, #32768, lsl #48
     bl 0xfffffff8
-    adr x0, 0xfb8
+    adr x0, 0xf78
     ldr s1, [x0]
     fcmp s0, s1
-    cset x0, ne
-    cbnz x0, 0x94
+    b.ne 0x94
     movn x0, #0
     bl 0xfffffff0
     orr v8.16b, v0.16b, v0.16b
     movn x0, #0
     bl 0xfffffff8
-    adr x0, 0xfbc
+    adr x0, 0xf7c
     ldr s1, [x0]
     fdiv s0, s0, s1
     fcvtzs x2, s0
-    adr x0, 0xfc0
+    adr x0, 0xf80
     ldr d0, [x0]
     fdiv d0, d8, d0
     fcvtzs x1, d0
@@ -233,33 +225,33 @@ main:
     sub sp, sp, #16
     stp x29, x30, [xzr]
     movn x0, #64510
+    movk x0, #0, lsl #16
+    movk x0, #0, lsl #32
     movk x0, #32768, lsl #48
     bl 0xfffffff0
-    adr x0, 0xfb0
+    adr x0, 0xf70
     ldr d1, [x0]
     fcmp d0, d1
-    cset x0, ne
-    cbnz x0, 0x9c
+    b.ne 0x9c
     movn x0, #49150
     movk x0, #65514, lsl #16
     movk x0, #127, lsl #32
     movk x0, #32768, lsl #48
     bl 0xfffffff8
-    adr x0, 0xfb8
+    adr x0, 0xf78
     ldr s1, [x0]
     fcmp s0, s1
-    cset x0, ne
-    cbnz x0, 0x94
+    b.ne 0x94
     movn x0, #0
     bl 0xfffffff0
     orr v8.16b, v0.16b, v0.16b
     movn x0, #0
     bl 0xfffffff8
-    adr x0, 0xfbc
+    adr x0, 0xf7c
     ldr s1, [x0]
     fdiv s0, s0, s1
     fcvtzs x2, s0
-    adr x0, 0xfc0
+    adr x0, 0xf80
     ldr d0, [x0]
     fdiv d0, d8, d0
     fcvtzs x1, d0

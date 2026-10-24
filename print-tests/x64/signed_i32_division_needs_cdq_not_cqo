@@ -1,23 +1,26 @@
 =========== OPT LEVEL: none-quick ===========
 main:
-    sub rsp, 0x18
+    push rbx
+    push rbp
+    sub rsp, 8
     mov rdi, 0xa
     call opaque
-    mov.q [rsp], rax
+    mov rbx, rax
     mov rdi, 0x1e
     call opaque
-    mov.q [rsp + 0x8], rax
+    mov rbp, rax
     mov rdi, 3
     call opaque
-    mov.q [rsp + 0x10], rax
-    mov.q rax, [rsp]
-    mov.q rcx, [rsp + 0x8]
-    sub eax, ecx
-    mov.q rcx, [rsp + 0x10]
+    mov rcx, rax
+    mov rax, rbx
+    mov rdx, rbp
+    sub eax, edx
     cdq
     idiv ecx
     movsxd rax, eax
-    add rsp, 0x18
+    add rsp, 8
+    pop rbp
+    pop rbx
     ret
 opaque:
     mov rax, rdi
@@ -51,24 +54,27 @@ opaque:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 main:
-    sub rsp, 0x18
+    push rbx
+    push rbp
+    sub rsp, 8
     mov rdi, 0xa
     call opaque
-    mov.q [rsp], rax
+    mov rbx, rax
     mov rdi, 0x1e
     call opaque
-    mov.q [rsp + 0x8], rax
+    mov rbp, rax
     mov rdi, 3
     call opaque
-    mov.q [rsp + 0x10], rax
-    mov.q rax, [rsp]
-    mov.q rcx, [rsp + 0x8]
-    sub eax, ecx
-    mov.q rcx, [rsp + 0x10]
+    mov rcx, rax
+    mov rax, rbx
+    mov rdx, rbp
+    sub eax, edx
     cdq
     idiv ecx
     movsxd rax, eax
-    add rsp, 0x18
+    add rsp, 8
+    pop rbp
+    pop rbx
     ret
 opaque:
     mov rax, rdi

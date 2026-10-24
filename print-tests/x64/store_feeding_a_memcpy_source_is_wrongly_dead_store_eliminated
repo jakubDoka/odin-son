@@ -3,34 +3,30 @@ ident:
     mov rax, rdi
     ret
 main:
-    sub rsp, 0x38
+    push rbx
+    sub rsp, 0x20
     pxor xmm0, xmm0
     movups.x [rsp + 0x10], xmm0
     movups.x [rsp], xmm0
     lea rdi, [rsp]
     call ident
-    mov.q [rsp + 0x20], rax
-    mov.q rax, [rsp + 0x20]
-    mov.q [rax], 5
-    mov.q rax, [rsp + 0x20]
-    mov.q [rax + 0x8], 6
-    mov.q rax, [rsp + 0x20]
+    mov rbx, rax
+    mov.q [rbx], 5
+    mov.q [rbx + 0x8], 6
+    mov rax, rbx
     add rax, 0x10
-    mov.q [rsp + 0x28], rax
     mov rdx, 0x10
-    mov.q rsi, [rsp + 0x20]
-    mov.q rdi, [rsp + 0x28]
-    call -0xb1
-    mov.q rax, [rsp + 0x20]
-    mov.q [rax], 7
-    mov.q rax, [rsp + 0x20]
-    mov.q rax, [rax + 0x10]
-    mov.q rcx, [rsp + 0x20]
-    mov.q rcx, [rcx + 0x18]
+    mov rsi, rbx
+    mov rdi, rax
+    call -0x10c
+    mov.q [rbx], 7
+    mov.q rax, [rbx + 0x10]
+    mov.q rcx, [rbx + 0x18]
     imul rcx, rcx, 0xa
     add rax, rcx
     add rax, 0x2bc
-    add rsp, 0x38
+    add rsp, 0x20
+    pop rbx
     ret
 =========== OPT LEVEL: none ===========
 ident:
@@ -52,7 +48,7 @@ main:
     mov rdx, 0x10
     mov rsi, rbx
     mov rdi, rax
-    call -0x9c
+    call -0xef
     mov.q [rbx], 7
     mov.q rax, [rbx + 0x10]
     mov.q rcx, [rbx + 0x18]
@@ -67,34 +63,30 @@ ident:
     mov rax, rdi
     ret
 main:
-    sub rsp, 0x38
+    push rbx
+    sub rsp, 0x20
     pxor xmm0, xmm0
     movups.x [rsp + 0x10], xmm0
     movups.x [rsp], xmm0
     lea rdi, [rsp]
     call ident
-    mov.q [rsp + 0x20], rax
-    mov.q rax, [rsp + 0x20]
-    mov.q [rax], 5
-    mov.q rax, [rsp + 0x20]
-    mov.q [rax + 0x8], 6
-    mov.q rax, [rsp + 0x20]
+    mov rbx, rax
+    mov.q [rbx], 5
+    mov.q [rbx + 0x8], 6
+    mov rax, rbx
     add rax, 0x10
-    mov.q [rsp + 0x28], rax
     mov rdx, 0x10
-    mov.q rsi, [rsp + 0x20]
-    mov.q rdi, [rsp + 0x28]
-    call -0xb1
-    mov.q rax, [rsp + 0x20]
-    mov.q [rax], 7
-    mov.q rax, [rsp + 0x20]
-    mov.q rax, [rax + 0x10]
-    mov.q rcx, [rsp + 0x20]
-    mov.q rcx, [rcx + 0x18]
+    mov rsi, rbx
+    mov rdi, rax
+    call -0x10c
+    mov.q [rbx], 7
+    mov.q rax, [rbx + 0x10]
+    mov.q rcx, [rbx + 0x18]
     imul rcx, rcx, 0xa
     add rax, rcx
     add rax, 0x2bc
-    add rsp, 0x38
+    add rsp, 0x20
+    pop rbx
     ret
 =========== OPT LEVEL: moderate ===========
 ident:
@@ -116,7 +108,7 @@ main:
     mov rdx, 0x10
     mov rsi, rbx
     mov rdi, rax
-    call -0x9c
+    call -0xef
     mov.q [rbx], 7
     mov.q rax, [rbx + 0x10]
     mov.q rcx, [rbx + 0x18]
@@ -146,7 +138,7 @@ main:
     mov rdx, 0x10
     mov rsi, rbx
     mov rdi, rax
-    call -0x9c
+    call -0xef
     mov.q [rbx], 7
     mov.q rax, [rbx + 0x10]
     mov.q rcx, [rbx + 0x18]
@@ -168,7 +160,7 @@ main:
     mov rdx, 0x10
     lea rsi, [rsp]
     mov rdi, rax
-    call -0x88
+    call -0xdb
     mov.q [rsp], 7
     mov.q rax, [rsp + 0x10]
     mov.q rcx, [rsp + 0x18]

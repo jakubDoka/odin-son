@@ -7,7 +7,10 @@ import "../../utils/fmt"
 import "core:math"
 import "core:slice"
 
-@(tag = "api")
+/// Pass will normalize loops, and apply loop specific optimizations. As of
+/// right now, the loop can be turned into memset or memcpy, or get eliminated
+/// if they have no sideffects.
+@(tag = "api,priority=95")
 loopopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 	context.allocator, _ = arna.scrath(prc.temps)
 
@@ -174,10 +177,7 @@ loopopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 			node: Node_ID,
 			ltree: ^bac.Loop_Tree,
 		) -> ^bac.Basic_Block {
-			append(
-				&ctx.sched.bbs,
-				bac.Basic_Block{head = node, loop_tree = ltree},
-			)
+			append(&ctx.sched.bbs, bac.Basic_Block{head = node, loop_tree = ltree})
 			join_bb := &ctx.sched.bbs[len(ctx.sched.bbs) - 1]
 			ctx.node_blocks[get_node(ctx, node).gvn] = join_bb
 			return join_bb
@@ -315,6 +315,7 @@ loopopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 			stride:    Node_ID,
 			bound:     Node_ID,
 			stride_vl: i64,
+			delayed:   bool,
 		}
 
 		inductors: [dynamic]Inductor
@@ -338,11 +339,13 @@ loopopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 			}
 
 			bound: Node_ID
+			delayed: bool
 			slcs := [][]bac.Node_Output{bvl.outs, onode.outs}
-			find_bound: for slc in slcs {
+			find_bound: for slc, i in slcs {
 				for bout in slc {
 					if bout.id == bedge.inps[1] {
 						bound = cond.inps[1 - bout.idx]
+						delayed = i == 1
 						break find_bound
 					}
 				}
@@ -351,7 +354,10 @@ loopopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 			if slice.contains(bb.instrs[:], bound) do bound = 0
 			terminates |= bound != 0
 
-			append(&inductors, Inductor{out.id, bvl.inps[1], bound, stride_vl})
+			append(
+				&inductors,
+				Inductor{out.id, bvl.inps[1], bound, stride_vl, delayed},
+			)
 		}
 
 		for ind in inductors {
@@ -434,11 +440,7 @@ loopopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 					if stride_node != 0 && (!stride_is_pow2 || stride > 8) {
 						append(
 							&indexings,
-							Indexing {
-								base,
-								stride_node,
-								bac.get_node_id(ctx, conode),
-							},
+							Indexing{base, stride_node, bac.get_node_id(ctx, conode)},
 						)
 					}
 				}
@@ -465,14 +467,7 @@ loopopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 				) -> Node_ID {
 					index := idx
 
-					index = bac.add_bin_op(
-						ctx,
-						"snoff",
-						.Mul,
-						.I64,
-						index,
-						stride,
-					)
+					index = bac.add_bin_op(ctx, "snoff", .Mul, .I64, index, stride)
 					index = bac.apply_peep(ctx, index)
 
 					return bac.add_bin_op(ctx, "snd", .Add, .I64, base, index)
@@ -486,14 +481,7 @@ loopopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 				)
 
 				nphy := add_lazy_phi(ctx, "srdph", phy.dt, bb.head, init)
-				next := bac.add_bin_op(
-					ctx,
-					"srdnt",
-					.Add,
-					phy.dt,
-					nphy,
-					idx.stride,
-				)
+				next := bac.add_bin_op(ctx, "srdnt", .Add, phy.dt, nphy, idx.stride)
 				bac.connect(ctx, nphy, next)
 				get_node(ctx, nphy).itype = .Phi
 				nphy = bac.intern(ctx, nphy)
@@ -519,6 +507,8 @@ loopopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 				}
 			}
 
+			req_sched := find_req_sched(ctx, &bb)
+
 			for store in stores {
 				snode := expand_node(ctx, store.node)
 				vl := expand_node(ctx, snode.inps[3])
@@ -540,9 +530,17 @@ loopopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 				   effective_op == .Lt &&
 				   ind.bound != 0 {
 
+					req_load_count := 0
+					for instr, idx in bb.instrs {
+						if get_node(ctx, instr).is_load {
+							req_load_count += int(bit_arr.contains(req_sched, idx))
+						}
+					}
+
 					can_memset :=
 						!slice.contains(bb.instrs[:], snode.inps[3]) &&
-						stride == 1
+						stride == 1 &&
+						req_load_count == 0
 
 					lidx, lok := slice.linear_search(
 						loads.node[:len(loads)],
@@ -551,33 +549,35 @@ loopopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 					can_memcpy :=
 						lok &&
 						vl.inps[1] == snode.inps[1] &&
-						loads[lidx].stride == store.stride
+						loads[lidx].stride == store.stride &&
+						req_load_count == 1
 					optimized |= can_memset | can_memcpy
 
 					size, dst, cpy: Node_ID
 
 					if can_memset || can_memcpy {
+						len := bac.add_bin_op(
+							ctx,
+							"ln",
+							.Sub,
+							.I64,
+							ind.bound,
+							phy.inps[1],
+						)
+						if ind.delayed {
+							one := bac.add_c_int(ctx, "dlinc", .I64, 1)
+							len = bac.add_bin_op(ctx, "dlin", .Add, .I64, len, one)
+						}
+
 						size = bac.add_bin_op(
 							ctx,
 							"lnscl",
 							.Mul,
 							.I64,
-							bac.add_bin_op(
-								ctx,
-								"ln",
-								.Sub,
-								.I64,
-								ind.bound,
-								phy.inps[1],
-							),
+							len,
 							bac.add_c_int(ctx, "scl", .I64, store.stride),
 						)
-						dst = compute_index_offset(
-							ctx,
-							store.base,
-							phy.inps[1],
-							stride,
-						)
+						dst = compute_index_offset(ctx, store.base, phy.inps[1], stride)
 					}
 
 					if can_memset {
@@ -599,12 +599,7 @@ loopopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 							head.inps[0],
 							mem.inps[1],
 							dst,
-							compute_index_offset(
-								ctx,
-								loads[lidx].base,
-								phy.inps[1],
-								stride,
-							),
+							compute_index_offset(ctx, loads[lidx].base, phy.inps[1], stride),
 							size,
 						)
 					}
@@ -637,8 +632,13 @@ loopopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 		}
 		resize(&bb.instrs, keep)
 
-		eliminate: if terminates {
-			req_sched := bit_arr.init(len(bb.instrs))
+		find_req_sched :: proc(
+			ctx: Ctx,
+			bb: ^bac.Basic_Block,
+		) -> (
+			req_sched: bit_arr.Bit_Set,
+		) {
+			req_sched = bit_arr.init(len(bb.instrs))
 			for {
 				changed := false
 
@@ -656,10 +656,7 @@ loopopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 							break
 						}
 
-						idx := slice.linear_search(
-							bb.instrs[:],
-							out.id,
-						) or_continue
+						idx := slice.linear_search(bb.instrs[:], out.id) or_continue
 
 						if bit_arr.contains(req_sched, idx) {
 							ok := bit_arr.set(req_sched, i)
@@ -672,6 +669,11 @@ loopopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 
 				if !changed do break
 			}
+			return
+		}
+
+		eliminate: if terminates {
+			req_sched := find_req_sched(ctx, &bb)
 
 			for it := bit_arr.iter(req_sched); i in bit_arr.iter_next(&it) {
 				instr := bb.instrs[i]

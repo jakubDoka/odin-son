@@ -1,0 +1,174 @@
+=========== OPT LEVEL: none-quick ===========
+fill_sum:
+    push rbx
+    push rbp
+    mov rcx, rsi
+    sub rcx, 1
+    add rcx, rdi
+    xor edx, edx
+    xor eax, eax
+1:
+    cmp rdx, rsi
+    jge 2
+    mov rbx, rdi
+    add rbx, rdx
+    mov.b [rbx], 7
+    movzx.b ebx, [rcx]
+    mov rbp, rax
+    add rbp, rbx
+    add rdx, 1
+    mov rax, rbp
+    jmp 1
+2:
+    pop rbp
+    pop rbx
+    ret
+main:
+    sub rsp, 8
+    mov.d [rsp], 0
+    lea rdi, [rsp]
+    mov rsi, 4
+    call fill_sum
+    add rsp, 8
+    ret
+=========== OPT LEVEL: none ===========
+fill_sum:
+    mov r8, rsi
+    sub r8, 1
+    add r8, rdi
+    xor ecx, ecx
+    xor eax, eax
+1:
+    cmp rcx, rsi
+    jge 2
+    mov rdx, rdi
+    add rdx, rcx
+    mov.b [rdx], 7
+    movzx.b edx, [r8]
+    add rax, rdx
+    add rcx, 1
+    jmp 1
+2:
+    ret
+main:
+    sub rsp, 8
+    mov.d [rsp], 0
+    lea rdi, [rsp]
+    mov rsi, 4
+    call fill_sum
+    add rsp, 8
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+fill_sum:
+    push rbx
+    push rbp
+    mov rcx, rsi
+    sub rcx, 1
+    add rcx, rdi
+    xor edx, edx
+    xor eax, eax
+1:
+    cmp rdx, rsi
+    jge 2
+    mov rbx, rdi
+    add rbx, rdx
+    mov.b [rbx], 7
+    movzx.b ebx, [rcx]
+    mov rbp, rax
+    add rbp, rbx
+    add rdx, 1
+    mov rax, rbp
+    jmp 1
+2:
+    pop rbp
+    pop rbx
+    ret
+main:
+    sub rsp, 8
+    mov.d [rsp], 0
+    lea rdi, [rsp]
+    mov rsi, 4
+    call fill_sum
+    add rsp, 8
+    ret
+=========== OPT LEVEL: moderate ===========
+fill_sum:
+    mov r8, rsi
+    sub r8, 1
+    add r8, rdi
+    xor ecx, ecx
+    xor eax, eax
+1:
+    cmp rcx, rsi
+    jge 2
+    mov rdx, rdi
+    add rdx, rcx
+    mov.b [rdx], 7
+    movzx.b edx, [r8]
+    add rax, rdx
+    add rcx, 1
+    jmp 1
+2:
+    ret
+main:
+    sub rsp, 8
+    mov.d [rsp], 0
+    lea rdi, [rsp]
+    mov rsi, 4
+    call fill_sum
+    add rsp, 8
+    ret
+=========== OPT LEVEL: all ===========
+fill_sum:
+    xor eax, eax
+    cmp rsi, 0
+    jle 2
+    mov r10, rsi
+    sub r10, 1
+    add r10, rdi
+    xor eax, eax
+    xor ecx, ecx
+1:
+    mov rdx, rdi
+    add rdx, rcx
+    mov.b [rdx], 7
+    movzx.b r9d, [r10]
+    add rcx, 1
+    cmp rcx, rsi
+    setge r8b
+    movzx r8d, r8b
+    mov rdx, rax
+    add rdx, r9
+    test r8b, r8b
+    mov rax, rdx
+    je 1
+    mov rax, rdx
+    jmp 2
+2:
+    ret
+main:
+    sub rsp, 8
+    mov.d [rsp], 0
+    lea rdi, [rsp]
+    mov rsi, 4
+    call fill_sum
+    add rsp, 8
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    mov.d [rsp - 0x8], 0
+    xor edx, edx
+    xor ecx, ecx
+1:
+    mov.b [rsp + rcx - 0x8], 7
+    movzx.b edi, [rsp - 0x5]
+    add rcx, 1
+    cmp rcx, 4
+    setge sil
+    movzx esi, sil
+    mov rax, rdx
+    add rax, rdi
+    test sil, sil
+    mov rdx, rax
+    je 1
+    ret

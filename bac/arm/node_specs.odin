@@ -6,10 +6,10 @@ Class_Flag :: bac.Class_Flag
 
 @(tag = "api", rodata, export, link_name = "bac_arm_SPEC")SPEC := bac.Node_Spec{
 	call_clobbers = {
-		{524287, 4294902015},
+		{4295491583, 4294902015},
 	},
 	datatype_to_reg_kind = {.Void = 0, .Mem = 0, .I8 = 0, .I16 = 0, .I32 = 0, .I64 = 0, .F32 = 1, .F64 = 1, .V128 = 1, .V256 = 1, .V512 = 1},
-	spill_boundary = {32, 32},
+	spill_boundary = {33, 32},
 	collect_meta = collect_meta,
 	emit_function = emit_function,
 	peep = peep_inst,
@@ -83,7 +83,9 @@ Class_Flag :: bac.Class_Flag
 		0b10, // Splat
 		0b10, // Ctz
 		0b10, // Simd_Extract_Lsbs
+		0b10, // Simd_Extract_Msbs
 		0b10, // Simd_Reduce_Add_Bisect
+		0b10, // Select
 		0b10, // Msub
 		0b10, // Cmlt
 		0b10000000, // Ext
@@ -93,7 +95,6 @@ Class_Flag :: bac.Class_Flag
 		0b10, // Lslv
 		0b10, // Asrv
 		0b10, // Lsrv
-		0b10000000, // Csel_Ult_Imm
 	},
 	node_extra_sizes = {
 		0 = 1, // Nil -> Cfg
@@ -116,9 +117,9 @@ Class_Flag :: bac.Class_Flag
 		25 = 1, // Ret -> Tup
 		27 = 2, // CInt -> CInt
 		55 = 1, // Proc_Addr -> Tup
-		71 = 1, // Ext -> Arm_Op
-		74 = 1, // Umov -> Arm_Op
-		78 = 1, // Csel_Ult_Imm -> Arm_Op
+		73 = 1, // Ext -> Arm_Op
+		76 = 1, // Umov -> Arm_Op
+		79 = 0,
 	},
 	node_flags = {
 		{}, // Nil
@@ -189,7 +190,9 @@ Class_Flag :: bac.Class_Flag
 		{Class_Flag.Interned}, // Splat
 		{Class_Flag.Interned}, // Ctz
 		{Class_Flag.Interned}, // Simd_Extract_Lsbs
+		{Class_Flag.Interned}, // Simd_Extract_Msbs
 		{Class_Flag.Interned}, // Simd_Reduce_Add_Bisect
+		{Class_Flag.Interned}, // Select
 		{}, // Msub
 		{}, // Cmlt
 		{}, // Ext
@@ -199,7 +202,6 @@ Class_Flag :: bac.Class_Flag
 		{}, // Lslv
 		{}, // Asrv
 		{}, // Lsrv
-		{}, // Csel_Ult_Imm
 	},
 	node_extra_types = ({}) when #config(NO_FMT, false) else ([]typeid{
 		0 = bac.Cfg,
@@ -222,9 +224,9 @@ Class_Flag :: bac.Class_Flag
 		25 = bac.Tup,
 		27 = bac.CInt,
 		55 = bac.Tup,
-		71 = Arm_Op,
-		74 = Arm_Op,
-		78 = Arm_Op,
+		73 = Arm_Op,
+		76 = Arm_Op,
+		79 = {},
 	}),
 	node_kind = nil when #config(NO_FMT, false) else Node_Type,
 }
@@ -298,7 +300,9 @@ Node_Type :: enum u16 {
 	Splat,
 	Ctz,
 	Simd_Extract_Lsbs,
+	Simd_Extract_Msbs,
 	Simd_Reduce_Add_Bisect,
+	Select,
 	Msub,
 	Cmlt,
 	Ext,
@@ -308,7 +312,6 @@ Node_Type :: enum u16 {
 	Lslv,
 	Asrv,
 	Lsrv,
-	Csel_Ult_Imm,
 }
 
 peep_inst :: proc(ctx: bac.Peep_Ctx, node: bac.Expanded_Node) -> Maybe(bac.Node_ID) {
@@ -356,30 +359,24 @@ add_umov :: #force_inline proc(prc: ^bac.Proc, name: string, dt: bac.Node_Dataty
 	}
 	return bac.add_raw(prc, name, u16(Node_Type.Umov), dt, {vec})
 }
-add_csel_ult_imm :: #force_inline proc(prc: ^bac.Proc, name: string, dt: bac.Node_Datatype, on_true: bac.Node_ID, on_false: bac.Node_ID, count: bac.Node_ID, aux: u32) -> (_id: bac.Node_ID) {
-	(^Arm_Op)(bac.get_next_extra_slot(prc, u16(Node_Type.Csel_Ult_Imm), 0))^ = {
-		aux = aux,
-	}
-	return bac.add_raw(prc, name, u16(Node_Type.Csel_Ult_Imm), dt, {on_true, on_false, count})
-}
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	when false {}
-	else when T == bac.Cfg {return 0}
-	else when T == bac.No_Extra {return 1}
-	else when T == bac.Tup {return 5}
 	else when T == Arm_Op {return 7}
-	else when T == bac.Local {return 4}
 	else when T == bac.CInt {return 6}
 	else when T == bac.Call {return 3}
+	else when T == bac.Cfg {return 0}
 	else when T == bac.Dbg_Sym {return 2}
+	else when T == bac.Local {return 4}
+	else when T == bac.No_Extra {return 1}
+	else when T == bac.Tup {return 5}
 	else {#panic(`the passed type is not subclass of anything`)}
 }
-#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
-#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
-#assert(size_of(bac.Tup) % bac.PRECISION == 0)
 #assert(size_of(Arm_Op) % bac.PRECISION == 0)
-#assert(size_of(bac.Local) % bac.PRECISION == 0)
 #assert(size_of(bac.CInt) % bac.PRECISION == 0)
 #assert(size_of(bac.Call) % bac.PRECISION == 0)
+#assert(size_of(bac.Cfg) % bac.PRECISION == 0)
 #assert(size_of(bac.Dbg_Sym) % bac.PRECISION == 0)
+#assert(size_of(bac.Local) % bac.PRECISION == 0)
+#assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
+#assert(size_of(bac.Tup) % bac.PRECISION == 0)

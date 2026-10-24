@@ -36,6 +36,7 @@ X17, X18, X19, X20, X21 :: Reg(17), Reg(18), Reg(19), Reg(20), Reg(21)
 X22, X23, X24, X25, X26 :: Reg(22), Reg(23), Reg(24), Reg(25), Reg(26)
 X27, X28, X29, X30 :: Reg(27), Reg(28), Reg(29), Reg(30)
 XZR, SP :: Reg(31), Reg(31)
+FLAGS :: Reg(32)
 
 V_BANK :: u16(RK_VECTOR) << 12
 V0, V1, V2 :: Reg(V_BANK | 0), Reg(V_BANK | 1), Reg(V_BANK | 2)
@@ -51,6 +52,11 @@ V27, V28, V29 :: Reg(V_BANK | 27), Reg(V_BANK | 28), Reg(V_BANK | 29)
 V30, V31 :: Reg(V_BANK | 30), Reg(V_BANK | 31)
 
 ARM_SYSTEMV_CC :: 0
+
+@(tag = "api", rodata, export, link_name = "bac_arm_OPT_HINTS")
+OPT_HINTS := bac.Opt_Hints {
+	select_types = {.I8, .I16, .I32, .I64, .F32, .F64},
+}
 
 @(tag = "api", rodata, export, link_name = "bac_arm_CC_TABLE")
 CC_TABLE := [?]bac.Call_Conv {
@@ -76,6 +82,7 @@ CC_TABLE := [?]bac.Call_Conv {
 				X16,
 				X17,
 				X18,
+				FLAGS,
 			},
 			{
 				V0,
@@ -124,16 +131,6 @@ when SPEC_NOT_PRESENT {
 
 	inherit_idx_of :: proc($T: typeid) -> u8 {return 0}
 
-	add_csel_ult_imm :: proc(
-		prc: ^bac.Proc,
-		name: string,
-		dt: bac.Node_Datatype,
-		on_true, on_false, count: bac.Node_ID,
-		aux: u32,
-	) -> bac.Node_ID {
-		return 0
-	}
-
 	Node_Type :: enum u16 {
 		Msub,
 		Cmlt,
@@ -144,7 +141,6 @@ when SPEC_NOT_PRESENT {
 		Lslv,
 		Asrv,
 		Lsrv,
-		Csel_Ult_Imm,
 	}
 }
 
@@ -190,8 +186,7 @@ peep :: proc(
 			break
 		}
 
-		signed :=
-			kind in bit_set[Node_Type]{.Le, .Lt, .Gt, .Ge, .Div, .Rem, .Shr}
+		signed := kind in bit_set[Node_Type]{.Le, .Lt, .Gt, .Ge, .Div, .Rem, .Shr}
 		ext: bac.Un_Op = signed ? .Conv : .U_Conv
 		inps: [2]bac.Node_ID
 		for inp, i in node.inps {
@@ -207,13 +202,7 @@ peep :: proc(
 
 		comparison := .Eq <= kind && kind <= .U_Ge
 		dt := comparison ? node.dt : bac.Node_Datatype.I32
-		wide := bac.add_raw(
-			ctx,
-			"iwide",
-			node.rtype,
-			dt,
-			inps[:len(node.inps)],
-		)
+		wide := bac.add_raw(ctx, "iwide", node.rtype, dt, inps[:len(node.inps)])
 		bac.worklist_add(ctx, ctx.worklist, wide)
 		if comparison do return wide
 
@@ -236,21 +225,33 @@ peep :: proc(
 			bac.worklist_add(ctx, ctx.worklist, count)
 		}
 
+		in_range: bac.Node_ID
 		if constant != nil {
 			if u64(constant.value) >= u64(bits) {
 				if kind != .Shr do return bac.add_c_int(ctx, "shzero", node.dt, 0)
 				count = bac.add_c_int(ctx, "shlimit", count_dt, bits - 1)
 			}
-		} else if kind == .Shr {
-			count = add_csel_ult_imm(
+		} else {
+			in_range = bac.add_bin_op(
 				ctx,
-				"shclamp",
-				count_dt,
+				"shrange",
+				.U_Lt,
+				.I8,
 				count,
-				bac.add_c_int(ctx, "shlimit", count_dt, bits - 1),
-				count,
-				u32(bits),
+				bac.add_c_int(ctx, "shwidth", count_dt, bits),
 			)
+			bac.worklist_add(ctx, ctx.worklist, in_range)
+			if kind == .Shr {
+				count = bac.add_select(
+					ctx,
+					"shclamp",
+					count_dt,
+					count,
+					bac.add_c_int(ctx, "shlimit", count_dt, bits - 1),
+					in_range,
+				)
+				bac.worklist_add(ctx, ctx.worklist, count)
+			}
 		}
 
 		@(static, rodata)
@@ -263,15 +264,18 @@ peep :: proc(
 			{node.inps[0], count},
 		)
 		if constant != nil || kind == .Shr do return shift
-		return add_csel_ult_imm(
+		guard := bac.add_select(
 			ctx,
 			"shguard",
 			node.dt,
 			shift,
 			bac.add_c_int(ctx, "shzero", node.dt, 0),
-			count,
-			u32(bits),
+			in_range,
 		)
+		bac.worklist_add(ctx, ctx.worklist, guard)
+		return guard
+	case .Ctz:
+		return bac.normalize_ctz(ctx, node, .I32, struct{}{})
 	case .CInt:
 		cnst: ^bac.CInt = bac.get_extra(ctx, node, bac.CInt)
 		if node.dt in bac.FLOAT_DTS && cnst.value != 0 {
@@ -279,14 +283,6 @@ peep :: proc(
 			addr := bac.add_global_addr(ctx, "caddr", global)
 			cmem := bac.get_or_add_const_mem(ctx)
 			return bac.add_load(ctx, "cild", node.dt, 0, cmem, addr)
-		}
-	case .Eq ..= .U_Ge:
-		if bac.operation_datatype(ctx.prc, node) in bac.FLOAT_DTS do break
-		if len(node.outs) == 1 &&
-		   get_node(ctx, node.outs[0].id).itype == .If &&
-		   node.dt != .Void {
-			node.dt = .Void
-			return id
 		}
 	case .Simd_Reduce_Add_Bisect:
 		if node.dt == .I64 {
@@ -380,8 +376,8 @@ peep :: proc(
 }
 
 post_schedule_peep :: proc(
-	_: bac.PS_Peep_Ctx,
-	_: bac.Expanded_Node,
+	ctx: bac.PS_Peep_Ctx,
+	node: bac.Expanded_Node,
 	_: $T,
 ) -> bac.Node_ID {
 	return 0
@@ -398,7 +394,9 @@ meta_of :: #force_inline proc(
 	@(static, rodata)
 	GPA_MASK := [?]i64{0x3FFFFFFF}
 	@(static, rodata)
-	GPA_SPILL_MASK := [?]i64{~i64(1 << uint(SP) | 1 << 30)}
+	GPA_SPILL_MASK := [?]i64{~i64(1 << uint(SP) | 1 << 30 | 1 << uint(FLAGS))}
+	@(static, rodata)
+	GPA_SPLIT_MASK := [?]i64{~i64(1 << uint(SP) | 1 << 30)}
 	@(static, rodata)
 	VEC_MASK := [?]i64{0xFFFFFFFF}
 	@(static, rodata)
@@ -449,9 +447,7 @@ meta_of :: #force_inline proc(
 	single :: bac.rm_intern_single
 	rslice :: bac.rm_intern_slice
 
-	dup :: #force_inline proc(
-		msks: []bac.RM_Intern_Idx,
-	) -> []bac.RM_Intern_Idx {
+	dup :: #force_inline proc(msks: []bac.RM_Intern_Idx) -> []bac.RM_Intern_Idx {
 		return slice.clone(msks)
 	}
 
@@ -479,7 +475,7 @@ meta_of :: #force_inline proc(
 	switch atype(node) {
 	case:
 		fallthrough
-	case .Nil ..= .Dbg_Scope, .Simd_Extract_Lsbs:
+	case .Nil ..= .Dbg_Scope, .Simd_Extract_Lsbs, .Simd_Extract_Msbs:
 		fmt.panicf("should not reach this: %v", node)
 	case .Poison ..= .Global, .Jump, .Always, .Trap:
 		return {out = IOUT}
@@ -489,11 +485,16 @@ meta_of :: #force_inline proc(
 		return {out = out, masks = GPA_MASKS[:1]}
 	case .Add ..= .Xor, .Shl ..= .And_Not, .Zip1, .Ext, .Lslv ..= .Lsrv:
 		return {out = out, masks = nmasks[:2]}
-	case .Msub, .Csel_Ult_Imm:
+	case .Msub:
 		return {out = out, masks = nmasks[:3]}
+	case .Select:
+		return {out = out, masks = dup({out, out, single(ra, FLAGS)})}
 	case .Eq ..= .U_Ge:
 		ikind := ra.datatype_to_reg_kind[get_node(prc, node.inps[0]).dt]
-		return {out = out, masks = masks[ikind][:2]}
+		return {
+			out = node.dt in bac.VECTOR_DTS ? out : single(ra, FLAGS),
+			masks = masks[ikind][:2],
+		}
 	case .Conv, .U_Conv, .Cast:
 		vl := get_node(prc, node.inps[0])
 		ckind := ra.datatype_to_reg_kind[vl.dt]
@@ -507,14 +508,21 @@ meta_of :: #force_inline proc(
 	case .Neg, .Not, .Cmlt, .Ctz:
 		return {out = out, masks = nmasks[:1]}
 	case .Split:
+		if nkind == RK_GENERAL {
+			mask := rslice(ra, RK_GENERAL, GPA_SPLIT_MASK[:])
+			// Flags preserve truth values, not arbitrary integers.
+			flag_uses := len(node.outs) != 0
+			for use in node.outs {
+				user := get_node(prc, use.id)
+				flag_uses &=
+					(user.itype == .If && use.idx == 1) ||
+					(user.itype == .Select && use.idx == 2)
+			}
+			return {out = flag_uses ? mask : sout, masks = dup({mask})}
+		}
 		return {out = sout, masks = snmasks[:1]}
 	case .If:
-		return {
-			out = IOUT,
-			input_start = 1,
-			masks = nmasks[:1 -
-			int(get_node(prc, node.inps[1]).dt == .Void)],
-		}
+		return {out = IOUT, input_start = 1, masks = dup({single(ra, FLAGS)})}
 	case .Call, .Return, .Set, .Copy:
 		return bac.cc_node_meta(prc, ra, node, CC_TABLE[:])
 	case .Ret:
@@ -732,8 +740,16 @@ emit_instr :: proc(
 		.Le   = {.LE, .LS},
 	}
 
-	condition_for :: proc(kind: Node_Type, dt: bac.Node_Datatype) -> Cond {
-		return CC_TABLE[kind][int(dt in bac.FLOAT_DTS)]
+	condition_for :: proc(ctx: ^Ctx, id: Node_ID) -> Cond {
+		id := id
+		node := expand_node(ctx, id)
+		for node.itype == .Split {
+			id = node.inps[0]
+			if reg_of(ctx, id) != FLAGS do return .NE
+			node = expand_node(ctx, id)
+		}
+		dt := get_node(ctx, node.inps[0]).dt
+		return CC_TABLE[atype(node)][int(dt in bac.FLOAT_DTS)]
 	}
 
 	Op_Type :: enum {
@@ -818,13 +834,18 @@ emit_instr :: proc(
 	if op_dt in bac.FLOAT_DTS && NODE_TO_OP[.Float][kind] != 0 {
 		op = NODE_TO_OP[.Float][kind]
 	}
-	is_64 := node.dt == .I64
+	is_64 := op_dt == .I64
 	is_f64 = op_dt == .F64
 
 	emit: switch kind {
 	case:
 		fallthrough
-	case .Nil ..= .Dbg_Scope, .Simd_Extract_Lsbs, .Rem, .U_Rem:
+	case .Nil ..=
+	     .Dbg_Scope,
+	     .Simd_Extract_Lsbs,
+	     .Simd_Extract_Msbs,
+	     .Rem,
+	     .U_Rem:
 		fmt.panicf("should not reach this: %v", node)
 	case .Poison ..= .Phi:
 	case .Umov:
@@ -835,11 +856,7 @@ emit_instr :: proc(
 
 		emit_op(
 			ctx.code,
-			op |
-			u32(is_64) << 30 |
-			imm << 16 |
-			u32(src.index) << 5 |
-			u32(dst.index),
+			op | u32(is_64) << 30 | imm << 16 | u32(src.index) << 5 | u32(dst.index),
 		)
 	case .Ext:
 		dst := reg_of(ctx, instr)
@@ -898,10 +915,7 @@ emit_instr :: proc(
 		dst := reg_of(ctx, instr)
 		src := reg_of(ctx, node.inps[0])
 
-		emit_op(
-			ctx.code,
-			op | imm << 16 | u32(src.index) << 5 | u32(dst.index),
-		)
+		emit_op(ctx.code, op | imm << 16 | u32(src.index) << 5 | u32(dst.index))
 	case .Global_Addr, .Proc_Addr:
 		scale_pow, id: u32
 		if kind == .Proc_Addr {
@@ -1016,12 +1030,7 @@ emit_instr :: proc(
 
 		emit_op(
 			ctx.code,
-			imm12_instr(
-				op,
-				reg_of(ctx, node.inps[3]),
-				reg_of(ctx, node.inps[2]),
-				0,
-			),
+			imm12_instr(op, reg_of(ctx, node.inps[3]), reg_of(ctx, node.inps[2]), 0),
 		)
 	case .Load:
 		// ldr rinstr, [rinp2, $imm12]
@@ -1052,6 +1061,46 @@ emit_instr :: proc(
 		assert(rd_off < 4096)
 		assert(rm_off < 4096)
 
+		if rm == FLAGS || rd == FLAGS {
+			other := rm == FLAGS ? rd : rm
+			spill := int(other.index) >= ctx.spill_boundary[RK_GENERAL]
+			tmp := other
+			if spill {
+				tmp = X17
+				// str x17, [sp, #-16]!
+				emit_op(ctx.code, 0xF81F0FF1)
+			}
+			if rm == FLAGS {
+				cc := condition_for(ctx, node.inps[0])
+				// cset wtmp, cc
+				emit_op(ctx.code, 0x1A9F07E0 | u32(cc_neg(cc)) << 12 | u32(tmp.index))
+				if spill {
+					// str x17, [sp, rd_off + 16]
+					emit_op(ctx.code, imm12_instr(0b1111100100, tmp, SP, rd_off + 2))
+				}
+			} else {
+				if spill {
+					// ldr x17, [sp, rm_off + 16]
+					emit_op(ctx.code, imm12_instr(0b1111100101, tmp, SP, rm_off + 2))
+				}
+				// cmp wtmp/xtmp, #0
+				emit_op(
+					ctx.code,
+					imm12_instr(
+						node.dt == .I64 ? 0b1111000100 : 0b0111000100,
+						XZR,
+						tmp,
+						0,
+					),
+				)
+			}
+			if spill {
+				// ldr x17, [sp], #16
+				emit_op(ctx.code, 0xF84107F1)
+			}
+			break
+		}
+
 		if rm.kind == RK_VECTOR {
 			if rm.index >= 32 && rd.index >= 32 {
 				// this is atroucious
@@ -1063,16 +1112,10 @@ emit_instr :: proc(
 				emit_op(ctx.code, 0x3D8003FF)
 
 				// ldr d31, [sp, rm_off + 16]
-				emit_op(
-					ctx.code,
-					imm12_instr(0b1111110101, V31, SP, rm_off + 2),
-				)
+				emit_op(ctx.code, imm12_instr(0b1111110101, V31, SP, rm_off + 2))
 
 				// str d31, [sp, rd_off + 16]
-				emit_op(
-					ctx.code,
-					imm12_instr(0b1111110100, V31, SP, rd_off + 2),
-				)
+				emit_op(ctx.code, imm12_instr(0b1111110100, V31, SP, rd_off + 2))
 
 				// ldr q31, [sp]
 				emit_op(ctx.code, 0x3DC003FF)
@@ -1089,16 +1132,14 @@ emit_instr :: proc(
 				MOV :: 0x4EA01C00
 				emit_op(
 					ctx.code,
-					MOV |
-					u32(rm.index) << 16 |
-					u32(rm.index) << 5 |
-					u32(rd.index),
+					MOV | u32(rm.index) << 16 | u32(rm.index) << 5 | u32(rd.index),
 				)
 			}
 			break
 		}
 
-		if rm.index >= 32 && rd.index >= 32 {
+		if int(rm.index) >= ctx.spill_boundary[RK_GENERAL] &&
+		   int(rd.index) >= ctx.spill_boundary[RK_GENERAL] {
 			// str x17, [sp, #-16]!
 			emit_op(ctx.code, 0xF81F0FF1)
 
@@ -1111,10 +1152,10 @@ emit_instr :: proc(
 
 			// ldr x17, [sp], #16
 			emit_op(ctx.code, 0xF84107F1)
-		} else if rm.index >= 32 {
+		} else if int(rm.index) >= ctx.spill_boundary[RK_GENERAL] {
 			// ldr rd, [SP, rm_off]
 			emit_op(ctx.code, imm12_instr(0b1111100101, rd, SP, rm_off))
-		} else if rd.index >= 32 {
+		} else if int(rd.index) >= ctx.spill_boundary[RK_GENERAL] {
 			// str rm, [SP, rd_off]
 			emit_op(ctx.code, imm12_instr(0b1111100100, rm, SP, rd_off))
 		} else {
@@ -1122,41 +1163,26 @@ emit_instr :: proc(
 			emit_op(ctx.code, sh_instr(true, 0b0101010, nil, rd, XZR, rm))
 		}
 
-	case .Csel_Ult_Imm:
-		CMP_W :: 0b0111000100
-		CMP_X :: 0b1111000100
-		CSEL :: 0x1A800000
-
-		count_64 := get_node(ctx, node.inps[2]).dt == .I64
-		// Keep NZCV internal to this node so scheduling cannot clobber the comparison.
-		emit_op(
-			ctx.code,
-			imm12_instr(
-				count_64 ? CMP_X : CMP_W,
-				XZR,
-				reg_of(ctx, node.inps[2]),
-				arm_op.aux,
-			),
-		)
-		emit_op(
-			ctx.code,
-			rrr(
-				is_64,
-				CSEL | u32(Cond.CC) << 12,
-				reg_of(ctx, instr),
-				reg_of(ctx, node.inps[0]),
-				reg_of(ctx, node.inps[1]),
-			),
-		)
-	case .Add ..=
-	     .Xor,
-	     .Div,
-	     .U_Div,
-	     .And_Not,
-	     .Shl ..=
-	     .U_Shr,
-	     .Lslv ..=
-	     .Lsrv:
+	case .Select:
+		cc := condition_for(ctx, node.inps[2])
+		dst := reg_of(ctx, instr)
+		on_true := reg_of(ctx, node.inps[0])
+		on_false := reg_of(ctx, node.inps[1])
+		if node.dt in bac.FLOAT_DTS {
+			// fcsel sdst/ddst, son_true/don_true, son_false/don_false, cc
+			emit_op(
+				ctx.code,
+				fff(is_f64, 0x1E200C00 | u32(cc) << 12, dst, on_true, on_false),
+			)
+		} else {
+			assert(node.dt in bac.INT_DTS)
+			// csel wdst/xdst, won_true/xon_true, won_false/xon_false, cc
+			emit_op(
+				ctx.code,
+				rrr(is_64, 0x1A800000 | u32(cc) << 12, dst, on_true, on_false),
+			)
+		}
+	case .Add ..= .Xor, .Div, .U_Div, .And_Not, .Shl ..= .U_Shr, .Lslv ..= .Lsrv:
 		rd := reg_of(ctx, instr)
 		rn := reg_of(ctx, node.inps[0])
 		rm := reg_of(ctx, node.inps[1])
@@ -1255,25 +1281,6 @@ emit_instr :: proc(
 			// cmp rn, rm
 			emit_op(ctx.code, rrr(is_64, op, XZR, rn, rm))
 		}
-
-		if node.dt != .Void {
-			// csinc rd, xzr, xzr, cc
-			op :: 0b10011010100
-			rm :: XZR
-			cond := cc_neg(condition_for(kind, inp.dt))
-			pd :: 0b01
-			rn :: XZR
-			rd := reg_of(ctx, instr)
-			emit_op(
-				ctx.code,
-				op << 21 |
-				u32(rm.index) << 16 |
-				u32(cond) << 12 |
-				pd << 10 |
-				u32(rn.index) << 5 |
-				u32(rd.index),
-			)
-		}
 	case .Neg, .Not:
 		emit_op(
 			ctx.code,
@@ -1324,27 +1331,20 @@ emit_instr :: proc(
 
 			hw: u32 = 0b00
 
-			emit_op(
-				ctx.code,
-				op << 23 | hw << 21 | u32(imm) << 5 | u32(reg.index),
-			)
+			emit_op(ctx.code, op << 23 | hw << 21 | u32(imm) << 5 | u32(reg.index))
 
 			remining_subs :=
 				(64 - intrinsics.count_leading_ones(cint.value) + 16 - 1) / 16
 			if cint.value >= 0 {
 				remining_subs =
-					(64 -
-						intrinsics.count_leading_zeros(cint.value) +
-						16 -
-						1) /
-					16
+					(64 - intrinsics.count_leading_zeros(cint.value) + 16 - 1) / 16
 			}
 
 			op = 0b111100101
 			for i in 1 ..< remining_subs {
 				hw = u32(i)
 				vl := u16(cint.value >> (hw * 16))
-				if vl != 0 {
+				if (vl != 0 || cint.value < 0) && (vl != max(u16) || cint.value >= 0) {
 					emit_op(
 						ctx.code,
 						op << 23 | hw << 21 | u32(vl) << 5 | u32(reg.index),
@@ -1370,28 +1370,10 @@ emit_instr :: proc(
 			},
 		)
 
-		cond := get_node(ctx, node.inps[1])
-
-		if cond.dt == .Void {
-			// b.<cond> <imm19>
-			op :: 0b01010100
-			imm19 :: 0
-			pd :: 0
-
-			operand_dt := get_node(ctx, bac.get_inputs(ctx, cond)[0]).dt
-			cond := cc_neg(condition_for(atype(cond), operand_dt))
-			if !is_consecutive do cond = cc_neg(cond)
-
-			emit_op(ctx.code, op << 24 | imm19 << 5 | pd << 4 | u32(cond))
-		} else {
-			op = 0b10110100 // cbnz <imm19>, rt
-			if !is_consecutive do op = 0b10110101 // cbz <imm19>, rt
-
-			imm19 :: 0
-			rt := reg_of(ctx, node.inps[1])
-
-			emit_op(ctx.code, op << 24 | imm19 << 5 | u32(rt.index))
-		}
+		cc := condition_for(ctx, node.inps[1])
+		if is_consecutive do cc = cc_neg(cc)
+		// b.<cc> <imm19>
+		emit_op(ctx.code, 0x54000000 | u32(cc))
 
 		if !is_consecutive do break
 		fallthrough
@@ -1425,8 +1407,7 @@ emit_instr :: proc(
 				op = 0xd63f0000
 
 				idx := len(node.inps) - 1
-				for ; get_node(ctx, node.inps[idx]).itype == .Local;
-				    idx -= 1 {}
+				for ; get_node(ctx, node.inps[idx]).itype == .Local; idx -= 1 {}
 				ptr := reg_of(ctx, node.inps[idx])
 
 				emit_op(ctx.code, op | u32(ptr.index) << 5)
@@ -1457,10 +1438,7 @@ emit_instr :: proc(
 			for reg in ctx.callee_saved[RK_GENERAL] {
 				if bit_arr.contains(ctx.used, int(reg)) {
 					// ldr rt, [sp, $imm12]
-					emit_op(
-						ctx.code,
-						imm12_instr(0b1111100101, reg, SP, pushed / 8),
-					)
+					emit_op(ctx.code, imm12_instr(0b1111100101, reg, SP, pushed / 8))
 					pushed += 8
 				}
 			}
@@ -1487,10 +1465,7 @@ emit_instr :: proc(
 
 			if ctx.stack_size != 0 {
 				// add sp, sp, ctx.stack_size
-				emit_op(
-					ctx.code,
-					imm12_instr(0b1001000100, SP, SP, ctx.stack_size),
-				)
+				emit_op(ctx.code, imm12_instr(0b1001000100, SP, SP, ctx.stack_size))
 			}
 		}
 

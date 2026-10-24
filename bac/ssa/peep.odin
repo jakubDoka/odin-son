@@ -144,8 +144,7 @@ fold_bin_op :: proc(
 		if u64(rhs) >= u64(bac.DT_SIZE[op_ty] * 8) do return 0
 		value = sext(lhs << u64(rhs), op_ty)
 	case .Shr:
-		value =
-			sext(lhs, op_ty) >> min(u64(rhs), u64(bac.DT_SIZE[op_ty] * 8 - 1))
+		value = sext(lhs, op_ty) >> min(u64(rhs), u64(bac.DT_SIZE[op_ty] * 8 - 1))
 	case .Eq:
 		value = i64(lhs == rhs)
 	case .Ne:
@@ -342,11 +341,7 @@ peep :: proc(
 				}
 
 				if get_node(ctx, user.id).itype == .Add {
-					bac.peep_ctx_add_trigger(
-						ctx,
-						bac.get_inputs(ctx, user.id)[1],
-						id,
-					)
+					bac.peep_ctx_add_trigger(ctx, bac.get_inputs(ctx, user.id)[1], id)
 				}
 
 				bac.peep_ctx_add_trigger(ctx, user.id, id)
@@ -391,9 +386,7 @@ peep :: proc(
 					continue
 				}
 
-				if unode.itype == .Copy &&
-				   user.idx == 3 &&
-				   forward_candidate == 0 {
+				if unode.itype == .Copy && user.idx == 3 && forward_candidate == 0 {
 					forward_candidate = user.id
 					continue
 				}
@@ -408,8 +401,7 @@ peep :: proc(
 			}
 
 			if load_base != 0 &&
-			   (((load_base != rev_forward_candidate) &&
-						   forward_candidate == 0) ||
+			   (((load_base != rev_forward_candidate) && forward_candidate == 0) ||
 					   forward_candidate != 0) {
 				break forward
 			}
@@ -420,11 +412,7 @@ peep :: proc(
 				bse, _ := bac.base_and_offset(ctx, fnode.inps[2])
 				subs := get_node(ctx, bse)
 
-				VALID :: bit_set[bac.Node_Type] {
-					.Local_Addr,
-					.Param,
-					.Global_Addr,
-				}
+				VALID :: bit_set[bac.Node_Type]{.Local_Addr, .Param, .Global_Addr}
 				if subs.itype not_in VALID {break forward}
 
 				cursor := fnode.inps[1]
@@ -433,8 +421,7 @@ peep :: proc(
 					cnode := expand_node(ctx, cursor)
 					if cnode.itype not_in STORES do break forward
 					base, _ := bac.base_and_offset(ctx, cnode.inps[2])
-					if base != id &&
-					   !bac.is_noalias(ctx, cursor, forward_candidate) {
+					if base != id && !bac.is_noalias(ctx, cursor, forward_candidate) {
 						bac.peep_ctx_add_trigger(ctx, cursor, id)
 						break forward
 					}
@@ -466,8 +453,7 @@ peep :: proc(
 				for out in bedge.outs {
 					if out.id != id {
 						we_are_alive =
-							(get_node(ctx, out.id).itype == .Else) ~
-							(cond_const.value == 0)
+							(get_node(ctx, out.id).itype == .Else) ~ (cond_const.value == 0)
 					}
 				}
 
@@ -507,12 +493,7 @@ peep :: proc(
 			for o in node.outs {
 				n := get_node(ctx, o.id)
 				if n.itype == .Phi {
-					fmt.assertf(
-						n.input_count == node.input_count + 1,
-						"%v %v",
-						n,
-						node,
-					)
+					fmt.assertf(n.input_count == node.input_count + 1, "%v %v", n, node)
 				}
 			}
 		}
@@ -544,6 +525,14 @@ peep :: proc(
 			}
 
 			return node.inps[0]
+		}
+
+		if if_, ok := select_diamond(ctx, id); ok {
+			has_phis := false
+			for out in node.outs {
+				has_phis |= get_node(ctx, out.id).itype == .Phi
+			}
+			if !has_phis do return bac.get_inputs(ctx, if_)[0]
 		}
 
 		phi_count := 0
@@ -621,12 +610,7 @@ peep :: proc(
 			for o in node.outs {
 				n := get_node(ctx, o.id)
 				if n.itype == .Phi {
-					fmt.assertf(
-						n.input_count == node.input_count + 1,
-						"%v %v",
-						n,
-						node,
-					)
+					fmt.assertf(n.input_count == node.input_count + 1, "%v %v", n, node)
 				}
 			}
 		}
@@ -642,6 +626,36 @@ peep :: proc(
 
 		if 2 < len(node.inps) && node.inps[2] == id {
 			return node.inps[1]
+		}
+
+		if len(node.inps) == 3 && node.inps[1] == node.inps[2] {
+			return node.inps[1]
+		}
+
+		if node.dt in ctx.select_types {
+			region := expand_node(ctx, node.inps[0])
+			if if_, ok := select_diamond(ctx, node.inps[0]); ok {
+				budget := 64
+				if !can_speculate_select_value(ctx, node.inps[1], &budget) ||
+				   !can_speculate_select_value(ctx, node.inps[2], &budget) {
+					break match
+				}
+				first_is_then := get_node(ctx, region.inps[0]).itype == .Then
+				return bac.add_select(
+					ctx,
+					"phisel",
+					node.dt,
+					node.inps[1 + int(!first_is_then)],
+					node.inps[1 + int(first_is_then)],
+					bac.get_inputs(ctx, if_)[1],
+				)
+			}
+			bac.peep_ctx_add_trigger(ctx, node.inps[0], id)
+		}
+	case .Select:
+		if node.inps[0] == node.inps[1] do return node.inps[0]
+		if cond := bac.get_extra(ctx, node.inps[2], CInt); cond != nil {
+			return node.inps[int(cond.value == 0)]
 		}
 	case .If:
 		if len(node.outs) < 2 {
@@ -665,12 +679,7 @@ peep :: proc(
 						ctx,
 						id,
 						1,
-						bac.add_c_int(
-							ctx,
-							"shfld",
-							.I8,
-							i64(pcnode.itype != .Else),
-						),
+						bac.add_c_int(ctx, "shfld", .I8, i64(pcnode.itype != .Else)),
 					)
 					return id
 				}
@@ -744,12 +753,7 @@ peep :: proc(
 					.Shr,
 					node.dt,
 					node.inps[0],
-					bac.add_c_int(
-						ctx,
-						"shc",
-						rhs.dt,
-						i64(bac.DT_SIZE[op_ty] * 8 - 1),
-					),
+					bac.add_c_int(ctx, "shc", rhs.dt, i64(bac.DT_SIZE[op_ty] * 8 - 1)),
 				)
 			}
 
@@ -991,8 +995,7 @@ peep :: proc(
 				for out in cnode.outs {
 					onode := expand_node(ctx, out.id)
 					if !onode.is_store ||
-					   (onode.itype == .Copy &&
-							   onode.inps[2] == onode.inps[3]) {
+					   (onode.itype == .Copy && onode.inps[2] == onode.inps[3]) {
 						bac.peep_ctx_add_trigger(ctx, out.id, id)
 						break eliminate
 					}
@@ -1006,6 +1009,7 @@ peep :: proc(
 					onode := expand_node(ctx, out.id)
 					if bac.is_noalias(ctx, id, out.id) {
 						if cursor != 0 do break eliminate
+						clobbered = false
 						cursor = out.id
 						continue
 					}
@@ -1014,6 +1018,7 @@ peep :: proc(
 					osize := bac.mem_op_size(ctx, out.id) or_break eliminate
 					obase, ooff := bac.base_and_offset(ctx, onode.inps[2])
 					if base != obase {
+						bac.peep_ctx_add_trigger(ctx, obase, id)
 						break eliminate
 					}
 
@@ -1218,13 +1223,7 @@ peep :: proc(
 		for i in 0 ..= prev_len {
 			slot := i == prev_len ? Slot{} : slots[prev_len - i - 1]
 
-			fmt.assertf(
-				offset >= slot.offset,
-				"%v, %v, %#v",
-				offset,
-				slot,
-				slots,
-			)
+			fmt.assertf(offset >= slot.offset, "%v, %v, %#v", offset, slot, slots)
 			rev_offset := slot.offset + slot.size
 			inserts := 0
 			for rev_offset < offset {
@@ -1298,10 +1297,7 @@ peep :: proc(
 					inject_at(
 						&slots,
 						i + 1,
-						Slot {
-							offset = slot.offset + chip,
-							size = slot.size - chip,
-						},
+						Slot{offset = slot.offset + chip, size = slot.size - chip},
 					)
 					slot.size = chip
 				}
@@ -1315,12 +1311,7 @@ peep :: proc(
 
 		mem_thread := mm
 		for slot in slots {
-			fmt.assertf(
-				math.is_power_of_two(slot.size),
-				"%v %#v",
-				slot.size,
-				slots,
-			)
+			fmt.assertf(math.is_power_of_two(slot.size), "%v %#v", slot.size, slots)
 			idx := intrinsics.count_trailing_zeros(slot.size)
 			table := [?]bac.Node_Datatype{.I8, .I16, .I32, .I64, .V128}
 			dt := table[idx]
@@ -1340,6 +1331,59 @@ peep :: proc(
 	}
 
 	return nil
+}
+
+select_diamond :: proc(ctx: bac.Peep_Ctx, region: Node_ID) -> (Node_ID, bool) {
+	if !bac.peep_ctx_graph_is_complete(ctx) do return 0, false
+	rnode := expand_node(ctx, region)
+	if rnode.itype != .Region || len(rnode.inps) != 2 do return 0, false
+	lhs := expand_node(ctx, rnode.inps[0])
+	rhs := expand_node(ctx, rnode.inps[1])
+	if !((lhs.itype == .Then && rhs.itype == .Else) ||
+		   (lhs.itype == .Else && rhs.itype == .Then)) {
+		return 0, false
+	}
+	if lhs.inps[0] != rhs.inps[0] do return 0, false
+	if get_node(ctx, lhs.inps[0]).itype != .If do return 0, false
+	// Branch-pinned memory operations must not become speculative select operands.
+	for head in rnode.inps {
+		for out in bac.get_outputs(ctx, head) {
+			if out.id != region {
+				bac.peep_ctx_add_trigger(ctx, out.id, region)
+				return 0, false
+			}
+		}
+	}
+	return lhs.inps[0], true
+}
+
+can_speculate_select_value :: proc(
+	ctx: bac.Peep_Ctx,
+	value: Node_ID,
+	budget: ^int,
+) -> bool {
+	if budget^ == 0 do return false
+	budget^ -= 1
+	node := expand_node(ctx, value)
+	#partial switch node.itype {
+	case .CInt,
+	     .Param,
+	     .Ret,
+	     .Phi,
+	     .Local_Addr,
+	     .Global_Addr,
+	     .Proc_Addr,
+	     .Poison:
+		return true
+	case .Div, .U_Div, .Rem, .U_Rem:
+		// Select evaluates both arms, including a formerly untaken division or load.
+		if node.dt in bac.INT_DTS do return false
+	}
+	if node.is_load || node.is_store || bac.is_cfg(ctx, value) do return false
+	for inp in node.inps {
+		if !can_speculate_select_value(ctx, inp, budget) do return false
+	}
+	return true
 }
 
 post_schedule_peep :: proc(

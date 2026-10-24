@@ -4,7 +4,8 @@ opaque:
     ret
 main:
     push rbx
-    sub rsp, 0x20
+    push rbp
+    sub rsp, 0x18
     pxor xmm0, xmm0
     movups.x [rsp], xmm0
     mov rdi, 0x64
@@ -18,31 +19,27 @@ main:
     mov.d [rsp + 0x4], eax
     mov rdi, 0x1f4
     call opaque
-    mov.q [rsp + 0x10], rax
-    mov.q rax, [rsp + 0x10]
     mov.q [rsp + 0x8], rax
-    movzx.b eax, [rsp]
-    add al, 1
-    mov.b [rsp], al
-    mov.q rcx, [rsp + 0x10]
-    add rcx, 4
-    mov.q [rsp + 0x10], rcx
-    movzx.w ecx, [rsp + 0x2]
-    movzx eax, al
-    add cx, 2
-    mov.w [rsp + 0x2], cx
-    mov.d edx, [rsp + 0x4]
-    add edx, 3
-    mov.d [rsp + 0x4], edx
-    mov.q rbx, [rsp + 0x10]
-    mov.q [rsp + 0x8], rbx
-    movzx ecx, cx
+    movzx.b ecx, [rsp]
+    add cl, 1
+    mov.b [rsp], cl
+    add rax, 4
+    mov rdx, rax
+    movzx.w ebx, [rsp + 0x2]
+    movzx eax, cl
+    add bx, 2
+    mov.w [rsp + 0x2], bx
+    mov.d ecx, [rsp + 0x4]
+    add ecx, 3
+    mov.d [rsp + 0x4], ecx
+    mov.q [rsp + 0x8], rdx
+    movzx ebx, bx
+    add rax, rbx
+    mov ecx, ecx
     add rax, rcx
-    mov ecx, edx
-    add rax, rcx
-    mov.q rcx, [rsp + 0x10]
-    add rax, rcx
-    add rsp, 0x20
+    add rax, rdx
+    add rsp, 0x18
+    pop rbp
     pop rbx
     ret
 =========== OPT LEVEL: none ===========
@@ -91,7 +88,8 @@ opaque:
     ret
 main:
     push rbx
-    sub rsp, 0x20
+    push rbp
+    sub rsp, 0x18
     pxor xmm0, xmm0
     movups.x [rsp], xmm0
     mov rdi, 0x64
@@ -105,31 +103,27 @@ main:
     mov.d [rsp + 0x4], eax
     mov rdi, 0x1f4
     call opaque
-    mov.q [rsp + 0x10], rax
-    mov.q rax, [rsp + 0x10]
     mov.q [rsp + 0x8], rax
-    movzx.b eax, [rsp]
-    add al, 1
-    mov.b [rsp], al
-    mov.q rcx, [rsp + 0x10]
-    add rcx, 4
-    mov.q [rsp + 0x10], rcx
-    movzx.w ecx, [rsp + 0x2]
-    movzx eax, al
-    add cx, 2
-    mov.w [rsp + 0x2], cx
-    mov.d edx, [rsp + 0x4]
-    add edx, 3
-    mov.d [rsp + 0x4], edx
-    mov.q rbx, [rsp + 0x10]
-    mov.q [rsp + 0x8], rbx
-    movzx ecx, cx
+    movzx.b ecx, [rsp]
+    add cl, 1
+    mov.b [rsp], cl
+    add rax, 4
+    mov rdx, rax
+    movzx.w ebx, [rsp + 0x2]
+    movzx eax, cl
+    add bx, 2
+    mov.w [rsp + 0x2], bx
+    mov.d ecx, [rsp + 0x4]
+    add ecx, 3
+    mov.d [rsp + 0x4], ecx
+    mov.q [rsp + 0x8], rdx
+    movzx ebx, bx
+    add rax, rbx
+    mov ecx, ecx
     add rax, rcx
-    mov ecx, edx
-    add rax, rcx
-    mov.q rcx, [rsp + 0x10]
-    add rax, rcx
-    add rsp, 0x20
+    add rax, rdx
+    add rsp, 0x18
+    pop rbp
     pop rbx
     ret
 =========== OPT LEVEL: moderate ===========

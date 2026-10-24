@@ -2,46 +2,36 @@
 main:
     sub sp, sp, #16
     add x0, sp, #0
-    movz x1, #0
-    movz x2, #8
-    add x2, x2, x0
-    str x1, [x2]
-    movz x3, #1
-    ldr x4, [x2]
-    cmp w4, w1
-    b.eq 1
-    movz x1, #0
-    b 2
-1:
     movz x1, #1
-2:
+    movz x2, #0
+    movz x3, #8
+    add x3, x3, x0
+    str x2, [x3]
+    ldr x4, [x3]
+    cmp x4, x2
+    csel x2, x1, x2, eq
     movz x4, #5
     str x4, [x0]
-    str x3, [x2]
+    str x1, [x3]
     movz x0, #2
-    add x0, x1, x0
+    add x0, x2, x0
     add sp, sp, #16
     ret
 =========== OPT LEVEL: none ===========
 main:
     sub sp, sp, #16
     add x4, sp, #0
+    movz x3, #1
     movz x1, #0
     movz x0, #8
-    add x3, x0, x4
-    str x1, [x3]
-    movz x2, #1
-    ldr x0, [x3]
-    cmp w0, w1
-    b.eq 1
-    movz x1, #0
-    b 2
-1:
-    movz x1, #1
-2:
+    add x2, x0, x4
+    str x1, [x2]
+    ldr x0, [x2]
+    cmp x0, x1
+    csel x1, x3, x1, eq
     movz x0, #5
     str x0, [x4]
-    str x2, [x3]
+    str x3, [x2]
     movz x0, #2
     add x0, x1, x0
     add sp, sp, #16
@@ -50,46 +40,36 @@ main:
 main:
     sub sp, sp, #16
     add x0, sp, #0
-    movz x1, #0
-    movz x2, #8
-    add x2, x2, x0
-    str x1, [x2]
-    movz x3, #1
-    ldr x4, [x2]
-    cmp w4, w1
-    b.eq 1
-    movz x1, #0
-    b 2
-1:
     movz x1, #1
-2:
+    movz x2, #0
+    movz x3, #8
+    add x3, x3, x0
+    str x2, [x3]
+    ldr x4, [x3]
+    cmp x4, x2
+    csel x2, x1, x2, eq
     movz x4, #5
     str x4, [x0]
-    str x3, [x2]
+    str x1, [x3]
     movz x0, #2
-    add x0, x1, x0
+    add x0, x2, x0
     add sp, sp, #16
     ret
 =========== OPT LEVEL: moderate ===========
 main:
     sub sp, sp, #16
     add x4, sp, #0
+    movz x3, #1
     movz x1, #0
     movz x0, #8
-    add x3, x0, x4
-    str x1, [x3]
-    movz x2, #1
-    ldr x0, [x3]
-    cmp w0, w1
-    b.eq 1
-    movz x1, #0
-    b 2
-1:
-    movz x1, #1
-2:
+    add x2, x0, x4
+    str x1, [x2]
+    ldr x0, [x2]
+    cmp x0, x1
+    csel x1, x3, x1, eq
     movz x0, #5
     str x0, [x4]
-    str x2, [x3]
+    str x3, [x2]
     movz x0, #2
     add x0, x1, x0
     add sp, sp, #16

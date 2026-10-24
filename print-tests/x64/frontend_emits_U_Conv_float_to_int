@@ -5,72 +5,63 @@ to_u32:
 to_u64:
     cvttsd2si rcx, xmm0
     shr rcx, 0x3f
-    mov rax, rcx
-    shl rax, 0x34
-    movq xmm1, rax
-    psubq xmm0, xmm1
-    cvttsd2si rax, xmm0
-    cmp rcx, 0x40
-    jb 2
     xor eax, eax
-    jmp 3
-2:
-    shl rax, cl
-3:
+    mov rdx, rcx
+    shl rdx, 0x34
+    movq xmm1, rdx
+    psubq xmm0, xmm1
+    cvttsd2si rdx, xmm0
+    shlx rdx, rdx, rcx
+    cmp rcx, 0x40
+    cmovb rax, rdx
     ret
 to_u64_f32:
     cvttss2si rcx, xmm0
     shr rcx, 0x3f
-    mov rax, rcx
-    shl eax, 0x17
-    movd xmm1, eax
-    psubd xmm0, xmm1
-    cvttss2si rax, xmm0
-    cmp rcx, 0x40
-    jb 5
     xor eax, eax
-    jmp 6
-5:
-    shl rax, cl
-6:
+    mov rdx, rcx
+    shl edx, 0x17
+    movd xmm1, edx
+    psubd xmm0, xmm1
+    cvttss2si rdx, xmm0
+    shlx rdx, rdx, rcx
+    cmp rcx, 0x40
+    cmovb rax, rdx
     ret
 main:
     push rbx
-    sub rsp, 0x20
-    movsd.q xmm0, [rip + 0xf3e]
+    push rbp
+    sub rsp, 8
+    movsd.q xmm0, [rip + 0xec8]
     call to_u32
-    mov.q [rsp], rax
-    movsd.q xmm0, [rip + 0xf34]
+    mov rbx, rax
+    movsd.q xmm0, [rip + 0xebf]
     call to_u64
-    mov.q [rsp + 0x8], rax
-    movss.d xmm0, [rip + 0xf29]
+    mov rbp, rax
+    movss.d xmm0, [rip + 0xeb6]
     call to_u64_f32
-    mov.q [rsp + 0x10], rax
-    movabs rcx, 0xde0b6b3a7640000
-    mov rbx, 0x3b9aca00
-    mov.q rax, [rsp]
+    mov rcx, rax
+    movabs rsi, 0xde0b6b3a7640000
+    mov rdi, 0x3b9aca00
+    mov rax, rbx
     xor rdx, rdx
-    div ebx
-    mov rax, rax
+    div edi
     mov eax, eax
-    mov.q [rsp], rax
-    mov.q rax, [rsp + 0x8]
+    mov rbx, rax
+    mov rax, rbp
     xor rdx, rdx
-    div rcx
-    mov rax, rax
+    div rsi
     imul rax, rax, 0xa
-    mov.q rdx, [rsp]
-    add rdx, rax
-    mov.q [rsp], rdx
-    mov.q rax, [rsp + 0x10]
+    add rbx, rax
+    mov rax, rcx
     xor rdx, rdx
-    div rcx
-    mov rax, rax
+    div rsi
     imul rax, rax, 0x64
-    mov.q rcx, [rsp]
+    mov rcx, rbx
     add rcx, rax
     mov rax, rcx
-    add rsp, 0x20
+    add rsp, 8
+    pop rbp
     pop rbx
     ret
 =========== OPT LEVEL: none ===========
@@ -78,48 +69,42 @@ to_u32:
     cvttsd2si rax, xmm0
     ret
 to_u64:
-    cvttsd2si rcx, xmm0
-    shr rcx, 0x3f
-    mov rax, rcx
-    shl rax, 0x34
-    movq xmm1, rax
-    psubq xmm0, xmm1
-    cvttsd2si rax, xmm0
-    cmp rcx, 0x40
-    jb 2
+    cvttsd2si rdx, xmm0
+    shr rdx, 0x3f
     xor eax, eax
-    jmp 3
-2:
-    shl rax, cl
-3:
+    mov rcx, rdx
+    shl rcx, 0x34
+    movq xmm1, rcx
+    psubq xmm0, xmm1
+    cvttsd2si rcx, xmm0
+    shlx rcx, rcx, rdx
+    cmp rdx, 0x40
+    cmovb rax, rcx
     ret
 to_u64_f32:
-    cvttss2si rcx, xmm0
-    shr rcx, 0x3f
-    mov rax, rcx
-    shl eax, 0x17
-    movd xmm1, eax
-    psubd xmm0, xmm1
-    cvttss2si rax, xmm0
-    cmp rcx, 0x40
-    jb 5
+    cvttss2si rdx, xmm0
+    shr rdx, 0x3f
     xor eax, eax
-    jmp 6
-5:
-    shl rax, cl
-6:
+    mov rcx, rdx
+    shl ecx, 0x17
+    movd xmm1, ecx
+    psubd xmm0, xmm1
+    cvttss2si rcx, xmm0
+    shlx rcx, rcx, rdx
+    cmp rdx, 0x40
+    cmovb rax, rcx
     ret
 main:
     push rbx
     push rbp
     sub rsp, 8
-    movsd.q xmm0, [rip + 0xf3c]
+    movsd.q xmm0, [rip + 0xee5]
     call to_u32
     mov rbp, rax
-    movsd.q xmm0, [rip + 0xf33]
+    movsd.q xmm0, [rip + 0xedc]
     call to_u64
     mov rbx, rax
-    movss.d xmm0, [rip + 0xf2a]
+    movss.d xmm0, [rip + 0xed3]
     call to_u64_f32
     mov rdi, rax
     movabs rsi, 0xde0b6b3a7640000
@@ -150,72 +135,63 @@ to_u32:
 to_u64:
     cvttsd2si rcx, xmm0
     shr rcx, 0x3f
-    mov rax, rcx
-    shl rax, 0x34
-    movq xmm1, rax
-    psubq xmm0, xmm1
-    cvttsd2si rax, xmm0
-    cmp rcx, 0x40
-    jb 2
     xor eax, eax
-    jmp 3
-2:
-    shl rax, cl
-3:
+    mov rdx, rcx
+    shl rdx, 0x34
+    movq xmm1, rdx
+    psubq xmm0, xmm1
+    cvttsd2si rdx, xmm0
+    shlx rdx, rdx, rcx
+    cmp rcx, 0x40
+    cmovb rax, rdx
     ret
 to_u64_f32:
     cvttss2si rcx, xmm0
     shr rcx, 0x3f
-    mov rax, rcx
-    shl eax, 0x17
-    movd xmm1, eax
-    psubd xmm0, xmm1
-    cvttss2si rax, xmm0
-    cmp rcx, 0x40
-    jb 5
     xor eax, eax
-    jmp 6
-5:
-    shl rax, cl
-6:
+    mov rdx, rcx
+    shl edx, 0x17
+    movd xmm1, edx
+    psubd xmm0, xmm1
+    cvttss2si rdx, xmm0
+    shlx rdx, rdx, rcx
+    cmp rcx, 0x40
+    cmovb rax, rdx
     ret
 main:
     push rbx
-    sub rsp, 0x20
-    movsd.q xmm0, [rip + 0xf3e]
+    push rbp
+    sub rsp, 8
+    movsd.q xmm0, [rip + 0xec8]
     call to_u32
-    mov.q [rsp], rax
-    movsd.q xmm0, [rip + 0xf34]
+    mov rbx, rax
+    movsd.q xmm0, [rip + 0xebf]
     call to_u64
-    mov.q [rsp + 0x8], rax
-    movss.d xmm0, [rip + 0xf29]
+    mov rbp, rax
+    movss.d xmm0, [rip + 0xeb6]
     call to_u64_f32
-    mov.q [rsp + 0x10], rax
-    movabs rcx, 0xde0b6b3a7640000
-    mov rbx, 0x3b9aca00
-    mov.q rax, [rsp]
+    mov rcx, rax
+    movabs rsi, 0xde0b6b3a7640000
+    mov rdi, 0x3b9aca00
+    mov rax, rbx
     xor rdx, rdx
-    div ebx
-    mov rax, rax
+    div edi
     mov eax, eax
-    mov.q [rsp], rax
-    mov.q rax, [rsp + 0x8]
+    mov rbx, rax
+    mov rax, rbp
     xor rdx, rdx
-    div rcx
-    mov rax, rax
+    div rsi
     imul rax, rax, 0xa
-    mov.q rdx, [rsp]
-    add rdx, rax
-    mov.q [rsp], rdx
-    mov.q rax, [rsp + 0x10]
+    add rbx, rax
+    mov rax, rcx
     xor rdx, rdx
-    div rcx
-    mov rax, rax
+    div rsi
     imul rax, rax, 0x64
-    mov.q rcx, [rsp]
+    mov rcx, rbx
     add rcx, rax
     mov rax, rcx
-    add rsp, 0x20
+    add rsp, 8
+    pop rbp
     pop rbx
     ret
 =========== OPT LEVEL: moderate ===========
@@ -223,48 +199,42 @@ to_u32:
     cvttsd2si rax, xmm0
     ret
 to_u64:
-    cvttsd2si rcx, xmm0
-    shr rcx, 0x3f
-    mov rax, rcx
-    shl rax, 0x34
-    movq xmm1, rax
-    psubq xmm0, xmm1
-    cvttsd2si rax, xmm0
-    cmp rcx, 0x40
-    jb 2
+    cvttsd2si rdx, xmm0
+    shr rdx, 0x3f
     xor eax, eax
-    jmp 3
-2:
-    shl rax, cl
-3:
+    mov rcx, rdx
+    shl rcx, 0x34
+    movq xmm1, rcx
+    psubq xmm0, xmm1
+    cvttsd2si rcx, xmm0
+    shlx rcx, rcx, rdx
+    cmp rdx, 0x40
+    cmovb rax, rcx
     ret
 to_u64_f32:
-    cvttss2si rcx, xmm0
-    shr rcx, 0x3f
-    mov rax, rcx
-    shl eax, 0x17
-    movd xmm1, eax
-    psubd xmm0, xmm1
-    cvttss2si rax, xmm0
-    cmp rcx, 0x40
-    jb 5
+    cvttss2si rdx, xmm0
+    shr rdx, 0x3f
     xor eax, eax
-    jmp 6
-5:
-    shl rax, cl
-6:
+    mov rcx, rdx
+    shl ecx, 0x17
+    movd xmm1, ecx
+    psubd xmm0, xmm1
+    cvttss2si rcx, xmm0
+    shlx rcx, rcx, rdx
+    cmp rdx, 0x40
+    cmovb rax, rcx
     ret
 main:
     push rbx
     push rbp
     sub rsp, 8
-    movsd.q xmm0, [rip + 0xf3c]
+    movsd.q xmm0, [rip + 0xee5]
     call to_u32
     mov rbp, rax
-    movsd.q xmm0, [rip + 0xf33]
+    movsd.q xmm0, [rip + 0xedc]
     call to_u64
     mov rbx, rax
-    movss.d xmm0, [rip + 0xf2a]
+    movss.d xmm0, [rip + 0xed3]
     call to_u64_f32
     mov rdi, rax
     movabs rsi, 0xde0b6b3a7640000
@@ -293,48 +263,42 @@ to_u32:
     cvttsd2si rax, xmm0
     ret
 to_u64:
-    cvttsd2si rcx, xmm0
-    shr rcx, 0x3f
-    mov rax, rcx
-    shl rax, 0x34
-    movq xmm1, rax
-    psubq xmm0, xmm1
-    cvttsd2si rax, xmm0
-    cmp rcx, 0x40
-    jb 2
+    cvttsd2si rdx, xmm0
+    shr rdx, 0x3f
     xor eax, eax
-    jmp 3
-2:
-    shl rax, cl
-3:
+    mov rcx, rdx
+    shl rcx, 0x34
+    movq xmm1, rcx
+    psubq xmm0, xmm1
+    cvttsd2si rcx, xmm0
+    shlx rcx, rcx, rdx
+    cmp rdx, 0x40
+    cmovb rax, rcx
     ret
 to_u64_f32:
-    cvttss2si rcx, xmm0
-    shr rcx, 0x3f
-    mov rax, rcx
-    shl eax, 0x17
-    movd xmm1, eax
-    psubd xmm0, xmm1
-    cvttss2si rax, xmm0
-    cmp rcx, 0x40
-    jb 5
+    cvttss2si rdx, xmm0
+    shr rdx, 0x3f
     xor eax, eax
-    jmp 6
-5:
-    shl rax, cl
-6:
+    mov rcx, rdx
+    shl ecx, 0x17
+    movd xmm1, ecx
+    psubd xmm0, xmm1
+    cvttss2si rcx, xmm0
+    shlx rcx, rcx, rdx
+    cmp rdx, 0x40
+    cmovb rax, rcx
     ret
 main:
     push rbx
     push rbp
     sub rsp, 8
-    movsd.q xmm0, [rip + 0xf3c]
+    movsd.q xmm0, [rip + 0xee5]
     call to_u32
     mov rbp, rax
-    movsd.q xmm0, [rip + 0xf33]
+    movsd.q xmm0, [rip + 0xedc]
     call to_u64
     mov rbx, rax
-    movss.d xmm0, [rip + 0xf2a]
+    movss.d xmm0, [rip + 0xed3]
     call to_u64_f32
     mov rdi, rax
     movabs rsi, 0xde0b6b3a7640000

@@ -32,6 +32,21 @@ when !fmt.NO_FMT {
 
 		fmt.set_user_formatters(&fmts)
 
+		fmt.register_user_formatter(Lrg_Fails, proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
+			value := value.(Lrg_Fails)
+			io.write_rune(fi.writer, '{')
+			first := true
+			for field in reflect.bit_fields_zipped(Lrg_Fails) {
+				if u8(value) & (1 << field.offset) != 0 {
+					if !first do io.write_rune(fi.writer, '|')
+					first = false
+					io.write_string(fi.writer, field.name)
+				}
+			}
+			io.write_rune(fi.writer, '}')
+			return true
+		})
+
 		fmt.register_user_formatter(
 			Reg_Mask,
 			proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
@@ -164,12 +179,7 @@ when !fmt.NO_FMT {
 				if len(regs) != 0 {
 					if inode.dt != .Void {
 						reg := regs[inode.gvn]
-						fmt.wprintf(
-							w,
-							"%v%03i",
-							reg_kind_char(reg.kind),
-							reg.index,
-						)
+						fmt.wprintf(w, "%v%03i", reg_kind_char(reg.kind), reg.index)
 					} else {
 						fmt.wprint(w, "    ")
 					}
@@ -197,10 +207,7 @@ when !fmt.NO_FMT {
 
 		node := expand_node(prc, id)
 
-		get_any_extra_node :: #force_inline proc(
-			prc: ^Proc,
-			node: ^Node,
-		) -> any {
+		get_any_extra_node :: #force_inline proc(prc: ^Proc, node: ^Node) -> any {
 			assert(int(node.rtype) < len(prc.node_extra_types))
 			return {&node.extra, prc.node_extra_types[node.rtype]}
 		}

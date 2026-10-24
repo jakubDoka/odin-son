@@ -3,27 +3,25 @@ opaque:
     mov rax, rdi
     ret
 consume:
-    mov.q [rsp - 0x8], rdi
-    mov.q rax, [rsp - 0x8]
+    mov rax, rdi
     add rax, rsi
-    mov rax, rax
     add rax, rdx
-    mov rax, rax
     add rax, rcx
-    mov rax, rax
     add rax, r8
-    mov rax, rax
     add rax, r9
-    mov rax, rax
     mov.q rcx, [rsp + 0x8]
     add rax, rcx
-    mov rax, rax
     mov.q rcx, [rsp + 0x10]
     add rax, rcx
-    mov rax, rax
     ret
 main:
-    sub rsp, 0x58
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    push r15
+    sub rsp, 0x28
     pxor xmm0, xmm0
     movups.x [rsp + 0x10], xmm0
     mov rdi, 0xa
@@ -31,37 +29,42 @@ main:
     mov.q [rsp + 0x10], rax
     mov rdi, 0x14
     call opaque
-    mov.q [rsp + 0x20], rax
-    mov.q rax, [rsp + 0x20]
-    mov.q [rsp + 0x18], rax
+    mov rbx, rax
+    mov.q [rsp + 0x18], rbx
     mov.q rax, [rsp + 0x10]
-    mov.q [rsp + 0x28], rax
+    mov rbp, rax
     mov rdi, 1
     call opaque
-    mov.q [rsp + 0x30], rax
+    mov r12, rax
     mov rdi, 2
     call opaque
-    mov.q [rsp + 0x38], rax
+    mov r13, rax
     mov rdi, 3
     call opaque
-    mov.q [rsp + 0x40], rax
+    mov r14, rax
     mov rdi, 4
     call opaque
-    mov.q [rsp + 0x48], rax
+    mov r15, rax
     mov rdi, 5
     call opaque
     mov.q [rsp], rax
     mov rdi, 6
     call opaque
     mov.q [rsp + 0x8], rax
-    mov.q rsi, [rsp + 0x20]
-    mov.q rdx, [rsp + 0x30]
-    mov.q rcx, [rsp + 0x38]
-    mov.q r8, [rsp + 0x40]
-    mov.q r9, [rsp + 0x48]
-    mov.q rdi, [rsp + 0x28]
+    mov rsi, rbx
+    mov rdx, r12
+    mov rcx, r13
+    mov r8, r14
+    mov r9, r15
+    mov rdi, rbp
     call consume
-    add rsp, 0x58
+    add rsp, 0x28
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
     ret
 =========== OPT LEVEL: none ===========
 opaque:
@@ -136,27 +139,25 @@ opaque:
     mov rax, rdi
     ret
 consume:
-    mov.q [rsp - 0x8], rdi
-    mov.q rax, [rsp - 0x8]
+    mov rax, rdi
     add rax, rsi
-    mov rax, rax
     add rax, rdx
-    mov rax, rax
     add rax, rcx
-    mov rax, rax
     add rax, r8
-    mov rax, rax
     add rax, r9
-    mov rax, rax
     mov.q rcx, [rsp + 0x8]
     add rax, rcx
-    mov rax, rax
     mov.q rcx, [rsp + 0x10]
     add rax, rcx
-    mov rax, rax
     ret
 main:
-    sub rsp, 0x58
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    push r15
+    sub rsp, 0x28
     pxor xmm0, xmm0
     movups.x [rsp + 0x10], xmm0
     mov rdi, 0xa
@@ -164,37 +165,42 @@ main:
     mov.q [rsp + 0x10], rax
     mov rdi, 0x14
     call opaque
-    mov.q [rsp + 0x20], rax
-    mov.q rax, [rsp + 0x20]
-    mov.q [rsp + 0x18], rax
+    mov rbx, rax
+    mov.q [rsp + 0x18], rbx
     mov.q rax, [rsp + 0x10]
-    mov.q [rsp + 0x28], rax
+    mov rbp, rax
     mov rdi, 1
     call opaque
-    mov.q [rsp + 0x30], rax
+    mov r12, rax
     mov rdi, 2
     call opaque
-    mov.q [rsp + 0x38], rax
+    mov r13, rax
     mov rdi, 3
     call opaque
-    mov.q [rsp + 0x40], rax
+    mov r14, rax
     mov rdi, 4
     call opaque
-    mov.q [rsp + 0x48], rax
+    mov r15, rax
     mov rdi, 5
     call opaque
     mov.q [rsp], rax
     mov rdi, 6
     call opaque
     mov.q [rsp + 0x8], rax
-    mov.q rsi, [rsp + 0x20]
-    mov.q rdx, [rsp + 0x30]
-    mov.q rcx, [rsp + 0x38]
-    mov.q r8, [rsp + 0x40]
-    mov.q r9, [rsp + 0x48]
-    mov.q rdi, [rsp + 0x28]
+    mov rsi, rbx
+    mov rdx, r12
+    mov rcx, r13
+    mov r8, r14
+    mov r9, r15
+    mov rdi, rbp
     call consume
-    add rsp, 0x58
+    add rsp, 0x28
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
     ret
 =========== OPT LEVEL: moderate ===========
 opaque:

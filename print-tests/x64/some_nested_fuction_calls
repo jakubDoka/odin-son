@@ -7,16 +7,20 @@ main:
     add rsp, 8
     ret
 a:
-    sub rsp, 0x18
-    mov.q [rsp], rsi
+    push rbx
+    push rbp
+    sub rsp, 8
+    mov rbx, rsi
     call b
-    mov.q [rsp + 0x8], rax
-    mov.q rdi, [rsp]
+    mov rbp, rax
+    mov rdi, rbx
     call c
-    mov.q rcx, [rsp + 0x8]
+    mov rcx, rbp
     add rcx, rax
     mov rax, rcx
-    add rsp, 0x18
+    add rsp, 8
+    pop rbp
+    pop rbx
     ret
 b:
     imul rax, rdi, 2
@@ -62,16 +66,20 @@ main:
     add rsp, 8
     ret
 a:
-    sub rsp, 0x18
-    mov.q [rsp], rsi
+    push rbx
+    push rbp
+    sub rsp, 8
+    mov rbx, rsi
     call b
-    mov.q [rsp + 0x8], rax
-    mov.q rdi, [rsp]
+    mov rbp, rax
+    mov rdi, rbx
     call c
-    mov.q rcx, [rsp + 0x8]
+    mov rcx, rbp
     add rcx, rax
     mov rax, rcx
-    add rsp, 0x18
+    add rsp, 8
+    pop rbp
+    pop rbx
     ret
 b:
     imul rax, rdi, 2

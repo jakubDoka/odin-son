@@ -17,7 +17,13 @@ btype :: #force_inline proc(node: bac.Expanded_Node) -> Node_Type {
 	return Node_Type(node.rtype)
 }
 
-@(tag = "api")
+/// Run the platform independend optimizations. This is preconfigured simple run
+/// of passes. To enable passes, you can configure them in the
+/// ctx.prc.opt_flags, by default, no passes except mandatory ones are enabled.
+///
+/// For separate passes, grep for `apply_peeps`, `conpute_latices`, `memopt`,
+/// `loopopt`. They have their own documentation.
+@(tag = "api,priority=97")
 opt :: proc(ctx: bac.Peep_Ctx) {
 	DEBUG_OPT :: false
 
@@ -52,7 +58,13 @@ opt :: proc(ctx: bac.Peep_Ctx) {
 	}
 }
 
-@(tag = "api")
+/// Compile the proc to the current node_spec. The minimal configuration of the
+/// context is the `.prc` and `.buf.code`. Function will crash the program if
+/// other buffers are required. This function also computes missing
+/// datastructures, you can compute them your self and set the pointers if you
+/// need customization. Note that all of the functions this calls are also
+/// available in the API.
+@(tag = "api,priority=98")
 compile :: proc(ctx: bac.Codegen_Emit_Ctx) -> (res: bac.Codegen_Output) {
 	ctx := ctx
 
@@ -76,13 +88,10 @@ compile :: proc(ctx: bac.Codegen_Emit_Ctx) -> (res: bac.Codegen_Output) {
 		"target not configured, set .prc.node_spec",
 	)
 
-	fmt.assertf(
-		ctx.buf.code != nil,
-		"code buffer not configured, set .buf.code",
-	)
+	fmt.assertf(ctx.buf.code != nil, "code buffer not configured, set .buf.code")
 
 	if ctx.schedule == nil {
-		bac.apply_peeps({ctx})
+		bac.apply_peeps({ctx, {}})
 
 		gs: bac.Schedule
 		bac.schedule_graph(ctx, &gs, .for_regalloc)
@@ -140,8 +149,11 @@ decl_local :: proc(prc: ^Proc, loc: Node_ID, name: string, type: u64) {
 	}
 }
 
-@(tag = "api")
-merge_returns :: proc(prc: ^Proc, args: []Node_ID) -> Node_ID {
+/// The args[0] needs to be a control flow, args[1] should be an end of a memory
+/// thread. You have to call this at least once if the function has reachable
+/// return path.
+@(tag = "api,priority=99")
+merge_return :: proc(prc: ^Proc, args: []Node_ID) -> Node_ID {
 	ret := bac.get_inputs(prc, prc.end)[0]
 
 	if ret == 0 {
@@ -149,25 +161,14 @@ merge_returns :: proc(prc: ^Proc, args: []Node_ID) -> Node_ID {
 		bac.set_input(prc, prc.end, 0, ret)
 	} else {
 		// TODO: extend existing region if possible
-		reg := bac.add_region(
-			prc,
-			"rreg",
-			{bac.get_inputs(prc, ret)[0], args[0]},
-		)
+		reg := bac.add_region(prc, "rreg", {bac.get_inputs(prc, ret)[0], args[0]})
 		bac.set_input(prc, ret, 0, reg)
 		for inp, i in bac.get_inputs(prc, ret)[1:] {
 			bac.set_input(
 				prc,
 				ret,
 				i + 1,
-				bac.add_phi(
-					prc,
-					"rphy",
-					get_node(prc, inp).dt,
-					reg,
-					inp,
-					args[i + 1],
-				),
+				bac.add_phi(prc, "rphy", get_node(prc, inp).dt, reg, inp, args[i + 1]),
 			)
 		}
 	}
@@ -457,7 +458,7 @@ get_scope_value :: proc(
 	#any_int idx: int,
 ) -> Node_ID {
 	snode := get_node(prc, scope)
-	assert(Node_Type(snode.rtype) == .Scope)
+	fmt.assertf(Node_Type(snode.rtype) == .Scope, "%v")
 
 	val := bac.get_inputs(prc, snode)[idx]
 	vnode := expand_node(prc, val)
@@ -488,14 +489,20 @@ should_debug_track :: proc(prc: ^bac.Proc, value: Node_ID) -> bool {
 	return prc.has_dbg && get_node(prc, value).dt > .Mem
 }
 
-@(tag = "api")
+/// declare a scalar value or a memory thread that should have phys generated
+/// based on updates done by set_scope_value and must be accessed trough
+/// get_scope_value, it retunrs the index withing the scope by which you can
+/// acces and modify the value.
+@(tag = "api,priority=99")
 push_scope_value :: proc(
 	prc: ^bac.Proc,
 	scope: Node_ID,
 	value: Node_ID,
 	name: string,
 	type: u64,
-) -> int {
+) -> (
+	id: int,
+) {
 	scope_node := get_node(prc, scope)
 	assert(Node_Type(scope_node.rtype) == .Scope)
 	if should_debug_track(prc, value) {
@@ -508,7 +515,9 @@ push_scope_value :: proc(
 	return bac.connect(prc, scope, value)
 }
 
-@(tag = "api")
+/// Update the scope value so it gets phys generated to express the ssa
+/// changes.
+@(tag = "api,priority=99")
 set_scope_value :: proc(
 	prc: ^bac.Proc,
 	scope: Node_ID,
@@ -524,13 +533,17 @@ set_scope_value :: proc(
 	bac.set_input(prc, scope, idx, value)
 }
 
-@(tag = "api")
+/// Delete the scope properly. This is nescessary to generate a proper debug
+/// info.
+@(tag = "api,priority=99")
 delete_scope :: proc(prc: ^bac.Proc, scope: Node_ID) {
 	truncate_scope(prc, scope, 1)
 	bac.delete_node(prc, scope)
 }
 
-@(tag = "api")
+/// Drops value that are no loger alive from the scope, this usually should be
+/// called at the end of a lexical scope.
+@(tag = "api,priority=99")
 truncate_scope :: proc(prc: ^bac.Proc, scope: Node_ID, #any_int to_len: int) {
 	snode := expand_node(prc, scope)
 
@@ -603,7 +616,9 @@ inline_call :: proc {
 	inline_stencil,
 }
 
-@(tag = "api")
+/// This just expands the `from` into a graph, refer to `inline_graph` for
+/// docs.
+@(tag = "api,priority=95")
 inline_stencil :: proc(prc: ^bac.Proc, call: Node_ID, from: bac.Stencil) {
 	slot: arna.Allocator
 	from_prc: bac.Proc
@@ -614,7 +629,17 @@ inline_stencil :: proc(prc: ^bac.Proc, call: Node_ID, from: bac.Stencil) {
 	inline_graph(prc, call, &from_prc)
 }
 
-@(tag = "api")
+/// Grep for "inline_and_optimize ::" for an example usage.
+///
+/// Inline a `from` into `prc` at `call`, the from and the call node shoul
+/// refer to the same function, or more precisely, the signatrue needs to be
+/// compatible. This invalidates whatever passes that were computes so its
+/// better to do this in bulk.
+///
+/// Good strategy is to optimize the `from` before inlining to maximize inline
+/// performance since same code does not get copyes and reoptimized
+/// redundantly.
+@(tag = "api,priority=95")
 inline_graph :: proc(prc: ^bac.Proc, call: Node_ID, from: ^bac.Proc) {
 	assert(prc.node_spec == &SPEC)
 
@@ -830,8 +855,7 @@ inline_graph :: proc(prc: ^bac.Proc, call: Node_ID, from: ^bac.Proc) {
 			input_cap = 1
 		}
 
-		if node.itype == .Phi &&
-		   get_node(ctx.from, node.inps[0]).itype == .Loop {
+		if node.itype == .Phi && get_node(ctx.from, node.inps[0]).itype == .Loop {
 			rtype = u16(Node_Type.Lazy_Phi)
 			input_cap = 2
 		}
@@ -1044,14 +1068,7 @@ add_field_load :: proc(
 	base: Node_ID,
 	offset: int = 0,
 ) -> Node_ID {
-	return add_load(
-		ctx,
-		name,
-		dt,
-		cfg,
-		mem,
-		add_field_offset(ctx, base, offset),
-	)
+	return add_load(ctx, name, dt, cfg, mem, add_field_offset(ctx, base, offset))
 }
 
 @(tag = "api")
@@ -1149,7 +1166,7 @@ arg_gen_next :: proc(
 	mem: Node_ID,
 	gen: ^Param_Gen,
 	name: string,
-	apa: ^Abi_Param,
+	apa: Abi_Param,
 ) -> (
 	omem: Node_ID,
 	value: Node_ID,
@@ -1175,7 +1192,9 @@ arg_gen_next :: proc(
 		}
 	}
 
-	for dt, j in apa.dt[:(apa.size + 7) / 8] {
+	dt := apa.dt
+
+	for dt, j in dt[:(apa.size + 7) / 8] {
 		vl := bac.add_param(ctx, name, dt, ctx.entry, 0)
 		gen.spill_start += int(j == 1)
 		append(&gen.vls, vl)
@@ -1229,12 +1248,21 @@ arg_gen_finalize :: proc(ctx: ^Proc, gen: ^Param_Gen) -> []bac.Param_Spec {
 	return arg_tys
 }
 
-@(tag = "api")
+/// Refer to examples/bac/ for a quick start.
+///
+/// Initialize the Proc for code emission. This returns the initial mem node
+/// that should be used to advance the memory state. The starting control flow
+/// node can be accessed in prc.meta.pinned.entry. Any non trivial codegen needs
+/// to track control flow and initial memory in a Scope node, all of the ssa
+/// builders expect the scope to have the control flow as the first input node.
+@(tag = "api,priority=100")
 start_proc :: proc(
 	prc: ^Proc,
 	mem: ^arna.Allocator,
 	temps: ^arna.Temps,
-) -> Node_ID {
+) -> (
+	rmem: Node_ID,
+) {
 	bac.ensure_init()
 
 	assert(temps != nil)
@@ -1252,7 +1280,7 @@ start_proc :: proc(
 }
 
 Builtin_Proc :: enum {
-	memcpy,
+	memmove,
 	memset,
 }
 
@@ -1269,7 +1297,7 @@ make_builtin_proc :: proc(prc: ^Proc, name: Builtin_Proc) {
 	val, src: Node_ID
 	srcv: int
 	switch name {
-	case .memcpy:
+	case .memmove:
 		src = bac.add_param(prc, "src", .I64, prc.entry, 1)
 		srcv = push_scope_value(prc, scope, src, "", 0)
 	case .memset:
@@ -1279,47 +1307,83 @@ make_builtin_proc :: proc(prc: ^Proc, name: Builtin_Proc) {
 	len := bac.add_param(prc, "len", .I64, prc.entry, 2)
 	lenv := push_scope_value(prc, scope, len, "", 0)
 
-	loop: Loop_State
-	start_loop(prc, scope, &loop)
+	move_if: If_State
+	if name == .memmove {
+		diff := bac.add_bin_op(prc, "send", .Sub, .I64, dst, src)
+		cond := bac.add_bin_op(prc, "cond", .U_Lt, .I8, diff, len)
+		start_if(prc, scope, &move_if, cond)
+	}
 
-	if_: If_State
-	cond := get_scope_value(prc, scope, lenv)
-	start_if(prc, scope, &if_, cond)
+	for i in 0 ..< 2 {
+		loop: Loop_State
+		start_loop(prc, scope, &loop)
+
+		if_: If_State
+		cond := get_scope_value(prc, scope, lenv)
+		start_if(prc, scope, &if_, cond)
+
+		ctrl := bac.get_inputs(prc, scope)[0]
+		one := bac.add_c_int(prc, "one", .I64, 1)
+
+		dst = get_scope_value(prc, scope, dstv)
+		if src != 0 {
+			src = get_scope_value(prc, scope, srcv)
+		}
+
+		for j in 0 ..< 2 {
+			if j == i {
+				mem = get_scope_value(prc, scope, memv)
+				if src != 0 {
+					val = bac.add_load(prc, "ld", .I8, ctrl, mem, src)
+				}
+
+				mem = bac.add_store(prc, "st", ctrl, mem, dst, val)
+				set_scope_value(prc, scope, memv, mem)
+			} else {
+				op: Bin_Op = i == 0 ? .Add : .Sub
+
+				dst = bac.add_bin_op(prc, "add_dst", op, .I64, dst, one)
+				set_scope_value(prc, scope, dstv, dst)
+
+				if src != 0 {
+					src = bac.add_bin_op(prc, "add_src", op, .I64, src, one)
+					set_scope_value(prc, scope, srcv, src)
+				}
+			}
+		}
+
+		sub := bac.add_bin_op(prc, "sub_len", .Sub, .I64, cond, one)
+		set_scope_value(prc, scope, lenv, sub)
+
+		start_else(prc, &scope, &if_)
+		loop_control(.Break, prc, scope, &loop)
+		scope = 0
+		end_else(prc, &scope, &if_)
+
+		end_loop(prc, &scope, &loop)
+
+		if name == .memmove {
+			if i == 0 {
+				start_else(prc, &scope, &move_if)
+				dst := get_scope_value(prc, scope, dstv)
+				src := get_scope_value(prc, scope, srcv)
+				dend := bac.add_bin_op(prc, "dend", .Add, .I64, dst, len)
+				send := bac.add_bin_op(prc, "dend", .Add, .I64, src, len)
+				set_scope_value(prc, scope, dstv, dend)
+				set_scope_value(prc, scope, srcv, send)
+			} else {
+				end_else(prc, &scope, &move_if)
+			}
+		} else {
+			if i == 0 {
+				break
+			}
+		}
+	}
 
 	ctrl := bac.get_inputs(prc, scope)[0]
-	one := bac.add_c_int(prc, "one", .I64, 1)
-
 	mem = get_scope_value(prc, scope, memv)
-	dst = get_scope_value(prc, scope, dstv)
-	if src != 0 {
-		src = get_scope_value(prc, scope, srcv)
-		val = bac.add_load(prc, "ld", .I8, ctrl, mem, src)
-	}
-
-	mem = bac.add_store(prc, "st", ctrl, mem, dst, val)
-	set_scope_value(prc, scope, memv, mem)
-
-	add := bac.add_bin_op(prc, "add_dst", .Add, .I64, dst, one)
-	set_scope_value(prc, scope, dstv, add)
-
-	if src != 0 {
-		ads := bac.add_bin_op(prc, "add_src", .Add, .I64, src, one)
-		set_scope_value(prc, scope, srcv, ads)
-	}
-
-	sub := bac.add_bin_op(prc, "sub_len", .Sub, .I64, cond, one)
-	set_scope_value(prc, scope, lenv, sub)
-
-	start_else(prc, &scope, &if_)
-	loop_control(.Break, prc, scope, &loop)
-	scope = 0
-	end_else(prc, &scope, &if_)
-
-	end_loop(prc, &scope, &loop)
-
-	ctrl = bac.get_inputs(prc, scope)[0]
-	mem = get_scope_value(prc, scope, memv)
-	merge_returns(prc, {ctrl, mem})
+	merge_return(prc, {ctrl, mem})
 
 	bac.delete_node(prc, scope)
 }

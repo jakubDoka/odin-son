@@ -2,38 +2,32 @@
 sum:
     push rbx
     push rbp
-    sub rsp, 0x48
+    sub rsp, 0x38
     mov.q [rsp + 0x1], rdi
     mov.q [rsp + 0x9], rsi
     pxor xmm0, xmm0
     movups.x [rsp + 0x11], xmm0
     xor eax, eax
 1:
-    mov.q [rsp + 0x21], rax
-    mov.q rcx, [rsp + 0x21]
-    add rcx, 0x10
-    mov.q [rsp + 0x29], rcx
-    mov.q rcx, [rsp + 0x29]
-    cmp.q rcx, [rsp + 0x9]
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    jne 2
+    mov rcx, rax
+    mov rdx, rcx
+    add rdx, 0x10
+    mov rbx, rdx
+    cmp.q rbx, [rsp + 0x9]
+    jge 2
     movups.x xmm0, [rsp + 0x11]
-    movups.x [rsp + 0x31], xmm0
+    movups.x [rsp + 0x21], xmm0
     mov.q rdi, [rsp + 0x1]
-    mov.q rcx, [rsp + 0x21]
     add rdi, rcx
-    mov.q rcx, [rsp + 0x21]
-    mov.q rdx, [rsp + 0x29]
+    mov rdx, rbx
     sub rdx, rcx
     mov rsi, rdx
     call from_slice u8
-    movups.x xmm1, [rsp + 0x31]
+    movups.x xmm1, [rsp + 0x21]
     paddb xmm1, xmm0
     movups xmm0, xmm1
     movups.x [rsp + 0x11], xmm0
-    mov.q rax, [rsp + 0x29]
+    mov rax, rbx
     jmp 1
 2:
     mov.b [rsp], 0
@@ -41,16 +35,14 @@ sum:
     mov.q rcx, [rsp + 0x9]
     xor edx, edx
 3:
-    mov.q [rsp + 0x21], rdx
-    mov.q rbx, [rsp + 0x21]
+    mov rbx, rdx
     cmp rbx, rcx
     jge 4
-    mov.q rbx, [rsp + 0x21]
-    mov rbp, rax
-    add rbp, rbx
-    movzx.b ebx, [rbp]
-    add.b [rsp], bl
-    mov.q rbx, [rsp + 0x21]
+    mov rbp, rbx
+    mov rsi, rax
+    add rsi, rbp
+    movzx.b ebp, [rsi]
+    add.b [rsp], bpl
     add rbx, 1
     mov rdx, rbx
     jmp 3
@@ -62,13 +54,13 @@ sum:
     psadbw xmm1, xmm0
     movd eax, xmm1
     add.b al, [rsp]
-    add rsp, 0x48
+    add rsp, 0x38
     pop rbp
     pop rbx
     ret
 main:
     sub rsp, 0x28
-    lea rdi, [rip + 0xe92]
+    lea rdi, [rip + 0xe55]
     mov rsi, 0x23
     mov dl, 0x7a
     mov.q [rsp + 0x10], rdi
@@ -83,12 +75,11 @@ main:
     mov.q rdi, [rsp + 0x10]
     mov.q rsi, [rsp + 0x18]
     call sum
-    mov.q [rsp + 0x20], rax
+    mov rcx, rax
     mov.q rax, [rsp]
-    mov.q rcx, [rsp + 0x8]
-    imul rcx, rcx, 0xa
-    add rax, rcx
-    mov.q rcx, [rsp + 0x20]
+    mov.q rdx, [rsp + 0x8]
+    imul rdx, rdx, 0xa
+    add rax, rdx
     movzx ecx, cl
     imul rcx, rcx, 0x64
     add rax, rcx
@@ -102,10 +93,7 @@ from_slice u8:
     xor eax, eax
 7:
     cmp rax, 0x10
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    jne 8
+    jge 8
     mov.q rcx, [rsp - 0x28]
     add rcx, rax
     movzx.b ecx, [rcx]
@@ -120,81 +108,80 @@ from_slice u8:
 simd_search u8:
     push rbx
     push rbp
-    sub rsp, 0x48
-    mov.q [rsp + 0x18], rdx
-    mov.q [rsp + 0x20], rcx
+    push r12
+    push r13
+    sub rsp, 0x38
+    mov rbx, rdx
+    mov rbp, rcx
     mov.q [rsp + 0x8], rdi
     mov.q [rsp + 0x10], rsi
-    mov.q rax, [rsp + 0x18]
+    movd xmm0, ebx
+    pxor xmm1, xmm1
+    pshufb xmm0, xmm1
+    movups.x [rsp + 0x18], xmm0
+    mov rax, 7
+    xor r12d, r12d
     movd xmm0, eax
-    movups.x [rsp + 0x38], xmm0
-    pxor xmm0, xmm0
-    xor ebx, ebx
-    movups.x xmm1, [rsp + 0x38]
-    pshufb xmm1, xmm0
-    movups.x [rsp + 0x38], xmm1
+    movups.x [rsp + 0x28], xmm0
 10:
     mov.q rdi, [rsp + 0x8]
     mov.q rax, [rsp + 0x10]
-    mov.q [rsp + 0x28], rax
-    mov.q rax, [rsp + 0x28]
-    mov rcx, 0x10
+    mov rcx, rax
+    mov rax, rcx
+    mov rsi, 0x10
     cqo
-    idiv rcx
-    mov.q [rsp + 0x30], rax
-    mov.q rax, [rsp + 0x30]
-    cmp rbx, rax
+    idiv rsi
+    cmp r12, rax
     jge 12
-    imul rbp, rbx, 0x10
-    add rdi, rbp
+    imul r13, r12, 0x10
+    add rdi, r13
     mov rsi, 0x10
     call from_slice u8
-    movups.x xmm1, [rsp + 0x38]
+    movups.x xmm1, [rsp + 0x18]
     pcmpeqb xmm0, xmm1
-    pmovmskb eax, xmm0
-    cmp ax, 0
+    movups.x xmm1, [rsp + 0x28]
+    vpsllw xmm0, xmm0, xmm1
+    pmovmskb edx, xmm0
+    cmp dx, 0
     jne 11
-    add rbx, 1
+    add r12, 1
     jmp 10
 11:
-    tzcnt eax, eax
-    movzx eax, ax
-    add rax, rbp
-    mov.q rcx, [rsp + 0x20]
-    mov.q [rcx], rax
-    mov bl, 1
+    tzcnt dx, dx
+    movzx edx, dx
+    add rdx, r13
+    mov.q [rbp], rdx
+    mov r8b, 1
     jmp 14
 12:
-    mov.q rax, [rsp + 0x30]
     imul rax, rax, 0x10
-    mov.q rcx, [rsp + 0x28]
     sub rcx, rax
-    mov.q [rsp + 0x28], rcx
+    mov rdx, rcx
     add rdi, rax
     lea rcx, [rsp]
-    mov.q rsi, [rsp + 0x28]
-    mov.q rdx, [rsp + 0x18]
+    mov rsi, rdx
+    mov rdx, rbx
     call linear_search u8
     mov.q rcx, [rsp]
     cmp rcx, 0
     jl 13
     mov.q rax, [rsp + 0x10]
-    mov rbp, 0x10
+    mov rbx, 0x10
     cqo
-    idiv rbp
+    idiv rbx
     imul rax, rax, 0x10
     add rax, rcx
-    mov.q rcx, [rsp + 0x20]
-    mov.q [rcx], rax
-    mov bl, 1
+    mov.q [rbp], rax
+    mov r8b, 1
     jmp 14
 13:
-    mov.q rax, [rsp + 0x20]
-    mov.q [rax], -1
-    xor ebx, ebx
+    mov.q [rbp], -1
+    xor r8d, r8d
 14:
-    mov rax, rbx
-    add rsp, 0x48
+    mov rax, r8
+    add rsp, 0x38
+    pop r13
+    pop r12
     pop rbp
     pop rbx
     ret
@@ -235,10 +222,7 @@ sum:
     add rcx, 0x10
     mov rbx, rcx
     cmp.q rbx, [rsp + 0x9]
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    jne 2
+    jge 2
     movups.x xmm0, [rsp + 0x11]
     movups.x [rsp + 0x21], xmm0
     mov.q rdi, [rsp + 0x1]
@@ -280,7 +264,7 @@ sum:
     ret
 main:
     sub rsp, 0x28
-    lea rdi, [rip + 0xecb]
+    lea rdi, [rip + 0xe83]
     mov rsi, 0x23
     mov dl, 0x7a
     mov.q [rsp + 0x10], rdi
@@ -313,10 +297,7 @@ from_slice u8:
     xor eax, eax
 7:
     cmp rax, 0x10
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    jne 8
+    jge 8
     mov.q rcx, [rsp - 0x28]
     add rcx, rax
     movzx.b edx, [rcx]
@@ -333,15 +314,18 @@ simd_search u8:
     push rbp
     push r12
     push r13
-    sub rsp, 0x28
+    sub rsp, 0x38
     mov r13, rdx
     mov r12, rcx
     mov.q [rsp + 0x8], rdi
     mov.q [rsp + 0x10], rsi
     movd xmm0, r13d
     pxor xmm1, xmm1
-    xor ebx, ebx
     pshufb xmm0, xmm1
+    movups.x [rsp + 0x28], xmm0
+    mov rax, 7
+    xor ebx, ebx
+    movd xmm0, eax
     movups.x [rsp + 0x18], xmm0
 10:
     mov.q rdi, [rsp + 0x8]
@@ -356,15 +340,17 @@ simd_search u8:
     add rdi, rbp
     mov rsi, 0x10
     call from_slice u8
-    movups.x xmm1, [rsp + 0x18]
+    movups.x xmm1, [rsp + 0x28]
     pcmpeqb xmm0, xmm1
+    movups.x xmm1, [rsp + 0x18]
+    vpsllw xmm0, xmm0, xmm1
     pmovmskb eax, xmm0
     cmp ax, 0
     jne 11
     add rbx, 1
     jmp 10
 11:
-    tzcnt eax, eax
+    tzcnt ax, ax
     movzx ecx, ax
     add rcx, rbp
     mov.q [r12], rcx
@@ -395,7 +381,7 @@ simd_search u8:
     mov.q [r12], -1
     xor eax, eax
 14:
-    add rsp, 0x28
+    add rsp, 0x38
     pop r13
     pop r12
     pop rbp
@@ -426,38 +412,32 @@ linear_search u8:
 sum:
     push rbx
     push rbp
-    sub rsp, 0x48
+    sub rsp, 0x38
     mov.q [rsp + 0x1], rdi
     mov.q [rsp + 0x9], rsi
     pxor xmm0, xmm0
     movups.x [rsp + 0x11], xmm0
     xor eax, eax
 1:
-    mov.q [rsp + 0x21], rax
-    mov.q rcx, [rsp + 0x21]
-    add rcx, 0x10
-    mov.q [rsp + 0x29], rcx
-    mov.q rcx, [rsp + 0x29]
-    cmp.q rcx, [rsp + 0x9]
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    jne 2
+    mov rcx, rax
+    mov rdx, rcx
+    add rdx, 0x10
+    mov rbx, rdx
+    cmp.q rbx, [rsp + 0x9]
+    jge 2
     movups.x xmm0, [rsp + 0x11]
-    movups.x [rsp + 0x31], xmm0
+    movups.x [rsp + 0x21], xmm0
     mov.q rdi, [rsp + 0x1]
-    mov.q rcx, [rsp + 0x21]
     add rdi, rcx
-    mov.q rcx, [rsp + 0x21]
-    mov.q rdx, [rsp + 0x29]
+    mov rdx, rbx
     sub rdx, rcx
     mov rsi, rdx
     call from_slice u8
-    movups.x xmm1, [rsp + 0x31]
+    movups.x xmm1, [rsp + 0x21]
     paddb xmm1, xmm0
     movups xmm0, xmm1
     movups.x [rsp + 0x11], xmm0
-    mov.q rax, [rsp + 0x29]
+    mov rax, rbx
     jmp 1
 2:
     mov.b [rsp], 0
@@ -465,16 +445,14 @@ sum:
     mov.q rcx, [rsp + 0x9]
     xor edx, edx
 3:
-    mov.q [rsp + 0x21], rdx
-    mov.q rbx, [rsp + 0x21]
+    mov rbx, rdx
     cmp rbx, rcx
     jge 4
-    mov.q rbx, [rsp + 0x21]
-    mov rbp, rax
-    add rbp, rbx
-    movzx.b ebx, [rbp]
-    add.b [rsp], bl
-    mov.q rbx, [rsp + 0x21]
+    mov rbp, rbx
+    mov rsi, rax
+    add rsi, rbp
+    movzx.b ebp, [rsi]
+    add.b [rsp], bpl
     add rbx, 1
     mov rdx, rbx
     jmp 3
@@ -486,13 +464,13 @@ sum:
     psadbw xmm1, xmm0
     movd eax, xmm1
     add.b al, [rsp]
-    add rsp, 0x48
+    add rsp, 0x38
     pop rbp
     pop rbx
     ret
 main:
     sub rsp, 0x28
-    lea rdi, [rip + 0xe92]
+    lea rdi, [rip + 0xe55]
     mov rsi, 0x23
     mov dl, 0x7a
     mov.q [rsp + 0x10], rdi
@@ -507,12 +485,11 @@ main:
     mov.q rdi, [rsp + 0x10]
     mov.q rsi, [rsp + 0x18]
     call sum
-    mov.q [rsp + 0x20], rax
+    mov rcx, rax
     mov.q rax, [rsp]
-    mov.q rcx, [rsp + 0x8]
-    imul rcx, rcx, 0xa
-    add rax, rcx
-    mov.q rcx, [rsp + 0x20]
+    mov.q rdx, [rsp + 0x8]
+    imul rdx, rdx, 0xa
+    add rax, rdx
     movzx ecx, cl
     imul rcx, rcx, 0x64
     add rax, rcx
@@ -526,10 +503,7 @@ from_slice u8:
     xor eax, eax
 7:
     cmp rax, 0x10
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    jne 8
+    jge 8
     mov.q rcx, [rsp - 0x28]
     add rcx, rax
     movzx.b ecx, [rcx]
@@ -544,81 +518,80 @@ from_slice u8:
 simd_search u8:
     push rbx
     push rbp
-    sub rsp, 0x48
-    mov.q [rsp + 0x18], rdx
-    mov.q [rsp + 0x20], rcx
+    push r12
+    push r13
+    sub rsp, 0x38
+    mov rbx, rdx
+    mov rbp, rcx
     mov.q [rsp + 0x8], rdi
     mov.q [rsp + 0x10], rsi
-    mov.q rax, [rsp + 0x18]
+    movd xmm0, ebx
+    pxor xmm1, xmm1
+    pshufb xmm0, xmm1
+    movups.x [rsp + 0x18], xmm0
+    mov rax, 7
+    xor r12d, r12d
     movd xmm0, eax
-    movups.x [rsp + 0x38], xmm0
-    pxor xmm0, xmm0
-    xor ebx, ebx
-    movups.x xmm1, [rsp + 0x38]
-    pshufb xmm1, xmm0
-    movups.x [rsp + 0x38], xmm1
+    movups.x [rsp + 0x28], xmm0
 10:
     mov.q rdi, [rsp + 0x8]
     mov.q rax, [rsp + 0x10]
-    mov.q [rsp + 0x28], rax
-    mov.q rax, [rsp + 0x28]
-    mov rcx, 0x10
+    mov rcx, rax
+    mov rax, rcx
+    mov rsi, 0x10
     cqo
-    idiv rcx
-    mov.q [rsp + 0x30], rax
-    mov.q rax, [rsp + 0x30]
-    cmp rbx, rax
+    idiv rsi
+    cmp r12, rax
     jge 12
-    imul rbp, rbx, 0x10
-    add rdi, rbp
+    imul r13, r12, 0x10
+    add rdi, r13
     mov rsi, 0x10
     call from_slice u8
-    movups.x xmm1, [rsp + 0x38]
+    movups.x xmm1, [rsp + 0x18]
     pcmpeqb xmm0, xmm1
-    pmovmskb eax, xmm0
-    cmp ax, 0
+    movups.x xmm1, [rsp + 0x28]
+    vpsllw xmm0, xmm0, xmm1
+    pmovmskb edx, xmm0
+    cmp dx, 0
     jne 11
-    add rbx, 1
+    add r12, 1
     jmp 10
 11:
-    tzcnt eax, eax
-    movzx eax, ax
-    add rax, rbp
-    mov.q rcx, [rsp + 0x20]
-    mov.q [rcx], rax
-    mov bl, 1
+    tzcnt dx, dx
+    movzx edx, dx
+    add rdx, r13
+    mov.q [rbp], rdx
+    mov r8b, 1
     jmp 14
 12:
-    mov.q rax, [rsp + 0x30]
     imul rax, rax, 0x10
-    mov.q rcx, [rsp + 0x28]
     sub rcx, rax
-    mov.q [rsp + 0x28], rcx
+    mov rdx, rcx
     add rdi, rax
     lea rcx, [rsp]
-    mov.q rsi, [rsp + 0x28]
-    mov.q rdx, [rsp + 0x18]
+    mov rsi, rdx
+    mov rdx, rbx
     call linear_search u8
     mov.q rcx, [rsp]
     cmp rcx, 0
     jl 13
     mov.q rax, [rsp + 0x10]
-    mov rbp, 0x10
+    mov rbx, 0x10
     cqo
-    idiv rbp
+    idiv rbx
     imul rax, rax, 0x10
     add rax, rcx
-    mov.q rcx, [rsp + 0x20]
-    mov.q [rcx], rax
-    mov bl, 1
+    mov.q [rbp], rax
+    mov r8b, 1
     jmp 14
 13:
-    mov.q rax, [rsp + 0x20]
-    mov.q [rax], -1
-    xor ebx, ebx
+    mov.q [rbp], -1
+    xor r8d, r8d
 14:
-    mov rax, rbx
-    add rsp, 0x48
+    mov rax, r8
+    add rsp, 0x38
+    pop r13
+    pop r12
     pop rbp
     pop rbx
     ret
@@ -659,10 +632,7 @@ sum:
     add rcx, 0x10
     mov rbx, rcx
     cmp.q rbx, [rsp + 0x9]
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    jne 2
+    jge 2
     movups.x xmm0, [rsp + 0x11]
     movups.x [rsp + 0x21], xmm0
     mov.q rdi, [rsp + 0x1]
@@ -704,7 +674,7 @@ sum:
     ret
 main:
     sub rsp, 0x28
-    lea rdi, [rip + 0xecb]
+    lea rdi, [rip + 0xe83]
     mov rsi, 0x23
     mov dl, 0x7a
     mov.q [rsp + 0x10], rdi
@@ -737,10 +707,7 @@ from_slice u8:
     xor eax, eax
 7:
     cmp rax, 0x10
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    jne 8
+    jge 8
     mov.q rcx, [rsp - 0x28]
     add rcx, rax
     movzx.b edx, [rcx]
@@ -757,15 +724,18 @@ simd_search u8:
     push rbp
     push r12
     push r13
-    sub rsp, 0x28
+    sub rsp, 0x38
     mov r13, rdx
     mov r12, rcx
     mov.q [rsp + 0x8], rdi
     mov.q [rsp + 0x10], rsi
     movd xmm0, r13d
     pxor xmm1, xmm1
-    xor ebx, ebx
     pshufb xmm0, xmm1
+    movups.x [rsp + 0x28], xmm0
+    mov rax, 7
+    xor ebx, ebx
+    movd xmm0, eax
     movups.x [rsp + 0x18], xmm0
 10:
     mov.q rdi, [rsp + 0x8]
@@ -780,15 +750,17 @@ simd_search u8:
     add rdi, rbp
     mov rsi, 0x10
     call from_slice u8
-    movups.x xmm1, [rsp + 0x18]
+    movups.x xmm1, [rsp + 0x28]
     pcmpeqb xmm0, xmm1
+    movups.x xmm1, [rsp + 0x18]
+    vpsllw xmm0, xmm0, xmm1
     pmovmskb eax, xmm0
     cmp ax, 0
     jne 11
     add rbx, 1
     jmp 10
 11:
-    tzcnt eax, eax
+    tzcnt ax, ax
     movzx ecx, ax
     add rcx, rbp
     mov.q [r12], rcx
@@ -819,7 +791,7 @@ simd_search u8:
     mov.q [r12], -1
     xor eax, eax
 14:
-    add rsp, 0x28
+    add rsp, 0x38
     pop r13
     pop r12
     pop rbp
@@ -906,7 +878,7 @@ sum:
     add rcx, 1
     cmp rcx, r12
     setge sil
-    movzx rsi, sil
+    movzx esi, sil
     add.b r8b, [rdx]
     test sil, sil
     je 4
@@ -924,15 +896,15 @@ main:
     mov dl, 0x7a
     lea rcx, [rsp + 0x8]
     mov rsi, 0x23
-    lea rdi, [rip + 0xe92]
+    lea rdi, [rip + 0xe3f]
     call simd_search u8
     mov dl, 0x61
     lea rcx, [rsp]
     mov rsi, 0x23
-    lea rdi, [rip + 0xe78]
+    lea rdi, [rip + 0xe25]
     call simd_search u8
     mov rsi, 0x23
-    lea rdi, [rip + 0xe65]
+    lea rdi, [rip + 0xe12]
     call sum
     mov rcx, rax
     mov.q rax, [rsp + 0x8]
@@ -954,7 +926,7 @@ simd_search u8:
     push r13
     push r14
     push r15
-    sub rsp, 0x28
+    sub rsp, 0x38
     mov.q [rsp + 0x8], rdi
     mov r15, rsi
     mov r14, rdx
@@ -966,27 +938,32 @@ simd_search u8:
     idiv rcx
     mov r12, rax
     pxor xmm1, xmm1
-    xor ebp, ebp
     pshufb xmm0, xmm1
+    movups.x [rsp + 0x20], xmm0
+    mov rax, 7
+    xor ebx, ebx
+    movd xmm0, eax
     movups.x [rsp + 0x10], xmm0
 9:
-    cmp rbp, r12
+    cmp rbx, r12
     jge 10
-    imul rbx, rbp, 0x10
+    imul rbp, rbx, 0x10
     mov.q rax, [rsp + 0x8]
-    add rax, rbx
+    add rax, rbp
     mov rdi, rax
     mov rsi, 0x10
     call from_slice u8
-    movups.x xmm1, [rsp + 0x10]
+    movups.x xmm1, [rsp + 0x20]
     pcmpeqb xmm0, xmm1
-    add rbp, 1
+    movups.x xmm1, [rsp + 0x10]
+    vpsllw xmm0, xmm0, xmm1
     pmovmskb eax, xmm0
+    add rbx, 1
     cmp ax, 0
     je 9
-    tzcnt eax, eax
+    tzcnt ax, ax
     movzx ecx, ax
-    add rcx, rbx
+    add rcx, rbp
     mov.q [r13], rcx
     mov al, 1
     jmp 12
@@ -1012,7 +989,7 @@ simd_search u8:
     mov.q [r13], -1
     xor eax, eax
 12:
-    add rsp, 0x28
+    add rsp, 0x38
     pop r15
     pop r14
     pop r13
@@ -1026,11 +1003,11 @@ linear_search u8:
     mov r9, rax
     cmp r9, rsi
     jge 15
-    mov r8, rdi
-    add r8, r9
+    mov rax, rdi
+    add rax, r9
+    movzx.b r8d, [rax]
     mov rax, r9
     add rax, 1
-    movzx.b r8d, [r8]
     cmp r8b, dl
     jne 14
     mov.q [rcx], r9
@@ -1047,39 +1024,39 @@ main:
     mov dl, 0x7a
     lea rcx, [rsp + 0x8]
     mov rsi, 0x23
-    lea rdi, [rip + 0xf9b]
+    lea rdi, [rip + 0xf48]
     call simd_search u8
     mov dl, 0x61
     lea rcx, [rsp]
     mov rsi, 0x23
-    lea rdi, [rip + 0xf81]
+    lea rdi, [rip + 0xf2e]
     call simd_search u8
     pxor xmm2, xmm2
     pxor xmm0, xmm0
     xor eax, eax
 1:
-    lea rcx, [rip + 0xf68]
+    lea rcx, [rip + 0xf15]
     add rcx, rax
     mov rdx, rax
     add rdx, 0x20
     cmp rdx, 0x23
     setge dl
-    movzx rdx, dl
+    movzx edx, dl
     add rax, 0x10
     movups xmm1, xmm0
     paddb.x xmm1, [rcx]
-    movups xmm0, xmm1
     test dl, dl
+    movups xmm0, xmm1
     je 1
     xor esi, esi
     xor edx, edx
 2:
-    lea rax, [rip + 0xf22]
+    lea rax, [rip + 0xecf]
     add rax, rdx
     add rdx, 1
     cmp rdx, 0x23
     setge cl
-    movzx rcx, cl
+    movzx ecx, cl
     add.b sil, [rax]
     test cl, cl
     je 2
@@ -1101,7 +1078,7 @@ simd_search u8:
     push rbx
     mov r10, rsi
     mov rbx, rdx
-    movd xmm1, ebx
+    movd xmm2, ebx
     mov rsi, 0x10
     mov rax, r10
     cqo
@@ -1109,7 +1086,9 @@ simd_search u8:
     mov rdx, rax
     mov al, 1
     pxor xmm0, xmm0
-    pshufb xmm1, xmm0
+    pshufb xmm2, xmm0
+    mov rsi, 7
+    movd xmm1, esi
     xor esi, esi
 4:
     cmp rsi, rdx
@@ -1118,12 +1097,13 @@ simd_search u8:
     mov r8, rdi
     add r8, r9
     movups.x xmm0, [r8]
-    pcmpeqb xmm0, xmm1
-    add rsi, 1
+    pcmpeqb xmm0, xmm2
+    vpsllw xmm0, xmm0, xmm1
     pmovmskb r8d, xmm0
+    add rsi, 1
     cmp r8w, 0
     je 4
-    tzcnt r8d, r8d
+    tzcnt r8w, r8w
     movzx edx, r8w
     add rdx, r9
     mov.q [rcx], rdx
@@ -1140,11 +1120,11 @@ simd_search u8:
     mov rsi, rdi
     cmp rsi, r11
     jge 7
-    mov r8, r10
-    add r8, rsi
+    mov rdi, r10
+    add rdi, rsi
+    movzx.b r9d, [rdi]
     mov rdi, rsi
     add rdi, 1
-    movzx.b r9d, [r8]
     cmp r9b, bl
     jne 6
     jmp 8

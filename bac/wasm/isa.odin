@@ -155,7 +155,7 @@ when !SPEC_NOT_PRESENT {
 			.F32 = .F32x4_Extract_Lane,
 			.F64 = .F64x2_Extract_Lane,
 		},
-		.Simd_Extract_Lsbs = #partial{
+		.Simd_Extract_Msbs = #partial{
 			.I8 = .I8x16_Bitmask,
 			.I16 = .I16x8_Bitmask,
 			.I32 = .I32x4_Bitmask,

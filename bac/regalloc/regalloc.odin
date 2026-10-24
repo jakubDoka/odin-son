@@ -17,7 +17,16 @@ expand_node :: bac.expand_node
 get_node :: bac.get_node
 Mode :: bac.Regalloc_Mode
 
-@(tag = "api")
+/// Regalloc computes the register allocation information for the given proc.
+/// You can choose between scan and graph coloring strategy. Scan scales
+/// linearly with the size fo the graph, but will not discover better
+/// allocation on average. Graph mode will have better results but scales
+/// quadratically with the input.
+///
+/// You need to configure the `ra` with the function param specs, calling
+/// convention and regalloc spec, but call convention can be nil, in which case
+/// the backend will select default one.
+@(tag = "api,priority=94")
 regalloc :: proc(
 	ra: ^bac.Regalloc,
 	prc: ^bac.Proc,
@@ -37,7 +46,7 @@ regalloc :: proc(
 		res, ok := regalloc_round(ra, prc, sched, scratch, mode, i)
 		if ok {
 			bac.add_efficiency_stat(prc, .regalloc_rounds, total, base)
-			//if bac.REGLOGS do log.info("regalloc rounds:", i)
+			when bac.REGLOGS do fmt.println("regalloc rounds:", i)
 			return res
 		}
 		total += int(prc.gvn)
@@ -107,6 +116,8 @@ regalloc_round :: proc(
 
 	ctx.instr_placement = make([dynamic]Instr_Placement, block_base)
 
+	log_lrgs(&ctx)
+
 	for bb, j in sched.bbs {
 		for instr in bb.instrs {
 			instr_node := get_node(prc, instr)
@@ -136,8 +147,7 @@ regalloc_round :: proc(
 					swap_becuase_use &= rhs.output_count == 1
 					swap_becuase_use &= lhs.output_count > 1
 					swap_becuase_use &=
-						len(inode.outs) != 1 ||
-						inode.outs[0].id != inode.inps[0]
+						len(inode.outs) != 1 || inode.outs[0].id != inode.inps[0]
 
 					if swap_becuase_use {
 						bac.swap_inputs(ctx.prc, inode, 0, 1)
@@ -165,12 +175,14 @@ regalloc_round :: proc(
 				if lrg == nil {
 					lrg = &lrgs[used_lrgs]
 					lrg.node = instr
+					lrg.must_spill = inode.must_spill
 					lrg.index = used_lrgs
 					lrg.mask = bac.reg_mask_clone(mask)
 					lrg.reg = -1
 					used_lrgs += 1
 				} else {
 					lrg = find(lrg)
+					lrg.must_spill |= inode.must_spill
 					intersect(lrg, mask)
 				}
 
@@ -184,6 +196,7 @@ regalloc_round :: proc(
 
 					umask := rm_get_use(ctx, onode, o.idx)
 					intersect(lrg, umask)
+					lrg.must_spill |= onode.must_spill
 				}
 
 				ctx.lrg_table[inode.gvn] = lrg
@@ -228,16 +241,10 @@ regalloc_round :: proc(
 
 	liveouts_clone_into :: proc(into: ^Liveouts, from: Liveouts) {
 		if len(into.data) < len(from.data) {
-			bac.grow_search_space(
-				&into.data,
-				len(from.data),
-				context.allocator,
-			)
+			bac.grow_search_space(&into.data, len(from.data), context.allocator)
 		}
 
-		mem.zero_slice(
-			into.data.hash[from.len - from.old:max(into.len, from.len)],
-		)
+		mem.zero_slice(into.data.hash[from.len - from.old:max(into.len, from.len)])
 		into.len = from.len - from.old
 		mem.copy_non_overlapping(
 			into.data.hash,
@@ -262,10 +269,7 @@ regalloc_round :: proc(
 
 	liveouts_find :: proc(l: ^Liveouts, lrg: u32) -> (int, bool) {
 		iter := bac.simd_iter_from(
-			l.data.hash[:mem.align_forward_int(
-				l.len,
-				size_of(bac.Intern_Vec),
-			)],
+			l.data.hash[:mem.align_forward_int(l.len, size_of(bac.Intern_Vec))],
 			lrg_hash(lrg),
 		)
 		for idx in bac.simd_iter_next(&iter) {
@@ -400,9 +404,7 @@ regalloc_round :: proc(
 							if bac.reg_mask_pop_count(ll.mask) == 1 {
 								bac.reg_mask_set(
 									rl.mask,
-									bac.reg_mask_first_set(
-										ll.mask,
-									) or_else fmt.panicf(""),
+									bac.reg_mask_first_set(ll.mask) or_else fmt.panicf(""),
 									false,
 								)
 
@@ -414,10 +416,7 @@ regalloc_round :: proc(
 								}
 							}
 
-							bit_arr.set(
-								interference,
-								rl.index * used_lrgs + ll.index,
-							)
+							bit_arr.set(interference, rl.index * used_lrgs + ll.index)
 						}
 					}
 				}
@@ -486,12 +485,7 @@ regalloc_round :: proc(
 
 						if get_node(prc, n).itype == .Poison do continue
 
-						changed |= add_liveout(
-							&ctx,
-							pred_liveouts,
-							lrg,
-							{node = n},
-						)
+						changed |= add_liveout(&ctx, pred_liveouts, lrg, {node = n})
 					}
 				}
 			}
@@ -542,10 +536,7 @@ regalloc_round :: proc(
 				l := &ctx.self_conflicts
 
 				iter := bac.simd_iter_from(
-					l.data.hash[:mem.align_forward_int(
-						l.len,
-						size_of(bac.Intern_Vec),
-					)],
+					l.data.hash[:mem.align_forward_int(l.len, size_of(bac.Intern_Vec))],
 					hash,
 				)
 				for idx in bac.simd_iter_next(&iter) {
@@ -591,10 +582,14 @@ regalloc_round :: proc(
 		current_slrg: Slrg_ID,
 	}
 
+	must_spill :: proc(ctx: Ctx, lrg: ^bac.Lrg) -> bool {
+		return can_spill(ctx, lrg) && lrg.must_spill
+	}
+
 	can_spill :: proc(ctx: Ctx, lrg: ^bac.Lrg) -> bool {
 		spill_boundary := ctx.ra.spill_boundary[lrg.mask.kind]
 		// TODO: remove this, its a hack, sepecific to x64
-		return (bac.reg_mask_last_set(lrg.mask) or_else 0) > spill_boundary
+		return (bac.reg_mask_last_set(lrg.mask) or_else 0) >= spill_boundary
 	}
 
 	switch mode {
@@ -663,8 +658,7 @@ regalloc_round :: proc(
 			) {
 				meta := &ctx.smetas[lrg.index]
 				assert(ctx.slrgs[meta.current_slrg].lrg == lrg)
-				if false &&
-				   ctx.slrgs[meta.current_slrg].end < ctx.block_offset {
+				if false && ctx.slrgs[meta.current_slrg].end < ctx.block_offset {
 					meta.current_slrg = alloc_slrg(
 						ctx,
 						{start = ctx.block_offset, lrg = lrg},
@@ -760,10 +754,7 @@ regalloc_round :: proc(
 
 					for k in bac.simd_iter_next_rev(&siter) {
 						if active.items.id[k].end == j {
-							bac.reg_mask_set(
-								free_regs[kind],
-								active.items.id[k].lrg.reg,
-							)
+							bac.reg_mask_set(free_regs[kind], active.items.id[k].lrg.reg)
 							active.len -= 1
 							active.items[active.len], active.items[k] =
 								active.items[k], active.items[active.len]
@@ -786,7 +777,7 @@ regalloc_round :: proc(
 					spill_boundary := ctx.ra.spill_boundary[slrg.lrg.mask.kind]
 					active := &active_slrgs[slrg.lrg.mask.kind]
 					// TODO: remove this, its a hack, sepecific to x64
-					if can_spill(ctx, slrg.lrg) {
+					if must_spill(ctx, slrg.lrg) {
 						slrg.lrg.mask.masks[0] &= -1 << uint(spill_boundary)
 					}
 
@@ -795,10 +786,7 @@ regalloc_round :: proc(
 					   bac.reg_mask_contains(available, slrg.lrg.reg) {
 						reg = int(slrg.lrg.reg)
 					} else {
-						reg, _ = bac.reg_mask_first_common_set(
-							available,
-							slrg.lrg.mask,
-						)
+						reg, _ = bac.reg_mask_first_common_set(available, slrg.lrg.mask)
 					}
 
 					recoverable_failure |= reg == -1
@@ -806,16 +794,9 @@ regalloc_round :: proc(
 					// NOTE: we do this even if we already failed as we
 					// also mark the killed lrgs
 					if bac.reg_mask_pop_count(slrg.lrg.mask) == 1 && i == 0 {
-						reg =
-							bac.reg_mask_first_set(
-								slrg.lrg.mask,
-							) or_else fmt.panicf("")
+						reg = bac.reg_mask_first_set(slrg.lrg.mask) or_else fmt.panicf("")
 						for oslrg in active.items.id[:active.len] {
-							bac.reg_mask_set(
-								oslrg.lrg.mask,
-								reg,
-								value = false,
-							)
+							bac.reg_mask_set(oslrg.lrg.mask, reg, value = false)
 							if bac.reg_mask_pop_count(oslrg.lrg.mask) == 0 {
 								ok = false
 								oslrg.lrg.killed = true
@@ -834,19 +815,40 @@ regalloc_round :: proc(
 						active_push(active, slrg)
 						bac.reg_mask_set(available, slrg.lrg.reg, false)
 					} else {
+						already_spilled :: proc(ctx: Ctx, slrg: ^Slrg) -> bool {
+							if int(slrg.lrg.reg) >=
+							   ctx.prc.spill_boundary[slrg.lrg.mask.kind] {
+								// NOTE: quick pressure releaf, somehow we terminate lots
+								// faster if we do this, probably because the forced spills
+								// won't bug us over time
+								//
+								// Good to note that this code only gets called when we know we
+								// failed the alloc
+								slrg.lrg.failed_to_assign = true
+							}
+							return must_spill(ctx, slrg.lrg) || slrg.lrg.fails != {}
+						}
+
+						expense :: proc(ctx: Ctx, slrg: ^Slrg) -> int {
+							return slrg.end - slrg.start
+						}
+
 						best := slrg
 						best_idx := -1
 						for oslrg, k in active.items.id[:active.len] {
-							if (oslrg.lrg.fails == {} &&
-								   !can_spill(ctx, oslrg.lrg) &&
-								   oslrg.end - oslrg.start >
-									   best.end - best.start) ||
-							   can_spill(ctx, best.lrg) ||
-							   best.lrg.fails != {} {
+
+							oxp := expense(ctx, oslrg)
+							bxp := expense(ctx, best)
+							diff := oxp - bxp
+
+							if (!already_spilled(ctx, oslrg) && diff > 0) ||
+							   already_spilled(ctx, best) {
 								best = oslrg
 								best_idx = k
 							}
 						}
+
+						assert(!already_spilled(ctx, best))
 						best.lrg.failed_to_assign = true
 						if best_idx >= 0 {
 							active.items[best_idx] = {end_hash(slrg.end), slrg}
@@ -937,10 +939,7 @@ regalloc_round :: proc(
 				}
 				total := to_move + len(inadj)
 
-				leeway := bac.reg_mask_intersection_pop_count(
-					ilrg.mask,
-					inlrg.mask,
-				)
+				leeway := bac.reg_mask_intersection_pop_count(ilrg.mask, inlrg.mask)
 
 				if total >= leeway &&
 				   (leeway == 0 ||
@@ -1079,11 +1078,7 @@ regalloc_round :: proc(
 				best = pick
 			}
 
-			swap_ord(
-				ctx,
-				&lrgs[ctx.color_ord[ready]],
-				&lrgs[ctx.color_ord[best]],
-			)
+			swap_ord(ctx, &lrgs[ctx.color_ord[ready]], &lrgs[ctx.color_ord[best]])
 			ready += 1
 
 			assert(ready <= len(ctx.color_ord))
@@ -1105,9 +1100,7 @@ regalloc_round :: proc(
 			for adj in ctx.adj[lrg.index] {
 				slc := &ctx.adj[adj]
 				idx :=
-					lrg_search(slc^, lrg.index) or_else fmt.panicf(
-						"removed a lrg twice",
-					)
+					lrg_search(slc^, lrg.index) or_else fmt.panicf("removed a lrg twice")
 				slc[idx], slc[len(slc) - 1] = slc[len(slc) - 1], slc[idx]
 				slc^ = slc[:len(slc) - 1]
 			}
@@ -1206,6 +1199,8 @@ regalloc_round :: proc(
 
 		intersect(a, b.mask)
 
+		a.must_spill |= b.must_spill
+
 		if a.rank == b.rank {
 			a.rank += 1
 		}
@@ -1250,6 +1245,10 @@ regalloc_round :: proc(
 
 	fail_count := 0
 
+	when bac.REGLOGS {
+		fmt.println()
+	}
+
 	for &lrg in lrgs[:used_lrgs_check] {
 		id := lrg.node
 
@@ -1258,8 +1257,8 @@ regalloc_round :: proc(
 			continue
 		}
 
-		if bac.REGLOGS {
-			//log.info("fail:", lrg, lrg.fails)
+		when bac.REGLOGS {
+			fmt.println("fail:", lrg, lrg.fails, get_node(prc, lrg.node).must_spill)
 		}
 
 		fail_count += 1
@@ -1302,13 +1301,7 @@ regalloc_round :: proc(
 					split := id
 					if out_node.itype != .Split {
 						assert(out_node.gvn < ctx.pre_split_gvn)
-						split = split_before(
-							ctx,
-							out.id,
-							out.idx,
-							"suse",
-							redirect = id,
-						)
+						split = split_before(ctx, out.id, out.idx, "suse", redirect = id)
 						inserted_splits += 1
 					}
 
@@ -1318,10 +1311,7 @@ regalloc_round :: proc(
 				if fnode.output_count == 0 {
 					block := get_node_block(ctx, m)
 					idx :=
-						slice.linear_search(
-							block.instrs[:],
-							id,
-						) or_else fmt.panicf("")
+						slice.linear_search(block.instrs[:], id) or_else fmt.panicf("")
 					ordered_remove(&block.instrs, idx)
 					bac.delete_node(ctx.prc, fnode)
 				}
@@ -1346,8 +1336,7 @@ regalloc_round :: proc(
 					onode := expand_node(prc, out.id)
 					oblock := get_node_block(ctx, out.id)
 					if onode.itype == .Phi {
-						last :=
-							bac.get_inputs(ctx.prc, onode.inps[0])[out.idx - 1]
+						last := bac.get_inputs(ctx.prc, onode.inps[0])[out.idx - 1]
 						oblock = get_node_block(ctx, last)
 					}
 
@@ -1358,25 +1347,14 @@ regalloc_round :: proc(
 
 					split := redirect
 					if onode.itype != .Split {
-						split = split_before(
-							ctx,
-							out.id,
-							out.idx,
-							"klb",
-							redirect,
-						)
+						split = split_before(ctx, out.id, out.idx, "klb", redirect)
 						inserted_splits += int(split != redirect)
 					}
 					bac.set_input(prc, out.id, out.idx, split)
 				}
 			}
 
-			bac.add_efficiency_stat(
-				prc,
-				.kill_splits_inserted,
-				inserted_splits,
-				1,
-			)
+			bac.add_efficiency_stat(prc, .kill_splits_inserted, inserted_splits, 1)
 
 			continue
 		}
@@ -1385,7 +1363,6 @@ regalloc_round :: proc(
 			inserted_splits := 0
 			for m in members {
 				split := m
-
 				has_call_use := false
 				for out in bac.get_outputs(prc, m) {
 					if get_node(prc, out.id).itype in bac.CALLS {
@@ -1432,37 +1409,37 @@ regalloc_round :: proc(
 			for m in members {
 				mnode := expand_node(prc, m)
 				redirect := m
+				mnode.must_spill = true
+
 				for out in slice.clone(mnode.outs) {
 					onode := expand_node(prc, out.id)
-					oblock := get_node_block(ctx, out.id)
-					if onode.itype == .Phi {
-						last :=
-							bac.get_inputs(ctx.prc, onode.inps[0])[out.idx - 1]
-						oblock = get_node_block(ctx, last)
-					}
+					onode.must_spill = true
+					if !can_spill(ctx, &lrg) {
+						oblock := get_node_block(ctx, out.id)
+						if onode.itype == .Phi {
+							last := bac.get_inputs(ctx.prc, onode.inps[0])[out.idx - 1]
+							oblock = get_node_block(ctx, last)
+						}
 
-					if redirect == m {
-						redirect = split_after(
-							ctx,
-							"assa",
-							m,
-							must = onode.itype == .Phi,
-						)
-						inserted_splits += 1
-					}
+						if redirect == m {
+							redirect = split_after(
+								ctx,
+								"assa",
+								m,
+								must = onode.itype == .Phi,
+							)
+							get_node(ctx.prc, redirect).must_spill = true
+							inserted_splits += 1
+						}
 
-					split := redirect
-					if onode.itype != .Split && onode.itype != .Phi {
-						split = split_before(
-							ctx,
-							out.id,
-							out.idx,
-							"assb",
-							redirect,
-						)
-						inserted_splits += 1
+						split := redirect
+						if onode.itype != .Split && onode.itype != .Phi {
+							split = split_before(ctx, out.id, out.idx, "assb", redirect)
+							get_node(ctx.prc, split).must_spill = true
+							inserted_splits += 1
+						}
+						bac.set_input(prc, out.id, out.idx, split)
 					}
-					bac.set_input(prc, out.id, out.idx, split)
 				}
 			}
 
@@ -1523,8 +1500,7 @@ regalloc_round :: proc(
 
 				inode := get_node(prc, inp)
 
-				if j != int(ctx.gmetas[node.gvn].in_place_slot) &&
-				   node.itype != .Phi {
+				if j != int(ctx.gmetas[node.gvn].in_place_slot) && node.itype != .Phi {
 					continue
 				}
 
@@ -1615,18 +1591,12 @@ regalloc_round :: proc(
 					if inp.output_count == 1 &&
 					   0 < i &&
 					   bb.instrs[i - 1] == inode.inps[0] &&
-					   !inp.scan_split &&
 					   ctx.gmetas[inp.gvn].in_place_slot >= 0 {
 
-						in_slot_id :=
-							inp.inps[ctx.gmetas[inp.gvn].in_place_slot]
+						in_slot_id := inp.inps[ctx.gmetas[inp.gvn].in_place_slot]
 						in_slot_node := expand_node(prc, in_slot_id)
 
-						umask := rm_get_use(
-							ctx,
-							inp,
-							ctx.gmetas[inp.gvn].in_place_slot,
-						)
+						umask := rm_get_use(ctx, inp, ctx.gmetas[inp.gvn].in_place_slot)
 
 						overlaps := bac.reg_mask_contains(
 							umask,
@@ -1643,8 +1613,7 @@ regalloc_round :: proc(
 							   res.allocs[inode.gvn] {
 
 								res.allocs[inp.gvn] = res.allocs[inode.gvn]
-								res.allocs[in_slot_node.gvn] =
-									res.allocs[inode.gvn]
+								res.allocs[in_slot_node.gvn] = res.allocs[inode.gvn]
 								continue
 							}
 						}
@@ -1657,13 +1626,9 @@ regalloc_round :: proc(
 						onode := expand_node(prc, o.id)
 
 						umask := rm_get_use(ctx, onode, o.idx)
-						overlaps := bac.reg_mask_contains(
-							umask,
-							res.allocs[inp.gvn].index,
-						)
+						overlaps := bac.reg_mask_contains(umask, res.allocs[inp.gvn].index)
 
-						if overlaps &&
-						   get_lrg(ctx, instr) != get_lrg(ctx, o.id) {
+						if overlaps && get_lrg(ctx, instr) != get_lrg(ctx, o.id) {
 							bac.subsume(prc, inode.inps[0], instr)
 							continue
 						}
@@ -1673,10 +1638,7 @@ regalloc_round :: proc(
 
 					if int(src.index) >= ctx.ra.spill_boundary[src.kind] &&
 					   int(dst.index) >= ctx.ra.spill_boundary[dst.kind] {
-						res.temp_stack_slot = max(
-							res.temp_stack_slot,
-							src.kind + 1,
-						)
+						res.temp_stack_slot = max(res.temp_stack_slot, src.kind + 1)
 					}
 				}
 
@@ -1699,7 +1661,7 @@ regalloc_round :: proc(
 
 	if ok do verify_alloc_integrity(ctx, res.allocs)
 
-	log_lrgs(&ctx)
+	//log_lrgs(&ctx)
 
 	return
 
@@ -1719,12 +1681,6 @@ regalloc_round :: proc(
 		node: ^bac.Node,
 		#any_int pos: int,
 	) -> bac.Reg_Mask {
-		if node.scan_split {
-			@(static, rodata)
-			slts: [8]i64
-			return {bit_length = ctx.ra.mask_len, masks = raw_data(&slts)}
-		}
-
 		meta := &ctx.gmetas[node.gvn]
 		idx := i8(pos) - i8(meta.input_start)
 		fmt.assertf(
@@ -1857,15 +1813,13 @@ regalloc_round :: proc(
 		for i := 0; i < len(members); i += 1 {
 			member := members[i]
 			for out in bac.get_outputs(prc, member) {
-				if get_lrg(ctx, out.id) == lrg &&
-				   !slice.contains(members[:], out.id) {
+				if get_lrg(ctx, out.id) == lrg && !slice.contains(members[:], out.id) {
 					append(&members, out.id)
 				}
 			}
 			for inp in bac.get_inputs(prc, member) {
 				if inp == 0 do continue
-				if get_lrg(ctx, inp) == lrg &&
-				   !slice.contains(members[:], inp) {
+				if get_lrg(ctx, inp) == lrg && !slice.contains(members[:], inp) {
 					append(&members, inp)
 				}
 			}
@@ -1988,8 +1942,7 @@ regalloc_round :: proc(
 		idx: int,
 	) {
 		block = get_node_block(ctx, id)
-		idx =
-			arna.simd_search(block.instrs[:], id) or_else fmt.panicf("%v", id)
+		idx = arna.simd_search(block.instrs[:], id) or_else fmt.panicf("%v", id)
 		return
 	}
 
@@ -2013,7 +1966,7 @@ regalloc_round :: proc(
 		return id
 	}
 
-	@(disabled = !bac.REGLOGS)
+	@(disabled = true || !bac.REGLOGS)
 	log_lrgs :: proc(ctx: ^Ctx) {
 		sb: strings.Builder
 
@@ -2030,8 +1983,7 @@ regalloc_round :: proc(
 		prefix :: proc(w: io.Writer, instr: ^bac.Node, bb: bac.Basic_Block) {
 			when !fmt.NO_FMT {
 				ctx := (^Ctx)(context.user_ptr)
-				if is_def_while_splitting(ctx^, instr) &&
-				   len(ctx.lrg_table) != 0 {
+				if is_def_while_splitting(ctx^, instr) && len(ctx.lrg_table) != 0 {
 					lrg := get_lrg(ctx^, bac.get_node_id(ctx.prc, instr))
 					if lrg == nil {
 						return

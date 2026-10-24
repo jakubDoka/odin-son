@@ -159,8 +159,7 @@ iter_next :: proc(it: ^Iter) -> (int, bool) {
 	}
 
 	pos :=
-		(it.i - 1) * MASK_SIZE +
-		intrinsics.count_trailing_zeros(it.current_mask)
+		(it.i - 1) * MASK_SIZE + intrinsics.count_trailing_zeros(it.current_mask)
 	it.current_mask &= it.current_mask - 1
 
 	return pos, true

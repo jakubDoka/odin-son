@@ -4,14 +4,11 @@ dirty:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0x200
-    call -0x3a
+    call -0x43
     xor eax, eax
 1:
     cmp rax, 0x40
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    jne 2
+    jge 2
     mov.q [rsp + rax*8], 0x55
     add rax, 1
     jmp 1
@@ -22,7 +19,7 @@ dirty:
 main:
     sub rsp, 0x38
     call dirty
-    mov.q [rsp + 0x30], rax
+    mov rcx, rax
     pxor xmm0, xmm0
     movups.x [rsp], xmm0
     mov.q [rsp + 0x10], 0
@@ -31,10 +28,9 @@ main:
     mov.q rax, [rsp]
     add.q rax, [rsp + 0x8]
     add.q rax, [rsp + 0x10]
-    mov.q rcx, [rsp + 0x20]
-    lea rax, [rax + rcx + 0x5]
+    mov.q rdx, [rsp + 0x20]
+    lea rax, [rax + rdx + 0x5]
     add.q rax, [rsp + 0x28]
-    mov.q rcx, [rsp + 0x30]
     add rax, rcx
     mov rcx, 0xfb
     cqo
@@ -48,16 +44,13 @@ dirty:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0x200
-    call -0x3a
-    xor ecx, ecx
+    call -0x3d
+    xor eax, eax
 1:
-    cmp rcx, 0x40
-    setge al
-    movzx rax, al
-    test al, al
-    jne 2
-    mov.q [rsp + rcx*8], 0x55
-    add rcx, 1
+    cmp rax, 0x40
+    jge 2
+    mov.q [rsp + rax*8], 0x55
+    add rax, 1
     jmp 1
 2:
     mov.q rax, [rsp + 0x18]
@@ -91,14 +84,11 @@ dirty:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0x200
-    call -0x3a
+    call -0x43
     xor eax, eax
 1:
     cmp rax, 0x40
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    jne 2
+    jge 2
     mov.q [rsp + rax*8], 0x55
     add rax, 1
     jmp 1
@@ -109,7 +99,7 @@ dirty:
 main:
     sub rsp, 0x38
     call dirty
-    mov.q [rsp + 0x30], rax
+    mov rcx, rax
     pxor xmm0, xmm0
     movups.x [rsp], xmm0
     mov.q [rsp + 0x10], 0
@@ -118,10 +108,9 @@ main:
     mov.q rax, [rsp]
     add.q rax, [rsp + 0x8]
     add.q rax, [rsp + 0x10]
-    mov.q rcx, [rsp + 0x20]
-    lea rax, [rax + rcx + 0x5]
+    mov.q rdx, [rsp + 0x20]
+    lea rax, [rax + rdx + 0x5]
     add.q rax, [rsp + 0x28]
-    mov.q rcx, [rsp + 0x30]
     add rax, rcx
     mov rcx, 0xfb
     cqo
@@ -135,16 +124,13 @@ dirty:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0x200
-    call -0x3a
-    xor ecx, ecx
+    call -0x3d
+    xor eax, eax
 1:
-    cmp rcx, 0x40
-    setge al
-    movzx rax, al
-    test al, al
-    jne 2
-    mov.q [rsp + rcx*8], 0x55
-    add rcx, 1
+    cmp rax, 0x40
+    jge 2
+    mov.q [rsp + rax*8], 0x55
+    add rax, 1
     jmp 1
 2:
     mov.q rax, [rsp + 0x18]
@@ -178,17 +164,14 @@ dirty:
     lea rdi, [rsp]
     xor esi, esi
     mov rdx, 0x200
-    call -0x3a
-    xor edx, edx
+    call -0x3d
+    xor ecx, ecx
 1:
-    mov.q [rsp + rdx*8], 0x55
+    mov.q [rsp + rcx*8], 0x55
     mov.q rax, [rsp + 0x18]
-    add rdx, 1
-    cmp rdx, 0x40
-    setge cl
-    movzx rcx, cl
-    test cl, cl
-    je 1
+    add rcx, 1
+    cmp rcx, 0x40
+    jl 1
     add rsp, 0x208
     ret
 main:
@@ -222,17 +205,14 @@ main:
     lea rdi, [rsp + 0x30]
     xor esi, esi
     mov rdx, 0x200
-    call -0x3b
-    xor ecx, ecx
+    call -0x3e
+    xor eax, eax
 1:
-    mov.q [rsp + rcx*8 + 0x30], 0x55
+    mov.q [rsp + rax*8 + 0x30], 0x55
     mov.q r8, [rsp + 0x48]
-    add rcx, 1
-    cmp rcx, 0x40
-    setge al
-    movzx rax, al
-    test al, al
-    je 1
+    add rax, 1
+    cmp rax, 0x40
+    jl 1
     pxor xmm0, xmm0
     movups.x [rsp], xmm0
     mov.q [rsp + 0x10], 0

@@ -5,7 +5,12 @@ main:
     str x20, [xzr, #88]
     str x21, [xzr, #96]
     str x22, [xzr, #104]
-    stp x29, x30, [xzr, #112]
+    str x23, [xzr, #112]
+    str x24, [xzr, #120]
+    str x25, [xzr, #128]
+    str x26, [xzr, #136]
+    str x27, [xzr, #144]
+    stp x29, x30, [xzr, #152]
     add x2, sp, #197
     movz x0, #16
     movz x1, #30
@@ -19,10 +24,10 @@ main:
     str x3, [x1]
     movz x1, #20
     bl fortran
-    str x0, [xzr, #128]
-    movz x19, #9
+    mov x19, x0
+    movz x20, #9
     add x0, sp, #0
-    str x19, [x0]
+    str x20, [x0]
     movz x0, #1
     movz x1, #2
     movz x2, #3
@@ -32,7 +37,7 @@ main:
     movz x5, #6
     movz x6, #7
     bl load_of_args
-    str x0, [xzr, #136]
+    mov x21, x0
     movz x0, #1
     movz x1, #2
     movz x2, #3
@@ -41,7 +46,7 @@ main:
     movz x5, #6
     movz x6, #7
     bl brahma
-    str x0, [xzr, #144]
+    mov x22, x0
     add x1, sp, #182
     movz x0, #513
     movk x0, #1027, lsl #16
@@ -65,27 +70,27 @@ main:
     add x0, x0, x1
     ldr w0, [x0]
     mov w0, w0
-    movz x20, #48
-    movz x21, #32
+    movz x23, #48
+    movz x24, #32
     movz x2, #12
     add x2, x2, x1
     ldrh w2, [x2]
     uxth w2, w2
-    lsl x2, x2, x21
+    lsl x2, x2, x24
     orr x2, x0, x2
     ldr x0, [x1]
     movz x3, #14
     add x1, x3, x1
     ldrb w1, [x1]
     uxtb w1, w1
-    lsl x1, x1, x20
+    lsl x1, x1, x23
     orr x1, x2, x1
     bl compose
-    str x0, [xzr, #152]
+    mov x25, x0
     movz x0, #1
     movz x1, #2
     bl return_stru
-    str x0, [xzr, #160]
+    mov x26, x0
     bl return_stru3
     add x1, sp, #168
     movz x2, #4
@@ -94,15 +99,15 @@ main:
     add x3, x3, x1
     mov w4, w0
     str w4, [x1]
-    lsr x4, x0, x21
+    lsr x4, x0, x24
     uxth w4, w4
     strh w4, [x2]
-    lsr x0, x0, x20
+    lsr x0, x0, x23
     uxtb w0, w0
     strb w0, [x3]
     movz x0, #5
     add x0, x0, x1
-    ldrb w22, [x0]
+    ldrb w27, [x0]
     bl return_stru3
     add x2, sp, #72
     add x4, sp, #56
@@ -117,24 +122,24 @@ main:
     add x3, x3, x8
     movz x9, #6
     add x9, x9, x8
-    lsr x10, x0, x21
+    lsr x10, x0, x24
     uxth w10, w10
     strh w10, [x3]
-    lsr x0, x0, x20
+    lsr x0, x0, x23
     uxtb w0, w0
     strb w0, [x9]
-    adr x0, 0xfc0
-    adr x3, 0xfc0
+    adr x0, 0xf64
+    adr x3, 0xf64
     movz x9, #2
     add x8, x9, x8
-    ldrb w20, [x8]
-    adr x8, 0xfc5
+    ldrb w23, [x8]
+    adr x8, 0xf69
     str x8, [x5]
     movz x8, #8
     add x5, x8, x5
     movz x8, #5
     str x8, [x5]
-    adr x5, 0xfca
+    adr x5, 0xf6e
     str x5, [x6]
     movz x5, #8
     add x5, x5, x6
@@ -143,45 +148,45 @@ main:
     add x5, sp, #32
     movz x6, #7
     str x6, [x5]
-    adr x5, 0xfd0
+    adr x5, 0xf74
     str x5, [x7]
     movz x5, #8
     add x5, x5, x7
     movz x6, #8
     str x6, [x5]
-    adr x5, 0xfd8
+    adr x5, 0xf7c
     str x5, [x4]
     movz x5, #8
     add x4, x5, x4
-    str x19, [x4]
+    str x20, [x4]
     movz x4, #10
     str x4, [x2]
-    adr x5, 0xfc2
+    adr x5, 0xf66
     movz x2, #1
     movz x4, #2
     movz x6, #3
     movz x7, #4
     bl stringa_dinga
-    ldr x1, [xzr, #128]
-    ldr x2, [xzr, #136]
+    add x1, x19, x21
+    add x1, x1, x22
+    uxtb w2, w25
     add x1, x1, x2
-    ldr x2, [xzr, #144]
+    add x1, x1, x26
+    uxtb w2, w27
     add x1, x1, x2
-    ldr x2, [xzr, #152]
-    uxtb w2, w2
-    add x1, x1, x2
-    ldr x2, [xzr, #160]
-    add x1, x1, x2
-    uxtb w2, w22
-    add x1, x1, x2
-    uxtb w2, w20
+    uxtb w2, w23
     add x1, x1, x2
     add x0, x1, x0
     ldr x19, [xzr, #80]
     ldr x20, [xzr, #88]
     ldr x21, [xzr, #96]
     ldr x22, [xzr, #104]
-    ldp x29, x30, [xzr, #112]
+    ldr x23, [xzr, #112]
+    ldr x24, [xzr, #120]
+    ldr x25, [xzr, #128]
+    ldr x26, [xzr, #136]
+    ldr x27, [xzr, #144]
+    ldp x29, x30, [xzr, #152]
     add sp, sp, #224
     ret
 compose:
@@ -190,7 +195,8 @@ compose:
     str x20, [xzr, #8]
     str x21, [xzr, #16]
     str x22, [xzr, #24]
-    stp x29, x30, [xzr, #32]
+    str x23, [xzr, #32]
+    stp x29, x30, [xzr, #40]
     add x19, sp, #56
     movz x20, #32
     movz x21, #48
@@ -223,8 +229,8 @@ compose:
     uxtb w1, w1
     lsl x1, x1, x21
     orr x0, x0, x1
-    bl 0x128
-    str x0, [xzr, #48]
+    bl 0x12c
+    mov x23, x0
     movz x0, #7
     add x0, x0, x19
     ldr w0, [x0]
@@ -241,9 +247,8 @@ compose:
     uxtb w1, w1
     lsl x1, x1, x21
     orr x0, x0, x1
-    bl 0x128
-    ldr x1, [xzr, #48]
-    uxtb w1, w1
+    bl 0x12c
+    uxtb w1, w23
     uxtb w0, w0
     add w0, w1, w0
     uxtb w0, w0
@@ -256,7 +261,8 @@ compose:
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
     ldr x22, [xzr, #24]
-    ldp x29, x30, [xzr, #32]
+    ldr x23, [xzr, #32]
+    ldp x29, x30, [xzr, #40]
     add sp, sp, #80
     ret
 kentus:
@@ -402,7 +408,7 @@ return_stru3:
     movz x1, #0
     movz x2, #7
     add x0, sp, #16
-    bl 0xfffff9d0
+    bl 0xfffff9ac
     movz x0, #513
     add x1, sp, #16
     strh w0, [x1]
@@ -447,7 +453,7 @@ return_stru4:
     movz x1, #0
     movz x2, #15
     add x0, sp, #32
-    bl 0xfffff928
+    bl 0xfffff904
     bl 0xffffff58
     mov w1, w0
     add x2, sp, #32
@@ -641,18 +647,18 @@ main:
     lsr x0, x0, x22
     uxtb w0, w0
     strb w0, [x9]
-    adr x0, 0xfc0
-    adr x3, 0xfc0
+    adr x0, 0xf80
+    adr x3, 0xf80
     movz x9, #2
     add x8, x9, x8
     ldrb w21, [x8]
-    adr x8, 0xfc5
+    adr x8, 0xf85
     str x8, [x7]
     movz x8, #8
     add x8, x8, x7
     movz x7, #5
     str x7, [x8]
-    adr x7, 0xfca
+    adr x7, 0xf8a
     str x7, [x6]
     movz x7, #8
     add x7, x7, x6
@@ -661,20 +667,20 @@ main:
     add x7, sp, #32
     movz x6, #7
     str x6, [x7]
-    adr x6, 0xfd0
+    adr x6, 0xf90
     str x6, [x5]
     movz x6, #8
     add x6, x6, x5
     movz x5, #8
     str x5, [x6]
-    adr x5, 0xfd8
+    adr x5, 0xf98
     str x5, [x4]
     movz x5, #8
     add x4, x5, x4
     str x19, [x4]
     movz x4, #10
     str x4, [x2]
-    adr x5, 0xfc2
+    adr x5, 0xf82
     movz x2, #1
     movz x4, #2
     movz x6, #3
@@ -921,7 +927,7 @@ return_stru3:
     movz x1, #0
     movz x2, #7
     add x0, sp, #16
-    bl 0xfffff9b8
+    bl 0xfffff9b4
     movz x1, #513
     add x0, sp, #16
     strh w1, [x0]
@@ -966,7 +972,7 @@ return_stru4:
     movz x1, #0
     movz x2, #15
     add x0, sp, #32
-    bl 0xfffff910
+    bl 0xfffff90c
     bl 0xffffff58
     mov w2, w0
     add x1, sp, #32
@@ -1037,7 +1043,12 @@ main:
     str x20, [xzr, #88]
     str x21, [xzr, #96]
     str x22, [xzr, #104]
-    stp x29, x30, [xzr, #112]
+    str x23, [xzr, #112]
+    str x24, [xzr, #120]
+    str x25, [xzr, #128]
+    str x26, [xzr, #136]
+    str x27, [xzr, #144]
+    stp x29, x30, [xzr, #152]
     add x2, sp, #197
     movz x0, #16
     movz x1, #30
@@ -1051,10 +1062,10 @@ main:
     str x3, [x1]
     movz x1, #20
     bl fortran
-    str x0, [xzr, #128]
-    movz x19, #9
+    mov x19, x0
+    movz x20, #9
     add x0, sp, #0
-    str x19, [x0]
+    str x20, [x0]
     movz x0, #1
     movz x1, #2
     movz x2, #3
@@ -1064,7 +1075,7 @@ main:
     movz x5, #6
     movz x6, #7
     bl load_of_args
-    str x0, [xzr, #136]
+    mov x21, x0
     movz x0, #1
     movz x1, #2
     movz x2, #3
@@ -1073,7 +1084,7 @@ main:
     movz x5, #6
     movz x6, #7
     bl brahma
-    str x0, [xzr, #144]
+    mov x22, x0
     add x1, sp, #182
     movz x0, #513
     movk x0, #1027, lsl #16
@@ -1097,27 +1108,27 @@ main:
     add x0, x0, x1
     ldr w0, [x0]
     mov w0, w0
-    movz x20, #48
-    movz x21, #32
+    movz x23, #48
+    movz x24, #32
     movz x2, #12
     add x2, x2, x1
     ldrh w2, [x2]
     uxth w2, w2
-    lsl x2, x2, x21
+    lsl x2, x2, x24
     orr x2, x0, x2
     ldr x0, [x1]
     movz x3, #14
     add x1, x3, x1
     ldrb w1, [x1]
     uxtb w1, w1
-    lsl x1, x1, x20
+    lsl x1, x1, x23
     orr x1, x2, x1
     bl compose
-    str x0, [xzr, #152]
+    mov x25, x0
     movz x0, #1
     movz x1, #2
     bl return_stru
-    str x0, [xzr, #160]
+    mov x26, x0
     bl return_stru3
     add x1, sp, #168
     movz x2, #4
@@ -1126,15 +1137,15 @@ main:
     add x3, x3, x1
     mov w4, w0
     str w4, [x1]
-    lsr x4, x0, x21
+    lsr x4, x0, x24
     uxth w4, w4
     strh w4, [x2]
-    lsr x0, x0, x20
+    lsr x0, x0, x23
     uxtb w0, w0
     strb w0, [x3]
     movz x0, #5
     add x0, x0, x1
-    ldrb w22, [x0]
+    ldrb w27, [x0]
     bl return_stru3
     add x2, sp, #72
     add x4, sp, #56
@@ -1149,24 +1160,24 @@ main:
     add x3, x3, x8
     movz x9, #6
     add x9, x9, x8
-    lsr x10, x0, x21
+    lsr x10, x0, x24
     uxth w10, w10
     strh w10, [x3]
-    lsr x0, x0, x20
+    lsr x0, x0, x23
     uxtb w0, w0
     strb w0, [x9]
-    adr x0, 0xfc0
-    adr x3, 0xfc0
+    adr x0, 0xf64
+    adr x3, 0xf64
     movz x9, #2
     add x8, x9, x8
-    ldrb w20, [x8]
-    adr x8, 0xfc5
+    ldrb w23, [x8]
+    adr x8, 0xf69
     str x8, [x5]
     movz x8, #8
     add x5, x8, x5
     movz x8, #5
     str x8, [x5]
-    adr x5, 0xfca
+    adr x5, 0xf6e
     str x5, [x6]
     movz x5, #8
     add x5, x5, x6
@@ -1175,45 +1186,45 @@ main:
     add x5, sp, #32
     movz x6, #7
     str x6, [x5]
-    adr x5, 0xfd0
+    adr x5, 0xf74
     str x5, [x7]
     movz x5, #8
     add x5, x5, x7
     movz x6, #8
     str x6, [x5]
-    adr x5, 0xfd8
+    adr x5, 0xf7c
     str x5, [x4]
     movz x5, #8
     add x4, x5, x4
-    str x19, [x4]
+    str x20, [x4]
     movz x4, #10
     str x4, [x2]
-    adr x5, 0xfc2
+    adr x5, 0xf66
     movz x2, #1
     movz x4, #2
     movz x6, #3
     movz x7, #4
     bl stringa_dinga
-    ldr x1, [xzr, #128]
-    ldr x2, [xzr, #136]
+    add x1, x19, x21
+    add x1, x1, x22
+    uxtb w2, w25
     add x1, x1, x2
-    ldr x2, [xzr, #144]
+    add x1, x1, x26
+    uxtb w2, w27
     add x1, x1, x2
-    ldr x2, [xzr, #152]
-    uxtb w2, w2
-    add x1, x1, x2
-    ldr x2, [xzr, #160]
-    add x1, x1, x2
-    uxtb w2, w22
-    add x1, x1, x2
-    uxtb w2, w20
+    uxtb w2, w23
     add x1, x1, x2
     add x0, x1, x0
     ldr x19, [xzr, #80]
     ldr x20, [xzr, #88]
     ldr x21, [xzr, #96]
     ldr x22, [xzr, #104]
-    ldp x29, x30, [xzr, #112]
+    ldr x23, [xzr, #112]
+    ldr x24, [xzr, #120]
+    ldr x25, [xzr, #128]
+    ldr x26, [xzr, #136]
+    ldr x27, [xzr, #144]
+    ldp x29, x30, [xzr, #152]
     add sp, sp, #224
     ret
 compose:
@@ -1222,7 +1233,8 @@ compose:
     str x20, [xzr, #8]
     str x21, [xzr, #16]
     str x22, [xzr, #24]
-    stp x29, x30, [xzr, #32]
+    str x23, [xzr, #32]
+    stp x29, x30, [xzr, #40]
     add x19, sp, #56
     movz x20, #32
     movz x21, #48
@@ -1255,8 +1267,8 @@ compose:
     uxtb w1, w1
     lsl x1, x1, x21
     orr x0, x0, x1
-    bl 0x128
-    str x0, [xzr, #48]
+    bl 0x12c
+    mov x23, x0
     movz x0, #7
     add x0, x0, x19
     ldr w0, [x0]
@@ -1273,9 +1285,8 @@ compose:
     uxtb w1, w1
     lsl x1, x1, x21
     orr x0, x0, x1
-    bl 0x128
-    ldr x1, [xzr, #48]
-    uxtb w1, w1
+    bl 0x12c
+    uxtb w1, w23
     uxtb w0, w0
     add w0, w1, w0
     uxtb w0, w0
@@ -1288,7 +1299,8 @@ compose:
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
     ldr x22, [xzr, #24]
-    ldp x29, x30, [xzr, #32]
+    ldr x23, [xzr, #32]
+    ldp x29, x30, [xzr, #40]
     add sp, sp, #80
     ret
 kentus:
@@ -1434,7 +1446,7 @@ return_stru3:
     movz x1, #0
     movz x2, #7
     add x0, sp, #16
-    bl 0xfffff9d0
+    bl 0xfffff9ac
     movz x0, #513
     add x1, sp, #16
     strh w0, [x1]
@@ -1479,7 +1491,7 @@ return_stru4:
     movz x1, #0
     movz x2, #15
     add x0, sp, #32
-    bl 0xfffff928
+    bl 0xfffff904
     bl 0xffffff58
     mov w1, w0
     add x2, sp, #32
@@ -1673,18 +1685,18 @@ main:
     lsr x0, x0, x22
     uxtb w0, w0
     strb w0, [x9]
-    adr x0, 0xfc0
-    adr x3, 0xfc0
+    adr x0, 0xf80
+    adr x3, 0xf80
     movz x9, #2
     add x8, x9, x8
     ldrb w21, [x8]
-    adr x8, 0xfc5
+    adr x8, 0xf85
     str x8, [x7]
     movz x8, #8
     add x8, x8, x7
     movz x7, #5
     str x7, [x8]
-    adr x7, 0xfca
+    adr x7, 0xf8a
     str x7, [x6]
     movz x7, #8
     add x7, x7, x6
@@ -1693,20 +1705,20 @@ main:
     add x7, sp, #32
     movz x6, #7
     str x6, [x7]
-    adr x6, 0xfd0
+    adr x6, 0xf90
     str x6, [x5]
     movz x6, #8
     add x6, x6, x5
     movz x5, #8
     str x5, [x6]
-    adr x5, 0xfd8
+    adr x5, 0xf98
     str x5, [x4]
     movz x5, #8
     add x4, x5, x4
     str x19, [x4]
     movz x4, #10
     str x4, [x2]
-    adr x5, 0xfc2
+    adr x5, 0xf82
     movz x2, #1
     movz x4, #2
     movz x6, #3
@@ -1953,7 +1965,7 @@ return_stru3:
     movz x1, #0
     movz x2, #7
     add x0, sp, #16
-    bl 0xfffff9b8
+    bl 0xfffff9b4
     movz x1, #513
     add x0, sp, #16
     strh w1, [x0]
@@ -1998,7 +2010,7 @@ return_stru4:
     movz x1, #0
     movz x2, #15
     add x0, sp, #32
-    bl 0xfffff910
+    bl 0xfffff90c
     bl 0xffffff58
     mov w2, w0
     add x1, sp, #32
@@ -2166,37 +2178,37 @@ main:
     add x6, sp, #16
     add x5, sp, #40
     movz x1, #0
-    adr x0, 0xfc5
+    adr x0, 0xf85
     str x0, [x3]
     movz x0, #8
     add x3, x0, x3
     movz x0, #5
     str x0, [x3]
-    adr x0, 0xfca
+    adr x0, 0xf8a
     str x0, [x6]
     movz x0, #8
     add x3, x0, x6
     movz x0, #6
     str x0, [x3]
-    adr x0, 0xfc0
-    adr x3, 0xfc0
+    adr x0, 0xf80
+    adr x3, 0xf80
     add x7, sp, #32
     movz x6, #7
     str x6, [x7]
-    adr x6, 0xfd0
+    adr x6, 0xf90
     str x6, [x5]
     movz x6, #8
     add x6, x6, x5
     movz x5, #8
     str x5, [x6]
-    adr x5, 0xfd8
+    adr x5, 0xf98
     str x5, [x4]
     movz x5, #8
     add x4, x5, x4
     str x21, [x4]
     movz x4, #10
     str x4, [x2]
-    adr x5, 0xfc2
+    adr x5, 0xf82
     movz x2, #1
     movz x4, #2
     movz x6, #3
@@ -2475,7 +2487,7 @@ return_stru3:
     movz x1, #0
     movz x2, #7
     add x0, sp, #16
-    bl 0xfffff9ac
+    bl 0xfffff9a8
     movz x1, #513
     add x0, sp, #16
     strh w1, [x0]
@@ -2524,7 +2536,7 @@ return_stru4:
     movz x1, #0
     movz x2, #15
     add x0, sp, #32
-    bl 0xfffff904
+    bl 0xfffff900
     mov w1, w20
     add x0, sp, #32
     str w1, [x0]
@@ -2802,7 +2814,7 @@ return_stru3:
     movz x1, #0
     movz x2, #7
     add x0, sp, #16
-    bl 0xfffffca8
+    bl 0xfffffca4
     movz x1, #513
     add x0, sp, #16
     strh w1, [x0]
@@ -2851,7 +2863,7 @@ return_stru4:
     movz x1, #0
     movz x2, #15
     add x0, sp, #32
-    bl 0xfffffc00
+    bl 0xfffffbfc
     mov w1, w20
     add x0, sp, #32
     str w1, [x0]

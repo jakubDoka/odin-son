@@ -10,7 +10,7 @@ export ODIN_ROOT="${ODIN_ROOT:-$(dirname "$(readlink -f "$(command -v "$odin_bin
 jit="${JIT:-$work_dir/jit}"
 
 if [[ -z "${JIT:-}" ]]; then
-	"$odin_bin" build "$repo_root" -out:"$jit"
+	"$odin_bin" build "$repo_root/odinc" -out:"$jit"
 fi
 
 mkdir "$work_dir/foreign-call"

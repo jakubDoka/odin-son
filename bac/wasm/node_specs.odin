@@ -84,7 +84,9 @@ Class_Flag :: bac.Class_Flag
 		0b10, // Splat
 		0b10, // Ctz
 		0b10, // Simd_Extract_Lsbs
+		0b10, // Simd_Extract_Msbs
 		0b10, // Simd_Reduce_Add_Bisect
+		0b10, // Select
 		0b10000000, // WASM_Store
 		0b10000000, // WASM_Load
 		0b10, // Get_Local
@@ -96,7 +98,6 @@ Class_Flag :: bac.Class_Flag
 		0b10, // WASM_Shl
 		0b10, // WASM_Shr
 		0b10, // WASM_U_Shr
-		0b10, // Select
 	},
 	node_extra_sizes = {
 		0 = 1, // Nil -> Cfg
@@ -119,10 +120,10 @@ Class_Flag :: bac.Class_Flag
 		25 = 1, // Ret -> Tup
 		27 = 2, // CInt -> CInt
 		55 = 1, // Proc_Addr -> Tup
-		69 = 2, // WASM_Store -> Mem_Op
-		70 = 2, // WASM_Load -> Mem_Op
-		76 = 1, // Extract_Lane_U -> Lane_Op
-		80 = 0,
+		71 = 2, // WASM_Store -> Mem_Op
+		72 = 2, // WASM_Load -> Mem_Op
+		78 = 1, // Extract_Lane_U -> Lane_Op
+		81 = 0,
 	},
 	node_flags = {
 		{}, // Nil
@@ -193,7 +194,9 @@ Class_Flag :: bac.Class_Flag
 		{Class_Flag.Interned}, // Splat
 		{Class_Flag.Interned}, // Ctz
 		{Class_Flag.Interned}, // Simd_Extract_Lsbs
+		{Class_Flag.Interned}, // Simd_Extract_Msbs
 		{Class_Flag.Interned}, // Simd_Reduce_Add_Bisect
+		{Class_Flag.Interned}, // Select
 		{Class_Flag.Store}, // WASM_Store
 		{Class_Flag.Load}, // WASM_Load
 		{}, // Get_Local
@@ -205,7 +208,6 @@ Class_Flag :: bac.Class_Flag
 		{}, // WASM_Shl
 		{}, // WASM_Shr
 		{}, // WASM_U_Shr
-		{}, // Select
 	},
 	node_extra_types = ({}) when #config(NO_FMT, false) else ([]typeid{
 		0 = bac.Cfg,
@@ -228,10 +230,10 @@ Class_Flag :: bac.Class_Flag
 		25 = bac.Tup,
 		27 = bac.CInt,
 		55 = bac.Tup,
-		69 = Mem_Op,
-		70 = Mem_Op,
-		76 = Lane_Op,
-		80 = {},
+		71 = Mem_Op,
+		72 = Mem_Op,
+		78 = Lane_Op,
+		81 = {},
 	}),
 	node_kind = nil when #config(NO_FMT, false) else Node_Type,
 }
@@ -305,7 +307,9 @@ Node_Type :: enum u16 {
 	Splat,
 	Ctz,
 	Simd_Extract_Lsbs,
+	Simd_Extract_Msbs,
 	Simd_Reduce_Add_Bisect,
+	Select,
 	WASM_Store,
 	WASM_Load,
 	Get_Local,
@@ -317,7 +321,6 @@ Node_Type :: enum u16 {
 	WASM_Shl,
 	WASM_Shr,
 	WASM_U_Shr,
-	Select,
 }
 
 peep_inst :: proc(ctx: bac.Peep_Ctx, node: bac.Expanded_Node) -> Maybe(bac.Node_ID) {
@@ -347,29 +350,26 @@ add_extract_lane_u :: #force_inline proc(prc: ^bac.Proc, name: string, dt: bac.N
 	}
 	return bac.add_raw(prc, name, u16(Node_Type.Extract_Lane_U), dt, {vec}, {lane = lane,})
 }
-add_select :: #force_inline proc(prc: ^bac.Proc, name: string, dt: bac.Node_Datatype, on_true: bac.Node_ID, on_false: bac.Node_ID, condition: bac.Node_ID) -> (_id: bac.Node_ID) {
-	return bac.add_raw(prc, name, u16(Node_Type.Select), dt, {on_true, on_false, condition})
-}
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	when false {}
-	else when T == bac.Tup {return 5}
-	else when T == Mem_Op {return 7}
-	else when T == bac.Call {return 3}
 	else when T == bac.CInt {return 6}
-	else when T == Lane_Op {return 8}
-	else when T == bac.Local {return 4}
+	else when T == bac.Call {return 3}
 	else when T == bac.Cfg {return 0}
 	else when T == bac.Dbg_Sym {return 2}
+	else when T == Lane_Op {return 8}
+	else when T == bac.Local {return 4}
+	else when T == Mem_Op {return 7}
 	else when T == bac.No_Extra {return 1}
+	else when T == bac.Tup {return 5}
 	else {#panic(`the passed type is not subclass of anything`)}
 }
-#assert(size_of(bac.Tup) % bac.PRECISION == 0)
-#assert(size_of(Mem_Op) % bac.PRECISION == 0)
-#assert(size_of(bac.Call) % bac.PRECISION == 0)
 #assert(size_of(bac.CInt) % bac.PRECISION == 0)
-#assert(size_of(Lane_Op) % bac.PRECISION == 0)
-#assert(size_of(bac.Local) % bac.PRECISION == 0)
+#assert(size_of(bac.Call) % bac.PRECISION == 0)
 #assert(size_of(bac.Cfg) % bac.PRECISION == 0)
 #assert(size_of(bac.Dbg_Sym) % bac.PRECISION == 0)
+#assert(size_of(Lane_Op) % bac.PRECISION == 0)
+#assert(size_of(bac.Local) % bac.PRECISION == 0)
+#assert(size_of(Mem_Op) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
+#assert(size_of(bac.Tup) % bac.PRECISION == 0)

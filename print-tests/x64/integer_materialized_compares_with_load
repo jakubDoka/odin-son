@@ -3,32 +3,32 @@ sld:
     mov.d ecx, [rsi]
     cmp edi, ecx
     sete al
-    movzx rax, al
+    movzx eax, al
     movzx eax, al
     cmp edi, ecx
     setne dl
-    movzx rdx, dl
+    movzx edx, dl
     movzx edx, dl
     lea rax, [rax + rdx*2]
     cmp edi, ecx
     setl dl
-    movzx rdx, dl
+    movzx edx, dl
     movzx edx, dl
     lea rax, [rax + rdx*4]
     cmp edi, ecx
     setle dl
-    movzx rdx, dl
+    movzx edx, dl
     movzx edx, dl
     lea rax, [rax + rdx*8]
     cmp edi, ecx
     setg dl
-    movzx rdx, dl
+    movzx edx, dl
     movzx edx, dl
     imul rdx, rdx, 0x10
     add rax, rdx
     cmp edi, ecx
     setge cl
-    movzx rcx, cl
+    movzx ecx, cl
     movzx ecx, cl
     imul rcx, rcx, 0x20
     add rax, rcx
@@ -37,113 +37,115 @@ uld:
     mov.d ecx, [rsi]
     cmp edi, ecx
     sete al
-    movzx rax, al
+    movzx eax, al
     movzx eax, al
     cmp edi, ecx
     setne dl
-    movzx rdx, dl
+    movzx edx, dl
     movzx edx, dl
     lea rax, [rax + rdx*2]
     cmp edi, ecx
     setb dl
-    movzx rdx, dl
+    movzx edx, dl
     movzx edx, dl
     lea rax, [rax + rdx*4]
     cmp edi, ecx
     setbe dl
-    movzx rdx, dl
+    movzx edx, dl
     movzx edx, dl
     lea rax, [rax + rdx*8]
     cmp edi, ecx
     seta dl
-    movzx rdx, dl
+    movzx edx, dl
     movzx edx, dl
     imul rdx, rdx, 0x10
     add rax, rdx
     cmp edi, ecx
     setae cl
-    movzx rcx, cl
+    movzx ecx, cl
     movzx ecx, cl
     imul rcx, rcx, 0x20
     add rax, rcx
     ret
 main:
-    sub rsp, 0x38
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    sub rsp, 0x10
     mov.d [rsp], 5
     mov rdi, 3
     lea rsi, [rsp]
     call sld
-    mov.q [rsp + 0x8], rax
+    mov rbx, rax
     lea rsi, [rsp]
     mov rdi, 5
     call sld
-    mov.q [rsp + 0x10], rax
+    mov rbp, rax
     mov rdi, 9
     lea rsi, [rsp]
     call sld
-    mov.q [rsp + 0x18], rax
+    mov r12, rax
     mov.d [rsp + 0x4], 0x3d0900
     mov rdi, 5
     lea rsi, [rsp + 0x4]
     call uld
-    mov.q [rsp + 0x20], rax
+    mov r13, rax
     lea rsi, [rsp + 0x4]
     mov rdi, 0x3d0900
     call uld
-    mov.q [rsp + 0x28], rax
+    mov r14, rax
     lea rsi, [rsp + 0x4]
     mov rdi, 0x3d0900
     call uld
-    mov.q rcx, [rsp + 0x8]
-    mov.q rdx, [rsp + 0x10]
-    add rcx, rdx
-    mov rcx, rcx
-    mov.q rdx, [rsp + 0x18]
-    add rcx, rdx
-    mov.q [rsp + 0x8], rcx
-    mov.q rcx, [rsp + 0x20]
-    mov.q rdx, [rsp + 0x28]
-    add rcx, rdx
-    mov rcx, rcx
+    mov rcx, rbx
+    add rcx, rbp
+    add rcx, r12
+    mov rdx, r13
+    add rdx, r14
+    add rdx, rax
+    mov rax, rdx
     add rcx, rax
-    mov.q [rsp + 0x10], rcx
-    mov.q rax, [rsp + 0x8]
-    mov.q rcx, [rsp + 0x10]
-    add rax, rcx
-    mov rax, rax
-    add rsp, 0x38
+    mov rax, rcx
+    add rsp, 0x10
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
     ret
 =========== OPT LEVEL: none ===========
 sld:
     mov.d ecx, [rsi]
     cmp edi, ecx
     sete al
-    movzx rax, al
+    movzx eax, al
     movzx edx, al
     cmp edi, ecx
     setne al
-    movzx rax, al
+    movzx eax, al
     movzx eax, al
     lea rdx, [rdx + rax*2]
     cmp edi, ecx
     setl al
-    movzx rax, al
+    movzx eax, al
     movzx eax, al
     lea rdx, [rdx + rax*4]
     cmp edi, ecx
     setle al
-    movzx rax, al
+    movzx eax, al
     movzx eax, al
     lea rax, [rdx + rax*8]
     cmp edi, ecx
     setg dl
-    movzx rdx, dl
+    movzx edx, dl
     movzx edx, dl
     imul rdx, rdx, 0x10
     add rax, rdx
     cmp edi, ecx
     setge cl
-    movzx rcx, cl
+    movzx ecx, cl
     movzx ecx, cl
     imul rcx, rcx, 0x20
     add rax, rcx
@@ -152,32 +154,32 @@ uld:
     mov.d ecx, [rsi]
     cmp edi, ecx
     sete al
-    movzx rax, al
+    movzx eax, al
     movzx edx, al
     cmp edi, ecx
     setne al
-    movzx rax, al
+    movzx eax, al
     movzx eax, al
     lea rdx, [rdx + rax*2]
     cmp edi, ecx
     setb al
-    movzx rax, al
+    movzx eax, al
     movzx eax, al
     lea rdx, [rdx + rax*4]
     cmp edi, ecx
     setbe al
-    movzx rax, al
+    movzx eax, al
     movzx eax, al
     lea rax, [rdx + rax*8]
     cmp edi, ecx
     seta dl
-    movzx rdx, dl
+    movzx edx, dl
     movzx edx, dl
     imul rdx, rdx, 0x10
     add rax, rdx
     cmp edi, ecx
     setae cl
-    movzx rcx, cl
+    movzx ecx, cl
     movzx ecx, cl
     imul rcx, rcx, 0x20
     add rax, rcx
@@ -235,32 +237,32 @@ sld:
     mov.d ecx, [rsi]
     cmp edi, ecx
     sete al
-    movzx rax, al
+    movzx eax, al
     movzx eax, al
     cmp edi, ecx
     setne dl
-    movzx rdx, dl
+    movzx edx, dl
     movzx edx, dl
     lea rax, [rax + rdx*2]
     cmp edi, ecx
     setl dl
-    movzx rdx, dl
+    movzx edx, dl
     movzx edx, dl
     lea rax, [rax + rdx*4]
     cmp edi, ecx
     setle dl
-    movzx rdx, dl
+    movzx edx, dl
     movzx edx, dl
     lea rax, [rax + rdx*8]
     cmp edi, ecx
     setg dl
-    movzx rdx, dl
+    movzx edx, dl
     movzx edx, dl
     imul rdx, rdx, 0x10
     add rax, rdx
     cmp edi, ecx
     setge cl
-    movzx rcx, cl
+    movzx ecx, cl
     movzx ecx, cl
     imul rcx, rcx, 0x20
     add rax, rcx
@@ -269,113 +271,115 @@ uld:
     mov.d ecx, [rsi]
     cmp edi, ecx
     sete al
-    movzx rax, al
+    movzx eax, al
     movzx eax, al
     cmp edi, ecx
     setne dl
-    movzx rdx, dl
+    movzx edx, dl
     movzx edx, dl
     lea rax, [rax + rdx*2]
     cmp edi, ecx
     setb dl
-    movzx rdx, dl
+    movzx edx, dl
     movzx edx, dl
     lea rax, [rax + rdx*4]
     cmp edi, ecx
     setbe dl
-    movzx rdx, dl
+    movzx edx, dl
     movzx edx, dl
     lea rax, [rax + rdx*8]
     cmp edi, ecx
     seta dl
-    movzx rdx, dl
+    movzx edx, dl
     movzx edx, dl
     imul rdx, rdx, 0x10
     add rax, rdx
     cmp edi, ecx
     setae cl
-    movzx rcx, cl
+    movzx ecx, cl
     movzx ecx, cl
     imul rcx, rcx, 0x20
     add rax, rcx
     ret
 main:
-    sub rsp, 0x38
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    sub rsp, 0x10
     mov.d [rsp], 5
     mov rdi, 3
     lea rsi, [rsp]
     call sld
-    mov.q [rsp + 0x8], rax
+    mov rbx, rax
     lea rsi, [rsp]
     mov rdi, 5
     call sld
-    mov.q [rsp + 0x10], rax
+    mov rbp, rax
     mov rdi, 9
     lea rsi, [rsp]
     call sld
-    mov.q [rsp + 0x18], rax
+    mov r12, rax
     mov.d [rsp + 0x4], 0x3d0900
     mov rdi, 5
     lea rsi, [rsp + 0x4]
     call uld
-    mov.q [rsp + 0x20], rax
+    mov r13, rax
     lea rsi, [rsp + 0x4]
     mov rdi, 0x3d0900
     call uld
-    mov.q [rsp + 0x28], rax
+    mov r14, rax
     lea rsi, [rsp + 0x4]
     mov rdi, 0x3d0900
     call uld
-    mov.q rcx, [rsp + 0x8]
-    mov.q rdx, [rsp + 0x10]
-    add rcx, rdx
-    mov rcx, rcx
-    mov.q rdx, [rsp + 0x18]
-    add rcx, rdx
-    mov.q [rsp + 0x8], rcx
-    mov.q rcx, [rsp + 0x20]
-    mov.q rdx, [rsp + 0x28]
-    add rcx, rdx
-    mov rcx, rcx
+    mov rcx, rbx
+    add rcx, rbp
+    add rcx, r12
+    mov rdx, r13
+    add rdx, r14
+    add rdx, rax
+    mov rax, rdx
     add rcx, rax
-    mov.q [rsp + 0x10], rcx
-    mov.q rax, [rsp + 0x8]
-    mov.q rcx, [rsp + 0x10]
-    add rax, rcx
-    mov rax, rax
-    add rsp, 0x38
+    mov rax, rcx
+    add rsp, 0x10
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
     ret
 =========== OPT LEVEL: moderate ===========
 sld:
     mov.d ecx, [rsi]
     cmp edi, ecx
     sete al
-    movzx rax, al
+    movzx eax, al
     movzx edx, al
     cmp edi, ecx
     setne al
-    movzx rax, al
+    movzx eax, al
     movzx eax, al
     lea rdx, [rdx + rax*2]
     cmp edi, ecx
     setl al
-    movzx rax, al
+    movzx eax, al
     movzx eax, al
     lea rdx, [rdx + rax*4]
     cmp edi, ecx
     setle al
-    movzx rax, al
+    movzx eax, al
     movzx eax, al
     lea rax, [rdx + rax*8]
     cmp edi, ecx
     setg dl
-    movzx rdx, dl
+    movzx edx, dl
     movzx edx, dl
     imul rdx, rdx, 0x10
     add rax, rdx
     cmp edi, ecx
     setge cl
-    movzx rcx, cl
+    movzx ecx, cl
     movzx ecx, cl
     imul rcx, rcx, 0x20
     add rax, rcx
@@ -384,32 +388,32 @@ uld:
     mov.d ecx, [rsi]
     cmp edi, ecx
     sete al
-    movzx rax, al
+    movzx eax, al
     movzx edx, al
     cmp edi, ecx
     setne al
-    movzx rax, al
+    movzx eax, al
     movzx eax, al
     lea rdx, [rdx + rax*2]
     cmp edi, ecx
     setb al
-    movzx rax, al
+    movzx eax, al
     movzx eax, al
     lea rdx, [rdx + rax*4]
     cmp edi, ecx
     setbe al
-    movzx rax, al
+    movzx eax, al
     movzx eax, al
     lea rax, [rdx + rax*8]
     cmp edi, ecx
     seta dl
-    movzx rdx, dl
+    movzx edx, dl
     movzx edx, dl
     imul rdx, rdx, 0x10
     add rax, rdx
     cmp edi, ecx
     setae cl
-    movzx rcx, cl
+    movzx ecx, cl
     movzx ecx, cl
     imul rcx, rcx, 0x20
     add rax, rcx
@@ -467,32 +471,32 @@ sld:
     mov.d ecx, [rsi]
     cmp edi, ecx
     sete al
-    movzx rax, al
+    movzx eax, al
     movzx edx, al
     cmp edi, ecx
     setne al
-    movzx rax, al
+    movzx eax, al
     movzx eax, al
     lea rdx, [rdx + rax*2]
     cmp edi, ecx
     setl al
-    movzx rax, al
+    movzx eax, al
     movzx eax, al
     lea rdx, [rdx + rax*4]
     cmp edi, ecx
     setle al
-    movzx rax, al
+    movzx eax, al
     movzx eax, al
     lea rax, [rdx + rax*8]
     cmp edi, ecx
     setg dl
-    movzx rdx, dl
+    movzx edx, dl
     movzx edx, dl
     imul rdx, rdx, 0x10
     add rax, rdx
     cmp edi, ecx
     setge cl
-    movzx rcx, cl
+    movzx ecx, cl
     movzx ecx, cl
     imul rcx, rcx, 0x20
     add rax, rcx
@@ -501,32 +505,32 @@ uld:
     mov.d ecx, [rsi]
     cmp edi, ecx
     sete al
-    movzx rax, al
+    movzx eax, al
     movzx edx, al
     cmp edi, ecx
     setne al
-    movzx rax, al
+    movzx eax, al
     movzx eax, al
     lea rdx, [rdx + rax*2]
     cmp edi, ecx
     setb al
-    movzx rax, al
+    movzx eax, al
     movzx eax, al
     lea rdx, [rdx + rax*4]
     cmp edi, ecx
     setbe al
-    movzx rax, al
+    movzx eax, al
     movzx eax, al
     lea rax, [rdx + rax*8]
     cmp edi, ecx
     seta dl
-    movzx rdx, dl
+    movzx edx, dl
     movzx edx, dl
     imul rdx, rdx, 0x10
     add rax, rdx
     cmp edi, ecx
     setae cl
-    movzx rcx, cl
+    movzx ecx, cl
     movzx ecx, cl
     imul rcx, rcx, 0x20
     add rax, rcx

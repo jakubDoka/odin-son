@@ -12,7 +12,7 @@ if [[ -z "${ODIN_ROOT:-}" || -z "${JIT:-}" ]]; then
 	export ODIN_ROOT="${ODIN_ROOT:-$(dirname "$(readlink -f "$odin_path")")}"
 fi
 if [[ -z "${JIT:-}" ]]; then
-	"$odin_bin" build "$repo_root" -out:"$build_dir/odin-son"
+	"$odin_bin" build "$repo_root/odinc" -out:"$build_dir/odin-son"
 	JIT="$build_dir/odin-son"
 fi
 

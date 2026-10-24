@@ -3,46 +3,41 @@ opaque:
     mov rax, rdi
     ret
 minmax:
-    mov.q [rsp - 0x20], rdi
-    mov.q [rsp - 0x18], rsi
-    mov.q rax, [rsp - 0x18]
-    mov.q rcx, [rsp - 0x20]
-    cmp rcx, rax
+    push rbx
+    push rbp
+    mov rax, rdi
+    mov rcx, rsi
+    cmp rax, rcx
     jl 2
-    mov.q rax, [rsp - 0x18]
-    mov.q [rdx], rax
-    mov.q [rsp - 0x28], r15
-    mov.q r15, [rsp - 0x20]
-    mov.q [rsp - 0x10], r15
-    mov.q r15, [rsp - 0x28]
+    mov.q [rdx], rcx
+    mov rbx, rax
     jmp 3
 2:
-    mov.q rax, [rsp - 0x20]
     mov.q [rdx], rax
-    mov.q [rsp - 0x28], r15
-    mov.q r15, [rsp - 0x18]
-    mov.q [rsp - 0x10], r15
-    mov.q r15, [rsp - 0x28]
+    mov rbx, rcx
 3:
-    mov.q rax, [rsp - 0x10]
+    mov rax, rbx
+    pop rbp
+    pop rbx
     ret
 main:
-    sub rsp, 0x18
+    push rbx
+    sub rsp, 0x10
     mov rdi, 9
     call opaque
-    mov.q [rsp + 0x8], rax
+    mov rbx, rax
     mov rdi, 4
     call opaque
-    mov.q [rsp + 0x10], rax
     lea rdx, [rsp]
-    mov.q rdi, [rsp + 0x8]
-    mov.q rsi, [rsp + 0x10]
+    mov rdi, rbx
+    mov rsi, rax
     call minmax
     mov.q rcx, [rsp]
     sub rax, rcx
     imul rax, rax, 2
     add rax, rcx
-    add rsp, 0x18
+    add rsp, 0x10
+    pop rbx
     ret
 =========== OPT LEVEL: none ===========
 opaque:
@@ -84,46 +79,41 @@ opaque:
     mov rax, rdi
     ret
 minmax:
-    mov.q [rsp - 0x20], rdi
-    mov.q [rsp - 0x18], rsi
-    mov.q rax, [rsp - 0x18]
-    mov.q rcx, [rsp - 0x20]
-    cmp rcx, rax
+    push rbx
+    push rbp
+    mov rax, rdi
+    mov rcx, rsi
+    cmp rax, rcx
     jl 2
-    mov.q rax, [rsp - 0x18]
-    mov.q [rdx], rax
-    mov.q [rsp - 0x28], r15
-    mov.q r15, [rsp - 0x20]
-    mov.q [rsp - 0x10], r15
-    mov.q r15, [rsp - 0x28]
+    mov.q [rdx], rcx
+    mov rbx, rax
     jmp 3
 2:
-    mov.q rax, [rsp - 0x20]
     mov.q [rdx], rax
-    mov.q [rsp - 0x28], r15
-    mov.q r15, [rsp - 0x18]
-    mov.q [rsp - 0x10], r15
-    mov.q r15, [rsp - 0x28]
+    mov rbx, rcx
 3:
-    mov.q rax, [rsp - 0x10]
+    mov rax, rbx
+    pop rbp
+    pop rbx
     ret
 main:
-    sub rsp, 0x18
+    push rbx
+    sub rsp, 0x10
     mov rdi, 9
     call opaque
-    mov.q [rsp + 0x8], rax
+    mov rbx, rax
     mov rdi, 4
     call opaque
-    mov.q [rsp + 0x10], rax
     lea rdx, [rsp]
-    mov.q rdi, [rsp + 0x8]
-    mov.q rsi, [rsp + 0x10]
+    mov rdi, rbx
+    mov rsi, rax
     call minmax
     mov.q rcx, [rsp]
     sub rax, rcx
     imul rax, rax, 2
     add rax, rcx
-    add rsp, 0x18
+    add rsp, 0x10
+    pop rbx
     ret
 =========== OPT LEVEL: moderate ===========
 opaque:

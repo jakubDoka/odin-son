@@ -3,7 +3,8 @@ opaque:
     mov rax, rdi
     ret
 main:
-    sub rsp, 0x28
+    push rbx
+    sub rsp, 0x20
     pxor xmm0, xmm0
     movups.x [rsp], xmm0
     movups.x [rsp + 0x10], xmm0
@@ -18,23 +19,20 @@ main:
     mov.q [rsp + 0x10], rax
     mov rdi, 4
     call opaque
-    mov.q [rsp + 0x20], rax
-    mov.q rax, [rsp + 0x20]
-    imul rax, rax, 0x3e8
-    mov.q rcx, [rsp + 0x20]
+    mov rcx, rax
+    imul rax, rcx, 0x3e8
     mov.q [rsp + 0x18], rcx
-    mov.q rcx, [rsp + 0x20]
     mov.q [rsp], rcx
-    mov.q rcx, [rsp + 0x8]
-    mov.q [rsp + 0x10], rcx
     mov.q rdx, [rsp + 0x8]
-    imul rdx, rdx, 0x64
+    mov.q [rsp + 0x10], rdx
+    mov.q rbx, [rsp + 0x8]
+    imul rbx, rbx, 0x64
+    add rax, rbx
+    imul rdx, rdx, 0xa
     add rax, rdx
-    imul rcx, rcx, 0xa
     add rax, rcx
-    mov.q rcx, [rsp + 0x20]
-    add rax, rcx
-    add rsp, 0x28
+    add rsp, 0x20
+    pop rbx
     ret
 =========== OPT LEVEL: none ===========
 opaque:
@@ -75,7 +73,8 @@ opaque:
     mov rax, rdi
     ret
 main:
-    sub rsp, 0x28
+    push rbx
+    sub rsp, 0x20
     pxor xmm0, xmm0
     movups.x [rsp], xmm0
     movups.x [rsp + 0x10], xmm0
@@ -90,23 +89,20 @@ main:
     mov.q [rsp + 0x10], rax
     mov rdi, 4
     call opaque
-    mov.q [rsp + 0x20], rax
-    mov.q rax, [rsp + 0x20]
-    imul rax, rax, 0x3e8
-    mov.q rcx, [rsp + 0x20]
+    mov rcx, rax
+    imul rax, rcx, 0x3e8
     mov.q [rsp + 0x18], rcx
-    mov.q rcx, [rsp + 0x20]
     mov.q [rsp], rcx
-    mov.q rcx, [rsp + 0x8]
-    mov.q [rsp + 0x10], rcx
     mov.q rdx, [rsp + 0x8]
-    imul rdx, rdx, 0x64
+    mov.q [rsp + 0x10], rdx
+    mov.q rbx, [rsp + 0x8]
+    imul rbx, rbx, 0x64
+    add rax, rbx
+    imul rdx, rdx, 0xa
     add rax, rdx
-    imul rcx, rcx, 0xa
     add rax, rcx
-    mov.q rcx, [rsp + 0x20]
-    add rax, rcx
-    add rsp, 0x28
+    add rsp, 0x20
+    pop rbx
     ret
 =========== OPT LEVEL: moderate ===========
 opaque:

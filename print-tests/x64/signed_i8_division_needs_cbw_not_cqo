@@ -1,18 +1,17 @@
 =========== OPT LEVEL: none-quick ===========
 main:
-    sub rsp, 0x18
+    push rbx
     mov rdi, 0xc8
     call opaque
-    mov.q [rsp], rax
+    mov rbx, rax
     mov rdi, 3
     call opaque
-    mov.q [rsp + 0x8], rax
-    mov.q rax, [rsp]
-    mov.q rcx, [rsp + 0x8]
+    mov rcx, rax
+    mov rax, rbx
     cbw
     idiv cl
     movsx rax, al
-    add rsp, 0x18
+    pop rbx
     ret
 opaque:
     mov rax, rdi
@@ -37,19 +36,18 @@ opaque:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 main:
-    sub rsp, 0x18
+    push rbx
     mov rdi, 0xc8
     call opaque
-    mov.q [rsp], rax
+    mov rbx, rax
     mov rdi, 3
     call opaque
-    mov.q [rsp + 0x8], rax
-    mov.q rax, [rsp]
-    mov.q rcx, [rsp + 0x8]
+    mov rcx, rax
+    mov rax, rbx
     cbw
     idiv cl
     movsx rax, al
-    add rsp, 0x18
+    pop rbx
     ret
 opaque:
     mov rax, rdi

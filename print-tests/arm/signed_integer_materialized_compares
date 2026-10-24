@@ -5,22 +5,22 @@ s8:
     uxtb w3, w1
     sxtb w1, w1
     cmp w2, w3
-    cset x4, eq
+    cset w4, eq
     uxtb w4, w4
     cmp w0, w1
-    cset x5, ge
+    cset w5, ge
     uxtb w5, w5
     cmp w2, w3
-    cset x2, ne
+    cset w2, ne
     uxtb w2, w2
     cmp w0, w1
-    cset x3, lt
+    cset w3, lt
     uxtb w3, w3
     cmp w0, w1
-    cset x6, gt
+    cset w6, gt
     uxtb w6, w6
     cmp w0, w1
-    cset x0, le
+    cset w0, le
     uxtb w0, w0
     movz x1, #2
     madd x1, x2, x1, xzr
@@ -44,22 +44,22 @@ s16:
     uxth w3, w1
     sxth w1, w1
     cmp w2, w3
-    cset x4, eq
+    cset w4, eq
     uxtb w4, w4
     cmp w0, w1
-    cset x5, ge
+    cset w5, ge
     uxtb w5, w5
     cmp w2, w3
-    cset x2, ne
+    cset w2, ne
     uxtb w2, w2
     cmp w0, w1
-    cset x3, lt
+    cset w3, lt
     uxtb w3, w3
     cmp w0, w1
-    cset x6, gt
+    cset w6, gt
     uxtb w6, w6
     cmp w0, w1
-    cset x0, le
+    cset w0, le
     uxtb w0, w0
     movz x1, #2
     madd x1, x2, x1, xzr
@@ -79,22 +79,22 @@ s16:
     ret
 s32:
     cmp w0, w1
-    cset x2, eq
+    cset w2, eq
     uxtb w2, w2
     cmp w0, w1
-    cset x3, ge
+    cset w3, ge
     uxtb w3, w3
     cmp w0, w1
-    cset x4, ne
+    cset w4, ne
     uxtb w4, w4
     cmp w0, w1
-    cset x5, lt
+    cset w5, lt
     uxtb w5, w5
     cmp w0, w1
-    cset x6, le
+    cset w6, le
     uxtb w6, w6
     cmp w0, w1
-    cset x0, gt
+    cset w0, gt
     uxtb w0, w0
     movz x1, #2
     madd x1, x4, x1, xzr
@@ -113,23 +113,23 @@ s32:
     add x0, x0, x1
     ret
 s64:
-    cmp w0, w1
-    cset x2, eq
+    cmp x0, x1
+    cset w2, eq
     uxtb w2, w2
-    cmp w0, w1
-    cset x3, ge
+    cmp x0, x1
+    cset w3, ge
     uxtb w3, w3
-    cmp w0, w1
-    cset x4, ne
+    cmp x0, x1
+    cset w4, ne
     uxtb w4, w4
-    cmp w0, w1
-    cset x5, lt
+    cmp x0, x1
+    cset w5, lt
     uxtb w5, w5
-    cmp w0, w1
-    cset x6, le
+    cmp x0, x1
+    cset w6, le
     uxtb w6, w6
-    cmp w0, w1
-    cset x0, gt
+    cmp x0, x1
+    cset w0, gt
     uxtb w0, w0
     movz x1, #2
     madd x1, x4, x1, xzr
@@ -148,23 +148,23 @@ s64:
     add x0, x0, x1
     ret
 sint:
-    cmp w0, w1
-    cset x2, eq
+    cmp x0, x1
+    cset w2, eq
     uxtb w2, w2
-    cmp w0, w1
-    cset x3, ge
+    cmp x0, x1
+    cset w3, ge
     uxtb w3, w3
-    cmp w0, w1
-    cset x4, ne
+    cmp x0, x1
+    cset w4, ne
     uxtb w4, w4
-    cmp w0, w1
-    cset x5, lt
+    cmp x0, x1
+    cset w5, lt
     uxtb w5, w5
-    cmp w0, w1
-    cset x6, le
+    cmp x0, x1
+    cset w6, le
     uxtb w6, w6
-    cmp w0, w1
-    cset x0, gt
+    cmp x0, x1
+    cset w0, gt
     uxtb w0, w0
     movz x1, #2
     madd x1, x4, x1, xzr
@@ -184,95 +184,104 @@ sint:
     ret
 main:
     sub sp, sp, #128
-    stp x29, x30, [xzr]
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    str x24, [xzr, #40]
+    str x25, [xzr, #48]
+    str x26, [xzr, #56]
+    str x27, [xzr, #64]
+    str x28, [xzr, #72]
+    stp x29, x30, [xzr, #80]
     movn x0, #0
     movz x1, #1
     bl 0xfffffd38
-    str x0, [xzr, #16]
+    mov x19, x0
     movz x1, #5
     movz x0, #5
     bl 0xfffffd38
-    str x0, [xzr, #24]
+    mov x20, x0
     movz x0, #7
     movn x1, #2
     bl 0xfffffd38
-    str x0, [xzr, #32]
+    mov x21, x0
     movn x0, #0
     movz x1, #1
     bl 0xfffffdd0
-    str x0, [xzr, #40]
+    mov x22, x0
     movz x1, #5
     movz x0, #5
     bl 0xfffffdd0
-    str x0, [xzr, #48]
+    mov x23, x0
     movz x0, #7
     movn x1, #2
     bl 0xfffffdd0
-    str x0, [xzr, #56]
+    mov x24, x0
     movn x0, #0
     movz x1, #1
     bl 0xfffffe68
-    str x0, [xzr, #64]
+    mov x25, x0
     movz x1, #5
     movz x0, #5
     bl 0xfffffe68
-    str x0, [xzr, #72]
+    mov x26, x0
     movz x0, #7
     movn x1, #2
     bl 0xfffffe68
-    str x0, [xzr, #80]
+    mov x27, x0
     movn x0, #0
     movz x1, #1
     bl 0xfffffef0
-    str x0, [xzr, #88]
+    mov x28, x0
     movz x1, #5
     movz x0, #5
+    bl 0xfffffef0
+    mov x29, x0
+    movz x0, #7
+    movn x1, #2
     bl 0xfffffef0
     str x0, [xzr, #96]
-    movz x0, #7
-    movn x1, #2
-    bl 0xfffffef0
-    str x0, [xzr, #104]
     movn x0, #0
     movz x1, #1
     bl 0xffffff78
-    str x0, [xzr, #112]
+    str x0, [xzr, #104]
     movz x1, #5
     movz x0, #5
     bl 0xffffff78
-    str x0, [xzr, #120]
+    str x0, [xzr, #112]
     movz x0, #7
     movn x1, #2
     bl 0xffffff78
-    ldr x1, [xzr, #16]
-    ldr x2, [xzr, #24]
+    add x1, x19, x20
+    add x1, x1, x21
+    add x2, x22, x23
+    add x2, x2, x24
     add x1, x1, x2
-    ldr x2, [xzr, #32]
+    add x2, x25, x26
+    add x2, x2, x27
     add x1, x1, x2
-    ldr x2, [xzr, #40]
-    ldr x3, [xzr, #48]
-    add x2, x2, x3
-    ldr x3, [xzr, #56]
-    add x2, x2, x3
-    add x1, x1, x2
-    ldr x2, [xzr, #64]
-    ldr x3, [xzr, #72]
-    add x2, x2, x3
-    ldr x3, [xzr, #80]
-    add x2, x2, x3
-    add x1, x1, x2
-    ldr x2, [xzr, #88]
+    add x2, x28, x29
     ldr x3, [xzr, #96]
     add x2, x2, x3
-    ldr x3, [xzr, #104]
-    add x2, x2, x3
     add x1, x1, x2
-    ldr x2, [xzr, #112]
-    ldr x3, [xzr, #120]
+    ldr x2, [xzr, #104]
+    ldr x3, [xzr, #112]
     add x2, x2, x3
     add x0, x2, x0
     add x0, x1, x0
-    ldp x29, x30, [xzr]
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldr x24, [xzr, #40]
+    ldr x25, [xzr, #48]
+    ldr x26, [xzr, #56]
+    ldr x27, [xzr, #64]
+    ldr x28, [xzr, #72]
+    ldp x29, x30, [xzr, #80]
     add sp, sp, #128
     ret
 =========== OPT LEVEL: none ===========
@@ -282,22 +291,22 @@ s8:
     uxtb w3, w1
     sxtb w2, w1
     cmp w4, w3
-    cset x0, eq
+    cset w0, eq
     uxtb w6, w0
     cmp w7, w2
-    cset x0, ge
+    cset w0, ge
     uxtb w5, w0
     cmp w4, w3
-    cset x0, ne
+    cset w0, ne
     uxtb w1, w0
     cmp w7, w2
-    cset x0, lt
+    cset w0, lt
     uxtb w4, w0
     cmp w7, w2
-    cset x0, gt
+    cset w0, gt
     uxtb w3, w0
     cmp w7, w2
-    cset x0, le
+    cset w0, le
     uxtb w2, w0
     movz x0, #2
     madd x0, x1, x0, xzr
@@ -321,22 +330,22 @@ s16:
     uxth w3, w1
     sxth w2, w1
     cmp w4, w3
-    cset x0, eq
+    cset w0, eq
     uxtb w6, w0
     cmp w7, w2
-    cset x0, ge
+    cset w0, ge
     uxtb w5, w0
     cmp w4, w3
-    cset x0, ne
+    cset w0, ne
     uxtb w1, w0
     cmp w7, w2
-    cset x0, lt
+    cset w0, lt
     uxtb w4, w0
     cmp w7, w2
-    cset x0, gt
+    cset w0, gt
     uxtb w3, w0
     cmp w7, w2
-    cset x0, le
+    cset w0, le
     uxtb w2, w0
     movz x0, #2
     madd x0, x1, x0, xzr
@@ -356,22 +365,22 @@ s16:
     ret
 s32:
     cmp w0, w1
-    cset x2, eq
+    cset w2, eq
     uxtb w7, w2
     cmp w0, w1
-    cset x2, ge
+    cset w2, ge
     uxtb w6, w2
     cmp w0, w1
-    cset x2, ne
+    cset w2, ne
     uxtb w5, w2
     cmp w0, w1
-    cset x2, lt
+    cset w2, lt
     uxtb w4, w2
     cmp w0, w1
-    cset x2, le
+    cset w2, le
     uxtb w3, w2
     cmp w0, w1
-    cset x0, gt
+    cset w0, gt
     uxtb w2, w0
     movz x0, #2
     madd x0, x5, x0, xzr
@@ -390,23 +399,23 @@ s32:
     add x0, x1, x0
     ret
 s64:
-    cmp w0, w1
-    cset x2, eq
+    cmp x0, x1
+    cset w2, eq
     uxtb w7, w2
-    cmp w0, w1
-    cset x2, ge
+    cmp x0, x1
+    cset w2, ge
     uxtb w6, w2
-    cmp w0, w1
-    cset x2, ne
+    cmp x0, x1
+    cset w2, ne
     uxtb w5, w2
-    cmp w0, w1
-    cset x2, lt
+    cmp x0, x1
+    cset w2, lt
     uxtb w4, w2
-    cmp w0, w1
-    cset x2, le
+    cmp x0, x1
+    cset w2, le
     uxtb w3, w2
-    cmp w0, w1
-    cset x0, gt
+    cmp x0, x1
+    cset w0, gt
     uxtb w2, w0
     movz x0, #2
     madd x0, x5, x0, xzr
@@ -425,23 +434,23 @@ s64:
     add x0, x1, x0
     ret
 sint:
-    cmp w0, w1
-    cset x2, eq
+    cmp x0, x1
+    cset w2, eq
     uxtb w7, w2
-    cmp w0, w1
-    cset x2, ge
+    cmp x0, x1
+    cset w2, ge
     uxtb w6, w2
-    cmp w0, w1
-    cset x2, ne
+    cmp x0, x1
+    cset w2, ne
     uxtb w5, w2
-    cmp w0, w1
-    cset x2, lt
+    cmp x0, x1
+    cset w2, lt
     uxtb w4, w2
-    cmp w0, w1
-    cset x2, le
+    cmp x0, x1
+    cset w2, le
     uxtb w3, w2
-    cmp w0, w1
-    cset x0, gt
+    cmp x0, x1
+    cset w0, gt
     uxtb w2, w0
     movz x0, #2
     madd x0, x5, x0, xzr
@@ -568,22 +577,22 @@ s8:
     uxtb w3, w1
     sxtb w1, w1
     cmp w2, w3
-    cset x4, eq
+    cset w4, eq
     uxtb w4, w4
     cmp w0, w1
-    cset x5, ge
+    cset w5, ge
     uxtb w5, w5
     cmp w2, w3
-    cset x2, ne
+    cset w2, ne
     uxtb w2, w2
     cmp w0, w1
-    cset x3, lt
+    cset w3, lt
     uxtb w3, w3
     cmp w0, w1
-    cset x6, gt
+    cset w6, gt
     uxtb w6, w6
     cmp w0, w1
-    cset x0, le
+    cset w0, le
     uxtb w0, w0
     movz x1, #2
     madd x1, x2, x1, xzr
@@ -607,22 +616,22 @@ s16:
     uxth w3, w1
     sxth w1, w1
     cmp w2, w3
-    cset x4, eq
+    cset w4, eq
     uxtb w4, w4
     cmp w0, w1
-    cset x5, ge
+    cset w5, ge
     uxtb w5, w5
     cmp w2, w3
-    cset x2, ne
+    cset w2, ne
     uxtb w2, w2
     cmp w0, w1
-    cset x3, lt
+    cset w3, lt
     uxtb w3, w3
     cmp w0, w1
-    cset x6, gt
+    cset w6, gt
     uxtb w6, w6
     cmp w0, w1
-    cset x0, le
+    cset w0, le
     uxtb w0, w0
     movz x1, #2
     madd x1, x2, x1, xzr
@@ -642,22 +651,22 @@ s16:
     ret
 s32:
     cmp w0, w1
-    cset x2, eq
+    cset w2, eq
     uxtb w2, w2
     cmp w0, w1
-    cset x3, ge
+    cset w3, ge
     uxtb w3, w3
     cmp w0, w1
-    cset x4, ne
+    cset w4, ne
     uxtb w4, w4
     cmp w0, w1
-    cset x5, lt
+    cset w5, lt
     uxtb w5, w5
     cmp w0, w1
-    cset x6, le
+    cset w6, le
     uxtb w6, w6
     cmp w0, w1
-    cset x0, gt
+    cset w0, gt
     uxtb w0, w0
     movz x1, #2
     madd x1, x4, x1, xzr
@@ -676,23 +685,23 @@ s32:
     add x0, x0, x1
     ret
 s64:
-    cmp w0, w1
-    cset x2, eq
+    cmp x0, x1
+    cset w2, eq
     uxtb w2, w2
-    cmp w0, w1
-    cset x3, ge
+    cmp x0, x1
+    cset w3, ge
     uxtb w3, w3
-    cmp w0, w1
-    cset x4, ne
+    cmp x0, x1
+    cset w4, ne
     uxtb w4, w4
-    cmp w0, w1
-    cset x5, lt
+    cmp x0, x1
+    cset w5, lt
     uxtb w5, w5
-    cmp w0, w1
-    cset x6, le
+    cmp x0, x1
+    cset w6, le
     uxtb w6, w6
-    cmp w0, w1
-    cset x0, gt
+    cmp x0, x1
+    cset w0, gt
     uxtb w0, w0
     movz x1, #2
     madd x1, x4, x1, xzr
@@ -711,23 +720,23 @@ s64:
     add x0, x0, x1
     ret
 sint:
-    cmp w0, w1
-    cset x2, eq
+    cmp x0, x1
+    cset w2, eq
     uxtb w2, w2
-    cmp w0, w1
-    cset x3, ge
+    cmp x0, x1
+    cset w3, ge
     uxtb w3, w3
-    cmp w0, w1
-    cset x4, ne
+    cmp x0, x1
+    cset w4, ne
     uxtb w4, w4
-    cmp w0, w1
-    cset x5, lt
+    cmp x0, x1
+    cset w5, lt
     uxtb w5, w5
-    cmp w0, w1
-    cset x6, le
+    cmp x0, x1
+    cset w6, le
     uxtb w6, w6
-    cmp w0, w1
-    cset x0, gt
+    cmp x0, x1
+    cset w0, gt
     uxtb w0, w0
     movz x1, #2
     madd x1, x4, x1, xzr
@@ -747,95 +756,104 @@ sint:
     ret
 main:
     sub sp, sp, #128
-    stp x29, x30, [xzr]
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    str x24, [xzr, #40]
+    str x25, [xzr, #48]
+    str x26, [xzr, #56]
+    str x27, [xzr, #64]
+    str x28, [xzr, #72]
+    stp x29, x30, [xzr, #80]
     movn x0, #0
     movz x1, #1
     bl 0xfffffd38
-    str x0, [xzr, #16]
+    mov x19, x0
     movz x1, #5
     movz x0, #5
     bl 0xfffffd38
-    str x0, [xzr, #24]
+    mov x20, x0
     movz x0, #7
     movn x1, #2
     bl 0xfffffd38
-    str x0, [xzr, #32]
+    mov x21, x0
     movn x0, #0
     movz x1, #1
     bl 0xfffffdd0
-    str x0, [xzr, #40]
+    mov x22, x0
     movz x1, #5
     movz x0, #5
     bl 0xfffffdd0
-    str x0, [xzr, #48]
+    mov x23, x0
     movz x0, #7
     movn x1, #2
     bl 0xfffffdd0
-    str x0, [xzr, #56]
+    mov x24, x0
     movn x0, #0
     movz x1, #1
     bl 0xfffffe68
-    str x0, [xzr, #64]
+    mov x25, x0
     movz x1, #5
     movz x0, #5
     bl 0xfffffe68
-    str x0, [xzr, #72]
+    mov x26, x0
     movz x0, #7
     movn x1, #2
     bl 0xfffffe68
-    str x0, [xzr, #80]
+    mov x27, x0
     movn x0, #0
     movz x1, #1
     bl 0xfffffef0
-    str x0, [xzr, #88]
+    mov x28, x0
     movz x1, #5
     movz x0, #5
+    bl 0xfffffef0
+    mov x29, x0
+    movz x0, #7
+    movn x1, #2
     bl 0xfffffef0
     str x0, [xzr, #96]
-    movz x0, #7
-    movn x1, #2
-    bl 0xfffffef0
-    str x0, [xzr, #104]
     movn x0, #0
     movz x1, #1
     bl 0xffffff78
-    str x0, [xzr, #112]
+    str x0, [xzr, #104]
     movz x1, #5
     movz x0, #5
     bl 0xffffff78
-    str x0, [xzr, #120]
+    str x0, [xzr, #112]
     movz x0, #7
     movn x1, #2
     bl 0xffffff78
-    ldr x1, [xzr, #16]
-    ldr x2, [xzr, #24]
+    add x1, x19, x20
+    add x1, x1, x21
+    add x2, x22, x23
+    add x2, x2, x24
     add x1, x1, x2
-    ldr x2, [xzr, #32]
+    add x2, x25, x26
+    add x2, x2, x27
     add x1, x1, x2
-    ldr x2, [xzr, #40]
-    ldr x3, [xzr, #48]
-    add x2, x2, x3
-    ldr x3, [xzr, #56]
-    add x2, x2, x3
-    add x1, x1, x2
-    ldr x2, [xzr, #64]
-    ldr x3, [xzr, #72]
-    add x2, x2, x3
-    ldr x3, [xzr, #80]
-    add x2, x2, x3
-    add x1, x1, x2
-    ldr x2, [xzr, #88]
+    add x2, x28, x29
     ldr x3, [xzr, #96]
     add x2, x2, x3
-    ldr x3, [xzr, #104]
-    add x2, x2, x3
     add x1, x1, x2
-    ldr x2, [xzr, #112]
-    ldr x3, [xzr, #120]
+    ldr x2, [xzr, #104]
+    ldr x3, [xzr, #112]
     add x2, x2, x3
     add x0, x2, x0
     add x0, x1, x0
-    ldp x29, x30, [xzr]
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldr x24, [xzr, #40]
+    ldr x25, [xzr, #48]
+    ldr x26, [xzr, #56]
+    ldr x27, [xzr, #64]
+    ldr x28, [xzr, #72]
+    ldp x29, x30, [xzr, #80]
     add sp, sp, #128
     ret
 =========== OPT LEVEL: moderate ===========
@@ -845,22 +863,22 @@ s8:
     uxtb w3, w1
     sxtb w2, w1
     cmp w4, w3
-    cset x0, eq
+    cset w0, eq
     uxtb w6, w0
     cmp w7, w2
-    cset x0, ge
+    cset w0, ge
     uxtb w5, w0
     cmp w4, w3
-    cset x0, ne
+    cset w0, ne
     uxtb w1, w0
     cmp w7, w2
-    cset x0, lt
+    cset w0, lt
     uxtb w4, w0
     cmp w7, w2
-    cset x0, gt
+    cset w0, gt
     uxtb w3, w0
     cmp w7, w2
-    cset x0, le
+    cset w0, le
     uxtb w2, w0
     movz x0, #2
     madd x0, x1, x0, xzr
@@ -884,22 +902,22 @@ s16:
     uxth w3, w1
     sxth w2, w1
     cmp w4, w3
-    cset x0, eq
+    cset w0, eq
     uxtb w6, w0
     cmp w7, w2
-    cset x0, ge
+    cset w0, ge
     uxtb w5, w0
     cmp w4, w3
-    cset x0, ne
+    cset w0, ne
     uxtb w1, w0
     cmp w7, w2
-    cset x0, lt
+    cset w0, lt
     uxtb w4, w0
     cmp w7, w2
-    cset x0, gt
+    cset w0, gt
     uxtb w3, w0
     cmp w7, w2
-    cset x0, le
+    cset w0, le
     uxtb w2, w0
     movz x0, #2
     madd x0, x1, x0, xzr
@@ -919,22 +937,22 @@ s16:
     ret
 s32:
     cmp w0, w1
-    cset x2, eq
+    cset w2, eq
     uxtb w7, w2
     cmp w0, w1
-    cset x2, ge
+    cset w2, ge
     uxtb w6, w2
     cmp w0, w1
-    cset x2, ne
+    cset w2, ne
     uxtb w5, w2
     cmp w0, w1
-    cset x2, lt
+    cset w2, lt
     uxtb w4, w2
     cmp w0, w1
-    cset x2, le
+    cset w2, le
     uxtb w3, w2
     cmp w0, w1
-    cset x0, gt
+    cset w0, gt
     uxtb w2, w0
     movz x0, #2
     madd x0, x5, x0, xzr
@@ -953,23 +971,23 @@ s32:
     add x0, x1, x0
     ret
 s64:
-    cmp w0, w1
-    cset x2, eq
+    cmp x0, x1
+    cset w2, eq
     uxtb w7, w2
-    cmp w0, w1
-    cset x2, ge
+    cmp x0, x1
+    cset w2, ge
     uxtb w6, w2
-    cmp w0, w1
-    cset x2, ne
+    cmp x0, x1
+    cset w2, ne
     uxtb w5, w2
-    cmp w0, w1
-    cset x2, lt
+    cmp x0, x1
+    cset w2, lt
     uxtb w4, w2
-    cmp w0, w1
-    cset x2, le
+    cmp x0, x1
+    cset w2, le
     uxtb w3, w2
-    cmp w0, w1
-    cset x0, gt
+    cmp x0, x1
+    cset w0, gt
     uxtb w2, w0
     movz x0, #2
     madd x0, x5, x0, xzr
@@ -988,23 +1006,23 @@ s64:
     add x0, x1, x0
     ret
 sint:
-    cmp w0, w1
-    cset x2, eq
+    cmp x0, x1
+    cset w2, eq
     uxtb w7, w2
-    cmp w0, w1
-    cset x2, ge
+    cmp x0, x1
+    cset w2, ge
     uxtb w6, w2
-    cmp w0, w1
-    cset x2, ne
+    cmp x0, x1
+    cset w2, ne
     uxtb w5, w2
-    cmp w0, w1
-    cset x2, lt
+    cmp x0, x1
+    cset w2, lt
     uxtb w4, w2
-    cmp w0, w1
-    cset x2, le
+    cmp x0, x1
+    cset w2, le
     uxtb w3, w2
-    cmp w0, w1
-    cset x0, gt
+    cmp x0, x1
+    cset w0, gt
     uxtb w2, w0
     movz x0, #2
     madd x0, x5, x0, xzr
@@ -1131,22 +1149,22 @@ s8:
     uxtb w3, w1
     sxtb w2, w1
     cmp w4, w3
-    cset x0, eq
+    cset w0, eq
     uxtb w6, w0
     cmp w7, w2
-    cset x0, ge
+    cset w0, ge
     uxtb w5, w0
     cmp w4, w3
-    cset x0, ne
+    cset w0, ne
     uxtb w1, w0
     cmp w7, w2
-    cset x0, lt
+    cset w0, lt
     uxtb w4, w0
     cmp w7, w2
-    cset x0, gt
+    cset w0, gt
     uxtb w3, w0
     cmp w7, w2
-    cset x0, le
+    cset w0, le
     uxtb w2, w0
     movz x0, #2
     madd x0, x1, x0, xzr
@@ -1170,22 +1188,22 @@ s16:
     uxth w3, w1
     sxth w2, w1
     cmp w4, w3
-    cset x0, eq
+    cset w0, eq
     uxtb w6, w0
     cmp w7, w2
-    cset x0, ge
+    cset w0, ge
     uxtb w5, w0
     cmp w4, w3
-    cset x0, ne
+    cset w0, ne
     uxtb w1, w0
     cmp w7, w2
-    cset x0, lt
+    cset w0, lt
     uxtb w4, w0
     cmp w7, w2
-    cset x0, gt
+    cset w0, gt
     uxtb w3, w0
     cmp w7, w2
-    cset x0, le
+    cset w0, le
     uxtb w2, w0
     movz x0, #2
     madd x0, x1, x0, xzr
@@ -1205,22 +1223,22 @@ s16:
     ret
 s32:
     cmp w0, w1
-    cset x2, eq
+    cset w2, eq
     uxtb w7, w2
     cmp w0, w1
-    cset x2, ge
+    cset w2, ge
     uxtb w6, w2
     cmp w0, w1
-    cset x2, ne
+    cset w2, ne
     uxtb w5, w2
     cmp w0, w1
-    cset x2, lt
+    cset w2, lt
     uxtb w4, w2
     cmp w0, w1
-    cset x2, le
+    cset w2, le
     uxtb w3, w2
     cmp w0, w1
-    cset x0, gt
+    cset w0, gt
     uxtb w2, w0
     movz x0, #2
     madd x0, x5, x0, xzr
@@ -1239,23 +1257,23 @@ s32:
     add x0, x1, x0
     ret
 s64:
-    cmp w0, w1
-    cset x2, eq
+    cmp x0, x1
+    cset w2, eq
     uxtb w7, w2
-    cmp w0, w1
-    cset x2, ge
+    cmp x0, x1
+    cset w2, ge
     uxtb w6, w2
-    cmp w0, w1
-    cset x2, ne
+    cmp x0, x1
+    cset w2, ne
     uxtb w5, w2
-    cmp w0, w1
-    cset x2, lt
+    cmp x0, x1
+    cset w2, lt
     uxtb w4, w2
-    cmp w0, w1
-    cset x2, le
+    cmp x0, x1
+    cset w2, le
     uxtb w3, w2
-    cmp w0, w1
-    cset x0, gt
+    cmp x0, x1
+    cset w0, gt
     uxtb w2, w0
     movz x0, #2
     madd x0, x5, x0, xzr
@@ -1274,23 +1292,23 @@ s64:
     add x0, x1, x0
     ret
 sint:
-    cmp w0, w1
-    cset x2, eq
+    cmp x0, x1
+    cset w2, eq
     uxtb w7, w2
-    cmp w0, w1
-    cset x2, ge
+    cmp x0, x1
+    cset w2, ge
     uxtb w6, w2
-    cmp w0, w1
-    cset x2, ne
+    cmp x0, x1
+    cset w2, ne
     uxtb w5, w2
-    cmp w0, w1
-    cset x2, lt
+    cmp x0, x1
+    cset w2, lt
     uxtb w4, w2
-    cmp w0, w1
-    cset x2, le
+    cmp x0, x1
+    cset w2, le
     uxtb w3, w2
-    cmp w0, w1
-    cset x0, gt
+    cmp x0, x1
+    cset w0, gt
     uxtb w2, w0
     movz x0, #2
     madd x0, x5, x0, xzr

@@ -1,43 +1,30 @@
 =========== OPT LEVEL: none-quick ===========
 sh:
-    mov.q [rsp - 0x18], rdi
-    mov.q [rsp - 0x10], rsi
-    mov.q rax, [rsp - 0x18]
-    mov.q rcx, [rsp - 0x10]
-    cmp rcx, 0x40
-    jb 1
+    shlx rcx, rdi, rsi
     xor eax, eax
-    jmp 2
-1:
-    shl rax, cl
-2:
-    mov rax, rax
+    cmp rsi, 0x40
+    cmovb rax, rcx
     ret
 main:
-    sub rsp, 8
+    push rbx
     mov rdi, 1
     mov rsi, 0x40
     call sh
-    mov.q [rsp], rax
+    mov rbx, rax
     mov rdi, 3
     mov rsi, 0x41
     call sh
-    mov.q rcx, [rsp]
+    mov rcx, rbx
     add rcx, rax
     mov rax, rcx
-    add rsp, 8
+    pop rbx
     ret
 =========== OPT LEVEL: none ===========
 sh:
-    mov rax, rdi
-    mov rcx, rsi
-    cmp rcx, 0x40
-    jb 1
+    shlx rcx, rdi, rsi
     xor eax, eax
-    jmp 2
-1:
-    shl rax, cl
-2:
+    cmp rsi, 0x40
+    cmovb rax, rcx
     ret
 main:
     push rbx
@@ -54,44 +41,31 @@ main:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 sh:
-    mov.q [rsp - 0x18], rdi
-    mov.q [rsp - 0x10], rsi
-    mov.q rax, [rsp - 0x18]
-    mov.q rcx, [rsp - 0x10]
-    cmp rcx, 0x40
-    jb 1
+    shlx rcx, rdi, rsi
     xor eax, eax
-    jmp 2
-1:
-    shl rax, cl
-2:
-    mov rax, rax
+    cmp rsi, 0x40
+    cmovb rax, rcx
     ret
 main:
-    sub rsp, 8
+    push rbx
     mov rdi, 1
     mov rsi, 0x40
     call sh
-    mov.q [rsp], rax
+    mov rbx, rax
     mov rdi, 3
     mov rsi, 0x41
     call sh
-    mov.q rcx, [rsp]
+    mov rcx, rbx
     add rcx, rax
     mov rax, rcx
-    add rsp, 8
+    pop rbx
     ret
 =========== OPT LEVEL: moderate ===========
 sh:
-    mov rax, rdi
-    mov rcx, rsi
-    cmp rcx, 0x40
-    jb 1
+    shlx rcx, rdi, rsi
     xor eax, eax
-    jmp 2
-1:
-    shl rax, cl
-2:
+    cmp rsi, 0x40
+    cmovb rax, rcx
     ret
 main:
     push rbx
@@ -108,15 +82,10 @@ main:
     ret
 =========== OPT LEVEL: all ===========
 sh:
-    mov rax, rdi
-    mov rcx, rsi
-    cmp rcx, 0x40
-    jb 1
+    shlx rcx, rdi, rsi
     xor eax, eax
-    jmp 2
-1:
-    shl rax, cl
-2:
+    cmp rsi, 0x40
+    cmovb rax, rcx
     ret
 main:
     push rbx

@@ -1,15 +1,15 @@
 package tests
 
-import main ".."
 import "../bac"
 import "../bac/arm"
 import "../bac/ssa"
 import "../bac/wasm"
 import "../bac/x64"
-import "../typecheck"
-import "../unicorn"
+import "../odinc"
+import "../odinc/typecheck"
 import "../utils/arna"
-import "../wabt"
+import "../utils/unicorn"
+import "../utils/wabt"
 import "base:intrinsics"
 import "core:debug/trace"
 import "core:dynlib"
@@ -42,7 +42,7 @@ setup_custom_fmt :: proc() {
 	})
 }
 
-init_single_file_program :: proc(ctx: ^main.Gen_Ctx, f: ^ast.File) {
+init_single_file_program :: proc(ctx: ^odinc.Gen_Ctx, f: ^ast.File) {
 	ctx.files.allocator = ctx.types.allocator
 	ctx.modules.allocator = ctx.types.allocator
 	if f.pkg_name == "" do f.pkg_name = "main"
@@ -139,7 +139,7 @@ run_test :: proc(
 
 	stats: bac.Stats
 
-	ctx: main.Gen_Ctx
+	ctx: odinc.Gen_Ctx
 	ctx.types = &types
 	ctx.stats = &stats
 	ctx.global = &global_ctx
@@ -148,7 +148,7 @@ run_test :: proc(
 	init_single_file_program(&ctx, &f)
 	typecheck.typecheck_program(&ctx)
 
-	levels := main.OPT_LEVELS
+	levels := odinc.OPT_LEVELS
 
 	Test_Vm :: enum {
 		Native,
@@ -158,7 +158,7 @@ run_test :: proc(
 	}
 
 	Test_Conf :: struct {
-		using level: main.Opt_Level,
+		using level: odinc.Opt_Level,
 		debug:       bool,
 		vm:          Test_Vm,
 	}
@@ -196,6 +196,22 @@ run_test :: proc(
 
 	prev_glob_count := len(ctx.globals)
 
+	append(
+		&ctx.procs,
+		typecheck.Proc {
+			name = "memmove",
+			hidden = true,
+			lit = &ast.Proc_Lit{body = &ast.Stmt{}},
+			sig = &{params = {.I64, .I64, .I64}},
+		},
+		typecheck.Proc {
+			name = "memset",
+			hidden = true,
+			lit = &ast.Proc_Lit{body = &ast.Stmt{}},
+			sig = &{params = {.I64, .I8, .I64}},
+		},
+	)
+
 	for level in confs {
 		dsb := &dsbs[level.vm]
 
@@ -229,18 +245,54 @@ run_test :: proc(
 			prc.stencil = {}
 		}
 
-		emit_ctx := bac.Codegen_Emit_Ctx{}
+		emit_ctx := bac.Codegen_Emit_Ctx {
+			lib_calls = {
+				copy = {id = u32(len(ctx.procs)) - 2},
+				set = {id = u32(len(ctx.procs)) - 1},
+			},
+			emit_got_imports = true,
+		}
+
+		switch level.vm {
+		case .Native:
+			ctx.target.cc = &x64.CC_TABLE[x64.X64_SYSTEMV_CC]
+			ctx.target.spec = &x64.SPEC
+			ctx.target.opt_hints = x64.OPT_HINTS
+		case .Arm:
+			ctx.target.cc = &arm.CC_TABLE[arm.ARM_SYSTEMV_CC]
+			ctx.target.spec = &arm.SPEC
+			ctx.target.opt_hints = arm.OPT_HINTS
+		case .Wasm:
+			ctx.target.cc = &wasm.CC_TABLE[wasm.WASM_SYSTEMV_CC]
+			ctx.target.spec = &wasm.SPEC
+			ctx.target.opt_hints = wasm.OPT_HINTS
+		case .Check:
+			unreachable()
+		}
+
+		for kind, i in ([]ssa.Builtin_Proc{.memmove, .memset}) {
+			ctx.prc = {
+				has_dbg = ctx.prc.has_dbg,
+				temps   = &arna.scratch,
+			}
+			ctx.node_spec = &ssa.SPEC
+			ctx.mem = &ctx.mems.prc
+			ctx.mem.pos = bac.PRECISION
+			ctx.opt_flags = level.flags
+			ctx.stats = &ctx.tstats
+
+			prc := &ctx.procs[len(ctx.procs) - 2 + i]
+
+			prc.param_types = {
+				0 ..< 3 = {dt = .I64},
+			}
+
+			ssa.make_builtin_proc(&ctx, kind)
+			odinc.emit_proc_code(&ctx, &emit_ctx, prc)
+		}
 
 		switch level.vm {
 		case .Native, .Arm:
-			if level.vm == .Native {
-				ctx.target.cc = &x64.CC_TABLE[x64.X64_SYSTEMV_CC]
-				ctx.target.spec = &x64.SPEC
-			} else {
-				ctx.target.cc = &arm.CC_TABLE[arm.ARM_SYSTEMV_CC]
-				ctx.target.spec = &arm.SPEC
-			}
-
 			imported_offsets: [dynamic]uintptr
 			imported_offsets.allocator = context.temp_allocator
 			append(&imported_offsets, 0)
@@ -257,67 +309,20 @@ run_test :: proc(
 				}
 			}
 
-			append(
-				&ctx.procs,
-				typecheck.Proc {
-					name = "memcpy",
-					hidden = true,
-					lit = &ast.Proc_Lit{body = &ast.Stmt{}},
-				},
-				typecheck.Proc {
-					name = "memset",
-					hidden = true,
-					lit = &ast.Proc_Lit{body = &ast.Stmt{}},
-				},
-			)
-
-			emit_ctx = bac.Codegen_Emit_Ctx {
-				lib_calls = {
-					copy = {id = u32(len(ctx.procs)) - 2},
-					set = {id = u32(len(ctx.procs)) - 1},
-				},
-				emit_got_imports = true,
-			}
-
-			for kind, i in ([]ssa.Builtin_Proc{.memcpy, .memset}) {
-				ctx.prc = {
-					has_dbg = ctx.prc.has_dbg,
-					temps   = &arna.scratch,
-				}
-				ctx.node_spec = &ssa.SPEC
-				ctx.mem = &ctx.mems.prc
-				ctx.mem.pos = bac.PRECISION
-				ctx.opt_flags = level.flags
-				ctx.stats = &ctx.tstats
-
-				prc := &ctx.procs[len(ctx.procs) - 2 + i]
-
-				prc.param_types = {
-					0 ..< 3 = {dt = .I64},
-				}
-
-				ssa.make_builtin_proc(&ctx, kind)
-				main.emit_proc_code(&ctx, &emit_ctx, prc)
-			}
-
 			for _, i in ctx.procs[:len(ctx.procs) - 2] {
-				main.emit_proc(&ctx, i, level, &emit_ctx)
+				odinc.emit_proc(&ctx, i, level, &emit_ctx)
 			}
 
 			defer for prc in ctx.procs do delete(prc.stencil.mem)
 
 			if .Inline in level.flags {
-				if !main.inline_and_optimize(&ctx, &emit_ctx) do continue
+				if !odinc.inline_and_optimize(&ctx, &emit_ctx) do continue
 			}
 
 			arna.alloc(&types.mems.code, 0, 4096)
 			code_until := types.mems.code.pos
 
-			global_addrs := make(
-				[]uintptr,
-				len(ctx.globals),
-				context.temp_allocator,
-			)
+			global_addrs := make([]uintptr, len(ctx.globals), context.temp_allocator)
 			for glob, i in ctx.globals {
 				align := uint(max(glob.align, 1))
 				slot := arna.alloc(&types.mems.code, len(glob.bytes), align)
@@ -337,18 +342,12 @@ run_test :: proc(
 					case .Global:
 						if rel.id >= bac.RELOC_BIG_CONSTANT_BASE {
 
-							slc := p.out.constants[rel.id -
-							bac.RELOC_BIG_CONSTANT_BASE -
-							2:]
+							slc := p.out.constants[rel.id - bac.RELOC_BIG_CONSTANT_BASE - 2:]
 
 							size := slc[0]
 							align := slc[1]
 
-							off := arna.alloc(
-								&types.mems.code,
-								uint(size),
-								uint(align),
-							)
+							off := arna.alloc(&types.mems.code, uint(size), uint(align))
 
 							copy(off, slc[2:])
 
@@ -358,8 +357,7 @@ run_test :: proc(
 						}
 					}
 
-					source :=
-						uintptr(raw_data(p.out.code)) + uintptr(rel.offset)
+					source := uintptr(raw_data(p.out.code)) + uintptr(rel.offset)
 					jump := i32(target_off - source)
 
 					jump = jump / (1 << rel.scale_pow)
@@ -415,14 +413,11 @@ run_test :: proc(
 					vl: int
 
 					if level.vm == .Native {
-						ptr := transmute(proc() -> int)(raw_data(
-								main.out.code,
-							))
+						ptr := transmute(proc() -> int)(raw_data(main.out.code))
 						vl = ptr()
 					} else {
 						start := int(
-							uintptr(raw_data(main.out.code)) -
-							uintptr(types.mems.code.ptr),
+							uintptr(raw_data(main.out.code)) - uintptr(types.mems.code.ptr),
 						)
 						avl, err := unicorn.run_arm64(
 							types.mems.code.ptr[:types.mems.code.pos],
@@ -443,29 +438,20 @@ run_test :: proc(
 				}
 			}
 
-			oka = virtual.protect(
-				types.mems.code.ptr,
-				code_until,
-				{.Read, .Write},
-			)
+			oka = virtual.protect(types.mems.code.ptr, code_until, {.Read, .Write})
 			assert(oka)
-
-			resize(&ctx.procs, len(ctx.procs) - 2)
 		case .Wasm:
-			ctx.target.cc = &wasm.CC_TABLE[wasm.WASM_SYSTEMV_CC]
-			ctx.target.spec = &wasm.SPEC
-
-			for _, i in ctx.procs {
-				main.emit_proc(&ctx, i, level, &emit_ctx)
+			for _, i in ctx.procs[:len(ctx.procs) - 2] {
+				odinc.emit_proc(&ctx, i, level, &emit_ctx)
 			}
 
 			defer for prc in ctx.procs do delete(prc.stencil.mem)
 
 			if .Inline in level.flags {
-				if !main.inline_and_optimize(&ctx, &emit_ctx) do continue
+				if !odinc.inline_and_optimize(&ctx, &emit_ctx) do continue
 			}
 
-			module := main.emit_wasm_module(&ctx, context.temp_allocator)
+			module := odinc.emit_wasm_module(&ctx, context.temp_allocator)
 
 			{context.allocator = context.temp_allocator
 				disasm_wasm(dsb, module)}
@@ -500,7 +486,7 @@ run_test :: proc(
 		sync.guard(&log_lock)
 		bac.aggregate_effeciency_stats(&g_stats, ctx.stats)
 		if intrinsics.atomic_sub(&test_rc, 1) == 1 {
-			main.log_stats(&g_stats)
+			odinc.log_stats(&g_stats)
 		}
 	}
 
@@ -532,8 +518,7 @@ run_test :: proc(
 				new, old := string(dsb.buf[:]), string(file)
 				if new != old {
 					new, old =
-						highlight_disasm(strings.clone(new)),
-						highlight_disasm(old)
+						highlight_disasm(strings.clone(new)), highlight_disasm(old)
 					clear(&dsb.buf)
 					append(&dsb.buf, "\n")
 					print_diff(&dsb, old, new)
@@ -692,6 +677,8 @@ disasm_wasm :: proc(sb: ^strings.Builder, module: []u8) {
 		fmt.sbprintln(sb, err)
 	}
 	if ok {
+		m.functions = m.functions[:len(m.functions) - 2]
+		m.func_types = m.func_types[:len(m.func_types) - 2]
 		rex_wasm.sbprint_wat(sb, m)
 	} else {
 		hash := hash.fnv64(module)
@@ -751,7 +738,7 @@ ARM_DS :: Disasm_Scope(
 	arm64.Endianness,
 ){arm64.decode, arm64.sbprint}
 
-disasm :: proc(sb: ^strings.Builder, ctx: main.Gen_Ctx, ds: $DS) {
+disasm :: proc(sb: ^strings.Builder, ctx: odinc.Gen_Ctx, ds: $DS) {
 	decoded_instrs: [dynamic]DS.Instruction
 	decoded_instr_info: [dynamic]DS.Instruction_Info
 	decoded_label_info: [dynamic]x86.Label_Definition
@@ -772,9 +759,7 @@ disasm :: proc(sb: ^strings.Builder, ctx: main.Gen_Ctx, ds: $DS) {
 		instructions := prc.out.code
 
 		offset := u32(
-			uintptr(raw_data(instructions)) -
-			uintptr(ctx.types.mems.code.ptr) -
-			mn,
+			uintptr(raw_data(instructions)) - uintptr(ctx.types.mems.code.ptr) - mn,
 		)
 
 		label_base := len(decoded_label_info)

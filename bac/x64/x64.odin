@@ -1065,16 +1065,6 @@ meta_of_raw :: proc(
 	node: bac.Expanded_Node,
 	_: $T,
 ) -> bac.Regalloc_Node_Meta {
-	@(static, rodata)
-	GPA_MASK := [?]i64{0xFFFF & ~i64(1 << uint(RSP))}
-	@(static, rodata)
-	GPA_SPILL_MASK := [?]i64{~i64(1 << uint(RSP) | 1 << uint(FLAGS))}
-	@(static, rodata)
-	GPA_SPLIT_MASK := [?]i64{~i64(1 << uint(RSP))}
-	@(static, rodata)
-	XMM_MASK := [?]i64{0xFFFF}
-	@(static, rodata)
-	XMM_SPILL_MASK := [?]i64{~i64(0)}
 
 	@(static, rodata)
 	GPA_DIV_MASK := [?]i64 {
@@ -1084,48 +1074,13 @@ meta_of_raw :: proc(
 		~i64(1 << uint(RDX)),
 	}
 
-	GPA_MASK_IDX :: bac.RM_Intern_Idx{}
-	XMM_MASK_IDX :: bac.RM_Intern_Idx {
-		kind = RK_VECTOR,
-	}
-	GPA_SPILL_MASK_IDX :: bac.RM_Intern_Idx {
-		index = 1,
-	}
-	XMM_SPILL_MASK_IDX :: bac.RM_Intern_Idx {
-		kind  = RK_VECTOR,
-		index = 1,
-	}
-
-	@(static, rodata)
-	GPA_MASKS := [6]bac.RM_Intern_Idx{}
-
-	@(static, rodata)
-	XMM_MASKS := [6]bac.RM_Intern_Idx {
-		0 ..< 6 = XMM_MASK_IDX,
-	}
-
-	@(static, rodata)
-	GPA_SPILL_MASKS := [6]bac.RM_Intern_Idx {
-		0 ..< 6 = GPA_SPILL_MASK_IDX,
-	}
-
-	@(static, rodata)
-	XMM_SPILL_MASKS := [6]bac.RM_Intern_Idx {
-		0 ..< 6 = XMM_SPILL_MASK_IDX,
-	}
-
 	IOUT :: bac.INVALID_RM_INDEX
 
 	if node.gvn == 1 {
 		if ra.cc == nil {
 			ra.cc = &CC_TABLE[X64_SYSTEMV_CC]
 		}
-
-		ra.mask_len = MASK_SIZE
-		rslice(ra, RK_GENERAL, GPA_MASK[:])
-		rslice(ra, RK_VECTOR, XMM_MASK[:])
-		rslice(ra, RK_GENERAL, GPA_SPILL_MASK[:])
-		rslice(ra, RK_VECTOR, XMM_SPILL_MASK[:])
+		seed_rm_interner(ra)
 	}
 
 	single :: bac.rm_intern_single
@@ -1232,7 +1187,6 @@ meta_of_raw :: proc(
 		return {out = out, masks = nmasks[:2], in_place_slot = 2}
 	case .Split:
 		if nkind == RK_GENERAL {
-			mask := rslice(ra, RK_GENERAL, GPA_SPLIT_MASK[:])
 			// Flags preserve truth values, not arbitrary integers.
 			flag_uses := len(node.outs) != 0
 			for use in node.outs {
@@ -1241,7 +1195,10 @@ meta_of_raw :: proc(
 					(user.itype == .If && use.idx == 1) ||
 					(user.itype == .Select && use.idx == 2)
 			}
-			return {out = flag_uses ? mask : sout, masks = dup({mask})}
+			return {
+				out = flag_uses ? GPA_SPLIT_MASKS[0] : sout,
+				masks = GPA_SPLIT_MASKS[:1],
+			}
 		}
 		return {out = sout, masks = snmasks[:1]}
 	case .Phi:

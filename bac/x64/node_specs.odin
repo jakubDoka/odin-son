@@ -496,3 +496,32 @@ inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 #assert(size_of(Mem_Op) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.Tup) % bac.PRECISION == 0)
+
+@(rodata) GPA_MASK := [?]i64{transmute(i64)u64(0x000000000000ffef)}
+GPA_MASK_IDX :: bac.RM_Intern_Idx{index = 0, kind = 0}
+@(rodata) GPA_MASKS := [6]bac.RM_Intern_Idx{0 ..< 6 = GPA_MASK_IDX}
+
+@(rodata) GPA_SPILL_MASK := [?]i64{transmute(i64)u64(0xfffffffffffeffef)}
+GPA_SPILL_MASK_IDX :: bac.RM_Intern_Idx{index = 1, kind = 0}
+@(rodata) GPA_SPILL_MASKS := [6]bac.RM_Intern_Idx{0 ..< 6 = GPA_SPILL_MASK_IDX}
+
+@(rodata) GPA_SPLIT_MASK := [?]i64{transmute(i64)u64(0xffffffffffffffef)}
+GPA_SPLIT_MASK_IDX :: bac.RM_Intern_Idx{index = 2, kind = 0}
+@(rodata) GPA_SPLIT_MASKS := [6]bac.RM_Intern_Idx{0 ..< 6 = GPA_SPLIT_MASK_IDX}
+
+@(rodata) XMM_MASK := [?]i64{transmute(i64)u64(0x000000000000ffff)}
+XMM_MASK_IDX :: bac.RM_Intern_Idx{index = 0, kind = 1}
+@(rodata) XMM_MASKS := [6]bac.RM_Intern_Idx{0 ..< 6 = XMM_MASK_IDX}
+
+@(rodata) XMM_SPILL_MASK := [?]i64{transmute(i64)u64(0xffffffffffffffff)}
+XMM_SPILL_MASK_IDX :: bac.RM_Intern_Idx{index = 1, kind = 1}
+@(rodata) XMM_SPILL_MASKS := [6]bac.RM_Intern_Idx{0 ..< 6 = XMM_SPILL_MASK_IDX}
+
+seed_rm_interner :: proc(ra: ^bac.Regalloc) {
+	ra.mask_len = MASK_SIZE
+	bac.rm_intern_slice(ra, 0, GPA_MASK[:])
+	bac.rm_intern_slice(ra, 0, GPA_SPILL_MASK[:])
+	bac.rm_intern_slice(ra, 0, GPA_SPLIT_MASK[:])
+	bac.rm_intern_slice(ra, 1, XMM_MASK[:])
+	bac.rm_intern_slice(ra, 1, XMM_SPILL_MASK[:])
+}

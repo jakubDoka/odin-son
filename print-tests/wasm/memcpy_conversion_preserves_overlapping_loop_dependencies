@@ -327,18 +327,16 @@
   (type (;0;) (func (param i64 i64 i64)))
   (type (;1;) (func (result i64)))
   (func $copy_forward (type 0) (param i64 i64 i64)
-    block
-      block
-        local.get 2
-        i64.const 0
-        i64.le_s
-        br_if 0
-        local.get 0
-        local.get 1
-        local.get 2
-        call 2
-        br 1
-      end
+    local.get 2
+    i64.const 0
+    i64.le_s
+    i32.eqz
+    if
+      local.get 0
+      local.get 1
+      local.get 2
+      call 2
+    else
     end
     return
     end

@@ -572,26 +572,24 @@
   (type (;1;) (func (result i64)))
   (func $cpy (type 0) (param i64 i64 i64)
     (local i64)
-    block
-      block
-        i64.const 2
-        local.set 3
-        local.get 2
-        i64.const 2
-        i64.le_s
-        br_if 0
-        local.get 0
-        i64.const 2
-        i64.add
-        local.get 1
-        i64.const 2
-        i64.add
-        local.get 2
-        local.get 3
-        i64.sub
-        call 2
-        br 1
-      end
+    i64.const 2
+    local.set 3
+    local.get 2
+    i64.const 2
+    i64.le_s
+    i32.eqz
+    if
+      local.get 0
+      i64.const 2
+      i64.add
+      local.get 1
+      i64.const 2
+      i64.add
+      local.get 2
+      local.get 3
+      i64.sub
+      call 2
+    else
     end
     return
     end

@@ -402,9 +402,7 @@ meta_of :: #force_inline proc(
 	single :: bac.rm_intern_single
 	rslice :: bac.rm_intern_slice
 
-	dup :: #force_inline proc(msks: []bac.RM_Intern_Idx) -> []bac.RM_Intern_Idx {
-		return slice.clone(msks)
-	}
+	dup :: bac.rm_dup
 
 	nkind := ra.datatype_to_reg_kind[node.dt]
 

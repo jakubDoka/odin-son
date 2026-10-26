@@ -139,7 +139,7 @@ when !fmt.NO_FMT {
 		our_ctx: Schedule
 
 		if ctx == nil {
-			schedule_graph(prc, &our_ctx, .for_regalloc)
+			schedule_graph(prc, &our_ctx, .for_display)
 			ctx = &our_ctx
 		}
 

@@ -496,6 +496,261 @@ main :: proc() -> int {
 }
 ```
 
+#### wasm if nested diamonds
+```odin
+package main
+
+choose :: proc(a: int, b: int, c: int) -> int {
+	r := 0
+	if a != 0 {
+		if b != 0 {
+			r = 0x11
+		} else {
+			r = 0x23
+		}
+		r += 0x40
+	} else {
+		if c != 0 {
+			r = 0x35
+		} else {
+			r = 0x47
+		}
+		r += 0x80
+	}
+	return r * 3 + a + b + c
+}
+
+main :: proc() -> int {
+	@(static) seed := 0
+	r := 0
+	i := seed - 1
+	for {
+		i += 1
+		if i >= 8 do break
+		r += choose(i & 1, i & 2, i & 4)
+	}
+	return r
+}
+```
+
+#### wasm if loop in then
+```odin
+package main
+
+choose :: proc(a: int, n: int) -> int {
+	r := 0
+	if a != 0 {
+		i := -1
+		for {
+			i += 1
+			if i >= n do break
+			r = r * 3 + i + 1
+		}
+	} else {
+		r = 0x51
+	}
+	return r + 0x100
+}
+
+main :: proc() -> int {
+	@(static) seed := 0
+	return choose(seed, 4) + choose(seed + 1, 4) + choose(seed + 1, 0)
+}
+```
+
+#### wasm if loops in both arms
+```odin
+package main
+
+choose :: proc(a: int, n: int) -> int {
+	r := 0
+	if a != 0 {
+		i := -1
+		for {
+			i += 1
+			if i >= n do break
+			if i == 2 do continue
+			r = r * 3 + i + 1
+		}
+	} else {
+		i := -1
+		for {
+			i += 1
+			if i >= n do break
+			if i == 3 do break
+			r = r * 5 + i + 1
+		}
+	}
+	return r + 0x100
+}
+
+main :: proc() -> int {
+	@(static) seed := 0
+	return choose(seed, 4) + choose(seed + 1, 4) + choose(seed + 1, 0)
+}
+```
+
+#### wasm if nested early returns
+```odin
+package main
+
+choose :: proc(a: int, b: int, c: int) -> int {
+	r := 0
+	if a != 0 {
+		if b != 0 do return 0x11
+		r = 0x23
+	} else {
+		if c != 0 do return 0x35
+		r = 0x47
+	}
+	if b == c {
+		r = r * 3 + 1
+	} else {
+		r = r * 5 + 2
+	}
+	return r + 0x100
+}
+
+main :: proc() -> int {
+	@(static) seed := 0
+	r := 0
+	i := seed - 1
+	for {
+		i += 1
+		if i >= 8 do break
+		r += choose(i & 1, i & 2, i & 4)
+	}
+	return r
+}
+```
+
+#### wasm if nested break and continue
+```odin
+package main
+
+choose :: proc(a: int, b: int) -> int {
+	r := 0
+	i := -1
+	for {
+		i += 1
+		if i >= 5 do break
+		if a != 0 {
+			if i == b do break
+			r += 0x11
+		} else {
+			if i == b do continue
+			r += 0x23
+		}
+		r = r * 3 + 1
+	}
+	return r + 0x100
+}
+
+main :: proc() -> int {
+	@(static) seed := 0
+	return choose(seed, 2) + choose(seed + 1, 2)
+}
+```
+
+#### wasm if short circuit joins
+```odin
+package main
+
+choose :: proc(a: int, b: int, c: int) -> int {
+	r := 0
+	if a != 0 && (b != 0 || c != 0) {
+		if b == c {
+			r = 0x11
+		} else {
+			r = 0x23
+		}
+	} else {
+		r = 0x35
+	}
+	if (a != 0 || b != 0) && c != 0 {
+		r = r * 3 + 1
+	} else {
+		r = r * 5 + 2
+	}
+	return r
+}
+
+main :: proc() -> int {
+	@(static) seed := 0
+	r := 0
+	i := seed - 1
+	for {
+		i += 1
+		if i >= 8 do break
+		r += choose(i & 1, i & 2, i & 4)
+	}
+	return r
+}
+```
+
+#### wasm if calls in both arms
+```odin
+package main
+
+step :: proc(p: ^int, n: int) -> int {
+	p^ = p^ * 3 + n
+	return p^
+}
+
+choose :: proc(p: ^int, a: int, b: int) -> int {
+	r := 0
+	if step(p, a) & 1 != 0 {
+		r = step(p, 0x11)
+		if b != 0 do r += step(p, 0x23)
+	} else {
+		r = step(p, 0x35)
+		if b == 0 do r += step(p, 0x47)
+	}
+	return r + step(p, 0x59)
+}
+
+main :: proc() -> int {
+	p := 0
+	r := choose(&p, 0, 0)
+	r += choose(&p, 1, 1)
+	return r + p
+}
+```
+
+#### wasm if labelled loop exits
+```odin
+package main
+
+choose :: proc(a: int, b: int) -> int {
+	r := 0
+	i := -1
+	outer: for {
+		i += 1
+		if i >= 4 do break
+		j := -1
+		for {
+			j += 1
+			if j >= 4 do break
+			if a != 0 {
+				if j == b do continue outer
+				r += 0x11
+			} else {
+				if j == b do break outer
+				r += 0x23
+			}
+			r = r * 3 + 1
+		}
+		r += 0x51
+	}
+	return r + 0x100
+}
+
+main :: proc() -> int {
+	@(static) seed := 0
+	return choose(seed, 2) + choose(seed + 1, 2)
+}
+```
+
 #### if statement with register pressure
 ```odin
 package main

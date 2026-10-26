@@ -515,7 +515,6 @@ peep :: proc(
 		}
 
 		elim: if len(node.inps) == 1 {
-
 			#reverse for out in node.outs {
 				if get_node(ctx, out.id).rtype == bac.DEAD_NODE_KIND do continue
 				onode := expand_node(ctx, out.id)
@@ -636,12 +635,12 @@ peep :: proc(
 			region := expand_node(ctx, node.inps[0])
 			if if_, ok := select_diamond(ctx, node.inps[0]); ok {
 				budget := 64
-				if !can_speculate_select_value(ctx, node.inps[1], &budget) ||
-				   !can_speculate_select_value(ctx, node.inps[2], &budget) {
+				if !can_speculate_select_value(ctx, node.inps[1], id, &budget) ||
+				   !can_speculate_select_value(ctx, node.inps[2], id, &budget) {
 					break match
 				}
 				first_is_then := get_node(ctx, region.inps[0]).itype == .Then
-				return bac.add_select(
+				sel := bac.add_select(
 					ctx,
 					"phisel",
 					node.dt,
@@ -649,6 +648,12 @@ peep :: proc(
 					node.inps[1 + int(first_is_then)],
 					bac.get_inputs(ctx, if_)[1],
 				)
+				bac.worklist_add(ctx, ctx.worklist, sel)
+				return sel
+			}
+
+			for inp in bac.get_inputs(ctx, node.inps[0]) {
+				bac.peep_ctx_add_trigger(ctx, inp, id)
 			}
 			bac.peep_ctx_add_trigger(ctx, node.inps[0], id)
 		}
@@ -1359,9 +1364,15 @@ select_diamond :: proc(ctx: bac.Peep_Ctx, region: Node_ID) -> (Node_ID, bool) {
 
 can_speculate_select_value :: proc(
 	ctx: bac.Peep_Ctx,
+	root: Node_ID,
 	value: Node_ID,
 	budget: ^int,
-) -> bool {
+) -> (
+	ok: bool,
+) {
+	defer if !ok {
+		bac.peep_ctx_add_trigger(ctx, value, root)
+	}
 	if budget^ == 0 do return false
 	budget^ -= 1
 	node := expand_node(ctx, value)
@@ -1381,7 +1392,7 @@ can_speculate_select_value :: proc(
 	}
 	if node.is_load || node.is_store || bac.is_cfg(ctx, value) do return false
 	for inp in node.inps {
-		if !can_speculate_select_value(ctx, inp, budget) do return false
+		if !can_speculate_select_value(ctx, inp, root, budget) do return false
 	}
 	return true
 }

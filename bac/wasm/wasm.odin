@@ -44,7 +44,7 @@ WASM_SYSTEMV_CC :: 0
 
 @(tag = "api", rodata, export, link_name = "bac_wasm_OPT_HINTS")
 OPT_HINTS := bac.Opt_Hints {
-	select_types = ~{},
+	select_types = ~{.Mem},
 }
 
 @(tag = "api", rodata, export, link_name = "bac_wasm_CC_TABLE")

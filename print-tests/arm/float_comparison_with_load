@@ -53,35 +53,27 @@ main:
     ret
 imm_cmps:
     ldr s0, [x0]
+    movz x0, #1
     eor v1.16b, v1.16b, v1.16b
-    movz x1, #1
-    movz x2, #0
+    movz x1, #0
     fcmp s0, s1
-    csel x1, x1, x2, eq
+    csel x0, x0, x1, eq
+    movz x1, #2
+    add x1, x1, x0
     fcmp s0, s1
-    b.ne 0x24
-    b 0x2c
-2:
-    movz x2, #2
-    add x1, x2, x1
-3:
-    ldr s0, [x0]
-    movz x2, #4
-    add x2, x2, x1
+    csel x0, x1, x0, ne
+    movz x1, #4
+    add x1, x1, x0
     fcmp s0, s1
-    csel x1, x2, x1, ls
+    csel x0, x1, x0, ls
+    movz x1, #8
+    add x1, x1, x0
     fcmp s0, s1
-    b.ge 0x4c
-    b 0x54
-4:
-    movz x2, #8
-    add x1, x2, x1
-5:
-    ldr s0, [x0]
-    movz x0, #16
-    add x0, x0, x1
+    csel x0, x1, x0, ge
+    movz x1, #16
+    add x1, x1, x0
     fcmp s0, s1
-    csel x0, x0, x1, mi
+    csel x0, x1, x0, mi
     movz x1, #32
     add x1, x1, x0
     fcmp s0, s1
@@ -89,34 +81,26 @@ imm_cmps:
     ret
 cmps:
     ldr s1, [x0]
-    movz x1, #1
-    movz x2, #0
+    movz x0, #1
+    movz x1, #0
     fcmp s0, s1
-    csel x1, x1, x2, eq
+    csel x0, x0, x1, eq
+    movz x1, #2
+    add x1, x1, x0
     fcmp s0, s1
-    b.ne 0x20
-    b 0x28
-7:
-    movz x2, #2
-    add x1, x2, x1
-8:
-    ldr s1, [x0]
-    movz x2, #4
-    add x2, x2, x1
+    csel x0, x1, x0, ne
+    movz x1, #4
+    add x1, x1, x0
     fcmp s0, s1
-    csel x1, x2, x1, ge
+    csel x0, x1, x0, ge
+    movz x1, #8
+    add x1, x1, x0
     fcmp s0, s1
-    b.ls 0x48
-    b 0x50
-9:
-    movz x2, #8
-    add x1, x2, x1
-10:
-    ldr s1, [x0]
-    movz x0, #16
-    add x0, x0, x1
+    csel x0, x1, x0, ls
+    movz x1, #16
+    add x1, x1, x0
     fcmp s0, s1
-    csel x0, x0, x1, gt
+    csel x0, x1, x0, gt
     movz x1, #32
     add x1, x1, x0
     fcmp s0, s1
@@ -174,67 +158,51 @@ main:
     add sp, sp, #64
     ret
 imm_cmps:
-    ldr s0, [x0]
-    eor v1.16b, v1.16b, v1.16b
-    movz x2, #1
-    movz x1, #0
-    fcmp s0, s1
-    csel x2, x2, x1, eq
-    fcmp s0, s1
-    b.ne 0x24
-    b 0x2c
-2:
-    movz x1, #2
-    add x2, x1, x2
-3:
-    ldr s0, [x0]
-    movz x1, #4
-    add x1, x1, x2
-    fcmp s0, s1
-    csel x1, x1, x2, ls
-    fcmp s0, s1
-    b.ge 0x4c
-    b 0x54
-4:
-    movz x2, #8
-    add x1, x2, x1
-5:
-    ldr s0, [x0]
+    ldr s1, [x0]
+    movz x1, #1
+    eor v0.16b, v0.16b, v0.16b
+    movz x0, #0
+    fcmp s1, s0
+    csel x1, x1, x0, eq
+    movz x0, #2
+    add x0, x0, x1
+    fcmp s1, s0
+    csel x1, x0, x1, ne
+    movz x0, #4
+    add x0, x0, x1
+    fcmp s1, s0
+    csel x1, x0, x1, ls
+    movz x0, #8
+    add x0, x0, x1
+    fcmp s1, s0
+    csel x1, x0, x1, ge
     movz x0, #16
     add x0, x0, x1
-    fcmp s0, s1
+    fcmp s1, s0
     csel x1, x0, x1, mi
     movz x0, #32
     add x0, x0, x1
-    fcmp s0, s1
+    fcmp s1, s0
     csel x0, x0, x1, gt
     ret
 cmps:
     ldr s1, [x0]
-    movz x2, #1
-    movz x1, #0
+    movz x1, #1
+    movz x0, #0
     fcmp s0, s1
-    csel x2, x2, x1, eq
+    csel x1, x1, x0, eq
+    movz x0, #2
+    add x0, x0, x1
     fcmp s0, s1
-    b.ne 0x20
-    b 0x28
-7:
-    movz x1, #2
-    add x2, x1, x2
-8:
-    ldr s1, [x0]
-    movz x1, #4
-    add x1, x1, x2
+    csel x1, x0, x1, ne
+    movz x0, #4
+    add x0, x0, x1
     fcmp s0, s1
-    csel x1, x1, x2, ge
+    csel x1, x0, x1, ge
+    movz x0, #8
+    add x0, x0, x1
     fcmp s0, s1
-    b.ls 0x48
-    b 0x50
-9:
-    movz x2, #8
-    add x1, x2, x1
-10:
-    ldr s1, [x0]
+    csel x1, x0, x1, ls
     movz x0, #16
     add x0, x0, x1
     fcmp s0, s1
@@ -299,35 +267,27 @@ main:
     ret
 imm_cmps:
     ldr s0, [x0]
+    movz x0, #1
     eor v1.16b, v1.16b, v1.16b
-    movz x1, #1
-    movz x2, #0
+    movz x1, #0
     fcmp s0, s1
-    csel x1, x1, x2, eq
+    csel x0, x0, x1, eq
+    movz x1, #2
+    add x1, x1, x0
     fcmp s0, s1
-    b.ne 0x24
-    b 0x2c
-2:
-    movz x2, #2
-    add x1, x2, x1
-3:
-    ldr s0, [x0]
-    movz x2, #4
-    add x2, x2, x1
+    csel x0, x1, x0, ne
+    movz x1, #4
+    add x1, x1, x0
     fcmp s0, s1
-    csel x1, x2, x1, ls
+    csel x0, x1, x0, ls
+    movz x1, #8
+    add x1, x1, x0
     fcmp s0, s1
-    b.ge 0x4c
-    b 0x54
-4:
-    movz x2, #8
-    add x1, x2, x1
-5:
-    ldr s0, [x0]
-    movz x0, #16
-    add x0, x0, x1
+    csel x0, x1, x0, ge
+    movz x1, #16
+    add x1, x1, x0
     fcmp s0, s1
-    csel x0, x0, x1, mi
+    csel x0, x1, x0, mi
     movz x1, #32
     add x1, x1, x0
     fcmp s0, s1
@@ -335,34 +295,26 @@ imm_cmps:
     ret
 cmps:
     ldr s1, [x0]
-    movz x1, #1
-    movz x2, #0
+    movz x0, #1
+    movz x1, #0
     fcmp s0, s1
-    csel x1, x1, x2, eq
+    csel x0, x0, x1, eq
+    movz x1, #2
+    add x1, x1, x0
     fcmp s0, s1
-    b.ne 0x20
-    b 0x28
-7:
-    movz x2, #2
-    add x1, x2, x1
-8:
-    ldr s1, [x0]
-    movz x2, #4
-    add x2, x2, x1
+    csel x0, x1, x0, ne
+    movz x1, #4
+    add x1, x1, x0
     fcmp s0, s1
-    csel x1, x2, x1, ge
+    csel x0, x1, x0, ge
+    movz x1, #8
+    add x1, x1, x0
     fcmp s0, s1
-    b.ls 0x48
-    b 0x50
-9:
-    movz x2, #8
-    add x1, x2, x1
-10:
-    ldr s1, [x0]
-    movz x0, #16
-    add x0, x0, x1
+    csel x0, x1, x0, ls
+    movz x1, #16
+    add x1, x1, x0
     fcmp s0, s1
-    csel x0, x0, x1, gt
+    csel x0, x1, x0, gt
     movz x1, #32
     add x1, x1, x0
     fcmp s0, s1
@@ -420,67 +372,51 @@ main:
     add sp, sp, #64
     ret
 imm_cmps:
-    ldr s0, [x0]
-    eor v1.16b, v1.16b, v1.16b
-    movz x2, #1
-    movz x1, #0
-    fcmp s0, s1
-    csel x2, x2, x1, eq
-    fcmp s0, s1
-    b.ne 0x24
-    b 0x2c
-2:
-    movz x1, #2
-    add x2, x1, x2
-3:
-    ldr s0, [x0]
-    movz x1, #4
-    add x1, x1, x2
-    fcmp s0, s1
-    csel x1, x1, x2, ls
-    fcmp s0, s1
-    b.ge 0x4c
-    b 0x54
-4:
-    movz x2, #8
-    add x1, x2, x1
-5:
-    ldr s0, [x0]
+    ldr s1, [x0]
+    movz x1, #1
+    eor v0.16b, v0.16b, v0.16b
+    movz x0, #0
+    fcmp s1, s0
+    csel x1, x1, x0, eq
+    movz x0, #2
+    add x0, x0, x1
+    fcmp s1, s0
+    csel x1, x0, x1, ne
+    movz x0, #4
+    add x0, x0, x1
+    fcmp s1, s0
+    csel x1, x0, x1, ls
+    movz x0, #8
+    add x0, x0, x1
+    fcmp s1, s0
+    csel x1, x0, x1, ge
     movz x0, #16
     add x0, x0, x1
-    fcmp s0, s1
+    fcmp s1, s0
     csel x1, x0, x1, mi
     movz x0, #32
     add x0, x0, x1
-    fcmp s0, s1
+    fcmp s1, s0
     csel x0, x0, x1, gt
     ret
 cmps:
     ldr s1, [x0]
-    movz x2, #1
-    movz x1, #0
+    movz x1, #1
+    movz x0, #0
     fcmp s0, s1
-    csel x2, x2, x1, eq
+    csel x1, x1, x0, eq
+    movz x0, #2
+    add x0, x0, x1
     fcmp s0, s1
-    b.ne 0x20
-    b 0x28
-7:
-    movz x1, #2
-    add x2, x1, x2
-8:
-    ldr s1, [x0]
-    movz x1, #4
-    add x1, x1, x2
+    csel x1, x0, x1, ne
+    movz x0, #4
+    add x0, x0, x1
     fcmp s0, s1
-    csel x1, x1, x2, ge
+    csel x1, x0, x1, ge
+    movz x0, #8
+    add x0, x0, x1
     fcmp s0, s1
-    b.ls 0x48
-    b 0x50
-9:
-    movz x2, #8
-    add x1, x2, x1
-10:
-    ldr s1, [x0]
+    csel x1, x0, x1, ls
     movz x0, #16
     add x0, x0, x1
     fcmp s0, s1
@@ -542,67 +478,51 @@ main:
     add sp, sp, #64
     ret
 imm_cmps:
-    ldr s0, [x0]
-    eor v1.16b, v1.16b, v1.16b
-    movz x2, #1
-    movz x1, #0
-    fcmp s0, s1
-    csel x2, x2, x1, eq
-    fcmp s0, s1
-    b.ne 0x24
-    b 0x2c
-2:
-    movz x1, #2
-    add x2, x1, x2
-3:
-    ldr s0, [x0]
-    movz x1, #4
-    add x1, x1, x2
-    fcmp s0, s1
-    csel x1, x1, x2, ls
-    fcmp s0, s1
-    b.ge 0x4c
-    b 0x54
-4:
-    movz x2, #8
-    add x1, x2, x1
-5:
-    ldr s0, [x0]
+    ldr s1, [x0]
+    movz x1, #1
+    eor v0.16b, v0.16b, v0.16b
+    movz x0, #0
+    fcmp s1, s0
+    csel x1, x1, x0, eq
+    movz x0, #2
+    add x0, x0, x1
+    fcmp s1, s0
+    csel x1, x0, x1, ne
+    movz x0, #4
+    add x0, x0, x1
+    fcmp s1, s0
+    csel x1, x0, x1, ls
+    movz x0, #8
+    add x0, x0, x1
+    fcmp s1, s0
+    csel x1, x0, x1, ge
     movz x0, #16
     add x0, x0, x1
-    fcmp s0, s1
+    fcmp s1, s0
     csel x1, x0, x1, mi
     movz x0, #32
     add x0, x0, x1
-    fcmp s0, s1
+    fcmp s1, s0
     csel x0, x0, x1, gt
     ret
 cmps:
     ldr s1, [x0]
-    movz x2, #1
-    movz x1, #0
+    movz x1, #1
+    movz x0, #0
     fcmp s0, s1
-    csel x2, x2, x1, eq
+    csel x1, x1, x0, eq
+    movz x0, #2
+    add x0, x0, x1
     fcmp s0, s1
-    b.ne 0x20
-    b 0x28
-7:
-    movz x1, #2
-    add x2, x1, x2
-8:
-    ldr s1, [x0]
-    movz x1, #4
-    add x1, x1, x2
+    csel x1, x0, x1, ne
+    movz x0, #4
+    add x0, x0, x1
     fcmp s0, s1
-    csel x1, x1, x2, ge
+    csel x1, x0, x1, ge
+    movz x0, #8
+    add x0, x0, x1
     fcmp s0, s1
-    b.ls 0x48
-    b 0x50
-9:
-    movz x2, #8
-    add x1, x2, x1
-10:
-    ldr s1, [x0]
+    csel x1, x0, x1, ls
     movz x0, #16
     add x0, x0, x1
     fcmp s0, s1

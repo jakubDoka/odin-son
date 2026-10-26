@@ -952,6 +952,500 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) wasm_if_nested_diamonds :: proc(t: ^testing.T) {
+
+
+
+choose :: proc(a: int, b: int, c: int) -> int {
+	r := 0
+	if a != 0 {
+		if b != 0 {
+			r = 0x11
+		} else {
+			r = 0x23
+		}
+		r += 0x40
+	} else {
+		if c != 0 {
+			r = 0x35
+		} else {
+			r = 0x47
+		}
+		r += 0x80
+	}
+	return r * 3 + a + b + c
+}
+
+main_ :: proc() -> int {
+	@(static) seed := 0
+	r := 0
+	i := seed - 1
+	for {
+		i += 1
+		if i >= 8 do break
+		r += choose(i & 1, i & 2, i & 4)
+	}
+	return r
+}
+
+run_test(t, `wasm_if_nested_diamonds`, `
+package main
+
+choose :: proc(a: int, b: int, c: int) -> int {
+	r := 0
+	if a != 0 {
+		if b != 0 {
+			r = 0x11
+		} else {
+			r = 0x23
+		}
+		r += 0x40
+	} else {
+		if c != 0 {
+			r = 0x35
+		} else {
+			r = 0x47
+		}
+		r += 0x80
+	}
+	return r * 3 + a + b + c
+}
+
+main :: proc() -> int {
+	@(static) seed := 0
+	r := 0
+	i := seed - 1
+	for {
+		i += 1
+		if i >= 8 do break
+		r += choose(i & 1, i & 2, i & 4)
+	}
+	return r
+}
+`, main_())
+}
+@(test) wasm_if_loop_in_then :: proc(t: ^testing.T) {
+
+
+
+choose :: proc(a: int, n: int) -> int {
+	r := 0
+	if a != 0 {
+		i := -1
+		for {
+			i += 1
+			if i >= n do break
+			r = r * 3 + i + 1
+		}
+	} else {
+		r = 0x51
+	}
+	return r + 0x100
+}
+
+main_ :: proc() -> int {
+	@(static) seed := 0
+	return choose(seed, 4) + choose(seed + 1, 4) + choose(seed + 1, 0)
+}
+
+run_test(t, `wasm_if_loop_in_then`, `
+package main
+
+choose :: proc(a: int, n: int) -> int {
+	r := 0
+	if a != 0 {
+		i := -1
+		for {
+			i += 1
+			if i >= n do break
+			r = r * 3 + i + 1
+		}
+	} else {
+		r = 0x51
+	}
+	return r + 0x100
+}
+
+main :: proc() -> int {
+	@(static) seed := 0
+	return choose(seed, 4) + choose(seed + 1, 4) + choose(seed + 1, 0)
+}
+`, main_())
+}
+@(test) wasm_if_loops_in_both_arms :: proc(t: ^testing.T) {
+
+
+
+choose :: proc(a: int, n: int) -> int {
+	r := 0
+	if a != 0 {
+		i := -1
+		for {
+			i += 1
+			if i >= n do break
+			if i == 2 do continue
+			r = r * 3 + i + 1
+		}
+	} else {
+		i := -1
+		for {
+			i += 1
+			if i >= n do break
+			if i == 3 do break
+			r = r * 5 + i + 1
+		}
+	}
+	return r + 0x100
+}
+
+main_ :: proc() -> int {
+	@(static) seed := 0
+	return choose(seed, 4) + choose(seed + 1, 4) + choose(seed + 1, 0)
+}
+
+run_test(t, `wasm_if_loops_in_both_arms`, `
+package main
+
+choose :: proc(a: int, n: int) -> int {
+	r := 0
+	if a != 0 {
+		i := -1
+		for {
+			i += 1
+			if i >= n do break
+			if i == 2 do continue
+			r = r * 3 + i + 1
+		}
+	} else {
+		i := -1
+		for {
+			i += 1
+			if i >= n do break
+			if i == 3 do break
+			r = r * 5 + i + 1
+		}
+	}
+	return r + 0x100
+}
+
+main :: proc() -> int {
+	@(static) seed := 0
+	return choose(seed, 4) + choose(seed + 1, 4) + choose(seed + 1, 0)
+}
+`, main_())
+}
+@(test) wasm_if_nested_early_returns :: proc(t: ^testing.T) {
+
+
+
+choose :: proc(a: int, b: int, c: int) -> int {
+	r := 0
+	if a != 0 {
+		if b != 0 do return 0x11
+		r = 0x23
+	} else {
+		if c != 0 do return 0x35
+		r = 0x47
+	}
+	if b == c {
+		r = r * 3 + 1
+	} else {
+		r = r * 5 + 2
+	}
+	return r + 0x100
+}
+
+main_ :: proc() -> int {
+	@(static) seed := 0
+	r := 0
+	i := seed - 1
+	for {
+		i += 1
+		if i >= 8 do break
+		r += choose(i & 1, i & 2, i & 4)
+	}
+	return r
+}
+
+run_test(t, `wasm_if_nested_early_returns`, `
+package main
+
+choose :: proc(a: int, b: int, c: int) -> int {
+	r := 0
+	if a != 0 {
+		if b != 0 do return 0x11
+		r = 0x23
+	} else {
+		if c != 0 do return 0x35
+		r = 0x47
+	}
+	if b == c {
+		r = r * 3 + 1
+	} else {
+		r = r * 5 + 2
+	}
+	return r + 0x100
+}
+
+main :: proc() -> int {
+	@(static) seed := 0
+	r := 0
+	i := seed - 1
+	for {
+		i += 1
+		if i >= 8 do break
+		r += choose(i & 1, i & 2, i & 4)
+	}
+	return r
+}
+`, main_())
+}
+@(test) wasm_if_nested_break_and_continue :: proc(t: ^testing.T) {
+
+
+
+choose :: proc(a: int, b: int) -> int {
+	r := 0
+	i := -1
+	for {
+		i += 1
+		if i >= 5 do break
+		if a != 0 {
+			if i == b do break
+			r += 0x11
+		} else {
+			if i == b do continue
+			r += 0x23
+		}
+		r = r * 3 + 1
+	}
+	return r + 0x100
+}
+
+main_ :: proc() -> int {
+	@(static) seed := 0
+	return choose(seed, 2) + choose(seed + 1, 2)
+}
+
+run_test(t, `wasm_if_nested_break_and_continue`, `
+package main
+
+choose :: proc(a: int, b: int) -> int {
+	r := 0
+	i := -1
+	for {
+		i += 1
+		if i >= 5 do break
+		if a != 0 {
+			if i == b do break
+			r += 0x11
+		} else {
+			if i == b do continue
+			r += 0x23
+		}
+		r = r * 3 + 1
+	}
+	return r + 0x100
+}
+
+main :: proc() -> int {
+	@(static) seed := 0
+	return choose(seed, 2) + choose(seed + 1, 2)
+}
+`, main_())
+}
+@(test) wasm_if_short_circuit_joins :: proc(t: ^testing.T) {
+
+
+
+choose :: proc(a: int, b: int, c: int) -> int {
+	r := 0
+	if a != 0 && (b != 0 || c != 0) {
+		if b == c {
+			r = 0x11
+		} else {
+			r = 0x23
+		}
+	} else {
+		r = 0x35
+	}
+	if (a != 0 || b != 0) && c != 0 {
+		r = r * 3 + 1
+	} else {
+		r = r * 5 + 2
+	}
+	return r
+}
+
+main_ :: proc() -> int {
+	@(static) seed := 0
+	r := 0
+	i := seed - 1
+	for {
+		i += 1
+		if i >= 8 do break
+		r += choose(i & 1, i & 2, i & 4)
+	}
+	return r
+}
+
+run_test(t, `wasm_if_short_circuit_joins`, `
+package main
+
+choose :: proc(a: int, b: int, c: int) -> int {
+	r := 0
+	if a != 0 && (b != 0 || c != 0) {
+		if b == c {
+			r = 0x11
+		} else {
+			r = 0x23
+		}
+	} else {
+		r = 0x35
+	}
+	if (a != 0 || b != 0) && c != 0 {
+		r = r * 3 + 1
+	} else {
+		r = r * 5 + 2
+	}
+	return r
+}
+
+main :: proc() -> int {
+	@(static) seed := 0
+	r := 0
+	i := seed - 1
+	for {
+		i += 1
+		if i >= 8 do break
+		r += choose(i & 1, i & 2, i & 4)
+	}
+	return r
+}
+`, main_())
+}
+@(test) wasm_if_calls_in_both_arms :: proc(t: ^testing.T) {
+
+
+
+step :: proc(p: ^int, n: int) -> int {
+	p^ = p^ * 3 + n
+	return p^
+}
+
+choose :: proc(p: ^int, a: int, b: int) -> int {
+	r := 0
+	if step(p, a) & 1 != 0 {
+		r = step(p, 0x11)
+		if b != 0 do r += step(p, 0x23)
+	} else {
+		r = step(p, 0x35)
+		if b == 0 do r += step(p, 0x47)
+	}
+	return r + step(p, 0x59)
+}
+
+main_ :: proc() -> int {
+	p := 0
+	r := choose(&p, 0, 0)
+	r += choose(&p, 1, 1)
+	return r + p
+}
+
+run_test(t, `wasm_if_calls_in_both_arms`, `
+package main
+
+step :: proc(p: ^int, n: int) -> int {
+	p^ = p^ * 3 + n
+	return p^
+}
+
+choose :: proc(p: ^int, a: int, b: int) -> int {
+	r := 0
+	if step(p, a) & 1 != 0 {
+		r = step(p, 0x11)
+		if b != 0 do r += step(p, 0x23)
+	} else {
+		r = step(p, 0x35)
+		if b == 0 do r += step(p, 0x47)
+	}
+	return r + step(p, 0x59)
+}
+
+main :: proc() -> int {
+	p := 0
+	r := choose(&p, 0, 0)
+	r += choose(&p, 1, 1)
+	return r + p
+}
+`, main_())
+}
+@(test) wasm_if_labelled_loop_exits :: proc(t: ^testing.T) {
+
+
+
+choose :: proc(a: int, b: int) -> int {
+	r := 0
+	i := -1
+	outer: for {
+		i += 1
+		if i >= 4 do break
+		j := -1
+		for {
+			j += 1
+			if j >= 4 do break
+			if a != 0 {
+				if j == b do continue outer
+				r += 0x11
+			} else {
+				if j == b do break outer
+				r += 0x23
+			}
+			r = r * 3 + 1
+		}
+		r += 0x51
+	}
+	return r + 0x100
+}
+
+main_ :: proc() -> int {
+	@(static) seed := 0
+	return choose(seed, 2) + choose(seed + 1, 2)
+}
+
+run_test(t, `wasm_if_labelled_loop_exits`, `
+package main
+
+choose :: proc(a: int, b: int) -> int {
+	r := 0
+	i := -1
+	outer: for {
+		i += 1
+		if i >= 4 do break
+		j := -1
+		for {
+			j += 1
+			if j >= 4 do break
+			if a != 0 {
+				if j == b do continue outer
+				r += 0x11
+			} else {
+				if j == b do break outer
+				r += 0x23
+			}
+			r = r * 3 + 1
+		}
+		r += 0x51
+	}
+	return r + 0x100
+}
+
+main :: proc() -> int {
+	@(static) seed := 0
+	return choose(seed, 2) + choose(seed + 1, 2)
+}
+`, main_())
+}
 @(test) if_statement_with_register_pressure :: proc(t: ^testing.T) {
 
 
@@ -16155,6 +16649,14 @@ NAMES := []string{
 `variables_that_create_register_pressure`,
 `variables_that_create_even_more_register_pressure`,
 `simple_if_statement`,
+`wasm_if_nested_diamonds`,
+`wasm_if_loop_in_then`,
+`wasm_if_loops_in_both_arms`,
+`wasm_if_nested_early_returns`,
+`wasm_if_nested_break_and_continue`,
+`wasm_if_short_circuit_joins`,
+`wasm_if_calls_in_both_arms`,
+`wasm_if_labelled_loop_exits`,
 `if_statement_with_register_pressure`,
 `if_statement_peepholes`,
 `different_shift_peeps`,
@@ -17241,6 +17743,245 @@ main :: proc() -> int {
 		a = 2
 	}
 	return a
+}
+`,
+`
+package main
+
+choose :: proc(a: int, b: int, c: int) -> int {
+	r := 0
+	if a != 0 {
+		if b != 0 {
+			r = 0x11
+		} else {
+			r = 0x23
+		}
+		r += 0x40
+	} else {
+		if c != 0 {
+			r = 0x35
+		} else {
+			r = 0x47
+		}
+		r += 0x80
+	}
+	return r * 3 + a + b + c
+}
+
+main :: proc() -> int {
+	@(static) seed := 0
+	r := 0
+	i := seed - 1
+	for {
+		i += 1
+		if i >= 8 do break
+		r += choose(i & 1, i & 2, i & 4)
+	}
+	return r
+}
+`,
+`
+package main
+
+choose :: proc(a: int, n: int) -> int {
+	r := 0
+	if a != 0 {
+		i := -1
+		for {
+			i += 1
+			if i >= n do break
+			r = r * 3 + i + 1
+		}
+	} else {
+		r = 0x51
+	}
+	return r + 0x100
+}
+
+main :: proc() -> int {
+	@(static) seed := 0
+	return choose(seed, 4) + choose(seed + 1, 4) + choose(seed + 1, 0)
+}
+`,
+`
+package main
+
+choose :: proc(a: int, n: int) -> int {
+	r := 0
+	if a != 0 {
+		i := -1
+		for {
+			i += 1
+			if i >= n do break
+			if i == 2 do continue
+			r = r * 3 + i + 1
+		}
+	} else {
+		i := -1
+		for {
+			i += 1
+			if i >= n do break
+			if i == 3 do break
+			r = r * 5 + i + 1
+		}
+	}
+	return r + 0x100
+}
+
+main :: proc() -> int {
+	@(static) seed := 0
+	return choose(seed, 4) + choose(seed + 1, 4) + choose(seed + 1, 0)
+}
+`,
+`
+package main
+
+choose :: proc(a: int, b: int, c: int) -> int {
+	r := 0
+	if a != 0 {
+		if b != 0 do return 0x11
+		r = 0x23
+	} else {
+		if c != 0 do return 0x35
+		r = 0x47
+	}
+	if b == c {
+		r = r * 3 + 1
+	} else {
+		r = r * 5 + 2
+	}
+	return r + 0x100
+}
+
+main :: proc() -> int {
+	@(static) seed := 0
+	r := 0
+	i := seed - 1
+	for {
+		i += 1
+		if i >= 8 do break
+		r += choose(i & 1, i & 2, i & 4)
+	}
+	return r
+}
+`,
+`
+package main
+
+choose :: proc(a: int, b: int) -> int {
+	r := 0
+	i := -1
+	for {
+		i += 1
+		if i >= 5 do break
+		if a != 0 {
+			if i == b do break
+			r += 0x11
+		} else {
+			if i == b do continue
+			r += 0x23
+		}
+		r = r * 3 + 1
+	}
+	return r + 0x100
+}
+
+main :: proc() -> int {
+	@(static) seed := 0
+	return choose(seed, 2) + choose(seed + 1, 2)
+}
+`,
+`
+package main
+
+choose :: proc(a: int, b: int, c: int) -> int {
+	r := 0
+	if a != 0 && (b != 0 || c != 0) {
+		if b == c {
+			r = 0x11
+		} else {
+			r = 0x23
+		}
+	} else {
+		r = 0x35
+	}
+	if (a != 0 || b != 0) && c != 0 {
+		r = r * 3 + 1
+	} else {
+		r = r * 5 + 2
+	}
+	return r
+}
+
+main :: proc() -> int {
+	@(static) seed := 0
+	r := 0
+	i := seed - 1
+	for {
+		i += 1
+		if i >= 8 do break
+		r += choose(i & 1, i & 2, i & 4)
+	}
+	return r
+}
+`,
+`
+package main
+
+step :: proc(p: ^int, n: int) -> int {
+	p^ = p^ * 3 + n
+	return p^
+}
+
+choose :: proc(p: ^int, a: int, b: int) -> int {
+	r := 0
+	if step(p, a) & 1 != 0 {
+		r = step(p, 0x11)
+		if b != 0 do r += step(p, 0x23)
+	} else {
+		r = step(p, 0x35)
+		if b == 0 do r += step(p, 0x47)
+	}
+	return r + step(p, 0x59)
+}
+
+main :: proc() -> int {
+	p := 0
+	r := choose(&p, 0, 0)
+	r += choose(&p, 1, 1)
+	return r + p
+}
+`,
+`
+package main
+
+choose :: proc(a: int, b: int) -> int {
+	r := 0
+	i := -1
+	outer: for {
+		i += 1
+		if i >= 4 do break
+		j := -1
+		for {
+			j += 1
+			if j >= 4 do break
+			if a != 0 {
+				if j == b do continue outer
+				r += 0x11
+			} else {
+				if j == b do break outer
+				r += 0x23
+			}
+			r = r * 3 + 1
+		}
+		r += 0x51
+	}
+	return r + 0x100
+}
+
+main :: proc() -> int {
+	@(static) seed := 0
+	return choose(seed, 2) + choose(seed + 1, 2)
 }
 `,
 `
@@ -24305,6 +25046,14 @@ main :: proc() -> int {
 `#load("../fuzz/crashes/regalloc_ioob.odin")`,
 }
 IS_FUZZ := []bool{
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
 false,
 false,
 false,

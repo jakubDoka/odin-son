@@ -35,183 +35,181 @@ main:
 check i8:
     push rbx
     push rbp
+    push r12
     mov rax, rdi
     mov rcx, rdx
+    mov rdx, 1
     add al, sil
     mov rbx, rax
-    mov rbp, 1
-    mov dil, 3
     mov rax, rbx
-    cbw
-    idiv dil
-    movsx rdi, al
+    xor al, sil
+    mov rbp, rax
+    mov rax, rbx
+    neg al
+    mov rdi, rax
     mov rax, rcx
     cmp al, bl
     sete al
     movzx eax, al
-    xor edx, edx
+    xor r8d, r8d
     test al, al
-    cmovne rdx, rbp
-    mov rax, rdx
+    cmovne r8, rdx
+    mov rax, r8
     mov rdx, rax
     add rdx, 2
+    mov r8, rbx
+    sar r8b, 2
+    movsx r8, r8b
     cmp bl, 0
     cmovl rax, rdx
     mov rdx, rax
     add rdx, 4
-    movsx rbp, bl
-    cmp rbp, rcx
+    movsx r9, bl
+    cmp r9, rcx
     cmovle rax, rdx
-    mov rbp, rax
-    mov r8, 3
-    mov rax, rcx
-    cqo
-    idiv r8
-    cmp rdi, rax
-    je 2
-    mov rax, rbp
-    jmp 3
-2:
-    mov rdx, rbp
-    add rdx, 8
-    mov rax, rdx
-3:
-    mov rbp, rax
-    mov rax, rbx
-    xor al, sil
-    mov rdi, rax
-    mov rax, rbp
-    add rax, 0x10
-    mov r8, rax
-    mov rax, rbx
-    neg al
     mov r9, rax
-    mov rax, rbx
-    sar al, 2
-    movsx r10, al
-    mov r11b, 5
+    mov rax, r9
+    add rax, 8
+    mov r10, rax
+    mov r11b, 3
     mov rax, rbx
     cbw
     idiv r11b
+    movsx r11, al
+    mov r12b, 5
+    mov rax, rbx
+    cbw
+    idiv r12b
     movzx edx, ah
     movsx rbx, dl
+    mov r12, 3
+    mov rax, rcx
+    cqo
+    idiv r12
+    cmp r11, rax
+    mov rax, r9
+    cmove rax, r10
+    mov r9, rax
+    mov rax, r9
+    add rax, 0x10
+    mov r10, rax
     mov r11, 5
     mov rax, rcx
     cqo
     idiv r11
     cmp rbx, rdx
-    mov rax, rbp
-    cmove rax, r8
+    mov rax, r9
+    cmove rax, r10
     mov rdx, rax
     add rdx, 0x20
     mov rbx, rcx
     sar rbx, 2
-    cmp r10, rbx
+    cmp r8, rbx
     cmove rax, rdx
     mov rdx, rax
     add rdx, 0x40
     mov rbx, rcx
     neg rbx
-    cmp r9b, bl
+    cmp dil, bl
     cmove rax, rdx
     mov rdx, rax
     add rdx, 0x80
     movsx rbx, sil
     xor rbx, rcx
     mov rcx, rbx
-    cmp dil, cl
+    cmp bpl, cl
     cmove rax, rdx
+    pop r12
     pop rbp
     pop rbx
     ret
 check i16:
     push rbx
     push rbp
+    push r12
     mov rax, rdi
     mov rcx, rdx
+    mov rdx, 1
     add ax, si
     mov rbx, rax
-    mov rbp, 1
-    mov rdi, 3
     mov rax, rbx
-    cwd
-    idiv di
-    movsx rdi, ax
+    xor ax, si
+    mov rbp, rax
+    mov rax, rbx
+    neg ax
+    mov rdi, rax
     mov rax, rcx
     cmp ax, bx
     sete al
     movzx eax, al
-    xor edx, edx
+    xor r8d, r8d
     test al, al
-    cmovne rdx, rbp
-    mov rax, rdx
+    cmovne r8, rdx
+    mov rax, r8
     mov rdx, rax
     add rdx, 2
+    mov r8, rbx
+    sar r8w, 2
+    movsx r8, r8w
     cmp bx, 0
     cmovl rax, rdx
     mov rdx, rax
     add rdx, 4
-    movsx rbp, bx
-    cmp rbp, rcx
+    movsx r9, bx
+    cmp r9, rcx
     cmovle rax, rdx
-    mov rbp, rax
-    mov r8, 3
-    mov rax, rcx
-    cqo
-    idiv r8
-    cmp rdi, rax
-    je 5
-    mov rax, rbp
-    jmp 6
-5:
-    mov rdx, rbp
-    add rdx, 8
-    mov rax, rdx
-6:
-    mov rbp, rax
-    mov rax, rbx
-    xor ax, si
-    mov rdi, rax
-    mov rax, rbp
-    add rax, 0x10
-    mov r8, rax
-    mov rax, rbx
-    neg ax
     mov r9, rax
-    mov rax, rbx
-    sar ax, 2
-    movsx r10, ax
-    mov r11, 5
+    mov rax, r9
+    add rax, 8
+    mov r10, rax
+    mov r11, 3
     mov rax, rbx
     cwd
     idiv r11w
+    movsx r11, ax
+    mov r12, 5
+    mov rax, rbx
+    cwd
+    idiv r12w
     movsx rbx, dx
+    mov r12, 3
+    mov rax, rcx
+    cqo
+    idiv r12
+    cmp r11, rax
+    mov rax, r9
+    cmove rax, r10
+    mov r9, rax
+    mov rax, r9
+    add rax, 0x10
+    mov r10, rax
     mov r11, 5
     mov rax, rcx
     cqo
     idiv r11
     cmp rbx, rdx
-    mov rax, rbp
-    cmove rax, r8
+    mov rax, r9
+    cmove rax, r10
     mov rdx, rax
     add rdx, 0x20
     mov rbx, rcx
     sar rbx, 2
-    cmp r10, rbx
+    cmp r8, rbx
     cmove rax, rdx
     mov rdx, rax
     add rdx, 0x40
     mov rbx, rcx
     neg rbx
-    cmp r9w, bx
+    cmp di, bx
     cmove rax, rdx
     mov rdx, rax
     add rdx, 0x80
     movsx rbx, si
     xor rbx, rcx
     mov rcx, rbx
-    cmp di, cx
+    cmp bp, cx
     cmove rax, rdx
+    pop r12
     pop rbp
     pop rbx
     ret
@@ -255,67 +253,65 @@ check i8:
     push r12
     mov rax, rdi
     mov r12, rdx
+    mov rdx, 1
     add al, sil
+    mov r9, rax
+    mov rax, r9
+    xor al, sil
     mov rbp, rax
-    mov rdi, 1
-    mov cl, 3
-    mov rax, rbp
-    cbw
-    idiv cl
-    movsx rcx, al
-    mov rdx, r12
-    cmp dl, bpl
+    mov rax, r9
+    neg al
+    mov rbx, rax
+    mov rcx, r12
+    cmp cl, r9b
     sete al
     movzx eax, al
-    xor r8d, r8d
+    xor edi, edi
     test al, al
-    cmovne r8, rdi
-    mov rax, r8
+    cmovne rdi, rdx
+    mov rax, rdi
     add rax, 2
-    cmp bpl, 0
-    cmovl r8, rax
-    mov rax, r8
+    mov rcx, r9
+    sar cl, 2
+    movsx rcx, cl
+    cmp r9b, 0
+    mov rdx, rdi
+    cmovl rdx, rax
+    mov rax, rdx
     add rax, 4
-    movsx rdi, bpl
-    cmp rdi, r12
-    mov rdi, r8
-    cmovle rdi, rax
-    mov r8, 3
-    mov rax, r12
-    cqo
-    idiv r8
-    cmp rcx, rax
-    je 2
-    jmp 3
-2:
-    add rdi, 8
-3:
-    mov rbx, rdi
-    mov rax, rbp
-    xor al, sil
+    movsx r8, r9b
+    cmp r8, r12
+    cmovle rdx, rax
+    mov r10, rdx
+    mov rax, r10
+    add rax, 8
     mov r11, rax
-    mov rax, rbx
-    add rax, 0x10
-    mov r10, rax
-    mov rax, rbp
-    neg al
-    mov r9, rax
-    mov rax, rbp
-    sar al, 2
-    movsx rcx, al
+    mov dil, 3
+    mov rax, r9
+    cbw
+    idiv dil
+    movsx r8, al
     mov dil, 5
-    mov rax, rbp
+    mov rax, r9
     cbw
     idiv dil
     movzx edx, ah
-    movsx r8, dl
-    mov rdi, 5
+    movsx rdi, dl
+    mov r9, 3
     mov rax, r12
     cqo
-    idiv rdi
-    cmp r8, rdx
-    mov rdi, rbx
-    cmove rdi, r10
+    idiv r9
+    cmp r8, rax
+    cmove r10, r11
+    mov r8, r10
+    add r8, 0x10
+    mov r9, 5
+    mov rax, r12
+    cqo
+    idiv r9
+    cmp rdi, rdx
+    mov rdi, r10
+    cmove rdi, r8
     mov rax, rdi
     add rax, 0x20
     mov rdx, r12
@@ -327,14 +323,14 @@ check i8:
     mov rcx, r12
     neg rcx
     mov rdx, rcx
-    cmp r9b, dl
+    cmp bl, dl
     mov rcx, rdi
     cmove rcx, rax
     mov rax, rcx
     add rax, 0x80
     movsx rsi, sil
     xor rsi, r12
-    cmp r11b, sil
+    cmp bpl, sil
     cmove rcx, rax
     mov rax, rcx
     pop r12
@@ -347,66 +343,64 @@ check i16:
     push r12
     mov rax, rdi
     mov r12, rdx
+    mov rdx, 1
     add ax, si
+    mov r9, rax
+    mov rax, r9
+    xor ax, si
     mov rbp, rax
-    mov rdi, 1
-    mov rcx, 3
-    mov rax, rbp
-    cwd
-    idiv cx
-    movsx rcx, ax
-    mov rdx, r12
-    cmp dx, bp
+    mov rax, r9
+    neg ax
+    mov rbx, rax
+    mov rcx, r12
+    cmp cx, r9w
     sete al
     movzx eax, al
-    xor r8d, r8d
+    xor edi, edi
     test al, al
-    cmovne r8, rdi
-    mov rax, r8
+    cmovne rdi, rdx
+    mov rax, rdi
     add rax, 2
-    cmp bp, 0
-    cmovl r8, rax
-    mov rax, r8
+    mov rcx, r9
+    sar cx, 2
+    movsx rcx, cx
+    cmp r9w, 0
+    mov rdx, rdi
+    cmovl rdx, rax
+    mov rax, rdx
     add rax, 4
-    movsx rdi, bp
-    cmp rdi, r12
-    mov rdi, r8
-    cmovle rdi, rax
-    mov r8, 3
-    mov rax, r12
-    cqo
-    idiv r8
-    cmp rcx, rax
-    je 5
-    jmp 6
-5:
-    add rdi, 8
-6:
-    mov rbx, rdi
-    mov rax, rbp
-    xor ax, si
+    movsx r8, r9w
+    cmp r8, r12
+    cmovle rdx, rax
+    mov r10, rdx
+    mov rax, r10
+    add rax, 8
     mov r11, rax
-    mov rax, rbx
-    add rax, 0x10
-    mov r10, rax
-    mov rax, rbp
-    neg ax
-    mov r9, rax
-    mov rax, rbp
-    sar ax, 2
-    movsx rcx, ax
-    mov rdi, 5
-    mov rax, rbp
+    mov rdi, 3
+    mov rax, r9
     cwd
     idiv di
-    movsx r8, dx
+    movsx r8, ax
     mov rdi, 5
+    mov rax, r9
+    cwd
+    idiv di
+    movsx rdi, dx
+    mov r9, 3
     mov rax, r12
     cqo
-    idiv rdi
-    cmp r8, rdx
-    mov rdi, rbx
-    cmove rdi, r10
+    idiv r9
+    cmp r8, rax
+    cmove r10, r11
+    mov r8, r10
+    add r8, 0x10
+    mov r9, 5
+    mov rax, r12
+    cqo
+    idiv r9
+    cmp rdi, rdx
+    mov rdi, r10
+    cmove rdi, r8
     mov rax, rdi
     add rax, 0x20
     mov rdx, r12
@@ -418,14 +412,14 @@ check i16:
     mov rcx, r12
     neg rcx
     mov rdx, rcx
-    cmp r9w, dx
+    cmp bx, dx
     mov rcx, rdi
     cmove rcx, rax
     mov rax, rcx
     add rax, 0x80
     movsx rsi, si
     xor rsi, r12
-    cmp r11w, si
+    cmp bp, si
     cmove rcx, rax
     mov rax, rcx
     pop r12
@@ -469,183 +463,181 @@ main:
 check i8:
     push rbx
     push rbp
+    push r12
     mov rax, rdi
     mov rcx, rdx
+    mov rdx, 1
     add al, sil
     mov rbx, rax
-    mov rbp, 1
-    mov dil, 3
     mov rax, rbx
-    cbw
-    idiv dil
-    movsx rdi, al
+    xor al, sil
+    mov rbp, rax
+    mov rax, rbx
+    neg al
+    mov rdi, rax
     mov rax, rcx
     cmp al, bl
     sete al
     movzx eax, al
-    xor edx, edx
+    xor r8d, r8d
     test al, al
-    cmovne rdx, rbp
-    mov rax, rdx
+    cmovne r8, rdx
+    mov rax, r8
     mov rdx, rax
     add rdx, 2
+    mov r8, rbx
+    sar r8b, 2
+    movsx r8, r8b
     cmp bl, 0
     cmovl rax, rdx
     mov rdx, rax
     add rdx, 4
-    movsx rbp, bl
-    cmp rbp, rcx
+    movsx r9, bl
+    cmp r9, rcx
     cmovle rax, rdx
-    mov rbp, rax
-    mov r8, 3
-    mov rax, rcx
-    cqo
-    idiv r8
-    cmp rdi, rax
-    je 2
-    mov rax, rbp
-    jmp 3
-2:
-    mov rdx, rbp
-    add rdx, 8
-    mov rax, rdx
-3:
-    mov rbp, rax
-    mov rax, rbx
-    xor al, sil
-    mov rdi, rax
-    mov rax, rbp
-    add rax, 0x10
-    mov r8, rax
-    mov rax, rbx
-    neg al
     mov r9, rax
-    mov rax, rbx
-    sar al, 2
-    movsx r10, al
-    mov r11b, 5
+    mov rax, r9
+    add rax, 8
+    mov r10, rax
+    mov r11b, 3
     mov rax, rbx
     cbw
     idiv r11b
+    movsx r11, al
+    mov r12b, 5
+    mov rax, rbx
+    cbw
+    idiv r12b
     movzx edx, ah
     movsx rbx, dl
+    mov r12, 3
+    mov rax, rcx
+    cqo
+    idiv r12
+    cmp r11, rax
+    mov rax, r9
+    cmove rax, r10
+    mov r9, rax
+    mov rax, r9
+    add rax, 0x10
+    mov r10, rax
     mov r11, 5
     mov rax, rcx
     cqo
     idiv r11
     cmp rbx, rdx
-    mov rax, rbp
-    cmove rax, r8
+    mov rax, r9
+    cmove rax, r10
     mov rdx, rax
     add rdx, 0x20
     mov rbx, rcx
     sar rbx, 2
-    cmp r10, rbx
+    cmp r8, rbx
     cmove rax, rdx
     mov rdx, rax
     add rdx, 0x40
     mov rbx, rcx
     neg rbx
-    cmp r9b, bl
+    cmp dil, bl
     cmove rax, rdx
     mov rdx, rax
     add rdx, 0x80
     movsx rbx, sil
     xor rbx, rcx
     mov rcx, rbx
-    cmp dil, cl
+    cmp bpl, cl
     cmove rax, rdx
+    pop r12
     pop rbp
     pop rbx
     ret
 check i16:
     push rbx
     push rbp
+    push r12
     mov rax, rdi
     mov rcx, rdx
+    mov rdx, 1
     add ax, si
     mov rbx, rax
-    mov rbp, 1
-    mov rdi, 3
     mov rax, rbx
-    cwd
-    idiv di
-    movsx rdi, ax
+    xor ax, si
+    mov rbp, rax
+    mov rax, rbx
+    neg ax
+    mov rdi, rax
     mov rax, rcx
     cmp ax, bx
     sete al
     movzx eax, al
-    xor edx, edx
+    xor r8d, r8d
     test al, al
-    cmovne rdx, rbp
-    mov rax, rdx
+    cmovne r8, rdx
+    mov rax, r8
     mov rdx, rax
     add rdx, 2
+    mov r8, rbx
+    sar r8w, 2
+    movsx r8, r8w
     cmp bx, 0
     cmovl rax, rdx
     mov rdx, rax
     add rdx, 4
-    movsx rbp, bx
-    cmp rbp, rcx
+    movsx r9, bx
+    cmp r9, rcx
     cmovle rax, rdx
-    mov rbp, rax
-    mov r8, 3
-    mov rax, rcx
-    cqo
-    idiv r8
-    cmp rdi, rax
-    je 5
-    mov rax, rbp
-    jmp 6
-5:
-    mov rdx, rbp
-    add rdx, 8
-    mov rax, rdx
-6:
-    mov rbp, rax
-    mov rax, rbx
-    xor ax, si
-    mov rdi, rax
-    mov rax, rbp
-    add rax, 0x10
-    mov r8, rax
-    mov rax, rbx
-    neg ax
     mov r9, rax
-    mov rax, rbx
-    sar ax, 2
-    movsx r10, ax
-    mov r11, 5
+    mov rax, r9
+    add rax, 8
+    mov r10, rax
+    mov r11, 3
     mov rax, rbx
     cwd
     idiv r11w
+    movsx r11, ax
+    mov r12, 5
+    mov rax, rbx
+    cwd
+    idiv r12w
     movsx rbx, dx
+    mov r12, 3
+    mov rax, rcx
+    cqo
+    idiv r12
+    cmp r11, rax
+    mov rax, r9
+    cmove rax, r10
+    mov r9, rax
+    mov rax, r9
+    add rax, 0x10
+    mov r10, rax
     mov r11, 5
     mov rax, rcx
     cqo
     idiv r11
     cmp rbx, rdx
-    mov rax, rbp
-    cmove rax, r8
+    mov rax, r9
+    cmove rax, r10
     mov rdx, rax
     add rdx, 0x20
     mov rbx, rcx
     sar rbx, 2
-    cmp r10, rbx
+    cmp r8, rbx
     cmove rax, rdx
     mov rdx, rax
     add rdx, 0x40
     mov rbx, rcx
     neg rbx
-    cmp r9w, bx
+    cmp di, bx
     cmove rax, rdx
     mov rdx, rax
     add rdx, 0x80
     movsx rbx, si
     xor rbx, rcx
     mov rcx, rbx
-    cmp di, cx
+    cmp bp, cx
     cmove rax, rdx
+    pop r12
     pop rbp
     pop rbx
     ret
@@ -689,67 +681,65 @@ check i8:
     push r12
     mov rax, rdi
     mov r12, rdx
+    mov rdx, 1
     add al, sil
+    mov r9, rax
+    mov rax, r9
+    xor al, sil
     mov rbp, rax
-    mov rdi, 1
-    mov cl, 3
-    mov rax, rbp
-    cbw
-    idiv cl
-    movsx rcx, al
-    mov rdx, r12
-    cmp dl, bpl
+    mov rax, r9
+    neg al
+    mov rbx, rax
+    mov rcx, r12
+    cmp cl, r9b
     sete al
     movzx eax, al
-    xor r8d, r8d
+    xor edi, edi
     test al, al
-    cmovne r8, rdi
-    mov rax, r8
+    cmovne rdi, rdx
+    mov rax, rdi
     add rax, 2
-    cmp bpl, 0
-    cmovl r8, rax
-    mov rax, r8
+    mov rcx, r9
+    sar cl, 2
+    movsx rcx, cl
+    cmp r9b, 0
+    mov rdx, rdi
+    cmovl rdx, rax
+    mov rax, rdx
     add rax, 4
-    movsx rdi, bpl
-    cmp rdi, r12
-    mov rdi, r8
-    cmovle rdi, rax
-    mov r8, 3
-    mov rax, r12
-    cqo
-    idiv r8
-    cmp rcx, rax
-    je 2
-    jmp 3
-2:
-    add rdi, 8
-3:
-    mov rbx, rdi
-    mov rax, rbp
-    xor al, sil
+    movsx r8, r9b
+    cmp r8, r12
+    cmovle rdx, rax
+    mov r10, rdx
+    mov rax, r10
+    add rax, 8
     mov r11, rax
-    mov rax, rbx
-    add rax, 0x10
-    mov r10, rax
-    mov rax, rbp
-    neg al
-    mov r9, rax
-    mov rax, rbp
-    sar al, 2
-    movsx rcx, al
+    mov dil, 3
+    mov rax, r9
+    cbw
+    idiv dil
+    movsx r8, al
     mov dil, 5
-    mov rax, rbp
+    mov rax, r9
     cbw
     idiv dil
     movzx edx, ah
-    movsx r8, dl
-    mov rdi, 5
+    movsx rdi, dl
+    mov r9, 3
     mov rax, r12
     cqo
-    idiv rdi
-    cmp r8, rdx
-    mov rdi, rbx
-    cmove rdi, r10
+    idiv r9
+    cmp r8, rax
+    cmove r10, r11
+    mov r8, r10
+    add r8, 0x10
+    mov r9, 5
+    mov rax, r12
+    cqo
+    idiv r9
+    cmp rdi, rdx
+    mov rdi, r10
+    cmove rdi, r8
     mov rax, rdi
     add rax, 0x20
     mov rdx, r12
@@ -761,14 +751,14 @@ check i8:
     mov rcx, r12
     neg rcx
     mov rdx, rcx
-    cmp r9b, dl
+    cmp bl, dl
     mov rcx, rdi
     cmove rcx, rax
     mov rax, rcx
     add rax, 0x80
     movsx rsi, sil
     xor rsi, r12
-    cmp r11b, sil
+    cmp bpl, sil
     cmove rcx, rax
     mov rax, rcx
     pop r12
@@ -781,66 +771,64 @@ check i16:
     push r12
     mov rax, rdi
     mov r12, rdx
+    mov rdx, 1
     add ax, si
+    mov r9, rax
+    mov rax, r9
+    xor ax, si
     mov rbp, rax
-    mov rdi, 1
-    mov rcx, 3
-    mov rax, rbp
-    cwd
-    idiv cx
-    movsx rcx, ax
-    mov rdx, r12
-    cmp dx, bp
+    mov rax, r9
+    neg ax
+    mov rbx, rax
+    mov rcx, r12
+    cmp cx, r9w
     sete al
     movzx eax, al
-    xor r8d, r8d
+    xor edi, edi
     test al, al
-    cmovne r8, rdi
-    mov rax, r8
+    cmovne rdi, rdx
+    mov rax, rdi
     add rax, 2
-    cmp bp, 0
-    cmovl r8, rax
-    mov rax, r8
+    mov rcx, r9
+    sar cx, 2
+    movsx rcx, cx
+    cmp r9w, 0
+    mov rdx, rdi
+    cmovl rdx, rax
+    mov rax, rdx
     add rax, 4
-    movsx rdi, bp
-    cmp rdi, r12
-    mov rdi, r8
-    cmovle rdi, rax
-    mov r8, 3
-    mov rax, r12
-    cqo
-    idiv r8
-    cmp rcx, rax
-    je 5
-    jmp 6
-5:
-    add rdi, 8
-6:
-    mov rbx, rdi
-    mov rax, rbp
-    xor ax, si
+    movsx r8, r9w
+    cmp r8, r12
+    cmovle rdx, rax
+    mov r10, rdx
+    mov rax, r10
+    add rax, 8
     mov r11, rax
-    mov rax, rbx
-    add rax, 0x10
-    mov r10, rax
-    mov rax, rbp
-    neg ax
-    mov r9, rax
-    mov rax, rbp
-    sar ax, 2
-    movsx rcx, ax
-    mov rdi, 5
-    mov rax, rbp
+    mov rdi, 3
+    mov rax, r9
     cwd
     idiv di
-    movsx r8, dx
+    movsx r8, ax
     mov rdi, 5
+    mov rax, r9
+    cwd
+    idiv di
+    movsx rdi, dx
+    mov r9, 3
     mov rax, r12
     cqo
-    idiv rdi
-    cmp r8, rdx
-    mov rdi, rbx
-    cmove rdi, r10
+    idiv r9
+    cmp r8, rax
+    cmove r10, r11
+    mov r8, r10
+    add r8, 0x10
+    mov r9, 5
+    mov rax, r12
+    cqo
+    idiv r9
+    cmp rdi, rdx
+    mov rdi, r10
+    cmove rdi, r8
     mov rax, rdi
     add rax, 0x20
     mov rdx, r12
@@ -852,14 +840,14 @@ check i16:
     mov rcx, r12
     neg rcx
     mov rdx, rcx
-    cmp r9w, dx
+    cmp bx, dx
     mov rcx, rdi
     cmove rcx, rax
     mov rax, rcx
     add rax, 0x80
     movsx rsi, si
     xor rsi, r12
-    cmp r11w, si
+    cmp bp, si
     cmove rcx, rax
     mov rax, rcx
     pop r12
@@ -906,67 +894,65 @@ check i8:
     push r12
     mov rax, rdi
     mov r12, rdx
+    mov rdx, 1
     add al, sil
+    mov r9, rax
+    mov rax, r9
+    xor al, sil
     mov rbp, rax
-    mov rdi, 1
-    mov cl, 3
-    mov rax, rbp
-    cbw
-    idiv cl
-    movsx rcx, al
-    mov rdx, r12
-    cmp dl, bpl
+    mov rax, r9
+    neg al
+    mov rbx, rax
+    mov rcx, r12
+    cmp cl, r9b
     sete al
     movzx eax, al
-    xor r8d, r8d
+    xor edi, edi
     test al, al
-    cmovne r8, rdi
-    mov rax, r8
+    cmovne rdi, rdx
+    mov rax, rdi
     add rax, 2
-    cmp bpl, 0
-    cmovl r8, rax
-    mov rax, r8
+    mov rcx, r9
+    sar cl, 2
+    movsx rcx, cl
+    cmp r9b, 0
+    mov rdx, rdi
+    cmovl rdx, rax
+    mov rax, rdx
     add rax, 4
-    movsx rdi, bpl
-    cmp rdi, r12
-    mov rdi, r8
-    cmovle rdi, rax
-    mov r8, 3
-    mov rax, r12
-    cqo
-    idiv r8
-    cmp rcx, rax
-    je 2
-    jmp 3
-2:
-    add rdi, 8
-3:
-    mov rbx, rdi
-    mov rax, rbp
-    xor al, sil
+    movsx r8, r9b
+    cmp r8, r12
+    cmovle rdx, rax
+    mov r10, rdx
+    mov rax, r10
+    add rax, 8
     mov r11, rax
-    mov rax, rbx
-    add rax, 0x10
-    mov r10, rax
-    mov rax, rbp
-    neg al
-    mov r9, rax
-    mov rax, rbp
-    sar al, 2
-    movsx rcx, al
+    mov dil, 3
+    mov rax, r9
+    cbw
+    idiv dil
+    movsx r8, al
     mov dil, 5
-    mov rax, rbp
+    mov rax, r9
     cbw
     idiv dil
     movzx edx, ah
-    movsx r8, dl
-    mov rdi, 5
+    movsx rdi, dl
+    mov r9, 3
     mov rax, r12
     cqo
-    idiv rdi
-    cmp r8, rdx
-    mov rdi, rbx
-    cmove rdi, r10
+    idiv r9
+    cmp r8, rax
+    cmove r10, r11
+    mov r8, r10
+    add r8, 0x10
+    mov r9, 5
+    mov rax, r12
+    cqo
+    idiv r9
+    cmp rdi, rdx
+    mov rdi, r10
+    cmove rdi, r8
     mov rax, rdi
     add rax, 0x20
     mov rdx, r12
@@ -978,14 +964,14 @@ check i8:
     mov rcx, r12
     neg rcx
     mov rdx, rcx
-    cmp r9b, dl
+    cmp bl, dl
     mov rcx, rdi
     cmove rcx, rax
     mov rax, rcx
     add rax, 0x80
     movsx rsi, sil
     xor rsi, r12
-    cmp r11b, sil
+    cmp bpl, sil
     cmove rcx, rax
     mov rax, rcx
     pop r12
@@ -998,66 +984,64 @@ check i16:
     push r12
     mov rax, rdi
     mov r12, rdx
+    mov rdx, 1
     add ax, si
+    mov r9, rax
+    mov rax, r9
+    xor ax, si
     mov rbp, rax
-    mov rdi, 1
-    mov rcx, 3
-    mov rax, rbp
-    cwd
-    idiv cx
-    movsx rcx, ax
-    mov rdx, r12
-    cmp dx, bp
+    mov rax, r9
+    neg ax
+    mov rbx, rax
+    mov rcx, r12
+    cmp cx, r9w
     sete al
     movzx eax, al
-    xor r8d, r8d
+    xor edi, edi
     test al, al
-    cmovne r8, rdi
-    mov rax, r8
+    cmovne rdi, rdx
+    mov rax, rdi
     add rax, 2
-    cmp bp, 0
-    cmovl r8, rax
-    mov rax, r8
+    mov rcx, r9
+    sar cx, 2
+    movsx rcx, cx
+    cmp r9w, 0
+    mov rdx, rdi
+    cmovl rdx, rax
+    mov rax, rdx
     add rax, 4
-    movsx rdi, bp
-    cmp rdi, r12
-    mov rdi, r8
-    cmovle rdi, rax
-    mov r8, 3
-    mov rax, r12
-    cqo
-    idiv r8
-    cmp rcx, rax
-    je 5
-    jmp 6
-5:
-    add rdi, 8
-6:
-    mov rbx, rdi
-    mov rax, rbp
-    xor ax, si
+    movsx r8, r9w
+    cmp r8, r12
+    cmovle rdx, rax
+    mov r10, rdx
+    mov rax, r10
+    add rax, 8
     mov r11, rax
-    mov rax, rbx
-    add rax, 0x10
-    mov r10, rax
-    mov rax, rbp
-    neg ax
-    mov r9, rax
-    mov rax, rbp
-    sar ax, 2
-    movsx rcx, ax
-    mov rdi, 5
-    mov rax, rbp
+    mov rdi, 3
+    mov rax, r9
     cwd
     idiv di
-    movsx r8, dx
+    movsx r8, ax
     mov rdi, 5
+    mov rax, r9
+    cwd
+    idiv di
+    movsx rdi, dx
+    mov r9, 3
     mov rax, r12
     cqo
-    idiv rdi
-    cmp r8, rdx
-    mov rdi, rbx
-    cmove rdi, r10
+    idiv r9
+    cmp r8, rax
+    cmove r10, r11
+    mov r8, r10
+    add r8, 0x10
+    mov r9, 5
+    mov rax, r12
+    cqo
+    idiv r9
+    cmp rdi, rdx
+    mov rdi, r10
+    cmove rdi, r8
     mov rax, rdi
     add rax, 0x20
     mov rdx, r12
@@ -1069,14 +1053,14 @@ check i16:
     mov rcx, r12
     neg rcx
     mov rdx, rcx
-    cmp r9w, dx
+    cmp bx, dx
     mov rcx, rdi
     cmove rcx, rax
     mov rax, rcx
     add rax, 0x80
     movsx rsi, si
     xor rsi, r12
-    cmp r11w, si
+    cmp bp, si
     cmove rcx, rax
     mov rax, rcx
     pop r12
@@ -1091,202 +1075,208 @@ main:
     push r13
     push r14
     push r15
-    mov.q rax, [rip + 0xf4f]
+    mov rax, 1
+    mov.q r9, [rip + 0xf48]
+    mov rcx, r9
+    sub rcx, 0x7ffe
+    mov r12, rcx
+    mov rdx, r9
+    add rdx, 0xa
+    mov rcx, r9
+    sub rcx, 0x7e
+    mov r14, rcx
+    mov rcx, rdx
+    mov r8, 3
+    mov rdi, 5
+    mov rsi, rdx
+    mov rdx, r9
+    add rdx, 0x78
+    add dl, sil
+    mov.q [rsp - 0x20], rdx
+    mov rdx, r9
+    add rdx, 0x7ff8
+    add dx, cx
+    mov r10, rdx
+    mov r9, r14
+    mov.q rdx, [rsp - 0x20]
+    cmp r9b, dl
+    sete r9b
+    movzx r9d, r9b
+    xor edx, edx
+    test r9b, r9b
+    cmovne rdx, rax
+    mov r11, rdx
+    mov.q rdx, [rsp - 0x20]
+    xor dl, sil
+    mov r13, rdx
+    mov r9, r12
+    cmp r9w, r10w
+    sete r9b
+    movzx r9d, r9b
+    xor edx, edx
+    test r9b, r9b
+    cmovne rdx, rax
+    mov.q [rsp - 0x28], rdx
+    mov rax, r10
+    xor ax, cx
     mov rbp, rax
-    mov rax, rbp
-    add rax, 0xa
+    mov rax, r11
+    add rax, 2
+    mov r9, rax
+    mov.q rax, [rsp - 0x28]
+    add rax, 2
     mov rbx, rax
-    mov rax, rbp
-    sub rax, 0x7e
+    mov.q rax, [rsp - 0x20]
+    cmp al, 0
+    mov rdx, r11
+    cmovl rdx, r9
+    mov r11, rdx
+    mov rax, r11
+    add rax, 4
+    mov r9, rax
+    mov.q rax, [rsp - 0x20]
+    movsx rdx, al
+    cmp rdx, r14
+    mov rdx, r11
+    cmovle rdx, r9
+    mov.q [rsp - 0x8], rdx
+    mov.q rax, [rsp - 0x20]
+    neg al
+    mov r15, rax
+    cmp r10w, 0
+    mov.q rdx, [rsp - 0x28]
+    cmovl rdx, rbx
+    mov r11, rdx
+    mov rax, r11
+    add rax, 4
+    mov r9, rax
+    mov rax, r10
+    neg ax
+    mov.q [rsp - 0x28], rax
+    movsx rdx, r10w
+    cmp rdx, r12
+    mov rax, r11
+    cmovle rax, r9
+    mov rbx, rax
+    mov rax, rbx
+    add rax, 8
     mov r11, rax
     mov r9, 3
-    mov rcx, rbx
-    mov rax, rbp
-    add rax, 0x78
-    add al, cl
-    mov r12, rax
-    mov sil, 3
-    mov rax, r12
-    cbw
-    idiv sil
-    movsx rsi, al
-    mov rdi, 1
-    mov rdx, r11
-    cmp dl, r12b
-    sete al
-    movzx eax, al
-    xor r8d, r8d
-    test al, al
-    cmovne r8, rdi
-    mov rax, r8
-    add rax, 2
-    cmp r12b, 0
-    mov r10, r8
-    cmovl r10, rax
     mov rax, r10
-    add rax, 4
-    movsx r8, r12b
-    cmp r8, r11
-    mov r8, r10
-    cmovle r8, rax
-    mov rax, r11
-    cqo
-    idiv r9
-    cmp rsi, rax
-    je 1
-    jmp 2
-1:
-    add r8, 8
-2:
-    mov r15, r8
-    mov rax, rbp
-    sub rax, 0x7ffe
-    mov r8, rax
-    mov rsi, rbx
-    mov rax, rbp
-    add rax, 0x7ff8
-    add ax, si
-    mov.q [rsp - 0x10], rax
-    mov rdx, r8
-    mov.q rax, [rsp - 0x10]
-    cmp dx, ax
-    sete al
-    movzx eax, al
-    xor edx, edx
-    test al, al
-    cmovne rdx, rdi
-    mov rax, rdx
-    add rax, 2
-    mov.q rdi, [rsp - 0x10]
-    cmp di, 0
-    cmovl rdx, rax
-    mov rbx, rdx
-    mov rdi, 3
-    mov.q rax, [rsp - 0x10]
     cwd
-    idiv di
-    movsx rdi, ax
+    idiv r9w
+    movsx r9, ax
+    mov rax, r12
+    cqo
+    idiv r8
+    cmp r9, rax
     mov rax, rbx
-    add rax, 4
-    mov.q rdx, [rsp - 0x10]
-    movsx r10, dx
-    cmp r10, r8
-    mov rdx, rbx
-    cmovle rdx, rax
-    mov r10, rdx
-    mov rax, r8
-    cqo
-    idiv r9
-    cmp rdi, rax
-    je 3
-    jmp 4
-3:
-    add r10, 8
-4:
-    mov r14, r10
-    mov rax, r15
-    add rax, 0x10
-    mov r13, rax
-    mov rax, r14
-    add rax, 0x10
-    mov rbp, rax
-    mov r10, 5
-    mov rdi, 5
-    mov.q rax, [rsp - 0x10]
-    cwd
-    idiv di
-    movsx rdi, dx
-    mov rax, r12
-    xor al, cl
-    mov rbx, rax
-    mov.q rax, [rsp - 0x10]
-    xor ax, si
-    mov r9, rax
-    mov rax, r8
-    cqo
-    idiv r10
-    cmp rdi, rdx
-    mov rdx, r14
-    cmove rdx, rbp
-    mov.q [rsp - 0x18], rdx
-    mov dil, 5
-    mov rax, r12
-    cbw
-    idiv dil
-    movzx edx, ah
-    movsx rbp, dl
-    mov rax, r12
-    sar al, 2
-    movsx rdi, al
-    mov rax, r11
-    cqo
-    idiv r10
-    cmp rbp, rdx
-    mov rdx, r15
-    cmove rdx, r13
-    mov r15, rdx
-    mov.q rax, [rsp - 0x18]
-    add rax, 0x20
-    mov r10, rax
-    mov.q rax, [rsp - 0x10]
-    sar ax, 2
-    movsx rax, ax
-    mov rdx, r15
-    add rdx, 0x20
-    mov r13, rdx
-    mov rdx, r12
-    neg dl
-    mov r14, rdx
-    mov.q rdx, [rsp - 0x10]
-    neg dx
-    mov rbp, rdx
-    mov rdx, r8
-    sar rdx, 2
-    cmp rax, rdx
-    mov.q rdx, [rsp - 0x18]
-    cmove rdx, r10
-    mov r10, rdx
-    mov rax, r11
-    sar rax, 2
-    cmp rdi, rax
-    mov rdx, r15
-    cmove rdx, r13
-    mov r13, rdx
-    mov rax, r13
-    add rax, 0x40
-    mov r12, rax
+    cmove rax, r11
+    mov.q [rsp - 0x18], rax
+    mov r9, 5
     mov rax, r10
+    cwd
+    idiv r9w
+    movsx r11, dx
+    mov rax, r10
+    sar ax, 2
+    movsx r10, ax
+    mov.q rax, [rsp - 0x8]
+    add rax, 8
+    mov.q [rsp - 0x10], rax
+    mov.q rax, [rsp - 0x20]
+    sar al, 2
+    movsx r9, al
+    mov.q rax, [rsp - 0x18]
+    add rax, 0x10
+    mov rbx, rax
+    mov rax, r12
+    cqo
+    idiv rdi
+    cmp r11, rdx
+    mov.q rax, [rsp - 0x18]
+    cmove rax, rbx
+    mov.q [rsp - 0x18], rax
+    mov r11b, 3
+    mov.q rax, [rsp - 0x20]
+    cbw
+    idiv r11b
+    movsx r11, al
+    mov bl, 5
+    mov.q rax, [rsp - 0x20]
+    cbw
+    idiv bl
+    movzx edx, ah
+    movsx rbx, dl
+    mov rax, r14
+    cqo
+    idiv r8
+    cmp r11, rax
+    mov.q rax, [rsp - 0x8]
+    mov.q rdx, [rsp - 0x10]
+    cmove rax, rdx
+    mov r11, rax
+    mov rax, r11
+    add rax, 0x10
+    mov r8, rax
+    mov rax, r14
+    cqo
+    idiv rdi
+    cmp rbx, rdx
+    mov rdx, r11
+    cmove rdx, r8
+    mov rdi, rdx
+    add rdi, 0x20
+    mov rax, r14
+    sar rax, 2
+    cmp r9, rax
+    cmove rdx, rdi
+    mov r11, rdx
+    mov.q rdi, [rsp - 0x18]
+    add rdi, 0x20
+    mov rax, r12
+    sar rax, 2
+    cmp r10, rax
+    mov.q rdx, [rsp - 0x18]
+    cmove rdx, rdi
+    mov r9, rdx
+    mov rax, r11
+    add rax, 0x40
+    mov r8, rax
+    mov rax, r9
     add rax, 0x40
     mov rdi, rax
-    mov rax, r8
+    mov rax, r12
     neg rax
     mov rdx, rax
-    cmp bp, dx
-    mov rdx, r10
+    mov.q rax, [rsp - 0x28]
+    cmp ax, dx
+    mov rdx, r9
     cmove rdx, rdi
-    mov rbp, rdx
-    mov rax, rbp
-    add rax, 0x80
-    mov r10, rax
-    mov rax, r11
+    mov r10, rdx
+    mov rax, r14
     neg rax
     mov rdx, rax
-    cmp r14b, dl
-    mov rdx, r13
-    cmove rdx, r12
-    mov rdi, rdx
-    mov rdx, rdi
-    add rdx, 0x80
-    movsx rcx, cl
-    xor rcx, r11
-    cmp bl, cl
-    mov rax, rdi
-    cmove rax, rdx
-    movsx rdx, si
-    xor rdx, r8
-    cmp r9w, dx
-    mov rcx, rbp
-    cmove rcx, r10
+    cmp r15b, dl
+    mov rdx, r11
+    cmove rdx, r8
+    mov r9, rdx
+    mov rax, r9
+    add rax, 0x80
+    mov r8, rax
+    mov rax, r10
+    add rax, 0x80
+    mov rdi, rax
+    movsx rdx, sil
+    xor rdx, r14
+    cmp r13b, dl
+    mov rax, r9
+    cmove rax, r8
+    movsx rdx, cx
+    xor rdx, r12
+    cmp bp, dx
+    mov rcx, r10
+    cmove rcx, rdi
     add rax, rcx
     pop r15
     pop r14

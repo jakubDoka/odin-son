@@ -11,6 +11,52 @@ import "core:sort"
 
 _ :: varint
 
+Cfg_Blocks :: struct {
+	bb_metas:    []BB_Meta,
+	block_stack: [dynamic]int,
+	final_order: [dynamic]int,
+	blocks:      [dynamic]Block,
+	inited:      bool,
+	close_loop:  bool,
+	cursor:      int,
+}
+
+BB_Meta :: struct {
+	break_block: int,
+	parent_if:   int,
+	block:       int,
+	ifified:     bool,
+	else_pos:    uint,
+}
+
+Block_Kind :: enum int {
+	Block,
+	Loop,
+}
+
+Block :: struct {
+	is_loop:   bool,
+	is_then:   bool,
+	is_else:   bool,
+	is_dead:   bool,
+	start:     int,
+	end:       int,
+	origin:    int,
+	worse:     int,
+	stack_pos: int,
+}
+
+Cfg_End_Kind :: enum int {
+	Else,
+	End,
+	End_Pop_Else,
+}
+
+Cfg_Start_Kind :: enum int {
+	Block,
+	Loop,
+}
+
 Dbg_Data :: struct {
 	syms: [dynamic]Dbg_Data_Sym,
 }
@@ -1010,4 +1056,301 @@ lsbs_to_msbs :: proc(ctx: ^Proc, node: Expanded_Node, _: $T) -> Node_ID {
 		lsbssh,
 		lane = node.lane,
 	)
+}
+
+cfg_blocks_next_end :: proc(
+	ctx: ^Cfg_Blocks,
+	i: int,
+	code: ^arna.Allocator,
+) -> (
+	end_kind: Cfg_End_Kind,
+	ok: bool,
+) {
+	for len(ctx.block_stack) > 0 &&
+	    ctx.blocks[slice.last(ctx.block_stack[:])].end == i {
+		block := ctx.blocks[pop(&ctx.block_stack)]
+		assert(!ctx.close_loop || !block.is_loop)
+		ctx.close_loop |= block.is_loop
+		if !ctx.close_loop {
+			if block.is_else {
+				ctx.bb_metas[block.origin].else_pos = code.pos
+				return .Else, true
+			} else {
+				if block.is_then &&
+				   code.pos == ctx.bb_metas[block.origin].else_pos + 1 {
+					return .End_Pop_Else, true
+				}
+				return .End, true
+			}
+		}
+	}
+
+	if ctx.close_loop {
+		append(&ctx.block_stack, -1)
+	}
+
+	return
+}
+
+cfg_blocks_next_start :: proc(
+	ctx: ^Cfg_Blocks,
+	i: int,
+) -> (
+	start_kind: Cfg_Start_Kind,
+	ok: bool,
+) {
+	if !ctx.inited {
+		ctx.cursor = len(ctx.final_order) - 1
+		ctx.inited = true
+	}
+
+	for ctx.cursor >= 0 && ctx.blocks[ctx.final_order[ctx.cursor]].start == i {
+		defer ctx.cursor -= 1
+		block := &ctx.blocks[ctx.final_order[ctx.cursor]]
+		block.stack_pos = len(ctx.block_stack)
+		append(&ctx.block_stack, ctx.final_order[ctx.cursor])
+		if block.is_loop {
+			if block.end == i {
+				ctx.close_loop = true
+			}
+			return .Loop, true
+		} else if block.is_else || block.is_then {
+			continue
+		} else {
+			return .Block, true
+		}
+	}
+
+	return
+}
+
+cfg_blocks_end_block :: proc(ctx: ^Cfg_Blocks) -> bool {
+	defer ctx.close_loop = false
+	if ctx.close_loop {
+		pop(&ctx.block_stack)
+	}
+	return ctx.close_loop
+}
+
+cfg_blocks_meta :: proc(
+	ctx: ^Cfg_Blocks,
+	ectx: ^Codegen_Emit_Ctx,
+	node: Expanded_Node,
+	block_idx: int,
+) -> (
+	block: ^Block,
+	is_nil: bool,
+	iffified: bool,
+	label: int,
+) {
+	block = &ctx.blocks[ctx.bb_metas[block_idx].break_block]
+	is_nil = block == &ctx.blocks[0]
+	if node.itype == .If {
+		iffified = ctx.bb_metas[get_node(ectx, node.inps[0]).gvn].ifified
+	}
+	label = len(ctx.block_stack) - block.stack_pos - 1
+	return
+}
+
+compute_blocks :: proc(cctx: ^Cfg_Blocks, ctx: Codegen_Emit_Ctx) {
+	cctx.blocks = make([dynamic]Block, 1, len(ctx.schedule.bbs) + 1)
+	cctx.bb_metas = make([]BB_Meta, len(ctx.schedule.bbs))
+
+	blocks := &cctx.blocks
+
+	for r in 0 ..< 2 {
+		for bb, i in ctx.schedule.bbs {
+			get_node(ctx, bb.head).gvn = u32(i)
+		}
+
+		for bb, i in ctx.schedule.bbs {
+			hnode := expand_node(ctx, bb.head)
+			tail := bb.instrs[len(bb.instrs) - 1]
+			tnode := expand_node(ctx, tail)
+
+			if hnode.itype == .Loop {
+				pred := expand_node(ctx, hnode.inps[1])
+				pred_blk := int(get_node(ctx, pred.inps[0]).gvn)
+				append(
+					blocks,
+					Block{is_loop = true, start = i, origin = pred_blk, end = pred_blk},
+				)
+			}
+
+			ifify: if hnode.itype == .Region && len(hnode.inps) == 2 {
+				the_if: int
+				for inp, j in hnode.inps {
+					ohnode := expand_node(ctx, expand_node(ctx, inp).inps[0])
+					if j == 0 do the_if = cctx.bb_metas[ohnode.gvn].parent_if
+					if cctx.bb_metas[ohnode.gvn].parent_if != the_if {
+						break ifify
+					}
+				}
+				if the_if == 0 do break ifify
+				the_if -= 1
+
+				// Incoming edges can force block nesting to start before the actual if.
+				for block in blocks[1:cctx.bb_metas[the_if].block] {
+					if block.start < the_if && the_if < block.end && block.end <= i {
+						break ifify
+					}
+				}
+
+				rel_blocks := blocks[cctx.bb_metas[the_if].block:]
+
+				end := 0
+				for ; end < len(rel_blocks) &&
+				    (rel_blocks[end].start == the_if || rel_blocks[end].end == i);
+				    end += 1 {}
+
+				rel_blocks = rel_blocks[:end]
+
+				if len(rel_blocks) != 2 do break ifify
+
+				rel_blocks[0].is_else = true
+				rel_blocks[1].is_then = true
+
+				assert(rel_blocks[0].start == the_if)
+				assert(rel_blocks[1].end == i)
+
+				rel_blocks[0].end = rel_blocks[1].origin + 1
+				rel_blocks[1].start = rel_blocks[0].end
+				rel_blocks[1].origin = rel_blocks[0].origin
+
+				cctx.bb_metas[the_if].ifified = true
+			}
+
+			cctx.bb_metas[i].block = len(blocks)
+
+			for next in tnode.outs {
+				nnode := expand_node(ctx, next.id)
+				if nnode.itype == .End do continue
+
+				if tnode.itype == .If {
+					cctx.bb_metas[nnode.gvn].parent_if = i + 1
+				} else {
+					cctx.bb_metas[nnode.gvn].parent_if = cctx.bb_metas[i].parent_if
+				}
+
+				if int(nnode.gvn) != i + 1 && nnode.itype != .Loop {
+					start := i
+
+					for ; get_node(ctx, ctx.schedule.bbs[start].head).itype == .Call_End;
+					    start -= 1 {
+					}
+
+					append(
+						blocks,
+						Block{start = start, origin = i, end = int(nnode.gvn)},
+					)
+				}
+			}
+		}
+
+		if r == 0 {
+			swapped := false
+			// Inner ranges must move before their enclosing ranges invalidate the indices.
+			for j := len(blocks) - 1; j > 0; j -= 1 {
+				block := blocks[j]
+				if !block.is_else do continue
+				assert(blocks[j + 1].is_then)
+				start := block.start + 1
+				if get_node(ctx, ctx.schedule.bbs[start].head).itype != .Else do continue
+				split := block.end
+				end := blocks[j + 1].end
+				slice.rotate_left(ctx.schedule.bbs[start:end], split - start)
+				swapped = true
+			}
+
+			if !swapped {break}
+
+			resize(&cctx.blocks, 1)
+			slice.zero(cctx.bb_metas)
+		}
+	}
+
+	slice.sort_by(blocks[1:], proc(a, b: Block) -> bool {return a.end > b.end})
+
+	cctx.final_order = make([dynamic]int, 0, len(blocks))
+	cctx.block_stack = make([dynamic]int, 0, len(blocks))
+	cursor := 1
+	for i := len(ctx.schedule.bbs) - 1; i >= 0; i -= 1 {
+		for len(cctx.block_stack) > 0 &&
+		    blocks[cctx.block_stack[len(cctx.block_stack) - 1]].start >= i {
+			idx := pop(&cctx.block_stack)
+			blocks[idx].start = i
+			append(&cctx.final_order, idx)
+		}
+
+		// NOTE: create a linked list of guys that coalesce into the best block
+		best_start := len(ctx.schedule.bbs)
+		best := 0
+		loop := 0
+		for ; cursor < len(blocks) && blocks[cursor].end == i; cursor += 1 {
+			if blocks[cursor].is_loop {
+				loop = cursor
+				continue
+			}
+
+			if blocks[cursor].start <= best_start {
+				assert(!blocks[best].is_else)
+				assert(!blocks[best].is_then)
+				blocks[cursor].worse = best
+				best = cursor
+				best_start = blocks[cursor].start
+			} else {
+				assert(!blocks[cursor].is_else)
+				assert(!blocks[cursor].is_then)
+				blocks[cursor].worse = blocks[best].worse
+				blocks[best].worse = cursor
+			}
+		}
+
+		if blocks[best].start >= blocks[loop].start {
+			best, loop = loop, best
+		}
+
+		for b in ([]int{best, loop}) {
+			if b != 0 {
+				if blocks[b].start == i {
+					assert(blocks[b].is_loop)
+					append(&cctx.final_order, b)
+				} else {
+					append(&cctx.block_stack, b)
+				}
+
+				for wcursor := b; wcursor != 0; wcursor = blocks[wcursor].worse {
+					fmt.assertf(
+						blocks[wcursor].start >= blocks[b].start,
+						"%v %v",
+						blocks[wcursor],
+						blocks[b],
+					)
+
+					cctx.bb_metas[blocks[wcursor].origin].break_block = b
+				}
+			}
+		}
+	}
+
+	if !ODIN_DISABLE_ASSERT {
+		for a in cctx.final_order {
+			for b in cctx.final_order {
+				if a == b do continue
+
+				a_block := cctx.blocks[a]
+				b_block := cctx.blocks[b]
+				fmt.assertf(
+					(a_block.start >= b_block.end || b_block.start >= a_block.end) ||
+					(a_block.start >= b_block.start && b_block.end >= a_block.end) ||
+					(a_block.start <= b_block.start && b_block.end <= a_block.end),
+					"%v %v",
+					a_block,
+					b_block,
+				)
+			}
+		}
+	}
+
+	assert(len(cctx.block_stack) == 0)
 }

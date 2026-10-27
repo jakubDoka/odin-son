@@ -13,7 +13,6 @@ import "core:time"
 import "typecheck"
 
 main :: proc() {
-
 	when #config(FUZZ, false) {
 		fuzz_main()
 		return

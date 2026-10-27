@@ -868,34 +868,7 @@ Ctx :: struct {
 	using inner: bac.Codegen_Emit_Ctx,
 	stack_size:  i32,
 	local_projs: [RK_COUNT]Local_Type_Projection,
-	bb_metas:    []BB_Meta,
-	block_stack: [dynamic]int,
-	final_order: [dynamic]int,
-	blocks:      [dynamic]Block,
-}
-
-BB_Meta :: struct {
-	break_block: int,
-	parent_if:   int,
-	block:       int,
-	ifified:     bool,
-}
-
-Block_Kind :: enum int {
-	Block,
-	Loop,
-}
-
-Block :: struct {
-	is_loop:   bool,
-	is_then:   bool,
-	is_else:   bool,
-	is_dead:   bool,
-	start:     int,
-	end:       int,
-	origin:    int,
-	worse:     int,
-	stack_pos: int,
+	cfg_blocks:  bac.Cfg_Blocks,
 }
 
 Local_Type :: enum Reg_Kind {
@@ -921,182 +894,13 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 	ctx: Ctx
 	ctx.inner = ectx
 
-	alloc_ty :: proc(reg: bac.Reg) -> (Local_Type, i16) {
-		return Local_Type(reg.kind), i16(reg.index)
-	}
-
 	ctx.code_start = ctx.code.pos
 	ctx.constants_start = ctx.constants.pos
 
 	bac.layout_call_args(ctx.prc, ctx.schedule, &ctx.stack_size)
 	bac.layout_locals(ctx.prc, ctx.schedule, &ctx.stack_size)
 
-	compute_blocks2 :: proc(ctx: ^Ctx) {
-
-	}
-
-	compute_blocks :: proc(ctx: ^Ctx) {
-		ctx.blocks = make([dynamic]Block, 1, len(ctx.schedule.bbs) + 1)
-		ctx.bb_metas = make([]BB_Meta, len(ctx.schedule.bbs))
-
-		for bb, i in ctx.schedule.bbs {
-			get_node(ctx, bb.head).gvn = u32(i)
-		}
-
-		blocks := &ctx.blocks
-
-		for bb, i in ctx.schedule.bbs {
-			hnode := expand_node(ctx, bb.head)
-			tail := bb.instrs[len(bb.instrs) - 1]
-			tnode := expand_node(ctx, tail)
-
-			if hnode.itype == .Loop {
-				pred := expand_node(ctx, hnode.inps[1])
-				pred_blk := int(get_node(ctx, pred.inps[0]).gvn)
-				append(
-					blocks,
-					Block{is_loop = true, start = i, origin = pred_blk, end = pred_blk},
-				)
-			}
-
-			ifify: if hnode.itype == .Region && len(hnode.inps) == 2 {
-				the_if: int
-				for inp, j in hnode.inps {
-					ohnode := expand_node(ctx, expand_node(ctx, inp).inps[0])
-					if j == 0 do the_if = ctx.bb_metas[ohnode.gvn].parent_if
-					if ctx.bb_metas[ohnode.gvn].parent_if != the_if {
-						break ifify
-					}
-				}
-				if the_if == 0 do break ifify
-				the_if -= 1
-
-				// Incoming edges can force block nesting to start before the actual if.
-				for block in blocks[1:ctx.bb_metas[the_if].block] {
-					if block.start < the_if && the_if < block.end && block.end <= i {
-						break ifify
-					}
-				}
-
-				rel_blocks := blocks[ctx.bb_metas[the_if].block:]
-
-				end := 0
-				for ; end < len(rel_blocks) &&
-				    (rel_blocks[end].start == the_if || rel_blocks[end].end == i);
-				    end += 1 {}
-
-				rel_blocks = rel_blocks[:end]
-
-				if len(rel_blocks) != 2 do break ifify
-
-				rel_blocks[0].is_else = true
-				rel_blocks[1].is_then = true
-
-				assert(rel_blocks[0].start == the_if)
-				assert(rel_blocks[1].end == i)
-
-				rel_blocks[0].end = rel_blocks[1].origin + 1
-				rel_blocks[1].start = rel_blocks[0].end
-				rel_blocks[1].origin = rel_blocks[0].origin
-
-				ctx.bb_metas[the_if].ifified = true
-			}
-
-			ctx.bb_metas[i].block = len(blocks)
-
-			for next in tnode.outs {
-				nnode := expand_node(ctx, next.id)
-				if nnode.itype == .End do continue
-
-				if tnode.itype == .If {
-					ctx.bb_metas[nnode.gvn].parent_if = i + 1
-				} else {
-					ctx.bb_metas[nnode.gvn].parent_if = ctx.bb_metas[i].parent_if
-				}
-
-				if int(nnode.gvn) != i + 1 && nnode.itype != .Loop {
-					start := i
-
-					for ; get_node(ctx, ctx.schedule.bbs[start].head).itype == .Call_End;
-					    start -= 1 {
-					}
-
-					append(
-						blocks,
-						Block{start = start, origin = i, end = int(nnode.gvn)},
-					)
-				}
-			}
-		}
-
-		slice.sort_by(blocks[1:], proc(a, b: Block) -> bool {return a.end > b.end})
-
-		ctx.final_order = make([dynamic]int, 0, len(blocks))
-		ctx.block_stack = make([dynamic]int, 0, len(blocks))
-		cursor := 1
-		for i := len(ctx.schedule.bbs) - 1; i >= 0; i -= 1 {
-			for len(ctx.block_stack) > 0 &&
-			    blocks[ctx.block_stack[len(ctx.block_stack) - 1]].start >= i {
-				idx := pop(&ctx.block_stack)
-				blocks[idx].start = i
-				append(&ctx.final_order, idx)
-			}
-
-			// NOTE: create a linked list of guys that coalesce into the best block
-			best_start := len(ctx.schedule.bbs)
-			best := 0
-			loop := 0
-			for ; cursor < len(blocks) && blocks[cursor].end == i; cursor += 1 {
-				if blocks[cursor].is_loop {
-					loop = cursor
-					continue
-				}
-
-				if blocks[cursor].start <= best_start {
-					assert(!blocks[best].is_else)
-					assert(!blocks[best].is_then)
-					blocks[cursor].worse = best
-					best = cursor
-					best_start = blocks[cursor].start
-				} else {
-					assert(!blocks[cursor].is_else)
-					assert(!blocks[cursor].is_then)
-					blocks[cursor].worse = blocks[best].worse
-					blocks[best].worse = cursor
-				}
-			}
-
-			if blocks[best].start >= blocks[loop].start {
-				best, loop = loop, best
-			}
-
-			for b in ([]int{best, loop}) {
-				if b != 0 {
-					if blocks[b].start == i {
-						assert(blocks[b].is_loop)
-						append(&ctx.final_order, b)
-					} else {
-						append(&ctx.block_stack, b)
-					}
-
-					for wcursor := b; wcursor != 0; wcursor = blocks[wcursor].worse {
-						fmt.assertf(
-							blocks[wcursor].start >= blocks[b].start,
-							"%v %v",
-							blocks[wcursor],
-							blocks[b],
-						)
-
-						ctx.bb_metas[blocks[wcursor].origin].break_block = b
-					}
-				}
-			}
-		}
-
-		assert(len(ctx.block_stack) == 0)
-	}
-
-	compute_blocks(&ctx)
+	bac.compute_blocks(&ctx.cfg_blocks, ctx)
 
 	param_counts: [RK_COUNT]i16
 	total_param_count := 0
@@ -1125,7 +929,7 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 
 	local_counts: [Local_Type]i16
 	for alloc in ctx.allocs {
-		kind, index := alloc_ty(alloc)
+		kind, index := Local_Type(alloc.kind), i16(alloc.index)
 		local_counts[kind] = max(
 			local_counts[kind],
 			index + 1 - param_counts[kind],
@@ -1158,64 +962,24 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 		emit_leb(ctx.code, u64(0))
 	}
 
-	if !ODIN_DISABLE_ASSERT {
-		for a in ctx.final_order {
-			for b in ctx.final_order {
-				if a == b do continue
-
-				a_block := ctx.blocks[a]
-				b_block := ctx.blocks[b]
-				fmt.assertf(
-					(a_block.start >= b_block.end || b_block.start >= a_block.end) ||
-					(a_block.start >= b_block.start && b_block.end >= a_block.end) ||
-					(a_block.start <= b_block.start && b_block.end <= a_block.end),
-					"%v %v",
-					a_block,
-					b_block,
-				)
-			}
-		}
-	}
-
 	// if we dont have a return then 0 will still trigger unreachable insertion
 	ret_idx := 0
-	cursor := len(ctx.final_order) - 1
 	for bb, i in ctx.schedule.bbs {
-		close_loop := false
-		for len(ctx.block_stack) > 0 &&
-		    ctx.blocks[slice.last(ctx.block_stack[:])].end == i {
-			block := ctx.blocks[pop(&ctx.block_stack)]
-			assert(!close_loop || !block.is_loop)
-			close_loop |= block.is_loop
-			if !close_loop {
-				if block.is_else {
-					emit_op(ctx.code, .Else)
-				} else {
-					emit_op(ctx.code, .End)
-				}
+		for end in bac.cfg_blocks_next_end(&ctx.cfg_blocks, i, ctx.code) {
+			TABLE := [bac.Cfg_End_Kind]Opcode {
+				.End ..= .End_Pop_Else      = .End,
+				.Else = .Else,
 			}
+			ctx.code.pos -= uint(end == .End_Pop_Else)
+			emit_op(ctx.code, TABLE[end])
 		}
 
-		if close_loop {
-			append(&ctx.block_stack, -1)
-		}
-
-		// TODO: swap the if branches and also dont emit else if we dont have to
-		for ; cursor >= 0 && ctx.blocks[ctx.final_order[cursor]].start == i;
-		    cursor -= 1 {
-			block := &ctx.blocks[ctx.final_order[cursor]]
-			block.stack_pos = len(ctx.block_stack)
-			append(&ctx.block_stack, ctx.final_order[cursor])
-			if block.is_loop {
-				emit_op(ctx.code, .Loop)
-				if block.end == i {
-					close_loop = true
-				}
-			} else if block.is_else || block.is_then {
-				continue
-			} else {
-				emit_op(ctx.code, .Block)
+		for start in bac.cfg_blocks_next_start(&ctx.cfg_blocks, i) {
+			TABLE := [bac.Cfg_Start_Kind]Opcode {
+				.Block = .Block,
+				.Loop  = .Loop,
 			}
+			emit_op(ctx.code, TABLE[start])
 			emit(ctx.code, {0x40})
 		}
 
@@ -1223,9 +987,8 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 			emit_instr(&ctx, instr, i, struct{}{})
 		}
 
-		if close_loop {
+		if bac.cfg_blocks_end_block(&ctx.cfg_blocks) {
 			emit_op(ctx.code, .End)
-			pop(&ctx.block_stack)
 		}
 
 		if get_node(ctx, bb.tail).itype == .Return {
@@ -1254,8 +1017,12 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block_idx: int, _: $T) {
 		op = NODE_TO_OP[kind][get_node(ctx, node.inps[0]).dt]
 	}
 
-	block := &ctx.blocks[ctx.bb_metas[block_idx].break_block]
-	label := len(ctx.block_stack) - block.stack_pos - 1
+	block, is_nil_block, ifified, label := bac.cfg_blocks_meta(
+		&ctx.cfg_blocks,
+		ctx,
+		node,
+		block_idx,
+	)
 
 	inp: ^bac.Node
 	if 0 < len(node.inps) {
@@ -1580,8 +1347,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block_idx: int, _: $T) {
 
 		emit_op(ctx.code, .Return)
 	case .Jump, .Always:
-		if block != &ctx.blocks[0] &&
-		   ((!block.is_then && !block.is_else) || label != 0) {
+		if !is_nil_block && ((!block.is_then && !block.is_else) || label != 0) {
 
 			emit_op(ctx.code, .Br)
 			emit_leb(ctx.code, u64(label))
@@ -1596,9 +1362,12 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block_idx: int, _: $T) {
 			emit_op(ctx.code, .I32_Wrap_I64)
 		}
 
-		ifified := ctx.bb_metas[get_node(ctx, node.inps[0]).gvn].ifified
-
-		if (loop_idx == 1) != ifified {
+		negate := loop_idx == 1
+		if loop_idx == -1 {
+			next := get_node(ctx, ctx.schedule.bbs[block_idx + 1].head)
+			negate = (next.itype == .Then) != ifified
+		}
+		if negate {
 			emit_op(ctx.code, .I32_Eqz)
 		}
 
@@ -1608,7 +1377,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block_idx: int, _: $T) {
 		} else if loop_idx != -1 {
 			emit_op(ctx.code, .Br_If)
 			emit_leb(ctx.code, u64(label))
-		} else if block != &ctx.blocks[0] {
+		} else if !is_nil_block {
 			emit_op(ctx.code, .Br_If)
 			emit_leb(ctx.code, u64(label))
 		}

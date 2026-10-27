@@ -232,8 +232,8 @@ main :: proc() -> int {
 	r := opaqe(0)
 
 	r += a & 10
-	r += a | 3 
-	r += a ~ 6 
+	r += a | 3
+	r += a ~ 6
 
 	return r
 }
@@ -748,6 +748,513 @@ choose :: proc(a: int, b: int) -> int {
 main :: proc() -> int {
 	@(static) seed := 0
 	return choose(seed, 2) + choose(seed + 1, 2)
+}
+```
+
+#### wasm if side effecting nested diamonds
+```odin
+package main
+
+step :: proc(p: ^int, digit: int) {
+	p^ = p^ * 0x10 + digit
+}
+
+choose :: proc(bits: int) -> int {
+	p := 0
+	if bits & 1 != 0 {
+		step(&p, 1)
+		if bits & 2 != 0 {
+			step(&p, 2)
+		} else {
+			step(&p, 3)
+		}
+		step(&p, 4)
+	} else {
+		step(&p, 5)
+		if bits & 4 != 0 {
+			step(&p, 6)
+		} else {
+			step(&p, 7)
+		}
+		step(&p, 8)
+	}
+	step(&p, 9)
+	return p
+}
+
+main :: proc() -> int {
+	@(static) seed := 0
+	r := 0
+	i := seed - 1
+	for {
+		i += 1
+		if i >= 8 do break
+		r = (r * 0x101 + choose(i)) & 0x7fff_ffff
+	}
+	return r
+}
+```
+
+#### wasm if sequential joins after calls
+```odin
+package main
+
+step :: proc(p: ^int, digit: int) -> int {
+	p^ = p^ * 7 + digit
+	return p^
+}
+
+choose :: proc(bits: int) -> int {
+	p := 0
+	r := 0
+	if step(&p, bits) & 1 != 0 {
+		r = step(&p, 0x11)
+	} else {
+		r = step(&p, 0x23)
+	}
+	s := step(&p, 0x35)
+	if bits & 2 != 0 {
+		r += step(&p, s & 0xf)
+	} else {
+		r -= step(&p, s & 7)
+	}
+	if bits & 4 != 0 {
+		step(&p, 0x47)
+	} else {
+		step(&p, 0x59)
+	}
+	return r + p
+}
+
+main :: proc() -> int {
+	@(static) seed := 0
+	r := 0
+	i := seed - 1
+	for {
+		i += 1
+		if i >= 8 do break
+		r = (r * 0x101 + choose(i)) & 0x7fff_ffff
+	}
+	return r
+}
+```
+
+#### wasm if nested memory effects
+```odin
+package main
+
+choose :: proc(p: ^int, bits: int) -> int {
+	p^ = 0
+	if bits & 1 != 0 {
+		p^ = p^ * 0x10 + 1
+		if bits & 2 != 0 {
+			p^ = p^ * 0x10 + 2
+		} else {
+			p^ = p^ * 0x10 + 3
+		}
+		p^ = p^ * 0x10 + 4
+	} else {
+		p^ = p^ * 0x10 + 5
+		if bits & 4 != 0 {
+			p^ = p^ * 0x10 + 6
+		} else {
+			p^ = p^ * 0x10 + 7
+		}
+		p^ = p^ * 0x10 + 8
+	}
+	if bits & 8 != 0 {
+		p^ = p^ * 0x10 + 9
+	} else {
+		p^ = p^ * 0x10 + 0xa
+	}
+	return p^
+}
+
+main :: proc() -> int {
+	@(static) seed := 0
+	p := 0
+	r := 0
+	i := seed - 1
+	for {
+		i += 1
+		if i >= 0x10 do break
+		r = (r * 0x101 + choose(&p, i)) & 0x7fff_ffff
+	}
+	return r + p
+}
+```
+
+#### wasm if guarded division stays conditional
+```odin
+package main
+
+choose :: proc(divisor: int, flag: int) -> int {
+	r := 0
+	if divisor != 0 {
+		r = 0x100 / divisor + 7
+	} else {
+		r = 0x11
+	}
+	if flag != 0 {
+		r = r * 3 + 0x100 % divisor
+	} else {
+		r = r * 5 + 0x23
+	}
+	return r
+}
+
+main :: proc() -> int {
+	@(static) seed := 0
+	r := choose(seed, seed)
+	r = r * 0x101 + choose(seed + 3, seed + 1)
+	r = r * 0x101 + choose(seed - 3, seed + 1)
+	return r
+}
+```
+
+#### wasm if empty arms and else if
+```odin
+package main
+
+step :: proc(p: ^int, digit: int) {
+	p^ = p^ * 0x10 + digit
+}
+
+choose :: proc(bits: int) -> int {
+	p := 1
+	if bits & 1 != 0 {
+	} else {
+		step(&p, 2)
+	}
+	if bits & 2 != 0 {
+		step(&p, 3)
+	} else {
+	}
+	if bits & 4 != 0 {
+		step(&p, 4)
+	} else if bits & 8 != 0 {
+		step(&p, 5)
+	} else if bits & 1 != 0 {
+		step(&p, 6)
+	} else {
+		step(&p, 7)
+	}
+	step(&p, 8)
+	return p
+}
+
+main :: proc() -> int {
+	@(static) seed := 0
+	r := 0
+	i := seed - 1
+	for {
+		i += 1
+		if i >= 0x10 do break
+		r = (r * 0x101 + choose(i)) & 0x7fff_ffff
+	}
+	return r
+}
+```
+
+#### wasm if conditional loop backedges
+```odin
+package main
+
+step :: proc(p: ^int, digit: int) {
+	p^ = p^ * 3 + digit
+}
+
+choose :: proc(bits: int, n: int) -> int {
+	p := 0
+	if bits & 1 != 0 {
+		i := 0
+		for {
+			if (i + bits) & 2 != 0 {
+				step(&p, 0x11)
+			} else {
+				step(&p, 0x23)
+			}
+			i += 1
+			if i >= n do break
+		}
+	} else {
+		i := 0
+		for {
+			if (i + bits) & 2 != 0 {
+				step(&p, 0x35)
+			} else {
+				step(&p, 0x47)
+			}
+			i += 1
+			if i >= n do break
+		}
+	}
+	step(&p, 0x59)
+	return p
+}
+
+main :: proc() -> int {
+	@(static) seed := 0
+	r := 0
+	i := seed - 1
+	for {
+		i += 1
+		if i >= 4 do break
+		n := -1
+		for {
+			n += 1
+			if n >= 5 do break
+			r = (r * 0x101 + choose(i, n)) & 0x7fff_ffff
+		}
+	}
+	return r
+}
+```
+
+#### wasm if shared loop exits
+```odin
+package main
+
+step :: proc(p: ^int, digit: int) {
+	p^ = (p^ * 3 + digit) & 0xffff
+}
+
+choose :: proc(bits: int) -> int {
+	p := 0
+	i := -1
+	for {
+		i += 1
+		if i >= 5 do break
+		if bits & 1 != 0 {
+			if i == 1 do continue
+			if bits & 2 != 0 {
+				step(&p, 0x11)
+				if i == 3 do break
+			} else {
+				step(&p, 0x23)
+				if i == 2 do break
+			}
+		} else {
+			if i == 2 do continue
+			if bits & 4 != 0 {
+				step(&p, 0x35)
+				if i == 3 do break
+			} else {
+				step(&p, 0x47)
+				if i == 4 do break
+			}
+		}
+		step(&p, 0x59)
+	}
+	step(&p, 0x6b)
+	return p
+}
+
+main :: proc() -> int {
+	@(static) seed := 0
+	r := 0
+	i := seed - 1
+	for {
+		i += 1
+		if i >= 8 do break
+		r = (r * 0x101 + choose(i)) & 0x7fff_ffff
+	}
+	return r
+}
+```
+
+#### wasm if switch joins
+```odin
+package main
+
+step :: proc(p: ^int, digit: int) {
+	p^ = p^ * 0x10 + digit
+}
+
+choose :: proc(bits: int) -> int {
+	p := 0
+	if bits & 1 != 0 {
+		switch bits & 6 {
+		case 0:
+			step(&p, 1)
+		case 2:
+			step(&p, 2)
+		case:
+			step(&p, 3)
+		}
+		step(&p, 4)
+	} else {
+		step(&p, 5)
+		switch bits & 6 {
+		case 0:
+			step(&p, 6)
+		case 4:
+			step(&p, 7)
+		case:
+			step(&p, 8)
+		}
+	}
+	if bits & 8 != 0 {
+		step(&p, 9)
+	} else {
+		step(&p, 0xa)
+	}
+	return p
+}
+
+main :: proc() -> int {
+	@(static) seed := 0
+	r := 0
+	i := seed - 1
+	for {
+		i += 1
+		if i >= 0x10 do break
+		r = (r * 0x101 + choose(i)) & 0x7fff_ffff
+	}
+	return r
+}
+```
+
+#### wasm if loop carried parallel values
+```odin
+package main
+
+step :: proc(p: ^int, digit: int) {
+	p^ = (p^ * 3 + digit) & 0xffff
+}
+
+choose :: proc(bits: int) -> int {
+	p := 0
+	a, b, c := 1, 3, 7
+	x: i32 = 0x11
+	y: f64 = 0x23
+	i := -1
+	for {
+		i += 1
+		if i >= 5 do break
+		if (bits + i) & 1 != 0 {
+			a, b, c = b, c, a
+			x += i32(a)
+			y += f64(b)
+			step(&p, a)
+		} else {
+			a, b, c = c, a, b
+			x -= i32(b)
+			y -= f64(c)
+			step(&p, c)
+		}
+		if (bits + i) & 2 != 0 {
+			step(&p, int(x))
+		} else {
+			step(&p, int(y))
+		}
+	}
+	return p + a * 0x100 + b * 0x10 + c + int(x) + int(y)
+}
+
+main :: proc() -> int {
+	@(static) seed := 0
+	r := 0
+	i := seed - 1
+	for {
+		i += 1
+		if i >= 4 do break
+		r = (r * 0x101 + choose(i)) & 0x7fff_ffff
+	}
+	return r
+}
+```
+
+#### wasm if returns inside loop arms
+```odin
+package main
+
+step :: proc(p: ^int, digit: int) {
+	p^ = p^ * 3 + digit
+}
+
+choose :: proc(bits: int, limit: int) -> int {
+	p := 0
+	if bits & 1 != 0 {
+		i := -1
+		for {
+			i += 1
+			if i >= 4 do break
+			if i == limit do return p + 0x100
+			if (bits + i) & 2 != 0 {
+				step(&p, 0x11)
+			} else {
+				step(&p, 0x23)
+			}
+		}
+		step(&p, 0x35)
+	} else {
+		i := -1
+		for {
+			i += 1
+			if i >= 4 do break
+			if i == limit do return p + 0x200
+			if (bits + i) & 2 != 0 {
+				step(&p, 0x47)
+			} else {
+				step(&p, 0x59)
+			}
+		}
+		step(&p, 0x6b)
+	}
+	step(&p, 0x7d)
+	return p
+}
+
+main :: proc() -> int {
+	@(static) seed := 0
+	r := 0
+	i := seed - 1
+	for {
+		i += 1
+		if i >= 4 do break
+		limit := -1
+		for {
+			limit += 1
+			if limit >= 5 do break
+			r = (r * 0x101 + choose(i, limit)) & 0x7fff_ffff
+		}
+	}
+	return r
+}
+```
+
+#### wasm if continue opposite early return
+```odin
+package main
+
+choose :: proc(p: ^int, bits: int) -> int {
+	p^ = 0
+	i := -1
+	for {
+		i += 1
+		if i >= 2 do break
+		if (bits + p^) & 3 != 1 {
+			if (bits + p^) & 3 == 0 do continue
+		} else {
+			if (bits + p^) & 0xe == 0 do return p^
+		}
+		p^ = (p^ * 3 + 0x43) & 0xffff
+	}
+	return p^
+}
+
+main :: proc() -> int {
+	@(static) seed := 0
+	p := 0
+	r := 0
+	i := seed - 1
+	for {
+		i += 1
+		if i >= 0x10 do break
+		r = (r * 0x101 + choose(&p, i)) & 0x7fff_ffff
+	}
+	return r + p
 }
 ```
 

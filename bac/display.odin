@@ -201,7 +201,7 @@ when !fmt.NO_FMT {
 		scheduled := false,
 	) {
 		if get_node(prc, id).rtype == DEAD_NODE_KIND {
-			fmt.wprintln(w, "<dead>")
+			fmt.wprint(w, "<dead>")
 			return
 		}
 

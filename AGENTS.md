@@ -78,3 +78,6 @@ is happening.
 
 When hardcoding instructions encodings, it is adamant that you add a comment
 with the parametrized assembly to make it clear what is being encoded.
+
+When you declare local functions put them at the end of the scope or after they
+are used.

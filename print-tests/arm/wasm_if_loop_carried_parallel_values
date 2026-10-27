@@ -1,0 +1,925 @@
+=========== OPT LEVEL: none-quick ===========
+step:
+    ldr x2, [x0]
+    movz x3, #3
+    madd x2, x2, x3, xzr
+    add x1, x2, x1
+    movz x2, #65535
+    and x1, x1, x2
+    str x1, [x0]
+    ret
+choose:
+    sub sp, sp, #128
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    str x24, [xzr, #40]
+    str x25, [xzr, #48]
+    str x26, [xzr, #56]
+    str x27, [xzr, #64]
+    str x28, [xzr, #72]
+    stp x29, x30, [xzr, #80]
+    mov x19, x0
+    movz x20, #0
+    movz x21, #2
+    movz x22, #5
+    add x0, sp, #112
+    str x20, [x0]
+    movz x23, #17
+    movn x24, #0
+    adr x0, 0xf4c
+    ldr d8, [x0]
+    movz x2, #7
+    movz x3, #3
+    movz x4, #1
+2:
+    mov x25, x4
+    mov x26, x3
+    mov x27, x2
+    movz x0, #1
+    add x24, x24, x0
+    cmp x24, x22
+    b.ge 0x12c
+    add x28, x19, x24
+    movz x0, #1
+    and x0, x0, x28
+    cmp x0, x20
+    b.ne 0xc0
+    add x0, sp, #112
+    mov x1, x26
+    bl 0xffffffe0
+    scvtf d0, x26
+    fsub d8, d8, d0
+    mov w0, w25
+    sub w23, w23, w0
+    mov x5, x27
+    mov x6, x26
+    mov x7, x25
+    b 0xe8
+3:
+    add x0, sp, #112
+    mov x1, x26
+    bl 0xffffffe0
+    scvtf d0, x27
+    fadd d8, d0, d8
+    mov w0, w26
+    add w23, w0, w23
+    mov x7, x27
+    mov x5, x26
+    mov x6, x25
+4:
+    mov x29, x6
+    str x5, [xzr, #96]
+    str x7, [xzr, #104]
+    and x0, x21, x28
+    cmp x0, x20
+    b.ne 0x110
+    fcvtzs x1, d8
+    add x0, sp, #112
+    bl 0xffffffe0
+    b 0x11c
+5:
+    sxtw x1, w23
+    add x0, sp, #112
+    bl 0xffffffe0
+6:
+    ldr x3, [xzr, #104]
+    ldr x4, [xzr, #96]
+    mov x2, x29
+    b 0x64
+7:
+    add x0, sp, #112
+    ldr x0, [x0]
+    movz x1, #256
+    madd x1, x1, x25, xzr
+    add x0, x0, x1
+    movz x1, #16
+    madd x1, x1, x26, xzr
+    add x0, x0, x1
+    add x0, x0, x27
+    sxtw x1, w23
+    add x0, x0, x1
+    fcvtzs x1, d8
+    add x0, x0, x1
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldr x24, [xzr, #40]
+    ldr x25, [xzr, #48]
+    ldr x26, [xzr, #56]
+    ldr x27, [xzr, #64]
+    ldr x28, [xzr, #72]
+    ldp x29, x30, [xzr, #80]
+    add sp, sp, #128
+    ret
+main:
+    sub sp, sp, #64
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    str x24, [xzr, #40]
+    stp x29, x30, [xzr, #48]
+    movz x19, #1
+    adr x0, 0xdb0
+    ldr x0, [x0]
+    sub x0, x0, x19
+    movz x20, #4
+    movz x21, #65535
+    movk x21, #32767, lsl #16
+    movz x22, #257
+    mov x1, x0
+    movz x2, #0
+9:
+    mov x23, x2
+    mov x0, x1
+    add x0, x0, x19
+    mov x24, x0
+    cmp x24, x20
+    b.ge 0x80
+    mov x0, x24
+    bl 0xfffffe6c
+    madd x3, x22, x23, xzr
+    add x0, x3, x0
+    and x0, x0, x21
+    mov x1, x24
+    mov x2, x0
+    b 0x48
+10:
+    mov x0, x23
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldr x24, [xzr, #40]
+    ldp x29, x30, [xzr, #48]
+    add sp, sp, #64
+    ret
+=========== OPT LEVEL: none ===========
+step:
+    ldr x3, [x0]
+    movz x2, #3
+    madd x2, x3, x2, xzr
+    add x2, x2, x1
+    movz x1, #65535
+    and x1, x2, x1
+    str x1, [x0]
+    ret
+choose:
+    sub sp, sp, #112
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    str x24, [xzr, #40]
+    str x25, [xzr, #48]
+    str x26, [xzr, #56]
+    str x27, [xzr, #64]
+    str x28, [xzr, #72]
+    stp x29, x30, [xzr, #80]
+    mov x29, x0
+    movz x23, #0
+    movz x21, #2
+    movz x20, #5
+    add x0, sp, #96
+    str x23, [x0]
+    movz x19, #17
+    movn x22, #0
+    adr x0, 0xf68
+    ldr d8, [x0]
+    movz x0, #7
+    movz x2, #3
+    movz x1, #1
+2:
+    mov x28, x1
+    mov x25, x2
+    mov x26, x0
+    movz x0, #1
+    add x22, x22, x0
+    cmp x22, x20
+    b.ge 0x118
+    add x24, x29, x22
+    movz x0, #1
+    and x0, x0, x24
+    cmp x0, x23
+    b.ne 0xb8
+    add x0, sp, #96
+    mov x1, x25
+    bl 0xffffffe0
+    scvtf d0, x25
+    fsub d8, d8, d0
+    mov w0, w28
+    sub w19, w19, w0
+    mov x27, x28
+    b 0xe0
+3:
+    add x0, sp, #96
+    mov x1, x25
+    bl 0xffffffe0
+    scvtf d0, x26
+    fadd d8, d0, d8
+    mov w0, w25
+    add w19, w0, w19
+    mov x27, x26
+    mov x26, x25
+    mov x25, x28
+4:
+    and x0, x21, x24
+    cmp x0, x23
+    b.ne 0xfc
+    fcvtzs x1, d8
+    add x0, sp, #96
+    bl 0xffffffe0
+    b 0x108
+5:
+    sxtw x1, w19
+    add x0, sp, #96
+    bl 0xffffffe0
+6:
+    mov x2, x27
+    mov x1, x26
+    mov x0, x25
+    b 0x64
+7:
+    add x0, sp, #96
+    ldr x2, [x0]
+    movz x1, #256
+    madd x0, x1, x28, xzr
+    add x2, x2, x0
+    movz x1, #16
+    madd x0, x1, x25, xzr
+    add x1, x2, x0
+    add x1, x1, x26
+    sxtw x0, w19
+    add x1, x1, x0
+    fcvtzs x0, d8
+    add x0, x1, x0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldr x24, [xzr, #40]
+    ldr x25, [xzr, #48]
+    ldr x26, [xzr, #56]
+    ldr x27, [xzr, #64]
+    ldr x28, [xzr, #72]
+    ldp x29, x30, [xzr, #80]
+    add sp, sp, #112
+    ret
+main:
+    sub sp, sp, #64
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    str x24, [xzr, #40]
+    stp x29, x30, [xzr, #48]
+    movz x22, #1
+    adr x0, 0xde0
+    ldr x0, [x0]
+    sub x0, x0, x22
+    movz x20, #4
+    movz x19, #65535
+    movk x19, #32767, lsl #16
+    movz x21, #257
+    movz x23, #0
+9:
+    add x0, x0, x22
+    mov x24, x0
+    cmp x24, x20
+    b.ge 0x70
+    mov x0, x24
+    bl 0xfffffe80
+    madd x1, x21, x23, xzr
+    add x0, x1, x0
+    and x23, x0, x19
+    mov x0, x24
+    b 0x44
+10:
+    mov x0, x23
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldr x24, [xzr, #40]
+    ldp x29, x30, [xzr, #48]
+    add sp, sp, #64
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+step:
+    ldr x2, [x0]
+    movz x3, #3
+    madd x2, x2, x3, xzr
+    add x1, x2, x1
+    movz x2, #65535
+    and x1, x1, x2
+    str x1, [x0]
+    ret
+choose:
+    sub sp, sp, #128
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    str x24, [xzr, #40]
+    str x25, [xzr, #48]
+    str x26, [xzr, #56]
+    str x27, [xzr, #64]
+    str x28, [xzr, #72]
+    stp x29, x30, [xzr, #80]
+    mov x19, x0
+    movz x20, #0
+    movz x21, #2
+    movz x22, #5
+    add x0, sp, #112
+    str x20, [x0]
+    movz x23, #17
+    movn x24, #0
+    adr x0, 0xf4c
+    ldr d8, [x0]
+    movz x2, #7
+    movz x3, #3
+    movz x4, #1
+2:
+    mov x25, x4
+    mov x26, x3
+    mov x27, x2
+    movz x0, #1
+    add x24, x24, x0
+    cmp x24, x22
+    b.ge 0x12c
+    add x28, x19, x24
+    movz x0, #1
+    and x0, x0, x28
+    cmp x0, x20
+    b.ne 0xc0
+    add x0, sp, #112
+    mov x1, x26
+    bl 0xffffffe0
+    scvtf d0, x26
+    fsub d8, d8, d0
+    mov w0, w25
+    sub w23, w23, w0
+    mov x5, x27
+    mov x6, x26
+    mov x7, x25
+    b 0xe8
+3:
+    add x0, sp, #112
+    mov x1, x26
+    bl 0xffffffe0
+    scvtf d0, x27
+    fadd d8, d0, d8
+    mov w0, w26
+    add w23, w0, w23
+    mov x7, x27
+    mov x5, x26
+    mov x6, x25
+4:
+    mov x29, x6
+    str x5, [xzr, #96]
+    str x7, [xzr, #104]
+    and x0, x21, x28
+    cmp x0, x20
+    b.ne 0x110
+    fcvtzs x1, d8
+    add x0, sp, #112
+    bl 0xffffffe0
+    b 0x11c
+5:
+    sxtw x1, w23
+    add x0, sp, #112
+    bl 0xffffffe0
+6:
+    ldr x3, [xzr, #104]
+    ldr x4, [xzr, #96]
+    mov x2, x29
+    b 0x64
+7:
+    add x0, sp, #112
+    ldr x0, [x0]
+    movz x1, #256
+    madd x1, x1, x25, xzr
+    add x0, x0, x1
+    movz x1, #16
+    madd x1, x1, x26, xzr
+    add x0, x0, x1
+    add x0, x0, x27
+    sxtw x1, w23
+    add x0, x0, x1
+    fcvtzs x1, d8
+    add x0, x0, x1
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldr x24, [xzr, #40]
+    ldr x25, [xzr, #48]
+    ldr x26, [xzr, #56]
+    ldr x27, [xzr, #64]
+    ldr x28, [xzr, #72]
+    ldp x29, x30, [xzr, #80]
+    add sp, sp, #128
+    ret
+main:
+    sub sp, sp, #64
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    str x24, [xzr, #40]
+    stp x29, x30, [xzr, #48]
+    movz x19, #1
+    adr x0, 0xdb0
+    ldr x0, [x0]
+    sub x0, x0, x19
+    movz x20, #4
+    movz x21, #65535
+    movk x21, #32767, lsl #16
+    movz x22, #257
+    mov x1, x0
+    movz x2, #0
+9:
+    mov x23, x2
+    mov x0, x1
+    add x0, x0, x19
+    mov x24, x0
+    cmp x24, x20
+    b.ge 0x80
+    mov x0, x24
+    bl 0xfffffe6c
+    madd x3, x22, x23, xzr
+    add x0, x3, x0
+    and x0, x0, x21
+    mov x1, x24
+    mov x2, x0
+    b 0x48
+10:
+    mov x0, x23
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldr x24, [xzr, #40]
+    ldp x29, x30, [xzr, #48]
+    add sp, sp, #64
+    ret
+=========== OPT LEVEL: moderate ===========
+step:
+    ldr x3, [x0]
+    movz x2, #3
+    madd x2, x3, x2, xzr
+    add x2, x2, x1
+    movz x1, #65535
+    and x1, x2, x1
+    str x1, [x0]
+    ret
+choose:
+    sub sp, sp, #112
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    str x24, [xzr, #40]
+    str x25, [xzr, #48]
+    str x26, [xzr, #56]
+    str x27, [xzr, #64]
+    str x28, [xzr, #72]
+    stp x29, x30, [xzr, #80]
+    mov x29, x0
+    movz x23, #0
+    movz x21, #2
+    movz x20, #5
+    add x0, sp, #96
+    str x23, [x0]
+    movz x19, #17
+    movn x22, #0
+    adr x0, 0xf68
+    ldr d8, [x0]
+    movz x0, #7
+    movz x2, #3
+    movz x1, #1
+2:
+    mov x28, x1
+    mov x25, x2
+    mov x26, x0
+    movz x0, #1
+    add x22, x22, x0
+    cmp x22, x20
+    b.ge 0x118
+    add x24, x29, x22
+    movz x0, #1
+    and x0, x0, x24
+    cmp x0, x23
+    b.ne 0xb8
+    add x0, sp, #96
+    mov x1, x25
+    bl 0xffffffe0
+    scvtf d0, x25
+    fsub d8, d8, d0
+    mov w0, w28
+    sub w19, w19, w0
+    mov x27, x28
+    b 0xe0
+3:
+    add x0, sp, #96
+    mov x1, x25
+    bl 0xffffffe0
+    scvtf d0, x26
+    fadd d8, d0, d8
+    mov w0, w25
+    add w19, w0, w19
+    mov x27, x26
+    mov x26, x25
+    mov x25, x28
+4:
+    and x0, x21, x24
+    cmp x0, x23
+    b.ne 0xfc
+    fcvtzs x1, d8
+    add x0, sp, #96
+    bl 0xffffffe0
+    b 0x108
+5:
+    sxtw x1, w19
+    add x0, sp, #96
+    bl 0xffffffe0
+6:
+    mov x2, x27
+    mov x1, x26
+    mov x0, x25
+    b 0x64
+7:
+    add x0, sp, #96
+    ldr x2, [x0]
+    movz x1, #256
+    madd x0, x1, x28, xzr
+    add x2, x2, x0
+    movz x1, #16
+    madd x0, x1, x25, xzr
+    add x1, x2, x0
+    add x1, x1, x26
+    sxtw x0, w19
+    add x1, x1, x0
+    fcvtzs x0, d8
+    add x0, x1, x0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldr x24, [xzr, #40]
+    ldr x25, [xzr, #48]
+    ldr x26, [xzr, #56]
+    ldr x27, [xzr, #64]
+    ldr x28, [xzr, #72]
+    ldp x29, x30, [xzr, #80]
+    add sp, sp, #112
+    ret
+main:
+    sub sp, sp, #64
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    str x24, [xzr, #40]
+    stp x29, x30, [xzr, #48]
+    movz x22, #1
+    adr x0, 0xde0
+    ldr x0, [x0]
+    sub x0, x0, x22
+    movz x20, #4
+    movz x19, #65535
+    movk x19, #32767, lsl #16
+    movz x21, #257
+    movz x23, #0
+9:
+    add x0, x0, x22
+    mov x24, x0
+    cmp x24, x20
+    b.ge 0x70
+    mov x0, x24
+    bl 0xfffffe80
+    madd x1, x21, x23, xzr
+    add x0, x1, x0
+    and x23, x0, x19
+    mov x0, x24
+    b 0x44
+10:
+    mov x0, x23
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldr x24, [xzr, #40]
+    ldp x29, x30, [xzr, #48]
+    add sp, sp, #64
+    ret
+=========== OPT LEVEL: all ===========
+step:
+    ldr x3, [x0]
+    movz x2, #3
+    madd x2, x3, x2, xzr
+    add x2, x2, x1
+    movz x1, #65535
+    and x1, x2, x1
+    str x1, [x0]
+    ret
+choose:
+    sub sp, sp, #128
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    str x24, [xzr, #40]
+    str x25, [xzr, #48]
+    str x26, [xzr, #56]
+    str x27, [xzr, #64]
+    str x28, [xzr, #72]
+    stp x29, x30, [xzr, #80]
+    str x0, [xzr, #104]
+    movz x23, #0
+    movz x22, #2
+    movz x21, #5
+    add x0, sp, #112
+    str x23, [x0]
+    movz x19, #17
+    adr x0, 0xf68
+    ldr d8, [x0]
+    movz x0, #7
+    movz x2, #1
+    movz x1, #3
+    movn x24, #0
+2:
+    mov x26, x1
+    mov x29, x2
+    mov x28, x0
+    movz x0, #1
+    add x20, x0, x24
+    ldr x0, [xzr, #104]
+    add x25, x0, x20
+    movz x0, #1
+    and x0, x0, x25
+    cmp x0, x23
+    b.ne 0xb8
+    add x0, sp, #112
+    mov x1, x26
+    bl 0xffffffe0
+    scvtf d0, x26
+    fsub d8, d8, d0
+    mov w0, w29
+    sub w19, w19, w0
+    str x29, [xzr, #96]
+    mov x29, x26
+    b 0xdc
+3:
+    add x0, sp, #112
+    mov x1, x26
+    bl 0xffffffe0
+    scvtf d0, x28
+    fadd d8, d0, d8
+    mov w0, w26
+    add w19, w0, w19
+    str x28, [xzr, #96]
+    mov x28, x26
+4:
+    sxtw x0, w19
+    mov x27, x0
+    fcvtzs x0, d8
+    mov x26, x0
+    and x0, x25, x22
+    cmp x0, x23
+    b.ne 0x108
+    add x0, sp, #112
+    mov x1, x26
+    bl 0xffffffe0
+    b 0x114
+5:
+    add x0, sp, #112
+    mov x1, x27
+    bl 0xffffffe0
+6:
+    add x0, sp, #112
+    ldr x3, [x0]
+    add x0, x24, x22
+    cmp x0, x21
+    mov x2, x28
+    ldr x1, [xzr, #96]
+    mov x0, x29
+    mov x24, x20
+    b.lt 0x64
+    movz x1, #256
+    madd x0, x1, x28, xzr
+    add x2, x3, x0
+    movz x1, #16
+    ldr x0, [xzr, #96]
+    madd x0, x1, x0, xzr
+    add x1, x2, x0
+    add x1, x1, x29
+    add x1, x1, x27
+    add x0, x1, x26
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldr x24, [xzr, #40]
+    ldr x25, [xzr, #48]
+    ldr x26, [xzr, #56]
+    ldr x27, [xzr, #64]
+    ldr x28, [xzr, #72]
+    ldp x29, x30, [xzr, #80]
+    add sp, sp, #128
+    ret
+main:
+    sub sp, sp, #80
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    str x24, [xzr, #40]
+    str x25, [xzr, #48]
+    str x26, [xzr, #56]
+    stp x29, x30, [xzr, #64]
+    movz x23, #1
+    movz x22, #4
+    adr x0, 0xdcc
+    ldr x0, [x0]
+    sub x2, x0, x23
+    add x0, x2, x23
+    cmp x0, x22
+    b.ge 0x98
+    movz x21, #65535
+    movk x21, #32767, lsl #16
+    movz x20, #2
+    movz x19, #257
+    movz x1, #0
+8:
+    mov x26, x1
+    mov x25, x2
+    add x0, x25, x23
+    mov x24, x0
+    mov x0, x24
+    bl 0xfffffe6c
+    madd x1, x26, x19, xzr
+    add x0, x1, x0
+    and x0, x0, x21
+    add x1, x20, x25
+    cmp x1, x22
+    mov x2, x24
+    mov x1, x0
+    b.lt 0x5c
+    b 0x9c
+9:
+    movz x0, #0
+10:
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldr x24, [xzr, #40]
+    ldr x25, [xzr, #48]
+    ldr x26, [xzr, #56]
+    ldp x29, x30, [xzr, #64]
+    add sp, sp, #80
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    sub sp, sp, #64
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    str x24, [xzr, #40]
+    str x25, [xzr, #48]
+    str x26, [xzr, #56]
+    movz x14, #4
+    movz x13, #0
+    movz x12, #1
+    adr x0, 0xf80
+    ldr x0, [x0]
+    sub x2, x0, x12
+    add x0, x2, x12
+    cmp x0, x14
+    b.ge 3
+    movz x11, #65535
+    movk x11, #32767, lsl #16
+    adr x0, 0xf88
+    ldr d3, [x0]
+    movz x10, #2
+    movz x9, #3
+    movz x8, #257
+    movz x7, #5
+    movz x6, #65535
+    movz x5, #256
+    movz x4, #16
+    movz x1, #0
+1:
+    add x3, x2, x12
+    movz x19, #1
+    movz x18, #3
+    movz x25, #0
+    movn x21, #0
+    movz x17, #7
+    orr v0.16b, v3.16b, v3.16b
+    movz x23, #17
+2:
+    mov x16, x21
+    mov x20, x25
+    add x21, x16, x12
+    add x22, x3, x21
+    and x0, x22, x12
+    cmp x0, x13
+    cset w25, ne
+    scvtf d1, x17
+    fadd d2, d1, d0
+    mov w0, w18
+    add w15, w0, w23
+    mov w0, w19
+    sub w23, w23, w0
+    scvtf d1, x18
+    fsub d0, d0, d1
+    cmp w25, #0
+    fcsel d0, d2, d0, ne
+    fcvtzs x0, d0
+    madd x20, x20, x9, xzr
+    add x20, x20, x18
+    and x20, x20, x6
+    madd x24, x20, x9, xzr
+    cmp w25, #0
+    csel w23, w15, w23, ne
+    sxtw x15, w23
+    add x20, x24, x15
+    and x20, x20, x6
+    add x24, x24, x0
+    and x24, x24, x6
+    and x22, x22, x10
+    cmp x22, x13
+    cset w22, ne
+    add x16, x16, x10
+    cmp x16, x7
+    cset w26, ge
+    cmp w22, #0
+    csel x22, x20, x24, ne
+    cmp w25, #0
+    csel x24, x18, x17, ne
+    cmp w25, #0
+    csel x20, x17, x19, ne
+    cmp w25, #0
+    csel x16, x19, x18, ne
+    mov x25, x22
+    mov x19, x24
+    mov x18, x20
+    mov x17, x16
+    cmp w26, #0
+    b.eq 2
+    madd x18, x1, x8, xzr
+    madd x1, x5, x24, xzr
+    add x17, x1, x22
+    madd x1, x4, x20, xzr
+    add x1, x17, x1
+    add x1, x1, x16
+    add x1, x1, x15
+    add x0, x1, x0
+    add x0, x18, x0
+    and x0, x0, x11
+    add x1, x2, x10
+    cmp x1, x14
+    mov x1, x0
+    mov x2, x3
+    b.lt 1
+    b 4
+3:
+    movz x0, #0
+4:
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldr x24, [xzr, #40]
+    ldr x25, [xzr, #48]
+    ldr x26, [xzr, #56]
+    add sp, sp, #64
+    ret

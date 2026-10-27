@@ -737,6 +737,8 @@ loopopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 			if bac.is_cfg(ctx, inp) {
 				vl := walk_use_blocks(ctx, inp, guard, out, nphy, to_loop)
 				append(&edges, vl)
+			} else {
+				break
 			}
 		}
 

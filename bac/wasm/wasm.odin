@@ -44,7 +44,7 @@ WASM_SYSTEMV_CC :: 0
 
 @(tag = "api", rodata, export, link_name = "bac_wasm_OPT_HINTS")
 OPT_HINTS := bac.Opt_Hints {
-	select_types = ~{.Mem},
+	select_types = ~{.Mem, .Void},
 }
 
 @(tag = "api", rodata, export, link_name = "bac_wasm_CC_TABLE")
@@ -961,14 +961,22 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 
 			ifify: if hnode.itype == .Region && len(hnode.inps) == 2 {
 				the_if: int
-				for inp in hnode.inps {
+				for inp, j in hnode.inps {
 					ohnode := expand_node(ctx, expand_node(ctx, inp).inps[0])
-					if the_if == 0 do the_if = ctx.bb_metas[ohnode.gvn].parent_if
+					if j == 0 do the_if = ctx.bb_metas[ohnode.gvn].parent_if
 					if ctx.bb_metas[ohnode.gvn].parent_if != the_if {
 						break ifify
 					}
 				}
+				if the_if == 0 do break ifify
 				the_if -= 1
+
+				// Incoming edges can force block nesting to start before the actual if.
+				for block in blocks[1:ctx.bb_metas[the_if].block] {
+					if block.start < the_if && the_if < block.end && block.end <= i {
+						break ifify
+					}
+				}
 
 				rel_blocks := blocks[ctx.bb_metas[the_if].block:]
 

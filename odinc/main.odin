@@ -156,6 +156,9 @@ main :: proc() {
 	ctx.ralloc_mode = level.ralloc_mode
 	ctx.errors = os.to_writer(os.stderr)
 
+	bac.current_prc = &ctx
+	defer bac.current_prc = nil
+
 	times: struct {
 		load:    time.Duration,
 		check:   time.Duration,

@@ -7,14 +7,18 @@ main:
     mov.q [rsp], rax
     lea rdi, [rsp]
     call opaque_ptr
-    mov.q rbx, [rax]
+    mov.q rax, [rax]
+    mov rbx, rax
     mov.q [rsp], 0x63
     mov rdi, 1
     call opaque
-    mov rcx, rax
+    cmp rax, 1
+    je 1
     xor eax, eax
-    cmp rcx, 1
-    cmove rax, rbx
+    jmp 2
+1:
+    mov rax, rbx
+2:
     add rsp, 0x10
     pop rbx
     ret
@@ -37,10 +41,12 @@ main:
     mov.q [rsp], 0x63
     mov rdi, 1
     call opaque
-    mov rcx, rax
-    xor eax, eax
-    cmp rcx, 1
-    cmove rax, rbx
+    cmp rax, 1
+    je 1
+    xor ebx, ebx
+    jmp 1
+1:
+    mov rax, rbx
     add rsp, 0x10
     pop rbx
     ret
@@ -59,14 +65,18 @@ main:
     mov.q [rsp], rax
     lea rdi, [rsp]
     call opaque_ptr
-    mov.q rbx, [rax]
+    mov.q rax, [rax]
+    mov rbx, rax
     mov.q [rsp], 0x63
     mov rdi, 1
     call opaque
-    mov rcx, rax
+    cmp rax, 1
+    je 1
     xor eax, eax
-    cmp rcx, 1
-    cmove rax, rbx
+    jmp 2
+1:
+    mov rax, rbx
+2:
     add rsp, 0x10
     pop rbx
     ret
@@ -89,10 +99,12 @@ main:
     mov.q [rsp], 0x63
     mov rdi, 1
     call opaque
-    mov rcx, rax
-    xor eax, eax
-    cmp rcx, 1
-    cmove rax, rbx
+    cmp rax, 1
+    je 1
+    xor ebx, ebx
+    jmp 1
+1:
+    mov rax, rbx
     add rsp, 0x10
     pop rbx
     ret
@@ -115,10 +127,12 @@ main:
     mov.q [rsp], 0x63
     mov rdi, 1
     call opaque
-    mov rcx, rax
-    xor eax, eax
-    cmp rcx, 1
-    cmove rax, rbx
+    cmp rax, 1
+    je 1
+    xor ebx, ebx
+    jmp 1
+1:
+    mov rax, rbx
     add rsp, 0x10
     pop rbx
     ret

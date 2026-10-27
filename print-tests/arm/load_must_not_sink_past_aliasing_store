@@ -9,16 +9,21 @@ main:
     str x0, [x1]
     add x0, sp, #24
     bl opaque_ptr
-    ldr x19, [x0]
+    ldr x0, [x0]
+    mov x19, x0
     movz x0, #99
     add x1, sp, #24
     str x0, [x1]
     movz x0, #1
     bl opaque
-    movz x1, #0
-    movz x2, #1
-    cmp x0, x2
-    csel x0, x19, x1, eq
+    movz x1, #1
+    cmp x0, x1
+    b.eq 1
+    movz x0, #0
+    b 2
+1:
+    mov x0, x19
+2:
     ldr x19, [xzr]
     ldp x29, x30, [xzr, #8]
     add sp, sp, #32
@@ -44,10 +49,13 @@ main:
     str x1, [x0]
     movz x0, #1
     bl opaque
-    movz x2, #0
     movz x1, #1
     cmp x0, x1
-    csel x0, x19, x2, eq
+    b.eq 1
+    movz x19, #0
+    b 1
+1:
+    mov x0, x19
     ldr x19, [xzr]
     ldp x29, x30, [xzr, #8]
     add sp, sp, #32
@@ -67,16 +75,21 @@ main:
     str x0, [x1]
     add x0, sp, #24
     bl opaque_ptr
-    ldr x19, [x0]
+    ldr x0, [x0]
+    mov x19, x0
     movz x0, #99
     add x1, sp, #24
     str x0, [x1]
     movz x0, #1
     bl opaque
-    movz x1, #0
-    movz x2, #1
-    cmp x0, x2
-    csel x0, x19, x1, eq
+    movz x1, #1
+    cmp x0, x1
+    b.eq 1
+    movz x0, #0
+    b 2
+1:
+    mov x0, x19
+2:
     ldr x19, [xzr]
     ldp x29, x30, [xzr, #8]
     add sp, sp, #32
@@ -102,10 +115,13 @@ main:
     str x1, [x0]
     movz x0, #1
     bl opaque
-    movz x2, #0
     movz x1, #1
     cmp x0, x1
-    csel x0, x19, x2, eq
+    b.eq 1
+    movz x19, #0
+    b 1
+1:
+    mov x0, x19
     ldr x19, [xzr]
     ldp x29, x30, [xzr, #8]
     add sp, sp, #32
@@ -131,10 +147,13 @@ main:
     str x1, [x0]
     movz x0, #1
     bl opaque
-    movz x2, #0
     movz x1, #1
     cmp x0, x1
-    csel x0, x19, x2, eq
+    b.eq 1
+    movz x19, #0
+    b 1
+1:
+    mov x0, x19
     ldr x19, [xzr]
     ldp x29, x30, [xzr, #8]
     add sp, sp, #32

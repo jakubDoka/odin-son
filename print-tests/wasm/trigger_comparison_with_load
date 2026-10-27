@@ -76,44 +76,60 @@
     end
   )
   (func $imm_cmps (type 1) (param i64) (result i64)
-    (local i64)
+    (local i64 i64 i64)
     local.get 0
     i64.load align=1
-    local.set 0
+    local.set 1
+    i64.const 0
+    local.set 2
     i64.const 1
     i64.const 0
-    local.get 0
+    local.get 1
     i64.const 0
     i64.eq
     select
-    local.tee 1
-    i64.const 2
-    i64.add
+    local.set 3
     local.get 1
-    local.get 0
     i64.const 0
     i64.ne
-    select
-    local.tee 1
+    i32.eqz
+    if
+    else
+      local.get 3
+      i64.const 2
+      i64.add
+      local.set 3
+    end
+    local.get 0
+    i64.load align=1
+    local.set 1
+    local.get 3
     i64.const 4
     i64.add
+    local.get 3
     local.get 1
-    local.get 0
     i64.const 0
     i64.le_s
     select
-    local.tee 1
-    i64.const 8
-    i64.add
+    local.set 3
     local.get 1
-    local.get 0
     i64.const 0
     i64.ge_s
-    select
-    local.tee 1
+    i32.eqz
+    if
+    else
+      local.get 3
+      i64.const 8
+      i64.add
+      local.set 3
+    end
+    local.get 0
+    i64.load align=1
+    local.set 0
+    local.get 3
     i64.const 16
     i64.add
-    local.get 1
+    local.get 3
     local.get 0
     i64.const 0
     i64.lt_s
@@ -123,51 +139,65 @@
     i64.add
     local.get 1
     local.get 0
-    i64.const 0
+    local.get 2
     i64.gt_s
     select
     return
     end
   )
   (func $cmps (type 2) (param i64 i64) (result i64)
-    (local i64)
+    (local i64 i64)
     local.get 1
     i64.load align=1
-    local.set 1
+    local.set 2
     i64.const 1
     i64.const 0
     local.get 0
-    local.get 1
+    local.get 2
     i64.eq
     select
-    local.tee 2
-    i64.const 2
-    i64.add
-    local.get 2
+    local.set 3
     local.get 0
-    local.get 1
+    local.get 2
     i64.ne
-    select
-    local.tee 2
+    i32.eqz
+    if
+    else
+      local.get 3
+      i64.const 2
+      i64.add
+      local.set 3
+    end
+    local.get 1
+    i64.load align=1
+    local.set 2
+    local.get 3
     i64.const 4
     i64.add
-    local.get 2
+    local.get 3
     local.get 0
-    local.get 1
+    local.get 2
     i64.ge_s
     select
-    local.tee 2
-    i64.const 8
-    i64.add
-    local.get 2
+    local.set 3
     local.get 0
-    local.get 1
+    local.get 2
     i64.le_s
-    select
-    local.tee 2
+    i32.eqz
+    if
+    else
+      local.get 3
+      i64.const 8
+      i64.add
+      local.set 3
+    end
+    local.get 1
+    i64.load align=1
+    local.set 1
+    local.get 3
     i64.const 16
     i64.add
-    local.get 2
+    local.get 3
     local.get 0
     local.get 1
     i64.gt_s
@@ -273,44 +303,60 @@
     end
   )
   (func $imm_cmps (type 1) (param i64) (result i64)
-    (local i64)
+    (local i64 i64 i64)
     local.get 0
     i64.load align=1
     local.set 1
+    i64.const 0
+    local.set 3
     i64.const 1
     i64.const 0
     local.get 1
     i64.const 0
     i64.eq
     select
-    local.tee 0
-    i64.const 2
-    i64.add
-    local.get 0
+    local.set 2
     local.get 1
     i64.const 0
     i64.ne
-    select
-    local.tee 0
+    i32.eqz
+    if
+    else
+      local.get 2
+      i64.const 2
+      i64.add
+      local.set 2
+    end
+    local.get 0
+    i64.load align=1
+    local.set 1
+    local.get 2
     i64.const 4
     i64.add
-    local.get 0
+    local.get 2
     local.get 1
     i64.const 0
     i64.le_s
     select
-    local.tee 0
-    i64.const 8
-    i64.add
-    local.get 0
+    local.set 2
     local.get 1
     i64.const 0
     i64.ge_s
-    select
-    local.tee 0
+    i32.eqz
+    if
+    else
+      local.get 2
+      i64.const 8
+      i64.add
+      local.set 2
+    end
+    local.get 0
+    i64.load align=1
+    local.set 1
+    local.get 2
     i64.const 16
     i64.add
-    local.get 0
+    local.get 2
     local.get 1
     i64.const 0
     i64.lt_s
@@ -320,14 +366,14 @@
     i64.add
     local.get 0
     local.get 1
-    i64.const 0
+    local.get 3
     i64.gt_s
     select
     return
     end
   )
   (func $cmps (type 2) (param i64 i64) (result i64)
-    (local i64)
+    (local i64 i64)
     local.get 1
     i64.load align=1
     local.set 2
@@ -337,34 +383,48 @@
     local.get 2
     i64.eq
     select
-    local.tee 1
-    i64.const 2
-    i64.add
-    local.get 1
+    local.set 3
     local.get 0
     local.get 2
     i64.ne
-    select
-    local.tee 1
+    i32.eqz
+    if
+    else
+      local.get 3
+      i64.const 2
+      i64.add
+      local.set 3
+    end
+    local.get 1
+    i64.load align=1
+    local.set 2
+    local.get 3
     i64.const 4
     i64.add
-    local.get 1
+    local.get 3
     local.get 0
     local.get 2
     i64.ge_s
     select
-    local.tee 1
-    i64.const 8
-    i64.add
-    local.get 1
+    local.set 3
     local.get 0
     local.get 2
     i64.le_s
-    select
-    local.tee 1
+    i32.eqz
+    if
+    else
+      local.get 3
+      i64.const 8
+      i64.add
+      local.set 3
+    end
+    local.get 1
+    i64.load align=1
+    local.set 2
+    local.get 3
     i64.const 16
     i64.add
-    local.get 1
+    local.get 3
     local.get 0
     local.get 2
     i64.gt_s
@@ -470,44 +530,60 @@
     end
   )
   (func $imm_cmps (type 1) (param i64) (result i64)
-    (local i64)
+    (local i64 i64 i64)
     local.get 0
     i64.load align=1
-    local.set 0
+    local.set 1
+    i64.const 0
+    local.set 2
     i64.const 1
     i64.const 0
-    local.get 0
+    local.get 1
     i64.const 0
     i64.eq
     select
-    local.tee 1
-    i64.const 2
-    i64.add
+    local.set 3
     local.get 1
-    local.get 0
     i64.const 0
     i64.ne
-    select
-    local.tee 1
+    i32.eqz
+    if
+    else
+      local.get 3
+      i64.const 2
+      i64.add
+      local.set 3
+    end
+    local.get 0
+    i64.load align=1
+    local.set 1
+    local.get 3
     i64.const 4
     i64.add
+    local.get 3
     local.get 1
-    local.get 0
     i64.const 0
     i64.le_s
     select
-    local.tee 1
-    i64.const 8
-    i64.add
+    local.set 3
     local.get 1
-    local.get 0
     i64.const 0
     i64.ge_s
-    select
-    local.tee 1
+    i32.eqz
+    if
+    else
+      local.get 3
+      i64.const 8
+      i64.add
+      local.set 3
+    end
+    local.get 0
+    i64.load align=1
+    local.set 0
+    local.get 3
     i64.const 16
     i64.add
-    local.get 1
+    local.get 3
     local.get 0
     i64.const 0
     i64.lt_s
@@ -517,51 +593,65 @@
     i64.add
     local.get 1
     local.get 0
-    i64.const 0
+    local.get 2
     i64.gt_s
     select
     return
     end
   )
   (func $cmps (type 2) (param i64 i64) (result i64)
-    (local i64)
+    (local i64 i64)
     local.get 1
     i64.load align=1
-    local.set 1
+    local.set 2
     i64.const 1
     i64.const 0
     local.get 0
-    local.get 1
+    local.get 2
     i64.eq
     select
-    local.tee 2
-    i64.const 2
-    i64.add
-    local.get 2
+    local.set 3
     local.get 0
-    local.get 1
+    local.get 2
     i64.ne
-    select
-    local.tee 2
+    i32.eqz
+    if
+    else
+      local.get 3
+      i64.const 2
+      i64.add
+      local.set 3
+    end
+    local.get 1
+    i64.load align=1
+    local.set 2
+    local.get 3
     i64.const 4
     i64.add
-    local.get 2
+    local.get 3
     local.get 0
-    local.get 1
+    local.get 2
     i64.ge_s
     select
-    local.tee 2
-    i64.const 8
-    i64.add
-    local.get 2
+    local.set 3
     local.get 0
-    local.get 1
+    local.get 2
     i64.le_s
-    select
-    local.tee 2
+    i32.eqz
+    if
+    else
+      local.get 3
+      i64.const 8
+      i64.add
+      local.set 3
+    end
+    local.get 1
+    i64.load align=1
+    local.set 1
+    local.get 3
     i64.const 16
     i64.add
-    local.get 2
+    local.get 3
     local.get 0
     local.get 1
     i64.gt_s
@@ -667,44 +757,60 @@
     end
   )
   (func $imm_cmps (type 1) (param i64) (result i64)
-    (local i64)
+    (local i64 i64 i64)
     local.get 0
     i64.load align=1
     local.set 1
+    i64.const 0
+    local.set 3
     i64.const 1
     i64.const 0
     local.get 1
     i64.const 0
     i64.eq
     select
-    local.tee 0
-    i64.const 2
-    i64.add
-    local.get 0
+    local.set 2
     local.get 1
     i64.const 0
     i64.ne
-    select
-    local.tee 0
+    i32.eqz
+    if
+    else
+      local.get 2
+      i64.const 2
+      i64.add
+      local.set 2
+    end
+    local.get 0
+    i64.load align=1
+    local.set 1
+    local.get 2
     i64.const 4
     i64.add
-    local.get 0
+    local.get 2
     local.get 1
     i64.const 0
     i64.le_s
     select
-    local.tee 0
-    i64.const 8
-    i64.add
-    local.get 0
+    local.set 2
     local.get 1
     i64.const 0
     i64.ge_s
-    select
-    local.tee 0
+    i32.eqz
+    if
+    else
+      local.get 2
+      i64.const 8
+      i64.add
+      local.set 2
+    end
+    local.get 0
+    i64.load align=1
+    local.set 1
+    local.get 2
     i64.const 16
     i64.add
-    local.get 0
+    local.get 2
     local.get 1
     i64.const 0
     i64.lt_s
@@ -714,14 +820,14 @@
     i64.add
     local.get 0
     local.get 1
-    i64.const 0
+    local.get 3
     i64.gt_s
     select
     return
     end
   )
   (func $cmps (type 2) (param i64 i64) (result i64)
-    (local i64)
+    (local i64 i64)
     local.get 1
     i64.load align=1
     local.set 2
@@ -731,34 +837,48 @@
     local.get 2
     i64.eq
     select
-    local.tee 1
-    i64.const 2
-    i64.add
-    local.get 1
+    local.set 3
     local.get 0
     local.get 2
     i64.ne
-    select
-    local.tee 1
+    i32.eqz
+    if
+    else
+      local.get 3
+      i64.const 2
+      i64.add
+      local.set 3
+    end
+    local.get 1
+    i64.load align=1
+    local.set 2
+    local.get 3
     i64.const 4
     i64.add
-    local.get 1
+    local.get 3
     local.get 0
     local.get 2
     i64.ge_s
     select
-    local.tee 1
-    i64.const 8
-    i64.add
-    local.get 1
+    local.set 3
     local.get 0
     local.get 2
     i64.le_s
-    select
-    local.tee 1
+    i32.eqz
+    if
+    else
+      local.get 3
+      i64.const 8
+      i64.add
+      local.set 3
+    end
+    local.get 1
+    i64.load align=1
+    local.set 2
+    local.get 3
     i64.const 16
     i64.add
-    local.get 1
+    local.get 3
     local.get 0
     local.get 2
     i64.gt_s
@@ -864,44 +984,60 @@
     end
   )
   (func $imm_cmps (type 1) (param i64) (result i64)
-    (local i64)
+    (local i64 i64 i64)
     local.get 0
     i64.load align=1
     local.set 1
+    i64.const 0
+    local.set 3
     i64.const 1
     i64.const 0
     local.get 1
     i64.const 0
     i64.eq
     select
-    local.tee 0
-    i64.const 2
-    i64.add
-    local.get 0
+    local.set 2
     local.get 1
     i64.const 0
     i64.ne
-    select
-    local.tee 0
+    i32.eqz
+    if
+    else
+      local.get 2
+      i64.const 2
+      i64.add
+      local.set 2
+    end
+    local.get 0
+    i64.load align=1
+    local.set 1
+    local.get 2
     i64.const 4
     i64.add
-    local.get 0
+    local.get 2
     local.get 1
     i64.const 0
     i64.le_s
     select
-    local.tee 0
-    i64.const 8
-    i64.add
-    local.get 0
+    local.set 2
     local.get 1
     i64.const 0
     i64.ge_s
-    select
-    local.tee 0
+    i32.eqz
+    if
+    else
+      local.get 2
+      i64.const 8
+      i64.add
+      local.set 2
+    end
+    local.get 0
+    i64.load align=1
+    local.set 1
+    local.get 2
     i64.const 16
     i64.add
-    local.get 0
+    local.get 2
     local.get 1
     i64.const 0
     i64.lt_s
@@ -911,14 +1047,14 @@
     i64.add
     local.get 0
     local.get 1
-    i64.const 0
+    local.get 3
     i64.gt_s
     select
     return
     end
   )
   (func $cmps (type 2) (param i64 i64) (result i64)
-    (local i64)
+    (local i64 i64)
     local.get 1
     i64.load align=1
     local.set 2
@@ -928,34 +1064,48 @@
     local.get 2
     i64.eq
     select
-    local.tee 1
-    i64.const 2
-    i64.add
-    local.get 1
+    local.set 3
     local.get 0
     local.get 2
     i64.ne
-    select
-    local.tee 1
+    i32.eqz
+    if
+    else
+      local.get 3
+      i64.const 2
+      i64.add
+      local.set 3
+    end
+    local.get 1
+    i64.load align=1
+    local.set 2
+    local.get 3
     i64.const 4
     i64.add
-    local.get 1
+    local.get 3
     local.get 0
     local.get 2
     i64.ge_s
     select
-    local.tee 1
-    i64.const 8
-    i64.add
-    local.get 1
+    local.set 3
     local.get 0
     local.get 2
     i64.le_s
-    select
-    local.tee 1
+    i32.eqz
+    if
+    else
+      local.get 3
+      i64.const 8
+      i64.add
+      local.set 3
+    end
+    local.get 1
+    i64.load align=1
+    local.set 2
+    local.get 3
     i64.const 16
     i64.add
-    local.get 1
+    local.get 3
     local.get 0
     local.get 2
     i64.gt_s

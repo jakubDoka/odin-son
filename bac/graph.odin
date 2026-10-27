@@ -568,7 +568,8 @@ peep_ctx_add_trigger :: proc(ctx: ^Proc, triggerer: Node_ID, tar: Node_ID) {
 
 	gvn := get_node(ctx, triggerer).gvn
 	if len(ctx.triggers) <= int(gvn) {
-		resize(ctx.triggers, gvn + 1)
+		// Exact growth retains quadratic amounts of storage in the scratch arena.
+		resize(ctx.triggers, max(int(gvn) + 1, len(ctx.triggers) * 2))
 	}
 	if !slice.contains(ctx.triggers[gvn][:], tar) {
 		cnt := append(&ctx.triggers[gvn], tar)

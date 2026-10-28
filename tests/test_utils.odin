@@ -115,8 +115,9 @@ run_gpu_test :: proc(
 	name: string,
 	source: string,
 	param_count: int,
-	ret_count: int,
+	result_types: []typeid,
 	ref_impl: proc(params: []gpu.Reg, results: []gpu.Reg),
+	max_float_ulps: int,
 ) {
 	name_str = name
 	context.logger.options &= ~{.Time, .Date, .Level, .Procedure}
@@ -169,33 +170,7 @@ run_gpu_test :: proc(
 	)
 
 	fn := &ctx.procs[1]
-
-	@(thread_local)
-	dev: gpu.Device
-
 	err: gpu.Error
-
-	if dev.fd == 0 {
-		dev, err = gpu.open()
-		fmt.assertf(err == nil, "failed to open gpu device: %v", err)
-	}
-
-	args := make([]gpu.Reg, param_count, context.temp_allocator)
-	slots := make([]gpu.Reg, ret_count, context.temp_allocator)
-	ref_slots := make([]gpu.Reg, ret_count, context.temp_allocator)
-
-	for &slot in mem.slice_data_cast([]f32, args) {
-		slot = rand.float32()
-	}
-
-	ref_impl(args, ref_slots)
-
-	gpu.execute(
-		&dev,
-		{code = mem.slice_data_cast([]u32, fn.out.code), width = .SIMD8},
-		args,
-		slots,
-	)
 
 	{context.allocator = context.temp_allocator
 		out: strings.Builder
@@ -210,14 +185,71 @@ run_gpu_test :: proc(
 			handle_golden_file(&out, diff_path)
 		}
 	}
+	if NO_RUN do return
 
-	testing.expectf(
-		t,
-		slice.equal(slots, ref_slots),
-		"%v == %v",
+	@(thread_local)
+	dev: gpu.Device
+
+	if dev.fd == 0 {
+		dev, err = gpu.open()
+		fmt.assertf(err == nil, "failed to open gpu device: %v", err)
+	}
+
+	args := make([]gpu.Reg, param_count, context.temp_allocator)
+	slots := make([]gpu.Reg, len(result_types), context.temp_allocator)
+	ref_slots := make([]gpu.Reg, len(result_types), context.temp_allocator)
+
+	for &slot in mem.slice_data_cast([]f32, args) {
+		slot = rand.float32() * 2 - 1
+	}
+	if len(args) != 0 do args[0][1] = transmute(f32)u32(0x80000000)
+	if len(args) > 1 {
+		args[1][0] = args[0][0]
+		args[1][1] = 0
+		args[1][2] = args[0][2]
+	}
+
+	ref_impl(args, ref_slots)
+
+	err = gpu.execute(
+		&dev,
+		{code = mem.slice_data_cast([]u32, fn.out.code), width = .SIMD8},
+		args,
 		slots,
-		ref_slots,
 	)
+	fmt.assertf(err == nil, "gpu execution error: %v", err)
+
+	for result_type, i in result_types {
+		for actual, lane in slots[i] {
+			expected := ref_slots[i][lane]
+			actual_bits := transmute(u32)actual
+			expected_bits := transmute(u32)expected
+			equal := actual_bits == expected_bits
+			if result_type == f32 do equal ||= actual == expected
+			if result_type == f32 && max_float_ulps != 0 {
+				equal ||=
+					actual_bits & 0x7fffffff > 0x7f800000 &&
+					expected_bits & 0x7fffffff > 0x7f800000
+				if actual_bits >> 31 == expected_bits >> 31 &&
+				   actual_bits & 0x7fffffff < 0x7f800000 &&
+				   expected_bits & 0x7fffffff < 0x7f800000 {
+					equal ||=
+						abs(i64(actual_bits) - i64(expected_bits)) <= i64(max_float_ulps)
+				}
+			}
+			testing.expectf(
+				t,
+				equal,
+				"result %v lane %v: %v (0x%08x) != %v (0x%08x)",
+				i,
+				lane,
+				actual,
+				actual_bits,
+				expected,
+				expected_bits,
+			)
+		}
+	}
 }
 
 run_test :: proc(
@@ -355,7 +387,7 @@ run_test :: proc(
 
 		for kind, i in ([]ssa.Builtin_Proc{.memmove, .memset}) {
 			ctx.opt_flags = level.flags
-			ssa.start_proc(&ctx, ctx.mem, &arna.scratch)
+			ssa.start_proc(&ctx, &ctx.mems.prc, &arna.scratch)
 
 			prc := &ctx.procs[len(ctx.procs) - 2 + i]
 

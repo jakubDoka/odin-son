@@ -55,6 +55,10 @@ main :: proc() {
 	}
 
 	when intel_xelp_poc.SPEC_NOT_PRESENT {
+		XELP_CLASSES := [intel_xelp_poc.Node_Type]meta.Class_Spec {
+			.Inv = {no_ctor = true, flags = {.Interned}},
+		}
+
 		meta.generate_spec(
 			meta.Spec_Gen_Input {
 				package_name = "bac_intel_xelp_poc",
@@ -62,7 +66,10 @@ main :: proc() {
 				"Reg_Kind :: bac.Reg_Kind\n" +
 				"Class_Flag :: bac.Class_Flag\n",
 				qual = "bac.",
-				classes = {meta.class_array(&meta.IDEAL_CLASSES, gen_ctors = false)},
+				classes = {
+					meta.class_array(&meta.IDEAL_CLASSES, gen_ctors = false),
+					meta.class_array(&XELP_CLASSES),
+				},
 				does_regalloc = true,
 				datatype_to_reg_kind = #partial{.I8 ..= .V512 = intel_xelp_poc.RK_GRF},
 				spill_boundary = {intel_xelp_poc.GRF_COUNT},

@@ -53,7 +53,9 @@ SPEC_NOT_PRESENT :: (#load("node_specs.odin", string) or_else "") == ""
 when SPEC_NOT_PRESENT {
 	Reg_Kind :: bac.Reg_Kind
 
-	Node_Type :: enum u16 {}
+	Node_Type :: enum u16 {
+		Inv,
+	}
 
 	inherit_idx_of :: proc($T: typeid) -> u8 {return 0}
 }
@@ -70,10 +72,14 @@ CC_TABLE := [1]bac.Call_Conv {
 }
 
 peep :: proc(
-	_: bac.Peep_Ctx,
-	_: bac.Expanded_Node,
+	ctx: bac.Peep_Ctx,
+	node: bac.Expanded_Node,
 	_: $T,
 ) -> Maybe(bac.Node_ID) {
+	if node.itype == .Div && node.dt == .F32 {
+		inv := bac.add_raw(ctx, "inv", u16(Node_Type.Inv), .F32, {node.inps[1]})
+		return bac.add_bin_op(ctx, "fdiv", .Mul, .F32, node.inps[0], inv)
+	}
 	return nil
 }
 
@@ -122,8 +128,12 @@ meta_of :: proc(
 		fmt.panicf("should not reach these: %v", node)
 	case .Poison ..= .Global:
 		return {out = out}
-	case .Add:
+	case .CInt:
+		return {out = out}
+	case .Add, .Sub, .Mul, .Eq ..= .Ge:
 		return {out = out, masks = nmasks[:2]}
+	case .Neg, .Inv, .Split:
+		return {out = out, masks = nmasks[:1]}
 	case .Param:
 		return {out = bac.param_mask(prc, ra, node)}
 	case .Return:
@@ -135,6 +145,35 @@ meta_of :: proc(
 
 Ctx :: struct {
 	using inner: bac.Codegen_Emit_Ctx,
+}
+
+when !SPEC_NOT_PRESENT {
+	@(rodata)
+	FLOAT_OPS := #partial [Node_Type]Op {
+		// add (8|M0) r{dst}.0<1>:f r{lhs}.0<8;8,1>:f r{rhs}.0<8;8,1>:f {@1}
+		.Add = {0x00030140, 0x00050aa0, 0x0a460005, 0x00460005},
+		// add (8|M0) r{dst}.0<1>:f r{lhs}.0<8;8,1>:f -r{rhs}.0<8;8,1>:f {@1}
+		.Sub = {0x00030140, 0x00050aa0, 0x0a460005, 0x02460005},
+		// mul (8|M0) r{dst}.0<1>:f r{lhs}.0<8;8,1>:f r{rhs}.0<8;8,1>:f {@1}
+		.Mul = {0x00030141, 0x00050aa0, 0x0a460005, 0x00460005},
+		// A non-float destination converts the comparison mask instead of preserving its bits.
+		// cmp (8|M0) (eq)f0.0 r{dst}.0<1>:f r{lhs}.0<8;8,1>:f r{rhs}.0<8;8,1>:f {@1}
+		.Eq  = {0x00030170, 0x00050aa0, 0x1a460005, 0x00460005},
+		// cmp (8|M0) (ne)f0.0 r{dst}.0<1>:f r{lhs}.0<8;8,1>:f r{rhs}.0<8;8,1>:f {@1}
+		.Ne  = {0x00030170, 0x00050aa0, 0x2a460005, 0x00460005},
+		// cmp (8|M0) (lt)f0.0 r{dst}.0<1>:f r{lhs}.0<8;8,1>:f r{rhs}.0<8;8,1>:f {@1}
+		.Lt  = {0x00030170, 0x00050aa0, 0x5a460005, 0x00460005},
+		// cmp (8|M0) (le)f0.0 r{dst}.0<1>:f r{lhs}.0<8;8,1>:f r{rhs}.0<8;8,1>:f {@1}
+		.Le  = {0x00030170, 0x00050aa0, 0x6a460005, 0x00460005},
+		// cmp (8|M0) (gt)f0.0 r{dst}.0<1>:f r{lhs}.0<8;8,1>:f r{rhs}.0<8;8,1>:f {@1}
+		.Gt  = {0x00030170, 0x00050aa0, 0x3a460005, 0x00460005},
+		// cmp (8|M0) (ge)f0.0 r{dst}.0<1>:f r{lhs}.0<8;8,1>:f r{rhs}.0<8;8,1>:f {@1}
+		.Ge  = {0x00030170, 0x00050aa0, 0x4a460005, 0x00460005},
+		// mov (8|M0) r{dst}.0<1>:f -r{src}.0<8;8,1>:f {@1}
+		.Neg = {0x00030161, 0x00052aa0, 0x00460005, 0},
+		// math.inv (8|M0) r{dst}.0<1>:f r{src}.0<8;8,1>:f {@1,$2}
+		.Inv = {0x00039238, 0x00050aa0, 0x10460005, 0},
+	}
 }
 
 emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
@@ -203,19 +242,72 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, _: $T) {
 	case .Nil ..= .Dbg_Scope:
 		fmt.panicf("should not reach these: %v", node)
 	case .Poison ..= .Phi:
-	case .Add:
-		dst := reg_of(ctx, instr)
-		lhs := reg_of(ctx, node.inps[0])
-		rhs := reg_of(ctx, node.inps[1])
+	case .CInt:
+		value := bac.get_extra(ctx, node, bac.CInt)
+		bits := u32(value.value)
+		if node.dt == .F32 do bits = transmute(u32)f32(value.fvalue)
+		// mov (8|M0) r{dst}.0<1>:ud {bits}:ud {@1}
 		emit_op(
 			ctx.code,
 			{
-				eu_control(.Add, 8, swsb = eu_swsb_regdist(1)),
-				eu_dst(dst, 0, .F) | eu_src0_type(.F),
-				eu_src(lhs, 0, 8, 8, 1) | eu_src1_type(.F),
-				eu_src(rhs, 0, 8, 8, 1),
+				eu_control(.Mov, 8, swsb = eu_swsb_regdist(1)),
+				eu_dst(reg_of(ctx, instr), 0, .UD) |
+				eu_src0_type(.UD) |
+				EU_SRC0_IMMEDIATE,
+				0,
+				bits,
 			},
 		)
+	case .Split:
+		dst := reg_of(ctx, instr)
+		src := reg_of(ctx, node.inps[0])
+		if dst == src do return
+		// mov (8|M0) r{dst}.0<1>:ud r{src}.0<8;8,1>:ud {@1}
+		emit_op(
+			ctx.code,
+			{
+				eu_control(.Mov, 8, swsb = eu_swsb_regdist(1)),
+				eu_dst(dst, 0, .UD) | eu_src0_type(.UD),
+				eu_src(src, 0, 8, 8, 1),
+				0,
+			},
+		)
+	case .Add, .Sub, .Mul, .Eq ..= .Ge, .Neg, .Inv:
+		assert(bac.operation_datatype(ctx, node) == .F32)
+		dst := reg_of(ctx, instr)
+		op := FLOAT_OPS[ptype(node)]
+		op[1] |= eu_reg_number(dst, .GRF) << 24
+		op[2] |= eu_reg_number(reg_of(ctx, node.inps[0]), .GRF) << 8
+		if len(node.inps) == 2 {
+			op[3] |= eu_reg_number(reg_of(ctx, node.inps[1]), .GRF) << 8
+		}
+		emit_op(ctx.code, op)
+
+		if ptype(node) == .Inv {
+			// Math is out of order; register-distance dependencies alone cannot wait for it.
+			// sync.nop (1|M0) null {$2.dst}
+			emit_op(
+				ctx.code,
+				{
+					eu_control(.Sync, 1, swsb = eu_swsb_sbid(2, .Wait_Dst)),
+					1 << 16,
+					0,
+					0,
+				},
+			)
+		} else if .Eq <= ptype(node) && ptype(node) <= .Ge {
+			// EU comparisons yield all-ones masks, but Odin booleans must be zero or one.
+			// and (8|M0) r{dst}.0<1>:ud r{dst}.0<8;8,1>:ud 0x1:ud {@1}
+			emit_op(
+				ctx.code,
+				{
+					eu_control(.And, 8, swsb = eu_swsb_regdist(1)),
+					eu_dst(dst, 0, .UD) | eu_src0_type(.UD) | EU_SRC1_IMMEDIATE,
+					eu_src(dst, 0, 8, 8, 1) | eu_src1_type(.UD),
+					1,
+				},
+			)
+		}
 	case .Return:
 		return_count := len(node.inps) - min(2, len(node.inps))
 		return_regs := CC_TABLE[XELP_CC].rets[RK_GRF]

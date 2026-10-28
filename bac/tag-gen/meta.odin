@@ -89,6 +89,22 @@ main :: proc() {
 
 				main_decl := f.decls[0].derived.(^ast.Value_Decl)
 				main := main_decl.values[0].derived.(^ast.Proc_Lit)
+				max_float_ulps := 0
+				visitor := ast.Visitor {
+					data = &max_float_ulps,
+					visit = proc(
+						visitor: ^ast.Visitor,
+						node: ^ast.Node,
+					) -> ^ast.Visitor {
+						if node == nil do return nil
+						if expr, ok := node.derived.(^ast.Binary_Expr);
+						   ok && expr.op.kind == .Quo {
+							(^int)(visitor.data)^ = 2
+						}
+						return visitor
+					},
+				}
+				ast.walk(&visitor, main.body)
 
 				rall_name, _ := strings.replace_all(name, " ", "_", context.allocator)
 				os.write_string(file, "@(test) ")
@@ -122,14 +138,18 @@ main :: proc() {
 
 				fmt.fprintfln(file, "\t}}")
 
-				fmt.fprintfln(
+				fmt.fprintf(
 					file,
-					"\trun_gpu_test(t, `%v`, `%v`, %v, %v, wide_main)",
+					"\trun_gpu_test(t, `%v`, `%v`, %v, {{",
 					rall_name,
 					code,
 					len(main.type.params.list),
-					len(main.type.results.list),
 				)
+				for res, i in main.type.results.list {
+					if i != 0 do fmt.fprintf(file, ", ")
+					fmt.fprintf(file, "%v", src_of(f, res.type))
+				}
+				fmt.fprintfln(file, "}}, wide_main, %v)", max_float_ulps)
 
 				fmt.fprintfln(file, "}}")
 			}

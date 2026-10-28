@@ -81,3 +81,5 @@ with the parametrized assembly to make it clear what is being encoded.
 
 When you declare local functions put them at the end of the scope or after they
 are used.
+
+Debug with gdb when appropriate, eg segfaults.

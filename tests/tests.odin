@@ -23,7 +23,275 @@ package main
 main :: proc(a: f32, b: f32) -> f32 {
 	return a + b
 }
-`, 2, 1, wide_main)
+`, 2, {f32}, wide_main, 0)
+}
+@(test) gpu_float_subtract :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc(a: f32, b: f32) -> f32 {
+	return a - b
+}
+	wide_main :: proc(params: []gpu.Reg, results: []gpu.Reg) {
+		for i in 0 ..< len(gpu.Reg) {
+			(^f32)(&results[0][i])^ = main_((^f32)(&params[0][i])^, (^f32)(&params[1][i])^)
+		}
+	}
+	run_gpu_test(t, `gpu_float_subtract`, `
+package main
+
+main :: proc(a: f32, b: f32) -> f32 {
+	return a - b
+}
+`, 2, {f32}, wide_main, 0)
+}
+@(test) gpu_float_multiply :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc(a: f32, b: f32) -> f32 {
+	return a * b
+}
+	wide_main :: proc(params: []gpu.Reg, results: []gpu.Reg) {
+		for i in 0 ..< len(gpu.Reg) {
+			(^f32)(&results[0][i])^ = main_((^f32)(&params[0][i])^, (^f32)(&params[1][i])^)
+		}
+	}
+	run_gpu_test(t, `gpu_float_multiply`, `
+package main
+
+main :: proc(a: f32, b: f32) -> f32 {
+	return a * b
+}
+`, 2, {f32}, wide_main, 0)
+}
+@(test) gpu_float_divide :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc(a: f32, b: f32) -> f32 {
+	return a / b
+}
+	wide_main :: proc(params: []gpu.Reg, results: []gpu.Reg) {
+		for i in 0 ..< len(gpu.Reg) {
+			(^f32)(&results[0][i])^ = main_((^f32)(&params[0][i])^, (^f32)(&params[1][i])^)
+		}
+	}
+	run_gpu_test(t, `gpu_float_divide`, `
+package main
+
+main :: proc(a: f32, b: f32) -> f32 {
+	return a / b
+}
+`, 2, {f32}, wide_main, 2)
+}
+@(test) gpu_float_negate :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc(a: f32) -> f32 {
+	return -a
+}
+	wide_main :: proc(params: []gpu.Reg, results: []gpu.Reg) {
+		for i in 0 ..< len(gpu.Reg) {
+			(^f32)(&results[0][i])^ = main_((^f32)(&params[0][i])^)
+		}
+	}
+	run_gpu_test(t, `gpu_float_negate`, `
+package main
+
+main :: proc(a: f32) -> f32 {
+	return -a
+}
+`, 1, {f32}, wide_main, 0)
+}
+@(test) gpu_float_positive :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc(a: f32) -> f32 {
+	// COMPILER BUG: the frontend does not accept unary plus yet.
+	// return +a
+	return a
+}
+	wide_main :: proc(params: []gpu.Reg, results: []gpu.Reg) {
+		for i in 0 ..< len(gpu.Reg) {
+			(^f32)(&results[0][i])^ = main_((^f32)(&params[0][i])^)
+		}
+	}
+	run_gpu_test(t, `gpu_float_positive`, `
+package main
+
+main :: proc(a: f32) -> f32 {
+	// COMPILER BUG: the frontend does not accept unary plus yet.
+	// return +a
+	return a
+}
+`, 1, {f32}, wide_main, 0)
+}
+@(test) gpu_float_equal :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc(a: f32, b: f32) -> bool {
+	return a == b
+}
+	wide_main :: proc(params: []gpu.Reg, results: []gpu.Reg) {
+		for i in 0 ..< len(gpu.Reg) {
+			(^bool)(&results[0][i])^ = main_((^f32)(&params[0][i])^, (^f32)(&params[1][i])^)
+		}
+	}
+	run_gpu_test(t, `gpu_float_equal`, `
+package main
+
+main :: proc(a: f32, b: f32) -> bool {
+	return a == b
+}
+`, 2, {bool}, wide_main, 0)
+}
+@(test) gpu_float_not_equal :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc(a: f32, b: f32) -> bool {
+	return a != b
+}
+	wide_main :: proc(params: []gpu.Reg, results: []gpu.Reg) {
+		for i in 0 ..< len(gpu.Reg) {
+			(^bool)(&results[0][i])^ = main_((^f32)(&params[0][i])^, (^f32)(&params[1][i])^)
+		}
+	}
+	run_gpu_test(t, `gpu_float_not_equal`, `
+package main
+
+main :: proc(a: f32, b: f32) -> bool {
+	return a != b
+}
+`, 2, {bool}, wide_main, 0)
+}
+@(test) gpu_float_less :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc(a: f32, b: f32) -> bool {
+	return a < b
+}
+	wide_main :: proc(params: []gpu.Reg, results: []gpu.Reg) {
+		for i in 0 ..< len(gpu.Reg) {
+			(^bool)(&results[0][i])^ = main_((^f32)(&params[0][i])^, (^f32)(&params[1][i])^)
+		}
+	}
+	run_gpu_test(t, `gpu_float_less`, `
+package main
+
+main :: proc(a: f32, b: f32) -> bool {
+	return a < b
+}
+`, 2, {bool}, wide_main, 0)
+}
+@(test) gpu_float_less_equal :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc(a: f32, b: f32) -> bool {
+	return a <= b
+}
+	wide_main :: proc(params: []gpu.Reg, results: []gpu.Reg) {
+		for i in 0 ..< len(gpu.Reg) {
+			(^bool)(&results[0][i])^ = main_((^f32)(&params[0][i])^, (^f32)(&params[1][i])^)
+		}
+	}
+	run_gpu_test(t, `gpu_float_less_equal`, `
+package main
+
+main :: proc(a: f32, b: f32) -> bool {
+	return a <= b
+}
+`, 2, {bool}, wide_main, 0)
+}
+@(test) gpu_float_greater :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc(a: f32, b: f32) -> bool {
+	return a > b
+}
+	wide_main :: proc(params: []gpu.Reg, results: []gpu.Reg) {
+		for i in 0 ..< len(gpu.Reg) {
+			(^bool)(&results[0][i])^ = main_((^f32)(&params[0][i])^, (^f32)(&params[1][i])^)
+		}
+	}
+	run_gpu_test(t, `gpu_float_greater`, `
+package main
+
+main :: proc(a: f32, b: f32) -> bool {
+	return a > b
+}
+`, 2, {bool}, wide_main, 0)
+}
+@(test) gpu_float_greater_equal :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc(a: f32, b: f32) -> bool {
+	return a >= b
+}
+	wide_main :: proc(params: []gpu.Reg, results: []gpu.Reg) {
+		for i in 0 ..< len(gpu.Reg) {
+			(^bool)(&results[0][i])^ = main_((^f32)(&params[0][i])^, (^f32)(&params[1][i])^)
+		}
+	}
+	run_gpu_test(t, `gpu_float_greater_equal`, `
+package main
+
+main :: proc(a: f32, b: f32) -> bool {
+	return a >= b
+}
+`, 2, {bool}, wide_main, 0)
+}
+@(test) gpu_float_equal_operands :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc(a: f32, b: f32) -> bool {
+	c := a + b
+	d := b + a
+	return c <= d
+}
+	wide_main :: proc(params: []gpu.Reg, results: []gpu.Reg) {
+		for i in 0 ..< len(gpu.Reg) {
+			(^bool)(&results[0][i])^ = main_((^f32)(&params[0][i])^, (^f32)(&params[1][i])^)
+		}
+	}
+	run_gpu_test(t, `gpu_float_equal_operands`, `
+package main
+
+main :: proc(a: f32, b: f32) -> bool {
+	c := a + b
+	d := b + a
+	return c <= d
+}
+`, 2, {bool}, wide_main, 0)
+}
+@(test) gpu_float_arithmetic_chain :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc(a: f32, b: f32, c: f32) -> f32 {
+	return -((a - b) * (b + c) / c)
+}
+	wide_main :: proc(params: []gpu.Reg, results: []gpu.Reg) {
+		for i in 0 ..< len(gpu.Reg) {
+			(^f32)(&results[0][i])^ = main_((^f32)(&params[0][i])^, (^f32)(&params[1][i])^, (^f32)(&params[2][i])^)
+		}
+	}
+	run_gpu_test(t, `gpu_float_arithmetic_chain`, `
+package main
+
+main :: proc(a: f32, b: f32, c: f32) -> f32 {
+	return -((a - b) * (b + c) / c)
+}
+`, 3, {f32}, wide_main, 2)
 }
 @(test) simplest :: proc(t: ^testing.T) {
 

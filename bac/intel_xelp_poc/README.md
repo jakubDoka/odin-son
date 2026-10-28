@@ -1,9 +1,15 @@
 # Intel Xe-LP proof-of-concept backend
 
-This package has a generated `bac.Node_Spec` for the shared nodes, no-op
-peephole hooks, and explicit unimplemented register-allocation and emission
-hooks. There are no target-specific nodes, lowering rules, or calling
-conventions yet. It is not an executable compiler target.
+This proof-of-concept emits single-block SIMD8 kernels for scalar `f32`
+addition, subtraction, multiplication, negation, and comparisons. Division
+lowers to a target-specific reciprocal node followed by multiplication, so it
+is approximate rather than correctly rounded. Comparisons return canonical
+zero-or-one booleans. Instruction templates live in the `FLOAT_OPS` node-type
+table, with register fields filled after allocation.
+
+Arguments use `r1` through `r8`, and results use `r120` through `r127` before
+being written to the output surface. Control flow, memory operations, spills,
+and other arithmetic datatypes remain unimplemented.
 
 Regenerate its spec through `gen-spec`, or run `odin run bac/meta2` from the
 repository root when `node_specs.odin` is absent. Check the package with:

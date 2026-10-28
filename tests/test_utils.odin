@@ -16,6 +16,7 @@ import "core:dynlib"
 import "core:fmt"
 import "core:hash"
 import "core:log"
+import "core:math"
 import "core:math/rand"
 import "core:mem"
 import "core:mem/virtual"
@@ -28,7 +29,6 @@ import "core:rexcode/isa"
 import "core:rexcode/isa/arm64"
 import "core:rexcode/isa/x86"
 import "core:simd"
-import "core:slice"
 import "core:strings"
 import "core:sync"
 import "core:testing"
@@ -202,8 +202,10 @@ run_gpu_test :: proc(
 	for &slot in mem.slice_data_cast([]f32, args) {
 		slot = rand.float32() * 2 - 1
 	}
-	if len(args) != 0 do args[0][1] = transmute(f32)u32(0x80000000)
+
+	if len(args) != 0 do args[0][1] = -0.0
 	if len(args) > 1 {
+		// inject devision by zero
 		args[1][0] = args[0][0]
 		args[1][1] = 0
 		args[1][2] = args[0][2]
@@ -225,17 +227,8 @@ run_gpu_test :: proc(
 			actual_bits := transmute(u32)actual
 			expected_bits := transmute(u32)expected
 			equal := actual_bits == expected_bits
-			if result_type == f32 do equal ||= actual == expected
-			if result_type == f32 && max_float_ulps != 0 {
-				equal ||=
-					actual_bits & 0x7fffffff > 0x7f800000 &&
-					expected_bits & 0x7fffffff > 0x7f800000
-				if actual_bits >> 31 == expected_bits >> 31 &&
-				   actual_bits & 0x7fffffff < 0x7f800000 &&
-				   expected_bits & 0x7fffffff < 0x7f800000 {
-					equal ||=
-						abs(i64(actual_bits) - i64(expected_bits)) <= i64(max_float_ulps)
-				}
+			if result_type == f32 {
+				equal ||= float_equal(actual, expected, max_float_ulps)
 			}
 			testing.expectf(
 				t,
@@ -249,6 +242,19 @@ run_gpu_test :: proc(
 				expected_bits,
 			)
 		}
+	}
+
+	float_equal :: proc(actual, expected: f32, max_ulps: int) -> bool {
+		if actual == expected do return true
+		if max_ulps == 0 do return false
+		if math.is_nan(actual) && math.is_nan(expected) do return true
+		if math.is_inf(actual) || math.is_inf(expected) do return false
+
+		value := actual
+		for _ in 0 ..< max_ulps {
+			value = math.nextafter(value, expected)
+		}
+		return value == expected
 	}
 }
 
@@ -296,8 +302,8 @@ run_test :: proc(
 
 	Test_Vm :: enum {
 		Native,
-		Arm,
 		Wasm,
+		Arm,
 		Check,
 	}
 

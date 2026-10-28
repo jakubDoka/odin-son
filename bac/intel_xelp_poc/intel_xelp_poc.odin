@@ -215,17 +215,17 @@ meta_of :: proc(
 }
 
 Ctx :: struct {
-	using inner:  bac.Codegen_Emit_Ctx,
-	cfg_blocks:   bac.Cfg_Blocks,
-	blocks:       []Block_State,
-	labels:       []uint,
-	branches:     [dynamic]Branch,
-	closing_loop: int,
+	using inner: bac.Codegen_Emit_Ctx,
+	blocks:      []Block_Info,
+	labels:      []uint,
+	branches:    [dynamic]Branch,
 }
 
-Block_State :: struct {
-	loop: int,
-	pair: int,
+Block_Info :: struct {
+	entry, branch:              Opcode,
+	target, end, else_end:      int,
+	next, parent_if, scope_end: int,
+	negate:                     bool,
 }
 
 Branch :: struct {
@@ -282,46 +282,10 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 	ctx.spill_slot_base = spill_slot_base[:]
 	ctx.spill_slot_size = SPILL_SLOT_SIZE[:]
 
-	bac.compute_blocks(&ctx.cfg_blocks, ctx.inner)
-
-	ctx.blocks = make([]Block_State, len(ctx.cfg_blocks.blocks))
-	ctx.labels = make([]uint, len(ctx.blocks) * 2)
+	prepare_blocks(&ctx)
+	ctx.labels = make([]uint, (len(ctx.blocks) + 1) * 2)
 	slice.fill(ctx.labels, max(uint))
 	ctx.branches = make([dynamic]Branch)
-
-	for idx in ctx.cfg_blocks.final_order {
-		block := ctx.cfg_blocks.blocks[idx]
-
-		if block.is_loop {
-			for outer in ctx.cfg_blocks.final_order {
-				ob := ctx.cfg_blocks.blocks[outer]
-				if !ob.is_loop &&
-				   !ob.is_then &&
-				   !ob.is_else &&
-				   ob.start <= block.start &&
-				   ob.end == block.end + 1 {
-					// Incoming edges outside the loop still need their own reconvergence point.
-					internal := true
-					for cursor := outer;
-					    cursor != 0;
-					    cursor = ctx.cfg_blocks.blocks[cursor].worse {
-						origin := ctx.cfg_blocks.blocks[cursor].origin
-						internal &= block.start <= origin && origin <= block.end
-					}
-					if internal do ctx.blocks[outer].loop = idx
-				}
-			}
-		}
-
-		if block.is_else {
-			for pair in ctx.cfg_blocks.final_order {
-				pb := ctx.cfg_blocks.blocks[pair]
-				if pb.is_then && pb.origin == block.origin {
-					ctx.blocks[idx].pair = pair
-				}
-			}
-		}
-	}
 
 	emit_op(
 		ctx.code,
@@ -354,40 +318,17 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 	)
 
 	for bb, bidx in ctx.schedule.bbs {
-		ctx.closing_loop = 0
-
-		for idx in bac.cfg_blocks_next_end_block(&ctx.cfg_blocks, bidx) {
-			block := ctx.cfg_blocks.blocks[idx]
-			if block.is_loop {
-				ctx.closing_loop = idx
-				continue
-			}
-			if ctx.blocks[idx].loop != 0 do continue
-			ctx.labels[idx * 2 + 1] = ctx.code.pos
-			if block.is_else {
-				assert(ctx.blocks[idx].pair != 0)
-				end := ctx.blocks[idx].pair * 2 + 1
-				emit_branch(&ctx, .Else, end, end)
-			} else {
-				op := block.is_then ? Opcode.Endif : Opcode.Join
-				emit_branch(&ctx, op, next_join(&ctx), 0)
-			}
+		block := ctx.blocks[bidx]
+		ctx.labels[(bidx + 1) * 2] = ctx.code.pos
+		if block.entry == .Else {
+			emit_branch(&ctx, .Else, block.else_end * 2, block.else_end * 2)
+		} else if block.entry != .Illegal {
+			next := block.branch == .While ? (bidx + 1) * 2 + 1 : block.next
+			emit_branch(&ctx, block.entry, next, 0)
 		}
 
-		for idx in bac.cfg_blocks_next_start_block(&ctx.cfg_blocks, bidx) {
-			ctx.labels[idx * 2] = ctx.code.pos
-			if ctx.cfg_blocks.blocks[idx].is_loop &&
-			   ctx.cfg_blocks.blocks[idx].end == bidx {
-				ctx.closing_loop = idx
-			}
-		}
-
-		for instr, i in bb.instrs {
+		for instr in bb.instrs {
 			emit_instr(&ctx, instr, bidx, struct{}{})
-		}
-
-		if bac.cfg_blocks_end_block(&ctx.cfg_blocks) {
-			assert(ctx.closing_loop == 0)
 		}
 	}
 
@@ -529,57 +470,27 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block_idx: int, _: $T) {
 			)
 		}
 	case .If, .Jump, .Always:
-		block, is_nil, ifified, _ := bac.cfg_blocks_meta(
-			&ctx.cfg_blocks,
-			&ctx.inner,
-			node,
-			block_idx,
-		)
-		flag: Reg
+		block := ctx.blocks[block_idx]
+		if block.branch == .Illegal do return
+		ctx.labels[(block_idx + 1) * 2 + 1] = ctx.code.pos
 		predicate: u32
 		if node.itype == .If {
-			flag = reg_of(ctx, node.inps[1])
-			next := get_node(ctx, ctx.schedule.bbs[block_idx + 1].head)
-			predicate = eu_predicate(flag, (next.itype == .Then) != ifified)
+			predicate = eu_predicate(
+				reg_of(ctx, node.inps[1]),
+				block.negate != (block.branch == .If),
+			)
 		}
-		if ifified {
-			for idx in ctx.cfg_blocks.final_order {
-				b := ctx.cfg_blocks.blocks[idx]
-				if b.is_else && b.origin == block_idx {
-					emit_branch(
-						ctx,
-						.If,
-						idx * 2 + 1,
-						ctx.blocks[idx].pair * 2 + 1,
-						predicate,
-						16,
-					)
-					return
-				}
-			}
+		#partial switch block.branch {
+		case .If:
+			emit_branch(ctx, .If, block.target * 2, block.end * 2, predicate, 16)
+		case .While:
+			emit_branch(ctx, .While, block.target * 2, 0, predicate)
+		case .Break:
+			emit_branch(ctx, .Break, block.next, block.target * 2 + 1, predicate)
+		case .Goto:
+			emit_branch(ctx, .Goto, block.next, block.target * 2, predicate)
+		case:
 			unreachable()
-		}
-		if ctx.closing_loop != 0 {
-			idx := ctx.closing_loop
-			ctx.labels[idx * 2 + 1] = ctx.code.pos
-			if node.itype == .If {
-				loop_idx := -1
-				for use, i in node.outs {
-					if get_node(ctx, use.id).itype == .Loop do loop_idx = i
-				}
-				assert(loop_idx != -1)
-				predicate = eu_predicate(flag, loop_idx == 1)
-			}
-			emit_branch(ctx, .While, idx * 2, 0, predicate)
-			ctx.closing_loop = 0
-			return
-		}
-		if is_nil || block.is_then || block.is_else do return
-		idx := ctx.cfg_blocks.bb_metas[block_idx].break_block
-		if loop := ctx.blocks[idx].loop; loop != 0 {
-			emit_branch(ctx, .Break, next_join(ctx), loop * 2 + 1, predicate)
-		} else {
-			emit_branch(ctx, .Goto, next_join(ctx), idx * 2 + 1, predicate)
 		}
 	case .Return:
 		return_count := len(node.inps) - min(2, len(node.inps))
@@ -649,14 +560,81 @@ reg_of :: proc(ctx: ^Ctx, node: bac.Node_ID) -> Reg {
 	return ctx.allocs[get_node(ctx, node).gvn]
 }
 
-next_join :: proc(ctx: ^Ctx) -> int {
-	#reverse for idx in ctx.cfg_blocks.block_stack {
-		if idx < 0 do continue
-		if ctx.blocks[idx].loop != 0 do continue
-		return idx * 2 + 1
+prepare_blocks :: proc(ctx: ^Ctx) {
+	ctx.blocks = make([]Block_Info, len(ctx.bbs))
+	for bb, i in ctx.bbs do get_node(ctx, bb.head).gvn = u32(i)
+	loops: [dynamic]int
+	for bb, i in ctx.bbs {
+		info := &ctx.blocks[i]
+		head := expand_node(ctx, bb.head)
+		for len(loops) != 0 && slice.last(loops[:]) < i + 1 do pop(&loops)
+		if head.itype == .Loop {
+			latch := bac.get_inputs(ctx, head.inps[1])[0]
+			append(&loops, int(get_node(ctx, latch).gvn) + 1)
+		} else if head.itype != .Entry {
+			for inp, j in head.inps {
+				pred := expand_node(ctx, inp)
+				pidx := int(get_node(ctx, pred.inps[0]).gvn)
+				parent := pred.itype == .If ? pidx + 1 : ctx.blocks[pidx].parent_if
+				if j == 0 do info.parent_if = parent
+				if parent != info.parent_if {
+					info.parent_if = 0
+					break
+				}
+			}
+		}
+
+		ifify: if head.itype == .Region &&
+		   len(head.inps) == 2 &&
+		   info.parent_if != 0 {
+			origin := &ctx.blocks[info.parent_if - 1]
+			// Side exits beyond the merge cannot be enclosed by native if/endif.
+			if origin.branch != .Goto || origin.scope_end > i + 1 do break ifify
+			left := int(get_node(ctx, bac.get_inputs(ctx, head.inps[0])[0]).gvn)
+			right := int(get_node(ctx, bac.get_inputs(ctx, head.inps[1])[0]).gvn)
+			if min(left, right) != origin.target - 2 || max(left, right) != i - 1 do break ifify
+			if get_node(ctx, ctx.bbs[left].tail).itype != .Jump ||
+			   get_node(ctx, ctx.bbs[right].tail).itype != .Jump {
+				break ifify
+			}
+			origin.branch, origin.end = .If, i + 1
+			ctx.blocks[origin.target - 1].entry = .Else
+			ctx.blocks[origin.target - 1].else_end = i + 1
+			ctx.blocks[min(left, right)].branch = .Illegal
+			info.entry = .Endif
+			info.parent_if = origin.parent_if
+		}
+
+		tail := expand_node(ctx, bb.tail)
+		for out, j in tail.outs {
+			next := get_node(ctx, out.id)
+			if next.itype == .End do continue
+			target := int(next.gvn) + 1
+			if info.parent_if != 0 {
+				parent := &ctx.blocks[info.parent_if - 1]
+				parent.scope_end = max(parent.scope_end, target, info.scope_end)
+			}
+			if tail.itype == .If do info.scope_end = max(info.scope_end, target)
+			if target == i + 2 do continue
+			info.target = target
+			info.negate = next.itype == .Else
+			if target <= i + 1 {
+				assert(next.itype == .Loop)
+				info.branch, info.negate = .While, j == 1
+			} else if len(loops) != 0 && target == slice.last(loops[:]) + 1 {
+				info.branch, info.target = .Break, slice.last(loops[:])
+			} else {
+				info.branch = .Goto
+				ctx.blocks[target - 1].entry = .Join
+			}
+		}
 	}
-	if ctx.closing_loop != 0 do return ctx.closing_loop * 2 + 1
-	return 0
+	next := 0
+	#reverse for &block, i in ctx.blocks {
+		block.next = next
+		if block.branch == .While do next = (i + 1) * 2 + 1
+		if block.entry != .Illegal do next = (i + 1) * 2
+	}
 }
 
 emit_branch :: proc(

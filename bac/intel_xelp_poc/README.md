@@ -8,11 +8,12 @@ zero-or-one booleans when used as values, and allocated flag registers when
 used by control flow. Instruction templates live in the `FLOAT_OPS` node-type
 table, with register fields filled after allocation.
 
-Structured control flow reuses `bac.Cfg_Blocks`: if/else regions emit
-`if`/`else`/`endif`, generic forward blocks emit `goto`/`join`, and loop
-backedges emit `while`. Enclosing loop-exit blocks can coalesce with the loop
-and use `break`. Branch targets and reconvergence points are patched after
-emission. Phi transfers execute under the active lane mask.
+Control flow uses a flat table indexed by scheduled basic block, independently
+of Wasm's `bac.Cfg_Blocks`. A forward pass recognizes simple diamonds for
+`if`/`else`/`endif`, marks forward destinations for `goto`/`join`, and identifies
+loop backedges and direct exits for `while`/`break`. A backward pass links the
+reconvergence points without sorting or reordering blocks. Branch offsets are
+patched after emission. Phi transfers execute under the active lane mask.
 
 Arguments use `r1` through `r8`, and results use `r120` through `r127` before
 being written to the output surface. Memory operations, spills,

@@ -1065,8 +1065,11 @@ cfg_blocks_next_end :: proc(
 	end_kind: Cfg_End_Kind,
 	ok: bool,
 ) {
-	for idx in cfg_blocks_next_end_block(ctx, i) {
-		block := ctx.blocks[idx]
+	for len(ctx.block_stack) > 0 &&
+	    ctx.blocks[slice.last(ctx.block_stack[:])].end == i {
+		block := ctx.blocks[pop(&ctx.block_stack)]
+		assert(!ctx.close_loop || !block.is_loop)
+		ctx.close_loop |= block.is_loop
 		if !ctx.close_loop {
 			if block.is_else {
 				ctx.bb_metas[block.origin].else_pos = code.pos
@@ -1081,25 +1084,10 @@ cfg_blocks_next_end :: proc(
 		}
 	}
 
-	return
-}
-
-cfg_blocks_next_end_block :: proc(
-	ctx: ^Cfg_Blocks,
-	i: int,
-) -> (
-	idx: int,
-	ok: bool,
-) {
-	if len(ctx.block_stack) > 0 &&
-	   ctx.blocks[slice.last(ctx.block_stack[:])].end == i {
-		idx = pop(&ctx.block_stack)
-		block := ctx.blocks[idx]
-		assert(!ctx.close_loop || !block.is_loop)
-		ctx.close_loop |= block.is_loop
-		return idx, true
+	if ctx.close_loop {
+		append(&ctx.block_stack, -1)
 	}
-	if ctx.close_loop do append(&ctx.block_stack, -1)
+
 	return
 }
 
@@ -1110,38 +1098,26 @@ cfg_blocks_next_start :: proc(
 	start_kind: Cfg_Start_Kind,
 	ok: bool,
 ) {
-	for idx in cfg_blocks_next_start_block(ctx, i) {
-		block := ctx.blocks[idx]
-		if block.is_loop do return .Loop, true
-		if !block.is_else && !block.is_then do return .Block, true
-	}
-	return
-}
-
-cfg_blocks_next_start_block :: proc(
-	ctx: ^Cfg_Blocks,
-	i: int,
-) -> (
-	idx: int,
-	ok: bool,
-) {
 	if !ctx.inited {
 		ctx.cursor = len(ctx.final_order) - 1
 		ctx.inited = true
 	}
 
-	if ctx.cursor >= 0 && ctx.blocks[ctx.final_order[ctx.cursor]].start == i {
+	for ctx.cursor >= 0 && ctx.blocks[ctx.final_order[ctx.cursor]].start == i {
 		defer ctx.cursor -= 1
-		idx = ctx.final_order[ctx.cursor]
-		block := &ctx.blocks[idx]
+		block := &ctx.blocks[ctx.final_order[ctx.cursor]]
 		block.stack_pos = len(ctx.block_stack)
 		append(&ctx.block_stack, ctx.final_order[ctx.cursor])
 		if block.is_loop {
 			if block.end == i {
 				ctx.close_loop = true
 			}
+			return .Loop, true
+		} else if block.is_else || block.is_then {
+			continue
+		} else {
+			return .Block, true
 		}
-		return idx, true
 	}
 
 	return

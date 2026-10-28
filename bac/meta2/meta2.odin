@@ -57,6 +57,7 @@ main :: proc() {
 	when intel_xelp_poc.SPEC_NOT_PRESENT {
 		XELP_CLASSES := [intel_xelp_poc.Node_Type]meta.Class_Spec {
 			.Inv = {no_ctor = true, flags = {.Interned}},
+			.Value_Eq ..= .Value_Ge = {no_ctor = true, flags = {.Interned}},
 		}
 
 		meta.generate_spec(
@@ -72,10 +73,11 @@ main :: proc() {
 				},
 				does_regalloc = true,
 				datatype_to_reg_kind = #partial{.I8 ..= .V512 = intel_xelp_poc.RK_GRF},
-				spill_boundary = {intel_xelp_poc.GRF_COUNT},
+				spill_boundary = {intel_xelp_poc.GRF_COUNT, intel_xelp_poc.FLAG_COUNT},
 				cc_table = intel_xelp_poc.CC_TABLE[:],
 				common_reg_specs = {
 					{"GRF", intel_xelp_poc.RK_GRF, {~i64(1), ~i64(1 << 55 | 1 << 54)}},
+					{"FLAG", intel_xelp_poc.RK_FLAG, {0xf, 0}},
 				},
 			},
 			"bac/intel_xelp_poc/node_specs.odin",

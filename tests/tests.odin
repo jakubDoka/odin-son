@@ -293,6 +293,640 @@ main :: proc(a: f32, b: f32, c: f32) -> f32 {
 }
 `, 3, {f32}, wide_main, 2)
 }
+@(test) gpu_if_else :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc(a: f32, b: f32) -> f32 {
+	result: f32
+	if a < b {
+		result = a - b
+	} else {
+		result = a + b
+	}
+	return result * b
+}
+	wide_main :: proc(params: []gpu.Reg, results: []gpu.Reg) {
+		for i in 0 ..< len(gpu.Reg) {
+			(^f32)(&results[0][i])^ = main_((^f32)(&params[0][i])^, (^f32)(&params[1][i])^)
+		}
+	}
+	run_gpu_test(t, `gpu_if_else`, `
+package main
+
+main :: proc(a: f32, b: f32) -> f32 {
+	result: f32
+	if a < b {
+		result = a - b
+	} else {
+		result = a + b
+	}
+	return result * b
+}
+`, 2, {f32}, wide_main, 0)
+}
+@(test) gpu_nested_if :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc(a: f32, b: f32, c: f32) -> f32 {
+	result := a
+	if a < b {
+		if b < c {
+			result = a + c
+		} else {
+			result = b - c
+		}
+	} else if a == b {
+		result = a * c
+	}
+	return result
+}
+	wide_main :: proc(params: []gpu.Reg, results: []gpu.Reg) {
+		for i in 0 ..< len(gpu.Reg) {
+			(^f32)(&results[0][i])^ = main_((^f32)(&params[0][i])^, (^f32)(&params[1][i])^, (^f32)(&params[2][i])^)
+		}
+	}
+	run_gpu_test(t, `gpu_nested_if`, `
+package main
+
+main :: proc(a: f32, b: f32, c: f32) -> f32 {
+	result := a
+	if a < b {
+		if b < c {
+			result = a + c
+		} else {
+			result = b - c
+		}
+	} else if a == b {
+		result = a * c
+	}
+	return result
+}
+`, 3, {f32}, wide_main, 0)
+}
+@(test) gpu_loop :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc(a: f32, b: f32) -> f32 {
+	result := a
+	// COMPILER BUG: the frontend does not lower three-clause for statements yet.
+	// for i: f32 = 0; i < 4; i += 1 {
+	i: f32 = 0
+	for {
+		if i >= 4 do break
+		i += 1
+		result += b
+	}
+	return result
+}
+	wide_main :: proc(params: []gpu.Reg, results: []gpu.Reg) {
+		for i in 0 ..< len(gpu.Reg) {
+			(^f32)(&results[0][i])^ = main_((^f32)(&params[0][i])^, (^f32)(&params[1][i])^)
+		}
+	}
+	run_gpu_test(t, `gpu_loop`, `
+package main
+
+main :: proc(a: f32, b: f32) -> f32 {
+	result := a
+	// COMPILER BUG: the frontend does not lower three-clause for statements yet.
+	// for i: f32 = 0; i < 4; i += 1 {
+	i: f32 = 0
+	for {
+		if i >= 4 do break
+		i += 1
+		result += b
+	}
+	return result
+}
+`, 2, {f32}, wide_main, 0)
+}
+@(test) gpu_divergent_loop_break :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc(a: f32, b: f32) -> f32 {
+	result := a
+	// COMPILER BUG: the frontend does not lower three-clause for statements yet.
+	// for i: f32 = 0; i < 4; i += 1 {
+	i: f32 = 0
+	for {
+		if i >= 4 do break
+		i += 1
+		result += b
+		if result > 1 {
+			break
+		}
+	}
+	return result
+}
+	wide_main :: proc(params: []gpu.Reg, results: []gpu.Reg) {
+		for i in 0 ..< len(gpu.Reg) {
+			(^f32)(&results[0][i])^ = main_((^f32)(&params[0][i])^, (^f32)(&params[1][i])^)
+		}
+	}
+	run_gpu_test(t, `gpu_divergent_loop_break`, `
+package main
+
+main :: proc(a: f32, b: f32) -> f32 {
+	result := a
+	// COMPILER BUG: the frontend does not lower three-clause for statements yet.
+	// for i: f32 = 0; i < 4; i += 1 {
+	i: f32 = 0
+	for {
+		if i >= 4 do break
+		i += 1
+		result += b
+		if result > 1 {
+			break
+		}
+	}
+	return result
+}
+`, 2, {f32}, wide_main, 0)
+}
+@(test) gpu_loop_continue :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc(a: f32, b: f32) -> f32 {
+	result := a
+	// COMPILER BUG: the frontend does not lower three-clause for statements yet.
+	// for i: f32 = 0; i < 4; i += 1 {
+	i: f32 = 0
+	for {
+		if i >= 4 do break
+		iteration := i
+		i += 1
+		if iteration < b {
+			continue
+		}
+		result += b
+	}
+	return result
+}
+	wide_main :: proc(params: []gpu.Reg, results: []gpu.Reg) {
+		for i in 0 ..< len(gpu.Reg) {
+			(^f32)(&results[0][i])^ = main_((^f32)(&params[0][i])^, (^f32)(&params[1][i])^)
+		}
+	}
+	run_gpu_test(t, `gpu_loop_continue`, `
+package main
+
+main :: proc(a: f32, b: f32) -> f32 {
+	result := a
+	// COMPILER BUG: the frontend does not lower three-clause for statements yet.
+	// for i: f32 = 0; i < 4; i += 1 {
+	i: f32 = 0
+	for {
+		if i >= 4 do break
+		iteration := i
+		i += 1
+		if iteration < b {
+			continue
+		}
+		result += b
+	}
+	return result
+}
+`, 2, {f32}, wide_main, 0)
+}
+@(test) gpu_nested_loops :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc(a: f32, b: f32) -> f32 {
+	result := a
+	// COMPILER BUG: the frontend does not lower three-clause for statements yet.
+	// for i: f32 = 0; i < 3; i += 1 {
+	i: f32 = 0
+	for {
+		if i >= 3 do break
+		i += 1
+		// COMPILER BUG: the frontend does not lower three-clause for statements yet.
+		// for j: f32 = 0; j < 3; j += 1 {
+		j: f32 = 0
+		for {
+			if j >= 3 do break
+			j += 1
+			if result > b {
+				break
+			}
+			result += 0.25
+		}
+		result -= b
+	}
+	return result
+}
+	wide_main :: proc(params: []gpu.Reg, results: []gpu.Reg) {
+		for i in 0 ..< len(gpu.Reg) {
+			(^f32)(&results[0][i])^ = main_((^f32)(&params[0][i])^, (^f32)(&params[1][i])^)
+		}
+	}
+	run_gpu_test(t, `gpu_nested_loops`, `
+package main
+
+main :: proc(a: f32, b: f32) -> f32 {
+	result := a
+	// COMPILER BUG: the frontend does not lower three-clause for statements yet.
+	// for i: f32 = 0; i < 3; i += 1 {
+	i: f32 = 0
+	for {
+		if i >= 3 do break
+		i += 1
+		// COMPILER BUG: the frontend does not lower three-clause for statements yet.
+		// for j: f32 = 0; j < 3; j += 1 {
+		j: f32 = 0
+		for {
+			if j >= 3 do break
+			j += 1
+			if result > b {
+				break
+			}
+			result += 0.25
+		}
+		result -= b
+	}
+	return result
+}
+`, 2, {f32}, wide_main, 0)
+}
+@(test) gpu_comparison_flag_and_value :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc(a: f32, b: f32) -> bool {
+	less := a < b
+	result := a
+	if less {
+		result += b
+	}
+	return (result < b) == less
+}
+	wide_main :: proc(params: []gpu.Reg, results: []gpu.Reg) {
+		for i in 0 ..< len(gpu.Reg) {
+			(^bool)(&results[0][i])^ = main_((^f32)(&params[0][i])^, (^f32)(&params[1][i])^)
+		}
+	}
+	run_gpu_test(t, `gpu_comparison_flag_and_value`, `
+package main
+
+main :: proc(a: f32, b: f32) -> bool {
+	less := a < b
+	result := a
+	if less {
+		result += b
+	}
+	return (result < b) == less
+}
+`, 2, {bool}, wide_main, 0)
+}
+@(test) gpu_boolean_phi_condition :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc(a: f32, b: f32, c: f32) -> f32 {
+	condition := a < b
+	if b < c {
+		condition = a == c
+	}
+	result := a
+	if condition {
+		result += c
+	}
+	return result
+}
+	wide_main :: proc(params: []gpu.Reg, results: []gpu.Reg) {
+		for i in 0 ..< len(gpu.Reg) {
+			(^f32)(&results[0][i])^ = main_((^f32)(&params[0][i])^, (^f32)(&params[1][i])^, (^f32)(&params[2][i])^)
+		}
+	}
+	run_gpu_test(t, `gpu_boolean_phi_condition`, `
+package main
+
+main :: proc(a: f32, b: f32, c: f32) -> f32 {
+	condition := a < b
+	if b < c {
+		condition = a == c
+	}
+	result := a
+	if condition {
+		result += c
+	}
+	return result
+}
+`, 3, {f32}, wide_main, 0)
+}
+@(test) gpu_early_return :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc(a: f32, b: f32) -> f32 {
+	if a < b {
+		return a * b
+	}
+	return a - b
+}
+	wide_main :: proc(params: []gpu.Reg, results: []gpu.Reg) {
+		for i in 0 ..< len(gpu.Reg) {
+			(^f32)(&results[0][i])^ = main_((^f32)(&params[0][i])^, (^f32)(&params[1][i])^)
+		}
+	}
+	run_gpu_test(t, `gpu_early_return`, `
+package main
+
+main :: proc(a: f32, b: f32) -> f32 {
+	if a < b {
+		return a * b
+	}
+	return a - b
+}
+`, 2, {f32}, wide_main, 0)
+}
+@(test) gpu_loop_nested_break_continue :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc(a: f32, b: f32) -> f32 {
+	result := a
+	i: f32 = 0
+	for {
+		i += 1
+		if i > 5 do break
+		if a < b {
+			result += 0.25
+			if result > b do break
+			continue
+		}
+		result -= 0.125
+		if result < b {
+			result += b
+		}
+	}
+	return result
+}
+	wide_main :: proc(params: []gpu.Reg, results: []gpu.Reg) {
+		for i in 0 ..< len(gpu.Reg) {
+			(^f32)(&results[0][i])^ = main_((^f32)(&params[0][i])^, (^f32)(&params[1][i])^)
+		}
+	}
+	run_gpu_test(t, `gpu_loop_nested_break_continue`, `
+package main
+
+main :: proc(a: f32, b: f32) -> f32 {
+	result := a
+	i: f32 = 0
+	for {
+		i += 1
+		if i > 5 do break
+		if a < b {
+			result += 0.25
+			if result > b do break
+			continue
+		}
+		result -= 0.125
+		if result < b {
+			result += b
+		}
+	}
+	return result
+}
+`, 2, {f32}, wide_main, 0)
+}
+@(test) gpu_labeled_loop_break :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc(a: f32, b: f32) -> f32 {
+	result := a
+	i: f32 = 0
+	outer: for {
+		i += 1
+		if i > 3 do break
+		j: f32 = 0
+		for {
+			j += 1
+			if j > 3 do break
+			result += 0.25
+			if result > b do break outer
+		}
+		result -= 0.125
+	}
+	return result
+}
+	wide_main :: proc(params: []gpu.Reg, results: []gpu.Reg) {
+		for i in 0 ..< len(gpu.Reg) {
+			(^f32)(&results[0][i])^ = main_((^f32)(&params[0][i])^, (^f32)(&params[1][i])^)
+		}
+	}
+	run_gpu_test(t, `gpu_labeled_loop_break`, `
+package main
+
+main :: proc(a: f32, b: f32) -> f32 {
+	result := a
+	i: f32 = 0
+	outer: for {
+		i += 1
+		if i > 3 do break
+		j: f32 = 0
+		for {
+			j += 1
+			if j > 3 do break
+			result += 0.25
+			if result > b do break outer
+		}
+		result -= 0.125
+	}
+	return result
+}
+`, 2, {f32}, wide_main, 0)
+}
+@(test) gpu_divergent_loop_count :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc(a: f32, b: f32) -> f32 {
+	result := a
+	i: f32 = 0
+	for {
+		if i > b + 2 do break
+		i += 1
+		result += 0.25
+	}
+	return result
+}
+	wide_main :: proc(params: []gpu.Reg, results: []gpu.Reg) {
+		for i in 0 ..< len(gpu.Reg) {
+			(^f32)(&results[0][i])^ = main_((^f32)(&params[0][i])^, (^f32)(&params[1][i])^)
+		}
+	}
+	run_gpu_test(t, `gpu_divergent_loop_count`, `
+package main
+
+main :: proc(a: f32, b: f32) -> f32 {
+	result := a
+	i: f32 = 0
+	for {
+		if i > b + 2 do break
+		i += 1
+		result += 0.25
+	}
+	return result
+}
+`, 2, {f32}, wide_main, 0)
+}
+@(test) gpu_flag_survives_materialized_comparison :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc(a: f32, b: f32) -> bool {
+	condition := a < b
+	value := false
+	i: f32 = 0
+	for {
+		i += 1
+		value = value == (i * 0.125 < b)
+		if condition {
+			if i > 4 do break
+		} else {
+			if i > 3 do break
+		}
+	}
+	return value
+}
+	wide_main :: proc(params: []gpu.Reg, results: []gpu.Reg) {
+		for i in 0 ..< len(gpu.Reg) {
+			(^bool)(&results[0][i])^ = main_((^f32)(&params[0][i])^, (^f32)(&params[1][i])^)
+		}
+	}
+	run_gpu_test(t, `gpu_flag_survives_materialized_comparison`, `
+package main
+
+main :: proc(a: f32, b: f32) -> bool {
+	condition := a < b
+	value := false
+	i: f32 = 0
+	for {
+		i += 1
+		value = value == (i * 0.125 < b)
+		if condition {
+			if i > 4 do break
+		} else {
+			if i > 3 do break
+		}
+	}
+	return value
+}
+`, 2, {bool}, wide_main, 0)
+}
+@(test) gpu_loop_shared_break_value :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc(a: f32, b: f32) -> f32 {
+	i: f32 = 0
+	for {
+		i += 1
+		if i > 4 do break
+		if i > b {
+			if a < b do break
+		}
+	}
+	return i
+}
+	wide_main :: proc(params: []gpu.Reg, results: []gpu.Reg) {
+		for i in 0 ..< len(gpu.Reg) {
+			(^f32)(&results[0][i])^ = main_((^f32)(&params[0][i])^, (^f32)(&params[1][i])^)
+		}
+	}
+	run_gpu_test(t, `gpu_loop_shared_break_value`, `
+package main
+
+main :: proc(a: f32, b: f32) -> f32 {
+	i: f32 = 0
+	for {
+		i += 1
+		if i > 4 do break
+		if i > b {
+			if a < b do break
+		}
+	}
+	return i
+}
+`, 2, {f32}, wide_main, 0)
+}
+@(test) gpu_loop_break_reconvergence :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc(a: f32, b: f32) -> f32 {
+	i: f32 = 0
+	for {
+		i += 1
+		if i > 4 do break
+		if a < b do break
+	}
+	return a + b
+}
+	wide_main :: proc(params: []gpu.Reg, results: []gpu.Reg) {
+		for i in 0 ..< len(gpu.Reg) {
+			(^f32)(&results[0][i])^ = main_((^f32)(&params[0][i])^, (^f32)(&params[1][i])^)
+		}
+	}
+	run_gpu_test(t, `gpu_loop_break_reconvergence`, `
+package main
+
+main :: proc(a: f32, b: f32) -> f32 {
+	i: f32 = 0
+	for {
+		i += 1
+		if i > 4 do break
+		if a < b do break
+	}
+	return a + b
+}
+`, 2, {f32}, wide_main, 0)
+}
+@(test) gpu_loop_branch_exits :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc(a: f32, b: f32) -> f32 {
+	i: f32 = 0
+	for {
+		i += 1
+		if a < b {
+			if i > 4 do break
+		} else {
+			if i > 3 do break
+		}
+	}
+	return i
+}
+	wide_main :: proc(params: []gpu.Reg, results: []gpu.Reg) {
+		for i in 0 ..< len(gpu.Reg) {
+			(^f32)(&results[0][i])^ = main_((^f32)(&params[0][i])^, (^f32)(&params[1][i])^)
+		}
+	}
+	run_gpu_test(t, `gpu_loop_branch_exits`, `
+package main
+
+main :: proc(a: f32, b: f32) -> f32 {
+	i: f32 = 0
+	for {
+		i += 1
+		if a < b {
+			if i > 4 do break
+		} else {
+			if i > 3 do break
+		}
+	}
+	return i
+}
+`, 2, {f32}, wide_main, 0)
+}
 @(test) simplest :: proc(t: ^testing.T) {
 
 

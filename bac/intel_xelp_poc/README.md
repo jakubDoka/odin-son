@@ -1,14 +1,21 @@
 # Intel Xe-LP proof-of-concept backend
 
-This proof-of-concept emits single-block SIMD8 kernels for scalar `f32`
+This proof-of-concept emits SIMD8 kernels for scalar `f32`
 addition, subtraction, multiplication, negation, and comparisons. Division
 lowers to a target-specific reciprocal node followed by multiplication, so it
 is approximate rather than correctly rounded. Comparisons return canonical
-zero-or-one booleans. Instruction templates live in the `FLOAT_OPS` node-type
+zero-or-one booleans when used as values, and allocated flag registers when
+used by control flow. Instruction templates live in the `FLOAT_OPS` node-type
 table, with register fields filled after allocation.
 
+Structured control flow reuses `bac.Cfg_Blocks`: if/else regions emit
+`if`/`else`/`endif`, generic forward blocks emit `goto`/`join`, and loop
+backedges emit `while`. Enclosing loop-exit blocks can coalesce with the loop
+and use `break`. Branch targets and reconvergence points are patched after
+emission. Phi transfers execute under the active lane mask.
+
 Arguments use `r1` through `r8`, and results use `r120` through `r127` before
-being written to the output surface. Control flow, memory operations, spills,
+being written to the output surface. Memory operations, spills,
 and other arithmetic datatypes remain unimplemented.
 
 Regenerate its spec through `gen-spec`, or run `odin run bac/meta2` from the
@@ -42,7 +49,8 @@ they are inside this package and `code` is a `^arna.Allocator`.
 `lanes` is 1, 2, 4, 8, 16, or 32. `mask_offset` is a multiple of four from
 0 to 28; the selected lanes must fit within 32 channels. `(W)` disables
 execution-mask checking; it does not change the execution width or introduce
-a flag predicate. Predication has no helper yet.
+a flag predicate. `eu_predicate(flag, negate)` packs normal flag predication;
+`eu_flag(flag)` selects the flag subregister for comparisons.
 
 ### Registers, regions, and types
 
@@ -237,8 +245,9 @@ emit_op(code, {
 ### Scope
 
 The current helpers cover direct-register one-/two-source ALU forms and raw
-sends with immediate descriptors. There are no packers yet for indirect
-addressing, flag predicates, saturation, condition modifiers, branches,
+sends with immediate descriptors, flag predicates, and structured branches.
+There are no packers yet for indirect
+addressing, saturation, general condition modifiers,
 three-source instructions, or compaction. An encodable field combination is
 not necessarily a legal instruction; instruction selection and scheduling
 must still respect Xe-LP's operation-specific restrictions.

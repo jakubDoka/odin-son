@@ -5,6 +5,7 @@ import "../../utils/arna"
 import "base:intrinsics"
 import "core:fmt"
 import "core:mem"
+import "core:slice"
 
 expand_node :: bac.expand_node
 get_node :: bac.get_node
@@ -17,7 +18,19 @@ MASK_SIZE :: GRF_COUNT
 GRF_BYTES :: 32
 GRF_COUNT :: 128
 RK_GRF :: Reg_Kind(0)
-RK_COUNT :: 1
+RK_FLAG :: Reg_Kind(1)
+FLAG_COUNT :: 4
+RK_COUNT :: 2
+VALUE_CMP_FLAG :: Reg {
+	kind  = RK_FLAG,
+	index = 3,
+}
+
+// A GRF destination does not suppress cmp's architectural flag write.
+@(rodata)
+VALUE_CMP_CLOBBERS := [RK_COUNT]i64 {
+	RK_FLAG = 1 << VALUE_CMP_FLAG.index,
+}
 
 R0 :: Reg(0)
 R1 :: Reg(1)
@@ -41,7 +54,7 @@ R126 :: Reg(126)
 R127 :: Reg(127)
 
 @(rodata)
-SPILL_SLOT_SIZE := [?]i32{128}
+SPILL_SLOT_SIZE := [RK_COUNT]i32{128, 2}
 
 EU_SRC0_IMMEDIATE :: u32(1 << 14)
 EU_SRC1_IMMEDIATE :: u32(1 << 15)
@@ -55,6 +68,12 @@ when SPEC_NOT_PRESENT {
 
 	Node_Type :: enum u16 {
 		Inv,
+		Value_Eq,
+		Value_Ne,
+		Value_Le,
+		Value_Lt,
+		Value_Gt,
+		Value_Ge,
 	}
 
 	inherit_idx_of :: proc($T: typeid) -> u8 {return 0}
@@ -66,8 +85,8 @@ OPT_HINTS := bac.Opt_Hints{}
 @(tag = "api", rodata, export, link_name = "bac_intel_xelp_poc_CC_TABLE")
 CC_TABLE := [1]bac.Call_Conv {
 	XELP_CC = {
-		args = {{R1, R2, R3, R4, R5, R6, R7, R8}},
-		rets = {{R120, R121, R122, R123, R124, R125, R126, R127}},
+		args = {{R1, R2, R3, R4, R5, R6, R7, R8}, {}},
+		rets = {{R120, R121, R122, R123, R124, R125, R126, R127}, {}},
 	},
 }
 
@@ -76,6 +95,37 @@ peep :: proc(
 	node: bac.Expanded_Node,
 	_: $T,
 ) -> Maybe(bac.Node_ID) {
+	if .Eq <= node.itype && node.itype <= .Ge {
+		value: bac.Node_ID
+		#reverse for use in node.outs {
+			if get_node(ctx, use.id).itype == .If && use.idx == 1 do continue
+			if value == 0 {
+				value = bac.add_raw(
+					ctx,
+					"cmpv",
+					u16(Node_Type.Value_Eq) + u16(node.itype) - u16(bac.Node_Type.Eq),
+					node.dt,
+					node.inps,
+				)
+			}
+			bac.set_input(ctx, use.id, use.idx, value)
+		}
+	}
+	if node.itype == .If {
+		condition := expand_node(ctx, node.inps[1])
+		if condition.itype < .Eq || condition.itype > .Ge {
+			flag := bac.add_bin_op(
+				ctx,
+				"boolflag",
+				.Ne,
+				.I8,
+				node.inps[1],
+				bac.add_c_int(ctx, "false", condition.dt, 0),
+			)
+			bac.set_input(ctx, bac.get_node_id(ctx, node), 1, flag)
+			return bac.get_node_id(ctx, node)
+		}
+	}
 	if node.itype == .Div && node.dt == .F32 {
 		inv := bac.add_raw(ctx, "inv", u16(Node_Type.Inv), .F32, {node.inps[1]})
 		return bac.add_bin_op(ctx, "fdiv", .Mul, .F32, node.inps[0], inv)
@@ -114,7 +164,8 @@ meta_of :: proc(
 	nkind := ra.datatype_to_reg_kind[node.dt]
 
 	masks := [RK_COUNT][]bac.RM_Intern_Idx {
-		RK_GRF = GRF_MASKS[:],
+		RK_GRF  = GRF_MASKS[:],
+		RK_FLAG = FLAG_MASKS[:],
 	}
 	nmasks := masks[nkind]
 	out := nmasks[0]
@@ -130,9 +181,29 @@ meta_of :: proc(
 		return {out = out}
 	case .CInt:
 		return {out = out}
-	case .Add, .Sub, .Mul, .Eq ..= .Ge:
+	case .Add, .Sub, .Mul:
 		return {out = out, masks = nmasks[:2]}
-	case .Neg, .Inv, .Split:
+	case .Value_Eq ..= .Value_Ge:
+		return {out = out, masks = GRF_MASKS[:2], clobbers = VALUE_CMP_CLOBBERS[:]}
+	case .Eq ..= .Ge:
+		return {out = FLAG_MASK_IDX, masks = GRF_MASKS[:2]}
+	case .If:
+		return {out = IOUT, input_start = 1, masks = FLAG_MASKS[:1]}
+	case .Jump, .Always:
+		return {out = IOUT}
+	case .Phi:
+		if out == IOUT do return {out = out}
+		inputs := make([]bac.RM_Intern_Idx, len(node.inps) - 1)
+		slice.fill(inputs, out)
+		return {out = out, input_start = 1, masks = inputs}
+	case .Neg, .Inv:
+		return {out = out, masks = nmasks[:1]}
+	case .Split:
+		source := expand_node(prc, node.inps[0])
+		for source.itype == .Split do source = expand_node(prc, source.inps[0])
+		if .Eq <= source.itype && source.itype <= .Ge {
+			return {out = FLAG_MASK_IDX, masks = FLAG_MASKS[:1]}
+		}
 		return {out = out, masks = nmasks[:1]}
 	case .Param:
 		return {out = bac.param_mask(prc, ra, node)}
@@ -144,7 +215,23 @@ meta_of :: proc(
 }
 
 Ctx :: struct {
-	using inner: bac.Codegen_Emit_Ctx,
+	using inner:  bac.Codegen_Emit_Ctx,
+	cfg_blocks:   bac.Cfg_Blocks,
+	blocks:       []Block_State,
+	labels:       []uint,
+	branches:     [dynamic]Branch,
+	closing_loop: int,
+}
+
+Block_State :: struct {
+	loop: int,
+	pair: int,
+}
+
+Branch :: struct {
+	pos:        uint,
+	jip, uip:   int,
+	jip_addend: int,
 }
 
 when !SPEC_NOT_PRESENT {
@@ -177,6 +264,7 @@ when !SPEC_NOT_PRESENT {
 }
 
 emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
+	context.allocator, _ = arna.scrath(ectx.prc.temps)
 	spill_slot_base: [RK_COUNT]i32
 	stack_param_offset: [RK_COUNT][dynamic]i32
 
@@ -193,6 +281,47 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 	ctx.stack_param_offset = stack_param_offset[:]
 	ctx.spill_slot_base = spill_slot_base[:]
 	ctx.spill_slot_size = SPILL_SLOT_SIZE[:]
+
+	bac.compute_blocks(&ctx.cfg_blocks, ctx.inner)
+
+	ctx.blocks = make([]Block_State, len(ctx.cfg_blocks.blocks))
+	ctx.labels = make([]uint, len(ctx.blocks) * 2)
+	slice.fill(ctx.labels, max(uint))
+	ctx.branches = make([dynamic]Branch)
+
+	for idx in ctx.cfg_blocks.final_order {
+		block := ctx.cfg_blocks.blocks[idx]
+
+		if block.is_loop {
+			for outer in ctx.cfg_blocks.final_order {
+				ob := ctx.cfg_blocks.blocks[outer]
+				if !ob.is_loop &&
+				   !ob.is_then &&
+				   !ob.is_else &&
+				   ob.start <= block.start &&
+				   ob.end == block.end + 1 {
+					// Incoming edges outside the loop still need their own reconvergence point.
+					internal := true
+					for cursor := outer;
+					    cursor != 0;
+					    cursor = ctx.cfg_blocks.blocks[cursor].worse {
+						origin := ctx.cfg_blocks.blocks[cursor].origin
+						internal &= block.start <= origin && origin <= block.end
+					}
+					if internal do ctx.blocks[outer].loop = idx
+				}
+			}
+		}
+
+		if block.is_else {
+			for pair in ctx.cfg_blocks.final_order {
+				pb := ctx.cfg_blocks.blocks[pair]
+				if pb.is_then && pb.origin == block.origin {
+					ctx.blocks[idx].pair = pair
+				}
+			}
+		}
+	}
 
 	emit_op(
 		ctx.code,
@@ -225,9 +354,51 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 	)
 
 	for bb, bidx in ctx.schedule.bbs {
-		assert(bidx == 0)
+		ctx.closing_loop = 0
+
+		for idx in bac.cfg_blocks_next_end_block(&ctx.cfg_blocks, bidx) {
+			block := ctx.cfg_blocks.blocks[idx]
+			if block.is_loop {
+				ctx.closing_loop = idx
+				continue
+			}
+			if ctx.blocks[idx].loop != 0 do continue
+			ctx.labels[idx * 2 + 1] = ctx.code.pos
+			if block.is_else {
+				assert(ctx.blocks[idx].pair != 0)
+				end := ctx.blocks[idx].pair * 2 + 1
+				emit_branch(&ctx, .Else, end, end)
+			} else {
+				op := block.is_then ? Opcode.Endif : Opcode.Join
+				emit_branch(&ctx, op, next_join(&ctx), 0)
+			}
+		}
+
+		for idx in bac.cfg_blocks_next_start_block(&ctx.cfg_blocks, bidx) {
+			ctx.labels[idx * 2] = ctx.code.pos
+			if ctx.cfg_blocks.blocks[idx].is_loop &&
+			   ctx.cfg_blocks.blocks[idx].end == bidx {
+				ctx.closing_loop = idx
+			}
+		}
+
 		for instr, i in bb.instrs {
-			emit_instr(&ctx, instr, struct{}{})
+			emit_instr(&ctx, instr, bidx, struct{}{})
+		}
+
+		if bac.cfg_blocks_end_block(&ctx.cfg_blocks) {
+			assert(ctx.closing_loop == 0)
+		}
+	}
+
+	for branch in ctx.branches {
+		op := (^Op)(&ctx.code.ptr[branch.pos])
+		jip := branch.jip == 0 ? branch.pos + 16 : ctx.labels[branch.jip]
+		assert(jip != max(uint))
+		op[3] = transmute(u32)i32(int(jip) + branch.jip_addend - int(branch.pos))
+		if branch.uip != 0 {
+			assert(ctx.labels[branch.uip] != max(uint))
+			op[2] = transmute(u32)i32(int(ctx.labels[branch.uip]) - int(branch.pos))
 		}
 	}
 
@@ -235,7 +406,7 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 }
 
 @(disabled = SPEC_NOT_PRESENT)
-emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, _: $T) {
+emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block_idx: int, _: $T) {
 	node := expand_node(ctx, instr)
 
 	#partial switch ptype(node) {
@@ -261,7 +432,33 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, _: $T) {
 	case .Split:
 		dst := reg_of(ctx, instr)
 		src := reg_of(ctx, node.inps[0])
-		if dst == src do return
+		if dst.kind == RK_FLAG {
+			assert(src.kind == RK_FLAG)
+			// (W) mov (1|M0) f{dst/2}.{dst%2}<1>:uw f{src/2}.{src%2}<0;1,0>:uw {@1}
+			emit_op(
+				ctx.code,
+				{
+					eu_control(.Mov, 1, swsb = eu_swsb_regdist(1), no_mask = true),
+					eu_dst(
+						Reg(0x30 + dst.index / 2),
+						u8(dst.index % 2 * 2),
+						.UW,
+						file = .ARF,
+					) |
+					eu_src0_type(.UW),
+					eu_src(
+						Reg(0x30 + src.index / 2),
+						u8(src.index % 2 * 2),
+						0,
+						1,
+						0,
+						file = .ARF,
+					),
+					0,
+				},
+			)
+			return
+		}
 		// mov (8|M0) r{dst}.0<1>:ud r{src}.0<8;8,1>:ud {@1}
 		emit_op(
 			ctx.code,
@@ -272,7 +469,42 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, _: $T) {
 				0,
 			},
 		)
-	case .Add, .Sub, .Mul, .Eq ..= .Ge, .Neg, .Inv:
+	case .Eq ..= .Ge, .Value_Eq ..= .Value_Ge:
+		materialized := ptype(node) >= .Value_Eq
+		kind :=
+			materialized ? Node_Type(u16(Node_Type.Eq) + node.rtype - u16(Node_Type.Value_Eq)) : ptype(node)
+		dst := reg_of(ctx, instr)
+		op := FLOAT_OPS[kind]
+		dt := get_node(ctx, node.inps[0]).dt
+		assert(dt == .F32 || dt in bit_set[bac.Node_Datatype]{.I8, .I32})
+		if dt != .F32 {
+			op[1] = eu_dst(R0, 0, .D, file = .ARF) | eu_src0_type(.D)
+			op[2] = (op[2] & 0xf0000000) | eu_src(R0, 0, 8, 8, 1) | eu_src1_type(.D)
+		}
+		if materialized {
+			op[0] |= eu_flag(VALUE_CMP_FLAG)
+			op[1] |= eu_reg_number(dst, .GRF) << 24 | 1 << 18
+		} else {
+			op[0] |= eu_flag(dst)
+			op[1] &= ~u32(1 << 18)
+		}
+		op[2] |= eu_reg_number(reg_of(ctx, node.inps[0]), .GRF) << 8
+		op[3] |= eu_reg_number(reg_of(ctx, node.inps[1]), .GRF) << 8
+		emit_op(ctx.code, op)
+		if materialized {
+			// EU masks must be canonicalized without overwriting allocated predicate flags.
+			// and (8|M0) r{dst}.0<1>:ud r{dst}.0<8;8,1>:ud 0x1:ud {@1}
+			emit_op(
+				ctx.code,
+				{
+					eu_control(.And, 8, swsb = eu_swsb_regdist(1)),
+					eu_dst(dst, 0, .UD) | eu_src0_type(.UD) | EU_SRC1_IMMEDIATE,
+					eu_src(dst, 0, 8, 8, 1) | eu_src1_type(.UD),
+					1,
+				},
+			)
+		}
+	case .Add, .Sub, .Mul, .Neg, .Inv:
 		assert(bac.operation_datatype(ctx, node) == .F32)
 		dst := reg_of(ctx, instr)
 		op := FLOAT_OPS[ptype(node)]
@@ -295,18 +527,59 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, _: $T) {
 					0,
 				},
 			)
-		} else if .Eq <= ptype(node) && ptype(node) <= .Ge {
-			// EU comparisons yield all-ones masks, but Odin booleans must be zero or one.
-			// and (8|M0) r{dst}.0<1>:ud r{dst}.0<8;8,1>:ud 0x1:ud {@1}
-			emit_op(
-				ctx.code,
-				{
-					eu_control(.And, 8, swsb = eu_swsb_regdist(1)),
-					eu_dst(dst, 0, .UD) | eu_src0_type(.UD) | EU_SRC1_IMMEDIATE,
-					eu_src(dst, 0, 8, 8, 1) | eu_src1_type(.UD),
-					1,
-				},
-			)
+		}
+	case .If, .Jump, .Always:
+		block, is_nil, ifified, _ := bac.cfg_blocks_meta(
+			&ctx.cfg_blocks,
+			&ctx.inner,
+			node,
+			block_idx,
+		)
+		flag: Reg
+		predicate: u32
+		if node.itype == .If {
+			flag = reg_of(ctx, node.inps[1])
+			next := get_node(ctx, ctx.schedule.bbs[block_idx + 1].head)
+			predicate = eu_predicate(flag, (next.itype == .Then) != ifified)
+		}
+		if ifified {
+			for idx in ctx.cfg_blocks.final_order {
+				b := ctx.cfg_blocks.blocks[idx]
+				if b.is_else && b.origin == block_idx {
+					emit_branch(
+						ctx,
+						.If,
+						idx * 2 + 1,
+						ctx.blocks[idx].pair * 2 + 1,
+						predicate,
+						16,
+					)
+					return
+				}
+			}
+			unreachable()
+		}
+		if ctx.closing_loop != 0 {
+			idx := ctx.closing_loop
+			ctx.labels[idx * 2 + 1] = ctx.code.pos
+			if node.itype == .If {
+				loop_idx := -1
+				for use, i in node.outs {
+					if get_node(ctx, use.id).itype == .Loop do loop_idx = i
+				}
+				assert(loop_idx != -1)
+				predicate = eu_predicate(flag, loop_idx == 1)
+			}
+			emit_branch(ctx, .While, idx * 2, 0, predicate)
+			ctx.closing_loop = 0
+			return
+		}
+		if is_nil || block.is_then || block.is_else do return
+		idx := ctx.cfg_blocks.bb_metas[block_idx].break_block
+		if loop := ctx.blocks[idx].loop; loop != 0 {
+			emit_branch(ctx, .Break, next_join(ctx), loop * 2 + 1, predicate)
+		} else {
+			emit_branch(ctx, .Goto, next_join(ctx), idx * 2 + 1, predicate)
 		}
 	case .Return:
 		return_count := len(node.inps) - min(2, len(node.inps))
@@ -376,6 +649,45 @@ reg_of :: proc(ctx: ^Ctx, node: bac.Node_ID) -> Reg {
 	return ctx.allocs[get_node(ctx, node).gvn]
 }
 
+next_join :: proc(ctx: ^Ctx) -> int {
+	#reverse for idx in ctx.cfg_blocks.block_stack {
+		if idx < 0 do continue
+		if ctx.blocks[idx].loop != 0 do continue
+		return idx * 2 + 1
+	}
+	if ctx.closing_loop != 0 do return ctx.closing_loop * 2 + 1
+	return 0
+}
+
+emit_branch :: proc(
+	ctx: ^Ctx,
+	opcode: Opcode,
+	jip, uip: int,
+	predicate: u32 = 0,
+	jip_addend: int = 0,
+) {
+	append(&ctx.branches, Branch{ctx.code.pos, jip, uip, jip_addend})
+	// [{predicate}] {opcode} (8|M0) {JIP} [{UIP}] {@1}
+	emit_op(
+		ctx.code,
+		{
+			eu_control(opcode, 8, swsb = eu_swsb_regdist(1)) | predicate,
+			uip != 0 ? 0xc000 : 0x4000,
+			0,
+			0,
+		},
+	)
+}
+
+eu_flag :: proc(reg: Reg) -> u32 {
+	assert(reg.kind == RK_FLAG && reg.index < FLAG_COUNT)
+	return u32(reg.index) << 22
+}
+
+eu_predicate :: proc(reg: Reg, negate: bool = false) -> u32 {
+	return eu_flag(reg) | 1 << 24 | u32(negate) << 28
+}
+
 emit_op :: proc(code: ^arna.Allocator, op: Op) {
 	op := op
 	bac.emit(code, mem.ptr_to_bytes(&op))
@@ -399,6 +711,7 @@ Opcode :: enum u8 {
 	Call     = 0x2C,
 	Ret      = 0x2D,
 	Goto     = 0x2E,
+	Join     = 0x2F,
 
 	// Messages
 	Send     = 0x31,

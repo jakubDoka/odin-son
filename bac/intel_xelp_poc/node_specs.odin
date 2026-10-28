@@ -9,7 +9,7 @@ Class_Flag :: bac.Class_Flag
 		{},
 	},
 	datatype_to_reg_kind = {.Void = 0, .Mem = 0, .I8 = 0, .I16 = 0, .I32 = 0, .I64 = 0, .F32 = 0, .F64 = 0, .V128 = 0, .V256 = 0, .V512 = 0},
-	spill_boundary = {128},
+	spill_boundary = {128, 4},
 	collect_meta = collect_meta,
 	emit_function = emit_function,
 	peep = peep_inst,
@@ -87,6 +87,12 @@ Class_Flag :: bac.Class_Flag
 		0b10, // Simd_Reduce_Add_Bisect
 		0b10, // Select
 		0b10, // Inv
+		0b10, // Value_Eq
+		0b10, // Value_Ne
+		0b10, // Value_Le
+		0b10, // Value_Lt
+		0b10, // Value_Gt
+		0b10, // Value_Ge
 	},
 	node_extra_sizes = {
 		0 = 1, // Nil -> Cfg
@@ -109,7 +115,7 @@ Class_Flag :: bac.Class_Flag
 		25 = 1, // Ret -> Tup
 		27 = 2, // CInt -> CInt
 		55 = 1, // Proc_Addr -> Tup
-		71 = 0,
+		77 = 0,
 	},
 	node_flags = {
 		{}, // Nil
@@ -184,6 +190,12 @@ Class_Flag :: bac.Class_Flag
 		{Class_Flag.Interned}, // Simd_Reduce_Add_Bisect
 		{Class_Flag.Interned}, // Select
 		{Class_Flag.Interned}, // Inv
+		{Class_Flag.Interned}, // Value_Eq
+		{Class_Flag.Interned}, // Value_Ne
+		{Class_Flag.Interned}, // Value_Le
+		{Class_Flag.Interned}, // Value_Lt
+		{Class_Flag.Interned}, // Value_Gt
+		{Class_Flag.Interned}, // Value_Ge
 	},
 	node_extra_types = ({}) when #config(NO_FMT, false) else ([]typeid{
 		0 = bac.Cfg,
@@ -206,7 +218,7 @@ Class_Flag :: bac.Class_Flag
 		25 = bac.Tup,
 		27 = bac.CInt,
 		55 = bac.Tup,
-		71 = {},
+		77 = {},
 	}),
 	node_kind = nil when #config(NO_FMT, false) else Node_Type,
 }
@@ -284,6 +296,12 @@ Node_Type :: enum u16 {
 	Simd_Reduce_Add_Bisect,
 	Select,
 	Inv,
+	Value_Eq,
+	Value_Ne,
+	Value_Le,
+	Value_Lt,
+	Value_Gt,
+	Value_Ge,
 }
 
 peep_inst :: proc(ctx: bac.Peep_Ctx, node: bac.Expanded_Node) -> Maybe(bac.Node_ID) {
@@ -331,9 +349,14 @@ inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 GRF_MASK_IDX :: bac.RM_Intern_Idx{index = 0, kind = 0}
 @(rodata) GRF_MASKS := [6]bac.RM_Intern_Idx{0 ..< 6 = GRF_MASK_IDX}
 
+@(rodata) FLAG_MASK := [?]i64{transmute(i64)u64(0x000000000000000f), transmute(i64)u64(0x0000000000000000)}
+FLAG_MASK_IDX :: bac.RM_Intern_Idx{index = 0, kind = 1}
+@(rodata) FLAG_MASKS := [6]bac.RM_Intern_Idx{0 ..< 6 = FLAG_MASK_IDX}
+
 seed_rm_interner :: proc(ra: ^bac.Regalloc) {
 	ra.mask_len = MASK_SIZE
 	bac.rm_intern_slice(ra, 0, GRF_MASK[:])
+	bac.rm_intern_slice(ra, 1, FLAG_MASK[:])
 }
 
 ptype :: #force_inline proc(node: bac.Expanded_Node) -> Node_Type {

@@ -29,7 +29,7 @@ main :: proc() {
 
 	levels := OPT_LEVELS
 	level := levels[len(levels) - 1]
-	target := TARGETS[0]
+	target := TARGETS[.X64]
 	show_timings := false
 	show_stats := false
 	check := false

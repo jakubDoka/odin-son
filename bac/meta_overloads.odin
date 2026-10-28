@@ -1,5 +1,5 @@
 package bac
-// NOTE: this file is generated: odin run meta
+// NOTE: this file is generated: odin run bac/tag-gen
 
 add_input :: proc{add_input_node, add_input_node_id}
 add_input_node_id :: #force_inline proc(prc: ^Proc, id: Node_ID, inp: Node_ID) -> int {

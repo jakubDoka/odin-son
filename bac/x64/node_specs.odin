@@ -525,3 +525,18 @@ seed_rm_interner :: proc(ra: ^bac.Regalloc) {
 	bac.rm_intern_slice(ra, 1, XMM_MASK[:])
 	bac.rm_intern_slice(ra, 1, XMM_SPILL_MASK[:])
 }
+
+xtype :: #force_inline proc(node: bac.Expanded_Node) -> Node_Type {
+	return Node_Type(node.rtype)
+}
+
+xextra :: #force_inline proc(
+	prc: ^bac.Proc,
+	node: ^bac.Node,
+	$T: typeid,
+) -> ^T {
+	if prc.inheritance_table[node.rtype] & (1 << inherit_idx_of(T)) == 0 {
+		return nil
+	}
+	return (^T)(&node.extra)
+}

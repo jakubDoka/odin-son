@@ -8293,7 +8293,7 @@ and 7. Expected 255, got 63 on x64 at every level except aggresive, with and
 without debug info. -->
 
 #### simd u16 reduction includes every lane
-```odin
+```!odin
 package main
 
 main :: proc() -> int {
@@ -8410,7 +8410,7 @@ input reaches the .Ext assertion node.lane == .I8 in bac/arm/arm.odin because
 the mask-lowering peep propagates the I16 lane type to a byte-only operation. -->
 
 #### simd word mask extracts one bit per lane
-```odin
+```!odin
 package main
 
 main :: proc() -> int {
@@ -8470,7 +8470,7 @@ product to 1 before subtracting 1; the fused operation instead produces
 -2^-54. Expected 1, got 0 on x64 except at aggresive. -->
 
 #### multiply add preserves intermediate rounding
-```odin
+```!odin
 package main
 
 check :: proc(a: f64, b: f64, c: f64) -> int {

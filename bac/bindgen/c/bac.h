@@ -36,12 +36,12 @@ typedef struct {
 } bac_String;
 
 typedef struct Soa_Slice_Of_bac_SS_Entry_V____i64 Soa_Slice_Of_bac_SS_Entry_V____i64;
-typedef struct Slice_Of_Slice_Of_bac_Reg Slice_Of_Slice_Of_bac_Reg;
-typedef struct Slice_Of_bac_Reg Slice_Of_bac_Reg;
-typedef struct Fidxe_Cap_Dyn_Arr_Of_2_bac_Node_Datatype Fidxe_Cap_Dyn_Arr_Of_2_bac_Node_Datatype;
-typedef struct bac_Node_Spec bac_Node_Spec;
-typedef struct Slice_Of_Soa_Slice_Of_bac_SS_Entry_V____i64 Slice_Of_Soa_Slice_Of_bac_SS_Entry_V____i64;
 typedef struct Slice_Of_Slice_Of_bac_i64 Slice_Of_Slice_Of_bac_i64;
+typedef struct Slice_Of_bac_Regalloc_Node_Meta Slice_Of_bac_Regalloc_Node_Meta;
+typedef struct Dyn_Arr_Of_bac_Basic_Block Dyn_Arr_Of_bac_Basic_Block;
+typedef bac_u16 bac_Node_Type;
+typedef struct Slice_Of_Slice_Of_bac_Reg Slice_Of_Slice_Of_bac_Reg;
+typedef struct Slice_Of_Soa_Slice_Of_bac_SS_Entry_V____i64 Slice_Of_Soa_Slice_Of_bac_SS_Entry_V____i64;
 typedef struct Slice_Of_Dyn_Arr_Of_bac_i32 Slice_Of_Dyn_Arr_Of_bac_i32;
 typedef struct Slice_Of_bac_Cfi_Op Slice_Of_bac_Cfi_Op;
 typedef struct Slice_Of_bac_Dbg_Location Slice_Of_bac_Dbg_Location;
@@ -50,7 +50,7 @@ typedef struct Slice_Of_bac_Node_ID Slice_Of_bac_Node_ID;
 typedef struct Slice_Of_bac_Node_Output Slice_Of_bac_Node_Output;
 typedef struct Slice_Of_bac_Param_Spec Slice_Of_bac_Param_Spec;
 typedef struct Slice_Of_bac_RM_Intern_Idx Slice_Of_bac_RM_Intern_Idx;
-typedef struct Slice_Of_bac_Regalloc_Node_Meta Slice_Of_bac_Regalloc_Node_Meta;
+typedef struct Slice_Of_bac_Reg Slice_Of_bac_Reg;
 typedef struct Slice_Of_bac_Reloc Slice_Of_bac_Reloc;
 typedef struct Slice_Of_bac_Sloc Slice_Of_bac_Sloc;
 typedef struct Slice_Of_bac_Bs_Class_Flag Slice_Of_bac_Bs_Class_Flag;
@@ -60,27 +60,27 @@ typedef struct Slice_Of_bac_int Slice_Of_bac_int;
 typedef struct Slice_Of_bac_u16 Slice_Of_bac_u16;
 typedef struct Slice_Of_bac_u32 Slice_Of_bac_u32;
 typedef struct Slice_Of_bac_u8 Slice_Of_bac_u8;
-typedef struct Dyn_Arr_Of_bac_Basic_Block Dyn_Arr_Of_bac_Basic_Block;
+typedef struct Fidxe_Cap_Dyn_Arr_Of_2_bac_Node_Datatype Fidxe_Cap_Dyn_Arr_Of_2_bac_Node_Datatype;
 typedef struct Dyn_Arr_Of_bac_Dbg_Data_Def Dyn_Arr_Of_bac_Dbg_Data_Def;
 typedef struct Dyn_Arr_Of_bac_Dbg_Data_Sym Dyn_Arr_Of_bac_Dbg_Data_Sym;
 typedef struct Dyn_Arr_Of_bac_Node_ID Dyn_Arr_Of_bac_Node_ID;
 typedef struct Dyn_Arr_Of_Dyn_Arr_Of_bac_Node_ID Dyn_Arr_Of_Dyn_Arr_Of_bac_Node_ID;
 typedef struct Dyn_Arr_Of_bac_i32 Dyn_Arr_Of_bac_i32;
-typedef struct arna_Allocator arna_Allocator;
-typedef struct bac_Basic_Block bac_Basic_Block;
-typedef struct bac_Cfg bac_Cfg;
-typedef struct bac_Codegen_Emit_Buf_Checkpoint bac_Codegen_Emit_Buf_Checkpoint;
-typedef bac_u8 bac_Dbg_Location_Kind;
 typedef bac_u16 bac_Bin_Op;
+typedef struct arna_Allocator arna_Allocator;
+typedef bac_u8 bac_Cfi_Kind;
+typedef struct bac_Basic_Block bac_Basic_Block;
+typedef struct bac_Codegen_Emit_Ctx bac_Codegen_Emit_Ctx;
 typedef struct bac_Call bac_Call;
 typedef struct bac_Call_Conv bac_Call_Conv;
-typedef struct bac_Node_Output bac_Node_Output;
-typedef bac_u8 bac_Cfi_Kind;
+typedef struct bac_Cfg bac_Cfg;
+typedef struct bac_Dbg_Sym bac_Dbg_Sym;
 typedef struct bac_Cfi_Op bac_Cfi_Op;
 typedef struct bac_Cfi_Spec bac_Cfi_Spec;
 typedef bac_int bac_Class_Flag;
 typedef struct bac_Codegen_Emit_Buf bac_Codegen_Emit_Buf;
-typedef struct bac_Codegen_Emit_Ctx bac_Codegen_Emit_Ctx;
+typedef struct bac_Codegen_Emit_Buf_Checkpoint bac_Codegen_Emit_Buf_Checkpoint;
+typedef struct bac_Node_Spec bac_Node_Spec;
 typedef struct bac_Codegen_Emit_Output bac_Codegen_Emit_Output;
 typedef struct bac_Codegen_Output bac_Codegen_Output;
 typedef struct bac_Codegen_Output_Bufs bac_Codegen_Output_Bufs;
@@ -89,7 +89,7 @@ typedef struct bac_Dbg_Data bac_Dbg_Data;
 typedef struct bac_Dbg_Data_Def bac_Dbg_Data_Def;
 typedef struct bac_Dbg_Data_Sym bac_Dbg_Data_Sym;
 typedef struct bac_Dbg_Location bac_Dbg_Location;
-typedef struct bac_Dbg_Sym bac_Dbg_Sym;
+typedef bac_u8 bac_Dbg_Location_Kind;
 typedef struct bac_Efficiency_Stat bac_Efficiency_Stat;
 typedef bac_int bac_Efficiency_Stat_Kind;
 typedef struct bac_Expanded_Node bac_Expanded_Node;
@@ -104,20 +104,21 @@ typedef struct bac_Nil_Node bac_Nil_Node;
 typedef struct bac_Node bac_Node;
 typedef bac_u8 bac_Node_Datatype;
 typedef bac_u32 bac_Node_ID;
-typedef bac_u16 bac_Node_Type;
+typedef struct bac_Node_Output bac_Node_Output;
 typedef bac_int bac_Opt_Flag;
 typedef struct bac_Opt_Hints bac_Opt_Hints;
 typedef struct bac_PS_Peep_Ctx bac_PS_Peep_Ctx;
-typedef struct bac_Reg bac_Reg;
 typedef struct bac_Param_Spec bac_Param_Spec;
+typedef bac_u16 bac_Reg_Kind;
 typedef bac_int bac_Pass;
 typedef struct bac_Peep_Ctx bac_Peep_Ctx;
-typedef struct bac_ssa_Param_Gen bac_ssa_Param_Gen;
-typedef struct bac_Proc_Meta bac_Proc_Meta;
+typedef struct bac_Schedule bac_Schedule;
+typedef struct bit_arr_Bit_Set bit_arr_Bit_Set;
 typedef struct bac_Proc bac_Proc;
-typedef struct bac_RM_Interner bac_RM_Interner;
+typedef struct bac_Proc_Meta bac_Proc_Meta;
 typedef struct bac_RM_Intern_Idx bac_RM_Intern_Idx;
-typedef bac_u16 bac_Reg_Kind;
+typedef struct bac_RM_Interner bac_RM_Interner;
+typedef struct bac_Reg bac_Reg;
 typedef struct bac_Regalloc bac_Regalloc;
 typedef bac_int bac_Regalloc_Mode;
 typedef struct bac_Regalloc_Node_Meta bac_Regalloc_Node_Meta;
@@ -126,7 +127,6 @@ typedef struct bac_Regalloc_Spec bac_Regalloc_Spec;
 typedef struct bac_Reloc bac_Reloc;
 typedef bac_u32 bac_Reloc_Kind;
 typedef bac_u32 bac_Reloc_Size;
-typedef struct bac_Schedule bac_Schedule;
 typedef bac_int bac_Schedule_Mode;
 typedef struct bac_Sloc bac_Sloc;
 typedef struct bac_Stats bac_Stats;
@@ -141,27 +141,27 @@ typedef struct bac_ssa_Block_State bac_ssa_Block_State;
 typedef struct bac_ssa_If_State bac_ssa_If_State;
 typedef bac_int bac_ssa_Loop_Control;
 typedef struct bac_ssa_Loop_State bac_ssa_Loop_State;
-typedef struct bit_arr_Bit_Set bit_arr_Bit_Set;
+typedef struct bac_ssa_Param_Gen bac_ssa_Param_Gen;
 typedef bac_u8 bac_Bs_Class_Flag;
 typedef bac_u16 bac_Bs_Node_Datatype;
 typedef bac_u8 bac_Bs_Opt_Flag;
 typedef bac_u8 bac_Bs_Pass;
 typedef struct container_queue_Queue_T_Node_ID container_queue_Queue_T_Node_ID;
-typedef bac_u8 runtime_Allocator_Mode;
-typedef bac_u8 runtime_Allocator_Error;
-typedef struct runtime_Allocator runtime_Allocator;
 typedef struct runtime_Maybe_T_Node_ID runtime_Maybe_T_Node_ID;
+typedef struct runtime_Allocator runtime_Allocator;
+typedef bac_u8 runtime_Allocator_Error;
+typedef bac_u8 runtime_Allocator_Mode;
 typedef struct runtime_Raw_Dynamic_Array runtime_Raw_Dynamic_Array;
 typedef struct runtime_Source_Code_Location runtime_Source_Code_Location;
-typedef void (*bac_Pre_Regalloc_Hook)(bac_Regalloc *, bac_Proc *, bac_Schedule *);
-typedef bac_Node_ID (*bac_PS_Peep_Fn)(bac_PS_Peep_Ctx, bac_Expanded_Node);
-typedef runtime_Maybe_T_Node_ID (*bac_Peep_Fn)(bac_Peep_Ctx, bac_Expanded_Node);
 typedef bac_Lattice (*bac_Sccp_Compute_Fn)(bac_Proc *, bac_Expanded_Node);
+typedef runtime_Maybe_T_Node_ID (*bac_Peep_Fn)(bac_Peep_Ctx, bac_Expanded_Node);
+typedef bac_Node_ID (*bac_PS_Peep_Fn)(bac_PS_Peep_Ctx, bac_Expanded_Node);
+typedef void (*bac_Pre_Regalloc_Hook)(bac_Regalloc *, bac_Proc *, bac_Schedule *);
 typedef runtime_Allocator_Error (*runtime_Allocator_Proc)(void *, runtime_Allocator_Mode, bac_int, bac_int, void *, bac_int, runtime_Source_Code_Location, Slice_Of_bac_u8 *);
 struct bac_Codegen_Emit_Output {
 };
-struct Slice_Of_bac_u16 {
-	bac_u16 *data;
+struct Slice_Of_bac_u32 {
+	bac_u32 *data;
 	bac_int len;
 };
 struct Slice_Of_bac_i32 {
@@ -176,8 +176,8 @@ struct Slice_Of_bac_int {
 	bac_int *data;
 	bac_int len;
 };
-struct Slice_Of_bac_u32 {
-	bac_u32 *data;
+struct Slice_Of_bac_u16 {
+	bac_u16 *data;
 	bac_int len;
 };
 struct Slice_Of_bac_u8 {
@@ -185,15 +185,49 @@ struct Slice_Of_bac_u8 {
 	bac_int len;
 };
 enum {
-	runtime_Allocator_Error_None = 0,
-	runtime_Allocator_Error_Out_Of_Memory = 1,
-	runtime_Allocator_Error_Invalid_Pointer = 2,
-	runtime_Allocator_Error_Invalid_Argument = 3,
-	runtime_Allocator_Error_Mode_Not_Implemented = 4,
+	bac_Reloc_Kind_Text = 0,
+	bac_Reloc_Kind_Got = 1,
+	bac_Reloc_Kind_Global = 2,
 };
 enum {
 	bac_Regalloc_Mode_with_scan = 0,
 	bac_Regalloc_Mode_with_coloring = 1,
+};
+enum {
+	bac_Schedule_Mode_for_regalloc = 0,
+	bac_Schedule_Mode_for_loopopt = 1,
+	bac_Schedule_Mode_for_display = 2,
+};
+enum {
+	bac_Opt_Flag_Sccp = 0,
+	bac_Opt_Flag_Local_Peeps = 1,
+	bac_Opt_Flag_Mem_Opt = 2,
+	bac_Opt_Flag_Loop_Opt = 3,
+	bac_Opt_Flag_Inline = 4,
+};
+struct runtime_Source_Code_Location {
+	bac_String file_path;
+	bac_i32 line;
+	bac_i32 column;
+	bac_String procedure;
+};
+struct Slice_Of_bac_Node_ID {
+	bac_Node_ID *data;
+	bac_int len;
+};
+enum {
+	runtime_Allocator_Mode_Alloc = 0,
+	runtime_Allocator_Mode_Free = 1,
+	runtime_Allocator_Mode_Free_All = 2,
+	runtime_Allocator_Mode_Resize = 3,
+	runtime_Allocator_Mode_Query_Features = 4,
+	runtime_Allocator_Mode_Query_Info = 5,
+	runtime_Allocator_Mode_Alloc_Non_Zeroed = 6,
+	runtime_Allocator_Mode_Resize_Non_Zeroed = 7,
+};
+enum {
+	bac_ssa_Loop_Control_Break = 0,
+	bac_ssa_Loop_Control_Continue = 1,
 };
 enum {
 	bac_Node_Type_Nil = 0,
@@ -268,46 +302,24 @@ enum {
 	bac_Node_Type_Simd_Reduce_Add_Bisect = 69,
 	bac_Node_Type_Select = 70,
 };
-struct runtime_Source_Code_Location {
-	bac_String file_path;
-	bac_i32 line;
-	bac_i32 column;
-	bac_String procedure;
-};
-enum {
-	bac_Schedule_Mode_for_regalloc = 0,
-	bac_Schedule_Mode_for_loopopt = 1,
-};
-enum {
-	bac_Reloc_Kind_Text = 0,
-	bac_Reloc_Kind_Got = 1,
-	bac_Reloc_Kind_Global = 2,
-};
-struct Slice_Of_bac_Node_ID {
-	bac_Node_ID *data;
-	bac_int len;
-};
 struct Slice_Of_Slice_Of_bac_i64 {
 	Slice_Of_bac_i64 *data;
 	bac_int len;
 };
 enum {
-	runtime_Allocator_Mode_Alloc = 0,
-	runtime_Allocator_Mode_Free = 1,
-	runtime_Allocator_Mode_Free_All = 2,
-	runtime_Allocator_Mode_Resize = 3,
-	runtime_Allocator_Mode_Query_Features = 4,
-	runtime_Allocator_Mode_Query_Info = 5,
-	runtime_Allocator_Mode_Alloc_Non_Zeroed = 6,
-	runtime_Allocator_Mode_Resize_Non_Zeroed = 7,
+	bac_Sym_Ref_Type_Func = 14,
 };
 enum {
-	bac_Class_Flag_Is_Basic_Block_Start = 0,
-	bac_Class_Flag_Interned = 1,
-	bac_Class_Flag_Comutes = 2,
-	bac_Class_Flag_Store = 3,
-	bac_Class_Flag_Load = 4,
-	bac_Class_Flag_Clonable = 5,
+	bac_Dbg_Location_Kind_Register = 0,
+	bac_Dbg_Location_Kind_Register_Offset = 1,
+};
+struct bac_Codegen_Emit_Buf_Checkpoint {
+	bac_uint code;
+	bac_uint constants;
+	bac_uint relocs;
+	bac_uint slocs;
+	bac_uint cfi;
+	bac_uint dbg_locs;
 };
 struct bac_Cfi_Spec {
 	bac_u8 cfa_reg;
@@ -317,11 +329,104 @@ struct bac_Cfi_Spec {
 	bac_i32 data_align;
 };
 enum {
+	bac_Class_Flag_Is_Basic_Block_Start = 0,
+	bac_Class_Flag_Interned = 1,
+	bac_Class_Flag_Comutes = 2,
+	bac_Class_Flag_Store = 3,
+	bac_Class_Flag_Load = 4,
+	bac_Class_Flag_Clonable = 5,
+};
+struct bac_Cfg {
+	bac_u32 idepth;
+};
+struct bac_Dbg_Sym {
+	bac_String name;
+	bac_u64 type;
+};
+enum {
 	bac_Cfi_Kind_Def_Cfa_Offset = 0,
 	bac_Cfi_Kind_Save_Reg = 1,
 	bac_Cfi_Kind_Restore_Reg = 2,
 	bac_Cfi_Kind_Remember_State = 3,
 	bac_Cfi_Kind_Restore_State = 4,
+};
+enum {
+	bac_Lattice_Type_Top = 0,
+	bac_Lattice_Type_Int = 1,
+	bac_Lattice_Type_Float = 2,
+	bac_Lattice_Type_Ctlr = 3,
+	bac_Lattice_Type_Mem = 4,
+	bac_Lattice_Type_Bot = 5,
+};
+struct bac_Lib_Call {
+	bac_u32 id : 31;
+	bac_u32 absolute : 1;
+};
+struct bac_Interner {
+	bac_uintptr hash_idx;
+	bac_uintptr node_idx;
+	bac_int len;
+	bac_int cap;
+};
+enum {
+	bac_Efficiency_Stat_Kind_graph_waste = 0,
+	bac_Efficiency_Stat_Kind_late_schedule_rounds = 1,
+	bac_Efficiency_Stat_Kind_ifg_rounds = 2,
+	bac_Efficiency_Stat_Kind_regalloc_rounds = 3,
+	bac_Efficiency_Stat_Kind_regalloc_memory_overhead = 4,
+	bac_Efficiency_Stat_Kind_regalloc_wasted_lrgs = 5,
+	bac_Efficiency_Stat_Kind_peephole_rounds = 6,
+	bac_Efficiency_Stat_Kind_splits_inserted = 7,
+	bac_Efficiency_Stat_Kind_pressure_splits_inserted = 8,
+	bac_Efficiency_Stat_Kind_fail_count_ratio = 9,
+	bac_Efficiency_Stat_Kind_kill_splits_inserted = 10,
+	bac_Efficiency_Stat_Kind_conflict_splits_inserted = 11,
+	bac_Efficiency_Stat_Kind_clones = 12,
+	bac_Efficiency_Stat_Kind_inlines = 13,
+	bac_Efficiency_Stat_Kind_duplicated_nodes = 14,
+	bac_Efficiency_Stat_Kind_deleted_nodes = 15,
+	bac_Efficiency_Stat_Kind_immediate_deletes = 16,
+	bac_Efficiency_Stat_Kind_redundant_peep = 17,
+	bac_Efficiency_Stat_Kind_sroad_locals = 18,
+	bac_Efficiency_Stat_Kind_sroa_slot_mismatch = 19,
+};
+struct bac_Efficiency_Stat {
+	bac_int total;
+	bac_int ideal;
+};
+enum {
+	bac_Lane_Type_I8 = 0,
+	bac_Lane_Type_I16 = 1,
+	bac_Lane_Type_I32 = 2,
+	bac_Lane_Type_I64 = 3,
+	bac_Lane_Type_F32 = 4,
+	bac_Lane_Type_F64 = 5,
+};
+enum {
+	bac_Node_Datatype_Void = 0,
+	bac_Node_Datatype_Mem = 1,
+	bac_Node_Datatype_I8 = 2,
+	bac_Node_Datatype_I16 = 3,
+	bac_Node_Datatype_I32 = 4,
+	bac_Node_Datatype_I64 = 5,
+	bac_Node_Datatype_F32 = 6,
+	bac_Node_Datatype_F64 = 7,
+	bac_Node_Datatype_V128 = 8,
+	bac_Node_Datatype_V256 = 9,
+	bac_Node_Datatype_V512 = 10,
+};
+struct bac_Loop_Tree {
+	bac_Loop_Tree *parent;
+	bac_u32 depth;
+	_Bool infinite;
+	_Bool already_always;
+};
+enum {
+	runtime_Allocator_Error_None = 0,
+	runtime_Allocator_Error_Out_Of_Memory = 1,
+	runtime_Allocator_Error_Invalid_Pointer = 2,
+	runtime_Allocator_Error_Invalid_Argument = 3,
+	runtime_Allocator_Error_Mode_Not_Implemented = 4,
 };
 enum {
 	bac_Bin_Op_Add = 28,
@@ -350,122 +455,6 @@ enum {
 	bac_Bin_Op_And_Not = 51,
 };
 enum {
-	bac_Opt_Flag_Sccp = 0,
-	bac_Opt_Flag_Local_Peeps = 1,
-	bac_Opt_Flag_Mem_Opt = 2,
-	bac_Opt_Flag_Loop_Opt = 3,
-	bac_Opt_Flag_Inline = 4,
-};
-struct bac_Codegen_Emit_Buf_Checkpoint {
-	bac_uint code;
-	bac_uint constants;
-	bac_uint relocs;
-	bac_uint slocs;
-	bac_uint cfi;
-	bac_uint dbg_locs;
-};
-struct bac_Cfg {
-	bac_u32 idepth;
-};
-enum {
-	bac_Dbg_Location_Kind_Register = 0,
-	bac_Dbg_Location_Kind_Register_Offset = 1,
-};
-enum {
-	bac_ssa_Loop_Control_Break = 0,
-	bac_ssa_Loop_Control_Continue = 1,
-};
-struct bac_Interner {
-	bac_uintptr hash_idx;
-	bac_uintptr node_idx;
-	bac_int len;
-	bac_int cap;
-};
-enum {
-	bac_Lattice_Type_Top = 0,
-	bac_Lattice_Type_Int = 1,
-	bac_Lattice_Type_Float = 2,
-	bac_Lattice_Type_Ctlr = 3,
-	bac_Lattice_Type_Mem = 4,
-	bac_Lattice_Type_Bot = 5,
-};
-enum {
-	bac_Lane_Type_I8 = 0,
-	bac_Lane_Type_I16 = 1,
-	bac_Lane_Type_I32 = 2,
-	bac_Lane_Type_I64 = 3,
-	bac_Lane_Type_F32 = 4,
-	bac_Lane_Type_F64 = 5,
-};
-struct bac_Efficiency_Stat {
-	bac_int total;
-	bac_int ideal;
-};
-struct bac_Dbg_Sym {
-	bac_String name;
-	bac_u64 type;
-};
-enum {
-	bac_Efficiency_Stat_Kind_graph_waste = 0,
-	bac_Efficiency_Stat_Kind_late_schedule_rounds = 1,
-	bac_Efficiency_Stat_Kind_ifg_rounds = 2,
-	bac_Efficiency_Stat_Kind_regalloc_rounds = 3,
-	bac_Efficiency_Stat_Kind_regalloc_memory_overhead = 4,
-	bac_Efficiency_Stat_Kind_regalloc_wasted_lrgs = 5,
-	bac_Efficiency_Stat_Kind_peephole_rounds = 6,
-	bac_Efficiency_Stat_Kind_splits_inserted = 7,
-	bac_Efficiency_Stat_Kind_pressure_splits_inserted = 8,
-	bac_Efficiency_Stat_Kind_fail_count_ratio = 9,
-	bac_Efficiency_Stat_Kind_kill_splits_inserted = 10,
-	bac_Efficiency_Stat_Kind_conflict_splits_inserted = 11,
-	bac_Efficiency_Stat_Kind_clones = 12,
-	bac_Efficiency_Stat_Kind_inlines = 13,
-	bac_Efficiency_Stat_Kind_duplicated_nodes = 14,
-	bac_Efficiency_Stat_Kind_deleted_nodes = 15,
-	bac_Efficiency_Stat_Kind_immediate_deletes = 16,
-	bac_Efficiency_Stat_Kind_redundant_peep = 17,
-	bac_Efficiency_Stat_Kind_sroad_locals = 18,
-	bac_Efficiency_Stat_Kind_sroa_slot_mismatch = 19,
-};
-struct bac_Lib_Call {
-	bac_u32 id : 31;
-	bac_u32 absolute : 1;
-};
-struct bac_Loop_Tree {
-	bac_Loop_Tree *parent;
-	bac_u32 depth;
-	_Bool infinite;
-	_Bool already_always;
-};
-enum {
-	bac_Node_Datatype_Void = 0,
-	bac_Node_Datatype_Mem = 1,
-	bac_Node_Datatype_I8 = 2,
-	bac_Node_Datatype_I16 = 3,
-	bac_Node_Datatype_I32 = 4,
-	bac_Node_Datatype_I64 = 5,
-	bac_Node_Datatype_F32 = 6,
-	bac_Node_Datatype_F64 = 7,
-	bac_Node_Datatype_V128 = 8,
-	bac_Node_Datatype_V256 = 9,
-	bac_Node_Datatype_V512 = 10,
-};
-enum {
-	bac_Pass_Peep = 0,
-	bac_Pass_Sccp = 1,
-	bac_Pass_Mem = 2,
-	bac_Pass_Loop = 3,
-};
-enum {
-	bac_Sym_Ref_Type_Func = 14,
-};
-enum {
-	bac_Reloc_Size_r32 = 0,
-	bac_Reloc_Size_r26 = 1,
-	bac_Reloc_Size_r19 = 2,
-	bac_Reloc_Size_r2_19 = 3,
-};
-enum {
 	bac_Un_Op_Neg = 60,
 	bac_Un_Op_Not = 61,
 	bac_Un_Op_Cast = 62,
@@ -477,14 +466,21 @@ enum {
 	bac_Un_Op_Simd_Extract_Msbs = 68,
 	bac_Un_Op_Simd_Reduce_Add_Bisect = 69,
 };
-struct bac_Sloc {
-	bac_u64 file : 20;
-	bac_u64 line : 20;
-	bac_u64 col : 16;
-	bac_u64 range : 8;
-} __attribute__((packed, aligned(4)));
-struct bac_ssa_Block_State {
-	bac_Node_ID end_scope;
+enum {
+	bac_Reloc_Size_r32 = 0,
+	bac_Reloc_Size_r26 = 1,
+	bac_Reloc_Size_r19 = 2,
+	bac_Reloc_Size_r2_19 = 3,
+};
+enum {
+	bac_Pass_Peep = 0,
+	bac_Pass_Sccp = 1,
+	bac_Pass_Mem = 2,
+	bac_Pass_Loop = 3,
+};
+struct bac_Node_Output {
+	bac_u32 id : 22;
+	bac_u32 idx : 10;
 };
 struct bac_Dbg_Data_Def {
 	bac_Node_ID node;
@@ -495,19 +491,49 @@ struct arna_Allocator {
 	bac_uint commited;
 	bac_uint reserved;
 };
-struct bac_Node_Output {
-	bac_u32 id : 22;
-	bac_u32 idx : 10;
+struct bac_Sloc {
+	bac_u64 file : 20;
+	bac_u64 line : 20;
+	bac_u64 col : 16;
+	bac_u64 range : 8;
+} __attribute__((packed, aligned(4)));
+struct bac_Tag {
+	bac_String name[1];
+	bac_u32 stable_id[1];
+} __attribute__((packed, aligned(4)));
+struct bac_ssa_Block_State {
+	bac_Node_ID end_scope;
 };
-struct bac_Reg {
-	bac_u16 index : 12;
-	bac_u16 kind : 4;
+struct Fidxe_Cap_Dyn_Arr_Of_2_bac_Node_Datatype {
+	bac_Node_Datatype data[2];
+	bac_u8 _padding[6];
+	bac_int len;
+};
+enum {
+	bac_Bs_Class_Flag_Is_Basic_Block_Start = 1 << 0,
+	bac_Bs_Class_Flag_Interned = 1 << 1,
+	bac_Bs_Class_Flag_Comutes = 1 << 2,
+	bac_Bs_Class_Flag_Store = 1 << 3,
+	bac_Bs_Class_Flag_Load = 1 << 4,
+	bac_Bs_Class_Flag_Clonable = 1 << 5,
+};
+enum {
+	bac_Bs_Opt_Flag_Sccp = 1 << 0,
+	bac_Bs_Opt_Flag_Local_Peeps = 1 << 1,
+	bac_Bs_Opt_Flag_Mem_Opt = 1 << 2,
+	bac_Bs_Opt_Flag_Loop_Opt = 1 << 3,
+	bac_Bs_Opt_Flag_Inline = 1 << 4,
 };
 enum {
 	bac_Bs_Pass_Peep = 1 << 0,
 	bac_Bs_Pass_Sccp = 1 << 1,
 	bac_Bs_Pass_Mem = 1 << 2,
 	bac_Bs_Pass_Loop = 1 << 3,
+};
+struct Soa_Slice_Of_bac_SS_Entry_V____i64 {
+	bac_u8 *hash;
+	bac_i64 **id;
+	bac_int __len;
 };
 enum {
 	bac_Bs_Node_Datatype_Void = 1 << 0,
@@ -526,45 +552,20 @@ struct bit_arr_Bit_Set {
 	bac_int *masks;
 	bac_int bit_length;
 };
-enum {
-	bac_Bs_Opt_Flag_Sccp = 1 << 0,
-	bac_Bs_Opt_Flag_Local_Peeps = 1 << 1,
-	bac_Bs_Opt_Flag_Mem_Opt = 1 << 2,
-	bac_Bs_Opt_Flag_Loop_Opt = 1 << 3,
-	bac_Bs_Opt_Flag_Inline = 1 << 4,
-};
-struct Fidxe_Cap_Dyn_Arr_Of_2_bac_Node_Datatype {
-	bac_Node_Datatype data[2];
-	bac_u8 _padding[6];
-	bac_int len;
-};
-struct Soa_Slice_Of_bac_SS_Entry_V____i64 {
-	bac_u8 *hash;
-	bac_i64 **id;
-	bac_int __len;
-};
-enum {
-	bac_Bs_Class_Flag_Is_Basic_Block_Start = 1 << 0,
-	bac_Bs_Class_Flag_Interned = 1 << 1,
-	bac_Bs_Class_Flag_Comutes = 1 << 2,
-	bac_Bs_Class_Flag_Store = 1 << 3,
-	bac_Bs_Class_Flag_Load = 1 << 4,
-	bac_Bs_Class_Flag_Clonable = 1 << 5,
-};
-struct bac_RM_Intern_Idx {
-	bac_u16 index : 12;
-	bac_u16 kind : 4;
-};
-struct bac_Tag {
-	bac_String name[1];
-	bac_u32 stable_id[1];
-} __attribute__((packed, aligned(4)));
 struct runtime_Maybe_T_Node_ID {
 	union {
 		bac_Node_ID variant_0;
 		bac_u8 _payload[4];
 	};
 	bac_u32 tag;
+};
+struct bac_Reg {
+	bac_u16 index : 12;
+	bac_u16 kind : 4;
+};
+struct bac_RM_Intern_Idx {
+	bac_u16 index : 12;
+	bac_u16 kind : 4;
 };
 struct bac_Lib_Calls {
 	bac_Lib_Call copy;
@@ -576,20 +577,24 @@ struct bac_Cfi_Op {
 	bac_Cfi_Kind kind;
 	bac_u8 reg;
 };
+struct Slice_Of_bac_Sloc {
+	bac_Sloc *data;
+	bac_int len;
+};
 struct Slice_Of_bac_Bs_Class_Flag {
 	bac_Bs_Class_Flag *data;
 	bac_int len;
 };
-struct Slice_Of_bac_Sloc {
-	bac_Sloc *data;
+struct Slice_Of_bac_RM_Intern_Idx {
+	bac_RM_Intern_Idx *data;
 	bac_int len;
 };
 struct Slice_Of_bac_Node_Output {
 	bac_Node_Output *data;
 	bac_int len;
 };
-struct Slice_Of_bac_RM_Intern_Idx {
-	bac_RM_Intern_Idx *data;
+struct Slice_Of_bac_Reg {
+	bac_Reg *data;
 	bac_int len;
 };
 struct Slice_Of_Soa_Slice_Of_bac_SS_Entry_V____i64 {
@@ -598,10 +603,6 @@ struct Slice_Of_Soa_Slice_Of_bac_SS_Entry_V____i64 {
 		bac_i64 **id;
 		bac_int __len;
 	} *data;
-	bac_int len;
-};
-struct Slice_Of_bac_Reg {
-	bac_Reg *data;
 	bac_int len;
 };
 struct bac_ssa_If_State {
@@ -624,6 +625,33 @@ struct bac_PS_Peep_Ctx {
 	bac_Proc *prc;
 	Slice_Of_bac_Node_ID preds;
 };
+struct bac_ssa_Abi_Param {
+	Fidxe_Cap_Dyn_Arr_Of_2_bac_Node_Datatype dt;
+	bac_int size;
+	bac_int real_size;
+	_Bool spilled;
+	_Bool scalar;
+	_Bool copied;
+};
+struct bac_ssa_Loop_State {
+	bac_Node_ID scope;
+	bac_Node_ID scopes[2];
+};
+struct bac_Stats {
+	bac_Efficiency_Stat efficiency[20];
+};
+struct bac_Reloc {
+	bac_u32 offset;
+	struct {
+		bac_u32 kind : 2;
+		bac_u32 size : 2;
+		bac_u32 scale_pow : 2;
+		bac_u32 id : 26;
+	} _0;
+};
+struct bac_Opt_Hints {
+	bac_Bs_Node_Datatype select_types;
+};
 struct bac_Lattice {
 	bac_i64 min;
 	bac_i64 max;
@@ -637,33 +665,6 @@ struct bac_Lattice {
 		bac_u64 dead : 1;
 		bac_u64 widens : 3;
 	} meta;
-};
-struct bac_ssa_Abi_Param {
-	Fidxe_Cap_Dyn_Arr_Of_2_bac_Node_Datatype dt;
-	bac_int size;
-	bac_int real_size;
-	_Bool spilled;
-	_Bool scalar;
-	_Bool copied;
-};
-struct bac_Stats {
-	bac_Efficiency_Stat efficiency[20];
-};
-struct bac_ssa_Loop_State {
-	bac_Node_ID scope;
-	bac_Node_ID scopes[2];
-};
-struct bac_Reloc {
-	bac_u32 offset;
-	struct {
-		bac_u32 kind : 2;
-		bac_u32 size : 2;
-		bac_u32 scale_pow : 2;
-		bac_u32 id : 26;
-	} _0;
-};
-struct bac_Opt_Hints {
-	bac_Bs_Node_Datatype select_types;
 };
 struct bac_Dbg_Location {
 	bac_Dbg_Sym sym;
@@ -697,17 +698,17 @@ struct Slice_Of_Slice_Of_bac_Reg {
 	Slice_Of_bac_Reg *data;
 	bac_int len;
 };
+struct bac_Regalloc_Output {
+	Slice_Of_bac_Reg allocs;
+	bac_Reg_Kind temp_stack_slot;
+	_Bool computed;
+};
 struct bac_Regalloc_Node_Meta {
 	Slice_Of_bac_RM_Intern_Idx masks;
 	Slice_Of_bac_i64 clobbers;
 	bac_RM_Intern_Idx out;
 	bac_i8 in_place_slot;
 	bac_u8 input_start;
-};
-struct bac_Regalloc_Output {
-	Slice_Of_bac_Reg allocs;
-	bac_Reg_Kind temp_stack_slot;
-	_Bool computed;
 };
 struct bac_RM_Interner {
 	Slice_Of_Soa_Slice_Of_bac_SS_Entry_V____i64 slots;
@@ -742,6 +743,10 @@ struct bac_Node {
 	bac_Tag tag;
 	bac_u32 extra[0];
 };
+struct runtime_Allocator {
+	runtime_Allocator_Proc procedure;
+	void *data;
+};
 struct bac_Codegen_Emit_Buf {
 	arna_Allocator *code;
 	arna_Allocator *constants;
@@ -754,17 +759,13 @@ struct Slice_Of_bac_Reloc {
 	bac_Reloc *data;
 	bac_int len;
 };
-struct Slice_Of_bac_Dbg_Location {
-	bac_Dbg_Location *data;
-	bac_int len;
-};
 struct Slice_Of_bac_Lattice {
 	bac_Lattice *data;
 	bac_int len;
 };
-struct runtime_Allocator {
-	runtime_Allocator_Proc procedure;
-	void *data;
+struct Slice_Of_bac_Dbg_Location {
+	bac_Dbg_Location *data;
+	bac_int len;
 };
 struct bac_Peep_Ctx {
 	bac_Proc *prc;
@@ -807,11 +808,6 @@ struct bac_Expanded_Node {
 	Slice_Of_bac_Node_ID inps;
 	Slice_Of_bac_Node_Output outs;
 };
-struct Dyn_Arr_Of_bac_i32 {
-	bac_i32 *data;
-	bac_int len, cap;
-	runtime_Allocator allocator;
-};
 struct Dyn_Arr_Of_bac_Node_ID {
 	bac_Node_ID *data;
 	bac_int len, cap;
@@ -819,6 +815,11 @@ struct Dyn_Arr_Of_bac_Node_ID {
 };
 struct Dyn_Arr_Of_bac_Dbg_Data_Def {
 	bac_Dbg_Data_Def *data;
+	bac_int len, cap;
+	runtime_Allocator allocator;
+};
+struct Dyn_Arr_Of_bac_i32 {
+	bac_i32 *data;
 	bac_int len, cap;
 	runtime_Allocator allocator;
 };
@@ -861,13 +862,13 @@ struct bac_Basic_Block {
 	bac_u32 offset;
 	bac_Loop_Tree *loop_tree;
 };
-struct Dyn_Arr_Of_bac_Basic_Block {
-	bac_Basic_Block *data;
+struct Dyn_Arr_Of_bac_Dbg_Data_Sym {
+	bac_Dbg_Data_Sym *data;
 	bac_int len, cap;
 	runtime_Allocator allocator;
 };
-struct Dyn_Arr_Of_bac_Dbg_Data_Sym {
-	bac_Dbg_Data_Sym *data;
+struct Dyn_Arr_Of_bac_Basic_Block {
+	bac_Basic_Block *data;
 	bac_int len, cap;
 	runtime_Allocator allocator;
 };
@@ -933,7 +934,10 @@ struct bac_Proc_Meta {
 	bac_u32 stable_id;
 	bac_u32 min_idepth;
 	bac_u32 max_idepth;
-	_Bool has_dbg;
+	struct {
+		_Bool has_dbg;
+		bac_Bs_Opt_Flag opt_flags;
+	} config;
 	struct {
 		bac_Node_ID entry;
 		bac_Node_ID end;
@@ -948,7 +952,9 @@ struct bac_Stencil {
 };
 struct bac_Proc {
 	bac_Node_Spec *node_spec;
-	bac_Stats *stats;
+	struct {
+		bac_Stats *stats;
+	} preserved;
 	bac_Worklist *worklist;
 	Dyn_Arr_Of_Dyn_Arr_Of_bac_Node_ID *triggers;
 	arna_Allocator *mem;
@@ -959,7 +965,6 @@ struct bac_Proc {
 	_Bool dont_intern;
 	_Bool dont_delete;
 	bac_Bs_Pass computed_passes;
-	bac_Bs_Opt_Flag opt_flags;
 	Slice_Of_bac_Lattice lattices;
 };
 
@@ -1141,7 +1146,7 @@ extern bac_Node_Spec bac_anal_SPEC;
 extern bac_Node_Spec bac_arm_SPEC;
 extern bac_Opt_Hints bac_arm_OPT_HINTS;
 extern bac_Opt_Hints bac_intel_xelp_poc_OPT_HINTS;
-extern bac_Call_Conv bac_intel_xelp_poc_CC_TABLE[0];
+extern bac_Call_Conv bac_intel_xelp_poc_CC_TABLE[1];
 extern bac_Node_Spec bac_intel_xelp_poc_SPEC;
 extern bac_Node_Spec bac_ssa_SPEC;
 extern bac_Node_ID bac_add_arbitrary_load(bac_Proc *ctx, bac_Node_ID cfg, bac_Node_ID mem, bac_Node_ID addr, bac_int rsize, bac_int extra_offset, bac_Node_Datatype unit);

@@ -3,18 +3,50 @@ package bac_intel_xelp_poc
 import bac ".."
 import "../../utils/arna"
 import "base:intrinsics"
+import "core:fmt"
 import "core:mem"
+
+expand_node :: bac.expand_node
+get_node :: bac.get_node
 
 Reg :: bac.Reg
 Op :: [4]u32
+
+MASK_SIZE :: GRF_COUNT
 
 GRF_BYTES :: 32
 GRF_COUNT :: 128
 RK_GRF :: Reg_Kind(0)
 RK_COUNT :: 1
 
+R0 :: Reg(0)
+R1 :: Reg(1)
+R2 :: Reg(2)
+R3 :: Reg(3)
+R4 :: Reg(4)
+R5 :: Reg(5)
+R6 :: Reg(6)
+R7 :: Reg(7)
+R8 :: Reg(8)
+
+R118 :: Reg(118)
+R119 :: Reg(119)
+R120 :: Reg(120)
+R121 :: Reg(121)
+R122 :: Reg(122)
+R123 :: Reg(123)
+R124 :: Reg(124)
+R125 :: Reg(125)
+R126 :: Reg(126)
+R127 :: Reg(127)
+
+@(rodata)
+SPILL_SLOT_SIZE := [?]i32{128}
+
 EU_SRC0_IMMEDIATE :: u32(1 << 14)
 EU_SRC1_IMMEDIATE :: u32(1 << 15)
+
+XELP_CC :: 0
 
 SPEC_NOT_PRESENT :: (#load("node_specs.odin", string) or_else "") == ""
 
@@ -30,7 +62,12 @@ when SPEC_NOT_PRESENT {
 OPT_HINTS := bac.Opt_Hints{}
 
 @(tag = "api", rodata, export, link_name = "bac_intel_xelp_poc_CC_TABLE")
-CC_TABLE := [0]bac.Call_Conv{}
+CC_TABLE := [1]bac.Call_Conv {
+	XELP_CC = {
+		args = {{R1, R2, R3, R4, R5, R6, R7, R8}},
+		rets = {{R120, R121, R122, R123, R124, R125, R126, R127}},
+	},
+}
 
 peep :: proc(
 	_: bac.Peep_Ctx,
@@ -49,16 +86,202 @@ post_schedule_peep :: proc(
 }
 
 meta_of :: proc(
-	_: ^bac.Proc,
-	_: ^bac.Regalloc,
-	_: bac.Expanded_Node,
+	prc: ^bac.Proc,
+	ra: ^bac.Regalloc,
+	node: bac.Expanded_Node,
 	_: $T,
 ) -> bac.Regalloc_Node_Meta {
-	panic("intel_xelp_poc: register allocation is not implemented")
+	IOUT :: bac.INVALID_RM_INDEX
+
+	if node.gvn == 1 {
+		if ra.cc == nil {
+			ra.cc = &CC_TABLE[XELP_CC]
+		}
+
+		seed_rm_interner(ra)
+	}
+
+	single :: bac.rm_intern_single
+	rslice :: bac.rm_intern_slice
+	dup :: bac.rm_dup
+
+	nkind := ra.datatype_to_reg_kind[node.dt]
+
+	masks := [RK_COUNT][]bac.RM_Intern_Idx {
+		RK_GRF = GRF_MASKS[:],
+	}
+	nmasks := masks[nkind]
+	out := nmasks[0]
+
+	if node.dt <= .Mem {
+		out = IOUT
+	}
+
+	#partial switch ptype(node) {
+	case .Nil ..= .Dbg_Scope:
+		fmt.panicf("should not reach these: %v", node)
+	case .Poison ..= .Global:
+		return {out = out}
+	case .Add:
+		return {out = out, masks = nmasks[:2]}
+	case .Param:
+		return {out = bac.param_mask(prc, ra, node)}
+	case .Return:
+		return bac.cc_node_meta(prc, ra, node, CC_TABLE[:])
+	case:
+		fmt.panicf("TODO: %v", node)
+	}
 }
 
-emit_function :: proc(_: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
-	panic("intel_xelp_poc: code emission is not implemented")
+Ctx :: struct {
+	using inner: bac.Codegen_Emit_Ctx,
+}
+
+emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
+	spill_slot_base: [RK_COUNT]i32
+	stack_param_offset: [RK_COUNT][dynamic]i32
+
+	ctx: Ctx
+	ctx.inner = ectx
+	ctx.code_start = ctx.code.pos
+	ctx.constants_start = ctx.constants.pos
+	ctx.instr_offsets = make([]u32, ctx.gvn)
+
+	if ctx.abi == nil {
+		ctx.abi = &CC_TABLE[XELP_CC]
+	}
+
+	ctx.stack_param_offset = stack_param_offset[:]
+	ctx.spill_slot_base = spill_slot_base[:]
+	ctx.spill_slot_size = SPILL_SLOT_SIZE[:]
+
+	emit_op(
+		ctx.code,
+		{
+			eu_control(.Mov, 8),
+			eu_dst(R119, 0, .UD) | eu_src0_type(.UD),
+			eu_src(R0, 0, 8, 8, 1),
+			0,
+		},
+	)
+	emit_op(
+		ctx.code,
+		{
+			eu_control(.Mov, 2),
+			eu_dst(R119, 0, .UD) | eu_src0_type(.UD) | EU_SRC0_IMMEDIATE,
+			0,
+			0,
+		},
+	)
+	emit_op(
+		ctx.code,
+		{
+			eu_control(.Mov, 1),
+			eu_dst(R119, eu_subreg(2, .UD), .UD) |
+			eu_src0_type(.UD) |
+			EU_SRC0_IMMEDIATE,
+			0,
+			GRF_BYTES - 1,
+		},
+	)
+
+	for bb, bidx in ctx.schedule.bbs {
+		assert(bidx == 0)
+		for instr, i in bb.instrs {
+			emit_instr(&ctx, instr, struct{}{})
+		}
+	}
+
+	return {}
+}
+
+@(disabled = SPEC_NOT_PRESENT)
+emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, _: $T) {
+	node := expand_node(ctx, instr)
+
+	#partial switch ptype(node) {
+	case .Nil ..= .Dbg_Scope:
+		fmt.panicf("should not reach these: %v", node)
+	case .Poison ..= .Phi:
+	case .Add:
+		dst := reg_of(ctx, instr)
+		lhs := reg_of(ctx, node.inps[0])
+		rhs := reg_of(ctx, node.inps[1])
+		emit_op(
+			ctx.code,
+			{
+				eu_control(.Add, 8, swsb = eu_swsb_regdist(1)),
+				eu_dst(dst, 0, .F) | eu_src0_type(.F),
+				eu_src(lhs, 0, 8, 8, 1) | eu_src1_type(.F),
+				eu_src(rhs, 0, 8, 8, 1),
+			},
+		)
+	case .Return:
+		return_count := len(node.inps) - min(2, len(node.inps))
+		return_regs := CC_TABLE[XELP_CC].rets[RK_GRF]
+		assert(return_count <= len(return_regs))
+		for i in 0 ..< return_count {
+			message_grfs: u8 = 2
+			src1 := R0
+			src1_file: Register_File = .ARF
+			ex_desc: u32
+			if i != 0 {
+				// The previous send must finish reading r119 before its X offset changes.
+				emit_op(
+					ctx.code,
+					{
+						eu_control(.Mov, 1, swsb = eu_swsb_sbid(0, .Wait_Src)),
+						eu_dst(R119, 0, .UD) | eu_src0_type(.UD) | EU_SRC0_IMMEDIATE,
+						0,
+						u32(i * GRF_BYTES),
+					},
+				)
+				message_grfs = 1
+				src1 = return_regs[i]
+				src1_file = .GRF
+				ex_desc = eu_message_ex_desc(1)
+			}
+
+			d1, d2, d3 := eu_send_desc(eu_dc1_desc(0xa, 0, 0, message_grfs))
+			e1, e2, e3 := eu_send_ex_desc(ex_desc)
+			emit_op(
+				ctx.code,
+				{
+					eu_control(.Send, 8, swsb = eu_swsb_combined(1, 0)),
+					eu_send_dst(R0, .ARF) | d1 | e1,
+					eu_send_target(.DC1) | eu_send_src(R119) | d2 | e2,
+					eu_send_src(src1, src1_file) | d3 | e3,
+				},
+			)
+		}
+
+		emit_op(
+			ctx.code,
+			{
+				eu_control(.Mov, 8),
+				eu_dst(R118, 0, .UD) | eu_src0_type(.UD),
+				eu_src(R0, 0, 8, 8, 1),
+				0,
+			},
+		)
+		d1, d2, d3 := eu_send_desc(eu_message_desc(0x10, 1, 0))
+		e1, e2, e3 := eu_send_ex_desc(0x10000000)
+		emit_op(
+			ctx.code,
+			{
+				eu_control(.Send, 8, swsb = eu_swsb_combined(1, 1)),
+				eu_send_dst(R0, .ARF, eot = true) | d1 | e1,
+				eu_send_target(.TS) | eu_send_src(R118) | d2 | e2,
+				eu_send_src(R0, .ARF) | d3 | e3,
+			},
+		)
+	case:
+		fmt.panicf("TODO: %v", node)
+	}
+}
+
+reg_of :: proc(ctx: ^Ctx, node: bac.Node_ID) -> Reg {
+	return ctx.allocs[get_node(ctx, node).gvn]
 }
 
 emit_op :: proc(code: ^arna.Allocator, op: Op) {
@@ -318,6 +541,11 @@ eu_dc1_desc :: proc(
 		response_grfs,
 		header,
 	)
+}
+
+eu_message_ex_desc :: proc(message_grfs: u8) -> u32 {
+	assert(message_grfs < 32)
+	return u32(message_grfs) << 6
 }
 
 eu_send_desc :: proc(desc: u32) -> (word1, word2, word3: u32) {

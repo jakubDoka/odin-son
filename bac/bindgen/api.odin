@@ -1,5 +1,5 @@
 package bac_bindgen
-// NOTE: this file is generated: odin run meta
+// NOTE: this file is generated: odin run bac/tag-gen
 
 import pkg_0 ".."
 import pkg_1 "../anal"

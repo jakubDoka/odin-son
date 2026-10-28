@@ -373,3 +373,18 @@ inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 #assert(size_of(Mem_Op) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.Tup) % bac.PRECISION == 0)
+
+wtype :: #force_inline proc(node: bac.Expanded_Node) -> Node_Type {
+	return Node_Type(node.rtype)
+}
+
+wextra :: #force_inline proc(
+	prc: ^bac.Proc,
+	node: ^bac.Node,
+	$T: typeid,
+) -> ^T {
+	if prc.inheritance_table[node.rtype] & (1 << inherit_idx_of(T)) == 0 {
+		return nil
+	}
+	return (^T)(&node.extra)
+}

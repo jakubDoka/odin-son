@@ -1,9 +1,30 @@
 #+build !wasm32
 package tests
-// NOTE: this file is generated: odin run meta
+// NOTE: this file is generated: odin run bac/tag-gen
 
 import "core:testing"
 import "base:intrinsics"
+import "../gpu-dispatch/gpu"
+@(test) gpu_simplest :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc(a: f32, b: f32) -> f32 {
+	return a + b
+}
+	wide_main :: proc(params: []gpu.Reg, results: []gpu.Reg) {
+		for i in 0 ..< len(gpu.Reg) {
+			(^f32)(&results[0][i])^ = main_((^f32)(&params[0][i])^, (^f32)(&params[1][i])^)
+		}
+	}
+	run_gpu_test(t, `gpu_simplest`, `
+package main
+
+main :: proc(a: f32, b: f32) -> f32 {
+	return a + b
+}
+`, 2, 1, wide_main)
+}
 @(test) simplest :: proc(t: ^testing.T) {
 
 
@@ -15717,65 +15738,6 @@ main :: proc() -> int {
 }
 `, main_())
 }
-// Disabled: known failure predating select lowering.
-simd_u16_reduction_includes_every_lane :: proc(t: ^testing.T) {
-
-
-
-main_ :: proc() -> int {
-	a: [8]u16 = {1, 2, 4, 8, 16, 32, 64, 128}
-	v := transmute(#simd[8]u16)a
-	return int(intrinsics.simd_reduce_add_bisect(v))
-}
-
-run_test(t, `simd_u16_reduction_includes_every_lane`, `
-package main
-
-main :: proc() -> int {
-	a: [8]u16 = {1, 2, 4, 8, 16, 32, 64, 128}
-	v := transmute(#simd[8]u16)a
-	return int(intrinsics.simd_reduce_add_bisect(v))
-}
-`, main_())
-}
-@(test) memset_conversion_preserves_store_before_loop_exit :: proc(t: ^testing.T) {
-
-
-
-fill :: proc(p: [^]u8, n: int) {
-	i := 0
-	for {
-		p[i] = 7
-		if i >= n do break
-		i += 1
-	}
-}
-
-main_ :: proc() -> int {
-	a: [8]u8
-	fill(([^]u8)(&a[0]), 3)
-	return int(a[0]) + int(a[1]) + int(a[2]) + int(a[3])
-}
-
-run_test(t, `memset_conversion_preserves_store_before_loop_exit`, `
-package main
-
-fill :: proc(p: [^]u8, n: int) {
-	i := 0
-	for {
-		p[i] = 7
-		if i >= n do break
-		i += 1
-	}
-}
-
-main :: proc() -> int {
-	a: [8]u8
-	fill(([^]u8)(&a[0]), 3)
-	return int(a[0]) + int(a[1]) + int(a[2]) + int(a[3])
-}
-`, main_())
-}
 @(test) memcpy_conversion_preserves_overlapping_loop_dependencies :: proc(t: ^testing.T) {
 
 
@@ -15882,47 +15844,6 @@ main :: proc() -> int {
 }
 `, main_())
 }
-// Disabled: known failure predating select lowering.
-simd_word_mask_extracts_one_bit_per_lane :: proc(t: ^testing.T) {
-
-
-
-main_ :: proc() -> int {
-	a: [8]u16 = {65535, 0, 65535, 0, 65535, 0, 65535, 0}
-	v := transmute(#simd[8]u16)a
-	return int(transmute(u8)intrinsics.simd_extract_lsbs(v))
-}
-
-run_test(t, `simd_word_mask_extracts_one_bit_per_lane`, `
-package main
-
-main :: proc() -> int {
-	a: [8]u16 = {65535, 0, 65535, 0, 65535, 0, 65535, 0}
-	v := transmute(#simd[8]u16)a
-	return int(transmute(u8)intrinsics.simd_extract_lsbs(v))
-}
-`, main_())
-}
-@(test) simd_byte_reduction_wraps_before_widening :: proc(t: ^testing.T) {
-
-
-
-main_ :: proc() -> int {
-	a: [16]u8 = {200, 200, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-	v := transmute(#simd[16]u8)a
-	return int(intrinsics.simd_reduce_add_bisect(v))
-}
-
-run_test(t, `simd_byte_reduction_wraps_before_widening`, `
-package main
-
-main :: proc() -> int {
-	a: [16]u8 = {200, 200, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-	v := transmute(#simd[16]u8)a
-	return int(intrinsics.simd_reduce_add_bisect(v))
-}
-`, main_())
-}
 @(test) memset_conversion_preserves_reads_inside_the_loop :: proc(t: ^testing.T) {
 
 
@@ -15962,61 +15883,6 @@ fill_sum :: proc(p: [^]u8, n: int) -> int {
 main :: proc() -> int {
 	a: [4]u8
 	return fill_sum(([^]u8)(&a[0]), 4)
-}
-`, main_())
-}
-// Disabled: known failure predating select lowering.
-multiply_add_preserves_intermediate_rounding :: proc(t: ^testing.T) {
-
-
-
-check :: proc(a: f64, b: f64, c: f64) -> int {
-	product := a * b
-	sum := product + c
-	return int(sum == 0)
-}
-
-main_ :: proc() -> int {
-	return check(1.000000007450580596923828125, 0.999999992549419403076171875, -1)
-}
-
-run_test(t, `multiply_add_preserves_intermediate_rounding`, `
-package main
-
-check :: proc(a: f64, b: f64, c: f64) -> int {
-	product := a * b
-	sum := product + c
-	return int(sum == 0)
-}
-
-main :: proc() -> int {
-	return check(1.000000007450580596923828125, 0.999999992549419403076171875, -1)
-}
-`, main_())
-}
-@(test) partial_aggregate_copy_reaches_a_dead_store_peephole_fixpoint :: proc(t: ^testing.T) {
-
-
-
-main_ :: proc() -> int {
-	x: [2]int = {11, 22}
-	y: [2]int = {1, 2}
-	p := transmute(^[1]int)(&x[0])
-	q := transmute(^[1]int)(&y[0])
-	q^ = p^
-	return y[0] + y[1]
-}
-
-run_test(t, `partial_aggregate_copy_reaches_a_dead_store_peephole_fixpoint`, `
-package main
-
-main :: proc() -> int {
-	x: [2]int = {11, 22}
-	y: [2]int = {1, 2}
-	p := transmute(^[1]int)(&x[0])
-	q := transmute(^[1]int)(&y[0])
-	q^ = p^
-	return y[0] + y[1]
 }
 `, main_())
 }
@@ -17879,17 +17745,11 @@ NAMES := []string{
 `sccp_float_nan_folding`,
 `arm_negative_constant_preserves_zero_halfwords`,
 `wasm_u32_constant_uses_signed_i32_leb_encoding`,
-`simd_u16_reduction_includes_every_lane`,
-`memset_conversion_preserves_store_before_loop_exit`,
 `memcpy_conversion_preserves_overlapping_loop_dependencies`,
 `count_trailing_zeros_examines_all_64_bits`,
 `count_trailing_zeros_of_a_narrow_zero_uses_its_own_width`,
 `simd_byte_mask_extracts_least_significant_bits`,
-`simd_word_mask_extracts_one_bit_per_lane`,
-`simd_byte_reduction_wraps_before_widening`,
 `memset_conversion_preserves_reads_inside_the_loop`,
-`multiply_add_preserves_intermediate_rounding`,
-`partial_aggregate_copy_reaches_a_dead_store_peephole_fixpoint`,
 `fuzz_0092546c2ab7b49f`,
 `fuzz_00f1be4a1ea4c499`,
 `fuzz_0203aad88c140351`,
@@ -25996,33 +25856,6 @@ main :: proc() -> int {
 `
 package main
 
-main :: proc() -> int {
-	a: [8]u16 = {1, 2, 4, 8, 16, 32, 64, 128}
-	v := transmute(#simd[8]u16)a
-	return int(intrinsics.simd_reduce_add_bisect(v))
-}
-`,
-`
-package main
-
-fill :: proc(p: [^]u8, n: int) {
-	i := 0
-	for {
-		p[i] = 7
-		if i >= n do break
-		i += 1
-	}
-}
-
-main :: proc() -> int {
-	a: [8]u8
-	fill(([^]u8)(&a[0]), 3)
-	return int(a[0]) + int(a[1]) + int(a[2]) + int(a[3])
-}
-`,
-`
-package main
-
 copy_forward :: proc(dst: [^]u8, src: [^]u8, n: int) {
 	i := 0
 	for {
@@ -26072,24 +25905,6 @@ main :: proc() -> int {
 `
 package main
 
-main :: proc() -> int {
-	a: [8]u16 = {65535, 0, 65535, 0, 65535, 0, 65535, 0}
-	v := transmute(#simd[8]u16)a
-	return int(transmute(u8)intrinsics.simd_extract_lsbs(v))
-}
-`,
-`
-package main
-
-main :: proc() -> int {
-	a: [16]u8 = {200, 200, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-	v := transmute(#simd[16]u8)a
-	return int(intrinsics.simd_reduce_add_bisect(v))
-}
-`,
-`
-package main
-
 fill_sum :: proc(p: [^]u8, n: int) -> int {
 	i := 0
 	r := 0
@@ -26105,31 +25920,6 @@ fill_sum :: proc(p: [^]u8, n: int) -> int {
 main :: proc() -> int {
 	a: [4]u8
 	return fill_sum(([^]u8)(&a[0]), 4)
-}
-`,
-`
-package main
-
-check :: proc(a: f64, b: f64, c: f64) -> int {
-	product := a * b
-	sum := product + c
-	return int(sum == 0)
-}
-
-main :: proc() -> int {
-	return check(1.000000007450580596923828125, 0.999999992549419403076171875, -1)
-}
-`,
-`
-package main
-
-main :: proc() -> int {
-	x: [2]int = {11, 22}
-	y: [2]int = {1, 2}
-	p := transmute(^[1]int)(&x[0])
-	q := transmute(^[1]int)(&y[0])
-	q^ = p^
-	return y[0] + y[1]
 }
 `,
 `#load("../fuzz/crashes/0092546c2ab7b49f.odin")`,
@@ -26534,12 +26324,6 @@ main :: proc() -> int {
 `#load("../fuzz/crashes/regalloc_ioob.odin")`,
 }
 IS_FUZZ := []bool{
-false,
-false,
-false,
-false,
-false,
-false,
 false,
 false,
 false,

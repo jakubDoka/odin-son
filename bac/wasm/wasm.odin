@@ -23,21 +23,6 @@ RK_F32 :: Reg_Kind(3)
 RK_V128 :: Reg_Kind(4)
 RK_COUNT :: 5
 
-wtype :: #force_inline proc(node: bac.Expanded_Node) -> Node_Type {
-	return Node_Type(node.rtype)
-}
-
-wextra :: #force_inline proc(
-	prc: ^bac.Proc,
-	node: ^bac.Node,
-	$T: typeid,
-) -> ^T {
-	if prc.inheritance_table[node.rtype] & (1 << inherit_idx_of(T)) == 0 {
-		return nil
-	}
-	return (^T)(&node.extra)
-}
-
 SPEC_NOT_PRESENT :: (#load("node_specs.odin", string) or_else "") == ""
 
 WASM_SYSTEMV_CC :: 0

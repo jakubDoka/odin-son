@@ -126,6 +126,7 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 	)
 
 	if !spec.no_spec_tables {
+
 		fmt.fprintf(
 			file,
 			"@(tag = \"api\", rodata, export, link_name = \"%v_SPEC\")",
@@ -593,6 +594,33 @@ collect_meta :: proc(ctx: ^%vProc,
 			)
 		}
 		fmt.fprintfln(file, "}}")
+	}
+
+	if spec_in.package_name != "bac" {
+		splits := strings.split(spec_in.package_name, "_")
+		prefix := splits[len(splits) - 1][:1]
+
+		fmt.fprintf(
+			file,
+			`
+%vtype :: #force_inline proc(node: bac.Expanded_Node) -> Node_Type {{
+	return Node_Type(node.rtype)
+}}
+
+%vextra :: #force_inline proc(
+	prc: ^bac.Proc,
+	node: ^bac.Node,
+	$T: typeid,
+) -> ^T {{
+	if prc.inheritance_table[node.rtype] & (1 << inherit_idx_of(T)) == 0 {{
+		return nil
+	}}
+	return (^T)(&node.extra)
+}}
+`,
+			prefix,
+			prefix,
+		)
 	}
 }
 

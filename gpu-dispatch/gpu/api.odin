@@ -11,28 +11,26 @@ MAX_KERNEL_BYTES :: 16 * 1024 * 1024
 DEFAULT_TIMEOUT_NS :: i64(2_000_000_000)
 MAX_TIMEOUT_NS :: i64(10_000_000_000)
 
-SIMD_Size :: enum u32 {
+Reg :: [8]f32
+
+SIMD_Width :: enum u32 {
 	SIMD8,
 	SIMD16,
 	SIMD32,
 }
 
 Kernel :: struct {
-	code:            []u32,
-	parameter_count: int,
-	result_count:    int,
-	simd:            SIMD_Size,
+	code:  []u32,
+	width: SIMD_Width,
 }
 
 Device :: struct {
-	fd:          linux.Fd,
-	context_id:  u32,
-	initialized: bool,
-	failed:      bool,
+	fd:         linux.Fd,
+	context_id: u32,
+	failed:     bool,
 }
 
 Error_Code :: enum {
-	Invalid_Device,
 	Device_Failed,
 	Invalid_Path,
 	Unsupported_Driver,
@@ -41,8 +39,6 @@ Error_Code :: enum {
 	Invalid_Kernel,
 	Invalid_Parameter_Count,
 	Invalid_Result_Count,
-	Parameter_Count_Mismatch,
-	Result_Count_Mismatch,
 	Invalid_SIMD_Size,
 	Invalid_Timeout,
 	Result_Overrun,
@@ -105,11 +101,10 @@ open :: proc(
 	ctx: GEM_Context
 	drm_ioctl(fd, .I915_CONTEXT_CREATE, &ctx) or_return
 	keep = true
-	return Device{fd = fd, context_id = ctx.id, initialized = true}, nil
+	return Device{fd = fd, context_id = ctx.id}, nil
 }
 
 close :: proc(device: ^Device) -> Error {
-	if device == nil || !device.initialized do return nil
 	ctx := GEM_Context {
 		id = device.context_id,
 	}
@@ -121,22 +116,21 @@ close :: proc(device: ^Device) -> Error {
 	return nil
 }
 
-validate :: proc(kernel: Kernel) -> Error {
+validate :: proc(kernel: Kernel, parameter_count, result_count: int) -> Error {
 	if len(kernel.code) == 0 ||
 	   len(kernel.code) % 2 != 0 ||
 	   len(kernel.code) > MAX_KERNEL_BYTES / size_of(u32) {
 		return Error_Code.Invalid_Kernel
 	}
-	if kernel.parameter_count < 0 ||
-	   kernel.parameter_count > MAX_PARAMETERS {
+	if uint(parameter_count) > MAX_PARAMETERS {
 		return Error_Code.Invalid_Parameter_Count
 	}
-	if kernel.result_count < 0 || kernel.result_count > MAX_RESULTS {
+	if uint(result_count) > MAX_RESULTS {
 		return Error_Code.Invalid_Result_Count
 	}
-	if kernel.simd != .SIMD8 &&
-	   kernel.simd != .SIMD16 &&
-	   kernel.simd != .SIMD32 {
+	if kernel.width != .SIMD8 &&
+	   kernel.width != .SIMD16 &&
+	   kernel.width != .SIMD32 {
 		return Error_Code.Invalid_SIMD_Size
 	}
 	return nil
@@ -145,17 +139,12 @@ validate :: proc(kernel: Kernel) -> Error {
 execute :: proc(
 	device: ^Device,
 	kernel: Kernel,
-	parameters: [][8]u32,
-	results: [][8]u32,
+	parameters: []Reg,
+	results: []Reg,
 	timeout_ns := DEFAULT_TIMEOUT_NS,
 ) -> Error {
-	validate(kernel) or_return
-	if len(parameters) != kernel.parameter_count {
-		return Error_Code.Parameter_Count_Mismatch
-	}
-	if len(results) != kernel.result_count do return Error_Code.Result_Count_Mismatch
+	validate(kernel, len(parameters), len(results)) or_return
 	if timeout_ns <= 0 || timeout_ns > MAX_TIMEOUT_NS do return Error_Code.Invalid_Timeout
-	if device == nil || !device.initialized do return Error_Code.Invalid_Device
 	if device.failed do return Error_Code.Device_Failed
 
 	layout := state_layout(len(parameters), len(kernel.code) * size_of(u32))
@@ -186,7 +175,7 @@ execute :: proc(
 	pack_commands(
 		&commands,
 		layout,
-		kernel.simd,
+		kernel.width,
 		objects[1].offset,
 		u64(layout.size),
 	)

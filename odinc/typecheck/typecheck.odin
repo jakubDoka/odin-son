@@ -1259,7 +1259,6 @@ Proc_Inst_Key :: struct {
 Types :: struct {
 	target:         Target,
 	check:          bool,
-	tstats:         bac.Stats,
 	mems:           Mems,
 	allocator:      runtime.Allocator,
 	procs:          [dynamic]Proc,

@@ -249,7 +249,7 @@ unsafe extern "C" {
     pub static bac_arm_SPEC: Node_Spec;
     pub static bac_arm_OPT_HINTS: Opt_Hints;
     pub static bac_intel_xelp_poc_OPT_HINTS: Opt_Hints;
-    pub static bac_intel_xelp_poc_CC_TABLE: [Call_Conv; 0];
+    pub static bac_intel_xelp_poc_CC_TABLE: [Call_Conv; 1];
     pub static bac_intel_xelp_poc_SPEC: Node_Spec;
     pub static bac_ssa_SPEC: Node_Spec;
     pub fn bac_add_arbitrary_load(
@@ -485,7 +485,7 @@ const _: () = assert!(core::mem::align_of::<arna_Allocator>() == 8);
 #[derive(Clone, Copy)]
 pub struct Proc {
     pub r#node_spec: *mut Node_Spec,
-    pub r#stats: *mut Stats,
+    pub r#preserved: Proc_preserved,
     pub r#worklist: *mut Worklist,
     pub r#triggers: *mut DynamicArray<DynamicArray<Node_ID>>,
     pub r#mem: *mut arna_Allocator,
@@ -496,11 +496,10 @@ pub struct Proc {
     pub r#dont_intern: bool,
     pub r#dont_delete: bool,
     pub r#computed_passes: Proc_computed_passes,
-    pub r#opt_flags: Proc_opt_flags,
     pub r#lattices: Slice<Lattice>,
 }
 const _: () = assert!(core::mem::offset_of!(Proc, r#node_spec) == 0);
-const _: () = assert!(core::mem::offset_of!(Proc, r#stats) == 8);
+const _: () = assert!(core::mem::offset_of!(Proc, r#preserved) == 8);
 const _: () = assert!(core::mem::offset_of!(Proc, r#worklist) == 16);
 const _: () = assert!(core::mem::offset_of!(Proc, r#triggers) == 24);
 const _: () = assert!(core::mem::offset_of!(Proc, r#mem) == 32);
@@ -511,7 +510,6 @@ const _: () = assert!(core::mem::offset_of!(Proc, r#meta) == 64);
 const _: () = assert!(core::mem::offset_of!(Proc, r#dont_intern) == 160);
 const _: () = assert!(core::mem::offset_of!(Proc, r#dont_delete) == 161);
 const _: () = assert!(core::mem::offset_of!(Proc, r#computed_passes) == 162);
-const _: () = assert!(core::mem::offset_of!(Proc, r#opt_flags) == 163);
 const _: () = assert!(core::mem::offset_of!(Proc, r#lattices) == 168);
 impl Default for Proc {
     fn default() -> Self {
@@ -649,6 +647,7 @@ const _: () = assert!(core::mem::align_of::<Schedule>() == 8);
 pub type Schedule_Mode = isize;
 pub const Schedule_Mode_for_regalloc: Schedule_Mode = 0;
 pub const Schedule_Mode_for_loopopt: Schedule_Mode = 1;
+pub const Schedule_Mode_for_display: Schedule_Mode = 2;
 const _: () = assert!(core::mem::size_of::<Schedule_Mode>() == 8);
 const _: () = assert!(core::mem::align_of::<Schedule_Mode>() == 8);
 #[repr(C, align(8))]
@@ -1253,6 +1252,19 @@ const _: () = assert!(core::mem::size_of::<ssa_Loop_Control>() == 8);
 const _: () = assert!(core::mem::align_of::<ssa_Loop_Control>() == 8);
 #[repr(C, align(8))]
 #[derive(Clone, Copy)]
+pub struct Proc_preserved {
+    pub r#stats: *mut Stats,
+}
+const _: () = assert!(core::mem::offset_of!(Proc_preserved, r#stats) == 0);
+impl Default for Proc_preserved {
+    fn default() -> Self {
+        unsafe { core::mem::zeroed() }
+    }
+}
+const _: () = assert!(core::mem::size_of::<Proc_preserved>() == 8);
+const _: () = assert!(core::mem::align_of::<Proc_preserved>() == 8);
+#[repr(C, align(8))]
+#[derive(Clone, Copy)]
 pub struct Worklist {
     pub r#queue: container_queue_Queue__T_Node_ID_,
     pub r#in_queue: bit_arr_Bit_Set,
@@ -1278,7 +1290,7 @@ pub struct Proc_Meta {
     pub r#stable_id: u32,
     pub r#min_idepth: u32,
     pub r#max_idepth: u32,
-    pub r#has_dbg: bool,
+    pub r#config: Proc_Meta_config,
     pub r#pinned: Proc_Meta_pinned,
     pub r#cached: Proc_Meta_cached,
 }
@@ -1291,7 +1303,7 @@ const _: () = assert!(core::mem::offset_of!(Proc_Meta, r#gdn) == 60);
 const _: () = assert!(core::mem::offset_of!(Proc_Meta, r#stable_id) == 64);
 const _: () = assert!(core::mem::offset_of!(Proc_Meta, r#min_idepth) == 68);
 const _: () = assert!(core::mem::offset_of!(Proc_Meta, r#max_idepth) == 72);
-const _: () = assert!(core::mem::offset_of!(Proc_Meta, r#has_dbg) == 76);
+const _: () = assert!(core::mem::offset_of!(Proc_Meta, r#config) == 76);
 const _: () = assert!(core::mem::offset_of!(Proc_Meta, r#pinned) == 80);
 const _: () = assert!(core::mem::offset_of!(Proc_Meta, r#cached) == 88);
 impl Default for Proc_Meta {
@@ -1304,9 +1316,6 @@ const _: () = assert!(core::mem::align_of::<Proc_Meta>() == 8);
 pub type Proc_computed_passes = u8;
 const _: () = assert!(core::mem::size_of::<Proc_computed_passes>() == 1);
 const _: () = assert!(core::mem::align_of::<Proc_computed_passes>() == 1);
-pub type Proc_opt_flags = u8;
-const _: () = assert!(core::mem::size_of::<Proc_opt_flags>() == 1);
-const _: () = assert!(core::mem::align_of::<Proc_opt_flags>() == 1);
 #[repr(C, align(8))]
 #[derive(Clone, Copy)]
 pub struct Lattice {
@@ -1802,6 +1811,21 @@ impl Default for Interner {
 }
 const _: () = assert!(core::mem::size_of::<Interner>() == 32);
 const _: () = assert!(core::mem::align_of::<Interner>() == 8);
+#[repr(C, align(1))]
+#[derive(Clone, Copy)]
+pub struct Proc_Meta_config {
+    pub r#has_dbg: bool,
+    pub r#opt_flags: Proc_Meta_config_opt_flags,
+}
+const _: () = assert!(core::mem::offset_of!(Proc_Meta_config, r#has_dbg) == 0);
+const _: () = assert!(core::mem::offset_of!(Proc_Meta_config, r#opt_flags) == 1);
+impl Default for Proc_Meta_config {
+    fn default() -> Self {
+        unsafe { core::mem::zeroed() }
+    }
+}
+const _: () = assert!(core::mem::size_of::<Proc_Meta_config>() == 2);
+const _: () = assert!(core::mem::align_of::<Proc_Meta_config>() == 1);
 #[repr(C, align(4))]
 #[derive(Clone, Copy)]
 pub struct Proc_Meta_pinned {
@@ -2202,6 +2226,9 @@ const _: () = assert!(core::mem::align_of::<PS_Peep_Fn>() == 8);
 pub type Pre_Regalloc_Hook = *mut core::ffi::c_void;
 const _: () = assert!(core::mem::size_of::<Pre_Regalloc_Hook>() == 8);
 const _: () = assert!(core::mem::align_of::<Pre_Regalloc_Hook>() == 8);
+pub type Proc_Meta_config_opt_flags = u8;
+const _: () = assert!(core::mem::size_of::<Proc_Meta_config_opt_flags>() == 1);
+const _: () = assert!(core::mem::align_of::<Proc_Meta_config_opt_flags>() == 1);
 #[repr(C, align(4))]
 #[derive(Clone, Copy)]
 pub struct Reloc_field_1 {

@@ -13,7 +13,7 @@ SIMD_Config :: struct {
 }
 
 @(rodata)
-SIMD_CONFIG := [SIMD_Size]SIMD_Config {
+SIMD_CONFIG := [SIMD_Width]SIMD_Config {
 	.SIMD8  = {0 << 30, 0xff},
 	.SIMD16 = {1 << 30, 0xffff},
 	.SIMD32 = {2 << 30, 0xffffffff},
@@ -94,7 +94,7 @@ pack_state :: proc(
 	data: []u32,
 	layout: State_Layout,
 	kernel: Kernel,
-	parameters: [][8]u32,
+	parameters: []Reg,
 	output_address: u64,
 ) {
 	copy(data[layout.curbe / 4:], mem.slice_data_cast([]u32, parameters))
@@ -146,7 +146,7 @@ emit_state_base_address :: proc(
 pack_commands :: proc(
 	b: ^Dword_Buffer,
 	layout: State_Layout,
-	simd: SIMD_Size,
+	simd: SIMD_Width,
 	state_address, state_size: u64,
 ) {
 	emit_pipe_control(b, PC_CS_STALL | PC_DC_FLUSH | PC_RT_FLUSH)

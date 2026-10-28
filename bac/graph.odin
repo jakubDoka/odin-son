@@ -442,7 +442,9 @@ Worklist :: struct {
 
 Proc :: struct {
 	using node_spec: ^Node_Spec,
-	using stats:     ^Stats,
+	using preserved: struct {
+		using stats: ^Stats,
+	},
 	worklist:        ^Worklist,
 	triggers:        ^[dynamic][dynamic]Node_ID,
 	mem:             ^arna.Allocator,
@@ -453,7 +455,6 @@ Proc :: struct {
 	dont_intern:     bool,
 	dont_delete:     bool,
 	computed_passes: bit_set[Pass],
-	opt_flags:       Opt_Flags,
 	lattices:        []Lattice,
 }
 
@@ -467,7 +468,10 @@ Proc_Meta :: struct {
 	stable_id:      u32,
 	min_idepth:     u32,
 	max_idepth:     u32,
-	has_dbg:        bool,
+	using config:   struct {
+		has_dbg:   bool,
+		opt_flags: Opt_Flags,
+	},
 	using pinned:   struct {
 		entry: Node_ID,
 		end:   Node_ID,

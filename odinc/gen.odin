@@ -44,22 +44,28 @@ OPT_LEVELS :: [?]Opt_Level {
 	{"aggresive", {.Local_Peeps, .Mem_Opt, .Inline, .Loop_Opt}, .with_coloring},
 }
 
-TARGETS := [?]typecheck.Target {
-	{
+Target_ID :: enum {
+	X64,
+	Wasm64,
+	Arm64,
+}
+
+TARGETS := [Target_ID]typecheck.Target {
+	.X64    = {
 		"amd64",
 		&x64.CC_TABLE[x64.X64_SYSTEMV_CC],
 		&x64.SPEC,
 		x64.OPT_HINTS,
 		emit_elf,
 	},
-	{
+	.Wasm64 = {
 		"wasm64",
 		&wasm.CC_TABLE[wasm.WASM_SYSTEMV_CC],
 		&wasm.SPEC,
 		wasm.OPT_HINTS,
 		emit_wasm_module,
 	},
-	{
+	.Arm64  = {
 		"arm64",
 		&arm.CC_TABLE[arm.ARM_SYSTEMV_CC],
 		&arm.SPEC,
@@ -789,11 +795,7 @@ emit_proc :: proc(
 	ctx.module = prc.module
 	ctx.file = prc.file
 	ctx.file_id = prc.file_id
-	ctx.prc = {
-		has_dbg = ctx.prc.has_dbg,
-	}
 	ctx.opt_flags = level.flags
-	ctx.stats = &ctx.tstats
 
 	ctx.mems.scratch.pos = 0
 	ctx.scope = make(

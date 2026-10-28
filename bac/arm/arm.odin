@@ -155,21 +155,6 @@ emit_op :: proc(code: ^arna.Allocator, instr: Op) {
 	emit(code, mem.ptr_to_bytes(&instr))
 }
 
-atype :: proc(node: ^Node) -> Node_Type {
-	return Node_Type(node.rtype)
-}
-
-aextra :: #force_inline proc(
-	prc: ^bac.Proc,
-	node: ^bac.Node,
-	$T: typeid,
-) -> ^T {
-	if prc.inheritance_table[node.rtype] & (1 << inherit_idx_of(T)) == 0 {
-		return nil
-	}
-	return (^T)(&node.extra)
-}
-
 peep :: proc(
 	ctx: bac.Peep_Ctx,
 	node: bac.Expanded_Node,

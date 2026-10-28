@@ -18,21 +18,6 @@ reg_of :: bac.reg_of
 mount_sloc :: bac.mount_sloc
 next_sloc :: bac.next_sloc
 
-xtype :: #force_inline proc(node: bac.Expanded_Node) -> Node_Type {
-	return Node_Type(node.rtype)
-}
-
-xextra :: #force_inline proc(
-	prc: ^bac.Proc,
-	node: ^bac.Node,
-	$T: typeid,
-) -> ^T {
-	if prc.inheritance_table[node.rtype] & (1 << inherit_idx_of(T)) == 0 {
-		return nil
-	}
-	return (^T)(&node.extra)
-}
-
 NOOP_REX :: 0b0100_0000
 
 NO_INDEX :: RSP
@@ -241,6 +226,18 @@ peep :: proc(
 	_: $T,
 ) -> Maybe(Node_ID) {
 	node := node
+
+	addr_add_offset :: proc(
+		prc: ^bac.Proc,
+		node: bac.Expanded_Node,
+	) -> (
+		base: Node_ID,
+		off: int,
+		ok: bool,
+	) {
+		if xtype(node) != .X64_Add do return
+		return node.inps[0], int(xextra(prc, node, Mem_Op).imm), true
+	}
 
 	id := bac.get_node_id(ctx, node)
 
@@ -911,7 +908,8 @@ add_node :: proc(
 
 make_node :: proc(
 	prc: ^bac.Proc,
-	from: Node_ID,
+	// NOTE: just to make this lazyli compiled
+	from: $T/Node_ID,
 	type: u16,
 	inps: []Node_ID,
 	extra: Mem_Op,
@@ -1005,18 +1003,6 @@ post_schedule_peep :: proc(
 	}
 
 	return 0
-}
-
-addr_add_offset :: proc(
-	prc: ^bac.Proc,
-	node: bac.Expanded_Node,
-) -> (
-	base: Node_ID,
-	off: int,
-	ok: bool,
-) {
-	if xtype(node) != .X64_Add do return
-	return node.inps[0], int(xextra(prc, node, Mem_Op).imm), true
 }
 
 meta_of :: proc(

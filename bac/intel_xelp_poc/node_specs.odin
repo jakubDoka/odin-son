@@ -6,6 +6,7 @@ Class_Flag :: bac.Class_Flag
 
 @(tag = "api", rodata, export, link_name = "bac_intel_xelp_poc_SPEC")SPEC := bac.Node_Spec{
 	call_clobbers = {
+		{},
 	},
 	datatype_to_reg_kind = {.Void = 0, .Mem = 0, .I8 = 0, .I16 = 0, .I32 = 0, .I64 = 0, .F32 = 0, .F64 = 0, .V128 = 0, .V256 = 0, .V512 = 0},
 	spill_boundary = {128},
@@ -322,3 +323,27 @@ inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 #assert(size_of(bac.Local) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.Tup) % bac.PRECISION == 0)
+
+@(rodata) GRF_MASK := [?]i64{transmute(i64)u64(0xfffffffffffffffe), transmute(i64)u64(0xff3fffffffffffff)}
+GRF_MASK_IDX :: bac.RM_Intern_Idx{index = 0, kind = 0}
+@(rodata) GRF_MASKS := [6]bac.RM_Intern_Idx{0 ..< 6 = GRF_MASK_IDX}
+
+seed_rm_interner :: proc(ra: ^bac.Regalloc) {
+	ra.mask_len = MASK_SIZE
+	bac.rm_intern_slice(ra, 0, GRF_MASK[:])
+}
+
+ptype :: #force_inline proc(node: bac.Expanded_Node) -> Node_Type {
+	return Node_Type(node.rtype)
+}
+
+pextra :: #force_inline proc(
+	prc: ^bac.Proc,
+	node: ^bac.Node,
+	$T: typeid,
+) -> ^T {
+	if prc.inheritance_table[node.rtype] & (1 << inherit_idx_of(T)) == 0 {
+		return nil
+	}
+	return (^T)(&node.extra)
+}

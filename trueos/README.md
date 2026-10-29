@@ -31,14 +31,22 @@ hot-reload helper are excluded from this compiler build.
 The build stages an SDK under `trueos/build/sdk`, adapting runtime allocation,
 formatted output, synchronization, and virtual memory for TRUEOS. It shares
 unmodified SDK packages through symlinks. `ODIN_SDK_ROOT` can select an installed
-SDK explicitly. The installed SDK is not modified. The package also embeds SDK collection
-files as `.trueos.assets`: the source files and supporting non-native files
-from `base`, `core`, and `vendor`, plus the SDK license. Native object files,
-archives, shared libraries, executables, and debugging files are excluded.
-The loader installs these files into the compiler app root at launch. This
-provides source collections; imports remain limited by the Odin SON language
-and code-generation features. Existing files at these asset paths are replaced
-when the compiler launches.
+SDK explicitly; no SDK environment variable is required. This SDK is used only
+to build the compiler on the host, and the installed SDK is not modified.
+The default Blueprint contains no upstream SDK source assets. Import-free
+programs and the embedded demos need no SDK collection files at runtime.
+
+An intentional SDK-bearing package can still be produced separately:
+
+```bash
+python3 trueos/package.py trueos/build/odin-son.raw.o trueos/build/odin-son.bp \
+    --sdk "$(/home/t4ce/Programmme/odin/odin root)"
+```
+
+That explicit option embeds `base`, `core`, and `vendor` source collections
+and the SDK license as `.trueos.assets`. The loader writes those files to the
+compiler app root on each launch. Native binaries are excluded, and collection
+imports remain limited by Odin SON's language and code-generation support.
 The target is `freestanding_amd64_sysv`, with PIC, no red zone, one
 code-generation module, and no ELF thread-local storage.
 
@@ -126,12 +134,13 @@ program/main.odin -o output.o
 ```
 
 `--odin-root` selects the directory containing `base`, `core`, and `vendor`
-source collections; it defaults to `.` inside the app filesystem root. The
-packaged SDK is installed there at launch. With
-the usual compiler identity, those directories are `apps/odin-son/base`,
-`apps/odin-son/core`, and `apps/odin-son/vendor`. No runtime `ODIN_ROOT`
-environment variable is required. Programs without collection imports need no
-collection files. Relative module imports are supported.
+source collections; it defaults to `.` inside the app filesystem root.
+Collection imports require separately supplied files or an explicitly
+SDK-bearing package. With the usual compiler identity, the default collection
+directories are `apps/odin-son/base`, `apps/odin-son/core`, and
+`apps/odin-son/vendor`. No runtime `ODIN_ROOT` environment variable is required.
+Programs without collection imports need no collection files. Relative module
+imports are supported.
 
 Other supported flags are `-target:amd64`, `-target:arm64`, `-target:wasm64`,
 `-o:<optimization-level>`, `-debug`, `-check`, and `--help`. Compiler success

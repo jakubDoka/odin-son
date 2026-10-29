@@ -3,6 +3,7 @@ package odin_son
 import "../bac"
 import "../bac/anal"
 import "../bac/arm"
+import "../bac/intel_xelp_poc"
 import "../bac/regalloc"
 import "../bac/ssa"
 import "../bac/wasm"
@@ -48,30 +49,42 @@ Target_ID :: enum {
 	X64,
 	Wasm64,
 	Arm64,
+	Intel_Xelp,
 }
 
 TARGETS := [Target_ID]typecheck.Target {
-	.X64    = {
+	.X64        = {
 		"amd64",
 		&x64.CC_TABLE[x64.X64_SYSTEMV_CC],
 		&x64.SPEC,
 		x64.OPT_HINTS,
 		emit_elf,
 	},
-	.Wasm64 = {
+	.Wasm64     = {
 		"wasm64",
 		&wasm.CC_TABLE[wasm.WASM_SYSTEMV_CC],
 		&wasm.SPEC,
 		wasm.OPT_HINTS,
 		emit_wasm_module,
 	},
-	.Arm64  = {
+	.Arm64      = {
 		"arm64",
 		&arm.CC_TABLE[arm.ARM_SYSTEMV_CC],
 		&arm.SPEC,
 		arm.OPT_HINTS,
 		emit_elf,
 	},
+	.Intel_Xelp = {
+		"intel_xelp_poc",
+		&intel_xelp_poc.CC_TABLE[intel_xelp_poc.XELP_CC],
+		&intel_xelp_poc.SPEC,
+		{},
+		emit_shader,
+	},
+}
+
+emit_shader :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
+	return ctx.procs[1].out.code
 }
 
 Abi_Param :: struct {

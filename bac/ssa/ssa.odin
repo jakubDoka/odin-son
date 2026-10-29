@@ -3,10 +3,10 @@ package bac_ssa
 import bac ".."
 import "../../utils/arna"
 import "../../utils/fmt"
+import "../amd64"
 import "../arm"
 import "../regalloc"
 import "../wasm"
-import "../x64"
 import "core:mem"
 import "core:slice"
 
@@ -74,7 +74,7 @@ compile :: proc(ctx: bac.Codegen_Emit_Ctx) -> (res: bac.Codegen_Output) {
 	if ctx.prc.node_spec == &SPEC {
 		when !SPEC_NOT_PRESENT {
 			when ODIN_ARCH == .amd64 {
-				ctx.prc.node_spec = &x64.SPEC
+				ctx.prc.node_spec = &amd64.SPEC
 			} else when ODIN_ARCH == .arm64 {
 				ctx.prc.node_spec = &arm.SPEC
 			} else when ODIN_ARCH == .wasm32 {

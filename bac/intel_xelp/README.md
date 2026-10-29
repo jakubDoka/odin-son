@@ -1,6 +1,6 @@
-# Intel Xe-LP proof-of-concept backend
+# Intel Xe-LP backend
 
-This proof-of-concept emits SIMD8 kernels for scalar `f32`
+This backend emits SIMD8 kernels for scalar `f32`
 addition, subtraction, multiplication, negation, and comparisons. Division
 lowers to a target-specific reciprocal node followed by multiplication, so it
 is approximate rather than correctly rounded. Comparisons return canonical
@@ -23,7 +23,7 @@ Regenerate its spec through `gen-spec`, or run `odin run bac/meta2` from the
 repository root when `node_specs.odin` is absent. Check the package with:
 
 ```sh
-odin check bac/intel_xelp_poc -no-entry-point
+odin check bac/intel_xelp -no-entry-point
 ```
 
 ## Encoding helpers

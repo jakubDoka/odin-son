@@ -7077,7 +7077,7 @@ main :: proc() -> int {
 }
 ```
 
-<!-- x64.odin:2578-2581 `.X64_Mul8` emits `{0xf6, mod_sm(...)}` with no REX prefix, so an 8-bit operand in rsi/rdi/rsp/rbp is encoded as dh/bh/ah/ch (and r8-r15 lose REX.B). `imul %bh` instead of `imul %dil`. expected 63, got 0 -->
+<!-- amd64.odin:2578-2581 `.AMD64_Mul8` emits `{0xf6, mod_sm(...)}` with no REX prefix, so an 8-bit operand in rsi/rdi/rsp/rbp is encoded as dh/bh/ah/ch (and r8-r15 lose REX.B). `imul %bh` instead of `imul %dil`. expected 63, got 0 -->
 
 #### i8 multiply missing REX on imul r m8
 ```odin
@@ -7094,7 +7094,7 @@ main :: proc() -> int {
 }
 ```
 
-<!-- x64.odin:2262-2265 indirect `.Call` emits `{0xFF, mod_sm(.Direct, 0b010, ptr)}` with no REX, so a callee-saved function pointer allocated to r8-r15 is called as the low register (`call *%rsi` instead of `call *%r14`). expected 35, got SIGSEGV -->
+<!-- amd64.odin:2262-2265 indirect `.Call` emits `{0xFF, mod_sm(.Direct, 0b010, ptr)}` with no REX, so a callee-saved function pointer allocated to r8-r15 is called as the low register (`call *%rsi` instead of `call *%r14`). expected 35, got SIGSEGV -->
 
 #### indirect call through high register missing REX B
 ```odin
@@ -7117,7 +7117,7 @@ main :: proc() -> int {
 }
 ```
 
-<!-- x64.odin:2535-2541 `.Shl ..= .U_Shr` lowers to a bare `shl/shr r, cl`, which masks the count to 5/6 bits, but Odin defines a shift by >= the operand width as 0. expected 0, got 7 -->
+<!-- amd64.odin:2535-2541 `.Shl ..= .U_Shr` lowers to a bare `shl/shr r, cl`, which masks the count to 5/6 bits, but Odin defines a shift by >= the operand width as 0. expected 0, got 7 -->
 
 #### shift count larger than operand width
 ```odin
@@ -7134,7 +7134,7 @@ main :: proc() -> int {
 }
 ```
 
-<!-- x64.odin:1858-1859/2674 float Eq/Ne map straight to sete/setne (and je/jne) after ucomisd; the unordered result sets ZF=1 so `NaN == x` yields true and `NaN != x` yields false (PF is never consulted). expected 2, got 1 -->
+<!-- amd64.odin:1858-1859/2674 float Eq/Ne map straight to sete/setne (and je/jne) after ucomisd; the unordered result sets ZF=1 so `NaN == x` yields true and `NaN != x` yields false (PF is never consulted). expected 2, got 1 -->
 
 #### float equality with NaN ignores the parity flag
 ```odin
@@ -7152,7 +7152,7 @@ main :: proc() -> int {
 }
 ```
 
-<!-- x64.odin:608-616 folds a constant shift amount into X64_Shl/X64_Shr without range-checking it, and x64.odin:2368/2397 emit it as a raw `shl/shr r, imm8`, which the CPU masks to 5/6 bits; Odin defines a shift by >= the operand width as 0. expected 0, got 3 -->
+<!-- amd64.odin:608-616 folds a constant shift amount into AMD64_Shl/AMD64_Shr without range-checking it, and amd64.odin:2368/2397 emit it as a raw `shl/shr r, imm8`, which the CPU masks to 5/6 bits; Odin defines a shift by >= the operand width as 0. expected 0, got 3 -->
 
 #### constant shift amount larger than operand width
 ```odin
@@ -7268,7 +7268,7 @@ main :: proc() -> int {
 }
 ```
 
-<!-- x64.odin:2804 the xmm spill-to-spill move emits `pop [rsp + dst_off - 8]`, but POP with an rsp-relative destination computes the address *after* RSP is incremented, so no bias is needed (the GPR path at x64.odin:2832 correctly uses dst_off); every float spill-to-spill copy writes 8 bytes below the intended slot. expected 116, got 49 -->
+<!-- amd64.odin:2804 the xmm spill-to-spill move emits `pop [rsp + dst_off - 8]`, but POP with an rsp-relative destination computes the address *after* RSP is incremented, so no bias is needed (the GPR path at amd64.odin:2832 correctly uses dst_off); every float spill-to-spill copy writes 8 bytes below the intended slot. expected 116, got 49 -->
 
 #### float spill to spill move writes 8 bytes below the slot
 ```odin
@@ -7309,7 +7309,7 @@ main :: proc() -> int {
 }
 ```
 
-<!-- x64.odin:2650 the memory-operand form of ucomiss/ucomisd builds its REX with `rex(lhs, bse, RAX, false)` while `emit_indirect_addr` is handed the real `idx`, so REX.X is dropped and an index register in r8-r15 is encoded as the matching low register (`ucomisd 0x0(%rbp,%rbp,8)` instead of `(%rbp,%r13,8)`). expected 4, got SIGSEGV -->
+<!-- amd64.odin:2650 the memory-operand form of ucomiss/ucomisd builds its REX with `rex(lhs, bse, RAX, false)` while `emit_indirect_addr` is handed the real `idx`, so REX.X is dropped and an index register in r8-r15 is encoded as the matching low register (`ucomisd 0x0(%rbp,%rbp,8)` instead of `(%rbp,%r13,8)`). expected 4, got SIGSEGV -->
 
 #### float compare against indexed memory drops REX X
 ```odin
@@ -8287,9 +8287,9 @@ main :: proc() -> int {
 }
 ```
 
-<!-- bac/x64/x64.odin peep (.Simd_Reduce_Add_Bisect, .I16): the second PSHUFD
+<!-- bac/amd64/amd64.odin peep (.Simd_Reduce_Add_Bisect, .I16): the second PSHUFD
 reads the original vector instead of the first partial sum, dropping lanes 6
-and 7. Expected 255, got 63 on x64 at every level except aggresive, with and
+and 7. Expected 255, got 63 on amd64 at every level except aggresive, with and
 without debug info. -->
 
 #### simd u16 reduction includes every lane
@@ -8306,7 +8306,7 @@ main :: proc() -> int {
 <!-- bac/ssa/loopopt.odin loopopt: the memset size is bound - initial even
 when the exit comparison uses the current induction phi after the store. The
 iteration at i == n still stores, so this loop writes n + 1 bytes, not n.
-Expected 28, got 21 on x64, ARM64, and Wasm at all and aggresive. -->
+Expected 28, got 21 on amd64, ARM64, and Wasm at all and aggresive. -->
 
 #### memset conversion preserves store before loop exit
 ```odin
@@ -8353,9 +8353,9 @@ main :: proc() -> int {
 }
 ```
 
-<!-- bac/x64/x64.odin emit_instr (.Ctz) always clears REX.W, so TZCNT only
+<!-- bac/amd64/amd64.odin emit_instr (.Ctz) always clears REX.W, so TZCNT only
 examines the low 32 bits even for I64 inputs. Expected 40 for 2^40, got 32 on
-x64 at every optimization level, with and without debug info. -->
+amd64 at every optimization level, with and without debug info. -->
 
 #### count trailing zeros examines all 64 bits
 ```odin
@@ -8370,7 +8370,7 @@ main :: proc() -> int {
 }
 ```
 
-<!-- bac/x64/x64.odin and bac/arm/arm.odin emit_instr (.Ctz), and the Ctz
+<!-- bac/amd64/amd64.odin and bac/arm/arm.odin emit_instr (.Ctz), and the Ctz
 opcode table in bac/wasm/isa.odin, use 32-bit operations for narrow inputs
 without adjusting the zero case to the original width. Expected 8, got 32
 on every target at every optimization level. -->
@@ -8388,10 +8388,10 @@ main :: proc() -> int {
 }
 ```
 
-<!-- bac/x64/x64.odin emit_instr (.Simd_Extract_Lsbs) emits PMOVMSKB, and
+<!-- bac/amd64/amd64.odin emit_instr (.Simd_Extract_Lsbs) emits PMOVMSKB, and
 bac/wasm/isa.odin selects i8x16.bitmask; both extract MSBs without first moving
 the LSBs into position. Comparison masks hide this because all bits in a lane
-are equal. Expected 85, got 0 on x64 and Wasm except at aggresive. -->
+are equal. Expected 85, got 0 on amd64 and Wasm except at aggresive. -->
 
 #### simd byte mask extracts least significant bits
 ```odin
@@ -8404,7 +8404,7 @@ main :: proc() -> int {
 }
 ```
 
-<!-- bac/x64/x64.odin emit_instr (.Simd_Extract_Lsbs) extracts one bit per
+<!-- bac/amd64/amd64.odin emit_instr (.Simd_Extract_Lsbs) extracts one bit per
 byte instead of one per word, returning 51 instead of 85. On ARM64 the same
 input reaches the .Ext assertion node.lane == .I8 in bac/arm/arm.odin because
 the mask-lowering peep propagates the I16 lane type to a byte-only operation. -->
@@ -8420,9 +8420,9 @@ main :: proc() -> int {
 }
 ```
 
-<!-- bac/x64/x64.odin peep (.Simd_Reduce_Add_Bisect, .I8) returns a Cast to
+<!-- bac/amd64/amd64.odin peep (.Simd_Reduce_Add_Bisect, .I8) returns a Cast to
 I16 instead of the original I8 datatype, so widening the reduction exposes
-the unwrapped PSADBW sum. Expected 144, got 400 on x64 at every level except
+the unwrapped PSADBW sum. Expected 144, got 400 on amd64 at every level except
 aggresive, with and without debug info. -->
 
 #### simd byte reduction wraps before widening
@@ -8464,10 +8464,10 @@ main :: proc() -> int {
 }
 ```
 
-<!-- bac/x64/x64.odin peep contracts floating-point Mul followed by Add to
-X64_Fma_213 unconditionally, including at none. The reference rounds the
+<!-- bac/amd64/amd64.odin peep contracts floating-point Mul followed by Add to
+AMD64_Fma_213 unconditionally, including at none. The reference rounds the
 product to 1 before subtracting 1; the fused operation instead produces
--2^-54. Expected 1, got 0 on x64 except at aggresive. -->
+-2^-54. Expected 1, got 0 on amd64 except at aggresive. -->
 
 #### multiply add preserves intermediate rounding
 ```!odin

@@ -1,4 +1,4 @@
-package bac_intel_xelp_poc
+package bac_intel_xelp
 
 import bac ".."
 import "../../utils/arna"
@@ -79,10 +79,10 @@ when SPEC_NOT_PRESENT {
 	inherit_idx_of :: proc($T: typeid) -> u8 {return 0}
 }
 
-@(tag = "api", rodata, export, link_name = "bac_intel_xelp_poc_OPT_HINTS")
+@(tag = "api", rodata, export, link_name = "bac_intel_xelp_OPT_HINTS")
 OPT_HINTS := bac.Opt_Hints{}
 
-@(tag = "api", rodata, export, link_name = "bac_intel_xelp_poc_CC_TABLE")
+@(tag = "api", rodata, export, link_name = "bac_intel_xelp_CC_TABLE")
 CC_TABLE := [1]bac.Call_Conv {
 	XELP_CC = {
 		args = {{R1, R2, R3, R4, R5, R6, R7, R8}, {}},
@@ -174,7 +174,7 @@ meta_of :: proc(
 		out = IOUT
 	}
 
-	#partial switch ptype(node) {
+	#partial switch xtype(node) {
 	case .Nil ..= .Dbg_Scope:
 		fmt.panicf("should not reach these: %v", node)
 	case .Poison ..= .Global:
@@ -344,7 +344,7 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block_idx: int, _: $T) {
 	node := expand_node(ctx, instr)
 
-	#partial switch ptype(node) {
+	#partial switch xtype(node) {
 	case .Nil ..= .Dbg_Scope:
 		fmt.panicf("should not reach these: %v", node)
 	case .Poison ..= .Phi:
@@ -405,9 +405,9 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block_idx: int, _: $T) {
 			},
 		)
 	case .Eq ..= .Ge, .Value_Eq ..= .Value_Ge:
-		materialized := ptype(node) >= .Value_Eq
+		materialized := xtype(node) >= .Value_Eq
 		kind :=
-			materialized ? Node_Type(u16(Node_Type.Eq) + node.rtype - u16(Node_Type.Value_Eq)) : ptype(node)
+			materialized ? Node_Type(u16(Node_Type.Eq) + node.rtype - u16(Node_Type.Value_Eq)) : xtype(node)
 		dst := reg_of(ctx, instr)
 		op := FLOAT_OPS[kind]
 		dt := get_node(ctx, node.inps[0]).dt
@@ -442,7 +442,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block_idx: int, _: $T) {
 	case .Add, .Sub, .Mul, .Neg, .Inv:
 		assert(bac.operation_datatype(ctx, node) == .F32)
 		dst := reg_of(ctx, instr)
-		op := FLOAT_OPS[ptype(node)]
+		op := FLOAT_OPS[xtype(node)]
 		op[1] |= eu_reg_number(dst, .GRF) << 24
 		op[2] |= eu_reg_number(reg_of(ctx, node.inps[0]), .GRF) << 8
 		if len(node.inps) == 2 {
@@ -450,7 +450,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block_idx: int, _: $T) {
 		}
 		emit_op(ctx.code, op)
 
-		if ptype(node) == .Inv {
+		if xtype(node) == .Inv {
 			// Math is out of order; register-distance dependencies alone cannot wait for it.
 			// sync.nop (1|M0) null {$2.dst}
 			emit_op(

@@ -1,8 +1,8 @@
 package odin_son
 
 import "../bac"
+import "../bac/amd64"
 import "../bac/arm"
-import "../bac/x64"
 import "../utils/arna"
 import "core:fmt"
 import "core:mem"
@@ -17,7 +17,7 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	context.allocator, _ = arna.scrath(allocator)
 
 	is_arm := ctx.target.spec == &arm.SPEC
-	assert(is_arm || ctx.target.spec == &x64.SPEC)
+	assert(is_arm || ctx.target.spec == &amd64.SPEC)
 
 	// --- .text : concatenate procedure code, 16 byte aligned ------------
 	text: [dynamic]u8
@@ -1313,8 +1313,8 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	DW_OP_BREGX :: 0x92
 
 	dwarf_reg :: proc(reg: bac.Reg) -> u64 {
-		if reg.kind == x64.RK_VECTOR do return 17 + u64(reg.index)
-		assert(reg.kind == x64.RK_GENERAL)
+		if reg.kind == amd64.RK_VECTOR do return 17 + u64(reg.index)
+		assert(reg.kind == amd64.RK_GENERAL)
 		mapping := [16]u8{0, 2, 1, 3, 7, 6, 4, 5, 8, 9, 10, 11, 12, 13, 14, 15}
 		assert(reg.index < len(mapping))
 		return u64(mapping[reg.index])

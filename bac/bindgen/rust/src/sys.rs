@@ -54,8 +54,6 @@ unsafe extern "C" {
     ) -> Node_ID;
     pub fn bac_set_scope_value(r#prc: *mut Proc, r#scope: Node_ID, r#idx: isize, r#value: Node_ID);
     pub fn bac_delete_scope(r#prc: *mut Proc, r#scope: Node_ID);
-    pub fn bac_truncate_scope(r#prc: *mut Proc, r#scope: Node_ID, r#to_len: isize);
-    pub fn bac_merge_return(r#prc: *mut Proc, r#args: Slice<Node_ID>) -> Node_ID;
     pub fn bac_push_scope_value(
         r#prc: *mut Proc,
         r#scope: Node_ID,
@@ -63,15 +61,17 @@ unsafe extern "C" {
         r#name: String,
         r#type: u64,
     ) -> isize;
+    pub fn bac_merge_return(r#prc: *mut Proc, r#args: Slice<Node_ID>) -> Node_ID;
+    pub fn bac_truncate_scope(r#prc: *mut Proc, r#scope: Node_ID, r#to_len: isize);
     pub fn bac_compile(r#ctx: Codegen_Emit_Ctx) -> Codegen_Output;
     pub fn bac_opt(r#ctx: Peep_Ctx);
-    pub fn bac_loopopt(r#prc: *mut Proc) -> bool;
-    pub fn bac_inline_stencil(r#prc: *mut Proc, r#call: Node_ID, r#from: Stencil);
+    pub fn bac_memopt(r#prc: *mut Proc) -> bool;
+    pub fn bac_inline_graph(r#prc: *mut Proc, r#call: Node_ID, r#from: *mut Proc);
     pub fn bac_mount_stencil(r#prc: *mut Proc, r#stencil: Stencil);
     pub fn bac_apply_peeps(r#ctx: Peep_Ctx) -> bool;
     pub fn bac_get_stencil(r#prc: *mut Proc) -> Stencil;
-    pub fn bac_memopt(r#prc: *mut Proc) -> bool;
-    pub fn bac_inline_graph(r#prc: *mut Proc, r#call: Node_ID, r#from: *mut Proc);
+    pub fn bac_loopopt(r#prc: *mut Proc) -> bool;
+    pub fn bac_inline_stencil(r#prc: *mut Proc, r#call: Node_ID, r#from: Stencil);
     pub fn bac_compact(r#prc: *mut Proc);
     pub fn bac_compute_latices(r#ctx: *mut Proc, r#scratch: runtime_Allocator) -> bool;
     pub fn bac_schedule_graph(
@@ -245,22 +245,18 @@ unsafe extern "C" {
     ) -> bool;
     pub fn bac_sloc_scope(r#prc: *mut Proc, r#sloc: Sloc, out0: *mut *mut Proc) -> Sloc;
     pub fn bac_unpin(r#prc: *mut Proc, r#id: Node_ID, r#no_delete: bool);
+    pub static bac_amd64_CC_TABLE: [Call_Conv; 2];
     pub static bac_anal_SPEC: Node_Spec;
-    pub static bac_arm_SPEC: Node_Spec;
+    pub static bac_amd64_SPEC: Node_Spec;
     pub static bac_arm_OPT_HINTS: Opt_Hints;
-    pub static bac_intel_xelp_poc_OPT_HINTS: Opt_Hints;
-    pub static bac_intel_xelp_poc_CC_TABLE: [Call_Conv; 1];
-    pub static bac_intel_xelp_poc_SPEC: Node_Spec;
+    pub static bac_arm_CC_TABLE: [Call_Conv; 1];
+    pub static bac_intel_xelp_CC_TABLE: [Call_Conv; 1];
+    pub static bac_intel_xelp_OPT_HINTS: Opt_Hints;
+    pub static bac_intel_xelp_SPEC: Node_Spec;
+    pub static bac_arm_SPEC: Node_Spec;
+    pub fn bac_set_local_size(r#prc: *mut Proc, r#loc: Node_ID, r#size: i32);
+    pub static bac_amd64_OPT_HINTS: Opt_Hints;
     pub static bac_ssa_SPEC: Node_Spec;
-    pub fn bac_add_arbitrary_load(
-        r#ctx: *mut Proc,
-        r#cfg: Node_ID,
-        r#mem: Node_ID,
-        r#addr: Node_ID,
-        r#rsize: isize,
-        r#extra_offset: isize,
-        r#unit: Node_Datatype,
-    ) -> Node_ID;
     pub fn bac_add_arbitrary_store(
         r#ctx: *mut Proc,
         r#cfg: Node_ID,
@@ -271,8 +267,25 @@ unsafe extern "C" {
         r#extra_offset: isize,
         r#unit: Node_Datatype,
     ) -> Node_ID;
-    pub fn bac_set_local_size(r#prc: *mut Proc, r#loc: Node_ID, r#size: i32);
-    pub static bac_arm_CC_TABLE: [Call_Conv; 1];
+    pub fn bac_add_field_offset(r#prc: *mut Proc, r#base: Node_ID, r#offset: isize) -> Node_ID;
+    pub fn bac_add_arbitrary_load(
+        r#ctx: *mut Proc,
+        r#cfg: Node_ID,
+        r#mem: Node_ID,
+        r#addr: Node_ID,
+        r#rsize: isize,
+        r#extra_offset: isize,
+        r#unit: Node_Datatype,
+    ) -> Node_ID;
+    pub fn bac_add_lazy_phi(
+        r#prc: *mut Proc,
+        r#name: String,
+        r#dt: Node_Datatype,
+        r#reg: Node_ID,
+        r#lhs: Node_ID,
+    ) -> Node_ID;
+    pub fn bac_add_scope(r#prc: *mut Proc, r#name: String, r#cfg: Node_ID) -> Node_ID;
+    pub fn bac_arg_gen_finalize(r#ctx: *mut Proc, r#gen: *mut ssa_Param_Gen) -> Slice<Param_Spec>;
     pub fn bac_add_field_load(
         r#ctx: *mut Proc,
         r#name: String,
@@ -291,16 +304,6 @@ unsafe extern "C" {
         r#offset: isize,
         r#value: Node_ID,
     ) -> Node_ID;
-    pub fn bac_add_scope(r#prc: *mut Proc, r#name: String, r#cfg: Node_ID) -> Node_ID;
-    pub fn bac_add_field_offset(r#prc: *mut Proc, r#base: Node_ID, r#offset: isize) -> Node_ID;
-    pub fn bac_add_lazy_phi(
-        r#prc: *mut Proc,
-        r#name: String,
-        r#dt: Node_Datatype,
-        r#reg: Node_ID,
-        r#lhs: Node_ID,
-    ) -> Node_ID;
-    pub fn bac_break_block(r#prc: *mut Proc, r#scope: *mut Node_ID, r#state: *mut ssa_Block_State);
     pub fn bac_arg_gen_next(
         r#ctx: *mut Proc,
         r#mem: Node_ID,
@@ -309,19 +312,16 @@ unsafe extern "C" {
         r#apa: ssa_Abi_Param,
         out0: *mut Node_ID,
     ) -> Node_ID;
-    pub fn bac_arg_gen_finalize(r#ctx: *mut Proc, r#gen: *mut ssa_Param_Gen) -> Slice<Param_Spec>;
+    pub fn bac_break_block(r#prc: *mut Proc, r#scope: *mut Node_ID, r#state: *mut ssa_Block_State);
+    pub fn bac_decl_local(r#prc: *mut Proc, r#loc: Node_ID, r#name: String, r#type: u64);
     pub fn bac_compute_index_offset(
         r#ctx: *mut Proc,
         r#base: Node_ID,
         r#index: Node_ID,
         r#stride: i64,
     ) -> Node_ID;
-    pub fn bac_decl_local(r#prc: *mut Proc, r#loc: Node_ID, r#name: String, r#type: u64);
     pub fn bac_end_block(r#prc: *mut Proc, r#scope: *mut Node_ID, r#state: *mut ssa_Block_State);
     pub fn bac_end_else(r#prc: *mut Proc, r#else_scope: *mut Node_ID, r#state: *mut ssa_If_State);
-    pub fn bac_end_if(r#prc: *mut Proc, r#then_scope: *mut Node_ID, r#state: *mut ssa_If_State);
-    pub fn bac_end_loop(r#prc: *mut Proc, r#node_scope: *mut Node_ID, r#state: *mut ssa_Loop_State);
-    pub fn bac_get_scope_value(r#prc: *mut Proc, r#scope: Node_ID, r#idx: isize) -> Node_ID;
     pub fn bac_add_dbg_scope(r#prc: *mut Proc, r#name: String, r#inputs: Slice<Node_ID>)
     -> Node_ID;
     pub fn bac_add_c_int(
@@ -353,9 +353,23 @@ unsafe extern "C" {
     -> Node_ID;
     pub fn bac_add_trap(r#prc: *mut Proc, r#name: String, r#inputs: Slice<Node_ID>) -> Node_ID;
     pub fn bac_init_custom_fmt();
-    pub fn bac_start_else(r#prc: *mut Proc, r#then_scope: *mut Node_ID, r#state: *mut ssa_If_State);
+    pub fn bac_end_if(r#prc: *mut Proc, r#then_scope: *mut Node_ID, r#state: *mut ssa_If_State);
+    pub fn bac_make_call(
+        r#prc: *mut Proc,
+        r#args: Slice<Node_ID>,
+        r#extra: Call,
+        out0: *mut Node_ID,
+    ) -> Node_ID;
     pub fn bac_start_block(r#state: *mut ssa_Block_State);
-    pub fn bac_start_loop(r#prc: *mut Proc, r#scope: Node_ID, r#state: *mut ssa_Loop_State);
+    pub fn bac_start_else(r#prc: *mut Proc, r#then_scope: *mut Node_ID, r#state: *mut ssa_If_State);
+    pub fn bac_get_scope_value(r#prc: *mut Proc, r#scope: Node_ID, r#idx: isize) -> Node_ID;
+    pub fn bac_end_loop(r#prc: *mut Proc, r#node_scope: *mut Node_ID, r#state: *mut ssa_Loop_State);
+    pub fn bac_loop_control(
+        r#variant: ssa_Loop_Control,
+        r#ctx: *mut Proc,
+        r#scope: Node_ID,
+        r#loop: *mut ssa_Loop_State,
+    );
     pub fn bac_start_if(
         r#prc: *mut Proc,
         r#scope: Node_ID,
@@ -367,24 +381,10 @@ unsafe extern "C" {
         r#node_scope: *mut Node_ID,
         r#state: *mut ssa_Loop_State,
     );
-    pub fn bac_make_call(
-        r#prc: *mut Proc,
-        r#args: Slice<Node_ID>,
-        r#extra: Call,
-        out0: *mut Node_ID,
-    ) -> Node_ID;
-    pub fn bac_loop_control(
-        r#variant: ssa_Loop_Control,
-        r#ctx: *mut Proc,
-        r#scope: Node_ID,
-        r#loop: *mut ssa_Loop_State,
-    );
+    pub fn bac_start_loop(r#prc: *mut Proc, r#scope: Node_ID, r#state: *mut ssa_Loop_State);
     pub static bac_wasm_CC_TABLE: [Call_Conv; 1];
     pub static bac_wasm_SPEC: Node_Spec;
     pub static bac_wasm_OPT_HINTS: Opt_Hints;
-    pub static bac_x64_CC_TABLE: [Call_Conv; 2];
-    pub static bac_x64_SPEC: Node_Spec;
-    pub static bac_x64_OPT_HINTS: Opt_Hints;
 }
 pub type ssa_Node_Type = u16;
 pub const ssa_Node_Type_Nil: ssa_Node_Type = 0;
@@ -1025,6 +1025,33 @@ const _: () = assert!(core::mem::size_of::<Sloc>() == 8);
 const _: () = assert!(core::mem::align_of::<Sloc>() == 4);
 #[repr(C, align(8))]
 #[derive(Clone, Copy)]
+pub struct Call_Conv {
+    pub r#callee_saved: Slice<Slice<Reg>>,
+    pub r#caller_saved: Slice<Slice<Reg>>,
+    pub r#args: Slice<Slice<Reg>>,
+    pub r#rets: Slice<Slice<Reg>>,
+    pub r#red_zone_size: i32,
+    pub r#is_syscall: bool,
+    pub r#cfi_spec: Cfi_Spec,
+    pub r#stack_pointer: Reg,
+}
+const _: () = assert!(core::mem::offset_of!(Call_Conv, r#callee_saved) == 0);
+const _: () = assert!(core::mem::offset_of!(Call_Conv, r#caller_saved) == 16);
+const _: () = assert!(core::mem::offset_of!(Call_Conv, r#args) == 32);
+const _: () = assert!(core::mem::offset_of!(Call_Conv, r#rets) == 48);
+const _: () = assert!(core::mem::offset_of!(Call_Conv, r#red_zone_size) == 64);
+const _: () = assert!(core::mem::offset_of!(Call_Conv, r#is_syscall) == 68);
+const _: () = assert!(core::mem::offset_of!(Call_Conv, r#cfi_spec) == 72);
+const _: () = assert!(core::mem::offset_of!(Call_Conv, r#stack_pointer) == 88);
+impl Default for Call_Conv {
+    fn default() -> Self {
+        unsafe { core::mem::zeroed() }
+    }
+}
+const _: () = assert!(core::mem::size_of::<Call_Conv>() == 96);
+const _: () = assert!(core::mem::align_of::<Call_Conv>() == 8);
+#[repr(C, align(8))]
+#[derive(Clone, Copy)]
 pub struct Node_Spec {
     pub r#node_extra_sizes: Slice<u8>,
     pub r#inheritance_table: Slice<u16>,
@@ -1063,46 +1090,6 @@ const _: () = assert!(core::mem::size_of::<Opt_Hints>() == 2);
 const _: () = assert!(core::mem::align_of::<Opt_Hints>() == 2);
 #[repr(C, align(8))]
 #[derive(Clone, Copy)]
-pub struct Call_Conv {
-    pub r#callee_saved: Slice<Slice<Reg>>,
-    pub r#caller_saved: Slice<Slice<Reg>>,
-    pub r#args: Slice<Slice<Reg>>,
-    pub r#rets: Slice<Slice<Reg>>,
-    pub r#red_zone_size: i32,
-    pub r#is_syscall: bool,
-    pub r#cfi_spec: Cfi_Spec,
-    pub r#stack_pointer: Reg,
-}
-const _: () = assert!(core::mem::offset_of!(Call_Conv, r#callee_saved) == 0);
-const _: () = assert!(core::mem::offset_of!(Call_Conv, r#caller_saved) == 16);
-const _: () = assert!(core::mem::offset_of!(Call_Conv, r#args) == 32);
-const _: () = assert!(core::mem::offset_of!(Call_Conv, r#rets) == 48);
-const _: () = assert!(core::mem::offset_of!(Call_Conv, r#red_zone_size) == 64);
-const _: () = assert!(core::mem::offset_of!(Call_Conv, r#is_syscall) == 68);
-const _: () = assert!(core::mem::offset_of!(Call_Conv, r#cfi_spec) == 72);
-const _: () = assert!(core::mem::offset_of!(Call_Conv, r#stack_pointer) == 88);
-impl Default for Call_Conv {
-    fn default() -> Self {
-        unsafe { core::mem::zeroed() }
-    }
-}
-const _: () = assert!(core::mem::size_of::<Call_Conv>() == 96);
-const _: () = assert!(core::mem::align_of::<Call_Conv>() == 8);
-#[repr(C, align(4))]
-#[derive(Clone, Copy)]
-pub struct ssa_Block_State {
-    pub r#end_scope: Node_ID,
-}
-const _: () = assert!(core::mem::offset_of!(ssa_Block_State, r#end_scope) == 0);
-impl Default for ssa_Block_State {
-    fn default() -> Self {
-        unsafe { core::mem::zeroed() }
-    }
-}
-const _: () = assert!(core::mem::size_of::<ssa_Block_State>() == 4);
-const _: () = assert!(core::mem::align_of::<ssa_Block_State>() == 4);
-#[repr(C, align(8))]
-#[derive(Clone, Copy)]
 pub struct ssa_Param_Gen {
     pub r#vls: DynamicArray<Node_ID>,
     pub r#spill_start: isize,
@@ -1116,6 +1103,21 @@ impl Default for ssa_Param_Gen {
 }
 const _: () = assert!(core::mem::size_of::<ssa_Param_Gen>() == 48);
 const _: () = assert!(core::mem::align_of::<ssa_Param_Gen>() == 8);
+#[repr(C, align(4))]
+#[derive(Clone, Copy)]
+pub struct Param_Spec {
+    pub r#dt: Node_Datatype,
+    pub r#size: i32,
+}
+const _: () = assert!(core::mem::offset_of!(Param_Spec, r#dt) == 0);
+const _: () = assert!(core::mem::offset_of!(Param_Spec, r#size) == 4);
+impl Default for Param_Spec {
+    fn default() -> Self {
+        unsafe { core::mem::zeroed() }
+    }
+}
+const _: () = assert!(core::mem::size_of::<Param_Spec>() == 8);
+const _: () = assert!(core::mem::align_of::<Param_Spec>() == 4);
 #[repr(C, align(8))]
 #[derive(Clone, Copy)]
 pub struct ssa_Abi_Param {
@@ -1141,19 +1143,17 @@ const _: () = assert!(core::mem::size_of::<ssa_Abi_Param>() == 40);
 const _: () = assert!(core::mem::align_of::<ssa_Abi_Param>() == 8);
 #[repr(C, align(4))]
 #[derive(Clone, Copy)]
-pub struct Param_Spec {
-    pub r#dt: Node_Datatype,
-    pub r#size: i32,
+pub struct ssa_Block_State {
+    pub r#end_scope: Node_ID,
 }
-const _: () = assert!(core::mem::offset_of!(Param_Spec, r#dt) == 0);
-const _: () = assert!(core::mem::offset_of!(Param_Spec, r#size) == 4);
-impl Default for Param_Spec {
+const _: () = assert!(core::mem::offset_of!(ssa_Block_State, r#end_scope) == 0);
+impl Default for ssa_Block_State {
     fn default() -> Self {
         unsafe { core::mem::zeroed() }
     }
 }
-const _: () = assert!(core::mem::size_of::<Param_Spec>() == 8);
-const _: () = assert!(core::mem::align_of::<Param_Spec>() == 4);
+const _: () = assert!(core::mem::size_of::<ssa_Block_State>() == 4);
+const _: () = assert!(core::mem::align_of::<ssa_Block_State>() == 4);
 #[repr(C, align(4))]
 #[derive(Clone, Copy)]
 pub struct ssa_If_State {
@@ -1169,21 +1169,6 @@ impl Default for ssa_If_State {
 }
 const _: () = assert!(core::mem::size_of::<ssa_If_State>() == 8);
 const _: () = assert!(core::mem::align_of::<ssa_If_State>() == 4);
-#[repr(C, align(4))]
-#[derive(Clone, Copy)]
-pub struct ssa_Loop_State {
-    pub r#scope: Node_ID,
-    pub r#scopes: [Node_ID; 2],
-}
-const _: () = assert!(core::mem::offset_of!(ssa_Loop_State, r#scope) == 0);
-const _: () = assert!(core::mem::offset_of!(ssa_Loop_State, r#scopes) == 4);
-impl Default for ssa_Loop_State {
-    fn default() -> Self {
-        unsafe { core::mem::zeroed() }
-    }
-}
-const _: () = assert!(core::mem::size_of::<ssa_Loop_State>() == 12);
-const _: () = assert!(core::mem::align_of::<ssa_Loop_State>() == 4);
 #[repr(C, align(4))]
 #[derive(Clone, Copy)]
 pub struct Nil_Node {
@@ -1245,6 +1230,21 @@ impl Default for Call {
 }
 const _: () = assert!(core::mem::size_of::<Call>() == 16);
 const _: () = assert!(core::mem::align_of::<Call>() == 4);
+#[repr(C, align(4))]
+#[derive(Clone, Copy)]
+pub struct ssa_Loop_State {
+    pub r#scope: Node_ID,
+    pub r#scopes: [Node_ID; 2],
+}
+const _: () = assert!(core::mem::offset_of!(ssa_Loop_State, r#scope) == 0);
+const _: () = assert!(core::mem::offset_of!(ssa_Loop_State, r#scopes) == 4);
+impl Default for ssa_Loop_State {
+    fn default() -> Self {
+        unsafe { core::mem::zeroed() }
+    }
+}
+const _: () = assert!(core::mem::size_of::<ssa_Loop_State>() == 12);
+const _: () = assert!(core::mem::align_of::<ssa_Loop_State>() == 4);
 pub type ssa_Loop_Control = isize;
 pub const ssa_Loop_Control_Break: ssa_Loop_Control = 0;
 pub const ssa_Loop_Control_Continue: ssa_Loop_Control = 1;
@@ -1634,6 +1634,27 @@ pub type Sym_Ref_Type = u32;
 pub const Sym_Ref_Type_Func: Sym_Ref_Type = 14;
 const _: () = assert!(core::mem::size_of::<Sym_Ref_Type>() == 4);
 const _: () = assert!(core::mem::align_of::<Sym_Ref_Type>() == 4);
+#[repr(C, align(4))]
+#[derive(Clone, Copy)]
+pub struct Cfi_Spec {
+    pub r#cfa_reg: u8,
+    pub r#return_addr_reg: u8,
+    pub r#initial_cfa_offset: u32,
+    pub r#code_align: u32,
+    pub r#data_align: i32,
+}
+const _: () = assert!(core::mem::offset_of!(Cfi_Spec, r#cfa_reg) == 0);
+const _: () = assert!(core::mem::offset_of!(Cfi_Spec, r#return_addr_reg) == 1);
+const _: () = assert!(core::mem::offset_of!(Cfi_Spec, r#initial_cfa_offset) == 4);
+const _: () = assert!(core::mem::offset_of!(Cfi_Spec, r#code_align) == 8);
+const _: () = assert!(core::mem::offset_of!(Cfi_Spec, r#data_align) == 12);
+impl Default for Cfi_Spec {
+    fn default() -> Self {
+        unsafe { core::mem::zeroed() }
+    }
+}
+const _: () = assert!(core::mem::size_of::<Cfi_Spec>() == 16);
+const _: () = assert!(core::mem::align_of::<Cfi_Spec>() == 4);
 pub type Node_Spec_node_flags = u8;
 const _: () = assert!(core::mem::size_of::<Node_Spec_node_flags>() == 1);
 const _: () = assert!(core::mem::align_of::<Node_Spec_node_flags>() == 1);
@@ -1661,27 +1682,6 @@ const _: () = assert!(core::mem::align_of::<Codegen_Spec>() == 8);
 pub type Opt_Hints_select_types = u16;
 const _: () = assert!(core::mem::size_of::<Opt_Hints_select_types>() == 2);
 const _: () = assert!(core::mem::align_of::<Opt_Hints_select_types>() == 2);
-#[repr(C, align(4))]
-#[derive(Clone, Copy)]
-pub struct Cfi_Spec {
-    pub r#cfa_reg: u8,
-    pub r#return_addr_reg: u8,
-    pub r#initial_cfa_offset: u32,
-    pub r#code_align: u32,
-    pub r#data_align: i32,
-}
-const _: () = assert!(core::mem::offset_of!(Cfi_Spec, r#cfa_reg) == 0);
-const _: () = assert!(core::mem::offset_of!(Cfi_Spec, r#return_addr_reg) == 1);
-const _: () = assert!(core::mem::offset_of!(Cfi_Spec, r#initial_cfa_offset) == 4);
-const _: () = assert!(core::mem::offset_of!(Cfi_Spec, r#code_align) == 8);
-const _: () = assert!(core::mem::offset_of!(Cfi_Spec, r#data_align) == 12);
-impl Default for Cfi_Spec {
-    fn default() -> Self {
-        unsafe { core::mem::zeroed() }
-    }
-}
-const _: () = assert!(core::mem::size_of::<Cfi_Spec>() == 16);
-const _: () = assert!(core::mem::align_of::<Cfi_Spec>() == 4);
 #[repr(C, align(4))]
 #[derive(Clone, Copy)]
 pub union ssa_If_State_branch {

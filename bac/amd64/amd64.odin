@@ -1,4 +1,4 @@
-package bac_x64
+package bac_amd64
 
 import bac ".."
 import "../../utils/arna"
@@ -66,7 +66,7 @@ RIP :: RBP
 GPA_REG_COUNT :: 16
 MASK_SIZE :: bac.MASK_SIZE
 
-X64_CFI_SPEC :: bac.Cfi_Spec {
+AMD64_CFI_SPEC :: bac.Cfi_Spec {
 	cfa_reg            = 7, // rsp
 	return_addr_reg    = 16,
 	initial_cfa_offset = 8,
@@ -85,17 +85,17 @@ X64_CFI_SPEC :: bac.Cfi_Spec {
 // * The `context` pointer is then the last parameter to the procedure
 // arguments
 
-X64_SYSTEMV_CC :: 0
-X64_LINUX_SYSCALL_CC :: 1
+AMD64_SYSTEMV_CC :: 0
+AMD64_LINUX_SYSCALL_CC :: 1
 
-@(tag = "api", rodata, export, link_name = "bac_x64_OPT_HINTS")
+@(tag = "api", rodata, export, link_name = "bac_amd64_OPT_HINTS")
 OPT_HINTS := bac.Opt_Hints {
 	select_types = {.I8, .I16, .I32, .I64},
 }
 
-@(tag = "api", rodata, export, link_name = "bac_x64_CC_TABLE")
+@(tag = "api", rodata, export, link_name = "bac_amd64_CC_TABLE")
 CC_TABLE := [?]bac.Call_Conv {
-	X64_SYSTEMV_CC = {
+	AMD64_SYSTEMV_CC = {
 		callee_saved = {{RBX, RBP, R12, R13, R14, R15}, {}},
 		caller_saved = {
 			{RAX, RCX, RDX, RSI, RDI, R8, R9, R10, R11, FLAGS},
@@ -124,10 +124,10 @@ CC_TABLE := [?]bac.Call_Conv {
 		},
 		rets = {{RAX, RDX}, {XMM0, XMM1}},
 		red_zone_size = 128,
-		cfi_spec = X64_CFI_SPEC,
+		cfi_spec = AMD64_CFI_SPEC,
 		stack_pointer = RSP,
 	},
-	X64_LINUX_SYSCALL_CC = {
+	AMD64_LINUX_SYSCALL_CC = {
 		callee_saved = {
 			{RBX, RDX, RDI, RSI, RBP, R8, R9, R10, R12, R13, R14, R15},
 			{},
@@ -136,7 +136,7 @@ CC_TABLE := [?]bac.Call_Conv {
 		args = {{RAX, RDI, RSI, RDX, R10, R8, R9}, {}},
 		rets = {{RAX}, {}},
 		is_syscall = true,
-		cfi_spec = X64_CFI_SPEC,
+		cfi_spec = AMD64_CFI_SPEC,
 	},
 }
 
@@ -153,41 +153,41 @@ when SPEC_NOT_PRESENT {
 	inherit_idx_of :: proc($T: typeid) -> u8 {return 0}
 
 	Node_Type :: enum u16 {
-		X64_Add,
-		X64_Sub,
-		X64_And,
-		X64_Or,
-		X64_Xor,
-		X64_Eq,
-		X64_Ne,
-		X64_Le,
-		X64_Lt,
-		X64_Gt,
-		X64_Ge,
-		X64_U_Lt,
-		X64_U_Gt,
-		X64_U_Le,
-		X64_U_Ge,
-		X64_Shl,
-		X64_Shr,
-		X64_U_Shr,
-		X64_Mul,
-		X64_Div,
-		X64_Lea,
-		X64_Load,
-		X64_Store,
-		X64_Neg,
-		X64_Not,
-		X64_Mul8,
-		X64_Fma_213,
-		X64_Pcmpeq,
-		X64_Padd,
-		X64_Psub,
-		X64_Pshufd,
-		X64_Pshuflw,
-		X64_Psadbw,
-		X64_Pshufb,
-		X64_Pextr,
+		AMD64_Add,
+		AMD64_Sub,
+		AMD64_And,
+		AMD64_Or,
+		AMD64_Xor,
+		AMD64_Eq,
+		AMD64_Ne,
+		AMD64_Le,
+		AMD64_Lt,
+		AMD64_Gt,
+		AMD64_Ge,
+		AMD64_U_Lt,
+		AMD64_U_Gt,
+		AMD64_U_Le,
+		AMD64_U_Ge,
+		AMD64_Shl,
+		AMD64_Shr,
+		AMD64_U_Shr,
+		AMD64_Mul,
+		AMD64_Div,
+		AMD64_Lea,
+		AMD64_Load,
+		AMD64_Store,
+		AMD64_Neg,
+		AMD64_Not,
+		AMD64_Mul8,
+		AMD64_Fma_213,
+		AMD64_Pcmpeq,
+		AMD64_Padd,
+		AMD64_Psub,
+		AMD64_Pshufd,
+		AMD64_Pshuflw,
+		AMD64_Psadbw,
+		AMD64_Pshufb,
+		AMD64_Pextr,
 	}
 }
 
@@ -215,10 +215,10 @@ Mem_Op :: struct {
 	aux:      u8,
 }
 
-BIN_OP_OFFSET :: transmute(u16)(i16(Node_Type.X64_Add) -
+BIN_OP_OFFSET :: transmute(u16)(i16(Node_Type.AMD64_Add) -
 	i16(bac.Node_Type.Add))
 
-UN_OP_OFFSET :: transmute(u16)(i16(Node_Type.X64_Neg) - i16(bac.Node_Type.Neg))
+UN_OP_OFFSET :: transmute(u16)(i16(Node_Type.AMD64_Neg) - i16(bac.Node_Type.Neg))
 
 peep :: proc(
 	ctx: bac.Peep_Ctx,
@@ -235,8 +235,8 @@ peep :: proc(
 		off: int,
 		ok: bool,
 	) {
-		if xtype(node) != .X64_Add do return
-		return node.inps[0], int(xextra(prc, node, Mem_Op).imm), true
+		if atype(node) != .AMD64_Add do return
+		return node.inps[0], int(aextra(prc, node, Mem_Op).imm), true
 	}
 
 	id := bac.get_node_id(ctx, node)
@@ -265,8 +265,8 @@ peep :: proc(
 	stack_base: bool
 
 	has_own_index :=
-		(xtype(node) == .X64_Store || xtype(node) == .X64_Load) &&
-		xextra(ctx, node, Mem_Op).scale != 0
+		(atype(node) == .AMD64_Store || atype(node) == .AMD64_Load) &&
+		aextra(ctx, node, Mem_Op).scale != 0
 
 	if 2 < len(node.inps) {
 		nbase, ndisplacement := bac.base_and_offset(
@@ -279,8 +279,8 @@ peep :: proc(
 		}
 
 		bnode := expand_node(ctx, nbase)
-		if xtype(bnode) == .X64_Lea {
-			mem_op := xextra(ctx, bnode, Mem_Op)
+		if atype(bnode) == .AMD64_Lea {
+			mem_op := aextra(ctx, bnode, Mem_Op)
 			scale = i32(mem_op.scale)
 			overflowed: bool
 			displacement, overflowed = intrinsics.overflow_add(
@@ -307,9 +307,9 @@ peep :: proc(
 		}
 	}
 
-	mem_op := xextra(ctx, node, Mem_Op)
+	mem_op := aextra(ctx, node, Mem_Op)
 
-	if xtype(node) == .Add && node.dt in bac.FLOAT_DTS {
+	if atype(node) == .Add && node.dt in bac.FLOAT_DTS {
 		lhs := expand_node(ctx, node.inps[0])
 		rhs := expand_node(ctx, node.inps[1])
 
@@ -322,14 +322,14 @@ peep :: proc(
 			return make_node(
 				ctx,
 				id,
-				u16(Node_Type.X64_Fma_213),
+				u16(Node_Type.AMD64_Fma_213),
 				{lhs.inps[0], lhs.inps[1], rhs_id},
 				{},
 			)
 		}
 	}
 
-	#partial matchx: switch xtype(node) {
+	#partial matchx: switch atype(node) {
 	case .Shl ..= .U_Shr:
 		if node.dt not_in bac.INT_DTS do break matchx
 		count := node.inps[1]
@@ -343,7 +343,7 @@ peep :: proc(
 				_, shifted := add_node(
 					ctx,
 					"shsign",
-					.X64_Shr,
+					.AMD64_Shr,
 					node.dt,
 					node.inps[:1],
 					{imm = i32(bits - 1)},
@@ -398,7 +398,7 @@ peep :: proc(
 			_, fallback = add_node(
 				ctx,
 				"shsign",
-				.X64_Shr,
+				.AMD64_Shr,
 				node.dt,
 				node.inps[:1],
 				{imm = i32(bits - 1)},
@@ -415,7 +415,7 @@ peep :: proc(
 		if inp.dt in bac.INT_DTS && node.dt in bac.INT_DTS {
 			break matchx
 		}
-		if xtype(node) == .Conv ||
+		if atype(node) == .Conv ||
 		   (inp.dt in bac.FLOAT_DTS && node.dt in bac.FLOAT_DTS) {
 			break matchx
 		}
@@ -426,7 +426,7 @@ peep :: proc(
 				return bac.add_un_op(ctx, "uftc", .U_Conv, node.dt, wide)
 			}
 
-			_, high := add_node(ctx, "ufti", .X64_U_Shr, .I64, {wide}, {imm = 63})
+			_, high := add_node(ctx, "ufti", .AMD64_U_Shr, .I64, {wide}, {imm = 63})
 			bits_dt: bac.Node_Datatype = inp.dt == .F64 ? .I64 : .I32
 			delta := high
 			if bits_dt == .I32 {
@@ -435,7 +435,7 @@ peep :: proc(
 			_, delta = add_node(
 				ctx,
 				"ufte",
-				.X64_Shl,
+				.AMD64_Shl,
 				bits_dt,
 				{delta},
 				{imm = inp.dt == .F64 ? 52 : 23},
@@ -444,7 +444,7 @@ peep :: proc(
 			_, adjusted := add_node(
 				ctx,
 				"ufta",
-				.X64_Psub,
+				.AMD64_Psub,
 				inp.dt,
 				{node.inps[0], delta},
 			)
@@ -463,7 +463,7 @@ peep :: proc(
 		_, high := add_node(
 			ctx,
 			"ufhi",
-			.X64_U_Shr,
+			.AMD64_U_Shr,
 			.I64,
 			{node.inps[0]},
 			{imm = 63},
@@ -482,13 +482,13 @@ peep :: proc(
 		_, delta = add_node(
 			ctx,
 			"ufde",
-			.X64_Shl,
+			.AMD64_Shl,
 			bits_dt,
 			{delta},
 			{imm = node.dt == .F64 ? 52 : 23},
 		)
 		delta = bac.add_un_op(ctx, "ufdb", .Cast, node.dt, delta)
-		_, res := add_node(ctx, "ufrs", .X64_Padd, node.dt, {converted, delta})
+		_, res := add_node(ctx, "ufrs", .AMD64_Padd, node.dt, {converted, delta})
 		return res
 	case .Ctz:
 		return bac.normalize_ctz(ctx, node, .I16, struct{}{})
@@ -501,7 +501,7 @@ peep :: proc(
 			_, cid := add_node(
 				ctx,
 				node.name,
-				.X64_Load,
+				.AMD64_Load,
 				node.dt,
 				{0, cmem, global},
 				{dt = node.dt},
@@ -520,15 +520,15 @@ peep :: proc(
 			pnode, pshufb := add_node(
 				ctx,
 				"pshufb",
-				.X64_Pshufb,
+				.AMD64_Pshufb,
 				node.dt,
 				{vec, zero},
 			)
 
 			return pshufb
 		case .I16:
-			_, words := add_node(ctx, "pshuflw", .X64_Pshuflw, node.dt, {vec})
-			_, splat := add_node(ctx, "pshufd", .X64_Pshufd, node.dt, {words})
+			_, words := add_node(ctx, "pshuflw", .AMD64_Pshuflw, node.dt, {vec})
+			_, splat := add_node(ctx, "pshufd", .AMD64_Pshufd, node.dt, {words})
 			return splat
 		case:
 			fmt.panicf("TODO: %v %v", node, inp)
@@ -542,7 +542,7 @@ peep :: proc(
 			_, pshufd := add_node(
 				ctx,
 				"pshufd",
-				.X64_Pshufd,
+				.AMD64_Pshufd,
 				inp.dt,
 				{node.inps[0]},
 				{aux = 0b11101110},
@@ -559,7 +559,7 @@ peep :: proc(
 			)
 			zero := bac.add_c_int(ctx, "zro", inp.dt, 0)
 
-			psadbw := add_x64_psadbw(ctx, "psadbw", inp.dt, add, zero)
+			psadbw := add_amd64_psadbw(ctx, "psadbw", inp.dt, add, zero)
 			get_node(ctx, psadbw).lane = node.lane
 
 			return bac.add_un_op(ctx, "sum", .Cast, .I8, psadbw)
@@ -567,7 +567,7 @@ peep :: proc(
 			_, pshufd := add_node(
 				ctx,
 				"pshufd",
-				.X64_Pshufd,
+				.AMD64_Pshufd,
 				inp.dt,
 				{node.inps[0]},
 				{aux = 0b11101110},
@@ -586,7 +586,7 @@ peep :: proc(
 			_, pshufd2 := add_node(
 				ctx,
 				"pshufd",
-				.X64_Pshufd,
+				.AMD64_Pshufd,
 				inp.dt,
 				{node.inps[0]},
 				{aux = 0b01010101},
@@ -602,14 +602,14 @@ peep :: proc(
 				lane = node.lane,
 			)
 
-			_, lhs := add_node(ctx, "pextrw", .X64_Pextr, node.dt, {add2}, {aux = 1})
+			_, lhs := add_node(ctx, "pextrw", .AMD64_Pextr, node.dt, {add2}, {aux = 1})
 			rhs := bac.add_un_op(ctx, "rhs", .Cast, node.dt, add2)
 			return bac.add_bin_op(ctx, "sum", .Add, node.dt, lhs, rhs)
 		case .I32:
 			_, pshufd := add_node(
 				ctx,
 				"pshufd",
-				.X64_Pshufd,
+				.AMD64_Pshufd,
 				inp.dt,
 				{node.inps[0]},
 				{aux = 0b11101110},
@@ -625,14 +625,14 @@ peep :: proc(
 				lane = node.lane,
 			)
 
-			_, lhs := add_node(ctx, "pextrd", .X64_Pextr, node.dt, {add}, {aux = 1})
+			_, lhs := add_node(ctx, "pextrd", .AMD64_Pextr, node.dt, {add}, {aux = 1})
 			rhs := bac.add_un_op(ctx, "rhs", .Cast, node.dt, add)
 			return bac.add_bin_op(ctx, "sum", .Add, node.dt, lhs, rhs)
 		case .I64:
 			_, lhs := add_node(
 				ctx,
 				"pextrq",
-				.X64_Pextr,
+				.AMD64_Pextr,
 				node.dt,
 				{node.inps[0]},
 				{aux = 1},
@@ -646,12 +646,12 @@ peep :: proc(
 		op_dt := bac.operation_datatype(ctx.prc, node)
 		if op_dt not_in bac.INT_DTS do break matchx
 		if node.dt == .I8 && node.itype == .Mul {
-			node.rtype = u16(Node_Type.X64_Mul8)
+			node.rtype = u16(Node_Type.AMD64_Mul8)
 			return id
 		}
 
 		if node.dt == .V128 && node.itype == .Eq {
-			node.rtype = u16(Node_Type.X64_Pcmpeq)
+			node.rtype = u16(Node_Type.AMD64_Pcmpeq)
 			return id
 		}
 
@@ -671,8 +671,8 @@ peep :: proc(
 			ascale: i32 = 1
 			aindex := node.inps[1]
 
-			if xtype(rhs) == .X64_Mul {
-				ascale = xextra(ctx, rhs, Mem_Op).imm
+			if atype(rhs) == .AMD64_Mul {
+				ascale = aextra(ctx, rhs, Mem_Op).imm
 				aindex = rhs.inps[0]
 			} else if rhs.itype == .Mul {
 				arhs_const := bac.get_extra(ctx, rhs.inps[1], bac.CInt)
@@ -707,7 +707,7 @@ peep :: proc(
 			return make_node(
 				ctx,
 				id,
-				u16(Node_Type.X64_Lea),
+				u16(Node_Type.AMD64_Lea),
 				{abase, aindex},
 				{scale = u8(ascale), dis = displacement},
 			)
@@ -717,7 +717,7 @@ peep :: proc(
 		res := make_node(
 			ctx,
 			id,
-			u16(Node_Type.X64_Load),
+			u16(Node_Type.AMD64_Load),
 			load_inps[:3 + int(scale != 0)],
 			{dis = displacement, scale = u8(scale), dt = node.dt},
 		)
@@ -739,14 +739,14 @@ peep :: proc(
 		res := make_node(
 			ctx,
 			id,
-			u16(Node_Type.X64_Store),
+			u16(Node_Type.AMD64_Store),
 			inps[:count],
 			{dis = displacement, imm = immediate, scale = u8(scale), dt = vl.dt},
 		)
 
 		bac.worklist_add(ctx, ctx.worklist, res)
 		return res
-	case .X64_Store, .X64_Load:
+	case .AMD64_Store, .AMD64_Load:
 		changed := false
 
 		if scale != 0 && mem_op.scale != 0 {
@@ -777,7 +777,7 @@ peep :: proc(
 		changed |= node.inps[2] != base
 		bac.set_input(ctx, id, 2, base)
 
-		widen_load: if xtype(node) == .X64_Load && node.dt < .I64 {
+		widen_load: if atype(node) == .AMD64_Load && node.dt < .I64 {
 			dominant: bac.Node_Type
 			for out in node.outs {
 				onode := get_node(ctx, out.id)
@@ -801,20 +801,20 @@ peep :: proc(
 			}
 		}
 
-		if xtype(node) == .X64_Store &&
+		if atype(node) == .AMD64_Store &&
 		   3 + int(mem_op.scale != 0) < len(node.inps) {
 			val := expand_node(ctx, node.inps[3])
-			val_mem := xextra(ctx, val, Mem_Op)
+			val_mem := aextra(ctx, val, Mem_Op)
 
-			X64_TRIGGER_OPS :: bit_set[Node_Type] {
-				.X64_Add,
-				.X64_Sub,
-				.X64_And,
-				.X64_Or,
-				.X64_Xor,
-				.X64_Shl,
-				.X64_Shr,
-				.X64_U_Shr,
+			AMD64_TRIGGER_OPS :: bit_set[Node_Type] {
+				.AMD64_Add,
+				.AMD64_Sub,
+				.AMD64_And,
+				.AMD64_Or,
+				.AMD64_Xor,
+				.AMD64_Shl,
+				.AMD64_Shr,
+				.AMD64_U_Shr,
 			}
 
 			IDEAL_TRIGGER_OPS :: bit_set[bac.Node_Type] {
@@ -830,15 +830,15 @@ peep :: proc(
 			IDEAL_TRIGGER_UN_OPS :: bit_set[bac.Node_Type]{.Not, .Neg}
 
 			is_interesting :=
-				((xtype(val) in X64_TRIGGER_OPS && len(val.inps) == 1) ||
+				((atype(val) in AMD64_TRIGGER_OPS && len(val.inps) == 1) ||
 					val.itype in IDEAL_TRIGGER_OPS)
 
 			is_interesting &= val.dt in bac.INT_DTS
 
 			if is_interesting && len(val.outs) == 1 {
 				lhs := expand_node(ctx, val.inps[0])
-				lhs_mem := xextra(ctx, lhs, Mem_Op)
-				dest_op: if xtype(lhs) == .X64_Load &&
+				lhs_mem := aextra(ctx, lhs, Mem_Op)
+				dest_op: if atype(lhs) == .AMD64_Load &&
 				   lhs.inps[1] == node.inps[1] &&
 				   lhs.inps[2] == node.inps[2] &&
 				   lhs_mem.scale == mem_op.scale &&
@@ -847,7 +847,7 @@ peep :: proc(
 				   lhs_mem.dis == mem_op.dis {
 
 					needs_removal :=
-						xtype(val) in X64_TRIGGER_OPS || val.itype in IDEAL_TRIGGER_UN_OPS
+						atype(val) in AMD64_TRIGGER_OPS || val.itype in IDEAL_TRIGGER_UN_OPS
 
 					rm_idx := 3 + int(lhs_mem.scale != 0)
 					if lhs_mem.scale != 0 && needs_removal {
@@ -858,7 +858,7 @@ peep :: proc(
 
 					if val.itype in IDEAL_TRIGGER_UN_OPS {
 						node.rtype += UN_OP_OFFSET
-					} else if xtype(val) in X64_TRIGGER_OPS {
+					} else if atype(val) in AMD64_TRIGGER_OPS {
 						mem_op.imm = val_mem.imm
 					}
 
@@ -875,7 +875,7 @@ peep :: proc(
 					changed = true
 				} else {
 					bac.peep_ctx_add_trigger(ctx, val.inps[0], id)
-					if xtype(lhs) == .X64_Load {
+					if atype(lhs) == .AMD64_Load {
 						bac.peep_ctx_add_trigger(ctx, lhs.inps[2], id)
 					}
 				}
@@ -922,9 +922,9 @@ make_node :: proc(
 	// NOTE: afaik this is sufficient since we don't insert load ops before
 	// scheduling
 	node.is_store = fnode.is_store
-	node.is_load = fnode.is_load || type == u16(Node_Type.X64_Load) || force_load
+	node.is_load = fnode.is_load || type == u16(Node_Type.AMD64_Load) || force_load
 	node.lane = fnode.lane
-	xextra(prc, node, Mem_Op)^ = extra
+	aextra(prc, node, Mem_Op)^ = extra
 	return id
 }
 
@@ -934,7 +934,7 @@ post_schedule_peep :: proc(
 	_: $T,
 ) -> Node_ID {
 	id := bac.get_node_id(ctx, node)
-	#partial matchx: switch xtype(node) {
+	#partial matchx: switch atype(node) {
 	case .Add ..= .Xor, .Eq ..= .U_Ge, .Mul, .Div:
 		op_dt := bac.operation_datatype(ctx.prc, node)
 		if op_dt in bac.FLOAT_DTS {
@@ -954,8 +954,8 @@ post_schedule_peep :: proc(
 		}
 
 		rhs := expand_node(ctx, node.inps[1])
-		if xtype(rhs) == .X64_Load && len(rhs.outs) == 1 {
-			mem_op := xextra(ctx, rhs, Mem_Op)
+		if atype(rhs) == .AMD64_Load && len(rhs.outs) == 1 {
+			mem_op := aextra(ctx, rhs, Mem_Op)
 			if mem_op.dt != rhs.dt do break matchx
 			if !has_no_clobbers(ctx, node.inps[1]) do break matchx
 			mem_op.mem_mode = .Src
@@ -975,12 +975,12 @@ post_schedule_peep :: proc(
 				force_load = true,
 			)
 		}
-	case .X64_Eq ..= .X64_U_Ge:
-		mem_op := xextra(ctx, node, Mem_Op)
+	case .AMD64_Eq ..= .AMD64_U_Ge:
+		mem_op := aextra(ctx, node, Mem_Op)
 		if mem_op.mem_mode != .None do break matchx
 		lhs := expand_node(ctx, node.inps[0])
-		if xtype(lhs) == .X64_Load && len(lhs.outs) == 1 {
-			om_mem_op := xextra(ctx, lhs, Mem_Op)
+		if atype(lhs) == .AMD64_Load && len(lhs.outs) == 1 {
+			om_mem_op := aextra(ctx, lhs, Mem_Op)
 			if om_mem_op.dt != lhs.dt do break matchx
 			if !has_no_clobbers(ctx, node.inps[0]) do break matchx
 			om_mem_op.imm = mem_op.imm
@@ -1022,16 +1022,16 @@ meta_of :: proc(
 		.Mul ..= .And_Not          = true,
 		.Neg      = true,
 		.Ctz      = true,
-		.X64_Add ..= .X64_Xor          = true,
-		.X64_Shl ..= .X64_Div          = true,
-		.X64_Neg  = true,
-		.X64_Mul8 = true,
+		.AMD64_Add ..= .AMD64_Xor          = true,
+		.AMD64_Shl ..= .AMD64_Div          = true,
+		.AMD64_Neg  = true,
+		.AMD64_Mul8 = true,
 	}
-	mem_op := xextra(prc, node, Mem_Op)
+	mem_op := aextra(prc, node, Mem_Op)
 	dt := mem_op != nil && mem_op.dt != .Void ? mem_op.dt : node.dt
-	sets_flags := SETS_FLAGS[xtype(node)] && dt in bac.INT_DTS
-	if .X64_Shl <= xtype(node) &&
-	   xtype(node) <= .X64_U_Shr &&
+	sets_flags := SETS_FLAGS[atype(node)] && dt in bac.INT_DTS
+	if .AMD64_Shl <= atype(node) &&
+	   atype(node) <= .AMD64_U_Shr &&
 	   mem_op.mem_mode == .None &&
 	   len(node.inps) == 2 {
 		sets_flags = false
@@ -1064,7 +1064,7 @@ meta_of_raw :: proc(
 
 	if node.gvn == 1 {
 		if ra.cc == nil {
-			ra.cc = &CC_TABLE[X64_SYSTEMV_CC]
+			ra.cc = &CC_TABLE[AMD64_SYSTEMV_CC]
 		}
 		seed_rm_interner(ra)
 	}
@@ -1094,9 +1094,9 @@ meta_of_raw :: proc(
 		sout = IOUT
 	}
 
-	mem_op: ^Mem_Op = xextra(prc, node, Mem_Op)
+	mem_op: ^Mem_Op = aextra(prc, node, Mem_Op)
 
-	switch xtype(node) {
+	switch atype(node) {
 	case:
 		fallthrough
 	case .Nil ..=
@@ -1115,11 +1115,11 @@ meta_of_raw :: proc(
 			masks = dup({out, out, single(ra, FLAGS)}),
 			in_place_slot = 2,
 		}
-	case .X64_Pcmpeq,
-	     .X64_Padd,
-	     .X64_Psub,
-	     .X64_Psadbw,
-	     .X64_Pshufb,
+	case .AMD64_Pcmpeq,
+	     .AMD64_Padd,
+	     .AMD64_Psub,
+	     .AMD64_Psadbw,
+	     .AMD64_Pshufb,
 	     .Add ..=
 	     .Xor,
 	     .Mul:
@@ -1215,37 +1215,37 @@ meta_of_raw :: proc(
 		return {out = out, masks = masks[ra.datatype_to_reg_kind[inp.dt]][:1]}
 	case .Simd_Extract_Msbs:
 		return {out = out, masks = XMM_MASKS[:1]}
-	case .X64_Mul, .X64_Div:
+	case .AMD64_Mul, .AMD64_Div:
 		if mem_op.dt not_in bac.FLOAT_DTS {
 			return {out = out, masks = nmasks[:1]}
 		}
 		fallthrough
-	case .X64_Shl ..=
-	     .X64_U_Shr,
-	     .X64_Add ..=
-	     .X64_Xor,
-	     .X64_Eq ..=
-	     .X64_U_Ge,
-	     .X64_Store,
-	     .X64_Neg,
-	     .X64_Not,
-	     .X64_Fma_213:
-		if .X64_Shl <= xtype(node) &&
-		   xtype(node) <= .X64_U_Shr &&
+	case .AMD64_Shl ..=
+	     .AMD64_U_Shr,
+	     .AMD64_Add ..=
+	     .AMD64_Xor,
+	     .AMD64_Eq ..=
+	     .AMD64_U_Ge,
+	     .AMD64_Store,
+	     .AMD64_Neg,
+	     .AMD64_Not,
+	     .AMD64_Fma_213:
+		if .AMD64_Shl <= atype(node) &&
+		   atype(node) <= .AMD64_U_Shr &&
 		   mem_op.mem_mode == .None &&
 		   len(node.inps) == 2 {
 			return {out = out, masks = nmasks[:2]}
 		}
 		const_off := int(mem_op.scale != 0)
 
-		#partial switch xtype(node) {
-		case .X64_Eq ..= .X64_Ge:
+		#partial switch atype(node) {
+		case .AMD64_Eq ..= .AMD64_Ge:
 			if mem_op.dt in bac.FLOAT_DTS do nmasks = XMM_MASKS[:]
 		}
 
-		is_comparison := .X64_Eq <= xtype(node) && xtype(node) <= .X64_U_Ge
+		is_comparison := .AMD64_Eq <= atype(node) && atype(node) <= .AMD64_U_Ge
 
-		if xtype(node) == .X64_Store && len(node.inps) - const_off == 4 {
+		if atype(node) == .AMD64_Store && len(node.inps) - const_off == 4 {
 			dt := get_node(prc, node.inps[3]).dt
 			nmasks = masks[ra.datatype_to_reg_kind[dt]]
 		}
@@ -1257,8 +1257,8 @@ meta_of_raw :: proc(
 
 		is_cload := get_node(prc, node.inps[0]).itype == .Global
 
-		#partial switch xtype(node) {
-		case .X64_Shl ..= .X64_U_Shr:
+		#partial switch atype(node) {
+		case .AMD64_Shl ..= .AMD64_U_Shr:
 			switch mem_op.mem_mode {
 			case .None:
 				masks = {}
@@ -1272,8 +1272,8 @@ meta_of_raw :: proc(
 				}
 			}
 		}
-		#partial switch xtype(node) {
-		case .X64_Add ..= .X64_Xor, .X64_Mul, .X64_Div, .X64_Shl ..= .X64_U_Shr:
+		#partial switch atype(node) {
+		case .AMD64_Add ..= .AMD64_Xor, .AMD64_Mul, .AMD64_Div, .AMD64_Shl ..= .AMD64_U_Shr:
 			switch mem_op.mem_mode {
 			case .None:
 				in_place_slot = 1
@@ -1281,11 +1281,11 @@ meta_of_raw :: proc(
 				in_place_slot = 2
 			case .Dest:
 			}
-		case .X64_Store:
+		case .AMD64_Store:
 			mem_op.mem_mode = .Dest
-		case .X64_Neg, .X64_Not:
+		case .AMD64_Neg, .AMD64_Not:
 			masks = {}
-		case .X64_Fma_213:
+		case .AMD64_Fma_213:
 			in_place_slot = 1 + i8(is_cload)
 			append(&masks, out)
 		}
@@ -1316,25 +1316,25 @@ meta_of_raw :: proc(
 			input_start = start,
 			in_place_slot = in_place_slot,
 		}
-	case .X64_Lea:
+	case .AMD64_Lea:
 		inp := get_node(prc, node.inps[0])
 		return {
 			out = out,
 			masks = nmasks[:1 + int(mem_op.scale != 0) - int(inp.dt == .Void)],
 			input_start = u8(inp.dt == .Void),
 		}
-	case .X64_Load:
+	case .AMD64_Load:
 		return {
 			out = out,
 			masks = GPA_MASKS[:1 + int(mem_op.scale != 0)],
 			input_start = 2 + u8(get_node(prc, node.inps[2]).dt == .Void),
 		}
-	case .X64_Mul8:
+	case .AMD64_Mul8:
 		rax := single(ra, RAX)
 		return {out = rax, masks = dup({GPA_MASK_IDX, rax})}
-	case .X64_Pshufd, .X64_Pshuflw:
+	case .AMD64_Pshufd, .AMD64_Pshuflw:
 		return {out = out, masks = nmasks[:1]}
-	case .X64_Pextr:
+	case .AMD64_Pextr:
 		return {out = out, masks = XMM_MASKS[:1]}
 	}
 }
@@ -1372,7 +1372,7 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 	ctx.instr_offsets = make([]u32, ctx.gvn)
 
 	if ctx.abi == nil {
-		ctx.abi = &CC_TABLE[X64_SYSTEMV_CC]
+		ctx.abi = &CC_TABLE[AMD64_SYSTEMV_CC]
 	}
 
 	ctx.stack_param_offset = stack_param_offset[:]
@@ -1411,13 +1411,13 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 			emit_cfi(
 				&ctx,
 				.Def_Cfa_Offset,
-				arg = u32(pushed) + X64_CFI_SPEC.initial_cfa_offset,
+				arg = u32(pushed) + AMD64_CFI_SPEC.initial_cfa_offset,
 			)
 			emit_cfi(
 				&ctx,
 				.Save_Reg,
 				reg = u8(reg.index),
-				arg = u32(pushed) + X64_CFI_SPEC.initial_cfa_offset,
+				arg = u32(pushed) + AMD64_CFI_SPEC.initial_cfa_offset,
 			)
 		}
 	}
@@ -1469,7 +1469,7 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 		emit_cfi(
 			&ctx,
 			.Def_Cfa_Offset,
-			arg = u32(pushed + ctx.stack_size) + X64_CFI_SPEC.initial_cfa_offset,
+			arg = u32(pushed + ctx.stack_size) + AMD64_CFI_SPEC.initial_cfa_offset,
 		)
 	}
 
@@ -1552,14 +1552,14 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 		.Rem       = {0xF7, 0b111},
 		.Load      = {0x8b, 0},
 		.Store     = {0x89, 0},
-		.X64_Add   = {0x81, 0b000},
-		.X64_Sub   = {0x81, 0b101},
-		.X64_And   = {0x81, 0b100},
-		.X64_Or    = {0x81, 0b001},
-		.X64_Xor   = {0x81, 0b110},
-		.X64_Shl   = {0xC1, 0b100},
-		.X64_Shr   = {0xC1, 0b111},
-		.X64_U_Shr = {0xC1, 0b101},
+		.AMD64_Add   = {0x81, 0b000},
+		.AMD64_Sub   = {0x81, 0b101},
+		.AMD64_And   = {0x81, 0b100},
+		.AMD64_Or    = {0x81, 0b001},
+		.AMD64_Xor   = {0x81, 0b110},
+		.AMD64_Shl   = {0xC1, 0b100},
+		.AMD64_Shr   = {0xC1, 0b111},
+		.AMD64_U_Shr = {0xC1, 0b101},
 		.Neg       = {0xf7, 0b011},
 		.Not       = {0xf7, 0b010},
 	}
@@ -1570,33 +1570,33 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 		.Sub     = {0x5C, 0},
 		.Mul     = {0x59, 0},
 		.Div     = {0x5E, 0},
-		.X64_Add = {0x58, 0},
-		.X64_Sub = {0x5C, 0},
-		.X64_Mul = {0x59, 0},
-		.X64_Div = {0x5E, 0},
+		.AMD64_Add = {0x58, 0},
+		.AMD64_Sub = {0x5C, 0},
+		.AMD64_Mul = {0x59, 0},
+		.AMD64_Div = {0x5E, 0},
 	}
 
 	@(static, rodata)
 	DEST_MODE_OPCODE_TABLE := #partial [Node_Type]Instr_Info {
-		.X64_Add   = {0x01, 0b000},
-		.X64_Sub   = {0x29, 0b101},
-		.X64_And   = {0x21, 0b100},
-		.X64_Or    = {0x09, 0b001},
-		.X64_Xor   = {0x31, 0b110},
-		.X64_Shl   = {0xD3, 0b100},
-		.X64_Shr   = {0xD3, 0b111},
-		.X64_U_Shr = {0xD3, 0b101},
-		.X64_Neg   = {0xf7, 0b011},
-		.X64_Not   = {0xf7, 0b010},
+		.AMD64_Add   = {0x01, 0b000},
+		.AMD64_Sub   = {0x29, 0b101},
+		.AMD64_And   = {0x21, 0b100},
+		.AMD64_Or    = {0x09, 0b001},
+		.AMD64_Xor   = {0x31, 0b110},
+		.AMD64_Shl   = {0xD3, 0b100},
+		.AMD64_Shr   = {0xD3, 0b111},
+		.AMD64_U_Shr = {0xD3, 0b101},
+		.AMD64_Neg   = {0xf7, 0b011},
+		.AMD64_Not   = {0xf7, 0b010},
 	}
 
 	@(static, rodata)
 	SRC_MODE_OPCODE_TABLE := #partial [Node_Type]Instr_Info {
-		.X64_Add = {0x03, 0},
-		.X64_Sub = {0x2B, 0},
-		.X64_And = {0x23, 0},
-		.X64_Or  = {0x0B, 0},
-		.X64_Xor = {0x33, 0},
+		.AMD64_Add = {0x03, 0},
+		.AMD64_Sub = {0x2B, 0},
+		.AMD64_And = {0x23, 0},
+		.AMD64_Or  = {0x0B, 0},
+		.AMD64_Xor = {0x33, 0},
 	}
 
 	ADD_LANE_TABLE :: #partial [bac.Lane_Type]u8 {
@@ -1615,11 +1615,11 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 
 	@(static, rodata)
 	SIMD_OPCODE_TABLE := #partial [Node_Type][bac.Lane_Type]u8 {
-		.X64_Add = ADD_LANE_TABLE,
-		.X64_Sub = SUB_LANE_TABLE,
-		.X64_And = #partial{.I8 ..= .I64 = 0xDB},
-		.X64_Or = #partial{.I8 ..= .I64 = 0xEB},
-		.X64_Xor = #partial{.I8 ..= .I64 = 0xEF},
+		.AMD64_Add = ADD_LANE_TABLE,
+		.AMD64_Sub = SUB_LANE_TABLE,
+		.AMD64_And = #partial{.I8 ..= .I64 = 0xDB},
+		.AMD64_Or = #partial{.I8 ..= .I64 = 0xEB},
+		.AMD64_Xor = #partial{.I8 ..= .I64 = 0xEF},
 		.Shl = #partial{.I16 = 0xF1, .I32 = 0xF2, .I64 = 0xF3},
 		.Add = ADD_LANE_TABLE,
 		.Sub = SUB_LANE_TABLE,
@@ -1631,7 +1631,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 	block_base := ctx.gvn - u32(len(ctx.bbs))
 	node := expand_node(ctx, instr)
 	mem_op_placeholder: Mem_Op
-	mem_op := xextra(ctx, node, Mem_Op)
+	mem_op := aextra(ctx, node, Mem_Op)
 	if mem_op == nil {
 		mem_op = &mem_op_placeholder
 	}
@@ -1647,7 +1647,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 
 	mount_sloc(ctx, instr)
 
-	type := xtype(node)
+	type := atype(node)
 
 	ctx.instr_offsets[node.gvn] = u32(ctx.code.pos)
 
@@ -1667,7 +1667,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 		src := reg_of(ctx, node.inps[0])
 		rx := rex(dst, src, RAX, false)
 		emit(ctx.code, {0x66, rx, 0x0f, 0xd7, mod_rm(.Direct, dst, src)})
-	case .X64_Pshufd, .X64_Pshuflw:
+	case .AMD64_Pshufd, .AMD64_Pshuflw:
 		dst := reg_of(ctx, instr)
 		src := reg_of(ctx, node.inps[0])
 
@@ -1676,12 +1676,12 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 
 		// pshufd/pshuflw $dst, $src, $prj
 		rx := rex(dst, src, NO_INDEX, false)
-		prefix: u8 = type == .X64_Pshuflw ? 0xF2 : 0x66
+		prefix: u8 = type == .AMD64_Pshuflw ? 0xF2 : 0x66
 		emit(
 			ctx.code,
 			{prefix, rx, 0xf, 0x70, mod_rm(.Direct, dst, src), mem_op.aux},
 		)
-	case .X64_Pshufb:
+	case .AMD64_Pshufb:
 		dst := reg_of(ctx, node.inps[0])
 		proj := reg_of(ctx, node.inps[1])
 
@@ -1691,7 +1691,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 		// pshufb $dst, $proj
 		rx := rex(dst, proj, NO_INDEX, false)
 		emit(ctx.code, {0x66, rx, 0xf, 0x38, 0, mod_rm(.Direct, dst, proj)})
-	case .X64_Psadbw:
+	case .AMD64_Psadbw:
 		dst := reg_of(ctx, instr)
 		rhs := reg_of(ctx, node.inps[1])
 
@@ -1701,18 +1701,18 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 		// psadbw $dst, $rhs
 		rx := rex(dst, rhs, NO_INDEX, false)
 		emit(ctx.code, {0x66, rx, 0x0f, 0xF6, mod_rm(.Direct, dst, rhs)})
-	case .X64_Padd, .X64_Psub:
+	case .AMD64_Padd, .AMD64_Psub:
 		dst := reg_of(ctx, instr)
 		rhs := reg_of(ctx, node.inps[1])
 		op: u8
-		if type == .X64_Padd {
+		if type == .AMD64_Padd {
 			op = node.dt == .F64 ? 0xD4 : 0xFE
 		} else {
 			op = node.dt == .F64 ? 0xFB : 0xFA
 		}
 		rx := rex(dst, rhs, NO_INDEX, false)
 		emit(ctx.code, {0x66, rx, 0x0f, op, mod_rm(.Direct, dst, rhs)})
-	case .X64_Pextr:
+	case .AMD64_Pextr:
 		dst := reg_of(ctx, instr)
 		src := reg_of(ctx, node.inps[0])
 		aux := mem_op.aux
@@ -1759,7 +1759,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 		// lea $dst, [rip + $offset]
 		emit(ctx.code, {rex(dst, RIP, NO_INDEX, true), 0x8d})
 		emit_indirect_addr(ctx, dst, RIP, NO_INDEX, 1, 0, id, kind = .Text)
-	case .X64_Lea:
+	case .AMD64_Lea:
 		dst := reg_of(ctx, instr)
 		bse, sdis, id := reg_and_disp_of(ctx, node.inps[0])
 		dis := mem_op.dis
@@ -1768,7 +1768,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 		rx := rex(dst, bse, idx, true)
 		emit(ctx.code, {rx, 0x8D})
 		emit_indirect_addr(ctx, dst, bse, idx, scl, sdis + dis, id)
-	case .Store, .X64_Store:
+	case .Store, .AMD64_Store:
 		bse, sdis, id := reg_and_disp_of(ctx, node.inps[2])
 		dis := mem_op.dis
 		dt := mem_op.dt
@@ -1814,7 +1814,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 			)
 			emit_imm_for_dt(ctx.code, dt, imm)
 		}
-	case .Load, .X64_Load:
+	case .Load, .AMD64_Load:
 		dt := mem_op.dt
 		bse, sdis, id := reg_and_disp_of(ctx, node.inps[2])
 		val := reg_of(ctx, instr)
@@ -2072,9 +2072,9 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 		case .F32, .F64, .V128, .V256, .V512:
 			fmt.panicf("")
 		}
-	case .X64_Add ..= .X64_Xor, .X64_Shl ..= .X64_U_Shr, .X64_Mul, .X64_Div:
-		if .X64_Shl <= type &&
-		   type <= .X64_U_Shr &&
+	case .AMD64_Add ..= .AMD64_Xor, .AMD64_Shl ..= .AMD64_U_Shr, .AMD64_Mul, .AMD64_Div:
+		if .AMD64_Shl <= type &&
+		   type <= .AMD64_U_Shr &&
 		   mem_op.mem_mode == .None &&
 		   len(node.inps) == 2 {
 			dst := reg_of(ctx, instr)
@@ -2093,7 +2093,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 						count,
 						node.dt == .I64,
 						._0F38,
-						PREFIXES[int(type) - int(Node_Type.X64_Shl)],
+						PREFIXES[int(type) - int(Node_Type.AMD64_Shl)],
 						false,
 					),
 					0xF7,
@@ -2119,7 +2119,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 			break
 		}
 
-		if type == .X64_Mul {
+		if type == .AMD64_Mul {
 			dst := reg_of(ctx, instr)
 			lhs := reg_of(ctx, node.inps[0])
 			imm := mem_op.imm
@@ -2130,15 +2130,15 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 			emit_imm_for_dt(ctx.code, node.dt, imm)
 			break
 		}
-		assert(type != .X64_Div)
+		assert(type != .AMD64_Div)
 
 		imm := mem_op.imm
 
-		is_shift := .X64_Shl <= xtype(node) && xtype(node) <= .X64_U_Shr
+		is_shift := .AMD64_Shl <= atype(node) && atype(node) <= .AMD64_U_Shr
 
 		switch mem_op.mem_mode {
 		case .None:
-			op := OPCODE_TABLE[xtype(node)]
+			op := OPCODE_TABLE[atype(node)]
 			dst := reg_of(ctx, node.inps[0])
 
 			// add/sub/and/or/xor $dst, $imm
@@ -2154,10 +2154,10 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 			dst, sdis, id := reg_and_disp_of(ctx, node.inps[2])
 			dis := mem_op.dis
 
-			op := OPCODE_TABLE[xtype(node)]
+			op := OPCODE_TABLE[atype(node)]
 			src := Reg(op.ext)
 			if 3 + imm_boundary < len(node.inps) {
-				op = DEST_MODE_OPCODE_TABLE[xtype(node)]
+				op = DEST_MODE_OPCODE_TABLE[atype(node)]
 				if !is_shift {
 					src = reg_of(ctx, node.inps[3])
 				}
@@ -2195,7 +2195,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 				emit_indirect_addr(ctx, dst, bse, idx, scl, dis + sdis, id)
 				break
 			}
-			op := SRC_MODE_OPCODE_TABLE[xtype(node)]
+			op := SRC_MODE_OPCODE_TABLE[atype(node)]
 
 			// add/sub/and/or/xor $dst, [$bse + $sdis + $dis]
 			rx := rex(dst, bse, idx, bac.DT_SIZE[node.dt] == 8)
@@ -2225,10 +2225,10 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 
 		// add/sub/and/or/xor $dst, $rhs
 		rx := rex(rhs, dst, RAX, bac.DT_SIZE[node.dt] == 8)
-		op := OPCODE_TABLE[xtype(node)].opcode
+		op := OPCODE_TABLE[atype(node)].opcode
 		emit_sized_opcode(ctx.code, node.dt, rx, op)
 		emit(ctx.code, {mod_rm(.Direct, rhs, dst)})
-	case .X64_Pcmpeq:
+	case .AMD64_Pcmpeq:
 		dst := reg_of(ctx, node.inps[0])
 		rhs := reg_of(ctx, node.inps[1])
 
@@ -2238,7 +2238,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 		// pcmpeq* $dst, $src
 		rx := rex(dst, rhs, RAX, false)
 		emit(ctx.code, {0x66, rx, 0x0f, 0x74, mod_rm(.Direct, dst, rhs)})
-	case .Eq ..= .U_Ge, .X64_Eq ..= .X64_U_Ge:
+	case .Eq ..= .U_Ge, .AMD64_Eq ..= .AMD64_U_Ge:
 		is_float := mem_op.dt in bac.FLOAT_DTS
 		#partial switch type {
 		case .Eq ..= .Ge:
@@ -2357,12 +2357,12 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 				mod_rm(.Direct, dst, b),
 			},
 		)
-	case .X64_Neg ..= .X64_Not:
+	case .AMD64_Neg ..= .AMD64_Not:
 		assert(mem_op.mem_mode == .Dest)
 		dis := mem_op.dis
 		dst, sdis, id := reg_and_disp_of(ctx, node.inps[2])
 
-		op := DEST_MODE_OPCODE_TABLE[xtype(node)]
+		op := DEST_MODE_OPCODE_TABLE[atype(node)]
 
 		// neg/not [$dst + $idx * $scl + $sdis + $dis]
 		rx := rex(RAX, dst, idx, bac.DT_SIZE[mem_op.dt] == 8)
@@ -2371,7 +2371,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 	case .Neg ..= .Not:
 		// neg/not $dst
 		dst := reg_of(ctx, node.inps[0])
-		op := OPCODE_TABLE[xtype(node)]
+		op := OPCODE_TABLE[atype(node)]
 		rx := rex(RAX, dst, RAX, bac.DT_SIZE[node.dt] == 8)
 		emit_sized_opcode(ctx.code, node.dt, rx, op.opcode)
 		emit(ctx.code, {mod_sm(.Direct, op.ext, dst)})
@@ -2390,12 +2390,12 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 		rx := rex(dst, rhs, RAX, bac.DT_SIZE[node.dt] == 8)
 		emit_extended_sized_opcode(ctx.code, node.dt, rx, 0xaf)
 		emit(ctx.code, {mod_rm(.Direct, dst, rhs)})
-	case .X64_Mul8:
+	case .AMD64_Mul8:
 		// imul $op
 		dst := reg_of(ctx, node.inps[0])
 		rx := rex(RAX, dst, NO_INDEX, false)
 		emit(ctx.code, {rx, 0xf6, mod_sm(.Direct, 0b101, dst)})
-	case .X64_Fma_213:
+	case .AMD64_Fma_213:
 		switch mem_op.mem_mode {
 		case .None:
 			dst := reg_of(ctx, node.inps[0])
@@ -2647,7 +2647,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 	case .Return:
 		emit_cfi(ctx, .Remember_State)
 
-		cfa := u32(ctx.pushed) + X64_CFI_SPEC.initial_cfa_offset
+		cfa := u32(ctx.pushed) + AMD64_CFI_SPEC.initial_cfa_offset
 
 		if ctx.stack_size != 0 {
 			// sub rsp, -$ctx.stack_size
@@ -2697,16 +2697,16 @@ condition_for :: proc(
 		.U_Le     = {6, 6},
 		.U_Gt     = {7, 7},
 		.U_Ge     = {3, 3},
-		.X64_Eq   = {4, 4},
-		.X64_Ne   = {5, 5},
-		.X64_Lt   = {0xC, 2},
-		.X64_Le   = {0xE, 6},
-		.X64_Gt   = {0xF, 7},
-		.X64_Ge   = {0xD, 3},
-		.X64_U_Lt = {2, 2},
-		.X64_U_Le = {6, 6},
-		.X64_U_Gt = {7, 7},
-		.X64_U_Ge = {3, 3},
+		.AMD64_Eq   = {4, 4},
+		.AMD64_Ne   = {5, 5},
+		.AMD64_Lt   = {0xC, 2},
+		.AMD64_Le   = {0xE, 6},
+		.AMD64_Gt   = {0xF, 7},
+		.AMD64_Ge   = {0xD, 3},
+		.AMD64_U_Lt = {2, 2},
+		.AMD64_U_Le = {6, 6},
+		.AMD64_U_Gt = {7, 7},
+		.AMD64_U_Ge = {3, 3},
 	}
 	node := expand_node(ctx, id)
 	for node.itype == .Split {
@@ -2715,10 +2715,10 @@ condition_for :: proc(
 		node = expand_node(ctx, id)
 	}
 	dt := get_node(ctx, node.inps[0]).dt
-	mem_op := xextra(ctx, node, Mem_Op)
+	mem_op := aextra(ctx, node, Mem_Op)
 	if mem_op != nil && mem_op.mem_mode != .None do dt = mem_op.dt
 	is_float := dt in bac.FLOAT_DTS
-	cc = CONDITIONS[xtype(node)][int(is_float)]
+	cc = CONDITIONS[atype(node)][int(is_float)]
 	unordered = is_float && (cc == 4 || cc == 5)
 	return
 }

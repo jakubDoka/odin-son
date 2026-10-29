@@ -1,13 +1,13 @@
 package bac_meta2
 
 import ".."
+import "../amd64"
 import "../anal"
 import "../arm"
-import "../intel_xelp_poc"
+import "../intel_xelp"
 import "../meta"
 import "../ssa"
 import "../wasm"
-import "../x64"
 
 main :: proc() {
 	when ssa.SPEC_NOT_PRESENT {
@@ -54,15 +54,15 @@ main :: proc() {
 		)
 	}
 
-	when intel_xelp_poc.SPEC_NOT_PRESENT {
-		XELP_CLASSES := [intel_xelp_poc.Node_Type]meta.Class_Spec {
+	when intel_xelp.SPEC_NOT_PRESENT {
+		XELP_CLASSES := [intel_xelp.Node_Type]meta.Class_Spec {
 			.Inv = {no_ctor = true, flags = {.Interned}},
 			.Value_Eq ..= .Value_Ge = {no_ctor = true, flags = {.Interned}},
 		}
 
 		meta.generate_spec(
 			meta.Spec_Gen_Input {
-				package_name = "bac_intel_xelp_poc",
+				package_name = "bac_intel_xelp",
 				header_import = "import bac \"..\"\n" +
 				"Reg_Kind :: bac.Reg_Kind\n" +
 				"Class_Flag :: bac.Class_Flag\n",
@@ -72,86 +72,86 @@ main :: proc() {
 					meta.class_array(&XELP_CLASSES),
 				},
 				does_regalloc = true,
-				datatype_to_reg_kind = #partial{.I8 ..= .V512 = intel_xelp_poc.RK_GRF},
-				spill_boundary = {intel_xelp_poc.GRF_COUNT, intel_xelp_poc.FLAG_COUNT},
-				cc_table = intel_xelp_poc.CC_TABLE[:],
+				datatype_to_reg_kind = #partial{.I8 ..= .V512 = intel_xelp.RK_GRF},
+				spill_boundary = {intel_xelp.GRF_COUNT, intel_xelp.FLAG_COUNT},
+				cc_table = intel_xelp.CC_TABLE[:],
 				common_reg_specs = {
-					{"GRF", intel_xelp_poc.RK_GRF, {~i64(1), ~i64(1 << 55 | 1 << 54)}},
-					{"FLAG", intel_xelp_poc.RK_FLAG, {0xf, 0}},
+					{"GRF", intel_xelp.RK_GRF, {~i64(1), ~i64(1 << 55 | 1 << 54)}},
+					{"FLAG", intel_xelp.RK_FLAG, {0xf, 0}},
 				},
 			},
-			"bac/intel_xelp_poc/node_specs.odin",
+			"bac/intel_xelp/node_specs.odin",
 		)
 	}
 
-	when x64.SPEC_NOT_PRESENT {
-		X64_SIMPLE_BIN_OP_SPEC :: meta.Class_Spec {
-			id      = x64.Mem_Op,
+	when amd64.SPEC_NOT_PRESENT {
+		AMD64_SIMPLE_BIN_OP_SPEC :: meta.Class_Spec {
+			id      = amd64.Mem_Op,
 			no_ctor = true,
 		}
 
-		X64_SIMPLE_SHIFT_OP_SPEC :: meta.Class_Spec {
-			id      = x64.Mem_Op,
+		AMD64_SIMPLE_SHIFT_OP_SPEC :: meta.Class_Spec {
+			id      = amd64.Mem_Op,
 			no_ctor = true,
 		}
 
-		X64_SIMPLE_UN_OP_SPEC :: meta.Class_Spec {
-			id      = x64.Mem_Op,
+		AMD64_SIMPLE_UN_OP_SPEC :: meta.Class_Spec {
+			id      = amd64.Mem_Op,
 			no_ctor = true,
 		}
 
-		X64_CLASSES := [x64.Node_Type]meta.Class_Spec {
-			.X64_Add ..= .X64_U_Ge = X64_SIMPLE_BIN_OP_SPEC,
-			.X64_Shl ..= .X64_U_Shr = X64_SIMPLE_SHIFT_OP_SPEC,
-			.X64_Neg ..= .X64_Not = X64_SIMPLE_UN_OP_SPEC,
-			.X64_Pcmpeq = {no_ctor = true, flags = {.Interned}},
-			.X64_Padd ..= .X64_Psub = X64_SIMPLE_BIN_OP_SPEC,
-			.X64_Psadbw = {args = {"lhs", "rhs"}},
-			.X64_Pshufd = {id = x64.Mem_Op, no_ctor = true},
-			.X64_Pshuflw = {id = x64.Mem_Op, no_ctor = true},
-			.X64_Pshufb = {id = x64.Mem_Op, no_ctor = true},
-			.X64_Pextr = {id = x64.Mem_Op, no_ctor = true},
-			.X64_Mul ..= .X64_Div = X64_SIMPLE_BIN_OP_SPEC,
-			.X64_Lea = {id = x64.Mem_Op, no_ctor = true},
-			.X64_Load = {id = x64.Mem_Op, flags = {.Load}, no_ctor = true},
-			.X64_Store = {id = x64.Mem_Op, flags = {.Store}, no_ctor = true},
-			.X64_Mul8 = {no_ctor = true, flags = {.Interned}},
-			.X64_Fma_213 = {id = x64.Mem_Op, no_ctor = true},
+		AMD64_CLASSES := [amd64.Node_Type]meta.Class_Spec {
+			.AMD64_Add ..= .AMD64_U_Ge = AMD64_SIMPLE_BIN_OP_SPEC,
+			.AMD64_Shl ..= .AMD64_U_Shr = AMD64_SIMPLE_SHIFT_OP_SPEC,
+			.AMD64_Neg ..= .AMD64_Not = AMD64_SIMPLE_UN_OP_SPEC,
+			.AMD64_Pcmpeq = {no_ctor = true, flags = {.Interned}},
+			.AMD64_Padd ..= .AMD64_Psub = AMD64_SIMPLE_BIN_OP_SPEC,
+			.AMD64_Psadbw = {args = {"lhs", "rhs"}},
+			.AMD64_Pshufd = {id = amd64.Mem_Op, no_ctor = true},
+			.AMD64_Pshuflw = {id = amd64.Mem_Op, no_ctor = true},
+			.AMD64_Pshufb = {id = amd64.Mem_Op, no_ctor = true},
+			.AMD64_Pextr = {id = amd64.Mem_Op, no_ctor = true},
+			.AMD64_Mul ..= .AMD64_Div = AMD64_SIMPLE_BIN_OP_SPEC,
+			.AMD64_Lea = {id = amd64.Mem_Op, no_ctor = true},
+			.AMD64_Load = {id = amd64.Mem_Op, flags = {.Load}, no_ctor = true},
+			.AMD64_Store = {id = amd64.Mem_Op, flags = {.Store}, no_ctor = true},
+			.AMD64_Mul8 = {no_ctor = true, flags = {.Interned}},
+			.AMD64_Fma_213 = {id = amd64.Mem_Op, no_ctor = true},
 		}
 
 		meta.generate_spec(
 			meta.Spec_Gen_Input {
-				package_name = "bac_x64",
+				package_name = "bac_amd64",
 				// %w-formatted table values bake in bare Reg_Kind/Class_Flag
 				// names, so alias them locally instead of teaching the
 				// generator about every %w call site
 				header_import = "import bac \"..\"\n" + "Reg_Kind :: bac.Reg_Kind\n" + "Class_Flag :: bac.Class_Flag\n",
 				qual = "bac.",
-				local_extra_types = {x64.Mem_Op},
+				local_extra_types = {amd64.Mem_Op},
 				classes = {
 					meta.class_array(&meta.IDEAL_CLASSES, gen_ctors = false),
-					meta.class_array(&X64_CLASSES),
+					meta.class_array(&AMD64_CLASSES),
 				},
 				does_regalloc = true,
 				datatype_to_reg_kind = #partial{
-					.I8 ..= .I64 = x64.RK_GENERAL,
-					.F32 ..= .V512 = x64.RK_VECTOR,
+					.I8 ..= .I64 = amd64.RK_GENERAL,
+					.F32 ..= .V512 = amd64.RK_VECTOR,
 				},
-				spill_boundary = {int(x64.FLAGS) + 1, 16},
-				cc_table = x64.CC_TABLE[:],
+				spill_boundary = {int(amd64.FLAGS) + 1, 16},
+				cc_table = amd64.CC_TABLE[:],
 				common_reg_specs = {
-					{"GPA", x64.RK_GENERAL, {0xFFFF & ~i64(1 << uint(x64.RSP))}},
+					{"GPA", amd64.RK_GENERAL, {0xFFFF & ~i64(1 << uint(amd64.RSP))}},
 					{
 						"GPA_SPILL",
-						x64.RK_GENERAL,
-						{~i64(1 << uint(x64.RSP) | 1 << uint(x64.FLAGS))},
+						amd64.RK_GENERAL,
+						{~i64(1 << uint(amd64.RSP) | 1 << uint(amd64.FLAGS))},
 					},
-					{"GPA_SPLIT", x64.RK_GENERAL, {~i64(1 << uint(x64.RSP))}},
-					{"XMM", x64.RK_VECTOR, {0xFFFF}},
-					{"XMM_SPILL", x64.RK_VECTOR, {~i64(0)}},
+					{"GPA_SPLIT", amd64.RK_GENERAL, {~i64(1 << uint(amd64.RSP))}},
+					{"XMM", amd64.RK_VECTOR, {0xFFFF}},
+					{"XMM_SPILL", amd64.RK_VECTOR, {~i64(0)}},
 				},
 			},
-			"bac/x64/node_specs.odin",
+			"bac/amd64/node_specs.odin",
 		)
 	}
 

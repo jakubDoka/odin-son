@@ -24,14 +24,6 @@ void trueos_cabi_write(uint32_t s, const void *p, size_t n) {
 int32_t trueos_cabi_blueprint_stop_control_v1(uint32_t op) { return 0; }
 int32_t trueos_cabi_blueprint_shutdown(const void *p, size_t n) { return 0; }
 
-__attribute__((weak)) uint32_t trueos_cabi_ui4_scene_frame_open_visual(int32_t x, int32_t y, uint32_t w, uint32_t h, uint32_t hz) { return 0; }
-__attribute__((weak)) int32_t trueos_cabi_ui4_scene_visual_frame_begin(uint32_t w) { return -95; }
-__attribute__((weak)) int32_t trueos_cabi_ui4_scene_native_compute_upload_v1(uint32_t w, uint32_t o, uint32_t total, const void *p, size_t n) { return -95; }
-__attribute__((weak)) int32_t trueos_cabi_ui4_scene_native_compute_render_v1(uint32_t w, float x, float y, float dx, float dy) { return -95; }
-__attribute__((weak)) int32_t trueos_cabi_ui4_scene_compute_frame_publish(uint32_t w, uint32_t x, uint32_t y, uint32_t width, uint32_t height) { return -95; }
-__attribute__((weak)) int32_t trueos_cabi_ui4_solara_frame_close(uint32_t w) { return -95; }
-__attribute__((weak)) int32_t trueos_cabi_ui4_scene_keyboard_state(uint32_t w, void *out) { return -95; }
-__attribute__((weak)) int32_t trueos_cabi_ui4_scene_pointer_event_take(uint32_t w, void *out) { return -95; }
 
 typedef struct {
     uint32_t id;

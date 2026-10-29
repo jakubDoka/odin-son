@@ -15,6 +15,12 @@ Class_Array :: struct {
 	gen_ctors: bool,
 }
 
+Common_Reg_Spec :: struct {
+	name:  string,
+	kind:  bac.Reg_Kind,
+	masks: []i64,
+}
+
 Spec_Gen_Input :: struct {
 	package_name:                 string,
 	gen_command:                  string,
@@ -29,6 +35,7 @@ Spec_Gen_Input :: struct {
 	does_regalloc:                bool,
 	has_regalloc_preprocess_hook: bool,
 	has_sccp:                     bool,
+	common_reg_specs:             []Common_Reg_Spec,
 }
 
 class_array :: proc(
@@ -119,6 +126,7 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 	)
 
 	if !spec.no_spec_tables {
+
 		fmt.fprintf(
 			file,
 			"@(tag = \"api\", rodata, export, link_name = \"%v_SPEC\")",
@@ -545,6 +553,75 @@ collect_meta :: proc(ctx: ^%vProc,
 		)
 	}
 
+	MASK_BUFFER_SIZE :: 6
+
+	intern_idxs: [16]int
+	for crs in spec_in.common_reg_specs {
+		fmt.fprintf(file, "\n@(rodata) %v_MASK := [?]i64{{", crs.name)
+		for m, i in crs.masks {
+			if i != 0 do fmt.fprintf(file, ", ")
+			fmt.fprintf(file, "transmute(i64)u64(0x%016x)", uint(m))
+		}
+		fmt.fprintfln(file, "}}")
+
+		fmt.fprintfln(
+			file,
+			"%v_MASK_IDX :: bac.%w",
+			crs.name,
+			bac.RM_Intern_Idx{kind = crs.kind, index = intern_idxs[crs.kind]},
+		)
+		intern_idxs[crs.kind] += 1
+
+		fmt.fprintfln(
+			file,
+			"@(rodata) %v_MASKS := [%v]bac.RM_Intern_Idx{{0 ..< %v = %v_MASK_IDX}}",
+			crs.name,
+			MASK_BUFFER_SIZE,
+			MASK_BUFFER_SIZE,
+			crs.name,
+		)
+	}
+
+	if spec_in.common_reg_specs != nil {
+		fmt.fprintfln(file, "\nseed_rm_interner :: proc(ra: ^bac.Regalloc) {{")
+		fmt.fprintfln(file, "\tra.mask_len = MASK_SIZE")
+		for crs in spec_in.common_reg_specs {
+			fmt.fprintfln(
+				file,
+				"\tbac.rm_intern_slice(ra, %v, %v_MASK[:])",
+				crs.kind,
+				crs.name,
+			)
+		}
+		fmt.fprintfln(file, "}}")
+	}
+
+	if spec_in.package_name != "bac" {
+		splits := strings.split(spec_in.package_name, "_")
+		prefix := splits[len(splits) - 1][:1]
+
+		fmt.fprintf(
+			file,
+			`
+%vtype :: #force_inline proc(node: bac.Expanded_Node) -> Node_Type {{
+	return Node_Type(node.rtype)
+}}
+
+%vextra :: #force_inline proc(
+	prc: ^bac.Proc,
+	node: ^bac.Node,
+	$T: typeid,
+) -> ^T {{
+	if prc.inheritance_table[node.rtype] & (1 << inherit_idx_of(T)) == 0 {{
+		return nil
+	}}
+	return (^T)(&node.extra)
+}}
+`,
+			prefix,
+			prefix,
+		)
+	}
 }
 
 SIMPLE_BINOP_CLASS :: Class_Spec {

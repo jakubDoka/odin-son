@@ -18,21 +18,6 @@ reg_of :: bac.reg_of
 mount_sloc :: bac.mount_sloc
 next_sloc :: bac.next_sloc
 
-xtype :: #force_inline proc(node: bac.Expanded_Node) -> Node_Type {
-	return Node_Type(node.rtype)
-}
-
-xextra :: #force_inline proc(
-	prc: ^bac.Proc,
-	node: ^bac.Node,
-	$T: typeid,
-) -> ^T {
-	if prc.inheritance_table[node.rtype] & (1 << inherit_idx_of(T)) == 0 {
-		return nil
-	}
-	return (^T)(&node.extra)
-}
-
 NOOP_REX :: 0b0100_0000
 
 NO_INDEX :: RSP
@@ -241,6 +226,18 @@ peep :: proc(
 	_: $T,
 ) -> Maybe(Node_ID) {
 	node := node
+
+	addr_add_offset :: proc(
+		prc: ^bac.Proc,
+		node: bac.Expanded_Node,
+	) -> (
+		base: Node_ID,
+		off: int,
+		ok: bool,
+	) {
+		if xtype(node) != .X64_Add do return
+		return node.inps[0], int(xextra(prc, node, Mem_Op).imm), true
+	}
 
 	id := bac.get_node_id(ctx, node)
 
@@ -911,7 +908,8 @@ add_node :: proc(
 
 make_node :: proc(
 	prc: ^bac.Proc,
-	from: Node_ID,
+	// NOTE: just to make this lazyli compiled
+	from: $T/Node_ID,
 	type: u16,
 	inps: []Node_ID,
 	extra: Mem_Op,
@@ -1007,18 +1005,6 @@ post_schedule_peep :: proc(
 	return 0
 }
 
-addr_add_offset :: proc(
-	prc: ^bac.Proc,
-	node: bac.Expanded_Node,
-) -> (
-	base: Node_ID,
-	off: int,
-	ok: bool,
-) {
-	if xtype(node) != .X64_Add do return
-	return node.inps[0], int(xextra(prc, node, Mem_Op).imm), true
-}
-
 meta_of :: proc(
 	prc: ^bac.Proc,
 	ra: ^bac.Regalloc,
@@ -1065,16 +1051,6 @@ meta_of_raw :: proc(
 	node: bac.Expanded_Node,
 	_: $T,
 ) -> bac.Regalloc_Node_Meta {
-	@(static, rodata)
-	GPA_MASK := [?]i64{0xFFFF & ~i64(1 << uint(RSP))}
-	@(static, rodata)
-	GPA_SPILL_MASK := [?]i64{~i64(1 << uint(RSP) | 1 << uint(FLAGS))}
-	@(static, rodata)
-	GPA_SPLIT_MASK := [?]i64{~i64(1 << uint(RSP))}
-	@(static, rodata)
-	XMM_MASK := [?]i64{0xFFFF}
-	@(static, rodata)
-	XMM_SPILL_MASK := [?]i64{~i64(0)}
 
 	@(static, rodata)
 	GPA_DIV_MASK := [?]i64 {
@@ -1084,56 +1060,18 @@ meta_of_raw :: proc(
 		~i64(1 << uint(RDX)),
 	}
 
-	GPA_MASK_IDX :: bac.RM_Intern_Idx{}
-	XMM_MASK_IDX :: bac.RM_Intern_Idx {
-		kind = RK_VECTOR,
-	}
-	GPA_SPILL_MASK_IDX :: bac.RM_Intern_Idx {
-		index = 1,
-	}
-	XMM_SPILL_MASK_IDX :: bac.RM_Intern_Idx {
-		kind  = RK_VECTOR,
-		index = 1,
-	}
-
-	@(static, rodata)
-	GPA_MASKS := [6]bac.RM_Intern_Idx{}
-
-	@(static, rodata)
-	XMM_MASKS := [6]bac.RM_Intern_Idx {
-		0 ..< 6 = XMM_MASK_IDX,
-	}
-
-	@(static, rodata)
-	GPA_SPILL_MASKS := [6]bac.RM_Intern_Idx {
-		0 ..< 6 = GPA_SPILL_MASK_IDX,
-	}
-
-	@(static, rodata)
-	XMM_SPILL_MASKS := [6]bac.RM_Intern_Idx {
-		0 ..< 6 = XMM_SPILL_MASK_IDX,
-	}
-
 	IOUT :: bac.INVALID_RM_INDEX
 
 	if node.gvn == 1 {
 		if ra.cc == nil {
 			ra.cc = &CC_TABLE[X64_SYSTEMV_CC]
 		}
-
-		ra.mask_len = MASK_SIZE
-		rslice(ra, RK_GENERAL, GPA_MASK[:])
-		rslice(ra, RK_VECTOR, XMM_MASK[:])
-		rslice(ra, RK_GENERAL, GPA_SPILL_MASK[:])
-		rslice(ra, RK_VECTOR, XMM_SPILL_MASK[:])
+		seed_rm_interner(ra)
 	}
 
 	single :: bac.rm_intern_single
 	rslice :: bac.rm_intern_slice
-
-	dup :: #force_inline proc(msks: []bac.RM_Intern_Idx) -> []bac.RM_Intern_Idx {
-		return slice.clone(msks)
-	}
+	dup :: bac.rm_dup
 
 	nkind := ra.datatype_to_reg_kind[node.dt]
 
@@ -1232,7 +1170,6 @@ meta_of_raw :: proc(
 		return {out = out, masks = nmasks[:2], in_place_slot = 2}
 	case .Split:
 		if nkind == RK_GENERAL {
-			mask := rslice(ra, RK_GENERAL, GPA_SPLIT_MASK[:])
 			// Flags preserve truth values, not arbitrary integers.
 			flag_uses := len(node.outs) != 0
 			for use in node.outs {
@@ -1241,7 +1178,10 @@ meta_of_raw :: proc(
 					(user.itype == .If && use.idx == 1) ||
 					(user.itype == .Select && use.idx == 2)
 			}
-			return {out = flag_uses ? mask : sout, masks = dup({mask})}
+			return {
+				out = flag_uses ? GPA_SPLIT_MASKS[0] : sout,
+				masks = GPA_SPLIT_MASKS[:1],
+			}
 		}
 		return {out = sout, masks = snmasks[:1]}
 	case .Phi:

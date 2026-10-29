@@ -28,7 +28,6 @@ Ty_Propagation :: struct {
 	inferred_ty: Type,
 	referencing: bool,
 	key:         Maybe(Decl_Key),
-	gpu_tag:     bool,
 }
 
 Mems :: struct {
@@ -867,12 +866,7 @@ typecheck_decl :: proc(
 			ctx,
 			{
 				inferred_ty = ty,
-				key = Decl_Key {
-					decl.name,
-					decl.file,
-					u32(decl.value.pos.offset),
-				},
-				gpu_tag = decl.gpu_tag,
+				key = Decl_Key{decl.name, decl.file, u32(decl.value.pos.offset)},
 			},
 			decl.value,
 		)
@@ -884,12 +878,7 @@ typecheck_decl :: proc(
 			ctx,
 			{
 				inferred_ty = ty,
-				key = Decl_Key {
-					decl.name,
-					decl.file,
-					u32(decl.value.pos.offset),
-				},
-				gpu_tag = decl.gpu_tag,
+				key = Decl_Key{decl.name, decl.file, u32(decl.value.pos.offset)},
 			},
 			decl.value,
 		)
@@ -937,7 +926,6 @@ collect_decls :: proc(f: ast.File, decls: ^[dynamic]Decl, file_id: File_ID) {
 						value = vl,
 						file = file_id,
 						is_mutable = decl.is_mutable,
-						gpu_tag = has_gpu_tag(decl),
 					},
 				)
 			}
@@ -956,7 +944,6 @@ collect_decls :: proc(f: ast.File, decls: ^[dynamic]Decl, file_id: File_ID) {
 						ty = cln,
 						value = decl.values[0],
 						file = file_id,
-						gpu_tag = has_gpu_tag(decl),
 					},
 				)
 			}
@@ -1094,12 +1081,6 @@ Proc :: struct {
 	hidden:      bool,
 	stencil:     bac.Stencil,
 	out:         bac.Codegen_Output,
-	gpu_tag:     bool,
-	gpu_program: []u32,
-	gpu_dispatch: Proc_ID,
-	gpu_native: bool,
-	gpu_ops: []Gpu_Op,
-	gpu_kernel: []u8,
 }
 
 // A module level (global) mutable variable. The backing data lives in
@@ -1252,7 +1233,6 @@ Decl :: struct {
 	file:       File_ID,
 	is_mutable: bool,
 	global_idx: u32,
-	gpu_tag:    bool,
 }
 
 Module :: struct {
@@ -1292,7 +1272,6 @@ Proc_Inst_Key :: struct {
 Types :: struct {
 	target:         Target,
 	check:          bool,
-	tstats:         bac.Stats,
 	mems:           Mems,
 	allocator:      runtime.Allocator,
 	procs:          [dynamic]Proc,
@@ -1373,7 +1352,6 @@ types_deinit :: proc(types: ^Types) {
 Global_Data :: struct {
 	bytes: []u8,
 	align: int,
-	gpu: bool,
 }
 
 Array :: struct {
@@ -1871,7 +1849,7 @@ typecheck :: proc(
 		if ctx.type_depth > 0 {
 			ty = error(ctx, node, "not allowed in types")
 		} else {
-			ty = proc_meta(ctx, typecheck_proc(ctx, ctx.module, prop.key, d, prop.gpu_tag))
+			ty = proc_meta(ctx, typecheck_proc(ctx, ctx.module, prop.key, d))
 		}
 	case ^ast.Basic_Lit:
 		tp := prop.inferred_ty
@@ -3223,38 +3201,12 @@ typecheck_proc :: proc(
 	mid: Module_ID,
 	decl: Maybe(Decl_Key),
 	prc: ^ast.Proc_Lit,
-	gpu_tag := false,
 ) -> Proc_ID {
 	context.allocator, _ = arna.scrath()
 
 	isig, _ := typecheck_sig(ctx, prc.type)
 
 	decl := decl.? or_else {}
-	gpu_program: []u32
-	gpu_dispatch: Proc_ID
-	gpu_native := false
-	gpu_ops: []Gpu_Op
-	if gpu_tag {
-		if isig == nil {
-			error(ctx, prc, "GPU procedures require concrete parameter and return types")
-		} else if prc.body == nil {
-			error(ctx, prc, "GPU tag requires a kernel body")
-		} else if len(isig.params) == 2 && len(isig.rets) == 1 &&
-		          isig.params[0] == .F32 && isig.params[1] == .F32 && isig.rets[0] == .F32 {
-			if ctx.target.name != "amd64" {error(ctx, prc, "native GPU calls require the amd64 TRUEOS target")}
-			gpu_native = true
-			gpu_ops = lower_gpu_scalar(ctx, prc)
-			gpu_dispatch = gpu_scalar_runtime(ctx)
-		} else if len(isig.params) != 2 || len(isig.rets) != 1 ||
-		          isig.params[0] != .U64 || isig.params[1] != .U64 || isig.rets[0] != .I32 {
-			error(ctx, prc, "GPU kernel requires proc(a: f32, b: f32) -> f32 or legacy proc(handle: u64, frame: u64) -> i32")
-		} else if ctx.target.name != "amd64" {
-			error(ctx, prc, "native GPU backend requires the amd64 TRUEOS target")
-		} else {
-			gpu_program = lower_gpu_program(ctx, prc)
-			gpu_dispatch = gpu_dispatch_proc(ctx)
-		}
-	}
 
 	assert(prc.type != nil)
 
@@ -3267,11 +3219,6 @@ typecheck_proc :: proc(
 			file = ctx.file,
 			file_id = ctx.file_id,
 			sig = isig,
-			gpu_tag = gpu_tag,
-			gpu_program = gpu_program,
-			gpu_native = gpu_native,
-			gpu_ops = gpu_ops,
-			gpu_dispatch = gpu_dispatch,
 		},
 	)
 
@@ -3286,20 +3233,6 @@ is_static :: proc(d: ^ast.Value_Decl) -> bool {
 			if id, ok := elem.derived.(^ast.Ident); ok {
 				if id.name == "static" do return true
 			}
-		}
-	}
-	return false
-}
-
-has_gpu_tag :: proc(d: ^ast.Value_Decl) -> bool {
-	for attr in d.attributes {
-		for elem in attr.elems {
-			field := elem.derived.(^ast.Field_Value) or_continue
-			name := field.field.derived.(^ast.Ident) or_continue
-			value := field.value.derived.(^ast.Basic_Lit) or_continue
-			if name.name != "tag" || value.tok.kind != .String do continue
-			tag, _, ok := strconv.unquote_string(value.tok.text)
-			if ok && tag == "gpu" do return true
 		}
 	}
 	return false
@@ -3353,7 +3286,7 @@ typecheck_program :: proc(ctx: ^Gen_Ctx) {
 
 	for i := 1; i < len(ctx.procs); i += 1 {
 		prc := ctx.procs[i]
-		if prc.sig == nil || prc.lit.body == nil || prc.gpu_tag do continue
+		if prc.sig == nil do continue
 
 		ctx.prc_id = auto_cast i
 		ctx.module = prc.module

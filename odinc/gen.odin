@@ -44,22 +44,28 @@ OPT_LEVELS :: [?]Opt_Level {
 	{"aggresive", {.Local_Peeps, .Mem_Opt, .Inline, .Loop_Opt}, .with_coloring},
 }
 
-TARGETS := [?]typecheck.Target {
-	{
+Target_ID :: enum {
+	X64,
+	Wasm64,
+	Arm64,
+}
+
+TARGETS := [Target_ID]typecheck.Target {
+	.X64    = {
 		"amd64",
 		&x64.CC_TABLE[x64.X64_SYSTEMV_CC],
 		&x64.SPEC,
 		x64.OPT_HINTS,
 		emit_elf,
 	},
-	{
+	.Wasm64 = {
 		"wasm64",
 		&wasm.CC_TABLE[wasm.WASM_SYSTEMV_CC],
 		&wasm.SPEC,
 		wasm.OPT_HINTS,
 		emit_wasm_module,
 	},
-	{
+	.Arm64  = {
 		"arm64",
 		&arm.CC_TABLE[arm.ARM_SYSTEMV_CC],
 		&arm.SPEC,
@@ -789,11 +795,7 @@ emit_proc :: proc(
 	ctx.module = prc.module
 	ctx.file = prc.file
 	ctx.file_id = prc.file_id
-	ctx.prc = {
-		has_dbg = ctx.prc.has_dbg,
-	}
 	ctx.opt_flags = level.flags
-	ctx.stats = &ctx.tstats
 
 	ctx.mems.scratch.pos = 0
 	ctx.scope = make(
@@ -816,7 +818,6 @@ emit_proc :: proc(
 
 	gen: Param_Gen
 	apa: Abi_Param
-	gpu_params: [2]Node_ID
 
 	ctx.ret_ptrs = make([]Node_ID, len(rabi.extras))
 
@@ -833,7 +834,6 @@ emit_proc :: proc(
 		par := prc.sig.params[j]
 
 		apar, value := arg_gen_next(ctx, &gen, par, "arg") or_continue
-		if prc.gpu_tag && j < len(gpu_params) do gpu_params[j] = value
 
 		value_idx: typecheck.Varuable_Idx
 		if apar.scalar && !apar.by_ptr {
@@ -856,24 +856,7 @@ emit_proc :: proc(
 
 	if prc.lit.body == nil do return
 
-	if prc.gpu_native {
-		emit_gpu_scalar_stub(ctx, prc, gpu_params)
-	} else if prc.gpu_tag {
-		program := mem.slice_to_bytes(prc.gpu_program)
-		idx := typecheck.add_global(ctx, program, 4)
-		global := bac.add_global(ctx, "gpu-program", idx)
-		addr := bac.add_global_addr(ctx, "gpu-program", global)
-		count := bac.add_c_int(ctx, "gpu-words", .I64, i64(len(prc.gpu_program)))
-		args := [?]Node_ID{ctx_ctrl(ctx), ctx_mem(ctx), bac.find_or_create_node(ctx, .Sym), gpu_params[0], gpu_params[1], addr, count}
-		control, memory := ssa.make_call(ctx, args[:], {cid = u32(prc.gpu_dispatch)})
-		result := ssa.add_call_ret(ctx, control, .I32)
-		returns := [?]Node_ID{control, memory, result}
-		ssa.merge_return(ctx, returns[:])
-		ssa.delete_scope(ctx, ctx.node_scope)
-		ctx.node_scope = 0
-	} else {
-		emit_stmts(ctx, {prc.lit.body})
-	}
+	emit_stmts(ctx, {prc.lit.body})
 	prc = &ctx.procs[i]
 
 	for ptr in ctx.ret_ptrs {
@@ -905,9 +888,6 @@ emit_proc_code :: proc(
 	prc: ^typecheck.Proc,
 ) {
 	context.allocator, _ = arna.scrath()
-
-	bac.current_prc = ctx
-	defer bac.current_prc = nil
 
 	ctx.node_spec = ctx.target.spec
 	if ctx.check {

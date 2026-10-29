@@ -269,6 +269,10 @@ RM_Intern_Idx :: bit_field u16 {
 	kind:  Reg_Kind | 4,
 }
 
+rm_dup :: #force_inline proc(msks: []RM_Intern_Idx) -> []RM_Intern_Idx {
+	return slice.clone(msks)
+}
+
 // TODO: compress this
 Regalloc_Node_Meta :: struct {
 	masks:         []RM_Intern_Idx,

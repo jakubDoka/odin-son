@@ -132,6 +132,7 @@ when !fmt.NO_FMT {
 		ctx: ^Schedule = nil,
 		prefix: proc(_: io.Writer, _: ^Node, _: Basic_Block) = nil,
 		regs: []Reg = {},
+		block_meta: any = nil,
 	) {
 		context.allocator, _ = arna.scrath(prc.temps)
 
@@ -139,14 +140,14 @@ when !fmt.NO_FMT {
 		our_ctx: Schedule
 
 		if ctx == nil {
-			schedule_graph(prc, &our_ctx, .for_regalloc)
+			schedule_graph(prc, &our_ctx, .for_display)
 			ctx = &our_ctx
 		}
 
 		seen_loop_trees: map[^Loop_Tree]int
 
 		instr_idx := 0
-		for bb in ctx.bbs {
+		for bb, i in ctx.bbs {
 			if bb.loop_tree != nil {
 				if bb.loop_tree not_in seen_loop_trees {
 					seen_loop_trees[bb.loop_tree] = len(seen_loop_trees)
@@ -167,6 +168,11 @@ when !fmt.NO_FMT {
 			display_node(w, prc, bb.head, scheduled = true)
 
 			fmt.wprint(w, " {\n")
+
+			meta := reflect.index(block_meta, i)
+			if meta != nil {
+				fmt.wprintf(w, " :: %v\n", meta)
+			}
 
 			for instr in bb.instrs {
 				inode := get_node(prc, instr)
@@ -201,7 +207,7 @@ when !fmt.NO_FMT {
 		scheduled := false,
 	) {
 		if get_node(prc, id).rtype == DEAD_NODE_KIND {
-			fmt.wprintln(w, "<dead>")
+			fmt.wprint(w, "<dead>")
 			return
 		}
 
@@ -434,6 +440,7 @@ when !fmt.NO_FMT {
 		ctx: ^Schedule = nil,
 		prefix: proc(_: io.Writer, _: ^Node, _: Basic_Block) = nil,
 		regs: []Reg = {},
+		block_meta: any = nil,
 	) {}
 
 	display_node :: #force_inline proc(

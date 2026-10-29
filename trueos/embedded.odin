@@ -6,11 +6,8 @@ import "core:odin/parser"
 import "typecheck"
 
 EMBEDDED_BOIDS :: #load("boids.source", string)
-EMBEDDED_GPU_BOIDS :: #load("gpu-boids.source", string)
-EMBEDDED_MANDELBROT :: #load("mandelbrot.source", string)
-
-load_embedded_boids :: proc(ctx: ^Gen_Ctx, gpu := false) -> bool {
-    return load_embedded_source(ctx, gpu ? EMBEDDED_GPU_BOIDS : EMBEDDED_BOIDS, gpu ? "embedded/gpu-boids/main.odin" : "embedded/boids/main.odin")
+load_embedded_boids :: proc(ctx: ^Gen_Ctx) -> bool {
+    return load_embedded_source(ctx, EMBEDDED_BOIDS, "embedded/boids/main.odin")
 }
 
 load_embedded_source :: proc(ctx: ^Gen_Ctx, source: string, path: string) -> bool {

@@ -19,12 +19,13 @@ def overlay(source, dest, replace=()):
             target.symlink_to(item, target_is_directory=item.is_dir())
 
 stage = BUILD / 'src'
-stage.mkdir(parents=True, exist_ok=True)
-for name in ('gen.odin', 'elf.odin', 'wasm_object.odin', 'gpu_native.odin'):
+if stage.exists():
+    shutil.rmtree(stage)
+stage.mkdir(parents=True)
+for name in ('gen.odin', 'elf.odin', 'wasm_object.odin'):
     (stage / name).write_text((COMPILER / name).read_text().replace('package odin_son', 'package main').replace('"../', '"'))
 for name in ('bac', 'typecheck', 'utils'):
     shutil.copytree((COMPILER if name == 'typecheck' else ROOT) / name, stage / name, dirs_exist_ok=True)
-shutil.copytree(ROOT / 'vendored/gam/util', stage / 'vendored/gam/util', dirs_exist_ok=True)
 for source in (stage / 'typecheck').glob('*.odin'):
     source.write_text(source.read_text().replace('"../../', '"../'))
 for test in stage.rglob('*_test.odin'):
@@ -34,8 +35,6 @@ shutil.copy2(NATIVE / 'main.odin', stage / 'main.odin')
 shutil.copy2(NATIVE / 'ide_build.odin', stage / 'ide_build.odin')
 shutil.copy2(NATIVE / 'embedded.odin', stage / 'embedded.odin')
 shutil.copy2(NATIVE / 'tui.odin', stage / 'tui.odin')
-shutil.copy2(NATIVE / 'mandelbrot.odin', stage / 'mandelbrot.odin')
-shutil.copy2(ROOT / 'examples/gpu-mandelbrot-trueos/main.odin', stage / 'mandelbrot.source')
 shutil.copy2(NATIVE / 'hello.odin.source', stage / 'hello.source')
 arena = stage / 'utils/arna/arna.odin'
 arena.write_text(arena.read_text().replace('ODIN_OS == .Freestanding', 'false'))
@@ -47,9 +46,6 @@ boids = (ROOT / 'examples/boids-trueos/main.odin').read_bytes()
 if b'intrinsics.syscall' in boids or b'trueos_cabi_shell_attached_write' not in boids:
     raise SystemExit('embedded boids must use the native TRUEOS ABI')
 (stage / 'boids.source').write_bytes(boids)
-gpu_boids = (ROOT / 'examples/gpu-boids-trueos/main.odin').read_text()
-gpu_phy = (ROOT / 'examples/gpu-boids-trueos/phy.odin').read_text().removeprefix('package main\n')
-(stage / 'gpu-boids.source').write_text(gpu_boids + '\n' + gpu_phy)
 loader = (COMPILER / 'loader.odin').read_text().replace('#+build !wasm32\n', '')
 loader = loader.replace('package odin_son', 'package main').replace('"../', '"')
 loader = loader.replace('import "core:os"', 'import os "platform"').replace('import "core:path/filepath"', '').replace('filepath.', 'os.')

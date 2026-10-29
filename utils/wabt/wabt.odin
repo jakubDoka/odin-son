@@ -3,11 +3,7 @@ package wabt
 import "core:c"
 import "core:testing"
 
-when !#exists("libwabt_runner.a") {
-	#panic("WABT runner is not built; run `bash misc/build-wabt.sh`")
-}
-
-foreign import wabt {"libwabt_runner.a", "system:wabt", "system:libstdc++.so.6", "system:crypto"}
+foreign import wabt "libwabt_runner.so"
 
 foreign wabt {
 	wabt_run_module :: proc(bytes: [^]u8, size: uintptr, entry_data: [^]u8, entry_size: uintptr, result: ^i64) -> c.int ---

@@ -3,6 +3,7 @@ package bac_meta2
 import ".."
 import "../anal"
 import "../arm"
+import "../intel_xelp_poc"
 import "../meta"
 import "../ssa"
 import "../wasm"
@@ -50,6 +51,36 @@ main :: proc() {
 				classes = {meta.class_array(&meta.IDEAL_CLASSES, gen_ctors = false)},
 			},
 			"bac/anal/node_specs.odin",
+		)
+	}
+
+	when intel_xelp_poc.SPEC_NOT_PRESENT {
+		XELP_CLASSES := [intel_xelp_poc.Node_Type]meta.Class_Spec {
+			.Inv = {no_ctor = true, flags = {.Interned}},
+			.Value_Eq ..= .Value_Ge = {no_ctor = true, flags = {.Interned}},
+		}
+
+		meta.generate_spec(
+			meta.Spec_Gen_Input {
+				package_name = "bac_intel_xelp_poc",
+				header_import = "import bac \"..\"\n" +
+				"Reg_Kind :: bac.Reg_Kind\n" +
+				"Class_Flag :: bac.Class_Flag\n",
+				qual = "bac.",
+				classes = {
+					meta.class_array(&meta.IDEAL_CLASSES, gen_ctors = false),
+					meta.class_array(&XELP_CLASSES),
+				},
+				does_regalloc = true,
+				datatype_to_reg_kind = #partial{.I8 ..= .V512 = intel_xelp_poc.RK_GRF},
+				spill_boundary = {intel_xelp_poc.GRF_COUNT, intel_xelp_poc.FLAG_COUNT},
+				cc_table = intel_xelp_poc.CC_TABLE[:],
+				common_reg_specs = {
+					{"GRF", intel_xelp_poc.RK_GRF, {~i64(1), ~i64(1 << 55 | 1 << 54)}},
+					{"FLAG", intel_xelp_poc.RK_FLAG, {0xf, 0}},
+				},
+			},
+			"bac/intel_xelp_poc/node_specs.odin",
 		)
 	}
 
@@ -108,6 +139,17 @@ main :: proc() {
 				},
 				spill_boundary = {int(x64.FLAGS) + 1, 16},
 				cc_table = x64.CC_TABLE[:],
+				common_reg_specs = {
+					{"GPA", x64.RK_GENERAL, {0xFFFF & ~i64(1 << uint(x64.RSP))}},
+					{
+						"GPA_SPILL",
+						x64.RK_GENERAL,
+						{~i64(1 << uint(x64.RSP) | 1 << uint(x64.FLAGS))},
+					},
+					{"GPA_SPLIT", x64.RK_GENERAL, {~i64(1 << uint(x64.RSP))}},
+					{"XMM", x64.RK_VECTOR, {0xFFFF}},
+					{"XMM_SPILL", x64.RK_VECTOR, {~i64(0)}},
+				},
 			},
 			"bac/x64/node_specs.odin",
 		)
@@ -196,9 +238,19 @@ main :: proc() {
 				},
 				spill_boundary = {int(arm.FLAGS) + 1, 32},
 				cc_table = arm.CC_TABLE[:],
+				common_reg_specs = {
+					{"GPA", arm.RK_GENERAL, {0x3FFFFFFF}},
+					{
+						"GPA_SPILL",
+						arm.RK_GENERAL,
+						{~i64(1 << uint(arm.SP) | 1 << 30 | 1 << uint(arm.FLAGS))},
+					},
+					{"GPA_SPLIT", arm.RK_GENERAL, {~i64(1 << uint(arm.SP) | 1 << 30)}},
+					{"VEC", arm.RK_VECTOR, {0xFFFFFFFF}},
+					{"VEC_SPILL", arm.RK_VECTOR, {~i64(0)}},
+				},
 			},
 			"bac/arm/node_specs.odin",
 		)
 	}
-
 }

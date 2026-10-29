@@ -31,7 +31,7 @@ Another category of tests we have are `test-programs`, that can be ran with
 `./misc/run-programs.sh`, the scripts asserts that exit codes and stdout/err
 are identical in programs compiled with each compiler.
 
-When running tests, NEVER wait for more the 12 seconds, tests usually compile in
+When running tests, NEVER wait for more the 20 seconds, tests usually compile in
 1s and run in matter of miliseconds.
 
 NEVER comment the code with what it does, only why we absolutely need it if its
@@ -78,3 +78,13 @@ is happening.
 
 When hardcoding instructions encodings, it is adamant that you add a comment
 with the parametrized assembly to make it clear what is being encoded.
+
+When you declare local functions put them at the end of the scope or after they
+are used.
+
+Debug with gdb when appropriate, eg segfaults.
+
+Try to use blank likes where appropriate that improves code readability.
+
+As you test code try to reiterate trough checks you added and remove them if
+they are not needed and instead put them as asserts.

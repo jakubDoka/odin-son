@@ -134,6 +134,7 @@ insert_alwasy :: proc(ctx: ^Proc, root: Node_ID) -> Node_ID {
 Schedule_Mode :: enum {
 	for_regalloc,
 	for_loopopt,
+	for_display,
 }
 
 /// The function initialzes `gs` with the graph schedule. This is a
@@ -292,7 +293,13 @@ schedule_graph :: proc(
 	cfg_rpos: [dynamic]Node_ID
 	visited := bit_arr.init(prc.gvn * 2)
 
-	cfg_reverse_postorder(prc, prc.entry, &cfg_rpos, visited, !loop_opt)
+	cfg_reverse_postorder(
+		prc,
+		prc.entry,
+		&cfg_rpos,
+		visited,
+		purpose == .for_regalloc,
+	)
 
 	cfg_reverse_postorder :: proc(
 		prc: ^Proc,

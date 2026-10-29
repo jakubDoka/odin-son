@@ -1266,9 +1266,15 @@ start_proc :: proc(
 	bac.ensure_init()
 
 	assert(temps != nil)
+
+	prc^ = {
+		config    = prc.config,
+		preserved = prc.preserved,
+	}
+
 	prc.node_spec = &SPEC
-	prc.mem = mem
 	prc.temps = temps
+	prc.mem = mem
 	prc.mem.pos = bac.PRECISION
 
 	prc.gvn = 1

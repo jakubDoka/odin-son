@@ -1966,7 +1966,7 @@ regalloc_round :: proc(
 		return id
 	}
 
-	@(disabled = true || !bac.REGLOGS)
+	@(disabled = !bac.REGLOGS)
 	log_lrgs :: proc(ctx: ^Ctx) {
 		sb: strings.Builder
 

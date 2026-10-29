@@ -90,7 +90,7 @@ def main():
         desktop = work / 'desktop.o'
         env = dict(os.environ)
         env.setdefault('ODIN_ROOT', str(Path(shutil.which(os.environ.get('ODIN', 'odin'))).resolve().parent))
-        run([ROOT / 'odin-son', modules, '-o', desktop], env=env)
+        run([os.environ.get('ODIN_SON_DESKTOP', ROOT / 'odin-son'), modules, '-o', desktop], env=env)
         run(['gcc', desktop, '-o', work / 'desktop'])
         native_result = subprocess.run([work / 'imports'], capture_output=True, timeout=12)
         desktop_result = subprocess.run([work / 'desktop'], capture_output=True, timeout=12)

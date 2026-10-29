@@ -13,7 +13,6 @@ import "core:time"
 import "typecheck"
 
 main :: proc() {
-
 	when #config(FUZZ, false) {
 		fuzz_main()
 		return
@@ -27,11 +26,10 @@ main :: proc() {
 
 	input: string
 	output := "a.o"
-	xelp_body_output := ""
 
 	levels := OPT_LEVELS
 	level := levels[len(levels) - 1]
-	target := TARGETS[0]
+	target := TARGETS[.X64]
 	show_timings := false
 	show_stats := false
 	check := false
@@ -44,10 +42,6 @@ main :: proc() {
 	for i < len(args) {
 		arg := args[i]
 		switch {
-		case arg == "-emit-xelp-body":
-			i += 1
-			if i >= len(args) { fmt.eprintln("missing argument to -emit-xelp-body"); os.exit(1) }
-			xelp_body_output = args[i]
 		case arg == "-o":
 			i += 1
 			if i >= len(args) {
@@ -115,9 +109,7 @@ main :: proc() {
 	}
 
 	if input == "" {
-		fmt.eprintln(
-			"usage: jit <entry.odin> [-o output.o] [-O:<level>] [-debug] [-emit-xelp-body body.bin]",
-		)
+		fmt.eprintln("usage: jit <entry.odin> [-o output.o] [-O:<level>] [-debug]")
 		os.exit(1)
 	}
 
@@ -163,6 +155,9 @@ main :: proc() {
 	ctx.ralloc_mode = level.ralloc_mode
 	ctx.errors = os.to_writer(os.stderr)
 
+	bac.current_prc = &ctx
+	defer bac.current_prc = nil
+
 	times: struct {
 		load:    time.Duration,
 		check:   time.Duration,
@@ -178,29 +173,6 @@ main :: proc() {
 		typecheck.typecheck_program(&ctx)}
 
 	if ctx.error_cnt > 0 do os.exit(1)
-
-	if xelp_body_output != "" {
-		if xelp_body_output == output { fmt.eprintln("Xe-LP body and CPU object require different output paths"); os.exit(1) }
-			body: []u8
-			native_index := -1
-			gpu_count := 0
-			for prc, j in ctx.procs {
-				if !prc.gpu_tag do continue
-				gpu_count += 1
-				if prc.gpu_native do native_index = j
-			}
-			ok := false
-			if gpu_count == 1 && native_index >= 0 {
-				body = compile_gpu_scalar_body(&ctx, &ctx.procs[native_index])
-				ok = true
-			} else {
-				body, ok = typecheck.emit_gpu_xelp_body(&ctx)
-			}
-		if !ok { fmt.eprintln("Xe-LP body emission requires exactly one nonempty tagged gpu arithmetic procedure"); os.exit(1) }
-		if err := os.write_entire_file(xelp_body_output, body); err != nil { fmt.eprintln("cannot write Xe-LP body:", err); os.exit(1) }
-		fmt.eprintfln("[odin-son xelp] stage=body-emitted target=12p1 bytes=%d complete_kernel=false artifact=%s", len(body), xelp_body_output)
-	}
-
 
 	emit_ctx := bac.Codegen_Emit_Ctx {
 		lib_calls = {copy = {id = MEMCPY_ID}, set = {id = MEMSET_ID}},

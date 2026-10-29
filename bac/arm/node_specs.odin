@@ -380,3 +380,47 @@ inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 #assert(size_of(bac.Local) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.Tup) % bac.PRECISION == 0)
+
+@(rodata) GPA_MASK := [?]i64{transmute(i64)u64(0x000000003fffffff)}
+GPA_MASK_IDX :: bac.RM_Intern_Idx{index = 0, kind = 0}
+@(rodata) GPA_MASKS := [6]bac.RM_Intern_Idx{0 ..< 6 = GPA_MASK_IDX}
+
+@(rodata) GPA_SPILL_MASK := [?]i64{transmute(i64)u64(0xfffffffe3fffffff)}
+GPA_SPILL_MASK_IDX :: bac.RM_Intern_Idx{index = 1, kind = 0}
+@(rodata) GPA_SPILL_MASKS := [6]bac.RM_Intern_Idx{0 ..< 6 = GPA_SPILL_MASK_IDX}
+
+@(rodata) GPA_SPLIT_MASK := [?]i64{transmute(i64)u64(0xffffffff3fffffff)}
+GPA_SPLIT_MASK_IDX :: bac.RM_Intern_Idx{index = 2, kind = 0}
+@(rodata) GPA_SPLIT_MASKS := [6]bac.RM_Intern_Idx{0 ..< 6 = GPA_SPLIT_MASK_IDX}
+
+@(rodata) VEC_MASK := [?]i64{transmute(i64)u64(0x00000000ffffffff)}
+VEC_MASK_IDX :: bac.RM_Intern_Idx{index = 0, kind = 1}
+@(rodata) VEC_MASKS := [6]bac.RM_Intern_Idx{0 ..< 6 = VEC_MASK_IDX}
+
+@(rodata) VEC_SPILL_MASK := [?]i64{transmute(i64)u64(0xffffffffffffffff)}
+VEC_SPILL_MASK_IDX :: bac.RM_Intern_Idx{index = 1, kind = 1}
+@(rodata) VEC_SPILL_MASKS := [6]bac.RM_Intern_Idx{0 ..< 6 = VEC_SPILL_MASK_IDX}
+
+seed_rm_interner :: proc(ra: ^bac.Regalloc) {
+	ra.mask_len = MASK_SIZE
+	bac.rm_intern_slice(ra, 0, GPA_MASK[:])
+	bac.rm_intern_slice(ra, 0, GPA_SPILL_MASK[:])
+	bac.rm_intern_slice(ra, 0, GPA_SPLIT_MASK[:])
+	bac.rm_intern_slice(ra, 1, VEC_MASK[:])
+	bac.rm_intern_slice(ra, 1, VEC_SPILL_MASK[:])
+}
+
+atype :: #force_inline proc(node: bac.Expanded_Node) -> Node_Type {
+	return Node_Type(node.rtype)
+}
+
+aextra :: #force_inline proc(
+	prc: ^bac.Proc,
+	node: ^bac.Node,
+	$T: typeid,
+) -> ^T {
+	if prc.inheritance_table[node.rtype] & (1 << inherit_idx_of(T)) == 0 {
+		return nil
+	}
+	return (^T)(&node.extra)
+}

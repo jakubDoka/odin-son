@@ -155,21 +155,6 @@ emit_op :: proc(code: ^arna.Allocator, instr: Op) {
 	emit(code, mem.ptr_to_bytes(&instr))
 }
 
-atype :: proc(node: ^Node) -> Node_Type {
-	return Node_Type(node.rtype)
-}
-
-aextra :: #force_inline proc(
-	prc: ^bac.Proc,
-	node: ^bac.Node,
-	$T: typeid,
-) -> ^T {
-	if prc.inheritance_table[node.rtype] & (1 << inherit_idx_of(T)) == 0 {
-		return nil
-	}
-	return (^T)(&node.extra)
-}
-
 peep :: proc(
 	ctx: bac.Peep_Ctx,
 	node: bac.Expanded_Node,
@@ -391,65 +376,18 @@ meta_of :: #force_inline proc(
 ) -> bac.Regalloc_Node_Meta {
 	IOUT :: bac.INVALID_RM_INDEX
 
-	@(static, rodata)
-	GPA_MASK := [?]i64{0x3FFFFFFF}
-	@(static, rodata)
-	GPA_SPILL_MASK := [?]i64{~i64(1 << uint(SP) | 1 << 30 | 1 << uint(FLAGS))}
-	@(static, rodata)
-	GPA_SPLIT_MASK := [?]i64{~i64(1 << uint(SP) | 1 << 30)}
-	@(static, rodata)
-	VEC_MASK := [?]i64{0xFFFFFFFF}
-	@(static, rodata)
-	VEC_SPILL_MASK := [?]i64{~i64(0)}
-
-	GPA_MASK_IDX :: bac.RM_Intern_Idx{}
-	VEC_MASK_IDX :: bac.RM_Intern_Idx {
-		kind = RK_VECTOR,
-	}
-	GPA_SPILL_MASK_IDX :: bac.RM_Intern_Idx {
-		index = 1,
-	}
-	VEC_SPILL_MASK_IDX :: bac.RM_Intern_Idx {
-		kind  = RK_VECTOR,
-		index = 1,
-	}
-
-	@(static, rodata)
-	GPA_MASKS := [6]bac.RM_Intern_Idx{}
-
-	@(static, rodata)
-	VEC_MASKS := [6]bac.RM_Intern_Idx {
-		0 ..< 6 = VEC_MASK_IDX,
-	}
-
-	@(static, rodata)
-	GPA_SPILL_MASKS := [6]bac.RM_Intern_Idx {
-		0 ..< 6 = GPA_SPILL_MASK_IDX,
-	}
-
-	@(static, rodata)
-	VEC_SPILL_MASKS := [6]bac.RM_Intern_Idx {
-		0 ..< 6 = VEC_SPILL_MASK_IDX,
-	}
-
 	if node.gvn == 1 {
 		if ra.cc == nil {
 			ra.cc = &CC_TABLE[ARM_SYSTEMV_CC]
 		}
 
-		ra.mask_len = MASK_SIZE
-		rslice(ra, RK_GENERAL, GPA_MASK[:])
-		rslice(ra, RK_VECTOR, VEC_MASK[:])
-		rslice(ra, RK_GENERAL, GPA_SPILL_MASK[:])
-		rslice(ra, RK_VECTOR, VEC_SPILL_MASK[:])
+		seed_rm_interner(ra)
 	}
 
 	single :: bac.rm_intern_single
 	rslice :: bac.rm_intern_slice
 
-	dup :: #force_inline proc(msks: []bac.RM_Intern_Idx) -> []bac.RM_Intern_Idx {
-		return slice.clone(msks)
-	}
+	dup :: bac.rm_dup
 
 	nkind := ra.datatype_to_reg_kind[node.dt]
 

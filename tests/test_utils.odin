@@ -1,21 +1,24 @@
 package tests
 
 import "../bac"
-import "../bac/arm"
+import "../bac/intel_xelp_poc"
 import "../bac/ssa"
-import "../bac/wasm"
-import "../bac/x64"
+import "../gpu-dispatch/gpu"
 import "../odinc"
 import "../odinc/typecheck"
 import "../utils/arna"
 import "../utils/unicorn"
 import "../utils/wabt"
 import "base:intrinsics"
+import "base:runtime"
 import "core:debug/trace"
 import "core:dynlib"
 import "core:fmt"
 import "core:hash"
 import "core:log"
+import "core:math"
+import "core:math/rand"
+import "core:mem"
 import "core:mem/virtual"
 import "core:odin/ast"
 import "core:odin/parser"
@@ -42,17 +45,27 @@ setup_custom_fmt :: proc() {
 	})
 }
 
-init_single_file_program :: proc(ctx: ^odinc.Gen_Ctx, f: ^ast.File) {
+init_single_file_program :: proc(ctx: ^odinc.Gen_Ctx, source: string) {
+	p := parser.Parser{}
+	f := ast.File {
+		src      = source,
+		fullpath = "test",
+	}
+	{context.allocator = context.temp_allocator
+		//p.err = parser.default_error_handler
+		ok := parser.parse_file(&p, &f); assert(ok)
+	}
+
 	ctx.files.allocator = ctx.types.allocator
 	ctx.modules.allocator = ctx.types.allocator
 	if f.pkg_name == "" do f.pkg_name = "main"
-	append(&ctx.files, f^)
+	append(&ctx.files, f)
 	append(&ctx.modules, typecheck.Module{name = f.pkg_name, file_count = 1})
 	ctx.modules[0].imports.allocator = ctx.types.allocator
 	ctx.modules[0].imports["intrinsics"] = typecheck.MODULE_INTRINSICS
 
 	decls := make([dynamic]typecheck.Decl, context.temp_allocator)
-	typecheck.collect_decls(f^, &decls, 0)
+	typecheck.collect_decls(f, &decls, 0)
 	typecheck.module_add_decls(ctx, 0, decls[:])
 }
 
@@ -62,26 +75,9 @@ name_str: string
 DO_DIFFING :: #config(DIFF, true)
 NO_RUN :: #config(NO_RUN, false)
 
-@(thread_local)
-types: typecheck.Types
-
-run_test :: proc(
-	t: ^testing.T,
-	name: string,
-	source: string,
-	exit_code: int,
-	diff := DO_DIFFING,
-	no_run := NO_RUN,
-) {
-	@(static) test_rc := 0
-	intrinsics.atomic_add(&test_rc, 1)
-
-	name_str = name
-	context.logger.options &= ~{.Time, .Date, .Level, .Procedure}
-	when ODIN_DEBUG {
-		context.assertion_failure_proc = trace.assertion_failure_proc
-	}
-	context.random_generator = {}
+ensure_types :: proc() -> ^typecheck.Types {
+	@(thread_local)
+	types: typecheck.Types
 
 	if types.mems.prc.reserved == 0 {
 		arna.scratch[0].reserved = 1024 * 1024
@@ -103,57 +99,211 @@ run_test :: proc(
 		typecheck.types_reset(&types)
 	}
 
-	defer {
-		free_all(context.temp_allocator)
-	}
+	return &types
+}
 
-	// NOTE: this is intensly stupid, but we have to do this or there
-	// will be dataraces
-	@(static) once: sync.Once
-	sync.once_do(&once, proc() {
-		context.allocator, _ = arna.scrath()
-		p := parser.Parser{}
-		f := ast.File {
-			src      = "package main",
-			fullpath = "test",
-		}
-		ok := parser.parse_file(&p, &f); assert(ok)
-	})
+reset_code_mems :: proc(ctx: ^typecheck.Types) {
+	ctx.mems.code.pos = 0
+	ctx.mems.reloc.pos = 0
+	ctx.mems.cfi.pos = 0
+	ctx.mems.dbg_loc.pos = 0
+	ctx.mems.constants.pos = 0
+}
+
+run_gpu_test :: proc(
+	t: ^testing.T,
+	name: string,
+	source: string,
+	param_count: int,
+	result_types: []typeid,
+	ref_impl: proc(params: []gpu.Reg, results: []gpu.Reg),
+	max_float_ulps: int,
+) {
+	name_str = name
+	context.logger.options &= ~{.Time, .Date, .Level, .Procedure}
+	when ODIN_DEBUG {
+		context.assertion_failure_proc = trace.assertion_failure_proc
+	}
+	context.random_generator = {}
+
+	rng: rand.PCG_Random_State
+	context.random_generator = rand.pcg_random_generator(&rng)
+	runtime.random_generator_reset_u64(
+		context.random_generator,
+		hash.fnv64a(transmute([]u8)name),
+	)
+
+	defer free_all(context.temp_allocator)
 
 	setup_custom_fmt()
 
-	global_ctx: typecheck.Global_Ctx
+	errors: strings.Builder
 
-	p := parser.Parser{}
-	f := ast.File {
-		src      = source,
-		fullpath = "test",
+	global_ctx: typecheck.Global_Ctx
+	stats: bac.Stats
+
+	ctx: odinc.Gen_Ctx
+	ctx.types = ensure_types()
+	ctx.stats = &stats
+	ctx.global = &global_ctx
+	ctx.errors = strings.to_writer(&errors)
+
+	bac.current_prc = &ctx
+	defer bac.current_prc = nil
+
+	init_single_file_program(&ctx, source)
+	typecheck.typecheck_program(&ctx)
+
+	emit_ctx := bac.Codegen_Emit_Ctx{}
+
+	ctx.target = {
+		name = "intel_xelp",
+		cc   = &intel_xelp_poc.CC_TABLE[intel_xelp_poc.XELP_CC],
+		spec = &intel_xelp_poc.SPEC,
 	}
+
+	odinc.emit_proc(
+		&ctx,
+		1,
+		odinc.OPT_LEVELS[len(odinc.OPT_LEVELS) - 2],
+		&emit_ctx,
+	)
+
+	fn := &ctx.procs[1]
+	err: gpu.Error
+
 	{context.allocator = context.temp_allocator
-		//p.err = parser.default_error_handler
-		ok := parser.parse_file(&p, &f); assert(ok)
+		out: strings.Builder
+		err = gpu.disassemble(&out, fn.out.code)
+		fmt.assertf(err == nil, "dissasm error: %v", err)
+
+		diff_path, _ := os.join_path(
+			{TEST_OUT_DIR, "intel_xelp", name},
+			context.allocator,
+		)
+		if DO_DIFFING {
+			handle_golden_file(&out, diff_path)
+		}
 	}
+	if NO_RUN do return
+
+	@(thread_local)
+	dev: gpu.Device
+
+	if dev.fd == 0 {
+		dev, err = gpu.open()
+		fmt.assertf(err == nil, "failed to open gpu device: %v", err)
+	}
+
+	args := make([]gpu.Reg, param_count, context.temp_allocator)
+	slots := make([]gpu.Reg, len(result_types), context.temp_allocator)
+	ref_slots := make([]gpu.Reg, len(result_types), context.temp_allocator)
+
+	for &slot in mem.slice_data_cast([]f32, args) {
+		slot = rand.float32() * 2 - 1
+	}
+
+	if len(args) != 0 do args[0][1] = -0.0
+	if len(args) > 1 {
+		// inject devision by zero
+		args[1][0] = args[0][0]
+		args[1][1] = 0
+		args[1][2] = args[0][2]
+	}
+
+	ref_impl(args, ref_slots)
+
+	err = gpu.execute(
+		&dev,
+		{code = mem.slice_data_cast([]u32, fn.out.code), width = .SIMD8},
+		args,
+		slots,
+	)
+	fmt.assertf(err == nil, "gpu execution error: %v", err)
+
+	for result_type, i in result_types {
+		for actual, lane in slots[i] {
+			expected := ref_slots[i][lane]
+			actual_bits := transmute(u32)actual
+			expected_bits := transmute(u32)expected
+			equal := actual_bits == expected_bits
+			if result_type == f32 {
+				equal ||= float_equal(actual, expected, max_float_ulps)
+			}
+			testing.expectf(
+				t,
+				equal,
+				"result %v lane %v: %v (0x%08x) != %v (0x%08x)",
+				i,
+				lane,
+				actual,
+				actual_bits,
+				expected,
+				expected_bits,
+			)
+		}
+	}
+
+	float_equal :: proc(actual, expected: f32, max_ulps: int) -> bool {
+		if actual == expected do return true
+		if max_ulps == 0 do return false
+		if math.is_nan(actual) && math.is_nan(expected) do return true
+		if math.is_inf(actual) || math.is_inf(expected) do return false
+
+		value := actual
+		for _ in 0 ..< max_ulps {
+			value = math.nextafter(value, expected)
+		}
+		return value == expected
+	}
+}
+
+run_test :: proc(
+	t: ^testing.T,
+	name: string,
+	source: string,
+	exit_code: int,
+	diff := DO_DIFFING,
+	no_run := NO_RUN,
+) {
+	@(static) test_rc := 0
+	intrinsics.atomic_add(&test_rc, 1)
+
+	name_str = name
+	context.logger.options &= ~{.Time, .Date, .Level, .Procedure}
+	when ODIN_DEBUG {
+		context.assertion_failure_proc = trace.assertion_failure_proc
+	}
+	context.random_generator = {}
+
+	defer free_all(context.temp_allocator)
+
+	setup_custom_fmt()
 
 	dsbs: [Test_Vm]strings.Builder
 	for &dsb in dsbs do dsb.buf.allocator = context.temp_allocator
 
+	global_ctx: typecheck.Global_Ctx
 	stats: bac.Stats
 
 	ctx: odinc.Gen_Ctx
-	ctx.types = &types
+	ctx.types = ensure_types()
 	ctx.stats = &stats
 	ctx.global = &global_ctx
 	ctx.errors = strings.to_writer(&dsbs[.Check])
 
-	init_single_file_program(&ctx, &f)
+	bac.current_prc = &ctx
+	defer bac.current_prc = nil
+
+	init_single_file_program(&ctx, source)
 	typecheck.typecheck_program(&ctx)
 
 	levels := odinc.OPT_LEVELS
 
 	Test_Vm :: enum {
 		Native,
-		Arm,
 		Wasm,
+		Arm,
 		Check,
 	}
 
@@ -172,23 +322,15 @@ run_test :: proc(
 	for level in levels[:] {
 		append(&confs, Test_Conf{level = level, debug = true})
 	}
+	check := len(confs)
 	for level in levels[:] {
 		append(&confs, Test_Conf{level = level, vm = .Wasm})
 	}
 	for level in levels[:] {
 		append(&confs, Test_Conf{level = level, vm = .Arm})
 	}
-	if name == "foreign_block" {
-		clear(&confs)
-		for level in levels {
-			append(
-				&confs,
-				Test_Conf{level = level},
-				Test_Conf{level = level, debug = true},
-			)
-		}
-	}
 
+	if name == "foreign_block" do resize(&confs, check)
 	if ctx.error_cnt > 0 do clear(&confs)
 
 	lib, did_load := dynlib.load_library("")
@@ -227,15 +369,9 @@ run_test :: proc(
 			}
 		}
 
-		bac.current_prc = &ctx
-		defer bac.current_prc = nil
+		reset_code_mems(ctx)
 
-		types.mems.code.pos = 0
-		types.mems.reloc.pos = 0
-		types.mems.cfi.pos = 0
-		types.mems.dbg_loc.pos = 0
-		types.mems.constants.pos = 0
-		types.check = level.vm == .Check
+		ctx.check = level.vm == .Check
 		ctx.has_dbg = level.debug
 		ctx.ralloc_mode = level.ralloc_mode
 		resize(&ctx.globals, prev_glob_count)
@@ -253,33 +389,11 @@ run_test :: proc(
 			emit_got_imports = true,
 		}
 
-		switch level.vm {
-		case .Native:
-			ctx.target.cc = &x64.CC_TABLE[x64.X64_SYSTEMV_CC]
-			ctx.target.spec = &x64.SPEC
-			ctx.target.opt_hints = x64.OPT_HINTS
-		case .Arm:
-			ctx.target.cc = &arm.CC_TABLE[arm.ARM_SYSTEMV_CC]
-			ctx.target.spec = &arm.SPEC
-			ctx.target.opt_hints = arm.OPT_HINTS
-		case .Wasm:
-			ctx.target.cc = &wasm.CC_TABLE[wasm.WASM_SYSTEMV_CC]
-			ctx.target.spec = &wasm.SPEC
-			ctx.target.opt_hints = wasm.OPT_HINTS
-		case .Check:
-			unreachable()
-		}
+		ctx.target = odinc.TARGETS[odinc.Target_ID(level.vm)]
 
 		for kind, i in ([]ssa.Builtin_Proc{.memmove, .memset}) {
-			ctx.prc = {
-				has_dbg = ctx.prc.has_dbg,
-				temps   = &arna.scratch,
-			}
-			ctx.node_spec = &ssa.SPEC
-			ctx.mem = &ctx.mems.prc
-			ctx.mem.pos = bac.PRECISION
 			ctx.opt_flags = level.flags
-			ctx.stats = &ctx.tstats
+			ssa.start_proc(&ctx, &ctx.mems.prc, &arna.scratch)
 
 			prc := &ctx.procs[len(ctx.procs) - 2 + i]
 
@@ -304,7 +418,7 @@ run_test :: proc(
 					if !no_run {
 						fmt.assertf(addr != nil, "missing symbol: %v", p.name)
 					}
-					slot := bac.emit_aligned(&types.mems.code, addr)
+					slot := bac.emit_aligned(&ctx.mems.code, addr)
 					append(&imported_offsets, uintptr(slot))
 				}
 			}
@@ -319,13 +433,13 @@ run_test :: proc(
 				if !odinc.inline_and_optimize(&ctx, &emit_ctx) do continue
 			}
 
-			arna.alloc(&types.mems.code, 0, 4096)
-			code_until := types.mems.code.pos
+			arna.alloc(&ctx.mems.code, 0, 4096)
+			code_until := ctx.mems.code.pos
 
 			global_addrs := make([]uintptr, len(ctx.globals), context.temp_allocator)
 			for glob, i in ctx.globals {
 				align := uint(max(glob.align, 1))
-				slot := arna.alloc(&types.mems.code, len(glob.bytes), align)
+				slot := arna.alloc(&ctx.mems.code, len(glob.bytes), align)
 				copy(slot, glob.bytes)
 				global_addrs[i] = uintptr(raw_data(slot))
 			}
@@ -347,7 +461,7 @@ run_test :: proc(
 							size := slc[0]
 							align := slc[1]
 
-							off := arna.alloc(&types.mems.code, uint(size), uint(align))
+							off := arna.alloc(&ctx.mems.code, uint(size), uint(align))
 
 							copy(off, slc[2:])
 
@@ -392,11 +506,7 @@ run_test :: proc(
 				}
 			}
 
-			oka := virtual.protect(
-				types.mems.code.ptr,
-				code_until,
-				{.Read, .Execute},
-			)
+			oka := virtual.protect(ctx.mems.code.ptr, code_until, {.Read, .Execute})
 			assert(oka)
 
 			if no_run {
@@ -417,10 +527,10 @@ run_test :: proc(
 						vl = ptr()
 					} else {
 						start := int(
-							uintptr(raw_data(main.out.code)) - uintptr(types.mems.code.ptr),
+							uintptr(raw_data(main.out.code)) - uintptr(ctx.mems.code.ptr),
 						)
 						avl, err := unicorn.run_arm64(
-							types.mems.code.ptr[:types.mems.code.pos],
+							ctx.mems.code.ptr[:ctx.mems.code.pos],
 							int(code_until),
 							start,
 							trace_instrs = #config(TRACE_INSTRS, false),
@@ -438,7 +548,7 @@ run_test :: proc(
 				}
 			}
 
-			oka = virtual.protect(types.mems.code.ptr, code_until, {.Read, .Write})
+			oka = virtual.protect(ctx.mems.code.ptr, code_until, {.Read, .Write})
 			assert(oka)
 		case .Wasm:
 			for _, i in ctx.procs[:len(ctx.procs) - 2] {
@@ -497,34 +607,38 @@ run_test :: proc(
 		.Wasm   = "wasm",
 	}
 
-	for &dsb, kind in dsbs {
-		if len(dsb.buf) == 0 do continue
+	if diff {
+		for &dsb, kind in dsbs {
+			if len(dsb.buf) == 0 do continue
 
-		context.allocator = context.temp_allocator
-		diff_path, _ := os.join_path(
-			{TEST_OUT_DIR, vm_names[kind], name},
-			context.allocator,
-		)
-		file, err := os.read_entire_file(diff_path, context.allocator)
+			context.allocator = context.temp_allocator
+			diff_path, _ := os.join_path(
+				{TEST_OUT_DIR, vm_names[kind], name},
+				context.allocator,
+			)
 
-		if diff {
-			if #config(ACCEPT, false) {
-				werr := os.write_entire_file(diff_path, dsb.buf[:])
-				assert(werr == nil)
-			} else if err == .Not_Exist {
-				log.error("\n", highlight_disasm(string(dsb.buf[:])), sep = "")
-			} else {
-				assert(err == nil)
-				new, old := string(dsb.buf[:]), string(file)
-				if new != old {
-					new, old =
-						highlight_disasm(strings.clone(new)), highlight_disasm(old)
-					clear(&dsb.buf)
-					append(&dsb.buf, "\n")
-					print_diff(&dsb, old, new)
-					log.error(string(dsb.buf[:]))
-				}
-			}
+			handle_golden_file(&dsb, diff_path)
+		}
+	}
+}
+
+handle_golden_file :: proc(dsb: ^strings.Builder, diff_path: string) {
+	file, err := os.read_entire_file(diff_path, context.allocator)
+
+	if #config(ACCEPT, false) {
+		werr := os.write_entire_file(diff_path, dsb.buf[:])
+		assert(werr == nil)
+	} else if err == .Not_Exist {
+		log.error("\n", highlight_disasm(string(dsb.buf[:])), sep = "")
+	} else {
+		assert(err == nil)
+		new, old := string(dsb.buf[:]), string(file)
+		if new != old {
+			new, old = highlight_disasm(strings.clone(new)), highlight_disasm(old)
+			clear(&dsb.buf)
+			append(&dsb.buf, "\n")
+			print_diff(dsb, old, new)
+			log.error(string(dsb.buf[:]))
 		}
 	}
 }

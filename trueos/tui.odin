@@ -15,7 +15,6 @@ foreign _ {
 }
 
 Tui_Demo :: struct { name: string, built: bool }
-TUI_MANDELBROT :: "gpu-mandelbrot"
 tui_messages: [8][160]u8
 tui_lengths: [8]int
 tui_message_count: int
@@ -44,8 +43,8 @@ tui_emit :: proc(text: string) -> bool {
 }
 
 tui_seed :: proc() -> bool {
-    names := [3]string{"gpu-boids", "cpu-boids", "hello"}
-    sources := [3]string{EMBEDDED_GPU_BOIDS, EMBEDDED_BOIDS, #load("hello.source", string)}
+    names := [2]string{"cpu-boids", "hello"}
+    sources := [2]string{EMBEDDED_BOIDS, #load("hello.source", string)}
     for name, i in names {
         path := strings.concatenate({name, "/main.odin"})
         defer delete(path)
@@ -63,7 +62,6 @@ tui_free_demos :: proc(demos: []Tui_Demo) {
 
 tui_discover :: proc(announce := true) -> ([]Tui_Demo, bool) {
     demos := make([dynamic]Tui_Demo)
-    append(&demos, Tui_Demo{name = strings.clone(TUI_MANDELBROT)})
     entries, err := os.read_dir(".", -1)
     if err != nil do return demos[:], false
     defer {
@@ -72,7 +70,6 @@ tui_discover :: proc(announce := true) -> ([]Tui_Demo, bool) {
     }
     for entry in entries {
         if entry.type != .Directory || strings.has_prefix(entry.name, ".") do continue
-        if entry.name == TUI_MANDELBROT do continue
         // Output stays a local basename, matching the scoped Blueprint launcher.
         safe := len(entry.name) > 0 && len(entry.name) <= 64
         for ch in entry.name {
@@ -125,15 +122,13 @@ tui_draw :: proc(demos: []Tui_Demo, selected, cols, rows: int, status: string) -
     defer strings.builder_destroy(&b)
     strings.write_string(&b, "\x1b[?1049h\x1b[?25l\x1b[0m\x1b[2J")
     tui_line(&b, 0, cols, "ODIN-SON  native compiler", "\x1b[48;2;16;16;16m\x1b[38;2;255;55;255m\x1b[1m")
-    native_pixel := len(demos) > 0 && demos[selected].name == TUI_MANDELBROT
-    help := native_pixel ? "Up/Down j/k select  Enter emit EU  r Mandelbrot  f refresh  q quit" : "Up/Down j/k select  Enter compile  r run  f refresh  q quit"
+    help := "Up/Down j/k select  Enter compile  r run  f refresh  q quit"
     tui_line(&b, 1, cols, help, "\x1b[0m\x1b[48;2;16;16;16m")
     tui_line(&b, 2, cols, status, "\x1b[0m\x1b[48;2;16;16;16m\x1b[38;2;180;180;180m")
     visible := max(1, rows-15)
     first := max(0, selected-visible+1)
     for i := first; i < min(len(demos), first+visible); i += 1 {
-        suffix := demos[i].name == TUI_MANDELBROT ? "  [embedded native EU]" : ""
-        label := fmt.aprintf("%s %s%s%s", i == selected ? ">" : " ", demos[i].name, suffix, demos[i].built ? "  [compiled]" : "")
+        label := fmt.aprintf("%s %s%s", i == selected ? ">" : " ", demos[i].name, demos[i].built ? "  [compiled]" : "")
         tui_line(&b, 4+i-first, cols, label, i == selected ? "\x1b[0m\x1b[38;2;255;55;255m" : "\x1b[0m")
         delete(label)
     }
@@ -146,14 +141,13 @@ tui_draw :: proc(demos: []Tui_Demo, selected, cols, rows: int, status: string) -
         slot := i % len(tui_messages)
         tui_line(&b, row, cols, string(tui_messages[slot][:tui_lengths[slot]]))
     }
-    footer := native_pixel ? "Embedded source -> native GPGPU. Pan/zoom with mouse; q/Esc in image returns." : "Auto-discovers apps/odin-son/<demo>/main.odin.  TAB parks; tui returns."
+    footer := "Auto-discovers apps/odin-son/<demo>/main.odin.  TAB parks; tui returns."
     tui_line(&b, rows-1, cols, footer, "\x1b[0m\x1b[90m")
     strings.write_string(&b, "\x1b[0m")
     return tui_emit(strings.to_string(b))
 }
 
 tui_compile :: proc(name: string) -> i32 {
-    if name == TUI_MANDELBROT do return run_gpu_mandelbrot("--gpu-mandelbrot")
     input := strings.concatenate({name, "/main.odin"})
     output := strings.concatenate({"demo-", name, ".o"})
     args := [6]cstring{cstring("odin-son"), cstring("--cpu-boids"), cstring("--blueprint"), strings.clone_to_cstring(input), cstring("-o"), strings.clone_to_cstring(output)}
@@ -162,7 +156,6 @@ tui_compile :: proc(name: string) -> i32 {
 }
 
 tui_run :: proc(name: string) -> i32 {
-    if name == TUI_MANDELBROT do return run_gpu_mandelbrot("--run-gpu-mandelbrot")
     payload := strings.concatenate({"./demo-", name, ".bp\x00\x00headless"})
     defer delete(payload)
     return trueos_cabi_blueprint_launch_script_v1(raw_data(payload), uintptr(len(payload)))
@@ -171,7 +164,7 @@ tui_run :: proc(name: string) -> i32 {
 run_tui :: proc() -> i32 {
     epoch: u64
     if trueos_cabi_blueprint_terminal_lease_current_v1(0, &epoch) != 0 {
-        fmt.eprintln("odin-son: TUI needs a terminal; use --cpu-boids or --gpu-boids for batch compilation")
+        fmt.eprintln("odin-son: TUI needs a terminal; pass a source path or --cpu-boids for batch compilation")
         return 1
     }
     defer {
@@ -243,21 +236,13 @@ run_tui :: proc() -> i32 {
             tui_lengths = {}
             result := tui_compile(demos[selected].name)
             demos[selected].built = result == 0
-            if demos[selected].name == TUI_MANDELBROT {
-                status = result == 0 ? "Native EU body stored. Press r to compile and display Mandelbrot." : "Native EU compilation failed; see compiler output."
-            } else {
-                status = result == 0 ? "Compiled. Press r to queue the demo in its own VM." : "Compile failed. Fix the source and try again."
-            }
+            status = result == 0 ? "Compiled. Press r to queue the demo in its own VM." : "Compile failed. Fix the source and try again."
             fmt.printfln("[odin-son tui] stage=compile demo=%s status=%d", demos[selected].name, result)
         case 'r', 'R':
             if len(demos) == 0 do continue
             if !demos[selected].built { status = "Compile this demo first (Enter)."; break }
             result := tui_run(demos[selected].name)
-            if demos[selected].name == TUI_MANDELBROT {
-                status = result == 0 ? "Mandelbrot finished. Compiler stays ready." : "Native compute failed; see compiler output and system log."
-            } else {
-                status = result == 0 ? "Launch queued in its own VM. Compiler stays ready." : "Launch request failed; see system log."
-            }
+            status = result == 0 ? "Launch queued in its own VM. Compiler stays ready." : "Launch request failed; see system log."
             fmt.printfln("[odin-son tui] stage=launch demo=%s status=%d", demos[selected].name, result)
         }
         dirty = true

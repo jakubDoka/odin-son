@@ -2,11 +2,12 @@ package meta
 
 import "core:fmt"
 import "core:odin/ast"
+import "core:odin/parser"
 import "core:os"
 import "core:slice"
 import "core:strings"
 
-COMMAND :: "odin run meta"
+COMMAND :: "odin run bac/tag-gen"
 SUFFIX :: "_node"
 
 // corpus is regenerated from TESTS.md on every run, crashes are imported from
@@ -22,6 +23,33 @@ main :: proc() {
 	gen_backend_api(load_backend_packages(".")[:])
 
 	{
+		next_odin_block :: proc(src: ^string) -> (name, code: string, ok: bool) {
+			for {
+				needle := "#### "
+				idx := strings.index(src^, needle)
+				if idx < 0 do return "", "", false
+				src^ = src^[idx + len(needle):]
+
+				needle = "\n```odin"
+				name_end_idx := strings.index(src^, needle)
+				if name_end_idx < 0 do return "", "", false
+				name = src^[:name_end_idx]
+				src^ = src^[name_end_idx + len(needle):]
+
+				if strings.contains(name, "\n") {
+					continue
+				}
+
+				needle = "```"
+				code_end_idx := strings.index(src^, needle)
+				if code_end_idx < 0 do return "", "", false
+				code = src^[:code_end_idx]
+				src^ = src^[code_end_idx + len(needle):]
+
+				return name, code, true
+			}
+		}
+
 		tests: [dynamic]Test
 
 		file, err := os.open("tests/tests.odin", {.Create, .Trunc, .Write})
@@ -34,39 +62,107 @@ main :: proc() {
 		os.write_string(file, "\n\n")
 		os.write_string(file, "import \"core:testing\"\n")
 		os.write_string(file, "import \"base:intrinsics\"\n")
+		os.write_string(file, "import \"../gpu-dispatch/gpu\"\n")
 
 		os.remove_all(FUZZ_CORPUS_DIR)
 		os.make_directory_all(FUZZ_CORPUS_DIR)
 
+		gen_gpu_tests: {
+			data, derr := os.read_entire_file(
+				"tests/GPU-TESTS.md",
+				context.allocator,
+			)
+			fmt.assertf(derr == nil, "%v", derr)
+
+			src := string(data)
+
+			for name, code in next_odin_block(&src) {
+				p := parser.Parser{}
+				f := ast.File {
+					src      = code,
+					fullpath = name,
+				}
+				{context.allocator = context.temp_allocator
+					//p.err = parser.default_error_handler
+					ok := parser.parse_file(&p, &f); assert(ok)
+				}
+
+				main_decl := f.decls[0].derived.(^ast.Value_Decl)
+				main := main_decl.values[0].derived.(^ast.Proc_Lit)
+				max_float_ulps := 0
+				visitor := ast.Visitor {
+					data = &max_float_ulps,
+					visit = proc(
+						visitor: ^ast.Visitor,
+						node: ^ast.Node,
+					) -> ^ast.Visitor {
+						if node == nil do return nil
+						if expr, ok := node.derived.(^ast.Binary_Expr);
+						   ok && expr.op.kind == .Quo {
+							(^int)(visitor.data)^ = 2
+						}
+						return visitor
+					},
+				}
+				ast.walk(&visitor, main.body)
+
+				rall_name, _ := strings.replace_all(name, " ", "_", context.allocator)
+				os.write_string(file, "@(test) ")
+				fmt.fprintfln(file, "%v :: proc(t: ^testing.T) {{", rall_name)
+
+				inlined, _ := strings.replace_all(code, "package main", "")
+				inlined, _ = strings.replace_all(inlined, "main ::", "main_ ::")
+
+				fmt.fprint(file, inlined)
+
+				fmt.fprintfln(
+					file,
+					"\twide_main :: proc(params: []gpu.Reg, results: []gpu.Reg) {{",
+				)
+
+				fmt.fprintfln(file, "\t\tfor i in 0 ..< len(gpu.Reg) {{")
+
+				fmt.fprintf(file, "\t\t\t")
+				for res, i in main.type.results.list {
+					if i != 0 do fmt.fprintf(file, ", ")
+					fmt.fprintf(file, "(^%v)(&results[%v][i])^", src_of(f, res.type), i)
+				}
+				fmt.fprintf(file, " = main_(")
+				for arg, i in main.type.params.list {
+					if i != 0 do fmt.fprintf(file, ", ")
+					fmt.fprintf(file, "(^%v)(&params[%v][i])^", src_of(f, arg.type), i)
+				}
+				fmt.fprintln(file, ")")
+
+				fmt.fprintfln(file, "\t\t}}")
+
+				fmt.fprintfln(file, "\t}}")
+
+				fmt.fprintf(
+					file,
+					"\trun_gpu_test(t, `%v`, `%v`, %v, {{",
+					rall_name,
+					code,
+					len(main.type.params.list),
+				)
+				for res, i in main.type.results.list {
+					if i != 0 do fmt.fprintf(file, ", ")
+					fmt.fprintf(file, "%v", src_of(f, res.type))
+				}
+				fmt.fprintfln(file, "}}, wide_main, %v)", max_float_ulps)
+
+				fmt.fprintfln(file, "}}")
+			}
+		}
+
 		file_paths := []string{"tests/TESTS.md"}
-		for file_path in file_paths {
+		for file_path, i in file_paths {
 			data, derr := os.read_entire_file(file_path, context.allocator)
 			fmt.assertf(derr == nil, "%v", derr)
 
 			src := string(data)
 
-			for {
-				needle := "#### "
-				idx := strings.index(src, needle)
-				if idx < 0 do break
-				src = src[idx + len(needle):]
-
-				needle = "\n```odin"
-				name_end_idx := strings.index(src, needle)
-				if name_end_idx < 0 do break
-				name := src[:name_end_idx]
-				src = src[name_end_idx + len(needle):]
-
-				if strings.contains(name, "\n") {
-					continue
-				}
-
-				needle = "```"
-				code_end_idx := strings.index(src, needle)
-				if code_end_idx < 0 do break
-				code := src[:code_end_idx]
-				src = src[code_end_idx + len(needle):]
-
+			for name, code in next_odin_block(&src) {
 				rall_name, _ := strings.replace_all(name, " ", "_", context.allocator)
 
 				corpus_path, _ := os.join_path(
@@ -78,19 +174,7 @@ main :: proc() {
 
 				append(&tests, Test{rall_name, code, .Normal})
 
-				DISABLED_TESTS := [?]string {
-					"multiply_add_preserves_intermediate_rounding",
-					"simd_u16_reduction_includes_every_lane",
-					"simd_word_mask_extracts_one_bit_per_lane",
-				}
-				if slice.contains(DISABLED_TESTS[:], rall_name) {
-					os.write_string(
-						file,
-						"// Disabled: known failure predating select lowering.\n",
-					)
-				} else {
-					os.write_string(file, "@(test) ")
-				}
+				os.write_string(file, "@(test) ")
 				fmt.fprintfln(file, "%v :: proc(t: ^testing.T) {{", rall_name)
 
 				// a `fail ...` test is expected to be rejected by our

@@ -85,26 +85,17 @@ In the current Shell3, submit `§§odin-son` and Enter to fetch and launch the
 published compiler. An AppDB-installed copy launches by exact name `odin-son`
 in CMD mode.
 
-On first launch it seeds `gpu-boids/main.odin`, `cpu-boids/main.odin`, and
+On first launch it seeds `cpu-boids/main.odin` and
 `hello/main.odin` under its app root, normally `apps/odin-son`. Existing files
 are preserved. Each example has its own directory because Odin modules load
 all `.odin` files in their directory. Add another `<demo>/main.odin`; the picker
 discovers it automatically while visible, or immediately with `f`. Demo folder
 names may contain ASCII letters, digits, `_`, and `-` (maximum 64 characters).
 
-The picker also includes `gpu-mandelbrot`, backed directly by the embedded
-source. Enter compiles its native EU arithmetic body to `mandelbrot.eu.bin`.
-Press `r` to compile and display it through the brokered UI4 compute frame;
-mouse dragging pans, the wheel zooms, and Q or Escape in the image returns to
-the compiler TUI. Native dispatch requires the kernel's `odin-native-gpgpu`
-feature and a supported Xe-LP device. This entry reserves its picker name and
-does not read a `gpu-mandelbrot/main.odin` file from disk.
-
 Use arrows or `j/k` to select and `q` to quit. For source directories, Enter
 compiles and `r` queues the last successful build in its own headless VM. Outputs are
-`demo-<name>.o` and `demo-<name>.bp` in the compiler app root. GPU boids creates
-its own UI4 frame and runs continuously. The GPU island admits one owner at a
-time. A queued launch is not proof that a child started or completed.
+`demo-<name>.o` and `demo-<name>.bp` in the compiler app root. A queued launch
+is not proof that a child started or completed.
 TAB parks the compiler terminal without exiting; select its slot and use `tui`
 to return. Resize/reentry redraw the retained selection. Jobs run sequentially;
 per-job temporary allocations and compiler arenas are freed before the next job.
@@ -179,9 +170,9 @@ After building:
 
 ```bash
 ODIN=/home/t4ce/Programmme/odin/odin python3 trueos/test.py
-python3 trueos/test_gpu.py
 python3 trueos/test_tui.py
 ODIN=/home/t4ce/Programmme/odin/odin python3 trueos/test_for.py
+python3 trueos/test_ide_build.py
 ```
 
 The tests execute the upstream-built object through `test_host.c`, which mocks
@@ -196,89 +187,52 @@ stored outputs, and executes its generated boids code with checksum `127`.
 The C harness is not included in the Blueprint. This validation does not boot
 TRUEOS or exercise its real VMX/EPT and filesystem implementations.
 
-## Tagged GPU boids experiment
+## Upstream boundary
 
-Launch the native compiler with `--gpu-boids` to compile the byte-embedded
-`examples/gpu-boids-trueos/main.odin` into `gpu-boids.o` and `gpu-boids.bp`.
-The generated Blueprint uses x86 code for lifecycle and event handling, and a
-small source-dependent GPU program for each boid's motion:
+The fork merges `jakubDoka/odin-son` main through `f96547e`. All shared backend,
+bindings, generators, desktop tooling, generated tests, and disassembly goldens
+match that upstream revision. Its `bac/intel_xelp_poc` and `gpu-dispatch` work
+are included unchanged. The previous fork-specific GPU backend, GPU frontend
+hooks, GPU demos, and native GPU runtime entry paths have been removed.
+Upstream GPU work is not connected to TRUEOS GPU submission by this adapter.
 
-```odin
-@(tag = "gpu")
-boids_step :: proc(handle: u64, frame: u64) -> i32 {
-    gpu_add_scaled(0, 2, 0.016666667)
-    gpu_add_scaled(1, 3, 0.016666667)
-    return 0
-}
-```
+Only two shared compiler files differ from upstream:
 
-The initial backend compiles `gpu_add_scaled(dst, src, scale)` into four-word
-instructions `[1, dst, src, f32_scale_bits]`. Registers 0 through 3 are `x`, `y`,
-`vx`, and `vy`; instructions execute in source order. One to sixteen instructions
-are supported. Unsupported statements, calls, signatures, register indices,
-and nonfinite scales are compiler errors. `return 0` terminates the kernel;
-the emitted x86 shim returns the runtime's submission result to its caller.
+- `odinc/typecheck/typecheck.odin`: canonical upper-half type pointers for
+  TRUEOS, grouped procedure parameters for ABI declarations, and ordinary
+  condition/initializer/post loops used by the minimal source subset.
+- `odinc/gen.odin`: emission of those ordinary loops through upstream SSA.
 
-The shim calls the guest-local `phy_gpu_dispatch(handle, frame, words,
-word_count)` helper in `examples/gpu-boids-trueos/phy.odin`. The helper uses
-the existing async-fs write operation on `vFile:compute-boids`, awaits completion
-with `trueos_cabi_poll_once`, reads its response before discarding the operation,
-and adds no custom C ABI or VMCALL transport. A native GPU interpreter executes
-those instructions after the
-runtime's GPU flock update, then the GPU renders an RGBA8 UI4 surface. The
-runtime owns the 100,000,000-byte island and PPGTT mapping. This is a minimal
-bytecode backend, not general Odin-to-EU compilation or SPIR-V generation.
-The runtime accepts each frame exactly once; `-11` requests a retry while the
-surface is busy. The example retries the same frame and exits on q, escape,
-interrupt, or stop. `--batch` on the generated application stops after 120 frames.
+The native entry, filesystem/runtime adapters, packaging, terminal UI, IDE
+protocol, CPU demo, and host validation live under `trueos` and
+`examples/boids-trueos`. The default package embeds no SDK collections.
+`prepare.py` recreates the staged source directory on every build so removed
+sources cannot survive into later builds. SDK and compiler compatibility
+adjustments remain confined to the disposable staging area.
 
-After the native build, `python3 trueos/test_gpu.py` checks compiler output,
-existing async-fs imports, partial responses, operation cleanup, lifecycle, busy
-retries and compiler diagnostics with host
-mocks. Changing both scale literals to zero changes the compiled program and
-the observed host state from `(7, 10)` to `(1, 2)` after 120 invocations. These
-host checks establish source dependence; real GPU completion, PPGTT and UI4
-presentation must be checked on TRUEOS separately. Compiler markers include
-`[odin-son gpu-backend]` with emitted instruction words. Application markers
-include `[odin-son gpu-boids]` for creation, first frame and lifecycle results.
+The desktop executable is a local build output rather than a tracked binary.
+Build it from `odinc` before running `test.py`, or set `ODIN_SON_DESKTOP` to a
+fresh desktop build. The installed Odin compiler must support the current
+upstream sources; older compilers may require the explicit `Lane_Type.I16`
+qualification already applied by `prepare.py` for native builds.
 
+## IDE build protocol
 
-The compiler also supports `--run-gpu-boids`, which commits both artifacts and
-then queues `./gpu-boids.bp` through the existing launch-script API with a
-headless destination. The child creates its own UI4 surface. Builds with
-`-define:TRUEOS_GPU_BOIDS_DEFAULT=true -define:TRUEOS_GPU_BOIDS_AUTORUN=true`
-select that experiment for explicit batch compilation; no-argument launch still opens the TUI; `--cpu-boids` selects the original
-terminal demo. Artifact markers record exact byte lengths and FNV-1a hashes
-only after filesystem commit, so downloaded artifacts can be matched to a run.
+Invoke `odin-son --ide-build request.json` with a version-1 source snapshot.
+The adapter stages project files, compiles the entry and relative imports,
+writes the requested Blueprint, and commits `result.json` with the original
+workspace/build/revision identity, diagnostics, and artifact SHA-256.
+`test_ide_build.py` covers successful compilation, module execution, and a
+failed build with source diagnostics, without SDK assets in the compiler.
 
 ## Frontend loop support
 
-The shared frontend accepts `for init; condition; post { ... }` and
-`for condition { ... }`, including omitted clauses. The initializer has its
-own loop scope; the condition must be bool, and `continue` reaches the post
-statement before testing the next iteration. `break` skips the post statement.
-Nested loops and labeled control flow use the existing SSA loop machinery.
-This support is shared by desktop and TRUEOS builds, without source rewriting.
-The hello seed uses `for i := 0; i < 10; i += 1` and prints a sum of 45.
+The retained minimal frontend supports `for init; condition; post { ... }`
+and `for condition { ... }`, including omitted clauses. The initializer owns
+its loop scope; `continue` reaches the post statement and `break` skips it.
+The hello seed prints a sum of 45 using this support.
 
-`test_for.py` compares 19 cases against upstream Odin at every optimization
-level. Set `ODIN_SON_DESKTOP` to a freshly built desktop compiler to exercise
-both builds. The corresponding 23 generated tests in `TESTS.md` cover native,
-ARM64, and WebAssembly execution plus rejection cases. Run with `DIFF=false`
-when checking semantics without updating disassembly golden files. The tests
-also caught an unsafe ARM comparison peephole: a single branch consumer does
-not ensure NZCV survives from a hoisted comparison to the branch. Comparisons
-now retain their bool register value.
-
-# Native scalar GPU procedures
-
-The compiler also accepts `@(tag = "gpu") proc(a, b: f32) -> f32` with one
-bounded arithmetic return expression. It emits native Xe-LP code in `.gpu.xelp`
-and CPU stubs using `trueos_cabi_vgpu_call_f32_v1`. The matching TRUEOS kernel
-extension is required to execute the result. Backend, payload, completion,
-ownership, and verification details are in
-[`bac/intel_xelp/README.md`](../bac/intel_xelp/README.md#native-scalar-procedures).
-
-Run `ODIN=/path/to/odin python3 trueos/test_gpu_scalar.py` after `trueos/build.sh`
-to compare host/freestanding output and exercise the CPU/native-instruction
-contract. This does not submit work to a physical GPU.
+`test_for.py` compares 19 cases against upstream Odin at all six optimization
+levels. Set `ODIN_SON_DESKTOP` to exercise both native and desktop builds.
+The upstream test corpus and goldens remain unchanged; this local adapter
+suite covers the retained subset separately.

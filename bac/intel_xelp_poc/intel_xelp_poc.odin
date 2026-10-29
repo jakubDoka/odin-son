@@ -5,9 +5,7 @@ import "../../utils/arna"
 import "base:intrinsics"
 import "core:fmt"
 import "core:mem"
-import "core:os"
 import "core:slice"
-import "core:sys/linux"
 
 expand_node :: bac.expand_node
 get_node :: bac.get_node
@@ -219,11 +217,13 @@ meta_of :: proc(
 Ctx :: struct {
 	using inner: bac.Codegen_Emit_Ctx,
 	blocks:      []Block_Info,
+	labels:      []uint,
 	branches:    [dynamic]Branch,
 }
 
 Branch :: struct {
-	pos: uint,
+	pos:      uint,
+	jip, uip: int,
 }
 
 when !SPEC_NOT_PRESENT {
@@ -275,8 +275,8 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 	ctx.spill_slot_size = SPILL_SLOT_SIZE[:]
 
 	prepare_blocks(&ctx)
-
-	bac.display_graph(os.to_writer(os.stderr), ctx, ctx, block_meta = ctx.blocks)
+	ctx.labels = make([]uint, (len(ctx.blocks) + 1) * 2)
+	slice.fill(ctx.labels, max(uint))
 
 	emit_op(
 		ctx.code,
@@ -310,9 +310,30 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 
 	for bb, bidx in ctx.schedule.bbs {
 		block := ctx.blocks[bidx]
+		ctx.labels[(bidx + 1) * 2] = ctx.code.pos
+		if block.has_join {
+			emit_branch(&ctx, .Join, 0, 0)
+		}
 
 		for instr in bb.instrs {
 			emit_instr(&ctx, instr, bidx, struct{}{})
+		}
+	}
+
+	next := uint(0)
+	#reverse for branch in ctx.branches {
+		op := (^Op)(&ctx.code.ptr[branch.pos])
+		opcode := Opcode(op[0] & 0x7f)
+		jip := branch.jip == 0 ? branch.pos + size_of(Op) : ctx.labels[branch.jip]
+		if opcode == .Join && next != 0 do jip = next
+		assert(jip != max(uint))
+		op[3] = transmute(u32)i32(int(jip) - int(branch.pos))
+		if branch.uip != 0 {
+			assert(ctx.labels[branch.uip] != max(uint))
+			op[2] = transmute(u32)i32(int(ctx.labels[branch.uip]) - int(branch.pos))
+		}
+		if opcode in (bit_set[Opcode]{.Join, .Else, .Endif, .While}) {
+			next = branch.pos
 		}
 	}
 
@@ -443,13 +464,18 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block_idx: int, _: $T) {
 			)
 		}
 	case .If, .Jump, .Always:
-		{panic("TODO")}
-
 		block := ctx.blocks[block_idx]
+		ctx.labels[(block_idx + 1) * 2 + 1] = ctx.code.pos
+		if block.type == .Dead do return
 
 		predicate: u32
 		if node.itype == .If {
-			// TODO: fill in the predicate
+			next_head := ctx.bbs[block_idx + 1].head
+			assert(node.outs[0].id == next_head || node.outs[1].id == next_head)
+			predicate = eu_predicate(
+				reg_of(ctx, node.inps[1]),
+				(node.outs[0].id == next_head) != (block.type == .If),
+			)
 		}
 
 		@(static, rodata)
@@ -463,18 +489,23 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block_idx: int, _: $T) {
 			.Else  = .Else,
 			.Dead  = {},
 		}
-		NEEDS_UIP :: bit_set[Jump_Type]{.If}
+		NEEDS_UIP :: bit_set[Jump_Type]{.Goto, .If, .Else, .Break, .Cont}
 
-		if block.type != .Dead {
-			emit_branch(
-				ctx,
-				TYPE_TO_OP[block.type],
-				block.type in NEEDS_UIP,
-				predicate,
-			)
+		jip, uip: int
+		if target := block.targets[.jip]; target != 0 {
+			at_end :=
+				block.type not_in bit_set[Jump_Type]{.If, .While, .Uncond_While} &&
+				(block.type == .Else || !ctx.blocks[target].has_join)
+			jip = (target + 1) * 2 + int(at_end)
+		}
+		if block.type in NEEDS_UIP {
+			target := block.targets[.uip]
+			assert(target != 0)
+			uip = (target + 1) * 2 + int(block.type != .Goto)
 		}
 
-	// TODO: emit branch relocations
+		emit_branch(ctx, TYPE_TO_OP[block.type], jip, uip, predicate)
+
 	case .Return:
 		return_count := len(node.inps) - min(2, len(node.inps))
 		return_regs := CC_TABLE[XELP_CC].rets[RK_GRF]
@@ -562,6 +593,7 @@ Jump_Target :: enum int {
 
 Block_Info :: struct {
 	parent_if: u32,
+	has_join:  bool,
 	type:      Jump_Type,
 	loop:      int,
 	targets:   [Jump_Target]int,
@@ -674,27 +706,37 @@ prepare_blocks :: proc(ctx: ^Ctx) {
 		info.loop = slice.last(active_loops[:])
 	}
 
+	for bb, bidx in ctx.bbs {
+		info := &ctx.blocks[bidx]
+		if info.type != .Goto do continue
+		tnode := expand_node(ctx, bb.tail)
+		assert(tnode.itype == .If || tnode.itype == .Jump)
+		target := get_node(ctx, tnode.outs[0].id)
+		assert(tnode.itype != .Jump || target.itype == .Region)
+		info.targets[.uip] = int(target.gvn)
+		ctx.blocks[target.gvn].has_join = true
+	}
+
 	active_cfg: [dynamic]int
 	append(&active_cfg, 0)
+
+	last_join := 0
 
 	#reverse for bb, bidx in ctx.bbs {
 		info := &ctx.blocks[bidx]
 		hnode := expand_node(ctx, bb.head)
-		tnode := expand_node(ctx, bb.tail)
+
+		acfg := slice.last(active_cfg[:])
+		next := min(
+			acfg != 0 ? acfg : max(int),
+			last_join != 0 ? last_join : max(int),
+		)
+		if next == max(int) do next = 0
 
 		switch info.type {
 		case .Dead:
 		case .Goto:
-			if tnode.itype == .If {
-				info.targets[.uip] = int(get_node(ctx, tnode.outs[0].id).gvn)
-				info.targets[.jip] = slice.last(active_cfg[:])
-			} else {
-				assert(tnode.itype == .Jump)
-				next := get_node(ctx, tnode.outs[0].id)
-				assert(next.itype == .Region)
-				info.targets[.uip] = int(next.gvn)
-				info.targets[.jip] = int(next.gvn)
-			}
+			info.targets[.jip] = min(info.targets[.uip], next != 0 ? next : max(int))
 		case .If:
 			else_idx := pop(&active_cfg)
 			einfo := &ctx.blocks[else_idx]
@@ -705,10 +747,10 @@ prepare_blocks :: proc(ctx: ^Ctx) {
 			info.targets[.uip] = info.targets[.jip]
 			append(&active_cfg, bidx)
 		case .Endif:
-			info.targets[.jip] = slice.last(active_cfg[:])
+			info.targets[.jip] = next
 			append(&active_cfg, bidx)
 		case .Break, .Cont:
-			info.targets[.jip] = slice.last(active_cfg[:])
+			info.targets[.jip] = next
 
 			#reverse for cfg in active_cfg {
 				if ctx.blocks[cfg].type == .Uncond_While ||
@@ -729,6 +771,10 @@ prepare_blocks :: proc(ctx: ^Ctx) {
 			assert(linfo.type == .While || linfo.type == .Uncond_While)
 			linfo.targets[.jip] = bidx
 		}
+
+		if info.has_join {
+			last_join = bidx
+		}
 	}
 
 	assert(len(active_cfg) == 1)
@@ -737,16 +783,16 @@ prepare_blocks :: proc(ctx: ^Ctx) {
 emit_branch :: proc(
 	ctx: ^Ctx,
 	opcode: Opcode,
-	has_uip: bool,
+	jip, uip: int,
 	predicate: u32 = 0,
 ) {
-	append(&ctx.branches, Branch{ctx.code.pos})
+	append(&ctx.branches, Branch{ctx.code.pos, jip, uip})
 	// [{predicate}] {opcode} (8|M0) {JIP} [{UIP}] {@1}
 	emit_op(
 		ctx.code,
 		{
 			eu_control(opcode, 8, swsb = eu_swsb_regdist(1)) | predicate,
-			has_uip ? 0xc000 : 0x4000,
+			uip != 0 ? 0xc000 : 0x4000,
 			0,
 			0,
 		},

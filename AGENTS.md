@@ -83,3 +83,8 @@ When you declare local functions put them at the end of the scope or after they
 are used.
 
 Debug with gdb when appropriate, eg segfaults.
+
+Try to use blank likes where appropriate that improves code readability.
+
+As you test code try to reiterate trough checks you added and remove them if
+they are not needed and instead put them as asserts.

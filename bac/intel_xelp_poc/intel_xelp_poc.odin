@@ -5,7 +5,9 @@ import "../../utils/arna"
 import "base:intrinsics"
 import "core:fmt"
 import "core:mem"
+import "core:os"
 import "core:slice"
+import "core:sys/linux"
 
 expand_node :: bac.expand_node
 get_node :: bac.get_node
@@ -217,21 +219,11 @@ meta_of :: proc(
 Ctx :: struct {
 	using inner: bac.Codegen_Emit_Ctx,
 	blocks:      []Block_Info,
-	labels:      []uint,
 	branches:    [dynamic]Branch,
 }
 
-Block_Info :: struct {
-	entry, branch:              Opcode,
-	target, end, else_end:      int,
-	next, parent_if, scope_end: int,
-	negate:                     bool,
-}
-
 Branch :: struct {
-	pos:        uint,
-	jip, uip:   int,
-	jip_addend: int,
+	pos: uint,
 }
 
 when !SPEC_NOT_PRESENT {
@@ -283,9 +275,8 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 	ctx.spill_slot_size = SPILL_SLOT_SIZE[:]
 
 	prepare_blocks(&ctx)
-	ctx.labels = make([]uint, (len(ctx.blocks) + 1) * 2)
-	slice.fill(ctx.labels, max(uint))
-	ctx.branches = make([dynamic]Branch)
+
+	bac.display_graph(os.to_writer(os.stderr), ctx, ctx, block_meta = ctx.blocks)
 
 	emit_op(
 		ctx.code,
@@ -319,27 +310,9 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 
 	for bb, bidx in ctx.schedule.bbs {
 		block := ctx.blocks[bidx]
-		ctx.labels[(bidx + 1) * 2] = ctx.code.pos
-		if block.entry == .Else {
-			emit_branch(&ctx, .Else, block.else_end * 2, block.else_end * 2)
-		} else if block.entry != .Illegal {
-			next := block.branch == .While ? (bidx + 1) * 2 + 1 : block.next
-			emit_branch(&ctx, block.entry, next, 0)
-		}
 
 		for instr in bb.instrs {
 			emit_instr(&ctx, instr, bidx, struct{}{})
-		}
-	}
-
-	for branch in ctx.branches {
-		op := (^Op)(&ctx.code.ptr[branch.pos])
-		jip := branch.jip == 0 ? branch.pos + 16 : ctx.labels[branch.jip]
-		assert(jip != max(uint))
-		op[3] = transmute(u32)i32(int(jip) + branch.jip_addend - int(branch.pos))
-		if branch.uip != 0 {
-			assert(ctx.labels[branch.uip] != max(uint))
-			op[2] = transmute(u32)i32(int(ctx.labels[branch.uip]) - int(branch.pos))
 		}
 	}
 
@@ -470,28 +443,38 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block_idx: int, _: $T) {
 			)
 		}
 	case .If, .Jump, .Always:
+		{panic("TODO")}
+
 		block := ctx.blocks[block_idx]
-		if block.branch == .Illegal do return
-		ctx.labels[(block_idx + 1) * 2 + 1] = ctx.code.pos
+
 		predicate: u32
 		if node.itype == .If {
-			predicate = eu_predicate(
-				reg_of(ctx, node.inps[1]),
-				block.negate != (block.branch == .If),
+			// TODO: fill in the predicate
+		}
+
+		@(static, rodata)
+		TYPE_TO_OP := [Jump_Type]Opcode {
+			.Goto  = .Goto,
+			.If    = .If,
+			.Break = .Break,
+			.Cont  = .Cont,
+			.While ..= .Uncond_While       = .While,
+			.Endif = .Endif,
+			.Else  = .Else,
+			.Dead  = {},
+		}
+		NEEDS_UIP :: bit_set[Jump_Type]{.If}
+
+		if block.type != .Dead {
+			emit_branch(
+				ctx,
+				TYPE_TO_OP[block.type],
+				block.type in NEEDS_UIP,
+				predicate,
 			)
 		}
-		#partial switch block.branch {
-		case .If:
-			emit_branch(ctx, .If, block.target * 2, block.end * 2, predicate, 16)
-		case .While:
-			emit_branch(ctx, .While, block.target * 2, 0, predicate)
-		case .Break:
-			emit_branch(ctx, .Break, block.next, block.target * 2 + 1, predicate)
-		case .Goto:
-			emit_branch(ctx, .Goto, block.next, block.target * 2, predicate)
-		case:
-			unreachable()
-		}
+
+	// TODO: emit branch relocations
 	case .Return:
 		return_count := len(node.inps) - min(2, len(node.inps))
 		return_regs := CC_TABLE[XELP_CC].rets[RK_GRF]
@@ -560,97 +543,210 @@ reg_of :: proc(ctx: ^Ctx, node: bac.Node_ID) -> Reg {
 	return ctx.allocs[get_node(ctx, node).gvn]
 }
 
+Jump_Type :: enum int {
+	Dead,
+	Goto,
+	If,
+	Else,
+	Endif,
+	Break,
+	Cont,
+	While,
+	Uncond_While,
+}
+
+Jump_Target :: enum int {
+	jip,
+	uip,
+}
+
+Block_Info :: struct {
+	parent_if: u32,
+	type:      Jump_Type,
+	loop:      int,
+	targets:   [Jump_Target]int,
+}
+
 prepare_blocks :: proc(ctx: ^Ctx) {
 	ctx.blocks = make([]Block_Info, len(ctx.bbs))
 	for bb, i in ctx.bbs do get_node(ctx, bb.head).gvn = u32(i)
-	loops: [dynamic]int
-	for bb, i in ctx.bbs {
-		info := &ctx.blocks[i]
-		head := expand_node(ctx, bb.head)
-		for len(loops) != 0 && slice.last(loops[:]) < i + 1 do pop(&loops)
-		if head.itype == .Loop {
-			latch := bac.get_inputs(ctx, head.inps[1])[0]
-			append(&loops, int(get_node(ctx, latch).gvn) + 1)
-		} else if head.itype != .Entry {
-			for inp, j in head.inps {
-				pred := expand_node(ctx, inp)
-				pidx := int(get_node(ctx, pred.inps[0]).gvn)
-				parent := pred.itype == .If ? pidx + 1 : ctx.blocks[pidx].parent_if
-				if j == 0 do info.parent_if = parent
-				if parent != info.parent_if {
-					info.parent_if = 0
+
+	active_loops: [dynamic]int
+	append(&active_loops, 0)
+
+	for bb, bidx in ctx.bbs {
+		info := &ctx.blocks[bidx]
+		hnode := expand_node(ctx, bb.head)
+		tnode := expand_node(ctx, bb.tail)
+		if 0 < len(hnode.inps) {
+			pred := expand_node(ctx, hnode.inps[0])
+			idx := get_node(ctx, pred.inps[0]).gvn
+			#partial match: switch pred.itype {
+			case .If:
+				info.parent_if = 1 + idx
+			case:
+				info.parent_if = ctx.blocks[idx].parent_if
+			}
+		}
+
+		if tnode.itype == .If && info.type == .Dead {
+			info.type = .Goto
+		}
+
+		ififiy: if hnode.itype == .Region {
+			// I think this also handles 0 if parent for loops as the loop can only
+			// be breaked trough nested if
+			min_parent_if := max(u32)
+			max_parent_if := min(u32)
+			for inp in hnode.inps {
+				pred := bac.get_node(ctx, bac.get_inputs(ctx, inp)[0])
+				parif := ctx.blocks[pred.gvn].parent_if
+				max_parent_if = max(max_parent_if, parif)
+				min_parent_if = min(min_parent_if, parif)
+			}
+
+			is_continue := false
+			if tnode.itype == .Jump && len(bb.instrs) == 1 {
+				for out in tnode.outs {
+					onode := expand_node(ctx, out.id)
+					if onode.itype == .Loop && out.idx == 1 {
+						is_continue = true
+						info.type = .Dead
+						break
+					}
+				}
+			}
+
+			for inp in hnode.inps {
+				pred := bac.get_node(ctx, bac.get_inputs(ctx, inp)[0])
+				parif := ctx.blocks[pred.gvn].parent_if - 1
+
+				is_adj := int(pred.gvn) == bidx - 1
+
+				if !is_adj {
+					ctx.blocks[pred.gvn].type = .Goto
+				}
+
+				if is_continue {
+					ctx.blocks[pred.gvn].type = is_adj ? .Uncond_While : .Cont
+				}
+
+				if ctx.bbs[parif].loop_tree.parent == bb.loop_tree &&
+				   ctx.bbs[slice.last(active_loops[:])].loop_tree ==
+					   ctx.bbs[parif].loop_tree {
+					assert(!is_continue)
+					ctx.blocks[pred.gvn].type = .Break
+					unreachable()
+				}
+			}
+
+			// recover the parent of the highest input, should offer good recovery
+			info.parent_if = ctx.blocks[min_parent_if - 1].parent_if
+
+			if len(hnode.inps) != 2 do break ififiy
+			if max_parent_if != min_parent_if do break ififiy
+
+			parif := &ctx.blocks[min_parent_if - 1]
+			parif.type = .If
+
+			for inp in hnode.inps {
+				pred := bac.get_node(ctx, bac.get_inputs(ctx, inp)[0])
+				is_end := int(pred.gvn) == bidx - 1
+				ctx.blocks[pred.gvn].type = is_end ? .Endif : .Else
+			}
+		}
+
+		if hnode.itype == .Loop {
+			append(&active_loops, bidx)
+			bnode := bac.expand_node(ctx, hnode.inps[1])
+			pred := bac.get_node(ctx, bnode.inps[0])
+			ctx.blocks[pred.gvn].type = bnode.itype == .If ? .While : .Uncond_While
+		}
+
+		for out in tnode.outs {
+			node := get_node(ctx, out.id)
+			if out.idx == 1 && node.itype == .Loop {
+				prev := pop(&active_loops)
+				assert(prev == int(node.gvn))
+			}
+		}
+
+		info.loop = slice.last(active_loops[:])
+	}
+
+	active_cfg: [dynamic]int
+	append(&active_cfg, 0)
+
+	#reverse for bb, bidx in ctx.bbs {
+		info := &ctx.blocks[bidx]
+		hnode := expand_node(ctx, bb.head)
+		tnode := expand_node(ctx, bb.tail)
+
+		switch info.type {
+		case .Dead:
+		case .Goto:
+			if tnode.itype == .If {
+				info.targets[.uip] = int(get_node(ctx, tnode.outs[0].id).gvn)
+				info.targets[.jip] = slice.last(active_cfg[:])
+			} else {
+				assert(tnode.itype == .Jump)
+				next := get_node(ctx, tnode.outs[0].id)
+				assert(next.itype == .Region)
+				info.targets[.uip] = int(next.gvn)
+				info.targets[.jip] = int(next.gvn)
+			}
+		case .If:
+			else_idx := pop(&active_cfg)
+			einfo := &ctx.blocks[else_idx]
+			info.targets[.jip] = else_idx + 1
+			info.targets[.uip] = einfo.targets[.jip]
+		case .Else:
+			info.targets[.jip] = pop(&active_cfg)
+			info.targets[.uip] = info.targets[.jip]
+			append(&active_cfg, bidx)
+		case .Endif:
+			info.targets[.jip] = slice.last(active_cfg[:])
+			append(&active_cfg, bidx)
+		case .Break, .Cont:
+			info.targets[.jip] = slice.last(active_cfg[:])
+
+			#reverse for cfg in active_cfg {
+				if ctx.blocks[cfg].type == .Uncond_While ||
+				   ctx.blocks[cfg].type == .While {
+					info.targets[.uip] = cfg
 					break
 				}
 			}
+		case .While, .Uncond_While:
+			append(&active_cfg, bidx)
 		}
 
-		ifify: if head.itype == .Region &&
-		   len(head.inps) == 2 &&
-		   info.parent_if != 0 {
-			origin := &ctx.blocks[info.parent_if - 1]
-			// Side exits beyond the merge cannot be enclosed by native if/endif.
-			if origin.branch != .Goto || origin.scope_end > i + 1 do break ifify
-			left := int(get_node(ctx, bac.get_inputs(ctx, head.inps[0])[0]).gvn)
-			right := int(get_node(ctx, bac.get_inputs(ctx, head.inps[1])[0]).gvn)
-			if min(left, right) != origin.target - 2 || max(left, right) != i - 1 do break ifify
-			if get_node(ctx, ctx.bbs[left].tail).itype != .Jump ||
-			   get_node(ctx, ctx.bbs[right].tail).itype != .Jump {
-				break ifify
-			}
-			origin.branch, origin.end = .If, i + 1
-			ctx.blocks[origin.target - 1].entry = .Else
-			ctx.blocks[origin.target - 1].else_end = i + 1
-			ctx.blocks[min(left, right)].branch = .Illegal
-			info.entry = .Endif
-			info.parent_if = origin.parent_if
+		#partial switch hnode.itype {
+		case .Loop:
+			loop := pop(&active_cfg)
+			assert(loop != 0)
+			linfo := &ctx.blocks[loop]
+			assert(linfo.type == .While || linfo.type == .Uncond_While)
+			linfo.targets[.jip] = bidx
 		}
+	}
 
-		tail := expand_node(ctx, bb.tail)
-		for out, j in tail.outs {
-			next := get_node(ctx, out.id)
-			if next.itype == .End do continue
-			target := int(next.gvn) + 1
-			if info.parent_if != 0 {
-				parent := &ctx.blocks[info.parent_if - 1]
-				parent.scope_end = max(parent.scope_end, target, info.scope_end)
-			}
-			if tail.itype == .If do info.scope_end = max(info.scope_end, target)
-			if target == i + 2 do continue
-			info.target = target
-			info.negate = next.itype == .Else
-			if target <= i + 1 {
-				assert(next.itype == .Loop)
-				info.branch, info.negate = .While, j == 1
-			} else if len(loops) != 0 && target == slice.last(loops[:]) + 1 {
-				info.branch, info.target = .Break, slice.last(loops[:])
-			} else {
-				info.branch = .Goto
-				ctx.blocks[target - 1].entry = .Join
-			}
-		}
-	}
-	next := 0
-	#reverse for &block, i in ctx.blocks {
-		block.next = next
-		if block.branch == .While do next = (i + 1) * 2 + 1
-		if block.entry != .Illegal do next = (i + 1) * 2
-	}
+	assert(len(active_cfg) == 1)
 }
 
 emit_branch :: proc(
 	ctx: ^Ctx,
 	opcode: Opcode,
-	jip, uip: int,
+	has_uip: bool,
 	predicate: u32 = 0,
-	jip_addend: int = 0,
 ) {
-	append(&ctx.branches, Branch{ctx.code.pos, jip, uip, jip_addend})
+	append(&ctx.branches, Branch{ctx.code.pos})
 	// [{predicate}] {opcode} (8|M0) {JIP} [{UIP}] {@1}
 	emit_op(
 		ctx.code,
 		{
 			eu_control(opcode, 8, swsb = eu_swsb_regdist(1)) | predicate,
-			uip != 0 ? 0xc000 : 0x4000,
+			has_uip ? 0xc000 : 0x4000,
 			0,
 			0,
 		},
@@ -673,77 +769,77 @@ emit_op :: proc(code: ^arna.Allocator, op: Op) {
 
 Opcode :: enum u8 {
 	// Control / synchronization
-	Illegal  = 0x00,
-	Sync     = 0x01,
-	Jmpi     = 0x20,
-	Brd      = 0x21,
-	If       = 0x22,
-	Brc      = 0x23,
-	Else     = 0x24,
-	Endif    = 0x25,
-	While    = 0x27,
-	Break    = 0x28,
-	Continue = 0x29,
-	Halt     = 0x2A,
-	Calla    = 0x2B,
-	Call     = 0x2C,
-	Ret      = 0x2D,
-	Goto     = 0x2E,
-	Join     = 0x2F,
+	Illegal = 0x00,
+	Sync    = 0x01,
+	Jmpi    = 0x20,
+	Brd     = 0x21,
+	If      = 0x22,
+	Brc     = 0x23,
+	Else    = 0x24,
+	Endif   = 0x25,
+	While   = 0x27,
+	Break   = 0x28,
+	Cont    = 0x29,
+	Halt    = 0x2A,
+	Calla   = 0x2B,
+	Call    = 0x2C,
+	Ret     = 0x2D,
+	Goto    = 0x2E,
+	Join    = 0x2F,
 
 	// Messages
-	Send     = 0x31,
-	Sendc    = 0x32,
+	Send    = 0x31,
+	Sendc   = 0x32,
 
 	// Math / arithmetic
-	Math     = 0x38,
-	Add      = 0x40,
-	Mul      = 0x41,
-	Avg      = 0x42,
-	Frc      = 0x43,
-	Rndu     = 0x44,
-	Rndd     = 0x45,
-	Rnde     = 0x46,
-	Rndz     = 0x47,
-	Mac      = 0x48,
-	Mach     = 0x49,
-	Lzd      = 0x4A,
-	Fbh      = 0x4B,
-	Fbl      = 0x4C,
-	Cbit     = 0x4D,
-	Addc     = 0x4E,
-	Subb     = 0x4F,
-	Mad      = 0x5B,
-	Madm     = 0x5D,
+	Math    = 0x38,
+	Add     = 0x40,
+	Mul     = 0x41,
+	Avg     = 0x42,
+	Frc     = 0x43,
+	Rndu    = 0x44,
+	Rndd    = 0x45,
+	Rnde    = 0x46,
+	Rndz    = 0x47,
+	Mac     = 0x48,
+	Mach    = 0x49,
+	Lzd     = 0x4A,
+	Fbh     = 0x4B,
+	Fbl     = 0x4C,
+	Cbit    = 0x4D,
+	Addc    = 0x4E,
+	Subb    = 0x4F,
+	Mad     = 0x5B,
+	Madm    = 0x5D,
 
 	// Data movement / selection
-	Nop      = 0x60,
-	Mov      = 0x61,
-	Sel      = 0x62,
-	Movi     = 0x63,
+	Nop     = 0x60,
+	Mov     = 0x61,
+	Sel     = 0x62,
+	Movi    = 0x63,
 
 	// Logic / bit operations
-	Not      = 0x64,
-	And      = 0x65,
-	Or       = 0x66,
-	Xor      = 0x67,
-	Shr      = 0x68,
-	Shl      = 0x69,
-	Smov     = 0x6A,
-	Asr      = 0x6C,
-	Ror      = 0x6E,
-	Rol      = 0x6F,
+	Not     = 0x64,
+	And     = 0x65,
+	Or      = 0x66,
+	Xor     = 0x67,
+	Shr     = 0x68,
+	Shl     = 0x69,
+	Smov    = 0x6A,
+	Asr     = 0x6C,
+	Ror     = 0x6E,
+	Rol     = 0x6F,
 
 	// Comparisons / conditional selection
-	Cmp      = 0x70,
-	Cmpn     = 0x71,
-	Csel     = 0x72,
+	Cmp     = 0x70,
+	Cmpn    = 0x71,
+	Csel    = 0x72,
 
 	// Bitfield operations
-	Bfrev    = 0x77,
-	Bfe      = 0x78,
-	Bfi1     = 0x79,
-	Bfi2     = 0x7A,
+	Bfrev   = 0x77,
+	Bfe     = 0x78,
+	Bfi1    = 0x79,
+	Bfi2    = 0x7A,
 }
 
 Data_Type :: enum u8 {

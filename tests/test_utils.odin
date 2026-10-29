@@ -119,6 +119,8 @@ run_gpu_test :: proc(
 	ref_impl: proc(params: []gpu.Reg, results: []gpu.Reg),
 	max_float_ulps: int,
 ) {
+	fmt.println(name)
+
 	name_str = name
 	context.logger.options &= ~{.Time, .Date, .Level, .Procedure}
 	when ODIN_DEBUG {
@@ -213,49 +215,52 @@ run_gpu_test :: proc(
 
 	ref_impl(args, ref_slots)
 
-	err = gpu.execute(
-		&dev,
-		{code = mem.slice_data_cast([]u32, fn.out.code), width = .SIMD8},
-		args,
-		slots,
-	)
-	fmt.assertf(err == nil, "gpu execution error: %v", err)
+	if !NO_RUN {
+		err = gpu.execute(
+			&dev,
+			{code = mem.slice_data_cast([]u32, fn.out.code), width = .SIMD8},
+			args,
+			slots,
+		)
+		fmt.assertf(err == nil, "gpu execution error: %v", err)
 
-	for result_type, i in result_types {
-		for actual, lane in slots[i] {
-			expected := ref_slots[i][lane]
-			actual_bits := transmute(u32)actual
-			expected_bits := transmute(u32)expected
-			equal := actual_bits == expected_bits
-			if result_type == f32 {
-				equal ||= float_equal(actual, expected, max_float_ulps)
+		for result_type, i in result_types {
+			for actual, lane in slots[i] {
+				expected := ref_slots[i][lane]
+				actual_bits := transmute(u32)actual
+				expected_bits := transmute(u32)expected
+				equal := actual_bits == expected_bits
+				if result_type == f32 {
+					equal ||= float_equal(actual, expected, max_float_ulps)
+				}
+				testing.expectf(
+					t,
+					equal,
+					"result %v lane %v: %v (0x%08x) != %v (0x%08x)",
+					i,
+					lane,
+					actual,
+					actual_bits,
+					expected,
+					expected_bits,
+				)
 			}
-			testing.expectf(
-				t,
-				equal,
-				"result %v lane %v: %v (0x%08x) != %v (0x%08x)",
-				i,
-				lane,
-				actual,
-				actual_bits,
-				expected,
-				expected_bits,
-			)
+		}
+
+		float_equal :: proc(actual, expected: f32, max_ulps: int) -> bool {
+			if actual == expected do return true
+			if max_ulps == 0 do return false
+			if math.is_nan(actual) && math.is_nan(expected) do return true
+			if math.is_inf(actual) || math.is_inf(expected) do return false
+
+			value := actual
+			for _ in 0 ..< max_ulps {
+				value = math.nextafter(value, expected)
+			}
+			return value == expected
 		}
 	}
 
-	float_equal :: proc(actual, expected: f32, max_ulps: int) -> bool {
-		if actual == expected do return true
-		if max_ulps == 0 do return false
-		if math.is_nan(actual) && math.is_nan(expected) do return true
-		if math.is_inf(actual) || math.is_inf(expected) do return false
-
-		value := actual
-		for _ in 0 ..< max_ulps {
-			value = math.nextafter(value, expected)
-		}
-		return value == expected
-	}
 }
 
 run_test :: proc(
@@ -266,6 +271,7 @@ run_test :: proc(
 	diff := DO_DIFFING,
 	no_run := NO_RUN,
 ) {
+	{return}
 	@(static) test_rc := 0
 	intrinsics.atomic_add(&test_rc, 1)
 

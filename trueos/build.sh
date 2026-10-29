@@ -9,5 +9,5 @@ ODIN_ROOT="$native_dir/build/sdk" "$odin_path" build "$native_dir/build/src" \
     -target:freestanding_amd64_sysv -build-mode:obj -no-entry-point \
     -no-thread-local -disable-red-zone -reloc-mode:pic -use-single-module \
     -define:TRUEOS=true \
-    -out:"$native_dir/build/odin-son.o" "$@"
-python3 "$native_dir/package.py" "$native_dir/build/odin-son.o" "$native_dir/build/odin-son.bp"
+    -out:"$native_dir/build/odin-son.raw.o" "$@"
+python3 "$native_dir/package.py" "$native_dir/build/odin-son.raw.o" "$native_dir/build/odin-son.bp" --sdk "$sdk_root"

@@ -31,6 +31,7 @@ for test in stage.rglob('*_test.odin'):
     test.unlink()
 shutil.copytree(NATIVE / 'platform', stage / 'platform', dirs_exist_ok=True)
 shutil.copy2(NATIVE / 'main.odin', stage / 'main.odin')
+shutil.copy2(NATIVE / 'ide_build.odin', stage / 'ide_build.odin')
 shutil.copy2(NATIVE / 'embedded.odin', stage / 'embedded.odin')
 shutil.copy2(NATIVE / 'tui.odin', stage / 'tui.odin')
 shutil.copy2(NATIVE / 'mandelbrot.odin', stage / 'mandelbrot.odin')
@@ -57,6 +58,8 @@ loader = loader.replace('fmt.assertf(rerr == nil, "cannot read module directory 
 loader = loader.replace('fmt.assertf(serr == nil, "cannot read %q", entry.fullpath)', 'if serr != nil { fmt.eprintln("cannot read", entry.fullpath); ctx.error_cnt += 1; return mid }')
 loader = loader.replace('fmt.assertf(pok, "failed to parse %q", entry.fullpath)', 'if !pok { fmt.eprintln("failed to parse", entry.fullpath); ctx.error_cnt += 1; return mid }')
 (stage / 'loader.odin').write_text(loader)
+p = stage / 'bac/codegen.odin'
+p.write_text(p.read_text().replace('max(node.lane, .I16)', 'max(node.lane, Lane_Type.I16)'))
 p = stage / 'bac/gcm.odin'
 p.write_text(p.read_text().replace('import "core:os"', 'import os "../platform"'))
 
@@ -65,6 +68,12 @@ overlay(SDK, sdk, ('base',))
 # Keep platform adapters in this disposable SDK; the installed Odin SDK stays shared.
 if (sdk / 'core').is_symlink(): (sdk / 'core').unlink()
 overlay(SDK / 'core', sdk / 'core', ('fmt',))
+if (sdk / 'core/crypto').is_symlink(): (sdk / 'core/crypto').unlink()
+overlay(SDK / 'core/crypto', sdk / 'core/crypto', ('sha2',))
+sha2 = sdk / 'core/crypto/sha2'
+(sha2 / 'sha256_impl_hw_intel.odin').unlink(missing_ok=True)
+p = sha2 / 'sha256_impl_hw_gen.odin'
+p.write_text(p.read_text().replace('#+build !amd64\n', ''))
 if (sdk / 'core/odin').is_symlink(): (sdk / 'core/odin').unlink()
 overlay(SDK / 'core/odin', sdk / 'core/odin', ('parser',))
 (sdk / 'core/odin/parser/parse_files.odin').unlink(missing_ok=True)

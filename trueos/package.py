@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 from pathlib import Path
 import re
+import hashlib
+import io
+import os
+import tarfile
+import tempfile
 import struct
 import subprocess
 import sys
@@ -28,6 +33,61 @@ IMPORTS = {
     'trueos_cabi_async_fs_status', 'trueos_cabi_async_fs_result_len',
     'trueos_cabi_async_fs_result_read', 'trueos_cabi_async_fs_discard', 'trueos_cabi_poll_once',
 }
+
+EXCLUDED_SUFFIXES = {'.a', '.so', '.dll', '.dylib', '.o', '.obj', '.lib', '.exe', '.pdb'}
+
+def attach_sdk(source, destination, sdk):
+    entries = []
+    sdk = sdk.resolve(strict=True)
+    for collection in ('base', 'core', 'vendor'):
+        root = sdk / collection
+        if not root.is_dir():
+            raise ValueError(f'missing SDK collection: {root}')
+        for path in sorted(root.rglob('*')):
+            if path.is_symlink() and path.is_dir():
+                raise ValueError(f'SDK directory symlink cannot be bundled safely: {path}')
+            if not path.is_file() or path.suffix.lower() in EXCLUDED_SUFFIXES:
+                continue
+            resolved = path.resolve(strict=True)
+            if not resolved.is_relative_to(sdk):
+                raise ValueError(f'SDK asset escapes root: {path}')
+            data = path.read_bytes()
+            if data.startswith((b'\x7fELF', b'!<arch>\n', b'MZ')):
+                continue
+            name = path.relative_to(sdk).as_posix()
+            if any(part in ('', '.', '..') or len(part.encode()) > 255 for part in name.split('/')) or len(name.encode()) > 4096:
+                raise ValueError(f'invalid SDK asset path: {name}')
+            entries.append((name.encode(), data))
+    license_path = sdk / 'LICENSE'
+    if not license_path.is_file():
+        raise ValueError(f'missing SDK license: {license_path}')
+    entries.append((b'odin-sdk-LICENSE', license_path.read_bytes()))
+    entries.sort(key=lambda item: item[0])
+    if len(entries) > 65536:
+        raise ValueError('SDK asset count exceeds kernel cap')
+    bundle = bytearray(struct.pack('<4sHHI', b'TRAS', 1, 0, len(entries)))
+    for name, data in entries:
+        if len(data) > 512 * 1024 * 1024:
+            raise ValueError('SDK asset exceeds kernel file cap')
+        bundle += struct.pack('<IQ', len(name), len(data)) + hashlib.sha256(data).digest() + name + data
+    if len(bundle) > 2 * 1024 * 1024 * 1024:
+        raise ValueError('SDK bundle exceeds kernel decode cap')
+    with tempfile.TemporaryDirectory(prefix='odin-assets-', dir=destination.parent) as temp:
+        temp = Path(temp)
+        tar_path, archive = temp / 'assets.tar', temp / 'assets.tar.lz4'
+        with tarfile.open(tar_path, 'w', format=tarfile.USTAR_FORMAT) as tar:
+            info = tarfile.TarInfo('assets.bundle')
+            info.size = len(bundle)
+            info.mode = 0o644
+            info.uid = info.gid = info.mtime = 0
+            tar.addfile(info, io.BytesIO(bundle))
+        subprocess.check_call(['lz4', '-12', '-BI', '--content-size', '-f', str(tar_path), str(archive)])
+        if archive.stat().st_size > 1024 * 1024 * 1024:
+            raise ValueError('SDK archive exceeds kernel archive cap')
+        subprocess.check_call(['objcopy', '--add-section', f'.trueos.assets={archive}',
+                               '--set-section-flags', '.trueos.assets=readonly,contents',
+                               str(source), str(destination)])
+    print(f'embedded SDK collections: {len(entries)} files, {len(bundle)} bytes')
 
 def package(source, destination):
     payload = source.read_bytes()
@@ -60,6 +120,14 @@ def package(source, destination):
 
 if __name__ == '__main__':
     try:
-        package(Path(sys.argv[1]), Path(sys.argv[2]))
+        if len(sys.argv) == 5 and sys.argv[3] == '--sdk':
+            raw = Path(sys.argv[1])
+            packed = raw.with_name('odin-son.o')
+            attach_sdk(raw, packed, Path(sys.argv[4]))
+            package(packed, Path(sys.argv[2]))
+        elif len(sys.argv) == 3:
+            package(Path(sys.argv[1]), Path(sys.argv[2]))
+        else:
+            raise ValueError('usage: package.py object output.bp [--sdk sdk-root]')
     except (ValueError, OSError, subprocess.CalledProcessError) as error:
         sys.exit(str(error))

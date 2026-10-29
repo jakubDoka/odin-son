@@ -35,6 +35,7 @@ trueos_main :: proc "c" (argc: uintptr, argv: [^]cstring) -> i32 {
             return run_tui()
         }
     }
+    if argc == 3 && string(argv[1]) == "--ide-build" do return ide_build(string(argv[2]))
     if argc == 2 && string(argv[1]) == "--tui" do return run_tui()
     if argc == 2 {
         mode := string(argv[1])

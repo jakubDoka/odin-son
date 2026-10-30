@@ -29,16 +29,15 @@ run :: proc() -> gpu.Error {
 
 	code := ADD_CODE
 	kernel := gpu.Kernel {
-		code            = mem.slice_data_cast([]u32, code[:]),
-		parameter_count = 2,
-		result_count    = 1,
+		code = mem.slice_data_cast([]u32, code[:]),
 	}
 	parameters := [?][8]u32 {
 		{37, 38, 39, 40, 41, 42, 43, 44},
 		{5, 5, 5, 5, 5, 5, 5, 5},
 	}
 	results: [1][8]u32
-	gpu.execute(&device, kernel, parameters[:], results[:]) or_return
+	gpu.execute(&device, kernel, mem.slice_data_cast([]gpu.Reg, parameters[:]),
+		mem.slice_data_cast([]gpu.Reg, results[:])) or_return
 	fmt.println(results[0])
 	return nil
 }
@@ -49,17 +48,59 @@ groups as the flat `[]u32` accepted by `Kernel.code`, without allocating.
 
 - `open(path := "/dev/dri/renderD128") -> (Device, Error)` creates a context.
 - `close(^Device) -> Error` releases it; repeated close is harmless.
-- `validate(Kernel) -> Error` checks metadata, lengths, and supported limits.
+- `validate(Kernel, parameter_count, result_count) -> Error` checks lengths and supported limits.
   It does **not** decode or validate ISA instructions.
-- `execute(^Device, Kernel, [][8]u32, [][8]u32, timeout_ns := 2_000_000_000)`
+- `execute(^Device, Kernel, []Reg, []Reg, timeout_ns := 2_000_000_000)`
   synchronously executes the kernel and copies its results into the caller's
   slice. It returns `Error`, with `nil` meaning success. Results are unchanged
-  on failure. The library never prints diagnostics or uses a CPU fallback.
+  on failure. `Reg` is `[8]f32`; cast other lane types as raw bits. The library
+  never prints diagnostics or uses a CPU fallback.
 
 Keep one `Device` open for repeated calls. Treat it as an owning handle: do not
 copy it, modify its fields, or concurrently execute/close it. Different devices
 can be used independently. Kernel code is borrowed for the duration of each
-call; there is no persistent uploaded-kernel object or code cache yet.
+call. For reusable uploaded kernels and larger pointer-addressed output buffers,
+use the persistent dispatch API below.
+
+## Reusable programs and buffers
+
+```odin
+program := gpu.program_create(&device, kernel, len(parameters)) or_return
+defer gpu.program_destroy(&program)
+output := gpu.buffer_create(&device, width * height * size_of(u32)) or_return
+defer gpu.buffer_destroy(&output)
+
+// Pack output.address into the shader's pointer uniform, not raw_data(output.words).
+gpu.dispatch(&program, parameters, groups_x, {&output}) or_return
+copy(cpu_iterations, output.words)
+```
+
+- `program_create(^Device, Kernel, parameter_count) -> (Program, Error)` uploads
+  code/state once and allocates a reusable command buffer.
+- `buffer_create(^Device, bytes) -> (Buffer, Error)` allocates a persistent,
+  mapped buffer with a stable 64-bit GPU virtual `address`. Sizes must be positive
+  multiples of four, at most 256 MiB. `words` exposes the requested range, not
+  page-alignment padding.
+- `dispatch(^Program, []Reg, groups_x, []^Buffer, timeout_ns := 2_000_000_000)`
+  launches `groups_x` workgroups, each with one hardware thread. X workgroup ID
+  is available in `r0.1`. Constants are identical for every thread. At most 16
+  distinct buffers may be supplied; all must belong to the program's device.
+  Every referenced pointer buffer must be listed. Binding-table entry 0 also
+  references the first buffer for kernels using the legacy result surface.
+- `program_destroy(^Program)` and `buffer_destroy(^Buffer)` release resources;
+  destroy them before closing their device. These are owning handles: do not copy,
+  mutate, or use them concurrently. GPU addresses are managed by the device.
+
+Dispatch waits for GPU completion, flushes HDC writes, and synchronizes buffer
+mappings before returning. Read `Buffer.words` only after successful completion;
+copy it into CPU memory before per-pixel processing to avoid slow repeated reads
+from write-combined mappings. A submitted job's wait/readback failure invalidates
+the device just as with `execute`. No pointer bounds checking or canary checking
+is performed on this raw-buffer path; the shader must stay within each buffer.
+The reusable path updates only parameters/commands, not kernel code, per call.
+
+The [Mandelbrot runner](../examples/mandelbrot/README.md) uses this API with
+packed uniforms, A64 stores, CPU color conversion, and a raylib texture.
 
 Execution errors are either an `Error_Code` or a `System_Error` containing the
 syscall operation, Linux errno, and (for ioctls) the complete request number. Host
@@ -69,28 +110,28 @@ before submitting again. A timeout/interruption does not cancel the old job.
 
 ## Disassembly
 
-`disassemble(code: []u8, allocator := context.allocator, library_path := "")`
-returns `(assembly: string, error: Error)` using Intel Graphics Assembler's
-shared-library C API. It decodes Xe-LP (`12p1`) instructions, including compacted
+`disassemble(out: ^strings.Builder, code: []u8, library_path := "")`
+appends assembly to the caller's builder and returns `Error`, using Intel
+Graphics Assembler's shared-library C API. It decodes Xe-LP (`12p1`) instructions, including compacted
 instructions, without opening a GPU device or starting a subprocess.
 
 ```odin
 code := ADD_CODE
-assembly, err := gpu.disassemble(mem.slice_to_bytes(code[:]))
+assembly: strings.Builder
+defer strings.builder_destroy(&assembly)
+err := gpu.disassemble(&assembly, mem.slice_to_bytes(code[:]))
 if err != nil {
 	fmt.eprintln(err)
 	return
 }
-defer delete(assembly)
-fmt.print(assembly)
+fmt.print(strings.to_string(assembly))
 ```
 
-The caller owns the returned string and must free it with the supplied
-allocator. The library and decoder context are released before returning;
-the string remains valid independently of them. Empty input returns an empty
-string successfully. Nonempty input must be a multiple of eight bytes and
-no larger than `MAX_KERNEL_BYTES`. Invalid encodings return an error and no
-assembly string.
+The caller owns the builder and its backing allocation. The library and decoder
+context are released before returning. Empty input succeeds without appending
+anything. Nonempty input must be a multiple of eight bytes and
+no larger than `MAX_KERNEL_BYTES`. Invalid encodings return an error without
+appending assembly.
 
 Install Intel's IGA library (usually distributed with Intel Graphics Compiler)
 to use this optional function. By default it searches the dynamic loader's
@@ -110,8 +151,8 @@ OpenCL binaries, or arbitrary Odin functions. The program must follow this ABI:
 
 | Item | Convention |
 | --- | --- |
-| Dispatch | One workgroup containing one hardware thread |
-| SIMD | `Kernel.simd`: `.SIMD8` (default), `.SIMD16`, or `.SIMD32`; all lanes enabled |
+| Dispatch | `execute`: one workgroup; `dispatch`: `groups_x` workgroups; one hardware thread per group |
+| SIMD | `Kernel.width`: `.SIMD8` (default), `.SIMD16`, or `.SIMD32`; all lanes enabled |
 | `r0` | Hardware dispatch payload; preserve what is needed for thread termination |
 | Arguments | One `[8]u32` per GRF starting at `r1`; argument `i`, lane `j` is in `r(1+i).j` |
 | Results | Write consecutive eight-dword vectors into binding-table entry 0, starting at byte offset 0 |
@@ -140,8 +181,8 @@ For example, set `parameters[0][0] = transmute(u32)f32(1.5)` and interpret a
 returned float with `transmute(f32)results[0][0]`. The dispatcher itself does
 not know the lane types or what computation the kernel performs.
 
-`parameter_count` and `result_count` must exactly match the slice lengths.
-The kernel must write its declared results and must not write beyond them.
+For `execute`, parameter/result counts come from the slice lengths.
+The kernel must write its requested results and must not write beyond them.
 The output page is initialized with a canary and the undeclared tail is checked
 after execution. This can detect accidental over-stores, not prove that every
 result was written or that the computation was correct. Unwritten words retain
@@ -154,8 +195,9 @@ Current limits:
 - Up to 16 MiB of code, a nonempty multiple of eight bytes. Compacted and
   uncompressed instructions can be mixed. The entry point is the first byte.
 - Positive completion timeout up to ten seconds; default two seconds.
-- No scratch/spill allocation, SLM, barriers, samplers, extra surfaces, or
-  external-buffer/pointer arguments. Temporary values must fit in GRFs.
+- No scratch/spill allocation, SLM, barriers, or samplers. Temporary values must
+  fit in GRFs. The reusable dispatch API supports pointer-addressed GEM buffers;
+  the one-shot `execute` API still uses its fixed result page.
 
 ## Addition example
 

@@ -12,6 +12,24 @@ import "core:strings"
 import "core:time"
 import "typecheck"
 
+Compile_Config :: struct {
+	input:        string,
+	output:       string,
+	source:       string,
+	root:         string,
+	level:        Opt_Level,
+	target:       Target_ID,
+	show_timings: bool,
+	show_stats:   bool,
+	check:        bool,
+	debug:        bool,
+}
+
+DEFAULT_COMPILE_CONFIG :: Compile_Config {
+	output = "a.o",
+	level  = OPT_LEVELS[len(OPT_LEVELS) - 1],
+}
+
 main :: proc() {
 	when #config(FUZZ, false) {
 		fuzz_main()
@@ -23,19 +41,11 @@ main :: proc() {
 	}
 	context.logger = log.create_console_logger()
 	context.logger.options &= ~{.Time, .Date, .Level, .Procedure}
+	bac.init_custom_fmt()
+	typecheck.init_type_fmt()
 
-	input: string
-	output := "a.o"
-
+	config := DEFAULT_COMPILE_CONFIG
 	levels := OPT_LEVELS
-	level := levels[len(levels) - 1]
-	target := TARGETS[.AMD64]
-	show_timings := false
-	show_stats := false
-	check := false
-	debug := false
-
-	root := os.get_env("ODIN_ROOT", context.temp_allocator)
 
 	args := os.args[1:]
 	i := 0
@@ -48,21 +58,21 @@ main :: proc() {
 				fmt.eprintln("missing argument to -o")
 				os.exit(1)
 			}
-			output = args[i]
+			config.output = args[i]
 		case arg == "-show-timings":
-			show_timings = true
+			config.show_timings = true
 		case arg == "-show-stats":
-			show_stats = true
+			config.show_stats = true
 		case arg == "-check":
-			check = true
+			config.check = true
 		case arg == "-debug" || arg == "-g":
-			debug = true
+			config.debug = true
 		case strings.has_prefix(arg, "-target:"):
 			name := arg[len("-target:"):]
 			found := false
-			for tar in TARGETS {
+			for tar, id in TARGETS {
 				if tar.name == name {
-					target = tar
+					config.target = id
 					found = true
 					break
 				}
@@ -81,7 +91,7 @@ main :: proc() {
 			found := false
 			for lvl in levels {
 				if lvl.name == name {
-					level = lvl
+					config.level = lvl
 					found = true
 					break
 				}
@@ -99,22 +109,40 @@ main :: proc() {
 			fmt.eprintfln("unknown flag: %v", arg)
 			os.exit(1)
 		case:
-			if input != "" {
+			if config.input != "" {
 				fmt.eprintln("multiple input files are not supported")
 				os.exit(1)
 			}
-			input = arg
+			config.input = arg
 		}
 		i += 1
 	}
 
-	if input == "" {
+	if config.input == "" {
 		fmt.eprintln("usage: jit <entry.odin> [-o output.o] [-O:<level>] [-debug]")
 		os.exit(1)
 	}
 
-	arna.scratch[0].reserved = 64 * 1024 * 1024
-	arna.scratch[1].reserved = 64 * 1024 * 1024
+	config.root = os.get_env("ODIN_ROOT", context.temp_allocator)
+
+	artifact, ok := compile(config)
+	if !ok do os.exit(1)
+	defer delete(artifact)
+	if !config.check {
+		if err := os.write_entire_file(config.output, artifact); err != nil {
+			fmt.eprintfln("failed to write %v: %v", config.output, err)
+			os.exit(1)
+		}
+	}
+}
+
+compile :: proc(
+	config: Compile_Config,
+	allocator := context.allocator,
+) -> (
+	artifact: []u8,
+	ok: bool,
+) {
 
 	types: typecheck.Types
 	types.mems.prc.reserved = 4096 * 16384
@@ -131,11 +159,11 @@ main :: proc() {
 	typecheck.types_init(&types)
 	defer typecheck.types_deinit(&types)
 
-	bac.init_custom_fmt()
-	typecheck.init_type_fmt()
+	level := config.level
+	target := TARGETS[config.target]
 
 	global_ctx: typecheck.Global_Ctx
-	global_ctx.root = root
+	global_ctx.root = config.root
 
 	if false {
 		for col in ([]string{"base", "core", "vendor"}) {
@@ -149,16 +177,21 @@ main :: proc() {
 	}
 
 	ctx: Gen_Ctx
+	if config.show_stats {
+		stats: bac.Stats
+		ctx.stats = &stats
+	}
 	ctx.types = &types
 	ctx.global = &global_ctx
 	ctx.target = target
-	ctx.check = check
-	ctx.prc.has_dbg = debug
+	ctx.check = config.check
+	ctx.prc.has_dbg = config.debug
 	ctx.ralloc_mode = level.ralloc_mode
 	ctx.errors = os.to_writer(os.stderr)
 
+	previous_prc := bac.current_prc
 	bac.current_prc = &ctx
-	defer bac.current_prc = nil
+	defer bac.current_prc = previous_prc
 
 	times: struct {
 		load:    time.Duration,
@@ -169,12 +202,17 @@ main :: proc() {
 	}
 
 	{time.SCOPED_TICK_DURATION(&times.load)
-		load_program(&ctx, input)}
+		if config.source != "" {
+			init_single_file_program(&ctx, config.source)
+		} else {
+			load_program(&ctx, config.input)
+		}
+	}
 
 	{time.SCOPED_TICK_DURATION(&times.check)
 		typecheck.typecheck_program(&ctx)}
 
-	if ctx.error_cnt > 0 do os.exit(1)
+	if ctx.error_cnt > 0 do return {}, false
 
 	emit_ctx := bac.Codegen_Emit_Ctx {
 		lib_calls = {copy = {id = MEMCPY_ID}, set = {id = MEMSET_ID}},
@@ -202,16 +240,11 @@ main :: proc() {
 				}
 			}
 		} else {
-			elf := target.emit(&ctx)
-
-			if werr := os.write_entire_file(output, elf); werr != nil {
-				fmt.eprintfln("failed to write %v: %v", output, werr)
-				os.exit(1)
-			}
+			artifact = target.emit(&ctx, allocator)
 		}
 	}
 
-	if show_timings {
+	if config.show_timings {
 		sum: time.Duration
 		for tf in reflect.struct_fields_zipped(type_of(times)) {
 			vl := reflect.struct_field_value(times, tf).(time.Duration)
@@ -229,9 +262,10 @@ main :: proc() {
 		}
 	}
 
-	if show_stats {
+	if config.show_stats {
 		log_stats(&ctx)
 	}
+	return artifact, true
 }
 
 log_stats :: proc(ctx: ^bac.Stats) {

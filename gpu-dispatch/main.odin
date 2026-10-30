@@ -27,23 +27,28 @@ execute_add :: proc(a, b: u32, device_path: string) -> bool {
 	defer gpu.close(&device)
 	code := ADD_CODE
 	kernel := gpu.Kernel {
-		code            = mem.slice_data_cast([]u32, code[:]),
-		parameter_count = 2,
-		result_count    = 1,
+		code = mem.slice_data_cast([]u32, code[:]),
 	}
 	parameters: [2][8]u32
-	for lane in 0..<8 {
+	for lane in 0 ..< 8 {
 		parameters[0][lane] = a + u32(lane)
 		parameters[1][lane] = b
 	}
 	result: [1][8]u32
-	err = gpu.execute(&device, kernel, parameters[:], result[:])
+	err = gpu.execute(
+		&device,
+		kernel,
+		mem.slice_data_cast([]gpu.Reg, parameters[:]),
+		mem.slice_data_cast([]gpu.Reg, result[:]),
+	)
 	if err != nil {
 		fmt.eprintf("GPU execution failed: %v\n", err)
 		return false
 	}
 	for actual, lane in result[0] {
-		expected := u32((u64(parameters[0][lane]) + u64(parameters[1][lane])) & 0xffffffff)
+		expected := u32(
+			(u64(parameters[0][lane]) + u64(parameters[1][lane])) & 0xffffffff,
+		)
 		if actual != expected {
 			fmt.eprintf(
 				"GPU verification failed in lane %d: got %d, expected %d.\n",

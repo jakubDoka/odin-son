@@ -25,9 +25,10 @@ Kernel :: struct {
 }
 
 Device :: struct {
-	fd:         linux.Fd,
-	context_id: u32,
-	failed:     bool,
+	fd:           linux.Fd,
+	context_id:   u32,
+	failed:       bool,
+	next_address: u64,
 }
 
 Error_Code :: enum {
@@ -44,6 +45,9 @@ Error_Code :: enum {
 	Result_Overrun,
 	Disassembler_Unavailable,
 	Invalid_Disassembler,
+	Invalid_Buffer,
+	Invalid_Program,
+	Invalid_Dispatch,
 }
 
 System_Error :: struct {
@@ -101,7 +105,8 @@ open :: proc(
 	ctx: GEM_Context
 	drm_ioctl(fd, .I915_CONTEXT_CREATE, &ctx) or_return
 	keep = true
-	return Device{fd = fd, context_id = ctx.id}, nil
+	return Device{fd = fd, context_id = ctx.id, next_address = 0x1_0010_0000},
+		nil
 }
 
 close :: proc(device: ^Device) -> Error {

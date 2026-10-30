@@ -111,6 +111,9 @@ Node_Type :: enum u16 {
 	Simd_Extract_Msbs,
 	Simd_Reduce_Add_Bisect,
 	Select,
+	Thread_Id,
+	Lane_Id,
+	Uniform_Addr,
 }
 add_entry :: #force_inline proc(prc: ^Proc, name: string) -> (_id: Node_ID) {
 	(^Cfg)(get_next_extra_slot(prc, u16(Node_Type.Entry), 0))^ = {

@@ -9,6 +9,30 @@ import "core:path/filepath"
 import "core:strings"
 import "typecheck"
 
+init_single_file_program :: proc(ctx: ^Gen_Ctx, source: string) {
+	p := parser.Parser{}
+	f := ast.File {
+		src      = source,
+		fullpath = "test",
+	}
+	{context.allocator = context.temp_allocator
+		//p.err = parser.default_error_handler
+		ok := parser.parse_file(&p, &f); assert(ok)
+	}
+
+	ctx.files.allocator = ctx.types.allocator
+	ctx.modules.allocator = ctx.types.allocator
+	if f.pkg_name == "" do f.pkg_name = "main"
+	append(&ctx.files, f)
+	append(&ctx.modules, typecheck.Module{name = f.pkg_name, file_count = 1})
+	ctx.modules[0].imports.allocator = ctx.types.allocator
+	ctx.modules[0].imports["intrinsics"] = typecheck.MODULE_INTRINSICS
+
+	decls := make([dynamic]typecheck.Decl, context.temp_allocator)
+	typecheck.collect_decls(f, &decls, 0)
+	typecheck.module_add_decls(ctx, 0, decls[:])
+}
+
 load_program :: proc(ctx: ^Gen_Ctx, entry_file: string) {
 	ctx.files.allocator = ctx.types.allocator
 	ctx.modules.allocator = ctx.types.allocator

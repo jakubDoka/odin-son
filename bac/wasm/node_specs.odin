@@ -87,6 +87,9 @@ Class_Flag :: bac.Class_Flag
 		0b10, // Simd_Extract_Msbs
 		0b10, // Simd_Reduce_Add_Bisect
 		0b10, // Select
+		0b10, // Thread_Id
+		0b10, // Lane_Id
+		0b100000, // Uniform_Addr
 		0b10000000, // WASM_Store
 		0b10000000, // WASM_Load
 		0b10, // Get_Local
@@ -120,10 +123,11 @@ Class_Flag :: bac.Class_Flag
 		25 = 1, // Ret -> Tup
 		27 = 2, // CInt -> CInt
 		55 = 1, // Proc_Addr -> Tup
-		71 = 2, // WASM_Store -> Mem_Op
-		72 = 2, // WASM_Load -> Mem_Op
-		78 = 1, // Extract_Lane_U -> Lane_Op
-		81 = 0,
+		73 = 1, // Uniform_Addr -> Tup
+		74 = 2, // WASM_Store -> Mem_Op
+		75 = 2, // WASM_Load -> Mem_Op
+		81 = 1, // Extract_Lane_U -> Lane_Op
+		84 = 0,
 	},
 	node_flags = {
 		{}, // Nil
@@ -197,6 +201,9 @@ Class_Flag :: bac.Class_Flag
 		{Class_Flag.Interned}, // Simd_Extract_Msbs
 		{Class_Flag.Interned}, // Simd_Reduce_Add_Bisect
 		{Class_Flag.Interned}, // Select
+		{Class_Flag.Interned}, // Thread_Id
+		{Class_Flag.Interned}, // Lane_Id
+		{Class_Flag.Interned}, // Uniform_Addr
 		{Class_Flag.Store}, // WASM_Store
 		{Class_Flag.Load}, // WASM_Load
 		{}, // Get_Local
@@ -230,10 +237,11 @@ Class_Flag :: bac.Class_Flag
 		25 = bac.Tup,
 		27 = bac.CInt,
 		55 = bac.Tup,
-		71 = Mem_Op,
-		72 = Mem_Op,
-		78 = Lane_Op,
-		81 = {},
+		73 = bac.Tup,
+		74 = Mem_Op,
+		75 = Mem_Op,
+		81 = Lane_Op,
+		84 = {},
 	}),
 	node_kind = nil when #config(NO_FMT, false) else Node_Type,
 }
@@ -310,6 +318,9 @@ Node_Type :: enum u16 {
 	Simd_Extract_Msbs,
 	Simd_Reduce_Add_Bisect,
 	Select,
+	Thread_Id,
+	Lane_Id,
+	Uniform_Addr,
 	WASM_Store,
 	WASM_Load,
 	Get_Local,

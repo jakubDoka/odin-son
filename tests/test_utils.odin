@@ -21,7 +21,6 @@ import "core:math/rand"
 import "core:mem"
 import "core:mem/virtual"
 import "core:odin/ast"
-import "core:odin/parser"
 import "core:os"
 import "core:rexcode/ir"
 import rex_wasm "core:rexcode/ir/wasm"
@@ -45,30 +44,6 @@ setup_custom_fmt :: proc() {
 	})
 }
 
-init_single_file_program :: proc(ctx: ^odinc.Gen_Ctx, source: string) {
-	p := parser.Parser{}
-	f := ast.File {
-		src      = source,
-		fullpath = "test",
-	}
-	{context.allocator = context.temp_allocator
-		//p.err = parser.default_error_handler
-		ok := parser.parse_file(&p, &f); assert(ok)
-	}
-
-	ctx.files.allocator = ctx.types.allocator
-	ctx.modules.allocator = ctx.types.allocator
-	if f.pkg_name == "" do f.pkg_name = "main"
-	append(&ctx.files, f)
-	append(&ctx.modules, typecheck.Module{name = f.pkg_name, file_count = 1})
-	ctx.modules[0].imports.allocator = ctx.types.allocator
-	ctx.modules[0].imports["intrinsics"] = typecheck.MODULE_INTRINSICS
-
-	decls := make([dynamic]typecheck.Decl, context.temp_allocator)
-	typecheck.collect_decls(f, &decls, 0)
-	typecheck.module_add_decls(ctx, 0, decls[:])
-}
-
 @(thread_local)
 name_str: string
 
@@ -80,9 +55,6 @@ ensure_types :: proc() -> ^typecheck.Types {
 	types: typecheck.Types
 
 	if types.mems.prc.reserved == 0 {
-		arna.scratch[0].reserved = 1024 * 1024
-		arna.scratch[1].reserved = 1024 * 1024
-
 		types.mems.prc.reserved = 4096 * 128
 		types.mems.regalloc.reserved = 4096 * 64
 		types.mems.scratch.reserved = 4096 * 16
@@ -151,7 +123,7 @@ run_gpu_test :: proc(
 	bac.current_prc = &ctx
 	defer bac.current_prc = nil
 
-	init_single_file_program(&ctx, source)
+	odinc.init_single_file_program(&ctx, source)
 	typecheck.typecheck_program(&ctx)
 
 	emit_ctx := bac.Codegen_Emit_Ctx{}
@@ -295,7 +267,7 @@ run_test :: proc(
 	bac.current_prc = &ctx
 	defer bac.current_prc = nil
 
-	init_single_file_program(&ctx, source)
+	odinc.init_single_file_program(&ctx, source)
 	typecheck.typecheck_program(&ctx)
 
 	levels := odinc.OPT_LEVELS

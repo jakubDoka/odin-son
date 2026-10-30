@@ -86,6 +86,9 @@ Class_Flag :: bac.Class_Flag
 		0b10, // Simd_Extract_Msbs
 		0b10, // Simd_Reduce_Add_Bisect
 		0b10, // Select
+		0b10, // Thread_Id
+		0b10, // Lane_Id
+		0b100000, // Uniform_Addr
 		0b10, // Inv
 		0b10, // Value_Eq
 		0b10, // Value_Ne
@@ -93,6 +96,16 @@ Class_Flag :: bac.Class_Flag
 		0b10, // Value_Lt
 		0b10, // Value_Gt
 		0b10, // Value_Ge
+		0b10, // Value_U_Lt
+		0b10, // Value_U_Gt
+		0b10, // Value_U_Le
+		0b10, // Value_U_Ge
+		0b100000, // Extract_Lane
+		0b10, // Address_Payload
+		0b10, // Store_A64
+		0b10, // Lane_Sequence
+		0b10, // Mul_Lo16
+		0b10, // Mul_Hi16
 	},
 	node_extra_sizes = {
 		0 = 1, // Nil -> Cfg
@@ -115,7 +128,9 @@ Class_Flag :: bac.Class_Flag
 		25 = 1, // Ret -> Tup
 		27 = 2, // CInt -> CInt
 		55 = 1, // Proc_Addr -> Tup
-		77 = 0,
+		73 = 1, // Uniform_Addr -> Tup
+		85 = 1, // Extract_Lane -> Tup
+		90 = 0,
 	},
 	node_flags = {
 		{}, // Nil
@@ -189,6 +204,9 @@ Class_Flag :: bac.Class_Flag
 		{Class_Flag.Interned}, // Simd_Extract_Msbs
 		{Class_Flag.Interned}, // Simd_Reduce_Add_Bisect
 		{Class_Flag.Interned}, // Select
+		{Class_Flag.Interned}, // Thread_Id
+		{Class_Flag.Interned}, // Lane_Id
+		{Class_Flag.Interned}, // Uniform_Addr
 		{Class_Flag.Interned}, // Inv
 		{Class_Flag.Interned}, // Value_Eq
 		{Class_Flag.Interned}, // Value_Ne
@@ -196,6 +214,16 @@ Class_Flag :: bac.Class_Flag
 		{Class_Flag.Interned}, // Value_Lt
 		{Class_Flag.Interned}, // Value_Gt
 		{Class_Flag.Interned}, // Value_Ge
+		{Class_Flag.Interned}, // Value_U_Lt
+		{Class_Flag.Interned}, // Value_U_Gt
+		{Class_Flag.Interned}, // Value_U_Le
+		{Class_Flag.Interned}, // Value_U_Ge
+		{Class_Flag.Interned}, // Extract_Lane
+		{}, // Address_Payload
+		{Class_Flag.Store}, // Store_A64
+		{Class_Flag.Interned}, // Lane_Sequence
+		{Class_Flag.Interned}, // Mul_Lo16
+		{Class_Flag.Interned}, // Mul_Hi16
 	},
 	node_extra_types = ({}) when #config(NO_FMT, false) else ([]typeid{
 		0 = bac.Cfg,
@@ -218,7 +246,9 @@ Class_Flag :: bac.Class_Flag
 		25 = bac.Tup,
 		27 = bac.CInt,
 		55 = bac.Tup,
-		77 = {},
+		73 = bac.Tup,
+		85 = bac.Tup,
+		90 = {},
 	}),
 	node_kind = nil when #config(NO_FMT, false) else Node_Type,
 }
@@ -295,6 +325,9 @@ Node_Type :: enum u16 {
 	Simd_Extract_Msbs,
 	Simd_Reduce_Add_Bisect,
 	Select,
+	Thread_Id,
+	Lane_Id,
+	Uniform_Addr,
 	Inv,
 	Value_Eq,
 	Value_Ne,
@@ -302,6 +335,16 @@ Node_Type :: enum u16 {
 	Value_Lt,
 	Value_Gt,
 	Value_Ge,
+	Value_U_Lt,
+	Value_U_Gt,
+	Value_U_Le,
+	Value_U_Ge,
+	Extract_Lane,
+	Address_Payload,
+	Store_A64,
+	Lane_Sequence,
+	Mul_Lo16,
+	Mul_Hi16,
 }
 
 peep_inst :: proc(ctx: bac.Peep_Ctx, node: bac.Expanded_Node) -> Maybe(bac.Node_ID) {
@@ -345,7 +388,7 @@ inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.Tup) % bac.PRECISION == 0)
 
-@(rodata) GRF_MASK := [?]i64{transmute(i64)u64(0xfffffffffffffffe), transmute(i64)u64(0x0100ffffffffffff)}
+@(rodata) GRF_MASK := [?]i64{transmute(i64)u64(0xfffffffffffffffe), transmute(i64)u64(0xff0fffffffffffff)}
 GRF_MASK_IDX :: bac.RM_Intern_Idx{index = 0, kind = 0}
 @(rodata) GRF_MASKS := [6]bac.RM_Intern_Idx{0 ..< 6 = GRF_MASK_IDX}
 

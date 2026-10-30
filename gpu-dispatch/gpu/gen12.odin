@@ -148,6 +148,7 @@ pack_commands :: proc(
 	layout: State_Layout,
 	simd: SIMD_Width,
 	state_address, state_size: u64,
+	groups_x: u32 = 1,
 ) {
 	emit_pipe_control(b, PC_CS_STALL | PC_DC_FLUSH | PC_RT_FLUSH)
 
@@ -167,7 +168,7 @@ pack_commands :: proc(
 	emit_state_base_address(b, state_address, state_size)
 
 	vfe := packet(b, MEDIA_VFE_STATE, 9)
-	vfe[3] = (2 - 1) << 16 | 1 << 8
+	vfe[3] = (64 - 1) << 16 | 1 << 8
 	vfe[5] = u32(layout.curbe_bytes / 32)
 
 	curbe := packet(b, MEDIA_CURBE_LOAD, 4)
@@ -180,7 +181,7 @@ pack_commands :: proc(
 
 	walker := packet(b, GPGPU_WALKER, 15)
 	walker[4] = SIMD_CONFIG[simd].encoding
-	walker[7], walker[10], walker[12] = 1, 1, 1
+	walker[7], walker[10], walker[12] = groups_x, 1, 1
 	walker[13] = SIMD_CONFIG[simd].mask
 	walker[14] = 0xffffffff
 

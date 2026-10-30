@@ -16,8 +16,27 @@ reconvergence points without sorting or reordering blocks. Branch offsets are
 patched after emission. Phi transfers execute under the active lane mask.
 
 Arguments use `r1` through `r8`, and results use `r120` through `r127` before
-being written to the output surface. Memory operations, spills,
-and other arithmetic datatypes remain unimplemented.
+being written to the output surface. Shader uniforms are packed into argument
+registers; target-specific `Extract_Lane` nodes splat individual words.
+Shared `Thread_Id` and `Lane_Id` nodes represent GPU builtins and are unreachable
+in CPU backends. Xe-LP interprets them as walker X group ID and SIMD8 lane index.
+
+The backend also supports 32-bit integer addition/subtraction, multiplication,
+bitwise operations, shifts, unsigned comparisons/division/remainder, and scalar
+integer/float conversions. Multiplication lowers to two word-source products;
+division/remainder use integer math messages with explicit completion waits.
+
+Uniform pointer loads remain 64-bit in SSA, then lower to two word splats.
+Pointer addition/scaling is split into low/high arithmetic with carry. A64
+32-bit scattered stores pack eight interleaved addresses into the contiguous
+`r116:r117` payload pair, constrained before allocation and excluded from
+ordinary GRF masks. Each send is followed by a scoreboard source-read wait so
+the allocator can safely reuse both address and value registers. No temporaries
+are allocated during encoding. Arbitrary memory loads, spills, general 64-bit
+arithmetic, and non-32-bit stores remain unimplemented.
+
+See [`examples/mandelbrot`](../../examples/mandelbrot/README.md) for a complete
+shader and interactive runner.
 
 The common allocation mask reserves `r112..r119` and `r121..r127` for the
 native full-frame renderer; `r120` remains the single pixel result register.

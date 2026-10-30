@@ -195,6 +195,9 @@ when SPEC_NOT_PRESENT {
 		Simd_Extract_Msbs,
 		Simd_Reduce_Add_Bisect,
 		Select,
+		Thread_Id,
+		Lane_Id,
+		Uniform_Addr,
 	}
 
 	inherit_idx_of :: proc($T: typeid) -> u8 {return 0}

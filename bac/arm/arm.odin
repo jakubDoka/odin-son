@@ -411,6 +411,8 @@ meta_of :: #force_inline proc(
 	}
 
 	switch atype(node) {
+	case .Thread_Id, .Lane_Id, .Uniform_Addr:
+		unreachable()
 	case:
 		fallthrough
 	case .Nil ..= .Dbg_Scope, .Simd_Extract_Lsbs, .Simd_Extract_Msbs:
@@ -776,6 +778,8 @@ emit_instr :: proc(
 	is_f64 = op_dt == .F64
 
 	emit: switch kind {
+	case .Thread_Id, .Lane_Id, .Uniform_Addr:
+		unreachable()
 	case:
 		fallthrough
 	case .Nil ..=

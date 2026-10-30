@@ -44,9 +44,9 @@ tui_emit :: proc(text: string) -> bool {
 }
 
 tui_seed :: proc() -> bool {
-    names := [9]string{"cpu-boids", "hello", "gpu-tests", "gpu-tests", "mandelbrot_gpu_cpu", "mandelbrot_gpu_cpu", "mandelbrot_gpu_poc", "mandelbrot_gpu_poc", "mandelbrot_gpu_poc"}
-    files := [9]string{"main.odin", "main.odin", "main.odin", "cases.odin", "main.odin", "shader.odin.source", "main.odin", "render.odin", "shader.poc.odin.source"}
-    sources := [9]string{EMBEDDED_BOIDS, #load("hello.source", string), #load("gpu-main.source", string), #load("gpu-cases.source", string), #load("mandelbrot-main.source", string), #load("mandelbrot-shader.source", string), #load("mandelbrot-poc-main.source", string), #load("mandelbrot-poc-render.source", string), #load("mandelbrot-poc-shader.source", string)}
+    names := [12]string{"cpu-boids", "hello", "gpu-tests", "gpu-tests", "mandelbrot_gpu_cpu", "mandelbrot_gpu_cpu", "mandelbrot_gpu_poc", "mandelbrot_gpu_poc", "mandelbrot_gpu_poc", "water_light", "water_light", "water_light"}
+    files := [12]string{"main.odin", "main.odin", "main.odin", "cases.odin", "main.odin", "shader.odin.source", "main.odin", "render.odin", "shader.poc.odin.source", "main.odin", "field.odin", "optics.odin"}
+    sources := [12]string{EMBEDDED_BOIDS, #load("hello.source", string), #load("gpu-main.source", string), #load("gpu-cases.source", string), #load("mandelbrot-main.source", string), #load("mandelbrot-shader.source", string), #load("mandelbrot-poc-main.source", string), #load("mandelbrot-poc-render.source", string), #load("mandelbrot-poc-shader.source", string), #load("water-light-main.source", string), #load("water-light-field.source", string), #load("water-light-optics.source", string)}
     for name, i in names {
         path := strings.concatenate({name, "/", files[i]})
         baseline := strings.concatenate({".odin-son-seeds/", path})
@@ -149,8 +149,9 @@ tui_draw :: proc(demos: []Tui_Demo, selected, cols, rows: int, status: string) -
     visible := max(1, rows-15)
     first := max(0, selected-visible+1)
     for i := first; i < min(len(demos), first+visible); i += 1 {
-        visual := demos[i].name == "mandelbrot_gpu_cpu" || demos[i].name == "mandelbrot_gpu_poc"
-        label := fmt.aprintf("%s %s%s%s", i == selected ? ">" : " ", demos[i].name, demos[i].built ? "  [compiled]" : "", visual ? "  [Enter: compile + run]" : "")
+        visual := demos[i].name == "mandelbrot_gpu_cpu" || demos[i].name == "mandelbrot_gpu_poc" || demos[i].name == "water_light"
+        profile := demos[i].name == "mandelbrot_gpu_poc" ? "  [3D Mandelbox]" : demos[i].name == "water_light" ? "  [D2Q9 + caustics]" : ""
+        label := fmt.aprintf("%s %s%s%s%s", i == selected ? ">" : " ", demos[i].name, profile, demos[i].built ? "  [compiled]" : "", visual ? "  [Enter: compile + run]" : "")
         tui_line(&b, 4+i-first, cols, label, i == selected ? "\x1b[0m\x1b[38;2;255;55;255m" : "\x1b[0m")
         delete(label)
     }
@@ -185,7 +186,9 @@ tui_compile :: proc(name: string) -> i32 {
     }
     input := strings.concatenate({name, "/main.odin"})
     output := strings.concatenate({"demo-", name, ".o"})
-    args := [6]cstring{cstring("odin-son"), cstring("--cpu-boids"), cstring("--blueprint"), strings.clone_to_cstring(input), cstring("-o"), strings.clone_to_cstring(output)}
+    // Keep field stages as calls instead of duplicating them into the UI loop.
+    optimization := name == "water_light" ? cstring("-o:all") : cstring("-o:aggresive")
+    args := [7]cstring{cstring("odin-son"), cstring("--cpu-boids"), cstring("--blueprint"), strings.clone_to_cstring(input), cstring("-o"), strings.clone_to_cstring(output), optimization}
     defer { delete(input); delete(output); delete(args[3]); delete(args[5]) }
     result := run_compiler(len(args), raw_data(args[:]))
     if result == 0 && has_shader do fmt.printfln("odin-son: CPU + Intel Xe-LP GPU compiled from source for %s", name)
@@ -314,9 +317,11 @@ run_tui :: proc() -> i32 {
             demos[selected].built = result == 0
             status = result == 0 ? "Compiled. Press r to queue the demo in its own VM." : "Compile failed. Fix the source and try again."
             fmt.printfln("[odin-son tui] stage=compile demo=%s status=%d", demos[selected].name, result)
-            if result == 0 && (demos[selected].name == "mandelbrot_gpu_cpu" || demos[selected].name == "mandelbrot_gpu_poc") {
+            if result == 0 && (demos[selected].name == "mandelbrot_gpu_cpu" || demos[selected].name == "mandelbrot_gpu_poc" || demos[selected].name == "water_light") {
                 result = tui_run(demos[selected].name)
-                status = result == 0 ? "Mandelbrot launch queued. Wheel zoom; drag pan; Q/Escape quits demo." : "Compiled; launch request failed. Press r to retry."
+                hint := demos[selected].name == "mandelbrot_gpu_poc" ? "Mandelbox launch queued. Drag orbit; wheel dolly; R resets; Q/Escape quits demo." : "Mandelbrot launch queued. Wheel zoom; drag pan; Q/Escape quits demo."
+                if demos[selected].name == "water_light" do hint = "Water light queued. Drag ripples; Space pause; V field; R reset; Q/Escape quits."
+                status = result == 0 ? hint : "Compiled; launch request failed. Press r to retry."
                 fmt.printfln("[odin-son tui] stage=launch demo=%s status=%d", demos[selected].name, result)
             }
         case 'r', 'R':

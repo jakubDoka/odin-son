@@ -19,6 +19,14 @@ Arguments use `r1` through `r8`, and results use `r120` through `r127` before
 being written to the output surface. Memory operations, spills,
 and other arithmetic datatypes remain unimplemented.
 
+The common allocation mask reserves `r112..r119` and `r121..r127` for the
+native full-frame renderer; `r120` remains the single pixel result register.
+For `main :: proc(f32, f32) -> f32`, TRUEOS can validate the complete kernel,
+retain its arithmetic and relative branches, and replace the scalar-dispatch
+header/store/EOT with its own SIMD8 grid-stride framebuffer envelope. Ordinary
+eight-result scalar dispatch remains supported. The driver validates every
+body register access before admitting it to the framebuffer path.
+
 Regenerate its spec through `gen-spec`, or run `odin run bac/meta2` from the
 repository root when `node_specs.odin` is absent. Check the package with:
 

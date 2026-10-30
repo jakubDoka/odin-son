@@ -74,13 +74,13 @@ report :: proc(stage: string, status: i32) -> i32 {
     return status
 }
 
-frame :: proc(window, width, height: u32, x, y, step: f32) -> i32 {
+frame :: proc(window, width, height: u32, yaw, pitch, distance: f32) -> i32 {
     for trueos_cabi_blueprint_stop_control_v1(1) == 0 {
         status := trueos_cabi_ui4_scene_visual_frame_begin(window)
         if status == -7 { trueos_cabi_sleep_ms(16); continue }
         if status != 0 do return report("frame-begin", status)
         report("frame-begin", status)
-        status = render_poc(window, width, height, x, y, step)
+        status = render_poc(window, width, height, yaw, pitch, distance)
         if status != 0 do return status
         for trueos_cabi_blueprint_stop_control_v1(1) == 0 {
             status = trueos_cabi_ui4_scene_compute_frame_publish(window, 0, 0, width, height)
@@ -93,7 +93,7 @@ frame :: proc(window, width, height: u32, x, y, step: f32) -> i32 {
 }
 
 run :: proc(window: u32) -> i32 {
-    status := report("opacity", trueos_cabi_ui4_scene_frame_set_opacity(window, 128))
+    status := report("opacity", trueos_cabi_ui4_scene_frame_set_opacity(window, 255))
     if status != 0 do return status
     code := transmute([]u8)native_pixel_code
     for offset := 0; offset < len(code); offset += 2048 {
@@ -106,11 +106,12 @@ run :: proc(window: u32) -> i32 {
         }
     }
     width, height := u32(320), u32(240)
-    x, y, step := f32(-2.0), f32(-1.125), f32(3.0/320.0)
-    status = frame(window, width, height, x, y, step)
+    yaw, pitch, distance := f32(0.55), f32(-0.3), f32(6.0)
+    reset_down := false
+    status = frame(window, width, height, yaw, pitch, distance)
     if status == -3 do return 0
     if status != 0 do return 1
-    message("mandelbrot_gpu_poc: ready; POC GPU samples at most 80x60; resize, wheel zoom, drag pan, Q/Escape quit\n")
+    message("mandelbrot_gpu_poc: ready; 3D Mandelbox, SIMD8 ray marching; drag orbit, wheel dolly, R reset, Q/Escape quit\n")
     pending: Resize
     resizing := false
     for trueos_cabi_blueprint_stop_control_v1(1) == 0 {
@@ -120,6 +121,12 @@ run :: proc(window: u32) -> i32 {
         if status != 0 && status != 1 do return report("keyboard", status)
         if status == 0 && (keyboard.down[0] & (u32(1) << 20) != 0 || keyboard.down[1] & (u32(1) << 9) != 0) do return 0
         dirty := false
+        reset := keyboard.down[0] & (u32(1) << 21) != 0
+        if reset && !reset_down {
+            yaw, pitch, distance = 0.55, -0.3, 6.0
+            dirty = true
+        }
+        reset_down = reset
         for {
             event: Resize
             status = trueos_cabi_ui4_scene_resize_event_take(window, &event)
@@ -134,8 +141,6 @@ run :: proc(window: u32) -> i32 {
             if status == -7 { trueos_cabi_sleep_ms(16); continue }
             if status == -3 do return 0
             if status != 0 do return report("resize", status)
-            x += (f32(width)-f32(pending.width)) * 0.5 * step
-            y += (f32(height)-f32(pending.height)) * 0.5 * step
             width, height = pending.width, pending.height
             resizing = false
             dirty = true
@@ -149,22 +154,23 @@ run :: proc(window: u32) -> i32 {
             if event.wheel != 0 {
                 factor := f32(0.8)
                 if event.wheel < 0 do factor = 1.25
-                next_step := step * factor
-                if next_step < 0.0000001 do next_step = 0.0000001
-                if next_step > 0.1 do next_step = 0.1
-                x += f32(event.local_x) * (step-next_step)
-                y += f32(event.local_y) * (step-next_step)
-                step = next_step
+                distance *= factor
+                if distance < 2.0 do distance = 2.0
+                if distance > 16.0 do distance = 16.0
                 dirty = true
             }
             if event.buttons & 1 != 0 && (event.dx != 0 || event.dy != 0) {
-                x -= f32(event.dx) * step
-                y -= f32(event.dy) * step
+                yaw += f32(event.dx)*0.008
+                pitch += f32(event.dy)*0.008
+                if yaw > 3.14159265 do yaw -= 6.2831853
+                if yaw < -3.14159265 do yaw += 6.2831853
+                if pitch > 1.3 do pitch = 1.3
+                if pitch < -1.3 do pitch = -1.3
                 dirty = true
             }
         }
         if dirty {
-            status = frame(window, width, height, x, y, step)
+            status = frame(window, width, height, yaw, pitch, distance)
             if status == -3 do return 0
             if status != 0 do return 1
         }
@@ -184,7 +190,7 @@ main :: proc() -> i32 {
         message("mandelbrot_gpu_poc: cannot open UI4 frame\n")
     }
     if status != 0 do message("mandelbrot_gpu_poc: demo failed\n")
-    reason := "POC Mandelbrot demo finished"
+    reason := "POC Mandelbox demo finished"
     trueos_cabi_blueprint_shutdown(raw_data(reason), uintptr(len(reason)))
     return status
 }

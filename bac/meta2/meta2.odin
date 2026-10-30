@@ -76,7 +76,8 @@ main :: proc() {
 				spill_boundary = {intel_xelp_poc.GRF_COUNT, intel_xelp_poc.FLAG_COUNT},
 				cc_table = intel_xelp_poc.CC_TABLE[:],
 				common_reg_specs = {
-					{"GRF", intel_xelp_poc.RK_GRF, {~i64(1), ~i64(1 << 55 | 1 << 54)}},
+					// The full-frame driver keeps its pixel/stride state above r111.
+					{"GRF", intel_xelp_poc.RK_GRF, {~i64(1), (i64(1) << 48) - 1 | i64(1) << 56}},
 					{"FLAG", intel_xelp_poc.RK_FLAG, {0xf, 0}},
 				},
 			},

@@ -1662,6 +1662,7 @@ interner_find :: proc(
 	prc: ^Proc,
 	id: Node_ID,
 	precomputed_hash: u8,
+	identity_only := false,
 ) -> (
 	int,
 	u8,
@@ -1678,7 +1679,7 @@ interner_find :: proc(
 
 	siter := simd_iter_from(iview.hash[:len(iview)], needle)
 	for idx in simd_iter_next(&siter) {
-		if node_eq(prc, iview.id[idx], id) {
+		if iview.id[idx] == id || (!identity_only && node_eq(prc, iview.id[idx], id)) {
 			return idx, needle, true
 		}
 	}
@@ -1750,7 +1751,9 @@ interner_grow :: proc(prc: ^Proc, new_cap: int) {
 unintern :: proc(prc: ^Proc, id: Node_ID, precomputed_hash: u8 = 0) {
 	if !has_flag(prc, id, .Interned) || prc.dont_intern do return
 
-	idx, _, _ := interner_find(prc, id, precomputed_hash)
+	// A rewritten node may now equal an earlier entry in the same hash bucket.
+	// Removal must select identity or this node can remain interned after deletion.
+	idx, _, _ := interner_find(prc, id, precomputed_hash, identity_only = true)
 	if idx < 0 do return
 
 	iview := interner_zip(prc)

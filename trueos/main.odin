@@ -31,6 +31,7 @@ trueos_main :: proc "c" (argc: uintptr, argv: [^]cstring) -> i32 {
     if argc == 2 && string(argv[1]) == "--tui" do return run_tui()
     if argc == 2 && string(argv[1]) == "--mandelbrot_gpu_cpu" do return run_mandelbrot_demo()
     if argc == 2 && string(argv[1]) == "--mandelbrot_gpu_poc" do return run_mandelbrot_demo("mandelbrot_gpu_poc")
+    if argc == 2 && string(argv[1]) == "--water_light" do return run_mandelbrot_demo("water_light")
     return run_compiler(argc, argv)
 }
 run_compiler :: proc(argc: uintptr, argv: [^]cstring) -> i32 {

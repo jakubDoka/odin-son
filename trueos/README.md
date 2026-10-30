@@ -160,17 +160,30 @@ produce diagnostics. Neither the iteration count nor the shader name/hash is
 fixed in the compiler. See `bac/intel_xelp_pixel/README.md` for the backend and
 ABI limits. The kernel must enable `odin-native-gpgpu`, as for `gpu-tests`.
 
-Select `mandelbrot_gpu_poc` to compile a second Mandelbrot example through the
-unchanged `bac/intel_xelp_poc` backend and ordinary frontend, SSA optimizer and
-register allocator. Enter compiles and queues it automatically; the direct
-flag is `--mandelbrot_gpu_poc`. Its shader keeps a real GPU loop and escape
-branch. The existing eight-result dispatch API feeds CPU grayscale expansion and
-a sprite upload followed by a GPU copy into the granted visual frame. It uses
-compute publication with the completed GPU producer release. The old direct CPU
-write path returned `-6` on a GPU-only visual frame. The demo uses at most
-80x60 GPU samples for responsiveness.
-See `trueos/mandelbrot-poc-demo/README.md` for sources, the backend comparison,
-and why these presentation paths do not support a fair timing comparison.
+Select `mandelbrot_gpu_poc [3D Mandelbox]` to compile the volumetric fractal
+through `bac/intel_xelp_poc` and the ordinary frontend, SSA optimizer and
+register allocator. Enter compiles and queues it automatically; the batch flag
+remains `--mandelbrot_gpu_poc`. Drag orbits, the wheel moves the camera,
+R resets, and Q/Escape quits. The shader ray marches eight-iteration box/sphere
+folds and estimates surface normals for lighting, occlusion and fog.
+
+The driver admits its bounded arithmetic/control-flow body inside the existing
+full-frame SIMD8 grid-stride renderer. Render_v2 adds six optional scalar
+uniforms for camera state; render_v1 and two-argument shaders remain supported.
+The reciprocal instruction requires its matching SBID wait. Framebuffer stores,
+tail masking and producer release remain driver-owned; no CPU pixels are
+expanded. See `trueos/mandelbrot-poc-demo/README.md` for the math, ABI and
+bare-metal validation. The separate `mandelbrot_gpu_cpu` entry remains 2D.
+
+The separate `water_light [D2Q9 + caustics]` entry compiles a coarse 64x48
+shallow-water lattice, a 128x96 refracted light field, and a 192x144 shaded
+image in native Odin SON. The existing GPU sprite renderer displays it; this
+first version solves and shades on the CPU and needs no kernel changes.
+Enter compiles/runs it; `--water_light` is the batch equivalent. Drag ripples,
+Space pauses, V cycles water/height/photon flux, and R resets. See
+`trueos/water-light-demo/README.md` for the model, accuracy/cost limits,
+controls, and validation.
+
 
 Verified on the physical rig on 29 October 2026: selecting `gpu-tests`, compiling
 and running produced all five passes (40/40 lanes). The generated Blueprint was
@@ -272,12 +285,14 @@ are included unchanged. The previous fork-specific GPU backend, GPU frontend
 hooks, GPU demos, and native GPU runtime entry paths have been removed.
 Upstream GPU work is not connected to TRUEOS GPU submission by this adapter.
 
-Only two shared compiler files differ from upstream:
+The shared compiler changes include:
 
 - `odinc/typecheck/typecheck.odin`: canonical upper-half type pointers for
   TRUEOS, grouped procedure parameters for ABI declarations, and ordinary
   condition/initializer/post loops used by the minimal source subset.
 - `odinc/gen.odin`: emission of those ordinary loops through upstream SSA.
+- `bac/graph.odin`: remove interned expressions by node identity when a
+  rewrite becomes equal to an earlier expression in the same hash bucket.
 
 The native entry, filesystem/runtime adapters, packaging, terminal UI, IDE
 protocol, CPU demo, and host validation live under `trueos` and

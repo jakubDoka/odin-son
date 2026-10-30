@@ -15,7 +15,7 @@ IMPORTS = {
     'trueos_cabi_ui4_scene_sprite_upload_rgba8', 'trueos_cabi_ui4_scene_sprite_quads',
     'trueos_cabi_ui4_scene_frame_open_visual', 'trueos_cabi_ui4_solara_frame_close',
     'trueos_cabi_ui4_scene_native_compute_upload_v1', 'trueos_cabi_ui4_scene_native_compute_dispatch_v1',
-    'trueos_cabi_ui4_scene_native_compute_render_v1', 'trueos_cabi_ui4_scene_visual_frame_begin',
+    'trueos_cabi_ui4_scene_native_compute_render_v1', 'trueos_cabi_ui4_scene_native_compute_render_v2', 'trueos_cabi_ui4_scene_visual_frame_begin',
     'trueos_cabi_ui4_scene_compute_frame_publish', 'trueos_cabi_ui4_scene_keyboard_state',
     'trueos_cabi_ui4_scene_pointer_event_take',
     'trueos_cabi_ui4_scene_resize_event_take', 'trueos_cabi_ui4_scene_frame_resize',

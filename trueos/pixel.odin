@@ -39,9 +39,12 @@ compile_pixel_file :: proc(input, output: string, complete_kernel := false) -> i
     if complete_kernel {
         typecheck.typecheck_program(&ctx)
         if ctx.error_cnt != 0 do return 1
-        if len(ctx.procs) != 2 || ctx.procs[1].name != "main" || len(ctx.procs[1].params) != 2 || ctx.procs[1].params[0] != .F32 || ctx.procs[1].params[1] != .F32 || len(ctx.procs[1].rets) != 1 || ctx.procs[1].rets[0] != .F32 {
-            fmt.eprintln("POC visual kernel requires one main :: proc(f32, f32) -> f32 without helper procedures")
+        if len(ctx.procs) != 2 || ctx.procs[1].name != "main" || len(ctx.procs[1].params) < 2 || len(ctx.procs[1].params) > 8 || len(ctx.procs[1].rets) != 1 || ctx.procs[1].rets[0] != .F32 {
+            fmt.eprintln("POC visual kernel requires one main with 2..8 f32 parameters and one f32 result, without helper procedures")
             return 1
+        }
+        for param in ctx.procs[1].params {
+            if param != .F32 {fmt.eprintln("POC visual kernel parameters must be f32"); return 1}
         }
         ctx.target = {name = "intel_xelp_poc", cc = &poc.CC_TABLE[poc.XELP_CC], spec = &poc.SPEC}
         level := OPT_LEVELS[len(OPT_LEVELS)-2]

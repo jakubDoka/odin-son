@@ -2,6 +2,7 @@ package bac_bindgen
 // NOTE: this file is generated: odin run bac/tag-gen
 
 import pkg_0 ".."
+import pkg_8 "../../utils/arna"
 import pkg_1 "../amd64"
 import pkg_2 "../anal"
 import pkg_3 "../arm"
@@ -9,31 +10,135 @@ import pkg_4 "../intel_xelp"
 import pkg_5 "../regalloc"
 import pkg_6 "../ssa"
 import pkg_7 "../wasm"
-import pkg_8 "../../utils/arna"
 
 @(rodata)
-API := [?]API_Proc{
-	{"../../utils/arna", "init_from_buffer", type_of(pkg_8.init_from_buffer), "/// Creates an arena backed by the slice of borrowed memory. The allocator\n/// assumes, the full memory region is mapped. If you are planning to allocate,\n/// you should make sure the `buf` is aligned to the max alignment you will use."},
-	{"../ssa", "start_proc", type_of(pkg_6.start_proc), "/// Refer to examples/bac/ for a quick start.\n///\n/// Initialize the Proc for code emission. This returns the initial mem node\n/// that should be used to advance the memory state. The starting control flow\n/// node can be accessed in prc.meta.pinned.entry. Any non trivial codegen needs\n/// to track control flow and initial memory in a Scope node, all of the ssa\n/// builders expect the scope to have the control flow as the first input node."},
-	{"../ssa", "set_scope_value", type_of(pkg_6.set_scope_value), "/// Update the scope value so it gets phys generated to express the ssa\n/// changes."},
-	{"../ssa", "delete_scope", type_of(pkg_6.delete_scope), "/// Delete the scope properly. This is nescessary to generate a proper debug\n/// info."},
-	{"../ssa", "push_scope_value", type_of(pkg_6.push_scope_value), "/// declare a scalar value or a memory thread that should have phys generated\n/// based on updates done by set_scope_value and must be accessed trough\n/// get_scope_value, it retunrs the index withing the scope by which you can\n/// acces and modify the value."},
-	{"../ssa", "merge_return", type_of(pkg_6.merge_return), "/// The args[0] needs to be a control flow, args[1] should be an end of a memory\n/// thread. You have to call this at least once if the function has reachable\n/// return path."},
-	{"../ssa", "truncate_scope", type_of(pkg_6.truncate_scope), "/// Drops value that are no loger alive from the scope, this usually should be\n/// called at the end of a lexical scope."},
-	{"../ssa", "compile", type_of(pkg_6.compile), "/// Compile the proc to the current node_spec. The minimal configuration of the\n/// context is the `.prc` and `.buf.code`. Function will crash the program if\n/// other buffers are required. This function also computes missing\n/// datastructures, you can compute them your self and set the pointers if you\n/// need customization. Note that all of the functions this calls are also\n/// available in the API."},
-	{"../ssa", "opt", type_of(pkg_6.opt), "/// Run the platform independend optimizations. This is preconfigured simple run\n/// of passes. To enable passes, you can configure them in the\n/// ctx.prc.opt_flags, by default, no passes except mandatory ones are enabled.\n///\n/// For separate passes, grep for `apply_peeps`, `conpute_latices`, `memopt`,\n/// `loopopt`. They have their own documentation."},
-	{"../ssa", "memopt", type_of(pkg_6.memopt), "/// Pass will rename scalar local variables to registers and also pull\n/// non-escaping local variables that are too big to a separate memory threads.\n/// It's a good idea to run this in combination of `apply_peeps` to termination.\n/// Pass complexity scales with the amount of locals in the function and memory\n/// ops they have."},
-	{"../ssa", "inline_graph", type_of(pkg_6.inline_graph), "/// Grep for \"inline_and_optimize ::\" for an example usage.\n///\n/// Inline a `from` into `prc` at `call`, the from and the call node shoul\n/// refer to the same function, or more precisely, the signatrue needs to be\n/// compatible. This invalidates whatever passes that were computes so its\n/// better to do this in bulk.\n///\n/// Good strategy is to optimize the `from` before inlining to maximize inline\n/// performance since same code does not get copyes and reoptimized\n/// redundantly."},
-	{"..", "mount_stencil", type_of(pkg_0.mount_stencil), "/// Reverse of get_stencil, if the proc has empty arena, the proc will borrow the\n/// .mem field and the prc should not be modifyed, but its safe to use it for\n/// inlining or other ops that just read the graph."},
-	{"..", "apply_peeps", type_of(pkg_0.apply_peeps), "/// Apply peephole optimizations until fixpoint, the peephole strategy is picked\n/// from the ctx.prc.node_spec.peep. If you use `compute_latices` before this\n/// pass, the latices will be used to improve optimizations."},
-	{"..", "get_stencil", type_of(pkg_0.get_stencil), "/// Extract the stencil from the function. The resulting stencil does not own\n/// the .mem, you need to clone it if you want to save the stencil for later.\n/// Stencil represents a compressed state of a graph, you can recover the\n/// function with mount_stencil. You usually want to store the stencils when\n/// collecting functions for inlining.\n///\n/// Note that stencil can be stored on disk and loaded just fine, it does not\n/// contain any global pointers that break the integrity."},
-	{"../ssa", "loopopt", type_of(pkg_6.loopopt), "/// Pass will normalize loops, and apply loop specific optimizations. As of\n/// right now, the loop can be turned into memset or memcpy, or get eliminated\n/// if they have no sideffects."},
-	{"../ssa", "inline_stencil", type_of(pkg_6.inline_stencil), "/// This just expands the `from` into a graph, refer to `inline_graph` for\n/// docs."},
-	{"..", "compact", type_of(pkg_0.compact), "/// The graph can accumulate wasted space of dead nodes during optimizations.\n/// Function will garbige collect the nodes into the smallest possible\n/// allocation. This is particularly usefull before `get_stencil`, as it\n/// reduces the memory usage of cold functions."},
-	{"..", "compute_latices", type_of(pkg_0.compute_latices), "/// Pass does not modify the graph but it computes more specialized latices for\n/// each node. This pass should be uned in conjungtion with `apply_peeps` which\n/// will clean up the graph based on the computed latices. The latices will be\n/// allocated in scratch and stored in ctx.lattices."},
-	{"..", "schedule_graph", type_of(pkg_0.schedule_graph), "/// The function initialzes `gs` with the graph schedule. This is a\n/// sidestructure that is trivial to invalidate. It supports 2 modes:\n/// - regalloc - slow and full schedule, it is required for regalloc to work\n///   properly\n/// - loopopt - this is fast aproximet schedule that mainly makes querying loop\n///   invariant code more efficiently."},
-	{"..", "take_dbg_data", type_of(pkg_0.take_dbg_data), "/// Call this after scheduling the graph and before register allocation. It will\n/// strip the debug info related nodes. This is a no-op if the debug info is not\n/// enabled so you can call this unconditionally. The `data` param will be\n/// initialized with the debug info. The graph from this point on should not be\n/// modified because the `data` relyes on the node ids not changing."},
-	{"../regalloc", "regalloc", type_of(pkg_5.regalloc), "/// Regalloc computes the register allocation information for the given proc.\n/// You can choose between scan and graph coloring strategy. Scan scales\n/// linearly with the size fo the graph, but will not discover better\n/// allocation on average. Graph mode will have better results but scales\n/// quadratically with the input.\n///\n/// You need to configure the `ra` with the function param specs, calling\n/// convention and regalloc spec, but call convention can be nil, in which case\n/// the backend will select default one."},
+API := [?]API_Proc {
+	{
+		"../../utils/arna",
+		"init_from_buffer",
+		type_of(pkg_8.init_from_buffer),
+		"/// Creates an arena backed by the slice of borrowed memory. The allocator\n/// assumes, the full memory region is mapped. If you are planning to allocate,\n/// you should make sure the `buf` is aligned to the max alignment you will use.",
+	},
+	{
+		"../ssa",
+		"start_proc",
+		type_of(pkg_6.start_proc),
+		"/// Refer to examples/bac/ for a quick start.\n///\n/// Initialize the Proc for code emission. This returns the initial mem node\n/// that should be used to advance the memory state. The starting control flow\n/// node can be accessed in prc.meta.pinned.entry. Any non trivial codegen needs\n/// to track control flow and initial memory in a Scope node, all of the ssa\n/// builders expect the scope to have the control flow as the first input node.",
+	},
+	{
+		"../ssa",
+		"set_scope_value",
+		type_of(pkg_6.set_scope_value),
+		"/// Update the scope value so it gets phys generated to express the ssa\n/// changes.",
+	},
+	{
+		"../ssa",
+		"delete_scope",
+		type_of(pkg_6.delete_scope),
+		"/// Delete the scope properly. This is nescessary to generate a proper debug\n/// info.",
+	},
+	{
+		"../ssa",
+		"push_scope_value",
+		type_of(pkg_6.push_scope_value),
+		"/// declare a scalar value or a memory thread that should have phys generated\n/// based on updates done by set_scope_value and must be accessed trough\n/// get_scope_value, it retunrs the index withing the scope by which you can\n/// acces and modify the value.",
+	},
+	{
+		"../ssa",
+		"merge_return",
+		type_of(pkg_6.merge_return),
+		"/// The args[0] needs to be a control flow, args[1] should be an end of a memory\n/// thread. You have to call this at least once if the function has reachable\n/// return path.",
+	},
+	{
+		"../ssa",
+		"truncate_scope",
+		type_of(pkg_6.truncate_scope),
+		"/// Drops value that are no loger alive from the scope, this usually should be\n/// called at the end of a lexical scope.",
+	},
+	{
+		"../ssa",
+		"compile",
+		type_of(pkg_6.compile),
+		"/// Compile the proc to the current node_spec. The minimal configuration of the\n/// context is the `.prc` and `.buf.code`. Function will crash the program if\n/// other buffers are required. This function also computes missing\n/// datastructures, you can compute them your self and set the pointers if you\n/// need customization. Note that all of the functions this calls are also\n/// available in the API.",
+	},
+	{
+		"../ssa",
+		"opt",
+		type_of(pkg_6.opt),
+		"/// Run the platform independend optimizations. This is preconfigured simple run\n/// of passes. To enable passes, you can configure them in the\n/// ctx.prc.opt_flags, by default, no passes except mandatory ones are enabled.\n///\n/// For separate passes, grep for `apply_peeps`, `conpute_latices`, `memopt`,\n/// `loopopt`. They have their own documentation.",
+	},
+	{
+		"../ssa",
+		"memopt",
+		type_of(pkg_6.memopt),
+		"/// Pass will rename scalar local variables to registers and also pull\n/// non-escaping local variables that are too big to a separate memory threads.\n/// It's a good idea to run this in combination of `apply_peeps` to termination.\n/// Pass complexity scales with the amount of locals in the function and memory\n/// ops they have.",
+	},
+	{
+		"../ssa",
+		"inline_graph",
+		type_of(pkg_6.inline_graph),
+		"/// Grep for \"inline_and_optimize ::\" for an example usage.\n///\n/// Inline a `from` into `prc` at `call`, the from and the call node shoul\n/// refer to the same function, or more precisely, the signatrue needs to be\n/// compatible. This invalidates whatever passes that were computes so its\n/// better to do this in bulk.\n///\n/// Good strategy is to optimize the `from` before inlining to maximize inline\n/// performance since same code does not get copyes and reoptimized\n/// redundantly.",
+	},
+	{
+		"..",
+		"mount_stencil",
+		type_of(pkg_0.mount_stencil),
+		"/// Reverse of get_stencil, if the proc has empty arena, the proc will borrow the\n/// .mem field and the prc should not be modifyed, but its safe to use it for\n/// inlining or other ops that just read the graph.",
+	},
+	{
+		"..",
+		"apply_peeps",
+		type_of(pkg_0.apply_peeps),
+		"/// Apply peephole optimizations until fixpoint, the peephole strategy is picked\n/// from the ctx.prc.node_spec.peep. If you use `compute_latices` before this\n/// pass, the latices will be used to improve optimizations.",
+	},
+	{
+		"..",
+		"get_stencil",
+		type_of(pkg_0.get_stencil),
+		"/// Extract the stencil from the function. The resulting stencil does not own\n/// the .mem, you need to clone it if you want to save the stencil for later.\n/// Stencil represents a compressed state of a graph, you can recover the\n/// function with mount_stencil. You usually want to store the stencils when\n/// collecting functions for inlining.\n///\n/// Note that stencil can be stored on disk and loaded just fine, it does not\n/// contain any global pointers that break the integrity.",
+	},
+	{
+		"../ssa",
+		"loopopt",
+		type_of(pkg_6.loopopt),
+		"/// Pass will normalize loops, and apply loop specific optimizations. As of\n/// right now, the loop can be turned into memset or memcpy, or get eliminated\n/// if they have no sideffects.",
+	},
+	{
+		"../ssa",
+		"inline_stencil",
+		type_of(pkg_6.inline_stencil),
+		"/// This just expands the `from` into a graph, refer to `inline_graph` for\n/// docs.",
+	},
+	{
+		"..",
+		"compact",
+		type_of(pkg_0.compact),
+		"/// The graph can accumulate wasted space of dead nodes during optimizations.\n/// Function will garbige collect the nodes into the smallest possible\n/// allocation. This is particularly usefull before `get_stencil`, as it\n/// reduces the memory usage of cold functions.",
+	},
+	{
+		"..",
+		"compute_latices",
+		type_of(pkg_0.compute_latices),
+		"/// Pass does not modify the graph but it computes more specialized latices for\n/// each node. This pass should be uned in conjungtion with `apply_peeps` which\n/// will clean up the graph based on the computed latices. The latices will be\n/// allocated in scratch and stored in ctx.lattices.",
+	},
+	{
+		"..",
+		"schedule_graph",
+		type_of(pkg_0.schedule_graph),
+		"/// The function initialzes `gs` with the graph schedule. This is a\n/// sidestructure that is trivial to invalidate. It supports 2 modes:\n/// - regalloc - slow and full schedule, it is required for regalloc to work\n///   properly\n/// - loopopt - this is fast aproximet schedule that mainly makes querying loop\n///   invariant code more efficiently.",
+	},
+	{
+		"..",
+		"take_dbg_data",
+		type_of(pkg_0.take_dbg_data),
+		"/// Call this after scheduling the graph and before register allocation. It will\n/// strip the debug info related nodes. This is a no-op if the debug info is not\n/// enabled so you can call this unconditionally. The `data` param will be\n/// initialized with the debug info. The graph from this point on should not be\n/// modified because the `data` relyes on the node ids not changing.",
+	},
+	{
+		"../regalloc",
+		"regalloc",
+		type_of(pkg_5.regalloc),
+		"/// Regalloc computes the register allocation information for the given proc.\n/// You can choose between scan and graph coloring strategy. Scan scales\n/// linearly with the size fo the graph, but will not discover better\n/// allocation on average. Graph mode will have better results but scales\n/// quadratically with the input.\n///\n/// You need to configure the `ra` with the function param specs, calling\n/// convention and regalloc spec, but call convention can be nil, in which case\n/// the backend will select default one.",
+	},
 	{"..", "add_local_addr", type_of(pkg_0.add_local_addr), ""},
 	{"..", "add_local", type_of(pkg_0.add_local), ""},
 	{"..", "add_loop", type_of(pkg_0.add_loop), ""},

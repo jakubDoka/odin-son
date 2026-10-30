@@ -42,6 +42,8 @@ R6 :: Reg(6)
 R7 :: Reg(7)
 R8 :: Reg(8)
 
+ADDRESS_PAYLOAD :: Reg(116)
+
 R118 :: Reg(118)
 R119 :: Reg(119)
 R120 :: Reg(120)
@@ -74,6 +76,16 @@ when SPEC_NOT_PRESENT {
 		Value_Lt,
 		Value_Gt,
 		Value_Ge,
+		Value_U_Lt,
+		Value_U_Gt,
+		Value_U_Le,
+		Value_U_Ge,
+		Extract_Lane,
+		Address_Payload,
+		Store_A64,
+		Lane_Sequence,
+		Mul_Lo16,
+		Mul_Hi16,
 	}
 
 	inherit_idx_of :: proc($T: typeid) -> u8 {return 0}
@@ -96,7 +108,43 @@ peep :: proc(
 	_: $T,
 ) -> Maybe(bac.Node_ID) {
 	#partial switch xtype(node) {
-	case .Eq ..= .Ge:
+	case .Lane_Id:
+		sequence := bac.add_raw(
+			ctx,
+			"lanes",
+			u16(Node_Type.Lane_Sequence),
+			.I16,
+			{ctx.entry},
+		)
+		return bac.add_un_op(ctx, "laneid", .U_Conv, .I32, sequence)
+	case .Mul:
+		if node.dt == .I32 {
+			// Word-source multiplies avoid Xe-LP's dword-multiply accumulator restrictions.
+			lo := bac.add_raw(
+				ctx,
+				"mullo16",
+				u16(Node_Type.Mul_Lo16),
+				.I32,
+				node.inps,
+			)
+			hi := bac.add_raw(
+				ctx,
+				"mulhi16",
+				u16(Node_Type.Mul_Hi16),
+				.I32,
+				node.inps,
+			)
+			hi = bac.add_bin_op(
+				ctx,
+				"mulhigh",
+				.Shl,
+				.I32,
+				hi,
+				bac.add_c_int(ctx, "bits", .I32, 16),
+			)
+			return bac.add_bin_op(ctx, "mul32", .Add, .I32, lo, hi)
+		}
+	case .Eq ..= .U_Ge:
 		value: bac.Node_ID
 		#reverse for use in node.outs {
 			if get_node(ctx, use.id).itype == .If && use.idx == 1 do continue
@@ -113,7 +161,7 @@ peep :: proc(
 		}
 	case .If:
 		condition := expand_node(ctx, node.inps[1])
-		if condition.itype < .Eq || condition.itype > .Ge {
+		if condition.itype < .Eq || condition.itype > .U_Ge {
 			flag := bac.add_bin_op(
 				ctx,
 				"boolflag",
@@ -129,6 +177,50 @@ peep :: proc(
 		if node.dt == .F32 {
 			inv := bac.add_raw(ctx, "inv", u16(Node_Type.Inv), .F32, {node.inps[1]})
 			return bac.add_bin_op(ctx, "fdiv", .Mul, .F32, node.inps[0], inv)
+		}
+	case .Load:
+		addr := expand_node(ctx, node.inps[2])
+		if addr.itype == .Uniform_Addr && node.dt != .I64 {
+			return extract_uniform(ctx.prc, addr, node.dt, 0)
+		}
+	case .Store:
+		assert(
+			get_node(ctx, node.inps[3]).dt == .I32 ||
+			get_node(ctx, node.inps[3]).dt == .F32,
+		)
+		lo, hi := split_address(ctx.prc, node.inps[2])
+		payload := bac.add_raw(
+			ctx,
+			"a64",
+			u16(Node_Type.Address_Payload),
+			.V512,
+			{node.inps[0], node.inps[1], lo, hi},
+		)
+		return bac.add_raw(
+			ctx,
+			"storea64",
+			u16(Node_Type.Store_A64),
+			.Mem,
+			{node.inps[0], node.inps[1], payload, node.inps[3]},
+		)
+	case .Conv, .U_Conv:
+		source := expand_node(ctx, node.inps[0])
+		if node.dt == .F32 &&
+		   source.dt == .I64 &&
+		   (source.itype == .Conv || source.itype == .U_Conv) &&
+		   get_node(ctx, source.inps[0]).dt == .I32 {
+			assert(node.itype == .Conv || source.itype == .U_Conv)
+			return bac.add_un_op(
+				ctx,
+				"intfloat",
+				bac.Un_Op(source.itype),
+				.F32,
+				source.inps[0],
+			)
+		}
+		if node.dt == .I32 && get_node(ctx, node.inps[0]).dt == .I64 {
+			lo, _ := split_address(ctx.prc, node.inps[0])
+			return lo
 		}
 	}
 
@@ -183,11 +275,23 @@ meta_of :: proc(
 		return {out = out}
 	case .CInt:
 		return {out = out}
-	case .Add, .Sub, .Mul:
+	case .Add,
+	     .Sub,
+	     .Mul,
+	     .Shl,
+	     .Shr,
+	     .U_Shr,
+	     .And,
+	     .Or,
+	     .Xor,
+	     .U_Div,
+	     .U_Rem,
+	     .Mul_Lo16,
+	     .Mul_Hi16:
 		return {out = out, masks = nmasks[:2]}
-	case .Value_Eq ..= .Value_Ge:
+	case .Value_Eq ..= .Value_U_Ge:
 		return {out = out, masks = GRF_MASKS[:2], clobbers = VALUE_CMP_CLOBBERS[:]}
-	case .Eq ..= .Ge:
+	case .Eq ..= .U_Ge:
 		return {out = FLAG_MASK_IDX, masks = GRF_MASKS[:2]}
 	case .If:
 		return {out = IOUT, input_start = 1, masks = FLAG_MASKS[:1]}
@@ -198,12 +302,26 @@ meta_of :: proc(
 		inputs := make([]bac.RM_Intern_Idx, len(node.inps) - 1)
 		slice.fill(inputs, out)
 		return {out = out, input_start = 1, masks = inputs}
-	case .Neg, .Inv:
+	case .Neg, .Inv, .Conv, .U_Conv, .Cast, .Extract_Lane:
 		return {out = out, masks = nmasks[:1]}
+	case .Thread_Id, .Lane_Sequence:
+		return {out = out}
+	case .Address_Payload:
+		return {
+			out = single(ra, ADDRESS_PAYLOAD),
+			input_start = 2,
+			masks = GRF_MASKS[:2],
+		}
+	case .Store_A64:
+		return {
+			out = IOUT,
+			input_start = 2,
+			masks = dup({single(ra, ADDRESS_PAYLOAD), GRF_MASK_IDX}),
+		}
 	case .Split:
 		source := expand_node(prc, node.inps[0])
 		for source.itype == .Split do source = expand_node(prc, source.inps[0])
-		if .Eq <= source.itype && source.itype <= .Ge {
+		if .Eq <= source.itype && source.itype <= .U_Ge {
 			return {out = FLAG_MASK_IDX, masks = FLAG_MASKS[:1]}
 		}
 		return {out = out, masks = nmasks[:1]}
@@ -356,6 +474,76 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block_idx: int, _: $T) {
 				bits,
 			},
 		)
+	case .Thread_Id, .Extract_Lane:
+		src := R0
+		lane := u32(1)
+		if xtype(node) == .Extract_Lane {
+			src = reg_of(ctx, node.inps[0])
+			lane = bac.get_extra(ctx, node, bac.Tup).idx
+		}
+		// mov (8|M0) r{dst}.0<1>:ud r{src}.{lane}<0;1,0>:ud {@1}
+		emit_op(
+			ctx.code,
+			{
+				eu_control(.Mov, 8, swsb = eu_swsb_regdist(1)),
+				eu_dst(reg_of(ctx, instr), 0, .UD) | eu_src0_type(.UD),
+				eu_src(src, eu_subreg(lane, .UD), 0, 1, 0),
+				0,
+			},
+		)
+	case .Lane_Sequence:
+		// Packed UV immediates advance in words, not destination dwords.
+		// mov (8|M0) r{dst}.0<1>:uw 0x76543210:uv {@1}
+		emit_op(
+			ctx.code,
+			{
+				eu_control(.Mov, 8, swsb = eu_swsb_regdist(1)),
+				eu_dst(reg_of(ctx, instr), 0, .UW) |
+				eu_src0_type(.UB) |
+				EU_SRC0_IMMEDIATE,
+				0,
+				0x76543210,
+			},
+		)
+	case .Address_Payload:
+		dst := reg_of(ctx, instr)
+		assert(dst == ADDRESS_PAYLOAD)
+		for input, half in node.inps[2:] {
+			// mov (8|M0) r{dst}.{half}<2>:ud r{src}.0<8;8,1>:ud {@1}
+			emit_op(
+				ctx.code,
+				{
+					eu_control(.Mov, 8, swsb = eu_swsb_regdist(1)),
+					eu_dst(dst, eu_subreg(u32(half), .UD), .UD, 2) | eu_src0_type(.UD),
+					eu_src(reg_of(ctx, input), 0, 8, 8, 1),
+					0,
+				},
+			)
+		}
+	case .Store_A64:
+		d1, d2, d3 := eu_send_desc(
+			eu_dc1_desc(0x19, 0x2e, 0xfd, 2, header = false),
+		)
+		e1, e2, e3 := eu_send_ex_desc(eu_message_ex_desc(1))
+		// send.dc1 (8|M0) null r{address} r{value} 0x40 0x04066efd {@1,$0}
+		emit_op(
+			ctx.code,
+			{
+				eu_control(.Send, 8, swsb = eu_swsb_combined(1, 0)),
+				eu_send_dst(R0, .ARF) | d1 | e1,
+				eu_send_target(.DC1) |
+				eu_send_src(reg_of(ctx, node.inps[2])) |
+				d2 |
+				e2,
+				eu_send_src(reg_of(ctx, node.inps[3])) | d3 | e3,
+			},
+		)
+		// A send reads its payload asynchronously, past the allocator's last use.
+		// sync.nop (1|M0) null {$0.src}
+		emit_op(
+			ctx.code,
+			{eu_control(.Sync, 1, swsb = eu_swsb_sbid(0, .Wait_Src)), 1 << 16, 0, 0},
+		)
 	case .Split:
 		dst := reg_of(ctx, instr)
 		src := reg_of(ctx, node.inps[0])
@@ -396,17 +584,21 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block_idx: int, _: $T) {
 				},
 			)
 		}
-	case .Eq ..= .Ge, .Value_Eq ..= .Value_Ge:
+	case .Eq ..= .U_Ge, .Value_Eq ..= .Value_U_Ge:
 		materialized := xtype(node) >= .Value_Eq
 		kind :=
 			materialized ? Node_Type(u16(Node_Type.Eq) + node.rtype - u16(Node_Type.Value_Eq)) : xtype(node)
 		dst := reg_of(ctx, instr)
+		unsigned := kind >= .U_Lt
+		if unsigned do kind = UNSIGNED_CMP[kind]
 		op := FLOAT_OPS[kind]
 		dt := get_node(ctx, node.inps[0]).dt
 		assert(dt == .F32 || dt in bit_set[bac.Node_Datatype]{.I8, .I32})
 		if dt != .F32 {
-			op[1] = eu_dst(R0, 0, .D, file = .ARF) | eu_src0_type(.D)
-			op[2] = (op[2] & 0xf0000000) | eu_src(R0, 0, 8, 8, 1) | eu_src1_type(.D)
+			type: Data_Type = unsigned ? .UD : .D
+			op[1] = eu_dst(R0, 0, type, file = .ARF) | eu_src0_type(type)
+			op[2] =
+				(op[2] & 0xf0000000) | eu_src(R0, 0, 8, 8, 1) | eu_src1_type(type)
 		}
 		if materialized {
 			op[0] |= eu_flag(VALUE_CMP_FLAG)
@@ -431,10 +623,26 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block_idx: int, _: $T) {
 				},
 			)
 		}
-	case .Add, .Sub, .Mul, .Neg, .Inv:
-		assert(bac.operation_datatype(ctx, node) == .F32)
+	case .Add,
+	     .Sub,
+	     .Mul,
+	     .Neg,
+	     .Inv,
+	     .Shl,
+	     .Shr,
+	     .U_Shr,
+	     .And,
+	     .Or,
+	     .Xor,
+	     .U_Div,
+	     .U_Rem,
+	     .Mul_Lo16,
+	     .Mul_Hi16:
 		dst := reg_of(ctx, instr)
-		op := FLOAT_OPS[xtype(node)]
+		dt := bac.operation_datatype(ctx, node)
+		assert(dt == .F32 || dt == .I32)
+		op := dt == .F32 ? FLOAT_OPS[xtype(node)] : INT_OPS[xtype(node)]
+		assert(op[0] != 0)
 		op[1] |= eu_reg_number(dst, .GRF) << 24
 		op[2] |= eu_reg_number(reg_of(ctx, node.inps[0]), .GRF) << 8
 		if len(node.inps) == 2 {
@@ -442,7 +650,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block_idx: int, _: $T) {
 		}
 		emit_op(ctx.code, op)
 
-		if xtype(node) == .Inv {
+		if xtype(node) == .Inv || xtype(node) == .U_Div || xtype(node) == .U_Rem {
 			// Math is out of order; register-distance dependencies alone cannot wait for it.
 			// sync.nop (1|M0) null {$2.dst}
 			emit_op(
@@ -455,6 +663,29 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block_idx: int, _: $T) {
 				},
 			)
 		}
+	case .Conv, .U_Conv, .Cast:
+		src_dt := get_node(ctx, node.inps[0]).dt
+		dst_dt := node.dt
+		assert(
+			(src_dt == .I16 || src_dt == .I32 || src_dt == .F32) &&
+			(dst_dt == .I32 || dst_dt == .F32),
+		)
+		src_type: Data_Type =
+			src_dt == .F32 ? .F : xtype(node) == .U_Conv ? .UD : .D
+		if src_dt == .I16 do src_type = xtype(node) == .U_Conv ? .UW : .W
+		dst_type: Data_Type =
+			dst_dt == .F32 ? .F : xtype(node) == .U_Conv ? .UD : .D
+		if xtype(node) == .Cast do src_type, dst_type = .UD, .UD
+		// mov (8|M0) r{dst}.0<1>:{dst_type} r{src}.0<8;8,1>:{src_type} {@1}
+		emit_op(
+			ctx.code,
+			{
+				eu_control(.Mov, 8, swsb = eu_swsb_regdist(1)),
+				eu_dst(reg_of(ctx, instr), 0, dst_type) | eu_src0_type(src_type),
+				eu_src(reg_of(ctx, node.inps[0]), 0, 8, 8, 1),
+				0,
+			},
+		)
 	case .If, .Jump, .Always:
 		block := ctx.blocks[block_idx]
 		ctx.labels[(block_idx + 1) * 2 + 1] = ctx.code.pos

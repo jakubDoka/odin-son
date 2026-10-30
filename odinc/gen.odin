@@ -84,7 +84,7 @@ TARGETS := [Target_ID]typecheck.Target {
 }
 
 emit_shader :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
-	return ctx.procs[1].out.code
+	return slice.clone(ctx.procs[1].out.code, allocator)
 }
 
 Abi_Param :: struct {
@@ -380,6 +380,26 @@ emit_lvalue :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Sym {
 		}
 	case .Decl:
 		gv := idmt.decl
+		if gv.shader_tag == "builtin" {
+			kind: bac.Node_Type = gv.name == "thread_id" ? .Thread_Id : .Lane_Id
+			return Value(bac.add_raw(ctx, gv.name, u16(kind), .I32, {ctx.entry}))
+		}
+		if gv.shader_tag == "uniform" {
+			offset := gv.uniform_offset
+			(^bac.Tup)(
+				bac.get_next_extra_slot(ctx, u16(bac.Node_Type.Uniform_Addr), 0),
+			)^ = {
+				idx = offset % 32,
+			}
+			addr := bac.add_raw(
+				ctx,
+				gv.name,
+				u16(bac.Node_Type.Uniform_Addr),
+				.I64,
+				{ctx.shader_params[offset / 32]},
+			)
+			return Value{id = addr, is_lvalue = true}
+		}
 
 		if gv.is_mutable {
 			g := bac.add_global(ctx, gv.name, gv.global_idx)
@@ -866,6 +886,22 @@ emit_proc :: proc(
 
 	{context.allocator = ctx.types.allocator
 		prc.param_types = ssa.arg_gen_finalize(ctx, &gen)}
+	ctx.shader_params = nil
+	if ctx.shader_uniform_bytes != 0 {
+		assert(
+			len(prc.param_types) == 0,
+			"shader uniforms cannot be mixed with explicit parameters",
+		)
+		count := (ctx.shader_uniform_bytes + 31) / 32
+		ctx.shader_params = make([]Node_ID, count)
+		prc.param_types = make([]bac.Param_Spec, count, ctx.types.allocator)
+		for &param, j in ctx.shader_params {
+			param = bac.add_param(ctx, "uniforms", .V256, ctx.entry, u32(j))
+			prc.param_types[j] = {
+				dt = .V256,
+			}
+		}
+	}
 
 	if prc.lit.body == nil do return
 

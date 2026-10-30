@@ -216,6 +216,7 @@ bulk_destroy :: proc(slots: ..^Allocator) {
 	for slot in slots {
 		rel_offset := uintptr(slot.ptr) - min_ptr
 		assert(rel_offset + uintptr(slot.reserved) <= uintptr(size))
+		slot^ = {}
 	}
 
 	release(rawptr(min_ptr), size)

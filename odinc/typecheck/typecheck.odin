@@ -56,27 +56,28 @@ Sloc_Key :: struct {
 }
 
 Gen_Ctx :: struct {
-	using global: ^Global_Ctx,
-	using types:  ^Types,
-	using prc:    bac.Proc,
-	node_scope:   Node_ID,
-	mem_slot:     int,
-	loop:         ^Loop_State,
-	file:         ^ast.File,
-	file_id:      File_ID,
-	module:       Module_ID,
-	prc_id:       Proc_ID,
-	ret_ptrs:     []Node_ID,
-	poly_types:   #soa[dynamic]Poly_Entry,
-	eval_depth:   int,
-	type_depth:   int,
-	error_cnt:    int,
-	reachable:    ^bool,
-	errors:       io.Writer,
-	stack_top:    uintptr,
-	depht:        int,
-	ralloc_mode:  ra.Mode,
-	decls:        [dynamic]Local_Decl,
+	using global:  ^Global_Ctx,
+	using types:   ^Types,
+	using prc:     bac.Proc,
+	node_scope:    Node_ID,
+	mem_slot:      int,
+	loop:          ^Loop_State,
+	file:          ^ast.File,
+	file_id:       File_ID,
+	module:        Module_ID,
+	prc_id:        Proc_ID,
+	ret_ptrs:      []Node_ID,
+	poly_types:    #soa[dynamic]Poly_Entry,
+	eval_depth:    int,
+	type_depth:    int,
+	error_cnt:     int,
+	reachable:     ^bool,
+	errors:        io.Writer,
+	stack_top:     uintptr,
+	depht:         int,
+	ralloc_mode:   ra.Mode,
+	decls:         [dynamic]Local_Decl,
+	shader_params: []Node_ID,
 }
 
 Local_Decl :: struct {
@@ -913,6 +914,8 @@ collect_decls :: proc(f: ast.File, decls: ^[dynamic]Decl, file_id: File_ID) {
 						value = vl,
 						file = file_id,
 						is_mutable = decl.is_mutable,
+						shader_tag = declaration_tag(decl),
+						has_initializer = len(decl.values) != 0,
 					},
 				)
 			}
@@ -936,6 +939,20 @@ collect_decls :: proc(f: ast.File, decls: ^[dynamic]Decl, file_id: File_ID) {
 			}
 		}
 	}
+}
+
+declaration_tag :: proc(decl: ^ast.Value_Decl) -> string {
+	for attr in decl.attributes {
+		for elem in attr.elems {
+			field := elem.derived.(^ast.Field_Value) or_continue
+			name := field.field.derived.(^ast.Ident) or_continue
+			value := field.value.derived.(^ast.Basic_Lit) or_continue
+			if name.name == "tag" && value.tok.kind == .String {
+				return value.tok.text[1:len(value.tok.text) - 1]
+			}
+		}
+	}
+	return ""
 }
 
 has_polys :: proc(ctx: ^Gen_Ctx, root: ^ast.Expr) -> (found: bool) {
@@ -1214,12 +1231,15 @@ get_builtin_proc :: proc(node: ^ast.Node) -> Builtin_Proc {
 }
 
 Decl :: struct {
-	name:       string,
-	ty:         ^ast.Expr,
-	value:      ^ast.Expr,
-	file:       File_ID,
-	is_mutable: bool,
-	global_idx: u32,
+	name:            string,
+	ty:              ^ast.Expr,
+	value:           ^ast.Expr,
+	file:            File_ID,
+	is_mutable:      bool,
+	global_idx:      u32,
+	shader_tag:      string,
+	uniform_offset:  u32,
+	has_initializer: bool,
 }
 
 Module :: struct {
@@ -1257,31 +1277,38 @@ Proc_Inst_Key :: struct {
 }
 
 Types :: struct {
-	target:         Target,
-	check:          bool,
-	mems:           Mems,
-	allocator:      runtime.Allocator,
-	procs:          [dynamic]Proc,
-	scope:          [dynamic]Variable,
-	proc_insts:     map[Proc_Inst_Key]Proc_ID,
-	pointers:       map[Type]Pointer,
-	multi_pointers: map[Type]Multi_Pointer,
-	structs:        map[Decl_Key]^Struct,
-	struct_insts:   map[Struct_Inst_Key]^Struct,
-	enums:          map[Decl_Key]^Enum,
-	unions:         map[Decl_Key]^Union,
-	arrays:         map[Array]^Array,
-	simds:          map[Simd]^Simd,
-	slices:         map[Slice]^Slice,
-	proc_types:     map[Proc_Type_Key]^Proc_Type,
-	type_slices:    map[Type_Slice_Key][]Type,
-	globals:        [dynamic]Global_Data,
-	global_vars:    [dynamic]Global_Var,
+	target:               Target,
+	check:                bool,
+	mems:                 Mems,
+	allocator:            runtime.Allocator,
+	procs:                [dynamic]Proc,
+	scope:                [dynamic]Variable,
+	proc_insts:           map[Proc_Inst_Key]Proc_ID,
+	pointers:             map[Type]Pointer,
+	multi_pointers:       map[Type]Multi_Pointer,
+	structs:              map[Decl_Key]^Struct,
+	struct_insts:         map[Struct_Inst_Key]^Struct,
+	enums:                map[Decl_Key]^Enum,
+	unions:               map[Decl_Key]^Union,
+	arrays:               map[Array]^Array,
+	simds:                map[Simd]^Simd,
+	slices:               map[Slice]^Slice,
+	proc_types:           map[Proc_Type_Key]^Proc_Type,
+	type_slices:          map[Type_Slice_Key][]Type,
+	globals:              [dynamic]Global_Data,
+	global_vars:          [dynamic]Global_Var,
+	shader_uniform_bytes: int,
+	owns_scratch:         bool,
 }
 
 types_init :: proc(types: ^Types) {
 	buf: [dynamic; 16]^arna.Allocator
-	append(&buf, &arna.scratch[0], &arna.scratch[1])
+	if arna.scratch == {} {
+		arna.scratch[0].reserved = 4096 * 1024
+		arna.scratch[1].reserved = 4096 * 1024
+		append(&buf, &arna.scratch[0], &arna.scratch[1])
+		types.owns_scratch = true
+	}
 	for &arena in mem.slice_data_cast(
 		[]arna.Allocator,
 		mem.ptr_to_bytes(&types.mems),
@@ -1325,7 +1352,10 @@ types_bind_allocators :: proc(types: ^Types) {
 
 types_deinit :: proc(types: ^Types) {
 	buf: [dynamic; 16]^arna.Allocator
-	append(&buf, &arna.scratch[0], &arna.scratch[1])
+	if types.owns_scratch {
+		append(&buf, &arna.scratch[0], &arna.scratch[1])
+		types.owns_scratch = false
+	}
 	for &arena in mem.slice_data_cast(
 		[]arna.Allocator,
 		mem.ptr_to_bytes(&types.mems),
@@ -2046,7 +2076,10 @@ typecheck :: proc(
 				)
 				break match
 			}
-			lvalue = pid.is_mutable
+			lvalue =
+				pid.is_mutable &&
+				pid.shader_tag != "uniform" &&
+				pid.shader_tag != "builtin"
 			ty = integrate_inferrence(ctx, mid, pid, prop.inferred_ty)
 			break match
 		}
@@ -2581,7 +2614,7 @@ typecheck :: proc(
 				meta.kind = .Const
 				meta.value = res.int
 			} else {
-				lvalue = true
+				lvalue = decl.shader_tag != "uniform" && decl.shader_tag != "builtin"
 			}
 			ty = res
 			break match
@@ -3215,6 +3248,46 @@ typecheck_program :: proc(ctx: ^Gen_Ctx) {
 			if decl.hash == 0 do break
 
 			vl := typecheck_decl(ctx, ctx.module, &decl.id)
+			if decl.id.shader_tag == "uniform" || decl.id.shader_tag == "builtin" {
+				if !decl.id.is_mutable || decl.id.has_initializer {
+					error(
+						ctx,
+						decl.id.value,
+						"shader inputs must be variables without initializers",
+					)
+				}
+				if decl.id.shader_tag == "builtin" {
+					if vl.type != .U32 ||
+					   (decl.id.name != "thread_id" && decl.id.name != "lane_id") {
+						error(
+							ctx,
+							decl.id.value,
+							"expected thread_id or lane_id with type u32",
+						)
+					}
+				} else {
+					dt := type_to_dt(vl.type)
+					if dt != .I32 && dt != .F32 && dt != .I64 {
+						error(
+							ctx,
+							decl.id.value,
+							"uniforms require a 32-bit scalar or 64-bit scalar/pointer",
+						)
+						continue
+					}
+					size := type_size(vl.type)
+					ctx.shader_uniform_bytes = mem.align_forward_int(
+						ctx.shader_uniform_bytes,
+						size,
+					)
+					decl.id.uniform_offset = u32(ctx.shader_uniform_bytes)
+					ctx.shader_uniform_bytes += size
+					if ctx.shader_uniform_bytes > 8 * 32 {
+						error(ctx, decl.id.value, "packed uniforms exceed eight registers")
+					}
+				}
+				continue
+			}
 
 			if !decl.id.is_mutable do continue
 

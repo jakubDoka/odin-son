@@ -87,6 +87,9 @@ Class_Flag :: bac.Class_Flag
 		0b10, // Simd_Extract_Msbs
 		0b10, // Simd_Reduce_Add_Bisect
 		0b10, // Select
+		0b10, // Thread_Id
+		0b10, // Lane_Id
+		0b100000, // Uniform_Addr
 		0b10000000, // AMD64_Add
 		0b10000000, // AMD64_Sub
 		0b10000000, // AMD64_And
@@ -144,38 +147,39 @@ Class_Flag :: bac.Class_Flag
 		25 = 1, // Ret -> Tup
 		27 = 2, // CInt -> CInt
 		55 = 1, // Proc_Addr -> Tup
-		71 = 3, // AMD64_Add -> Mem_Op
-		72 = 3, // AMD64_Sub -> Mem_Op
-		73 = 3, // AMD64_And -> Mem_Op
-		74 = 3, // AMD64_Or -> Mem_Op
-		75 = 3, // AMD64_Xor -> Mem_Op
-		76 = 3, // AMD64_Eq -> Mem_Op
-		77 = 3, // AMD64_Ne -> Mem_Op
-		78 = 3, // AMD64_Le -> Mem_Op
-		79 = 3, // AMD64_Lt -> Mem_Op
-		80 = 3, // AMD64_Gt -> Mem_Op
-		81 = 3, // AMD64_Ge -> Mem_Op
-		82 = 3, // AMD64_U_Lt -> Mem_Op
-		83 = 3, // AMD64_U_Gt -> Mem_Op
-		84 = 3, // AMD64_U_Le -> Mem_Op
-		85 = 3, // AMD64_U_Ge -> Mem_Op
-		86 = 3, // AMD64_Shl -> Mem_Op
-		87 = 3, // AMD64_Shr -> Mem_Op
-		88 = 3, // AMD64_U_Shr -> Mem_Op
-		89 = 3, // AMD64_Mul -> Mem_Op
-		90 = 3, // AMD64_Div -> Mem_Op
-		91 = 3, // AMD64_Lea -> Mem_Op
-		92 = 3, // AMD64_Load -> Mem_Op
-		93 = 3, // AMD64_Store -> Mem_Op
-		94 = 3, // AMD64_Neg -> Mem_Op
-		95 = 3, // AMD64_Not -> Mem_Op
-		97 = 3, // AMD64_Fma_213 -> Mem_Op
-		99 = 3, // AMD64_Padd -> Mem_Op
-		100 = 3, // AMD64_Psub -> Mem_Op
-		101 = 3, // AMD64_Pshufd -> Mem_Op
-		102 = 3, // AMD64_Pshuflw -> Mem_Op
-		104 = 3, // AMD64_Pshufb -> Mem_Op
-		105 = 3, // AMD64_Pextr -> Mem_Op
+		73 = 1, // Uniform_Addr -> Tup
+		74 = 3, // AMD64_Add -> Mem_Op
+		75 = 3, // AMD64_Sub -> Mem_Op
+		76 = 3, // AMD64_And -> Mem_Op
+		77 = 3, // AMD64_Or -> Mem_Op
+		78 = 3, // AMD64_Xor -> Mem_Op
+		79 = 3, // AMD64_Eq -> Mem_Op
+		80 = 3, // AMD64_Ne -> Mem_Op
+		81 = 3, // AMD64_Le -> Mem_Op
+		82 = 3, // AMD64_Lt -> Mem_Op
+		83 = 3, // AMD64_Gt -> Mem_Op
+		84 = 3, // AMD64_Ge -> Mem_Op
+		85 = 3, // AMD64_U_Lt -> Mem_Op
+		86 = 3, // AMD64_U_Gt -> Mem_Op
+		87 = 3, // AMD64_U_Le -> Mem_Op
+		88 = 3, // AMD64_U_Ge -> Mem_Op
+		89 = 3, // AMD64_Shl -> Mem_Op
+		90 = 3, // AMD64_Shr -> Mem_Op
+		91 = 3, // AMD64_U_Shr -> Mem_Op
+		92 = 3, // AMD64_Mul -> Mem_Op
+		93 = 3, // AMD64_Div -> Mem_Op
+		94 = 3, // AMD64_Lea -> Mem_Op
+		95 = 3, // AMD64_Load -> Mem_Op
+		96 = 3, // AMD64_Store -> Mem_Op
+		97 = 3, // AMD64_Neg -> Mem_Op
+		98 = 3, // AMD64_Not -> Mem_Op
+		100 = 3, // AMD64_Fma_213 -> Mem_Op
+		102 = 3, // AMD64_Padd -> Mem_Op
+		103 = 3, // AMD64_Psub -> Mem_Op
+		104 = 3, // AMD64_Pshufd -> Mem_Op
+		105 = 3, // AMD64_Pshuflw -> Mem_Op
+		107 = 3, // AMD64_Pshufb -> Mem_Op
+		108 = 3, // AMD64_Pextr -> Mem_Op
 	},
 	node_flags = {
 		{}, // Nil
@@ -249,6 +253,9 @@ Class_Flag :: bac.Class_Flag
 		{Class_Flag.Interned}, // Simd_Extract_Msbs
 		{Class_Flag.Interned}, // Simd_Reduce_Add_Bisect
 		{Class_Flag.Interned}, // Select
+		{Class_Flag.Interned}, // Thread_Id
+		{Class_Flag.Interned}, // Lane_Id
+		{Class_Flag.Interned}, // Uniform_Addr
 		{}, // AMD64_Add
 		{}, // AMD64_Sub
 		{}, // AMD64_And
@@ -306,9 +313,7 @@ Class_Flag :: bac.Class_Flag
 		25 = bac.Tup,
 		27 = bac.CInt,
 		55 = bac.Tup,
-		71 = Mem_Op,
-		72 = Mem_Op,
-		73 = Mem_Op,
+		73 = bac.Tup,
 		74 = Mem_Op,
 		75 = Mem_Op,
 		76 = Mem_Op,
@@ -331,13 +336,16 @@ Class_Flag :: bac.Class_Flag
 		93 = Mem_Op,
 		94 = Mem_Op,
 		95 = Mem_Op,
+		96 = Mem_Op,
 		97 = Mem_Op,
-		99 = Mem_Op,
+		98 = Mem_Op,
 		100 = Mem_Op,
-		101 = Mem_Op,
 		102 = Mem_Op,
+		103 = Mem_Op,
 		104 = Mem_Op,
 		105 = Mem_Op,
+		107 = Mem_Op,
+		108 = Mem_Op,
 	}),
 	node_kind = nil when #config(NO_FMT, false) else Node_Type,
 }
@@ -414,6 +422,9 @@ Node_Type :: enum u16 {
 	Simd_Extract_Msbs,
 	Simd_Reduce_Add_Bisect,
 	Select,
+	Thread_Id,
+	Lane_Id,
+	Uniform_Addr,
 	AMD64_Add,
 	AMD64_Sub,
 	AMD64_And,

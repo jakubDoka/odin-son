@@ -85,6 +85,9 @@ Class_Flag :: bac.Class_Flag
 		0b10, // Simd_Extract_Msbs
 		0b10, // Simd_Reduce_Add_Bisect
 		0b10, // Select
+		0b10, // Thread_Id
+		0b10, // Lane_Id
+		0b100000, // Uniform_Addr
 		0b10000000, // Scope
 		0b10, // Lazy_Phi
 	},
@@ -109,8 +112,9 @@ Class_Flag :: bac.Class_Flag
 		25 = 1, // Ret -> Tup
 		27 = 2, // CInt -> CInt
 		55 = 1, // Proc_Addr -> Tup
-		71 = 1, // Scope -> Scope
-		72 = 0,
+		73 = 1, // Uniform_Addr -> Tup
+		74 = 1, // Scope -> Scope
+		75 = 0,
 	},
 	node_flags = {
 		{}, // Nil
@@ -184,6 +188,9 @@ Class_Flag :: bac.Class_Flag
 		{Class_Flag.Interned}, // Simd_Extract_Msbs
 		{Class_Flag.Interned}, // Simd_Reduce_Add_Bisect
 		{Class_Flag.Interned}, // Select
+		{Class_Flag.Interned}, // Thread_Id
+		{Class_Flag.Interned}, // Lane_Id
+		{Class_Flag.Interned}, // Uniform_Addr
 		{}, // Scope
 		{}, // Lazy_Phi
 	},
@@ -208,8 +215,9 @@ Class_Flag :: bac.Class_Flag
 		25 = bac.Tup,
 		27 = bac.CInt,
 		55 = bac.Tup,
-		71 = Scope,
-		72 = {},
+		73 = bac.Tup,
+		74 = Scope,
+		75 = {},
 	}),
 	node_kind = nil when #config(NO_FMT, false) else Node_Type,
 }
@@ -286,6 +294,9 @@ Node_Type :: enum u16 {
 	Simd_Extract_Msbs,
 	Simd_Reduce_Add_Bisect,
 	Select,
+	Thread_Id,
+	Lane_Id,
+	Uniform_Addr,
 	Scope,
 	Lazy_Phi,
 }

@@ -406,6 +406,8 @@ meta_of :: #force_inline proc(
 	dup :: bac.rm_dup
 
 	switch wtype(node) {
+	case .Thread_Id, .Lane_Id, .Uniform_Addr:
+		unreachable()
 	case:
 		fallthrough
 	case .Nil ..= .Dbg_Scope, .Simd_Reduce_Add_Bisect, .Simd_Extract_Lsbs:
@@ -586,6 +588,8 @@ pre_regalloc_hook :: proc(
 		// TODO: this is uselss to be strongly typed, we anyway just use the
 		// length, and wether the out is invalid
 		switch wtype(node) {
+		case .Thread_Id, .Lane_Id, .Uniform_Addr:
+			unreachable()
 		case:
 			fallthrough
 		case .Nil ..=
@@ -1023,6 +1027,8 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block_idx: int, _: $T) {
 	}
 
 	switch kind {
+	case .Thread_Id, .Lane_Id, .Uniform_Addr:
+		unreachable()
 	case:
 		fallthrough
 	case .Nil ..=

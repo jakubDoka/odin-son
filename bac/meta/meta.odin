@@ -642,6 +642,9 @@ IDEAL_CLASSES := [bac.Node_Type]Class_Spec {
 	.Poison = {default_type = .Void, flags = {.Interned}},
 	// TODO: maybe its better to introduce a flag: Schedule_Early
 	.Param = {id = Tup, args = {"entry"}, extra_args = {"idx"}},
+	.Thread_Id = {no_ctor = true, flags = {.Interned}},
+	.Lane_Id = {no_ctor = true, flags = {.Interned}},
+	.Uniform_Addr = {id = Tup, no_ctor = true, flags = {.Interned}},
 	.CInt = {
 		id = bac.CInt,
 		extra_args = {"value"},

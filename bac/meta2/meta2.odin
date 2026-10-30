@@ -57,15 +57,18 @@ main :: proc() {
 	when intel_xelp.SPEC_NOT_PRESENT {
 		XELP_CLASSES := [intel_xelp.Node_Type]meta.Class_Spec {
 			.Inv = {no_ctor = true, flags = {.Interned}},
-			.Value_Eq ..= .Value_Ge = {no_ctor = true, flags = {.Interned}},
+			.Value_Eq ..= .Value_U_Ge = {no_ctor = true, flags = {.Interned}},
+			.Extract_Lane = {id = bac.Tup, no_ctor = true, flags = {.Interned}},
+			.Address_Payload = {no_ctor = true},
+			.Store_A64 = {no_ctor = true, flags = {.Store}},
+			.Lane_Sequence = {no_ctor = true, flags = {.Interned}},
+			.Mul_Lo16 ..= .Mul_Hi16 = {no_ctor = true, flags = {.Interned}},
 		}
 
 		meta.generate_spec(
 			meta.Spec_Gen_Input {
 				package_name = "bac_intel_xelp",
-				header_import = "import bac \"..\"\n" +
-				"Reg_Kind :: bac.Reg_Kind\n" +
-				"Class_Flag :: bac.Class_Flag\n",
+				header_import = "import bac \"..\"\n" + "Reg_Kind :: bac.Reg_Kind\n" + "Class_Flag :: bac.Class_Flag\n",
 				qual = "bac.",
 				classes = {
 					meta.class_array(&meta.IDEAL_CLASSES, gen_ctors = false),
@@ -76,7 +79,9 @@ main :: proc() {
 				spill_boundary = {intel_xelp.GRF_COUNT, intel_xelp.FLAG_COUNT},
 				cc_table = intel_xelp.CC_TABLE[:],
 				common_reg_specs = {
-					{"GRF", intel_xelp.RK_GRF, {~i64(1), ~i64(1 << 55 | 1 << 54)}},
+					// TODO: this is not ideal to reserve so many registers for shit
+					// and instead support this in the regalloc but that is a big task
+					{"GRF", intel_xelp.RK_GRF, {~i64(1), ~i64(0xf << 52)}},
 					{"FLAG", intel_xelp.RK_FLAG, {0xf, 0}},
 				},
 			},

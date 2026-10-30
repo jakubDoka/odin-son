@@ -573,7 +573,8 @@ memopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 								if init.is_loop do continue
 
 								inode := expand_node(ctx, init.node)
-								if btype(inode) != .Lazy_Phi do continue
+								// Resolving an inherited slot can expose a phi owned by an outer loop.
+								if btype(inode) != .Lazy_Phi || inode.inps[0] != loop.loop_node do continue
 
 								for bnode.is_loop {
 									loop := ctx.loops[bnode.node]

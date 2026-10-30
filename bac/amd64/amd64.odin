@@ -218,7 +218,8 @@ Mem_Op :: struct {
 BIN_OP_OFFSET :: transmute(u16)(i16(Node_Type.AMD64_Add) -
 	i16(bac.Node_Type.Add))
 
-UN_OP_OFFSET :: transmute(u16)(i16(Node_Type.AMD64_Neg) - i16(bac.Node_Type.Neg))
+UN_OP_OFFSET :: transmute(u16)(i16(Node_Type.AMD64_Neg) -
+	i16(bac.Node_Type.Neg))
 
 peep :: proc(
 	ctx: bac.Peep_Ctx,
@@ -602,7 +603,14 @@ peep :: proc(
 				lane = node.lane,
 			)
 
-			_, lhs := add_node(ctx, "pextrw", .AMD64_Pextr, node.dt, {add2}, {aux = 1})
+			_, lhs := add_node(
+				ctx,
+				"pextrw",
+				.AMD64_Pextr,
+				node.dt,
+				{add2},
+				{aux = 1},
+			)
 			rhs := bac.add_un_op(ctx, "rhs", .Cast, node.dt, add2)
 			return bac.add_bin_op(ctx, "sum", .Add, node.dt, lhs, rhs)
 		case .I32:
@@ -625,7 +633,14 @@ peep :: proc(
 				lane = node.lane,
 			)
 
-			_, lhs := add_node(ctx, "pextrd", .AMD64_Pextr, node.dt, {add}, {aux = 1})
+			_, lhs := add_node(
+				ctx,
+				"pextrd",
+				.AMD64_Pextr,
+				node.dt,
+				{add},
+				{aux = 1},
+			)
 			rhs := bac.add_un_op(ctx, "rhs", .Cast, node.dt, add)
 			return bac.add_bin_op(ctx, "sum", .Add, node.dt, lhs, rhs)
 		case .I64:
@@ -847,7 +862,8 @@ peep :: proc(
 				   lhs_mem.dis == mem_op.dis {
 
 					needs_removal :=
-						atype(val) in AMD64_TRIGGER_OPS || val.itype in IDEAL_TRIGGER_UN_OPS
+						atype(val) in AMD64_TRIGGER_OPS ||
+						val.itype in IDEAL_TRIGGER_UN_OPS
 
 					rm_idx := 3 + int(lhs_mem.scale != 0)
 					if lhs_mem.scale != 0 && needs_removal {
@@ -922,7 +938,8 @@ make_node :: proc(
 	// NOTE: afaik this is sufficient since we don't insert load ops before
 	// scheduling
 	node.is_store = fnode.is_store
-	node.is_load = fnode.is_load || type == u16(Node_Type.AMD64_Load) || force_load
+	node.is_load =
+		fnode.is_load || type == u16(Node_Type.AMD64_Load) || force_load
 	node.lane = fnode.lane
 	aextra(prc, node, Mem_Op)^ = extra
 	return id
@@ -1018,12 +1035,12 @@ meta_of :: proc(
 	}
 	@(static, rodata)
 	SETS_FLAGS := #partial [Node_Type]bool {
-		.Add ..= .Xor          = true,
-		.Mul ..= .And_Not          = true,
-		.Neg      = true,
-		.Ctz      = true,
-		.AMD64_Add ..= .AMD64_Xor          = true,
-		.AMD64_Shl ..= .AMD64_Div          = true,
+		.Add ..= .Xor            = true,
+		.Mul ..= .And_Not            = true,
+		.Neg        = true,
+		.Ctz        = true,
+		.AMD64_Add ..= .AMD64_Xor            = true,
+		.AMD64_Shl ..= .AMD64_Div            = true,
 		.AMD64_Neg  = true,
 		.AMD64_Mul8 = true,
 	}
@@ -1097,6 +1114,8 @@ meta_of_raw :: proc(
 	mem_op: ^Mem_Op = aextra(prc, node, Mem_Op)
 
 	switch atype(node) {
+	case .Thread_Id, .Lane_Id, .Uniform_Addr:
+		unreachable()
 	case:
 		fallthrough
 	case .Nil ..=
@@ -1273,7 +1292,12 @@ meta_of_raw :: proc(
 			}
 		}
 		#partial switch atype(node) {
-		case .AMD64_Add ..= .AMD64_Xor, .AMD64_Mul, .AMD64_Div, .AMD64_Shl ..= .AMD64_U_Shr:
+		case .AMD64_Add ..=
+		     .AMD64_Xor,
+		     .AMD64_Mul,
+		     .AMD64_Div,
+		     .AMD64_Shl ..=
+		     .AMD64_U_Shr:
 			switch mem_op.mem_mode {
 			case .None:
 				in_place_slot = 1
@@ -1537,21 +1561,21 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 
 	@(static, rodata)
 	OPCODE_TABLE := #partial [Node_Type]Instr_Info {
-		.Add       = {0x01, 0},
-		.Sub       = {0x29, 0},
-		.And       = {0x21, 0},
-		.Or        = {0x09, 0},
-		.Xor       = {0x31, 0},
-		.Shl       = {0xD3, 0b100},
-		.U_Shr     = {0xD3, 0b101},
-		.Shr       = {0xD3, 0b111},
-		.And_Not   = {0xF7, 0b010},
-		.U_Div     = {0xF7, 0b110},
-		.U_Rem     = {0xF7, 0b110},
-		.Div       = {0xF7, 0b111},
-		.Rem       = {0xF7, 0b111},
-		.Load      = {0x8b, 0},
-		.Store     = {0x89, 0},
+		.Add         = {0x01, 0},
+		.Sub         = {0x29, 0},
+		.And         = {0x21, 0},
+		.Or          = {0x09, 0},
+		.Xor         = {0x31, 0},
+		.Shl         = {0xD3, 0b100},
+		.U_Shr       = {0xD3, 0b101},
+		.Shr         = {0xD3, 0b111},
+		.And_Not     = {0xF7, 0b010},
+		.U_Div       = {0xF7, 0b110},
+		.U_Rem       = {0xF7, 0b110},
+		.Div         = {0xF7, 0b111},
+		.Rem         = {0xF7, 0b111},
+		.Load        = {0x8b, 0},
+		.Store       = {0x89, 0},
 		.AMD64_Add   = {0x81, 0b000},
 		.AMD64_Sub   = {0x81, 0b101},
 		.AMD64_And   = {0x81, 0b100},
@@ -1560,16 +1584,16 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 		.AMD64_Shl   = {0xC1, 0b100},
 		.AMD64_Shr   = {0xC1, 0b111},
 		.AMD64_U_Shr = {0xC1, 0b101},
-		.Neg       = {0xf7, 0b011},
-		.Not       = {0xf7, 0b010},
+		.Neg         = {0xf7, 0b011},
+		.Not         = {0xf7, 0b010},
 	}
 
 	@(static, rodata)
 	FLOAT_OPCODE_TABLE := #partial [Node_Type]Instr_Info {
-		.Add     = {0x58, 0},
-		.Sub     = {0x5C, 0},
-		.Mul     = {0x59, 0},
-		.Div     = {0x5E, 0},
+		.Add       = {0x58, 0},
+		.Sub       = {0x5C, 0},
+		.Mul       = {0x59, 0},
+		.Div       = {0x5E, 0},
 		.AMD64_Add = {0x58, 0},
 		.AMD64_Sub = {0x5C, 0},
 		.AMD64_Mul = {0x59, 0},
@@ -1652,6 +1676,8 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 	ctx.instr_offsets[node.gvn] = u32(ctx.code.pos)
 
 	switch type {
+	case .Thread_Id, .Lane_Id, .Uniform_Addr:
+		unreachable()
 	case:
 		fallthrough
 	case .Nil ..=
@@ -2072,7 +2098,12 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 		case .F32, .F64, .V128, .V256, .V512:
 			fmt.panicf("")
 		}
-	case .AMD64_Add ..= .AMD64_Xor, .AMD64_Shl ..= .AMD64_U_Shr, .AMD64_Mul, .AMD64_Div:
+	case .AMD64_Add ..=
+	     .AMD64_Xor,
+	     .AMD64_Shl ..=
+	     .AMD64_U_Shr,
+	     .AMD64_Mul,
+	     .AMD64_Div:
 		if .AMD64_Shl <= type &&
 		   type <= .AMD64_U_Shr &&
 		   mem_op.mem_mode == .None &&
@@ -2687,16 +2718,16 @@ condition_for :: proc(
 	id := id
 	@(static, rodata)
 	CONDITIONS := #partial [Node_Type][2]u8 {
-		.Eq       = {4, 4},
-		.Ne       = {5, 5},
-		.Lt       = {0xC, 7},
-		.Le       = {0xE, 3},
-		.Gt       = {0xF, 7},
-		.Ge       = {0xD, 3},
-		.U_Lt     = {2, 2},
-		.U_Le     = {6, 6},
-		.U_Gt     = {7, 7},
-		.U_Ge     = {3, 3},
+		.Eq         = {4, 4},
+		.Ne         = {5, 5},
+		.Lt         = {0xC, 7},
+		.Le         = {0xE, 3},
+		.Gt         = {0xF, 7},
+		.Ge         = {0xD, 3},
+		.U_Lt       = {2, 2},
+		.U_Le       = {6, 6},
+		.U_Gt       = {7, 7},
+		.U_Ge       = {3, 3},
 		.AMD64_Eq   = {4, 4},
 		.AMD64_Ne   = {5, 5},
 		.AMD64_Lt   = {0xC, 2},

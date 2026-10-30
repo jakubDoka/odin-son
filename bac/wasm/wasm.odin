@@ -244,16 +244,13 @@ peep :: proc(
 		}
 
 		if wtype(inp) == .Load && len(inp.outs) == 1 {
-			(^Mem_Op)(bac.get_next_extra_slot(ctx, u16(Node_Type.WASM_Load), 0))^ = {
-				source = inp.dt,
-				signed = signed,
-			}
 			return bac.add_raw(
 				ctx,
 				"sxld",
 				u16(Node_Type.WASM_Load),
 				node.dt,
 				inp.inps,
+				extra = &Mem_Op{source = inp.dt, signed = signed},
 			)
 		}
 	case .Load, .Store:
@@ -271,13 +268,16 @@ peep :: proc(
 		}
 
 		if off != 0 || changed {
-			(^Mem_Op)(bac.get_next_extra_slot(ctx, u16(op), 0))^ = {
-				source = node.dt,
-				offset = i64(off),
-			}
 			inps := slice.clone(node.inps)
 			inps[2] = base
-			return bac.add_raw(ctx, "offm", u16(op), node.dt, inps)
+			return bac.add_raw(
+				ctx,
+				"offm",
+				u16(op),
+				node.dt,
+				inps,
+				extra = &Mem_Op{source = node.dt, offset = i64(off)},
+			)
 		}
 	case .And_Not:
 		return bac.add_bin_op(

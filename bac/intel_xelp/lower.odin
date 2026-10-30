@@ -12,15 +12,13 @@ extract_uniform :: proc(
 ) -> bac.Node_ID {
 	offset := bac.get_extra(prc, addr, bac.Tup).idx
 	assert(offset % 4 == 0 && offset + half * 4 < GRF_BYTES)
-	(^bac.Tup)(bac.get_next_extra_slot(prc, u16(Node_Type.Extract_Lane), 0))^ = {
-		idx = offset / 4 + half,
-	}
 	return bac.add_raw(
 		prc,
 		"uniform",
 		u16(Node_Type.Extract_Lane),
 		dt,
 		{addr.inps[0]},
+		extra = &bac.Tup{offset / 4 + half},
 	)
 }
 

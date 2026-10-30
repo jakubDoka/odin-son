@@ -916,9 +916,16 @@ add_node :: proc(
 	^bac.Node,
 	Node_ID,
 ) {
-	slot := (^Mem_Op)(bac.get_next_extra_slot(ctx, u16(type), 0))
-	slot^ = extra
-	id := bac.add_raw(ctx, name, u16(type), dt, inps, meta = {lane = lane})
+	extra := extra
+	id := bac.add_raw(
+		ctx,
+		name,
+		u16(type),
+		dt,
+		inps,
+		extra = &extra,
+		meta = {lane = lane},
+	)
 	return get_node(ctx, id), id
 }
 

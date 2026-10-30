@@ -386,17 +386,13 @@ emit_lvalue :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Sym {
 		}
 		if gv.shader_tag == "uniform" {
 			offset := gv.uniform_offset
-			(^bac.Tup)(
-				bac.get_next_extra_slot(ctx, u16(bac.Node_Type.Uniform_Addr), 0),
-			)^ = {
-				idx = offset % 32,
-			}
 			addr := bac.add_raw(
 				ctx,
 				gv.name,
 				u16(bac.Node_Type.Uniform_Addr),
 				.I64,
 				{ctx.shader_params[offset / 32]},
+				extra = &bac.Tup{offset % 32},
 			)
 			return Value{id = addr, is_lvalue = true}
 		}

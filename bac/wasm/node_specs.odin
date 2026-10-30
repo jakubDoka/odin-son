@@ -183,10 +183,9 @@ collect_meta :: proc(ctx: ^bac.Proc,
 }
 
 add_extract_lane_u :: #force_inline proc(prc: ^bac.Proc, name: string, dt: bac.Node_Datatype, vec: bac.Node_ID, laneidx: u32, lane: bac.Lane_Type = {}) -> (_id: bac.Node_ID) {
-	(^Lane_Op)(bac.get_next_extra_slot(prc, u16(Node_Type.Extract_Lane_U), 0))^ = {
+	return bac.add_raw(prc, name, u16(Node_Type.Extract_Lane_U), dt, {vec}, extra = &Lane_Op{
 		laneidx = laneidx,
-	}
-	return bac.add_raw(prc, name, u16(Node_Type.Extract_Lane_U), dt, {vec}, {lane = lane,})
+	}, meta = {lane = lane,})
 }
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {

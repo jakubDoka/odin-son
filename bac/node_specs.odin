@@ -1,5 +1,5 @@
 package bac
-// NOTE: this file is generated, see: /home/mlokis/personal/odin/jit/bac/meta/meta.odin(875:2)
+// NOTE: this file is generated, see: /home/mlokis/personal/odin/jit/bac/meta/meta.odin(869:2)
 
 INHERITANCE_TABLE :: []u16{		0b1, // Nil
 		0b1, // Entry
@@ -418,43 +418,36 @@ Node_Type :: enum u16 {
 	Uniform_Addr,
 }
 add_entry :: #force_inline proc(prc: ^Proc, name: string) -> (_id: Node_ID) {
-	(^Cfg)(get_next_extra_slot(prc, u16(Node_Type.Entry), 0))^ = {
-	}
-	return add_raw(prc, name, u16(Node_Type.Entry), .Void, {})
+	return add_raw(prc, name, u16(Node_Type.Entry), .Void, {}, extra = &Cfg{
+	})
 }
 add_then :: #force_inline proc(prc: ^Proc, name: string, ctrl: Node_ID) -> (_id: Node_ID) {
-	(^Cfg)(get_next_extra_slot(prc, u16(Node_Type.Then), 0))^ = {
-	}
-	return add_raw(prc, name, u16(Node_Type.Then), .Void, {ctrl})
+	return add_raw(prc, name, u16(Node_Type.Then), .Void, {ctrl}, extra = &Cfg{
+	})
 }
 add_else :: #force_inline proc(prc: ^Proc, name: string, ctrl: Node_ID) -> (_id: Node_ID) {
-	(^Cfg)(get_next_extra_slot(prc, u16(Node_Type.Else), 0))^ = {
-	}
-	return add_raw(prc, name, u16(Node_Type.Else), .Void, {ctrl})
+	return add_raw(prc, name, u16(Node_Type.Else), .Void, {ctrl}, extra = &Cfg{
+	})
 }
 add_region :: #force_inline proc(prc: ^Proc, name: string, inputs: []Node_ID) -> (_id: Node_ID) {
-	(^Cfg)(get_next_extra_slot(prc, u16(Node_Type.Region), 0))^ = {
-	}
-	return add_raw(prc, name, u16(Node_Type.Region), .Void, inputs)
+	return add_raw(prc, name, u16(Node_Type.Region), .Void, inputs, extra = &Cfg{
+	})
 }
 add_loop :: #force_inline proc(prc: ^Proc, name: string, ctrl: Node_ID) -> (_id: Node_ID) {
-	(^Cfg)(get_next_extra_slot(prc, u16(Node_Type.Loop), 0))^ = {
-	}
-	return add_raw(prc, name, u16(Node_Type.Loop), .Void, {ctrl}, {extra_capacity = 1,})
+	return add_raw(prc, name, u16(Node_Type.Loop), .Void, {ctrl}, extra = &Cfg{
+	}, meta = {extra_capacity = 1,})
 }
 @(tag = "api")
 add_call_end :: #force_inline proc(prc: ^Proc, name: string, call: Node_ID) -> (_id: Node_ID) {
-	(^Cfg)(get_next_extra_slot(prc, u16(Node_Type.Call_End), 0))^ = {
-	}
-	return add_raw(prc, name, u16(Node_Type.Call_End), .Void, {call})
+	return add_raw(prc, name, u16(Node_Type.Call_End), .Void, {call}, extra = &Cfg{
+	})
 }
 add_end :: #force_inline proc(prc: ^Proc, name: string, inputs: []Node_ID) -> (_id: Node_ID) {
 	return add_raw(prc, name, u16(Node_Type.End), .Void, inputs)
 }
 add_dbg_sym_decl :: #force_inline proc(prc: ^Proc, name: string) -> (_id: Node_ID) {
-	(^Dbg_Sym)(get_next_extra_slot(prc, u16(Node_Type.Dbg_Sym_Decl), 0))^ = {
-	}
-	return add_raw(prc, name, u16(Node_Type.Dbg_Sym_Decl), .Void, {})
+	return add_raw(prc, name, u16(Node_Type.Dbg_Sym_Decl), .Void, {}, extra = &Dbg_Sym{
+	})
 }
 add_dbg_sym_update :: #force_inline proc(prc: ^Proc, name: string, new_value: Node_ID, prev_update: Node_ID) -> (_id: Node_ID) {
 	return add_raw(prc, name, u16(Node_Type.Dbg_Sym_Update), .Void, {new_value, prev_update})
@@ -463,35 +456,30 @@ add_dbg_scope :: #force_inline proc(prc: ^Proc, name: string, inputs: []Node_ID)
 	return add_raw(prc, name, u16(Node_Type.Dbg_Scope), .Void, inputs)
 }
 add_if :: #force_inline proc(prc: ^Proc, name: string, ctrl: Node_ID, cond: Node_ID) -> (_id: Node_ID) {
-	(^Cfg)(get_next_extra_slot(prc, u16(Node_Type.If), 0))^ = {
-	}
-	return add_raw(prc, name, u16(Node_Type.If), .Void, {ctrl, cond})
+	return add_raw(prc, name, u16(Node_Type.If), .Void, {ctrl, cond}, extra = &Cfg{
+	})
 }
 add_jump :: #force_inline proc(prc: ^Proc, name: string, ctrl: Node_ID) -> (_id: Node_ID) {
-	(^Cfg)(get_next_extra_slot(prc, u16(Node_Type.Jump), 0))^ = {
-	}
-	return add_raw(prc, name, u16(Node_Type.Jump), .Void, {ctrl})
+	return add_raw(prc, name, u16(Node_Type.Jump), .Void, {ctrl}, extra = &Cfg{
+	})
 }
 @(tag = "api")
 add_trap :: #force_inline proc(prc: ^Proc, name: string, inputs: []Node_ID) -> (_id: Node_ID) {
-	(^Cfg)(get_next_extra_slot(prc, u16(Node_Type.Trap), 0))^ = {
-	}
-	return add_raw(prc, name, u16(Node_Type.Trap), .Void, inputs)
+	return add_raw(prc, name, u16(Node_Type.Trap), .Void, inputs, extra = &Cfg{
+	})
 }
 @(tag = "api")
 add_call :: #force_inline proc(prc: ^Proc, name: string, inputs: []Node_ID, extra: Call) -> (_id: Node_ID) {
-	(^Call)(get_next_extra_slot(prc, u16(Node_Type.Call), 0))^ = extra
-	return add_raw(prc, name, u16(Node_Type.Call), .Void, inputs)
+	extra := extra
+	return add_raw(prc, name, u16(Node_Type.Call), .Void, inputs, extra = &extra)
 }
 add_always :: #force_inline proc(prc: ^Proc, name: string, inputs: []Node_ID) -> (_id: Node_ID) {
-	(^Cfg)(get_next_extra_slot(prc, u16(Node_Type.Always), 0))^ = {
-	}
-	return add_raw(prc, name, u16(Node_Type.Always), .Void, inputs)
+	return add_raw(prc, name, u16(Node_Type.Always), .Void, inputs, extra = &Cfg{
+	})
 }
 add_return :: #force_inline proc(prc: ^Proc, name: string, inputs: []Node_ID) -> (_id: Node_ID) {
-	(^Cfg)(get_next_extra_slot(prc, u16(Node_Type.Return), 0))^ = {
-	}
-	return add_raw(prc, name, u16(Node_Type.Return), .Void, inputs)
+	return add_raw(prc, name, u16(Node_Type.Return), .Void, inputs, extra = &Cfg{
+	})
 }
 add_poison :: #force_inline proc(prc: ^Proc, name: string) -> (_id: Node_ID) {
 	return add_raw(prc, name, u16(Node_Type.Poison), .Void, {})
@@ -511,43 +499,38 @@ add_sym :: #force_inline proc(prc: ^Proc, name: string, entry: Node_ID) -> (_id:
 }
 @(tag = "api")
 add_local :: #force_inline proc(prc: ^Proc, name: string, mem: Node_ID) -> (_id: Node_ID) {
-	(^Local)(get_next_extra_slot(prc, u16(Node_Type.Local), 0))^ = {
-	}
-	return add_raw(prc, name, u16(Node_Type.Local), .Void, {mem})
+	return add_raw(prc, name, u16(Node_Type.Local), .Void, {mem}, extra = &Local{
+	})
 }
 @(tag = "api")
 add_global :: #force_inline proc(prc: ^Proc, name: string, idx: u32) -> (_id: Node_ID) {
-	(^Tup)(get_next_extra_slot(prc, u16(Node_Type.Global), 0))^ = {
+	return add_raw(prc, name, u16(Node_Type.Global), .Void, {}, extra = &Tup{
 		idx = idx,
-	}
-	return add_raw(prc, name, u16(Node_Type.Global), .Void, {})
+	})
 }
 add_param :: #force_inline proc(prc: ^Proc, name: string, dt: Node_Datatype, entry: Node_ID, idx: u32) -> (_id: Node_ID) {
-	(^Tup)(get_next_extra_slot(prc, u16(Node_Type.Param), 0))^ = {
+	return add_raw(prc, name, u16(Node_Type.Param), dt, {entry}, extra = &Tup{
 		idx = idx,
-	}
-	return add_raw(prc, name, u16(Node_Type.Param), dt, {entry})
+	})
 }
 @(tag = "api")
 add_ret :: #force_inline proc(prc: ^Proc, name: string, dt: Node_Datatype, call_end: Node_ID, idx: u32) -> (_id: Node_ID) {
-	(^Tup)(get_next_extra_slot(prc, u16(Node_Type.Ret), 0))^ = {
+	return add_raw(prc, name, u16(Node_Type.Ret), dt, {call_end}, extra = &Tup{
 		idx = idx,
-	}
-	return add_raw(prc, name, u16(Node_Type.Ret), dt, {call_end})
+	})
 }
 add_phi :: #force_inline proc(prc: ^Proc, name: string, dt: Node_Datatype, reg: Node_ID, lhs: Node_ID, rhs: Node_ID) -> (_id: Node_ID) {
 	return add_raw(prc, name, u16(Node_Type.Phi), dt, {reg, lhs, rhs})
 }
 @(tag = "api")
 add_c_int :: #force_inline proc(prc: ^Proc, name: string, dt: Node_Datatype, value: i64) -> (_id: Node_ID) {
-	(^CInt)(get_next_extra_slot(prc, u16(Node_Type.CInt), 0))^ = {
+	return add_raw(prc, name, u16(Node_Type.CInt), dt, {}, extra = &CInt{
 		value = value,
-	}
-	return add_raw(prc, name, u16(Node_Type.CInt), dt, {})
+	})
 }
 @(tag = "api")
 add_bin_op :: #force_inline proc(prc: ^Proc, name: string, type: Bin_Op, dt: Node_Datatype, lhs: Node_ID, rhs: Node_ID, lane: Lane_Type = {}) -> (_id: Node_ID) {
-	return add_raw(prc, name, u16(type), dt, {lhs, rhs}, {lane = lane,})
+	return add_raw(prc, name, u16(type), dt, {lhs, rhs}, meta = {lane = lane,})
 }
 add_split :: #force_inline proc(prc: ^Proc, name: string, dt: Node_Datatype, dest: Node_ID) -> (_id: Node_ID) {
 	return add_raw(prc, name, u16(Node_Type.Split), dt, {dest})
@@ -562,10 +545,9 @@ add_global_addr :: #force_inline proc(prc: ^Proc, name: string, global: Node_ID)
 }
 @(tag = "api")
 add_proc_addr :: #force_inline proc(prc: ^Proc, name: string, idx: u32) -> (_id: Node_ID) {
-	(^Tup)(get_next_extra_slot(prc, u16(Node_Type.Proc_Addr), 0))^ = {
+	return add_raw(prc, name, u16(Node_Type.Proc_Addr), .I64, {}, extra = &Tup{
 		idx = idx,
-	}
-	return add_raw(prc, name, u16(Node_Type.Proc_Addr), .I64, {})
+	})
 }
 @(tag = "api")
 add_copy :: #force_inline proc(prc: ^Proc, name: string, ctrl: Node_ID, mem: Node_ID, dst: Node_ID, src: Node_ID, size: Node_ID) -> (_id: Node_ID) {
@@ -583,7 +565,7 @@ add_load :: #force_inline proc(prc: ^Proc, name: string, dt: Node_Datatype, ctrl
 }
 @(tag = "api")
 add_un_op :: #force_inline proc(prc: ^Proc, name: string, type: Un_Op, dt: Node_Datatype, oprnd: Node_ID, lane: Lane_Type = {}) -> (_id: Node_ID) {
-	return add_raw(prc, name, u16(type), dt, {oprnd}, {lane = lane,})
+	return add_raw(prc, name, u16(type), dt, {oprnd}, meta = {lane = lane,})
 }
 @(tag = "api")
 add_select :: #force_inline proc(prc: ^Proc, name: string, dt: Node_Datatype, on_true: Node_ID, on_false: Node_ID, condition: Node_ID) -> (_id: Node_ID) {

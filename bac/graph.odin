@@ -1928,14 +1928,27 @@ set_input :: proc(
 	return id
 }
 
+// NOTE: this does not intern
 clone :: proc(prc: ^Proc, id: Node_ID) -> Node_ID {
 	node := expand_node(prc, id)
 	fmt.assertf(!has_flag(prc, node, .Interned) || prc.dont_intern, "%v", node)
 	assert(node.itype != .Call)
-	idx := get_next_extra_slot(prc, node.rtype, node.extra_dwords)
-	extra := get_extra_dwords(prc, node, consider_dbg = true)
-	copy(idx[:len(extra)], extra)
-	new := add_raw(prc, node.name, node.rtype, node.dt, node.inps)
+
+	new_node, new := shallow_clone(prc, node)
+
+	new_node.input_idx = u32(prc.mem.pos / PRECISION)
+	_ = arna.clone(prc.mem, node.inps)
+	new_node.input_cap = new_node.input_count
+
+	new_node.output_count = 0
+	new_node.output_cap = 0
+
+	init_counts(prc, new_node)
+
+	for inp, i in node.inps {
+		add_output(prc, inp, new, i)
+	}
+
 	return new
 }
 
@@ -2115,18 +2128,6 @@ compute_node_size :: proc(prc: ^Proc, type: u16, extra_dwords: int) -> int {
 	return size_of(Node) + total + int(prc.has_dbg) * size_of(Sloc)
 }
 
-get_next_extra_slot :: proc(
-	prc: ^Proc,
-	type: u16,
-	extra_dwords: int,
-) -> [^]u32 {
-	size := compute_node_size(prc, type, extra_dwords)
-	slot := arna.alloc(prc.mem, uint(size), PRECISION)
-	prc.mem.pos -= uint(len(slot))
-
-	return ([^]u32)(raw_data(slot)[size_of(Node):])
-}
-
 get_tag :: proc(prc: ^Proc, node: Node_ID) -> ^Tag {
 	when NODE_NAMES {
 		return &get_node(prc, node).tag
@@ -2144,21 +2145,46 @@ get_sloc_node :: proc(prc: ^Proc, node: ^Node) -> ^Sloc {
 }
 
 Add_Raw_Meta :: bit_field u64 {
-	lane:           Lane_Type | 3,
-	extra_capacity: int       | 2,
-	extra_dwords:   int       | 4,
+	type:           u16           | 16,
+	dt:             Node_Datatype | 4,
+	input_count:    int           | 16,
+	lane:           Lane_Type     | 3,
+	extra_capacity: int           | 2,
+	extra_dwords:   int           | 4,
 }
 
-add_raw :: proc(
+add_raw :: #force_inline proc(
 	prc: ^Proc,
 	name: Tag_Name,
 	type: u16,
 	dt: Node_Datatype,
 	inps: []Node_ID = {},
+	extra: rawptr = nil,
 	meta: Add_Raw_Meta = {},
 ) -> (
 	id: Node_ID,
 ) {
+	meta := meta
+	meta.dt = dt
+	meta.type = type
+	meta.input_count = len(inps)
+	return add_raw_2(prc, name, raw_data(inps), extra, meta)
+}
+
+// NOTE: we take less parameters which means they all get passed in tegisters,
+// the Meta can also often get folded
+add_raw_2 :: #force_no_inline proc(
+	prc: ^Proc,
+	name: Tag_Name,
+	inps: [^]Node_ID = {},
+	extra: rawptr,
+	meta: Add_Raw_Meta = {},
+) -> (
+	id: Node_ID,
+) {
+	type, dt, inps := meta.type, meta.dt, inps[:meta.input_count]
+
+	assert(mem.is_aligned(extra, PRECISION))
 	assert(prc.node_spec != nil, "call bac_ssa.start_proc first")
 
 	id = Node_ID(prc.mem.pos / PRECISION)
@@ -2179,6 +2205,22 @@ add_raw :: proc(
 		input_count  = u16(len(inps)),
 		input_cap    = u16(len(inps) + meta.extra_capacity),
 	}
+
+	@(static, rodata)
+	ZEROED := [16]u32{}
+
+	assert(
+		prc.node_spec.node_extra_sizes[type] + u8(meta.extra_dwords) < len(ZEROED),
+	)
+
+	extra := extra
+	if extra == nil do extra = raw_data(&ZEROED)
+
+	mem.copy_non_overlapping(
+		raw_data(&node.extra),
+		extra,
+		(int(prc.node_extra_sizes[type]) + meta.extra_dwords) * size_of(u32),
+	)
 
 	new_inps := arna.alloc(
 		prc.mem,

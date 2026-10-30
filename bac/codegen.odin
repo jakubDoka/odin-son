@@ -852,28 +852,44 @@ compute_param_offsets :: proc(
 	}
 }
 
-c_int_as_global :: proc(ctx: ^Proc, node: ^Node) -> Node_ID {
-	cnst := get_extra(ctx, node, CInt)
+Small_Constant :: struct {
+	dt:          Node_Datatype,
+	using value: struct #raw_union #align (4) {
+		f32:  f32,
+		f64:  f64,
+		u8x8: [16]u8,
+	},
+}
 
-	size := DT_SIZE[node.dt] / 4
-	slot := get_next_extra_slot(ctx, u16(Node_Type.Global), size)
-
-	(^Node_Datatype)(slot)^ = node.dt
-	if node.dt == .F32 {
-		(^f32)(slot[1:])^ = f32(cnst.fvalue)
-	} else {
-		assert(node.dt == .F64)
-		// TODO: unaligned
-		(^f64)(slot[1:])^ = cnst.fvalue
-	}
+small_constant_as_global :: proc(ctx: ^Proc, slot: Small_Constant) -> Node_ID {
+	size := DT_SIZE[slot.dt] / 4 + 1
+	slot := slot
 
 	return add_raw(
 		ctx,
 		"iglb",
 		u16(Node_Type.Global),
 		.Void,
+		extra = &slot,
 		meta = {extra_dwords = size},
 	)
+}
+
+c_int_as_global :: proc(ctx: ^Proc, node: ^Node) -> Node_ID {
+	slot := Small_Constant {
+		dt = node.dt,
+	}
+
+	cnst := get_extra(ctx, node, CInt)
+	if node.dt == .F32 {
+		slot.f32 = f32(cnst.fvalue)
+	} else {
+		assert(node.dt == .F64)
+		// TODO: unaligned
+		slot.f64 = cnst.fvalue
+	}
+
+	return small_constant_as_global(ctx, slot)
 }
 
 emit_big_constant_from_global :: proc(
@@ -882,11 +898,14 @@ emit_big_constant_from_global :: proc(
 ) -> bool {
 	if inp.extra_dwords != 0 {
 		tup: ^Tup = get_extra(ctx, inp, Tup)
-		dwords := get_extra_dwords(ctx, inp)
+		scg := (^Small_Constant)(tup)
 		tup.idx = emit_big_constant(
 			ctx,
-			DT_SIZE[Node_Datatype(dwords[0])],
-			mem.slice_data_cast([]u8, dwords[1:]),
+			DT_SIZE[scg.dt], // align actually
+			mem.slice_data_cast(
+				[]u8,
+				mem.ptr_to_bytes(&scg.value)[:DT_SIZE[scg.dt]],
+			),
 		)
 		inp.extra_dwords = 0
 		return true

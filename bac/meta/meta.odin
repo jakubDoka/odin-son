@@ -499,29 +499,13 @@ collect_meta :: proc(ctx: ^%vProc,
 
 			fmt.fprintf(file, ") -> (_id: %vNode_ID) {{\n", q)
 
+			if len(class.extra_args) == 1 && class.extra_args[0] == "*" {
+				os.write_string(file, "\textra := extra\n")
+			}
+
 			extra_type := qualify_type(q, packname, class.id)
 			has_extra :=
 				len(class.extra_args) != 0 || reflect.size_of_typeid(class.id) > 0
-			if has_extra {
-				fmt.fprintf(
-					file,
-					"\t(^%v)(%vget_next_extra_slot(prc," + " u16(%v.%v), 0))^ = ",
-					extra_type,
-					q,
-					qualify_enm(q, classes.enm),
-					name,
-				)
-			}
-
-			if len(class.extra_args) == 1 && class.extra_args[0] == "*" {
-				os.write_string(file, "extra\n")
-			} else if has_extra {
-				os.write_string(file, "{\n")
-				for earg in class.extra_args {
-					fmt.fprintf(file, "\t\t%v = %v,\n", earg, earg)
-				}
-				os.write_string(file, "\t}\n")
-			}
 
 			if k == "" {
 				fmt.fprintf(
@@ -560,8 +544,18 @@ collect_meta :: proc(ctx: ^%vProc,
 
 			pass_meta := class.extra_capacity != 0 || pass_lane
 
+			if len(class.extra_args) == 1 && class.extra_args[0] == "*" {
+				os.write_string(file, ", extra = &extra")
+			} else if has_extra {
+				fmt.fprintfln(file, ", extra = &%v{{", class.id)
+				for earg in class.extra_args {
+					fmt.fprintf(file, "\t\t%v = %v,\n", earg, earg)
+				}
+				os.write_string(file, "\t}")
+			}
+
 			if pass_meta {
-				os.write_string(file, ", {")
+				os.write_string(file, ", meta = {")
 
 				if class.extra_capacity != 0 {
 					fmt.fprintf(file, "extra_capacity = %v,", class.extra_capacity)

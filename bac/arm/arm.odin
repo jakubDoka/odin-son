@@ -285,20 +285,13 @@ peep :: proc(
 			return id
 		}
 	case .Simd_Extract_Lsbs:
-		dat := []u8{1, 2, 4, 8, 16, 32, 64, 128, 1, 2, 4, 8, 16, 32, 64, 128}
-		size := len(dat) / size_of(u32)
-		slot := bac.get_next_extra_slot(ctx, u16(Node_Type.Global), size)
-		dst := mem.slice_data_cast([]u8, slot[1:][:size])
-		copy(dst, dat)
-		fmt.assertf(string(dst) == string(dat), "%v %v", dst, size)
-		(^bac.Node_Datatype)(slot)^ = .V128
-		msk := bac.add_raw(
-			ctx,
-			"selmk",
-			u16(Node_Type.Global),
-			.Void,
-			meta = {extra_dwords = size},
-		)
+		slot := bac.Small_Constant {
+			dt   = .V128,
+			u8x8 = {1, 2, 4, 8, 16, 32, 64, 128, 1, 2, 4, 8, 16, 32, 64, 128},
+		}
+
+		msk := bac.small_constant_as_global(ctx, slot)
+
 		addr := bac.add_global_addr(ctx, "selmka", msk)
 		cmem := bac.get_or_add_const_mem(ctx)
 		mskld := bac.add_load(ctx, "seld", .V128, 0, cmem, addr)

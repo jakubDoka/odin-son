@@ -123,12 +123,11 @@ post_schedule_peep_inst :: proc(
 
 @(tag = "api")
 add_scope :: #force_inline proc(prc: ^bac.Proc, name: string, cfg: bac.Node_ID) -> (_id: bac.Node_ID) {
-	(^Scope)(bac.get_next_extra_slot(prc, u16(Node_Type.Scope), 0))^ = {
-	}
-	return bac.add_raw(prc, name, u16(Node_Type.Scope), .Void, {cfg})
+	return bac.add_raw(prc, name, u16(Node_Type.Scope), .Void, {cfg}, extra = &Scope{
+	})
 }
 add_lazy_phi :: #force_inline proc(prc: ^bac.Proc, name: string, dt: bac.Node_Datatype, reg: bac.Node_ID, lhs: bac.Node_ID) -> (_id: bac.Node_ID) {
-	return bac.add_raw(prc, name, u16(Node_Type.Lazy_Phi), dt, {reg, lhs}, {extra_capacity = 1,})
+	return bac.add_raw(prc, name, u16(Node_Type.Lazy_Phi), dt, {reg, lhs}, meta = {extra_capacity = 1,})
 }
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {

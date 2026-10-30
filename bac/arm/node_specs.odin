@@ -175,25 +175,23 @@ add_msub :: #force_inline proc(prc: ^bac.Proc, name: string, dt: bac.Node_Dataty
 	return bac.add_raw(prc, name, u16(Node_Type.Msub), dt, {multiplicant, multiplier, subtractant})
 }
 add_cmlt :: #force_inline proc(prc: ^bac.Proc, name: string, lhs: bac.Node_ID, lane: bac.Lane_Type = {}) -> (_id: bac.Node_ID) {
-	return bac.add_raw(prc, name, u16(Node_Type.Cmlt), .V128, {lhs}, {lane = lane,})
+	return bac.add_raw(prc, name, u16(Node_Type.Cmlt), .V128, {lhs}, meta = {lane = lane,})
 }
 add_ext :: #force_inline proc(prc: ^bac.Proc, name: string, lhs: bac.Node_ID, rhs: bac.Node_ID, aux: u32, lane: bac.Lane_Type = {}) -> (_id: bac.Node_ID) {
-	(^Arm_Op)(bac.get_next_extra_slot(prc, u16(Node_Type.Ext), 0))^ = {
+	return bac.add_raw(prc, name, u16(Node_Type.Ext), .V128, {lhs, rhs}, extra = &Arm_Op{
 		aux = aux,
-	}
-	return bac.add_raw(prc, name, u16(Node_Type.Ext), .V128, {lhs, rhs}, {lane = lane,})
+	}, meta = {lane = lane,})
 }
 add_zip1 :: #force_inline proc(prc: ^bac.Proc, name: string, lsh: bac.Node_ID, rhs: bac.Node_ID, lane: bac.Lane_Type = {}) -> (_id: bac.Node_ID) {
-	return bac.add_raw(prc, name, u16(Node_Type.Zip1), .V128, {lsh, rhs}, {lane = lane,})
+	return bac.add_raw(prc, name, u16(Node_Type.Zip1), .V128, {lsh, rhs}, meta = {lane = lane,})
 }
 add_addv128 :: #force_inline proc(prc: ^bac.Proc, name: string, dt: bac.Node_Datatype, vec: bac.Node_ID, lane: bac.Lane_Type = {}) -> (_id: bac.Node_ID) {
-	return bac.add_raw(prc, name, u16(Node_Type.Addv128), dt, {vec}, {lane = lane,})
+	return bac.add_raw(prc, name, u16(Node_Type.Addv128), dt, {vec}, meta = {lane = lane,})
 }
 add_umov :: #force_inline proc(prc: ^bac.Proc, name: string, dt: bac.Node_Datatype, vec: bac.Node_ID, aux: u32) -> (_id: bac.Node_ID) {
-	(^Arm_Op)(bac.get_next_extra_slot(prc, u16(Node_Type.Umov), 0))^ = {
+	return bac.add_raw(prc, name, u16(Node_Type.Umov), dt, {vec}, extra = &Arm_Op{
 		aux = aux,
-	}
-	return bac.add_raw(prc, name, u16(Node_Type.Umov), dt, {vec})
+	})
 }
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {

@@ -2,7 +2,7 @@ package bac_ssa
 import bac ".."
 Reg_Kind :: bac.Reg_Kind
 Class_Flag :: bac.Class_Flag
-import "base:intrinsics"// NOTE: this file is generated: 
+import "base:intrinsics"// NOTE: this file is generated, see: /home/mlokis/personal/odin/jit/bac/meta2/meta2.odin(24:3)
 
 @(tag = "api", rodata, export, link_name = "bac_ssa_SPEC")SPEC := bac.Node_Spec{
 	call_clobbers = {

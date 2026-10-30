@@ -2,6 +2,8 @@ package bac_meta
 
 import ".."
 import "core:fmt"
+import "core:odin/ast"
+import "core:odin/parser"
 import "core:os"
 import "core:reflect"
 import "core:slice"
@@ -22,20 +24,14 @@ Common_Reg_Spec :: struct {
 }
 
 Spec_Gen_Input :: struct {
-	package_name:                 string,
-	gen_command:                  string,
-	header_import:                string,
-	qual:                         string,
-	local_extra_types:            []typeid,
-	classes:                      []Class_Array,
-	datatype_to_reg_kind:         [bac.Node_Datatype]bac.Reg_Kind,
-	spill_boundary:               []int,
-	cc_table:                     []bac.Call_Conv,
-	no_spec_tables:               bool,
-	does_regalloc:                bool,
-	has_regalloc_preprocess_hook: bool,
-	has_sccp:                     bool,
-	common_reg_specs:             []Common_Reg_Spec,
+	gen_command:          string,
+	header_import:        []string,
+	classes:              []Class_Array,
+	datatype_to_reg_kind: [bac.Node_Datatype]bac.Reg_Kind,
+	spill_boundary:       []int,
+	cc_table:             []bac.Call_Conv,
+	no_spec_tables:       bool,
+	common_reg_specs:     []Common_Reg_Spec,
 }
 
 class_array :: proc(
@@ -45,10 +41,10 @@ class_array :: proc(
 	return {E, slice.clone(slice.enumerated_array(arr)), gen_ctors}
 }
 
-qualify_type :: proc(qual: string, locals: []typeid, id: typeid) -> string {
+qualify_type :: proc(qual: string, pack: string, id: typeid) -> string {
 	if qual == "" do return fmt.tprintf("%v", id)
-	for l in locals {
-		if l == id do return fmt.tprintf("%v", id)
+	if pack == type_info_of(id).variant.(reflect.Type_Info_Named).pkg {
+		return fmt.tprintf("%v", id)
 	}
 	return fmt.tprintf("%v%v", qual, id)
 }
@@ -58,12 +54,21 @@ qualify_enm :: proc(qual: string, enm: typeid) -> string {
 	return fmt.tprintf("%v", enm)
 }
 
-generate_spec :: proc(spec: Spec_Gen_Input, out_path: string) {
+generate_spec :: proc(
+	spec: Spec_Gen_Input,
+	package_path: string,
+	loc := #caller_location,
+) {
 	context.allocator = context.temp_allocator
 
+	pack, ok := parser.collect_package(package_path)
+	assert(ok)
+	ok = parser.parse_package(pack)
+	assert(ok)
+
 	spec := spec
-	q := spec.qual
-	locals := spec.local_extra_types
+	q := pack.name == "bac" ? "" : "bac."
+	packname := pack.name
 
 	for classes in spec.classes {
 		for &class in classes.ids {
@@ -71,20 +76,24 @@ generate_spec :: proc(spec: Spec_Gen_Input, out_path: string) {
 		}
 	}
 
+	pckg, _ := os.join_path({package_path, "node_specs.odin"}, context.allocator)
+
 	file, err := os.open(
-		out_path,
+		pckg,
 		{.Create, .Trunc, .Write},
 		os.Permissions_Default - os.Permissions_Execute_All,
 	)
 	fmt.assertf(err == nil, "%v", err)
 	defer os.close(file)
 
-	fmt.fprintf(file, "package %s\n", spec.package_name)
-	os.write_string(file, spec.header_import)
+	fmt.fprintf(file, "package %s\n", pack.name)
+	for h in spec.header_import {
+		fmt.fprintfln(file, h)
+	}
 	if !spec.no_spec_tables {
 		os.write_string(file, `import "base:intrinsics"`)
 	}
-	fmt.fprintf(file, "// NOTE: this file is generated: %s", spec.gen_command)
+	fmt.fprintf(file, "// NOTE: this file is generated, see: %v", loc)
 	os.write_string(file, "\n\n")
 
 	Group_Member :: struct {
@@ -95,6 +104,33 @@ generate_spec :: proc(spec: Spec_Gen_Input, out_path: string) {
 	groups: map[string]map[Group_Member]struct{}
 
 	inheritable: map[typeid]int
+
+	Opt_Fn :: enum i64 {
+		collect_meta,
+		sccp_compute,
+		pre_regalloc_hook,
+	}
+
+	OPT_FN_TRIGGERS := [len(Opt_Fn)]string {
+		"meta_of",
+		"sccp_compute",
+		"pre_regalloc_hook",
+	}
+
+	active_opt_fns: bit_set[Opt_Fn;i64]
+
+	for fn, i in reflect.enum_fields_zipped(Opt_Fn) {
+		for name, ofile in pack.files {
+			for decl in ofile.decls {
+				dcl := decl.derived.(^ast.Value_Decl) or_continue
+				for name in dcl.names {
+					if name.derived.(^ast.Ident).name == OPT_FN_TRIGGERS[i] {
+						(^i64)(&active_opt_fns)^ |= 1 << uint(i)
+					}
+				}
+			}
+		}
+	}
 
 	for classes, j in spec.classes {
 		for class, i in classes.ids {
@@ -133,7 +169,7 @@ generate_spec :: proc(spec: Spec_Gen_Input, out_path: string) {
 		fmt.fprintf(
 			file,
 			"@(tag = \"api\", rodata, export, link_name = \"%v_SPEC\")",
-			spec.package_name,
+			pack.name,
 		)
 		fmt.fprintf(file, "SPEC := %vNode_Spec{{\n", q)
 
@@ -159,15 +195,11 @@ generate_spec :: proc(spec: Spec_Gen_Input, out_path: string) {
 
 		fmt.fprintf(file, "\tspill_boundary = %w,\n", spec.spill_boundary)
 
-		if spec.has_sccp {
-			fmt.fprintf(file, "\tsccp_compute = sccp_compute,\n")
+		for fn in active_opt_fns {
+			vl := reflect.enum_name_from_value(fn) or_else panic("")
+			fmt.fprintfln(file, "\t%v = %v,", vl, vl)
 		}
-		if spec.does_regalloc {
-			fmt.fprintf(file, "\tcollect_meta = collect_meta,\n")
-		}
-		if spec.has_regalloc_preprocess_hook {
-			fmt.fprintf(file, "\tpre_regalloc_hook = pre_regalloc_hook,\n")
-		}
+
 		fmt.fprintf(file, "\temit_function = emit_function,\n")
 		fmt.fprintf(file, "\tpeep = peep_inst,\n")
 		fmt.fprintf(file, "\tpost_schedule_peep = post_schedule_peep_inst,\n")
@@ -290,7 +322,7 @@ generate_spec :: proc(spec: Spec_Gen_Input, out_path: string) {
 
 	for classes in spec.classes[start:] {
 		for class in classes.ids {
-			fmt.fprintf(file, "\t\t%v,\n", qualify_type(q, locals, class.id))
+			fmt.fprintf(file, "\t\t%v,\n", qualify_type(q, packname, class.id))
 		}
 	}
 
@@ -381,7 +413,7 @@ post_schedule_peep_inst :: proc(
 		)
 	}
 
-	if spec.does_regalloc {
+	if .collect_meta in active_opt_fns {
 		fmt.fprintfln(
 			file,
 			`
@@ -467,7 +499,7 @@ collect_meta :: proc(ctx: ^%vProc,
 
 			fmt.fprintf(file, ") -> (_id: %vNode_ID) {{\n", q)
 
-			extra_type := qualify_type(q, locals, class.id)
+			extra_type := qualify_type(q, packname, class.id)
 			has_extra :=
 				len(class.extra_args) != 0 || reflect.size_of_typeid(class.id) > 0
 			if has_extra {
@@ -572,7 +604,7 @@ collect_meta :: proc(ctx: ^%vProc,
 		fmt.fprintf(
 			file,
 			"\telse when T == %v {{return %v}}\n",
-			qualify_type(q, locals, inh.type),
+			qualify_type(q, packname, inh.type),
 			inh.idx,
 		)
 	}
@@ -587,7 +619,7 @@ collect_meta :: proc(ctx: ^%vProc,
 		fmt.fprintfln(
 			file,
 			"#assert(size_of(%v) %% %vPRECISION == 0)",
-			qualify_type(q, locals, inh.type),
+			qualify_type(q, packname, inh.type),
 			q,
 		)
 	}
@@ -635,8 +667,8 @@ collect_meta :: proc(ctx: ^%vProc,
 		fmt.fprintfln(file, "}}")
 	}
 
-	if spec.package_name != "bac" {
-		splits := strings.split(spec.package_name, "_")
+	if pack.name != "bac" {
+		splits := strings.split(pack.name, "_")
 		prefix := splits[len(splits) - 1][:1]
 
 		fmt.fprintf(
@@ -842,11 +874,10 @@ IDEAL_CLASSES := [bac.Node_Type]Class_Spec {
 main :: proc() {
 	generate_spec(
 		Spec_Gen_Input {
-			package_name = "bac",
 			classes = {class_array(&IDEAL_CLASSES)},
 			no_spec_tables = true,
 		},
-		"bac/node_specs.odin",
+		"bac",
 	)
 }
 

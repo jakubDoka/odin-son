@@ -23,34 +23,31 @@ main :: proc() {
 
 		meta.generate_spec(
 			meta.Spec_Gen_Input {
-				package_name      = "bac_ssa",
-				// %w-formatted table values bake in bare Reg_Kind/Class_Flag
-				// names, so alias them locally instead of teaching the
-				// generator about every %w call site
-				header_import     = "import bac \"..\"\n" + "Reg_Kind :: bac.Reg_Kind\n" + "Class_Flag :: bac.Class_Flag\n",
-				qual              = "bac.",
-				local_extra_types = {ssa.Scope},
-				classes           = {
+				header_import = {
+					"import bac \"..\"",
+					"Reg_Kind :: bac.Reg_Kind",
+					"Class_Flag :: bac.Class_Flag",
+				},
+				classes = {
 					meta.class_array(&meta.IDEAL_CLASSES, gen_ctors = false),
 					meta.class_array(&SSA_CLASSES),
 				},
-				has_sccp          = true,
 			},
-			"bac/ssa/node_specs.odin",
+			"bac/ssa",
 		)
 	}
 
 	when anal.SPEC_NOT_PRESENT {
 		meta.generate_spec(
 			meta.Spec_Gen_Input {
-				package_name = "bac_anal",
-				header_import = "import bac \"..\"\n" +
-				"Reg_Kind :: bac.Reg_Kind\n" +
-				"Class_Flag :: bac.Class_Flag\n",
-				qual = "bac.",
+				header_import = {
+					"import bac \"..\"",
+					"Reg_Kind :: bac.Reg_Kind",
+					"Class_Flag :: bac.Class_Flag",
+				},
 				classes = {meta.class_array(&meta.IDEAL_CLASSES, gen_ctors = false)},
 			},
-			"bac/anal/node_specs.odin",
+			"bac/anal",
 		)
 	}
 
@@ -67,14 +64,15 @@ main :: proc() {
 
 		meta.generate_spec(
 			meta.Spec_Gen_Input {
-				package_name = "bac_intel_xelp",
-				header_import = "import bac \"..\"\n" + "Reg_Kind :: bac.Reg_Kind\n" + "Class_Flag :: bac.Class_Flag\n",
-				qual = "bac.",
+				header_import = {
+					"import bac \"..\"",
+					"Reg_Kind :: bac.Reg_Kind",
+					"Class_Flag :: bac.Class_Flag",
+				},
 				classes = {
 					meta.class_array(&meta.IDEAL_CLASSES, gen_ctors = false),
 					meta.class_array(&XELP_CLASSES),
 				},
-				does_regalloc = true,
 				datatype_to_reg_kind = #partial{.I8 ..= .V512 = intel_xelp.RK_GRF},
 				spill_boundary = {intel_xelp.GRF_COUNT, intel_xelp.FLAG_COUNT},
 				cc_table = intel_xelp.CC_TABLE[:],
@@ -85,7 +83,7 @@ main :: proc() {
 					{"FLAG", intel_xelp.RK_FLAG, {0xf, 0}},
 				},
 			},
-			"bac/intel_xelp/node_specs.odin",
+			"bac/intel_xelp",
 		)
 	}
 
@@ -126,18 +124,18 @@ main :: proc() {
 
 		meta.generate_spec(
 			meta.Spec_Gen_Input {
-				package_name = "bac_amd64",
 				// %w-formatted table values bake in bare Reg_Kind/Class_Flag
 				// names, so alias them locally instead of teaching the
 				// generator about every %w call site
-				header_import = "import bac \"..\"\n" + "Reg_Kind :: bac.Reg_Kind\n" + "Class_Flag :: bac.Class_Flag\n",
-				qual = "bac.",
-				local_extra_types = {amd64.Mem_Op},
+				header_import = {
+					"import bac \"..\"",
+					"Reg_Kind :: bac.Reg_Kind",
+					"Class_Flag :: bac.Class_Flag",
+				},
 				classes = {
 					meta.class_array(&meta.IDEAL_CLASSES, gen_ctors = false),
 					meta.class_array(&AMD64_CLASSES),
 				},
-				does_regalloc = true,
 				datatype_to_reg_kind = #partial{
 					.I8 ..= .I64 = amd64.RK_GENERAL,
 					.F32 ..= .V512 = amd64.RK_VECTOR,
@@ -156,7 +154,7 @@ main :: proc() {
 					{"XMM_SPILL", amd64.RK_VECTOR, {~i64(0)}},
 				},
 			},
-			"bac/amd64/node_specs.odin",
+			"bac/amd64",
 		)
 	}
 
@@ -180,19 +178,18 @@ main :: proc() {
 
 		meta.generate_spec(
 			meta.Spec_Gen_Input {
-				package_name = "bac_wasm",
 				// %w-formatted table values bake in bare Reg_Kind/Class_Flag
 				// names, so alias them locally instead of teaching the
 				// generator about every %w call site
-				header_import = "import bac \"..\"\n" + "Reg_Kind :: bac.Reg_Kind\n" + "Class_Flag :: bac.Class_Flag\n",
-				qual = "bac.",
-				local_extra_types = {wasm.Lane_Op, wasm.Mem_Op},
+				header_import = {
+					"import bac \"..\"\n",
+					"Reg_Kind :: bac.Reg_Kind\n",
+					"Class_Flag :: bac.Class_Flag\n",
+				},
 				classes = {
 					meta.class_array(&meta.IDEAL_CLASSES, gen_ctors = false),
 					meta.class_array(&WASM_CLASSES),
 				},
-				does_regalloc = true,
-				has_regalloc_preprocess_hook = true,
 				datatype_to_reg_kind = #partial{
 					.I8 ..= .I32 = wasm.RK_I32,
 					.I64 = wasm.RK_I64,
@@ -203,7 +200,7 @@ main :: proc() {
 				spill_boundary = {0 ..= wasm.RK_COUNT = 64},
 				cc_table = wasm.CC_TABLE[:],
 			},
-			"bac/wasm/node_specs.odin",
+			"bac/wasm",
 		)
 	}
 
@@ -226,17 +223,15 @@ main :: proc() {
 
 		meta.generate_spec(
 			meta.Spec_Gen_Input {
-				package_name = "bac_arm",
-				header_import = "import bac \"..\"\n" +
-				"Reg_Kind :: bac.Reg_Kind\n" +
-				"Class_Flag :: bac.Class_Flag\n",
-				qual = "bac.",
-				local_extra_types = {arm.Arm_Op},
+				header_import = {
+					"import bac \"..\"\n",
+					"Reg_Kind :: bac.Reg_Kind\n",
+					"Class_Flag :: bac.Class_Flag\n",
+				},
 				classes = {
 					meta.class_array(&meta.IDEAL_CLASSES, gen_ctors = false),
 					meta.class_array(&ARM_CLASSES),
 				},
-				does_regalloc = true,
 				datatype_to_reg_kind = #partial{
 					.I8 ..= .I64 = arm.RK_GENERAL,
 					.F32 ..= .V512 = arm.RK_VECTOR,
@@ -255,7 +250,7 @@ main :: proc() {
 					{"VEC_SPILL", arm.RK_VECTOR, {~i64(0)}},
 				},
 			},
-			"bac/arm/node_specs.odin",
+			"bac/arm",
 		)
 	}
 }

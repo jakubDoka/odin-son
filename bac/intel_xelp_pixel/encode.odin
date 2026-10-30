@@ -61,7 +61,8 @@ encode_alu :: proc(a: ALU) -> (Instruction, Error) {
 	if a.op == .Sel && a.predicate == .None do return {}, .Predicate
 	if a.distance > 7 do return {}, .Dependency
 
-	// mov/add/mul/cmp/sel/and/or/xor (8|M0) r{dst}.0<1>:{type} r{src0}.0<8;8,1>:{type} r{src1}.0<8;8,1>:{type} {@distance}
+	// mov/add/mul/cmp/sel/and/or/xor/shr/shl (8|M0) r{dst}.0<1>:{type} r{src0}.0<8;8,1>:{type} r{src1}.0<8;8,1>:{type} {@distance}
+	// Sources may also broadcast; mov src0 and binary src1 may be immediate.
 	w: Instruction
 	w[0] = u32(a.op) | (3 << 16) | (u32(a.distance) << 8)
 	if a.write_enable do w[0] |= 1 << 31

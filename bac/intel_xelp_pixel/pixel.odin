@@ -87,11 +87,11 @@ add :: proc(state: ^Lowering, alu: ALU, inputs := [2]int{}, count := 0) -> int {
 }
 
 allocate :: proc(machine: []Machine_Op, values: int) -> ([]int, bool) {
-    last := make([]int, values)
-    defer delete(last)
-    for &n in last do n = -1
+    last_use := make([]int, values)
+    defer delete(last_use)
+    for &n in last_use do n = -1
     for op, i in machine {
-        for n in 0..<op.count do last[op.inputs[n]] = i
+        for n in 0..<op.count do last_use[op.inputs[n]] = i
     }
     registers := make([]int, values)
     registers[0], registers[1] = 1, 2
@@ -110,9 +110,9 @@ allocate :: proc(machine: []Machine_Op, values: int) -> ([]int, bool) {
         }
         for n in 0..<op.count {
             value := op.inputs[n]
-            if value >= 2 && last[value] == i do busy[registers[value]] = false
+            if value >= 2 && last_use[value] == i do busy[registers[value]] = false
         }
-        if op.dst >= 0 && last[op.dst] < 0 do busy[registers[op.dst]] = false
+        if op.dst >= 0 && last_use[op.dst] < 0 do busy[registers[op.dst]] = false
     }
     return registers, true
 }

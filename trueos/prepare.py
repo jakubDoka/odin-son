@@ -65,6 +65,19 @@ loader = loader.replace('fmt.assertf(oerr == nil, "cannot open module directory 
 loader = loader.replace('fmt.assertf(rerr == nil, "cannot read module directory %q", dir)', 'if rerr != nil { fmt.eprintln("cannot read module directory", dir); ctx.error_cnt += 1; return mid }')
 loader = loader.replace('fmt.assertf(serr == nil, "cannot read %q", entry.fullpath)', 'if serr != nil { fmt.eprintln("cannot read", entry.fullpath); ctx.error_cnt += 1; return mid }')
 loader = loader.replace('fmt.assertf(pok, "failed to parse %q", entry.fullpath)', 'if !pok { fmt.eprintln("failed to parse", entry.fullpath); ctx.error_cnt += 1; return mid }')
+collection_assert = '''fmt.assertf(
+\t\t\t\t\tok,
+\t\t\t\t\t"unknown collection: %v, available: %v",
+\t\t\t\t\tcol,
+\t\t\t\t\tctx.collections,
+\t\t\t\t)'''
+if collection_assert not in loader:
+    raise SystemExit('native loader collection diagnostic adapter no longer matches upstream')
+loader = loader.replace(collection_assert, '''if !ok {
+                    fmt.eprintfln("%s: collection import %s is unavailable in the native Odin SON profile; use import-free code, project-local modules, or base:intrinsics. External SDK collections require --odin-root explicitly.", ctx.files[ctx.modules[mid].file_start + i].fullpath, imp.relpath.text)
+                    ctx.error_cnt += 1
+                    continue
+                }''')
 (stage / 'loader.odin').write_text(loader)
 p = stage / 'bac/codegen.odin'
 p.write_text(p.read_text().replace('max(node.lane, .I16)', 'max(node.lane, Lane_Type.I16)'))

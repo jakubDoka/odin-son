@@ -35,6 +35,10 @@ SDK explicitly; no SDK environment variable is required. This SDK is used only
 to build the compiler on the host, and the installed SDK is not modified.
 The default Blueprint contains no upstream SDK source assets. Import-free
 programs and the embedded demos need no SDK collection files at runtime.
+The default native profile accepts project-local imports and `base:intrinsics`.
+Other collection imports produce a diagnostic; SDK files left by an older
+package do not silently expand that profile. External SDK collections require
+an explicit `--odin-root <directory>` and remain subject to compiler limits.
 
 An intentional SDK-bearing package can still be produced separately:
 

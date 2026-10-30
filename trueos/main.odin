@@ -44,6 +44,7 @@ run_compiler :: proc(argc: uintptr, argv: [^]cstring) -> i32 {
     input := ""
     output := "a.o"
     root := "."
+    collections_enabled := false
     level := OPT_LEVELS[len(OPT_LEVELS)-1]
     target := TARGETS[.X64]
     blueprint_output := false
@@ -58,7 +59,7 @@ run_compiler :: proc(argc: uintptr, argv: [^]cstring) -> i32 {
         case arg == "-o", arg == "--odin-root":
             i += 1
             if i >= argc { fmt.eprintln("missing flag value"); return 1 }
-            if arg == "-o" { output = string(argv[i]); output_explicit = true } else { root = string(argv[i]) }
+            if arg == "-o" { output = string(argv[i]); output_explicit = true } else { root = string(argv[i]); collections_enabled = true }
         case arg == "--help", arg == "-h":
             fmt.println("usage: odin-son [entry.odin] [-o output.o] [--odin-root odin] [-target:amd64|arm64|wasm64] [-o:level] [-debug] [-check] [--blueprint]")
             fmt.println("No arguments opens the compiler TUI. --cpu-boids compiles the embedded CPU demo. --ide-build request.json handles an IDE build.")
@@ -115,8 +116,12 @@ run_compiler :: proc(argc: uintptr, argv: [^]cstring) -> i32 {
     defer typecheck.types_deinit(&types)
     global: typecheck.Global_Ctx
     global.root = root
-    for col in ([]string{"base", "core", "vendor"}) {
-        global.collections[col], _ = os.join_path({root, col}, context.temp_allocator)
+    // Old SDK assets can outlive the package that installed them. Loading them
+    // implicitly exceeds the bounded native compiler's source arena.
+    if collections_enabled {
+        for col in ([]string{"base", "core", "vendor"}) {
+            global.collections[col], _ = os.join_path({root, col}, context.temp_allocator)
+        }
     }
     ctx: Gen_Ctx
     ctx.types = &types

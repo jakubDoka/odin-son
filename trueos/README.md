@@ -176,9 +176,10 @@ expanded. See `trueos/mandelbrot-poc-demo/README.md` for the math, ABI and
 bare-metal validation. The separate `mandelbrot_gpu_cpu` entry remains 2D.
 
 The separate `water_light [D2Q9 + caustics]` entry compiles a coarse 64x48
-shallow-water lattice, a 128x96 refracted light field, and a 192x144 shaded
-image in native Odin SON. The existing GPU sprite renderer displays it; this
-first version solves and shades on the CPU and needs no kernel changes.
+shallow-water lattice and a 128x96 refracted light field in native Odin SON.
+It prepares six 192x144 optical fields; a custom Intel Xe-LP SIMD8 shader,
+compiled from editable Odin source on TRUEOS, shades the visual lease directly.
+The kernel must enable `odin-native-gpgpu` and the native field-upload/render ABI.
 Enter compiles/runs it; `--water_light` is the batch equivalent. Drag ripples,
 Space pauses, V cycles water/height/photon flux, and R resets. See
 `trueos/water-light-demo/README.md` for the model, accuracy/cost limits,

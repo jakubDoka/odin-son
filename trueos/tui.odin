@@ -44,9 +44,9 @@ tui_emit :: proc(text: string) -> bool {
 }
 
 tui_seed :: proc() -> bool {
-    names := [12]string{"cpu-boids", "hello", "gpu-tests", "gpu-tests", "mandelbrot_gpu_cpu", "mandelbrot_gpu_cpu", "mandelbrot_gpu_poc", "mandelbrot_gpu_poc", "mandelbrot_gpu_poc", "water_light", "water_light", "water_light"}
-    files := [12]string{"main.odin", "main.odin", "main.odin", "cases.odin", "main.odin", "shader.odin.source", "main.odin", "render.odin", "shader.poc.odin.source", "main.odin", "field.odin", "optics.odin"}
-    sources := [12]string{EMBEDDED_BOIDS, #load("hello.source", string), #load("gpu-main.source", string), #load("gpu-cases.source", string), #load("mandelbrot-main.source", string), #load("mandelbrot-shader.source", string), #load("mandelbrot-poc-main.source", string), #load("mandelbrot-poc-render.source", string), #load("mandelbrot-poc-shader.source", string), #load("water-light-main.source", string), #load("water-light-field.source", string), #load("water-light-optics.source", string)}
+    names := [13]string{"cpu-boids", "hello", "gpu-tests", "gpu-tests", "mandelbrot_gpu_cpu", "mandelbrot_gpu_cpu", "mandelbrot_gpu_poc", "mandelbrot_gpu_poc", "mandelbrot_gpu_poc", "water_light", "water_light", "water_light", "water_light"}
+    files := [13]string{"main.odin", "main.odin", "main.odin", "cases.odin", "main.odin", "shader.odin.source", "main.odin", "render.odin", "shader.poc.odin.source", "main.odin", "field.odin", "optics.odin", "shader.poc.odin.source"}
+    sources := [13]string{EMBEDDED_BOIDS, #load("hello.source", string), #load("gpu-main.source", string), #load("gpu-cases.source", string), #load("mandelbrot-main.source", string), #load("mandelbrot-shader.source", string), #load("mandelbrot-poc-main.source", string), #load("mandelbrot-poc-render.source", string), #load("mandelbrot-poc-shader.source", string), #load("water-light-main.source", string), #load("water-light-field.source", string), #load("water-light-optics.source", string), #load("water-light-shader.source", string)}
     for name, i in names {
         path := strings.concatenate({name, "/", files[i]})
         baseline := strings.concatenate({".odin-son-seeds/", path})

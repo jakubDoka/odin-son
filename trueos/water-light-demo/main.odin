@@ -3,10 +3,10 @@ package main
 foreign _ {
     trueos_time_monotonic_nanos :: proc() -> u64 ---
     trueos_cabi_ui4_scene_window_title_set_v1 :: proc(window: u32, text: [^]u8, bytes: uintptr) -> i32 ---
-    trueos_cabi_ui4_scene_sprite_upload_rgba8 :: proc(window, sprite, width, height: u32, bytes: ^u8, size: uintptr) -> i32 ---
-    trueos_cabi_ui4_scene_sprite_frame_begin :: proc(window, clear_rgba: u32) -> i32 ---
-    trueos_cabi_ui4_scene_sprite_quads :: proc(window: u32, quads: ^Quad, count: uintptr) -> i32 ---
-    trueos_cabi_ui4_solara_frame_publish :: proc(window, x, y, width, height: u32) -> i32 ---
+    trueos_cabi_ui4_scene_native_compute_upload_v1 :: proc(window, offset, total: u32, bytes: ^u8, size: uintptr) -> i32 ---
+    trueos_cabi_ui4_scene_native_compute_fields_upload_v1 :: proc(window, offset, total: u32, bytes: ^f32, size: uintptr) -> i32 ---
+    trueos_cabi_ui4_scene_native_compute_fields_render_v1 :: proc(window: u32) -> i32 ---
+    trueos_cabi_ui4_scene_compute_frame_publish :: proc(window, x, y, width, height: u32) -> i32 ---
     trueos_cabi_write :: proc(stream: u32, bytes: [^]u8, size: uintptr) ---
     trueos_cabi_blueprint_stop_control_v1 :: proc(op: u32) -> i32 ---
     trueos_cabi_blueprint_shutdown :: proc(data: [^]u8, size: uintptr) -> i32 ---
@@ -48,13 +48,6 @@ Resize :: struct {
     old_height: u32,
     width: u32,
     height: u32,
-}
-
-Quad :: struct {
-    sprite: u32,
-    corners: [16]f32,
-    color: u32,
-    flags: u32,
 }
 
 water: Water
@@ -103,7 +96,7 @@ failure :: proc(stage: string, status: i32) -> i32 {
     return status
 }
 
-statistics :: proc(tick_us, optics_us, shade_us, present_us, dropped: u64) {
+statistics :: proc(tick_us, optics_us, field_prepare_us, present_us, dropped: u64) {
     mass := f64(0.0)
     for i := 0; i < CELLS; i += 1 do mass += f64(water.height[i])
     residual := optics.incident-optics.reflected-optics.absorbed-optics.escaped-optics.deposited
@@ -112,7 +105,7 @@ statistics :: proc(tick_us, optics_us, shade_us, present_us, dropped: u64) {
     log_text(" mass_error_ppm="); log_integer(i64((mass-water.initial_mass)*1000000.0/water.initial_mass))
     log_text(" solve_us="); log_integer(i64(tick_us))
     log_text(" optics_us="); log_integer(i64(optics_us))
-    log_text(" shade_us="); log_integer(i64(shade_us))
+    log_text(" field_prepare_us="); log_integer(i64(field_prepare_us))
     log_text(" present_us="); log_integer(i64(present_us))
     log_text(" energy_error_ppm="); log_integer(i64(residual*1000000.0/optics.incident))
     log_text(" dropped_ticks="); log_integer(i64(dropped)); log_flush()
@@ -132,30 +125,30 @@ seed_water :: proc() {
 }
 
 present :: proc(window, width, height: u32) -> i32 {
-    status := trueos_cabi_ui4_scene_sprite_upload_rgba8(window, 1, IMAGE_W, IMAGE_H, &optics.rgba[0], 110592)
-    for status == -7 {
-        if trueos_cabi_blueprint_stop_control_v1(1) != 0 do return -3
-        trueos_cabi_sleep_ms(4)
-        status = trueos_cabi_ui4_scene_sprite_upload_rgba8(window, 1, IMAGE_W, IMAGE_H, &optics.rgba[0], 110592)
+    for offset := u32(0); offset < 663552; offset += 2048 {
+        count := u32(663552)-offset
+        if count > 2048 do count = 2048
+        status := trueos_cabi_ui4_scene_native_compute_fields_upload_v1(window, offset, 663552, &optics.fields[offset/4], uintptr(count))
+        for status == -7 {
+            if trueos_cabi_blueprint_stop_control_v1(1) != 0 do return -3
+            trueos_cabi_sleep_ms(4)
+            status = trueos_cabi_ui4_scene_native_compute_fields_upload_v1(window, offset, 663552, &optics.fields[offset/4], uintptr(count))
+        }
+        if status != 0 do return failure("field-upload", status)
     }
-    if status != 0 do return failure("upload", status)
-    view_w, view_h := f32(width), f32(height)
-    if view_w*3.0 > view_h*4.0 {view_w = view_h*4.0/3.0} else {view_h = view_w*3.0/4.0}
-    left, top := (f32(width)-view_w)*0.5, (f32(height)-view_h)*0.5
-    quad: Quad
-    quad.sprite = 1
-    quad.corners = {left, top, 0.0, 0.0, left+view_w, top, 1.0, 0.0, left+view_w, top+view_h, 1.0, 1.0, left, top+view_h, 0.0, 1.0}
-    quad.color = 0xffffffff
     for trueos_cabi_blueprint_stop_control_v1(1) == 0 {
-        status = trueos_cabi_ui4_scene_sprite_frame_begin(window, 0xff26201c)
+        status := trueos_cabi_ui4_scene_visual_frame_begin(window)
         if status == -7 {trueos_cabi_sleep_ms(4); continue}
         if status != 0 do return failure("begin", status)
-        status = trueos_cabi_ui4_scene_sprite_quads(window, &quad, 1)
-        // Admission Busy cancels an unsubmitted sprite lease; acquire a fresh frame.
-        if status == -7 {trueos_cabi_sleep_ms(4); continue}
-        if status != 0 do return failure("draw", status)
+        status = trueos_cabi_ui4_scene_native_compute_fields_render_v1(window)
+        for status == -7 {
+            if trueos_cabi_blueprint_stop_control_v1(1) != 0 do return -3
+            trueos_cabi_sleep_ms(4)
+            status = trueos_cabi_ui4_scene_native_compute_fields_render_v1(window)
+        }
+        if status != 0 do return failure("gpu-shade", status)
         for trueos_cabi_blueprint_stop_control_v1(1) == 0 {
-            status = trueos_cabi_ui4_solara_frame_publish(window, 0, 0, width, height)
+            status = trueos_cabi_ui4_scene_compute_frame_publish(window, 0, 0, width, height)
             if status != -7 do return status
             trueos_cabi_sleep_ms(4)
         }
@@ -164,6 +157,13 @@ present :: proc(window, width, height: u32) -> i32 {
 }
 
 run :: proc(window: u32) -> i32 {
+    code := transmute([]u8)native_pixel_code
+    for offset := 0; offset < len(code); offset += 2048 {
+        count := len(code)-offset
+        if count > 2048 do count = 2048
+        status := trueos_cabi_ui4_scene_native_compute_upload_v1(window, u32(offset), u32(len(code)), &code[offset], uintptr(count))
+        if status != 0 do return failure("gpu-upload", status)
+    }
     seed_water()
     set_title(window, 0)
     status := trueos_cabi_ui4_scene_frame_set_opacity(window, 255)
@@ -182,7 +182,7 @@ run :: proc(window: u32) -> i32 {
     tick_us := u64(0)
     dirty := true
     profile_pending := false
-    message("water_light: ready; D2Q9 water=64x48 light=128x96 image=192x144; native CPU fields + GPU sprite display\n")
+    message("water_light: ready; D2Q9 water=64x48 light=128x96 fields=192x144x6; native CPU fields + runtime-generated SIMD8 GPU water shading\n")
     message("water_light: drag ripples; Space pause; V water/height/caustics; wheel optical depth; A rain; R reset; P profile; Q/Escape quit\n")
     for trueos_cabi_blueprint_stop_control_v1(1) == 0 {
         keyboard: Keyboard
@@ -269,14 +269,14 @@ run :: proc(window: u32) -> i32 {
             light_solve(&water, &optics, depth)
             optics_us := (trueos_time_monotonic_nanos()-started)/1000
             started = trueos_time_monotonic_nanos()
-            shade_water(&water, &optics, depth, mode)
-            shade_us := (trueos_time_monotonic_nanos()-started)/1000
+            prepare_water_fields(&water, &optics, depth, mode)
+            field_prepare_us := (trueos_time_monotonic_nanos()-started)/1000
             started = trueos_time_monotonic_nanos()
             status = present(window, width, height)
             if status == -3 do return 0
             if status != 0 do return failure("present", status)
             present_us := (trueos_time_monotonic_nanos()-started)/1000
-            if frames%120 == 0 || profile_pending do statistics(tick_us, optics_us, shade_us, present_us, dropped)
+            if frames%120 == 0 || profile_pending do statistics(tick_us, optics_us, field_prepare_us, present_us, dropped)
             profile_pending = false
             frames += 1
             dirty = false

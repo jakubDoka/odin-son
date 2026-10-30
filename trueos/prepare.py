@@ -48,6 +48,7 @@ shutil.copy2(NATIVE / 'mandelbrot-demo/assets/shader.odin.source', stage / 'mand
 for name in ('main', 'render'):
     shutil.copy2(NATIVE / f'mandelbrot-poc-demo/{name}.odin', stage / f'mandelbrot-poc-{name}.source')
 shutil.copy2(NATIVE / 'mandelbrot-poc-demo/shader.poc.odin.source', stage / 'mandelbrot-poc-shader.source')
+shutil.copy2(NATIVE / 'water-light-demo/shader.poc.odin.source', stage / 'water-light-shader.source')
 for name in ('main', 'field', 'optics'):
     shutil.copy2(NATIVE / f'water-light-demo/{name}.odin', stage / f'water-light-{name}.source')
 arena = stage / 'utils/arna/arna.odin'

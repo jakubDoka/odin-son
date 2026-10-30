@@ -8,7 +8,7 @@ IMAGE_H :: 144
 
 Optics :: struct {
     flux: [LIGHT_CELLS]f32,
-    rgba: [110592]u8,
+    fields: [165888]f32,
     incident: f64,
     reflected: f64,
     absorbed: f64,
@@ -121,68 +121,42 @@ light_sample :: proc(o: ^Optics, x, y: f32) -> f32 {
     return a*(1.0-ty)+b*ty
 }
 
-channel :: proc(value: f32) -> u8 {
-    c := value
-    if c < 0.0 do c = 0.0
-    if c > 1.0 do c = 1.0
-    return u8(c*255.0)
-}
-
-shade_pixel :: proc(w: ^Water, o: ^Optics, depth: f32, mode: int, px, py: f32) -> u32 {
-    r, g, b := f32(0.32), f32(0.36), f32(0.38)
-    if px >= -0.5 && px < f32(GRID_W)-0.5 && py >= -0.5 && py < f32(GRID_H)-0.5 {
-        if mode == 1 {
-            displacement := (field_sample(([^]f32)(&w.height[0]), px, py)-1.0)*5.0
-            return u32(channel(0.3+displacement)) | (u32(channel(0.45+displacement)) << 8) | (u32(channel(0.6+displacement)) << 16) | 0xff000000
-        }
-        if mode == 2 {
-            energy := light_sample(o, px, py)
-            gray := u32(channel(energy/(0.5+energy)))
-            return gray | (gray << 8) | (gray << 16) | 0xff000000
-        }
-        normal, ray: Ray
-        surface_normal(w, px, py, depth, &normal)
-        reflection := refract_ray(&normal, 0.12, 0.18, -0.976729, &ray)
-        path := -depth*field_sample(([^]f32)(&w.height[0]), px, py)/ray.z
-        bx, by := px+ray.x*path, py+ray.y*path
-        caustic := light_sample(o, bx, by)
-        baseline := 0.9796268*transmission(0.012*depth)
-        illumination := 0.75+3.0*(caustic-baseline)
-        if illumination < 0.1 do illumination = 0.1
-        if illumination > 2.5 do illumination = 2.5
-        tile_x, tile_y := int(bx+128.0), int(by+128.0)
-        tile := f32(0.86)
-        if (tile_x/8+tile_y/8)%2 == 0 do tile = 0.72
-        if tile_x%8 == 0 || tile_y%8 == 0 do tile *= 0.6
-        fresnel := 1.0-reflection
-        highlight := normal.x*0.2-normal.y*0.15+normal.z*0.9682458
-        if highlight < 0.0 do highlight = 0.0
-        highlight *= highlight
-        highlight *= highlight
-        highlight *= highlight
-        highlight *= highlight
-        highlight *= highlight
-        highlight *= highlight
-        glint := highlight*0.65
-        r = tile*0.82*illumination*transmission(0.035*path)*fresnel+reflection*0.35+glint
-        g = tile*0.98*illumination*transmission(0.012*path)*fresnel+reflection*0.68+glint
-        b = tile*0.96*illumination*transmission(0.006*path)*fresnel+reflection*0.94+glint
-
-    }
-    return u32(channel(r)) | (u32(channel(g)) << 8) | (u32(channel(b)) << 16) | 0xff000000
-}
-
-shade_water :: proc(w: ^Water, o: ^Optics, depth: f32, mode: int) {
+prepare_water_fields :: proc(w: ^Water, o: ^Optics, depth: f32, mode: int) {
     for y := 0; y < IMAGE_H; y += 1 {
         for x := 0; x < IMAGE_W; x += 1 {
             px := (f32(x)+0.5)*f32(GRID_W+4)/f32(IMAGE_W)-2.5
             py := (f32(y)+0.5)*f32(GRID_H+3)/f32(IMAGE_H)-2.0
-            color := shade_pixel(w, o, depth, mode, px, py)
-            index := (y*IMAGE_W+x)*4
-            o.rgba[index] = u8(color & 255)
-            o.rgba[index+1] = u8((color >> 8) & 255)
-            o.rgba[index+2] = u8((color >> 16) & 255)
-            o.rgba[index+3] = 255
+            index := y*IMAGE_W+x
+            for field := 0; field < 5; field += 1 do o.fields[field*27648+index] = 0.0
+            o.fields[138240+index] = 3.0
+            if px < -0.5 || px >= f32(GRID_W)-0.5 || py < -0.5 || py >= f32(GRID_H)-0.5 do continue
+            o.fields[138240+index] = f32(mode)
+            if mode == 1 {
+                o.fields[110592+index] = (field_sample(([^]f32)(&w.height[0]), px, py)-1.0)*5.0
+                continue
+            }
+            if mode == 2 {
+                o.fields[110592+index] = light_sample(o, px, py)
+                continue
+            }
+            normal, ray: Ray
+            surface_normal(w, px, py, depth, &normal)
+            reflection := refract_ray(&normal, 0.12, 0.18, -0.976729, &ray)
+            path := -depth*field_sample(([^]f32)(&w.height[0]), px, py)/ray.z
+            bx, by := px+ray.x*path, py+ray.y*path
+            caustic := light_sample(o, bx, by)
+            baseline := 0.9796268*transmission(0.012*depth)
+            illumination := 0.75+3.0*(caustic-baseline)
+            if illumination < 0.1 do illumination = 0.1
+            if illumination > 2.5 do illumination = 2.5
+            tile_x, tile_y := int(bx+128.0), int(by+128.0)
+            tile := f32(0.86)
+            if (tile_x/8+tile_y/8)%2 == 0 do tile = 0.72
+            if tile_x%8 == 0 || tile_y%8 == 0 do tile *= 0.6
+            o.fields[index] = path
+            o.fields[27648+index] = tile*illumination*(1.0-reflection)
+            o.fields[55296+index] = reflection
+            o.fields[82944+index] = normal.x*0.2-normal.y*0.15+normal.z*0.9682458
         }
     }
 }

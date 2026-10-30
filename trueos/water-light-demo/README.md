@@ -2,8 +2,10 @@
 
 Launch `odin-son`, choose `water_light [D2Q9 + caustics]`, and press Enter.
 The new entry is separate from both Mandelbrot examples. The batch command is
-`--water_light`. No kernel change, SDK bundle, precompiled shader, or downloaded
-texture is required. Native Odin SON compiles the three source files on the node.
+`--water_light`. Native Odin SON compiles the CPU sources and the editable
+`shader.poc.odin.source` on the node. The kernel needs `odin-native-gpgpu` and
+the native field-upload/render ABI. No SDK bundle, precompiled application
+shader, or downloaded texture is required.
 
 - Left click/drag displaces the water without adding net mass or momentum.
 - Space pauses/resumes; R resets the two initial disturbances.
@@ -15,11 +17,22 @@ texture is required. Native Odin SON compiles the three source files on the node
 ## What runs where
 
 The CPU solves a **64x48 D2Q9 shallow-water lattice**, traces **128x96 light
-packets**, and shades a **192x144 image**. One retained sprite ID is replaced
-and displayed by the existing GPU sprite renderer, with letterboxing when
-needed. The GPU does not execute the fluid solver or optical shader in this
-first version. The model and image arrays occupy about 408 KiB, independent
-of window size; output rendering/composition still costs more at larger sizes.
+packets**, and prepares six planar **192x144 optical fields**: viewing-ray path,
+illuminated bottom material, Fresnel reflection, highlight cosine, diagnostic
+value, and view mode. The GPU reads these fields and executes the runtime
+compiled SIMD8 water shader for absorption, reflection, highlights, diagnostic
+tone mapping and color quantization. It writes the visual lease directly and
+preserves the pool aspect ratio with letterboxing. Simulation and optical
+transport remain on the CPU. Model and field arrays occupy about 1 MiB,
+independent of window size; GPU shading/composition costs grow with output size.
+
+The shader uses the existing `intel_xelp_poc` compiler and admission profile.
+Its six f32 inputs arrive in r1..r6; its f32 result carries an exact 24-bit RGB
+integer. The field-render envelope converts that result and supplies opaque
+alpha. Native code and finite field uploads use owner-bound sequential chunks
+of at most 2048 bytes, including through Hull. The driver retains the lease
+until GPU retirement, then publishes through the compute-frame path. The
+runtime path has no sprite draw or sprite-kernel dependency.
 
 The 60 Hz simulation uses a fixed step. At most six steps catch up in an input
 turn; excess wall-clock time is counted as dropped ticks rather than changing
@@ -100,7 +113,18 @@ all disturbances. The closed-wall refinement case is recorded separately.
 Local test programs, metrics and captures live in the sibling TRUEOS checkout
 under `tgt/water-light/`; they are not installed with the demo.
 
-## Bare-metal validation, 30 October 2026
+## Native field-shader validation
+
+The replacement shader compiles to 2,992 bytes of native Intel EU code and
+passes the existing native POC admission. A temporary EU interpreter checks
+4,000 absorption/reflection/highlight and diagnostic cases against an independent
+color reference, allowing one channel unit for reciprocal rounding. A host ABI
+harness runs 81 native frames with field uploads, shader execution, input,
+resizing, Busy injection at every GPU stage and cleanup. These checks do not
+establish hardware execution of the replacement; the captures below describe
+the earlier sprite version.
+
+## Historical sprite-path validation, 30 October 2026
 
 The new menu entry compiled and ran on the node with the existing kernel.
 The final native Blueprint is 451,152 bytes. The water, height and photon-flux

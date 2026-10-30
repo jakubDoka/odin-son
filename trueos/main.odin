@@ -47,7 +47,7 @@ run_compiler :: proc(argc: uintptr, argv: [^]cstring) -> i32 {
     root := "."
     collections_enabled := false
     level := OPT_LEVELS[len(OPT_LEVELS)-1]
-    target := TARGETS[.X64]
+    target := TARGETS[.AMD64]
     blueprint_output := false
     check := false
     debug := false

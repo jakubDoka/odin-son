@@ -588,7 +588,7 @@ regalloc_round :: proc(
 
 	can_spill :: proc(ctx: Ctx, lrg: ^bac.Lrg) -> bool {
 		spill_boundary := ctx.ra.spill_boundary[lrg.mask.kind]
-		// TODO: remove this, its a hack, sepecific to x64
+		// TODO: remove this, its a hack, sepecific to amd64
 		return (bac.reg_mask_last_set(lrg.mask) or_else 0) >= spill_boundary
 	}
 
@@ -776,7 +776,7 @@ regalloc_round :: proc(
 					available := free_regs[slrg.lrg.mask.kind]
 					spill_boundary := ctx.ra.spill_boundary[slrg.lrg.mask.kind]
 					active := &active_slrgs[slrg.lrg.mask.kind]
-					// TODO: remove this, its a hack, sepecific to x64
+					// TODO: remove this, its a hack, sepecific to amd64
 					if must_spill(ctx, slrg.lrg) {
 						slrg.lrg.mask.masks[0] &= -1 << uint(spill_boundary)
 					}

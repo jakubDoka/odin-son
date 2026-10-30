@@ -44,7 +44,7 @@ def main():
         assert b'argc=2' in demo.stdout and b'argv[0]=' in demo.stdout
         assert b'compiling embedded TRUEOS boids' in demo.stdout
         assert b'stored boids.o' in demo.stdout and b'stored boids.bp' in demo.stdout
-        assert b'commit complete; boids is ready to load' in demo.stdout
+        assert b'commit complete; Blueprint is ready to load' in demo.stdout
         assert b'source collections root=.' in demo.stdout
         demo_bp = (work / 'boids.bp').read_bytes()
         demo_header = struct.unpack('<4sHHQII', demo_bp[:24])

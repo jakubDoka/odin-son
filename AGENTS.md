@@ -5,10 +5,10 @@ The tests are generated with `gen-meta` (look into `misc/profiles.fish`) and
 node spec is generated with `gen-spec`, you can run tests with `run-test`.
 
 The backend is split into `bac` (the generic engine, shared node spec, and
-codegen scaffolding) plus one subpackage per architecture, e.g. `bac/x64` and
+codegen scaffolding) plus one subpackage per architecture, e.g. `bac/amd64` and
 the pre-lowering SSA IR `bac/ssa`. Shared node kinds are in
 `Node_Type` in `bac/graph.odin`; target-specific node kinds go into that
-target's own enum in its own module (e.g. `Node_Type` in `bac/x64/x64.odin`,
+target's own enum in its own module (e.g. `Node_Type` in `bac/amd64/amd64.odin`,
 `Node_Type` in `bac/ssa/ssa_spec.odin`). Adding a new architecture
 means adding a new `bac/<arch>` directory — nothing in root `bac` should need
 editing. If you are going to use the generated construction fuctions in the

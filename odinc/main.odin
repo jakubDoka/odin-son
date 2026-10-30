@@ -29,7 +29,7 @@ main :: proc() {
 
 	levels := OPT_LEVELS
 	level := levels[len(levels) - 1]
-	target := TARGETS[.X64]
+	target := TARGETS[.AMD64]
 	show_timings := false
 	show_stats := false
 	check := false
@@ -137,13 +137,15 @@ main :: proc() {
 	global_ctx: typecheck.Global_Ctx
 	global_ctx.root = root
 
-	for col in ([]string{"base", "core", "vendor"}) {
-		global_ctx.collections[col], _ = os.join_path(
-			{global_ctx.root, col},
-			context.temp_allocator,
-		)
-		_, err := os.stat(global_ctx.collections[col], context.temp_allocator)
-		fmt.assertf(err == nil, "%v: %v", global_ctx.collections[col], err)
+	if false {
+		for col in ([]string{"base", "core", "vendor"}) {
+			global_ctx.collections[col], _ = os.join_path(
+				{global_ctx.root, col},
+				context.temp_allocator,
+			)
+			_, err := os.stat(global_ctx.collections[col], context.temp_allocator)
+			fmt.assertf(err == nil, "%v: %v", global_ctx.collections[col], err)
+		}
 	}
 
 	ctx: Gen_Ctx

@@ -23,7 +23,7 @@ EXPORTER = r'''
 package main
 
 import "../bac"
-import "../bac/intel_xelp_poc"
+import "../bac/intel_xelp"
 import "../odinc"
 import "../odinc/typecheck"
 import "../utils/arna"
@@ -83,7 +83,7 @@ compile :: proc(name, source, result_type: string, count, max_ulps: int,
     typecheck.typecheck_program(&ctx)
     if ctx.error_cnt != 0 { fmt.eprintln(strings.to_string(errors)); os.exit(1) }
 
-    ctx.target = {name="intel_xelp", cc=&intel_xelp_poc.CC_TABLE[intel_xelp_poc.XELP_CC], spec=&intel_xelp_poc.SPEC}
+    ctx.target = {name="intel_xelp", cc=&intel_xelp.CC_TABLE[intel_xelp.XELP_CC], spec=&intel_xelp.SPEC}
     emit: bac.Codegen_Emit_Ctx
     odinc.emit_proc(&ctx, 1, odinc.OPT_LEVELS[len(odinc.OPT_LEVELS)-2], &emit)
     code := ctx.procs[1].out.code

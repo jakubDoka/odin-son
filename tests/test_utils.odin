@@ -1,7 +1,7 @@
 package tests
 
 import "../bac"
-import "../bac/intel_xelp_poc"
+import "../bac/intel_xelp"
 import "../bac/ssa"
 import "../gpu-dispatch/gpu"
 import "../odinc"
@@ -158,8 +158,8 @@ run_gpu_test :: proc(
 
 	ctx.target = {
 		name = "intel_xelp",
-		cc   = &intel_xelp_poc.CC_TABLE[intel_xelp_poc.XELP_CC],
-		spec = &intel_xelp_poc.SPEC,
+		cc   = &intel_xelp.CC_TABLE[intel_xelp.XELP_CC],
+		spec = &intel_xelp.SPEC,
 	}
 
 	odinc.emit_proc(
@@ -500,7 +500,7 @@ run_test :: proc(
 			if !level.debug {
 				context.allocator = context.temp_allocator
 				if level.vm == .Native {
-					disasm(dsb, ctx, X64_DS)
+					disasm(dsb, ctx, AMD64_DS)
 				} else {
 					disasm(dsb, ctx, ARM_DS)
 				}
@@ -602,7 +602,7 @@ run_test :: proc(
 
 	vm_names := [Test_Vm]string {
 		.Check  = "check",
-		.Native = "x64",
+		.Native = "amd64",
 		.Arm    = "arm",
 		.Wasm   = "wasm",
 	}
@@ -838,7 +838,7 @@ Disasm_Scope :: struct(
 	),
 }
 
-X64_DS :: Disasm_Scope(
+AMD64_DS :: Disasm_Scope(
 	x86.Instruction,
 	x86.Instruction_Info,
 	x86.Relocation,

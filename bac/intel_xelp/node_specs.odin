@@ -1,16 +1,15 @@
-package bac_x64
+package bac_intel_xelp
 import bac ".."
 Reg_Kind :: bac.Reg_Kind
 Class_Flag :: bac.Class_Flag
 // NOTE: this file is generated: 
 
-@(tag = "api", rodata, export, link_name = "bac_x64_SPEC")SPEC := bac.Node_Spec{
+@(tag = "api", rodata, export, link_name = "bac_intel_xelp_SPEC")SPEC := bac.Node_Spec{
 	call_clobbers = {
-		{69575, 65535},
-		{67587, 0},
+		{},
 	},
-	datatype_to_reg_kind = {.Void = 0, .Mem = 0, .I8 = 0, .I16 = 0, .I32 = 0, .I64 = 0, .F32 = 1, .F64 = 1, .V128 = 1, .V256 = 1, .V512 = 1},
-	spill_boundary = {17, 16},
+	datatype_to_reg_kind = {.Void = 0, .Mem = 0, .I8 = 0, .I16 = 0, .I32 = 0, .I64 = 0, .F32 = 0, .F64 = 0, .V128 = 0, .V256 = 0, .V512 = 0},
+	spill_boundary = {128, 4},
 	collect_meta = collect_meta,
 	emit_function = emit_function,
 	peep = peep_inst,
@@ -87,41 +86,13 @@ Class_Flag :: bac.Class_Flag
 		0b10, // Simd_Extract_Msbs
 		0b10, // Simd_Reduce_Add_Bisect
 		0b10, // Select
-		0b10000000, // X64_Add
-		0b10000000, // X64_Sub
-		0b10000000, // X64_And
-		0b10000000, // X64_Or
-		0b10000000, // X64_Xor
-		0b10000000, // X64_Eq
-		0b10000000, // X64_Ne
-		0b10000000, // X64_Le
-		0b10000000, // X64_Lt
-		0b10000000, // X64_Gt
-		0b10000000, // X64_Ge
-		0b10000000, // X64_U_Lt
-		0b10000000, // X64_U_Gt
-		0b10000000, // X64_U_Le
-		0b10000000, // X64_U_Ge
-		0b10000000, // X64_Shl
-		0b10000000, // X64_Shr
-		0b10000000, // X64_U_Shr
-		0b10000000, // X64_Mul
-		0b10000000, // X64_Div
-		0b10000000, // X64_Lea
-		0b10000000, // X64_Load
-		0b10000000, // X64_Store
-		0b10000000, // X64_Neg
-		0b10000000, // X64_Not
-		0b10, // X64_Mul8
-		0b10000000, // X64_Fma_213
-		0b10, // X64_Pcmpeq
-		0b10000000, // X64_Padd
-		0b10000000, // X64_Psub
-		0b10000000, // X64_Pshufd
-		0b10000000, // X64_Pshuflw
-		0b10, // X64_Psadbw
-		0b10000000, // X64_Pshufb
-		0b10000000, // X64_Pextr
+		0b10, // Inv
+		0b10, // Value_Eq
+		0b10, // Value_Ne
+		0b10, // Value_Le
+		0b10, // Value_Lt
+		0b10, // Value_Gt
+		0b10, // Value_Ge
 	},
 	node_extra_sizes = {
 		0 = 1, // Nil -> Cfg
@@ -144,38 +115,7 @@ Class_Flag :: bac.Class_Flag
 		25 = 1, // Ret -> Tup
 		27 = 2, // CInt -> CInt
 		55 = 1, // Proc_Addr -> Tup
-		71 = 3, // X64_Add -> Mem_Op
-		72 = 3, // X64_Sub -> Mem_Op
-		73 = 3, // X64_And -> Mem_Op
-		74 = 3, // X64_Or -> Mem_Op
-		75 = 3, // X64_Xor -> Mem_Op
-		76 = 3, // X64_Eq -> Mem_Op
-		77 = 3, // X64_Ne -> Mem_Op
-		78 = 3, // X64_Le -> Mem_Op
-		79 = 3, // X64_Lt -> Mem_Op
-		80 = 3, // X64_Gt -> Mem_Op
-		81 = 3, // X64_Ge -> Mem_Op
-		82 = 3, // X64_U_Lt -> Mem_Op
-		83 = 3, // X64_U_Gt -> Mem_Op
-		84 = 3, // X64_U_Le -> Mem_Op
-		85 = 3, // X64_U_Ge -> Mem_Op
-		86 = 3, // X64_Shl -> Mem_Op
-		87 = 3, // X64_Shr -> Mem_Op
-		88 = 3, // X64_U_Shr -> Mem_Op
-		89 = 3, // X64_Mul -> Mem_Op
-		90 = 3, // X64_Div -> Mem_Op
-		91 = 3, // X64_Lea -> Mem_Op
-		92 = 3, // X64_Load -> Mem_Op
-		93 = 3, // X64_Store -> Mem_Op
-		94 = 3, // X64_Neg -> Mem_Op
-		95 = 3, // X64_Not -> Mem_Op
-		97 = 3, // X64_Fma_213 -> Mem_Op
-		99 = 3, // X64_Padd -> Mem_Op
-		100 = 3, // X64_Psub -> Mem_Op
-		101 = 3, // X64_Pshufd -> Mem_Op
-		102 = 3, // X64_Pshuflw -> Mem_Op
-		104 = 3, // X64_Pshufb -> Mem_Op
-		105 = 3, // X64_Pextr -> Mem_Op
+		77 = 0,
 	},
 	node_flags = {
 		{}, // Nil
@@ -249,41 +189,13 @@ Class_Flag :: bac.Class_Flag
 		{Class_Flag.Interned}, // Simd_Extract_Msbs
 		{Class_Flag.Interned}, // Simd_Reduce_Add_Bisect
 		{Class_Flag.Interned}, // Select
-		{}, // X64_Add
-		{}, // X64_Sub
-		{}, // X64_And
-		{}, // X64_Or
-		{}, // X64_Xor
-		{}, // X64_Eq
-		{}, // X64_Ne
-		{}, // X64_Le
-		{}, // X64_Lt
-		{}, // X64_Gt
-		{}, // X64_Ge
-		{}, // X64_U_Lt
-		{}, // X64_U_Gt
-		{}, // X64_U_Le
-		{}, // X64_U_Ge
-		{}, // X64_Shl
-		{}, // X64_Shr
-		{}, // X64_U_Shr
-		{}, // X64_Mul
-		{}, // X64_Div
-		{}, // X64_Lea
-		{Class_Flag.Load}, // X64_Load
-		{Class_Flag.Store}, // X64_Store
-		{}, // X64_Neg
-		{}, // X64_Not
-		{Class_Flag.Interned}, // X64_Mul8
-		{}, // X64_Fma_213
-		{Class_Flag.Interned}, // X64_Pcmpeq
-		{}, // X64_Padd
-		{}, // X64_Psub
-		{}, // X64_Pshufd
-		{}, // X64_Pshuflw
-		{}, // X64_Psadbw
-		{}, // X64_Pshufb
-		{}, // X64_Pextr
+		{Class_Flag.Interned}, // Inv
+		{Class_Flag.Interned}, // Value_Eq
+		{Class_Flag.Interned}, // Value_Ne
+		{Class_Flag.Interned}, // Value_Le
+		{Class_Flag.Interned}, // Value_Lt
+		{Class_Flag.Interned}, // Value_Gt
+		{Class_Flag.Interned}, // Value_Ge
 	},
 	node_extra_types = ({}) when #config(NO_FMT, false) else ([]typeid{
 		0 = bac.Cfg,
@@ -306,38 +218,7 @@ Class_Flag :: bac.Class_Flag
 		25 = bac.Tup,
 		27 = bac.CInt,
 		55 = bac.Tup,
-		71 = Mem_Op,
-		72 = Mem_Op,
-		73 = Mem_Op,
-		74 = Mem_Op,
-		75 = Mem_Op,
-		76 = Mem_Op,
-		77 = Mem_Op,
-		78 = Mem_Op,
-		79 = Mem_Op,
-		80 = Mem_Op,
-		81 = Mem_Op,
-		82 = Mem_Op,
-		83 = Mem_Op,
-		84 = Mem_Op,
-		85 = Mem_Op,
-		86 = Mem_Op,
-		87 = Mem_Op,
-		88 = Mem_Op,
-		89 = Mem_Op,
-		90 = Mem_Op,
-		91 = Mem_Op,
-		92 = Mem_Op,
-		93 = Mem_Op,
-		94 = Mem_Op,
-		95 = Mem_Op,
-		97 = Mem_Op,
-		99 = Mem_Op,
-		100 = Mem_Op,
-		101 = Mem_Op,
-		102 = Mem_Op,
-		104 = Mem_Op,
-		105 = Mem_Op,
+		77 = {},
 	}),
 	node_kind = nil when #config(NO_FMT, false) else Node_Type,
 }
@@ -414,41 +295,13 @@ Node_Type :: enum u16 {
 	Simd_Extract_Msbs,
 	Simd_Reduce_Add_Bisect,
 	Select,
-	X64_Add,
-	X64_Sub,
-	X64_And,
-	X64_Or,
-	X64_Xor,
-	X64_Eq,
-	X64_Ne,
-	X64_Le,
-	X64_Lt,
-	X64_Gt,
-	X64_Ge,
-	X64_U_Lt,
-	X64_U_Gt,
-	X64_U_Le,
-	X64_U_Ge,
-	X64_Shl,
-	X64_Shr,
-	X64_U_Shr,
-	X64_Mul,
-	X64_Div,
-	X64_Lea,
-	X64_Load,
-	X64_Store,
-	X64_Neg,
-	X64_Not,
-	X64_Mul8,
-	X64_Fma_213,
-	X64_Pcmpeq,
-	X64_Padd,
-	X64_Psub,
-	X64_Pshufd,
-	X64_Pshuflw,
-	X64_Psadbw,
-	X64_Pshufb,
-	X64_Pextr,
+	Inv,
+	Value_Eq,
+	Value_Ne,
+	Value_Le,
+	Value_Lt,
+	Value_Gt,
+	Value_Ge,
 }
 
 peep_inst :: proc(ctx: bac.Peep_Ctx, node: bac.Expanded_Node) -> Maybe(bac.Node_ID) {
@@ -472,9 +325,6 @@ collect_meta :: proc(ctx: ^bac.Proc,
 	return bac.regalloc_collect_meta(ctx, ra, sched, meta_of_)
 }
 
-add_x64_psadbw :: #force_inline proc(prc: ^bac.Proc, name: string, dt: bac.Node_Datatype, lhs: bac.Node_ID, rhs: bac.Node_ID) -> (_id: bac.Node_ID) {
-	return bac.add_raw(prc, name, u16(Node_Type.X64_Psadbw), dt, {lhs, rhs})
-}
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	when false {}
@@ -483,7 +333,6 @@ inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	else when T == bac.Cfg {return 0}
 	else when T == bac.Dbg_Sym {return 2}
 	else when T == bac.Local {return 4}
-	else when T == Mem_Op {return 7}
 	else when T == bac.No_Extra {return 1}
 	else when T == bac.Tup {return 5}
 	else {#panic(`the passed type is not subclass of anything`)}
@@ -493,37 +342,21 @@ inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 #assert(size_of(bac.Cfg) % bac.PRECISION == 0)
 #assert(size_of(bac.Dbg_Sym) % bac.PRECISION == 0)
 #assert(size_of(bac.Local) % bac.PRECISION == 0)
-#assert(size_of(Mem_Op) % bac.PRECISION == 0)
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.Tup) % bac.PRECISION == 0)
 
-@(rodata) GPA_MASK := [?]i64{transmute(i64)u64(0x000000000000ffef)}
-GPA_MASK_IDX :: bac.RM_Intern_Idx{index = 0, kind = 0}
-@(rodata) GPA_MASKS := [6]bac.RM_Intern_Idx{0 ..< 6 = GPA_MASK_IDX}
+@(rodata) GRF_MASK := [?]i64{transmute(i64)u64(0xfffffffffffffffe), transmute(i64)u64(0x0100ffffffffffff)}
+GRF_MASK_IDX :: bac.RM_Intern_Idx{index = 0, kind = 0}
+@(rodata) GRF_MASKS := [6]bac.RM_Intern_Idx{0 ..< 6 = GRF_MASK_IDX}
 
-@(rodata) GPA_SPILL_MASK := [?]i64{transmute(i64)u64(0xfffffffffffeffef)}
-GPA_SPILL_MASK_IDX :: bac.RM_Intern_Idx{index = 1, kind = 0}
-@(rodata) GPA_SPILL_MASKS := [6]bac.RM_Intern_Idx{0 ..< 6 = GPA_SPILL_MASK_IDX}
-
-@(rodata) GPA_SPLIT_MASK := [?]i64{transmute(i64)u64(0xffffffffffffffef)}
-GPA_SPLIT_MASK_IDX :: bac.RM_Intern_Idx{index = 2, kind = 0}
-@(rodata) GPA_SPLIT_MASKS := [6]bac.RM_Intern_Idx{0 ..< 6 = GPA_SPLIT_MASK_IDX}
-
-@(rodata) XMM_MASK := [?]i64{transmute(i64)u64(0x000000000000ffff)}
-XMM_MASK_IDX :: bac.RM_Intern_Idx{index = 0, kind = 1}
-@(rodata) XMM_MASKS := [6]bac.RM_Intern_Idx{0 ..< 6 = XMM_MASK_IDX}
-
-@(rodata) XMM_SPILL_MASK := [?]i64{transmute(i64)u64(0xffffffffffffffff)}
-XMM_SPILL_MASK_IDX :: bac.RM_Intern_Idx{index = 1, kind = 1}
-@(rodata) XMM_SPILL_MASKS := [6]bac.RM_Intern_Idx{0 ..< 6 = XMM_SPILL_MASK_IDX}
+@(rodata) FLAG_MASK := [?]i64{transmute(i64)u64(0x000000000000000f), transmute(i64)u64(0x0000000000000000)}
+FLAG_MASK_IDX :: bac.RM_Intern_Idx{index = 0, kind = 1}
+@(rodata) FLAG_MASKS := [6]bac.RM_Intern_Idx{0 ..< 6 = FLAG_MASK_IDX}
 
 seed_rm_interner :: proc(ra: ^bac.Regalloc) {
 	ra.mask_len = MASK_SIZE
-	bac.rm_intern_slice(ra, 0, GPA_MASK[:])
-	bac.rm_intern_slice(ra, 0, GPA_SPILL_MASK[:])
-	bac.rm_intern_slice(ra, 0, GPA_SPLIT_MASK[:])
-	bac.rm_intern_slice(ra, 1, XMM_MASK[:])
-	bac.rm_intern_slice(ra, 1, XMM_SPILL_MASK[:])
+	bac.rm_intern_slice(ra, 0, GRF_MASK[:])
+	bac.rm_intern_slice(ra, 1, FLAG_MASK[:])
 }
 
 xtype :: #force_inline proc(node: bac.Expanded_Node) -> Node_Type {

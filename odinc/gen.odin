@@ -1,12 +1,13 @@
 package odin_son
 
 import "../bac"
+import "../bac/amd64"
 import "../bac/anal"
 import "../bac/arm"
+import "../bac/intel_xelp"
 import "../bac/regalloc"
 import "../bac/ssa"
 import "../bac/wasm"
-import "../bac/x64"
 import "../utils/arna"
 import "base:runtime"
 import "core:fmt"
@@ -45,33 +46,45 @@ OPT_LEVELS :: [?]Opt_Level {
 }
 
 Target_ID :: enum {
-	X64,
+	AMD64,
 	Wasm64,
 	Arm64,
+	Intel_Xelp,
 }
 
 TARGETS := [Target_ID]typecheck.Target {
-	.X64    = {
+	.AMD64      = {
 		"amd64",
-		&x64.CC_TABLE[x64.X64_SYSTEMV_CC],
-		&x64.SPEC,
-		x64.OPT_HINTS,
+		&amd64.CC_TABLE[amd64.AMD64_SYSTEMV_CC],
+		&amd64.SPEC,
+		amd64.OPT_HINTS,
 		emit_elf,
 	},
-	.Wasm64 = {
+	.Wasm64     = {
 		"wasm64",
 		&wasm.CC_TABLE[wasm.WASM_SYSTEMV_CC],
 		&wasm.SPEC,
 		wasm.OPT_HINTS,
 		emit_wasm_module,
 	},
-	.Arm64  = {
+	.Arm64      = {
 		"arm64",
 		&arm.CC_TABLE[arm.ARM_SYSTEMV_CC],
 		&arm.SPEC,
 		arm.OPT_HINTS,
 		emit_elf,
 	},
+	.Intel_Xelp = {
+		"intel_xelp",
+		&intel_xelp.CC_TABLE[intel_xelp.XELP_CC],
+		&intel_xelp.SPEC,
+		{},
+		emit_shader,
+	},
+}
+
+emit_shader :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
+	return ctx.procs[1].out.code
 }
 
 Abi_Param :: struct {
@@ -1961,7 +1974,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				call_end, mem := ssa.make_call(
 					ctx,
 					args,
-					{cid = ~u32(0), flags = {ccid = x64.X64_LINUX_SYSCALL_CC}},
+					{cid = ~u32(0), flags = {ccid = amd64.AMD64_LINUX_SYSCALL_CC}},
 				)
 				for arg in args[CALL_PREFIX:] {
 					bac.unpin(ctx, arg)

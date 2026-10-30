@@ -1,4 +1,4 @@
-package bac_intel_xelp_poc
+package bac_intel_xelp
 
 import bac ".."
 import "../../utils/arna"
@@ -79,10 +79,10 @@ when SPEC_NOT_PRESENT {
 	inherit_idx_of :: proc($T: typeid) -> u8 {return 0}
 }
 
-@(tag = "api", rodata, export, link_name = "bac_intel_xelp_poc_OPT_HINTS")
+@(tag = "api", rodata, export, link_name = "bac_intel_xelp_OPT_HINTS")
 OPT_HINTS := bac.Opt_Hints{}
 
-@(tag = "api", rodata, export, link_name = "bac_intel_xelp_poc_CC_TABLE")
+@(tag = "api", rodata, export, link_name = "bac_intel_xelp_CC_TABLE")
 CC_TABLE := [1]bac.Call_Conv {
 	XELP_CC = {
 		args = {{R1, R2, R3, R4, R5, R6, R7, R8}, {}},
@@ -95,7 +95,8 @@ peep :: proc(
 	node: bac.Expanded_Node,
 	_: $T,
 ) -> Maybe(bac.Node_ID) {
-	if .Eq <= node.itype && node.itype <= .Ge {
+	#partial switch xtype(node) {
+	case .Eq ..= .Ge:
 		value: bac.Node_ID
 		#reverse for use in node.outs {
 			if get_node(ctx, use.id).itype == .If && use.idx == 1 do continue
@@ -110,8 +111,7 @@ peep :: proc(
 			}
 			bac.set_input(ctx, use.id, use.idx, value)
 		}
-	}
-	if node.itype == .If {
+	case .If:
 		condition := expand_node(ctx, node.inps[1])
 		if condition.itype < .Eq || condition.itype > .Ge {
 			flag := bac.add_bin_op(
@@ -125,11 +125,13 @@ peep :: proc(
 			bac.set_input(ctx, bac.get_node_id(ctx, node), 1, flag)
 			return bac.get_node_id(ctx, node)
 		}
+	case .Div:
+		if node.dt == .F32 {
+			inv := bac.add_raw(ctx, "inv", u16(Node_Type.Inv), .F32, {node.inps[1]})
+			return bac.add_bin_op(ctx, "fdiv", .Mul, .F32, node.inps[0], inv)
+		}
 	}
-	if node.itype == .Div && node.dt == .F32 {
-		inv := bac.add_raw(ctx, "inv", u16(Node_Type.Inv), .F32, {node.inps[1]})
-		return bac.add_bin_op(ctx, "fdiv", .Mul, .F32, node.inps[0], inv)
-	}
+
 	return nil
 }
 
@@ -174,7 +176,7 @@ meta_of :: proc(
 		out = IOUT
 	}
 
-	#partial switch ptype(node) {
+	#partial switch xtype(node) {
 	case .Nil ..= .Dbg_Scope:
 		fmt.panicf("should not reach these: %v", node)
 	case .Poison ..= .Global:
@@ -226,33 +228,23 @@ Branch :: struct {
 	jip, uip: int,
 }
 
-when !SPEC_NOT_PRESENT {
-	@(rodata)
-	FLOAT_OPS := #partial [Node_Type]Op {
-		// add (8|M0) r{dst}.0<1>:f r{lhs}.0<8;8,1>:f r{rhs}.0<8;8,1>:f {@1}
-		.Add = {0x00030140, 0x00050aa0, 0x0a460005, 0x00460005},
-		// add (8|M0) r{dst}.0<1>:f r{lhs}.0<8;8,1>:f -r{rhs}.0<8;8,1>:f {@1}
-		.Sub = {0x00030140, 0x00050aa0, 0x0a460005, 0x02460005},
-		// mul (8|M0) r{dst}.0<1>:f r{lhs}.0<8;8,1>:f r{rhs}.0<8;8,1>:f {@1}
-		.Mul = {0x00030141, 0x00050aa0, 0x0a460005, 0x00460005},
-		// A non-float destination converts the comparison mask instead of preserving its bits.
-		// cmp (8|M0) (eq)f0.0 r{dst}.0<1>:f r{lhs}.0<8;8,1>:f r{rhs}.0<8;8,1>:f {@1}
-		.Eq  = {0x00030170, 0x00050aa0, 0x1a460005, 0x00460005},
-		// cmp (8|M0) (ne)f0.0 r{dst}.0<1>:f r{lhs}.0<8;8,1>:f r{rhs}.0<8;8,1>:f {@1}
-		.Ne  = {0x00030170, 0x00050aa0, 0x2a460005, 0x00460005},
-		// cmp (8|M0) (lt)f0.0 r{dst}.0<1>:f r{lhs}.0<8;8,1>:f r{rhs}.0<8;8,1>:f {@1}
-		.Lt  = {0x00030170, 0x00050aa0, 0x5a460005, 0x00460005},
-		// cmp (8|M0) (le)f0.0 r{dst}.0<1>:f r{lhs}.0<8;8,1>:f r{rhs}.0<8;8,1>:f {@1}
-		.Le  = {0x00030170, 0x00050aa0, 0x6a460005, 0x00460005},
-		// cmp (8|M0) (gt)f0.0 r{dst}.0<1>:f r{lhs}.0<8;8,1>:f r{rhs}.0<8;8,1>:f {@1}
-		.Gt  = {0x00030170, 0x00050aa0, 0x3a460005, 0x00460005},
-		// cmp (8|M0) (ge)f0.0 r{dst}.0<1>:f r{lhs}.0<8;8,1>:f r{rhs}.0<8;8,1>:f {@1}
-		.Ge  = {0x00030170, 0x00050aa0, 0x4a460005, 0x00460005},
-		// mov (8|M0) r{dst}.0<1>:f -r{src}.0<8;8,1>:f {@1}
-		.Neg = {0x00030161, 0x00052aa0, 0x00460005, 0},
-		// math.inv (8|M0) r{dst}.0<1>:f r{src}.0<8;8,1>:f {@1,$2}
-		.Inv = {0x00039238, 0x00050aa0, 0x10460005, 0},
-	}
+Jump_Type :: enum int {
+	None,
+	Goto,
+	If,
+	Else,
+	Endif,
+	Break,
+	Cont,
+	While,
+	Uncond_While,
+}
+
+Block_Info :: struct {
+	parent_if: u32,
+	has_join:  bool,
+	type:      Jump_Type,
+	jip, uip:  int,
 }
 
 emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
@@ -344,7 +336,7 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block_idx: int, _: $T) {
 	node := expand_node(ctx, instr)
 
-	#partial switch ptype(node) {
+	#partial switch xtype(node) {
 	case .Nil ..= .Dbg_Scope:
 		fmt.panicf("should not reach these: %v", node)
 	case .Poison ..= .Phi:
@@ -392,22 +384,22 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block_idx: int, _: $T) {
 					0,
 				},
 			)
-			return
+		} else {
+			// mov (8|M0) r{dst}.0<1>:ud r{src}.0<8;8,1>:ud {@1}
+			emit_op(
+				ctx.code,
+				{
+					eu_control(.Mov, 8, swsb = eu_swsb_regdist(1)),
+					eu_dst(dst, 0, .UD) | eu_src0_type(.UD),
+					eu_src(src, 0, 8, 8, 1),
+					0,
+				},
+			)
 		}
-		// mov (8|M0) r{dst}.0<1>:ud r{src}.0<8;8,1>:ud {@1}
-		emit_op(
-			ctx.code,
-			{
-				eu_control(.Mov, 8, swsb = eu_swsb_regdist(1)),
-				eu_dst(dst, 0, .UD) | eu_src0_type(.UD),
-				eu_src(src, 0, 8, 8, 1),
-				0,
-			},
-		)
 	case .Eq ..= .Ge, .Value_Eq ..= .Value_Ge:
-		materialized := ptype(node) >= .Value_Eq
+		materialized := xtype(node) >= .Value_Eq
 		kind :=
-			materialized ? Node_Type(u16(Node_Type.Eq) + node.rtype - u16(Node_Type.Value_Eq)) : ptype(node)
+			materialized ? Node_Type(u16(Node_Type.Eq) + node.rtype - u16(Node_Type.Value_Eq)) : xtype(node)
 		dst := reg_of(ctx, instr)
 		op := FLOAT_OPS[kind]
 		dt := get_node(ctx, node.inps[0]).dt
@@ -442,7 +434,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block_idx: int, _: $T) {
 	case .Add, .Sub, .Mul, .Neg, .Inv:
 		assert(bac.operation_datatype(ctx, node) == .F32)
 		dst := reg_of(ctx, instr)
-		op := FLOAT_OPS[ptype(node)]
+		op := FLOAT_OPS[xtype(node)]
 		op[1] |= eu_reg_number(dst, .GRF) << 24
 		op[2] |= eu_reg_number(reg_of(ctx, node.inps[0]), .GRF) << 8
 		if len(node.inps) == 2 {
@@ -450,7 +442,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block_idx: int, _: $T) {
 		}
 		emit_op(ctx.code, op)
 
-		if ptype(node) == .Inv {
+		if xtype(node) == .Inv {
 			// Math is out of order; register-distance dependencies alone cannot wait for it.
 			// sync.nop (1|M0) null {$2.dst}
 			emit_op(
@@ -466,7 +458,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block_idx: int, _: $T) {
 	case .If, .Jump, .Always:
 		block := ctx.blocks[block_idx]
 		ctx.labels[(block_idx + 1) * 2 + 1] = ctx.code.pos
-		if block.type == .Dead do return
+		if block.type == .None do break
 
 		predicate: u32
 		if node.itype == .If {
@@ -487,25 +479,24 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block_idx: int, _: $T) {
 			.While ..= .Uncond_While       = .While,
 			.Endif = .Endif,
 			.Else  = .Else,
-			.Dead  = {},
+			.None  = {},
 		}
 		NEEDS_UIP :: bit_set[Jump_Type]{.Goto, .If, .Else, .Break, .Cont}
 
 		jip, uip: int
-		if target := block.targets[.jip]; target != 0 {
+		if target := block.jip; target != 0 {
 			at_end :=
 				block.type not_in bit_set[Jump_Type]{.If, .While, .Uncond_While} &&
 				(block.type == .Else || !ctx.blocks[target].has_join)
 			jip = (target + 1) * 2 + int(at_end)
 		}
 		if block.type in NEEDS_UIP {
-			target := block.targets[.uip]
+			target := block.uip
 			assert(target != 0)
 			uip = (target + 1) * 2 + int(block.type != .Goto)
 		}
 
 		emit_branch(ctx, TYPE_TO_OP[block.type], jip, uip, predicate)
-
 	case .Return:
 		return_count := len(node.inps) - min(2, len(node.inps))
 		return_regs := CC_TABLE[XELP_CC].rets[RK_GRF]
@@ -574,31 +565,6 @@ reg_of :: proc(ctx: ^Ctx, node: bac.Node_ID) -> Reg {
 	return ctx.allocs[get_node(ctx, node).gvn]
 }
 
-Jump_Type :: enum int {
-	Dead,
-	Goto,
-	If,
-	Else,
-	Endif,
-	Break,
-	Cont,
-	While,
-	Uncond_While,
-}
-
-Jump_Target :: enum int {
-	jip,
-	uip,
-}
-
-Block_Info :: struct {
-	parent_if: u32,
-	has_join:  bool,
-	type:      Jump_Type,
-	loop:      int,
-	targets:   [Jump_Target]int,
-}
-
 prepare_blocks :: proc(ctx: ^Ctx) {
 	ctx.blocks = make([]Block_Info, len(ctx.bbs))
 	for bb, i in ctx.bbs do get_node(ctx, bb.head).gvn = u32(i)
@@ -621,7 +587,7 @@ prepare_blocks :: proc(ctx: ^Ctx) {
 			}
 		}
 
-		if tnode.itype == .If && info.type == .Dead {
+		if tnode.itype == .If && info.type == .None {
 			info.type = .Goto
 		}
 
@@ -643,7 +609,7 @@ prepare_blocks :: proc(ctx: ^Ctx) {
 					onode := expand_node(ctx, out.id)
 					if onode.itype == .Loop && out.idx == 1 {
 						is_continue = true
-						info.type = .Dead
+						info.type = .None
 						break
 					}
 				}
@@ -702,8 +668,6 @@ prepare_blocks :: proc(ctx: ^Ctx) {
 				assert(prev == int(node.gvn))
 			}
 		}
-
-		info.loop = slice.last(active_loops[:])
 	}
 
 	for bb, bidx in ctx.bbs {
@@ -713,7 +677,7 @@ prepare_blocks :: proc(ctx: ^Ctx) {
 		assert(tnode.itype == .If || tnode.itype == .Jump)
 		target := get_node(ctx, tnode.outs[0].id)
 		assert(tnode.itype != .Jump || target.itype == .Region)
-		info.targets[.uip] = int(target.gvn)
+		info.uip = int(target.gvn)
 		ctx.blocks[target.gvn].has_join = true
 	}
 
@@ -731,31 +695,30 @@ prepare_blocks :: proc(ctx: ^Ctx) {
 			acfg != 0 ? acfg : max(int),
 			last_join != 0 ? last_join : max(int),
 		)
-		if next == max(int) do next = 0
 
 		switch info.type {
-		case .Dead:
+		case .None:
 		case .Goto:
-			info.targets[.jip] = min(info.targets[.uip], next != 0 ? next : max(int))
+			info.jip = min(info.uip, next)
 		case .If:
 			else_idx := pop(&active_cfg)
 			einfo := &ctx.blocks[else_idx]
-			info.targets[.jip] = else_idx + 1
-			info.targets[.uip] = einfo.targets[.jip]
+			info.jip = else_idx + 1
+			info.uip = einfo.jip
 		case .Else:
-			info.targets[.jip] = pop(&active_cfg)
-			info.targets[.uip] = info.targets[.jip]
+			info.jip = pop(&active_cfg)
+			info.uip = info.jip
 			append(&active_cfg, bidx)
 		case .Endif:
-			info.targets[.jip] = next
+			info.jip = next
 			append(&active_cfg, bidx)
 		case .Break, .Cont:
-			info.targets[.jip] = next
+			info.jip = next
 
 			#reverse for cfg in active_cfg {
 				if ctx.blocks[cfg].type == .Uncond_While ||
 				   ctx.blocks[cfg].type == .While {
-					info.targets[.uip] = cfg
+					info.uip = cfg
 					break
 				}
 			}
@@ -763,13 +726,15 @@ prepare_blocks :: proc(ctx: ^Ctx) {
 			append(&active_cfg, bidx)
 		}
 
+		if info.jip == max(int) do info.jip = 0
+
 		#partial switch hnode.itype {
 		case .Loop:
 			loop := pop(&active_cfg)
 			assert(loop != 0)
 			linfo := &ctx.blocks[loop]
 			assert(linfo.type == .While || linfo.type == .Uncond_While)
-			linfo.targets[.jip] = bidx
+			linfo.jip = bidx
 		}
 
 		if info.has_join {
@@ -811,108 +776,6 @@ eu_predicate :: proc(reg: Reg, negate: bool = false) -> u32 {
 emit_op :: proc(code: ^arna.Allocator, op: Op) {
 	op := op
 	bac.emit(code, mem.ptr_to_bytes(&op))
-}
-
-Opcode :: enum u8 {
-	// Control / synchronization
-	Illegal = 0x00,
-	Sync    = 0x01,
-	Jmpi    = 0x20,
-	Brd     = 0x21,
-	If      = 0x22,
-	Brc     = 0x23,
-	Else    = 0x24,
-	Endif   = 0x25,
-	While   = 0x27,
-	Break   = 0x28,
-	Cont    = 0x29,
-	Halt    = 0x2A,
-	Calla   = 0x2B,
-	Call    = 0x2C,
-	Ret     = 0x2D,
-	Goto    = 0x2E,
-	Join    = 0x2F,
-
-	// Messages
-	Send    = 0x31,
-	Sendc   = 0x32,
-
-	// Math / arithmetic
-	Math    = 0x38,
-	Add     = 0x40,
-	Mul     = 0x41,
-	Avg     = 0x42,
-	Frc     = 0x43,
-	Rndu    = 0x44,
-	Rndd    = 0x45,
-	Rnde    = 0x46,
-	Rndz    = 0x47,
-	Mac     = 0x48,
-	Mach    = 0x49,
-	Lzd     = 0x4A,
-	Fbh     = 0x4B,
-	Fbl     = 0x4C,
-	Cbit    = 0x4D,
-	Addc    = 0x4E,
-	Subb    = 0x4F,
-	Mad     = 0x5B,
-	Madm    = 0x5D,
-
-	// Data movement / selection
-	Nop     = 0x60,
-	Mov     = 0x61,
-	Sel     = 0x62,
-	Movi    = 0x63,
-
-	// Logic / bit operations
-	Not     = 0x64,
-	And     = 0x65,
-	Or      = 0x66,
-	Xor     = 0x67,
-	Shr     = 0x68,
-	Shl     = 0x69,
-	Smov    = 0x6A,
-	Asr     = 0x6C,
-	Ror     = 0x6E,
-	Rol     = 0x6F,
-
-	// Comparisons / conditional selection
-	Cmp     = 0x70,
-	Cmpn    = 0x71,
-	Csel    = 0x72,
-
-	// Bitfield operations
-	Bfrev   = 0x77,
-	Bfe     = 0x78,
-	Bfi1    = 0x79,
-	Bfi2    = 0x7A,
-}
-
-Data_Type :: enum u8 {
-	UB = 0x0,
-	UW = 0x1,
-	UD = 0x2,
-	B  = 0x4,
-	W  = 0x5,
-	D  = 0x6,
-	HF = 0x9,
-	F  = 0xa,
-}
-
-Register_File :: enum u8 {
-	ARF,
-	GRF,
-}
-
-SFID :: enum u8 {
-	TS  = 0x7,
-	DC1 = 0xc,
-}
-
-SBID_Mode :: enum u8 {
-	Wait_Dst = 0x20,
-	Wait_Src = 0x30,
-	Set      = 0x40,
 }
 
 eu_control :: proc(

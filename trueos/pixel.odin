@@ -4,7 +4,7 @@ import "core:fmt"
 import "core:hash"
 import "core:mem"
 import "bac"
-import poc "bac/intel_xelp_poc"
+import poc "bac/intel_xelp"
 import "typecheck"
 import "utils/arna"
 import os "platform"
@@ -26,7 +26,7 @@ compile_pixel_file :: proc(input, output: string, complete_kernel := false) -> i
     ctx: Gen_Ctx
     ctx.types = &types
     ctx.global = &global
-    ctx.target = TARGETS[.X64]
+    ctx.target = TARGETS[.AMD64]
     ctx.errors = os.to_writer(os.stderr)
     stats: bac.Stats
     ctx.stats = &stats

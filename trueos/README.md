@@ -3,7 +3,7 @@
 From the repository root:
 
 ```bash
-ODIN=/home/t4ce/Programmme/odin/odin bash trueos/build.sh
+bash trueos/build.sh
 ```
 
 Outputs:
@@ -15,7 +15,7 @@ The sibling TRUEOS-Blueprints repository also supports the named native build
 and its ordinary single-app publication path:
 
 ```bash
-ODIN=/home/t4ce/Programmme/odin/odin cargo bp odin-son
+cargo bp odin-son
 ```
 
 Run that command from TRUEOS-Blueprints. It rebuilds this checkout, copies the
@@ -40,7 +40,7 @@ An intentional SDK-bearing package can still be produced separately:
 
 ```bash
 python3 trueos/package.py trueos/build/odin-son.raw.o trueos/build/odin-son.bp \
-    --sdk "$(/home/t4ce/Programmme/odin/odin root)"
+    --sdk "$(odin root)"
 ```
 
 That explicit option embeds `base`, `core`, and `vendor` source collections
@@ -85,21 +85,93 @@ In the current Shell3, submit `§§odin-son` and Enter to fetch and launch the
 published compiler. An AppDB-installed copy launches by exact name `odin-son`
 in CMD mode.
 
-On first launch it seeds `cpu-boids/main.odin` and
-`hello/main.odin` under its app root, normally `apps/odin-son`. Existing files
-are preserved. Each example has its own directory because Odin modules load
+On first launch it seeds `cpu-boids/main.odin`, `hello/main.odin`,
+`gpu-tests/{main,cases}.odin`, and
+`mandelbrot_gpu_cpu/{main.odin,shader.odin.source}` under its app root, normally
+`apps/odin-son`. It also seeds `mandelbrot_gpu_poc` with `main.odin`,
+`render.odin`, and `shader.poc.odin.source`. Seed baselines under `.odin-son-seeds/` let unchanged bundled
+files follow package updates while preserving local edits. Each example has
+its own directory because Odin modules load
 all `.odin` files in their directory. Add another `<demo>/main.odin`; the picker
 discovers it automatically while visible, or immediately with `f`. Demo folder
 names may contain ASCII letters, digits, `_`, and `-` (maximum 64 characters).
 
 Use arrows or `j/k` to select and `q` to quit. For source directories, Enter
 compiles and `r` queues the last successful build in its own headless VM. Outputs are
-`demo-<name>.o` and `demo-<name>.bp` in the compiler app root. A queued launch
+`demo-<name>.o` and `demo-<name>.bp` in the compiler app root. Run exports the
+Blueprint to `common/odin-son/` for the existing path-based launcher. A queued launch
 is not proof that a child started or completed.
 TAB parks the compiler terminal without exiting; select its slot and use `tui`
 to return. Resize/reentry redraw the retained selection. Jobs run sequentially;
 per-job temporary allocations and compiler arenas are freed before the next job.
 Syntax and type errors are displayed in the latest-output panel.
+
+Select `gpu-tests`, press Enter, then `r` for the five Odin-native iGPU checks.
+The single `odin-son.bp` includes the import-free runner source, fixtures and
+five precompiled GPU kernels. The resident odin-son compiles the CPU runner on
+TRUEOS and packages `demo-gpu-tests.bp`; no separate GPU-test download or SDK
+is needed. The child prints the per-test results and summary to Blueprint logs.
+GPU kernels are embedded ahead of time; this entry does not recompile them.
+
+Select `mandelbrot_gpu_cpu` and press Enter to compile its shader and CPU runner
+on TRUEOS and queue one launch automatically. The compiler stays open; `r` can launch the compiled
+demo again. The direct flag `--mandelbrot_gpu_cpu` seeds the examples, compiles
+this entry, and queues one launch without opening the picker. The child opens
+the original 320x240 UI4 Mandelbrot view: wheel zooms around the pointer,
+left-button dragging pans, and Q/Escape closes it. It stays open until quit or
+stopped; compiling it does not repeatedly launch children.
+Brokered UI4 resize events replace the backing frame and redraw its full new
+extent, preserving the complex-plane center and pixel scale. Pending resize
+requests survive Busy responses, and the newest requested size wins. An
+unchanged copy of the original bundled Mandelbrot runner upgrades when seeded;
+edited source files remain preserved.
+
+The import-free CPU source is `trueos/mandelbrot-demo/main.odin`; the shader
+source is `trueos/mandelbrot-demo/assets/shader.odin.source`. Building the
+compiler embeds both sources, without compiling the Mandelbrot shader on the
+host. There is no shader snapshot, manifest verification, historical compiler
+checkout, or shader preparation command. After editing bundled source, run
+`cargo bp odin-son` in TRUEOS-Blueprints, relaunch the compiler and select the
+example. You can also edit the seeded `shader.odin.source` on TRUEOS and press
+Enter directly.
+
+The picker checks every example for `shader.odin.source`. If present, it asks
+the resident compiler to produce a fresh native Intel Xe-LP SIMD8 pixel body:
+
+```text
+odin-son --gpu-pixel <demo>/shader.odin.source -o <demo>/shader.eu
+```
+
+The picker generates `<demo>/kernel.odin` containing `native_pixel_code`, then
+compiles the CPU runner and packages the Blueprint. Shader errors stop this
+sequence and prevent launching an older build. The generated CPU runner
+uploads those newly compiled bytes through the existing native-compute ABI.
+
+The compiler is generic within its scalar pixel subset: exactly one tagged
+procedure `(f32, f32) -> f32`, f32/bool locals, arithmetic `+/-/*`, comparisons,
+boolean operations, ternary selection, and constant loops bounded to 1..64
+iterations. It unrolls loops; the driver limits the resulting body to 24 KiB.
+Unsupported syntax, division, register exhaustion, and oversized programs
+produce diagnostics. Neither the iteration count nor the shader name/hash is
+fixed in the compiler. See `bac/intel_xelp_pixel/README.md` for the backend and
+ABI limits. The kernel must enable `odin-native-gpgpu`, as for `gpu-tests`.
+
+Select `mandelbrot_gpu_poc` to compile a second Mandelbrot example through the
+unchanged `bac/intel_xelp_poc` backend and ordinary frontend, SSA optimizer and
+register allocator. Enter compiles and queues it automatically; the direct
+flag is `--mandelbrot_gpu_poc`. Its shader keeps a real GPU loop and escape
+branch. The existing eight-result dispatch API feeds CPU grayscale expansion and
+a sprite upload followed by a GPU copy into the granted visual frame. It uses
+compute publication with the completed GPU producer release. The old direct CPU
+write path returned `-6` on a GPU-only visual frame. The demo uses at most
+80x60 GPU samples for responsiveness.
+See `trueos/mandelbrot-poc-demo/README.md` for sources, the backend comparison,
+and why these presentation paths do not support a fair timing comparison.
+
+Verified on the physical rig on 29 October 2026: selecting `gpu-tests`, compiling
+and running produced all five passes (40/40 lanes). The generated Blueprint was
+13,824 bytes. Evidence: `build/odin-son-picker-gpu-receipt.json` and
+`build/odin-son-picker-gpu-hardware.log`. No kernel rebuild was required.
 
 For source-free batch compilation, `--cpu-boids` compiles the byte-embedded
 native boids source from `examples/boids-trueos/main.odin`. It needs no source
@@ -236,3 +308,120 @@ The hello seed prints a sum of 45 using this support.
 levels. Set `ODIN_SON_DESKTOP` to exercise both native and desktop builds.
 The upstream test corpus and goldens remain unchanged; this local adapter
 suite covers the retained subset separately.
+
+## Ahead-of-time GPU smoke kernels
+
+Compile five representative upstream GPU tests on the host:
+
+```bash
+ODIN=/path/to/odin python3 trueos/compile_gpu_tests.py
+```
+
+This exports addition (`gpu_simplest`), comparison (`gpu_float_less`),
+`gpu_if_else`, `gpu_loop_continue`, and `gpu_nested_loops` into
+`trueos/build/gpu-tests`. Each test produces one raw Xe-LP SIMD8 `.bin` kernel.
+The shared `manifest.json` records hashes, input registers as raw u32 bits,
+eight expected result lanes, result types, and comparison tolerances. Inputs
+use the same name-seeded PCG generator as upstream; expected results come from
+host Odin executing the test source. Compilation does not open a GPU device.
+
+The binaries include upstream's entry setup, result-store messages and EOT.
+They use arguments in r1 onward, the result in r120, and output binding-table
+entry 0. They still require compatible Gen12-LP dispatch state, input registers,
+an output surface, submission, and completion/readback handling. They are
+kernel payloads for a standalone Blueprint runner, not Blueprints themselves.
+This step does not validate hardware execution or publish an application.
+
+Use repeated `--test gpu_name` options to select another small set, or `--all`
+for the entire corpus. A successful export removes obsolete kernels listed
+in the previous output manifest. The host build requires Odin and GCC; its
+temporary compiler sources and host executable are discarded after export.
+
+## Standalone Odin-native GPU test Blueprint
+
+```bash
+ODIN=/path/to/odin bash trueos/build-gpu-tests.sh
+python3 trueos/test_gpu_demo.py
+```
+
+The runner's CPU code is compiled by odin-son. The default build first uses
+upstream Odin to bootstrap the host odin-son compiler, then invokes that
+compiler on the import-free runner. To use an existing compiler directly, set
+`ODIN_SON=/path/to/odin-son`. Application compilation uses empty collection
+directories and includes no upstream Odin SDK, runtime, allocator or formatter.
+Only debug sections are stripped during packaging; CPU instructions and data
+come directly from odin-son's ELF emitter. The result has eight native imports:
+seven TRUEOS ABI functions and `memset`.
+
+The output is `trueos/build/odin-son-gpu.bp`. Launch `odin-son-gpu`
+with no arguments or `--gpu-tests`. It performs five dispatches, one SIMD8
+thread each, and prints the eight-lane comparison and actual/expected FNV-1a
+checksums. A device error stops submission and reports the remaining cases as
+skipped. A returned result is checked against the host-Odin reference values;
+the Blueprint returns a failure status if any lane fails or a case is skipped.
+
+This uses the separate `odin-native-gpgpu` route that served the mini-Mandelbrot
+demo: an owner-scoped UI4 native-compute upload followed by the new
+`trueos_cabi_ui4_scene_native_compute_dispatch_v1` readback operation. It opens
+a 32x32 owner frame, runs the checks without a render loop, and closes it.
+It has no ShaderToy or IDE integration. The current kernel must include that
+new entry point; publishing the Blueprint alone does not update a running kernel.
+
+The five kernels and their fixtures are checked-in snapshots under
+`trueos/gpu-demo/assets`. Their SHA-256 values are verified during the host
+build and printed for identifying a run. Kernel admission uses the supported
+instruction/envelope profile, not these hashes or a five-test allowlist.
+Supported complete kernels use direct GRF arithmetic, comparisons and branches,
+with one final eight-lane BT0 media-block store and EOT. Dispatch accepts 1..=8
+input registers and returns one eight-lane register. The driver supplies the
+state and output surface, waits for its release fence, checks output canaries,
+and quarantines an incomplete submission before another can reuse its backing.
+The earlier arithmetic-body/pixel-render entry points remain available.
+
+To replace the snapshots after another host compilation:
+
+```bash
+python3 trueos/prepare_gpu_demo.py --from-export trueos/build/gpu-tests
+```
+
+The host-mock test verifies exact binary uploads and input registers, success
+reporting, mismatch detection, and stop-on-device-error behavior. It does not
+execute the kernels on a GPU. The kernel admission checks can be run from the
+sibling TRUEOS checkout with `python3 tools/testpy/test_native_xelp_kernels.py`.
+
+### Baremetal functional run
+
+On 29 October 2026 the published `odin-gpu-tests.bp` ran through the
+Odin-native path on the physical rig: all five cases passed, 40/40 lanes,
+with matching actual/expected checksums and clean VM teardown. The Blueprint
+SHA-256 is `d35c33892652b0c6be7e3158a4788151c053434aa655118ba4b0a59534c6fdd6`.
+Reproduce on a kernel with the new native dispatch entry point by submitting
+`§§odin-gpu-tests` in Shell3. This is one deterministic input set per kernel.
+
+| Case | Lanes | Actual = expected FNV-1a |
+| --- | --- | --- |
+| Addition | 8/8 | `d43e4df6e07bd16d` |
+| Comparison | 8/8 | `6c87646ff7553914` |
+| If/else | 8/8 | `def2042bfd8a6944` |
+| Loop/continue | 8/8 | `0ed7f87ee82c810b` |
+| Nested loops | 8/8 | `6c52c80c6ae0f5a3` |
+
+The local machine-readable receipt and extracted hardware log are in the
+sibling TRUEOS checkout under `tgt/rig-images/odin-native-qtd3_vsv/`:
+`odin-native-receipt.json` and `odin-gpu-tests-hardware.log`.
+
+### Runner and GPU kernels both compiled by odin-son
+
+A separate baremetal run on 29 October 2026 exercised the new
+`odin-son-gpu.bp`: odin-son emitted the CPU runner and the five GPU kernels.
+All five tests passed (40/40 lanes), with the same checksums as the table above
+and clean shutdown. This application is ahead-of-time compiled and embeds the
+GPU kernels; it does not contain a runtime compiler.
+
+The Blueprint is 12,360 bytes, SHA-256
+`0ab1d47234cb93233fc425d1804d96d3ba88052c8d2e1a6ed78e367f23331862`.
+Launch it with `§§odin-son-gpu`. Build provenance is in
+`trueos/build/odin-son-gpu-build.json`; the hardware receipt and extracted log
+are `trueos/build/odin-son-gpu-receipt.json` and
+`trueos/build/odin-son-gpu-hardware.log`. The earlier `odin-gpu-tests.bp` run
+used upstream Odin to compile the runner and remains a separate historical run.

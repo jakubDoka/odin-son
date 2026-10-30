@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from pathlib import Path
 import shutil
+import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -13,6 +14,8 @@ def overlay(source, dest, replace=()):
     dest.mkdir(parents=True, exist_ok=True)
     for item in source.iterdir():
         target = dest / item.name
+        if target.is_symlink():
+            target.unlink()
         if item.name in replace:
             shutil.copytree(item, target, dirs_exist_ok=True)
         elif not target.exists():
@@ -35,7 +38,16 @@ shutil.copy2(NATIVE / 'main.odin', stage / 'main.odin')
 shutil.copy2(NATIVE / 'ide_build.odin', stage / 'ide_build.odin')
 shutil.copy2(NATIVE / 'embedded.odin', stage / 'embedded.odin')
 shutil.copy2(NATIVE / 'tui.odin', stage / 'tui.odin')
+shutil.copy2(NATIVE / 'pixel.odin', stage / 'pixel.odin')
 shutil.copy2(NATIVE / 'hello.odin.source', stage / 'hello.source')
+subprocess.run([sys.executable, str(NATIVE / 'prepare_gpu_demo.py')], check=True)
+for name in ('main', 'cases'):
+    shutil.copy2(NATIVE / f'gpu-demo/{name}.odin', stage / f'gpu-{name}.source')
+shutil.copy2(NATIVE / 'mandelbrot-demo/main.odin', stage / 'mandelbrot-main.source')
+shutil.copy2(NATIVE / 'mandelbrot-demo/assets/shader.odin.source', stage / 'mandelbrot-shader.source')
+for name in ('main', 'render'):
+    shutil.copy2(NATIVE / f'mandelbrot-poc-demo/{name}.odin', stage / f'mandelbrot-poc-{name}.source')
+shutil.copy2(NATIVE / 'mandelbrot-poc-demo/shader.poc.odin.source', stage / 'mandelbrot-poc-shader.source')
 arena = stage / 'utils/arna/arna.odin'
 arena.write_text(arena.read_text().replace('ODIN_OS == .Freestanding', 'false'))
 virtual_aliases = stage / 'utils/arna/virtual.odin'

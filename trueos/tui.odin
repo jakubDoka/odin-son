@@ -3,6 +3,7 @@ package main
 import "core:fmt"
 import "core:strings"
 import "core:slice"
+import "core:hash"
 import os "platform"
 
 foreign _ {
@@ -43,14 +44,34 @@ tui_emit :: proc(text: string) -> bool {
 }
 
 tui_seed :: proc() -> bool {
-    names := [2]string{"cpu-boids", "hello"}
-    sources := [2]string{EMBEDDED_BOIDS, #load("hello.source", string)}
+    names := [9]string{"cpu-boids", "hello", "gpu-tests", "gpu-tests", "mandelbrot_gpu_cpu", "mandelbrot_gpu_cpu", "mandelbrot_gpu_poc", "mandelbrot_gpu_poc", "mandelbrot_gpu_poc"}
+    files := [9]string{"main.odin", "main.odin", "main.odin", "cases.odin", "main.odin", "shader.odin.source", "main.odin", "render.odin", "shader.poc.odin.source"}
+    sources := [9]string{EMBEDDED_BOIDS, #load("hello.source", string), #load("gpu-main.source", string), #load("gpu-cases.source", string), #load("mandelbrot-main.source", string), #load("mandelbrot-shader.source", string), #load("mandelbrot-poc-main.source", string), #load("mandelbrot-poc-render.source", string), #load("mandelbrot-poc-shader.source", string)}
     for name, i in names {
-        path := strings.concatenate({name, "/main.odin"})
-        defer delete(path)
-        if _, err := os.stat(path); err == nil do continue
-        if os.create_dir_all(name) != nil do return false
-        if os.write_entire_file(path, transmute([]u8)sources[i]) != nil do return false
+        path := strings.concatenate({name, "/", files[i]})
+        baseline := strings.concatenate({".odin-son-seeds/", path})
+        baseline_dir := strings.concatenate({".odin-son-seeds/", name})
+        defer {delete(path); delete(baseline); delete(baseline_dir)}
+        replace := true
+        if _, err := os.stat(path); err == nil {
+            previous, err := os.read_entire_file(path)
+            if err != nil do return false
+            prior_seed, prior_err := os.read_entire_file(baseline)
+            replace = prior_err == nil && string(previous) == string(prior_seed)
+            delete(prior_seed)
+            if name == "mandelbrot_gpu_cpu" && files[i] == "main.odin" && prior_err != nil {
+                // These releases predate seed baselines; only migrate their exact bundled sources.
+                fingerprint := hash.fnv64a(previous)
+                replace = (len(previous) == 4538 && fingerprint == 0x14879123a510ed80) || (len(previous) == 6206 && fingerprint == 0x3dc328232cfaaf57)
+            }
+            delete(previous)
+        }
+        if replace {
+            if os.create_dir_all(name) != nil do return false
+            if os.write_entire_file(path, transmute([]u8)sources[i]) != nil do return false
+        }
+        if os.create_dir_all(baseline_dir) != nil do return false
+        if os.write_entire_file(baseline, transmute([]u8)sources[i]) != nil do return false
     }
     return true
 }
@@ -128,7 +149,8 @@ tui_draw :: proc(demos: []Tui_Demo, selected, cols, rows: int, status: string) -
     visible := max(1, rows-15)
     first := max(0, selected-visible+1)
     for i := first; i < min(len(demos), first+visible); i += 1 {
-        label := fmt.aprintf("%s %s%s", i == selected ? ">" : " ", demos[i].name, demos[i].built ? "  [compiled]" : "")
+        visual := demos[i].name == "mandelbrot_gpu_cpu" || demos[i].name == "mandelbrot_gpu_poc"
+        label := fmt.aprintf("%s %s%s%s", i == selected ? ">" : " ", demos[i].name, demos[i].built ? "  [compiled]" : "", visual ? "  [Enter: compile + run]" : "")
         tui_line(&b, 4+i-first, cols, label, i == selected ? "\x1b[0m\x1b[38;2;255;55;255m" : "\x1b[0m")
         delete(label)
     }
@@ -148,17 +170,71 @@ tui_draw :: proc(demos: []Tui_Demo, selected, cols, rows: int, status: string) -
 }
 
 tui_compile :: proc(name: string) -> i32 {
+    shader := strings.concatenate({name, "/shader.odin.source"})
+    poc_shader := strings.concatenate({name, "/shader.poc.odin.source"})
+    defer {delete(shader); delete(poc_shader)}
+    has_shader := false
+    has_poc := false
+    if _, err := os.stat(poc_shader); err == nil do has_poc = true
+    if _, err := os.stat(shader); err == nil {
+        if has_poc {fmt.eprintln("choose one shader backend per example directory"); return 1}
+        has_shader = true
+        if result := tui_compile_pixel(name, shader); result != 0 do return result
+    } else if has_poc {
+        if result := tui_compile_pixel(name, poc_shader, true); result != 0 do return result
+    }
     input := strings.concatenate({name, "/main.odin"})
     output := strings.concatenate({"demo-", name, ".o"})
     args := [6]cstring{cstring("odin-son"), cstring("--cpu-boids"), cstring("--blueprint"), strings.clone_to_cstring(input), cstring("-o"), strings.clone_to_cstring(output)}
     defer { delete(input); delete(output); delete(args[3]); delete(args[5]) }
-    return run_compiler(len(args), raw_data(args[:]))
+    result := run_compiler(len(args), raw_data(args[:]))
+    if result == 0 && has_shader do fmt.printfln("odin-son: CPU + Intel Xe-LP GPU compiled from source for %s", name)
+    if result == 0 && has_poc do fmt.printfln("odin-son: CPU + intel_xelp_poc complete GPU kernel compiled from source for %s", name)
+    return result
+}
+
+tui_compile_pixel :: proc(name, source: string, poc := false) -> i32 {
+    binary := strings.concatenate({name, "/shader.eu"})
+    kernel := strings.concatenate({name, "/kernel.odin"})
+    flag := cstring("--gpu-pixel")
+    if poc do flag = cstring("--gpu-poc")
+    args := [5]cstring{cstring("odin-son"), flag, strings.clone_to_cstring(source), cstring("-o"), strings.clone_to_cstring(binary)}
+    defer {delete(binary); delete(kernel); delete(args[2]); delete(args[4])}
+    result := run_compiler(len(args), raw_data(args[:]))
+    if result != 0 do return result
+    code, err := os.read_entire_file(binary)
+    if err != nil do return 1
+    defer delete(code)
+    builder: strings.Builder
+    strings.builder_init(&builder)
+    defer strings.builder_destroy(&builder)
+    strings.write_string(&builder, "package main\n\nnative_pixel_code :: \"")
+    for byte in code do fmt.sbprintf(&builder, "\\x%02x", byte)
+    strings.write_string(&builder, "\"\n")
+    if os.write_entire_file(kernel, transmute([]u8)strings.to_string(builder)) != nil do return 1
+    return 0
 }
 
 tui_run :: proc(name: string) -> i32 {
-    payload := strings.concatenate({"./demo-", name, ".bp\x00\x00headless"})
+    source := strings.concatenate({"demo-", name, ".bp"})
+    destination := strings.concatenate({"common/odin-son/demo-", name, ".bp"})
+    defer { delete(source); delete(destination) }
+    bytes, err := os.read_entire_file(source)
+    if err != nil do return -1
+    defer delete(bytes)
+    // Path-based child launches are restricted to the existing shared export.
+    if os.create_dir_all("common/odin-son") != nil do return -1
+    if os.write_entire_file(destination, bytes) != nil do return -1
+    payload := strings.concatenate({"./", destination, "\x00\x00headless"})
     defer delete(payload)
     return trueos_cabi_blueprint_launch_script_v1(raw_data(payload), uintptr(len(payload)))
+}
+
+run_mandelbrot_demo :: proc(name := "mandelbrot_gpu_cpu") -> i32 {
+    if !tui_seed() do return 1
+    result := tui_compile(name)
+    if result != 0 do return result
+    return tui_run(name)
 }
 
 run_tui :: proc() -> i32 {
@@ -238,6 +314,11 @@ run_tui :: proc() -> i32 {
             demos[selected].built = result == 0
             status = result == 0 ? "Compiled. Press r to queue the demo in its own VM." : "Compile failed. Fix the source and try again."
             fmt.printfln("[odin-son tui] stage=compile demo=%s status=%d", demos[selected].name, result)
+            if result == 0 && (demos[selected].name == "mandelbrot_gpu_cpu" || demos[selected].name == "mandelbrot_gpu_poc") {
+                result = tui_run(demos[selected].name)
+                status = result == 0 ? "Mandelbrot launch queued. Wheel zoom; drag pan; Q/Escape quits demo." : "Compiled; launch request failed. Press r to retry."
+                fmt.printfln("[odin-son tui] stage=launch demo=%s status=%d", demos[selected].name, result)
+            }
         case 'r', 'R':
             if len(demos) == 0 do continue
             if !demos[selected].built { status = "Compile this demo first (Enter)."; break }

@@ -143,6 +143,12 @@ static void complete(Operation *op) {
         for (size_t i = 0; i < 4; ++i) op->bytes[8 + i] = count >> (8 * i);
         op->size = pos;
     } else if (op->kind == 5) {
+        for (char *part = op->path + 1; *part; ++part) {
+            if (*part != '/') continue;
+            *part = 0;
+            mkdir(op->path, 0755);
+            *part = '/';
+        }
         if (mkdir(op->path, 0755)) {
             struct stat st;
             if (stat(op->path, &st) || !S_ISDIR(st.st_mode)) op->error = -2;
@@ -225,6 +231,7 @@ int32_t trueos_cabi_blueprint_launch_script_v1(const void *p, size_t n) {
     size_t script_len = strlen(script);
     assert(path_len + script_len + 10 == n);
     assert(!memcmp(script + script_len, "\0headless", 9));
+    assert(!strncmp(payload, "./common/odin-son/demo-", 22));
     FILE *file = fopen(payload, "rb");
     assert(file);
     char magic[4];

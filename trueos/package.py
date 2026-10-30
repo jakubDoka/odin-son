@@ -11,6 +11,15 @@ import subprocess
 import sys
 
 IMPORTS = {
+    'trueos_cabi_ui4_scene_frame_set_opacity',
+    'trueos_cabi_ui4_scene_sprite_upload_rgba8', 'trueos_cabi_ui4_scene_sprite_quads',
+    'trueos_cabi_ui4_scene_frame_open_visual', 'trueos_cabi_ui4_solara_frame_close',
+    'trueos_cabi_ui4_scene_native_compute_upload_v1', 'trueos_cabi_ui4_scene_native_compute_dispatch_v1',
+    'trueos_cabi_ui4_scene_native_compute_render_v1', 'trueos_cabi_ui4_scene_visual_frame_begin',
+    'trueos_cabi_ui4_scene_compute_frame_publish', 'trueos_cabi_ui4_scene_keyboard_state',
+    'trueos_cabi_ui4_scene_pointer_event_take',
+    'trueos_cabi_ui4_scene_resize_event_take', 'trueos_cabi_ui4_scene_frame_resize',
+    'trueos_cabi_ui4_scene_frame_write_opaque_rgba8', 'trueos_cabi_ui4_solara_frame_publish',
     'trueos_cabi_shell_attached_write', 'trueos_cabi_shell_attached_read_byte', 'trueos_cabi_sleep_ms',
     'trueos_cabi_blueprint_terminal_lease_current_v1', 'trueos_cabi_blueprint_terminal_lease_release_v1',
     'trueos_cabi_blueprint_terminal_surface_snapshot_v1', 'trueos_cabi_async_fs_create_dir_all_start',
@@ -80,7 +89,7 @@ def attach_sdk(source, destination, sdk):
                                str(source), str(destination)])
     print(f'embedded SDK collections: {len(entries)} files, {len(bundle)} bytes')
 
-def package(source, destination):
+def package(source, destination, entry_symbol="trueos_main", filesystem_independent=False):
     payload = source.read_bytes()
     if payload[:6] != b'\x7fELF\x02\x01' or struct.unpack_from('<HH', payload, 16) != (1, 62):
         raise ValueError('expected an x86-64 ELF64 relocatable object')
@@ -101,12 +110,12 @@ def package(source, destination):
     symbols = subprocess.check_output(['readelf', '-sW', source], text=True)
     for line in symbols.splitlines():
         parts = line.split()
-        if len(parts) == 8 and parts[3:5] == ['FUNC', 'GLOBAL'] and parts[7] == 'trueos_main':
+        if len(parts) == 8 and parts[3:5] == ['FUNC', 'GLOBAL'] and parts[7] == entry_symbol:
             entry = (int(parts[6]) << 32) | int(parts[1], 16)
             break
     else:
-        raise ValueError('native compiler entry not found')
-    destination.write_bytes(struct.pack('<4sHHQII', b'TRBP', 1, 0x201, entry, len(payload), len(payload)) + payload)
+        raise ValueError(f'native Blueprint entry {entry_symbol!r} not found')
+    destination.write_bytes(struct.pack('<4sHHQII', b'TRBP', 1, 0x201 | (0x400 if filesystem_independent else 0), entry, len(payload), len(payload)) + payload)
     print(f'{destination}: {len(payload)} ELF bytes, {len(imports)} native imports, no Linux runtime')
 
 if __name__ == '__main__':

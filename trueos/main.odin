@@ -29,6 +29,8 @@ trueos_main :: proc "c" (argc: uintptr, argv: [^]cstring) -> i32 {
     if argc <= 1 do return run_tui()
     if argc == 3 && string(argv[1]) == "--ide-build" do return ide_build(string(argv[2]))
     if argc == 2 && string(argv[1]) == "--tui" do return run_tui()
+    if argc == 2 && string(argv[1]) == "--mandelbrot_gpu_cpu" do return run_mandelbrot_demo()
+    if argc == 2 && string(argv[1]) == "--mandelbrot_gpu_poc" do return run_mandelbrot_demo("mandelbrot_gpu_poc")
     return run_compiler(argc, argv)
 }
 run_compiler :: proc(argc: uintptr, argv: [^]cstring) -> i32 {
@@ -48,6 +50,8 @@ run_compiler :: proc(argc: uintptr, argv: [^]cstring) -> i32 {
     check := false
     debug := false
     output_explicit := false
+    gpu_pixel := false
+    gpu_poc := false
     for i := uintptr(1); i < argc; i += 1 {
         arg := string(argv[i])
         switch {
@@ -58,8 +62,14 @@ run_compiler :: proc(argc: uintptr, argv: [^]cstring) -> i32 {
         case arg == "--help", arg == "-h":
             fmt.println("usage: odin-son [entry.odin] [-o output.o] [--odin-root odin] [-target:amd64|arm64|wasm64] [-o:level] [-debug] [-check] [--blueprint]")
             fmt.println("No arguments opens the compiler TUI. --cpu-boids compiles the embedded CPU demo. --ide-build request.json handles an IDE build.")
+            fmt.println("--mandelbrot_gpu_cpu compiles and queues the Mandelbrot demo once.")
+            fmt.println("--mandelbrot_gpu_poc compiles and queues the proof-of-concept backend Mandelbrot demo once.")
+            fmt.println("--gpu-pixel shader.odin.source -o shader.eu compiles a tagged f32 pixel procedure to Intel Xe-LP SIMD8.")
+            fmt.println("--gpu-poc shader.poc.odin.source -o shader.eu compiles a complete SIMD8 kernel through intel_xelp_poc.")
             return 0
         case arg == "--cpu-boids":
+        case arg == "--gpu-pixel": gpu_pixel = true
+        case arg == "--gpu-poc": gpu_poc = true
         case arg == "--blueprint": blueprint_output = true
         case arg == "-check": check = true
         case arg == "-debug", arg == "-g": debug = true
@@ -81,6 +91,10 @@ run_compiler :: proc(argc: uintptr, argv: [^]cstring) -> i32 {
         }
     }
     embedded := input == ""
+    if gpu_pixel || gpu_poc {
+        if embedded || blueprint_output || (gpu_pixel && gpu_poc) {fmt.eprintln("choose --gpu-pixel or --gpu-poc with one source path and raw code output"); return 1}
+        return compile_pixel_file(input, output, gpu_poc)
+    }
     if blueprint_output && target.name != "amd64" { fmt.eprintln("--blueprint requires -target:amd64"); return 1 }
     if embedded {
         if target.name != "amd64" { fmt.eprintln("embedded TRUEOS boids requires -target:amd64"); return 1 }
@@ -137,7 +151,7 @@ run_compiler :: proc(argc: uintptr, argv: [^]cstring) -> i32 {
         blueprint := package_boids(bytes)
         fmt.printfln("odin-son: storing native Blueprint %s", blueprint_path)
         if os.write_entire_file(blueprint_path, blueprint) != nil { fmt.eprintln("cannot write", blueprint_path); return 1 }
-        fmt.printfln("odin-son: stored %s (%d bytes), commit complete; boids is ready to load", blueprint_path, len(blueprint))
+        fmt.printfln("odin-son: stored %s (%d bytes), commit complete; Blueprint is ready to load", blueprint_path, len(blueprint))
     }
     return 0
 }

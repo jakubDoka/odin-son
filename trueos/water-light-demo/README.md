@@ -26,7 +26,8 @@ preserves the pool aspect ratio with letterboxing. Simulation and optical
 transport remain on the CPU. Model and field arrays occupy about 1 MiB,
 independent of window size; GPU shading/composition costs grow with output size.
 
-The shader uses the existing `intel_xelp_poc` compiler and admission profile.
+The shader uses the ordinary frontend, SSA pipeline and `intel_xelp` backend
+through `--gpu-xelp`, with the existing native admission profile.
 Its six f32 inputs arrive in r1..r6; its f32 result carries an exact 24-bit RGB
 integer. The field-render envelope converts that result and supplies opaque
 alpha. Native code and finite field uploads use owner-bound sequential chunks

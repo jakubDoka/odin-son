@@ -126,8 +126,10 @@ This is an adaptation of the tagged-global Mandelbrot kernel: TRUEOS supplies th
 pixel coordinates, grid-stride dispatch and framebuffer stores through its existing
 native compute ABI. The shader keeps the original escape-test/update order, using
 exact float iteration counters (32..512) and returning normalized iteration depth.
-The currently synced backend does not compile `builtin`/`uniform` globals, integer
-pixel addressing or pointer stores from the original source. The result is an opaque
+The backend supports `builtin`/`uniform` globals, integer pixel addressing and
+pointer stores. This preset uses the narrower framebuffer ABI: f32 coordinates,
+optional f32 uniforms and one f32 result, with stores supplied by TRUEOS.
+The result is an opaque
 grayscale Mandelbrot image, with white interior. Start at 128 iterations; use wheel
 zoom, left drag to pan, +/- to change the iteration limit, R to reset, and Q/Escape
 to close. Resize follows the frame. The kernel must enable `odin-native-gpgpu`.
@@ -154,11 +156,13 @@ checkout, or shader preparation command. After editing bundled source, run
 example. You can also edit the seeded `shader.odin.source` on TRUEOS and press
 Enter directly.
 
-The picker checks every example for `shader.odin.source`. If present, it asks
-the resident compiler to produce a fresh native Intel Xe-LP SIMD8 pixel body:
+The picker checks each example for `shader.odin.source` or
+`shader.poc.odin.source`. Both filenames use the ordinary frontend, SSA
+optimizer, register allocator and `intel_xelp` backend to produce fresh native
+Intel Xe-LP SIMD8 code:
 
 ```text
-odin-son --gpu-pixel <demo>/shader.odin.source -o <demo>/shader.eu
+odin-son --gpu-xelp <demo>/shader.odin.source -o <demo>/shader.eu
 ```
 
 The picker generates `<demo>/kernel.odin` containing `native_pixel_code`, then
@@ -166,17 +170,21 @@ compiles the CPU runner and packages the Blueprint. Shader errors stop this
 sequence and prevent launching an older build. The generated CPU runner
 uploads those newly compiled bytes through the existing native-compute ABI.
 
-The compiler is generic within its scalar pixel subset: exactly one tagged
-procedure `(f32, f32) -> f32`, f32/bool locals, arithmetic `+/-/*`, comparisons,
-boolean operations, ternary selection, and constant loops bounded to 1..64
-iterations. It unrolls loops; the driver limits the resulting body to 24 KiB.
-Unsupported syntax, division, register exhaustion, and oversized programs
-produce diagnostics. Neither the iteration count nor the shader name/hash is
-fixed in the compiler. See `bac/intel_xelp_pixel/README.md` for the backend and
-ABI limits. The kernel must enable `odin-native-gpgpu`, as for `gpu-tests`.
+`--gpu-xelp` is the canonical GPU compile flag; `--gpu-pixel` and `--gpu-poc`
+remain compatibility aliases. The framebuffer profile accepts one `main`
+procedure with 2..8 f32 arguments and one f32 result. Legacy
+`@(tag = "gpu")` entry procedures use this same compiler pipeline. Loops and
+branches use the normal backend; division lowers to approximate reciprocal
+math. Shader source follows ordinary Odin typing rules: use explicit f32
+locals and constants where needed, since inferred f64 values are unsupported
+by this backend. The compile wrapper checks code length against the 24 KiB
+limit; the driver validates instructions and register accesses when the runner
+uploads the kernel. There is no separate pixel compiler or pixel IR. See
+`bac/intel_xelp/README.md` for backend capabilities. The kernel must enable
+`odin-native-gpgpu`.
 
 Select `mandelbrot_gpu_poc [3D Mandelbox]` to compile the volumetric fractal
-through `bac/intel_xelp_poc` and the ordinary frontend, SSA optimizer and
+through `bac/intel_xelp` and the ordinary frontend, SSA optimizer and
 register allocator. Enter compiles and queues it automatically; the batch flag
 remains `--mandelbrot_gpu_poc`. Drag orbits, the wheel moves the camera,
 R resets, and Q/Escape quits. The shader ray marches eight-iteration box/sphere
@@ -294,12 +302,11 @@ TRUEOS or exercise its real VMX/EPT and filesystem implementations.
 
 ## Upstream boundary
 
-The fork merges `jakubDoka/odin-son` main through `f96547e`. All shared backend,
-bindings, generators, desktop tooling, generated tests, and disassembly goldens
-match that upstream revision. Its `bac/intel_xelp_poc` and `gpu-dispatch` work
-are included unchanged. The previous fork-specific GPU backend, GPU frontend
-hooks, GPU demos, and native GPU runtime entry paths have been removed.
-Upstream GPU work is not connected to TRUEOS GPU submission by this adapter.
+The fork integrates upstream `jakubDoka/odin-son` with the TRUEOS adapters.
+`bac/intel_xelp` is the sole Xe-LP backend; `intel_xelp_poc` was its former
+name. TRUEOS GPU presets compile through the ordinary frontend and SSA pipeline,
+then submit admitted native code through the existing TRUEOS compute ABI.
+The former `intel_xelp_pixel` backend and specialized pixel frontend are removed.
 
 The shared compiler changes include:
 

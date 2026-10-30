@@ -48,8 +48,6 @@ Record :: struct {
 compile :: proc(name, source, result_type: string, count, max_ulps: int,
                 reference: proc(args: [][8]f32) -> [8]u32) -> Record {
     types: typecheck.Types
-    arna.scratch[0].reserved = 1024*1024
-    arna.scratch[1].reserved = 1024*1024
     for &arena in mem.slice_data_cast([]arna.Allocator, mem.ptr_to_bytes(&types.mems)) do arena.reserved = 1024*1024
     types.mems.type.reserved = 16*1024*1024
     typecheck.types_init(&types)

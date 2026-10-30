@@ -174,36 +174,34 @@ tui_draw :: proc(demos: []Tui_Demo, selected, cols, rows: int, status: string) -
 
 tui_compile :: proc(name: string) -> i32 {
     shader := strings.concatenate({name, "/shader.odin.source"})
-    poc_shader := strings.concatenate({name, "/shader.poc.odin.source"})
-    defer {delete(shader); delete(poc_shader)}
+    legacy_shader := strings.concatenate({name, "/shader.poc.odin.source"})
+    defer {delete(shader); delete(legacy_shader)}
+    source := ""
     has_shader := false
-    has_poc := false
-    if _, err := os.stat(poc_shader); err == nil do has_poc = true
+    if _, err := os.stat(legacy_shader); err == nil do source = legacy_shader
     if _, err := os.stat(shader); err == nil {
-        if has_poc {fmt.eprintln("choose one shader backend per example directory"); return 1}
+        if source != "" {fmt.eprintln("choose one shader source per example directory"); return 1}
+        source = shader
+    }
+    if source != "" {
         has_shader = true
-        if result := tui_compile_pixel(name, shader); result != 0 do return result
-    } else if has_poc {
-        if result := tui_compile_pixel(name, poc_shader, true); result != 0 do return result
+        if result := tui_compile_pixel(name, source); result != 0 do return result
     }
     input := strings.concatenate({name, "/main.odin"})
     output := strings.concatenate({"demo-", name, ".o"})
     // Keep field stages as calls instead of duplicating them into the UI loop.
     optimization := name == "water_light" ? cstring("-o:all") : cstring("-o:aggresive")
-    args := [7]cstring{cstring("odin-son"), cstring("--cpu-boids"), cstring("--blueprint"), strings.clone_to_cstring(input), cstring("-o"), strings.clone_to_cstring(output), optimization}
-    defer { delete(input); delete(output); delete(args[3]); delete(args[5]) }
+    args := [6]cstring{cstring("odin-son"), cstring("--blueprint"), strings.clone_to_cstring(input), cstring("-o"), strings.clone_to_cstring(output), optimization}
+    defer { delete(input); delete(output); delete(args[2]); delete(args[4]) }
     result := run_compiler(len(args), raw_data(args[:]))
-    if result == 0 && has_shader do fmt.printfln("odin-son: CPU + Intel Xe-LP GPU compiled from source for %s", name)
-    if result == 0 && has_poc do fmt.printfln("odin-son: CPU + intel_xelp_poc complete GPU kernel compiled from source for %s", name)
+    if result == 0 && has_shader do fmt.printfln("odin-son: CPU + intel_xelp SIMD8 GPU compiled from source for %s", name)
     return result
 }
 
-tui_compile_pixel :: proc(name, source: string, poc := false) -> i32 {
+tui_compile_pixel :: proc(name, source: string) -> i32 {
     binary := strings.concatenate({name, "/shader.eu"})
     kernel := strings.concatenate({name, "/kernel.odin"})
-    flag := cstring("--gpu-pixel")
-    if poc do flag = cstring("--gpu-poc")
-    args := [5]cstring{cstring("odin-son"), flag, strings.clone_to_cstring(source), cstring("-o"), strings.clone_to_cstring(binary)}
+    args := [5]cstring{cstring("odin-son"), cstring("--gpu-xelp"), strings.clone_to_cstring(source), cstring("-o"), strings.clone_to_cstring(binary)}
     defer {delete(binary); delete(kernel); delete(args[2]); delete(args[4])}
     result := run_compiler(len(args), raw_data(args[:]))
     if result != 0 do return result

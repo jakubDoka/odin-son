@@ -38,11 +38,13 @@ def main():
         assert shader.read_bytes() == (NATIVE / 'mandelbrot-demo/assets/shader.odin.source').read_bytes()
         first_code = (work / 'mandelbrot_gpu_cpu/shader.eu').read_bytes()
         assert b'compiled Intel Xe-LP SIMD8 pixel' in mandelbrot
+        assert b'backend=intel_xelp complete kernel' in mandelbrot
         assert ''.join(f'\\x{byte:02x}' for byte in first_code) in (work / 'mandelbrot_gpu_cpu/kernel.odin').read_text()
         assert (work / 'common/odin-son/demo-mandelbrot_gpu_cpu.bp').read_bytes() == (work / 'demo-mandelbrot_gpu_cpu.bp').read_bytes()
         shader.write_text('package main\n@(tag="gpu")\nshade :: proc(a,b:f32)->f32 { return a*0.125+b }\n')
         changed = tui('\rq', TRUEOS_TEST_STABLE_HEAP='1')
         assert b'stage=launch demo=mandelbrot_gpu_cpu status=0\n' in changed
+        assert b'backend=intel_xelp complete kernel' in changed
         assert (work / 'mandelbrot_gpu_cpu/shader.eu').read_bytes() != first_code
         shader.write_text('package main\n@(tag="gpu")\nshade :: proc(a,b:f32)->f32 { return missing }\n')
         bad_shader = tui('\rq')
@@ -52,7 +54,7 @@ def main():
         poc = tui('jj\r\rq', TRUEOS_TEST_STABLE_HEAP='1')
         assert poc.count(b'stage=compile demo=mandelbrot_gpu_poc status=0\n') == 2
         assert poc.count(b'stage=launch demo=mandelbrot_gpu_poc status=0\n') == 2
-        assert b'backend=intel_xelp_poc complete kernel' in poc
+        assert b'backend=intel_xelp complete kernel' in poc
         poc_shader = work / 'mandelbrot_gpu_poc/shader.poc.odin.source'
         assert poc_shader.read_bytes() == (NATIVE / 'mandelbrot-poc-demo/shader.poc.odin.source').read_bytes()
         poc_code = (work / 'mandelbrot_gpu_poc/shader.eu').read_bytes()

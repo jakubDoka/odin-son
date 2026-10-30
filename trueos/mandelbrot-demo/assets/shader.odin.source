@@ -1,24 +1,21 @@
 package main
 
-@(tag = "gpu")
-process :: proc(cx, cy: f32) -> f32 {
-    zx := 0.0
-    zy := 0.0
-    depth := 0.0
+main :: proc(cx, cy: f32) -> f32 {
+    zx := f32(0.0)
+    zy := f32(0.0)
+    depth := f32(0.0)
     active := true
-    for i := 0; i < 2; i += 1 {
+    for i := f32(0.0); i < 2.0; i += 1.0 {
         xx := zx * zx
         yy := zy * zy
         nx := xx - yy + cx
         ny := 2.0 * zx * zy + cy
-        zx = active ? nx : zx
-        zy = active ? ny : zy
-        depth = active ? depth + 1.0 : depth
-        active = active ? ((zx * zx + zy * zy) <= 4.0) : false
+        if active {
+            zx = nx
+            zy = ny
+            depth += 1.0
+            active = (zx * zx + zy * zy) <= 4.0
+        }
     }
     return depth * 0.04
-}
-
-main :: proc() -> int {
-    return int(process(0.0, 0.0))
 }

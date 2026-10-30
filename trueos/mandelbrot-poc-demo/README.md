@@ -1,4 +1,4 @@
-# 3D Mandelbox through intel_xelp_poc
+# 3D Mandelbox through intel_xelp
 
 Launch `odin-son`, select `mandelbrot_gpu_poc [3D Mandelbox]`, and press Enter.
 The existing POC entry now compiles a volumetric Mandelbox and its CPU window
@@ -44,13 +44,15 @@ allocator compile one `main` with 2..8 f32 arguments and one f32 return value,
 without helper procedures. Arguments 1/2 are per-pixel coordinates; arguments
 3..8 are optional view uniforms. This shader uses five: yaw cosine/sine,
 pitch cosine/sine, and camera distance. The eighth argument is unused.
+`--gpu-xelp` selects this pipeline; the old `--gpu-poc` flag and
+`shader.poc.odin.source` filename remain compatible.
 
 `trueos_cabi_ui4_scene_native_compute_render_v2(window, params, bytes)` takes
 exactly 40 bytes: ten packed f32 values (origin.xy, positive pixel step.xy,
 then six uniforms). The original render_v1 API and two-argument shaders remain
 supported; their extra uniforms default to zero. Parameters must be finite.
 
-The driver validates the complete POC kernel and retains its control-flow body
+On upload, the driver validates the complete kernel and retains its control-flow body
 between its fixed header and store/EOT tail. It rejects accesses to driver
 registers. The common allocation mask reserves r112..r119 and r121..r127;
 arguments use r1..r8 and the result uses r120. Uniforms are preserved in r126

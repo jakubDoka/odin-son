@@ -31,6 +31,8 @@ for name in ('bac', 'typecheck', 'utils'):
     shutil.copytree((COMPILER if name == 'typecheck' else ROOT) / name, stage / name, dirs_exist_ok=True)
 for source in (stage / 'typecheck').glob('*.odin'):
     source.write_text(source.read_text().replace('"../../', '"../'))
+scratch_defaults = stage / 'typecheck/typecheck.odin'
+scratch_defaults.write_text(scratch_defaults.read_text().replace('4096 * 1024', '#config(TRUEOS_COMPILER_SCRATCH_MIB, 4)*1024*1024'))
 for test in stage.rglob('*_test.odin'):
     test.unlink()
 shutil.copytree(NATIVE / 'platform', stage / 'platform', dirs_exist_ok=True)

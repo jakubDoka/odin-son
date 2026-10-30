@@ -53,8 +53,7 @@ run_compiler :: proc(argc: uintptr, argv: [^]cstring) -> i32 {
     check := false
     debug := false
     output_explicit := false
-    gpu_pixel := false
-    gpu_poc := false
+    gpu_xelp := false
     for i := uintptr(1); i < argc; i += 1 {
         arg := string(argv[i])
         switch {
@@ -67,13 +66,12 @@ run_compiler :: proc(argc: uintptr, argv: [^]cstring) -> i32 {
             fmt.println("No arguments opens the compiler TUI. --cpu-boids compiles the embedded CPU demo. --ide-build request.json handles an IDE build.")
             fmt.println("--mandelbrot_gpu_cpu compiles and queues the Mandelbrot demo once.")
             fmt.println("--mandelbrot_gpu_native compiles and queues the SIMD8 escape-time Mandelbrot preset once.")
-            fmt.println("--mandelbrot_gpu_poc compiles and queues the proof-of-concept backend Mandelbrot demo once.")
-            fmt.println("--gpu-pixel shader.odin.source -o shader.eu compiles a tagged f32 pixel procedure to Intel Xe-LP SIMD8.")
-            fmt.println("--gpu-poc shader.poc.odin.source -o shader.eu compiles a complete SIMD8 kernel through intel_xelp_poc.")
+            fmt.println("--mandelbrot_gpu_poc compiles and queues the 3D Mandelbox demo once.")
+            fmt.println("--gpu-xelp shader.odin.source -o shader.eu compiles an f32 pixel procedure through intel_xelp SIMD8.")
+            fmt.println("--gpu-pixel and --gpu-poc are compatibility aliases for --gpu-xelp.")
             return 0
         case arg == "--cpu-boids":
-        case arg == "--gpu-pixel": gpu_pixel = true
-        case arg == "--gpu-poc": gpu_poc = true
+        case arg == "--gpu-xelp", arg == "--gpu-pixel", arg == "--gpu-poc": gpu_xelp = true
         case arg == "--blueprint": blueprint_output = true
         case arg == "-check": check = true
         case arg == "-debug", arg == "-g": debug = true
@@ -95,9 +93,9 @@ run_compiler :: proc(argc: uintptr, argv: [^]cstring) -> i32 {
         }
     }
     embedded := input == ""
-    if gpu_pixel || gpu_poc {
-        if embedded || blueprint_output || (gpu_pixel && gpu_poc) {fmt.eprintln("choose --gpu-pixel or --gpu-poc with one source path and raw code output"); return 1}
-        return compile_pixel_file(input, output, gpu_poc)
+    if gpu_xelp {
+        if embedded || blueprint_output {fmt.eprintln("--gpu-xelp requires one source path and raw code output"); return 1}
+        return compile_pixel_file(input, output)
     }
     if blueprint_output && target.name != "amd64" { fmt.eprintln("--blueprint requires -target:amd64"); return 1 }
     if embedded {
@@ -108,8 +106,6 @@ run_compiler :: proc(argc: uintptr, argv: [^]cstring) -> i32 {
     } else {
         fmt.printfln("odin-son: loading source %s", input)
     }
-    arna.scratch[0].reserved = #config(TRUEOS_COMPILER_SCRATCH_MIB, 4)*1024*1024
-    arna.scratch[1].reserved = #config(TRUEOS_COMPILER_SCRATCH_MIB, 4)*1024*1024
     types: typecheck.Types
     for &arena in mem.slice_data_cast([]arna.Allocator, mem.ptr_to_bytes(&types.mems)) { arena.reserved = #config(TRUEOS_COMPILER_ARENA_MIB, 2)*1024*1024 }
     types.mems.prc.reserved = #config(TRUEOS_COMPILER_GRAPH_MIB, 8)*1024*1024
@@ -134,6 +130,9 @@ run_compiler :: proc(argc: uintptr, argv: [^]cstring) -> i32 {
     ctx.errors = os.to_writer(os.stderr)
     ctx.prc.has_dbg = debug
     ctx.ralloc_mode = level.ralloc_mode
+    previous_prc := bac.current_prc
+    bac.current_prc = &ctx
+    defer bac.current_prc = previous_prc
     if embedded {
         if !load_embedded_boids(&ctx) { fmt.eprintln("embedded boids parse failed"); return 1 }
     } else { load_program(&ctx, input) }

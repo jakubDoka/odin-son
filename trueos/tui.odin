@@ -44,9 +44,9 @@ tui_emit :: proc(text: string) -> bool {
 }
 
 tui_seed :: proc() -> bool {
-    names := [13]string{"cpu-boids", "hello", "gpu-tests", "gpu-tests", "mandelbrot_gpu_cpu", "mandelbrot_gpu_cpu", "mandelbrot_gpu_poc", "mandelbrot_gpu_poc", "mandelbrot_gpu_poc", "water_light", "water_light", "water_light", "water_light"}
-    files := [13]string{"main.odin", "main.odin", "main.odin", "cases.odin", "main.odin", "shader.odin.source", "main.odin", "render.odin", "shader.poc.odin.source", "main.odin", "field.odin", "optics.odin", "shader.poc.odin.source"}
-    sources := [13]string{EMBEDDED_BOIDS, #load("hello.source", string), #load("gpu-main.source", string), #load("gpu-cases.source", string), #load("mandelbrot-main.source", string), #load("mandelbrot-shader.source", string), #load("mandelbrot-poc-main.source", string), #load("mandelbrot-poc-render.source", string), #load("mandelbrot-poc-shader.source", string), #load("water-light-main.source", string), #load("water-light-field.source", string), #load("water-light-optics.source", string), #load("water-light-shader.source", string)}
+    names := [11]string{"mandelbrot_gpu_native", "mandelbrot_gpu_native", "mandelbrot_gpu_cpu", "mandelbrot_gpu_cpu", "mandelbrot_gpu_poc", "mandelbrot_gpu_poc", "mandelbrot_gpu_poc", "water_light", "water_light", "water_light", "water_light"}
+    files := [11]string{"main.odin", "shader.poc.odin.source", "main.odin", "shader.odin.source", "main.odin", "render.odin", "shader.poc.odin.source", "main.odin", "field.odin", "optics.odin", "shader.poc.odin.source"}
+    sources := [11]string{#load("mandelbrot-native-main.source", string), #load("mandelbrot-native-shader.source", string), #load("mandelbrot-main.source", string), #load("mandelbrot-shader.source", string), #load("mandelbrot-poc-main.source", string), #load("mandelbrot-poc-render.source", string), #load("mandelbrot-poc-shader.source", string), #load("water-light-main.source", string), #load("water-light-field.source", string), #load("water-light-optics.source", string), #load("water-light-shader.source", string)}
     for name, i in names {
         path := strings.concatenate({name, "/", files[i]})
         baseline := strings.concatenate({".odin-son-seeds/", path})
@@ -91,6 +91,8 @@ tui_discover :: proc(announce := true) -> ([]Tui_Demo, bool) {
     }
     for entry in entries {
         if entry.type != .Directory || strings.has_prefix(entry.name, ".") do continue
+        // Older packages left these demo directories in the persistent app root.
+        if entry.name == "cpu-boids" || entry.name == "gpu-boids" || entry.name == "gpu-tests" || entry.name == "hello" do continue
         // Output stays a local basename, matching the scoped Blueprint launcher.
         safe := len(entry.name) > 0 && len(entry.name) <= 64
         for ch in entry.name {
@@ -149,8 +151,8 @@ tui_draw :: proc(demos: []Tui_Demo, selected, cols, rows: int, status: string) -
     visible := max(1, rows-15)
     first := max(0, selected-visible+1)
     for i := first; i < min(len(demos), first+visible); i += 1 {
-        visual := demos[i].name == "mandelbrot_gpu_cpu" || demos[i].name == "mandelbrot_gpu_poc" || demos[i].name == "water_light"
-        profile := demos[i].name == "mandelbrot_gpu_poc" ? "  [3D Mandelbox]" : demos[i].name == "water_light" ? "  [D2Q9 + caustics]" : ""
+        visual := demos[i].name == "mandelbrot_gpu_native" || demos[i].name == "mandelbrot_gpu_cpu" || demos[i].name == "mandelbrot_gpu_poc" || demos[i].name == "water_light"
+        profile := demos[i].name == "mandelbrot_gpu_native" ? "  [Mandelbrot SIMD8]" : demos[i].name == "mandelbrot_gpu_poc" ? "  [3D Mandelbox]" : demos[i].name == "water_light" ? "  [D2Q9 + caustics]" : ""
         label := fmt.aprintf("%s %s%s%s%s", i == selected ? ">" : " ", demos[i].name, profile, demos[i].built ? "  [compiled]" : "", visual ? "  [Enter: compile + run]" : "")
         tui_line(&b, 4+i-first, cols, label, i == selected ? "\x1b[0m\x1b[38;2;255;55;255m" : "\x1b[0m")
         delete(label)
@@ -317,10 +319,11 @@ run_tui :: proc() -> i32 {
             demos[selected].built = result == 0
             status = result == 0 ? "Compiled. Press r to queue the demo in its own VM." : "Compile failed. Fix the source and try again."
             fmt.printfln("[odin-son tui] stage=compile demo=%s status=%d", demos[selected].name, result)
-            if result == 0 && (demos[selected].name == "mandelbrot_gpu_cpu" || demos[selected].name == "mandelbrot_gpu_poc" || demos[selected].name == "water_light") {
+            if result == 0 && (demos[selected].name == "mandelbrot_gpu_native" || demos[selected].name == "mandelbrot_gpu_cpu" || demos[selected].name == "mandelbrot_gpu_poc" || demos[selected].name == "water_light") {
                 result = tui_run(demos[selected].name)
                 hint := demos[selected].name == "mandelbrot_gpu_poc" ? "Mandelbox launch queued. Drag orbit; wheel dolly; R resets; Q/Escape quits demo." : "Mandelbrot launch queued. Wheel zoom; drag pan; Q/Escape quits demo."
                 if demos[selected].name == "water_light" do hint = "Water light queued. Drag ripples; Space pause; V field; R reset; Q/Escape quits."
+                if demos[selected].name == "mandelbrot_gpu_native" do hint = "Mandelbrot queued. Wheel zoom; drag pan; +/- iterations; R reset; Q/Escape quits."
                 status = result == 0 ? hint : "Compiled; launch request failed. Press r to retry."
                 fmt.printfln("[odin-son tui] stage=launch demo=%s status=%d", demos[selected].name, result)
             }

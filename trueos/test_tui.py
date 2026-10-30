@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import os
 from pathlib import Path
-import struct
 import subprocess
 import tempfile
 
@@ -20,26 +19,19 @@ def main():
         run(['gcc', '-std=c11', NATIVE / 'test_host.c', NATIVE / 'build/odin-son.o', '-lm', '-o', exe])
         def tui(keys, **env):
             return run([exe], cwd=work, env=dict(os.environ, TRUEOS_TEST_TUI_KEYS=keys, **env)).stdout
-        seeded = tui('\r\rrq', TRUEOS_TEST_STABLE_HEAP='1', TRUEOS_TEST_REENTRY='1')
-        assert b'stage=discovery demos=6' in seeded
-        assert seeded.count(b'[odin-son tui] stage=compile demo=cpu-boids status=0\n') == 2
-        assert b'stage=launch demo=cpu-boids status=0\n' in seeded
+        seeded = tui('q', TRUEOS_TEST_REENTRY='1')
+        assert b'stage=discovery demos=4' in seeded
         assert b'\x1b[48;2;16;16;16m' in seeded and b'\x1b[?1049l' in seeded
-        bp = (work / 'demo-cpu-boids.bp').read_bytes()
-        assert struct.unpack('<4sHHQII', bp[:24])[:4] == (b'TRBP', 1, 0x601, 0)
-        assert bp[24:] == (work / 'demo-cpu-boids.o').read_bytes()
-        gpu_ok = tui('j\r\rrq', TRUEOS_TEST_STABLE_HEAP='1')
-        assert gpu_ok.count(b'stage=compile demo=gpu-tests status=0\n') == 2
-        assert b'stage=launch demo=gpu-tests status=0\n' in gpu_ok
-        assert (work / 'gpu-tests/cases.odin').read_bytes() == (NATIVE / 'gpu-demo/cases.odin').read_bytes()
-        run(['python3', NATIVE / 'test_gpu_demo.py', '--object', work / 'demo-gpu-tests.o'])
-        hello_ok = tui('jj\rq', TRUEOS_TEST_STABLE_HEAP='1')
-        assert b'stage=compile demo=hello status=0\n' in hello_ok
-        run(['objcopy', '--redefine-sym', 'main=hello_entry', work / 'demo-hello.o', work / 'hello-host.o'])
-        (work / 'hello-host.c').write_text('#include <stdint.h>\n#include <stdio.h>\nint32_t hello_entry(void);\nvoid trueos_cabi_write(uint32_t s, const void *p, uintptr_t n) { fwrite(p, 1, n, stdout); }\nint main(void) { return hello_entry(); }\n')
-        run(['gcc', work / 'hello-host.o', work / 'hello-host.c', '-o', work / 'hello-host'])
-        assert b'sum(0..<10) = 45' in run([work / 'hello-host']).stdout
-        mandelbrot = tui('kkk\r\rq', TRUEOS_TEST_STABLE_HEAP='1')
+        for name in ('cpu-boids', 'gpu-boids', 'gpu-tests', 'hello'):
+            assert not (work / name).exists()
+            legacy = work / name
+            legacy.mkdir()
+            (legacy / 'main.odin').write_text('package main\nmain :: proc() -> i32 { return 0 }\n')
+        upgraded = tui('fq')
+        assert b'stage=discovery demos=4' in upgraded
+        for name in ('cpu-boids', 'gpu-boids', 'gpu-tests', 'hello'):
+            assert (' ' + name).encode() not in upgraded
+        mandelbrot = tui('\r\rq', TRUEOS_TEST_STABLE_HEAP='1')
         assert mandelbrot.count(b'stage=compile demo=mandelbrot_gpu_cpu status=0\n') == 2
         assert mandelbrot.count(b'stage=launch demo=mandelbrot_gpu_cpu status=0\n') == 2
         shader = work / 'mandelbrot_gpu_cpu/shader.odin.source'
@@ -49,15 +41,15 @@ def main():
         assert ''.join(f'\\x{byte:02x}' for byte in first_code) in (work / 'mandelbrot_gpu_cpu/kernel.odin').read_text()
         assert (work / 'common/odin-son/demo-mandelbrot_gpu_cpu.bp').read_bytes() == (work / 'demo-mandelbrot_gpu_cpu.bp').read_bytes()
         shader.write_text('package main\n@(tag="gpu")\nshade :: proc(a,b:f32)->f32 { return a*0.125+b }\n')
-        changed = tui('kkk\rq', TRUEOS_TEST_STABLE_HEAP='1')
+        changed = tui('\rq', TRUEOS_TEST_STABLE_HEAP='1')
         assert b'stage=launch demo=mandelbrot_gpu_cpu status=0\n' in changed
         assert (work / 'mandelbrot_gpu_cpu/shader.eu').read_bytes() != first_code
         shader.write_text('package main\n@(tag="gpu")\nshade :: proc(a,b:f32)->f32 { return missing }\n')
-        bad_shader = tui('kkk\rq')
+        bad_shader = tui('\rq')
         assert b'stage=compile demo=mandelbrot_gpu_cpu status=1\n' in bad_shader
         assert b'stage=launch demo=mandelbrot_gpu_cpu' not in bad_shader
         shader.write_bytes((NATIVE / 'mandelbrot-demo/assets/shader.odin.source').read_bytes())
-        poc = tui('kk\r\rq', TRUEOS_TEST_STABLE_HEAP='1')
+        poc = tui('jj\r\rq', TRUEOS_TEST_STABLE_HEAP='1')
         assert poc.count(b'stage=compile demo=mandelbrot_gpu_poc status=0\n') == 2
         assert poc.count(b'stage=launch demo=mandelbrot_gpu_poc status=0\n') == 2
         assert b'backend=intel_xelp_poc complete kernel' in poc
@@ -66,10 +58,10 @@ def main():
         poc_code = (work / 'mandelbrot_gpu_poc/shader.eu').read_bytes()
         assert (work / 'common/odin-son/demo-mandelbrot_gpu_poc.bp').read_bytes() == (work / 'demo-mandelbrot_gpu_poc.bp').read_bytes()
         poc_shader.write_text('package main\nmain :: proc(a:f32,b:f32)->f32 { return a*b }\n')
-        assert b'stage=launch demo=mandelbrot_gpu_poc status=0\n' in tui('kk\rq', TRUEOS_TEST_STABLE_HEAP='1')
+        assert b'stage=launch demo=mandelbrot_gpu_poc status=0\n' in tui('jj\rq', TRUEOS_TEST_STABLE_HEAP='1')
         assert (work / 'mandelbrot_gpu_poc/shader.eu').read_bytes() != poc_code
         poc_shader.write_text('package main\nmain :: proc(a:f32,b:f32)->f32 { return missing }\n')
-        bad_poc = tui('kk\rq')
+        bad_poc = tui('jj\rq')
         assert b'stage=compile demo=mandelbrot_gpu_poc status=1\n' in bad_poc
         assert b'stage=launch demo=mandelbrot_gpu_poc' not in bad_poc
         poc_shader.write_bytes((NATIVE / 'mandelbrot-poc-demo/shader.poc.odin.source').read_bytes())
@@ -77,28 +69,26 @@ def main():
         run([exe, '--mandelbrot_gpu_cpu'], cwd=work)
         mandelbrot_source = work / 'mandelbrot_gpu_cpu/main.odin'
         mandelbrot_source.write_text('package main\nmain :: proc() -> i32 { return missing }\n')
-        failed_mandelbrot = tui('kkk\rq')
+        failed_mandelbrot = tui('\rq')
         assert b'stage=compile demo=mandelbrot_gpu_cpu status=1\n' in failed_mandelbrot
         assert b'stage=launch demo=mandelbrot_gpu_cpu' not in failed_mandelbrot
         # Seeding must preserve edited sources, and one failed job must not kill the VM.
-        hello = work / 'hello/main.odin'
-        hello.write_text('package main\nmain :: proc() -> i32 { return missing }\n')
-        failing = tui('jj\rjjjj\rq')  # hello fails, then cpu-boids succeeds
-        assert b'stage=compile demo=hello status=1\n' in failing
-        assert b'stage=compile demo=cpu-boids status=0\n' in failing
-        assert 'missing' in hello.read_text()
-        hello.write_text('package main\nmain :: proc( {\n')
-        malformed = tui('jj\rjjjj\rq')
-        assert b'stage=compile demo=hello status=1\n' in malformed
-        assert b'stage=compile demo=cpu-boids status=0\n' in malformed
+        failing = tui('\rjj\rq')
+        assert b'stage=compile demo=mandelbrot_gpu_cpu status=1\n' in failing
+        assert b'stage=compile demo=mandelbrot_gpu_poc status=0\n' in failing
+        assert 'missing' in mandelbrot_source.read_text()
+        mandelbrot_source.write_text('package main\nmain :: proc( {\n')
+        malformed = tui('\rjj\rq')
+        assert b'stage=compile demo=mandelbrot_gpu_cpu status=1\n' in malformed
+        assert b'stage=compile demo=mandelbrot_gpu_poc status=0\n' in malformed
         discovered = tui('fq', TRUEOS_TEST_ADD_DEMO='1')
-        assert b'stage=discovery demos=7' in discovered and b' extra' in discovered
-        hello.write_bytes((NATIVE / 'hello.odin.source').read_bytes())
-        repeated = tui('\r'*8 + 'rq', TRUEOS_TEST_STABLE_HEAP='1')
-        assert repeated.count(b'[odin-son tui] stage=compile demo=cpu-boids status=0\n') == 8
-        assert b'stage=launch demo=cpu-boids status=0\n' in repeated
+        assert b'stage=discovery demos=5' in discovered and b' extra' in discovered
+        mandelbrot_source.write_bytes((NATIVE / 'mandelbrot-demo/main.odin').read_bytes())
+        repeated = tui('j' + '\r'*8 + 'rq', TRUEOS_TEST_STABLE_HEAP='1')
+        assert repeated.count(b'[odin-son tui] stage=compile demo=mandelbrot_gpu_cpu status=0\n') == 8
+        assert b'stage=launch demo=mandelbrot_gpu_cpu status=0\n' in repeated
         automatic = tui('q', TRUEOS_TEST_AUTO_DISCOVER='1')
-        assert b'stage=discovery demos=8' in automatic and b' auto' in automatic
+        assert b'stage=discovery demos=6' in automatic and b' auto' in automatic
     print('PASS: native TUI seeds/preserves demos; discovers new directories; repeated compilation has stable live heap allocations; semantic/parse failures recover; queued launch, terminal resize/reentry, short writes and quit release are exercised by ABI mocks.')
 
 if __name__ == '__main__':

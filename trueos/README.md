@@ -89,11 +89,11 @@ In the current Shell3, submit `§§odin-son` and Enter to fetch and launch the
 published compiler. An AppDB-installed copy launches by exact name `odin-son`
 in CMD mode.
 
-On first launch it seeds `cpu-boids/main.odin`, `hello/main.odin`,
-`gpu-tests/{main,cases}.odin`, and
+On first launch it seeds
 `mandelbrot_gpu_cpu/{main.odin,shader.odin.source}` under its app root, normally
-`apps/odin-son`. It also seeds `mandelbrot_gpu_poc` with `main.odin`,
-`render.odin`, and `shader.poc.odin.source`. Seed baselines under `.odin-son-seeds/` let unchanged bundled
+`apps/odin-son`. It also seeds `mandelbrot_gpu_native` with its native runner
+and `shader.poc.odin.source`, plus `mandelbrot_gpu_poc` and `water_light`.
+Seed baselines under `.odin-son-seeds/` let unchanged bundled
 files follow package updates while preserving local edits. Each example has
 its own directory because Odin modules load
 all `.odin` files in their directory. Add another `<demo>/main.odin`; the picker
@@ -110,12 +110,27 @@ to return. Resize/reentry redraw the retained selection. Jobs run sequentially;
 per-job temporary allocations and compiler arenas are freed before the next job.
 Syntax and type errors are displayed in the latest-output panel.
 
-Select `gpu-tests`, press Enter, then `r` for the five Odin-native iGPU checks.
-The single `odin-son.bp` includes the import-free runner source, fixtures and
-five precompiled GPU kernels. The resident odin-son compiles the CPU runner on
-TRUEOS and packages `demo-gpu-tests.bp`; no separate GPU-test download or SDK
-is needed. The child prints the per-test results and summary to Blueprint logs.
-GPU kernels are embedded ahead of time; this entry does not recompile them.
+The packaged picker excludes `cpu-boids`, `gpu-boids`, `gpu-tests`, and `hello`,
+including directories left by older installations. Standalone GPU test tooling
+and the embedded `--cpu-boids` batch command remain available.
+
+Select `mandelbrot_gpu_native` and press Enter for a full escape-time Mandelbrot
+preset. The resident compiler builds `shader.poc.odin.source` through the upstream
+`intel_xelp` SIMD8 backend, builds its native UI4 runner, and queues the Blueprint.
+The source and runner are bundled in `odin-son.bp`; no raylib or host compiler is
+needed on TRUEOS. `--mandelbrot_gpu_native` performs the same compile-and-launch
+sequence directly. Outputs are `mandelbrot_gpu_native/shader.eu`,
+`demo-mandelbrot_gpu_native.o`, and `demo-mandelbrot_gpu_native.bp` under the app root.
+
+This is an adaptation of the tagged-global Mandelbrot kernel: TRUEOS supplies the
+pixel coordinates, grid-stride dispatch and framebuffer stores through its existing
+native compute ABI. The shader keeps the original escape-test/update order, using
+exact float iteration counters (32..512) and returning normalized iteration depth.
+The currently synced backend does not compile `builtin`/`uniform` globals, integer
+pixel addressing or pointer stores from the original source. The result is an opaque
+grayscale Mandelbrot image, with white interior. Start at 128 iterations; use wheel
+zoom, left drag to pan, +/- to change the iteration limit, R to reset, and Q/Escape
+to close. Resize follows the frame. The kernel must enable `odin-native-gpgpu`.
 
 Select `mandelbrot_gpu_cpu` and press Enter to compile its shader and CPU runner
 on TRUEOS and queue one launch automatically. The compiler stays open; `r` can launch the compiled

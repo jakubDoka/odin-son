@@ -11,7 +11,8 @@ import subprocess
 import sys
 
 IMPORTS = {
-    'trueos_cabi_ui4_scene_frame_set_opacity',
+    'trueos_cabi_ui4_scene_frame_set_opacity', 'trueos_cabi_ui4_scene_window_title_set_v1',
+    'trueos_time_monotonic_nanos',
     'trueos_cabi_ui4_scene_sprite_upload_rgba8', 'trueos_cabi_ui4_scene_sprite_quads',
     'trueos_cabi_ui4_scene_native_compute_fields_upload_v1', 'trueos_cabi_ui4_scene_native_compute_fields_render_v1',
     'trueos_cabi_ui4_scene_frame_open_visual', 'trueos_cabi_ui4_solara_frame_close',

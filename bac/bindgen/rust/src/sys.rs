@@ -458,8 +458,11 @@ pub const ssa_Node_Type_Simd_Extract_Lsbs: ssa_Node_Type = 67;
 pub const ssa_Node_Type_Simd_Extract_Msbs: ssa_Node_Type = 68;
 pub const ssa_Node_Type_Simd_Reduce_Add_Bisect: ssa_Node_Type = 69;
 pub const ssa_Node_Type_Select: ssa_Node_Type = 70;
-pub const ssa_Node_Type_Scope: ssa_Node_Type = 71;
-pub const ssa_Node_Type_Lazy_Phi: ssa_Node_Type = 72;
+pub const ssa_Node_Type_Thread_Id: ssa_Node_Type = 71;
+pub const ssa_Node_Type_Lane_Id: ssa_Node_Type = 72;
+pub const ssa_Node_Type_Uniform_Addr: ssa_Node_Type = 73;
+pub const ssa_Node_Type_Scope: ssa_Node_Type = 74;
+pub const ssa_Node_Type_Lazy_Phi: ssa_Node_Type = 75;
 const _: () = assert!(core::mem::size_of::<ssa_Node_Type>() == 2);
 const _: () = assert!(core::mem::align_of::<ssa_Node_Type>() == 2);
 #[repr(C, align(8))]
@@ -875,6 +878,9 @@ pub const Node_Type_Simd_Extract_Lsbs: Node_Type = 67;
 pub const Node_Type_Simd_Extract_Msbs: Node_Type = 68;
 pub const Node_Type_Simd_Reduce_Add_Bisect: Node_Type = 69;
 pub const Node_Type_Select: Node_Type = 70;
+pub const Node_Type_Thread_Id: Node_Type = 71;
+pub const Node_Type_Lane_Id: Node_Type = 72;
+pub const Node_Type_Uniform_Addr: Node_Type = 73;
 const _: () = assert!(core::mem::size_of::<Node_Type>() == 2);
 const _: () = assert!(core::mem::align_of::<Node_Type>() == 2);
 #[repr(C, align(4))]

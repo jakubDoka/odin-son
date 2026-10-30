@@ -58,10 +58,10 @@ qualify_enm :: proc(qual: string, enm: typeid) -> string {
 	return fmt.tprintf("%v", enm)
 }
 
-generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
+generate_spec :: proc(spec: Spec_Gen_Input, out_path: string) {
 	context.allocator = context.temp_allocator
 
-	spec := spec_in
+	spec := spec
 	q := spec.qual
 	locals := spec.local_extra_types
 
@@ -81,6 +81,9 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 
 	fmt.fprintf(file, "package %s\n", spec.package_name)
 	os.write_string(file, spec.header_import)
+	if !spec.no_spec_tables {
+		os.write_string(file, `import "base:intrinsics"`)
+	}
 	fmt.fprintf(file, "// NOTE: this file is generated: %s", spec.gen_command)
 	os.write_string(file, "\n\n")
 
@@ -130,7 +133,7 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 		fmt.fprintf(
 			file,
 			"@(tag = \"api\", rodata, export, link_name = \"%v_SPEC\")",
-			spec_in.package_name,
+			spec.package_name,
 		)
 		fmt.fprintf(file, "SPEC := %vNode_Spec{{\n", q)
 
@@ -168,100 +171,136 @@ generate_spec :: proc(spec_in: Spec_Gen_Input, out_path: string) {
 		fmt.fprintf(file, "\temit_function = emit_function,\n")
 		fmt.fprintf(file, "\tpeep = peep_inst,\n")
 		fmt.fprintf(file, "\tpost_schedule_peep = post_schedule_peep_inst,\n")
+	}
 
-		os.write_string(file, "\tinheritance_table = {\n")
-		for classes in spec.classes {
-			for class, i in classes.ids {
-				inherit_set: bac.Inherit_Table_Elem
+	start := int(!spec.no_spec_tables)
 
-				mark_inherits(&inherit_set, class.id, inheritable)
-
-				mark_inherits :: proc(
-					slot: ^bac.Inherit_Table_Elem,
-					t: typeid,
-					inheritable: map[typeid]int,
-				) {
-					idx := inheritable[t]
-					slot^ |= 1 << uint(idx)
-
-					field := reflect.struct_field_by_name(t, "_")
-					if field.is_using {
-						assert(field.offset == 0)
-						mark_inherits(slot, field.type.id, inheritable)
-					}
-				}
-
-				fmt.fprintf(
-					file,
-					"\t\t0b%b, // %v\n",
-					inherit_set,
-					reflect.enum_field_names(classes.enm)[i],
-				)
-			}
-		}
-		os.write_string(file, "\t},\n")
-
-		os.write_string(file, "\tnode_extra_sizes = {\n")
-		idx := 0
-		last_idx := 0
-		for classes in spec.classes {
-			for class, i in classes.ids {
-				if reflect.size_of_typeid(class.id) != 0 {
-					fmt.fprintf(
-						file,
-						"\t\t%v = %v, // %v -> %v\n",
-						idx,
-						reflect.size_of_typeid(class.id) / 4,
-						reflect.enum_field_names(classes.enm)[i],
-						class.id,
-					)
-					last_idx = idx
-				}
-				idx += 1
-			}
-		}
-		if last_idx != idx - 1 {
-			fmt.fprintf(file, "\t\t%v = 0,\n", idx - 1)
-		}
-		os.write_string(file, "\t},\n")
-
-		os.write_string(file, "\tnode_flags = {\n")
-		for classes in spec.classes {
-			for class, i in classes.ids {
-				fmt.fprintf(
-					file,
-					"\t\t%w, // %v\n",
-					class.flags,
-					reflect.enum_field_names(classes.enm)[i],
-				)
-			}
-		}
-		os.write_string(file, "\t},\n")
-
+	if spec.no_spec_tables {
+		os.write_string(file, "INHERITANCE_TABLE :: []u16{")
+	} else {
 		os.write_string(
 			file,
-			"\tnode_extra_types = ({}) when #config(NO_FMT, false) else ([]typeid{\n",
+			"\tinheritance_table =" +
+			" intrinsics.concatenate(bac.INHERITANCE_TABLE, []u16{\n",
 		)
-		idx = 0
-		for classes in spec.classes {
-			for class in classes.ids {
-				if class.id != bac.No_Extra {
-					fmt.fprintf(
-						file,
-						"\t\t%v = %v,\n",
-						idx,
-						qualify_type(q, locals, class.id),
-					)
-					last_idx = idx
-				}
-				idx += 1
-			}
-		}
-		if last_idx != idx - 1 {
-			fmt.fprintf(file, "\t\t%v = {{}},\n", idx - 1)
-		}
-		os.write_string(file, "\t}),\n")
+	}
 
+	for classes in spec.classes[start:] {
+		for class, i in classes.ids {
+			inherit_set: bac.Inherit_Table_Elem
+
+			mark_inherits(&inherit_set, class.id, inheritable)
+
+			mark_inherits :: proc(
+				slot: ^bac.Inherit_Table_Elem,
+				t: typeid,
+				inheritable: map[typeid]int,
+			) {
+				idx := inheritable[t]
+				slot^ |= 1 << uint(idx)
+
+				field := reflect.struct_field_by_name(t, "_")
+				if field.is_using {
+					assert(field.offset == 0)
+					mark_inherits(slot, field.type.id, inheritable)
+				}
+			}
+
+			fmt.fprintf(
+				file,
+				"\t\t0b%b, // %v\n",
+				inherit_set,
+				reflect.enum_field_names(classes.enm)[i],
+			)
+		}
+	}
+
+	if spec.no_spec_tables {
+		os.write_string(file, "}\n")
+	} else {
+		os.write_string(file, "\t}),\n")
+	}
+
+	if spec.no_spec_tables {
+		os.write_string(file, "NODE_EXTRA_SIZES :: []u8{")
+	} else {
+		os.write_string(
+			file,
+			"\tnode_extra_sizes =" +
+			" intrinsics.concatenate(bac.NODE_EXTRA_SIZES, []u8{\n",
+		)
+	}
+
+	idx := 0
+	last_idx := 0
+	for classes in spec.classes[start:] {
+		for class, i in classes.ids {
+			fmt.fprintf(
+				file,
+				"\t\t%v, // %v -> %v\n",
+				reflect.size_of_typeid(class.id) / 4,
+				reflect.enum_field_names(classes.enm)[i],
+				class.id,
+			)
+		}
+	}
+
+	if spec.no_spec_tables {
+		os.write_string(file, "}\n")
+	} else {
+		os.write_string(file, "\t}),\n")
+	}
+
+	if spec.no_spec_tables {
+		os.write_string(file, "\tNODE_FLAGS :: []Class_Flags{\n")
+	} else {
+		os.write_string(
+			file,
+			"\tnode_flags =" +
+			" intrinsics.concatenate(bac.NODE_FLAGS, []bac.Class_Flags{\n",
+		)
+	}
+
+	for classes in spec.classes[start:] {
+		for class, i in classes.ids {
+			fmt.fprintf(
+				file,
+				"\t\t%w, // %v\n",
+				class.flags,
+				reflect.enum_field_names(classes.enm)[i],
+			)
+		}
+	}
+
+	if spec.no_spec_tables {
+		os.write_string(file, "}\n")
+	} else {
+		os.write_string(file, "\t}),\n")
+	}
+
+	if spec.no_spec_tables {
+		os.write_string(file, "\tNODE_EXTRA_TYPES :: []typeid{\n")
+	} else {
+		os.write_string(
+			file,
+			"\tnode_extra_types = ({}) when #config(NO_FMT, false) else (" +
+			"intrinsics.concatenate(bac.NODE_EXTRA_TYPES, []typeid{\n",
+		)
+	}
+
+	for classes in spec.classes[start:] {
+		for class in classes.ids {
+			fmt.fprintf(file, "\t\t%v,\n", qualify_type(q, locals, class.id))
+		}
+	}
+
+	if spec.no_spec_tables {
+		os.write_string(file, "}\n")
+	} else {
+		os.write_string(file, "\t})),\n")
+	}
+
+	if !spec.no_spec_tables {
 		os.write_string(
 			file,
 			"\tnode_kind = nil when #config(NO_FMT, false) else Node_Type,\n",
@@ -556,7 +595,7 @@ collect_meta :: proc(ctx: ^%vProc,
 	MASK_BUFFER_SIZE :: 6
 
 	intern_idxs: [16]int
-	for crs in spec_in.common_reg_specs {
+	for crs in spec.common_reg_specs {
 		fmt.fprintf(file, "\n@(rodata) %v_MASK := [?]i64{{", crs.name)
 		for m, i in crs.masks {
 			if i != 0 do fmt.fprintf(file, ", ")
@@ -582,10 +621,10 @@ collect_meta :: proc(ctx: ^%vProc,
 		)
 	}
 
-	if spec_in.common_reg_specs != nil {
+	if spec.common_reg_specs != nil {
 		fmt.fprintfln(file, "\nseed_rm_interner :: proc(ra: ^bac.Regalloc) {{")
 		fmt.fprintfln(file, "\tra.mask_len = MASK_SIZE")
-		for crs in spec_in.common_reg_specs {
+		for crs in spec.common_reg_specs {
 			fmt.fprintfln(
 				file,
 				"\tbac.rm_intern_slice(ra, %v, %v_MASK[:])",
@@ -596,8 +635,8 @@ collect_meta :: proc(ctx: ^%vProc,
 		fmt.fprintfln(file, "}}")
 	}
 
-	if spec_in.package_name != "bac" {
-		splits := strings.split(spec_in.package_name, "_")
+	if spec.package_name != "bac" {
+		splits := strings.split(spec.package_name, "_")
 		prefix := splits[len(splits) - 1][:1]
 
 		fmt.fprintf(

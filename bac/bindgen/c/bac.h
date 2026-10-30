@@ -301,6 +301,9 @@ enum {
 	bac_Node_Type_Simd_Extract_Msbs = 68,
 	bac_Node_Type_Simd_Reduce_Add_Bisect = 69,
 	bac_Node_Type_Select = 70,
+	bac_Node_Type_Thread_Id = 71,
+	bac_Node_Type_Lane_Id = 72,
+	bac_Node_Type_Uniform_Addr = 73,
 };
 struct Slice_Of_Slice_Of_bac_i64 {
 	Slice_Of_bac_i64 *data;

@@ -12,13 +12,12 @@ import rl "vendor:raylib"
 
 Uniforms :: struct {
 	width, height, max_iterations: u32,
+	pixels_per_thread:             u32,
 	x_min, y_min, dx, dy:          f32,
 	output:                        u64,
-	pixels_per_thread:             u32,
 }
 
 #assert(offset_of(Uniforms, output) == 32)
-#assert(offset_of(Uniforms, pixels_per_thread) == 40)
 
 main :: proc() {
 	if len(os.args) > 1 && os.args[1] == "--help" {
@@ -163,13 +162,13 @@ run :: proc(path: string) -> bool {
 			uniforms := Uniforms {
 				width             = u32(width),
 				height            = u32(height),
+				pixels_per_thread = 64,
 				max_iterations    = max_iterations,
 				x_min             = f32(center_x - step * f64(width) * 0.5),
 				y_min             = f32(center_y - span * 0.5),
 				dx                = f32(step),
 				dy                = f32(step),
 				output            = buffer.address,
-				pixels_per_thread = 64,
 			}
 			parameters: [2]gpu.Reg
 			copy(mem.slice_to_bytes(parameters[:]), mem.ptr_to_bytes(&uniforms))

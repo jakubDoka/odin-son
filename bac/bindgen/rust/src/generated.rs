@@ -98,6 +98,9 @@ impl NodeType {
     pub const Simd_Extract_Msbs: Self = Self(sys::ssa_Node_Type_Simd_Extract_Msbs);
     pub const Simd_Reduce_Add_Bisect: Self = Self(sys::ssa_Node_Type_Simd_Reduce_Add_Bisect);
     pub const Select: Self = Self(sys::ssa_Node_Type_Select);
+    pub const Thread_Id: Self = Self(sys::ssa_Node_Type_Thread_Id);
+    pub const Lane_Id: Self = Self(sys::ssa_Node_Type_Lane_Id);
+    pub const Uniform_Addr: Self = Self(sys::ssa_Node_Type_Uniform_Addr);
     pub const Scope: Self = Self(sys::ssa_Node_Type_Scope);
     pub const Lazy_Phi: Self = Self(sys::ssa_Node_Type_Lazy_Phi);
 }

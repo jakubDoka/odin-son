@@ -2,14 +2,17 @@ package mandelbrot
 
 @(tag = "builtin")
 thread_id: u32
+@(tag = "builtin")
+lane_id: u32
+
 @(tag = "uniform")
 width: u32
 @(tag = "uniform")
 height: u32
-@(tag = "builtin")
-lane_id: u32
 @(tag = "uniform")
 max_iterations: u32
+@(tag = "uniform")
+pixels_per_thread: u32
 @(tag = "uniform")
 x_min: f32
 @(tag = "uniform")
@@ -20,8 +23,6 @@ dx: f32
 dy: f32
 @(tag = "uniform")
 output: [^]u32
-@(tag = "uniform")
-pixels_per_thread: u32
 
 main :: proc() {
 	base := thread_id * pixels_per_thread

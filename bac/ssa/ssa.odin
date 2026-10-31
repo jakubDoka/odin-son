@@ -1263,8 +1263,6 @@ start_proc :: proc(
 ) -> (
 	rmem: Node_ID,
 ) {
-	bac.ensure_init()
-
 	assert(temps != nil)
 
 	prc^ = {

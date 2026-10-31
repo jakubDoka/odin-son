@@ -35,8 +35,8 @@ fn main() {
         let mut int_spec = bac::AbiParam::new(&[Datatype::I64]);
         int_spec.scalar = true;
 
-        let left = params.next(&mut memory, "left", &int_spec);
-        let right = params.next(&mut memory, "right", &int_spec);
+        let left = params.next(&mut memory, "left", int_spec);
+        let right = params.next(&mut memory, "right", int_spec);
         param_specs.copy_from_slice(params.finalize());
 
         let sum = builder.add_bin_op("sum", BinOp::Add, Datatype::I64, left, right, Lane::I8);

@@ -2423,12 +2423,3 @@ truncate_inputs :: proc(prc: ^Proc, scope: Node_ID, #any_int to_len: int) {
 
 	snode.input_count = u16(to_len)
 }
-
-ensure_init :: proc() {
-	when ODIN_BUILD_MODE != .Executable {
-		@(static) inited: bool
-		if !intrinsics.atomic_exchange(&inited, true) {
-			runtime._startup_runtime()
-		}
-	}
-}

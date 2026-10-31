@@ -15,9 +15,10 @@ init_custom_fmt :: #force_inline proc() {
 	}
 }
 
+@(thread_local)
+current_prc: [int(!fmt.NO_FMT)]^Proc
+
 when !fmt.NO_FMT {
-	@(thread_local)
-	current_prc: ^Proc
 
 	init_custom_fmt_impl :: proc() {
 		Scratch :: struct #align (4096) {
@@ -88,7 +89,7 @@ when !fmt.NO_FMT {
 			proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
 				value := value.(Node_ID)
 				if value != 0 {
-					display_node_gvn(fi.writer, current_prc, value)
+					display_node_gvn(fi.writer, current_prc[0], value)
 				} else {
 					fmt.wprint(fi.writer, "nl")
 				}
@@ -100,8 +101,8 @@ when !fmt.NO_FMT {
 			Node,
 			proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
 				value := &value.(Node)
-				id := get_node_id(current_prc, value)
-				display_node(fi.writer, current_prc, id)
+				id := get_node_id(current_prc[0], value)
+				display_node(fi.writer, current_prc[0], id)
 				return true
 			},
 		)
@@ -110,8 +111,8 @@ when !fmt.NO_FMT {
 			Expanded_Node,
 			proc(fi: ^fmt.Info, value: any, r: rune) -> bool {
 				value := &value.(Expanded_Node)
-				id := get_node_id(current_prc, value)
-				display_node(fi.writer, current_prc, id)
+				id := get_node_id(current_prc[0], value)
+				display_node(fi.writer, current_prc[0], id)
 				return true
 			},
 		)

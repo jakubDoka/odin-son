@@ -246,18 +246,20 @@ impl<'a> Proc<'a> {
         self.raw.get_mut().node_spec = spec.as_ptr();
     }
 
-    pub fn apply_peeps(&mut self) -> bool {
+    pub fn apply_peeps(&mut self, opt_hints: sys::Opt_Hints) -> bool {
         unsafe {
             sys::bac_apply_peeps(sys::Peep_Ctx {
                 prc: self.raw_ptr(),
+                opt_hints,
             })
         }
     }
 
-    pub fn opt(&mut self) {
+    pub fn opt(&mut self, opt_hints: sys::Opt_Hints) {
         unsafe {
             sys::bac_opt(sys::Peep_Ctx {
                 prc: self.raw_ptr(),
+                opt_hints,
             });
         }
     }
@@ -677,7 +679,7 @@ impl Proc<'_> {
         mem: NodeId,
         generator: &mut sys::ssa_Param_Gen,
         name: &str,
-        abi: &mut sys::ssa_Abi_Param,
+        abi: sys::ssa_Abi_Param,
     ) -> (NodeId, NodeId) {
         let mut out_mem = 0;
         let value = unsafe {
@@ -747,10 +749,9 @@ impl<'a> Builder<'a> {
 }
 
 impl<'p, 'a> ParamGen<'p, 'a> {
-    pub fn next(&mut self, mem: &mut &'p Node, name: &'static str, abi: &AbiParam) -> &'p Node {
+    pub fn next(&mut self, mem: &mut &'p Node, name: &'static str, abi: AbiParam) -> &'p Node {
         let id = self.proc.check(mem);
-        let mut abi = *abi;
-        let result = unsafe { self.proc.arg_gen_next(id, &mut self.raw, name, &mut abi) };
+        let result = unsafe { self.proc.arg_gen_next(id, &mut self.raw, name, abi) };
         *mem = unsafe { self.proc.get_node(result.0) };
         unsafe { self.proc.get_node(result.1) }
     }

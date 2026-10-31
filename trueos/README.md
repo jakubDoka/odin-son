@@ -64,6 +64,16 @@ system-call instructions. Packaging checks all undefined imports and relocation
 types against the existing Blueprint loader's supported native interfaces.
 Retired synchronous filesystem imports are explicitly rejected during packaging.
 
+## Platform API context
+
+TRUEOS API documentation belongs to the IDE, independently of the selected
+compiler. Edit workspace context includes the versioned API index and topic
+catalog. The IDE's read-only `api_reference` request retrieves a topic without
+launching a compiler, installing files, or modifying project source.
+
+The compact Cargo/rustdoc-derived reference is packaged by
+`TRUEOS-Blueprints/crates/trueos-ide`; odin-son only compiles project snapshots.
+
 ## Running on TRUEOS
 
 Deliver `odin-son.bp` through the usual Blueprint/AppDB path. Source files and

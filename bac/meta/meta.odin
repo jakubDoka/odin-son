@@ -4,10 +4,12 @@ import ".."
 import "core:fmt"
 import "core:odin/ast"
 import "core:odin/parser"
+import "core:odin/tokenizer"
 import "core:os"
 import "core:reflect"
 import "core:slice"
 import "core:strings"
+import "core:unicode"
 
 Mask_Intern_Key :: u8
 
@@ -59,6 +61,13 @@ generate_spec :: proc(
 	package_path: string,
 	loc := #caller_location,
 ) {
+	@(static) m: map[typeid]fmt.User_Formatter
+	@(static) once := false
+	if !once {
+		fmt.set_user_formatters(&m)
+		once = true
+	}
+
 	context.allocator = context.temp_allocator
 
 	pack, ok := parser.collect_package(package_path)
@@ -67,7 +76,7 @@ generate_spec :: proc(
 	assert(ok)
 
 	spec := spec
-	q := pack.name == "bac" ? "" : "bac."
+	qual := pack.name == "bac" ? "" : "bac."
 	packname := pack.name
 
 	for classes in spec.classes {
@@ -171,7 +180,7 @@ generate_spec :: proc(
 			"@(tag = \"api\", rodata, export, link_name = \"%v_SPEC\")",
 			pack.name,
 		)
-		fmt.fprintf(file, "SPEC := %vNode_Spec{{\n", q)
+		fmt.fprintf(file, "SPEC := %vNode_Spec{{\n", qual)
 
 		os.write_string(file, "\tcall_clobbers = {\n")
 		for cc in spec.cc_table {
@@ -322,7 +331,7 @@ generate_spec :: proc(
 
 	for classes in spec.classes[start:] {
 		for class in classes.ids {
-			fmt.fprintf(file, "\t\t%v,\n", qualify_type(q, packname, class.id))
+			fmt.fprintf(file, "\t\t%v,\n", qualify_type(qual, packname, class.id))
 		}
 	}
 
@@ -373,7 +382,7 @@ generate_spec :: proc(
 					file,
 					"\t%v = u16(%v.%v),",
 					class.name,
-					qualify_enm(q, classes.enm),
+					qualify_enm(qual, classes.enm),
 					class.name,
 				)
 			}
@@ -403,13 +412,13 @@ post_schedule_peep_inst :: proc(
 	return post_schedule_peep(ctx, node, struct{{}}{{}})
 }}
 `,
-			q,
-			q,
-			q,
-			q,
-			q,
-			q,
-			q,
+			qual,
+			qual,
+			qual,
+			qual,
+			qual,
+			qual,
+			qual,
 		)
 	}
 
@@ -427,15 +436,15 @@ collect_meta :: proc(ctx: ^%vProc,
 	return %vregalloc_collect_meta(ctx, ra, sched, meta_of_)
 }}
 `,
-			q,
-			q,
-			q,
-			q,
-			q,
-			q,
-			q,
-			q,
-			q,
+			qual,
+			qual,
+			qual,
+			qual,
+			qual,
+			qual,
+			qual,
+			qual,
+			qual,
 		)
 	}
 
@@ -464,7 +473,7 @@ collect_meta :: proc(ctx: ^%vProc,
 				file,
 				"add_%v :: #force_inline proc(prc: ^%vProc, name: string",
 				strings.to_snake_case(fname),
-				q,
+				qual,
 			)
 
 			if k != "" {
@@ -472,15 +481,15 @@ collect_meta :: proc(ctx: ^%vProc,
 			}
 
 			if class.default_type == nil {
-				fmt.fprintf(file, ", dt: %vNode_Datatype", q)
+				fmt.fprintf(file, ", dt: %vNode_Datatype", qual)
 			}
 
 			for arg in class.args {
-				fmt.fprintf(file, ", %v: %vNode_ID", arg, q)
+				fmt.fprintf(file, ", %v: %vNode_ID", arg, qual)
 			}
 
 			if class.varargs {
-				fmt.fprintf(file, ", inputs: []%vNode_ID", q)
+				fmt.fprintf(file, ", inputs: []%vNode_ID", qual)
 			}
 
 			for earg in class.extra_args {
@@ -494,16 +503,16 @@ collect_meta :: proc(ctx: ^%vProc,
 			}
 
 			if pass_lane {
-				fmt.fprintf(file, ", lane: %vLane_Type = {{}}", q)
+				fmt.fprintf(file, ", lane: %vLane_Type = {{}}", qual)
 			}
 
-			fmt.fprintf(file, ") -> (_id: %vNode_ID) {{\n", q)
+			fmt.fprintf(file, ") -> (_id: %vNode_ID) {{\n", qual)
 
 			if len(class.extra_args) == 1 && class.extra_args[0] == "*" {
 				os.write_string(file, "\textra := extra\n")
 			}
 
-			extra_type := qualify_type(q, packname, class.id)
+			extra_type := qualify_type(qual, packname, class.id)
 			has_extra :=
 				len(class.extra_args) != 0 || reflect.size_of_typeid(class.id) > 0
 
@@ -511,12 +520,12 @@ collect_meta :: proc(ctx: ^%vProc,
 				fmt.fprintf(
 					file,
 					"\treturn %vadd_raw(prc, name, u16(%v.%v), ",
-					q,
-					qualify_enm(q, classes.enm),
+					qual,
+					qualify_enm(qual, classes.enm),
 					name,
 				)
 			} else {
-				fmt.fprintf(file, "\treturn %vadd_raw(prc, name, u16(type), ", q)
+				fmt.fprintf(file, "\treturn %vadd_raw(prc, name, u16(type), ", qual)
 			}
 
 			if ty, ok := class.default_type.?; ok {
@@ -598,7 +607,7 @@ collect_meta :: proc(ctx: ^%vProc,
 		fmt.fprintf(
 			file,
 			"\telse when T == %v {{return %v}}\n",
-			qualify_type(q, packname, inh.type),
+			qualify_type(qual, packname, inh.type),
 			inh.idx,
 		)
 	}
@@ -613,8 +622,8 @@ collect_meta :: proc(ctx: ^%vProc,
 		fmt.fprintfln(
 			file,
 			"#assert(size_of(%v) %% %vPRECISION == 0)",
-			qualify_type(q, packname, inh.type),
-			q,
+			qualify_type(qual, packname, inh.type),
+			qual,
 		)
 	}
 
@@ -686,6 +695,175 @@ collect_meta :: proc(ctx: ^%vProc,
 			prefix,
 			prefix,
 		)
+	}
+
+	rewrites_path, _ := os.join_path(
+		{package_path, "rewrites.rs"},
+		context.allocator,
+	)
+
+	if file, err := os.read_entire_file(rewrites_path, context.allocator);
+	   err == nil {
+
+		Parser :: struct {
+			using tok: tokenizer.Tokenizer,
+		}
+
+		Stmt :: struct {
+			pat:   Node,
+			value: Node,
+		}
+
+		Set_Range :: struct {
+			start, end: string,
+		}
+
+		Node :: struct {
+			name:      string,
+			children:  []Node,
+			code:      string,
+			enum_name: string,
+			set:       []Set_Range,
+			comments:  []string,
+			at:        bool,
+			eof:       bool,
+		}
+
+		fmt.register_user_formatter(Set_Range, proc(fi: ^fmt.Info, arg: any, verb: rune) -> bool {
+				value := arg.(Set_Range)
+				fmt.wprint(fi.writer, value.start)
+				if value.start != value.end do fmt.wprint(fi.writer, " to", value.end)
+				return true
+			})
+
+		fmt.register_user_formatter(Node, proc(fi: ^fmt.Info, arg: any, verb: rune) -> bool {
+			fmt.wprint(fi.writer, "{")
+			written := false
+			for field in reflect.struct_fields_zipped(Node) {
+				value := reflect.struct_field_value(arg, field)
+				if !reflect.is_nil(value) {
+					if written do fmt.wprint(fi.writer, ", ")
+					written = true
+					fmt.wprintf(fi.writer, "%v = %v", field.name, value)
+				}
+			}
+			fmt.wprint(fi.writer, "}")
+			return true
+		})
+
+		parser := Parser{}
+		tokenizer.init(&parser, string(file), rewrites_path, error_handler)
+
+		stmts: [dynamic]Stmt
+
+		for {
+			pat := expr(&parser)
+			if pat.eof do break
+			expect(&parser, .Colon)
+			expect(&parser, .Colon)
+			value := expr(&parser)
+
+			fmt.eprintln(pat, "::", value)
+
+			append(&stmts, Stmt{pat, value})
+		}
+
+		expr :: proc(parser: ^Parser) -> (res: Node) {
+			comments: [dynamic]string
+
+			for peek(parser^).kind == .Comment {
+				append(&comments, tokenizer.scan(parser).text)
+			}
+
+			at := scan_if(parser, .At)
+
+			tok := tokenizer.scan(parser)
+
+			#partial switch tok.kind {
+			case .Ident:
+				if unicode.is_upper(rune(tok.text[0])) {
+					res.enum_name = tok.text
+				} else {
+					if scan_if(parser, .Colon) {
+						res = expr(parser)
+					}
+					res.name = tok.text
+				}
+			case .Open_Paren:
+				children: [dynamic]Node
+				for {
+					append(&children, expr(parser))
+
+					if scan_if(parser, .Close_Paren) do break
+					if scan_if(parser, .EOF) do break
+				}
+				res.children = children[:]
+			case .Open_Brace:
+				depth := 1
+				last_tok: tokenizer.Token
+				for depth > 0 {
+					last_tok = tokenizer.scan(parser)
+					if last_tok.kind == .Open_Brace do depth += 1
+					if last_tok.kind == .Close_Brace do depth -= 1
+					if last_tok.kind == .EOF do break
+				}
+				res.code = parser.src[tok.pos.offset + 1:last_tok.pos.offset]
+			case .Open_Bracket:
+				set: [dynamic]Set_Range
+				for {
+					start := expect(parser, .Ident)
+					end := start
+					if scan_if(parser, .Range_Full) do end = expect(parser, .Ident)
+
+					append(&set, Set_Range{start.text, end.text})
+
+					if scan_if(parser, .Close_Bracket) do break
+					if scan_if(parser, .EOF) do break
+					expect(parser, .Comma)
+				}
+				res.set = set[:]
+			case .EOF:
+				res.eof = true
+			}
+
+			res.comments = comments[:]
+			res.at = at
+
+			return
+		}
+
+		expect :: proc(
+			parser: ^Parser,
+			kind: tokenizer.Token_Kind,
+		) -> tokenizer.Token {
+			tok := tokenizer.scan(parser)
+			if tok.kind != kind {
+				error_handler(tok.pos, "expected %v, but got %v", kind, tok.kind)
+				parser.error_count += 1
+			}
+			return tok
+		}
+
+		peek :: proc(parser: Parser) -> tokenizer.Token {
+			cpy := parser
+			return tokenizer.scan(&cpy)
+		}
+
+		scan_if :: proc(parser: ^Parser, kind: tokenizer.Token_Kind) -> bool {
+			tok := peek(parser^)
+			if tok.kind != kind {
+				return false
+			}
+
+			tokenizer.scan(parser)
+			return true
+		}
+
+		error_handler :: proc(pos: tokenizer.Pos, msg: string, args: ..any) {
+			fmt.eprintf("%s(%d:%d) ", pos.file, pos.line, pos.column)
+			fmt.eprintf(msg, ..args)
+			fmt.eprintf("\n")
+		}
 	}
 }
 

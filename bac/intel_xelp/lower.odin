@@ -1,8 +1,8 @@
 package bac_intel_xelp
 
 import bac ".."
+import "../../utils/fmt"
 import "base:intrinsics"
-import "core:fmt"
 
 extract_uniform :: proc(
 	prc: ^bac.Proc,

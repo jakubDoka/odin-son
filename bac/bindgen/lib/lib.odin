@@ -9,6 +9,7 @@ import bac "../.."
 import bac_ssa "../../ssa"
 import bac_arm "../../arm"
 import bac_amd64 "../../amd64"
+import bac_intel_xelp "../../intel_xelp/"
 import bac_wasm "../../wasm"
 import bac_regalloc "../../regalloc/"
 import arna "../../../utils/arna/"
@@ -17,6 +18,7 @@ _ :: bac
 _ :: bac_ssa
 _ :: bac_arm
 _ :: bac_amd64
+_ :: bac_intel_xelp
 _ :: bac_wasm
 _ :: bac_regalloc
 _ :: arna

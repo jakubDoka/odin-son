@@ -1,27 +1,27 @@
 package mandelbrot
 
-@(tag = "builtin")
+@(tag = "gpu:builtin")
 thread_id: u32
-@(tag = "builtin")
+@(tag = "gpu:builtin")
 lane_id: u32
 
-@(tag = "uniform")
+@(tag = "gpu:uniform")
 width: u32
-@(tag = "uniform")
+@(tag = "gpu:uniform")
 height: u32
-@(tag = "uniform")
+@(tag = "gpu:uniform")
 max_iterations: u32
-@(tag = "uniform")
+@(tag = "gpu:uniform")
 pixels_per_thread: u32
-@(tag = "uniform")
+@(tag = "gpu:uniform")
 x_min: f32
-@(tag = "uniform")
+@(tag = "gpu:uniform")
 y_min: f32
-@(tag = "uniform")
+@(tag = "gpu:uniform")
 dx: f32
-@(tag = "uniform")
+@(tag = "gpu:uniform")
 dy: f32
-@(tag = "uniform")
+@(tag = "gpu:uniform")
 output: [^]u32
 
 main :: proc() {

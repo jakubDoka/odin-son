@@ -671,12 +671,6 @@ int_type_for_size :: proc(size: int) -> Type {
 	return Type(int(Type.U8) + intrinsics.count_trailing_zeros(size))
 }
 
-// instantiate_struct returns the concrete struct type produced by applying the
-// parametric struct declared at `base` (AST `node`) to `args`. Instances are
-// interned by (base, args) so identical instantiations share one `^Struct`.
-// When `args` are still polymorphic (a `$T` leaked in from an enclosing generic
-// signature) the fields/size are left unresolved: only the (base, args) shape is
-// needed there, and it is re-instantiated with concrete args at call time.
 instantiate_struct :: proc(
 	ctx: ^Gen_Ctx,
 	base: ^Struct,
@@ -686,9 +680,12 @@ instantiate_struct :: proc(
 
 	args := intern_type_slice(ctx, uargs)
 	key := Struct_Inst_Key{base, string(mem.slice_data_cast([]u8, args))}
-	if existing, ok := ctx.struct_insts[key]; ok do return pack_type(existing)
+	if existing, ok := ctx.struct_insts[key]; ok && len(args) != 0 {
+		return pack_type(existing)
+	}
 
-	structa := new(Struct, ctx.types.allocator)
+	structa := base
+	if len(uargs) != 0 do structa = new(Struct, ctx.types.allocator)
 	structa.align = 1
 	structa.params = args
 	ctx.struct_insts[key] = structa
@@ -705,7 +702,13 @@ instantiate_struct :: proc(
 		)
 	}
 
-	structa.fields = make([]Struct_Field, len(base.fields), ctx.types.allocator)
+	if structa != base {
+		structa.fields = make(
+			[]Struct_Field,
+			len(base.fields),
+			ctx.types.allocator,
+		)
+	}
 
 	for &field, i in structa.fields {
 		field = base.fields[i]
@@ -906,6 +909,26 @@ collect_decls :: proc(f: ast.File, decls: ^[dynamic]Decl, file_id: File_ID) {
 			for name, i in decl.names {
 				vl := &nil_node.node
 				if i < len(decl.values) do vl = decl.values[i]
+
+				tag: string
+				for attr in decl.attributes {
+					for elem in attr.elems {
+						field := elem.derived.(^ast.Field_Value) or_continue
+						name := field.field.derived.(^ast.Ident) or_continue
+						value := field.value.derived.(^ast.Basic_Lit) or_continue
+						if name.name == "tag" && value.tok.kind == .String {
+							tag = value.tok.text[1:len(value.tok.text) - 1]
+						}
+					}
+				}
+
+				is_gpu_uniform, is_gpu_builtin: bool
+
+				for str in strings.split_iterator(&tag, ",") {
+					is_gpu_builtin |= str == "gpu:builtin"
+					is_gpu_uniform |= str == "gpu:uniform"
+				}
+
 				append(
 					decls,
 					Decl {
@@ -914,7 +937,8 @@ collect_decls :: proc(f: ast.File, decls: ^[dynamic]Decl, file_id: File_ID) {
 						value = vl,
 						file = file_id,
 						is_mutable = decl.is_mutable,
-						shader_tag = declaration_tag(decl),
+						is_gpu_uniform = is_gpu_uniform,
+						is_gpu_builtin = is_gpu_builtin,
 						has_initializer = len(decl.values) != 0,
 					},
 				)
@@ -939,20 +963,6 @@ collect_decls :: proc(f: ast.File, decls: ^[dynamic]Decl, file_id: File_ID) {
 			}
 		}
 	}
-}
-
-declaration_tag :: proc(decl: ^ast.Value_Decl) -> string {
-	for attr in decl.attributes {
-		for elem in attr.elems {
-			field := elem.derived.(^ast.Field_Value) or_continue
-			name := field.field.derived.(^ast.Ident) or_continue
-			value := field.value.derived.(^ast.Basic_Lit) or_continue
-			if name.name == "tag" && value.tok.kind == .String {
-				return value.tok.text[1:len(value.tok.text) - 1]
-			}
-		}
-	}
-	return ""
 }
 
 has_polys :: proc(ctx: ^Gen_Ctx, root: ^ast.Expr) -> (found: bool) {
@@ -1132,7 +1142,6 @@ call_sig :: proc(ctx: ^Gen_Ctx, node: ^ast.Node) -> (v: ^Proc_Type, ok: bool) {
 	return prc, true
 }
 
-// expect_integer checks an index like expression, any integer width will do
 expect_integer :: proc(ctx: ^Gen_Ctx, node: ^ast.Node) -> ^Check_Meta {
 	got := typecheck(ctx, {inferred_ty = .Int}, node)
 	if node == nil ||
@@ -1143,8 +1152,6 @@ expect_integer :: proc(ctx: ^Gen_Ctx, node: ^ast.Node) -> ^Check_Meta {
 	return error(ctx, node, "expected an integer, found %v", got.type)
 }
 
-// expect_args validates the arity of a builtin or intrinsic call and hands the
-// arguments back, so a mismatch can be `or_return`ed
 expect_args :: proc(
 	ctx: ^Gen_Ctx,
 	node: ^ast.Node,
@@ -1162,8 +1169,6 @@ expect_args :: proc(
 	return args, true
 }
 
-// destructured_sig validates the `a, b := f()` shape, where the results of a
-// single call are spread over `count` bindings
 destructured_sig :: proc(
 	ctx: ^Gen_Ctx,
 	node: ^ast.Node,
@@ -1237,7 +1242,8 @@ Decl :: struct {
 	file:            File_ID,
 	is_mutable:      bool,
 	global_idx:      u32,
-	shader_tag:      string,
+	is_gpu_uniform:  bool,
+	is_gpu_builtin:  bool,
 	uniform_offset:  u32,
 	has_initializer: bool,
 }
@@ -1425,8 +1431,6 @@ Proc_Type :: struct {
 	rets:   []Type,
 }
 
-// Union memory layout: the active variant's payload lives at offset 0, and the
-// tag (1-based variant index, 0 == nil) lives at `tag_offset`.
 Union :: struct {
 	variants:   []Type,
 	tag_ty:     Type,
@@ -1444,8 +1448,6 @@ VOID := Check_Meta {
 	type = .Void,
 }
 
-// `known` so that a poisoned value can also flow through the constant
-// evaluating paths without tripping their invariants
 @(rodata)
 INVALID := Check_Meta {
 	type  = .Invalid_Type,
@@ -1516,36 +1518,26 @@ typecheck :: proc(
 		}
 	case ^ast.Struct_Type:
 		structa := intern_decl(ctx, &ctx.structs, prop.key, &ty) or_break
-		structa.align = 1
 
-		prev := len(ctx.poly_types)
-		if d.poly_params != nil {
-			structa.param_names = make(
-				[]string,
-				len(d.poly_params.list),
-				ctx.types.allocator,
-			)
-			for param, i in d.poly_params.list {
-				fld, is_fld := param.derived.(^ast.Field)
-				if !is_fld {
-					ty = error(ctx, param, "expected field expr")
-					break match
-				}
-				if len(fld.names) != 1 {
-					ty = error(ctx, param, "TODO: support multiple identifiers")
-					break match
-				}
-				pd, is_poly := fld.names[0].derived.(^ast.Poly_Type)
-				if !is_poly {
-					ty = error(
-						ctx,
-						param,
-						"TODO: only $T struct parameters are supported",
-					)
-					break match
-				}
-				structa.param_names[i] = pd.type.name
+		params: ast.Field_List
+		if d.poly_params != nil do params = d.poly_params^
+		structa.param_names = make([]string, len(params.list), ctx.types.allocator)
+		for param, i in params.list {
+			fld, is_fld := param.derived.(^ast.Field)
+			if !is_fld {
+				ty = error(ctx, param, "expected field expr")
+				break match
 			}
+			if len(fld.names) != 1 {
+				ty = error(ctx, param, "TODO: support multiple identifiers")
+				break match
+			}
+			pd, is_poly := fld.names[0].derived.(^ast.Poly_Type)
+			if !is_poly {
+				ty = error(ctx, param, "TODO: only $T struct parameters are supported")
+				break match
+			}
+			structa.param_names[i] = pd.type.name
 		}
 
 		structa.fields = make(
@@ -1570,22 +1562,12 @@ typecheck :: proc(
 				break match
 			}
 			field.name = fname.name
-
-			if d.poly_params == nil {
-				field.ty = emit_type(ctx, ast_field.type)
-				field.offset = mem.align_forward_int(
-					structa.size,
-					type_align(field.ty),
-				)
-				structa.size = field.offset + type_size(field.ty)
-				structa.align = max(structa.align, type_align(field.ty))
-			} else {
-				field.ty_ast = ast_field.type
-			}
+			field.ty_ast = ast_field.type
 		}
-		structa.size = mem.align_forward_int(structa.size, structa.align)
 
-		resize(&ctx.poly_types, prev)
+		if len(structa.param_names) == 0 {
+			instantiate_struct(ctx, structa, {})
+		}
 
 		ty = tpmeta(ctx, pack_type(structa))
 	case ^ast.Enum_Type:
@@ -2076,10 +2058,7 @@ typecheck :: proc(
 				)
 				break match
 			}
-			lvalue =
-				pid.is_mutable &&
-				pid.shader_tag != "uniform" &&
-				pid.shader_tag != "builtin"
+			lvalue = pid.is_mutable && !pid.is_gpu_uniform && !pid.is_gpu_builtin
 			ty = integrate_inferrence(ctx, mid, pid, prop.inferred_ty)
 			break match
 		}
@@ -2614,7 +2593,7 @@ typecheck :: proc(
 				meta.kind = .Const
 				meta.value = res.int
 			} else {
-				lvalue = decl.shader_tag != "uniform" && decl.shader_tag != "builtin"
+				lvalue = !decl.is_gpu_uniform && !decl.is_gpu_builtin
 			}
 			ty = res
 			break match
@@ -3248,7 +3227,7 @@ typecheck_program :: proc(ctx: ^Gen_Ctx) {
 			if decl.hash == 0 do break
 
 			vl := typecheck_decl(ctx, ctx.module, &decl.id)
-			if decl.id.shader_tag == "uniform" || decl.id.shader_tag == "builtin" {
+			if decl.id.is_gpu_uniform || decl.id.is_gpu_builtin {
 				if !decl.id.is_mutable || decl.id.has_initializer {
 					error(
 						ctx,
@@ -3256,7 +3235,8 @@ typecheck_program :: proc(ctx: ^Gen_Ctx) {
 						"shader inputs must be variables without initializers",
 					)
 				}
-				if decl.id.shader_tag == "builtin" {
+
+				if decl.id.is_gpu_builtin {
 					if vl.type != .U32 ||
 					   (decl.id.name != "thread_id" && decl.id.name != "lane_id") {
 						error(
@@ -3275,6 +3255,7 @@ typecheck_program :: proc(ctx: ^Gen_Ctx) {
 						)
 						continue
 					}
+
 					size := type_size(vl.type)
 					ctx.shader_uniform_bytes = mem.align_forward_int(
 						ctx.shader_uniform_bytes,

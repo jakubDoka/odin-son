@@ -2,8 +2,8 @@ package bac_intel_xelp
 
 import bac ".."
 import "../../utils/arna"
+import "../../utils/fmt"
 import "base:intrinsics"
-import "core:fmt"
 import "core:mem"
 import "core:slice"
 

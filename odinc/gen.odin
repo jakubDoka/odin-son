@@ -380,11 +380,11 @@ emit_lvalue :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Sym {
 		}
 	case .Decl:
 		gv := idmt.decl
-		if gv.shader_tag == "builtin" {
+		if gv.is_gpu_builtin {
 			kind: bac.Node_Type = gv.name == "thread_id" ? .Thread_Id : .Lane_Id
 			return Value(bac.add_raw(ctx, gv.name, u16(kind), .I32, {ctx.entry}))
 		}
-		if gv.shader_tag == "uniform" {
+		if gv.is_gpu_uniform {
 			offset := gv.uniform_offset
 			addr := bac.add_raw(
 				ctx,

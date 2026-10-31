@@ -174,7 +174,6 @@ generate_spec :: proc(
 	)
 
 	if !spec.no_spec_tables {
-
 		fmt.fprintf(
 			file,
 			"@(tag = \"api\", rodata, export, link_name = \"%v_SPEC\")",
@@ -726,6 +725,7 @@ collect_meta :: proc(ctx: ^%vProc,
 			set:       []Set_Range,
 			comments:  []string,
 			at:        bool,
+			not:       bool,
 			eof:       bool,
 		}
 
@@ -763,7 +763,7 @@ collect_meta :: proc(ctx: ^%vProc,
 			expect(&parser, .Colon)
 			value := expr(&parser)
 
-			fmt.eprintln(pat, "::", value)
+			//fmt.eprintln(pat, "::", value)
 
 			append(&stmts, Stmt{pat, value})
 		}
@@ -775,7 +775,13 @@ collect_meta :: proc(ctx: ^%vProc,
 				append(&comments, tokenizer.scan(parser).text)
 			}
 
-			at := scan_if(parser, .At)
+			at, not: bool
+			for {
+				prev := parser.offset
+				at |= scan_if(parser, .At)
+				not |= scan_if(parser, .Not)
+				if prev == parser.offset do break
+			}
 
 			tok := tokenizer.scan(parser)
 
@@ -827,7 +833,8 @@ collect_meta :: proc(ctx: ^%vProc,
 			}
 
 			res.comments = comments[:]
-			res.at = at
+			res.at |= at
+			res.not |= not
 
 			return
 		}

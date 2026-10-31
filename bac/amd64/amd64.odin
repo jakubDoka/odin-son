@@ -338,7 +338,7 @@ peep :: proc(
 		constant := bac.get_extra(ctx, count, bac.CInt)
 		bits := i64(bac.DT_SIZE[node.dt] * 8)
 		if constant != nil {
-			if constant.value == 0 do return node.inps[0]
+			assert(constant.value != 0)
 			if u64(constant.value) >= u64(bits) {
 				if node.itype != .Shr do return bac.add_c_int(ctx, "shzero", node.dt, 0)
 				_, shifted := add_node(

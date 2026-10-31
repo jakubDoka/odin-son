@@ -1782,9 +1782,8 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		bac.unpin(ctx, tagv)
 		bac.unpin(ctx, ptr)
 	case ^ast.For_Stmt:
-		assert(d.init == nil)
-		assert(d.cond == nil)
-		assert(d.post == nil)
+		sbase := ctx_scope_base(ctx)
+		if d.init != nil do emit_nodes(ctx, {}, d.init)
 
 		loop_state: typecheck.Loop_State
 		loop_state.label = typecheck.src_of(ctx.file^, d.label)
@@ -1792,11 +1791,25 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		ctx.loop = &loop_state
 
 		ssa.start_loop(ctx, ctx.node_scope, &loop_state.bstate)
+		if d.cond != nil {
+			cond := emit_rvalue(ctx, {}, d.cond)
+			// COMPILER BUG: a start_else(cond) exit is misclassified as infinite by loop scheduling.
+			zero := bac.add_c_int(ctx, "fzero", .I8, 0)
+			exit := bac.add_bin_op(ctx, "fexit", .Eq, .I8, cond, zero)
+			if_state: ssa.If_State
+			ssa.start_if(ctx, ctx.node_scope, &if_state, exit)
+			ssa.loop_control(.Break, ctx, ctx.node_scope, &loop_state.bstate)
+			ctx.node_scope = 0
+			ssa.end_if(ctx, &ctx.node_scope, &if_state)
+		}
 		emit_stmts(ctx, {d.body})
 
+		ssa.start_loop_increment(ctx, &ctx.node_scope, &loop_state.bstate)
+		if ctx.node_scope != 0 && d.post != nil do emit_nodes(ctx, {}, d.post)
 		ssa.end_loop(ctx, &ctx.node_scope, &loop_state.bstate)
 
 		ctx.loop = ctx.loop.parent
+		emit_stmts(ctx, {}, sbase)
 	case ^ast.Range_Stmt:
 		expr_ty := get_node_type(d.expr)
 		base := emit_nodes(ctx, {}, d.expr)

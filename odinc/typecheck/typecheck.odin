@@ -598,7 +598,20 @@ pack_type :: proc(typ: Type_Data) -> Type {
 
 unpack_type :: proc(typ: Type) -> Type_Data {
 	raw := Raw_Type(typ)
-	return transmute(Type_Data)Raw_Type_Data{data = raw.data, tag = int(raw.tag)}
+	data := raw.data
+	when #config(TRUEOS, false) {
+		#assert(size_of(uintptr) == 8)
+		// TRUEOS allocates in the upper canonical half; packing drops bits 63..48.
+		if data & (1 << 47) != 0 {
+			data |= 0xffff_0000_0000_0000
+		}
+	}
+	return(
+		transmute(Type_Data)Raw_Type_Data {
+			data = data,
+			tag = int(raw.tag),
+		} \
+	)
 }
 
 intern_type_slice :: proc(ctx: ^Gen_Ctx, tys: []Type) -> []Type {
@@ -2461,9 +2474,14 @@ typecheck :: proc(
 		if exhaustive && !reachable && !sw.broken do mark_unreachable(ctx)
 		ty = &VOID
 	case ^ast.For_Stmt:
-		if d.init != nil || d.cond != nil || d.post != nil {
-			error(ctx, node, "TODO: only `for {{ .. }}` is supported")
+		prev := len(ctx.scope)
+		defer {
+			for var in ctx.scope[prev:] do set_node_data(var.ident, var.flags)
+			resize(&ctx.scope, prev)
 		}
+		if d.init != nil do typecheck(ctx, {}, d.init)
+		if d.cond != nil do typecheck_as(ctx, .Bool, d.cond)
+		if d.post != nil do typecheck(ctx, {}, d.post)
 
 		loop := Loop_State {
 			parent = ctx.loop,
@@ -2473,7 +2491,8 @@ typecheck :: proc(
 		defer ctx.loop = loop.parent
 
 		typecheck_branch(ctx, d.body)
-		if !loop.broken do mark_unreachable(ctx)
+		if d.cond == nil && !loop.broken do mark_unreachable(ctx)
+		ty = &VOID
 	case ^ast.Range_Stmt:
 		if d.init != nil do error(ctx, d.init, "TODO: a for with an initializer")
 		expr_meta := typecheck(ctx, {}, d.expr)
@@ -3152,6 +3171,26 @@ typecheck_sig :: proc(
 	concrete: bool,
 ) {
 	plist := prc.params.list
+	grouped := false
+	for field in plist do grouped |= len(field.names) > 1
+	if grouped {
+		flat := make([dynamic]^ast.Field, ctx.types.allocator)
+		for field in plist {
+			if len(field.names) <= 1 {append(&flat, field); continue}
+			for name in field.names {
+				copy := new(ast.Field, ctx.types.allocator)
+				copy^ = field^
+				// Typechecking replaces syntax with metadata, so grouped fields cannot share a type node.
+				{context.allocator = ctx.types.allocator
+					copy.type = ast.clone(field.type)}
+				copy.names = make([]^ast.Expr, 1, ctx.types.allocator)
+				copy.names[0] = name
+				append(&flat, copy)
+			}
+		}
+		prc.params.list = flat[:]
+		plist = flat[:]
+	}
 	rlist: []^ast.Field
 	if prc.results != nil {
 		rlist = prc.results.list

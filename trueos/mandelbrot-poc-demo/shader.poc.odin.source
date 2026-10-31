@@ -1,0 +1,93 @@
+package main
+
+main :: proc(sx, sy, yaw_cos, yaw_sin, pitch_cos, pitch_sin, distance: f32) -> f32 {
+    length2 := sx*sx + sy*sy + 2.25
+    ray_length := f32(2.0)
+    for n := f32(0.0); n < 5.0; n += 1.0 {
+        ray_length = 0.5 * (ray_length + length2/ray_length)
+    }
+    rx := sx/ray_length
+    ry := -sy/ray_length
+    rz := -1.5/ray_length
+    tilted_y := pitch_cos*ry - pitch_sin*rz
+    tilted_z := pitch_sin*ry + pitch_cos*rz
+    dx := yaw_cos*rx + yaw_sin*tilted_z
+    dy := tilted_y
+    dz := -yaw_sin*rx + yaw_cos*tilted_z
+    ox := distance*yaw_sin*pitch_cos
+    oy := -distance*pitch_sin
+    oz := distance*yaw_cos*pitch_cos
+    travel := f32(0.0)
+    phase := f32(0.0)
+    center_de := f32(0.0)
+    nx := f32(0.0)
+    ny := f32(0.0)
+    px := ox
+    py := oy
+    pz := oz
+    steps := f32(0.0)
+    for sample := f32(0.0); sample < 100.0; sample += 1.0 {
+        x := px
+        y := py
+        z := pz
+        derivative := f32(1.0)
+        for iteration := f32(0.0); iteration < 8.0; iteration += 1.0 {
+            if x > 1.0 { x = 2.0-x } else if x < -1.0 { x = -2.0-x }
+            if y > 1.0 { y = 2.0-y } else if y < -1.0 { y = -2.0-y }
+            if z > 1.0 { z = 2.0-z } else if z < -1.0 { z = -2.0-z }
+            radius2 := x*x + y*y + z*z
+            if radius2 > 256.0 do break
+            fold := f32(1.0)
+            if radius2 < 0.25 { fold = 4.0 } else if radius2 < 1.0 { fold = 1.0/radius2 }
+            scale := 2.5*fold
+            x = scale*x + px
+            y = scale*y + py
+            z = scale*z + pz
+            derivative = 2.5*fold*derivative + 1.0
+        }
+        radius2 := x*x + y*y + z*z
+        radius := 1.0 + 0.125*radius2
+        for n := f32(0.0); n < 6.0; n += 1.0 {
+            radius = 0.5*(radius + radius2/radius)
+        }
+        de := radius/derivative
+        if phase == 0.0 {
+            steps += 1.0
+            if de < 0.0025 {
+                center_de = de
+                phase = 1.0
+                px += 0.004
+            } else {
+                travel += de*0.75
+                if travel > 24.0 do return 0.025 + 0.025*(1.0-sy*sy)
+                px = ox + dx*travel
+                py = oy + dy*travel
+                pz = oz + dz*travel
+            }
+        } else if phase == 1.0 {
+            nx = de-center_de
+            px -= 0.004
+            py += 0.004
+            phase = 2.0
+        } else if phase == 2.0 {
+            ny = de-center_de
+            py -= 0.004
+            pz += 0.004
+            phase = 3.0
+        } else {
+            nz := de-center_de
+            norm2 := nx*nx + ny*ny + nz*nz + 0.000000000001
+            // Scaling keeps Newton's starting estimate near the finite-difference normal.
+            norm := f32(0.01)
+            for n := f32(0.0); n < 10.0; n += 1.0 {
+                norm = 0.5*(norm + norm2/norm)
+            }
+            light := (nx*0.36 + ny*0.8 + nz*0.48)/norm
+            if light < 0.0 do light = 0.0
+            ambient := 1.0/(1.0 + steps*0.025)
+            fog := 1.0/(1.0 + travel*0.035)
+            return (0.16 + 0.8*light)*ambient*fog
+        }
+    }
+    return 0.025
+}

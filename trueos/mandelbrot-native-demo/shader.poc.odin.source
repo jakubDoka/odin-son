@@ -1,0 +1,18 @@
+package mandelbrot
+
+main :: proc(cx, cy, max_iterations: f32) -> f32 {
+    x: f32
+    y: f32
+    iteration: f32
+    for {
+        if iteration >= max_iterations do break
+        xx := x*x
+        yy := y*y
+        if xx+yy > 4.0 do break
+        xy := x*y
+        y = 2.0*xy+cy
+        x = xx-yy+cx
+        iteration += 1.0
+    }
+    return iteration/max_iterations
+}

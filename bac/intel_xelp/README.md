@@ -1,5 +1,10 @@
 # Intel Xe-LP backend
 
+`intel_xelp` is the sole Xe-LP backend, using the ordinary Odin frontend,
+SSA optimizer and register allocator. TRUEOS selects it with `--gpu-xelp`;
+`--gpu-pixel` and `--gpu-poc` remain compatibility aliases. Legacy
+`@(tag = "gpu")` entries and `main` entries use the same pipeline.
+
 This backend emits SIMD8 kernels for scalar `f32`
 addition, subtraction, multiplication, negation, and comparisons. Division
 lowers to a target-specific reciprocal node followed by multiplication, so it
@@ -37,6 +42,18 @@ arithmetic, and non-32-bit stores remain unimplemented.
 
 See [`examples/mandelbrot`](../../examples/mandelbrot/README.md) for a complete
 shader and interactive runner.
+
+The common allocation mask reserves `r112..r119` and `r121..r127` for the
+native full-frame renderer; `r120` remains the single pixel result register.
+For `main` with 2..8 f32 arguments and one f32 result, the TRUEOS driver
+validates the complete kernel on upload, retains its arithmetic and relative
+branches, and replaces the scalar-dispatch
+header/store/EOT with its own SIMD8 grid-stride framebuffer envelope. Ordinary
+eight-result scalar dispatch remains supported. The driver validates every
+body register access before admitting it to the framebuffer path.
+This framebuffer profile supplies coordinates, optional scalar uniforms and
+stores through the driver. Its ABI is narrower than the backend's standalone
+kernel support for tagged globals, integer operations and pointer stores.
 
 Regenerate its spec through `gen-spec`, or run `odin run bac/meta2` from the
 repository root when `node_specs.odin` is absent. Check the package with:

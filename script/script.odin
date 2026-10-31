@@ -880,8 +880,7 @@ run_generated :: proc() -> int {
 					jit_path,
 					entry,
 					fmt.tprintf("-o:%v", level),
-					"-o",
-					res_obj,
+					fmt.tprintf("-out:%v", res_obj),
 					env_map = {root_env},
 				)
 				fmt.print(res.stdout)

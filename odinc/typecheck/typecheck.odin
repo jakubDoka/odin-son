@@ -1,6 +1,7 @@
 package typecheck
 
 import "../../bac"
+import "../../bac/intel_xelp"
 import ra "../../bac/regalloc"
 import "../../bac/ssa"
 import "../../utils/arna"
@@ -25,9 +26,10 @@ Call_Conv :: bac.Call_Conv
 MODULE_INTRINSICS :: 0
 
 Ty_Propagation :: struct {
-	inferred_ty: Type,
-	referencing: bool,
-	key:         Maybe(Decl_Key),
+	inferred_ty:  Type,
+	referencing:  bool,
+	field_access: bool,
+	key:          Maybe(Decl_Key),
 }
 
 Mems :: struct {
@@ -686,6 +688,7 @@ instantiate_struct :: proc(
 
 	structa := base
 	if len(uargs) != 0 do structa = new(Struct, ctx.types.allocator)
+	structa.custom_layout = base.custom_layout
 	structa.align = 1
 	structa.params = args
 	ctx.struct_insts[key] = structa
@@ -910,25 +913,6 @@ collect_decls :: proc(f: ast.File, decls: ^[dynamic]Decl, file_id: File_ID) {
 				vl := &nil_node.node
 				if i < len(decl.values) do vl = decl.values[i]
 
-				tag: string
-				for attr in decl.attributes {
-					for elem in attr.elems {
-						field := elem.derived.(^ast.Field_Value) or_continue
-						name := field.field.derived.(^ast.Ident) or_continue
-						value := field.value.derived.(^ast.Basic_Lit) or_continue
-						if name.name == "tag" && value.tok.kind == .String {
-							tag = value.tok.text[1:len(value.tok.text) - 1]
-						}
-					}
-				}
-
-				is_gpu_uniform, is_gpu_builtin: bool
-
-				for str in strings.split_iterator(&tag, ",") {
-					is_gpu_builtin |= str == "gpu:builtin"
-					is_gpu_uniform |= str == "gpu:uniform"
-				}
-
 				append(
 					decls,
 					Decl {
@@ -937,9 +921,6 @@ collect_decls :: proc(f: ast.File, decls: ^[dynamic]Decl, file_id: File_ID) {
 						value = vl,
 						file = file_id,
 						is_mutable = decl.is_mutable,
-						is_gpu_uniform = is_gpu_uniform,
-						is_gpu_builtin = is_gpu_builtin,
-						has_initializer = len(decl.values) != 0,
 					},
 				)
 			}
@@ -1236,16 +1217,12 @@ get_builtin_proc :: proc(node: ^ast.Node) -> Builtin_Proc {
 }
 
 Decl :: struct {
-	name:            string,
-	ty:              ^ast.Expr,
-	value:           ^ast.Expr,
-	file:            File_ID,
-	is_mutable:      bool,
-	global_idx:      u32,
-	is_gpu_uniform:  bool,
-	is_gpu_builtin:  bool,
-	uniform_offset:  u32,
-	has_initializer: bool,
+	name:       string,
+	ty:         ^ast.Expr,
+	value:      ^ast.Expr,
+	file:       File_ID,
+	is_mutable: bool,
+	global_idx: u32,
 }
 
 Module :: struct {
@@ -1262,11 +1239,13 @@ Module :: struct {
 }
 
 Global_Ctx :: struct {
-	root:        string,
-	collections: map[string]string,
-	modules:     [dynamic]Module,
+	root:         string,
+	entry_module: Module_ID,
+	entry_point:  string,
+	collections:  map[string]string,
+	modules:      [dynamic]Module,
 	// every loaded file, indexable by File_ID
-	files:       [dynamic]ast.File,
+	files:        [dynamic]ast.File,
 }
 
 Proc_Type_Key :: string
@@ -1283,28 +1262,27 @@ Proc_Inst_Key :: struct {
 }
 
 Types :: struct {
-	target:               Target,
-	check:                bool,
-	mems:                 Mems,
-	allocator:            runtime.Allocator,
-	procs:                [dynamic]Proc,
-	scope:                [dynamic]Variable,
-	proc_insts:           map[Proc_Inst_Key]Proc_ID,
-	pointers:             map[Type]Pointer,
-	multi_pointers:       map[Type]Multi_Pointer,
-	structs:              map[Decl_Key]^Struct,
-	struct_insts:         map[Struct_Inst_Key]^Struct,
-	enums:                map[Decl_Key]^Enum,
-	unions:               map[Decl_Key]^Union,
-	arrays:               map[Array]^Array,
-	simds:                map[Simd]^Simd,
-	slices:               map[Slice]^Slice,
-	proc_types:           map[Proc_Type_Key]^Proc_Type,
-	type_slices:          map[Type_Slice_Key][]Type,
-	globals:              [dynamic]Global_Data,
-	global_vars:          [dynamic]Global_Var,
-	shader_uniform_bytes: int,
-	owns_scratch:         bool,
+	target:         Target,
+	check:          bool,
+	mems:           Mems,
+	allocator:      runtime.Allocator,
+	procs:          [dynamic]Proc,
+	scope:          [dynamic]Variable,
+	proc_insts:     map[Proc_Inst_Key]Proc_ID,
+	pointers:       map[Type]Pointer,
+	multi_pointers: map[Type]Multi_Pointer,
+	structs:        map[Decl_Key]^Struct,
+	struct_insts:   map[Struct_Inst_Key]^Struct,
+	enums:          map[Decl_Key]^Enum,
+	unions:         map[Decl_Key]^Union,
+	arrays:         map[Array]^Array,
+	simds:          map[Simd]^Simd,
+	slices:         map[Slice]^Slice,
+	proc_types:     map[Proc_Type_Key]^Proc_Type,
+	type_slices:    map[Type_Slice_Key][]Type,
+	globals:        [dynamic]Global_Data,
+	global_vars:    [dynamic]Global_Var,
+	owns_scratch:   bool,
 }
 
 types_init :: proc(types: ^Types) {
@@ -1400,11 +1378,12 @@ Decl_Key :: struct {
 }
 
 Struct :: struct {
-	param_names: []string,
-	params:      []Type,
-	fields:      []Struct_Field,
-	size:        int,
-	align:       int,
+	param_names:   []string,
+	params:        []Type,
+	fields:        []Struct_Field,
+	size:          int,
+	align:         int,
+	custom_layout: bool,
 }
 
 Struct_Field :: struct {
@@ -1518,6 +1497,12 @@ typecheck :: proc(
 		}
 	case ^ast.Struct_Type:
 		structa := intern_decl(ctx, &ctx.structs, prop.key, &ty) or_break
+		structa.custom_layout =
+			d.is_packed ||
+			d.is_raw_union ||
+			d.align != nil ||
+			d.min_field_align != nil ||
+			d.max_field_align != nil
 
 		params: ast.Field_List
 		if d.poly_params != nil do params = d.poly_params^
@@ -2027,7 +2012,7 @@ typecheck :: proc(
 		}
 		ty = error(ctx, d.expr, "can not slice a %v", base.type)
 	case ^ast.Selector_Expr:
-		base := typecheck(ctx, {}, d.expr)
+		base := typecheck(ctx, {field_access = true}, d.expr)
 
 		f, is_ident := d.field.derived.(^ast.Ident)
 		if !is_ident {
@@ -2058,7 +2043,7 @@ typecheck :: proc(
 				)
 				break match
 			}
-			lvalue = pid.is_mutable && !pid.is_gpu_uniform && !pid.is_gpu_builtin
+			lvalue = pid.is_mutable
 			ty = integrate_inferrence(ctx, mid, pid, prop.inferred_ty)
 			break match
 		}
@@ -2551,6 +2536,15 @@ typecheck :: proc(
 
 		#reverse for &var, i in ctx.scope {
 			if var.name == d.name {
+				if .Shader_Uniform in var.flags && !prop.field_access {
+					ty = error(
+						ctx,
+						node,
+						"shader uniforms may only be accessed through their fields",
+					)
+					break match
+				}
+
 				if prop.referencing {
 					var.flags |= {.Referenced}
 				}
@@ -2593,7 +2587,7 @@ typecheck :: proc(
 				meta.kind = .Const
 				meta.value = res.int
 			} else {
-				lvalue = !decl.is_gpu_uniform && !decl.is_gpu_builtin
+				lvalue = true
 			}
 			ty = res
 			break match
@@ -3049,6 +3043,7 @@ typecheck :: proc(
 Var_Flag :: enum uintptr {
 	Referenced,
 	Immutable,
+	Shader_Uniform,
 }
 
 Var_Flags :: bit_set[Var_Flag;uintptr]
@@ -3211,6 +3206,52 @@ is_static :: proc(d: ^ast.Value_Decl) -> bool {
 	return false
 }
 
+is_shader_entry :: proc(ctx: ^Gen_Ctx, prc: Proc) -> bool {
+	name := ctx.entry_point != "" ? ctx.entry_point : "main"
+	return(
+		ctx.target.spec == &intel_xelp.SPEC &&
+		prc.module == ctx.entry_module &&
+		prc.name == name \
+	)
+}
+
+shader_builtin :: proc(name: string) -> (kind: bac.Node_Type, ok: bool) {
+	switch name {
+	case "thread_id":
+		return .Thread_Id, true
+	case "lane_id":
+		return .Lane_Id, true
+	}
+	return
+}
+
+is_shader_uniform :: proc(ctx: ^Gen_Ctx, node: ^ast.Node) -> bool {
+	node := node
+	for {
+		if paren, ok := node.derived.(^ast.Paren_Expr); ok {
+			node = paren.expr
+			continue
+		}
+		break
+	}
+	id := node.derived.(^ast.Ident) or_return
+	meta := get_ident_meta(id)
+	return meta.kind == .Local && .Shader_Uniform in ctx.scope[meta.index].flags
+}
+
+is_shader_uniform_type :: proc(ty: Type) -> bool {
+	#partial switch t in unpack_type(ty) {
+	case Pointer, Multi_Pointer:
+		return true
+	case ^Enum:
+		return is_shader_uniform_type(t.backing)
+	}
+	return in_set(
+		ty,
+		{.I32, .U32, .I64, .U64, .Int, .Uint, .Uintptr, .Rawptr, .F32},
+	)
+}
+
 typecheck_program :: proc(ctx: ^Gen_Ctx) {
 	ctx.stack_top = get_stack_pointer()
 
@@ -3227,49 +3268,6 @@ typecheck_program :: proc(ctx: ^Gen_Ctx) {
 			if decl.hash == 0 do break
 
 			vl := typecheck_decl(ctx, ctx.module, &decl.id)
-			if decl.id.is_gpu_uniform || decl.id.is_gpu_builtin {
-				if !decl.id.is_mutable || decl.id.has_initializer {
-					error(
-						ctx,
-						decl.id.value,
-						"shader inputs must be variables without initializers",
-					)
-				}
-
-				if decl.id.is_gpu_builtin {
-					if vl.type != .U32 ||
-					   (decl.id.name != "thread_id" && decl.id.name != "lane_id") {
-						error(
-							ctx,
-							decl.id.value,
-							"expected thread_id or lane_id with type u32",
-						)
-					}
-				} else {
-					dt := type_to_dt(vl.type)
-					if dt != .I32 && dt != .F32 && dt != .I64 {
-						error(
-							ctx,
-							decl.id.value,
-							"uniforms require a 32-bit scalar or 64-bit scalar/pointer",
-						)
-						continue
-					}
-
-					size := type_size(vl.type)
-					ctx.shader_uniform_bytes = mem.align_forward_int(
-						ctx.shader_uniform_bytes,
-						size,
-					)
-					decl.id.uniform_offset = u32(ctx.shader_uniform_bytes)
-					ctx.shader_uniform_bytes += size
-					if ctx.shader_uniform_bytes > 8 * 32 {
-						error(ctx, decl.id.value, "packed uniforms exceed eight registers")
-					}
-				}
-				continue
-			}
-
 			if !decl.id.is_mutable do continue
 
 			size := type_size(vl.type)
@@ -3299,6 +3297,7 @@ typecheck_program :: proc(ctx: ^Gen_Ctx) {
 		}
 	}
 
+	has_shader_entry := false
 	for i := 1; i < len(ctx.procs); i += 1 {
 		prc := ctx.procs[i]
 		if prc.sig == nil do continue
@@ -3315,6 +3314,11 @@ typecheck_program :: proc(ctx: ^Gen_Ctx) {
 			append(&ctx.poly_types, e)
 		}
 
+		shader_entry := is_shader_entry(ctx, prc)
+		has_shader_entry |= shader_entry
+		has_uniforms := false
+		shader_param_count := 0
+
 		for par, j in prc.params {
 			asta := prc.lit.type.params.list[j]
 			if len(asta.names) != 1 do continue
@@ -3322,14 +3326,55 @@ typecheck_program :: proc(ctx: ^Gen_Ctx) {
 
 			#partial switch d in asta.names[0].derived {
 			case ^ast.Ident:
-				append(
-					&ctx.scope,
-					Variable{name = d.name, type = par, flags = {.Immutable}},
-				)
+				flags := Var_Flags{.Immutable}
+				if shader_entry {
+					if _, builtin := shader_builtin(d.name); builtin {
+						if par != .U32 {
+							error(ctx, asta, "shader builtin %q must have type u32", d.name)
+						}
+					} else if uniform, ok := unpack_type(par).(^Struct); ok {
+						if has_uniforms {
+							error(
+								ctx,
+								asta,
+								"a shader entrypoint accepts at most one uniform struct",
+							)
+						}
+						has_uniforms = true
+						flags |= {.Shader_Uniform}
+						if uniform.custom_layout {
+							error(
+								ctx,
+								asta,
+								"shader uniforms require a struct with natural layout",
+							)
+						}
+						for field in uniform.fields {
+							if !is_shader_uniform_type(field.ty) {
+								error(
+									ctx,
+									asta,
+									"uniform field %q requires a 32-bit scalar or 64-bit integer/pointer, found %v",
+									field.name,
+									field.ty,
+								)
+							}
+						}
+						shader_param_count += (uniform.size + 31) / 32
+					} else {
+						shader_param_count += 1
+					}
+				}
+
+				append(&ctx.scope, Variable{name = d.name, type = par, flags = flags})
 			case ^ast.Poly_Type:
 			case:
 				error(ctx, asta.names[0], "expected a parameter name")
 			}
+		}
+
+		if shader_entry && shader_param_count > 8 {
+			error(ctx, prc.lit.type.params, "shader inputs exceed eight registers")
 		}
 
 		if prc.lit.body == nil do continue
@@ -3337,6 +3382,12 @@ typecheck_program :: proc(ctx: ^Gen_Ctx) {
 		if typecheck_branch(ctx, prc.lit.body) && prc.lit.type.results != nil {
 			error(ctx, prc.lit.type.results, "expected return value")
 		}
+	}
+
+	if ctx.target.spec == &intel_xelp.SPEC && !has_shader_entry {
+		file := &ctx.files[ctx.modules[ctx.entry_module].file_start]
+		name := ctx.entry_point != "" ? ctx.entry_point : "main"
+		error(ctx, file.pkg_decl, "missing shader entrypoint %q", name)
 	}
 }
 

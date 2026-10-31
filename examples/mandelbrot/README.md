@@ -32,17 +32,28 @@ color conversion, and texture upload.
 
 ## Packed uniforms
 
-Uniforms follow source declaration order, with natural 4-/8-byte alignment,
-packed into 32-byte parameter registers starting at `r1`. Builtins occupy no
-uniform space. This shader uses two registers:
+`shader.Uniforms` is shared by the runner and the shader's `render` entrypoint.
+Its fields use their normal struct offsets, packed into 32-byte parameter
+registers starting at `r1`. The struct can have any parameter name except
+`thread_id` or `lane_id`, and may be passed only once. Fields must be 32-bit
+integers, `f32`, or 64-bit integers/pointers; aggregate fields and custom layouts
+are not supported. Only field accesses are allowed, not copies or addresses of
+the uniform struct or its fields. These restrictions apply only to GPU
+entrypoints; ordinary CPU calls use the normal Odin calling convention.
+
+The `thread_id: u32` and `lane_id: u32` parameters are builtins and occupy no
+parameter registers. This shader uses two registers:
 
 | Byte offset | Uniform |
 | --- | --- |
 | 0 / 4 / 8 | `width`, `height`, `max_iterations` |
-| 12 / 16 / 20 / 24 | `x_min`, `y_min`, `dx`, `dy` |
-| 28 | alignment padding |
+| 12 | `pixels_per_thread` (must be a multiple of 8) |
+| 16 / 20 / 24 / 28 | `x_min`, `y_min`, `dx`, `dy` |
 | 32 | `output` (64-bit GPU virtual address, **not** a CPU pointer) |
-| 40 | `pixels_per_thread` (must be a multiple of 8) |
+
+The same shader can be called on the CPU with
+`shader.render(uniforms, thread_id, lane_id)` and a CPU pointer in
+`uniforms.output`. The interactive runner only dispatches it on the GPU.
 
 `thread_id` is the walker X workgroup ID; each workgroup has one hardware
 thread. `lane_id` is 0–7. Dispatch enough groups to cover
@@ -50,7 +61,8 @@ thread. `lane_id` is 0–7. Dispatch enough groups to cover
 in `gpu.dispatch` so i915 maps their GPU addresses for the submission.
 
 The runner calls `odinc.compile` with a `Compile_Config` selecting the Xe-LP
-target and embedded `source`. This is the same compilation pipeline used by the
+target, embedded `source`, and `entry_point = "render"` (the default is `main`).
+This is the same compilation pipeline used by the
 CLI; it returns `(artifact: []u8, ok: bool)`, with caller-owned artifact bytes
 and diagnostics written to stderr. Omit `source` to load `input` from disk.
 Start with `odinc.DEFAULT_COMPILE_CONFIG` to use the CLI's default flags.
@@ -58,5 +70,5 @@ Only the CLI writes the returned artifact to `Compile_Config.output`.
 The standalone compiler can also emit the raw kernel:
 
 ```sh
-odin run odinc -- examples/mandelbrot/shader/main.odin -target:intel_xelp -o:all -o /tmp/opencode/mandelbrot.bin
+odin run odinc -- examples/mandelbrot/shader/main.odin -target:intel_xelp -entry-point:render -o:all -o /tmp/opencode/mandelbrot.bin
 ```

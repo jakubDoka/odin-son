@@ -45,7 +45,7 @@ load_program :: proc(ctx: ^Gen_Ctx, entry_file: string) {
 	loaded: map[string]typecheck.Module_ID
 	loaded.allocator = context.temp_allocator
 
-	load_dir(ctx, entry_dir, &loaded)
+	ctx.entry_module = load_dir(ctx, entry_dir, &loaded)
 }
 
 load_dir :: proc(

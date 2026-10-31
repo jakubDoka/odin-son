@@ -84,7 +84,12 @@ TARGETS := [Target_ID]typecheck.Target {
 }
 
 emit_shader :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
-	return slice.clone(ctx.procs[1].out.code, allocator)
+	for prc in ctx.procs {
+		if typecheck.is_shader_entry(ctx, prc) {
+			return slice.clone(prc.out.code, allocator)
+		}
+	}
+	panic("missing shader entrypoint")
 }
 
 Abi_Param :: struct {
@@ -380,22 +385,6 @@ emit_lvalue :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Sym {
 		}
 	case .Decl:
 		gv := idmt.decl
-		if gv.is_gpu_builtin {
-			kind: bac.Node_Type = gv.name == "thread_id" ? .Thread_Id : .Lane_Id
-			return Value(bac.add_raw(ctx, gv.name, u16(kind), .I32, {ctx.entry}))
-		}
-		if gv.is_gpu_uniform {
-			offset := gv.uniform_offset
-			addr := bac.add_raw(
-				ctx,
-				gv.name,
-				u16(bac.Node_Type.Uniform_Addr),
-				.I64,
-				{ctx.shader_params[offset / 32]},
-				extra = &bac.Tup{offset % 32},
-			)
-			return Value{id = addr, is_lvalue = true}
-		}
 
 		if gv.is_mutable {
 			g := bac.add_global(ctx, gv.name, gv.global_idx)
@@ -857,10 +846,36 @@ emit_proc :: proc(
 		assert(!apa.spilled && !apa.by_ptr)
 	}
 
+	ctx.shader_params = nil
+	shader_entry := typecheck.is_shader_entry(ctx, prc^)
+
 	for ast_par, j in prc.lit.type.params.list {
 		fmt.assertf(len(ast_par.names) == 1, "%#v", ast_par)
 		name := ast_par.names[0].derived.(^ast.Ident) or_continue
 		par := prc.sig.params[j]
+
+		if shader_entry {
+			if kind, builtin := typecheck.shader_builtin(name.name); builtin {
+				value := bac.add_raw(ctx, name.name, u16(kind), .I32, {ctx.entry})
+				idx := push_scope_value(ctx, name, value, par)
+				add_var(ctx, {name.name, idx, par, nil, {}})
+				continue
+			}
+			if uniform, ok := unpack_type(par).(^typecheck.Struct); ok {
+				ctx.shader_params = make([]Node_ID, (uniform.size + 31) / 32)
+				for &param in ctx.shader_params {
+					_, param = ssa.arg_gen_next(
+						ctx,
+						ctx_mem(ctx),
+						&gen,
+						name.name,
+						{dt = {.V256}, scalar = true},
+					)
+				}
+				add_var(ctx, {name.name, 0, par, nil, {.Shader_Uniform}})
+				continue
+			}
+		}
 
 		apar, value := arg_gen_next(ctx, &gen, par, "arg") or_continue
 
@@ -882,22 +897,6 @@ emit_proc :: proc(
 
 	{context.allocator = ctx.types.allocator
 		prc.param_types = ssa.arg_gen_finalize(ctx, &gen)}
-	ctx.shader_params = nil
-	if ctx.shader_uniform_bytes != 0 {
-		assert(
-			len(prc.param_types) == 0,
-			"shader uniforms cannot be mixed with explicit parameters",
-		)
-		count := (ctx.shader_uniform_bytes + 31) / 32
-		ctx.shader_params = make([]Node_ID, count)
-		prc.param_types = make([]bac.Param_Spec, count, ctx.types.allocator)
-		for &param, j in ctx.shader_params {
-			param = bac.add_param(ctx, "uniforms", .V256, ctx.entry, u32(j))
-			prc.param_types[j] = {
-				dt = .V256,
-			}
-		}
-	}
 
 	if prc.lit.body == nil do return
 
@@ -1516,6 +1515,20 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			fmt.panicf("TODO: %#v", d)
 		}
 	case ^ast.Selector_Expr:
+		if typecheck.is_shader_uniform(ctx, d.expr) {
+			offset := typecheck.get_node_data(d.field, int)
+			res = bac.add_raw(
+				ctx,
+				"uniform",
+				u16(bac.Node_Type.Uniform_Addr),
+				.I64,
+				{ctx.shader_params[offset / 32]},
+				extra = &bac.Tup{u32(offset % 32)},
+			)
+			lvalue = true
+			break
+		}
+
 		if typecheck.is_of(
 			typecheck.get_node_meta(d.expr).typeida,
 			^typecheck.Enum,

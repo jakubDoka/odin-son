@@ -16,6 +16,7 @@ Compile_Config :: struct {
 	input:        string,
 	output:       string,
 	source:       string,
+	entry_point:  string,
 	root:         string,
 	level:        Opt_Level,
 	target:       Target_ID,
@@ -86,6 +87,8 @@ main :: proc() {
 				fmt.eprintln()
 				os.exit(1)
 			}
+		case strings.has_prefix(arg, "-entry-point:"):
+			config.entry_point = arg[len("-entry-point:"):]
 		case strings.has_prefix(arg, "-o:"):
 			name := arg[len("-o:"):]
 			found := false
@@ -123,6 +126,10 @@ main :: proc() {
 		os.exit(1)
 	}
 
+	if config.target == .Intel_Xelp {
+		config.level = OPT_LEVELS[len(OPT_LEVELS) - 1]
+	}
+
 	config.root = os.get_env("ODIN_ROOT", context.temp_allocator)
 
 	artifact, ok := compile(config)
@@ -143,7 +150,6 @@ compile :: proc(
 	artifact: []u8,
 	ok: bool,
 ) {
-
 	types: typecheck.Types
 	types.mems.prc.reserved = 4096 * 16384
 	types.mems.regalloc.reserved = 4096 * 8192
@@ -164,6 +170,7 @@ compile :: proc(
 
 	global_ctx: typecheck.Global_Ctx
 	global_ctx.root = config.root
+	global_ctx.entry_point = config.entry_point
 
 	if false {
 		for col in ([]string{"base", "core", "vendor"}) {

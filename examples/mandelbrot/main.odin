@@ -8,16 +8,11 @@ import "core:math"
 import "core:mem"
 import "core:os"
 import "core:time"
+import shader "shader"
 import rl "vendor:raylib"
 
-Uniforms :: struct {
-	width, height, max_iterations: u32,
-	pixels_per_thread:             u32,
-	x_min, y_min, dx, dy:          f32,
-	output:                        u64,
-}
-
-#assert(offset_of(Uniforms, output) == 32)
+UNIFORM_REGISTERS ::
+	(size_of(shader.Uniforms) + size_of(gpu.Reg) - 1) / size_of(gpu.Reg)
 
 main :: proc() {
 	if len(os.args) > 1 && os.args[1] == "--help" {
@@ -40,6 +35,7 @@ run :: proc(path: string) -> bool {
 		{
 			input = "mandelbrot.odin",
 			source = #load("shader/main.odin", string),
+			entry_point = "render",
 			target = .Intel_Xelp,
 			level = odinc.OPT_LEVELS[4],
 		},
@@ -55,7 +51,7 @@ run :: proc(path: string) -> bool {
 	program, program_error := gpu.program_create(
 		&device,
 		{code = mem.slice_data_cast([]u32, code)},
-		2,
+		UNIFORM_REGISTERS,
 	)
 	if program_error != nil {
 		fmt.eprintf("Cannot upload shader: %v\n", program_error)
@@ -159,7 +155,7 @@ run :: proc(path: string) -> bool {
 		if dirty {
 			start := time.tick_now()
 			step = span / f64(height)
-			uniforms := Uniforms {
+			uniforms := shader.Uniforms {
 				width             = u32(width),
 				height            = u32(height),
 				pixels_per_thread = 64,
@@ -168,9 +164,9 @@ run :: proc(path: string) -> bool {
 				y_min             = f32(center_y - span * 0.5),
 				dx                = f32(step),
 				dy                = f32(step),
-				output            = buffer.address,
+				output            = cast([^]u32)uintptr(buffer.address),
 			}
-			parameters: [2]gpu.Reg
+			parameters: [UNIFORM_REGISTERS]gpu.Reg
 			copy(mem.slice_to_bytes(parameters[:]), mem.ptr_to_bytes(&uniforms))
 			groups :=
 				(u32(len(iterations)) + uniforms.pixels_per_thread - 1) /
@@ -180,11 +176,7 @@ run :: proc(path: string) -> bool {
 				fmt.eprintf("Shader execution failed: %v\n", err)
 				return false
 			}
-			copy(iterations, buffer.words)
-			for iteration, i in iterations {
-				colors[i] = iteration >= max_iterations ? rl.BLACK : palette[iteration]
-			}
-			rl.UpdateTexture(texture, raw_data(colors))
+			rl.UpdateTexture(texture, raw_data(buffer.words))
 			elapsed = time.tick_since(start)
 			dirty = false
 		}

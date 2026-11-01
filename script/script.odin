@@ -811,6 +811,14 @@ run_generated :: proc() -> int {
 		for test in tests {
 			name := test.name
 			fmt.println("===", name, "===")
+			config_flags := []string{}
+			if name == "module-imports" {
+				config_flags = {
+					"-define:MODULE_IMPORTS_BASE=0x20",
+					"-define:MODULE_IMPORTS_ENABLED=true",
+					"-define:MODULE_IMPORTS_LABEL=constants",
+				}
+			}
 			subdir := join(MOD_DIR, name)
 			mkdir(subdir)
 			entry := join(test.directory, "main.odin")
@@ -844,7 +852,7 @@ run_generated :: proc() -> int {
 			write(dest, strings.to_string(builder))
 
 			odin_bin := join(MOD_DIR, name, "ref-bin.bin")
-			if cmd("odin", "build", subdir, fmt.tprintf("-out:%v", odin_bin)).exit_code !=
+			if cmd("odin", "build", subdir, fmt.tprintf("-out:%v", odin_bin), extras = config_flags).exit_code !=
 			   0 {
 				failures += 1
 				continue
@@ -880,8 +888,10 @@ run_generated :: proc() -> int {
 					jit_path,
 					entry,
 					fmt.tprintf("-o:%v", level),
-					fmt.tprintf("-out:%v", res_obj),
+					"-o",
+					res_obj,
 					env_map = {root_env},
+					extras = config_flags,
 				)
 				fmt.print(res.stdout)
 				if res.exit_code != 0 {

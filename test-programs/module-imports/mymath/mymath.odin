@@ -1,5 +1,8 @@
 package mymath
 
+FORWARD_VALUE :: LATER_VALUE + 2
+ARRAY_LENGTH :: LATER_VALUE >> 4
+
 square :: proc(x: int) -> int {
 	return x * x
 }

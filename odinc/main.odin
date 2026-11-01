@@ -18,6 +18,7 @@ Compile_Config :: struct {
 	source:       string,
 	entry_point:  string,
 	root:         string,
+	configs:      map[string]string,
 	level:        Opt_Level,
 	target:       Target_ID,
 	show_timings: bool,
@@ -46,6 +47,7 @@ main :: proc() {
 	typecheck.init_type_fmt()
 
 	config := DEFAULT_COMPILE_CONFIG
+	config.configs = make(map[string]string, context.temp_allocator)
 	levels := OPT_LEVELS
 
 	args := os.args[1:]
@@ -89,6 +91,20 @@ main :: proc() {
 			}
 		case strings.has_prefix(arg, "-entry-point:"):
 			config.entry_point = arg[len("-entry-point:"):]
+		case strings.has_prefix(arg, "-define:"):
+			name, value, ok := typecheck.parse_config_define(arg[len("-define:"):])
+			if !ok {
+				fmt.eprintfln(
+					"invalid configuration definition %q; expected -define:NAME=value",
+					arg,
+				)
+				os.exit(1)
+			}
+			if _, exists := config.configs[name]; exists {
+				fmt.eprintfln("configuration %q is defined more than once", name)
+				os.exit(1)
+			}
+			config.configs[name] = value
 		case strings.has_prefix(arg, "-o:"):
 			name := arg[len("-o:"):]
 			found := false
@@ -122,7 +138,9 @@ main :: proc() {
 	}
 
 	if config.input == "" {
-		fmt.eprintln("usage: jit <entry.odin> [-o output.o] [-O:<level>] [-debug]")
+		fmt.eprintln(
+			"usage: jit <entry.odin> [-o output.o] [-o:<level>] [-define:NAME=value] [-debug]",
+		)
 		os.exit(1)
 	}
 
@@ -171,6 +189,7 @@ compile :: proc(
 	global_ctx: typecheck.Global_Ctx
 	global_ctx.root = config.root
 	global_ctx.entry_point = config.entry_point
+	global_ctx.configs = config.configs
 
 	if false {
 		for col in ([]string{"base", "core", "vendor"}) {

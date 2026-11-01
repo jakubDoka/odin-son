@@ -3,6 +3,24 @@ package main
 import "myfmt"
 import "mymath"
 
+CONSTANT_TOTAL :: FORWARD_CONSTANT + mymath.FORWARD_VALUE
+FORWARD_CONSTANT :: myfmt.CHAINED_VALUE
+CONFIG_LABEL :: #config(MODULE_IMPORTS_LABEL, "fallback")
+
+when myfmt.CHAINED_VALUE == 0x45 {
+	CONSTANT_ARRAY_LENGTH :: mymath.ARRAY_LENGTH
+} else {
+	#panic(
+		"transitive cross-module constant condition selected the wrong branch",
+	)
+}
+
+#assert(CONSTANT_TOTAL == 0x67)
+#assert(CONSTANT_ARRAY_LENGTH == 2)
+#assert(CONFIG_LABEL == "constants")
+
+constant_seed: int = myfmt.CHAINED_VALUE
+
 // Exercises a compile time static global living in .data and a .Global
 // relocation referencing it.
 counter :: proc() -> int {
@@ -81,7 +99,11 @@ main :: proc() -> int {
 	myfmt.print_int(i64(global_accum), 10) // 127
 	myfmt.print("\n")
 
+	values: [CONSTANT_ARRAY_LENGTH]int
+	constants := CONSTANT_TOTAL + len(values) + constant_seed
+	print_labeled(CONFIG_LABEL, i64(constants), 10)
+
 	// x + y + z = 123, check = -42 + 255 + 10 + 511 + 1 = 735,
-	// global_accum = 127
-	return x + y + z + check + global_accum // 985
+	// global_accum = 127, constants = 174
+	return x + y + z + check + global_accum + constants // 1159
 }

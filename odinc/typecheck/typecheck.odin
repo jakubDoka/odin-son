@@ -333,28 +333,6 @@ type_align :: proc(ty: Type) -> int {
 	return TYPE_SIZES[ty]
 }
 
-const_eval_int :: proc(node: ^ast.Expr) -> (value: i64, ok: bool) {
-	#partial switch d in node.derived {
-	case ^ast.Basic_Lit:
-		if d.tok.kind != .Integer do return 0, false
-		return i64(strconv.parse_u64(d.tok.text) or_return), true
-	case ^ast.Unary_Expr:
-		if d.op.text != "-" do return 0, false
-		inner := const_eval_int(d.expr) or_return
-		return -inner, true
-	case ^ast.Binary_Expr:
-		lhs, rhs :=
-			const_eval_int(d.left) or_return, const_eval_int(d.right) or_return
-		#partial switch d.op.kind {
-		case .Mul:
-			return lhs * rhs, true
-		}
-	case ^ast.Paren_Expr:
-		return const_eval_int(d.expr)
-	}
-	return 0, false
-}
-
 type_size :: proc(ty: Type) -> (res: int) {
 	#partial switch t in unpack_type(ty) {
 	case ^Proc_Type, Pointer, Multi_Pointer:
@@ -780,6 +758,8 @@ tmeta :: proc(ctx: ^Gen_Ctx, ty: Type) -> ^Check_Meta {
 }
 
 tcmeta :: proc(ctx: ^Gen_Ctx, ty: Type, value: Lit) -> ^Check_Meta {
+	value := value
+	if ty == .F32 do value.float = f64(f32(value.float))
 	return new_clone(
 		Check_Meta{type = ty, known = true, lit = value},
 		ctx.types.allocator,
@@ -836,6 +816,7 @@ find_module_decl :: proc(
 	); idx in bac.simd_iter_next(&iter) {
 		decl := &module.decl_idx.id[idx]
 		if decl.name != name do continue
+		if !decl_enabled(ctx, mod, decl) do continue
 		typecheck_decl(ctx, mod, decl)
 		return decl, true
 	}
@@ -851,23 +832,12 @@ integrate_inferrence :: proc(
 ) -> ^Check_Meta {
 	meta := get_node_meta(decl.value)
 	if meta == &INVALID do return error(ctx, decl.value, "Accessing invalid global")
-	if decl.is_mutable do return meta
+	if decl.is_mutable do return tmeta(ctx, meta.type)
 	if inferred == .Void do return meta
 	if meta.type == inferred do return meta
 	if !in_set(inferred, NUMBER_TYPES) do return meta
 
-	vl := meta.lit
-	if inferred in FLOAT_TYPES && meta.type in INTEGER_TYPES {
-		vl.float = f64(vl.int)
-	}
-	if inferred in INTEGER_TYPES && meta.type in FLOAT_TYPES {
-		vl.int = i64(vl.float)
-	}
-
-	return new_clone(
-		Check_Meta{type = inferred, known = meta.known, lit = vl},
-		ctx.types.allocator,
-	)
+	return typecheck_conversion(ctx, decl.value, inferred, meta)
 }
 
 typecheck_decl :: proc(
@@ -912,9 +882,6 @@ typecheck_decl :: proc(
 			},
 			decl.value,
 		)
-		if vl != &INVALID && vl != &VOID {
-			vl.known = false
-		}
 	} else {
 		vl = typecheck_eval(
 			ctx,
@@ -951,11 +918,36 @@ module_add_decls :: proc(ctx: ^Gen_Ctx, mid: Module_ID, decls: []Decl) {
 nil_node: ast.Bad_Expr = {}
 
 collect_decls :: proc(f: ast.File, decls: ^[dynamic]Decl, file_id: File_ID) {
+	collect_stmt_decls(f, decls, file_id, f.decls[:])
+}
+
+collect_stmt_decls :: proc(
+	f: ast.File,
+	decls: ^[dynamic]Decl,
+	file_id: File_ID,
+	stmts: []^ast.Stmt,
+	condition: ^Decl_Condition = nil,
+) {
 	// TODO: put this into the global init once this ICE is fixed
 	nil_node.derived = &nil_node
 	nil_node.derived_expr = &nil_node
 
-	for stmt in f.decls {
+	for stmt in stmts {
+		if branch, ok := stmt.derived.(^ast.When_Stmt); ok {
+			for body, i in ([2]^ast.Stmt{branch.body, branch.else_stmt}) {
+				if body == nil do continue
+				gate := new_clone(
+					Decl_Condition{condition, branch.cond, i == 0},
+					decls.allocator,
+				)
+				if block, ok := body.derived.(^ast.Block_Stmt); ok {
+					collect_stmt_decls(f, decls, file_id, block.stmts, gate)
+				} else {
+					collect_stmt_decls(f, decls, file_id, {body}, gate)
+				}
+			}
+			continue
+		}
 		if decl, ok := stmt.derived_stmt.(^ast.Value_Decl); ok {
 			for name, i in decl.names {
 				vl := &nil_node.node
@@ -969,6 +961,7 @@ collect_decls :: proc(f: ast.File, decls: ^[dynamic]Decl, file_id: File_ID) {
 						value = vl,
 						file = file_id,
 						is_mutable = decl.is_mutable,
+						condition = condition,
 					},
 				)
 			}
@@ -987,6 +980,7 @@ collect_decls :: proc(f: ast.File, decls: ^[dynamic]Decl, file_id: File_ID) {
 						ty = cln,
 						value = decl.values[0],
 						file = file_id,
+						condition = condition,
 					},
 				)
 			}
@@ -1226,6 +1220,7 @@ Varuable_Idx :: union #no_nil {
 	int,
 	Node_ID,
 	Lit,
+	^Decl,
 }
 
 Variable :: struct {
@@ -1271,6 +1266,7 @@ Decl :: struct {
 	file:       File_ID,
 	is_mutable: bool,
 	global_idx: u32,
+	condition:  ^Decl_Condition,
 }
 
 Module :: struct {
@@ -1290,6 +1286,7 @@ Global_Ctx :: struct {
 	root:         string,
 	entry_module: Module_ID,
 	entry_point:  string,
+	configs:      map[string]string,
 	collections:  map[string]string,
 	modules:      [dynamic]Module,
 	// every loaded file, indexable by File_ID
@@ -1481,6 +1478,17 @@ INVALID := Check_Meta {
 	known = true,
 }
 
+typecheck_eval_as :: proc(
+	ctx: ^Gen_Ctx,
+	node: ^ast.Node,
+	ty: Type,
+) -> (
+	res: ^Check_Meta,
+) {
+	res = typecheck_eval(ctx, {inferred_ty = ty}, node)
+	return expect(ctx, node, res, ty)
+}
+
 typecheck_eval :: proc(
 	ctx: ^Gen_Ctx,
 	prop: Ty_Propagation,
@@ -1491,7 +1499,10 @@ typecheck_eval :: proc(
 	ctx.eval_depth += 1
 	defer ctx.eval_depth -= 1
 	res := typecheck(ctx, prop, node)
-	if !res.known do error(ctx, node, "expression is not constant")
+	if !res.known {
+		res = error(ctx, node, "expression is not constant")
+		set_node_data(node, res)
+	}
 	return res
 }
 
@@ -1605,8 +1616,8 @@ typecheck :: proc(
 					break match
 				}
 				vname = fname.name
-				cv, cok := const_eval_int(fd.value)
-				if !cok {
+				cv := typecheck_eval(ctx, {inferred_ty = e.backing}, fd.value)
+				if !in_set(cv.type, INTEGER_TYPES) {
 					ty = error(
 						ctx,
 						fd.value,
@@ -1614,7 +1625,7 @@ typecheck :: proc(
 					)
 					break match
 				}
-				vval = cv
+				vval = cv.int
 			case:
 				ty = error(ctx, f, "expected an enum variant")
 				break match
@@ -1700,41 +1711,17 @@ typecheck :: proc(
 		}
 	case ^ast.Block_Stmt:
 		prev_scope_len := len(ctx.scope)
+		typecheck_block_constants(ctx, d.stmts)
 
-		for stmt in d.stmts {
-			decl := stmt.derived.(^ast.Value_Decl) or_continue
+		stmts: [dynamic]^ast.Stmt
+		stmts.allocator = ctx.types.allocator
+		expand_when_stmts(ctx, d.stmts, &stmts)
+		d.stmts = stmts[:]
 
-			if len(decl.names) == 0 do continue
-			if decl.is_mutable do continue
-
-			ty := emit_type(ctx, decl.type)
-
-			if len(decl.names) != len(decl.values) {
-				error(
-					ctx,
-					stmt,
-					"expected %v values, found %v",
-					len(decl.names),
-					len(decl.values),
-				)
-				continue
-			}
-			for name, i in decl.names {
-				ident := extract_var_ident(ctx, name) or_continue
-				res := typecheck_eval(ctx, {inferred_ty = ty}, decl.values[i])
-				if res.type == .Void {
-					error(ctx, decl.values[i], "expected this to have a type")
-					continue
-				}
-				append(
-					&ctx.scope,
-					Variable {
-						name = ident.name,
-						type = res.type,
-						idx = res.lit,
-						ident = ident,
-					},
-				)
+		for i := prev_scope_len; i < len(ctx.scope); i += 1 {
+			if decl, ok := ctx.scope[i].idx.(^Decl); ok {
+				res := typecheck_decl(ctx, ctx.module, decl)
+				ctx.scope[i].type = res.type
 			}
 		}
 
@@ -1869,25 +1856,27 @@ typecheck :: proc(
 	case ^ast.Basic_Lit:
 		tp := prop.inferred_ty
 
+		value: Lit
+
 		#partial switch d.tok.kind {
 		case .Integer:
-			if tp != .Void && !in_set(tp, NUMBER_TYPES) {
+			if tp == .Void do tp = .Int
+
+			if !in_set(tp, NUMBER_TYPES) || tp == .Bool {
 				ty = error(ctx, node, "an integer literal can not be a %v", tp)
 				break match
 			}
 
-			if tp == .Void do tp = .Int
-
-			value, ok := strconv.parse_u64(d.tok.text)
+			vl, ok := strconv.parse_u64(d.tok.text)
 			if !ok {
 				ty = error(ctx, node, "malformed integer literal")
 				break match
 			}
 
 			if in_set(tp, INTEGER_TYPES) {
-				ty = tcmeta(ctx, tp, {int = i64(value)})
+				value.uint = vl
 			} else {
-				ty = tcmeta(ctx, tp, {float = f64(value)})
+				value.float = f64(vl)
 			}
 		case .Float:
 			if tp != .Void && !in_set(tp, NUMBER_TYPES) {
@@ -1895,12 +1884,12 @@ typecheck :: proc(
 				break match
 			}
 			if !in_set(tp, FLOAT_TYPES) do tp = .F64
-			value, ok := strconv.parse_f64(d.tok.text)
+			vl, ok := strconv.parse_f64(d.tok.text)
 			if !ok {
 				ty = error(ctx, node, "malformed float literal")
 				break match
 			}
-			ty = tcmeta(ctx, tp, {float = f64(value)})
+			value.float = f64(vl)
 		case .Rune:
 			if tp != .Void && !in_set(tp, INTEGER_TYPES) {
 				ty = error(ctx, node, "a rune literal can not be a %v", tp)
@@ -1917,18 +1906,20 @@ typecheck :: proc(
 				ty = error(ctx, node, "malformed rune literal")
 				break match
 			}
-			ty = tcmeta(ctx, tp, {rune = r})
+			value.rune = r
 		case .String:
 			_, _, ok := strconv.unquote_string(d.tok.text)
 			if !ok {
 				ty = error(ctx, node, "invalid string literal")
 				break match
 			}
-
 			ty = expect(ctx, node, tcmeta(ctx, .String, {string = &d.tok.text}), tp)
+			break match
 		case:
 			ty = error(ctx, node, "TODO: %v literals", d.tok.kind)
+			break match
 		}
+		ty = tcmeta(ctx, tp, value)
 	case ^ast.Comp_Lit:
 		inferred_ty := emit_type(ctx, d.type)
 		if inferred_ty == .Void do inferred_ty = prop.inferred_ty
@@ -2095,7 +2086,7 @@ typecheck :: proc(
 			for v in t.variants {
 				if v.name == f.name {
 					set_node_data(d.field, int(v.value))
-					ty = tmeta(ctx, base.lit.typeida)
+					ty = tcmeta(ctx, base_ty, {int = v.value})
 					break match
 				}
 			}
@@ -2122,7 +2113,7 @@ typecheck :: proc(
 		for v in e.variants {
 			if v.name == d.field.name {
 				set_node_data(d.field, int(v.value))
-				ty = tmeta(ctx, prop.inferred_ty)
+				ty = tcmeta(ctx, prop.inferred_ty, {int = v.value})
 				break match
 			}
 		}
@@ -2151,9 +2142,17 @@ typecheck :: proc(
 		ty = tmeta(ctx, target)
 	case ^ast.Binary_Expr:
 		if d.op.kind == .Cmp_And || d.op.kind == .Cmp_Or {
-			typecheck_as(ctx, .Bool, d.left)
-			typecheck_as(ctx, .Bool, d.right)
-			ty = tmeta(ctx, .Bool)
+			lhs := typecheck_as(ctx, .Bool, d.left)
+			rhs := typecheck_as(ctx, .Bool, d.right)
+			if lhs.type == .Invalid_Type || rhs.type == .Invalid_Type {
+				ty = &INVALID
+			} else if lhs.known && rhs.known {
+				value :=
+					d.op.kind == .Cmp_And ? lhs.int != 0 && rhs.int != 0 : lhs.int != 0 || rhs.int != 0
+				ty = tcmeta(ctx, .Bool, {int = i64(value)})
+			} else {
+				ty = tmeta(ctx, .Bool)
+			}
 			break match
 		}
 
@@ -2184,87 +2183,50 @@ typecheck :: proc(
 			validate = false
 		}
 
-		if is_num_lit(d.left) && !is_num_lit(d.right) {
+		if d.op.kind != .Shl &&
+		   d.op.kind != .Shr &&
+		   is_num_lit(d.left) &&
+		   !is_num_lit(d.right) {
 			rhs_ty = typecheck(ctx, prop, d.right)
 			lhs_ty = typecheck_as(ctx, rhs_ty.type, d.left)
 		}
 
 		if rhs_ty == nil {
 			lhs_ty = typecheck(ctx, prop, d.left)
-			inferred_ty := lhs_ty.type
 			if d.op.kind == .Shl || d.op.kind == .Shr {
-				inferred_ty = .Uint
+				rhs_ty = expect_integer(ctx, d.right)
+			} else {
+				rhs_ty = typecheck_as(ctx, lhs_ty.type, d.right)
 			}
-			rhs_ty = typecheck_as(ctx, inferred_ty, d.right)
 		}
 
 		if d.op.kind != .Shl && d.op.kind != .Shr {
-			expect(ctx, node, lhs_ty, rhs_ty.type)
+			if expect(ctx, node, lhs_ty, rhs_ty.type) == &INVALID {
+				ty = &INVALID
+				break match
+			}
+		}
+		if lhs_ty.type == .Invalid_Type || rhs_ty.type == .Invalid_Type {
+			ty = &INVALID
+			break match
 		}
 
-		if validate {
+		constant_only :=
+			lhs_ty.known &&
+			rhs_ty.known &&
+			(is_comparison && lhs_ty.type == .String ||
+					d.op.kind == .Mod_Mod &&
+						in_set(constant_base_type(lhs_ty.type), INTEGER_TYPES))
+		if validate && !constant_only {
 			ty = valid_binop(ctx, lhs_ty.type, node, d.op.kind)
 			if ty != nil do break match
 		}
 
 		if lhs_ty.known && rhs_ty.known {
-			lhs_ty = new_clone(lhs_ty^, ctx.types.allocator)
-			is_float := lhs_ty.type in FLOAT_TYPES
-			is_signed := lhs_ty.type in SIGNED_TYPES
-			is_unsigned := lhs_ty.type in UNSIGNED_TYPES
-
-			if !is_float && !is_signed && !is_unsigned {
-				ty = error(ctx, node, "operation not supported for %v", lhs_ty.type)
-				break match
-			}
-
-			#partial switch d.op.kind {
-			case .Quo:
-				if rhs_ty.int == 0 {
-					ty = error(ctx, d.right, "division by zero")
-					break match
-				}
-				if is_float {
-					lhs_ty.float /= rhs_ty.float
-				} else if is_signed {
-					lhs_ty.uint /= rhs_ty.uint
-				} else {
-					lhs_ty.int /= rhs_ty.int
-				}
-			case .Mul:
-				if is_float {
-					lhs_ty.float *= rhs_ty.float
-				} else {
-					lhs_ty.int *= rhs_ty.int
-				}
-			case .Add:
-				if is_float {
-					lhs_ty.float += rhs_ty.float
-				} else {
-					lhs_ty.int += rhs_ty.int
-				}
-			case .Sub:
-				if is_float {
-					lhs_ty.float -= rhs_ty.float
-				} else {
-					lhs_ty.int -= rhs_ty.int
-				}
-			case:
-				ty = error(ctx, node, "TODO: constant folding of %v", d.op.text)
-				break match
-			}
+			ty = constant_binary(ctx, d, lhs_ty, rhs_ty)
 		} else {
-			lhs_ty = tmeta(ctx, lhs_ty.type)
+			ty = tmeta(ctx, is_comparison ? .Bool : lhs_ty.type)
 		}
-
-		if is_comparison {
-			res := tmeta(ctx, .Bool)
-			res.known = lhs_ty.known
-			res.lit = rhs_ty.lit
-			lhs_ty = res
-		}
-
-		ty = lhs_ty
 	case ^ast.Unary_Expr:
 		#partial switch d.op.kind {
 		case .And:
@@ -2301,21 +2263,27 @@ typecheck :: proc(
 			if vl.known {
 				vl = new_clone(vl^, ctx.types.allocator)
 				vl.int ~= -1
+				if in_set(vl.type, UNSIGNED_TYPES) && type_size(vl.type) < 8 {
+					vl.uint &= (u64(1) << uint(type_size(vl.type) * 8)) - 1
+				}
 			}
 			ty = vl
-		case .Sub:
+		case .Sub, .Add:
 			vl := typecheck(ctx, prop, d.expr)
 			is_float := in_set(vl.type, FLOAT_TYPES)
 			if !in_set(vl.type, NUMBER_TYPES) {
-				ty = error(ctx, node, "only numbers support this, TODO: vectors")
+				ty = error(ctx, node, "only numbers support this, TODO: %v", vl.type)
 				break match
 			}
-			if vl.known {
+			if vl.known && d.op.kind == .Sub {
 				vl = new_clone(vl^, ctx.types.allocator)
 				if is_float {
 					vl.float = -vl.float
+				} else if in_set(vl.type, UNSIGNED_TYPES) {
+					ty = error(ctx, node, "unsigned constant can not be negated")
+					break match
 				} else {
-					vl.int = -vl.int
+					vl.int *= -1
 				}
 			}
 			ty = vl
@@ -2535,7 +2503,22 @@ typecheck :: proc(
 		ty = &VOID
 	case ^ast.Paren_Expr:
 		ty = typecheck(ctx, prop, d.expr)
+	case ^ast.Ternary_When_Expr:
+		cond := typecheck_eval_as(ctx, d.cond, .Bool)
+		if cond.type != .Bool do break match
+		ty = typecheck(ctx, prop, cond.int != 0 ? d.x : d.y)
+	case ^ast.Ternary_If_Expr:
+		typecheck_as(ctx, .Bool, d.cond)
+		x := typecheck(ctx, prop, d.x)
+		typecheck_as(ctx, x.type, d.y)
+		ty = tmeta(ctx, x.type)
 	case ^ast.Type_Cast:
+		if d.tok.kind == .Cast {
+			dst := emit_type(ctx, d.type)
+			src := typecheck(ctx, {}, d.expr)
+			ty = typecheck_conversion(ctx, node, dst, src)
+			break match
+		}
 		if d.tok.kind != .Transmute {
 			ty = error(ctx, node, "TODO: %v", d.tok.text)
 			break match
@@ -2582,6 +2565,17 @@ typecheck :: proc(
 				meta.kind = .Local
 				meta.index = i
 
+				if decl, ok := var.idx.(^Decl); ok {
+					ty = typecheck_decl(ctx, ctx.module, decl)
+					ctx.scope[i].type = ty.type
+					meta.kind = .Const
+					meta.lit = ty.lit
+					if ty.type == .Invalid_Type {
+						ty = error(ctx, node, "accessing an invalid constant declaration")
+					}
+					break match
+				}
+
 				if lit, ok := var.idx.(Lit); ok {
 					meta.kind = .Const
 					meta.lit = lit
@@ -2627,7 +2621,7 @@ typecheck :: proc(
 		if d.name == "false" || d.name == "true" {
 			meta.kind = .Const
 			meta.value = i64(d.name == "true")
-			ty = tmeta(ctx, .Bool)
+			ty = tcmeta(ctx, .Bool, {int = meta.value})
 			break match
 		}
 
@@ -2655,6 +2649,10 @@ typecheck :: proc(
 
 		ty = error(ctx, node, "undeclared identifier %q", d.name)
 	case ^ast.Call_Expr:
+		if directive, ok := d.expr.derived.(^ast.Basic_Directive); ok {
+			ty = typecheck_directive(ctx, prop, d, directive)
+			break match
+		}
 		bprc := get_builtin_proc(d.expr)
 		switch bprc {
 		case .nil:
@@ -2662,7 +2660,17 @@ typecheck :: proc(
 			args := expect_args(ctx, node, d.args, 1, &ty) or_break match
 			arg_ty := typecheck(ctx, {}, args[0])
 			#partial switch t in unpack_type(arg_ty.type) {
-			case ^Array, ^Slice, String_Type:
+			case ^Array:
+				ty = tcmeta(ctx, .Int, {int = i64(t.len)})
+				break match
+			case String_Type:
+				if arg_ty.known {
+					ty = tcmeta(ctx, .Int, {int = i64(len(constant_string(arg_ty)))})
+				} else {
+					ty = tmeta(ctx, .Int)
+				}
+				break match
+			case ^Slice:
 				ty = tmeta(ctx, .Int)
 				break match
 			}
@@ -2805,29 +2813,10 @@ typecheck :: proc(
 				break match
 			case:
 				expect_args(ctx, d, d.args, 1, &ty) or_break match
-				src := typecheck(ctx, {inferred_ty = callee.typeida}, d.args[0])
-
-				valid_conv_type :: proc(type: Type) -> bool {
-					return(
-						type in NUMBER_TYPES ||
-						type == .Rawptr ||
-						is_of(type, Pointer) ||
-						is_of(type, ^Enum) ||
-						is_of(type, Multi_Pointer) \
-					)
-				}
-
-				if !valid_conv_type(src.type) {
-					ty = error(ctx, d.args[0], "TODO: unsupported cast src")
-					break match
-				}
-
-				if !valid_conv_type(callee.typeida) {
-					ty = error(ctx, d.args[0], "TODO: unsupported cast dst")
-					break match
-				}
-
-				ty = tmeta(ctx, callee.typeida)
+				inferred :=
+					is_num_lit(d.args[0]) && in_set(callee.typeida, NUMBER_TYPES) ? callee.typeida : .Void
+				src := typecheck(ctx, {inferred_ty = inferred}, d.args[0])
+				ty = typecheck_conversion(ctx, node, callee.typeida, src)
 				break match
 			}
 		case:
@@ -3279,6 +3268,7 @@ typecheck_program :: proc(ctx: ^Gen_Ctx) {
 
 		for &decl in mod.decl_idx {
 			if decl.hash == 0 do break
+			if !decl_enabled(ctx, ctx.module, &decl.id) do continue
 
 			vl := typecheck_decl(ctx, ctx.module, &decl.id)
 			if !decl.id.is_mutable do continue
@@ -3297,16 +3287,19 @@ typecheck_program :: proc(ctx: ^Gen_Ctx) {
 			bytes := make([]u8, size, ctx.globals.allocator)
 
 			if decl.id.value.derived != &nil_node {
-				value, cok := const_eval_int(decl.id.value)
-				if !cok {
+				if !constant_scalar_bytes(vl, bytes) {
 					error(ctx, decl.id.value, "TODO: non constant global initializer")
 					continue
 				}
-				val_bytes := transmute([8]u8)value
-				copy(bytes, val_bytes[:size])
 			}
 
 			decl.id.global_idx = add_global(ctx, bytes, type_align(vl.type))
+		}
+
+		for i in 0 ..< mod.file_count {
+			ctx.file_id = File_ID(mod.file_start + i)
+			ctx.file = &ctx.files[ctx.file_id]
+			typecheck_package_stmts(ctx, ctx.file.decls[:])
 		}
 	}
 

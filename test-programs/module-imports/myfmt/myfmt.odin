@@ -4,7 +4,18 @@ package myfmt
 // of Odin the JIT understands. The only external code we may call is the linux
 // syscall interface, so all output goes through `write(2)` (syscall 1) on fd 1.
 
+import "../mymath"
 import "base:intrinsics"
+
+CHAINED_VALUE :: SELECTED_VALUE + 1
+
+when #config(MODULE_IMPORTS_ENABLED, false) && mymath.FORWARD_VALUE == 0x22 {
+	SELECTED_VALUE :: mymath.FORWARD_VALUE << 1
+} else {
+	#panic("cross-module constant condition selected the wrong branch")
+}
+
+#assert(CHAINED_VALUE == 0x45)
 
 // Result of parsing an unsigned integer. Kept at 16 bytes (two registers) so
 // it is returned in registers rather than through memory.

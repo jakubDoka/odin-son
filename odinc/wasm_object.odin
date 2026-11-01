@@ -133,13 +133,13 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 		putb(&sections[.data], wasm.Opcode.End)
 
 		uleb(&sections[.data], u64(mem_init_size - init_mem_start))
+		offset := init_mem_start
 		for global in ctx.globals {
-			offset := init_mem_start
 			if !slice.all_of(global.bytes, 0) {
 				padding := mem.align_forward_int(offset, global.align) - offset
 				resize(&sections[.data], len(sections[.data]) + padding)
 				append(&sections[.data], ..global.bytes)
-				offset += len(global.bytes)
+				offset += padding + len(global.bytes)
 			}
 		}
 		section_counts[.data] += 1

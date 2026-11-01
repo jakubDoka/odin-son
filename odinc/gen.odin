@@ -380,7 +380,7 @@ emit_lvalue :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Sym {
 			return idx
 		case Node_ID:
 			return Value{id = idx, is_lvalue = true}
-		case typecheck.Lit:
+		case typecheck.Lit, ^typecheck.Decl:
 			fmt.panicf("TODO %#v", expr.derived)
 		}
 	case .Decl:
@@ -1035,12 +1035,16 @@ emit_known :: proc(
 	meta: ^typecheck.Check_Meta,
 ) -> Value {
 	dt := type_to_dt(meta.type)
-	if meta.type in typecheck.NUMBER_TYPES {
+	if meta.type in typecheck.NUMBER_TYPES ||
+	   typecheck.is_of(meta.type, ^typecheck.Enum) {
 		return Value(bac.add_c_int(ctx, "cnst", dt, meta.int))
 	}
 
 	#partial switch t in unpack_type(meta.type) {
-	case typecheck.Typeid_Type:
+	case typecheck.Typeid_Type,
+	     typecheck.Rawptr_Type,
+	     typecheck.Pointer,
+	     typecheck.Multi_Pointer:
 		return Value(bac.add_c_int(ctx, "cnst", dt, meta.int))
 	case typecheck.String_Type:
 		return {id = emit_string(ctx, prop, meta.string^), is_lvalue = true}
@@ -1301,6 +1305,8 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		bac.unpin(ctx, lhsv.id)
 	case ^ast.Unary_Expr:
 		#partial switch d.op.kind {
+		case .Add:
+			res = emit_rvalue(ctx, {}, d.expr)
 		case .And:
 			node := emit_nodes(ctx, {}, d.expr)
 			assert(node.is_lvalue)
@@ -1446,12 +1452,11 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				bytes := make([]u8, size, ctx.globals.allocator)
 
 				if type_to_dt(vty) != .Void {
-					value, cok := typecheck.const_eval_int(d.values[i])
-					if !cok {
-						fmt.panicf("TODO: non-constant static initializer: %v", name)
-					}
-					val_bytes := transmute([8]u8)value
-					copy(bytes, val_bytes[:size])
+					ok := typecheck.constant_scalar_bytes(
+						typecheck.get_node_meta(d.values[i]),
+						bytes,
+					)
+					assert(ok)
 				}
 
 				idx := typecheck.add_global(ctx, bytes, typecheck.type_align(vty))
@@ -1669,7 +1674,66 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		}
 	case ^ast.Paren_Expr:
 		res, lvalue = unpack(emit_nodes(ctx, prop, d.expr))
+	case ^ast.Ternary_When_Expr:
+		cond := typecheck.get_node_meta(d.cond)
+		res, lvalue = unpack(emit_nodes(ctx, prop, cond.int != 0 ? d.x : d.y))
+	case ^ast.Ternary_If_Expr:
+		cond := typecheck.get_node_meta(d.cond)
+		if cond.known {
+			res, lvalue = unpack(emit_nodes(ctx, prop, cond.int != 0 ? d.x : d.y))
+			break
+		}
+
+		condition := emit_rvalue(ctx, {}, d.cond)
+
+		base := get_node(ctx, ctx.node_scope).input_count
+		slot: int
+		dest: Node_ID
+		if dt == .Void {
+			dest = prop.dest != 0 ? prop.dest : alloca(ctx, "ternary", ty)
+			bac.pin(ctx, dest)
+		} else {
+			zero := bac.add_c_int(ctx, "zero", dt, 0)
+			slot = push_scope_value(ctx, nil, zero, ty)
+		}
+
+		state: ssa.If_State
+		ssa.start_if(ctx, ctx.node_scope, &state, condition)
+		for arm, i in ([2]^ast.Expr{d.x, d.y}) {
+			if i == 1 do ssa.start_else(ctx, &ctx.node_scope, &state)
+			value := emit_nodes(ctx, {dest = dest}, arm)
+			if dt == .Void {
+				store_value(ctx, "ternary", dest, value, ty)
+			} else {
+				ssa.set_scope_value(
+					ctx,
+					ctx.node_scope,
+					slot,
+					to_rvalue(ctx, value, ty),
+				)
+			}
+		}
+		ssa.end_else(ctx, &ctx.node_scope, &state)
+
+		if dt == .Void {
+			res, lvalue = dest, true
+			bac.unpin(ctx, dest, no_delete = true)
+		} else {
+			res = ssa.get_scope_value(ctx, ctx.node_scope, slot)
+			bac.pin(ctx, res)
+			ssa.truncate_scope(ctx, ctx.node_scope, base)
+			bac.unpin(ctx, res, no_delete = true)
+		}
 	case ^ast.Type_Cast:
+		if d.tok.kind == .Cast {
+			res = emit_conversion(
+				ctx,
+				ty,
+				get_node_type(d.expr),
+				emit_rvalue(ctx, {}, d.expr),
+			)
+			break
+		}
 		dst_ty := get_node_type(node)
 		inner := emit_nodes(ctx, {}, d.expr)
 		if type_to_dt(dst_ty) == .Void {
@@ -1893,6 +1957,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		bac.unpin(ctx, data_ptr)
 		bac.unpin(ctx, length)
 	case ^ast.Call_Expr:
+		if _, ok := d.expr.derived.(^ast.Basic_Directive); ok do break
 		switch typecheck.get_builtin_proc(d.expr) {
 		case .nil:
 		case .len:
@@ -2072,7 +2137,6 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		case base_ty == .Typeid:
 			dest_dt := type_to_dt(base_meta.typeida)
 			src_ty := get_node_type(d.args[0])
-			src_dt := type_to_dt(src_ty)
 			arg := emit_rvalue(ctx, {}, d.args[0])
 
 			if s, ok := unpack_type(base_meta.typeida).(^typecheck.Simd); ok {
@@ -2087,24 +2151,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				break match
 			}
 
-			if dest_dt == src_dt {
-				res = arg
-			} else {
-				// Narrow non-numeric sources were zero-extended before conversion,
-				// while wide ones used the signed integer-to-float path.
-				op: bac.Un_Op = .Conv
-				if src_dt in bac.FLOAT_DTS {
-					if typecheck.in_set(base_meta.typeida, typecheck.UNSIGNED_TYPES) {
-						op = .U_Conv
-					}
-				} else if !typecheck.in_set(src_ty, typecheck.SIGNED_TYPES) &&
-				   (dest_dt not_in bac.FLOAT_DTS ||
-						   bac.DT_SIZE[src_dt] < 8 ||
-						   typecheck.in_set(src_ty, typecheck.UNSIGNED_TYPES)) {
-					op = .U_Conv
-				}
-				res = bac.add_un_op(ctx, "cnv", op, dest_dt, arg)
-			}
+			res = emit_conversion(ctx, base_meta.typeida, src_ty, arg)
 		case:
 			fmt.panicf("TODO: %v %v", base_ty, node)
 		}
@@ -2136,6 +2183,40 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 	res = bac.apply_peep(ctx, res)
 
 	return {id = res, is_lvalue = lvalue}
+}
+
+emit_conversion :: proc(
+	ctx: ^Gen_Ctx,
+	dst, src: Type,
+	arg: Node_ID,
+) -> Node_ID {
+	dest_dt, src_dt := type_to_dt(dst), type_to_dt(src)
+	if dst == .Bool {
+		zero := bac.add_c_int(ctx, "zero", src_dt, 0)
+		return bac.add_bin_op(ctx, "tobool", .Ne, dest_dt, arg, zero)
+	}
+	if dest_dt == src_dt do return arg
+	op: bac.Un_Op = .Conv
+	if src_dt in bac.FLOAT_DTS {
+		if typecheck.in_set(
+			typecheck.constant_base_type(dst),
+			typecheck.UNSIGNED_TYPES,
+		) {
+			op = .U_Conv
+		}
+	} else if !typecheck.in_set(
+		   typecheck.constant_base_type(src),
+		   typecheck.SIGNED_TYPES,
+	   ) &&
+	   (dest_dt not_in bac.FLOAT_DTS ||
+			   bac.DT_SIZE[src_dt] < 8 ||
+			   typecheck.in_set(
+				   typecheck.constant_base_type(src),
+				   typecheck.UNSIGNED_TYPES,
+			   )) {
+		op = .U_Conv
+	}
+	return bac.add_un_op(ctx, "cnv", op, dest_dt, arg)
 }
 
 call_proc_of :: proc(

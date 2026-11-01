@@ -72,7 +72,7 @@ load_dir :: proc(
 	fmt.assertf(rerr == nil, "cannot read module directory %q", dir)
 
 	mod.file_start = len(ctx.files)
-	decls: [dynamic]typecheck.Decl
+	decls := make([dynamic]typecheck.Decl, ctx.types.allocator)
 
 	for entry in entries {
 		if entry.type == .Directory do continue

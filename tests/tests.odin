@@ -959,6 +959,550 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) comptime_integer_operations :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc() -> int {
+	A :: -0x25
+	B :: 0x7
+	#assert(A / B == -5)
+	#assert(A % B == -2)
+	#assert(0xffff_ffff_ffff_ffff / u64(3) == 0x5555_5555_5555_5555)
+	#assert(0xffff_ffff_ffff_ffff % u64(3) == 0)
+	#assert((0xa5 & 0x3c) == 0x24)
+	#assert((0xa5 | 0x3c) == 0xbd)
+	#assert((0xa5 ~ 0x3c) == 0x99)
+	#assert((0xa5 &~ 0x3c) == 0x81)
+	#assert((1 << 12) == 0x1000)
+	#assert((-0x20 >> 3) == -4)
+	#assert((u64(0x8000_0000_0000_0000) >> 63) == 1)
+	#assert(~u8(0xf0) == 0x0f)
+	#assert(+B == 7)
+	#assert(A < B && A <= -0x25 && B > A && B >= 7)
+	#assert(A != B && B == 7 && !false && true)
+	#assert(u64(0xffff_ffff_ffff_ffff) > u64(1))
+	N :: ((0x30 >> 2) + B) & 0xf
+	a: [N]int
+	return len(a) + int(A / B) + int(A % B)
+}
+
+run_test(t, `comptime_integer_operations`, `
+package main
+
+main :: proc() -> int {
+	A :: -0x25
+	B :: 0x7
+	#assert(A / B == -5)
+	#assert(A % B == -2)
+	#assert(0xffff_ffff_ffff_ffff / u64(3) == 0x5555_5555_5555_5555)
+	#assert(0xffff_ffff_ffff_ffff % u64(3) == 0)
+	#assert((0xa5 & 0x3c) == 0x24)
+	#assert((0xa5 | 0x3c) == 0xbd)
+	#assert((0xa5 ~ 0x3c) == 0x99)
+	#assert((0xa5 &~ 0x3c) == 0x81)
+	#assert((1 << 12) == 0x1000)
+	#assert((-0x20 >> 3) == -4)
+	#assert((u64(0x8000_0000_0000_0000) >> 63) == 1)
+	#assert(~u8(0xf0) == 0x0f)
+	#assert(+B == 7)
+	#assert(A < B && A <= -0x25 && B > A && B >= 7)
+	#assert(A != B && B == 7 && !false && true)
+	#assert(u64(0xffff_ffff_ffff_ffff) > u64(1))
+	N :: ((0x30 >> 2) + B) & 0xf
+	a: [N]int
+	return len(a) + int(A / B) + int(A % B)
+}
+`, main_())
+}
+@(test) comptime_scalar_conversions :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc() -> int {
+	A :: i16(-123)
+	B :: f64(A)
+	C :: int(-7.0)
+	D :: cast(i32)0x7f
+	#assert(B == -123.0)
+	#assert(C == -7)
+	#assert(D == 0x7f)
+	#assert(int == int && i32 != u32)
+	#assert(f64(u64(0xffff_ffff_ffff_ffff)) > 0.0)
+	#assert(f32(1.5) * f32(2.0) == f32(3.0))
+	#assert(-7.5 / 2.5 == -3.0)
+	#assert(1.25 < 2.5 && 2.5 >= 2.5 && 1.25 != 2.5)
+	#assert(bool(true) && int(true) == 1 && int(false) == 0)
+	return int(B) + C
+}
+
+run_test(t, `comptime_scalar_conversions`, `
+package main
+
+main :: proc() -> int {
+	A :: i16(-123)
+	B :: f64(A)
+	C :: int(-7.0)
+	D :: cast(i32)0x7f
+	#assert(B == -123.0)
+	#assert(C == -7)
+	#assert(D == 0x7f)
+	#assert(int == int && i32 != u32)
+	#assert(f64(u64(0xffff_ffff_ffff_ffff)) > 0.0)
+	#assert(f32(1.5) * f32(2.0) == f32(3.0))
+	#assert(-7.5 / 2.5 == -3.0)
+	#assert(1.25 < 2.5 && 2.5 >= 2.5 && 1.25 != 2.5)
+	#assert(bool(true) && int(true) == 1 && int(false) == 0)
+	return int(B) + C
+}
+`, main_())
+}
+@(test) comptime_initializers :: proc(t: ^testing.T) {
+
+
+
+BASE :: 0x10
+Flags :: enum {
+	A = BASE << 1,
+	B = BASE | 3,
+}
+
+@(static) global: int = (BASE + 7) / 3
+@(static) fraction: f32 = 1.5 + 0.75
+@(static) enabled: bool = BASE > 0
+
+main_ :: proc() -> int {
+	@(static) local := (BASE ~ 3) + 1
+	#assert(Flags.A == Flags.A)
+	#assert(int(Flags.B) == 0x13)
+	return global + local + int(fraction) + int(enabled)
+}
+
+run_test(t, `comptime_initializers`, `
+package main
+
+BASE :: 0x10
+Flags :: enum {
+	A = BASE << 1,
+	B = BASE | 3,
+}
+
+@(static) global: int = (BASE + 7) / 3
+@(static) fraction: f32 = 1.5 + 0.75
+@(static) enabled: bool = BASE > 0
+
+main :: proc() -> int {
+	@(static) local := (BASE ~ 3) + 1
+	#assert(Flags.A == Flags.A)
+	#assert(int(Flags.B) == 0x13)
+	return global + local + int(fraction) + int(enabled)
+}
+`, main_())
+}
+@(test) comptime_when_declarations :: proc(t: ^testing.T) {
+
+
+
+when SELECTED {
+	VALUE :: LATER + 2
+	when VALUE == 0x22 {
+		selected :: proc() -> int { return VALUE }
+	} else {
+		selected :: proc() -> int { return missing }
+	}
+} else {
+	VALUE :: missing
+}
+
+SELECTED :: (1 << 4) == 0x10
+LATER :: 0x20
+
+#assert(VALUE == 0x22)
+
+main_ :: proc() -> int {
+	when N == 0 {
+		#panic("inactive")
+	} else when N > 2 {
+		OFFSET :: N + 3
+	} else {
+		OFFSET :: missing
+	}
+	N :: 4
+	AFTER :: OFFSET + 1
+	when false {
+		return missing
+	}
+	when true {
+		return selected() + AFTER
+	}
+}
+
+run_test(t, `comptime_when_declarations`, `
+package main
+
+when SELECTED {
+	VALUE :: LATER + 2
+	when VALUE == 0x22 {
+		selected :: proc() -> int { return VALUE }
+	} else {
+		selected :: proc() -> int { return missing }
+	}
+} else {
+	VALUE :: missing
+}
+
+SELECTED :: (1 << 4) == 0x10
+LATER :: 0x20
+
+#assert(VALUE == 0x22)
+
+main :: proc() -> int {
+	when N == 0 {
+		#panic("inactive")
+	} else when N > 2 {
+		OFFSET :: N + 3
+	} else {
+		OFFSET :: missing
+	}
+	N :: 4
+	AFTER :: OFFSET + 1
+	when false {
+		return missing
+	}
+	when true {
+		return selected() + AFTER
+	}
+}
+`, main_())
+}
+@(test) comptime_top_level_when :: proc(t: ^testing.T) {
+
+
+
+when false {
+	#panic("inactive first branch")
+	main_ :: proc() -> int { return missing }
+} else when !ENABLED {
+	#assert(false)
+	main_ :: proc() -> int { return missing }
+} else {
+	main_ :: proc() -> int {
+		value := Value{VALUE}
+		return value.number + seed
+	}
+}
+
+when ENABLED {
+	Value :: struct { number: int }
+	@(static) seed: int = 7
+	when true {
+		VALUE :: 0x20
+	}
+	#assert(VALUE == 0x20)
+} else {
+	when missing {
+		#panic("inactive nested branch")
+	}
+}
+
+when true {}
+ENABLED :: true
+#assert(size_of(Value) == 8)
+
+run_test(t, `comptime_top_level_when`, `
+package main
+
+when false {
+	#panic("inactive first branch")
+	main :: proc() -> int { return missing }
+} else when !ENABLED {
+	#assert(false)
+	main :: proc() -> int { return missing }
+} else {
+	main :: proc() -> int {
+		value := Value{VALUE}
+		return value.number + seed
+	}
+}
+
+when ENABLED {
+	Value :: struct { number: int }
+	@(static) seed: int = 7
+	when true {
+		VALUE :: 0x20
+	}
+	#assert(VALUE == 0x20)
+} else {
+	when missing {
+		#panic("inactive nested branch")
+	}
+}
+
+when true {}
+ENABLED :: true
+#assert(size_of(Value) == 8)
+`, main_())
+}
+@(test) comptime_polymorphic_when :: proc(t: ^testing.T) {
+
+
+
+choose :: proc(x: $T, $ENABLED: bool) -> int {
+	when !ENABLED {
+		return 0
+	} else when T == i32 {
+		return int(x) + 1
+	} else when T == u64 {
+		return int(x) + 2
+	} else {
+		return missing
+	}
+}
+
+main_ :: proc() -> int {
+	return choose(i32(3), true) + choose(u64(4), true) + choose(1.0, false)
+}
+
+run_test(t, `comptime_polymorphic_when`, `
+package main
+
+choose :: proc(x: $T, $ENABLED: bool) -> int {
+	when !ENABLED {
+		return 0
+	} else when T == i32 {
+		return int(x) + 1
+	} else when T == u64 {
+		return int(x) + 2
+	} else {
+		return missing
+	}
+}
+
+main :: proc() -> int {
+	return choose(i32(3), true) + choose(u64(4), true) + choose(1.0, false)
+}
+`, main_())
+}
+@(test) comptime_conditional_expressions :: proc(t: ^testing.T) {
+
+
+
+N :: #config(COMPTIME_TEST_N, 0x20)
+VALUE :: 0x12 when N == 0x20 else missing
+TEXT :: "li\x6eux"
+#assert(TEXT == "linux")
+#assert("a" < "b" && "b" >= "b" && "x" != "y")
+#assert(len(TEXT) == 5)
+
+main_ :: proc() -> int {
+	A := 7 if N > 0 else 9
+	B := true ? 3 : 4
+	return VALUE + A + B
+}
+
+run_test(t, `comptime_conditional_expressions`, `
+package main
+
+N :: #config(COMPTIME_TEST_N, 0x20)
+VALUE :: 0x12 when N == 0x20 else missing
+TEXT :: "li\x6eux"
+#assert(TEXT == "linux")
+#assert("a" < "b" && "b" >= "b" && "x" != "y")
+#assert(len(TEXT) == 5)
+
+main :: proc() -> int {
+	A := 7 if N > 0 else 9
+	B := true ? 3 : 4
+	return VALUE + A + B
+}
+`, main_())
+}
+@(test) comptime_integer_literal_boundaries :: proc(t: ^testing.T) {
+
+
+
+MINIMUM :: -0x8000_0000_0000_0000
+MAXIMUM: int : 0x7fff_ffff_ffff_ffff
+UNSIGNED: u64 : 0xffff_ffff_ffff_ffff
+SIGNED_BYTE: i8 : -(0x80)
+UNSIGNED_BYTE: u8 : 0xff
+
+#assert(MINIMUM == -0x8000_0000_0000_0000)
+#assert(MAXIMUM == 0x7fff_ffff_ffff_ffff)
+#assert(UNSIGNED >> 63 == 1)
+#assert(SIGNED_BYTE == -0x80)
+#assert(UNSIGNED_BYTE == 0xff)
+
+main_ :: proc() -> int {
+	return int(UNSIGNED >> 63) + int(SIGNED_BYTE) + int(UNSIGNED_BYTE)
+}
+
+run_test(t, `comptime_integer_literal_boundaries`, `
+package main
+
+MINIMUM :: -0x8000_0000_0000_0000
+MAXIMUM: int : 0x7fff_ffff_ffff_ffff
+UNSIGNED: u64 : 0xffff_ffff_ffff_ffff
+SIGNED_BYTE: i8 : -(0x80)
+UNSIGNED_BYTE: u8 : 0xff
+
+#assert(MINIMUM == -0x8000_0000_0000_0000)
+#assert(MAXIMUM == 0x7fff_ffff_ffff_ffff)
+#assert(UNSIGNED >> 63 == 1)
+#assert(SIGNED_BYTE == -0x80)
+#assert(UNSIGNED_BYTE == 0xff)
+
+main :: proc() -> int {
+	return int(UNSIGNED >> 63) + int(SIGNED_BYTE) + int(UNSIGNED_BYTE)
+}
+`, main_())
+}
+@(test) fail_comptime_integer_literal_ranges :: proc(t: ^testing.T) {
+run_test(t, `fail_comptime_integer_literal_ranges`, `
+package main
+
+SIGNED_OVERFLOW: int : 0xffff_ffff_ffff_ffff
+NEGATIVE_UNSIGNED: u64 : -1
+NEGATIVE_OVERFLOW: int : -0xffff_ffff_ffff_ffff
+BYTE_OVERFLOW: u8 : 0x100
+NEGATIVE_BYTE: u8 : -1
+MINIMUM :: -0x8000_0000_0000_0000
+NEGATED_MINIMUM :: -MINIMUM
+
+main :: proc() -> int { return 0 }
+`, 0)
+}
+@(test) fail_comptime_division_by_zero :: proc(t: ^testing.T) {
+run_test(t, `fail_comptime_division_by_zero`, `
+package main
+
+main :: proc() -> int {
+	QUOTIENT :: 1 / 0
+	REMAINDER :: 1 % 0
+	FLOAT :: 1.0 / 0.0
+	return 0
+}
+`, 0)
+}
+@(test) fail_comptime_negative_shift :: proc(t: ^testing.T) {
+run_test(t, `fail_comptime_negative_shift`, `
+package main
+
+main :: proc() -> int {
+	VALUE :: 1 << -1
+	return 0
+}
+`, 0)
+}
+@(test) fail_comptime_when_conditions :: proc(t: ^testing.T) {
+run_test(t, `fail_comptime_when_conditions`, `
+package main
+
+when 1 { VALUE :: 1 }
+
+main :: proc(x: int) -> int {
+	when x > 0 { return 1 }
+	return 0
+}
+`, 0)
+}
+@(test) fail_comptime_assertions :: proc(t: ^testing.T) {
+run_test(t, `fail_comptime_assertions`, `
+package main
+
+#assert(false)
+#assert(false, "custom assertion failure")
+when true { #assert(false, "active top-level assertion") }
+
+main :: proc(x: int) -> int {
+	#assert(false)
+	#assert(x > 0)
+	return 0
+}
+`, 0)
+}
+@(test) fail_comptime_panics :: proc(t: ^testing.T) {
+run_test(t, `fail_comptime_panics`, `
+package main
+
+#panic("comptime failure")
+when false {} else when true { #panic("active top-level panic") }
+
+main :: proc() -> int { return 0 }
+`, 0)
+}
+@(test) fail_comptime_config_defaults :: proc(t: ^testing.T) {
+run_test(t, `fail_comptime_config_defaults`, `
+package main
+
+TYPE :: #config(TEST_CONFIG_INTEGER, int)
+
+main :: proc(x: int) -> int {
+	NAME :: #config("bad", 1)
+	VALUE :: #config(TEST_CONFIG_INTEGER, x)
+	return 0
+}
+`, 0)
+}
+@(test) fail_comptime_conversions :: proc(t: ^testing.T) {
+run_test(t, `fail_comptime_conversions`, `
+package main
+
+main :: proc(x: int) -> int {
+	VALUE :: int(x)
+	NARROW :: u8(0x100)
+	return 0
+}
+`, 0)
+}
+@(test) fail_comptime_operand_types :: proc(t: ^testing.T) {
+run_test(t, `fail_comptime_operand_types`, `
+package main
+
+main :: proc() -> int {
+	VALUE :: "text" == 1
+	return 0
+}
+`, 0)
+}
+@(test) fail_comptime_config_types :: proc(t: ^testing.T) {
+run_test(t, `fail_comptime_config_types`, `
+package main
+
+BOOLEAN :: #config(TEST_CONFIG_INTEGER, false)
+INTEGER :: #config(TEST_CONFIG_TEXT, 0)
+
+main :: proc() -> int { return 0 }
+`, 0)
+}
+@(test) fail_comptime_config_ranges :: proc(t: ^testing.T) {
+run_test(t, `fail_comptime_config_ranges`, `
+package main
+
+BYTE_OVERFLOW :: #config(TEST_CONFIG_BYTE_OVERFLOW, u8(0))
+NEGATIVE_BYTE :: #config(TEST_CONFIG_NEGATIVE, u8(0))
+SIGNED_OVERFLOW :: #config(TEST_CONFIG_UNSIGNED_MAX, 0)
+FRACTION :: #config(TEST_CONFIG_FRACTION, 0)
+NEGATIVE_UNSIGNED :: #config(TEST_CONFIG_NEGATIVE, u64(0))
+NEGATIVE_OVERFLOW :: #config(TEST_CONFIG_NEGATIVE_OVERFLOW, 0)
+
+main :: proc() -> int { return 0 }
+`, 0)
+}
+@(test) fail_comptime_config_syntax :: proc(t: ^testing.T) {
+run_test(t, `fail_comptime_config_syntax`, `
+package main
+
+UNTERMINATED :: #config(TEST_CONFIG_UNTERMINATED, "fallback")
+TRAILING_TOKENS :: #config(TEST_CONFIG_TRAILING_TOKENS, 0)
+STATEMENT :: #config(TEST_CONFIG_STATEMENT, 0)
+INVALID_ESCAPE :: #config(TEST_CONFIG_INVALID_ESCAPE, "fallback")
+INVALID_INTEGER :: #config(TEST_CONFIG_INVALID_INTEGER, 0)
+EMPTY :: #config(TEST_CONFIG_EMPTY, 0)
+
+main :: proc() -> int { return 0 }
+`, 0)
+}
 @(test) all_integer_operators :: proc(t: ^testing.T) {
 
 
@@ -18385,6 +18929,26 @@ main :: proc() {
 NAMES := []string{
 `simplest`,
 `basic_arithmetic`,
+`comptime_integer_operations`,
+`comptime_scalar_conversions`,
+`comptime_initializers`,
+`comptime_when_declarations`,
+`comptime_top_level_when`,
+`comptime_polymorphic_when`,
+`comptime_conditional_expressions`,
+`comptime_integer_literal_boundaries`,
+`fail_comptime_integer_literal_ranges`,
+`fail_comptime_division_by_zero`,
+`fail_comptime_negative_shift`,
+`fail_comptime_when_conditions`,
+`fail_comptime_assertions`,
+`fail_comptime_panics`,
+`fail_comptime_config_defaults`,
+`fail_comptime_conversions`,
+`fail_comptime_operand_types`,
+`fail_comptime_config_types`,
+`fail_comptime_config_ranges`,
+`fail_comptime_config_syntax`,
 `all_integer_operators`,
 `narrow_unsigned_integer_widening`,
 `narrow_signed_integer_widening`,
@@ -19063,6 +19627,319 @@ opt_level :: "none"
 main :: proc() -> int {
 	return 1 + 2 * 3
 }
+`,
+`
+package main
+
+main :: proc() -> int {
+	A :: -0x25
+	B :: 0x7
+	#assert(A / B == -5)
+	#assert(A % B == -2)
+	#assert(0xffff_ffff_ffff_ffff / u64(3) == 0x5555_5555_5555_5555)
+	#assert(0xffff_ffff_ffff_ffff % u64(3) == 0)
+	#assert((0xa5 & 0x3c) == 0x24)
+	#assert((0xa5 | 0x3c) == 0xbd)
+	#assert((0xa5 ~ 0x3c) == 0x99)
+	#assert((0xa5 &~ 0x3c) == 0x81)
+	#assert((1 << 12) == 0x1000)
+	#assert((-0x20 >> 3) == -4)
+	#assert((u64(0x8000_0000_0000_0000) >> 63) == 1)
+	#assert(~u8(0xf0) == 0x0f)
+	#assert(+B == 7)
+	#assert(A < B && A <= -0x25 && B > A && B >= 7)
+	#assert(A != B && B == 7 && !false && true)
+	#assert(u64(0xffff_ffff_ffff_ffff) > u64(1))
+	N :: ((0x30 >> 2) + B) & 0xf
+	a: [N]int
+	return len(a) + int(A / B) + int(A % B)
+}
+`,
+`
+package main
+
+main :: proc() -> int {
+	A :: i16(-123)
+	B :: f64(A)
+	C :: int(-7.0)
+	D :: cast(i32)0x7f
+	#assert(B == -123.0)
+	#assert(C == -7)
+	#assert(D == 0x7f)
+	#assert(int == int && i32 != u32)
+	#assert(f64(u64(0xffff_ffff_ffff_ffff)) > 0.0)
+	#assert(f32(1.5) * f32(2.0) == f32(3.0))
+	#assert(-7.5 / 2.5 == -3.0)
+	#assert(1.25 < 2.5 && 2.5 >= 2.5 && 1.25 != 2.5)
+	#assert(bool(true) && int(true) == 1 && int(false) == 0)
+	return int(B) + C
+}
+`,
+`
+package main
+
+BASE :: 0x10
+Flags :: enum {
+	A = BASE << 1,
+	B = BASE | 3,
+}
+
+@(static) global: int = (BASE + 7) / 3
+@(static) fraction: f32 = 1.5 + 0.75
+@(static) enabled: bool = BASE > 0
+
+main :: proc() -> int {
+	@(static) local := (BASE ~ 3) + 1
+	#assert(Flags.A == Flags.A)
+	#assert(int(Flags.B) == 0x13)
+	return global + local + int(fraction) + int(enabled)
+}
+`,
+`
+package main
+
+when SELECTED {
+	VALUE :: LATER + 2
+	when VALUE == 0x22 {
+		selected :: proc() -> int { return VALUE }
+	} else {
+		selected :: proc() -> int { return missing }
+	}
+} else {
+	VALUE :: missing
+}
+
+SELECTED :: (1 << 4) == 0x10
+LATER :: 0x20
+
+#assert(VALUE == 0x22)
+
+main :: proc() -> int {
+	when N == 0 {
+		#panic("inactive")
+	} else when N > 2 {
+		OFFSET :: N + 3
+	} else {
+		OFFSET :: missing
+	}
+	N :: 4
+	AFTER :: OFFSET + 1
+	when false {
+		return missing
+	}
+	when true {
+		return selected() + AFTER
+	}
+}
+`,
+`
+package main
+
+when false {
+	#panic("inactive first branch")
+	main :: proc() -> int { return missing }
+} else when !ENABLED {
+	#assert(false)
+	main :: proc() -> int { return missing }
+} else {
+	main :: proc() -> int {
+		value := Value{VALUE}
+		return value.number + seed
+	}
+}
+
+when ENABLED {
+	Value :: struct { number: int }
+	@(static) seed: int = 7
+	when true {
+		VALUE :: 0x20
+	}
+	#assert(VALUE == 0x20)
+} else {
+	when missing {
+		#panic("inactive nested branch")
+	}
+}
+
+when true {}
+ENABLED :: true
+#assert(size_of(Value) == 8)
+`,
+`
+package main
+
+choose :: proc(x: $T, $ENABLED: bool) -> int {
+	when !ENABLED {
+		return 0
+	} else when T == i32 {
+		return int(x) + 1
+	} else when T == u64 {
+		return int(x) + 2
+	} else {
+		return missing
+	}
+}
+
+main :: proc() -> int {
+	return choose(i32(3), true) + choose(u64(4), true) + choose(1.0, false)
+}
+`,
+`
+package main
+
+N :: #config(COMPTIME_TEST_N, 0x20)
+VALUE :: 0x12 when N == 0x20 else missing
+TEXT :: "li\x6eux"
+#assert(TEXT == "linux")
+#assert("a" < "b" && "b" >= "b" && "x" != "y")
+#assert(len(TEXT) == 5)
+
+main :: proc() -> int {
+	A := 7 if N > 0 else 9
+	B := true ? 3 : 4
+	return VALUE + A + B
+}
+`,
+`
+package main
+
+MINIMUM :: -0x8000_0000_0000_0000
+MAXIMUM: int : 0x7fff_ffff_ffff_ffff
+UNSIGNED: u64 : 0xffff_ffff_ffff_ffff
+SIGNED_BYTE: i8 : -(0x80)
+UNSIGNED_BYTE: u8 : 0xff
+
+#assert(MINIMUM == -0x8000_0000_0000_0000)
+#assert(MAXIMUM == 0x7fff_ffff_ffff_ffff)
+#assert(UNSIGNED >> 63 == 1)
+#assert(SIGNED_BYTE == -0x80)
+#assert(UNSIGNED_BYTE == 0xff)
+
+main :: proc() -> int {
+	return int(UNSIGNED >> 63) + int(SIGNED_BYTE) + int(UNSIGNED_BYTE)
+}
+`,
+`
+package main
+
+SIGNED_OVERFLOW: int : 0xffff_ffff_ffff_ffff
+NEGATIVE_UNSIGNED: u64 : -1
+NEGATIVE_OVERFLOW: int : -0xffff_ffff_ffff_ffff
+BYTE_OVERFLOW: u8 : 0x100
+NEGATIVE_BYTE: u8 : -1
+MINIMUM :: -0x8000_0000_0000_0000
+NEGATED_MINIMUM :: -MINIMUM
+
+main :: proc() -> int { return 0 }
+`,
+`
+package main
+
+main :: proc() -> int {
+	QUOTIENT :: 1 / 0
+	REMAINDER :: 1 % 0
+	FLOAT :: 1.0 / 0.0
+	return 0
+}
+`,
+`
+package main
+
+main :: proc() -> int {
+	VALUE :: 1 << -1
+	return 0
+}
+`,
+`
+package main
+
+when 1 { VALUE :: 1 }
+
+main :: proc(x: int) -> int {
+	when x > 0 { return 1 }
+	return 0
+}
+`,
+`
+package main
+
+#assert(false)
+#assert(false, "custom assertion failure")
+when true { #assert(false, "active top-level assertion") }
+
+main :: proc(x: int) -> int {
+	#assert(false)
+	#assert(x > 0)
+	return 0
+}
+`,
+`
+package main
+
+#panic("comptime failure")
+when false {} else when true { #panic("active top-level panic") }
+
+main :: proc() -> int { return 0 }
+`,
+`
+package main
+
+TYPE :: #config(TEST_CONFIG_INTEGER, int)
+
+main :: proc(x: int) -> int {
+	NAME :: #config("bad", 1)
+	VALUE :: #config(TEST_CONFIG_INTEGER, x)
+	return 0
+}
+`,
+`
+package main
+
+main :: proc(x: int) -> int {
+	VALUE :: int(x)
+	NARROW :: u8(0x100)
+	return 0
+}
+`,
+`
+package main
+
+main :: proc() -> int {
+	VALUE :: "text" == 1
+	return 0
+}
+`,
+`
+package main
+
+BOOLEAN :: #config(TEST_CONFIG_INTEGER, false)
+INTEGER :: #config(TEST_CONFIG_TEXT, 0)
+
+main :: proc() -> int { return 0 }
+`,
+`
+package main
+
+BYTE_OVERFLOW :: #config(TEST_CONFIG_BYTE_OVERFLOW, u8(0))
+NEGATIVE_BYTE :: #config(TEST_CONFIG_NEGATIVE, u8(0))
+SIGNED_OVERFLOW :: #config(TEST_CONFIG_UNSIGNED_MAX, 0)
+FRACTION :: #config(TEST_CONFIG_FRACTION, 0)
+NEGATIVE_UNSIGNED :: #config(TEST_CONFIG_NEGATIVE, u64(0))
+NEGATIVE_OVERFLOW :: #config(TEST_CONFIG_NEGATIVE_OVERFLOW, 0)
+
+main :: proc() -> int { return 0 }
+`,
+`
+package main
+
+UNTERMINATED :: #config(TEST_CONFIG_UNTERMINATED, "fallback")
+TRAILING_TOKENS :: #config(TEST_CONFIG_TRAILING_TOKENS, 0)
+STATEMENT :: #config(TEST_CONFIG_STATEMENT, 0)
+INVALID_ESCAPE :: #config(TEST_CONFIG_INVALID_ESCAPE, "fallback")
+INVALID_INTEGER :: #config(TEST_CONFIG_INVALID_INTEGER, 0)
+EMPTY :: #config(TEST_CONFIG_EMPTY, 0)
+
+main :: proc() -> int { return 0 }
 `,
 `
 package main
@@ -27218,6 +28095,26 @@ main :: proc() -> int {
 `#load("../fuzz/crashes/regalloc_ioob.odin")`,
 }
 IS_FUZZ := []bool{
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
 false,
 false,
 false,

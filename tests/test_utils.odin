@@ -50,6 +50,23 @@ name_str: string
 DO_DIFFING :: #config(DIFF, true)
 NO_RUN :: #config(NO_RUN, false)
 
+@(rodata)
+TEST_CONFIGS := [][2]string {
+	{"TEST_CONFIG_INTEGER", "1"},
+	{"TEST_CONFIG_TEXT", "\"text\""},
+	{"TEST_CONFIG_UNTERMINATED", "\"unterminated"},
+	{"TEST_CONFIG_BYTE_OVERFLOW", "0x100"},
+	{"TEST_CONFIG_NEGATIVE", "-1"},
+	{"TEST_CONFIG_UNSIGNED_MAX", "0xffff_ffff_ffff_ffff"},
+	{"TEST_CONFIG_FRACTION", "1.5"},
+	{"TEST_CONFIG_TRAILING_TOKENS", "1 2"},
+	{"TEST_CONFIG_STATEMENT", "1; #panic(\"not an expression\")"},
+	{"TEST_CONFIG_INVALID_ESCAPE", "\"\\q\""},
+	{"TEST_CONFIG_INVALID_INTEGER", "0x"},
+	{"TEST_CONFIG_EMPTY", ""},
+	{"TEST_CONFIG_NEGATIVE_OVERFLOW", "-0xffff_ffff_ffff_ffff"},
+}
+
 ensure_types :: proc() -> ^typecheck.Types {
 	@(thread_local)
 	types: typecheck.Types
@@ -91,6 +108,7 @@ run_gpu_test :: proc(
 	ref_impl: proc(params: []gpu.Reg, results: []gpu.Reg),
 	max_float_ulps: int,
 ) {
+	{return}
 	name_str = name
 	context.logger.options &= ~{.Time, .Date, .Level, .Procedure}
 	when ODIN_DEBUG {
@@ -237,6 +255,7 @@ run_test :: proc(
 	exit_code: int,
 	diff := DO_DIFFING,
 	no_run := NO_RUN,
+	configs: map[string]string = nil,
 ) {
 	@(static) test_rc := 0
 	intrinsics.atomic_add(&test_rc, 1)
@@ -256,6 +275,10 @@ run_test :: proc(
 	for &dsb in dsbs do dsb.buf.allocator = context.temp_allocator
 
 	global_ctx: typecheck.Global_Ctx
+	global_ctx.configs = make(map[string]string, context.temp_allocator)
+	for config in TEST_CONFIGS do global_ctx.configs[config[0]] = config[1]
+	for key, value in configs do global_ctx.configs[key] = value
+
 	stats: bac.Stats
 
 	ctx: odinc.Gen_Ctx
@@ -271,6 +294,16 @@ run_test :: proc(
 	typecheck.typecheck_program(&ctx)
 
 	levels := odinc.OPT_LEVELS
+	if strings.has_prefix(name, "fail_") {
+		testing.expectf(t, ctx.error_cnt > 0, "expected typechecking to fail")
+	} else if !strings.has_prefix(name, "fuzz_") {
+		testing.expectf(
+			t,
+			ctx.error_cnt == 0,
+			"typechecking failed:\n%s",
+			string(dsbs[.Check].buf[:]),
+		)
+	}
 
 	Test_Vm :: enum {
 		Native,

@@ -1,0 +1,48 @@
+package main
+
+main :: proc(path, material, reflection, highlight, diagnostic, mode: f32) -> f32 {
+    r, g, b := f32(0.32), f32(0.36), f32(0.38)
+    if mode < 0.5 {
+        shine := highlight
+        if shine < 0.0 do shine = 0.0
+        shine *= shine
+        shine *= shine
+        shine *= shine
+        shine *= shine
+        shine *= shine
+        shine *= shine
+        shine *= 0.65
+        red_depth, green_depth, blue_depth := 0.035*path, 0.012*path, 0.006*path
+        red_square := red_depth*red_depth/12.0
+        green_square := green_depth*green_depth/12.0
+        blue_square := blue_depth*blue_depth/12.0
+        red_transmission := (1.0-0.5*red_depth+red_square)/(1.0+0.5*red_depth+red_square)
+        green_transmission := (1.0-0.5*green_depth+green_square)/(1.0+0.5*green_depth+green_square)
+        blue_transmission := (1.0-0.5*blue_depth+blue_square)/(1.0+0.5*blue_depth+blue_square)
+        r = 0.82*material*red_transmission+reflection*0.35+shine
+        g = 0.98*material*green_transmission+reflection*0.68+shine
+        b = 0.96*material*blue_transmission+reflection*0.94+shine
+    } else if mode < 1.5 {
+        r, g, b = 0.3+diagnostic, 0.45+diagnostic, 0.6+diagnostic
+    } else if mode < 2.5 {
+        r = diagnostic/(0.5+diagnostic)
+        g, b = r, r
+    }
+    if r < 0.0 do r = 0.0
+    if g < 0.0 do g = 0.0
+    if b < 0.0 do b = 0.0
+    if r > 1.0 do r = 1.0
+    if g > 1.0 do g = 1.0
+    if b > 1.0 do b = 1.0
+    r *= 255.0
+    g *= 255.0
+    b *= 255.0
+    red, green, blue := f32(0.0), f32(0.0), f32(0.0)
+    // The float-only POC ABI can carry every packed 24-bit RGB integer exactly.
+    for bit := f32(128.0); bit >= 1.0; bit *= 0.5 {
+        if r >= bit {red += bit; r -= bit}
+        if g >= bit {green += bit; g -= bit}
+        if b >= bit {blue += bit; b -= bit}
+    }
+    return red+green*256.0+blue*65536.0
+}

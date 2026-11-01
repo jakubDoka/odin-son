@@ -1,0 +1,12 @@
+package main
+foreign _ {
+    trueos_cabi_write :: proc "c" (stream: u32, data: [^]u8, size: uintptr) ---
+}
+main :: proc() -> i32 {
+    total := 0
+    for i := 0; i < 10; i += 1 { total += i }
+    message := "hello from native Odin: sum(0..<10) = 45\n"
+    if total != 45 do return 1
+    trueos_cabi_write(1, raw_data(message), uintptr(len(message)))
+    return 0
+}

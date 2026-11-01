@@ -849,9 +849,9 @@ emit_proc :: proc(
 	ctx.shader_params = nil
 	shader_entry := typecheck.is_shader_entry(ctx, prc^)
 
-	for ast_par, j in prc.lit.type.params.list {
-		fmt.assertf(len(ast_par.names) == 1, "%#v", ast_par)
-		name := ast_par.names[0].derived.(^ast.Ident) or_continue
+	for ast_par, j in typecheck.preprocess_list(prc.lit.type.params) {
+		if ast_par.is_const do continue
+		name := ast_par.name
 		par := prc.sig.params[j]
 
 		if shader_entry {
@@ -2223,9 +2223,8 @@ emit_call :: proc(
 	} else {
 		for arg, i in d.args {
 			if prc_id != 0 {
-				par := ctx.procs[prc_id].lit.type.params.list[i]
-				assert(len(par.names) == 1)
-				if _, ok := par.names[0].derived.(^ast.Poly_Type); ok {
+				par := typecheck.preprocess_list(ctx.procs[prc_id].lit.type.params)[i]
+				if par.is_const {
 					continue
 				}
 			}

@@ -193,6 +193,48 @@ TYPE_SIZES := #partial [Type]int {
 	.F64     = 8,
 }
 
+Ast_Field :: struct {
+	is_const: bool,
+	name:     ^ast.Ident,
+	type:     ^ast.Expr,
+	default:  ^ast.Expr,
+}
+
+preprocess_list :: proc(
+	list: ^ast.Field_List,
+	alloc := context.allocator,
+	broadcast_type := false,
+) -> []Ast_Field {
+	context.allocator = alloc
+
+	if list == nil do return {}
+
+	listr: [dynamic]Ast_Field
+
+	for l in list.list {
+		type := l.type
+		dv := l.default_value
+		if len(l.names) == 0 {
+			@(rodata, static)
+			SENTINEL := ast.Ident{}
+			append(&listr, Ast_Field{false, &SENTINEL, type, dv})
+		}
+		for n in l.names {
+			if poly, ok := n.derived.(^ast.Poly_Type); ok {
+				append(&listr, Ast_Field{true, poly.type, type, dv})
+			} else {
+				append(&listr, Ast_Field{false, n.derived.(^ast.Ident), type, dv})
+			}
+			if !broadcast_type {
+				type = nil
+				dv = nil
+			}
+		}
+	}
+
+	return listr[:]
+}
+
 // error reports `msg` at `node` and yields the poison meta, so that callers can
 // simply `return error(...)` and let the invalid type flow through the rest of
 // the check. Any diagnostic mentioning an already poisoned type is a follow up
@@ -713,9 +755,15 @@ instantiate_struct :: proc(
 		)
 	}
 
+	last_field := Type.Void
 	for &field, i in structa.fields {
 		field = base.fields[i]
-		field.ty = emit_type(ctx, ast.clone(field.ty_ast))
+		if field.ty_ast == nil {
+			field.ty = last_field
+		} else {
+			field.ty = emit_type(ctx, ast.clone(field.ty_ast))
+		}
+		last_field = field.ty
 
 		// TODO: extract this to a layout computation
 		field.offset = mem.align_forward_int(structa.size, type_align(field.ty))
@@ -1525,28 +1573,11 @@ typecheck :: proc(
 			structa.param_names[i] = pd.type.name
 		}
 
-		structa.fields = make(
-			[]Struct_Field,
-			len(d.fields.list),
-			ctx.types.allocator,
-		)
+		fields := preprocess_list(d.fields)
+		structa.fields = make([]Struct_Field, len(fields), ctx.types.allocator)
 		for &field, i in structa.fields {
-			ast_field := d.fields.list[i]
-			if len(ast_field.names) != 1 {
-				ty = error(
-					ctx,
-					ast_field,
-					"TODO: a struct field needs exactly one name, found %v",
-					len(ast_field.names),
-				)
-				break match
-			}
-			fname, is_ident := ast_field.names[0].derived.(^ast.Ident)
-			if !is_ident {
-				ty = error(ctx, ast_field.names[0], "expected a field name")
-				break match
-			}
-			field.name = fname.name
+			ast_field := fields[i]
+			field.name = ast_field.name.name
 			field.ty_ast = ast_field.type
 		}
 
@@ -2819,12 +2850,9 @@ typecheck :: proc(
 
 				prev_polys := len(ctx.poly_types)
 
-				ar_rets: []^ast.Field
-				if prc.lit.type.results != nil {
-					ar_rets = prc.lit.type.results.list
-				}
+				ar_params := preprocess_list(prc.lit.type.params)
 
-				params := make([]Type, len(prc.lit.type.params.list))
+				params := make([]Type, len(ar_params))
 
 				if len(d.args) != len(params) {
 					ty = error(
@@ -2837,27 +2865,21 @@ typecheck :: proc(
 					break match
 				}
 
-				for param_ast, i in prc.lit.type.params.list {
-					if len(param_ast.names) != 1 {
-						ty = error(
-							ctx,
-							param_ast,
-							"TODO: a parameter needs exactly one name",
-						)
-						break match
-					}
-
+				last_type := Type.Void
+				for param_ast, i in ar_params {
 					inferred_ty := Type.Void
-					if !has_polys(ctx, param_ast.type) {
+
+					if param_ast.type == nil {
+						inferred_ty = last_type
+					} else if !has_polys(ctx, param_ast.type) {
 						ast := ast.clone(param_ast.type)
 						inferred_ty = emit_type(ctx, ast)
 					}
 
 					res: ^Check_Meta
-					if poly, ok := param_ast.names[0].derived.(^ast.Poly_Type); ok {
+					if param_ast.is_const {
 						res = typecheck_eval(ctx, {inferred_ty = inferred_ty}, d.args[i])
-
-						append(&ctx.poly_types, Poly_Entry{poly.type.name, res^})
+						append(&ctx.poly_types, Poly_Entry{param_ast.name.name, res^})
 					} else {
 						res = typecheck(ctx, {inferred_ty = inferred_ty}, d.args[i])
 					}
@@ -2877,7 +2899,7 @@ typecheck :: proc(
 						break match
 					}
 
-					params[i] = res.type
+					params[i], last_type = res.type, res.type
 				}
 
 				names := ctx.poly_types.name[prev_polys:len(ctx.poly_types)]
@@ -2910,14 +2932,14 @@ typecheck :: proc(
 						prc.lit = ast.clone(prc.lit).derived.(^ast.Proc_Lit)
 					}
 
+					ar_rets := preprocess_list(
+						prc.lit.type.results,
+						broadcast_type = true,
+					)
+
 					rets := make([]Type, len(ar_rets))
 
-					ast_rets: []^ast.Field
-					if prc.lit.type.results != nil {
-						ast_rets = prc.lit.type.results.list
-					}
-
-					for ret, i in ast_rets {
+					for ret, i in ar_rets {
 						rets[i] = emit_type(ctx, ret.type)
 					}
 
@@ -3125,40 +3147,31 @@ typecheck_sig :: proc(
 	ty: ^Proc_Type,
 	concrete: bool,
 ) {
-	plist := prc.params.list
-	rlist: []^ast.Field
-	if prc.results != nil {
-		rlist = prc.results.list
-	}
-
-	lists := [][]^ast.Field{plist, rlist}
-
-	for param in plist {
-		if len(param.names) != 1 {
-			error(ctx, param, "TODO: a parameter needs at most one name")
-		}
-	}
+	lists := []^ast.Field_List{prc.params, prc.results}
 
 	if has_polys(ctx, prc) do return
 
-	params := make([]Type, len(plist))
-	rets := make([]Type, len(rlist))
-	tys := [][]Type{params, rets}
+	typs := [2][]Type{}
 
 	for list, j in lists {
-		tys := tys[j]
+		list := preprocess_list(list)
+		tys := make([]Type, len(list))
 
+		last_type := Type.Void
 		for param, i in list {
-			tys[i] = emit_type(ctx, param.type)
-			if tys[i] == .Void {
-				error(ctx, param, "TODO: support default parameters")
+			if param.type == nil {
+				tys[i] = last_type
+			} else {
+				tys[i] = emit_type(ctx, param.type)
 			}
+			last_type = tys[i]
 		}
+		typs[j] = tys
 	}
 
 	sig := Proc_Type {
-		params = intern_type_slice(ctx, params),
-		rets   = intern_type_slice(ctx, rets),
+		params = intern_type_slice(ctx, typs[0]),
+		rets   = intern_type_slice(ctx, typs[1]),
 	}
 
 	return intern_proc_type(ctx, &sig), true
@@ -3319,58 +3332,55 @@ typecheck_program :: proc(ctx: ^Gen_Ctx) {
 		has_uniforms := false
 		shader_param_count := 0
 
+		pparams := preprocess_list(prc.lit.type.params, ctx.scope.allocator)
+
 		for par, j in prc.params {
-			asta := prc.lit.type.params.list[j]
-			if len(asta.names) != 1 do continue
+			asta := pparams[j]
+			name := asta.name
 			if par == .Void do continue
 
-			#partial switch d in asta.names[0].derived {
-			case ^ast.Ident:
-				flags := Var_Flags{.Immutable}
-				if shader_entry {
-					if _, builtin := shader_builtin(d.name); builtin {
-						if par != .U32 {
-							error(ctx, asta, "shader builtin %q must have type u32", d.name)
-						}
-					} else if uniform, ok := unpack_type(par).(^Struct); ok {
-						if has_uniforms {
-							error(
-								ctx,
-								asta,
-								"a shader entrypoint accepts at most one uniform struct",
-							)
-						}
-						has_uniforms = true
-						flags |= {.Shader_Uniform}
-						if uniform.custom_layout {
-							error(
-								ctx,
-								asta,
-								"shader uniforms require a struct with natural layout",
-							)
-						}
-						for field in uniform.fields {
-							if !is_shader_uniform_type(field.ty) {
-								error(
-									ctx,
-									asta,
-									"uniform field %q requires a 32-bit scalar or 64-bit integer/pointer, found %v",
-									field.name,
-									field.ty,
-								)
-							}
-						}
-						shader_param_count += (uniform.size + 31) / 32
-					} else {
-						shader_param_count += 1
+			if asta.is_const do continue
+			flags := Var_Flags{.Immutable}
+			if shader_entry {
+				if _, builtin := shader_builtin(name.name); builtin {
+					if par != .U32 {
+						error(ctx, asta.name, "shader builtin %q must have type u32", name)
 					}
+				} else if uniform, ok := unpack_type(par).(^Struct); ok {
+					if has_uniforms {
+						error(
+							ctx,
+							asta.name,
+							"a shader entrypoint accepts at most one uniform struct",
+						)
+					}
+					has_uniforms = true
+					flags |= {.Shader_Uniform}
+					if uniform.custom_layout {
+						error(
+							ctx,
+							asta.name,
+							"shader uniforms require a struct with natural layout",
+						)
+					}
+					for field in uniform.fields {
+						if !is_shader_uniform_type(field.ty) {
+							error(
+								ctx,
+								asta.name,
+								"uniform field %q requires a 32-bit scalar or 64-bit integer/pointer, found %v",
+								field.name,
+								field.ty,
+							)
+						}
+					}
+					shader_param_count += (uniform.size + 31) / 32
+				} else {
+					shader_param_count += 1
 				}
-
-				append(&ctx.scope, Variable{name = d.name, type = par, flags = flags})
-			case ^ast.Poly_Type:
-			case:
-				error(ctx, asta.names[0], "expected a parameter name")
 			}
+
+			append(&ctx.scope, Variable{name = name.name, type = par, flags = flags})
 		}
 
 		if shader_entry && shader_param_count > 8 {

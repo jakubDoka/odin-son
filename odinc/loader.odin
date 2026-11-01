@@ -17,8 +17,7 @@ init_single_file_program :: proc(ctx: ^Gen_Ctx, source: string) {
 	}
 	{context.allocator = context.temp_allocator
 		//p.err = parser.default_error_handler
-		ok := parser.parse_file(&p, &f); assert(ok)
-	}
+		ok := parser.parse_file(&p, &f); assert(ok)}
 
 	ctx.files.allocator = ctx.types.allocator
 	ctx.modules.allocator = ctx.types.allocator

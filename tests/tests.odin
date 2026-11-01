@@ -965,7 +965,7 @@ main :: proc() -> int {
 
 opt_level :: "none"
 
-batch :: proc(a: $T, b: T, n: T) -> int {
+batch :: proc(a, b, n: $T) -> int {
 	r := 0
 
 	r += int(a * b)
@@ -1011,7 +1011,7 @@ package main
 
 opt_level :: "none"
 
-batch :: proc(a: $T, b: T, n: T) -> int {
+batch :: proc(a, b, n: $T) -> int {
 	r := 0
 
 	r += int(a * b)
@@ -19069,7 +19069,7 @@ package main
 
 opt_level :: "none"
 
-batch :: proc(a: $T, b: T, n: T) -> int {
+batch :: proc(a, b, n: $T) -> int {
 	r := 0
 
 	r += int(a * b)

@@ -1018,10 +1018,7 @@ verify :: proc(prc: ^Proc) {
 	}
 
 	if !prc.dont_intern && CHECK_INTERN_INTEGRITY {
-		for it := bit_arr.iter(
-			seen_intern_slots,
-			inverted = true,
-		); idx in bit_arr.iter_next(&it) {
+		for it := bit_arr.iter(seen_intern_slots, inverted = true); idx in bit_arr.iter_next(&it) {
 			if idx < seen_intern_slots.bit_length {
 				arr := interner_zip(prc)
 				grub := get_node(prc, arr[idx].id)

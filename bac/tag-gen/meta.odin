@@ -84,8 +84,7 @@ main :: proc() {
 				}
 				{context.allocator = context.temp_allocator
 					//p.err = parser.default_error_handler
-					ok := parser.parse_file(&p, &f); assert(ok)
-				}
+					ok := parser.parse_file(&p, &f); assert(ok)}
 
 				main_decl := f.decls[0].derived.(^ast.Value_Decl)
 				main := main_decl.values[0].derived.(^ast.Proc_Lit)

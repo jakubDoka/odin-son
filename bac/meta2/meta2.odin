@@ -2,7 +2,6 @@ package bac_meta2
 
 import ".."
 import "../amd64"
-import "../anal"
 import "../arm"
 import "../intel_xelp"
 import "../meta"
@@ -34,20 +33,6 @@ main :: proc() {
 				},
 			},
 			"bac/ssa",
-		)
-	}
-
-	when anal.SPEC_NOT_PRESENT {
-		meta.generate_spec(
-			meta.Spec_Gen_Input {
-				header_import = {
-					"import bac \"..\"",
-					"Reg_Kind :: bac.Reg_Kind",
-					"Class_Flag :: bac.Class_Flag",
-				},
-				classes = {meta.class_array(&meta.IDEAL_CLASSES, gen_ctors = false)},
-			},
-			"bac/anal",
 		)
 	}
 

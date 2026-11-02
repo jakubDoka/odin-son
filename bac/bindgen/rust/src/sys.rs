@@ -52,8 +52,6 @@ unsafe extern "C" {
         r#mem: *mut arna_Allocator,
         r#temps: *mut arna_Temps,
     ) -> Node_ID;
-    pub fn bac_set_scope_value(r#prc: *mut Proc, r#scope: Node_ID, r#idx: isize, r#value: Node_ID);
-    pub fn bac_delete_scope(r#prc: *mut Proc, r#scope: Node_ID);
     pub fn bac_push_scope_value(
         r#prc: *mut Proc,
         r#scope: Node_ID,
@@ -61,17 +59,19 @@ unsafe extern "C" {
         r#name: String,
         r#type: u64,
     ) -> isize;
-    pub fn bac_merge_return(r#prc: *mut Proc, r#args: Slice<Node_ID>) -> Node_ID;
+    pub fn bac_set_scope_value(r#prc: *mut Proc, r#scope: Node_ID, r#idx: isize, r#value: Node_ID);
+    pub fn bac_delete_scope(r#prc: *mut Proc, r#scope: Node_ID);
     pub fn bac_truncate_scope(r#prc: *mut Proc, r#scope: Node_ID, r#to_len: isize);
+    pub fn bac_merge_return(r#prc: *mut Proc, r#args: Slice<Node_ID>) -> Node_ID;
     pub fn bac_compile(r#ctx: Codegen_Emit_Ctx) -> Codegen_Output;
     pub fn bac_opt(r#ctx: Peep_Ctx);
-    pub fn bac_memopt(r#prc: *mut Proc) -> bool;
     pub fn bac_inline_graph(r#prc: *mut Proc, r#call: Node_ID, r#from: *mut Proc);
+    pub fn bac_inline_stencil(r#prc: *mut Proc, r#call: Node_ID, r#from: Stencil);
     pub fn bac_mount_stencil(r#prc: *mut Proc, r#stencil: Stencil);
     pub fn bac_apply_peeps(r#ctx: Peep_Ctx) -> bool;
     pub fn bac_get_stencil(r#prc: *mut Proc) -> Stencil;
     pub fn bac_loopopt(r#prc: *mut Proc) -> bool;
-    pub fn bac_inline_stencil(r#prc: *mut Proc, r#call: Node_ID, r#from: Stencil);
+    pub fn bac_memopt(r#prc: *mut Proc) -> bool;
     pub fn bac_compact(r#prc: *mut Proc);
     pub fn bac_compute_latices(r#ctx: *mut Proc, r#scratch: runtime_Allocator) -> bool;
     pub fn bac_schedule_graph(
@@ -246,28 +246,16 @@ unsafe extern "C" {
     pub fn bac_sloc_scope(r#prc: *mut Proc, r#sloc: Sloc, out0: *mut *mut Proc) -> Sloc;
     pub fn bac_unpin(r#prc: *mut Proc, r#id: Node_ID, r#no_delete: bool);
     pub static bac_amd64_CC_TABLE: [Call_Conv; 2];
-    pub static bac_anal_SPEC: Node_Spec;
-    pub static bac_amd64_SPEC: Node_Spec;
-    pub static bac_arm_OPT_HINTS: Opt_Hints;
     pub static bac_arm_CC_TABLE: [Call_Conv; 1];
-    pub static bac_intel_xelp_CC_TABLE: [Call_Conv; 1];
-    pub static bac_intel_xelp_OPT_HINTS: Opt_Hints;
-    pub static bac_intel_xelp_SPEC: Node_Spec;
+    pub static bac_amd64_SPEC: Node_Spec;
     pub static bac_arm_SPEC: Node_Spec;
+    pub static bac_arm_OPT_HINTS: Opt_Hints;
+    pub static bac_intel_xelp_CC_TABLE: [Call_Conv; 1];
+    pub static bac_intel_xelp_SPEC: Node_Spec;
+    pub static bac_intel_xelp_OPT_HINTS: Opt_Hints;
+    pub static bac_ssa_SPEC: Node_Spec;
     pub fn bac_set_local_size(r#prc: *mut Proc, r#loc: Node_ID, r#size: i32);
     pub static bac_amd64_OPT_HINTS: Opt_Hints;
-    pub static bac_ssa_SPEC: Node_Spec;
-    pub fn bac_add_arbitrary_store(
-        r#ctx: *mut Proc,
-        r#cfg: Node_ID,
-        r#mem: Node_ID,
-        r#addr: Node_ID,
-        r#rvalue: Node_ID,
-        r#rsize: isize,
-        r#extra_offset: isize,
-        r#unit: Node_Datatype,
-    ) -> Node_ID;
-    pub fn bac_add_field_offset(r#prc: *mut Proc, r#base: Node_ID, r#offset: isize) -> Node_ID;
     pub fn bac_add_arbitrary_load(
         r#ctx: *mut Proc,
         r#cfg: Node_ID,
@@ -277,15 +265,6 @@ unsafe extern "C" {
         r#extra_offset: isize,
         r#unit: Node_Datatype,
     ) -> Node_ID;
-    pub fn bac_add_lazy_phi(
-        r#prc: *mut Proc,
-        r#name: String,
-        r#dt: Node_Datatype,
-        r#reg: Node_ID,
-        r#lhs: Node_ID,
-    ) -> Node_ID;
-    pub fn bac_add_scope(r#prc: *mut Proc, r#name: String, r#cfg: Node_ID) -> Node_ID;
-    pub fn bac_arg_gen_finalize(r#ctx: *mut Proc, r#gen: *mut ssa_Param_Gen) -> Slice<Param_Spec>;
     pub fn bac_add_field_load(
         r#ctx: *mut Proc,
         r#name: String,
@@ -304,6 +283,18 @@ unsafe extern "C" {
         r#offset: isize,
         r#value: Node_ID,
     ) -> Node_ID;
+    pub fn bac_add_arbitrary_store(
+        r#ctx: *mut Proc,
+        r#cfg: Node_ID,
+        r#mem: Node_ID,
+        r#addr: Node_ID,
+        r#rvalue: Node_ID,
+        r#rsize: isize,
+        r#extra_offset: isize,
+        r#unit: Node_Datatype,
+    ) -> Node_ID;
+    pub fn bac_add_scope(r#prc: *mut Proc, r#name: String, r#cfg: Node_ID) -> Node_ID;
+    pub fn bac_arg_gen_finalize(r#ctx: *mut Proc, r#gen: *mut ssa_Param_Gen) -> Slice<Param_Spec>;
     pub fn bac_arg_gen_next(
         r#ctx: *mut Proc,
         r#mem: Node_ID,
@@ -312,16 +303,25 @@ unsafe extern "C" {
         r#apa: ssa_Abi_Param,
         out0: *mut Node_ID,
     ) -> Node_ID;
+    pub fn bac_add_field_offset(r#prc: *mut Proc, r#base: Node_ID, r#offset: isize) -> Node_ID;
+    pub fn bac_add_lazy_phi(
+        r#prc: *mut Proc,
+        r#name: String,
+        r#dt: Node_Datatype,
+        r#reg: Node_ID,
+        r#lhs: Node_ID,
+    ) -> Node_ID;
     pub fn bac_break_block(r#prc: *mut Proc, r#scope: *mut Node_ID, r#state: *mut ssa_Block_State);
-    pub fn bac_decl_local(r#prc: *mut Proc, r#loc: Node_ID, r#name: String, r#type: u64);
     pub fn bac_compute_index_offset(
         r#ctx: *mut Proc,
         r#base: Node_ID,
         r#index: Node_ID,
         r#stride: i64,
     ) -> Node_ID;
+    pub fn bac_decl_local(r#prc: *mut Proc, r#loc: Node_ID, r#name: String, r#type: u64);
     pub fn bac_end_block(r#prc: *mut Proc, r#scope: *mut Node_ID, r#state: *mut ssa_Block_State);
     pub fn bac_end_else(r#prc: *mut Proc, r#else_scope: *mut Node_ID, r#state: *mut ssa_If_State);
+    pub fn bac_end_if(r#prc: *mut Proc, r#then_scope: *mut Node_ID, r#state: *mut ssa_If_State);
     pub fn bac_add_dbg_scope(r#prc: *mut Proc, r#name: String, r#inputs: Slice<Node_ID>)
     -> Node_ID;
     pub fn bac_add_c_int(
@@ -353,38 +353,37 @@ unsafe extern "C" {
     -> Node_ID;
     pub fn bac_add_trap(r#prc: *mut Proc, r#name: String, r#inputs: Slice<Node_ID>) -> Node_ID;
     pub fn bac_init_custom_fmt();
-    pub fn bac_end_if(r#prc: *mut Proc, r#then_scope: *mut Node_ID, r#state: *mut ssa_If_State);
-    pub fn bac_make_call(
-        r#prc: *mut Proc,
-        r#args: Slice<Node_ID>,
-        r#extra: Call,
-        out0: *mut Node_ID,
-    ) -> Node_ID;
+    pub fn bac_end_loop(r#prc: *mut Proc, r#node_scope: *mut Node_ID, r#state: *mut ssa_Loop_State);
     pub fn bac_start_block(r#state: *mut ssa_Block_State);
     pub fn bac_start_else(r#prc: *mut Proc, r#then_scope: *mut Node_ID, r#state: *mut ssa_If_State);
-    pub fn bac_get_scope_value(r#prc: *mut Proc, r#scope: Node_ID, r#idx: isize) -> Node_ID;
-    pub fn bac_end_loop(r#prc: *mut Proc, r#node_scope: *mut Node_ID, r#state: *mut ssa_Loop_State);
-    pub fn bac_loop_control(
-        r#variant: ssa_Loop_Control,
-        r#ctx: *mut Proc,
-        r#scope: Node_ID,
-        r#loop: *mut ssa_Loop_State,
-    );
     pub fn bac_start_if(
         r#prc: *mut Proc,
         r#scope: Node_ID,
         r#state: *mut ssa_If_State,
         r#cond: Node_ID,
     );
+    pub fn bac_make_call(
+        r#prc: *mut Proc,
+        r#args: Slice<Node_ID>,
+        r#extra: Call,
+        out0: *mut Node_ID,
+    ) -> Node_ID;
+    pub fn bac_loop_control(
+        r#variant: ssa_Loop_Control,
+        r#ctx: *mut Proc,
+        r#scope: Node_ID,
+        r#loop: *mut ssa_Loop_State,
+    );
+    pub fn bac_get_scope_value(r#prc: *mut Proc, r#scope: Node_ID, r#idx: isize) -> Node_ID;
+    pub fn bac_start_loop(r#prc: *mut Proc, r#scope: Node_ID, r#state: *mut ssa_Loop_State);
+    pub static bac_wasm_CC_TABLE: [Call_Conv; 1];
     pub fn bac_start_loop_increment(
         r#prc: *mut Proc,
         r#node_scope: *mut Node_ID,
         r#state: *mut ssa_Loop_State,
     );
-    pub fn bac_start_loop(r#prc: *mut Proc, r#scope: Node_ID, r#state: *mut ssa_Loop_State);
-    pub static bac_wasm_CC_TABLE: [Call_Conv; 1];
-    pub static bac_wasm_SPEC: Node_Spec;
     pub static bac_wasm_OPT_HINTS: Opt_Hints;
+    pub static bac_wasm_SPEC: Node_Spec;
 }
 pub type ssa_Node_Type = u16;
 pub const ssa_Node_Type_Nil: ssa_Node_Type = 0;

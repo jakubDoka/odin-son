@@ -863,7 +863,15 @@ integrate_inferrence :: proc(
 ) -> ^Check_Meta {
 	meta := get_node_meta(decl.value)
 	if meta == &INVALID do return error(ctx, decl.value, "Accessing invalid global")
-	if decl.is_mutable do return tmeta(ctx, meta.type)
+
+	if decl.is_mutable {
+		if ctx.eval_depth > 0 && decl.global_idx != 0 {
+			return lcmeta(ctx, decl.resolved_ty, {decl.global_idx, 0})
+		}
+
+		return tmeta(ctx, decl.resolved_ty)
+	}
+
 	if inferred == .Void do return meta
 	if meta.type == inferred do return meta
 	if !in_set(inferred, NUMBER_TYPES) do return meta
@@ -901,25 +909,54 @@ typecheck_decl :: proc(
 	set_node_data(decl.value, &INVALID)
 
 	context.allocator, _ = arna.scrath()
+
 	dty := ast.clone(decl.ty)
 	decl.resolved_ty = emit_type(ctx, dty)
-	vl: ^Check_Meta
-	vl = typecheck_eval(
-		ctx,
-		{
-			inferred_ty = decl.resolved_ty,
-			key = Decl_Key{decl.name, decl.file, u32(decl.value.pos.offset)},
-		},
-		decl.value,
-	)
+	if decl.is_mutable && decl.resolved_ty == .Void {
+		if comp, ok := decl.value.derived.(^ast.Comp_Lit); ok {
+			decl.resolved_ty = emit_type(ctx, comp.type)
+		}
+	}
+
+	prop := Ty_Propagation {
+		inferred_ty = decl.resolved_ty,
+		key         = Decl_Key{decl.name, decl.file, u32(decl.value.pos.offset)},
+	}
+	if decl.is_mutable &&
+	   decl.resolved_ty != .Void &&
+	   decl.resolved_ty != .Invalid_Type {
+		// Cyclic address references need storage before the initializer is evaluated.
+		decl.global_idx = alloc_global(ctx, decl.resolved_ty, decl.value)
+		if decl.global_idx == 0 do return &INVALID
+
+		prop.dest.dest = {decl.global_idx, 0}
+		set_node_data(decl.value, lcmeta(ctx, decl.resolved_ty, prop.dest.dest))
+	}
+
+	vl := typecheck_eval(ctx, prop, decl.value)
 	if decl.resolved_ty == .Void do decl.resolved_ty = vl.type
+
 	assert(get_node_meta(decl.value) != nil)
 	if get_node_meta(decl.value) == &VOID {
 		set_node_data(decl.value, &INVALID)
 		return error(ctx, decl.value, "the call returns no value")
 	}
 
-	return expect(ctx, decl.value, vl, decl.resolved_ty)
+	vl = expect(ctx, decl.value, vl, decl.resolved_ty)
+	if !decl.is_mutable || vl.type == .Invalid_Type do return vl
+
+	if decl.global_idx == 0 {
+		decl.global_idx = alloc_global(ctx, decl.resolved_ty, decl.value)
+		if decl.global_idx == 0 do return &INVALID
+	}
+
+	ctx.eval_depth += 1
+	defer ctx.eval_depth -= 1
+
+	prop.dest.dest = {decl.global_idx, 0}
+	init := gi_init(ctx, prop, vl.type)
+	gi_ensure_stored(ctx, init, vl)
+	return vl
 }
 
 module_add_decls :: proc(ctx: ^Gen_Ctx, mid: Module_ID, decls: []Decl) {
@@ -1409,8 +1446,15 @@ types_deinit :: proc(types: ^Types) {
 }
 
 Global_Data :: struct {
-	bytes: []u8,
-	align: int,
+	bytes:  []u8,
+	align:  int,
+	relocs: [dynamic]Global_Reloc,
+}
+
+Global_Reloc :: struct {
+	in_offset: u32,
+	to:        u32,
+	to_offset: u32,
 }
 
 Array :: struct {
@@ -1558,19 +1602,20 @@ typecheck :: proc(
 		if lvalue && ty != &INVALID {
 			ty.lvalue = true
 		}
-		if !lvalue && ty.lvalue do ty.lvalue = false
 		set_node_data(node, ty)
 	}
 
 	#partial match: switch d in node.derived {
 	case ^ast.Bad_Expr:
 		if d.derived == &nil_node && prop.inferred_ty != .Void {
-			ty = tcmeta(ctx, prop.inferred_ty, {})
+			ty, lvalue = global_zero(ctx, prop)
 		} else {
 			ty = error(ctx, node, "bad expr")
 		}
 	case ^ast.Struct_Type:
 		structa := intern_decl(ctx, &ctx.structs, prop.key, &ty) or_break
+		ty = tpmeta(ctx, pack_type(structa))
+		set_node_data(node, ty)
 		structa.custom_layout =
 			d.is_packed ||
 			d.is_raw_union ||
@@ -1936,7 +1981,14 @@ typecheck :: proc(
 		}
 		ty = tcmeta(ctx, tp, value)
 	case ^ast.Comp_Lit:
-		prop := gi_init(ctx, prop, emit_type(ctx, d.type))
+		comp_ty: Type
+		if d.type != nil && len(d.type.end.file) == 0 {
+			comp_ty = get_node_meta(d.type).typeida
+		} else {
+			comp_ty = emit_type(ctx, d.type)
+		}
+
+		prop := gi_init(ctx, prop, comp_ty)
 
 		#partial switch t in unpack_type(prop.inferred_ty) {
 		case ^Struct:
@@ -1992,6 +2044,24 @@ typecheck :: proc(
 				res := typecheck_as(ctx, t.elem, elem, prop)
 				gi_ensure_stored(ctx, prop, res)
 			}
+		case ^Slice:
+			array_ty := intern_array(ctx, t.elem, len(d.elems))
+			backing := gi_init(ctx, {inferred_ty = array_ty}, .Void)
+			for elem, i in d.elems {
+				gi_set_offset(&backing, i * type_size(t.elem))
+				res := typecheck_as(ctx, t.elem, elem, backing)
+				gi_ensure_stored(ctx, backing, res)
+			}
+
+			data := tcmeta(
+				ctx,
+				intern_multi_pointer(ctx, t.elem),
+				{dest = {backing.dest.idx, 0}},
+			)
+			gi_ensure_stored(ctx, prop, data)
+
+			gi_set_offset(&prop, 8)
+			gi_ensure_stored(ctx, prop, tcmeta(ctx, .Int, {int = i64(len(d.elems))}))
 		case:
 			ty = error(
 				ctx,
@@ -2004,8 +2074,14 @@ typecheck :: proc(
 
 		ty, lvalue = gi_end(ctx, prop)
 	case ^ast.Index_Expr:
-		base := typecheck(ctx, {}, d.expr)
-		expect_integer(ctx, d.index)
+		base := typecheck(ctx, {referencing = prop.referencing}, d.expr)
+		index := expect_integer(ctx, d.index)
+		if should_be_known && base.known && index.known {
+			ty = global_index(ctx, node, base, index.int)
+			lvalue = ty.lvalue
+			break match
+		}
+
 		#partial switch t in unpack_type(base.type) {
 		case ^Array:
 			lvalue = base.lvalue
@@ -2020,7 +2096,8 @@ typecheck :: proc(
 			break match
 		case Pointer:
 			if nt, ok := unpack_type(t^).(^Array); ok {
-				ty = tmeta(ctx, intern_multi_pointer(ctx, nt.elem))
+				lvalue = true
+				ty = tmeta(ctx, nt.elem)
 				break match
 			}
 		case Multi_Pointer:
@@ -2031,8 +2108,17 @@ typecheck :: proc(
 		ty = error(ctx, d.expr, "can not index a %v", base.type)
 	case ^ast.Slice_Expr:
 		base := typecheck(ctx, {}, d.expr)
-		expect_integer(ctx, d.low)
-		expect_integer(ctx, d.high)
+		low := expect_integer(ctx, d.low)
+		high := expect_integer(ctx, d.high)
+		if should_be_known &&
+		   base.known &&
+		   (d.low == nil || low.known) &&
+		   (d.high == nil || high.known) {
+			ty = global_slice(ctx, prop, d, base, low, high)
+			lvalue = ty.lvalue
+			break match
+		}
+
 		#partial switch t in unpack_type(base.type) {
 		case ^Array:
 			ty = tmeta(ctx, intern_slice(ctx, t.elem))
@@ -2045,7 +2131,7 @@ typecheck :: proc(
 			break match
 		case Pointer:
 			if nt, ok := unpack_type(t^).(^Array); ok {
-				ty = tmeta(ctx, intern_multi_pointer(ctx, nt.elem))
+				ty = tmeta(ctx, intern_slice(ctx, nt.elem))
 				break match
 			}
 		case Multi_Pointer:
@@ -2058,7 +2144,11 @@ typecheck :: proc(
 		}
 		ty = error(ctx, d.expr, "can not slice a %v", base.type)
 	case ^ast.Selector_Expr:
-		base := typecheck(ctx, {field_access = true}, d.expr)
+		base := typecheck(
+			ctx,
+			{field_access = true, referencing = prop.referencing},
+			d.expr,
+		)
 
 		f, is_ident := d.field.derived.(^ast.Ident)
 		if !is_ident {
@@ -2091,6 +2181,7 @@ typecheck :: proc(
 			}
 			lvalue = pid.is_mutable
 			ty = integrate_inferrence(ctx, mid, pid, prop.inferred_ty)
+			set_node_data(d.field, pid)
 			break match
 		}
 
@@ -2099,6 +2190,10 @@ typecheck :: proc(
 		if p, ok := unpack_type(base_ty).(Pointer); ok {
 			base_ty = p^
 			through_ptr = true
+			if should_be_known && base.known {
+				base = global_load(ctx, base)
+				base = lcmeta(ctx, base_ty, base.dest)
+			}
 		}
 
 		if base.type == .Typeid {
@@ -2120,6 +2215,9 @@ typecheck :: proc(
 					set_node_data(d.field, field.offset)
 					lvalue = through_ptr || base.lvalue
 					ty = tmeta(ctx, field.ty)
+					if should_be_known && base.known {
+						ty = global_field(ctx, base, field.ty, field.offset)
+					}
 					break match
 				}
 			}
@@ -2193,17 +2291,25 @@ typecheck :: proc(
 		if is_nil_lit(d.left) || is_nil_lit(d.right) {
 			operand := is_nil_lit(d.left) ? d.right : d.left
 			oty := typecheck(ctx, {}, operand)
-			_ = unwrap_type(
-				ctx,
-				operand,
-				oty.type,
-				^Union,
-				"only a union can be compared to nil, found %v",
-				&ty,
-			) or_break match
+			if is_data_pointer(oty.type) || is_of(oty.type, ^Proc_Type) {
+				nil_expr := is_nil_lit(d.left) ? d.left : d.right
+				nil_ty := typecheck_as(ctx, oty.type, nil_expr)
+				lhs_ty = is_nil_lit(d.left) ? nil_ty : oty
+				rhs_ty = is_nil_lit(d.left) ? oty : nil_ty
+			} else {
+				_ = unwrap_type(
+					ctx,
+					operand,
+					oty.type,
+					^Union,
+					"a %v can not be compared to nil",
+					&ty,
+				) or_break match
 
-			rhs_ty = oty
-			lhs_ty = oty
+				rhs_ty = oty
+				lhs_ty = oty
+			}
+
 			validate = false
 		}
 
@@ -2271,6 +2377,9 @@ typecheck :: proc(
 
 			inner_ty := expect(ctx, d.expr, res, inferred_ty)
 			ty = tmeta(ctx, intern_pointer(ctx, inner_ty.type))
+			if res.known {
+				ty = tcmeta(ctx, ty.type, {dest = res.dest})
+			}
 		case .Not:
 			vl := typecheck_as(ctx, .Bool, d.expr)
 			if vl.known {
@@ -2331,6 +2440,9 @@ typecheck :: proc(
 		) or_break match
 		lvalue = true
 		ty = tmeta(ctx, ptr^)
+		if should_be_known && inner.known {
+			ty = lcmeta(ctx, ptr^, inner.dest)
+		}
 	case ^ast.Expr_Stmt:
 		ty = typecheck(ctx, {}, d.expr)
 	case ^ast.If_Stmt:
@@ -2654,12 +2766,16 @@ typecheck :: proc(
 				ty = error(ctx, node, "can not infer the type of nil")
 				break match
 			}
-			if !is_of(prop.inferred_ty, ^Union) && !is_of(prop.inferred_ty, ^Slice) {
+			if !is_of(prop.inferred_ty, ^Union) &&
+			   !is_of(prop.inferred_ty, ^Slice) &&
+			   !is_data_pointer(prop.inferred_ty) &&
+			   !is_of(prop.inferred_ty, ^Proc_Type) {
 				ty = error(ctx, d, "TODO: suport materializing %v", prop.inferred_ty)
 				break match
 			}
+
 			meta.kind = .Nil
-			ty = tmeta(ctx, prop.inferred_ty)
+			ty, lvalue = global_zero(ctx, prop)
 			break match
 		}
 
@@ -2689,13 +2805,24 @@ typecheck :: proc(
 				break match
 			case String_Type:
 				if arg_ty.known {
-					ty = tcmeta(ctx, .Int, {int = i64(len(constant_string(arg_ty)))})
+					if arg_ty.lvalue {
+						ty = global_load(ctx, global_field(ctx, arg_ty, .Int, 8))
+					} else {
+						ty = tcmeta(
+							ctx,
+							.Int,
+							{int = i64(len(constant_string(ctx, arg_ty)))},
+						)
+					}
 				} else {
 					ty = tmeta(ctx, .Int)
 				}
 				break match
 			case ^Slice:
 				ty = tmeta(ctx, .Int)
+				if arg_ty.known {
+					ty = global_load(ctx, global_field(ctx, arg_ty, .Int, 8))
+				}
 				break match
 			}
 			ty = error(ctx, args[0], "can not take the len of a %v", arg_ty.type)
@@ -2703,6 +2830,11 @@ typecheck :: proc(
 		case .raw_data:
 			args := expect_args(ctx, node, d.args, 1, &ty) or_break match
 			arg_ty := typecheck(ctx, {}, args[0])
+			if should_be_known && arg_ty.known {
+				ty = global_raw_data(ctx, node, arg_ty)
+				break match
+			}
+
 			#partial switch t in unpack_type(arg_ty.type) {
 			case ^Slice:
 				ty = tmeta(ctx, intern_multi_pointer(ctx, t.elem))
@@ -3071,6 +3203,11 @@ typecheck :: proc(
 
 	if ty == nil do ty = &VOID
 
+	if should_be_known && !prop.referencing {
+		ty = global_load(ctx, ty)
+		lvalue = ty.lvalue
+	}
+
 	return
 }
 
@@ -3294,36 +3431,7 @@ typecheck_program :: proc(ctx: ^Gen_Ctx) {
 			if decl.hash == 0 do break
 			if !decl_enabled(ctx, ctx.module, &decl.id) do continue
 
-			vl := typecheck_decl(ctx, ctx.module, &decl.id)
-			if !decl.id.is_mutable do continue
-
-			size := type_size(vl.type)
-			MAX_GLOBAL_SIZE :: 1024 * 1024
-			if size < 0 || size > MAX_GLOBAL_SIZE {
-				error(
-					ctx,
-					decl.id.value,
-					"Globals bigger then %vb are not supported",
-					1024 * 1024,
-				)
-				continue
-			}
-
-			assert(vl.known)
-
-			if vl.lvalue {
-				assert(vl.dest.offset == 0, "TODO")
-				decl.id.global_idx = vl.dest.idx
-			} else {
-				ctx.eval_depth += 1
-				defer ctx.eval_depth -= 1
-
-				prop := gi_init(ctx, {inferred_ty = decl.id.resolved_ty}, vl.type)
-				gi_ensure_stored(ctx, prop, vl)
-				decl.id.global_idx = gi_end(ctx, prop).idx
-
-				vl.type = decl.id.resolved_ty
-			}
+			typecheck_decl(ctx, ctx.module, &decl.id)
 		}
 
 		for i in 0 ..< mod.file_count {
@@ -3473,7 +3581,14 @@ src_of :: proc(f: ast.File, node: ^ast.Node) -> string {
 
 add_global :: proc(ctx: ^Gen_Ctx, bytes: []u8, align: int) -> u32 {
 	idx := u32(len(ctx.globals))
-	append(&ctx.globals, Global_Data{bytes = bytes, align = align})
+	append(
+		&ctx.globals,
+		Global_Data {
+			bytes = bytes,
+			align = align,
+			relocs = make([dynamic]Global_Reloc, ctx.types.allocator),
+		},
+	)
 	return idx
 }
 
@@ -3675,24 +3790,23 @@ gi_init :: proc(
 		res.inferred_ty = ty
 	}
 
-	size := type_size(res.root_ty)
-	align := type_align(res.root_ty)
 	if ctx.eval_depth > 0 && res.dest.dest.idx == 0 {
-		res.dest.dest = {u32(len(ctx.globals)), 0}
-		append(
-			&ctx.globals,
-			Global_Data{make([]u8, size, ctx.types.allocator), align},
-		)
-
-		if uni != nil {
-			gi_set_offset(&res, uni.tag_offset)
-			gi_ensure_stored(
-				ctx,
-				res,
-				&Check_Meta{type = uni.tag_ty, known = true, lit = {int = i64(tag)}},
-			)
-			gi_set_offset(&res, 0)
+		size := type_size(res.root_ty)
+		align := type_align(res.root_ty)
+		res.dest.dest = {
+			add_global(ctx, make([]u8, size, ctx.types.allocator), align),
+			0,
 		}
+	}
+
+	if ctx.eval_depth > 0 && uni != nil && tag != 0 {
+		gi_set_offset(&res, uni.tag_offset)
+		gi_ensure_stored(
+			ctx,
+			res,
+			&Check_Meta{type = uni.tag_ty, known = true, lit = {int = i64(tag)}},
+		)
+		gi_set_offset(&res, 0)
 	}
 
 	return
@@ -3703,12 +3817,10 @@ gi_set_offset :: proc(prop: ^Global_Init, #any_int rel: u32) {
 }
 
 gi_ensure_stored :: proc(ctx: ^Gen_Ctx, prop: Global_Init, res: ^Check_Meta) {
-	if ctx.eval_depth > 0 && !res.lvalue {
-		assert(res.known)
-		dest := ctx.globals[prop.dest.idx].bytes[prop.dest.offset:]
-		vl_size := type_size(res.type)
-		copy(dest[:vl_size], mem.ptr_to_bytes(&res.lit))
-	}
+	if ctx.eval_depth == 0 || res.type == .Invalid_Type || prop.dest.idx == 0 do return
+
+	assert(res.known)
+	global_store(ctx, prop.dest.dest, res)
 }
 
 gi_end :: proc(

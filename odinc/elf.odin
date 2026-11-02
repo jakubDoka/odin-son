@@ -40,6 +40,8 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	data: [dynamic]u8
 	global_off := make([]int, len(ctx.globals))
 	for glob, i in ctx.globals {
+		if glob.align == 0 do continue
+
 		align := max(glob.align, 1)
 		for len(data) % align != 0 do append(&data, 0)
 		global_off[i] = len(data)
@@ -86,6 +88,8 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	}
 
 	for glob, i in ctx.globals {
+		if glob.align == 0 do continue
+
 		append(
 			&locals,
 			Elf64_Sym {
@@ -107,13 +111,7 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	sec_abbrev_sym := next_local + 2
 	sec_line_sym := next_local + 3
 	sec_loc_sym := next_local + 4
-	for shndx in ([]Section {
-			.Text,
-			.Rodata,
-			.Debug_Abbrev,
-			.Debug_Line,
-			.Debug_Loc,
-		}) {
+	for shndx in ([]Section{.Text, .Rodata, .Debug_Abbrev, .Debug_Line, .Debug_Loc}) {
 		append(
 			&locals,
 			Elf64_Sym{st_info = {bind = .Local, type = .Section}, st_shndx = shndx},
@@ -250,6 +248,24 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 					r_offset = u64(slot),
 					r_info = {sym = sym, type = type},
 					r_addend = addend,
+				},
+			)
+		}
+	}
+
+	data_rels: [dynamic]Elf64_Rela
+	for glob, i in ctx.globals {
+		for rel in glob.relocs {
+			is_proc := rel.to_offset == max(u32)
+			append(
+				&data_rels,
+				Elf64_Rela {
+					r_offset = u64(global_off[i]) + u64(rel.in_offset),
+					r_info = {
+						sym = is_proc ? proc_sym[rel.to] : data_sym[rel.to],
+						type = is_arm ? .AArch64_Abs64 : .X86_64_Abs64,
+					},
+					r_addend = is_proc ? 0 : i64(rel.to_offset),
 				},
 			)
 		}
@@ -796,6 +812,7 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	name_relatext := strtab_add(&shstr, ".rela.text")
 	name_rodata := strtab_add(&shstr, ".rodata")
 	name_data := strtab_add(&shstr, ".data")
+	name_reladata := strtab_add(&shstr, ".rela.data")
 	name_dbg_abbrev := strtab_add(&shstr, ".debug_abbrev")
 	name_dbg_info := strtab_add(&shstr, ".debug_info")
 	name_rela_dbg_info := strtab_add(&shstr, ".rela.debug_info")
@@ -823,6 +840,10 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 
 	eb_align(&b, 8)
 	data_off := eb_bytes(&b, data[:])
+
+	eb_align(&b, 8)
+	rela_data_off := len(b.buf)
+	for r in data_rels do eb_struct(&b, r)
 
 	eb_align(&b, 8)
 	rela_off := len(b.buf)
@@ -899,6 +920,16 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 			sh_offset = u64(data_off),
 			sh_size = u64(len(data)),
 			sh_addralign = 8,
+		},
+		.Rela_Data = {
+			sh_name = name_reladata,
+			sh_type = .Rela,
+			sh_offset = u64(rela_data_off),
+			sh_size = u64(len(data_rels) * size_of(Elf64_Rela)),
+			sh_link = .Symtab,
+			sh_info_section = .Data,
+			sh_addralign = 8,
+			sh_entsize = size_of(Elf64_Rela),
 		},
 		.Debug_Abbrev = {
 			sh_name = name_dbg_abbrev,
@@ -1184,6 +1215,7 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 		Rela_Text,
 		Rodata,
 		Data,
+		Rela_Data,
 		Debug_Abbrev,
 		Debug_Info,
 		Rela_Debug_Info,

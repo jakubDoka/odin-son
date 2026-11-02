@@ -443,10 +443,40 @@ run_test :: proc(
 
 			global_addrs := make([]uintptr, len(ctx.globals), context.temp_allocator)
 			for glob, i in ctx.globals {
+				if glob.align == 0 do continue
+
 				align := uint(max(glob.align, 1))
 				slot := arna.alloc(&ctx.mems.code, len(glob.bytes), align)
 				copy(slot, glob.bytes)
 				global_addrs[i] = uintptr(raw_data(slot))
+			}
+
+			for glob, i in ctx.globals {
+				for rel in glob.relocs {
+					value: uintptr
+					if rel.to_offset == max(u32) {
+						prc := ctx.procs[rel.to]
+						value = uintptr(raw_data(prc.out.code))
+						if prc.lit.body == nil {
+							value = uintptr(dynlib.symbol_address(lib, prc.name))
+						}
+					} else {
+						value = global_addrs[rel.to] + uintptr(rel.to_offset)
+					}
+
+					if level.vm == .Arm {
+						value =
+							value -
+							uintptr(ctx.mems.code.ptr) +
+							uintptr(unicorn.CODE_ADDRESS)
+					}
+
+					mem.copy(
+						rawptr(global_addrs[i] + uintptr(rel.in_offset)),
+						&value,
+						size_of(value),
+					)
+				}
 			}
 
 			for p in ctx.procs {

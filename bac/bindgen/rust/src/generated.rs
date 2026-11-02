@@ -179,15 +179,6 @@ impl RegallocMode {
     pub const with_coloring: Self = Self(sys::Regalloc_Mode_with_coloring);
 }
 impl Proc<'_> {
-    pub unsafe fn r#set_scope_value(&self, r#scope: NodeId, r#idx: isize, r#value: NodeId) {
-        let result =
-            unsafe { sys::bac_set_scope_value(self.raw_ptr(), r#scope.0, r#idx, r#value.0) };
-        result
-    }
-    pub unsafe fn r#delete_scope(&self, r#scope: NodeId) {
-        let result = unsafe { sys::bac_delete_scope(self.raw_ptr(), r#scope.0) };
-        result
-    }
     pub unsafe fn r#push_scope_value(
         &self,
         r#scope: NodeId,
@@ -200,22 +191,31 @@ impl Proc<'_> {
         };
         result
     }
-    pub unsafe fn r#merge_return(&self, r#args: &[NodeId]) -> NodeId {
+    pub unsafe fn r#set_scope_value(&self, r#scope: NodeId, r#idx: isize, r#value: NodeId) {
         let result =
-            unsafe { sys::bac_merge_return(self.raw_ptr(), sys::Slice::from(r#args).cast()) };
-        let result = NodeId(result);
+            unsafe { sys::bac_set_scope_value(self.raw_ptr(), r#scope.0, r#idx, r#value.0) };
+        result
+    }
+    pub unsafe fn r#delete_scope(&self, r#scope: NodeId) {
+        let result = unsafe { sys::bac_delete_scope(self.raw_ptr(), r#scope.0) };
         result
     }
     pub unsafe fn r#truncate_scope(&self, r#scope: NodeId, r#to_len: isize) {
         let result = unsafe { sys::bac_truncate_scope(self.raw_ptr(), r#scope.0, r#to_len) };
         result
     }
-    pub unsafe fn r#memopt(&self) -> bool {
-        let result = unsafe { sys::bac_memopt(self.raw_ptr()) };
+    pub unsafe fn r#merge_return(&self, r#args: &[NodeId]) -> NodeId {
+        let result =
+            unsafe { sys::bac_merge_return(self.raw_ptr(), sys::Slice::from(r#args).cast()) };
+        let result = NodeId(result);
         result
     }
     pub unsafe fn r#loopopt(&self) -> bool {
         let result = unsafe { sys::bac_loopopt(self.raw_ptr()) };
+        result
+    }
+    pub unsafe fn r#memopt(&self) -> bool {
+        let result = unsafe { sys::bac_memopt(self.raw_ptr()) };
         result
     }
     pub unsafe fn r#add_local_addr(&self, r#name: &str, r#local: NodeId) -> NodeId {
@@ -584,36 +584,6 @@ impl Proc<'_> {
         let result = unsafe { sys::bac_set_local_size(self.raw_ptr(), r#loc.0, r#size) };
         result
     }
-    pub unsafe fn r#add_arbitrary_store(
-        &self,
-        r#cfg: NodeId,
-        r#mem: NodeId,
-        r#addr: NodeId,
-        r#rvalue: NodeId,
-        r#rsize: isize,
-        r#extra_offset: isize,
-        r#unit: Datatype,
-    ) -> NodeId {
-        let result = unsafe {
-            sys::bac_add_arbitrary_store(
-                self.raw_ptr(),
-                r#cfg.0,
-                r#mem.0,
-                r#addr.0,
-                r#rvalue.0,
-                r#rsize,
-                r#extra_offset,
-                r#unit.0,
-            )
-        };
-        let result = NodeId(result);
-        result
-    }
-    pub unsafe fn r#add_field_offset(&self, r#base: NodeId, r#offset: isize) -> NodeId {
-        let result = unsafe { sys::bac_add_field_offset(self.raw_ptr(), r#base.0, r#offset) };
-        let result = NodeId(result);
-        result
-    }
     pub unsafe fn r#add_arbitrary_load(
         &self,
         r#cfg: NodeId,
@@ -634,24 +604,6 @@ impl Proc<'_> {
                 r#unit.0,
             )
         };
-        let result = NodeId(result);
-        result
-    }
-    pub unsafe fn r#add_lazy_phi(
-        &self,
-        r#name: &str,
-        r#dt: Datatype,
-        r#reg: NodeId,
-        r#lhs: NodeId,
-    ) -> NodeId {
-        let result = unsafe {
-            sys::bac_add_lazy_phi(self.raw_ptr(), r#name.into(), r#dt.0, r#reg.0, r#lhs.0)
-        };
-        let result = NodeId(result);
-        result
-    }
-    pub unsafe fn r#add_scope(&self, r#name: &str, r#cfg: NodeId) -> NodeId {
-        let result = unsafe { sys::bac_add_scope(self.raw_ptr(), r#name.into(), r#cfg.0) };
         let result = NodeId(result);
         result
     }
@@ -701,14 +653,58 @@ impl Proc<'_> {
         let result = NodeId(result);
         result
     }
+    pub unsafe fn r#add_arbitrary_store(
+        &self,
+        r#cfg: NodeId,
+        r#mem: NodeId,
+        r#addr: NodeId,
+        r#rvalue: NodeId,
+        r#rsize: isize,
+        r#extra_offset: isize,
+        r#unit: Datatype,
+    ) -> NodeId {
+        let result = unsafe {
+            sys::bac_add_arbitrary_store(
+                self.raw_ptr(),
+                r#cfg.0,
+                r#mem.0,
+                r#addr.0,
+                r#rvalue.0,
+                r#rsize,
+                r#extra_offset,
+                r#unit.0,
+            )
+        };
+        let result = NodeId(result);
+        result
+    }
+    pub unsafe fn r#add_scope(&self, r#name: &str, r#cfg: NodeId) -> NodeId {
+        let result = unsafe { sys::bac_add_scope(self.raw_ptr(), r#name.into(), r#cfg.0) };
+        let result = NodeId(result);
+        result
+    }
+    pub unsafe fn r#add_field_offset(&self, r#base: NodeId, r#offset: isize) -> NodeId {
+        let result = unsafe { sys::bac_add_field_offset(self.raw_ptr(), r#base.0, r#offset) };
+        let result = NodeId(result);
+        result
+    }
+    pub unsafe fn r#add_lazy_phi(
+        &self,
+        r#name: &str,
+        r#dt: Datatype,
+        r#reg: NodeId,
+        r#lhs: NodeId,
+    ) -> NodeId {
+        let result = unsafe {
+            sys::bac_add_lazy_phi(self.raw_ptr(), r#name.into(), r#dt.0, r#reg.0, r#lhs.0)
+        };
+        let result = NodeId(result);
+        result
+    }
     pub unsafe fn r#break_block(&self, r#scope: &mut NodeId, r#state: &mut sys::ssa_Block_State) {
         let result = unsafe {
             sys::bac_break_block(self.raw_ptr(), core::ptr::from_mut(r#scope).cast(), r#state)
         };
-        result
-    }
-    pub unsafe fn r#decl_local(&self, r#loc: NodeId, r#name: &str, r#type: u64) {
-        let result = unsafe { sys::bac_decl_local(self.raw_ptr(), r#loc.0, r#name.into(), r#type) };
         result
     }
     pub unsafe fn r#compute_index_offset(
@@ -722,6 +718,10 @@ impl Proc<'_> {
         let result = NodeId(result);
         result
     }
+    pub unsafe fn r#decl_local(&self, r#loc: NodeId, r#name: &str, r#type: u64) {
+        let result = unsafe { sys::bac_decl_local(self.raw_ptr(), r#loc.0, r#name.into(), r#type) };
+        result
+    }
     pub unsafe fn r#end_block(&self, r#scope: &mut NodeId, r#state: &mut sys::ssa_Block_State) {
         let result = unsafe {
             sys::bac_end_block(self.raw_ptr(), core::ptr::from_mut(r#scope).cast(), r#state)
@@ -733,6 +733,16 @@ impl Proc<'_> {
             sys::bac_end_else(
                 self.raw_ptr(),
                 core::ptr::from_mut(r#else_scope).cast(),
+                r#state,
+            )
+        };
+        result
+    }
+    pub unsafe fn r#end_if(&self, r#then_scope: &mut NodeId, r#state: &mut sys::ssa_If_State) {
+        let result = unsafe {
+            sys::bac_end_if(
+                self.raw_ptr(),
+                core::ptr::from_mut(r#then_scope).cast(),
                 r#state,
             )
         };
@@ -832,14 +842,33 @@ impl Proc<'_> {
         let result = NodeId(result);
         result
     }
-    pub unsafe fn r#end_if(&self, r#then_scope: &mut NodeId, r#state: &mut sys::ssa_If_State) {
+    pub unsafe fn r#end_loop(&self, r#node_scope: &mut NodeId, r#state: &mut sys::ssa_Loop_State) {
         let result = unsafe {
-            sys::bac_end_if(
+            sys::bac_end_loop(
+                self.raw_ptr(),
+                core::ptr::from_mut(r#node_scope).cast(),
+                r#state,
+            )
+        };
+        result
+    }
+    pub unsafe fn r#start_else(&self, r#then_scope: &mut NodeId, r#state: &mut sys::ssa_If_State) {
+        let result = unsafe {
+            sys::bac_start_else(
                 self.raw_ptr(),
                 core::ptr::from_mut(r#then_scope).cast(),
                 r#state,
             )
         };
+        result
+    }
+    pub unsafe fn r#start_if(
+        &self,
+        r#scope: NodeId,
+        r#state: &mut sys::ssa_If_State,
+        r#cond: NodeId,
+    ) {
+        let result = unsafe { sys::bac_start_if(self.raw_ptr(), r#scope.0, r#state, r#cond.0) };
         result
     }
     pub unsafe fn r#make_call(&self, r#args: &[NodeId], r#extra: Call) -> (NodeId, NodeId) {
@@ -855,38 +884,13 @@ impl Proc<'_> {
         let result = (NodeId(out0), NodeId(result));
         result
     }
-    pub unsafe fn r#start_else(&self, r#then_scope: &mut NodeId, r#state: &mut sys::ssa_If_State) {
-        let result = unsafe {
-            sys::bac_start_else(
-                self.raw_ptr(),
-                core::ptr::from_mut(r#then_scope).cast(),
-                r#state,
-            )
-        };
-        result
-    }
     pub unsafe fn r#get_scope_value(&self, r#scope: NodeId, r#idx: isize) -> NodeId {
         let result = unsafe { sys::bac_get_scope_value(self.raw_ptr(), r#scope.0, r#idx) };
         let result = NodeId(result);
         result
     }
-    pub unsafe fn r#end_loop(&self, r#node_scope: &mut NodeId, r#state: &mut sys::ssa_Loop_State) {
-        let result = unsafe {
-            sys::bac_end_loop(
-                self.raw_ptr(),
-                core::ptr::from_mut(r#node_scope).cast(),
-                r#state,
-            )
-        };
-        result
-    }
-    pub unsafe fn r#start_if(
-        &self,
-        r#scope: NodeId,
-        r#state: &mut sys::ssa_If_State,
-        r#cond: NodeId,
-    ) {
-        let result = unsafe { sys::bac_start_if(self.raw_ptr(), r#scope.0, r#state, r#cond.0) };
+    pub unsafe fn r#start_loop(&self, r#scope: NodeId, r#state: &mut sys::ssa_Loop_State) {
+        let result = unsafe { sys::bac_start_loop(self.raw_ptr(), r#scope.0, r#state) };
         result
     }
     pub unsafe fn r#start_loop_increment(
@@ -903,23 +907,8 @@ impl Proc<'_> {
         };
         result
     }
-    pub unsafe fn r#start_loop(&self, r#scope: NodeId, r#state: &mut sys::ssa_Loop_State) {
-        let result = unsafe { sys::bac_start_loop(self.raw_ptr(), r#scope.0, r#state) };
-        result
-    }
 }
 impl Builder<'_> {
-    pub fn r#set_scope_value(&self, r#scope: &Node, r#idx: isize, r#value: &Node) {
-        let r#scope = self.check(r#scope);
-        let r#value = self.check(r#value);
-        let result = unsafe { self.proc.r#set_scope_value(r#scope, r#idx, r#value) };
-        result
-    }
-    pub fn r#delete_scope(&self, r#scope: &Node) {
-        let r#scope = self.check(r#scope);
-        let result = unsafe { self.proc.r#delete_scope(r#scope) };
-        result
-    }
     pub fn r#push_scope_value(
         &self,
         r#scope: &Node,
@@ -935,6 +924,22 @@ impl Builder<'_> {
         };
         result
     }
+    pub fn r#set_scope_value(&self, r#scope: &Node, r#idx: isize, r#value: &Node) {
+        let r#scope = self.check(r#scope);
+        let r#value = self.check(r#value);
+        let result = unsafe { self.proc.r#set_scope_value(r#scope, r#idx, r#value) };
+        result
+    }
+    pub fn r#delete_scope(&self, r#scope: &Node) {
+        let r#scope = self.check(r#scope);
+        let result = unsafe { self.proc.r#delete_scope(r#scope) };
+        result
+    }
+    pub fn r#truncate_scope(&self, r#scope: &Node, r#to_len: isize) {
+        let r#scope = self.check(r#scope);
+        let result = unsafe { self.proc.r#truncate_scope(r#scope, r#to_len) };
+        result
+    }
     pub fn r#merge_return(&self, r#args: &[&Node]) -> &Node {
         self.proc.with_node_ids(r#args, |r#args| {
             let result = unsafe { self.proc.r#merge_return(r#args) };
@@ -942,17 +947,12 @@ impl Builder<'_> {
             result
         })
     }
-    pub fn r#truncate_scope(&self, r#scope: &Node, r#to_len: isize) {
-        let r#scope = self.check(r#scope);
-        let result = unsafe { self.proc.r#truncate_scope(r#scope, r#to_len) };
+    pub fn r#loopopt(&self) -> bool {
+        let result = unsafe { self.proc.r#loopopt() };
         result
     }
     pub fn r#memopt(&self) -> bool {
         let result = unsafe { self.proc.r#memopt() };
-        result
-    }
-    pub fn r#loopopt(&self) -> bool {
-        let result = unsafe { self.proc.r#loopopt() };
         result
     }
     pub fn r#add_local_addr(&self, r#name: &'static str, r#local: &Node) -> &Node {
@@ -1295,40 +1295,6 @@ impl Builder<'_> {
         let result = unsafe { self.proc.r#set_local_size(r#loc, r#size) };
         result
     }
-    pub fn r#add_arbitrary_store(
-        &self,
-        r#cfg: &Node,
-        r#mem: &Node,
-        r#addr: &Node,
-        r#rvalue: &Node,
-        r#rsize: isize,
-        r#extra_offset: isize,
-        r#unit: Datatype,
-    ) -> &Node {
-        let r#cfg = self.check(r#cfg);
-        let r#mem = self.check(r#mem);
-        let r#addr = self.check(r#addr);
-        let r#rvalue = self.check(r#rvalue);
-        let result = unsafe {
-            self.proc.r#add_arbitrary_store(
-                r#cfg,
-                r#mem,
-                r#addr,
-                r#rvalue,
-                r#rsize,
-                r#extra_offset,
-                r#unit,
-            )
-        };
-        let result = unsafe { self.proc.get_node(result) };
-        result
-    }
-    pub fn r#add_field_offset(&self, r#base: &Node, r#offset: isize) -> &Node {
-        let r#base = self.check(r#base);
-        let result = unsafe { self.proc.r#add_field_offset(r#base, r#offset) };
-        let result = unsafe { self.proc.get_node(result) };
-        result
-    }
     pub fn r#add_arbitrary_load(
         &self,
         r#cfg: &Node,
@@ -1345,25 +1311,6 @@ impl Builder<'_> {
             self.proc
                 .r#add_arbitrary_load(r#cfg, r#mem, r#addr, r#rsize, r#extra_offset, r#unit)
         };
-        let result = unsafe { self.proc.get_node(result) };
-        result
-    }
-    pub fn r#add_lazy_phi(
-        &self,
-        r#name: &'static str,
-        r#dt: Datatype,
-        r#reg: &Node,
-        r#lhs: &Node,
-    ) -> &Node {
-        let r#reg = self.check(r#reg);
-        let r#lhs = self.check(r#lhs);
-        let result = unsafe { self.proc.r#add_lazy_phi(r#name, r#dt, r#reg, r#lhs) };
-        let result = unsafe { self.proc.get_node(result) };
-        result
-    }
-    pub fn r#add_scope(&self, r#name: &'static str, r#cfg: &Node) -> &Node {
-        let r#cfg = self.check(r#cfg);
-        let result = unsafe { self.proc.r#add_scope(r#name, r#cfg) };
         let result = unsafe { self.proc.get_node(result) };
         result
     }
@@ -1406,9 +1353,57 @@ impl Builder<'_> {
         let result = unsafe { self.proc.get_node(result) };
         result
     }
-    pub fn r#decl_local(&self, r#loc: &Node, r#name: &'static str, r#type: u64) {
-        let r#loc = self.check(r#loc);
-        let result = unsafe { self.proc.r#decl_local(r#loc, r#name, r#type) };
+    pub fn r#add_arbitrary_store(
+        &self,
+        r#cfg: &Node,
+        r#mem: &Node,
+        r#addr: &Node,
+        r#rvalue: &Node,
+        r#rsize: isize,
+        r#extra_offset: isize,
+        r#unit: Datatype,
+    ) -> &Node {
+        let r#cfg = self.check(r#cfg);
+        let r#mem = self.check(r#mem);
+        let r#addr = self.check(r#addr);
+        let r#rvalue = self.check(r#rvalue);
+        let result = unsafe {
+            self.proc.r#add_arbitrary_store(
+                r#cfg,
+                r#mem,
+                r#addr,
+                r#rvalue,
+                r#rsize,
+                r#extra_offset,
+                r#unit,
+            )
+        };
+        let result = unsafe { self.proc.get_node(result) };
+        result
+    }
+    pub fn r#add_scope(&self, r#name: &'static str, r#cfg: &Node) -> &Node {
+        let r#cfg = self.check(r#cfg);
+        let result = unsafe { self.proc.r#add_scope(r#name, r#cfg) };
+        let result = unsafe { self.proc.get_node(result) };
+        result
+    }
+    pub fn r#add_field_offset(&self, r#base: &Node, r#offset: isize) -> &Node {
+        let r#base = self.check(r#base);
+        let result = unsafe { self.proc.r#add_field_offset(r#base, r#offset) };
+        let result = unsafe { self.proc.get_node(result) };
+        result
+    }
+    pub fn r#add_lazy_phi(
+        &self,
+        r#name: &'static str,
+        r#dt: Datatype,
+        r#reg: &Node,
+        r#lhs: &Node,
+    ) -> &Node {
+        let r#reg = self.check(r#reg);
+        let r#lhs = self.check(r#lhs);
+        let result = unsafe { self.proc.r#add_lazy_phi(r#name, r#dt, r#reg, r#lhs) };
+        let result = unsafe { self.proc.get_node(result) };
         result
     }
     pub fn r#compute_index_offset(&self, r#base: &Node, r#index: &Node, r#stride: i64) -> &Node {
@@ -1416,6 +1411,11 @@ impl Builder<'_> {
         let r#index = self.check(r#index);
         let result = unsafe { self.proc.r#compute_index_offset(r#base, r#index, r#stride) };
         let result = unsafe { self.proc.get_node(result) };
+        result
+    }
+    pub fn r#decl_local(&self, r#loc: &Node, r#name: &'static str, r#type: u64) {
+        let r#loc = self.check(r#loc);
+        let result = unsafe { self.proc.r#decl_local(r#loc, r#name, r#type) };
         result
     }
     pub fn r#add_dbg_scope(&self, r#name: &'static str, r#inputs: &[&Node]) -> &Node {
@@ -1535,6 +1535,11 @@ impl<'p, 'a> LoopState<'p, 'a> {
         *r#node_scope = unsafe { self.proc.get_node(r#node_scope_id) };
         result
     }
+    pub fn r#start_loop(&mut self, r#scope: &Node) {
+        let r#scope = self.proc.check(r#scope);
+        let result = unsafe { self.proc.r#start_loop(r#scope, &mut self.raw) };
+        result
+    }
     pub fn r#start_loop_increment(&mut self, r#node_scope: &mut &'p Node) {
         let mut r#node_scope_id = self.proc.check(r#node_scope);
         let result = unsafe {
@@ -1542,11 +1547,6 @@ impl<'p, 'a> LoopState<'p, 'a> {
                 .r#start_loop_increment(&mut r#node_scope_id, &mut self.raw)
         };
         *r#node_scope = unsafe { self.proc.get_node(r#node_scope_id) };
-        result
-    }
-    pub fn r#start_loop(&mut self, r#scope: &Node) {
-        let r#scope = self.proc.check(r#scope);
-        let result = unsafe { self.proc.r#start_loop(r#scope, &mut self.raw) };
         result
     }
 }

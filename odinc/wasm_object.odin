@@ -79,28 +79,15 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 		resize(&name_sec, RESERVED_LEN)
 	}
 
-	mem_init_size := STACK_SIZE
-
-	emit_global :: proc(
-		buf: ^[dynamic]u8,
-		ty: wasm.Type,
-		mutability: Mutability,
-		#any_int offset: i64,
-	) {
-		putb(buf, ty)
-		putb(buf, mutability)
-		putb(buf, wasm.Opcode.I64_Const)
-		sleb(buf, offset)
-		putb(buf, wasm.Opcode.End)
-	}
-
 	stack_pointer: {
 		emit_global(&sections[.global], .i64, .mut, STACK_SIZE)
 		section_counts[.global] += 1
 	}
 
+	mem_init_size := STACK_SIZE
 	init_mem_start := 0
 	global_idxes := make([]int, len(ctx.globals))
+	global_offsets := make([]int, len(ctx.globals))
 	for i in 0 ..< 2 {
 		do_zeroed := i == 0
 
@@ -109,13 +96,18 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 		}
 
 		for global, j in ctx.globals[1:] {
-			if do_zeroed == slice.all_of(global.bytes, 0) {
-				mem_init_size = mem.align_forward_int(mem_init_size, global.align)
-				emit_global(&sections[.global], .i64, .const, mem_init_size)
-				mem_init_size += len(global.bytes)
-				global_idxes[1 + j] = section_counts[.global]
-				section_counts[.global] += 1
-			}
+			if global.align == 0 do continue
+
+			zeroed := slice.all_of(global.bytes, 0) && len(global.relocs) == 0
+			if do_zeroed != zeroed do continue
+
+			mem_init_size = mem.align_forward_int(mem_init_size, global.align)
+			global_offsets[1 + j] = mem_init_size
+			emit_global(&sections[.global], .i64, .const, mem_init_size)
+			mem_init_size += len(global.bytes)
+
+			global_idxes[1 + j] = section_counts[.global]
+			section_counts[.global] += 1
 		}
 	}
 
@@ -123,26 +115,6 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 		putb(&sections[.memory], Limit_Type.I64_Open)
 		uleb(&sections[.memory], u64((mem_init_size + PAGE_SIZE - 1) / PAGE_SIZE))
 		section_counts[.memory] += 1
-	}
-
-	static_init: {
-		putb(&sections[.data], u8(0))
-
-		putb(&sections[.data], wasm.Opcode.I64_Const)
-		sleb(&sections[.data], i64(init_mem_start))
-		putb(&sections[.data], wasm.Opcode.End)
-
-		uleb(&sections[.data], u64(mem_init_size - init_mem_start))
-		offset := init_mem_start
-		for global in ctx.globals[1:] {
-			if !slice.all_of(global.bytes, 0) {
-				padding := mem.align_forward_int(offset, global.align) - offset
-				resize(&sections[.data], len(sections[.data]) + padding)
-				append(&sections[.data], ..global.bytes)
-				offset += padding + len(global.bytes)
-			}
-		}
-		section_counts[.data] += 1
 	}
 
 	func_idxes := make([]int, len(ctx.procs))
@@ -161,24 +133,6 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 		}
 	}
 
-	emit_name :: proc(sec: ^[dynamic]u8, name: string) {
-		uleb(sec, u64(len(name)))
-		append(sec, name)
-	}
-
-	export :: proc(
-		sec: ^[dynamic]u8,
-		name: string,
-		type: Export_Type,
-		#any_int idx: u64,
-	) {
-		emit_name(sec, name)
-		putb(sec, type)
-		uleb(sec, idx)
-	}
-
-	indirect_ids: [dynamic]int
-
 	for prc, i in ctx.procs[1:] {
 		if prc.lit.body == nil {
 			scope := "env"
@@ -195,6 +149,7 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 		}
 	}
 
+	indirect_ids: [dynamic]int
 	for prc, i in ctx.procs[1:] {
 		if len(prc.out.code) != 0 {
 			if prc.name == "main" {
@@ -211,9 +166,7 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 				opcode := wasm.Opcode(prc.out.code[reloc.offset - 1])
 				#partial switch opcode {
 				case .I64_Const:
-					// TODO: dedup
-					id = u64(len(indirect_ids))
-					append(&indirect_ids, func_idxes[reloc.id])
+					id = indirect_id(&indirect_ids, func_idxes[reloc.id])
 				case .Call:
 					id = u64(func_idxes[reloc.id])
 				case .Global_Get:
@@ -243,6 +196,43 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 		}
 	}
 
+	static_init: {
+		putb(&sections[.data], u8(0))
+
+		putb(&sections[.data], wasm.Opcode.I64_Const)
+		sleb(&sections[.data], i64(init_mem_start))
+		putb(&sections[.data], wasm.Opcode.End)
+		uleb(&sections[.data], u64(mem_init_size - init_mem_start))
+
+		data_start := len(sections[.data])
+		resize(&sections[.data], data_start + mem_init_size - init_mem_start)
+		for global, i in ctx.globals {
+			if global.align == 0 do continue
+
+			zeroed := slice.all_of(global.bytes, 0) && len(global.relocs) == 0
+			if zeroed do continue
+
+			offset := data_start + global_offsets[i] - init_mem_start
+			copy(sections[.data][offset:], global.bytes)
+
+			for rel in global.relocs {
+				value: u64
+				if rel.to_offset == max(u32) {
+					value = indirect_id(&indirect_ids, func_idxes[rel.to])
+				} else {
+					value = u64(global_offsets[rel.to]) + u64(rel.to_offset)
+				}
+
+				copy(
+					sections[.data][offset + int(rel.in_offset):][:8],
+					mem.ptr_to_bytes(&value),
+				)
+			}
+		}
+
+		section_counts[.data] += 1
+	}
+
 	export(&sections[.export], "__stack_pointer", .global, 0)
 	section_counts[.export] += 1
 	export(&sections[.export], "memory", .mem, 0)
@@ -251,8 +241,8 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 	dyn_call_table: {
 		putb(&sections[.table], u8(0x70))
 		putb(&sections[.table], Limit_Type.I32_Closed)
-		uleb(&sections[.table], u64(len(indirect_ids)))
-		uleb(&sections[.table], u64(len(indirect_ids)))
+		uleb(&sections[.table], u64(len(indirect_ids) + 1))
+		uleb(&sections[.table], u64(len(indirect_ids) + 1))
 		section_counts[.table] += 1
 	}
 
@@ -260,7 +250,7 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 		putb(&sections[.element], u8(0))
 
 		putb(&sections[.element], wasm.Opcode.I32_Const)
-		sleb(&sections[.element], 0)
+		sleb(&sections[.element], 1)
 		putb(&sections[.element], wasm.Opcode.End)
 
 		uleb(&sections[.element], u64(len(indirect_ids)))
@@ -304,6 +294,35 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 
 	return slice.clone(bytes[:], scratch)
 
+	emit_global :: proc(
+		buf: ^[dynamic]u8,
+		ty: wasm.Type,
+		mutability: Mutability,
+		#any_int offset: i64,
+	) {
+		putb(buf, ty)
+		putb(buf, mutability)
+		putb(buf, wasm.Opcode.I64_Const)
+		sleb(buf, offset)
+		putb(buf, wasm.Opcode.End)
+	}
+
+	emit_name :: proc(sec: ^[dynamic]u8, name: string) {
+		uleb(sec, u64(len(name)))
+		append(sec, name)
+	}
+
+	export :: proc(
+		sec: ^[dynamic]u8,
+		name: string,
+		type: Export_Type,
+		#any_int idx: u64,
+	) {
+		emit_name(sec, name)
+		putb(sec, type)
+		uleb(sec, idx)
+	}
+
 	encode_func_type :: proc(
 		buf: ^[dynamic]u8,
 		params: []bac.Param_Spec,
@@ -327,5 +346,15 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 		}
 
 		wasm.encode_func_type(buf, params, ret_dts[:])
+	}
+
+	indirect_id :: proc(ids: ^[dynamic]int, func_idx: int) -> u64 {
+		index, ok := slice.linear_search(ids[:], func_idx)
+		if !ok {
+			index = len(ids)
+			append(ids, func_idx)
+		}
+
+		return u64(index + 1)
 	}
 }

@@ -2,7 +2,6 @@ package odin_son
 
 import "../bac"
 import "../bac/amd64"
-import "../bac/anal"
 import "../bac/arm"
 import "../bac/intel_xelp"
 import "../bac/regalloc"
@@ -935,7 +934,7 @@ emit_proc_code :: proc(
 
 	ctx.node_spec = ctx.target.spec
 	if ctx.check {
-		ctx.node_spec = &anal.SPEC
+		panic("")
 	}
 
 	peep_ctx: bac.Peep_Ctx
@@ -1034,6 +1033,13 @@ emit_known :: proc(
 	prop: Prop,
 	meta: ^typecheck.Check_Meta,
 ) -> Value {
+	if meta.lvalue {
+		global := bac.add_global(ctx, "const", meta.idx)
+		ptr := bac.add_global_addr(ctx, "const", global)
+		ptr = field_offset(ctx, ptr, int(meta.offset))
+		return {id = ptr, is_lvalue = true}
+	}
+
 	dt := type_to_dt(meta.type)
 	if meta.type in typecheck.NUMBER_TYPES ||
 	   typecheck.is_of(meta.type, ^typecheck.Enum) {
@@ -1041,14 +1047,25 @@ emit_known :: proc(
 	}
 
 	#partial switch t in unpack_type(meta.type) {
-	case typecheck.Typeid_Type,
-	     typecheck.Rawptr_Type,
-	     typecheck.Pointer,
-	     typecheck.Multi_Pointer:
+	case typecheck.Typeid_Type:
 		return Value(bac.add_c_int(ctx, "cnst", dt, meta.int))
+	case typecheck.Rawptr_Type, typecheck.Pointer, typecheck.Multi_Pointer:
+		global := ctx.globals[meta.idx]
+		if global.align == 0 {
+			value: i64
+			copy(mem.ptr_to_bytes(&value), global.bytes)
+			value += i64(meta.offset)
+			return Value(bac.add_c_int(ctx, "cnst", dt, value))
+		}
+
+		g := bac.add_global(ctx, "ptr", meta.idx)
+		ptr := bac.add_global_addr(ctx, "ptr", g)
+		return Value(field_offset(ctx, ptr, int(meta.offset)))
 	case typecheck.String_Type:
 		return {id = emit_string(ctx, prop, meta.string^), is_lvalue = true}
 	case ^typecheck.Proc_Type:
+		if meta.procid == 0 do return Value(bac.add_c_int(ctx, "nilproc", dt, 0))
+
 		res := bac.add_proc_addr(ctx, "fptr", u32(meta.procid))
 		return Value(res)
 	case:
@@ -1282,15 +1299,17 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 
 		if typecheck.is_nil_lit(d.left) || typecheck.is_nil_lit(d.right) {
 			union_expr := typecheck.is_nil_lit(d.left) ? d.right : d.left
-			u := unpack_type(get_node_type(union_expr)).(^typecheck.Union)
-			uv := emit_nodes(ctx, {}, union_expr)
-			assert(uv.is_lvalue)
-			tag_dt := type_to_dt(u.tag_ty)
-			tag := field_load(ctx, "ntag", tag_dt, uv.id, u.tag_offset)
-			zero := bac.add_c_int(ctx, "nzero", tag_dt, 0)
-			op: bac.Bin_Op = d.op.kind == .Cmp_Eq ? .Eq : .Ne
-			res = bac.add_bin_op(ctx, "ncmp", op, dt, tag, zero)
-			break
+			if u, ok := unpack_type(get_node_type(union_expr)).(^typecheck.Union);
+			   ok {
+				uv := emit_nodes(ctx, {}, union_expr)
+				assert(uv.is_lvalue)
+				tag_dt := type_to_dt(u.tag_ty)
+				tag := field_load(ctx, "ntag", tag_dt, uv.id, u.tag_offset)
+				zero := bac.add_c_int(ctx, "nzero", tag_dt, 0)
+				op: bac.Bin_Op = d.op.kind == .Cmp_Eq ? .Eq : .Ne
+				res = bac.add_bin_op(ctx, "ncmp", op, dt, tag, zero)
+				break
+			}
 		}
 
 		lhsv := emit_nodes(ctx, {}, d.left)
@@ -1450,16 +1469,13 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			if typecheck.is_static(d) {
 				size := type_size(vty)
 				bytes := make([]u8, size, ctx.globals.allocator)
-
-				if type_to_dt(vty) != .Void {
-					ok := typecheck.constant_scalar_bytes(
-						typecheck.get_node_meta(d.values[i]),
-						bytes,
-					)
-					assert(ok)
-				}
-
 				idx := typecheck.add_global(ctx, bytes, typecheck.type_align(vty))
+				typecheck.global_store(
+					ctx,
+					{idx, 0},
+					typecheck.get_node_meta(d.values[i]),
+				)
+
 				g := bac.add_global(ctx, name, idx)
 				ptr := bac.add_global_addr(ctx, name, g)
 				bac.pin(ctx, ptr)
@@ -1520,6 +1536,14 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			fmt.panicf("TODO: %#v", d)
 		}
 	case ^ast.Selector_Expr:
+		if get_node_type(d.expr) == .Module {
+			decl := typecheck.get_node_data(d.field, ^typecheck.Decl)
+			g := bac.add_global(ctx, decl.name, decl.global_idx)
+			res = bac.add_global_addr(ctx, decl.name, g)
+			lvalue = true
+			break
+		}
+
 		if typecheck.is_shader_uniform(ctx, d.expr) {
 			offset := typecheck.get_node_data(d.field, int)
 			res = bac.add_raw(
@@ -1574,7 +1598,8 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 	case ^ast.Index_Expr:
 		base := emit_nodes(ctx, {}, d.expr)
 
-		if typecheck.is_of(get_node_type(d.expr), typecheck.Multi_Pointer) {
+		if typecheck.is_of(get_node_type(d.expr), typecheck.Multi_Pointer) ||
+		   typecheck.is_of(get_node_type(d.expr), typecheck.Pointer) {
 			base = Value(to_rvalue(ctx, base, d.expr))
 		} else {
 			assert(base.is_lvalue)

@@ -436,13 +436,7 @@ generate_rust_api :: proc(api: []API_Proc) {
 			fmt.fprintln(f, "}")
 		}
 	}
-	for receiver in ([?]string {
-			"Proc",
-			"Builder",
-			"IfState",
-			"LoopState",
-			"BlockState",
-		}) {
+	for receiver in ([?]string{"Proc", "Builder", "IfState", "LoopState", "BlockState"}) {
 		checked := receiver != "Proc"
 		state_receiver := checked && receiver != "Builder"
 		if state_receiver {

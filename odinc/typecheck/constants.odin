@@ -1,5 +1,6 @@
 package typecheck
 
+import "core:mem"
 import "core:odin/ast"
 import "core:odin/tokenizer"
 import "core:strconv"
@@ -9,7 +10,13 @@ constant_base_type :: proc(ty: Type) -> Type {
 	return ty
 }
 
-constant_string :: proc(meta: ^Check_Meta) -> string {
+constant_string :: proc(ctx: ^Gen_Ctx, meta: ^Check_Meta) -> string {
+	if meta.lvalue {
+		data := global_raw_data(ctx, nil, meta)
+		length := global_load(ctx, global_field(ctx, meta, .Int, 8)).int
+		return string(ctx.globals[data.idx].bytes[data.offset:][:length])
+	}
+
 	value, _, ok := strconv.unquote_string(meta.string^)
 	assert(ok)
 	return value
@@ -46,7 +53,11 @@ constant_binary :: proc(
 		value: bool
 		switch {
 		case base == .String:
-			value = constant_compare(constant_string(lhs), constant_string(rhs), op)
+			value = constant_compare(
+				constant_string(ctx, lhs),
+				constant_string(ctx, rhs),
+				op,
+			)
 		case base == .Typeid:
 			value = constant_compare(lhs.typeida, rhs.typeida, op)
 		case in_set(base, FLOAT_TYPES):
@@ -55,6 +66,32 @@ constant_binary :: proc(
 			value = constant_compare(lhs.uint, rhs.uint, op)
 		case in_set(base, SIGNED_TYPES):
 			value = constant_compare(lhs.int, rhs.int, op)
+		case is_data_pointer(base):
+			left, right := lhs.dest, rhs.dest
+			left_global, right_global :=
+				ctx.globals[left.idx], ctx.globals[right.idx]
+			if left_global.align == 0 && right_global.align == 0 {
+				left_value, right_value: u64
+				copy(mem.ptr_to_bytes(&left_value), left_global.bytes)
+				copy(mem.ptr_to_bytes(&right_value), right_global.bytes)
+				value = constant_compare(
+					left_value + u64(left.offset),
+					right_value + u64(right.offset),
+					op,
+				)
+			} else if op == .Cmp_Eq || op == .Not_Eq {
+				value = (left == right) == (op == .Cmp_Eq)
+			} else if left.idx == right.idx {
+				value = constant_compare(left.offset, right.offset, op)
+			} else {
+				return error(
+					ctx,
+					node,
+					"can not order constant pointers to different globals",
+				)
+			}
+		case is_of(base, ^Proc_Type):
+			value = constant_compare(lhs.procid, rhs.procid, op)
 		case:
 			return error(
 				ctx,
@@ -190,6 +227,27 @@ typecheck_conversion :: proc(
 
 	if src.type == dst do return src
 
+	if is_data_pointer(dst) {
+		if is_data_pointer(src.type) do return tcmeta(ctx, dst, src.lit)
+		return global_pointer(ctx, dst, src.uint)
+	}
+
+	if is_data_pointer(src.type) {
+		global := ctx.globals[src.idx]
+		if global.align != 0 {
+			return error(
+				ctx,
+				node,
+				"a relocatable pointer can not be converted to a constant integer",
+			)
+		}
+
+		value: Lit
+		copy(mem.ptr_to_bytes(&value), global.bytes)
+		value.uint += u64(src.offset)
+		return tcmeta(ctx, dst, value)
+	}
+
 	from, to := constant_base_type(src.type), constant_base_type(dst)
 	value: Lit
 
@@ -255,7 +313,7 @@ typecheck_directive :: proc(
 		message := "compile-time assertion failed"
 		if len(node.args) == 2 {
 			msg := typecheck_eval_as(ctx, node.args[1], .String)
-			if msg.type == .String do message = constant_string(msg)
+			if msg.type == .String do message = constant_string(ctx, msg)
 		}
 
 		if cond.type == .Bool && cond.known && cond.int == 0 {
@@ -267,7 +325,7 @@ typecheck_directive :: proc(
 		if !ok do return ty
 		message := typecheck_eval_as(ctx, args[0], .String)
 		if message.type != .String do return &INVALID
-		return error(ctx, node, "%s", constant_string(message))
+		return error(ctx, node, "%s", constant_string(ctx, message))
 	case:
 		return error(ctx, node, "unsupported directive #%s", directive.name)
 	}

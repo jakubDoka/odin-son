@@ -1,47 +1,113 @@
 This codebase contains a in progress implementation of the JIT compiler and a
 Odin frontend to dogfood the JIT.
 
-The tests are generated with `gen-meta` (look into `misc/profiles.fish`) and
-node spec is generated with `gen-spec`, you can run tests with `run-test`.
+### Code Conventions
 
-The backend is split into `bac` (the generic engine, shared node spec, and
-codegen scaffolding) plus one subpackage per architecture, e.g. `bac/amd64` and
-the pre-lowering SSA IR `bac/ssa`. Shared node kinds are in
-`Node_Type` in `bac/graph.odin`; target-specific node kinds go into that
-target's own enum in its own module (e.g. `Node_Type` in `bac/amd64/amd64.odin`,
-`Node_Type` in `bac/ssa/ssa_spec.odin`). Adding a new architecture
-means adding a new `bac/<arch>` directory — nothing in root `bac` should need
-editing. If you are going to use the generated construction fuctions in the
-backend, or any generated thing for that matter, they should have a stub
-version in that module's own bootstrap file (`bac/meta/meta.odin` for root,
-`bac/meta2/meta2.odin` for generating the submodules) or the codegen will fail.
+When writing longer functions, try to minimize the distance from variable to
+use, but also insert blank lines, usually after the `if` that used some
+variable declarations near it. Also separate code by blank lines if its not as
+strongly related as code before it but dont overdo it, if there is a sequence
+of unrelated lines then invert the rule.
 
-A test is specified in a `tests/TESTS.md` in a standard format that is parsed
-by `meta.odin` and translated to `tests/tests.odin` functions. The code snipped
-needs to be compilable with odin compiler and SHOULD NEVER CONTAIN REACHABLE
-INFINITE LOOP since ist ran before the actual test starts to extract the return
-value that is then asserted for changes.
+Prefer local functions if they are only used in that scope. When you declare
+local functions put them at the end of the scope or after they are used.
 
-The `tests/TESTS.md` snippets double as the corpus for the AFL++ fuzzer, run it
-with `./misc/fuzz.sh` (`--help` for the flags). It only compiles, never runs
-the generated code. `gen-meta` imports whatever crashed into `fuzz/crashes/`
-and turns each one into a test.
+Functions are usefull for reuse, but only do single line functions if they
+remove expression duplication. When you start writing code its usually better
+to have a bit of duplicity then priemptively extract functions. Single use
+functions should not exist unless they larger and would otherwise be too nested.
 
-Another category of tests we have are `test-programs`, that can be ran with
-`./misc/run-programs.sh`, the scripts asserts that exit codes and stdout/err
-are identical in programs compiled with each compiler.
-
-When running tests, NEVER wait for more the 20 seconds, tests usually compile in
-1s and run in matter of miliseconds.
+The code is viewed with 2-space tabs.
 
 NEVER comment the code with what it does, only why we absolutely need it if its
 handling an edgecase that is unclear.
 
-The peephole optimizations can be found with `peep :: proc`.
+Prefer adding asserts then silent filter clauses. If the assert is hit for a
+good reason, handle it instead.
 
-If the test segfaults use -define:NO_RUN=true to view the disassembly.
+Its preffered to use static tables over big swich statements that just select a
+value if that saves code. Of course if the table would be prohibitively big,
+compared to what entryes are actualy populated dont do this.
+
+### Project layout
+
+The project is split into 2 main libraries:
+- `bac/`   - stand alone jit compilation library using Sea Of Nodes ir
+- `odinc/` - incomplete implementation of the odin compiler
+
+#### bac/
+
+The library has its core definitions in the root, then there are modules used
+for code generation, and lastly modules containing `Node_Spec` definitions. A
+`Node_Spec` is a big struct containing tables and function pointers that define
+how the IR is compiled. `Proc` needs to have a `Node_Spec` to operate properly,
+so `bac/ssa` defined a cross platform sped that is used during building and for
+cross platform optimizations. Other spec definitions are related to actually
+emitting the final executable code.
+
+If you are not explicitly instructed to modify this directory, assume it should
+not be modified.
+
+DONT try to obtain registers/local/slot in the instruction encoding stage
+(emit_functions/emit_instr). If you need temporaries, lower the node into
+multiple in a target specific peephole and, if required, add new instructions
+to the target. I dont want to see any hacks like spilling random register to
+stack or adding a wasm local, only exception is mem2mem split and that is rare
+case, no instructions should quarantee spills.
+
+When hardcoding instructions encodings, it is adamant that you add a comment
+with the parametrized assembly to make it clear what is being encoded.
+
+### Tooling
+
+Common commands you should use are in `misc/profiles.fish` (`### codegen` and
+down). Scripts are always written in odin (`/script`).
 
 Use the fff MCP tools for all file search operations instead of default tools.
+
+#### Testing
+
+The tests are mostly autogenerated and they should be, there are few categories
+of tests:
+
+- `tests/TESTS.md`     - normal integration tests
+- `tests/GPU-TESTS.md` - run on gpu, restricted features
+- `fuzz/crashes/*`     - generated by the fuzzer, cpu only as well
+- `test-programs/`     - these are full end2end tests (`run-programs`)
+
+A test always runs first in native odin code compiled by the official odin
+compiler. Haveing a infinite loop in the test code is therefore UNNACCEPTABLE.
+The results of that are then compared to the result from the program compiled
+by the odin-son.
+
+Don't forget to delete any temporary tests, ideally dont even put them into
+this repo.
+
+Its better wo write constants as hex in tests if it makes it more obvious what
+is happening.
+
+#### Codegen
+
+There are various code generation scripts:
+
+- `bac/meta/`    - core library and first stage codegen script, it generates
+  the root node_spec.odin code
+- `bac/meta2/`   - second stage codegen, generates node spec for everithing
+  else
+- `bac/bindgen/` - generates Rust and C bindings, dont fix error in bindings
+  unless explicitly instructed
+- `bac/tag-gen/` - code walks the source files looking for `@(tag = "")`
+  attributes and generating code based on them. There are 2 possible
+  attributes:
+  - `node_proc`  - this function will have a auto generated overload to accept
+    both ^Node and Node_ID
+  - `api`        - included in the public api of the bac library
+  - `priority=n` - determines ordering of the functions in the api files
+    (relevant for C)
+
+Use `gen-spec` command to regenerate all of the code.
+
+### Bugs, crashes and debugging
 
 It's important that whenever you work around a compiler bug, denote it in the
 test code with a comment starting with `COMPILER BUG:`, you can then fff for
@@ -58,33 +124,7 @@ the context. So basically, grep the value and verify the allocator was properly
 set. Reason this happens is becuause its common to override the main allocator
 with a scoped arena. As mentioned above.
 
-Its preffered to use static tables over big swich statements that just select a
-value if that saves code. Of course if the table would be prohibitively big,
-compared to what entryes are actualy populated dont do this.
-
-DONT try to obtain registers/local/slot in the instruction encoding stage
-(emit_functions/emit_instr). If you need temporaries, lower the node into
-multiple in a target specific peephole and, if required, add new instructions
-to the target. I dont want to see any hacks like spilling random register to
-stack or adding a wasm local, only exception is mem2mem split and that is rare
-case, no instructions should quarantee spills.
-
-DONT keep tests in the repo unless instructed otherwise, you can write tests as
-a intermediary step in sloving something but dont keep them, unless instructed
-to write tests.
-
-Its better wo write constants as hex in tests if it makes it more obvious what
-is happening.
-
-When hardcoding instructions encodings, it is adamant that you add a comment
-with the parametrized assembly to make it clear what is being encoded.
-
-When you declare local functions put them at the end of the scope or after they
-are used.
+If the test segfaults use -define:NO_RUN=true to view the disassembly, if they
+still segfault, you know its a compiler error not a misscompilation.
 
 Debug with gdb when appropriate, eg segfaults.
-
-Try to use blank likes where appropriate that improves code readability.
-
-As you test code try to reiterate trough checks you added and remove them if
-they are not needed and instead put them as asserts.

@@ -8855,3 +8855,27 @@ main :: proc() -> int {
 	return y[0] + y[1]
 }
 ```
+
+#### global compound literals
+```odin
+package main
+
+Stru :: struct {
+	x: int,
+	y: int,
+}
+
+Uni :: union {
+	u8,
+	int,
+}
+
+@(static) stru := Stru{1, 2}
+@(static) arr := [3]int{4, 2, 5}
+@(static) stru_arr := [2]Stru{{8, 7}, {9, 3}}
+@(static) uni: Uni = int(1)
+
+main :: proc() -> int {
+	return stru.x + stru.y + arr[1] + arr[2] + stru_arr[0].x + stru_arr[1].y + uni.(int)
+}
+```

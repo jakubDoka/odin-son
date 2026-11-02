@@ -17324,6 +17324,52 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) global_compound_literals :: proc(t: ^testing.T) {
+
+
+
+Stru :: struct {
+	x: int,
+	y: int,
+}
+
+Uni :: union {
+	u8,
+	int,
+}
+
+@(static) stru := Stru{1, 2}
+@(static) arr := [3]int{4, 2, 5}
+@(static) stru_arr := [2]Stru{{8, 7}, {9, 3}}
+@(static) uni : Uni = int(1)
+
+main_ :: proc() -> int {
+	return stru.x + stru.y + arr[1] + arr[2] + stru_arr[0].x + stru_arr[1].y + uni.(int)
+}
+
+run_test(t, `global_compound_literals`, `
+package main
+
+Stru :: struct {
+	x: int,
+	y: int,
+}
+
+Uni :: union {
+	u8,
+	int,
+}
+
+@(static) stru := Stru{1, 2}
+@(static) arr := [3]int{4, 2, 5}
+@(static) stru_arr := [2]Stru{{8, 7}, {9, 3}}
+@(static) uni : Uni = int(1)
+
+main :: proc() -> int {
+	return stru.x + stru.y + arr[1] + arr[2] + stru_arr[0].x + stru_arr[1].y + uni.(int)
+}
+`, main_())
+}
 @(test) fuzz_0092546c2ab7b49f :: proc(t: ^testing.T) {
 run_test(t, "fuzz_0092546c2ab7b49f", string(#load("../fuzz/crashes/0092546c2ab7b49f.odin")), 0,
 				diff = false, no_run = true)
@@ -19208,6 +19254,7 @@ NAMES := []string{
 `count_trailing_zeros_of_a_narrow_zero_uses_its_own_width`,
 `simd_byte_mask_extracts_least_significant_bits`,
 `memset_conversion_preserves_reads_inside_the_loop`,
+`global_compound_literals`,
 `fuzz_0092546c2ab7b49f`,
 `fuzz_00f1be4a1ea4c499`,
 `fuzz_0203aad88c140351`,
@@ -27693,6 +27740,28 @@ main :: proc() -> int {
 	return fill_sum(([^]u8)(&a[0]), 4)
 }
 `,
+`
+package main
+
+Stru :: struct {
+	x: int,
+	y: int,
+}
+
+Uni :: union {
+	u8,
+	int,
+}
+
+@(static) stru := Stru{1, 2}
+@(static) arr := [3]int{4, 2, 5}
+@(static) stru_arr := [2]Stru{{8, 7}, {9, 3}}
+@(static) uni : Uni = int(1)
+
+main :: proc() -> int {
+	return stru.x + stru.y + arr[1] + arr[2] + stru_arr[0].x + stru_arr[1].y + uni.(int)
+}
+`,
 `#load("../fuzz/crashes/0092546c2ab7b49f.odin")`,
 `#load("../fuzz/crashes/00f1be4a1ea4c499.odin")`,
 `#load("../fuzz/crashes/0203aad88c140351.odin")`,
@@ -28095,6 +28164,7 @@ main :: proc() -> int {
 `#load("../fuzz/crashes/regalloc_ioob.odin")`,
 }
 IS_FUZZ := []bool{
+false,
 false,
 false,
 false,

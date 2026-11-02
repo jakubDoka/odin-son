@@ -27,6 +27,7 @@ MODULE_INTRINSICS :: 0
 
 Ty_Propagation :: struct {
 	inferred_ty:  Type,
+	dest:         Lit,
 	referencing:  bool,
 	field_access: bool,
 	key:          Maybe(Decl_Key),
@@ -107,15 +108,22 @@ Loop_State :: struct {
 }
 
 Lit :: struct #raw_union {
-	procid:    Proc_ID,
-	module:    Module_ID,
-	typeida:   Type,
-	intrinsic: Intrinsic,
-	int:       i64,
-	uint:      u64,
-	rune:      rune,
-	float:     f64,
-	string:    ^string,
+	procid:     Proc_ID,
+	module:     Module_ID,
+	typeida:    Type,
+	intrinsic:  Intrinsic,
+	int:        i64,
+	uint:       u64,
+	rune:       rune,
+	float:      f64,
+	float32:    f32,
+	string:     ^string,
+	using dest: Global_Dest,
+}
+
+Global_Dest :: struct {
+	idx:    u32,
+	offset: u32,
 }
 
 Check_Meta :: struct {
@@ -276,7 +284,18 @@ expect :: proc(
 	got: ^Check_Meta,
 	want: Type,
 ) -> ^Check_Meta {
-	if node == nil || assignable(want, got.type) do return got
+	if node == nil do return got
+	if want == got.type do return got
+	if want == .Void ||
+	   want == .Invalid_Type ||
+	   got.type == .Invalid_Type {return got}
+
+	if u, ok := unpack_type(want).(^Union); ok {
+		if idx, found := union_variant_index(u, got.type); found {
+			return got
+		}
+	}
+
 	return error(ctx, node, "expected %v, found %v", want, got.type)
 }
 
@@ -284,8 +303,11 @@ typecheck_as :: proc(
 	ctx: ^Gen_Ctx,
 	want: Type,
 	node: ^ast.Node,
+	prop: Ty_Propagation = {},
 ) -> ^Check_Meta {
-	return expect(ctx, node, typecheck(ctx, {inferred_ty = want}, node), want)
+	prop := prop
+	prop.inferred_ty = want
+	return expect(ctx, node, typecheck(ctx, prop, node), want)
 }
 
 // unwrap_type is the recovering counterpart of `unpack_type(ty).(T)`: on a
@@ -757,7 +779,19 @@ tmeta :: proc(ctx: ^Gen_Ctx, ty: Type) -> ^Check_Meta {
 	return new_clone(Check_Meta{type = ty}, ctx.types.allocator)
 }
 
-tcmeta :: proc(ctx: ^Gen_Ctx, ty: Type, value: Lit) -> ^Check_Meta {
+lcmeta :: proc(ctx: ^Gen_Ctx, ty: Type, dest: Global_Dest) -> ^Check_Meta {
+	return new_clone(
+		Check_Meta{type = ty, known = true, lvalue = true, lit = {dest = dest}},
+		ctx.types.allocator,
+	)
+}
+
+tcmeta :: proc(
+	ctx: ^Gen_Ctx,
+	ty: Type,
+	value: Lit,
+	global := false,
+) -> ^Check_Meta {
 	value := value
 	if ty == .F32 do value.float = f64(f32(value.float))
 	return new_clone(
@@ -810,10 +844,7 @@ find_module_decl :: proc(
 	needle := hash_name(name)
 
 	module := &ctx.modules[mod]
-	for iter := bac.simd_iter_from(
-		module.decl_idx.hash[:len(module.decl_idx)],
-		needle,
-	); idx in bac.simd_iter_next(&iter) {
+	for iter := bac.simd_iter_from(module.decl_idx.hash[:len(module.decl_idx)], needle); idx in bac.simd_iter_next(&iter) {
 		decl := &module.decl_idx.id[idx]
 		if decl.name != name do continue
 		if !decl_enabled(ctx, mod, decl) do continue
@@ -871,34 +902,24 @@ typecheck_decl :: proc(
 
 	context.allocator, _ = arna.scrath()
 	dty := ast.clone(decl.ty)
-	ty := emit_type(ctx, dty)
+	decl.resolved_ty = emit_type(ctx, dty)
 	vl: ^Check_Meta
-	if decl.is_mutable {
-		vl = typecheck(
-			ctx,
-			{
-				inferred_ty = ty,
-				key = Decl_Key{decl.name, decl.file, u32(decl.value.pos.offset)},
-			},
-			decl.value,
-		)
-	} else {
-		vl = typecheck_eval(
-			ctx,
-			{
-				inferred_ty = ty,
-				key = Decl_Key{decl.name, decl.file, u32(decl.value.pos.offset)},
-			},
-			decl.value,
-		)
-	}
+	vl = typecheck_eval(
+		ctx,
+		{
+			inferred_ty = decl.resolved_ty,
+			key = Decl_Key{decl.name, decl.file, u32(decl.value.pos.offset)},
+		},
+		decl.value,
+	)
+	if decl.resolved_ty == .Void do decl.resolved_ty = vl.type
 	assert(get_node_meta(decl.value) != nil)
 	if get_node_meta(decl.value) == &VOID {
 		set_node_data(decl.value, &INVALID)
 		return error(ctx, decl.value, "the call returns no value")
 	}
 
-	return expect(ctx, decl.value, vl, ty)
+	return expect(ctx, decl.value, vl, decl.resolved_ty)
 }
 
 module_add_decls :: proc(ctx: ^Gen_Ctx, mid: Module_ID, decls: []Decl) {
@@ -1260,13 +1281,14 @@ get_builtin_proc :: proc(node: ^ast.Node) -> Builtin_Proc {
 }
 
 Decl :: struct {
-	name:       string,
-	ty:         ^ast.Expr,
-	value:      ^ast.Expr,
-	file:       File_ID,
-	is_mutable: bool,
-	global_idx: u32,
-	condition:  ^Decl_Condition,
+	name:        string,
+	ty:          ^ast.Expr,
+	value:       ^ast.Expr,
+	resolved_ty: Type,
+	file:        File_ID,
+	is_mutable:  bool,
+	global_idx:  u32,
+	condition:   ^Decl_Condition,
 }
 
 Module :: struct {
@@ -1338,10 +1360,7 @@ types_init :: proc(types: ^Types) {
 		append(&buf, &arna.scratch[0], &arna.scratch[1])
 		types.owns_scratch = true
 	}
-	for &arena in mem.slice_data_cast(
-		[]arna.Allocator,
-		mem.ptr_to_bytes(&types.mems),
-	) {
+	for &arena in mem.slice_data_cast([]arna.Allocator, mem.ptr_to_bytes(&types.mems)) {
 		append(&buf, &arena)
 	}
 
@@ -1351,10 +1370,7 @@ types_init :: proc(types: ^Types) {
 }
 
 types_reset :: proc(types: ^Types) {
-	for &arena in mem.slice_data_cast(
-		[]arna.Allocator,
-		mem.ptr_to_bytes(&types.mems),
-	) {
+	for &arena in mem.slice_data_cast([]arna.Allocator, mem.ptr_to_bytes(&types.mems)) {
 		arna.reset(&arena, false)
 	}
 
@@ -1385,10 +1401,7 @@ types_deinit :: proc(types: ^Types) {
 		append(&buf, &arna.scratch[0], &arna.scratch[1])
 		types.owns_scratch = false
 	}
-	for &arena in mem.slice_data_cast(
-		[]arna.Allocator,
-		mem.ptr_to_bytes(&types.mems),
-	) {
+	for &arena in mem.slice_data_cast([]arna.Allocator, mem.ptr_to_bytes(&types.mems)) {
 		append(&buf, &arena)
 	}
 
@@ -1519,6 +1532,8 @@ typecheck :: proc(
 	ty: ^Check_Meta,
 ) {
 	context.allocator, _ = arna.scrath()
+
+	should_be_known := ctx.eval_depth > 0
 
 	if node == nil do return &VOID
 
@@ -1921,64 +1936,73 @@ typecheck :: proc(
 		}
 		ty = tcmeta(ctx, tp, value)
 	case ^ast.Comp_Lit:
-		inferred_ty := emit_type(ctx, d.type)
-		if inferred_ty == .Void do inferred_ty = prop.inferred_ty
+		prop := gi_init(ctx, prop, emit_type(ctx, d.type))
 
-		#partial switch t in unpack_type(inferred_ty) {
+		#partial switch t in unpack_type(prop.inferred_ty) {
 		case ^Struct:
 			for elem, i in d.elems {
-				#partial switch e in elem.derived {
+				field: ^Struct_Field
+				value: ^ast.Expr
+
+				#partial matchf: switch e in elem.derived {
 				case ^ast.Field_Value:
 					name := src_of(ctx.file^, e.field)
-					found := false
-					for &field in t.fields {
-						if field.name != name do continue
-						found = true
-						set_node_data(e.field, field.offset)
-						typecheck_as(ctx, field.ty, e.value)
+					for &fld in t.fields {
+						if fld.name == name {
+							field = &fld
+							value = e.value
+							set_node_data(e.field, field.offset)
+							break matchf
+						}
 					}
-					if !found {
-						error(ctx, e.field, "%v has no field %q", inferred_ty, name)
-					}
+					error(ctx, e.field, "%v has no field %q", prop.inferred_ty, name)
+					continue
 				case:
 					if i >= len(t.fields) {
 						error(
 							ctx,
 							elem,
 							"%v has only %v fields",
-							inferred_ty,
+							prop.inferred_ty,
 							len(t.fields),
 						)
 						continue
 					}
-					typecheck_as(ctx, t.fields[i].ty, elem)
+					field = &t.fields[i]
+					value = elem
 				}
-			}
 
-			ty = tmeta(ctx, inferred_ty)
+				gi_set_offset(&prop, field.offset)
+				res := typecheck_as(ctx, field.ty, value, prop)
+				gi_ensure_stored(ctx, prop, res)
+			}
 		case ^Array:
 			if len(d.elems) > t.len {
 				error(
 					ctx,
 					node,
 					"%v holds only %v elements, found %v",
-					inferred_ty,
+					prop.inferred_ty,
 					t.len,
 					len(d.elems),
 				)
 			}
-			for elem in d.elems {
-				typecheck_as(ctx, t.elem, elem)
+			for elem, i in d.elems {
+				gi_set_offset(&prop, i * type_size(t.elem))
+				res := typecheck_as(ctx, t.elem, elem, prop)
+				gi_ensure_stored(ctx, prop, res)
 			}
-			ty = tmeta(ctx, inferred_ty)
 		case:
 			ty = error(
 				ctx,
 				node,
 				"a compound literal can not construct a %v",
-				inferred_ty,
+				prop.inferred_ty,
 			)
+			break match
 		}
+
+		ty, lvalue = gi_end(ctx, prop)
 	case ^ast.Index_Expr:
 		base := typecheck(ctx, {}, d.expr)
 		expect_integer(ctx, d.index)
@@ -2918,8 +2942,7 @@ typecheck :: proc(
 					}
 					prc.name = string(name.buf[:])
 					{context.allocator = ctx.types.allocator
-						prc.lit = ast.clone(prc.lit).derived.(^ast.Proc_Lit)
-					}
+						prc.lit = ast.clone(prc.lit).derived.(^ast.Proc_Lit)}
 
 					ar_rets := preprocess_list(
 						prc.lit.type.results,
@@ -3261,6 +3284,7 @@ typecheck_program :: proc(ctx: ^Gen_Ctx) {
 
 	@(static) stt: ast.Proc_Lit
 	append(&ctx.procs, Proc{lit = &stt})
+	append(&ctx.globals, Global_Data{})
 
 	for mid in 0 ..< len(ctx.modules) {
 		ctx.module = Module_ID(mid)
@@ -3284,16 +3308,22 @@ typecheck_program :: proc(ctx: ^Gen_Ctx) {
 				)
 				continue
 			}
-			bytes := make([]u8, size, ctx.globals.allocator)
 
-			if decl.id.value.derived != &nil_node {
-				if !constant_scalar_bytes(vl, bytes) {
-					error(ctx, decl.id.value, "TODO: non constant global initializer")
-					continue
-				}
+			assert(vl.known)
+
+			if vl.lvalue {
+				assert(vl.dest.offset == 0, "TODO")
+				decl.id.global_idx = vl.dest.idx
+			} else {
+				ctx.eval_depth += 1
+				defer ctx.eval_depth -= 1
+
+				prop := gi_init(ctx, {inferred_ty = decl.id.resolved_ty}, vl.type)
+				gi_ensure_stored(ctx, prop, vl)
+				decl.id.global_idx = gi_end(ctx, prop).idx
+
+				vl.type = decl.id.resolved_ty
 			}
-
-			decl.id.global_idx = add_global(ctx, bytes, type_align(vl.type))
 		}
 
 		for i in 0 ..< mod.file_count {
@@ -3612,4 +3642,86 @@ extract_var_ident :: proc(
 		return nil, false
 	}
 	return ident, true
+}
+
+Global_Init :: struct {
+	prev_offset: u32,
+	root_ty:     Type,
+	using prop:  Ty_Propagation,
+}
+
+gi_init :: proc(
+	ctx: ^Gen_Ctx,
+	prop: Ty_Propagation,
+	ty: Type,
+) -> (
+	res: Global_Init,
+) {
+	res.prop = prop
+	res.prev_offset = prop.dest.offset
+	res.root_ty = res.inferred_ty
+
+	uni: ^Union
+	tag: int
+	if ty != .Void {
+		res.root_ty = ty
+		ok: bool
+		if uni, ok = unpack_type(res.inferred_ty).(^Union); ok {
+			if tag, ok = slice.linear_search(uni.variants, ty); ok {
+				tag += 1
+				res.root_ty = res.inferred_ty
+			}
+		}
+		res.inferred_ty = ty
+	}
+
+	size := type_size(res.root_ty)
+	align := type_align(res.root_ty)
+	if ctx.eval_depth > 0 && res.dest.dest.idx == 0 {
+		res.dest.dest = {u32(len(ctx.globals)), 0}
+		append(
+			&ctx.globals,
+			Global_Data{make([]u8, size, ctx.types.allocator), align},
+		)
+
+		if uni != nil {
+			gi_set_offset(&res, uni.tag_offset)
+			gi_ensure_stored(
+				ctx,
+				res,
+				&Check_Meta{type = uni.tag_ty, known = true, lit = {int = i64(tag)}},
+			)
+			gi_set_offset(&res, 0)
+		}
+	}
+
+	return
+}
+
+gi_set_offset :: proc(prop: ^Global_Init, #any_int rel: u32) {
+	prop.dest.offset = prop.prev_offset + rel
+}
+
+gi_ensure_stored :: proc(ctx: ^Gen_Ctx, prop: Global_Init, res: ^Check_Meta) {
+	if ctx.eval_depth > 0 && !res.lvalue {
+		assert(res.known)
+		dest := ctx.globals[prop.dest.idx].bytes[prop.dest.offset:]
+		vl_size := type_size(res.type)
+		copy(dest[:vl_size], mem.ptr_to_bytes(&res.lit))
+	}
+}
+
+gi_end :: proc(
+	ctx: ^Gen_Ctx,
+	prop: Global_Init,
+) -> (
+	^Check_Meta,
+	bool,
+) #optional_ok {
+	if prop.dest.dest.idx != 0 {
+		return lcmeta(ctx, prop.root_ty, {prop.dest.dest.idx, prop.prev_offset}),
+			true
+	} else {
+		return tmeta(ctx, prop.inferred_ty), true
+	}
 }

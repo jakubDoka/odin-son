@@ -108,12 +108,12 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 			init_mem_start = mem_init_size
 		}
 
-		for global, j in ctx.globals {
+		for global, j in ctx.globals[1:] {
 			if do_zeroed == slice.all_of(global.bytes, 0) {
 				mem_init_size = mem.align_forward_int(mem_init_size, global.align)
 				emit_global(&sections[.global], .i64, .const, mem_init_size)
 				mem_init_size += len(global.bytes)
-				global_idxes[j] = section_counts[.global]
+				global_idxes[1 + j] = section_counts[.global]
 				section_counts[.global] += 1
 			}
 		}
@@ -134,7 +134,7 @@ emit_wasm_module :: proc(ctx: ^Gen_Ctx, scratch := context.allocator) -> []u8 {
 
 		uleb(&sections[.data], u64(mem_init_size - init_mem_start))
 		offset := init_mem_start
-		for global in ctx.globals {
+		for global in ctx.globals[1:] {
 			if !slice.all_of(global.bytes, 0) {
 				padding := mem.align_forward_int(offset, global.align) - offset
 				resize(&sections[.data], len(sections[.data]) + padding)

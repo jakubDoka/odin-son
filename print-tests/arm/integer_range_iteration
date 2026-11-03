@@ -1,0 +1,259 @@
+=========== OPT LEVEL: none-quick ===========
+main:
+    movz x0, #4
+    movz x1, #1
+    movn x2, #2
+    movz x3, #10
+    movz x4, #0
+    movz x5, #0
+1:
+    cmp x2, x0
+    b.ge 2
+    madd x6, x3, x2, xzr
+    add x6, x6, x4
+    add x7, x4, x1
+    add x2, x2, x1
+    add x6, x6, x5
+    mov x5, x6
+    mov x4, x7
+    b 1
+2:
+    movz x0, #5
+    movz x2, #2
+    movz x3, #65535
+    movk x3, #65535, lsl #16
+    movk x3, #65535, lsl #32
+    movk x3, #32767, lsl #48
+    mov x4, x5
+3:
+    cmp x2, x0
+    b.gt 5
+    add x4, x4, x2
+    cmp x3, x2
+    b.eq 4
+    add x2, x2, x1
+    b 3
+4:
+    mov x0, x4
+    b 6
+5:
+    mov x0, x4
+6:
+    movz x2, #11
+    movz x3, #8
+    movz x4, #100
+    movz x5, #0
+7:
+    cmp x3, x2
+    b.ge 8
+    madd x6, x4, x5, xzr
+    add x7, x5, x1
+    add x6, x6, x0
+    add x3, x3, x1
+    mov x0, x6
+    mov x5, x7
+    b 7
+8:
+    ret
+=========== OPT LEVEL: none ===========
+main:
+    movz x5, #4
+    movz x6, #1
+    movn x2, #2
+    movz x4, #10
+    movz x0, #0
+    movz x1, #0
+1:
+    cmp x2, x5
+    b.ge 2
+    madd x3, x4, x2, xzr
+    add x3, x3, x0
+    add x0, x0, x6
+    add x2, x2, x6
+    add x1, x3, x1
+    b 1
+2:
+    movz x3, #5
+    movz x0, #2
+    movz x2, #65535
+    movk x2, #65535, lsl #16
+    movk x2, #65535, lsl #32
+    movk x2, #32767, lsl #48
+3:
+    cmp x0, x3
+    b.gt 4
+    add x1, x1, x0
+    cmp x2, x0
+    b.eq 4
+    add x0, x0, x6
+    b 3
+    b 4
+4:
+    movz x5, #11
+    movz x2, #8
+    movz x4, #100
+    mov x0, x1
+    movz x1, #0
+5:
+    cmp x2, x5
+    b.ge 6
+    madd x3, x4, x1, xzr
+    add x1, x1, x6
+    add x0, x3, x0
+    add x2, x2, x6
+    b 5
+6:
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+main:
+    movz x0, #4
+    movz x1, #1
+    movn x2, #2
+    movz x3, #10
+    movz x4, #0
+    movz x5, #0
+1:
+    cmp x2, x0
+    b.ge 2
+    madd x6, x3, x2, xzr
+    add x6, x6, x4
+    add x7, x4, x1
+    add x2, x2, x1
+    add x6, x6, x5
+    mov x5, x6
+    mov x4, x7
+    b 1
+2:
+    movz x0, #5
+    movz x2, #2
+    movz x3, #65535
+    movk x3, #65535, lsl #16
+    movk x3, #65535, lsl #32
+    movk x3, #32767, lsl #48
+    mov x4, x5
+3:
+    cmp x2, x0
+    b.gt 5
+    add x4, x4, x2
+    cmp x3, x2
+    b.eq 4
+    add x2, x2, x1
+    b 3
+4:
+    mov x0, x4
+    b 6
+5:
+    mov x0, x4
+6:
+    movz x2, #11
+    movz x3, #8
+    movz x4, #100
+    movz x5, #0
+7:
+    cmp x3, x2
+    b.ge 8
+    madd x6, x4, x5, xzr
+    add x7, x5, x1
+    add x6, x6, x0
+    add x3, x3, x1
+    mov x0, x6
+    mov x5, x7
+    b 7
+8:
+    ret
+=========== OPT LEVEL: moderate ===========
+main:
+    movz x5, #4
+    movz x6, #1
+    movn x2, #2
+    movz x4, #10
+    movz x0, #0
+    movz x1, #0
+1:
+    cmp x2, x5
+    b.ge 2
+    madd x3, x4, x2, xzr
+    add x3, x3, x0
+    add x0, x0, x6
+    add x2, x2, x6
+    add x1, x3, x1
+    b 1
+2:
+    movz x3, #5
+    movz x0, #2
+    movz x2, #65535
+    movk x2, #65535, lsl #16
+    movk x2, #65535, lsl #32
+    movk x2, #32767, lsl #48
+3:
+    cmp x0, x3
+    b.gt 4
+    add x1, x1, x0
+    cmp x2, x0
+    b.eq 4
+    add x0, x0, x6
+    b 3
+    b 4
+4:
+    movz x5, #11
+    movz x2, #8
+    movz x4, #100
+    mov x0, x1
+    movz x1, #0
+5:
+    cmp x2, x5
+    b.ge 6
+    madd x3, x4, x1, xzr
+    add x1, x1, x6
+    add x0, x3, x0
+    add x2, x2, x6
+    b 5
+6:
+    ret
+=========== OPT LEVEL: all ===========
+main:
+    movz x5, #4
+    movz x6, #1
+    movn x2, #2
+    movz x4, #10
+    movz x0, #0
+    movz x1, #0
+1:
+    mov x3, x1
+    madd x1, x4, x2, xzr
+    add x1, x1, x0
+    cmp x2, x5
+    add x2, x2, x6
+    add x1, x1, x3
+    add x0, x0, x6
+    b.lt 1
+    movz x4, #65535
+    movk x4, #65535, lsl #16
+    movk x4, #65535, lsl #32
+    movk x4, #32767, lsl #48
+    movz x2, #5
+    movz x0, #2
+2:
+    cmp x0, x2
+    b.gt 3
+    add x3, x3, x0
+    add x1, x0, x6
+    cmp x4, x0
+    mov x0, x1
+    b.ne 2
+    b 3
+3:
+    movz x5, #11
+    movz x2, #8
+    movz x4, #100
+    movz x1, #0
+4:
+    mov x0, x3
+    madd x3, x4, x1, xzr
+    cmp x2, x5
+    add x1, x1, x6
+    add x3, x3, x0
+    add x2, x2, x6
+    b.lt 4
+    ret
+=========== OPT LEVEL: aggresive ===========

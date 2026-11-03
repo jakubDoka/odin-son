@@ -1,0 +1,380 @@
+=========== OPT LEVEL: none-quick ===========
+bound:
+    mov rax, rsi
+    add.q [rdi], 1
+    ret
+main:
+    push rbx
+    push rbp
+    sub rsp, 0x18
+    mov.q [rsp], 0
+    mov.q [rsp + 0x8], 0
+    lea rdi, [rsp]
+    mov rsi, 2
+    call bound
+    mov rcx, rax
+    xor edx, edx
+2:
+    mov rbx, rdx
+    mov rbp, rcx
+    lea rdi, [rsp + 0x8]
+    mov rsi, 5
+    call bound
+    cmp rbp, rax
+    jge 3
+    mov rax, rbp
+    mov rsi, rbx
+    add rsi, rax
+    mov rax, rsi
+    add rbp, 1
+    mov rcx, rbp
+    mov rdx, rax
+    jmp 2
+3:
+    movabs rax, 0x7fffffffffffffff
+    mov rcx, 3
+    mov rdx, 4
+    xor ebp, ebp
+4:
+    mov rsi, rbx
+    mov rdi, rbp
+    cmp rdi, rcx
+    jg 6
+    mov r8, rdi
+    mov r9, rsi
+    add r9, r8
+    mov r8, r9
+    cmp rax, rdi
+    je 5
+    cmp rdi, 1
+    sete r9b
+    movzx r9d, r9b
+    add rdi, 1
+    test r9b, r9b
+    cmovne rcx, rdx
+    mov rbp, rdi
+    mov rbx, r8
+    jmp 4
+5:
+    mov rax, r8
+    jmp 7
+6:
+    mov rax, rsi
+7:
+    mov.q rcx, [rsp]
+    imul rcx, rcx, 0x64
+    add rax, rcx
+    mov.q rcx, [rsp + 0x8]
+    imul rcx, rcx, 0xa
+    add rax, rcx
+    add rsp, 0x18
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: none ===========
+bound:
+    mov rax, rsi
+    add.q [rdi], 1
+    ret
+main:
+    push rbx
+    push rbp
+    sub rsp, 0x18
+    mov.q [rsp], 0
+    mov.q [rsp + 0x8], 0
+    lea rdi, [rsp]
+    mov rsi, 2
+    call bound
+    mov rbp, rax
+    xor eax, eax
+2:
+    mov rbx, rax
+    lea rdi, [rsp + 0x8]
+    mov rsi, 5
+    call bound
+    cmp rbp, rax
+    jge 3
+    mov rcx, rbp
+    mov rax, rbx
+    add rax, rcx
+    add rbp, 1
+    jmp 2
+3:
+    movabs r8, 0x7fffffffffffffff
+    mov rdi, 3
+    mov rsi, 4
+    xor eax, eax
+4:
+    cmp rax, rdi
+    jg 5
+    mov rdx, rax
+    mov rcx, rbx
+    add rcx, rdx
+    cmp r8, rax
+    je 6
+    cmp rax, 1
+    sete dl
+    movzx edx, dl
+    add rax, 1
+    test dl, dl
+    cmovne rdi, rsi
+    mov rbx, rcx
+    jmp 4
+    jmp 6
+5:
+    mov rcx, rbx
+6:
+    mov.q rax, [rsp]
+    imul rax, rax, 0x64
+    add rcx, rax
+    mov.q rax, [rsp + 0x8]
+    imul rax, rax, 0xa
+    add rcx, rax
+    mov rax, rcx
+    add rsp, 0x18
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+bound:
+    mov rax, rsi
+    add.q [rdi], 1
+    ret
+main:
+    push rbx
+    push rbp
+    sub rsp, 0x18
+    mov.q [rsp], 0
+    mov.q [rsp + 0x8], 0
+    lea rdi, [rsp]
+    mov rsi, 2
+    call bound
+    mov rcx, rax
+    xor edx, edx
+2:
+    mov rbx, rdx
+    mov rbp, rcx
+    lea rdi, [rsp + 0x8]
+    mov rsi, 5
+    call bound
+    cmp rbp, rax
+    jge 3
+    mov rax, rbp
+    mov rsi, rbx
+    add rsi, rax
+    mov rax, rsi
+    add rbp, 1
+    mov rcx, rbp
+    mov rdx, rax
+    jmp 2
+3:
+    movabs rax, 0x7fffffffffffffff
+    mov rcx, 3
+    mov rdx, 4
+    xor ebp, ebp
+4:
+    mov rsi, rbx
+    mov rdi, rbp
+    cmp rdi, rcx
+    jg 6
+    mov r8, rdi
+    mov r9, rsi
+    add r9, r8
+    mov r8, r9
+    cmp rax, rdi
+    je 5
+    cmp rdi, 1
+    sete r9b
+    movzx r9d, r9b
+    add rdi, 1
+    test r9b, r9b
+    cmovne rcx, rdx
+    mov rbp, rdi
+    mov rbx, r8
+    jmp 4
+5:
+    mov rax, r8
+    jmp 7
+6:
+    mov rax, rsi
+7:
+    mov.q rcx, [rsp]
+    imul rcx, rcx, 0x64
+    add rax, rcx
+    mov.q rcx, [rsp + 0x8]
+    imul rcx, rcx, 0xa
+    add rax, rcx
+    add rsp, 0x18
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: moderate ===========
+bound:
+    mov rax, rsi
+    add.q [rdi], 1
+    ret
+main:
+    push rbx
+    push rbp
+    sub rsp, 0x18
+    mov.q [rsp], 0
+    mov.q [rsp + 0x8], 0
+    lea rdi, [rsp]
+    mov rsi, 2
+    call bound
+    mov rbp, rax
+    xor eax, eax
+2:
+    mov rbx, rax
+    lea rdi, [rsp + 0x8]
+    mov rsi, 5
+    call bound
+    cmp rbp, rax
+    jge 3
+    mov rcx, rbp
+    mov rax, rbx
+    add rax, rcx
+    add rbp, 1
+    jmp 2
+3:
+    movabs r8, 0x7fffffffffffffff
+    mov rdi, 3
+    mov rsi, 4
+    xor eax, eax
+4:
+    cmp rax, rdi
+    jg 5
+    mov rdx, rax
+    mov rcx, rbx
+    add rcx, rdx
+    cmp r8, rax
+    je 6
+    cmp rax, 1
+    sete dl
+    movzx edx, dl
+    add rax, 1
+    test dl, dl
+    cmovne rdi, rsi
+    mov rbx, rcx
+    jmp 4
+    jmp 6
+5:
+    mov rcx, rbx
+6:
+    mov.q rax, [rsp]
+    imul rax, rax, 0x64
+    add rcx, rax
+    mov.q rax, [rsp + 0x8]
+    imul rax, rax, 0xa
+    add rcx, rax
+    mov rax, rcx
+    add rsp, 0x18
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: all ===========
+bound:
+    mov rax, rsi
+    add.q [rdi], 1
+    ret
+main:
+    push rbx
+    push rbp
+    sub rsp, 0x18
+    mov.q [rsp], 0
+    mov.q [rsp + 0x8], 0
+    lea rdi, [rsp]
+    mov rsi, 2
+    call bound
+    mov rbp, rax
+    xor edx, edx
+2:
+    mov rbx, rdx
+    lea rdi, [rsp + 0x8]
+    mov rsi, 5
+    call bound
+    mov rsi, rax
+    mov.q rcx, [rsp]
+    mov.q rax, [rsp + 0x8]
+    mov rdi, rbp
+    mov rdx, rbx
+    add rdx, rdi
+    mov r8, rbp
+    add r8, 1
+    cmp rbp, rsi
+    mov rbp, r8
+    jl 2
+    movabs r10, 0x7fffffffffffffff
+    mov r9, 3
+    mov r8, 4
+    xor esi, esi
+3:
+    cmp rsi, r9
+    jg 4
+    mov rdi, rsi
+    mov rdx, rbx
+    add rdx, rdi
+    cmp rsi, 1
+    cmove r9, r8
+    mov rdi, rsi
+    add rdi, 1
+    cmp r10, rsi
+    mov rsi, rdi
+    mov rbx, rdx
+    jne 3
+    jmp 5
+4:
+    mov rdx, rbx
+5:
+    imul rcx, rcx, 0x64
+    add rdx, rcx
+    imul rax, rax, 0xa
+    add rdx, rax
+    mov rax, rdx
+    add rsp, 0x18
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    mov rdi, 2
+    xor edx, edx
+    xor eax, eax
+1:
+    mov rcx, rax
+    cmp rdi, 5
+    setge sil
+    movzx esi, sil
+    mov rax, rcx
+    add rax, rdi
+    mov r9, rdx
+    add r9, 1
+    add rdi, 1
+    test sil, sil
+    mov rdx, r9
+    je 1
+    movabs r8, 0x7fffffffffffffff
+    mov rdi, 3
+    mov rsi, 4
+    xor edx, edx
+2:
+    cmp rdx, rdi
+    jg 3
+    mov rax, rcx
+    add rax, rdx
+    cmp rdx, 1
+    cmove rdi, rsi
+    mov rcx, rdx
+    add rcx, 1
+    cmp r8, rdx
+    mov rdx, rcx
+    mov rcx, rax
+    jne 2
+    jmp 4
+3:
+    mov rax, rcx
+4:
+    add rax, 0x64
+    imul rcx, r9, 0xa
+    add rax, rcx
+    ret

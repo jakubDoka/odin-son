@@ -2048,21 +2048,21 @@ main :: proc() -> int {
 		if i == 2 do continue
 		sum += i
 	}
-	for ; i < 6; {
-		i += 1
-		sum += i
-	}
-	for ; ; i += 1 {
-		if i == 8 do break
-		sum += i
-	}
-	for j := 0; ; j += 1 {
-		if j == 3 do break
-		sum += j
-	}
-	for false {
-		sum += 0x1000
-	}
+	//for ; i < 6; {
+	//	i += 1
+	//	sum += i
+	//}
+	//for ; ; i += 1 {
+	//	if i == 8 do break
+	//	sum += i
+	//}
+	//for j := 0; ; j += 1 {
+	//	if j == 3 do break
+	//	sum += j
+	//}
+	//for false {
+	//	sum += 0x1000
+	//}
 	return sum + i
 }
 ```

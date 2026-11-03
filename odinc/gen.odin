@@ -1899,13 +1899,15 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			if_state: ssa.If_State
 			ssa.start_if(ctx, ctx.node_scope, &if_state, cond)
 
-			// Delaying the exit edge until after the body currently breaks register allocation.
+			emit_stmts(ctx, {d.body})
+
 			ssa.start_else(ctx, &ctx.node_scope, &if_state)
 			ssa.loop_control(.Break, ctx, ctx.node_scope, &loop_state.bstate)
 			ctx.node_scope = 0
 			ssa.end_else(ctx, &ctx.node_scope, &if_state)
+		} else {
+			emit_stmts(ctx, {d.body})
 		}
-		emit_stmts(ctx, {d.body})
 
 		ssa.start_loop_increment(ctx, &ctx.node_scope, &loop_state.bstate)
 		if ctx.node_scope != 0 do emit_nodes(ctx, {}, d.post)

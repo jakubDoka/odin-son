@@ -116,8 +116,6 @@ regalloc_round :: proc(
 
 	ctx.instr_placement = make([dynamic]Instr_Placement, block_base)
 
-	log_lrgs(&ctx)
-
 	for bb, j in sched.bbs {
 		for instr in bb.instrs {
 			instr_node := get_node(prc, instr)
@@ -1461,6 +1459,8 @@ regalloc_round :: proc(
 		0,
 	)
 
+	log_lrgs(&ctx)
+
 	assert(any_fails == !ok)
 
 	for sc in ctx.self_conflicts.data[:ctx.self_conflicts.len] {
@@ -1498,7 +1498,7 @@ regalloc_round :: proc(
 			for inp, j in node.inps {
 				if get_lrg(ctx, inp) == nil do continue
 
-				inode := get_node(prc, inp)
+				inode := expand_node(prc, inp)
 
 				if j != int(ctx.gmetas[node.gvn].in_place_slot) && node.itype != .Phi {
 					continue
@@ -1512,12 +1512,18 @@ regalloc_round :: proc(
 					continue
 				}
 
+				// NOTE: special case where we absolutely need to split the phi def
+				// because it collides with the immediate use that outlives the loop
+
 				inp_lrg := ctx.lrg_table[inode.gvn]
 				if inp_lrg == lrg &&
 				   ((inode.itype != .Split &&
 							   (ctx.instr_placement[inode.gvn] !=
 										   ctx.instr_placement[node.gvn] ||
-									   inode.gvn != node.gvn - 1)) ||
+									   inode.gvn != node.gvn - 1 ||
+									   (inode.itype == .Phi &&
+											   get_lrg(ctx, inp) == get_lrg(ctx, id) &&
+											   inode.inps[2] == oth))) ||
 						   inode.output_count > 1) {
 					split: Node_ID
 					if last_split != 0 &&

@@ -1,0 +1,137 @@
+=========== OPT LEVEL: none-quick ===========
+main:
+    push rbx
+    push rbp
+    xor ecx, ecx
+    xor edx, edx
+1:
+    cmp rcx, 6
+    jl 4
+    mov rbx, 3
+    mov rax, rdx
+2:
+    cmp rbx, 0
+    jg 3
+    pop rbp
+    pop rbx
+    ret
+3:
+    imul rbp, rbx, 0xa
+    add rax, rbp
+    sub rbx, 1
+    jmp 2
+4:
+    mov rax, rdx
+    add rax, rcx
+    add rcx, 1
+    mov rdx, rax
+    jmp 1
+=========== OPT LEVEL: none ===========
+main:
+    xor ecx, ecx
+    xor eax, eax
+1:
+    cmp rcx, 6
+    jl 4
+    mov rdx, 3
+2:
+    cmp rdx, 0
+    jg 3
+    ret
+3:
+    imul rcx, rdx, 0xa
+    add rax, rcx
+    sub rdx, 1
+    jmp 2
+4:
+    add rax, rcx
+    add rcx, 1
+    jmp 1
+=========== OPT LEVEL: moderate-quick ===========
+main:
+    push rbx
+    push rbp
+    xor ecx, ecx
+    xor edx, edx
+1:
+    cmp rcx, 6
+    jl 4
+    mov rbx, 3
+    mov rax, rdx
+2:
+    cmp rbx, 0
+    jg 3
+    pop rbp
+    pop rbx
+    ret
+3:
+    imul rbp, rbx, 0xa
+    add rax, rbp
+    sub rbx, 1
+    jmp 2
+4:
+    mov rax, rdx
+    add rax, rcx
+    add rcx, 1
+    mov rdx, rax
+    jmp 1
+=========== OPT LEVEL: moderate ===========
+main:
+    xor ecx, ecx
+    xor eax, eax
+1:
+    cmp rcx, 6
+    jl 4
+    mov rdx, 3
+2:
+    cmp rdx, 0
+    jg 3
+    ret
+3:
+    imul rcx, rdx, 0xa
+    add rax, rcx
+    sub rdx, 1
+    jmp 2
+4:
+    add rax, rcx
+    add rcx, 1
+    jmp 1
+=========== OPT LEVEL: all ===========
+main:
+    xor ecx, ecx
+    xor edx, edx
+1:
+    mov rax, rdx
+    cmp rcx, 6
+    setl sil
+    movzx esi, sil
+    mov rdx, rax
+    add rdx, rcx
+    add rcx, 1
+    test sil, sil
+    jne 1
+    mov rdi, 3
+2:
+    mov rcx, rax
+    imul rsi, rdi, 0xa
+    cmp rdi, 0
+    setg dl
+    movzx edx, dl
+    mov rax, rcx
+    add rax, rsi
+    sub rdi, 1
+    test dl, dl
+    jne 2
+    mov rsi, 4
+3:
+    mov rax, rcx
+    cmp rsi, 4
+    setl dl
+    movzx edx, dl
+    mov rcx, rax
+    add rcx, 0x1000
+    add rsi, 1
+    test dl, dl
+    jne 3
+    ret
+=========== OPT LEVEL: aggresive ===========

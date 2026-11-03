@@ -22,25 +22,6 @@ constant_string :: proc(ctx: ^Gen_Ctx, meta: ^Check_Meta) -> string {
 	return value
 }
 
-constant_compare :: proc(lhs, rhs: $T, op: tokenizer.Token_Kind) -> bool {
-	#partial switch op {
-	case .Cmp_Eq:
-		return lhs == rhs
-	case .Not_Eq:
-		return lhs != rhs
-	case .Lt:
-		return lhs < rhs
-	case .Lt_Eq:
-		return lhs <= rhs
-	case .Gt:
-		return lhs > rhs
-	case .Gt_Eq:
-		return lhs >= rhs
-	case:
-		unreachable()
-	}
-}
-
 constant_binary :: proc(
 	ctx: ^Gen_Ctx,
 	node: ^ast.Binary_Expr,
@@ -193,6 +174,26 @@ constant_binary :: proc(
 		)
 	}
 	return result
+
+	constant_compare :: proc(lhs, rhs: $T, op: tokenizer.Token_Kind) -> bool {
+		#partial switch op {
+		case .Cmp_Eq:
+			return lhs == rhs
+		case .Not_Eq:
+			return lhs != rhs
+		case .Lt:
+			return lhs < rhs
+		case .Lt_Eq:
+			return lhs <= rhs
+		case .Gt:
+			return lhs > rhs
+		case .Gt_Eq:
+			return lhs >= rhs
+		case:
+			unreachable()
+		}
+	}
+
 }
 
 valid_conversion_type :: proc(ty: Type) -> bool {

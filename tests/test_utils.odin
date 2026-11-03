@@ -65,6 +65,7 @@ TEST_CONFIGS := [][2]string {
 	{"TEST_CONFIG_INVALID_INTEGER", "0x"},
 	{"TEST_CONFIG_EMPTY", ""},
 	{"TEST_CONFIG_NEGATIVE_OVERFLOW", "-0xffff_ffff_ffff_ffff"},
+	{"TEST_NATIVE_GLOBAL_REFERENCE", "false"},
 }
 
 ensure_types :: proc() -> ^typecheck.Types {

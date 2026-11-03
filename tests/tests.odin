@@ -17370,6 +17370,500 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) global_absolute_pointers_and_zero_initialization :: proc(t: ^testing.T) {
+
+
+
+Pointers :: struct {
+	single: ^int,
+	multi:  [^]u8,
+	raw:    rawptr,
+}
+
+@(static) pointers := Pointers{cast(^int)uintptr(0x1230), cast([^]u8)uintptr(0x4560), rawptr(uintptr(0x7890))}
+@(static) zero: Pointers
+@(static) single: ^int
+@(static) multi: [^]u8
+@(static) raw: rawptr
+
+main_ :: proc() -> int {
+	address := uintptr(pointers.single)
+	converted := cast([^]u8)pointers.raw
+	matches := pointers.single == cast(^int)uintptr(0x1230) &&
+		pointers.multi != nil && uintptr(pointers.raw) == 0x7890
+	return int(address) + int(uintptr(converted)) + int(matches) +
+		int(single == nil) + int(nil == multi) + int(raw == nil) +
+		int(zero.single == nil) + int(zero.multi == nil) + int(zero.raw == nil)
+}
+
+run_test(t, `global_absolute_pointers_and_zero_initialization`, `
+package main
+
+Pointers :: struct {
+	single: ^int,
+	multi:  [^]u8,
+	raw:    rawptr,
+}
+
+@(static) pointers := Pointers{cast(^int)uintptr(0x1230), cast([^]u8)uintptr(0x4560), rawptr(uintptr(0x7890))}
+@(static) zero: Pointers
+@(static) single: ^int
+@(static) multi: [^]u8
+@(static) raw: rawptr
+
+main :: proc() -> int {
+	address := uintptr(pointers.single)
+	converted := cast([^]u8)pointers.raw
+	matches := pointers.single == cast(^int)uintptr(0x1230) &&
+		pointers.multi != nil && uintptr(pointers.raw) == 0x7890
+	return int(address) + int(uintptr(converted)) + int(matches) +
+		int(single == nil) + int(nil == multi) + int(raw == nil) +
+		int(zero.single == nil) + int(zero.multi == nil) + int(zero.raw == nil)
+}
+`, main_())
+}
+@(test) global_nested_slice_literals :: proc(t: ^testing.T) {
+
+
+
+Views :: struct {
+	before: int,
+	items:  [2][]int,
+	empty:  []int,
+}
+
+@(static) views := Views{0x11, {[]int{0x20, 0x30}, []int{0x40, 0x50, 0x60}}, nil}
+
+main_ :: proc() -> int {
+	copy := views
+	copy.items[0][1] += 3
+	views.items[1][2] += 5
+	return views.before + views.items[0][1] + copy.items[1][2] +
+		len(copy.items[0]) + len(copy.items[1]) + len(views.empty) +
+		int(raw_data(views.empty) == nil)
+}
+
+run_test(t, `global_nested_slice_literals`, `
+package main
+
+Views :: struct {
+	before: int,
+	items:  [2][]int,
+	empty:  []int,
+}
+
+@(static) views := Views{0x11, {[]int{0x20, 0x30}, []int{0x40, 0x50, 0x60}}, nil}
+
+main :: proc() -> int {
+	copy := views
+	copy.items[0][1] += 3
+	views.items[1][2] += 5
+	return views.before + views.items[0][1] + copy.items[1][2] +
+		len(copy.items[0]) + len(copy.items[1]) + len(views.empty) +
+		int(raw_data(views.empty) == nil)
+}
+`, main_())
+}
+@(test) global_string_aggregates :: proc(t: ^testing.T) {
+
+
+
+Record :: struct {
+	before: int,
+	text:   string,
+	after:  int,
+}
+
+@(static) texts := [3]string{"a\x62\x00cdef", "second", ""}
+@(static) record := Record{0x11, "_first_"[1:6], 0x22}
+@(static) substrings := [3]string{"a\x62\x00cdef"[1:5], ("abcdef"[1:5])[2:], "xyz"[3:]}
+@(static) matches := "a\x62\x00cdef"[1:5] == "b\x00cd"
+
+main_ :: proc() -> int {
+	copy := record
+	record.text = texts[1]
+	data := raw_data(texts[0])
+	return copy.before + copy.after + int(copy.text[0]) + int(record.text[1]) +
+		int(data[3]) + int(texts[0][2]) + len(texts[0]) + len(texts[2]) +
+		len(copy.text) + len(record.text) + int(substrings[0][3]) +
+		int(substrings[1][0]) + len(substrings[2]) + int(matches)
+}
+
+run_test(t, `global_string_aggregates`, `
+package main
+
+Record :: struct {
+	before: int,
+	text:   string,
+	after:  int,
+}
+
+@(static) texts := [3]string{"a\x62\x00cdef", "second", ""}
+@(static) record := Record{0x11, "_first_"[1:6], 0x22}
+@(static) substrings := [3]string{"a\x62\x00cdef"[1:5], ("abcdef"[1:5])[2:], "xyz"[3:]}
+@(static) matches := "a\x62\x00cdef"[1:5] == "b\x00cd"
+
+main :: proc() -> int {
+	copy := record
+	record.text = texts[1]
+	data := raw_data(texts[0])
+	return copy.before + copy.after + int(copy.text[0]) + int(record.text[1]) +
+		int(data[3]) + int(texts[0][2]) + len(texts[0]) + len(texts[2]) +
+		len(copy.text) + len(record.text) + int(substrings[0][3]) +
+		int(substrings[1][0]) + len(substrings[2]) + int(matches)
+}
+`, main_())
+}
+@(test) global_procedure_pointer_tables :: proc(t: ^testing.T) {
+
+
+
+Table :: struct {
+	before:    int,
+	callbacks: [3]proc(x: int) -> int,
+	after:     int,
+}
+
+@(static) table := Table{0x11, {
+	proc(x: int) -> int { return x + 3 },
+	proc(x: int) -> int { return x * 2 },
+	nil,
+}, 0x22}
+@(static) absent: proc(x: int) -> int
+
+main_ :: proc() -> int {
+	copy := table
+	result := table.callbacks[0](4) + copy.callbacks[1](5)
+	table.callbacks[0] = copy.callbacks[1]
+	return result + table.callbacks[0](6) + copy.callbacks[0](7) +
+		copy.before + copy.after + int(absent == nil) +
+		int(nil == copy.callbacks[2]) + int(table.callbacks[0] != nil)
+}
+
+run_test(t, `global_procedure_pointer_tables`, `
+package main
+
+Table :: struct {
+	before:    int,
+	callbacks: [3]proc(x: int) -> int,
+	after:     int,
+}
+
+@(static) table := Table{0x11, {
+	proc(x: int) -> int { return x + 3 },
+	proc(x: int) -> int { return x * 2 },
+	nil,
+}, 0x22}
+@(static) absent: proc(x: int) -> int
+
+main :: proc() -> int {
+	copy := table
+	result := table.callbacks[0](4) + copy.callbacks[1](5)
+	table.callbacks[0] = copy.callbacks[1]
+	return result + table.callbacks[0](6) + copy.callbacks[0](7) +
+		copy.before + copy.after + int(absent == nil) +
+		int(nil == copy.callbacks[2]) + int(table.callbacks[0] != nil)
+}
+`, main_())
+}
+@(test) local_static_pointer_aggregates :: proc(t: ^testing.T) {
+
+
+
+State :: struct {
+	value: ^int,
+	items: []int,
+	text:  string,
+}
+
+step :: proc() -> int {
+	@(static) state := State{nil, []int{2, 3}, "_abc_"[1:4]}
+	state.items[0] += 1
+	return state.items[0] + state.items[1] + int(state.text[1]) +
+		int(state.value == nil)
+}
+
+main_ :: proc() -> int {
+	first := step()
+	return first + step()
+}
+
+run_test(t, `local_static_pointer_aggregates`, `
+package main
+
+State :: struct {
+	value: ^int,
+	items: []int,
+	text:  string,
+}
+
+step :: proc() -> int {
+	@(static) state := State{nil, []int{2, 3}, "_abc_"[1:4]}
+	state.items[0] += 1
+	return state.items[0] + state.items[1] + int(state.text[1]) +
+		int(state.value == nil)
+}
+
+main :: proc() -> int {
+	first := step()
+	return first + step()
+}
+`, main_())
+}
+@(test) fail_global_dangling_pointer_read :: proc(t: ^testing.T) {
+run_test(t, `fail_global_dangling_pointer_read`, `
+package main
+
+pointer: ^int = cast(^int)uintptr(0x1230)
+value := pointer^
+
+main :: proc() -> int {
+	return value
+}
+`, 0)
+}
+@(test) fail_global_constant_index_out_of_bounds :: proc(t: ^testing.T) {
+run_test(t, `fail_global_constant_index_out_of_bounds`, `
+package main
+
+values := [2]int{1, 2}
+value := values[2]
+
+main :: proc() -> int {
+	return value
+}
+`, 0)
+}
+@(test) fail_global_constant_slice_out_of_bounds :: proc(t: ^testing.T) {
+run_test(t, `fail_global_constant_slice_out_of_bounds`, `
+package main
+
+values := [2]int{1, 2}
+view := values[1:3]
+
+main :: proc() -> int {
+	return len(view)
+}
+`, 0)
+}
+@(test) fail_global_relocatable_pointer_to_integer :: proc(t: ^testing.T) {
+run_test(t, `fail_global_relocatable_pointer_to_integer`, `
+package main
+
+value: int = 1
+address := uintptr(&value)
+
+main :: proc() -> int {
+	return int(address)
+}
+`, 0)
+}
+@(test) global_self_referential_pointer_initializer :: proc(t: ^testing.T) {
+
+
+
+// COMPILER BUG: Odin rejects self-referential initializers, so its reference initializes at runtime.
+// pointer: rawptr = rawptr(&pointer)
+when #config(TEST_NATIVE_GLOBAL_REFERENCE, true) {
+	@(static) pointer: rawptr
+} else {
+	pointer: rawptr = rawptr(&pointer)
+}
+
+main_ :: proc() -> int {
+	when #config(TEST_NATIVE_GLOBAL_REFERENCE, true) {
+		pointer = rawptr(&pointer)
+	}
+
+	if pointer != rawptr(&pointer) do return -1
+	alias := cast(^rawptr)pointer
+	if alias^ != pointer do return -2
+	alias^ = nil
+	return int(pointer == nil) + int(alias == &pointer)
+}
+
+run_test(t, `global_self_referential_pointer_initializer`, `
+package main
+
+// COMPILER BUG: Odin rejects self-referential initializers, so its reference initializes at runtime.
+// pointer: rawptr = rawptr(&pointer)
+when #config(TEST_NATIVE_GLOBAL_REFERENCE, true) {
+	@(static) pointer: rawptr
+} else {
+	pointer: rawptr = rawptr(&pointer)
+}
+
+main :: proc() -> int {
+	when #config(TEST_NATIVE_GLOBAL_REFERENCE, true) {
+		pointer = rawptr(&pointer)
+	}
+
+	if pointer != rawptr(&pointer) do return -1
+	alias := cast(^rawptr)pointer
+	if alias^ != pointer do return -2
+	alias^ = nil
+	return int(pointer == nil) + int(alias == &pointer)
+}
+`, main_())
+}
+@(test) global_self_referential_aggregate_initializer :: proc(t: ^testing.T) {
+
+
+
+Node :: struct {
+	next:  ^Node,
+	value: int,
+	field: ^int,
+	items: [3]int,
+	view:  []int,
+}
+
+// COMPILER BUG: Odin rejects self-referential initializers, so its reference initializes at runtime.
+// root: Node = {&root, 0x12, &root.value, {0x20, 0x30, 0x40}, root.items[1:]}
+when #config(TEST_NATIVE_GLOBAL_REFERENCE, true) {
+	@(static) root: Node
+	@(static) initial: int
+} else {
+	root: Node = {&root, 0x12, &root.value, {0x20, 0x30, 0x40}, root.items[1:]}
+	initial := root.next.value
+}
+
+main_ :: proc() -> int {
+	when #config(TEST_NATIVE_GLOBAL_REFERENCE, true) {
+		root = Node{&root, 0x12, &root.value, {0x20, 0x30, 0x40}, root.items[1:]}
+		initial = root.next.value
+	}
+
+	if root.next != &root || root.field != &root.value do return -1
+	if len(root.view) != 2 || &root.view[0] != &root.items[1] do return -2
+	if initial != 0x12 do return -3
+	root.next.value += 3
+	root.field^ += 5
+	root.view[1] += 7
+	return initial + root.value + root.next.next.value + root.field^ +
+		root.items[2] + root.view[1] + len(root.view)
+}
+
+run_test(t, `global_self_referential_aggregate_initializer`, `
+package main
+
+Node :: struct {
+	next:  ^Node,
+	value: int,
+	field: ^int,
+	items: [3]int,
+	view:  []int,
+}
+
+// COMPILER BUG: Odin rejects self-referential initializers, so its reference initializes at runtime.
+// root: Node = {&root, 0x12, &root.value, {0x20, 0x30, 0x40}, root.items[1:]}
+when #config(TEST_NATIVE_GLOBAL_REFERENCE, true) {
+	@(static) root: Node
+	@(static) initial: int
+} else {
+	root: Node = {&root, 0x12, &root.value, {0x20, 0x30, 0x40}, root.items[1:]}
+	initial := root.next.value
+}
+
+main :: proc() -> int {
+	when #config(TEST_NATIVE_GLOBAL_REFERENCE, true) {
+		root = Node{&root, 0x12, &root.value, {0x20, 0x30, 0x40}, root.items[1:]}
+		initial = root.next.value
+	}
+
+	if root.next != &root || root.field != &root.value do return -1
+	if len(root.view) != 2 || &root.view[0] != &root.items[1] do return -2
+	if initial != 0x12 do return -3
+	root.next.value += 3
+	root.field^ += 5
+	root.view[1] += 7
+	return initial + root.value + root.next.next.value + root.field^ +
+		root.items[2] + root.view[1] + len(root.view)
+}
+`, main_())
+}
+@(test) global_mutually_referential_initializers :: proc(t: ^testing.T) {
+
+
+
+Node :: struct {
+	value: int,
+	next:  ^Node,
+}
+
+// COMPILER BUG: Odin rejects cyclic initializers, so its reference initializes at runtime.
+// left: Node = {0x12, &right}; right := Node{0x23, &left}
+when #config(TEST_NATIVE_GLOBAL_REFERENCE, true) {
+	@(static) left: Node
+	@(static) right: Node
+	@(static) links: [2]^Node
+	@(static) initial: int
+} else {
+	left: Node = {0x12, &right}
+	right := Node{0x23, &left}
+	links := [2]^Node{&left, &right}
+	initial := left.next.next.value + right.next.next.value
+}
+
+main_ :: proc() -> int {
+	when #config(TEST_NATIVE_GLOBAL_REFERENCE, true) {
+		left = Node{0x12, &right}
+		right = Node{0x23, &left}
+		links = {&left, &right}
+		initial = left.next.next.value + right.next.next.value
+	}
+
+	if left.next != &right || right.next != &left do return -1
+	if left.next.next != &left || right.next.next != &right do return -2
+	if links[0] != &left || links[1] != &right do return -3
+	if initial != 0x35 do return -4
+	links[0].next.value += 3
+	links[1].next.value += 5
+	return initial + left.value + right.value +
+		links[0].next.value + links[1].next.value
+}
+
+run_test(t, `global_mutually_referential_initializers`, `
+package main
+
+Node :: struct {
+	value: int,
+	next:  ^Node,
+}
+
+// COMPILER BUG: Odin rejects cyclic initializers, so its reference initializes at runtime.
+// left: Node = {0x12, &right}; right := Node{0x23, &left}
+when #config(TEST_NATIVE_GLOBAL_REFERENCE, true) {
+	@(static) left: Node
+	@(static) right: Node
+	@(static) links: [2]^Node
+	@(static) initial: int
+} else {
+	left: Node = {0x12, &right}
+	right := Node{0x23, &left}
+	links := [2]^Node{&left, &right}
+	initial := left.next.next.value + right.next.next.value
+}
+
+main :: proc() -> int {
+	when #config(TEST_NATIVE_GLOBAL_REFERENCE, true) {
+		left = Node{0x12, &right}
+		right = Node{0x23, &left}
+		links = {&left, &right}
+		initial = left.next.next.value + right.next.next.value
+	}
+
+	if left.next != &right || right.next != &left do return -1
+	if left.next.next != &left || right.next.next != &right do return -2
+	if links[0] != &left || links[1] != &right do return -3
+	if initial != 0x35 do return -4
+	links[0].next.value += 3
+	links[1].next.value += 5
+	return initial + left.value + right.value +
+		links[0].next.value + links[1].next.value
+}
+`, main_())
+}
 @(test) fuzz_0092546c2ab7b49f :: proc(t: ^testing.T) {
 run_test(t, "fuzz_0092546c2ab7b49f", string(#load("../fuzz/crashes/0092546c2ab7b49f.odin")), 0,
 				diff = false, no_run = true)
@@ -19255,6 +19749,18 @@ NAMES := []string{
 `simd_byte_mask_extracts_least_significant_bits`,
 `memset_conversion_preserves_reads_inside_the_loop`,
 `global_compound_literals`,
+`global_absolute_pointers_and_zero_initialization`,
+`global_nested_slice_literals`,
+`global_string_aggregates`,
+`global_procedure_pointer_tables`,
+`local_static_pointer_aggregates`,
+`fail_global_dangling_pointer_read`,
+`fail_global_constant_index_out_of_bounds`,
+`fail_global_constant_slice_out_of_bounds`,
+`fail_global_relocatable_pointer_to_integer`,
+`global_self_referential_pointer_initializer`,
+`global_self_referential_aggregate_initializer`,
+`global_mutually_referential_initializers`,
 `fuzz_0092546c2ab7b49f`,
 `fuzz_00f1be4a1ea4c499`,
 `fuzz_0203aad88c140351`,
@@ -27762,6 +28268,261 @@ main :: proc() -> int {
 	return stru.x + stru.y + arr[1] + arr[2] + stru_arr[0].x + stru_arr[1].y + uni.(int)
 }
 `,
+`
+package main
+
+Pointers :: struct {
+	single: ^int,
+	multi:  [^]u8,
+	raw:    rawptr,
+}
+
+@(static) pointers := Pointers{cast(^int)uintptr(0x1230), cast([^]u8)uintptr(0x4560), rawptr(uintptr(0x7890))}
+@(static) zero: Pointers
+@(static) single: ^int
+@(static) multi: [^]u8
+@(static) raw: rawptr
+
+main :: proc() -> int {
+	address := uintptr(pointers.single)
+	converted := cast([^]u8)pointers.raw
+	matches := pointers.single == cast(^int)uintptr(0x1230) &&
+		pointers.multi != nil && uintptr(pointers.raw) == 0x7890
+	return int(address) + int(uintptr(converted)) + int(matches) +
+		int(single == nil) + int(nil == multi) + int(raw == nil) +
+		int(zero.single == nil) + int(zero.multi == nil) + int(zero.raw == nil)
+}
+`,
+`
+package main
+
+Views :: struct {
+	before: int,
+	items:  [2][]int,
+	empty:  []int,
+}
+
+@(static) views := Views{0x11, {[]int{0x20, 0x30}, []int{0x40, 0x50, 0x60}}, nil}
+
+main :: proc() -> int {
+	copy := views
+	copy.items[0][1] += 3
+	views.items[1][2] += 5
+	return views.before + views.items[0][1] + copy.items[1][2] +
+		len(copy.items[0]) + len(copy.items[1]) + len(views.empty) +
+		int(raw_data(views.empty) == nil)
+}
+`,
+`
+package main
+
+Record :: struct {
+	before: int,
+	text:   string,
+	after:  int,
+}
+
+@(static) texts := [3]string{"a\x62\x00cdef", "second", ""}
+@(static) record := Record{0x11, "_first_"[1:6], 0x22}
+@(static) substrings := [3]string{"a\x62\x00cdef"[1:5], ("abcdef"[1:5])[2:], "xyz"[3:]}
+@(static) matches := "a\x62\x00cdef"[1:5] == "b\x00cd"
+
+main :: proc() -> int {
+	copy := record
+	record.text = texts[1]
+	data := raw_data(texts[0])
+	return copy.before + copy.after + int(copy.text[0]) + int(record.text[1]) +
+		int(data[3]) + int(texts[0][2]) + len(texts[0]) + len(texts[2]) +
+		len(copy.text) + len(record.text) + int(substrings[0][3]) +
+		int(substrings[1][0]) + len(substrings[2]) + int(matches)
+}
+`,
+`
+package main
+
+Table :: struct {
+	before:    int,
+	callbacks: [3]proc(x: int) -> int,
+	after:     int,
+}
+
+@(static) table := Table{0x11, {
+	proc(x: int) -> int { return x + 3 },
+	proc(x: int) -> int { return x * 2 },
+	nil,
+}, 0x22}
+@(static) absent: proc(x: int) -> int
+
+main :: proc() -> int {
+	copy := table
+	result := table.callbacks[0](4) + copy.callbacks[1](5)
+	table.callbacks[0] = copy.callbacks[1]
+	return result + table.callbacks[0](6) + copy.callbacks[0](7) +
+		copy.before + copy.after + int(absent == nil) +
+		int(nil == copy.callbacks[2]) + int(table.callbacks[0] != nil)
+}
+`,
+`
+package main
+
+State :: struct {
+	value: ^int,
+	items: []int,
+	text:  string,
+}
+
+step :: proc() -> int {
+	@(static) state := State{nil, []int{2, 3}, "_abc_"[1:4]}
+	state.items[0] += 1
+	return state.items[0] + state.items[1] + int(state.text[1]) +
+		int(state.value == nil)
+}
+
+main :: proc() -> int {
+	first := step()
+	return first + step()
+}
+`,
+`
+package main
+
+pointer: ^int = cast(^int)uintptr(0x1230)
+value := pointer^
+
+main :: proc() -> int {
+	return value
+}
+`,
+`
+package main
+
+values := [2]int{1, 2}
+value := values[2]
+
+main :: proc() -> int {
+	return value
+}
+`,
+`
+package main
+
+values := [2]int{1, 2}
+view := values[1:3]
+
+main :: proc() -> int {
+	return len(view)
+}
+`,
+`
+package main
+
+value: int = 1
+address := uintptr(&value)
+
+main :: proc() -> int {
+	return int(address)
+}
+`,
+`
+package main
+
+// COMPILER BUG: Odin rejects self-referential initializers, so its reference initializes at runtime.
+// pointer: rawptr = rawptr(&pointer)
+when #config(TEST_NATIVE_GLOBAL_REFERENCE, true) {
+	@(static) pointer: rawptr
+} else {
+	pointer: rawptr = rawptr(&pointer)
+}
+
+main :: proc() -> int {
+	when #config(TEST_NATIVE_GLOBAL_REFERENCE, true) {
+		pointer = rawptr(&pointer)
+	}
+
+	if pointer != rawptr(&pointer) do return -1
+	alias := cast(^rawptr)pointer
+	if alias^ != pointer do return -2
+	alias^ = nil
+	return int(pointer == nil) + int(alias == &pointer)
+}
+`,
+`
+package main
+
+Node :: struct {
+	next:  ^Node,
+	value: int,
+	field: ^int,
+	items: [3]int,
+	view:  []int,
+}
+
+// COMPILER BUG: Odin rejects self-referential initializers, so its reference initializes at runtime.
+// root: Node = {&root, 0x12, &root.value, {0x20, 0x30, 0x40}, root.items[1:]}
+when #config(TEST_NATIVE_GLOBAL_REFERENCE, true) {
+	@(static) root: Node
+	@(static) initial: int
+} else {
+	root: Node = {&root, 0x12, &root.value, {0x20, 0x30, 0x40}, root.items[1:]}
+	initial := root.next.value
+}
+
+main :: proc() -> int {
+	when #config(TEST_NATIVE_GLOBAL_REFERENCE, true) {
+		root = Node{&root, 0x12, &root.value, {0x20, 0x30, 0x40}, root.items[1:]}
+		initial = root.next.value
+	}
+
+	if root.next != &root || root.field != &root.value do return -1
+	if len(root.view) != 2 || &root.view[0] != &root.items[1] do return -2
+	if initial != 0x12 do return -3
+	root.next.value += 3
+	root.field^ += 5
+	root.view[1] += 7
+	return initial + root.value + root.next.next.value + root.field^ +
+		root.items[2] + root.view[1] + len(root.view)
+}
+`,
+`
+package main
+
+Node :: struct {
+	value: int,
+	next:  ^Node,
+}
+
+// COMPILER BUG: Odin rejects cyclic initializers, so its reference initializes at runtime.
+// left: Node = {0x12, &right}; right := Node{0x23, &left}
+when #config(TEST_NATIVE_GLOBAL_REFERENCE, true) {
+	@(static) left: Node
+	@(static) right: Node
+	@(static) links: [2]^Node
+	@(static) initial: int
+} else {
+	left: Node = {0x12, &right}
+	right := Node{0x23, &left}
+	links := [2]^Node{&left, &right}
+	initial := left.next.next.value + right.next.next.value
+}
+
+main :: proc() -> int {
+	when #config(TEST_NATIVE_GLOBAL_REFERENCE, true) {
+		left = Node{0x12, &right}
+		right = Node{0x23, &left}
+		links = {&left, &right}
+		initial = left.next.next.value + right.next.next.value
+	}
+
+	if left.next != &right || right.next != &left do return -1
+	if left.next.next != &left || right.next.next != &right do return -2
+	if links[0] != &left || links[1] != &right do return -3
+	if initial != 0x35 do return -4
+	links[0].next.value += 3
+	links[1].next.value += 5
+	return initial + left.value + right.value +
+		links[0].next.value + links[1].next.value
+}
+`,
 `#load("../fuzz/crashes/0092546c2ab7b49f.odin")`,
 `#load("../fuzz/crashes/00f1be4a1ea4c499.odin")`,
 `#load("../fuzz/crashes/0203aad88c140351.odin")`,
@@ -28164,6 +28925,18 @@ main :: proc() -> int {
 `#load("../fuzz/crashes/regalloc_ioob.odin")`,
 }
 IS_FUZZ := []bool{
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
 false,
 false,
 false,

@@ -1,0 +1,21 @@
+package main
+
+main :: proc(a, b, accumulator, saturate: u32) -> u32 {
+    a0 := a & 0xffff
+    a1 := a >> 16
+    b0 := b & 0xffff
+    b1 := b >> 16
+    low := a0 * b0
+    cross0 := a1 * b0
+    cross1 := a0 * b1
+    high := a1 * b1
+    overflow := high != 0 || (cross0 >> 16) != 0 || (cross1 >> 16) != 0
+    partial := low + (cross0 << 16)
+    overflow = overflow || partial < low
+    product := partial + (cross1 << 16)
+    overflow = overflow || product < partial
+    result := product + accumulator
+    overflow = overflow || result < product
+    if saturate != 0 && overflow do return 0xffffffff
+    return result
+}

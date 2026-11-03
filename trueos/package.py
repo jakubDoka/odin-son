@@ -11,6 +11,9 @@ import subprocess
 import sys
 
 IMPORTS = {
+    'trueos_cabi_matrix_compute_v1', 'trueos_cabi_matrix_compute_capacity_v1',
+    'trueos_cabi_thread_spawn', 'trueos_cabi_thread_join',
+    'pthread_mutex_init', 'pthread_mutex_lock', 'pthread_mutex_unlock', 'pthread_mutex_destroy',
     'trueos_cabi_ui4_scene_frame_set_opacity', 'trueos_cabi_ui4_scene_window_title_set_v1',
     'trueos_time_monotonic_nanos',
     'trueos_cabi_ui4_scene_sprite_upload_rgba8', 'trueos_cabi_ui4_scene_sprite_quads',

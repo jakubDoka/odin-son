@@ -4673,6 +4673,667 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) c_style_for_loops :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc() -> int {
+	sum := 0
+	for i := 0; i < 6; i += 1 {
+		sum += i
+	}
+	for i := 3; i > 0; i -= 1 {
+		sum += i * 10
+	}
+	for i := 4; i < 4; i += 1 {
+		sum += 0x1000
+	}
+	return sum
+}
+
+run_test(t, `c_style_for_loops`, `
+package main
+
+main :: proc() -> int {
+	sum := 0
+	for i := 0; i < 6; i += 1 {
+		sum += i
+	}
+	for i := 3; i > 0; i -= 1 {
+		sum += i * 10
+	}
+	for i := 4; i < 4; i += 1 {
+		sum += 0x1000
+	}
+	return sum
+}
+`, main_())
+}
+@(test) c_style_for_omitted_clauses :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc() -> int {
+	i := 0
+	sum := 0
+	// COMPILER BUG: emitting the loop condition's false arm after this body
+	// makes graph-coloring register allocation exceed its round limit.
+	// Failing order in gen.odin:
+	// ssa.start_if(ctx, ctx.node_scope, &if_state, cond)
+	// emit_stmts(ctx, {d.body})
+	// ssa.start_else(ctx, &ctx.node_scope, &if_state)
+	// ssa.loop_control(.Break, ctx, ctx.node_scope, &loop_state.bstate)
+	// ctx.node_scope = 0
+	// ssa.end_else(ctx, &ctx.node_scope, &if_state)
+	for i < 4 {
+		i += 1
+		if i == 2 do continue
+		sum += i
+	}
+	for ; i < 6; {
+		i += 1
+		sum += i
+	}
+	for ; ; i += 1 {
+		if i == 8 do break
+		sum += i
+	}
+	for j := 0; ; j += 1 {
+		if j == 3 do break
+		sum += j
+	}
+	for false {
+		sum += 0x1000
+	}
+	return sum + i
+}
+
+run_test(t, `c_style_for_omitted_clauses`, `
+package main
+
+main :: proc() -> int {
+	i := 0
+	sum := 0
+	// COMPILER BUG: emitting the loop condition's false arm after this body
+	// makes graph-coloring register allocation exceed its round limit.
+	// Failing order in gen.odin:
+	// ssa.start_if(ctx, ctx.node_scope, &if_state, cond)
+	// emit_stmts(ctx, {d.body})
+	// ssa.start_else(ctx, &ctx.node_scope, &if_state)
+	// ssa.loop_control(.Break, ctx, ctx.node_scope, &loop_state.bstate)
+	// ctx.node_scope = 0
+	// ssa.end_else(ctx, &ctx.node_scope, &if_state)
+	for i < 4 {
+		i += 1
+		if i == 2 do continue
+		sum += i
+	}
+	for ; i < 6; {
+		i += 1
+		sum += i
+	}
+	for ; ; i += 1 {
+		if i == 8 do break
+		sum += i
+	}
+	for j := 0; ; j += 1 {
+		if j == 3 do break
+		sum += j
+	}
+	for false {
+		sum += 0x1000
+	}
+	return sum + i
+}
+`, main_())
+}
+@(test) c_style_for_continue_and_break :: proc(t: ^testing.T) {
+
+
+
+step :: proc(i: int, calls: ^int) -> int {
+	calls^ += 1
+	return i + 1
+}
+
+main_ :: proc() -> int {
+	calls := 0
+	i := 0
+	sum := 0
+	for ; i < 8; i = step(i, &calls) {
+		if i == 1 do continue
+		if i == 5 do break
+		sum += i
+	}
+	return sum + calls * 10 + i * 100
+}
+
+run_test(t, `c_style_for_continue_and_break`, `
+package main
+
+step :: proc(i: int, calls: ^int) -> int {
+	calls^ += 1
+	return i + 1
+}
+
+main :: proc() -> int {
+	calls := 0
+	i := 0
+	sum := 0
+	for ; i < 8; i = step(i, &calls) {
+		if i == 1 do continue
+		if i == 5 do break
+		sum += i
+	}
+	return sum + calls * 10 + i * 100
+}
+`, main_())
+}
+@(test) c_style_for_initializer_scope :: proc(t: ^testing.T) {
+
+
+
+less :: proc(i: ^int) -> bool { return i^ < 4 }
+step :: proc(i: ^int) -> int { return i^ + 1 }
+
+main_ :: proc() -> int {
+	i := 0x20
+	sum := 0
+	for i := 0; less(&i); i = step(&i) {
+		j := i + 1
+		sum += j
+	}
+	for i := 0; i < 2; i += 1 {
+		i := 7
+		sum += i
+	}
+	return sum + i
+}
+
+run_test(t, `c_style_for_initializer_scope`, `
+package main
+
+less :: proc(i: ^int) -> bool { return i^ < 4 }
+step :: proc(i: ^int) -> int { return i^ + 1 }
+
+main :: proc() -> int {
+	i := 0x20
+	sum := 0
+	for i := 0; less(&i); i = step(&i) {
+		j := i + 1
+		sum += j
+	}
+	for i := 0; i < 2; i += 1 {
+		i := 7
+		sum += i
+	}
+	return sum + i
+}
+`, main_())
+}
+@(test) c_style_for_labelled_control :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc() -> int {
+	sum := 0
+	outer: for i := 0; i < 4; i += 1 {
+		x := i + 10
+		for j := 0; j < 3; j += 1 {
+			y := x + j
+			switch j {
+			case 1:
+				if i == 2 do break outer
+				continue outer
+			case:
+				sum += y
+			}
+		}
+	}
+	return sum
+}
+
+run_test(t, `c_style_for_labelled_control`, `
+package main
+
+main :: proc() -> int {
+	sum := 0
+	outer: for i := 0; i < 4; i += 1 {
+		x := i + 10
+		for j := 0; j < 3; j += 1 {
+			y := x + j
+			switch j {
+			case 1:
+				if i == 2 do break outer
+				continue outer
+			case:
+				sum += y
+			}
+		}
+	}
+	return sum
+}
+`, main_())
+}
+@(test) c_style_for_returning_body :: proc(t: ^testing.T) {
+
+
+
+choose :: proc(n: int) -> int {
+	for i := 0; i < n; i += 1 {
+		return i + 7
+	}
+	return 3
+}
+
+main_ :: proc() -> int {
+	return choose(0) + choose(4)
+}
+
+run_test(t, `c_style_for_returning_body`, `
+package main
+
+choose :: proc(n: int) -> int {
+	for i := 0; i < n; i += 1 {
+		return i + 7
+	}
+	return 3
+}
+
+main :: proc() -> int {
+	return choose(0) + choose(4)
+}
+`, main_())
+}
+@(test) integer_range_iteration :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc() -> int {
+	sum := 0
+	for v, i in -3 ..< 4 {
+		sum += v * 10 + i
+	}
+	for v in 2 ..= 5 {
+		sum += v
+	}
+	for _, i in 8 ..< 11 {
+		sum += i * 100
+	}
+	return sum
+}
+
+run_test(t, `integer_range_iteration`, `
+package main
+
+main :: proc() -> int {
+	sum := 0
+	for v, i in -3 ..< 4 {
+		sum += v * 10 + i
+	}
+	for v in 2 ..= 5 {
+		sum += v
+	}
+	for _, i in 8 ..< 11 {
+		sum += i * 100
+	}
+	return sum
+}
+`, main_())
+}
+@(test) integer_range_empty_and_singleton :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc() -> int {
+	lo := 5
+	hi := 3
+	sum := 0
+	for v in lo ..< lo {
+		sum += v + 0x1000
+	}
+	for v in lo ..< hi {
+		sum += v + 0x1000
+	}
+	for v in lo ..= hi {
+		sum += v + 0x1000
+	}
+	for v, i in lo ..= lo {
+		sum += v + i
+	}
+	return sum
+}
+
+run_test(t, `integer_range_empty_and_singleton`, `
+package main
+
+main :: proc() -> int {
+	lo := 5
+	hi := 3
+	sum := 0
+	for v in lo ..< lo {
+		sum += v + 0x1000
+	}
+	for v in lo ..< hi {
+		sum += v + 0x1000
+	}
+	for v in lo ..= hi {
+		sum += v + 0x1000
+	}
+	for v, i in lo ..= lo {
+		sum += v + i
+	}
+	return sum
+}
+`, main_())
+}
+@(test) integer_range_typed_bounds :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc() -> int {
+	lo: u64 = 0x8000_0000_0000_0000
+	hi := lo + 3
+	sum := 0
+	for v, i in lo ..< hi {
+		x: u64 = v - lo
+		y: int = i
+		sum += int(x) + y * 10
+	}
+	end: u8 = 4
+	for v in 1 ..< end {
+		x: u8 = v
+		sum += int(x)
+	}
+	for v in i8(-3) ..= 1 {
+		x: i8 = v
+		sum += int(x)
+	}
+	return sum
+}
+
+run_test(t, `integer_range_typed_bounds`, `
+package main
+
+main :: proc() -> int {
+	lo: u64 = 0x8000_0000_0000_0000
+	hi := lo + 3
+	sum := 0
+	for v, i in lo ..< hi {
+		x: u64 = v - lo
+		y: int = i
+		sum += int(x) + y * 10
+	}
+	end: u8 = 4
+	for v in 1 ..< end {
+		x: u8 = v
+		sum += int(x)
+	}
+	for v in i8(-3) ..= 1 {
+		x: i8 = v
+		sum += int(x)
+	}
+	return sum
+}
+`, main_())
+}
+@(test) integer_range_bound_evaluation :: proc(t: ^testing.T) {
+
+
+
+bound :: proc(calls: ^int, value: int) -> int {
+	calls^ += 1
+	return value
+}
+
+main_ :: proc() -> int {
+	starts := 0
+	ends := 0
+	sum := 0
+	for v in bound(&starts, 2) ..< bound(&ends, 5) {
+		sum += v
+	}
+	hi := 3
+	for v in 0 ..= hi {
+		if v == 1 do hi = 4
+		sum += v
+	}
+	return sum + starts * 100 + ends * 10
+}
+
+run_test(t, `integer_range_bound_evaluation`, `
+package main
+
+bound :: proc(calls: ^int, value: int) -> int {
+	calls^ += 1
+	return value
+}
+
+main :: proc() -> int {
+	starts := 0
+	ends := 0
+	sum := 0
+	for v in bound(&starts, 2) ..< bound(&ends, 5) {
+		sum += v
+	}
+	hi := 3
+	for v in 0 ..= hi {
+		if v == 1 do hi = 4
+		sum += v
+	}
+	return sum + starts * 100 + ends * 10
+}
+`, main_())
+}
+@(test) integer_range_continue_and_labelled_control :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc() -> int {
+	sum := 0
+	outer: for v, i in 2 ..< 6 {
+		for j in 0 ..= 3 {
+			x := v + j
+			if j == 1 do continue outer
+			sum += x + i * 10
+		}
+	}
+	for v, i in 0 ..= 5 {
+		if v == 1 do continue
+		if v == 4 do break
+		sum += v + i
+	}
+	return sum
+}
+
+run_test(t, `integer_range_continue_and_labelled_control`, `
+package main
+
+main :: proc() -> int {
+	sum := 0
+	outer: for v, i in 2 ..< 6 {
+		for j in 0 ..= 3 {
+			x := v + j
+			if j == 1 do continue outer
+			sum += x + i * 10
+		}
+	}
+	for v, i in 0 ..= 5 {
+		if v == 1 do continue
+		if v == 4 do break
+		sum += v + i
+	}
+	return sum
+}
+`, main_())
+}
+@(test) integer_range_inclusive_limits :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc() -> int {
+	sum := 0
+	count := 0
+	for v in u8(0xfe) ..= u8(0xff) {
+		sum += int(v)
+		count += 1
+		if count > 3 do break
+		continue
+	}
+	for v in i8(0x7e) ..= i8(0x7f) {
+		sum += int(v)
+		count += 1
+		if count > 6 do break
+	}
+	for v, i in u64(0xffff_ffff_ffff_fffe) ..= u64(0xffff_ffff_ffff_ffff) {
+		sum += int(v & 0xff) + i
+		count += 1
+		if count > 9 do break
+	}
+	for v in i64(0x7fff_ffff_ffff_fffe) ..= i64(0x7fff_ffff_ffff_ffff) {
+		sum += int(v & 0xff)
+		count += 1
+		if count > 12 do break
+	}
+	return sum + count * 1000
+}
+
+run_test(t, `integer_range_inclusive_limits`, `
+package main
+
+main :: proc() -> int {
+	sum := 0
+	count := 0
+	for v in u8(0xfe) ..= u8(0xff) {
+		sum += int(v)
+		count += 1
+		if count > 3 do break
+		continue
+	}
+	for v in i8(0x7e) ..= i8(0x7f) {
+		sum += int(v)
+		count += 1
+		if count > 6 do break
+	}
+	for v, i in u64(0xffff_ffff_ffff_fffe) ..= u64(0xffff_ffff_ffff_ffff) {
+		sum += int(v & 0xff) + i
+		count += 1
+		if count > 9 do break
+	}
+	for v in i64(0x7fff_ffff_ffff_fffe) ..= i64(0x7fff_ffff_ffff_ffff) {
+		sum += int(v & 0xff)
+		count += 1
+		if count > 12 do break
+	}
+	return sum + count * 1000
+}
+`, main_())
+}
+@(test) integer_range_initializer_scope :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc() -> int {
+	n := 0x20
+	sum := 0
+	for n := 4; v, i in 1 ..= n {
+		sum += v + i
+	}
+	return sum + n
+}
+
+run_test(t, `integer_range_initializer_scope`, `
+package main
+
+main :: proc() -> int {
+	n := 0x20
+	sum := 0
+	for n := 4; v, i in 1 ..= n {
+		sum += v + i
+	}
+	return sum + n
+}
+`, main_())
+}
+@(test) fail_c_style_for_condition :: proc(t: ^testing.T) {
+run_test(t, `fail_c_style_for_condition`, `
+package main
+
+main :: proc() -> int {
+	for i := 0; i; i += 1 {}
+	return 0
+}
+`, 0)
+}
+@(test) fail_c_style_for_initializer_scope :: proc(t: ^testing.T) {
+run_test(t, `fail_c_style_for_initializer_scope`, `
+package main
+
+main :: proc() -> int {
+	for i := 0; i < 1; i += 1 {}
+	return i
+}
+`, 0)
+}
+@(test) fail_c_style_for_post_scope :: proc(t: ^testing.T) {
+run_test(t, `fail_c_style_for_post_scope`, `
+package main
+
+main :: proc() -> int {
+	for i := 0; i < 1; i += step {
+		step := 1
+	}
+	return 0
+}
+`, 0)
+}
+@(test) fail_integer_range_bounds :: proc(t: ^testing.T) {
+run_test(t, `fail_integer_range_bounds`, `
+package main
+
+main :: proc() -> int {
+	for v in 1.0 ..< 3.0 {}
+	for v in false ..= true {}
+	for v in i32(0) ..< u32(3) {}
+	return 0
+}
+`, 0)
+}
+@(test) fail_integer_range_bindings :: proc(t: ^testing.T) {
+run_test(t, `fail_integer_range_bindings`, `
+package main
+
+main :: proc() -> int {
+	for v, i in 0 ..< 3 {
+		v = 1
+		i = 2
+	}
+	for v, i, extra in 0 ..< 3 {}
+	for &v in 0 ..< 3 {}
+	return 0
+}
+`, 0)
+}
+@(test) fail_integer_range_scope :: proc(t: ^testing.T) {
+run_test(t, `fail_integer_range_scope`, `
+package main
+
+main :: proc() -> int {
+	for n := 3; v, i in 0 ..< n {}
+	return n + v + i
+}
+`, 0)
+}
+@(test) fail_integer_range_reverse :: proc(t: ^testing.T) {
+run_test(t, `fail_integer_range_reverse`, `
+package main
+
+main :: proc() -> int {
+	#reverse for v in 0 ..< 3 {}
+	return 0
+}
+`, 0)
+}
 @(test) nested_loops :: proc(t: ^testing.T) {
 
 
@@ -19532,6 +20193,26 @@ NAMES := []string{
 `integer_conversion_narrowing_across_widths`,
 `extend_reduce_integer_chain`,
 `loops`,
+`c_style_for_loops`,
+`c_style_for_omitted_clauses`,
+`c_style_for_continue_and_break`,
+`c_style_for_initializer_scope`,
+`c_style_for_labelled_control`,
+`c_style_for_returning_body`,
+`integer_range_iteration`,
+`integer_range_empty_and_singleton`,
+`integer_range_typed_bounds`,
+`integer_range_bound_evaluation`,
+`integer_range_continue_and_labelled_control`,
+`integer_range_inclusive_limits`,
+`integer_range_initializer_scope`,
+`fail_c_style_for_condition`,
+`fail_c_style_for_initializer_scope`,
+`fail_c_style_for_post_scope`,
+`fail_integer_range_bounds`,
+`fail_integer_range_bindings`,
+`fail_integer_range_scope`,
+`fail_integer_range_reverse`,
 `nested_loops`,
 `rotated_nested_loops`,
 `exemplar_affine_loop`,
@@ -22034,6 +22715,349 @@ main :: proc() -> int {
 	}
 
 	return a
+}
+`,
+`
+package main
+
+main :: proc() -> int {
+	sum := 0
+	for i := 0; i < 6; i += 1 {
+		sum += i
+	}
+	for i := 3; i > 0; i -= 1 {
+		sum += i * 10
+	}
+	for i := 4; i < 4; i += 1 {
+		sum += 0x1000
+	}
+	return sum
+}
+`,
+`
+package main
+
+main :: proc() -> int {
+	i := 0
+	sum := 0
+	// COMPILER BUG: emitting the loop condition's false arm after this body
+	// makes graph-coloring register allocation exceed its round limit.
+	// Failing order in gen.odin:
+	// ssa.start_if(ctx, ctx.node_scope, &if_state, cond)
+	// emit_stmts(ctx, {d.body})
+	// ssa.start_else(ctx, &ctx.node_scope, &if_state)
+	// ssa.loop_control(.Break, ctx, ctx.node_scope, &loop_state.bstate)
+	// ctx.node_scope = 0
+	// ssa.end_else(ctx, &ctx.node_scope, &if_state)
+	for i < 4 {
+		i += 1
+		if i == 2 do continue
+		sum += i
+	}
+	for ; i < 6; {
+		i += 1
+		sum += i
+	}
+	for ; ; i += 1 {
+		if i == 8 do break
+		sum += i
+	}
+	for j := 0; ; j += 1 {
+		if j == 3 do break
+		sum += j
+	}
+	for false {
+		sum += 0x1000
+	}
+	return sum + i
+}
+`,
+`
+package main
+
+step :: proc(i: int, calls: ^int) -> int {
+	calls^ += 1
+	return i + 1
+}
+
+main :: proc() -> int {
+	calls := 0
+	i := 0
+	sum := 0
+	for ; i < 8; i = step(i, &calls) {
+		if i == 1 do continue
+		if i == 5 do break
+		sum += i
+	}
+	return sum + calls * 10 + i * 100
+}
+`,
+`
+package main
+
+less :: proc(i: ^int) -> bool { return i^ < 4 }
+step :: proc(i: ^int) -> int { return i^ + 1 }
+
+main :: proc() -> int {
+	i := 0x20
+	sum := 0
+	for i := 0; less(&i); i = step(&i) {
+		j := i + 1
+		sum += j
+	}
+	for i := 0; i < 2; i += 1 {
+		i := 7
+		sum += i
+	}
+	return sum + i
+}
+`,
+`
+package main
+
+main :: proc() -> int {
+	sum := 0
+	outer: for i := 0; i < 4; i += 1 {
+		x := i + 10
+		for j := 0; j < 3; j += 1 {
+			y := x + j
+			switch j {
+			case 1:
+				if i == 2 do break outer
+				continue outer
+			case:
+				sum += y
+			}
+		}
+	}
+	return sum
+}
+`,
+`
+package main
+
+choose :: proc(n: int) -> int {
+	for i := 0; i < n; i += 1 {
+		return i + 7
+	}
+	return 3
+}
+
+main :: proc() -> int {
+	return choose(0) + choose(4)
+}
+`,
+`
+package main
+
+main :: proc() -> int {
+	sum := 0
+	for v, i in -3 ..< 4 {
+		sum += v * 10 + i
+	}
+	for v in 2 ..= 5 {
+		sum += v
+	}
+	for _, i in 8 ..< 11 {
+		sum += i * 100
+	}
+	return sum
+}
+`,
+`
+package main
+
+main :: proc() -> int {
+	lo := 5
+	hi := 3
+	sum := 0
+	for v in lo ..< lo {
+		sum += v + 0x1000
+	}
+	for v in lo ..< hi {
+		sum += v + 0x1000
+	}
+	for v in lo ..= hi {
+		sum += v + 0x1000
+	}
+	for v, i in lo ..= lo {
+		sum += v + i
+	}
+	return sum
+}
+`,
+`
+package main
+
+main :: proc() -> int {
+	lo: u64 = 0x8000_0000_0000_0000
+	hi := lo + 3
+	sum := 0
+	for v, i in lo ..< hi {
+		x: u64 = v - lo
+		y: int = i
+		sum += int(x) + y * 10
+	}
+	end: u8 = 4
+	for v in 1 ..< end {
+		x: u8 = v
+		sum += int(x)
+	}
+	for v in i8(-3) ..= 1 {
+		x: i8 = v
+		sum += int(x)
+	}
+	return sum
+}
+`,
+`
+package main
+
+bound :: proc(calls: ^int, value: int) -> int {
+	calls^ += 1
+	return value
+}
+
+main :: proc() -> int {
+	starts := 0
+	ends := 0
+	sum := 0
+	for v in bound(&starts, 2) ..< bound(&ends, 5) {
+		sum += v
+	}
+	hi := 3
+	for v in 0 ..= hi {
+		if v == 1 do hi = 4
+		sum += v
+	}
+	return sum + starts * 100 + ends * 10
+}
+`,
+`
+package main
+
+main :: proc() -> int {
+	sum := 0
+	outer: for v, i in 2 ..< 6 {
+		for j in 0 ..= 3 {
+			x := v + j
+			if j == 1 do continue outer
+			sum += x + i * 10
+		}
+	}
+	for v, i in 0 ..= 5 {
+		if v == 1 do continue
+		if v == 4 do break
+		sum += v + i
+	}
+	return sum
+}
+`,
+`
+package main
+
+main :: proc() -> int {
+	sum := 0
+	count := 0
+	for v in u8(0xfe) ..= u8(0xff) {
+		sum += int(v)
+		count += 1
+		if count > 3 do break
+		continue
+	}
+	for v in i8(0x7e) ..= i8(0x7f) {
+		sum += int(v)
+		count += 1
+		if count > 6 do break
+	}
+	for v, i in u64(0xffff_ffff_ffff_fffe) ..= u64(0xffff_ffff_ffff_ffff) {
+		sum += int(v & 0xff) + i
+		count += 1
+		if count > 9 do break
+	}
+	for v in i64(0x7fff_ffff_ffff_fffe) ..= i64(0x7fff_ffff_ffff_ffff) {
+		sum += int(v & 0xff)
+		count += 1
+		if count > 12 do break
+	}
+	return sum + count * 1000
+}
+`,
+`
+package main
+
+main :: proc() -> int {
+	n := 0x20
+	sum := 0
+	for n := 4; v, i in 1 ..= n {
+		sum += v + i
+	}
+	return sum + n
+}
+`,
+`
+package main
+
+main :: proc() -> int {
+	for i := 0; i; i += 1 {}
+	return 0
+}
+`,
+`
+package main
+
+main :: proc() -> int {
+	for i := 0; i < 1; i += 1 {}
+	return i
+}
+`,
+`
+package main
+
+main :: proc() -> int {
+	for i := 0; i < 1; i += step {
+		step := 1
+	}
+	return 0
+}
+`,
+`
+package main
+
+main :: proc() -> int {
+	for v in 1.0 ..< 3.0 {}
+	for v in false ..= true {}
+	for v in i32(0) ..< u32(3) {}
+	return 0
+}
+`,
+`
+package main
+
+main :: proc() -> int {
+	for v, i in 0 ..< 3 {
+		v = 1
+		i = 2
+	}
+	for v, i, extra in 0 ..< 3 {}
+	for &v in 0 ..< 3 {}
+	return 0
+}
+`,
+`
+package main
+
+main :: proc() -> int {
+	for n := 3; v, i in 0 ..< n {}
+	return n + v + i
+}
+`,
+`
+package main
+
+main :: proc() -> int {
+	#reverse for v in 0 ..< 3 {}
+	return 0
 }
 `,
 `
@@ -28925,6 +29949,26 @@ main :: proc() -> int {
 `#load("../fuzz/crashes/regalloc_ioob.odin")`,
 }
 IS_FUZZ := []bool{
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
 false,
 false,
 false,

@@ -2560,33 +2560,84 @@ typecheck :: proc(
 		if exhaustive && !reachable && !sw.broken do mark_unreachable(ctx)
 		ty = &VOID
 	case ^ast.For_Stmt:
-		if d.init != nil || d.cond != nil || d.post != nil {
-			error(ctx, node, "TODO: only `for {{ .. }}` is supported")
+		prev := len(ctx.scope)
+		defer {
+			for var in ctx.scope[prev:] {
+				set_node_data(var.ident, var.flags)
+			}
+			resize(&ctx.scope, prev)
 		}
+
+		typecheck(ctx, {}, d.init)
+		if d.cond != nil do typecheck_as(ctx, .Bool, d.cond)
 
 		loop := Loop_State {
 			parent = ctx.loop,
 			label  = src_of(ctx.file^, d.label),
+			broken = d.cond != nil,
 		}
 		ctx.loop = &loop
 		defer ctx.loop = loop.parent
 
 		typecheck_branch(ctx, d.body)
+		typecheck_branch(ctx, d.post)
 		if !loop.broken do mark_unreachable(ctx)
 	case ^ast.Range_Stmt:
-		if d.init != nil do error(ctx, d.init, "TODO: a for with an initializer")
-		expr_meta := typecheck(ctx, {}, d.expr)
+		prev := len(ctx.scope)
+		defer {
+			for var in ctx.scope[prev:] {
+				set_node_data(var.ident, var.flags)
+			}
+			resize(&ctx.scope, prev)
+		}
+		typecheck(ctx, {}, d.init)
+
+		interval, is_interval := ast.unparen_expr(d.expr).derived.(^ast.Binary_Expr)
+		is_interval =
+			is_interval &&
+			(interval.op.kind == .Range_Half || interval.op.kind == .Range_Full)
 		elem: Type
-		#partial switch t in unpack_type(expr_meta.type) {
-		case ^Slice:
-			elem = t.elem
-		case ^Array:
-			elem = t.elem
-		case String_Type:
-			elem = .U8
-		case:
-			ty = error(ctx, d.expr, "can not range over a %v", expr_meta.type)
-			break match
+		if is_interval {
+			if d.reverse {
+				error(ctx, node, "#reverse is not supported with integer ranges")
+			}
+
+			lhs, rhs: ^Check_Meta
+			if is_num_lit(interval.left) && !is_num_lit(interval.right) {
+				rhs = typecheck(ctx, {}, interval.right)
+				lhs = typecheck_as(ctx, rhs.type, interval.left)
+			} else {
+				lhs = typecheck(ctx, {}, interval.left)
+				rhs = typecheck_as(ctx, lhs.type, interval.right)
+			}
+			if expect(ctx, interval.right, rhs, lhs.type) == &INVALID {
+				ty = &INVALID
+				break match
+			}
+			if !in_set(lhs.type, INTEGER_TYPES) || lhs.type == .Bool {
+				ty = error(
+					ctx,
+					d.expr,
+					"expected an integer range, found %v",
+					lhs.type,
+				)
+				break match
+			}
+			elem = lhs.type
+			set_node_data(d.expr, tmeta(ctx, elem))
+		} else {
+			expr_meta := typecheck(ctx, {}, d.expr)
+			#partial switch t in unpack_type(expr_meta.type) {
+			case ^Slice:
+				elem = t.elem
+			case ^Array:
+				elem = t.elem
+			case String_Type:
+				elem = .U8
+			case:
+				ty = error(ctx, d.expr, "can not range over a %v", expr_meta.type)
+				break match
+			}
 		}
 
 		loop := Loop_State {
@@ -2597,7 +2648,6 @@ typecheck :: proc(
 		ctx.loop = &loop
 		defer ctx.loop = loop.parent
 
-		prev := len(ctx.scope)
 		val_types := [2]Type{elem, .Int}
 		for v, i in d.vals {
 			if i >= len(val_types) {
@@ -2605,23 +2655,32 @@ typecheck :: proc(
 				break
 			}
 			inner := v
-			if un, is_un := v.derived.(^ast.Unary_Expr); is_un && i == 0 do inner = un.expr
+			if un, is_un := v.derived.(^ast.Unary_Expr); is_un && i == 0 {
+				if is_interval {
+					error(ctx, v, "integer ranges can not be iterated by reference")
+					continue
+				}
+				inner = un.expr
+			}
 			id, is_ident := inner.derived.(^ast.Ident)
 			if !is_ident {
 				error(ctx, v, "expected a binding name")
 				continue
 			}
+			flags: Var_Flags
+			if is_interval do flags |= {.Immutable}
 			append(
 				&ctx.scope,
-				Variable{name = id.name, type = val_types[i], ident = inner},
+				Variable {
+					name = id.name,
+					type = val_types[i],
+					ident = inner,
+					flags = flags,
+				},
 			)
 		}
 		typecheck_branch(ctx, d.body)
 		if !loop.broken do mark_unreachable(ctx)
-		for var in ctx.scope[prev:] {
-			set_node_data(var.ident, var.flags)
-		}
-		resize(&ctx.scope, prev)
 	case ^ast.Branch_Stmt:
 		if d.tok.kind != .Break && d.tok.kind != .Continue {
 			ty = error(ctx, node, "TODO: %v", d.tok.text)

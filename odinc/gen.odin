@@ -12,6 +12,7 @@ import "base:runtime"
 import "core:fmt"
 import "core:mem"
 import "core:odin/ast"
+import "core:odin/tokenizer"
 import "core:slice"
 import "core:strconv"
 import "typecheck"
@@ -1884,9 +1885,8 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		bac.unpin(ctx, tagv)
 		bac.unpin(ctx, ptr)
 	case ^ast.For_Stmt:
-		assert(d.init == nil)
-		assert(d.cond == nil)
-		assert(d.post == nil)
+		sbase := ctx_scope_base(ctx)
+		emit_nodes(ctx, {}, d.init)
 
 		loop_state: typecheck.Loop_State
 		loop_state.label = typecheck.src_of(ctx.file^, d.label)
@@ -1894,12 +1894,100 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		ctx.loop = &loop_state
 
 		ssa.start_loop(ctx, ctx.node_scope, &loop_state.bstate)
+		if d.cond != nil {
+			cond := emit_rvalue(ctx, {}, d.cond)
+			if_state: ssa.If_State
+			ssa.start_if(ctx, ctx.node_scope, &if_state, cond)
+
+			// Delaying the exit edge until after the body currently breaks register allocation.
+			ssa.start_else(ctx, &ctx.node_scope, &if_state)
+			ssa.loop_control(.Break, ctx, ctx.node_scope, &loop_state.bstate)
+			ctx.node_scope = 0
+			ssa.end_else(ctx, &ctx.node_scope, &if_state)
+		}
 		emit_stmts(ctx, {d.body})
 
+		ssa.start_loop_increment(ctx, &ctx.node_scope, &loop_state.bstate)
+		if ctx.node_scope != 0 do emit_nodes(ctx, {}, d.post)
 		ssa.end_loop(ctx, &ctx.node_scope, &loop_state.bstate)
 
 		ctx.loop = ctx.loop.parent
+		emit_stmts(ctx, {}, sbase)
 	case ^ast.Range_Stmt:
+		sbase := ctx_scope_base(ctx)
+		emit_nodes(ctx, {}, d.init)
+
+		interval, is_interval := ast.unparen_expr(d.expr).derived.(^ast.Binary_Expr)
+		if is_interval &&
+		   (interval.op.kind == .Range_Half || interval.op.kind == .Range_Full) {
+			elem_ty := get_node_type(interval.left)
+			dt := type_to_dt(elem_ty)
+			first := emit_rvalue(ctx, {}, interval.left)
+			value_slot := push_scope_value(
+				ctx,
+				slice.get(d.vals, 0) or_else nil,
+				first,
+				elem_ty,
+			)
+
+			idx_slot := -1
+			if len(d.vals) > 1 {
+				zero := bac.add_c_int(ctx, "rz", .I64, 0)
+				idx_slot = push_scope_value(ctx, d.vals[1], zero, .Int)
+			}
+
+			loop_state := typecheck.Loop_State {
+				label  = typecheck.src_of(ctx.file^, d.label),
+				parent = ctx.loop,
+			}
+			ctx.loop = &loop_state
+			ssa.start_loop(ctx, ctx.node_scope, &loop_state.bstate)
+
+			limit := emit_rvalue(ctx, {}, interval.right)
+			value := ssa.get_scope_value(ctx, ctx.node_scope, value_slot)
+			tok: tokenizer.Token_Kind =
+				interval.op.kind == .Range_Half ? .Gt_Eq : .Gt
+			op, name, _ := typecheck.tok_to_binop(elem_ty, tok) or_else panic("")
+			stop := bac.add_bin_op(ctx, name, op, .I8, value, limit)
+			break_if(ctx, &loop_state, stop)
+
+			for v, i in d.vals {
+				slot := i == 0 ? value_slot : idx_slot
+				vty := i == 0 ? elem_ty : .Int
+				flags := typecheck.get_node_vflags(v)
+				add_var(ctx, {typecheck.src_of(ctx.file^, v), slot, vty, v, flags})
+			}
+			emit_stmts(ctx, {d.body})
+
+			ssa.start_loop_increment(ctx, &ctx.node_scope, &loop_state.bstate)
+			if ctx.node_scope != 0 {
+				value = ssa.get_scope_value(ctx, ctx.node_scope, value_slot)
+				if interval.op.kind == .Range_Full {
+					// The final inclusive value may not have a representable successor.
+					max := ~u64(0) >> uint(64 - type_size(elem_ty) * 8)
+					if typecheck.in_set(elem_ty, typecheck.SIGNED_TYPES) do max >>= 1
+					last := bac.add_c_int(ctx, "rmax", dt, i64(max))
+					done := bac.add_bin_op(ctx, "rdone", .Eq, .I8, value, last)
+					break_if(ctx, &loop_state, done)
+				}
+				one := bac.add_c_int(ctx, "r1", dt, 1)
+				next := bac.add_bin_op(ctx, "rinc", .Add, dt, value, one)
+				ssa.set_scope_value(ctx, ctx.node_scope, value_slot, next)
+
+				if idx_slot >= 0 {
+					idx := ssa.get_scope_value(ctx, ctx.node_scope, idx_slot)
+					one := bac.add_c_int(ctx, "ri1", .I64, 1)
+					next := bac.add_bin_op(ctx, "riinc", .Add, .I64, idx, one)
+					ssa.set_scope_value(ctx, ctx.node_scope, idx_slot, next)
+				}
+			}
+
+			ssa.end_loop(ctx, &ctx.node_scope, &loop_state.bstate)
+			ctx.loop = ctx.loop.parent
+			emit_stmts(ctx, {}, sbase)
+			break
+		}
+
 		expr_ty := get_node_type(d.expr)
 		base := emit_nodes(ctx, {}, d.expr)
 
@@ -1924,8 +2012,6 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		bac.pin(ctx, length)
 
 		stride := type_size(elem_ty)
-		sbase := ctx_scope_base(ctx)
-
 		iinit := bac.add_c_int(ctx, "rz", .I64, 0)
 		idx_slot := push_scope_value(
 			ctx,
@@ -1944,11 +2030,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		idxv := ssa.get_scope_value(ctx, ctx.node_scope, idx_slot)
 		cond := bac.add_bin_op(ctx, "rge", .Ge, .I8, idxv, length)
 
-		if_state: ssa.If_State
-		ssa.start_if(ctx, ctx.node_scope, &if_state, cond)
-		ssa.loop_control(.Break, ctx, ctx.node_scope, &loop_state.bstate)
-		ctx.node_scope = 0 // NOTE: no dbg scope
-		ssa.end_if(ctx, &ctx.node_scope, &if_state)
+		break_if(ctx, &loop_state, cond)
 
 		elem_addr := index_offset(ctx, data_ptr, idxv, stride)
 
@@ -2208,6 +2290,14 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 	res = bac.apply_peep(ctx, res)
 
 	return {id = res, is_lvalue = lvalue}
+
+	break_if :: proc(ctx: ^Gen_Ctx, loop: ^typecheck.Loop_State, cond: Node_ID) {
+		state: ssa.If_State
+		ssa.start_if(ctx, ctx.node_scope, &state, cond)
+		ssa.loop_control(.Break, ctx, ctx.node_scope, &loop.bstate)
+		ctx.node_scope = 0
+		ssa.end_if(ctx, &ctx.node_scope, &state)
+	}
 }
 
 emit_conversion :: proc(

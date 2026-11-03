@@ -2008,6 +2008,389 @@ main :: proc() -> int {
 }
 ```
 
+#### c style for loops
+```odin
+package main
+
+main :: proc() -> int {
+	sum := 0
+	for i := 0; i < 6; i += 1 {
+		sum += i
+	}
+	for i := 3; i > 0; i -= 1 {
+		sum += i * 10
+	}
+	for i := 4; i < 4; i += 1 {
+		sum += 0x1000
+	}
+	return sum
+}
+```
+
+#### c style for omitted clauses
+```odin
+package main
+
+main :: proc() -> int {
+	i := 0
+	sum := 0
+	// COMPILER BUG: emitting the loop condition's false arm after this body
+	// makes graph-coloring register allocation exceed its round limit.
+	// Failing order in gen.odin:
+	// ssa.start_if(ctx, ctx.node_scope, &if_state, cond)
+	// emit_stmts(ctx, {d.body})
+	// ssa.start_else(ctx, &ctx.node_scope, &if_state)
+	// ssa.loop_control(.Break, ctx, ctx.node_scope, &loop_state.bstate)
+	// ctx.node_scope = 0
+	// ssa.end_else(ctx, &ctx.node_scope, &if_state)
+	for i < 4 {
+		i += 1
+		if i == 2 do continue
+		sum += i
+	}
+	for ; i < 6; {
+		i += 1
+		sum += i
+	}
+	for ; ; i += 1 {
+		if i == 8 do break
+		sum += i
+	}
+	for j := 0; ; j += 1 {
+		if j == 3 do break
+		sum += j
+	}
+	for false {
+		sum += 0x1000
+	}
+	return sum + i
+}
+```
+
+#### c style for continue and break
+```odin
+package main
+
+step :: proc(i: int, calls: ^int) -> int {
+	calls^ += 1
+	return i + 1
+}
+
+main :: proc() -> int {
+	calls := 0
+	i := 0
+	sum := 0
+	for ; i < 8; i = step(i, &calls) {
+		if i == 1 do continue
+		if i == 5 do break
+		sum += i
+	}
+	return sum + calls * 10 + i * 100
+}
+```
+
+#### c style for initializer scope
+```odin
+package main
+
+less :: proc(i: ^int) -> bool { return i^ < 4 }
+step :: proc(i: ^int) -> int { return i^ + 1 }
+
+main :: proc() -> int {
+	i := 0x20
+	sum := 0
+	for i := 0; less(&i); i = step(&i) {
+		j := i + 1
+		sum += j
+	}
+	for i := 0; i < 2; i += 1 {
+		i := 7
+		sum += i
+	}
+	return sum + i
+}
+```
+
+#### c style for labelled control
+```odin
+package main
+
+main :: proc() -> int {
+	sum := 0
+	outer: for i := 0; i < 4; i += 1 {
+		x := i + 10
+		for j := 0; j < 3; j += 1 {
+			y := x + j
+			switch j {
+			case 1:
+				if i == 2 do break outer
+				continue outer
+			case:
+				sum += y
+			}
+		}
+	}
+	return sum
+}
+```
+
+#### c style for returning body
+```odin
+package main
+
+choose :: proc(n: int) -> int {
+	for i := 0; i < n; i += 1 {
+		return i + 7
+	}
+	return 3
+}
+
+main :: proc() -> int {
+	return choose(0) + choose(4)
+}
+```
+
+#### integer range iteration
+```odin
+package main
+
+main :: proc() -> int {
+	sum := 0
+	for v, i in -3 ..< 4 {
+		sum += v * 10 + i
+	}
+	for v in 2 ..= 5 {
+		sum += v
+	}
+	for _, i in 8 ..< 11 {
+		sum += i * 100
+	}
+	return sum
+}
+```
+
+#### integer range empty and singleton
+```odin
+package main
+
+main :: proc() -> int {
+	lo := 5
+	hi := 3
+	sum := 0
+	for v in lo ..< lo {
+		sum += v + 0x1000
+	}
+	for v in lo ..< hi {
+		sum += v + 0x1000
+	}
+	for v in lo ..= hi {
+		sum += v + 0x1000
+	}
+	for v, i in lo ..= lo {
+		sum += v + i
+	}
+	return sum
+}
+```
+
+#### integer range typed bounds
+```odin
+package main
+
+main :: proc() -> int {
+	lo: u64 = 0x8000_0000_0000_0000
+	hi := lo + 3
+	sum := 0
+	for v, i in lo ..< hi {
+		x: u64 = v - lo
+		y: int = i
+		sum += int(x) + y * 10
+	}
+	end: u8 = 4
+	for v in 1 ..< end {
+		x: u8 = v
+		sum += int(x)
+	}
+	for v in i8(-3) ..= 1 {
+		x: i8 = v
+		sum += int(x)
+	}
+	return sum
+}
+```
+
+#### integer range bound evaluation
+```odin
+package main
+
+bound :: proc(calls: ^int, value: int) -> int {
+	calls^ += 1
+	return value
+}
+
+main :: proc() -> int {
+	starts := 0
+	ends := 0
+	sum := 0
+	for v in bound(&starts, 2) ..< bound(&ends, 5) {
+		sum += v
+	}
+	hi := 3
+	for v in 0 ..= hi {
+		if v == 1 do hi = 4
+		sum += v
+	}
+	return sum + starts * 100 + ends * 10
+}
+```
+
+#### integer range continue and labelled control
+```odin
+package main
+
+main :: proc() -> int {
+	sum := 0
+	outer: for v, i in 2 ..< 6 {
+		for j in 0 ..= 3 {
+			x := v + j
+			if j == 1 do continue outer
+			sum += x + i * 10
+		}
+	}
+	for v, i in 0 ..= 5 {
+		if v == 1 do continue
+		if v == 4 do break
+		sum += v + i
+	}
+	return sum
+}
+```
+
+#### integer range inclusive limits
+```odin
+package main
+
+main :: proc() -> int {
+	sum := 0
+	count := 0
+	for v in u8(0xfe) ..= u8(0xff) {
+		sum += int(v)
+		count += 1
+		if count > 3 do break
+		continue
+	}
+	for v in i8(0x7e) ..= i8(0x7f) {
+		sum += int(v)
+		count += 1
+		if count > 6 do break
+	}
+	for v, i in u64(0xffff_ffff_ffff_fffe) ..= u64(0xffff_ffff_ffff_ffff) {
+		sum += int(v & 0xff) + i
+		count += 1
+		if count > 9 do break
+	}
+	for v in i64(0x7fff_ffff_ffff_fffe) ..= i64(0x7fff_ffff_ffff_ffff) {
+		sum += int(v & 0xff)
+		count += 1
+		if count > 12 do break
+	}
+	return sum + count * 1000
+}
+```
+
+#### integer range initializer scope
+```odin
+package main
+
+main :: proc() -> int {
+	n := 0x20
+	sum := 0
+	for n := 4; v, i in 1 ..= n {
+		sum += v + i
+	}
+	return sum + n
+}
+```
+
+#### fail c style for condition
+```odin
+package main
+
+main :: proc() -> int {
+	for i := 0; i; i += 1 {}
+	return 0
+}
+```
+
+#### fail c style for initializer scope
+```odin
+package main
+
+main :: proc() -> int {
+	for i := 0; i < 1; i += 1 {}
+	return i
+}
+```
+
+#### fail c style for post scope
+```odin
+package main
+
+main :: proc() -> int {
+	for i := 0; i < 1; i += step {
+		step := 1
+	}
+	return 0
+}
+```
+
+#### fail integer range bounds
+```odin
+package main
+
+main :: proc() -> int {
+	for v in 1.0 ..< 3.0 {}
+	for v in false ..= true {}
+	for v in i32(0) ..< u32(3) {}
+	return 0
+}
+```
+
+#### fail integer range bindings
+```odin
+package main
+
+main :: proc() -> int {
+	for v, i in 0 ..< 3 {
+		v = 1
+		i = 2
+	}
+	for v, i, extra in 0 ..< 3 {}
+	for &v in 0 ..< 3 {}
+	return 0
+}
+```
+
+#### fail integer range scope
+```odin
+package main
+
+main :: proc() -> int {
+	for n := 3; v, i in 0 ..< n {}
+	return n + v + i
+}
+```
+
+#### fail integer range reverse
+```odin
+package main
+
+main :: proc() -> int {
+	#reverse for v in 0 ..< 3 {}
+	return 0
+}
+```
+
 #### nested loops
 ```odin
 package main

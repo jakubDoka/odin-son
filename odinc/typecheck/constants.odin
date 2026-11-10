@@ -6,8 +6,8 @@ import "core:odin/tokenizer"
 import "core:strconv"
 
 constant_base_type :: proc(ty: Type) -> Type {
-	if e, ok := unpack_type(ty).(^Enum); ok do return e.backing
-	return ty
+	if e, ok := unpack_type(ty).(^Enum); ok do return strip_named(e.backing)
+	return strip_named(ty)
 }
 
 constant_string :: proc(ctx: ^Gen_Ctx, meta: ^Check_Meta) -> string {
@@ -197,12 +197,7 @@ constant_binary :: proc(
 }
 
 valid_conversion_type :: proc(ty: Type) -> bool {
-	return(
-		in_set(constant_base_type(ty), NUMBER_TYPES) ||
-		ty == .Rawptr ||
-		is_of(ty, Pointer) ||
-		is_of(ty, Multi_Pointer) \
-	)
+	return in_set(constant_base_type(ty), NUMBER_TYPES) || is_data_pointer(ty)
 }
 
 typecheck_conversion :: proc(
@@ -273,14 +268,14 @@ typecheck_conversion :: proc(
 		value = src.lit
 	}
 
-	return tcmeta(ctx, to, value)
+	return tcmeta(ctx, dst, value)
 }
 
 constant_scalar_bytes :: proc(meta: ^Check_Meta, bytes: []u8) -> bool {
 	if !meta.known || !valid_conversion_type(meta.type) do return false
 
 	value := meta.int
-	if meta.type == .F32 do value = i64(transmute(u32)f32(meta.float))
+	if strip_named(meta.type) == .F32 do value = i64(transmute(u32)f32(meta.float))
 
 	data := transmute([8]u8)value
 	assert(len(bytes) <= len(data))

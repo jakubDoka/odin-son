@@ -1,0 +1,185 @@
+=========== OPT LEVEL: none-quick ===========
+main:
+    sub sp, sp, #48
+    add x0, sp, #0
+    movz x1, #0
+    str x1, [x0]
+    movz x2, #8
+    add x3, x0, x2
+    add x4, sp, #16
+    add x5, sp, #32
+    add x6, x5, x2
+    movz x7, #3
+    str x7, [x3]
+    str x0, [x4]
+    add x0, x4, x2
+    movz x3, #32
+    str x3, [x0]
+    str x4, [x5]
+    movz x0, #256
+    str x0, [x6]
+    add x3, sp, #32
+    movz x4, #0
+1:
+    cmp x3, x1
+    b.ne 2
+    movz x0, #16
+    add x0, x0, x4
+    add sp, sp, #48
+    ret
+2:
+    ldr x0, [x3]
+    add x5, x3, x2
+    ldr x5, [x5]
+    add x5, x5, x4
+    mov x3, x0
+    mov x4, x5
+    b 1
+=========== OPT LEVEL: none ===========
+main:
+    sub sp, sp, #48
+    add x7, sp, #0
+    movz x6, #0
+    str x6, [x7]
+    movz x5, #8
+    add x1, x7, x5
+    add x4, sp, #16
+    add x3, sp, #32
+    add x2, x3, x5
+    movz x0, #3
+    str x0, [x1]
+    str x7, [x4]
+    add x1, x4, x5
+    movz x0, #32
+    str x0, [x1]
+    str x4, [x3]
+    movz x0, #256
+    str x0, [x2]
+    add x1, sp, #32
+    movz x0, #0
+1:
+    cmp x1, x6
+    b.ne 2
+    movz x1, #16
+    add x0, x1, x0
+    add sp, sp, #48
+    ret
+2:
+    ldr x2, [x1]
+    add x1, x1, x5
+    ldr x1, [x1]
+    add x0, x1, x0
+    mov x1, x2
+    b 1
+=========== OPT LEVEL: moderate-quick ===========
+main:
+    sub sp, sp, #48
+    add x0, sp, #0
+    movz x1, #0
+    str x1, [x0]
+    movz x2, #8
+    add x3, x0, x2
+    add x4, sp, #16
+    add x5, sp, #32
+    add x6, x5, x2
+    movz x7, #3
+    str x7, [x3]
+    str x0, [x4]
+    add x0, x4, x2
+    movz x3, #32
+    str x3, [x0]
+    str x4, [x5]
+    movz x0, #256
+    str x0, [x6]
+    add x3, sp, #32
+    movz x4, #0
+1:
+    cmp x3, x1
+    b.ne 2
+    movz x0, #16
+    add x0, x0, x4
+    add sp, sp, #48
+    ret
+2:
+    ldr x0, [x3]
+    add x5, x3, x2
+    ldr x5, [x5]
+    add x5, x5, x4
+    mov x3, x0
+    mov x4, x5
+    b 1
+=========== OPT LEVEL: moderate ===========
+main:
+    sub sp, sp, #48
+    add x7, sp, #0
+    movz x6, #0
+    str x6, [x7]
+    movz x5, #8
+    add x1, x7, x5
+    add x4, sp, #16
+    add x3, sp, #32
+    add x2, x3, x5
+    movz x0, #3
+    str x0, [x1]
+    str x7, [x4]
+    add x1, x4, x5
+    movz x0, #32
+    str x0, [x1]
+    str x4, [x3]
+    movz x0, #256
+    str x0, [x2]
+    add x1, sp, #32
+    movz x0, #0
+1:
+    cmp x1, x6
+    b.ne 2
+    movz x1, #16
+    add x0, x1, x0
+    add sp, sp, #48
+    ret
+2:
+    ldr x2, [x1]
+    add x1, x1, x5
+    ldr x1, [x1]
+    add x0, x1, x0
+    mov x1, x2
+    b 1
+=========== OPT LEVEL: all ===========
+main:
+    sub sp, sp, #48
+    add x8, sp, #0
+    add x3, sp, #32
+    movz x7, #0
+    str x7, [x8]
+    movz x6, #8
+    add x2, x8, x6
+    add x5, sp, #16
+    add x4, x3, x6
+    movz x0, #16
+    movz x1, #3
+    str x1, [x2]
+    str x8, [x5]
+    add x2, x5, x6
+    movz x1, #32
+    str x1, [x2]
+    str x5, [x3]
+    movz x1, #256
+    str x1, [x4]
+    cmp x3, x7
+    b.ne 1
+    b 3
+1:
+    movz x1, #0
+2:
+    add x2, x3, x6
+    ldr x2, [x2]
+    ldr x3, [x3]
+    cmp x3, x7
+    add x2, x1, x2
+    mov x1, x2
+    b.ne 2
+    add x0, x2, x0
+3:
+    add sp, sp, #48
+    ret
+=========== OPT LEVEL: aggresive ===========

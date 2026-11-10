@@ -533,7 +533,7 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 			append(&dbg_info, fmt.aprint(type))
 			append(&dbg_info, 0)
 			encoding := Dw_Ate.Signed
-			if type == .Bool {
+			if typecheck.strip_named(type) == .Bool {
 				encoding = .Boolean
 			} else if typecheck.in_set(type, typecheck.FLOAT_TYPES) {
 				encoding = .Float

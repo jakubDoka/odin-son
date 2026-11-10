@@ -1,6 +1,8 @@
 This codebase contains a in progress implementation of the JIT compiler and a
 Odin frontend to dogfood the JIT.
 
+Never commit any changes I will do that when I see fit.
+
 ### Code Conventions
 
 When writing longer functions, try to minimize the distance from variable to

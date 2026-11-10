@@ -175,6 +175,7 @@ x86_reg_class_classify :: proc(
 	return
 
 	classify :: proc(ty: Type, slots: []X86_Reg_Class, offset: int = 0) -> bool {
+		ty := typecheck.strip_named(ty)
 		mem.is_aligned(rawptr(uintptr(offset)), typecheck.type_align(ty)) or_return
 
 		@(static, rodata)
@@ -394,7 +395,7 @@ emit_lvalue :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Sym {
 			panic("no")
 		}
 	case .Const:
-		if meta.type == .String {
+		if typecheck.strip_named(meta.type) == .String {
 			return Value{id = emit_string(ctx, {}, meta.string^), is_lvalue = true}
 		}
 
@@ -1608,7 +1609,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 
 		base_ptr := base.id
 		if typecheck.is_of(get_node_type(d.expr), ^typecheck.Slice) ||
-		   get_node_type(d.expr) == .String {
+		   typecheck.strip_named(get_node_type(d.expr)) == .String {
 			base_ptr = field_load(ctx, "sdti", .I64, base.id)
 		}
 
@@ -2308,7 +2309,7 @@ emit_conversion :: proc(
 	arg: Node_ID,
 ) -> Node_ID {
 	dest_dt, src_dt := type_to_dt(dst), type_to_dt(src)
-	if dst == .Bool {
+	if typecheck.strip_named(dst) == .Bool {
 		zero := bac.add_c_int(ctx, "zero", src_dt, 0)
 		return bac.add_bin_op(ctx, "tobool", .Ne, dest_dt, arg, zero)
 	}

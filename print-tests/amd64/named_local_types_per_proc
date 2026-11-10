@@ -1,0 +1,111 @@
+=========== OPT LEVEL: none-quick ===========
+first:
+    mov rax, 0x18
+    ret
+second:
+    mov rax, 0x1e
+    ret
+main:
+    push rbx
+    sub rsp, 0x10
+    mov.b [rsp], 4
+    call first
+    mov rbx, rax
+    call second
+    mov rcx, rbx
+    add rcx, rax
+    mov rax, rcx
+    movzx.b ecx, [rsp]
+    add rax, rcx
+    add rax, 1
+    add rsp, 0x10
+    pop rbx
+    ret
+=========== OPT LEVEL: none ===========
+first:
+    mov rax, 0x18
+    ret
+second:
+    mov rax, 0x1e
+    ret
+main:
+    push rbx
+    sub rsp, 0x10
+    mov.b [rsp], 4
+    call first
+    mov rbx, rax
+    call second
+    add rbx, rax
+    movzx.b eax, [rsp]
+    add rbx, rax
+    mov rax, rbx
+    add rax, 1
+    add rsp, 0x10
+    pop rbx
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+first:
+    mov rax, 0x18
+    ret
+second:
+    mov rax, 0x1e
+    ret
+main:
+    push rbx
+    sub rsp, 0x10
+    mov.b [rsp], 4
+    call first
+    mov rbx, rax
+    call second
+    mov rcx, rbx
+    add rcx, rax
+    mov rax, rcx
+    movzx.b ecx, [rsp]
+    add rax, rcx
+    add rax, 1
+    add rsp, 0x10
+    pop rbx
+    ret
+=========== OPT LEVEL: moderate ===========
+first:
+    mov rax, 0x18
+    ret
+second:
+    mov rax, 0x1e
+    ret
+main:
+    push rbx
+    sub rsp, 0x10
+    mov.b [rsp], 4
+    call first
+    mov rbx, rax
+    call second
+    add rbx, rax
+    movzx.b eax, [rsp]
+    add rbx, rax
+    mov rax, rbx
+    add rax, 1
+    add rsp, 0x10
+    pop rbx
+    ret
+=========== OPT LEVEL: all ===========
+first:
+    mov rax, 0x18
+    ret
+second:
+    mov rax, 0x1e
+    ret
+main:
+    push rbx
+    call first
+    mov rbx, rax
+    call second
+    add rbx, rax
+    mov rax, rbx
+    add rax, 5
+    pop rbx
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    mov rax, 0x3b
+    ret

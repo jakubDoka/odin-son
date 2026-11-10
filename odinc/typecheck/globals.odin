@@ -6,7 +6,11 @@ import "core:odin/ast"
 import "core:slice"
 
 is_data_pointer :: proc(ty: Type) -> bool {
-	return ty == .Rawptr || is_of(ty, Pointer) || is_of(ty, Multi_Pointer)
+	return(
+		strip_named(ty) == .Rawptr ||
+		is_of(ty, Pointer) ||
+		is_of(ty, Multi_Pointer) \
+	)
 }
 
 alloc_global :: proc(ctx: ^Gen_Ctx, ty: Type, node: ^ast.Node) -> u32 {
@@ -106,7 +110,7 @@ global_store :: proc(ctx: ^Gen_Ctx, dest: Global_Dest, meta: ^Check_Meta) {
 				Global_Reloc{dest.offset, u32(meta.procid), max(u32)},
 			)
 		}
-	} else if meta.type == .String {
+	} else if strip_named(meta.type) == .String {
 		value := constant_string(ctx, meta)
 		data := slice.clone(transmute([]u8)value, ctx.types.allocator)
 		idx := add_global(ctx, data, 1)
@@ -116,7 +120,9 @@ global_store :: proc(ctx: ^Gen_Ctx, dest: Global_Dest, meta: ^Check_Meta) {
 		copy(bytes[8:], mem.ptr_to_bytes(&length))
 	} else {
 		value := meta.lit
-		if meta.type == .F32 do value.uint = u64(transmute(u32)f32(meta.float))
+		if strip_named(meta.type) == .F32 {
+			value.uint = u64(transmute(u32)f32(meta.float))
+		}
 
 		assert(size <= size_of(value))
 		copy(bytes, mem.ptr_to_bytes(&value)[:size])
@@ -153,7 +159,9 @@ global_load :: proc(ctx: ^Gen_Ctx, meta: ^Check_Meta) -> ^Check_Meta {
 	)
 	if is_data_pointer(meta.type) do return global_pointer(ctx, meta.type, value.uint)
 
-	if meta.type == .F32 do value.float = f64(transmute(f32)u32(value.uint))
+	if strip_named(meta.type) == .F32 {
+		value.float = f64(transmute(f32)u32(value.uint))
+	}
 	if in_set(constant_base_type(meta.type), SIGNED_TYPES) {
 		shift := uint(64 - type_size(meta.type) * 8)
 		value.int = (value.int << shift) >> shift

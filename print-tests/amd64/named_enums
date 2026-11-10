@@ -1,0 +1,251 @@
+=========== OPT LEVEL: none-quick ===========
+pick:
+    cmp dil, 0
+    je 3
+    cmp dil, 4
+    je 2
+    cmp dil, 5
+    je 1
+    xor eax, eax
+    jmp 4
+1:
+    mov rax, 0x100
+    jmp 4
+2:
+    mov rax, 0x10
+    jmp 4
+3:
+    mov rax, 1
+4:
+    ret
+main:
+    push rbx
+    push rbp
+    sub rsp, 8
+    mov.w [rsp], 0x705
+    mov dil, 4
+    call pick
+    mov rbx, rax
+    movzx.b edi, [rsp]
+    call pick
+    mov rbp, rax
+    xor edi, edi
+    call pick
+    mov rcx, rbx
+    add rcx, rbp
+    add rcx, rax
+    mov rax, rcx
+    mov rcx, rax
+    add rcx, 0x3000
+    add rax, 0x1000
+    cmp.b [rsp], 4
+    cmovne rax, rcx
+    movzx.b ecx, [rsp + 0x1]
+    add rcx, 5
+    lea rax, [rax + rcx + 0x4000]
+    add rax, 0x48002
+    add rsp, 8
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: none ===========
+pick:
+    cmp dil, 0
+    je 3
+    cmp dil, 4
+    je 2
+    cmp dil, 5
+    je 1
+    xor eax, eax
+    jmp 4
+1:
+    mov rax, 0x100
+    jmp 4
+2:
+    mov rax, 0x10
+    jmp 4
+3:
+    mov rax, 1
+4:
+    ret
+main:
+    push rbx
+    push rbp
+    sub rsp, 8
+    mov.w [rsp], 0x705
+    mov dil, 4
+    call pick
+    mov rbx, rax
+    movzx.b edi, [rsp]
+    call pick
+    mov rbp, rax
+    xor edi, edi
+    call pick
+    add rbx, rbp
+    add rbx, rax
+    mov rax, rbx
+    add rax, 0x3000
+    add rbx, 0x1000
+    cmp.b [rsp], 4
+    cmovne rbx, rax
+    movzx.b eax, [rsp + 0x1]
+    add rax, 5
+    lea rax, [rbx + rax + 0x4000]
+    add rax, 0x48002
+    add rsp, 8
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+pick:
+    cmp dil, 0
+    je 3
+    cmp dil, 4
+    je 2
+    cmp dil, 5
+    je 1
+    xor eax, eax
+    jmp 4
+1:
+    mov rax, 0x100
+    jmp 4
+2:
+    mov rax, 0x10
+    jmp 4
+3:
+    mov rax, 1
+4:
+    ret
+main:
+    push rbx
+    push rbp
+    sub rsp, 8
+    mov.w [rsp], 0x705
+    mov dil, 4
+    call pick
+    mov rbx, rax
+    movzx.b edi, [rsp]
+    call pick
+    mov rbp, rax
+    xor edi, edi
+    call pick
+    mov rcx, rbx
+    add rcx, rbp
+    add rcx, rax
+    mov rax, rcx
+    mov rcx, rax
+    add rcx, 0x3000
+    add rax, 0x1000
+    cmp.b [rsp], 4
+    cmovne rax, rcx
+    movzx.b ecx, [rsp + 0x1]
+    add rcx, 5
+    lea rax, [rax + rcx + 0x4000]
+    add rax, 0x48002
+    add rsp, 8
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: moderate ===========
+pick:
+    cmp dil, 0
+    je 3
+    cmp dil, 4
+    je 2
+    cmp dil, 5
+    je 1
+    xor eax, eax
+    jmp 4
+1:
+    mov rax, 0x100
+    jmp 4
+2:
+    mov rax, 0x10
+    jmp 4
+3:
+    mov rax, 1
+4:
+    ret
+main:
+    push rbx
+    push rbp
+    sub rsp, 8
+    mov.w [rsp], 0x705
+    mov dil, 4
+    call pick
+    mov rbx, rax
+    movzx.b edi, [rsp]
+    call pick
+    mov rbp, rax
+    xor edi, edi
+    call pick
+    add rbx, rbp
+    add rbx, rax
+    mov rax, rbx
+    add rax, 0x3000
+    add rbx, 0x1000
+    cmp.b [rsp], 4
+    cmovne rbx, rax
+    movzx.b eax, [rsp + 0x1]
+    add rax, 5
+    lea rax, [rbx + rax + 0x4000]
+    add rax, 0x48002
+    add rsp, 8
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: all ===========
+pick:
+    cmp dil, 0
+    je 3
+    cmp dil, 4
+    je 2
+    cmp dil, 5
+    je 1
+    xor eax, eax
+    jmp 4
+1:
+    mov rax, 0x100
+    jmp 4
+2:
+    mov rax, 0x10
+    jmp 4
+3:
+    mov rax, 1
+4:
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    sub rsp, 0x10
+    mov dil, 4
+    call pick
+    mov r12, rax
+    mov.w [rsp], 0x705
+    movzx.b eax, [rsp]
+    mov rbp, rax
+    mov rdi, rbp
+    call pick
+    mov rbx, rax
+    xor edi, edi
+    call pick
+    mov rcx, rax
+    movzx.b esi, [rsp + 0x1]
+    mov rax, r12
+    add rax, rbx
+    add rax, rcx
+    mov rcx, rax
+    add rcx, 0x3000
+    add rax, 0x1000
+    cmp bpl, 4
+    cmovne rax, rcx
+    add rsi, 5
+    lea rax, [rax + rsi + 0x4000]
+    add rax, 0x48002
+    add rsp, 0x10
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: aggresive ===========

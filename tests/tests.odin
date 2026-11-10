@@ -18556,6 +18556,877 @@ main :: proc() -> int {
 }
 `, main_())
 }
+@(test) named_self_referential_struct :: proc(t: ^testing.T) {
+
+
+
+Node :: struct {
+	next:  ^Node,
+	value: int,
+}
+
+main_ :: proc() -> int {
+	c := Node{nil, 0x3}
+	b := Node{&c, 0x20}
+	a := Node{&b, 0x100}
+	sum := 0
+	for p := &a; p != nil; p = p.next {
+		sum += p.value
+	}
+	return sum + size_of(Node)
+}
+
+run_test(t, `named_self_referential_struct`, `
+package main
+
+Node :: struct {
+	next:  ^Node,
+	value: int,
+}
+
+main :: proc() -> int {
+	c := Node{nil, 0x3}
+	b := Node{&c, 0x20}
+	a := Node{&b, 0x100}
+	sum := 0
+	for p := &a; p != nil; p = p.next {
+		sum += p.value
+	}
+	return sum + size_of(Node)
+}
+`, main_())
+}
+@(test) named_mutually_recursive_structs :: proc(t: ^testing.T) {
+
+
+
+Outer :: struct {
+	inner: ^Inner,
+	x:     int,
+}
+
+Inner :: struct {
+	outer: Outer,
+	y:     int,
+}
+
+Left :: struct {
+	right: ^Right,
+	v:     int,
+}
+
+Right :: struct {
+	left: ^Left,
+	v:    int,
+}
+
+main_ :: proc() -> int {
+	i: Inner
+	i.outer = Outer{&i, 0x5}
+	i.y = 0x7
+	l := Left{nil, 0x10}
+	r := Right{&l, 0x20}
+	l.right = &r
+	return i.outer.inner.outer.x + i.y + l.right.left.v + r.left.right.v +
+		size_of(Inner) + size_of(Left)
+}
+
+run_test(t, `named_mutually_recursive_structs`, `
+package main
+
+Outer :: struct {
+	inner: ^Inner,
+	x:     int,
+}
+
+Inner :: struct {
+	outer: Outer,
+	y:     int,
+}
+
+Left :: struct {
+	right: ^Right,
+	v:     int,
+}
+
+Right :: struct {
+	left: ^Left,
+	v:    int,
+}
+
+main :: proc() -> int {
+	i: Inner
+	i.outer = Outer{&i, 0x5}
+	i.y = 0x7
+	l := Left{nil, 0x10}
+	r := Right{&l, 0x20}
+	l.right = &r
+	return i.outer.inner.outer.x + i.y + l.right.left.v + r.left.right.v +
+		size_of(Inner) + size_of(Left)
+}
+`, main_())
+}
+@(test) named_struct_union_through_pointer :: proc(t: ^testing.T) {
+
+
+
+Tree :: struct {
+	child: ^Branch,
+	value: int,
+}
+
+Branch :: union {
+	Tree,
+	int,
+}
+
+walk :: proc(b: ^Branch) -> int {
+	switch v in b^ {
+	case Tree:
+		if v.child == nil do return v.value
+		return v.value + walk(v.child)
+	case int:
+		return v
+	}
+	return 0
+}
+
+main_ :: proc() -> int {
+	leaf: Branch = 0x30
+	mid: Branch = Tree{&leaf, 0x4}
+	root: Branch = Tree{&mid, 0x200}
+	return walk(&root) + size_of(Branch)
+}
+
+run_test(t, `named_struct_union_through_pointer`, `
+package main
+
+Tree :: struct {
+	child: ^Branch,
+	value: int,
+}
+
+Branch :: union {
+	Tree,
+	int,
+}
+
+walk :: proc(b: ^Branch) -> int {
+	switch v in b^ {
+	case Tree:
+		if v.child == nil do return v.value
+		return v.value + walk(v.child)
+	case int:
+		return v
+	}
+	return 0
+}
+
+main :: proc() -> int {
+	leaf: Branch = 0x30
+	mid: Branch = Tree{&leaf, 0x4}
+	root: Branch = Tree{&mid, 0x200}
+	return walk(&root) + size_of(Branch)
+}
+`, main_())
+}
+@(test) fail_anonymous_structs_are_distinct :: proc(t: ^testing.T) {
+run_test(t, `fail_anonymous_structs_are_distinct`, `
+package main
+
+main :: proc() -> int {
+	a: struct {
+		x: int,
+	}
+	b: struct {
+		x: int,
+	}
+	a = b
+	c: enum {
+		A,
+	}
+	d: enum {
+		A,
+	}
+	c = d
+	return a.x
+}
+`, 0)
+}
+@(test) named_local_types_per_proc :: proc(t: ^testing.T) {
+
+
+
+Foo :: struct {
+	a: u8,
+}
+
+first :: proc() -> int {
+	Foo :: struct {
+		x: int,
+	}
+	f := Foo{0x10}
+	return f.x + size_of(Foo)
+}
+
+second :: proc() -> int {
+	Foo :: struct {
+		x, y: int,
+		z:    u8,
+	}
+	f := Foo{1, 2, 3}
+	return f.x + f.y + int(f.z) + size_of(Foo)
+}
+
+main_ :: proc() -> int {
+	f := Foo{0x4}
+	return first() + second() + int(f.a) + size_of(Foo)
+}
+
+run_test(t, `named_local_types_per_proc`, `
+package main
+
+Foo :: struct {
+	a: u8,
+}
+
+first :: proc() -> int {
+	Foo :: struct {
+		x: int,
+	}
+	f := Foo{0x10}
+	return f.x + size_of(Foo)
+}
+
+second :: proc() -> int {
+	Foo :: struct {
+		x, y: int,
+		z:    u8,
+	}
+	f := Foo{1, 2, 3}
+	return f.x + f.y + int(f.z) + size_of(Foo)
+}
+
+main :: proc() -> int {
+	f := Foo{0x4}
+	return first() + second() + int(f.a) + size_of(Foo)
+}
+`, main_())
+}
+@(test) named_local_types_in_generic_procs :: proc(t: ^testing.T) {
+
+
+
+boxed :: proc(v: $T) -> int {
+	Box :: struct {
+		value: T,
+		tag:   u8,
+	}
+	b := Box{v, 0x2}
+	return int(b.value) + int(b.tag) + size_of(Box)
+}
+
+main_ :: proc() -> int {
+	return boxed(int(0x10)) + boxed(u8(0x20)) + boxed(int(0x40))
+}
+
+run_test(t, `named_local_types_in_generic_procs`, `
+package main
+
+boxed :: proc(v: $T) -> int {
+	Box :: struct {
+		value: T,
+		tag:   u8,
+	}
+	b := Box{v, 0x2}
+	return int(b.value) + int(b.tag) + size_of(Box)
+}
+
+main :: proc() -> int {
+	return boxed(int(0x10)) + boxed(u8(0x20)) + boxed(int(0x40))
+}
+`, main_())
+}
+@(test) named_types_in_nested_procs :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc() -> int {
+	Foo :: struct {
+		x: int,
+	}
+	helper :: proc() -> int {
+		Foo :: struct {
+			x, y: int,
+		}
+		inner :: proc() -> int {
+			Foo :: struct {
+				z: u8,
+			}
+			f := Foo{0x7}
+			return int(f.z) + size_of(Foo)
+		}
+		f := Foo{1, 2}
+		return f.x + f.y + inner() + size_of(Foo)
+	}
+	f := Foo{0x30}
+	return f.x + helper() + size_of(Foo)
+}
+
+run_test(t, `named_types_in_nested_procs`, `
+package main
+
+main :: proc() -> int {
+	Foo :: struct {
+		x: int,
+	}
+	helper :: proc() -> int {
+		Foo :: struct {
+			x, y: int,
+		}
+		inner :: proc() -> int {
+			Foo :: struct {
+				z: u8,
+			}
+			f := Foo{0x7}
+			return int(f.z) + size_of(Foo)
+		}
+		f := Foo{1, 2}
+		return f.x + f.y + inner() + size_of(Foo)
+	}
+	f := Foo{0x30}
+	return f.x + helper() + size_of(Foo)
+}
+`, main_())
+}
+@(test) fail_named_type_display :: proc(t: ^testing.T) {
+run_test(t, `fail_named_type_display`, `
+package main
+
+Vec :: struct($T: typeid) {
+	data: [4]T,
+	len:  int,
+}
+
+Foo :: struct {
+	x: int,
+}
+
+Node :: struct {
+	next: ^Node,
+}
+
+Shape :: union {
+	Foo,
+	Node,
+}
+
+Kind :: enum u8 {
+	A,
+	B,
+}
+
+boxed :: proc(v: $T) -> int {
+	Box :: struct {
+		value: T,
+	}
+	b: Box
+	s: string = b
+	return 0
+}
+
+local :: proc() -> int {
+	Foo :: struct {
+		x: int,
+	}
+	f: Foo
+	g: Outer_Foo = f
+	return 0
+}
+
+Outer_Foo :: Foo
+
+main :: proc() -> int {
+	helper :: proc() -> int {
+		Inner :: struct {
+			a: int,
+		}
+		i: Inner
+		s: string = i
+		return 0
+	}
+	v: Vec(int)
+	w: Vec(Foo)
+	w = v
+	s: string = v
+	n: Node
+	t: string = n.next
+	sh: Shape
+	u: string = sh
+	k: string = Kind.A
+	x: Vec(int) = w
+	literal := proc() -> int {
+		Lit :: struct {
+			a: int,
+		}
+		l: Lit
+		s: string = l
+		return 0
+	}
+	return boxed(int(1)) + boxed(f32(1)) + local() + helper() + literal()
+}
+`, 0)
+}
+@(test) named_poly_struct_identity :: proc(t: ^testing.T) {
+
+
+
+Vec :: struct($T: typeid) {
+	data: [4]T,
+	len:  int,
+}
+
+push :: proc(v: ^Vec($T), x: T) {
+	v.data[v.len] = x
+	v.len += 1
+}
+
+sum :: proc(v: Vec(int)) -> int {
+	// COMPILER BUG: the optimizer asserts in apply_peeps when the loop below
+	// gets inlined after the pushes into the array field
+	// s := 0
+	// for i in 0 ..< v.len do s += v.data[i]
+	// return s
+	return v.data[0] + v.data[1] + v.data[2] + v.data[3] + v.len
+}
+
+// the polymorphic T of the caller must not leak into the fields of Vec(u8)
+fill :: proc(x: $T) -> int {
+	v: Vec(u8)
+	push(&v, u8(x))
+	Pair :: struct($U: typeid) {
+		a: T,
+		b: U,
+	}
+	p := Pair(u8){x, 0x1}
+	return size_of(Vec(u8)) * 0x100 + size_of(Pair(u8)) + int(p.b) + int(v.data[0])
+}
+
+main_ :: proc() -> int {
+	a: Vec(int)
+	push(&a, 0x10)
+	push(&a, 0x20)
+	b: Vec(int) = a
+	push(&b, 0x3)
+	c: Vec(u8)
+	push(&c, 0x4)
+	return sum(a) + sum(b) + int(c.data[0]) + size_of(Vec(int)) +
+		size_of(Vec(u8)) + align_of(Vec(u8)) + fill(int(0x2)) + fill(u8(0x3))
+}
+
+run_test(t, `named_poly_struct_identity`, `
+package main
+
+Vec :: struct($T: typeid) {
+	data: [4]T,
+	len:  int,
+}
+
+push :: proc(v: ^Vec($T), x: T) {
+	v.data[v.len] = x
+	v.len += 1
+}
+
+sum :: proc(v: Vec(int)) -> int {
+	// COMPILER BUG: the optimizer asserts in apply_peeps when the loop below
+	// gets inlined after the pushes into the array field
+	// s := 0
+	// for i in 0 ..< v.len do s += v.data[i]
+	// return s
+	return v.data[0] + v.data[1] + v.data[2] + v.data[3] + v.len
+}
+
+// the polymorphic T of the caller must not leak into the fields of Vec(u8)
+fill :: proc(x: $T) -> int {
+	v: Vec(u8)
+	push(&v, u8(x))
+	Pair :: struct($U: typeid) {
+		a: T,
+		b: U,
+	}
+	p := Pair(u8){x, 0x1}
+	return size_of(Vec(u8)) * 0x100 + size_of(Pair(u8)) + int(p.b) + int(v.data[0])
+}
+
+main :: proc() -> int {
+	a: Vec(int)
+	push(&a, 0x10)
+	push(&a, 0x20)
+	b: Vec(int) = a
+	push(&b, 0x3)
+	c: Vec(u8)
+	push(&c, 0x4)
+	return sum(a) + sum(b) + int(c.data[0]) + size_of(Vec(int)) +
+		size_of(Vec(u8)) + align_of(Vec(u8)) + fill(int(0x2)) + fill(u8(0x3))
+}
+`, main_())
+}
+@(test) named_enums :: proc(t: ^testing.T) {
+
+
+
+Color :: enum u8 {
+	Red,
+	Green = 0x4,
+	Blue,
+}
+
+Pixel :: struct {
+	color: Color,
+	alpha: u8,
+}
+
+Value :: union {
+	Color,
+	int,
+}
+
+pick :: proc(c: Color) -> int {
+	switch c {
+	case .Red:
+		return 0x1
+	case .Green:
+		return 0x10
+	case .Blue:
+		return 0x100
+	}
+	return 0
+}
+
+main_ :: proc() -> int {
+	c: Color = .Green
+	p := Pixel{.Blue, 0x7}
+	total := pick(c) + pick(p.color) + pick(.Red)
+	if c == .Green do total += 0x1000
+	if p.color != c do total += 0x2000
+	if Color.Red < Color.Blue do total += 0x4000
+	total += int(Color.Blue) + int(p.alpha)
+	back := Color(0)
+	if back == .Red do total += 0x8000
+	v: Value = Color.Green
+	switch x in v {
+	case Color:
+		total += int(x) * 0x10000
+	case int:
+		total += x
+	}
+	return total + size_of(Pixel)
+}
+
+run_test(t, `named_enums`, `
+package main
+
+Color :: enum u8 {
+	Red,
+	Green = 0x4,
+	Blue,
+}
+
+Pixel :: struct {
+	color: Color,
+	alpha: u8,
+}
+
+Value :: union {
+	Color,
+	int,
+}
+
+pick :: proc(c: Color) -> int {
+	switch c {
+	case .Red:
+		return 0x1
+	case .Green:
+		return 0x10
+	case .Blue:
+		return 0x100
+	}
+	return 0
+}
+
+main :: proc() -> int {
+	c: Color = .Green
+	p := Pixel{.Blue, 0x7}
+	total := pick(c) + pick(p.color) + pick(.Red)
+	if c == .Green do total += 0x1000
+	if p.color != c do total += 0x2000
+	if Color.Red < Color.Blue do total += 0x4000
+	total += int(Color.Blue) + int(p.alpha)
+	back := Color(0)
+	if back == .Red do total += 0x8000
+	v: Value = Color.Green
+	switch x in v {
+	case Color:
+		total += int(x) * 0x10000
+	case int:
+		total += x
+	}
+	return total + size_of(Pixel)
+}
+`, main_())
+}
+@(test) named_unions_and_type_switch :: proc(t: ^testing.T) {
+
+
+
+Circle :: struct {
+	r: int,
+}
+
+Rect :: struct {
+	w, h: int,
+}
+
+Shape :: union {
+	Circle,
+	Rect,
+}
+
+area :: proc(s: Shape) -> int {
+	switch v in s {
+	case Circle:
+		return 3 * v.r * v.r
+	case Rect:
+		return v.w * v.h
+	}
+	return 0
+}
+
+main_ :: proc() -> int {
+	a: Shape = Circle{2}
+	b: Shape = Rect{3, 4}
+	none: Shape
+	total := area(a) + area(b) + area(none)
+	c := a.(Circle)
+	total += c.r * 0x10
+	return total + size_of(Shape)
+}
+
+run_test(t, `named_unions_and_type_switch`, `
+package main
+
+Circle :: struct {
+	r: int,
+}
+
+Rect :: struct {
+	w, h: int,
+}
+
+Shape :: union {
+	Circle,
+	Rect,
+}
+
+area :: proc(s: Shape) -> int {
+	switch v in s {
+	case Circle:
+		return 3 * v.r * v.r
+	case Rect:
+		return v.w * v.h
+	}
+	return 0
+}
+
+main :: proc() -> int {
+	a: Shape = Circle{2}
+	b: Shape = Rect{3, 4}
+	none: Shape
+	total := area(a) + area(b) + area(none)
+	c := a.(Circle)
+	total += c.r * 0x10
+	return total + size_of(Shape)
+}
+`, main_())
+}
+@(test) named_structs_by_value :: proc(t: ^testing.T) {
+
+
+
+Small :: struct {
+	a: i32,
+	b: i32,
+}
+
+Pair :: struct {
+	x: int,
+	y: f64,
+}
+
+Big :: struct {
+	a, b, c: int,
+}
+
+swap :: proc(s: Small) -> Small {
+	return Small{s.b, s.a}
+}
+
+// COMPILER BUG: wasm rejects returning a mixed int/float struct, the
+// generated return is typed [i64, i64] instead of [i64, f64]
+// scale :: proc(p: Pair, k: int) -> Pair {
+// 	return Pair{p.x * k, p.y * f64(k)}
+// }
+scale :: proc(p: Pair, k: int) -> int {
+	return p.x * k + int(p.y * f64(k))
+}
+
+grow :: proc(b: Big) -> Big {
+	return Big{b.a + 1, b.b + 2, b.c + 3}
+}
+
+main_ :: proc() -> int {
+	s := swap(Small{0x3, 0x5})
+	p := scale(Pair{0x2, 1.5}, 4)
+	b := grow(Big{0x10, 0x20, 0x30})
+	return int(s.a) * 0x10 + int(s.b) + p + b.a + b.b + b.c
+}
+
+run_test(t, `named_structs_by_value`, `
+package main
+
+Small :: struct {
+	a: i32,
+	b: i32,
+}
+
+Pair :: struct {
+	x: int,
+	y: f64,
+}
+
+Big :: struct {
+	a, b, c: int,
+}
+
+swap :: proc(s: Small) -> Small {
+	return Small{s.b, s.a}
+}
+
+// COMPILER BUG: wasm rejects returning a mixed int/float struct, the
+// generated return is typed [i64, i64] instead of [i64, f64]
+// scale :: proc(p: Pair, k: int) -> Pair {
+// 	return Pair{p.x * k, p.y * f64(k)}
+// }
+scale :: proc(p: Pair, k: int) -> int {
+	return p.x * k + int(p.y * f64(k))
+}
+
+grow :: proc(b: Big) -> Big {
+	return Big{b.a + 1, b.b + 2, b.c + 3}
+}
+
+main :: proc() -> int {
+	s := swap(Small{0x3, 0x5})
+	p := scale(Pair{0x2, 1.5}, 4)
+	b := grow(Big{0x10, 0x20, 0x30})
+	return int(s.a) * 0x10 + int(s.b) + p + b.a + b.b + b.c
+}
+`, main_())
+}
+@(test) named_type_globals :: proc(t: ^testing.T) {
+
+
+
+Mode :: enum {
+	Off,
+	On = 0x3,
+}
+
+Point :: struct {
+	x, y: int,
+	mode: Mode,
+}
+
+Slot :: union {
+	Point,
+	int,
+}
+
+when #config(TEST_NATIVE_GLOBAL_REFERENCE, true) {
+	@(static) origin: Point
+	@(static) mode: Mode
+	@(static) slot: Slot
+	@(static) other: Slot
+} else {
+	origin := Point{0x10, 0x20, .On}
+	mode: Mode = .On
+	slot: Slot = Point{0x1, 0x2, .Off}
+	other: Slot = int(0x40)
+}
+
+main_ :: proc() -> int {
+	when #config(TEST_NATIVE_GLOBAL_REFERENCE, true) {
+		origin = Point{0x10, 0x20, .On}
+		mode = .On
+		slot = Point{0x1, 0x2, .Off}
+		other = int(0x40)
+	}
+
+	total := origin.x + origin.y + int(origin.mode) + int(mode)
+	p := slot.(Point)
+	total += p.x + p.y + other.(int)
+	origin.x += 1
+	mode = .Off
+	return total + origin.x + int(mode)
+}
+
+run_test(t, `named_type_globals`, `
+package main
+
+Mode :: enum {
+	Off,
+	On = 0x3,
+}
+
+Point :: struct {
+	x, y: int,
+	mode: Mode,
+}
+
+Slot :: union {
+	Point,
+	int,
+}
+
+when #config(TEST_NATIVE_GLOBAL_REFERENCE, true) {
+	@(static) origin: Point
+	@(static) mode: Mode
+	@(static) slot: Slot
+	@(static) other: Slot
+} else {
+	origin := Point{0x10, 0x20, .On}
+	mode: Mode = .On
+	slot: Slot = Point{0x1, 0x2, .Off}
+	other: Slot = int(0x40)
+}
+
+main :: proc() -> int {
+	when #config(TEST_NATIVE_GLOBAL_REFERENCE, true) {
+		origin = Point{0x10, 0x20, .On}
+		mode = .On
+		slot = Point{0x1, 0x2, .Off}
+		other = int(0x40)
+	}
+
+	total := origin.x + origin.y + int(origin.mode) + int(mode)
+	p := slot.(Point)
+	total += p.x + p.y + other.(int)
+	origin.x += 1
+	mode = .Off
+	return total + origin.x + int(mode)
+}
+`, main_())
+}
 @(test) fuzz_0092546c2ab7b49f :: proc(t: ^testing.T) {
 run_test(t, "fuzz_0092546c2ab7b49f", string(#load("../fuzz/crashes/0092546c2ab7b49f.odin")), 0,
 				diff = false, no_run = true)
@@ -20474,6 +21345,19 @@ NAMES := []string{
 `global_self_referential_pointer_initializer`,
 `global_self_referential_aggregate_initializer`,
 `global_mutually_referential_initializers`,
+`named_self_referential_struct`,
+`named_mutually_recursive_structs`,
+`named_struct_union_through_pointer`,
+`fail_anonymous_structs_are_distinct`,
+`named_local_types_per_proc`,
+`named_local_types_in_generic_procs`,
+`named_types_in_nested_procs`,
+`fail_named_type_display`,
+`named_poly_struct_identity`,
+`named_enums`,
+`named_unions_and_type_switch`,
+`named_structs_by_value`,
+`named_type_globals`,
 `fuzz_0092546c2ab7b49f`,
 `fuzz_00f1be4a1ea4c499`,
 `fuzz_0203aad88c140351`,
@@ -29608,6 +30492,477 @@ main :: proc() -> int {
 		links[0].next.value + links[1].next.value
 }
 `,
+`
+package main
+
+Node :: struct {
+	next:  ^Node,
+	value: int,
+}
+
+main :: proc() -> int {
+	c := Node{nil, 0x3}
+	b := Node{&c, 0x20}
+	a := Node{&b, 0x100}
+	sum := 0
+	for p := &a; p != nil; p = p.next {
+		sum += p.value
+	}
+	return sum + size_of(Node)
+}
+`,
+`
+package main
+
+Outer :: struct {
+	inner: ^Inner,
+	x:     int,
+}
+
+Inner :: struct {
+	outer: Outer,
+	y:     int,
+}
+
+Left :: struct {
+	right: ^Right,
+	v:     int,
+}
+
+Right :: struct {
+	left: ^Left,
+	v:    int,
+}
+
+main :: proc() -> int {
+	i: Inner
+	i.outer = Outer{&i, 0x5}
+	i.y = 0x7
+	l := Left{nil, 0x10}
+	r := Right{&l, 0x20}
+	l.right = &r
+	return i.outer.inner.outer.x + i.y + l.right.left.v + r.left.right.v +
+		size_of(Inner) + size_of(Left)
+}
+`,
+`
+package main
+
+Tree :: struct {
+	child: ^Branch,
+	value: int,
+}
+
+Branch :: union {
+	Tree,
+	int,
+}
+
+walk :: proc(b: ^Branch) -> int {
+	switch v in b^ {
+	case Tree:
+		if v.child == nil do return v.value
+		return v.value + walk(v.child)
+	case int:
+		return v
+	}
+	return 0
+}
+
+main :: proc() -> int {
+	leaf: Branch = 0x30
+	mid: Branch = Tree{&leaf, 0x4}
+	root: Branch = Tree{&mid, 0x200}
+	return walk(&root) + size_of(Branch)
+}
+`,
+`
+package main
+
+main :: proc() -> int {
+	a: struct {
+		x: int,
+	}
+	b: struct {
+		x: int,
+	}
+	a = b
+	c: enum {
+		A,
+	}
+	d: enum {
+		A,
+	}
+	c = d
+	return a.x
+}
+`,
+`
+package main
+
+Foo :: struct {
+	a: u8,
+}
+
+first :: proc() -> int {
+	Foo :: struct {
+		x: int,
+	}
+	f := Foo{0x10}
+	return f.x + size_of(Foo)
+}
+
+second :: proc() -> int {
+	Foo :: struct {
+		x, y: int,
+		z:    u8,
+	}
+	f := Foo{1, 2, 3}
+	return f.x + f.y + int(f.z) + size_of(Foo)
+}
+
+main :: proc() -> int {
+	f := Foo{0x4}
+	return first() + second() + int(f.a) + size_of(Foo)
+}
+`,
+`
+package main
+
+boxed :: proc(v: $T) -> int {
+	Box :: struct {
+		value: T,
+		tag:   u8,
+	}
+	b := Box{v, 0x2}
+	return int(b.value) + int(b.tag) + size_of(Box)
+}
+
+main :: proc() -> int {
+	return boxed(int(0x10)) + boxed(u8(0x20)) + boxed(int(0x40))
+}
+`,
+`
+package main
+
+main :: proc() -> int {
+	Foo :: struct {
+		x: int,
+	}
+	helper :: proc() -> int {
+		Foo :: struct {
+			x, y: int,
+		}
+		inner :: proc() -> int {
+			Foo :: struct {
+				z: u8,
+			}
+			f := Foo{0x7}
+			return int(f.z) + size_of(Foo)
+		}
+		f := Foo{1, 2}
+		return f.x + f.y + inner() + size_of(Foo)
+	}
+	f := Foo{0x30}
+	return f.x + helper() + size_of(Foo)
+}
+`,
+`
+package main
+
+Vec :: struct($T: typeid) {
+	data: [4]T,
+	len:  int,
+}
+
+Foo :: struct {
+	x: int,
+}
+
+Node :: struct {
+	next: ^Node,
+}
+
+Shape :: union {
+	Foo,
+	Node,
+}
+
+Kind :: enum u8 {
+	A,
+	B,
+}
+
+boxed :: proc(v: $T) -> int {
+	Box :: struct {
+		value: T,
+	}
+	b: Box
+	s: string = b
+	return 0
+}
+
+local :: proc() -> int {
+	Foo :: struct {
+		x: int,
+	}
+	f: Foo
+	g: Outer_Foo = f
+	return 0
+}
+
+Outer_Foo :: Foo
+
+main :: proc() -> int {
+	helper :: proc() -> int {
+		Inner :: struct {
+			a: int,
+		}
+		i: Inner
+		s: string = i
+		return 0
+	}
+	v: Vec(int)
+	w: Vec(Foo)
+	w = v
+	s: string = v
+	n: Node
+	t: string = n.next
+	sh: Shape
+	u: string = sh
+	k: string = Kind.A
+	x: Vec(int) = w
+	literal := proc() -> int {
+		Lit :: struct {
+			a: int,
+		}
+		l: Lit
+		s: string = l
+		return 0
+	}
+	return boxed(int(1)) + boxed(f32(1)) + local() + helper() + literal()
+}
+`,
+`
+package main
+
+Vec :: struct($T: typeid) {
+	data: [4]T,
+	len:  int,
+}
+
+push :: proc(v: ^Vec($T), x: T) {
+	v.data[v.len] = x
+	v.len += 1
+}
+
+sum :: proc(v: Vec(int)) -> int {
+	// COMPILER BUG: the optimizer asserts in apply_peeps when the loop below
+	// gets inlined after the pushes into the array field
+	// s := 0
+	// for i in 0 ..< v.len do s += v.data[i]
+	// return s
+	return v.data[0] + v.data[1] + v.data[2] + v.data[3] + v.len
+}
+
+// the polymorphic T of the caller must not leak into the fields of Vec(u8)
+fill :: proc(x: $T) -> int {
+	v: Vec(u8)
+	push(&v, u8(x))
+	Pair :: struct($U: typeid) {
+		a: T,
+		b: U,
+	}
+	p := Pair(u8){x, 0x1}
+	return size_of(Vec(u8)) * 0x100 + size_of(Pair(u8)) + int(p.b) + int(v.data[0])
+}
+
+main :: proc() -> int {
+	a: Vec(int)
+	push(&a, 0x10)
+	push(&a, 0x20)
+	b: Vec(int) = a
+	push(&b, 0x3)
+	c: Vec(u8)
+	push(&c, 0x4)
+	return sum(a) + sum(b) + int(c.data[0]) + size_of(Vec(int)) +
+		size_of(Vec(u8)) + align_of(Vec(u8)) + fill(int(0x2)) + fill(u8(0x3))
+}
+`,
+`
+package main
+
+Color :: enum u8 {
+	Red,
+	Green = 0x4,
+	Blue,
+}
+
+Pixel :: struct {
+	color: Color,
+	alpha: u8,
+}
+
+Value :: union {
+	Color,
+	int,
+}
+
+pick :: proc(c: Color) -> int {
+	switch c {
+	case .Red:
+		return 0x1
+	case .Green:
+		return 0x10
+	case .Blue:
+		return 0x100
+	}
+	return 0
+}
+
+main :: proc() -> int {
+	c: Color = .Green
+	p := Pixel{.Blue, 0x7}
+	total := pick(c) + pick(p.color) + pick(.Red)
+	if c == .Green do total += 0x1000
+	if p.color != c do total += 0x2000
+	if Color.Red < Color.Blue do total += 0x4000
+	total += int(Color.Blue) + int(p.alpha)
+	back := Color(0)
+	if back == .Red do total += 0x8000
+	v: Value = Color.Green
+	switch x in v {
+	case Color:
+		total += int(x) * 0x10000
+	case int:
+		total += x
+	}
+	return total + size_of(Pixel)
+}
+`,
+`
+package main
+
+Circle :: struct {
+	r: int,
+}
+
+Rect :: struct {
+	w, h: int,
+}
+
+Shape :: union {
+	Circle,
+	Rect,
+}
+
+area :: proc(s: Shape) -> int {
+	switch v in s {
+	case Circle:
+		return 3 * v.r * v.r
+	case Rect:
+		return v.w * v.h
+	}
+	return 0
+}
+
+main :: proc() -> int {
+	a: Shape = Circle{2}
+	b: Shape = Rect{3, 4}
+	none: Shape
+	total := area(a) + area(b) + area(none)
+	c := a.(Circle)
+	total += c.r * 0x10
+	return total + size_of(Shape)
+}
+`,
+`
+package main
+
+Small :: struct {
+	a: i32,
+	b: i32,
+}
+
+Pair :: struct {
+	x: int,
+	y: f64,
+}
+
+Big :: struct {
+	a, b, c: int,
+}
+
+swap :: proc(s: Small) -> Small {
+	return Small{s.b, s.a}
+}
+
+// COMPILER BUG: wasm rejects returning a mixed int/float struct, the
+// generated return is typed [i64, i64] instead of [i64, f64]
+// scale :: proc(p: Pair, k: int) -> Pair {
+// 	return Pair{p.x * k, p.y * f64(k)}
+// }
+scale :: proc(p: Pair, k: int) -> int {
+	return p.x * k + int(p.y * f64(k))
+}
+
+grow :: proc(b: Big) -> Big {
+	return Big{b.a + 1, b.b + 2, b.c + 3}
+}
+
+main :: proc() -> int {
+	s := swap(Small{0x3, 0x5})
+	p := scale(Pair{0x2, 1.5}, 4)
+	b := grow(Big{0x10, 0x20, 0x30})
+	return int(s.a) * 0x10 + int(s.b) + p + b.a + b.b + b.c
+}
+`,
+`
+package main
+
+Mode :: enum {
+	Off,
+	On = 0x3,
+}
+
+Point :: struct {
+	x, y: int,
+	mode: Mode,
+}
+
+Slot :: union {
+	Point,
+	int,
+}
+
+when #config(TEST_NATIVE_GLOBAL_REFERENCE, true) {
+	@(static) origin: Point
+	@(static) mode: Mode
+	@(static) slot: Slot
+	@(static) other: Slot
+} else {
+	origin := Point{0x10, 0x20, .On}
+	mode: Mode = .On
+	slot: Slot = Point{0x1, 0x2, .Off}
+	other: Slot = int(0x40)
+}
+
+main :: proc() -> int {
+	when #config(TEST_NATIVE_GLOBAL_REFERENCE, true) {
+		origin = Point{0x10, 0x20, .On}
+		mode = .On
+		slot = Point{0x1, 0x2, .Off}
+		other = int(0x40)
+	}
+
+	total := origin.x + origin.y + int(origin.mode) + int(mode)
+	p := slot.(Point)
+	total += p.x + p.y + other.(int)
+	origin.x += 1
+	mode = .Off
+	return total + origin.x + int(mode)
+}
+`,
 `#load("../fuzz/crashes/0092546c2ab7b49f.odin")`,
 `#load("../fuzz/crashes/00f1be4a1ea4c499.odin")`,
 `#load("../fuzz/crashes/0203aad88c140351.odin")`,
@@ -30010,6 +31365,19 @@ main :: proc() -> int {
 `#load("../fuzz/crashes/regalloc_ioob.odin")`,
 }
 IS_FUZZ := []bool{
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
 false,
 false,
 false,

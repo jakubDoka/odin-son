@@ -1,0 +1,237 @@
+=========== OPT LEVEL: none-quick ===========
+walk:
+    push rbx
+    mov rbx, rdi
+    mov.q rax, [rbx + 0x10]
+    cmp rax, 1
+    je 2
+    cmp rax, 2
+    je 1
+    xor ecx, ecx
+    jmp 4
+1:
+    mov.q rax, [rbx]
+    mov rcx, rax
+    jmp 4
+2:
+    cmp.q [rbx], 0
+    je 3
+    mov.q rdi, [rbx]
+    call walk
+    mov.q rdx, [rbx + 0x8]
+    add rdx, rax
+    mov rcx, rdx
+    jmp 4
+3:
+    mov.q rax, [rbx + 0x8]
+    mov rcx, rax
+4:
+    mov rax, rcx
+    pop rbx
+    ret
+main:
+    sub rsp, 0x48
+    mov.q [rsp + 0x8], 0
+    mov.q [rsp], 0x30
+    mov.q [rsp + 0x10], 2
+    lea rax, [rsp]
+    mov.q [rsp + 0x18], rax
+    mov.q [rsp + 0x20], 4
+    mov.q [rsp + 0x28], 1
+    lea rax, [rsp + 0x18]
+    mov.q [rsp + 0x30], rax
+    mov.q [rsp + 0x38], 0x200
+    mov.q [rsp + 0x40], 1
+    lea rdi, [rsp + 0x30]
+    call walk
+    add rax, 0x18
+    add rsp, 0x48
+    ret
+=========== OPT LEVEL: none ===========
+walk:
+    push rbx
+    mov rbx, rdi
+    mov.q rax, [rbx + 0x10]
+    cmp rax, 1
+    je 2
+    cmp rax, 2
+    je 1
+    xor eax, eax
+    jmp 4
+1:
+    mov.q rax, [rbx]
+    jmp 4
+2:
+    cmp.q [rbx], 0
+    je 3
+    mov.q rdi, [rbx]
+    call walk
+    mov rcx, rax
+    mov.q rax, [rbx + 0x8]
+    add rax, rcx
+    jmp 4
+3:
+    mov.q rax, [rbx + 0x8]
+4:
+    pop rbx
+    ret
+main:
+    sub rsp, 0x48
+    mov.q [rsp + 0x8], 0
+    mov.q [rsp], 0x30
+    mov.q [rsp + 0x10], 2
+    lea rax, [rsp]
+    mov.q [rsp + 0x18], rax
+    mov.q [rsp + 0x20], 4
+    mov.q [rsp + 0x28], 1
+    lea rax, [rsp + 0x18]
+    mov.q [rsp + 0x30], rax
+    mov.q [rsp + 0x38], 0x200
+    mov.q [rsp + 0x40], 1
+    lea rdi, [rsp + 0x30]
+    call walk
+    add rax, 0x18
+    add rsp, 0x48
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+walk:
+    push rbx
+    mov rbx, rdi
+    mov.q rax, [rbx + 0x10]
+    cmp rax, 1
+    je 2
+    cmp rax, 2
+    je 1
+    xor ecx, ecx
+    jmp 4
+1:
+    mov.q rax, [rbx]
+    mov rcx, rax
+    jmp 4
+2:
+    cmp.q [rbx], 0
+    je 3
+    mov.q rdi, [rbx]
+    call walk
+    mov.q rdx, [rbx + 0x8]
+    add rdx, rax
+    mov rcx, rdx
+    jmp 4
+3:
+    mov.q rax, [rbx + 0x8]
+    mov rcx, rax
+4:
+    mov rax, rcx
+    pop rbx
+    ret
+main:
+    sub rsp, 0x48
+    mov.q [rsp + 0x8], 0
+    mov.q [rsp], 0x30
+    mov.q [rsp + 0x10], 2
+    lea rax, [rsp]
+    mov.q [rsp + 0x18], rax
+    mov.q [rsp + 0x20], 4
+    mov.q [rsp + 0x28], 1
+    lea rax, [rsp + 0x18]
+    mov.q [rsp + 0x30], rax
+    mov.q [rsp + 0x38], 0x200
+    mov.q [rsp + 0x40], 1
+    lea rdi, [rsp + 0x30]
+    call walk
+    add rax, 0x18
+    add rsp, 0x48
+    ret
+=========== OPT LEVEL: moderate ===========
+walk:
+    push rbx
+    mov rbx, rdi
+    mov.q rax, [rbx + 0x10]
+    cmp rax, 1
+    je 2
+    cmp rax, 2
+    je 1
+    xor eax, eax
+    jmp 4
+1:
+    mov.q rax, [rbx]
+    jmp 4
+2:
+    cmp.q [rbx], 0
+    je 3
+    mov.q rdi, [rbx]
+    call walk
+    mov rcx, rax
+    mov.q rax, [rbx + 0x8]
+    add rax, rcx
+    jmp 4
+3:
+    mov.q rax, [rbx + 0x8]
+4:
+    pop rbx
+    ret
+main:
+    sub rsp, 0x48
+    mov.q [rsp + 0x8], 0
+    mov.q [rsp], 0x30
+    mov.q [rsp + 0x10], 2
+    lea rax, [rsp]
+    mov.q [rsp + 0x18], rax
+    mov.q [rsp + 0x20], 4
+    mov.q [rsp + 0x28], 1
+    lea rax, [rsp + 0x18]
+    mov.q [rsp + 0x30], rax
+    mov.q [rsp + 0x38], 0x200
+    mov.q [rsp + 0x40], 1
+    lea rdi, [rsp + 0x30]
+    call walk
+    add rax, 0x18
+    add rsp, 0x48
+    ret
+=========== OPT LEVEL: all ===========
+walk:
+    push rbx
+    mov rbx, rdi
+    mov.q rax, [rbx + 0x10]
+    cmp rax, 1
+    je 2
+    cmp rax, 2
+    je 1
+    xor eax, eax
+    jmp 4
+1:
+    mov.q rax, [rbx]
+    jmp 4
+2:
+    cmp.q [rbx], 0
+    je 3
+    mov.q rdi, [rbx]
+    call walk
+    mov rcx, rax
+    mov.q rax, [rbx + 0x8]
+    add rax, rcx
+    jmp 4
+3:
+    mov.q rax, [rbx + 0x8]
+4:
+    pop rbx
+    ret
+main:
+    sub rsp, 0x48
+    mov.q [rsp + 0x8], 0
+    mov.q [rsp], 0x30
+    mov.q [rsp + 0x10], 2
+    lea rax, [rsp]
+    mov.q [rsp + 0x18], rax
+    mov.q [rsp + 0x20], 4
+    mov.q [rsp + 0x28], 1
+    lea rax, [rsp + 0x18]
+    mov.q [rsp + 0x30], rax
+    mov.q [rsp + 0x38], 0x200
+    mov.q [rsp + 0x40], 1
+    lea rdi, [rsp + 0x30]
+    call walk
+    add rax, 0x18
+    add rsp, 0x48
+    ret
+=========== OPT LEVEL: aggresive ===========

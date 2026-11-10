@@ -1,0 +1,119 @@
+=========== OPT LEVEL: none-quick ===========
+main:
+    mov.q [rsp - 0x38], 0
+    mov.q [rsp - 0x30], 3
+    lea rax, [rsp - 0x38]
+    mov.q [rsp - 0x28], rax
+    mov.q [rsp - 0x20], 0x20
+    lea rax, [rsp - 0x28]
+    mov.q [rsp - 0x18], rax
+    mov.q [rsp - 0x10], 0x100
+    xor eax, eax
+    lea rcx, [rsp - 0x18]
+1:
+    cmp rcx, 0
+    jne 2
+    add rax, 0x10
+    ret
+2:
+    mov.q rdx, [rcx]
+    add.q rax, [rcx + 0x8]
+    mov rcx, rdx
+    jmp 1
+=========== OPT LEVEL: none ===========
+main:
+    mov.q [rsp - 0x38], 0
+    mov.q [rsp - 0x30], 3
+    lea rax, [rsp - 0x38]
+    mov.q [rsp - 0x28], rax
+    mov.q [rsp - 0x20], 0x20
+    lea rax, [rsp - 0x28]
+    mov.q [rsp - 0x18], rax
+    mov.q [rsp - 0x10], 0x100
+    xor eax, eax
+    lea rcx, [rsp - 0x18]
+1:
+    cmp rcx, 0
+    jne 2
+    add rax, 0x10
+    ret
+2:
+    mov.q rdx, [rcx]
+    add.q rax, [rcx + 0x8]
+    mov rcx, rdx
+    jmp 1
+=========== OPT LEVEL: moderate-quick ===========
+main:
+    mov.q [rsp - 0x38], 0
+    mov.q [rsp - 0x30], 3
+    lea rax, [rsp - 0x38]
+    mov.q [rsp - 0x28], rax
+    mov.q [rsp - 0x20], 0x20
+    lea rax, [rsp - 0x28]
+    mov.q [rsp - 0x18], rax
+    mov.q [rsp - 0x10], 0x100
+    xor eax, eax
+    lea rcx, [rsp - 0x18]
+1:
+    cmp rcx, 0
+    jne 2
+    add rax, 0x10
+    ret
+2:
+    mov.q rdx, [rcx]
+    add.q rax, [rcx + 0x8]
+    mov rcx, rdx
+    jmp 1
+=========== OPT LEVEL: moderate ===========
+main:
+    mov.q [rsp - 0x38], 0
+    mov.q [rsp - 0x30], 3
+    lea rax, [rsp - 0x38]
+    mov.q [rsp - 0x28], rax
+    mov.q [rsp - 0x20], 0x20
+    lea rax, [rsp - 0x28]
+    mov.q [rsp - 0x18], rax
+    mov.q [rsp - 0x10], 0x100
+    xor eax, eax
+    lea rcx, [rsp - 0x18]
+1:
+    cmp rcx, 0
+    jne 2
+    add rax, 0x10
+    ret
+2:
+    mov.q rdx, [rcx]
+    add.q rax, [rcx + 0x8]
+    mov rcx, rdx
+    jmp 1
+=========== OPT LEVEL: all ===========
+main:
+    lea rcx, [rsp - 0x18]
+    mov.q [rsp - 0x38], 0
+    mov.q [rsp - 0x30], 3
+    lea rax, [rsp - 0x38]
+    mov.q [rsp - 0x28], rax
+    mov.q [rsp - 0x20], 0x20
+    lea rax, [rsp - 0x28]
+    mov.q [rsp - 0x18], rax
+    mov.q [rsp - 0x10], 0x100
+    cmp rcx, 0
+    jne 1
+    mov rax, 0x10
+    jmp 3
+1:
+    xor eax, eax
+    lea rcx, [rsp - 0x18]
+2:
+    mov rsi, rcx
+    mov.q rcx, [rsi]
+    cmp rcx, 0
+    setne dl
+    movzx edx, dl
+    add.q rax, [rsi + 0x8]
+    test dl, dl
+    jne 2
+    add rax, 0x10
+3:
+    ret
+=========== OPT LEVEL: aggresive ===========
